@@ -101,6 +101,8 @@ int is_pike_master = 0;
 // makes the Encoder class encode references to the master and all
 // ex-masters as references to the current master object.
 
+protected object debugger;
+
 mapping(string:object) fs_map = ([]);
 object root_fs;
 // ---  Functions begin here.
@@ -3635,6 +3637,22 @@ protected mixed main_resolv(string sym, CompatResolver|void resolver) {
   return v;
 };
 
+void load_debugger() {
+   set_debugger(1);
+     // load the debugger support
+   function d;
+   mixed err = catch {
+     d = main_resolv("Debug.Debugger.debug_server",
+			 get_compilation_handler(compat_major, compat_minor));
+    };
+
+    if(!d){  werror("Unable to load debugger.\n");
+		throw(d);
+    }
+    debugger = d();
+    debugger->load_breakpoint();
+}
+
 //! This function is called when all the driver is done with all setup
 //! of modules, efuns, tables etc. etc. and is ready to start executing
 //! _real_ programs. It receives the arguments not meant for the driver.
@@ -3712,6 +3730,7 @@ void _main(array(string(0..255)) orig_argv)
       ({"compiler_trace", NO_ARG,  ({"--compiler-trace"}), 0, 0}),
       ({"assembler_debug",MAY_HAVE_ARG, ({"--assembler-debug"}), 0, 0}),
       ({"optimizer_debug",MAY_HAVE_ARG, ({"--optimizer-debug"}), 0, 0}),
+      ({"debugger",          MAY_HAVE_ARG, ({"--debugger"}), 0, 1}),
       ({"debug",          MAY_HAVE_ARG, ({"--debug"}), 0, 1}),
       ({"trace",          MAY_HAVE_ARG, ({"--trace"}), 0, 1}),
       ({"ignore",         MAY_HAVE_ARG, ({"-Dqdatplr"}), 0, 1}),
@@ -3766,7 +3785,10 @@ void _main(array(string(0..255)) orig_argv)
       case "debug":
 	debug+=(int)q[i][1];
 	break;
-
+	  case "debugger":
+	  load_debugger();
+	  set_debugger(1);
+	  break;
       case "trace":
 	trace+=(int)q[i][1];
 	break;
@@ -3903,6 +3925,7 @@ void _main(array(string(0..255)) orig_argv)
 	if(debug) _debug(debug);
 #endif
 	if(trace) trace = predef::trace(trace);
+
 	mixed ret;
 	mixed err = catch {
 	    // One reason for this catch is to get a new call to

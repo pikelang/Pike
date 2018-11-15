@@ -835,8 +835,123 @@ struct backlog
 struct backlog backlog[BACKLOG];
 int backlogp=BACKLOG-1;
 
+
+// begining of debugging state. we obviously will need better data structures for this.
+THREAD_T stepping_thread = NULL;
+int stepping_mode = 0;
+struct svalue * debugger_server = NULL;
+
 static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 {
+    struct pike_string *filep;
+    INT_TYPE linep;
+	int debug_retval = 0;
+	
+if((stepping_mode != 0 && stepping_thread == th_self()) || Pike_fp->context->prog == bp_prog) 
+{
+	
+    char *file = NULL, *f;
+    struct pike_string *filep2;
+
+	printf("stepping_mode: %d, stepping_thread: %p\n", stepping_mode, stepping_thread);
+    filep2 = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
+    if (filep2 && !filep2->size_shift) {
+      file = filep->str;
+      while((f=strchr(file,'/')))
+	file=f+1;
+    }
+    fprintf(stderr,"- %s:%4ld:%p(%"PRINTPTRDIFFT"d): "
+	    "%-25s %4"PRINTPTRDIFFT"d %4"PRINTPTRDIFFT"d\n",
+	    file ? file : "-",(long)linep,
+	    Pike_fp->pc, Pike_fp->pc - Pike_fp->context->prog->program,
+	    get_opcode_name(instr),
+	    Pike_sp-Pike_interpreter.evaluator_stack,
+	    Pike_mark_sp-Pike_interpreter.mark_stack);
+        free_string(filep2);
+	
+			printf("pro: %p, %p %p, %p\n", bp_prog, Pike_fp->context->prog, bp_offset, Pike_fp->pc - Pike_fp->context->prog->program);
+		}
+		
+		
+		
+	if((stepping_mode != 0 && stepping_thread == th_self()) || ((Pike_fp->context->prog == bp_prog) && (bp_offset == (Pike_fp->pc - Pike_fp->context->prog->program)))) {
+	    int num_locals = 0;	
+		int fp_num_locals = Pike_fp->num_locals;
+		struct svalue * current_local = Pike_fp->locals;	
+		printf("got a match!\n");
+		stepping_thread = th_self();
+		
+		if(debugger_server == NULL) {
+			
+		  push_text("Debug.Debugger.get_debugger_handler");
+		  SAFE_APPLY_MASTER("resolv", 1 );
+		 
+		  // look up the function
+		  safe_apply_svalue(Pike_sp-1, 0, 1);
+
+		  if(TYPEOF(Pike_sp[-1]) != T_FUNCTION) {
+			  Pike_error("Could not get debugger for breakpoint.\n");
+		  }
+
+		  // TODO check we actually got the memory.
+		debugger_server = malloc(sizeof(struct svalue));
+		  
+		  
+		  assign_svalue((debugger_server), Pike_sp-1);
+		  add_ref_svalue((debugger_server));  
+
+		  pop_stack();
+		  pop_stack();
+		}
+  	    
+	    filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
+		
+		ref_push_string(filep);
+		push_int(linep);
+		
+		push_text(get_opcode_name(instr));
+		
+		ref_push_object(Pike_fp->current_object);
+
+		while(num_locals < fp_num_locals) {
+			push_svalue(current_local);
+			add_ref_svalue(Pike_sp - 1);
+			current_local++;
+		    num_locals++;
+		}
+
+		f_aggregate(num_locals);
+		//f_backtrace(0);
+		//printf("applying\n");
+
+		// we don't want to step though any of the do_breakpoint() instructions that actually wake up the debugger.
+		// this seems safe for the basic scenario, but perhaps we should do this on another thread altogether?
+		stepping_mode = 0; 
+
+		safe_apply_svalue(debugger_server, 5, 1);
+		//printf("applied\n");
+		if(TYPEOF(*(Pike_sp - 1)) != T_INT) 
+		{
+			pop_stack();
+			Pike_error("Wrong return type from debug callback.\n");
+		} else {
+			debug_retval = (*(Pike_sp - 1)).u.integer;
+		}
+		pop_stack();
+
+		if(debug_retval == 1) // single_step
+		{
+			//printf("debug_retval: %d\n", debug_retval);
+			stepping_mode = 1; // single_step		
+		} else {
+			stepping_mode = 0;
+			stepping_thread = 0;
+		}
+
+	}
+	
+	
+
   if(Pike_interpreter.trace_level > 2)
   {
     char *file = NULL, *f;
@@ -1187,7 +1302,7 @@ static int catching_eval_instruction (PIKE_OPCODE_T *pc);
 PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 {
 #ifdef PIKE_DEBUG
-  if (d_flag || Pike_interpreter.trace_level > 2) {
+  if (enable_debugger || d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (F_CATCH - F_OFFSET);
     if (Pike_interpreter.trace_level>3) {
       sprintf(trace_buffer, "-    Addr = %p\n", addr);
@@ -1315,7 +1430,7 @@ void *dummy_label = NULL;
 PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr)
 {
 #ifdef PIKE_DEBUG
-  if (d_flag || Pike_interpreter.trace_level > 2) {
+  if (enable_debugger|| d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (F_CATCH - F_OFFSET);
     if (Pike_interpreter.trace_level>3) {
       sprintf(trace_buffer, "-    Addr = %p\n", addr);
@@ -1430,7 +1545,7 @@ static void debug_instr_prologue (PIKE_INSTR_T instr)
 }
 
 #define DEBUG_PROLOGUE(OPCODE, EXTRA) do {				\
-    if (d_flag || Pike_interpreter.trace_level > 2) {			\
+    if (enable_debugger || d_flag || Pike_interpreter.trace_level > 2) {			\
       debug_instr_prologue ((OPCODE) - F_OFFSET);			\
       EXTRA;								\
     }									\
@@ -1440,19 +1555,19 @@ static void debug_instr_prologue (PIKE_INSTR_T instr)
  * machine code. */
 void simple_debug_instr_prologue_0 (PIKE_INSTR_T instr)
 {
-  if (d_flag || Pike_interpreter.trace_level > 2)
+  if (enable_debugger|| d_flag || Pike_interpreter.trace_level > 2)
     low_debug_instr_prologue (instr);
 }
 void simple_debug_instr_prologue_1 (PIKE_INSTR_T instr, INT32 arg)
 {
-  if (d_flag || Pike_interpreter.trace_level > 2) {
+  if (enable_debugger || d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (instr);
     DEBUG_LOG_ARG (arg);
   }
 }
 void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
 {
-  if (d_flag || Pike_interpreter.trace_level > 2) {
+  if (enable_debugger || d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (instr);
     DEBUG_LOG_ARG (arg1);
     DEBUG_LOG_ARG2 (arg2);
@@ -2038,6 +2153,7 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
 struct pike_frame *alloc_pike_frame(void)
 {
     struct pike_frame *res;
+	
     if( free_pike_frame )
     {
       res = free_pike_frame;
@@ -2259,7 +2375,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
               safe_describe_svalue(&obj_name, &obj_sval, 0, NULL);
               PIKE_FN_START(function->name->size_shift == 0 ?
                             function->name->str : "[widestring fn name]",
-                            buffer_get_string(s));
+                            buffer_get_string(&obj_name));
               buffer_free(&obj_name);
             }
             if(UNLIKELY(Pike_interpreter.trace_level))
@@ -3374,7 +3490,7 @@ void slow_check_stack(void)
     {
       if(f->locals < Pike_interpreter.evaluator_stack ||
 	f->locals > &(Pike_interpreter.evaluator_stack[Pike_stack_size]))
-      Pike_fatal("Local variable pointer points to Finspång.\n");
+      Pike_fatal("Local variable pointer points to Finspang.\n");
 
       if(f->args < 0 || f->args > Pike_stack_size)
 	Pike_fatal("FEL FEL FEL! HELP!! (corrupted pike_frame)\n");

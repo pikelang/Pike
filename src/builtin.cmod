@@ -502,6 +502,35 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
   push_array(res);
 }
 
+PMOD_EXPORT
+PIKEFUN int set_debugger(int i)
+  optflags OPT_SIDE_EFFECT;
+efun;
+ {
+  int tmp = enable_debugger;
+  enable_debugger = i;
+  pop_stack();
+  push_int(tmp);
+}
+
+PMOD_EXPORT
+PIKEFUN int add_breakpoint(program p, int line_number) 
+  optflags OPT_SIDE_EFFECT;
+efun;
+{
+  ptrdiff_t pc_offset;
+  
+  // TODO: low_get_offset_for_line doesn't see the file name when a class comes from multiple files (eg via includes), which
+  // can cause the breakpoint to be set on the wrong spot. we need to check to see if the markers are actually present and there's
+  // a bug in the line-number reading code, or if there's a bug in the line-number generation code.
+  pc_offset = low_get_offset_for_line(p, line_number);
+  pop_n_elems(args);
+  bp_offset = pc_offset;
+  bp_prog = p;
+  if(!pc_offset) Pike_error("Line number not found\n");
+  push_int(pc_offset);
+}
+
 /*! @decl string basetype(mixed x)
  *!
  *! Same as sprintf("%t",x);

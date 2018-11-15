@@ -17,6 +17,7 @@
 
 PMOD_EXPORT extern int d_flag, a_flag, l_flag, c_flag, p_flag;
 PMOD_EXPORT extern int debug_options, runtime_options;
+PMOD_EXPORT extern int enable_debugger;
 PMOD_EXPORT extern int default_t_flag;
 #if defined(YYDEBUG) || defined(PIKE_DEBUG)
 extern int yydebug;

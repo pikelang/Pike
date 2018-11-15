@@ -8235,6 +8235,52 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
   return res;
 }
 
+
+PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
+					      struct program *prog,
+					      INT_TYPE linep)
+{
+  if (prog->program && prog->linenumbers) {    
+      struct pike_string *file = NULL;
+      static char *base, *cnt;
+      ptrdiff_t off;
+      INT32 pid;
+      INT_TYPE line = 0;
+
+      base = NULL;
+	  off = 0;
+	  cnt = prog->linenumbers;
+      pid=prog->id;
+
+      while(cnt < prog->linenumbers + prog->num_linenumbers)
+      {
+		  printf("cnt: %d\n", *cnt);
+		 if(*cnt == 127)
+		 {
+		   int strno;
+		   cnt++;
+		   printf("new file\n");
+	  	   strno = get_small_number(&cnt);
+	  	   CHECK_FILE_ENTRY (prog, strno);
+	 	   file = prog->strings[strno];
+		   printf("file: %s\n", file->str);
+		   continue;
+		}
+		
+		off+=get_small_number(&cnt);
+		line+=get_small_number(&cnt);\
+  	    printf("line: %d %p\n", line, off);
+		
+		if(line == linep) { printf("found\n"); return off; }
+      }
+  } else {
+    fprintf(stderr, "No program of linenumbers program:%p linenumbers:%p\n",
+	    prog->program, prog->linenumbers);
+  }
+
+  return NULL;
+}
+
 PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 					      struct program *prog,
 					      INT_TYPE *linep)

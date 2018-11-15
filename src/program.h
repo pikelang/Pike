@@ -16,6 +16,10 @@
 #include "string_builder.h"
 #include "gc_header.h"
 
+
+struct program * bp_prog;
+ptrdiff_t bp_offset;
+
 /* Needed to support dynamic loading on NT */
 PMOD_EXPORT extern struct program_state * Pike_compiler;
 

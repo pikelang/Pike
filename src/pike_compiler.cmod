@@ -2914,9 +2914,9 @@ node *pop_local_variables(int level, node *block)
 	Pike_compiler->compiler_frame->variable[level].flags |=
 	  LOCAL_VAR_IS_USED;
       }
-      free_string(Pike_compiler->compiler_frame->variable[level].name);
-      copy_shared_string(Pike_compiler->compiler_frame->variable[level].name,
-			 empty_pike_string);
+     // free_string(Pike_compiler->compiler_frame->variable[level].name);
+     // copy_shared_string(Pike_compiler->compiler_frame->variable[level].name,
+	//		 empty_pike_string);
       /* FIXME: Do we need to keep the filenames? */
     }
   }
