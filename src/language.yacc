@@ -484,10 +484,6 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
 	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
       yywarning("Extern declared inherit.");
     }
-    if (Pike_compiler->current_annotations &&
-	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
-      yywarning("Annotations not supported for inherits.");
-    }
     if($3)
     {
       struct pike_string *s=Pike_sp[-1].u.string;
@@ -1030,7 +1026,7 @@ def: modifiers optional_attributes simple_type optional_constant
   | annotation ';'
   {
     $1 = mknode(F_COMMA_EXPR, $1, NULL);
-    compiler_add_annotations(-1, $1);
+    compiler_add_program_annotations(0, $1);
     free_node($1);
   }
   | '@' TOK_CONSTANT ';'

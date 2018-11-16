@@ -3193,6 +3193,13 @@ void low_start_new_program(struct program *p,
       do_free_array(p->annotations[e]);
       p->annotations[e] = NULL;
     }
+    for (e = 0; e < p->num_inherits; e++) {
+      struct inherit *inh = p->inherits + e;
+      if (inh->inherit_level > 1) continue;
+      if (!inh->annotations) continue;
+      free_array(inh->annotations);
+      inh->annotations = NULL;
+    }
   }
   if (pass == COMPILER_PASS_FIRST) {
     if(c->compilation_depth >= 1) {
@@ -3396,6 +3403,7 @@ void low_start_new_program(struct program *p,
     i.parent_identifier=-1;
     i.parent_offset=OBJECT_PARENT;
     i.name=0;
+    i.annotations = NULL;
     add_to_inherits(i);
   }
 
@@ -3517,6 +3525,8 @@ static void exit_program_struct(struct program *p)
   if(p->inherits)
     for(e=0; e<p->num_inherits; e++)
     {
+      if (p->inherits[e].annotations)
+	free_array(p->inherits[e].annotations);
       if(p->inherits[e].name)
 	free_string(p->inherits[e].name);
       if(e)
@@ -4232,7 +4242,7 @@ static int add_variant_dispatcher(struct pike_string *name,
  * being compiled.
  *
  * @param id
- *   Identifier to annotate, -1 for the current program.
+ *   Identifier to annotate.
  *
  * @param val
  *   Annotation value. Should be an object implementing
@@ -4240,7 +4250,6 @@ static int add_variant_dispatcher(struct pike_string *name,
  */
 static void add_annotation(int id, struct svalue *val)
 {
-  id += 1;
   while (Pike_compiler->new_program->num_annotations <= id) {
     add_to_annotations(NULL);
   }
@@ -4263,6 +4272,48 @@ void compiler_add_annotations(int id, node *annotations)
     annotations = CDR(annotations);
     if (val_node->token != F_CONSTANT) continue;
     add_annotation(id, &val_node->u.sval);
+  }
+}
+
+/**
+ * Add a single annotation for an inherit in the current program
+ * being compiled.
+ *
+ * @param inh
+ *   Inherit to annotate.
+ *
+ * @param val
+ *   Annotation value. Should be an object implementing
+ *   the Pike.Annotation interface.
+ *
+ * NOTE: This operation is ONLY valid for inherits at
+ *       levels 0 and 1!
+ *
+ */
+static void add_program_annotation(int inh, struct svalue *val)
+{
+  struct inherit *inherit = Pike_compiler->new_program->inherits + inh;
+  if (inherit->inherit_level > 1) {
+    Pike_fatal("Attempt to annotate inherit #%d at level %d!\n",
+	       inh, inherit->inherit_level);
+  }
+  if (val) {
+    if (inherit->annotations) {
+      inherit->annotations = append_array(inherit->annotations, val);
+    } else {
+      push_svalue(val);
+      inherit->annotations = aggregate_array(1);
+    }
+  }
+}
+
+void compiler_add_program_annotations(int inh, node *annotations)
+{
+  while(annotations) {
+    node *val_node = CAR(annotations);
+    annotations = CDR(annotations);
+    if (val_node->token != F_CONSTANT) continue;
+    add_program_annotation(inh, &val_node->u.sval);
   }
 }
 
@@ -5113,28 +5164,36 @@ void lower_inherit(struct program *p,
     return;
   }
 
-  if (Pike_compiler->compiler_pass == COMPILER_PASS_EXTRA) {
+  if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
+    /* NB: Pike_compiler->num_inherits is off by 1!
+     *     This is probably due to not counting the initial inherit.
+     */
     struct program *old_p =
       Pike_compiler->new_program->
       inherits[Pike_compiler->num_inherits+1].prog;
+    inherit_offset = Pike_compiler->num_inherits + 1;
     Pike_compiler->num_inherits += old_p->num_inherits;
 
     if (old_p != p) {
       yyerror("Got different program for inherit in second pass "
 	      "(resolver problem).");
     }
-    return;
-  }
-  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-    struct program *old_p =
-      Pike_compiler->new_program->
-      inherits[Pike_compiler->num_inherits+1].prog;
-    Pike_compiler->num_inherits += old_p->num_inherits;
 
-    if (old_p != p) {
-      yyerror("Got different program for inherit in second pass "
-	      "(resolver problem).");
+    /* Restore annotations (if any) to and from the inherited program. */
+    do {
+      struct inherit *src_inh = p->inherits;
+      struct inherit *dst_inh =
+	Pike_compiler->new_program->inherits + inherit_offset;
+      if (!src_inh->annotations) continue;
+
+      dst_inh->annotations = copy_array(src_inh->annotations);
+    } while(0);
+
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_EXTRA) {
+      return;
     }
+
+    assert(Pike_compiler->compiler_pass == COMPILER_PASS_LAST);
 
     if (!(p->flags & PROGRAM_FINISHED)) {
       /* Require that the inherited program really is finished in pass
@@ -5254,6 +5313,10 @@ void lower_inherit(struct program *p,
 	inherit.parent_offset=parent_offset;
 	inherit.parent_identifier=parent_identifier;
       }
+
+      if (inherit.annotations) {
+	inherit.annotations = copy_array(inherit.annotations);
+      }
     }else{
       if(!inherit.parent)
       {
@@ -5311,6 +5374,9 @@ void lower_inherit(struct program *p,
 	  inherit.parent=par;
 	  inherit.parent_offset=INHERIT_PARENT;
 	}
+      }
+      if (inherit.annotations) {
+	add_ref(inherit.annotations);
       }
     }
     if(inherit.parent) add_ref(inherit.parent);
@@ -5496,11 +5562,17 @@ void compiler_do_inherit(node *n,
   struct program *p;
   struct identifier *i;
   INT32 numid=-1, offset=0;
+  int inherit_offset = Pike_compiler->new_program->num_inherits;
 
   if(!n)
   {
     yyerror("Unable to inherit");
     return;
+  }
+
+  if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
+    /* Note off by one! */
+    inherit_offset = Pike_compiler->num_inherits + 1;
   }
 
   if ((n->token == F_APPLY) && (CAR(n)->token == F_CONSTANT) &&
@@ -5603,6 +5675,13 @@ void compiler_do_inherit(node *n,
       resolv_class(n);
       do_inherit(Pike_sp-1, flags, name);
       pop_stack();
+  }
+
+  if (Pike_compiler->current_annotations) {
+    compiler_add_program_annotations(inherit_offset,
+				     Pike_compiler->current_annotations);
+    free_node(Pike_compiler->current_annotations);
+    Pike_compiler->current_annotations = NULL;
   }
 }
 
@@ -8753,6 +8832,9 @@ void gc_mark_program_as_referenced(struct program *p)
 
 	if(e && p->inherits[e].prog)
 	  gc_mark_program_as_referenced(p->inherits[e].prog);
+
+	if (p->inherits[e].annotations)
+	  gc_mark_array_as_referenced(p->inherits[e].annotations);
       }
 
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
@@ -8784,6 +8866,9 @@ void real_gc_cycle_check_program(struct program *p, int weak)
 
 	if(e && p->inherits[e].prog)
 	  gc_cycle_check_program(p->inherits[e].prog, 0);
+
+	if (p->inherits[e].annotations)
+	  gc_cycle_check_array(p->inherits[e].annotations, 0);
       }
 
       for (e = p->num_annotations - 1; e >= 0; e--) {
@@ -8835,6 +8920,10 @@ static void gc_check_program(struct program *p)
 
       if(e && p->inherits[e].prog)
 	debug_gc_check (p->inherits[e].prog, " as inherited program of a program");
+
+      if (p->inherits[e].annotations)
+	debug_gc_check(p->inherits[e].annotations,
+		       " as annotations for an inherit");
     }
 
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
@@ -8950,6 +9039,11 @@ size_t gc_free_all_unreferenced_programs(void)
 	{
 	  free_program(p->inherits[e].prog);
 	  p->inherits[e].prog=0;
+	}
+
+	if (p->inherits[e].annotations) {
+	  free_array(p->inherits[e].annotations);
+	  p->inherits[e].annotations = NULL;
 	}
       }
 

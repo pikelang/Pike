@@ -556,7 +556,7 @@ void my_describe_inherit_structure(struct program *p)
 
 static struct inherit dummy_inherit
 #ifdef PIKE_DEBUG
-  = {-4711, -4711, -4711, -4711, (size_t) -4711, -4711, NULL, NULL, NULL}
+= {-4711, -4711, -4711, -4711, (size_t) -4711, -4711, NULL, NULL, NULL, NULL}
 #endif
 ;
 

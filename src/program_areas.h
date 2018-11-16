@@ -24,9 +24,6 @@ FOO(unsigned INT16,struct program_constant, struct program_constant, constants)
 PASS1ONLY(unsigned INT16,struct reference, struct reference, identifier_references)
 PASS1ONLY(unsigned INT16,struct inherit, struct inherit, inherits)
 PASS1ONLY(unsigned INT16,struct identifier, struct identifier, identifiers)
-/* NB: Annotations for the program itself are at index #0.
- *     Annotations for identifiers are thus offset by 1.
- */
 PASS1ONLY(unsigned INT16, struct array *, struct array *, annotations)
 #undef PASS1ONLY
 #undef FOO

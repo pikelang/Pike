@@ -2601,6 +2601,7 @@ static void compile_compiler(void)
   inh->storage_offset = p->xstorage;
   inh->parent = NULL;
   inh->name = NULL;
+  inh->annotations = NULL;
   p->num_inherits = 1;
 
   /* Force clone_object() to accept the program...
@@ -2632,6 +2633,7 @@ static void compile_compiler(void)
   inh->storage_offset = p2->xstorage;
   inh->parent = NULL;
   inh->name = NULL;
+  inh->annotations = NULL;
   p2->num_inherits = 1;
 
   p2->flags |= PROGRAM_PASS_1_DONE;
