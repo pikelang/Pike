@@ -498,6 +498,20 @@ struct inherit
   /* The name of the inherit, if there is any. For nested inherits,
    * this can be a string on the form "A::B::C". */
   struct pike_string *name;
+
+  /* The set of annotations for this inherit (if any).
+   *
+   * For inherit #0 these are set directly via annotations
+   * on the class.
+   *
+   * For inherits at level 1 these are set from the annotations
+   * on the corresponding inherit declaration, together with
+   * the original annotations.
+   *
+   * For inherits at higher levels they are copied verbatim from their
+   * previous program.
+   */
+  struct array *annotations;
 };
 
 /**
@@ -816,6 +830,7 @@ void check_program(struct program *p);
 int low_is_variant_dispatcher(struct identifier *id);
 int is_variant_dispatcher(struct program *prog, int fun);
 void compiler_add_annotations(int id, node *annotations);
+void compiler_add_program_annotations(int id, node *annotations);
 struct program *end_first_pass(int finish);
 PMOD_EXPORT struct program *debug_end_program(void);
 PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
