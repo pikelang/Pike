@@ -4459,7 +4459,38 @@ struct program *end_first_pass(int finish)
 			OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
       }
     }
+    /* FIXME: Call end_pass() in annotations here?
+     */
     Pike_compiler->compiler_pass = COMPILER_PASS_LAST;
+  }
+
+  if (!Pike_compiler->num_parse_error) {
+    prog = Pike_compiler->new_program;
+    if (prog->inherits->annotations) {
+      struct array *a = prog->inherits->annotations;
+      for (e = 0; e < a->size; e++) {
+	struct object *o;
+	struct program *p;
+	struct inherit *inh;
+	int fun;
+	if (TYPEOF(ITEM(a)[e]) != PIKE_T_OBJECT) continue;
+	o = ITEM(a)[e].u.object;
+	p = o->prog;
+	if (!p) continue;
+	inh = p->inherits + SUBTYPEOF(ITEM(a)[e]);
+	p = inh->prog;
+	fun = find_identifier("end_pass", p);
+	if (fun < 0) continue;
+	fun += inh->identifier_level;
+	push_int(Pike_compiler->compiler_pass);
+	ref_push_program(prog);
+	ref_push_object_inherit(Pike_fp->current_object,
+				Pike_fp->context -
+				Pike_fp->current_program->inherits);
+	safe_apply_low2(o, fun, 3, NULL);
+	pop_stack();
+      }
+    }
   }
 
   /*

@@ -101,6 +101,10 @@ program Encoder = [program] master()->Encoder;
 program Decoder = [program] master()->Decoder;
 program Codec = [program] master()->Codec;
 
+#if constant(__builtin.Annotation)
+program Annotation = __builtin.Annotation;
+#endif
+
 #if 0
 protected constant TYPE = typeof(typeof([mixed]0));
 

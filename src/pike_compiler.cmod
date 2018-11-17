@@ -3006,6 +3006,51 @@ PIKECLASS placeholder
   }
 }
 
+/*! @module Pike
+ */
+
+/*! @class Annotation
+ *!
+ *! This class describes the API that the compiler
+ *! expects for the annotation syntax.
+ *!
+ *! @note
+ *!   Classes implementing this API typically need
+ *!   to be marked @tt{constant@}.
+ *!
+ *! @seealso
+ *!   @[Annotations]
+ */
+struct program *Annotation_program = NULL;
+PIKECLASS Annotation
+  program_flags PROGRAM_CONSTANT;
+{
+  /*! @decl optional void end_pass(int pass, program prog, @
+   *!                              CompilerEnvironment.PikeCompiler compiler)
+   *!
+   *! Callback called by the compiler when it is finishing a compilation pass.
+   *!
+   *! @param pass
+   *!   Compilation pass.
+   *!
+   *! @param prog
+   *!   Program being compiled.
+   *!
+   *! @param compiler
+   *!   @[CompilerEnvironment.PikeCompiler] state for the compiler.
+   */
+  PIKEFUN void end_pass(int pass, program prog,
+			CompilerEnvironment_PikeCompiler compiler)
+    prototype;
+    flags ID_OPTIONAL;
+  {}
+}
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 void low_init_pike_compiler(void)
 {
 #ifdef PIKE_THREADS
