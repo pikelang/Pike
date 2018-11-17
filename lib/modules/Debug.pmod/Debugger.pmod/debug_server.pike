@@ -52,12 +52,12 @@ public void breakpoint(string desc, mapping state)
 }
 */
 
-public int do_breakpoint(string file, int line, string opcode, object current_object, array locals, array bt)
+public int do_breakpoint(string file, int line, int current_fp, string opcode, object current_object, array locals, array bt)
 {
   if(!breakpoint_client) return 0;
   object key = bp_lock->lock();
   breakpoint_cond = Thread.Condition();
-  bpbe->call_out(lambda(){breakpoint_hilfe = .BreakpointHilfe(breakpoint_client, this, file + ":" + line, current_object, locals, bt);}, 0);
+  bpbe->call_out(lambda(){breakpoint_hilfe = .BreakpointHilfe(breakpoint_client, this, file + ":" + line, current_fp, current_object, locals, bt);}, 0);
   werror("Hilfe started for Breakpoint on %s at %s.", opcode, file + ":" + line);
   breakpoint_cond->wait(key);
   key = 0;

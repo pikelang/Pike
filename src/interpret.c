@@ -908,7 +908,7 @@ if((stepping_mode != 0 && stepping_thread == th_self()) || Pike_fp->context->pro
 		
 		ref_push_string(filep);
 		push_int(linep);
-		
+		push_int((long)Pike_fp);
 		push_text(get_opcode_name(instr));
 		
 		ref_push_object(Pike_fp->current_object);
@@ -928,7 +928,7 @@ if((stepping_mode != 0 && stepping_thread == th_self()) || Pike_fp->context->pro
 		// this seems safe for the basic scenario, but perhaps we should do this on another thread altogether?
 		stepping_mode = 0; 
 
-		safe_apply_svalue(debugger_server, 5, 1);
+		safe_apply_svalue(debugger_server, 6, 1);
 		//printf("applied\n");
 		if(TYPEOF(*(Pike_sp - 1)) != T_INT) 
 		{

@@ -3,6 +3,7 @@
   Stdio.File client;
   object debug_server;
   object current_object;
+  int current_fp;
   array locals;
   array backtrace;
 
@@ -38,6 +39,21 @@
     destruct(e);
     }
   }
+  
+  class CommandSetLocal
+  {
+    inherit Tools.Hilfe.Command;
+    string help(string what) { return "Set local variable"; }
+
+    void exec(Tools.Hilfe.Evaluator e, string line, array(string) words,
+            array(string) tokens) {
+				// TODO parse value so we get an actual evaluated result.
+
+	tokens -= ({" "});
+    e->safe_write("Set Local: " + (tokens * " ") + ".\n");
+	debugger_set_local(current_fp, (int)tokens[1], tokens[2]);
+}
+  }
 
   class CommandBackTrace
   {
@@ -65,7 +81,7 @@
   }
 
 
-  protected void create(Stdio.File _client, object _debug_server, string desc, object _current_object, array _locals, array _bt)
+  protected void create(Stdio.File _client, object _debug_server, string desc, int fp, object _current_object, array _locals, array _bt)
   {
 //	  werror("client: %O\n", client);
     debug_server = _debug_server;
@@ -73,7 +89,8 @@
 	current_object = _current_object;
 	locals = _locals;
     backtrace = _bt;
-
+    current_fp = fp;
+	
     client->write("Breakpoint on " + desc + "\n");
     ::create(client, client);
 	//werror("Initialized\n");
@@ -88,6 +105,7 @@
     m_delete(commands, "quit");
     commands->go = CommandGo();
     commands->step = CommandStep();
+	commands->set_local = CommandSetLocal();
 	
 //    commands->bt = CommandBackTrace();
 //    commands->backtrace = commands->bt;

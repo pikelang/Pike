@@ -514,6 +514,19 @@ efun;
 }
 
 PMOD_EXPORT
+PIKEFUN int debugger_set_local(int pc, int i, mixed value)
+  optflags OPT_SIDE_EFFECT;
+efun;
+{
+  struct pike_frame * fp = (struct pike_frame *)pc;
+  printf("Pike_fp: %p\n", fp);
+  assign_svalue(fp->locals+(ptrdiff_t)i, value);
+  pop_n_elems(3);
+  push_int(0);
+}
+
+
+PMOD_EXPORT
 PIKEFUN int add_breakpoint(program p, int line_number) 
   optflags OPT_SIDE_EFFECT;
 efun;
