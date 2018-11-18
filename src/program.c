@@ -5215,7 +5215,7 @@ void lower_inherit(struct program *p,
       struct inherit *src_inh = p->inherits;
       struct inherit *dst_inh =
 	Pike_compiler->new_program->inherits + inherit_offset;
-      if (!src_inh->annotations) continue;
+      if (!src_inh->annotations) break;
 
       dst_inh->annotations = copy_array(src_inh->annotations);
     } while(0);
