@@ -251,6 +251,9 @@
 /* If so, is it restricted to user and system time? */
 #undef GETRUSAGE_RESTRICTED
 
+/* Define if you have infnan */
+#undef HAVE_INFNAN
+
 /* Define if you have _isnan */
 #undef HAVE__ISNAN
 
