@@ -3048,6 +3048,67 @@ PIKECLASS Annotation
 /*! @endclass
  */
 
+/*! @module Annotations
+ */
+
+/*! @class Implements
+ *!
+ *! This annotation causes the compiler to validate that
+ *! the annotated class implements the specified API.
+ */
+struct program *Implements_program = NULL;
+PIKECLASS Implements
+  program_flags PROGRAM_CONSTANT;
+{
+  /*! @decl inherit Pike.Annotation
+   */
+  INHERIT Annotation;
+
+  PIKEVAR program api flags ID_STATIC;
+
+  PIKEFUN void create(program api)
+    flags ID_PROTECTED;
+  {
+    if (THIS->api) Pike_error("Already initialized.\n");
+    add_ref(THIS->api = api);
+  }
+
+  PIKEFUN void end_pass(int pass, program prog,
+			CompilerEnvironment_PikeCompiler compiler)
+  {
+    struct program *api = THIS->api;
+    if (!api) Pike_error("Uninitialized.\n");
+
+    /* Only perform the checks in the last pass. */
+    if (pass != COMPILER_PASS_LAST) return;
+
+    if (!is_compatible(prog, api)) {
+      /* NB: We need to enter the compiler to call yyexplain_*().
+       *     Note also that low_enter_compiler() eats a ref to the object.
+       */
+      add_ref(compiler);
+      low_enter_compiler(compiler, compiler_inh_num);
+      /* NB: low_enter_compiler invalidates THIS! */
+      yyexplain_not_compatible(REPORT_ERROR, prog, api);
+      exit_compiler();
+    } else if (!implements(prog, api)) {
+      /* NB: We need to enter the compiler to call yyexplain_*().
+       *     Note also that low_enter_compiler() eats a ref to the object.
+       */
+      add_ref(compiler);
+      low_enter_compiler(compiler, compiler_inh_num);
+      /* NB: low_enter_compiler invalidates THIS! */
+      yyexplain_not_implements(REPORT_WARNING, prog, api);
+      exit_compiler();
+    }
+  }
+}
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 /*! @endmodule
  */
 
