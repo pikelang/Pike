@@ -1856,6 +1856,7 @@ int main(int argc, char **argv)
 ])
 
 AC_SUBST(PKG_CONFIG_PATH)
+AC_SUBST(PKG_CONFIG_LIBDIR)
 
 AC_DEFUN(PIKE_FIND_LIB_INCLUDE,
 [
@@ -1876,6 +1877,12 @@ AC_DEFUN(PIKE_PROG_PKG_CONFIG,
 [
   # NB: pkg-config does not have native support for multiple ABIs.
   MY_AC_PATH_PROGS(PKG_CONFIG, ${ac_tool_prefix}pkg-config pkg-config, no)
+  if test "$pike_cv_sys_os:$pike_cv_abi:$PKG_CONFIG:$PKG_CONFIG_LIBDIR" = \
+          "Solaris:64:/usr/bin/pkg-config:"; then
+    # Workaround for 32-bit only pkg-config on Solaris 11.
+    PKG_CONFIG_LIBDIR='/usr/lib/64/pkgconfig:/usr/share/pkgconfig'
+    export PKG_CONFIG_LIBDIR
+  fi
 ])
 
 dnl package, variable, options
