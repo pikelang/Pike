@@ -857,7 +857,7 @@ if((stepping_mode != 0 && stepping_thread == th_self()) || Pike_fp->context->pro
 	printf("stepping_mode: %d, stepping_thread: %p\n", stepping_mode, stepping_thread);
     filep2 = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
     if (filep2 && !filep2->size_shift) {
-      file = filep->str;
+      file = filep2->str;
       while((f=strchr(file,'/')))
 	file=f+1;
     }
@@ -898,7 +898,7 @@ if((stepping_mode != 0 && stepping_thread == th_self()) || Pike_fp->context->pro
 		debugger_server = malloc(sizeof(struct svalue));
 		  
 		  
-		  assign_svalue((debugger_server), Pike_sp-1);
+		  assign_svalue_no_free((debugger_server), Pike_sp-1);
 		  add_ref_svalue((debugger_server));  
 
 		  pop_stack();
