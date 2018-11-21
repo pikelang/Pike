@@ -1220,6 +1220,7 @@ test_any([[
 test_compile_warning([[
   class A { static int foo = 1; int bar() { return foo; } }
 ]])
+
 test_any_equal([[
   // Test that filename and line numbers in backtraces are correct.
   // This specific test used to trigger two different bugs.
