@@ -307,14 +307,17 @@ int do_docode(node *n, int flags)
   int stack_depth_save = current_stack_depth;
   struct compilation *c = THIS_COMPILATION;
   INT_TYPE save_current_line = c->lex.current_line;
+  struct pike_string *save_current_file = c->lex.current_file;
   if(!n) return 0;
   c->lex.current_line=n->line_number;
+  c->lex.current_file = n->current_file;
 #ifdef PIKE_DEBUG
   if (current_stack_depth == -4711) Pike_fatal("do_docode() used outside docode().\n");
 #endif
   i=do_docode2(n, flags);
   current_stack_depth = stack_depth_save + i;
 
+  c->lex.current_file = save_current_file;
   c->lex.current_line=save_current_line;
   return i;
 }
