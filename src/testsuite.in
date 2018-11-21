@@ -1076,6 +1076,25 @@ test_any([[
   return catch { Builtin.__Backtrace_Tester__(); }[1][-1][2];
 ]], Builtin.__Backtrace_Tester__)
 
+test_any_equal([[
+  // Test that filename and line numbers in backtraces are correct.
+  // This specific test used to trigger two different bugs.
+  // cf [LysLysKOM 22997909].
+  int whee(string w)
+  {
+#line 7 "whee-before"
+    int x = 0;
+    error("whee!\n");
+#line 10 "whee-after"
+    string q = "wq";
+    q += "21";
+    return sizeof(q + w);
+  }
+#line 15 "test"
+  mixed err = catch { whee("foo"); };
+  return ({ err[1][-1][0], err[1][-1][1] });
+]], ({ "whee-before", 8 }))
+
 test_compile_warning([[
   class A { static int foo = 1; int bar() { return foo; } }
 ]])
