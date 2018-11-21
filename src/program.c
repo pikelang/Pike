@@ -8355,6 +8355,7 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
     ptrdiff_t offset = pc - prog->program;
     if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
       static struct pike_string *file = NULL;
+      static struct pike_string *next_file = NULL;
       static char *base, *cnt;
       static ptrdiff_t off;
       static INT32 pid;
@@ -8377,13 +8378,14 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	  cnt++;
 	  strno = get_small_number(&cnt);
 	  CHECK_FILE_ENTRY (prog, strno);
-	  file = prog->strings[strno];
+	  next_file = prog->strings[strno];
 	  continue;
 	}
 	off+=get_small_number(&cnt);
       fromold:
 	if(off > offset) break;
 	line+=get_small_number(&cnt);
+	file = next_file;
       }
       if (cnt >= prog->linenumbers + prog->num_linenumbers) {
 	/* We reached the end of the table. Make sure
