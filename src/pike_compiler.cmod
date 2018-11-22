@@ -3106,6 +3106,43 @@ PIKECLASS Implements
 /*! @endclass
  */
 
+/*! @class InheritedClass
+ *!
+ *! This is the class for the @[Inherited] annotation.
+ */
+struct program *InheritedClass_program = NULL;
+struct object *Inherited_annotation = NULL;
+PIKECLASS InheritedClass
+  program_flags PROGRAM_CONSTANT|PROGRAM_NO_EXPLICIT_DESTRUCT;
+{
+  /*! @decl inherit Pike.Annotation
+   */
+  INHERIT Annotation;
+
+  /*! @decl @@Inherited
+   */
+  EXTRA
+  {
+    add_to_annotations(NULL);
+  }
+}
+/*! @endclass
+ */
+
+/*! @decl constant Inherited = InheritedClass()
+ *!
+ *! This @[Annotation] informs the compiler that any @[Annotation]
+ *! marked with it is to be inherited. The default is that annotations
+ *! on classes are not inherited.
+ */
+EXTRA
+{
+  Inherited_annotation = clone_object(InheritedClass_program, 0);
+  add_object_constant("Inherited", Inherited_annotation, 0);
+  ref_push_object(Inherited_annotation);
+  InheritedClass_program->annotations[0] = aggregate_array(1);
+}
+
 /*! @endmodule
  */
 
@@ -3165,6 +3202,13 @@ void init_pike_compiler(void)
 
 void cleanup_pike_compiler(void)
 {
+  if (Inherited_annotation) {
+    /* Break the circularity. */
+    do_free_array(InheritedClass_program->annotations[0]);
+    InheritedClass_program->annotations[0] = NULL;
+    free_object(Inherited_annotation);
+    Inherited_annotation = NULL;
+  }
   EXIT;
 }
 

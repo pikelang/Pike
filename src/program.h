@@ -501,12 +501,14 @@ struct inherit
 
   /* The set of annotations for this inherit (if any).
    *
-   * For inherit #0 these are set directly via annotations
-   * on the class.
+   * For inherit #0 these are set either directly via
+   * annotations on the class, or via inherit of classes
+   * that have annotations that are annotated as @Inherited.
    *
    * For inherits at level 1 these are set from the annotations
    * on the corresponding inherit declaration, together with
-   * the original annotations.
+   * the original annotations that haven't been annotated as
+   * @Inherited.
    *
    * For inherits at higher levels they are copied verbatim from their
    * previous program.

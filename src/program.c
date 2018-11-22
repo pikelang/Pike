@@ -5211,13 +5211,62 @@ void lower_inherit(struct program *p,
     }
 
     /* Restore annotations (if any) to and from the inherited program. */
-    do {
+    if (p->inherits->annotations) {
       struct inherit *src_inh = p->inherits;
       struct inherit *dst_inh =
 	Pike_compiler->new_program->inherits + inherit_offset;
-      if (!src_inh->annotations) break;
+      struct array *annotations;
+      int found_inh = 0;
+      int e;
 
-      dst_inh->annotations = copy_array(src_inh->annotations);
+      dst_inh->annotations = annotations = copy_array(src_inh->annotations);
+      for (e = 0; e < annotations->size; e++) {
+	if (TYPEOF(ITEM(annotations)[e]) == PIKE_T_OBJECT) {
+	  /* FIXME: Subtyped objects? */
+	  struct object *ann = ITEM(annotations)[e].u.object;
+	  if (ann->prog && ann->prog->inherits[0].annotations) {
+	    /* Check if it has the @Inherited annotation. */
+	    struct array *a = ann->prog->inherits[0].annotations;
+	    int is_inherited = 0;
+	    int ee;
+	    for (ee = 0; ee < a->size; ee++) {
+	      if ((TYPEOF(ITEM(a)[ee]) == PIKE_T_OBJECT) &&
+		  (ITEM(a)[ee].u.object == Inherited_annotation)) {
+		is_inherited = 1;
+		break;
+	      }
+	    }
+	    if (is_inherited) {
+	      found_inh++;
+	      add_program_annotation(0, &(ITEM(annotations)[e]));
+
+	      /* Switch out the annotation with a placeholding marker,
+	       * so that we can perform the filtering (if any)
+	       * more efficiently below.
+	       *
+	       * We use the Inherited_annotation object
+	       * as the placeholding marker.
+	       */
+	      SET_SVAL(ITEM(annotations)[e], PIKE_T_OBJECT, 0,
+		       object, Inherited_annotation);
+	      add_ref(Inherited_annotation);
+	      free_object(ann);
+	    }
+	  }
+	}
+      }
+      if (found_inh) {
+	if (found_inh == annotations->size) {
+	  free_array(annotations);
+	  dst_inh->annotations = NULL;
+	} else {
+	  ref_push_object(Inherited_annotation);
+	  dst_inh->annotations =
+	    subtract_array_svalue(annotations, Pike_sp - 1);
+	  pop_stack();
+	  free_array(annotations);
+	}
+      }
     } while(0);
 
     if (Pike_compiler->compiler_pass == COMPILER_PASS_EXTRA) {
@@ -5346,7 +5395,55 @@ void lower_inherit(struct program *p,
       }
 
       if (inherit.annotations) {
-	inherit.annotations = copy_array(inherit.annotations);
+	struct array *annotations;
+	int e;
+	int found_inh = 0;
+	inherit.annotations = annotations = copy_array(inherit.annotations);
+	for (e = 0; e < annotations->size; e++) {
+	  if (TYPEOF(ITEM(annotations)[e]) == PIKE_T_OBJECT) {
+	    /* FIXME: Subtyped objects? */
+	    struct object *ann = ITEM(annotations)[e].u.object;
+	    if (ann->prog && ann->prog->inherits[0].annotations) {
+	      /* Check if it has the @Inherited annotation. */
+	      struct array *a = ann->prog->inherits[0].annotations;
+	      int is_inherited = 0;
+	      int ee;
+	      for (ee = 0; ee < a->size; ee++) {
+		if ((TYPEOF(ITEM(a)[ee]) == PIKE_T_OBJECT) &&
+		    (ITEM(a)[ee].u.object == Inherited_annotation)) {
+		  is_inherited = 1;
+		  break;
+		}
+	      }
+	      if (is_inherited) {
+		found_inh++;
+		add_program_annotation(0, &(ITEM(annotations)[e]));
+
+		/* Switch out the annotation with a placeholding marker,
+		 * so that we can perform the filtering (if any)
+		 * more efficiently below.
+		 *
+		 * We use the Inherited_annotation object
+		 * as the placeholding marker.
+		 */
+		add_ref(ITEM(annotations)[e].u.object = Inherited_annotation);
+		free_object(ann);
+	      }
+	    }
+	  }
+	}
+	if (found_inh) {
+	  if (found_inh == annotations->size) {
+	    free_array(annotations);
+	    inherit.annotations = NULL;
+	  } else {
+	    ref_push_object(Inherited_annotation);
+	    inherit.annotations =
+	      subtract_array_svalue(annotations, Pike_sp - 1);
+	    pop_stack();
+	    free_array(annotations);
+	  }
+	}
       }
     }else{
       if(!inherit.parent)
