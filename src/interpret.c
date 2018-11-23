@@ -30,6 +30,7 @@
 #include "bignum.h"
 #include "pike_types.h"
 #include "pikecode.h"
+#include "pike_compiler.h"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -3079,7 +3080,10 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     }
   }
 
-  if (use_dummy_reference) {
+  if (use_dummy_reference &&
+      /* NB: add_to_*() are only valid in the first pass! */
+      (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) &&
+      (Pike_compiler->new_program == prog)) {
     /* No suitable function was found, so add one. */
     struct identifier dummy;
     struct reference dummy_ref = {
@@ -3099,6 +3103,10 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     add_to_identifiers(dummy);
     fun = prog->num_identifier_references;
     add_to_identifier_references(dummy_ref);
+  } else if (use_dummy_reference) {
+    /* FIXME: Hope that we don't have any F_EXTERN et al. */
+    fun = 0;
+    use_dummy_reference = 0;
   }
 
   /* FIXME: Is this up-to-date with mega_apply? */
