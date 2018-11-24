@@ -10807,6 +10807,97 @@ constant cif_defines = #"
 </define>";
 ]])
 
+// ####  Test annotations.
+
+test_compile_any([[
+  @constant;
+]])
+test_compile_any([[
+  @Pike.Annotations.Implements(Builtin.null);
+]])
+test_compile_any([[
+  import Pike.Annotations;
+  @Implements(Builtin.null);
+]])
+test_compile_any([[
+  import Pike.Annotations;
+  class A {
+    @Implements(A);
+    int foo() {}
+  }
+]])
+dnl test_compile_warning([[
+dnl   import Pike.Annotations;
+dnl   class A {
+dnl     @Implements(A);
+dnl     int foo();	// Just a prototype.
+dnl   }
+dnl ]])
+test_compile_warning([[
+  import Pike.Annotations;
+  class A {
+    int foo() {}
+  }
+  class B {
+    @Implements(A);
+  }
+]])
+dnl test_compile_warning([[
+dnl   import Pike.Annotations;
+dnl   class A {
+dnl     int foo() {}
+dnl   }
+dnl   class B {
+dnl     @Implements(A);
+dnl     int foo();	// Just a prototype.
+dnl   }
+dnl ]])
+test_compile_any([[
+  import Pike.Annotations;
+  class A {
+    @Implements(A);
+    int foo() {}
+  }
+  class B {
+    // NB: The @Implements(A) annotation is NOT inherited from A.
+    inherit A;
+    float foo() { return 1.0; }
+  }
+]])
+test_compile_any([[
+  local class InheritedImplements {
+    inherit Pike.Annotations.Implements;
+    @constant;
+    @Pike.Annotations.Inherited;
+  }
+  class A {
+    // Everything that inherits A must implement A.
+    @InheritedImplements(A);
+    int foo() {}
+  }
+  class B {
+    inherit A;
+    int foo() { return 1; }
+  }
+]])
+test_compile_error([[
+  local class InheritedImplements {
+    inherit Pike.Annotations.Implements;
+    @constant;
+    @Pike.Annotations.Inherited;
+  }
+  class A {
+    // Everything that inherits A must implement A.
+    @InheritedImplements(A);
+    int foo() {}
+  }
+  class B {
+    inherit A;
+    // This fails due to bad return type compared with A::foo().
+    float foo() { return 1.0; }
+  }
+]])
+
 // foop
 define(do_test_foop,[[
 test_eq($1 (17), !($2))
