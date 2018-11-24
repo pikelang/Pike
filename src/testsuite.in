@@ -1089,7 +1089,7 @@ test_any_equal([[
     string q = "wq";
     q += "21";
     return sizeof(q + w);
-  }
+  };
 #line 15 "test"
   mixed err = catch { whee("foo"); };
   return ({ err[1][-1][0], err[1][-1][1] });
