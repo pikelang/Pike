@@ -2853,6 +2853,13 @@ if test "x${AR-}" = x ; then
 fi
 AC_SUBST(AR)
 
+# PaX flags control (NetBSD).
+if test "x${PAXCTL-}" = x ; then
+  AC_PATH_PROG(PAXCTL, paxctl, , $PATH:$EXTRA_PATH)
+  export PAXCTL
+fi
+AC_SUBST(PAXCTL)
+
 if test "x${RNTANY-}" = x ; then
   AC_PATH_PROG(RNTANY, rntany, , $PATH:$EXTRA_PATH)
   export RNTANY
@@ -5707,6 +5714,7 @@ fi
 
 ########################################################################
 
+PAXCTL_ALLOW_MPROTECT=:
 if test yes = "$with_machine_code"; then
   AC_MSG_CHECKING(register name convention)
   AC_CACHE_VAL(pike_cv_cpu_reg_prefix,
@@ -5728,7 +5736,55 @@ if test yes = "$with_machine_code"; then
     *) AC_MSG_RESULT(${pike_cv_cpu_reg_prefix}0)
        AC_DEFINE_UNQUOTED(PIKE_CPU_REG_PREFIX,"$pike_cv_cpu_reg_prefix");;
   esac
-else :; fi
+
+  if test "x$PAXCTL" = "x:"; then :; else
+    AC_MSG_CHECKING(${PAXCTL} syntax to allow mprotect)
+    AC_CACHE_VAL(pike_cv_paxctl_allow_mprotect,
+    [
+      echo "int main(int argc, char **argv) { return 0; }" >conftest.c
+      pike_cv_paxctl_allow_mprotect=no
+      if ${CC} ${CFLAGS} conftest.c -o conftest >&AC_FD_CC 2>&1; then
+	if test -f conftest; then
+	  # Notes about paxctl flags:
+	  #
+	  # Flag	Linux			NetBSD
+	  #     	Usage.			View PaX flags.
+	  #   -v	View PaX flags.		-
+	  #   -m	Allow mprotect.		Remove +m flag.
+	  #   +m	File +m (fail).		Allow mprotect.
+	  #   -M	Disallow mprotect.	Remove +M flag.
+	  #   +M	File +M (fail).		Disallow mprotect.
+	  #   -c	Convert GNU to PaX.	-
+	  #   -C	Create PaX header.	-
+	  #
+	  # Note that Linux paxctl fails if there's no PaX ELF header,
+	  # unless -C or -c have been specified.
+	  # Note that Linux -C fails if there's a PT_GNU_STACK header.
+	  # Note that Linux -c fails if there's no PT_GNU_STACK header.
+	  for pike_cv_paxctl_allow_mprotect in +m -cCm no; do
+	    if test "x$pike_cv_paxctl_allow_mprotect" = "xno"; then
+	      break
+	    fi
+	    echo "${PAXCTL} ${pike_cv_paxctl_allow_mprotect} conftest" \
+		>&AC_FD_CC
+	    if ${PAXCTL} ${pike_cv_paxctl_allow_mprotect} conftest \
+		>&AC_FD_CC 2>&1; then
+	      break
+	    fi
+	  done
+        else
+	  echo "No result from compilation." >&AC_FD_CC
+	fi
+      fi
+    ])
+    AC_MSG_RESULT($pike_cv_paxctl_allow_mprotect)
+    if test "x$pike_cv_paxctl_allow_mprotect" = "xno"; then :; else
+      PAXCTL_ALLOW_MPROTECT="\$(PAXCTL) ${pike_cv_paxctl_allow_mprotect}"
+    fi
+  fi
+fi
+
+AC_SUBST(PAXCTL_ALLOW_MPROTECT)
 
 ########################################################################
 

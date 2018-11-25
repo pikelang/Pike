@@ -110,6 +110,9 @@ RCEXE=@RCEXE@
 
 FALLBACK_CC=@FALLBACK_CC@
 
+PAXCTL=@PAXCTL@
+PAXCTL_ALLOW_MPROTECT=@PAXCTL_ALLOW_MPROTECT@
+
 AR=@AR@
 
 LD=@LD@
@@ -347,6 +350,8 @@ tpike-real: main.o $(CORE_OBJ) tmodule.o modules/linker_options
 	$(LD) $(LDFLAGS) main.o $(CORE_OBJ) tmodule.o \
 	  `cat modules/linker_options` \
 	  $(LIBS) -o tpike@EXEEXT@
+# Turn off PaX mprotect inhibition on NetBSD and others.
+	@$(PAXCTL_ALLOW_MPROTECT) tpike
 
 # Only want tpike to exist for use with $(RUNPIKE) in the modules. We
 # don't want to require it actually being up-to-date.
@@ -378,6 +383,8 @@ pike@EXEEXT@ pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_optio
 	  `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
 	  $(LIBS) @PIKE_ICON_RES@ -o pike
 	@MT_FIX_PIKE_EXE@
+# Turn off PaX mprotect inhibition on NetBSD and others.
+	@$(PAXCTL_ALLOW_MPROTECT) pike
 # The dumped modules are removed whenever Pike is relinked since some
 # of the bytecode methods (e.g. ia32) store absolute addresses to
 # global structs. That should probably be fixed in them so that dumped
