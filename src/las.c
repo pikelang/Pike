@@ -1249,6 +1249,9 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 	    (s->u.program->flags & PROGRAM_USES_PARENT)) {
 	  /* The constant program refers to its parent, so we need as well. */
 	  res->node_info = OPT_EXTERNAL_DEPEND;
+	} else {
+	  free_node(res);
+	  return mkconstantsvaluenode(s);
 	}
       }
     }else{
