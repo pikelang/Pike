@@ -527,16 +527,15 @@ efun;
 
 
 PMOD_EXPORT
-PIKEFUN int add_breakpoint(program p, int line_number) 
+PIKEFUN int add_breakpoint(program p, string fname, int line_number) 
   optflags OPT_SIDE_EFFECT;
 efun;
 {
   ptrdiff_t pc_offset;
   
-  // TODO: low_get_offset_for_line doesn't see the file name when a class comes from multiple files (eg via includes), which
-  // can cause the breakpoint to be set on the wrong spot. we need to check to see if the markers are actually present and there's
-  // a bug in the line-number reading code, or if there's a bug in the line-number generation code.
-  pc_offset = low_get_offset_for_line(p, line_number);
+  // TODO: we need to develop the line search further: a file can be included multiple times within a program, and so
+  //   in theory, a breakpoint for a line within a file could actually be multiple breakpoints. we stop at the first one.
+  pc_offset = low_get_offset_for_line(p, fname, line_number);
   pop_n_elems(args);
   bp_offset = pc_offset;
   bp_prog = p;
