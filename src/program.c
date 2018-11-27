@@ -8445,6 +8445,7 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 
 PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
 					      struct program *prog,
+					      struct pike_string * fname,
 					      INT_TYPE linep)
 {
   if (prog->program && prog->linenumbers) {    
@@ -8453,32 +8454,39 @@ PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
       ptrdiff_t off;
       INT32 pid;
       INT_TYPE line = 0;
-
+      int wanted_file = 0;
       base = NULL;
-	  off = 0;
-	  cnt = prog->linenumbers;
+      off = 0;
+      cnt = prog->linenumbers;
       pid=prog->id;
 
       while(cnt < prog->linenumbers + prog->num_linenumbers)
       {
-		  printf("cnt: %d\n", *cnt);
+		  //printf("cnt: %d\n", *cnt);
 		 if(*cnt == 127)
 		 {
 		   int strno;
 		   cnt++;
-		   printf("new file\n");
+		   //printf("new file\n");
 	  	   strno = get_small_number(&cnt);
 	  	   CHECK_FILE_ENTRY (prog, strno);
 	 	   file = prog->strings[strno];
+		   if(file == fname) {
+                     //printf("Right file, right time\n");
+                     wanted_file = 1;
+                   }
+                   else {
+                     wanted_file = 0;
+                   }
 		   printf("file: %s\n", file->str);
 		   continue;
 		}
 		
 		off+=get_small_number(&cnt);
-		line+=get_small_number(&cnt);\
+                line+=get_small_number(&cnt);
   	    printf("line: %d %p\n", line, off);
 		
-		if(line == linep) { printf("found\n"); return off; }
+		if(wanted_file && line == linep) { printf("found\n"); return off; }
       }
   } else {
     fprintf(stderr, "No program of linenumbers program:%p linenumbers:%p\n",

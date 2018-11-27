@@ -999,9 +999,10 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
 PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
 						    int fun,
 						    INT_TYPE *linep);
-							PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
-								struct program *prog,
-								INT_TYPE linep);
+PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
+						struct program *prog,
+						struct pike_string * fname,
+						INT_TYPE linep);
 struct supporter_marker;
 void count_memory_in_supporter_markers(size_t *num, size_t *size);
 PMOD_EXPORT int low_quick_add_function(struct pike_string *name_tmp,
