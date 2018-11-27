@@ -39,6 +39,17 @@
     destruct(e);
     }
   }
+
+  class CommandLocals
+  {
+    inherit Tools.Hilfe.Command;
+    string help(string what) { return "Display local variables"; }
+    
+    void exec(Tools.Hilfe.Evaluator e, string line, array(string) words,
+            array(string) tokens) {
+      e->safe_write("Locals: %O\n", locals);
+    }
+  }
   
   class CommandSetLocal
   {
@@ -47,12 +58,21 @@
 
     void exec(Tools.Hilfe.Evaluator e, string line, array(string) words,
             array(string) tokens) {
-				// TODO parse value so we get an actual evaluated result.
-
+	// TODO parse value so we get an actual evaluated result.
 	tokens -= ({" "});
-    e->safe_write("Set Local: " + (tokens * " ") + ".\n");
-	debugger_set_local(current_fp, (int)tokens[1], tokens[2]);
-}
+	int pos = (int)tokens[1];
+        object expr = Tools.Hilfe.Expression(tokens[2..]);
+        string res = e->parse_expression(expr);
+        if(res) { 
+          e->safe_write(res); 
+          return;
+        }
+        mixed val = e->history[e->history->get_latest_entry_num()];
+        e->safe_write("setting local %d = %O\n", pos, val);
+        locals[pos] = val;
+	debugger_set_local(current_fp, pos, val);
+    }
+
   }
 
   class CommandBackTrace
@@ -105,13 +125,11 @@
     m_delete(commands, "quit");
     commands->go = CommandGo();
     commands->step = CommandStep();
-	commands->set_local = CommandSetLocal();
+    commands->set_local = CommandSetLocal();
+    commands->get_locals = CommandLocals();
 	
-//    commands->bt = CommandBackTrace();
-//    commands->backtrace = commands->bt;
-//client->write("Initialized\n");
-
-//	reset_evaluator();
+    commands->bt = CommandBackTrace();
+    commands->backtrace = commands->bt;
   }
 
 protected void _destruct()
