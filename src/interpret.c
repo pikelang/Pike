@@ -922,14 +922,14 @@ if((stepping_mode != 0 && stepping_thread == th_self()) || Pike_fp->context->pro
 		}
 
 		f_aggregate(num_locals);
-		//f_backtrace(0);
+		f_backtrace(0);
 		//printf("applying\n");
 
 		// we don't want to step though any of the do_breakpoint() instructions that actually wake up the debugger.
 		// this seems safe for the basic scenario, but perhaps we should do this on another thread altogether?
 		stepping_mode = 0; 
 
-		safe_apply_svalue(debugger_server, 6, 1);
+		safe_apply_svalue(debugger_server, 7, 1);
 		//printf("applied\n");
 		if(TYPEOF(*(Pike_sp - 1)) != T_INT) 
 		{
