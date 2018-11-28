@@ -2297,7 +2297,12 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
     struct pike_frame *new_frame = NULL;
 
     int type = (function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS));
-    if( o->prog != pike_trampoline_program && function->func.offset != -1 )
+    if( o->prog != pike_trampoline_program &&
+        !(
+#ifdef USE_VALGRIND
+          type & IDENTIFIER_PIKE_FUNCTION &&
+#endif
+          function->func.offset == -1 ))
     {
       switch( type )
       {
