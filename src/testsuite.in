@@ -11854,9 +11854,11 @@ test_any([[
   string b = getcwd();
   cd("..");
 #ifdef __NT__
-  return a==getcwd() && b==a+"\\getcwd_test";
+  return (a==getcwd() && b==a+"\\getcwd_test") || \
+    ({ a, b, getcwd() });
 #else
-  return a==getcwd() && b==a+"/getcwd_test";
+  return (a==getcwd() && b==a+"/getcwd_test") || \
+    ({ a, b, getcwd() });
 #endif
 ]], 1)
 test_do(Stdio.recursive_rm("getcwd_test"))
