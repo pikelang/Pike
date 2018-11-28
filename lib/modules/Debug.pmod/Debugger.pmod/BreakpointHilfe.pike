@@ -3,8 +3,6 @@
   Stdio.File client;
   object debug_server;
   object current_object;
-  int current_fp;
-  array locals;
   array backtrace;
 
   constant SINGLE_STEP = 1;
@@ -39,42 +37,7 @@
     destruct(e);
     }
   }
-
-  class CommandLocals
-  {
-    inherit Tools.Hilfe.Command;
-    string help(string what) { return "Display local variables"; }
-    
-    void exec(Tools.Hilfe.Evaluator e, string line, array(string) words,
-            array(string) tokens) {
-      e->safe_write("Locals: %O\n", locals);
-    }
-  }
-  
-  class CommandSetLocal
-  {
-    inherit Tools.Hilfe.Command;
-    string help(string what) { return "Set local variable"; }
-
-    void exec(Tools.Hilfe.Evaluator e, string line, array(string) words,
-            array(string) tokens) {
-	// TODO parse value so we get an actual evaluated result.
-	tokens -= ({" "});
-	int pos = (int)tokens[1];
-        object expr = Tools.Hilfe.Expression(tokens[2..]);
-        string res = e->parse_expression(expr);
-        if(res) { 
-          e->safe_write(res); 
-          return;
-        }
-        mixed val = e->history[e->history->get_latest_entry_num()];
-        e->safe_write("setting local %d = %O\n", pos, val);
-        locals[pos] = val;
-	debugger_set_local(current_fp, pos, val);
-    }
-
-  }
-
+ 
   class CommandBackTrace
   {
     inherit Tools.Hilfe.Command;
@@ -100,22 +63,19 @@
     }
   }
 
-
-  protected void create(Stdio.File _client, object _debug_server, string desc, int fp, object _current_object, array _locals, array _bt)
+  protected void create(Stdio.File _client, object _debug_server, string desc, object _current_object, array _bt)
   {
 //	  werror("client: %O\n", client);
     debug_server = _debug_server;
  	client = _client;
 	current_object = _current_object;
-	locals = _locals;
     backtrace = _bt;
-    current_fp = fp;
 	
     client->write("Breakpoint on " + desc + "\n");
     ::create(client, client);
 	//werror("Initialized\n");
 
-    foreach((["locals": locals, "backtrace": backtrace, "current_object": current_object]); string h; mixed v)
+    foreach((["backtrace": backtrace, "current_object": current_object]); string h; mixed v)
     {
       variables[h] = v;
       types[h] = sprintf("%t", v);
@@ -125,8 +85,7 @@
     m_delete(commands, "quit");
     commands->go = CommandGo();
     commands->step = CommandStep();
-    commands->set_local = CommandSetLocal();
-    commands->get_locals = CommandLocals();
+ //   commands->set_local = CommandSetLocal();
 	
     commands->bt = CommandBackTrace();
     commands->backtrace = commands->bt;

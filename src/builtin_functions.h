@@ -194,6 +194,7 @@ PMOD_EXPORT void f_function_name(INT32 args);
 PMOD_EXPORT void f_function_object(INT32 args);
 PMOD_EXPORT void f_function_program(INT32 args);
 PMOD_EXPORT void f_backtrace(INT32 args);
+PMOD_EXPORT void f_debug_backtrace(INT32 args);
 
 struct pike_list_node
 {

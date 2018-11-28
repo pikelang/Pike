@@ -67,6 +67,8 @@
 #define SET_ZONE(this, VAL)	((this)->extra.tm_zone = (VAL))
 #endif
 
+void low_low_backtrace(struct Pike_interpreter_struct *i, int keep_pc);
+
 DECLARATIONS
 
 /*! @module System
@@ -511,18 +513,6 @@ efun;
   enable_debugger = i;
   pop_stack();
   push_int(tmp);
-}
-
-PMOD_EXPORT
-PIKEFUN int debugger_set_local(int pc, int i, mixed value)
-  optflags OPT_SIDE_EFFECT;
-efun;
-{
-  struct pike_frame * fp = (struct pike_frame *)pc;
-  printf("Pike_fp: %p\n", fp);
-  assign_svalue(fp->locals+(ptrdiff_t)i, value);
-  pop_n_elems(3);
-  push_int(0);
 }
 
 
@@ -2469,9 +2459,10 @@ PIKECLASS backtrace_frame
   PIKEVAR array args;
 
   /* These are cleared when filename and lineno have been initialized
-   * from them. */
+   * from them, unless keep_pc is set. */
   PIKEVAR program prog flags ID_PROTECTED|ID_PRIVATE;
   CVAR PIKE_OPCODE_T *pc;
+  CVAR struct pike_frame * fp;
 
   /* These two are considered to be uninitialized from prog, pc and
    * fun as long as lineno == 0. */
@@ -2482,6 +2473,7 @@ PIKECLASS backtrace_frame
   INIT
   {
     THIS->pc = NULL;
+    THIS->fp = NULL;
     THIS->lineno = 0;
     THIS->filename = NULL;
   }
@@ -2489,13 +2481,52 @@ PIKECLASS backtrace_frame
 
   EXIT
     gc_trivial;
-  {
+  {  
     if (THIS->filename) {
       free_string(THIS->filename);
       THIS->filename = NULL;
     }
+
     THIS->pc = NULL;
-    THIS->lineno = 0;
+
+    if(THIS->fp) {
+      free_pike_frame(THIS->fp);
+    }
+    THIS->fp = NULL;
+
+    if((THIS->prog) != NULL)
+      free_program(THIS->prog);
+	  THIS->prog = NULL;
+
+    THIS->lineno = 0;	
+  }
+
+  PIKEFUN mixed locals() {
+    int num_locals = 0;
+    int fp_num_locals;
+    if(!(THIS->fp))
+      Pike_error("locals are only available within a debugging environment!\n");
+    fp_num_locals = THIS->fp->num_locals;
+    struct svalue * current_local = THIS->fp->locals;
+    while(num_locals < fp_num_locals) {
+      push_svalue(current_local);
+      add_ref_svalue(Pike_sp - 1);
+      current_local++;
+      num_locals++;
+    }
+
+     f_aggregate(num_locals);
+  }
+
+  PIKEFUN int set_local(int i, mixed value)
+  optflags OPT_SIDE_EFFECT;
+  {
+    if(!(THIS->fp))
+      Pike_error("locals are only available within a debugging environment!\n");
+    struct pike_frame * fp = THIS->fp;
+    assign_svalue(fp->locals+(ptrdiff_t)i, value);
+    pop_n_elems(2);
+    push_int(0);
   }
 
   /* NOTE: Use old-style getter/setter syntax for compatibility with
@@ -2536,7 +2567,7 @@ PIKECLASS backtrace_frame
 
     if (THIS->pc && THIS->prog) {
       file = low_get_line(THIS->pc, THIS->prog, &THIS->lineno);
-      THIS->pc = NULL;
+      if((THIS->fp) == NULL) THIS->pc = NULL;
     }
     else if (TYPEOF(THIS->_fun) == PIKE_T_FUNCTION) {
 #ifdef PIKE_DEBUG
@@ -2560,12 +2591,12 @@ PIKECLASS backtrace_frame
       else free_string (file);
     }
 
-    if (THIS->prog) {
+    if (THIS->prog && ((THIS->fp) == NULL)) {
       free_program(THIS->prog);
       THIS->prog = NULL;
     }
   }
-
+  
   /*! @decl string _sprintf(int c, mapping|void opts)
    */
   PIKEFUN string _sprintf(int c, mapping|void opts)
@@ -2838,6 +2869,11 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
 
 void low_backtrace(struct Pike_interpreter_struct *i)
 {
+  low_low_backtrace(i, 0);
+}
+
+void low_low_backtrace(struct Pike_interpreter_struct *i, int keep_pc)
+{
   struct svalue *stack_top = i->stack_pointer;
   struct pike_frame *f, *of = 0;
   int size = 0;
@@ -2860,6 +2896,11 @@ void low_backtrace(struct Pike_interpreter_struct *i)
     SET_SVAL(res->item[size], PIKE_T_OBJECT, 0, object, o);
 
     bf = OBJ2_BACKTRACE_FRAME(o);
+
+    if(keep_pc) {
+	  add_ref(f);
+      bf->fp = f;
+    }
 
     SET_SVAL(bf->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
 
@@ -2982,6 +3023,14 @@ PIKEFUN array(mixed) backtrace()
      optflags OPT_EXTERNAL_DEPEND;
 {
   low_backtrace(& Pike_interpreter);
+}
+
+PMOD_EXPORT
+PIKEFUN array(mixed) debug_backtrace()
+     efun;
+     optflags OPT_EXTERNAL_DEPEND;
+{
+  low_low_backtrace(& Pike_interpreter, 1);
 }
 
 /*! @class Replace
