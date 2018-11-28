@@ -179,7 +179,11 @@
       function->recur_depth++;
 #endif
 
-      if(function->func.offset == -1) {
+      if(
+#ifdef USE_VALGRIND
+         function->identifier_flags & IDENTIFIER_PIKE_FUNCTION &&
+#endif
+         function->func.offset == -1) {
 	new_frame->num_args = args;
 	generic_error(NULL, Pike_sp, args,
 		      "Calling undefined function.\n");
