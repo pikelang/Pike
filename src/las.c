@@ -729,6 +729,66 @@ static int is_automap_arg_list(node *n)
   }
 }
 
+static int apply_opt_flags_for_ref(struct program *prog, int fun);
+
+static int apply_opt_flags_for_sval(struct svalue *s)
+{
+  switch(TYPEOF(*s))
+  {
+  case T_FUNCTION:
+    if (SUBTYPEOF(*s) == FUNCTION_BUILTIN)
+    {
+      return s->u.efun->flags;
+    }
+    if (s->u.object->prog) {
+      return apply_opt_flags_for_ref(s->u.object->prog, SUBTYPEOF(*s));
+    }
+    yyerror("Calling function in destructed module.");
+    break;
+
+  case T_PROGRAM:
+    if (s->u.program->flags & PROGRAM_CONSTANT) {
+      return 0;
+    }
+    break;
+
+  case T_OBJECT:
+    if (!s->u.object->prog) {
+      break;
+    }
+    return apply_opt_flags_for_ref(s->u.object->prog,
+				   FIND_LFUN(s->u.object->prog, LFUN_CALL));
+  }
+  return OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
+}
+
+static int apply_opt_flags_for_ref(struct program *prog, int fun)
+{
+  if (!prog) {
+    yyerror("Calling function in destructed object.");
+  } else if (fun < 0) {
+    yyerror("Attempt to call a missing function.");
+  } else  {
+    struct identifier *id = ID_FROM_INT(prog, fun);
+    struct program *p = PROG_FROM_INT(prog, fun);
+    if (IDENTIFIER_IS_FUNCTION(id->identifier_flags)) {
+      return id->opt_flags;
+    }
+    if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+      DECLARE_CYCLIC();
+      struct svalue *s = &p->constants[id->func.const_info.offset].sval;
+      int ret;
+      if ((ret = (size_t)BEGIN_CYCLIC(p, s))) {
+	return ret;
+      }
+      SET_CYCLIC_RET(OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+      ret = apply_opt_flags_for_sval(s);
+      END_CYCLIC();
+      return ret;
+    }
+  }
+  return OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
+}
 
 node *debug_mknode(int token, node *a, node *b)
 {
@@ -838,7 +898,6 @@ node *debug_mknode(int token, node *a, node *b)
   case F_APPLY:
     {
       unsigned INT16 opt_flags = OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
-      struct identifier *i = NULL;
 
       if (a) {
 	switch(a->token) {
@@ -846,14 +905,7 @@ node *debug_mknode(int token, node *a, node *b)
 	  switch(TYPEOF(a->u.sval))
 	  {
 	    case T_FUNCTION:
-	      if (SUBTYPEOF(a->u.sval) == FUNCTION_BUILTIN)
-	      {
-		opt_flags = a->u.sval.u.efun->flags;
-	      } else if (a->u.sval.u.object->prog) {
-		i = ID_FROM_INT(a->u.sval.u.object->prog, SUBTYPEOF(a->u.sval));
-	      } else {
-		yyerror("Calling function in destructed module.");
-	      }
+	      opt_flags = apply_opt_flags_for_sval(&a->u.sval);
 	      break;
 
 	    case T_PROGRAM:
@@ -875,7 +927,8 @@ node *debug_mknode(int token, node *a, node *b)
 	      state = state->previous;
 	    }
 	    if (state) {
-	      i = ID_FROM_INT(state->new_program, a->u.integer.b);
+	      opt_flags = apply_opt_flags_for_ref(state->new_program,
+						  a->u.integer.b);
 	    } else {
 	      yyerror("Parent has left.");
 	    }
@@ -886,15 +939,8 @@ node *debug_mknode(int token, node *a, node *b)
 	default:
 	  res->tree_info |= a->tree_info;
 	}
-	if (i && IDENTIFIER_IS_FUNCTION(i->identifier_flags)) {
-	  res->node_info |= i->opt_flags;
-	} else {
-	  res->node_info |= opt_flags;
-	}
-      } else {
-	res->node_info |= opt_flags;
       }
-      res->node_info |= OPT_APPLY;
+      res->node_info |= opt_flags | OPT_APPLY;
       if(b) res->tree_info |= b->tree_info;
       if (res->node_info & OPT_EXTERNAL_DEPEND) {
 	/* Applying something that has external dependencies
