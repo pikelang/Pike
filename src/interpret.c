@@ -844,24 +844,24 @@ struct svalue * debugger_server = NULL;
 
 static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 {
+    struct debug_breakpoint * bp;
     struct pike_string *filep;
     INT_TYPE linep;
 	int debug_retval = 0;
-	
-if((stepping_mode != 0 && stepping_thread == th_self()) || Pike_fp->context->prog == bp_prog) 
-{
-	
-    char *file = NULL, *f;
-    struct pike_string *filep2;
+#ifdef PIKE_DEBUG	
+    if((stepping_mode != 0 && stepping_thread == th_self()) || (bp = Pike_fp->context->prog->breakpoints) != NULL) 
+    {
+        char *file = NULL, *f;
+        struct pike_string *filep2;
 
-	printf("stepping_mode: %d, stepping_thread: %p\n", stepping_mode, stepping_thread);
-    filep2 = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
-    if (filep2 && !filep2->size_shift) {
-      file = filep2->str;
-      while((f=strchr(file,'/')))
-	file=f+1;
-    }
-    fprintf(stderr,"- %s:%4ld:%p(%"PRINTPTRDIFFT"d): "
+        printf("stepping_mode: %d, stepping_thread: %p\n", stepping_mode, stepping_thread);
+        filep2 = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
+        if (filep2 && !filep2->size_shift) {
+          file = filep2->str;
+          while((f=strchr(file,'/')))
+          file=f+1;
+        }
+        fprintf(stderr,"- %s:%4ld:%p(%"PRINTPTRDIFFT"d): "
 	    "%-25s %4"PRINTPTRDIFFT"d %4"PRINTPTRDIFFT"d\n",
 	    file ? file : "-",(long)linep,
 	    Pike_fp->pc, Pike_fp->pc - Pike_fp->context->prog->program,
@@ -870,13 +870,24 @@ if((stepping_mode != 0 && stepping_thread == th_self()) || Pike_fp->context->pro
 	    Pike_mark_sp-Pike_interpreter.mark_stack);
         free_string(filep2);
 	
-			printf("pro: %p, %p %p, %p\n", bp_prog, Pike_fp->context->prog, bp_offset, Pike_fp->pc - Pike_fp->context->prog->program);
-		}
+		        printf("pro: %p, %p %p, %p\n", bp_prog, Pike_fp->context->prog, bp_offset, Pike_fp->pc - Pike_fp->context->prog->program);
+    }
 		
-		
-		
-	if((stepping_mode != 0 && stepping_thread == th_self()) || ((Pike_fp->context->prog == bp_prog) && (bp_offset == (Pike_fp->pc - Pike_fp->context->prog->program)))) {
-		printf("got a match!\n");
+	if((stepping_mode != 0 && stepping_thread == th_self()) || bp != NULL ) {
+	  int pause_here = 0;
+          if(stepping_mode != 0) {
+            pause_here = 1;
+          } else {
+            while(bp != NULL) {
+              if(bp->offset == (Pike_fp->pc - Pike_fp->context->prog->program)) {
+                pause_here = 1;
+                break;
+              }
+              bp = bp->next;
+            };
+          }
+          if(pause_here) {
+	    printf("got a match!\n");
 		stepping_thread = th_self();
 		
 		if(debugger_server == NULL) {
@@ -909,15 +920,14 @@ if((stepping_mode != 0 && stepping_thread == th_self()) || Pike_fp->context->pro
 		
 		ref_push_object(Pike_fp->current_object);
 
-		f_debug_backtrace(0);
-		//printf("applying\n");
+		f_cq___debug_backtrace(0);
 
 		// we don't want to step though any of the do_breakpoint() instructions that actually wake up the debugger.
 		// this seems safe for the basic scenario, but perhaps we should do this on another thread altogether?
 		stepping_mode = 0; 
 
 		safe_apply_svalue(debugger_server, 5, 1);
-		//printf("applied\n");
+
 		if(TYPEOF(*(Pike_sp - 1)) != T_INT) 
 		{
 		  pop_stack();
@@ -929,15 +939,15 @@ if((stepping_mode != 0 && stepping_thread == th_self()) || Pike_fp->context->pro
 
 		if(debug_retval == 1) // single_step
 		{
-		  //printf("debug_retval: %d\n", debug_retval);
-		  stepping_mode = 1; // single_step		
+			stepping_mode = 1; // single_step		
 		} else {
 	  	  stepping_mode = 0;
 		  stepping_thread = 0;
 		}
+           }
 
 	}
-	
+#endif /* PIKE_DEBUG */	
 	
 
   if(Pike_interpreter.trace_level > 2)

@@ -3123,7 +3123,6 @@ struct program *low_allocate_program(void)
   gc_init_marker(p);
   p->flags|=PROGRAM_VIRGIN;
   p->alignment_needed=1;
-
   GC_ALLOC(p);
   p->id=++current_program_id;
   INIT_PIKE_MEMOBJ(p, T_PROGRAM);

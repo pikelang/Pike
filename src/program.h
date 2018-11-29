@@ -640,6 +640,15 @@ struct identifier_lookup_cache
   INT32 identifier_id;
 };
 
+#ifdef PIKE_DEBUG
+struct debug_breakpoint {
+  struct program * prog;
+  ptrdiff_t offset;
+  struct debug_breakpoint * prev;
+  struct debug_breakpoint * next;
+};
+#endif /* PIKE_DEBUG */
+
 struct program
 {
   GC_MARKER_MEMBERS;
@@ -667,6 +676,7 @@ struct program
   void (*event_handler)(int);
 #ifdef PIKE_DEBUG
   unsigned INT32 checksum;
+  struct debug_breakpoint * breakpoints;
 #endif
 #ifdef PROFILING
   unsigned INT32 num_clones;
