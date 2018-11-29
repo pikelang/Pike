@@ -63,7 +63,19 @@
     }
   }
 
-  protected void create(Stdio.File _client, object _debug_server, string desc, object _current_object, array _bt)
+  protected variant void create(Stdio.File _client, object _debug_server)
+  {
+    debug_server = _debug_server;
+   	client = _client;
+	
+    ::create(client, client);
+	
+    m_delete(commands, "exit");
+    m_delete(commands, "quit");
+    commands->go = CommandGo();
+  }
+
+  protected variant void create(Stdio.File _client, object _debug_server, string desc, object _current_object, array _bt)
   {
 //	  werror("client: %O\n", client);
     debug_server = _debug_server;
@@ -93,7 +105,28 @@
 
 protected void _destruct()
 {
-  object key = debug_server->bp_lock->lock();
-  debug_server->breakpoint_cond->signal();
-  key = 0;
+  object key;
+
+  // when we are created by the debug server, a condition variable will be waited on.
+  // signalling that condition variable causes execution to continue, which we want to do
+  // as this hilfe object is destroyed by a continue or step command.
+
+  // the breakpoint condition variable exists when a breakpoint has been reached and execution
+  // in a thread is suspended for the debugger. signalling this variabnle causes the thread to
+  // move on from the breakpoint.
+  if(debug_server->breakpoint_cond) {
+    key = debug_server->bp_lock->lock();
+    debug_server->breakpoint_cond->signal();
+    key = 0;
+  }
+  
+  // the wait condition variable exists when the pike interpreter is waiting on startup for a
+  // debugger to connect. when we exit from this situation, we are permitting the master object
+  // to continue executing
+  if(debug_server->wait_cond) {
+    key = debug_server->wait_lock->lock();
+    debug_server->wait_cond->signal();
+    key = 0;
+    debug_server->wait_cond = 0;
+  }
 }

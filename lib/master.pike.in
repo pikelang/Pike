@@ -3637,7 +3637,7 @@ protected mixed main_resolv(string sym, CompatResolver|void resolver) {
   return v;
 };
 
-void load_debugger() {
+void load_debugger(int wait_seconds) {
    set_debugger(1);
      // load the debugger support
    function d;
@@ -3660,7 +3660,7 @@ void load_debugger() {
 		throw(d);
     }
     debugger = d();
-    debugger->load_breakpoint();
+    debugger->load_breakpoint(wait_seconds);
 }
 
 //! This function is called when all the driver is done with all setup
@@ -3710,6 +3710,9 @@ void _main(array(string(0..255)) orig_argv)
 
   Version cur_compat_ver;
 
+  int have_debugger = 0;
+  int debugger_wait = 5; // 5 seconds by default
+  
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
     array q;
@@ -3741,6 +3744,7 @@ void _main(array(string(0..255)) orig_argv)
       ({"assembler_debug",MAY_HAVE_ARG, ({"--assembler-debug"}), 0, 0}),
       ({"optimizer_debug",MAY_HAVE_ARG, ({"--optimizer-debug"}), 0, 0}),
       ({"debugger",          MAY_HAVE_ARG, ({"--debugger"}), 0, 1}),
+      ({"debugger_wait",          HAS_ARG, ({"--debugger-wait"}), 0, 1}),
       ({"debug",          MAY_HAVE_ARG, ({"--debug"}), 0, 1}),
       ({"trace",          MAY_HAVE_ARG, ({"--trace"}), 0, 1}),
       ({"ignore",         MAY_HAVE_ARG, ({"-Dqdatplr"}), 0, 1}),
@@ -3793,15 +3797,17 @@ void _main(array(string(0..255)) orig_argv)
         break;
 
       case "debug":
-	debug+=(int)q[i][1];
-	break;
+	    debug+=(int)q[i][1];
+	    break;
 	  case "debugger":
-	  load_debugger();
-	  set_debugger(1);
-	  break;
+	  	have_debugger = 1;
+	    break;
+	  case "debugger_wait":
+	    debugger_wait = (int)q[i][1];
+		break;
       case "trace":
-	trace+=(int)q[i][1];
-	break;
+	    trace+=(int)q[i][1];
+	    break;
 
       case "modpath":
 	add_module_path(q[i][1]);
@@ -3836,7 +3842,12 @@ void _main(array(string(0..255)) orig_argv)
 	break;
       }
     }
-
+	
+	if(have_debugger) {
+      load_debugger(debugger_wait);
+      set_debugger(1);
+	}
+	
     cur_compat_ver = Version (compat_major, compat_minor);
     if (cur_compat_ver < lowestcompat)
     {

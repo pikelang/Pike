@@ -58,6 +58,8 @@ Driver options:
  --optimizer-debug=#  : Set global optimizer debug level.
  --debug=#            : Increase or set debug level.
  --trace=#            : Increase the trace level.
+ --debugger           : Enable the Pike debugger (available with RTL debug only).
+ --debugger-wait=#    : Wait # seconds for a debugger to connect before continuing.
  -D<symbol>[=value]   : Define the preprocessor symbol (to value).
  -q#                  : End excution after # Pike instructions
  -a -a#               : Increase peep hole optimizer debug level.
