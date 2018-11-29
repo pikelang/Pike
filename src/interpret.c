@@ -840,7 +840,7 @@ int backlogp=BACKLOG-1;
 // begining of debugging state. we obviously will need better data structures for this.
 THREAD_T stepping_thread = NULL;
 int stepping_mode = 0;
-struct svalue * debugger_server = NULL;
+struct svalue debugger_server = SVALUE_INIT_FREE;
 
 static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 {
@@ -890,7 +890,7 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 	    printf("got a match!\n");
 		stepping_thread = th_self();
 		
-		if(debugger_server == NULL) {
+		if(TYPEOF(debugger_server) == PIKE_T_FREE) {
 			
 		  push_text("Debug.Debugger.get_debugger_handler");
 		  SAFE_APPLY_MASTER("resolv", 1 );
@@ -902,11 +902,7 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 			  Pike_error("Could not get debugger for breakpoint.\n");
 		  }
 
-		  // TODO check we actually got the memory.
-		  debugger_server = malloc(sizeof(struct svalue));
-		  
-		  assign_svalue_no_free((debugger_server), Pike_sp-1);
-		  add_ref_svalue((debugger_server));  
+		  assign_svalue(&debugger_server, Pike_sp-1);
 
 		  pop_stack();
 		  pop_stack();
@@ -926,7 +922,7 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 		// this seems safe for the basic scenario, but perhaps we should do this on another thread altogether?
 		stepping_mode = 0; 
 
-		safe_apply_svalue(debugger_server, 5, 1);
+		safe_apply_svalue(&debugger_server, 5, 1);
 
 		if(TYPEOF(*(Pike_sp - 1)) != T_INT) 
 		{
@@ -3820,6 +3816,7 @@ PMOD_EXPORT void cleanup_interpret(void)
 void really_clean_up_interpret(void)
 {
 #ifdef DO_PIKE_CLEANUP
+  free_svalue(&debugger_server);
 #if 0
   struct pike_frame_block *p;
   int e;
