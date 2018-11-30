@@ -6,3 +6,7 @@ constant Implements = __builtin.Implements;
 constant InheritedClass = __builtin.InheritedClass;
 
 constant Inherited = __builtin.Inherited;
+
+constant AutoCodecClass = __builtin.AutoCodecClass;
+
+constant AutoCodec = __builtin.AutoCodec;

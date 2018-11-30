@@ -3143,6 +3143,104 @@ EXTRA
   InheritedClass_program->annotations[0] = aggregate_array(1);
 }
 
+/*! @class AutoCodecClass
+ *!
+ *! This is the class that implements the @[AutoCodec] annotstion.
+ */
+struct program *AutoCodecClass_program = NULL;
+struct object *AutoCodec_annotation = NULL;
+PIKECLASS AutoCodecClass
+  program_flags PROGRAM_CONSTANT|PROGRAM_NO_EXPLICIT_DESTRUCT;
+{
+  /*! @decl inherit Annotation
+   */
+  INHERIT Annotation;
+
+  PIKEFUN void end_pass(int pass, program prog,
+			CompilerEnvironment_PikeCompiler compiler)
+  {
+    int e = Pike_compiler->num_create_args;
+    struct pike_type *type = NULL;
+    struct pike_type *save_return_type;
+    node *n = NULL;
+    struct pike_string *encode_string;
+    MAKE_CONST_STRING(encode_string, "_encode");
+    /* NB: We need to enter the compiler to call define_function() et al.
+     *     Note also that low_enter_compiler() eats a ref to the object.
+     */
+    add_ref(compiler);
+    low_enter_compiler(compiler, compiler_inh_num);
+
+    if (!e) {
+      push_finished_type(zero_type_string);
+    } else {
+      if (e < 0) {
+	/* Varargs marker. */
+	e = -e;
+	push_finished_type(prog->identifiers[--e].type);
+	pop_type_stack(PIKE_T_ARRAY);
+	n = mknode(F_PUSH_ARRAY, mkidentifiernode(e), NULL);
+      } else {
+	push_finished_type(prog->identifiers[--e].type);
+	n = mkidentifiernode(e);
+      }
+      while (e--) {
+	push_finished_type(prog->identifiers[e].type);
+	push_type(T_OR);
+	n = mknode(F_ARG_LIST, mkidentifiernode(e), n);
+      }
+    }
+    push_type(PIKE_T_ARRAY);
+    push_type(T_VOID);
+    push_type(T_MANY);
+
+    type = compiler_pop_type();
+
+    save_return_type = Pike_compiler->compiler_frame->current_return_type;
+    Pike_compiler->compiler_frame->current_return_type = type->cdr;
+
+    n = mknode(F_RETURN, mkefuncallnode("aggregate", n), 0);
+
+    fprintf(stderr, "Type:\n");
+    simple_describe_type(type);
+    fprintf(stderr, "\nCode:\n");
+    print_tree(n);
+    fprintf(stderr, "\n");
+
+    define_function(encode_string, type, 0, IDENTIFIER_PIKE_FUNCTION, 0, 0);
+
+    if (pass == COMPILER_PASS_LAST) {
+      dooptcode(encode_string, n, type, 0);
+    }
+
+    Pike_compiler->compiler_frame->current_return_type = save_return_type;
+
+    free_node(n);
+    free_type(type);
+
+    exit_compiler();
+  }
+}
+/*! @endclass
+ */
+
+/*! @decl constant AutoCodec = AutoCodecClass()
+ *!
+ *! This @[Annotation] causes the compiler to automatically
+ *! add an implementation of @[_encode()] that returns
+ *! an array with suitable arguments to @[lfun::create].
+ *!
+ *! @note
+ *!   This annotation is only useful for classes that
+ *!   use the implicit create()-syntax, or have a create()
+ *!   that doesn't need any arguments.
+ */
+EXTRA
+{
+  AutoCodec_annotation = clone_object(AutoCodecClass_program, 0);
+  add_object_constant("AutoCodec", AutoCodec_annotation, 0);
+}
+
 /*! @endmodule
  */
 
@@ -3202,6 +3300,10 @@ void init_pike_compiler(void)
 
 void cleanup_pike_compiler(void)
 {
+  if (AutoCodec_annotation) {
+    free_object(AutoCodec_annotation);
+    AutoCodec_annotation = NULL;
+  }
   if (Inherited_annotation) {
     /* Break the circularity. */
     do_free_array(InheritedClass_program->annotations[0]);
