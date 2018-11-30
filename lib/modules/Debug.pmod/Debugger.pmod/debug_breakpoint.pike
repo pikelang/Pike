@@ -5,5 +5,5 @@ inherit __builtin.debug_breakpoint;
 #endif
 
 string _sprintf(int conversion_type, mapping(string:int)|void params) {
-  return sprintf("Breakpoint(%O,%s,%d)", get_program(), get_filename(), get_line_number());
+  return sprintf("Breakpoint(%O,%s,%s,%d)", get_program(), get_filename(), get_within_file(), get_line_number());
 }

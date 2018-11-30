@@ -8483,7 +8483,7 @@ PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
 		
 		off+=get_small_number(&cnt);
                 line+=get_small_number(&cnt);
-  	    printf("line: %d %p\n", line, off);
+  	   // printf("line: %d %p\n", line, off);
 		
 		if(wanted_file && line == linep) { printf("found\n"); return off; }
       }
@@ -8492,7 +8492,7 @@ PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
 	    prog->program, prog->linenumbers);
   }
 
-  return NULL;
+  return 0;
 }
 
 PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,

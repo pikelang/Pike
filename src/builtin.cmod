@@ -520,8 +520,10 @@ PIKECLASS debug_breakpoint {
 
   PIKEVAR program prog flags ID_PROTECTED|ID_PRIVATE;
   PIKEVAR string fname flags ID_PROTECTED|ID_PRIVATE;
+  PIKEVAR string within_fname flags ID_PROTECTED|ID_PRIVATE;
   PIKEVAR int line_number flags ID_PROTECTED|ID_PRIVATE;
   PIKEVAR int enabled flags ID_PROTECTED|ID_PRIVATE;
+  PIKEVAR int want_enabled flags ID_PROTECTED|ID_PRIVATE;
   
   CVAR struct debug_breakpoint * bp;
 
@@ -530,8 +532,21 @@ PIKECLASS debug_breakpoint {
   optflags OPT_SIDE_EFFECT;
   {
     THIS->fname = fname;
+    THIS->within_fname = fname;
     THIS->line_number = line_number;
     add_ref(fname);
+	add_ref(fname);
+  }
+  
+  PIKEFUN void create(string fname, string within_fname, int line_number) 
+  flags ID_PROTECTED;
+  optflags OPT_SIDE_EFFECT;
+  {
+    THIS->fname = fname;
+    THIS->within_fname = within_fname;
+    THIS->line_number = line_number;
+    add_ref(fname);
+	add_ref(within_fname);
   }
 
   PIKEFUN void create(
@@ -541,10 +556,28 @@ program p, string fname, int line_number)
 {
    THIS->prog = p;
    THIS->fname = fname;
+   THIS->within_fname = fname;
    THIS->line_number = line_number;
    add_ref(p);
    add_ref(fname);
+   add_ref(fname);
 }
+
+  PIKEFUN void create(
+program p, string fname, string within_file, int line_number) 
+  flags ID_PROTECTED;
+  optflags OPT_SIDE_EFFECT;
+{
+   THIS->prog = p;
+   THIS->fname = fname;
+   THIS->within_fname = within_file;
+   THIS->line_number = line_number;
+   add_ref(p);
+   add_ref(fname);
+	add_ref(within_file);
+}
+
+
   PIKEFUN program get_program() {
     if(THIS->prog)
       RETURN THIS->prog;
@@ -555,24 +588,30 @@ program p, string fname, int line_number)
     add_ref(THIS->fname); /* it seems strange to need this, but whatever. */
     RETURN THIS->fname;
   }
+
+  PIKEFUN string get_within_file() {
+    add_ref(THIS->within_fname); /* it seems strange to need this, but whatever. */
+    RETURN THIS->within_fname;
+  }
+
   
   PIKEFUN int get_line_number() {
     RETURN THIS->line_number;
   }
 
-  PIKEFUN int get_enabled() {
+  PIKEFUN int is_deferred() {
+    RETURN ((THIS->prog) == NULL);
+  }
+
+  PIKEFUN int is_enabled() {
     RETURN THIS->enabled;
   }
 
-  PIKEFUN int enable() {
+  int low_enable_breakpoint() {
     ptrdiff_t offset;
-    if(THIS->enabled)
-      Pike_error("Breakpoint already enabled.\n");
-    /* This should eventually be a deferred breakpoint initialization. */
-    if(!(THIS->prog))
-      Pike_error("Program for breakpoint has not been resolved. Unable to enable.\n");
-    offset = low_get_offset_for_line(THIS->prog, THIS->fname, THIS->line_number);
-    if(offset < 0) Pike_error("Unable to find offset of line number in program!\n");
+    offset = low_get_offset_for_line(THIS->prog, THIS->within_fname, THIS->line_number);
+    if(offset < 0) return 0;
+//Pike_error("Unable to find offset of line number in program!\n");
 #ifdef PIKE_DEBUG
     struct debug_breakpoint * bp = malloc(sizeof(struct debug_breakpoint));
     if(!bp) Pike_fatal("Unable to allocate memory for breakpoint\n");
@@ -587,9 +626,10 @@ program p, string fname, int line_number)
     THIS->prog->breakpoints = bp;
     THIS->bp = bp;
     THIS->enabled = 1;
+    return 1;
 #else
-  Pike_error("Cannot enable breakpoints if debug is not enabled.\n");
-#endif /*PIKE_DEBUG*/
+    return 0;
+#endif /* PIKE_DEBUG */
   }
 
   void low_disable_breakpoint() {
@@ -631,6 +671,23 @@ program p, string fname, int line_number)
   return pc_offset;
 }
 
+  PIKEFUN int enable() {
+#ifdef PIKE_DEBUG
+    if(THIS->enabled)
+      Pike_error("Breakpoint already enabled.\n");
+    /* This should eventually be a deferred breakpoint initialization. */
+    if(!(THIS->prog)) {
+      printf("Program for breakpoint has not been resolved. Deferring enablement.\n");
+      THIS->want_enabled = 1;
+      RETURN -1;
+    }
+    low_enable_breakpoint();
+    RETURN 1;
+#else
+  Pike_error("Cannot enable breakpoints if debug is not enabled.\n");
+#endif /*PIKE_DEBUG*/
+  }
+
   PIKEFUN int disable() {
     if(!(THIS->enabled))
       Pike_error("Breakpoint not enabled.\n");
@@ -638,9 +695,34 @@ program p, string fname, int line_number)
     THIS->enabled = 0;
   }
 
+  PIKEFUN void set_program(program prog) {
+  
+  // TODO it seems that entries for a given file in master()->programs can be set
+  // multiple times, and that they are not always proper programs. we need to
+  // attempt to understand that situation a little better. for now, this will weed
+  // out attempts to set a program that we won't be able to look up an offset in.
+  if(!(prog->program)) {
+    printf("no program!\n");
+	return;
+  }
+
+  if(THIS->enabled) {
+    low_disable_breakpoint();
+    THIS->enabled = 0;
+  }
+
+  THIS->prog = prog;
+  add_ref(prog);
+  
+    if(THIS->want_enabled) {
+      if(!low_enable_breakpoint()) printf("unable to enable deferred breakpoint.\n");
+      THIS->want_enabled = 0;
+    }
+  }
   INIT {
     THIS->prog = NULL;
     THIS->fname = NULL;
+    THIS->within_fname = NULL;
     THIS->line_number = 0;
     THIS->enabled = 0;
   }
@@ -651,9 +733,12 @@ program p, string fname, int line_number)
        free_program(THIS->prog);
      if(THIS->fname)
        free_string(THIS->fname);
+     if(THIS->within_fname)
+       free_string(THIS->within_fname);
      THIS->bp = NULL; /* should already have been freed by low_disable_breakpoint(). */
      THIS->prog = NULL;
      THIS->fname = NULL;
+     THIS->within_fname = NULL;
      THIS->line_number = 0;
   }
 }
