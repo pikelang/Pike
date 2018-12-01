@@ -116,6 +116,7 @@ enum LFUN {
     LFUN_POW,
     LFUN_RPOW,
     LFUN__SQRT,
+    LFUN__ANNOTATIONS,
 };
 
 extern const char *const lfun_names[];
@@ -965,6 +966,8 @@ int store_constant(const struct svalue *foo,
 struct array *program_indices(struct program *p);
 struct array *program_values(struct program *p);
 struct array *program_types(struct program *p);
+struct array *program_inherit_annotations(struct program *p);
+struct array *program_annotations(struct program *p, int flags);
 int low_program_index_no_free(struct svalue *to, struct program *p, int e,
 			      struct object *parent, int parent_identifier);
 int program_index_no_free(struct svalue *to, struct svalue *what,
