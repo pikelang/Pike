@@ -134,6 +134,9 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
 PMOD_EXPORT struct array *object_indices(struct object *o, int inherit_level);
 PMOD_EXPORT struct array *object_values(struct object *o, int inherit_level);
 PMOD_EXPORT struct array *object_types(struct object *o, int inherit_level);
+PMOD_EXPORT struct array *object_annotations(struct object *o,
+					     int inherit_level,
+					     int flags);
 PMOD_EXPORT void visit_object (struct object *o, int action, void *extra);
 PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type,
 				 void *extra);

@@ -4109,6 +4109,74 @@ PMOD_EXPORT void f_types(INT32 args)
   push_array(a);
 }
 
+/*! @decl array(array(Pike.Annotation)) annotations(object|program|function x, @
+ *!                                                 int(0..1)|void recurse)
+ *!
+ *!   Return an array with the annotations for all symbols in @[x].
+ *!
+ *! @param x
+ *!   @mixed
+ *!     @type object
+ *!       For objects which define @[lfun::_annotations()] that return value
+ *!       is used.
+ *!
+ *!       For other objects an array with annotations for all non-protected
+ *!       symbols is returned.
+ *!     @type program
+ *!       Returns an array with annotations for all non-protected symbols.
+ *!   @endmixed
+ *!
+ *! @param recurse
+ *!   Include annotations recursively added via inherits.
+ *!
+ *! @note
+ *!   This function was added in Pike 8.1.
+ *!
+ *! @seealso
+ *!   @[indices()], @[values()], @[types()]
+ */
+PMOD_EXPORT void f_annotations(INT32 args)
+{
+  ptrdiff_t size;
+  struct array *a = NULL;
+  struct pike_type *default_type = mixed_type_string;
+  struct svalue *arg = NULL;
+  ptrdiff_t flags = 0;
+
+  get_all_args("annotations", args, "%O.%i", &arg, &flags);
+
+  if (flags & ~(ptrdiff_t)1) {
+    SIMPLE_ARG_TYPE_ERROR("annotations", 2, "int(0..1)|void");
+  }
+
+  switch(TYPEOF(Pike_sp[-args]))
+  {
+  case T_OBJECT:
+    a = object_annotations(Pike_sp[-args].u.object, SUBTYPEOF(Pike_sp[-args]),
+			   flags);
+    break;
+
+  case T_PROGRAM:
+    a = program_annotations(Pike_sp[-args].u.program, flags);
+    break;
+
+  case T_FUNCTION:
+    {
+      struct program *p = program_from_svalue(Pike_sp-args);
+      if (p) {
+	a = program_annotations(p, flags);
+	break;
+      }
+    }
+    /* FALLTHRU */
+
+  default:
+    SIMPLE_ARG_TYPE_ERROR("annotations", 1, "object|program|function");
+  }
+  pop_n_elems(args);
+  push_array(a);
+}
+
 /*! @decl program|function object_program(mixed o)
  *!
  *!   Return the program from which @[o] was instantiated. If the
@@ -10076,6 +10144,10 @@ void init_builtin_efuns(void)
 		       tArr(tType(tVar(0)))),
 		 tFunc(tMultiset, tArr(tType(tInt1))),
 		 tFunc(tOr(tObj,tPrg(tObj)), tArr(tType(tMix)))),0,NULL,0);
+
+  /* function(object|program, int|void:array(array)) */
+  ADD_EFUN2("annotations", f_annotations,
+	    tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tArr(tArr(tMix))),0,NULL,0);
 
   /* function(mixed:int) */
   ADD_EFUN2("zero_type",f_zero_type,tFunc(tMix,tInt01),0,0,generate_zero_type);

@@ -185,6 +185,7 @@ const char *const lfun_names[]  = {
   "`**",
   "``**",
   "_sqrt",
+  "_annotations",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -249,7 +250,8 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tFunction tFunction, tVoid, tMix),	/* "_random", */
   tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "pow", */
   tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "rpow", */
-  tFunc(tVoid,tMix),/* "_sqrt* */
+  tFunc(tVoid,tMix),            /* "_sqrt", */
+  tFuncV(tNone,tVoid,tArray),   /* "_annotations", */
 };
 
 /* These two are not true LFUNs! */
@@ -7896,6 +7898,104 @@ struct array *program_types(struct program *p)
       } else {
 	/* Prototype constant. */
 	ref_push_type_value(ID_FROM_INT(p, e)->type);
+	n++;
+      }
+    }
+  }
+  f_aggregate(n);
+  res = Pike_sp[-1].u.array;
+  add_ref(res);
+  pop_stack();
+  return(res);
+}
+
+/**
+ * Returns an array containing the recursive annotations
+ * for all inherits in the program.
+ *
+ * Retuns NULL if there are no such annotations.
+ */
+struct array *program_inherit_annotations(struct program *p)
+{
+  int prev_offset = -1;
+  int i;
+  int found = 0;
+  struct svalue *res = Pike_sp;
+
+  for (i = 0; i < p->num_inherits; i++) {
+    push_undefined();
+  }
+  for (i = 0; i < p->num_inherits; i++) {
+    struct inherit *inh = p->inherits + i;
+    if (inh->inherit_level > 0) {
+      push_svalue(res + inh->inherit_level - 1);
+    } else {
+      push_undefined();
+    }
+    if (inh->annotations) {
+      ref_push_array(inh->annotations);
+      f_add(2);
+      found = 1;
+    }
+    assign_svalue(res + inh->inherit_level, Pike_sp - 1);
+    pop_stack();
+  }
+  if (found) {
+    return aggregate_array(Pike_sp - res);
+  }
+  pop_n_elems(Pike_sp - res);
+  return NULL;
+}
+
+struct array *program_annotations(struct program *p, int flags)
+{
+  int i;
+  int n = 0;
+  struct array *res;
+  struct array *inherit_annotations = NULL;
+  if (flags & 1) {
+    inherit_annotations = program_inherit_annotations(p);
+  }
+  for (i = p->num_identifier_index; i--; ) {
+    struct identifier *id;
+    int e = p->identifier_index[i];
+    if (p->identifier_references[e].id_flags &
+	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
+      continue;
+    }
+    id = ID_FROM_INT(p, e);
+    if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+      /* FIXME!
+       */
+      continue;
+    } else if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+      if (id->func.const_info.offset >= 0) {
+	struct reference *ref = PTR_FROM_INT(p, e);
+	struct program *p2 = PROG_FROM_PTR(p, ref);
+	struct svalue *val = &p2->constants[id->func.const_info.offset].sval;
+	struct array *inh_ann = NULL;
+	if ((TYPEOF(*val) != T_PROGRAM) ||
+	    !(val->u.program->flags & PROGRAM_USES_PARENT)) {
+	  if (inherit_annotations &&
+	      (TYPEOF(ITEM(inherit_annotations)[ref->inherit_offset]) ==
+	       PIKE_T_ARRAY)) {
+	    inh_ann = ITEM(inherit_annotations)[ref->inherit_offset].u.array;
+	    ref_push_array(inh_ann);
+	  }
+	  if ((p2->num_annotations > ref->identifier_offset) &&
+	      p2->annotations[ref->identifier_offset]) {
+	    ref_push_array(p2->annotations[ref->identifier_offset]);
+	    if (inh_ann) {
+	      f_add(2);
+	    }
+	  } else if (!inh_ann) {
+	    push_int(0);
+	  }
+	  n++;
+	}
+      } else {
+	/* FIXME: Prototype constant. */
+	push_int(0);
 	n++;
       }
     }

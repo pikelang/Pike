@@ -2186,6 +2186,74 @@ PMOD_EXPORT struct array *object_types(struct object *o, int inherit_number)
   return a;
 }
 
+PMOD_EXPORT struct array *object_annotations(struct object *o,
+					     int inherit_number,
+					     int flags)
+{
+  struct array *a = NULL;
+  struct program *p;
+  struct inherit *inh;
+  int fun;
+  int e;
+
+  p=o->prog;
+  if(!p)
+    Pike_error("annotations() on destructed object.\n");
+
+  p = (inh = p->inherits + inherit_number)->prog;
+
+  if((fun = low_find_lfun(p, LFUN__ANNOTATIONS)) >= 0)
+  {
+    struct array *a;
+    if (flags) {
+      push_int(flags);
+    }
+    apply_low(o, fun + inh->identifier_level, !!flags);
+    if(TYPEOF(Pike_sp[-1]) != T_ARRAY)
+      Pike_error("Bad return type from o->_annotations()\n");
+    a = Pike_sp[-1].u.array;
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
+  } else if ((fun = FIND_LFUN(p, LFUN__VALUES)) != -1) {
+    /* Some dwim for the case where lfun::_values() is overloaded,
+     * but not lfun::_annotations().
+     */
+    int sz;
+    a = object_values(o, inherit_number);
+    sz = a->size;
+    free_array(a);
+    a = allocate_array(sz);
+  } else {
+    struct svalue *res = Pike_sp;
+    struct array *inherit_annotations = NULL;
+
+    if (flags) {
+      inherit_annotations = program_inherit_annotations(p);
+    }
+    for(e = 0; e < (int)p->num_identifier_index; e++)
+    {
+      struct reference *ref = PTR_FROM_INT(p, e);
+      struct program *pp = PROG_FROM_PTR(p, ref);
+      struct array *vals = NULL;
+      if (inherit_annotations) {
+	push_svalue(ITEM(inherit_annotations) + ref->inherit_offset);
+      } else {
+	push_undefined();
+      }
+      if (ref->identifier_offset < pp->num_annotations) {
+	struct array *vals = pp->annotations[ref->identifier_offset];
+	if (vals) {
+	  ref_push_array(vals);
+	  f_add(2);
+	}
+      }
+    }
+    a = aggregate_array(Pike_sp - res);
+    do_free_array(inherit_annotations);
+  }
+  return a;
+}
+
 
 PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
 {
