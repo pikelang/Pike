@@ -3201,12 +3201,6 @@ PIKECLASS AutoCodecClass
 
     n = mknode(F_RETURN, mkefuncallnode("aggregate", n), 0);
 
-    fprintf(stderr, "Type:\n");
-    simple_describe_type(type);
-    fprintf(stderr, "\nCode:\n");
-    print_tree(n);
-    fprintf(stderr, "\n");
-
     define_function(encode_string, type, 0, IDENTIFIER_PIKE_FUNCTION, 0, 0);
 
     if (pass == COMPILER_PASS_LAST) {
