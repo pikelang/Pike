@@ -2205,10 +2205,14 @@ PMOD_EXPORT struct array *object_annotations(struct object *o,
   if((fun = low_find_lfun(p, LFUN__ANNOTATIONS)) >= 0)
   {
     struct array *a;
+    ref_push_object_inherit(o, inherit_number);
     if (flags) {
+      push_undefined();
       push_int(flags);
+      apply_low(o, fun + inh->identifier_level, 3);
+    } else {
+      apply_low(o, fun + inh->identifier_level, 1);
     }
-    apply_low(o, fun + inh->identifier_level, !!flags);
     if(TYPEOF(Pike_sp[-1]) != T_ARRAY)
       Pike_error("Bad return type from o->_annotations()\n");
     a = Pike_sp[-1].u.array;
