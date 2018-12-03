@@ -5,6 +5,9 @@
 protected object debugger;
 protected mapping breakpoints = ([]);
 
+// TODO: we need to make sure that we don't accidentally create multiple breakpoints for the same code position.
+// also need to handle request for lines that don't exist.
+
 //! 
 void deferred_breakpoint_completer(string filename, program prog) {
 //werror("breakpoint completer: %O\n", prog);
@@ -18,14 +21,14 @@ void deferred_breakpoint_completer(string filename, program prog) {
 
 }
 
-//!
+//! add a breakpoint for a particular program, at a particular file and ine number (ie, possibly an included file path)
 variant object add_breakpoint(program p, string within_file, int line_number) {
   object bp = Breakpoint(p, within_file, line_number);
   breakpoints[bp] = 1;
   return bp;
 }
 
-//! support for deferred breakpoints, TBD
+//! supports breakpoints on programs not yet loaded.
 variant object add_breakpoint(string filename, int line_number) {
 	object bp;
     program p = master()->programs[filename];
@@ -39,7 +42,10 @@ variant object add_breakpoint(string filename, int line_number) {
   return bp;
 }
 
-//! support for deferred breakpoints, TBD
+//! supports breakpoints on programs not yet loaded.
+//!  @param within_file
+//!    search for lines in pogram coming from within_file, which may be different than the file containing
+//!    the larger program definition, such as includes.
 variant object add_breakpoint(string filename, string within_file, int line_number) {
 	object bp;
   program p = master()->programs[filename];
@@ -60,6 +66,7 @@ object remove_breakpoint(object breakpoint) {
   return m_delete(breakpoints, breakpoint);
 }
 
+//!
 mapping get_breakpoints() {
   return breakpoints + ([]);
 }
