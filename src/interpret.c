@@ -838,8 +838,9 @@ int backlogp=BACKLOG-1;
 
 
 // begining of debugging state. we obviously will need better data structures for this.
-THREAD_T stepping_thread = NULL;
 int stepping_mode = 0;
+THREAD_T stepping_thread = NULL;
+#define IS_THREAD_STEPPING(A) (stepping_thread == A)
 struct svalue debugger_server = SVALUE_INIT_FREE;
 
 static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
@@ -848,8 +849,10 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
     struct pike_string *filep;
     INT_TYPE linep;
 	int debug_retval = 0;
-#ifdef PIKE_DEBUG	
-    if((stepping_mode != 0 && stepping_thread == th_self()) || (bp = Pike_fp->context->prog->breakpoints) != NULL) 
+#ifdef PIKE_DEBUG
+	/* This block exists solely to print some debug when we execute opcodes in a thread that's stepping, 
+	    or a program that contains breakpoints. */
+    if((stepping_mode != 0 && IS_THREAD_STEPPING(th_self())) || (bp = Pike_fp->context->prog->breakpoints) != NULL) 
     {
         char *file = NULL, *f;
         struct pike_string *filep2;
@@ -870,10 +873,11 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 	    Pike_mark_sp-Pike_interpreter.mark_stack);
         free_string(filep2);
 	
-		        printf("pro: %p, %p %p, %p\n", bp_prog, Pike_fp->context->prog, bp_offset, Pike_fp->pc - Pike_fp->context->prog->program);
+        printf("pro: %p, %p %p, %p\n", bp_prog, Pike_fp->context->prog, bp_offset, Pike_fp->pc - Pike_fp->context->prog->program);
     }
 		
-	if((stepping_mode != 0 && stepping_thread == th_self()) || bp != NULL ) {
+	/* This block performs the actual breakpoint/step behavior */
+	if((stepping_mode != 0 && IS_THREAD_STEPPING(th_self())) || bp != NULL ) {
 	  int pause_here = 0;
           if(stepping_mode != 0) {
             pause_here = 1;
@@ -908,7 +912,7 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 		  pop_stack();
 		}
   	    
-	        filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
+	    filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
 		
 		ref_push_string(filep);
 		push_int(linep);
