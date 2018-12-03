@@ -515,7 +515,6 @@ efun;
   push_int(tmp);
 }
 
-
 PIKECLASS debug_breakpoint {
 
   PIKEVAR program prog flags ID_PROTECTED|ID_PRIVATE;
@@ -635,6 +634,7 @@ program p, string fname, string within_file, int line_number)
   void low_disable_breakpoint() {
      struct debug_breakpoint * bp, *pbp;
 
+#ifdef PIKE_DEBUG
      if((THIS->prog) && (bp = (THIS->prog->breakpoints)) != NULL) {
         while(bp != NULL) {
           if(bp == (THIS->bp)) {
@@ -659,6 +659,7 @@ program p, string fname, string within_file, int line_number)
           }
         };       
      }
+#endif /* PIKE_DEBUG */
   }
 
   ptrdiff_t low_add_breakpoint() {
