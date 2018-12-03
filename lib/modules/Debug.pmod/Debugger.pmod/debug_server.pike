@@ -61,7 +61,7 @@ public int do_breakpoint(string file, int line, string opcode, object current_ob
   object key = bp_lock->lock();
   breakpoint_cond = Thread.Condition();
   bpbe->call_out(lambda(){breakpoint_hilfe = .BreakpointHilfe(breakpoint_client, this, file + ":" + line, current_object, bt);}, 0);
-  werror("Hilfe started for Breakpoint on %s at %s.", opcode, file + ":" + line);
+  werror("Hilfe started for Breakpoint on %s at %s.\n", opcode, file + ":" + line);
   breakpoint_cond->wait(key);
   key = 0;
   // now, we must wait for the hilfe session to end.
@@ -91,7 +91,6 @@ private void handle_breakpoint_client(int id)
   breakpoint_hilfe->read_callback(0, "");
   breakpoint_client->set_backend(bpbe);
   breakpoint_client->set_nonblocking(breakpoint_read, breakpoint_write, breakpoint_close);
-  breakpoint_client->write("Welcome to the Pike Debugger2.\n");
   breakpoint_hilfe->read_callback(0, "");
 }
 
