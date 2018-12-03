@@ -251,7 +251,8 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "pow", */
   tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "rpow", */
   tFunc(tVoid,tMix),            /* "_sqrt", */
-  tFuncV(tNone,tVoid,tArray),   /* "_annotations", */
+  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt)
+	 tOr(tInt01,tVoid),tVoid,tArray),   /* "_annotations", */
 };
 
 /* These two are not true LFUNs! */
@@ -1381,6 +1382,54 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @seealso
  *!   @[predef::random()], @[RandomInterface]
+ */
+
+/*! @decl object|int|float lfun::`**(int|float|object exp)
+ *!   Called by @[predef::`**()].
+ *!
+ *! @seealso
+ *!   @[predef::`**()], @[lfun::``**()]
+ */
+
+/*! @decl object|int|float lfun::``**(int|float|object base)
+ *!   Called by @[predef::`**()].
+ *!
+ *! @seealso
+ *!   @[predef::`**()], @[lfun::`**()]
+ */
+
+/*! @decl mixed lfun::_sqrt()
+ *!   Called by @[sqrt()].
+ *!
+ *! @seealso
+ *!   @[sqrt()]
+ */
+
+/*! @decl array lfun::_annotations(object|void context, int|void access, @
+ *!                                int(0..1)|void recursive)
+ *!   Called by @[annotations()]
+ *!
+ *! @param context
+ *!   Inherit in the current object to return the annotations for.
+ *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
+ *!   should be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
+ *!
+ *! @param recursive
+ *!   Include nested annotations from the inherits.
+ *!
+ *! @seealso
+ *!   @[annotations()]
  */
 
 /**** END FAKE LFUNS ****/
