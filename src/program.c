@@ -8585,7 +8585,7 @@ PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
                 line+=get_small_number(&cnt);
   	   // printf("line: %d %p\n", line, off);
 		
-		if(wanted_file && line == linep) { printf("found\n"); return off; }
+		if(wanted_file && line == linep) { printf("found offset for line %d.\n", linep); return off; }
       }
   } else {
     fprintf(stderr, "No program of linenumbers program:%p linenumbers:%p\n",

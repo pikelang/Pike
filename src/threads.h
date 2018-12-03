@@ -54,6 +54,7 @@ struct thread_state {
   signed char status;
 #ifdef PIKE_DEBUG
   char debug_flags;
+  int stepping_mode;
 #endif
 };
 

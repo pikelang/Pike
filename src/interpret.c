@@ -838,9 +838,7 @@ int backlogp=BACKLOG-1;
 
 
 // begining of debugging state. we obviously will need better data structures for this.
-int stepping_mode = 0;
-THREAD_T stepping_thread = NULL;
-#define IS_THREAD_STEPPING(A) (stepping_thread == A)
+#define IS_THREAD_STEPPING(A) (A->stepping_mode)
 struct svalue debugger_server = SVALUE_INIT_FREE;
 
 static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
@@ -849,15 +847,20 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
     struct pike_string *filep;
     INT_TYPE linep;
 	int debug_retval = 0;
+	struct thread_state * th_state;
+	
 #ifdef PIKE_DEBUG
 	/* This block exists solely to print some debug when we execute opcodes in a thread that's stepping, 
 	    or a program that contains breakpoints. */
-    if((stepping_mode != 0 && IS_THREAD_STEPPING(th_self())) || (bp = Pike_fp->context->prog->breakpoints) != NULL) 
+	th_state = thread_state_for_id(th_self());
+
+	/*
+    if((IS_THREAD_STEPPING(th_state)) || (bp = Pike_fp->context->prog->breakpoints) != NULL) 
     {
         char *file = NULL, *f;
         struct pike_string *filep2;
 
-        printf("stepping_mode: %d, stepping_thread: %p\n", stepping_mode, stepping_thread);
+//        printf("stepping_mode: %d\n", IS_THREAD_STEPPING(th_state));
         filep2 = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
         if (filep2 && !filep2->size_shift) {
           file = filep2->str;
@@ -871,15 +874,16 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 	    get_opcode_name(instr),
 	    Pike_sp-Pike_interpreter.evaluator_stack,
 	    Pike_mark_sp-Pike_interpreter.mark_stack);
-        free_string(filep2);
+	free_string(filep2);
 	
         printf("pro: %p, %p %p, %p\n", bp_prog, Pike_fp->context->prog, bp_offset, Pike_fp->pc - Pike_fp->context->prog->program);
     }
-		
+*/	
+			
 	/* This block performs the actual breakpoint/step behavior */
-	if((stepping_mode != 0 && IS_THREAD_STEPPING(th_self())) || bp != NULL ) {
+	if((IS_THREAD_STEPPING(th_state)) || (bp = Pike_fp->context->prog->breakpoints) != NULL ) {
 	  int pause_here = 0;
-          if(stepping_mode != 0) {
+          if(IS_THREAD_STEPPING(th_state)) {
             pause_here = 1;
           } else {
             while(bp != NULL) {
@@ -891,27 +895,25 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
             };
           }
           if(pause_here) {
-	    printf("got a match!\n");
-		stepping_thread = th_self();
+	         // printf("got a match!\n");
 		
-		if(TYPEOF(debugger_server) == PIKE_T_FREE) {
-			
-		  push_text("Debug.Debugger.get_debugger_handler");
-		  SAFE_APPLY_MASTER("resolv", 1 );
+		    if(TYPEOF(debugger_server) == PIKE_T_FREE) {
+		      push_text("Debug.Debugger.get_debugger_handler");
+		      SAFE_APPLY_MASTER("resolv", 1 );
 		 
-		  // look up the function
-		  safe_apply_svalue(Pike_sp-1, 0, 1);
+		      // look up the function
+  		      safe_apply_svalue(Pike_sp-1, 0, 1);
 
-		  if(TYPEOF(Pike_sp[-1]) != T_FUNCTION) {
-			  Pike_error("Could not get debugger for breakpoint.\n");
-		  }
+		      if(TYPEOF(Pike_sp[-1]) != T_FUNCTION) {
+			    Pike_error("Could not get debugger for breakpoint.\n");
+ 		      }
 
-		  assign_svalue(&debugger_server, Pike_sp-1);
+  		      assign_svalue(&debugger_server, Pike_sp-1);
 
-		  pop_stack();
-		  pop_stack();
-		}
-  	    
+		      pop_stack();
+		      pop_stack();
+		    }
+
 	    filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
 		
 		ref_push_string(filep);
@@ -924,8 +926,7 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 
 		// we don't want to step though any of the do_breakpoint() instructions that actually wake up the debugger.
 		// this seems safe for the basic scenario, but perhaps we should do this on another thread altogether?
-		stepping_mode = 0; 
-
+   	    th_state->stepping_mode = 0;
 		safe_apply_svalue(&debugger_server, 5, 1);
 
 		if(TYPEOF(*(Pike_sp - 1)) != T_INT) 
@@ -939,12 +940,11 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 
 		if(debug_retval == 1) // single_step
 		{
-			stepping_mode = 1; // single_step		
+  	  	  th_state->stepping_mode = 1;		
 		} else {
-	  	  stepping_mode = 0;
-		  stepping_thread = 0;
+	  	  th_state->stepping_mode = 0;
 		}
-           }
+      }
 
 	}
 #endif /* PIKE_DEBUG */	
