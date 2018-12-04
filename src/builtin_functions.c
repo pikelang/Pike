@@ -4143,26 +4143,25 @@ PMOD_EXPORT void f_annotations(INT32 args)
   struct svalue *arg = NULL;
   ptrdiff_t flags = 0;
 
-  get_all_args("annotations", args, "%O.%i", &arg, &flags);
+  get_all_args("annotations", args, "%*.%i", &arg, &flags);
 
   if (flags & ~(ptrdiff_t)1) {
     SIMPLE_ARG_TYPE_ERROR("annotations", 2, "int(0..1)|void");
   }
 
-  switch(TYPEOF(Pike_sp[-args]))
+  switch(TYPEOF(*arg))
   {
   case T_OBJECT:
-    a = object_annotations(Pike_sp[-args].u.object, SUBTYPEOF(Pike_sp[-args]),
-			   flags);
+    a = object_annotations(arg->u.object, SUBTYPEOF(Pike_sp[-args]), flags);
     break;
 
   case T_PROGRAM:
-    a = program_annotations(Pike_sp[-args].u.program, flags);
+    a = program_annotations(arg->u.program, flags);
     break;
 
   case T_FUNCTION:
     {
-      struct program *p = program_from_svalue(Pike_sp-args);
+      struct program *p = program_from_svalue(arg);
       if (p) {
 	a = program_annotations(p, flags);
 	break;
