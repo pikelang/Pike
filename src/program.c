@@ -8049,6 +8049,7 @@ struct array *program_annotations(struct program *p, int flags)
       }
     }
   }
+  do_free_array(inherit_annotations);
   f_aggregate(n);
   res = Pike_sp[-1].u.array;
   add_ref(res);
