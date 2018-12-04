@@ -2236,7 +2236,7 @@ PMOD_EXPORT struct array *object_annotations(struct object *o,
     }
     for(e = 0; e < (int)p->num_identifier_index; e++)
     {
-      struct reference *ref = PTR_FROM_INT(p, e);
+      struct reference *ref = PTR_FROM_INT(p, p->identifier_index[e]);
       struct program *pp = PROG_FROM_PTR(p, ref);
       struct array *vals = NULL;
       if (inherit_annotations) {
