@@ -1977,10 +1977,11 @@ class FILE
   {
     if( !charset ) // autodetect.
     {
+      string locale;
       if( getenv("CHARSET") )
         charset = getenv("CHARSET");
-      else if( getenv("LANG") )
-        sscanf(getenv("LANG"), "%*s.%s", charset );
+      else if( (locale = getenv("LC_ALL") || getenv("LC_CTYPE") || getenv("LANG") ) )
+        sscanf( locale, "%*s.%s", charset );
       if( !charset )
         return;
     }
