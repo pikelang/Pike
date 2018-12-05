@@ -1557,8 +1557,8 @@ static void f_compilation_create(INT32 args)
   if (c->placeholder) free_object(c->placeholder);
   if ((c->placeholder=aplaceholder)) add_ref(aplaceholder);
 
-  c->major = amajor?amajor:-1;
-  c->minor = aminor?aminor:-1;
+  c->major = amajor;
+  c->minor = aminor;
 
   STACK_LEVEL_DONE(args);
   pop_n_elems(args);
