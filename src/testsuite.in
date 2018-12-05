@@ -10917,6 +10917,69 @@ test_compile_error([[
   }
 ]])
 
+test_any_equal([[
+  class A {
+    @"class_A";
+    @"constant_foo":constant foo = 0;
+    @"function_bar":void bar() {}
+    @"variable_baz":mixed baz;
+    mixed a_none;
+    @"variable_b_none":mixed b_none;
+  }
+  class B {
+    @"class_B";
+    @"inherit_A":inherit A;
+    @"variable_buz":mixed buz;
+    @"variable_a_none":mixed a_none;
+    mixed b_none;
+  }
+  A a = A();
+  B b = B();
+  return ({
+    mkmapping(indices(A), annotations(A)),
+    mkmapping(indices(A), annotations(A, 1)),
+    mkmapping(indices(a), annotations(a)),
+    mkmapping(indices(a), annotations(a, 1)),
+    mkmapping(indices(B), annotations(B)),
+    mkmapping(indices(B), annotations(B, 1)),
+    mkmapping(indices(b), annotations(b)),
+    mkmapping(indices(b), annotations(b, 1)),
+  });
+]], [[
+  ({
+    ([ "foo": ({ "constant_foo" }), ]),
+    ([ "foo": ({ "class_A", "constant_foo" }), ]),
+    ([ "foo": ({ "constant_foo" }),
+       "bar": ({ "function_bar" }),
+       "baz": ({ "variable_baz" }),
+       "a_none": 0,
+       "b_none": ({ "variable_b_none" }),
+    ]),
+    ([ "foo": ({ "class_A", "constant_foo" }),
+       "bar": ({ "class_A", "function_bar" }),
+       "baz": ({ "class_A", "variable_baz" }),
+       "a_none": ({ "class_A" }),
+       "b_none": ({ "class_A", "variable_b_none" }),
+    ]),
+    ([ "foo": ({ "constant_foo" }), ]),
+    ([ "foo": ({ "class_B", "class_A", "inherit_A", "constant_foo" }), ]),
+    ([ "foo": ({ "constant_foo" }),
+       "bar": ({ "function_bar" }),
+       "baz": ({ "variable_baz" }),
+       "buz": ({ "variable_buz" }),
+       "a_none": ({ "variable_a_none" }),
+       "b_none": 0,
+    ]),
+    ([ "foo": ({ "class_B", "class_A", "inherit_A", "constant_foo" }),
+       "bar": ({ "class_B", "class_A", "inherit_A", "function_bar" }),
+       "baz": ({ "class_B", "class_A", "inherit_A", "variable_baz" }),
+       "buz": ({ "class_B", "variable_buz" }),
+       "a_none": ({ "class_B", "variable_a_none" }),
+       "b_none": ({ "class_B" }),
+    ]),
+  })
+]])
+
 // foop
 define(do_test_foop,[[
 test_eq($1 (17), !($2))
