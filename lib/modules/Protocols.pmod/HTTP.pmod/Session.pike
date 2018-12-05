@@ -677,17 +677,30 @@ protected inline string connection_lookup(Standards.URI url)
 Query give_me_connection(Standards.URI url)
 {
    Query q;
+   Query old_q;
 
    Thread.MutexKey key = connection_cache_mux->lock();
 
    if (array(KeptConnection) v =
        connection_cache[connection_lookup(url)])
    {
-      q=v[0]->use(); // removes itself
-      // clean up
-      q->buf="";
-      q->headerbuf="";
-      q->n_used++;
+      old_q = v[0]->use(); // removes itself
+   }
+
+   q = SessionQuery();
+   q->hostname_cache=hostname_cache;
+   if (old_q) {
+      // Transfer connection from the old Query object to the new.
+      foreach(({ "con", "host", "port",
+#if constant(SSL.Cipher)
+		 "https", "context", "ssl_session",
+#endif
+	      }), string field) {
+         q[field] = old_q[field];
+      }
+      q->n_used = old_q->n_used+1;
+      old_q->con = 0;
+      destruct(old_q);
    }
    else
    {
@@ -701,8 +714,6 @@ Query give_me_connection(Standards.URI url)
 	 one->disconnect(); // removes itself
       }
 
-      q=SessionQuery();
-      q->hostname_cache=hostname_cache;
       connections_host_n[connection_lookup(url)]++; // new
    }
    connections_inuse_n++;
