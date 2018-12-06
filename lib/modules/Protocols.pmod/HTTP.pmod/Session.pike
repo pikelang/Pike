@@ -600,6 +600,7 @@ int maximum_connection_reuse=1000000;
 
 // internal (but readable for debug purposes)
 mapping(string:array(KeptConnection)) connection_cache=([]);
+Thread.Mutex connection_cache_mux = Thread.Mutex();
 int connections_kept_n=0;
 int connections_inuse_n=0;
 mapping(string:int) connections_host_n=([]);
@@ -611,6 +612,7 @@ protected class KeptConnection
 
    void create(string _lookup,Query _q)
    {
+      Thread.MutexKey key = connection_cache_mux->lock(2);
       lookup=_lookup;
       q=_q;
 
@@ -622,6 +624,7 @@ protected class KeptConnection
 
    void disconnect()
    {
+      Thread.MutexKey key = connection_cache_mux->lock(2);
       connection_cache[lookup]-=({this});
       if (!sizeof(connection_cache[lookup]))
 	 m_delete(connection_cache,lookup);
@@ -637,6 +640,7 @@ protected class KeptConnection
 
    Query use()
    {
+      Thread.MutexKey key = connection_cache_mux->lock(2);
       connection_cache[lookup]-=({this});
       if (!sizeof(connection_cache[lookup]))
 	 m_delete(connection_cache,lookup);
@@ -658,15 +662,30 @@ protected inline string connection_lookup(Standards.URI url)
 Query give_me_connection(Standards.URI url)
 {
    Query q;
+   Query old_q;
+
+   Thread.MutexKey key = connection_cache_mux->lock();
 
    if (array(KeptConnection) v =
        connection_cache[connection_lookup(url)])
    {
-      q=v[0]->use(); // removes itself
-      // clean up
-      q->buf="";
-      q->headerbuf="";
-      q->n_used++;
+      old_q = v[0]->use(); // removes itself
+   }
+
+   q = SessionQuery();
+   q->hostname_cache=hostname_cache;
+   if (old_q) {
+      // Transfer connection from the old Query object to the new.
+      foreach(({ "con", "host", "port",
+#if constant(SSL.Cipher)
+		 "https", "context", "ssl_session",
+#endif
+	      }), string field) {
+         q[field] = old_q[field];
+      }
+      q->n_used = old_q->n_used+1;
+      old_q->con = 0;
+      destruct(old_q);
    }
    else
    {
@@ -680,8 +699,6 @@ Query give_me_connection(Standards.URI url)
 	 one->disconnect(); // removes itself
       }
 
-      q=SessionQuery();
-      q->hostname_cache=hostname_cache;
       connections_host_n[connection_lookup(url)]++; // new
    }
    connections_inuse_n++;
