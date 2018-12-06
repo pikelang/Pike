@@ -2091,6 +2091,106 @@ PMOD_EXPORT void multiset_insert (struct multiset *l,
   multiset_insert_2 (l, ind, NULL, 1);
 }
 
+/**
+ * Add an entry to a multiset.
+ * Nothing is done if ind is destructed.
+ *
+ * Returns -1 if ind is destructed.
+ * Otherwise returns the node offset in the multiset for the
+ * new node.
+ */
+PMOD_EXPORT ptrdiff_t multiset_add (struct multiset *l, struct svalue *ind)
+{
+  struct multiset_data *msd = l->msd;
+  union msnode *new;
+  enum find_types find_type;
+  ONERROR uwp;
+  RBSTACK_INIT (rbstack);
+
+  /* Note: Similar code in multiset_insert_2, multiset_add_after,
+   * multiset_delete_2 and multiset_delete_node. */
+
+#ifdef PIKE_DEBUG
+  debug_malloc_touch (l);
+  debug_malloc_touch (msd);
+  check_svalue (ind);
+#endif
+
+  SET_ONERROR (uwp, free_indirect_multiset_data, &msd);
+
+  while (1) {
+    if (!msd->root) {
+      if (IS_DESTRUCTED (ind)) {
+	UNSET_ONERROR (uwp);
+	return -1;
+      }
+      if (prepare_for_add (l, l->node_refs)) msd = l->msd;
+      ALLOC_MSNODE (msd, l->node_refs, new);
+      find_type = FIND_NOROOT;
+      goto add;
+    }
+
+    if (!msd->free_list && !l->node_refs) {
+      /* Enlarge now if possible. Otherwise we either have to redo the
+       * search or don't use a rebalancing resize. */
+      if (msd->refs > 1) {
+	l->msd = copy_multiset_data (msd);
+	MOVE_MSD_REF (l, msd);
+      }
+#ifdef PIKE_DEBUG
+      if (d_flag > 1) check_multiset (l, 1);
+#endif
+      l->msd = resize_multiset_data (msd, ENLARGE_SIZE (msd->allocsize), 0);
+      msd = l->msd;
+    }
+#if 0
+    else
+      if (msd->size == msd->allocsize)
+	fputs ("Can't rebalance multiset tree in multiset_add\n", stderr);
+#endif
+
+    add_ref (msd);
+    find_type = low_multiset_track_le_gt (msd, ind, &rbstack);
+
+    if (l->msd != msd) {
+      RBSTACK_FREE (rbstack);
+      if (!sub_ref (msd)) free_multiset_data (msd);
+      msd = l->msd;
+    }
+
+    else
+      switch (find_type) {
+	case FIND_LESS:
+	case FIND_GREATER:
+	  sub_extra_ref (msd);
+	  if (prepare_for_add (l, 1)) {
+	    rbstack_shift (rbstack, HDR (msd->nodes), HDR (l->msd->nodes));
+	    msd = l->msd;
+	  }
+	  ALLOC_MSNODE (msd, l->node_refs, new);
+	  goto add;
+
+	case FIND_DESTRUCTED:
+	  sub_extra_ref (msd);
+	  midflight_remove_node_fast (l, &rbstack, 0);
+	  msd = l->msd;
+	  break;
+
+	case FIND_KEY_DESTRUCTED:
+	  sub_extra_ref (msd);
+	  UNSET_ONERROR (uwp);
+	  return -1;
+
+	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
+      }
+  }
+
+add:
+  UNSET_ONERROR (uwp);
+  ADD_NODE (msd, rbstack, new, ind, find_type);
+  return MSNODE2OFF (msd, new);
+}
+
 #define TEST_LESS(MSD, A, B, CMP_RES) do {				\
     if (TYPEOF(MSD->cmp_less) == T_INT)					\
       INTERNAL_CMP (A, B, CMP_RES);					\

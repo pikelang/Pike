@@ -376,6 +376,7 @@ PMOD_EXPORT void multiset_set_flags (struct multiset *l, int flags);
 PMOD_EXPORT struct multiset *mkmultiset (struct array *indices);
 PMOD_EXPORT void multiset_insert (struct multiset *l,
 				  struct svalue *ind);
+PMOD_EXPORT ptrdiff_t multiset_add(struct multiset *l, struct svalue *ind);
 PMOD_EXPORT int multiset_delete (struct multiset *l,
 				 struct svalue *ind);
 #ifdef MULTISET_INDVAL
