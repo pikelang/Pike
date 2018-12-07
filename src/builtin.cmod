@@ -1609,18 +1609,20 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
   RETURN 8 * (1 << s->size_shift);
 }
 
-/*! @decl mixed m_delete(object|mapping map, mixed index)
+/*! @decl mixed m_delete(object|mapping|multiset map, mixed index)
  *!
  *! If @[map] is an object that implements @[lfun::_m_delete()],
  *! that function will be called with @[index] as its single argument.
  *!
- *! Otherwise if @[map] is a mapping the entry with index @[index]
- *! will be removed from @[map] destructively.
+ *! Otherwise if @[map] is a mapping or multiset the entry with
+ *! index @[index] will be removed from @[map] destructively.
  *!
- *! If the mapping does not have an entry with index @[index], nothing is done.
+ *! If the mapping or multiset does not have an entry with
+ *! index @[index], nothing is done.
  *!
  *! @returns
- *!   The value that was removed will be returned.
+ *!   The value that was removed will be returned,
+ *!   and @expr{UNDEFINED@} otherwise.
  *!
  *! @note
  *!   Note that @[m_delete()] changes @[map] destructively.
@@ -1629,10 +1631,12 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *!   @[mappingp()]
  */
 PMOD_EXPORT
-PIKEFUN mixed m_delete(object|mapping map, mixed index)
+PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index)
   efun;
   optflags OPT_SIDE_EFFECT;
-  rawtype tOr(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),tVar(1)),tFunc(tObj tMix,tMix))
+  rawtype tOr3(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),tVar(1)),
+	       tFunc(tSet(tSetvar(0,tMix)) tVar(0),tInt01),
+	       tFunc(tObj tMix,tMix));
 {
   struct program *p;
   if( TYPEOF(*map) == T_MAPPING )
@@ -1655,8 +1659,15 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
 	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 1);
     stack_swap();
     pop_stack();
+  } else if (TYPEOF(*map) == T_MULTISET) {
+    struct svalue s;
+    multiset_delete_2(map->u.multiset, index, &s);
+    pop_n_elems(args);
+    *Pike_sp = s;
+    Pike_sp++;
+    dmalloc_touch_svalue(Pike_sp-1);
   } else {
-    SIMPLE_ARG_TYPE_ERROR("m_delete", 1, "object|mapping");
+    SIMPLE_ARG_TYPE_ERROR("m_delete", 1, "object|mapping|multiset");
   }
 }
 
