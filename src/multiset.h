@@ -340,6 +340,7 @@ PMOD_EXPORT struct multiset *real_allocate_multiset (int allocsize,
 						     int flags,
 						     struct svalue *cmp_less);
 PMOD_EXPORT void do_free_multiset (struct multiset *l);
+PMOD_EXPORT void clear_multiset(struct multiset *l);
 PMOD_EXPORT void multiset_fix_type_field (struct multiset *l);
 PMOD_EXPORT void multiset_set_flags (struct multiset *l, int flags);
 PMOD_EXPORT struct multiset *mkmultiset (struct array *indices);

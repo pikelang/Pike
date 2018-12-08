@@ -1913,23 +1913,42 @@ PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index)
   }
 }
 
-/*! @decl void m_clear(mapping map)
+/*! @decl void m_clear(mapping|multiset|object map)
  *!
- *!   Clear the contents of a mapping.
+ *!   Clear the contents of a mapping or multiset.
  *!
- *!   This function clears the content of the mapping @[map] so
- *!   that it becomes empty. This is an atomic operation.
+ *!   This function clears the content of the mapping
+ *!   or multiset @[map] so that it becomes empty.
+ *!   This is an atomic operation.
+ *!
+ *!   If @[map] is an object @[lfun::_m_clear()] will be called
+ *!   in it.
  *!
  *! @seealso
  *!   @[m_delete()]
  */
 PMOD_EXPORT
-PIKEFUN void m_clear(mapping map)
-  efun
+PIKEFUN void m_clear(mapping|multiset|object map)
+  efun;
   optflags OPT_SIDE_EFFECT;
 {
-  /* FIXME: Add an LFUN__M_CLEAR analogous with LFUN__M_DELETE? */
-  clear_mapping(map);
+  struct program *p;
+  if (TYPEOF(*map) == PIKE_T_MAPPING) {
+    clear_mapping(map->u.mapping);
+  } else if (TYPEOF(*map) == PIKE_T_MULTISET) {
+    clear_multiset(map->u.multiset);
+  } else if ((TYPEOF(*map) == PIKE_T_OBJECT) && (p = map->u.object->prog)) {
+    int id = FIND_LFUN(p->inherits[SUBTYPEOF(*map)].prog, LFUN__M_CLEAR);
+    if( id == -1 ) {
+      SIMPLE_ARG_TYPE_ERROR("m_clear", 1, "object with lfun::_m_clear()");
+    }
+    apply_low(map->u.object,
+	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 0);
+    pop_stack();
+  } else {
+    SIMPLE_ARG_TYPE_ERROR("m_clear", 1, "mapping|multiset");
+  }
+  pop_n_elems(args);
 }
 
 /*! @decl int get_weak_flag(array|mapping|multiset m)

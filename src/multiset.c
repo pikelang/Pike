@@ -204,6 +204,16 @@ static struct multiset_data empty_ind_msd = {
   {{{NULL, NULL, SVALUE_INIT_INT (0)}}}
 };
 
+static struct multiset_data empty_weak_ind_msd = {
+  GC_HEADER_INIT(1), 0,
+  NULL, NULL,
+  SVALUE_INIT_INT (0),
+  0, 0, 0,
+  BIT_INT,
+  MULTISET_WEAK_INDICES,
+  {{{NULL, NULL, SVALUE_INIT_INT (0)}}}
+};
+
 void free_multiset_data (struct multiset_data *msd);
 
 #define INIT_MULTISET(L) do {						\
@@ -855,6 +865,22 @@ PMOD_EXPORT void do_sub_msnode_ref (struct multiset *l)
     debug_malloc_touch (l);
     debug_malloc_touch (l->msd);
     sub_msnode_ref (l);
+  }
+}
+
+PMOD_EXPORT void clear_multiset(struct multiset *l)
+{
+  if (l) {
+    struct multiset_data *msd = l->msd;
+    debug_malloc_touch(l);
+    debug_malloc_touch(l->msd);
+    if (msd->flags & MULTISET_WEAK_INDICES) {
+      l->msd = &empty_weak_ind_msd;
+    } else {
+      l->msd = &empty_ind_msd;
+    }
+    add_ref(l->msd);
+    if (!sub_ref(msd)) free_multiset_data(msd);
   }
 }
 
@@ -3792,6 +3818,9 @@ void init_multiset()
   dmalloc_register (&empty_ind_msd, sizeof (empty_ind_msd),
 		    DMALLOC_LOCATION());
   dmalloc_accept_leak (&empty_ind_msd);
+  dmalloc_register (&empty_weak_ind_msd, sizeof (empty_weak_ind_msd),
+		    DMALLOC_LOCATION());
+  dmalloc_accept_leak (&empty_weak_ind_msd);
 #endif
 
 }
@@ -4150,7 +4179,11 @@ void debug_dump_multiset (struct multiset *l)
     fprintf (stderr, ", refs=%d, noval_refs=%d, flags=0x%x, size=%d, allocsize=%d\n",
 	     msd->refs, msd->noval_refs, msd->flags, msd->size, msd->allocsize);
 
-    if (msd == &empty_ind_msd) fputs ("msd is empty_ind_msd\n", stderr);
+    if (msd == &empty_ind_msd) {
+      fputs ("msd is empty_ind_msd\n", stderr);
+    } else if (msd == &empty_weak_ind_msd) {
+      fputs ("msd is empty_weak_ind_msd\n", stderr);
+    }
 
 #ifdef PIKE_DEBUG
     fputs ("Indices type field =", stderr);

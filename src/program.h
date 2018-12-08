@@ -121,6 +121,7 @@ enum LFUN {
     LFUN_RPOW,
     LFUN__SQRT,
     LFUN__ANNOTATIONS,
+    LFUN__M_CLEAR,
 };
 
 extern const char *const lfun_names[];
