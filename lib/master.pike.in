@@ -8,6 +8,7 @@
 //
 
 #pike __REAL_VERSION__
+//#charset iso-8859-1  // hardcoded, can not be changed
 //#pragma strict_types
 #pragma dynamic_dot
 
@@ -2143,6 +2144,7 @@ protected void create()
   add_constant("__dirnode", dirnode);
   add_constant("__joinnode", joinnode);
 
+  werror = locale_werror;
   add_constant("write", write);
   add_constant("werror", werror);
   // To make it possible to overload get_dir and file_stat later on.
@@ -3605,7 +3607,7 @@ string _master_file_name;
 // Gets set to 1 if we're in async-mode (script->main() returned <0)
 private int(0..1) _async=0;
 
-//! Returns 1 if weÂ´re in async-mode, e.g. if the main method has
+//! Returns 1 if we're in async-mode, e.g. if the main method has
 //! returned a negative number.
 int(0..1) asyncp() {
   return _async;
@@ -3827,10 +3829,10 @@ void _main(array(string(0..255)) orig_argv)
         exit(0);
 
       case "version":
-        exit(0, string_to_utf8(version() + " Copyright Â© 1994-2018 LinkÃ¶ping University\n"
+        exit(0, version() + " Copyright © 1994-2018 Linköping University\n"
             "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
             "welcome to redistribute it under certain conditions; read the files\n"
-            "COPYING and COPYRIGHT in the Pike distribution for more details.\n"));
+            "COPYING and COPYRIGHT in the Pike distribution for more details.\n");
 
       case "help":
 	exit( 0, main_resolv("Tools.MasterHelp")->do_help(opts[1]) );
@@ -6092,4 +6094,22 @@ object get_compat_master(int major, int minor)
     return Pike_8_0_master::get_compat_master(major, minor);
   // 8.1 and later.
   return this;
+}
+
+private function locale_werror_cache;
+protected void locale_werror(mixed ... args)
+{
+  function werror = locale_werror_cache;
+  if (!werror) {
+    catch {
+      object stderr = main_resolv( "Stdio.FILE" )( "stderr", "w" );
+      stderr->set_charset( 0 );
+      werror = stderr->write;
+      if (werror && !locale_werror_cache)
+	locale_werror_cache = werror;
+    };
+    if (!werror)
+      werror = Files()->_stderr->write;
+  }
+  werror(@args);
 }
