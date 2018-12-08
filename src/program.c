@@ -186,6 +186,7 @@ const char *const lfun_names[]  = {
   "``**",
   "_sqrt",
   "_annotations",
+  "_m_clear",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -253,6 +254,7 @@ static const char *const raw_lfun_types[] = {
   tFunc(tVoid,tMix),            /* "_sqrt", */
   tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt)
 	 tOr(tInt01,tVoid),tVoid,tArray),   /* "_annotations", */
+  tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
 };
 
 /* These two are not true LFUNs! */
@@ -1430,6 +1432,14 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @seealso
  *!   @[annotations()]
+ */
+
+/*! @decl void lfun::_m_clear()
+ *!
+ *!   Called by @[m_clear()].
+ *!
+ *! @seeaslo
+ *!   @[lfun::_m_delete()], @[lfun::_m_add()]
  */
 
 /**** END FAKE LFUNS ****/
