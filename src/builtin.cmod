@@ -1951,6 +1951,35 @@ PIKEFUN void m_clear(mapping|multiset|object map)
   pop_n_elems(args);
 }
 
+/*! @decl void m_add(multiset|object l, mixed val)
+ *!
+ *!   Add a member to a multiset.
+ *!
+ *! @seealso
+ *!   @[m_delete()]
+ */
+PMOD_EXPORT
+PIKEFUN void m_add(multiset|object l, mixed val)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFunc(tSet(tSetvar(0, tMix)) tVar(0), tVoid);
+{
+  struct program *p;
+  if (TYPEOF(*l) == PIKE_T_MULTISET) {
+    multiset_add(l->u.multiset, val);
+  } else if ((TYPEOF(*l) == PIKE_T_OBJECT) && (p = l->u.object->prog)) {
+    int id = FIND_LFUN(p->inherits[SUBTYPEOF(*l)].prog, LFUN__M_ADD);
+    if( id == -1 ) {
+      SIMPLE_ARG_TYPE_ERROR("m_add", 1, "object with lfun::_m_add()");
+    }
+    apply_low(l->u.object,
+	      id + p->inherits[SUBTYPEOF(*l)].identifier_level, 1);
+  } else {
+    SIMPLE_ARG_TYPE_ERROR("m_add", 1, "multiset|object");
+  }
+  pop_n_elems(args);
+}
+
 /*! @decl int get_weak_flag(array|mapping|multiset m)
  *!
  *! Returns the weak flag settings for @[m]. It's a combination of
