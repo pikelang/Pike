@@ -5897,6 +5897,35 @@ test_any([[multiset m=(<>);int e;
 ]],-1)
 
 
+test_any([[multiset m = (<>); int e; int f;
+  for (e = 0; e < 100;e++) {
+    for (f = e; f < 100; f++) {
+      m_add(m, f);
+    }
+  }
+  for (e = 0; e < 100; e++) {
+    f = -1;
+    while (m_delete(m, e)) f++;
+    if (f != e) return e;
+  }
+  return -1;
+]], -1)
+
+test_any([[multiset m = (<>); int e; int f;
+  for (e = 0; e < 100;e++) {
+    for (f = e; f < 100; f++) {
+      m_add(m, e);
+    }
+  }
+  for (e = 0; e < 100; e++) {
+    f = e;
+    while (m_delete(m, e)) f++;
+    if (f != 100) return e;
+  }
+  return -1;
+]], -1)
+
+
 test_any([[multiset m=(<>);int e;
   mixed a;
   a=allocate(1000);
