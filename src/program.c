@@ -5879,7 +5879,8 @@ void compiler_do_inherit(node *n,
       pop_stack();
   }
 
-  if (Pike_compiler->current_annotations) {
+  if (Pike_compiler->current_annotations &&
+      (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
     compiler_add_program_annotations(inherit_offset,
 				     Pike_compiler->current_annotations);
     free_node(Pike_compiler->current_annotations);
