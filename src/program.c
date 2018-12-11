@@ -3258,6 +3258,7 @@ void low_start_new_program(struct program *p,
       i->type=get_type_of_svalue(&tmp);
     }
 
+#if 0
     /* Reset annotations so that they can be readded properly. */
     for (e = 0; e < p->num_annotations; e++) {
       do_free_array(p->annotations[e]);
@@ -3270,6 +3271,7 @@ void low_start_new_program(struct program *p,
       free_array(inh->annotations);
       inh->annotations = NULL;
     }
+#endif /* 0 */
   }
   if (pass == COMPILER_PASS_FIRST) {
     if(c->compilation_depth >= 1) {
@@ -5280,6 +5282,7 @@ void lower_inherit(struct program *p,
 	      "(resolver problem).");
     }
 
+#if 0
     /* Restore annotations (if any) to and from the inherited program. */
     if (p->inherits->annotations) {
       struct inherit *src_inh = p->inherits;
@@ -5338,6 +5341,7 @@ void lower_inherit(struct program *p,
 	}
       }
     } while(0);
+#endif /* 0 */
 
     if (Pike_compiler->compiler_pass == COMPILER_PASS_EXTRA) {
       return;
@@ -6211,6 +6215,7 @@ int define_variable(struct pike_string *name,
       struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
       struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
 
+#if 0
       if (Pike_compiler->current_annotations) {
 	compiler_add_annotations(ref->identifier_offset,
 				 Pike_compiler->current_annotations);
@@ -6218,6 +6223,7 @@ int define_variable(struct pike_string *name,
 	free_node(Pike_compiler->current_annotations);
 	Pike_compiler->current_annotations = NULL;
       }
+#endif /* 0 */
 
       free_type(id->type);
       copy_pike_type(id->type, type);
@@ -6475,6 +6481,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
       struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
 
+#if 0
       if (Pike_compiler->current_annotations) {
 	compiler_add_annotations(ref->identifier_offset,
 				 Pike_compiler->current_annotations);
@@ -6482,6 +6489,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	free_node(Pike_compiler->current_annotations);
 	Pike_compiler->current_annotations = NULL;
       }
+#endif /* 0 */
 
       if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
 	/* FIXME: We probably ought to do something here... */
@@ -6998,6 +7006,7 @@ INT32 define_function(struct pike_string *name,
 
     if(!(ref.id_flags & ID_INHERITED)) /* not inherited */
     {
+#if 0
       if (Pike_compiler->current_annotations) {
 	compiler_add_annotations(ref.identifier_offset,
 				 Pike_compiler->current_annotations);
@@ -7005,6 +7014,7 @@ INT32 define_function(struct pike_string *name,
 	free_node(Pike_compiler->current_annotations);
 	Pike_compiler->current_annotations = NULL;
       }
+#endif /* 0 */
 
       if( !( IDENTIFIER_IS_FUNCTION(funp->identifier_flags) &&
 	     ( (!func || func->offset == -1) || (funp->func.offset == -1))))
