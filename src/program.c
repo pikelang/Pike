@@ -7939,6 +7939,7 @@ struct array *program_inherit_annotations(struct program *p)
     }
     if (inh->annotations) {
       ref_push_array(inh->annotations);
+      f_mkmultiset(1);
       f_add(2);
       found = 1;
     }
@@ -7978,18 +7979,19 @@ struct array *program_annotations(struct program *p, int flags)
 	struct reference *ref = PTR_FROM_INT(p, e);
 	struct program *p2 = PROG_FROM_PTR(p, ref);
 	struct svalue *val = &p2->constants[id->func.const_info.offset].sval;
-	struct array *inh_ann = NULL;
+	struct multiset *inh_ann = NULL;
 	if ((TYPEOF(*val) != T_PROGRAM) ||
 	    !(val->u.program->flags & PROGRAM_USES_PARENT)) {
 	  if (inherit_annotations &&
 	      (TYPEOF(ITEM(inherit_annotations)[ref->inherit_offset]) ==
-	       PIKE_T_ARRAY)) {
-	    inh_ann = ITEM(inherit_annotations)[ref->inherit_offset].u.array;
-	    ref_push_array(inh_ann);
+	       PIKE_T_MULTISET)) {
+	    inh_ann = ITEM(inherit_annotations)[ref->inherit_offset].u.multiset;
+	    ref_push_multiset(inh_ann);
 	  }
 	  if ((p2->num_annotations > ref->identifier_offset) &&
 	      p2->annotations[ref->identifier_offset]) {
 	    ref_push_array(p2->annotations[ref->identifier_offset]);
+	    f_mkmultiset(1);
 	    if (inh_ann) {
 	      f_add(2);
 	    }
