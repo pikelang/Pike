@@ -2248,6 +2248,7 @@ PMOD_EXPORT struct array *object_annotations(struct object *o,
 	struct array *vals = pp->annotations[ref->identifier_offset];
 	if (vals) {
 	  ref_push_array(vals);
+	  f_mkmultiset(1);
 	  f_add(2);
 	}
       }

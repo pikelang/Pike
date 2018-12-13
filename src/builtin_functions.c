@@ -4109,8 +4109,8 @@ PMOD_EXPORT void f_types(INT32 args)
   push_array(a);
 }
 
-/*! @decl array(array(Pike.Annotation)) annotations(object|program|function x, @
- *!                                                 int(0..1)|void recurse)
+/*! @decl array(multiset(Pike.Annotation)) annotations(object|program|function x, @
+ *!                                                    int(0..1)|void recurse)
  *!
  *!   Return an array with the annotations for all symbols in @[x].
  *!
@@ -4123,11 +4123,16 @@ PMOD_EXPORT void f_types(INT32 args)
  *!       For other objects an array with annotations for all non-protected
  *!       symbols is returned.
  *!     @type program
- *!       Returns an array with annotations for all non-protected symbols.
+ *!       Returns an array with annotations for all non-protected
+ *!       constant symbols.
  *!   @endmixed
  *!
  *! @param recurse
  *!   Include annotations recursively added via inherits.
+ *!
+ *! @returns
+ *!   The order of the resulting array is the same as that of @[indices()]
+ *!   for the same @[x].
  *!
  *! @note
  *!   This function was added in Pike 8.1.
@@ -10144,9 +10149,9 @@ void init_builtin_efuns(void)
 		 tFunc(tMultiset, tArr(tType(tInt1))),
 		 tFunc(tOr(tObj,tPrg(tObj)), tArr(tType(tMix)))),0,NULL,0);
 
-  /* function(object|program, int|void:array(array)) */
+  /* function(object|program, int(0..1)|void:array(multiset)) */
   ADD_EFUN2("annotations", f_annotations,
-	    tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tArr(tArr(tMix))),0,NULL,0);
+	    tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tArr(tSet(tMix))),0,NULL,0);
 
   /* function(mixed:int) */
   ADD_EFUN2("zero_type",f_zero_type,tFunc(tMix,tInt01),0,0,generate_zero_type);
