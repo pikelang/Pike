@@ -5,7 +5,8 @@
 //! The @[Future] and @[Promise] API was inspired by
 //! @url{https://github.com/couchdeveloper/FutureLib@}.
 
-protected enum State {
+local protected enum State {
+  STATE_NO_FUTURE = -1,
   STATE_PENDING = 0,
   STATE_FULFILLED,
   STATE_REJECTED,
@@ -90,7 +91,7 @@ class Future
     mixed res = result;
     if (!s) {
       Thread.MutexKey key = mux->lock();
-      while (!state) {
+      while (state <= STATE_PENDING) {
 	cond->wait(key);
       }
 
@@ -125,6 +126,7 @@ class Future
       case STATE_FULFILLED:
         callout(cb, 0, result, @extra);
         break;
+      case STATE_NO_FUTURE:
       case STATE_PENDING:
         // Rely on interpreter lock to add to success_cbs before state changes
         // again
@@ -154,6 +156,7 @@ class Future
       case STATE_REJECTED:
         callout(cb, 0, result, @extra);
         break;
+      case STATE_NO_FUTURE:
       case STATE_PENDING:
         // Rely on interpreter lock to add to failure_cbs before state changes
         // again
@@ -572,7 +575,8 @@ class Future
   protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%s,%O)", this_program,
-                             ([ STATE_PENDING : "pending",
+                             ([ STATE_NO_FUTURE : "no future",
+			        STATE_PENDING : "pending",
                                 STATE_REJECTED : "rejected",
                                 STATE_FULFILLED : "fulfilled" ])[state],
                              result);
@@ -636,7 +640,7 @@ protected class AggregateState
       Thread.MutexKey key = mux->lock();
       do
       {
-        if (!p->state)
+        if (p->state <= STATE_PENDING)
         {
           ++failed;
           if (max_failures < failed && max_failures >= 0)
@@ -671,7 +675,7 @@ protected class AggregateState
       Thread.MutexKey key = mux->lock();
       do
       {
-        if (!p->state)
+        if (p->state <= STATE_PENDING)
         {
           ++succeeded;
           if (promises - min_failures < succeeded)
@@ -716,7 +720,7 @@ class Promise
   final AggregateState _astate;
 
   //! Creates a new promise, optionally initialised from a traditional callback
-  //! driven method via @expr{executor(resolve, reject, extra ... )@}.
+  //! driven method via @expr{executor(success, failure, @@extra)@}.
   //!
   //! @seealso
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
@@ -724,6 +728,7 @@ class Promise
    function(function(mixed:void),
             function(mixed:void), mixed ...:void) executor, mixed ... extra)
   {
+    state = STATE_NO_FUTURE;
     if (executor)
       executor(success, failure, @extra);
   }
@@ -752,6 +757,7 @@ class Promise
   //! The future value that we promise.
   Future future()
   {
+    if (state == STATE_NO_FUTURE) state = STATE_PENDING;
     return Future::this;
   }
 
@@ -760,7 +766,7 @@ class Promise
     void|function(mixed : void) globalfailure)
   {
     Thread.MutexKey key = mux->lock();
-    if (!state)
+    if (state <= STATE_PENDING)
     {
       state = newstate;
       result = value;
@@ -819,7 +825,7 @@ class Promise
   //!   @[success()], @[try_failure()], @[failure()], @[on_success()]
   inline this_program try_success(mixed value)
   {
-    return state ? this_program::this : success(value, 1);
+    return (state > STATE_PENDING) ? this_program::this : success(value, 1);
   }
 
   //! @decl this_program failure(mixed value)
@@ -857,7 +863,7 @@ class Promise
   //!   @[failure()], @[success()], @[on_failure()]
   inline this_program try_failure(mixed value)
   {
-    return state ? this_program::this : failure(value, 1);
+    return (state > STATE_PENDING) ? this_program::this : failure(value, 1);
   }
 
   inline private void fill_astate()
@@ -1018,7 +1024,8 @@ class Promise
 
   protected void _destruct()
   {
-    if (!state)
+    // NB: Don't complain about dropping STATE_NO_FUTURE on the floor.
+    if (state == STATE_PENDING)
       try_failure(({ "Promise broken.\n", backtrace() }));
   }
 }
