@@ -3121,10 +3121,6 @@ PIKECLASS InheritedClass
 
   /*! @decl @@Inherited
    */
-  EXTRA
-  {
-    add_to_annotations(NULL);
-  }
 }
 /*! @endclass
  */
@@ -3139,8 +3135,11 @@ EXTRA
 {
   Inherited_annotation = clone_object(InheritedClass_program, 0);
   add_object_constant("Inherited", Inherited_annotation, 0);
+  assert(!InheritedClass_program->inherits[0].annotations);
   ref_push_object(Inherited_annotation);
-  InheritedClass_program->annotations[0] = aggregate_array(1);
+  f_aggregate_multiset(1);
+  InheritedClass_program->inherits[0].annotations = Pike_sp[-1].u.multiset;
+  Pike_sp--;
 }
 
 /*! @class AutoCodecClass
@@ -3300,8 +3299,8 @@ void cleanup_pike_compiler(void)
   }
   if (Inherited_annotation) {
     /* Break the circularity. */
-    do_free_array(InheritedClass_program->annotations[0]);
-    InheritedClass_program->annotations[0] = NULL;
+    do_free_multiset(InheritedClass_program->inherits[0].annotations);
+    InheritedClass_program->inherits[0].annotations = NULL;
     free_object(Inherited_annotation);
     Inherited_annotation = NULL;
   }
