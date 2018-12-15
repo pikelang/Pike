@@ -3583,7 +3583,7 @@ static void exit_program_struct(struct program *p)
     for(e=0; e<p->num_inherits; e++)
     {
       if (p->inherits[e].annotations)
-	free_array(p->inherits[e].annotations);
+	free_multiset(p->inherits[e].annotations);
       if(p->inherits[e].name)
 	free_string(p->inherits[e].name);
       if(e)
@@ -4356,10 +4356,12 @@ static void add_program_annotation(int inh, struct svalue *val)
   }
   if (val) {
     if (inherit->annotations) {
-      inherit->annotations = append_array(inherit->annotations, val);
+      multiset_add(inherit->annotations, val);
     } else {
       push_svalue(val);
-      inherit->annotations = aggregate_array(1);
+      f_aggregate_multiset(1);
+      inherit->annotations = Pike_sp[-1].u.multiset;
+      Pike_sp--;
     }
   }
 }
@@ -4523,30 +4525,40 @@ struct program *end_first_pass(int finish)
 
   if (!Pike_compiler->num_parse_error) {
     prog = Pike_compiler->new_program;
+    /* NB: Need referenced msnodes! */
     if (prog->inherits->annotations) {
-      struct array *a = prog->inherits->annotations;
-      for (e = 0; e < a->size; e++) {
+      struct multiset *l = prog->inherits->annotations;
+      ptrdiff_t pos;
+      /* NB: multiset_first() adds an msnode_ref. */
+      for (pos = multiset_first(l); pos >= 0; pos = multiset_next(l, pos)) {
 	struct object *o;
 	struct program *p;
 	struct inherit *inh;
 	int fun;
-	if (TYPEOF(ITEM(a)[e]) != PIKE_T_OBJECT) continue;
-	o = ITEM(a)[e].u.object;
-	p = o->prog;
-	if (!p) continue;
-	inh = p->inherits + SUBTYPEOF(ITEM(a)[e]);
-	p = inh->prog;
-	fun = find_identifier("end_pass", p);
-	if (fun < 0) continue;
-	fun += inh->identifier_level;
-	push_int(Pike_compiler->compiler_pass);
-	ref_push_program(prog);
-	ref_push_object_inherit(Pike_fp->current_object,
-				Pike_fp->context -
-				Pike_fp->current_program->inherits);
-	safe_apply_low2(o, fun, 3, NULL);
+	push_multiset_value(l, nodepos);
+	if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
+	  o = Pike_sp[-1].u.object;
+	  p = o->prog;
+	  if (p) {
+	    inh = p->inherits + SUBTYPEOF(Pike_sp[-1]);
+	    p = inh->prog;
+	    fun = find_identifier("end_pass", p);
+	    if (fun >= 0) {
+	      fun += inh->identifier_level;
+	      push_int(Pike_compiler->compiler_pass);
+	      ref_push_program(prog);
+	      ref_push_object_inherit(Pike_fp->current_object,
+				      Pike_fp->context -
+				      Pike_fp->current_program->inherits);
+	      safe_apply_low2(o, fun, 3, NULL);
+	      pop_stack();
+	    }
+	  }
+	}
 	pop_stack();
       }
+      /* Remove the msnode_ref added by multiset_first(). */
+      sub_msnode_ref(l);
     }
   }
 
@@ -5393,55 +5405,45 @@ void lower_inherit(struct program *p,
       }
 
       if (inherit.annotations) {
-	struct array *annotations;
-	int e;
-	int found_inh = 0;
-	inherit.annotations = annotations = copy_array(inherit.annotations);
-	for (e = 0; e < annotations->size; e++) {
-	  if (TYPEOF(ITEM(annotations)[e]) == PIKE_T_OBJECT) {
-	    /* FIXME: Subtyped objects? */
-	    struct object *ann = ITEM(annotations)[e].u.object;
-	    if (ann->prog && ann->prog->inherits[0].annotations) {
-	      /* Check if it has the @Inherited annotation. */
-	      struct array *a = ann->prog->inherits[0].annotations;
-	      int is_inherited = 0;
-	      int ee;
-	      for (ee = 0; ee < a->size; ee++) {
-		if ((TYPEOF(ITEM(a)[ee]) == PIKE_T_OBJECT) &&
-		    (ITEM(a)[ee].u.object == Inherited_annotation)) {
-		  is_inherited = 1;
-		  break;
-		}
-	      }
-	      if (is_inherited) {
-		found_inh++;
-		add_program_annotation(0, &(ITEM(annotations)[e]));
+	struct multiset *annotations;
+	union msnode *node = low_multiset_first(inherit.annotations->msd);
+	int keep_annotations = 0;
 
-		/* Switch out the annotation with a placeholding marker,
-		 * so that we can perform the filtering (if any)
-		 * more efficiently below.
-		 *
-		 * We use the Inherited_annotation object
-		 * as the placeholding marker.
-		 */
-		add_ref(ITEM(annotations)[e].u.object = Inherited_annotation);
-		free_object(ann);
+	inherit.annotations = annotations = copy_multiset(inherit.annotations);
+
+	ref_push_object(Inherited_annotation);
+
+	while(node) {
+	  if (TYPEOF(node->i.ind) != T_DELETED) {
+	    low_push_multiset_index(node);
+	    if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
+	      /* FIXME: Subtyped objects? */
+	      struct object *ann = Pike_sp[-1].u.object;
+	      if (ann->prog && ann->prog->inherits[0].annotations) {
+		/* Check if it has the @Inherited annotation. */
+		struct multiset *l = ann->prog->inherits[0].annotations;
+		if (multiset_lookup(l, Pike_sp-2)) {
+		  add_program_annotation(0, Pike_sp-1);
+
+		  multiset_delete(annotations, Pike_sp-1);
+		} else {
+		  keep_annotations = 1;
+		}
+	      } else {
+		keep_annotations = 1;
 	      }
+	    } else {
+	      keep_annotations = 1;
 	    }
-	  }
-	}
-	if (found_inh) {
-	  if (found_inh == annotations->size) {
-	    free_array(annotations);
-	    inherit.annotations = NULL;
-	  } else {
-	    ref_push_object(Inherited_annotation);
-	    inherit.annotations =
-	      subtract_array_svalue(annotations, Pike_sp - 1);
 	    pop_stack();
-	    free_array(annotations);
 	  }
+	  node = low_multiset_next(node);
 	}
+	if (!keep_annotations) {
+	  free_multiset(annotations);
+	  inherit.annotations = NULL;
+	}
+	pop_stack();
       }
     }else{
       if(!inherit.parent)
@@ -7937,8 +7939,7 @@ struct array *program_inherit_annotations(struct program *p)
       push_undefined();
     }
     if (inh->annotations) {
-      ref_push_array(inh->annotations);
-      f_mkmultiset(1);
+      ref_push_multiset(inh->annotations);
       f_add(2);
       found = 1;
     }
@@ -9080,7 +9081,7 @@ void gc_mark_program_as_referenced(struct program *p)
 	  gc_mark_program_as_referenced(p->inherits[e].prog);
 
 	if (p->inherits[e].annotations)
-	  gc_mark_array_as_referenced(p->inherits[e].annotations);
+	  gc_mark_multiset_as_referenced(p->inherits[e].annotations);
       }
 
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
@@ -9114,7 +9115,7 @@ void real_gc_cycle_check_program(struct program *p, int weak)
 	  gc_cycle_check_program(p->inherits[e].prog, 0);
 
 	if (p->inherits[e].annotations)
-	  gc_cycle_check_array(p->inherits[e].annotations, 0);
+	  gc_cycle_check_multiset(p->inherits[e].annotations, 0);
       }
 
       for (e = p->num_annotations - 1; e >= 0; e--) {
@@ -9288,7 +9289,7 @@ size_t gc_free_all_unreferenced_programs(void)
 	}
 
 	if (p->inherits[e].annotations) {
-	  free_array(p->inherits[e].annotations);
+	  free_multiset(p->inherits[e].annotations);
 	  p->inherits[e].annotations = NULL;
 	}
       }

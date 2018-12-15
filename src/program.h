@@ -520,7 +520,7 @@ struct inherit
    * For inherits at higher levels they are copied verbatim from their
    * previous program.
    */
-  struct array *annotations;
+  struct multiset *annotations;
 };
 
 /**
