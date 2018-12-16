@@ -4536,7 +4536,7 @@ struct program *end_first_pass(int finish)
 	struct program *p;
 	struct inherit *inh;
 	int fun;
-	push_multiset_value(l, nodepos);
+	push_multiset_index(l, pos);
 	if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
 	  o = Pike_sp[-1].u.object;
 	  p = o->prog;
