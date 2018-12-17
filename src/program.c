@@ -3553,7 +3553,7 @@ static void exit_program_struct(struct program *p)
 
   if (p->annotations) {
     for (e = 0; e < p->num_annotations; e++) {
-      do_free_array(p->annotations[e]);
+      do_free_multiset(p->annotations[e]);
     }
   }
 
@@ -4313,11 +4313,12 @@ static void add_annotation(int id, struct svalue *val)
 
   if (val) {
     if (Pike_compiler->new_program->annotations[id]) {
-      Pike_compiler->new_program->annotations[id] =
-	append_array(Pike_compiler->new_program->annotations[id], val);
+      multiset_add(Pike_compiler->new_program->annotations[id], val);
     } else {
       push_svalue(val);
-      Pike_compiler->new_program->annotations[id] = aggregate_array(1);
+      f_aggregate_multiset(1);
+      Pike_compiler->new_program->annotations[id] = Pike_sp[-1].u.multiset;
+      Pike_sp--;
     }
   }
 }
@@ -7990,8 +7991,7 @@ struct array *program_annotations(struct program *p, int flags)
 	  }
 	  if ((p2->num_annotations > ref->identifier_offset) &&
 	      p2->annotations[ref->identifier_offset]) {
-	    ref_push_array(p2->annotations[ref->identifier_offset]);
-	    f_mkmultiset(1);
+	    ref_push_multiset(p2->annotations[ref->identifier_offset]);
 	    if (inh_ann) {
 	      f_add(2);
 	    }
@@ -9091,7 +9091,7 @@ void gc_mark_program_as_referenced(struct program *p)
 
       for (e = p->num_annotations-1; e >= 0; e--) {
 	if (p->annotations[e])
-	  gc_mark_array_as_referenced(p->annotations[e]);
+	  gc_mark_multiset_as_referenced(p->annotations[e]);
       }
     } GC_LEAVE;
 }
@@ -9120,7 +9120,7 @@ void real_gc_cycle_check_program(struct program *p, int weak)
 
       for (e = p->num_annotations - 1; e >= 0; e--) {
 	if (p->annotations[e])
-	  gc_cycle_check_array(p->annotations[e], 0);
+	  gc_cycle_check_multiset(p->annotations[e], 0);
       }
 
       /* Strong ref follows. It must be last. */
@@ -9295,7 +9295,7 @@ size_t gc_free_all_unreferenced_programs(void)
       }
 
       for (e = 0; e < p->num_annotations; e++) {
-	do_free_array(p->annotations[e]);
+	do_free_multiset(p->annotations[e]);
 	p->annotations[e] = NULL;
       }
 
