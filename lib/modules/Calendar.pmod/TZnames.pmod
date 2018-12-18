@@ -225,6 +225,8 @@ mapping abbr2zones =
      "Europe/Jersey",
    }),
    "+00": ({
+     "Africa/Casablanca",
+     "Africa/El_Aaiun",
      "America/Scoresbysund",
      "Antarctica/Troll",
      "Atlantic/Azores",
@@ -236,6 +238,8 @@ mapping abbr2zones =
      "Europe/Amsterdam",
    }),
    "+01": ({
+     "Africa/Casablanca",
+     "Africa/El_Aaiun",
      "Africa/Freetown",
      "Atlantic/Madeira",
      "Etc/GMT-1",
@@ -470,7 +474,6 @@ mapping abbr2zones =
      "Asia/Kuala_Lumpur",
      "Asia/Kuching",
      "Asia/Makassar",
-     "Asia/Manila",
      "Asia/Novokuznetsk",
      "Asia/Novosibirsk",
      "Asia/Phnom_Penh",
@@ -505,8 +508,8 @@ mapping abbr2zones =
      "Asia/Khandyga",
      "Asia/Kuala_Lumpur",
      "Asia/Kuching",
+     "Asia/Macau",
      "Asia/Makassar",
-     "Asia/Manila",
      "Asia/Phnom_Penh",
      "Asia/Pontianak",
      "Asia/Sakhalin",
@@ -534,6 +537,7 @@ mapping abbr2zones =
      "Asia/Chita",
      "Asia/Choibalsan",
      "Asia/Khandyga",
+     "Asia/Macau",
      "Asia/Magadan",
      "Asia/Sakhalin",
      "Asia/Srednekolymsk",
@@ -1224,7 +1228,6 @@ mapping abbr2zones =
    }),
    "CET": ({
      "Africa/Algiers",
-     "Africa/Casablanca",
      "Africa/Ceuta",
      "Africa/Tripoli",
      "Africa/Tunis",
@@ -1372,6 +1375,9 @@ mapping abbr2zones =
      "Asia/Shanghai",
      "Asia/Taipei",
      "CST6CDT",
+   }),
+   "CT": ({
+     "Asia/Macau",
    }),
    "CWT": ({
      "America/Atikokan",
@@ -1682,6 +1688,7 @@ mapping abbr2zones =
    }),
    "HPT": ({
      "America/Adak",
+     "Pacific/Honolulu",
    }),
    "HST": ({
      "America/Adak",
@@ -1691,6 +1698,7 @@ mapping abbr2zones =
    }),
    "HWT": ({
      "America/Adak",
+     "Pacific/Honolulu",
    }),
    "IDDT": ({
      "Asia/Gaza",
@@ -1728,6 +1736,7 @@ mapping abbr2zones =
    }),
    "JST": ({
      "Asia/Hong_Kong",
+     "Asia/Manila",
      "Asia/Pyongyang",
      "Asia/Seoul",
      "Asia/Taipei",
@@ -2363,6 +2372,7 @@ mapping abbr2zones =
      "America/Tijuana",
      "America/Vancouver",
      "America/Whitehorse",
+     "Asia/Manila",
      "PST8PDT",
    }),
    "PKST": ({
@@ -2427,6 +2437,7 @@ mapping abbr2zones =
      "America/Tijuana",
      "America/Vancouver",
      "America/Whitehorse",
+     "Asia/Manila",
      "PST8PDT",
    }),
    "PWT": ({
@@ -2524,9 +2535,7 @@ mapping abbr2zones =
    }),
    "WEST": ({
      "Africa/Algiers",
-     "Africa/Casablanca",
      "Africa/Ceuta",
-     "Africa/El_Aaiun",
      "Atlantic/Azores",
      "Atlantic/Canary",
      "Atlantic/Faroe",
@@ -2541,9 +2550,7 @@ mapping abbr2zones =
    }),
    "WET": ({
      "Africa/Algiers",
-     "Africa/Casablanca",
      "Africa/Ceuta",
-     "Africa/El_Aaiun",
      "Atlantic/Azores",
      "Atlantic/Canary",
      "Atlantic/Faroe",
