@@ -136,7 +136,6 @@ testfont binary
 /lib/modules/Parser.pmod/XML.pmod/Tree.pmod foreign_ident
 /lib/modules/Parser.pmod/XML.pmod/testsuite.in foreign_ident
 /lib/modules/Parser.pmod/module.pmod foreign_ident
-/lib/modules/Pike.pmod foreign_ident
 /lib/modules/Protocols.pmod/DNS.pmod foreign_ident
 /lib/modules/Protocols.pmod/HTTP.pmod/Query.pike foreign_ident
 /lib/modules/Protocols.pmod/HTTP.pmod/Session.pike foreign_ident
@@ -269,7 +268,6 @@ testfont binary
 /src/block_alloc.h foreign_ident
 /src/block_alloc_h.h foreign_ident
 /src/build_modlist_h foreign_ident
-/src/builtin.cmod foreign_ident
 /src/builtin_functions.c foreign_ident
 /src/builtin_functions.h foreign_ident
 /src/callback.c foreign_ident
