@@ -27,6 +27,13 @@ constant THREAD_NOT_STARTED = __builtin.THREAD_NOT_STARTED;
 constant THREAD_RUNNING = __builtin.THREAD_RUNNING;
 constant THREAD_EXITED = __builtin.THREAD_EXITED;
 
+private local void unlock(MutexKey key)
+{
+  // NB: Work-around in case the key has been used in a function call
+  //     (the typical case being cond->wait()), and may have ended up
+  //     in a backtrace to to eg the gc having executed a broken destroy().
+  destruct(key);
+}
 
 //! @[Fifo] implements a fixed length first-in, first-out queue.
 //! A fifo is a queue of values and is often used as a stream of data
@@ -80,7 +87,7 @@ optional class Fifo {
     object key=lock::lock();
     while(!num) r_cond::wait(key);
     mixed res = read_unlocked();
-    key = 0;
+    unlock(key);
     return res;
   }
 
@@ -147,7 +154,7 @@ optional class Fifo {
     object key=lock::lock();
     while(!num) r_cond::wait(key);
     array ret = read_all_unlocked();
-    key = 0;
+    unlock(key);
     return ret;
   }
 
@@ -194,7 +201,7 @@ optional class Fifo {
     while(num == sizeof(buffer)) w_cond::wait(key);
     write_unlocked (value);
     int items = num;
-    key = 0;
+    unlock(key);
     return items;
   }
 
@@ -275,7 +282,7 @@ optional class Queue {
     while(w_ptr == r_ptr) r_cond::wait(key);
     tmp=buffer[r_ptr];
     buffer[r_ptr++] = 0;	// Throw away any references.
-    key=0;
+    unlock(key);
     return tmp;
   }
 
@@ -335,7 +342,7 @@ optional class Queue {
     object key=lock::lock();
     while (w_ptr == r_ptr) r_cond::wait(key);
     array ret = read_all_unlocked();
-    key = 0;
+    unlock(key);
     return ret;
   }
 
@@ -449,7 +456,7 @@ optional class Farm
     {
       object key = mutex->lock();
       while(!ready)     ft_cond->wait(key);
-      key = 0;
+      unlock(key);
       if( ready < 0 )   throw( value );
       return value;
     }
@@ -570,6 +577,7 @@ optional class Farm
           free_threads -= ({ this });
           lock = 0;
           update_thread_name(1);
+	  unlock(key);
           destruct();
           return;
         }
@@ -641,6 +649,7 @@ optional class Farm
     }
     object(Handler) t = free_threads[0];
     free_threads = free_threads[1..];
+    unlock(lock);
     return t;
   }
         
@@ -801,6 +810,7 @@ optional class Farm
         free_threads[0]->cond->signal();
       if( sizeof( threads ) > max_num_threads)
         ft_cond->wait(key);
+      unlock(key);
     }
     ft_cond->broadcast( );
     return omnt;
@@ -910,6 +920,7 @@ optional class ResourceCount {
     MutexKey key = _mutex->lock();
     while (_count > level)		// Recheck before allowing further
       _cond->wait(key);
+    unlock(key);
   }
 
   //! Increments the resource-counter.
