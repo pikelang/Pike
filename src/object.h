@@ -39,6 +39,7 @@ extern struct program *magic_set_index_program;
 extern struct program *magic_indices_program;
 extern struct program *magic_values_program;
 extern struct program *magic_types_program;
+extern struct program *magic_annotations_program;
 #ifdef DO_PIKE_CLEANUP
 PMOD_EXPORT extern int gc_external_refs_zapped;
 PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line);
@@ -219,5 +220,8 @@ void check_all_objects(void);
                               tOr(tVoid,tInt), tArray)
 #define tF_MAGIC_TYPES tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) \
                              tOr(tVoid,tInt), tArr(tType(tMix)))
+#define tF_MAGIC_ANNOTATIONS tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) \
+				   tOr(tVoid,tInt) tOr(tVoid,tInt01), \
+				   tArr(tType(tMix)))
 
 #endif /* OBJECT_H */

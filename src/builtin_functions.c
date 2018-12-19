@@ -4138,7 +4138,8 @@ PMOD_EXPORT void f_types(INT32 args)
  *!   This function was added in Pike 8.1.
  *!
  *! @seealso
- *!   @[indices()], @[values()], @[types()]
+ *!   @[indices()], @[values()], @[types()], @[lfun::_annotations()],
+ *!   @[::_annotations()]
  */
 PMOD_EXPORT void f_annotations(INT32 args)
 {
