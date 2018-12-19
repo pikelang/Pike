@@ -2436,6 +2436,54 @@ PIKEFUN void _disassemble(function fun)
 /*! @module Pike
  */
 
+/*! @class FakeObject
+ *!
+ *! Used as a place holder in eg backtraces for objects that
+ *! are unsuitable to have references to in backtraces.
+ *!
+ *! Examples of such objects are instances of @[Thread.MutexKey],
+ *! and @[Nettle.Cipher.State].
+ *!
+ *! @seealso
+ *!   @[backtrace()]
+ */
+PIKECLASS FakeObject
+  program_flags PROGRAM_CONSTANT;
+{
+  PIKEVAR program prog flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+
+  PIKEFUN void create(program|function|void prog)
+    flags ID_PROTECTED;
+  {
+    struct program *p = prog ? program_from_svalue(prog):NULL;
+    do_free_program(THIS->prog);
+    THIS->prog = p;
+    if (p) add_ref(p);
+  }
+
+  PIKEFUN string _sprintf(int c, mapping|void ignored)
+    flags ID_PROTECTED;
+  {
+    push_text("%O()");
+    if (THIS->prog) {
+      ref_push_program(THIS->prog);
+    } else {
+      ref_push_program(Pike_fp->current_program);
+    }
+    f_sprintf(2);
+  }
+}
+
+/*! @endclass
+ */
+
+static struct object *clone_fake_object(struct program *p)
+{
+  if (p) ref_push_program(p);
+  else push_undefined();
+  return clone_object(FakeObject_program, 1);
+}
+
 /*! @class BacktraceFrame
  */
 
@@ -2899,6 +2947,25 @@ void low_backtrace(struct Pike_interpreter_struct *i)
 	    assign_svalues_no_free(bf->args->item + numargs,
 				   f->locals[numargs].u.array->item,
 				   varargs, BIT_MIXED);
+	}
+	if (bf->args->type_field & BIT_OBJECT) {
+	  ptrdiff_t i;
+	  for (i = 0; i < bf->args->size; i++) {
+	    struct svalue *s = ITEM(bf->args) + i;
+	    if ((TYPEOF(*s) == T_OBJECT) &&
+		s->u.object->prog &&
+		(s->u.object->prog->flags &
+		 (PROGRAM_DESTRUCT_IMMEDIATE|PROGRAM_CLEAR_STORAGE))) {
+	      /* It is typically a bad idea to have extra references
+	       * to objects with these flags. The flags are usually
+	       * used by stuff like mutex keys and encryption keys
+	       * respectively.
+	       */
+	      struct object *o = clone_fake_object(s->u.object->prog);
+	      free_object(s->u.object);
+	      SET_SVAL(*s, T_OBJECT, 0, object, o);
+	    }
+	  }
 	}
       }
     }
