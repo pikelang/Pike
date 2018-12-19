@@ -2772,6 +2772,7 @@ struct program *magic_set_index_program=0;
 struct program *magic_indices_program=0;
 struct program *magic_values_program=0;
 struct program *magic_types_program=0;
+struct program *magic_annotations_program=0;
 
 void push_magic_index(struct program *type, int inherit_no, int parent_level)
 {
@@ -3388,6 +3389,163 @@ static void f_magic_types (INT32 args)
   res->type_field = types;
 }
 
+/*! @decl array ::_annotations(object|void context, int|void access, @
+ *!                            int(0..1)|void recursive)
+ *!   Called by @[annotations()]
+ *!
+ *! @param context
+ *!   Inherit in the current object to return the annotations for.
+ *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
+ *!   should be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
+ *!
+ *! @param recursive
+ *!   Include nested annotations from the inherits.
+ *!
+ *! Builtin function to list the annotations (if any) of the identifiers
+ *! of an object. This is useful when @[lfun::_annotations] has been overloaded.
+ *!
+ *! @seealso
+ *!   @[annotations()], @[lfun::_annotations()]
+ */
+static void f_magic_annotations(INT32 args)
+{
+  struct object *obj = NULL;
+  struct program *prog = NULL;
+  struct inherit *inherit = NULL;
+  struct array *inherit_annotations = NULL;
+  struct array *res;
+  TYPE_FIELD types;
+  int type = 0, e, i;
+  int recurse = 0;
+
+  switch(args) {
+    default:
+    case 3:
+      if (TYPEOF(Pike_sp[2-args]) != T_INT)
+	SIMPLE_ARG_TYPE_ERROR ("::_annotations", 3, "void|int(0..1)");
+      recurse = Pike_sp[2-args].u.integer & 1;
+      /* FALLTHRU */
+    case 2:
+      if (TYPEOF(Pike_sp[1-args]) != T_INT)
+	SIMPLE_ARG_TYPE_ERROR ("::_annotations", 2, "void|int");
+      type = Pike_sp[1-args].u.integer;
+      /* FALLTHRU */
+    case 1:
+      if (TYPEOF(Pike_sp[-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (Pike_sp[-args].u.integer & 1);
+	if (Pike_sp[-args].u.integer & 2) {
+	  if(!(obj=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!obj->prog)
+	    Pike_error("Object is destructed.\n");
+	  inherit = obj->prog->inherits + 0;
+	}
+      } else if (TYPEOF(Pike_sp[-args]) == T_OBJECT) {
+	obj = Pike_sp[-args].u.object;
+	if (obj != MAGIC_THIS->o)
+	  Pike_error("::_annotations context is not the current object.\n");
+	if(!obj->prog)
+	  Pike_error("::_annotations on destructed object.\n");
+	inherit = obj->prog->inherits + SUBTYPEOF(Pike_sp[-args]);
+      } else {
+	SIMPLE_ARG_TYPE_ERROR ("::_annotations", 1, "void|object|int");
+      }
+      /* FALLTHRU */
+    case 0:
+      break;
+  }
+
+  if (!obj && !(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if (!obj->prog) Pike_error ("Object is destructed.\n");
+
+  if (!inherit) {
+    /* FIXME: This has somewhat odd behavior if there are local identifiers
+     *        before inherits that are overridden by them
+     *        (e.g. listing duplicate identifiers). But then again, this is
+     *        not the only place where that gives strange effects, imho.
+     *   /mast
+     */
+    inherit = MAGIC_THIS->inherit;
+  }
+
+  prog = inherit->prog;
+
+  if (recurse) {
+    inherit_annotations = program_inherit_annotations(prog);
+  }
+
+  if (type & 1) {
+    pop_n_elems (args);
+    push_array (res = allocate_array(prog->num_identifier_references));
+    types = 0;
+    for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      struct reference *ref = prog->identifier_references + e;
+      struct identifier *id = ID_FROM_PTR (prog, ref);
+      struct program *id_prog = PROG_FROM_PTR(prog, ref);
+      if (ref->id_flags & ID_HIDDEN) continue;
+      if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	  (ID_INHERITED|ID_PRIVATE)) continue;
+      if (inherit_annotations) {
+	push_svalue(ITEM(inherit_annotations) + ref->inherit_offset);
+      } else {
+	push_undefined();
+      }
+      if (ref->identifier_offset < id_prog->num_annotations) {
+	struct array *vals = id_prog->annotations[ref->identifier_offset];
+	if (vals) {
+	  ref_push_array(vals);
+	  f_add(2);
+	}
+      }
+      ITEM(res)[i] = Pike_sp[-1];
+      types |= 1<<TYPEOF(Pike_sp[-1]);
+      Pike_sp--;
+      i++;
+    }
+    res->type_field |= types;
+    Pike_sp[-1].u.array = resize_array (res, i);
+    res->type_field = types;
+    return;
+  }
+
+  pop_n_elems (args);
+  push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
+  types = 0;
+  for (e = 0; e < (int) prog->num_identifier_index; e++) {
+    struct reference *ref = PTR_FROM_INT(prog, prog->identifier_index[e]);
+    struct program *id_prog = PROG_FROM_PTR(prog, ref);
+    struct array *vals = NULL;
+    if (inherit_annotations) {
+      push_svalue(ITEM(inherit_annotations) + ref->inherit_offset);
+    } else {
+      push_undefined();
+    }
+    if (ref->identifier_offset < id_prog->num_annotations) {
+      struct array *vals = id_prog->annotations[ref->identifier_offset];
+      if (vals) {
+	ref_push_array(vals);
+	f_add(2);
+      }
+    }
+    ITEM(res)[e] = Pike_sp[-1];
+    types |= 1<<TYPEOF(Pike_sp[-1]);
+  }
+  res->type_field = types;
+  do_free_array(inherit_annotations);
+}
+
 /*! @endnamespace
  */
 
@@ -3441,6 +3599,14 @@ void init_object(void)
                     tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_types, tF_MAGIC_TYPES, ID_PROTECTED);
   magic_types_program=end_program();
+
+  /* ::_annotations() */
+  start_new_program();
+  offset=ADD_STORAGE(struct magic_index_struct);
+  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    tObj, T_OBJECT, ID_PROTECTED);
+  ADD_FUNCTION("`()", f_magic_annotations, tF_MAGIC_ANNOTATIONS, ID_PROTECTED);
+  magic_annotations_program=end_program();
 
   exit_compiler();
 }
@@ -3684,6 +3850,12 @@ void exit_object(void)
   {
     free_program(magic_types_program);
     magic_types_program=0;
+  }
+
+  if(magic_annotations_program)
+  {
+    free_program(magic_annotations_program);
+    magic_annotations_program=0;
   }
 }
 

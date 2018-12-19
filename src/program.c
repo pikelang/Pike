@@ -2491,6 +2491,9 @@ struct node_s *program_magic_identifier (struct program_state *state,
     } else if(ident == lfun_strings[LFUN__TYPES]) {
       return mknode(F_MAGIC_TYPES, mknewintnode(i),
 		    mknewintnode(state_depth));
+    } else if(ident == lfun_strings[LFUN__ANNOTATIONS]) {
+      return mknode(F_MAGIC_ANNOTATIONS, mknewintnode(i),
+		    mknewintnode(state_depth));
     }
 
     if (inherit_num && !TEST_COMPAT(7, 8) &&
