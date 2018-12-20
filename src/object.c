@@ -3503,9 +3503,9 @@ static void f_magic_annotations(INT32 args)
 	push_undefined();
       }
       if (ref->identifier_offset < id_prog->num_annotations) {
-	struct array *vals = id_prog->annotations[ref->identifier_offset];
+	struct multiset *vals = id_prog->annotations[ref->identifier_offset];
 	if (vals) {
-	  ref_push_array(vals);
+	  ref_push_multiset(vals);
 	  f_add(2);
 	}
       }
@@ -3533,14 +3533,15 @@ static void f_magic_annotations(INT32 args)
       push_undefined();
     }
     if (ref->identifier_offset < id_prog->num_annotations) {
-      struct array *vals = id_prog->annotations[ref->identifier_offset];
+      struct multiset *vals = id_prog->annotations[ref->identifier_offset];
       if (vals) {
-	ref_push_array(vals);
+	ref_push_multiset(vals);
 	f_add(2);
       }
     }
     ITEM(res)[e] = Pike_sp[-1];
     types |= 1<<TYPEOF(Pike_sp[-1]);
+    Pike_sp--;
   }
   res->type_field = types;
   do_free_array(inherit_annotations);
