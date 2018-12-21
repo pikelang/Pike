@@ -3271,10 +3271,10 @@ void low_start_new_program(struct program *p,
   if(idp) *idp=id;
 
   CDFPRINTF("th(%ld) %p low_start_new_program() %s "
-            "pass=%d: lock_depth:%d, compilation_depth:%d\n",
+            "pass=%d: compilation_depth:%d\n",
             (long)th_self(), p, name ? name->str : "-",
             Pike_compiler->compiler_pass,
-            lock_depth, c->compilation_depth);
+            c->compilation_depth);
 
   init_type_stack();
 
@@ -3500,9 +3500,9 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
   }
 
   CDFPRINTF("th(%ld) start_new_program(%ld, %s): "
-            "lock_depth:%d, compilation_depth:%d\n",
+            "compilation_depth:%d\n",
             (long)th_self(), (long)line, file,
-            lock_depth, c->compilation_depth);
+            c->compilation_depth);
 
   low_start_new_program(0, COMPILER_PASS_FIRST, 0, 0, 0);
   store_linenumber(line,c->lex.current_file);
@@ -4689,9 +4689,9 @@ struct program *end_first_pass(int finish)
 
 
   CDFPRINTF("th(%ld) %p end_first_pass(%d): "
-            "lock_depth:%d, compilation_depth:%d\n",
+            "compilation_depth:%d\n",
             (long)th_self(), prog, finish,
-            lock_depth, c->compilation_depth);
+            c->compilation_depth);
 
   c->compilation_depth--;
 
