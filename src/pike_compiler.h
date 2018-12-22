@@ -44,7 +44,12 @@ struct Supporter
    * supporters. A supporter is linked onto this list when it is
    * unlinked from the current_supporter list. */
 
-  struct object *self;
+  struct svalue self;
+  /* CompilerEnvironment object for this supporter.
+   * NB: NOT reference counted!
+   * NB: Subtyped to the CompilerEnvironment inherit.
+   */
+
   supporter_callback *fun;
   void *data;
 
@@ -65,8 +70,6 @@ struct compilation
 
   struct program *p;			/* Compiled program or NULL. */
   struct lex lex;
-  int compilation_inherit;		/* Inherit in supporter->self containing
-					 * compilation_program. */
 
   struct svalue default_module;		/* predef:: */
   struct byte_buffer used_modules;		/* Stack of svalues with imported

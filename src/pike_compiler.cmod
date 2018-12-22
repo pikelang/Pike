@@ -267,7 +267,7 @@ int unlink_current_supporter(struct Supporter *c)
     ret++;
     c->next_dependant = c->depends_on->dependants;
     c->depends_on->dependants=c;
-    add_ref(c->self);
+    add_ref(c->self.u.object);
     CDFPRINTF("th(%ld) unlink_current_supporter() "
               "supporter=%p (prog %p) depends on %p (prog %p).\n",
               (long) th_self(), c, c->prog,
@@ -308,7 +308,7 @@ int call_dependants(struct Supporter *s, int finish)
     verify_supporters();
     if (!tmp->fun(tmp->data, finish)) ok = 0;
     verify_supporters();
-    free_object(tmp->self);
+    free_object(tmp->self.u.object);
   }
   return ok;
 }
@@ -1278,8 +1278,9 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
             (long) th_self(), cc->p, finish ? "continuing" : "cleaning up");
 
   /* Reenter the delayed compilation. */
-  add_ref(cc->supporter.self);
-  low_enter_compiler(cc->supporter.self, cc->compilation_inherit);
+  add_ref(cc->supporter.self.u.object);
+  low_enter_compiler(cc->supporter.self.u.object,
+		     SUBTYPEOF(cc->supporter.self));
 
   if (finish && cc->p) {
     if (cc->flags & COMPILER_NEED_EXTRA_PASS) {
@@ -1320,9 +1321,9 @@ static void compilation_event_handler(int e)
   case PROG_EVENT_INIT:
     CDFPRINTF("th(%ld) compilation: INIT(%p).\n", (long) th_self(), c);
     memset(c, 0, sizeof(*c));
-    c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
-    c->compilation_inherit =
-      Pike_fp->context - Pike_fp->current_object->prog->inherits;
+    SET_SVAL(c->supporter.self, T_OBJECT,
+	     Pike_fp->context - Pike_fp->current_object->prog->inherits,
+	     object, Pike_fp->current_object); /* NOTE: Not ref-counted! */
     buffer_init(&c->used_modules);
     SET_SVAL(c->default_module, T_MAPPING, 0, mapping, get_builtin_constants());
     add_ref(c->default_module.u.mapping);
