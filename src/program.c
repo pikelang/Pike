@@ -3667,6 +3667,19 @@ void dump_program_desc(struct program *p)
       fprintf(stderr,"name  : %s\n",p->inherits[e].name->str);
     }
 
+    if (p->inherits[e].annotations) {
+      union msnode *node = low_multiset_first(p->inherits[e].annotations->msd);
+      fprintf(stderr, "annotations:\n");
+      while (node) {
+	if (TYPEOF(node->i.ind) != T_DELETED) {
+	  low_push_multiset_index(node);
+	  safe_pike_fprintf(stderr, "  %O\n", Pike_sp-1);
+	  pop_stack();
+	}
+	node = low_multiset_next(node);
+      }
+    }
+
     for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
     fprintf(stderr,"inherit_level: %d\n",p->inherits[e].inherit_level);
 
@@ -3723,6 +3736,24 @@ void dump_program_desc(struct program *p)
     fprintf(stderr,"%3d (%3d):",e,q);
     for(d=0;d<INHERIT_FROM_INT(p,e)->inherit_level;d++) fprintf(stderr,"  ");
     fprintf(stderr,"%s;\n", ID_FROM_INT(p,e)->name->str);
+  }
+
+  if (p->annotations) {
+    fprintf(stderr, "All identifier annotations:\n");
+    for (q = 0; q < p->num_annotations; q++) {
+      struct multiset *l = p->annotations[q];
+      union msnode *node;
+      if (!l) continue;
+      fprintf(stderr, "  Identifier #%d: %s\n",
+	      q, p->identifiers[q].name->str);
+      for (node = low_multiset_first(l->msd);
+	   node;
+	   node = low_multiset_next(node)) {
+	low_push_multiset_index(node);
+	safe_pike_fprintf(stderr, "    %O\n", Pike_sp-1);
+	pop_stack();
+      }
+    }
   }
 
   fprintf(stderr,"$$$$$ dump_program_desc for %p done\n", p);
@@ -3906,6 +3937,17 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
 	    inh->parent_identifier, inh->parent_offset,
 	    inh->parent ? inh->parent->program_id : -1,
 	    inh->identifier_ref_offset);
+
+    if (inh->annotations) {
+      union msnode *node = low_multiset_first(inh->annotations->msd);
+      int i;
+      for (i = 0; node; (node = low_multiset_next(node)), i++) {
+	fprintf(stderr, "%*s        annotation #%d: ", indent, "", i);
+	low_push_multiset_index(node);
+	safe_pike_fprintf(stderr, "%O\n", Pike_sp-1);
+	pop_stack();
+      }
+    }
   }
   fprintf(stderr, "\n"
 	  "%*sIdentifier table:\n"
@@ -3923,6 +3965,16 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
 	    indent, "",
 	    p->num_strings?p->strings[id->filename_strno]->str:"-",
 	    (long)id->linenumber);
+    if ((d < p->num_annotations) && p->annotations[d]) {
+      union msnode *node = low_multiset_first(p->annotations[d]->msd);
+      int i;
+      for (i = 0; node; (node = low_multiset_next(node)), i++) {
+	fprintf(stderr, "%*s        annotation #%d: ", indent, "", i);
+	low_push_multiset_index(node);
+	safe_pike_fprintf(stderr, "%O\n", Pike_sp-1);
+	pop_stack();
+      }
+    }
   }
 
   fprintf(stderr, "\n"
