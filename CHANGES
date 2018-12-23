@@ -11,6 +11,10 @@ o Compiler
     GCC 8 started to emit instructions relying on the correct,
     alignment, causing General Protection Faults.
 
+o Calendar
+
+  Fixed typo in the Catalan word for December.
+
 
 Changes since Pike 8.0.610 (release 12)
 
