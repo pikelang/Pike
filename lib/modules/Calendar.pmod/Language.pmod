@@ -1819,7 +1819,7 @@ class cCATALAN
       "setembre",
       "octubre",
       "novembre",
-      "decembre",
+      "desembre",
    });
 
    protected private constant week_day_names=
