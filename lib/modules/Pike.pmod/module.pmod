@@ -37,6 +37,10 @@ constant OPEN_BOUND = __builtin.OPEN_BOUND;
 
 constant BacktraceFrame = __builtin.backtrace_frame;
 
+#if constant(__builtin.FakeObject)
+constant FakeObject = __builtin.FakeObject;
+#endif
+
 constant __Backend = __builtin.Backend;
 
 //! The class of the @[DefaultBackend].
