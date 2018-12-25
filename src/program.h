@@ -534,7 +534,7 @@ struct inherit
 #define INHERIT_ALL	-3	/* All inherits but not self. */
 
 
-
+/* PROGRAM_* flags. Currently INT16. */
 
 /* program parts have been realloced into one block */
 #define PROGRAM_OPTIMIZED 1
