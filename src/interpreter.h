@@ -196,6 +196,6 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     }
   }
 
-  UNREACHABLE();
+  UNREACHABLE(0);
 
 }
