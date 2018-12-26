@@ -1033,8 +1033,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   struct svalue *number,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
-  INIT_ERROR(math);
   const struct svalue *base_sp = Pike_sp - args;
+  INIT_ERROR(math);
   if(number)
   {
     ERROR_COPY_SVALUE(math, number);
@@ -1066,7 +1066,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void out_of_memory_error (
 {
   resource_error (func, args, amount,
                   amount ? msg_out_of_mem_2 : msg_out_of_mem, amount);
-  UNREACHABLE();
+  UNREACHABLE(return);
 }
 
 /* coverity[+kill] */

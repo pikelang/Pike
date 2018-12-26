@@ -1049,7 +1049,7 @@ again:
 	    default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
 	  }
 	}
-        UNREACHABLE();
+        UNREACHABLE(goto node_done);
       }
 
     node_done:
@@ -1151,7 +1151,7 @@ static struct multiset *mkmultiset_2 (struct array *indices,
 	    default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
 	  }
 	}
-        UNREACHABLE();
+        UNREACHABLE(goto node_skipped);
 
       node_added:
 #ifdef PIKE_DEBUG
@@ -1538,7 +1538,7 @@ static enum find_types low_multiset_track_eq (
 	{find_type = FIND_LESS; goto done;},
 	{find_type = FIND_EQUAL; goto done;},
 	{find_type = FIND_GREATER; goto done;});
-      UNREACHABLE();
+      UNREACHABLE(goto done);
     }
 
     else {
@@ -1711,7 +1711,7 @@ static enum find_types low_multiset_track_le_gt (
       },
       {find_type = FIND_LESS; goto done;},
       {find_type = FIND_GREATER; goto done;});
-    UNREACHABLE();
+    UNREACHABLE(goto done);
   }
 
   else {
@@ -1732,7 +1732,7 @@ static enum find_types low_multiset_track_le_gt (
       },
       {find_type = FIND_LESS; goto done;},
       {find_type = FIND_GREATER; goto done;});
-    UNREACHABLE();
+    UNREACHABLE(goto done);
   }
 
 done:
@@ -3277,7 +3277,7 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
 	  default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
 	}
       }
-      UNREACHABLE();
+      UNREACHABLE(goto node_skipped);
 
     node_added:
 #ifdef PIKE_DEBUG
