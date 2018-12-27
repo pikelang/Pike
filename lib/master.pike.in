@@ -632,10 +632,13 @@ mapping(string:int) load_time=([]);
 
 #endif // PIKE_AUTORELOAD
 
+//!
 protected class CompilerEnvironment
 {
+  //!
   inherit predef::CompilerEnvironment : OrigCompilerEnvironment;
 
+  //!
   mixed resolv(string identifier, string filename,
 	       object|void handler, object|void compat_handler)
   {
@@ -643,6 +646,7 @@ protected class CompilerEnvironment
 			    handler, compat_handler);
   }
 
+  //!
   program handle_inherit(string inh, string current_file,
 			 object|void handler, object|void compat_handler)
   {
@@ -650,6 +654,7 @@ protected class CompilerEnvironment
 				    handler, compat_handler);
   }
 
+  //!
   program handle_import(string module, string current_file,
 			object|void handler, object|void compat_handler)
   {
@@ -662,26 +667,32 @@ protected class CompilerEnvironment
     return master()->get_compilation_handler(major, minor);
   }
 
+  //!
   int compile_exception(mixed err)
   {
     function(mixed:int) fun = master()->compile_exception;
     return fun && fun(err);
   }
 
+  //!
   string format_exception(mixed err)
   {
     return 0;
   }
 
+  //!
   class CPP
   {
+    //!
     inherit ::this_program;
 
 #if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+    //!
     object handler;
     object compat_handler;
 #endif
 
+    //!
     protected mixed apply_handler(string fun, mixed ... args)
     {
       function f;
@@ -773,23 +784,27 @@ protected class CompilerEnvironment
       ::report(severity, filename, linenumber, subsystem, message, @extra_args);
     }
 
+    //!
     object get_compilation_handler(int major, int minor)
     {
       return apply_handler(__func__, major, minor);
     }
 
 #if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+    //!
     mapping(string:string|function|object) get_predefines()
     {
       return apply_handler(__func__);
     }
 
+    //!
     mixed resolv(string sym)
     {
       return apply_handler(__func__, sym, current_file,
 			   handler, compat_handler);
     }
 
+    //!
     string handle_include(string header_file, string current_file,
 			  int(0..1) is_local_ref)
     {
@@ -797,6 +812,7 @@ protected class CompilerEnvironment
 			   is_local_ref);
     }
 
+    //!
     string read_include(string filename)
     {
       return apply_handler(__func__, filename);
@@ -813,6 +829,7 @@ protected class CompilerEnvironment
       return apply_handler(__func__, def, arguments);
     }
 
+    //!
     void change_cpp_compatibility(int major, int minor)
     {
       if ((compat_major == major) && (compat_minor == minor)) {
@@ -828,11 +845,13 @@ protected class CompilerEnvironment
       ::change_cpp_compatibility(major, minor);
     }
 
+    //!
     int compile_exception(mixed err)
     {
       return apply_handler(__func__, err);
     }
 
+    //!
     string format_exception(mixed err)
     {
       string ret = apply_handler(__func__, err);
