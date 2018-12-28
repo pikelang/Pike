@@ -1134,6 +1134,7 @@ void resolve_class_paths(Node n, string|void path, Node|void parent)
   case "doc":
   case "source-position":
   case "modifiers":
+  case "annotations":
   case "classname":
     // We're not interrested in the stuff under the above nodes.
     return;

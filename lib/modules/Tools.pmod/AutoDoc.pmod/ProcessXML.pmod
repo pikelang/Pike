@@ -496,6 +496,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
   mapping(string : SimpleNode) dest_children = ([]);
   mapping(string : array(SimpleNode)) dest_groups = ([]);
   SimpleNode dest_has_doc;
+  array(SimpleNode) dest_annotations = ({});
   multiset(string) dest_modifiers = (<>);
   array(SimpleNode) other_children = ({});
 
@@ -611,6 +612,10 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
         dest_modifiers |= (multiset)node->get_elements()->get_any_name();
         break;
 
+      case "annotations":
+        dest_annotations += node->get_elements();
+        break;
+
       case "doc":
         if (!sizeof(String.trim(node->value_of_node()))) {
 	  // NULL doc.
@@ -664,11 +669,17 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
   // of the dest node.
   children = ({});
 
+  if (sizeof(dest_annotations)) {
+    SimpleElementNode annotations = SimpleElementNode("annotations", ([]));
+    annotations->replace_children(dest_annotations);
+    children = ({ SimpleTextNode("\n"), annotations });
+  }
+
   if (sizeof(dest_modifiers)) {
     SimpleElementNode modifiers = SimpleElementNode("modifiers", ([]));
     modifiers->replace_children(map(indices(dest_modifiers),
 				    SimpleElementNode, ([])));
-    children = ({ SimpleTextNode("\n"), modifiers });
+    children += ({ SimpleTextNode("\n"), modifiers });
   }
 
   if (dest_has_doc) {
