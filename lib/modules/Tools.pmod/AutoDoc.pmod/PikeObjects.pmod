@@ -576,6 +576,16 @@ class DocGroup {
 // REPRESENTATION OF PIKES LEXICAL OBJECTS (class, function, variable ...)
 //========================================================================
 
+class Annotation(array(string) tokens)
+{
+  constant is_annotation = 1;
+
+  string xml(.Flags|void flags)
+  {
+    return xmltag("annotation", tokens * "");
+  }
+}
+
 //! Base class for representing a documentable Pike lexical entity.
 //!
 //! This class is inherited by classes for representing
@@ -586,6 +596,8 @@ class DocGroup {
 //!   @[Modifier], @[Method], @[Constant], @[Typedef], @[EnumConstant],
 //!   @[Enum], @[Variable]
 class PikeObject {
+  array(Annotation) annotations;
+
   //! The set of modifiers affecting this entity.
   array(string) modifiers = ({ });
 
@@ -615,6 +627,8 @@ class PikeObject {
     string s = "";
     if (position)
       s += position->xml(flags);
+    if (annotations && sizeof(annotations))
+      s += xmltag("annotations", annotations->xml(flags) * "");
     if (sizeof(modifiers))
       s += xmltag("modifiers", map(modifiers, xmltag) * "");
     return s;
