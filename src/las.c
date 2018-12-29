@@ -1185,11 +1185,13 @@ node *debug_mklocalnode(int var, int depth)
   int e;
   node *res = mkemptynode();
   res->token = F_LOCAL;
-
   f=Pike_compiler->compiler_frame;
   for(e=0;e<depth;e++) f=f->previous;
   copy_pike_type(res->type, f->variable[var].type);
-
+  res->name = f->variable[var].name;
+  add_ref(res->name);
+  add_ref(res->name);
+// printf("mklocalnode %s\n", res->name->str);
   res->node_info = OPT_NOT_CONST;
   res->tree_info = res->node_info;
   if (res->type && (res->type->type == PIKE_T_AUTO)) {

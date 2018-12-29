@@ -2719,7 +2719,7 @@ static int do_docode2(node *n, int flags)
     if(n->u.integer.a >=
        find_local_frame(n->u.integer.b)->max_number_of_locals)
       yyerror("Illegal to use local variable here.");
-
+//    printf("F_LOCAL: %s\n", n->name->str);
     if(n->u.integer.b)
     {
       if(flags & WANT_LVALUE)

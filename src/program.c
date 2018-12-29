@@ -8547,6 +8547,7 @@ PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
 					      struct pike_string * fname,
 					      INT_TYPE linep)
 {
+  ptrdiff_t gotoff = 0;
   if (prog->program && prog->linenumbers) {    
       struct pike_string *file = NULL;
       static char *base, *cnt;
@@ -8583,15 +8584,16 @@ PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
 		
 		off+=get_small_number(&cnt);
                 line+=get_small_number(&cnt);
-  	   // printf("line: %d %p\n", line, off);
+				printf("line: %d %p\n", line, off);
 		
-		if(wanted_file && line == linep) { printf("found offset for line %d.\n", linep); return off; }
+		if(wanted_file && line == linep) { printf("found offset for line %d: %p.\n", linep, off); gotoff = off; }
       }
   } else {
     fprintf(stderr, "No program of linenumbers program:%p linenumbers:%p\n",
 	    prog->program, prog->linenumbers);
   }
 
+  if(gotoff) return gotoff;
   return 0;
 }
 

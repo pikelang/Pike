@@ -848,7 +848,6 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
     INT_TYPE linep;
 	int debug_retval = 0;
 	struct thread_state * th_state;
-	
 #ifdef PIKE_DEBUG
 	/* This block exists solely to print some debug when we execute opcodes in a thread that's stepping, 
 	    or a program that contains breakpoints. */
@@ -882,6 +881,13 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 			
 	/* This block performs the actual breakpoint/step behavior */
 	if((IS_THREAD_STEPPING(th_state)) || (bp = Pike_fp->context->prog->breakpoints) != NULL ) {
+		INT_TYPE linep;
+		struct pike_string * linefile = get_line(Pike_fp->pc,
+							 Pike_fp->context->prog,
+							  &linep);
+		printf("linep: %s:%d\n", linefile->str, linep);					  
+        printf("pro: %p, %p %p, %p\n", bp_prog, Pike_fp->context->prog, bp_offset, Pike_fp->pc - Pike_fp->context->prog->program);
+
 	  int pause_here = 0;
           if(IS_THREAD_STEPPING(th_state)) {
             pause_here = 1;
