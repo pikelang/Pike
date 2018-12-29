@@ -859,6 +859,55 @@ protected class CompilerEnvironment
     }
 
 #if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+    //! @decl void create(string|void current_file, @
+    //!                   int|string|void charset, object|void handler, @
+    //!                   void|int compat_major, void|int compat_minor, @
+    //!                   void|int picky_cpp)
+    //! @decl void create(mapping(string:mixed) options)
+    //!
+    //!   Initialize the preprocessor.
+    //!
+    //! @param options
+    //!   If the first argument is a mapping, no other arguments may follow.
+    //!   Instead, they have to be given as members of the mapping (if wanted).
+    //!   The following members are then recognized:
+    //!
+    //!   @mapping
+    //!     @member string "current_file"
+    //!       Name of the current file. It is used for generating
+    //!       #line directives and for locating include files.
+    //!     @member int|string "charset"
+    //!       Charset to use when processing @expr{data@}.
+    //!     @member object "handler"
+    //!       Compilation handler.
+    //!     @member int "compat_major"
+    //!       Sets the major pike version used for compat handling.
+    //!     @member int "compat_minor"
+    //!       Sets the minor pike version used for compat handling.
+    //!     @member int "picky_cpp"
+    //!       Generate more warnings.
+    //!     @member int "keep_comments"
+    //!       This option keeps @[cpp()] from removing comments.
+    //!       Useful in combination with the prefix feature below.
+    //!     @member string "prefix"
+    //!       If a prefix is given, only prefixed directives will be
+    //!       processed. For example, if the prefix is @expr{"foo"@}, then
+    //!       @expr{#foo_ifdef COND@} and @expr{foo___LINE__@} would be
+    //!       processed, @expr{#ifdef COND@} and @expr{__LINE__@}
+    //!       would not.
+    //!   @endmapping
+    //!
+    //! @param current_file
+    //!   If the @[current_file] argument has not been specified,
+    //!   it will default to @expr{"-"@}.
+    //!
+    //! @param charset
+    //!   Turn on automatic character set detection if @expr{1@}, otherwise
+    //!   specifies the character set used by the input.
+    //!   Defaults to @expr{"ISO-10646"@}.
+    //!
+    //! @seealso
+    //!   @[compile()]
 
     protected void create(mapping(string:mixed) options)
     {
