@@ -325,7 +325,7 @@ class AbstractSimpleNode {
   }
 
   //! Returns a clone of the sub-tree rooted in the node.
-  AbstractSimpleNode clone() {
+  optional AbstractSimpleNode clone() {
     AbstractSimpleNode n = low_clone();
     foreach(mChildren, AbstractSimpleNode child)
       n->add_child( child->clone() );
@@ -622,6 +622,8 @@ class AbstractNode {
   inherit AbstractSimpleNode;
   //  Private member variables
   /* protected */ AbstractNode           mParent = 0;
+
+  @Pike.Annotations.Implements(AbstractSimpleNode);
 
   // Instruct Pike.count_memory to search three steps: mChildren (in
   // VirtualNode also mAttrNodes) -> array value -> mParent.
@@ -1522,6 +1524,9 @@ class SimpleNode
   inherit AbstractSimpleNode;
   inherit VirtualNode;
 
+  @Pike.Annotations.Implements(AbstractSimpleNode);
+  @Pike.Annotations.Implements(VirtualNode);
+
   // Needed for cross-overloading
   optional SimpleNode low_clone()
   {
@@ -1535,6 +1540,9 @@ class Node
 {
   inherit AbstractNode;
   inherit VirtualNode;
+
+  @Pike.Annotations.Implements(AbstractNode);
+  @Pike.Annotations.Implements(VirtualNode);
 
   // Needed for cross-overloading
   optional Node low_clone()
@@ -2047,6 +2055,9 @@ class SimpleRootNode
   inherit SimpleNode;
   inherit XMLParser;
 
+  @Pike.Annotations.Implements(SimpleNode);
+  // @Pike.Annotations.Implements(XMLParser);
+
   protected mapping(string:SimpleElementNode) node_ids;
 
   //! Find the element with the specified id.
@@ -2134,6 +2145,9 @@ class SimpleRootNode
 class SimpleTextNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleTextNode(get_text());
@@ -2150,6 +2164,9 @@ class SimpleTextNode
 class SimpleCommentNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleCommentNode(get_text());
@@ -2166,6 +2183,9 @@ class SimpleCommentNode
 class SimpleHeaderNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleHeaderNode(get_attributes());
@@ -2182,6 +2202,9 @@ class SimpleHeaderNode
 class SimplePINode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimplePINode(get_full_name(), get_attributes(), get_text());
@@ -2199,6 +2222,9 @@ class SimplePINode
 class SimpleDoctypeNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleDoctypeNode(get_full_name(), get_attributes(), 0);
@@ -2219,6 +2245,9 @@ class SimpleDoctypeNode
 class SimpleDTDEntityNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleDTDEntityNode(get_full_name(), get_attributes(), get_text());
@@ -2238,6 +2267,9 @@ class SimpleDTDElementNode
   inherit SimpleNode;
   inherit DTDElementHelper;
 
+  @Pike.Annotations.Implements(SimpleNode);
+  @Pike.Annotations.Implements(DTDElementHelper);
+
   protected SimpleNode low_clone()
   {
     return SimpleDTDElementNode(get_full_name(), get_expression());
@@ -2255,6 +2287,9 @@ class SimpleDTDElementNode
 class SimpleDTDAttlistNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleDTDAttlistNode(get_full_name(), get_attributes(), get_text());
@@ -2272,6 +2307,9 @@ class SimpleDTDAttlistNode
 class SimpleDTDNotationNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleDTDNotationNode(get_full_name(), get_attributes(), get_text());
@@ -2289,6 +2327,9 @@ class SimpleDTDNotationNode
 class SimpleElementNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleElementNode(get_full_name(), get_attributes());
@@ -2308,6 +2349,9 @@ class RootNode
 {
   inherit Node;
   inherit XMLParser;
+
+  @Pike.Annotations.Implements(Node);
+  // @Pike.Annotations.Implements(XMLParser);
 
   protected mapping(string:ElementNode) node_ids;
 
@@ -2395,6 +2439,9 @@ class RootNode
 class TextNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return TextNode(get_text());
@@ -2411,6 +2458,9 @@ class TextNode
 class CommentNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return CommentNode(get_text());
@@ -2427,6 +2477,9 @@ class CommentNode
 class HeaderNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return HeaderNode(get_attributes());
@@ -2443,6 +2496,9 @@ class HeaderNode
 class PINode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return PINode(get_full_name(), get_attributes(), get_text());
@@ -2460,6 +2516,9 @@ class PINode
 class DoctypeNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return DoctypeNode(get_full_name(), get_attributes(), 0);
@@ -2480,6 +2539,9 @@ class DoctypeNode
 class DTDEntityNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return DTDEntityNode(get_full_name(), get_attributes(), get_text());
@@ -2499,6 +2561,9 @@ class DTDElementNode
   inherit Node;
   inherit DTDElementHelper;
 
+  @Pike.Annotations.Implements(Node);
+  @Pike.Annotations.Implements(DTDElementHelper);
+
   protected Node low_clone()
   {
     return DTDElementNode(get_full_name(), get_expression());
@@ -2516,6 +2581,9 @@ class DTDElementNode
 class DTDAttlistNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return DTDAttlistNode(get_full_name(), get_attributes(), get_text());
@@ -2533,6 +2601,9 @@ class DTDAttlistNode
 class DTDNotationNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return DTDNotationNode(get_full_name(), get_attributes(), get_text());
@@ -2550,6 +2621,9 @@ class DTDNotationNode
 class ElementNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return ElementNode(get_full_name(), get_attributes());
@@ -2566,6 +2640,9 @@ class ElementNode
 class AttributeNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return AttributeNode(get_full_name(), get_text());
