@@ -1,19 +1,80 @@
 Changes since Pike 8.0.702 (release 13)
 
+New Features
+------------
+
+o  ADT.History
+
+   Support encode/decode_value().
+
 Bug fixes
 ---------
+
+o combine_path()
+
+  Fixed corner case where combine_path() on strings starting with
+  "./../" used to gain one directory level. Eg:
+
+    Old behavior:
+    > combine_path(".", "../foo");
+    (1) Result: "../foo"
+    > combine_path("./..", "foo");
+    (2) Result: "foo"
+    > combine_path("./../foo");
+    (3) Result: "foo"
+    
+    New (fixed) behavior:
+    > combine_path(".", "../foo");
+    (1) Result: "../foo"
+    > combine_path("./..", "foo");
+    (2) Result: "../foo"
+    > combine_path("./../foo");
+    (3) Result: "../foo"
+
+o Calendar
+
+  Fixed typo in the Catalan word for the month December.
 
 o Compiler
 
   - Adhere to the calling convention more in the machine code
     generator on amd64, namely by keeping the stack pointer aligned
-    before calling into C code.
-    GCC 8 started to emit instructions relying on the correct,
-    alignment, causing General Protection Faults.
+    before calling into C code. GCC 8 started to emit instructions
+    relying on the correct, alignment, causing General Protection
+    Faults.
 
-o Calendar
+  - Fixed some corner cases where file names where missing from
+    backtraces.
 
-  Fixed typo in the Catalan word for December.
+o Protocols.HTTP.Query
+
+  On Solaris 11 Stdio.File()->connect() often fails with EADDRINUSE.
+  If this happens, retry the connection.
+
+o Protocols.Websocket
+
+  Tentative fix for error 'indexing the NULL value with "set_nonblocking'.
+
+o SSL.File
+
+  Do not close automatically on write error.
+
+  The internal ssl_write_callback() would call shutdown()
+  on write error, which would cause the object to enter
+  one of the closed states, without the user actually
+  having closed the file.
+  
+  This in turn caused errors like "Not open" from
+  functions like read() and set_nonblocking().
+
+Building & Tools
+----------------
+
+o Drop support for Postgres 7.2.
+
+o Fix compilation with Nettle 3.1.1.
+
+o Support recent versions of libfreetype.
 
 
 Changes since Pike 8.0.610 (release 12)
