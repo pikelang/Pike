@@ -898,8 +898,23 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
       e->name = eatIdentifier();
     return e;
   }
+  else if ((s == "static_assert") || (s == "_Static_assert")) {
+    // Static assertion. Skip.
+    skipBlock();
+    eat(";");
+    return parseDecl(args);
+  }
   else {
     Type t = parseOrType();
+
+    if (peekToken() == "(") {
+      // Probably a static assertion, or similar macro expansion.
+      // Skip.
+      skipBlock();
+      skip(";");
+      return parseDecl(args);
+    }
+
     // only allow lfun::, predef::, :: in front of methods/variables
     string name = eatIdentifier(args["allowScopePrefix"]);
 
