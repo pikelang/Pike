@@ -3,12 +3,23 @@ Changes since Pike 8.0.702 (release 13)
 New Features
 ------------
 
-o  ADT.History
+o ADT.History
 
-   Support encode/decode_value().
+  Support encode/decode_value().
+
+o Pike.FakeObject
+
+  This is used as a placeholder used in place of other objects in backtraces.
 
 Bug fixes
 ---------
+
+o backtrace()
+
+  Hide mutex keys and crypto contexts from backtraces.
+
+  Having unexpected references to mutex keys may cause hangs and
+  complaints about attempting to lock mutexes recursively.
 
 o combine_path()
 
@@ -31,9 +42,22 @@ o combine_path()
     > combine_path("./../foo");
     (3) Result: "../foo"
 
+o describe_backtrace()
+
+  - Do not use value identifiers that have not been defined in
+    the visible backtrace.
+
+  - Fix clipped/canclip propagation.
+
+o types()
+
+  Fixed reference leak.
+
 o Calendar
 
-  Fixed typo in the Catalan word for the month December.
+  - Fixed typo in the Catalan word for the month December.
+
+  - Updated tzdata to 2018g.
 
 o Compiler
 
@@ -45,6 +69,19 @@ o Compiler
 
   - Fixed some corner cases where file names where missing from
     backtraces.
+
+o Protocols.HTTP.Session
+
+  - Fix race-condition when multiple threads call give_me_connection()
+    with the same url at the same time.
+
+  - Don't attempt to reuse SessionQuery objects.
+
+    give_me_connection() now always returns a new SessionQuery object
+    (albeit sometimes with a reused connection).
+
+    This should alleviate issues with stuff being left around from
+    previous queries.
 
 o Protocols.HTTP.Query
 
@@ -67,14 +104,47 @@ o SSL.File
   This in turn caused errors like "Not open" from
   functions like read() and set_nonblocking().
 
+o Thread.Queue
+
+  Attempt to work around glibc bugs.
+
+  Glibc 2.24 and earlier have a broken implementation of condition
+  variables (cf https://sourceware.org/bugzilla/show_bug.cgi?id=13165).
+
+  Attempt to work around the issue by having the signalling thread
+  release the associated mutex before signalling.
+
+o Thread.ResourceCount
+
+  Fixed mutex handling.
+
 Building & Tools
 ----------------
 
-o Drop support for Postgres 7.2.
+o Drop support for Postgres 7.1.
 
 o Fix compilation with Nettle 3.1.1.
 
 o Support recent versions of libfreetype.
+
+o Drop use of the obsolete (~20 years) Solaris ioctl /proc API.
+
+  The ioctl-based /proc API was obsoleted in Solaris 2.6 (July 1997),
+  but to be supported "until the next major release". In Solaris 11.4
+  (August 2018) the support has now finally been removed.
+
+  Most of the removed code was from 1995, and was thus older than Pike...
+
+o Improved pkg-config search path detection on Solaris.
+
+  Solaris 11.4 provides a single pkg-config binary, which by default
+  searches in /usr/lib/pkgconfig/ and /usr/share/pkgconfig/.
+  Unfortunately, /usr/lib/pkgconfig/ contains information for
+  the 32-bit packages (64-bit d:o is in /usr/lib/64/pkgconfig/).
+
+  This issue caused eg 32-bit headers for libffi to be used, causing
+  a SIGSEGV in ffi_closure_unix64_inner() due to the differing sizes
+  of ffi_closure in 32-bit and 64-bit abi.
 
 
 Changes since Pike 8.0.610 (release 12)
