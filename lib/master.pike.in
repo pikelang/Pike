@@ -4473,6 +4473,12 @@ string decode_charset(string data, string charset)
 //! Class used by @[describe_backtrace()] to describe values in backtraces.
 class Describer
 {
+  /* Attempt to avoid keeping this object around, as it may contain
+   * indirect references to stuff (like mutex keys) in backtraces,
+   * via the ident mapping below.
+   */
+  inherit _static_modules.Builtin.DestructImmediate;
+
   int clipped=0;
   int canclip=0;
   mapping(mixed:int|string) ident = ([]);
