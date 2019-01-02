@@ -945,6 +945,8 @@ optional class Local
 /* Fallback implementation of Thread.MutexKey */
 optional class MutexKey (protected function(:void) dec_locks)
 {
+  inherit Builtin.DestructImmediate;
+
   int `!()
   {
     // Should be destructed when the mutex is, but we can't pull that
