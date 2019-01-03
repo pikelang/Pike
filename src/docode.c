@@ -44,6 +44,7 @@ struct statement_label_name
 {
   struct statement_label_name *next;
   struct pike_string *str;
+  struct pike_string *file;
   INT_TYPE line_number;
   int used;
 };
@@ -2394,6 +2395,7 @@ static int do_docode2(node *n, int flags)
     PUSH_STATEMENT_LABEL;
     name.str = CAR(n)->u.sval.u.string;
     name.line_number = n->line_number;
+    name.file = n->current_file;
     name.used = 0;
 
     for (label = current_label; label; label = label->prev) {
@@ -2401,10 +2403,13 @@ static int do_docode2(node *n, int flags)
       for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
 	if (lbl_name->str == name.str) {
 	  INT_TYPE save_line = c->lex.current_line;
+	  struct pike_string *save_file = c->lex.current_file;
 	  c->lex.current_line = name.line_number;
+	  c->lex.current_file = name.file;
 	  my_yyerror("Duplicate nested labels, previous one on line %d.",
 		     lbl_name->line_number);
 	  c->lex.current_line = save_line;
+	  c->lex.current_file = save_file;
 	  goto label_check_done;
 	}
     }
