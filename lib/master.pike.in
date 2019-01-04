@@ -940,6 +940,40 @@ protected class CompilerEnvironment
 protected CompilerEnvironment DefaultCompilerEnvironment =
   CompilerEnvironment();
 
+//! @decl CompilationHandler get_active_compilation_handler()
+//!
+//!   Returns the currently active compilation compatibility handler, or
+//!   @tt{0@} (zero) if none is active.
+//!
+//! @note
+//!   This function should only be used during a call of @[compile()].
+//!
+//! @seealso
+//!   @[get_active_error_handler()], @[compile()],
+//!   @[master()->get_compilation_handler()], @[CompilationHandler]
+protected object get_active_compilation_handler()
+{
+  CompilerEnvironment.PikeCompiler c = get_active_compiler();
+  return c && c->compat_handler;
+}
+
+//! @decl CompilationHandler get_active_error_handler()
+//!
+//!   Returns the currently active compilation error handler
+//!   (second argument to @[compile()]), or @tt{0@} (zero) if none
+//!   is active.
+//!
+//! @note
+//!   This function should only be used during a call of @[compile()].
+//!
+//! @seealso
+//!   @[get_active_compilation_handler()], @[compile()], @[CompilationHandler]
+protected object get_active_error_handler()
+{
+  CompilerEnvironment.PikeCompiler c = get_active_compiler();
+  return c && c->handler;
+}
+
 protected string cpp(string data, mapping|string|void current_file,
 		     int|string|void charset, object|void handler,
 		     void|int compat_major, void|int compat_minor,
@@ -2190,6 +2224,8 @@ enum bool { false=0, true=1 };
  */
 protected void create()
 {
+  add_constant("get_active_compilation_handler", get_active_compilation_handler);
+  add_constant("get_active_error_handler", get_active_error_handler);
   add_constant("CompilerEnvironment", CompilerEnvironment);
   add_constant("DefaultCompilerEnvironment", DefaultCompilerEnvironment);
   add_constant("cpp", cpp);
