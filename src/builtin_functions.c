@@ -3070,80 +3070,6 @@ PMOD_EXPORT void f_get_active_compiler(INT32 args)
   push_undefined();
 }
 
-/*! @decl CompilationHandler get_active_compilation_handler()
- *!
- *!   Returns the currently active compilation compatibility handler, or
- *!   @tt{0@} (zero) if none is active.
- *!
- *! @note
- *!   This function should only be used during a call of @[compile()].
- *!
- *! @seealso
- *!   @[get_active_error_handler()], @[compile()],
- *!   @[master()->get_compilation_handler()], @[CompilationHandler]
- */
-PMOD_EXPORT void f_get_active_compilation_handler(INT32 args)
-{
-  struct compilation *c = NULL;
-
-  if (compilation_program) {
-    struct pike_frame *compiler_frame = Pike_fp;
-
-    while (compiler_frame &&
-	   (compiler_frame->context->prog != compilation_program)) {
-      compiler_frame = compiler_frame->next;
-    }
-
-    if (compiler_frame) {
-      c = (struct compilation *)compiler_frame->current_storage;
-    }
-  }
-
-  pop_n_elems(args);
-  if (c && c->compat_handler) {
-    ref_push_object(c->compat_handler);
-  } else {
-    push_int(0);
-  }
-}
-
-/*! @decl CompilationHandler get_active_error_handler()
- *!
- *!   Returns the currently active compilation error handler
- *!   (second argument to @[compile()]), or @tt{0@} (zero) if none
- *!   is active.
- *!
- *! @note
- *!   This function should only be used during a call of @[compile()].
- *!
- *! @seealso
- *!   @[get_active_compilation_handler()], @[compile()], @[CompilationHandler]
- */
-PMOD_EXPORT void f_get_active_error_handler(INT32 args)
-{
-  struct compilation *c = NULL;
-
-  if (compilation_program) {
-    struct pike_frame *compiler_frame = Pike_fp;
-
-    while (compiler_frame &&
-	   (compiler_frame->context->prog != compilation_program)) {
-      compiler_frame = compiler_frame->next;
-    }
-
-    if (compiler_frame) {
-      c = (struct compilation *)compiler_frame->current_storage;
-    }
-  }
-
-  pop_n_elems(args);
-  if (c && c->handler) {
-    ref_push_object(c->handler);
-  } else {
-    push_int(0);
-  }
-}
-
 /*! @decl array allocate(int size)
  *! @decl array allocate(int size, mixed init)
  *!
@@ -9882,16 +9808,6 @@ void init_builtin_efuns(void)
 
   /* function(:object) */
   ADD_EFUN("get_active_compiler", f_get_active_compiler,
-	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-
-  /* function(:object) */
-  ADD_EFUN("get_active_compilation_handler",
-	   f_get_active_compilation_handler,
-	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-
-  /* function(:object) */
-  ADD_EFUN("get_active_error_handler",
-	   f_get_active_error_handler,
 	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
 
   /* function(int,void|0=mixed:array(0)) */
