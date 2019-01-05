@@ -10,6 +10,8 @@
 #include "lex.h"
 #include "program.h"
 
+#define SUPPORT_COMPILER_HANDLERS
+
 extern struct program *reporter_program;
 extern struct program *compilation_env_program;
 extern struct program *compilation_program;
@@ -57,12 +59,19 @@ struct Supporter
   /* The top level program in the compilation unit. */
 };
 
+/**
+ * This is the storage for CompilationEnvironment.PikeCompiler.
+ *
+ * There is one of these for each translation unit being compiled.
+ */
 struct compilation
 {
   struct Supporter supporter;
   struct pike_string *prog;		/* String to compile. */
+#ifdef SUPPORT_COMPILER_HANDLERS
   struct object *handler;		/* error_handler */
   struct object *compat_handler;	/* compat_handler */
+#endif /* SUPPORT_COMPILER_HANDLERS */
   int major, minor;			/* Base compat version */
   struct program *target;		/* Program being compiled. */
   struct object *placeholder;
