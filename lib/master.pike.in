@@ -667,6 +667,134 @@ protected class CompilerEnvironment
     return master()->get_compilation_handler(major, minor);
   }
 
+#if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
+  //!
+  class PikeCompiler
+  {
+    //!
+    inherit ::this_program;
+
+    //!
+    object handler;
+    object compat_handler;
+
+    //!
+    protected mixed apply_handler(string fun, mixed ... args)
+    {
+      function f;
+      foreach(({ handler, compat_handler }), object o) {
+	if (objectp(o) && functionp(f = predef::`->(o, fun))) {
+	  return f(@args);
+	}
+      }
+      return CompilerEnvironment::`->(fun)(@args);
+    }
+
+    //!
+    void report(SeverityLevel severity, string filename, int linenumber,
+		string subsystem, string message,
+		mixed ... extra_args)
+    {
+      foreach(({ handler, compat_handler }), object o) {
+	if (!objectp(o)) continue;
+	if (functionp(o->report)) {
+	  o->report(severity, filename, linenumber,
+		    subsystem, message, @extra_args);
+	  return;
+	}
+	if (severity < WARNING) continue;
+	if (severity >= ERROR) {
+	  if (functionp(o->compile_error)) {
+	    o->compile_error(filename, linenumber,
+			     sizeof(extra_args)?
+			     sprintf(message, @extra_args):
+			     message);
+	    return;
+	  }
+	} else {
+	  if (functionp(o->compile_warning)) {
+	    o->compile_warning(filename, linenumber,
+			       sizeof(extra_args)?
+			       sprintf(message, @extra_args):
+			       message);
+	    return;
+	  }
+	}
+      }
+      CompilerEnvironment::report(severity, filename, linenumber,
+				  subsystem, message, @extra_args);
+    }
+
+    //!
+    mixed resolv(string identifier)
+    {
+      return apply_handler(__func__, identifier, current_file,
+			   handler, compat_handler);
+    }
+
+    //!
+    mapping(string:mixed)|object get_default_module()
+    {
+      /* FIXME: This function probably ought to merge the results from
+       *        both handlers.
+       */
+      return apply_handler(__func__);
+    }
+
+    //!
+    object get_compilation_handler(int major, int minor)
+    {
+      return apply_handler(__func__, major, minor);
+    }
+
+    //!
+    program handle_inherit(string inh)
+    {
+      return apply_handler(__func__, inh, current_file,
+			   handler, compat_handler);
+    }
+
+    //!
+    program handle_import(string module)
+    {
+      return apply_handler(__func__, module, current_file,
+			   handler, compat_handler);
+    }
+
+    //!
+    void change_compiler_compatibility(int major, int minor)
+    {
+      if ((major == compat_major) && (minor == compat_minor)) {
+	// Optimization: Already at this compat level.
+	return;
+      }
+      if (((major == -1) && (minor == -1)) ||
+	  ((major == __REAL_MAJOR__) && (minor == __REAL_MINOR__))) {
+	if ((compat_major == __REAL_MAJOR__) &&
+	    (compat_minor == __REAL_MINOR__)) {
+	  // Optimization again: Already at this compat level.
+	  return;
+	}
+	compat_handler = 0;
+      } else {
+	compat_handler = get_compilation_handler(major, minor);
+      }
+
+      ::change_compiler_compatibility(major, minor);
+    }
+
+    //!
+    protected void create(string|void source,
+			  object|void handler,
+			  int|void major, int|void minor,
+			  program|void target, object|void placeholder)
+    {
+      this::handler = handler;
+      ::create(source, UNDEFINED, major, minor, target, placeholder);
+    }
+  }
+#endif /* _static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__ */
+
   //!
   int compile_exception(mixed err)
   {
@@ -939,10 +1067,32 @@ protected class CompilerEnvironment
     }
 #endif
   }
+
+#if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
+  //!
+  program compile(string source, object|void handler,
+		  int|void major, int|void minor,
+		  program|void target, object|void placeholder)
+  {
+    return PikeCompiler(source, handler, major, minor, target, placeholder)->
+      compile();
+  }
+#endif /* _static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__ */
 }
 
 protected CompilerEnvironment DefaultCompilerEnvironment =
   CompilerEnvironment();
+
+#if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
+protected program compile(string source, object|void handler,
+			  int|void major, int|void minor,
+			  program|void target, object|void placeholder)
+{
+  return DefaultCompilerEnvironment->compile(source, handler,
+					     major, minor,
+					     target, placeholder);
+}
+#endif /* _static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__ */
 
 //! @decl CompilationHandler get_active_compilation_handler()
 //!
@@ -2230,6 +2380,9 @@ enum bool { false=0, true=1 };
  */
 protected void create()
 {
+#if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
+  add_constant("compile", compile);
+#endif /* _static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__ */
   add_constant("get_active_compilation_handler", get_active_compilation_handler);
   add_constant("get_active_error_handler", get_active_error_handler);
   add_constant("CompilerEnvironment", CompilerEnvironment);
