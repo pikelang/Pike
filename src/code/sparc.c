@@ -192,7 +192,7 @@
 	  SPARC_OR(reg_, reg_, (val_ & 0x3ff000)>>12, 1);		\
 	}								\
 	SPARC_SLL(reg_, reg_, 12, 1);					\
-	if (val_ & 0x3ff) {						\
+	if (val_ & 0xfff) {						\
 	  /* or reg, %lo(val_), reg */					\
 	  SPARC_OR(reg_, reg_, val_ & 0xfff, 1);			\
 	}								\
