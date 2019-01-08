@@ -298,7 +298,7 @@ class MyRule (string id)
 
 // ---
 
-#define INF_YEAR 2050
+#define INF_YEAR 2150
 #define NUL_YEAR 1850
 
       int y1=(int)a[0] || NUL_YEAR;
@@ -388,7 +388,7 @@ class MyRule (string id)
 		  }
 		  else if (y0==y1)
 		     t+="         case "+y0+":\n";
-		  else if (y1==2050)
+		  else if (y1 == INF_YEAR)
 		     {
 			if (!my[NUL_YEAR]) t+="         case "+y0+"..:\n";
 			else t=replace(t,"½½½",(string)y0);
