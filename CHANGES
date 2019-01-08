@@ -70,6 +70,11 @@ o Compiler
   - Fixed some corner cases where file names where missing from
     backtraces.
 
+o Process.run
+
+  - Don't error if stdin modifier is supplied as the empty string.
+    [LysLysKOM 23099651]
+
 o Protocols.HTTP.Session
 
   - Fix race-condition when multiple threads call give_me_connection()
