@@ -623,15 +623,20 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 
 #if constant(Shuffler)
   if (mystdin) {
-    Shuffler.Shuffler sfr = Shuffler.Shuffler();
-    sfr->set_backend (backend);
-    Shuffler.Shuffle sf = sfr->shuffle( mystdin );
-    sf->add_source(stdin_str);
-    sf->set_done_callback (lambda () {
-			     catch { mystdin->close(); };
-			     mystdin = 0;
-			   });
-    sf->start();
+    if (stdin_str != "") {
+      Shuffler.Shuffler sfr = Shuffler.Shuffler();
+      sfr->set_backend (backend);
+      Shuffler.Shuffle sf = sfr->shuffle( mystdin );
+      sf->add_source(stdin_str);
+      sf->set_done_callback (lambda () {
+                               catch { mystdin->close(); };
+                               mystdin = 0;
+                             });
+      sf->start();
+    } else {
+      catch { mystdin->close(); };
+      mystdin = 0;
+    }
   }
 #endif
 
