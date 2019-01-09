@@ -10,7 +10,7 @@
 #include "lex.h"
 #include "program.h"
 
-#define SUPPORT_COMPILER_HANDLERS
+/* #define SUPPORT_COMPILER_HANDLERS */
 
 extern struct program *reporter_program;
 extern struct program *compilation_env_program;
