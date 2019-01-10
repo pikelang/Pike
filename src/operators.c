@@ -503,7 +503,6 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	{
         case T_ARRAY:
 	  {
-	    extern void f_mkmultiset(INT32);
 	    f_mkmultiset(1);
 	    break;
 	  }
