@@ -2632,6 +2632,26 @@ PIKECLASS backtrace_frame
     }
   }
 
+  PIKEFUN string `filename()
+  {
+    if (!THIS->lineno) {
+      fill_in_file_and_line();
+    }
+    if (THIS->filename) {
+      ref_push_string(THIS->filename);
+      return;
+    }
+    push_undefined();
+  }
+
+  PIKEFUN string `line()
+  {
+    if (!THIS->lineno) {
+      fill_in_file_and_line();
+    }
+    push_int(THIS->lineno);
+  }
+
   /*! @decl string _sprintf(int c, mapping|void opts)
    */
   PIKEFUN string _sprintf(int c, mapping|void opts)
