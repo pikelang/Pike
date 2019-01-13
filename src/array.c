@@ -2274,7 +2274,8 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
   return a;
 }
 
-/** Add an element to the end of an array by resizing the array.
+/**
+ * Add an element to the end of an array by resizing the array.
  *
  * @param a the array to be appended
  * @param s the value to be added to the new element in the array
@@ -2287,7 +2288,8 @@ PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
   return a;
 }
 
-/** Automap assignments
+/**
+ * Automap assignments
  * This implements X[*] = ...[*]..
  * Assign elements in a at @level to elements from b at the same @level.
  * This will not actually modify any of the arrays, only change the
