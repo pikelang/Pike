@@ -1,0 +1,51 @@
+subject: Pike 8.0: Thread safety, Process.run, pgsql, Calendar, tzdata2018i, describe_backtrace
+from: eccaaf9814335d9bb326a2f278d4f0d8478b7061
+to: f8024eff4f5f12739ebe6c79437dfd8b0877f6ba
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2018-11-02T144115
+restart: true
+
+Multiple fixes:
+
+• Process.run: Accept empty string in modifiers as stdin
+
+  Restores behaviour as of 7.8.
+
+• Updated to tzdata2018i.
+
+• Calendar.mkrules: Increase INF_YEAR from 2050 to 2150.
+
+  Recent tzdata files (2018i) contain entries past 2050 (eg for Iran).
+
+• Calendar: December is called Desembre in Catalan
+
+• Thread: Added workaround for mutexkeys ending up in backtraces.
+
+  Thread.Queue et al should now survive their controlling MutexKey
+  having ended up in a backtrace.
+
+• pgsql: Autoterminate dangling database connections at program exit.
+
+• Thread.ResourceCount: Fixed mutex handling.
+
+• pgsql: Avoid excessive latency on frequent ping()s.
+
+• Protocols.HTTP.Session: Don't attempt to reuse SessionQuery objects.
+
+  give_me_connection() now always returns a new SessionQuery object
+  (albeit sometimes with a reused connection).
+
+  This should alleviate issues with stuff being left around from
+  previous queries.
+
+• Protocols.HTTP.Session: Improved thread-safety.
+
+  Fixes race-condition when multiple threads call give_me_connection()
+  with the same url at the same time.
+
+• Master: Multiple describe_backtrace() fixes.
+
+  Do not use value identifiers that have not been defined in
+  the visible backtrace.
+
+  Fix clipped/canclip propagation.
