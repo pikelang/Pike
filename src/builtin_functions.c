@@ -5276,6 +5276,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
    pop_n_elems(args);
 
    delaysleep(delay, do_abort_on_signal, 0);
+   low_check_threads_etc();
 }
 
 #undef FIX_LEFT
