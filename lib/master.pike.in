@@ -570,11 +570,9 @@ array(string) explode_path(string p)
 string dirname(string x)
 {
   if(x=="") return "";
-  array(string) tmp=x/":";
-  array(string) tmp2=tmp[-1]/"/";
-  tmp[-1]=tmp2[..<1]*"/";
-  if(sizeof(tmp2) >= 2 && tmp2[-2]=="") tmp[-1]+="/";
-  return tmp*":";
+  array(string) tmp = EXPLODE_PATH(x);
+  if (x[0] == '/' && sizeof(tmp) < 3) return "/";
+  return tmp[..<1]*"/";
 }
 
 //! Returns the last segment of a path.
