@@ -1227,15 +1227,15 @@ test_any_equal([[
   // cf [LysLysKOM 22997909].
   int whee(string w)
   {
-#line 7 "whee-before"
+#line 8 "whee-before"
     int x = 0;
     error("whee!\n");
-#line 10 "whee-after"
+#line 11 "whee-after"
     string q = "wq";
     q += "21";
     return sizeof(q + w);
-  }
-#line 15 "test"
+  };
+#line 16 "test"
   mixed err = catch { whee("foo"); };
   return ({ err[1][-1][0], err[1][-1][1] });
 ]], ({ "whee-before", 8 }))
