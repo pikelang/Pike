@@ -1234,7 +1234,7 @@ test_any_equal([[
 #line 16 "test"
   mixed err = catch { whee("foo"); };
   return ({ err[1][-1][0], err[1][-1][1] });
-]], ({ "whee-before", 8 }))
+]], ({ "whee-before", 9 }))
 
 test_compile_warning([[
   class A { static int foo = 1; int bar() { return foo; } }
