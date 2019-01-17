@@ -1647,6 +1647,85 @@ PMOD_EXPORT void f_add_constant(INT32 args)
 #define AMIGAOS_COMBINE_PATH
 #include "combine_path.h"
 
+static ptrdiff_t find_last_path_separator(struct pike_string *path,
+					  p_wchar2 sep,
+					  ptrdiff_t pos)
+{
+  switch(path->size_shift) {
+  case eightbit:
+    {
+      p_wchar0 *str = STR0(path);
+      while (pos--) {
+	if (str[pos] == sep) return pos;
+      }
+    }
+    break;
+  case sixteenbit:
+    {
+      p_wchar1 *str = STR1(path);
+      while (pos--) {
+	if (str[pos] == sep) return pos;
+      }
+    }
+    break;
+  case thirtytwobit:
+    {
+      p_wchar2 *str = STR2(path);
+      while (pos--) {
+	if (str[pos] == sep) return pos;
+      }
+    }
+    break;
+  default:
+    Pike_fatal("Unsupported string width.\n");
+    break;
+  }
+  return -1;
+}
+
+PMOD_EXPORT void f_dirname(INT32 args)
+{
+  struct pike_string *s = NULL;
+  ptrdiff_t pos, pos2 = -1;
+
+#ifdef __NT__
+  check_all_args("dirname", args, BIT_STRING, 0);
+  push_text("\\");
+  push_text("/");
+  f_replace(3);
+#endif
+
+  get_all_args("dirname", args, "%t", &s);
+
+  pos = find_last_path_separator(s, '/', s->len);
+  if (pos < 0) {
+    ref_push_string(empty_pike_string);
+  } else if (pos) {
+    push_string(string_slice(s, 0, pos));
+  } else {
+    push_text("/");
+  }
+  stack_pop_n_elems_keep_top(args);
+}
+
+PMOD_EXPORT void f_basename(INT32 args)
+{
+  struct pike_string *s = NULL;
+  ptrdiff_t pos, pos2 = -1;
+
+  get_all_args("basename", args, "%t", &s);
+
+  pos = find_last_path_separator(s, '/', s->len);
+#ifdef __NT__
+  pos2 = find_last_path_separator(s, '\\', s->len);
+  if (pos2 > pos) pos = pos2;
+#endif /* __NT__ */
+  if (pos < 0) {
+    return;
+  }
+  push_string(string_slice(s, pos+1, s->len - (pos+1)));
+  stack_pop_n_elems_keep_top(args);
+}
 
 
 /*! @decl int zero_type(mixed a)
@@ -9818,17 +9897,25 @@ void init_builtin_efuns(void)
   /* function(mixed:int) */
   ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt01),0);
 
+  ADD_EFUN("basename", f_basename, tFunc(tSetvar(0, tStr), tVar(0)), 0);
+
   /* function(string...:string) */
-  ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
-  ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
-  ADD_EFUN("combine_path_amigaos",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
+  ADD_EFUN("combine_path_nt", f_combine_path_nt,
+	   tFuncV(tNone, tSetvar(0, tStr), tVar(0)), 0);
+  ADD_EFUN("combine_path_unix", f_combine_path_unix,
+	   tFuncV(tNone, tSetvar(0, tStr), tVar(0)), 0);
+  ADD_EFUN("combine_path_amigaos", f_combine_path_amigaos,
+	   tFuncV(tNone, tSetvar(0, tStr), tVar(0)), 0);
 #if defined(__NT__)
-  ADD_EFUN("combine_path",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
+  ADD_EFUN("combine_path", f_combine_path_nt,
+	   tFuncV(tNone, tSetvar(0, tStr), tVar(0)), 0);
 #else
 #ifdef __amigaos__
-  ADD_EFUN("combine_path",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
+  ADD_EFUN("combine_path", f_combine_path_amigaos,
+	   tFuncV(tNone, tSetvar(0, tStr), tVar(0)), 0);
 #else
-  ADD_EFUN("combine_path",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
+  ADD_EFUN("combine_path", f_combine_path_unix,
+	   tFuncV(tNone, tSetvar(0, tStr), tVar(0)), 0);
 #endif
 #endif
 
@@ -9845,6 +9932,8 @@ void init_builtin_efuns(void)
 
   /* function(object|void:void) */
   ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);
+
+  ADD_EFUN("dirname", f_dirname, tFunc(tSetvar(0, tStr), tVar(0)), 0);
 
   /* function(mixed,mixed:int) */
   ADD_EFUN("equal",f_equal,tFunc(tMix tMix,tInt01),OPT_TRY_OPTIMIZE);

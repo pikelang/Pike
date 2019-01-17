@@ -553,6 +553,7 @@ array(string) explode_path(string p)
   return r;
 }
 
+#if !constant(dirname)
 //! Returns all but the last segment of a path. Some example inputs and
 //! outputs:
 //!
@@ -574,7 +575,11 @@ string dirname(string x)
   if (x[0] == '/' && sizeof(tmp) < 3) return "/";
   return tmp[..<1]*"/";
 }
+#else /* dirname */
+constant dirname = predef::dirname;
+#endif /* !dirname */
 
+#if !constant(basename)
 //! Returns the last segment of a path.
 //!
 //! @seealso
@@ -585,6 +590,10 @@ string basename(string x)
   return tmp[-1];
 #define BASENAME(X) (EXPLODE_PATH(X)[-1])
 }
+#else /* basename */
+constant basename = predef::basename;
+#define BASENAME(X)	basename(X)
+#endif /* !basename */
 
 #ifdef PIKE_AUTORELOAD
 
@@ -2295,8 +2304,12 @@ optional int(0..1) handle_attribute(mixed value, string attribute)
  */
 constant master_efuns = ({
   "error",
+#if !constant(basename)
   "basename",
+#endif
+#if !constant(dirname)
   "dirname",
+#endif
   "is_absolute_path",
   "explode_path",
 
