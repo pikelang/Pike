@@ -5202,38 +5202,58 @@ PIKECLASS SelectBackend
       int e;
       PIKE_STAT_T tmp;
 
+#ifdef __NT__
+      int i;
+      for (i = 0; i < 3; i++) {
+	int j;
+	for (j = 0; j < sb->set.sets[i].fd_count; j++) {
+	  SOCKET s = sb->set.sets[i].fd_array[j];
+	  for (e = 0; e < FD_SETSIZE; e++) {
+	    if (s == (SOCKET)da_handle[e]) break;
+	  }
+	  if (e == FD_SETSIZE) {
+	    Pike_fatal("No fd found for socket 0x%08lx.\n", (long)s);
+	  }
+#else
       /* FIXME: OOB? */
       for(e=0;e<=sb->set.max_fd;e++)
       {
 	if(fd_FD_ISSET(e, sb->set.sets + MY_READSET)
 	   || fd_FD_ISSET(e, sb->set.sets + MY_WRITESET)
 	   || fd_FD_ISSET(e, sb->set.sets + MY_EXCEPTSET)
-	  )
-	{
-	  int ret;
-
-	  if (e >= fd_map_size || fd_map[e] != me)
-	    Pike_fatal("Unmapped fd %d in select set.\n", e);
-
-	  do {
-	    ret = fd_fstat(e, &tmp);
-	    /* FIXME: Perhaps do check_threads_etc() here? */
-	  }while(ret < 0 && errno == EINTR);
-
-	  if(ret<0)
+	   ) {
+#endif
 	  {
-	    switch(errno)
+	    int ret;
+
+	    if (e >= fd_map_size || fd_map[e] != me)
+	      Pike_fatal("Unmapped fd %d in select set.\n", e);
+
+	    do {
+	      ret = fd_fstat(e, &tmp);
+	      /* FIXME: Perhaps do check_threads_etc() here? */
+	    }while(ret < 0 && errno == EINTR);
+
+	    if(ret<0)
 	    {
+	      switch(errno)
+	      {
 	      case EBADF:
 		Pike_fatal("Backend filedescriptor %d is bad.\n",e);
 		break;
 	      case ENOENT:
 		Pike_fatal("Backend filedescriptor %d is not.\n",e);
 		break;
+	      }
 	    }
 	  }
+        }
+      }
+#if 0
+      /* Make the precompiler happy... */
 	}
       }
+#endif /* 0 */
     }
 
 #endif	/* PIKE_DEBUG */
