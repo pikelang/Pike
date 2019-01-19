@@ -2957,6 +2957,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   int p_flags = prog->flags;
   LOW_JMP_BUF *saved_jmpbuf;
   int fun = -1;
+  int save_compiler_pass = Pike_compiler->compiler_pass;
 
   /* Search for a function that belongs to the current program,
    * since this is needed for opcodes that use INHERIT_FROM_*
@@ -2969,17 +2970,21 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     }
   }
 
-  if (use_dummy_reference &&
-      /* NB: add_to_*() are only valid in the first pass! */
-      (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) &&
-      (Pike_compiler->new_program == prog)) {
+#ifdef PIKE_DEBUG
+  if (Pike_compiler->new_program != prog) {
+    Pike_fatal("Invalid use of apply_low_save_and_stupid().\n");
+  }
+#endif /* PIKE_DEBUG */
+
+  /* NB: add_to_*() are only valid in the first pass! */
+  Pike_compiler->compiler_pass = COMPILER_PASS_FIRST;
+  if (use_dummy_reference) {
     /* No suitable function was found, so add one. */
     struct identifier dummy;
     struct reference dummy_ref = {
       0, 0, ID_HIDDEN,
       PIKE_T_UNKNOWN, { 0, },
     };
-    /* FIXME: Assert that o->prog == Pike_compiler->new_program */
     copy_shared_string(dummy.name, empty_pike_string);
     copy_pike_type(dummy.type, function_type_string);
     dummy.filename_strno = -1;
@@ -2992,10 +2997,6 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     add_to_identifiers(dummy);
     fun = prog->num_identifier_references;
     add_to_identifier_references(dummy_ref);
-  } else if (use_dummy_reference) {
-    /* FIXME: Hope that we don't have any F_EXTERN et al. */
-    fun = 0;
-    use_dummy_reference = 0;
   }
 
   /* FIXME: Is this up-to-date with mega_apply? */
@@ -3043,6 +3044,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   UNSETJMP(tmp);
 
   Pike_interpreter.catching_eval_jmpbuf = saved_jmpbuf;
+  Pike_compiler->compiler_pass = save_compiler_pass;
 
   if (use_dummy_reference) {
     /* Pop the dummy identifier. */
