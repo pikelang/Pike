@@ -295,12 +295,13 @@ static void exit_builtin_modules(void)
 	  int is_static = 0;						\
 	  static const struct TYPE *statics[] = {STATICS NULL};		\
 	  ptrdiff_t i; /* Use signed type to avoid warnings from gcc. */ \
-	  INT32 refs;							\
+	  INT32 refs, gc_refs;                                          \
 	  for (i = 0; i < (ptrdiff_t) (NELEM (statics) - 1); i++)	\
 	    if (x == statics[i])					\
 	      is_static = 1;						\
 	  refs = x->refs;						\
-	  while (refs > m->gc_refs + is_static) {		        \
+	  gc_refs = m->gc_refs;                                         \
+	  while (refs > gc_refs + is_static) {	        	        \
 	    PIKE_CONCAT(free_, TYPE) (x);				\
 	    refs--;							\
 	  }								\
