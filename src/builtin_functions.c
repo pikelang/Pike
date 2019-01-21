@@ -9397,13 +9397,13 @@ slow_path:
 
 /*! @decl string defined(program x, string identifier)
  *!
- *!   Returns a string with filename and linenumber where @[idenfifier]
+ *!   Returns a string with filename and linenumber where @[identifier]
  *!   in @[x] was defined.
  *!
  *!   Returns @expr{0@} (zero) when no line can be found, e.g. for
  *!   builtin functions.
  *!
- *!   If @[idenfier] can not be found in @[x] this function returns
+ *!   If @[identifier] can not be found in @[x] this function returns
  *!   where the program is defined.
  */
 PMOD_EXPORT void f_program_identifier_defined(INT32 args)
