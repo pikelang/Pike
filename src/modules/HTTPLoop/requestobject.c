@@ -654,8 +654,8 @@ static void actually_send(struct send_args *a)
 #if defined(TCP_CORK) && defined(SOL_TCP)
     DWERROR("cork... \n");
     {
-      int true=1;
-      fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, sizeof(true) );
+      int true_val=1;
+      fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true_val, sizeof(true_val) );
     }
 #endif
     fail = WRITE(a->to->fd, (char *)data, data_len);
@@ -745,8 +745,8 @@ static void actually_send(struct send_args *a)
   DWERROR("all written.. \n");
 #if defined(TCP_CORK) && defined(SOL_TCP)
   {
-    int false = 0;
-    fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &false, sizeof(false) );
+    int false_val = 0;
+    fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &false_val, sizeof(false_val) );
   }
 #endif
   {
