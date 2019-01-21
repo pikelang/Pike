@@ -9800,7 +9800,7 @@ slow_path:
 
 /*! @decl string|zero defined(program x, string identifier)
  *!
- *!   Returns a string with filename and linenumber where @[idenfifier]
+ *!   Returns a string with filename and linenumber where @[identifier]
  *!   in @[x] was defined.
  *!
  *!   Returns @expr{0@} (zero) when no line can be found, e.g. for
