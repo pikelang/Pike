@@ -12,8 +12,6 @@
 // and will likely throw an error, if the JSON string does not
 // match the expected interface, even if the JSON itself is valid.
 
-#define TO_MIXED(x) Standards.JSON.decode(Standards.JSON.encode(x))
-
 typedef mapping(string:mixed) ConfigurationDoneArguments;
 
 ConfigurationDoneArguments ConfigurationDoneArguments_from_JSON(mixed json) {
@@ -49,13 +47,13 @@ class ProtocolMessage {
     int    seq;  // json: "seq"
     string type; // json: "type"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -77,15 +75,15 @@ class Request {
     mixed  arguments; // json: "arguments"
     string command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -139,15 +137,15 @@ class Event {
     mixed  body;  // json: "body"
     string event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -176,18 +174,18 @@ class Response {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -221,18 +219,18 @@ class ErrorResponse {
     int               request_seq; // json: "request_seq"
     bool              success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -253,12 +251,12 @@ ErrorResponse ErrorResponse_from_JSON(mixed json) {
 class ErrorResponseBody {
     mixed error; // json: "error"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "error" : error,
+        ]);
 
-        json["error"] = TO_MIXED(error);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -282,18 +280,18 @@ class Message {
     mixed  url_label;      // json: "urlLabel"
     mixed  variables;      // json: "variables"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "format" : format,
+            "id" : id,
+            "sendTelemetry" : send_telemetry,
+            "showUser" : show_user,
+            "url" : url,
+            "urlLabel" : url_label,
+            "variables" : variables,
+        ]);
 
-        json["format"] = TO_MIXED(format);
-        json["id"] = TO_MIXED(id);
-        json["sendTelemetry"] = TO_MIXED(send_telemetry);
-        json["showUser"] = TO_MIXED(show_user);
-        json["url"] = TO_MIXED(url);
-        json["urlLabel"] = TO_MIXED(url_label);
-        json["variables"] = TO_MIXED(variables);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -334,15 +332,15 @@ class InitializedEvent {
     mixed body;  // json: "body"
     mixed event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -372,15 +370,15 @@ class StoppedEvent {
     StoppedEventBody body;  // json: "body"
     mixed            event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -403,17 +401,17 @@ class StoppedEventBody {
     mixed  text;                // json: "text"
     mixed  thread_id;           // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "allThreadsStopped" : all_threads_stopped,
+            "description" : description,
+            "preserveFocusHint" : preserve_focus_hint,
+            "reason" : reason,
+            "text" : text,
+            "threadId" : thread_id,
+        ]);
 
-        json["allThreadsStopped"] = TO_MIXED(all_threads_stopped);
-        json["description"] = TO_MIXED(description);
-        json["preserveFocusHint"] = TO_MIXED(preserve_focus_hint);
-        json["reason"] = TO_MIXED(reason);
-        json["text"] = TO_MIXED(text);
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -447,15 +445,15 @@ class ContinuedEvent {
     ContinuedEventBody body;  // json: "body"
     mixed              event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -474,13 +472,13 @@ class ContinuedEventBody {
     mixed all_threads_continued; // json: "allThreadsContinued"
     int   thread_id;             // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "allThreadsContinued" : all_threads_continued,
+            "threadId" : thread_id,
+        ]);
 
-        json["allThreadsContinued"] = TO_MIXED(all_threads_continued);
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -506,15 +504,15 @@ class ExitedEvent {
     ExitedEventBody body;  // json: "body"
     mixed           event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -532,12 +530,12 @@ ExitedEvent ExitedEvent_from_JSON(mixed json) {
 class ExitedEventBody {
     int exit_code; // json: "exitCode"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "exitCode" : exit_code,
+        ]);
 
-        json["exitCode"] = TO_MIXED(exit_code);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -563,15 +561,15 @@ class TerminatedEvent {
     mixed body;  // json: "body"
     mixed event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -589,12 +587,12 @@ TerminatedEvent TerminatedEvent_from_JSON(mixed json) {
 class TerminatedEventBody {
     mixed restart; // json: "restart"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "restart" : restart,
+        ]);
 
-        json["restart"] = TO_MIXED(restart);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -619,15 +617,15 @@ class ThreadEvent {
     ThreadEventBody body;  // json: "body"
     mixed           event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -646,13 +644,13 @@ class ThreadEventBody {
     string reason;    // json: "reason"
     int    thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "reason" : reason,
+            "threadId" : thread_id,
+        ]);
 
-        json["reason"] = TO_MIXED(reason);
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -678,15 +676,15 @@ class OutputEvent {
     OutputEventBody body;  // json: "body"
     mixed           event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -710,18 +708,18 @@ class OutputEventBody {
     mixed  source;              // json: "source"
     mixed  variables_reference; // json: "variablesReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "category" : category,
+            "column" : column,
+            "data" : data,
+            "line" : line,
+            "output" : output,
+            "source" : source,
+            "variablesReference" : variables_reference,
+        ]);
 
-        json["category"] = TO_MIXED(category);
-        json["column"] = TO_MIXED(column);
-        json["data"] = TO_MIXED(data);
-        json["line"] = TO_MIXED(line);
-        json["output"] = TO_MIXED(output);
-        json["source"] = TO_MIXED(source);
-        json["variablesReference"] = TO_MIXED(variables_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -769,19 +767,19 @@ class Source {
     mixed source_reference;  // json: "sourceReference"
     mixed sources;           // json: "sources"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "adapterData" : adapter_data,
+            "checksums" : checksums,
+            "name" : name,
+            "origin" : origin,
+            "path" : path,
+            "presentationHint" : presentation_hint,
+            "sourceReference" : source_reference,
+            "sources" : sources,
+        ]);
 
-        json["adapterData"] = TO_MIXED(adapter_data);
-        json["checksums"] = TO_MIXED(checksums);
-        json["name"] = TO_MIXED(name);
-        json["origin"] = TO_MIXED(origin);
-        json["path"] = TO_MIXED(path);
-        json["presentationHint"] = TO_MIXED(presentation_hint);
-        json["sourceReference"] = TO_MIXED(source_reference);
-        json["sources"] = TO_MIXED(sources);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -805,13 +803,13 @@ class Checksum {
     mixed  algorithm; // json: "algorithm"
     string checksum;  // json: "checksum"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "algorithm" : algorithm,
+            "checksum" : checksum,
+        ]);
 
-        json["algorithm"] = TO_MIXED(algorithm);
-        json["checksum"] = TO_MIXED(checksum);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -846,15 +844,15 @@ class BreakpointEvent {
     BreakpointEventBody body;  // json: "body"
     mixed               event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -873,13 +871,13 @@ class BreakpointEventBody {
     Breakpoint breakpoint; // json: "breakpoint"
     string     reason;     // json: "reason"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "breakpoint" : breakpoint,
+            "reason" : reason,
+        ]);
 
-        json["breakpoint"] = TO_MIXED(breakpoint);
-        json["reason"] = TO_MIXED(reason);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -906,19 +904,19 @@ class Breakpoint {
     mixed source;     // json: "source"
     bool  verified;   // json: "verified"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "column" : column,
+            "endColumn" : end_column,
+            "endLine" : end_line,
+            "id" : id,
+            "line" : line,
+            "message" : message,
+            "source" : source,
+            "verified" : verified,
+        ]);
 
-        json["column"] = TO_MIXED(column);
-        json["endColumn"] = TO_MIXED(end_column);
-        json["endLine"] = TO_MIXED(end_line);
-        json["id"] = TO_MIXED(id);
-        json["line"] = TO_MIXED(line);
-        json["message"] = TO_MIXED(message);
-        json["source"] = TO_MIXED(source);
-        json["verified"] = TO_MIXED(verified);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -950,15 +948,15 @@ class ModuleEvent {
     ModuleEventBody body;  // json: "body"
     mixed           event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -977,13 +975,13 @@ class ModuleEventBody {
     Module module; // json: "module"
     mixed  reason; // json: "reason"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "module" : module,
+            "reason" : reason,
+        ]);
 
-        json["module"] = TO_MIXED(module);
-        json["reason"] = TO_MIXED(reason);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1022,21 +1020,21 @@ class Module {
     mixed  symbol_status;    // json: "symbolStatus"
     mixed  version;          // json: "version"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "addressRange" : address_range,
+            "dateTimeStamp" : date_time_stamp,
+            "id" : id,
+            "isOptimized" : is_optimized,
+            "isUserCode" : is_user_code,
+            "name" : name,
+            "path" : path,
+            "symbolFilePath" : symbol_file_path,
+            "symbolStatus" : symbol_status,
+            "version" : version,
+        ]);
 
-        json["addressRange"] = TO_MIXED(address_range);
-        json["dateTimeStamp"] = TO_MIXED(date_time_stamp);
-        json["id"] = TO_MIXED(id);
-        json["isOptimized"] = TO_MIXED(is_optimized);
-        json["isUserCode"] = TO_MIXED(is_user_code);
-        json["name"] = TO_MIXED(name);
-        json["path"] = TO_MIXED(path);
-        json["symbolFilePath"] = TO_MIXED(symbol_file_path);
-        json["symbolStatus"] = TO_MIXED(symbol_status);
-        json["version"] = TO_MIXED(version);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1084,15 +1082,15 @@ class LoadedSourceEvent {
     LoadedSourceEventBody body;  // json: "body"
     mixed                 event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1111,13 +1109,13 @@ class LoadedSourceEventBody {
     mixed  reason; // json: "reason"
     Source source; // json: "source"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "reason" : reason,
+            "source" : source,
+        ]);
 
-        json["reason"] = TO_MIXED(reason);
-        json["source"] = TO_MIXED(source);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1144,15 +1142,15 @@ class ProcessEvent {
     ProcessEventBody body;  // json: "body"
     mixed            event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1173,15 +1171,15 @@ class ProcessEventBody {
     mixed  start_method;      // json: "startMethod"
     mixed  system_process_id; // json: "systemProcessId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "isLocalProcess" : is_local_process,
+            "name" : name,
+            "startMethod" : start_method,
+            "systemProcessId" : system_process_id,
+        ]);
 
-        json["isLocalProcess"] = TO_MIXED(is_local_process);
-        json["name"] = TO_MIXED(name);
-        json["startMethod"] = TO_MIXED(start_method);
-        json["systemProcessId"] = TO_MIXED(system_process_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1218,15 +1216,15 @@ class CapabilitiesEvent {
     CapabilitiesEventBody body;  // json: "body"
     mixed                 event; // json: "event"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "event" : event,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["event"] = TO_MIXED(event);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1244,12 +1242,12 @@ CapabilitiesEvent CapabilitiesEvent_from_JSON(mixed json) {
 class CapabilitiesEventBody {
     Capabilities capabilities; // json: "capabilities"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "capabilities" : capabilities,
+        ]);
 
-        json["capabilities"] = TO_MIXED(capabilities);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1294,37 +1292,37 @@ class Capabilities {
     mixed supports_value_formatting_options;    // json: "supportsValueFormattingOptions"
     mixed support_terminate_debuggee;           // json: "supportTerminateDebuggee"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "additionalModuleColumns" : additional_module_columns,
+            "exceptionBreakpointFilters" : exception_breakpoint_filters,
+            "supportedChecksumAlgorithms" : supported_checksum_algorithms,
+            "supportsCompletionsRequest" : supports_completions_request,
+            "supportsConditionalBreakpoints" : supports_conditional_breakpoints,
+            "supportsConfigurationDoneRequest" : supports_configuration_done_request,
+            "supportsDelayedStackTraceLoading" : supports_delayed_stack_trace_loading,
+            "supportsEvaluateForHovers" : supports_evaluate_for_hovers,
+            "supportsExceptionInfoRequest" : supports_exception_info_request,
+            "supportsExceptionOptions" : supports_exception_options,
+            "supportsFunctionBreakpoints" : supports_function_breakpoints,
+            "supportsGotoTargetsRequest" : supports_goto_targets_request,
+            "supportsHitConditionalBreakpoints" : supports_hit_conditional_breakpoints,
+            "supportsLoadedSourcesRequest" : supports_loaded_sources_request,
+            "supportsLogPoints" : supports_log_points,
+            "supportsModulesRequest" : supports_modules_request,
+            "supportsRestartFrame" : supports_restart_frame,
+            "supportsRestartRequest" : supports_restart_request,
+            "supportsSetExpression" : supports_set_expression,
+            "supportsSetVariable" : supports_set_variable,
+            "supportsStepBack" : supports_step_back,
+            "supportsStepInTargetsRequest" : supports_step_in_targets_request,
+            "supportsTerminateRequest" : supports_terminate_request,
+            "supportsTerminateThreadsRequest" : supports_terminate_threads_request,
+            "supportsValueFormattingOptions" : supports_value_formatting_options,
+            "supportTerminateDebuggee" : support_terminate_debuggee,
+        ]);
 
-        json["additionalModuleColumns"] = TO_MIXED(additional_module_columns);
-        json["exceptionBreakpointFilters"] = TO_MIXED(exception_breakpoint_filters);
-        json["supportedChecksumAlgorithms"] = TO_MIXED(supported_checksum_algorithms);
-        json["supportsCompletionsRequest"] = TO_MIXED(supports_completions_request);
-        json["supportsConditionalBreakpoints"] = TO_MIXED(supports_conditional_breakpoints);
-        json["supportsConfigurationDoneRequest"] = TO_MIXED(supports_configuration_done_request);
-        json["supportsDelayedStackTraceLoading"] = TO_MIXED(supports_delayed_stack_trace_loading);
-        json["supportsEvaluateForHovers"] = TO_MIXED(supports_evaluate_for_hovers);
-        json["supportsExceptionInfoRequest"] = TO_MIXED(supports_exception_info_request);
-        json["supportsExceptionOptions"] = TO_MIXED(supports_exception_options);
-        json["supportsFunctionBreakpoints"] = TO_MIXED(supports_function_breakpoints);
-        json["supportsGotoTargetsRequest"] = TO_MIXED(supports_goto_targets_request);
-        json["supportsHitConditionalBreakpoints"] = TO_MIXED(supports_hit_conditional_breakpoints);
-        json["supportsLoadedSourcesRequest"] = TO_MIXED(supports_loaded_sources_request);
-        json["supportsLogPoints"] = TO_MIXED(supports_log_points);
-        json["supportsModulesRequest"] = TO_MIXED(supports_modules_request);
-        json["supportsRestartFrame"] = TO_MIXED(supports_restart_frame);
-        json["supportsRestartRequest"] = TO_MIXED(supports_restart_request);
-        json["supportsSetExpression"] = TO_MIXED(supports_set_expression);
-        json["supportsSetVariable"] = TO_MIXED(supports_set_variable);
-        json["supportsStepBack"] = TO_MIXED(supports_step_back);
-        json["supportsStepInTargetsRequest"] = TO_MIXED(supports_step_in_targets_request);
-        json["supportsTerminateRequest"] = TO_MIXED(supports_terminate_request);
-        json["supportsTerminateThreadsRequest"] = TO_MIXED(supports_terminate_threads_request);
-        json["supportsValueFormattingOptions"] = TO_MIXED(supports_value_formatting_options);
-        json["supportTerminateDebuggee"] = TO_MIXED(support_terminate_debuggee);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1371,16 +1369,16 @@ class ColumnDescriptor {
     mixed  type;           // json: "type"
     mixed  width;          // json: "width"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "attributeName" : attribute_name,
+            "format" : format,
+            "label" : label,
+            "type" : type,
+            "width" : width,
+        ]);
 
-        json["attributeName"] = TO_MIXED(attribute_name);
-        json["format"] = TO_MIXED(format);
-        json["label"] = TO_MIXED(label);
-        json["type"] = TO_MIXED(type);
-        json["width"] = TO_MIXED(width);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1408,14 +1406,14 @@ class ExceptionBreakpointsFilter {
     string filter;                               // json: "filter"
     string label;                                // json: "label"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "default" : exception_breakpoints_filter_default,
+            "filter" : filter,
+            "label" : label,
+        ]);
 
-        json["default"] = TO_MIXED(exception_breakpoints_filter_default);
-        json["filter"] = TO_MIXED(filter);
-        json["label"] = TO_MIXED(label);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1443,15 +1441,15 @@ class RunInTerminalRequest {
     ArgumentsClass arguments; // json: "arguments"
     mixed          command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1474,16 +1472,16 @@ class ArgumentsClass {
     mixed         kind;  // json: "kind"
     mixed         title; // json: "title"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "args" : args,
+            "cwd" : cwd,
+            "env" : env,
+            "kind" : kind,
+            "title" : title,
+        ]);
 
-        json["args"] = TO_MIXED(args);
-        json["cwd"] = TO_MIXED(cwd);
-        json["env"] = TO_MIXED(env);
-        json["kind"] = TO_MIXED(kind);
-        json["title"] = TO_MIXED(title);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1512,16 +1510,16 @@ class RunInTerminalRequestArguments {
     mixed         kind;  // json: "kind"
     mixed         title; // json: "title"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "args" : args,
+            "cwd" : cwd,
+            "env" : env,
+            "kind" : kind,
+            "title" : title,
+        ]);
 
-        json["args"] = TO_MIXED(args);
-        json["cwd"] = TO_MIXED(cwd);
-        json["env"] = TO_MIXED(env);
-        json["kind"] = TO_MIXED(kind);
-        json["title"] = TO_MIXED(title);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1551,18 +1549,18 @@ class RunInTerminalResponse {
     int                       request_seq; // json: "request_seq"
     bool                      success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1584,13 +1582,13 @@ class RunInTerminalResponseBody {
     mixed process_id;       // json: "processId"
     mixed shell_process_id; // json: "shellProcessId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "processId" : process_id,
+            "shellProcessId" : shell_process_id,
+        ]);
 
-        json["processId"] = TO_MIXED(process_id);
-        json["shellProcessId"] = TO_MIXED(shell_process_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1621,15 +1619,15 @@ class InitializeRequest {
     RequestArguments arguments; // json: "arguments"
     mixed            command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1657,21 +1655,21 @@ class RequestArguments {
     mixed  supports_variable_paging;         // json: "supportsVariablePaging"
     mixed  supports_variable_type;           // json: "supportsVariableType"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "adapterID" : adapter_id,
+            "clientID" : client_id,
+            "clientName" : client_name,
+            "columnsStartAt1" : columns_start_at1,
+            "linesStartAt1" : lines_start_at1,
+            "locale" : locale,
+            "pathFormat" : path_format,
+            "supportsRunInTerminalRequest" : supports_run_in_terminal_request,
+            "supportsVariablePaging" : supports_variable_paging,
+            "supportsVariableType" : supports_variable_type,
+        ]);
 
-        json["adapterID"] = TO_MIXED(adapter_id);
-        json["clientID"] = TO_MIXED(client_id);
-        json["clientName"] = TO_MIXED(client_name);
-        json["columnsStartAt1"] = TO_MIXED(columns_start_at1);
-        json["linesStartAt1"] = TO_MIXED(lines_start_at1);
-        json["locale"] = TO_MIXED(locale);
-        json["pathFormat"] = TO_MIXED(path_format);
-        json["supportsRunInTerminalRequest"] = TO_MIXED(supports_run_in_terminal_request);
-        json["supportsVariablePaging"] = TO_MIXED(supports_variable_paging);
-        json["supportsVariableType"] = TO_MIXED(supports_variable_type);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1707,21 +1705,21 @@ class InitializeRequestArguments {
     mixed  supports_variable_paging;         // json: "supportsVariablePaging"
     mixed  supports_variable_type;           // json: "supportsVariableType"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "adapterID" : adapter_id,
+            "clientID" : client_id,
+            "clientName" : client_name,
+            "columnsStartAt1" : columns_start_at1,
+            "linesStartAt1" : lines_start_at1,
+            "locale" : locale,
+            "pathFormat" : path_format,
+            "supportsRunInTerminalRequest" : supports_run_in_terminal_request,
+            "supportsVariablePaging" : supports_variable_paging,
+            "supportsVariableType" : supports_variable_type,
+        ]);
 
-        json["adapterID"] = TO_MIXED(adapter_id);
-        json["clientID"] = TO_MIXED(client_id);
-        json["clientName"] = TO_MIXED(client_name);
-        json["columnsStartAt1"] = TO_MIXED(columns_start_at1);
-        json["linesStartAt1"] = TO_MIXED(lines_start_at1);
-        json["locale"] = TO_MIXED(locale);
-        json["pathFormat"] = TO_MIXED(path_format);
-        json["supportsRunInTerminalRequest"] = TO_MIXED(supports_run_in_terminal_request);
-        json["supportsVariablePaging"] = TO_MIXED(supports_variable_paging);
-        json["supportsVariableType"] = TO_MIXED(supports_variable_type);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1756,18 +1754,18 @@ class InitializeResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1818,37 +1816,37 @@ class Types {
     mixed supports_value_formatting_options;    // json: "supportsValueFormattingOptions"
     mixed support_terminate_debuggee;           // json: "supportTerminateDebuggee"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "additionalModuleColumns" : additional_module_columns,
+            "exceptionBreakpointFilters" : exception_breakpoint_filters,
+            "supportedChecksumAlgorithms" : supported_checksum_algorithms,
+            "supportsCompletionsRequest" : supports_completions_request,
+            "supportsConditionalBreakpoints" : supports_conditional_breakpoints,
+            "supportsConfigurationDoneRequest" : supports_configuration_done_request,
+            "supportsDelayedStackTraceLoading" : supports_delayed_stack_trace_loading,
+            "supportsEvaluateForHovers" : supports_evaluate_for_hovers,
+            "supportsExceptionInfoRequest" : supports_exception_info_request,
+            "supportsExceptionOptions" : supports_exception_options,
+            "supportsFunctionBreakpoints" : supports_function_breakpoints,
+            "supportsGotoTargetsRequest" : supports_goto_targets_request,
+            "supportsHitConditionalBreakpoints" : supports_hit_conditional_breakpoints,
+            "supportsLoadedSourcesRequest" : supports_loaded_sources_request,
+            "supportsLogPoints" : supports_log_points,
+            "supportsModulesRequest" : supports_modules_request,
+            "supportsRestartFrame" : supports_restart_frame,
+            "supportsRestartRequest" : supports_restart_request,
+            "supportsSetExpression" : supports_set_expression,
+            "supportsSetVariable" : supports_set_variable,
+            "supportsStepBack" : supports_step_back,
+            "supportsStepInTargetsRequest" : supports_step_in_targets_request,
+            "supportsTerminateRequest" : supports_terminate_request,
+            "supportsTerminateThreadsRequest" : supports_terminate_threads_request,
+            "supportsValueFormattingOptions" : supports_value_formatting_options,
+            "supportTerminateDebuggee" : support_terminate_debuggee,
+        ]);
 
-        json["additionalModuleColumns"] = TO_MIXED(additional_module_columns);
-        json["exceptionBreakpointFilters"] = TO_MIXED(exception_breakpoint_filters);
-        json["supportedChecksumAlgorithms"] = TO_MIXED(supported_checksum_algorithms);
-        json["supportsCompletionsRequest"] = TO_MIXED(supports_completions_request);
-        json["supportsConditionalBreakpoints"] = TO_MIXED(supports_conditional_breakpoints);
-        json["supportsConfigurationDoneRequest"] = TO_MIXED(supports_configuration_done_request);
-        json["supportsDelayedStackTraceLoading"] = TO_MIXED(supports_delayed_stack_trace_loading);
-        json["supportsEvaluateForHovers"] = TO_MIXED(supports_evaluate_for_hovers);
-        json["supportsExceptionInfoRequest"] = TO_MIXED(supports_exception_info_request);
-        json["supportsExceptionOptions"] = TO_MIXED(supports_exception_options);
-        json["supportsFunctionBreakpoints"] = TO_MIXED(supports_function_breakpoints);
-        json["supportsGotoTargetsRequest"] = TO_MIXED(supports_goto_targets_request);
-        json["supportsHitConditionalBreakpoints"] = TO_MIXED(supports_hit_conditional_breakpoints);
-        json["supportsLoadedSourcesRequest"] = TO_MIXED(supports_loaded_sources_request);
-        json["supportsLogPoints"] = TO_MIXED(supports_log_points);
-        json["supportsModulesRequest"] = TO_MIXED(supports_modules_request);
-        json["supportsRestartFrame"] = TO_MIXED(supports_restart_frame);
-        json["supportsRestartRequest"] = TO_MIXED(supports_restart_request);
-        json["supportsSetExpression"] = TO_MIXED(supports_set_expression);
-        json["supportsSetVariable"] = TO_MIXED(supports_set_variable);
-        json["supportsStepBack"] = TO_MIXED(supports_step_back);
-        json["supportsStepInTargetsRequest"] = TO_MIXED(supports_step_in_targets_request);
-        json["supportsTerminateRequest"] = TO_MIXED(supports_terminate_request);
-        json["supportsTerminateThreadsRequest"] = TO_MIXED(supports_terminate_threads_request);
-        json["supportsValueFormattingOptions"] = TO_MIXED(supports_value_formatting_options);
-        json["supportTerminateDebuggee"] = TO_MIXED(support_terminate_debuggee);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1897,15 +1895,15 @@ class ConfigurationDoneRequest {
     mixed arguments; // json: "arguments"
     mixed command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1937,18 +1935,18 @@ class ConfigurationDoneResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -1979,15 +1977,15 @@ class LaunchRequest {
     LaunchRequestArgumentsClass arguments; // json: "arguments"
     mixed                       command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2007,13 +2005,13 @@ class LaunchRequestArgumentsClass {
     mixed restart;  // json: "__restart"
     mixed no_debug; // json: "noDebug"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "__restart" : restart,
+            "noDebug" : no_debug,
+        ]);
 
-        json["__restart"] = TO_MIXED(restart);
-        json["noDebug"] = TO_MIXED(no_debug);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2033,13 +2031,13 @@ class LaunchRequestArguments {
     mixed restart;  // json: "__restart"
     mixed no_debug; // json: "noDebug"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "__restart" : restart,
+            "noDebug" : no_debug,
+        ]);
 
-        json["__restart"] = TO_MIXED(restart);
-        json["noDebug"] = TO_MIXED(no_debug);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2067,18 +2065,18 @@ class LaunchResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2109,15 +2107,15 @@ class AttachRequest {
     AttachRequestArgumentsClass arguments; // json: "arguments"
     mixed                       command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2136,12 +2134,12 @@ AttachRequest AttachRequest_from_JSON(mixed json) {
 class AttachRequestArgumentsClass {
     mixed restart; // json: "__restart"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "__restart" : restart,
+        ]);
 
-        json["__restart"] = TO_MIXED(restart);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2159,12 +2157,12 @@ constant ARAK_GROUNDHOG_ATTACH = "attach"; // json: "attach"
 class AttachRequestArguments {
     mixed restart; // json: "__restart"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "__restart" : restart,
+        ]);
 
-        json["__restart"] = TO_MIXED(restart);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2191,18 +2189,18 @@ class AttachResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2236,15 +2234,15 @@ class RestartRequest {
     mixed arguments; // json: "arguments"
     mixed command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2276,18 +2274,18 @@ class RestartResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2321,15 +2319,15 @@ class DisconnectRequest {
     mixed arguments; // json: "arguments"
     mixed command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2349,13 +2347,13 @@ class DisconnectRequestArguments {
     mixed restart;            // json: "restart"
     mixed terminate_debuggee; // json: "terminateDebuggee"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "restart" : restart,
+            "terminateDebuggee" : terminate_debuggee,
+        ]);
 
-        json["restart"] = TO_MIXED(restart);
-        json["terminateDebuggee"] = TO_MIXED(terminate_debuggee);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2375,13 +2373,13 @@ class DisconnectArguments {
     mixed restart;            // json: "restart"
     mixed terminate_debuggee; // json: "terminateDebuggee"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "restart" : restart,
+            "terminateDebuggee" : terminate_debuggee,
+        ]);
 
-        json["restart"] = TO_MIXED(restart);
-        json["terminateDebuggee"] = TO_MIXED(terminate_debuggee);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2409,18 +2407,18 @@ class DisconnectResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2450,15 +2448,15 @@ class TerminateRequest {
     mixed arguments; // json: "arguments"
     mixed command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2477,12 +2475,12 @@ TerminateRequest TerminateRequest_from_JSON(mixed json) {
 class TerminateRequestArguments {
     mixed restart; // json: "restart"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "restart" : restart,
+        ]);
 
-        json["restart"] = TO_MIXED(restart);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2500,12 +2498,12 @@ constant TERMINATE = "terminate"; // json: "terminate"
 class TerminateArguments {
     mixed restart; // json: "restart"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "restart" : restart,
+        ]);
 
-        json["restart"] = TO_MIXED(restart);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2532,18 +2530,18 @@ class TerminateResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2575,15 +2573,15 @@ class SetBreakpointsRequest {
     SetBreakpointsRequestArguments arguments; // json: "arguments"
     mixed                          command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2605,15 +2603,15 @@ class SetBreakpointsRequestArguments {
     Source source;          // json: "source"
     mixed  source_modified; // json: "sourceModified"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "breakpoints" : breakpoints,
+            "lines" : lines,
+            "source" : source,
+            "sourceModified" : source_modified,
+        ]);
 
-        json["breakpoints"] = TO_MIXED(breakpoints);
-        json["lines"] = TO_MIXED(lines);
-        json["source"] = TO_MIXED(source);
-        json["sourceModified"] = TO_MIXED(source_modified);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2636,16 +2634,16 @@ class SourceBreakpoint {
     int   line;          // json: "line"
     mixed log_message;   // json: "logMessage"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "column" : column,
+            "condition" : condition,
+            "hitCondition" : hit_condition,
+            "line" : line,
+            "logMessage" : log_message,
+        ]);
 
-        json["column"] = TO_MIXED(column);
-        json["condition"] = TO_MIXED(condition);
-        json["hitCondition"] = TO_MIXED(hit_condition);
-        json["line"] = TO_MIXED(line);
-        json["logMessage"] = TO_MIXED(log_message);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2670,15 +2668,15 @@ class SetBreakpointsArguments {
     Source source;          // json: "source"
     mixed  source_modified; // json: "sourceModified"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "breakpoints" : breakpoints,
+            "lines" : lines,
+            "source" : source,
+            "sourceModified" : source_modified,
+        ]);
 
-        json["breakpoints"] = TO_MIXED(breakpoints);
-        json["lines"] = TO_MIXED(lines);
-        json["source"] = TO_MIXED(source);
-        json["sourceModified"] = TO_MIXED(source_modified);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2711,18 +2709,18 @@ class SetBreakpointsResponse {
     int                        request_seq; // json: "request_seq"
     bool                       success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2743,12 +2741,12 @@ SetBreakpointsResponse SetBreakpointsResponse_from_JSON(mixed json) {
 class SetBreakpointsResponseBody {
     array(Breakpoint) breakpoints; // json: "breakpoints"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "breakpoints" : breakpoints,
+        ]);
 
-        json["breakpoints"] = TO_MIXED(breakpoints);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2774,15 +2772,15 @@ class SetFunctionBreakpointsRequest {
     SetFunctionBreakpointsRequestArguments arguments; // json: "arguments"
     mixed                                  command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2801,12 +2799,12 @@ SetFunctionBreakpointsRequest SetFunctionBreakpointsRequest_from_JSON(mixed json
 class SetFunctionBreakpointsRequestArguments {
     array(FunctionBreakpoint) breakpoints; // json: "breakpoints"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "breakpoints" : breakpoints,
+        ]);
 
-        json["breakpoints"] = TO_MIXED(breakpoints);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2824,14 +2822,14 @@ class FunctionBreakpoint {
     mixed  hit_condition; // json: "hitCondition"
     string name;          // json: "name"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "condition" : condition,
+            "hitCondition" : hit_condition,
+            "name" : name,
+        ]);
 
-        json["condition"] = TO_MIXED(condition);
-        json["hitCondition"] = TO_MIXED(hit_condition);
-        json["name"] = TO_MIXED(name);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2851,12 +2849,12 @@ constant SET_FUNCTION_BREAKPOINTS = "setFunctionBreakpoints"; // json: "setFunct
 class SetFunctionBreakpointsArguments {
     array(FunctionBreakpoint) breakpoints; // json: "breakpoints"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "breakpoints" : breakpoints,
+        ]);
 
-        json["breakpoints"] = TO_MIXED(breakpoints);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2883,18 +2881,18 @@ class SetFunctionBreakpointsResponse {
     int                                request_seq; // json: "request_seq"
     bool                               success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2915,12 +2913,12 @@ SetFunctionBreakpointsResponse SetFunctionBreakpointsResponse_from_JSON(mixed js
 class SetFunctionBreakpointsResponseBody {
     array(Breakpoint) breakpoints; // json: "breakpoints"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "breakpoints" : breakpoints,
+        ]);
 
-        json["breakpoints"] = TO_MIXED(breakpoints);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2944,15 +2942,15 @@ class SetExceptionBreakpointsRequest {
     SetExceptionBreakpointsRequestArguments arguments; // json: "arguments"
     mixed                                   command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2972,13 +2970,13 @@ class SetExceptionBreakpointsRequestArguments {
     mixed         exception_options; // json: "exceptionOptions"
     array(string) filters;           // json: "filters"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "exceptionOptions" : exception_options,
+            "filters" : filters,
+        ]);
 
-        json["exceptionOptions"] = TO_MIXED(exception_options);
-        json["filters"] = TO_MIXED(filters);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -2996,13 +2994,13 @@ class ExceptionOptions {
     mixed break_mode; // json: "breakMode"
     mixed path;       // json: "path"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "breakMode" : break_mode,
+            "path" : path,
+        ]);
 
-        json["breakMode"] = TO_MIXED(break_mode);
-        json["path"] = TO_MIXED(path);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3028,13 +3026,13 @@ class ExceptionPathSegment {
     array(string) names;  // json: "names"
     mixed         negate; // json: "negate"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "names" : names,
+            "negate" : negate,
+        ]);
 
-        json["names"] = TO_MIXED(names);
-        json["negate"] = TO_MIXED(negate);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3054,13 +3052,13 @@ class SetExceptionBreakpointsArguments {
     mixed         exception_options; // json: "exceptionOptions"
     array(string) filters;           // json: "filters"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "exceptionOptions" : exception_options,
+            "filters" : filters,
+        ]);
 
-        json["exceptionOptions"] = TO_MIXED(exception_options);
-        json["filters"] = TO_MIXED(filters);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3088,18 +3086,18 @@ class SetExceptionBreakpointsResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3128,15 +3126,15 @@ class ContinueRequest {
     ContinueRequestArguments arguments; // json: "arguments"
     mixed                    command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3155,12 +3153,12 @@ ContinueRequest ContinueRequest_from_JSON(mixed json) {
 class ContinueRequestArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3178,12 +3176,12 @@ constant CONTINUE = "continue"; // json: "continue"
 class ContinueArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3209,18 +3207,18 @@ class ContinueResponse {
     int                  request_seq; // json: "request_seq"
     bool                 success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3241,12 +3239,12 @@ ContinueResponse ContinueResponse_from_JSON(mixed json) {
 class ContinueResponseBody {
     mixed all_threads_continued; // json: "allThreadsContinued"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "allThreadsContinued" : all_threads_continued,
+        ]);
 
-        json["allThreadsContinued"] = TO_MIXED(all_threads_continued);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3271,15 +3269,15 @@ class NextRequest {
     NextRequestArguments arguments; // json: "arguments"
     mixed                command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3298,12 +3296,12 @@ NextRequest NextRequest_from_JSON(mixed json) {
 class NextRequestArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3321,12 +3319,12 @@ constant NEXT = "next"; // json: "next"
 class NextArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3352,18 +3350,18 @@ class NextResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3400,15 +3398,15 @@ class StepInRequest {
     StepInRequestArguments arguments; // json: "arguments"
     mixed                  command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3428,13 +3426,13 @@ class StepInRequestArguments {
     mixed target_id; // json: "targetId"
     int   thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "targetId" : target_id,
+            "threadId" : thread_id,
+        ]);
 
-        json["targetId"] = TO_MIXED(target_id);
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3454,13 +3452,13 @@ class StepInArguments {
     mixed target_id; // json: "targetId"
     int   thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "targetId" : target_id,
+            "threadId" : thread_id,
+        ]);
 
-        json["targetId"] = TO_MIXED(target_id);
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3488,18 +3486,18 @@ class StepInResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3530,15 +3528,15 @@ class StepOutRequest {
     StepOutRequestArguments arguments; // json: "arguments"
     mixed                   command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3557,12 +3555,12 @@ StepOutRequest StepOutRequest_from_JSON(mixed json) {
 class StepOutRequestArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3580,12 +3578,12 @@ constant STEP_OUT = "stepOut"; // json: "stepOut"
 class StepOutArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3612,18 +3610,18 @@ class StepOutResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3655,15 +3653,15 @@ class StepBackRequest {
     StepBackRequestArguments arguments; // json: "arguments"
     mixed                    command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3682,12 +3680,12 @@ StepBackRequest StepBackRequest_from_JSON(mixed json) {
 class StepBackRequestArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3705,12 +3703,12 @@ constant STEP_BACK = "stepBack"; // json: "stepBack"
 class StepBackArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3737,18 +3735,18 @@ class StepBackResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3778,15 +3776,15 @@ class ReverseContinueRequest {
     ReverseContinueRequestArguments arguments; // json: "arguments"
     mixed                           command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3805,12 +3803,12 @@ ReverseContinueRequest ReverseContinueRequest_from_JSON(mixed json) {
 class ReverseContinueRequestArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3828,12 +3826,12 @@ constant REVERSE_CONTINUE = "reverseContinue"; // json: "reverseContinue"
 class ReverseContinueArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3860,18 +3858,18 @@ class ReverseContinueResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3902,15 +3900,15 @@ class RestartFrameRequest {
     RestartFrameRequestArguments arguments; // json: "arguments"
     mixed                        command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3929,12 +3927,12 @@ RestartFrameRequest RestartFrameRequest_from_JSON(mixed json) {
 class RestartFrameRequestArguments {
     int frame_id; // json: "frameId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "frameId" : frame_id,
+        ]);
 
-        json["frameId"] = TO_MIXED(frame_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3952,12 +3950,12 @@ constant RESTART_FRAME = "restartFrame"; // json: "restartFrame"
 class RestartFrameArguments {
     int frame_id; // json: "frameId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "frameId" : frame_id,
+        ]);
 
-        json["frameId"] = TO_MIXED(frame_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -3984,18 +3982,18 @@ class RestartFrameResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4027,15 +4025,15 @@ class GotoRequest {
     GotoRequestArguments arguments; // json: "arguments"
     mixed                command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4055,13 +4053,13 @@ class GotoRequestArguments {
     int target_id; // json: "targetId"
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "targetId" : target_id,
+            "threadId" : thread_id,
+        ]);
 
-        json["targetId"] = TO_MIXED(target_id);
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4081,13 +4079,13 @@ class GotoArguments {
     int target_id; // json: "targetId"
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "targetId" : target_id,
+            "threadId" : thread_id,
+        ]);
 
-        json["targetId"] = TO_MIXED(target_id);
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4114,18 +4112,18 @@ class GotoResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4156,15 +4154,15 @@ class PauseRequest {
     PauseRequestArguments arguments; // json: "arguments"
     mixed                 command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4183,12 +4181,12 @@ PauseRequest PauseRequest_from_JSON(mixed json) {
 class PauseRequestArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4206,12 +4204,12 @@ constant PAUSE = "pause"; // json: "pause"
 class PauseArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4238,18 +4236,18 @@ class PauseResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4278,15 +4276,15 @@ class StackTraceRequest {
     StackTraceRequestArguments arguments; // json: "arguments"
     mixed                      command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4308,15 +4306,15 @@ class StackTraceRequestArguments {
     mixed start_frame; // json: "startFrame"
     int   thread_id;   // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "format" : format,
+            "levels" : levels,
+            "startFrame" : start_frame,
+            "threadId" : thread_id,
+        ]);
 
-        json["format"] = TO_MIXED(format);
-        json["levels"] = TO_MIXED(levels);
-        json["startFrame"] = TO_MIXED(start_frame);
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4354,19 +4352,19 @@ class StackFrameFormat {
     mixed parameter_types;  // json: "parameterTypes"
     mixed parameter_values; // json: "parameterValues"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "hex" : hex,
+            "includeAll" : include_all,
+            "line" : line,
+            "module" : module,
+            "parameterNames" : parameter_names,
+            "parameters" : parameters,
+            "parameterTypes" : parameter_types,
+            "parameterValues" : parameter_values,
+        ]);
 
-        json["hex"] = TO_MIXED(hex);
-        json["includeAll"] = TO_MIXED(include_all);
-        json["line"] = TO_MIXED(line);
-        json["module"] = TO_MIXED(module);
-        json["parameterNames"] = TO_MIXED(parameter_names);
-        json["parameters"] = TO_MIXED(parameters);
-        json["parameterTypes"] = TO_MIXED(parameter_types);
-        json["parameterValues"] = TO_MIXED(parameter_values);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4394,15 +4392,15 @@ class StackTraceArguments {
     mixed start_frame; // json: "startFrame"
     int   thread_id;   // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "format" : format,
+            "levels" : levels,
+            "startFrame" : start_frame,
+            "threadId" : thread_id,
+        ]);
 
-        json["format"] = TO_MIXED(format);
-        json["levels"] = TO_MIXED(levels);
-        json["startFrame"] = TO_MIXED(start_frame);
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4431,18 +4429,18 @@ class StackTraceResponse {
     int                    request_seq; // json: "request_seq"
     bool                   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4464,13 +4462,13 @@ class StackTraceResponseBody {
     array(StackFrame) stack_frames; // json: "stackFrames"
     mixed             total_frames; // json: "totalFrames"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "stackFrames" : stack_frames,
+            "totalFrames" : total_frames,
+        ]);
 
-        json["stackFrames"] = TO_MIXED(stack_frames);
-        json["totalFrames"] = TO_MIXED(total_frames);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4495,20 +4493,20 @@ class StackFrame {
     mixed  presentation_hint; // json: "presentationHint"
     mixed  source;            // json: "source"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "column" : column,
+            "endColumn" : end_column,
+            "endLine" : end_line,
+            "id" : id,
+            "line" : line,
+            "moduleId" : module_id,
+            "name" : name,
+            "presentationHint" : presentation_hint,
+            "source" : source,
+        ]);
 
-        json["column"] = TO_MIXED(column);
-        json["endColumn"] = TO_MIXED(end_column);
-        json["endLine"] = TO_MIXED(end_line);
-        json["id"] = TO_MIXED(id);
-        json["line"] = TO_MIXED(line);
-        json["moduleId"] = TO_MIXED(module_id);
-        json["name"] = TO_MIXED(name);
-        json["presentationHint"] = TO_MIXED(presentation_hint);
-        json["source"] = TO_MIXED(source);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4552,15 +4550,15 @@ class ScopesRequest {
     ScopesRequestArguments arguments; // json: "arguments"
     mixed                  command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4579,12 +4577,12 @@ ScopesRequest ScopesRequest_from_JSON(mixed json) {
 class ScopesRequestArguments {
     int frame_id; // json: "frameId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "frameId" : frame_id,
+        ]);
 
-        json["frameId"] = TO_MIXED(frame_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4602,12 +4600,12 @@ constant SCOPES = "scopes"; // json: "scopes"
 class ScopesArguments {
     int frame_id; // json: "frameId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "frameId" : frame_id,
+        ]);
 
-        json["frameId"] = TO_MIXED(frame_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4633,18 +4631,18 @@ class ScopesResponse {
     int                request_seq; // json: "request_seq"
     bool               success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4665,12 +4663,12 @@ ScopesResponse ScopesResponse_from_JSON(mixed json) {
 class ScopesResponseBody {
     array(Scope) scopes; // json: "scopes"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "scopes" : scopes,
+        ]);
 
-        json["scopes"] = TO_MIXED(scopes);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4696,21 +4694,21 @@ class Scope {
     mixed  source;              // json: "source"
     int    variables_reference; // json: "variablesReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "column" : column,
+            "endColumn" : end_column,
+            "endLine" : end_line,
+            "expensive" : expensive,
+            "indexedVariables" : indexed_variables,
+            "line" : line,
+            "name" : name,
+            "namedVariables" : named_variables,
+            "source" : source,
+            "variablesReference" : variables_reference,
+        ]);
 
-        json["column"] = TO_MIXED(column);
-        json["endColumn"] = TO_MIXED(end_column);
-        json["endLine"] = TO_MIXED(end_line);
-        json["expensive"] = TO_MIXED(expensive);
-        json["indexedVariables"] = TO_MIXED(indexed_variables);
-        json["line"] = TO_MIXED(line);
-        json["name"] = TO_MIXED(name);
-        json["namedVariables"] = TO_MIXED(named_variables);
-        json["source"] = TO_MIXED(source);
-        json["variablesReference"] = TO_MIXED(variables_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4744,15 +4742,15 @@ class VariablesRequest {
     VariablesRequestArguments arguments; // json: "arguments"
     mixed                     command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4775,16 +4773,16 @@ class VariablesRequestArguments {
     mixed start;               // json: "start"
     int   variables_reference; // json: "variablesReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "count" : count,
+            "filter" : filter,
+            "format" : format,
+            "start" : start,
+            "variablesReference" : variables_reference,
+        ]);
 
-        json["count"] = TO_MIXED(count);
-        json["filter"] = TO_MIXED(filter);
-        json["format"] = TO_MIXED(format);
-        json["start"] = TO_MIXED(start);
-        json["variablesReference"] = TO_MIXED(variables_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4815,12 +4813,12 @@ constant NAMED = "named";     // json: "named"
 class ValueFormat {
     mixed hex; // json: "hex"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "hex" : hex,
+        ]);
 
-        json["hex"] = TO_MIXED(hex);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4842,16 +4840,16 @@ class VariablesArguments {
     mixed start;               // json: "start"
     int   variables_reference; // json: "variablesReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "count" : count,
+            "filter" : filter,
+            "format" : format,
+            "start" : start,
+            "variablesReference" : variables_reference,
+        ]);
 
-        json["count"] = TO_MIXED(count);
-        json["filter"] = TO_MIXED(filter);
-        json["format"] = TO_MIXED(format);
-        json["start"] = TO_MIXED(start);
-        json["variablesReference"] = TO_MIXED(variables_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4881,18 +4879,18 @@ class VariablesResponse {
     int                   request_seq; // json: "request_seq"
     bool                  success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4913,12 +4911,12 @@ VariablesResponse VariablesResponse_from_JSON(mixed json) {
 class VariablesResponseBody {
     array(Variable) variables; // json: "variables"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "variables" : variables,
+        ]);
 
-        json["variables"] = TO_MIXED(variables);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4951,19 +4949,19 @@ class Variable {
     string value;               // json: "value"
     int    variables_reference; // json: "variablesReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "evaluateName" : evaluate_name,
+            "indexedVariables" : indexed_variables,
+            "name" : name,
+            "namedVariables" : named_variables,
+            "presentationHint" : presentation_hint,
+            "type" : type,
+            "value" : value,
+            "variablesReference" : variables_reference,
+        ]);
 
-        json["evaluateName"] = TO_MIXED(evaluate_name);
-        json["indexedVariables"] = TO_MIXED(indexed_variables);
-        json["name"] = TO_MIXED(name);
-        json["namedVariables"] = TO_MIXED(named_variables);
-        json["presentationHint"] = TO_MIXED(presentation_hint);
-        json["type"] = TO_MIXED(type);
-        json["value"] = TO_MIXED(value);
-        json["variablesReference"] = TO_MIXED(variables_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -4997,14 +4995,14 @@ class VariablePresentationHint {
     mixed kind;       // json: "kind"
     mixed visibility; // json: "visibility"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "attributes" : attributes,
+            "kind" : kind,
+            "visibility" : visibility,
+        ]);
 
-        json["attributes"] = TO_MIXED(attributes);
-        json["kind"] = TO_MIXED(kind);
-        json["visibility"] = TO_MIXED(visibility);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5029,15 +5027,15 @@ class SetVariableRequest {
     SetVariableRequestArguments arguments; // json: "arguments"
     mixed                       command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5059,15 +5057,15 @@ class SetVariableRequestArguments {
     string value;               // json: "value"
     int    variables_reference; // json: "variablesReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "format" : format,
+            "name" : name,
+            "value" : value,
+            "variablesReference" : variables_reference,
+        ]);
 
-        json["format"] = TO_MIXED(format);
-        json["name"] = TO_MIXED(name);
-        json["value"] = TO_MIXED(value);
-        json["variablesReference"] = TO_MIXED(variables_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5091,15 +5089,15 @@ class SetVariableArguments {
     string value;               // json: "value"
     int    variables_reference; // json: "variablesReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "format" : format,
+            "name" : name,
+            "value" : value,
+            "variablesReference" : variables_reference,
+        ]);
 
-        json["format"] = TO_MIXED(format);
-        json["name"] = TO_MIXED(name);
-        json["value"] = TO_MIXED(value);
-        json["variablesReference"] = TO_MIXED(variables_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5128,18 +5126,18 @@ class SetVariableResponse {
     int                     request_seq; // json: "request_seq"
     bool                    success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5164,16 +5162,16 @@ class SetVariableResponseBody {
     string value;               // json: "value"
     mixed  variables_reference; // json: "variablesReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "indexedVariables" : indexed_variables,
+            "namedVariables" : named_variables,
+            "type" : type,
+            "value" : value,
+            "variablesReference" : variables_reference,
+        ]);
 
-        json["indexedVariables"] = TO_MIXED(indexed_variables);
-        json["namedVariables"] = TO_MIXED(named_variables);
-        json["type"] = TO_MIXED(type);
-        json["value"] = TO_MIXED(value);
-        json["variablesReference"] = TO_MIXED(variables_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5200,15 +5198,15 @@ class SourceRequest {
     SourceRequestArguments arguments; // json: "arguments"
     mixed                  command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5228,13 +5226,13 @@ class SourceRequestArguments {
     mixed source;           // json: "source"
     int   source_reference; // json: "sourceReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "source" : source,
+            "sourceReference" : source_reference,
+        ]);
 
-        json["source"] = TO_MIXED(source);
-        json["sourceReference"] = TO_MIXED(source_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5254,13 +5252,13 @@ class SourceArguments {
     mixed source;           // json: "source"
     int   source_reference; // json: "sourceReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "source" : source,
+            "sourceReference" : source_reference,
+        ]);
 
-        json["source"] = TO_MIXED(source);
-        json["sourceReference"] = TO_MIXED(source_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5287,18 +5285,18 @@ class SourceResponse {
     int                request_seq; // json: "request_seq"
     bool               success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5320,13 +5318,13 @@ class SourceResponseBody {
     string content;   // json: "content"
     mixed  mime_type; // json: "mimeType"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "content" : content,
+            "mimeType" : mime_type,
+        ]);
 
-        json["content"] = TO_MIXED(content);
-        json["mimeType"] = TO_MIXED(mime_type);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5350,15 +5348,15 @@ class ThreadsRequest {
     mixed arguments; // json: "arguments"
     mixed command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5389,18 +5387,18 @@ class ThreadsResponse {
     int                 request_seq; // json: "request_seq"
     bool                success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5421,12 +5419,12 @@ ThreadsResponse ThreadsResponse_from_JSON(mixed json) {
 class ThreadsResponseBody {
     array(Thread) threads; // json: "threads"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threads" : threads,
+        ]);
 
-        json["threads"] = TO_MIXED(threads);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5443,13 +5441,13 @@ class Thread {
     int    id;   // json: "id"
     string name; // json: "name"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "id" : id,
+            "name" : name,
+        ]);
 
-        json["id"] = TO_MIXED(id);
-        json["name"] = TO_MIXED(name);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5473,15 +5471,15 @@ class TerminateThreadsRequest {
     TerminateThreadsRequestArguments arguments; // json: "arguments"
     mixed                            command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5500,12 +5498,12 @@ TerminateThreadsRequest TerminateThreadsRequest_from_JSON(mixed json) {
 class TerminateThreadsRequestArguments {
     mixed thread_ids; // json: "threadIds"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadIds" : thread_ids,
+        ]);
 
-        json["threadIds"] = TO_MIXED(thread_ids);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5523,12 +5521,12 @@ constant TERMINATE_THREADS = "terminateThreads"; // json: "terminateThreads"
 class TerminateThreadsArguments {
     mixed thread_ids; // json: "threadIds"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadIds" : thread_ids,
+        ]);
 
-        json["threadIds"] = TO_MIXED(thread_ids);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5555,18 +5553,18 @@ class TerminateThreadsResponse {
     int    request_seq; // json: "request_seq"
     bool   success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5596,15 +5594,15 @@ class ModulesRequest {
     ModulesRequestArguments arguments; // json: "arguments"
     mixed                   command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5624,13 +5622,13 @@ class ModulesRequestArguments {
     mixed module_count; // json: "moduleCount"
     mixed start_module; // json: "startModule"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "moduleCount" : module_count,
+            "startModule" : start_module,
+        ]);
 
-        json["moduleCount"] = TO_MIXED(module_count);
-        json["startModule"] = TO_MIXED(start_module);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5650,13 +5648,13 @@ class ModulesArguments {
     mixed module_count; // json: "moduleCount"
     mixed start_module; // json: "startModule"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "moduleCount" : module_count,
+            "startModule" : start_module,
+        ]);
 
-        json["moduleCount"] = TO_MIXED(module_count);
-        json["startModule"] = TO_MIXED(start_module);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5683,18 +5681,18 @@ class ModulesResponse {
     int                 request_seq; // json: "request_seq"
     bool                success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5716,13 +5714,13 @@ class ModulesResponseBody {
     array(Module) modules;       // json: "modules"
     mixed         total_modules; // json: "totalModules"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "modules" : modules,
+            "totalModules" : total_modules,
+        ]);
 
-        json["modules"] = TO_MIXED(modules);
-        json["totalModules"] = TO_MIXED(total_modules);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5746,15 +5744,15 @@ class LoadedSourcesRequest {
     mixed arguments; // json: "arguments"
     mixed command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5785,18 +5783,18 @@ class LoadedSourcesResponse {
     int                       request_seq; // json: "request_seq"
     bool                      success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5817,12 +5815,12 @@ LoadedSourcesResponse LoadedSourcesResponse_from_JSON(mixed json) {
 class LoadedSourcesResponseBody {
     array(Source) sources; // json: "sources"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "sources" : sources,
+        ]);
 
-        json["sources"] = TO_MIXED(sources);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5846,15 +5844,15 @@ class EvaluateRequest {
     EvaluateRequestArguments arguments; // json: "arguments"
     mixed                    command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5876,15 +5874,15 @@ class EvaluateRequestArguments {
     mixed  format;     // json: "format"
     mixed  frame_id;   // json: "frameId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "context" : context,
+            "expression" : expression,
+            "format" : format,
+            "frameId" : frame_id,
+        ]);
 
-        json["context"] = TO_MIXED(context);
-        json["expression"] = TO_MIXED(expression);
-        json["format"] = TO_MIXED(format);
-        json["frameId"] = TO_MIXED(frame_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5908,15 +5906,15 @@ class EvaluateArguments {
     mixed  format;     // json: "format"
     mixed  frame_id;   // json: "frameId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "context" : context,
+            "expression" : expression,
+            "format" : format,
+            "frameId" : frame_id,
+        ]);
 
-        json["context"] = TO_MIXED(context);
-        json["expression"] = TO_MIXED(expression);
-        json["format"] = TO_MIXED(format);
-        json["frameId"] = TO_MIXED(frame_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5945,18 +5943,18 @@ class EvaluateResponse {
     int                  request_seq; // json: "request_seq"
     bool                 success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -5982,17 +5980,17 @@ class EvaluateResponseBody {
     mixed  type;                // json: "type"
     float  variables_reference; // json: "variablesReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "indexedVariables" : indexed_variables,
+            "namedVariables" : named_variables,
+            "presentationHint" : presentation_hint,
+            "result" : result,
+            "type" : type,
+            "variablesReference" : variables_reference,
+        ]);
 
-        json["indexedVariables"] = TO_MIXED(indexed_variables);
-        json["namedVariables"] = TO_MIXED(named_variables);
-        json["presentationHint"] = TO_MIXED(presentation_hint);
-        json["result"] = TO_MIXED(result);
-        json["type"] = TO_MIXED(type);
-        json["variablesReference"] = TO_MIXED(variables_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6023,15 +6021,15 @@ class SetExpressionRequest {
     SetExpressionRequestArguments arguments; // json: "arguments"
     mixed                         command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6053,15 +6051,15 @@ class SetExpressionRequestArguments {
     mixed  frame_id;   // json: "frameId"
     string value;      // json: "value"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "expression" : expression,
+            "format" : format,
+            "frameId" : frame_id,
+            "value" : value,
+        ]);
 
-        json["expression"] = TO_MIXED(expression);
-        json["format"] = TO_MIXED(format);
-        json["frameId"] = TO_MIXED(frame_id);
-        json["value"] = TO_MIXED(value);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6085,15 +6083,15 @@ class SetExpressionArguments {
     mixed  frame_id;   // json: "frameId"
     string value;      // json: "value"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "expression" : expression,
+            "format" : format,
+            "frameId" : frame_id,
+            "value" : value,
+        ]);
 
-        json["expression"] = TO_MIXED(expression);
-        json["format"] = TO_MIXED(format);
-        json["frameId"] = TO_MIXED(frame_id);
-        json["value"] = TO_MIXED(value);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6122,18 +6120,18 @@ class SetExpressionResponse {
     int                       request_seq; // json: "request_seq"
     bool                      success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6159,17 +6157,17 @@ class SetExpressionResponseBody {
     string value;               // json: "value"
     mixed  variables_reference; // json: "variablesReference"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "indexedVariables" : indexed_variables,
+            "namedVariables" : named_variables,
+            "presentationHint" : presentation_hint,
+            "type" : type,
+            "value" : value,
+            "variablesReference" : variables_reference,
+        ]);
 
-        json["indexedVariables"] = TO_MIXED(indexed_variables);
-        json["namedVariables"] = TO_MIXED(named_variables);
-        json["presentationHint"] = TO_MIXED(presentation_hint);
-        json["type"] = TO_MIXED(type);
-        json["value"] = TO_MIXED(value);
-        json["variablesReference"] = TO_MIXED(variables_reference);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6200,15 +6198,15 @@ class StepInTargetsRequest {
     StepInTargetsRequestArguments arguments; // json: "arguments"
     mixed                         command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6227,12 +6225,12 @@ StepInTargetsRequest StepInTargetsRequest_from_JSON(mixed json) {
 class StepInTargetsRequestArguments {
     int frame_id; // json: "frameId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "frameId" : frame_id,
+        ]);
 
-        json["frameId"] = TO_MIXED(frame_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6250,12 +6248,12 @@ constant STEP_IN_TARGETS = "stepInTargets"; // json: "stepInTargets"
 class StepInTargetsArguments {
     int frame_id; // json: "frameId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "frameId" : frame_id,
+        ]);
 
-        json["frameId"] = TO_MIXED(frame_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6281,18 +6279,18 @@ class StepInTargetsResponse {
     int                       request_seq; // json: "request_seq"
     bool                      success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6313,12 +6311,12 @@ StepInTargetsResponse StepInTargetsResponse_from_JSON(mixed json) {
 class StepInTargetsResponseBody {
     array(StepInTarget) targets; // json: "targets"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "targets" : targets,
+        ]);
 
-        json["targets"] = TO_MIXED(targets);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6336,13 +6334,13 @@ class StepInTarget {
     int    id;    // json: "id"
     string label; // json: "label"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "id" : id,
+            "label" : label,
+        ]);
 
-        json["id"] = TO_MIXED(id);
-        json["label"] = TO_MIXED(label);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6369,15 +6367,15 @@ class GotoTargetsRequest {
     GotoTargetsRequestArguments arguments; // json: "arguments"
     mixed                       command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6398,14 +6396,14 @@ class GotoTargetsRequestArguments {
     int    line;   // json: "line"
     Source source; // json: "source"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "column" : column,
+            "line" : line,
+            "source" : source,
+        ]);
 
-        json["column"] = TO_MIXED(column);
-        json["line"] = TO_MIXED(line);
-        json["source"] = TO_MIXED(source);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6427,14 +6425,14 @@ class GotoTargetsArguments {
     int    line;   // json: "line"
     Source source; // json: "source"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "column" : column,
+            "line" : line,
+            "source" : source,
+        ]);
 
-        json["column"] = TO_MIXED(column);
-        json["line"] = TO_MIXED(line);
-        json["source"] = TO_MIXED(source);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6462,18 +6460,18 @@ class GotoTargetsResponse {
     int                     request_seq; // json: "request_seq"
     bool                    success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6494,12 +6492,12 @@ GotoTargetsResponse GotoTargetsResponse_from_JSON(mixed json) {
 class GotoTargetsResponseBody {
     array(GotoTarget) targets; // json: "targets"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "targets" : targets,
+        ]);
 
-        json["targets"] = TO_MIXED(targets);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6522,17 +6520,17 @@ class GotoTarget {
     string label;      // json: "label"
     int    line;       // json: "line"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "column" : column,
+            "endColumn" : end_column,
+            "endLine" : end_line,
+            "id" : id,
+            "label" : label,
+            "line" : line,
+        ]);
 
-        json["column"] = TO_MIXED(column);
-        json["endColumn"] = TO_MIXED(end_column);
-        json["endLine"] = TO_MIXED(end_line);
-        json["id"] = TO_MIXED(id);
-        json["label"] = TO_MIXED(label);
-        json["line"] = TO_MIXED(line);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6562,15 +6560,15 @@ class CompletionsRequest {
     CompletionsRequestArguments arguments; // json: "arguments"
     mixed                       command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6592,15 +6590,15 @@ class CompletionsRequestArguments {
     mixed  line;     // json: "line"
     string text;     // json: "text"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "column" : column,
+            "frameId" : frame_id,
+            "line" : line,
+            "text" : text,
+        ]);
 
-        json["column"] = TO_MIXED(column);
-        json["frameId"] = TO_MIXED(frame_id);
-        json["line"] = TO_MIXED(line);
-        json["text"] = TO_MIXED(text);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6624,15 +6622,15 @@ class CompletionsArguments {
     mixed  line;     // json: "line"
     string text;     // json: "text"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "column" : column,
+            "frameId" : frame_id,
+            "line" : line,
+            "text" : text,
+        ]);
 
-        json["column"] = TO_MIXED(column);
-        json["frameId"] = TO_MIXED(frame_id);
-        json["line"] = TO_MIXED(line);
-        json["text"] = TO_MIXED(text);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6661,18 +6659,18 @@ class CompletionsResponse {
     int                     request_seq; // json: "request_seq"
     bool                    success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6693,12 +6691,12 @@ CompletionsResponse CompletionsResponse_from_JSON(mixed json) {
 class CompletionsResponseBody {
     array(CompletionItem) targets; // json: "targets"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "targets" : targets,
+        ]);
 
-        json["targets"] = TO_MIXED(targets);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6718,16 +6716,16 @@ class CompletionItem {
     mixed  text;   // json: "text"
     mixed  type;   // json: "type"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "label" : label,
+            "length" : length,
+            "start" : start,
+            "text" : text,
+            "type" : type,
+        ]);
 
-        json["label"] = TO_MIXED(label);
-        json["length"] = TO_MIXED(length);
-        json["start"] = TO_MIXED(start);
-        json["text"] = TO_MIXED(text);
-        json["type"] = TO_MIXED(type);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6774,15 +6772,15 @@ class ExceptionInfoRequest {
     ExceptionInfoRequestArguments arguments; // json: "arguments"
     mixed                         command;   // json: "command"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "arguments" : arguments,
+            "command" : command,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["arguments"] = TO_MIXED(arguments);
-        json["command"] = TO_MIXED(command);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6801,12 +6799,12 @@ ExceptionInfoRequest ExceptionInfoRequest_from_JSON(mixed json) {
 class ExceptionInfoRequestArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6824,12 +6822,12 @@ constant EXCEPTION_INFO = "exceptionInfo"; // json: "exceptionInfo"
 class ExceptionInfoArguments {
     int thread_id; // json: "threadId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "threadId" : thread_id,
+        ]);
 
-        json["threadId"] = TO_MIXED(thread_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6855,18 +6853,18 @@ class ExceptionInfoResponse {
     int                       request_seq; // json: "request_seq"
     bool                      success;     // json: "success"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "seq" : seq,
+            "type" : type,
+            "body" : body,
+            "command" : command,
+            "message" : message,
+            "request_seq" : request_seq,
+            "success" : success,
+        ]);
 
-        json["seq"] = TO_MIXED(seq);
-        json["type"] = TO_MIXED(type);
-        json["body"] = TO_MIXED(body);
-        json["command"] = TO_MIXED(command);
-        json["message"] = TO_MIXED(message);
-        json["request_seq"] = TO_MIXED(request_seq);
-        json["success"] = TO_MIXED(success);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6890,15 +6888,15 @@ class ExceptionInfoResponseBody {
     mixed  details;      // json: "details"
     string exception_id; // json: "exceptionId"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "breakMode" : break_mode,
+            "description" : description,
+            "details" : details,
+            "exceptionId" : exception_id,
+        ]);
 
-        json["breakMode"] = TO_MIXED(break_mode);
-        json["description"] = TO_MIXED(description);
-        json["details"] = TO_MIXED(details);
-        json["exceptionId"] = TO_MIXED(exception_id);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6924,17 +6922,17 @@ class ExceptionDetails {
     mixed stack_trace;     // json: "stackTrace"
     mixed type_name;       // json: "typeName"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "evaluateName" : evaluate_name,
+            "fullTypeName" : full_type_name,
+            "innerException" : inner_exception,
+            "message" : message,
+            "stackTrace" : stack_trace,
+            "typeName" : type_name,
+        ]);
 
-        json["evaluateName"] = TO_MIXED(evaluate_name);
-        json["fullTypeName"] = TO_MIXED(full_type_name);
-        json["innerException"] = TO_MIXED(inner_exception);
-        json["message"] = TO_MIXED(message);
-        json["stackTrace"] = TO_MIXED(stack_trace);
-        json["typeName"] = TO_MIXED(type_name);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
@@ -6957,12 +6955,12 @@ ExceptionDetails ExceptionDetails_from_JSON(mixed json) {
 class ModulesViewDescriptor {
     array(ColumnDescriptor) columns; // json: "columns"
 
-    string encode_json()  {
-        mapping(string:mixed) json = ([]);
+    string encode_json() {
+        mapping(string:mixed) json = ([
+            "columns" : columns,
+        ]);
 
-        json["columns"] = TO_MIXED(columns);
-
-        return Standards.JSON.encode(json, Standards.JSON.HUMAN_READABLE);
+        return Standards.JSON.encode(json);
     }
 }
 
