@@ -819,7 +819,7 @@ string parse_text(Node n, void|String.Buffer ret) {
       ret->add( "<", name, ">\n" );
       foreach(c->get_elements("group"), Node c) {
 	int got_item;
-	foreach(c->get_elements, Node e) {
+	foreach(c->get_elements(), Node e) {
 	  switch(e->get_any_name()) {
 	  case "item":
 	    if (got_item) {
