@@ -2973,6 +2973,10 @@ named_class: TOK_CLASS line_number_info simple_identifier
       i = ID_FROM_INT(Pike_compiler->new_program, $<number>4);
       free_type(i->type);
       i->type = get_type_of_svalue(&sv);
+      if (p->flags & PROGRAM_CONSTANT) {
+	/* Update, in case of @constant. */
+	i->opt_flags = 0;
+      }
       free_program(p);
     } else if (!Pike_compiler->num_parse_error) {
       /* Make sure code in this class is aware that something went wrong. */
