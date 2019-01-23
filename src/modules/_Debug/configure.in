@@ -1,4 +1,4 @@
-AC_INIT()
+AC_INIT(debug.cmod)
 AC_MODULE_INIT()
 AC_CONFIG_HEADER(debug_config.h)
 AC_OUTPUT(Makefile,echo FOO >stamp-h)
