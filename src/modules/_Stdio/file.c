@@ -1301,8 +1301,7 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
  *!   @[read_oob()], @[write()], @[receive_fd()], @[send_fd()]
  */
 
-/*!
- *! @decl int read(Stdio.Buffer|String.Buffer dst)
+/*! @decl int read(Stdio.Buffer|String.Buffer dst)
  *! 
  *! Reads data from a file or stream into the buffer @[dst]. Tries to
  *! read as many bytes as buffer space available.
@@ -1314,8 +1313,7 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
  *!     @[errno()] will return the corresponding error code.
  */
 
-/*!
- *! @decl int read(System.Memory dst, void|int(0..) offset)
+/*! @decl int read(System.Memory dst, void|int(0..) offset)
  *! 
  *! Reads data from a file or stream into the buffer @[dst] at offset
  *! @[offset]. Tries to read as many bytes as buffer space available.
