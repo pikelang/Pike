@@ -3505,6 +3505,10 @@ PMOD_EXPORT void f_crypt(INT32 args)
   char *ret, *pwd = NULL, *saltp = NULL;
   char *alphabet =
     "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+#ifdef HAVE_CRYPT_R
+  struct crypt_data crypt_data;
+  crypt_data.initialized = 0;
+#endif
 
   get_all_args("crypt", args, ".%s%s", &pwd, &saltp);
 
@@ -3547,15 +3551,38 @@ PMOD_EXPORT void f_crypt(INT32 args)
       args = 1;
     }
   }
-#ifdef HAVE_CRYPT
+
+  /* NB: crypt(3C) with modern algorithms may be quite slow,
+   *     so release the interpreter lock if possible.
+   */
+#ifdef HAVE_CRYPT_R
+  /* Glibc reentrant version of crypt(3C). */
+  THREADS_ALLOW();
+  {
+    ret = crypt_r(pwd, saltp, &crypt_data);
+  }
+  THREADS_DISALLOW();
+#elif defined(HAVE_CRYPT)
+#ifdef SOLARIS
+  /* NB: crypt(3C) on Solaris (since at least Solaris 8) is
+   *     documented to be thread-safe (due to returning a
+   *     thread-local buffer).
+   *
+   *     On Linux (glibc 2.27) and MacOS X (Darwin 13.4.0) it
+   *     is documented NOT to be thread-safe.
+   */
+  THREADS_ALLOW();
+#endif
   ret = (char *)crypt(pwd, saltp);
-#else
-#ifdef HAVE__CRYPT
+#ifdef SOLARIS
+  THREADS_DISALLOW();
+#endif
+#elif defined(HAVE__CRYPT)
   ret = (char *)_crypt(pwd, saltp);
 #else
 #error No crypt function found and fallback failed.
 #endif
-#endif
+
   if (!ret) {
     switch(errno) {
 #ifdef ELIBACC
