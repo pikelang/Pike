@@ -1683,6 +1683,23 @@ static ptrdiff_t find_last_path_separator(struct pike_string *path,
   return -1;
 }
 
+/*! @decl string dirname(string path)
+ *!
+ *! Returns all but the last segment of a path. Some example inputs and
+ *! outputs:
+ *!
+ *! @xml{<matrix>
+ *! <r><c><b>Expression</b></c><c><b>Value</b></c></r>
+ *! <r><c>dirname("/a/b")</c><c>"/a"</c></r>
+ *! <r><c>dirname("/a/")</c><c>"/a"</c></r>
+ *! <r><c>dirname("/a")</c><c>"/"</c></r>
+ *! <r><c>dirname("/")</c><c>"/"</c></r>
+ *! <r><c>dirname("")</c><c>""</c></r>
+ *! </matrix>@}
+ *!
+ *! @seealso
+ *! @[basename()], @[explode_path()]
+ */
 PMOD_EXPORT void f_dirname(INT32 args)
 {
   struct pike_string *s = NULL;
@@ -1708,6 +1725,13 @@ PMOD_EXPORT void f_dirname(INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
+/*! @decl string basename(string path)
+ *!
+ *! Returns the last segment of a path.
+ *!
+ *! @seealso
+ *! @[dirname()], @[explode_path()]
+ */
 PMOD_EXPORT void f_basename(INT32 args)
 {
   struct pike_string *s = NULL;
