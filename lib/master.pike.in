@@ -554,20 +554,6 @@ array(string) explode_path(string p)
 }
 
 #if !constant(dirname)
-//! Returns all but the last segment of a path. Some example inputs and
-//! outputs:
-//!
-//! @xml{<matrix>
-//! <r><c><b>Expression</b></c><c><b>Value</b></c></r>
-//! <r><c>dirname("/a/b")</c><c>"/a"</c></r>
-//! <r><c>dirname("/a/")</c><c>"/a"</c></r>
-//! <r><c>dirname("/a")</c><c>"/"</c></r>
-//! <r><c>dirname("/")</c><c>"/"</c></r>
-//! <r><c>dirname("")</c><c>""</c></r>
-//! </matrix>@}
-//!
-//! @seealso
-//! @[basename()], @[explode_path()]
 string dirname(string x)
 {
   if(x=="") return "";
@@ -580,10 +566,6 @@ constant dirname = predef::dirname;
 #endif /* !dirname */
 
 #if !constant(basename)
-//! Returns the last segment of a path.
-//!
-//! @seealso
-//! @[dirname()], @[explode_path()]
 string basename(string x)
 {
   array(string) tmp=EXPLODE_PATH(x);
