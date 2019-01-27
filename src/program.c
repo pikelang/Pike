@@ -1440,7 +1440,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *!   Called by @[m_clear()].
  *!
- *! @seeaslo
+ *! @seealso
  *!   @[lfun::_m_delete()], @[lfun::_m_add()]
  */
 
