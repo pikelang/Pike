@@ -104,7 +104,7 @@ else
     AC_MSG_RESULT($pike_cv_mysql_lib_dir)
     if test "x$pike_cv_mysql_lib_dir" = "xno"; then :; else
       echo Adding $pike_cv_mysql_lib_dir to the library search path.
-      LDFLAGS="${LDFLAGS} -R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir"
+      LDFLAGS="-R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir ${LDFLAGS}"
     fi
 
     AC_MSG_CHECKING(for Mysql include-directory)
@@ -130,16 +130,17 @@ else
       # NB: mariadb_config doens't distinguish between
       #     LDFLAGS and LIBS
       MARIADB_LIBS=""
+      MARIADB_LDFLAGS=""
       set ignored `${MARIADB_CONFIG} --libs_r`
       while test "$#" -gt 1; do
         case "$2" in
           -L*)
 	    echo "Adding `echo $2 | sed -e 's/^-L//'` to the library search path."
-	    LDFLAGS="${LDFLAGS} $2 `echo $2 | sed -e 's/^-L/-R/'`"
+	    MARIADB_LDFLAGS="${MARIADB_LDFLAGS} $2 `echo $2 | sed -e 's/^-L/-R/'`"
 	    ;;
           -R*)
 	    echo "Adding `echo $2 | sed -e 's/^-R//'` to the library runtime search path."
-	    LDFLAGS="${LDFLAGS} $2"
+	    MARIADB_LDFLAGS="${MARIADB_LDFLAGS} $2"
 	    ;;
 	  -lmaria*)
 	    # We handle the client library itself later.
@@ -155,6 +156,8 @@ else
 	esac
 	shift
       done
+
+      LDFLAGS="${MARIADB_LDFLAGS} ${LDFLAGS}"
 
       if echo " $MARIADB_LIBS" | grep -i iconv >/dev/null; then :; else
 	# NB: Sometimes iconv doesn't get listed by mariadb_config.
