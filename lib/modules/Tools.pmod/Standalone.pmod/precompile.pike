@@ -2034,6 +2034,7 @@ sprintf("        } else {\n"
 	    } else if (name) {
 	      p = mkname(names[(string)name]||(string)name, "program");
 	    }
+	    check_used[inh_offset] = 1;
 	    addfuncs +=
 	      IFDEF(define,
 		    ({
@@ -2048,16 +2049,22 @@ sprintf("        } else {\n"
 				       indent, p, numid, offset,
 				       attributes->flags || "0"),
 			       x[e]->line),
-		      PC.Token(sprintf("%s%s = Pike_compiler->new_program->"
-				       "inherits[%s].identifier_level;\n",
-				       indent, inh_offset, inh_num),
-			       x[e]->line),
+		      IFDEF(inh_offset + "_used",
+			    ({
+			      PC.Token(sprintf("%s%s = Pike_compiler->new_program->"
+					       "inherits[%s].identifier_level;\n",
+					       indent, inh_offset, inh_num),
+				       x[e]->line),
+			    })),
 		    }) + post);
 	    ret += DEFINE(define) + ({
 	      PC.Token(sprintf("static int %s = -1;\n", inh_num),
 		       x[e]->line),
-	      PC.Token(sprintf("static int %s = -1;\n", inh_offset),
-		       x[e]->line),
+	      IFDEF(inh_offset + "_used",
+		    ({
+		      PC.Token(sprintf("static int %s = -1;\n", inh_offset),
+			       x[e]->line),
+		    })),
 	    });
 	    e = pos;
 	    break;
