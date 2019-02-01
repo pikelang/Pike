@@ -1444,7 +1444,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[lfun::_m_delete()], @[lfun::_m_add()]
  */
 
-/*! @decl void lfun::_m_add()]
+/*! @decl void lfun::_m_add()
  *!
  *!   Called by @[m_add()].
  *!
