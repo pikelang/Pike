@@ -1068,7 +1068,6 @@ class File
           outbuffer->consume(bytes);
 	if (sizeof(outbuffer) && (bytes > 0)) {
 	  // Not all was written. Probably EWOULDBLOCK.
-          // FIXME: ... or a thread added to the buffer ...
 	  bytes = 0;
 	}
 	if (bytes <= 0) {
