@@ -340,7 +340,7 @@ array(int) get_PSD(Stdio.File f)
 //!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@},
 //!       @expr{"jpeg"@} and @expr{"psd"@}.
 //!   @endarray
-array(int) get(string|Stdio.File file) {
+array(int) get(string|Stdio.File file, int(0..1)|void exif) {
   string fn;
   if(stringp(file)) {
     fn = file;
@@ -382,7 +382,7 @@ array(int) get(string|Stdio.File file) {
      }
      else
      {
-      ret = get_JPEG(file);
+      ret = (exif? exif_get_JPEG(file) : get_JPEG(file));
       if(ret) return ret+({ "jpeg" });
      }
      
@@ -390,4 +390,10 @@ array(int) get(string|Stdio.File file) {
     file = Stdio.File(fn);
     if(file) return get(file);   
   }
+}
+
+//! Like @[get()], but returns the dimensions flipped if
+//! @[Image.JPEG.exif_decode()] would flip them
+array(int) exif_get(string|Stdio.File file) {
+  return get(file, 1);
 }
