@@ -126,18 +126,6 @@ array(int) get_JPEG(Stdio.File f)
     case M_SOF15:		/* Differential lossless, arithmetic */
       int image_height, image_width;
       sscanf(f->read(7), "%*3s%2c%2c", image_height, image_width);
-      if (f->seek(0) == 0)
-      {
-	mapping exif = Standards.EXIF.get_properties(f);
-	if ((< "5", "6", "7", "8" >)[exif->Orientation])
-	{
-	  // Picture has been rotated/flipped 90 or 270 degrees, so
-	  // exchange width and height to reflect that.
-	  int tmp = image_height;
-	  image_height = image_width;
-	  image_width = tmp;
-	}
-      }
       return ({ image_width,image_height });
       break;
 	
@@ -152,6 +140,31 @@ array(int) get_JPEG(Stdio.File f)
       break;
     }
   }
+}
+
+/* Perform EXIF based dimension flipping */
+protected array(int) exif_flip(Stdio.File f, array(int) dims)
+{
+  if (arrayp(dims) && f->seek(0) == 0)
+  {
+    mapping exif = Standards.EXIF.get_properties(f);
+    if ((< "5", "6", "7", "8" >)[exif->Orientation])
+    {
+      // Picture has been rotated/flipped 90 or 270 degrees, so
+      // exchange width and height to reflect that.
+      int tmp = dims[1];
+      dims[1] = dims[0];
+      dims[0] = tmp;
+    }
+  }
+  return dims;
+}
+
+//! Like @[get_JPEG()], but returns the dimensions flipped if
+//! @[Image.JPEG.exif_decode()] would flip them
+array(int) exif_get_JPEG(Stdio.File f)
+{
+  return exif_flip(f, get_JPEG(f));
 }
 
 // GIF-header:
@@ -328,7 +341,7 @@ array(int) get_PSD(Stdio.File f)
 //!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@},
 //!       @expr{"jpeg"@} and @expr{"psd"@}.
 //!   @endarray
-array(int) get(string|Stdio.File file) {
+array(int) get(string|Stdio.File file, int(0..1)|void exif) {
   string fn;
   if(stringp(file)) {
     fn = file;
@@ -370,7 +383,7 @@ array(int) get(string|Stdio.File file) {
      }
      else
      {
-      ret = get_JPEG(file);
+      ret = (exif? exif_get_JPEG(file) : get_JPEG(file));
       if(ret) return ret+({ "jpeg" });
      }
      
@@ -378,4 +391,10 @@ array(int) get(string|Stdio.File file) {
     file = Stdio.File(fn);
     if(file) return get(file);   
   }
+}
+
+//! Like @[get()], but returns the dimensions flipped if
+//! @[Image.JPEG.exif_decode()] would flip them
+array(int) exif_get(string|Stdio.File file) {
+  return get(file, 1);
 }

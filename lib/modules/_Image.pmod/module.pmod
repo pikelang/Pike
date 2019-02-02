@@ -30,9 +30,10 @@ Image.Image decode( string data )
 
 //! Attempts to decode @[data] as image data. The heuristics
 //! has some limited ability to decode macbinary files as well.
-mapping _decode( string data )
+mapping _decode( string data, int(0..1)|void exif )
 {
   Image.Image i, a;
+  mapping e;
   string format;
 
   if(!data)
@@ -130,14 +131,25 @@ mapping _decode( string data )
   }
 #endif
 
+  // Use the low-level EXIF decode function if applicable
+#if constant(Image.JPEG)
+  if (!i && data[..1] == "\xff\xd8") {
+      mapping res = (exif? Image.JPEG.exif_decode( data ) : Image.JPEG._decode( data ));
+      i = res->image;
+      a = res->alpha;
+      e = res->exif;
+      format = "JPEG";
+  }
+#endif
+
   if(!i) {
     catch {
-      // PNM, JPEG, XCF, PNG, (GIF), ILBM, BMP, RAS, PVR,
+      // PNM, (JPEG), XCF, PNG, (GIF), ILBM, BMP, RAS, PVR,
       // TIM, XWD, PCX, PSD
       mapping res = Image.ANY._decode( data );
       i = res->image;
       a = res->alpha;
-      format = fmts[res->format];
+      format = fmts[res->type];
     };
   }
 
@@ -163,7 +175,13 @@ mapping _decode( string data )
     "alpha":a,
     "img":i,
     "image":i,
-  ]);
+  ]) + (e? (["exif":e]) : ([]));
+}
+
+//! Like @[_decode()] but decodes EXIF and applies the rotation.
+mapping exif_decode( string data )
+{
+  return _decode( data, 1 );
 }
 
 //! Attempts to decode @[data] as image layer data. Additional

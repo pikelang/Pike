@@ -11,6 +11,13 @@ o Pike.FakeObject
 
   This is used as a placeholder used in place of other objects in backtraces.
 
+o Image.Dims.exif_get and Image.exif_decode
+
+  New convenience functions to get the functionality of
+  Image.Dims.exif_get_JPEG and Image.JPEG._decode (rotation of the image
+  according to the EXIF orientation information) without needing to check
+  if the image is JPEG first.
+
 Bug fixes
 ---------
 
@@ -69,6 +76,13 @@ o Compiler
 
   - Fixed some corner cases where file names where missing from
     backtraces.
+
+o Image.Dims
+
+  - Fixed the inconsistency that Image.Dims.get_JPEG (and thus
+    Image.Dims.get) would flip the dimensions on JPEGs with EXIF
+    orientation information, even though Image.JPEG.decode does not
+    actually perform the rotations.
 
 o Process.run
 
