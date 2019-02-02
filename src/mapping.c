@@ -1795,8 +1795,8 @@ static struct mapping *and_mappings(struct mapping *a, struct mapping *b)
     }
     UNSET_ONERROR(err);
   } else {
-    /* Copy the first mapping */
-    res = copy_mapping(a);
+    /* Loop over second mapping, insert into new one */
+    res = allocate_mapping(0);
     SET_ONERROR(err, do_free_mapping, res);
 
     /* Remove elements in res that aren't in b, copy values for those that
@@ -1809,9 +1809,6 @@ static struct mapping *and_mappings(struct mapping *a, struct mapping *b)
           mapping_insert(res, &k2->ind, &k2->val);
           break;
         }
-      }
-      if (!k2) {
-        map_delete(res, &k->ind);
       }
     }
 
