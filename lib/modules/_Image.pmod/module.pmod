@@ -137,7 +137,7 @@ mapping _decode( string data )
       mapping res = Image.ANY._decode( data );
       i = res->image;
       a = res->alpha;
-      format = fmts[res->format];
+      format = fmts[res->type];
     };
   }
 
