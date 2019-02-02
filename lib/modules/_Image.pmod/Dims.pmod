@@ -125,18 +125,6 @@ array(int) get_JPEG(Stdio.File f)
     case M_SOF15:		/* Differential lossless, arithmetic */
       int image_height, image_width;
       sscanf(f->read(7), "%*3s%2c%2c", image_height, image_width);
-      if (f->seek(0) == 0)
-      {
-	mapping exif = Standards.EXIF.get_properties(f);
-	if ((< "5", "6", "7", "8" >)[exif->Orientation])
-	{
-	  // Picture has been rotated/flipped 90 or 270 degrees, so
-	  // exchange width and height to reflect that.
-	  int tmp = image_height;
-	  image_height = image_width;
-	  image_width = tmp;
-	}
-      }
       return ({ image_width,image_height });
       break;
 	
@@ -151,6 +139,31 @@ array(int) get_JPEG(Stdio.File f)
       break;
     }
   }
+}
+
+/* Perform EXIF based dimension flipping */
+protected array(int) exif_flip(Stdio.File f, array(int) dims)
+{
+  if (arrayp(dims) && f->seek(0) == 0)
+  {
+    mapping exif = Standards.EXIF.get_properties(f);
+    if ((< "5", "6", "7", "8" >)[exif->Orientation])
+    {
+      // Picture has been rotated/flipped 90 or 270 degrees, so
+      // exchange width and height to reflect that.
+      int tmp = dims[1];
+      dims[1] = dims[0];
+      dims[0] = tmp;
+    }
+  }
+  return dims;
+}
+
+//! Like @[get_JPEG()], but returns the dimensions flipped if
+//! @[Image.JPEG.exif_decode()] would flip them
+array(int) exif_get_JPEG(Stdio.File f)
+{
+  return exif_flip(f, get_JPEG(f));
 }
 
 // GIF-header:
