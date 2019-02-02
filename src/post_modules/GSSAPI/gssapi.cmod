@@ -666,7 +666,7 @@ PIKEFUN array(string) minor_status_messages (int minor_status, void|string mech)
  */
 PIKECLASS Error
 {
- /*! @inherit Error.Generic
+ /*! @decl inherit Error.Generic
   */
   INHERIT generic_error;
 
@@ -993,7 +993,7 @@ static DECLSPEC(noreturn) void handle_error (
  */
 PIKECLASS MissingServicesError
 {
-  /*! @inherit Error.Generic
+  /*! @decl inherit Error.Generic
    */
   INHERIT generic_error;
 
