@@ -94,9 +94,8 @@ protected int skip_variable(Stdio.File f)
   return 1;
 }
 
-//! Reads the dimensions from a JPEG file and returns an array with
-//! width and height, or if the file isn't a valid image, 0.
-array(int) get_JPEG(Stdio.File f)
+/* Get the width, height and orientation from a JPEG file */
+protected mapping get_JPEG_internal(Stdio.File f)
 {
   if (!first_marker(f))
     return 0;
@@ -122,16 +121,7 @@ array(int) get_JPEG(Stdio.File f)
     case M_SOF15:		/* Differential lossless, arithmetic */
       int image_height, image_width;
       sscanf(f->read(7), "%*3s%2c%2c", image_height, image_width);
-      if( exif && has_value(exif, "Orientation") &&
-          (< "5", "6", "7", "8" >)[exif->Orientation] )
-      {
-        // Picture has been rotated/flipped 90 or 270 degrees, so
-        // exchange width and height to reflect that.
-        int tmp = image_height;
-        image_height = image_width;
-        image_width = tmp;
-      }
-      return ({ image_width,image_height });
+      return ([ "width": image_width, "height": image_height, "exif": exif ]);
       break;
 
     case M_APP1:
@@ -156,6 +146,39 @@ array(int) get_JPEG(Stdio.File f)
       break;
     }
   }
+}
+
+//! Reads the dimensions from a JPEG file and returns an array with
+//! width and height, or if the file isn't a valid image, 0.
+array(int) get_JPEG(Stdio.File f)
+{
+  mapping result = get_JPEG_internal(f);
+  return result && ({ result->width, result->height });
+}
+
+/* Perform EXIF based dimension flipping */
+protected array(int) exif_flip(array(int) dims, mapping exif)
+{
+  if (arrayp(dims) && exif && has_index(exif, "Orientation"))
+  {
+    if ((< "5", "6", "7", "8" >)[exif->Orientation])
+    {
+      // Picture has been rotated/flipped 90 or 270 degrees, so
+      // exchange width and height to reflect that.
+      int tmp = dims[1];
+      dims[1] = dims[0];
+      dims[0] = tmp;
+    }
+  }
+  return dims;
+}
+
+//! Like @[get_JPEG()], but returns the dimensions flipped if
+//! @[Image.JPEG.exif_decode()] would flip them
+array(int) exif_get_JPEG(Stdio.File f)
+{
+  mapping result = get_JPEG_internal(f);
+  return result && exif_flip(({ result->width, result->height }), result->exif);
 }
 
 // GIF-header:
@@ -367,7 +390,7 @@ array(int) get_WebP(Stdio.File f)
 //!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@},
 //!       @expr{"jpeg"@}, @expr{"webp"@} and @expr{"psd"@}.
 //!   @endarray
-array(int|string) get(string|Stdio.File file) {
+array(int|string) get(string|Stdio.File file, int(0..1)|void exif) {
 
   if(stringp(file))
     file = Stdio.FakeFile(file);
@@ -405,7 +428,7 @@ array(int|string) get(string|Stdio.File file) {
 
   case "\xff\xd8":
     file->seek(-2, Stdio.SEEK_CUR);
-    ret = get_JPEG(file);
+    ret = (exif? exif_get_JPEG(file) : get_JPEG(file));
     if(ret) return ret+({ "jpeg" });
     break;
 
@@ -417,4 +440,10 @@ array(int|string) get(string|Stdio.File file) {
   }
 
   return 0;
+}
+
+//! Like @[get()], but returns the dimensions flipped if
+//! @[Image.JPEG.exif_decode()] would flip them
+array(int) exif_get(string|Stdio.File file) {
+  return get(file, 1);
 }
