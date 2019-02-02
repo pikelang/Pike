@@ -458,12 +458,10 @@ PIKECLASS Buffer
     }
 
     if ( io->output.u.object ) {
-      struct svalue output_fun = io->output;
-
+      move_svalue(Pike_sp++, &io->output);
       SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-
-      safe_apply_svalue(&output_fun, 0, 1);
-      free_svalue(&output_fun);
+      apply_svalue(Pike_sp-1, 0);
+      pop_n_elems(2);
     }
   }
 
