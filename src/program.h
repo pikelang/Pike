@@ -682,6 +682,13 @@ struct program
   INT16 lfuns[NUM_LFUNS];
 };
 
+struct local_variable_info
+{
+  int names[MAX_LOCAL];	/* Offset in strings. */
+  int types[MAX_LOCAL];	/* Offset in constants. */
+  int num_local;	/* Number of entries in either of the above. */
+};
+
 PMOD_EXPORT void dump_program_tables (const struct program *p, int indent);
 
 #ifdef PIKE_DEBUG
@@ -990,7 +997,8 @@ PMOD_EXPORT char *low_get_program_line_plain (struct program *prog,
 					      int malloced);
 PMOD_EXPORT struct pike_string *low_get_line(PIKE_OPCODE_T *pc,
 					     struct program *prog,
-					     INT_TYPE *linep);
+					     INT_TYPE *linep,
+					     struct local_variable_info *vars);
 PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
 				      INT_TYPE *linep, int malloced);
 PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,

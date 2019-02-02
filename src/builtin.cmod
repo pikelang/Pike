@@ -2601,7 +2601,7 @@ PIKECLASS backtrace_frame
     assert (THIS->lineno == 0);
 
     if (THIS->pc && THIS->prog) {
-      file = low_get_line(THIS->pc, THIS->prog, &THIS->lineno);
+      file = low_get_line(THIS->pc, THIS->prog, &THIS->lineno, NULL);
       THIS->pc = NULL;
     }
     else if (TYPEOF(THIS->_fun) == PIKE_T_FUNCTION) {

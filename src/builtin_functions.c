@@ -9683,7 +9683,8 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
 
   if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
      id->func.offset != -1)
-      file = low_get_line(id_prog->program + id->func.offset, id_prog, &line);
+    file = low_get_line(id_prog->program + id->func.offset, id_prog,
+			&line, NULL);
   else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags) &&
            id->func.const_info.offset >= 0 &&
            (p2 = program_from_svalue (&id_prog->constants[id->func.const_info.offset].sval)))
@@ -9829,8 +9830,9 @@ PMOD_EXPORT void f_function_defined(INT32 args)
     id_prog = PROG_FROM_INT (p, func);
 
     if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
-      id->func.offset != -1)
-      file = low_get_line(id_prog->program + id->func.offset, id_prog, &line);
+       id->func.offset != -1)
+      file = low_get_line(id_prog->program + id->func.offset, id_prog,
+			  &line, NULL);
     else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags) &&
 	     id->func.const_info.offset >= 0 &&
 	     (p2 = program_from_svalue (&id_prog->constants[id->func.const_info.offset].sval)))
