@@ -83,6 +83,13 @@ PIKECLASS Buffer
 
   CVAR Buffer b;
 
+  EXTRA
+  {
+    PIKE_MAP_VARIABLE("__output", OFFSETOF(Buffer_struct, b.output),
+		      tMix, PIKE_T_MIXED, ID_PRIVATE|ID_HIDDEN|ID_PROTECTED);
+  }
+
+
   static void io_set_error_mode( Buffer *io, struct program *m )
   {
     if( m ) add_ref(m);
