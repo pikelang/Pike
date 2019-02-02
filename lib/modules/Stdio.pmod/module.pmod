@@ -1073,7 +1073,7 @@ class File
 	}
 	if (bytes <= 0) {
           outbuffer->__set_on_write(buffer_write);
-	  return 0; // FIXME: This ought to return bytes (0 or -1), really.
+	  return bytes;
         }
       }
 
