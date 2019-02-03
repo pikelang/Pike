@@ -687,7 +687,7 @@ Annotation parseAnnotation()
 {
   if (peekToken() != "@") return 0;
   eat("@");
-  return Annotation(skipUntil((< ":", ";" >)));
+  return Annotation(skipUntil((< ":", ";", EOF >)));
 }
 
 //! Parse a set of annotations from the token stream.
@@ -792,12 +792,16 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
   Annotation a = parseAnnotation();
   array(Annotation) annotations;
   if (a) {
-    if (peekToken() == ";") {
+    switch(peekToken()) {
+    case ";":
       eat(";");
+      // FALL_THROUGH
+    case EOF:
       return a;
-    } else {
+    default:
       eat(":");
       annotations = ({ a }) + parseAnnotations();
+      break;
     }
   }
   array(string) modifiers = parseModifiers();
