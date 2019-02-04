@@ -3580,12 +3580,13 @@ PIKECLASS Context
 
 
 /*! @class InitContext
- *! @inherit Context
  *!
  *! Variant of @[Context] which is used on the initiator side.
  */
 PIKECLASS InitContext
 {
+  /*! @decl inherit Context
+   */
   INHERIT Context;
 
   /* The following are only used during context establishment since
@@ -3976,12 +3977,13 @@ PIKECLASS InitContext
 
 
 /*! @class AcceptContext
- *! @inherit Context
  *!
  *! Variant of @[Context] which is used on the acceptor side.
  */
 PIKECLASS AcceptContext
 {
+  /*! @decl inherit Context
+   */
   INHERIT Context;
 
   CVAR struct object *delegated_cred;
