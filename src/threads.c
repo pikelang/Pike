@@ -2873,7 +2873,6 @@ void exit_cond_obj(struct object *UNUSED(o))
  */
 void f_thread_backtrace(INT32 args)
 {
-  void low_backtrace(struct Pike_interpreter_struct *);
   struct thread_state *foo = THIS_THREAD;
 
   pop_n_elems(args);
