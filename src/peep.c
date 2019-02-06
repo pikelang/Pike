@@ -553,18 +553,24 @@ INT32 assemble(int store_linenumbers)
       break;
 
     case F_FRAME_NAME:
+      fprintf(stderr, "PEEP: F_FRAME_NAME %d %d [%d]\n",
+	      c->arg, c->arg2, store_linenumbers);
       if (store_linenumbers) {
 	store_linenumber_frame_name(c->arg, c->arg2);
       }
       break;
 
     case F_FRAME_TYPE:
+      fprintf(stderr, "PEEP: F_FRAME_TYPE %d %d [%d]\n",
+	      c->arg, c->arg2, store_linenumbers);
       if (store_linenumbers) {
 	store_linenumber_frame_type(c->arg, c->arg2);
       }
       break;
 
     case F_FRAME_END:
+      fprintf(stderr, "PEEP: F_FRAME_END %d [%d]\n",
+	      c->arg, store_linenumbers);
       if (store_linenumbers) {
 	store_linenumber_frame_end(c->arg);
       }

@@ -8184,8 +8184,8 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
  * Frame variable:
  *   1. char		127 (marker).
  *   2. small number	~(frame stack offset).
- *   3. char		0: name, 1: type
- *   4. small number	name: strings_offset, type: constants_offset
+ *   3. char		0: name, 1: type, 2:end
+ *   4. small number	name: strings_offset, type: constants_offset, end: -
  *
  * Line number entry:
  *   1. small number	Index in program.program (pc).
