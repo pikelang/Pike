@@ -2595,48 +2595,55 @@ PIKECLASS backtrace_frame
     RETURN (t == literal_array_string);
   }
 
-  static void fill_in_file_and_line()
+  static void fill_in_file_and_line(struct backtrace_frame_struct *this)
   {
     struct pike_string *file = NULL;
-    assert (THIS->lineno == 0);
+    assert (this->lineno == 0);
 
-    if (THIS->pc && THIS->prog) {
-      file = low_get_line(THIS->pc, THIS->prog, &THIS->lineno, NULL);
-      THIS->pc = NULL;
+    if (vars) vars->num_local = 0;
+    if (this->pc && this->prog) {
+      file = low_get_line(this->pc, this->prog, &this->lineno, NULL);
+      this->pc = NULL;
     }
-    else if (TYPEOF(THIS->_fun) == PIKE_T_FUNCTION) {
+    else if (TYPEOF(this->_fun) == PIKE_T_FUNCTION) {
 #ifdef PIKE_DEBUG
-      if (THIS->_fun.u.object->prog &&
-	  THIS->_fun.u.object->prog != THIS->oprog) {
-	struct identifier *id = ID_FROM_INT(THIS->oprog, SUBTYPEOF(THIS->_fun));
+      if (this->_fun.u.object->prog &&
+	  this->_fun.u.object->prog != this->oprog) {
+	struct identifier *id = ID_FROM_INT(this->oprog, SUBTYPEOF(this->_fun));
 	/* FIXME: Dump dmalloc info for the object? */
 	Pike_fatal("Lost track of function pointer! Function name was %s.\n",
 		   id->name?id->name->str:"<no name>");
       }
 #endif
-      file = low_get_function_line (THIS->_fun.u.object, SUBTYPEOF(THIS->_fun),
-                                    &THIS->lineno);
+      file = low_get_function_line (this->_fun.u.object, SUBTYPEOF(this->_fun),
+                                    &this->lineno);
     }
-    else if (THIS->prog) {
-      file = low_get_program_line (THIS->prog, &THIS->lineno);
+    else if (this->prog) {
+      file = low_get_program_line (this->prog, &this->lineno);
     }
 
     if (file) {
-      if (!THIS->filename) THIS->filename = file;
+      if (!this->filename) this->filename = file;
       else free_string (file);
     }
 
-    if (THIS->prog) {
-      free_program(THIS->prog);
-      THIS->prog = NULL;
+    if (this->prog) {
+      free_program(this->prog);
+      this->prog = NULL;
     }
+  }
+
+  PIKEFUN void fill_in_file_and_line()
+    flags ID_PROTECTED;
+  {
+    if (THIS->lineno) return;
+    fill_in_file_and_line(THIS, NULL);
   }
 
   PIKEFUN string `filename()
   {
-    if (!THIS->lineno) {
-      fill_in_file_and_line();
-    }
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
     if (THIS->filename) {
       ref_push_string(THIS->filename);
       return;
@@ -2646,9 +2653,8 @@ PIKECLASS backtrace_frame
 
   PIKEFUN string `line()
   {
-    if (!THIS->lineno) {
-      fill_in_file_and_line();
-    }
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
     push_int(THIS->lineno);
   }
 
@@ -2666,7 +2672,8 @@ PIKECLASS backtrace_frame
 
     push_static_text("backtrace_frame(");
 
-    if (THIS->lineno == 0) fill_in_file_and_line();
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
 
     if (THIS->filename) {
       ref_push_string(THIS->filename);
@@ -2766,17 +2773,18 @@ PIKECLASS backtrace_frame
 	end = numargs-1;
     }
 
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+
     for (i = index; i <= end; i++) {
       switch(i) {
       case 0:	/* Filename */
-        if (THIS->lineno == 0) fill_in_file_and_line();
 	if (THIS->filename)
 	  ref_push_string(THIS->filename);
 	else
 	  push_int(0);
 	break;
       case 1:	/* Linenumber */
-        if (THIS->lineno == 0) fill_in_file_and_line();
 	push_int(THIS->lineno);
 	break;
       case 2:	/* Function */
@@ -2823,9 +2831,11 @@ PIKECLASS backtrace_frame
       args = 2;
     }
 
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+
     switch(index) {
     case 0:	/* Filename */
-      if (THIS->lineno == 0) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_STRING) {
 	if ((TYPEOF(*value) != PIKE_T_INT) ||
 	    (value->u.integer)) {
@@ -2845,14 +2855,12 @@ PIKECLASS backtrace_frame
       break;
 
     case 1:	/* Linenumber */
-      if (THIS->lineno == 0) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_INT)
 	SIMPLE_ARG_TYPE_ERROR("`[]=", 2, "int(1..)");
       THIS->lineno = value->u.integer;
       break;
 
     case 2:	/* Function */
-      if (THIS->lineno == 0) fill_in_file_and_line();
       assign_svalue(&THIS->_fun, value);
       break;
     default:	/* Arguments */
