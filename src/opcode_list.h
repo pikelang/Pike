@@ -92,4 +92,8 @@ OPCODE_NOCODE("volatile_return", F_VOLATILE_RETURN, 0)
  * only be evaluated once. */
 OPCODE_NOCODE("assign_self", F_ASSIGN_SELF, 0)
 
+OPCODE_NOCODE("frame_type", F_FRAME_TYPE, I_HASARG2)
+OPCODE_NOCODE("frame_name", F_FRAME_NAME, I_HASARG2)
+OPCODE_NOCODE("frame_end", F_FRAME_END, I_HASARG)
+
 OPCODE_NOCODE("instr_max", F_MAX_INSTR, 0)

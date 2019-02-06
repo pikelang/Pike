@@ -988,6 +988,7 @@ void start_line_numbering(void);
 void store_linenumber(INT_TYPE current_line, struct pike_string *current_file);
 void store_linenumber_frame_name(int frame_offset, int string_num);
 void store_linenumber_frame_type(int frame_offset, int constant_num);
+void store_linenumber_frame_end(int frame_offset);
 PMOD_EXPORT struct pike_string *low_get_program_line(struct program *prog,
 						     INT_TYPE *linep);
 PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,

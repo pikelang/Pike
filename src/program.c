@@ -8184,8 +8184,8 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
  * Frame variable:
  *   1. char		127 (marker).
  *   2. small number	~(frame stack offset).
- *   3. char		0: name, 1: type
- *   4. small number	name: strings_offset, type: constants_offset
+ *   3. char		0: name, 1: type, 2:end
+ *   4. small number	name: strings_offset, type: constants_offset, end: -
  *
  * Line number entry:
  *   1. small number	Index in program.program (pc).
@@ -8474,6 +8474,13 @@ void store_linenumber_frame_type(int frame_offset, int constant_num)
   insert_small_number(constant_num);
 }
 
+void store_linenumber_frame_end(int frame_offset)
+{
+  add_to_linenumbers(127);
+  insert_small_number(~frame_offset);
+  add_to_linenumbers(2);
+}
+
 #define FIND_PROGRAM_LINE(prog, file, line) do {			\
     char *pos = prog->linenumbers;					\
     file = NULL;							\
@@ -8668,6 +8675,11 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	  } else {
 	    int frame_offset = ~strno;
 	    int kind = *cnt++;
+	    if (kind == 2) {
+	      /* end of frame */
+	      frame.num_local = frame_offset;
+	      continue;
+	    }
 	    strno = get_small_number(&cnt);
 	    frame.num_local = frame_offset+1;
 	    if (frame_offset < MAX_LOCAL) {
