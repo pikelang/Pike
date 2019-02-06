@@ -2600,7 +2600,6 @@ PIKECLASS backtrace_frame
     struct pike_string *file = NULL;
     assert (this->lineno == 0);
 
-    if (vars) vars->num_local = 0;
     if (this->pc && this->prog) {
       file = low_get_line(this->pc, this->prog, &this->lineno, NULL);
       this->pc = NULL;
