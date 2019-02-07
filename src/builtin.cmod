@@ -2636,7 +2636,7 @@ PIKECLASS backtrace_frame
     flags ID_PROTECTED;
   {
     if (THIS->lineno) return;
-    fill_in_file_and_line(THIS, NULL);
+    fill_in_file_and_line(THIS);
   }
 
   PIKEFUN string `filename()
