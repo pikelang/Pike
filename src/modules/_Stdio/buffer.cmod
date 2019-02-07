@@ -89,6 +89,7 @@ PIKECLASS Buffer
 		      tMix, PIKE_T_MIXED, ID_PRIVATE|ID_HIDDEN|ID_PROTECTED);
   }
 
+
   static void io_set_error_mode( Buffer *io, struct program *m )
   {
     if( m ) add_ref(m);
@@ -419,7 +420,6 @@ PIKECLASS Buffer
 
       if( s )
       {
-        io->output_triggered = 1;
         push_string( s );
         apply_svalue( fun, 1 );
 	if (UNLIKELY(TYPEOF(Pike_sp[-1]) != PIKE_T_INT)) {
@@ -445,34 +445,24 @@ PIKECLASS Buffer
     return -1;
   }
 
-  PMOD_EXPORT ptrdiff_t io_actually_trigger_output( Buffer *io )
+  PMOD_EXPORT void io_actually_trigger_output( Buffer *io )
     ATTRIBUTE((noclone,noinline));
 
-  PMOD_EXPORT ptrdiff_t io_actually_trigger_output( Buffer *io )
+  PMOD_EXPORT void io_actually_trigger_output( Buffer *io )
   {
-    struct program *prog;
-    struct reference *ref;
-    struct inherit *inh;
-
-    if (UNLIKELY(!(prog = io->output.u.object->prog))) {
+    if (UNLIKELY(!io->output.u.object->prog)) {
       /* Destructed object. */
       free_svalue(&io->output);
       SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-      return 0;
+      return;
     }
-    ref = PTR_FROM_INT(prog, SUBTYPEOF(io->output));
-    inh = INHERIT_FROM_PTR(prog, ref);
-    if ((inh->prog == file_program) &&
-	(ref->identifier_offset == fd_write_identifier_offset)) {
-      /* Stdio.Fd::write */
-      struct my_file *fd =
-	get_inherit_storage( io->output.u.object, ref->inherit_offset );
-      io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE );
-      io->output_triggered = 1;
-      return 0;
+
+    if ( io->output.u.object ) {
+      move_svalue(Pike_sp++, &io->output);
+      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+      apply_svalue(Pike_sp-1, 0);
+      pop_n_elems(2);
     }
-    else
-      return io_call_write( io, &io->output, MINIMUM( io_len(io), 100 ) );
   }
 
   static int io_range_error( Buffer *io, ptrdiff_t howmuch )
@@ -975,36 +965,29 @@ PIKECLASS Buffer
     RETURN bread;
   }
 
-  /*! @decl int __fd_set_output( object|function(string:int) write_callback )
+  /*! @decl void __set_on_write( function write_callback )
    *!
    *! This tells the buffer to trigger the write callback for the
-   *! specified filedescriptor when data is added to the buffer.
+   *! specified file descriptor when data is added to the buffer.
    *!
-   *! This is used internally by Stdio.File to handle nonblocking
-   *! buffered mode, and is not really intended to be used directly.
-   *!
-   *! If @[write_callback] is @expr{0@} (zero) the state is cleared.
+   *! @note
+   *!   This is used internally by @[Stdio.File] and @[SSL.File] to
+   *!   handle nonblocking buffered mode, and is not necessarily
+   *!   intended to be used directly by anything but implementations
+   *!   of File or Stream like programs. Do not use this yourself
+   *!   on buffers with Files or Streams in buffer modes.
    */
-  PIKEFUN void __fd_set_output( zero|object|function f )
+  PIKEFUN void __set_on_write( zero|function f )
   {
     Buffer *io = THIS;
-    if( TYPEOF(*f) == PIKE_T_OBJECT ) {
-      struct program *p = f->u.object->prog;
-      if (p) {
-	struct inherit *inh = p->inherits + SUBTYPEOF(*f);
-	int write_fun_num;
-	p = inh->prog;
-	if ((write_fun_num = find_identifier("write", p)) == -1) {
-	  Pike_error("Function \"write\" not available in object.\n");
-	}
-	SET_SVAL_TYPE_SUBTYPE(*f, PIKE_T_FUNCTION, write_fun_num);
-      }
-    } else if (TYPEOF(*f) != PIKE_T_FUNCTION) {
-      push_int(0);
-      f = Pike_sp-1;
+
+    if (f)
+      assign_svalue(&io->output, f);
+    else {
+      if (io->output.u.object)
+        free_svalue(&io->output);
+      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     }
-    assign_svalue(&io->output, f);
-    io->output_triggered = 0;
   }
 
   /*! @decl int(-1..) output_to( Stdio.Stream|function(string:int) fun, @
@@ -1034,6 +1017,13 @@ PIKECLASS Buffer
    *!
    *! If no bytes have been written successfully and @expr{fun()@} failed
    *! with an error, @expr{-1@} will be returned.
+   *!
+   *! @deprecated
+   *!   This function is going to get deprecated. In case you want to use
+   *!   it against an @[Stdio.File] like object, please consider using
+   *!   the @expr{f->write(buf)@} API. If you want to use it against a custom
+   *!   write function, please consider supporting the @expr{f->write(buf)@}
+   *!   API in it.
    */
   PIKEFUN int(-1..) output_to( object|function(string:int) f, int|void nbytes )
   {
@@ -1113,29 +1103,6 @@ PIKECLASS Buffer
 	break;
     }
     RETURN written;
-  }
-
-  /*! @decl int(-1..) try_output()
-   *!
-   *! Try to write some data from the buffer to the file
-   *! registered with @[__fd_set_output()].
-   *!
-   *! This is typically called from backend callbacks when it
-   *! seems that it is possible to write some data to the file.
-   *!
-   *! @returns
-   *!   Returns @expr{-1@} on write error, and otherwise
-   *!   the number of bytes written to the file.
-   *!
-   *! @seealso
-   *!   @[__fd_set_output()]
-   */
-  PIKEFUN int(-1..) try_output()
-  {
-    Buffer *io = THIS;
-    if (LIKELY(io->output.u.object) && LIKELY(!io->output_triggered))
-      RETURN io_actually_trigger_output(io);
-    RETURN 0;
   }
 
   /*! @decl int read_sint( int size )

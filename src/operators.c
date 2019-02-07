@@ -622,7 +622,8 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
           struct pike_string *file;
           INT_TYPE lineno;
           if(Pike_fp->pc &&
-             (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog, &lineno))) {
+             (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog,
+				  &lineno, NULL))) {
             push_string(file);
           }else{
             push_int(0);
@@ -660,7 +661,8 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	  struct pike_string *file;
 	  INT_TYPE lineno;
 	  if(Pike_fp->pc &&
-	     (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog, &lineno))) {
+	     (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog,
+				  &lineno, NULL))) {
 	    push_string(file);
 	  }else{
 	    push_int(0);

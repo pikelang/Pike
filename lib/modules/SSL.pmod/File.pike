@@ -508,7 +508,7 @@ void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
   user_read_buffer = in;
 
   if (user_write_buffer) {
-    user_write_buffer->__fd_set_output( 0 );
+    user_write_buffer->__set_on_write( 0 );
     if (out && sizeof(user_write_buffer)) {
       // Behave as if any data in the new output buffer was
       // appended to the old output buffer.
@@ -516,7 +516,7 @@ void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
     }
   }
   if (user_write_buffer = out)
-    user_write_buffer->__fd_set_output(internal_write);
+    user_write_buffer->__set_on_write(buffer_write);
 }
 
 //! Get the active input and output buffers that have been
@@ -981,7 +981,7 @@ int write(string|array(string) data, mixed... args)
   }
 
   if (user_write_buffer) {
-    user_write_buffer->__fd_set_output(0);
+    user_write_buffer->__set_on_write(0);
     if (sizeof(user_write_buffer)) {
       // The write buffer isn't empty, so try to empty it. */
       int bytes = user_write_buffer->output_to(internal_write);
@@ -990,7 +990,7 @@ int write(string|array(string) data, mixed... args)
 	bytes = 0;
       }
       if (bytes <= 0) {
-	user_write_buffer->__fd_set_output(internal_write);
+	user_write_buffer->__set_on_write(buffer_write);
 	return bytes;
       }
     }
@@ -1007,12 +1007,16 @@ int write(string|array(string) data, mixed... args)
       return actual_bytes;
     }
 
-    user_write_buffer->__fd_set_output(internal_write);
+    user_write_buffer->__set_on_write(buffer_write);
 
     return bytes;
   }
 
   return internal_write(data);
+}
+
+protected void buffer_write() {
+    user_write_buffer->output_to(internal_write);
 }
 
 protected int internal_write(string|array(string) data)
@@ -1280,13 +1284,13 @@ protected void internal_poll()
 	user_write_buffer->output_to(internal_write);
       }
       if (!sizeof(user_write_buffer)) {
-	user_write_buffer->__fd_set_output(0);
+	user_write_buffer->__set_on_write(0);
 	write_callback(callback_id || this, user_write_buffer);
 	if (!this) return;
 	if (sizeof(user_write_buffer)) {
-	  user_write_buffer->output_to(internal_write);
+            write_buffer();
 	}
-	user_write_buffer->__fd_set_output(internal_write);
+	user_write_buffer->__set_on_write(buffer_write);
       }
     } else {
       write_callback(callback_id || this);

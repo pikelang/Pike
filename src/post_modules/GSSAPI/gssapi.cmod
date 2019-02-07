@@ -63,7 +63,8 @@ DECLARATIONS
 #define DEFINE_STATIC_OID(NAME, VALUE)					\
   static const unsigned char PIKE_CONCAT (NAME, _elements)[] = VALUE;	\
   static const gss_OID_desc PIKE_CONCAT (NAME, _desc) = {		\
-    sizeof (PIKE_CONCAT (NAME, _elements)) - 1, &PIKE_CONCAT (NAME, _elements) \
+    sizeof (PIKE_CONCAT (NAME, _elements)) - 1,				\
+    &PIKE_CONCAT (NAME, _elements),					\
   };									\
   static const gss_OID_desc * const NAME = &PIKE_CONCAT (NAME, _desc)
 
@@ -445,10 +446,10 @@ static void resolve_syms(void)
  *! and servers to authenticate each other using Kerberos, thereby
  *! making single sign-on possible in a Kerberized environment.
  *!
- *! All functions in this module that wraps GSS-API routines might throw
- *! @[GSSAPI.Error], and by default they do for all such errors. Only in
+ *! All functions in this module that wrap GSS-API routines may throw
+ *! @[GSSAPI.Error], and by default they do so for all such errors. Only in
  *! some special cases do they return when a GSS-API error has happened,
- *! and that is noted in the documentation.
+ *! and this is then noted in the documentation.
  */
 
 
@@ -660,48 +661,40 @@ PIKEFUN array(string) minor_status_messages (int minor_status, void|string mech)
 }
 
 /*! @class Error
- *! @inherit Error.Generic
  *!
  *! Error object used for GSS-API errors.
  */
-
-/*! @decl constant is_gssapi_error = 1
- *! @decl constant error_type = "gssapi_error"
- *!
- *! Object recognition constants.
- */
-
-/* Can't use PIKECLASS since precompile.pike doesn't support constants
- * (at least not in 7.4). */
-
-struct gssapi_err_struct {
-  INT_TYPE major_status, minor_status;
-  gss_OID_desc mech;
-};
-
-static struct program *gssapi_err_program = NULL;
-static ptrdiff_t gssapi_err_struct_offset;
-
-#undef THIS
-#define THIS ((struct gssapi_err_struct *)				\
-	      (Pike_fp->current_storage + gssapi_err_struct_offset))
-
-/* Assume gssapi_err_program begins with the generic_error_program inherit. */
-#define GEN_ERR_THIS ((struct generic_error_struct *)			\
-		      (Pike_fp->current_storage + 0))
-
-static void gssapi_err_events (int event)
+PIKECLASS Error
 {
-  switch (event) {
-    case PROG_EVENT_INIT:
-      THIS->major_status = THIS->minor_status = 0;
-      THIS->mech.elements = NULL;
-      break;
-    case PROG_EVENT_EXIT:
-      if (THIS->mech.elements) free (THIS->mech.elements);
-      break;
+ /*! @decl inherit Error.Generic
+  */
+  INHERIT generic_error;
+
+  EXTRA
+  {
+    /*! @decl constant is_gssapi_error = 1
+     *! @decl constant error_type = "gssapi_error"
+     *!
+     *! Object recognition constants.
+     */
+    add_string_constant ("error_type", "gssapi_error", 0);
+    add_integer_constant ("is_gssapi_error", 1, 0);
+
+    Pike_compiler->new_program->flags &= ~PROGRAM_LIVE_OBJ;
   }
-}
+
+  PIKEVAR int major_status;
+  PIKEVAR int minor_status;
+  CVAR gss_OID_desc mech;
+
+#define GEN_ERR_THIS ((struct generic_error_struct *)			\
+		      (Pike_fp->current_storage +			\
+		       Error_generic_error_inh_storage_offset))
+
+  EXIT
+  {
+    if (THIS->mech.elements) free (THIS->mech.elements);
+  }
 
 /*! @decl int major_status
  *!
@@ -803,28 +796,17 @@ static struct pike_string *make_gss_err_message (
  *!   Backtrace. The current backtrace for the calling function is
  *!   used if left out.
  */
-static void gssapi_err_create (INT32 args)
+  PIKEFUN void create (void|int major, void|int minor,
+		       void|string mech, void|string message,
+		       void|array backtrace)
+    flags ID_PROTECTED;
 {
-  /* get_all_args doesn't handle optional args in 7.4.. :P */
-  if(args > 5) wrong_number_of_args_error("create",args,5);
+  if (major) THIS->major_status = major->u.integer;
 
-  if(args > 0) {
-    if(TYPEOF(Pike_sp[0-args]) != T_INT)
-      SIMPLE_ARG_TYPE_ERROR ("create",1,"void|int");
-    THIS->major_status = Pike_sp[-args].u.integer;
-  }
+  if (minor) THIS->minor_status = minor->u.integer;
 
-  if(args > 1) {
-    if(TYPEOF(Pike_sp[1-args]) != T_INT)
-      SIMPLE_ARG_TYPE_ERROR ("create",2,"void|int");
-    THIS->minor_status = Pike_sp[-args].u.integer;
-  }
-
-  if(args > 2 &&
-     (TYPEOF(Pike_sp[2-args]) != T_INT || Pike_sp[2-args].u.integer)) {
-    if(TYPEOF(Pike_sp[2-args]) != T_STRING)
-      SIMPLE_ARG_TYPE_ERROR ("create",3,"void|string");
-    WITH_PUSHED_GSS_OID (mech_oid, Pike_sp[2-args].u.string) {
+  if (mech) {
+    WITH_PUSHED_GSS_OID (mech_oid, mech) {
       if (THIS->mech.elements) free (THIS->mech.elements);
       COPY_OID (&THIS->mech, &mech_oid);
     } END_GSS_OID (mech_oid);
@@ -833,11 +815,8 @@ static void gssapi_err_create (INT32 args)
   {
     gss_OID mech = THIS->mech.elements ? &THIS->mech : GSS_C_NO_OID;
 
-    if(args > 3 &&
-       (TYPEOF(Pike_sp[3-args]) != T_INT || Pike_sp[3-args].u.integer)) {
-      if(TYPEOF(Pike_sp[3-args]) != T_STRING)
-	SIMPLE_ARG_TYPE_ERROR ("create",4,"void|string");
-      ref_push_string (Pike_sp[3-args].u.string);
+    if (message) {
+      ref_push_string(message);
       push_static_text (": ");
       push_string (make_gss_err_message (THIS->major_status, THIS->minor_status,
 					 mech, NULL, NULL));
@@ -856,11 +835,8 @@ static void gssapi_err_create (INT32 args)
 
   if (GEN_ERR_THIS->error_backtrace)
     free_array (GEN_ERR_THIS->error_backtrace);
-  if(args > 4 &&
-     (TYPEOF(Pike_sp[4-args]) != T_INT || Pike_sp[4-args].u.integer)) {
-    if(TYPEOF(Pike_sp[4-args]) != T_ARRAY)
-      SIMPLE_ARG_TYPE_ERROR ("create",5,"void|array");
-    add_ref (GEN_ERR_THIS->error_backtrace = Pike_sp[4-args].u.array);
+  if (backtrace) {
+    add_ref (GEN_ERR_THIS->error_backtrace = backtrace);
   }
   else {
     f_backtrace (0);
@@ -876,9 +852,8 @@ static void gssapi_err_create (INT32 args)
  *! @[major_status]. See @[GSSAPI.major_status_messages] for further
  *! details.
  */
-static void gssapi_err_major_msgs (INT32 args)
+PIKEFUN array(string) major_status_messages()
 {
-  if (args) wrong_number_of_args_error ("major_status_messages", args, 0);
   push_int (THIS->major_status);
   f_major_status_messages (1);
 }
@@ -889,9 +864,8 @@ static void gssapi_err_major_msgs (INT32 args)
  *! @[minor_status]. See @[GSSAPI.minor_status_messages] for further
  *! details.
  */
-static void gssapi_err_minor_msgs (INT32 args)
+PIKEFUN array(string) minor_status_messages()
 {
-  if (args) wrong_number_of_args_error ("major_status_messages", args, 0);
   push_int (THIS->minor_status);
   if (THIS->mech.elements) {
     ref_push_string (get_dd_oid (&THIS->mech));
@@ -907,26 +881,26 @@ static void gssapi_err_minor_msgs (INT32 args)
  *! minor status, or zero if no mechanism has been set. It is returned
  *! on dotted-decimal form.
  */
-static void gssapi_err_minor_mech (INT32 args)
+PIKEFUN string minor_status_mech()
 {
-  pop_n_elems (args);
   if (!THIS->mech.elements)
     push_int (0);
   else
     ref_push_string (get_dd_oid (&THIS->mech));
 }
 
+}
 /*! @endclass */
 
 static DECLSPEC(noreturn) void throw_gssapi_error (
   OM_uint32 major, OM_uint32 minor, const gss_OID mech, const char *msg, ...)
 {
-  struct object *o = fast_clone_object (gssapi_err_program);
-  struct gssapi_err_struct *gssapi_err =
-    (struct gssapi_err_struct *) (o->storage + gssapi_err_struct_offset);
-  /* Assume gssapi_err_program begins with the generic_error_program inherit. */
+  struct object *o = fast_clone_object (Error_program);
+  struct Error_struct *gssapi_err = OBJ2_ERROR(o);
+
   struct generic_error_struct *gen_err =
-    (struct generic_error_struct *) (o->storage + 0);
+    (struct generic_error_struct *)
+    (o->storage + Error_generic_error_inh_storage_offset);
   struct pike_string *errmsg;
 
   gssapi_err->major_status = major;
@@ -1013,48 +987,43 @@ static DECLSPEC(noreturn) void handle_error (
 
 
 /*! @class MissingServicesError
- *! @inherit Error.Generic
  *!
  *! Error object used when one or more required services are missing
  *! in a @[GSSAPI.Context] object.
  */
-
-/*! @decl constant is_gssapi_missing_services_error = 1
- *! @decl constant error_type = "gssapi_missing_services_error"
- *!
- *! Object recognition constants.
- */
-
-struct missing_err_struct {
-  INT_TYPE services;
-};
-
-static struct program *missing_err_program = NULL;
-static ptrdiff_t missing_err_struct_offset;
-
-#undef THIS
-#define THIS ((struct missing_err_struct *)				\
-	      (Pike_fp->current_storage + missing_err_struct_offset))
-
-/* We can reuse the same GEN_ERR_THIS as in gssapi_err_program. */
-
-static void missing_err_events (int event)
+PIKECLASS MissingServicesError
 {
-  switch (event) {
-    case PROG_EVENT_INIT:
-      THIS->services = 0;
-      break;
-  }
-}
+  /*! @decl inherit Error.Generic
+   */
+  INHERIT generic_error;
 
-/*! @decl int services
- *!
- *! Bitfield of @tt{GSSAPI.*_FLAG@} flags for the missing services
- *! that caused the error.
- *!
- *! @seealso
- *!   @[GSSAPI.describe_services]
- */
+  EXTRA
+  {
+    /*! @decl constant is_gssapi_missing_services_error = 1
+     *! @decl constant error_type = "gssapi_missing_services_error"
+     *!
+     *! Object recognition constants.
+     */
+    add_string_constant ("error_type", "gssapi_missing_services_error", 0);
+    add_integer_constant ("is_gssapi_missing_services_error", 1, 0);
+
+    Pike_compiler->new_program->flags &= ~PROGRAM_LIVE_OBJ;
+  }
+
+#undef GEN_ERR_THIS
+#define GEN_ERR_THIS ((struct generic_error_struct *)			\
+		      (Pike_fp->current_storage +			\
+		       MissingServicesError_generic_error_inh_storage_offset))
+
+  /*! @decl int services
+   *!
+   *! Bitfield of @tt{GSSAPI.*_FLAG@} flags for the missing services
+   *! that caused the error.
+   *!
+   *! @seealso
+   *!   @[GSSAPI.describe_services]
+   */
+  PIKEVAR int services;
 
 static void describe_services_and_push (OM_uint32 services)
 {
@@ -1089,28 +1058,26 @@ static struct pike_string *make_missing_err_message (OM_uint32 missing)
  *! @param missing_services
  *!   Initial value for @[services].
  */
-static void missing_err_create (INT32 args)
+PIKEFUN void create(void|int missing_services)
+  flags ID_PROTECTED;
 {
-  if (args > 1) wrong_number_of_args_error ("create", args, 1);
-
-  if (args) {
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-      SIMPLE_ARG_TYPE_ERROR ("create", 1, "void|int");
-    THIS->services = Pike_sp[-1].u.integer;
+  if (missing_services) {
+    THIS->services = missing_services->u.integer;
   }
 }
 
+}
 /*! @endclass */
 
 static void throw_missing_services_error (OM_uint32 missing)
 {
-  struct object *o = fast_clone_object (missing_err_program);
-  struct missing_err_struct *missing_err =
-    (struct missing_err_struct *) (o->storage + missing_err_struct_offset);
-  /* Assume missing_err_program begins with the generic_error_program
-   * inherit. */
+  struct object *o = fast_clone_object (MissingServicesError_program);
+  struct MissingServicesError_struct *missing_err =
+    OBJ2_MISSINGSERVICESERROR(o);
+
   struct generic_error_struct *gen_err =
-    (struct generic_error_struct *) (o->storage + 0);
+    (struct generic_error_struct *)
+    (o->storage + MissingServicesError_generic_error_inh_storage_offset);
 
   missing_err->services = missing;
   gen_err->error_message = make_missing_err_message (missing);
@@ -3630,12 +3597,10 @@ PIKECLASS InitContext
   CVAR OM_uint32 desired_services;
   CVAR OM_uint32 desired_time;
 
-  /* Isn't there a neater method to access the inherited objects? */
-  static ptrdiff_t InitContext_Context_storage_offset;
 #undef THIS_CONTEXT
 #define THIS_CONTEXT ((struct Context_struct *)				\
 		      (Pike_fp->current_object->storage +		\
-		       InitContext_Context_storage_offset))
+		       InitContext_Context_inh_storage_offset))
 
   INIT
   {
@@ -4026,12 +3991,10 @@ PIKECLASS AcceptContext
    * gss_accept_sec_context calls. */
   CVAR struct object *cred;
 
-  /* Isn't there a neater method to access the inherited objects? */
-  static ptrdiff_t AcceptContext_Context_storage_offset;
 #undef THIS_CONTEXT
 #define THIS_CONTEXT ((struct Context_struct *)				\
 		      (Pike_fp->current_object->storage +		\
-		       AcceptContext_Context_storage_offset))
+		       AcceptContext_Context_inh_storage_offset))
 
   INIT
   {
@@ -4334,56 +4297,8 @@ PIKE_MODULE_INIT
 #ifdef HAVE_GSSAPI
   der_dd_map = allocate_mapping (10);
 
-  start_new_program();
-  low_inherit (generic_error_program, NULL, 0, 0, 0, NULL);
-  gssapi_err_struct_offset = ADD_STORAGE (struct gssapi_err_struct);
-  add_string_constant ("error_type", "gssapi_error", 0);
-  add_integer_constant ("is_gssapi_error", 1, 0);
-  PIKE_MAP_VARIABLE ("major_status",
-		     (gssapi_err_struct_offset +
-		      OFFSETOF (gssapi_err_struct, major_status)),
-		     tInt, T_INT, 0);
-  PIKE_MAP_VARIABLE ("minor_status",
-		     (gssapi_err_struct_offset +
-		      OFFSETOF (gssapi_err_struct, minor_status)),
-		     tInt, T_INT, 0);
-  pike_set_prog_event_callback (gssapi_err_events);
-#ifdef PROGRAM_LIVE_OBJ
-  Pike_compiler->new_program->flags &= ~PROGRAM_LIVE_OBJ;
-#endif
-  ADD_FUNCTION ("create", gssapi_err_create,
-		tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tString)
-		      tOr(tVoid,tString) tOr(tVoid,tArray),
-		      tVoid), ID_PROTECTED);
-  ADD_FUNCTION ("major_status_messages", gssapi_err_major_msgs,
-		tFunc(tVoid,tArr(tString)), 0);
-  ADD_FUNCTION ("minor_status_messages", gssapi_err_minor_msgs,
-		tFunc(tVoid,tArr(tString)), 0);
-  ADD_FUNCTION ("minor_status_mech", gssapi_err_minor_mech,
-		tFunc(tVoid,tString), 0);
-  gssapi_err_program = end_program();
-  add_program_constant ("Error", gssapi_err_program, 0);
-
-  start_new_program();
-  low_inherit (generic_error_program, NULL, 0, 0, 0, NULL);
-  missing_err_struct_offset = ADD_STORAGE (struct missing_err_struct);
-  add_string_constant ("error_type", "gssapi_missing_services_error", 0);
-  add_integer_constant ("is_gssapi_missing_services_error", 1, 0);
-  PIKE_MAP_VARIABLE ("services",
-		     (missing_err_struct_offset +
-		      OFFSETOF (missing_err_struct, services)),
-		     tInt, T_INT, 0);
-  pike_set_prog_event_callback (missing_err_events);
-#ifdef PROGRAM_LIVE_OBJ
-  Pike_compiler->new_program->flags &= ~PROGRAM_LIVE_OBJ;
-#endif
-  ADD_FUNCTION ("create", missing_err_create,
-		tFunc(tOr(tVoid,tInt), tVoid), ID_PROTECTED);
-  missing_err_program = end_program();
-  add_program_constant ("MissingServicesError", missing_err_program, 0);
-
   /* As it happens, none of the currently defined errors and flags in
-   * the GSS-API spec conflicts with the sign bit if INT_TYPE is 32
+   * the GSS-API spec conflict with the sign bit if INT_TYPE is 32
    * bits, so we can assume native ints for all of the following. */
 
   add_integer_constant ("ERROR_MASK",
@@ -4456,12 +4371,7 @@ PIKE_MODULE_INIT
 
   INIT;
 
-#ifdef HAVE_GSSAPI
-  InitContext_Context_storage_offset =
-    low_get_storage (InitContext_program, Context_program);
-  AcceptContext_Context_storage_offset =
-    low_get_storage (AcceptContext_program, Context_program);
-#else
+#ifndef HAVE_GSSAPI
   HIDE_MODULE();
 #endif
 }
@@ -4473,8 +4383,6 @@ PIKE_MODULE_EXIT
   free_svalue (&int_pos_inf);
   free_svalue (&encode_der_oid);
   free_svalue (&decode_der_oid);
-  if (gssapi_err_program) free_program (gssapi_err_program);
-  if (missing_err_program) free_program (missing_err_program);
 #endif
 
   EXIT;

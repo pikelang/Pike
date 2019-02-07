@@ -1444,7 +1444,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[lfun::_m_delete()], @[lfun::_m_add()]
  */
 
-/*! @decl void lfun::_m_add()]
+/*! @decl void lfun::_m_add()
  *!
  *!   Called by @[m_add()].
  *!
@@ -8180,6 +8180,12 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
  *   1. char		127 (marker).
  *   2. small number	Filename entry number in string table.
  *
+ * Frame variable:
+ *   1. char		127 (marker).
+ *   2. small number	~(frame stack offset).
+ *   3. char		0: name, 1: type, 2:end
+ *   4. small number	name: strings_offset, type: constants_offset, end: -
+ *
  * Line number entry:
  *   1. small number	Index in program.program (pc).
  * 			Stored as the difference from the pc in the
@@ -8451,6 +8457,29 @@ void store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
   }
 }
 
+void store_linenumber_frame_name(int frame_offset, int string_num)
+{
+  add_to_linenumbers(127);
+  insert_small_number(~frame_offset);
+  add_to_linenumbers(0);
+  insert_small_number(string_num);
+}
+
+void store_linenumber_frame_type(int frame_offset, int constant_num)
+{
+  add_to_linenumbers(127);
+  insert_small_number(~frame_offset);
+  add_to_linenumbers(1);
+  insert_small_number(constant_num);
+}
+
+void store_linenumber_frame_end(int frame_offset)
+{
+  add_to_linenumbers(127);
+  insert_small_number(~frame_offset);
+  add_to_linenumbers(2);
+}
+
 #define FIND_PROGRAM_LINE(prog, file, line) do {			\
     char *pos = prog->linenumbers;					\
     file = NULL;							\
@@ -8662,7 +8691,8 @@ PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
 
 PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 					      struct program *prog,
-					      INT_TYPE *linep)
+					      INT_TYPE *linep,
+					      struct local_variable_info *vars)
 {
   linep[0] = 0;
 
@@ -8675,6 +8705,7 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
       static ptrdiff_t off;
       static INT32 pid;
       static INT_TYPE line;
+      static struct local_variable_info frame;
 
       if(prog->linenumbers == base && prog->id == pid && offset > off &&
 	 cnt < prog->linenumbers + prog->num_linenumbers)
@@ -8684,6 +8715,7 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
       off=line=0;
       pid=prog->id;
       file = 0;
+      frame.num_local = 0;
 
       while(cnt < prog->linenumbers + prog->num_linenumbers)
       {
@@ -8692,8 +8724,39 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	  int strno;
 	  cnt++;
 	  strno = get_small_number(&cnt);
-	  CHECK_FILE_ENTRY (prog, strno);
-	  next_file = prog->strings[strno];
+	  if (strno >= 0) {
+	    CHECK_FILE_ENTRY (prog, strno);
+	    next_file = prog->strings[strno];
+	  } else {
+	    int frame_offset = ~strno;
+	    int kind = *cnt++;
+	    if (kind == 2) {
+	      /* end of frame */
+	      frame.num_local = frame_offset;
+	      continue;
+	    }
+	    strno = get_small_number(&cnt);
+	    frame.num_local = frame_offset+1;
+	    if (frame_offset < MAX_LOCAL) {
+	      switch(kind) {
+	      case 0:	/* name */
+		frame.names[frame_offset] = strno;
+		break;
+	      case 1:	/* type */
+		frame.types[frame_offset] = strno;
+		break;
+#ifdef PIKE_DEBUG
+	      default:
+		Pike_fatal("Unknown linenumber entry: %d\n", kind);
+		break;
+#endif
+	      }
+#ifdef PIKE_DEBUG
+	    } else {
+	      Pike_fatal("Frame offset out of range: %d\n", frame_offset);
+#endif
+	    }
+	  }
 	  continue;
 	}
 	off+=get_small_number(&cnt);
@@ -8709,6 +8772,7 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	base = NULL;
       }
       linep[0]=line;
+      if (vars) *vars = frame;
       if (file) {
 	add_ref(file);
 	return file;
@@ -8805,7 +8869,7 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
     return unknown_program;
   }
 
-  res = low_get_line(pc, prog, linep);
+  res = low_get_line(pc, prog, linep, NULL);
   if (!res) {
     struct pike_string *not_found;
     REF_MAKE_CONST_STRING(not_found, "Line not found");
@@ -8837,7 +8901,7 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
     }
     if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
 	(id->func.offset != -1))
-      return low_get_line (p->program + id->func.offset, p, linep);
+      return low_get_line (p->program + id->func.offset, p, linep, NULL);
     if ((ret = get_identifier_line(o->prog, fun, linep))) {
       add_ref(ret);
       return ret;

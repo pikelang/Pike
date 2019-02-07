@@ -879,14 +879,7 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
     }
 */	
 		
-		
-		
-	if((stepping_mode != 0 && stepping_thread == th_self()) || ((Pike_fp->context->prog == bp_prog) && (bp_offset == (Pike_fp->pc - Pike_fp->context->prog->program)))) {
-		printf("got a match!\n");
-		stepping_thread = th_self();
-		
-		if(debugger_server == NULL) {
-			
+
 	/* This block performs the actual breakpoint/step behavior */
 	if((IS_THREAD_STEPPING(th_state)) || (bp = Pike_fp->context->prog->breakpoints) != NULL ) {
 		INT_TYPE linep;
@@ -923,32 +916,30 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
  		      }
 
 		  // TODO check we actually got the memory.
-		  debugger_server = malloc(sizeof(struct svalue));
+		  debugger_server = *(struct svalue *)malloc(sizeof(struct svalue));
 		  
-		  assign_svalue_no_free((debugger_server), Pike_sp-1);
-		  add_ref_svalue((debugger_server));  
+		  assign_svalue_no_free((&debugger_server), Pike_sp-1);
+		  add_ref_svalue(&debugger_server);
 
 		  pop_stack();
 		  pop_stack();
 		}
   	    
-	        filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
-		
+		filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
+
 		ref_push_string(filep);
 		push_int(linep);
 		push_text(get_opcode_name(instr));
 		
 		ref_push_object(Pike_fp->current_object);
 
-		f_debug_backtrace(0);
-		//printf("applying\n");
+		f_cq___debug_backtrace(0);
 
 		// we don't want to step though any of the do_breakpoint() instructions that actually wake up the debugger.
 		// this seems safe for the basic scenario, but perhaps we should do this on another thread altogether?
    	    th_state->stepping_mode = 0;
-		safe_apply_svalue(&debugger_server, 5, 1);
 
-		safe_apply_svalue(debugger_server, 5, 1);
+		safe_apply_svalue(&debugger_server, 5, 1);
 		//printf("applied\n");
 		if(TYPEOF(*(Pike_sp - 1)) != T_INT) 
 		{
@@ -961,11 +952,9 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 
 		if(debug_retval == 1) // single_step
 		{
-		  //printf("debug_retval: %d\n", debug_retval);
-		  stepping_mode = 1; // single_step		
+  	  	  th_state->stepping_mode = 1;
 		} else {
-	  	  stepping_mode = 0;
-		  stepping_thread = 0;
+	  	  th_state->stepping_mode = 0;
 		}
       }
 

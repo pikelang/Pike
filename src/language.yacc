@@ -914,6 +914,8 @@ def: modifiers optional_attributes simple_type optional_constant
 	c->lex.current_file = f;
       }
 
+      $12 = pop_local_variables(0, $12);
+
       f=dooptcode($5->u.sval.u.string, $12, $<n>11->u.sval.u.type, $1);
 
       i = ID_FROM_INT(Pike_compiler->new_program, f);
@@ -2207,6 +2209,8 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     fprintf(stderr, "\n");
 #endif /* LAMBDA_DEBUG */
 
+    $7 = pop_local_variables(0, $7);
+
     f=dooptcode(name,
 		$7,
 		type,
@@ -2342,6 +2346,8 @@ local_function: TOK_IDENTIFIER start_function func_args
     c->lex.current_line = $1->line_number;
 
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
+
+    $5 = pop_local_variables(0, $5);
 
     debug_malloc_touch($5);
     dooptcode(i->name,
@@ -2677,6 +2683,8 @@ anon_class: TOK_CLASS line_number_info
 			       mknode(F_POP_VALUE, create_code, NULL),
 			       mknode(F_RETURN, mkintnode(0), NULL));
 
+	  create_code = pop_local_variables(0, create_code);
+
 	  /* Fifth: Define the function. */
 
 	  f=dooptcode(create_string, create_code, type, ID_PROTECTED);
@@ -2933,6 +2941,8 @@ named_class: TOK_CLASS line_number_info simple_identifier
 	  create_code = mknode(F_COMMA_EXPR,
 			       mknode(F_POP_VALUE, create_code, NULL),
 			       mknode(F_RETURN, mkintnode(0), NULL));
+
+	  create_code = pop_local_variables(0, create_code);
 
 	  /* Fifth: Define the function. */
 
