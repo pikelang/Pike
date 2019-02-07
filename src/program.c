@@ -1562,7 +1562,7 @@ static struct program *gc_mark_program_pos = 0;
 
 #define CHECK_FILE_ENTRY(PROG, STRNO)					\
   do {									\
-    if ((STRNO < 0) || (STRNO >= PROG->num_strings))			\
+    if ((STRNO >= PROG->num_strings))			\
       Pike_fatal ("Invalid file entry in linenumber info.\n");		\
   } while (0)
 
@@ -7778,7 +7778,7 @@ int store_prog_string(struct pike_string *str)
   return Pike_compiler->new_program->num_strings-1;
 }
 
-/* NOTE: O(n²)! */
+/* NOTE: O(nï¿½)! */
 int store_constant(const struct svalue *foo,
 		   int equal,
 		   struct pike_string *UNUSED(constant_name))
@@ -8662,6 +8662,11 @@ PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
 		   //printf("new file\n");
 	  	   strno = get_small_number(&cnt);
 	  	   CHECK_FILE_ENTRY (prog, strno);
+	  	   if(strno < 0) {
+	  	       cnt++;
+               get_small_number(&cnt);
+	  	       continue; // variable entry
+	  	   }
 	 	   file = prog->strings[strno];
 		   if(file == fname) {
                      //printf("Right file, right time\n");
@@ -8675,8 +8680,8 @@ PMOD_EXPORT ptrdiff_t low_get_offset_for_line (
 		}
 		
 		off+=get_small_number(&cnt);
-                line+=get_small_number(&cnt);
-				printf("line: %d %p\n", line, off);
+        line+=get_small_number(&cnt);
+		printf("line: %d %p\n", line, off);
 		
 		if(wanted_file && line == linep) { printf("found offset for line %d: %p.\n", linep, off); gotoff = off; }
       }
