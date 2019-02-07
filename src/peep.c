@@ -552,6 +552,24 @@ INT32 assemble(int store_linenumbers)
       ins_data(c->arg);
       break;
 
+    case F_FRAME_NAME:
+      if (store_linenumbers) {
+	store_linenumber_frame_name(c->arg, c->arg2);
+      }
+      break;
+
+    case F_FRAME_TYPE:
+      if (store_linenumbers) {
+	store_linenumber_frame_type(c->arg, c->arg2);
+      }
+      break;
+
+    case F_FRAME_END:
+      if (store_linenumbers) {
+	store_linenumber_frame_end(c->arg);
+      }
+      break;
+
     case F_ENTRY:
 #ifdef INS_ENTRY
       INS_ENTRY();
