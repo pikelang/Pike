@@ -4361,7 +4361,7 @@ static int add_variant_dispatcher(struct pike_string *name,
  *   Annotation value. Should be an object implementing
  *   the Pike.Annotation interface.
  */
-static void add_annotation(int id, struct svalue *val)
+PMOD_EXPORT void add_annotation(int id, struct svalue *val)
 {
   while (Pike_compiler->new_program->num_annotations <= id) {
     add_to_annotations(NULL);
@@ -4404,7 +4404,7 @@ void compiler_add_annotations(int id, node *annotations)
  *       levels 0 and 1!
  *
  */
-static void add_program_annotation(int inh, struct svalue *val)
+PMOD_EXPORT void add_program_annotation(int inh, struct svalue *val)
 {
   struct inherit *inherit = Pike_compiler->new_program->inherits + inh;
   if (inherit->inherit_level > 1) {
