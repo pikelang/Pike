@@ -3067,7 +3067,7 @@ PIKECLASS placeholder
  *! @seealso
  *!   @[Annotations]
  */
-struct program *Annotation_program = NULL;
+PMOD_EXPORT struct program *Annotation_program = NULL;
 PIKECLASS Annotation
   program_flags PROGRAM_CONSTANT;
 {
@@ -3102,7 +3102,7 @@ PIKECLASS Annotation
  *! This annotation causes the compiler to validate that
  *! the annotated class implements the specified API.
  */
-struct program *Implements_program = NULL;
+PMOD_EXPORT struct program *Implements_program = NULL;
 PIKECLASS Implements
   program_flags PROGRAM_CONSTANT;
 {
@@ -3157,7 +3157,7 @@ PIKECLASS Implements
  *! This is the class for the @[Inherited] annotation.
  */
 struct program *InheritedClass_program = NULL;
-struct object *Inherited_annotation = NULL;
+PMOD_EXPORT struct object *Inherited_annotation = NULL;
 PIKECLASS InheritedClass
   program_flags PROGRAM_CONSTANT|PROGRAM_NO_EXPLICIT_DESTRUCT;
 {
