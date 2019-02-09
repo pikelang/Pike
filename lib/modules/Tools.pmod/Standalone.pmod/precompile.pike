@@ -57,6 +57,10 @@ string usage = #"[options] <from> > <to>
    INHERIT \"__builtin.foo\"
      attributes;
 
+   IMPLEMENTS bar;
+
+   IMPLEMENTS \"__builtin.foo\";
+
    CVAR int foo;
    PIKEVAR mapping m
      attributes;
@@ -2081,6 +2085,119 @@ sprintf("        } else {\n"
 			       x[e]->line),
 		    })),
 	    });
+	    e = pos;
+	    break;
+	  }
+	case "IMPLEMENTS":
+	  {
+	    int pos=search(x,PC.Token(";",0),e);
+
+	    string p;
+	    string numid = "-1";
+	    string offset = "0";
+	    string indent = "  ";
+	    array pre = ({});
+	    array post = ({});
+
+	    mixed name=x[e+1];
+	    string define = make_unique_name("implements",name,base,"defined");
+	    if ((string)name == "::") {
+#if 0
+	      e++;
+	      name = x[e+1];
+	      if ((name == "this_program") &&
+		  has_suffix(base, "_" + class_name)) {
+		define = make_unique_name("implements",name,base,"defined");
+		name = UNDEFINED;
+		// FIXME: The following is broken!
+		pre = ({
+		  PC.Token(
+sprintf("  do {\n"
+	"    int i__ =\n"
+	"      reference_inherited_identifier(Pike_compiler->previous, NULL,\n"
+	"                                     %s);\n"
+	"    if (i__ != -1) {\n"
+	"      struct program *p = Pike_compiler->previous->new_program;\n"
+	"      struct identifier *id__ = ID_FROM_INT(p, i__);\n"
+	"      if (IDENTIFIER_IS_CONSTANT(id__->identifier_flags) &&\n"
+	"          (id__->func.const_info.offset != -1)) {\n"
+	"        struct svalue *s = &PROG_FROM_INT(p, i__)->\n"
+	"          constants[id__->func.const_info.offset].sval;\n"
+	"        if (TYPEOF(*s) == T_PROGRAM) {\n"
+	"          p = s->u.program;\n",
+	allocate_string(sprintf("%q", class_name))),
+			   x[e]->line),
+		});
+		indent = "          ";
+		p = "p";
+		numid = "i__";
+		offset = "1 + 42";
+		post = ({
+		  PC.Token(
+sprintf("        } else {\n"
+	"          yyerror(\"Previous definition of %s is not a program.\");\n"
+	"        }\n"
+	"      } else {\n"
+	"        yyerror(\"Previous definition of %s is not constant.\");\n"
+	"      }\n"
+	"    } else {\n"
+	"      yyerror(\"Failed to find previous definition of %s.\");\n"
+	"    }\n"
+	"  } while(0);\n",
+	class_name, class_name, class_name),
+			   x[e]->line),
+		});
+	      } else {
+		error("Unsupported IMPLEMENTS syntax.\n");
+	      }
+#else
+	      error("Unsupported IMPLEMENTS syntax.\n");
+#endif
+	    }
+
+	    mapping attributes = parse_attributes(x[e+2..pos]);
+	    if (((string)name)[0] == '\"') {
+	      pre = ({
+		PC.Token("  do {\n"),
+		PC.Token("    struct program *p = resolve_program(" +
+			 allocate_string((string)name) +
+			 ");\n",
+			 name->line),
+		PC.Token("    if (p) {\n"),
+	      });
+	      indent = "      ";
+	      p = "p";
+	      post = ({
+		PC.Token("      free_program(p);\n"
+			 "    } else {\n", name->line),
+		PC.Token("      yyerror(\"Implements failed.\");\n"
+			 "    }\n"
+			 "  } while(0);", x[e]->line),
+	      });
+	      if (api < 5) {
+		warn("%s:%d: API level 5 (or higher) is required "
+		     "for implements of strings.\n",
+		     name->file, name->line);
+	      }
+	    } else if (name) {
+	      p = mkname(names[(string)name]||(string)name, "program");
+	    }
+	    addfuncs +=
+	      IFDEF(define,
+		    pre + ({
+		      PC.Token(sprintf("%sref_push_program(%s);\n",
+				       indent, p),
+			       x[e]->line),
+		      PC.Token(sprintf("%spush_object(clone_object("
+				       "Implements_program, 1));\n",
+				       indent),
+			       x[e]->line),
+		      PC.Token(sprintf("%sadd_program_annotation(0, Pike_sp-1);\n",
+				       indent),
+			       x[e]->line),
+		      PC.Token(sprintf("%spop_stack();\n", indent), x[e]->line),
+		    }) + post);
+	    ret += DEFINE(define);
 	    e = pos;
 	    break;
 	  }
