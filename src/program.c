@@ -6199,16 +6199,6 @@ int define_variable(struct pike_string *name,
       struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
       struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
 
-#if 0
-      if (Pike_compiler->current_annotations) {
-	compiler_add_annotations(ref->identifier_offset,
-				 Pike_compiler->current_annotations);
-	/* Only annotate a single identifier. */
-	free_node(Pike_compiler->current_annotations);
-	Pike_compiler->current_annotations = NULL;
-      }
-#endif /* 0 */
-
       free_type(id->type);
       copy_pike_type(id->type, type);
       return n;
@@ -6464,16 +6454,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     }else{
       struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
       struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
-
-#if 0
-      if (Pike_compiler->current_annotations) {
-	compiler_add_annotations(ref->identifier_offset,
-				 Pike_compiler->current_annotations);
-	/* Only annotate a single identifier. */
-	free_node(Pike_compiler->current_annotations);
-	Pike_compiler->current_annotations = NULL;
-      }
-#endif /* 0 */
 
       if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
 	/* FIXME: We probably ought to do something here... */
@@ -6990,16 +6970,6 @@ INT32 define_function(struct pike_string *name,
 
     if(!(ref.id_flags & ID_INHERITED)) /* not inherited */
     {
-#if 0
-      if (Pike_compiler->current_annotations) {
-	compiler_add_annotations(ref.identifier_offset,
-				 Pike_compiler->current_annotations);
-	/* Only annotate a single identifier. */
-	free_node(Pike_compiler->current_annotations);
-	Pike_compiler->current_annotations = NULL;
-      }
-#endif /* 0 */
-
       if( !( IDENTIFIER_IS_FUNCTION(funp->identifier_flags) &&
 	     ( (!func || func->offset == -1) || (funp->func.offset == -1))))
       {
