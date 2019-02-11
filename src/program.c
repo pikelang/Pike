@@ -8428,26 +8428,26 @@ void store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
   }
 }
 
-void store_linenumber_frame_name(int frame_offset, int string_num)
+void store_linenumber_local_name(int local_num, int string_num)
 {
   add_to_linenumbers(127);
-  insert_small_number(~frame_offset);
+  insert_small_number(~local_num);
   add_to_linenumbers(0);
   insert_small_number(string_num);
 }
 
-void store_linenumber_frame_type(int frame_offset, int constant_num)
+void store_linenumber_local_type(int local_num, int constant_num)
 {
   add_to_linenumbers(127);
-  insert_small_number(~frame_offset);
+  insert_small_number(~local_num);
   add_to_linenumbers(1);
   insert_small_number(constant_num);
 }
 
-void store_linenumber_frame_end(int frame_offset)
+void store_linenumber_local_end(int local_num)
 {
   add_to_linenumbers(127);
-  insert_small_number(~frame_offset);
+  insert_small_number(~local_num);
   add_to_linenumbers(-1);
 }
 
@@ -8643,22 +8643,22 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	    CHECK_FILE_ENTRY (prog, strno);
 	    next_file = prog->strings[strno];
 	  } else {
-	    int frame_offset = ~strno;
+	    int local_num = ~strno;
 	    int kind = *((signed char *)cnt++);
 	    if (kind >= 0) {
 	      strno = get_small_number(&cnt);
 	    }
-	    frame.num_local = frame_offset+1;
-	    if (frame_offset < MAX_LOCAL) {
+	    if (local_num < MAX_LOCAL) {
+	      frame.num_local = local_num + 1;
 	      switch(kind) {
 	      case -1:	/* end */
-		frame.num_local = frame_offset;
+		frame.num_local = local_num;
 		break;
 	      case 0:	/* name */
-		frame.names[frame_offset] = strno;
+		frame.names[local_num] = strno;
 		break;
 	      case 1:	/* type */
-		frame.types[frame_offset] = strno;
+		frame.types[local_num] = strno;
 		break;
 #ifdef PIKE_DEBUG
 	      default:
