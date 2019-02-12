@@ -8668,7 +8668,7 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	      }
 #ifdef PIKE_DEBUG
 	    } else {
-	      Pike_fatal("Frame offset out of range: %d\n", frame_offset);
+	      Pike_fatal("Local variable out of range: %d\n", local_num);
 #endif
 	    }
 	  }
