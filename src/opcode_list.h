@@ -92,4 +92,15 @@ OPCODE_NOCODE("volatile_return", F_VOLATILE_RETURN, 0)
  * only be evaluated once. */
 OPCODE_NOCODE("assign_self", F_ASSIGN_SELF, 0)
 
+/* The following three cause assemble() to generate
+ * corresponding entries in the linenumber table.
+ */
+
+/* local_num, string_num */
+OPCODE_NOCODE("set_local_name", F_SET_LOCAL_NAME, I_HASARG2)
+/* local_num, constant_num */
+OPCODE_NOCODE("set_local_type", F_SET_LOCAL_TYPE, I_HASARG2)
+/* local_num */
+OPCODE_NOCODE("set_local_end", F_SET_LOCAL_END, I_HASARG)
+
 OPCODE_NOCODE("instr_max", F_MAX_INSTR, 0)
