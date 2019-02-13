@@ -80,6 +80,18 @@ class Future
   protected array(array(function(mixed, mixed ...: void)|mixed))
     failure_cbs = ({});
 
+  //! Call a callback function.
+  //!
+  //! @param cb
+  //!   Callback function to call.
+  //!
+  //! @param args
+  //!   Arguments to call @[cb] with.
+  protected void call_callback(function cb, mixed ... args)
+  {
+    callout(cb, 0, @args);
+  }
+
   //! Wait for fulfillment and return the value.
   //!
   //! @throws
@@ -123,7 +135,7 @@ class Future
   {
     switch (state) {
       case STATE_FULFILLED:
-        callout(cb, 0, result, @extra);
+        call_callback(cb, result, @extra);
         break;
       case STATE_PENDING:
         // Rely on interpreter lock to add to success_cbs before state changes
@@ -152,7 +164,7 @@ class Future
   {
     switch (state) {
       case STATE_REJECTED:
-        callout(cb, 0, result, @extra);
+        call_callback(cb, result, @extra);
         break;
       case STATE_PENDING:
         // Rely on interpreter lock to add to failure_cbs before state changes
@@ -770,10 +782,10 @@ class Promise
       {
         foreach(cbs; ; array cb)
           if (cb)
-            callout(cb[0], 0, value, @cb[1..]);
+            call_callback(cb[0], value, @cb[1..]);
       }
       else if (globalfailure)
-        callout(globalfailure, 0, value);
+        call_callback(globalfailure, value);
       failure_cbs = success_cbs = 0;		// Free memory and references
     }
     else
