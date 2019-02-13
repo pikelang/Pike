@@ -85,6 +85,8 @@ class Future
 
   protected Pike.Backend backend;
 
+  protected array timeout_call_out_handle;
+
   //! Set the backend to use for calling any callbacks.
   //!
   //! @note
@@ -125,6 +127,13 @@ class Future
   //!   @[set_backend()], @[use_backend()]
   protected void call_callback(function cb, mixed ... args)
   {
+    if (timeout_call_out_handle) {
+      // Remove the timeout call_out, as it will not be relevant,
+      // but holds a reference to us.
+      (backend?backend->remove_call_out:remove_call_out)
+	(timeout_call_out_handle);
+      timeout_call_out_handle = UNDEFINED;
+    }
     if (backend) {
       backend->call_out(cb, 0, @args);
     } else {
@@ -617,7 +626,12 @@ class Future
     Promise p = Promise();
     on_failure(p->failure);
     on_success(p->success);
-    (backend?backend->call_out:call_out)
+    if (timeout_call_out_handle) {
+      // Remove the previous timeout call_out.
+      (backend?backend->remove_call_out:remove_call_out)
+	(timeout_call_out_handle);
+    }
+    timeout_call_out_handle = (backend?backend->call_out:call_out)
       (p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
     return p->future();
   }
