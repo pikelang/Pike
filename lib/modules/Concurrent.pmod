@@ -24,9 +24,19 @@ void on_failure(function(mixed : void) f)
 protected function(mixed : void) global_on_failure;
 
 //! @param enable
-//!   Setting this to @expr{false@} causes all @[Concurrent] callbacks
-//!   (except for timeouts)
-//!   to be called directly, without using a backend.
+//!   @int
+//!     @value 0
+//!       A @expr{false@} value causes all @[Concurrent] callbacks
+//!       (except for timeouts) to default to being called directly,
+//!       without using a backend.
+//!     @value 1
+//!       A @expr{true@} value causes callbacks to default to being
+//!       called via @[Pike.DefaultBackend].
+//!   @endint
+//!
+//! @note
+//!   Be very careful about running in the backend disabled mode,
+//!   as it may cause unlimited recursion and reentrancy issues.
 //!
 //! @note
 //!   As long as the backend hasn't started, it will default to @expr{false@}.
