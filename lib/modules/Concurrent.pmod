@@ -36,6 +36,9 @@ protected function(mixed : void) global_on_failure;
 //! @note
 //!   (Un)setting this typically alters the order in which some callbacks
 //!   are called (depending on what happens in a callback).
+//!
+//! @seealso
+//!   @[Future()->set_backend()], @[Future()->call_callback()]
 final void use_backend(int enable)
 {
   callout = enable ? call_out : callnow;
@@ -80,6 +83,31 @@ class Future
   protected array(array(function(mixed, mixed ...: void)|mixed))
     failure_cbs = ({});
 
+  protected Pike.Backend backend;
+
+  //! Set the backend to use for calling any callbacks.
+  //!
+  //! @note
+  //!   This overides the mode set by @[use_backend()].
+  //!
+  //! @seealso
+  //!   @[get_backend()], @[use_backend()]
+  void set_backend(Pike.Backend backend)
+  {
+    this::backend = backend;
+  }
+
+  //! Get the backend (if any) used to call any callbacks.
+  //!
+  //! This returns the value set by @[set_backend()].
+  //!
+  //! @seealso
+  //!   @[set_backend()]
+  Pike.Backend get_backend()
+  {
+    return backend;
+  }
+
   //! Call a callback function.
   //!
   //! @param cb
@@ -87,9 +115,21 @@ class Future
   //!
   //! @param args
   //!   Arguments to call @[cb] with.
+  //!
+  //! The default implementation calls @[cb] via the
+  //! backend set via @[set_backend()] (if any), and
+  //! otherwise falls back the the mode set by
+  //! @[use_backend()].
+  //!
+  //! @seealso
+  //!   @[set_backend()], @[use_backend()]
   protected void call_callback(function cb, mixed ... args)
   {
-    callout(cb, 0, @args);
+    if (backend) {
+      backend->call_out(cb, 0, @args);
+    } else {
+      callout(cb, 0, @args);
+    }
   }
 
   //! Wait for fulfillment and return the value.
@@ -577,7 +617,8 @@ class Future
     Promise p = Promise();
     on_failure(p->failure);
     on_success(p->success);
-    call_out(p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
+    (backend?backend->call_out:call_out)
+      (p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
     return p->future();
   }
 
