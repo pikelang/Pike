@@ -1051,6 +1051,13 @@ node *debug_mknode(int token, node *a, node *b)
     res->node_info |= OPT_FLAG_NODE;
     break;
 
+  case F_SET_LOCAL_NAME:
+  case F_SET_LOCAL_TYPE:
+  case F_SET_LOCAL_END:
+    /* Protect against the node being removed by the optimizer. */
+    res->node_info |= OPT_NOT_CONST|OPT_SIDE_EFFECT;
+    break;
+
   default:
     if(a) res->tree_info |= a->tree_info;
     if(b) res->tree_info |= b->tree_info;
@@ -4177,6 +4184,12 @@ void fix_type_field(node *n)
   case F_MAGIC_ANNOTATIONS:
     /* FIXME: Could have a stricter type for ::_annotations. */
     MAKE_CONSTANT_TYPE(n->type, tF_MAGIC_ANNOTATIONS);
+    break;
+
+  case F_SET_LOCAL_NAME:
+  case F_SET_LOCAL_TYPE:
+  case F_SET_LOCAL_END:
+    copy_pike_type(n->type, void_type_string);
     break;
 
   case F_CATCH:

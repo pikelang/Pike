@@ -2807,6 +2807,20 @@ static int do_docode2(node *n, int flags)
     }
     return 1;
 
+  case F_SET_LOCAL_NAME:
+    tmp1 = store_prog_string(CDR(n)->u.sval.u.string);
+    emit2(F_SET_LOCAL_NAME, CAR(n)->u.sval.u.integer, tmp1);
+    return 0;
+
+  case F_SET_LOCAL_TYPE:
+    tmp1 = store_constant(&CDR(n)->u.sval, 0, NULL);
+    emit2(F_SET_LOCAL_TYPE, CAR(n)->u.sval.u.integer, tmp1);
+    return 0;
+
+  case F_SET_LOCAL_END:
+    emit1(F_SET_LOCAL_END, CAR(n)->u.sval.u.integer);
+    return 0;
+
   default:
     Pike_fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
     UNREACHABLE(return 0);
