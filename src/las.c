@@ -1084,6 +1084,23 @@ node *debug_mknode(int token, node *a, node *b)
   return res;
 }
 
+static node *vmknestednodes(int token, va_list args)
+{
+  node *n = va_arg(args, node *);
+  if (!n) return n;
+  return mknode(token, n, vmknestednodes(token, args));
+}
+
+node *mknestednodes(int token, ...)
+{
+  va_list args;
+  node *res;
+  va_start(args, token);
+  res = vmknestednodes(token, args);
+  va_end(args);
+  return res;
+}
+
 node *debug_mkstrnode(struct pike_string *str)
 {
   node *res = mkemptynode();
