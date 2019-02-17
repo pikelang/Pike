@@ -1224,8 +1224,8 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 		     mkapplynode(mkprgnode(string_split_iterator_program),
 				 mknestednodes(F_ARG_LIST, $0,
 					       mkintnode(split),
-					       mkintnode(1)),
-				 NULL),
+					       mkintnode(1),
+					       NULL)),
 		     vars),
 	      $3);
 }
