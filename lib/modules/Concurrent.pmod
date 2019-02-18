@@ -1133,6 +1133,10 @@ class Promise
 //! A @[Future] that represents the first
 //! of the @expr{futures@} that completes.
 //!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
+//!
 //! @seealso
 //!   @[race()], @[Promise.first_completed()]
 variant Future first_completed(array(Future) futures)
@@ -1145,6 +1149,10 @@ variant inline Future first_completed(Future ... futures)
 }
 
 //! JavaScript Promise API equivalent of @[first_completed()].
+//!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
 //!
 //! @seealso
 //!   @[first_completed()], @[Promise.first_completed()]
@@ -1160,6 +1168,10 @@ variant inline Future race(Future ... futures)
 
 //! @returns
 //! A @[Future] that represents the array of all the completed @expr{futures@}.
+//!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
 //!
 //! @seealso
 //!   @[all()], @[Promise.depend()]
@@ -1177,6 +1189,10 @@ inline variant Future results(Future ... futures)
 
 //! JavaScript Promise API equivalent of @[results()].
 //!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
+//!
 //! @seealso
 //!   @[results()], @[Promise.depend()]
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
@@ -1191,6 +1207,9 @@ inline variant Future all(Future ... futures)
 
 //! @returns
 //! A new @[Future] that has already failed for the specified @expr{reason@}.
+//!
+//! @note
+//!   The returned @[Future] does NOT have a backend set.
 //!
 //! @seealso
 //!   @[Future.on_failure()], @[Promise.failure()]
@@ -1208,6 +1227,9 @@ Future reject(mixed reason)
 //! @note
 //! This function can be used to ensure values are futures.
 //!
+//! @note
+//!   The returned @[Future] does NOT have a backend set.
+//!
 //! @seealso
 //!   @[Future.on_success()], @[Promise.success()]
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
@@ -1220,6 +1242,10 @@ Future resolve(mixed value)
 
 //! Return a @[Future] that represents the array of mapping @[fun]
 //! over the results of the completed @[futures].
+//!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
 Future traverse(array(Future) futures,
 		function(mixed, mixed ... : mixed) fun,
 		mixed ... extra)
@@ -1246,6 +1272,10 @@ Future traverse(array(Future) futures,
 //!   once for every @[Future] in @[futures], unless one of
 //!   calls fails in which case no further calls will be
 //!   performed.
+//!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
 Future fold(array(Future) futures,
 	    mixed initial,
 	    function(mixed, mixed, mixed ... : mixed) fun,
