@@ -121,6 +121,28 @@ class Future
     return backend;
   }
 
+  //! Create a new @[Promise] with the same base settings
+  //! as the current object.
+  //!
+  //! Overload this function if you need to propagate more state
+  //! to new @[Promise] objects.
+  //!
+  //! The default implementation copies the backend
+  //! setting set with @[set_backend()] to the new @[Promise].
+  //!
+  //! @seealso
+  //!   @[Promise], @[set_backend()]
+  Promise promise_factory()
+  {
+    Promise res = Promise();
+
+    if (backend) {
+      res->set_backend(backend);
+    }
+
+    return res;
+  }
+
   //! Call a callback function.
   //!
   //! @param cb
@@ -326,7 +348,7 @@ class Future
   //!  @[map_with()], @[transform()], @[recover()]
   this_program map(function(mixed, mixed ... : mixed) fun, mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_failure(p->failure);
     on_success(apply, p, fun, extra);
     return p->future();
@@ -357,7 +379,7 @@ class Future
   this_program map_with(function(mixed, mixed ... : this_program) fun,
 			mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_failure(p->failure);
     on_success(apply_flat, p, fun, extra);
     return p->future();
@@ -398,7 +420,7 @@ class Future
   this_program recover(function(mixed, mixed ... : mixed) fun,
 		       mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_success(p->success);
     on_failure(apply, p, fun, extra);
     return p->future();
@@ -429,7 +451,7 @@ class Future
   this_program recover_with(function(mixed, mixed ... : this_program) fun,
 			    mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_success(p->success);
     on_failure(apply_flat, p, fun, extra);
     return p->future();
@@ -459,7 +481,7 @@ class Future
   this_program filter(function(mixed, mixed ... : int(0..1)) fun,
 		      mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_failure(p->failure);
     on_success(apply_filter, p, fun, extra);
     return p->future();
@@ -497,7 +519,7 @@ class Future
 			 function(mixed, mixed ... : mixed)|void failure,
 			 mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_success(apply, p, success, extra);
     on_failure(apply, p, failure || success, extra);
     return p->future();
@@ -536,7 +558,7 @@ class Future
 		         function(mixed, mixed ... : this_program)|void failure,
 			      mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_success(apply_flat, p, success, extra);
     on_failure(apply_flat, p, failure || success, extra);
     return p->future();
@@ -594,7 +616,7 @@ class Future
   this_program then(void|function(mixed, mixed ... : mixed) onfulfilled,
    void|function(mixed, mixed ... : mixed) onrejected,
    mixed ... extra) {
-    Promise p = Promise();
+    Promise p = promise_factory();
     if (onfulfilled)
       on_success(apply_smart, p, onfulfilled, extra);
     else
@@ -636,7 +658,7 @@ class Future
   //! result of this @[Future], or be failed after @[seconds] have expired.
   this_program timeout(int|float seconds)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_failure(p->failure);
     on_success(p->success);
     if (timeout_call_out_handle) {
@@ -985,7 +1007,7 @@ class Promise
   }
   variant this_program depend()
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     depend(p->future());
     return p;
   }
