@@ -2912,19 +2912,39 @@ node *low_pop_local_variables(int level, node *block)
     e=--(Pike_compiler->compiler_frame->current_number_of_locals);
     if (block) {
       struct local_variable *var = Pike_compiler->compiler_frame->variable + e;
-      block = mknestednodes(F_COMMA_EXPR,
-			    mknode(F_SET_LOCAL_NAME, mkintnode(e),
-				   mkstrnode(var->name)),
-			    mknode(F_SET_LOCAL_TYPE, mkintnode(e),
-				   mktypenode(var->type)),
-			    block,
-			    mknode(F_POP_VALUE,
-				   mknode(F_ASSIGN,
-					  mklocalnode(e, 0),
-					  mkintnode(0)),
-				   NULL),
-			    mknode(F_SET_LOCAL_END, mkintnode(e), NULL),
-			    NULL);
+      if (var->name /*->len*/) {
+	block = mknestednodes(F_COMMA_EXPR,
+			      mknode(F_SET_LOCAL_NAME, mkintnode(e),
+				     mkstrnode(var->name)),
+			      mknode(F_SET_LOCAL_TYPE, mkintnode(e),
+				     mktypenode(var->type)),
+			      block,
+			      mknode(F_POP_VALUE,
+				     mknode(F_ASSIGN,
+					    mklocalnode(e, 0),
+					    mkintnode(0)),
+				     NULL),
+			      mknode(F_SET_LOCAL_END, mkintnode(e), NULL),
+			      NULL);
+      } else {
+	/* No name; this is typically used for internal temporary variables,
+	 * eg for the safe-indexing operators.
+	 *
+	 * As we're in the middle of an expression, it gets
+	 * confused by the void expressions.
+	 *
+	 * Skip generating variable information, as it will
+	 * only be "" and mixed anyway.
+	 */
+	block = mknestednodes(F_COMMA_EXPR,
+			      block,
+			      mknode(F_POP_VALUE,
+				     mknode(F_ASSIGN,
+					    mklocalnode(e, 0),
+					    mkintnode(0)),
+				     NULL),
+			      NULL);
+      }
     }
     if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	!(Pike_compiler->compiler_frame->variable[e].flags &
