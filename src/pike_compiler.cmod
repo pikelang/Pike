@@ -2912,7 +2912,7 @@ node *low_pop_local_variables(int level, node *block)
     e=--(Pike_compiler->compiler_frame->current_number_of_locals);
     if (block) {
       struct local_variable *var = Pike_compiler->compiler_frame->variable + e;
-      if (var->name /*->len*/) {
+      if (var->name->len) {
 	block = mknestednodes(F_COMMA_EXPR,
 			      mknode(F_SET_LOCAL_NAME, mkintnode(e),
 				     mkstrnode(var->name)),
