@@ -93,6 +93,24 @@ struct compilation
   struct mapping *resolve_cache;
 };
 
+/*
+ * The next level is struct program_state, which are held in
+ * a linked list stack rooted in the Pike_compiler variable.
+ * There is one such struct for each class being compiled,
+ * with the current class being in Pike_compiler.
+ *
+ * Cf compilation.h for its definition.
+ */
+
+/*
+ * The next level is struct compiler_frame, which are held in
+ * a linked list stack rooted in the field of the same name in
+ * struct program_state. They keep track of state for the
+ * current function.
+ *
+ * Cf las.h for its definition.
+ */
+
 #ifdef PIKE_DEBUG
 #define CHECK_COMPILER()	do {				\
     if (!Pike_fp || !compilation_program ||			\
