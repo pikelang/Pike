@@ -777,8 +777,10 @@ void i_img_bmp__decode(INT32 args,int header_only)
    if (j < 0 || j > olen)
        Pike_error("Image.BMP.decode: unexpected EOF\n");
 
-   s=os+j;
-   len=olen-j;
+   if (j) {
+     s = os + j;
+     len = olen - j;
+   }
 
    if (len>0) switch (bpp)
    {
