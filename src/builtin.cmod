@@ -34,6 +34,7 @@
 #include "whitespace.h"
 #include "sprintf.h"
 #include "pike_search.h"
+#include "pike_compiler.h"
 
 #include <errno.h>
 #include <math.h>
@@ -2621,13 +2622,15 @@ PIKECLASS backtrace_frame
     RETURN (t == literal_array_string);
   }
 
-  static void fill_in_file_and_line(struct backtrace_frame_struct *this)
+  static void fill_in_file_and_line(struct backtrace_frame_struct *this,
+				    struct local_variable_info *vars)
   {
     struct pike_string *file = NULL;
     assert (this->lineno == 0);
 
+    if (vars) vars->num_local = 0;
     if (this->pc && this->prog) {
-      file = low_get_line(this->pc, this->prog, &this->lineno, NULL);
+      file = low_get_line(this->pc, this->prog, &this->lineno, vars);
       this->pc = NULL;
     }
     else if (TYPEOF(this->_fun) == PIKE_T_FUNCTION) {
@@ -2662,7 +2665,7 @@ PIKECLASS backtrace_frame
     flags ID_PROTECTED;
   {
     if (THIS->lineno) return;
-    fill_in_file_and_line(THIS);
+    fill_in_file_and_line(THIS, NULL);
   }
 
   PIKEFUN string `filename()
