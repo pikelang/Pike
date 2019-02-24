@@ -2904,6 +2904,292 @@ PIKECLASS backtrace_frame
 /*! @endclass
  */
 
+/*! @class LiveBacktraceFrame
+ *!
+ *! A @[BacktraceFrame] which retains access to the running code.
+ *!
+ *! This means that unless the corresponding thread running the code
+ *! is halted (or similar), the values in the fields contained in
+ *! this object may change at any time.
+ *!
+ *! On the other hand it allows for inspection and altering of
+ *! the local variables (if any) belonging to the frame. Typical
+ *! use of this would be for debugging.
+ *!
+ *! @seealso
+ *!   @[BacktraceFrame]
+ */
+PIKECLASS LiveBacktraceFrame
+{
+  /*! @decl @Annotations.Implements(BacktraceFrame)
+   */
+  IMPLEMENTS backtrace_frame;
+
+  /* The live frame to inspect. */
+  CVAR struct pike_frame *fp;
+
+  /* FIXME: Keep track of the corresponding thread? */
+
+  /* fp->pc when low_get_line() was last called. */
+  CVAR PIKE_OPCODE_T *pc;
+
+  /* Cached result of low_get_line(). lineno == 0 indicates
+   * that the values are stale.
+   */
+  CVAR struct pike_string *filename;
+  CVAR INT_TYPE lineno;
+  CVAR struct local_variable_info locals;
+
+  EXIT
+    gc_trivial;
+  {
+    if (THIS->filename) {
+      free_string(THIS->filename);
+      THIS->filename = NULL;
+    }
+    if (THIS->fp) {
+      free_pike_frame(THIS->fp);
+      THIS->fp = NULL;
+    }
+  }
+
+  GC_CHECK
+  {
+    if (THIS->fp && !debug_gc_check(THIS->fp, " as live backtrace frame"))
+      gc_check_frame(THIS->fp);
+  }
+
+  GC_RECURSE
+  {
+    if (THIS->fp) gc_recurse_frame(THIS->fp);
+  }
+
+  PIKEFUN void fill_in_file_and_line()
+    flags ID_PROTECTED;
+  {
+    if (THIS->lineno) {
+      if (THIS->fp && (THIS->pc == THIS->fp->pc)) return;
+      THIS->lineno = 0;
+    }
+    if (THIS->filename) {
+      free_string(THIS->filename);
+      THIS->filename = NULL;
+    }
+    THIS->locals.num_local = 0;
+    if (!THIS->fp) return;
+
+    THIS->filename =
+      low_get_line((THIS->pc = THIS->fp->pc), THIS->fp->current_program,
+		   &THIS->lineno, &THIS->locals);
+  }
+
+  PIKEFUN mixed `fun()
+  {
+    struct pike_frame *fp = THIS->fp;
+
+    if (!fp) {
+      push_undefined();
+      return;
+    }
+
+    if (!fp->context) {
+      if (fp->pc == (void *)do_gc) {
+	push_text("gc");
+      } else {
+	push_undefined();
+      }
+      return;
+    }
+
+    if (fp->current_object && fp->current_object->prog) {
+      if (fp->fun == FUNCTION_BUILTIN) {
+	/* Unusual case. The frame is from call_c_initializers(), gc()
+	 * or similar. cf [bug 6156].	/grubba
+	 *
+	 * Masquerade as the program.
+	 *
+	 * FIXME: Ought to keep parent-pointers.
+	 */
+	ref_push_program(fp->current_object->prog);
+      } else {
+	ref_push_function(fp->current_object, fp->fun);
+      }
+      return;
+    }
+
+    push_undefined();
+  }
+
+  /*! @decl int(0..1) _is_type(string t)
+   *! This object claims to be an array for backward compatibility.
+   */
+  PIKEFUN int(0..1) _is_type(string t)
+  {
+    RETURN (t == literal_array_string);
+  }
+
+  PIKEFUN array `args()
+  {
+    struct pike_frame *fp = THIS->fp;
+    struct array *res;
+
+    if (!fp) {
+      push_undefined();
+      return;
+    }
+
+    push_array(res = allocate_array_no_init(fp->num_args, 0));
+    res->type_field =
+      assign_svalues_no_free(res->item, fp->locals, fp->num_args, BIT_MIXED);
+
+    if (fp->context && fp->current_object && fp->current_object->prog &&
+	(fp->fun != FUNCTION_BUILTIN)) {
+      struct identifier *func =
+	ID_FROM_INT(fp->current_object->prog, fp->fun);
+      if ((func->identifier_flags & IDENTIFIER_VARARGS) &&
+	  (fp->num_args < fp->num_locals) &&
+	  TYPEOF(fp->locals[fp->num_args]) == T_ARRAY) {
+	ref_push_array(fp->locals[fp->num_args].u.array);
+	f_add(2);
+	res = Pike_sp[-1].u.array;
+      }
+    }
+
+    if (res->type_field & BIT_OBJECT) {
+      ptrdiff_t i;
+      for (i = 0; i < res->size; i++) {
+	struct svalue *s = ITEM(res) + i;
+	if ((TYPEOF(*s) == T_OBJECT) &&
+	    s->u.object->prog &&
+	    (s->u.object->prog->flags &
+	     (PROGRAM_DESTRUCT_IMMEDIATE|PROGRAM_CLEAR_STORAGE))) {
+	  /* It is typically a bad idea to have extra references
+	   * to objects with these flags. The flags are usually
+	   * used by stuff like mutex keys and encryption keys
+	   * respectively.
+	   */
+	  struct object *o = clone_fake_object(s->u.object->prog);
+	  free_object(s->u.object);
+	  SET_SVAL(*s, T_OBJECT, 0, object, o);
+	}
+      }
+    }
+  }
+
+  PIKEFUN string `filename()
+  {
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if (THIS->filename) {
+      ref_push_string(THIS->filename);
+      return;
+    }
+    push_undefined();
+  }
+
+  PIKEFUN string `line()
+  {
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    push_int(THIS->lineno);
+  }
+
+  /*! @decl int(3..) _sizeof()
+   */
+  PIKEFUN int(3..) _sizeof()
+    flags ID_PROTECTED;
+  {
+    struct pike_frame *fp = THIS->fp;
+    int sz = 3;
+
+    if (fp) {
+      sz += fp->num_args;
+
+      if (fp->context && fp->current_object && fp->current_object->prog &&
+	  (fp->fun != FUNCTION_BUILTIN)) {
+	struct identifier *func =
+	  ID_FROM_INT(fp->current_object->prog, fp->fun);
+	if ((func->identifier_flags & IDENTIFIER_VARARGS) &&
+	    (fp->num_args < fp->num_locals) &&
+	    TYPEOF(fp->locals[fp->num_args]) == T_ARRAY) {
+	  sz += fp->locals[fp->num_args].u.array->size;
+	}
+      }
+    }
+
+    push_int(sz);
+  }
+
+  PIKEFUN int(0..) `num_locals()
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp) {
+      push_undefined();
+    } else {
+      push_int(fp->num_locals);
+    }
+  }
+
+  PIKEFUN mixed get_local(int(0..) l)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%d\n", l);
+    }
+    push_svalue(fp->locals + l);
+  }
+
+  PIKEFUN mixed set_local(int(0..) l, mixed val)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%d\n", l);
+    }
+    assign_svalue(fp->locals + l, val);
+  }
+
+  PIKEFUN string get_local_name(int(0..) l)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%d\n", l);
+    }
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if ((l < THIS->locals.num_local) && fp->current_object &&
+	fp->current_object->prog) {
+      int strno = THIS->locals.names[l];
+      if (strno < THIS->fp->current_object->prog->num_strings) {
+	ref_push_string(THIS->fp->current_object->prog->strings[strno]);
+	return;
+      }
+    }
+    push_undefined();
+  }
+
+  PIKEFUN type get_local_type(int(0..) l)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%d\n", l);
+    }
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if ((l < THIS->locals.num_local) && fp->current_object &&
+	fp->current_object->prog) {
+      int constno = THIS->locals.types[l];
+      if (constno < THIS->fp->current_object->prog->num_constants) {
+	push_svalue(&THIS->fp->current_object->prog->constants[constno].sval);
+	return;
+      }
+    }
+    push_undefined();
+  }
+};
+
+/*! @endclass
+ */
+
 /*! @decl mapping(string:int|string) get_runtime_info()
  *!
  *! Get information about the Pike runtime.
