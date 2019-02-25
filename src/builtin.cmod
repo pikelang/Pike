@@ -2983,10 +2983,8 @@ PIKECLASS LiveBacktraceFrame
 		   &THIS->lineno, &THIS->locals);
   }
 
-  PIKEFUN mixed `fun()
+  static void f_LiveBacktraceFrame_get_fun(struct pike_frame *fp)
   {
-    struct pike_frame *fp = THIS->fp;
-
     if (!fp) {
       push_undefined();
       return;
@@ -3018,6 +3016,11 @@ PIKECLASS LiveBacktraceFrame
     }
 
     push_undefined();
+  }
+
+  PIKEFUN mixed `fun()
+  {
+    f_LiveBacktraceFrame_get_fun(THIS->fp);
   }
 
   /*! @decl int(0..1) _is_type(string t)
@@ -3118,6 +3121,100 @@ PIKECLASS LiveBacktraceFrame
     }
 
     push_int(sz);
+  }
+
+  /*! @decl mixed `[](int index, int|void end_or_none)
+   *! The BacktraceFrame object can be indexed as an array.
+   */
+  PIKEFUN mixed `[](int index, int|void end_or_none)
+    flags ID_PROTECTED;
+  {
+    INT_TYPE end = index;
+    INT32 numargs = 3;
+    INT32 i;
+    struct pike_frame *fp = THIS->fp;
+    struct array *extra = NULL;
+
+    if (THIS->fp) {
+      numargs += THIS->fp->num_args;
+
+      if (fp->context && fp->current_object && fp->current_object->prog &&
+	  (fp->fun != FUNCTION_BUILTIN)) {
+	struct identifier *func =
+	  ID_FROM_INT(fp->current_object->prog, fp->fun);
+	if ((func->identifier_flags & IDENTIFIER_VARARGS) &&
+	    (fp->num_args < fp->num_locals) &&
+	    TYPEOF(fp->locals[fp->num_args]) == T_ARRAY) {
+	  extra = fp->locals[fp->num_args].u.array;
+	  numargs += extra->size;
+	}
+      }
+    }
+
+    if (!end_or_none) {
+      if (index < 0)
+        index_error("pike_frame->`[]", args, NULL, Pike_sp-args,
+		    "Indexing with negative index (%"PRINTPIKEINT"d)\n", index);
+      else if (index >= numargs)
+        index_error("pike_frame->`[]", args, NULL, Pike_sp-args,
+		    "Indexing with too large index (%"PRINTPIKEINT"d)\n", index);
+    } else
+      end = end_or_none->u.integer;
+
+    pop_n_elems(args);
+
+    if (end_or_none) {
+      if ((end < 0) || (end < index) || (index >= numargs)) {
+	f_aggregate(0);
+	return;
+      }
+
+      if (end >= numargs)
+	end = numargs-1;
+    }
+
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+
+    for (i = index; i <= end; i++) {
+      switch(i) {
+      case 0:	/* Filename */
+	if (THIS->filename)
+	  ref_push_string(THIS->filename);
+	else
+	  push_int(0);
+	break;
+      case 1:	/* Linenumber */
+	push_int(THIS->lineno);
+	break;
+      case 2:	/* Function */
+	f_LiveBacktraceFrame_get_fun(THIS->fp);
+        break;
+      default:	/* Arguments */
+        {
+	  if (i > 2) {
+	    int j = i - 3;
+	    if (j < fp->num_args) {
+	      push_svalue(fp->locals + j);
+	      break;
+	    }
+	    j -= fp->num_args;
+	    if (extra && (j < extra->size)) {
+	      push_svalue(ITEM(extra) + j);
+	      break;
+	    }
+	  }
+          bad_arg_error("`[]", args, 1,
+			"int(0..)", Pike_sp-args,
+			"Bad argument 1 to backtrace_frame->`[](): "
+			"Expected int(0..%d)\n",
+			numargs + 2);
+        }
+        UNREACHABLE(break);
+      }
+    }
+    if (end_or_none)
+      f_aggregate(1 + end - index);
   }
 
   PIKEFUN int(0..) `num_locals()
