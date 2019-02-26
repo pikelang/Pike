@@ -193,7 +193,7 @@ PMOD_EXPORT void f_get_weak_flag(INT32 args);
 PMOD_EXPORT void f_function_name(INT32 args);
 PMOD_EXPORT void f_function_object(INT32 args);
 PMOD_EXPORT void f_function_program(INT32 args);
-void low_backtrace(struct Pike_interpreter_struct *);
+void low_backtrace(struct Pike_interpreter_struct *, int flags);
 PMOD_EXPORT void f_backtrace(INT32 args);
 
 struct pike_list_node

@@ -2861,9 +2861,26 @@ void exit_cond_obj(struct object *UNUSED(o))
 /*! @class Thread
  */
 
-/*! @decl array(mixed) backtrace()
+/*! @decl array(mixed) backtrace(int|void flags)
  *!
  *! Returns the current call stack for the thread.
+ *!
+ *! @param flags
+ *!
+ *!   A bit mask of flags affecting generation of the backtrace.
+ *!
+ *!   Currently a single flag is defined:
+ *!   @int
+ *!     @value 1
+ *!       Return @[LiveBacktraceFrame]s. This flag causes the frame
+ *!       objects to track changes (as long as they are in use), and
+ *!       makes eg local variables for functions available for
+ *!       inspection or change.
+ *!
+ *!       Note that since these values are "live", they may change or
+ *!       dissapear at any time unless the corresponding thread has
+ *!       been halted or similar.
+ *!   @endint
  *!
  *! @returns
  *!   The result has the same format as for @[predef::backtrace()].
@@ -2874,21 +2891,26 @@ void exit_cond_obj(struct object *UNUSED(o))
 void f_thread_backtrace(INT32 args)
 {
   struct thread_state *foo = THIS_THREAD;
-
-  pop_n_elems(args);
+  int flags = 0;
 
   if(foo == Pike_interpreter.thread_state)
   {
-    f_backtrace(0);
+    f_backtrace(args);
+
+    return;
   }
-  else if(foo->state.stack_pointer)
+
+  get_all_args("backtrace", args, ".d", &flags);
+
+  pop_n_elems(args);
+
+  if(foo->state.stack_pointer)
   {
-    low_backtrace(& foo->state);
+    low_backtrace(& foo->state, flags);
   }
   else
   {
-    push_int(0);
-    f_allocate(1);
+    ref_push_array(&empty_array);
   }
 }
 

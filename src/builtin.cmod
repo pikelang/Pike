@@ -3341,7 +3341,7 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
 /*! @endmodule
  */
 
-void low_backtrace(struct Pike_interpreter_struct *i)
+void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 {
   struct svalue *stack_top = i->stack_pointer;
   struct pike_frame *f, *of = 0;
@@ -3356,11 +3356,29 @@ void low_backtrace(struct Pike_interpreter_struct *i)
   push_array(res);
 
   for (f = i->frame_pointer; f && size; f = (of = f)->next) {
-    struct object *o = fast_clone_object(backtrace_frame_program);
+    struct object *o;
     struct backtrace_frame_struct *bf;
     struct identifier *function = NULL;
 
     size--;
+
+    if (flags & 1) {
+      struct LiveBacktraceFrame_struct *bf;
+
+      o = fast_clone_object(LiveBacktraceFrame_program);
+
+      bf = OBJ2_LIVEBACKTRACEFRAME(o);
+
+      SET_SVAL(res->item[size], PIKE_T_OBJECT, 0, object, o);
+
+      add_ref(bf->fp = f);
+
+      /* FIXME: Keep track of the corresponding thread? */
+
+      continue;
+    }
+
+    o = fast_clone_object(backtrace_frame_program);
 
     SET_SVAL(res->item[size], PIKE_T_OBJECT, 0, object, o);
 
@@ -3465,16 +3483,48 @@ void low_backtrace(struct Pike_interpreter_struct *i)
   /* NOTE: res has already been pushed on the stack. */
 }
 
-/*! @decl array(Pike.BacktraceFrame) backtrace()
- *!
- *!   FIXME: This documentation is not up to date!
+/*! @decl array(Pike.BacktraceFrame) backtrace(int|void flags)
  *!
  *!   Get a description of the current call stack.
  *!
+ *! @param flags
+ *!
+ *!   A bit mask of flags affecting generation of the backtrace.
+ *!
+ *!   Currently a single flag is defined:
+ *!   @int
+ *!     @value 1
+ *!       Return @[LiveBacktraceFrame]s. This flag causes the frame
+ *!       objects to track changes (as long as they are in use), and
+ *!       makes eg local variables for functions available for
+ *!       inspection or change.
+ *!
+ *!       Note that since these values are "live", they may change or
+ *!       dissapear at any time unless the corresponding thread has
+ *!       been halted or similar.
+ *!   @endint
+ *!
+ *! @returns
  *!   The description is returned as an array with one entry for each call
  *!   frame on the stack.
  *!
- *!   Each entry has this format:
+ *!   The entries are represented by @[Pike.BacktraceFrame] objects.
+ *!
+ *!   The current call frame will be last in the array.
+ *!
+ *! @note
+ *!   Please note that the frame order may be reversed in a later version
+ *!   of Pike to accommodate for deferred backtraces.
+ *!
+ *! @note
+ *!   Note that the arguments reported in the backtrace are the current
+ *!   values of the variables, and not the ones that were at call-time.
+ *!   This can be used to hide sensitive information from backtraces
+ *!   (eg passwords).
+ *!
+ *! @note
+ *!   In old versions of Pike the entries used to be represented
+ *!   by arrays of the following format:
  *!   @array
  *!     @elem string file
  *!       A string with the filename if known, else zero.
@@ -3485,27 +3535,18 @@ void low_backtrace(struct Pike_interpreter_struct *i)
  *!     @elem mixed|void ... args
  *!       The arguments that the function was called with.
  *!   @endarray
- *!
- *!   The current call frame will be last in the array.
- *!
- *! @note
- *!   Please note that the frame order may be reversed in a later version
- *!   of Pike to accommodate for deferred backtraces.
- *!
- *!   Note that the arguments reported in the backtrace are the current
- *!   values of the variables, and not the ones that were at call-time.
- *!   This can be used to hide sensitive information from backtraces
- *!   (eg passwords).
+ *!   The above format is still supported by eg @[describe_backtrace()].
  *!
  *! @seealso
  *!   @[catch()], @[throw()]
  */
 PMOD_EXPORT
-PIKEFUN array(mixed) backtrace()
+PIKEFUN array(mixed) backtrace(int|void local_vars)
      efun;
      optflags OPT_EXTERNAL_DEPEND;
 {
-  low_backtrace(& Pike_interpreter);
+  low_backtrace(& Pike_interpreter, local_vars?local_vars->u.integer:0);
+  stack_pop_n_elems_keep_top(args);
 }
 
 /*! @class Replace
