@@ -10,6 +10,7 @@ local protected enum State {
   STATE_PENDING = 0,
   STATE_FULFILLED,
   STATE_REJECTED,
+  STATE_REJECTION_REPORTED,
 };
 
 protected Thread.Mutex mux = Thread.Mutex();
@@ -192,7 +193,7 @@ class Future
       res = result;
     }
 
-    if (s == STATE_REJECTED) {
+    if (s >= STATE_REJECTED) {
       throw(res);
     }
     return res;
@@ -247,6 +248,9 @@ class Future
   {
     switch (state) {
       case STATE_REJECTED:
+	state = STATE_REJECTION_REPORTED;
+	// FALL_THROUGH
+      case STATE_REJECTION_REPORTED:
         call_callback(cb, result, @extra);
         break;
       case STATE_NO_FUTURE:
@@ -677,6 +681,7 @@ class Future
                              ([ STATE_NO_FUTURE : "no future",
 			        STATE_PENDING : "pending",
                                 STATE_REJECTED : "rejected",
+				STATE_REJECTION_REPORTED : "rejection_reported",
                                 STATE_FULFILLED : "fulfilled" ])[state],
                              result);
   }
@@ -861,8 +866,7 @@ class Promise
   }
 
   protected this_program finalise(State newstate, mixed value, int try,
-    array(array(function(mixed, mixed ...: void)|array(mixed))) cbs,
-    void|function(mixed : void) globalfailure)
+    array(array(function(mixed, mixed ...: void)|array(mixed))) cbs)
   {
     Thread.MutexKey key = mux->lock();
     if (state <= STATE_PENDING)
@@ -876,9 +880,10 @@ class Promise
         foreach(cbs; ; array cb)
           if (cb)
             call_callback(cb[0], value, @cb[1..]);
+	if (newstate == STATE_REJECTED) {
+	  state = STATE_REJECTION_REPORTED;
+	}
       }
-      else if (globalfailure)
-        call_callback(globalfailure, value);
       failure_cbs = success_cbs = 0;		// Free memory and references
     }
     else
@@ -946,7 +951,7 @@ class Promise
   this_program failure(mixed value, void|int try)
   {
     return
-     finalise(STATE_REJECTED, value, try, failure_cbs, global_on_failure);
+     finalise(STATE_REJECTED, value, try, failure_cbs);
   }
 
   //! Maybe reject the @[Future] value.
@@ -1126,6 +1131,9 @@ class Promise
     // NB: Don't complain about dropping STATE_NO_FUTURE on the floor.
     if (state == STATE_PENDING)
       try_failure(({ "Promise broken.\n", backtrace() }));
+    if ((state == STATE_REJECTED) && global_on_failure)
+      call_callback(global_on_failure, result);
+    result = UNDEFINED;
   }
 }
 
