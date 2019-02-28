@@ -175,28 +175,37 @@ class Future
     }
   }
 
-  //! Wait for fulfillment and return the value.
+  //! Wait for fulfillment.
   //!
-  //! @throws
-  //!   Throws on rejection.
-  mixed get()
+  //! @seealso
+  //!   @[get()]
+  this_program wait()
   {
-    State s = state;
-    mixed res = result;
-    if (!s) {
+    if (state <= STATE_PENDING) {
       Thread.MutexKey key = mux->lock();
       while (state <= STATE_PENDING) {
 	cond->wait(key);
       }
-
-      s = state;
-      res = result;
     }
 
-    if (s >= STATE_REJECTED) {
-      throw(res);
+    return this;
+  }
+
+  //! Wait for fulfillment and return the value.
+  //!
+  //! @throws
+  //!   Throws on rejection.
+  //!
+  //! @seealso
+  //!   @[wait()]
+  mixed get()
+  {
+    wait();
+
+    if (state >= STATE_REJECTED) {
+      throw(result);
     }
-    return res;
+    return result;
   }
 
   //! Register a callback that is to be called on fulfillment.
@@ -849,6 +858,13 @@ class Promise
     if (_astate)
       _astate->materialise();
     return ::on_failure(cb, @extra);
+  }
+
+  Future wait()
+  {
+    if (_astate)
+      _astate->materialise();
+    return ::wait();
   }
 
   mixed get()
