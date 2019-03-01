@@ -72,13 +72,7 @@ private void auto_use_backend()
 }
 
 protected function(function(mixed ...:void), int|float, mixed ...:mixed)
- callout;
-
-private void create()
-{
-  callout = callnow;
-  call_out(auto_use_backend, 0);
-}
+  callout = ((callout = callnow), call_out(auto_use_backend, 0), callout);
 
 //! Value that will be provided asynchronously
 //! sometime in the future.
