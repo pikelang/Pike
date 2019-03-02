@@ -46,6 +46,8 @@ struct replace_many_context
   int flags;
 };
 
+struct Pike_interpreter_struct;
+
 PMOD_EXPORT struct object *get_val_true(void);
 PMOD_EXPORT struct object *get_val_false(void);
 PMOD_EXPORT struct object *get_val_null(void);
