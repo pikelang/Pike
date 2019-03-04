@@ -598,7 +598,7 @@ static void polyfill_some(struct image *img,
 	 c=c->next;
       }
 
-      /* find first horisintal event */
+      /* Find first horisontal event */
       xmin=ll->xmin;
       c=ll;
       while (c)
@@ -626,7 +626,6 @@ static void polyfill_some(struct image *img,
 
 	 /* shift to get next event */
 	 xmin = xmax;
-         xmax = xmin - 1.0;
       }
 
 
