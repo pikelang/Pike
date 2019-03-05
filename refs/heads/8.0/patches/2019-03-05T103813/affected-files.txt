@@ -1,0 +1,5 @@
+Modified files:
+  pike/lib/modules/Concurrent.pmod
+  pike/lib/modules/Tools.pmod/Standalone.pmod/autodoc_to_html.pike
+  pike/lib/modules/_Image.pmod/Dims.pmod
+  pike/lib/modules/_Image.pmod/module.pmod
