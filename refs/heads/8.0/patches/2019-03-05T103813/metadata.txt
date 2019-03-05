@@ -1,0 +1,93 @@
+subject: Pike 8.0: Concurrent API fixes, EXIF rotation handling, Autodoc rendering
+from: f8024eff4f5f12739ebe6c79437dfd8b0877f6ba
+to: 5317c76b00fb356ea588edd1582bd2691e865ac2
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2019-01-14T123857
+restart: true
+
+Multiple fixes:
+
+• Concurrent: Moved some initialization code to __INIT().
+
+This fixes an issue with the variable callout not being initialized
+properly in classes that have inherited Concurrent.
+
+Fixes some of the issues in [WS-404].
+
+• Concurrent.Future: Added wait().
+
+This differs from get() in that it will not throw on failure.
+
+• Concurrent.Promise: Fix handling of rejections.
+
+The global rejection callback (installed via Concurrent.on_failure())
+must not be called before the user has had a chance to register
+custom rejection callbacks (via Concurrent.Future()->on_failure()).
+
+Calling of the global rejection callback is now deferred until
+the Promise is destructed.
+
+Fixes erroneous reporting of unhandled Promise errors.
+
+• Concurrent.Promise: Reduce number of complaints.
+
+Don't complain about dropping promises that have no corresponding
+future on the floor. As the promises have no future, nobody is
+affected by them not being fulfilled.
+
+• Documentation [Concurrent]: Note where backend state isn't propagated.
+
+• Concurrent.Future: Added promise_factory().
+
+This makes propagating state to new Promises easier.
+
+New Promises are now created with the same backend as
+the Promise they originated from.
+
+• Documentation [Concurrent]: Added note about backend disabled mode.
+
+• Concurrent.Future: Reduce references.
+
+There's no point in having the timeout call_out after
+the Promise has been fulfilled, so remove it (if any).
+
+• Concurrent.Future: Added {get,set}_backend().
+
+This makes it possible to have a custom Pike.Backend handle
+the callbacks for the Future.
+
+• Concurrent.Future: Added internal function call_callback().
+
+This makes it possible to adjust the way that callbacks are
+called via overloading. The typical use case is for wanting
+callbacks to be called by some other thread than the backend.
+
+• Image: Add convenience functions applying EXIF decoding and rotation
+
+The functions Image.Dims.exif_get() and Image.exif_decode() work like
+Image.Dims.get() and Image._decode(), except that if the image happens
+to be JPEG the EXIF aware functions Image.Dims.exif_get_JPEG and
+Image.JPEG.exif_decode are used.
+
+• Image.Dims: Revert EXIF flipping of dimensions in get_JPEG
+
+Like for JPEG._decode, add a specific exif_get_JPEG which does the
+flipping instead.
+
+• Image._decode: Use the correct output parameter of Image.ANY._decode
+
+• Image.JPEG.exif_decode: Fix type of xsize and ysize on flipped images
+
+Previously the fields "xsize" and "ysize" would be integers if the
+image was not flipped, and functions if is was flipped...
+
+• Tools.Standalone.autodoc_to_html: Fixed typo.
+
+• Tools.Standalone.autodoc_to_html: Improved rendering of <ol> and <ul>.
+
+The renderers for <ol> and <ul> now share code.
+
+The <ol> renderer now survives without <text>-nodes.
+
+Improved rendering of <ol> and <ul> when both <li>-nodes with
+name attributes and <text>-nodes are present.
