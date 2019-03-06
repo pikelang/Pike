@@ -535,7 +535,7 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
 	     m->stop>=m->size ||
 	     m->stop<m->start ||
 	     m->size<0)
-	    res->error = 416;
+	    m->error = 416;
       }
    }
 
