@@ -3176,6 +3176,23 @@ PIKECLASS Implements
       exit_compiler();
     }
   }
+
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+    flags ID_PROTECTED;
+  {
+    if (c != 'O') {
+      push_undefined();
+      return;
+    }
+
+    push_text("Pike.Annotations.Implements(%O)");
+    if (THIS->api) {
+      ref_push_program(THIS->api);
+    } else {
+      push_undefined();
+    }
+    f_sprintf(2);
+  }
 }
 /*! @endclass
  */
@@ -3195,6 +3212,17 @@ PIKECLASS InheritedClass
 
   /*! @decl @@Inherited
    */
+
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+    flags ID_PROTECTED;
+  {
+    if (c != 'O') {
+      push_undefined();
+      return;
+    }
+
+    push_text("Pike.Annotations.Inherited");
+  }
 }
 /*! @endclass
  */
