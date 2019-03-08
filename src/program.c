@@ -3122,6 +3122,63 @@ void fixate_program(void)
     }
   }
 
+  if (p->num_annotations) {
+    struct pike_string *save_file = c->lex.current_file;
+    INT_TYPE save_line = c->lex.current_line;
+
+    for (i = 0; i < p->num_annotations; i++) {
+      struct multiset *l = p->annotations[i];
+      int d;
+
+      if (!l) continue;
+
+      /* Make using yyerror() et al more convenient. */
+      c->lex.current_line = p->identifiers[i].linenumber;
+      c->lex.current_file = p->strings[p->identifiers[i].filename_strno];
+
+      /* Convert the identifier number (i) to a reference number (d). */
+      for (d = 0; d < p->num_identifier_references; d++) {
+	struct reference *ref = p->identifier_references + d;
+	ptrdiff_t pos;
+
+	if (ref->inherit_offset || (ref->identifier_offset != i)) continue;
+
+	for (pos = multiset_first(l); pos >= 0; pos = multiset_next(l, pos)) {
+	  push_multiset_index(l, pos);
+
+	  if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
+	    struct object *o = Pike_sp[-1].u.object;
+	    struct program *op = o->prog;
+	    if (op) {
+	      struct inherit *inh = op->inherits + SUBTYPEOF(Pike_sp[-1]);
+	      int fun;
+	      op = inh->prog;
+	      fun = find_identifier("end_pass_identifier", op);
+	      if (fun >= 0) {
+		fun += inh->identifier_level;
+		push_int(COMPILER_PASS_LAST);
+		ref_push_program(p);
+		push_int(d);
+		ref_push_object_inherit(Pike_fp->current_object,
+					Pike_fp->context -
+					Pike_fp->current_program->inherits);
+		safe_apply_low2(o, fun, 4, NULL);
+		pop_stack();
+	      }
+	    }
+	  }
+
+	  pop_stack();
+	}
+	/* Remove the msnode_ref added by multiset_first(). */
+	sub_msnode_ref(l);
+      }
+    }
+
+    c->lex.current_file = save_file;
+    c->lex.current_line = save_line;
+  }
+
 #ifdef DEBUG_MALLOC
   {
 #define DBSTR(X) ((X)?(X)->str:"")
