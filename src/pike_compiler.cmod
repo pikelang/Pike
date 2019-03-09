@@ -3244,6 +3244,103 @@ EXTRA
   Pike_sp--;
 }
 
+/*! @class OverrideClass
+ *!
+ *! This is the class for the @[Override] annotation.
+ */
+struct program *OverrideClass_program = NULL;
+PMOD_EXPORT struct object *Override_annotation = NULL;
+PIKECLASS OverrideClass
+  program_flags PROGRAM_CONSTANT|PROGRAM_NO_EXPLICIT_DESTRUCT;
+{
+  /*! @decl inherit Pike.Annotation
+   */
+  INHERIT Annotation;
+
+  PIKEFUN void end_pass_identifier(int pass, program prog, int(0..) ref,
+				   CompilerEnvironment_PikeCompiler compiler)
+  {
+    struct reference *ptr;
+    struct identifier *id;
+    struct pike_string *sym;
+    int i;
+    int found = -1;
+
+    if (pass != COMPILER_PASS_LAST) return;
+
+    if (!prog || (ref >= prog->num_identifier_references)) return;
+
+    /* Make sure that we can reach ourselves later,
+     * in case we need to generate an error.
+     */
+    ref_push_object(Pike_fp->current_object);
+
+    add_ref(compiler);
+    low_enter_compiler(compiler, compiler_inh_num);
+    /* NB: low_enter_compiler() invalidates THIS! */
+
+    ptr = prog->identifier_references + ref;
+
+    id = ID_FROM_PTR(prog, ptr);
+
+    sym = id->name;
+
+    /* FIXME: Check that:
+     *  * This is not a named lambda().
+     *  * Get the symbol name and check that it exists
+     *    in one of the parents (lookup ::symbol).
+     *  * If the symbol is a variant check also
+     *    that the type for previous definition also
+     *    covers the new type.
+     */
+    for(i = 1; i < prog->num_inherits; i++) {
+      struct inherit *inh = prog->inherits + i;
+      struct reference *r;
+
+      found = find_shared_string_identifier(sym, inh->prog);
+      if (found == -1) continue;
+      r = inh->prog->identifier_references + found;
+      if (r->id_flags & ID_HIDDEN) {
+	found = -1;
+	continue;
+      }
+      break;
+    }
+
+    if (found == -1) {
+      my_yyerror("@%O: Symbol ::%S not found.", Pike_sp-1, sym);
+    }
+
+    exit_compiler();
+
+    push_undefined();
+  }
+
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+    flags ID_PROTECTED;
+  {
+    if (c != 'O') {
+      push_undefined();
+      return;
+    }
+
+    push_text("Pike.Annotations.Override");
+  }
+}
+/*! @endclass
+ */
+
+/*! @decl constant Override = OverrideClass()
+ *!
+ *! This @[Annotation] informs the compiler that any symbol
+ *! marked with it is expected to also have been inherited.
+ */
+EXTRA
+{
+  Override_annotation = clone_object(OverrideClass_program, 0);
+  add_object_constant("Override", Override_annotation, 0);
+}
+
 /*! @class AutoCodecClass
  *!
  *! This is the class that implements the @[AutoCodec] annotstion.
@@ -3399,6 +3496,10 @@ void init_pike_compiler(void)
 
 void cleanup_pike_compiler(void)
 {
+  if (Override_annotation) {
+    free_object(Override_annotation);
+    Override_annotation = NULL;
+  }
   if (AutoCodec_annotation) {
     free_object(AutoCodec_annotation);
     AutoCodec_annotation = NULL;
