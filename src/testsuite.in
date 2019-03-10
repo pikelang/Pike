@@ -10946,6 +10946,66 @@ test_compile_error([[
   }
 ]])
 
+test_compile_any([[
+  class A {
+    int a;
+  }
+  class B {
+    inherit A;
+    @Pike.Annotations.Override: int a;
+  }
+]])
+test_compile_error([[
+  class A {
+    int a;
+  }
+  class B {
+    inherit A;
+
+    // This fails due to b not being present in A.
+    @Pike.Annotations.Override: int b;
+  }
+]])
+test_compile_any([[
+  class A {
+    int a;
+  }
+  class B {
+    private inherit A;
+
+    @Pike.Annotations.Override: int a;
+  }
+]])
+test_compile_any([[
+  class A {
+    int a;
+  }
+  class B {
+    int b;
+  }
+  class C {
+    inherit A;
+    inherit B;
+
+    @Pike.Annotations.Override: int a;
+    @Pike.Annotations.Override: int b;
+  }
+]])
+test_compile_error([[
+  class A {
+    int a;
+  }
+  class B {
+    private inherit A;
+  }
+  class C {
+    inherit B;
+
+    // This fails due to a being hidden by B.
+    @Pike.Annotations.Override: int a;
+  }
+]])
+
 test_any_equal([[
   class A {
     @"class_A";
