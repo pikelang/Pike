@@ -1297,11 +1297,9 @@ static void _decode_get_extension(unsigned char **s,
 				  size_t *len)
 {
    int ext;
-   size_t n,sz;
 
    if (*len<3) { (*s)+=*len; (*len)=0; return; }
-   n=0;
-   
+
    ext=(*s)[1];
    
    (*len)-=2;
@@ -1311,22 +1309,31 @@ static void _decode_get_extension(unsigned char **s,
 
    push_int(ext);
 
-   while (*len && (sz=**s))
-   {
-      if ((*len)-1<sz) sz=(*len)-1;
+   if (*len && **s) {
+      struct string_builder data;
+      ONERROR uwp;
+      size_t sz;
 
-      push_string(make_shared_binary_string((char *)(*s)+1,sz));
-      n++;
+      init_string_builder_alloc(&data, **s, 0);
+      SET_ONERROR(uwp, free_string_builder, &data);
 
-      (*len)-=(sz+1);
-      (*s)+=(sz+1);
-   }
-   if (*len) { (*len)-=1; (*s)+=1; }
+      while (*len && (sz=**s))
+      {
+	 if ((*len)-1<sz) sz=(*len)-1;
 
-   if (!n)
+	 string_builder_binary_strcat0(&data, (*s)+1, sz);
+
+	 (*len)-=(sz+1);
+	 (*s)+=(sz+1);
+      }
+
+      push_string(finish_string_builder(&data));
+      UNSET_ONERROR(uwp);
+   } else {
       push_empty_string();
-   else
-      f_add(DO_NOT_WARN(n));
+   }
+
+   if (*len) { (*len)-=1; (*s)+=1; }
 
    f_aggregate(3);
 }
@@ -1334,8 +1341,7 @@ static void _decode_get_extension(unsigned char **s,
 static void _decode_get_render(unsigned char **s,
 			       size_t *len)
 {
-   int n=0,bpp;
-   size_t sz;
+   int bpp;
 
 /* byte ...
    0  0x2c (render block init)
@@ -1397,22 +1403,31 @@ static void _decode_get_render(unsigned char **s,
 
    if (*len) { push_int(**s); (*s)++; (*len)--; } else push_int(0);
 
-   while (*len && (sz=**s))
-   {
-      if ((*len)-1<sz) sz=(*len)-1;
+   if (*len && **s) {
+      struct string_builder data;
+      ONERROR uwp;
+      size_t sz;
 
-      push_string(make_shared_binary_string((char *)(*s)+1,sz));
-      n++;
+      init_string_builder_alloc(&data, **s, 0);
+      SET_ONERROR(uwp, free_string_builder, &data);
 
-      (*len)-=(sz+1);
-      (*s)+=(sz+1);
-   }
-   if (*len) { (*len)-=1; (*s)+=1; }
+      while (*len && (sz=**s))
+      {
+	 if ((*len)-1<sz) sz=(*len)-1;
 
-   if (!n)
+	 string_builder_binary_strcat0(&data, (*s)+1, sz);
+
+	 (*len)-=(sz+1);
+	 (*s)+=(sz+1);
+      }
+
+      push_string(finish_string_builder(&data));
+      UNSET_ONERROR(uwp);
+   } else {
       push_empty_string();
-   else
-      f_add(n);
+   }
+
+   if (*len) { (*len)-=1; (*s)+=1; }
 
    f_aggregate(9);
 }
