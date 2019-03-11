@@ -3297,10 +3297,18 @@ PIKECLASS OverrideClass
       struct inherit *inh = prog->inherits + i;
       struct reference *r;
 
+      if (inh->inherit_level != 1) continue;
+
       found = find_shared_string_identifier(sym, inh->prog);
       if (found == -1) continue;
       r = inh->prog->identifier_references + found;
-      if (r->id_flags & ID_HIDDEN) {
+      /* NB: We're looking directly in the references in the
+       *     inherited program, NOT in the references of the
+       *     program being compiled. Thus the ID_PRIVATE.
+       */
+      fprintf(stderr, "Found: %d, id_flags: 0x04x\n",
+	      found, r->id_flags);
+      if (r->id_flags & (ID_HIDDEN|ID_PRIVATE)) {
 	found = -1;
 	continue;
       }
