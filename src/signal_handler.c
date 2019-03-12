@@ -480,16 +480,12 @@ static const struct sigdesc signal_desc []={
 #ifdef SIGTERM
   { SIGTERM, "SIGTERM" },
 #endif
-
-#if !defined(__linux__) || !defined(_REENTRANT)
 #ifdef SIGUSR1
   { SIGUSR1, "SIGUSR1" },
 #endif
 #ifdef SIGUSR2
   { SIGUSR2, "SIGUSR2" },
 #endif
-#endif /* !defined(__linux__) || !defined(_REENTRANT) */
-
 #ifdef SIGCHLD
   { SIGCHLD, "SIGCHLD" },
 #endif
@@ -937,10 +933,6 @@ static void f_signal(int args)
   signum=Pike_sp[-args].u.integer;
   if(signum <0 ||
      signum >=MAX_SIGNALS
-#if defined(__linux__) && defined(_REENTRANT)
-     || signum == SIGUSR1
-     || signum == SIGUSR2
-#endif
     )
   {
     Pike_error("Signal %d out of range.\n", signum);
