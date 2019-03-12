@@ -4119,6 +4119,7 @@ void fix_type_field(node *n)
     break;
 
   case F_TYPEOF:
+    type_stack_mark();
     if (CAR(n)) {
       push_finished_type(CAR(n)->type);
     } else {
@@ -4126,7 +4127,7 @@ void fix_type_field(node *n)
     }
     push_type(T_TYPE);
     if (n->type) free_type(n->type);
-    n->type = pop_type();
+    n->type = pop_unfinished_type();
     break;
 
   case F_UNDEFINED:
