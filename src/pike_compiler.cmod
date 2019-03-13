@@ -3306,12 +3306,11 @@ PIKECLASS OverrideClass
        *     inherited program, NOT in the references of the
        *     program being compiled. Thus the ID_PRIVATE.
        */
-      fprintf(stderr, "Found: %d, id_flags: 0x04x\n",
-	      found, r->id_flags);
       if (r->id_flags & (ID_HIDDEN|ID_PRIVATE)) {
 	found = -1;
 	continue;
       }
+      /* FIXME: Warn if symbol is ID_LOCAL/ID_INLINE? */
       break;
     }
 
