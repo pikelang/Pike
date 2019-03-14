@@ -13947,6 +13947,16 @@ array a()
 test_compile_error_any([[enum X {A, B}; enum(X) x;]])
 test_compile_error_any([[enum {intern : extern};]])
 
+test_compile_any([[
+  // GitHub pikelang/Pike #25.
+  typedef typeof(Val.true)|typeof(Val.false) bool;
+
+  int main (int argc, array(string) argv) {
+    bool a = Val.true;
+    return 0;
+  }
+]])
+
 // - modifiers, compile time type checks
 
 test_compile_any(class A {int v;} class B {inherit A; int v;})
