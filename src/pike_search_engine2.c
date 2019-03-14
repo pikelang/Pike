@@ -1,4 +1,10 @@
 /*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * NCHAR = Needle character
  * HCHAR = Haystack character
  */
@@ -30,14 +36,19 @@ static INLINE int NameNH(MEMCMP)(NCHAR *a, HCHAR *b, ptrdiff_t e)
 #endif
 }
 
-INLINE HCHAR *NameNH(memchr_search)(void *data,
+HCHAR *NameNH(memchr_search)(void *data,
 				    HCHAR *haystack,
 				    ptrdiff_t haystacklen)
 {
-  return NameNH(MEMCHR)(haystack, DO_NOT_WARN((NCHAR)(ptrdiff_t)data), haystacklen);
+  return NameNH(MEMCHR)(haystack,
+			DO_NOT_WARN((NCHAR)(ptrdiff_t) PTR_TO_INT(data)),
+			haystacklen);
 }
 
 
+#ifndef DEBUG_CLANG
+static /* works around clang 3.0 compilation/linking error. */
+#endif
 INLINE HCHAR *NameNH(memchr_memcmp)(NCHAR *needle,
 				    ptrdiff_t needlelen,
 				    HCHAR *haystack,
@@ -83,10 +94,14 @@ HCHAR *NameNH(boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
 				 HCHAR *haystack,
 				 ptrdiff_t haystacklen)
 {
-  ptrdiff_t i=s->plen-1;
+  NCHAR *needle = NEEDLE;
+  ptrdiff_t nlen = NEEDLELEN;
+  ptrdiff_t plen = s->plen;
+
+  ptrdiff_t i=plen-1;
   ptrdiff_t hlen=haystacklen;
-  if(NEEDLELEN > s->plen)
-    hlen -= NEEDLELEN-s->plen;
+  if(nlen > plen)
+    hlen -= nlen-plen;
   
  restart:
   while(i<hlen)
@@ -98,31 +113,31 @@ HCHAR *NameNH(boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
     else
     {
 #if NSHIFT == 0
-      j=s->plen-1;
+      j=plen-1;
       
 #ifdef PIKE_DEBUG
-      if(NEEDLE[j] != haystack[i])
-	fatal("T2BM failed!\n");
+      if(needle[j] != haystack[i])
+	Pike_fatal("T2BM failed!\n");
 #endif
 
 #else
       i++;
-      j=s->plen;
+      j=plen;
 #endif
       
-      while(NEEDLE[--j] == haystack[--i])
+      while(needle[--j] == haystack[--i])
       {
 	if(!j)
 	{
-	  if(NEEDLELEN > s->plen)
+	  if(nlen > plen)
 	  {
-	    if(!NameNH(MEMCMP)(NEEDLE+s->plen,
-			       haystack+i+s->plen, NEEDLELEN-s->plen))
+	    if(!NameNH(MEMCMP)(needle+plen,
+			       haystack+i+plen, nlen-plen))
 	    {
 	      return haystack+i;
 	    }else{
 	      /* this can be optimized... */
-	      i+=s->plen;
+	      i+=plen;
 	      goto restart;
 	    }
 	  }else{
@@ -145,22 +160,27 @@ HCHAR *NameNH(hubbe_search)(struct hubbe_searcher *s,
 			    HCHAR *haystack,
 			    ptrdiff_t haystacklen)
 {
+  NCHAR *needle = NEEDLE;
+  ptrdiff_t nlen = NEEDLELEN;
+  size_t hsize = s->hsize;
+  size_t max = s->max;
+
   INT32 tmp, h;
   HCHAR *q, *end;
   register struct hubbe_search_link *ptr;
   
   end=haystack+haystacklen;
-  q=haystack + s->max - 4;
+  q=haystack + max - 4;
 
   NameH(HUBBE_ALIGN)(q);
 
-  for(;q<=end-sizeof(INT32);q+=s->max)
+  for(;q<=(HCHAR*)(((char *)end)-sizeof(INT32));q+=max)
   {
     h=tmp=NameH(GET_4_ALIGNED_CHARS)(q);
     
     h+=h>>7;
     h+=h>>17;
-    h&=s->hsize;
+    h&=hsize;
     
     for(ptr=s->set[h];ptr;ptr=ptr->next)
     {
@@ -175,12 +195,11 @@ HCHAR *NameNH(hubbe_search)(struct hubbe_searcher *s,
        */
       if(where<haystack) continue;
 
-      if(where+NEEDLELEN>end) return 0;
+      if(where+nlen>end) return 0;
       
-      if(!NameNH(MEMCMP)(NEEDLE,where,NEEDLELEN))
+      if(!NameNH(MEMCMP)(needle,where,nlen))
 	return where;
     }
   }
   return 0;
 }
-

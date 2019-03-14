@@ -1,16 +1,13 @@
-# $Id: Makefile.in,v 1.32 2000/05/29 09:58:24 per Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS = image_module.o \
 	image.o font.o matrix.o blit.o pattern.o dct.o \
         operator.o colortable.o polyfill.o \
-	orient.o colors.o search.o layers.o default_font.o \
-	poly.o @ASSEMBLY_OBJECTS@
-MODNAME=image
+	orient.o colors.o search.o layers.o \
+	default_font.o @ASSEMBLY_OBJECTS@
 MODULE_SUBDIRS=encodings
 MODULE_ARCHIVES=encodings/encodings.a
-MODULE_LDFLAGS=@LDFLAGS@
-REAL_TESTSUITE=module_testsuite.in
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
@@ -20,9 +17,16 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
+.SUFFIXES: .s
+
 .s.o:  $<
-	echo "Compiling $<"
-	@nasm -f elf -g -o $@ $<
+	@echo "Compiling $<"
+	@if nasm -f elf -g -o $@ $< ; then :; else \
+	  status=$$?; \
+	  echo "Compilation command was:" >&2; \
+	  echo "nasm -f elf -g -o $@ $<" >&2; \
+	  exit $$status; \
+	fi
 
 pike: all
 	cd ../..; $(MAKE) "AR=$(AR)"

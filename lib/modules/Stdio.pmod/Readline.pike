@@ -1,11 +1,14 @@
-// $Id: Readline.pike,v 1.39 2000/10/10 19:58:24 hubbe Exp $
 #pike __REAL_VERSION__
+
+//!
+//! @fixme
+//!   Ought to have support for charset conversion.
 class OutputController
 {
-  static private object(Stdio.File) outfd;
-  static private object(Stdio.Terminfo.Termcap) term;
-  static private int xpos = 0, columns = 0;
-  static private mapping oldattrs = 0;
+  protected private .File outfd;
+  protected private .Terminfo.Termcap term;
+  protected private int xpos = 0, columns = 0;
+  protected private mapping oldattrs = 0;
 
 #define BLINK     1
 #define BOLD      2
@@ -15,10 +18,10 @@ class OutputController
 #define STANDOUT  32
 #define UNDERLINE 64
 
-  static private int selected_attributes = 0, needed_attributes = 0;
-  static private int active_attributes = 0;
+  protected private int selected_attributes = 0, needed_attributes = 0;
+  protected private int active_attributes = 0;
 
-  static int low_attribute_mask(array(string) atts)
+  protected int low_attribute_mask(array(string) atts)
   {
     return `|(@rows(([
       "blink":BLINK,
@@ -31,9 +34,9 @@ class OutputController
     ]), atts));
   }
 
-  static void low_set_attributes(int mask, int val, int|void temp)
+  protected void low_set_attributes(int mask, int val, int|void temp)
   {
-    int i, remv = mask & selected_attributes & ~val;
+    int remv = mask & selected_attributes & ~val;
     string s = "";
 
     if(remv & 15) {
@@ -48,7 +51,7 @@ class OutputController
       needed_attributes &= ~remv;
     }
     active_attributes &= ~remv;
-    for(i=0; remv; i++)
+    for(int i=0; remv; i++)
       if(remv & (1<<i)) {
 	string cap = ({0,0,0,0,"ZR","se","ue"})[i];
 	if(cap && (cap = term->put(cap)))
@@ -62,12 +65,12 @@ class OutputController
     needed_attributes |= add;
   }
 
-  static void low_disable_attributes()
+  protected void low_disable_attributes()
   {
     low_set_attributes(active_attributes, 0, 1);
   }
 
-  static void low_enable_attributes()
+  protected void low_enable_attributes()
   {
     int i, add = needed_attributes;
     string s = "";
@@ -86,16 +89,19 @@ class OutputController
       outfd->write(s);
   }
 
+  //! Set the provided attributes to on.
   void turn_on(string ... atts)
   {
     low_set_attributes(low_attribute_mask(atts), ~0);
   }
 
+  //! Set the provided attributes to off.
   void turn_off(string ... atts)
   {
     low_set_attributes(low_attribute_mask(atts), 0);
   }
 
+  //!
   void disable()
   {
     catch{
@@ -108,6 +114,7 @@ class OutputController
     };
   }
 
+  //!
   void enable()
   {
     if(term->put("cr") && term->put("do"))
@@ -117,12 +124,19 @@ class OutputController
 				 "OFILL":1,"OFDEL":0,"ONLRET":0,"ONOCR":0]));};
   }
 
-  void destroy()
+  protected void destroy()
   {
     disable();
   }
 
-  void check_columns()
+  //! Check and return the terminal width.
+  //!
+  //! @note
+  //!   In Pike 7.4 and earlier this function returned @expr{void@}.
+  //!
+  //! @seealso
+  //!   @[get_number_of_columns]
+  int check_columns()
   {
     catch {
       int c = outfd->tcgetattr()->columns;
@@ -131,14 +145,20 @@ class OutputController
     };
     if(!columns)
       columns = term->tgetnum("co") || 80;
+    return columns;
   }
 
+  //! Returns the width of the terminal.
+  //! @note
+  //!   Does not check the width of the terminal.
+  //! @seealso
+  //!   @[check_columns]
   int get_number_of_columns()
   {
     return columns;
   }
 
-  static string escapify(string s, void|int hide)
+  protected string escapify(string s, void|int hide)
   {
 #if 1
     s=replace(s,
@@ -164,10 +184,10 @@ class OutputController
 		  "~P","~Q","~R","~S","~T","~U","~V","~W",
 		  "~X","~Y","~Z","~[","~\\","~]","~^","~_",
 		  }));
-    return hide ? "*"*strlen(s) : s;
+    return hide ? "*"*sizeof(s) : s;
 #else
 
-  for(int i=0; i<strlen(s); i++)
+  for(int i=0; i<sizeof(s); i++)
       if(s[i]<' ')
 	s = s[..i-1]+sprintf("^%c", s[i]+'@')+s[i+1..];
       else if(s[i]==127)
@@ -179,16 +199,20 @@ class OutputController
   }
 
 
-  static int width(string s)
+  protected int width(string s)
   {
-    return strlen(s);
+    return sizeof(s);
   }
 
-  static int escapified_width(string s)
+  protected int escapified_width(string s)
   {
     return width(escapify(s));
   }
 
+  // FIXME: Ought to buffer output.
+  // FIXME: Ought to support nonblocking output.
+
+  //!
   void low_write(string s, void|int word_break)
   {
     int n = width(s);
@@ -210,13 +234,14 @@ class OutputController
 	if(spos==-1)
 	{
 	  outfd->write(line);
+	  xpos+=l;
 	}else{
-	  l=strlen(line)-spos;
+	  l=sizeof(line)-spos;
 	  outfd->write(line[..l-2]);
+	  xpos+=l-1;
 	}
 	s=s[l..];
 	n-=l;
-	xpos+=l;
 	if(xpos<columns || !term->tgetflag("am"))
 	  outfd->write((term->put("cr")||"")+(term->put("do")||"\n"));
 	xpos = 0;
@@ -241,11 +266,13 @@ class OutputController
       outfd->write(" "+le);
   }
 
+  //!
   void write(string s,void|int word_break,void|int hide)
   {
     low_write(escapify(s,hide),word_break);
   }
 
+  //!
   void low_move_downward(int n)
   {
     if(n<=0)
@@ -255,6 +282,7 @@ class OutputController
     outfd->write(term->put("DO", n) || (term->put("do")||"")*n);
   }
 
+  //!
   void low_move_upward(int n)
   {
     if(n<=0)
@@ -264,6 +292,7 @@ class OutputController
     outfd->write(term->put("UP", n) || (term->put("up")||"")*n);
   }
 
+  //!
   void low_move_forward(int n)
   {
     if(n<=0)
@@ -285,6 +314,7 @@ class OutputController
     }
   }
 
+  //!
   void low_move_backward(int n)
   {
     if(n<=0)
@@ -292,7 +322,7 @@ class OutputController
     if(active_attributes && !term->tgetflag("ms"))
       low_disable_attributes();
     if(xpos-n>=0) {
-      outfd->write(term->put("LE", n) || (term->put("le")||"")*n);
+      outfd->write(term->put("LE", n) || (term->put("le")||term->put("kb")||"\10")*n);
       xpos -= n;
     } else {
       int l = 1+(n-xpos-1)/columns;
@@ -305,6 +335,7 @@ class OutputController
     }
   }
 
+  //!
   void low_erase(int n)
   {
     string e = term->put("ec", n);
@@ -319,24 +350,31 @@ class OutputController
     }
   }
 
+  //!
   void move_forward(string s)
   {
     low_move_forward(escapified_width(s));
   }
 
+  //!
   void move_backward(string s)
   {
     low_move_backward(escapified_width(s));
   }
 
+  //!
   void erase(string s)
   {
     low_erase(escapified_width(s));
   }
 
+  //!
   void newline()
   {
-    string cr = term->put("cr"), down = term->put("do");
+    string cr = term->put("cr");
+    // NOTE: Use "sf" in preference to "do" since "do" for "xterm" on HPUX
+    //       is "\33[B", which doesn't scroll when at the last line.
+    string down = term->put("sf") || term->put("do");
     if(active_attributes && !term->tgetflag("ms"))
       low_disable_attributes();
     if(cr && down)
@@ -347,6 +385,7 @@ class OutputController
     xpos = 0;
   }
 
+  //!
   void bol()
   {
     if(active_attributes && !term->tgetflag("ms"))
@@ -355,6 +394,7 @@ class OutputController
     xpos = 0;
   }
 
+  //!
   void clear(int|void partial)
   {
     string s;
@@ -372,35 +412,42 @@ class OutputController
     outfd->write(term->put("cd")||"");
   }
 
+  //!
   void beep()
   {
     outfd->write(term->put("bl")||"");
   }
 
-  void create(object(Stdio.File)|void _outfd,
-	      object(Stdio.Terminfo.Termcap)|string|void _term)
+  //!
+  void create(.File|void _outfd,
+	      .Terminfo.Termcap|string|void _term)
   {
-    outfd = _outfd || Stdio.File("stdout");
+    outfd = _outfd || Stdio.FILE( "stdout", "w" );
+    if( outfd->set_charset )
+       outfd->set_charset( 0 ); // autodetect
+
     term = objectp(_term)? _term : .Terminfo.getTerm(_term);
     catch { oldattrs = outfd->tcgetattr(); };
     check_columns();
   }
-
 }
 
+//!
+//! @fixme
+//!   Ought to have support for charset conversion.
 class InputController
 {
-  static private object infd, term;
-  static private int enabled = -1;
-  static private function(:int) close_callback = 0;
-  static private string prefix="";
-  static private mapping(int:function|mapping(string:function)) bindings=([]);
-  static private function grab_binding = 0;
-  static private mapping oldattrs = 0;
+  protected private object infd, term;
+  protected private int enabled = -1;
+  protected private function(:int) close_callback = 0;
+  protected private string prefix="";
+  protected private mapping(int:function|mapping(string:function)) bindings=([]);
+  protected private function grab_binding = 0;
+  protected private mapping oldattrs = 0;
 
   int dumb=0;
 
-  void destroy()
+  protected void destroy()
   {
     catch{ infd->set_blocking(); };
     if(dumb)
@@ -410,7 +457,7 @@ class InputController
 					  "VEOL":0,"VLNEXT":0])&oldattrs); };
   }
 
-  static private string process_input(string s)
+  protected private string process_input(string s)
   {
     int i;
 
@@ -447,7 +494,7 @@ class InputController
     return "";
   }
 
-  static private void read_cb(mixed _, string s)
+  protected private void read_cb(mixed _, string s)
   {
     if (!s || s=="")
       return;
@@ -459,14 +506,14 @@ class InputController
     prefix = process_input(s);
   }
 
-  static private void close_cb()
+  protected private void close_cb()
   {
     if (close_callback && close_callback())
       return;
-    destruct(this_object());
+    destruct(this);
   }
 
-  static private int set_enabled(int e)
+  protected private int set_enabled(int e)
   {
     if (e != enabled)
     {
@@ -476,21 +523,36 @@ class InputController
 	string oldprefix = prefix;
 	prefix = "";
 	prefix = process_input(oldprefix);
-	infd->set_nonblocking(read_cb, 0, close_cb);
+	if ((!infd->set_read_callback || !infd->set_close_callback) &&
+	    infd->set_nonblocking)
+	  infd->set_nonblocking( read_cb, 0, close_cb );
+	else {
+	  // Avoid messing with the write callback if possible.
+	  infd->set_read_callback( read_cb );
+	  infd->set_close_callback( close_cb );
+	}
       }
-      else
+      else if ((!infd->set_read_callback || !infd->set_close_callback) &&
+	       infd->set_blocking)
 	infd->set_blocking();
+      else {
+	// Avoid messing with the write callback if possible.
+	infd->set_read_callback(0);
+	infd->set_close_callback(0);
+      }
       return !enabled;
     }
     else
       return enabled;
   }
 
+  //!
   int isenabled()
   {
     return enabled;
   }
 
+  //!
   int enable(int ... e)
   {
     if (sizeof(e))
@@ -499,11 +561,13 @@ class InputController
       return set_enabled(1);
   }
 
+  //!
   int disable()
   {
     return set_enabled(0);
   }
 
+  //!
   int run_blocking()
   {
     disable();
@@ -524,22 +588,26 @@ class InputController
     }
   }
 
+  //!
   void set_close_callback(function (:int) ccb)
   {
     close_callback = ccb;
   }
 
+  //! Clears the bindings.
   void nullbindings()
   {
     bindings = ([]);
   }
 
+  //!
   void grabnextkey(function g)
   {
     if(functionp(g))
       grab_binding = g;
   }
 
+  //!
   function bindstr(string str, function f)
   {
     function oldf = 0;
@@ -552,17 +620,13 @@ class InputController
     case 1:
       if (mappingp(bindings[str[0]]))
       {
-	oldf = bindings[str[0]][str];
+	oldf = m_delete(bindings[str[0]], str);
 	if (f)
 	  bindings[str[0]][str] = f;
-	else
-	  m_delete(bindings[str[0]], str);
       } else {
-	oldf = bindings[str[0]];
+	oldf = m_delete(bindings, str[0]);
 	if (f)
 	  bindings[str[0]] = f;
-	else
-	  m_delete(bindings, str[0]);
       }
       break;
     default:
@@ -585,11 +649,13 @@ class InputController
     return oldf;
   }
 
+  //!
   function unbindstr(string str)
   {
     return bindstr(str, 0);
   }
 
+  //!
   function getbindingstr(string str)
   {
     switch (sizeof(str||""))
@@ -604,26 +670,34 @@ class InputController
     }
   }
 
+  //!
   function bindtc(string cap, function f)
   {
     return bindstr(term->tgetstr(cap), f);
   }
 
+  //!
   function unbindtc(string cap)
   {
     return unbindstr(term->tgetstr(cap));
   }
 
+  //!
   function getbindingtc(string cap)
   {
     return getbindingstr(term->tgetstr(cap));
   }
 
+  //!
   string parsekey(string k)
   {
     if (k[..1]=="\\!")
       k = term->tgetstr(k[2..]);
-    else for(int i=0; i<sizeof(k); i++)
+    else if (k[..3]=="^[\\!") {
+      // Kludge for symbolic meta in bind table.
+      if (k = term->tgetstr(k[4..]))
+	k = "\033" + k;
+    } else for(int i=0; i<sizeof(k); i++)
       switch(k[i])
       {
       case '\\':
@@ -677,21 +751,25 @@ class InputController
     return k;
   }
 
+  //!
   function bind(string k, function f)
   {
     return bindstr(parsekey(k), f);
   }
 
+  //!
   function unbind(string k)
   {
     return unbindstr(parsekey(k));
   }
 
+  //!
   function getbinding(string k, string cap)
   {
     return getbindingstr(parsekey(k));
   }
 
+  //!
   mapping(string:function) getbindings()
   {
     mapping(int:function) bb = bindings-Array.filter(bindings, mappingp);
@@ -701,9 +779,16 @@ class InputController
 	      @Array.filter(values(bindings), mappingp));
   }
 
+  //!
   void create(object|void _infd, object|string|void _term)
   {
-    infd = _infd || Stdio.File("stdin");
+    infd = _infd;
+    if( !_infd )
+    {
+      infd = Stdio.FILE( "stdin", "r" );
+      if( infd->set_charset )
+        infd->set_charset( 0 ); // autodetect
+    }
     term = objectp(_term)? _term : .Terminfo.getTerm(_term);
     disable();
     if(search(term->aliases, "dumb")>=0) {
@@ -724,89 +809,111 @@ class InputController
 
 }
 
+//!
 class DefaultEditKeys
 {
-  static private multiset word_break_chars = mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\"'`"/"");
-  static object _readline;
+  protected private multiset word_break_chars =
+    mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\"'`"/"");
+  protected object _readline;
 
+  //!
   void self_insert_command(string str)
   {
     _readline->insert(str, _readline->getcursorpos());
   }
 
+  //!
   void quoted_insert()
   {
     _readline->get_input_controller()->grabnextkey(self_insert_command);
   }
 
+  //!
   void newline()
   {
     _readline->newline();
   }
 
+  //!
   void up_history()
   {
     _readline->delta_history(-1);
   }
 
+  //!
   void down_history()
   {
     _readline->delta_history(1);
   }
 
+  //!
   void backward_delete_char()
   {
     int p = _readline->getcursorpos();
     _readline->delete(p-1,p);
   }
 
+  //!
+  void delete_char()
+  {
+    int p = _readline->getcursorpos();
+    if (p<sizeof(_readline->gettext()))
+      _readline->delete(p,p+1);
+  }
+
+  //!
   void delete_char_or_eof()
   {
     int p = _readline->getcursorpos();
-    if (p<strlen(_readline->gettext()))
+    if (p<sizeof(_readline->gettext()))
       _readline->delete(p,p+1);
-    else if(!strlen(_readline->gettext()))
+    else if(!sizeof(_readline->gettext()))
       _readline->eof();
   }
 
+  //!
   void forward_char()
   {
     _readline->setcursorpos(_readline->getcursorpos()+1);
   }
 
+  //!
   void backward_char()
   {
     _readline->setcursorpos(_readline->getcursorpos()-1);
   }
 
+  //!
   void beginning_of_line()
   {
     _readline->setcursorpos(0);
   }
 
+  //!
   void end_of_line()
   {
-    _readline->setcursorpos(strlen(_readline->gettext()));
+    _readline->setcursorpos(sizeof(_readline->gettext()));
   }
 
+  //!
   void transpose_chars()
   {
     int p = _readline->getcursorpos();
-    if (p<0 || p>=strlen(_readline->gettext()))
+    if (p<0 || p>=sizeof(_readline->gettext()))
       return;
     string c = _readline->gettext()[p-1..p];
     _readline->delete(p-1, p+1);
     _readline->insert(reverse(c), p-1);
   }
 
-  static array find_word_to_manipulate()
+  protected array find_word_to_manipulate()
   {
     int p = _readline->getcursorpos();
     int ep;
     string line = _readline->gettext();
-    while(word_break_chars[ line[p..p] ] && p < strlen(line))
+    while(word_break_chars[ line[p..p] ] && p < sizeof(line))
       p++;
-    if(p >= strlen(line)) {
+    if(p >= sizeof(line)) {
       _readline->setcursorpos(p);
       return ({ 0, 0 });
     }
@@ -815,6 +922,7 @@ class DefaultEditKeys
     return ({ line[p..ep-1], p });
   }
 
+  //!
   void capitalize_word()
   {
     [string word, string pos]= find_word_to_manipulate();
@@ -822,6 +930,7 @@ class DefaultEditKeys
       _readline->insert(String.capitalize(lower_case(word)), pos);
   }
 
+  //!
   void upcase_word()
   {
     [string word, string pos]= find_word_to_manipulate();
@@ -829,14 +938,15 @@ class DefaultEditKeys
       _readline->insert(upper_case(word), pos);
   }
 
+  //!
   void downcase_word()
   {
     [string word, string pos]= find_word_to_manipulate();
     if(word)
       _readline->insert(lower_case(word), pos);
   }
-  
-  static int forward_find_word()
+
+  protected int forward_find_word()
   {
     int p, n;
     string line = _readline->gettext();
@@ -848,11 +958,11 @@ class DefaultEditKeys
     return p;
   }
 
-  static int backward_find_word()
+  protected int backward_find_word()
   {
     int p = _readline->getcursorpos()-1;
     string line = _readline->gettext();
-    if(p >= strlen(line)) p = strlen(line) - 1;
+    if(p >= sizeof(line)) p = sizeof(line) - 1;
     while(word_break_chars[ line[p..p] ] && p >= 0)
       // find first "non break char"
       p--;
@@ -863,22 +973,26 @@ class DefaultEditKeys
       }
     return p;
   }
-  
+
+  //!
   void forward_word()
   {
     _readline->setcursorpos(forward_find_word());
   }
 
+  //!
   void backward_word()
   {
     _readline->setcursorpos(backward_find_word());
   }
 
+  //!
   void kill_word()
   {
     _readline->kill(_readline->getcursorpos(), forward_find_word());
   }
   
+  //!
   void backward_kill_word()
   {
     int sp = backward_find_word();
@@ -888,37 +1002,44 @@ class DefaultEditKeys
     _readline->kill(sp, ep);
   }
 
+  //!
   void kill_line()
   {
-    _readline->kill(_readline->getcursorpos(), strlen(_readline->gettext()));
+    _readline->kill(_readline->getcursorpos(), sizeof(_readline->gettext()));
   }
 
+  //!
   void kill_whole_line()
   {
-    _readline->kill(0, strlen(_readline->gettext()));
+    _readline->kill(0, sizeof(_readline->gettext()));
   }
 
+  //!
   void yank()
   {
     _readline->setmark(_readline->getcursorpos());
     _readline->insert(_readline->kill_ring_yank(),_readline->getcursorpos());
   }
 
+  //!
   void kill_ring_save()
   { 
     _readline->add_to_kill_ring(_readline->region());
   }
 
+  //!
   void kill_region()
   { 
     _readline->kill(@_readline->pointmark());
   }
 
+  //!
   void set_mark()
   {
     _readline->setmark(_readline->getcursorpos());
   }
 
+  //!
   void swap_mark_and_point()
   {
     int p=_readline->getcursorpos();
@@ -926,21 +1047,25 @@ class DefaultEditKeys
     _readline->setmark(p);
   }
 
+  //!
   void redisplay()
   {
     _readline->redisplay(0);
   }
 
+  //!
   void clear_screen()
   {
     _readline->redisplay(1);
   }
 
-  static array(array(string|function)) default_bindings = ({
+  protected array(array(string|function)) default_bindings = ({
     ({ "^[[A", up_history }),
     ({ "^[[B", down_history }),
     ({ "^[[C", forward_char }),
     ({ "^[[D", backward_char }),
+    ({ "^[^[[C", forward_word }),
+    ({ "^[^[[D", backward_word }),
     ({ "^[C", capitalize_word }),
     ({ "^[c", capitalize_word }),
     ({ "^[U", upcase_word }),
@@ -977,14 +1102,41 @@ class DefaultEditKeys
     ({ "^W", kill_region }),
     ({ "^Y", yank }),
     ({ "^?", backward_delete_char }),
+    ({ "^X^X", swap_mark_and_point }),
+    // Termcap-style
     ({ "\\!ku", up_history }),
     ({ "\\!kd", down_history }),
     ({ "\\!kr", forward_char }),
     ({ "\\!kl", backward_char }),
-    ({ "^X^X", swap_mark_and_point }),
+    ({ "^[\\!kr", forward_word }),
+    ({ "^[\\!kl", backward_word }),
+    ({ "\\!kD", delete_char }),
+    ({ "\\!kb", backward_delete_char }),
+    ({ "^[\\!kD", kill_word }),
+    ({ "^[\\!kb", backward_kill_word }),
+    ({ "\\!kh", beginning_of_line }),
+    ({ "\\!@7", end_of_line }),
+    ({ "\\!@8", newline }),
+    ({ "\\!ho", beginning_of_line }),
+    // Terminfo-style
+    ({ "\\!kcuu1", up_history }),
+    ({ "\\!kcud1", down_history }),
+    ({ "\\!kcuf1", forward_char }),
+    ({ "\\!kcub1", backward_char }),
+    ({ "^[\\!kcuf1", forward_word }),
+    ({ "^[\\!kcub1", backward_word }),
+    ({ "\\!kdch1", delete_char }),
+    ({ "\\!kbs", backward_delete_char }),
+    ({ "^[\\!kdch1", kill_word }),
+    ({ "^[\\!kbs", backward_kill_word }),
+    ({ "\\!khome", beginning_of_line }),
+    ({ "\\!kend", end_of_line }),
+    ({ "\\!kent", newline }),
+    ({ "\\!home", beginning_of_line }),
   });
 
-  static void set_default_bindings()
+  //!
+  protected void set_default_bindings()
   {
     object ic = _readline->get_input_controller();
     ic->nullbindings();
@@ -1002,6 +1154,7 @@ class DefaultEditKeys
       ic->bind(@b);
   }
 
+  //!
   void create(object readline)
   {
     _readline = readline;
@@ -1010,22 +1163,26 @@ class DefaultEditKeys
 
 }
 
+//!
 class History
 {
-  static private array(string) historylist;
-  static private mapping(int:string) historykeep=([]);
-  static private int minhistory, maxhistory, historynum;
+  protected private array(string) historylist;
+  protected private mapping(int:string) historykeep=([]);
+  protected private int minhistory, maxhistory, historynum;
 
+  //!
   string encode()
   {
     return historylist*"\n";
   }
   
+  //!
   int get_history_num()
   {
     return historynum;
   }
 
+  //!
   string history(int n, string text)
   {
     if (n<minhistory)
@@ -1040,6 +1197,7 @@ class History
     return historylist[(historynum=n)-minhistory];
   }
 
+  //!
   void initline()
   {
     if (sizeof(historylist)==0 || historylist[-1]!="") {
@@ -1055,6 +1213,7 @@ class History
     historykeep = ([]);
   }
 
+  //!
   void finishline(string text)
   {
     foreach(indices(historykeep), int n)
@@ -1062,53 +1221,66 @@ class History
     historykeep = ([]);
     historylist[-1] = text;
     if(sizeof(historylist)>1 && historylist[-2]==historylist[-1])
-      historylist = historylist[..sizeof(historylist)-2];
+      historylist = historylist[..<1];
   }
 
+  //!
   void set_max_history(int maxhist)
   {
     maxhistory = maxhist;
   }
 
+  //!
   void create(int maxhist, void|array(string) hist)
   {
     historylist = hist || ({ "" });
     minhistory = historynum = 0;
     maxhistory = maxhist;
   }
-
 }
 
 
-static private object(OutputController) output_controller;
-static private object(InputController) input_controller;
-static private string prompt="";
-static private array(string) prompt_attrs=0;
-static private string text="", readtext;
-static private function(string:void) newline_func;
-static private int cursorpos = 0;
-static private int mark = 0;
-/*static private */ object(History) historyobj = 0;
-static private int hide = 0;
+protected private OutputController output_controller;
+protected private InputController input_controller;
+protected private string prompt="";
+protected private array(string) prompt_attrs=0;
+protected private string text="", readtext;
+protected private function(string:void) newline_func;
+protected private int cursorpos = 0;
+protected private int mark = 0;
+/*static private */ History historyobj = 0;
+protected private int hide = 0;
 
-static private array(string) kill_ring=({});
-static private int kill_ring_size=30;
+protected private array(string) kill_ring=({});
+protected private int kill_ring_size=30;
 
-object(OutputController) get_output_controller()
+//!  get current output control object
+//!  @returns
+//!    Terminal output controller object
+OutputController get_output_controller()
 {
   return output_controller;
 }
 
-object(InputController) get_input_controller()
+//!  get current input control object
+//!  @returns
+//!    Terminal input controller object
+InputController get_input_controller()
 {
   return input_controller;
 }
 
+//!   Return the current prompt string.
 string get_prompt()
 {
   return prompt;
 }
 
+//!   Set the prompt string.
+//! @param newp
+//!   New prompt string
+//! @param newattrs
+//!   Terminal attributes
 string set_prompt(string newp, array(string)|void newattrs)
 {
 //  werror("READLINE: Set prompt: %O\n",newp);
@@ -1123,27 +1295,36 @@ string set_prompt(string newp, array(string)|void newattrs)
   return oldp;
 }
 
+//!   Set text echo on or off.
+//! @param onoff
+//! 1 for echo, 0 for no echo.
 void set_echo(int onoff)
 {
   hide=!onoff;
 }
 
+//! @fixme
+//!   Document this function
 string gettext()
 {
   return text;
 }
 
+//! @fixme
+//!   Document this function
 int getcursorpos()
 {
   return cursorpos;
 }
 
+//! @fixme
+//!   Document this function
 int setcursorpos(int p)
 {
   if (p<0)
     p = 0;
-  if (p>strlen(text))
-    p = strlen(text);
+  if (p>sizeof(text))
+    p = sizeof(text);
   if (p<cursorpos)
   {
     if(!input_controller->dumb)
@@ -1159,47 +1340,55 @@ int setcursorpos(int p)
   return cursorpos;
 }
 
+//! @fixme
+//!   Document this function
 int setmark(int p)
 {
   if (p<0)
     p = 0;
-  if (p>strlen(text))
-    p = strlen(text);
+  if (p>sizeof(text))
+    p = sizeof(text);
   mark=p;
 }
 
+//! @fixme
+//!   Document this function
 int getmark()
 {
   return mark;
 }
 
+//! @fixme
+//!   Document this function
 void insert(string s, int p)
 {
   if (p<0)
     p = 0;
-  if (p>strlen(text))
-    p = strlen(text);
+  if (p>sizeof(text))
+    p = sizeof(text);
   setcursorpos(p);
   if(!input_controller->dumb)
     output_controller->write(s,0,hide);
-  cursorpos += strlen(s);
+  cursorpos += sizeof(s);
   string rest = text[p..];
-  if (strlen(rest) && !input_controller->dumb)
+  if (sizeof(rest) && !input_controller->dumb)
   {
     output_controller->write(rest,0,hide);
     output_controller->move_backward(rest);
   }
   text = text[..p-1]+s+rest;
 
-  if (mark>p) mark+=strlen(s);
+  if (mark>p) mark+=sizeof(s);
 }
 
+//! @fixme
+//!   Document this function
 void delete(int p1, int p2)
 {
   if (p1<0)
     p1 = 0;
-  if (p2>strlen(text))
-    p2 = strlen(text);
+  if (p2>sizeof(text))
+    p2 = sizeof(text);
   setcursorpos(p1);
   if (p1>=p2)
     return;
@@ -1212,10 +1401,12 @@ void delete(int p1, int p2)
   if (mark>p2) mark-=(p2-p1);
   else if (mark>p1) mark=p1;
 
-  cursorpos = strlen(text);
+  cursorpos = sizeof(text);
   setcursorpos(p1);
 }
 
+//! @fixme
+//!   Document this function
 array(int) pointmark() // returns point and mark in numeric order
 {
    int p1,p2;
@@ -1224,6 +1415,8 @@ array(int) pointmark() // returns point and mark in numeric order
    return ({p1,p2});
 }
 
+//! @fixme
+//!   Document this function
 string region(int ... args) /* p1, p2 or point-mark */
 {
    int p1,p2;
@@ -1232,45 +1425,60 @@ string region(int ... args) /* p1, p2 or point-mark */
    return text[p1..p2-1];
 }
 
+//! @fixme
+//!   Document this function
 void kill(int p1, int p2)
 {
   if (p1<0)
     p1 = 0;
-  if (p2>strlen(text))
-    p2 = strlen(text);
+  if (p2>sizeof(text))
+    p2 = sizeof(text);
   if (p1>=p2)
     return;
   add_to_kill_ring(text[p1..p2-1]);
   delete(p1,p2);
 }
 
+//! @fixme
+//!   Document this function
 void add_to_kill_ring(string s)
 {
    kill_ring+=({s});
    if (sizeof(kill_ring)>kill_ring_size) kill_ring=kill_ring[1..];
 }
 
+//! @fixme
+//!   Document this function
 string kill_ring_yank()
 {
    if (!sizeof(kill_ring)) return "";
    return kill_ring[-1];
 }
 
+//! @fixme
+//!   Document this function
 void history(int n)
 {
   if(historyobj) {
     string h = historyobj->history(n, text);
-    delete(0, strlen(text)+strlen(prompt));
+    delete(0, sizeof(text)+sizeof(prompt));
     insert(h, 0);
   }
 }
 
+//! Changes the line to a line from the history @[d] steps from the
+//! current entry (0 being the current line, negative values older,
+//! and positive values newer).
+//! @note
+//!   Only effective if you have a history object.
 void delta_history(int d)
 {
   if(historyobj)
     history(historyobj->get_history_num()+d);
 }
 
+//! @fixme
+//!   Document this function
 void redisplay(int clear, int|void nobackup)
 {
   int p = cursorpos;
@@ -1297,7 +1505,7 @@ void redisplay(int clear, int|void nobackup)
   setcursorpos(p);
 }
 
-static private void initline()
+protected private void initline()
 {
   text = "";
   cursorpos = 0;
@@ -1305,6 +1513,8 @@ static private void initline()
     historyobj->initline();
 }
 
+//! @fixme
+//!   Document this function
 string newline()
 {
   setcursorpos(sizeof(text));
@@ -1320,6 +1530,8 @@ string newline()
     newline_func(data);
 }
 
+//! @fixme
+//!   Document this function
 void eof()
 {
   if (historyobj)
@@ -1329,11 +1541,11 @@ void eof()
     newline_func(0);    
 }
 
-
+//! Print a message to the output device
 void message(string msg)
 {
   int p = cursorpos;
-  setcursorpos(strlen(text));
+  setcursorpos(sizeof(text));
   output_controller->newline();
   foreach(msg/"\n", string l) {
     output_controller->write(l);
@@ -1343,39 +1555,40 @@ void message(string msg)
   setcursorpos(p);
 }
 
+//! @fixme
+//!   Document this function
 void write(string msg,void|int word_wrap)
 {
   int p = cursorpos;
-  setcursorpos(0);
-  if(!input_controller->dumb) {
-    output_controller->bol();
-    output_controller->clear(1);
-  }
   array(string) tmp=msg/"\n";
-  foreach(tmp[..sizeof(tmp)-2],string l)
+  foreach(tmp[..<1],string l)
   {
     output_controller->write(l,word_wrap);
     output_controller->newline();
   }
   output_controller->write(tmp[-1],word_wrap);
 
-  cursorpos=strlen(text);
+  cursorpos=sizeof(text);
   redisplay(0, 1);
   setcursorpos(p);
 }
 
+//! @fixme
+//!   Document this function
 void list_completions(array(string) c)
 {
   message(sprintf("%-*#s",output_controller->get_number_of_columns(),
 		  c*"\n"));
 }
 
-static private void read_newline(string s)
+protected private void read_newline(string s)
 {
   input_controller->disable();
   readtext = s;
 }
 
+//! @fixme
+//!   Document this function
 void set_nonblocking(function f)
 {
   int p=cursorpos;
@@ -1398,17 +1611,21 @@ void set_nonblocking(function f)
   }
 }
 
+//! @fixme
+//!   Document this function
 void set_blocking()
 {
   set_nonblocking(0);
 }
 
+//! @fixme
+//!   Document this function
 string edit(string data, string|void local_prompt, array(string)|void attrs)
 {
-  if(data && strlen(data) && input_controller->dumb)
+  if(data && sizeof(data) && input_controller->dumb)
   {
     string ret=edit("", (local_prompt || get_prompt()) +"["+data+"] ", attrs);
-    return (!ret || !strlen(ret))?data:ret;
+    return (!ret || !sizeof(ret))?data:ret;
   }
   string old_prompt;
   array(string) old_attrs;
@@ -1445,12 +1662,16 @@ string edit(string data, string|void local_prompt, array(string)|void attrs)
   return (res>=0 || sizeof(readtext)) && readtext;
 }
 
+//! @fixme
+//!   Document this function
 string read(string|void prompt, array(string)|void attrs)
 {
   return edit("", prompt, attrs);
 }
 
-void enable_history(array(string)|object(History)|int hist)
+//! @fixme
+//!   Document this function
+void enable_history(array(string)|History|int hist)
 {
   if (objectp(hist))
     historyobj = hist;
@@ -1464,12 +1685,14 @@ void enable_history(array(string)|object(History)|int hist)
     historyobj = History(hist);
 }
 
+//! @fixme
+//!   Document this function
 History get_history()
 {
   return historyobj;
 }
 
-void destroy()
+protected void destroy()
 {
   if(input_controller)
     destruct(input_controller);
@@ -1477,12 +1700,26 @@ void destroy()
     destruct(output_controller);
 }
 
+//! Creates a Readline object, that takes input from @[infd] and has output
+//! on @[outfd].
+//!
+//! @param infd
+//!   Defaults to @[Stdio.stdin].
+//!
+//! @param interm
+//!   Defaults to @[Stdio.Terminfo.getTerm()].
+//!
+//! @param outfd
+//!   Defaults to @[infd], unless @[infd] is 0, in which case
+//!   @[outfd] defaults to @[Stdio.stdout].
+//!
+//! @param outterm
+//!   Defaults to @[interm].
 void create(object|void infd, object|string|void interm,
 	    object|void outfd, object|string|void outterm)
 {
   atexit(destroy);
   output_controller = OutputController(outfd || infd, outterm || interm);
   input_controller = InputController(infd, interm);
-  DefaultEditKeys(this_object());
+  DefaultEditKeys(this);
 }
-

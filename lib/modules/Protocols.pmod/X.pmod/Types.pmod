@@ -1,13 +1,10 @@
 /* Types.pmod
- *
- * $Id: Types.pmod,v 1.35 2001/04/07 00:56:31 nilsson Exp $
  */
 
 /*
  *    Protocols.X, a Pike interface to the X Window System
  *
- *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
- *    Pontus Hagland, David Hedbor.
+ *    See COPYRIGHT for copyright information.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -24,13 +21,7 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
-/* Questions, bug fixes and bug reports can be sent to the pike
- * mailing list, pike@roxen.com, or to the athors (see AUTHORS for
- * email addresses. */
-
 #pike __REAL_VERSION__
-
-#include "error.h"
 
 class XResource
 {
@@ -43,7 +34,7 @@ class XResource
     display = d;
     id = i;
 
-    display->remember_id(id, this_object());
+    display->remember_id(id, this);
   }
 
   object FreeRequest() {}
@@ -105,7 +96,7 @@ class Font
   object CreateGlyphCursor(int sourcechar, array(int)|void foreground,
 			   array(int)|void background)
   {
-    return display->CreateGlyphCursor(this_object(), sourcechar, 0, 0,
+    return display->CreateGlyphCursor(this, sourcechar, 0, 0,
 				      foreground, background);
   }
 
@@ -295,7 +286,7 @@ class Drawable
     r->gc = gc;
     r->src = src;
     r->area = area;
-    r->dst = this_object();
+    r->dst = this;
     r->x = x;
     r->y = y;
     return r;
@@ -342,7 +333,7 @@ class Drawable
   {
     object req = CreatePixmap_req(width, height, depth);
     display->send_request( req );
-    object p = Pixmap(display, req->pid, this_object(), colormap );
+    object p = Pixmap(display, req->pid, this, colormap );
     p->depth = depth;
     return p;
   }
@@ -474,142 +465,14 @@ class Pixmap
 
 class Window
 {
+
+  inherit .KeySyms;
   inherit Drawable;
   int currentInputMask;
 
   /* Keys are event names, values are arrays of ({ priority, function }) */
   mapping(string:array(array)) event_callbacks = ([ ]);
 
-  int alt_gr, num_lock, shift, control, caps_lock;
-  int meta, alt, super, hyper;
-
-  mapping attributes = ([]);
-
-#include "keysyms.h"
-
-  void ReleaseKey( int sym )
-  {
-    switch(sym)
-    {
-     case XK_Scroll_Lock: return 0; break;
-     case XK_Mode_switch:  alt_gr = 0; return;
-     case XK_Num_Lock:    num_lock = 0; return;
-     case XK_Shift_L:
-     case XK_Shift_Lock:
-     case XK_Shift_R:     shift=0; return;
-     case XK_Control_L: case XK_Control_R:   control=0; return;
-     case XK_Caps_Lock:  caps_lock=0; return;
-
-     case XK_Meta_L: case XK_Meta_R:   meta=0; return;
-     case XK_Alt_L:  case XK_Alt_R:   alt=0; return;
-     case XK_Super_L:case XK_Super_R:   super=0; return;
-     case XK_Hyper_L: case XK_Hyper_R:   hyper=0; return;
-    }
-  }
-
-  string _LookupKeysym( int keysym )
-  {
-    switch(keysym)
-    {
-     case XK_BackSpace:   return "";
-     case XK_Tab:         return "\t";
-     case XK_Linefeed:    return "\n";
-     case XK_Return:      return "\n";
-     case XK_Escape:      return "";
-     case XK_Delete:      return "";
-       /* Kanji here ... */
-       /* Korean here ... */
-       /* Cursors ... */
-     case XK_KP_Space:       return " ";
-     case XK_KP_Tab:         return "\t";
-     case XK_KP_Equal:       return "=";
-     case XK_KP_Multiply:    return "*";
-     case XK_KP_Add:         return "+";
-     case XK_KP_Subtract:    return "-";
-     case XK_KP_Decimal:     return ".";
-     case XK_KP_Divide:      return "/";
-
-     case XK_KP_0:      return "0";
-     case XK_KP_1:      return "1";
-     case XK_KP_2:      return "2";
-     case XK_KP_3:      return "3";
-     case XK_KP_4:      return "4";
-     case XK_KP_5:      return "5";
-     case XK_KP_6:      return "6";
-     case XK_KP_7:      return "7";
-     case XK_KP_8:      return "8";
-     case XK_KP_9:      return "9";
-
-     case XK_space..XK_at:     return sprintf("%c", keysym);
-     case XK_A..XK_Z: 
-     case XK_a..XK_z:  
-       keysym = keysym&0xdf;
-       if(control) return sprintf("%c", (keysym-'A')+1);
-       if(shift || caps_lock) return sprintf("%c",keysym);
-       return sprintf("%c",keysym+0x20);
-
-     default:
-       if(keysym < 256)
-	 return sprintf("%c", keysym);
-       return 0;
-       /*Latin2 .. latin3 .. latin4 .. katakana .. arabic .. cyrillic ..
-	 greek .. technical .. special .. publishing .. APL .. hebrew ..
-	 thai .. korean .. hangul .. */
-    }
-  } 
-  mapping compose_patterns;
-  string compose_state = "";
-  string LookupKeysym( int keysym )
-  {
-    if(!compose_patterns) compose_patterns =  display->compose_patterns;
-    switch(keysym)
-    {
-     case XK_A..XK_Z: 
-     case XK_a..XK_z:
-       keysym = keysym&0xdf;      // Upper..
-       if(!shift && !caps_lock)  //
-	 keysym=keysym+0x20;    // .. and lower ..
-       break;
-
-     case XK_Mode_switch:  alt_gr = 1; return 0;
-     case XK_Num_Lock:    num_lock = 1; return 0;
-     case XK_Shift_L:
-     case XK_Shift_Lock:
-     case XK_Shift_R:     shift=1; return 0;
-     case XK_Control_L:
-     case XK_Control_R:   control=1; return 0;
-     case XK_Caps_Lock:  caps_lock=1; return 0;
-     case XK_Meta_L:
-     case XK_Meta_R:   meta=1; return 0;
-     case XK_Alt_L:
-     case XK_Alt_R:   alt=1; return 0;
-     case XK_Super_L:
-     case XK_Super_R:   super=1; return 0;
-     case XK_Hyper_L:
-     case XK_Hyper_R:   hyper=1; return 0;
-    }
-
-    compose_state += sprintf("%4c", keysym);
-
-    if(arrayp(compose_patterns[compose_state]))  return 0; // More to come..
-
-    if(compose_patterns[compose_state])
-    {
-      keysym = compose_patterns[compose_state];
-      compose_state="";
-      return _LookupKeysym( keysym );
-    }
-    if(strlen(compose_state)>4)
-    {
-      string res="";
-      while(strlen(compose_state)
-	    && (sscanf(compose_state, "%4c%s", keysym, compose_state)==2))
-	res += _LookupKeysym( keysym ) || "";
-      return strlen(res)?res:0;
-    }
-    compose_state="";
-    return _LookupKeysym( keysym );
-  }
 
   string handle_keys(mapping evnt)
   {
@@ -622,7 +485,7 @@ class Window
     if( keysym )
     {
       if(evnt->type == "KeyPress")
-	evnt->data = LookupKeysym( keysym );
+	evnt->data = LookupKeysym( keysym, display );
       else
 	foreach(keysymopts, int k)
 	  ReleaseKey( k );
@@ -647,9 +510,9 @@ class Window
     return req;
   }
 
-  object new(mixed ... args) /* Kludge */
+  this_program new(mixed ... args) /* Kludge */
   {
-    return object_program(this_object())(@args);
+    return this_program(@args);
   }
 
   object CreateColormap(object visual, int|void alloc)
@@ -683,8 +546,8 @@ class Window
     // 		   Crypto.string_to_hex(req->to_string())));
     
     display->send_request(req);
-    object w = new(display, req->wid, visual, this_object());
-    w->depth = d||depth||this_object()->rootDepth;
+    object w = new(display, req->wid, visual, this);
+    w->depth = d||depth||this->rootDepth;
     w->colormap = c;
     w->currentInputMask = req->attributes->EventMask;
     w->attributes = attributes || ([]);
@@ -702,7 +565,7 @@ class Window
     display->send_request(req);
     
     // object w = Window(display, req->wid);
-    object w = new(display, req->wid, 0, this_object());
+    object w = new(display, req->wid, 0, this);
     
     w->visual = visual;
     w->currentInputMask = 0;
@@ -940,7 +803,7 @@ class Window
     if(!display->extensions["SHAPE"])
       error("No shape extension available.\n");
     display->extensions["SHAPE"]->
-      ShapeRectangles( this_object(), xo, yo, kind, operation, rectangles );
+      ShapeRectangles( this, xo, yo, kind, operation, rectangles );
   }
 
   void ShapeMask( string kind, int xo, int yo, string operation,
@@ -955,7 +818,7 @@ class Window
     if(!display->extensions["SHAPE"])
       error("No shape extension available.\n");
     display->extensions["SHAPE"]->
-      ShapeMask( this_object(), xo, yo, kind, operation, mask );
+      ShapeMask( this, xo, yo, kind, operation, mask );
   }
 
   void ShapeOffset( string kind, int xo, int yo )
@@ -968,7 +831,7 @@ class Window
     }
     if(!display->extensions["SHAPE"])
       error("No shape extension available.\n");
-    display->extensions["SHAPE"]->ShapeOffset( this_object(), kind, xo, yo );
+    display->extensions["SHAPE"]->ShapeOffset( this, kind, xo, yo );
   }
 
 

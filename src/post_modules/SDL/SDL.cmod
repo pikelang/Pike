@@ -1,0 +1,3385 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+#include "stralloc.h"
+#include "pike_macros.h"
+#include "program.h"
+#include "program_id.h"
+#include "operators.h"
+#include "fdlib.h"
+#include "fd_control.h"
+#include "backend.h"
+#include "module_support.h"
+#include "array.h"
+#include "builtin_functions.h"
+#include "mapping.h"
+#include "pike_types.h"
+#include "threads.h"
+
+#include "sdl_config.h"
+
+DECLARATIONS
+
+#ifdef HAVE_SDL
+
+/*! @module SDL
+ *!
+ *! SDL or Simple DirectMedia Layer is a cross-platform multimedia
+ *! library designed to provide fast access to the graphics
+ *! framebuffer, audio device, input and other devices. This module
+ *! implements a wrapper for SDL and other relevant libraries like
+ *! SDL_mixer. The interface is similar to the C one, but using
+ *! generally accepted Pike syntax.
+ *!
+ *! This means that classes are used when appropriate and that method
+ *! names use all lowercase letters with words separated by _. For
+ *! example @tt{SDL_SetVideoMode@} is named @[SDL.set_video_mode]. Also note
+ *! that unless otherwise noted, errors result in an error being
+ *! thrown rather than returning @expr{-1@} or @expr{0@}, as commonly
+ *! done in SDL methods.
+ */
+
+
+/* To be able to access image functionality */
+#include  "modules/Image/image.h"
+
+#ifdef DYNAMIC_MODULE
+struct program *image_program;
+struct program *image_color_program;
+#else
+extern struct program *image_program;
+extern struct program *image_color_program;
+#endif
+
+static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
+{
+   struct color_struct *cs;
+   struct object *color;
+   if (r<0) r=0; else if (r>COLORMAX) r=COLORMAX;
+   if (g<0) g=0; else if (g>COLORMAX) g=COLORMAX;
+   if (b<0) b=0; else if (b>COLORMAX) b=COLORMAX;
+
+   color = clone_object(image_color_program,0);
+
+   cs=(struct color_struct*)
+      get_storage(color, image_color_program);
+
+   cs->rgb.r=(COLORTYPE)r;
+   cs->rgb.g=(COLORTYPE)g;
+   cs->rgb.b=(COLORTYPE)b;
+   RGB_TO_RGBL(cs->rgbl,cs->rgb);
+   return color;
+}
+
+
+/* SDL needs this defined in it its own way */
+#undef DECLSPEC
+#ifdef HAVE_SDL_SDL_H
+# include <SDL/SDL.h>
+#else
+# include <SDL.h>
+#endif
+
+#ifdef HAVE_SDL_MIXER
+# ifdef HAVE_SDL_SDL_MIXER_H
+#  include <SDL/SDL_mixer.h>
+# elif defined(HAVE_SDL_MIXER_H)
+#  include <SDL_mixer.h>
+# endif
+#endif
+
+#include "constants.h"
+
+#define THIS_OBJ Pike_interpreter.frame_pointer->current_object
+#define RET_THIS() do { pop_n_elems(args); ref_push_object(THIS_OBJ); return; } while(0)
+
+/* Fall back to a normal index on this object, in case
+ * someone inherited us. */
+ #define OBJ_INDEX() do { \
+      struct svalue res; \
+      object_index_no_free2 (&res, Pike_fp->current_object, 0, Pike_sp-1); \
+      pop_stack(); \
+      *Pike_sp++ = res; \
+    } while(0) \
+
+
+#define CHECK_CLASS(o, name, arg)\
+  if(o->prog != PIKE_CONCAT(name, _program)) { \
+    Pike_error("Invalid class for argument %d\n", arg); \
+  }
+
+/* Subsystem init (or rather quit) generations.
+ * This is needed to detect whether a subsystem has been exited
+ * since an object was created.
+ */
+static int timer_generation;
+static int audio_generation;
+static int video_generation;
+static int cdrom_generation;
+static int joystick_generation;
+
+/*! @decl void init(int flags)
+ *!
+ *! Initializes SDL.  This should be called before all other SDL
+ *! functions.
+ *!
+ *! @param flags
+ *!  The flags parameter specifies what part(s) of SDL to
+ *!  initialize. It can be one of many of the following ORed together.
+ *!
+ *! @dl
+ *!   @item SDL.INIT_TIMER
+ *!    Initializes the timer subsystem.
+ *!
+ *!   @item SDL.INIT_AUDIO
+ *!    Initializes the audio subsystem.
+ *!
+ *!   @item SDL.INIT_VIDEO
+ *!    Initializes the video subsystem.
+ *!
+ *!   @item SDL.INIT_CDROM
+ *!    Initializes the cdrom subsystem.
+ *!
+ *!   @item SDL.INIT_JOYSTICK
+ *!    Initializes the joystick subsystem.
+ *!
+ *!   @item SDL.INIT_EVERYTHING
+ *!    Initialize all of the above.
+ *!
+ *!   @item SDL.INIT_NOPARACHUTE
+ *!    Prevents SDL from catching fatal signals.
+ *!
+ *!   @item SDL.INIT_EVENTTHREAD
+ *!    Run event polling in a separate thread. Not always supported.
+ *! @enddl
+ *!
+ *! @seealso
+ *!   @[SDL.quit()], @[SDL.init_sub_system()], @[SDL.quit_sub_system()]
+ *!
+ */
+PIKEFUN void init(int flags) {
+  if( SDL_Init(flags) == -1) {
+    Pike_error("SDL Initialization failed: %s\n", SDL_GetError());
+  }
+}
+
+/*! @decl void|string get_error()
+ *!
+ *! Get the last internal SDL error.
+ *! @returns
+ *!   The error string, or zero if there was no error.
+ */
+PIKEFUN void|string get_error() {
+  const char *err = SDL_GetError();
+  pop_n_elems(args);
+  if(err != NULL) {
+    push_text(err);
+  } else {
+    push_int(0);
+  }
+}
+
+/*! @decl void init_sub_system(int flags)
+ *!
+ *! After SDL has been initialized with @[SDL.init()] you may initialize
+ *! uninitialized subsystems with this method.
+ *!
+ *! @param flags
+ *!  The same as what is used in @[SDL.init()].
+ *!
+ *! @seealso
+ *!  @[SDL.init()],  @[SDL.quit()], @[SDL.quit_sub_system()]
+ */
+PIKEFUN int init_sub_system(int flags) {
+  RETURN SDL_InitSubSystem(flags);
+}
+
+/*! @decl void quit_sub_system(int flags)
+ *!
+ *! After an SDL subsystem has been initialized with @[SDL.init()] or
+ *! @[SDL.init_sub_system()], it may be shut down with this method.
+ *!
+ *! @param  flags
+ *!   A bitwise OR'd combination of the subsystems
+ *!   you wish to shut down (see @[SDL.init()] for a list of subsystem flags).
+ *!
+ *! @seealso
+ *!  @[SDL.init()], @[SDL.init_sub_system()], @[SDL.quit()]
+ */
+PIKEFUN void quit_sub_system(int flags) {
+  SDL_QuitSubSystem(flags);
+  if (flags & SDL_INIT_TIMER) timer_generation++;
+  if (flags & SDL_INIT_AUDIO) audio_generation++;
+  if (flags & SDL_INIT_VIDEO) video_generation++;
+  if (flags & SDL_INIT_CDROM) cdrom_generation++;
+  if (flags & SDL_INIT_JOYSTICK) joystick_generation++;
+}
+
+/*! @decl int was_init(int flags)
+ *!
+ *! This method allows you to see which SDL subsytems have been
+ *! initialized.
+ *!
+ *! @param  flags
+ *!   A bitwise OR'd combination of the subsystems
+ *!   you wish to check (see @[SDL.init()] for a list of subsystem flags).
+ *!
+ *! @returns
+ *!  A bitwised OR'd combination of the initialized subsystems
+ *!
+ *! @seealso
+ *!  @[SDL.init()], @[SDL.init_sub_system()]
+ *!
+ */
+PIKEFUN int was_init(int flags)
+     optflags OPT_EXTERNAL_DEPEND;
+{
+  RETURN SDL_WasInit(flags);
+}
+
+/*! @decl void quit()
+ *!
+ *! Shuts down all SDL subsystems and frees the resources allocated to
+ *! them. This should always be called before you exit.
+ *!
+ *! @note
+ *! You can use the @[atexit()] method to ensure that this method is always
+ *! called when Pike exits normally.
+ *!
+ *! @seealso
+ *!  @[SDL.init()],  @[SDL.init_sub_system()], @[SDL.quit_sub_system()]
+ */
+PIKEFUN void quit() {
+  SDL_Quit();
+  timer_generation++;
+  audio_generation++;
+  video_generation++;
+  cdrom_generation++;
+  joystick_generation++;
+}
+
+
+/*! @decl int enable_unicode(int enable)
+ *!
+ *! Enables/Disables UNICODE keyboard translation.
+ *!
+ *! If you wish to translate a keysym to its printable
+ *! representation, you need to enable UNICODE translation using this
+ *! function and then look in the @b{unicode@} member of the
+ *! @[SDL.Keysym] class. This value will be zero for keysyms that do
+ *! not have a printable representation.  UNICODE translation is
+ *! disabled by default as the conversion can cause a slight
+ *! overhead.
+ *!
+ *! @param enable
+ *!   A value of @expr{1@} enables Unicode translation, @expr{0@} disables
+ *!   it and @expr{-1@} leaves it unchanged (useful for querying the current
+ *!   translation mode).
+ *!
+ *! @returns
+ *!   The previous translation mode (@expr{1@} enabled, @expr{0@} disabled).
+ *!   If @b{enable@} is @expr{-1@}, the return value is the current translation
+ *!   mode.
+ *!
+ *! @seealso
+ *!
+ *!   @[SDL.Keysym]
+ */
+PIKEFUN int enable_unicode(int enable)
+     optflags OPT_SIDE_EFFECT;
+{
+  RETURN SDL_EnableUNICODE(enable);
+}
+
+
+/*! @decl int get_mod_state()
+ *!
+ *! Returns the current state of the modifier keys (CTRL, ALT, etc.).
+ *!
+ *! @returns
+ *! The return value can be an OR'd combination of the following:
+ *! SDL.KMOD_NONE, SDL.KMOD_LSHIFT, SDL.KMOD_RSHIFT, SDL.KMOD_LCTRL,
+ *! SDL.KMOD_RCTRL, SDL.KMOD_LALT, SDL.KMOD_RALT, SDL.KMOD_LMETA,
+ *! SDL.KMOD_RMETA, SDL.KMOD_NUM, SDL.KMOD_CAPS, and
+ *! SDL.KMOD_MODE.
+ *!
+ *! For convenience, the following are also defined:
+ *! SDL.KMOD_CTRL, SDL.KMOD_SHIFT, SDL.KMOD_ALT and SDL.KMOD_META
+ *!
+ *! @seealso
+ *!   @[SDL.get_key_state()], @[SDL.pump_events()]
+ */
+PIKEFUN int get_mod_state()
+     optflags OPT_EXTERNAL_DEPEND;
+{
+  RETURN SDL_GetModState();
+}
+
+/*! @decl string get_key_state()
+ *!
+ *! Gets a snapshot of the current keyboard state.
+ *!
+ *! @returns
+ *!   The current state is returned as a string.
+ *!
+ *!   The string is indexed by the @tt{SDL.K_*@} symbols.
+ *!   A value of @expr{1@} means the key is pressed and
+ *!   a value of @expr{0@} means it's not.
+ *!
+ *! @note
+ *!  Call @[SDL.pump_events()] to update the state array.
+ *!
+ *! @seealso
+ *!   @[SDL.get_mod_state()], @[SDL.pump_events()]
+ *!
+ *! @example
+ *!   @code
+ *!     // Test if the 'Escape' key is pressed.
+ *!     SDL.pump_events();
+ *!     string ks = SDL.get_key_state();
+ *!     if ( ks[SDL.K_ESCAPE] )
+ *!     {
+ *!       // handle key press...
+ *!   @endcode
+ */
+PIKEFUN string get_key_state()
+     optflags OPT_EXTERNAL_DEPEND;
+{
+  int numkeys;
+  unsigned char *state = SDL_GetKeyState(&numkeys);
+  push_string(make_shared_binary_string((char*)state, numkeys));
+}
+
+/*! @class Rect
+ *!
+ *! Used in SDL to define a rectangular area. It is sometimes also used
+ *! to specify only points or sizes (i.e only one of the position and
+ *! dimension is used).
+ */
+PIKECLASS Rect {
+  CVAR SDL_Rect rect;
+
+  INIT {
+    THIS->rect.x = THIS->rect.y = 0;
+    THIS->rect.w = THIS->rect.h = 0;
+  }
+#define CHECK_I16_ARG(fun, n, x)	do {			\
+    if ((x) < -32768 || (x) > 32767)				\
+    SIMPLE_BAD_ARG_ERROR((fun), (n), "int(-32768..32767)");	\
+} while(0)
+#define CHECK_U16_ARG(fun, n, x)	do {			\
+    if ((x) < 0 || (x) > 65535)					\
+    SIMPLE_BAD_ARG_ERROR((fun), (n), "int(0..65535)");		\
+} while(0)
+
+  /*! @decl void create()
+   *! @decl void create(int(-32768..32767) x, int(-32768..32767) y)
+   *! @decl void create(int(-32768..32767) x, int(-32768..32767) y, @
+   *!                   int(0..65535) w, int(0..65535) h)
+   *!
+   *!   Create a new @[Rect].
+   *!
+   *! @param x
+   *! @param y
+   *!   Optional initial values for @[Rect()->x] and @[Rect()->y].
+   *!
+   *! @param w
+   *! @param h
+   *!   Optional initial values for @[Rect()->w] and @[Rect()->h].
+   */
+  PIKEFUN void create() { }
+  PIKEFUN void create(int(-32768..32767) x, int(-32768..32767) y) {
+      CHECK_I16_ARG("create", 1, x);
+      CHECK_I16_ARG("create", 2, y);
+      THIS->rect.x = x;
+      THIS->rect.y = y;
+  }
+  PIKEFUN void create(int(-32768..32767) x, int(-32768..32767) y,
+		      int(0..65535) w, int(0..65535) h) {
+      CHECK_I16_ARG("create", 1, x);
+      CHECK_I16_ARG("create", 2, y);
+      CHECK_U16_ARG("create", 3, w);
+      CHECK_U16_ARG("create", 4, h);
+      THIS->rect.x = x;
+      THIS->rect.y = y;
+      THIS->rect.w = w;
+      THIS->rect.h = h;
+  }
+
+  /*! @decl int(-32768..32767) x
+   *! @decl int(-32768..32767) y
+   *!   Position of the upper-left corner of the rectangle.
+   *!   Internally these are 16 bit signed integers.
+   *!   A runtime error will be generated when integer values are used
+   *!   that are too big.
+   */
+  PIKEFUN int(-32768..32767) `x()
+  {
+    push_int(THIS->rect.x);
+  }
+  PIKEFUN int(-32768..32767) `y()
+  {
+    push_int(THIS->rect.y);
+  }
+  PIKEFUN int(-32768..32767) `x=(int(-32768..32767) value)
+  {
+    CHECK_I16_ARG("`x=", 1, value);
+    THIS->rect.x = value;
+  }
+  PIKEFUN int(-32768..32767) `y=(int(-32768..32767) value)
+  {
+    CHECK_I16_ARG("`y=", 1, value);
+    THIS->rect.y = value;
+  }
+
+  /*! @decl int(0..65535) w
+   *! @decl int(0..65535) h
+   *!   The width and height of the rectangle. Internally these are 16 bit unsigned
+   *!   integers. A runtime error will be generated when integer values are used
+   *!   that are too big.
+   */
+  PIKEFUN int(0..65535) `w()
+  {
+    push_int(THIS->rect.w);
+  }
+  PIKEFUN int(0..65535) `h()
+  {
+    push_int(THIS->rect.h);
+  }
+
+  PIKEFUN int(0..65535) `w=(int(0..65535) value)
+  {
+    CHECK_U16_ARG("`w=", 1, value);
+    THIS->rect.w = value;
+  }
+  PIKEFUN int(0..65535) `h=(int(0..65535) value)
+  {
+    CHECK_U16_ARG("`h=", 1, value);
+    THIS->rect.h = value;
+  }
+
+  /*! @decl mixed cast(string type)
+   *!
+   *! It is possible to cast a Rect object to an @tt{array@} or
+   *! to a @tt{mapping@}. The array will have the values in the
+   *! order x, y, w, h and the mapping will have the values
+   *! associated with the corresponding names.
+   */
+  PIKEFUN mixed cast( string type )
+  {
+    struct pike_string *array_t;
+    struct pike_string *mapping_t;
+    REF_MAKE_CONST_STRING( array_t, "array" );
+    REF_MAKE_CONST_STRING( mapping_t, "mapping" );
+
+    if( type == array_t )
+    {
+      pop_n_elems( args );
+      push_int(THIS->rect.x);
+      push_int(THIS->rect.y);
+      push_int(THIS->rect.w);
+      push_int(THIS->rect.h);
+      f_aggregate(4);
+      return;
+    } else if( type == mapping_t ) {
+      pop_n_elems( args );
+      push_text("x");
+      push_int(THIS->rect.x);
+      push_text("y");
+      push_int(THIS->rect.y);
+      push_text("w");
+      push_int(THIS->rect.w);
+      push_text("h");
+      push_int(THIS->rect.h);
+      f_aggregate_mapping(8);
+      return;
+    }
+
+    Pike_error("Cannot cast to %S\n", type);
+  }
+}
+/*! @endclass Rect */
+
+/*! @class Keysym
+ *!
+ *! The Keysym class is used to report key presses and releases. It's
+ *! available from the @[SDL.Event] class for keyboard events.
+ */
+PIKECLASS Keysym {
+  CVAR SDL_keysym keysym;
+
+  /*! @decl int mod
+   *!  Current key modifiers
+   *!
+   *!  @[mod] stores the current state of the keyboard modifiers as
+   *!  explained in @[SDL.get_mod_state()].
+   */
+  PIKEFUN int `mod()
+  {
+    push_int(THIS->keysym.mod);
+  }
+
+  /*! @decl int scancode
+   *!  Hardware specific scancode
+   *!
+   *!  The @[scancode] field should generally be left alone - it is the
+   *!  hardware dependent scancode returned by the keyboard.
+   *!
+   */
+  PIKEFUN int `scancode()
+  {
+    push_int(THIS->keysym.scancode);
+  }
+
+  /*! @decl int sym
+   *!  SDL virtual keysym
+   *!
+   *!  The @[sym] field is extremely useful.
+   *!  It is the SDL-defined value of the key.
+   *!  This field is very useful when you are checking for certain key presses.
+   *!
+   */
+  PIKEFUN int `sym()
+  {
+    push_int(THIS->keysym.sym);
+  }
+
+  /*! @decl int unicode
+   *!
+   *!  Translated character
+   *!
+   *!  The @[unicode] field is only used
+   *!  when UNICODE translation has beed enabled with @[SDL.enable_unicode()].
+   *!  If @[unicode] is non-zero then this the UNICODE character corresponding
+   *!  to the keypress.
+   *!
+   *! @note
+   *!  UNICODE translation does have a slight overhead so don't
+   *!  enable it unless its needed.
+   */
+  PIKEFUN int `unicode()
+  {
+    push_int(THIS->keysym.unicode);
+  }
+}
+
+/*! @endclass Keysym */
+
+#define CHECK_INIT() if(THIS->fmt == NULL) { Pike_error("PixelFormat unitialized!\n"); }
+
+#if !defined(SDL_ALPHA_OPAQUE) || !SDL_ALPHA_OPAQUE
+/* SDL 1.1.4 and earlier had inverted alpha.
+ * This was changed in 1.1.5, when also
+ * SDL_ALPHA_{OPAQUE,TRANSPARENT} were added.
+ */
+#define CONVERT_ALPHA(X)	(255-(X))
+#else
+#define CONVERT_ALPHA(X)	(X)
+#endif
+
+/*! @class PixelFormat
+ *!
+ *! This describes the format of the pixel data stored at the pixels field
+ *! of a @[SDL.Surface]. Every surface stores a @[PixelFormat] in the format
+ *! field.
+ */
+PIKECLASS PixelFormat {
+  /* THIS->fmt is never freed by us since the it's always a pointer to that
+     of a Surface class */
+  /* FIXME: What if the Surface is freed?
+   *        Ought to use parent pointer!
+   */
+  CVAR SDL_PixelFormat *fmt;
+
+  INIT {
+    THIS->fmt = NULL;
+  }
+
+  /*! @decl int rloss
+   *! @decl int gloss
+   *! @decl int bloss
+   *! @decl int aloss
+   *!   Precision loss of each color component.
+   */
+  PIKEFUN int `rloss()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Rloss);
+  }
+  PIKEFUN int `gloss()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Gloss);
+  }
+  PIKEFUN int `bloss()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Bloss);
+  }
+  PIKEFUN int `aloss()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Aloss);
+  }
+
+  /*! @decl int rmask
+   *! @decl int gmask
+   *! @decl int bmask
+   *! @decl int amask
+   *!   Binary mask used to retrieve individual color values.
+   */
+  PIKEFUN int `rmask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Rmask);
+  }
+  PIKEFUN int `gmask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Gmask);
+  }
+  PIKEFUN int `bmask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Bmask);
+  }
+  PIKEFUN int `amask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Amask);
+  }
+
+  /*! @decl int rshift
+   *! @decl int gshift
+   *! @decl int bshift
+   *! @decl int ashift
+   *!  Binary left shift of each color component in the pixel value.
+   */
+  PIKEFUN int `rshift()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Rshift);
+  }
+  PIKEFUN int `gshift()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Gshift);
+  }
+  PIKEFUN int `bshift()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Bshift);
+  }
+  PIKEFUN int `ashift()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Ashift);
+  }
+
+  /*! @decl int alpha
+   *!  Overall surface alpha value.
+   */
+  PIKEFUN int `alpha()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(CONVERT_ALPHA(THIS->fmt->alpha));
+  }
+
+  /*! @decl int colorkey
+   *!  Pixel value of transparent pixels.
+   */
+  PIKEFUN int `colorkey()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->colorkey);
+  }
+
+  /*! @decl int bits_per_pixel
+   *!   The number of bits used to represent each pixel in a
+   *!   surface. Usually 8, 16, 24 or 32.
+   */
+  PIKEFUN int `bits_per_pixel()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->BitsPerPixel);
+  }
+
+  /*! @decl int bytes_per_pixel
+   *!   The number of bytes used to represent each pixel in a
+   *!   surface. Usually one to four.
+   */
+  PIKEFUN int `bytes_per_pixel()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->BytesPerPixel);
+  }
+
+  /*! @decl array(int) losses()
+   *!  Convenience method returning the RGBA precision loss as an array.
+   */
+  PIKEFUN array(int) losses() {
+    push_int(THIS->fmt->Rloss);
+    push_int(THIS->fmt->Gloss);
+    push_int(THIS->fmt->Bloss);
+    push_int(THIS->fmt->Aloss);
+    f_aggregate(4);
+  }
+
+  /*! @decl array(int) masks()
+   *!  Convenience method returning the RGBA masks as an array.
+   */
+  PIKEFUN array(int) masks() {
+    push_int(THIS->fmt->Rmask);
+    push_int(THIS->fmt->Gmask);
+    push_int(THIS->fmt->Bmask);
+    push_int(THIS->fmt->Amask);
+    f_aggregate(4);
+  }
+
+  /*! @decl array(int) shifts()
+   *!  Convenience method returning the RGBA shifts as an array.
+   */
+  PIKEFUN array(int) shifts() {
+    push_int(THIS->fmt->Rshift);
+    push_int(THIS->fmt->Gshift);
+    push_int(THIS->fmt->Bshift);
+    push_int(THIS->fmt->Ashift);
+    f_aggregate(4);
+  }
+
+  /*! @decl int map_rgb(int r, int g, int b)
+   *! @decl int map_rgb(Image.Color.Color color)
+   *!
+   *! Maps the RGB color value to the specified pixel format and
+   *! returns the pixel value as an integer.
+   *!
+   *! If the format has a palette (8-bit) the index of the closest
+   *! matching color in the palette will be returned.
+   *!
+   *! If the pixel format has an alpha component it will be
+   *! returned as all 1 bits (fully opaque).
+   *!
+   *! @param r
+   *! @param g
+   *! @param b
+   *!
+   *! The red, green and blue components specified as an integer
+   *! between 0 and 255.
+   *!
+   *! @param color
+   *! The color as represented by an @[Image.Color.Color] object.
+   *! @returns
+   *! A pixel value best approximating the given RGB color value for a
+   *! given pixel format.
+   *!
+   *! @seealso
+   *!   @[map_rgba()], @[get_rgb()], @[get_rgba()]
+   */
+  PIKEFUN int map_rgb(int r, int g, int b) {
+    RETURN SDL_MapRGB(THIS->fmt, r, g, b);
+  }
+
+  PIKEFUN int map_rgb(object color) {
+    struct color_struct *cs;
+    CHECK_CLASS(color, image_color, 1);
+    cs = ((struct color_struct *)(color->storage));
+    RETURN SDL_MapRGB(THIS->fmt, cs->rgb.r, cs->rgb.g, cs->rgb.b);
+  }
+
+  /*! @decl int map_rgba(int r, int g, int b, int a)
+   *! @decl int map_rgba(Image.Color.Color color, int a)
+   *!
+   *! Maps the RGBA color value to the specified pixel format and
+   *! returns the pixel value as an integer.
+   *!
+   *! If the format has a palette (8-bit) the index of the closest
+   *! matching color in the palette will be returned.
+   *!
+   *! If the pixel format has an alpha component it will be
+   *! returned as all 1 bits (fully opaque).
+   *!
+   *! @param r
+   *! @param g
+   *! @param b
+   *! @param a
+   *!
+   *! The red, green and blue components specified as an integer
+   *! between 0 and 255.
+   *!
+   *! @param color
+   *! The color as represented by an @[Image.Color.Color] object.
+   *!
+   *! @returns
+   *! A pixel value best approximating the given RGB color value for a
+   *! given pixel format.
+   *!
+   *! @seealso
+   *!   @[map_rgb()], @[get_rgb()], @[get_rgba()]
+   */
+  PIKEFUN int map_rgba(int r, int g, int b, int a) {
+    RETURN SDL_MapRGBA(THIS->fmt, r, g, b, CONVERT_ALPHA(a));
+  }
+
+  PIKEFUN int map_rgba(object color, int a) {
+    struct color_struct *cs;
+    CHECK_CLASS(color, image_color, 1);
+    cs = ((struct color_struct *)(color->storage));
+    RETURN SDL_MapRGBA(THIS->fmt, cs->rgb.r, cs->rgb.g, cs->rgb.b,
+		       CONVERT_ALPHA(a));
+  }
+
+  /*! @decl Image.Color.Color get_rgb(int pixel)
+   *!
+   *! Get RGB component values from a pixel stored in this pixel format.
+   *!
+   *! @param pixel
+   *!   A pixel retrieved from a surface with this pixel format or a color
+   *!   previously mapped with @[map_rgb()] or @[map_rgba()].
+   *! @returns
+   *!  A @[Image.Color.Color] object with the RGB components of the pixel.
+   *!
+   *! @seealso
+   *!   @[map_rgb()], @[map_rgba()], @[get_rgba()]
+   */
+  PIKEFUN object get_rgb(int pixel) {
+    Uint8 r, g, b;
+    SDL_GetRGB((Uint32)pixel, THIS->fmt, &r, &g, &b);
+    RETURN image_make_rgb_color(r, g, b);
+  }
+
+  /*! @decl mapping(string:Image.Color.Color|int) get_rgba(int pixel)
+   *!
+   *! Get RGB component values from a pixel stored in this pixel format.
+   *!
+   *! @param pixel
+   *!   A pixel retrieved from a surface with this pixel format or a color
+   *!   previously mapped with @[map_rgb()] or @[map_rgba()].
+   *!
+   *! @returns
+   *!   A mapping containing the RGBA components of the pixel:
+   *!   @mapping
+   *!     @member Image.Color.Color "color"
+   *!       The RGB color value of the pixel.
+   *!     @member int "alpha"
+   *!       The alpha value of the pixel in the range 0-255.
+   *!   @endmapping
+   *!
+   *! @seealso
+   *!   @[map_rgb()], @[map_rgba()], @[get_rgb()]
+   */
+  PIKEFUN mapping(string:object|int) get_rgba(int pixel) {
+    Uint8 r, g, b, a;
+    SDL_GetRGBA((Uint32)pixel, THIS->fmt, &r, &g, &b, &a);
+    pop_n_elems(args);
+    push_text("color");
+    push_object(image_make_rgb_color(r, g, b));
+    push_text("alpha");
+    push_int(CONVERT_ALPHA(a));
+    f_aggregate_mapping(4);
+  }
+}
+/*! @endclass PixelFormat */
+#undef CHECK_INIT
+
+
+#define CHECK_INIT() if((THIS->generation != video_generation) || (THIS->vidinfo == NULL)) { Pike_error("VideoInfo unitialized!\n"); }
+
+/*! @class VideoInfo
+ *!
+ *! This (read-only) class is returned by @[SDL.get_video_info()]. It
+ *! contains information on either the 'best' available mode (if
+ *! called before @[SDL.set_video_mode()]) or the current video mode.
+ *!
+ */
+PIKECLASS VideoInfo {
+  /* THIS->vidinfo is never freed by us since SDL manages that */
+  CVAR const SDL_VideoInfo *vidinfo;
+  CVAR int generation;
+
+  INIT {
+    THIS->vidinfo = NULL;
+    THIS->generation = video_generation;
+  }
+
+  /*! @decl int blit_fill
+   *!   Are color fills accelerated?
+   */
+  PIKEFUN int `blit_fill()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_fill);
+  }
+  /*! @decl int blit_hw
+   *!   Are hardware to hardware blits accelerated?
+   */
+  PIKEFUN int `blit_hw()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_hw);
+  }
+  /*! @decl int blit_hw_a
+   *!   Are hardware to hardware alpha blits accelerated?
+   */
+  PIKEFUN int `blit_hw_a()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_hw_A);
+  }
+  /*! @decl int blit_hw_cc
+   *!   Are hardware to hardware colorkey blits accelerated?
+   */
+  PIKEFUN int `blit_hw_cc()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_hw_CC);
+  }
+  /*! @decl int blit_sw
+   *!   Are software to hardware blits accelerated?
+   */
+  PIKEFUN int `blit_sw()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_sw);
+  }
+  /*! @decl int blit_sw_a
+   *!   Are software to hardware alpha blits accelerated?
+   */
+  PIKEFUN int `blit_sw_a()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_sw_A);
+  }
+  /*! @decl int blit_sw_cc
+   *!   Are software to hardware colorkey blits accelerated?
+   */
+  PIKEFUN int `blit_sw_cc()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_sw_CC);
+  }
+  /*! @decl int hw_available
+   *!   Is it possible to create hardware surfaces?
+   */
+  PIKEFUN int `hw_available()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->hw_available);
+  }
+  /*! @decl int video_mem
+   *!   Total amount of video memory in KB.
+   */
+  PIKEFUN int `video_mem()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->video_mem);
+  }
+  /*! @decl int wm_available
+   *!   Is there a window manager available
+   */
+  PIKEFUN int `wm_available()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->wm_available);
+  }
+  /*! @decl SDL.PixelFormat format
+   *!   Pixel format of the video device.
+   */
+  PIKEFUN object `format()
+  {
+    struct object *fmt;
+    CHECK_INIT(); /* Make sure this is inited */
+    fmt = clone_object(PixelFormat_program, 0);
+    OBJ2_PIXELFORMAT(fmt)->fmt = THIS->vidinfo->vfmt;
+    push_object(fmt);
+  }
+}
+/*! @endclass VideoInfo */
+#undef CHECK_INIT
+
+#define CHECK_INIT() if((THIS->generation != video_generation) || (THIS->_s == NULL)) { Pike_error("Surface unitialized!\n"); }
+/*! @class Surface
+ *!
+ *! Surface's represent areas of "graphical" memory, memory that can
+ *! be drawn to.  The video framebuffer is returned as a
+ *! @[SDL.Surface] by @[SDL.set_video_mode()] and
+ *! @[SDL.get_video_surface()].
+ */
+PIKECLASS Surface {
+  CVAR SDL_Surface *_s;
+  CVAR void (*fast_set_pixel)(Uint16 x, Uint16 y, Uint32 pixel);
+  CVAR int generation;
+
+  static void fast_set_pixel1(Uint16 x, Uint16 y, Uint32 pixel) {
+    SDL_Surface *screen = THIS->_s;
+    *((Uint8 *)screen->pixels + y * screen->pitch + x) = pixel;
+  }
+  static void fast_set_pixel2(Uint16 x, Uint16 y, Uint32 pixel) {
+    SDL_Surface *screen = THIS->_s;
+    *((Uint16 *)screen->pixels +  y * (screen->pitch>>1) + x) = pixel;
+  }
+  static void fast_set_pixel3(Uint16 x, Uint16 y, Uint32 pixel) {
+    SDL_Surface *screen = THIS->_s;
+    Uint8 *pix = (Uint8 *)screen->pixels + y * screen->pitch + x * 3;
+    if(SDL_BYTEORDER == SDL_BIG_ENDIAN) {
+      pix[2] = pixel & 0xff;
+      pix[1] = (pixel >> 8) & 0xff;
+      pix[0] = (pixel >> 16) & 0xff;
+    } else {
+      pix[0] = pixel;
+      pix[1] = (pixel >> 8) & 0xff;
+      pix[2] = (pixel >> 16) & 0xff;
+    }
+  }
+  static void fast_set_pixel4(Uint16 x, Uint16 y, Uint32 pixel) {
+    SDL_Surface *screen = THIS->_s;
+    *((Uint32 *)screen->pixels + y * (screen->pitch>>2) + x) = pixel;
+  }
+  static void (*get_fast_set_pixel(int bpp))(Uint16 x, Uint16 y, Uint32 pixel)
+  {
+    switch(bpp) {
+    case 1: return &fast_set_pixel1;
+    case 2: return &fast_set_pixel2;
+    case 3: return &fast_set_pixel3;
+    case 4: return &fast_set_pixel4;
+    }
+    return NULL;
+  }
+
+  /*! @decl int get_pixel(int x, int y)
+   *! Get the value of the specified pixel. The surface needs to be
+   *! locked before this method can be used.
+   *! @param x
+   *! @param y
+   *!  Pixel coordinate to get.
+   *! @returns
+   *!   The value of the specified pixel.
+   *! @seealso
+   *!  @[set_pixel()], @[unlock()], @[lock()]
+   */
+  PIKEFUN int get_pixel(int x, int y)
+  {
+    CHECK_INIT();
+    if(THIS->fast_set_pixel) {
+      SDL_Surface *surface = THIS->_s;
+      int bpp = surface->format->BytesPerPixel;
+      Uint8 *p;
+      if(x < 0 || y < 0 || x > surface->w || y > surface->h) {
+	Pike_error("Pixel out of bounds!\n");
+      }
+      p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+
+      switch(bpp) {
+      case 1:  RETURN *p;
+      case 2:  RETURN *(Uint16 *)p;
+      case 3:
+	if(SDL_BYTEORDER == SDL_BIG_ENDIAN) {
+	  RETURN p[0] << 16 | p[1] << 8 | p[2];
+	} else {
+	  RETURN p[0] | p[1] << 8 | p[2] << 16;
+	}
+      case 4:  RETURN *(Uint32 *)p;
+      default: RETURN 0;       /* shouldn't happen, but avoids warnings */
+      }
+    } else {
+      Pike_error("Surface must be locked before you can set or get pixels.\n");
+    }
+  }
+
+  /*! @decl int set_pixel(int x, int y, int pixel)
+   *! Set the value of the specified pixel. The surface needs to be
+   *! locked before this method can be used.
+   *! @param x
+   *! @param y
+   *!  Pixel coordinate to modify.
+   *! @param pixel
+   *!  Pixel value to set to the specified pixel.
+   *! @returns
+   *!   A reference to the surface itself.
+   *! @seealso
+   *!  @[get_pixel()], @[unlock()], @[lock()]
+   */
+  PIKEFUN object set_pixel(int x, int y, int pixel) {
+    CHECK_INIT();
+    if(THIS->fast_set_pixel) {
+      if(x < 0 || y < 0 || x > THIS->_s->w || y > THIS->_s->h) {
+	Pike_error("Pixel out of bounds!\n");
+      }
+      THIS->fast_set_pixel(x, y, pixel);
+      RET_THIS();
+    }
+    Pike_error("Surface must be locked before you can set or get pixels.\n");
+  }
+
+  INIT {
+    THIS->_s = NULL;
+    THIS->fast_set_pixel = NULL;
+    THIS->generation = video_generation;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    if((THIS->generation == video_generation) && THIS->_s) {
+      SDL_FreeSurface(THIS->_s);
+      THIS->_s = NULL;
+    }
+    THIS->fast_set_pixel = NULL;
+  }
+
+  /*! @decl int flags
+   *!   The following are supported in the flags field.
+   *!   @dl
+   *!     @item SDL.SWSURFACE
+   *!       Surface is stored in system memory
+   *!     @item SDL.HWSURFACE
+   *!       Surface is stored in video memory
+   *!     @item SDL.ASYNCBLIT
+   *!       Surface uses asynchronous blits if possible.
+   *!     @item SDL.ANYFORMAT
+   *!       Allows any pixel-format (Display  surface).
+   *!     @item SDL.HWPALETTE
+   *!       Surface has exclusive palette.
+   *!     @item SDL.DOUBLEBUF
+   *!       Surface is double buffered (Display surface).
+   *!     @item SDL.FULLSCREEN
+   *!       Surface is full screen (Display  Sur face).
+   *!     @item SDL.OPENGL
+   *!       Surface has an OpenGL context (Display Surface).
+   *!     @item SDL.OPENGLBLIT
+   *!       Surface supports OpenGL blitting (Display Surface).
+   *!     @item SDL.RESIZABLE
+   *!       Surface is resizable (Display Surface).
+   *!     @item SDL.HWACCEL
+   *!       Surface blit uses hardware acceleration.
+   *!     @item SDL.SRCCOLORKEY
+   *!       Surface use colorkey blitting.
+   *!     @item SDL.RLEACCEL
+   *!       Colorkey  blitting is accelerated with RLE.
+   *!     @item SDL.SRCALPHA
+   *!       Surface blit uses alpha blending.
+   *!     @item SDL.PREALLOC
+   *!       Surface uses preallocated memory.
+   *!   @enddl
+   */
+  PIKEFUN int `flags()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->_s->flags);
+  }
+
+  /*! @decl int w
+   *! @decl int h
+   *!   The width and height of the surface in pixels.
+   */
+  PIKEFUN int `h()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->_s->h);
+  }
+  PIKEFUN int `w()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->_s->w);
+  }
+
+#if 0
+  PIKEFUN int `pitch()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->_s->pitch);
+  }
+#endif
+
+  /*! @decl SDL.Rect clip_rect
+   *!  This is the clipping rectangle as set by @[set_clip_rect()].
+   */
+  PIKEFUN int `clip_rect()
+  {
+    struct object *rect;
+    CHECK_INIT(); /* Make sure this is inited */
+    rect = clone_object( Rect_program, 0 );
+    OBJ2_RECT(rect)->rect = THIS->_s->clip_rect;
+    push_object(rect);
+  }
+  /*! @decl SDL.PixelFormat format
+   *!   The pixel format of this surface.
+   */
+  PIKEFUN int `format()
+  {
+    struct object *fmt;
+    CHECK_INIT(); /* Make sure this is inited */
+    fmt = clone_object( PixelFormat_program, 0 );
+    OBJ2_PIXELFORMAT(fmt)->fmt = THIS->_s->format;
+    push_object(fmt);
+  }
+
+
+  /*! @decl int lock()
+   *!
+   *! This methods locks the surface to allow direct access to the pixels
+   *! using the @[get_pixel()] and @[set_pixel()] methods.
+   *!
+   *! @note
+   *!   Note that although all surfaces in SDL don't require locking,
+   *!   you still need to call this method to enable the set/get pixel
+   *!   methods. You should unlock the surface when you're doing modifying it.
+   *!
+   *! @note
+   *!   Calling this method multiple times means that you need to call
+   *!   unlock an equal number of times for the surface to become unlocked.
+   *! @returns
+   *!   1 for success or 0 if the surface couldn't be locked.
+   *! @seealso
+   *!  @[unlock()], @[set_pixel()], @[get_pixel()]
+   */
+  PIKEFUN int lock() {
+    int locked = 1;
+    CHECK_INIT();
+    if ( SDL_MUSTLOCK(THIS->_s) ) {
+      locked = SDL_LockSurface(THIS->_s) != -1;
+    }
+    if(locked) {
+      THIS->fast_set_pixel = get_fast_set_pixel(THIS->_s->format->BytesPerPixel);
+    }
+    RETURN locked;
+  }
+
+  /*! @decl void unlock()
+   *!
+   *! Surfaces that were previously locked using @[lock()] must be
+   *! unlocked with @[unlock()].
+   *!
+   *! Surfaces should be unlocked as soon as possible.
+   *!
+   *! @seealso
+   *!  @[lock()]
+   */
+  PIKEFUN void unlock() {
+    CHECK_INIT();
+    THIS->fast_set_pixel = NULL;
+    if ( SDL_MUSTLOCK(THIS->_s) ) {
+      SDL_UnlockSurface(THIS->_s);
+    }
+  }
+
+  /*! @decl SDL.Surface init(int flags, int width, int height, int depth, @
+   *!                        int Rmask, int Gmask, int Bmask, int Amask)
+   *!
+   *! This (re)initializes this surface using the specified
+   *! parameters.
+   *!
+   *! Any previously allocated data will be freed.
+   *!
+   *! @param depth
+   *! @param Rmask
+   *! @param Gmask
+   *! @param Bmask
+   *! @param Amask
+   *!   If @[depth] is 8 bits an empty palette is allocated for the surface,
+   *!   otherwise a 'packed-pixel' @[SDL.PixelFormat] is created using
+   *!   the @b{[RGBA]mask@}'s provided.
+   *!
+   *! @param width
+   *! @param height
+   *!   @[width] and @[height] specify the desired size of the image.
+   *!
+   *! @param flags
+   *!   @[flags] specifies the type of surface that should be created.
+   *!   It is an OR'd combination of the following possible values:
+   *!
+   *! @dl
+   *!   @item SDL.SWSURFACE
+   *!     SDL will create the surface in system memory. This improves
+   *!     the performance of pixel level access, however you may not
+   *!     be able to take advantage of some types of hardware
+   *!     blitting.
+   *!
+   *!   @item SDL.HWSURFACE
+   *!     SDL will attempt to create the surface in video memory. This
+   *!     will allow SDL to take advantage of Video->Video blits
+   *!     (which are often accelerated).
+   *!
+   *!   @item SDL.SRCCOLORKEY
+   *!
+   *!     This flag turns on colourkeying for blits from this
+   *!     surface. If SDL.HWSURFACE is also specified and colourkeyed
+   *!     blits are hardware-accelerated, then SDL will attempt to
+   *!     place the surface in video memory. Use @[set_color_key()] to
+   *!     set or clear this flag after surface creation.
+   *!
+   *!   @item SDL.SRCALPHA
+   *!     This flag turns on alpha-blending for blits from this
+   *!     surface. If SDL.HWSURFACE is also specified and alpha
+   *!     blending blits are hardware-accelerated, then the surface
+   *!     will be placed in video memory if possible.  Use
+   *!     @[set_alpha()] to set or clear this flag after surface
+   *!     creation.
+   *! @enddl
+   *!
+   *! @note
+   *!   If an alpha-channel is specified (that is, if Amask is
+   *!   nonzero), then the SDL.SRCALPHA flag is automatically set. You
+   *!   may remove this flag by calling @[set_alpha()] after surface
+   *!   creation.
+   *!
+   *! @returns
+   *!  A reference to itself.
+   *!
+   *! @note
+   *!  If this method fails, the surface will become uninitialized.
+   *!
+   *! @seealso
+   *!  @[set_image()]
+   */
+  PIKEFUN object init(int flags, int width, int height, int depth,
+		      int Rmask, int Gmask, int Bmask, int Amask) {
+    if((THIS->generation == video_generation ) && THIS->_s) {
+      SDL_FreeSurface(THIS->_s);
+    }
+    THIS->_s = SDL_CreateRGBSurface(flags, width, height, depth,
+				    Rmask, Gmask, Bmask, Amask);
+    if(THIS->_s == NULL) {
+      Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
+    } else {
+      THIS->generation = video_generation;
+      RET_THIS();
+    }
+  }
+
+  /*!  @decl SDL.Surface set_image(Image.Image image, int|void flags)
+   *!  @decl SDL.Surface set_image(Image.Image image, Image.Image alpha, @
+   *!                              int|void flags)
+   *!
+   *! This (re)initializes this surface from the @[Image.Image] in
+   *! @[image].
+   *!
+   *! Any previously allocated data will be freed.
+   *!
+   *! If initialization is successful, this surface will use @tt{RGBA8888@}
+   *! format. For good blitting performance, it should be converted to
+   *! the display format using @[display_format()].
+   *!
+   *! @param image
+   *!  The source image.
+   *! @param alpha
+   *!   Optional alpha channel. In Pike, the alpha channel can have
+   *!   different alpha values for red, green and blue. Since SDL
+   *!   doesn't support this, only the alpha value of the red color is
+   *!   used in the conversion. When this calling convention is used,
+   *!   the surface alpha value of @b{image@} is ignored.
+   *!
+   *! @param flags
+   *!   When present this specifies the type of surface that should be
+   *!   created. It is an OR'd combination of the following possible
+   *!   values:
+   *!
+   *! @dl
+   *!   @item SDL.SWSURFACE
+   *!     SDL will create the surface in system memory. This improves
+   *!     the performance of pixel level access, however you may not
+   *!     be able to take advantage of some types of hardware
+   *!     blitting.
+   *!
+   *!   @item SDL.HWSURFACE
+   *!     SDL will attempt to create the surface in video memory. This
+   *!     will allow SDL to take advantage of Video->Video blits
+   *!     (which are often accelerated).
+   *!
+   *!   @item SDL.SRCCOLORKEY
+   *!     This flag turns on colourkeying for blits from this
+   *!     surface. If SDL.HWSURFACE is also specified and colourkeyed
+   *!     blits are hardware-accelerated, then SDL will attempt to
+   *!     place the surface in video memory. Use @[set_color_key()] to
+   *!     set or clear this flag after surface creation.
+   *!
+   *!   @item SDL.SRCALPHA
+   *!     This flag turns on alpha-blending for blits from this
+   *!     surface. If SDL.HWSURFACE is also specified and alpha
+   *!     blending blits are hardware-accelerated, then the surface
+   *!     will be placed in video memory if possible. Note that if
+   *!     this surface has an alpha value specified, this flag is
+   *!     enabled automatically. Use @[set_alpha()] to modify this
+   *!     flag at a later point.
+   *! @enddl
+   *!
+   *! @note
+   *!  If this method fails, the surface will become uninitialized.
+   *!
+   *! @returns
+   *!  A reference to itself.
+   *!
+   *! @seealso
+   *!  @[init()]
+   */
+  PIKEFUN object set_image(object image, int|void _flags) {
+    int flags = 0;
+    int x, y;
+    struct image *i;
+    Uint32 *dest;
+    rgb_group rgb;
+    if((THIS->generation == video_generation) && (THIS->_s != NULL)) {
+      SDL_FreeSurface(THIS->_s);
+      THIS->_s = NULL;
+    }
+    //    if(image_program != NULL) {
+    CHECK_CLASS(image, image, 1);
+    //    }
+    if(_flags) {
+      if(TYPEOF(*_flags) != PIKE_T_INT) {
+	SIMPLE_BAD_ARG_ERROR("set_image",2,"int|void");
+      }
+      flags = _flags->u.integer;
+    }
+    i = ((struct image *)(image->storage));
+    if(i->alpha) {
+      flags &= SDL_SRCALPHA;
+    }
+    THIS->_s =
+      SDL_CreateRGBSurface(flags, i->xsize, i->ysize, 32,
+			   0xff000000, 0x00ff0000, 0x0000ff00,  0x000000ff);
+    if(!THIS->_s) {
+      Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
+    }
+    THIS->generation = video_generation;
+    SDL_LockSurface(THIS->_s);
+    dest = THIS->_s->pixels;
+
+#define pixel(_img,x,y) ((_img)->img[((int)(x))+((int)(y))*(int)(_img)->xsize])
+    for(y = 0; y < i->ysize; y++) {
+      int off = y*THIS->_s->pitch/4;
+      for(x = 0; x < i->xsize; x++) {
+	rgb = pixel(i, x, y);
+	*((Uint32 *)dest + off + x) =
+	  (rgb.r << 24) + (rgb.g << 16) + (rgb.b << 8) +
+	  CONVERT_ALPHA(i->alpha);
+      }
+    }
+#undef pixel
+    SDL_UnlockSurface(THIS->_s);
+    RET_THIS();
+  }
+
+  PIKEFUN object set_image(object image, object alpha, int|void _flags) {
+    int flags = 0;
+    int x, y;
+    struct image *i, *a;
+    Uint32 *dest;
+    rgb_group rgb, argb;
+    if((THIS->generation == video_generation) && (THIS->_s != NULL)) {
+      SDL_FreeSurface(THIS->_s);
+      THIS->_s = NULL;
+    }
+
+    CHECK_CLASS(image, image, 1);
+    CHECK_CLASS(alpha, image, 2);
+
+    if(_flags) {
+      if(TYPEOF(*_flags) != PIKE_T_INT) {
+	SIMPLE_BAD_ARG_ERROR("set_image",3,"int|void");
+      }
+      flags = _flags->u.integer;
+    }
+    i = ((struct image *)(image->storage));
+    a = ((struct image *)(alpha->storage));
+
+    THIS->_s =
+      SDL_CreateRGBSurface(flags, i->xsize, i->ysize, 32,
+			   0xff000000, 0x00ff0000, 0x0000ff00,  0x000000ff);
+    if(!THIS->_s) {
+      Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
+    }
+    THIS->generation = video_generation;
+    SDL_LockSurface(THIS->_s);
+    dest = THIS->_s->pixels;
+
+#define pixel(_img,x,y) ((_img)->img[((int)(x))+((int)(y))*(int)(_img)->xsize])
+    for(y = 0; y < i->ysize; y++) {
+      int off = y*THIS->_s->pitch/4;
+      for(x = 0; x < i->xsize; x++) {
+	rgb = pixel(i, x, y);
+	argb = pixel(a, x, y);
+	*((Uint32 *)dest + off + x) =
+	  (rgb.r << 24) + (rgb.g << 16) + (rgb.b << 8) +
+	  CONVERT_ALPHA(argb.r);
+      }
+    }
+#undef pixel
+    SDL_UnlockSurface(THIS->_s);
+    RET_THIS();
+  }
+
+  /*! @decl SDL.Surface display_format()
+   *!
+   *! This function takes a surface and copies it to a new  surface
+   *! of  the  pixel format and colors of the video framebuffer,
+   *! suitable for fast blitting onto the  display  surface. It calls
+   *! @[convert_surface()].
+   *!
+   *! If you want to take advantage of hardware colorkey or alpha blit
+   *! acceleration, you should set the colorkey and / or alpha value
+   *! before calling this function.
+   *!
+   *! If you want an alpha channel, see @[display_format_alpha()].
+   *!
+   *! @returns
+   *!   The new surface. An error is thrown if the conversion fails.
+   */
+  PIKEFUN object display_format() {
+    SDL_Surface *tmp;
+    CHECK_INIT();
+    tmp = SDL_DisplayFormat(THIS->_s);
+    if(tmp) {
+      struct object *new_surface = clone_object( Surface_program, 0 );
+      OBJ2_SURFACE(new_surface)->_s = tmp;
+      RETURN new_surface;
+    } else {
+      Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
+    }
+  }
+
+  /*! @decl SDL.Surface display_format_alpha()
+   *!
+   *! This function takes a surface and copies it to a new  surface
+   *! of  the  pixel format and colors of the video framebuffer,
+   *! suitable for fast blitting onto the  display  surface. It calls
+   *! @[convert_surface()].
+   *!
+   *! If you want to take advantage of hardware colorkey or alpha blit
+   *! acceleration, you should set the colorkey and / or alpha value
+   *! before calling this function.
+   *!
+   *! This function can be used to convert a colourkey to an alpha
+   *! channel, if the SDL.SRCCOLORKEY flag is set on the surface. The
+   *! generated surface will then be transparent (alpha=0) where the
+   *! pixels match the colourkey, and opaque (alpha=255) elsewhere.
+   *!
+   *! @returns
+   *!   The new surface. An error is thrown if the conversion fails.
+   */
+   PIKEFUN object display_format_alpha() {
+    SDL_Surface *tmp;
+    CHECK_INIT();
+    tmp = SDL_DisplayFormatAlpha(THIS->_s);
+    if(tmp) {
+      struct object *new_surface = clone_object( Surface_program, 0 );
+      OBJ2_SURFACE(new_surface)->_s = tmp;
+      RETURN new_surface;
+    } else {
+      Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
+    }
+  }
+
+   /*! @decl object blit(SDL.Surface dst, SDL.Rect|void srcrect,@
+    *!                   SDL.Rect|void dstrect)
+    *!
+    *! Perform a blit from this surface to the @[dst] surface.
+    *!
+    *! @param dst
+    *!   Destination @[Surface] for the blit.
+    *!
+    *! @param srcrect
+    *!   Optional source @[Rect]. If @[UNDEFINED] the entire source @[Surface]
+    *!   will be copied.
+    *!
+    *! @param dstrect
+    *!   Optional destination @[Rect]. Only the position fields
+    *!   @tt{x@} and @tt{y@} values are used. If @[UNDEFINED] the
+    *!   blit will be performed to position @tt{0, 0@}.
+    */
+  PIKEFUN object blit(object dst, object|void _srcrect, object|void _dstrect) {
+    SDL_Rect *srcrect = NULL, *dstrect = NULL;
+    CHECK_CLASS(dst, Surface, 1);
+    if (OBJ2_SURFACE(dst)->generation != video_generation)
+      Pike_error("Uninitialized destination surface.\n");
+    if(_srcrect) {
+      CHECK_CLASS(_srcrect, Rect, 2);
+      srcrect = &(OBJ2_RECT(_srcrect)->rect);
+    }
+    if(_dstrect) {
+      CHECK_CLASS(_dstrect, Rect, 3);
+      dstrect = &(OBJ2_RECT(_dstrect)->rect);
+    }
+
+    CHECK_INIT();
+    SDL_BlitSurface(THIS->_s, srcrect,
+		    OBJ2_SURFACE(dst)->_s, dstrect);
+    RET_THIS();
+  }
+
+  /*! @decl object fill_rect(int color, SDL.Rect dstrect)
+   *!
+   *! Fill a rectangle with a solid color.
+   *!
+   *! @seealso
+   *!   @[fill()]
+   */
+  PIKEFUN object fill_rect(int color, object dstrect) {
+    CHECK_INIT();
+    CHECK_CLASS(dstrect, Rect, 2);
+    SDL_FillRect(THIS->_s,&(OBJ2_RECT(dstrect)->rect), (Uint32)color);
+    RET_THIS();
+  }
+
+  /*! @decl object fill(int color)
+   *!
+   *! Fill the entire surface with a solid color.
+   *!
+   *! @seealso
+   *!   @[fill_rect()]
+   */
+  PIKEFUN object fill(int color) {
+    CHECK_INIT();
+    SDL_FillRect(THIS->_s, NULL, (Uint32)color);
+    RET_THIS();
+  }
+
+  /*! @decl object set_color_key(int flag, int key)
+   *!
+   *! Set or clear the color key (aka transparent pixel) for a the surface.
+   *! Also control whether RLE-accelleration is enabled or not.
+   *!
+   *! @param flag
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN object set_color_key(int flag, int key)  {
+    CHECK_INIT();
+    SDL_SetColorKey(THIS->_s, flag, key);
+    RET_THIS();
+  }
+
+  /*! @decl object set_alpha(int flag, int alpha)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN object set_alpha(int flag, int alpha)  {
+    CHECK_INIT();
+    SDL_SetAlpha(THIS->_s, flag, CONVERT_ALPHA(alpha));
+    RET_THIS();
+  }
+
+  /*! @decl object set_clip_rect(SDL.Rect rect)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN object set_clip_rect(object rect)  {
+    CHECK_INIT();
+    CHECK_CLASS(rect, Rect, 1);
+    SDL_SetClipRect(THIS->_s, &OBJ2_RECT(rect)->rect);
+    RET_THIS();
+  }
+
+  /*! @decl object convert_surface(SDL.PixelFormat fmt, int flags)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN object convert_surface(object fmt, int flags) {
+    struct object *new_surface;
+    SDL_Surface *tmp;
+    CHECK_INIT();
+    CHECK_CLASS(fmt, PixelFormat, 1);
+
+    tmp = SDL_ConvertSurface(THIS->_s, OBJ2_PIXELFORMAT(fmt)->fmt, flags);
+    pop_n_elems(args);
+    if(!tmp) {
+      Pike_error("Failed to convert surface: %s\n", SDL_GetError());
+    }
+    new_surface = clone_object( Surface_program, 0 );
+    OBJ2_SURFACE(new_surface)->_s = tmp;
+    push_object(new_surface);
+  }
+
+}
+/*! @endclass Surface */
+#undef CHECK_INIT
+
+/* SDL Video Method */
+
+/*! @decl int video_mode_ok(int width, int height, int bpp, int flags)
+ *!
+ *! Checks to see if a particular video mode is supported.
+ *!
+ *! @returns
+ *!  Returns 0 if the requested mode isn't supported under any bit depth, or the
+ *!  bits-per-pixel of the closest available mode with the given width, height
+ *!  and @[SDL.Surface] flags.
+ *!
+ *! @seealso
+ *!  @[SDL.Surface], @[SDL.set_video_mode()], @[SDL.get_video_info()]
+ */
+PIKEFUN int video_mode_ok(int width, int height, int bpp, int flags) {
+  RETURN SDL_VideoModeOK(width, height, bpp, flags);
+}
+
+
+/*! @decl int flip(SDL.Surface|void screen)
+ *! On  hardware that supports double-buffering, this function
+ *! sets up a flip and returns. The  hardware  will  wait  for
+ *! vertical  retrace,  and then swap video buffers before the
+ *! next video surface blit or lock will return.  On  hardware
+ *! that  doesn't support double-buffering, this is equivalent
+ *! to calling @[SDL.update_rect(screen, 0, 0, 0, 0)]
+ *!
+ *! The  @[SDL.DOUBLEBUF] flag must have been passed to
+ *! @[SDL.set_video_mode()] when setting the video mode for this
+ *! function to perform hardware flipping.
+ *!
+ *! @param screen
+ *!  The screen object to flip. If missing, the default screen is used.
+ *! @returns
+ *!  This function returns 1 if successful, or 0 if there was an error.
+ *!
+ *! @seealso
+ *!  @[SDL.update_rect()]
+ */
+
+PIKEFUN int flip(object|void screen) {
+  SDL_Surface *vs = NULL;
+  if(!screen) {
+    vs = SDL_GetVideoSurface();
+  } else {
+    CHECK_CLASS(screen, Surface, 5);
+    if (OBJ2_SURFACE(screen)->generation != video_generation)
+      Pike_error("Uninitialized screen Surface.\n");
+    vs = OBJ2_SURFACE(screen)->_s;
+  }
+  RETURN SDL_Flip(vs) == 0;
+}
+
+/*PIKEFUN void SDL_UpdateRects(object|void screen, int numrects, array rects);*/
+
+/*! @decl void update_rect(int x, int y, int w, int h, SDL.Surface|void screen)
+ *!
+ *! Makes sure the given area is updated on the given screen.  The
+ *! rectangle must be confined within the screen boundaries (no clipping
+ *! is done).
+ *!
+ *! If 'x', 'y', 'w' and 'h' are all 0, @[SDL.update_rect()] will update
+ *! the entire screen.
+ *!
+ *! This function should not be called while @[screen] is locked.
+ *!
+ *! @param x
+ *! @param y
+ *!  Top left corner of the rectangle to update.
+ *! @param w
+ *! @param h
+ *!  Width and height of the rectangle to update.
+ *! @param screen
+ *!  The screen object to flip. If missing, the default screen is used.
+ *! @seealso
+ *!  @[SDL.flip()]
+ */
+PIKEFUN void update_rect(int x, int y, int w, int h, object|void screen) {
+  SDL_Surface *vs;
+  if(!screen) {
+    vs = SDL_GetVideoSurface();
+  } else {
+    CHECK_CLASS(screen, Surface, 5);
+    if (OBJ2_SURFACE(screen)->generation != video_generation)
+      Pike_error("Uninitialized screen Surface.\n");
+    vs = OBJ2_SURFACE(screen)->_s;
+  }
+  SDL_UpdateRect(vs, x, y, w, h);
+}
+
+/*! @decl int set_gamma(float red, float green, float blue)
+ *!
+ *! @fixme
+ *!   Document this function
+ */
+PIKEFUN int set_gamma(float red, float green, float blue) {
+  RETURN SDL_SetGamma(red, green, blue);
+}
+
+/*! @decl void|object get_video_surface()
+ *!
+ *! Returns the current display surface.
+ *!
+ *! If SDL is doing format conversion on the display surface, this method
+ *! returns the publicly visible surface, not the real video surface.
+ *!
+ *! @returns
+ *!   The current display surface, or 0 if there is no display surface.
+ *!
+ *! @seealso
+ *!   @[SDL.set_video_mode()]
+ */
+PIKEFUN void|object get_video_surface()
+{
+  SDL_Surface *screen = SDL_GetVideoSurface();
+  if(screen != NULL) {
+    struct object *surface = clone_object( Surface_program, 0 );
+    /* to avoid freeing when the new Surface class is destroyed */
+    screen->refcount ++;
+    OBJ2_SURFACE(surface)->_s = screen;
+    push_object(surface);
+    return;
+  }
+  push_int(0);
+}
+
+/*! @decl void|object get_video_info()
+ *!
+ *! @returns
+ *!  Returns an @[SDL.VideoInfo] object, which holds information about the video
+ *!  hardware, or 0 if the video device has not yet been initialized (with a
+ *!  call to @[SDL.init()]).
+ */
+PIKEFUN void|object get_video_info()
+{
+  const SDL_VideoInfo *vidinfo = SDL_GetVideoInfo();
+  if(vidinfo != NULL) {
+    struct object *viptr = clone_object( VideoInfo_program, 0 );
+    /* to avoid freeing when the new Surface class is destroyed */
+    OBJ2_VIDEOINFO(viptr)->vidinfo = vidinfo;
+    push_object(viptr);
+    return;
+  }
+  push_int(0);
+}
+
+/*! @decl void gl_set_attribute(int attribute, int value)
+ *!
+ *! Sets an SDL/OpenGL attribute to the given value.
+ *!
+ *! This won't take effect until after a call to @[SDL.set_video_mode()].
+ *!
+ *! @param attribute
+ *!  The attribute to set.  This will be one of @[SDL.GL_RED_SIZE],
+ *!  @[SDL.GL_GREEN_SIZE], @[SDL.GL_BLUE_SIZE],
+ *!  @[SDL.GL_DEPTH_SIZE] or @[SDL.GL_DOUBLEBUFFER].
+ *!
+ *! @param value
+ *!  The value to set for this attribute.
+ *!
+ *! @seealso
+ *!  @[SDL.gl_get_attribute()]
+ */
+PIKEFUN void gl_set_attribute( int attribute, int value )
+{
+  SDL_GL_SetAttribute( attribute, value );
+}
+
+/*! @decl int gl_get_attribute(int attribute)
+ *!
+ *! Returns the value of the given SDL/OpenGL attribute.  You might want
+ *! to call this after @[SDL.set_video_mode()] to check that attributes
+ *! have been set as you expected.
+ *!
+ *! @param attribute
+ *!  The SDL/OpenGL attribute to query.
+ *!
+ *! @returns
+ *!  The value of the given attribute.
+ *!
+ *! @example
+ *!   @code
+ *!     // Has double-buffering been set?
+ *!     int db = SDL.gl_get_attribute( SDL.GL_DOUBLEBUFFER );
+ *!     if ( db )
+ *!     {
+ *!       // yes...
+ *!   @endcode
+ */
+PIKEFUN int gl_get_attribute( int attribute )
+{
+  int res;
+  SDL_GL_GetAttribute( attribute, &res );
+  RETURN res;
+}
+
+/*! @decl int show_cursor(int show)
+ *!
+ *! Sets the state of the mouse cursor on the SDL screen (visible or hidden),
+ *! or queries its current state.
+ *!
+ *! By default, the cursor is visible.
+ *!
+ *! @param show
+ *!  One of these constants:
+ *!   @dl
+ *!    @item SDL.ENABLE
+ *!     Show the cursor.
+ *!    @item SDL.DISABLE
+ *!     Hide the cursor.
+ *!    @item SDL.QUERY
+ *!     Determine the current state of the cursor.
+ *!   @enddl
+ *!
+ *! @returns
+ *!  The current state of the mouse cursor, either @[SDL.ENABLE] or
+ *!  @[SDL.DISABLE].
+ */
+PIKEFUN int show_cursor( int show )
+{
+  RETURN SDL_ShowCursor( show );
+}
+
+/*! @decl void warp_mouse(int xpos, int ypos)
+ *!
+ *! Sets the position of the mouse cursor to the given coordinates.
+ *! This generates an @tt{SDL.MOUSEMOTION@} event.
+ *!
+ *! @param xpos
+ *!  Requested position of the mouse cursor along the x-axis.
+ *! @param ypos
+ *!  Requested position of the mouse cursor along the y-axis.
+ */
+PIKEFUN void warp_mouse( int xpos, int ypos )
+{
+  SDL_WarpMouse( xpos, ypos );
+}
+
+/*! @decl void gl_swap_buffers()
+ *!
+ *! Swaps the OpenGL buffers on a double-buffered screen.
+ *!
+ *! @seealso
+ *!  @[SDL.gl_set_attribute()], @[SDL.gl_get_attribute()],
+ *!  @[SDL.set_video_mode()]
+ */
+
+PIKEFUN void gl_swap_buffers( )
+{
+  THREADS_ALLOW();
+  SDL_GL_SwapBuffers( );
+  THREADS_DISALLOW();
+}
+
+/*! @decl object set_video_mode(int width, int height, int bpp, int flags)
+ *!
+ *! Sets up a video mode with the specified width, height and bits per pixel.
+ *!
+ *! @param width
+ *!  The desired width.  Setting this to <= 0 results in an SDL error.
+ *! @param height
+ *!  The desired height.  Setting this to <= 0 results in an SDL error.
+ *! @param bpp
+ *!  The bits per pixel.  This should be either 0, 8, 16, 24 or 32.  If you set
+ *!  this to 0, the bits-per-pixel value of the current display will be used.
+ *! @param flags
+ *!  An OR'd combination of the desired @[SDL.Surface] flags.
+ *!
+ *! @returns
+ *!  The framebuffer surface.  An error is thrown if the video mode can't be
+ *!  set.
+ *!
+ *! @seealso
+ *!  @[SDL.Surface], @[SDL.video_mode_ok()]
+ */
+PIKEFUN object set_video_mode(int width, int height, int bpp, int flags)
+{
+  if(width <= 0 || height <= 0) { /* To avoid core dump in SDL */
+    SDL_SetError("Tried to open window with width and/or height smaller than 1.");
+  } else {
+    SDL_Surface *screen = NULL;
+    switch(bpp) { /* Switch to avoid coredump in SDL */
+    case 0: case 8: case 16: case 24: case 32:
+      screen = SDL_SetVideoMode(width, height, bpp, flags);
+      if(screen != NULL) {
+	struct object *surface = clone_object( Surface_program, 0 );
+	/* to avoid freeing when the new Surface class is destroyed, since
+	 * it's a reference to the screen surface, which SDL handles.
+	 */
+	screen->refcount ++;
+	OBJ2_SURFACE(surface)->_s = screen;
+	pop_n_elems(args);
+	push_object(surface);
+	return;
+      }
+      break;
+    default:
+      SDL_SetError("Invalid bpp, expected 0, 8, 16, 24 or 32.");
+    }
+  }
+  Pike_error("Failed to set video mode: %s\n", SDL_GetError());
+}
+
+/*! @decl int blit_surface(SDL.Surface src, SDL.Surface dst,@
+ *!                        SDL.Rect|void srcrect, SDL.Rect|void dstrect)
+ *!
+ *! Peforms a fast blit from the source surface to the destination surface.
+ *!
+ *! The final blit rectangle is stored in @tt{dstrect@}.  This may differ from
+ *! @tt{srcrect@} if there was clipping.
+ *!
+ *! This function should not be called on a locked surface.
+ *!
+ *! @param src
+ *!  The surface to be copied.
+ *! @param dst
+ *!  The destination surface.  This will usually be your main screen,
+ *!  initialized with a call to @[SDL.set_video_mode()].
+ *! @param srcrect
+ *!  The rectangular section of @tt{src@} to copy.  If the whole surface is to
+ *!  be copied, you can set this to @tt{0@}.
+ *! @param dstrect
+ *!  Where the source surface should be copied to on the destination surface.
+ *!  Only the @tt{x@} and @tt{y@} fields of the @[SDL.Rect] object are used.
+ *!  To copy @tt{src@} to the top-left corner of @tt{dst@}, i.e. at coordinates
+ *!  <0,0>, you can set this to @tt{0@}.
+ *!
+ *! @returns
+ *!  If successful, 0, otherwise -1.
+ *!
+ *! @seealso
+ *!  @[SDL.Surface()->blit()]
+ */
+PIKEFUN int blit_surface(object src, object dst,
+			 object|void _srcrect,
+			 object|void _dstrect) {
+  SDL_Rect *srcrect = NULL, *dstrect = NULL;
+  CHECK_CLASS(src, Surface, 1);
+  CHECK_CLASS(dst, Surface, 2);
+  if (OBJ2_SURFACE(src)->generation != video_generation)
+    Pike_error("Uninitialized source Surface.\n");
+  if (OBJ2_SURFACE(dst)->generation != video_generation)
+    Pike_error("Uninitialized destination Surface.\n");
+  if(_srcrect) {
+    CHECK_CLASS(_srcrect, Rect, 3);
+    srcrect = &(OBJ2_RECT(_srcrect)->rect);
+  }
+  if(_dstrect) {
+    CHECK_CLASS(_dstrect, Rect, 4);
+    dstrect = &(OBJ2_RECT(_dstrect)->rect);
+  }
+
+  RETURN SDL_BlitSurface(OBJ2_SURFACE(src)->_s, srcrect,
+			 OBJ2_SURFACE(dst)->_s, dstrect);
+}
+
+/*! @decl void|string video_driver_name()
+ *!
+ *! Obtains the name of the video driver.  This is a simple one-word identifier
+ *! such as 'x11' or 'windib'.
+ *!
+ *! @returns
+ *!  The name of the video driver, or 0 if video has not yet been initialized
+ *!  (with a call to @[SDL.init()]).
+ */
+PIKEFUN void|string video_driver_name() {
+  char tmp[256];
+  tmp[0] = 0;
+  SDL_VideoDriverName(tmp, 255);
+  if(!*tmp) {
+    push_int(0);
+    return;
+  }
+  push_text(tmp);
+}
+
+/*! @decl void set_caption(string title, string icon)
+ *!
+ *! Sets the window's title and icon name.  Icon name refers to the text
+ *! that appears next to the application's icon in its minimized window.
+ *!
+ *! @param title
+ *!  The window's title.
+ *!
+ *! @param icon
+ *!  The minimized window's icon name.
+ *!
+ *! @seealso
+ *!  @[SDL.get_caption()]
+ */
+PIKEFUN void set_caption(string title, string icon) {
+  SDL_WM_SetCaption(title->str, icon->str);
+}
+
+/*! @decl array(string) get_caption()
+ *!
+ *! @returns
+ *!  A 2-element array holding the window title and icon name.
+ *!
+ *! @seealso
+ *!  @[SDL.set_caption()]
+ */
+PIKEFUN array(string) get_caption() {
+  char *title, *icon;
+  SDL_WM_GetCaption(&title, &icon);
+  pop_n_elems(args);
+  push_text(title == NULL ? "" : title);
+  push_text(icon == NULL ? "" : icon);
+  f_aggregate(2);
+}
+
+/*! @decl int iconify_window()
+ *!
+ *! Attempts to iconify (i.e. minimize) the application window.
+ *!
+ *! If the call is successful, the application will receive an
+ *! @[SDL.APPACTIVE] loss event.
+ *!
+ *! @returns
+ *!  Non-zero if successful, otherwise @expr{0@}.
+ */
+PIKEFUN int iconify_window() {
+  RETURN SDL_WM_IconifyWindow();
+}
+
+/*! @decl int toggle_fullscreen(void|SDL.Surface screen)
+ *!
+ *! Toggles the application between windowed and fullscreen mode, if supported.
+ *! X11 is the only target currently supported.
+ *!
+ *! @param screen
+ *!   The framebuffer surface, as returned by @[SDL.set_video_mode()].
+ *!
+ *! @returns
+ *!   Returns 1 on success or 0 on failure.
+ */
+PIKEFUN int toggle_fullscreen(void|object screen) {
+  SDL_Surface *vs = 0;
+  if(!screen) {
+    vs = SDL_GetVideoSurface();
+  } else {
+    CHECK_CLASS(screen, Surface, 1);
+    if (OBJ2_SURFACE(screen)->generation != video_generation)
+      Pike_error("Uninitialized screen Surface.\n");
+    vs = OBJ2_SURFACE(screen)->_s;
+  }
+  if(!vs) { RETURN -1; }
+  RETURN SDL_WM_ToggleFullScreen(vs);
+}
+
+/*! @decl int grab_input(int mode)
+ *!
+ *! Sets or queries the current 'grab' mode.
+ *!
+ *! Grabbing input means asking that all mouse activity be confined to
+ *! this application window and that nearly all keyboard events are
+ *! passed directly to the application, bypassing the window manager.
+ *!
+ *! @param mode
+ *!  One of the following constants:
+ *!   @dl
+ *!    @item
+ *!     @[SDL.GRAB_ON]
+ *!    @item
+ *!     @[SDL.GRAB_OFF]
+ *!    @item
+ *!     @[SDL.GRAB_QUERY]
+ *!   @enddl
+ *!
+ *! @returns
+ *!  The current grab mode, either @[SDL.GRAB_ON] or @[SDL.GRAB_OFF].
+ */
+PIKEFUN int grab_input(int mode) {
+  RETURN SDL_WM_GrabInput(mode);
+}
+
+/* Joystick related functionality */
+
+#ifdef HAVE_LIBSDL_JOYSTICK
+
+/*! @class Joystick
+ *!
+ *! Represents a joystick, gamepad or other similar input device attached
+ *! to the system.
+ *!
+ *! You must call @[SDL.init()] with the @[SDL.INIT_JOYSTICK] flag to
+ *! enable joystick support.
+ *!
+ *! All index numbers count from @expr{0@}.
+ *!
+ *! All @[SDL.Joystick] methods throw an exception if they are called on
+ *! an uninitialized object.
+ */
+
+#define CHECK_INIT() if((THIS->generation != joystick_generation) || (THIS->joystick == NULL)) { Pike_error("Joystick uninitialized!\n"); }
+PIKECLASS Joystick {
+  CVAR SDL_Joystick *joystick;
+  CVAR int generation;
+
+  INIT {
+    THIS->joystick = NULL;
+    THIS->generation = joystick_generation;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    if((THIS->generation == joystick_generation) && (THIS->joystick != NULL)) {
+      SDL_JoystickClose(THIS->joystick);
+      THIS->joystick = NULL;
+    }
+  }
+
+  /*! @decl void create(int device_index)
+   *!
+   *! Opens the given joystick device for use.
+   *!
+   *! @param device_index
+   *!  The @i{n@}th joystick device available to the system.
+   *!
+   *! @seealso
+   *!  @[SDL.num_joysticks()]
+   */
+  PIKEFUN void create(int device_index) {
+    THIS->joystick = SDL_JoystickOpen(device_index);
+    if(!THIS->joystick) {
+      Pike_error("Failed to open joystick %"PRINTPIKEINT"d: %s\n", device_index,
+		 SDL_GetError());
+    }
+    THIS->generation = joystick_generation;
+  }
+
+  /*! @decl int index()
+   *!
+   *! @returns
+   *!  The index of this joystick.
+   */
+  PIKEFUN int index() {
+    CHECK_INIT();
+    RETURN SDL_JoystickIndex(THIS->joystick);
+  }
+
+  /*! @decl int num_axes()
+   *!
+   *! @returns
+   *!  The number of axes available for this joystick.
+   */
+  PIKEFUN int num_axes() {
+    CHECK_INIT();
+    RETURN SDL_JoystickNumAxes(THIS->joystick);
+  }
+
+  /*! @decl int num_balls()
+   *!
+   *! @returns
+   *!  The number of trackballs available for this joystick.
+   */
+  PIKEFUN int num_balls() {
+    CHECK_INIT();
+    RETURN SDL_JoystickNumBalls(THIS->joystick);
+  }
+
+  /*! @decl int num_hats()
+   *!
+   *! @returns
+   *!  The number of hats available for this joystick.
+   */
+  PIKEFUN int num_hats() {
+    CHECK_INIT();
+    RETURN SDL_JoystickNumHats(THIS->joystick);
+  }
+
+  /*! @decl int num_buttons()
+   *!
+   *! @returns
+   *!  The number of buttons available for this joystick.
+   */
+  PIKEFUN int num_buttons() {
+    CHECK_INIT();
+    RETURN SDL_JoystickNumButtons(THIS->joystick);
+  }
+
+  /*! @decl float get_axis(int axis)
+   *!
+   *! Returns the current position of the given axis.
+   *!
+   *! The returned value is a float between @expr{-1.0@} and @expr{1.0@}.
+   *!
+   *! @param axis
+   *!  The axis index.
+   *!
+   *! @returns
+   *!  The current position of the given axis.
+   *!
+   *! @seealso
+   *!  @[num_axes()]
+   */
+  PIKEFUN float get_axis(int axis) {
+    int axis_value;
+    CHECK_INIT();
+    axis_value = SDL_JoystickGetAxis(THIS->joystick, axis);
+    RETURN (FLOAT_TYPE)axis_value / (FLOAT_TYPE)32768;
+  }
+
+  /*! @decl int get_hat(int hat)
+   *!
+   *! Returns the current state of the given hat.
+   *!
+   *! This is represented as an OR'd combination of one or more of the
+   *! following constants:
+   *!
+   *! @dl
+   *!   @item
+   *!     @[SDL.HAT_CENTERED]
+   *!   @item
+   *!     @[SDL.HAT_UP]
+   *!   @item
+   *!     @[SDL.HAT_RIGHT]
+   *!   @item
+   *!     @[SDL.HAT_DOWN]
+   *!   @item
+   *!     @[SDL.HAT_LEFT]
+   *!   @item
+   *!     @[SDL.HAT_RIGHTUP]
+   *!   @item
+   *!     @[SDL.HAT_RIGHTDOWN]
+   *!   @item
+   *!     @[SDL.HAT_LEFTUP]
+   *!   @item
+   *!     @[SDL.HAT_LEFTDOWN]
+   *! @enddl
+   *!
+   *! @param hat
+   *!  The hat index.
+   *!
+   *! @returns
+   *!  The current state of the given hat.
+   *!
+   *! @seealso
+   *!  @[num_hats()]
+   */
+  PIKEFUN int get_hat(int hat) {
+    CHECK_INIT();
+    RETURN SDL_JoystickGetHat(THIS->joystick, hat);
+  }
+
+  /*! @decl array(int) get_ball(int ball)
+   *!
+   *! Returns the axis change of the given trackball.
+   *!
+   *! This is its relative motion along both axes since the last call to
+   *! @[get_ball()]. It is returned as a 2-element array holding the values
+   *! of @i{dx@} and @i{dy@} (- the motion deltas).
+   *!
+   *! @returns
+   *!  The axis change of the given trackball.
+   *!
+   *! @seealso
+   *!  @[num_balls()]
+   */
+  PIKEFUN array(int) get_ball(int ball) {
+    int dx, dy;
+    CHECK_INIT();
+    SDL_JoystickGetBall(THIS->joystick, ball, &dx, &dy);
+    pop_n_elems(args);
+    push_int(dx);
+    push_int(dy);
+    f_aggregate(2);
+  }
+
+  /*! @decl int get_button(int button)
+   *!
+   *! Returns the current state of the given button.
+   *!
+   *! This is @expr{1@} if the button is pressed, otherwise @expr{0@}.
+   *!
+   *! @param button
+   *!  The button index.
+   *!
+   *! @returns
+   *!  The current state of the given button.
+   *!
+   *! @seealso
+   *!  @[num_buttons()]
+   */
+  PIKEFUN int get_button(int button) {
+    CHECK_INIT();
+    RETURN SDL_JoystickGetButton(THIS->joystick, button);
+  }
+
+  /*! @decl string name()
+   *!
+   *! @returns
+   *!  The implementation-dependent name of this joystick.
+   *!
+   *! @seealso
+   *!  @[SDL.joystick_name()]
+   */
+  PIKEFUN string name() {
+    const char *name;
+    CHECK_INIT();
+    name = SDL_JoystickName(SDL_JoystickIndex(THIS->joystick));
+    pop_n_elems(args);
+    if(name == NULL) {
+      push_int(0);
+    } else {
+      push_text(name);
+    }
+  }
+}
+#undef CHECK_INIT
+
+/*! @endclass
+ */
+
+/*! @decl void pump_events()
+ *!
+ *! Pumps the event loop, gathering events from the input devices.
+ *!
+ *! Normally you won't need to call this method, as it's called implicitly
+ *! by @[SDL.Event->poll()].
+ *!
+ *! @seealso
+ *!  @[get_key_state()], @[get_mod_state()]
+ */
+PIKEFUN void pump_events() {
+  SDL_PumpEvents();
+}
+
+/*! @decl int num_joysticks()
+ *!
+ *! @returns
+ *!  The number of joysticks available to the system.
+ *!
+ *! @seealso
+ *!  @[SDL.Joystick]
+ */
+PIKEFUN int num_joysticks() {
+  RETURN SDL_NumJoysticks();
+}
+
+/*! @decl string joystick_name(int device_index)
+ *!
+ *! Returns the implementation-dependent name of the @i{n@}th joystick
+ *! device available to the system.
+ *!
+ *! @param device_index
+ *!  The @i{n@}th joystick device.
+ *!
+ *! @returns
+ *!  The implementation-dependent name of the given joystick device.
+ *!
+ *! @seealso
+ *!  @[SDL.Joystick->name()]
+ */
+PIKEFUN string joystick_name(int device_index) {
+  const char *name = SDL_JoystickName(device_index);
+  pop_n_elems(args);
+  if(name == NULL) {
+    push_int(0);
+  } else {
+    push_text(name);
+  }
+}
+
+/*! @decl int joystick_opened(int device_index)
+ *!
+ *! Determines whether the given joystick device has already been opened.
+ *!
+ *! @param device_index
+ *!  The @i{n@}th joystick device.
+ *!
+ *! @returns
+ *!  @expr{1@} if this device has already been opened, otherwise @expr{0@}.
+ */
+PIKEFUN int joystick_opened(int device_index) {
+  RETURN SDL_JoystickOpened(device_index);
+}
+
+/*! @decl void joystick_update()
+ *!
+ *! Updates the state of all open joysticks attached to the system.
+ */
+PIKEFUN void joystick_update() {
+  SDL_JoystickUpdate();
+}
+
+/*! @decl int joystick_event_state(int state)
+ *!
+ *! Enables, disables or queries the state of joystick event processing.
+ *!
+ *! @param state
+ *!  One of the following constants:
+ *!  @dl
+ *!    @item
+ *!     @[SDL.ENABLE]
+ *!
+ *!      Enables joystick event processing.
+ *!    @item
+ *!     @[SDL.IGNORE]
+ *!
+ *!      Disables joystick event processing.
+ *!    @item
+ *!     @[SDL.QUERY]
+ *!
+ *!      Queries the current state and returns it.
+ *!  @enddl
+ *!
+ *! @returns
+ *!   The current state of joystick event processing.  If @[state] was
+ *!   @[SDL.ENABLE] or @[SDL.IGNORE], then processing will now be enabled
+ *!   or disabled, respectively.
+ */
+PIKEFUN int joystick_event_state(int state) {
+  RETURN SDL_JoystickEventState(state);
+}
+#endif
+
+/* CD Related methods */
+
+/*! @class CDTrack
+ *!
+ *! @decl int id
+ *! @decl int length
+ *! @decl int offset
+ *! @decl int type
+ *!
+ *! @fixme
+ *!   Document this variable
+ */
+PIKECLASS CDTrack {
+  CVAR SDL_CDtrack track;
+  INIT {
+    THIS->track.id     = 0;
+    THIS->track.type   = 0;
+    THIS->track.length = 0;
+    THIS->track.offset = 0;
+  }
+  PIKEFUN int `id()
+  {
+    push_int(THIS->track.id);
+  }
+  PIKEFUN int `length()
+  {
+    push_int(THIS->track.length);
+  }
+  PIKEFUN int `offset()
+  {
+    push_int(THIS->track.offset);
+  }
+  PIKEFUN int `type()
+  {
+    push_int(THIS->track.type);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class CD
+ */
+#define CHECK_INIT() if((THIS->generation != cdrom_generation) || (THIS->cd == NULL)) { Pike_error("CD unitialized!\n"); }
+PIKECLASS CD {
+  CVAR SDL_CD *cd;
+  CVAR int generation;
+  INIT {
+    THIS->cd = NULL;
+    THIS->generation = cdrom_generation;
+  }
+  EXIT
+    gc_trivial;
+  {
+    if((THIS->generation == cdrom_generation) && THIS->cd) {
+      SDL_CDClose(THIS->cd);
+      THIS->cd = NULL;
+    };
+  }
+
+  /*! @decl void create(int drive)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN void create(int drive) {
+    THIS->cd = SDL_CDOpen(drive);
+    if(!THIS->cd) {
+      Pike_error("Failed to open CD %"PRINTPIKEINT"d: %s\n", drive, SDL_GetError());
+    }
+    THIS->generation = cdrom_generation;
+  }
+
+  /*! @decl int current_frame
+   *!
+   *! @fixme
+   *!   Document this variable
+   */
+  PIKEFUN int `current_frame()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->cd->cur_frame);
+  }
+
+  /*! @decl int current_track
+   *!
+   *! @fixme
+   *!   Document this variable
+   */
+  PIKEFUN int `current_track()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->cd->cur_track);
+  }
+
+  /*! @decl int id
+   *!
+   *! @fixme
+   *!   Document this variable
+   */
+  PIKEFUN int `id()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->cd->id);
+  }
+
+  /*! @decl int numtracks
+   *!
+   *! @fixme
+   *!   Document this variable
+   */
+  PIKEFUN int `numtracks()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->cd->numtracks);
+  }
+
+  /*! @decl CDTrack track(int track)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN object track(int track) {
+    struct object *trackobj;
+    CHECK_INIT(); /* Make sure this is inited */
+    if(track >= THIS->cd->numtracks || track < 0) {
+      Pike_error("Track ID out of range.\n");
+    }
+    trackobj = clone_object( CDTrack_program, 0 );
+    OBJ2_CDTRACK(trackobj)->track = THIS->cd->track[track];
+    RETURN trackobj;
+  }
+
+  /*! @decl int status()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN int status() {
+    CHECK_INIT(); /* Make sure this is inited */
+    RETURN SDL_CDStatus(THIS->cd);
+  }
+
+  /*! @decl int play(int start, int length)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN int play(int start, int length) {
+    CHECK_INIT(); /* Make sure this is inited */
+    RETURN SDL_CDPlay(THIS->cd, start, length);
+  }
+
+  /*! @decl int play_tracks(int start_track, int start_frame, @
+   *!                       int ntracks, int nframes)
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN int play_tracks(int start_track, int start_frame,
+			  int ntracks, int nframes) {
+    CHECK_INIT(); /* Make sure this is inited */
+    RETURN SDL_CDPlayTracks(THIS->cd, start_track, start_frame,
+			    ntracks, nframes);
+  }
+
+  /*! @decl int pause()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN int pause() {
+    CHECK_INIT(); /* Make sure this is inited */
+    RETURN SDL_CDPause(THIS->cd);
+  }
+
+  /*! @decl int resume()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN int resume() {
+    CHECK_INIT(); /* Make sure this is inited */
+    RETURN SDL_CDResume(THIS->cd);
+  }
+
+  /*! @decl int stop()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN int stop() {
+    CHECK_INIT(); /* Make sure this is inited */
+    RETURN SDL_CDStop(THIS->cd);
+  }
+
+  /*! @decl int eject()
+   *!
+   *! @fixme
+   *!   Document this function
+   */
+  PIKEFUN int eject() {
+    CHECK_INIT(); /* Make sure this is inited */
+    RETURN SDL_CDEject(THIS->cd);
+  }
+}
+#undef CHECK_INIT
+
+/*! @endclass
+ */
+
+/*! @decl int cd_num_drives()
+ *!
+ *! @returns
+ *!  The number of CD-ROM drives on the system.
+ *!
+ *! @seealso
+ *!  @[SDL.cd_name()]
+ */
+PIKEFUN int cd_num_drives() {
+  RETURN SDL_CDNumDrives();
+}
+
+/*! @decl string|void cd_name(int drive)
+ *!
+ *! Returns a human-readable and system-dependent name for the given drive.
+ *!
+ *! @param drive
+ *!  The CD drive index.
+ *!
+ *! @returns
+ *!  A human-readable and system-dependent name for the given drive,
+ *!  or @expr{0@} if no name is available.
+ *!
+ *! @seealso
+ *!  @[SDL.cd_num_drives()]
+ */
+PIKEFUN string|void cd_name(int drive) {
+  const char *name = SDL_CDName(drive);
+  pop_n_elems(args);
+  if(name != NULL) {
+    push_text(name);
+  } else {
+    push_int(0);
+  }
+}
+
+#ifdef HAVE_SDL_MIXER
+/* This section contains all audio code, and it requires the SDL_mixer
+ * library.
+ */
+
+/*! @class Music
+ *!
+ *! Use an @[SDL.Music] object to load in a music file or sample and
+ *! then play it back using an internal player.
+ *!
+ *! You must call @[SDL.init()] with the @[SDL.INIT_AUDIO] flag for
+ *! audio support to be available.  You must also first set up some
+ *! audio parameters with a call to @[SDL.open_audio()].
+ *!
+ *! @seealso
+ *!  @[SDL.open_audio()]
+ */
+PIKECLASS Music {
+  CVAR Mix_Music *music;
+  CVAR int generation;
+
+  INIT {
+    THIS->music = NULL;
+  }
+  EXIT
+    gc_trivial;
+  {
+    if((THIS->generation == audio_generation) && (THIS->music != NULL)) {
+      Mix_FreeMusic(THIS->music);
+      THIS->music = NULL;
+    }
+  }
+
+  /*! @decl void create(string fname)
+   *!
+   *! Loads in the given music file and initializes the object ready
+   *! for playback.
+   *!
+   *! Supported formats are OGG, MP3, MOD, MID and WAV.
+   *!
+   *! An exception is thrown if the file fails to load.
+   *!
+   *! @param fname
+   *!  The name of the music file to be loaded.
+   */
+  PIKEFUN void create(string fname) {
+    if((THIS->generation == audio_generation) && (THIS->music)) {
+      // Since you can manually call this...
+      Mix_FreeMusic(THIS->music);
+    }
+    THIS->music = Mix_LoadMUS(fname->str);
+    if(THIS->music == NULL) {
+      Pike_error("Failed to load %S: %s\n",
+		 fname, SDL_GetError());
+    }
+    THIS->generation = audio_generation;
+  }
+
+  /*! @decl object pause()
+   *!
+   *! Pauses the music playback.
+   *!
+   *! It is safe to call this method when the music is already paused.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
+   *!
+   *! @seealso
+   *!  @[resume()], @[paused()]
+   */
+  PIKEFUN object pause() {
+    Mix_PauseMusic();
+    RET_THIS();
+  }
+
+  /*! @decl object halt()
+   *!
+   *! Stops music playback immediately, including any fader effects.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
+   */
+  PIKEFUN object halt() {
+    Mix_HaltMusic();
+    RET_THIS();
+  }
+
+  /*! @decl object resume()
+   *!
+   *! Resume music playback after a call to @[pause()].
+   *!
+   *! It is safe to call this method when the music isn't paused.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
+   *!
+   *! @seealso
+   *!  @[pause()], @[paused()]
+   */
+  PIKEFUN object resume() {
+    Mix_ResumeMusic();
+    RET_THIS();
+  }
+
+  /*! @decl object rewind()
+   *!
+   *! Rewinds the music to the start and resumes playback.
+   *!
+   *! If the music was paused at the time of this call, you will still
+   *! need to call @[resume()] to restart playback.
+   *!
+   *! This function works only for MOD, OGG, MP3 and Native MIDI streams.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
+   */
+  PIKEFUN object rewind() {
+    Mix_RewindMusic();
+    RET_THIS();
+  }
+
+  /* Status queries */
+  /*! @decl int paused()
+   *!
+   *! Determines if the music is already paused.
+   *!
+   *! @returns
+   *!  @expr{1@} if the music is paused, otherwise @expr{0@}.
+   */
+  PIKEFUN int paused() {
+    RETURN Mix_PausedMusic();
+  }
+
+  /*! @decl int playing()
+   *!
+   *! Determines if the music is already playing.
+   *!
+   *! This method will return @expr{1@} even if the music has been paused.
+   *!
+   *! @returns
+   *!  @expr{1@} if the music is playing, otherwise @expr{0@}.
+   */
+  PIKEFUN int playing() {
+    RETURN Mix_PlayingMusic();
+  }
+
+  /*! @decl int fading()
+   *!
+   *! Determines the current state of fading for this @[SDL.Music] object.
+   *!
+   *! @returns
+   *!  One of the following constants:
+   *!  @dl
+   *!   @item
+   *!    @[SDL.MIX_NO_FADING]
+   *!   @item
+   *!    @[SDL.MIX_FADING_IN]
+   *!   @item
+   *!    @[SDL.MIX_FADING_OUT]
+   *!  @enddl
+   *!
+   *! @seealso
+   *!  @[fade_in()], @[fade_out()]
+   */
+  PIKEFUN int fading() {
+    RETURN Mix_FadingMusic();
+  }
+
+  /*! @decl object play(int|void loops)
+   *!
+   *! Starts playback.  Repeats @tt{loops@} number of times.
+   *!
+   *! @param loops
+   *!  The number of times the music should be looped (i.e. repeated).
+   *!  If @tt{loops@} is @expr{-1@} or omitted, the music will repeat
+   *!  indefinitely.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
+   */
+  PIKEFUN object play(int|void _loops) {
+    int loops = -1;
+    if(_loops) {
+      if(TYPEOF(*_loops) == PIKE_T_INT) {
+	loops = _loops->u.integer;
+      } else {
+	SIMPLE_BAD_ARG_ERROR("Music.play", 1, "void|int");
+      }
+    }
+    Mix_PlayMusic(THIS->music, loops);
+    RET_THIS();
+  }
+
+  /*! @decl object fade_in(int ms, int|void loops)
+   *!
+   *! Fades the music in over the given number of milliseconds.
+   *! Playback is repeated @tt{loops@} number of times.
+   *!
+   *! The fade-in will only happen on the first play, not on subsequent loops.
+   *! Likewise, calling this method on an object that is already playing has
+   *! the same effect as @[rewind()]: playback will start over at the
+   *! beginning but without fading in.
+   *!
+   *! @param ms
+   *!  Music fades in over this number of milliseconds.
+   *!
+   *! @param loops
+   *!  How many times the music should be repeated (looped).
+   *!  Passing a value of @expr{0@} here means the music
+   *!  plays once over - i.e. no repeats.  A value of @expr{-1@}
+   *!  loops the music indefinitely.  This is the default if you
+   *!  don't specify a value.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
+   *!
+   *! @seealso
+   *!  @[fade_out()], @[fading()]
+   */
+  PIKEFUN object fade_in(int ms, int|void _loops) {
+    int loops = -1;
+    if(_loops) {
+      if(TYPEOF(*_loops) == PIKE_T_INT) {
+	loops = _loops->u.integer;
+      } else {
+	SIMPLE_BAD_ARG_ERROR("Music.fade_in", 2, "void|int");
+      }
+    }
+    Mix_FadeInMusic(THIS->music, loops, ms);
+    RET_THIS();
+  }
+
+  /*! @decl object fade_out(int ms)
+   *!
+   *! Fades the music out over the given number of milliseconds.
+   *!
+   *! After @tt{ms@} milliseconds have passed, the music will be stopped;
+   *! i.e. @[playing()] will return @expr{0@}.
+   *!
+   *! @param ms
+   *!  The number of milliseconds it will take to fade out the music,
+   *!  starting from now.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
+   */
+  PIKEFUN object fade_out(int ms) {
+    Mix_FadeOutMusic(ms);
+    RET_THIS();
+  }
+
+  /*! @decl float set_volume(float vol)
+   *!
+   *! Sets the volume for music playback.
+   *!
+   *! @param vol
+   *!  The volume to set.  This is a float value from @expr{0.0@}
+   *!  (silent) to @expr{1.0@} (full volume).  Values
+   *!  above and below these limits will be clamped.
+   *!
+   *! @returns
+   *!  The previous volume setting.
+   */
+  PIKEFUN float set_volume(float vol) {
+    if(vol > 1.0)       { vol = 1.0; }
+    else if(vol < 0.0)  { vol = 0.0; }
+    RETURN (FLOAT_TYPE)Mix_VolumeMusic((int)(128 * vol)) / 128.0;
+  }
+
+  /*! @decl float volume()
+   *!
+   *! @returns
+   *!  The current volume setting.  This is a float value from
+   *!  @expr{0.0@} (silent) to @expr{1.0@} (full volume).
+   */
+  PIKEFUN float volume() {
+    RETURN (FLOAT_TYPE)Mix_VolumeMusic(-1) / 128.0;
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @decl void open_audio(int frequency, int format, int channels, int bufsize)
+ *!
+ *! Initializes the audio API.
+ *!
+ *! Throws an exception if audio can't be initialized.
+ *!
+ *! @param frequency
+ *!  Output sampling frequency, measured in samples per second (Hz).
+ *!  A value of @expr{44100@} provides CD-quality playback.
+ *!  A less CPU-intensive value for games is @expr{22050@}.
+ *!
+ *! @param format
+ *!  Output sample format.  One of the following constants:
+ *!   @dl
+ *!    @item SDL.AUDIO_U8
+ *!     Unsigned 8-bit samples.
+ *!    @item SDL.AUDIO_S8
+ *!     Signed 8-bit samples.
+ *!    @item SDL.AUDIO_U16LSB
+ *!     Unsigned 16-bit samples in little-endian byte order.
+ *!    @item SDL.AUDIO_S16LSB
+ *!     Signed 16-bit samples in little-endian byte order.
+ *!    @item SDL.AUDIO_U16MSB
+ *!     Unsigned 16-bit samples in big-endian byte order.
+ *!    @item SDL.AUDIO_S16MSB
+ *!     Signed 16-bit samples in big-endian byte order.
+ *!    @item SDL.AUDIO_U16
+ *!     Same as SDL.AUDIO_U16LSB.
+ *!    @item SDL.AUDIO_S16
+ *!     Same as SDL.AUDIO_S16LSB.
+ *!    @item SDL.AUDIO_U16SYS
+ *!     Unsigned 16-bit samples in system byte order.
+ *!    @item SDL.AUDIO_S16SYS
+ *!     Signed 16-bit samples in system byte order.
+ *!     If in doubt, try this one first.
+ *!   @enddl
+ *!
+ *! @param channels
+ *!  Number of sound channels in output: @expr{1@} for mono,
+ *!  @expr{2@} for stereo.
+ *!
+ *! @param bufsize
+ *!  How many bytes to use per output sample.
+ *!  @expr{1024@} is a typical value for games.  If just playing
+ *!  music you might set this to @expr{4096@} or higher.
+ */
+PIKEFUN void open_audio(int frequency, int format, int channels, int bufsize) {
+  SDL_InitSubSystem(SDL_INIT_AUDIO); /* Just in case */
+  if(Mix_OpenAudio(frequency, format, channels, bufsize) == -1) {
+    Pike_error("Failed to open audio: %s\n", SDL_GetError());
+  }
+}
+
+/* HAVE_SDL_MIXER */
+#endif
+
+
+/* SDL_event handling */
+
+/*! @class Event
+ */
+PIKECLASS Event {
+  CVAR SDL_Event event;
+
+  INIT {
+    THIS->event.type = SDL_NOEVENT;
+  }
+
+  /*! @decl int get()
+   *!
+   *! Removes the next event (if any) from the queue and stores it in this
+   *! @[SDL.Event] object.
+   *!
+   *! @returns
+   *!  1 if there was an event to 'get', otherwise 0.
+   */
+  PIKEFUN int get() {
+    RETURN SDL_PollEvent(&THIS->event);
+  }
+
+  /*! @decl int wait()
+   *!
+   *! Waits indefinitely for the next available event, which is then removed
+   *! from the queue and stored in this @[SDL.Event] object.
+   *!
+   *! @returns
+   *!  Returns 1 on success, or 0 if there was an error while waiting for the
+   *!  next event.
+   */
+  PIKEFUN int wait() {
+    RETURN SDL_WaitEvent(&THIS->event);
+  }
+
+  /*! @decl int poll()
+   *!
+   *! Polls for currently pending events.
+   *!
+   *! @returns
+   *!  1 if there are currently pending events, otherwise 0.
+   */
+  PIKEFUN int poll() {
+    RETURN SDL_PollEvent(NULL);
+  }
+
+  /*! @decl int axis
+   *! @decl int ball
+   *! @decl int button
+   *! @decl int code
+   *! @decl int gain
+   *! @decl int h
+   *! @decl int hat
+   *! @decl Keysym keysym
+   *! @decl int state
+   *! @decl int type
+   *! @decl int value
+   *! @decl int w
+   *! @decl int which
+   *! @decl int x
+   *! @decl int xrel
+   *! @decl int y
+   *! @decl int yrel
+   */
+
+#define ASSERT_EVENT(TYPE, SYM) do {  \
+    if (THIS->event.type != TYPE) \
+      Pike_error("Event->" SYM " is not valid for this event type. \n"); \
+  } while(0)
+
+  PIKEFUN int `axis()
+  {
+    ASSERT_EVENT(SDL_JOYAXISMOTION, "axis");
+    push_int(THIS->event.jaxis.axis);
+  }
+  PIKEFUN int `ball()
+  {
+    ASSERT_EVENT(SDL_JOYBALLMOTION, "ball");
+    push_int(THIS->event.jball.ball);
+  }
+  PIKEFUN int `button()
+  {
+    switch(THIS->event.type) {
+    case SDL_JOYBUTTONDOWN:
+    case SDL_JOYBUTTONUP:
+      push_int(THIS->event.jbutton.button); return;
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      push_int(THIS->event.button.button); return;
+    default:
+      Pike_error("Event->button is not valid for this event type. \n");
+    }
+  }
+  PIKEFUN int `code()
+  {
+    ASSERT_EVENT(SDL_USEREVENT, "code");
+    push_int(THIS->event.user.code);
+  }
+  PIKEFUN int `gain()
+  {
+    ASSERT_EVENT(SDL_ACTIVEEVENT, "gain");
+    push_int(THIS->event.active.gain);
+  }
+  PIKEFUN int `h()
+  {
+    ASSERT_EVENT(SDL_VIDEORESIZE, "h");
+    push_int(THIS->event.resize.h);
+  }
+  PIKEFUN int `hat()
+  {
+    ASSERT_EVENT(SDL_JOYHATMOTION, "hat");
+    push_int(THIS->event.jhat.hat);
+  }
+  PIKEFUN object `keysym()
+  {
+    struct object *keysym_obj;
+    switch(THIS->event.type) {
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+      keysym_obj = clone_object(Keysym_program, 0);
+      OBJ2_KEYSYM(keysym_obj)->keysym = THIS->event.key.keysym;
+      push_object(keysym_obj);
+      return;
+    default:
+      Pike_error("Event->keysym is not valid for this event type. \n");
+    }
+  }
+  PIKEFUN int `state()
+  {
+    switch(THIS->event.type) {
+    case SDL_ACTIVEEVENT:
+      push_int(THIS->event.active.state); return;
+    case SDL_JOYBUTTONDOWN:
+    case SDL_JOYBUTTONUP:
+      push_int(THIS->event.jbutton.state); return;
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+      push_int(THIS->event.key.state); return;
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      push_int(THIS->event.button.state); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.state); return;
+    default:
+      Pike_error("Event->state is not valid for this event type. \n");
+    }
+  }
+  PIKEFUN int `type()
+  {
+    push_int(THIS->event.type);
+  }
+  PIKEFUN int `value()
+  {
+    switch(THIS->event.type) {
+    case SDL_JOYAXISMOTION:
+      push_int(THIS->event.jaxis.value); return;
+    case SDL_JOYHATMOTION:
+      push_int(THIS->event.jhat.value); return;
+    default:
+      Pike_error("Event->value is not valid for this event type. \n");
+    }
+  }
+  PIKEFUN int `w()
+  {
+    ASSERT_EVENT(SDL_VIDEORESIZE, "w");
+    push_int(THIS->event.resize.w);
+  }
+  PIKEFUN int `which()
+  {
+    switch(THIS->event.type) {
+    case SDL_JOYAXISMOTION:
+      push_int(THIS->event.jaxis.which); return;
+    case SDL_JOYBALLMOTION:
+      push_int(THIS->event.jball.which); return;
+    case SDL_JOYBUTTONDOWN:
+    case SDL_JOYBUTTONUP:
+      push_int(THIS->event.jbutton.which); return;
+    case SDL_JOYHATMOTION:
+      push_int(THIS->event.jhat.which); return;
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+      push_int(THIS->event.key.which); return;
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      push_int(THIS->event.button.which); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.which); return;
+    default:
+      Pike_error("Event->which is not valid for this event type. \n");
+    }
+  }
+  PIKEFUN int `x()
+  {
+    switch(THIS->event.type) {
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      push_int(THIS->event.button.x); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.x); return;
+    default:
+      Pike_error("Event->x is not valid for this event type. \n");
+    }
+  }
+  PIKEFUN int `xrel()
+  {
+    switch(THIS->event.type) {
+    case SDL_JOYBALLMOTION:
+      push_int(THIS->event.jball.xrel); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.xrel); return;
+    default:
+      Pike_error("Event->xrel is not valid for this event type. \n");
+    }
+  }
+  PIKEFUN int `y()
+  {
+    switch(THIS->event.type) {
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      push_int(THIS->event.button.y); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.y); return;
+    default:
+      Pike_error("Event->y is not valid for this event type. \n");
+    }
+  }
+  PIKEFUN int `yrel()
+  {
+    switch(THIS->event.type) {
+    case SDL_JOYBALLMOTION:
+      push_int(THIS->event.jball.yrel); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.yrel); return;
+    default:
+      Pike_error("Event->yrel is not valid for this event type. \n");
+    }
+  }
+}
+
+/*! @endclass
+ */
+
+/* Pike initialization modules below */
+
+PIKE_MODULE_INIT
+{
+  INIT;
+
+  init_sdl_constants();
+
+#ifdef DYNAMIC_MODULE
+  image_program = PIKE_MODULE_IMPORT(Image, image_program);
+  image_color_program = PIKE_MODULE_IMPORT(Image, image_color_program);
+
+  if(!image_program || !image_color_program) {
+    yyerror("Could not load Image module.");
+    return;
+  }
+#endif
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+  SDL_Quit();
+}
+
+
+/*! @endmodule SDL */
+
+#else /* HAVE_SDL */
+
+PIKE_MODULE_INIT {
+}
+PIKE_MODULE_EXIT {
+}
+#endif /* HAVE_SDL */

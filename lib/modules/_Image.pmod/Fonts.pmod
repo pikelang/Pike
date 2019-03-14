@@ -1,29 +1,36 @@
+#pike __REAL_VERSION__
+
 //! @appears Image.Fonts
-//! Abstracted Font-handling support
+//! Abstracted Font-handling support. Should be used instead of
+//! accessing the @[FreeType], @[TTF] and @[Image.Font] modules directly.
 
 constant ITALIC = 1;
-//! The font is/should be italic
+//! The font is/should be italic.
 
 constant BOLD   = 2;
-//! The font is/should be bold
+//! The font is/should be bold.
 
-constant BLACK  = 6; // Also enables BOLD..
-
+constant BLACK  = 6;
+//! The font is/should be black.
+//!
+//! @note
+//!   This also implies @[BOLD].
 
 constant NO_FAKE  = 256; 
 //! Used in @[open_font]() to specify that no fake bold or italic
 //! should be attempted.
 
 #if constant(Image.FreeType.Face)
-static class FTFont
+//! FreeType 2.x font.
+class FTFont
 {
   constant driver = "FreeType 2";
 
   Thread.Mutex lock = Thread.Mutex();
-  static Image.FreeType.Face face;
-  static int size;
-  static int xspacing;
-  static int line_height;
+  Image.FreeType.Face face;
+  protected int size;
+  protected int xspacing;
+  protected int line_height;
 
   mapping(string:mixed) info()
   {
@@ -49,7 +56,7 @@ static class FTFont
     return line_height;
   }
 
-  static mixed do_write_char( int c )
+  protected mixed do_write_char( int c )
   {
     catch{
       return face->write_char( c );
@@ -57,11 +64,11 @@ static class FTFont
     return 0;
   }
 
-  static Image.Image write_row( string text )
+  protected Image.Image write_row( string text )
   {
     Image.Image res;
     int xp, ys;
-    if( !strlen( text ) )
+    if( !sizeof( text ) )
       text = " ";
     array(int) tx = (array(int))text;
     array chars = map( tx, do_write_char );
@@ -111,6 +118,12 @@ static class FTFont
     return res;
   }
 
+  int advance( int character )
+  {
+    mapping m = do_write_char( character );
+    if( m )
+      return m->advance;
+  }
   
   Image.Image write( string ... text )
   {
@@ -151,14 +164,15 @@ static class FTFont
 #endif
 
 #if constant(Image.TTF)
+//! FreeType 1.x font.
 class TTFont
 {
   constant driver = "FreeType 1";
 
-  static object real;
-  static int size;
+  protected object real;
+  protected int size;
 
-  static int translate_ttf_style( string style )
+  protected int translate_ttf_style( string style )
   {
     switch( lower_case( (style-"-")-" " ) )
     {
@@ -208,7 +222,7 @@ class TTFont
     array(Image.Image) res = map( what, real->write );
 
     Image.Image rr = Image.Image( max(0,@res->xsize()),
-                                  abs(`+(0,res->ysize())));
+                                  abs(`+(0,@res->ysize())));
     
     int start = 0;
     foreach( res, object r )
@@ -229,20 +243,25 @@ class TTFont
 #endif
 
 
-class Font( static string file,
-	    static int size )
+class Font( protected string file,
+	    protected int size )
 //! The abstract Font class. The @[file] is a valid font-file, @[size]
 //! is in pixels, but the size of the characters to be rendered, not
 //! the height of the finished image (the image is generally speaking
 //! bigger then the size of the characters).
 {
-  static object font;
-  static object codec;
-  
-  static int fake_bold;
-  static int fake_italic;
+  object font;
+  protected object codec;
 
-  static void open_font( )
+  protected int fake_bold;
+  protected int fake_italic;
+
+  string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(%O, %d)", this_program, file, size);
+  }
+
+  protected void open_font( )
   {
     switch( file )
     {
@@ -256,7 +275,7 @@ class Font( static string file,
 	    ->add_container( "encoding", 
 			     lambda(Parser.HTML p,
 				    mapping m, string enc) {
-			       codec=Locale.Charset.encoder(enc,"");
+			       codec=Charset.encoder(enc,"");
 			     } )
 	    ->feed( Stdio.read_file( file+".properties" ) )
 	    ->read();
@@ -280,16 +299,16 @@ class Font( static string file,
     }
   }
 
-  static Image.Image post_process( Image.Image rr )
+  protected Image.Image post_process( Image.Image rr )
   {
     if( fake_bold > 0 )
     {
-      object r2 = Image.Image( rr->xsize()+2, rr->ysize() );
+      object r2 = Image.Image( rr->xsize()+fake_bold+2, rr->ysize() );
       object r3 = rr*0.5;
       for( int i = 0; i<=fake_bold; i++ )
 	for( int j = 0; j<=fake_bold; j++ )
 	  r2->paste_alpha_color( r3,  255, 255, 255, i, j-2 );
-      rr = r2->paste_alpha_color( rr, 255,255,255, 1, -1 );
+        rr = r2->paste_alpha_color( rr, 255,255,255, 1, -1 );
     }
 
     // FIXME: Should skewx line-by-line.
@@ -359,10 +378,10 @@ class Font( static string file,
   }
 }
 
-static mapping fontlist = ([]);
-static array font_dirs = ({});
+protected mapping fontlist = ([]);
+protected array font_dirs = ({});
 
-static void rescan_fontlist()
+protected void rescan_fontlist()
 {
   fontlist = ([]);
   foreach( font_dirs, string f )
@@ -428,7 +447,7 @@ Font open_font( string fontname, int size, int flags, int|void force )
 	    int t;
 	    if( (t=((m->style & BLACK) == (flags&BLACK)) +
 		 ((m->style & ITALIC) == (flags&ITALIC)))
-		< best )
+		> best )
 	    {
 	      best = t;
 	      res = m;
@@ -471,11 +490,19 @@ void set_font_dirs( array(string) directories )
 }
 
 
-void create()
+protected void create()
 {
 #ifdef __NT__
-  set_font_dirs( ({combine_path(replace(getenv("SystemRoot"),
-					"\\","/"),"fonts/")}) );
+  string root = getenv("SystemRoot");
+  if(root)
+    root = replace(root, "\\", "/");
+  else if(file_stat("C:/WINDOWS/"))
+    root = "C:/WINDOWS/";
+  else if(file_stat("C:/WINNT/"))
+    root = "C:/WINNT/";
+
+  if(root)
+    set_font_dirs( ({ combine_path(root, "fonts/")}) );
 #else
   array dirs = ({});
   foreach( ({"/usr/openwin/lib/X11/fonts/TrueType/",

@@ -1,24 +1,22 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "dynamic_buffer.h"
 #include "stralloc.h"
 #include "pike_error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.13 2000/12/01 08:09:45 hubbe Exp $");
+PMOD_EXPORT dynamic_buffer pike_global_buffer;
 
-static dynamic_buffer buff;
-
-PMOD_EXPORT char *low_make_buf_space(size_t space, dynamic_buffer *buf)
+PMOD_EXPORT char *low_make_buf_space(ptrdiff_t space, dynamic_buffer *buf)
 {
   char *ret;
 #ifdef PIKE_DEBUG
-  if(!buf->s.str) fatal("ARRRRGH! Deadly Trap!\n");
+  if(!buf->s.str) Pike_fatal("ARRRRGH! Deadly Trap!\n");
 #endif
 
   if(buf->s.len+space >= buf->bufsize)
@@ -29,20 +27,20 @@ PMOD_EXPORT char *low_make_buf_space(size_t space, dynamic_buffer *buf)
       buf->bufsize*=2;
     }while(buf->s.len+space >= buf->bufsize);
 
-    buf->s.str=(char *)realloc(buf->s.str, buf->bufsize);
+    buf->s.str=realloc(buf->s.str, buf->bufsize);
     if(!buf->s.str)
-      Pike_error("Out of memory.\n");
+      Pike_fatal("Out of memory.\n");
   }
   ret = buf->s.str + buf->s.len;
   buf->s.len += space;
   return ret;
 }
 
-PMOD_EXPORT void low_my_putchar(char b,dynamic_buffer *buf)
+PMOD_EXPORT void low_my_putchar(int b,dynamic_buffer *buf)
 {
 #ifdef PIKE_DEBUG
   if(!buf->s.str)
-    fatal("Error in internal buffering.\n");
+    Pike_fatal("Error in internal buffering.\n");
 #endif
   low_make_buf_space(1,buf)[0]=b;
 }
@@ -52,7 +50,7 @@ PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l,
 {
 #ifdef PIKE_DEBUG
   if(!buf->s.str)
-    fatal("Error in internal buffering.\n");
+    Pike_fatal("Error in internal buffering.\n");
 #endif
 
   MEMCPY(low_make_buf_space(l, buf),b, l);
@@ -60,7 +58,7 @@ PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l,
 
 PMOD_EXPORT void debug_initialize_buf(dynamic_buffer *buf)
 {
-  buf->s.str=(char *)xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
+  buf->s.str=xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
   *(buf->s.str)=0;
   buf->s.len=0;
 }
@@ -76,7 +74,7 @@ PMOD_EXPORT void low_reinit_buf(dynamic_buffer *buf)
   }
 }
 
-PMOD_EXPORT void low_init_buf_with_string(string s, dynamic_buffer *buf)
+PMOD_EXPORT void low_init_buf_with_string(dynbuf_string s, dynamic_buffer *buf)
 {
   if(buf->s.str) { free(buf->s.str); buf->s.str=NULL; } 
   buf->s=s;
@@ -87,18 +85,18 @@ PMOD_EXPORT void low_init_buf_with_string(string s, dynamic_buffer *buf)
   buf->s.str=realloc(buf->s.str,buf->bufsize);
 #ifdef PIKE_DEBUG
   if(!buf->s.str)
-    fatal("Realloc failed.\n");
+    Pike_fatal("Realloc failed.\n");
 #endif
 }
 
-PMOD_EXPORT string complex_free_buf(void)
+PMOD_EXPORT dynbuf_string complex_free_buf(dynamic_buffer *old_buf)
 {
-  string tmp;
-  if(!buff.s.str) return buff.s;
+  dynbuf_string tmp;
+  if(!pike_global_buffer.s.str) return pike_global_buffer.s;
   my_putchar(0);
-  buff.s.len--;
-  tmp=buff.s;
-  buff.s.str=0;
+  pike_global_buffer.s.len--;
+  tmp=pike_global_buffer.s;
+  pike_global_buffer = *old_buf;
   return tmp;
 }
 
@@ -108,10 +106,10 @@ PMOD_EXPORT void toss_buffer(dynamic_buffer *buf)
   buf->s.str=0;
 }
 
-PMOD_EXPORT char *simple_free_buf(void)
+PMOD_EXPORT char *simple_free_buf(dynamic_buffer *old_buf)
 {
-  if(!buff.s.str) return 0;
-  return complex_free_buf().str;
+  if(!pike_global_buffer.s.str) return 0;
+  return complex_free_buf(old_buf).str;
 }
 
 PMOD_EXPORT struct pike_string *debug_low_free_buf(dynamic_buffer *buf)
@@ -125,17 +123,74 @@ PMOD_EXPORT struct pike_string *debug_low_free_buf(dynamic_buffer *buf)
   return q;
 }
 
-PMOD_EXPORT struct pike_string *debug_free_buf(void) { return low_free_buf(&buff); }
-PMOD_EXPORT char *make_buf_space(INT32 space) { return low_make_buf_space(space,&buff); }
-PMOD_EXPORT void my_putchar(char b) { low_my_putchar(b,&buff); }
-PMOD_EXPORT void my_binary_strcat(const char *b, ptrdiff_t l) { low_my_binary_strcat(b,l,&buff); }
-PMOD_EXPORT void my_strcat(const char *b) { my_binary_strcat(b,strlen(b)); }
-PMOD_EXPORT void init_buf(void) { low_reinit_buf(&buff); }
-PMOD_EXPORT void init_buf_with_string(string s) { low_init_buf_with_string(s,&buff); }
+PMOD_EXPORT struct pike_string *debug_free_buf(dynamic_buffer *old_buf)
+{
+  struct pike_string *res = low_free_buf(&pike_global_buffer);
+  pike_global_buffer = *old_buf;
+  return res;
+}
+
+PMOD_EXPORT void abandon_buf(dynamic_buffer *old_buf)
+{
+  toss_buffer(&pike_global_buffer);
+  pike_global_buffer = *old_buf;
+}
+
+PMOD_EXPORT char *make_buf_space(INT32 space)
+{
+  return low_make_buf_space(space,&pike_global_buffer);
+}
+
+PMOD_EXPORT void my_putchar(int b)
+{
+  low_my_putchar(b,&pike_global_buffer);
+}
+
+PMOD_EXPORT void my_binary_strcat(const char *b, ptrdiff_t l)
+{
+  low_my_binary_strcat(b,l,&pike_global_buffer);
+}
+
+PMOD_EXPORT void my_strcat(const char *b)
+{
+  my_binary_strcat(b,strlen(b));
+}
+
+PMOD_EXPORT void init_buf(dynamic_buffer *old_buf)
+{
+  *old_buf = pike_global_buffer;
+  pike_global_buffer.s.str = NULL;
+  initialize_buf(&pike_global_buffer);
+}
+
+PMOD_EXPORT void init_buf_with_string(dynamic_buffer *old_buf, dynbuf_string s)
+{
+  *old_buf = pike_global_buffer;
+  pike_global_buffer.s.str = NULL;
+  low_init_buf_with_string(s,&pike_global_buffer);
+}
+
+PMOD_EXPORT void save_buffer (dynamic_buffer *save_buf)
+{
+  *save_buf = pike_global_buffer;
+  pike_global_buffer.s.str = NULL;
+}
+
+PMOD_EXPORT void restore_buffer (dynamic_buffer *save_buf)
+{
+#ifdef PIKE_DEBUG
+  if (pike_global_buffer.s.str)
+    Pike_fatal ("Global buffer already in use.\n");
+#endif
+  pike_global_buffer = *save_buf;
+}
+
+#if 0
 PMOD_EXPORT char *debug_return_buf(void)
 {
   my_putchar(0);
-  return buff.s.str;
+  return pike_global_buffer.s.str;
 }
-/* int my_get_buf_size() {  return buff->s.len; } */
+#endif
 
+/* int my_get_buf_size() {  return pike_global_buffer->s.len; } */

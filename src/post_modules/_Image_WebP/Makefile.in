@@ -1,0 +1,11 @@
+@make_variables@
+VPATH=@srcdir@
+OBJS=image_webp.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+image_webp.o : $(SRCDIR)/image_webp.c
+
+@dependencies@

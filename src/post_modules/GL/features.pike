@@ -58,10 +58,25 @@ array func_misc = ({
   ({"glEvalCoord", "V+RR"}),
   ({"glEvalPoint", "V+II"}),
   ({"glFog","VE@Q"}),
-  ({"glFrustum", "VDDDDDD"}),
+
+  // Replaced by my_glFrustum since glFrustum is
+  // broken on some SUN implementations.
+  //  ({"glFrustum", "VDDDDDD"}),
+
   ({"glGenLists", "II"}),
   ({"glGetError", "E"}),
   ({"glGetString", "SE"}),
+  ({"glGetTexImage", "VEIII&"}),
+  ({"glReadPixels", "VIIIIEE&"}),
+  ({"glSelectBuffer","VI&" }),
+  ({"glFeedbackBuffer","VIE&" }),
+  ({"glVertexPointer","VIEI&" }),
+  ({"glInterleavedArrays", "VEI&" }),
+  ({"glTexCoordPointer","VIEI&" }),
+  ({"glIndexPointer","VEI&" }),
+  ({"glNormalPointer","VEI&" }),
+  ({"glColorPointer","VIEI&" }),
+  ({"glEdgeFlagPointer","VI&" }),
   ({"glHint", "VEE"}),
   ({"glIndex", "VZ"}),
   ({"glIndexMask", "VI"}),
@@ -98,9 +113,13 @@ array func_misc = ({
   ({"glTexCoord", "V+Z"}),
   ({"glTexEnv","VEE@Q"}),
   ({"glTexGen","VEE@Z"}),
+  ({"glEvalMesh1", "VEII" }),
+  ({"glEvalMesh2", "VEIIII" }),
   ({"glTexImage2D","VEIIwhIfti"}),
+  ({"glTexImage1D","VEIIwIfti"}),
   ({"glTexParameter","VEE@Q"}),
   ({"glTexSubImage2D","VEIIIwhfti"}),
+  ({"glTexSubImage1D","VEIIwfti"}),
   ({"glTranslate", "V!RRR"}),
   ({"glVertex","V+ZZZ"}),
   ({"glViewport", "VIIII"}),
@@ -115,14 +134,9 @@ mapping func_cat = ([
 
   glAreTexturesResident
   glBitmap
-  glCallLists
-  glColorPointer
-  glDeleteTextures
   glDrawElements
-  glEdgeFlagPointer
   glEvalMesh
   glFeedbackBuffer
-  glGenTextures
   glGetClipPlane
   glGetLight
   glGetMap
@@ -132,25 +146,16 @@ mapping func_cat = ([
   glGetPolygonStipple
   glGetTexEnv
   glGetTexGen
-  glGetTexImage
   glGetTexLevelParameter
   glGetTexParameter
-  glIndexPointer
-  glInterleavedArrays
-  glMap1
-  glMap2
-  glMapGrid
-  glNormalPointer
   glPixelMap
   glPixelTransfer
+  glMapGrid
+  glMap1
+  glMap2
   glPolygonStipple
   glPrioritizeTextures
-  glReadPixels
   glRect
-  glSelectBuffer
-  glTexCoordPointer
-  glTexImage1D
-  glTexSubImage1D
   glVertexPoint
 
 */

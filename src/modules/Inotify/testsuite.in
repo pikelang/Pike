@@ -1,0 +1,57 @@
+// Only do the following tests if we have System.Inotify.
+cond([[ master()->resolv("System")["Inotify"] ]], [[
+
+test_true(functionp(System.Inotify.parse_event));
+test_true(programp(System.Inotify._Instance));
+test_true(programp(System.Inotify.Instance));
+test_true(intp(System.Inotify.IN_CREATE));
+test_true(intp(System.Inotify.IN_ATTRIB));
+test_true(intp(System.Inotify.IN_CLOSE_WRITE));
+test_true(intp(System.Inotify.IN_CLOSE_NOWRITE));
+test_true(intp(System.Inotify.IN_DELETE));
+test_true(intp(System.Inotify.IN_DELETE_SELF));
+test_true(intp(System.Inotify.IN_MODIFY));
+test_true(intp(System.Inotify.IN_MOVE_SELF));
+test_true(intp(System.Inotify.IN_MOVED_FROM));
+test_true(intp(System.Inotify.IN_MOVED_TO));
+test_true(intp(System.Inotify.IN_OPEN));
+test_true(intp(System.Inotify.IN_MOVE));
+test_true(intp(System.Inotify.IN_CLOSE));
+test_true(intp(System.Inotify.IN_DONT_FOLLOW));
+test_true(intp(System.Inotify.IN_ONESHOT));
+test_true(intp(System.Inotify.IN_ONLYDIR));
+test_true(intp(System.Inotify.IN_IGNORED));
+test_true(intp(System.Inotify.IN_ISDIR));
+test_true(intp(System.Inotify.IN_Q_OVERFLOW));
+test_true(intp(System.Inotify.IN_UNMOUNT));
+test_any([[ // stole this from pikes Stdio.File testsuite.
+  Stdio.Stat st = file_stat("/tmp");
+  string prefix = (st && st->isdir)?"/tmp/":"";
+  int pid = getpid();
+  int i;
+  prefix += "conftest_pike_dir_";
+  for(i = 0; i < 32; i++) {
+    string testdir = prefix + i;
+    if (mkdir(testdir)) {
+      add_constant("testdir", testdir + "/");
+      add_constant("testfile", testdir + "/conftest");
+      return 1;
+    }
+  }
+  add_constant("testfile", "conftest");
+  return 0;
+]], 1)
+test_any([[
+	object i = System.Inotify._Instance();
+	object file = Stdio.File();
+	file->assign(i->fd());
+	i->add_watch(testdir, System.Inotify.IN_CREATE);
+	Stdio.write_file(testfile, "test");
+	array a = System.Inotify.parse_event(file->read(4096, 1));
+
+	return a[3] == "conftest" && a[1] == System.Inotify.IN_CREATE;
+]], 1)
+test_do(add_constant("testdir"))
+test_do(add_constant("testfile"))
+
+]]) // System.Inotify

@@ -8,6 +8,8 @@
 //! 	This module can't be used by itself, but
 //! 	is inherited by other modules (<ref>ISO</ref> by <ref>YMD</ref>, 
 //! 	for instance).
+//!
+//! inherits TimeRanges
 
 #pike __REAL_VERSION__
 
@@ -16,8 +18,7 @@
 //- these classes majorly works on seconds
 //- an hour is 3600 seconds, a minute is 60 seconds
 
-import ".";
-inherit TimeRanges:TimeRanges;
+inherit Calendar.TimeRanges:TimeRanges;
 
 #include "constants.h"
 
@@ -25,21 +26,14 @@ inherit TimeRanges:TimeRanges;
 
 function(mixed...:TimeRange) Day;
 
-// sanity check
-
-static private int __sanity_check=lambda()
-{
-   if (5000000000!=5*inano)
-      error("Calendar.Time needs bignums (Gmp.mpz)\n");
-   return 1;
-}();
-
-Ruleset.Timezone Timezone_UTC=Ruleset.Timezone(0,"UTC"); // needed for dumping
+Calendar.Rule.Timezone Timezone_UTC=
+  Calendar.Rule.Timezone(0,"UTC"); // needed for dumping
 
 string calendar_name() { return "Time"; }
 
 //------------------------------------------------------------------------
-//! class TimeOfDay
+//! class TimeofDay
+//!  Virtual class used by e.g. Hour.
 //------------------------------------------------------------------------
 
 class TimeofDay
@@ -72,7 +66,7 @@ class TimeofDay
 //- for internal use:
 //- method void create("timeofday",rules,unixtime,len)
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -83,14 +77,14 @@ class TimeofDay
       switch (args[0])
       {
 	 case "timeofday":
-	    rules=[object(Ruleset)]args[1];
+	    rules=[object(Calendar.Ruleset)]args[1];
 	    ux=[int]args[2];
 	    len=[int]args[3];
 	    ls=CALUNKNOWN;
 	    return;
 
 	 case "timeofday_sd":
-	    rules=[object(Ruleset)]args[1];
+	    rules=[object(Calendar.Ruleset)]args[1];
 	    ux=[int]args[2];
 	    len=[int]args[3];
 	    ls=[int]args[4];
@@ -110,7 +104,7 @@ class TimeofDay
       ::create(@args);
    }
 
-   static int(0..1) create_backtry(mixed ...args) 
+   protected int(0..1) create_backtry(mixed ...args) 
    {
       if (sizeof(args)>1 && objectp(args[0])) 
       {
@@ -148,7 +142,7 @@ class TimeofDay
       ls=CALUNKNOWN;
    }
 
-   static void create_now();
+   protected void create_now();
 
    void create_julian_day(int|float jd)
    {
@@ -170,7 +164,7 @@ class TimeofDay
    }
 
 // make local second 
-   static void make_local()
+   protected void make_local()
    {
       if (!base) make_base();
 
@@ -184,10 +178,36 @@ class TimeofDay
       }
    }
 
+   TimeRange `*(int|float n)
+   {  
+      if(intp(n))
+        return set_size(n,this);
+      else
+        return second()*(int)(how_many(Second)*n);
+   }
+
+   array(TimeRange) split(int|float n, void|function|TimeRange with)
+   {  
+      if(!with)
+        with=Second;
+      if (functionp(with)) with=promote_program(with);
+      float length=how_many(with)/(float)n;
+      TimeRange start=beginning();
+      TimeRange end=end();
+      array result=({});
+      while(start+with*length < end)
+      { 
+        result += ({ start->distance(start+with*length) });
+        start=start+with*length;
+      }
+      result += ({ start->distance(end) });
+      return result;
+   }
+
 // default autopromote
-   TimeRange autopromote()
+   this_program autopromote()
    {
-      return this_object();
+      return this;
    }
 
    array(int(-1..1)) _compare(TimeRange with)
@@ -199,7 +219,7 @@ class TimeofDay
 
       if (with->is_timeofday_f)
       {
-	 array(int(-1..1)) cmp=with->_compare(this_object());
+	 array(int(-1..1)) cmp=with->_compare(this);
 
 	 return ({-cmp[0],
 		  -cmp[2],
@@ -222,12 +242,12 @@ class TimeofDay
       }
    }
    
-   cSecond beginning()
+   TimeRange beginning()
    {
       return Second("timeofday_sd",rules,ux,0,ls,utco)->autopromote();
    }
 
-   cSecond end()
+   TimeRange end()
    {
       return Second("timeofday",rules,ux+len,0)->autopromote();
    }
@@ -248,7 +268,7 @@ class TimeofDay
 
       int m;
       if ( (m=to->unix_time()-unix_time())<0) 
-	 error("Negative distance %O .. %O\n", this_object(),to);
+	 error("Negative distance %O .. %O\n", this,to);
 
       return 
 	 Second("timeofday_sd",rules,ux,m,ls,utco)
@@ -272,7 +292,7 @@ class TimeofDay
       return ::range(to);
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       if (other->is_timeofday)
@@ -304,7 +324,7 @@ class TimeofDay
 	 return _move(n,step->number_of_seconds());
 
       if (!base) make_base();
-      return base->add(n,step)->place(this_object(),1);
+      return base->add(n,step)->place(this,1);
    }
 
 //! method Hour hour()
@@ -455,7 +475,7 @@ class TimeofDay
       return Second("timeofday",rules,ux+n,1)->autopromote();
    }
 
-   static array(TimeRange) get_timeofday(string unit,
+   protected array(TimeRange) get_timeofday(string unit,
 					 int start,int step,program p,
 					 int ... range)
    {
@@ -649,7 +669,7 @@ class TimeofDay
       return 0.0;
    }
 
-//! function mapping datetime()
+//! method mapping datetime()
 //!     This gives back a mapping with the relevant
 //!	time information (representing the start of the period);
 //!	<pre>
@@ -742,6 +762,7 @@ class TimeofDay
 //!     nice           "2 Jun 20:53", "2 Jun 2000 20:53:14" [2][5]
 //!     nicez          "2 Jun 20:53 CET" [2][5]
 //!     smtp           "Fri, 2 Jun 2000 20:53:14 +0100" [6]
+//!     commonlog      "02/Jun/2000:20:53:14 +0100" [2]
 //!	</pre>
 //!	<tt>[1]</tt> note conflict (think 1 February 2003)
 //!	<br><tt>[2]</tt> language dependent
@@ -770,42 +791,42 @@ class TimeofDay
 
    string format_iso_time()
    {
-      return this_object()->format_iso_ymd()+" "+format_todz_iso();
+      return this->format_iso_ymd()+" "+format_todz_iso();
    }
 
    string format_ext_time()
    {
-      return this_object()->format_ext_ymd()+" "+format_tod();
+      return this->format_ext_ymd()+" "+format_tod();
    }
 
    string format_time()
    {
-      return this_object()->format_ymd()+" "+format_tod();
+      return this->format_ymd()+" "+format_tod();
    }
 
    string format_time_short()
    {
-      return this_object()->format_ymd_short()+" "+format_tod();
+      return this->format_ymd_short()+" "+format_tod();
    }
 
    string format_iso_short()
    {
-      return this_object()->format_ymd_short()+"T"+format_tod();
+      return this->format_ymd_short()+"T"+format_tod();
    }
 
    string format_time_xshort()
    {
-      return this_object()->format_ymd_xshort()+" "+format_tod();
+      return this->format_ymd_xshort()+" "+format_tod();
    }
 
    string format_mtime()
    {
-      return this_object()->format_ymd()+" "+format_mod();
+      return this->format_ymd()+" "+format_mod();
    }
 
    string format_xtime()
    {
-      return this_object()->format_ymd()+" "+format_xtod();
+      return this->format_ymd()+" "+format_xtod();
    }
 
    string format_ctime()
@@ -823,6 +844,20 @@ class TimeofDay
 
       return replace(base->format_http(),
 		     "00:00:00",format_tod());
+   }
+
+   string format_ext_time_short()
+   {
+      if (!base) make_base();
+      return replace(base->format_ext_time_short(),
+		     "00:00:00 GMT",format_todz());
+   }
+
+   string format_commonlog()
+   {
+      if (!base) make_base();
+      return replace(base->format_commonlog(),
+		     "00:00:00 ",format_tod()+" ");
    }
 
    string format_tod()
@@ -883,7 +918,7 @@ class TimeofDay
    {
       if (ls==CALUNKNOWN) make_local();
       int u=utc_offset();
-      return sprintf("%s, %s %s %s %d:%02d:%02d %+03d%02d",
+      return sprintf("%s, %s %s %s %02d:%02d:%02d %+03d%02d",
 		     base->week_day_shortname(),
 		     base->month_day_name(),
 		     base->month_shortname(),
@@ -895,12 +930,12 @@ class TimeofDay
    string format_elapsed()
    {
       string res="";
-      object left=this_object();
+      object left=this;
       int x;
-      if ( (x=(this_object()/Day)) )
+      if ( (x=(this/Day)) )
       {
 	 res+=sprintf("%dd",x);
-	 left=this_object()->add(x,Day)->range(this_object()->end());
+	 left=this->add(x,Day)->range(this->end());
       }
       return sprintf("%s%d:%02d:%02d",
 		     res,left->len/3600,
@@ -910,7 +945,7 @@ class TimeofDay
 
 // --------
 
-   TimeofDay set_ruleset(Ruleset r)
+   this_program set_ruleset(Calendar.Ruleset r)
    {
       return 
 	 Second("timeofday",r,ux,len)
@@ -949,8 +984,19 @@ class TimeofDay
 	 :sprintf("UTC-%d:%02d:%02d",u/3600,(u/60)%60,u%60);
    }
 
+   string tzname_utc_offset()
+   {
+      int u=utc_offset();
+      return sprintf("%+03d%02d", -u/3600, abs(u)/60%60);
+   }
 
-   
+   string tzname_location()
+   {
+      string location = rules->timezone->zoneid;
+      if (location || tzn) return location || tzn;
+      return [utco,tzn]=rules->timezone->tz_ux(ux), tzn;
+   }
+
 // -----------------------------------------------------------------
 
    TimeRange place(TimeRange what,void|int force)
@@ -964,6 +1010,20 @@ class TimeofDay
 
 // --------
 
+//! method void call_out(function fun,mixed ...args)
+//!	Creates a call_out to this point in time.
+   void call_out(function fun,mixed ...args)
+   {
+      if (ux-time(1)>10000)
+	 predef::call_out(call_out,ux-time(1)-100,fun,@args);
+      else if (ux-time(1)<0)
+	 predef::call_out(fun,0,@args); // already
+      else
+	 predef::call_out(fun,-time(ux),@args);
+   }
+
+// --------
+
 //  #define TIME_OPERATOR_DEBUG
 #ifdef TIME_OPERATOR_DEBUG
 #define DEBUG_OVERLOAD_OPERATOR(OP,NAME,IND)				\
@@ -971,8 +1031,8 @@ class TimeofDay
    {									\
       _ind+=IND;							\
       TimeRange x=::OP(@args);						\
-      _ind=_ind[..strlen(_ind)-strlen(IND)-1];				\
-      werror(_ind+"  %O\n",this_object());				\
+      _ind=_ind[..<sizeof(IND)];				\
+      werror(_ind+"  %O\n",this);					\
       foreach (args,TimeRange t) werror(_ind+NAME+" %O\n",t);		\
       werror(_ind+"= %O\n",x);						\
       return x;								\
@@ -1054,12 +1114,12 @@ class cSuperTimeRange
 
 // wrapper methods to calculate units in a supertimerange
 
-   static array(TimeRange) get_units(string unit,int ... range)
+   protected array(TimeRange) get_units(string unit,int ... range)
    {
       int from=0,to=0x7fffffff,pos=0;
       array res=({});
       TimeRange last=0;
-      string ums=unit[..strlen(unit)-2]; // no 's'
+      string ums=unit[..<1]; // no 's'
 
       if (sizeof(range)==2)
 	 [from,to]=range;
@@ -1091,11 +1151,11 @@ class cSuperTimeRange
       return res;
    }
 
-   static int num_units(string unit)
+   protected int num_units(string unit)
    {
       int pos=0;
       TimeRange last=0;
-      string ums=unit[..strlen(unit)-2]; // no 's'
+      string ums=unit[..<1]; // no 's'
 
       foreach (parts,TimeRange part)
       {
@@ -1108,7 +1168,7 @@ class cSuperTimeRange
       return pos;
    }
 
-   static TimeRange get_unit(string unit,int n)
+   protected TimeRange get_unit(string unit,int n)
    {
       array(TimeRange) res=get_units(unit,n,n);
       if (sizeof(res)==1) return res[0];
@@ -1132,6 +1192,7 @@ class cSuperTimeRange
 
    string format_iso_time() { return RBASE->format_iso_time(); }
    string format_ext_time() { return RBASE->format_ext_time(); }
+   string format_ext_time_short() { return RBASE->format_ext_time_short(); }
    string format_time() { return RBASE->format_time(); }
    string format_time_short() { return RBASE->format_time_short(); }
    string format_time_xshort() { return RBASE->format_time_xshort(); }
@@ -1159,11 +1220,11 @@ class cSuperTimeRange
       return parts[0]->distance(z)->format_elapsed();
    }
 
-   string sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       if (t=='t') 
 	 return "Calendar."+calendar_name()+".TimeofDay";
-      return ::sprintf(t,m);
+      return ::_sprintf(t,m);
    }
 }
 
@@ -1199,30 +1260,32 @@ class cHour
 
    inherit TimeofDay;
 
+   protected int __hash() { return ux/(60*60); }
+
    void create_unixtime_default(int unixtime)
    {
       create_unixtime(unixtime,3600);
    }
 
-   static void create_now()
+   protected void create_now()
    {
       create_unixtime(time(),3600);
    }
 
-   static void create_unixtime(int _ux,int _len)
+   protected void create_unixtime(int _ux,int _len)
    {
       ::create_unixtime(_ux,_len);
       if (ls==CALUNKNOWN) make_local();
       if (ls%3600) ux-=ls%3600,ls=CALUNKNOWN;
    }
 
-   static void create_julian_day(int|float jd)
+   protected void create_julian_day(int|float jd)
    {
       ::create_julian_day(jd);
       len=3600;
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       len-=len%3600;
@@ -1230,14 +1293,14 @@ class cHour
 
    TimeofDay _move(int n,int m)
    {
-      if (m==0 || n==0) return this_object();
+      if (m==0 || n==0) return this;
       if (m%3600) 
 	 return Second("timeofday",rules,ux,len)->_move(n,m);
       return Hour("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
 
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       if (catch {
       switch (t)
@@ -1309,7 +1372,9 @@ class cMinute
 
    inherit TimeofDay;
 
-   static void create_unixtime(int _ux,int _len)
+   protected int __hash() { return ux/60; }
+
+   protected void create_unixtime(int _ux,int _len)
    {
       ::create_unixtime(_ux,_len);
       if (ls==CALUNKNOWN) make_local();
@@ -1321,7 +1386,7 @@ class cMinute
       create_unixtime(unixtime,60);
    }
 
-   static void create_now()
+   protected void create_now()
    {
       create_unixtime(time()/60*60,60);
    }
@@ -1334,7 +1399,7 @@ class cMinute
       return ::autopromote();
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       len-=len%60;
@@ -1342,12 +1407,12 @@ class cMinute
 
    TimeofDay _move(int n,int m)
    {
-      if (m==0 || n==0) return this_object();
+      if (m==0 || n==0) return this;
       if (m%60) return Second("timeofday",rules,ux,len)->_move(n,m);
       return Minute("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1414,17 +1479,19 @@ class cSecond
 
    inherit TimeofDay;
 
+   protected int __hash() { return ux; }
+
    void create_unixtime_default(int unixtime)
    {
       create_unixtime(unixtime,1);
    }
 
-   static void create_now()
+   protected void create_now()
    {
       create_unixtime(time(),1);
    }
 
-   static void create_julian_day(int|float jd)
+   protected void create_julian_day(int|float jd)
    {
       ::create_julian_day(jd);
       len=1;
@@ -1440,11 +1507,11 @@ class cSecond
 
    TimeofDay _move(int n,int m)
    {
-      if (m==0 || n==0) return this_object();
+      if (m==0 || n==0) return this;
       return Second("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1479,9 +1546,9 @@ class cSecond
 
 // backwards compatible with calendar I
    string iso_name()
-   { return this_object()->format_ymd()+" T"+format_tod(); }
+   { return this->format_ymd()+"T"+format_tod(); }
    string iso_short_name() 
-   { return this_object()->format_ymd_short()+" T"+(format_tod()-":"); }
+   { return this->format_ymd_short()+"T"+(format_tod()-":"); }
 
 
    TimeRange place(TimeRange what,void|int force)
@@ -1520,7 +1587,7 @@ class cSecond
 //!	nanoseconds. A shorter or more precise time period then 
 //!	in nanoseconds is not possible within the current Fraction class.
 //!
-//! inherits TimeofDay
+//! inherits Second
 //------------------------------------------------------------------------
 
 function(mixed...:cFraction) Fraction=cFraction;
@@ -1536,11 +1603,13 @@ class cFraction
    int len_s;  // seconds length
 
 //! method void create()
-//! method void create("unixtime",int|float unixtime)
-//! method void create("unixtime",int|float unixtime,int|float len)
-//!	It is possible to create a Fraction in two ways,
+//! method void create("unix",int|float unixtime)
+//! method void create("unix",int|float unixtime,int|float len)
+//! method void create(int y,int m,int d,int h,int m,int s,int ns)
+//!	It is possible to create a Fraction in three ways,
 //!	either "now" with no arguments or
-//!	from a unix time (as from <tt>time(2)</tt>).
+//!	from a unix time (as from <tt>time(2)</tt>),
+//!	or the convenience way from ymd-hms integers.
 //!
 //!	If created from unix time, both the start of the period
 //!	and the size of the period can be given in floats,
@@ -1553,7 +1622,7 @@ class cFraction
 //!	If created without explicit length, the fraction will always be
 //!	of zero length.
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -1563,7 +1632,7 @@ class cFraction
       }
       else if (args[0]=="timeofday_f")
       {
-	 rules=[object(Ruleset)]args[1];
+	 rules=[object(Calendar.Ruleset)]args[1];
 	 ux=[int]args[2];
 	 ns=[int]args[3];
 	 len_s=[int]args[4];
@@ -1571,7 +1640,7 @@ class cFraction
 	 ls=CALUNKNOWN;
 
 	 if (ns<0)
-	    error("Can't create negative ns: %O\n",this_object());
+	    error("Can't create negative ns: %O\n",this);
 
 	 if (!rules) error("no rules\n");
 
@@ -1580,7 +1649,7 @@ class cFraction
 	 len=len_s+(ns+len_ns+inano-1)/inano;
 
 	 if (ns<0)
-	    error("Can't create negative ns: %O\n",this_object());
+	    error("Can't create negative ns: %O\n",this);
 
 	 return;
       }
@@ -1592,6 +1661,13 @@ class cFraction
       }
       else switch (args[0])
       {
+	 case "timeofday":
+	    rules=[object(Calendar.Ruleset)]args[1];
+	    ux=[int]args[2];
+	    len=[int]args[3];
+	    ls=CALUNKNOWN;
+	    ns=[int]args[4];
+	    return;
 	 case "unix":
 	    rules=default_rules;
 	    create_unixtime(@args[1..]);
@@ -1602,7 +1678,7 @@ class cFraction
 	    return;
 	 case "unix_r":
 	    rules=args[-1];
-	    create_unixtime(@args[..sizeof(args)-2]);
+	    create_unixtime(@args[..<1]);
 	    return;
 	 case "julian_r":
 	    rules=args[2];
@@ -1615,7 +1691,7 @@ class cFraction
 	    @args,0,0,0);
    }
 
-   int create_backtry(mixed ...args) 
+   int create_backtry(mixed ...args)
    {
       if (sizeof(args)>1 && objectp(args[0]) && args[0]->is_day) 
       {
@@ -1650,7 +1726,7 @@ class cFraction
       return ::create_backtry(@args);
    }
 
-   static void create_now()
+   protected void create_now()
    {
       ux=time();
       ns=(int)(inano*time(ux));
@@ -1662,7 +1738,7 @@ class cFraction
    int unix_time() { return ux; }
    float f_unix_time() { return ux+ns*(1.0/inano); }
 
-   static void create_unixtime(int|float unixtime,
+   protected void create_unixtime(int|float unixtime,
 			       void|int|float _len)
    {
       ux=(int)unixtime;
@@ -1672,7 +1748,7 @@ class cFraction
       ls=CALUNKNOWN;
    }
 
-   static void create_unixtime_default(int|float unixtime)
+   protected void create_unixtime_default(int|float unixtime)
    {
       create_unixtime(unixtime);
    }
@@ -1682,7 +1758,7 @@ class cFraction
       return 2440588+(ux+ns*(1.0/inano))*(1/86400.0)+0.5;
    }
 
-   static void create_julian_day(int|float jd)
+   protected void create_julian_day(int|float jd)
    {
 // 1970-01-01 is julian day 2440588
       jd-=2440588;
@@ -1693,7 +1769,7 @@ class cFraction
       ls=CALUNKNOWN;
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1712,7 +1788,7 @@ class cFraction
       }
    }
 
-   int __hash() { return ux; }
+   protected int __hash() { return ux; }
 
    string nice_print()
    {
@@ -1735,7 +1811,14 @@ class cFraction
       if (!ns && !len_ns)
 	 return Second("timeofday",rules,ux,len_s)->autopromote();
 
-      return this_object();
+      return this;
+   }
+
+   this_program set_ruleset(Calendar.Ruleset r)
+   {
+      return 
+	 Fraction("timeofday",r,ux,len,ns)
+	 ->autopromote();
    }
 
    TimeofDay _move(int n,int z_s,void|int z_ns)
@@ -1755,7 +1838,7 @@ class cFraction
       return ::_add(n,step);
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       if (other->is_timeofday_f)
@@ -1766,7 +1849,7 @@ class cFraction
       }
    }
 
-   static TimeRange _set_size(int n,TimeRange t)
+   protected TimeRange _set_size(int n,TimeRange t)
    {
       if (t->is_timeofday_f)
 	 return Fraction("timeofday_f",rules,ux,ns,
@@ -1796,7 +1879,7 @@ class cFraction
 
       if (s2<s1 ||
 	  (s2==s1 && to->ns<ns))
-	 error("Negative distance %O .. %O\n", this_object(),to);
+	 error("Negative distance %O .. %O\n", this,to);
 
       return 
 	 Fraction("timeofday_f",rules,ux,ns,s2-s1-1,to->ns-ns+inano)
@@ -1832,14 +1915,14 @@ class cFraction
 
    TimeofDay beginning()
    {
-      if (len_s==0.0 && len_ns==0.0) return this_object();
+      if (len_s==0.0 && len_ns==0.0) return this;
       return Fraction("timeofday_f",rules,ux,ns,0,0)
 	 ->autopromote();
    }
 
    TimeofDay end()
    {
-      if (len_s==0 && len_ns==0) return this_object();
+      if (len_s==0 && len_ns==0) return this;
       object q=Fraction("timeofday_f",rules,ux+len_s,ns+len_ns,0,0)
 	 ->autopromote();
       return q;
@@ -1895,7 +1978,7 @@ class cFraction
       if (to<from)
 	 return ({});
 
-      if (from==0.0 && to==n) return ({this_object()});
+      if (from==0.0 && to==n) return ({this});
 
       to-=from;
       return ({Fraction("timeofday_f",rules,
@@ -1921,9 +2004,9 @@ class cFraction
    string format_elapsed()
    {
       int x;
-      if ( (x=(this_object()/Day)) )
+      if ( (x=(this/Day)) )
       {
-	 object left=this_object()->add(x,Day)->range(this_object()->end());
+	 object left=this->add(x,Day)->range(this->end());
 	 return sprintf("%dd%d:%02d:%02d.%03d",
 			x,left->len_s/3600,
 			(left->len_s/60)%60,
@@ -1941,6 +2024,21 @@ class cFraction
 	 return sprintf("%d.%06d",
 			len_s,len_ns/1000);
       return sprintf("0.%09d",len_ns);
+   }
+
+   float fraction_no()
+   {
+      return ns / 1e9;
+   }
+
+   void call_out(function fun,mixed ...args)
+   {
+      if (ux-time(1)>10000)
+	 predef::call_out(call_out,ux-time(1)-100,fun,@args);
+      else if (ux-time(1)<0)
+	 predef::call_out(fun,0,@args); // already
+      else 
+	 predef::call_out(fun,-time(ux)+ns*1e-9,@args);
    }
 }
 
@@ -1972,22 +2070,22 @@ TimeofDay now()
 //!	Result: Fraction(Fri 2 Jun 2000 16:03:02.323912 UTC)
 //!	</pre>
 
-this_program set_timezone(string|Ruleset.Timezone tz)
+this_program set_timezone(string|Calendar.Rule.Timezone tz)
 {
    return set_ruleset(default_rules->set_timezone(tz));
 }
 
-Ruleset.Timezone timezone()
+Calendar.Rule.Timezone timezone()
 {
    return default_rules->timezone;
 }
 
-this_program set_language(string|Ruleset.Language lang)
+this_program set_language(string|Calendar.Rule.Language lang)
 {
    return set_ruleset(default_rules->set_language(lang));
 }
 
-Ruleset.Language language()
+Calendar.Rule.Language language()
 {
    return default_rules->language;
 }
@@ -1998,15 +2096,14 @@ Ruleset.Language language()
 //!	<ref>set_ruleset</ref> returns a new calendar object,
 //!	but with the new ruleset.
 
-this_program set_ruleset(Ruleset r)
+this_program set_ruleset(Calendar.Ruleset r)
 {
-// "this_program" here ceased to work
-   object c=object_program(this_object())();
+   this_program c=this_program();
    c->default_rules=r;
    return c;
 }
 
-Ruleset ruleset()
+Calendar.Ruleset ruleset()
 {
    return default_rules;
 }

@@ -1,5 +1,7 @@
 // by Mirar 
 
+#pike 7.0
+
 inherit Calendar.Gregorian : christ;
 
 class Year

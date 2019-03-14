@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include <global.h>
 
 #include "config.h"
@@ -22,11 +28,10 @@
 #include <arpa/inet.h>
 #endif
 
+#include "pike_netlib.h"
 #include "accept_and_parse.h"
 #include "util.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
 int aap_get_time(void)
 {
@@ -77,6 +82,7 @@ int aap_get_header(struct args *req, char *header, int operation, void *res)
        /* in[os..i-1] == the header */
        if(i-os == hl)
        {
+	 /* Inlined strncasecmp(header, in + os, hl). */
 	 ptrdiff_t j;
 	 for(j=0;j<hl; j++)
 	   if((in[os+j]&95) != (header[j]&95))
@@ -102,6 +108,8 @@ int aap_get_header(struct args *req, char *header, int operation, void *res)
 	   }
 	 }
        }
+       break;
+
      case '\r':
      case '\n':
        os = i+1;
@@ -110,4 +118,3 @@ int aap_get_header(struct args *req, char *header, int operation, void *res)
   return 0;
 } 
 #endif
-

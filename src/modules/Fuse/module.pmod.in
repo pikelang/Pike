@@ -1,0 +1,240 @@
+#pike __REAL_VERSION__
+
+//! Fuse - Filesystem in USErspace
+//!
+//! FUSE (Filesystem in USErspace) provides a simple interface for
+//! userspace programs to export a virtual filesystem to the Linux
+//! kernel.  FUSE also aims to provide a secure method for non
+//! privileged users to create and mount their own filesystem
+//! implementations.
+//!
+//! FUSE is only available on Linux.
+//!
+//! See http://sourceforge.net/projects/fuse/ for more information
+//!
+//! This module maps the Fuse library more or less directly to pike.
+//!
+//! A tip: /usr/include/asm/errno.h can be included in pike programs on Linux.
+
+#if constant(@module@.run)
+inherit @module@;
+
+class Operations
+//! This is the interface you have to implement to write a FUSE filesystem
+//! If something goes wrong in your callback, always return errno.
+//! Unless the function returns a specific value (Stat, string or similar), 
+//! return 0 if all is well.
+//!
+//! You do not have to implement all functions. Unimplemented
+//! functions have a default implementation that returns -ENOIMPL.
+{
+    //! Unkown directory entry type
+    final constant DT_UNKNOWN = 0;
+
+    //! FIFO directory entry
+    final constant DT_FIFO = 1;
+
+    //! Character special directory entry
+    final constant DT_CHR = 2;
+    
+    //! Directory directory entry
+    final constant DT_DIR = 4;
+
+    //! Block special directory entry
+    final constant DT_BLK = 6;
+
+    //! Normal file directory entry
+    final constant DT_REG = 8;
+
+    //! Symlink directory entry
+    final constant DT_LNK = 10;
+
+    //! Socket directory entry
+    final constant DT_SOCK = 12;
+
+    //! Open for append 
+    final constant O_APPEND=02000;
+
+    //! Mask for read/write/rdwr
+    final constant O_ACCMODE=3;
+
+    //! Open read only
+    final constant O_RDONLY=0;
+
+    //! Open write only
+    final constant O_WRONLY=1;
+
+    //! Open read/write only
+    final constant O_RDWR=2;
+
+    //! Stat a file.
+    //! @note 
+    //! This function is required.
+    //! @returns
+    //! The symlink contents or errno
+    Stdio.Stat|int(1..) getattr( string path );
+
+    //! Read a symlink.
+    //! @returns
+    //! The symlink contents or errno
+    string|int(1..) readlink( string path );
+
+    //! Get directory contents. The callback get the filename.
+    //! @note 
+    //! This function is required.
+    //! @returns
+    //! errno or 0
+    int readdir( string path, function(string:void) callback );
+
+    //! Create a node (file, device special, or named pipe).
+    //! See man 2 mknod
+    //! @returns
+    //! errno or 0
+    int mknod( string path, int mode, int rdev );
+
+    //! Create a directory.
+    //! @returns
+    //! errno or 0
+    int mkdir( string path, int mode );
+
+    //! Remove a file
+    //! @returns
+    //! errno or 0
+    int unlink( string path );
+
+    //! Remove a directory
+    //! @returns
+    //! errno or 0
+    int rmdir( string path );
+    
+    //! Create a symlink from source to destination.
+    //! @returns
+    //! errno or 0
+    int symlink( string source, string destination );
+
+    //! Create a hard link from source to destination.
+    //! @returns
+    //! errno or 0
+    int link( string source, string destination );
+
+    //! Rename @[source] to @[destination].
+    //! @returns
+    //! errno or 0
+    int rename( string source, string destination );
+    
+    //! Change mode
+    //! @returns
+    //! errno or 0
+    int chmod( string path, int mode );
+    
+    //! Change owner
+    //! @returns
+    //! errno or 0
+    int chown( string path, int uid, int gid);
+    
+    //! Shrink or enlarge file
+    //! @returns
+    //! errno or 0
+    int truncate( string path, int new_length);
+
+    //! Set access and modification time
+    //! @returns
+    //! errno or 0
+    int utime( string path, int atime, int mtime );
+
+    //! Open @[path]. @[mode] is as for the system call open.
+    //! (mode & O_ACCMODE) is one of O_RDONLY, O_WRONLY and O_RDWR.
+    //! The mode can also contain other flags, most notably O_APPEND.
+    //! @note
+    //! You do not really have to implement this function.
+    //! It's useful to start prefetch and to cache open files, and
+    //! check that the user has permission to read/write the file.
+    //! @returns
+    //! errno or 0
+    int open( string path, int mode );
+
+    //! Read data from a file. You have to return at most @[len] bytes,
+    //! unless an error occurs.
+    //! @returns
+    //! errno or data
+    string|int(1..) read( string path, int len, int offset );
+
+    //! Write data to the file. Should write all data.
+    //! @returns
+    //! errno or amount written (bytes)
+    int write( string path, string data, int offset  );
+
+    //! Stat a filesystem.
+    //! Mapping as from @[filesystem_stat]
+    //! @note
+    //!   required for @tt{'df'@} support, without this function there
+    //!   is an error each time @tt{'df'@} is run.
+    mapping(string:int) statfs( string path );
+
+    //! The inverse of open. 
+    //! @note 
+    //! The file might very well be openend multiple times. 
+    //! Keep reference counts.
+    int release( string path );  
+
+    //! Flush data and user-data to disk. Not required.
+    //! If the @[datasync] parameter is non-zero, then only the user data
+    //! should be flushed, not the meta data.
+    int fsync( string path, int datasync );
+
+    //! Return a list of all available extended attributes on @[path]
+    array(string)|int listxattr(string path);
+
+    //! Remove the extended attribute @[name] from @[path]
+    int removexattr(string path, string name);
+    
+    //! Get the extended attribute @[name] on @[path]
+    string getxattr( string path, string name );
+
+    //! Set the extended attribute @[name] on @[path] to @[value]
+    int setxattr(string path, string name, string value, int flags );
+
+    //! Create and open or just open the given @[path]
+    int creat( string path, int mode, int flag );
+
+    //! Return if the user is allowed to access the @[path]. If the
+    //! 'default_permissions' mount option is given, this method is not
+    //! called.
+    int access( string path, int mode ); 
+
+    //! Write unwritten data. 
+    int flush( string path, int flags );
+}
+
+//! @decl void run( Operations handler, array(string) args );
+//! Start fuse. Args is as in argv in main().
+//! The first argument (argv[0], program name) is used as the filesystem name.
+//! The first non-flag argument after argv[0] is used as the mountpoint.
+//! Otherwise these arguments are supported:
+//! @pre{
+//!     -d                  enable debug output (implies -f)
+//!     -f                  foreground operation
+//!     -s                  disable multithreaded operation
+//!     -r                  mount read only (equivalent to '-o ro')
+//!     -o opt,[opt...]     mount options
+//!     -h                  print help
+//! @}
+//! 
+//! Mount options:
+//! @pre{
+//!     default_permissions    enable permission checking
+//!     allow_other            allow access to other users
+//!     allow_root             allow access to root
+//!     kernel_cache           cache files in kernel
+//!     large_read             issue large read requests (2.4 only)
+//!     direct_io              use direct I/O
+//!     max_read=N             set maximum size of read requests (default 128K)
+//!     hard_remove            immediate removal (don't hide files)
+//!     debug                  enable debug output
+//!     fsname=NAME            set filesystem name in mtab (overrides argv[0])
+//! @}
+
+// {
+//     ::run( handler, args );
+// }
+#endif

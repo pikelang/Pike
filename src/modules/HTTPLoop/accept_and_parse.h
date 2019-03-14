@@ -1,7 +1,13 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* #define AAP_DEBUG 1 */
 #define CACHE_HTABLE_SIZE 40951
 
-#ifndef __NT__
+#if !defined(__NT__) && !defined(__WIN32__)
 #ifdef HAVE_SIGNAL
 # define HAVE_TIMEOUTS
 #endif
@@ -96,7 +102,7 @@ struct args
 
   struct svalue cb;
   struct svalue args;
-  struct sockaddr_in from;
+  PIKE_SOCKADDR from;
   struct cache *cache;
   struct filesystem *filesystem;
   struct log *log;
@@ -111,7 +117,7 @@ struct log_entry
   size_t received_bytes;
   struct pstring raw;
   struct pstring url;
-  struct sockaddr_in from;
+  PIKE_SOCKADDR from;
   struct pstring method;
   struct pike_string *protocol;
 };
@@ -127,10 +133,10 @@ struct log
 
 struct log_object
 {
-  int time;
-  int reply;
-  ptrdiff_t sent_bytes;
-  ptrdiff_t received_bytes;
+  INT_TYPE time;
+  INT_TYPE reply;
+  INT_TYPE sent_bytes;
+  INT_TYPE received_bytes;
   struct pike_string *raw;
   struct pike_string *url;
   struct pike_string *method;
@@ -146,8 +152,6 @@ struct c_request_object
   struct mapping *misc_variables;
   int headers_parsed;
 };
-
-#define MY_MIN(a,b) ((a)<(b)?(a):(b))
 
 #define LOG(X,Y,Z) do { \
     if((Y)->cache) {\

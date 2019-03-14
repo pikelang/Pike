@@ -1,9 +1,11 @@
-/* $Id: operator.c,v 1.37 2000/12/27 19:27:34 per Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /*
 **! module Image
-**! note
-**!	$Id: operator.c,v 1.37 2000/12/27 19:27:34 per Exp $
 **! class Image
 */
 
@@ -12,14 +14,10 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "pike_error.h"
 #include "threads.h"
 #include "builtin_functions.h"
@@ -28,8 +26,8 @@
 #include "image_machine.h"
 #include "assembly.h"
 
-/* This must be included last! */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_program;
 #ifdef THIS
@@ -44,31 +42,31 @@ extern struct program *image_program;
 
 #define STANDARD_OPERATOR_HEADER(what)					\
    struct object *o;							\
-   struct image *img,*oper=NULL;					\
+   struct image *img,*oper;					        \
    rgb_group *s1,*s2,*d;						\
    rgbl_group rgb;							\
    rgb_group trgb;                                                      \
    INT32 i;								\
 									\
-   if (!THIS->img) Pike_error("no image\n");					\
+   if (!THIS->img) Pike_error("no image\n");				\
 									\
-   if (args && sp[-args].type==T_INT)					\
+   if (args && TYPEOF(sp[-args]) == T_INT)				\
    {									\
       rgb.r=sp[-args].u.integer;					\
       rgb.g=sp[-args].u.integer;					\
       rgb.b=sp[-args].u.integer;					\
       oper=NULL;							\
    }									\
-   else if (args && sp[-args].type==T_FLOAT)				\
+   else if (args && TYPEOF(sp[-args]) == T_FLOAT)			\
    {									\
       rgb.r=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
       rgb.g=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
       rgb.b=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
       oper=NULL;							\
    }									\
-   else if (args && (sp[-args].type==T_ARRAY ||				\
-		     sp[-args].type==T_OBJECT ||			\
-		     sp[-args].type==T_STRING) &&			\
+   else if (args && (TYPEOF(sp[-args]) == T_ARRAY ||			\
+		     TYPEOF(sp[-args]) == T_OBJECT ||			\
+		     TYPEOF(sp[-args]) == T_STRING) &&			\
             image_color_arg(-args,&trgb))				\
    {									\
       rgb.r=trgb.r; rgb.g=trgb.g; rgb.b=trgb.b; 			\
@@ -76,23 +74,24 @@ extern struct program *image_program;
    }									\
    else									\
    {									\
-      if (args<1 || sp[-args].type!=T_OBJECT				\
+     if (args<1 || TYPEOF(sp[-args]) != T_OBJECT			\
        || !sp[-args].u.object						\
        || sp[-args].u.object->prog!=image_program)			\
-      Pike_error("illegal arguments to image->"what"()\n");			\
+      Pike_error("illegal arguments to image->"what"()\n");		\
 									\
       oper=(struct image*)sp[-args].u.object->storage;			\
-      if (!oper->img) Pike_error("no image (operand)\n");			\
+      if (!oper->img) Pike_error("no image (operand)\n");		\
       if (oper->xsize!=THIS->xsize					\
           || oper->ysize!=THIS->ysize)					\
-         Pike_error("operands differ in size (image->"what")");		\
+         Pike_error("operands differ in size (image->"what")\n");	\
+      rgb.r=rgb.b=rgb.g=0;    /*silence warning,hyperminimal suboptimization..*/ \
    }									\
 									\
    push_int(THIS->xsize);						\
    push_int(THIS->ysize);						\
    o=clone_object(image_program,2);					\
    img=(struct image*)o->storage;					\
-   if (!img->img) { free_object(o); Pike_error("out of memory\n"); }		\
+   if (!img->img) { free_object(o); Pike_error("out of memory\n"); }	\
 									\
    s1=THIS->img;							\
    if (oper) s2=oper->img; else s2=NULL;				\
@@ -100,7 +99,7 @@ extern struct program *image_program;
 									\
    i=img->xsize*img->ysize;						\
    THREADS_ALLOW();							\
-   if (s2)
+   if (oper)
 
 
 /*
@@ -172,9 +171,9 @@ STANDARD_OPERATOR_HEADER("`+")
        image_add_buffers_mmx_x86asm( d, s1, s2, (i*3)/8 );
        nleft = (i*3)%8;
        for( ; nleft; nleft-- )
-         ((unsigned char *)d)[i-nleft-1] = 
-                    MINIMUM((((unsigned char *)s1)[i-nleft-1] +
-                             ((unsigned char *)s2)[i-nleft-1]), 255 );
+         ((unsigned char *)d)[i * 3 - nleft] = 
+                    MINIMUM((((unsigned char *)s1)[i * 3 - nleft] +
+                             ((unsigned char *)s2)[i * 3 - nleft]), 255 );
      } else 
 #endif
      while (i--)
@@ -253,6 +252,7 @@ void image_operator_multiply(INT32 args)
    double q=1/255.0;
 STANDARD_OPERATOR_HEADER("`*")
   {
+#if 0
 #ifdef ASSEMBLY_OK
      if( image_cpuid & IMAGE_MMX )
      {
@@ -264,6 +264,7 @@ STANDARD_OPERATOR_HEADER("`*")
                     (((unsigned char *)s1)[i-nleft-1] * 
                      ((unsigned char *)s2)[i-nleft-1]) / 255;
      } else
+#endif
 #endif
      while (i--)
      {
@@ -277,6 +278,7 @@ STANDARD_OPERATOR_HEADER("`*")
             (rgb.g < 256) &&
             (rgb.b < 256) )
    {
+#if 0
 #ifdef ASSEMBLY_OK
      /* there is some overhead in setting this up */
      if( (image_cpuid & IMAGE_MMX) && (i>40) )
@@ -286,6 +288,7 @@ STANDARD_OPERATOR_HEADER("`*")
        i = i%4;
        d -= i;  s1 -= i;
      }
+#endif
 #endif
      while (i--)
      {
@@ -365,26 +368,47 @@ STANDARD_OPERATOR_HEADER("`%%")
 
 void image_operator_divide(INT32 args)
 {
-   double q=1/255.0;
-STANDARD_OPERATOR_HEADER("`/")
-   while (i--)
-   {
-      d->r=testrange(floor(s1->r/(q*(s2->r+1))+0.5));
-      d->g=testrange(floor(s1->g/(q*(s2->g+1))+0.5));
-      d->b=testrange(floor(s1->b/(q*(s2->b+1))+0.5));
-      s1++; s2++; d++; 
-   }
-   else
-   while (i--)
-   {
-      d->r=testrange(floor(s1->r/(q*(rgb.r+1))+0.5));
-      d->g=testrange(floor(s1->g/(q*(rgb.g+1))+0.5));
-      d->b=testrange(floor(s1->b/(q*(rgb.b+1))+0.5));
-      s1++; d++; 
-   }
-   THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+
+  if( args == 1 &&
+      (TYPEOF(Pike_sp[-1]) == T_INT ||
+       TYPEOF(Pike_sp[-1]) == T_FLOAT ) )
+  {
+    extern void f_divide( int x );
+    /* Major optimization for this not totally uncommon case. Perhaps
+       not 100% correct (10/3.0 != 10*(1.0/3.0) when operating with 32
+       bit floats), but more than good enough.
+
+       Also, mult has MMX optimizations, while divide does not.
+    */
+    push_float( 1.0 );
+    stack_swap();
+    f_divide( 2 );
+    image_operator_multiply( 1 );
+    return;
+  }
+  else
+  {
+    double q=1/255.0;
+    STANDARD_OPERATOR_HEADER("`/")
+      while (i--)
+      {
+	d->r=testrange(floor(s1->r/(q*(s2->r+1))+0.5));
+	d->g=testrange(floor(s1->g/(q*(s2->g+1))+0.5));
+	d->b=testrange(floor(s1->b/(q*(s2->b+1))+0.5));
+	s1++; s2++; d++; 
+      }
+    else
+      while (i--)
+      {
+	d->r=testrange(floor(s1->r/(q*(rgb.r+1))+0.5));
+	d->g=testrange(floor(s1->g/(q*(rgb.g+1))+0.5));
+	d->b=testrange(floor(s1->b/(q*(rgb.b+1))+0.5));
+	s1++; d++; 
+      }
+    THREADS_DISALLOW();
+    pop_n_elems(args);		   		   		
+    push_object(o);
+  }
 }
 
 
@@ -522,7 +546,10 @@ void image_operator_equal(INT32 args)
    INT32 i;
    int res=1;
 
-   if (args && sp[-args].type==T_INT)
+   if (!args)
+     SIMPLE_TOO_FEW_ARGS_ERROR ("Image->`==", 1);
+
+   if (TYPEOF(sp[-args]) == T_INT)
    {
       rgb.r=sp[-args].u.integer;
       rgb.g=sp[-args].u.integer;
@@ -535,11 +562,11 @@ void image_operator_equal(INT32 args)
 	 return;
       }
    }
-   else if (args && sp[-args].type==T_ARRAY
+   else if (TYPEOF(sp[-args]) == T_ARRAY
        && sp[-args].u.array->size>=3
-       && sp[-args].u.array->item[0].type==T_INT
-       && sp[-args].u.array->item[1].type==T_INT
-       && sp[-args].u.array->item[2].type==T_INT)
+       && TYPEOF(sp[-args].u.array->item[0]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[1]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[2]) == T_INT)
    {
       rgb.r=sp[-args].u.array->item[0].u.integer;
       rgb.g=sp[-args].u.array->item[1].u.integer;
@@ -554,10 +581,14 @@ void image_operator_equal(INT32 args)
    }
    else
    {
-      if (args<1 || sp[-args].type!=T_OBJECT
-       || !sp[-args].u.object
-       || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 Pike_error("`==: illegal argument 2\n");
+      if (TYPEOF(sp[-args]) != T_OBJECT
+       || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program))) {
+	/* `== must be able to compare anything with anything -
+	 * shouldn't throw an error here. */
+	pop_n_elems (args);
+	push_int (0);
+	return;
+      }
 
       if (!oper->img || !THIS->img)
       {
@@ -572,6 +603,8 @@ void image_operator_equal(INT32 args)
 	 push_int(0);
 	 return;
       }
+      /* silence warning.. */
+      rgb.r = rgb.g = rgb.b = 0;
    }
 
    s1=THIS->img;
@@ -613,18 +646,18 @@ void image_operator_lesser(INT32 args)
    if (!THIS->img)
       Pike_error("image->`<: operator 1 has no image\n");
 
-   if (args && sp[-args].type==T_INT)
+   if (args && TYPEOF(sp[-args]) == T_INT)
    {
       rgb.r=sp[-args].u.integer;
       rgb.g=sp[-args].u.integer;
       rgb.b=sp[-args].u.integer;
       oper=NULL;
    }
-   else if (args && sp[-args].type==T_ARRAY
+   else if (args && TYPEOF(sp[-args]) == T_ARRAY
        && sp[-args].u.array->size>=3
-       && sp[-args].u.array->item[0].type==T_INT
-       && sp[-args].u.array->item[1].type==T_INT
-       && sp[-args].u.array->item[2].type==T_INT)
+       && TYPEOF(sp[-args].u.array->item[0]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[1]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[2]) == T_INT)
    {
       rgb.r=sp[-args].u.array->item[0].u.integer;
       rgb.g=sp[-args].u.array->item[1].u.integer;
@@ -633,16 +666,19 @@ void image_operator_lesser(INT32 args)
    }
    else
    {
-      if (args<1 || sp[-args].type!=T_OBJECT
+      if (args<1 || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
        || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 Pike_error("`==: illegal argument 2\n");
+	 Pike_error("image->`<: illegal argument 2\n");
 
       if (!oper->img)
 	 Pike_error("image->`<: operator 2 has no image\n");
       if (oper->xsize!=THIS->xsize
           || oper->ysize!=THIS->ysize)
 	 Pike_error("image->`<: operators differ in size\n");
+      rgb.r = 0;
+      rgb.g = 0;
+      rgb.b = 0;
    }
 
    s1=THIS->img;
@@ -660,7 +696,7 @@ void image_operator_lesser(INT32 args)
    if (s2)
       while (i--)
       {
-	 if (s1->r>=s1->r || s1->g>=s1->g || s1->b>=s1->b) { res=0; break; }
+	 if (s1->r>=s2->r || s1->g>=s2->g || s1->b>=s2->b) { res=0; break; }
 	 s1++; s2++;
       }
    else
@@ -685,18 +721,18 @@ void image_operator_greater(INT32 args)
    if (!THIS->img)
       Pike_error("image->`>: operator 1 has no image\n");
 
-   if (args && sp[-args].type==T_INT)
+   if (args && TYPEOF(sp[-args]) == T_INT)
    {
       rgb.r=sp[-args].u.integer;
       rgb.g=sp[-args].u.integer;
       rgb.b=sp[-args].u.integer;
       oper=NULL;
    }
-   else if (args && sp[-args].type==T_ARRAY
+   else if (args && TYPEOF(sp[-args]) == T_ARRAY
        && sp[-args].u.array->size>=3
-       && sp[-args].u.array->item[0].type==T_INT
-       && sp[-args].u.array->item[1].type==T_INT
-       && sp[-args].u.array->item[2].type==T_INT)
+       && TYPEOF(sp[-args].u.array->item[0]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[1]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[2]) == T_INT)
    {
       rgb.r=sp[-args].u.array->item[0].u.integer;
       rgb.g=sp[-args].u.array->item[1].u.integer;
@@ -705,16 +741,19 @@ void image_operator_greater(INT32 args)
    }
    else
    {
-      if (args<1 || sp[-args].type!=T_OBJECT
+      if (args<1 || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
        || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
-	 Pike_error("`==: illegal argument 2\n");
+	 Pike_error("image->`>: illegal argument 2\n");
 
       if (!oper->img)
 	 Pike_error("image->`>: operator 2 has no image\n");
       if (oper->xsize!=THIS->xsize
           || oper->ysize!=THIS->ysize)
 	 Pike_error("image->`>: operators differ in size\n");
+      rgb.r = 0;
+      rgb.g = 0;
+      rgb.b = 0;
    }
 
    s1=THIS->img;
@@ -732,7 +771,7 @@ void image_operator_greater(INT32 args)
    if (s2)
       while (i--)
       {
-	 if (s1->r<=s1->r || s1->g<=s1->g || s1->b<=s1->b) { res=0; break; }
+	 if (s1->r<=s2->r || s1->g<=s2->g || s1->b<=s2->b) { res=0; break; }
 	 s1++; s2++;
       }
    else
@@ -801,9 +840,9 @@ void image_average(INT32 args)
    }
    THREADS_DISALLOW();
 
-   push_float(sumy.r/(float)THIS->ysize);
-   push_float(sumy.g/(float)THIS->ysize);
-   push_float(sumy.b/(float)THIS->ysize);
+   push_float(DO_NOT_WARN((FLOAT_TYPE)(sumy.r/(float)THIS->ysize)));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)(sumy.g/(float)THIS->ysize)));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)(sumy.b/(float)THIS->ysize)));
 
    f_aggregate(3);
 }
@@ -840,9 +879,9 @@ void image_sumf(INT32 args)
    }
    THREADS_DISALLOW();
 
-   push_float(sumy.r);
-   push_float(sumy.g);
-   push_float(sumy.b);
+   push_float(DO_NOT_WARN((FLOAT_TYPE)sumy.r));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)sumy.g));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)sumy.b));
 
    f_aggregate(3);
 }
@@ -956,7 +995,7 @@ static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,
    INT32 i;
    if (args-args_start<3) return;
    for (i=0; i<3; i++)
-      if (sp[-args+i+args_start].type!=T_INT)
+      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
          Pike_error("Illegal r,g,b argument to %s\n",name);
    rgb->r=sp[-args+args_start].u.integer;
    rgb->g=sp[1-args+args_start].u.integer;
@@ -1058,4 +1097,3 @@ void image_find_max(INT32 args)
 
    f_aggregate(2);
 }
-

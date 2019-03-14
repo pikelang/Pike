@@ -1,0 +1,456 @@
+START_MARKER
+
+dnl - ADT.BitBuffer
+
+test_do( add_constant( "B", ADT.BitBuffer() ) )
+test_eq( B->drain(), "" )
+test_eq( B->feed(""), B )
+test_eval_error( B->feed("\400") )
+test_eq( B->drain(), "" )
+test_eq( sizeof(B), 0 )
+
+test_eq( B->put(3,3), B )
+test_eq( sizeof(B), 3 )
+test_eq( B->get(2), 1 )
+test_eq( sizeof(B), 1 )
+test_eq( B->drain(), "" )
+
+test_eq( B->feed("foo"), B )
+test_eq( sizeof(B), 3*8+1 )
+test_eq( B->drain(), "\xb3""7\xb7" )
+test_eq( sizeof(B), 1 )
+test_eq( B->get(1), 1 )
+
+test_eq( B->feed("\xff\0"), B )
+test_eq( B->get(7), 127 )
+test_eq( B->get(4), 8 )
+test_eq( B->get(5), 0 )
+
+test_eq( B->put1(9), B )
+test_eq( B->get(9), 0b111111111 )
+
+test_eq( B->put1(1), B )
+test_eq( B->put0(4), B )
+test_eq( sizeof(B), 5 )
+test_eq( B->put1(4), B )
+test_eq( sizeof(B), 9 )
+test_eq( B->get(1), 1 )
+test_eq( B->drain(), "\17" )
+test_eq( sizeof(B), 0 )
+test_eq( B->drain(), "" )
+test_eval_error( B->get(1) )
+
+test_eq( B->feed("bar"), B )
+test_eq( B->read(2), "ba" )
+test_eq( B->put(1,2), B )
+test_eq( B->read(5), "r" )
+test_eq( B->put(9839,14), B )
+test_eq( B->read(2), "fo" )
+test_eq( sizeof(B), 0 )
+
+test_do( add_constant( "B" ) )
+
+
+dnl - ADT.History
+
+test_eq(sizeof(ADT.History(2)),0)
+
+test_do(add_constant("adth", ADT.History(2)))
+test_eq(adth->get_maxsize(),2)
+test_any([[
+  adth->push(17);
+  return sizeof(adth);
+]], 1)
+test_any([[
+  adth->push(18);
+  return sizeof(adth);
+]], 2)
+test_any([[
+  adth->push(19);
+  return sizeof(adth);
+]], 2)
+test_eq(adth->get_latest_entry_num(),3)
+test_eq(adth->get_first_entry_num(),2)
+test_eval_error(return adth[0])
+test_eval_error(return adth[1])
+test_eq(adth[2],18)
+test_eq(adth[3],19)
+test_eq(adth[-1],19)
+test_eq(adth[-2],18)
+test_eval_error(return adth[-3])
+test_do( adth->set_maxsize(4) )
+test_eq(adth->get_maxsize(),4)
+test_eq(sizeof(adth),2)
+test_eq(adth[-1],19)
+test_eq(adth[-2],18)
+test_eval_error(return adth[-3])
+test_do( adth->push(20); adth->push(21); adth->push(22); )
+test_eq(adth[3],19)
+test_eq(adth[6],22)
+test_do( adth->flush() )
+test_eq(adth->get_latest_entry_num(),6)
+test_eq(adth->get_first_entry_num(),0)
+test_do( adth->set_maxsize(0) )
+test_do( adth->push(23) )
+test_eq(sizeof(adth),0)
+test_do( adth->set_maxsize(2) )
+test_eq(adth->query_no_adjacent_duplicates(), 0)
+test_do( adth->set_no_adjacent_duplicates(1), 0)
+test_do( adth->push(24) )
+test_do( adth->push(25) )
+test_do( adth->push(25) )
+test_do( adth->push(25) )
+test_eq(adth[-2],24)
+test_do( adth->set_no_adjacent_duplicates(0), 0)
+test_do( adth->push(26) )
+test_do( adth->push(26) )
+test_eq(adth[-2],26)
+test_do( adth[-1]=27 )
+test_equal(indices(adth),[[ ({9,10}) ]])
+test_equal(values(adth),[[ ({26,27}) ]])
+test_do(add_constant("adth"))
+
+
+dnl - ADT.Priority_queue
+
+test_eval_error( ADT.Priority_queue()->pop(); )
+test_any([[
+  object q=ADT.Priority_queue();
+  q->push(1,"a");
+  return q->pop();
+]], "a")
+test_any([[
+  object q=ADT.Priority_queue();
+  q->push(1,"a");
+  q->push(2,"b");
+  return q->pop();
+]], "a")
+test_any([[
+  object q=ADT.Priority_queue();
+  q->push(2,"a");
+  q->push(1,"b");
+  return q->pop();
+]], "b")
+
+
+dnl - ADT.Stack
+
+test_any([[
+  object s = ADT.Stack();
+  s->push(1);
+  return s->pop();
+]], 1)
+
+test_eval_error(return ADT.Stack()->pop())
+
+test_any([[
+  object s = ADT.Stack();
+  for(int i; i<1000; i++)
+    s->push(i);
+  for(int i; i<1000; i++)
+    s->pop();
+  for(int i; i<1000; i++)
+    s->push(i);
+  return s->pop();
+]], 999)
+
+test_equal_any([[
+  object s = ADT.Stack();
+  s->push(2);
+  s->push(3);
+  s->push(4);
+  s->pop();
+  return s->pop(2);
+]], ({2,3}) )
+
+test_any([[
+  object s = ADT.Stack();
+  s->push(5);
+  return s->top();
+]], 5)
+
+test_eval_error(return ADT.Stack()->top())
+
+test_any([[
+  object s = ADT.Stack();
+  for(int i; i<1000; i++)
+    s->push(i);
+  for(int i; i<1000; i++)
+    s->quick_pop();
+  for(int i; i<1000; i++)
+    s->push(i);
+  return sizeof(s);
+]], 1000)
+
+test_any([[
+  object s = ADT.Stack();
+  for(int i; i<1000; i++)
+    s->push(i);
+  return sizeof(s);
+]], 1000)
+
+test_any([[
+  object s = ADT.Stack();
+  s->push(3);
+  s->reset();
+  return sizeof(s);
+]], 0)
+
+test_any([[
+  object s = ADT.Stack();
+  s->set_stack( "1234"/1 );
+  s->push("5");
+  return s->pop()+sizeof(s);
+]], "54")
+
+test_any([[
+  object s = ADT.Stack();
+  s->push("a");
+  s->push("b");
+  return values(s)*",";
+]], [["a,b"]])
+
+test_any([[
+  object s = ADT.Stack();
+  s->set_stack( "1234"/1 );
+  object t = ADT.Stack();
+  t->push("5");
+  return values(s+t)*"";
+]], "12345")
+
+
+dnl - ADT.Struct
+
+test_do([[
+  class Test {
+    inherit ADT.Struct;
+    Item one = Byte();
+    Item two = Word(2);
+    Item three = Chars(3);
+  };
+  add_constant("Test", Test);
+]])
+test_equal( sizeof(Test()), 6 )
+test_equal( indices(Test()), ({ "one", "two", "three" }) )
+test_equal( values(Test()), ({ 0, 2, "\0\0\0" }) )
+test_eq( (string)Test("123456"), "123456" )
+test_eq( (string)Test("1234567"), "123456" )
+test_equal( (array)Test("123456"), ({ "1", "23", "456" }) )
+test_any([[
+  Test test=Test();
+  test->one=1;
+  test->two=3;
+  test->three="klm";
+  return (string)test;
+]], "\1\0\3klm")
+test_any([[
+  Test test=Test();
+  test["one"]=1;
+  test["two"]=3;
+  test["three"]="klm";
+  return (string)test;
+]], "\1\0\3klm")
+test_any([[
+  Test test=Test();
+  return sprintf("%O%O%O", test->one, test->two, test->three);
+]], "02\"\\0\\0\\0\"")
+test_any([[
+  Test test=Test();
+  return sprintf("%O%O%O", test["one"], test["two"], test["three"]);
+]], "02\"\\0\\0\\0\"")
+test_any([[
+  Test test=Test();
+  test->decode("123456");
+  return test->encode();
+]], "123456")
+test_eval_error([[
+  Test test=Test();
+  test->one=-1;
+]])
+test_eval_error([[
+  Test test=Test();
+  test->one=256;
+]])
+test_eval_error([[
+  Test test=Test();
+  test->two=-1;
+]])
+test_eval_error([[
+  Test test=Test();
+  test->two=65536;
+]])
+test_eval_error([[
+  Test test=Test();
+  test->three="";
+]])
+test_eval_error([[
+  Test test=Test();
+  test->three="xx\0777";
+]])
+test_do( add_constant("Test") )
+test_do([[
+  class Test {
+    inherit ADT.Struct;
+  };
+  add_constant( "Test", Test );
+]])
+test_equal( sizeof(Test()), 0 )
+test_equal( indices(Test()), ({}) )
+test_equal( values(Test()), ({}) )
+test_equal( (string)Test(), "" )
+test_do( Test()->decode("123") )
+test_do( Test()->decode("") )
+test_do( add_constant("Test") )
+test_any([[
+  class Test {
+    inherit ADT.Struct;
+    Item one = Byte(1);
+    Item two = Word();
+    Item three = Chars(3, "klm");
+  };
+  return (string)Test();
+]], "\1\0\0klm")
+test_any([[
+  class Test {
+    inherit ADT.Struct;
+    Item a = Word(0x1234);
+    Item b = Drow(0x1234);
+    Item c = Long(0x12345678);
+    Item d = Gnol(0x12345678);
+    Item e = uint64();
+    Item f = int32();
+  };
+  return (string)Test();
+]], "\22""44\22\22""4VxxV4\22\0\0\0\0\0\0\0\0\0\0\0\0");
+test_do([[
+  class Test {
+    inherit ADT.Struct;
+    Item a = Varchars();
+    Item b = Varchars(1,3);
+    Item c = Chars(1);
+  };
+  add_constant("Test",Test);
+]])
+test_eq( (string)Test("a\0b\0c"), "a\0b\0c" )
+test_eq( (string)Test("a\0b\0c\0"), "a\0b\0c" )
+test_eval_error( Test("a\0\0c") )
+test_eval_error( Test("a\0bbbb\0c") )
+test_eval_error( Test("a\0b\0") )
+test_eq( sizeof(Test("aa\0b\0c")), 6 )
+test_do( add_constant("Test"); )
+test_do([[
+  class A {
+    inherit ADT.Struct;
+    Item a = Byte();
+    Item b = Byte();
+  };
+  class B {
+    inherit ADT.Struct;
+    Item x = Word();
+    Item y = A();
+    Item z = Byte();
+  };
+  add_constant("Test", B);
+]])
+test_eq( (string)Test("XXABZ"), "XXABZ" )
+test_eq( Test("XXABZ")->y->a, 'A' )
+test_do( add_constant("Test"); )
+
+dnl - ADT.Table
+
+test_equal(ADT.Table.table(
+ ({ ({ "a", "b", 42 }),
+    ({ "c", "b", 41 }),
+    ({ "a", "a", 76 }) }),
+ ({ "X", "Y", "z" }))->select("x", 2)->sum("Z")->distinct(0)->rsort("X")
+ ->rename(0, "fOo")->sort("foO")->cast("array"),
+ ({ ({ "a", 118 }),
+    ({ "c", 41 }) }))
+
+test_equal(ADT.Table.table(
+  ({ ({ "a", "5.3" }),
+     ({ "b", "5.1" }),
+     ({ "c", "4711" }) }), ({ "one", "two" }),
+     ({ (["type":"text"]), (["type":"num"]) }))->sort("two")->cast("array"),
+  ({ ({ "b", "5.1" }),
+     ({ "a", "5.3" }),
+     ({ "c", "4711" }) }))
+
+
+dnl  - ADT.struct
+
+define(test_put,[[
+test_any([[
+  object s=ADT.struct();
+  s->$1;
+  return s->pop_data()+"\7777"+s->pop_data();
+]],$2"\7777")
+test_any_equal([[
+  object s=ADT.struct($2);
+  return s->$3;
+]], $4)
+]])
+
+test_put(add_data("hej"), "hej", get_fix_string(3), "hej")
+test_put(put_uint(17,1), "\21", get_uint(1), 17)
+test_put(put_uint(17,2), "\0\21", get_uint(2), 17)
+test_put(put_var_string("hej",1), "\3hej", get_var_string(1), "hej")
+cond([[ master()->resolv("Gmp")->mpz ]],[[
+  test_put(put_bignum(Gmp.mpz(123456789)), "\0\4\7[\315\25", get_bignum(),
+    Gmp.mpz(123456789))
+]])
+test_put(put_fix_string("hej"), "hej", get_fix_string(3), "hej")
+test_put(put_fix_uint_array(({1,2,3,4}), 1), "\1\2\3\4", get_fix_uint_array(1,4),
+  ({1,2,3,4}))
+test_put(put_var_uint_array(({1,2,3,4}),1,1), "\4\1\2\3\4", get_var_uint_array(1,1),
+  ({1,2,3,4}))
+
+test_any([[
+  object s=ADT.struct("abcdefghijk");
+  return s->get_fix_string(3)+" "+s->contents()+" "+s->get_fix_string(3);
+]],  "abc defghijk def")
+
+test_any([[
+  object s=ADT.struct("abcdefghijk");
+  return s->get_fix_string(3)+" "+s->get_rest();
+]], "abc defghijk")
+
+test_eval_error([[
+  object s=ADT.struct("abc");
+  s->get_rest();
+  s->get_fix_string(1);
+]])
+
+test_any([[
+  object s=ADT.struct("hej");
+  string r = "x" + sizeof(s);
+  s->get_uint(3);
+  return r + ":" + sizeof(s);
+]], "x3:0")
+
+test_eq([[ ADT.struct()->add_data("hej")->put_uint(1,2)->put_var_string("hi",1)->put_bignum(Gmp.mpz(1),1)->put_fix_string("x")->put_fix_uint_array(({6,7}),1)->put_var_uint_array(({6,7}),1,1)->pop_data() ]], "hej\0\1\2hi\1\1x\6\7\2\6\7")
+test_eq([[ ADT.struct()->put_var_uint_array(({6,7}),2,2)->pop_data() ]], "\0\4\0\6\0\7")
+test_eq([[ ADT.struct()->put_var_string_array(({"a","b"}),2,2)->pop_data() ]], "\0\6\0\1a\0\1b")
+
+
+dnl ADT.Queue
+
+test_any([[
+  object q=ADT.Queue();
+  if(sizeof(q)) return 1;
+  if((array)q!=({})) return 2;
+  if(!q->is_empty()) return 3;
+  q->put(1,2);
+  if(sizeof(q)!=2) return 4;
+  if(!equal((array)q,({1,2}))) return 5;
+  if(!equal(values(q),({1,2}))) return 6;
+  if(q->peek()!=1) return 7;
+  if(q->get()!=1) return 8;
+  if(sizeof(q)!=1) return 9;
+  q->flush();
+  if(sizeof(q)) return 10;
+  if(!undefinedp(q->get())) return 11;
+  return 0;
+]], 0)
+
+END_MARKER

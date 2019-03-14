@@ -1,9 +1,11 @@
-/* $Id: orient.c,v 1.19 2001/07/19 21:11:12 nilsson Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /*
 **! module Image
-**! note
-**!	$Id: orient.c,v 1.19 2001/07/19 21:11:12 nilsson Exp $
 **! class Image
 */
 
@@ -12,23 +14,19 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "pike_error.h"
 
 #include "image.h"
 
 #include <builtin_functions.h>
 
-/* This must be included last! */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_program;
 #ifdef THIS
@@ -101,8 +99,8 @@ static INLINE int sq(int a) { return a*a; }
 static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 
 static void _image_orient(struct image *source,
-			  struct object *o[4],
-			  struct image *img[4])
+			  struct object *o[5],
+			  struct image *img[5])
 {
    int i;
    struct { int x,y; } or[4]={ {1,0}, {1,1}, {0,1}, {-1,1} };
@@ -168,9 +166,9 @@ void image_orient(INT32 args)
 
   if (args)
   {
-    if (sp[-args].type==T_INT) 
+    if (TYPEOF(sp[-args]) == T_INT)
       mag=sp[-args].u.integer;
-    else if (sp[-args].type==T_FLOAT)
+    else if (TYPEOF(sp[-args]) == T_FLOAT)
       mag=sp[-args].u.float_number;
     else {
       bad_arg_error("image->orient\\n",sp-args,args,1,"",sp+1-1-args,
@@ -186,13 +184,13 @@ void image_orient(INT32 args)
 
   if (args>1)
   {
-    if (sp[1-args].type!=T_ARRAY) 
+    if (TYPEOF(sp[1-args]) != T_ARRAY)
       bad_arg_error("image->orient\\n",sp-args,args,2,"",sp+2-1-args,
 		"Bad argument 2 to image->orient\n()\n");
     if (sp[1-args].u.array->size!=4)
       Pike_error("The array given as argument 2 to image->orient do not have size 4\n");
     for(i=0; i<4; i++)
-      if ((sp[1-args].u.array->item[i].type!=T_OBJECT) ||
+      if ((TYPEOF(sp[1-args].u.array->item[i]) != T_OBJECT) ||
 	  (!(sp[1-args].u.array->item[i].u.object)) ||
 	  (sp[1-args].u.array->item[i].u.object->prog!=image_program))
 	Pike_error("The array given as argument 2 to image->orient do not contain images\n");
@@ -250,8 +248,11 @@ CHRONO("begin hsv...");
 	}
 	else z=0,w=0;
      else {
-	z = -DOUBLE_TO_INT(-32*(h/j)+(j>0)*128+128);
-	w = my_abs(DOUBLE_TO_INT(j));
+	if (j) {
+	    z = -DOUBLE_TO_INT(-32*(h/j)+(j>0)*128+128);
+	    w = my_abs(DOUBLE_TO_INT(j));
+	}
+	else z=0,w=0;
      }
 
      d->r=(COLORTYPE)z;
@@ -269,7 +270,7 @@ THREADS_DISALLOW();
 
   if (!w)
   {
-    o[4]->refs++;
+    add_ref(o[4]);
     pop_n_elems(5);
     push_object(o[4]);
   }
@@ -289,4 +290,3 @@ void image_orient4(INT32 args)
   pop_n_elems(1);
   f_aggregate(4);
 }
-

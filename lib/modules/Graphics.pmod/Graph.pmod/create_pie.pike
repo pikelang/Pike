@@ -1,69 +1,46 @@
-#!NOMODULE
+//! Graph sub-module for drawing pie-charts.
+//
+// These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
+// Create_pie can draw pie charts in different forms.
 
 #pike __REAL_VERSION__
 
 #include "graph.h"
 
-// import Image;
-import Array;
-import Stdio;
-
-inherit "polyline.pike";
-inherit "create_graph.pike";
-inherit "create_bars.pike";
-
-constant cvs_version = "$Id: create_pie.pike,v 1.6 2001/04/07 00:55:17 nilsson Exp $";
-
-/*
- * name = "BG: Create pies";
- * doc = "Business Graphics sub-module for drawing pie-charts.";
- */
-
-/*
-These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
-Create_pie can draw pie charts in different forms.
-
-The data is taken from the diagram_data-mapping which is described in 
- doc/diagram_internals.txt
-
-
-*/ 
-
+inherit .create_bars;
 
 mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 {
   //Only tested with xsize>=100
-  int si=diagram_data["fontsize"];
+  int si=diagram_data->fontsize;
 
-  string where_is_ax;
-
-  object(Image.image) piediagram;
+  Image.Image piediagram;
 
   init_bg(diagram_data);
-  piediagram=diagram_data["image"];
+  piediagram=diagram_data->image;
   setinitcolors(diagram_data);
 
   set_legend_size(diagram_data);
 
-  diagram_data["ysize"]-=diagram_data["legend_size"];
-  
+  diagram_data->ysize-=diagram_data->legend_size;
+
   //Do the standard init (The init function is in create_graph)
   init(diagram_data);
 
   //Initiate values
-  int|void  size=diagram_data["xsize"];
-  array(int|float) numbers=diagram_data["data"][0];
-  void | array(string) names=diagram_data["xnames"];
-  void|int twoD=diagram_data["drawtype"]=="2D";
-  void|array(array(int)) colors=diagram_data["datacolors"];
-  array(int)bg=diagram_data["bgcolor"];
-  array(int)fg=diagram_data["textcolor"];
-  int tone=diagram_data["tone"];
+  int size=diagram_data->xsize;
+  array(int|float) numbers=diagram_data->data[0];
+  array(string) names=diagram_data->xnames;
+  int twoD=diagram_data->drawtype=="2D";
+  array(array(int)) colors=diagram_data->datacolors;
+  array(int) bg=diagram_data->bgcolor;
+  array(int) fg=diagram_data->textcolor;
+  int tone=diagram_data->tone;
 
   for(int i; i<sizeof(numbers); i++)
     if ((float)numbers[i]<0.0)
       numbers[i]*=-1.0;
-  
+
 
 
 
@@ -104,8 +81,8 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   if (names)
     text=allocate(sizeof(names));
    
-  if (diagram_data["3Ddepth"]>diagram_data["ysize"]/5)
-    diagram_data["3Ddepth"]=diagram_data["ysize"]/5;
+  if (diagram_data["3Ddepth"]>diagram_data->ysize/5)
+    diagram_data["3Ddepth"]=diagram_data->ysize/5;
   
   notext=GETFONT(xnamesfont);
   if (names)
@@ -114,21 +91,21 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	{
 	  if ((names[i]!=0) && (names[i]!=""))
 	    text[i]=notext
-	      ->write(UNICODE((string)(names[i]),diagram_data["encoding"]))
-	      ->scale(0,diagram_data["fontsize"]);
+	      ->write(UNICODE((string)(names[i]),diagram_data->encoding))
+	      ->scale(0,diagram_data->fontsize);
 	  else
-	    text[i]=Image.image(diagram_data["fontsize"],
-				diagram_data["fontsize"]);
+	    text[i]=Image.Image(diagram_data->fontsize,
+				diagram_data->fontsize);
 
 	  if (text[i]->xsize()<1)
-	    text[i]=Image.image(diagram_data["fontsize"],
-				diagram_data["fontsize"]);
+	    text[i]=Image.Image(diagram_data->fontsize,
+				diagram_data->fontsize);
 
-	  if (text[i]->xsize()>diagram_data["xsize"]/5+diagram_data["3Ddepth"])
-	    text[i]=text[i]->scale((int)diagram_data["xsize"]/5, 0);
+	  if (text[i]->xsize()>diagram_data->xsize/5+diagram_data["3Ddepth"])
+	    text[i]=text[i]->scale((int)diagram_data->xsize/5, 0);
 
-	  if (text[i]->ysize()>diagram_data["ysize"]/5-diagram_data["3Ddepth"])
-	    text[i]=text[i]->scale(0, (int)diagram_data["ysize"]/5-
+	  if (text[i]->ysize()>diagram_data->ysize/5-diagram_data["3Ddepth"])
+	    text[i]=text[i]->scale(0, (int)diagram_data->ysize/5-
 				   diagram_data["3Ddepth"]);
 	  
 	  if (xmaxtext<(text[i]->xsize()))
@@ -138,37 +115,37 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	  
 	}
     else
-       throw(({"Missing font or similar error!\n", backtrace() }));
+      error("Missing font or similar error!\n");
 
   int nameheight=write_name(diagram_data);
 
   //Some calculations
   if (twoD)
     {
-      xc=diagram_data["xsize"]/2;
-      yc=diagram_data["ysize"]/2+nameheight/2;
-      xr=(int)min(xc-xmaxtext-ymaxtext-1-diagram_data["linewidth"], 
+      xc=diagram_data->xsize/2;
+      yc=diagram_data->ysize/2+nameheight/2;
+      xr=(int)min(xc-xmaxtext-ymaxtext-1-diagram_data->linewidth, 
 		  yc-2*ymaxtext-
-		  1-diagram_data["linewidth"]-nameheight);
+		  1-diagram_data->linewidth-nameheight);
       yr=xr;
     }
   else
     {
-      xc=diagram_data["xsize"]/2;
-      yc=diagram_data["ysize"]/2-diagram_data["3Ddepth"]/2+nameheight/2;
+      xc=diagram_data->xsize/2;
+      yc=diagram_data->ysize/2-diagram_data["3Ddepth"]/2+nameheight/2;
       yr=(int)(min(xc-xmaxtext-ymaxtext-1-diagram_data["3Ddepth"]/2, 
 		   yc-2*ymaxtext-1-nameheight)
-	       -diagram_data["linewidth"]);
+	       -diagram_data->linewidth);
       xr=(int)(min(xc-xmaxtext-ymaxtext-1, 
 		   yc+diagram_data["3Ddepth"]/2-
 		   2*ymaxtext-1-nameheight)-
-	       diagram_data["linewidth"]);
+	       diagram_data->linewidth);
     }
-  float w=diagram_data["linewidth"];
+  float w=diagram_data->linewidth;
 
   if (xr<2)
-    throw(({"Image to small for this pie-diagram.\n"
-	    "Try smaller font or bigger image!\n", backtrace() }));
+    error("Image to small for this pie-diagram.\n"
+	  "Try smaller font or bigger image!\n");
 
   //initiate the 0.25*% for different numbers:
   //Ex: If numbers is ({3,3}) pnumbers will be ({200, 200}) 
@@ -210,17 +187,17 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   
   //Initiate the piediagram!
   float FI=0;
-  if (diagram_data["center"])
+  if (diagram_data->center)
     {
       //If to great center integer is given, module is used. 
       // Center should not be greater than sizeof(data[0]).
-      diagram_data["center"]%=(1+sizeof(numbers));
-      FI=(400-`+(0,@pnumbers[0..diagram_data["center"]-2])
-	-pnumbers[diagram_data["center"]-1]*0.5)*2.0*PI/400.0;
+      diagram_data->center%=(1+sizeof(numbers));
+      FI=(400-`+(0,@pnumbers[0..diagram_data->center-2])
+	-pnumbers[diagram_data->center-1]*0.5)*2.0*PI/400.0;
     }
   else
-    if (diagram_data["rotate"])
-      FI=((float)(diagram_data["rotate"])*2.0*PI/360.0)%(2*PI);
+    if (diagram_data->rotate)
+      FI=((float)(diagram_data->rotate)*2.0*PI/360.0)%(2*PI);
   float most_down=yc+yr+w;
   float most_right=xc+xr+w;
   float most_left=xc-xr-w;
@@ -236,12 +213,12 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
     }
 
   //Draw the slices
-  if (sizeof(diagram_data["datacolors"])>
-      sizeof(diagram_data["data"][0]))
-    diagram_data["datacolors"]=diagram_data["datacolors"]
-      [0..sizeof(diagram_data["data"][0])-1];
+  if (sizeof(diagram_data->datacolors)>
+      sizeof(diagram_data->data[0]))
+    diagram_data->datacolors=diagram_data->datacolors
+      [..sizeof(diagram_data->data[0])-1];
   
-  int t=sizeof(diagram_data["datacolors"]);
+  int t=sizeof(diagram_data->datacolors);
 
   float miniwxr;
   float miniwyr;
@@ -267,9 +244,9 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	    diagram_data["3Ddepth"];
 	}
       object skugg;
-      skugg=Image.image(piediagram->xsize(),piediagram->ysize(), 255,255,255);
+      skugg=Image.Image(piediagram->xsize(),piediagram->ysize(), 255,255,255);
       object foo;
-      foo=Image.image(piediagram->xsize(),piediagram->ysize(), 255,255,255);
+      foo=Image.Image(piediagram->xsize(),piediagram->ysize(), 255,255,255);
       skugg->tuned_box(xc,yc-yr-1,xc+xr+1,1+yc+yr+diagram_data["3Ddepth"],  
 		       ({			 
 			 ({255,255,255}),
@@ -308,7 +285,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
       for(i=0; i<t; i++)
 	{
 	  piediagram->setcolor(
-			       @diagram_data["datacolors"][i]
+			       @diagram_data->datacolors[i]
 			       );
 	  
 	  if (pnumbers[i])
@@ -327,7 +304,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 
       piediagram->setcolor(0,0,0);
       piediagram->polyfill(
-			   make_polygon_from_line(diagram_data["linewidth"],
+			   make_polygon_from_line(diagram_data->linewidth,
 						  ({
 						    xc+(xr+w/2.0), 
 						    yc})+
@@ -341,7 +318,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   edge_nr=0;
   for(i=0; i<t; i++)
     {
-      piediagram=piediagram->setcolor(@diagram_data["datacolors"][i]);
+      piediagram=piediagram->setcolor(@diagram_data->datacolors[i]);
       if (pnumbers[i])
 	piediagram=piediagram->polyfill(({(float)xc,(float)yc})+
 					arr[2*edge_nr..2*(edge_nr+pnumbers[i]+2)+1]);
@@ -353,11 +330,11 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   edge_nr=pnumbers[0];
 
   //black borders
-  if (diagram_data["linewidth"]>LITET)
+  if (diagram_data->linewidth>LITET)
     {
-      piediagram->setcolor(@diagram_data["axcolor"]);
+      piediagram->setcolor(@diagram_data->axcolor);
       piediagram->polygone(
-				      make_polygon_from_line(diagram_data["linewidth"],
+				      make_polygon_from_line(diagram_data->linewidth,
 							     ({
 							       xc,
 							       yc,
@@ -372,7 +349,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	{
 	  piediagram->
 	    polygone(
-		     make_polygon_from_line(diagram_data["linewidth"],
+		     make_polygon_from_line(diagram_data->linewidth,
 					    ({xc
 					      ,yc,
 					      arr[2*(edge_nr)],
@@ -395,21 +372,20 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   //And now some shading!
   if (!twoD)
     {
-      object below;
       array(int) b=({70,70,70});
       array(int) a=({0,0,0});
       
       
       object tbild;
 
-      int imxsize=piediagram->xsize(); //diagram_data["xsize"];
-      int imysize=piediagram->ysize(); //diagram_data["ysize"]+diagram_data["legendsize"];
+      int imxsize=piediagram->xsize(); //diagram_data->xsize;
+      int imysize=piediagram->ysize(); //diagram_data->ysize+diagram_data->legendsize;
 
       if(tone)
 	{
 	  
 	  
-	  tbild=Image.image(imxsize, imysize, 255, 255, 255)->
+	  tbild=Image.Image(imxsize, imysize, 255, 255, 255)->
 	    tuned_box(0, 0 , 1, imysize,
 		      ({a,a,b,b}));
 	  tbild=tbild->paste(tbild->copy(0,0,0, imysize), 1, 0);
@@ -447,7 +423,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 		+(miniwyr-w/2.0)*sin(-PI/2+edge_nr*2.0*PI/400.0);
 	      piediagram=piediagram->
 		polygone(
-			 make_polygon_from_line(diagram_data["linewidth"],
+			 make_polygon_from_line(diagram_data->linewidth,
 						({
 						  x1,y1,
 						  x2,y2
@@ -495,10 +471,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	piediagram=piediagram->paste_alpha_color(text[i], @fg, x, y);
       }
 
-  diagram_data["ysize"]-=diagram_data["legend_size"];
-  diagram_data["image"]=piediagram;
+  diagram_data->ysize-=diagram_data->legend_size;
+  diagram_data->image=piediagram;
   return diagram_data;
-
-
-
 }

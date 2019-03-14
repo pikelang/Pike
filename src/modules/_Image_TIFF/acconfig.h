@@ -1,6 +1,8 @@
 /*
- * $Id: acconfig.h,v 1.1 1999/04/07 14:37:11 per Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #ifndef GMP_MACHINE_H
 #define GMP_MACHINE_H
@@ -8,7 +10,7 @@
 @TOP@
 @BOTTOM@
 
-/* Define this if you have -ltiff */
-#undef HAVE_LIBTIFF
+/* Define this if you have a working -ltiff */
+#undef HAVE_WORKING_LIBTIFF
 
 #endif

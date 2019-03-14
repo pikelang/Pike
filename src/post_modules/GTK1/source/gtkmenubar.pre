@@ -1,0 +1,16 @@
+/* -*- C -*- */
+class GTK1.MenuBar;
+inherit GTK1.MenuShell;
+//! Basically a horizontal W(Menu).
+//! <p>The menu image cannot be
+//! grabbed automatically, but this is how you would create a menu all
+//! in one line. This is not the recommended coding style.</p><p>
+//! IMG: GTK1.MenuBar()->add(GTK1.MenuItem("Menu")->set_submenu(GTK1.Menu()->add(GTK1.MenuItem("Sub")))->select()->activate())->add(GTK1.MenuItem("Bar"))
+//! </p>
+void create();
+void append( GTK1.Widget menu );
+void prepend( GTK1.Widget menu );
+void insert( GTK1.Widget menu, int position );
+void set_shadow_type( int int );
+
+

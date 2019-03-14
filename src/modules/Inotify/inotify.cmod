@@ -1,0 +1,338 @@
+/* vim:syntax=c
+ */
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/* Module for the linux inotify api.
+ *
+ * Ref: inotify(7)
+ *
+ */
+
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#include "global.h"
+#include "interpret.h"
+#include "module.h"
+#include "program.h"
+#include "stralloc.h"
+#include "svalue.h"
+#include "object.h"
+#include "pike_types.h"
+#include "builtin_functions.h"
+#include "fdlib.h"
+#include "pike_threadlib.h"
+
+#include "modules/_Stdio/file_machine.h"
+#include "modules/_Stdio/file.h"
+
+#ifdef HAVE_SYS_INOTIFY_H
+
+#include <sys/inotify.h>
+#include <errno.h>
+#include <unistd.h>
+
+DECLARATIONS
+
+/*! @module System */
+
+/*! @module Inotify
+ *! This module implements an API to linux inotify. It is available on all
+ *! kernels from version 2.6.13 onwards. Inotify offers fast and scalable file
+ *! notifications.
+ */
+
+/*! @decl constant IN_ALL_EVENTS
+ *! This is a derived constant that is not part of the standard inotify API. It
+ *! is the union of all other constants.
+ *!
+ *! @decl constant IN_ACCESS
+ *! @decl constant IN_ATTRIB
+ *! @decl constant IN_CLOSE
+ *! @decl constant IN_CLOSE_WRITE
+ *! @decl constant IN_CLOSE_NOWRITE
+ *! @decl constant IN_CREATE
+ *! @decl constant IN_DELETE
+ *! @decl constant IN_DELETE_SELF
+ *! @decl constant IN_MODIFY
+ *! @decl constant IN_MOVE_SELF
+ *! @decl constant IN_MOVED_FROM
+ *! @decl constant IN_MOVED_TO
+ *! @decl constant IN_OPEN
+ *! @decl constant IN_MOVE
+ *! @decl constant IN_CLOSE
+ *! @decl constant IN_DONT_FOLLOW
+ *! @decl constant IN_MASK_ADD
+ *! @decl constant IN_ONESHOT
+ *! @decl constant IN_ONLYDIR
+ *! @decl constant IN_IGNORED
+ *! @decl constant IN_ISDIR
+ *! @decl constant IN_Q_OVERFLOW
+ *! @decl constant IN_UNMOUNT
+ *! 	Please have a look at the inotify(7) manpage for information about
+ *!	these constants.
+ *! @note
+ *! 	Some constants may not be available when the module has been
+ *!	compiled on a machine with linux kernel before 2.6.15. See the
+ *!	manpage for more details.
+ */
+
+/*! @decl array(string|int) parse_event(string data)
+ *! Parses one inotify_event struct from @expr{data@}.
+ *! @returns
+ *! 	Returns an array consisting of
+ *! 	@array
+ *!	    @elem int 0
+ *! 		The watch descriptor returned by @[_Instance()->add_watch()]
+ *!		when the watch for this file was added.
+ *!	    @elem int 1
+ *! 		An integer that describes the event that occured. See
+ *!		the inotify manpage for a list of possible events and
+ *!		their numerical identifiers.
+ *!	    @elem int 2
+ *! 		An integer cookie that can be used to group together
+ *!		different events that were triggered by moving a file
+ *!		from one location to another.
+ *! 	    @elem string 3
+ *! 		The name of the file. This will only be present if the
+ *!		event happened to a file in a directory that was
+ *!		watched, e.g. with @[System.Inotify.IN_CREATE].
+ *! 		Otherwise this will be 0.
+ *!	    @elem int 4
+ *! 		The length of the data that has been parsed. If the @[data]
+ *!		string contains more than one inotify event, this parse
+ *!		function needs to be called again with the remainder as
+ *!		an argument.
+ *! 	@endarray
+ */
+PIKEFUN array(string|int) parse_event(string data) {
+    struct inotify_event event;
+    size_t len;
+    const char * d;
+
+    if (data->size_shift)
+	Pike_error("Inotify events should not be wide.\n");
+
+    if ((size_t)data->len < sizeof(struct inotify_event))
+	Pike_error("Malformed data.\n");
+
+    d = data->str;
+
+    memcpy(&event, d, sizeof(struct inotify_event));
+
+    push_int(event.wd);
+    push_int((int)event.mask);
+    push_int((int)event.cookie);
+
+    if (event.len) {
+        if (event.len > data->len - sizeof(struct inotify_event))
+            Pike_error("Data missing. Got %u expected %u bytes.\n", (unsigned)(data->len - sizeof(struct inotify_event)), event.len);
+        d += sizeof(struct inotify_event);
+	push_string(make_shared_binary_string(d, strnlen(d, event.len)));
+    } else {
+        push_int(0);
+    }
+
+    push_int((int)(event.len + sizeof(struct inotify_event)));
+
+    f_aggregate(5);
+    stack_swap();
+    pop_stack();
+}
+
+/*! @class _Instance
+ *! 	Simple wrapper class that gives direct access to the @tt{inotify(7)@}
+ *!	interface. On create an inotify instance is initiated by calling
+ *!	@tt{inotify_init(2)@}. Every object of this class has its own inotify
+ *!	file descriptor. Use this class only if you want direct access to
+ *!	the file descriptor to read from it manually. For a more user
+ *!	friendly inferface use @[System.Inotify.Instance].
+ *!
+ *! @seealso
+ *!     @[System.Inotify.Instance]
+ */
+PIKECLASS _Instance {
+    CVAR int fd;
+    CVAR struct object * fd_object;
+
+    /*! @decl int add_watch(string file, int mask)
+     *! Add a watch for a certain file or directory and specific events.
+     *! Adding more than one watch for one file will overwrite the
+     *! previous watch unless @[System.Inotify.IN_MASK_ADD] is contained
+     *! in the mask.
+     *! @param path
+     *!	    Path of the file or directory.
+     *! @param mask
+     *!	    Integer mask specifying the event type. This can be a
+     *!	    combination of different event types using bitwise OR.
+     *!	    See the inotify manpage for possible values and their
+     *!	    description. The values defined by the inotify header
+     *!	    file are exported by @[System.Inotify] as constants
+     *!	    using the same names (e.g. @[System.Inotify.IN_CREATE]).
+     *! @returns
+     *!     Returns a watch descriptor.
+     *! @note
+     *!	    Subdirectories are not watched. If you want to watch
+     *!	    subdirectories as well, you need to add watches for
+     *!	    them individually.
+     *!
+     *! @seealso
+     *!     @[rm_watch()], @[parse_event()]
+     */
+    PIKEFUN int add_watch(string file, int mask) {
+	INT32 err;
+
+	if (file->size_shift)
+	    Pike_error("Widestring filenames are not allowed.\n");
+
+	err = inotify_add_watch(THIS->fd, file->str, (INT32)mask);
+
+	if (err == -1)
+	    Pike_error("inotify_add_watch failed: %s\n",
+		       strerror(errno));
+	else
+	    RETURN err;
+    }
+
+
+    /*! @decl object get_fd()
+     *! @returns
+     *!	    Returns the file descriptor associated with this inotify instance.
+     *! @note
+     *!	    Use @[fd()] instead.
+     */
+    PIKEFUN int get_fd() {
+	push_int(THIS->fd);
+    }
+
+    /*! @decl object fd()
+     *! @returns
+     *!	    Returns a instance of @[Stdio.Fd] corresponding to the inotify instance. This can passed to
+     *!	    @[Stdio.File()->assign()].
+     */
+    PIKEFUN object fd() {
+	ref_push_object(THIS->fd_object);
+    }
+
+    /*! @decl int rm_watch(int wd)
+     *! Remove a watch.
+     *! @param wd
+     *!	    The watch descriptor that was returned by @[add_watch()].
+     */
+    PIKEFUN void rm_watch(int wd) {
+	INT32 err;
+
+	err = inotify_rm_watch(THIS->fd, wd);
+
+	if (err == 0) {
+	    return;
+	}
+
+	if (errno == EINVAL) {
+	    Pike_error("Wrong argument to rm_watch().\n");
+	} else if (errno == EBADF) {
+	    Pike_error("Oups. I feel funny inside.\n");
+	}
+    }
+
+    INIT {
+	struct object * o;
+	THIS->fd = inotify_init();
+	THIS->fd_object = NULL;
+
+	if (THIS->fd == -1) switch (errno) {
+	case EMFILE:
+	    Pike_error("User limit on inotify instances reached.\n");
+	case ENFILE:
+	    Pike_error("User limit on file descriptors reached.\n");
+	case ENOMEM:
+	    Pike_error("No free kernel memory available.\n");
+	}
+
+	o = file_make_object_from_fd(THIS->fd, FILE_READ, fd_CAN_NONBLOCK);
+	/* We will close the inotify fd on EXIT */
+	((struct my_file *)(o->storage + o->prog->inherits->storage_offset))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+	THIS->fd_object = o;
+    }
+
+    EXIT {
+	if (THIS->fd_object) {
+	    free_object(THIS->fd_object);
+	    THIS->fd_object = NULL;
+	}
+	if (THIS->fd != -1) {
+	    int fd = THIS->fd;
+	    /*
+	     * currently (linux 3.4.9) closing an inotify fd takes in the order of 100 ms
+	     */
+	    THREADS_ALLOW();
+	    close(fd);
+	    THREADS_DISALLOW();
+	}
+    }
+}
+
+/*! @endclass
+ */
+
+#define ADD_ICONST(name) do {			\
+    add_integer_constant(#name, name, 0);	\
+} while(0);
+
+#else /* !HAVE_SYS_INOTIFY_H */
+
+#define ADD_ICONST(name)
+
+#endif /* HAVE_SYS_INOTIFY_H */
+
+PIKE_MODULE_INIT {
+    ADD_ICONST(IN_ACCESS);
+    ADD_ICONST(IN_ALL_EVENTS);
+    ADD_ICONST(IN_ATTRIB);
+    ADD_ICONST(IN_CLOSE_WRITE);
+    ADD_ICONST(IN_CLOSE_NOWRITE);
+    ADD_ICONST(IN_CREATE);
+    ADD_ICONST(IN_DELETE);
+    ADD_ICONST(IN_DELETE_SELF);
+    ADD_ICONST(IN_MODIFY);
+    ADD_ICONST(IN_MOVE_SELF);
+    ADD_ICONST(IN_MOVED_FROM);
+    ADD_ICONST(IN_MOVED_TO);
+    ADD_ICONST(IN_OPEN);
+
+    ADD_ICONST(IN_MOVE);
+    ADD_ICONST(IN_CLOSE);
+
+/* some of these came with 2.6.15 linux and 2.5 glibc */
+#ifdef IN_DONT_FOLLOW
+    ADD_ICONST(IN_DONT_FOLLOW);
+#endif
+#ifdef IN_MASK_ADD
+    ADD_ICONST(IN_MASK_ADD);
+#endif
+    ADD_ICONST(IN_ONESHOT);
+#ifdef IN_ONLYDIR
+    ADD_ICONST(IN_ONLYDIR);
+#endif
+
+    ADD_ICONST(IN_IGNORED);
+    ADD_ICONST(IN_ISDIR);
+    ADD_ICONST(IN_Q_OVERFLOW);
+    ADD_ICONST(IN_UNMOUNT);
+
+    INIT
+}
+
+PIKE_MODULE_EXIT {
+    EXIT
+}
+
+/*! @endmodule
+ */
+/*! @endmodule
+ */

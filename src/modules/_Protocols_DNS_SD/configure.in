@@ -1,0 +1,38 @@
+
+AC_INIT(sd.c)
+AC_CONFIG_HEADER(config.h)
+AC_ARG_WITH(dnssd,     [  --with(out)-dnssd      Support for DNS-SD],[],[with_dnssd=yes])
+
+AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(DNS-SD)
+
+if test x$with_dnssd = xyes ; then
+
+  PIKE_FEATURE(DNS-SD,[no (dns_sd.h or howl.h not found)])
+
+  AC_CHECK_HEADERS(dns_sd.h howl.h)
+  
+  if test x$ac_cv_header_dns_sd_h = xyes; then
+    PIKE_FEATURE(DNS-SD,[no (libdns_sd not found)])
+    AC_CHECK_FUNC(DNSServiceRegister, [
+      PIKE_FEATURE(DNS-SD,[yes (dns_sd.h)])
+      AC_DEFINE(HAVE_DNS_SD)
+    ], [
+      AC_CHECK_LIB(dns_sd, DNSServiceRegister, [
+        PIKE_FEATURE(DNS-SD,[yes (dns_sd.h -ldns_sd)])
+        AC_DEFINE(HAVE_DNS_SD)
+        LIBS="${LIBS} -ldns_sd"
+      ])
+    ])
+  elif test x$ac_cv_header_howl_h = xyes; then
+    PIKE_FEATURE(DNS-SD,[no (libhowl not found)])
+    AC_DEFINE(HAVE_HOWL)
+    AC_CHECK_LIB(howl, sw_discovery_init, [
+      PIKE_FEATURE(DNS-SD,[yes (howl.h)])
+      LIBS="${LIBS} -lhowl"
+    ])
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

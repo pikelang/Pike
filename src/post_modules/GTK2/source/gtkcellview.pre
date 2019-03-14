@@ -1,0 +1,143 @@
+/* -*- C -*- */
+require gtk26;
+class GTK2.CellView;
+inherit GTK2.Widget;
+inherit GTK2.CellLayout;
+
+//! Properties:
+//! string background
+//! GDK2.Color background-gdk
+//! int background-set
+
+void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
+//! Create a new W(CellView) widget.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args==1) {
+    GtkWidget *gcv;
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+      struct object *o1;
+      get_all_args("create",args,"%o",&o1);
+      gcv=gtk_cell_view_new_with_pixbuf(GDK_PIXBUF(get_gobject(o1)));
+      THIS->obj=G_OBJECT(gcv);
+    } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+      struct pike_string *str;
+      get_all_args("create",args,"%t",&str);
+      ref_push_string(str);
+      f_string_to_utf8(1);
+      gcv=gtk_cell_view_new_with_text(CGSTR0(Pike_sp[-1].u.string));
+      pop_stack();
+      THIS->obj=G_OBJECT(gcv);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_CELL_VIEW);
+    }
+  } else if (args==2) {
+    struct pike_string *str;
+    INT_TYPE mark;
+    GtkWidget *gcv;
+    get_all_args("create",args,"%t%i",&str,&mark);
+    ref_push_string(str);
+    f_string_to_utf8(1);
+    if (mark)
+      gcv=gtk_cell_view_new_with_markup(CGSTR0(Pike_sp[-1].u.string));
+    else
+      gcv=gtk_cell_view_new_with_text(CGSTR0(Pike_sp[-1].u.string));
+    pop_stack();
+    THIS->obj=G_OBJECT(gcv);
+  } else {
+    GtkWidget *gcv;
+    gcv=gtk_cell_view_new();
+    THIS->obj=G_OBJECT(gcv);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+
+void set_model(GTK2.TreeModel model);
+//! Sets the model.  If this view already has a model set, it will remove it
+//! before setting the new model.
+
+void set_displayed_row(?GTK2.TreePath path)
+//! Sets the row of the model that is currently displayed.  If the path is
+//! omitted, then the contents of the cellview "stick" at their last value;
+//! this is not normally a desired result, but may be a needed intermediate
+//! state if say, the mode becomes temporarily empty.
+{
+  pgtk2_verify_inited();
+  if (args) {
+    struct object *o1;
+    get_all_args("set_displayed_row",args,"%o",&o1);
+    gtk_cell_view_set_displayed_row(GTK_CELL_VIEW(THIS->obj),
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
+  } else {
+    gtk_cell_view_set_displayed_row(GTK_CELL_VIEW(THIS->obj),NULL);
+  }
+  RETURN_THIS();
+}
+
++GTK2.TreePath get_displayed_row()
+//! Returns a W(TreePath) referring to the currently displayed row.  If no
+//! row is currently displayed, 0 is returned.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkTreePath *path=gtk_cell_view_get_displayed_row(GTK_CELL_VIEW(THIS->obj));
+    push_pgdk2object(path,pgtk2_tree_path_program,1);
+  }
+}
+
+mapping(string:int) get_size_of_row(GTK2.TreePath path)
+//! Returns width and height of the size needed to display the model row
+//! pointed to by path.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    GtkRequisition req;
+    get_all_args("get_size_of_row",args,"%o",&o1);
+    gtk_cell_view_get_size_of_row(GTK_CELL_VIEW(THIS->obj),
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),&req);
+    pgtk2_pop_n_elems(args);
+    ref_push_string(_STR("width")); push_int(req.width);
+    ref_push_string(_STR("height")); push_int(req.height);
+    f_aggregate_mapping(4);
+  }
+}
+
+void set_background_color(GDK2.Color color)
+//! Sets the background color.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("set_background_color",args,"%o",&o1);
+    gtk_cell_view_set_background_color(GTK_CELL_VIEW(THIS->obj),
+		(GdkColor *)get_gdkobject(o1,color));
+  }
+  RETURN_THIS();
+}
+
+array(GTK2.CellRenderer) get_cell_renderers()
+//! Returns the cell renderers which have been added to this view.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GList *gl,*g2;
+    int i;
+
+    gl=g2=gtk_cell_view_get_cell_renderers(GTK_CELL_VIEW(THIS->obj));
+    i=0;
+    while (g2) {
+      push_gobject(g2->data);
+      g_object_ref(g2->data);
+      i++;
+      g2=g_list_next(g2);
+    }
+    f_aggregate(i);
+    g_list_free(gl);
+  }
+}
+endrequire;

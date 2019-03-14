@@ -1,6 +1,8 @@
 /*
- * $Id: acconfig.h,v 1.2 2001/01/17 11:52:50 mirar Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #ifndef PDF_MACHINE_H
 #define PDF_MACHINE_H

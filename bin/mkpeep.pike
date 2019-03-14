@@ -1,39 +1,51 @@
-#!/usr/local/bin/pike
+#! /usr/bin/env pike
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.23 2001/09/24 17:02:58 grubba Exp $ */
+#define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
-#define JUMPBACK 3
-
-string skipwhite(string s)
-{
-#if DEBUG > 9
-  werror("skipwhite("+s+")\n");
-#endif
-
-  sscanf(s,"%*[ \t\n]%s",s);
-  return s;
+void err(string e, mixed ... a) {
+  werror(e, @a);
+  exit(1);
 }
 
-string stripwhite(string s)
-{
-  sscanf(s,"%*[ \t\n]%s",s);
-  s=reverse(s);
-  sscanf(s,"%*[ \t\n]%s",s);
-  return reverse(s);
+array(string) linebreak(array(string) tokens, int width) {
+  array(string) out = ({});
+  string line = "";
+  foreach(tokens, string token)
+    if(sizeof(line)+sizeof(token)<=width)
+      line += token;
+    else {
+      out += ({ line });
+      SKIPWHITE(token);
+      line = token;
+    }
+  if(line!="")
+    out += ({ line });
+  return out;
 }
 
-/* Find the matching parenthesis */
+string make_multiline(string prefix, array(string)|string tokens,
+		      string suffix) {
+  if(stringp(tokens))
+    tokens = ((tokens/" ")/1)*({" "});
+  tokens += ({ suffix });
+  tokens = linebreak([array(string)]tokens, 79-sizeof(prefix));
+  string ret = "";
+  foreach(tokens; int r; string line)
+    if(!r)
+      ret += prefix + line + "\n";
+    else
+      ret += sprintf("%*n%s\n", sizeof(prefix), line);
+  return ret;
+}
+
+// Find the matching parenthesis
 int find_end(string s)
 {
-  int e,parlvl=1;
+  int parlvl=1;
 
-#if DEBUG > 8
-  werror("find_end("+s+")\n");
-#endif
-  
-  for(e=1;e<strlen(s);e++)
+  for(int e=1; e<sizeof(s); e++)
   {
     switch(s[e])
     {
@@ -48,20 +60,17 @@ int find_end(string s)
       break;
     }
   }
-  werror("Syntax error (1).\n");
-  exit(1);
+
+  err("Syntax error (1).\n");
 }
 
 array(string) explode_comma_expr(string s)
 {
-#if DEBUG>4
-  werror("Exploding %O\n",s);
-#endif
   int parlvl;
   array(string) ret=({});
   int begin=0;
 
-  for(int e=0;e<strlen(s);e++)
+  for(int e=0; e<sizeof(s); e++)
   {
     switch(s[e])
     {
@@ -76,199 +85,176 @@ array(string) explode_comma_expr(string s)
     case ',':
       if(!parlvl)
       {
-	ret+=({ stripwhite(s[begin..e-1]) });
+	ret+=({ String.trim_all_whites(s[begin..e-1]) });
 	begin=e+1;
       }
     }
   }
 
-  /* Ignore empty last arguments */
-  if(strlen(stripwhite(s[begin..])))
-    ret+=({ stripwhite(s[begin..]) });
-#if DEBUG>4
-  werror("RESULT: %O\n",ret);
-#endif
+  // Ignore empty last arguments
+  if(sizeof(String.trim_all_whites(s[begin..])))
+    ret += ({ String.trim_all_whites(s[begin..]) });
+
   return ret;
 }
 
+array(string) tokenize(string line) {
+  array(string) t = ({});
 
-/* Splitline into components */
-array(int|string|array(string)) split(string s)
-{
-  array(string) a, b;
-  string tmp;
-  int e,opcodes;
-  string line=s;
-  opcodes=0;
-
-#ifdef DEBUG
-  werror("split("+s+")\n");
-#endif
-
-  b=({});
-
-  s=skipwhite(s);
-  
-  /* First, we tokenize */
-  while(strlen(s))
+  while(sizeof(line))
   {
-    switch(s[0])
+    switch(line[0])
     {
-      /* Source / Target separator */
+      // Source / Target separator
     case ':':
-      b+=({":"});
-      s=s[1..];
+      t += ({":"});
+      line = line[1..];
       break;
 
     case '!':
-      b+=({"!"});
-      s=s[1..];
+      t += ({"!"});
+      line = line[1..];
       break;
 
       // Any identifier (i.e. not eof).
     case '?':
-      b+=({"?"});
-      s=s[1..];
+      t += ({"?"});
+      line = line[1..];
       break;
 
-      /* Identifier */
+      // Identifier
     case 'A'..'Z':
     case 'a'..'z':
     case '0'..'9':
     case '_':
-      sscanf(s,"%[a-zA-Z0-9_]%s",tmp,s);
-      b+=({"F_"+tmp});
+      sscanf(line, "%[a-zA-Z0-9_]%s", string id, line);
+      t += ({"F_"+id});
       break;
 
-      /* argument */
+      // argument
     case '(':
       {
-	int i=find_end(s);
-	b+=({ s[0..i] });
-	s=s[i+1..strlen(s)];
+	int i=find_end(line);
+	t += ({ line[0..i] });
+	line = line[i+1..];
       }
       break;
 
-      /* condition */
+      // condition
     case '[':
       {
-	int i=find_end(s);
-	b+=({ s[0..i] });
-	s=s[i+1..strlen(s)];
+	int i=find_end(line);
+	t += ({ line[0..i] });
+	line = line[i+1..];
       }
       break;
     }
 
-    s=skipwhite(s);
+    SKIPWHITE(line);
   }
 
-  /* Find the source/dest separator */
-  int i=search(b, ":");
-  if(i==-1)
-  {
-    werror("Syntax error (%O).\n",b);
-    return 0;
-  }
-
-  /* a=source, b=dest */
-  a=b[..i-1];
-  b=b[i+1..];
-
-  /* Count 'steps' in source */
-  for(e=0;e<sizeof(a);e++)
-    if((<'F', '?'>)[a[e][0]])
-      opcodes++;
-
-#if 0
-  /* It was a good idea, but it doesn't work */
-  mixed qqqq=copy_value(b);
-  i=0;
-  while(sizeof(b))
-  {
-    if(b[0] != a[i])
-      break;
-    
-    if(sizeof(b)>1 && b[1][0]!='F')
-    {
-      if(b[1] != sprintf("($%da)",i+1))
-	break;
-      b=b[2..];
-    }else{
-      b=b[1..];
-    }
-    i++;
-    opcodes--;
-  }
-  if(i)
-    werror("----------------------\n%d\n%O\n%O\n%O\n",opcodes,a,b,qqqq);
-#endif
-
-  i=0;
-  array(string) newa=({});
-  for(e=0;e<sizeof(a);e++)
-  {
-    switch(a[e][0])
-    {
-      case '(':
-	array(string) tmp=explode_comma_expr(a[e][1..strlen(a[e])-2]);
-	for(int x=0;x<sizeof(tmp);x++)
-	{
-	  string arg=sprintf("$%d%c", i, 'a'+x);
-	  if(arg != tmp[x] && strlen(tmp[x]))
-	    newa+=({ sprintf("(%s)==%s",tmp[x], arg) });
-	}
-      break;
-
-    case '[':
-      newa+=({ a[e][1..strlen(a[e])-2] });
-      break;
-
-    case 'F':
-      i++;
-      newa+=({ a[e]+"==$"+i+"o" });
-      break;
-
-    case '?':
-      i++;
-      newa += ({"$" + i + "o != -1"});
-      break;
-
-      default: newa+=({a[e]});
-    }
-  }
-  a=newa;
-
-  // Magic for the '!' operator
-  for(e=0;e<sizeof(a);e++)
-  {
-    if(a[e]=="!")
-    {
-      sscanf(a[e+1],"%s==%s",string op, string arg);
-      a[e+1]=sprintf("%s != %s && %s !=-1",op,arg,arg);
-      a=a[..e-1]+a[e+1..];
-      e--;
-    }
-  }
-
-  return ({a,b,opcodes, line,a});
+  return t;
 }
 
-/* Replace $[0-9]+(o|a|b) with something a C compiler can understand */
+class Rule {
+  array(string) from;
+  array(string) to;
+  int opcodes;
+  string line;
+
+  mapping(string:array(string)) varmap = ([]);
+
+  void create(string _line) {
+    line = _line;
+    array(string) tokens = tokenize(line);
+
+    // Section tokens into source and target.
+    int div = search(tokens, ":");
+    if(div==-1) err("Syntax error. No source/target delimiter.\n");
+    from = tokens[..div-1];
+
+    post_process();
+
+    // Note: Can't reverse scan until we have counted the opcodes. */
+    reverse_scan(to = tokens[div+1..]);
+  }
+
+  void reverse_scan(array(string) tokens)
+  {
+    /* Adjust to reverse scan. */
+    foreach(tokens; int i; string t) {
+      array(string) tmp = t/"$";
+      if (sizeof(tmp) == 1) continue;
+      foreach(tmp; int j; string expr) {
+	if (!j) continue;
+	sscanf(expr, "%d%s", int num, string rest);
+	tmp[j] = sprintf("%d%s", opcodes - num, rest);
+      }
+      tokens[i] = tmp * "$";
+    }
+  }
+
+  void post_process() {
+    array(string) nt = ({});
+
+    opcodes = 0;
+    foreach(from, string t)
+      switch(t[0]) {
+      case '(':
+	array(string) exprs = explode_comma_expr(t[1..sizeof(t)-2]);
+	foreach(exprs; int x; string expr) {
+	  string arg = sprintf("$%d%c", opcodes, 'a'+x);
+	  if(arg != expr && sizeof(expr))
+	    nt += ({ sprintf("(%s)==%s", expr, arg) });
+	}
+	break;
+
+      case '[':
+	nt += ({ t[1..sizeof(t)-2] });
+	break;
+
+      case 'F':
+	opcodes++;
+	nt += ({ t+"==$"+opcodes+"o" });
+	break;
+
+      case '?':
+	opcodes++;
+	nt += ({ "$"+opcodes+"o != -1" });
+	break;
+
+      default:
+	nt += ({ t });
+      }
+
+    reverse_scan(nt);
+
+    for(int e; e<sizeof(nt); e++)
+      if(nt[e]=="!") {
+	sscanf(nt[e+1], "%s==%s", string op, string arg);
+	nt[e+1] = sprintf("%s != %s && %s !=-1", op, arg, arg);
+	nt = nt[..e-1]+nt[e+1..];
+	e--;
+      }
+
+    from = nt;
+  }
+
+  string _sprintf(int t) {
+    return t=='O' ? ("Rule("+line+")") : 0;
+  }
+}
+
+// Replace $[0-9]+(o|a|b) with something a C compiler can understand.
 string treat(string expr)
 {
-  int e;
-  array(string) tmp;
-  tmp=expr/"$";
-  for(e=1;e<sizeof(tmp);e++)
-  {
-    string num, rest;
-    int type;
-    if(sscanf(tmp[e],"%d%c%s",num,type,rest)!=3)
-    {
-      werror("Syntax error (3).\n");
-      exit(2);
-    }
-    num--;
+  array(string) tmp = expr/"$";
+  for(int e=1; e<sizeof(tmp); e++) {
+    string rest;
+    int num, type;
+    if(sscanf(tmp[e], "%d%c%s", num, type, rest)!=3)
+      err("Syntax error (3).\n");
+
     switch(type)
     {
     case 'a': tmp[e]="argument("+num+")"+rest; break;
@@ -279,194 +265,239 @@ string treat(string expr)
   return tmp*"";
 }
 
-/* Dump C co(d|r)e */
-void dump2(array(array(array(string))) data,int ind)
-{
-  int e,i,max,maxe;
-  mixed tmp;
-  string test;
-  mapping(string:mapping(string:array(array(array(string))))) foo;
-  mixed cons, var;
+int function_serial;
+string functions = "";
 
-  foo=([]);
+class Switch(string test) {
+  constant is_switch = 1;
+  mapping(string:array(Switch|Breakable)) cases = ([]);
+
+  void add_case(string c, array(Switch|Breakable) b) {
+    cases[c] = b;
+  }
+
+  void make_child_fun() {
+    foreach(sort(indices(cases)), string c)
+      if(sizeof(cases[c])==1 && cases[c][0]->is_switch)
+	([object(Switch)]cases[c][0])->make_fun();
+      else
+	foreach(cases[c], object(Switch)|object(Breakable) b)
+	  if(b->is_switch)
+	    ([object(Switch)]b)->make_child_fun();
+  }
+
+  void make_fun() {
+    made_fun = ++function_serial;
+    functions += "static int _asm_peep_"+made_fun+"(void)\n{\n";
+    functions += make_switch(2);
+    functions +=
+      "  return 0;\n"
+      "}\n"
+      "\n";
+  }
+
+  int made_fun;
+  string get_string(int(0..) ind) {
+    if(made_fun) {
+      string ret = "";
+      ret += sprintf("%*nif (_asm_peep_%d())\n"
+		     "%*n  return 1;\n",
+		     ind, made_fun,
+		     ind);
+      return ret;
+    }
+    return make_switch(ind);
+  }
+
+  string make_switch(int(0..) ind) {
+    string ret = "";
+    ret += sprintf("%*nswitch(%s)\n", ind, test);
+    ret += sprintf("%*n{\n", ind);
+
+    foreach(sort(indices(cases)), string c) {
+      ret += sprintf("%*ncase %s:\n", ind, c);
+      foreach(cases[c], object(Switch)|object(Breakable) b)
+	ret += b->get_string([int(0..)](ind+2));
+      ret += sprintf("%*n  break;\n"
+		     "\n",
+		     ind);
+    }
+
+    ret += sprintf("%*n}\n", ind);
+    return ret;
+  }
+}
+
+class Breakable {
+  array(string|array(string)) lines = ({});
+
+  void add_line(string a, void|array(string)|string b, void|string c) {
+    if(c)
+      lines += ({ ({ a,b,c }) });
+    else
+      lines += ({ a });
+  }
+
+  string get_string(int(0..) ind) {
+    string ret = "";
+    foreach(lines, string|array(string) line)
+      if(stringp(line)) {
+	if(String.trim_all_whites([string]line)=="")
+	  ret += line;
+	else
+	  ret += sprintf("%*n%s\n", ind, [string]line);
+      }
+      else {
+	array(string) line = [array(string)]line;
+	ret += make_multiline(" "*ind+line[0], line[1], line[2]);
+      }
+    return ret;
+  }
+}
+
+array(Switch|Breakable) make_switches(array(Rule) data)
+{
+  int i,maxv;
+  string test,cons,var;
+  array(Switch|Breakable) ret = ({});
 
   while(1)
   {
-    foo=([]);
+    // meta variable : condition (from) : array(Rule)
+    mapping(string:mapping(string:array(Rule))) foo = ([]);
 
-    /* First we create a mapping:
-     * foo [ meta variable ] [ condition ] = ({ lines });
-     */
-    foreach(data, array(array(string)) d)
-    {
-      array(string) a = d[0];
-      array(string) b = d[1];
-      for(e=0;e<sizeof(a);e++)
+    foreach(data, Rule d)
+      foreach(d->from, string line)
       {
-	if(sscanf(a[e],"F_%[A-Z0-9_]==%s",cons,var)==2 ||
-	   sscanf(a[e],"(%d)==%s",cons,var)==2 ||
-	   sscanf(a[e],"%d==%s",cons,var)==2)
+	if(sscanf(line,"F_%*[A-Z0-9_]==%s", var)==2 ||
+	   sscanf(line,"(%*d)==%s", var)==2 ||
+	   sscanf(line,"%*d==%s", var)==2)
 	{
 	  if(!foo[var]) foo[var]=([]);
-	  if(!foo[var][a[e]]) foo[var][a[e]]=({});
-	  foo[var][a[e]]+=({d});
+	  if(!foo[var][line]) foo[var][line]=({});
+	  foo[var][line] += ({d});
 	}
       }
-    }
 
-    /* Check what variable has most values */
-    max=maxe=e=0; 
-    foreach(values(foo), mapping(string:array(array(array(string)))) d)
-    {
-      if(sizeof(d)>max)
-      {
-	max=sizeof(d);
-	maxe=e;
+    // Check what variable has most values.
+    // Sort to create deterministic result.
+    maxv = 0;
+    foreach(sort(indices(foo)), string ptest)
+      if(sizeof(foo[ptest])>maxv) {
+	test = ptest;
+	maxv = sizeof(foo[ptest]);
       }
-      e++;
-    }
 
-    /* If zero, done */
-    if(max <= 1) break;
+    // If zero, done
+    if(maxv <= 1) break;
 
-    test=indices(foo)[maxe];
-    
-    write(sprintf("%*nswitch(%s)\n",ind,treat(test)));
-    write(sprintf("%*n{\n",ind));
+    Switch s = Switch(treat(test));
 
-    mapping(string:array(array(array(string)))) d = values(foo)[maxe];
+    // condition : array(Rule)
+    mapping(string:array(Rule)) d = foo[test];
     array(string) a = indices(d);
-    array(array(array(array(string)))) b = values(d);
+    array(array(Rule)) b = values(d);
+    sort(a,b);
 
-
-    /* foo: variable
+    /* test : variable
      * a[x] : condition
-     * b[x] : line
+     * b[x] : rules
      */
 
-    for(e=0;e<sizeof(a);e++)
+    for(int i=0; i<sizeof(a); i++)
     {
-      /* The lines b[e] are removed from data as they
+      /* The lines b[i] are removed from data as they
        * will be treated below
        */
-      data-=b[e];
+      data-=b[i];
 
-      if(sscanf(a[e],"(%s)==%s",cons,var)!=2)
-	sscanf(a[e],"%s==%s",cons,var);
-      
-      write(sprintf("%*ncase %s:\n",ind,cons+""));
+      if(sscanf(a[i],"(%s)==%s",cons,var)!=2)
+	sscanf(a[i],"%s==%s",cons,var);
 
-      foreach(b[e], array(array(string)) d) d[0]-=({a[e]});
-      dump2(b[e],ind+2);
-      write(sprintf("%*n  break;\n",ind));
-      write("\n");
+      foreach(b[i], Rule d)
+	d->from -= ({ a[i] });
+
+      s->add_case(cons, make_switches(b[i]));
     }
-
-    write(sprintf("%*n}\n",ind));
+    ret += ({ s });
   }
-  
-  /* Take care of whatever is left */
+
+  // Take care of whatever is left
   if(sizeof(data))
   {
-    foreach(data, array(array(string)) d)
+    Breakable buf = Breakable();
+    int(0..) ind;
+    foreach(data, Rule d)
     {
-      write(sprintf("%*n/* %s */\n",ind,d[3]));
-      
-      if(sizeof(d[0]))
-      {
-	string test;
-	test=treat(d[0]*" && ");
-	write(sprintf("%*nif(%s)\n",ind,test));
-      }
-      write(sprintf("%*n{\n",ind));
-      ind+=2;
-      write("%*ndo_optimization(%d,\n",ind,d[2]);
+      buf->add_line(" "*ind+"/* ", d->line, " */");
 
-      for(i=0;i<sizeof(d[1]);i++)
+      if(sizeof(d->from))
+	buf->add_line(" "*ind+"if(", treat(d->from*" && "), ")");
+
+      buf->add_line( sprintf("%*n{", ind) );
+      ind += 2;
+      array(string) opargs = ({ d->opcodes+", " });
+
+      array(array(string)) ops = ({});
+
+      for(int i=0; i<sizeof(d->to); i++)
       {
-	array args=({});
-	string fcode=d[1][i];
-	if(i+1<sizeof(d[1]) && d[1][i+1][0]=='(')
+	array(string) args=({});
+	string fcode=d->to[i];
+	if(i+1<sizeof(d->to) && d->to[i+1][0]=='(')
 	{
-	  string tmp=d[1][i+1];
-	  args=explode_comma_expr(tmp[1..strlen(tmp)-2]);
+	  string tmp=d->to[i+1];
+	  args=explode_comma_expr(tmp[1..sizeof(tmp)-2]);
 	  i++;
 	}
-	write("%*n                %d,%s,%{(%s), %}\n",
-	      ind,
-	      sizeof(args)+1,
-	      fcode,
-	      Array.map(args,treat));
-
+	ops += ({ ({ sizeof(args)+1+", ", fcode+", ",
+		     @map(args,treat)[*]+", " }) });
       }
-      write("%*n                0);\n",ind);
+      opargs += ({ sizeof(ops) + ", " }) + reverse(ops) * ({});
+      buf->add_line(" "*ind+"do_optimization(", opargs, "0);");
 
-      write(sprintf("%*ncontinue;\n",ind));
-      ind-=2;
-      write(sprintf("%*n}\n",ind,test));
+      buf->add_line( sprintf("%*nreturn 1;", ind) );
+      ind -= 2;
+      buf->add_line( sprintf("%*n}", ind) );
     }
+    ret += ({ buf });
   }
+  return ret;
 }
-  
 
 
 int main(int argc, array(string) argv)
 {
-  int e,max,maxe;
-  string f;
-  mapping foo=([]);
-  array(array(array(string))) data=({});
+  array(Rule) data=({});
 
-  mapping tests=([]);
-
-  /* Read input file */
-  f=cpp(Stdio.read_bytes(argv[1]),argv[1]);
+  // Read input file
+  string f=cpp(Stdio.read_file(argv[1]), argv[1]);
   foreach(f/"\n",f)
   {
-    array(string) a, b;
-    mapping tmp;
+    if(f=="" || f[0]=='#') continue;
 
-    sscanf(f,"%s#",f);
-
-    /* Parse expressions */
-    foreach(f/";",f)
-      {
-	f=skipwhite(f);
-	if(!strlen(f)) continue;
-	data+=({split(f)});
-      }
+    // Parse expressions
+    foreach(f/";",f) {
+      f = String.trim_all_whites(f);
+      if(!sizeof(f)) continue;
+      data += ({ Rule(f) });
+    }
   }
 
-//  write(sprintf("%O\n",data));
+  write("\n\n/* Generated from %s by mkpeep.pike\n   %s\n*/\n\n",
+	argv[1], Calendar.ISO.now()->format_time());
 
-  write("  len=instrbuf.s.len/sizeof(p_instr);\n"
-	"  instructions=(p_instr *)instrbuf.s.str;\n"
-	"  instrbuf.s.str=0;\n"
-	"  fifo_len=0;\n"
-	"  init_bytecode();\n\n"
-	"  for(eye=0;eye<len || fifo_len;)\n  {\n"
-	"\n"
-	"#ifdef PIKE_DEBUG\n"
-	"    if(a_flag>6) {\n"
-	"      int e;\n"
-	"      fprintf(stderr, \"#%ld,%d:\",\n"
-	"              DO_NOT_WARN((long)eye),\n"
-	"              fifo_len);\n"
-	"      for(e=0;e<4;e++) {\n"
-	"        fprintf(stderr,\" \");\n"
-	"        dump_instr(instr(e));\n"
-	"      }\n"
-	"      fprintf(stderr,\"\\n\");\n"
-	"    }\n"
-	"#endif\n\n");
+  array(Switch) a = [array(Switch)]make_switches(data);
 
-  dump2(data,4);
+  a->make_child_fun();
 
-  write("    advance();\n");
-  write("  }\n");
-  write("  for(eye=0;eye<len;eye++) free_string(instructions[eye].file);\n");
-  write("  free((char *)instructions);\n");
+  write( functions );
+
+  write("static int low_asm_opt(void) {\n");
+  map(a->get_string(2), write);
+
+  write("  return 0;\n"
+	"}\n");
 
   return 0;
 }
-

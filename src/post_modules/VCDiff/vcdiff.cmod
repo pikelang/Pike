@@ -1,0 +1,269 @@
+#include "global.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "stralloc.h"
+#include "array.h"
+#include "pike_macros.h"
+#include "program.h"
+#include "stralloc.h"
+#include "object.h"
+#include "pike_types.h"
+#include "threads.h"
+#include "dynamic_buffer.h"
+#include "module_support.h"
+#include "builtin_functions.h"
+
+#ifdef HAVE_VCDIFF
+
+#include "vcdiff_wrapper.h"
+
+DECLARATIONS
+
+/*! @module VCDiff
+ *!
+ *! Pike glue for the open-vcdiff differential compression library. 
+ *! http://code.google.com/p/open-vcdiff/
+ *!
+ *! Encoding and decoding relies on a common string that the differences are
+ *! computed against - this string is called the dictionary.
+ *!
+ *! Basic usage:
+ *! @code
+ *!   string dict = "abcdef";
+ *!   VCDiff.Encoder encoder = VCDiff.Encoder (dict);
+ *!   string encoded = encoder->encode ("abcdefghijklmnopqrstuvwxyz");
+ *!   VCDiff.Decoder decoder = VCDiff.Decoder (dict);
+ *!   string decoded = decoder->decode (encoded);
+ *! @endcode
+ */
+
+PIKECLASS Encoder {
+  CVAR void *dict;
+  CVAR void *vcencoder;
+  CVAR int test;
+  CVAR int encoder_state;
+    
+  PIKEFUN void create (string dictionary)
+  {
+    void *_dict;
+    void *_vcencoder;
+    int dict_len;
+    char *dict_str;
+
+    if (dictionary->size_shift)
+      Pike_error("Wide strings not supported.\n");
+
+    if (THIS->dict != NULL)
+      vcdiff_free_dictionary (THIS->dict);
+    if (THIS->vcencoder != NULL)
+      vcdiff_free_encoder (THIS->vcencoder);
+
+    THREADS_ALLOW();
+    _dict = vcdiff_init_dictionary (dictionary->str, dictionary->len);
+    THREADS_DISALLOW();
+
+    if (_dict != NULL) {
+      _vcencoder = vcdiff_init_encoder (_dict);
+      THIS->dict = _dict;
+      THIS->vcencoder = _vcencoder;
+      THIS->encoder_state = 1;
+    } else {
+      Pike_error ("Initializing dictionary failed.\n");
+    }
+    pop_n_elems (args);
+  }
+
+  PIKEFUN string encode (string data)
+  {
+    push_int (1);
+    apply (Pike_fp->current_object, "encode_chunk", 2);
+  }
+    
+  PIKEFUN string encode_chunk (void|string data, void|int(0..1) flush)
+  {
+    char *in_buf = NULL;
+    int in_buf_len = 0;
+      
+    char *out_buf = NULL;
+    int out_buf_len = 0;
+
+    char *trailer = NULL;
+    int trailer_len = 0;
+
+    void *vcenc = THIS->vcencoder;
+    int *enc_state_ptr = &THIS->encoder_state;
+
+    struct pike_string *s;
+    struct string_builder sb;
+      
+    if (THIS->encoder_state == 0) {
+      Pike_error ("Calling encode_chunk in un-initialized object.\n");
+    }
+      
+    if (data) {
+      if (data->size_shift)
+	Pike_error("Wide strings not supported.\n");
+      in_buf_len = data->len;
+      in_buf = data->str;
+    } else if (THIS->encoder_state == 3) {
+      RETURN make_shared_binary_string ("", 0);
+    }
+
+    THREADS_ALLOW();
+    vcdiff_encode_chunk (vcenc, in_buf, in_buf_len,
+			 &out_buf, &out_buf_len, enc_state_ptr);
+    THREADS_DISALLOW();
+
+    if (flush) {
+      // Flush internal buffers.
+      vcdiff_encode_chunk (vcenc, NULL, 0, 
+			   &trailer, &trailer_len, enc_state_ptr);
+    }
+
+    init_string_builder (&sb, 0);
+    string_builder_binary_strcat (&sb, out_buf, out_buf_len);
+    free (out_buf);
+
+    if (trailer) {
+      string_builder_binary_strcat (&sb, trailer, trailer_len);
+      free (trailer);
+    }
+
+    s = finish_string_builder (&sb);
+    RETURN s;
+  }
+    
+  INIT {
+    THIS->dict = NULL;
+    THIS->vcencoder = NULL;
+    THIS->encoder_state = 0;
+  }
+    
+  EXIT {
+    if (THIS->dict != NULL)
+      vcdiff_free_dictionary (THIS->dict);
+    if (THIS->vcencoder != NULL)
+      vcdiff_free_encoder (THIS->vcencoder);
+  }
+}
+
+PIKECLASS Decoder {
+  PIKEVAR string dictionary;
+  CVAR void *vcdecoder;
+  CVAR int decoder_state;
+  CVAR char *dict_str;
+  CVAR int dict_len;
+    
+  PIKEFUN void create (string dictionary)
+  {
+    if (dictionary->size_shift)
+      Pike_error("Wide strings not supported.\n");
+
+    if (THIS->vcdecoder != NULL)
+      vcdiff_free_decoder (THIS->vcdecoder);
+
+    THIS->dict_len = dictionary->len;
+    THIS->dict_str = (char *)malloc (dictionary->len);
+    memcpy (THIS->dict_str, dictionary->str, dictionary->len);
+
+    THIS->vcdecoder = vcdiff_init_decoder (THIS->dict_str, THIS->dict_len);
+
+    THIS->decoder_state = 2;
+    pop_n_elems (args);
+  }
+    
+  PIKEFUN string decode (string data)
+  {
+    push_int (1);
+    apply (Pike_fp->current_object, "decode_chunk", 2);
+  }
+    
+  PIKEFUN string decode_chunk (string data, void|int(0..1) flush)
+  {
+    char *in_buf = NULL;
+    int in_buf_len = 0;
+      
+    char *out_buf = NULL;
+    int out_buf_len = 0;
+
+    char *trailer = NULL;
+    int trailer_len = 0;
+
+    void *vcdec = THIS->vcdecoder;
+    int *dec_state_ptr = &THIS->decoder_state;
+
+    struct pike_string *s;
+    struct string_builder sb;
+    int res = 0;
+      
+    if (THIS->decoder_state == 0) {
+      Pike_error ("Calling decode_chunk in un-initialized object.\n");
+    }
+      
+    if (data) {
+      if (data->size_shift)
+	Pike_error("Wide strings not supported.\n");
+      in_buf_len = data->len;
+      in_buf = data->str;
+    } else if (THIS->decoder_state == 3) {
+      RETURN make_shared_binary_string ("", 0);
+    }
+
+    THREADS_ALLOW();
+    res = vcdiff_decode_chunk (vcdec, in_buf, in_buf_len,
+			       &out_buf, &out_buf_len, dec_state_ptr);
+    THREADS_DISALLOW();
+    if (!res)
+      Pike_error ("vcdiff_decode_chunk failed\n");
+
+    if (flush) {
+      // Flush internal buffers.
+      vcdiff_decode_chunk (vcdec, NULL, 0, 
+			   &trailer, &trailer_len, dec_state_ptr);
+    }
+
+    init_string_builder (&sb, 0);
+    string_builder_binary_strcat (&sb, out_buf, out_buf_len);
+    free (out_buf);
+
+    if (trailer) {
+      string_builder_binary_strcat (&sb, trailer, trailer_len);
+      free (trailer);
+    }
+
+    s = finish_string_builder (&sb);
+
+    RETURN s;
+  }
+    
+  INIT {
+    THIS->vcdecoder = NULL;
+    THIS->decoder_state = 0;
+  }
+    
+  EXIT {
+    if (THIS->vcdecoder != NULL)
+      vcdiff_free_decoder (THIS->vcdecoder);
+    if (THIS->dict_str != NULL)  
+      free (THIS->dict_str);
+  }
+}
+
+/*! @endmodule */
+
+#endif /* HAVE_VCDIFF */
+
+PIKE_MODULE_INIT
+{
+#ifdef HAVE_VCDIFF
+  INIT
+#endif
+}
+
+PIKE_MODULE_EXIT
+{
+#ifdef HAVE_VCDIFF
+  EXIT
+#endif
+}
+

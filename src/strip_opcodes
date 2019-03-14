@@ -1,5 +1,109 @@
 #!/bin/sh
 
-sed 's/OPCODE/\
-OPCODE/g' | egrep '^OPCODE[0-9]' | sed 's/"[ 	]*).*/")/g'
+# Avoid clever UTF-8 assumptions.
+LANG=C
+LC_CTYPE=C
+LC_ALL=C
 
+export LANG LC_CTYPE LC_ALL
+
+# Notes about limitations in SysV sed:
+#
+#  o The *-operator only operates on single character regexps.
+#  o The |-operator does not exist.
+#  o Labels are only terminated by newline (ie ; does not terminate
+#    a label).
+#  o Character ranges may not contain literal newlines.
+
+sed -e '
+# First pass-through and convert #line directives.
+  /^#line/b
+  s/^# \([0-9]* "[^"]*"\).*$/#line \1/
+  s/^# \([0-9]*\).*$/#line \1/
+  t
+
+# Output all complete OPCODE[0-9].* --- expressions
+# accumulated so far.
+: loop
+  /OPCODE[0-9]/!b keepnl
+
+# Stupid IRIX cpp turns --- into -- -
+# SysV sed does not support multi-character *-expressions,
+# so we use ½ instead.
+  s/ -- \{0,1\}- / ½ /g
+
+# Make sure the substitute flag is cleared.
+  t loop
+
+  h
+  s/^[^½]*\(OPCODE[0-9][^½]*\) ½.*$/\1¤/p
+  t more
+  N
+  b loop
+
+# Remove the match from the hold space,
+# and check for more.
+: more
+  g
+  s/^[^½]*OPCODE[0-9][^½]* ½\(.*\)$/\1/
+  b loop
+
+# Keep only the newlines.
+: keepnl
+  s/.//g' | sed -e '
+# Redundant or extra newline and #line removal.
+
+# Remove newlines that were inserted by p.
+: loop
+  /¤$/{
+    N
+    s/¤\n//
+    b loop
+  }
+# Add empty lines to hold, and start the next cycle.
+  /^[ 	]*$/{
+# We are only interrested in the newline...
+    s/.//g
+    H
+    x
+# RLE encode newlines so that we can avoid overflowing hold.
+    s/\n\{16,16\}/¤/
+    s/¤\{16,16\}/½/
+    x
+    d
+  }
+# Clear hold, and put #line directives there,
+# and start the next cycle.
+  /^#line/{
+    h
+    d
+  }
+
+# Print hold except for a possible initial newline.
+  x
+# Unpack the RLE.
+  s/½/¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤/g
+  s/¤/\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+/g
+  s/^\n//
+  p
+
+# Clear hold.
+  s/.//g
+  s/\n//g
+  x'

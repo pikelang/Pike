@@ -1,0 +1,1587 @@
+
+START_MARKER
+
+dnl - NetUtils
+
+test_equal( NetUtils.string_to_ip( "0.0.0.0" ), 0 );
+test_equal( NetUtils.string_to_ip( "255.0.0.0" ), 0xff000000 );
+test_equal( NetUtils.string_to_ip( "0.255.0.0" ), 0x00ff0000 );
+test_equal( NetUtils.string_to_ip( "255.255.255.255" ), 0xffffffff );
+
+test_equal( NetUtils.string_to_ip( "65535.255.255" ), -1 );
+
+test_equal( NetUtils.string_to_ip( "20.255.255" ), -1 );
+test_equal( NetUtils.string_to_ip( "20...10" ), -1 );
+
+test_equal( NetUtils.string_to_ip( "4.3.2.300" ), -1 );
+
+test_equal( NetUtils.string_to_ip( "::255.0.0.0" ), 0xff000000);
+
+test_equal( NetUtils.string_to_ip( "1::255.0.0.0" ), 5192296858534827628530500607410176);
+
+test_equal( NetUtils.string_to_ip("2001:4c28:a030:30:219:99ff:fe6d:2eb4"),
+                 42542032843807851754427830279823240884);
+
+test_equal( NetUtils.string_to_ip("10293::"),-1);
+test_equal( NetUtils.string_to_ip("fel::"),-1);
+test_equal( NetUtils.ip_to_string( -1 ), 0 );
+
+test_equal( NetUtils.ip_to_string( 0 ), "0.0.0.0" );
+test_equal( NetUtils.ip_to_string( 0xff000000 ), "255.0.0.0" );
+test_equal( NetUtils.ip_to_string( 0x00ff0000 ), "0.255.0.0" );
+test_equal( NetUtils.ip_to_string( 0xffffffff ), "255.255.255.255" );
+
+test_equal( NetUtils.ip_to_string( 4294967296 ), "::1:0:0" );
+
+test_equal(NetUtils.ip_to_string( 0xffffeeeeaaaa99998888777766665555 ),
+                "ffff:eeee:aaaa:9999:8888:7777:6666:5555");
+
+test_equal(NetUtils.ip_to_string( 0xffff0000000000000000000000005555 ), 
+                "ffff::5555");
+
+test_equal(NetUtils.ip_to_string( 0x00010000000000000000000000000000 ),
+                "1::");
+
+test_equal( NetUtils.string_to_ip("10293::"),-1);
+test_equal( NetUtils.string_to_ip("fel::"),-1);
+test_equal( NetUtils.cidr_to_netmask( "0.0.0.0/0" ), ({ 0,NetUtils.IPV6_FULL_MASK^0xffffffff }) );
+test_equal( NetUtils.cidr_to_netmask( "255.0.0.0/0" ), ({ 0,NetUtils.IPV6_FULL_MASK^0xffffffff }) );
+test_equal( NetUtils.cidr_to_netmask( "ff::/0" ), ({ 0,0 }) );
+
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/32" ),
+                 ({ 0xffffffff,NetUtils.IPV6_FULL_MASK }) );
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/16" ), 
+                 ({ 0xffff0000,NetUtils.IPV6_FULL_MASK^0xffff }) );
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/0"  ), 
+                 ({ 0x00000000,NetUtils.IPV6_FULL_MASK^0xffffffff }) );
+test_equal( NetUtils.cidr_to_netmask( "::/0"  ), 
+                 ({ 0x00000000,0 }) );
+test_equal( NetUtils.cidr_to_netmask( "10.30.1.69/17"      ), 
+                 ({ 0x0a1e0000,NetUtils.IPV6_FULL_MASK^0x7fff }) );
+test_equal( NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"),
+                 ({ 0x0001000200030004<<64,
+                    0xffffffffffffffff<<64,
+                 }) );
+test_equal( NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/96"),
+                 ({ 0x000100020003000400050006<<32,
+                    0xffffffffffffffffffffffff<<32,
+                 }) );
+test_equal( NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/32"), ({0x00010002<<96,0xffffffff<<96}) );
+
+test_equal( NetUtils.cidr_to_netmask( "10.30/3"            ), 0 );
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255"    ), 0 );
+test_equal( NetUtils.cidr_to_netmask( "255"                ), 0 );
+
+// comma instead of first dot
+test_equal( NetUtils.cidr_to_netmask( "255,255.255.255/32" ), 0 );
+
+test_equal( NetUtils.cidr_to_netmask( "20...10/1"          ), 0 );
+test_equal( NetUtils.cidr_to_netmask( 0                    ), 0 );
+test_equal( NetUtils.cidr_to_netmask( "4.3.2.300/16"       ), 0 );
+test_equal( NetUtils.cidr_to_netmask( "4.3.2.1/38"         ), 0 );
+// binary IPs
+test_equal( NetUtils.ip_in_block( 0xffffffff, 0xffffffff, 0xffffffff ), true );
+
+test_equal( NetUtils.ip_in_block( 0xffff0000, 0xffff0000, 0xffff0102 ), true );
+test_equal( NetUtils.ip_in_block( 0x00000000, 0x00000000, 0x01020304 ), true );
+test_equal( NetUtils.ip_in_block( 0x0a1e0000, 0xffff8000, 0x0a1e0145 ), true );
+
+test_equal( NetUtils.ip_in_block( 0xffffffff, 0xffffffff, 0x01020304 ), false );
+test_equal( NetUtils.ip_in_block( 0xffff0000, 0xffff0000, 0x01020102 ), false );
+
+// string IPs
+test_equal( NetUtils.ip_in_block( 0xffffffff, 0xffffffff, "255.255.255.255" ), true );
+test_equal( NetUtils.ip_in_block( 0xffff0000, 0xffff0000, "255.255.1.2"     ), true );
+test_equal( NetUtils.ip_in_block( 0x00000000, 0x00000000, "1.2.3.4"         ), true );
+test_equal( NetUtils.ip_in_block( 0x0a1e0000, 0xffff8000, "10.30.1.69"      ), true );
+
+test_equal( NetUtils.ip_in_block( 0xffffffff, 0xffffffff, "1.2.3.4"         ), false );
+test_equal( NetUtils.ip_in_block( 0xffff0000, 0xffff0000, "1.2.1.2"         ), false );
+test_equal( NetUtils.ip_in_block( 0x01020000, 0xffff0000, "1.1.1.2"         ), false );
+
+// error handling
+test_eval_error( NetUtils.ip_in_block( 0x00000000, 0x00000000, "65535.255.255"   ));
+test_eval_error( NetUtils.ip_in_block( 0x00000000, 0x00000000, "20.255.255"      ));
+test_eval_error( NetUtils.ip_in_block( 0x00000000, 0x00000000, "20...10"         ));
+test_eval_error( NetUtils.ip_in_block( -1,         0x00000000, "255.255.255.255" ));
+test_eval_error( NetUtils.ip_in_block( 0x00000000, -1,         "255.255.255.255" ));
+
+test_equal( NetUtils.ip_in_block( @NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"), "1:2:3:4:5:6:7:8"), true );
+test_equal( NetUtils.ip_in_block( @NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"), "1:2:3:4::"), true );
+test_equal( NetUtils.ip_in_block( @NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"), "1:2:3:4:ffff:123:0:0"), true );
+test_equal( NetUtils.ip_in_block( @NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"), "1:2:3:9:ffff:123:0:0"), false )
+
+
+
+test_equal( NetUtils.NetMask("1.2.3.4/24")->ip_in("1.2.3.1"), true );
+test_equal( NetUtils.NetMask("1.2.3.4/24")->ip_in("1.2.2.1"), false );
+test_equal( NetUtils.NetMask("1.2.3.4/32")->ip_in("1.2.3.4"), true );
+test_equal( NetUtils.NetMask("1.2.3.4/32")->ip_in("1.2.3.3"), false );
+test_equal( NetUtils.NetMask("1.2.3.4")->ip_in("1.2.3.4"), true );
+test_equal( NetUtils.NetMask("1.2.3.4")->ip_in("1.2.3.3"), false );
+test_eval_error( NetUtils.NetMask("1.2.3.4/38") );
+test_eval_error( NetUtils.NetMask("1.2.3.foo") );
+test_eval_error( NetUtils.NetMask("foo") );
+test_eval_error(NetUtils.IpRangeLookup(0));
+test_equal(NetUtils.IpRangeLookup( ([ ]) )->lookup("1.2.3.4"), 0);
+test_eval_error(NetUtils.IpRangeLookup( ([
+        "good": ({ "1.2.3.4", "4.5.6.0/24" }),
+        "bad": ({ "foo" }),
+    ]) ));
+
+test_eval_error(NetUtils.IpRangeLookup( ([
+        "bad": ({ "4.3.2.300" }),
+    ]) ));
+
+test_eval_error(NetUtils.IpRangeLookup( ([
+        "bad": ({ "4.3.2.1/38" }),
+    ]) ));
+
+test_eval_error(NetUtils.IpRangeLookup( ([
+        "good": ({ "1.2.3.4", "4.5.6.0/24" }),
+        "ok": ({ "127.0.0.0/8" }),
+        "bad": ({ "192.168.1.0/24", "4.3.2.1/38" }),
+    ]) ));
+
+
+test_any([[
+
+    NetUtils.IpRangeLookup irl = NetUtils.IpRangeLookup( ([ "single": ({ "1.2.3.4" }) ]) );
+    if(irl->lookup("1.2.3.4")!= "single") return 0;
+    if(irl->lookup("4.3.2.1")!= 0) return 0;
+    return 1;
+]],1)
+
+test_any([[
+    NetUtils.IpRangeLookup irl = NetUtils.IpRangeLookup( ([
+        "info1": ({ "1.2.3.0/24" }),
+        "info2": ({ "88.192.0.0/10" }),
+    ]) );
+    if(irl->lookup("1.2.3.4")!= "info1") return 0;
+    if(irl->lookup("88.201.123.44")!= "info2") return 0;
+    if(irl->lookup("222.123.45.6")!= 0) return 0;
+    return 1;
+]],1);
+
+test_any([[
+    NetUtils.IpRangeLookup irl = NetUtils.IpRangeLookup( ([
+        "info1": ({ "1.2.3.0/24", "88.192.0.0/10" }),
+        "info2": ({ "192.168.1.14", "192.168.1.23", "153.154.155.156" }),
+        "info3": ({ "127.0.0.0/8" }),
+    ]) );
+    if(irl->lookup("1.2.3.4")!= "info1") return 0;
+    if(irl->lookup("88.201.123.44")!= "info1") return 0;
+    if(irl->lookup("192.168.1.23")!= "info2") return 0;
+    if(irl->lookup("192.168.1.55")!= 0) return 0;
+    if(irl->lookup("127.0.0.1")!= "info3") return 0;
+    return 1;
+]],1)
+test_any([[
+    NetUtils.IpRangeLookup irl = NetUtils.IpRangeLookup( ([
+        "info1": ({ "1.2.3.0/24", "127.0.0.1" }),
+        "info2": ({ "1.2.3.0/28", "127.0.0.0/16" }),
+        "info3": ({ "127.0.0.0/8" }),
+    ]) );
+    if(irl->lookup("127.0.0.1")!= "info1") return 0;
+    if(irl->lookup("127.0.0.2")!= "info2") return 0;
+    if(irl->lookup("127.0.42.1")!= "info2") return 0;
+    if(irl->lookup("127.88.44.22")!= "info3") return 0;
+    if(irl->lookup("126.0.0.1")!= 0) return 0;
+
+    if(irl->lookup("1.2.3.127")!= "info1") return 0;
+    if(irl->lookup("1.2.3.15")!= "info2") return 0;
+    return 1;
+]],1)
+
+test_any([[
+    NetUtils.IpRangeLookup irl = NetUtils.IpRangeLookup
+        (([
+            "test2":({"::/0"}),
+            "test":({"0.0.0.0/0"}),
+        ]));
+    if( irl->lookup("1.2.3.4")!= "test" ) return 0;
+    if( irl->lookup("1.2.3.4")!= "test" ) return 0;
+    if( irl->lookup("1::")!="test2" ) return 0;
+    if( irl->lookup("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")!= "test2" ) return 0;
+    return 1;
+]],1)
+
+
+test_do([[
+    array victims = ({
+        "127.0.0.1",
+        "::1",
+        "2001::feed",
+        "224.0.0.1",
+        "2002::beef",
+        "3001:10::",
+        "32.2.0.1",
+    });
+
+    array(string)
+        nothing=({}),
+        v6only = "localhostv6,localv6,globalv6,multicastv6,teredo,6to4,privatev6"/",",
+        v4only = "localhost,local,global,multicast,private"/",",
+        teredo = "localhostv6,localv6,teredo,globalv6,multicastv6,6to4,privatev6"/",",
+        v6to4  = "localhostv6,localv6,6to4,globalv6,multicastv6,teredo,privatev6"/",",
+        dual6to4 = "localhostv6,localhost,localv6,local,6to4,globalv6,global,multicastv6,"
+                   "multicast,teredo,privatev6,private"/",",
+        dualdual = "localhostv6,localhost,localv6,local,teredo,6to4,globalv6,global,multicastv6,"
+                  "multicast,privatev6,private"/",";
+
+     add_constant( "victims", victims );
+     add_constant( "nothing", nothing );
+     add_constant( "v6only", v6only );
+     add_constant( "v4only", v4only );
+     add_constant( "teredo", teredo );
+     add_constant( "v6to4", v6to4 );
+     add_constant( "dual6to4", dual6to4 );
+     add_constant( "dualdual", dualdual );
+]]);
+
+test_equal( NetUtils._connectable_network_types( false, false, false, false ), nothing );
+test_equal( NetUtils._connectable_network_types( false, false, false, true ), nothing );
+test_equal( NetUtils._connectable_network_types( false, false, true, false ), nothing );
+test_equal( NetUtils._connectable_network_types( false, false, true, true ), nothing );
+
+test_equal( NetUtils._connectable_network_types( true, false, false, false ),v6only );
+test_equal( NetUtils._connectable_network_types( false, true, false, false ), v4only );
+test_equal( NetUtils._connectable_network_types( false, true, true, false ), v4only );
+test_equal( NetUtils._connectable_network_types( false, true, false, true ), v4only );
+test_equal( NetUtils._connectable_network_types( false, true, true, true ), v4only );
+test_equal( NetUtils._connectable_network_types( true, false, true, false ), teredo );
+test_equal( NetUtils._connectable_network_types( true, false, false, true ), v6to4 );
+test_equal( NetUtils._connectable_network_types( true, true, false, true ), dual6to4 );
+test_equal( NetUtils._connectable_network_types( true, true, true, true ), dualdual );
+
+
+test_equal( NetUtils._sort_addresses( victims, 0, false, nothing ), ({}) );
+test_equal( NetUtils._sort_addresses( victims, 0, false, v6only ), ({
+                     "::1",
+                     "3001:10::",
+                     "2001::feed",
+                     "2002::beef",
+                 }) );
+test_equal( NetUtils._sort_addresses( victims, 0, false, v4only ), ({
+                     "127.0.0.1",
+                     "32.2.0.1",
+                     "224.0.0.1",
+                 }) );
+test_equal( NetUtils._sort_addresses( victims, 0, false, teredo ), ({
+                     "::1",
+                     "2001::feed",
+                     "3001:10::",
+                     "2002::beef",
+                 }) );
+test_equal( NetUtils._sort_addresses( victims, 0, false, v6to4 ), ({
+                     "::1",
+                     "2002::beef",
+                     "3001:10::",
+                     "2001::feed",
+                 }) );
+test_equal( NetUtils._sort_addresses( victims, 0, false, dualdual ), ({
+                     "::1",
+                     "127.0.0.1",
+                     "2001::feed",
+                     "2002::beef",
+                     "3001:10::",
+                     "32.2.0.1",
+                     "224.0.0.1",
+                 }) );
+
+
+dnl network-addr, network-type, opt-separate-v6
+define(test_network_type, [[
+  test_true([[(< $2 >)
+              [NetUtils.get_network_type($1, $3)]
+            ]])
+]])
+
+dnl network-addr, network-type, opt-separate-v6
+define(test_local_network_type, [[
+  // Test a network that might be a local network.
+  // The localhost variants are there just in case
+  // the local machine actually has the IP.
+  test_network_type([[$1]],
+                    [[ NetUtils.LOCAL, NetUtils.LOCALV6,
+                       NetUtils.LOCALHOST, NetUtils.LOCALHOSTV6, $2 ]],
+                    [[$3]])
+]])
+
+test_network_type("::1", NetUtils.LOCALHOST)
+test_network_type("::1", NetUtils.LOCALHOSTV6, true)
+test_network_type("127.0.0.1", NetUtils.LOCALHOST)
+test_network_type("::ffff:127.0.0.1", NetUtils.LOCALHOST)
+test_network_type("::ffff:127.0.0.1", NetUtils.LOCALHOST, true)
+
+// NB: No machines will have these as local address,
+//     since the corresponding IPv4 addresses are reserved.
+//     (Correspond to 0.0.0.0 and 255.255.18.52).
+test_network_type("2001::feed", NetUtils.TEREDO)
+test_network_type("2001:0:ffff:1234::4321", NetUtils.TEREDO)
+
+test_local_network_type("10.0.0.1", NetUtils.PRIVATE)
+test_local_network_type("::FFFF:10.0.0.1", NetUtils.PRIVATE)
+test_local_network_type("172.16.0.1", NetUtils.PRIVATE)
+test_local_network_type("::FFFF:172.16.0.1", NetUtils.PRIVATE)
+test_local_network_type("192.168.0.1", NetUtils.PRIVATE)
+test_local_network_type("::FFFF:192.168.0.1", NetUtils.PRIVATE)
+test_local_network_type("fc00::1", NetUtils.PRIVATE)
+
+// NB: Multicast addresses are not valid as local addresses.
+test_network_type("224.0.0.1", NetUtils.MULTICAST)
+test_network_type("ff00:1:2:3::1", NetUtils.MULTICAST)
+
+// NB: No machines will have these as local address,
+//     since the corresponding IPv4 addresses are reserved.
+//     (Correspond to 0.0.0.0 and 255.255.18.52).
+test_network_type("2002::beef", NetUtils.V6TO4)
+test_network_type("2002:ffff:1234::beef", NetUtils.V6TO4)
+
+test_local_network_type("2001:1::feed", NetUtils.GLOBAL)
+test_local_network_type("2001:ffff:1234::4321", NetUtils.GLOBAL)
+test_local_network_type("2003::beef", NetUtils.GLOBAL)
+test_local_network_type("3002:ffff::1234:beef", NetUtils.GLOBAL)
+
+test_local_network_type("2001:1::feed", NetUtils.GLOBALV6, true)
+test_local_network_type("2001:ffff:1234::4321", NetUtils.GLOBALV6, true)
+
+    // Could be mistaken for 2002::/16
+test_local_network_type("32.2.0.1", NetUtils.GLOBAL)
+test_local_network_type("32.2.0.1", NetUtils.GLOBAL, true)
+
+    // Could be mistaken for 2001:0::/32
+test_local_network_type("32.1.0.0", NetUtils.GLOBAL)
+test_local_network_type("32.1.0.0", NetUtils.GLOBAL, true)
+
+
+test_do([[
+     add_constant("victims");
+     add_constant("nothing");
+     add_constant("v6only");
+     add_constant("v4only");
+     add_constant("teredo");
+     add_constant("v6to4");
+     add_constant("dual6to4");
+     add_constant("dualdual");
+]])
+
+test_any([[
+    class TestRemoteAddressObject(string local_ip, string remote_ip)
+    {
+        inherit NetUtils.RemoteAddressObject;
+
+        string query_address(int|void l)
+        {
+            if (l)
+                return local_ip;
+            return remote_ip;
+        }
+    };
+
+    string def_ip = "192.168.0.1";
+    string def_port = "1111";
+    string local_ip = "123.123.123.123";
+    string local_port = "1234";
+    string remote_ip = "234.234.234.234";
+    string remote_port = "5678";
+
+     add_constant("TestRemoteAddressObject",TestRemoteAddressObject);
+     add_constant("def_ip", def_ip );
+     add_constant("def_port", def_port );
+     add_constant("local_ip", local_ip );
+     add_constant("local_port", local_port );
+     add_constant("remote_ip", local_ip );
+     add_constant("remote_port", local_port );
+
+    return 1;
+]],1);
+
+
+test_equal(NetUtils.ip_of(0, false, def_ip), def_ip);
+test_equal(NetUtils.ip_of(0, true, def_ip), def_ip);
+test_equal(NetUtils.ip_of(remote_ip, false, def_ip), remote_ip);
+test_equal(NetUtils.ip_of(local_ip, true, def_ip), local_ip);
+test_equal(NetUtils.ip_of(remote_ip + " " + remote_port, false, def_ip), remote_ip);
+test_equal(NetUtils.ip_of(local_ip + " " + local_port, true, def_ip), local_ip);
+test_equal(NetUtils.ip_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " + remote_port), false, def_ip), remote_ip);
+test_equal(NetUtils.ip_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " + remote_port), true, def_ip), local_ip);
+test_equal(NetUtils.ip_of(TestRemoteAddressObject(local_ip, remote_ip), false, def_ip), remote_ip);
+test_equal(NetUtils.ip_of(TestRemoteAddressObject(local_ip, remote_ip), true, def_ip), local_ip);
+
+test_equal(NetUtils.port_of(0, false, def_port), def_port);
+test_equal(NetUtils.port_of(0, true, def_port), def_port);
+test_equal(NetUtils.port_of(remote_ip, false, def_port), def_port);
+test_equal(NetUtils.port_of(local_ip, true, def_port), def_port);
+test_equal(NetUtils.port_of(remote_ip + " " + remote_port, false, def_port), remote_port);
+test_equal(NetUtils.port_of(local_ip + " " + local_port, true, def_port), local_port);
+test_equal(NetUtils.port_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " + remote_port), false, def_port), remote_port);
+test_equal(NetUtils.port_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " +remote_port), true, def_port), local_port);
+test_equal(NetUtils.port_of(TestRemoteAddressObject(local_ip, remote_ip), false, def_port), def_port);
+test_equal(NetUtils.port_of(TestRemoteAddressObject(local_ip, remote_ip), true, def_port), def_port);
+
+test_equal(NetUtils.ip_and_port_of(0, false), 0);
+test_equal(NetUtils.ip_and_port_of(0, true), 0);
+test_equal(NetUtils.ip_and_port_of(remote_ip, false), ({ remote_ip, 0 }) );
+test_equal(NetUtils.ip_and_port_of(local_ip, true), ({ local_ip, 0 }) );
+test_equal(NetUtils.ip_and_port_of(remote_ip + " " + remote_port, false), ({ remote_ip, remote_port }) );
+test_equal(NetUtils.ip_and_port_of(local_ip + " " + local_port, true), ({ local_ip, local_port }) );
+test_equal(NetUtils.ip_and_port_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " + remote_port), false), ({ remote_ip, remote_port }) );
+test_equal(NetUtils.ip_and_port_of(TestRemoteAddressObject(local_ip + " " + local_port, remote_ip + " " +remote_port), true), ({ local_ip, local_port }) );
+test_equal(NetUtils.ip_and_port_of(TestRemoteAddressObject(local_ip, remote_ip), false), ({ remote_ip, 0 }) );
+test_equal(NetUtils.ip_and_port_of(TestRemoteAddressObject(local_ip, remote_ip), true), ({ local_ip, 0 }) );
+test_do([[
+     add_constant("TestRemoteAddressObject");
+     add_constant("def_ip" );
+     add_constant("def_port" );
+     add_constant("local_ip" );
+     add_constant("local_port" );
+     add_constant("remote_ip" );
+     add_constant("remote_port" );
+]]);
+dnl - Arg
+
+test_equal( Arg.parse("aa --hopp --haha=ho -bar=foo x y"/" "),
+ ([ "hopp":1, "haha":"ho", "b":1, "a":1, "r":"foo", Arg.REST: ({"x","y"}) ]) )
+test_equal( Arg.parse("aa -bar -x=6"/" "),
+ ([ "b":1, "a":1, "r":1, "x":"6", Arg.REST: ({}) ]) )
+test_equal( Arg.parse("aa --foo --bar"/" "),
+ ([ "foo":1, "bar":1, Arg.REST: ({}) ]) )
+test_equal( Arg.parse("aa --foo - --bar"/" "),
+ ([ "foo":1, Arg.REST: ({ "-","--bar" }) ]) )
+test_equal( Arg.parse("aa --foo x --bar"/" "),
+ ([ "foo":1, Arg.REST: ({ "x","--bar" }) ]) )
+test_equal( Arg.parse("aa -foo -o"/" "),
+ ([ "f":1, "o":3, Arg.REST: ({}) ]) )
+
+test_any([[
+
+class Opt
+{
+  inherit Arg.Options;
+  Opt verbose = NoOpt("-v")|NoOpt("--verbose")|Env("VERBOSE");
+  Opt name = HasOpt("-n")|HasOpt("--name")|Default("Donald");
+  Opt debug = MaybeOpt("-d")|MaybeOpt("--debug");
+};
+
+add_constant("o",Opt);
+return 1;
+]], 1)
+
+test_equal( sort(indices(o(({"x"})))) , ({ "debug", "name", "verbose" }) )
+test_equal( (mapping)o(({"x"}),([])) , ([ "name" : "Donald", Arg.REST:({}) ]) )
+test_equal( o(({"x"}),([]))->verbose , 0 )
+test_equal( o(({"x"}),([]))->debug , 0 )
+test_equal( o(({"x"}),([]))->name , "Donald" )
+test_equal( o("x --name=foo"/" ",([]))->name , "foo" )
+test_equal( o("x -n=foo"/" ",([]))->name , "foo" )
+test_equal( o("x -n foo"/" ",([]))->name , "foo" )
+test_equal( (mapping)o("x -dvn foo xor"/" ",([])), ([ "debug":1, "verbose":1, "name":"foo", Arg.REST : ({ "xor" }) ]) )
+test_equal( o(({"x"}),(["VERBOSE":"1"]))->verbose, "1" )
+test_equal( (mapping)o("x --verbose=5"/" ",([])), ([ "name":"Donald", Arg.REST : ({ "--verbose=5" }) ]) )
+test_equal( o("x -v -v"/" ",([]))->verbose , 2 )
+
+test_do(add_constant("o"))
+
+
+dnl - Array
+
+test_equal(Array.diff(({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }),
+                      ({ 6, 7, 8, 9, 3, 4, 5, 1, 2, 0 })),
+           ({ ({ ({ 0, 1, 2, 3, 4, 5 }),
+                 ({ 6, 7, 8, 9 }), ({}) }),
+              ({ ({}), ({ 6, 7, 8, 9 }),
+                 ({ 3, 4, 5, 1, 2, 0 }) }) }))
+test_equal(Array.diff(({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }),
+                      ({ 9, 7, 8, 4, 5, 6, 0, 1, 2, 3 })),
+           ({ ({ ({}), ({ 0, 1, 2, 3 }),
+                 ({ 4, 5, 6, 7, 8, 9 }) }),
+              ({ ({ 9, 7, 8, 4, 5, 6 }),
+                 ({ 0, 1, 2, 3 }), ({}) }) }))
+test_equal(Array.diff("qadfgoksdfäojerjgöohjgdgkm"/"",
+                      "xadfgokälojeorjgöoyjgdgkmzzz"/""),
+           ({ ({ ({ "q" }), "adfgok"/"", "sdf"/"", ({ "ä" }), ({}),
+                 "oje"/"", ({}), "rjgöo"/"", ({ "h" }), "jgdgkm"/"", ({}) }),
+              ({ ({ "x" }), "adfgok"/"", ({}), ({ "ä" }), ({ "l" }),
+                 "oje"/"", ({ "o" }), "rjgöo"/"", ({ "y" }), "jgdgkm"/"",
+                 "zzz"/"" }) }))
+test_equal(Array.diff("123.org"/"","http://123.org/"/""),
+	   ({ ({ ({}), "123.org"/"", ({}) }),
+	      ({ "http://"/"", "123.org"/"", ({ "/" }) }) }))
+
+dnl Array.diff_compare_table
+
+test_equal(Array.longest_ordered_sequence("dfgaokäpojghadjjioijrgxcvb"/""),
+	   ({ 0, 1, 2, 10, 11, 16, 18, 19, 20, 22 }));
+
+test_equal([[ Array.interleave_array( ({
+  ([ 2:2, 6:3]), ([ 2:4, 5:5 ]), ([]), ([2:6,3:7,6:8]) })) ]],[[
+({ 0, 2, -1, 6 }) ]])
+
+dnl Array.sort
+
+test_equal([[ Array.diff(enumerate(4),enumerate(4,1,2)) ]],
+	   [[ ({ ({ ({0,1}), ({2,3}), ({   }) }),
+		 ({ ({   }), ({2,3}), ({4,5}) }) }) ]])
+test_any_equal([[ array x, y;
+		  [x, y] = Array.diff(enumerate(4),enumerate(4,1,2));
+                  return x[1] == y[1]; ]], 1)
+
+test_equal(Array.everynth("0123456789"/""),
+  ({ "0", "2", "4", "6", "8"}))
+test_equal(Array.everynth("0123456789"/"",3),
+  ({ "0", "3", "6", "9"}))
+test_equal(Array.everynth("0123456789"/"",3,4),
+  ({ "4", "7"}))
+test_equal(Array.everynth(({})),({}))
+
+test_equal(Array.splice(({7,8,99}),({"h","h",99})),
+	({7,"h",8,"h",99,99}))
+test_equal(Array.splice(({7,8}),({"h","h",99})),
+	({7,"h",8,"h"}))
+test_equal(Array.splice(({7,8,99}),({"h","h",99}),({"g",({"fg"}),97})),
+	({7,"h","g",8,"h",({"fg"}),99,99,97}))
+test_equal(Array.splice(({7,"foo"})),
+	({7,"foo"}))
+test_equal(Array.splice(),
+	({}))
+test_equal(Array.splice(({})),
+	({}))
+
+test_equal(Array.transpose( ({ ({ 1,2,3}), ({4,5,6}) }) ),
+	({ ({1,4}), ({2,5}), ({3,6}) }))
+test_equal([[Array.transpose(({catch{throw(({""}));},({1,2})[1..]}))]],
+	   [[ ({ ({ "", 2 }) }) ]])
+
+test_equal(Array.uniq( ({ 1,1,2,2,3,3,4,1,2,3,3,2,1,2,1 }) ),
+	({1,2,3,4}))
+test_equal(Array.uniq( ({ "a",5,1.0,5,"b","a" }) ),
+	({"a",5,1.0,"b"}))
+test_equal(Array.uniq( ({}) ), ({}))
+
+test_equal(Array.filter( ({ 1,2,3,4,5,6, }), lambda(int i) { return 0; } ),
+	({}))
+test_equal(Array.filter( ({ 1,2,3,4,5,6, }), lambda(int i) { return 1; } ),
+	({1,2,3,4,5,6}))
+test_equal(Array.filter( ({ 1,2,3,4,5,6, }), lambda(int i) { return i%2; } ),
+	({1,3,5}))
+test_equal([[ Array.filter( ({}), lambda(int i) { return 1; })]], ({}))
+
+test_equal(Array.permute( ({ 1,2 }), 0 ),
+	({ 1,2 }))
+test_equal(Array.permute( ({ 1,2 }), 1 ),
+	({ 2,1 }))
+test_equal(Array.permute( ({ 1,2 }), 2 ),
+	({ 1,2 }))
+test_equal(Array.permute( ({ 1,2,3,4,5,6,7,8,9,10 }), 3628800),
+	({ 1,2,3,4,5,6,7,8,9,10 }))
+test_equal(Array.permute( ({}), 1 ), ({}))
+
+test_equal(Array.enumerate(0), ({}))
+test_equal(Array.enumerate(1), ({ 0 }))
+test_equal(Array.enumerate(5), ({ 0,1,2,3,4 }))
+test_equal(Array.enumerate(5,2), ({ 0,2,4,6,8 }))
+test_equal(Array.enumerate(5,2,7), ({ 7,9,11,13,15 }))
+test_equal(Array.enumerate(5,2,7,`-), ({ 7,5,3,1,-1 }))
+
+test_eq([[ Array.reduce(`>>, ({})) ]], 0)
+test_eq([[ Array.reduce(`==, ({}), 1) ]], 1)
+test_eq([[ Array.reduce(`<<, ({1,2,3,4,5})) ]], 1<<14)
+
+test_eq([[ Array.rreduce(`>>, ({})) ]], 0)
+test_eq([[ Array.rreduce(`==, ({}), 1) ]], 1)
+test_eq([[ Array.rreduce(`<<, ({4,3,2,1})) ]], 1125899906842624)
+
+test_equal(Array.shuffle(({})), ({}))
+test_equal(Array.shuffle(({1})), ({1}))
+test_any([[
+  random_seed(4711);
+  array b = Array.shuffle(Array.enumerate(1000));
+  random_seed(4711);
+  // There is a chance in 1000! (aprox. 4E2568) that this fails of
+  // natural causes.
+  return equal(b, Array.shuffle(Array.enumerate(1000))) &&
+               !equal(Array.enumerate(1000),b);
+]], 1);
+test_true( equal(Array.enumerate(1000),sort(Array.shuffle(Array.enumerate(1000)))) )
+
+dnl Array.search_array
+
+test_equal( Array.sum_arrays( `+, ({}) ), ({}) )
+test_equal( Array.sum_arrays( `+, enumerate(5), enumerate(5)), ({0,2,4,6,8}) )
+
+test_equal(Array.sort_array(({})), ({}))
+test_equal([[ Array.sort_array(enumerate(9), `<) ]], [[ enumerate(9,-1,8) ]])
+
+dnl Array.columns
+dnl Array.transpose_old
+
+dnl (note that the results would be different for a really optimal diff3)
+test_equal(Array.diff3(({}),({"a","c"}),({"b","y"})),
+	   ({({({       })}),
+	     ({({"a","c"})}),
+	     ({({"b","y"})})}))
+test_equal(Array.diff3(({"a"}),({"a","b"}),({"b"})),
+	   ({({({"a"}),({   })}),
+	     ({({"a"}),({"b"})}),
+	     ({({   }),({"b"})})}))
+test_equal(Array.diff3(({"a"}),({"a","c"}),({"b"})),
+	   ({({({"a"}),({   })}),
+	     ({({"a"}),({"c"})}),
+	     ({({   }),({"b"})})}))
+test_equal(Array.diff3(({"a","d"}),({"a","d"}),({"a","b"})),
+	   ({({({"a"}),({"d"})}),
+	     ({({"a"}),({"d"})}),
+	     ({({"a"}),({"b"})})}))
+test_equal(Array.diff3(({"a","b"}),({"b"}),({"c","b"})),
+	   ({({({"a"}),({"b"})}),
+	     ({({   }),({"b"})}),
+	     ({({"c"}),({"b"})})}))
+dnl The following is not optimal.
+test_equal(Array.diff3(({"a","b"}),({"b"}),({"b","b"})),
+	   ({({({"a"}),({"b"}),({   })}),
+	     ({({   }),({"b"}),({   })}),
+	     ({({   }),({"b"}),({"b"})})}))
+test_equal(Array.diff3(({"a","c","d"}),({"a","d","d"}),({"a","b"})),
+	   ({({({"a"}),({"c"}),({"d"}),({   })}),
+	     ({({"a"}),({   }),({"d"}),({"d"})}),
+	     ({({"a"}),({"b"}),({   }),({   })})}))
+test_equal(Array.diff3(({"a","b","c"}),({"b","e","c"}),({"b","e","c"})),
+	   ({({({"a"}),({"b"}),({   }),({"c"})}),
+	     ({({   }),({"b"}),({"e"}),({"c"})}),
+	     ({({   }),({"b"}),({"e"}),({"c"})})}))
+test_equal(Array.diff3(({"a","b","x"}),({"y","b","c","x"}),({"y","c","a"})),
+	   ({({({"a"}),({"b"}),({   }),({"x"})}),
+	     ({({"y"}),({"b"}),({"c"}),({"x"})}),
+	     ({({"y"}),({   }),({"c"}),({"a"})})}))
+test_equal(Array.diff3(({"y","b","c","x"}),({"y","c","a"}),({"a","b","x"})),
+	   ({({({"y"}),({"b"}),({"c"}),({"x"})}),
+	     ({({"y"}),({   }),({"c"}),({"a"})}),
+	     ({({"a"}),({"b"}),({   }),({"x"})})}))
+test_equal(Array.diff3(({"y","b","c","x"}),({"a","b","x"}),({"y","c","a"})),
+	   ({({({"y"}),({"b"}),({"c"}),({"x"})}),
+	     ({({"a"}),({"b"}),({   }),({"x"})}),
+	     ({({"y"}),({   }),({"c"}),({"a"})})}))
+test_equal(Array.diff3(({"a","a","b","b"}),({"b","b","c","c"}),({"c","c","a","a"})),
+	   ({({({"a","a"}),({"b","b"}),({       }),({       })}),
+	     ({({       }),({"b","b"}),({"c","c"}),({       })}),
+	     ({({       }),({       }),({"c","c"}),({"a","a"})})}))
+dnl The following is not optimal.
+test_equal(Array.diff3(({"a","x","b","c"}),({"b","x","c"}),({"b","x","c"})),
+	   ({({({"a","x"}),({"b"}),({   }),({"c"})}),
+	     ({({       }),({"b"}),({"x"}),({"c"})}),
+	     ({({       }),({"b"}),({"x"}),({"c"})})}))
+test_equal(Array.diff3(({"x","x","a","x"}),({"a","x","b","x"}),({"a","x","b","x"})),
+	   ({({({"x","x"}),({"a","x"}),({       })}),
+	     ({({       }),({"a","x"}),({"b","x"})}),
+	     ({({       }),({"a","x"}),({"b","x"})})}))
+test_equal(Array.diff3(({"a","a","b"}),({"b","c"}),({"c","a","a"})),
+	   ({({({   }),({   }),({"a","a"}),({"b"})}),
+	     ({({"b"}),({"c"}),({       }),({   })}),
+	     ({({   }),({"c"}),({"a","a"}),({   })})}))
+test_equal(Array.diff3(({"x","x","x","a"}),({"y","b"}),({"x","x","x","c"})),
+	   ({({({"x","x","x"}),({"a"    })}),
+	     ({({           }),({"y","b"})}),
+	     ({({"x","x","x"}),({"c"    })})}))
+test_equal(Array.diff3(({"a","x","x","x","a"}),({"b","y","y","b"}),({"c","x","x","x","c"})),
+	   ({({({"a"            }),({"x","x","x"}),({"a"})}),
+	     ({({"b","y","y","b"}),({           }),({   })}),
+	     ({({"c"            }),({"x","x","x"}),({"c"})})}))
+test_equal(Array.diff3(({"a","b","c","d"}),({"x","x","x","d"}),({"a","y","y","y"})),
+	   ({({({"a"}),({"b","c"    }),({"d"})}),
+	     ({({   }),({"x","x","x"}),({"d"})}),
+	     ({({"a"}),({"y","y","y"}),({   })})}))
+test_equal(Array.diff3(({"a","b","c","d"}),({"a","x","x","d"}),({"a","y","y","y"})),
+	   ({({({"a"}),({"b","c"    }),({"d"})}),
+	     ({({"a"}),({"x","x"    }),({"d"})}),
+	     ({({"a"}),({"y","y","y"}),({   })})}))
+test_equal(Array.diff3(({"a","b","c","d"}),({"x","x","x","b"}),({"a","y","y","y"})),
+	   ({({({"a"        }),({"b"}),({"c","d"    })}),
+	     ({({"x","x","x"}),({"b"}),({           })}),
+	     ({({"a"        }),({   }),({"y","y","y"})})}))
+test_equal(Array.diff3(({"a","b","c","d"}),({"x","x","x","c"}),({"a","y","y","y"})),
+	   ({({({"a"}),({"b"        }),({"c"}),({"d"})}),
+	     ({({   }),({"x","x","x"}),({"c"}),({   })}),
+	     ({({"a"}),({"y","y","y"}),({   }),({   })})}))
+test_equal(Array.diff3(({"a","b","b","c","d"}),({"z","a","b","b","x"}),({"z","b","c","x"})),
+	   ({({({   }),({"a"}),({"b"}),({"b"}),({"c"}),({"d"})}),
+	     ({({"z"}),({"a"}),({"b"}),({"b"}),({   }),({"x"})}),
+	     ({({"z"}),({   }),({"b"}),({   }),({"c"}),({"x"})})}))
+test_equal(Array.diff3(({"a","b","c","d"}),({"b","a","c","c"}),({"b","b","d","d","a"})),
+	   ({({({"a"}),({"b"}),({"c"}),({"d"}),({   }),({   }),({       })}),
+	     ({({   }),({"b"}),({   }),({   }),({   }),({"a"}),({"c","c"})}),
+	     ({({   }),({"b"}),({"b"}),({"d"}),({"d"}),({"a"}),({       })})}))
+dnl The following is not optimal.
+test_equal(Array.diff3(({"a"}),({"b","a"}),({"a","b","a"})),
+	   ({({({   }),({"a"}),({       })}),
+	     ({({"b"}),({"a"}),({       })}),
+	     ({({   }),({"a"}),({"b","a"})})}))
+dnl The following is not optimal.
+test_equal(Array.diff3(({"a","c"}),({"b","a","c"}),({"a","c","b","a","c"})),
+	   ({({({   }),({"a","c"}),({           })}),
+	     ({({"b"}),({"a","c"}),({           })}),
+	     ({({   }),({"a","c"}),({"b","a","c"})})}))
+dnl The following is not optimal.
+test_equal(Array.diff3(({"a","d"}),({"b","a","c"}),({"a","c","b","a","c"})),
+	   ({({({   }),({"a"}),({"d"        }),({   })}),
+	     ({({"b"}),({"a"}),({           }),({"c"})}),
+	     ({({   }),({"a"}),({"c","b","a"}),({"c"})})}))
+dnl The following is not optimal.
+test_equal(Array.diff3(({"a","a"}),({"b","a","d","a"}),({"a","a","b","a","a"})),
+	   ({({({   }),({"a"}),({   }),({"a"}),({           })}),
+	     ({({"b"}),({"a"}),({"d"}),({"a"}),({           })}),
+	     ({({   }),({"a"}),({   }),({"a"}),({"b","a","a"})})}))
+test_equal(Array.diff3(({"a"}),({"a","b"}),({"b","a"})),
+	   ({({({   }),({"a"}),({   })}),
+	     ({({   }),({"a"}),({"b"})}),
+	     ({({"b"}),({"a"}),({   })})}))
+test_equal(Array.diff3(({"a","b"}),({"b","a"}),({"a"})),
+	   ({({({   }),({"a"}),({"b"})}),
+	     ({({"b"}),({"a"}),({   })}),
+	     ({({   }),({"a"}),({   })})}))
+test_equal(Array.diff3(({"b","a"}),({"a"}),({"a","b"})),
+	   ({({({"b"}),({"a"}),({   })}),
+	     ({({   }),({"a"}),({   })}),
+	     ({({   }),({"a"}),({"b"})})}))
+test_equal(Array.diff3(({"a","b"}),({"a"}),({"b","a"})),
+	   ({({({   }),({"a"}),({"b"})}),
+	     ({({   }),({"a"}),({   })}),
+	     ({({"b"}),({"a"}),({   })})}))
+test_equal(Array.diff3(({"a","c"}),({"a","c","b","a"}),({"b","a","c"})),
+	   ({({({   }),({"a","c"}),({       })}),
+	     ({({   }),({"a","c"}),({"b","a"})}),
+	     ({({"b"}),({"a","c"}),({       })})}))
+test_equal(Array.diff3(({"a","c","b","a"}),({"a","c"}),({"b","a","c"})),
+	   ({({({   }),({"a","c"}),({"b","a"})}),
+	     ({({   }),({"a","c"}),({       })}),
+	     ({({"b"}),({"a","c"}),({       })})}))
+test_equal(Array.diff3(({1,2,3,4}),({1,6,7,2}),({1,3,4,2,6,7})),
+	   ({({({1}),({2}),({3,4}),({ }),({   }),({ })}),
+             ({({1}),({ }),({   }),({ }),({6,7}),({2})}),
+             ({({1}),({ }),({3,4}),({2}),({6,7}),({ })})}))
+
+define(test_sort,[[
+  test_eq(Array.$1($2,$3), -1)
+  test_eq(Array.$1($3,$2), 1)
+]])
+
+test_false(Array.dwim_sort_func("",""))
+test_sort(dwim_sort_func,"1","a")
+test_sort(dwim_sort_func,"1","1a")
+test_sort(dwim_sort_func,"0a","1")
+test_sort(dwim_sort_func,"1","2")
+test_sort(dwim_sort_func,"2a","10")
+test_sort(dwim_sort_func,"a1x","a02x")
+test_eq(Array.dwim_sort_func("1","1"), 0)
+test_eq(Array.dwim_sort_func("1","01"), 0)
+
+test_false(Array.lyskom_sort_func("",""))
+test_sort(lyskom_sort_func,"a","b")
+test_false(Array.lyskom_sort_func("a","a"))
+test_false(Array.lyskom_sort_func("Foo (bar)","foo (really!)"))
+
+test_eq( Array.flatten( ({}) ), ({}) )
+test_equal( Array.flatten( ({1,({2,({3,({4}),({}),5})}),({({}),({6})})})),
+  ({1,2,3,4,5,6}) )
+test_equal( Array.flatten( ({ 1,({2,3}),4,({2,3}),5 }) ), ({1,2,3,4,2,3,5}) )
+test_any_equal([[
+  array a=({1,2,3});
+  a[1]=a;
+  return Array.flatten(a);
+]], ({1,3}))
+test_any_equal([[
+  array a=({1,({2,3}),({4,5}),({2,3})});
+  a[2][1]=a;
+  return Array.flatten(a);
+]], ({1,2,3,4,2,3}))
+
+test_eq(Array.sum(({})),0)
+test_eq(Array.sum((array(int))"157"), 157)
+test_eq([[ Array.sum(enumerate(12345)) ]],
+	[[ Array.reduce(`+, enumerate(12345)) ]])
+test_eq(Array.sum( "abcdefgh"/2.5 ), "abcdefgh")
+test_equal([[ Array.sum( ({ ({ 1,2,3 }), ({ 4,5 }) }) )]],[[ ({ 1,2,3,4,5 }) ]])
+
+test_equal(Array.uniq2(({})), ({}))
+test_equal([[ Array.uniq2("AAAAAAAAAAAHHHHAAA!!!!"/1)*"" ]], [[ "AHA!" ]])
+
+test_equal([[ Array.arrayify( ({1,2,3}) ) ]],[[ ({1,2,3}) ]])
+test_equal([[ Array.arrayify( 1 ) ]],[[ ({1}) ]])
+test_equal([[ Array.arrayify( 0 ) ]],[[ ({0}) ]])
+test_equal([[ Array.arrayify( UNDEFINED ) ]],[[ ({}) ]])
+
+dnl Array.oid_sort_func
+dnl Array.greedy_diff
+
+test_equal( Array.count(({})), ([]) )
+test_eq( Array.count((multiset)("All your Pike are belong to us!"/1), " "), 6 )
+test_eq( Array.count("...and there was much rejoicing."/1, "."), 4 )
+test_eq([[Array.count((["An":"eye", "for":4, "an":"eye"]), "eye")]], 2 )
+test_equal([[ Array.count((["An":"eye", "for":4, "an":"eye"])) ]],
+	   [[ ([ "eye":2, 4:1 ]) ]])
+
+test_equal(Array.common_prefix(({ "soliloquise"/1 })), "soliloquise"/1)
+test_equal(Array.common_prefix(({ "muzzle"/1, "muzzy"/1 })), "muzz"/1)
+test_equal(Array.common_prefix(({ "labyrinth"/1, "diatom"/1 })), ({}))
+test_equal(Array.common_prefix(({ "abc"/1, "abc"/1, "abc"/1 })), "abc"/1)
+test_equal(Array.common_prefix(({})), ({}))
+
+dnl - Colors
+
+define(test_rgb,[[
+  test_equal(Colors.$1($2),({$3}))
+  test_equal(Colors.$1(({$2})),({$3}))
+]])
+
+test_rgb(rgb_to_hsv,[[0,0,0]],[[0,0,0]])
+test_rgb(rgb_to_hsv,[[255,255,255]],[[0,0,255]])
+test_rgb(rgb_to_hsv,[[17,42,112]],[[159,216,112]])
+test_rgb(hsv_to_rgb,[[0,0,0]],[[0,0,0]])
+test_rgb(hsv_to_rgb,[[255,255,255]],[[255,0,0]])
+test_rgb(hsv_to_rgb,[[17,42,112]],[[112,101,93]])
+test_rgb(rgb_to_cmyk,[[0,0,0]],[[0,0,0,100]])
+test_rgb(rgb_to_cmyk,[[255,255,255]],[[0,0,0,0]])
+test_rgb(rgb_to_cmyk,[[17,41,112]],[[37,28,0,56]])
+test_rgb(cmyk_to_rgb,[[0,0,0,0]],[[255,255,255]])
+test_rgb(cmyk_to_rgb,[[100,100,100,100]],[[0,0,0]])
+test_rgb(cmyk_to_rgb,[[17,42,100,2]],[[207,143,0]])
+
+test_equal(Colors.parse_color(0),({0,0,0}))
+test_equal(Colors.parse_color(""),({0,0,0}))
+test_equal(Colors.parse_color("gazonk"),({0,0,0}))
+test_equal(Colors.parse_color(0, ({1,2,3})),({1,2,3}))
+test_equal(Colors.parse_color("", ({1,2,3})),({1,2,3}))
+test_equal(Colors.parse_color("gazonk", ({1,2,3})),({1,2,3}))
+test_equal(Colors.parse_color("red"),({255,0,0}))
+test_equal(Colors.parse_color("red", ({1,2,3})),({255,0,0}))
+test_equal(Colors.parse_color("RED"),({255,0,0}))
+test_equal(Colors.parse_color("lightred"),({255,61,61}))
+test_equal(Colors.parse_color("LIGHT RED"),({255,61,61}))
+test_equal(Colors.parse_color("dimgray"),({105,105,105}))
+test_equal(Colors.parse_color("#ff0000"),({255,0,0}))
+test_equal(Colors.parse_color("ff0000"),({255,0,0}))
+test_equal(Colors.parse_color("@0,255,255"),({255,0,0}))
+test_equal(Colors.parse_color("%0,100,100,0"),({255,0,0}))
+
+test_eq(Colors.color_name(0),"-")
+test_eq(Colors.color_name( ({0,0}) ), "-")
+test_eq(Colors.color_name( ({255,0,0}) ), "red")
+test_eq(Colors.color_name( ({255,61,61}) ), "#ff3d3d")
+test_eq(Colors.color_name( ({105,105,105}) ), "dimgrey")
+
+
+dnl - Getopt
+dnl setup
+test_do(add_constant("original_POSIX_ME_HARDER", getenv("POSIX_ME_HARDER"));)
+test_do(add_constant("original_foo", getenv("foo"));)
+test_do(putenv("POSIX_ME_HARDER", 0);)
+test_do(putenv("foo", "bar");)
+// The following code is broken if the testsuite isn't run with -F,
+// and messing around with internal structures in the master is not
+// a good idea.
+//	/grubba 2004-07-14
+//
+dnl test_do( add_constant("getopt_env", master()->environment); )
+dnl test_do( master()->environment=([ "foo": ({ "foo", "bar" }) ]); )
+dnl test_eq(function_object(getenv), master())
+test_equal(getenv("foo"), "bar")
+test_equal(master()->getenv("foo"), "bar")
+test_false(getenv("POSIX_ME_HARDER"))
+test_false(master()->getenv("POSIX_ME_HARDER"))
+
+test_eq( Getopt.find_option( ({}), "a" ), 0 )
+test_eq( Getopt.find_option( "-a,-b"/",", "a" ), 0 )
+test_eq( Getopt.find_option( "-a,--b"/",", "a" ), 0 )
+test_eq( Getopt.find_option( "-a,-b"/",", "b" ), 1 )
+test_eq( Getopt.find_option( "-a,-ab"/",", "b" ), 1 )
+test_eq( Getopt.find_option( ",-a,-b"/",", "bc"/1 ), 1)
+test_eq( Getopt.find_option( ",-,-a"/",", "a" ), 1)
+test_eq( Getopt.find_option( ",--,-a"/",", "a" ), 0)
+
+test_eq( Getopt.find_option( ",--a,-b"/",", "a"), 0)
+test_eq( Getopt.find_option( ",--a,-b"/",", "b"), 1)
+test_eq( Getopt.find_option( ",--a=b"/",", "x", "a"), "b")
+test_eq( Getopt.find_option( ",--a=b"/",", "x", "a", 0, "y"), "b")
+test_eq( Getopt.find_option( ",--a,-b"/",", "b", "a", 0, "y"), "-b")
+test_eq( Getopt.find_option( ",--a,-b"/",", "b", "a", 0, UNDEFINED), 1)
+test_eval_error( Getopt.find_option( ",--a"/",", "x", "a", 0, "y", 1) )
+
+test_eq( Getopt.find_option( ",-ab"/",", "a"), 1)
+test_eq( Getopt.find_option( ",-ab"/",", "b"), 1)
+test_eq( Getopt.find_option( ",-ab"/",", "a", 0, 0, "y"), "b")
+test_eq( Getopt.find_option( ",-a,-b"/",", "ab"/1, 0, 0, "y"), "-b")
+test_eval_error( Getopt.find_option( ",-a"/",", "a", 0, 0, "y", 1) )
+
+test_any_equal([[
+  array x = ({ "", "--a" });
+  Getopt.find_option( x, "x", "a" );
+  return x;
+]],[[ ({ "", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "--a" });
+  Getopt.find_option( x, "x", "b" );
+  return x;
+]],[[ ({ "", "--a" }) ]])
+test_any_equal([[
+  array x = ({ "", "--a", "hej" });
+  Getopt.find_option( x, "x", "a", 0, "b" );
+  return x;
+]],[[ ({ "", 0, 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  Getopt.find_option( x, "a" );
+  return x;
+]],[[ ({ "", "-b" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  Getopt.find_option( x, "b" );
+  return x;
+]],[[ ({ "", "-a" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  Getopt.find_option( x, "a", 0, 0, "y" );
+  return x;
+]],[[ ({ "", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "-", "-abc" });
+  Getopt.find_option( x, "b" );
+  return x;
+]],[[ ({ "", "-", "-ac" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab", "c" });
+  Getopt.find_option( x, "b", 0, 0, "y" );
+  return x;
+]],[[ ({ "", "-a", 0 }) ]])
+
+test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), 0, "e" ), "e")
+test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), "foo", "e" ), "bar")
+test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), "foo" ), "bar")
+test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), ({"x","foo"}) ), "bar")
+test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), "x", "e" ), "e")
+
+test_equal( Getopt.get_args( ({}) ), ({}) )
+test_equal( Getopt.get_args(({ "x",0,0,1,"y",0,"z" })), "xyz"/1 )
+test_eval_error( Getopt.get_args(({ "x", "-a" }), 0, 1) )
+test_equal( Getopt.get_args(({ "-a", 0, "a"})), ({ "-a", "a" }) )
+test_eval_error( Getopt.get_args(({ "x", "--a" }), 0, 1) )
+test_equal( Getopt.get_args(({ "x", "--", "--a" })), ({ "x", "--a" }) )
+test_equal( Getopt.get_args(({ "x", "-" })), ({ "x", "-" }) )
+test_eval_error( Getop.get_args(({ "x", "a", "-b" }), 0, 1) )
+
+test_equal( Getopt.get_args(({ "x", "a", "-b" }), 1, 1), ({ "x", "a", "-b" }))
+test_equal( Getopt.get_args(({ "x", "ab", "-b" }), 1, 1), ({ "x", "ab", "-b" }))
+test_eval_error( Getopt.get_args(({ "x", 0, "-b" }), 1, 1))
+test_eval_error( Getopt.get_args(({ "x", "-a" }), 1, 1))
+
+test_do( add_constant("opt", lambda(array x, array y, mixed ... z) {
+ return Getopt.find_all_options(x, ({ y }), @z); }); )
+test_equal( Getopt.find_all_options( ({}), ({}) ), ({}) )
+test_equal( opt( "-a,-b"/",", ({ "a", Getopt.NO_ARG, "-a" }) ), ({}) )
+test_equal( opt( "-a,--b"/",", ({ "a", Getopt.NO_ARG, "-b" }) ), ({}) )
+test_equal( opt( "-a,-b"/",", ({ "b", Getopt.NO_ARG, "-b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( "-a,-ab"/",", ({ "b", Getopt.NO_ARG, "-b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( ",-,-a"/",", ({ "a", Getopt.NO_ARG, "-a" }) ),
+ ({ ({ "a", 1 }) }) ) )
+test_equal( opt( ",--,-a"/",", ({ "a", Getopt.NO_ARG, "-a" }) ), ({}) )
+test_equal( opt( ",-b,-A"/",", ({ "a", Getopt.NO_ARG, "-a-A"/2 }) ),
+ ({ ({ "a", 1 }) }) )
+test_equal( Getopt.find_all_options( ",-a,-b"/",",
+ ({ ({ "a", Getopt.NO_ARG, "-a" }), ({ "b", Getopt.NO_ARG, "-b" }) })),
+ ({ ({ "a", 1 }), ({ "b", 1 }) }) )
+
+test_equal( opt( "--a,--b"/",", ({ "a", Getopt.NO_ARG, "--a" }) ), ({}) )
+test_equal( opt( "--a,--b"/",", ({ "b", Getopt.NO_ARG, "--b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( "--a,--b=c"/",", ({ "b", Getopt.NO_ARG, "--b" }) ),
+ ({ ({ "b", "c" }) }) )
+test_equal( opt( ",-,--a"/",", ({ "a", Getopt.NO_ARG, "--a" }) ),
+ ({ ({ "a", 1 }) }) ) )
+test_equal( opt( ",--,--a"/",", ({ "a", Getopt.NO_ARG, "--a" }) ), ({}) )
+test_equal( opt( ",--b,--A"/",", ({ "a", Getopt.NO_ARG, "--a--A"/3 }) ),
+ ({ ({ "a", 1 }) }) )
+test_equal( Getopt.find_all_options( ",--a,--b"/",",
+ ({ ({ "a", Getopt.NO_ARG, "--a" }), ({ "b", Getopt.NO_ARG, "--b" }) })),
+ ({ ({ "a", 1 }), ({ "b", 1 }) }) )
+
+test_equal( opt( "-a,-b"/",", ({ "a", Getopt.MAY_HAVE_ARG, "-a" }) ), ({}) )
+test_equal( opt( "-a,-b"/",", ({ "b", Getopt.MAY_HAVE_ARG, "-b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( "-a,-b,c"/",", ({ "b", Getopt.MAY_HAVE_ARG, "-b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( "-a,-bc"/",", ({ "b", Getopt.MAY_HAVE_ARG, "-b" }) ),
+ ({ ({ "b", "c" }) }) )
+
+test_equal( opt( "--a,--b"/",", ({ "a", Getopt.MAY_HAVE_ARG, "--a" }) ), ({}) )
+test_equal( opt( "--a,--b,d"/",", ({ "b", Getopt.MAY_HAVE_ARG, "--b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( "--a,--b=c,d"/",", ({ "b", Getopt.MAY_HAVE_ARG, "--b" }) ),
+ ({ ({ "b", "c" }) }) )
+
+test_equal( opt( "-a,-b"/",", ({ "a", Getopt.HAS_ARG, "-a" }) ), ({}) )
+test_eval_error( opt( "-a,-b"/",", ({ "b", Getopt.HAS_ARG, "-b" }), 0, 1 ) )
+test_equal( opt( "-a,-b,c"/",", ({ "b", Getopt.HAS_ARG, "-b" }) ),
+ ({ ({ "b", "c" }) }) )
+test_equal( opt( "-a,-bc,d"/",", ({ "b", Getopt.HAS_ARG, "-b" }) ),
+ ({ ({ "b", "c" }) }) )
+
+test_equal( opt( "--a,--b"/",", ({ "a", Getopt.HAS_ARG, "--a" }) ), ({}) )
+test_eval_error( opt( "--a,--b"/",", ({ "b", Getopt.HAS_ARG, "--b" }), 0, 1 ) )
+test_equal( opt( "--a,--b,d"/",", ({ "b", Getopt.HAS_ARG, "--b" }) ),
+ ({ ({ "b", "d" }) }) )
+test_equal( opt( "--a,--b=c,d"/",", ({ "b", Getopt.HAS_ARG, "--b" }) ),
+ ({ ({ "b", "c" }) }) )
+
+test_any_equal([[
+  array x = ({ "", "--a" });
+  opt( x, ({ "x", Getopt.NO_ARG, "--a" }) );
+  return x;
+]],[[ ({ "", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "--a" });
+  opt( x, ({ "x", Getopt.NO_ARG, "--b" }) );
+  return x;
+]],[[ ({ "", "--a" }) ]])
+test_any_equal([[
+  array x = ({ "", "--a", "hej" });
+  opt( x, ({ "x", Getopt.HAS_ARG, "--a" }) );
+  return x;
+]],[[ ({ "", 0, 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "--a", "hej" });
+  opt( x, ({ "x", Getopt.MAY_HAVE_ARG, "--a" }) );
+  return x;
+]],[[ ({ "", 0, "hej" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  opt( x, ({ "x", Getopt.NO_ARG, "-a" }) );
+  return x;
+]],[[ ({ "", "-b" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  opt( x, ({ "x", Getopt.MAY_HAVE_ARG, "-a" }) );
+  return x;
+]],[[ ({ "", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  opt( x, ({ "x", Getopt.NO_ARG, "-b" }) );
+  return x;
+]],[[ ({ "", "-a" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  opt( x, ({ "x", Getopt.HAS_ARG, "-a" }) );
+  return x;
+]],[[ ({ "", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "-", "-abc" });
+  opt( x, ({ "x", Getopt.NO_ARG, "-b" }) );
+  return x;
+]],[[ ({ "", "-", "-ac" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab", "c" });
+  opt( x, ({ "x", Getopt.HAS_ARG, "-b" }) );
+  return x;
+]],[[ ({ "", "-a", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab", "c", "--x", "x" });
+  Getopt.find_all_options( x, ({
+    ({ "x", Getopt.HAS_ARG, "-b" }),
+    ({ "y", Getopt.NO_ARG, "-a" }),
+    ({ "z", Getopt.HAS_ARG, "--x" }) }) );
+  return x;
+]],[[ ({ "", 0, 0, 0, 0 }) ]])
+test_any_equal([[
+  array x = ({"program", "-M", ".", "-e", "x"});
+  Getopt.find_all_options(
+    x, ({
+      ({"M", Getopt.HAS_ARG, "-M", 0, 0}),
+      ({"e", Getopt.HAS_ARG, "-e", 0, 0}),
+    }), 1);
+  return x;
+]], ({"program", 0, 0, 0, 0}))
+
+test_equal( opt( ({}), ({ "a", Getopt.MAY_HAVE_ARG, "-a", 0, "e" }) ),
+ ({ }) )
+test_equal( opt( ({"","-a"}), ({ "a", Getopt.MAY_HAVE_ARG, "-a", 0, "e" }) ),
+ ({ ({ "a", "e" }) }) )
+test_equal( opt( ({"","--a"}), ({ "a", Getopt.MAY_HAVE_ARG, "--a", 0, "e" }) ),
+ ({ ({ "a", "e" }) }) )
+
+test_equal( opt( ({}), ({ "a", Getopt.HAS_ARG, "-a", "foo" }) ),
+ ({ ({ "a", "bar" }) }) )
+test_equal( opt( ({}), ({ "a", Getopt.HAS_ARG, "-a", ({ "x", "foo" }) }) ),
+ ({ ({ "a", "bar" }) }) )
+
+test_equal( Getopt.get_args(({ "x", "a", "-b" }), 1, 1), ({ "x", "a", "-b" }))
+test_any_equal([[
+  array x = ({ "x", "a", "-b" });
+  opt(x, ({ "y", Getopt.HAS_ARG, "-b" }), 1 );
+  return x;
+]],[[ ({ "x", "a", "-b" }) ]])
+
+test_do( putenv("POSIX_ME_HARDER", "1"); )
+test_eq( getenv("POSIX_ME_HARDER"), "1")
+test_eval_error( Getop.get_args(({ "x", "a", "-b" }), -1, 1) )
+test_equal( Getopt.get_args(({ "x", "a", "-b" }), 0, 1), ({ "x", "a", "-b" }))
+test_eval_error( Getopt.get_args(({ "x", 0, "-b" }), 0, 1))
+test_eval_error( opt( ({"x","a","-b"}), ({"y",Getopt.HAS_ARG,"-b"}), -1, 1 ))
+test_any_equal([[
+  array x = ({ "x", "a", "-b" });
+  opt(x, ({ "y", Getopt.HAS_ARG, "-b" }), 0, 1 );
+  return x;
+]],[[ ({ "x", "a", "-b" }) ]])
+test_any_equal([[
+  array x = ({ "x", "a", "-b" });
+  opt(x, ({ "y", Getopt.HAS_ARG, "-b" }), 1, 1);
+  return x;
+]],[[ ({ "x", "a", "-b" }) ]])
+
+dnl cleanup
+test_do( putenv("POSIX_ME_HARDER", original_POSIX_ME_HARDER); )
+test_do( putenv("foo", original_foo); )
+test_do( add_constant("original_POSIX_ME_HARDER"); )
+test_do( add_constant("original_foo"); )
+test_do( add_constant("opt"); )
+
+dnl - Int
+
+test_eq( Int.parity(0), 0 )
+test_eq( Int.parity(1), 1 )
+test_eq( Int.parity(2), 1 )
+test_eq( Int.parity(3), 0 )
+test_eq( Int.parity(4), 1 )
+test_eq( Int.parity(6), 0 )
+test_eq( Int.parity(7), 1 )
+
+test_eq( Int.swap_word(array_sscanf("\1\2", "%2c")[0]),
+         array_sscanf("\2\1", "%2c")[0])
+test_eq( Int.swap_long(array_sscanf("\1\2\3\4", "%4c")[0]),
+         array_sscanf("\4\3\2\1", "%4c")[0])
+
+dnl - Mapping
+dnl Mapping.delete
+dnl Mapping.Iterator
+
+test_do([[
+  // Test for [bug 5085].
+  for (int i=0; i < 100; i++) {
+    // The following line trigged the bug 33% of the time.
+    get_iterator(([1:1]))->_random();
+  }
+]])
+
+dnl - Multiset
+dnl Multiset.Iterator
+
+dnl - Process
+test_equal([[Process.split_quoted_string("test ")]],[[({"test"})]])
+test_equal([[Process.split_quoted_string("'test'")]],[[({"test"})]])
+test_equal([[Process.split_quoted_string("foo 'test' bar")]],[[({"foo","test","bar"})]])
+test_equal([[Process.split_quoted_string ("\\\"")]],
+	   [[({"\""})]])
+test_equal([[Process.split_quoted_string ("\\a")]],
+	   [[({"a"})]])
+test_equal([[Process.split_quoted_string ("\\ ")]],
+	   [[({" "})]])
+test_equal([[Process.split_quoted_string ("x\\")]],
+	   [[({"x"})]])
+test_equal([[Process.split_quoted_string ("\"\\\"foo bar\"")]],
+	   [[({"\"foo bar"})]])
+test_equal([[Process.split_quoted_string ("\"\"foo bar\"")]],
+	   [[({"foo", "bar"})]])
+test_equal([[Process.split_quoted_string (" \t\n\r a \t\n\r b \t\n\r ")]],
+	   [[({"a", "b"})]])
+test_equal([[Process.split_quoted_string ("")]],
+	   [[({})]])
+test_equal([[Process.split_quoted_string ("\"\"")]],
+	   [[({""})]])
+test_equal([[Process.split_quoted_string ("''")]],
+	   [[({""})]])
+test_equal([[Process.split_quoted_string ("a  ''  \"\"  b")]],
+	   [[({"a", "", "", "b"})]])
+test_equal([[Process.split_quoted_string ("\\")]],
+	   [[({})]])
+test_equal([[Process.split_quoted_string ("\\\\")]],
+	   [[({"\\"})]])
+test_equal([[Process.split_quoted_string ("\\\\", 1)]],
+	   [[({"\\"})]])
+test_equal([[Process.split_quoted_string ("\"")]],
+	   [[({""})]])
+test_equal([[Process.split_quoted_string ("'")]],
+	   [[({""})]])
+test_equal([[Process.split_quoted_string ("\"\\\"'\\x\"")]],
+	   [[({"\"'\\x"})]])
+test_equal([[Process.split_quoted_string ("'\"\\'\\x'")]],
+	   [[({"\"\\x"})]])
+test_equal([[Process.split_quoted_string ("\"a  \t\n\rb\"")]],
+	   [[({"a  \t\n\rb"})]])
+test_equal([[Process.split_quoted_string ("a\"b\"\'c\'")]],
+	   [[({"abc"})]])
+test_equal([[Process.split_quoted_string ("a\\ b")]],
+	   [[({"a b"})]])
+test_equal([[Process.split_quoted_string ("\\a\\b")]],
+	   [[({"ab"})]])
+test_equal([[Process.split_quoted_string ("\\a\\b", 1)]],
+	   [[({"\\a\\b"})]])
+test_equal([[Process.split_quoted_string ("\0")]],
+	   [[({"\0"})]])
+test_equal([[Process.split_quoted_string ("\0q\0p\0\0r\0")]],
+	   [[({"\0q\0p\0\0r\0"})]])
+test_equal([[Process.split_quoted_string ("\"\0\"")]],
+	   [[({"\0"})]])
+test_equal([[Process.split_quoted_string ("\"\0q\0p\0\0r\0\"")]],
+	   [[({"\0q\0p\0\0r\0"})]])
+test_equal([[Process.split_quoted_string ("'\0'")]],
+	   [[({"\0"})]])
+test_equal([[Process.split_quoted_string ("'\0q\0p\0\0r\0'")]],
+	   [[({"\0q\0p\0\0r\0"})]])
+test_equal([[Process.split_quoted_string ("\"\\\"")]],
+	   [[({"\""})]])
+test_equal([[Process.split_quoted_string ("\"\\")]],
+	   [[({"\\"})]])
+test_equal([[Process.split_quoted_string ("\"\\\0")]],
+	   [[({"\\\0"})]])
+test_equal([[Process.split_quoted_string ("\"a\\bc")]],
+	   [[({"a\\bc"})]])
+test_equal([[Process.split_quoted_string ("'a\\bc")]],
+	   [[({"a\\bc"})]])
+test_equal([[Process.split_quoted_string("pike -m master.pike 'write(\"test\");'")]],[[({"pike","-m","master.pike","write(\"test\");"})]])
+test_false([[
+#ifdef __NT__
+  Process.system(RUNPIKE +" -e exit(0)")
+#else /* !__NT__ */
+  Process.system(RUNPIKE +" -e 'exit(0)'")
+#endif /* __NT__ */
+]])
+test_true([[
+#ifdef __NT__
+  Process.system(RUNPIKE+" -e exit(1)")
+#else /* !__NT__ */
+  Process.system(RUNPIKE+" -e 'exit(1)'")
+#endif /* __NT__ */
+]])
+test_any([[object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(2)"})); sleep(2); return p->wait()]],2)
+test_eq([[
+#ifdef __NT__
+  Process.popen(RUNPIKE+" -e \"write(\\\"test\\\");\"")
+#else /* !__NT__ */
+  Process.popen(RUNPIKE+" -e 'write(\"test\");'")
+#endif /* __NT__ */
+]],"test")
+test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(5)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); o2=0; return p->wait()]],1)
+
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(5)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.File(\"stdin\")->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.File(); object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.File(\"stdin\")->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_BIDIRECTIONAL); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o2])); o->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+[[
+  test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
+  test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
+  test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
+  
+  test_any([[
+    object o=Process.create_process(({"/bin/cat","/dev/null"}));
+    if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return 99;
+    sleep(1);
+    return kill(o->pid(), 9);
+  ]],0);
+
+  dnl Some OSs have a delay before PIDs are reused.
+  dnl Be nice, and let them reuse some.
+  test_do([[ sleep(2); ]]);
+  test_any([[
+#ifdef DISABLE_SLOW_TESTS
+    return -1;
+#endif
+    for(int x=0;x<10;x++) { for(int e=0;e<100;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;]],-1)
+]])
+
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+[[
+  test_any([[
+#ifdef DISABLE_SLOW_TESTS
+    return ({});
+#endif
+    return allocate(10, thread_create) (
+      lambda() {
+	for (int x=0; x<10; x++) {
+	  for (int e=0; e<50; e++)
+	    if (Process.create_process(({"/bin/cat","/dev/null"}))->wait())
+	      return e;
+	  __signal_watchdog();
+	}
+	return -1;
+      }
+    )->wait() - ({-1})]],({}))
+]])
+
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+[[
+  test_do([[
+#ifdef DISABLE_SLOW_TESTS
+    return 0;
+#endif
+  for(int q=0;q<100;q++)
+  {
+    array fnord=({});
+    Thread.Fifo fifo=Thread.Fifo();
+
+    for(int e=0;e<10;e++)
+    {
+      fnord+=({ thread_create(lambda() {
+        	  Process.create_process(({"/bin/cat","/dev/null"}));
+        	  fifo->read();
+	        })
+	      });
+    }
+    // for(int e=0;e<50;e++)  Stdio.Port()->bind(0);
+    for(int e=0;e<10;e++) fifo->write(1);
+    fnord->wait();
+    __signal_watchdog();
+  }
+  ]])
+]])
+
+cond([[ file_stat("/bin/sleep")  && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+[[
+test_any([[
+  class Fnord
+  {
+int gnapp(int t)
+{
+#ifdef DISABLE_SLOW_TESTS
+  return -1;
+#endif
+  int e;
+  for(e=0;e<7;e++)
+  {
+    for(int d=0;d<150;d++)
+    {
+      object o=Process.create_process(({"/bin/sleep","99999"}));
+      kill( o->pid(), 9 );
+      o->wait();
+      __signal_watchdog();
+    }
+//    werror("%d",t);
+  }
+  return -1;
+}
+
+array start()
+{
+  array a=({});
+  for(int e=0;e<10;e++)
+    a+=({thread_create(gnapp,e)});
+  return a;
+}
+};
+
+return Fnord()->start()->wait()-({ -1 });
+]],[[ ({}) ]])
+
+test_do([[
+  object proc = Process.create_process (({"/bin/sleep", "99999"}));
+  array threads = allocate (10, Thread.thread_create) (
+    lambda (object proc) {proc->wait();}, proc);
+  sleep (1);
+  proc->kill (9);
+  return threads->wait() - ({-1});
+]], ({}))
+]])
+
+cond([[all_constants()->thread_create]],
+[[
+  test_any([[
+    int num_ok = 0;
+
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey l = m->lock();
+
+    void thread_fn()
+    {
+      m->lock();
+      num_ok++;
+    };
+
+    array(Thread.Thread) t = (({Thread.thread_create}) * 5) (thread_fn);
+
+    sleep (0.5); // Make sure they are waiting for the lock.
+    destruct (m);
+    l = 0;
+    sleep (0.5); // Wait for them to finish.
+
+    return num_ok;
+  ]], 5)
+]])
+
+dnl - This test is disabled for now.
+cond([[ 0 && __builtin->TraceProcess && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+[[
+test_any([[
+  // Check that tracing works...
+  // Spawn a /bin/dd that hangs on a read from a pipe connected to
+  // this process, so that it will die of SIGPIPE if we die.
+  Stdio.File input_fd = Stdio.File();
+  Process.TraceProcess proc =
+    Process.TraceProcess(RUNPIKE_ARRAY + ({ "-e", "Stdio.stdin.read(1)" }), ([
+      "stdin":input_fd->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE),
+    ]));
+
+  int initial_sleep = 5;
+  int count;
+  int state;
+  int code;
+  while (((code = proc->wait()) == -2) && (count++ < 20)) {
+    int sig = proc->last_signal();
+    switch(sig) {
+    case signum("TRAP"):
+      if (state) {
+        // NB: OSF/1 issues two SIGTRAPS before the program starts executing.
+	werror("Unexpected SIGTRAP in state %d.\n", state);
+      }
+      state = ((state <= 1) ? 1 : state);
+      proc->cont();
+
+      // Give it some time to settle down after initialization.
+      if (initial_sleep) {
+	sleep(initial_sleep);
+	initial_sleep=0;
+      }
+
+      // Check that we can block deadly signals.
+      proc->kill(signum("TERM"));
+      break;
+    case signum("TERM"):
+      if (state != 1) {
+	werror("Unexpected SIGTERM in state %d.\n", state);
+      }
+      state = ((state <= 2) ? 2 : state);
+      proc->cont();		// Ignore it...
+
+      // Check that we can make harmless signals deadly.
+      proc->kill(signum("CONT"));
+      break;
+    case signum("CONT"):
+      if (state != 2) {
+	werror("Unexpected SIGCONT in state %d.\n", state);
+      }
+      state = ((state <= 3) ? 3 : state);
+      proc->cont(signum("KILL"));	// Make it a SIGKILL
+
+      sleep(5);	// Give it some time to die and get reaped.
+
+      if (proc->kill(signum("KILL"))) {
+	return sprintf("Process didn't die of cont(%d).", signum("KILL"));
+      }
+      break;
+    default:
+      proc->kill(signum("KILL"));
+      return sprintf("Unexpected signal:%d in state %d.", sig, state);
+    }
+  }
+
+  if (code == -2) {
+    proc->kill(signum("KILL"));
+    return sprintf("Looping trace. (Looped %d times).", count-1);
+  }
+
+  if (code != -1) {
+    proc->kill(signum("KILL"));
+    return sprintf("Bad termination returncode from wait():%d (expected -1).",
+		   code);
+  }
+
+  if (state != 3) {
+    return sprintf("Unexpected termination in state %d, signal %d.",
+		   state, proc->last_signal());
+  }
+
+  int sig = proc->last_signal();
+  if (sig != signum("KILL")) {
+    proc->kill(signum("KILL"));
+    return sprintf("Unexpected termination signal:%d (expected %d).",
+		   sig, signum("KILL"));
+  }
+  // Test ok.
+  return 0; ]], 0)
+]])
+
+test_do([[
+  string s;
+  for(s="foobar";strlen(s)<78;s+=s)
+  {
+    for(int e=0;e<strlen(s);e++)
+    {
+      s[e]++;
+    }
+  }
+]])
+
+// Thread.Queue
+test_do([[ add_constant("TestQueue", Thread.Queue()); ]])
+test_any([[
+  int i;
+  for(i = 0; i < 10; i++) {
+    TestQueue->write(i);
+  }
+  return TestQueue->read();
+]], 0)
+test_eq([[ TestQueue->size() ]], 9)
+test_equal([[ TestQueue->peek_array() ]], [[ ({ 1,2,3,4,5,6,7,8,9 }) ]])
+test_eq([[ TestQueue->size() ]], 9)
+test_equal([[ TestQueue->read_array() ]], [[ ({ 1,2,3,4,5,6,7,8,9 }) ]])
+test_false([[ TestQueue->size() ]])
+test_equal([[ TestQueue->peek_array() ]], [[ ({ }) ]])
+test_equal([[ TestQueue->try_read_array() ]], [[ ({ }) ]])
+test_false([[ TestQueue->size() ]])
+test_true([[ zero_type(TestQueue->try_read()) ]])
+test_do([[ add_constant("TestQueue"); ]])
+
+test_false(!Val.true)
+test_true(!Val.false)
+test_eq((int) Val.true, 1)
+test_eq((int) Val.false, 0)
+test_eq((string) Val.true, "1")
+test_eq((string) Val.false, "0")
+test_false(Val.true == 0)
+test_false(Val.true == 1)
+test_false(Val.false == 0)
+test_false(Val.false == 1)
+test_false(Val.true == Val.false)
+test_true(Val.true == Val.true)
+test_true(Val.false == Val.false)
+
+test_true(!Val.null)
+test_eval_error((int) Val.null)
+test_eval_error((string) Val.null)
+test_false(Val.null == 0)
+test_false(Val.null == 1)
+test_false(Val.null == Val.true)
+test_false(Val.null == Val.false)
+test_true(Val.null == Val.null)
+
+test_true(decode_value (encode_value (Val.null)) == Val.null)
+test_true(decode_value (encode_value (Val.true)) == Val.true)
+test_true(decode_value (encode_value (Val.false)) == Val.false)
+test_true(decode_value ("\266ke0#\6\5rVal.null") == Val.null)
+test_true(decode_value ("\266ke0#\6\5rVal.true") == Val.true)
+test_true(decode_value ("\266ke0#\6\6rVal.false") == Val.false)
+
+test_true(([Val.null: 1])[Val.null])
+test_false(([Val.false: 1])[Val.null])
+test_false(([0: 1])[Val.null])
+test_true(([Val.true: 1])[Val.true])
+test_false(([Val.true: 1])[Val.false])
+test_true(([Val.false: 1])[Val.false])
+test_false(([Val.true: 1])[Val.false])
+
+END_MARKER

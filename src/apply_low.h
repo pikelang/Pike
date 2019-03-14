@@ -1,15 +1,29 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
     {
       struct program *p;
       struct reference *ref;
       struct pike_frame *new_frame;
       struct identifier *function;
-      
+
+#if 0
+      /* This kind of fault tolerance is braindamaged. /mast */
       if(fun<0)
       {
 	pop_n_elems(Pike_sp-save_sp);
-	push_int(0);
+	push_undefined();
 	return 0;
       }
+#else
+#ifdef PIKE_DEBUG
+      if (fun < 0)
+	Pike_fatal ("Invalid function offset: %d.\n", fun);
+#endif
+#endif
 
       check_stack(256);
       check_mark_stack(256);
@@ -28,6 +42,7 @@
 	      do_debug();
 	    break;
 	  case 4:
+	  default:
 	    do_debug();
 	}
       }
@@ -38,7 +53,7 @@
 	PIKE_ERROR("destructed object->function",
 	      "Cannot call functions in destructed objects.\n", Pike_sp, args);
 
-      if(!(p->flags & PROGRAM_PASS_1_DONE))
+      if(!(p->flags & PROGRAM_PASS_1_DONE) || (p->flags & PROGRAM_AVOID_CHECK))
 	PIKE_ERROR("__empty_program() -> function",
 	      "Cannot call functions in unfinished objects.\n", Pike_sp, args);
 	
@@ -62,24 +77,21 @@
 	describe(p);
 	fprintf(stderr,"########Object is:\n");
 	describe(o);
-	fatal("Function index out of range.\n");
+	Pike_fatal("Function index out of range.\n");
       }
 #endif
 
       ref = p->identifier_references + fun;
 #ifdef PIKE_DEBUG
       if(ref->inherit_offset>=p->num_inherits)
-	fatal("Inherit offset out of range in program.\n");
+	Pike_fatal("Inherit offset out of range in program.\n");
 #endif
 
       /* init a new evaluation pike_frame */
       new_frame=alloc_pike_frame();
 #ifdef PROFILING
-#ifdef HAVE_GETHRTIME
       new_frame->children_base = Pike_interpreter.accounted_time;
-      new_frame->start_time = gethrtime() - Pike_interpreter.time_base;
-
-#endif
+      new_frame->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
 
       /* This is mostly for profiling, but
        * could also be used to find out the name of a function
@@ -89,19 +101,26 @@
        * put it here until someone needs it. -Hubbe
        */
       new_frame->ident = ref->identifier_offset;
+      DO_IF_PROFILING_DEBUG({
+	  fprintf(stderr, "%p{: Push at %" PRINT_CPU_TIME
+		  " %" PRINT_CPU_TIME "\n",
+		  Pike_interpreter.thread_state, new_frame->start_time,
+		  new_frame->children_base);
+	});
 #endif
       debug_malloc_touch(new_frame);
 
       new_frame->next = Pike_fp;
       new_frame->current_object = o;
-      new_frame->context = p->inherits[ ref->inherit_offset ];
+      new_frame->current_program = p;
+      new_frame->context = p->inherits + ref->inherit_offset;
 
-      function = new_frame->context.prog->identifiers + ref->identifier_offset;
+      function = new_frame->context->prog->identifiers + ref->identifier_offset;
       new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
 
       
 #ifdef PIKE_DEBUG
-	if(t_flag > 9)
+	if(Pike_interpreter.trace_level > 9)
 	{
 	  fprintf(stderr,"-- ref: inoff=%d idoff=%d flags=%d\n",
 		  ref->inherit_offset,
@@ -109,87 +128,120 @@
 		  ref->id_flags);
 
 	  fprintf(stderr,"-- context: prog->id=%d inlev=%d idlev=%d pi=%d po=%d so=%ld name=%s\n",
-		  new_frame->context.prog->id,
-		  new_frame->context.inherit_level,
-		  new_frame->context.identifier_level,
-		  new_frame->context.parent_identifier,
-		  new_frame->context.parent_offset,
-		  DO_NOT_WARN((long)new_frame->context.storage_offset),
-		  new_frame->context.name ? new_frame->context.name->str  : "NULL");
-	  if(t_flag>19)
+		  new_frame->context->prog->id,
+		  new_frame->context->inherit_level,
+		  new_frame->context->identifier_level,
+		  new_frame->context->parent_identifier,
+		  new_frame->context->parent_offset,
+		  DO_NOT_WARN((long)new_frame->context->storage_offset),
+		  new_frame->context->name ? new_frame->context->name->str  : "NULL");
+	  if(Pike_interpreter.trace_level>19)
 	  {
-	    describe(new_frame->context.prog);
+	    describe(new_frame->context->prog);
 	  }
 	}
 #endif
 
 
-      new_frame->expendible =new_frame->locals = Pike_sp - args;
+      new_frame->expendible = new_frame->locals = Pike_sp - args;
       new_frame->args = args;
       new_frame->pc = 0;
-#ifdef SCOPE
       new_frame->scope=scope;
-#else
-      new_frame->scope=0;
+#ifdef PIKE_DEBUG
+      if(scope && new_frame->fun == scope->fun)
+      {
+	Pike_fatal("Que? A function cannot be parented by itself!\n");
+      }
 #endif
       new_frame->save_sp=save_sp;
-      
+
       add_ref(new_frame->current_object);
-      add_ref(new_frame->context.prog);
-      if(new_frame->context.parent) add_ref(new_frame->context.parent);
-#ifdef SCOPE
+      add_ref(new_frame->current_program);
       if(new_frame->scope) add_ref(new_frame->scope);
-#endif
+#ifdef PIKE_DEBUG
+      if (Pike_fp) {
 
-      if(t_flag)
-      {
-	char buf[50];
+	if (new_frame->locals < Pike_fp->locals) {
+	  fatal("New locals below old locals: %p < %p\n",
+		new_frame->locals, Pike_fp->locals);
+	}
 
-	init_buf();
-	sprintf(buf, "%lx->",
-		DO_NOT_WARN((long)o));
-	my_strcat(buf);
-	my_strcat(function->name->str);
-	do_trace_call(args);
+	if (d_flag > 1) {
+	  /* Liberal use of variables for debugger convenience. */
+	  size_t i;
+	  struct svalue *l = Pike_fp->locals;
+	  for (i = 0; l + i < Pike_sp; i++)
+	    if (TYPEOF(l[i]) != PIKE_T_FREE)
+	      debug_check_svalue (l + i);
+	}
       }
-      
+#endif /* PIKE_DEBUG */
+
       Pike_fp = new_frame;
       
+      if(Pike_interpreter.trace_level)
+      {
+	dynamic_buffer save_buf;
+	char buf[50];
+
+	init_buf(&save_buf);
+	sprintf(buf, "%lx->", DO_NOT_WARN((long) PTR_TO_INT (o)));
+	my_strcat(buf);
+	if (function->name->size_shift)
+	  my_strcat ("[widestring function name]");
+	else
+	  my_strcat(function->name->str);
+	do_trace_call(args, &save_buf);
+      }
+      if (PIKE_FN_START_ENABLED()) {
+	/* DTrace enter probe
+	   arg0: function name
+	   arg1: object
+	*/
+	dynamic_buffer save_buf;
+	dynbuf_string obj_name;
+	struct svalue obj_sval;
+	SET_SVAL(obj_sval, T_OBJECT, 0, object, o);
+	init_buf(&save_buf);
+	safe_describe_svalue(&obj_sval, 0, NULL);
+	obj_name = complex_free_buf(&save_buf);
+	PIKE_FN_START(function->name->size_shift == 0 ?
+		      function->name->str : "[widestring fn name]",
+		      obj_name.str);
+      }
+
 #ifdef PROFILING
       function->num_calls++;
+      function->recur_depth++;
 #endif
   
       if(function->func.offset == -1) {
+	new_frame->num_args = args;
 	generic_error(NULL, Pike_sp, args,
 		      "Calling undefined function.\n");
       }
       
-#ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-      new_frame->self_time_base=function->total_time;
-#endif
-#endif
-
-      switch(function->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
+      switch(function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS))
       {
       case IDENTIFIER_C_FUNCTION:
 	debug_malloc_touch(Pike_fp);
 	Pike_fp->num_args=args;
-	new_frame->current_storage = o->storage+new_frame->context.storage_offset;
+	new_frame->current_storage = o->storage+new_frame->context->storage_offset;
 	new_frame->num_locals=args;
-	check_threads_etc();
+	FAST_CHECK_THREADS_ON_CALL();
 	(*function->func.c_fun)(args);
 	break;
 	
       case IDENTIFIER_CONSTANT:
       {
-	struct svalue *s=&(Pike_fp->context.prog->
-			   constants[function->func.offset].sval);
+	struct svalue *s=&(Pike_fp->context->prog->
+			   constants[function->func.const_info.offset].sval);
 	debug_malloc_touch(Pike_fp);
-	if(s->type == T_PROGRAM)
+	if(TYPEOF(*s) == T_PROGRAM)
 	{
 	  struct object *tmp;
-	  check_threads_etc();
+	  FAST_CHECK_THREADS_ON_CALL();
+	  Pike_fp->num_args=args;
 	  tmp=parent_clone_object(s->u.program,
 				  o,
 				  fun,
@@ -199,8 +251,8 @@
 	}
 	/* Fall through */
       }
-      
-      case 0:
+
+      case IDENTIFIER_VARIABLE:
       {
 	/* FIXME:
 	 * Use new-style tail-recursion instead
@@ -212,11 +264,19 @@
 	  /* Create an extra svalue for tail recursion style call */
 	  Pike_sp++;
 	  MEMMOVE(Pike_sp-args,Pike_sp-args-1,sizeof(struct svalue)*args);
-	  Pike_sp[-args-1].type=T_INT;
+#ifdef DEBUG_MALLOC
+	  if (args) {
+	    int i;
+	    /* Note: touch the dead svalue too. */
+	    for (i=args+2; i > 0; i--) {
+	      dmalloc_touch_svalue(Pike_sp-i);
+	    }
+	  }
+#endif /* DEBUG_MALLOC */
 	}else{
 	  free_svalue(Pike_sp-args-1);
-	  Pike_sp[-args-1].type=T_INT;
 	}
+	mark_free_svalue (Pike_sp - args - 1);
 	low_object_index_no_free(Pike_sp-args-1,o,fun);
 
 	/* No profiling code for calling variables - Hubbe */
@@ -231,6 +291,10 @@
 	  pop_n_elems(Pike_sp-save_sp-args);
 	}
 	arg1=(void *)(Pike_sp-args-1);
+	if (PIKE_FN_POPFRAME_ENABLED()) {
+	  /* DTrace adjust frame depth */
+	  PIKE_FN_POPFRAME();
+	}
 	goto apply_svalue;
       }
 
@@ -239,82 +303,56 @@
 	int num_args;
 	int num_locals;
 	PIKE_OPCODE_T *pc;
+	FAST_CHECK_THREADS_ON_CALL();
 
 #ifdef PIKE_DEBUG
 	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
-	  fatal("Pike code called within gc.\n");
+	  Pike_fatal("Pike code called within gc.\n");
+    new_frame->num_args = 0;
+    new_frame->num_locals = 0;
 #endif
 
 	debug_malloc_touch(Pike_fp);
-	pc=new_frame->context.prog->program + function->func.offset;
+	pc=new_frame->context->prog->program + function->func.offset;
 
-	num_locals = READ_INCR_BYTE(pc);
-	num_args = READ_INCR_BYTE(pc);
-
-#ifdef PIKE_DEBUG
-	if(num_locals < num_args)
-	  fatal("Wrong number of arguments or locals in function def.\n"
-		"num_locals: %d < num_args: %d\n",
-		num_locals, num_args);
-#endif
-
-	if(function->identifier_flags & IDENTIFIER_SCOPE_USED)
-	  new_frame->expendible+=num_locals;
-	
-	
-	if(function->identifier_flags & IDENTIFIER_VARARGS)
-	{
-	  /* adjust arguments on stack */
-	  if(args < num_args) /* push zeros */
-	  {
-	    push_undefines(num_args-args);
-	    f_aggregate(0);
-	  }else{
-	    f_aggregate(args - num_args); /* make array */
-	  }
-	  args = num_args+1;
-	}else{
-	  /* adjust arguments on stack */
-	  if(args < num_args) /* push zeros */
-	    push_undefines(num_args-args);
-	  else
-	    pop_n_elems(args - num_args);
-	  args=num_args;
-	}
-
-	if(num_locals > args)
-	  push_zeroes(num_locals-args);
-
-	new_frame->num_locals=num_locals;
-	new_frame->num_args=num_args;
 	new_frame->save_mark_sp=new_frame->mark_sp_base=Pike_mark_sp;
-	check_threads_etc();
 	new_frame->pc = pc
 #ifdef ENTRY_PROLOGUE_SIZE
 	  + ENTRY_PROLOGUE_SIZE
 #endif /* ENTRY_PROLOGUE_SIZE */
 	  ;
-	return 1;
+
+	return new_frame->pc;
       }
+
+      default:
+	if (IDENTIFIER_IS_ALIAS(function->identifier_flags)) {
+	  POP_PIKE_FRAME();
+	  do {
+	    struct external_variable_context loc;
+	    loc.o = o;
+	    loc.inherit = INHERIT_FROM_INT(p, fun);
+	    loc.parent_identifier = 0;
+	    find_external_context(&loc, function->func.ext_ref.depth);
+	    fun = function->func.ext_ref.id;
+	    p = (o = loc.o)->prog;
+	    function = ID_FROM_INT(p, fun);
+	  } while (IDENTIFIER_IS_ALIAS(function->identifier_flags));
+	  if (PIKE_FN_POPFRAME_ENABLED()) {
+	    /* DTrace adjust frame depth */
+	    PIKE_FN_POPFRAME();
+	  }
+	  goto apply_low;
+	}
+#ifdef PIKE_DEBUG
+	Pike_fatal("Unknown identifier type.\n");
+#endif
       }
-#ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-  {
-    long long time_passed, time_in_children, self_time;
-    time_in_children=  Pike_interpreter.accounted_time - Pike_fp->children_base;
-    time_passed = gethrtime() - Pike_interpreter.time_base - Pike_fp->start_time;
-    self_time=time_passed - time_in_children;
-    Pike_interpreter.accounted_time+=self_time;
-    function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);
-    function->self_time+=(INT32)( self_time /1000);
-  }
-#endif
-#endif
 
 #if 0
 #ifdef PIKE_DEBUG
       if(Pike_fp!=new_frame)
-	fatal("Frame stack out of whack!\n");
+	Pike_fatal("Frame stack out of whack!\n");
 #endif
 #endif
       

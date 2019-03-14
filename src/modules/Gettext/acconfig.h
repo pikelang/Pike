@@ -1,6 +1,9 @@
 /*
- * $Id: acconfig.h,v 1.2 2000/03/12 11:36:31 hubbe Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef GETTEXT_CONFIG_H
 #define GETTEXT_CONFIG_H
 
@@ -8,6 +11,9 @@
 
 /* define if you have gettext */
 #undef HAVE_GETTEXT
+
+/* Defined if bindtextdomain(3) copes with NULL as dirname */
+#undef BINDTEXTDOMAIN_HANDLES_NULL
 
 @BOTTOM@
 

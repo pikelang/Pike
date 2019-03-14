@@ -1,9 +1,11 @@
-/* $Id: pattern.c,v 1.24 2001/07/18 18:49:59 nilsson Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /*
 **! module Image
-**! note
-**!	$Id: pattern.c,v 1.24 2001/07/18 18:49:59 nilsson Exp $
 **! class Image
 */
 
@@ -12,22 +14,18 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "pike_error.h"
 #include "threads.h"
 #include "builtin_functions.h"
 
 #include "image.h"
 
-/* This must be included last! */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_program;
 #ifdef THIS
@@ -47,7 +45,7 @@ extern struct program *image_program;
 #define NOISE_PZ 337
 #define NOISE_PHI 0.6180339
 
-static double noise_p1[NOISE_PTS]=
+static const double noise_p1[NOISE_PTS]=
 {0.7687, 0.7048, 0.2400, 0.8877, 0.3604, 0.3365, 0.4929, 0.6689, 
  0.5958, 0.1747, 0.8518, 0.1367, 0.8194, 0.2953, 0.7487, 0.8822, 
  0.8200, 0.4410, 0.5080, 0.2866, 0.4414, 0.1916, 0.0896, 0.1759, 
@@ -181,7 +179,7 @@ static double noise_p1[NOISE_PTS]=
 
 #define FRAC(X) ((X)-floor(X))
 
-static double noise(double Vx,double Vy,double *noise_p)
+static double noise(double Vx,double Vy,const double *noise_p)
 {
    int Ax[3],Ay[3];
    int n,i,j;
@@ -248,21 +246,21 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    double fr,fg,fb,q;
    int b;
 
-   if (s->type!=T_ARRAY)
+   if (TYPEOF(*s) != T_ARRAY)
       Pike_error("Illegal colorrange to %s\n",where);
    else if (s->u.array->size<2)
       Pike_error("Colorrange array too small (meaningless) (to %s)\n",where);
 
-   vp=v=(void*)xalloc(sizeof(double)*(s->u.array->size/2+1));
-   rgbp=rgb=(void*)xalloc(sizeof(rgbd_group)*(s->u.array->size/2+1));
+   vp=v=xalloc(sizeof(double)*(s->u.array->size/2+1));
+   rgbp=rgb=xalloc(sizeof(rgbd_group)*(s->u.array->size/2+1));
 
    for (i=0; i<s->u.array->size-1; i+=2)
    {
       rgb_group rgbt;
 
-      if (s->u.array->item[i].type==T_INT) 
+      if (TYPEOF(s->u.array->item[i]) == T_INT)
 	 *vp = (double)s->u.array->item[i].u.integer;
-      else if (s->u.array->item[i].type==T_FLOAT) 
+      else if (TYPEOF(s->u.array->item[i]) == T_FLOAT)
 	 *vp = s->u.array->item[i].u.float_number;
       else 
 	 bad_arg_error(where,
@@ -324,14 +322,14 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 
 #define GET_FLOAT_ARG(sp,args,n,def,where) \
    ( (args>n) \
-      ? ( (sp[n-args].type==T_INT) ? (double)(sp[n-args].u.integer) \
-	  : ( (sp[n-args].type==T_FLOAT) ? sp[n-args].u.float_number \
+      ? ( (TYPEOF(sp[n-args]) == T_INT) ? (double)(sp[n-args].u.integer) \
+	  : ( (TYPEOF(sp[n-args]) == T_FLOAT) ? sp[n-args].u.float_number \
 	      : ( Pike_error("illegal argument(s) to %s\n", where), 0.0 ) ) ) \
       : def )
 #define GET_INT_ARG(sp,args,n,def,where) \
    ( (args>n) \
-      ? ( (sp[n-args].type==T_INT) ? sp[n-args].u.integer \
-	  : ( (sp[n-args].type==T_FLOAT) ? DOUBLE_TO_INT(sp[n-args].u.float_number) \
+      ? ( (TYPEOF(sp[n-args]) == T_INT) ? sp[n-args].u.integer		\
+	  : ( (TYPEOF(sp[n-args]) == T_FLOAT) ? DOUBLE_TO_INT(sp[n-args].u.float_number) \
 	      : ( Pike_error("illegal argument(s) to %s\n", where), 0 ) ) ) \
       : def )
 
@@ -380,10 +378,11 @@ void image_noise(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      Pike_error("Out of memory\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("noise",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    cscale*=COLORRANGE_LEVELS;
@@ -460,10 +459,11 @@ void image_turbulence(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      Pike_error("Out of memory\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("noise",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    cscale*=COLORRANGE_LEVELS;

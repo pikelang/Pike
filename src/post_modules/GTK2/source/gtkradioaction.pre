@@ -1,0 +1,92 @@
+/* -*- C -*- */
+require gtk24;
+
+class GTK2.RadioAction;
+inherit GTK2.ToggleAction;
+
+//! Properties
+require gtk210;
+//! int current-value
+endrequire;
+//! GTK2.RadioAction group
+//! int value
+
+signal changed;
+
+void create(string|mapping(string:mixed) name_or_props, ?string label,
+	    ?string tooltip, ?string stock_id, ?int value)
+//! Creates a new GTK2.ToggleAction object.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args==4) {
+    char *name,*stock_id;
+    struct pike_string *label, *tooltip;
+    gchar *label2=NULL, *tooltip2=NULL;
+    INT_TYPE val;
+    GtkRadioAction *gr;
+    get_all_args("create",args,"%s%t%t%s%i",&name,&label,&tooltip,&stock_id,&val);
+    if(label) {
+      ref_push_string(label);
+      f_string_to_utf8(1);
+      label2 = GSTR0(Pike_sp[-1].u.string);
+    }
+    if(tooltip) {
+      ref_push_string(tooltip);
+      f_string_to_utf8(1);
+      tooltip2 = GSTR0(Pike_sp[-1].u.string);
+    }
+    gr=gtk_radio_action_new(name,label2,tooltip2,stock_id,val);
+    if(tooltip) pop_stack();
+    if(label) pop_stack();
+    THIS->obj=G_OBJECT(gr);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_RADIO_ACTION);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+
+array(GTK2.RadioAction) get_group()
+//! Returns the list representing the radio group.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GSList *gsl;
+    int i=0;
+    gsl=gtk_radio_action_get_group(GTK_RADIO_ACTION(THIS->obj));
+    while (gsl) {
+      push_gobject(gsl->data);
+      g_object_ref(gsl->data);
+      i++;
+      gsl=g_slist_next(gsl);
+    }
+    f_aggregate(i);
+  }
+}
+
+void set_group(GTK2.RadioAction member)
+//! Sets the radio group.
+{
+  pgtk2_verify_inited();
+  {
+    GSList *gl;
+    struct object *o1;
+    get_all_args("set_group",args,"%o",&o1);
+    gl=gtk_radio_action_get_group(GTK_RADIO_ACTION(get_gobject(o1)));
+    gtk_radio_action_set_group(GTK_RADIO_ACTION(THIS->obj),gl);
+  }
+  RETURN_THIS();
+}
+
+int get_current_value();
+//! Obtains the value property of the currently active member.
+
+require gtk210;
+void set_current_value(int value);
+//! Sets the currently active group member to the member with value property
+//! value.
+endrequire;
+
+endrequire;

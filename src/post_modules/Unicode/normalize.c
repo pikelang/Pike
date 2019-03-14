@@ -1,7 +1,12 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: normalize.c,v 1.6 2001/09/24 17:03:59 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -14,8 +19,6 @@ RCSID("$Id: normalize.c,v 1.6 2001/09/24 17:03:59 grubba Exp $");
 #include "buffer.h"
 #include "normalize.h"
 
-/* must be included last */
-#include "module_magic.h"
 struct comp
 {
   const int c1;
@@ -54,7 +57,6 @@ struct canonical_cl
   const int cl;
 }; /* 8 bytes/entry */
 
-#include "hsize.h"
 /* generated from .txt */
 #include "decompositions.h"
 #include "canonicals.h"
@@ -69,27 +71,36 @@ static struct canonic_h   canonic_h[sizeof(_ca)/sizeof(_ca[0])];
 static struct canonic_h  *canonic_hash[HSIZE];
 
 
+#ifdef PIKE_DEBUG
+static int hashes_inited = 0;
+#endif
 
 static void init_hashes()
 {
   unsigned int i;
+
+#ifdef PIKE_DEBUG
+  if (hashes_inited) Pike_fatal ("init_hashes called twice\n");
+  hashes_inited = 1;
+#endif
+
   for( i = 0; i<sizeof(_d)/sizeof(_d[0]); i++ )
   {
-    int h = _d[i].c%HSIZE;
+    unsigned int h = (unsigned int)_d[i].c%HSIZE;
     decomp_h[i].v = _d+i;
     decomp_h[i].next = decomp_hash[h];
     decomp_hash[h] = decomp_h+i;
   }
   for( i = 0; i<sizeof(_c)/sizeof(_c[0]); i++ )
   {
-    int h = ((_c[i].c1<<16)|_c[i].c2)%HSIZE;
+    unsigned int h = (((unsigned int)_c[i].c1<<16)|_c[i].c2)%HSIZE;
     comp_h[i].v = _c+i;
     comp_h[i].next = comp_hash[h];
     comp_hash[h] = comp_h+i;
   }
   for( i = 0; i<sizeof(_ca)/sizeof(_ca[0]); i++ )
   {
-    int h = _ca[i].c % HSIZE;
+    unsigned int h = (unsigned int)_ca[i].c % HSIZE;
     canonic_h[i].v = _ca+i;
     canonic_h[i].next = canonic_hash[h];
     canonic_hash[h] = canonic_h+i;
@@ -104,7 +115,7 @@ void unicode_normalize_init()
 
 const struct decomp *get_decomposition( int c )
 {
-  int hv = c % HSIZE;
+  unsigned int hv = (unsigned int)c % HSIZE;
   const struct decomp_h *r = decomp_hash[hv];
   while( r )
   {
@@ -117,7 +128,7 @@ const struct decomp *get_decomposition( int c )
 
 int get_canonical_class( int c )
 {
-  int hv = c % HSIZE;
+  unsigned int hv = (unsigned int)c % HSIZE;
   const struct canonic_h *r = canonic_hash[hv];
   while( r )
   {
@@ -141,6 +152,8 @@ int get_canonical_class( int c )
 int get_compose_pair( int c1, int c2 )
 {
   const struct comp_h *r;
+  unsigned int hv;
+
   if( c1 >= LBase )
   {
     /* Perhaps hangul */
@@ -165,8 +178,10 @@ int get_compose_pair( int c1, int c2 )
     }
   }
 
+  hv = (unsigned int)c1 << 16 | (unsigned int)c2;
   /* Nope. Not hangul. */
-  for( r=comp_hash[ ((unsigned int)((c1<<16) | (c2))) % HSIZE ]; r; r=r->next )
+  for( r=comp_hash[ hv % HSIZE ];
+       r; r=r->next )
     if( (r->v->c1 == c1) && (r->v->c2 == c2) )
       return r->v->c;
 
@@ -175,9 +190,8 @@ int get_compose_pair( int c1, int c2 )
 
 static void rec_get_decomposition( int canonical, int c, struct buffer *tmp )
 {
-  const struct decomp *decomp = get_decomposition( c );
-  
-  if( decomp && !(canonical && decomp->compat) )
+  const struct decomp *decomp;
+  if( (decomp = get_decomposition( c )) && !(canonical && decomp->compat) )
   {
     if( decomp->data[0] )
       rec_get_decomposition( canonical, decomp->data[0], tmp );
@@ -186,7 +200,6 @@ static void rec_get_decomposition( int canonical, int c, struct buffer *tmp )
   }
   else
   {
-
     if( (c >= SBase) && c < (SBase+SCount) )
       /* Hangul */
     {
@@ -214,21 +227,28 @@ struct buffer *unicode_decompose_buffer( struct buffer *source,	int how )
 
   for( i = 0; i<source->size; i++ )
   {
-    tmp->size = 0;
-    rec_get_decomposition( canonical, source->data[i], tmp );
-    for( j = 0; j<tmp->size; j++ )
+    if( source->data[i] < 160 )
     {
-      int c = tmp->data[j];
-      int cl = get_canonical_class( c );
-      int k = res->size;
-      /* Sort combining marks */
-      if( cl != 0 )
+      uc_buffer_write( res, source->data[i] );
+    }
+    else
+    {
+      tmp->size = 0;
+      rec_get_decomposition( canonical, source->data[i], tmp );
+      for( j = 0; j<tmp->size; j++ )
       {
-	for( ; k > 0; k-- )
-	  if( get_canonical_class( res->data[k-1] ) <= cl )
-	    break;
+	int c = tmp->data[j];
+	int cl = get_canonical_class( c );
+	int k = res->size;
+	/* Sort combining marks */
+	if( cl != 0 )
+	{
+	  for( ; k > 0; k-- )
+	    if( get_canonical_class( res->data[k-1] ) <= cl )
+	      break;
+	}
+	uc_buffer_insert( res, k, c );
       }
-      uc_buffer_insert( res, k, c );
     }
   }
   uc_buffer_free( tmp );
@@ -236,7 +256,7 @@ struct buffer *unicode_decompose_buffer( struct buffer *source,	int how )
   return res;
 }
 
-struct buffer *unicode_compose_buffer( struct buffer *source, int how )
+struct buffer *unicode_compose_buffer( struct buffer *source, int UNUSED(how) )
 {
   int startch = source->data[0];
   int lastclass = get_canonical_class( startch )?256:0;
@@ -270,6 +290,11 @@ struct buffer *unicode_compose_buffer( struct buffer *source, int how )
 struct pike_string *unicode_normalize( struct pike_string *source,
 				       int how )
 {
+  /* Special case for the empty string. */
+  if (!source->len) {
+    add_ref(source);
+    return source;
+  }
   /* What, me lisp? */
   if( how & COMPOSE_BIT )
     return

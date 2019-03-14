@@ -1,10 +1,48 @@
-Pike by Fredrik Hübinette 1994-2001
-Permission to copy, modify, and distribute this source
-for any legal purpose granted as long as my name is
-still attached to it. More specifically the GPL licence
-applies to this software.
+Pike by Fredrik Hübinette 1994-2001 and the Pike team 2001-2011
 
-Read src/README for details on installation.
-New releases can be found on ftp://ftp.roxen.com/pub/pike/
+Permission to copy, modify, and distribute this source for any legal
+purpose granted as long as my name is still attached to it.  More
+specifically, the GPL, LGPL and MPL licenses apply to this software.
+
+New releases can be found on http://pike.ida.liu.se/download/
 Report bugs at http://community.roxen.com/crunch/
-There is also a mailing list, to subscribe to it mail: pike-request@roxen.com
+There is also a mailing list, to subscribe to it mail:
+pike-request@roxen.com
+
+
+HOW TO BUILD PIKE
+
+If you are building Pike from git, read README-GIT instead.
+
+The top-level makefile (in this directory, not the src directory) has
+all the magic you need to build Pike. Just type 'make'.
+To install type "make install" or "make install_interactive".
+
+You will need gnu m4, bison and a C compiler. You probably also want
+to use GNU make and libz.
+
+If that doesn't work, refer to README-GIT, in particular the sections
+on additional "DEPENDENCIES", on "CONFIGURE OPTIONS AND BUILD VARIABLES",
+on "MANUAL BUILDING" and, if needed, the section "IF IT DOESN'T WORK".
+
+
+BUGS
+
+If you find a bug in the interpreter, the first thing to do is to make
+sure the interpreter is compiled with PIKE_DEBUG defined.  If not,
+recompile with PIKE_DEBUG and see if you get another error.  When
+you've done this, please report the bug to us at
+http://community.roxen.com/crunch/ and include as much as you can
+muster of the following:
+
+  o The version of the driver. (Try pike --version or look in
+    src/version.h)
+  o What kind of system hardware/software you use (OS, compiler, etc.)
+  o The piece of code that crashes or bugs, preferably in a very
+    small Pike-script with the bug isolated.  Please send a complete
+    running example of something that makes the interpreter bug.
+  o A description of what it is that bugs and when.
+  o If you know how, then also give us a backtrace and dump of vital
+    variables at the point of crash.
+  o Or, if you found the error and corrected it, just send us the
+    bugfix along with a description of what you did and why.

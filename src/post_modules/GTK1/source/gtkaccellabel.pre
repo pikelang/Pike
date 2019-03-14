@@ -1,0 +1,11 @@
+/* -*- C -*- */
+class GTK1.AccelLabel;
+inherit GTK1.Label;
+//! A label for accelerators.
+void create(string text);
+int get_accel_width();
+void set_accel_widget( GTK1.Widget accel_widget);
+int refetch();
+
+
+

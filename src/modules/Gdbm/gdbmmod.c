@@ -1,10 +1,10 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.14 2001/01/23 22:12:39 grubba Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -13,12 +13,9 @@ RCSID("$Id: gdbmmod.c,v 1.14 2001/01/23 22:12:39 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
-#include "array.h"
-#include "object.h"
-#include "pike_macros.h"
-
-/* THIS MUST BE INCLUDED LAST */
-#include "module_magic.h"
+#include "module.h"
+#include "program.h"
+#include "module_support.h"
 
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
 
@@ -27,6 +24,8 @@ RCSID("$Id: gdbmmod.c,v 1.14 2001/01/23 22:12:39 grubba Exp $");
 #ifdef _REENTRANT
 static MUTEX_T gdbm_lock STATIC_MUTEX_INIT;
 #endif  
+
+#define sp Pike_sp
 
 struct gdbm_glue
 {
@@ -51,37 +50,57 @@ static void do_free(void)
   }
 }
 
+/* Compat with old gdbm. */
+#ifndef GDBM_SYNC
+#define GDBM_SYNC 0
+#endif
+#ifndef GDBM_NOLOCK
+#define GDBM_NOLOCK 0
+#endif
+
 static int fixmods(char *mods)
 {
-  int mode;
-  mode=0;
+  int mode = 0;
+  int flags = GDBM_NOLOCK;
   while(1)
   {
     switch(*(mods++))
     {
     case 0:
-      switch(mode & 15)
-      {
-      default: Pike_error("No mode given for gdbm->open()\n"); 
-      case 1|16:
-      case 1: mode=GDBM_READER; break;
-      case 3: mode=GDBM_WRITER; break;
-      case 3|16: mode=GDBM_WRITER | GDBM_FAST; break;
-      case 7: mode=GDBM_WRCREAT; break;
-      case 7|16: mode=GDBM_WRCREAT | GDBM_FAST; break;
-      case 15: mode=GDBM_NEWDB; break;
-      case 15|16: mode=GDBM_NEWDB | GDBM_FAST; break;
+      switch(mode) {
+      default:
+      case 0x0:
+	Pike_error("No mode given for gdbm->open()\n"); 
+      case 0x1:	/* r */
+	return GDBM_READER;
+      case 0x3:	/* rw */
+	return GDBM_WRITER | flags;
+      case 0x7:	/* rwc */
+	return GDBM_WRCREAT | flags;
+      case 0xf: /* rwct */
+	return GDBM_NEWDB | flags;
       }
-      return mode;
 
-    case 'r': case 'R': mode|=1;  break;
-    case 'w': case 'W': mode|=3;  break;
-    case 'c': case 'C': mode|=7;  break;
-    case 't': case 'T': mode|=15; break;
-    case 'f': case 'F': mode|=16; break;
+    case 'r': case 'R': mode = 0x1; break;
+    case 'w': case 'W': mode = 0x3; break;
+    case 'c': case 'C': mode = 0x7; break;
+    case 't': case 'T': mode = 0xf; break;
+
+      /*
+       * Flags from this point on.
+       */
+    case 'f': case 'F': flags |= GDBM_FAST; break;
+
+      /*
+       * NOTE: The following are new in Pike 7.7.
+       */
+
+    case 's': case 'S': flags |= GDBM_SYNC; break;
+      /* NOTE: This flag is inverted! */
+    case 'l': case 'L': flags &= ~GDBM_NOLOCK; break;
 
     default:
-      Pike_error("Bad mode flag in gdbm->open.\n");
+      Pike_error("Bad mode flag '%c' in gdbm->open.\n", mods[-1]);
     }
   }
 }
@@ -91,6 +110,51 @@ void gdbmmod_fatal(char *err)
   Pike_error("GDBM: %s\n",err);
 }
 
+/*! @module Gdbm
+ */
+
+/*! @class gdbm
+ */
+
+/*! @decl void create(void|string file, void|string mode)
+ *!
+ *! Without arguments, this function does nothing. With one argument it
+ *! opens the given file as a gdbm database, if this fails for some
+ *! reason, an error will be generated. If a second argument is present,
+ *! it specifies how to open the database using one or more of the follow
+ *! flags in a string:
+ *!
+ *! @string
+ *!   @value r
+ *!     Open database for reading
+ *!   @value w
+ *!     Open database for writing
+ *!   @value c
+ *!     Create database if it does not exist
+ *!   @value t
+ *!     Overwrite existing database
+ *!   @value f
+ *!     Fast mode
+ *!   @value s
+ *!     Synchronous mode
+ *!   @value l
+ *!     Locking mode
+ *! @endstring
+ *!
+ *! The fast mode prevents the database from syncronizing each change
+ *! in the database immediately. This is dangerous because the database
+ *! can be left in an unusable state if Pike is terminated abnormally.
+ *!
+ *! The default mode is @expr{"rwc"@}.
+ *!
+ *! @note
+ *!  The gdbm manual states that it is important that the database is
+ *!  closed properly. Unfortunately this will not be the case if Pike
+ *!  calls exit() or returns from main(). You should therefore make sure
+ *!  you call close or destruct your gdbm objects when exiting your
+ *!  program. This will probably be done automatically in the future.
+ */
+
 static void gdbmmod_create(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -99,17 +163,21 @@ static void gdbmmod_create(INT32 args)
   {
     GDBM_FILE tmp;
     struct pike_string *tmp2;
-    int rwmode = GDBM_WRCREAT;
+    int rwmode = GDBM_WRCREAT|GDBM_NOLOCK;
 
-    if(sp[-args].type != T_STRING)
+    if(TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Bad argument 1 to gdbm->create()\n");
 
     if(args>1)
     {
-      if(sp[1-args].type != T_STRING)
+      if(TYPEOF(sp[1-args]) != T_STRING)
 	Pike_error("Bad argument 2 to gdbm->create()\n");
 
       rwmode=fixmods(sp[1-args].u.string->str);
+    }
+
+    if (this->dbf) {
+      do_free();
     }
 
     tmp2=sp[-args].u.string;
@@ -125,16 +193,24 @@ static void gdbmmod_create(INT32 args)
       if(tmp) gdbm_close(tmp);
       Pike_error("Object destructed in gdbm->open()n");
     }
-    THIS->dbf=tmp;
+    this->dbf=tmp;
 
     pop_n_elems(args);
-    if(!THIS->dbf)
-      Pike_error("Failed to open GDBM database.\n");
+    if(!this->dbf)
+      Pike_error("Failed to open GDBM database: %d: %s.\n",
+		 gdbm_errno, gdbm_strerror(gdbm_errno));
   }
 }
 
 #define STRING_TO_DATUM(dat, st) dat.dptr=st->str,dat.dsize=st->len;
 #define DATUM_TO_STRING(dat) make_shared_binary_string(dat.dptr, dat.dsize)
+
+/*! @decl string fetch(string key)
+ *! @decl string `[](string key)
+ *!
+ *! Return the data associated with the key 'key' in the database.
+ *! If there was no such key in the database, zero is returned.
+ */
 
 static void gdbmmod_fetch(INT32 args)
 {
@@ -144,7 +220,7 @@ static void gdbmmod_fetch(INT32 args)
   if(!args)
     Pike_error("Too few arguments to gdbm->fetch()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Bad argument 1 to gdbm->fetch()\n");
 
   if(!THIS->dbf)
@@ -168,6 +244,13 @@ static void gdbmmod_fetch(INT32 args)
   }
 }
 
+/*! @decl int(0..1) delete(string key)
+ *!
+ *! Remove a key from the database. Returns 1 if successful,
+ *! otherwise 0, e.g. when the item is not present or the
+ *! database is read only.
+ */
+
 static void gdbmmod_delete(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -176,7 +259,7 @@ static void gdbmmod_delete(INT32 args)
   if(!args)
     Pike_error("Too few arguments to gdbm->delete()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Bad argument 1 to gdbm->delete()\n");
 
   if(!this->dbf)
@@ -191,8 +274,14 @@ static void gdbmmod_delete(INT32 args)
   THREADS_DISALLOW();
   
   pop_n_elems(args);
-  push_int(0);
+  push_int( ret==0 );
 }
+
+/*! @decl string firstkey()
+ *!
+ *! Return the first key in the database, this can be any key in the
+ *! database.
+ */
 
 static void gdbmmod_firstkey(INT32 args)
 {
@@ -217,6 +306,17 @@ static void gdbmmod_firstkey(INT32 args)
   }
 }
 
+/*! @decl string nextkey(string key)
+ *!
+ *! This returns the key in database that follows the key 'key' key.
+ *! This is of course used to iterate over all keys in the database.
+ *!
+ *! @example
+ *!  // Write the contents of the database
+ *!  for(key=gdbm->firstkey(); k; k=gdbm->nextkey(k))
+ *!    write(k+":"+gdbm->fetch(k)+"\n");
+ */
+
 static void gdbmmod_nextkey(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -224,7 +324,7 @@ static void gdbmmod_nextkey(INT32 args)
   if(!args)
     Pike_error("Too few arguments to gdbm->nextkey()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Bad argument 1 to gdbm->nextkey()\n");
 
   if(!THIS->dbf)
@@ -248,6 +348,43 @@ static void gdbmmod_nextkey(INT32 args)
   }
 }
 
+/*! @decl string `[]= (string key, string data)
+ *!
+ *! Associate the contents of 'data' with the key 'key'. If the key 'key'
+ *! already exists in the database the data for that key will be replaced.
+ *! If it does not exist it will be added. An error will be generated if
+ *! the database was not open for writing.
+ *!
+ *! @example
+ *!   gdbm[key] = data;
+ *!
+ *! @returns
+ *!   Returns @[data] on success.
+ *!
+ *! @seealso
+ *!   @[store()]
+ */
+
+/*! @decl int store(string key, string data)
+ *!
+ *! Associate the contents of 'data' with the key 'key'. If the key 'key'
+ *! already exists in the database the data for that key will be replaced.
+ *! If it does not exist it will be added. An error will be generated if
+ *! the database was not open for writing.
+ *!
+ *! @example
+ *!   gdbm->store(key, data);
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success.
+ *!
+ *! @note
+ *!   Note that the returned value differs from that of @[`[]=()].
+ *!
+ *! @seealso
+ *!   @[`[]=()]
+ */
+
 static void gdbmmod_store(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -257,14 +394,14 @@ static void gdbmmod_store(INT32 args)
   if(args<2)
     Pike_error("Too few arguments to gdbm->store()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Bad argument 1 to gdbm->store()\n");
 
-  if(sp[1-args].type != T_STRING)
+  if(TYPEOF(sp[1-args]) != T_STRING)
     Pike_error("Bad argument 2 to gdbm->store()\n");
 
   if (args > 2) {
-    if (sp[2-args].type != T_INT) {
+    if (TYPEOF(sp[2-args]) != T_INT) {
       Pike_error("Bad argument 3 to gdbm->store()\n");
     }
     if (sp[2-args].u.integer) {
@@ -289,9 +426,25 @@ static void gdbmmod_store(INT32 args)
   } else if (ret == 1) {
     Pike_error("Duplicate key.\n");
   }
-  pop_n_elems(args);
-  push_int(ret == 0);
+  ref_push_string(sp[1-args].u.string);
+  stack_pop_n_elems_keep_top(args);
 }
+
+/* Compat */
+static void gdbmmod_store_compat(INT32 args)
+{
+  gdbmmod_store(args);
+  pop_stack();
+  push_int(1);
+}
+
+/*! @decl int reorganize()
+ *!
+ *! Deletions and insertions into the database can cause fragmentation
+ *! which will make the database bigger. This routine reorganizes the
+ *! contents to get rid of fragmentation. Note however that this function
+ *! can take a LOT of time to run.
+ */
 
 static void gdbmmod_reorganize(INT32 args)
 {
@@ -309,6 +462,14 @@ static void gdbmmod_reorganize(INT32 args)
   push_int(ret);
 }
 
+/*! @decl void sync()
+ *!
+ *! When opening the database with the 'f' flag writings to the database
+ *! can be cached in memory for a long time. Calling sync will write
+ *! all such caches to disk and not return until everything is stored
+ *! on the disk.
+ */
+
 static void gdbmmod_sync(INT32 args)
 {
   struct gdbm_glue *this=THIS;
@@ -323,6 +484,11 @@ static void gdbmmod_sync(INT32 args)
   push_int(0);
 }
 
+/*! @decl void close()
+ *!
+ *! Closes the database.
+ */
+
 static void gdbmmod_close(INT32 args)
 {
   pop_n_elems(args);
@@ -331,21 +497,27 @@ static void gdbmmod_close(INT32 args)
   push_int(0);
 }
 
-static void init_gdbm_glue(struct object *o)
+static void init_gdbm_glue(struct object *UNUSED(o))
 {
   THIS->dbf=0;
 }
 
-static void exit_gdbm_glue(struct object *o)
+static void exit_gdbm_glue(struct object *UNUSED(o))
 {
   do_free();
 }
 
-#endif
+/*! @endclass
+ */
 
-void pike_module_exit(void) {}
+/*! @endmodule
+ */
 
-void pike_module_init(void)
+#endif /* defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM) */
+
+PIKE_MODULE_EXIT {}
+
+PIKE_MODULE_INIT
 {
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
   start_new_program();
@@ -353,22 +525,22 @@ void pike_module_init(void)
   
   /* function(void|string,void|string:void) */
   ADD_FUNCTION("create", gdbmmod_create,
-	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr), tVoid), 0 /*ID_STATIC*/);
+	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr), tVoid), 0 /*ID_PROTECTED*/);
 
   /* function(:void) */
   ADD_FUNCTION("close",gdbmmod_close,tFunc(tNone,tVoid),0);
   /* function(string, string, int(0..1)|void: int) */
-  ADD_FUNCTION("store", gdbmmod_store,
+  ADD_FUNCTION("store", gdbmmod_store_compat,
 	       tFunc(tStr tStr tOr(tInt01, tVoid), tInt), 0);
-  /* function(string, string, int(0..1)|void: int) */
+  /* function(string, string, int(0..1)|void: string) */
   ADD_FUNCTION("`[]=", gdbmmod_store,
-	       tFunc(tStr tStr tOr(tInt01, tVoid), tInt), 0);
+	       tFunc(tStr tSetvar(0, tStr) tOr(tInt01, tVoid), tVar(0)), 0);
   /* function(string:string) */
   ADD_FUNCTION("fetch",gdbmmod_fetch,tFunc(tStr,tStr),0);
   /* function(string:string) */
   ADD_FUNCTION("`[]",gdbmmod_fetch,tFunc(tStr,tStr),0);
   /* function(string:int) */
-  ADD_FUNCTION("delete",gdbmmod_delete,tFunc(tStr,tInt),0);
+  ADD_FUNCTION("delete",gdbmmod_delete,tFunc(tStr,tInt01),0);
   /* function(:string) */
   ADD_FUNCTION("firstkey",gdbmmod_firstkey,tFunc(tNone,tStr),0);
   /* function(string:string) */
@@ -381,6 +553,8 @@ void pike_module_init(void)
   set_init_callback(init_gdbm_glue);
   set_exit_callback(exit_gdbm_glue);
   end_class("gdbm",0);
+#else
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
 #endif
 }
-

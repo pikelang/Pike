@@ -1,8 +1,9 @@
-# $Id: configure.in,v 1.7 2001/01/19 22:36:44 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(GLUT)
 
 AC_SUBST(AUTO)
 AC_ARG_WITH(GLUT,  [  --without-GLUT    no support for GLUT],[without_GLUT=yes],[without_GLUT=no])
@@ -11,7 +12,7 @@ if test x$without_GLUT = xyes; then
   AUTO=""
 else
   AC_PATH_XTRA()
-  # The variables from the PATH_EXTRA macro are missnamed...
+  # The variables from the PATH_XTRA macro are missnamed...
   #
   #   Variable     Function	Contents
   #   X_CFLAGS     CPPFLAGS	-I
@@ -27,7 +28,17 @@ else
 
   AC_CHECK_HEADERS(GL/glut.h)
 
-  CPPFLAGS="$CFLAGS $X_CFLAGS"
+  DO_IF_OS(Darwin,
+  [
+    # MaxOS X
+    # NOTE: These tests may need to move to the main configure script.
+    #       cf comments in the Darwin section of the main configure script.
+    AC_SYS_COMPILER_FLAG(-framework GLUT, framework_GLUT, LDFLAGS)
+    AC_SYS_COMPILER_FLAG(-framework GLUT, framework_GLUT, CPPFLAGS)
+  ])
+  AC_CHECK_HEADERS(GLUT/glut.h)
+
+  CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   LIBS="$X_EXTRA_LIBS $LIBS"
   LDFLAGS="$LDFLAGS $X_LIBS $X_PRE_LIBS"
   AC_CHECK_LIB(X11, XDrawPoint)
@@ -49,19 +60,63 @@ else
 #ifdef HAVE_GL_GLUT_H
 #include <GL/glut.h>
 #endif /* HAVE_GL_GLUT_H */
+#ifdef HAVE_GLUT_GLUT_H
+#include <GL/glut.h>
+#endif /* HAVE_GLUT_GLUT_H */
     ], [ glutSolidTeapot(1.0) ],
        [ pike_cv_lib_glut=yes ], [ pike_cv_lib_glut=no ])
     LIBS="$oldLIBS"
   ])
-  if test x"$ac_cv_header_GL_glut_h$pike_cv_lib_glut" = "xyesyes"; then
+  if test x"$pike_cv_lib_glut" = "xyes"; then
     AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+
+  # FIXME: Ought to just check -lobjc, since -framework GLUT is checked above.
+  AC_MSG_CHECKING(for glutSolidTeapot in GLUT.framework)
+  AC_CACHE_VAL(pike_cv_framework_GLUT, [
+    oldLIBS="$LIBS"
+    LIBS="-framework GLUT -lobjc $LIBS"
+    AC_TRY_LINK([
+#ifdef HAVE_GL_GLUT_H
+#include <GL/glut.h>
+#endif /* HAVE_GL_GLUT_H */
+#ifdef HAVE_GLUT_GLUT_H
+#include <GL/glut.h>
+    ], [ glutSolidTeapot(1.0) ],
+       [ pike_cv_framework_GLUT=yes ], [ pike_cv_framework_GLUT=no ])
+    LIBS="$oldLIBS"
+  ])
+  if test x"$pike_cv_framework_GLUT" = "xyes"; then
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+  if test x"$ac_cv_header_GL_glut_h$pike_cv_lib_glut" = "xyesyes"; then
     AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
     LIBS="-lglut $LIBS"
     AUTO=auto.o
+    PIKE_FEATURE(GLUT,[yes (libglut)])
+  elif test x"$ac_cv_header_GLUT_glut_h$pike_cv_framework_GLUT" = "xyesyes"; then
+    AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
+    LIBS="-framework GLUT -lobjc $LIBS"
+    AUTO=auto.o
+    PIKE_FEATURE(GLUT,[yes (framework GLUT)])
   else
-    AC_MSG_RESULT(no)
     AUTO=""
+    PIKE_FEATURE_NODEP(GLUT)
   fi
+
+  # Check for availability of some functions that aren't present in
+  # all versions of GLUT (they are missing in eg AIX 4.3).
+  AC_CHECK_FUNCS([glutEnterGameMode glutForceJoystickFunc glutGameModeGet \
+    glutGameModeString glutIgnoreKeyRepeat glutInitDisplayString \
+    glutJoystickFunc glutKeyboardUpFunc glutLeaveGameMode \
+    glutPostWindowOverlayRedisplay glutPostWindowRedisplay glutReportErrors \
+    glutSetKeyRepeat glutSpecialUpFunc], [], [
+      AC_DEFINE_UNQUOTED(`echo "MISSING_$ac_func" | tr '[[a-z]]' '[[A-Z]]'`)
+  ])
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

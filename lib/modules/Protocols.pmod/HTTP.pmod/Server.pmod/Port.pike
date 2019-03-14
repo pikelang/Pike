@@ -1,25 +1,20 @@
-import ".";
-
-inherit _Port;
+#pike __REAL_VERSION__
 
 Stdio.Port port;
 int portno;
 string|int(0..0) interface;
-function(Request:void) callback;
+function(.Request:void) callback;
 
-program request_program=Request;
+//!
+object|function|program request_program=.Request;
 
-//! module Protocols
-//! submodule HTTP
-//! submodule Server
-//! class Port
-//!	The simplest server possible. Binds a port and calls
-//!	a callback with <ref to=Request>Server.Request</ref> objects.
+//! The simplest server possible. Binds a port and calls
+//! a callback with @[request_program] objects.
 
-//! method void create(function(Request:void) callback)
-//! method void create(function(Request:void) callback,int portno,void|string interface)
-
-void create(function(Request:void) _callback,
+//! @decl void create(function(.Request:void) callback)
+//! @decl void create(function(.Request:void) callback,@
+//!                   int portno, void|string interface)
+void create(function(.Request:void) _callback,
 	    void|int _portno,
 	    void|string _interface)
 {
@@ -36,9 +31,7 @@ void create(function(Request:void) _callback,
 	    portno,strerror(port->errno()));
 }
 
-//! method void close()
-//!	Closes the HTTP port. 
-
+//! Closes the HTTP port.
 void close()
 {
    destruct(port);
@@ -49,9 +42,11 @@ void destroy() { close(); }
 
 // the port accept callback
 
-static void new_connection()
+protected void new_connection()
 {
-   Stdio.File fd=port->accept();
-   Request r=request_program();
-   r->attach_fd(fd,this_object(),callback);
+    while( Stdio.File fd=port->accept() )
+    {
+	.Request r=request_program();
+	r->attach_fd(fd,this,callback);
+    }
 }

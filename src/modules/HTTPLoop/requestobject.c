@@ -1,12 +1,12 @@
 /*
- * $Id: requestobject.c,v 1.18 2001/07/12 13:21:53 grubba Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #include "global.h"
 #include "config.h"
 	  
-#include "array.h"
-#include "backend.h"
 #include "machine.h"
 #include "mapping.h"
 #include "module_support.h"
@@ -14,7 +14,6 @@
 #include "object.h"
 #include "operators.h"
 #include "pike_memory.h"
-#include "program.h"
 #include "constants.h"
 #include "stralloc.h"
 #include "svalue.h"
@@ -41,17 +40,18 @@
 #include <sys/uio.h>
 #endif
 
-/* This must be included last! */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 #ifdef _REENTRANT
+#include "pike_netlib.h"
 #include "accept_and_parse.h"
 #include "log.h"
 #include "util.h"
 #include "cache.h"
 #include "requestobject.h"
 
-/* Used when fatal() can't be. */
+/* Used when Pike_fatal() can't be. */
 #define DWERROR(X)	write(2, X, sizeof(X) - sizeof(""))
 
 /* All current implementations of sendfile(2) are broken. */
@@ -76,44 +76,6 @@
 #undef CAN_HAVE_NONSHARED_LINUX_SYSCALL4
 #endif /* CAN_HAVE_NONSHARED_LINUX_SYSCALL4 */
 #endif /* HAVE_BROKEN_SENDFILE */
-
-#if defined(CAN_HAVE_LINUX_SYSCALL4) || \
-    !defined(DYNAMIC_MODULE) && defined(CAN_HAVE_NONSHARED_LINUX_SYSCALL4)
-
-#include <asm/unistd.h>
-#ifndef __NR_sendfile
-#define __NR_sendfile 187
-#endif
-_syscall4(ssize_t,sendfile,int,out,int,in,off_t*,off,size_t,size);
-#define HAVE_SENDFILE
-
-#elif defined(CAN_HAVE_SENDFILE)
-
-ssize_t sendfile(int out, int in, off_t *off, size_t size)
-{
-  ssize_t retval;
-  asm volatile(
-               "pushl %%ebx\n\t"
-               "movl %%edi,%%ebx\n\t"
-               "int $0x80\n\t"
-               "popl %%ebx"
-               :"=a" (retval)
-               :"0" (187),
-               "D" (out), /* pseudo-ebx (put it in edi)*/
-               "c" (in),
-               "d" (off),
-               "S" (size)
-               );
-  if ((unsigned long) retval > (unsigned long)-1000) 
-  {
-    errno = -retval;
-    retval = -1;
-  }
-  return retval;
-}
-# define HAVE_SENDFILE
-#endif
-
 
 /* Define local global string variables ... */
 #define STRING(X,Y) /*extern*/ struct pike_string *X
@@ -290,7 +252,7 @@ void f_aap_scan_for_query(INT32 args)
 
 
 static void decode_x_url_mixed(char *in, ptrdiff_t l, struct mapping *v,
-			       char *dec, char *rest_query, char **rp)
+			       char *dec, char *UNUSED(rest_query), char **rp)
 {
   ptrdiff_t pos = 0, lamp = 0, leq=0, dl;
 
@@ -335,12 +297,14 @@ static void parse_query(void)
   struct svalue *q;
   struct mapping *v = allocate_mapping(10); /* variables */
   push_string(s_query);
-  if(!(q = low_mapping_lookup(THIS->misc_variables, sp-1))) 
+  if(!(q = low_mapping_lookup(THIS->misc_variables, sp-1))) {
     f_aap_scan_for_query(0);
-  q = low_mapping_lookup(THIS->misc_variables, sp-1);
+    /* q will not be 0 below, as we have inserted the value now */
+    q = low_mapping_lookup(THIS->misc_variables, sp-1);
+  }
   sp--;
 
-  if(q->type == T_STRING) 
+  if(TYPEOF(*q) == T_STRING)
   {
     char *dec = aap_malloc(q->u.string->len*2+1);
     char *rest_query = dec+q->u.string->len+1, *rp=rest_query;
@@ -425,7 +389,7 @@ void f_aap_index_op(INT32 args)
   if(!THIS->misc_variables) 
   {
     struct svalue s;
-    object_index_no_free2(&s, Pike_fp->current_object, sp-1);
+    object_index_no_free2(&s, Pike_fp->current_object, 0, sp-1);
     pop_stack();
     *sp=s;
     sp++;
@@ -465,7 +429,14 @@ void f_aap_index_op(INT32 args)
 
   if(s == s_remoteaddr)
   {
-    push_text(inet_ntoa(THIS->request->from.sin_addr));
+#ifdef fd_inet_ntop
+    char buffer[64];
+    push_text(fd_inet_ntop(SOCKADDR_FAMILY(THIS->request->from),
+			   SOCKADDR_IN_ADDR(THIS->request->from),
+			   buffer, sizeof(buffer)) );
+#else
+    push_text(inet_ntoa(*SOCKADDR_IN_ADDR(THIS->request->from)));
+#endif
     push_string(s_remoteaddr);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
     sp--;
@@ -584,8 +555,7 @@ void f_aap_index_op(INT32 args)
     }
     else
     {
-      sp[-1].type = T_INT;
-      sp[-1].u.integer = 0;
+      SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, 0);
     }
     push_string(s_since);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
@@ -601,7 +571,7 @@ void f_aap_index_op(INT32 args)
     pop_stack();
     push_constant_text("roxen");
     if((tmp = low_mapping_lookup(get_builtin_constants(), sp-1)) 
-       && tmp->type == T_OBJECT)
+       && TYPEOF(*tmp) == T_OBJECT)
     {
       pop_stack( );
       ref_push_object( tmp->u.object );
@@ -609,7 +579,7 @@ void f_aap_index_op(INT32 args)
       f_index( 2 );
       ref_push_string(s_client);
       f_aap_index_op( 1 );
-      push_constant_text("");
+      push_empty_string();
       f_multiply( 2 );
       apply_svalue( sp-2, 1 );
       push_string(s_supports);
@@ -663,7 +633,7 @@ void f_aap_index_op(INT32 args)
   }
   {
     struct svalue s;
-    object_index_no_free2(&s, Pike_fp->current_object, sp-1);
+    object_index_no_free2(&s, Pike_fp->current_object, 0, sp-1);
     pop_stack();
     *sp=s;
     sp++;
@@ -675,14 +645,14 @@ void f_aap_index_op(INT32 args)
   
 /* } */
 
-void f_aap_end(INT32 args)
+void f_aap_end(INT32 UNUSED(args))
 {
   /* end connection. */
 }
 
-void f_aap_output(INT32 args)
+void f_aap_output(INT32 UNUSED(args))
 {
-  if(sp[-1].type != T_STRING) Pike_error("Bad argument 1 to output\n");
+  if(TYPEOF(sp[-1]) != T_STRING) Pike_error("Bad argument 1 to output\n");
   WRITE(THIS->request->fd, sp[-1].u.string->str, sp[-1].u.string->len);
 }
 
@@ -700,7 +670,7 @@ struct send_args
 };
 
 static int num_send_args;
-struct send_args *new_send_args()
+struct send_args *new_send_args(void)
 {
   num_send_args++;
   return aap_malloc( sizeof( struct send_args ) );
@@ -780,7 +750,7 @@ void actually_send(struct send_args *a)
 	}
 	break;
       case EFAULT:	/* Invalid address specified as arg */
-	/* NOTE: Can't use fatal(), since we're not in a valid Pike context. */
+	/* NOTE: Can't use Pike_fatal(), since we're not in a valid Pike context. */
 	DWERROR("FreeBSD-style sendfile() returned EFAULT.\n");
 	abort();
 	break;
@@ -830,7 +800,7 @@ void actually_send(struct send_args *a)
 #endif
   if(data)
   {
-    MEMCPY(foo, data+MY_MIN((data_len-4),9), 4);
+    MEMCPY(foo, data+MINIMUM((data_len-4),9), 4);
     first=1;
 #ifdef TCP_CORK
 #ifdef AAP_DEBUG
@@ -906,7 +876,7 @@ void actually_send(struct send_args *a)
   while(a->len)
   {
     ptrdiff_t nread, written=0;
-    nread = fd_read(a->from_fd, a->buffer, MY_MIN(BUFFER,a->len));
+    nread = fd_read(a->from_fd, a->buffer, MINIMUM(BUFFER,a->len));
 #ifdef AAP_DEBUG
   fprintf(stderr, "writing %d bytes... \n", nread);
 #endif
@@ -971,16 +941,16 @@ void f_aap_reply(INT32 args)
   struct send_args *q;
   if(!THIS->request)
     Pike_error("reply already called.\n");
-  if(args && sp[-args].type == T_STRING) 
+  if(args && TYPEOF(sp[-args]) == T_STRING)
     reply_string = 1;
 
   if(args>1)
   {
     if(args<3)
       Pike_error("->reply(string|void pre,object(Stdio.file) fd,int len)\n");
-    if(sp[-args+1].type != T_OBJECT)
+    if(TYPEOF(sp[-args+1]) != T_OBJECT)
       Pike_error("Bad argument 2 to reply\n");
-    if(sp[-args+2].type != T_INT)
+    if(TYPEOF(sp[-args+2]) != T_INT)
       Pike_error("Bad argument 3 to reply\n");
     reply_object = 1;
   }
@@ -993,7 +963,7 @@ void f_aap_reply(INT32 args)
   {
     /* safe_apply() needed to avoid leak of q */
     safe_apply(sp[-2].u.object, "query_fd", 0);
-    if((sp[-1].type != T_INT) || (sp[-1].u.integer <= 0))
+    if((TYPEOF(sp[-1]) != T_INT) || (sp[-1].u.integer <= 0))
     {
       aap_free(q);
       Pike_error("Bad fileobject to request_object->reply()\n");
@@ -1031,7 +1001,7 @@ void f_aap_reply_with_cache(INT32 args)
   if(!THIS->request)
     Pike_error("Reply already called.\n");
 
-  get_all_args("reply_with_cache", args, "%S%d", &reply, &time_to_keep);
+  get_all_args("reply_with_cache", args, "%S%i", &reply, &time_to_keep);
 
   if((size_t)reply->len < (size_t)THIS->request->cache->max_size/2)
   {
@@ -1102,12 +1072,12 @@ void f_low_aap_reqo__init(struct c_request_object *o)
 	  o->request->res.url, o->request->res.url_len);
 }
 
-void aap_init_request_object(struct object *o)
+void aap_init_request_object(struct object *UNUSED(o))
 {
   MEMSET(THIS, 0, sizeof(*THIS));
 }
 
-void aap_exit_request_object(struct object *o)
+void aap_exit_request_object(struct object *UNUSED(o))
 {
   if(THIS->request)
     free_args( THIS->request );

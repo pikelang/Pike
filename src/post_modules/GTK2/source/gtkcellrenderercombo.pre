@@ -1,0 +1,27 @@
+/* -*- C -*- */
+require gtk26;
+
+class GTK2.CellRendererCombo;
+inherit GTK2.CellRendererText;
+
+//! Properties:
+//! int has-entry
+//! GTK2.TreeModel model
+//! int text-column
+
+void create(?mapping(string:mixed) props)
+//! Creates a new W(CellRendererCombo).
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_CELL_RENDERER_COMBO);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkCellRenderer *gcr;
+    gcr=gtk_cell_renderer_combo_new();
+    THIS->obj=G_OBJECT(gcr);
+  }
+  pgtk2__init_this_object();
+}
+endrequire;

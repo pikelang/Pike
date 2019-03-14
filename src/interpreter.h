@@ -1,3 +1,8 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #undef LOW_GET_ARG
 #undef LOW_GET_JUMP
@@ -10,6 +15,9 @@
 #undef CASE
 #undef BREAK
 #undef DONE
+
+#undef JUMP_DONE
+#define JUMP_DONE DONE
 
 #ifdef HAVE_COMPUTED_GOTO
 
@@ -39,33 +47,29 @@
 #define FETCH
 
 #define LOW_GET_ARG()	((PROG_COUNTER++)[0])
-#if defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
+#if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_SPARC
 #define LOW_GET_JUMP()	(PROG_COUNTER[0])
 #define LOW_SKIPJUMP()	(++PROG_COUNTER)
-#else /* !(PIKE_USE_MACHINE_CODE && sparc) */
+#else /* PIKE_BYTECODE_METHOD != PIKE_BYTECODE_SPARC */
 #define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)
 #define LOW_SKIPJUMP()	(PROG_COUNTER += sizeof(INT32))
-#endif /* PIKE_USE_MACHINE_CODE && sparc */
+#endif /* PIKE_BYTECODE_METHOD */
 
 #ifdef PIKE_DEBUG
 
-#define GET_ARG() (backlog[backlogp].arg=(\
-  instr=prefix,\
-  prefix=0,\
-  instr += LOW_GET_ARG(),\
-  (t_flag>3 ? sprintf(trace_buffer, "-    Arg = %ld\n", \
-                     (long)instr), \
-              write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
-  instr))
+#define GET_ARG() (						\
+  instr=prefix,							\
+  prefix=0,							\
+  instr += LOW_GET_ARG(),					\
+  DEBUG_LOG_ARG (instr),					\
+  instr)
 
-#define GET_ARG2() (backlog[backlogp].arg2=(\
-  instr=prefix2,\
-  prefix2=0,\
-  instr += LOW_GET_ARG(),\
-  (t_flag>3 ? sprintf(trace_buffer, "-    Arg2 = %ld\n", \
-                      (long)instr), \
-              write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
-  instr))
+#define GET_ARG2() (						\
+  instr=prefix2,						\
+  prefix2=0,							\
+  instr += LOW_GET_ARG(),					\
+  DEBUG_LOG_ARG2 (instr),					\
+  instr)
 
 #else /* !PIKE_DEBUG */
 
@@ -82,13 +86,26 @@
 
 static int eval_instruction(PIKE_OPCODE_T *pc)
 {
+  PIKE_INSTR_T instr;
 #ifdef HAVE_COMPUTED_GOTO
   static void *strap = &&init_strap;
-  void *instr = NULL;
+  instr = NULL;
 #else /* !HAVE_COMPUTED_GOTO */
   unsigned INT32 prefix2=0,prefix=0;
-  unsigned INT32 instr;
 #endif /* HAVE_COMPUTED_GOTO */
+  /* Variables that are commonly used by the various opcodes.
+   * They are defined here to reduce the size of the stack frame.
+   */
+  struct svalue tmp, tmp2;
+  struct external_variable_context loc;
+  struct program *p;
+  struct object *o;
+  struct svalue *s;
+  PIKE_OPCODE_T *addr;
+  DO_IF_DEBUG(dynamic_buffer save_buf);
+
+#undef LOCAL_VAR
+#define LOCAL_VAR(X)	/* Local variable defined above. */
 
 #ifdef HAVE_COMPUTED_GOTO
   goto *strap;
@@ -98,131 +115,15 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
   debug_malloc_touch(Pike_fp);
   while(1)
   {
+    INT32 arg1, arg2;
     instr = pc[0];
     Pike_fp->pc = pc++;
 
     STEP_BREAK_LINE
-    
+
 #ifdef PIKE_DEBUG
-
-    if(t_flag > 2)
-    {
-      char *file, *f;
-      struct pike_string *filep;
-      INT32 linep;
-
-      filep = get_line(pc-1,Pike_fp->context.prog,&linep);
-      file = filep->str;
-      while((f=STRCHR(file,'/')))
-	file=f+1;
-      fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
-	      file,(long)linep,
-	      DO_NOT_WARN((long)(pc-Pike_fp->context.prog->program-1)),
-#ifdef HAVE_COMPUTED_GOTO
-	      get_opcode_name(instr),
-#else /* !HAVE_COMPUTED_GOTO */
-	      get_f_name(instr + F_OFFSET),
-#endif /* HAVE_COMPUTED_GOTO */
-	      DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),
-	      DO_NOT_WARN((long)(Pike_mark_sp-Pike_interpreter.mark_stack)));
-      free_string(filep);
-    }
-
-#ifdef HAVE_COMPUTED_GOTO
-    if (instr) 
-      ADD_RUNNED(instr);
-    else
-      fatal("NULL Instruction!\n");
-#else /* !HAVE_COMPUTED_GOTO */
-    if(instr + F_OFFSET < F_MAX_OPCODE) 
-      ADD_RUNNED(instr + F_OFFSET);
-#endif /* HAVE_COMPUTED_GOTO */
-
-    if(d_flag)
-    {
-      backlogp++;
-      if(backlogp >= BACKLOG) backlogp=0;
-
-      if(backlog[backlogp].program)
-	free_program(backlog[backlogp].program);
-
-      backlog[backlogp].program=Pike_fp->context.prog;
-      add_ref(Pike_fp->context.prog);
-      backlog[backlogp].instruction=instr;
-      backlog[backlogp].pc=pc;
-      backlog[backlogp].stack = Pike_sp - Pike_interpreter.evaluator_stack;
-      backlog[backlogp].mark_stack = Pike_mark_sp - Pike_interpreter.mark_stack;
-#ifdef _REENTRANT
-      backlog[backlogp].thread_id=Pike_interpreter.thread_id;
-#endif
-
-#ifdef _REENTRANT
-      CHECK_INTERPRETER_LOCK();
-      if(OBJ2THREAD(Pike_interpreter.thread_id)->state.thread_id !=
-	 Pike_interpreter.thread_id)
-	fatal("Arglebargle glop glyf, thread swap problem!\n");
-
-      if(d_flag>1 && thread_for_id(th_self()) != Pike_interpreter.thread_id)
-        fatal("thread_for_id() (or Pike_interpreter.thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id);
-#endif
-
-      Pike_sp[0].type=99; /* an invalid type */
-      Pike_sp[1].type=99;
-      Pike_sp[2].type=99;
-      Pike_sp[3].type=99;
-      
-      if(Pike_sp<Pike_interpreter.evaluator_stack ||
-	 Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
-	fatal("Stack error (generic) sp=%p/%p mark_sp=%p/%p locals=%p.\n",
-	      Pike_sp,
-	      Pike_interpreter.evaluator_stack,
-	      Pike_mark_sp,
-	      Pike_interpreter.mark_stack,
-	      Pike_fp->locals);
-      
-      if(Pike_mark_sp > Pike_interpreter.mark_stack+Pike_stack_size)
-	fatal("Mark Stack error (overflow).\n");
-
-
-      if(Pike_mark_sp < Pike_interpreter.mark_stack)
-	fatal("Mark Stack error (underflow).\n");
-
-      if(Pike_sp > Pike_interpreter.evaluator_stack+Pike_stack_size)
-	fatal("stack error (overflow).\n");
-      
-      if(/* Pike_fp->fun>=0 && */ Pike_fp->current_object->prog &&
-	 Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
-	fatal("Stack error (stupid!).\n");
-
-      if(Pike_interpreter.recoveries &&
-	 (Pike_sp-Pike_interpreter.evaluator_stack <
-	  Pike_interpreter.recoveries->stack_pointer))
-	fatal("Stack error (underflow).\n");
-
-      if(Pike_mark_sp > Pike_interpreter.mark_stack &&
-	 Pike_mark_sp[-1] > Pike_sp)
-	fatal("Stack error (underflow?)\n");
-      
-      if(d_flag > 9) do_debug();
-
-      debug_malloc_touch(Pike_fp->current_object);
-      switch(d_flag)
-      {
-	default:
-	case 3:
-	  check_object(Pike_fp->current_object);
-/*	  break; */
-
-	case 2:
-	  check_object_context(Pike_fp->current_object,
-			       Pike_fp->context.prog,
-			       Pike_fp->current_object->storage+
-			       Pike_fp->context.storage_offset);
-	case 1:
-	case 0:
-	  break;
-      }
-    }
+    if (d_flag || Pike_interpreter.trace_level > 2)
+      low_debug_instr_prologue (instr);
 #endif
 
 #ifdef HAVE_COMPUTED_GOTO
@@ -261,59 +162,77 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #define INTERPRETER
 
-#define OPCODE0(OP, DESC, CODE) CASE(OP); CODE; DONE
-#define OPCODE1(OP, DESC, CODE) CASE(OP); { \
-    INT32 arg1=GET_ARG(); \
+#define OPCODE0(OP, DESC, FLAGS, CODE) CASE(OP); CODE; DONE
+#define OPCODE1(OP, DESC, FLAGS, CODE) CASE(OP); { \
+    arg1=GET_ARG(); \
     FETCH; \
     CODE; \
   } DONE
 
-#define OPCODE2(OP, DESC, CODE) CASE(OP); { \
-    INT32 arg1=GET_ARG(); \
-    INT32 arg2=GET_ARG2(); \
+#define OPCODE2(OP, DESC, FLAGS, CODE) CASE(OP); { \
+    arg1=GET_ARG(); \
+    arg2=GET_ARG2(); \
     FETCH; \
     CODE; \
   } DONE
 
-#define OPCODE0_TAIL(OP, DESC, CODE) CASE(OP); CODE
-#define OPCODE1_TAIL(OP, DESC, CODE) CASE(OP); CODE
-#define OPCODE2_TAIL(OP, DESC, CODE) CASE(OP); CODE
+#define OPCODE0_ALIAS(OP, DESC, FLAGS, FUN) OPCODE0(OP, DESC, FLAGS, {FUN();})
+#define OPCODE1_ALIAS(OP, DESC, FLAGS, FUN) OPCODE1(OP, DESC, FLAGS, {FUN(arg1);})
+#define OPCODE2_ALIAS(OP, DESC, FLAGS, FUN) OPCODE2(OP, DESC, FLAGS, {FUN(arg1, arg2);})
 
-#define OPCODE0_RETURN(OP, DESC, CODE) OPCODE0(OP, DESC, CODE)
-#define OPCODE1_RETURN(OP, DESC, CODE) OPCODE1(OP, DESC, CODE)
-#define OPCODE2_RETURN(OP, DESC, CODE) OPCODE2(OP, DESC, CODE)
-#define OPCODE0_TAILRETURN(OP, DESC, CODE) OPCODE0_TAIL(OP, DESC, CODE)
-#define OPCODE1_TAILRETURN(OP, DESC, CODE) OPCODE1_TAIL(OP, DESC, CODE)
-#define OPCODE2_TAILRETURN(OP, DESC, CODE) OPCODE2_TAIL(OP, DESC, CODE)
+#define OPCODE0_TAIL(OP, DESC, FLAGS, CODE) CASE(OP); CODE
+#define OPCODE1_TAIL(OP, DESC, FLAGS, CODE) CASE(OP); CODE
+#define OPCODE2_TAIL(OP, DESC, FLAGS, CODE) CASE(OP); CODE
 
-#define OPCODE0_JUMP(OP, DESC, CODE) CASE(OP); CODE; DONE
-#define OPCODE0_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
+#define OPCODE0_JUMP		OPCODE0
+#define OPCODE1_JUMP		OPCODE1
+#define OPCODE2_JUMP		OPCODE2
+#define OPCODE0_TAILJUMP	OPCODE0_TAIL
+#define OPCODE1_TAILJUMP	OPCODE1_TAIL
+#define OPCODE2_TAILJUMP	OPCODE2_TAIL
+
+#define OPCODE0_RETURN(OP, DESC, FLAGS, CODE) OPCODE0(OP, DESC, FLAGS | I_RETURN, CODE)
+#define OPCODE1_RETURN(OP, DESC, FLAGS, CODE) OPCODE1(OP, DESC, FLAGS | I_RETURN, CODE)
+#define OPCODE2_RETURN(OP, DESC, FLAGS, CODE) OPCODE2(OP, DESC, FLAGS | I_RETURN, CODE)
+#define OPCODE0_TAILRETURN(OP, DESC, FLAGS, CODE) OPCODE0_TAIL(OP, DESC, FLAGS | I_RETURN, CODE)
+#define OPCODE1_TAILRETURN(OP, DESC, FLAGS, CODE) OPCODE1_TAIL(OP, DESC, FLAGS | I_RETURN, CODE)
+#define OPCODE2_TAILRETURN(OP, DESC, FLAGS, CODE) OPCODE2_TAIL(OP, DESC, FLAGS | I_RETURN, CODE)
+
+#define OPCODE0_PTRJUMP(OP, DESC, FLAGS, CODE) CASE(OP); CODE; DONE
+#define OPCODE0_TAILPTRJUMP(OP, DESC, FLAGS, CODE) CASE(OP); CODE
 
 /* These are something of a special case as they
  * requires a POINTER stored explicitly after
  * the instruction itself.
  */
-#define OPCODE1_JUMP(OP, DESC, CODE) CASE(OP); { \
-    INT32 arg1=GET_ARG(); \
+#define OPCODE1_PTRJUMP(OP, DESC, FLAGS, CODE) CASE(OP); { \
+    arg1=GET_ARG(); \
     FETCH; \
     CODE; \
   } DONE
 
-#define OPCODE2_JUMP(OP, DESC, CODE) CASE(OP); { \
-    INT32 arg1=GET_ARG(); \
-    INT32 arg2=GET_ARG2(); \
+#define OPCODE2_PTRJUMP(OP, DESC, FLAGS, CODE) CASE(OP); { \
+    arg1=GET_ARG(); \
+    arg2=GET_ARG2(); \
     FETCH; \
     CODE; \
   } DONE
 
-#define OPCODE1_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
-#define OPCODE2_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
+#define OPCODE1_TAILPTRJUMP(OP, DESC, FLAGS, CODE) CASE(OP); CODE
+#define OPCODE2_TAILPTRJUMP(OP, DESC, FLAGS, CODE) CASE(OP); CODE
+
+#define OPCODE0_BRANCH		OPCODE0_PTRJUMP
+#define OPCODE1_BRANCH		OPCODE1_PTRJUMP
+#define OPCODE2_BRANCH		OPCODE2_PTRJUMP
+#define OPCODE0_TAILBRANCH	OPCODE0_TAILPTRJUMP
+#define OPCODE1_TAILBRANCH	OPCODE1_TAILPTRJUMP
+#define OPCODE2_TAILBRANCH	OPCODE2_TAILPTRJUMP
 
 #include "interpret_functions.h"
 
 #ifndef HAVE_COMPUTED_GOTO      
     default:
-      fatal("Strange instruction %ld\n",(long)instr);
+      Pike_fatal("Strange instruction %ld\n",(long)instr);
     }
 #endif /* !HAVE_COMPUTED_GOTO */
   }
@@ -334,6 +253,29 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #undef OPCODE0_TAILJUMP
 #undef OPCODE1_TAILJUMP
 #undef OPCODE2_TAILJUMP
+#undef OPCODE0_PTRJUMP
+#undef OPCODE1_PTRJUMP
+#undef OPCODE2_PTRJUMP
+#undef OPCODE0_TAILPTRJUMP
+#undef OPCODE1_TAILPTRJUMP
+#undef OPCODE2_TAILPTRJUMP
+#undef OPCODE0_RETURN
+#undef OPCODE1_RETURN
+#undef OPCODE2_RETURN
+#undef OPCODE0_TAILRETURN
+#undef OPCODE1_TAILRETURN
+#undef OPCODE2_TAILRETURN
+#undef OPCODE0_BRANCH
+#undef OPCODE1_BRANCH
+#undef OPCODE2_BRANCH
+#undef OPCODE0_TAILBRANCH
+#undef OPCODE1_TAILBRANCH
+#undef OPCODE2_TAILBRANCH
+  /* NOTE: No need to redefine these.
+   * #undef OPCODE0_ALIAS
+   * #undef OPCODE1_ALIAS
+   * #undef OPCODE2_ALIAS
+   */
 #undef LABEL
 #define LABEL(OP)			&&PIKE_CONCAT(LABEL_,OP)
 #define NULL_LABEL(OP)			NULL
@@ -343,12 +285,12 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #define OPCODE0_TAIL(OP,DESC)		LABEL(OP),
 #define OPCODE1_TAIL(OP,DESC)		LABEL(OP),
 #define OPCODE2_TAIL(OP,DESC)		LABEL(OP),
-#define OPCODE0_JUMP(OP,DESC)		LABEL(OP),
-#define OPCODE1_JUMP(OP,DESC)		LABEL(OP),
-#define OPCODE2_JUMP(OP,DESC)		LABEL(OP),
-#define OPCODE0_TAILJUMP(OP,DESC)	LABEL(OP),
-#define OPCODE1_TAILJUMP(OP,DESC)	LABEL(OP),
-#define OPCODE2_TAILJUMP(OP,DESC)	LABEL(OP),
+#define OPCODE0_PTRJUMP(OP,DESC)	LABEL(OP),
+#define OPCODE1_PTRJUMP(OP,DESC)	LABEL(OP),
+#define OPCODE2_PTRJUMP(OP,DESC)	LABEL(OP),
+#define OPCODE0_TAILPTRJUMP(OP,DESC)	LABEL(OP),
+#define OPCODE1_TAILPTRJUMP(OP,DESC)	LABEL(OP),
+#define OPCODE2_TAILPTRJUMP(OP,DESC)	LABEL(OP),
 #define OPCODE0_RETURN(OP,DESC)		LABEL(OP),
 #define OPCODE1_RETURN(OP,DESC)		LABEL(OP),
 #define OPCODE2_RETURN(OP,DESC)		LABEL(OP),
@@ -410,7 +352,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #ifdef PIKE_DEBUG
     if (sizeof(table) != (F_MAX_OPCODE-F_OFFSET)*sizeof(void *))
-      fatal("opcode_to_label out of sync: 0x%08lx != 0x%08lx\n",
+      Pike_fatal("opcode_to_label out of sync: 0x%08lx != 0x%08lx\n",
 	    DO_NOT_WARN((long)sizeof(table)),
 	    DO_NOT_WARN((long)((F_MAX_OPCODE-F_OFFSET)*sizeof(void *))));
 #endif /* PIKE_DEBUG */

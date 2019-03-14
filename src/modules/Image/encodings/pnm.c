@@ -1,9 +1,11 @@
-/* $Id: pnm.c,v 1.25 2001/03/15 16:56:08 mirar Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /*
 **! module Image
-**! note
-**!	$Id: pnm.c,v 1.25 2001/03/15 16:56:08 mirar Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -23,7 +25,7 @@
 **!	P4(PBM) - binary bitmap 
 **!	P5(PGM) - binary greymap 
 **!	P6(PPM) - binary truecolor
-** 	P7 - binary truecolor (used by xv for thumbnails)
+**! 	P7 - binary truecolor (used by xv for thumbnails)
 **!	</pre>
 **!
 **!	Simple encoding:<br>
@@ -49,25 +51,19 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.25 2001/03/15 16:56:08 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
-#include "array.h"
 #include "pike_error.h"
 #include "operators.h"
 
-
 #include "image.h"
-#include "builtin_functions.h"
 
 #include "encodings.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
@@ -140,8 +136,7 @@ void img_pnm_decode(INT32 args)
 
    struct pike_string *s;
 
-   if (args<1 ||
-       sp[-args].type!=T_STRING)
+   if (args<1 || TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.PNM.decode(): Illegal arguments\n");
 
    s=sp[-args].u.string;
@@ -283,14 +278,13 @@ void img_pnm_encode_P1(INT32 args) /* ascii PBM */
    int x,y;
    rgb_group *s;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P1(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P1(): Given image is empty\n");
 
-   sprintf(buf,"P1\n%d %d\n",img->xsize,img->ysize);
+   sprintf(buf,"P1\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n",img->xsize,img->ysize);
    a=make_shared_string(buf);
 
    y=img->ysize;
@@ -326,8 +320,7 @@ void img_pnm_encode_P2(INT32 args) /* ascii PGM */
    int n;
    struct object *o = NULL;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage((o=sp[-args].u.object),image_program)))
       Pike_error("Image.PNM.encode_P2(): Illegal arguments\n");
    if (!img->img)
@@ -336,8 +329,8 @@ void img_pnm_encode_P2(INT32 args) /* ascii PGM */
    add_ref(o);
    pop_n_elems(args);
 
-   sprintf(buf,"P2\n%d %d\n255\n",img->xsize,img->ysize);
-   push_string(make_shared_string(buf));
+   sprintf(buf,"P2\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n255\n",img->xsize,img->ysize);
+   push_text(buf);
    n=1;
 
    y=img->ysize;
@@ -348,7 +341,7 @@ void img_pnm_encode_P2(INT32 args) /* ascii PGM */
       while (x--)
       {
 	 sprintf(buf,"%d%c",(s->r+s->g*2+s->b)/4,x?' ':'\n');
-	 push_string(make_shared_string(buf));
+	 push_text(buf);
 	 n++;
 	 if (n>32) { f_add(n); n=1; }
 	 s++;
@@ -367,8 +360,7 @@ void img_pnm_encode_P3(INT32 args) /* ascii PPM */
    int n;
    struct object *o = NULL;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage((o=sp[-args].u.object),image_program)))
       Pike_error("Image.PNM.encode_P3(): Illegal arguments\n");
    if (!img->img)
@@ -377,8 +369,8 @@ void img_pnm_encode_P3(INT32 args) /* ascii PPM */
    add_ref(o);
    pop_n_elems(args);
 
-   sprintf(buf,"P3\n%d %d\n255\n",img->xsize,img->ysize);
-   push_string(make_shared_string(buf));
+   sprintf(buf,"P3\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n255\n",img->xsize,img->ysize);
+   push_text(buf);
    n=1;
 
    y=img->ysize;
@@ -389,7 +381,7 @@ void img_pnm_encode_P3(INT32 args) /* ascii PPM */
       while (x--)
       {
 	 sprintf(buf,"%d %d %d%c",s->r,s->g,s->b,x?' ':'\n');
-	 push_string(make_shared_string(buf));
+	 push_text(buf);
 	 n++;
 	 if (n>32) { f_add(n); n=1; }
 	 s++;
@@ -408,14 +400,13 @@ void img_pnm_encode_P4(INT32 args) /* binary PBM */
    int y,x,bit;
    rgb_group *s;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P4(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P4(): Given image is empty\n");
 
-   sprintf(buf,"P4\n%d %d\n",img->xsize,img->ysize);
+   sprintf(buf,"P4\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n",img->xsize,img->ysize);
    a=make_shared_string(buf);
 
    y=img->ysize;
@@ -454,14 +445,13 @@ void img_pnm_encode_P5(INT32 args) /* binary PGM */
    int n;
    rgb_group *s;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P5(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P5(): Given image is empty\n");
 
-   sprintf(buf,"P5\n%d %d\n255\n",img->xsize,img->ysize);
+   sprintf(buf,"P5\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n255\n",img->xsize,img->ysize);
    a=make_shared_string(buf);
 
    n=img->xsize*img->ysize;
@@ -486,14 +476,13 @@ void img_pnm_encode_P6(INT32 args)
    struct pike_string *a,*b;
    struct image *img=NULL;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P6(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P6(): Given image is empty\n");
 
-   sprintf(buf,"P6\n%d %d\n255\n",img->xsize,img->ysize);
+   sprintf(buf,"P6\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n255\n",img->xsize,img->ysize);
    a=make_shared_string(buf);
    if (sizeof(rgb_group)==3)
       b=make_shared_binary_string((char*)img->img,
@@ -527,8 +516,7 @@ void img_pnm_encode_ascii(INT32 args)
    int n;
    void (*func)(INT32);
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_ascii(): Illegal arguments\n");
    if (!img->img)
@@ -561,8 +549,7 @@ void img_pnm_encode_binary(INT32 args)
    int n;
    void (*func)(INT32);
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_binary(): Illegal arguments\n");
    if (!img->img)
@@ -593,29 +580,19 @@ struct program *image_pnm_module_program=NULL;
 
 void init_image_pnm(void)
 {
-   add_function("encode",img_pnm_encode_binary,
-		"function(object:string)",0);
-   add_function("encode_binary",img_pnm_encode_binary,
-		"function(object:string)",0);
-   add_function("encode_ascii",img_pnm_encode_ascii,
-		"function(object:string)",0);
+   ADD_FUNCTION("encode",img_pnm_encode_binary,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_binary",img_pnm_encode_binary,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_ascii",img_pnm_encode_ascii,tFunc(tObj,tStr),0);
 
-   add_function("encode_P1",img_pnm_encode_P1,
-		"function(object:string)",0);
-   add_function("encode_P2",img_pnm_encode_P2,
-		"function(object:string)",0);
-   add_function("encode_P3",img_pnm_encode_P3,
-		"function(object:string)",0);
+   ADD_FUNCTION("encode_P1",img_pnm_encode_P1,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_P2",img_pnm_encode_P2,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_P3",img_pnm_encode_P3,tFunc(tObj,tStr),0);
 
-   add_function("encode_P4",img_pnm_encode_P4,
-		"function(object:string)",0);
-   add_function("encode_P5",img_pnm_encode_P5,
-		"function(object:string)",0);
-   add_function("encode_P6",img_pnm_encode_P6,
-		"function(object:string)",0);
+   ADD_FUNCTION("encode_P4",img_pnm_encode_P4,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_P5",img_pnm_encode_P5,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_P6",img_pnm_encode_P6,tFunc(tObj,tStr),0);
 
-   add_function("decode",img_pnm_decode,
-		"function(string:object)",0);
+   ADD_FUNCTION("decode",img_pnm_decode,tFunc(tStr,tObj),0);
 }
 
 void exit_image_pnm(void)

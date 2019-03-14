@@ -1,30 +1,27 @@
 //! module Calendar
-
-// $Id: TimeRanges.pmod,v 1.18 2001/06/09 15:00:50 mirar Exp $
+//!
+//! submodule TimeRanges
 
 #pike __REAL_VERSION__
 
 #define zero int(0..0)
 
-import ".";
-
 program SuperTimeRange=cSuperTimeRange;
 
 string calendar_name() { return "TimeRanges"; }
 
-object calendar_object=this_object();
+object calendar_object=this;
 
-string _sprintf(int t) { return (t=='O')?calendar_name():0; }
+protected string _sprintf(int t) { return t=='O' && calendar_name(); }
 
-Ruleset default_rules=
-   master()->resolv("Calendar")["default_rules"];
+Calendar.Ruleset default_rules=Calendar.default_rules;
 
 //------------------------------------------------------------------------
 //! class TimeRange
-//! 	This is the base class for any time measurement
-//!	and calendrar information. It defines all the
-//!	things you can do with a time range, any time
-//!	period.
+//! 	This is the base class (usually implemented by e.g. Calendar
+//! 	subclasses like Calendar.Second) for any time measurement and
+//! 	calendrar information. It defines all the things you can do
+//! 	with a time range or any time period.
 //!
 //!	A TimeRange doubles as both a fixed period in
 //!	time, and an amount of time. For instance,
@@ -39,7 +36,7 @@ class TimeRange
 {
    constant is_timerange=1;
 
-   Ruleset rules;
+   Calendar.Ruleset rules;
 
 //! method void create("unix",int unixtime)
 //! method void create("unix",int unixtime,int seconds_len)
@@ -68,11 +65,11 @@ class TimeRange
 //!	The size of the new object may be inexact;
 //!	a Month object can't comprehend seconds, for instance.
 
-   static void create_unixtime(int unixtime,int len);
-   static void create_unixtime_default(int unixtime);
-   static void create_julian_day(int jd);
+   protected void create_unixtime(int unixtime,int len);
+   protected void create_unixtime_default(int unixtime);
+   protected void create_julian_day(int jd);
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (sizeof(args)) switch (args[0])
       {
@@ -122,28 +119,22 @@ class TimeRange
       }
 
       error("%O.%O: Illegal parameters %O,%O,%O...\n",
-	    function_object(object_program(this_object())),
-	    object_program(this_object()),
-	    @args,0,0,0);
+	    function_object(this_program),
+	    this_program,@args,0,0,0);
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
 // inheriting class must take care of size
-      if (other->julian_day)
-      {
-	 int|float jd=other->julian_day();
-	 if (floatp(jd) && other->unix_time)
-	    create("unix_r",other->unix_time(),other->ruleset());
-	 else
-	    create("julian_r",jd,other->ruleset());
-      }
-      else if (other->unix_time)
-	 create("unix_r",other->unix_time(),other->ruleset());
-      else 
+      if (other->unix_time) {
+         rules = other->ruleset();
+         create_unixtime_default(other->unix_time());
+      } else if (other->julian_day) {
+	 rules = other->ruleset();
+         create_julian_day(other->julian_day());
+      } else 
 	 error("Can't convert %O->%s.%O\n",other,
-	       calendar_name(),
-	       object_program(this_object()));
+	       calendar_name(), this_program);
    }
 
 //! method TimeRange set_size(TimeRange size)
@@ -156,7 +147,7 @@ class TimeRange
 //!	A negative size is not permitted; a zero one are.
 
 // virtual
-   static TimeRange _set_size(int n,TimeRange x);
+   protected TimeRange _set_size(int n,TimeRange x);
 
    TimeRange set_size(function|TimeRange|int(0..0x7fffffff) a,
 		      void|function|TimeRange b)
@@ -165,8 +156,7 @@ class TimeRange
       int(0..0x7fffffff) n;
       if (!b) 
 	 if (intp(a)) 
-	    x=[function|object(TimeRange)]this_object(),
-	       n=[int(0..0x7fffffff)]a;
+	    x=this,n=[int(0..0x7fffffff)]a;
 	 else
 	    x=a,n=1;
       else
@@ -201,7 +191,7 @@ class TimeRange
 //!	</pre>
 
 // virtual
-   static this_program _add(int n,this_program step);
+   protected this_program _add(int n,this_program step);
 
    this_program add(function|this_program|int a,
 		 void|function|this_program b)
@@ -210,8 +200,7 @@ class TimeRange
       int n;
       if (!b) 
 	 if (intp(a)) 
-	    x=[function|object(this_program)]this_object(),
-	       n=[int]a;
+	   x=this,n=[int]a;
 	 else
 	    x=a,n=1;
       else
@@ -270,19 +259,27 @@ class TimeRange
 //!	of steps the motion will be. It does <i>never</i> represent
 //!	any <i>fixed</i> amount of time, like seconds or days.
 
-   TimeRange `+(program|this_program|int n)
+   TimeRange `+(program|this_program|int n,
+		program|this_program|int ... more)
    {
-      if (objectp(n)) return add(1,n);
+      TimeRange res;
+      if (objectp(n)) res = add(1,n);
+      else res = add(n);
+      if (sizeof(more))
+	 return predef::`+(res, @more);
+      return res;
+   }
+
+  TimeRange ``+(int n, int ... more)
+   {
+      if (sizeof(more)) n = predef::`+(n, @more);
       return add(n);
    }
 
-   TimeRange ``+(int n)
+   TimeRange `-(program|this_program|int n,
+		TimeRange|this_program|int ... more)
    {
-      return add(n);
-   }
-
-   TimeRange `-(TimeRange|program|int n)
-   {
+      if (sizeof(more)) n = predef::`+(n, @more);
       if (objectp(n)) return add(-1,n);
       return add(-n);
    }
@@ -295,12 +292,12 @@ class TimeRange
 
    TimeRange next()
    {
-      return this_object()+1;
+      return this+1;
    }
 
    TimeRange prev()
    {
-      return this_object()-1;
+      return this-1;
    }
 
 //! method TimeRange `*(int n)
@@ -308,17 +305,19 @@ class TimeRange
 //!	the time period. <tt>t*17</tt> is
 //!	the same as doing <tt>t-><ref>set_size</ref>(t,17)</tt>.
 
-   function ``* = `*;
-   TimeRange `*(int n)
+   TimeRange ``* (int n) {return `* (n);}
+   TimeRange `*(int|float n)
    {
-      return set_size(n,this_object());
+      return set_size((int)n,this);
    }
 
-//! method array(TimeRange) `/(int n)
-//! method array(TimeRange) split(int n)
+//! method array(TimeRange) `/(int|float n)
+//! method array(TimeRange) split(int|float n, void|TimeRange with)
 //!	This divides the called timerange into
 //!	n pieces. The returned timerange type
 //!	is not neccesarily of the same type as the called one.
+//!     If the optional timerange is specified then the resulting timeranges
+//!     will be multiples of that range (except for the last one).
 //!
 //! known bugs:
 //!	These are currently not defined for 
@@ -334,7 +333,7 @@ class TimeRange
 //!	with the instance of a <ref to=YMD.Year>Year</ref>.
 
 // virtual
-   array(TimeRange) split(int n);
+   array(TimeRange) split(int|float n, void|function|TimeRange with);
 
    int how_many(function|TimeRange with)
    {
@@ -399,9 +398,9 @@ class TimeRange
       }
    }
 
-   array(TimeRange)|int `/(TimeRange|program|int x)
+   array(TimeRange)|int `/(TimeRange|program|int|float x)
    {
-      if (intp(x)) return split(x);
+      if (intp(x) || floatp(x)) return split(x);
       else return how_many(x);
    }
 
@@ -419,10 +418,10 @@ class TimeRange
 
    int offset_to(TimeRange x)
    {
-      if (x==this_object()) return 0;
-      if (x<this_object())
-	 return -(x->distance(this_object())/this_object());
-      return this_object()->distance(x)/this_object();
+      if (x==this) return 0;
+      if (x<this)
+	 return -(x->distance(this)/this);
+      return this->distance(x)/this;
    }
 
 //! method TimeRange beginning()
@@ -533,7 +532,7 @@ class TimeRange
    {
       if (objectp(what) && what->is_supertimerange)
       {
-	 array(int(-1..1)) cmp=what->_compare(this_object());
+	 array(int(-1..1)) cmp=what->_compare(this);
 
 	 return ({-cmp[0],
 		  -cmp[2],
@@ -542,7 +541,7 @@ class TimeRange
       }
       return ({-1,-1,-1,-1});
 //        error("_compare: incompatible classes %O <-> %O\n",
-//  	    object_program(this_object()),object_program(what));
+//  	    this_program,object_program(what));
    }
 
    string _describe_compare(array(int(-1..1)) c,TimeRange a,TimeRange b)
@@ -681,13 +680,12 @@ class TimeRange
 //!
 //! known bugs:
 //!	_equal is not currently possible to overload,
-//!	due to wierd bugs, so equal uses `== for now.
+//!	due to weird bugs, so equal uses `== for now.
 
-   int(0..1) `==(TimeRange what) 
-   { 
-      return object_program(what)==object_program(this_object()) &&
-	 what->ruleset()==ruleset() &&
-	 equals(what); 
+   int(0..1) `==(mixed what) 
+   {
+     return objectp(what) && functionp(what->ruleset) &&
+       what->ruleset()==ruleset() && equals(what); 
    }
 
    int __hash();
@@ -708,7 +706,8 @@ class TimeRange
 //!          &gt;----- cut -----&lt;
 //!	</pre>
 
-   function ``& = `&;
+   TimeRange|zero ``& (TimeRange with, mixed... extra)
+    {return `& (with, @extra);}
    TimeRange|zero `&(TimeRange with, mixed ...extra)
    {
       if (with->is_nulltimerange) 
@@ -718,7 +717,7 @@ class TimeRange
 	 return nulltimerange; // no overlap, no extra
 
       if (with->is_supertimerange)
-	 return predef::`&(with,this_object(),@extra); // let it handle that...
+	 return predef::`&(with,this,@extra); // let it handle that...
 
       TimeRange from,to;
 
@@ -744,26 +743,26 @@ class TimeRange
 //!     &lt;----------union----------&gt;
 //!	</pre>
 
-   function ``| = `|;
+   TimeRange ``| (TimeRange with, mixed... extra) {return `| (with, @extra);}
    TimeRange `|(TimeRange with,mixed ...extra)
    {
       if (with->is_nulltimerange) 
-	 return sizeof(extra)?`|(@extra):this_object();
+	 return sizeof(extra)?`|(@extra):this;
       array(int(-1..1)) a=_compare(with);
       TimeRange from,to;
 
       if (a[END_BEGIN]<0 || a[BEGIN_END]>0)
-	 from=SuperTimeRange( sort(({this_object(),with})) ); // no overlap
+	 from=SuperTimeRange( sort(({this,with})) ); // no overlap
       else
       {
 	 if (with->is_supertimerange)   // let it handle that...
-	    return predef::`|(with,this_object(),@extra);
+	    return predef::`|(with,this,@extra);
 
    // from the first beginning
-	 if (a[BEGIN_BEGIN]<0) from=this_object(); else from=with;
+	 if (a[BEGIN_BEGIN]<0) from=this; else from=with;
 
    // to the last end
-	 if (a[END_END]>0) to=this_object(); else to=with;
+	 if (a[END_END]>0) to=this; else to=with;
    // compute
 	 from=from->range(to);
       }
@@ -783,28 +782,28 @@ class TimeRange
 //!     &lt;----|               |---->   - exclusive or
 //!	</pre>
 
-   function ``^ = `^;
+   TimeRange ``^ (TimeRange with, mixed... extra) {return `^ (with, @extra);}
    TimeRange `^(TimeRange with,mixed ... extra)
    {
       if (with->is_supertimerange)
-	 return `^(with,this_object(),@extra); // let it handle that...
+	 return `^(with,this,@extra); // let it handle that...
       if (with->is_nulltimerange) 
-	 return sizeof(extra)?`^(@extra):this_object();
+	 return sizeof(extra)?`^(@extra):this;
 
       TimeRange res;
 
       array(int(-1..1)) a=_compare(with);
       
-//        write(_describe_compare(a,this_object(),with));
+//        write(_describe_compare(a,this,with));
 
       TimeRange first,second;
       if (a[END_BEGIN]<0 || a[BEGIN_END]>0)
-	 res=SuperTimeRange( sort(({this_object(),with})) ); // no overlap
+	 res=SuperTimeRange( sort(({this,with})) ); // no overlap
       else if (a[BEGIN_END]==0 || a[END_BEGIN]==0) // bordering
 	 if (a[BEGIN_BEGIN]<0)
 	    res=range(with); // A precedes B
 	 else
-	    res=with->range(this_object()); // B precedes A
+	    res=with->range(this); // B precedes A
       else if (a[BEGIN_BEGIN]==0 && a[END_END]==0)
 	 return sizeof(extra)?predef::`^(nulltimerange,@extra):nulltimerange;
       else
@@ -813,13 +812,13 @@ class TimeRange
 	 if (a[BEGIN_BEGIN]<0) 
 	    first=distance(with); 
 	 else 
-	    first=with->distance(this_object());
+	    first=with->distance(this);
 
 // and from the first end to the last end
 	 if (a[END_END]<0) 
 	    second=end()->range(with); 
 	 else 
-	    second=with->end()->range(this_object());
+	    second=with->end()->range(this);
 	 res=first|second;
       }
    // done
@@ -845,7 +844,7 @@ class TimeRange
       array(int(-1..1)) a=_compare(what);
 
       if (a[END_BEGIN]<=0 || a[BEGIN_END]>=0)
-	 return sizeof(extra)?subtract(@extra):this_object(); // no overlap
+	 return sizeof(extra)?subtract(@extra):this; // no overlap
 
       if (what->is_supertimerange)
       {
@@ -860,13 +859,13 @@ class TimeRange
 
       TimeRange res;
 
-//        write(_describe_compare(a,this_object(),what));
+//        write(_describe_compare(a,this,what));
 
       if (a[BEGIN_BEGIN]>=0)      // it preceeds us
 	 if (a[END_END]<=0) 
 	    return nulltimerange; // full overlap
 	 else                     // half overlap at start
-	    res=what->end()->range(this_object());
+	    res=what->end()->range(this);
       else if (a[END_END]<=0)     // it succeeds us
 	 res=distance(what);
       else 
@@ -876,7 +875,7 @@ class TimeRange
 //  		what->end(),end());
 // it's inside us
 	 res=predef::`|(distance(what),
-			what->end()->range(this_object()));
+			what->end()->range(this));
       }
       if (sizeof(extra)) return res->subtract(@extra);
       return res;
@@ -889,8 +888,8 @@ class TimeRange
 //!	this may include timezone shanges,
 //!	and change the time of day.
 
-   TimeRange set_ruleset(Ruleset r);
-   Ruleset ruleset()
+   this_program set_ruleset(Calendar.Ruleset r);
+   Calendar.Ruleset ruleset()
    {
       return rules;
    }
@@ -910,27 +909,27 @@ class TimeRange
 //!	<tt>Year(2003)-&gt;...-&gt;set_timezone(TimeZone.CET)-&gt;...-&gt;hour(14)-&gt;...</tt>
 //!
 
-   TimeRange set_timezone(string|Ruleset.Timezone tz)
+   this_program set_timezone(string|Calendar.Rule.Timezone tz)
    {
       return set_ruleset(rules->set_timezone(tz));
    }
 
-   Ruleset.Timezone timezone()
+   Calendar.Rule.Timezone timezone()
    {
       return rules->timezone;
    }
 
-//! method TimeRange set_language(Language lang)
+//! method TimeRange set_language(Rule.Language lang)
 //! method TimeRange set_language(string lang)
 //! method Language language()
 //!	Set or get the current language rule.
 
-   TimeRange set_language(string|Ruleset.Language lang)
+   this_program set_language(string|Calendar.Rule.Language lang)
    {
       return set_ruleset(rules->set_language(lang));
    }
 
-   Ruleset.Language language()
+   Calendar.Rule.Language language()
    {
       return rules->language;
    }
@@ -945,7 +944,7 @@ class TimeRange
    }
 
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -982,7 +981,7 @@ class cSuperTimeRange
 //!	two time ranges. Otherwise, it's either not
 //!	a time period at all or a normal time period.
 
-   void create(array(TimeRange) _parts)
+   protected void create(array(TimeRange) _parts)
    {
       if (sizeof(_parts->is_supertimerange-({0})))
 	 error("one part is super\n%O\n",_parts);
@@ -1053,7 +1052,7 @@ class cSuperTimeRange
       if (with->is_supertimerange)
 	 res=mend_overlap(sort(with->parts+parts));
       else if (with->is_nulltimerange)
-	 return this_object();
+	 return this;
       else
 	 res=mend_overlap(sort( ({with})+parts ));
       if (sizeof(extra)) 
@@ -1134,12 +1133,12 @@ class cSuperTimeRange
       return 0;
    }
 
-   int __hash()
+   protected int __hash()
    {
       return predef::`+(@map(parts,"__hash"));
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1153,13 +1152,14 @@ class cSuperTimeRange
       return ::_sprintf(t,m);
    }
 
-   TimeRange set_timezone(string|Timezone tz)
+   TimeRange set_timezone(string|Calendar.Rule.Timezone tz)
    {
 // fixme?
       return `|(@map(parts,"set_timezone",tz));
    }
 }
 
+//! module Calendar
 //! constant TimeRange nulltimerange
 //!	This represents the null time range, 
 //!	which, to differ from the zero time range
@@ -1173,50 +1173,50 @@ class cSuperTimeRange
 
 
 program NullTimeRange=cNullTimeRange;
-static class cNullTimeRange
+protected class cNullTimeRange
 {
    inherit TimeRange;
 
    constant is_nulltimerange=1;
 
 // overload
-   void create()
+   protected void create()
    {
    }
 
    TimeRange set_size(TimeRange|int(0..0x7fffffff) a,void|TimeRange b)
    {
-      return this_object();
+      return this;
    }
 
    TimeRange place(TimeRange what,void|int force)
    {
-      return this_object();
+      return this;
    }
 
    array(TimeRange) split(int n)
    {
-      return allocate(n,this_object());
+      return allocate(n,this);
    }
 
-   TimeRange beginning() { return this_object(); }
-   TimeRange end() { return this_object(); }
+   TimeRange beginning() { return this; }
+   TimeRange end() { return this; }
 
    TimeRange distance(TimeRange to)
    {
-      if (to==this_object()) return this_object();
+      if (to==this) return this;
       error("Can't distance/space/range with the null timerange\n");
    }
 
    array(int(-1..1)) _compare(TimeRange with)
    {
-      if (with==this_object()) return ({0,0,0,0});
+      if (with==this) return ({0,0,0,0});
       return ({-1,-1,-1,-1});
    }
 
    int(0..1) `<(TimeRange with)
    {
-      return !(with==this_object());
+      return !(with==this);
    }
 
    int(0..1) `>(TimeRange with)
@@ -1236,22 +1236,22 @@ static class cNullTimeRange
 
    TimeRange `&(TimeRange with, mixed ...extra)
    {
-      return predef::`&(with,this_object(),@extra);
+      return predef::`&(with,this,@extra);
    }
 
    TimeRange `|(TimeRange with, mixed ...extra)
    {
-      return predef::`|(with,this_object(),@extra);
+      return predef::`|(with,this,@extra);
    }
 
    TimeRange `^(TimeRange with, mixed ...extra)
    {
-      return predef::`^(with,this_object(),@extra);
+      return predef::`^(with,this,@extra);
    }
 
    this_program subtract(TimeRange with, mixed ...extra)
    {
-      return this_object();
+      return this;
    }
 
    int(1..1) `!()
@@ -1259,7 +1259,7 @@ static class cNullTimeRange
       return 1;
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1274,9 +1274,9 @@ cNullTimeRange nulltimerange=NullTimeRange();
 
 // helper functions
 
-static mapping(function:TimeRange) program2stuff=([]);
+protected mapping(function:TimeRange) program2stuff=([]);
 
-static TimeRange promote_program(function p)
+protected TimeRange promote_program(function p)
 {
    TimeRange x;
    if ( (x=program2stuff[p]) ) return x;

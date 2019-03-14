@@ -1,18 +1,38 @@
+#pike __REAL_VERSION__
+
 // This module contains utility functions for XML creation and
 // some other useful stuff common to all the modules.
 
 #include "./debug.h"
 
-static constant DOC_COMMENT = "//!";
+protected constant DOC_COMMENT = "//!";
 
-static int isDigit(int c) { return '0' <= c && c <= '9'; }
+//! Flags affecting autodoc extractor behaviour.
+//!
+//! @seealso
+//!   @[ProcessXML.extractXML()], @[MirarDocParser],
+//!   @[Tools.Standalone.extract_autodoc()]
+enum Flags {
+  FLAG_QUIET = 0,	//! Keep quiet about non-fatal errors.
+  FLAG_NORMAL = 1,	//! Normal verbosity.
+  FLAG_VERBOSE = 2,	//! Extra verbosity.
+  FLAG_DEBUG = 3,	//! Full verbosity.
+  FLAG_VERB_MASK = 3,	//! Verbosity mask.
+  FLAG_KEEP_GOING = 4,	//! Attempt to keep going after errors.
+  FLAG_COMPAT = 8,	//! Attempt to be compatible with old Pike.
+  FLAG_NO_DYNAMIC = 16,	//! Reduce the amount of dynamic information
+			//! in the generated files (line numbers,
+			//! extractor version, extraction time, etc).
+}
 
-static int isDocComment(string s) {
+protected int isDigit(int c) { return '0' <= c && c <= '9'; }
+
+protected int isDocComment(string s) {
   return has_prefix(s, DOC_COMMENT);
 }
 
 //FIXME: should it return 0 for keywords ??
-static int isIdent(string s) {
+protected int isIdent(string s) {
   if (!s || s == "")
     return 0;
   int first = s[0];
@@ -29,16 +49,23 @@ static int isIdent(string s) {
   return 1;
 }
 
-static string xmlquote(string s) {
+protected int(0..1) isFloat(string s)
+{
+  int n;
+  sscanf(s, "%*[0-9].%*[0-9]%n", n);
+  return sizeof(s) && n == sizeof(s);
+}
+
+protected string xmlquote(string s) {
   return replace(s, ({ "<", ">", "&" }), ({ "&lt;", "&gt;", "&amp;" }));
 }
 
-static string attributequote(string s) {
+protected string attributequote(string s) {
   return replace(s, ({ "<", ">", "\"", "'", "&" }),
                  ({ "&lt;", "&gt;", "&#34;", "&#39;", "&amp;" }));
 }
 
-static string writeattributes(mapping(string:string) attrs)
+protected string writeattributes(mapping(string:string) attrs)
 {
   string s = "";
   foreach(sort(indices(attrs || ([]))), string attr)
@@ -46,13 +73,13 @@ static string writeattributes(mapping(string:string) attrs)
   return s;
 }
 
-static string opentag(string t, mapping(string:string)|void attributes) {
+protected string opentag(string t, mapping(string:string)|void attributes) {
   return "<" + t + writeattributes(attributes) + ">";
 }
 
-static string closetag(string t) { return "</" + t + ">"; }
+protected string closetag(string t) { return "</" + t + ">"; }
 
-static string xmltag(string t, string|mapping(string:string)|void arg1,
+protected string xmltag(string t, string|mapping(string:string)|void arg1,
                      string|void arg2)
 {
   mapping attributes = mappingp(arg1) ? arg1 : 0;
@@ -63,12 +90,18 @@ static string xmltag(string t, string|mapping(string:string)|void arg1,
   return s;
 }
 
+//! Class used to keep track of where in the source a piece of
+//! documentation originated.
 class SourcePosition {
+  //!
   string filename;
+
+  //! Range of lines.
   int firstline;
   int lastline;
 
-  static void create(string filename, int firstline,
+  //!
+  protected void create(string filename, int firstline,
                      int|void lastline)
   {
     if (!firstline) {
@@ -79,16 +112,19 @@ class SourcePosition {
       werror("**********************************************************\n");
       werror("**********************************************************\n");
     }
-    local::filename = filename;
-    local::firstline = firstline;
-    local::lastline = lastline;
+    this_program::filename = filename;
+    this_program::firstline = firstline;
+    this_program::lastline = lastline; 
   }
 
+  //! @returns
+  //!   Returns a copy of the current object.
   SourcePosition copy() {
     return SourcePosition(filename, firstline, lastline);
   }
 
-  string _sprintf() {
+  string _sprintf(int t) {
+    if(t!='O') return 0;
     string res = "SourcePosition(File: " + (filename ? filename : "?");
     if (firstline)
       if (lastline)
@@ -98,7 +134,10 @@ class SourcePosition {
     return res + ")";
   }
 
-  string xml() {
+  //! @returns
+  //!   Returns a string with an XML-fragment describing the source position.
+  string xml(Flags|void flags) {
+    if (flags & FLAG_NO_DYNAMIC) return "";
     mapping(string:string) m = ([]);
     m["file"] = filename || "?";
     if (firstline) m["first-line"] = (string) firstline;
@@ -107,16 +146,19 @@ class SourcePosition {
   }
 }
 
-class AutoDocError {
-  SourcePosition position;
-  string part;     // which part of the autodoc system...
-  string message;
-  static void create(SourcePosition _position, string _part, string _message) {
-    position = _position;
-    part = _part;
-    message = _message;
-  }
-  string _sprintf() {
-    return sprintf("AutoDocError(%O, %O, %O)", position, part, message);
+//! Base class for errors generated by the autodoc extraction system.
+class AutoDocError (
+		    //!
+		    SourcePosition position,
+
+		    //! Which part of the autodoc system.
+		    string part,
+
+		    //! Error message.
+		    string message
+		    ) {
+  string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O, %O, %O)", this_program,
+			     position, part, message);
   }
 }

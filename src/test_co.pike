@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_co.pike,v 1.6 2001/03/12 10:51:28 hubbe fake $ */
+import Tools.Testsuite;
 
 void verify();
 
@@ -10,7 +10,7 @@ int cnt;
 
 #define FUN(X) void X() \
 { \
-  if(!(--fc[X] && (++cnt & 15))) { verify(); werror("."); } \
+  if(!(--fc[X] && (++cnt & 15))) { verify(); log_twiddler(); } \
 }
 
 FUN(f0)
@@ -35,12 +35,15 @@ void verify()
   {
     if(fc[f] != ff[f])
     {
-      werror("Incorrect number of call outs!\n");
-      werror(sprintf("%O != %O\n",fc,ff));
+      log_msg("Incorrect number of call outs!\n");
+      log_msg(sprintf("%O != %O\n",fc,ff));
       exit(1);
     }
   }
-  if(!sizeof(ff)) { werror("\n"); exit(0); }
+  if(!sizeof(ff)) {
+    log_status ("");
+    exit(0);
+  }
   gc();
 }
 
@@ -70,34 +73,34 @@ mixed rco(mixed func)
 void do_remove()
 {
   fc[do_remove]--;
-  werror("\nRemoving call outs ");
+  log_status("Removing call outs");
   for(int d=0;d<50;d++)
   {
     for(int e=0;e<200;e++)
       rco(fn[random(10)]);
     
     verify();
-    werror(".");
+    log_twiddler();
   }
-  werror("\nWaiting to exit ");
+  log_status("Waiting to exit");
   call_out(exit,30,1);
 }
 
 int main()
 {
   random_seed(0);
-  write("Creating call outs ");
+  log_status("Creating call outs");
   for(int d=0;d<50;d++)
   {
     for(int e=0;e<100;e++)
     {
       co(fn[random(10)],random(1000)/100.0);
     }
-    werror(".");
+    log_twiddler();
     verify();
   }
 
-  werror("\nTesting end of heap ...");
+  log_status("Testing end of heap");
 
   verify();
 
@@ -110,12 +113,12 @@ int main()
   {
     if(zero_type(rco(tmp[e]))==1)
     {
-      werror("Remove call out failed!!!\n");
+      log_msg("Remove call out failed!!!\n");
       exit(1);
     }
   }
 
-  werror("\nTesting beginning of heap ...");
+  log_status("Testing beginning of heap");
 
   verify();
 
@@ -127,16 +130,16 @@ int main()
   {
     if(zero_type(rco(tmp[e]))==1)
     {
-      werror("Remove call out failed!!!\n");
+      log_msg("Remove call out failed!!!\n");
       exit(1);
     }
   }
 
   verify();
   
-  werror("\nWaiting ");
+  log_status("Waiting");
 
   co(do_remove,1.0);
-  
+
   return -17;
 }

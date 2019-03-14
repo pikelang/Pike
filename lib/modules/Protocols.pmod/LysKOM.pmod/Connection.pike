@@ -1,15 +1,14 @@
-//  $Id: Connection.pike,v 1.8 2001/04/27 13:38:41 grubba Exp $
 //!	This class contains nice abstraction for calls into the
-//!	server. They are named "<i>call</i>",
-//!	"<tt>async_</tt><i>call</i>" or
-//!	"<tt>async_cb_</tt><i>call</i>", depending on
+//!	server. They are named "@tt{@i{call@}@}",
+//!	"@tt{async_@i{call@}@}" or
+//!	"@tt{async_cb_@i{call@}@}", depending on
 //!	how you want the call to be done.
 
 //! @decl mixed XXX(mixed ...args)
 //! @decl object async_XXX(mixed ...args)
 //! @decl object async_cb_XXX(function callback,mixed ...args)
 //!	Do a call to the server. This really
-//!	clones a <link to=Protocols.LysKOM.Request>request</link> object,
+//!	clones a @[Protocols.LysKOM.Request] object,
 //!	and initialises it. @tt{XXX@} is to be read as
 //!	one of the calls in the lyskom protocol. ('-' is replaced
 //!	with '_'.) (ie, logout, async_login or async_cb_get_conf_stat.)
@@ -26,7 +25,6 @@
 
 import ".";
 
-object this=this_object();
 object con; // LysKOM.Raw
 
 //!	Description of the connected server.
@@ -122,8 +120,6 @@ class SyncRequest
       if (!m) return ret;
       else return m;
    }
-
-  string _sprintf(){ return "SyncRequest()"; }
 }
 
 class AsyncRequest
@@ -141,8 +137,6 @@ class AsyncRequest
       req->async(@args);
       return req;
    }
-
-  string _sprintf(){ return "AsyncRequest()"; }
 }
 
 class AsyncCBRequest
@@ -161,15 +155,13 @@ class AsyncCBRequest
       req->async(@args);
       return req;
    }
-
-  string _sprintf(){ return "AsyncCBRequest()"; }
 }
 
 mixed `->(string request)
 {
    program p;
    if ( (p=Request[String.capitalize(request)]) )
-      return SyncRequest(p,this_object());
+      return SyncRequest(p,this);
    else if ( request[..5]=="async_" &&
 	     (p=Request[String.capitalize(request[6..])]) )
       return AsyncRequest(p);
@@ -181,5 +173,3 @@ mixed `->(string request)
 }
 
 mixed `[](string request) { return `->(request); }
-
-string _sprintf(){ return "Connection()"; }

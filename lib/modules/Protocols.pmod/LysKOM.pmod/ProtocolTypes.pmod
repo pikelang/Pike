@@ -3,10 +3,13 @@
 import .Helper;
 
 
+//! Data types as defined by the LysKOM protocol specification.
+
 //
 // automatically generated datatypes
 //
 
+//!
 class LysKOMTime
 {
    int              seconds;                       // INT32
@@ -19,7 +22,9 @@ class LysKOMTime
    int              day_of_year;                   // INT32
    int(0..1)        is_dst;                        // BOOL
 
-  string _sprintf(){ return print(1); }
+  string _sprintf(int t){
+    return t=='O' && sprintf("%O(%s)", this_program, print(1));
+  }
 
    string print(void|int long)
    {
@@ -60,6 +65,7 @@ class LysKOMTime
    }
 }
 
+//!
 class TextStatOld
 {
    LysKOMTime       creation_time;                 // Time
@@ -68,8 +74,6 @@ class TextStatOld
    int              no_of_chars;                   // INT32
    int(0..65535)    no_of_marks;                   // INT16
    array(int)       misc_info;                     // ARRAY Misc-Info
-
-  string _sprintf(){ return "TextStatOld()"; }
 
    void create(string|int|array ... args)
    {
@@ -96,6 +100,7 @@ class TextStatOld
    }
 }
 
+//!
 class TextNumberPair
 {
    int              local_number;                  // Local-Text-No
@@ -116,13 +121,14 @@ class TextNumberPair
          });
    }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("TextNumberPair(%d:%d)",
-		   local_number, global_number);
+    return t=='O' && sprintf("%O(%d:%d)", this_program,
+			     local_number, global_number);
   }
 }
 
+//!
 class LocalToGlobalBlock
 {
   int densep;
@@ -135,13 +141,12 @@ class LocalToGlobalBlock
     if(densep)
       dense=TextList(@args[1..]);
     else
-      sparse=Array.map(args[2..]/2,               // ARRAY Text-Number-Pair
+      sparse=Array.map(args[2]/2,               // ARRAY Text-Number-Pair
 		       lambda(array z) { return TextNumberPair(@z); });
   }
-
-  string _sprintf(){ return "LocalToGlobalBlock()"; }
 }
 
+//!
 class TextMapping
 {
    int              range_begin;                   // Local-Text-No
@@ -159,16 +164,15 @@ class TextMapping
 
    array encode()
    {
+      error("unimplemented\n");
       return
          ({
             range_begin,                           // Local-Text-No
             range_end,                             // Local-Text-No
             later_texts_exists,                    // BOOL
-            @error("unimplemented"),               // Local-To-Global-Block
+            /*@error("unimplemented"),*/           // Local-To-Global-Block
          });
    }
-
-  string _sprintf(){ return "TextMapping()"; }
 }
 
 constant sessionflagsnames = 
@@ -185,6 +189,7 @@ multiset(string) SessionFlags(string bits)
    return res;
 }
 
+//!
 class DynamicSessionInfo
 {
    int              session;                       // Session-No
@@ -216,10 +221,9 @@ class DynamicSessionInfo
             H(what_am_i_doing),                    // HOLLERITH
          });
    }
-
-  string _sprintf(){ return "DynamicSessionInfo()"; }
 }
 
+//!
 class SessionInfo
 {
    int(0..65535)    person;                        // Pers-No
@@ -254,10 +258,9 @@ class SessionInfo
             @connection_time->encode(),            // Time
          });
    }
-
-  string _sprintf(){ return "SessionInfo()"; }
 }
 
+//!
 class WhoInfo
 {
    int(0..65535)    person;                        // Pers-No
@@ -286,8 +289,6 @@ class WhoInfo
             H(username),                           // HOLLERITH
          });
    }
-
-  string _sprintf(){ return "WhoInfo()"; }
 }
 
 constant personalflagsnames = 
@@ -316,6 +317,7 @@ multiset(string) AuxItemFlags(string bits)
    return res;
 }
 
+//!
 class AuxItem
 {
    int              aux_no;                        // Aux-No
@@ -351,9 +353,12 @@ class AuxItem
          });
    }
 
-  string _sprintf(){ return sprintf("AuxItem(%d)", tag); }
+  string _sprintf(int t){
+    return t=='O' && sprintf("%O(%d)", this_program, tag);
+  }
 }
 
+//!
 class TextStat
 {
    LysKOMTime       creation_time;                 // Time
@@ -394,10 +399,9 @@ class TextStat
                                { return z->encode(); }))),
          });
    }
-
-  string _sprintf(){ return "TextStat()"; }
 }
 
+//!
 class InfoOld
 {
    int              version;                       // INT32
@@ -429,8 +433,6 @@ class InfoOld
             motd_of_lyskom,                        // Text-No
          });
    }
-
-  string _sprintf(){ return "InfoOld()"; }
 }
 
 constant membershiptypenames = 
@@ -446,6 +448,7 @@ multiset(string) MembershipType(string bits)
    return res;
 }
 
+//!
 class Membership
 {
    int              position;                      // INT32
@@ -487,10 +490,9 @@ class Membership
             B(@rows(type, membershiptypenames)),   // Membership-Type
          });
    }
-
-  string _sprintf(){ return "Membership()"; }
 }
 
+//!
 class Member
 {
    int(0..65535)    member;                        // Pers-No
@@ -516,10 +518,9 @@ class Member
             B(@rows(type, membershiptypenames)),   // Membership-Type
          });
    }
-
-  string _sprintf(){ return "Member()"; }
 }
 
+//!
 class MembershipOld
 {
    LysKOMTime       last_time_read;                // Time
@@ -549,10 +550,9 @@ class MembershipOld
             @A((array(string))read_texts),         // ARRAY Local-Text-No
          });
    }
-
-  string _sprintf(){ return "MembershipOld()"; }
 }
 
+//!
 class Info
 {
    int              version;                       // INT32
@@ -592,10 +592,9 @@ class Info
                                { return z->encode(); }))),
          });
    }
-
-  string _sprintf(){ return "Info()"; }
 }
 
+//!
 class StaticSessionInfo
 {
    string           username;                      // HOLLERITH
@@ -621,8 +620,6 @@ class StaticSessionInfo
             @connection_time->encode(),            // Time
          });
    }
-
-  string _sprintf(){ return "StaticSessionInfo()"; }
 }
 
 constant extendedconftypenames = 
@@ -639,6 +636,7 @@ multiset(string) ExtendedConfType(string bits)
    return res;
 }
 
+//!
 class TextList
 {
    int              first_local_no;                // Local-Text-No
@@ -659,10 +657,9 @@ class TextList
             @A((array(string))texts),              // ARRAY Text-No
          });
    }
-
-  string _sprintf(){ return "TextList()"; }
 }
 
+//!
 class AuxItemInput
 {
    int              tag;                           // INT32
@@ -688,10 +685,9 @@ class AuxItemInput
             H(data),                               // HOLLERITH
          });
    }
-
-  string _sprintf(){ return "AuxItemInput()"; }
 }
 
+//!
 class WhoInfoIdent
 {
    int(0..65535)    person;                        // Pers-No
@@ -726,8 +722,6 @@ class WhoInfoIdent
             H(ident_user),                         // HOLLERITH
          });
    }
-
-  string _sprintf(){ return "WhoInfoIdent()"; }
 }
 
 constant conftypenames = 
@@ -742,6 +736,7 @@ multiset(string) ConfType(string bits)
    return res;
 }
 
+//!
 class ConfZInfo
 {
    string           name;                          // HOLLERITH
@@ -764,10 +759,9 @@ class ConfZInfo
             conf_no,                               // Conf-No
          });
    }
-
-  string _sprintf(){ return "ConfZInfo()"; }
 }
 
+//!
 class WhoInfoOld
 {
    int(0..65535)    person;                        // Pers-No
@@ -790,11 +784,9 @@ class WhoInfoOld
             H(what_am_i_doing),                    // HOLLERITH
          });
    }
-
-
-  string _sprintf(){ return "WhoInfoOld()"; }
 }
 
+//!
 class Mark
 {
    int              text_no;                       // Text-No
@@ -815,9 +807,12 @@ class Mark
          });
    }
 
-  string _sprintf(){ return sprintf("Mark(%d, text %d)", text_no, type); }
+  string _sprintf(int t){
+    return t=='O' && sprintf("%O(%d, text %d)", this_program, text_no, type);
+  }
 }
 
+//!
 class Conference
 {
    string           name;                          // HOLLERITH
@@ -888,9 +883,12 @@ class Conference
          });
    }
 
-  string _sprintf(){ return sprintf("Conference(%s)", name); }
+  string _sprintf(int t){
+    return t=='O' && sprintf("%O(%s)", this_program, name);
+  }
 }
 
+//!
 class ConferenceOld
 {
    string           name;                          // HOLLERITH
@@ -947,9 +945,12 @@ class ConferenceOld
          });
    }
 
-  string _sprintf(){ return sprintf("ConferenceOld(%s)", name); }
+  string _sprintf(int t){
+    return t=='O' && sprintf("%O(%s)", this_program, name);
+  }
 }
 
+//!
 class SessionInfoIdent
 {
    int(0..65535)    person;                        // Pers-No
@@ -990,10 +991,9 @@ class SessionInfoIdent
             @connection_time->encode(),            // Time
          });
    }
-
-  string _sprintf(){ return "SessionInfoIdent()"; }
 }
 
+//!
 class VersionInfo
 {
    int              protocol_version;              // INT32
@@ -1018,13 +1018,15 @@ class VersionInfo
    }
 
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("VersionInfo(%s version %s; protocol %d)",
-		   server_software, software_version, protocol_version);
+    return t=='O' && sprintf("%O(%s version %s; protocol %d)",
+			     this_program, server_software,
+			     software_version, protocol_version);
   }
 }
 
+//!
 class ConfListArchaic
 {
    array(int(0..65535)) conf_nos;                  // ARRAY Conf-No
@@ -1045,12 +1047,11 @@ class ConfListArchaic
       return
          ({
             @A((array(string))conf_nos),           // ARRAY Conf-No
-            A(`+(@Array.map(conf_types,            // ARRAY Conf-Type
-                            lambda(multiset(string) z) 
-                               { return B(@rows(z,conftypenames)); }))),
+            A(Array.map(conf_types,                // ARRAY Conf-Type
+			lambda(multiset(string) z) 
+			{ return B(@rows(z,conftypenames)); })),
          });
    }
-  string _sprintf(){ return "ConfListArchaic()"; }
 }
 
 constant privbitsnames = 
@@ -1068,6 +1069,7 @@ multiset(string) PrivBits(string bits)
    return res;
 }
 
+//!
 class UConference
 {
    string           name;                          // HOLLERITH
@@ -1093,10 +1095,9 @@ class UConference
             nice,                                  // Garb-Nice
          });
    }
-
-  string _sprintf(){ return "UConference()"; }
 }
 
+//!
 class Person
 {
    string           username;                      // HOLLERITH
@@ -1162,5 +1163,7 @@ class Person
          });
    }
 
-  string _sprintf(){ return sprintf("Person(%s)", username); }
+  string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%s)", this_program, username);
+  }
 }

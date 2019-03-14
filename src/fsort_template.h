@@ -1,20 +1,40 @@
 /*
- * $Id: fsort_template.h,v 1.10 2001/09/24 17:07:13 grubba Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "stuff.h"
+
+#ifdef SORT_BY_INDEX
+/* Sort by index. */
+
+#ifndef SWAP
+#error SWAP required when SORT_BY_INDEX is defined.
+#endif
+
+#define PTYPE ptrdiff_t
+
+#else  /* !SORT_BY_INDEX */
+/* Sort by pointer. */
 
 #ifndef SWAP
 #define UNDEF_SWAP
-#define SWAP(X,Y) { tmp=*(X); *(X)=*(Y); *(Y)=tmp; }
+#define SWAP(X,Y) { TYPE tmp=*(X); *(X)=*(Y); *(Y)=tmp; }
 #endif
+
+#define PTYPE TYPE *
+
+#endif	/* !SORT_BY_INDEX */
 
 #ifndef STEP
 #define UNDEF_STEP
-#define STEP(X,Y) (&((X)[(Y)]))
+#define STEP(X,Y) ((X) + (Y))
 #endif
 
 #define INC(X) X=STEP(X,1)
 #define DEC(X) X=STEP(X,-1)
-#define SIZE ((ptrdiff_t)(char *)STEP((TYPE *)0,1))
+#define SIZE PTR_TO_INT(STEP((PTYPE)0,1))
 
 #define PARENT(X) (((X)-1)>>1)
 #define CHILD1(X) (((X)<<1)+1)
@@ -22,8 +42,8 @@
 #define MKNAME(X) MKNAME2(ID,X)
 #define MKNAME2(X,Y) PIKE_CONCAT(X,Y)
 
-static void MKNAME(_do_sort)(register TYPE *bas,
-			       register TYPE *last,
+static void MKNAME(_do_sort)(register PTYPE bas,
+			       register PTYPE last,
 			       int max_recursion
 #ifdef EXTRA_ARGS
 			       EXTRA_ARGS
@@ -33,7 +53,11 @@ static void MKNAME(_do_sort)(register TYPE *bas,
 #endif
   )
 {
-  register TYPE *a, *b, tmp;
+  register PTYPE a;
+  register PTYPE b;
+#ifdef EXTRA_LOCALS
+  EXTRA_LOCALS
+#endif
 
   while(bas < last)
   {
@@ -82,7 +106,7 @@ static void MKNAME(_do_sort)(register TYPE *bas,
 	if(d_flag>1)
 	  for(x=howmany-1;x;x--)
 	    if( CMP( STEP(bas,x-1), STEP(bas,x)  ) > 0)
-	      fatal("Sorting failed!\n");
+	      Pike_fatal("Sorting failed!\n");
 #endif
 	
 	return;
@@ -94,62 +118,67 @@ static void MKNAME(_do_sort)(register TYPE *bas,
       while(a < b)
       {
 #if 1
-	while(a<b)
+	while(1)
 	{
-	  while(1)
-	  {
-	    if(a<=b && CMP(a,bas) <= 0)
-	      INC(a);
-	    else
-	    {
-	      while(a< b && CMP(bas,b) <= 0) DEC(b);
-	      break;
-	    }
-	    if(a< b && CMP(bas,b) <= 0)
-	      DEC(b);
-	    else
-	    {
-	      while(a<=b && CMP(a,bas) <= 0) INC(a);
-	      break;
-	    }
-	  }
-	  
-	  if(a<b)
-	  {
-	    SWAP(a,b);
+	  if(a<=b && CMP(a,bas) <= 0)
 	    INC(a);
-	    if(b > STEP(a,1)) DEC(b);
+	  else
+	  {
+	    while(a< b && CMP(bas,b) <= 0) DEC(b);
+	    break;
+	  }
+	  if(a< b && CMP(bas,b) <= 0)
+	    DEC(b);
+	  else
+	  {
+	    while(a<=b && CMP(a,bas) <= 0) INC(a);
+	    break;
 	  }
 	}
 #else
 	while(a<=b && CMP(a,bas) < 0) INC(a);
 	while(a< b && CMP(bas,b) < 0) DEC(b);
+#endif
 	if(a<b)
 	{
 	  SWAP(a,b);
 	  INC(a);
 	  if(b > STEP(a,1)) DEC(b);
 	}
-#endif
       }
+
       DEC(a);
-      SWAP(a,bas);
-      DEC(a);
+      if( a != bas ) {
+	SWAP(a,bas);
+	DEC(a);
       
-      if(  (char *)a - (char *)bas < (char *)last - (char *)b )
+	if(  (char *)a - (char *)bas < (char *)last - (char *)b )
+        {
+	  MKNAME(_do_sort)(bas,a,max_recursion XARGS);
+	  bas=b;
+	} else {
+	  MKNAME(_do_sort)(b,last,max_recursion XARGS);
+	  last=a;
+	}
+      }
+      else
       {
-	MKNAME(_do_sort)(bas,a,max_recursion XARGS);
-	bas=b;
-      } else {
-	MKNAME(_do_sort)(b,last,max_recursion XARGS);
-	last=a;
+	DEC(a);
+	if( STEP(0,-1) < (char *)last - (char *)b )
+	{
+	  MKNAME(_do_sort)(bas,a,max_recursion XARGS);
+	  bas=b;
+	} else {
+	  MKNAME(_do_sort)(b,last,max_recursion XARGS);
+	  last=a;
+	}
       }
     }
   }
 }
 
-void ID(register TYPE *bas,
-	register TYPE *last
+void ID(register PTYPE bas,
+	register PTYPE last
 #ifdef EXTRA_ARGS
 	EXTRA_ARGS
 #endif
@@ -159,6 +188,7 @@ void ID(register TYPE *bas,
 }
 
 
+#undef PTYPE
 #undef INC
 #undef DEC
 #undef PARENT

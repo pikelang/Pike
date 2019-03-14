@@ -1,17 +1,15 @@
 /*
- * $Id: bytecode.c,v 1.4 2001/07/20 13:28:03 grubba Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Default bytecode assembler for Pike.
- *
  */
 
 void ins_f_byte(unsigned int b)
 {
-#ifdef PIKE_DEBUG
-  if(store_linenumbers && b<F_MAX_OPCODE)
-    ADD_COMPILED(b);
-#endif /* PIKE_DEBUG */
-
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
   if(b>255)
@@ -21,8 +19,9 @@ void ins_f_byte(unsigned int b)
   add_to_program((unsigned char)b);
 }
 
-void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
+void ins_f_byte_with_arg(unsigned int a, INT32 bb)
 {
+  unsigned INT32 b = bb;
   switch(b >> 8)
   {
   case 0 : break;
@@ -51,9 +50,10 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 }
 
 void ins_f_byte_with_2_args(unsigned int a,
-			    unsigned INT32 c,
-			    unsigned INT32 b)
+			    INT32 c,
+			    INT32 bb)
 {
+  unsigned INT32 b = bb;
   switch(b >> 8)
   {
   case 0 : break;
@@ -80,4 +80,3 @@ void ins_f_byte_with_2_args(unsigned int a,
   ins_f_byte_with_arg(a,c);
   add_to_program((PIKE_OPCODE_T)b);
 }
-

@@ -1,39 +1,34 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* Dream SNES Image file */
 
 #include "global.h"
-RCSID("$Id: dsi.c,v 1.3 2000/12/01 08:10:04 hubbe Exp $");
-
 #include "image_machine.h"
 
-#include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
-#include "module_support.h"
 #include "interpret.h"
 #include "object.h"
 #include "svalue.h"
-#include "threads.h"
-#include "array.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "pike_error.h"
-#include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
-#include "dynamic_buffer.h"
-#include "signal_handler.h"
-#include "bignum.h"
 
 #include "image.h"
 #include "colortable.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_program;
 
-void f__decode( INT32 args )
+static void f__decode( INT32 args )
 {
   int xs, ys, x, y;
   unsigned char *data, *dp;
@@ -41,7 +36,7 @@ void f__decode( INT32 args )
   struct object *i, *a;
   struct image *ip, *ap;
   rgb_group black = {0,0,0};
-  if( sp[-args].type != T_STRING )
+  if( TYPEOF(sp[-args]) != T_STRING )
     Pike_error("Illegal argument 1 to Image.DSI._decode\n");
   data = (unsigned char *)sp[-args].u.string->str;
   len = (size_t)sp[-args].u.string->len;
@@ -96,7 +91,7 @@ void f__decode( INT32 args )
   f_aggregate_mapping( 4 );
 }
 
-void f_decode( INT32 args )
+static void f_decode( INT32 args )
 {
   f__decode( args );
   push_constant_text( "image" );
@@ -105,8 +100,8 @@ void f_decode( INT32 args )
 
 void init_image_dsi()
 {
-  add_function("_decode", f__decode, "function(string:mapping)", 0);
-  add_function("decode", f_decode, "function(string:object)", 0);
+  ADD_FUNCTION("_decode", f__decode, tFunc(tStr,tMapping), 0);
+  ADD_FUNCTION("decode", f_decode, tFunc(tStr,tObj), 0);
 }
 
 

@@ -1,0 +1,33 @@
+/* -*- C -*- */
+class GTK2.HScrollbar;
+inherit GTK2.Scrollbar;
+
+//! A horizontal scrollbar.<p>
+//! General documentation: See W(Scrollbar)
+//! IMG: GTK2.HScrollbar(GTK2.Adjustment())->set_size_request(300,15)
+//!</p>
+
+void create(GTK2.Adjustment|mapping(string:mixed)|void adjustment_or_props)
+//! Used to create a new hscrollbar widget.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+      struct object *o1;
+      GtkWidget *gh;
+      get_all_args("create",args,"%o",&o1);
+      gh=gtk_hscrollbar_new(GTK_ADJUSTMENT(get_gobject(o1)));
+      THIS->obj=G_OBJECT(gh);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_HSCROLLBAR);
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gh;
+    gh=gtk_hscrollbar_new(NULL);
+    THIS->obj=G_OBJECT(gh);
+  }
+  pgtk2__init_this_object();
+}
+

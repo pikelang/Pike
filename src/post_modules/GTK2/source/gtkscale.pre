@@ -1,0 +1,79 @@
+/* -*- C -*- */
+class GTK2.Scale;
+inherit GTK2.Range;
+
+//! The GTK2.Scale widget is an abstract class, used only for deriving
+//! the subclasses GTK2.Hscale and GTK2.Vscale.
+//! <p>
+//! See W(Range) for generic range documentation
+//! </p>
+
+//! Properties:
+//! int digits
+//! int draw-value
+//! int value-pos
+//! <p>
+//! Style properties:
+//! int slider-length
+//! int value-spacing
+
+signal format_value;
+
+require gtk22;
+//! Adds a mark at @[value].
+//!
+//! A mark is indicated visually by drawing a tick mark next to the
+//! scale, and GTK+ makes it easy for the user to position the scale
+//! exactly at the marks value.
+//!
+//! If @[markup] is specified, text is shown next to the tick mark.
+void add_mark(float value, int pos, ?string markup );
+
+//! Removes any marks that have been added with add_mark().
+void clear_marks();
+endrequire;
+
+void set_digits(int precision);
+//! Sets the number of decimal places that are displayed in the value.
+
+void set_draw_value(int drawp);
+//! Specifies whether the current value is displayed as a string next
+//! to the slider.
+
+void set_value_pos( int where );
+//! Sets the position in which the current value is displayed. One of
+//! CONST(GTK_POS)
+
+int get_digits();
+//! Gets the number of decimal places that are displayed.
+
+int get_draw_value();
+//! Returns whether the current value is displayed as a string next to the
+//! slider.
+
+int get_value_pos();
+//! Gets the position in which the current value is displayed.
+
+require pango;
+require gtk24;
++Pango.Layout get_layout();
+//! Gets the Pango.Layout used to display the scale.
+
+mapping(string:int) get_layout_offsets()
+//! Obtains the coordinates where the scale will draw the Pango.Layout
+//! representing the text in the scale.  Remember when using the Pango.Layout
+//! function you need to convert to and from pixels using PANGO_SCALE.
+{
+  pgtk2_verify_inited();
+  {
+    gint x,y;
+    pgtk2_pop_n_elems(args);
+    gtk_scale_get_layout_offsets(GTK_SCALE(THIS->obj),&x,&y);
+    ref_push_string(_STR("x")); push_int(x);
+    ref_push_string(_STR("y")); push_int(y);
+    f_aggregate_mapping(4);
+  }
+}
+endrequire;
+endrequire;
+

@@ -1,6 +1,5 @@
-/build
-/img
-/manual
-/manual.xml
-/html_manual
-/manual-tree-split
+/modref
+/onepage
+/traditional_manual
+/pelix_modref
+/autodoc.xml

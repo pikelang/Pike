@@ -1,7 +1,11 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "stralloc.h"
-#include "global.h"
-RCSID("$Id: unicode_module.cmod,v 1.2 2001/06/28 19:19:02 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -15,127 +19,213 @@ RCSID("$Id: unicode_module.cmod,v 1.2 2001/06/28 19:19:02 per Exp $");
 #include "normalize.h"
 #include "split.h"
 #include "buffer.h"
+#include "uversion.h"
+#include "rtl.h"
 
-/* must be included last */
-#include "module_magic.h"
+DECLARATIONS
 
-static void push_words( int *d, struct words *w )
+/*! @module Unicode
+ */
+
+static void push_words( struct buffer *data, struct words *w )
 {
+  const p_wchar2 *d = data->data;
   struct array *r = allocate_array( w->size );
   unsigned int i;
-  
   for( i=0; i<w->size; i++ )
   {
-    r->item[i].type = PIKE_T_STRING;
-    r->item[i].u.string =
-      make_shared_binary_string2( d+w->words[i].start,
-				  w->words[i].size );
+    SET_SVAL(r->item[i], PIKE_T_STRING, 0, string,
+	     make_shared_binary_string2( d+w->words[i].start,
+					 w->words[i].size ));
   }
+  r->type_field = BIT_STRING;
   push_array( r );
+  uc_buffer_free( data );
   uc_words_free( w );
 }
 
-
+/*! @decl array(string) split_words(string input)
+ *! Splits the input string into an array of words, on the boundaries between
+ *! the different kinds of word characters as defined by @[is_wordchar]. The
+ *! result is an array of words, with the non-word characters between them
+ *! thrown away.
+ */
 PIKEFUN array(string) split_words( string input )
+     optflags OPT_TRY_OPTIMIZE;
 {
   struct words *res;
   struct buffer * data;
   data = uc_buffer_from_pikestring( input );
   res = unicode_split_words_buffer( data );
   pop_n_elems( args );
-  push_words( data->data, res );
-  uc_buffer_free( data );
+  push_words( data, res );
 }
 
+/*! @decl array(string) split_words_and_normalize(string input)
+ *!
+ *! A less wasteful equivalent of
+ *! @expr{@[split_words](@[normalize](@[input], "NFKD"))@}.
+ */
 PIKEFUN array(string) split_words_and_normalize( string input )
+     optflags OPT_TRY_OPTIMIZE;
 {
   struct words *res;
-  struct buffer *data;
-  data = unicode_decompose_buffer(uc_buffer_from_pikestring(input), COMPAT_BIT);
-  res = unicode_split_words_buffer( data );
-  pop_n_elems( args );
-  push_words( data->data, res );
-  uc_buffer_free( data );
+  {
+    struct buffer *data;
+    data = uc_buffer_from_pikestring(input);
+    pop_n_elems( args );
+    data = unicode_decompose_buffer( data, COMPAT_BIT );
+    res = unicode_split_words_buffer( data );
+    push_words( data, res );
+  }
 }
 
+/*! @decl string normalize( string data, string method );
+ *!
+ *! Normalize the given unicode string according to the specified method.
+ *! 
+ *! The methods are:
+ *!
+ *!  NFC, NFD, NFKC and NFKD.
+ *!  
+ *! The methods are described in detail in the UAX #15 document, which
+ *! can currently be found at
+ *! http://www.unicode.org/unicode/reports/tr15/tr15-21.html
+ *!
+ *! A short description:
+ *! 
+ *! C and D specifies whether to decompose (D) complex characters to
+ *! their parts, or compose (C) single characters to complex ones.
+ *!
+ *! K specifies whether or not do a canonical or compatibility
+ *! conversion. When K is present, compatibility transformations are
+ *! performed as well as the canonical transformations.
+ *!
+ *! @i{In the following text, 'X' denotes the single character 'X', even
+ *!  if there is more than one character inside the quotation marks. 
+ *!  The reson is that it's somewhat hard to describe unicode in
+ *!  iso-8859-1.@}
+ *!
+ *! The Unicode Standard defines two equivalences between characters:
+ *! canonical equivalence and compatibility equivalence. Canonical
+ *! equivalence is a basic equivalency between characters or
+ *! sequences of characters. 
+ *!
+ *! 'Å'  and  'A' '° (combining ring above)' are canonically equivalent.
+ *!
+ *! For round-trip compatibility with existing standards, Unicode has
+ *! encoded many entities that are really variants of existing nominal
+ *! characters. The visual representations of these character are
+ *! typically a subset of the possible visual representations of the
+ *! nominal character. These are given compatibility decompositions in
+ *! the standard. Because the characters are visually distinguished,
+ *! replacing a character by a compatibility equivalent may lose
+ *! formatting information unless supplemented by markup or styling.
+ *!
+ *! Examples of compatibility equivalences:
+ *! @ul
+ *!   @item
+ *!     Font variants (thin, italic, extra wide characters etc)
+ *!   @item
+ *!     Circled and squared characters
+ *!   @item
+ *!     super/subscript ('²' -> '2')
+ *!   @item
+ *!     Fractions       ('½' -> '1/2')
+ *!   @item
+ *!     Other composed characters ('fi' -> 'f' 'i',  'kg' -> 'k' 'g')
+ *! @endul
+ *!
+ */
 PIKEFUN string normalize( string s, string flags )
- //! @decl string normalize( string data, string method );
- //!
- //! Normalize the given unicode string according to the specified method.
- //! 
- //! The methods are:
- //!
- //!  NFC, NFD, NFKC and NFKD.
- //!  
- //! The methods are described in detail in the UAX #15 document, which
- //! can currently be found at
- //! http://www.unicode.org/unicode/reports/tr15/tr15-21.html
- //!
- //! A short description:
- //! 
- //! C and D specifies whether to decompose (D) complex characters to
- //! their parts, or compose (C) single characters to complex ones.
- //!
- //! K specifies whether or not do a canonical or compatibility
- //! conversion. When K is present, compatibility transformations are
- //! performed as well as the canonical transformations.
- //!
- //! @i{In the following text, 'X' denotes the single character 'X', even
- //!  if there is more than one character inside the quotation marks. 
- //!  The reson is that it's somewhat hard to describe unicode in
- //!  iso-8859-1.@}
- //!
- //! The Unicode Standard defines two equivalences between characters:
- //! canonical equivalence and compatibility equivalence. Canonical
- //! equivalence is a basic equivalency between characters or
- //! sequences of characters. 
- //!
- //! 'Å'  and  'A' '° (combining ring above)' are canonically equivalent.
- //!
- //! For round-trip compatibility with existing standards, Unicode has
- //! encoded many entities that are really variants of existing nominal
- //! characters. The visual representations of these character are
- //! typically a subset of the possible visual representations of the
- //! nominal character. These are given compatibility decompositions in
- //! the standard. Because the characters are visually distinguished,
- //! replacing a character by a compatibility equivalent may lose
- //! formatting information unless supplemented by markup or styling.
- //!
- //! Examples of compatibility equivalences:
- //!   o Font variants (thin, italic, extra wide characters etc)
- //!   o Circled and squared characters
- //!   o super/subscript ('²' -> '2')
- //!   o Fractions       ('½' -> '1/2')
- //!   o Other composed characters ('fi' -> 'f' 'i',  'kg' -> 'k' 'g')
- //!
- //! 'kg' is equivalent to 'k' 'g'
+     optflags OPT_TRY_OPTIMIZE;
 {
   int _flags=0, i;
 
   for( i = 0; i<flags->len; i++ )
     switch( flags->str[ i ] )
     {
-      case 'K': _flags|=1; break;
-      case 'C': _flags|=2; break;
+      case 'K': _flags |= COMPAT_BIT; break;
+      case 'C': _flags |= COMPOSE_BIT; break;
     }
 
   RETURN unicode_normalize( s, _flags );
 }
 
+/*! @decl int is_wordchar(int c)
+ *! Returns whether a unicode character @[c] is a word, part of a word or not.
+ *! @returns
+ *!   @int
+ *!     @value 2
+ *!       The character is an ideograph (a CJK single-word character)
+ *!     @value 1
+ *!       The character is a letter, number or non-spacing mark, as defined by
+ *!       its unicode (general category) specification
+ *!     @value 0
+ *!       Any other character (such as symbols, punctuation and separators)
+ *!   @endint
+ */
 PIKEFUN int is_wordchar( int c )
+     optflags OPT_TRY_OPTIMIZE;
 {
   RETURN unicode_is_wordchar( c );
 }
 
+static int is_rtl_char( int c )
+{
+  unsigned int rtl=0, i;
+  for(i=0; i<sizeof(_rtl); i++)
+  {
+    if(c<_rtl[i]) return rtl;
+    rtl ^= 1;
+  }
+  return 0;
+}
 
-void pike_module_init()
+/*! @decl int is_rtlchar( int c )
+ *! Returns @expr{1@} if the character is a RTL character or
+ *! indicator, otherwise @expr{0@}.
+ */
+PIKEFUN int is_rtlchar( int c )
+  optflags OPT_TRY_OPTIMIZE;
+{
+  RETURN is_rtl_char(c);
+}
+
+/*! @decl int is_rtlstring( string s )
+ *! Returns @expr{1@} if the string contains RTL characters or
+ *! RTL indicators, otherwise @expr{0@}.
+ */
+PIKEFUN int is_rtlstring( string s )
+  optflags OPT_TRY_OPTIMIZE;
+{
+  int shift, len;
+  char *str;
+  shift = s->size_shift;
+  if( shift==0 ) RETURN 0;
+  len = s->len;
+  str = s->str;
+  while( --len )
+    if( is_rtl_char(INDEX_CHARP(str,len,shift)) ) RETURN 1;
+  RETURN 0;
+}
+
+/*! @decl constant version
+ *! Contains the version of the current Unicode database as a string,
+ *! e.g. @expr{"5.0.0"@}.
+ */
+
+/*! @endmodule
+ */
+
+PIKE_MODULE_INIT
 {
   INIT
   unicode_normalize_init();
+  add_string_constant("version", UVERSION, 0);
 }
 
-void pike_module_exit()
+PIKE_MODULE_EXIT
 {
   EXIT
 }
-

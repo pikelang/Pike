@@ -1,9 +1,11 @@
-/* $Id: image.c,v 1.192 2001/09/24 11:13:36 grubba Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /*
 **! module Image
-**! note
-**!	$Id: image.c,v 1.192 2001/09/24 11:13:36 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -69,7 +71,9 @@
 **!	<ref>outline</ref>
 **!	<ref>select_from</ref>, 
 **!	<ref>rgb_to_hsv</ref>,
-**!	<ref>hsv_to_rgb</ref>,<br>
+**!	<ref>hsv_to_rgb</ref>,
+**!	<ref>rgb_to_yuv</ref>,
+**!	<ref>yuv_to_rgb</ref>,<br>
 **!
 **!	<ref>average</ref>,
 **!	<ref>max</ref>,
@@ -98,16 +102,13 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.192 2001/09/24 11:13:36 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
 #include "pike_error.h"
-#include "operators.h"
 #include "module_support.h"
 
 
@@ -119,12 +120,12 @@ RCSID("$Id: image.c,v 1.192 2001/09/24 11:13:36 grubba Exp $");
 #include "assembly.h"
 #endif
 
-/* This must be included last! */
-#include "module_magic.h"
 
+#define sp Pike_sp
 
 extern struct program *image_program;
 extern struct program *image_colortable_program;
+extern struct program *image_color_program;
 
 #ifdef THIS
 #undef THIS /* Needed for NT */
@@ -174,7 +175,7 @@ static void chrono(char *x)
 
 /***************** init & exit *********************************/
 
-static void init_image_struct(struct object *obj)
+static void init_image_struct(struct object *UNUSED(obj))
 {
   THIS->img=NULL;
   THIS->rgb.r=0;
@@ -185,7 +186,7 @@ static void init_image_struct(struct object *obj)
 /*  fprintf(stderr,"init %lx (%d)\n",obj,++obj_counter);*/
 }
 
-static void exit_image_struct(struct object *obj)
+static void exit_image_struct(struct object *UNUSED(obj))
 {
   if (THIS->img) { free(THIS->img); THIS->img=NULL; }
 /*
@@ -230,14 +231,14 @@ static INLINE int getrgb(struct image *img,
    if (max<3 || args-args_start<3) return 0;
 
    for (i=0; i<3; i++)
-      if (sp[-args+i+args_start].type!=T_INT)
+      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
          Pike_error("Illegal r,g,b argument to %s\n",name);
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
 
-   if (max > 3 && args-args_start>=4) 
-      if (sp[3-args+args_start].type!=T_INT)
+   if (max > 3 && args-args_start>=4)
+      if (TYPEOF(sp[3-args+args_start]) != T_INT)
       {
          Pike_error("Illegal alpha argument to %s\n",name);
 	 return 0; /* avoid stupid warning */
@@ -259,7 +260,7 @@ static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *nam
    INT32 i;
    if (args-args_start<3) return;
    for (i=0; i<3; i++)
-      if (sp[-args+i+args_start].type!=T_INT)
+      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
          Pike_error("Illegal r,g,b argument to %s\n",name);
    rgb->r=sp[-args+args_start].u.integer;
    rgb->g=sp[1-args+args_start].u.integer;
@@ -370,12 +371,12 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 }
 
 
-void img_apply_matrix(struct image *dest,
-		      struct image *img,
-		      int width,int height,
-		      rgbd_group *matrix,
-		      rgb_group default_rgb,
-		      double div)
+static void img_apply_matrix(struct image *dest,
+			     struct image *img,
+			     int width,int height,
+			     rgbd_group *matrix,
+			     double div,
+			     rgb_group default_rgb)
 {
    rgb_group *d,*ip,*dp;
    rgbd_group *mp;
@@ -405,11 +406,10 @@ THREADS_ALLOW();
    ex=width-bx;
    ey=height-by;
    
-   d=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
 THREADS_DISALLOW();
 
-   if(!d) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
-   
+   d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize + RGB_VEC_PAD);
+
 THREADS_ALLOW();
 CHRONO("apply_matrix, one");
 
@@ -492,6 +492,7 @@ THREADS_DISALLOW();
 
 /*
 **! method void create()
+**! method void create(Image.Image image)
 **! method void create(int xsize,int ysize)
 **! method void create(int xsize,int ysize,Color color)
 **! method void create(int xsize,int ysize,int r,int g,int b)
@@ -512,16 +513,19 @@ THREADS_DISALLOW();
 **!	for convinience:
 **!
 **!	<pre>
-**!	channel modes; followed by a number of 1-char-per-pixel strings 
-**!	or image objects (where red channel will be used), 
+**!	channel modes; followed by a number of 1-char-per-pixel strings
+**!	or image objects (where red channel will be used),
 **!	or an integer value:
 **!	  "grey" : make a grey image (needs 1 source: grey)
 **!	  "rgb"  : make an rgb image (needs 3 sources: red, green and blue)
 **!	  "cmyk" : make a rgb image from cmyk (cyan, magenta, yellow, black)
+**!	  "adjusted_cmyk" : make a rgb image from cmyk
+**!                (cyan, magenta, yellow, black) where the colors aren't
+**!                100% pure (C: 009ee0, M: e2007a, Y: ffec00, K: 1a171b).
 **!
 **!	generate modes; all extra arguments is given to the
 **!	generation function. These has the same name as the method:
-**!	  "<ref>test</ref>," 
+**!	  "<ref>test</ref>,"
 **!	  "<ref>gradients</ref>"
 **!	  "<ref>noise</ref>"
 **!	  "<ref>turbulence</ref>"
@@ -531,6 +535,8 @@ THREADS_DISALLOW();
 **!	  "<ref>tuned_box</ref>" (coordinates is automatic)
 **!	</pre>
 **!
+**! arg Image.Image image
+**!     Image to clone.
 **! arg int xsize
 **! arg int ysize
 **! 	size of (new) image in pixels
@@ -545,7 +551,7 @@ THREADS_DISALLOW();
 **! see also: copy, clone, Image.Image
 **! bugs
 **!	SIGSEGVS can be caused if the size is too big, due
-**!	to unchecked overflow - 
+**!	to unchecked overflow -
 **!	(xsize*ysize)&MAXINT is small enough to allocate.
 */
 
@@ -576,7 +582,7 @@ void img_read_get_channel(int arg,char *name,INT32 args,
    struct image *img;
    if (arg>args)
       SIMPLE_TOO_FEW_ARGS_ERROR("create_method",1+arg);
-   switch (sp[arg-args-1].type)
+   switch (TYPEOF(sp[arg-args-1]))
    {
       case T_INT:
 	 *c=(COLORTYPE)sp[arg-args-1].u.integer;
@@ -606,7 +612,8 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 		  "uninitialized image object\n",arg+1,name);
 	 if (img->xsize!=THIS->xsize || img->ysize!=THIS->ysize) 
 	    Pike_error("create_method: argument %d (%s channel): "
-		  "size is wrong, %dx%d; expected %dx%d\n",
+		  "size is wrong, %"PRINTPIKEINT"dx%"PRINTPIKEINT"d;"
+		       " expected %"PRINTPIKEINT"dx%"PRINTPIKEINT"d\n",
 		  arg+1,name,img->xsize,img->ysize,
 		  THIS->xsize,THIS->ysize);
 	 *s=(COLORTYPE*)img->img;
@@ -626,7 +633,7 @@ void img_read_grey(INT32 args)
    int n=THIS->xsize*THIS->ysize;
    rgb_group *d;
    img_read_get_channel(1,"grey",args,&m1,&s1,&c1);
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n);
+   d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
    switch (m1)
    {
       case 0: MEMSET(d,c1,n*sizeof(rgb_group)); break;
@@ -644,7 +651,7 @@ void img_read_rgb(INT32 args)
    img_read_get_channel(1,"red",args,&m1,&s1,&(rgb.r));
    img_read_get_channel(2,"green",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"blue",args,&m3,&s3,&(rgb.b));
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n);
+   d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    switch (m1|(m2<<4)|(m3<<4))
    {
@@ -698,13 +705,85 @@ void img_read_cmyk(INT32 args)
    img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
    img_read_get_channel(4,"black",args,&m4,&s4,&k);
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n);
+   d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    while (n--)
    {
-      d->r=COLORMAX-*s1-*s4;
-      d->g=COLORMAX-*s2-*s4;
-      d->b=COLORMAX-*s3-*s4;
+      d->r = ((COLORMAX-*s1)*(COLORMAX-*s4))/COLORMAX;
+      d->g = ((COLORMAX-*s2)*(COLORMAX-*s4))/COLORMAX;
+      d->b = ((COLORMAX-*s3)*(COLORMAX-*s4))/COLORMAX;
+      s1+=m1;
+      s2+=m2;
+      s3+=m3;
+      s4+=m4;
+      d++;
+   }
+}
+
+/* Ink colors for C, M, Y & K. */
+#define CMYK_CR	0x00
+#define CMYK_CG	0x9e
+#define CMYK_CB	0xe0
+#define CMYK_MR	0xe2
+#define CMYK_MG	0x00
+#define CMYK_MB	0x7a
+#define CMYK_YR	0xff
+#define CMYK_YG	0xec
+#define CMYK_YB	0x00
+#define CMYK_KR	0x1a
+#define CMYK_KG	0x17
+#define CMYK_KB	0x1b
+void img_read_adjusted_cmyk(INT32 args)
+{
+   int m1,m2,m3,m4;
+   unsigned char *s1,*s2,*s3,*s4;
+   int n=THIS->xsize*THIS->ysize;
+   rgb_group *d,rgb;
+   COLORTYPE k;
+   img_read_get_channel(1,"cyan",args,&m1,&s1,&(rgb.r));
+   img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
+   img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
+   img_read_get_channel(4,"black",args,&m4,&s4,&k);
+   d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
+
+   while (n--)
+   {
+      unsigned char c = *s1;
+      unsigned char m = *s2;
+      unsigned char y = *s3;
+      unsigned char k = *s4;
+      unsigned long tmp;
+      /* Mix the channels multiplicatively. */
+      tmp = 255*255;
+      tmp *= 255*255-(255-CMYK_CR)*c;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_MR)*m;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_YR)*y;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_KR)*k;
+      tmp /= 255*255*255;
+      d->r = tmp;
+      tmp = 255*255;
+      tmp *= 255*255-(255-CMYK_CG)*c;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_MG)*m;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_YG)*y;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_KG)*k;
+      tmp /= 255*255*255;
+      d->g = tmp;
+      tmp = 255*255;
+      tmp *= 255*255-(255-CMYK_CB)*c;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_MB)*m;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_YB)*y;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_KB)*k;
+      tmp /= 255*255*255;
+      d->b = tmp;
       s1+=m1;
       s2+=m2;
       s3+=m3;
@@ -722,7 +801,7 @@ void img_read_cmy(INT32 args)
    img_read_get_channel(1,"cyan",args,&m1,&s1,&(rgb.r));
    img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n);
+   d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    while (n--)
    {
@@ -740,30 +819,32 @@ static void image_gradients(INT32 args);
 static void image_tuned_box(INT32 args);
 static void image_test(INT32 args);
 
+static struct pike_string *s_grey,*s_rgb,*s_cmyk,*s_adjusted_cmyk,*s_cmy;
+static struct pike_string *s_test,*s_gradients,*s_noise,*s_turbulence,
+  *s_random,*s_randomgrey,*s_tuned_box;
+
 void image_create_method(INT32 args)
 {
-   static struct pike_string *s_grey,*s_rgb,*s_cmyk,*s_cmy;
-   static struct pike_string *s_test,*s_gradients,*s_noise,*s_turbulence,
-      *s_random,*s_randomgrey,*s_tuned_box;
    struct image *img;
 
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("create_method",1);
 
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_BAD_ARG_ERROR("create_method",1,"string");
 
-   MAKE_CONSTANT_SHARED_STRING(s_grey,"grey");
-   MAKE_CONSTANT_SHARED_STRING(s_rgb,"rgb");
-   MAKE_CONSTANT_SHARED_STRING(s_cmyk,"cmyk");
-   MAKE_CONSTANT_SHARED_STRING(s_cmy,"cmy");
-   MAKE_CONSTANT_SHARED_STRING(s_test,"test");
-   MAKE_CONSTANT_SHARED_STRING(s_gradients,"gradients");
-   MAKE_CONSTANT_SHARED_STRING(s_noise,"noise");
-   MAKE_CONSTANT_SHARED_STRING(s_turbulence,"turbulence");
-   MAKE_CONSTANT_SHARED_STRING(s_random,"random");
-   MAKE_CONSTANT_SHARED_STRING(s_randomgrey,"randomgrey");
-   MAKE_CONSTANT_SHARED_STRING(s_tuned_box,"tuned_box");
+   MAKE_CONST_STRING(s_grey,"grey");
+   MAKE_CONST_STRING(s_rgb,"rgb");
+   MAKE_CONST_STRING(s_cmyk,"cmyk");
+   MAKE_CONST_STRING(s_adjusted_cmyk,"adjusted_cmyk");
+   MAKE_CONST_STRING(s_cmy,"cmy");
+   MAKE_CONST_STRING(s_test,"test");
+   MAKE_CONST_STRING(s_gradients,"gradients");
+   MAKE_CONST_STRING(s_noise,"noise");
+   MAKE_CONST_STRING(s_turbulence,"turbulence");
+   MAKE_CONST_STRING(s_random,"random");
+   MAKE_CONST_STRING(s_randomgrey,"randomgrey");
+   MAKE_CONST_STRING(s_tuned_box,"tuned_box");
 
    if (THIS->xsize<=0 || THIS->ysize<=0)
       Pike_error("create_method: image size is too small\n");
@@ -789,9 +870,16 @@ void image_create_method(INT32 args)
       ref_push_object(THISOBJ);
       return;
    }
+   if (sp[-args].u.string==s_adjusted_cmyk)
+   {
+      img_read_adjusted_cmyk(args-1);
+      pop_n_elems(2);
+      ref_push_object(THISOBJ);
+      return;
+   }
    if (sp[-args].u.string==s_cmy)
    {
-      img_read_cmyk(args-1);
+      img_read_cmy(args-1);
       pop_n_elems(2);
       ref_push_object(THISOBJ);
       return;
@@ -799,8 +887,20 @@ void image_create_method(INT32 args)
 
    if (sp[-args].u.string==s_test)
       image_test(args-1);
-   else if (sp[-args].u.string==s_gradients)
-      image_gradients(args-1);
+   else if (sp[-args].u.string==s_gradients) {
+     if(args<2) {
+       push_int(THIS->xsize/2);
+       push_int(0);
+       push_int(0); push_int(0); push_int(0);
+       f_aggregate(5);
+       push_int(THIS->xsize/2);
+       push_int(THIS->ysize);
+       push_int(255); push_int(255); push_int(255);
+       f_aggregate(5);
+       args+=2;
+     }
+     image_gradients(args-1);
+   }
    else if (sp[-args].u.string==s_noise)
       image_noise(args-1);
    else if (sp[-args].u.string==s_turbulence)
@@ -813,14 +913,16 @@ void image_create_method(INT32 args)
    {
       if (args<2) push_int(0);
 
-      THIS->img=(rgb_group*)
-	 xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+      THIS->img=
+	 xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
+
       if (args>2) pop_n_elems(args-2);
       push_int(0); stack_swap();
       push_int(0); stack_swap();
       push_int(THIS->xsize-1); stack_swap();
       push_int(THIS->ysize-1); stack_swap();
       image_tuned_box(5);
+      return;
    }
    else 
       Pike_error("create_method: unknown method\n");
@@ -836,9 +938,18 @@ void image_create_method(INT32 args)
 
 void image_create(INT32 args)
 {
+   if ((args >= 1) && (TYPEOF(sp[-args]) == T_OBJECT)) {
+      struct object *o = sp[-args].u.object;
+      pop_n_elems(args - 1);
+      apply(o, "xsize", 0);
+      apply(o, "ysize", 0);
+      image_create(2);
+      image_paste(1);
+      return;
+   }
    if (args<2) return;
-   if (sp[-args].type!=T_INT||
-       sp[1-args].type!=T_INT)
+   if (TYPEOF(sp[-args]) != T_INT||
+       TYPEOF(sp[1-args]) != T_INT)
       bad_arg_error("Image.Image->create",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Image->create()\n");
 
@@ -846,14 +957,15 @@ void image_create(INT32 args)
 	
    THIS->xsize=sp[-args].u.integer;
    THIS->ysize=sp[1-args].u.integer;
+#if 0
    if (THIS->xsize<0) THIS->xsize=0;
    if (THIS->ysize<0) THIS->ysize=0;
-
-   if (image_too_big(THIS->xsize,THIS->ysize)) 
+#endif
+   if (image_too_big(THIS->xsize,THIS->ysize))
       Pike_error("Image.Image->create(): image too large (>2Gpixels)\n");
 
-   if (args>2 && sp[2-args].type==T_STRING &&
-       !image_color_svalue(sp+2-args,&(THIS->rgb))) 
+   if (args>2 && TYPEOF(sp[2-args]) == T_STRING &&
+       !image_color_svalue(sp+2-args,&(THIS->rgb)))
       /* don't try method "lightblue", etc */
    {
       image_create_method(args-2);
@@ -863,9 +975,7 @@ void image_create(INT32 args)
    else
       getrgb(THIS,2,args,args,"Image.Image->create()"); 
 
-   THIS->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize +1);
-   if (!THIS->img)
-     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   THIS->img=xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
 
    img_clear(THIS->img,THIS->rgb,THIS->xsize*THIS->ysize);
    pop_n_elems(args);
@@ -905,19 +1015,26 @@ void image_create(INT32 args)
 **! see also: copy, create
 */
 
+static void my_free_object(struct object *o)
+{
+  free_object(o);
+}
+
 void image_clone(INT32 args)
 {
    struct object *o;
    struct image *img;
+   ONERROR err;
 
    if (args)
       if (args<2||
-	  sp[-args].type!=T_INT||
-	  sp[1-args].type!=T_INT)
+	  TYPEOF(sp[-args]) != T_INT||
+	  TYPEOF(sp[1-args]) != T_INT)
 	 bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
 
    o=clone_object(image_program,0);
+   SET_ONERROR(err, my_free_object, o);
    img=(struct image*)(o->storage);
    *img=*THIS;
 
@@ -935,15 +1052,10 @@ void image_clone(INT32 args)
    if (img->xsize<0) img->xsize=1;
    if (img->ysize<0) img->ysize=1;
 
-   img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
+   img->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    if (THIS->img)
    {
-      if (!img->img)
-      {
-	 free_object(o);
-	 resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
-      }
-      if (img->xsize==THIS->xsize 
+      if (img->xsize==THIS->xsize
 	  && img->ysize==THIS->ysize)
 	 MEMCPY(img->img,THIS->img,sizeof(rgb_group)*img->xsize*img->ysize);
       else
@@ -954,6 +1066,7 @@ void image_clone(INT32 args)
    else
       img_clear(img->img,img->rgb,img->xsize*img->ysize);
 
+   UNSET_ONERROR(err);
    pop_n_elems(args);
    push_object(o);
 }
@@ -993,11 +1106,12 @@ void image_clear(INT32 args)
 
    getrgb(img,0,args,args,"Image.Image->clear()"); 
 
-   img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
+   img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    if (!img->img)
    {
      free_object(o);
-     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+     SIMPLE_OUT_OF_MEMORY_ERROR("clear",
+				sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    }
 
    img_clear(img->img,img->rgb,img->xsize*img->ysize);
@@ -1059,10 +1173,10 @@ void image_copy(INT32 args)
       return;
    }
    if (args<4||
-       sp[-args].type!=T_INT||
-       sp[1-args].type!=T_INT||
-       sp[2-args].type!=T_INT||
-       sp[3-args].type!=T_INT)
+       TYPEOF(sp[-args]) != T_INT||
+       TYPEOF(sp[1-args]) != T_INT||
+       TYPEOF(sp[2-args]) != T_INT||
+       TYPEOF(sp[3-args]) != T_INT)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
 
@@ -1083,9 +1197,9 @@ void image_copy(INT32 args)
 
 /*
 **! method object change_color(int tor,int tog,int tob)
-**! method object change_color(int fromr,int fromg,int fromb, int tor,int tog,int tob)
-**! 	Changes one color (exakt match) to another.
-**!	If non-exakt-match is preferred, check <ref>distancesq</ref>
+**! method object change_color(int fromr,int fromg,int fromb,int tor,int tog,int tob)
+**! 	Changes one color (exact match) to another.
+**!	If non-exact-match is preferred, check <ref>distancesq</ref>
 **!	and <ref>paste_alpha_color</ref>.
 **! returns a new (the destination) image object
 **!
@@ -1122,10 +1236,11 @@ static void image_change_color(INT32 args)
    img=(struct image*)(o->storage);
    *img=*THIS;
 
-   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("change_color",
+				 sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    }
 
    left=THIS->xsize*THIS->ysize;
@@ -1249,7 +1364,7 @@ static void image_find_autocrop(INT32 args)
    int left=1,right=1,top=1,bottom=1;
 
    if (args) {
-      if (sp[-args].type!=T_INT)
+      if (TYPEOF(sp[-args]) != T_INT)
          bad_arg_error("find_autocrop",sp-args,args,0,"",sp-args,
 		"Bad arguments to find_autocrop()\n");
       else
@@ -1258,10 +1373,10 @@ static void image_find_autocrop(INT32 args)
 
    if (args>=5)
    {
-      left=!(sp[1-args].type==T_INT && sp[1-args].u.integer==0);
-      right=!(sp[2-args].type==T_INT && sp[2-args].u.integer==0);
-      top=!(sp[3-args].type==T_INT && sp[3-args].u.integer==0);
-      bottom=!(sp[4-args].type==T_INT && sp[4-args].u.integer==0);
+      left=!(TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer==0);
+      right=!(TYPEOF(sp[2-args]) == T_INT && sp[2-args].u.integer==0);
+      top=!(TYPEOF(sp[3-args]) == T_INT && sp[3-args].u.integer==0);
+      bottom=!(TYPEOF(sp[4-args]) == T_INT && sp[4-args].u.integer==0);
    }
 
    if (!THIS->img)
@@ -1336,6 +1451,7 @@ void image_setcolor(INT32 args)
 
 /*
 **! method object setpixel(int x,int y)
+**! method object setpixel(int x,int y,Image.Color c)
 **! method object setpixel(int x,int y,int r,int g,int b)
 **! method object setpixel(int x,int y,int r,int g,int b,int alpha)
 **!    
@@ -1363,8 +1479,8 @@ void image_setpixel(INT32 args)
 {
    INT32 x,y;
    if (args<2||
-       sp[-args].type!=T_INT||
-       sp[1-args].type!=T_INT)
+       TYPEOF(sp[-args]) != T_INT||
+       TYPEOF(sp[1-args]) != T_INT)
       bad_arg_error("setpixel",sp-args,args,0,"",sp-args,
 		"Bad arguments to setpixel()\n");
    getrgb(THIS,2,args,args,"Image.Image->setpixel()");   
@@ -1392,8 +1508,8 @@ void image_getpixel(INT32 args)
    rgb_group rgb;
 
    if (args<2||
-       sp[-args].type!=T_INT||
-       sp[1-args].type!=T_INT)
+       TYPEOF(sp[-args]) != T_INT||
+       TYPEOF(sp[1-args]) != T_INT)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
 
@@ -1445,10 +1561,10 @@ void image_getpixel(INT32 args)
 void image_line(INT32 args)
 {
    if (args<4||
-       sp[-args].type!=T_INT||
-       sp[1-args].type!=T_INT||
-       sp[2-args].type!=T_INT||
-       sp[3-args].type!=T_INT)
+       TYPEOF(sp[-args]) != T_INT||
+       TYPEOF(sp[1-args]) != T_INT||
+       TYPEOF(sp[2-args]) != T_INT||
+       TYPEOF(sp[3-args]) != T_INT)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
    getrgb(THIS,4,args,args,"Image.Image->line()");
@@ -1471,9 +1587,11 @@ void image_line(INT32 args)
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> return lena()->copy()->box(40,10,10,80,0,255,0); </illustration></td>
+**!	<td><illustration> return lena()->copy()->box(40,10,10,80,255,0,0,75); </illustration></td>
 **!	</tr><tr>
 **!	<td>original</td>
 **!	<td>->box<wbr>(40,10,<wbr>10,80,<wbr>0,255,0)</td>
+**!	<td>->box<wbr>(40,10,<wbr>10,80,<wbr>255,0,0,75)</td>
 **!	</tr></table>
 **! 
 **! returns the object called
@@ -1493,10 +1611,10 @@ void image_line(INT32 args)
 void image_box(INT32 args)
 {
    if (args<4||
-       sp[-args].type!=T_INT||
-       sp[1-args].type!=T_INT||
-       sp[2-args].type!=T_INT||
-       sp[3-args].type!=T_INT)
+       TYPEOF(sp[-args]) != T_INT||
+       TYPEOF(sp[1-args]) != T_INT||
+       TYPEOF(sp[2-args]) != T_INT||
+       TYPEOF(sp[3-args]) != T_INT)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
    getrgb(THIS,4,args,args,"Image.Image->box()");
@@ -1506,8 +1624,8 @@ void image_box(INT32 args)
 	   sp[1-args].u.integer,
 	   sp[2-args].u.integer,
 	   sp[3-args].u.integer);
-   pop_n_elems(args);
    ref_push_object(THISOBJ);
+   stack_pop_n_elems_keep_top(args);
 }
 
 /*
@@ -1545,10 +1663,10 @@ void image_circle(INT32 args)
    INT32 i;
 
    if (args<4||
-       sp[-args].type!=T_INT||
-       sp[1-args].type!=T_INT||
-       sp[2-args].type!=T_INT||
-       sp[3-args].type!=T_INT)
+       TYPEOF(sp[-args]) != T_INT||
+       TYPEOF(sp[1-args]) != T_INT||
+       TYPEOF(sp[2-args]) != T_INT||
+       TYPEOF(sp[3-args]) != T_INT)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
    getrgb(THIS,4,args,args,"Image.Image->circle()");
@@ -1573,18 +1691,18 @@ static INLINE int image_color_svalue_rgba(struct svalue *s,
 					   rgba_group *d)
 {
    rgb_group rgb;
-   if (s->type==T_ARRAY && s->u.array->size>=4)
+   if (TYPEOF(*s) == T_ARRAY && s->u.array->size>=4)
    {
-      if (s->u.array->item[0].type!=T_INT) return 0;
-      else d->r=(COLORTYPE)s->u.array->item[0].u.integer; 
-      if (s->u.array->item[1].type!=T_INT) return 0;
-      else d->g=(COLORTYPE)s->u.array->item[1].u.integer; 
-      if (s->u.array->item[2].type!=T_INT) return 0;
-      else d->b=(COLORTYPE)s->u.array->item[2].u.integer; 
+     struct array *a = s->u.array;
+     if( (a->type_field!=BIT_INT) &&
+	 (array_fix_type_field(a)!=BIT_INT) )
+       return 0;
 
-      if (s->u.array->item[3].type!=T_INT) return 0;
-      else d->alpha=(COLORTYPE)s->u.array->item[3].u.integer; 
-      return 1;
+     d->r=(COLORTYPE)a->item[0].u.integer;
+     d->g=(COLORTYPE)a->item[1].u.integer;
+     d->b=(COLORTYPE)a->item[2].u.integer;
+     d->alpha=(COLORTYPE)a->item[3].u.integer;
+     return 1;
    }
    else if (image_color_svalue(s,&rgb))
    {
@@ -1697,6 +1815,9 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
   int x,y;
   rgb_group color, *from, old;
   if(!xsize || !maxheight) return;
+
+  old.r = old.g = old.b = 0;
+
   if(length > 128)
   {
     for(y=0; y<maxheight; y++)
@@ -1747,10 +1868,10 @@ static void image_tuned_box(INT32 args)
   double dxw, dyw;
 
   if (args<5||
-      sp[-args].type!=T_INT||
-      sp[1-args].type!=T_INT||
-      sp[2-args].type!=T_INT||
-      sp[3-args].type!=T_INT)
+      TYPEOF(sp[-args]) != T_INT||
+      TYPEOF(sp[1-args]) != T_INT||
+      TYPEOF(sp[2-args]) != T_INT||
+      TYPEOF(sp[3-args]) != T_INT)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->tuned_box",5);
 
   if (!THIS->img)
@@ -1761,7 +1882,7 @@ static void image_tuned_box(INT32 args)
   x2=sp[2-args].u.integer;
   y2=sp[3-args].u.integer;
 
-  if (sp[4-args].type==T_ARRAY)
+  if (TYPEOF(sp[4-args]) == T_ARRAY)
   {
      if (args>5) pop_n_elems(args-5);
      args+=sp[-1].u.array->size-1;
@@ -1947,7 +2068,7 @@ static void image_gradients(INT32 args)
    img=(struct image*)get_storage(o,image_program);
    d=img->img;
 
-   if (args && sp[-1].type==T_FLOAT)
+   if (args && TYPEOF(sp[-1]) == T_FLOAT)
    {
       args--;
       grad=sp[-1].u.float_number;
@@ -1959,13 +2080,10 @@ static void image_gradients(INT32 args)
    while (args--)
    {
       struct array *a = NULL;
-      if (sp[-1].type!=T_ARRAY ||
+      if (TYPEOF(sp[-1]) != T_ARRAY ||
 	  (a=sp[-1].u.array)->size!=5 ||
-	  a->item[0].type!=T_INT ||
-	  a->item[1].type!=T_INT ||
-	  a->item[2].type!=T_INT ||
-	  a->item[3].type!=T_INT ||
-	  a->item[4].type!=T_INT)
+	  ( (a->type_field & ~BIT_INT) &&
+	    (array_fix_type_field(a) & ~BIT_INT) ))
       {
 	 while (first) { c=first; first=c->next; free(c); }
 	 bad_arg_error("Image.Image->gradients",sp-args,args,0,"",sp-args,
@@ -1975,7 +2093,7 @@ static void image_gradients(INT32 args)
       if (!c)
       {
 	 while (first) { c=first; first=c->next; free(c); }
-	 resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+	 SIMPLE_OUT_OF_MEMORY_ERROR("gradients", sizeof(struct gr_point));
       }
       c->next=first;
       c->x=a->item[0].u.integer;
@@ -2076,7 +2194,7 @@ static void image_gradients(INT32 args)
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> return lena()->test()</illustration></td>
-**!	<td><illustration> return lena()->copy()->test()</illustration></td>
+**!	<td><illustration> return lena()->test()</illustration></td>
 **!	</tr><tr>
 **!	<td>original</td>
 **!	<td>->test()</td>
@@ -2178,10 +2296,11 @@ void image_grey(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("grey",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2205,6 +2324,7 @@ void image_grey(INT32 args)
 /*
 **! method object color()
 **! method object color(int value)
+**! method object color(Color color)
 **! method object color(int r,int g,int b)
 **!    Colorize an image. 
 **!
@@ -2229,6 +2349,8 @@ void image_grey(INT32 args)
 **! arg int g
 **! arg int b
 **!	red, green, blue factors
+**! arg Color color
+**!     Color object with factors
 **! arg int value
 **!	factor
 **!
@@ -2246,9 +2368,16 @@ void image_color(INT32 args)
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
    if (args<3)
    {
-      if (args>0 && sp[-args].type==T_INT)
+      struct color_struct *cs;
+      if (args>0 && TYPEOF(sp[-args]) == T_INT)
 	 rgb.r=rgb.b=rgb.g=sp[-args].u.integer;
-      else 
+      else if (args>0 && TYPEOF(sp[-args]) == T_OBJECT &&
+	       (cs = (struct color_struct *)get_storage(sp[-args].u.object,
+							image_color_program)))
+	 rgb.r=cs->rgb.r,
+	 rgb.g=cs->rgb.g,
+	 rgb.b=cs->rgb.b;
+      else
 	 rgb.r=THIS->rgb.r,
 	 rgb.g=THIS->rgb.g,
 	 rgb.b=THIS->rgb.b;
@@ -2259,10 +2388,11 @@ void image_color(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("color",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2314,34 +2444,42 @@ void image_color(INT32 args)
 
 void image_invert(INT32 args)
 {
-   INT32 x;
-   rgb_group *s,*d;
+   size_t sz;
+   char *s,*d;
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   sz = sizeof(rgb_group)*THIS->xsize * THIS->ysize;
+   if (!(img->img=malloc(sz + RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("invert", sz + RGB_VEC_PAD);
    }
 
-   d=img->img;
-   s=THIS->img;
+   d = (char *)img->img;
+   s = (char *)THIS->img;
 
-   x=THIS->xsize*THIS->ysize;
    THREADS_ALLOW();
-   while (x--)
+   if (sz >= sizeof(INT_TYPE))
    {
-      d->r=( 255-s->r );
-      d->g=( 255-s->g );
-      d->b=( 255-s->b );
-      d++;
-      s++;
+     INT_TYPE *dd = (INT_TYPE *)d;
+     INT_TYPE *ss = (INT_TYPE *)s;
+     do {
+       *(dd++) = ~*(ss++);
+       sz -= sizeof(INT_TYPE);
+     } while (sz >= sizeof(INT_TYPE));
+     d = (char *)dd;
+     s = (char *)ss;
+   }
+   while (sz--)
+   {
+     *(d++) = ~*(s++);
    }
    THREADS_DISALLOW();
 
@@ -2394,22 +2532,26 @@ void image_threshold(INT32 args)
    struct image *img;
    INT_TYPE level=-1;
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");
 
-   if (args==1)
-      get_all_args("threshold",args,"%i",&level),level*=3;
+   if (args==1 && TYPEOF(sp[-args]) == T_INT) {
+      get_all_args("threshold",args,"%i",&level);
+      level*=3;
+      rgb.r=rgb.g=rgb.b=0;
+   }
    else if (!getrgb(THIS,0,args,args,"Image.Image->threshold()"))
       rgb.r=rgb.g=rgb.b=0;
    else
-      rgb=THIS->rgb;
+     rgb=THIS->rgb;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("threshold",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2468,18 +2610,18 @@ void image_threshold(INT32 args)
 **!	<td>->rgb_to_hsv();</td>
 **!	</tr><tr valign=center>
 **!	<td><illustration>
-**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}));
 **!	</illustration></td>
 **!	<td><illustration>
-**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}))
 **!          ->hsv_to_rgb();
 **!	</illustration></td>
 **!	<td><illustration>
-**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}))
 **!          ->rgb_to_hsv();
@@ -2529,10 +2671,11 @@ void image_hsv_to_rgb(INT32 args)
    img=(struct image*)o->storage;
    *img=*THIS;
 
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("hsv_to_rgb",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2608,16 +2751,18 @@ void image_rgb_to_hsv(INT32 args)
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
 
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("rgb_to_hsv",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2652,6 +2797,181 @@ void image_rgb_to_hsv(INT32 args)
    push_object(o);
 }
 
+
+
+/*
+**! method object rgb_to_yuv()
+**! method object yuv_to_rgb()
+**!    Converts RGB data to YUV (YCrCb) data, or the other way around.
+**!    When converting to YUV, the resulting data is stored like this:
+**!     pixel.r = v (cr); pixel.g = y; pixel.b = u (cb);
+**!
+**!    When converting to RGB, the input data is asumed to be placed in
+**!    the pixels as above.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->yuv_to_rgb(); </illustration></td>
+**!	<td><illustration> return lena()->rgb_to_yuv(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->yuv_to_rgb();</td>
+**!	<td>->rgb_to_yuv();</td>
+**!	</tr><tr valign=center>
+**!	<td><illustration>
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}));
+**!	</illustration></td>
+**!	<td><illustration>
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}))
+**!          ->yuv_to_rgb();
+**!	</illustration></td>
+**!	<td><illustration>
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}))
+**!          ->rgb_to_yuv();
+**!	</illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>tuned box (below)</td>
+**!	<td>the rainbow (below)</td>
+**!	<td>same, but rgb_to_yuv()</td>
+**!	</tr></table>
+**!
+**!
+**!    RGB to YUB calculation (this follows CCIR.601):
+**!    <pre>
+**!    in = input pixel
+**!    out = destination pixel
+**!    Ey = 0.299*in.r+0.587*in.g+0.114*in.b
+**!    Ecr = 0.713*(in.r - Ey) = 0.500*in.r-0.419*in.g-0.081*in.b
+**!    Ecb = 0.564*(in.b - Ey) = -0.169*in.r-0.331*in.g+0.500*in.b
+**!    out.r=0.875*Ecr+128
+**!    out.g=0.86*Ey+16
+**!    out.b=0.875*Ecb+128
+**!    </pre>
+**!
+**!     Example: Nice rainbow.
+**!     <pre>
+**!     object i = Image.Image(200,200);
+**!     i = i->tuned_box(0,0, 200,200,
+**!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+**!                         ({ 255,255,255 }), ({ 0,255,255 })}))
+**!          ->yuv_to_rgb();
+**!	</pre>
+**! returns the new image object
+*/
+
+#define CLAMP(v,l,h) ((v)<(l)? (l) : ((v)>(h)? (h) : (v)))
+
+#define DENORM_Y(y) ((((y)*220)/256)+16)
+#define DENORM_C(c) ((((c)*112)/128)+128)
+
+#define NORM_Y(y) ((((y)-16)*256)/220)
+#define NORM_C(c) ((((c)-128)*128)/112)
+
+void image_yuv_to_rgb(INT32 args)
+{
+   INT32 i;
+   rgb_group *s,*d;
+   struct object *o;
+   struct image *img;
+   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+
+   o=clone_object(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
+   {
+      free_object(o);
+      SIMPLE_OUT_OF_MEMORY_ERROR("yuv_to_rgb",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
+   }
+
+   d=img->img;
+   s=THIS->img;
+
+   THREADS_ALLOW();
+   i=img->xsize*img->ysize;
+   while (i--)
+   {
+     double y,cr,cb;
+     int r,g,b;
+
+     y = NORM_Y((double)s->g);
+     cr = NORM_C((double)s->r);
+     cb = NORM_C((double)s->b);
+
+     r = y+1.402*cr;
+     g = y-0.714*cr-0.344*cb;
+     b = y+1.772*cb;
+
+     d->r = CLAMP(r, 0, 255);
+     d->g = CLAMP(g, 0, 255);
+     d->b = CLAMP(b, 0, 255);
+     s++; d++;
+   }
+exit_loop:
+   ;	/* Needed to keep some compilers happy. */
+   THREADS_DISALLOW();
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
+void image_rgb_to_yuv(INT32 args)
+{
+   INT32 i;
+   rgb_group *s,*d;
+   struct object *o;
+   struct image *img;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
+
+   o=clone_object(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
+   {
+      free_object(o);
+      SIMPLE_OUT_OF_MEMORY_ERROR("rgb_to_yuv",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
+   }
+
+   d=img->img;
+   s=THIS->img;
+
+   THREADS_ALLOW();
+   i=img->xsize*img->ysize;
+   while (i--)
+   {
+     int y,cr,cb;
+
+     y = DENORM_Y(0.299*s->r+0.587*s->g+0.114*s->b);
+     cr = DENORM_C(0.500*s->r-0.419*s->g-0.081*s->b);
+     cb = DENORM_C(-0.169*s->r-0.331*s->g+0.500*s->b);
+
+     d->g = CLAMP(y, 16, 235);
+     d->r = CLAMP(cr, 16, 239);
+     d->b = CLAMP(cb, 16, 239);
+     s++; d++;
+   }
+   THREADS_DISALLOW();
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
+#undef NORM_Y
+#undef NORM_C
+#undef DENORM_Y
+#undef DENORM_C
+#undef CLAMP
 
 
 /*
@@ -2702,17 +3022,19 @@ void image_distancesq(INT32 args)
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    getrgb(THIS,0,args,args,"Image.Image->distancesq()");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("distancesq",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2858,6 +3180,32 @@ fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b
 **!    This value is squared and compared with the square of the 
 **!    distance above.
 **!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena()->select_from(35,35,16); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,32); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,64); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,96); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,128); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,192); </illustration></td>
+**!	<td><illustration> return lena()->select_from(35,35,256); </illustration></td>
+**!	</tr><tr>
+**!	<td>35, 35, 16</td>
+**!	<td>35, 35, 32</td>
+**!	<td>35, 35, 64</td>
+**!	<td>35, 35, 96</td>
+**!	<td>35, 35, 128</td>
+**!	<td>35, 35, 192</td>
+**!	<td>35, 35, 256</td>
+**!	</tr></table>
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()*lena()->select_from(35,35,200); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>original * select_from(35,35,200)</td>
+**!	</tr></table>
+**!
 **! returns the new image object
 **!
 **! arg int x
@@ -2873,16 +3221,17 @@ void image_select_from(INT32 args)
    struct image *img;
    INT32 low_limit=0;
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    if (args<2 
-       || sp[-args].type!=T_INT
-       || sp[1-args].type!=T_INT)
+       || TYPEOF(sp[-args]) != T_INT
+       || TYPEOF(sp[1-args]) != T_INT)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
 
    if (args>=3) 
-      if (sp[2-args].type!=T_INT)
+      if (TYPEOF(sp[2-args]) != T_INT)
 	 bad_arg_error("Image",sp-args,args,3,"",sp+3-1-args,
 		"Bad argument 3 (edge value) to Image()\n");
       else
@@ -2894,10 +3243,11 @@ void image_select_from(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("select_from",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
    MEMSET(img->img,0,sizeof(rgb_group)*img->xsize*img->ysize);
 
@@ -2929,6 +3279,17 @@ void image_select_from(INT32 args)
 **!	scales the image with a factor, without smoothing.
 **!     This routine is faster than scale, but gives less correct
 **!     results
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->bitscale(0.75); </illustration></td>
+**!	<td><illustration> return lena()->scale(0.75); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>bitscale(0.75)</td>
+**!	<td>scale(0.75)</td>
+**!	</tr></table>
+**!
 **! returns the new image object
 **! arg float factor
 **!	factor to use for both x and y
@@ -2962,21 +3323,21 @@ void image_bitscale( INT32 args )
 
   if( args == 1 )
   {
-    if( sp[-1].type == T_INT )
+    if( TYPEOF(sp[-1]) == T_INT )
     {
       newx = oldx * sp[-1].u.integer;
       newy = oldy * sp[-1].u.integer;
-    } else if( sp[-1].type == T_FLOAT ) {
+    } else if( TYPEOF(sp[-1]) == T_FLOAT ) {
       newx = DOUBLE_TO_INT(oldx * sp[-1].u.float_number);
       newy = DOUBLE_TO_INT(oldy * sp[-1].u.float_number);
     } else 
       Pike_error("The scale factor must be an integer less than 2^32, or a float\n");
   } else if( args == 2 ) {
-    if( sp[-1].type != sp[-2].type )
+    if( TYPEOF(sp[-1]) != TYPEOF(sp[-2]) )
       Pike_error("Wrong type of argument\n");
-    if( sp[-2].type  == T_INT )
+    if( TYPEOF(sp[-2]) == T_INT )
       (newx = sp[-2].u.integer),(newy = sp[-1].u.integer);
-    else if( sp[-2].type  == T_FLOAT )
+    else if( TYPEOF(sp[-2]) == T_FLOAT )
     {
       newx = DOUBLE_TO_INT(oldx*sp[-2].u.float_number);
       newy = DOUBLE_TO_INT(oldy*sp[-1].u.float_number);
@@ -3145,18 +3506,19 @@ void image_apply_matrix(INT32 args)
    rgb_group default_rgb;
    struct object *o;
    double div;
+   ONERROR o_err, matrix_err;
 
 CHRONO("apply_matrix");
 
    if (args<1 ||
-       sp[-args].type!=T_ARRAY)
+       TYPEOF(sp[-args]) != T_ARRAY)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
 
    if (args>3) 
-      if (sp[1-args].type!=T_INT ||
-	  sp[2-args].type!=T_INT ||
-	  sp[3-args].type!=T_INT)
+      if (TYPEOF(sp[1-args]) != T_INT ||
+	  TYPEOF(sp[2-args]) != T_INT ||
+	  TYPEOF(sp[3-args]) != T_INT)
 	 Pike_error("Illegal argument(s) (2,3,4) to Image.Image->apply_matrix()\n");
       else
       {
@@ -3171,14 +3533,14 @@ CHRONO("apply_matrix");
       default_rgb.b=0;
    }
 
-   if (args>4 
-       && sp[4-args].type==T_INT)
+   if (args>4
+       && TYPEOF(sp[4-args]) == T_INT)
    {
       div=sp[4-args].u.integer;
       if (!div) div=1;
    }
-   else if (args>4 
-	    && sp[4-args].type==T_FLOAT)
+   else if (args>4
+	    && TYPEOF(sp[4-args]) == T_FLOAT)
    {
       div=sp[4-args].u.float_number;
       if (!div) div=1;
@@ -3189,44 +3551,42 @@ CHRONO("apply_matrix");
    width=-1;
    for (i=0; i<height; i++)
    {
-      struct svalue s=sp[-args].u.array->item[i];
-      if (s.type!=T_ARRAY) 
+      struct svalue *s = sp[-args].u.array->item + i;
+      if (TYPEOF(*s) != T_ARRAY)
 	 Pike_error("Illegal contents of (root) array (Image.Image->apply_matrix)\n");
       if (width==-1)
-	 width=s.u.array->size;
+	 width = s->u.array->size;
       else
-	 if (width!=s.u.array->size)
+	 if (width != s->u.array->size)
 	    Pike_error("Arrays has different size (Image.Image->apply_matrix)\n");
    }
    if (width==-1) width=0;
 
-   matrix=malloc(sizeof(rgbd_group)*width*height+1);
-   if (!matrix) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
-   
+   matrix=xalloc(sizeof(rgbd_group)*width*height+1);
+
    for (i=0; i<height; i++)
    {
-      struct svalue s=sp[-args].u.array->item[i];
+      struct svalue *s = sp[-args].u.array->item + i;
       for (j=0; j<width; j++)
       {
-	 struct svalue s2=s.u.array->item[j];
-	 if (s2.type==T_ARRAY && s2.u.array->size == 3)
+	 struct svalue *s2 = s->u.array->item + j;
+	 if (TYPEOF(*s2) == T_ARRAY && s2->u.array->size == 3)
 	 {
-	    struct svalue s3;
-	    s3=s2.u.array->item[0];
-	    if (s3.type==T_INT) matrix[j+i*width].r = (float)s3.u.integer; 
+	    struct svalue *s3 = s2->u.array->item;
+	    if (TYPEOF(*s3) == T_INT) matrix[j+i*width].r = (float)s3->u.integer;
 	    else matrix[j+i*width].r=0;
 
-	    s3=s2.u.array->item[1];
-	    if (s3.type==T_INT) matrix[j+i*width].g = (float)s3.u.integer;
+	    s3++;
+	    if (TYPEOF(*s3) == T_INT) matrix[j+i*width].g = (float)s3->u.integer;
 	    else matrix[j+i*width].g=0;
 
-	    s3=s2.u.array->item[2];
-	    if (s3.type==T_INT) matrix[j+i*width].b = (float)s3.u.integer; 
+	    s3++;
+	    if (TYPEOF(*s3) == T_INT) matrix[j+i*width].b = (float)s3->u.integer;
 	    else matrix[j+i*width].b=0;
 	 }
-	 else if (s2.type==T_INT)
+	 else if (TYPEOF(*s2) == T_INT)
 	    matrix[j+i*width].r=matrix[j+i*width].g=
-	       matrix[j+i*width].b = (float)s2.u.integer;
+	       matrix[j+i*width].b = (float)s2->u.integer;
 	 else
 	    matrix[j+i*width].r=matrix[j+i*width].g=
 	       matrix[j+i*width].b = 0.0;
@@ -3235,14 +3595,19 @@ CHRONO("apply_matrix");
 
    o=clone_object(image_program,0);
 
+   SET_ONERROR(matrix_err, free, matrix);
+   SET_ONERROR(o_err, my_free_object, o);
+
 CHRONO("apply_matrix, begin");
 
    if (THIS->img)
       img_apply_matrix((struct image*)o->storage,THIS,
-		       width,height,matrix,default_rgb,div);
+		       width,height,matrix,div,default_rgb);
 
 CHRONO("apply_matrix, end");
 
+   UNSET_ONERROR(o_err);
+   UNSET_ONERROR(matrix_err);
    free(matrix);
 
    pop_n_elems(args);
@@ -3304,8 +3669,8 @@ CHRONO("apply_matrix, end");
 
 static void _image_outline(INT32 args,int mask)
 {
-   static unsigned char defaultmatrix[9]={0,1,0,1,1,1,0,1,0};
-   unsigned char *matrix=defaultmatrix;
+   static const unsigned char defaultmatrix[9]={0,1,0,1,1,1,0,1,0};
+   unsigned char *matrix = (unsigned char *)defaultmatrix;
    int height=3;
    int width=3;
    unsigned char *tmp,*d;
@@ -3319,37 +3684,36 @@ static void _image_outline(INT32 args,int mask)
    if (!THIS->img || !THIS->xsize || !THIS->ysize)
       Pike_error("Called Image.Image object is not initialized\n");;
 
-   if (args && sp[-args].type==T_ARRAY)
+   if (args && TYPEOF(sp[-args]) == T_ARRAY)
    {
       int i,j;
       height=sp[-args].u.array->size;
       width=-1;
       for (i=0; i<height; i++)
       {
-	 struct svalue s=sp[-args].u.array->item[i];
-	 if (s.type!=T_ARRAY) 
+	 struct svalue *s = sp[-args].u.array->item + i;
+	 if (TYPEOF(*s) != T_ARRAY)
 	    Pike_error("Image.Image->outline: Illegal contents of (root) array\n");
 	 if (width==-1)
-	    width=s.u.array->size;
+	    width=s->u.array->size;
 	 else
-	    if (width!=s.u.array->size)
+	    if (width!=s->u.array->size)
 	       Pike_error("Image.Image->outline: Arrays has different size\n");
       }
       if (width==-1) width=0;
 
-      matrix=malloc(sizeof(int)*width*height+1);
-      if (!matrix) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
-   
+      matrix=xalloc(sizeof(int)*width*height+1);
+
       for (i=0; i<height; i++)
       {
-	 struct svalue s=sp[-args].u.array->item[i];
+	 struct svalue *s=sp[-args].u.array->item + i;
 	 for (j=0; j<width; j++)
 	 {
-	    struct svalue s2=s.u.array->item[j];
-	    if (s2.type==T_INT)
-	       matrix[j+i*width]=(unsigned char)s2.u.integer;
+	    struct svalue *s2 = s->u.array->item + j;
+	    if (TYPEOF(*s2) == T_INT)
+	       matrix[j+i*width] = (unsigned char)s2->u.integer;
 	    else
-	       matrix[j+i*width]=1;
+	       matrix[j+i*width] = 1;
 	 }
       }
       ai=1;
@@ -3361,10 +3725,14 @@ static void _image_outline(INT32 args,int mask)
    img=(struct image*)(o->storage);
    img->rgb=THIS->rgb;
 
-   tmp=malloc((THIS->xsize+width)*(THIS->ysize+height));
-   if (!tmp) { free_object(o); resource_error(NULL,0,0,"memory",0,"Out of memory.\n"); }
-   MEMSET(tmp,0,(THIS->xsize+width)*(THIS->ysize+height));
- 
+   tmp=calloc((THIS->xsize+width),(THIS->ysize+height+1));
+   if (!tmp) {
+     free_object(o);
+     if (matrix!=defaultmatrix) free(matrix);
+     SIMPLE_OUT_OF_MEMORY_ERROR("outline",
+				(THIS->xsize+width)*(THIS->ysize+height)+1);
+   }
+
    s=THIS->img;
 
    if (!mask)
@@ -3442,8 +3810,8 @@ static void _image_outline(INT32 args,int mask)
       if (mask)
 	 while (x--)
 	 {
-	    static rgb_group white={255,255,255};
-	    static rgb_group black={0,0,0};
+	    static const rgb_group white={255,255,255};
+	    static const rgb_group black={0,0,0};
 	    if (*d && s->r==bkgl.r && s->g==bkgl.g && s->b==bkgl.b)
 	       *di=white;
 	    else
@@ -3465,6 +3833,7 @@ static void _image_outline(INT32 args,int mask)
 	 }
       d+=width;
    }
+   free(tmp);
 
    if (matrix!=defaultmatrix) free(matrix);
 
@@ -3525,44 +3894,45 @@ void image_modify_by_intensity(INT32 args)
    struct image *img;
    long div;
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
    if (args<5) 
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->modify_by_intensity()",5);
    
    getrgbl(&rgb,0,args,"Image.Image->modify_by_intensity()");
    div=rgb.r+rgb.g+rgb.b;
    if (!div) div=1;
 
-   s=malloc(sizeof(rgb_group)*(args-3)+1);
-   if (!s) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   s=xalloc(sizeof(rgb_group)*(args-3)+RGB_VEC_PAD);
 
    for (x=0; x<args-3; x++)
    {
-      if (sp[3-args+x].type==T_INT)
+      if (TYPEOF(sp[3-args+x]) == T_INT)
 	 s[x].r=s[x].g=s[x].b=testrange( sp[3-args+x].u.integer );
-      else if (sp[3-args+x].type==T_ARRAY &&
+      else if (TYPEOF(sp[3-args+x]) == T_ARRAY &&
 	       sp[3-args+x].u.array->size >= 3)
       {
 	 struct svalue sv;
 	 array_index_no_free(&sv,sp[3-args+x].u.array,0);
-	 if (sv.type==T_INT) s[x].r=testrange( sv.u.integer );
+	 if (TYPEOF(sv) == T_INT) s[x].r=testrange( sv.u.integer );
 	 else s[x].r=0;
 	 array_index(&sv,sp[3-args+x].u.array,1);
-	 if (sv.type==T_INT) s[x].g=testrange( sv.u.integer );
+	 if (TYPEOF(sv) == T_INT) s[x].g=testrange( sv.u.integer );
 	 else s[x].g=0;
 	 array_index(&sv,sp[3-args+x].u.array,2);
-	 if (sv.type==T_INT) s[x].b=testrange( sv.u.integer );
+	 if (TYPEOF(sv) == T_INT) s[x].b=testrange( sv.u.integer );
 	 else s[x].b=0;
 	 free_svalue(&sv);
       }
       else s[x].r=s[x].g=s[x].b=0;
    }
 
-   list=malloc(sizeof(rgb_group)*256+1);
+   list=malloc(sizeof(rgb_group)*256+RGB_VEC_PAD);
    if (!list) 
    {
       free(s);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("modify_by_intensity",
+				 sizeof(rgb_group)*256+RGB_VEC_PAD);
    }
    for (x=0; x<args-4; x++)
    {
@@ -3583,15 +3953,16 @@ void image_modify_by_intensity(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      free(list);
+      SIMPLE_OUT_OF_MEMORY_ERROR("modify_by_intensity",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
    s=THIS->img;
-
 
    x=THIS->xsize*THIS->ysize;
    THREADS_ALLOW();
@@ -3702,6 +4073,9 @@ static void image_apply_curve_2( struct object *o,
 }
 
 
+struct pike_string *s_red, *s_green, *s_blue;
+struct pike_string *s_saturation, *s_value, *s_hue;
+
 static void image_apply_curve( INT32 args )
 {
   int i, j;
@@ -3711,14 +4085,14 @@ static void image_apply_curve( INT32 args )
      {
        unsigned char curve[3][256];
        for( i = 0; i<3; i++ )
-         if( sp[-args+i].type != T_ARRAY ||
+         if( TYPEOF(sp[-args+i]) != T_ARRAY ||
              sp[-args+i].u.array->size != 256 )
            bad_arg_error("Image.Image->apply_curve", 
                          sp-args, args, 0, "", sp-args,
                          "Bad arguments to apply_curve()\n");
          else
            for( j = 0; j<256; j++ )
-             if( sp[-args+i].u.array->item[j].type == T_INT )
+             if( TYPEOF(sp[-args+i].u.array->item[j]) == T_INT )
                curve[i][j]=MINIMUM(sp[-args+i].u.array->item[j].u.integer,255);
        pop_n_elems( args );
        image_apply_curve_3( curve );
@@ -3726,31 +4100,28 @@ static void image_apply_curve( INT32 args )
      }
    case 2:
      {
-       struct pike_string *s_red, *s_green, *s_blue;
-       struct pike_string *s_saturation, *s_value, *s_hue;
        unsigned char curve[256];
        int chan = 0, co = 0;
        struct object *o;
-       MAKE_CONSTANT_SHARED_STRING(s_red,"red");
-       MAKE_CONSTANT_SHARED_STRING(s_green,"green");
-       MAKE_CONSTANT_SHARED_STRING(s_blue,"blue");
-       MAKE_CONSTANT_SHARED_STRING(s_saturation,"saturation");
-       MAKE_CONSTANT_SHARED_STRING(s_value,"value");
-       MAKE_CONSTANT_SHARED_STRING(s_hue,"hue");
 
-       if( sp[-args].type != T_STRING )
-         bad_arg_error("Image.Image->apply_curve", 
-                       sp-args, args, 0, "", sp-args,
-                       "Bad arguments to apply_curve()\n" );
-       if( sp[-args+1].type != T_ARRAY ||
+       if( TYPEOF(sp[-args]) != T_STRING )
+	 SIMPLE_BAD_ARG_ERROR("Image.Image->apply_curve()", 1,
+			      "string");
+       if( TYPEOF(sp[-args+1]) != T_ARRAY ||
            sp[-args+1].u.array->size != 256 )
-         bad_arg_error("Image.Image->apply_curve", 
-                       sp-args, args, 0, "", sp-args,
-                       "Bad arguments to apply_curve()\n" );
-       else
-         for( j = 0; j<256; j++ )
-           if( sp[-args+1].u.array->item[j].type == T_INT )
-             curve[j] = MINIMUM(sp[-args+1].u.array->item[j].u.integer,255);
+	 SIMPLE_BAD_ARG_ERROR("Image.Image->apply_curve()", 2,
+			      "256 element array");
+
+       for( j = 0; j<256; j++ )
+	 if( TYPEOF(sp[-args+1].u.array->item[j]) == T_INT )
+	   curve[j] = MINIMUM(sp[-args+1].u.array->item[j].u.integer,255);
+
+       MAKE_CONST_STRING(s_red,"red");
+       MAKE_CONST_STRING(s_green,"green");
+       MAKE_CONST_STRING(s_blue,"blue");
+       MAKE_CONST_STRING(s_saturation,"saturation");
+       MAKE_CONST_STRING(s_value,"value");
+       MAKE_CONST_STRING(s_hue,"hue");
 
        if( sp[-args].u.string == s_red )
        {
@@ -3782,6 +4153,8 @@ static void image_apply_curve( INT32 args )
          chan = 2;
          co = 0;
        }
+       else
+	 Pike_error("Unknown channel in argument 1.\n");
 
        if( co )
        { 
@@ -3810,14 +4183,14 @@ static void image_apply_curve( INT32 args )
    case 1:
      {
        unsigned char curve[256];
-       if( sp[-args].type != T_ARRAY ||
+       if( TYPEOF(sp[-args]) != T_ARRAY ||
            sp[-args].u.array->size != 256 )
-         bad_arg_error("Image.Image->apply_curve", 
+         bad_arg_error("Image.Image->apply_curve",
                        sp-args, args, 0, "", sp-args,
                        "Bad arguments to apply_curve()\n" );
        else
          for( j = 0; j<256; j++ )
-           if( sp[-args].u.array->item[j].type == T_INT )
+           if( TYPEOF(sp[-args].u.array->item[j]) == T_INT )
              curve[j] = MINIMUM(sp[-args].u.array->item[j].u.integer,255);
        pop_n_elems( args );
        image_apply_curve_1( curve );
@@ -3886,28 +4259,29 @@ void image_gamma(INT32 args)
    double gammar=0.0, gammab=0.0, gammag=0.0;
    COLORTYPE newr[256];
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
-   if (args==1) 
-      if (sp[-args].type==T_INT) 
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
+   if (args==1) {
+      if (TYPEOF(sp[-args]) == T_INT)
 	 gammar=gammab=gammag=(double)sp[-args].u.integer;
-      else if (sp[-args].type==T_FLOAT) 
+      else if (TYPEOF(sp[-args]) == T_FLOAT)
 	 gammar=gammab=gammag=sp[-args].u.float_number;
-      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->gamma()\n");
+      else
+	SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",1,"int|float");
+   }
    else if (args==3)
    {
-      if (sp[-args].type==T_INT) gammar=(double)sp[-args].u.integer;
-      else if (sp[-args].type==T_FLOAT) gammar=sp[-args].u.float_number;
-      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->gamma()\n");
-      if (sp[1-args].type==T_INT) gammag=(double)sp[1-args].u.integer;
-      else if (sp[1-args].type==T_FLOAT) gammag=sp[1-args].u.float_number;
-      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->gamma()\n");
-      if (sp[2-args].type==T_INT) gammab=(double)sp[2-args].u.integer;
-      else if (sp[2-args].type==T_FLOAT) gammab=sp[2-args].u.float_number;
-      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->gamma()\n");
+      if (TYPEOF(sp[-args]) == T_INT) gammar=(double)sp[-args].u.integer;
+      else if (TYPEOF(sp[-args]) == T_FLOAT) gammar=sp[-args].u.float_number;
+      else SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",1,"int|float");
+
+      if (TYPEOF(sp[1-args]) == T_INT) gammag=(double)sp[1-args].u.integer;
+      else if (TYPEOF(sp[1-args]) == T_FLOAT) gammag=sp[1-args].u.float_number;
+      else SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",2,"int|float");
+
+      if (TYPEOF(sp[2-args]) == T_INT) gammab=(double)sp[2-args].u.integer;
+      else if (TYPEOF(sp[2-args]) == T_FLOAT) gammab=sp[2-args].u.float_number;
+      else SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",3,"int|float");
    }
    else
       Pike_error("Image.Image->gamma(): illegal number of arguments\n");
@@ -3932,10 +4306,11 @@ void image_gamma(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("gamma",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -3955,82 +4330,6 @@ void image_gamma(INT32 args)
 
    pop_n_elems(args);
    push_object(o);
-}
-
-
-/*
-**! method object map_closest(array(array(int)) colors)
-**! method object map_fast(array(array(int)) colors)
-**! method object map_fs(array(array(int)) colors)
-**! method array select_colors(int num)
-**!	Compatibility functions. Do not use!
-**!
-**!	Replacement examples:
-**!
-**!	Old code:
-**!	<pre>img=map_fs(img->select_colors(200));</pre>
-**!	New code:
-**!	<pre>img=Image.Colortable(img,200)->floyd_steinberg()->map(img);</pre>
-**!
-**!	Old code:
-**!	<pre>img=map_closest(img->select_colors(17)+({({255,255,255}),({0,0,0})}));</pre>
-**!	New code:
-**!	<pre>img=Image.Colortable(img,19,({({255,255,255}),({0,0,0})}))->map(img);</pre>
-*/
-
-void _image_map_compat(INT32 args,int fs) /* compat function */
-{
-  struct neo_colortable *nct;
-  struct object *o,*co;
-  struct image *this = THIS;
-  rgb_group *d;
-
-  co=clone_object(image_colortable_program,args);
-  nct=(struct neo_colortable*)get_storage(co,image_colortable_program);
-
-  if (fs) image_colortable_internal_floyd_steinberg(
-	   (struct neo_colortable *)get_storage(co,image_colortable_program));
-
-  push_int(this->xsize);
-  push_int(this->ysize);
-  o=clone_object(image_program,2);
-      
-  d=((struct image*)(o->storage))->img;
-
-  THREADS_ALLOW();
-
-  image_colortable_map_image(nct,this->img,d,
-			     this->xsize*this->ysize,this->xsize);
-
-  THREADS_DISALLOW();
-
-  free_object(co);
-  push_object(o);
-}
-
-void image_map_compat(INT32 args) { _image_map_compat(args,0); }
-void image_map_fscompat(INT32 args) { _image_map_compat(args,1); }
-
-void image_select_colors(INT32 args)
-{
-   int colors;
-   struct object *o;
-
-   if (args<1
-      || sp[-args].type!=T_INT)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
-
-   colors=sp[-args].u.integer;
-   pop_n_elems(args);
-
-   ref_push_object(THISOBJ);
-   push_int(colors);
-
-   o=clone_object(image_colortable_program,2);
-   image_colortable_cast_to_array((struct neo_colortable*)
-				  get_storage(o,image_colortable_program));
-   free_object(o);
 }
 
 /*
@@ -4059,7 +4358,7 @@ void image_write_lsb_rgb(INT32 args)
    char *s;
 
    if (args<1
-       || sp[-args].type!=T_STRING)
+       || TYPEOF(sp[-args]) != T_STRING)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
    
@@ -4130,7 +4429,7 @@ void image_write_lsb_grey(INT32 args)
    char *s;
 
    if (args<1
-       || sp[-args].type!=T_STRING)
+       || TYPEOF(sp[-args]) != T_STRING)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
    
@@ -4210,15 +4509,16 @@ void image_cast(INT32 args)
 {
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->cast",1);
-   if (sp[-args].type==T_STRING||sp[-args].u.string->size_shift)
+   if (TYPEOF(sp[-args]) == T_STRING || sp[-args].u.string->size_shift)
    {
+     if (!THIS->img)
+       Pike_error("Called Image.Image object is not initialized\n");
+
       if (strncmp(sp[-args].u.string->str,"array",5)==0)
       {
 	 int i,j;
 	 rgb_group *s=THIS->img;
 
-	 if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
-	 
 	 pop_n_elems(args);
 
 	 for (i=0; i<THIS->ysize; i++)
@@ -4236,8 +4536,6 @@ void image_cast(INT32 args)
       }
       if (strncmp(sp[-args].u.string->str,"string",6)==0)
       {
-	 if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
-
 	 pop_n_elems(args);
 	 push_string(make_shared_binary_string((char *)THIS->img,
 					       THIS->xsize*THIS->ysize
@@ -4254,9 +4552,9 @@ static void image__sprintf( INT32 args )
   int x;
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
-  if (sp[-args].type!=T_INT)
+  if (TYPEOF(sp[-args]) != T_INT)
     SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
-  if (sp[1-args].type!=T_MAPPING)
+  if (TYPEOF(sp[1-args]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
 
   x = sp[-2].u.integer;
@@ -4281,6 +4579,25 @@ static void image__sprintf( INT32 args )
   }
 }
 
+/*
+**! method object grey_blur(int no_pass)
+**!	Works like blur, but only operates on the r color channel.
+**!     A faster alternative to blur for grey scale images. @[no_pass]
+**!     is the number of times the blur matrix is applied.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->grey_blur(1); </illustration></td>
+**!	<td><illustration> return lena()->grey_blur(5); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>grey_blur(1)</td>
+**!	<td>grey_blur(5)</td>
+**!	</tr></table>
+**!
+**! see also: blur
+*/
+
 static void image_grey_blur( INT32 args )
 {
   /* Basically a exactly like blur, but only uses the r color channel. */
@@ -4294,8 +4611,8 @@ static void image_grey_blur( INT32 args )
 
   if( !rgb )
     Pike_error("This object is not initialized\n");
-    
-  if (sp[-args].type!=T_INT)  SIMPLE_BAD_ARG_ERROR("grey_blur",0,"integer");
+
+  if (TYPEOF(sp[-args]) != T_INT)  SIMPLE_BAD_ARG_ERROR("grey_blur",0,"integer");
 
   t = sp[-args].u.integer;  /* times */
 
@@ -4335,7 +4652,24 @@ static void image_grey_blur( INT32 args )
   ref_push_object( THISOBJ );
 }
 
-
+/*
+**! method string blur(int no_pass)
+**!	A special case of apply_matrix that creates a blur effect.
+**!     About four times faster than the generic apply_matrix.
+**!     @[no_pass] is the number of times the blur matrix is applied.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->blur(1); </illustration></td>
+**!	<td><illustration> return lena()->blur(5); </illustration></td>
+**!	</tr><tr>
+**!	<td>original</td>
+**!	<td>blur(1)</td>
+**!	<td>blur(5)</td>
+**!	</tr></table>
+**!
+**! see also: apply_matrix, grey_blur
+*/
 
 static void image_blur( INT32 args )
 /* about four times faster than the generic apply matrix for this
@@ -4347,12 +4681,12 @@ static void image_blur( INT32 args )
   int ye = THIS->ysize;
   rgb_group *rgb = THIS->img;
   if( args != 1 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("grey_blur",1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("blur",1);
 
   if( !rgb )
     Pike_error("This object is not initialized\n");
-    
-  if (sp[-args].type!=T_INT)  SIMPLE_BAD_ARG_ERROR("grey_blur",0,"integer");
+
+  if (TYPEOF(sp[-args]) != T_INT)  SIMPLE_BAD_ARG_ERROR("blur",0,"integer");
 
   t = sp[-args].u.integer;  /* times */
 
@@ -4450,7 +4784,8 @@ void image_tobitmap(INT32 args)
    rgb_group *s;
 
    pop_n_elems(args);
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    xs=(THIS->xsize+7)>>3;
 
@@ -4482,6 +4817,56 @@ void image_tobitmap(INT32 args)
    push_string(end_shared_string(res));
 }
 
+
+/***************** Serialization methods ***********************/
+
+void image__encode( INT32 UNUSED(args) )
+{
+    push_int( THIS->xsize );
+    push_int( THIS->ysize );
+    push_string( make_shared_binary_string((char *)THIS->img,
+					   THIS->xsize*THIS->ysize
+					   *sizeof(rgb_group)) );
+    f_aggregate( 3 );
+}
+
+void image__decode( INT32 args )
+{
+    struct array *a;
+    int w, h;
+    if( args != 1 ||
+	TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY ||
+	Pike_sp[-1].u.array->size != 3 ||
+	TYPEOF((a=Pike_sp[-1].u.array)->item[2]) != PIKE_T_STRING ||
+        TYPEOF(a->item[0]) != PIKE_T_INT ||
+        TYPEOF(a->item[1]) != PIKE_T_INT )
+	Pike_error( "Illegal arguments to decode\n");
+
+    w = a->item[0].u.integer;
+    h = a->item[1].u.integer;
+
+    if( w*h*(ptrdiff_t) sizeof(rgb_group) != a->item[2].u.string->len )
+	Pike_error("Illegal image data\n");
+
+    if( THIS->img )
+	free( THIS->img );
+
+    THIS->xsize = w;
+    THIS->ysize = h;
+    THIS->img = xalloc( sizeof(rgb_group)*w*h+RGB_VEC_PAD );
+
+    memcpy( THIS->img, a->item[2].u.string->str, a->item[2].u.string->len );
+    pop_stack();
+}
+
+static void image__size_object(INT32 UNUSED(args))
+{
+    INT_TYPE sz = 0;
+    if( THIS->img )
+        sz = THIS->xsize*THIS->ysize*sizeof(rgb_group)+RGB_VEC_PAD;
+    push_int(sz);
+}
+
 /***************** global init etc *****************************/
 
 #define tRGB tOr3(tColor,tVoid,tInt) tOr(tInt,tVoid) tOr(tInt,tVoid)
@@ -4497,10 +4882,15 @@ void init_image_image(void)
    ADD_STORAGE(struct image);
    
    ADD_FUNCTION("_sprintf", image__sprintf, tFunc(tInt , tString), 0 );
+   ADD_FUNCTION("_size_object", image__size_object, tFunc(tVoid,tInt), 0);
+
+   ADD_FUNCTION("_encode", image__encode, tFunc(tVoid,tArray), 0 );
+   ADD_FUNCTION("_decode", image__decode, tFunc(tArray,tVoid), 0 );
 
    ADD_FUNCTION("create",image_create,
-		tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),
-		    tFuncV(tInt tInt tString,tMixed,tVoid)),0);
+		tOr3(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),
+		     tFunc(tObj, tVoid),
+		     tFuncV(tInt tInt tString,tMixed,tVoid)),0);
    ADD_FUNCTION("clone",image_clone,
 		tOr3(tFunc(tInt tInt tInt tInt tRGB,tObj),
                      tFunc(tRGB,tObj),
@@ -4586,9 +4976,13 @@ void init_image_image(void)
 		tFunc(tVoid,tObj),0);
    ADD_FUNCTION("hsv_to_rgb",image_hsv_to_rgb,
 		tFunc(tVoid,tObj),0);
+   ADD_FUNCTION("rgb_to_yuv",image_rgb_to_yuv,
+		tFunc(tVoid,tObj),0);
+   ADD_FUNCTION("yuv_to_rgb",image_yuv_to_rgb,
+		tFunc(tVoid,tObj),0);
 
    ADD_FUNCTION("select_from",image_select_from,
-		tFunc(tInt tInt,tObj),0);
+		tFunc(tInt tInt tOr(tInt, tVoid),tObj),0);
 
    ADD_FUNCTION("apply_matrix",image_apply_matrix,
 		tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),tOr(tVoid,tInt),tObj),0);
@@ -4643,15 +5037,6 @@ void init_image_image(void)
 		tFunc(tNone,tInt),0);
    ADD_FUNCTION("ysize",image_ysize,
 		tFunc(tNone,tInt),0);
-
-   ADD_FUNCTION("map_closest",image_map_compat,
-		tFunc(tArr(tArr(tInt)),tObj),0);
-   ADD_FUNCTION("map_fast",image_map_compat,
-		tFunc(tArr(tArr(tInt)),tObj),0);
-   ADD_FUNCTION("map_fs",image_map_fscompat,
-		tFunc(tArr(tArr(tInt)),tObj),0);
-   ADD_FUNCTION("select_colors",image_select_colors,
-		tFunc(tInt,tArr(tArr(tInt))),0);
 
    ADD_FUNCTION("noise",image_noise,
 		tFunc(tArr(tOr3(tInt,tFloat,tColor))
@@ -4764,6 +5149,37 @@ void init_image_image(void)
 
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
+
+
+#ifndef FAKE_DYNAMIC_LOAD
+   /* Added by per: Export all functions needed by _Image_GIF */
+   PIKE_MODULE_EXPORT(Image, image_lay );
+   PIKE_MODULE_EXPORT(Image, image_colortable_write_rgb );
+   PIKE_MODULE_EXPORT(Image, image_colortable_size );
+   PIKE_MODULE_EXPORT(Image, image_colortable_index_8bit_image );
+   PIKE_MODULE_EXPORT(Image, image_colortable_internal_floyd_steinberg );
+#endif
+
+
+   s_red=0;
+   s_green=0;
+   s_blue=0;
+   s_value=0;
+   s_saturation=0;
+   s_hue=0;
+
+   s_grey=0;
+   s_rgb=0;
+   s_cmyk=0;
+   s_adjusted_cmyk=0;
+   s_cmy=0;
+   s_test=0;
+   s_gradients=0;
+   s_noise=0;
+   s_turbulence=0;
+   s_random=0;
+   s_randomgrey=0;
+   s_tuned_box=0;
 }
 
 void exit_image_image(void) 

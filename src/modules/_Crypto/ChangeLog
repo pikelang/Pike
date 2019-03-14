@@ -1,5 +1,0 @@
-Wed Nov 27 12:51:32 1996  Niels Möller  <nisse@morpheus.infovav.se>
-
-	* crypto.c: Changed names of init functions to make static linking
-	easier.
-

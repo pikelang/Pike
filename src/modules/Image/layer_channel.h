@@ -1,15 +1,23 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* template for operator layer row function */
 
 static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 		    rgb_group *sa,rgb_group *la,rgb_group *da,
 		    int len,double alpha)
 {
-   MEMCPY(da,sa,sizeof(rgb_group)*len); /* always copy alpha channel */
+  if (da != sa)
+    MEMCPY(da,sa,sizeof(rgb_group)*len); /* always copy alpha channel */
 #define da da da /* protect */
    if (alpha==0.0)
    {
 #ifdef LAYER_DUAL
-      MEMCPY(d,s,sizeof(rgb_group)*len);
+     if (d != s)
+       MEMCPY(d,s,sizeof(rgb_group)*len);
 #endif
       return; 
    }
@@ -37,7 +45,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    l++; s++; la++; d++; sa++; 
+	    l++; s++; d++; sa++; 
 	 }
       else
 	 while (len--)

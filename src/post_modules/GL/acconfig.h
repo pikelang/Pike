@@ -1,4 +1,8 @@
-/* $Id: acconfig.h,v 1.3 1999/11/07 01:43:31 per fake $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /* Define if you have libGL */
 #undef HAVE_LIBGL

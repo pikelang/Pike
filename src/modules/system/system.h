@@ -1,6 +1,10 @@
 /*
- * $Id: system.h,v 1.5 2001/02/03 23:08:41 mirar Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Prototypes for the Pike system-module
  *
  * Henrik Grubbström 1997-01-28
@@ -47,6 +51,10 @@ void f_closelog(INT32 args);
  * memory.c
  */
 
+#ifdef HAVE_WINDOWS_H
+#define WIN32SHM
+#endif
+
 struct memory_storage
 {
    unsigned char *p;
@@ -56,6 +64,9 @@ struct memory_storage
 #define MEM_WRITE       0x02
 #define MEM_FREE_FREE   0x10
 #define MEM_FREE_MUNMAP 0x20   
+#define MEM_FREE_SHMDEL 0x40
    unsigned long flags;
+#ifdef WIN32SHM
+   void *extra;
+#endif
 };
-

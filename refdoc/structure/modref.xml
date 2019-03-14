@@ -1,0 +1,19 @@
+<!-- This file contains information telling the final joiner how to -->
+<!-- put everything together, as well as information about how to -->
+<!-- split it up into smaller files. -->
+
+
+<manual>
+  <dir name="ignored">
+  <file name="ignored">
+    <chapter title="ignored">
+      <insert-move entity=""/>
+    </chapter>
+  </file>
+  </dir>
+
+  <void>
+    <!-- insert-move entity="__builtin"/ -->
+    <insert-move entity="_Roxen"/>
+  </void>
+</manual>

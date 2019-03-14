@@ -1,6 +1,3 @@
-#
-# $Id: configure.in,v 1.8 2001/02/13 15:44:17 mirar Exp $
-#
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(jpeglib,     [  --with(out)-jpeglib       Support JPEG (Image.JPEG)],[],[with_jpeglib=yes])
@@ -11,13 +8,94 @@ PIKE_FEATURE_WITHOUT(Image.JPEG)
 
 if test x$with_jpeglib = xyes ; then
   PIKE_FEATURE_NODEP(Image.JPEG)
-  AC_CHECK_HEADERS(jpeglib.h)
+  AC_CHECK_HEADERS(windows.h wtypes.h jpeglib.h jconfig.h)
   if test $ac_cv_header_jpeglib_h = yes ; then
     AC_CHECK_LIB(jpeg, jpeg_CreateCompress, [
       AC_DEFINE(HAVE_LIBJPEG) 
       LIBS="${LIBS-} -ljpeg"
       PIKE_FEATURE_OK(Image.JPEG)
+
+      AC_MSG_CHECKING(for JERR_BAD_CROP_SPEC)
+      AC_CACHE_VAL(pike_cv_jpeg_jerr_bad_crop_spec, [
+        AC_TRY_COMPILE([
+#include <jerror.h>
+int main(int argc, char **argv)
+{
+  int err = JERR_BAD_CROP_SPEC;
+  exit(0);
+}
+        ], [])
       ])
+      if test "x$pike_cv_jpeg_jerr_bad_crop_spec" = "xyes"; then
+        AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_JERR_BAD_CROP_SPEC)
+      else
+        AC_MSG_RESULT(no)
+      fi
+      AC_CHECK_FUNCS(jcopy_sample_rows jcopy_block_row jzero_far jdiv_round_up jround_up)
+    ])
+    AC_MSG_CHECKING([if jpeg_componment_info has the member height_in_blocks])
+    AC_CACHE_VAL(pike_cv_jpeg_height_in_blocks, [
+      AC_TRY_COMPILE([
+#define FILE void
+#define size_t unsigned int
+#include <jpeglib.h>
+      ],[
+  JDIMENSION block_test;
+  jpeg_component_info *compptr;
+
+  block_test = compptr->height_in_blocks;
+      ],[
+        pike_cv_jpeg_height_in_blocks=yes
+      ],[
+        pike_cv_jpeg_height_in_blocks=no
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_jpeg_height_in_blocks)
+    if test "x$pike_cv_jpeg_height_in_blocks" = "xno"; then
+      AC_DEFINE(TRANSFORMS_NOT_SUPPORTED)
+    else :; fi
+    AC_MSG_CHECKING([if jpeg_decompress_struct has the member marker_list])
+    AC_CACHE_VAL(pike_cv_marker_list, [
+      AC_TRY_COMPILE([
+#define FILE void
+#define size_t unsigned int
+#include <jpeglib.h>
+      ],[
+j_decompress_ptr srcinfo;
+void *test_ptr;
+
+test_ptr=(void*)srcinfo->marker_list;
+      ],[
+        pike_cv_marker_list=yes
+      ],[
+        pike_cv_marker_list=no
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_marker_list)
+    if test "x$pike_cv_marker_list" = "xno"; then
+      AC_DEFINE(TRANSFORMS_NOT_SUPPORTED)
+    else :; fi
+    if test "x$ac_cv_header_jconfig_h$ac_cv_header_windows_h" = "xyesyes"; then
+      # <jconfig.h> is likely to have been generated without
+      # WIN32_LEAN_AND_MEAN, and will thus believe that the
+      # typedef 'boolean' is set.
+      AC_MSG_CHECKING(if jconfig.h claims HAVE_BOOLEAN)
+      AC_CACHE_VAL(pike_cv_jconfig_have_boolean, [
+	AC_EGREP_CPP(oui, [
+#include <jconfig.h>
+#ifdef HAVE_BOOLEAN
+oui
+#endif
+        ], pike_cv_jconfig_have_boolean=yes, pike_cv_jconfig_have_boolean=no)
+      ])
+      if test "x$pike_cv_jconfig_have_boolean" = "xyes"; then
+        AC_DEFINE(HAVE_JCONFIG_H_HAVE_BOOLEAN)
+	AC_MSG_RESULT(yes)
+      else
+        AC_MSG_RESULT(no)
+      fi
+    else :; fi
   fi
 fi
 

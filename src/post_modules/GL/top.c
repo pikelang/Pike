@@ -1,30 +1,43 @@
 /*
- * $Id: top.c,v 1.14 2000/12/01 18:46:05 hubbe Exp $
- *
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
 
 #include "config.h"
 
 #ifdef HAVE_GL
 
+/* INT64, INT32, INT16 and INT8 conflict with some GL headerfiles.
+ * eg on AIX 4.2.
+ */
+#ifdef INT64
+#undef INT64
+#endif
+#undef INT32
+#undef INT16
+#undef INT8
+
 #ifdef HAVE_WINDEF_H
-#include <windef.h>
+#include <windows.h>
 #endif /* HAVE_WINDEF_H */
-#ifdef HAVE_WINGDI_H
-#include <wingdi.h>
-#endif /* HAVE_WINGDI_H */
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
+#ifdef HAVE_OPENGL_GL_H
+#include <OpenGL/gl.h>
+#endif /* HAVE_OPENGL_GL_H */
 #ifdef HAVE_GL_GLX_H
 #include <GL/glx.h>
 #endif /* HAVE_GL_GLX_H */
 
+/* Restore INT64, INT32, INT16 and INT8. */
+#include "pike_int_types.h"
+
 #endif /* HAVE_GL */
 
-#include "global.h"
-
-RCSID("$Id: top.c,v 1.14 2000/12/01 18:46:05 hubbe Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -34,7 +47,6 @@ RCSID("$Id: top.c,v 1.14 2000/12/01 18:46:05 hubbe Exp $");
 #include "module_support.h"
 #include "pike_error.h"
 
-#include "module_magic.h"
 
 #ifdef HAVE_GL
 
@@ -47,7 +59,7 @@ static void f_glGet(INT32 args)
 
   check_all_args("glGet", args, BIT_INT, 0);
 
-  arg1=sp[0-args].u.integer;
+  arg1=Pike_sp[0-args].u.integer;
 
   pop_n_elems(args);
 
@@ -370,7 +382,7 @@ static void f_glGet(INT32 args)
 #endif /* HAVE_GL */
 
 
-void pike_module_init( void )
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_GL
   extern void GL_add_auto_funcs(void);
@@ -383,7 +395,6 @@ void pike_module_init( void )
 }
 
 
-void pike_module_exit( void )
+PIKE_MODULE_EXIT
 {
 }
-

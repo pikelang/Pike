@@ -24,8 +24,8 @@ programs/quitp.pike: cardeci
 
 Cast:
 
-nisse is Niels Möller, nisse@idonex.se
-cardeci is Per Hedbor, per@idonex.se
-neotron is David Hedbor, neotron@idonex.se
-mirar is Pontus Hagland, mirar@idonex.se
-marcus is Marcus Comstedt, marcus@idonex.se
+nisse is Niels Möller
+cardeci is Per Hedbor
+neotron is David Hedbor
+mirar is Pontus Hagland
+marcus is Marcus Comstedt

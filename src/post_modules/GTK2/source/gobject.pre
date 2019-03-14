@@ -1,0 +1,350 @@
+/* -*- C -*- */
+class G.Object;
+
+//! The base object.  All GDK and GTK classes inherit from this.
+//! The Pango classes also inherit from this class.
+
+signal notify;
+
+void destroy()
+//! Destroy this object. This is the normal way to (eg) close a window.
+{
+  if (THIS->obj)
+    g_object_unref(THIS->obj);
+  THIS->obj=NULL;
+  pgtk2_pop_n_elems(args);
+  push_int(0);
+}
+
+void set_property(string property, mixed value)
+//! Set a property on a G.Object (and any derived types) to value.
+{
+  pgtk2_verify_inited();
+  {
+    char *prop;
+    struct svalue *sv;
+    get_all_args("set_property",args,"%s%*",&prop,&sv);
+    pgtk2_set_property(G_OBJECT(THIS->obj),prop,sv);
+  }
+  RETURN_THIS();
+}
+
+mixed get_property(string property)
+//! Get a property.
+{
+  pgtk2_verify_inited();
+  {
+    char *prop;
+    get_all_args("get_property",args,"%s",&prop);
+    pgtk2_get_property(G_OBJECT(THIS->obj),prop);
+    stack_swap();
+    pgtk2_pop_n_elems(args);
+  }
+}
+
+
+int signal_connect(string signal, function callback, mixed|void callback_arg,
+		   string|void detail,int|void connect_before)
+//! Connect a signal to a pike function.  The function will be called with
+//! the last argument to this function as its last argument (defaults to 0);
+//! the first argument is always the widget, and any other arguments are the
+//! ones supplied by GTK. If connect_before is nonzero, the callback will be
+//! called prior to the normal handling of the signal (and can return true
+//! to suppress that handling), otherwise it will be called after.
+//! <p>
+//! The return value of this function can be used to remove a signal with
+//! signal_disconnect(), and block and unblock the signal with signal_block()
+//! and signal_unblock().
+{
+  char *a;
+  int id;
+  struct signal_data *b;
+  struct svalue *tmp1,*tmp2;
+  GClosure *gc;
+  GQuark det;
+  char *detail=NULL;
+  int connect_before=0;
+
+  if (args==2) {
+    push_int(0);
+    args++;
+  }
+  get_all_args("signal_connect",args,"%s%*%*.%s%d",&a,&tmp1,&tmp2,&detail,&connect_before);
+
+  b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
+  if (b==NULL)
+    SIMPLE_OUT_OF_MEMORY_ERROR("signal_connect",sizeof(struct signal_data));
+
+  assign_svalue_no_free(&b->cb,tmp1);
+  assign_svalue_no_free(&b->args,tmp2);
+
+  b->signal_id=g_signal_lookup(a,G_TYPE_FROM_INSTANCE(THIS->obj));
+  if (!b->signal_id) {
+    g_free(b);
+    Pike_error("Signal \"%s\" is not defined in the '%s' class ancestry.\n",
+		a,g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
+  }
+  gc=g_cclosure_new_swap(G_CALLBACK(pgtk2_signal_func_wrapper),
+		    b,(GClosureNotify)pgtk2_free_signal_data);
+  g_closure_set_marshal(gc,pgtk2_marshaller);
+  if (detail)
+    det=g_quark_try_string(detail);
+  else
+    det=0;
+  id=g_signal_connect_closure_by_id(G_OBJECT(THIS->obj),b->signal_id,det,
+				gc,!connect_before);
+  pgtk2_pop_n_elems(args);
+  push_int(id);
+}
+
+void signal_disconnect(int signal_id)
+//! Remove a signal formerly added by signal_connect.  The argument is the
+//! return value of signal_connect().  See signal_connect() for more info.
+{
+  INT_TYPE i;
+  get_all_args("signal_disconnect",args,"%i",&i);
+  g_signal_handler_disconnect(G_OBJECT(THIS->obj),i);
+  RETURN_THIS();
+}
+
+void signal_block(int signal_id)
+//! Temporarily block a signal handler.  No signals will be received while the
+//! handler is blocked.
+//! See signal_connect() for more info.
+{
+  INT_TYPE i;
+  get_all_args("signal_block",args,"%i",&i);
+  g_signal_handler_block(G_OBJECT(THIS->obj),i);
+  RETURN_THIS();
+}
+
+void signal_unblock(int signal_id)
+//! Unblock a formerly blocked signal handler.  See signal_block() and
+//! signal_connect() for more info.
+{
+  INT_TYPE i;
+  get_all_args("signal_unblock",args,"%i",&i);
+  g_signal_handler_unblock(G_OBJECT(THIS->obj),i);
+  RETURN_THIS();
+}
+
+void signal_emit(string signal_name, string|void detail)
+//! Send the current named signal.
+{
+  pgtk2_verify_inited();
+  {
+    char *s;
+    GQuark gq;
+    GSignalQuery _opts;
+    GSignalQuery *opts=&_opts;
+    guint signal_id;
+    const gchar *detail=NULL;
+
+    get_all_args("signal_emit",args,"%s.%s",&s,&detail);
+    gq=g_quark_from_string(s);
+    signal_id=g_signal_lookup(s,G_TYPE_FROM_INSTANCE(THIS->obj));
+    g_signal_query(signal_id,opts);
+    if (opts->n_params!=args-1) {
+      pgtk2_pop_n_elems(args);
+/*      Pike_error("Signal %s expects %d args, got %d.\n",s,opts->n_params,args-1); */
+      Pike_error("signal_emit:  signature mismatch for signal \"%s\" in the '%s' class ancestry.\n"
+		 "              expected %d args, got %d.\n",s,
+		 g_type_name(G_OBJECT_TYPE(THIS->obj)),opts->n_params,args-1);
+    }
+    {
+      unsigned i;
+      GValue *params;
+      GValue rvalue={0};
+
+      params = alloca(sizeof(GValue)*(opts->n_params+1));
+      memset(params,0,sizeof(GValue)*(opts->n_params+1)); 
+      g_value_init(params+0,G_TYPE_FROM_INSTANCE(THIS->obj));
+      g_value_set_object(params+0,G_OBJECT(THIS->obj));
+      for (i=0; i<opts->n_params; i++) {
+	pgtk2_set_gvalue(params+i+1,opts->param_types[i],&Pike_sp[-args+(i+1)]);
+      }
+      if (opts->return_type!=G_TYPE_NONE)
+	g_value_init(&rvalue,opts->return_type);
+      if (detail) {
+	GQuark detail_id;
+
+	detail_id=g_quark_try_string(detail);
+	g_signal_emitv(params,signal_id,detail_id,&rvalue);
+      } else
+	g_signal_emitv(params,signal_id,0,&rvalue);
+      pgtk2_pop_n_elems(args);
+      if (opts->return_type!=G_TYPE_NONE) {
+	pgtk2_push_gvalue_rt(&rvalue);
+      } else {
+	push_int(0);
+      }
+      g_value_unset(&rvalue);
+      g_value_unset(params);
+      for (i=1; i<opts->n_params; i++)
+	g_value_unset(params+i);
+    }
+  }
+}
+
+int new_signal(string name, array types, string return_type)
+//! Create a new signal.
+{
+  pgtk2_verify_inited();
+  {
+    struct pike_string *t;
+    struct pike_string *ret_type_name;
+    struct array *a;
+    gchar *name;
+    guint id;
+    GType *param_types;
+    guint n_params;
+    GType return_type;
+    int i;
+
+    get_all_args("new_signal",args,"%t%A%t",&t,&a,&ret_type_name);
+    if (a->size) {
+      ref_push_string(t);
+      f_string_to_utf8(1);
+      name=g_strdup(CGSTR0(Pike_sp[-1].u.string));
+      if (name==NULL) {
+	pop_stack();
+	SIMPLE_OUT_OF_MEMORY_ERROR("new_signal",ret_type_name->len*2);
+      }
+      if (is_same_string(ret_type_name,_STR("void"))) {
+	return_type=G_TYPE_NONE;
+      } else if (is_same_string(ret_type_name,_STR("int"))) {
+	return_type=G_TYPE_INT;
+      } else if (is_same_string(ret_type_name,_STR("float"))) {
+	return_type=G_TYPE_DOUBLE;
+      } else if (is_same_string(ret_type_name,_STR("string"))) {
+	return_type=G_TYPE_STRING;
+      } else if (is_same_string(ret_type_name,_STR("object"))) {
+	return_type=G_TYPE_OBJECT;
+      } else {
+	return_type=G_TYPE_POINTER;
+      }
+
+      param_types=malloc(sizeof(GType)*a->size);
+      if (param_types==NULL) {
+	g_free(name);
+	SIMPLE_OUT_OF_MEMORY_ERROR("new_signal",sizeof(GType)*a->size);
+      }
+
+      for (i=n_params=0; i<a->size; i++) {
+	if (TYPEOF(ITEM(a)[i]) != PIKE_T_STRING)
+	  continue;
+	if (is_same_string(ITEM(a)[i].u.string,_STR("int"))) {
+	  param_types[n_params]=G_TYPE_INT;
+	  n_params++;
+	} else if (is_same_string(ITEM(a)[i].u.string,_STR("float"))) {
+	  param_types[n_params]=G_TYPE_DOUBLE;
+	  n_params++;
+	} else if (is_same_string(ITEM(a)[i].u.string,_STR("string"))) {
+	  param_types[n_params]=G_TYPE_STRING;
+	  n_params++;
+	} else if (is_same_string(ITEM(a)[i].u.string,_STR("object"))) {
+	  param_types[n_params]=G_TYPE_OBJECT;
+	  n_params++;
+	} else {
+	  param_types[n_params]=G_TYPE_POINTER;
+	  n_params++;
+	}
+
+      }
+      pgtk2_pop_n_elems(args);
+      id=g_signal_newv(name,G_TYPE_FROM_INSTANCE(THIS->obj),G_SIGNAL_RUN_LAST,
+		       NULL,NULL,NULL,pgtk2_marshaller,return_type,
+		       n_params,param_types);
+      push_int(id);
+      xfree(param_types);
+      g_free(name);
+    }
+  }
+}
+
+void signal_stop(string signal_name)
+//! Stop the emission of a signal.
+{
+  char *s;
+  get_all_args("signal_stop",args,"%s",&s);
+  gtk_signal_emit_stop_by_name(GTK_OBJECT(THIS->obj),s);
+  RETURN_THIS();
+}
+
+void notify(string property);
+//! Emits a "notify" signal for the named property on the object.
+
+void accel_groups_activate(int accel_key, int accel_mods)
+//! Finds the first accelerator in an GTK.AccelGroup attached to this object
+//! that matches accel_key and accel_mods, and activates that accelerator.
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE accel_key;
+    INT_TYPE accel_mods;
+    get_all_args("accel_groups_activate",args,"%i%i",&accel_key,&accel_mods);
+    gtk_accel_groups_activate(G_OBJECT(THIS->obj),accel_key,accel_mods);
+  }
+  RETURN_THIS();
+}
+
+require gtk210;
+/*
+object ref_sink();
+//! Increase the reference count of this object, and possibly remove the
+//! floating reference, if this object has a floating reference.
+*/
+
+int is_floating();
+//! Checks whether this object has a floating reference.
+endrequire;
+
+string get_docs()
+//! Get documentation on object
+{
+  pgtk2_get_doc(G_OBJECT(THIS->obj), NULL);
+}
+
+%{
+void pgtk2_object_destroy_data(gpointer data) {
+  struct svalue *sv=(struct svalue *)data;
+  free_svalue(sv);
+  g_free(sv);
+}
+%}
+
+object set_data(string name, mixed arg)
+//! Each object carries around a table of associations from strings to
+//! pointers. This function lets you set an association.
+//!
+//! If the object already had an association with that name, the old
+//! association will be destroyed.
+{
+  pgtk2_verify_inited();
+  {
+    char *name;
+    struct svalue *sv,*sv1;
+
+    get_all_args("set_data",args,"%s%*",&name,&sv);
+    sv1=(struct svalue *)g_malloc(sizeof(struct svalue));
+    assign_svalue_no_free(sv1,sv);
+    g_object_set_data_full(G_OBJECT(THIS->obj), name, (void *)sv1,
+			   pgtk2_object_destroy_data);
+  }
+  RETURN_THIS();
+}
+
+object get_data(string name)
+//! Gets a named field from the object.
+{
+  pgtk2_verify_inited();
+  {
+    struct svalue *sv;
+    char *name;
+
+    get_all_args("get_data",args,"%s",&name);
+    sv=(struct svalue *)g_object_get_data(G_OBJECT(THIS->obj),name);
+    pop_n_elems(args);
+    if (sv) push_svalue(sv); else push_undefined();
+  }
+}

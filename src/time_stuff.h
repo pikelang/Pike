@@ -1,15 +1,13 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
 /*
- * $Id: time_stuff.h,v 1.8 1998/03/28 14:57:08 grubba Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef TIME_STUFF_H
 #define TIME_STUFF_H
 
-#include "machine.h"
+#include "global.h"
 
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>
@@ -24,7 +22,9 @@
 # endif
 #endif
 
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+# include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 # include <winsock.h>
 #endif
 
@@ -59,6 +59,12 @@
     }						\
   } while(0)
 
+/* Note: fdlib.c contains a function local_time_to_utc that converts a
+ * time_t containing local time to a real one (i.e. UTC). It might be
+ * generally useful but is so far slightly MS specific, which is why
+ * it still resides in fdlib.c. (It just needs some more of the usual
+ * HAVE_XYZ configure test hoopla.) */
+
 #ifndef STRUCT_TIMEVAL_DECLARED
 #define STRUCT_TIMEVAL_DECLARED
 #endif
@@ -71,5 +77,28 @@ struct timeval
 };
 #endif
 
+PMOD_EXPORT extern struct timeval current_time;
+PMOD_EXPORT extern int current_time_invalid;
+
+#define INVALIDATE_CURRENT_TIME() do { current_time_invalid = 1; } while (0)
+#define UPDATE_CURRENT_TIME() do {					\
+	    GETTIMEOFDAY(&current_time);				\
+	    current_time_invalid = 0;					\
+	} while (0)
+#define ACCURATE_GETTIMEOFDAY(X) do {					\
+	    UPDATE_CURRENT_TIME();					\
+	    *(X) = current_time;					\
+	} while (0)
+#define ACCURATE_GETTIMEOFDAY_RVAL(X, ___rval) do {			\
+	    (___rval) = GETTIMEOFDAY(&current_time);			\
+	    current_time_invalid = 0;					\
+	    *(X) = current_time;					\
+	} while (0)
+#define INACCURATE_GETTIMEOFDAY(X) do {					\
+	    /* unlikely() not available */				\
+	    if (!(current_time_invalid)) { }				\
+	    else UPDATE_CURRENT_TIME();					\
+	    *(X) = current_time;					\
+	} while (0)
 
 #endif

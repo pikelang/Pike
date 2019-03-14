@@ -1,18 +1,13 @@
-# $Id: Makefile.in,v 1.5 1999/11/18 08:01:05 hubbe Exp $
-# (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
-MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=postgres.o pgresult.o
 POSTGRES_SUPPORTED=@POSTGRES_SUPPORTED@
+MODULE_SPOTLESS_EXTRA=pgres_config.h
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
-
-spotless: clean
-	-rm config.* pgres_config.h
 
 @dependencies@

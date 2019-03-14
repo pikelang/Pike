@@ -1,0 +1,34 @@
+/* -*- C -*- */
+class GTK2.DrawingArea;
+inherit GTK2.Widget;
+
+//! The drawing area is a window you can draw in.
+//! Please note that you <b>must</b> handle refresh and resize events
+//! on your own. Use W(pDrawingArea) for a drawingarea with automatic
+//! refresh/resize handling.
+//! IMG: GTK2.DrawingArea()->set_size_request(100,100)
+
+void create(?mapping(string:mixed) props)
+//! Create a new drawing area.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_DRAWING_AREA);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gda;
+    gda=gtk_drawing_area_new();
+    THIS->obj=G_OBJECT(gda);
+  }
+  pgtk2__init_this_object();
+}
+
+%{
+#undef TWIN
+#undef _GC
+#define TWIN GTK_WIDGET(THIS->obj)->window
+#define GC(X) ((GdkGC*)get_gdkobject(X,gc))
+%}
+
+#include "common_draw.inc"

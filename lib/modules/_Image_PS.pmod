@@ -1,6 +1,10 @@
 #pike __REAL_VERSION__
 
-string find_in_path( string file )
+//! @appears Image.PS
+//! Codec for the Adobe page description language PostScript.
+//! Uses Ghostscript for decoding or built-in support.
+
+protected string find_in_path( string file )
 {
   string path=getenv("PATH");
   foreach(path ? path/":" : ({}) , path)
@@ -8,63 +12,229 @@ string find_in_path( string file )
       return path;
 }
 
+//! Decodes the postscript @[data] into an image object
+//! using Ghostscript.
+//! @param options
+//!   Optional decoding parameters.
+//!   @mapping
+//!     @member int "dpi"
+//!       The resolution the image should be rendered in.
+//!       Defaults to 100.
+//!     @member string "device"
+//!       The selected Ghostscript device. Defaults to "ppmraw".
+//!     @member string "binary"
+//!       Path to the Ghostscript binary to be used. If missing
+//!       the environment paths will be searched for a file "gs"
+//!       to be used instead.
+//!     @member int(0..1) "force_gs"
+//!	   Forces use of Ghostscript for EPS files instead
+//!	   of Pikes native support.
+//!	@member int(0..1) "eps_crop"
+//!	   Use -dEPSCrop option to Ghostscript to crop the
+//!	   BoundingBox for a EPS file.
+//!	@member int(0..1) "cie_color"
+//!	   Use -dUseCIEColor option to Ghostscript for
+//!	   mapping color values through a CIE color space.
+//!     @member string "file"
+//!        Filename to read. If this is specified, it will be
+//!        passed along to the @tt{gs@} binary, so that it can
+//!        read the file directly. If this is specified @[data]
+//!        may be set to @expr{0@} (zero).
+//!   @endmapping
+//!
+//! @note
+//!   Some versions of @tt{gs@} on MacOS X have problems with
+//!   reading files on stdin. If this occurrs, try writing to
+//!   a plain file and specifying the @tt{file@} option.
+//!
+//! @note
+//!   @tt{gs@} versions 7.x and earlier don't support rendering
+//!   of EPSes if they are specified with the @tt{file@} option.
+//!   If this is a problem, upgrade to @tt{gs@} version 8.x or
+//!   later.
 object decode( string data, mapping|void options )
 {
   if(!options) options = ([]);
-  object fd, fd2;
-  object fd3, fd4;
-  string bbox;
-  int llx, lly;
-  int urx, ury;
-  fd = Stdio.File();
-  fd2 = fd->pipe();
+  if (data) {
+    if(has_prefix(data, "\xc5\xd0\xd3\xc6")) {
+      // DOS EPS Binary Header.
+      int ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len, sum;
+      sscanf(data, "%*4c%-4c%-4c%-4c%-4c%-4c%-4c%-2c",
+	     ps_start, ps_len, meta_start, meta_len,
+	     tiff_start, tiff_len, sum);
+#if constant(Image.TIFF.decode)
+      if (tiff_start && tiff_len) {
+	return Image.TIFF.decode(data[tiff_start..tiff_start + tiff_len-1]);
+      }
+#endif
+      data = data[ps_start..ps_start+ps_len-1];
+    }
+    if(data[0..3] != "%!PS")
+      error("This is not a postscript file!\n");
 
-  fd3 = Stdio.File();
-  fd4 = fd3->pipe();
-
-  if(data[0..3] != "%!PS")
-    error("This is not a postscrip file!\n");
-
-  if(sscanf(data, "%*s\n%%%%BoundingBox: %s\n", bbox) == 2)
-  {
-    int x0,x1,y0,y1;
-    sscanf(bbox, "%d %d %d %d", x0,y0,x1,y1 );
-    llx = (int)((x0/72.0) * (options->dpi||100)+0.01);
-    lly = (int)((y0/72.0) * (options->dpi||100)+0.01);
-    urx = (int)((x1/72.0) * (options->dpi||100)+0.01);
-    ury = (int)((y1/72.0) * (options->dpi||100)+0.01);
+    if(!options->force_gs)
+    {
+      if (has_prefix(data, "%!PS-Adobe-3.0 EPSF-3.0")) {
+	int width, height, bits, ncols;
+	int nbws, width2, encoding;
+	string init_tag;
+	if ((sscanf(data,
+		    "%*s%%ImageData:%*[ ]%d%*[ ]%d%*[ ]%d%*[ ]%d%"
+		    "*[ ]%d%*[ ]%d%*[ ]%d%*[ ]\"%s\"",
+		    width, height, bits, ncols,
+		    nbws, width2, encoding, init_tag) > 7) &&
+	    (width == width2) && (width > 0) && (height > 0) && (bits == 8) &&
+	    (< 1, 2 >)[encoding]) {
+	  // Image data present.
+	  int len;
+	  string term;
+	  string raw;
+	  if ((sscanf(data, "%*s%%%%BeginBinary:%*[ ]%d%[\r\n]%s",
+		      len, term, raw) == 5) &&
+	      (len>0) && has_prefix(raw, init_tag + term)) {
+	    raw = raw[sizeof(init_tag+term)..len-1];
+	    if (encoding == 2) {
+	      // Decode the hex data.
+#if constant(String.hex2string)
+	      raw = String.hex2string(raw - term);
+#else
+	      raw += Crypto.hex_to_string(raw - term);
+#endif
+	    }
+	    if (sizeof(raw) == width*height*(ncols+nbws)) {
+	      array(string) rows = raw/width;
+	      if ((<3,4>)[ncols]) {
+		// RGB or CMYK image.
+		array(string) channels = allocate(ncols, "");
+		int c;
+		for (c = 0; c < ncols; c++) {
+		  int i;
+		  for (i = c; i < sizeof(rows); i += ncols+nbws) {
+		    channels[c] += rows[i];
+		  }
+		}
+		if (ncols == 3) {
+		  return Image.Image(width, height, "rgb", @channels);
+		}
+		return Image.Image(width, height, "adjusted_cmyk", @channels);
+	      }
+	      string grey = "";
+	      int i;
+	      for(i = ncols; i < sizeof(rows); i += ncols+nbws) {
+		grey += rows[i];
+	      }
+	      return Image.Image(width, height, "rgb", grey, grey, grey);
+	    }
+	  }
+	}
+      }
+    }
   }
 
+  Stdio.File fd = Stdio.File();
+  object fd2 = fd->pipe();
+
+  Stdio.File fd3 = Stdio.File();
+  object fd4 = fd3->pipe();
+
   array command = ({
-    find_in_path("gs")||("/bin/sh -c gs "),
+    options->binary||find_in_path("gs")||("/bin/sh -c gs "),
     "-quiet",
     "-sDEVICE="+(options->device||"ppmraw"),
     "-r"+(options->dpi||100),
-    "-dNOPAUSE",
+    "-dBATCH",
+    "-dNOPAUSE"});
+
+  if(options->eps_crop)
+    command += ({"-dEPSCrop"});
+
+  if(options->cie_color)
+    command += ({"-dUseCIEColor"});
+
+  command += ({
     "-sOutputFile=-",
-    "-",
-    "-c quit 2>/dev/null" 
+    options->file || "-",
+    "-c",
+    "quit",
   });
 
-//   werror("running "+(command*" ")+"\n");
-  Process.create_process( command, ([
+  Process.Process pid = Process.create_process( command, ([
     "stdin":fd,
-    "stdout":fd3,
-    "stderr":fd3,
+    "stdout":fd4,
+    "stderr":fd4,
   ]));
-  destruct(fd);
-  destruct(fd3);
-  fd2->write( data );
-  if(search(data, "showpage") == -1)
-    fd2->write( "\nshowpage\n" );
-  destruct(fd2);
-  object i= Image.PNM.decode( fd4->read() );
-  
-  if(urx && ury)
-    i = i->mirrory()->copy(llx,lly,urx,ury)->mirrory();
+  fd->close();
+  fd4->close();
+
+  // Backend to use.
+  Pike.Backend be = Pike.Backend();
+
+  // Kill the gs binary after 30 seconds in case it hangs.
+  mixed co =
+    be->call_out(lambda(Process.Process pid) {
+		   if (!pid->status()) {
+		     pid->kill(9);
+		   }
+		 }, 30, pid);
+  if(!options->file)
+  {
+    if(!has_value(data, "showpage"))
+      data += "\nshowpage\n";
+    be->add_file(fd2);
+    Stdio.sendfile(({ data }), 0, 0, sizeof(data), 0, fd2,
+		   lambda(int n) {
+		     fd2->close();
+		   });
+  } else {
+    fd2->close();
+  }
+  string output = "";
+  be->add_file(fd3);
+  fd3->set_nonblocking(lambda(mixed ignored, string s) {
+			 output += s;
+		       }, 0,
+		       lambda() {
+			 fd3->close();
+			 destruct(fd3);
+		       });
+  mixed err = catch {
+    while (fd3) {
+      be(1.0);
+    }
+  };
+#if 0
+  if (err) {
+    werror("Backend failed: %s\n", describe_backtrace(err));
+  }
+#endif
+  be->remove_call_out(co);
+  int ret_code = pid->wait();
+  if(ret_code)
+    error("Ghostscript failed with exit code: %O:\n%s\n", ret_code, output);
+  object i= Image.PNM.decode( output );
+
+  if (data) {
+
+    if(data && sscanf(data, "%*s\n%%%%BoundingBox: %s\n", string bbox) == 2 &&
+       !options->eps_crop)
+    {
+      int x0,x1,y0,y1;
+      sscanf(bbox, "%d %d %d %d", x0,y0,x1,y1 );
+      int llx = (int)((x0/72.0) * (options->dpi||100)+0.01);
+      int lly = (int)((y0/72.0) * (options->dpi||100)+0.01);
+      int urx = (int)((x1/72.0) * (options->dpi||100)+0.01);
+      int ury = (int)((y1/72.0) * (options->dpi||100)+0.01);
+
+      if(urx && ury)
+	i = i->mirrory()->copy(llx,lly,urx,ury)->mirrory();
+    }
+  }
   return i;
 }
 
+//! Calls decode and returns the image in the "image"
+//! index of the mapping. This method is present for
+//! API reasons.
 mapping _decode( string data, mapping|void options )
 {
   return ([ "image":decode( data,options ) ]);
@@ -72,7 +242,16 @@ mapping _decode( string data, mapping|void options )
 
 
 
-
+//! Encodes the image object @[img] as a postscript 3.0 file.
+//! @param options
+//!   Optional extra encoding parameters.
+//!   @mapping
+//!     @member int "dpi"
+//!       The resolution of the encoded image. Defaults to 100.
+//!     @member int(0..1) "eps"
+//!       If the resulting image should be an eps instead of ps.
+//!       Defaults to 0, no.
+//!   @endmapping
 string encode(  object img, mapping|void options )
 {
   int w = img->xsize(), h = img->ysize();
@@ -102,4 +281,70 @@ string encode(  object img, mapping|void options )
   return res;
 }
 
+//! Same as encode. Present for API reasons.
 function _encode = encode;
+
+//! Decodes the header of the postscript @[data] into a mapping.
+//!
+//! @mapping
+//!   @member int "xsize"
+//!   @member int "ysize"
+//!     Size of image
+//!   @member string "type"
+//!     File type information as MIME type. Always "application/postscript".
+//!   @member string "color_space"
+//!     Color space of image. "GRAYSCALE", "LAB", RGB", "CMYK" or "UNKNOWN"
+//!  @endmapping
+//!
+public mapping decode_header(string data) {
+  if(has_prefix(data, "\xc5\xd0\xd3\xc6")) {
+    // DOS EPS Binary Header.
+    int ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len, sum;
+    sscanf(data, "%*4c%-4c%-4c%-4c%-4c%-4c%-4c%-2c",
+	   ps_start, ps_len, meta_start, meta_len,
+	   tiff_start, tiff_len, sum);
+#if constant(Image.TIFF.decode_header)
+    if (tiff_start && tiff_len) {
+      return Image.TIFF.decode_header(data[tiff_start..tiff_start + tiff_len-1]);
+    }
+#endif
+    data = data[ps_start..ps_start+ps_len-1];
+  }
+
+  if (has_prefix(data, "%!PS-Adobe-3.0 EPSF-3.0")) {
+    int width, height, bits, ncols;
+    int nbws, width2, encoding;
+    string init_tag;
+    if ((sscanf(data,
+		  "%*s%%ImageData:%*[ ]%d%*[ ]%d%*[ ]%d%*[ ]%d%"
+		  "*[ ]%d%*[ ]%d%*[ ]%d%*[ ]\"%s\"",
+		  width, height, bits, ncols,
+		  nbws, width2, encoding, init_tag) > 7) &&
+	  (width == width2) && (width > 0) && (height > 0) && (bits == 8) &&
+	  (< 1, 2 >)[encoding]) {
+	    string color_space;
+	    switch (ncols) {
+	      case 1:
+		color_space = "GRAYSCALE";
+		break;
+	      case 2:
+		color_space = "LAB";
+		break;
+	      case 3:
+		color_space = "RGB";
+		break;
+	      case 4:
+		color_space = "CMYK";
+	      break;
+	      default:
+		color_space = "UNKNOWN";
+		break;
+	    }
+	return ([ "type": "application/postscript",
+		  "xsize": width,
+		  "ysize": height,
+		  "color_space": color_space ]);
+      }
+    }
+  return 0;
+}

@@ -18,7 +18,7 @@ void handle(object o)
   object fd = Stdio.File();
   string q = o->not_query;
   int len;
-  if(!strlen(q)) q="foo";
+  if(!sizeof(q)) q="foo";
   if(q[-1]=='/') 
     q += "index.html";
   sscanf(q, "%*[/]%s", q);
@@ -45,7 +45,7 @@ void handle(object o)
 			"Server: Quick'n'dirty\r\n"
 			"Content-type: text/plain\r\n"
 			"Connection: Keep-Alive\r\n"
-			"Content-length: "+strlen(er)+"\r\n"
+			"Content-length: "+sizeof(er)+"\r\n"
 			"\r\n"+er, 200);
   }
 }
@@ -84,7 +84,7 @@ int main(int argc, array argv)
 		  }
 		}, t);
 
-#if efun(thread_set_concurrency)
+#if constant(thread_set_concurrency)
   thread_set_concurrency(10);
 #endif
   port = files.port();

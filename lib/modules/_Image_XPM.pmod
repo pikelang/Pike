@@ -1,5 +1,8 @@
 #pike __REAL_VERSION__
 
+//! @appears Image.XPM
+//! X PixMap image format.
+
 inherit Image._XPM;
 #if 0
 # define TE( X )  werror("XPM profile: %-20s ... ", (X));
@@ -16,9 +19,9 @@ int old_time,start_time;
 # define TE(X)
 #endif
 
+//! @decl mapping _decode(string bytes, mapping|void options)
 mapping _decode( string what, void|mapping opts )
 {
-  array e;
   array data;
   mapping retopts = ([ ]);
   if(!opts)
@@ -27,7 +30,7 @@ mapping _decode( string what, void|mapping opts )
   if(sscanf(what, "%*s/*%*[ \t]XPM%*[ \t]*/%*s{%s", what)  != 5)
     error("This is not a XPM image (1)\n");
 
-  if(strlen(what)<100000)
+  if(sizeof(what)<100000)
   {
     TD("Extra scan for small images");
     sscanf(what, "%s\n/* XPM */", what ) ||
@@ -46,7 +49,6 @@ mapping _decode( string what, void|mapping opts )
   data = what/"\n";
   what = 0;
   int len = sizeof(data);
-  int r, sp;
 
   TD("Trim");
   _xpm_trim_rows( data );
@@ -68,13 +70,18 @@ mapping _decode( string what, void|mapping opts )
   if(sizeof(data) < ncolors+2)
     error("Too few elements in array to decode color values\n");
   array colors;
-  if(cpp < 4)
-    colors = data[1..ncolors];
-  else
+
+// kludge? probable FIXME?
+// I can't see why the colors not always must be sorted...
+//  /Mirar 2003-01-31
+
+//   if(cpp < 4)
+//     colors = data[1..ncolors];
+//   else
     colors = sort(data[1..ncolors]);
   TD("Creating images");
-  object i = Image.image( width, height );
-  object a = Image.image( width, height,255,255,255 );
+  object i = Image.Image( width, height );
+  object a = Image.Image( width, height,255,255,255 );
   TD("Decoding image");
 //   for(int y = 0; y<height && y<sizeof(data); y++)
   _xpm_write_rows( i,a,cpp,colors,data );
@@ -100,10 +107,10 @@ array ok = ({
 
 array cmap_t;
 
+//! @decl string encode(Image.Image image, mapping|void options)
 string encode( object what, mapping|void options )
 {
   int x,y,q;
-  array lcmapt;
   TI("Encode init");
   if(!options) options = ([]);
   if(!cmap_t)
@@ -172,7 +179,7 @@ string encode( object what, mapping|void options )
     string r = "";
     int i;
     r += "\"";
-    for(i=0; i<strlen(row); i++)
+    for(i=0; i<sizeof(row); i++)
       r += cmap_t[row[i]];
     res += r+"\",\n";
   }
@@ -183,7 +190,7 @@ string encode( object what, mapping|void options )
   return res;
 }
 
-
+//! @decl Image.Image decode(string bytes)
 object decode( string what )
 {
   return _decode(what)->image;

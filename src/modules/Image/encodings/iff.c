@@ -1,12 +1,12 @@
-/* $Id: iff.c,v 1.9 2000/12/01 08:10:04 hubbe Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.9 2000/12/01 08:10:04 hubbe Exp $");
-#include "pike_macros.h"
-#include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
@@ -15,8 +15,8 @@ RCSID("$Id: iff.c,v 1.9 2000/12/01 08:10:04 hubbe Exp $");
 #include "operators.h"
 #include "builtin_functions.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 static ptrdiff_t low_parse_iff(unsigned char *data, ptrdiff_t len,
 			       unsigned char *hdr,
@@ -73,9 +73,9 @@ static struct pike_string *low_make_iff(struct svalue *s)
   size_t len;
   unsigned char lenb[4];
 
-  if(s->type != T_ARRAY || s->u.array->size != 2 ||
-     s->u.array->item[0].type != T_STRING ||
-     s->u.array->item[1].type != T_STRING)
+  if(TYPEOF(*s) != T_ARRAY || s->u.array->size != 2 ||
+     TYPEOF(s->u.array->item[0]) != T_STRING ||
+     TYPEOF(s->u.array->item[1]) != T_STRING)
     Pike_error("invalid chunk\n");
 
   add_ref(s->u.array);
@@ -108,7 +108,7 @@ struct pike_string *make_iff(char *id, struct array *chunks)
     if(chunks->size > 1)
       f_add(chunks->size);
   } else
-    push_text("");
+    push_empty_string();
   f_add(2);
   f_aggregate(2);
   res = low_make_iff(&sp[-1]);

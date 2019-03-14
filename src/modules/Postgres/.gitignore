@@ -7,6 +7,9 @@
 /make_variables
 /modlist_headers
 /modlist_segment
-/module_testsuite
+/testsuite
 /pgres_config.h
+/pgres_config.h.in
 /remake
+/stamp-h
+/stamp-h.in

@@ -1,0 +1,174 @@
+/* -*- c -*- */
+
+#include "global.h"
+
+#ifdef __NT__
+
+#include "interpret.h"
+#include "svalue.h"
+#include "object.h"
+#include "module_support.h"
+#include "pike_macros.h"
+#include "stralloc.h"
+
+#include "nettle.h"
+
+#include <winerror.h>
+#include <wincrypt.h>
+
+#ifndef NTE_EXISTS
+#define NTE_EXISTS		0x8009000FL
+#endif
+#ifndef NTE_BAD_KEYSET
+#define NTE_BAD_KEYSET		0x80090016
+#endif
+#ifndef NTE_KEYSET_NOT_DEF
+#define NTE_KEYSET_NOT_DEF	0x80090019
+#endif
+
+DECLARATIONS
+
+/*! @module Crypto
+ */
+
+/*! @module NT
+ */
+
+/*! @class CryptContext
+ *!
+ *! Class representing an HCRYPTPROV handle.
+ */
+
+PIKECLASS CryptContext
+{
+  CVAR HCRYPTPROV handle;
+
+  /*! @decl void create(string(0..255) name, string(0..255) csp, int type,@
+   *!                   int flags)
+   *! @param name
+   *! Key container name. When flags is set to @[CRYPT_VERIFYCONTEXT]
+   *! the name must be @expr{0@}.
+   *!
+   *! @param csp
+   *! The name of the Crypto Service Provider to use. If set to
+   *! @expr{0@} the user default CSP will be used.
+   */
+  PIKEFUN void create(int|string(0..255) str1, int|string(0..255) str2, int type, int flags)
+    flags ID_PROTECTED;
+  {
+    if(THIS->handle) Pike_error("Already initialized.\n");
+    if(TYPEOF(*str1) == T_STRING && str1->u.string->size_shift)
+      Pike_error("Bad argument 1. Must be 8-bit string.\n");
+    if(TYPEOF(*str2) == T_STRING && str2->u.string->size_shift)
+      Pike_error("Bad argument 2. Must be 8-bit string.\n");
+    if(!CryptAcquireContext(&THIS->handle,
+			    (TYPEOF(*str1) == T_STRING ? str1->u.string->str : 0),
+			    (TYPEOF(*str2) == T_STRING ? str2->u.string->str : 0),
+			    type, flags)) {
+      INT32 errcode = GetLastError();
+
+      switch(errcode) {
+      case NTE_EXISTS:
+	Pike_error("CryptContext->create(): Key container already exists.\n");
+	break;
+      case NTE_BAD_KEYSET:
+	Pike_error("CryptContext->create(): No default key container.\n");
+	break;
+      case NTE_KEYSET_NOT_DEF:
+	Pike_error("CryptContext->create(): Crypto Service Provider not set up correctly.\n");
+	break;
+      default:
+	Pike_error("CryptContext->create(): Failed with code 0x%08x.\n",
+		   errcode);
+	break;
+      }
+    }
+    pop_n_elems(args);
+  }
+
+  /*! @decl string(0..255) read(int size, string(0..255)|void init)
+   *!
+   *! Retreive some random data. Calls CryptGenRandom in the NT API.
+   */
+  PIKEFUN string(0..255) read(int size, string(0..255)|void init)
+    optflags OPT_EXTERNAL_DEPEND;
+  {
+    struct pike_string *res;
+    if(size<0)
+      Pike_error("Negative string length.\n");
+    if(init) {
+      NO_WIDE_STRING(init);
+      if(size==0)
+	size = init->len;
+    }
+    res = begin_shared_string(size);
+    if(init && size>0)
+      MEMCPY(res->str, init->str, MINIMUM(init->len,size));
+    if(CryptGenRandom(THIS->handle, size, (BYTE*)res->str)) {
+      pop_n_elems(args);
+      push_string(end_shared_string(res));
+    }
+    else {
+      pop_n_elems(args);
+      do_free_unlinked_pike_string (res);
+      push_int(0);
+    }
+  }
+
+  INIT
+  {
+    THIS->handle = 0;
+  }
+  EXIT
+    gc_trivial;
+  {
+    if(THIS->handle)
+    {
+      CryptReleaseContext(THIS->handle, 0);
+    }
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+void nt_init()
+{
+  INIT;
+
+#define SIMPCONST(X) \
+      add_integer_constant(#X,X,0);
+
+  SIMPCONST(PROV_RSA_FULL);
+  SIMPCONST(PROV_RSA_SIG);
+  SIMPCONST(PROV_DSS);
+  SIMPCONST(PROV_FORTEZZA);
+#ifdef PROV_MS_EXCHANGE
+  SIMPCONST(PROV_MS_EXCHANGE);
+#endif
+  SIMPCONST(PROV_SSL);
+
+  SIMPCONST(CRYPT_VERIFYCONTEXT);
+  SIMPCONST(CRYPT_NEWKEYSET);
+  SIMPCONST(CRYPT_DELETEKEYSET);
+#ifdef CRYPT_MACHINE_KEYSET
+  SIMPCONST(CRYPT_MACHINE_KEYSET);
+#endif
+#ifdef CRYPT_SILENT
+  SIMPCONST(CRYPT_SILENT);
+#endif
+
+}
+
+void nt_exit()
+{
+  EXIT;
+}
+
+#endif /* __NT__ */

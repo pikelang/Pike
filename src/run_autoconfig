@@ -1,10 +1,9 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.32 2001/09/23 21:21:16 grubba Exp $
-#
 # Bootstrap script
 
 need_to_make_depend=no
+prune_flag=""
 
 case :$PATH: in
    */NT/tools:*)
@@ -12,6 +11,11 @@ case :$PATH: in
       PATH=`echo :$PATH | sed 's@:[^:]*/NT/tools:@@g' | sed 's@^:@@'`
    ;;
 esac
+
+if test "x$1" = "x--no-recursion"; then
+  prune_flag="-prune"
+  shift
+fi
 
 if test "x$1" = "x" ; then
   base=`echo $0 | sed 's@[^/]*$@@g'`
@@ -31,48 +35,138 @@ else
   fi
 fi
 
-autoconf_version="`autoconf --version|head -1|awk '{ print $NF }'`"
+findprog() {
+  (
+    IFS=:
+    for path in $PATH; do
+      if [ -x "$path/$1" ]; then
+	return 0
+      fi
+    done
+    return 1
+  )
+}
 
-if [ "`echo $autoconf_version|awk -F. '{ print $1 }'`" -ne "2" -o \
-     "`echo $autoconf_version|awk -F. '{ print $2 }'`" -ge "50" ]; then
-  # Autoconf 2.50 and later is seriously broken.
-  echo "Autoconf version $autoconf_version is not supported." >&2
-  echo >&2
-  echo "Get and install autoconf 2.13." >&2
+# There are script wrappers for autoconf (e.g. in Debian) that tries
+# to autodetect which autoconf version configure.in etc is written
+# for. There are also configure.in scripts (e.g. in Pike) that tries
+# to detect which autoconf they're running in. These tend to fool each
+# other, so try to avoid the script wrappers.
+if findprog autoconf2.50 && findprog autoheader2.50; then
+  autoconf=autoconf2.50
+  autoheader=autoheader2.50
+else
+  autoconf=autoconf
+  autoheader=autoheader
+fi
+
+ac_args="--localdir=$localdir"
+ah_args=""
+
+autom4te_polluted="no"
+
+autoconf_version="`\"$autoconf\" --version $ac_args|head -n 1|awk '{ print $NF }'`"
+
+if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'|sed -e 's/[A-Za-z]//g'`" -ne "2" -o \
+     "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'|sed -e 's/[A-Za-z]//g'`" -le "10" -o \
+     "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'|sed -e 's/[A-Za-z]//g'`" -ge "50" ]; then
+  if [ "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'|sed -e 's/[A-Za-z]//g'`" -le "51" ]; then
+    # Autoconf 2.50 and 2.51 are seriously broken.
+    echo "Autoconf version $autoconf_version is not supported." >&2
+    echo >&2
+    echo "Get and install autoconf 2.52 or later." >&2
+    # Abort
+    exit 1
+  elif [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'|sed -e 's/[A-Za-z]//g'`" = "2" -a \
+         "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'|sed -e 's/[A-Za-z]//g'`" -ge "53" ]; then
+    # NB: autoheader 2.53 is stupid, and has broken handling of warnings.
+    #     1) The warning flags are not passed along to autoconf.
+    #     2) The option --warnings is misspelled by missing the last 's'.
+    if [ "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'|sed -e 's/[A-Za-z]//g'`" -le "53" ]; then
+      # autoconf 2.53 doesn't have --prepend-include.
+      ac_args="-Wno-obsolete --include=$localdir"
+      ah_args="--include=$localdir"
+    else
+      ac_args="-Wno-obsolete --prepend-include=$localdir"
+      ah_args="-Wno-obsolete --prepend-include=$localdir"
+    fi
+    # Attempt to kludge around Perl's stupid warnings about locale settings.
+    LANGUAGE=C LC_CTYPE=C LANG=C export LANGUAGE LC_CTYPE LANG
+    LC_MONETARY=C LC_NUMERIC=C export LC_MONETARY LC_NUMERIC
+    LC_MESSAGES=C LC_COLLATE=C export LC_MESSAGES LC_COLLATE
+    LC_TIME=C LC_ALL=C export LC_TIME LC_ALL
+    autom4te_polluted=yes
+  fi;
+else
+  echo "Warning: Using autoconf < 2.50.  Don't do this if you want to make export." >&2
+fi
+
+autoheader_version="`\"$autoheader\" --version $ah_args|head -n 1|awk '{ print $NF }'`"
+
+if [ "x$autoconf_version" != "x$autoheader_version" ]; then
+  echo "$autoheader version ($autoheader_version) differs from $autoconf version ($autoconf_version)" >&2
   # Abort
   exit 1
 else :; fi
 
+num=0
+OIFS="$IFS"
 IFS=''
-( find . -follow -type d -print || find . -type d -print ) |egrep -v '/(CVS)|(RCS)|(test-install)$'| while read dir; do
+( find . -follow -type d -print $prune_flag || \
+  find . -type d -print $prune_flag
+) | egrep -v '/(CVS)|(RCS)|(test-install)$' | sort | uniq | (
+  while read dir; do
 
-  if [ -f $dir/Makefile.am -a -f $dir/configure.in ]; then
-    # aclocal needs to be run before autoconf
-    echo "Running aclocal in $dir"
-    (cd $dir ; aclocal )
-    echo "Running automake in $dir"
-    (cd $dir ; automake )
-  fi
-
-  if [ -f $dir/acconfig.h -a $dir/configure.in ]; then
-    echo "Running autoheader in $dir"
-    ( cd $dir ; autoheader && echo foo >stamp-h.in )
-  fi
-
-  if [ -f $dir/configure.in ]; then
-    if grep AC_INIT $dir/configure.in >/dev/null; then
-      echo "Running autoconf in $dir"
-      ( cd $dir ; autoconf --localdir=$localdir )
-    else
-      echo "$dir seems to use Cygnus-configure."
+    IFS="$OIFS"
+    if [ -f "$dir/Makefile.am" -a -f "$dir/configure.in" ]; then
+      # aclocal needs to be run before autoconf
+      echo "Running aclocal in $dir"
+      (cd "$dir" ; aclocal )
+      echo "Running automake in $dir"
+      (cd "$dir" ; automake )
     fi
-  fi
 
-  if [ -f $dir/Makefile.in -a ! -f $dir/dependencies ] && egrep @dependencies@ $dir/Makefile.in >/dev/null; then
-    touch $dir/dependencies
-    need_to_make_depend=yes
-  fi
-done
+    if [ -f "$dir/Makefile.in" -a ! -f "$dir/dependencies" ] && \
+	egrep @dependencies@ "$dir/Makefile.in" >/dev/null; then
+      touch "$dir/dependencies"
+      need_to_make_depend=yes
+    fi
+    if [ -f "$dir/configure.in" ]; then
+      (
+	cd "$dir"
+	if grep AC_CONFIG_HEADER configure.in >/dev/null; then
+	  echo "Running $autoheader in $dir"
+	  "$autoheader" $ah_args && echo foo >stamp-h.in
+	fi
+	if grep AC_INIT configure.in >/dev/null; then
+	  echo "Running $autoconf in $dir"
+	  "$autoconf" $ac_args
+	else
+	  echo "$dir seems to use Cygnus-configure."
+	fi
+	if [ "$autom4te_polluted" = "yes" ]; then
+          # autoconf 2.53+ pollutes the source tree with cache-directories.
+	  for d in autom4te*.cache; do
+	    test -d "$d" && rm -rf "$d"
+	  done
+	fi
+      ) &
+      num=`expr $num + 1`
+      if [ $num -ge 12 ] ; then
+        num=0
+        wait
+      fi
+    fi
+
+  done
+
+  wait
+) | cat
+
+IFS="$OIFS"
+
+# Note: The above use of cat is somewhat magic. It forces the script
+#       to wait until all the subshells have closed their stdout.
 
 if test "x$need_to_make_depend" = "xyes" ; then
   echo You need to run \"make depend\" after \"configure\", and then \"configure\" again.

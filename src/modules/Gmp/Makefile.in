@@ -1,14 +1,17 @@
-# $Id: Makefile.in,v 1.21 2001/09/06 20:37:28 grubba Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=mpz_glue.o next_prime.o my_mpz_xor.o mpq.o mpf.o
+SRC_TARGETS=$(SRCDIR)/prime_table.out
 
 PRIME_LIMIT=1024
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
-@dynamic_module_makefile@
+# Reset the symbol prefix base to the empty string.
+PRECOMPILER_ARGS="--base="
+
+@static_module_makefile@
 
 # UnixWare make needs help to find the source file...
 mpq.o: $(SRCDIR)/mpq.c
@@ -16,19 +19,9 @@ mpq.o: $(SRCDIR)/mpq.c
 # UnixWare make needs help to find the source file...
 mpf.o: $(SRCDIR)/mpf.c
 
-next_prime.o: prime_table.out
+next_prime.o: $(SRCDIR)/prime_table.out
 
-prime_table.out: prime_table_@CROSS@
-	./prime_table_@CROSS@ $(PRIME_LIMIT) >prime_table.out
-
-# Not cross-compiling
-prime_table_no: $(SRCDIR)/prime_table.c
-	$(CC) $(CFLAGS) $(SRCDIR)/prime_table.c -o prime_table_no
-
-# Cross-compiling
-prime_table_yes: $(SRCDIR)/prime_table.pike
-	test -f ./prime_table_yes || ln -s $(SRCDIR)/prime_table.pike ./prime_table_yes || cp $(SRCDIR)/prime_table.pike ./prime_table_yes
-
-depend: prime_table.out
+$(SRCDIR)/prime_table.out: $(SRCDIR)/prime_table.pike
+	$(BUILD_BASE)/precompile.sh $(SRCDIR)/prime_table.pike $(PRIME_LIMIT) >$(SRCDIR)/prime_table.out || { rm $(SRCDIR)/prime_table.out; exit 1; }
 
 @dependencies@

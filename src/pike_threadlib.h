@@ -1,6 +1,9 @@
 /*
- * $Id: pike_threadlib.h,v 1.6 2001/09/20 19:07:57 hubbe Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
 
@@ -10,8 +13,9 @@
  * for pike threads.
  */
 
-
-#include "machine.h"
+#include "global.h"
+#include "pike_embed.h"
+#include "pike_rusage.h"
 
 /* Needed for the sigset_t typedef, which is needed for
  * the pthread_sigsetmask() prototype on Solaris 2.x.
@@ -22,6 +26,7 @@
 /* Needed for pthread_t on OSF/1 */
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
+
 #ifdef PIKE_THREADS
 
 /* The fp macro conflicts with Solaris's <pthread.h>. */
@@ -55,6 +60,12 @@
 /* AIX is *STUPID* - Hubbe */
 #undef func_data
 
+/* So is OSF/1 - Marcus */
+#undef try
+#undef except
+#undef finally
+#undef leave
+
 #undef HAVE_PTHREAD_H
 #endif /* _MIT_POSIX_THREADS */
 
@@ -64,7 +75,26 @@
 #undef HAVE_SPROC
 #endif /* _SGI_SPROC_THREADS */
 
+#ifdef HAVE_THREAD_H
+#include <thread.h>
+#endif
+#ifdef HAVE_SCHED_H
+#include <sched.h>
+#endif
 
+#ifdef USE_DARWIN_THREADS_WITHOUT_MACH
+/* OSX Threads don't get along with mach headers! */
+#else
+#ifdef HAVE_MACH_TASK_INFO_H
+#include <mach/task_info.h>
+#endif
+#ifdef HAVE_MACH_TASK_H
+#include <mach/task.h>
+#endif
+#ifdef HAVE_MACH_MACH_INIT_H
+#include <mach/mach_init.h>
+#endif
+#endif /* USE_DARWIN_THREADS_WITHOUT_MACH */
 
 /* Restore the fp macro. */
 #ifdef FRAMEPOINTER_WAS_DEFINED
@@ -72,11 +102,27 @@
 #undef FRAMEPOINTER_WAS_DEFINED
 #endif /* FRAMEPOINTER_WAS_DEFINED */
 
-
-extern int num_threads;
-PMOD_EXPORT extern int live_threads;
-struct object;
+PMOD_EXPORT extern int threads_disabled;
+PMOD_EXPORT extern ptrdiff_t thread_storage_offset;
+PMOD_EXPORT extern struct program *thread_id_prog;
+PMOD_EXPORT extern int num_threads;
 PMOD_EXPORT extern size_t thread_stack_size;
+
+PMOD_EXPORT void thread_low_error (int errcode, const char *cmd,
+				   const char *fname, int lineno);
+
+#define LOW_THREAD_CHECK_NONZERO_ERROR(CALL) do {			\
+    int thread_errcode_ = (CALL);					\
+    if (thread_errcode_)						\
+      thread_low_error(thread_errcode_, TOSTR(CALL),			\
+		       __FILE__, __LINE__);				\
+  } while (0)
+
+#ifdef CONFIGURE_TEST
+#define USE_ERRORCHECK_MUTEX 1
+#else
+#define USE_ERRORCHECK_MUTEX (debug_options & ERRORCHECK_MUTEXES)
+#endif
 
 #define DEFINE_MUTEX(X) PIKE_MUTEX_T X
 
@@ -97,27 +143,41 @@ void th_atfork_child(void);
 
 #define THREAD_T pthread_t
 #define PIKE_MUTEX_T pthread_mutex_t
-#define mt_init(X) pthread_mutex_init((X),0)
 
-#if !defined(HAVE_PTHREAD_MUTEX_RECURSIVE_NP) && defined(HAVE_PTHREAD_MUTEX_RECURSIVE)
-#define PTHREAD_MUTEX_RECURSIVE_NP PTHREAD_MUTEX_RECURSIVE
-#define HAVE_PTHREAD_MUTEX_RECURSIVE_NP
+#ifdef PIKE_MUTEX_ERRORCHECK
+#define mt_init(X) do {							\
+    if (USE_ERRORCHECK_MUTEX) {						\
+      pthread_mutexattr_t attr;						\
+      pthread_mutexattr_init(&attr);					\
+      pthread_mutexattr_settype(&attr, PIKE_MUTEX_ERRORCHECK);		\
+      pthread_mutex_init((X), &attr);					\
+    }									\
+    else								\
+      pthread_mutex_init((X),0);					\
+  } while (0)
+#define DO_IF_PIKE_MUTEX_ERRORCHECK(X) X
+#else
+#define mt_init(X) pthread_mutex_init((X),0)
+#define DO_IF_PIKE_MUTEX_ERRORCHECK(X)
 #endif
 
-#ifdef HAVE_PTHREAD_MUTEX_RECURSIVE_NP
+#ifdef PIKE_MUTEX_RECURSIVE
 #define mt_init_recursive(X)						\
     do{ \
       pthread_mutexattr_t attr;					\
       pthread_mutexattr_init(&attr);					\
-      pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);	\
+      pthread_mutexattr_settype(					\
+	&attr,								\
+	PIKE_MUTEX_RECURSIVE						\
+	DO_IF_PIKE_MUTEX_ERRORCHECK (| PIKE_MUTEX_ERRORCHECK));		\
       pthread_mutex_init((X), &attr);					\
     }while(0)
 #endif
 
-#define mt_lock(X) pthread_mutex_lock(X)
+#define mt_lock(X) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_mutex_lock(X))
 #define mt_trylock(X) pthread_mutex_trylock(X)
-#define mt_unlock(X) pthread_mutex_unlock(X)
-#define mt_destroy(X) pthread_mutex_destroy(X)
+#define mt_unlock(X) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_mutex_unlock(X))
+#define mt_destroy(X) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_mutex_destroy(X))
 
 /* SIGH! No setconcurrency in posix threads. This is more or less
  * needed to make usable multi-threaded programs on solaris machines
@@ -125,13 +185,16 @@ void th_atfork_child(void);
  * threaded.
  */
 #define th_setconcurrency(X) 
-#ifdef HAVE_PTHREAD_YIELD
-#define th_yield()	pthread_yield()
-#else
-#define th_yield()
-#endif /* HAVE_PTHREAD_YIELD */
-extern pthread_attr_t pattr;
-extern pthread_attr_t small_pattr;
+#ifdef HAVE_SCHED_YIELD
+#define low_th_yield() sched_yield()
+#elif defined (HAVE_PTHREAD_YIELD)
+#define low_th_yield()	pthread_yield()
+#elif defined (HAVE_PTHREAD_YIELD_NP)
+/* Some pthread libs define yield as non-portable function. */
+#define low_th_yield()	pthread_yield_np()
+#endif
+PMOD_EXPORT extern pthread_attr_t pattr;
+PMOD_EXPORT extern pthread_attr_t small_pattr;
 
 #define th_create(ID,fun,arg) pthread_create(ID,&pattr,fun,arg)
 #define th_create_small(ID,fun,arg) pthread_create(ID,&small_pattr,fun,arg)
@@ -143,14 +206,12 @@ extern pthread_attr_t small_pattr;
 #define th_setspecific pthread_setspecific
 #define th_getspecific pthread_getspecific
 
-
 #ifdef HAVE_PTHREAD_KILL
-#define th_kill(ID,sig) pthread_kill((ID),(sig))
+#define th_kill(ID,sig) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_kill((ID),(sig)))
 #else /* !HAVE_PTHREAD_KILL */
-/* MacOS X (aka Darwin) doesn't have pthread_kill. */
+/* MacOS X (aka Darwin) prior to 10.2 doesn't have pthread_kill. */
 #define th_kill(ID,sig)
 #endif /* HAVE_PTHREAD_KILL */
-#define th_join(ID,res) pthread_join((ID),(res))
 #ifdef HAVE_PTHREAD_COND_INIT
 #define COND_T pthread_cond_t
 
@@ -169,7 +230,7 @@ extern pthread_attr_t small_pattr;
 #define co_wait(COND, MUTEX) pthread_cond_wait((COND), (MUTEX))
 #define co_signal(X) pthread_cond_signal(X)
 #define co_broadcast(X) pthread_cond_broadcast(X)
-#define co_destroy(X) pthread_cond_destroy(X)
+#define co_destroy(X) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_cond_destroy(X))
 #else
 #error No way to make cond-vars
 #endif /* HAVE_PTHREAD_COND_INIT */
@@ -177,17 +238,16 @@ extern pthread_attr_t small_pattr;
 #endif /* POSIX_THREADS */
 
 
-
-
 #ifdef UNIX_THREADS
+
 #define THREAD_T thread_t
 #define PTHREAD_MUTEX_INITIALIZER DEFAULTMUTEX
 #define PIKE_MUTEX_T mutex_t
-#define mt_init(X) mutex_init((X),USYNC_THREAD,0)
-#define mt_lock(X) mutex_lock(X)
+#define mt_init(X) LOW_THREAD_CHECK_NONZERO_ERROR (mutex_init((X),USYNC_THREAD,0))
+#define mt_lock(X) LOW_THREAD_CHECK_NONZERO_ERROR (mutex_lock(X))
 #define mt_trylock(X) mutex_trylock(X)
-#define mt_unlock(X) mutex_unlock(X)
-#define mt_destroy(X) mutex_destroy(X)
+#define mt_unlock(X) LOW_THREAD_CHECK_NONZERO_ERROR (mutex_unlock(X))
+#define mt_destroy(X) LOW_THREAD_CHECK_NONZERO_ERROR (mutex_destroy(X))
 
 #define th_setconcurrency(X) thr_setconcurrency(X)
 
@@ -196,8 +256,7 @@ extern pthread_attr_t small_pattr;
 #define th_exit(foo) thr_exit(foo)
 #define th_self() thr_self()
 #define th_kill(ID,sig) thr_kill((ID),(sig))
-#define th_yield() thr_yield()
-#define th_join(ID,res) thr_join((ID), NULL, (res))
+#define low_th_yield() thr_yield()
 
 #define COND_T cond_t
 #define co_init(X) cond_init((X),USYNC_THREAD,0)
@@ -206,8 +265,8 @@ extern pthread_attr_t small_pattr;
 #define co_broadcast(X) cond_broadcast(X)
 #define co_destroy(X) cond_destroy(X)
 
-
 #endif /* UNIX_THREADS */
+
 
 #ifdef SGI_SPROC_THREADS
 
@@ -229,8 +288,7 @@ extern pthread_attr_t small_pattr;
 #define th_create_small(ID, fun, arg)	(((*(ID)) = sproc(fun, PIKE_SPROC_FLAGS, arg)) == -1)
 #define th_exit(X)	exit(X)
 #define th_self()	getpid()
-#define th_yield()	sginap(0)
-#define th_join(ID,res)	/*********/
+#define low_th_yield()	sginap(0)
 #define th_equal(X,Y) ((X)==(Y))
 #define th_hash(X) ((unsigned INT32)(X))
 
@@ -242,35 +300,52 @@ extern pthread_attr_t small_pattr;
 
 
 #ifdef NT_THREADS
+
 #include <process.h>
 #include <windows.h>
 
+#define LOW_THREAD_CHECK_ZERO_ERROR(CALL) do {			\
+    if (!(CALL))						\
+      thread_low_error(GetLastError(), TOSTR(CALL),		\
+		       __FILE__, __LINE__);			\
+  } while (0)
+
 #define THREAD_T unsigned
 #define th_setconcurrency(X)
-#define th_create(ID,fun,arg) low_nt_create_thread(2*1024*1024,fun, arg,ID)
+#define th_create(ID,fun,arg) low_nt_create_thread(thread_stack_size,fun, arg,ID)
 #define th_create_small(ID,fun,arg) low_nt_create_thread(8192*sizeof(char *), fun,arg,ID)
 #define TH_RETURN_TYPE unsigned __stdcall
 #define TH_STDCALL __stdcall
 #define th_exit(foo) _endthreadex(foo)
-#define th_join(ID,res)	/******************* FIXME! ****************/
 #define th_self() GetCurrentThreadId()
 #define th_destroy(X)
-#define th_yield() Sleep(0)
+#define low_th_yield() Sleep(0)
 #define th_equal(X,Y) ((X)==(Y))
 #define th_hash(X) (X)
 
+/* FIXME: Check if we can switch to the cheaper CRITICAL_SECTION objects. */
+
+/* Note that Windows mutexes always allow recursive locking. */
+
 #define PIKE_MUTEX_T HANDLE
-#define mt_init(X) CheckValidHandle((*(X)=CreateMutex(NULL, 0, NULL)))
-#define mt_lock(X) WaitForSingleObject(CheckValidHandle(*(X)), INFINITE)
-#define mt_trylock(X) WaitForSingleObject(CheckValidHandle(*(X)), 0)
-#define mt_unlock(X) ReleaseMutex(CheckValidHandle(*(X)))
-#define mt_destroy(X) CloseHandle(CheckValidHandle(*(X)))
+#define mt_init(X) LOW_THREAD_CHECK_ZERO_ERROR ((*(X)=CreateMutex(NULL, 0, NULL)))
+#define mt_lock(X)							\
+  LOW_THREAD_CHECK_ZERO_ERROR (						\
+    WaitForSingleObject(CheckValidHandle(*(X)), INFINITE) == WAIT_OBJECT_0)
+#define mt_trylock(X)							\
+  (WaitForSingleObject(CheckValidHandle(*(X)), 0) != WAIT_FAILED)
+#define mt_unlock(X) LOW_THREAD_CHECK_ZERO_ERROR (ReleaseMutex(CheckValidHandle(*(X))))
+#define mt_destroy(X) LOW_THREAD_CHECK_ZERO_ERROR (CloseHandle(CheckValidHandle(*(X))))
 
 #define EVENT_T HANDLE
-#define event_init(X) CheckValidHandle(*(X)=CreateEvent(NULL, 1, 0, NULL))
-#define event_signal(X) SetEvent(CheckValidHandle(*(X)))
-#define event_destroy(X) CloseHandle(CheckValidHandle(*(X)))
-#define event_wait(X) WaitForSingleObject(CheckValidHandle(*(X)), INFINITE)
+#define event_init(X) LOW_THREAD_CHECK_ZERO_ERROR (*(X)=CreateEvent(NULL, 1, 0, NULL))
+#define event_signal(X) LOW_THREAD_CHECK_ZERO_ERROR (SetEvent(CheckValidHandle(*(X))))
+#define event_destroy(X) LOW_THREAD_CHECK_ZERO_ERROR (CloseHandle(CheckValidHandle(*(X))))
+#define event_wait(X)							\
+  LOW_THREAD_CHECK_ZERO_ERROR (						\
+    WaitForSingleObject(CheckValidHandle(*(X)), INFINITE) == WAIT_OBJECT_0)
+#define event_wait_msec(X, MSEC)					\
+  WaitForSingleObject(CheckValidHandle(*(X)), (MSEC))
 
 /* No fork -- no atfork */
 #define th_atfork(X,Y,Z)
@@ -278,7 +353,10 @@ extern pthread_attr_t small_pattr;
 #define th_atfork_parent()
 #define th_atfork_child()
 
-#endif
+/* FIXME: Use windows condition variables if running on Vista or
+ * Windows Server 2008. */
+
+#endif	/* NT_THREADS */
 
 
 #if !defined(COND_T) && defined(EVENT_T) && defined(PIKE_MUTEX_T)
@@ -299,52 +377,14 @@ typedef struct cond_t_s
 
 #define COND_T struct cond_t_s
 
-#define co_init(X) do { mt_init(& (X)->lock), (X)->head=(X)->tail=0; }while(0)
+#define co_init(X) do { mt_init(& (X)->lock); (X)->head=(X)->tail=0; }while(0)
 
 PMOD_EXPORT int co_wait(COND_T *c, PIKE_MUTEX_T *m);
 PMOD_EXPORT int co_signal(COND_T *c);
 PMOD_EXPORT int co_broadcast(COND_T *c);
 PMOD_EXPORT int co_destroy(COND_T *c);
 
-#endif
-
-extern int th_running;
-
-PMOD_EXPORT extern PIKE_MUTEX_T interpreter_lock;
-
-#if defined(PIKE_DEBUG) && !defined(__NT__)
-
-/* This is a debug wrapper to enable checks that the interpreter lock
- * is hold by the current thread. */
-
-extern THREAD_T debug_locking_thread;
-#define SET_LOCKING_THREAD (debug_locking_thread = th_self(), 0)
-
-#define mt_lock_interpreter() (mt_lock(&interpreter_lock) || SET_LOCKING_THREAD)
-#define mt_trylock_interpreter() (mt_trylock(&interpreter_lock) || SET_LOCKING_THREAD)
-#define mt_unlock_interpreter() (mt_unlock(&interpreter_lock))
-#define co_wait_interpreter(COND) \
-  do {co_wait((COND), &interpreter_lock); SET_LOCKING_THREAD;} while (0)
-
-#define CHECK_INTERPRETER_LOCK() do {					\
-  if (th_running) {							\
-    THREAD_T self;							\
-    if (!mt_trylock(&interpreter_lock))					\
-      fatal("Interpreter is not locked.\n");				\
-    self = th_self();							\
-    if (!th_equal(debug_locking_thread, self))				\
-      fatal("Interpreter is not locked by this thread.\n");		\
-  }									\
-} while (0)
-
-#else
-
-#define mt_lock_interpreter() (mt_lock(&interpreter_lock))
-#define mt_trylock_interpreter() (mt_trylock(&interpreter_lock))
-#define mt_unlock_interpreter() (mt_unlock(&interpreter_lock))
-#define co_wait_interpreter(COND) do {co_wait((COND), &interpreter_lock);} while (0)
-
-#endif
+#endif	/* !COND_T && EVENT_T && PIKE_MUTEX_T */
 
 #ifndef TH_RETURN_TYPE
 #define TH_RETURN_TYPE void *
@@ -358,8 +398,13 @@ extern THREAD_T debug_locking_thread;
 #define th_destroy(X)
 #endif
 
-#ifndef th_yield
-#define th_yield()
+#ifndef low_th_yield
+#ifdef HAVE_THR_YIELD
+#define low_th_yield() thr_yield()
+#else
+#define low_th_yield() 0
+#define HAVE_NO_YIELD
+#endif
 #endif
 
 #ifndef th_equal
@@ -370,58 +415,110 @@ extern THREAD_T debug_locking_thread;
 #define th_hash(X) hashmem((unsigned char *)&(X),sizeof(THREAD_T), 16)
 #endif
 
+PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, long s, long nanos);
 
-/* Define to get a debug-trace of some of the threads operations. */
-/* #define VERBOSE_THREADS_DEBUG	0 */ /* Some debug */
-/* #define VERBOSE_THREADS_DEBUG	1 */ /* Lots of debug */
+#ifndef CONFIGURE_TEST
 
-#ifndef VERBOSE_THREADS_DEBUG
-#define THREADS_FPRINTF(L,X)
+struct interleave_mutex
+{
+  struct interleave_mutex *next;
+  struct interleave_mutex *prev;
+  PIKE_MUTEX_T lock;
+};
+
+#define IMUTEX_T struct interleave_mutex
+
+#define DEFINE_IMUTEX(name) IMUTEX_T name
+
+PMOD_EXPORT void pike_lock_imutex (IMUTEX_T *im COMMA_DLOC_DECL);
+PMOD_EXPORT void pike_unlock_imutex (IMUTEX_T *im COMMA_DLOC_DECL);
+
+/* NOTE: Threads are enabled during the locking operation. */
+#define LOCK_IMUTEX(IM) pike_lock_imutex ((IM) COMMA_DLOC)
+
+/* NOTE: MUST be called in a THREADS_DISALLOW() context. */
+#define UNLOCK_IMUTEX(IM) pike_unlock_imutex ((IM) COMMA_DLOC)
+
+#define THREAD_TABLE_SIZE 127  /* Totally arbitrary prime */
+
+extern PIKE_MUTEX_T thread_table_lock;
+extern struct thread_state *thread_table_chains[THREAD_TABLE_SIZE];
+extern int num_pike_threads;
+
+/* Note: thread_table_lock is held while the code is run. */
+#define FOR_EACH_THREAD(TSTATE, CODE)					\
+  do {									\
+    INT32 __tt_idx__;							\
+    mt_lock( & thread_table_lock );					\
+    for(__tt_idx__=0; __tt_idx__<THREAD_TABLE_SIZE; __tt_idx__++)	\
+      for(TSTATE=thread_table_chains[__tt_idx__];			\
+	  TSTATE;							\
+	  TSTATE=TSTATE->hashlink) {					\
+	CODE;								\
+      }									\
+    mt_unlock( & thread_table_lock );					\
+  } while (0)
+
+PMOD_EXPORT void pike_low_lock_interpreter (DLOC_DECL);
+PMOD_EXPORT void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL);
+PMOD_EXPORT int pike_low_timedwait_interpreter (COND_T *cond,
+						long sec, long nsec
+						COMMA_DLOC_DECL);
+
+PMOD_EXPORT void pike_lock_interpreter (DLOC_DECL);
+PMOD_EXPORT void pike_unlock_interpreter (DLOC_DECL);
+PMOD_EXPORT void pike_wait_interpreter (COND_T *cond COMMA_DLOC_DECL);
+PMOD_EXPORT int pike_timedwait_interpreter (COND_T *cond,
+					    long sec, long nsec
+					    COMMA_DLOC_DECL);
+
+#define low_mt_lock_interpreter() pike_low_lock_interpreter (DLOC)
+#define low_co_wait_interpreter(COND)					\
+  pike_low_wait_interpreter (COND COMMA_DLOC)
+#define low_co_wait_interpreter_timeout(COND, SEC, NSEC)		\
+  pike_low_timedwait_interpreter (COND, SEC, NSEC COMMA_DLOC)
+
+#define mt_lock_interpreter() pike_lock_interpreter (DLOC)
+#define mt_unlock_interpreter() pike_unlock_interpreter (DLOC)
+#define co_wait_interpreter(COND) pike_wait_interpreter (COND COMMA_DLOC)
+#define co_wait_interpreter_timeout(COND, SEC, NSEC)			\
+  pike_timedwait_interpreter (COND, SEC, NSEC COMMA_DLOC)
+
+#ifdef INTERNAL_PROFILING
+PMOD_EXPORT extern unsigned long thread_yields;
+#define th_yield() (thread_yields++, low_th_yield())
 #else
-#define THREADS_FPRINTF(L,X)	do { \
-    if ((VERBOSE_THREADS_DEBUG + 0) >= (L)) fprintf X; \
-  } while(0)
-#endif /* VERBOSE_THREADS_DEBUG */
-
-#ifdef THREAD_TRACE
-PMOD_EXPORT extern int t_flag;
-#define SWAP_OUT_TRACE(_tmp)	do { (_tmp)->status.t_flag = t_flag; } while(0)
-#define SWAP_IN_TRACE(_tmp)	do { t_flag = (_tmp)->status.t_flag; } while(0)
-#else /* !THREAD_TRACE */
-#define SWAP_OUT_TRACE(_tmp)
-#define SWAP_IN_TRACE(_tmp)
-#endif /* THREAD_TRACE */
-
-#if defined(PROFILING) && defined(HAVE_GETHRTIME)
-#define DO_IF_PROFILING(X) X
-#else
-#define DO_IF_PROFILING(X)
+#define th_yield() low_th_yield()
 #endif
 
-#define SWAP_OUT_THREAD(_tmp) do {				\
-       (_tmp)->state=Pike_interpreter;				\
-       (_tmp)->swapped=1;					\
-       DO_IF_PROFILING( (_tmp)->time_base += gethrtime() ; )	\
-      } while(0)
+PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts);
+#define INIT_THREAD_STATE(TS) pike_init_thread_state (TS)
+#define EXIT_THREAD_STATE(_tmp) do {					\
+    DO_IF_DEBUG (Pike_sp = (struct svalue *) (ptrdiff_t) -1);		\
+  } while (0)
 
-#define SWAP_IN_THREAD(_tmp) do {					\
-       (_tmp)->swapped=0;						\
-       Pike_interpreter=(_tmp)->state;					\
-       DO_IF_PROFILING(  Pike_interpreter.time_base -=  gethrtime();)	\
-     } while(0)
+PMOD_EXPORT void pike_swap_out_thread (struct thread_state *ts COMMA_DLOC_DECL);
+PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts COMMA_DLOC_DECL);
+PMOD_EXPORT void pike_swap_in_current_thread (struct thread_state *ts
+					      COMMA_DLOC_DECL);
 
-#define SWAP_OUT_CURRENT_THREAD() \
-  do {\
-     struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
-     SWAP_OUT_THREAD(_tmp); \
-     THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
-			 __FILE__, __LINE__, (unsigned int)_tmp->thread_id)) \
+#define SWAP_OUT_THREAD(TS) pike_swap_out_thread (TS COMMA_DLOC)
+#define SWAP_IN_THREAD(TS) pike_swap_in_thread (TS COMMA_DLOC)
 
-#define SWAP_IN_CURRENT_THREAD() \
-   THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
-		       __FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
-   SWAP_IN_THREAD(_tmp);\
- } while(0)
+#define SWAP_OUT_CURRENT_THREAD()					\
+  do {									\
+    struct thread_state *cur_ts__ = Pike_interpreter.thread_state;	\
+    pike_swap_out_thread (cur_ts__ COMMA_DLOC);				\
+    {
+
+#define SWAP_IN_CURRENT_THREAD()					\
+    ;}									\
+    pike_swap_in_current_thread (cur_ts__ COMMA_DLOC);			\
+  } while (0)
+
+#ifdef PIKE_DEBUG
+PMOD_EXPORT void debug_list_all_threads(void);
+#endif
 
 #if defined(PIKE_DEBUG) && ! defined(DONT_HIDE_GLOBALS)
 /* Note that scalar types are used in place of pointers and vice versa
@@ -439,131 +536,137 @@ PMOD_EXPORT extern int t_flag;
  * very well sometimes anyways... -Hubbe
  */
 #define HIDE_PC								\
-  ;void *pc_=(((unsigned char **)__builtin_frame_address(0))[1]);	\
+  void *pc_=(((unsigned char **)__builtin_frame_address(0))[1]);	\
   (((unsigned char **)__builtin_frame_address(0))[1])=0
 #define REVEAL_PC \
   (((unsigned char **)__builtin_frame_address(0))[1])=pc_;
-#endif
-#endif
+
+#endif	/* __i386__ */
+#endif	/* __GCC__ */
 
 #ifndef HIDE_PC
 #define HIDE_PC
 #define REVEAL_PC
 #endif
 
-#define HIDE_GLOBAL_VARIABLES() do { \
-   int Pike_interpreter =0; \
-   int pop_n_elems = 0; \
-   int push_sp_mark = 0, pop_sp_mark = 0, threads_disabled = 1 \
-   HIDE_PC
+#define HIDE_GLOBAL_VARIABLES() do {					\
+    int Pike_interpreter_pointer =0;					\
+    int pop_n_elems = 0;						\
+    int push_sp_mark = 0, pop_sp_mark = 0, threads_disabled = 1;	\
+    HIDE_PC;								\
+    {
 
 /* Note that the semi-colon below is needed to add an empty statement
  * in case there is a label before the macro.
  */
-#define REVEAL_GLOBAL_VARIABLES() ; REVEAL_PC } while(0)
+#define REVEAL_GLOBAL_VARIABLES()					\
+    ;}									\
+    REVEAL_PC;								\
+  } while (0)
+
 #else /* PIKE_DEBUG */
 #define HIDE_GLOBAL_VARIABLES()
 #define REVEAL_GLOBAL_VARIABLES()
 #endif /* PIKE_DEBUG */
 
-#define	OBJ2THREAD(X) \
-  ((struct thread_state *)((X)->storage+thread_storage_offset))
-
-#define THREADSTATE2OBJ(X) ((X)->state.thread_id)
-
-PMOD_EXPORT extern int Pike_in_gc;
-#define THREADS_ALLOW() do { \
-     struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
-     DO_IF_DEBUG({ \
-       if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
-	 fatal("thread_for_id() (or Pike_interpreter.thread_id) failed!" \
-               " %p != %p\n", \
-               thread_for_id(th_self()), Pike_interpreter.thread_id); \
-       if (Pike_in_gc > 50 && Pike_in_gc < 300) \
-	 fatal("Threads allowed during garbage collection.\n"); \
-     }) \
-     if(num_threads > 1 && !threads_disabled) { \
-       SWAP_OUT_THREAD(_tmp); \
-       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
-			   __FILE__, __LINE__, \
-			   (unsigned int)_tmp->thread_id, live_threads)); \
-       mt_unlock_interpreter(); \
-     } else {} \
-     HIDE_GLOBAL_VARIABLES()
-
-#define THREADS_DISALLOW() \
-     REVEAL_GLOBAL_VARIABLES(); \
-     if(_tmp->swapped) { \
-       mt_lock_interpreter(); \
-       THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() %s:%d t:%08x(#%d)\n", \
-			   __FILE__, __LINE__, \
-                           (unsigned int)_tmp->thread_id, live_threads)); \
-       while (threads_disabled) { \
-         THREADS_FPRINTF(1, (stderr, \
-                             "THREADS_DISALLOW(): Threads disabled\n")); \
-         co_wait_interpreter(&threads_disabled_change); \
-       } \
-       SWAP_IN_THREAD(_tmp);\
-     } \
-     DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
-        fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; ) \
-   } while(0)
-
-#define THREADS_ALLOW_UID() do { \
-     struct thread_state *_tmp_uid=OBJ2THREAD(Pike_interpreter.thread_id); \
-     DO_IF_DEBUG({ \
-       if(thread_for_id(th_self()) != Pike_interpreter.thread_id) { \
-	 fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n", \
-               thread_for_id(th_self()),Pike_interpreter.thread_id); \
-       } \
-       if ((Pike_in_gc > 50) && (Pike_in_gc < 300)) { \
-         fprintf(stderr, __FILE__ ":" DEFINETOSTR(__LINE__) ": Fatal error:\n"); \
-	 debug_fatal("Threads allowed during garbage collection (%d).\n", \
-                     Pike_in_gc); \
-       } \
-     }) \
-     if(num_threads > 1 && !threads_disabled) { \
-       SWAP_OUT_THREAD(_tmp_uid); \
-       live_threads++; \
-       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d)\n", \
-			   __FILE__, __LINE__, \
-			   (unsigned int)_tmp_uid->thread_id, live_threads)); \
-       mt_unlock_interpreter(); \
-     } else {} \
-     HIDE_GLOBAL_VARIABLES()
-
-#define THREADS_DISALLOW_UID() \
-     REVEAL_GLOBAL_VARIABLES(); \
-     if(_tmp_uid->swapped) { \
-       mt_lock_interpreter(); \
-       live_threads--; \
-       THREADS_FPRINTF(1, (stderr, \
-                           "THREADS_DISALLOW_UID() %s:%d t:%08x(#%d)\n", \
-			   __FILE__, __LINE__, \
-                           (unsigned int)_tmp_uid->thread_id, live_threads)); \
-       co_broadcast(&live_threads_change); \
-       while (threads_disabled) { \
-         THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW_UID(): Wait...\n")); \
-         co_wait_interpreter(&threads_disabled_change); \
-       } \
-       SWAP_IN_THREAD(_tmp_uid);\
-     } \
-   } while(0)
-
-#define SWAP_IN_THREAD_IF_REQUIRED() do { 			\
-  struct thread_state *_tmp=thread_state_for_id(th_self());	\
-  HIDE_GLOBAL_VARIABLES();					\
-  THREADS_DISALLOW()
-
 #ifdef PIKE_DEBUG
-#define ASSERT_THREAD_SWAPPED_IN() do {				\
-    struct thread_state *_tmp=thread_state_for_id(th_self());	\
-    if(_tmp->swapped) fatal("Thread is not swapped in!\n");	\
-  }while(0)
-
+PMOD_EXPORT void pike_assert_thread_swapped_in (DLOC_DECL);
+PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL);
+#define ASSERT_THREAD_SWAPPED_IN() pike_assert_thread_swapped_in (DLOC)
+#define DEBUG_CHECK_THREAD() pike_debug_check_thread (DLOC)
 #else
-#define ASSERT_THREAD_SWAPPED_IN()
+#define ASSERT_THREAD_SWAPPED_IN() do { } while (0)
+#define DEBUG_CHECK_THREAD() do { } while (0)
 #endif
+
+/* THREADS_ALLOW and THREADS_DISALLOW unlocks the interpreter lock so
+ * that other threads may run in the pike interpreter. Must be used
+ * around code that might block, and may be used around code that just
+ * takes a lot of time. Note though in the latter case that the
+ * locking overhead is significant - the work should be on the order
+ * of microseconds or else it might even get slower.
+ *
+ * Between THREADS_ALLOW and THREADS_DISALLOW, you may not change any
+ * data structure that might be accessible by other threads, and you
+ * may not access any data they could possibly change.
+ *
+ * The following rules are just some special cases of the preceding
+ * statement:
+ *
+ * o  You may not throw pike exceptions, not even if you catch them
+ *    yourself.
+ * o  You may not create instances of any pike data type, because that
+ *    always implicitly modifies global structures (e.g. the doubly
+ *    linked lists that link together all arrays, mappings, multisets,
+ *    objects, and programs).
+ * o  You may not change the refcount of any pike structure, unless
+ *    all its other references are from your own code (see also last
+ *    item below).
+ * o  If you (prior to THREADS_ALLOW) have added your own ref to some
+ *    structure, you can assume that it continues to exist. Refs from
+ *    your own stack count in this regard, because you know that they
+ *    will remain until THREADS_DISALLOW. Note that even objects are
+ *    guaranteed to continue to exist, but they may be destructed at
+ *    any time.
+ * o  Only immutable data in structs you have refs to may be read, and
+ *    nothing may be changed.
+ * o  If you before THREADS_ALLOW have created your own instance of
+ *    some data type, i.e. so that you got the only ref to it, you can
+ *    safely change it. But changes that have effect on global
+ *    structures are still verboten - that includes freeing any pike
+ *    data type, and calling functions like finish_string_builder,
+ *    just to name one.
+ */
+
+/* The difference between THREADS_ALLOW and THREADS_ALLOW_UID is that
+ * _disable_threads waits for the latter to hold in
+ * THREADS_DISALLOW_UID before returning. Otoh, THREADS_ALLOW sections
+ * might continue to run when threads are officially disabled. That is
+ * fine as long as they don't have any effect on the process state
+ * that is observable from other threads. Iow, THREADS_ALLOW_UID is
+ * necessary when doing any kind of I/O, calling nonreentrant
+ * functions, or similar. */
+
+PMOD_EXPORT void pike_threads_allow (struct thread_state *ts
+				     COMMA_DLOC_DECL);
+PMOD_EXPORT void pike_threads_disallow (struct thread_state *ts
+					COMMA_DLOC_DECL);
+PMOD_EXPORT void pike_threads_allow_ext (struct thread_state *ts
+					 COMMA_DLOC_DECL);
+PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
+					    COMMA_DLOC_DECL);
+
+#define THREADS_ALLOW() do {						\
+    struct thread_state *cur_ts__ = Pike_interpreter.thread_state;	\
+    pike_threads_allow (cur_ts__ COMMA_DLOC);				\
+    HIDE_GLOBAL_VARIABLES();						\
+    {
+
+#define THREADS_DISALLOW()						\
+    ;}									\
+    REVEAL_GLOBAL_VARIABLES();						\
+    pike_threads_disallow (cur_ts__ COMMA_DLOC);			\
+  } while (0)
+
+#define THREADS_ALLOW_UID() do {					\
+    struct thread_state *cur_ts_ext__ = Pike_interpreter.thread_state;	\
+    pike_threads_allow_ext (cur_ts_ext__ COMMA_DLOC);			\
+    HIDE_GLOBAL_VARIABLES();						\
+    {
+
+#define THREADS_DISALLOW_UID()						\
+    ;}									\
+    REVEAL_GLOBAL_VARIABLES();						\
+    pike_threads_disallow_ext (cur_ts_ext__ COMMA_DLOC);		\
+  } while (0)
+
+/* FIXME! The macro below leaks live_threads!
+ *        Avoid if possible!
+ */
+#define SWAP_IN_THREAD_IF_REQUIRED()					\
+  pike_threads_disallow (thread_state_for_id(th_self()) COMMA_DLOC)
+
+#endif	/* !CONFIGURE_TEST */
 
 #endif /* PIKE_THREADS */
 
@@ -596,9 +699,12 @@ PMOD_EXPORT extern int Pike_in_gc;
 #define low_th_init()
 #define th_cleanup()
 #define th_init_programs()
-#define th_self() ((void*)0)
+#define th_self() NULL
+#define co_wait(X,Y)
+#define co_wait_timeout(X,Y,S,N)
 #define co_signal(X)
 #define co_broadcast(X)
+#define co_destroy(X)
 
 #define low_init_threads_disable()
 #define init_threads_disable(X)
@@ -612,16 +718,12 @@ PMOD_EXPORT extern int Pike_in_gc;
 #endif
 
 #ifdef __NT__
-#ifndef PIKE_DEBUG
+#if !defined (PIKE_DEBUG) || defined (CONFIGURE_TEST)
 #define CheckValidHandle(X) (X)
 #else
 PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
 #endif
 #endif
-
-extern int threads_disabled;
-PMOD_EXPORT extern ptrdiff_t thread_storage_offset;
-PMOD_EXPORT extern struct program *thread_id_prog;
 
 #ifndef NO_PIKE_SHORTHAND
 #define MUTEX_T PIKE_MUTEX_T
@@ -630,16 +732,24 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 
 /* Initializer macros for static mutex and condition variables */
 #ifdef PTHREAD_MUTEX_INITIALIZER
+#define HAS_STATIC_MUTEX_INIT
 #define STATIC_MUTEX_INIT  = PTHREAD_MUTEX_INITIALIZER
 #else
 #define STATIC_MUTEX_INIT
 #endif
 #ifdef PTHREAD_COND_INITIALIZER
+#define HAS_STATIC_COND_INIT
 #define STATIC_COND_INIT   = PTHREAD_COND_INITIALIZER
 #else
 #define STATIC_COND_INIT
 #endif
 
+#ifndef THREAD_T_TO_PTR
+#ifdef PIKE_THREAD_T_IS_POINTER
+#define THREAD_T_TO_PTR(X)	((void *)(X))
+#else /* !PIKE_THREAD_T_IS_POINTER */
+#define THREAD_T_TO_PTR(X)	((void *)(ptrdiff_t)(X))
+#endif /* PIKE_THREAD_T_IS_POINTER */
+#endif /* !THREAD_T_TO_PTR */
 
 #endif /* PIKE_THREADLIB_H */
-

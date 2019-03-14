@@ -1,0 +1,234 @@
+<chapter title="Preprocessor">
+
+<p>Before the Pike code is sent to the compiler it is fed through the
+preprocessor. The preprocessor converts the source code from its
+character encoding into the Pike internal representation, performs
+some simple normalizations and consistency checks and executes the
+"preprocessor directives" that the programmer may have put into the
+file. The preprocessor directives are like a very simple programming
+language that allows for simple code generation and manipulation.
+The code preprocessor can be called from within Pike with the
+<ref>cpp</ref> call.</p>
+
+<section title="Charset Heuristics">
+
+<p>Pike code is Unicode enabled, so the first thing the preprocessor
+has to do is to try to determine the character encoding of the file.
+It will first look at the two first bytes of the file and interpret
+them according to this chart.</p>
+
+<matrix>
+<r><c><b>Byte 0</b></c><c><b>Byte 1</b></c><c><b>Interpretation</b></c></r>
+<r><c>0</c><c>0</c><c>32bit wide string.</c></r>
+<r><c>0</c><c>&gt;0</c><c>16bit Unicode string.</c></r>
+<r><c>&gt;0</c><c>0</c><c>16bit Unicode string in reverse byte order.</c></r>
+<r><c>0xfe</c><c>0xff</c><c>16bit Unicode string.</c></r>
+<r><c>0xff</c><c>0xfe</c><c>16bit Unicode string in reverse byte order.</c></r>
+<r><c>0x7b</c><c>0x83</c><c>EBCDIC-US ("#c").</c></r>
+<r><c>0x7b</c><c>0x40</c><c>EBCDIC-US ("# ").</c></r>
+<r><c>0x7b</c><c>0x09</c><c>EBCDIC-US ("#\t").</c></r>
+</matrix>
+
+<ul>
+<li>With any other combination of bytes the preprocessor will assume
+iso-8859-1 encoding until a #charset directive has been found.</li>
+<li>The file must be an multiple of 4 or 2 bytes in order to be correctly
+decoded as 32bit or 16bit wide string.</li>
+<li>It's an error for a program written in EBCDIC not to start with a
+#charset directive.</li>
+<li>For obfuscation it is possible to encode the #charset directive in
+a different charset than the charset stated in the #charset directive.</li>
+</ul>
+
+</section>
+
+<section title="Code Normalization">
+
+<p>The preprocessor collapses all consecutive white space characters
+outside of strings, except for newlines, to single space characters.
+All // and /**/ comments are removed, as are #! lines. Pike considers
+ANSI/DEC escape sequences as white space. Supported formats are
+&lt;ESC&gt;[\040-\077]+[\100-\177] and
+&lt;CSI&gt;[\040-\077]*[\100-\177]. Note that this means that it is
+possible to do color markup in the actual source file.</p>
+
+<p>The preprocessor will treat seven consecutive &lt; characters
+outside of a string as an CVS conflict error and will return "CVS
+conflict detected."</p>
+
+</section>
+
+<section title="Defines and Macros">
+
+<p>Defining macros or constants is one of the most used preprocessor
+features. It enables you to make abstractions on a code generation
+level as well as altering constants cross-application. The simplest
+use of the #define directive however is to declare a "define" as
+present.</p>
+
+<example>
+#define DO_OVERSAMPLING
+</example>
+
+<p>The existence of this definition can now be used by e.g. #ifdef and
+#ifndef to activate or deactivate blocks of program code.</p>
+
+<example>
+#ifdef DO_OVERSAMPLING
+  // This code is not always run.
+  img->render(size*4)->shrink(4);
+#endif
+</example>
+
+<p>Note that defines can be given to pike at execution time. In order
+to set DO_OVERSAMPLING from a command line, the option
+-DDO_OVERSAMPLING is added before the name of the pike program. E.g.
+<tt>pike -DDO_OVERSAMPLING my_program.pike</tt>.</p>
+
+<p>A define can also be given a specific value, which will be inserted
+everywhere the define is placed in the source code.</p>
+
+<example>
+#define CYCLES 20
+
+void do_stuff() {
+  for(int i; i&lt;CYCLES; i++) do_other_stuff();
+}
+</example>
+
+<p>Defines can be given specific values on the command line too, just
+be sure to quote them as required by your shell.</p>
+
+<example>
+~% pike '-DTEXT="Hello world!"' -e 'write("%s\n", TEXT);'
+Hello world!
+</example>
+
+<p>Finally #define can also be used to define macros. Macros are just
+text expansion with arguments, but it is often very useful to make a
+cleaner looking code and to write less.</p>
+
+<example>
+#define VAR(X) id-&gt;misc-&gt;variable[X]
+#define ROL(X,Y) (((X)&lt;&lt;(Y))&amp;7+((X)&gt;&gt;(8-(Y))))
+#define PLACEHOLDER(X) void X(mixed ... args) { \
+  error("Method " #X " is not implemented yet.\n"); }
+#define ERROR(X,Y ...) werror("MyClass" X "\n", Y)
+#define NEW_CONSTANTS(X) do{ int i=sizeof(all_constants()); \
+    X \
+    werror("Constant diff is %d\n", sizeof(all_constants())-i); \
+  }while(0)
+#define MY_FUNC(X,Y) void my##X##Y()
+</example>
+
+<ul>
+<li>A macro can have up to 254 arguments.</li>
+<li>It can be wise to put extra parentheses around the arguments
+expanded since it is a purely textual expansion. E.g. if the macro
+DOUBLE(X) is defined as X*2, then DOUBLE(2+3) will produce 2+3*2,
+probably producing a hard to track down bug.</li>
+<li>Since the preprocessor works with textual expansion, it will not
+evaluate its arguments. Using one argument several time in the macro
+will thus cause it to evaluated several times during execution. E.g.
+#define MSG(X) werror("The value "+(X)+" can differ from "+(X)+"\n")
+when called with MSG(random(1000));.</li>
+<li>A backslash (\) at the end of the line can be used to make the
+definition span several lines.</li>
+<li>A hash (#) in front of a macro variable "casts" it to a string.</li>
+<li>It is possible to define macros with a variable list of arguments
+by using the ... syntax.</li>
+<li>Macros are often formulated so that a semicolon after it is
+apropriate, for improved code readability.</li>
+<li>In Pike code macros and defines are most often written in all caps.</li>
+<li>If a macro expands into several statements, you are well advised to
+group them together in containment block, such as do { BODY } while(0).
+If you do not, your macro could produce other hard to track down bugs,
+if put as a loop or if body without surrounding curly braces.</li>
+<li>A double hash (##) in front of a macro variable concatenates it with
+the text before it.</li>
+</ul>
+
+</section>
+
+<section title="Preprocessor Directives">
+
+<p>All of the preprocessor directives except the string-related
+(<tt>#string</tt> and <tt>#""</tt>) should have the hash character
+(<tt>#</tt>) as the first character of the line. Even though it is currently
+allowed to be indented, it is likely that this will generate warnings or errors
+in the future. Note that it is however allowed to put white-space between the
+hash character and the rest of the directive to create indentation in code.</p>
+
+<insert-move entity="cpp::.#!"/>
+
+<insert-move entity="cpp::.#line"/>
+
+<insert-move entity='cpp::.#""'/>
+
+<insert-move entity="cpp::.#string"/>
+
+<insert-move entity="cpp::.#include"/>
+
+<insert-move entity="cpp::.#if"/>
+
+<insert-move entity="cpp::.#ifdef"/>
+
+<insert-move entity="cpp::.#ifndef"/>
+
+<insert-move entity="cpp::.#endif"/>
+
+<insert-move entity="cpp::.#else"/>
+
+<insert-move entity="cpp::.#elif"/>
+
+<insert-move entity="cpp::.#define"/>
+
+<insert-move entity="cpp::.#undef"/>
+
+<insert-move entity="cpp::.#error"/>
+
+<insert-move entity="cpp::.#charset"/>
+
+<insert-move entity="cpp::.#pike"/>
+
+<insert-move entity="cpp::.#pragma"/>
+
+<insert-move entity="cpp::.#warning"/>
+
+</section>
+
+<section title="Predefined defines">
+  <insert-move entity="cpp::.__VERSION__"/>
+  <insert-move entity="cpp::.__MAJOR__"/>
+  <insert-move entity="cpp::.__MINOR__"/>
+  <insert-move entity="cpp::.__BUILD__"/>
+  <insert-move entity="cpp::.__REAL_VERSION__"/>
+  <insert-move entity="cpp::.__REAL_MAJOR__"/>
+  <insert-move entity="cpp::.__REAL_MINOR__"/>
+  <insert-move entity="cpp::.__REAL_BUILD__"/>
+  <insert-move entity="cpp::.__DATE__"/>
+  <insert-move entity="cpp::.__TIME__"/>
+  <insert-move entity="cpp::.__FILE__"/>
+  <insert-move entity="cpp::.__DIR__"/>
+  <insert-move entity="cpp::.__LINE__"/>
+  <insert-move entity="cpp::.__AUTO_BIGNUM__"/>
+  <insert-move entity="cpp::.__NT__"/>
+  <insert-move entity="cpp::.__PIKE__"/>
+  <insert-move entity="cpp::.__amigaos__"/>
+  <insert-move entity="cpp::._Pragma"/>
+  <insert-move entity="cpp::.static_assert"/>
+</section>
+
+<section title="Test functions">
+
+  <p>These functions are used in <ref resolved="cpp::#if">#if</ref> et al
+     expressions to test for presence of symbols.</p>
+
+  <insert-move entity="cpp::.constant"/>
+  <insert-move entity="cpp::.defined"/>
+
+</section>
+
+  <!-- insert-move entity="cpp::"/ -->
+
+</chapter>

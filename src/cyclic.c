@@ -1,23 +1,27 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "cyclic.h"
 
-RCSID("$Id: cyclic.c,v 1.5 2000/08/10 08:54:34 grubba Exp $");
-
 #define CYCLIC_HASH_SIZE 4711
 
-CYCLIC *cyclic_hash[CYCLIC_HASH_SIZE];
+static CYCLIC *cyclic_hash[CYCLIC_HASH_SIZE];
 
 static void low_unlink_cyclic(CYCLIC *c)
 {
   size_t h;
   CYCLIC **p;
-  h=(ptrdiff_t)c->id;
+  h=PTR_TO_INT(c->id);
   h*=33;
-  h|=(ptrdiff_t)c->a;
+  h|=PTR_TO_INT(c->a);
   h*=33;
-  h|=(ptrdiff_t)c->b;
+  h|=PTR_TO_INT(c->b);
   h*=33;
-  h|=(ptrdiff_t)c->th;
+  h|=PTR_TO_INT(c->th);
   h*=33;
   h%=CYCLIC_HASH_SIZE;
 
@@ -26,35 +30,38 @@ static void low_unlink_cyclic(CYCLIC *c)
     if(c == *p)
     {
       *p=c->next;
+#ifdef CYCLIC_DEBUG
+      fprintf (stderr, "%s: END_CYCLIC a=%p b=%p: no cycle\n", c->id, c->a, c->b);
+#endif
       return;
     }
   }
-  fatal("Unlink cyclic on lost cyclic struct.\n");
+  Pike_fatal("Unlink cyclic on lost cyclic struct.\n");
 }
 
-void unlink_cyclic(CYCLIC *c)
+PMOD_EXPORT void unlink_cyclic(CYCLIC *c)
 {
   UNSET_ONERROR(c->onerr);
   low_unlink_cyclic(c);
 }
 
-void *begin_cyclic(CYCLIC *c,
-		   void *id,
-		   void *th,
-		   void *a,
-		   void *b)
+PMOD_EXPORT void *begin_cyclic(CYCLIC *c,
+			       char *id,
+			       void *th,
+			       void *a,
+			       void *b)
 {
   size_t h;
   void *ret=0;
   CYCLIC *p;
 
-  h=(ptrdiff_t)id;
+  h=PTR_TO_INT(id);
   h*=33;
-  h|=(ptrdiff_t)a;
+  h|=PTR_TO_INT(a);
   h*=33;
-  h|=(ptrdiff_t)b;
+  h|=PTR_TO_INT(b);
   h*=33;
-  h|=(ptrdiff_t)th;
+  h|=PTR_TO_INT(th);
   h*=33;
   h%=CYCLIC_HASH_SIZE;
 
@@ -62,6 +69,9 @@ void *begin_cyclic(CYCLIC *c,
   {
     if(a == p->a && b==p->b && id==p->id)
     {
+#ifdef CYCLIC_DEBUG
+      fprintf (stderr, "%s: BEGIN_CYCLIC a=%p b=%p: found cycle\n", id, a, b);
+#endif
       ret=p->ret;
       break;
     }
@@ -75,5 +85,8 @@ void *begin_cyclic(CYCLIC *c,
   c->next=cyclic_hash[h];
   cyclic_hash[h]=c;
   SET_ONERROR(c->onerr, low_unlink_cyclic, c);
+#ifdef CYCLIC_DEBUG
+  if (!ret) fprintf (stderr, "%s: BEGIN_CYCLIC a=%p b=%p: no cycle\n", id, a, b);
+#endif
   return ret;
 }

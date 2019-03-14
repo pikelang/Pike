@@ -1,0 +1,6 @@
+AC_INIT(Shuffler.cmod)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

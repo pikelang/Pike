@@ -1,71 +1,84 @@
-/* $Id: any.c,v 1.20 2000/12/01 08:10:03 hubbe Exp $ */
-
 /*
-**! module Image
-**! note
-**!	$Id: any.c,v 1.20 2000/12/01 08:10:03 hubbe Exp $
-**! submodule ANY
-**!
-**!	This method calls the other decoding methods
-**!	and has some heuristics for what type of image
-**!	this is.
-**!
-**!	Methods:
-**!	<ref>decode</ref>, <ref>decode_alpha</ref>,
-**!	<ref>_decode</ref>
-**!
-**! see also: Image
-**!
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
 */
+
 #include "global.h"
 
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
-RCSID("$Id: any.c,v 1.20 2000/12/01 08:10:03 hubbe Exp $");
-#include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
-#include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
-#include "array.h"
+#include "mapping.h"
 #include "pike_error.h"
-#include "threads.h"
 
 #include "image.h"
 
 #include "encodings.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
-/*
-**! method mapping _decode(string data)
-**! method object decode(string data)
-**! method object decode_alpha(string data)
-**!	Tries heuristics to find the correct method 
-**!	of decoding the data, then calls that method.
-**!
-**! 	The result of _decode() is a mapping that contains
-**!	<pre>
-**!		"type":image data type (ie, "image/jpeg" or similar)
-**!		"image":the image object,
-**!		"alpha":the alpha channel or 0 if N/A
-**!	</pre>
-**!
-**! note
-**!	Throws upon failure.
-*/
+/*! @module Image
+ */
 
+/*! @module ANY
+ *!
+ *!  These method calls other decoding methods
+ *!  and has some heuristics for what type of image
+ *!  this is.
+ *!
+ */
+
+#define sp Pike_sp
+
+/* PNG module uses "type" for something else than what we want to use
+   it for.  Rename "type" to "_type", and insert our own "type"...  */
+
+static void fix_png_mapping(void)
+{
+  struct svalue *s;
+  if(TYPEOF(sp[-1]) != T_MAPPING) return;
+  if((s = simple_mapping_string_lookup(sp[-1].u.mapping, "type"))) {
+    push_text("_type");
+    mapping_insert(sp[-2].u.mapping, &sp[-1], s);
+    pop_stack();
+  }
+  push_text("type");
+  push_text("image/png");
+  mapping_insert(sp[-3].u.mapping, &sp[-2], &sp[-1]);
+  pop_n_elems(2);
+}
+
+
+/*! @decl mapping _decode(string data)
+ *! @decl object decode(string data)
+ *! @decl object decode_alpha(string data)
+ *!
+ *! Tries heuristics to find the correct method
+ *! of decoding the data, then calls that method.
+ *!
+ *! The result of _decode() is a mapping that contains
+ *!
+ *! @mapping
+ *!   @member string "type"
+ *!     File type information as MIME type (ie "image/jpeg" or similar)
+ *!   @member Image.Image "image"
+ *!     the image object
+ *!   @member int alpha
+ *!     the alpha channel or 0 if N/A
+ *! @endmapping
+ *!
+ *! @note
+ *!	Throws upon failure.
+ */
 void image_any__decode(INT32 args)
 {
-   if (args!=1 || sp[-args].type!=T_STRING)
+   if (args!=1 || TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.ANY.decode: illegal arguments\n");
-   
+
    if (sp[-args].u.string->len<4)
       Pike_error("Image.ANY.decode: too short string\n");
 
@@ -87,61 +100,59 @@ void image_any__decode(INT32 args)
 
       case CHAR2(255,216):
 	 /* JFIF */
-	 push_text("Image");
-	 push_int(0);
-	 SAFE_APPLY_MASTER("resolv",2);
-	 push_text("JPEG");
-	 f_index(2);
-	 push_text("_decode");
-	 f_index(2);
+	 push_text("Image.JPEG._decode");
+	 SAFE_APPLY_MASTER("resolv_or_error",1);
 	 stack_swap();
 	 f_call_function(2);
 	 return;
 
       case CHAR2('g','i'):
 	 /* XCF */
-	 push_text("Image");
-	 push_int(0);
-	 SAFE_APPLY_MASTER("resolv",2);
-	 push_text("XCF");
-	 f_index(2);
-	 push_text("_decode");
-	 f_index(2);
+	 push_text("Image.XCF._decode");
+	 SAFE_APPLY_MASTER("resolv_or_error",1);
 	 stack_swap();
 	 f_call_function(2);
 	 return;
 
       case CHAR2(137,'P'):
 	 /* PNG */
-	 push_text("Image");
-	 push_int(0);
-	 SAFE_APPLY_MASTER("resolv",2);
-	 push_text("PNG");
-	 f_index(2);
-	 push_text("_decode");
-	 f_index(2);
+	 push_text("Image.PNG._decode");
+	 SAFE_APPLY_MASTER("resolv_or_error",1);
 	 stack_swap();
 	 f_call_function(2);
+	 fix_png_mapping();
 	 return;
 
       case CHAR2('G','I'):
 	 /* GIF */
-	 push_text("Image");
-	 push_int(0);
-	 SAFE_APPLY_MASTER("resolv", 2);
-	 push_text("GIF");
-	 f_index(2);
-	 push_text("decode_map");
-	 f_index(2);
+	 push_text("Image.GIF.decode_map");
+	 SAFE_APPLY_MASTER("resolv_or_error", 1);
 	 stack_swap();
 	 f_call_function(2);
 	 return;
+
+      case CHAR2('8','B'):
+	/* Photoshop (8BPS) */
+	push_text("Image.PSD._decode");
+	SAFE_APPLY_MASTER("resolv_or_error",1);
+	stack_swap();
+	f_call_function(2);
+	return;
 
       case CHAR2('F','O'):
 	 /* ILBM (probably) */
 	 img_ilbm_decode(1);
 	 push_text("image/x-ilbm");
 	 goto simple_image;
+
+      case CHAR2('I','I'):	/* Little endian. */
+      case CHAR2('M','M'):	/* Big endian. */
+	/* TIFF */
+	push_text("Image.TIFF._decode");
+	SAFE_APPLY_MASTER("resolv_or_error",1);
+	stack_swap();
+	f_call_function(2);
+	return;
 
       case CHAR2('B','M'):
 	 /* BMP */
@@ -165,6 +176,11 @@ void image_any__decode(INT32 args)
 	 image_tim_f__decode(1);
 	 return;
 
+      case CHAR2(0xc5, 0xd0):
+	/* FIXME: DOS EPS Binary File Header. */
+	goto unknown_format;
+	break;
+
       case CHAR2(0,0):
 	 switch (CHAR2(sp[-args].u.string->str[2],sp[-args].u.string->str[3]))
 	 {
@@ -173,12 +189,18 @@ void image_any__decode(INT32 args)
 	       image_xwd__decode(1);
 	       return; /* done */
 	 }
-	 
+
 	 goto unknown_format;
 
       default:
+	if( sp[-args].u.string->str[0] == 10 ) {
+	  /* PCX */
+	  image_pcx_decode(1);
+	  push_text("image/x-pcx");
+	  goto simple_image;
+	}
 unknown_format:
-	 Pike_error("Unknown image format.\n");	 
+	 Pike_error("Unknown image format.\n");
    }
 
 simple_image:
@@ -192,11 +214,34 @@ simple_image:
    return;
 }
 
+
+
+/*! @decl mapping decode_header(string data)
+ *!
+ *! Tries heuristics to find the correct method
+ *! of decoding the header, then calls that method.
+ *!
+ *! The resulting mapping depends on wich decode_header method that
+ *! is executed, but these keys will probably exist
+ *!
+ *! @mapping
+ *!   @member int "xsize"
+ *!   @member int "ysize"
+ *!       Size of image
+ *!   @member string "type"
+ *!     File type information as MIME type.
+ *!   @member string "color_space"
+ *!     Color space of image.
+ *! @endmapping
+ *!
+ *! @note
+ *!	Throws upon failure.
+ */
 void image_any_decode_header(INT32 args)
 {
-   if (args!=1 || sp[-args].type!=T_STRING)
+   if (args!=1 || TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.ANY.decode_header: illegal arguments\n");
-   
+
    if (sp[-args].u.string->len<4)
       Pike_error("Image.ANY.decode_header: too short string\n");
 
@@ -215,58 +260,48 @@ void image_any_decode_header(INT32 args)
 
       case CHAR2(255,216):
 	 /* JFIF */
-	 push_text("Image");
-	 push_int(0);
-	 SAFE_APPLY_MASTER("resolv",2);
-	 push_text("JPEG");
-	 f_index(2);
-	 push_text("decode_header");
-	 f_index(2);
+	 push_text("Image.JPEG.decode_header");
+	 SAFE_APPLY_MASTER("resolv_or_error",1);
 	 stack_swap();
 	 f_call_function(2);
 	 return;
 
       case CHAR2(137,'P'):
 	 /* PNG */
-	 push_text("Image");
-	 push_int(0);
-	 SAFE_APPLY_MASTER("resolv",2);
-	 push_text("PNG");
-	 f_index(2);
-	 push_text("decode_header");
-	 f_index(2);
+	 push_text("Image.PNG.decode_header");
+	 SAFE_APPLY_MASTER("resolv_or_error",1);
 	 stack_swap();
 	 f_call_function(2);
+	 fix_png_mapping();
 	 return;
 
       case CHAR2('g','i'):
 	 /* XCF */
-	 push_text("Image");
-	 push_int(0);
-	 SAFE_APPLY_MASTER("resolv",2);
-	 push_text("XCF");
-	 f_index(2);
-	 push_text("_decode"); /* just try it ... */
-	 f_index(2);
+	 push_text("Image.XCF._decode");
+	 SAFE_APPLY_MASTER("resolv_or_error",1);
 	 stack_swap();
 	 f_call_function(2);
 	 return;
 
       case CHAR2('G','I'):
 	 /* GIF */
-	 push_text("Image");
-	 push_int(0);
-	 SAFE_APPLY_MASTER("resolv", 2);
-	 push_text("GIF");
-	 f_index(2);
-	 push_text("decode_map");
-	 f_index(2);
+	 push_text("Image.GIF.decode_map");
+	 SAFE_APPLY_MASTER("resolv_or_error", 1);
 	 stack_swap();
 	 f_call_function(2);
 	 return;
 
       case CHAR2('F','O'):
 	 Pike_error("Image.ANY.decode: decoding of ILBM header unimplemented\n");
+
+      case CHAR2('I','I'):	/* Little endian. */
+      case CHAR2('M','M'):	/* Big endian. */
+	/* TIFF */
+	push_text("Image.TIFF.decode_header");
+	SAFE_APPLY_MASTER("resolv_or_error",1);
+	stack_swap();
+	f_call_function(2);
+	return;
 
       case CHAR2('B','M'):
 	 /* BMP */
@@ -288,6 +323,15 @@ void image_any_decode_header(INT32 args)
 	 image_tim_f_decode_header(1);
 	 return;
 
+      case CHAR2(0xc5, 0xd0):
+      case CHAR2('%','!'):
+	/* PS */
+	push_text("Image.PS.decode_header");
+	SAFE_APPLY_MASTER("resolv_or_error",1);
+	stack_swap();
+	f_call_function(2);
+	break;
+
       case CHAR2(0,0):
 	 switch (CHAR2(sp[-args].u.string->str[2],sp[-args].u.string->str[3]))
 	 {
@@ -296,12 +340,12 @@ void image_any_decode_header(INT32 args)
 	       image_xwd_decode_header(1);
 	       return; /* done */
 	 }
-	 
+
 	 goto unknown_format;
 
       default:
 unknown_format:
-	 Pike_error("Unknown image format.\n");	 
+	 Pike_error("Unknown image format.\n");
    }
 }
 
@@ -319,20 +363,21 @@ void image_any_decode_alpha(INT32 args)
    f_index(2);
 }
 
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
 
 /** module *******************************************/
 
 void init_image_any(void)
 {
-   add_function("_decode",image_any__decode,
-		"function(string:mapping)",0);
-   add_function("decode_header",image_any_decode_header,
-		"function(string:mapping)",0);
+  ADD_FUNCTION("_decode",image_any__decode,tFunc(tStr,tMapping), 0);
+  ADD_FUNCTION("decode_header",image_any_decode_header,tFunc(tStr,tMapping),0);
 
-   add_function("decode",image_any_decode,
-		"function(string:object)",0);
-   add_function("decode_alpha",image_any_decode_alpha,
-		"function(string:object)",0);
+  ADD_FUNCTION("decode",image_any_decode,tFunc(tStr,tObj),0);
+  ADD_FUNCTION("decode_alpha",image_any_decode_alpha,tFunc(tStr,tObj),0);
 }
 
 void exit_image_any(void)

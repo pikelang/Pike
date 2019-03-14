@@ -1,10 +1,14 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "config.h"
-#ifndef __NT__
+#if !defined(__NT__) && !defined(__WIN32__)
 #include <global.h>
 #include <threads.h>
-#include <stralloc.h>
 #include <signal.h>
-#include <fdlib.h>
 
 #ifdef _REENTRANT
 #include <stdlib.h>
@@ -23,6 +27,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "pike_netlib.h"
 #include "accept_and_parse.h"
 #include "timeout.h"
 #include "util.h"
@@ -39,8 +44,6 @@
 #endif /* HAVE_POLL_H */
 #endif /* HAVE_POLL */
 
-/* This must be included last! */
-#include "module_magic.h"
 
 MUTEX_T aap_timeout_mutex;
 
@@ -125,10 +128,6 @@ void debug_print_timeout_queue( struct timeout *target )
 }
 #endif /* PIKE_DEBUG */
 
-#ifndef OFFSETOF
-#define OFFSETOF(str_type, field) ((long)& (((struct str_type *)0)->field))
-#endif
-
 void aap_remove_timeout_thr(int *to)
 {
   mt_lock( &aap_timeout_mutex );
@@ -161,12 +160,19 @@ void aap_remove_timeout_thr(int *to)
 
 static volatile int aap_time_to_die = 0;
 
-static void *handle_timeouts(void *ignored)
+static COND_T aap_timeout_thread_is_dead;
+
+static void *handle_timeouts(void *UNUSED(ignored))
 {
-  while(!aap_time_to_die)
+  while(1)
   {
     struct timeout *t;
     mt_lock( &aap_timeout_mutex );
+    if (aap_time_to_die) {
+      co_signal (&aap_timeout_thread_is_dead);
+      mt_unlock (&aap_timeout_mutex);
+      break;
+    }
     t = first_timeout;
     while(t)
     {
@@ -179,7 +185,11 @@ static void *handle_timeouts(void *ignored)
     }
     mt_unlock( &aap_timeout_mutex );
 #ifdef HAVE_POLL
-    poll(0,0,1000);
+    {
+      /*  MacOS X is stupid, and requires a non-NULL pollfd pointer. */
+      struct pollfd sentinel;
+      poll(&sentinel,0,1000);
+    }
 #else
     sleep(1);
 #endif
@@ -201,6 +211,7 @@ void aap_init_timeouts(void)
   fprintf(stderr, "AAP: aap_init_timeouts.\n");
 #endif /* AAP_DEBUG */
   mt_init(&aap_timeout_mutex);
+  co_init (&aap_timeout_thread_is_dead);
   th_create_small(&aap_timeout_thread, handle_timeouts, 0);
 #ifdef AAP_DEBUG
   fprintf(stderr, "AAP: handle_timeouts started.\n");
@@ -213,14 +224,14 @@ void aap_exit_timeouts(void)
 #ifdef AAP_DEBUG
   fprintf(stderr, "AAP: aap_exit_timeouts.\n");
 #endif /* AAP_DEBUG */
+  THREADS_ALLOW();
+  mt_lock (&aap_timeout_mutex);
   aap_time_to_die = 1;
-  if (Pike_interpreter.thread_id) {
-    THREADS_ALLOW();
-    th_join(aap_timeout_thread, &res);
-    THREADS_DISALLOW();
-  } else {
-    th_join(aap_timeout_thread, &res);
-  }
+  co_wait (&aap_timeout_thread_is_dead, &aap_timeout_mutex);
+  mt_unlock (&aap_timeout_mutex);
+  THREADS_DISALLOW();
+  mt_destroy (&aap_timeout_mutex);
+  co_destroy (&aap_timeout_thread_is_dead);
 #ifdef AAP_DEBUG
   fprintf(stderr, "AAP: aap_exit_timeouts done.\n");
 #endif /* AAP_DEBUG */

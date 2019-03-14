@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 
 #include <math.h>
@@ -5,36 +11,30 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.8 2001/04/17 09:00:50 per Exp $");
-#include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
-#include "constants.h"
 #include "interpret.h"
 #include "operators.h"
 #include "svalue.h"
-#include "threads.h"
-#include "array.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "program.h"
-
 
 #include "image.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
+#define sp Pike_sp
 
 extern struct program *image_program;
 
-/*
-**! module Image
-**! submodule WBMP
-**!   WAP WBMP format
-*/
+/*! @module Image
+ */
+
+/*! @module WBMP
+ *! WAP bitmap format - WBMP.
+ */
 
 struct buffer
 {
@@ -107,12 +107,25 @@ static void push_ext_header( struct ext_header *eh )
   f_aggregate_mapping( 4 );
 }
 
+static void free_wbf_header_contents( struct wbf_header *wh )
+{
+  while( wh->first_ext_header )
+  {
+    struct ext_header *eh = wh->first_ext_header;
+    wh->first_ext_header = eh->next;
+    free( eh );
+  }
+}
+
 static struct wbf_header decode_header( struct buffer *data )
 {
   struct wbf_header res;
+  ONERROR err;
   MEMSET( &res, 0, sizeof(res) );
   res.type = wbf_read_int( data );
   res.fix_header_field = read_uchar( data );
+  SET_ONERROR(err, free_wbf_header_contents, &res);
+
   if( res.fix_header_field & 0x80 )
   {
     switch( (res.fix_header_field>>5) & 0x3 )
@@ -130,33 +143,22 @@ static struct wbf_header decode_header( struct buffer *data )
          {
            struct ext_header *eh;
            q = read_uchar( data );
-           eh = malloc( sizeof( struct ext_header ) );
-           MEMSET( eh, 0, sizeof( struct ext_header ) );
+           eh = xcalloc( 1, sizeof( struct ext_header ) );
+           eh->next = res.first_ext_header;
+           res.first_ext_header = eh;
            eh->name_len = ((q>>4) & 0x7) + 1;
            eh->value_len = (q & 0xf) + 1;
            read_string( data, eh->name_len, eh->name );
            read_string( data, eh->value_len, eh->value );
-           eh->next = res.first_ext_header;
-           res.first_ext_header = eh->next;
          }
        }
     }
   }
   res.width = wbf_read_int( data );
   res.height = wbf_read_int( data );
+  UNSET_ONERROR(err);
   return res;
 }
-
-static void free_wbf_header_contents( struct wbf_header *wh )
-{
-  while( wh->first_ext_header )
-  {
-    struct ext_header *eh = wh->first_ext_header;
-    wh->first_ext_header = eh->next;
-    free( eh );
-  }
-}
-
 
 static void low_image_f_wbf_decode_type0( struct wbf_header *wh,
                                           struct buffer *buff )
@@ -291,15 +293,40 @@ static void low_image_f_wbf_decode( int args, int mode )
   }
 }
 
+/*! @decl object decode(string image)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
+
 static void image_f_wbf_decode( int args )
 {
   low_image_f_wbf_decode( args, 2 );
 }
 
+/*! @decl mapping _decode(string image)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
+
 static void image_f_wbf__decode( int args )
 {
   low_image_f_wbf_decode( args, 1 );
 }
+
+/*! @decl mapping decode_header(string image)
+ *!
+ *! @returns
+ *!   @mapping
+ *!     @member string "format"
+ *!       The MIME type and encoding for the image, e.g. "image/x-wap.wbmp; type=0".
+ *!     @member int "xsize"
+ *!     @member int "ysize"
+ *!     @member int "fix_header_field"
+ *!     @member int "ext_header_field"
+ *!  @endmapping
+ */
 
 static void image_f_wbf_decode_header( int args )
 {
@@ -333,8 +360,7 @@ static void push_wap_type0_image_data( struct image *i )
   int x, y;
   unsigned char *data, *p;
   rgb_group *is;
-  data = malloc( i->ysize * (i->xsize+7)/8 );
-  MEMSET( data, 0, i->ysize * (i->xsize+7)/8 );
+  data = xcalloc( i->ysize, (i->xsize+7)/8 );
   is = i->img;
   for( y = 0; y<i->ysize; y++ )
   {
@@ -345,11 +371,17 @@ static void push_wap_type0_image_data( struct image *i )
         p[x/8] |= 128 >> (x%8);
       is++;
     }
-    printf("\n");
   }
   push_string( make_shared_binary_string( (char *)data,
 					  i->ysize * (i->xsize+7)/8 ) );
 }
+
+/*! @decl string encode(object image, void|mapping args)
+ *! @decl string _encode(object image, void|mapping args)
+ *!
+ *! @fixme
+ *!  Document this function.
+ */
 
 static void image_f_wbf_encode( int args )
 {
@@ -362,7 +394,7 @@ static void image_f_wbf_encode( int args )
     Pike_error("No image given to encode.\n");
   if( args > 2 )
     Pike_error("Too many arguments to encode.\n");
-  if( sp[-args].type != T_OBJECT )
+  if( TYPEOF(sp[-args]) != T_OBJECT )
     Pike_error("No image given to encode.\n");
 
   o = sp[-args].u.object;
@@ -371,7 +403,7 @@ static void image_f_wbf_encode( int args )
     Pike_error("Wrong type object argument\n");
   if( args == 2 )
   {
-    if( sp[-args+1].type != T_MAPPING )
+    if( TYPEOF(sp[-args+1]) != T_MAPPING )
       Pike_error("Wrong type for argument 2.\n");
     options = sp[-args+1].u.mapping;
   }
@@ -388,16 +420,22 @@ static void image_f_wbf_encode( int args )
   free_object( o );
 }
 
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
 void init_image_wbf()
 {
-  add_function( "encode", image_f_wbf_encode, 
-                "function(object,void|mapping:string)", 0);
-  add_function( "_encode", image_f_wbf_encode, 
-                "function(object,void|mapping:string)", 0);
-  add_function( "decode", image_f_wbf_decode, "function(string:object)", 0);
-  add_function( "_decode", image_f_wbf__decode, "function(string:mapping)", 0);
-  add_function( "decode_header", image_f_wbf_decode_header, 
-                "function(string:mapping)", 0);
+  ADD_FUNCTION( "encode", image_f_wbf_encode,
+		tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
+  ADD_FUNCTION( "_encode", image_f_wbf_encode,
+		tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
+  ADD_FUNCTION( "decode", image_f_wbf_decode, tFunc(tStr,tObj), 0);
+  ADD_FUNCTION( "_decode", image_f_wbf__decode, tFunc(tStr,tMapping), 0);
+  ADD_FUNCTION( "decode_header", image_f_wbf_decode_header,
+		tFunc(tStr,tMapping), 0);
 }
 
 void exit_image_wbf()

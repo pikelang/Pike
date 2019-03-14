@@ -1,60 +1,39 @@
-#include "global.h"
-RCSID("$Id: psd.c,v 1.30 2001/06/13 13:01:57 grubba Exp $");
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
+#include "global.h"
 #include "image_machine.h"
 
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "module_support.h"
 #include "interpret.h"
 #include "object.h"
 #include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
-#include "operators.h"
-#include "dynamic_buffer.h"
-#include "pike_macros.h"
 
 #include "image.h"
 #include "colortable.h"
 #include "bignum.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
-
-
-/* The sp macro conflicts with Solaris 2.5.1's <netinet/in.h>. */
-#ifdef sp
-#undef sp
-#define STACKPOINTER_WAS_DEFINED
-#endif /* sp */
-
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
-/* Restore the sp macro */
-#ifdef STACKPOINTER_WAS_DEFINED
-#define sp Pike_sp
-#undef STACK_POINTER_WAS_DEFINED
-#endif /* STACKPOINTER_WAS_DEFINED */
 
+#define sp Pike_sp
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
-
-/*
-**! module Image
-**! submodule PSD
-**!
-*/
 
 #define STRING(X) static struct pike_string *PIKE_CONCAT(s_, X)
 #include "psd_constant_strings.h"
@@ -110,12 +89,6 @@ static unsigned char psd_read_uchar( struct buffer *from )
   }
   return res;
 }
-
-static int psd_read_char( struct buffer *from )
-{
-  return (char)psd_read_uchar( from );
-}
-
 
 static char *psd_read_data( struct buffer * from, size_t len )
 {
@@ -190,15 +163,15 @@ struct layer
 {
   struct layer *next;
   struct layer *prev;
-  unsigned int top;
-  unsigned int left;
-  unsigned int right;
-  unsigned int bottom;
+  int top;
+  int left;
+  int right;
+  int bottom;
 
-  unsigned int mask_top;
-  unsigned int mask_left;
-  unsigned int mask_right;
-  unsigned int mask_bottom;
+  int mask_top;
+  int mask_left;
+  int mask_right;
+  int mask_bottom;
   unsigned int mask_default_color;
   unsigned int mask_flags;
 
@@ -206,7 +179,6 @@ struct layer
   unsigned int num_channels;
   unsigned int clipping;
   unsigned int flags;
-  int compression;
   struct channel_info channel_info[24];
   struct buffer mode;
   struct buffer extra_data;
@@ -227,16 +199,15 @@ static void decode_layers_and_masks( struct psd_image *dst,
   
   if( count < 0 )
   {
-    count = -count;
+    if (DO_INT16_NEG_OVERFLOW(count, &count))
+        Pike_error("overflow\n");
     first_alpha_is_magic = 1;
   } else if(count == 0)
     return;
   while( count-- )
   {
     unsigned int cnt;
-    struct layer *l= 
-    layer = (struct layer *)xalloc( sizeof( struct layer ));
-    MEMSET(layer, 0, sizeof(struct layer));
+    struct layer *l = layer = xcalloc( sizeof( struct layer ), 1);
     layer->next = dst->first_layer;
     if(dst->first_layer) dst->first_layer->prev = layer;
     dst->first_layer = layer;
@@ -256,7 +227,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
     layer->opacity = psd_read_uchar( src );
     layer->clipping = psd_read_uchar( src );
     layer->flags = psd_read_uchar( src );
-    psd_read_uchar( src );
+    psd_read_uchar( src ); /* filler byte */
     layer->extra_data = psd_read_string( src );
     layer->extra_data.len++;
     if(layer->extra_data.len)
@@ -271,12 +242,12 @@ static void decode_layers_and_masks( struct psd_image *dst,
         layer->mask_bottom = psd_read_int( &tmp2 );
         layer->mask_right  = psd_read_int( &tmp2 );
         layer->mask_default_color = psd_read_uchar( &tmp2 );
-/*         layer->mask_flags = psd_read_uchar( &tmp2 ); */
+        layer->mask_flags = psd_read_uchar( &tmp2 );
       }
       tmp2 = psd_read_string( &tmp );
       if( tmp2.len )
       {
-	/* ranges (?) */
+	/* Layer blending ranges data */
       }
       layer->name = psd_read_pstring( &tmp );
     }
@@ -300,7 +271,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
 static struct buffer
 packbitsdecode(struct buffer src, 
                struct buffer dst, 
-               int nbytes)
+               size_t nbytes)
 {
   int n;
 
@@ -346,31 +317,32 @@ packbitsdecode(struct buffer src,
 
 static void f_decode_packbits_encoded(INT32 args)
 {
-  struct pike_string *src = sp[-args].u.string;
-  int nelems = sp[-args+1].u.integer;
-  int width = sp[-args+2].u.integer;
+  struct pike_string *src = NULL;
+  int nelems = 0;
+  int width = 0;
+  int multiplier = 1;
   struct pike_string *dest;
-  int compression = 0;
+  int compression = -1;
   struct buffer b, ob, d;
-  if(sp[-args].type != T_STRING)
-    Pike_error("Internal argument error");
+  if(TYPEOF(sp[-args]) != T_STRING)
+    Pike_error("Internal argument error.\n");
 
+  get_all_args("decode_packbits_encoded", args,
+	       "%T%d%d.%d%d",
+	       &src, &nelems, &width,
+	       &multiplier, &compression);
 
-  if(args == 5)
-  {
-    nelems *= sp[-args+3].u.integer;
-    compression = sp[-args+4].u.integer;
-    b.str = (unsigned char *)src->str;
-    b.len = src->len;
-    pop_n_elems(4);
-  } else if(args == 3) {
-    if( src->str[0] )
-      Pike_error("Impossible compression (%d)!\n", (src->str[0]<<8|src->str[1]) );
-    compression = src->str[1];
-    b.str = (unsigned char *)src->str+2;
-    b.len = src->len-2;
-    pop_n_elems(2);
+  nelems *= multiplier;
+  b.str = (unsigned char *)src->str;
+  b.len = src->len;
+  if (compression < 0) {
+    compression = psd_read_ushort(&b);
   }
+
+  pop_n_elems(args-1);
+
+  if (nelems < 0 || b.len < (size_t)nelems*2)
+    Pike_error("Not enough space for %d short integers.\n", nelems);
 
   ob = b;
   ob.str += nelems*2;
@@ -379,18 +351,19 @@ static void f_decode_packbits_encoded(INT32 args)
   switch(compression)
   {
    case 1:
-     dest = begin_shared_string( width * nelems );
-     d.str = (unsigned char *)dest->str; d.len = width*nelems;
-/*      while(nelems--) */
-     /*ob =*/ 
-     packbitsdecode( ob, d, width*nelems );
+     d.len = width * nelems;
+     dest = begin_shared_string( d.len );
+     d.str = (unsigned char *)dest->str;
+     if (ob.len < d.len)
+       Pike_error("Not enough space.\n");
+     packbitsdecode( ob, d, d.len );
      push_string( end_shared_string( dest ) );
      break;
    case 0:
      push_string( make_shared_binary_string((char *)b.str,b.len));
      break;
    default:
-     Pike_error("Impossible compression (%d)!\n", src->str[1]);
+     Pike_error("Unsupported compression (%d)!\n", compression);
   }
   stack_swap();
   pop_stack();
@@ -405,7 +378,7 @@ static void f_decode_image_channel( INT32 args )
   struct object *io;
   unsigned char *source;
   rgb_group *dst;
-  get_all_args( "_decode_image_channel",args, "%d%d%S", &w,&h,&s);
+  get_all_args( "_decode_image_channel",args, "%i%i%S", &w,&h,&s);
 
   ref_push_string( s );
   push_int( h );
@@ -439,7 +412,7 @@ static void f_decode_image_data( INT32 args )
   struct object *io;
   unsigned char *source, *source2, *source3, *source4;
   rgb_group *dst;
-  get_all_args( "_decode_image_data",args, "%d%d%d%d%d%S%S", 
+  get_all_args( "_decode_image_data",args, "%i%i%i%i%i%S%S", 
                 &w,&h,&d,&m,&c,&s,&ct);
 
   if(!ct->len) ct = NULL;
@@ -492,8 +465,8 @@ static void f_decode_image_data( INT32 args )
          dst->r = ct->str[*source];
          dst->g = ct->str[*source+256];
          dst->b = ct->str[*source+256*2];
-         *source++;
-         *dst++;
+         source++;
+         dst++;
        }
        else
        {
@@ -561,10 +534,10 @@ void push_layer( struct layer  *l)
   ref_push_string( s_mask_right );    push_int( l->mask_right );
   ref_push_string( s_mask_bottom );   push_int( l->mask_bottom );
   ref_push_string( s_mask_flags );    push_int( l->mask_flags );
+  ref_push_string( s_mask_default_color ); push_int( l->mask_default_color );
   ref_push_string( s_opacity );       push_int( l->opacity );
   ref_push_string( s_clipping );      push_int( l->clipping );
   ref_push_string( s_flags );         push_int( l->flags );
-  ref_push_string( s_compression );   push_int( l->compression );
   ref_push_string( s_mode );          push_buffer( &l->mode );
   ref_push_string( s_extra_data );    push_buffer( &l->extra_data );
   ref_push_string( s_name );          push_buffer( &l->name );
@@ -591,10 +564,9 @@ void push_psd_image( struct psd_image *i )
   ref_push_string( s_height ); push_int( i->rows );
   ref_push_string( s_width );  push_int( i->columns );
   ref_push_string( s_compression ); push_int( i->compression );
-  ref_push_string( s_depth ); push_int( i->compression );
+  ref_push_string( s_depth ); push_int( i->depth );
   ref_push_string( s_mode ); push_int( i->mode );
   ref_push_string( s_color_data ); push_buffer( &i->color_data );
-/*   ref_push_string( s_resource_data ); push_buffer( &i->resource_data ); */
   ref_push_string( s_resources ); decode_resources( &i->resource_data );
   ref_push_string( s_image_data ); push_buffer( &i->image_data );
   ref_push_string( s_layers );
@@ -620,6 +592,10 @@ static void decode_resources( struct buffer *b )
     int id;
     struct buffer data;
     struct buffer name;
+
+    /* Non-photoshop software may use another identifier and
+       still be compatible with the Adobe PSD file format specification.
+       FIXME? */
     if( signature[0] != '8' ||  signature[1] != 'B' ||
         signature[2] != 'I' ||  signature[3] != 'M' )
       break;
@@ -676,6 +652,13 @@ static void decode_resources( struct buffer *b )
 	  f_aggregate( num_guides );
 	}
 	break;
+      case 0x040b: /* URL */
+	{
+	  struct buffer b = psd_read_pstring( &data );
+	  push_constant_text( "url" );
+	  push_buffer( &b );
+	}
+	break;
       case 0x03ed: /* res. info. */
 	push_constant_text( "resinfo" );
 
@@ -689,7 +672,64 @@ static void decode_resources( struct buffer *b )
 
 	f_aggregate_mapping( 12 );
 	break;
+
+      case 0x03fc: /* Declared completely obsolete by Adobe */
+      case 0x03ff:
+      case 0x0403:
+	break;
+
+      case 0x03e8: /* Photoshop 2.0. Obsolete! */
+	/* 5*int16  channels, rows, columns, depth, mode */
+
+      case 0x03e9: /* Machintosh print manager print info record. */
+
+      case 0x03eb: /* Photoshop 2.0. Obsolete! Indexed color table */
+
+      case 0x03ee:
+        /* Names of alpha channels as a series of pascal strings */
+
+      case 0x03ef: /* DisplayInfo structure */
+
+      case 0x03f1: /* Border information */
+	/* Contains a fixed-number for the border width and an int16 for the
+	   border units (1=inches, 2=cm, 3=points, 4=picas, 5=columns) */
+
+      case 0x03f2: /* Background color. */
+
+      case 0x03f3: /* Print flags */
+	/* A series of one byte boolean values for
+	   labels, crop marks, color bars, registration marks, negative, flip
+	   interpolate and caption */
+
+      case 0x03f4: /* Grayscale and multichannel halftoning information. */
+      case 0x03f5: /* Color halftoning information. */
+      case 0x03f6: /* Duotone halftoning information. */
+      case 0x03f7: /* Grayscale and multichannel transfer functions. */
+      case 0x03f8: /* Color transfer functions. */
+      case 0x03f9: /* Duotone transfer functions. */
+      case 0x03fa: /* Duotone image information. */
+      case 0x03fb: /* Two bytes for the effective black and white values
+		      for the dot range. */
+      case 0x03fd: /* EPS options */
+      case 0x03fe: /* Quick Mask information. 2 bytes containing Quick Mask
+		      channel ID. One byte boolean indicating whether the
+		      mask was initially empty. */
+      case 0x0401: /* Working path */
+      case 0x0402: /* Layers group information. 2 bytes per layer containing a
+		      group ID for the dragging groups. */
+      case 0x0404: /* IPTC-NAA record */
+      case 0x0405: /* Image mode for raw format files. */
+      case 0x0406: /* JPEG quality */
+      case 0x040A: /* Copyright flag */
+      case 0x0bb7: /* Name of clipping path */
+      case 0x2710: /* Print flags information .
+		      2 bytes version (=1), 1 byte center crop marks,
+		      1 zeroed byte, 4 bytes bleed width value,
+		      2 bytes bleed width scale. */
       default:
+	if ((id >= 0x07d0) && (id <= 0x0bb6)) {
+	  /* Path information */
+	}
 	push_int( id );
 	push_buffer( &data );
 	break;
@@ -705,6 +745,8 @@ static void image_f_psd___decode( INT32 args )
   get_all_args( "Image.PSD.___decode", args, "%S", &s );
   if(args > 1)
     pop_n_elems( args-1 );
+  if(s->len < 26+4+4+4 ) /* header+color mode+image res+layers */
+    Pike_error("This is not a Photoshop PSD file (too short)\n");
   if(s->str[0] != '8' || s->str[1] != 'B'  
      || s->str[2] != 'P'  || s->str[3] != 'S' )
     Pike_error("This is not a Photoshop PSD file (invalid signature)\n");
@@ -755,13 +797,10 @@ static void f_apply_cmap( INT32 args )
 static struct program *image_encoding_psd_program=NULL;
 void init_image_psd()
 {
-  add_function( "___decode", image_f_psd___decode, 
-                "function(string:mapping)", 0);
-  add_function( "___decode_image_channel", f_decode_image_channel, 
-                "mixed", 0);
-  add_function( "___decode_image_data", f_decode_image_data, 
-                "mixed", 0);
-  add_function( "__apply_cmap", f_apply_cmap, "mixed", 0);
+  ADD_FUNCTION( "___decode", image_f_psd___decode, tFunc(tStr,tMapping), 0);
+  ADD_FUNCTION( "___decode_image_channel", f_decode_image_channel,tFunction,0);
+  ADD_FUNCTION( "___decode_image_data", f_decode_image_data,tFunction,0);
+  ADD_FUNCTION( "__apply_cmap", f_apply_cmap, tFunc(tObj tStr,tVoid), 0);
 
   add_integer_constant("Bitmap" , Bitmap, 0 );
   add_integer_constant("Greyscale" , Greyscale, 0 );
@@ -771,8 +810,6 @@ void init_image_psd()
   add_integer_constant("Multichannel" , Multichannel, 0 );
   add_integer_constant("Duotone" , Duotone, 0 );
   add_integer_constant("Lab" , Lab, 0 );
-
-
 
   add_integer_constant("LAYER_FLAG_PRESERVE_TRANSPARENCY", 0x01, 0 );
   add_integer_constant("LAYER_FLAG_INVISIBLE", 0x02, 0 );
@@ -792,4 +829,3 @@ void exit_image_psd()
 #include "psd_constant_strings.h"
 #undef STRING
 }
-

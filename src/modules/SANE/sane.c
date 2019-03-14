@@ -1,12 +1,16 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "config.h"
 
-#if defined(HAVE_SANE_SANE_H) || defined(HAVE_SANE_H)
+#if (defined(HAVE_SANE_SANE_H) || defined(HAVE_SANE_H)) && defined(HAVE_LIBSANE)
 #ifdef HAVE_SANE_SANE_H
 #include <sane/sane.h>
-#else
-#ifdef HAVE_SANE_H
+#elif defined(HAVE_SANE_H)
 #include <sane.h>
-#endif
 #endif
 #include <stdio.h>
 
@@ -29,20 +33,14 @@
 
 #include "../Image/image.h"
 
-/* must be included last */
-#include "module_magic.h"
 
-RCSID("$Id: sane.c,v 1.9 2001/07/21 00:54:31 nilsson Exp $");
+#define sp Pike_sp
 
-/*
-**! module SANE
-**!
-**!	This module enables access to the SANE (Scanner Access Now Easy)
-**!     library from pike
-**!
-**! note
-**!	$Id: sane.c,v 1.9 2001/07/21 00:54:31 nilsson Exp $
-*/
+/*! @module SANE
+ *!
+ *!  This module enables access to the SANE (Scanner Access Now Easy)
+ *!  library from pike
+ */
 
 static int sane_is_inited;
 
@@ -68,32 +66,28 @@ static void push_device( SANE_Device *d )
 }
 
 
-/*
-**! method array(mapping) list-scanners()
-**!
-**!  Returns an array with all available scanners.
-**!
-**!    Example:
-**!     <pre>
-**!   Pike v0.7 release 120 running Hilfe v2.0 (Incremental Pike Frontend)
-**!   > SANE.list_scanners();
-**!     Result: ({
-**!            ([
-**!              "model":"Astra 1220S     ",
-**!              "name":"umax:/dev/scg1f",
-**!              "type":"flatbed scanner",
-**!              "vendor":"UMAX    "
-**!            ]),
-**!            ([
-**!              "model":"Astra 1220S     ",
-**!              "name":"net:lain.idonex.se:umax:/dev/scg1f",
-**!              "type":"flatbed scanner",
-**!              "vendor":"UMAX    "
-**!            ])
-**!        })
-**!
-**!     </pre>
-*/
+/*! @decl array(mapping) list_scanners()
+ *!
+ *!  Returns an array with all available scanners.
+ *!
+ *! @example
+ *!   Pike v0.7 release 120 running Hilfe v2.0 (Incremental Pike Frontend)
+ *!   > SANE.list_scanners();
+ *!     Result: ({
+ *!            ([
+ *!              "model":"Astra 1220S     ",
+ *!              "name":"umax:/dev/scg1f",
+ *!              "type":"flatbed scanner",
+ *!              "vendor":"UMAX    "
+ *!            ]),
+ *!            ([
+ *!              "model":"Astra 1220S     ",
+ *!              "name":"net:lain.idonex.se:umax:/dev/scg1f",
+ *!              "type":"flatbed scanner",
+ *!              "vendor":"UMAX    "
+ *!            ])
+ *!        })
+ */
 static void f_list_scanners( INT32 args )
 {
   SANE_Device **devices;
@@ -206,10 +200,11 @@ static void push_option_descriptor( const SANE_Option_Descriptor *o )
   f_aggregate_mapping( sp - osp );
 }
 
-/*
-**! class Scanner
-**!    Scanner s = Scanner( scanner name )
-*/
+/*! @class Scanner
+ */
+
+/*! @decl void create(string name)
+ */
 static void f_scanner_create( INT32 args )
 {
   char *name;
@@ -220,9 +215,73 @@ static void f_scanner_create( INT32 args )
     Pike_error("Failed to open scanner \"%s\"\n", name );
 }
 
-/*
-**! method array(mapping) list_options()
-*/
+/*! @decl array(mapping) list_options()
+ *!
+ *! This method returns an array where every element is a
+ *! mapping, layed out as follows.
+ *!
+ *! @mapping
+ *!   @member string "name"
+ *!
+ *!   @member string "title"
+ *!
+ *!   @member string "desc"
+ *!
+ *!   @member string "type"
+ *!     @string
+ *!       @value "boolean"
+ *!       @value "int"
+ *!       @value "float"
+ *!       @value "string"
+ *!       @value "button"
+ *!       @value "group"
+ *!     @endstring
+ *!   @member string "unit"
+ *!     @string
+ *!       @value "none"
+ *!       @value "pixel"
+ *!       @value "bit"
+ *!       @value "mm"
+ *!       @value "dpi"
+ *!       @value "percent"
+ *!       @value "microsend"
+ *!     @endstring
+ *!   @member int "size"
+ *!
+ *!   @member multiset "cap"
+ *!     @multiset
+ *!       @index "soft_select"
+ *!       @index "hard_select"
+ *!       @index "emulate"
+ *!       @index "automatic"
+ *!       @index "inactive"
+ *!       @index "advanced"
+ *!     @endmultiset
+ *!   @member int(0..0)|mapping "constraint"
+ *!     Constraints can be of three different types; range, word list or string
+ *!     list. Constraint contains 0 if there are no constraints.
+ *!
+ *!     @mapping range
+ *!       @member string "type"
+ *!         Contains the value "range".
+ *!       @member int "max"
+ *!       @member int "min"
+ *!       @member int "quant"
+ *!     @endmapping
+ *!
+ *!     @mapping "word list"
+ *!       @member string "type"
+ *!         Contains the value "list".
+ *!       @member array(float|int) "list"
+ *!     @endmapping
+ *!
+ *!     @mapping "string list"
+ *!       @member string "type"
+ *!         Contains the value "list".
+ *!       @member array(string) "list"
+ *!     @endmapping
+ *! @endmapping
+ */
 static void f_scanner_list_options( INT32 args )
 {
   int i, n;
@@ -248,11 +307,10 @@ static int find_option( char *name, const SANE_Option_Descriptor **p )
 }
 
 
-/*
-**! method void set_option( string name, mixed new_value )
-**! method void set_option( string name )
-**!    If no value is specified, the option is set to it's default value
-*/
+/*! @decl void set_option( string name, mixed new_value )
+ *! @decl void set_option( string name )
+ *!    If no value is specified, the option is set to it's default value
+ */
 static void f_scanner_set_option( INT32 args )
 {
   char *name;
@@ -271,7 +329,7 @@ static void f_scanner_set_option( INT32 args )
      case SANE_TYPE_BOOL:
      case SANE_TYPE_INT:
      case SANE_TYPE_BUTTON:
-       sp++;get_all_args( "set_option", args, "%D", &int_value );sp--;
+       sp++;get_all_args( "set_option", args, "%I", &int_value );sp--;
        sane_control_option( THIS->h, no, SANE_ACTION_SET_VALUE,
                             &int_value, &tmp );
        break;
@@ -297,9 +355,8 @@ static void f_scanner_set_option( INT32 args )
 }
 
 
-/*
-**! method mixed get_option( string name )
-*/
+/*! @decl mixed get_option( string name )
+ */
 static void f_scanner_get_option( INT32 args )
 {
   char *name;
@@ -338,9 +395,18 @@ static void f_scanner_get_option( INT32 args )
   }
 }
 
-/*
-**! method mapping(string:int) get_parameters()
-*/
+/*! @decl mapping(string:int) get_parameters()
+ *!
+ *! @returns
+ *!   @mapping
+ *!  	@member int "format"
+ *!  	@member int "last_frame"
+ *!  	@member int "lines"
+ *!  	@member int "depth"
+ *!  	@member int "pixels_per_line"
+ *!  	@member int "bytes_per_line"
+ *!   @endmapping
+ */
 static void f_scanner_get_parameters( INT32 args )
 {
   SANE_Parameters p;
@@ -365,7 +431,8 @@ static void get_grey_frame( SANE_Handle h, SANE_Parameters *p, char *data )
   while( nbytes )
   {
     char *pp = buffer;
-    if( sane_read( h, buffer, MINIMUM(8000,nbytes), &amnt_read ) )
+    if( sane_read( h, (unsigned char *)buffer, MINIMUM(8000,nbytes),
+		   &amnt_read ) )
       return;
     while( amnt_read-- && nbytes--)
     {
@@ -383,7 +450,8 @@ static void get_rgb_frame( SANE_Handle h, SANE_Parameters *p, char *data )
   while( nbytes )
   {
     char *pp = buffer;
-    if( sane_read( h, buffer, MINIMUM(8000,nbytes), &amnt_read ) )
+    if( sane_read( h, (unsigned char *)buffer, MINIMUM(8000,nbytes),
+		   &amnt_read ) )
       return;
     while( amnt_read-- && nbytes--)
       *(data++) = *(pp++);
@@ -420,9 +488,8 @@ static void assert_image_program()
     Pike_error("No Image.Image?!\n");
 }
 
-/*
-**! method Image.Image simple_scan()
-*/
+/*! @decl Image.Image simple_scan()
+ */
 static void f_scanner_simple_scan( INT32 args )
 {
   SANE_Parameters p;
@@ -475,9 +542,8 @@ static void f_scanner_simple_scan( INT32 args )
   push_object( o );
 }
 
-/*
-**! method void row_scan(function(Image.Image,int,Scanner:void) callback)
-*/
+/*! @decl void row_scan(function(Image.Image,int,Scanner:void) callback)
+ */
 static void f_scanner_row_scan( INT32 args )
 {
   SANE_Parameters p;
@@ -620,9 +686,8 @@ static void nonblocking_row_scan_callback( int fd, void *_c )
   }
 }
 
-/*
-**! method void nonblocking_row_scan(function(Image.Image,int,Scanner,int:void) callback)
-*/
+/*! @decl void nonblocking_row_scan(function(Image.Image,int,Scanner,int:void) callback)
+ */
 static void f_scanner_nonblocking_row_scan( INT32 args )
 {
   SANE_Parameters p;
@@ -654,7 +719,7 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
   push_int( 1 );
   rsp->o = clone_object( image_program, 2 );
   rsp->t = Pike_fp->current_object;
-  Pike_fp->current_object->refs++;
+  add_ref(Pike_fp->current_object);
   rsp->r = ((struct image *)rsp->o->storage)->img;
   rsp->h = THIS->h;
   rsp->p = p;
@@ -673,14 +738,30 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
     free( rsp );
     Pike_error("Failed to get select fd for scanning device!\n");
   }
-  set_read_callback( fd, nonblocking_row_scan_callback, (void*)rsp );
+  set_read_callback( fd, (file_callback)nonblocking_row_scan_callback,
+		     (void*)rsp );
   push_int( 0 );
 }
 
+/*! @decl void cancel_scan()
+ */
 static void f_scanner_cancel_scan( INT32 args )
 {
   sane_cancel( THIS->h );
 }
+
+/*! @endclass
+ */
+
+/*! @decl constant FrameGray
+ *! @decl constant FrameRGB
+ *! @decl constant FrameRed
+ *! @decl constant FrameGreen
+ *! @decl constant FrameBlue
+ */
+
+/*! @endmodule
+ */
 
 static void init_scanner_struct( struct object *p )
 {
@@ -693,11 +774,11 @@ static void exit_scanner_struct( struct object *p )
     sane_close( THIS->h );
 }
 
-void pike_module_init()
+PIKE_MODULE_INIT
 {
   struct program *p;
-  add_function( "list_scanners", f_list_scanners,
-                "function(void:array(mapping))", 0 );
+  ADD_FUNCTION( "list_scanners", f_list_scanners,
+                tFunc(tNone,tArr(tMapping)), 0 );
 
   add_integer_constant( "FrameGray", SANE_FRAME_GRAY,0  );
   add_integer_constant( "FrameRGB",  SANE_FRAME_RGB,0   );
@@ -708,39 +789,35 @@ void pike_module_init()
 
   start_new_program();
   ADD_STORAGE( struct scanner );
-  add_function( "get_option", f_scanner_get_option,
-                "function(string:mixed)", 0 );
-  add_function( "set_option", f_scanner_set_option,
-                "function(string,void|mixed:void)", 0 );
-  add_function( "list_options", f_scanner_list_options,
-                    "function(void:array(mapping(string:mixed)))", 0 );
+  ADD_FUNCTION( "get_option", f_scanner_get_option, tFunc(tStr, tMix), 0 );
+  ADD_FUNCTION( "set_option", f_scanner_set_option,
+		tFunc(tStr  tOr(tVoid, tMix), tVoid), 0 );
+  ADD_FUNCTION( "list_options", f_scanner_list_options,
+		tFunc(tNone, tArr(tMap(tStr, tMix))), 0 );
 
-  add_function( "simple_scan", f_scanner_simple_scan,
-                "function(void:object)", 0 );
+  ADD_FUNCTION( "simple_scan", f_scanner_simple_scan, tFunc(tNone, tObj), 0 );
 
-  add_function( "row_scan", f_scanner_row_scan,
-                "function(function(object,int,object:void):void)", 0 );
+  ADD_FUNCTION( "row_scan", f_scanner_row_scan,
+		tFunc(tFunc(tObj tInt tObj,tVoid),tVoid), 0 );
 
-  add_function( "nonblocking_row_scan", f_scanner_nonblocking_row_scan,
-                "function(function(object,int,object,int:void):void)", 0 );
+  ADD_FUNCTION( "nonblocking_row_scan", f_scanner_nonblocking_row_scan,
+		tFunc(tFunc(tObj tInt tObj tInt,tVoid),tVoid), 0 );
 
-  add_function( "cancel_scan", f_scanner_cancel_scan,
-                "function(void:object)", 0 );
+  ADD_FUNCTION( "cancel_scan", f_scanner_cancel_scan, tFunc(tNone, tObj), 0 );
 
-  add_function( "get_parameters", f_scanner_get_parameters,
-                "function(void:mapping)", 0 );
+  ADD_FUNCTION( "get_parameters", f_scanner_get_parameters,
+		tFunc(tNone, tMapping), 0 );
 
-  add_function( "create", f_scanner_create,
-                "function(string:void)", ID_STATIC );
+  ADD_FUNCTION( "create", f_scanner_create, tFunc(tStr, tVoid), ID_PROTECTED );
 
-   set_init_callback(init_scanner_struct);
-   set_exit_callback(exit_scanner_struct);
+  set_init_callback(init_scanner_struct);
+  set_exit_callback(exit_scanner_struct);
 
   add_program_constant( "Scanner", (p=end_program( ) ), 0 );
   free_program( p );
 }
 
-void pike_module_exit()
+PIKE_MODULE_EXIT
 {
   if( sane_is_inited )
     sane_exit();
@@ -749,7 +826,12 @@ void pike_module_exit()
 }
 
 #else
-#include "module_magic.h"
-void pike_module_init() {}
-void pike_module_exit() {}
+#include "program.h"
+#include "module.h"
+#include "module_support.h"
+PIKE_MODULE_INIT {
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
+}
+PIKE_MODULE_EXIT {}
 #endif

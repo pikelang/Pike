@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "pike_macros.h"
 #include "queue.h"
@@ -8,6 +14,11 @@ struct queue_entry
   queue_call call;
   void *data;
 };
+
+/* FIXME: Add a way to keep the first block even when the queue
+ * becomes empty. In e.g. the gc the queue becomes empty very
+ * frequently which causes the first block to be freed and allocated a
+ * lot. */
 
 #define QUEUE_ENTRIES 8191
 
@@ -24,7 +35,7 @@ void run_queue(struct pike_queue *q)
 
 #ifdef PIKE_DEBUG
   if (q->first && q->last == (struct queue_block *)(ptrdiff_t)1)
-    fatal("This looks like a lifo queue.\n");
+    Pike_fatal("This looks like a lifo queue.\n");
 #endif
 
   while((b=q->first))
@@ -37,7 +48,7 @@ void run_queue(struct pike_queue *q)
     }
 
     q->first=b->next;
-    free((char *)b);
+    free(b);
   }
   q->last=0;
 }
@@ -48,7 +59,7 @@ void discard_queue(struct pike_queue *q)
   while (b)
   {
     struct queue_block *next = b->next;
-    free((char *) b);
+    free(b);
     b = next;
   }
   q->first = q->last = 0;
@@ -61,7 +72,7 @@ void enqueue(struct pike_queue *q, queue_call call, void *data)
 #ifdef PIKE_DEBUG
   if (!q->first) q->last = 0;
   else if (q->last == (struct queue_block *)(ptrdiff_t)1)
-    fatal("This looks like a lifo queue.\n");
+    Pike_fatal("This looks like a lifo queue.\n");
 #endif
 
   b=q->last;
@@ -90,7 +101,7 @@ void run_lifo_queue(struct pike_queue *q)
 
 #ifdef PIKE_DEBUG
   if (q->first && q->last != (struct queue_block *)(ptrdiff_t)1)
-    fatal("This does not look like a lifo queue.\n");
+    Pike_fatal("This does not look like a lifo queue.\n");
 #endif
 
   while((b=q->first))
@@ -102,7 +113,7 @@ void run_lifo_queue(struct pike_queue *q)
     }
     else {
       q->first=b->next;
-      free((char *)b);
+      free(b);
     }
   }
 }
@@ -114,7 +125,7 @@ void enqueue_lifo(struct pike_queue *q, queue_call call, void *data)
 #ifdef PIKE_DEBUG
   if (!q->first) q->last = (struct queue_block *)(ptrdiff_t)1;
   else if (q->last != (struct queue_block *)(ptrdiff_t)1)
-    fatal("This does not look like a lifo queue.\n");
+    Pike_fatal("This does not look like a lifo queue.\n");
 #endif
 
   if(!b || b->used >= QUEUE_ENTRIES)
@@ -136,7 +147,7 @@ void *dequeue_lifo(struct pike_queue *q, queue_call call)
 
 #ifdef PIKE_DEBUG
   if (q->first && q->last != (struct queue_block *)(ptrdiff_t)1)
-    fatal("This does not look like a lifo queue.\n");
+    Pike_fatal("This does not look like a lifo queue.\n");
 #endif
 
   while((b=q->first))
@@ -149,7 +160,7 @@ void *dequeue_lifo(struct pike_queue *q, queue_call call)
     }
     else {
       q->first=b->next;
-      free((char *)b);
+      free(b);
     }
   }
 

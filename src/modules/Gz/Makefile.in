@@ -1,6 +1,5 @@
-# $Id: Makefile.in,v 1.5 1999/11/18 07:59:03 hubbe Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS=zlibmod.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 

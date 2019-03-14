@@ -1,0 +1,236 @@
+START_MARKER
+
+// Tools.Hilfe
+define(test_hilfe_setup_low,[[test_do([[
+class TestHilfe {
+  inherit Tools.Hilfe.Evaluator;
+
+  string out = "";
+
+  string get() {
+    string ret = out;
+    out = "";
+    return ret;
+  }
+
+  int(0..) mywrite(string in, mixed ... args) {
+    out += sprintf(in, @args);
+    return 0;
+  }
+
+  void create() {
+    write = mywrite;
+    ::create();
+  }
+
+  function put = add_input_line;
+
+  string test_eval(string|array(string) in) {
+    if(arrayp(in))
+      foreach(in, string line)
+        put(line);
+    else
+      put(in);
+    return get();
+  }
+
+  int(0..1) test_done() {
+    if(!state->finishedp()) {
+      state->flush();
+      return 0;
+    }
+    return 1;
+  }
+};
+
+add_constant("testhilfe", TestHilfe());
+
+]]) ]])
+
+define(test_hilfe,[[
+  test_eq([[testhilfe->test_eval($1)]],[[$2]])
+  test_true(testhilfe->test_done())
+]])
+define(test_hilfe_setup,[[
+  test_hilfe_setup_low()
+  test_hilfe(".", version() + " running Hilfe v3.5 (Incremental Pike Frontend)\n");
+  test_hilfe([["set format sprintf \"%s\""]], "");
+]])  
+
+test_hilfe_setup()
+test_hilfe("1;", "1")
+
+// Testing parser
+test_hilfe([[ ({ "(", "." }) ]], "")
+test_hilfe( ({ "int", "." }), "")
+test_hilfe("string a=\"hej",
+	   "Hilfe Error: Unterminated string \"\\\"hej\\n\" at line 1\n")
+test_hilfe("({)",[[ "Hilfe Error: \")\" end parenthesis does not match "
+       "closest start parenthesis \"{\".\n" ]])
+test_hilfe( ({ "int c // =3;", "=4;" }), "")
+test_hilfe("c;", "4")
+test_hilfe( ({ "string a=#\"hej", "san\";" }), "")
+test_hilfe("a;", "\"hej\\n\"\n\"san\"")
+test_hilfe("class A{}", "")
+test_hilfe("A();", "HilfeInput()->A()")
+test_hilfe("A a=A();", "")
+test_hilfe("class { int i=4; }()->i;", "4")
+//  test("class A{}();", "object")
+test_hilfe("indices((<1,2>));","({ /""* 2 elements *""/\n    1,\n    2\n})")
+test_hilfe("void nop(mixed m){};", "")
+test_hilfe("nop(({}));",
+  "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
+  "0")
+test_hilfe("int a;", "")
+test_hilfe("a++;", "0")
+test_hilfe("a;", "1")
+
+test_hilfe("void foo(function f) { write(\"a\"); f(); write(\"b\"); }", "")
+//  test("foo() { write(\"-\"); }", "a-b")
+
+// Test variable delarations.
+test_hilfe("int|float a=2;", "")
+test_hilfe("a=2.0;", "2.0")
+test_hilfe("int b=2;", "")
+test_hilfe("b=2.0;", "Compiler Error: 1: Bad type in assignment.\n"
+       "Compiler Error: 1: Expected: int.\n"
+       "Compiler Error: 1: Got     : float.\n")
+test_hilfe("Image.Image i=Image.Image();", "")
+test_hilfe("i;", [["Image.Image( 0 x 0 /""* 0.0Kb *""/)"]])
+test_hilfe([["constant z=`+(1,2),y=2;"]], "")
+test_hilfe("z;", "3")
+test_hilfe("y;", "2")
+test_hilfe("int z;", "Hilfe Error: \"z\" already defined as constant.\n")
+test_hilfe("int y;", "Hilfe Error: \"y\" already defined as constant.\n")
+test_hilfe("array|Stdio.File ä;", "")
+test_hilfe("Stdio.File|array ä;", "")
+test_hilfe("int(1..3)|string b=3;", "")
+test_hilfe("array(int) c=({1,2,3});", "")
+
+// Test variable bindings.
+test_hilfe("new", "")
+test_hilfe("int i;", "")
+test_hilfe("i;", "0")
+test_hilfe("void foo() { i++; }", "")
+test_hilfe("foo();",
+  "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
+  "0")
+test_hilfe("i;", "1")
+test_hilfe("i*2;", "2")
+test_hilfe("2*i;", "2")
+
+test_hilfe("int n=0;", "")
+test_hilfe("foreach(({1,2,3}), int m){n+=m;}", "Ok.\n")
+test_hilfe("n;","6")
+test_hilfe("foreach( ({ 1, 2, 3, }); int i; int m) { n+=m; }", "Ok.\n")
+test_hilfe("n;", "12")
+
+test_hilfe("for(int j; j<5; j++) write(\"%d\",j);", "01234Ok.\n")
+test_hilfe("j;", "Compiler Error: 1: Undefined identifier j.\n")
+test_hilfe("for(int i; i<5; i++) write(\"%d\",i);", "01234Ok.\n")
+test_hilfe("i;", "1")
+test_hilfe("catch { for(int i; i<5; i++) write(\"%d\",i); };", "012340")
+test_hilfe("i;", "1")
+test_hilfe("class A (int i) { int foo() { return i; } }", "")
+test_hilfe("A(2)->foo();", "2")
+test_hilfe("i;", "1")
+
+test_hilfe("mixed x=\"bar\";", "")
+test_hilfe("void foo(mixed x){ x?werror(\"\"):werror(\"\");};","")
+test_hilfe("foo(1);", 
+  "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
+  "0")
+
+test_hilfe("array a = ({1});", "")
+test_hilfe("({2})+a;", "({ /* 2 elements */\n    2,\n    1\n})")
+test_hilfe([[ ({ "int i,j;", "mapping a=([1:2]);",
+           "foreach(a;i;j) write(\"%O,%O\\n\",i,j);" }) ]],[[ "1,2\nOk.\n" ]])
+
+test_hilfe("int i;","")
+test_hilfe("map(\"!\",lambda(mixed i){return i;});","\"!\"")
+
+test_hilfe("new","")
+test_hilfe("int a=sscanf(\"12\",\"%d\",int b);","")
+test_hilfe("b;","12")
+test_hilfe("for(int i;i<2;i++) sscanf(\"13\",\"%d\",int b);","Ok.\n")
+test_hilfe("b;","12")
+test_hilfe("for(int i;i<2;i++) sscanf(\"13\",\"%d\",b);","Ok.\n")
+test_hilfe("b;","13")
+
+// Clear history...
+test_do( add_constant("testhilfe") )
+test_hilfe_setup()
+
+// Testing history.
+test_hilfe("2;", "2")
+test_hilfe("_*_;", "4")
+test_hilfe("_*_;", "16")
+test_hilfe("_==__[-1];", "1")
+test_hilfe("__[1]+__[2]+__[-1];", "7")
+
+// Test odd hang bug.
+test_hilfe([[ "filter(indices(Calendar.Language),"
+	   "lambda(string s){ return sizeof(s) < 0; });" ]],
+           "({ })")
+
+test_hilfe("new", "")
+test_hilfe("int a;", "")
+test_hilfe("if(a) a=0;", "Ok.\n")
+test_hilfe("else a=1;", "Ok.\n");
+test_hilfe("a;", "1")
+
+test_hilfe("function f = lambda(int(0..1) a){};", "")
+
+test_hilfe("if(a) a=0; else a=1;", "Ok.\n");
+
+test_hilfe("class B { int i; void create(int x) { i=x; } }", "")
+test_hilfe("object b=B(3);", "")
+test_hilfe("b->i;", "3");
+
+test_hilfe("sscanf(\"abc\"[0..2],\"%s\",string s);", "1")
+test_hilfe("s;","\"abc\"")
+
+test_hilfe("new", "")
+test_hilfe("int a = 3;", "")
+test_hilfe("int b = 23;", "")
+test_hilfe("a & b;", "3")
+
+test_hilfe("switch(a) { case 2: return 1; case 3: return 2; }", "Ok.\n")
+
+test_do( add_constant("testhilfe") )
+
+test_true([[ Tools.Hilfe.StdinHilfe ]])
+test_true([[ Tools.Hilfe.GenericHilfe ]])
+test_true([[ Tools.Hilfe.GenericAsyncHilfe ]])
+test_true([[ Tools.Hilfe.main ]])
+
+
+// Tools.Legal
+test_true([[ has_prefix(Tools.Legal.Copyright.get_latest_pike(), "Copyright © ") ]])
+test_true([[ mappingp( Tools.Legal.Copyright.get_all() ) ]])
+test_true([[ arrayp( Tools.Legal.Copyright.get_all()->Pike ) ]])
+test_any([[
+  int x=sizeof( Tools.Legal.Copyright.get_all() );
+  int y=sizeof( Tools.Legal.Copyright.get_text() );
+  Tools.Legal.Copyright.add( "Basun", ({ "Dunald Dock" }) );
+  return ( (x+1) == sizeof( Tools.Legal.Copyright.get_all() ) ) &&
+	 ( y < sizeof(Tools.Legal.Copyright.get_text()) );
+]], 1)
+test_eval_error([[ Tools.Legal.Copyright.add( "Basun", ({ "Muckey Mice" }) ); ]])
+test_equal([[ Tools.Legal.Copyright.get_all()->Basun ]], [[ ({ "Dunald Dock" }) ]])
+
+test_true([[ stringp( Tools.Legal.License.get_text() ) ]])
+
+test_any([[
+  int ret=1;
+  foreach(indices(Tools.Standalone);; string name)
+    if( name!="process_files" && programp(Tools.Standalone[name]) &&
+        !stringp(Tools.Standalone[name]()->description) )
+    {
+      ret=0;
+      werror("Missing description for %O.\n",name);
+    }
+  return ret;
+]], 1)
+
+END_MARKER

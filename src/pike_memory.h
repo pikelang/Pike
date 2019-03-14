@@ -1,18 +1,124 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-
 /*
- * $Id: pike_memory.h,v 1.29 2000/12/13 21:31:53 hubbe Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef MEMORY_H
 #define MEMORY_H
 
 #include "global.h"
 #include "stralloc.h"
 
+#ifdef USE_VALGRIND
+
+#define HAVE_VALGRIND_MACROS
+/* Assume that any of the following header files have the macros we
+ * need. Haven't checked if it's true or not. */
+
+#ifdef HAVE_MEMCHECK_H
+#include <memcheck.h>
+#elif defined(HAVE_VALGRIND_MEMCHECK_H)
+#include <valgrind/memcheck.h>
+#elif defined(HAVE_VALGRIND_H)
+#include <valgrind.h>
+#else
+#undef HAVE_VALGRIND_MACROS
+#endif
+
+#endif	/* USE_VALGRIND */
+
+#ifdef HAVE_VALGRIND_MACROS
+
+#ifndef VALGRIND_MAKE_MEM_NOACCESS
+#define VALGRIND_MAKE_MEM_NOACCESS VALGRIND_MAKE_NOACCESS
+#define VALGRIND_MAKE_MEM_UNDEFINED VALGRIND_MAKE_WRITABLE
+#define VALGRIND_MAKE_MEM_DEFINED VALGRIND_MAKE_READABLE
+#endif
+
+/* No Access */
+#define PIKE_MEM_NA(lvalue) do {					\
+    PIKE_MEM_NA_RANGE(&(lvalue), sizeof (lvalue));			\
+  } while (0)
+#define PIKE_MEM_NA_RANGE(addr, bytes) do {				\
+    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_NOACCESS(addr, bytes));		\
+  } while (0)
+
+/* Write Only -- Will become RW when having been written to */
+#define PIKE_MEM_WO(lvalue) do {					\
+    PIKE_MEM_WO_RANGE(&(lvalue), sizeof (lvalue));			\
+  } while (0)
+#define PIKE_MEM_WO_RANGE(addr, bytes) do {				\
+    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_UNDEFINED(addr, bytes));		\
+  } while (0)
+
+/* Read/Write */
+#define PIKE_MEM_RW(lvalue) do {					\
+    PIKE_MEM_RW_RANGE(&(lvalue), sizeof (lvalue));			\
+  } while (0)
+#define PIKE_MEM_RW_RANGE(addr, bytes) do {				\
+    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_DEFINED(addr, bytes));		\
+  } while (0)
+
+/* Read Only -- Not currently supported by valgrind */
+#define PIKE_MEM_RO(lvalue) do {					\
+    PIKE_MEM_RO_RANGE(&(lvalue), sizeof (lvalue));			\
+  } while (0)
+#define PIKE_MEM_RO_RANGE(addr, bytes) do {				\
+    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_DEFINED(addr, bytes));		\
+  } while (0)
+
+/* Return true if a memchecker is in use. */
+#define PIKE_MEM_CHECKER() RUNNING_ON_VALGRIND
+
+/* Return true if a memchecker reports the memory to not be
+ * addressable (might also print debug messages etc). */
+#define PIKE_MEM_NOT_ADDR(lvalue)					\
+  PIKE_MEM_NOT_ADDR_RANGE(&(lvalue), sizeof (lvalue))
+#define PIKE_MEM_NOT_ADDR_RANGE(addr, bytes)				\
+  VALGRIND_CHECK_MEM_IS_ADDRESSABLE(addr, bytes)
+
+/* Return true if a memchecker reports the memory to not be defined
+ * (might also print debug messages etc). */
+#define PIKE_MEM_NOT_DEF(lvalue)					\
+  PIKE_MEM_NOT_DEF_RANGE(&(lvalue), sizeof (lvalue))
+#define PIKE_MEM_NOT_DEF_RANGE(addr, bytes)				\
+  VALGRIND_CHECK_MEM_IS_DEFINED(addr, bytes)
+
+#ifdef VALGRIND_CREATE_MEMPOOL
+# define PIKE_MEMPOOL_CREATE(a)         VALGRIND_CREATE_MEMPOOL(a, 0, 0)
+# define PIKE_MEMPOOL_ALLOC(a, p, l)    VALGRIND_MEMPOOL_ALLOC(a, p, l)
+# define PIKE_MEMPOOL_FREE(a, p, l)     VALGRIND_MEMPOOL_FREE(a, p)
+# define PIKE_MEMPOOL_DESTROY(a)        VALGRIND_DESTROY_MEMPOOL(a)
+#else
+/* somewhat functional alternatives to mempool macros */
+# define PIKE_MEMPOOL_CREATE(a)
+# define PIKE_MEMPOOL_ALLOC(a, p, l)    PIKE_MEM_WO_RANGE(p, l)
+# define PIKE_MEMPOOL_FREE(a, p, l)     PIKE_MEM_NA_RANGE(p, l)
+# define PIKE_MEMPOOL_DESTROY(a)
+#endif
+
+#else  /* !HAVE_VALGRIND_MACROS */
+
+#define PIKE_MEM_NA(lvalue)		do {} while (0)
+#define PIKE_MEM_NA_RANGE(addr, bytes)	do {} while (0)
+#define PIKE_MEM_WO(lvalue)		do {} while (0)
+#define PIKE_MEM_WO_RANGE(addr, bytes)	do {} while (0)
+#define PIKE_MEM_RW(lvalue)		do {} while (0)
+#define PIKE_MEM_RW_RANGE(addr, bytes)	do {} while (0)
+#define PIKE_MEM_RO(lvalue)		do {} while (0)
+#define PIKE_MEM_RO_RANGE(addr, bytes)	do {} while (0)
+#define PIKE_MEM_CHECKER()		0
+#define PIKE_MEM_NOT_ADDR(lvalue)	0
+#define PIKE_MEM_NOT_ADDR_RANGE(addr, bytes) 0
+#define PIKE_MEM_NOT_DEF(lvalue)	0
+#define PIKE_MEM_NOT_DEF_RANGE(addr, bytes) 0
+#define PIKE_MEMPOOL_CREATE(a)
+#define PIKE_MEMPOOL_ALLOC(a, p, l)
+#define PIKE_MEMPOOL_FREE(a, p, l)
+#define PIKE_MEMPOOL_DESTROY(a)
+
+#endif	/* !HAVE_VALGRIND_MACROS */
 
 
 #define MEMSEARCH_LINKS 512
@@ -42,77 +148,101 @@ struct mem_searcher
   struct link *set[MEMSEARCH_LINKS];
 };
 
+/*
+ * The purpose of this function is to avoid dead store elimination in cases when
+ * sensitive data has to be cleared from memory.
+ */
+static INLINE void * guaranteed_memset(void * p, int c, size_t n) {
+    volatile char * _p = (char *)p;
+    while (n--) *_p++ = c;
+    return (void *)p;
+}
 
-#if 1
-/* use new searching stuff */
+static INLINE unsigned INT64 get_unaligned64(const void * ptr) {
+    unsigned INT64 v;
+    memcpy(&v, ptr, 8);
+    return v;
+}
+
+static INLINE void set_unaligned64(void * ptr, unsigned INT64 v) {
+    memcpy(ptr, &v, 8);
+}
+
+static INLINE unsigned INT64 get_unaligned32(const void * ptr) {
+    unsigned INT32 v;
+    memcpy(&v, ptr, 4);
+    return v;
+}
+
+static INLINE void set_unaligned32(void * ptr, unsigned INT32 v) {
+    memcpy(ptr, &v, 4);
+}
+
+static INLINE unsigned INT16 get_unaligned16(const void * ptr) {
+    unsigned INT16 v;
+    memcpy(&v, ptr, 2);
+    return v;
+}
+
+static INLINE void set_unaligned16(void * ptr, unsigned INT16 v) {
+    memcpy(ptr, &v, 2);
+}
 
 #include "pike_search.h"
 
-#else
-struct generic_mem_searcher
-{
-  char needle_shift;
-  char haystack_shift;
-  union data_u
-  {
-    struct mem_searcher eightbit;
-    struct other_search_s
-    {
-      enum methods method;
-      void *needle;
-      size_t needlelen;
-      int first_char;
-    } other;
-  } data;
-};
-
-#endif
-
 #include "block_alloc_h.h"
-#define MEMCHR0 MEMCHR
+extern int page_size;
 
 /* Note to self: Prototypes must be updated manually /Hubbe */
-PMOD_EXPORT ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz);
-PMOD_EXPORT long pcharp_strlen(PCHARP a);
-PMOD_EXPORT INLINE p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar2 c, ptrdiff_t e);
-PMOD_EXPORT INLINE p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e);
-PMOD_EXPORT void swap(char *a, char *b, size_t size);
+PMOD_EXPORT ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz) ATTRIBUTE((pure));
+PMOD_EXPORT long pcharp_strlen(PCHARP a)  ATTRIBUTE((pure));
+
+#define MEMCHR0 MEMCHR
+p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
+p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
+
+/* PMOD_EXPORT void swap(char *a, char *b, size_t size); */
 PMOD_EXPORT void reverse(char *memory, size_t nitems, size_t size);
 PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
-PMOD_EXPORT size_t hashmem(const unsigned char *a, size_t len, size_t mlen);
-PMOD_EXPORT size_t hashstr(const unsigned char *str, ptrdiff_t maxn);
-PMOD_EXPORT size_t simple_hashmem(const unsigned char *str, ptrdiff_t len, ptrdiff_t maxn);
-PMOD_EXPORT void init_memsearch(struct mem_searcher *s,
-		    char *needle,
-		    size_t needlelen,
-		    size_t max_haystacklen);
-PMOD_EXPORT char *memory_search(struct mem_searcher *s,
-		    char *haystack,
-		    size_t haystacklen);
-PMOD_EXPORT void init_generic_memsearcher(struct generic_mem_searcher *s,
-			      void *needle,
-			      size_t needlelen,
-			      char needle_shift,
-			      size_t estimated_haystack,
-			      char haystack_shift);
-PMOD_EXPORT void *generic_memory_search(struct generic_mem_searcher *s,
-			    void *haystack,
-			    size_t haystacklen,
-			    char haystack_shift);
-PMOD_EXPORT char *my_memmem(char *needle,
-		size_t needlelen,
-		char *haystack,
-		size_t haystacklen);
+
+#if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
+extern PMOD_EXPORT
+#ifdef __i386__
+__attribute__((fastcall)) 
+#endif
+size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
+#else
+PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, size_t key) ATTRIBUTE((pure));
+#endif
+PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pure));
+/*
 PMOD_EXPORT void memfill(char *to,
 	     INT32 tolen,
 	     char *from,
 	     INT32 fromlen,
 	     INT32 offset);
-PMOD_EXPORT char *debug_xalloc(size_t size);
-PMOD_EXPORT void *debug_xmalloc(size_t s);
+*/
+#define MALLOC_FUNCTION  ATTRIBUTE((malloc)) ATTRIBUTE((warn_unused_result))
+
+PMOD_EXPORT void *debug_xalloc(size_t size) MALLOC_FUNCTION;
+PMOD_EXPORT void *debug_xmalloc(size_t s) MALLOC_FUNCTION;
 PMOD_EXPORT void debug_xfree(void *mem);
-PMOD_EXPORT void *debug_xrealloc(void *m, size_t s);
-PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s);
+PMOD_EXPORT void *debug_xrealloc(void *m, size_t s) MALLOC_FUNCTION;
+PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s) MALLOC_FUNCTION;
+PMOD_EXPORT void *aligned_alloc(size_t size, size_t alignment) MALLOC_FUNCTION;
+
+#define PIKE_ALIGNTO(x, a)	(((x) + (a)-1) & ~((a)-1))
+
+PMOD_EXPORT void *mexec_alloc(size_t sz) MALLOC_FUNCTION;
+PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz) MALLOC_FUNCTION;
+PMOD_EXPORT void mexec_free(void *ptr);
+void init_pike_memory (void);
+void exit_pike_memory (void);
+
+#ifdef DEBUG_MALLOC
+PMOD_EXPORT void * system_malloc(size_t) MALLOC_FUNCTION;
+PMOD_EXPORT void system_free(void *);
+#endif
 
 #undef BLOCK_ALLOC
 
@@ -122,83 +252,10 @@ PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s);
 #define DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(IF, ELSE)	ELSE
 #endif /* HANDLES_UNALIGNED_MEMORY_ACCESS */
 
-#if SIZEOF_CHAR_P == 4
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 3)
-#else /* sizeof(char *) != 4 */
-#if SIZEOF_CHAR_P == 8
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 4)
-#else /* sizeof(char *) != 8 */
-#define DIVIDE_BY_2_CHAR_P(X)	(X /= 2*sizeof(size_t))
-#endif /* sizeof(char *) == 8 */
-#endif /* sizeof(char *) == 4 */
-
-/* NB: RET should be an lvalue of type size_t. */
-#define DO_HASHMEM(RET, A, LEN, MLEN)			\
-  do {							\
-    const unsigned char *a = A;				\
-    size_t len = LEN;					\
-    size_t mlen = MLEN;					\
-    size_t ret;						\
-  							\
-    ret = 9248339*len;					\
-    if(len<mlen)					\
-      mlen=len;						\
-    else						\
-    {							\
-      switch(len-mlen)					\
-      {							\
-  	default: ret^=(ret<<6) + a[len-7];		\
-  	case 7:						\
-  	case 6: ret^=(ret<<7) + a[len-5];		\
-  	case 5:						\
-  	case 4: ret^=(ret<<4) + a[len-4];		\
-  	case 3: ret^=(ret<<3) + a[len-3];		\
-  	case 2: ret^=(ret<<3) + a[len-2];		\
-  	case 1: ret^=(ret<<3) + a[len-1];		\
-      }							\
-    }							\
-    a += mlen & 7;					\
-    switch(mlen&7)					\
-    {							\
-      case 7: ret^=a[-7];				\
-      case 6: ret^=(ret<<4)+a[-6];			\
-      case 5: ret^=(ret<<7)+a[-5];			\
-      case 4: ret^=(ret<<6)+a[-4];			\
-      case 3: ret^=(ret<<3)+a[-3];			\
-      case 2: ret^=(ret<<7)+a[-2];			\
-      case 1: ret^=(ret<<5)+a[-1];			\
-    }							\
-  							\
-    DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(			\
-      {							\
-  	size_t *b;					\
-  	b=(size_t *)a;					\
-    							\
-  	for(DIVIDE_BY_2_CHAR_P(mlen);mlen--;)		\
-  	{						\
-  	  ret^=(ret<<7)+*(b++);				\
-  	  ret^=(ret>>6)+*(b++);				\
-  	}						\
-      }							\
-    ,							\
-      for(mlen >>= 3; mlen--;)				\
-      {							\
-  	register size_t t1;				\
-  	register size_t t2;				\
-  	t1= a[0];					\
-  	t2= a[1];					\
-  	t1=(t1<<5) + a[2];				\
-  	t2=(t2<<4) + a[3];				\
-  	t1=(t1<<7) + a[4];				\
-  	t2=(t2<<5) + a[5];				\
-  	t1=(t1<<3) + a[6];				\
-  	t2=(t2<<4) + a[7];				\
-  	a += 8;						\
-  	ret^=(ret<<7) + (ret>>6) + t1 + (t2<<6);	\
-      }							\
-    )							\
-  							\
-    RET = ret;						\
-  } while(0)
+/* Determine if we should use our own heap manager for executable
+ * memory. */
+#if defined(MEXEC_USES_MMAP) || defined (_WIN32)
+#define USE_MY_MEXEC_ALLOC
+#endif
 
 #endif

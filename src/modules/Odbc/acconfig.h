@@ -1,6 +1,10 @@
 /*
- * $Id: acconfig.h,v 1.5 2000/09/14 17:43:11 grubba Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Config-file for the Pike ODBC-module.
  *
  * Henrik Grubbström
@@ -29,8 +33,20 @@
 /* Define if you have SQLULEN */
 #undef HAVE_SQLULEN
 
+/* Define if you have SQLHENV */
+#undef HAVE_SQLHENV
+
+/* Define if you have SQLHDBC */
+#undef HAVE_SQLHDBC
+
+/* Define if you have SQLHSTMT */
+#undef HAVE_SQLHSTMT
+
 /* Define if you have ODBC */
 #undef HAVE_ODBC
+
+/* Define if you want to enable implicit commit (discouraged). */
+#undef ENABLE_IMPLICIT_COMMIT
 
 @BOTTOM@
 

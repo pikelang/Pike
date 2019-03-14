@@ -1,14 +1,7 @@
-/* Atom.pmod
- *
- * X Atoms $Id: Atom.pmod,v 1.8 2001/04/07 00:56:31 nilsson Exp $
- *
- */
-
 /*
  *    Proocols.X, a Pike interface to the X Window System
  *
- *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
- *    Pontus Hagland, David Hedbor.
+ *    See COPYRIGHT for copyright information.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -24,10 +17,6 @@
  *    along with this program; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
-
-/* Questions, bug fixes and bug reports can be sent to the pike
- * mailing list, pike@roxen.com, or to the athors (see AUTHORS for
- * email addresses. */
 
 #pike __REAL_VERSION__
 
@@ -67,8 +56,7 @@ class pending_intern
   {
     if (!success)
       {
-	throw( ({ "Atom.pending_intern->handle_reply: InternAtom failed!\n",
-		    backtrace() })  );
+	error( "Atom.pending_intern->handle_reply: InternAtom failed!\n" );
       }
     atom->id = reply;
     display->remember_atom(atom);
@@ -85,8 +73,7 @@ class pending_name_lookup
   {
     if (!success)
       {
-	throw( ({ "Atom.pending_intern->handle_reply: InternAtom failed!\n",
-		    backtrace() })  );
+	error( "Atom.pending_intern->handle_reply: InternAtom failed!\n" );
       }
     atom->name = reply;
     display->remember_atom(atom);
@@ -126,14 +113,14 @@ class atom_manager
     if (atom_table[name])
       return atom_table[name];
 
-    object atom = Atom(this_object());
+    object atom = Atom(this);
     atom->name = name;
 
     object req = .Requests.InternAtom();
     req->name = name;
     if (callback)
       {
-	send_async_request(req, pending_intern(this_object(), atom,
+	send_async_request(req, pending_intern(this, atom,
 					       callback)->handle_reply);
 	return 0;
       } else {
@@ -157,12 +144,12 @@ class atom_manager
   {
     if (atoms[id])
       return atoms[id];
-    object atom = Atom(this_object());
+    object atom = Atom(this);
     atom->id = id;
     object req = GetAtomName_req(atom);
     if (callback)
       {
-	send_async_request(req, pending_name_lookup(this_object(), atom,
+	send_async_request(req, pending_name_lookup(this, atom,
 						  callback)->handle_reply);
 	return 0;
       } else {
@@ -179,7 +166,7 @@ class atom_manager
   {
     for(int i = 1; i<sizeof(._Xlib.predefined_atoms); i++)
       {
-	object atom = Atom(this_object());
+	object atom = Atom(this);
 	atom->id = i;
 	atom->name = ._Xlib.predefined_atoms[i];
 	remember_atom(atom);

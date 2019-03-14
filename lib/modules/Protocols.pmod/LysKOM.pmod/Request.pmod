@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
 
-//  $Id: Request.pmod,v 1.9 2001/04/27 13:38:41 grubba Exp $
 //!	This module contains nice abstraction for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or 
@@ -23,8 +22,8 @@ class _Request
    private mixed res;
 
 #if constant(thread_create) && !LYSKOM_UNTHREADED
-   private object wait_lock;
-   private object wait_mutex;
+  private object wait_cond = Thread.Condition();
+  private object wait_mutex = Thread.Mutex();
 #endif
 
    function callback;
@@ -65,6 +64,9 @@ class _Request
 
    mixed _reply(object|array what)
    {
+#if constant(thread_create) && !LYSKOM_UNTHREADED
+      object key = wait_mutex->lock();
+#endif
       if (objectp(what))
       {
 	 error=what;
@@ -76,8 +78,8 @@ class _Request
 	 res=reply(what);
       }
 #if constant(thread_create) && !LYSKOM_UNTHREADED
-      if (wait_lock)
-	 destruct(wait_lock);
+      wait_cond->signal();
+      destruct(key);
 #endif
       if (callback) callback(error||res);
 
@@ -94,11 +96,12 @@ class _Request
 #if constant(thread_create) && !LYSKOM_UNTHREADED
    mixed `()() // wait
    {
-      if (ok || error) return res;
-      wait_mutex=Thread.Mutex();
-      wait_lock=wait_mutex->lock(); // lock it
-      wait_lock=wait_mutex->lock(1); // lock it again, ie wait
-      return res;
+      object key = wait_mutex->lock();
+      do {
+	if (ok || error)
+	  return res;
+	wait_cond->wait(key);
+      } while (1);
    }
 #else
    mixed `()() // wait
@@ -115,7 +118,7 @@ class _Request
    int(0..1) ok;
 
    //!	How the call failed.
-   //!	The call has completed if @code{(ok||error)@}.
+   //!	The call has completed if @expr{(ok||error)@}.
    //!
    object error;
 
@@ -304,7 +307,7 @@ class Set_priv_bits
    {
       return ({7,
                person,
-               @B(@rows(privileges,privbitsnames))});
+               B(@rows(privileges,privbitsnames))});
    }
 
    void reply(array what)
@@ -377,7 +380,7 @@ class Create_conf_old
    {
       return ({10,
                H(name),
-               @B(@rows(type,extendedconftypenames))});
+               B(@rows(type,extendedconftypenames))});
    }
 
    int(0..65535) reply(array what)
@@ -630,7 +633,7 @@ class Set_conf_type
    {
       return ({21,
                conf_no,
-               @B(@rows(type,extendedconftypenames))});
+               B(@rows(type,extendedconftypenames))});
    }
 
    void reply(array what)
@@ -2099,7 +2102,7 @@ class Create_conf
    {
       return ({88,
                H(name),
-               @B(@rows(type,extendedconftypenames)),
+               B(@rows(type,extendedconftypenames)),
                @A(aux_items->encode())});
    }
 
@@ -2399,7 +2402,7 @@ class Add_member
                pers_no,
                priority,
                where,
-               @B(@rows(type,membershiptypenames))});
+               B(@rows(type,membershiptypenames))});
    }
 
    void reply(array what)
@@ -2453,7 +2456,7 @@ class Set_membership_type
       return ({102,
                pers,
                conf,
-               @B(@rows(type,membershiptypenames))});
+               B(@rows(type,membershiptypenames))});
    }
 
    void reply(array what)
@@ -2544,4 +2547,3 @@ class Set_keep_commented
    {
    }
 }
-

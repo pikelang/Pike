@@ -1,24 +1,29 @@
-# $Id: configure.in,v 1.52 2001/08/13 15:35:50 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
-AC_MODULE_INIT()
+AC_MODULE_INIT(_system)
 
 AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
+AC_CHECK_LIB(net, __get_socket_descriptor)
+
+dnl For Cygwin
+AC_CHECK_LIB(cygipc, shmget)
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
-  # FIXME: These look suspiciouly much like 32bit versions.
+  # FIXME: These look suspiciously much like 32bit versions.
   #        We probably want to use 64bit versions on IA64.
-  LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 $LIBS"
+  LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -lole32 $LIBS"
 fi
 
-AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
-	sys/conf.h sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h \
+AC_CHECK_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
+	sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h winsock2.h \
 	sys/utsname.h pwd.h passwd.h shadow.h grp.h sys/stat.h winsock.h \
         sys/systeminfo.h windows.h sys/param.h utime.h sys/utime.h sys/id.h \
-	sys/time.h sys/mman.h fcntl.h sys/fcntl.h netinfo/ni.h)
+	sys/time.h sys/shm.h sys/mman.h fcntl.h sys/fcntl.h netinfo/ni.h \
+	sys/prctl.h cygwin/ipc.h cygwin/sem.h cygwin/shm.h ws2tcpip.h \
+	NewAPIs.h sys/loadavg.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for working sys/resource.h])
@@ -51,20 +56,50 @@ else
   AC_MSG_RESULT(no)
 fi
 
-AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
+if test "`uname`" = "AIX"; then
+  # Pike's use of getaddrinfo SIGSEGVs for some users on some releases of
+  # AIX 5L 5.1.
+  #
+  # AIX 5L getaddrinfo is broken prior to
+  # AIX 5100-06 Recommended Maintenance
+  #
+  # getaddrinfo is implemented in /usr/lib/ia64l64/libc.so.1,
+  # which is part of the bos.rte.libc. AIX 5100-06 contains
+  # U496907 bos.rte.libc 5.1.0.59
+  #
+  # Suspected causes:
+  # IY29763  2 submodule getaddrinfo gets wrong sin6_len
+  # IY44782  2 malloc struct sockaddr_in6 in getaddrinfo() needs to be bzero
+  # IY51966  2 THIRD PARTY IMAPD CORE DUMP WHEN CALLING GETADDRINFO
+
+  # Path:Fileset:Level:PTF Id:State:Type:Description
+  libc_ver="`lslpp -qcl bos.rte.libc 2>/dev/null| awk -F: '{ print $3 }'`"
+  case "$libc_ver" in
+    5.1.0.*)
+      if test "`echo $libc_ver | awk -F. '{ print $4 }'`" -lt 59; then
+	AC_MSG_WARN([AIX 5.1 with libc older than 5.1.0.59 detected ($libc_ver)
+Disabling use of getaddrinfo.])
+	ac_cv_func_getaddrinfo=broken
+      fi
+    ;;
+  esac
+fi
+     
+AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown lchown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
         geteuid getpgrp getpgid getppid getuid getgid setuid setgid setpgrp \
         setpgid getsid setsid \
 	getpwnam getspnam getgrnam getpwuid getgrgid \
 	getgrent setgrent endgrent getpwent setpwent endpwent \
-	chroot fchroot uname sysinfo gethostname gethostbyname \
+	gethostname gethostbyname getservbyname \
+	chroot fchroot uname sysinfo sync \
         getgrnam_r getgrent_r getgrgid_r \
         getpwnam_r getpwent_r getpwuid_r \
-        getspnam_r innetgr utime sleep usleep nanosleep \
-        getrlimit setrlimit  \
+	getspnam_r innetgr utime _utime lutimes sleep usleep nanosleep \
+        getrlimit setrlimit setproctitle \
         setitimer getitimer mmap munmap \
-	gettimeofday settimeofday)
-
+	gettimeofday settimeofday prctl inet_ntoa inet_ntop getaddrinfo \
+	getloadavg daemon)
 
 if test "x$ac_cv_func_setpgrp" = "xyes"; then
   AC_MSG_CHECKING([if setpgrp takes two arguments (BSD)])
@@ -85,8 +120,6 @@ if test "x$ac_cv_func_setpgrp" = "xyes"; then
     AC_MSG_RESULT(no)
   fi
 fi
-
-AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_MSG_CHECKING(for solaris style gethostbyname_r)
 
@@ -133,6 +166,52 @@ AC_MSG_RESULT($pike_cv_have_osf1_gethostbyname_r)
 
 if test $pike_cv_have_osf1_gethostbyname_r = yes; then
   AC_DEFINE(HAVE_OSF1_GETHOSTBYNAME_R)
+fi
+
+AC_MSG_CHECKING(for solaris style getservbyname_r)
+
+AC_CACHE_VAL(pike_cv_have_solaris_getservbyname_r,
+[
+AC_TRY_LINK([
+#define _REENTRANT
+#define _THREAD_SAFE
+#include <netdb.h>
+],[
+  char data[2000];
+  struct servent result,*bar;
+  getservbyname_r("foo","bar",&result, data, sizeof(data))->s_port;
+],pike_cv_have_solaris_getservbyname_r=yes,
+pike_cv_have_solaris_getservbyname_r=no)
+])
+
+AC_MSG_RESULT($pike_cv_have_solaris_getservbyname_r)
+
+if test $pike_cv_have_solaris_getservbyname_r = yes; then
+  AC_DEFINE(HAVE_SOLARIS_GETSERVBYNAME_R)
+fi
+
+
+AC_MSG_CHECKING(for OSF1 style getservbyname_r)
+
+AC_CACHE_VAL(pike_cv_have_osf1_getservbyname_r,
+[
+AC_TRY_LINK([
+#define _REENTRANT
+#define _THREAD_SAFE
+#include <netdb.h>
+],[
+  int bar;
+  struct servent result;
+  struct servent_data data;
+  bar=getservbyname_r("foo","bar",&result, &data);
+],pike_cv_have_osf1_getservbyname_r=yes,
+pike_cv_have_osf1_getservbyname_r=no)
+])
+
+AC_MSG_RESULT($pike_cv_have_osf1_getservbyname_r)
+
+if test $pike_cv_have_osf1_getservbyname_r = yes; then
+  AC_DEFINE(HAVE_OSF1_GETSERVBYNAME_R)
 fi
 
 if test "$ac_cv_func_getspnam_r" = "yes"; then
@@ -253,6 +332,21 @@ else
   AC_MSG_RESULT(no)
 fi
 
+AC_MSG_CHECKING(for GNU libc)
+AC_CACHE_VAL(pike_cv_glibc, [
+  AC_EGREP_CPP(no_glibc, [
+#include <features.h>
+#ifndef __GLIBC__
+no_glibc
+#endif
+  ], pike_cv_glibc=no, pike_cv_glibc=yes)
+])
+if test "$pike_cv_glibc" = yes; then
+  AC_MSG_RESULT(yes - disabling unlocked syslog calls)
+  AC_DEFINE(MIGHT_HAVE_SYSLOG_RACES)
+else
+  AC_MSG_RESULT(no)
+fi
 
 
 AC_MSG_CHECKING(setrlimit syntax)
@@ -340,36 +434,6 @@ if test "$pike_cv_itimer_type_is_02" = yes; then
   AC_DEFINE(ITIMER_TYPE_IS_02)
 fi
 
-
-AC_MSG_CHECKING([for the RDTSC instruction (x86)])
-AC_CACHE_VAL(pike_cv_have_rdtsc, [
-AC_TRY_RUN([
-
-#define RTSC(l,h)							\
-   __asm__ __volatile__ (  "rdtsc"					\
-			   :"=a" (l),					\
-			   "=d" (h))
-
-static long long rtsc()
-{
-   long long now;
-   unsigned long nl,nh;
-   RTSC(nl,nh);
-   return (((long long)nh)<<32)|nl;
-}
-
-int main()
-{
-   if (rtsc()<rtsc()) 
-      return 0;
-   return 1;
-}
-],[pike_cv_have_rdtsc=yes],[pike_cv_have_rdtsc=no])])
-AC_MSG_RESULT($pike_cv_have_rdtsc)
-if test $pike_cv_have_rdtsc = yes; then
-  AC_DEFINE(HAVE_RDTSC)
-fi
-
-
+AC_HAVE_FUNCS(GetUserName AllocConsole AttachConsole FreeConsole)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

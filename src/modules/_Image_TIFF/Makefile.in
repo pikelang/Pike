@@ -1,8 +1,10 @@
-# $Id: Makefile.in,v 1.3 1999/11/18 08:02:16 hubbe Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 OBJS=image_tiff.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+DUMMY=dummy.o
+LINKER_OPTIONS=modules/_Image_TIFF/dummy.o
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 

@@ -1,4 +1,4 @@
-#define FILE "NormalizationTest-3.1.0.txt"
+#! /usr/bin/env pike
 
 #define c1 c[0]
 #define c2 c[1]
@@ -6,27 +6,43 @@
 #define c4 c[3]
 #define c5 c[4]
 
+constant log_msg = Tools.Testsuite.log_msg;
+constant log_status = Tools.Testsuite.log_status;
+
+int tests, fail;
+
 void main(int argc, array argv)
 {
-  int tests, fail, part, opl;
-  write("Performing Unicode normalization tests\n");
-  write("See http://www.unicode.org/Public/3.1-Update/" FILE "\n" );
+  if (getenv()->TEST_VERBOSITY)
+    // Run from testsuite.
+    argv = ({"dummy", combine_path (__FILE__, "..")});
+  else {
+    write("Performing Unicode normalization tests\n");
+    write("See http://www.unicode.org/Public/3.2-Update/NormalizationTest-3.2.0.txt\n");
+    if( argc<2 || has_value( argv, "--help" ) )
+    {
+      write("\nUsage %s <path>\nwhere path is the path to the directory with the NormalizationTest.txt file.\n",
+	    argv[0]);
+      exit(0);
+    }
+  }
 
-  foreach( Stdio.File( argv[1]+"/"+FILE,"r" )->read()/"\n", string l )
+  int part, opl;
+
+  foreach( Stdio.File( argv[1]+"/NormalizationTest.txt","r" )->read()/"\n", string l )
   {
-    if( !strlen( l ) )
+    if( !sizeof( l ) || has_prefix(l, "#"))
       continue;
 
     if( l[0] == '@' )
     {
-      if( opl ) write("Done. "+(tests-opl+1)+" tests.\n" );
-      write("\n");
+      if( opl ) log_status("Done. "+(tests-opl+1)+" tests." );
       opl = tests+1;
-      write( replace( l[1..], " #", ":") +"\n" );
+      log_status( replace( l[1..], " #", ":"));
       part++;
       continue;
     }
-    if( !strlen( l ) )
+    if( !sizeof( l ) )
       continue;
 
     string decode_hex( string d )
@@ -48,15 +64,15 @@ void main(int argc, array argv)
       foreach( t, string tt )
 	if( Unicode.normalize( tt, method ) != ok )
 	{
-	  write("\n");
-	  write("Test %d/%s failed:\n"
-		"expected: %s\n"
-		"got:      %s\n"
-		"input:    %s\n",tests/6,method,
-		 hex(ok), hex(Unicode.normalize(tt,method)), hex(tt));
+	  log_msg("Test %d/%s failed:\n"
+		  "expected: %s\n"
+		  "got:      %s\n"
+		  "input:    %s\n",tests/6,method,
+		  hex(ok), hex(Unicode.normalize(tt,method)), hex(tt));
 	  fail++;
 	  return;
 	}
+      tests++;
     };
 
     
@@ -68,13 +84,9 @@ void main(int argc, array argv)
 
     test( c4, "NFKC", c1, c2, c3, c4, c5 );
     test( c5, "NFKD", c1, c2, c3, c4, c5 );
-    tests += 6;
   }
-  write( "Done. "+(tests-opl+1)+" tests.\n" );
-  if( fail )
-  {
-    write( "Summary: %d/%d tests failed\n", fail, tests );
-    exit( 1 );
-  }
-  exit( 0 );
+  log_status( "Done. "+(tests-opl+1)+" tests." );
+
+  Tools.Testsuite.report_result (tests - fail, fail, 0);
+  return 0;
 }

@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "image_machine.h"
 #include <math.h>
@@ -6,16 +12,13 @@
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.12 2000/12/01 08:10:03 hubbe Exp $");
-#include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
-#include "svalue.h"
-#include "threads.h"
-#include "array.h"
 #include "pike_error.h"
 #include "mapping.h"
 #include "operators.h"
@@ -24,8 +27,6 @@ RCSID("$Id: avs.c,v 1.12 2000/12/01 08:10:03 hubbe Exp $");
 #include "builtin_functions.h"
 #include "module_support.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 extern struct program *image_program;
 
@@ -38,7 +39,7 @@ extern struct program *image_program;
 /*
 **! method object decode(string data)
 **! method mapping _decode(string data)
-**! method string encode(object image)
+**! method string encode(object image, object|void alpha)
 **!
 **! Handle encoding and decoding of AVS-X images.
 **! AVS is rather trivial, and not really useful, but:
@@ -53,7 +54,7 @@ void image_avs_f__decode(INT32 args)
   struct object *io, *ao;
   struct pike_string *s;
   unsigned int c;
-  unsigned int w, h;
+  int w, h;
   unsigned char *q;
   get_all_args( "decode", args, "%S", &s);
   
@@ -61,10 +62,11 @@ void image_avs_f__decode(INT32 args)
   w = q[0]<<24 | q[1]<<16 | q[2]<<8 | q[3];
   h = q[4]<<24 | q[5]<<16 | q[6]<<8 | q[7];
 
-  if( w <= 0 || h <= 0)
+  /* Check for under and overflow. */
+  if ((w <= 0) || (h <= 0) || (w>>16)*(h>>16))
     Pike_error("This is not an AVS file (w=%d; h=%d)\n", w, h);
 
-  if((size_t)w*h*4+8 > (size_t)s->len)
+  if((size_t)w*h*4+8 != (size_t)s->len)
     Pike_error("This is not an AVS file (w=%d; h=%d; s=%ld)\n",
 	  w, h,
 	  DO_NOT_WARN((long)s->len));
@@ -76,7 +78,7 @@ void image_avs_f__decode(INT32 args)
   push_int( h );
   ao = clone_object( image_program, 2);
 
-  for(c=0; c<w*h; c++)
+  for(c=0; c< (unsigned) w * h; c++)
   {
     rgb_group pix, apix;
     apix.r = apix.g = apix.b = q[c*4+8];
@@ -110,11 +112,18 @@ void image_avs_f_encode(INT32 args )
   int x,y;
   unsigned int *q;
   rgb_group apix = {255, 255, 255};
-  get_all_args( "encode", args, "%o", &io);
+  get_all_args( "encode", args, "%o.%o", &io, &ao);
   
   if(!(i = (struct image *)get_storage( io, image_program)))
     Pike_error("Wrong argument 1 to Image.AVS.encode\n");
-  
+
+  if(ao) {
+    if (!(a = (struct image *)get_storage( ao, image_program)))
+      Pike_error("Wrong argument 2 to Image.AVS.encode\n");
+    if ((a->xsize != i->xsize) || (a->ysize != i->ysize))
+      Pike_error("Bad size for alpha channel to Image.AVS.encode.\n");
+  }
+
   s = begin_shared_string( i->xsize*i->ysize*4+8 );
   MEMSET(s->str, 0, s->len );
 
@@ -128,7 +137,7 @@ void image_avs_f_encode(INT32 args )
   for(y=0; y<i->ysize; y++)
     for(x=0; x<i->xsize; x++)
     {
-      register int rv = 0;
+      register unsigned int rv = 0;
       rgb_group pix = *(is++);
       if(as) apix = *(as++);
       rv = ((apix.g<<24)|(pix.r<<16)|(pix.g<<8)|pix.b);
@@ -140,9 +149,10 @@ void image_avs_f_encode(INT32 args )
 
 void init_image_avs()
 {
-  add_function( "decode",  image_avs_f_decode,  "function(string:object)", 0);
-  add_function( "_decode", image_avs_f__decode, "function(string:mapping)", 0);
-  add_function( "encode",  image_avs_f_encode,  "function(object:string)", 0);
+  ADD_FUNCTION( "decode",  image_avs_f_decode,  tFunc(tStr,tObj), 0);
+  ADD_FUNCTION( "_decode", image_avs_f__decode, tFunc(tStr,tMapping), 0);
+  ADD_FUNCTION( "encode",  image_avs_f_encode,
+		tFunc(tObj tOr(tObj,tVoid),tStr), 0);
 }
 
 void exit_image_avs()

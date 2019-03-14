@@ -1,0 +1,7 @@
+CC=gcc
+CFLAGS=-O2 -DDEBIAN
+LDFLAGS=-L/usr/lib -L/usr/X11R6/lib
+CPPFLAGS=-I/usr/include/pike/@PIKEVERSION@/ -I/usr/include
+CPP=gcc -E
+LDSHARED=gcc -shared
+configure_args=@CONFIGURE_ARGS@

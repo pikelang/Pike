@@ -1,22 +1,19 @@
-/*
- * An SQL-based storage manager
- * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
- *
- * $Id: MySQL.pike,v 1.4 2001/01/20 15:34:08 kinkie Exp $
- *
- * This storage manager provides the means to save data to an SQL-based 
- * backend.
- * 
- * For now it's mysql only, dialectization will be added at a later time.
- * Serialization should be taken care of by the low-level SQL drivers.
- *
- * Notice: the administrator is supposed to create the database and give
- * the roxen user enough privileges to write to it. It will be care
- * of this driver to create the database itself.
- *
- * 
- */
+
+//! An SQL-based storage manager
+//!
+//! This storage manager provides the means to save data to an SQL-based 
+//! backend.
+//!
+//! For now it's mysql only, dialectization will be added at a later time.
+//! Serialization should be taken care of by the low-level SQL drivers.
+//!
+//! @note
+//!   An administrator is supposed to create the database and give
+//!   the user enough privileges to write to it. It will be care
+//!   of this driver to create the database tables itself.
+//!
+//! @thanks
+//!   Thanks to Francesco Chemolli <kinkie@@roxen.com> for the contribution.
 
 #pike __REAL_VERSION__
 
@@ -31,7 +28,7 @@ data longblob NOT NULL, \
 dependants longblob \
 )"
 
-Sql.sql db;
+Sql.Sql db;
 int have_dependants=0;
 
 #if 0                           // set to 1 to enable debugging
@@ -46,8 +43,8 @@ int have_dependants=0;
 #endif // 1
 
 
-//database manipulation is done externally. This class only returns
-//values, with some lazy decoding.
+//! Database manipulation is done externally. This class only returns
+//! values, with some lazy decoding.
 class Data {
   inherit Cache.Data;
   private int _size;
@@ -86,7 +83,6 @@ class Data {
 private object(Sql.sql_result) enum_result;
 int(0..0)|string first() {
   debug("first()");
-  array res;
   if (enum_result)
     destruct(enum_result);
   enum_result=db->big_query("select cachekey from cache");
@@ -144,8 +140,6 @@ void set(string key, mixed value,
          void|multiset(string) dependants) {
   debug("setting value for key %s (e: %d, v: %f",key,expire_time,
         preciousness?preciousness:1.0);
-  mixed err;
-  mixed tmp;
   db->query("delete from cache where cachekey='%s'",key);
   db->query("insert into cache "
             "(cachekey,atime,ctime,etime,cost,data, dependants) "
@@ -183,11 +177,11 @@ void aget(string key,
 }
 
 
-
+//!
 void create(string sql_url) {
   array result=0;
   mixed err=0;
-  db=Sql.sql(sql_url);
+  db=Sql.Sql(sql_url);
   // used to determine whether there already is a DB here.
   err=catch(result=db->query("select stamp from cache_admin"));
   if (err || !sizeof(result)) {

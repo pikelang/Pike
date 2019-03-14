@@ -1,6 +1,4 @@
 #
-# $Id: configure.in,v 1.27 2001/02/27 18:52:25 grubba Exp $
-#
 # Configure script for the mysql-module
 #
 # Henrik Grubbström
@@ -9,11 +7,17 @@
 #
 # NOTE: 
 #   Prior to 3.20.0          		After 3.20.0
-#   --------------------------------------------------------------
+#   -------------------------------------------------------------------
 #   /usr/local/mysql/mach-lib-threads	/usr/local/lib/mysql
 #   /usr/local/mysql/include		/usr/local/include/mysql
 #   libmysql.a				libmysqllib.a
 #   libstrings.a			libmystrings.a
+#
+#   MariaDB-Client 1.0.0
+#   -------------------------------------------------------------------
+#   /usr/local/lib
+#   /usr/local/mariadbclient/include
+#   libmariadbclient.a
 #
 
 
@@ -22,118 +26,232 @@ AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
+# ___Mysql.so is wrapped by lib/modules/Mysql.pmod.
+MODULE_WRAPPER_PREFIX="___"
+
 PIKE_FEATURE_WITHOUT(Mysql)
 
 OLD_LIBS=$LIBS
 OLD_LDFLAGS=$LDFLAGS
 OLD_CPPFLAGS=$CPPFLAGS
-MYSQL_LIBS=""
 
 AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
+AC_ARG_WITH(mariadb,[  --without-mariadb     disable use of MariaDB-client library],[],[with_mariadb=yes])
 
 if test x$with_mysql = xno; then
   :
 else
   PIKE_FEATURE_NODEP(Mysql)
 
-  AC_MSG_CHECKING(for Mysql lib-directory)
+  PIKE_SELECT_ABI
 
-  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread no"
-  incdirs="$with_root/usr/local/include/mysql $with_root/usr/local/mysql/include/mysql $with_root/opt/include/mysql $with_root/opt/mysql/include/mysql $with_root/usr/gnu/include/mysql $with_root/usr/include/mysql $with_root/include/mysql $with_root/usr/local/mysql/include no"
-
-  if test x$with_mysql = xyes; then :; else
-    # Mysql installation directory specified.
-
-    libdirs="$with_mysql/lib/mysql $with_mysql/lib $libdirs"
-    incdirs="$with_mysql/include/mysql $with_mysql/include $incdirs"
+  if test "x$with_mariadb" = "xno"; then
+      MARIADB_CONFIG=no
+  else
+      AC_PATH_PROG(MARIADB_CONFIG,${ac_tool_prefix}mariadb_config,no)
   fi
+  if test "x${MARIADB_CONFIG}" = "xno"; then
 
-  AC_CACHE_VAL(pike_cv_mysql_lib_dir, [
-    for pike_cv_mysql_lib_dir in $libdirs; do
-      if test -d $pike_cv_mysql_lib_dir/.; then
-        break
-      else
-        :
-      fi
+  AC_MSG_CHECKING(for Mysql directory prefix)
+  AC_CACHE_VAL(pike_cv_mysql_lib_dir_prefix, [
+    pike_cv_mysql_lib_dir_prefix=no
+    for dir_prefix in $with_mysql \
+      `echo "${with_site_prefixes}"|sed -e 's/:/ /g'` \
+      `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$with_root$ac_default_prefix@g"` \
+      $with_root/usr/local $with_root/sw/local $with_root/sw \
+      $with_root/usr/gnu $with_root/opt/gnu $with_root/sw/gnu \
+      $with_root/usr/freeware $with_root/usr/pkg \
+      $with_root/opt/csw $with_root/opt/csw/mysql5 $with_root/opt/csw/mysql4 \
+      $with_root/usr/sfw $with_root/opt/sfw \
+      $with_root/usr $with_root
+    do
+      if test -d "$dir_prefix/."; then :; else continue; fi
+
+      for subdir in mysql .; do
+        if test -d "$dir_prefix/$subdir/."; then :; else continue; fi
+        for libdir in $pike_cv_abi_suffixes; do
+          if test -d "$dir_prefix/$subdir/lib$libdir/mysql/." || test -d "$dir_prefix/$subdir/lib/mysql$libdir/."; then
+            pike_cv_mysql_lib_dir_prefix="$dir_prefix/$subdir"
+	    break 3
+          fi
+        done
+      done
     done
   ])
+  AC_MSG_RESULT($pike_cv_mysql_lib_dir_prefix)
 
-  AC_MSG_RESULT($pike_cv_mysql_lib_dir)
+  if test "x$pike_cv_mysql_lib_dir_prefix" = "xno"; then :; else
 
-  if test x$pike_cv_mysql_lib_dir = xno; then :; else
-    echo Adding $pike_cv_mysql_lib_dir to the library search path.
-    LDFLAGS="${LDFLAGS} -R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir"
-  fi
-
-  AC_MSG_CHECKING(for Mysql include-directory)
-
-  AC_CACHE_VAL(pike_cv_mysql_include_dir, [
-    for pike_cv_mysql_include_dir in $incdirs; do
-      if test -d $pike_cv_mysql_include_dir/.; then
-        break
-      else
-	:
+    AC_MSG_CHECKING(for Mysql lib directory)
+    AC_CACHE_VAL(pike_cv_mysql_lib_dir, [
+      pike_cv_mysql_lib_dir="no"
+      for libdir in $pike_cv_abi_suffixes; do
+        if test -d "$pike_cv_mysql_lib_dir_prefix/lib$libdir/mysql/."; then
+          pike_cv_mysql_lib_dir="$pike_cv_mysql_lib_dir_prefix/lib$libdir/mysql"
+	  break
+	else
+          if test -d "$pike_cv_mysql_lib_dir_prefix/lib/mysql$libdir/."; then
+            pike_cv_mysql_lib_dir="$pike_cv_mysql_lib_dir_prefix/lib/mysql$libdir"
+	    break
+          fi
+        fi
+      done
+      # Blastwave adds an extra lib on top.
+      if test -d "$pike_cv_mysql_lib_dir/lib/."; then
+	pike_cv_mysql_lib_dir="$pike_cv_mysql_lib_dir/lib"
       fi
-    done
-  ])
+    ])
+    AC_MSG_RESULT($pike_cv_mysql_lib_dir)
+    if test "x$pike_cv_mysql_lib_dir" = "xno"; then :; else
+      echo Adding $pike_cv_mysql_lib_dir to the library search path.
+      LDFLAGS="${LDFLAGS} -R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir"
+    fi
 
-  AC_MSG_RESULT($pike_cv_mysql_include_dir)
+    AC_MSG_CHECKING(for Mysql include-directory)
+    AC_CACHE_VAL(pike_cv_mysql_include_dir, [
+      pike_cv_mysql_include_dir="no"
+      for incdir in include/mysql include; do
+        if test -d "$pike_cv_mysql_lib_dir_prefix/$incdir/."; then
+          pike_cv_mysql_include_dir="$pike_cv_mysql_lib_dir_prefix/$incdir"
+	  break
+        fi
+      done
+    ])
+    AC_MSG_RESULT($pike_cv_mysql_include_dir)
 
-  if test x$pike_cv_mysql_include_dir = xno; then :; else
-    echo Adding $pike_cv_mysql_include_dir to the include search path.
-    CPPFLAGS="${CPPFLAGS} -I$pike_cv_mysql_include_dir"
+    if test x$pike_cv_mysql_include_dir = xno; then :; else
+      echo Adding $pike_cv_mysql_include_dir to the include search path.
+      CPPFLAGS="-I$pike_cv_mysql_include_dir ${CPPFLAGS}"
+    fi
   fi
+  else
+      echo "MariaDB found. Attempting to use."
+      # MariaDB
+      # NB: mariadb_config doens't distinguish between
+      #     LDFLAGS and LIBS
+      MARIADB_LIBS=""
+      set ignored `${MARIADB_CONFIG} --libs_r`
+      while test "$#" -gt 1; do
+        case "$2" in
+          -L*)
+	    echo "Adding `echo $2 | sed -e 's/^-L//'` to the library search path."
+	    LDFLAGS="${LDFLAGS} $2 `echo $2 | sed -e 's/^-L/-R/'`"
+	    ;;
+          -R*)
+	    echo "Adding `echo $2 | sed -e 's/^-R//'` to the library runtime search path."
+	    LDFLAGS="${LDFLAGS} $2"
+	    ;;
+	  -lmaria*)
+	    # We handle the client library itself later.
+	    ;;
+	  *)
+	    # NB: We need to buffer libs to get them in the correct order.
+	    echo "Adding $2 to LIBS."
+	    MARIADB_LIBS="${MARIADB_LIBS} $2"
+	    ;;
+	esac
+	shift
+      done
+      echo "Adding `${MARIADB_CONFIG} --include` to CPPFLAGS."
+      CPPFLAGS="`${MARIADB_CONFIG} --include` ${CPPFLAGS}"
+  fi
+
 
   # Header file
 
-  AC_CHECK_HEADERS(winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
+  AC_CHECK_HEADERS(winsock2.h winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h,,,[
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+  ])
+  AC_MSG_CHECKING(for mysql/mysqld_ername.h)
+  AC_CACHE_VAL(ac_cv_mysqld_ername, [
+  AC_TRY_COMPILE([],[
+struct foo {
+    const char * a;
+    int b;
+};
+const static struct foo list[] = {
+#include <mysql/mysqld_ername.h>
+};
+    ],ac_cv_mysqld_ername=yes,ac_cv_mysqld_ername=no)
+  ])
+  if test x$ac_cv_mysqld_ername = xyes; then
+      AC_DEFINE(HAVE_MYSQL_MYSQLD_ERNAME_H)
+      AC_MSG_RESULT(yes)
+  else
+      AC_MSG_RESULT(no)
+  fi
+
+  if test x$ac_cv_header_mysql_h$ac_cv_header_mysql_mysql_h = xnono; then
+    # Required headerfile missing.
+    PIKE_FEATURE_NODEP(Mysql)
+    pike_cv_mysql="no"
+  fi
+
+  # Defines within headerfile
+define([AC_CHECK_MYSQL_OPTIONS],
+[
+AC_MSG_CHECKING(for $1)
+AC_CACHE_VAL(ac_cv_pike_mysql_opt_$1, [
+AC_TRY_COMPILE([
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#endif
+#endif
+], [
+int tmp;
+tmp = $1;
+], ac_cv_pike_mysql_opt_$1=yes,
+   ac_cv_pike_mysql_opt_$1=no)
+])
+if test "x$ac_cv_pike_mysql_opt_$1" = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_$1)
+else
+  AC_MSG_RESULT(no)
+fi
+])
+
+
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_RECONNECT)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_READ_DEFAULT_FILE)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_CONNECT_TIMEOUT)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_COMPRESS)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_NAMED_PIPE)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_INIT_COMMAND)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_READ_DEFAULT_GROUP)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_SET_CHARSET_DIR)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_SET_CHARSET_NAME)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_LOCAL_INFILE)
+  AC_CHECK_MYSQL_OPTIONS(SHUTDOWN_DEFAULT)
 
   # Mysql libs
 
-  pike_cv_mysql="unknown"
+dnl   if test x"$pike_cv_sys_os" = xWindows_NT ; then
+dnl     LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -luser32 ${LIBS}"
+dnl   fi
 
-  AC_CHECK_LIB(mystrings, bchange, [
-    LIBS="-lmystrings $LIBS"
-    MYSQL_LIBS="-lmystrings ${MYSQL_LIBS}"
-    pike_cv_mysql="post3.20"
-  ], [
-    AC_CHECK_LIB(strings, bchange, [
-      LIBS="-lstrings $LIBS"
-      MYSQL_LIBS="-lstrings ${MYSQL_LIBS}"
-      pike_cv_mysql="pre3.20"
-    ], [])
-  ])
-
-  AC_MSG_CHECKING(Mysql version)
-
-  AC_MSG_RESULT($pike_cv_mysql)
+  old_LIBS="$LIBS"
 
   # System libs which might be needed
 
-  if echo $LIBS|grep -- -lsocket >&5 2>&5; then
-    :
-  else
-    AC_CHECK_LIB(socket, socket, [
-      LIBS="-lsocket $LIBS"
-      MYSQL_LIBS="-lsocket ${MYSQL_LIBS}"
-    ], [])
-  fi
-  if echo $LIBS|grep -- -lnsl >&5 2>&5; then
-    :
-  else
-    AC_CHECK_LIB(nsl, gethostbyname, [
-      LIBS="-lnsl $LIBS"
-      MYSQL_LIBS="-lnsl ${MYSQL_LIBS}"
-    ], [])
-  fi
-  if echo $LIBS|grep -- -lm >&5 2>&5; then
-    :
-  else
-    AC_CHECK_LIB(m, floor, [
-      LIBS="-lm $LIBS"
-      MYSQL_LIBS="-lm ${MYSQL_LIBS}"
-    ], [])
-  fi
+  AC_SEARCH_LIBS(socket, socket)
+  AC_SEARCH_LIBS(gethostbyname, nsl)
+  AC_SEARCH_LIBS(floor, m)
+
+  # Header check necessary for PIKE_FUNCS_NEED_DECLS.
+  AC_CHECK_HEADERS(pthread.h)
 
   # Pthreads is still needed in 3.20.0.
   AC_CHECK_FUNC(pthread_self, [], [
@@ -148,35 +266,71 @@ else
     ])
   ])
 
-  AC_CHECK_LIB(dbug, _db_doprnt_, [
-    LIBS="-ldbug $LIBS"
-    MYSQL_LIBS="-ldbug ${MYSQL_LIBS}"
-  ], [])
+  if test "x${MARIADB_CONFIG}" = "xno"; then :; else
+      # Needed for libmariadbclient.a 1.0.0.
+      AC_SEARCH_LIBS(OPENSSL_config, crypto)
+      AC_SEARCH_LIBS(SSL_library_init, ssl)
+  fi
 
-  AC_CHECK_LIB(mysys, my_init, [
-    LIBS="-lmysys $LIBS"
-    MYSQL_LIBS="-lmysys ${MYSQL_LIBS}"
-  ], [])
+  AC_SEARCH_LIBS(_db_doprnt_, dbug)
+  AC_SEARCH_LIBS(my_init, mysys)
 
   # mysql 3.23.x libmysqlclient requires zlib...
-  AC_CHECK_LIB(z, compress, [
-    LIBS="-lz $LIBS"
-    MYSQL_LIBS="-lz ${MYSQL_LIBS}"
-  ], [])
+  AC_SEARCH_LIBS(compress, z)
+
+  if test "x${MARIADB_CONFIG}" = "xno"; then :; else
+      LIBS="${MARIADB_LIBS} ${LIBS}"
+  fi
 
   # Try a couple of mysqlclient libs
   # in order of age, newest first.
 
 define([AC_CHECK_SQLLIB],
 [
-AC_MSG_CHECKING(for mysql_connect in $1)
-AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_connect,
+AC_MSG_CHECKING(for mysql_real_connect in $1)
+AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_real_connect,
 [
   ac_save_LIBS="$LIBS"
 LIBS="-l$1 $LIBS"
   AC_TRY_LINK(
 [
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#endif
+#endif
+],[
+  mysql_real_connect(0,0,0,0,0,0,0,0);
+],ac_cv_pike_lib_$1_mysql_real_connect=yes,
+  ac_cv_pike_lib_$1_mysql_real_connect=no)
+LIBS="$ac_save_LIBS"
+])
+
+if test "x$ac_cv_pike_lib_$1_mysql_real_connect" = xyes ; then
+  PIKE_FEATURE(Mysql,[yes (lib$1)])
+  AC_MSG_RESULT(yes)
+  $2
+else
+  AC_MSG_RESULT(no)
+
+  AC_MSG_CHECKING(for mysql_connect in $1)
+  AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_connect,
+  [
+    ac_save_LIBS="$LIBS"
+    LIBS="-l$1 $LIBS"
+    AC_TRY_LINK(
+[
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -189,37 +343,96 @@ LIBS="-l$1 $LIBS"
 #endif
 ],[
   mysql_connect(0,0,0,0);
-],ac_cv_pike_lib_$1_mysql_connect=yes,ac_cv_pike_lib_$1_mysql_connect=no)
-LIBS="$ac_save_LIBS"
-])
+],ac_cv_pike_lib_$1_mysql_connect=yes,
+  ac_cv_pike_lib_$1_mysql_connect=no)
+  LIBS="$ac_save_LIBS"
+  ])
 
-if test "x$ac_cv_pike_lib_$1_mysql_connect" = xyes ; then
-  PIKE_FEATURE(Mysql,[yes (lib$1)])
-  AC_MSG_RESULT(yes)
-  $2
-else
-  AC_MSG_RESULT(no)
-  $3
+  if test "x$ac_cv_pike_lib_$1_mysql_connect" = xyes ; then
+    PIKE_FEATURE(Mysql,[yes (lib$1)])
+    AC_MSG_RESULT(yes)
+    $2
+  else
+    AC_MSG_RESULT(no)
+    $3
+  fi
 fi
 ])
 
-  AC_CHECK_SQLLIB(mysqlclient, [
-    LIBS="-lmysqlclient $LIBS"
-    MYSQL_LIBS="-lmysqlclient ${MYSQL_LIBS}"
-  ], [ 
-    AC_CHECK_SQLLIB(mysqllib, [
-      LIBS="-lmysqllib $LIBS"
-      MYSQL_LIBS="-lmysqllib ${MYSQL_LIBS}"
+  if test "x${MARIADB_CONFIG}" = "xno"; then
+  # libmysql.lib is the name for the libmysql.dll wrapper in the
+  # windows releases. There's also a mysqlclient.lib which contain the
+  # static version. We prefer the dynamic one so check libmysql first.
+  AC_CHECK_SQLLIB(libmysql, [
+    LIBS="-llibmysql $LIBS"
+  ], [
+    AC_CHECK_SQLLIB(mysqlclient, [
+      LIBS="-lmysqlclient $LIBS"
     ], [
-      AC_CHECK_SQLLIB(mysql, [
-	LIBS="-lmysql $LIBS"
-	MYSQL_LIBS="-lmysql ${MYSQL_LIBS}"
-      ], [ 
-        PIKE_FEATURE_NODEP(Mysql)
-	pike_cv_mysql="no" 
-	])
+      AC_CHECK_SQLLIB(mysqllib, [
+	LIBS="-lmysqllib $LIBS"
+      ], [
+	AC_CHECK_SQLLIB(mysql, [
+	  LIBS="-lmysql $LIBS"
+	], [
+	  PIKE_FEATURE_NODEP(Mysql)
+	  pike_cv_mysql="no" 
+	  ])
+      ])
     ])
   ])
+  else
+      AC_CHECK_SQLLIB(mariadbclient, [
+	LIBS="-lmariadbclient $LIBS"
+      ], [
+	AC_CHECK_SQLLIB(mariadb, [
+	  LIBS="-lmariadb $LIBS"
+	], [
+	  PIKE_FEATURE_NODEP(Mysql)
+	  pike_cv_mysql="no"
+	])
+      ])
+  fi
+
+  if test x$pike_cv_mysql = xno; then :; else
+    # Check version match
+    AC_CHECK_FUNC(mysql_get_client_version,[
+      AC_TRY_RUN([#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#else
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+#endif
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#endif
+#endif
+#include <stdio.h>
+int main(int argc, char *argv[])
+{
+#ifdef MYSQL_VERSION_ID
+  unsigned long ver = mysql_get_client_version();
+  if((ver/100) != (MYSQL_VERSION_ID/100)) {
+    fprintf(stderr, "Version mismatch: compile=%lu, run=%lu\n",
+            (unsigned long)MYSQL_VERSION_ID, ver);
+    exit(1);
+  }
+#endif
+  return 0;
+}],[],[
+	AC_MSG_WARN([Header version does not match library version, diabling module])
+	PIKE_FEATURE(Mysql,[no (header/library mismatch)])
+	pike_cv_mysql=no
+      ],[
+	# Cross-compiling.
+	:
+      ])
+    ],[])
+  fi
 
   if test x$pike_cv_mysql = xno; then
     # Restore variables, so we don't link with unnessesary libs
@@ -227,7 +440,6 @@ fi
     LIBS=$OLD_LIBS
     CPPFLAGS=$OLD_CPPFLAGS
     LDFLAGS=$OLD_LDFLAGS
-    MYSQL_LIBS=""
   else
     AC_DEFINE(HAVE_MYSQL)
 
@@ -239,7 +451,9 @@ fi
       AC_MSG_CHECKING(for $1)
       AC_CACHE_VAL(AC_CV_NAME, [
         AC_TRY_LINK([
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -257,13 +471,21 @@ fi
         ], [AC_CV_NAME="yes"], [AC_CV_NAME="no"])
       ])
       if test "$AC_CV_NAME" = "yes"; then
-        AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
+	AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]), [], [Defined if $1 exists.])
       fi
       AC_MSG_RESULT($AC_CV_NAME)
     ])
     
     PIKE_CHECK_MYSQL_FUNC(mysql_real_query)
     PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
+    PIKE_CHECK_MYSQL_FUNC(mysql_options)
+    PIKE_CHECK_MYSQL_FUNC(mysql_set_character_set)
+    PIKE_CHECK_MYSQL_FUNC(mysql_ssl_set)
+    PIKE_CHECK_MYSQL_FUNC(mysql_sqlstate)
+
+    # This function should exist even in ancient versions, but it
+    # appear to exist only in header files sometimes.
+    PIKE_CHECK_MYSQL_FUNC(mysql_character_set_name)
 
     # Note: The following two are variables:
     PIKE_CHECK_MYSQL_FUNC(mysql_port)
@@ -279,7 +501,9 @@ fi
       AC_CACHE_VAL(pike_cv_mysql_fetch_lengths_ret_type, [
         for ret_type in "unsigned long long" "unsigned long" "unsigned int" "long long" "long" "int"; do
 	  AC_TRY_COMPILE([
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -313,9 +537,70 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
 			   $pike_cv_mysql_fetch_lengths_ret_type)
       fi
     else :; fi
+
+    # Header checks necessary for PIKE_FUNCS_NEED_DECLS.
+    AC_CHECK_HEADERS(stdio.h io.h)
+
+    AC_CHECK_FUNCS(ldiv open sopen close read fileno puts fgets \
+                   _findfirst _findnext _findclose)
+
+    AC_MSG_CHECKING(for the charsetnr member in MYSQL_FIELD)
+    AC_CACHE_VAL(pike_cv_have_mysql_field_charsetnr, [
+      AC_TRY_LINK([
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#error Need mysql.h headerfile!
+#endif
+#endif
+      ], [
+	void *foo__ = &(((MYSQL_FIELD *) 0)->charsetnr);
+      ], [pike_cv_have_mysql_field_charsetnr="yes"],
+	 [pike_cv_have_mysql_field_charsetnr="no"])
+    ])
+    if test "$pike_cv_have_mysql_field_charsetnr" = yes; then
+      AC_DEFINE(HAVE_MYSQL_FIELD_CHARSETNR)
+    fi
+    AC_MSG_RESULT($pike_cv_have_mysql_field_charsetnr)
+
+    AC_MSG_CHECKING(for the net.vio member in MYSQL)
+    AC_CACHE_VAL(pike_cv_have_mysql_field_net_vio, [
+      AC_TRY_LINK([
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#error Need mysql.h headerfile!
+#endif
+#endif
+      ], [
+	void *foo__ = &(((MYSQL *) 0)->net.vio);
+      ], [pike_cv_have_mysql_field_net_vio="yes"],
+	 [pike_cv_have_mysql_field_net_vio="no"])
+    ])
+    if test "$pike_cv_have_mysql_field_net_vio" = yes; then
+      AC_DEFINE(HAVE_MYSQL_FIELD_NET_VIO)
+    fi
+    AC_MSG_RESULT($pike_cv_have_mysql_field_net_vio)
+
   fi
 fi
-
-AC_SUBST(MYSQL_LIBS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

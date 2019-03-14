@@ -1,51 +1,47 @@
-//! module Calendar
-//! submodule Stardate
-//!	This implements TNG stardates. 
-
 #pike __REAL_VERSION__
 
-import ".";
+//! This implements TNG stardates. 
 
-inherit TimeRanges;
-
-static constant TNGSTARPERJULIAN=1000.0/365.2425;
-static constant TNGSTARPERSECOND=TNGSTARPERJULIAN/86400;
-static constant TNG0JULIAN=2569518.5;
-static constant TNG0UNIX=11139552000;
+protected constant TNGSTARPERJULIAN=1000.0/365.2425;
+protected constant TNGSTARPERSECOND=TNGSTARPERJULIAN/86400;
+protected constant TNG0JULIAN=2569518.5;
+protected constant TNG0UNIX=11139552000;
 
 string calendar_name() { return "Stardate"; }
 
 function(mixed...:cTick) Tick=cTick;
+
+//!
 class cTick
 {
-   inherit TimeRange;
+   inherit Calendar.TimeRange;
 
    constant is_stardate=1;
 
    float t;
    float len;
 
-//! method void create(mixed ...)
-//! method void create(int|float date)
-//! method void create()
-//!	Apart from the standard creation methods
-//!	(julian day, etc), you can create a stardate
-//!	from the stardate number. The length
-//!	of the period will then be zero.
-//!
-//!	You can also omit any arguments to create now.
-//!
-//! known bugs:
-//!	Since the precision is limited to the float type
-//!	of pike you can get non-precise results:
-//!
-//!     <pre>
-//!	> Calendar.Second(Calendar.Stardate.Day(Calendar.Year()));
-//!	Result: Second(Fri 31 Dec 1999 23:59:18 CET - Sun 31 Dec 2000 23:59:18 CET)
-//!	</pre>
+  //! @decl void create(mixed ... args)
+  //! @decl void create(int|float date)
+  //! @decl void create()
+  //!	Apart from the standard creation methods
+  //!	(julian day, etc), you can create a stardate
+  //!	from the stardate number. The length
+  //!	of the period will then be zero.
+  //!
+  //!	You can also omit any arguments to create now.
+  //!
+  //! @bugs
+  //!	Since the precision is limited to the float type
+  //!	of Pike you can get non-precise results:
+  //!
+  //! @code
+  //! > Calendar.Second(Calendar.Stardate.Day(Calendar.Year()));
+  //! Result: Second(Fri 31 Dec 1999 23:59:18 CET - Sun 31 Dec 2000 23:59:18 CET)
+  //! @endcode
 
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       switch (sizeof(args))
       {
@@ -62,68 +58,62 @@ class cTick
 	 case 1:
 	    if (intp(args[0]) || floatp(args[0]))
 	    {
-	       rules=default_rules;
+	       rules=Calendar.default_rules;
 	       t=(float)args[0];
 	       len=0.0;
 	       return;
 	    }
 	    break;
 	 case 0:
-	    rules=default_rules;
+	    rules=Calendar.default_rules;
 	    create_unixtime_default(time());
 	    return;
       }
-      rules=default_rules;
+      rules=Calendar.default_rules;
       ::create(@args);
    }
 
-   static void create_unixtime(int unixtime,int seconds)
+   protected void create_unixtime(int unixtime,int seconds)
    {
       t=(unixtime-TNG0UNIX)*TNGSTARPERSECOND;
       len=seconds*TNGSTARPERSECOND;
    }
 
-   static void create_unixtime_default(int unixtime)
+   protected void create_unixtime_default(int unixtime)
    {
       t=(unixtime-TNG0UNIX)*TNGSTARPERSECOND;
       len=0.0;
    }
 
-   static void create_julian_day(int|float jd)
+   protected void create_julian_day(int|float jd)
    {
       t=(jd-TNG0JULIAN)*TNGSTARPERJULIAN;
       len=0.0;
    }
 
-// method float tic()
-//	This gives back the start of the stardate period,
-//	as a float.
-
+  //! This gives back the start of the stardate period,
+  //! as a float.
    float tic()
    {
       return t;
    }
 
-//! method float tics()
-//!	This gives back the number of stardate tics
-//!	in the period.
-
+  //! This gives back the number of stardate tics
+  //! in the period.
    float tics()
    {
       return len;
    }
 
-//! method int number_of_seconds()
-//! method int number_of_days()
-//!	This gives back the Gregorian/Earth/ISO number of seconds
-//!	and number of days, for convinience and conversion to
-//!	other calendars.
-
+  //! This gives back the Gregorian/Earth/ISO number of seconds,
+  //! for convinience and conversion to other calendars.
    int number_of_seconds()
    {
       return (int)(len/TNGSTARPERSECOND);
    }
 
+  //! This gives back the Gregorian/Earth/ISO number of days,
+  //! for convinience and conversion to other calendars.
    int number_of_days()
    {
       return (int)(len/TNGSTARPERJULIAN);
@@ -139,7 +129,7 @@ class cTick
       return ((int)(t/TNGSTARPERJULIAN))+TNG0JULIAN;
    }
 
-   TimeRange add(int n,void|this_program step)
+   protected Calendar.TimeRange _add(int n,void|this_program step)
    {
       float x;
       if (!step) 
@@ -154,10 +144,10 @@ class cTick
 
       if (n&&x)
 	 return Tick("stardate",rules,t+x,len);
-      return this_object();
+      return this;
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(Calendar.TimeRange other)
    {
       if (other->unix_time)
 	 create_unixtime_default(other->unix_time());
@@ -176,26 +166,26 @@ class cTick
 	 len=0.0;
    }
 
-   static TimeRange _set_size(int n,TimeRange x)
+   protected Calendar.TimeRange _set_size(int n, Calendar.TimeRange x)
    {
       if (!x->is_stardate)
 	 error("distance: Incompatible type %O\n",x);
       return Tick("stardate",rules,t,x->len);
    }
 
-   TimeRange place(TimeRange what,void|int force)
+   Calendar.TimeRange place(Calendar.TimeRange what,void|int force)
    {
 // can't do this
-      return this_object();
+      return this;
    }
 
-   array(TimeRange) split(int n)
+   array(Calendar.TimeRange) split(int n)
    {
-      if (!n) return ({this_object()}); // foo
+      if (!n) return ({this}); // foo
 
       float z=t;
       float l=len/n;
-      array(TimeRange) res=({});
+      array(Calendar.TimeRange) res=({});
 
       while (n--)
 	 res+=({Tick("stardate",rules,z,l)}),z+=l;
@@ -203,19 +193,19 @@ class cTick
       return res;
    }
 
-   TimeRange beginning()
+   Calendar.TimeRange beginning()
    {
-      if (!len) return this_object();
+      if (!len) return this;
       return Tick("stardate",rules,t,0.0);
    }
 
-   TimeRange end()
+   Calendar.TimeRange end()
    {
-      if (!len) return this_object();
+      if (!len) return this;
       return Tick("stardate",rules,t+len,0.0);
    }
 
-   TimeRange distance(TimeRange to)
+   Calendar.TimeRange distance(Calendar.TimeRange to)
    {
       if (!to->is_stardate)
 	 error("distance: Incompatible type %O\n",to);
@@ -224,7 +214,7 @@ class cTick
       return Tick("stardate",rules,t,to->t-t);
    }
 
-   array _compare(TimeRange with)
+   array(int(-1..1)) _compare(Calendar.TimeRange with)
    {
       float b1=t;
       float e1=t+len;
@@ -239,12 +229,12 @@ class cTick
 
    int __hash() { return (int)t; }
 
-   cTick set_ruleset(Ruleset r)
+   Calendar.TimeRange set_ruleset(Calendar.Ruleset r)
    {
       return Tick("stardate",r,t,len);
    }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t, mapping m)
    {
       switch (t)
       {
@@ -270,29 +260,30 @@ class cTick
       return sprintf("%.3f",t);
    }
 
-//! string format_long()
-//! string format_short()
-//! string format_vshort()
-//!	Format the stardate tick nicely.
-//!	<pre>
-//!	   long    "-322537.312"
-//!	   short   "77463.312"  (w/o >100000-component)
-//!	   short   "7463.312"  (w/o >10000-component)
-//!	</pre>
+  //! @decl string format_long(void|int precision)
+  //! @decl string format_short(void|int precision)
+  //! @decl string format_vshort(void|int precision)
+  //! Format the stardate tick nicely. Precision is the number of
+  //! decimals. Defaults to 3.
+  //! @xml{<matrix>
+  //!   <r><c>long</c><c>"-322537.312"</c><c></c></r>
+  //!   <r><c>short</c><c>"77463.312"</c><c>(w/o >100000-component)</c></r>
+  //!   <r><c>vshort</c><c>"7463.312"</c><c>(w/o >10000-component)</c></r>
+  //! </matrix>@}
 
-   string format_long()
+   string format_long(void|int p)
    {
-      return sprintf("%.3f",t);
+      return sprintf("%.*f",p||3,t);
    }
 
-   string format_short()
+   string format_short(void|int p)
    {
-      return sprintf("%.3f",t-((int)t/100000)*100000);
+      return sprintf("%.*f",p||3,t-((int)t/100000)*100000);
    }
 
-   string format_vshort()
+   string format_vshort(void|int p)
    {
-      return sprintf("%.3f",t-((int)t/10000)*10000);
+      return sprintf("%.*f",p||3,t-((int)t/10000)*10000);
    }
 }
 
@@ -306,11 +297,8 @@ function(mixed...:cTick) Day=cTick;
 //  global convinience functions
 //------------------------------------------------------------------------
 
-//! method TimeofDay now()
-//!	Give the zero-length time period of the
-//!	current time.
-
-TimeofDay now()
+//! Give the zero-length time period of the current time.
+/*Calendar.Time.TimeofDay*/cTick now()
 {
    return Tick();
 }

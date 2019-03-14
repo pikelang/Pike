@@ -1,0 +1,347 @@
+START_MARKER
+
+test_eq([[ String.Buffer()->add("xxx") ]], 3)
+test_any([[
+  String.Buffer s=String.Buffer();
+  s->add("xxx");
+  s->add("a", "b");
+  s->putchar(65);
+  s->add("B");
+  s->putchar(67);
+  return (string)s;
+]], "xxxabABC")
+test_any([[
+  String.Buffer s=String.Buffer(2);
+  s->add("a");
+  s->add("b");
+  s->add("c");
+  return (string)s;
+]], "abc")
+test_any([[
+  String.Buffer s=String.Buffer(2);
+  s->add("abcdefg");
+  s->add("");
+  s->add("hij");
+  return s->get();
+]], "abcdefghij")
+test_any([[
+  String.Buffer s=String.Buffer();
+  s->add("xxx");
+  string t=s->get();
+  s->add("yyy");
+  string u=(string)s;
+  s->add("zzz");
+  return t+u+(string)s;
+]], "xxxyyyyyyzzz")
+test_any([[
+  String.Buffer s=String.Buffer();
+  s->add("xxx");
+  string t=s->get_copy();
+  s->add("yyy");
+  return t+(string)s;
+]], "xxxxxxyyy")
+test_any([[
+  String.Buffer s=String.Buffer();
+  s->add("abcde");
+  return sizeof(s);
+]], 5)
+test_any([[
+  String.Buffer b = String.Buffer(), c = b;
+  string teststr = map (indices (allocate (3000)),
+			lambda (int i) {
+			  return "\1234" + i;
+			}) * ",";
+  b = b + teststr;
+  b = b + "end";
+  return teststr + "end" == b->get();
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("abc");
+  b->add("\400\500");
+  b->putchar(256);
+  b->add("x");
+  return (string)b;
+]], "abc\400\500\400x")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("x");
+  b->sprintf("%x",1178);
+  b->add("y");
+  return (string)b;
+]], "x49ay")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->sprintf("%x", 10);
+  b->sprintf("%x", 11);
+  return (string)b;
+]], "ab")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->sprintf("");
+  return (string)b;
+]], "")
+
+test_compile_error([[ String.Buffer()->sprintf("%d"); ]])
+test_eval_error([[ function f=String.Buffer()->sprintf; f("%d"); ]])
+test_eval_error([[ String.Buffer()->add("x",0); ]])
+
+test_do([[
+  String.Buffer b = String.Buffer();
+  b->add (Standards.UUID.make_version4()->str() + "blaj");
+  b->add ("x");
+  return (string) b;
+]])
+test_do([[
+  String.Buffer b = String.Buffer();
+  b->add (Standards.UUID.make_version4()->str() + "blaj\12345678");
+  b->add ("x");
+  return (string) b;
+]])
+test_do([[
+  String.Buffer b = String.Buffer();
+  b->add (Standards.UUID.make_version4()->str() + "blaj");
+  b->add ("x\12345678");
+  return (string) b;
+]])
+
+test_eq([[ String.count( "", "a" ) ]], 0)
+test_eq([[ String.count( "aaa", "a" ) ]], 3)
+test_eq([[ String.count( "aaa", "aa" ) ]], 1)
+test_eq([[ String.count( "aaaa", "aa" ) ]], 2)
+
+test_eq([[ String.width( "" ) ]], 8)
+test_eq([[ String.width( "hej\xffhej" ) ]], 8)
+test_eq([[ String.width( "hej\x100hej" ) ]], 16)
+test_eq([[ String.width( "hej\xffffhej" ) ]], 16)
+test_eq([[ String.width( "hej\x10000hej" ) ]], 32)
+test_eq([[ String.width( (string)({ 65, -1, 65 }) ) ]], 32)
+
+test_eq(String.trim_whites (" \t\0 \t"), "\0")
+test_eq(String.trim_whites (" \t\400 \t"), "\400")
+test_eq(String.trim_whites (" \t\200000 \t"), "\200000")
+test_eq(String.trim_whites ("\0"), "\0")
+test_eq(String.trim_whites ("\400"), "\400")
+test_eq(String.trim_whites ("\200000"), "\200000")
+test_eq(String.trim_whites (" \t "), "")
+test_eq(String.trim_whites (""), "")
+test_eq(String.trim_whites (" \t\rx\r\t "), "\rx\r")
+test_eq(String.trim_whites (" \t\nx\n\t "), "\nx\n")
+
+test_eq(String.trim_all_whites (" \t\n\r\0 \t\n\r"), "\0")
+test_eq(String.trim_all_whites (" \t\n\r\400 \t\n\r"), "\400")
+test_eq(String.trim_all_whites (" \t\n\r\200000 \t\n\r"), "\200000")
+test_eq(String.trim_all_whites ("\0"), "\0")
+test_eq(String.trim_all_whites ("\400"), "\400")
+test_eq(String.trim_all_whites ("\200000"), "\200000")
+test_eq(String.trim_all_whites (" \t\n\r "), "")
+test_eq(String.trim_all_whites (""), "")
+test_eq(String.trim_all_whites ("\t\r\n\240\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000abc\t\r\n\240\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000"), "abc")
+
+test_eq(String.normalize_space ("\v\f \t\n\r\0\v\f \t\n\r"), "\0")
+test_eq(String.normalize_space ("\v\f \t\n\r\400\v\f \t\u2000\n\r"), "\400")
+test_eq(String.normalize_space ("\v\f \t\n\r\200000\v\f \t\n\r"), "\200000")
+test_eq(String.normalize_space ("\v\f \t\n\ra\400\v\f \t\n\ra\400\t \v\f"),
+			        "a\400 a\400")
+test_eq(String.normalize_space ("\0"), "\0")
+test_eq(String.normalize_space ("\400"), "\400")
+test_eq(String.normalize_space ("\200000"), "\200000")
+test_eq(String.normalize_space (" \t\n\r\v\f "), "")
+test_eq(String.normalize_space (" \t\n\r\v\f ","\n"), " \t\r\v\f ")
+test_eq(String.normalize_space (""), "")
+test_eq(String.normalize_space ("  a  bb    ccc    ddd \n eee f g\n"),
+				 "a bb ccc ddd eee f g")
+test_eq(String.normalize_space ("  a  bb    ccc    ddd \n eee f g\n"," \t"),
+			        "a bb ccc ddd\neee f g\n")
+test_eq(String.normalize_space ("  a  bb    ccc    ddd \n eee f g\n","\t "),
+			        "a\tbb\tccc\tddd\neee\tf\tg\n")
+test_eq(String.normalize_space ("  a  bb    ccc    ddd \n eee f g\n",""),
+				 "  a  bb    ccc    ddd \n eee f g\n")
+test_eq(String.normalize_space ("  a  bb    ccc   ddd \n eee f g\n","\x2000 "),
+			    "a\u2000bb\u2000ccc\u2000ddd\neee\u2000f\u2000g\n")
+test_eq(String.normalize_space ("  a  bb   ccc   ddd \n eee f g\n","\xf0000 "),
+	"a\U000f0000bb\U000f0000ccc\U000f0000ddd\neee\U000f0000f\U000f0000g\n")
+
+dnl MISSING TEST: String.Iterator
+
+test_any([[
+  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ');
+  array res = ({});
+  foreach(it; ; string part) {
+    res += ({ part });
+  }
+  return equal(res, "  foobar gazonk  gurka baz  "/" ");
+]], 1)
+test_any([[
+  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ');
+  return sizeof(it);
+]], [[
+  sizeof("  foobar gazonk  gurka baz  "/" ");
+]])
+test_any([[
+  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ');
+  array res = ({});
+  foreach(it; ; string part) {
+    res += ({ part });
+  }
+  return equal(res, "foobar gazonk  gurka baz"/" ");
+]], 1)
+test_any([[
+  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ');
+  return sizeof(it);
+]], [[
+  sizeof("foobar gazonk  gurka baz"/" ");
+]])
+test_any([[
+  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ', 1);
+  array res = ({});
+  foreach(it; ; string part) {
+    res += ({ part });
+  }
+  return equal(res, "foobar gazonk gurka baz"/" ");
+]], 1)
+test_any([[
+  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ', 1);
+  return sizeof(it);
+]], [[
+  sizeof("foobar gazonk gurka baz"/" ");
+]])
+test_any([[
+  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ', 1);
+  array res = ({});
+  foreach(it; ; string part) {
+    res += ({ part });
+  }
+  return equal(res, "foobar gazonk gurka baz"/" ");
+]], 1)
+test_any([[
+  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ', 1);
+  return sizeof(it);
+]], [[
+  sizeof("foobar gazonk gurka baz"/" ");
+]])
+
+test_eq( String.Replace(({}),({}))(""), "" )
+test_eq( String.Replace("bar"/1,"foo"/1)(""), "" )
+test_eq( String.Replace("bax"/1,"fox"/1)("bar"), "for" )
+
+test_eq( String.SingleReplace("","")(""), "" )
+test_eq( String.SingleReplace("a","b")("bar"), "bbr" )
+
+test_eq(String.int2char(0), "\0")
+test_eq(String.int2char(65), "A")
+test_eq(String.int2char(256), "\400")
+test_eq(String.int2char(65536), "\200000")
+
+test_eq(String.int2hex(0), "0")
+test_eq(String.int2hex(1), "1")
+test_eq(String.int2hex(-1), "-1")
+test_eq(String.int2hex(15), "f")
+test_eq(String.int2hex(-15), "-f")
+test_eq(String.int2hex(16), "10")
+test_eq(String.int2hex(-16), "-10")
+test_eq(String.int2hex(-0x80000000), "-80000000")
+test_eq(String.int2hex(0x80000000-1), "7fffffff")
+test_eq(String.int2hex(-0x800000000), "-800000000")
+test_eq(String.int2hex(0x800000000-1), "7ffffffff")
+test_eq(String.int2hex(Gmp.mpz(1)), "1")
+
+test_eq(String.string2hex(""), "")
+test_eq(String.string2hex("x"), "78")
+test_eq(String.string2hex("x\xff"), "78ff")
+test_eval_error(return String.string2hex("x\xfff"))
+
+test_eq(String.hex2string(""), "")
+test_eq(String.hex2string("ab00"), "\xab\0")
+test_eval_error(return String.hex2string("ab0"))
+dnl test_eval_error(return String.hex2string("ax"))
+
+test_eq([[ String.implode_nicely( ({ "1","2","3" }) ) ]],[[ "1, 2 and 3" ]])
+test_eq([[ String.implode_nicely( ({ "1","2","3" }), "och" ) ]],[[ "1, 2 och 3" ]])
+test_eq([[ String.implode_nicely( ({ 1,2,3 }) ) ]],[[ "1, 2 and 3" ]])
+test_eq([[ String.implode_nicely( ({ 1,2,3 }), "och" ) ]],[[ "1, 2 och 3" ]])
+test_true([[ String.implode_nicely( ({ 1.0,2.0,3.0 }) ) ]])
+test_true([[ String.implode_nicely( ({ 1.0,2.0,3.0 }), "och" ) ]])
+test_eq([[ String.implode_nicely( ({ "1",2,3 }) ) ]],[[ "1, 2 and 3" ]])
+test_eq([[ String.implode_nicely( ({}) ) ]], "")
+test_eq([[ String.implode_nicely( ({ 1 }) ) ]], "1")
+
+test_eq([[ String.capitalize( "abc" ) ]], "Abc")
+test_eq([[ String.capitalize( "Abc" ) ]], "Abc")
+test_eq([[ String.capitalize( "ABC" ) ]], "ABC")
+test_eq([[ String.capitalize("-") ]], "-")
+
+test_eq([[ String.sillycaps( "hikaru no go" ) ]], "Hikaru No Go")
+test_eq([[ String.sillycaps( "Hikaru No Go" ) ]], "Hikaru No Go")
+test_eq([[ String.sillycaps( "HIKARU NO GO" ) ]], "HIKARU NO GO")
+
+test_eq(String.common_prefix(({ "soliloquise" })), "soliloquise")
+test_eq(String.common_prefix(({ "muzzle", "muzzy" })), "muzz")
+test_eq(String.common_prefix(({ "labyrinth", "diatom" })), "")
+test_eq(String.common_prefix(({ "abc", "abc", "abc" })), "abc")
+test_eq(String.common_prefix(({})), "")
+
+dnl MISSING TEST: fuzzymatch
+
+test_eq(String.soundex(""),"000")
+test_eq(String.soundex("AI"),"A000")
+test_eq(String.soundex("anna"),"A500")
+test_eq(String.soundex("Martin"),"M635")
+test_eq(String.soundex("Pike"),"P200")
+
+test_do([[
+  foreach( ",I,II,III,IV,V,VI,VII,VIII,IX,X,XI,XII,XIII,XIV,XV,XVI,XVII,XVIII,XIX,XX"/",";
+           int t; string res)
+    if(String.int2roman(t)!=res) error("%s should be %s\n", String.int2roman(t), res);
+]])
+test_eq(String.int2roman(100),"C")
+test_eq(String.int2roman(1000),"M")
+test_eq(String.int2roman(2000),"MM")
+test_eval_error( return String.int2roman(100000); )
+test_eval_error( return String.int2roman(-1); )
+
+test_eq(String.int2size(-1),"-1 byte")
+test_eq(String.int2size(0),"0 bytes")
+test_eq(String.int2size(1),"1 byte")
+test_eq(String.int2size(2),"2 bytes")
+test_eq(String.int2size(1023),"1023 bytes")
+test_eq(String.int2size(1024),"1 kB")
+test_eq(String.int2size(1025),"1.0 kB")
+test_eq(String.int2size(3<<19), "1.5 MB")
+test_eq(String.int2size(pow(1024,2)),"1 MB")
+test_eq(String.int2size(pow(1024,3)),"1 GB")
+test_eq(String.int2size(pow(1024,4)),"1 TB")
+test_eq(String.int2size(pow(1024,5)),"1 PB")
+test_eq(String.int2size(pow(1024,6)),"1 EB")
+test_eq(String.int2size(pow(1024,7)),"1 ZB")
+test_eq(String.int2size(pow(1024,8)),"1 YB")
+test_eq(String.int2size(pow(1024,9)),"1024 YB")
+
+dnl MISSING TEST: expand_tabs
+dnl MISSING TEST: line_expand_tabs
+
+test_eq([[
+  String.HTML.select("language",
+      ({ ({ "eng", "English" }),
+         ({ "swe", "Swedish" }),
+         ({ "nor", "Norwegian" }) }),
+      "swe")
+]],[[ "<select name=\"language\">\n<option value=\"eng\">English</option>\n<option value=\"swe\" selected=\"selected\">Swedish</option>\n<option value=\"nor\">Norwegian</option>\n</select>" ]])
+test_eq([[
+  String.HTML.select("language",
+      ({ ({ "eng", "English" }),
+         ({ "swe", "Swedish" }),
+         ({ "nor", "Norwegian" }) }))
+]],[[ "<select name=\"language\">\n<option value=\"eng\">English</option>\n<option value=\"swe\">Swedish</option>\n<option value=\"nor\">Norwegian</option>\n</select>" ]])
+test_eq([[
+  String.HTML.select("language", ({ "eng", "swe", "nor" }), "swe")
+]],[[ "<select name=\"language\">\n<option value=\"eng\">eng</option>\n<option value=\"swe\" selected=\"selected\">swe</option>\n<option value=\"nor\">nor</option>\n</select>" ]])
+test_eq([[
+  String.HTML.select("language", ({ "eng", "swe", "nor" }))
+]],[[ "<select name=\"language\">\n<option value=\"eng\">eng</option>\n<option value=\"swe\">swe</option>\n<option value=\"nor\">nor</option>\n</select>" ]])
+
+test_equal(String.secure("foo"),"foo")
+
+dnl MISSING TEST: String.HTML.simple_obox
+dnl MISSING TEST: String.HTML.Obox
+END_MARKER

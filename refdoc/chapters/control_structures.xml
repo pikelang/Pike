@@ -1,20 +1,22 @@
 <chapter title="Control Structures">
 
-<p>In this chapter all the control structures in Pike will be explained. As
-mentioned earlier, control structures are used to control the flow of the
+<p>In this chapter all the control structures in Pike will be
+explained. Control structures are used to control the flow of the
 program execution. Note that functions that make the program pause and
 simple function calls are not qualified as control structures.</p>
 
 <section title="Conditions">
 
-<p>Pike only has two major condition control structures. We have already seen
-examples of both of them in Chapter two. But for completeness they will be
-described again in this chapter.</p>
+<p>Conditions are control structures that, given a test condition
+selects what code to be executed. These range from the binary "execute
+or not" to a large table of code where the selection of which code to
+run is based on an input parameter.</p>
 
 <subsection title="if">
 
-<p>The simplest one is called the <b>if statement</b>. It can be written anywhere
-where a statement is expected and it looks like this:</p>
+<p>The simplest one is called the <b>if statement</b>. It can be
+written anywhere where a statement is expected and it looks like
+this:</p>
 
 <example>
 if( expression )
@@ -37,7 +39,7 @@ else
 
 <p>This is actually more or less how the interpreter executes the if statement.
 In short, <i>statement1</i> is executed if <i>expression</i> is <b>true</b>
-otherwise <i>statement2</i> is executed. If you are interested in
+otherwise <i>statement2</i> is executed. If you are not interested in
 having something executed if the expression is false you can drop the
 whole else part like this:</p>
 
@@ -46,14 +48,15 @@ if( expression )
   statement1;
 </example>
 
-<p>If on the other hand you are not interested in evaluating something if the
-expression is <b>false</b> you should use the <b>not</b> operator to negate
-the true/false value of the expression. See chapter 5 for more information
-about the <b>not</b> operator. It would look like this:</p>
+<p>If on the other hand you are not interested in evaluating something
+if the expression is <b>false</b> you should use the <b>not</b>
+operator to negate the true/false value of the expression. See
+<fixme>chapter</fixme> for more information about the <b>not</b>
+operator. It would look like this:</p>
 
 <example>
 if( ! expression )
-  statement2 ;
+  statement2;
 </example>
 
 <p>Any of the statements here and in the rest of this chapter can
@@ -70,6 +73,26 @@ if ( ! expression )
   statement;
 }
 </example>
+
+<p>It is also possible to place several if statements in sequence, so
+that if the first expression is false it continues with the next one
+and the next one until the first true expression is found.</p>
+
+<example>
+if ( expression1 )
+  statement1;
+else if ( expression2 )
+  statement2;
+else if ( expression3 )
+  statement3;
+else
+  statement4;
+</example>
+
+<p>A special case of the above example is when in every expression you
+compare one variable with different values. For those applications the
+switch statement described below can be used instead to increas
+performance and simplify the code.</p>
 
 </subsection>
 
@@ -225,12 +248,12 @@ the modem by using the functions <tt>write</tt> and <tt>gets</tt>.</p>
 
 <p><tt>Foreach</tt> is unique in that it does not have an explicit test expression
 evaluated for each iteration in the loop. Instead, <tt>foreach</tt> executes
-the statement once for each element in an array. <tt>Foreach</tt> looks like
-this:</p>
+the statement once for each element in a set. <tt>Foreach</tt> has two
+syntaxes, the first of which look like this:</p>
 
 <example>
 foreach ( array_expression, variable )
-  statement ;
+  statement;
 </example>
 
 <p>We have already seen an example of <tt>foreach</tt> in the <tt>find_song</tt>
@@ -250,13 +273,34 @@ function in chapter 2. What foreach does is:</p>
 doing the same thing with a <tt>for</tt> loop, as shown here:</p>
 
 <example>
-array tmp1= array_expression;
+array tmp1 = array_expression;
 for ( tmp2 = 0; tmp2 &lt; sizeof(tmp1); tmp2++ )
 {
   variable = tmp1 [ tmp2 ];
   statement;
 }
 </example>
+
+<p>The second syntax for <tt>foreach</tt> is the more flexible iterator syntax,
+which can be used to iterate over arrays, mappings, multisets and strings as
+well as some objects. It also has the option of providing the index value:</p>
+
+<example>
+foreach ( iterable_expression; optional_index_variable; optional_value_variable )
+  statement;
+</example>
+
+<p>This is approximately equivalent to:</p>
+
+<example>
+for (Iterator iter = get_iterator(iterable_expression); iter; iter->next()) {
+  optional_index_variable = iter->index();
+  optional_value_variable = iter->value();
+  statement;
+}
+</example>
+
+<p>See <ref>get_iterator()</ref> for further details.</p>
 
 </subsection>
 </section>
@@ -269,9 +313,9 @@ that is still missing is the ability to exit a loop in the middle of it.
 There are three ways to do this:</p>
 
 <subsection title="break">
-<p><tt>break</tt> exits a loop or switch statement immediately and continues
-executing after the loop. <tt>Break</tt> can not be used outside of a loop or
-switch. It is quite useful in conjunction with <tt>while(1)</tt> to
+<p><tt>break</tt> exits a loop, switch, or catch statement immediately and continues
+executing after the loop. <tt>Break</tt> can not be used outside of one of these.
+It is quite useful in conjunction with <tt>while(1)</tt> to
 construct command parsing loops for instance:</p>
 
 <example>
@@ -282,6 +326,32 @@ while(1)
   do_command(command);
 }
 </example>
+
+<p>When you want to break out of more than the innermost loop, you can tell
+<tt>break</tt> what loop to break free of using lables, as in:</p>
+
+<example>
+array arr1, arr2;
+while(1)
+{
+  // ...
+a:if(sizeof(arr1) >= sizeof(arr2))
+  {
+    int i = sizeof(b), j = sizeof(yb);
+    while(i)
+      if(b[--i] != yb[--j])
+        break a;
+    // the code here is only run when arr1
+    // and arr2 share some common suffix
+  }
+  // execution continues here
+}
+</example>
+
+<p>Inside a <tt>catch</tt> block, <tt>break</tt> will terminate the block with no
+exception being thrown; <tt>catch</tt> will return zero, as if execution had
+continued to the end of the block.</p>
+
 </subsection>
 
 <subsection title="continue">

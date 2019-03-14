@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+//! Implements an abstraction of the normal filesystem.
+
 inherit Filesystem.Base;
 
 // Some notes about NT code:
@@ -14,12 +16,23 @@ inherit Filesystem.Base;
 //  pattern, since getcwd() is used to get the initial value of the
 //  'wd' variable unless a different path is specified.
 //
-static Filesystem.Base parent; // parent filesystem
+protected Filesystem.Base parent; // parent filesystem
 
-static string root = ""; // Note: Can now include leading "/"
-static string wd;        // never trailing "/"
+protected string root = ""; // Note: Can now include leading "/"
+protected string wd;        // never trailing "/"
 
-static void create(void|string directory,  // default: cwd
+//! @decl void create(void|string directory, void|string root, void|int fast, void|Filesystem.Base parent)
+//! Instanciate a new object representing the filesystem.
+//! @param directory
+//! The directory (in the real filesystem) that should become
+//! the root of the filesystemobject.
+//! @param root
+//! Internal
+//! @param fast
+//! Internal
+//! @param parent
+//! Internal
+protected void create(void|string directory,  // default: cwd
 		   void|string _root,   // internal: root
 		   void|int fast,       // internal: fast mode (no check)
 		   void|Filesystem.Base _parent)
@@ -42,13 +55,13 @@ static void create(void|string directory,  // default: cwd
 #ifdef __NT__
     directory = replace( directory, "\\", "/" );
     string p;
-    if( strlen(root) )
+    if( sizeof(root) )
     {
       if( sscanf( directory, "%s:/%s", p, directory ) )
       {
-	if( strlen( root ) )
+	if( sizeof( root ) )
 	{
-	  if( search( root, ":/" ) == -1 )
+	  if( !has_value( root, ":/" ) )
 	    root = p+":"+ (root[0] == '/' ?"":"/") + root;
 	  else
 	    error( "Cannot change directory to above"+root+"\n" );
@@ -58,26 +71,26 @@ static void create(void|string directory,  // default: cwd
       }
     }
 #endif
-    while( strlen(directory) && directory[0] == '/' )
+    while( sizeof(directory) && directory[0] == '/' )
       directory = directory[1..];
-    while( strlen(directory) && directory[-1] == '/' )
-      directory = directory[..strlen(directory)-2];
+    while( sizeof(directory) && directory[-1] == '/' )
+      directory = directory[..<1];
 #ifdef __NT__
-    if( strlen( directory ) != 2 || directory[1] != ':' )
+    if( sizeof( directory ) != 2 || directory[1] != ':' )
 #endif
       if(!(a = file_stat(combine_path("/",root,directory))) || !a->isdir)
 	error("Not a directory\n");
   }
-  while( strlen(directory) && directory[0] == '/' )
+  while( sizeof(directory) && directory[0] == '/' )
     directory = directory[1..];
-  while( strlen(directory) && directory[-1] == '/' )
-    directory = directory[..strlen(directory)-2];
+  while( sizeof(directory) && directory[-1] == '/' )
+    directory = directory[..<1];
   wd = directory;
 }
 
-static string _sprintf()
+protected string _sprintf(int t)
 {
-  return sprintf("Filesystem.System(/* root=%O, wd=%O */)", root, wd);
+  return t=='O' && sprintf("%O(/* root=%O, wd=%O */)", this_program, root, wd);
 }
 
 Filesystem.Base cd(string directory)
@@ -87,7 +100,7 @@ Filesystem.Base cd(string directory)
   directory = replace( directory, "\\", "/" );
 #endif
   if(!st) return 0;
-  if(st->isdir()) // stay
+  if(st->isdir) // stay
     return this_program(combine_path(wd, directory),
 			root, 1, parent);
   return st->cd(); // try something else
@@ -119,8 +132,8 @@ Filesystem.Stat stat(string file, int|void lstat)
    Stdio.Stat a;
 #ifdef __NT__
    file = replace( file, "\\", "/" );
-   while( strlen(file) && file[-1] == '/' )
-     file = file[..strlen(file)-2];
+   while( sizeof(file) && file[-1] == '/' )
+     file = file[..<1];
 #endif
    string full = combine_path(wd, file);
    if ( full!="" && full[0]=='/') full=full[1..];
@@ -128,9 +141,9 @@ Filesystem.Stat stat(string file, int|void lstat)
    if((a = file_stat(combine_path("/",root,full), lstat)))
    {
      Filesystem.Stat s = Filesystem.Stat();
-     s->fullpath = full;
+     s->fullpath = sprintf("/%s", full);
      s->name = file;
-     s->filesystem = this_object();
+     s->filesystem = this;
      s->attach_statobject(a);
      return s;
    }
@@ -144,8 +157,8 @@ array(string) get_dir(void|string directory, void|string|array(string) globs)
   if(directory)
   {
     directory = replace( directory, "\\", "/" );
-    while( strlen(directory) && directory[-1] == '/' )
-      directory = directory[..strlen(directory)-2];
+    while( sizeof(directory) && directory[-1] == '/' )
+      directory = directory[..<1];
   }
 #endif
   directory = directory ? combine_path(wd, directory) : wd;
@@ -171,13 +184,13 @@ array(string) get_dir(void|string directory, void|string|array(string) globs)
 array(Filesystem.Stat) get_stats(void|string directory,
 				 void|string|array(string) globs)
 {
-  Filesystem.Base z = this_object();
+  Filesystem.Base z = this;
 #ifdef __NT__
   if(directory)
   {
     directory = replace( directory, "\\", "/" );
-    while( strlen(directory) && directory[-1] == '/' )
-      directory = directory[..strlen(directory)-2];
+    while( sizeof(directory) && directory[-1] == '/' )
+      directory = directory[..<1];
   }
 #endif
   if(directory &&
@@ -252,22 +265,21 @@ void chown(string filename, int|object owner, int|object group)
 #endif
 }
 
-array find(void|function(Filesystem.Stat:int) mask, mixed ... extra)
+array find(void|function(Filesystem.Stat, mixed|void...:int) mask,
+	   mixed|void ... extra)
 {
-  array res = ({}),
-	d = get_stats() || ({}),
-	r = filter(d, "isdir");
+  array(Filesystem.Stat) res = ({});
+  array(Filesystem.Stat) d = get_stats() || ({});
+  array(Filesystem.Stat) r = filter(d, "isdir");
 
   if(mask)
     res += filter(d-r, mask, @extra);
   else
     res += d-r;
 
-  foreach(r, Filesystem.Base dir)
+  foreach(r, Filesystem.Stat dir)
   {
-    if(!mask)
-      res += ({ dir });
-    else if(mask(dir, @extra))
+    if(!mask || mask(dir, @extra))
       res += ({ dir });
 
     if(dir->name=="." || dir->name=="..")

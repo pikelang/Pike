@@ -1,18 +1,16 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "hashtable.h"
 #include "stralloc.h"
 #include "stuff.h"
 #include "pike_error.h"
 
-RCSID("$Id: hashtable.c,v 1.8 2000/12/01 08:09:47 hubbe Exp $");
-
-static size_t gobble(struct pike_string *s)
+static size_t gobble(const struct pike_string *s)
 {
   size_t i;
   i=my_hash_string(s);
@@ -25,7 +23,8 @@ static size_t gobble(struct pike_string *s)
 /*
  * Search hash for a specific string.
  */
-struct hash_entry *hash_lookup(struct hash_table *h, struct pike_string *s)
+struct hash_entry *hash_lookup(const struct hash_table *h,
+                               const struct pike_string *s)
 {
   struct hash_entry *e, **prev, **base;
 
@@ -68,8 +67,8 @@ static void rehash_list_backwards(struct hash_table *h,
 struct hash_table *create_hash_table(void)
 {
   struct hash_table *new;
-  new=(struct hash_table *)calloc(1,sizeof(struct hash_table)+
-				  (NEW_HASHTABLE_SIZE-1)*sizeof(struct hash_entry *));
+  new=calloc(1, sizeof(struct hash_table)+
+             (NEW_HASHTABLE_SIZE-1)*sizeof(struct hash_entry *));
   new->entries=0;
   new->mask=NEW_HASHTABLE_SIZE-1;
   return new;
@@ -84,19 +83,19 @@ struct hash_table *hash_rehash(struct hash_table *h,int size)
   int e;
 
 #ifdef PIKE_DEBUG
-  if( 1 << my_log2(size) != size)
-    fatal("Size is not a power of two!\n");
+  if (size & (size-1))
+    Pike_fatal("Size is not a power of two! Size: 0x%08x\n", size);
 #endif
 
-  new=(struct hash_table *)calloc(1,sizeof(struct hash_table)+
-				  (size-1)*sizeof(struct hash_entry *));
+  new=calloc(1, sizeof(struct hash_table)+
+             (size-1)*sizeof(struct hash_entry *));
   new->mask = size - 1;
   new->entries = h->entries;
 
   for(e=0; e<=h->mask; e++)
     rehash_list_backwards(new,h->htable[e]);
 
-  free((char *)h);
+  free(h);
   return new;
 }
 
@@ -142,7 +141,7 @@ struct hash_table *hash_unlink(struct hash_table *h, struct hash_entry *s)
     }
   }
 #ifdef PIKE_DEBUG
-  fatal("hash_entry not in hashtable\n");
+  Pike_fatal("hash_entry not in hashtable\n");
 #endif
   return h;
 }
@@ -175,8 +174,8 @@ void free_hashtable(struct hash_table *h,
       if(free_entry)
 	free_entry(i);
       else
-	free((char *)i);
+	free(i);
     }
   }
-  free((char *)h);
+  free(h);
 }

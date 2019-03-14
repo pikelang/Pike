@@ -1,6 +1,5 @@
 import Stdio;
 
-mapping exts = ([]);
 constant days = ({ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" });
 constant months = ({ "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" });
@@ -43,14 +42,14 @@ string http_date(int t)
 
 class request_program 
 {
-  inherit HTTPLoop.prog;
+  inherit HTTPAccept.prog;
 }
 
-void handle(object o)
+mixed handle(object o)
 {
   string url = o->not_query;
   string f = combine_path(BASE, url[1..]);
-  array s;
+  array|object s;
   if(f[-1] == '/' && (s = file_stat(f+"index.html"))) {
     url += "index.html";
     f += "index.html";
@@ -62,7 +61,7 @@ void handle(object o)
       "<h1>No such file or directory: "+f+"</h1>";
     o->reply_with_cache("HTTP/1.0 404 Unknown file\r\n"
 			"Content-type: text/html\r\n"
-			"Content-Length: "+strlen(nofile)+"\r\n"
+			"Content-Length: "+sizeof(nofile)+"\r\n"
 			"MIME-Version: 1.0\r\n"
 			"Server: Neo-FastSpeed\r\n"
 			"Connection: Keep-Alive\r\n"
@@ -92,7 +91,7 @@ void handle(object o)
 	catch { readlink(f+file); islink = 1; };
 #endif
 	string ext = (file / ".") [-1];
-	string ctype = (size >= 0 ? exts[ext] || "text/plain" :
+	string ctype = (size >= 0 ? MIME.ext_to_media_type(ext) || "text/plain" :
 			"Directory");
 	if(size < -1)
 	  file += "/";
@@ -105,7 +104,7 @@ void handle(object o)
 		       ctype);
       }
       return o->reply_with_cache(head +
-				 "Content-Length: "+strlen(res)+
+				 "Content-Length: "+sizeof(res)+
 				 "\r\n\r\n"+res, 30);
     } else {
       o->reply_with_cache("HTTP/1.0 302  Redirect\r\n"
@@ -120,8 +119,7 @@ void handle(object o)
     }
   } else {
     string ext = (f / ".") [-1];
-    string ctype = exts[ext] || "text/plain";
-#if 1
+    string ctype = MIME.ext_to_media_type(ext) || "text/plain";
     o->reply_with_cache("HTTP/1.1 200 Ok\r\n"
 			"Content-type: "+ctype+"\r\n"
 			"Content-Length: "+s[1]+"\r\n"
@@ -131,17 +129,6 @@ void handle(object o)
 			"Connection: Keep-Alive\r\n"
 			"\r\n"+
 			read_bytes(f), 20);
-#else
-    o->reply("HTTP/1.1 200 Ok\r\n"
-             "Content-type: "+ctype+"\r\n"
-             "Content-Length: "+s[1]+"\r\n"
-             "Last-Modified: "+http_date(s[4])+"\r\n"
-             "MIME-Version: 1.0\r\n"
-             "Server: Neo-FastSpeed\r\n"
-             "Connection: Keep-Alive\r\n"
-             "\r\n",
-             Stdio.File(f, "r"), s[1]);
-#endif
     destruct(o);
   }
 }
@@ -151,25 +138,17 @@ object l;
 
 int main(int argc, array (string) argv)
 {
-#if efun(thread_set_concurrency)
+#if constant(thread_set_concurrency)
   thread_set_concurrency(100);
 #endif
   port = Stdio.Port();
-  array foo;
-  foreach(read_file((argv[0] - "wwwserver.pike") + "extensions")/"\n",
-	  string s) {
-    if(strlen(s) && s[0] != '#' && (foo = (s / "\t" - ({""}))) &&
-       sizeof(foo) == 2)
-      exts[foo[0]] = foo[1];
-  }
-  werror(sprintf("Found %d extensions...\n", sizeof(exts)));
   if(!port->bind(PORT))
   {
     werror("Bind failed.\n");
     return 1;
   }
   
-  l = HTTPLoop.Loop( port, request_program, handle, 0, 1024*1024, 0, 
+  l = HTTPAccept.Loop( port, request_program, handle, 0, 1024*1024, 0, 
 		       0);
   werror("WWW-server listening to port "+PORT+".\n");
   return -1;

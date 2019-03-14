@@ -1,0 +1,25 @@
+/* -*- C -*- */
+require gtk220;
+
+class GTK2.Spinner;
+inherit GTK2.DrawingArea;
+
+//! A @[Spinner] widget displays an icon-size spinning animation. It
+//! is often used as an alternative to a GtkProgressBar for displaying
+//! indefinite activity, instead of actual progress.
+//!
+//! To start the animation, use @[start], to stop it use @[stop]
+
+//! Properties:
+//! int active
+
+//!
+void create();
+
+//! Start the spinner
+void start();
+
+//! Stop the spinner
+void stop();
+
+endrequire;

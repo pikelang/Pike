@@ -1,6 +1,10 @@
 /*
- * $Id: version.h,v 1.2 1998/03/02 18:52:49 grubba Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * This file is provided for CVS's sake, and to define a simple string to be
  * used as the module's release version
  */

@@ -1,8 +1,13 @@
 /*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Sybase driver for the Pike programming language.
  *
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
- * (C) Roxen IS
  *
  */
 
@@ -24,8 +29,6 @@
 #include "sybase_config.h"
 #include "global.h"
 
-RCSID("$Id: sybase.c,v 1.6 2000/12/05 21:08:38 per Exp $");
-
 #ifdef HAVE_SYBASE
 
 
@@ -44,8 +47,7 @@ RCSID("$Id: sybase.c,v 1.6 2000/12/05 21:08:38 per Exp $");
 #include "sybase.h"
 
 
-/* This must be included last! */
-#include "module_magic.h"
+#define sp Pike_sp
 
 /* define this to enable debugging */
 /* #define SYBDEBUG */
@@ -76,11 +78,6 @@ RCSID("$Id: sybase.c,v 1.6 2000/12/05 21:08:38 per Exp $");
 #define errdebug(err)
 #endif
 
-/* pike 0.6 compatibility stuff */
-#ifndef ADD_STORAGE
-#define ADD_STORAGE(X) add_storage(sizeof(X))
-#endif
-
 
 /* Actual code */
 #ifdef _REENTRANT
@@ -105,7 +102,7 @@ static MUTEX_T mainlock;
 #define FAILED(status) (status!=CS_SUCCEED)
 #define OK(status) (status==CS_SUCCEED)
 
-#define THIS ((pike_sybase_connection *) (fp->current_storage))
+#define THIS ((pike_sybase_connection *) (Pike_fp->current_storage))
 
 
 
@@ -314,7 +311,7 @@ static void sybase_destroy (struct object * o) {
     }
     this->busy--;
     sybdebug((stderr,"Busy status: %d\n",this->busy));
-    /* if we fail, it's useless anyways. Maybe we should fatal() */
+    /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
   
   if (this->cmd) {
@@ -325,7 +322,7 @@ static void sybase_destroy (struct object * o) {
       sybdebug((stderr,"\tHm... failed\n"));
     }
     this->cmd=NULL; 
-    /* if we fail, it's useless anyways. Maybe we should fatal() */
+    /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
 
   if (this->results) {
@@ -356,7 +353,7 @@ static void sybase_destroy (struct object * o) {
       sybdebug((stderr,"Gasp! Failed!\n"));
     }
     this->connection=NULL;
-    /* if we fail, it's useless anyways. Maybe we should fatal() */
+    /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
 
   SYB_LOCK(mainlock); /* this is really needed only here */
@@ -374,7 +371,7 @@ static void sybase_destroy (struct object * o) {
       sybdebug((stderr,"\tGosh Robin! You're right!\n"));
     }
     this->context=NULL;
-    /* if we fail, it's useless anyways. Maybe we should fatal() */
+    /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
 
   SYB_UNLOCK(mainlock);
@@ -418,17 +415,17 @@ static void f_connect (INT32 args) {
                  BIT_INT|BIT_VOID,0);
 
   /* fetch arguments, so that we can enable threads */
-  if (sp[2-args].type == T_STRING && sp[2-args].u.string->len) { /*username*/
+  if (TYPEOF(sp[2-args]) == T_STRING && sp[2-args].u.string->len) { /*username*/
     username=sp[2-args].u.string->str;
     usernamelen=sp[2-args].u.string->len;
     sybdebug((stderr,"\tgot username: %s\n",username));
   }
-  if (sp[3-args].type == T_STRING && sp[2-args].u.string->len) { /*password*/
+  if (TYPEOF(sp[3-args]) == T_STRING && sp[2-args].u.string->len) { /*password*/
       pass=sp[3-args].u.string->str;
     passlen=sp[3-args].u.string->len;
     sybdebug((stderr,"\tgot password: %s\n",pass));
   }
-  if (sp[-args].type==T_STRING && sp[-args].u.string->len) { /*hostname*/
+  if (TYPEOF(sp[-args]) == T_STRING && sp[-args].u.string->len) { /*hostname*/
     hostname=sp[-args].u.string->str;
     hostnamelen=sp[-args].u.string->len;
     sybdebug((stderr,"\tgot hostname: %s\n",hostname));
@@ -519,7 +516,7 @@ static void f_connect (INT32 args) {
   
 }
 
-/* create (host,database,username,password,port) */
+/* create (host,database,username,password,port|options) */
 static void f_create (INT32 args) {
   char *host,*db,*user,*pass;
   CS_RETCODE ret;
@@ -532,11 +529,11 @@ static void f_create (INT32 args) {
   check_all_args("sybase->create",args,
                  BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
                  BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-                 BIT_INT|BIT_VOID,0);
+                 BIT_INT|BIT_MAPPING|BIT_VOID, 0);
   
   /* if connected, disconnect */
   if (this->context)
-    sybase_destroy(fp->current_object);
+    sybase_destroy(Pike_fp->current_object);
 
   THREADS_ALLOW();
   SYB_LOCK(mainlock);
@@ -722,7 +719,7 @@ static void f_big_query(INT32 args) {
 /*       this->busy--; */
       flush_results_queue(this);
       break;
-    default: /* Ok */
+    default:; /* Ok */
     }
 
     if (err||done) break; /* get out of the while cycle */
@@ -744,9 +741,9 @@ static void f_big_query(INT32 args) {
       sybdebug((stderr,"I have %d columns' worth of data\n",numcols));
       sybdebug((stderr,"Allocating results**\n"));
       /* it looks like xalloc can't be used here. Hubbe? */
-      results=(char**)malloc(numcols*sizeof(char*));
-      results_lengths=(CS_INT*)malloc(numcols*sizeof(CS_INT));
-      nulls=(CS_SMALLINT*)malloc(numcols*sizeof(CS_SMALLINT));
+      results=malloc(numcols*sizeof(char*));
+      results_lengths=malloc(numcols*sizeof(CS_INT));
+      nulls=malloc(numcols*sizeof(CS_SMALLINT));
       this->results=results;
       this->results_lengths=results_lengths;
       this->nulls=nulls;
@@ -768,8 +765,8 @@ static void f_big_query(INT32 args) {
         sybdebug((stderr,"Allocating %ld+%d+1 bytes\n",
                  length,EXTRA_COLUMN_SPACE));
         /* it looks like xalloc can't be used here. Hubbe? */
-        results[j]=(char*)malloc((length+EXTRA_COLUMN_SPACE+1)*
-                                 sizeof(char));
+        results[j]=malloc((length+EXTRA_COLUMN_SPACE+1)*
+                          sizeof(char));
         if (results[j]==NULL) {
           sybdebug((stderr,"PANIC! COULDN'T ALLOCATE MEMORY!"));
         }
@@ -802,8 +799,8 @@ static void f_big_query(INT32 args) {
         length=guess_column_length(cmd,1);
 
         sybdebug((stderr,"Guessed length of %d\n",length));
-        function_result=(char*)malloc((length+EXTRA_COLUMN_SPACE+1)*
-                                         sizeof(char));
+        function_result=malloc((length+EXTRA_COLUMN_SPACE+1)*
+                               sizeof(char));
 
         description.datatype=CS_CHAR_TYPE;
         description.format=CS_FMT_NULLTERM;
@@ -897,7 +894,7 @@ static void f_big_query(INT32 args) {
     push_int(0);
     break;
   case PS_RESULT_THIS:
-    ref_push_object(fp->current_object);
+    ref_push_object(Pike_fp->current_object);
     break;
   case PS_RESULT_STATUS:
     this->busy--;
@@ -906,7 +903,7 @@ static void f_big_query(INT32 args) {
     function_result=NULL;
     break;
   default:
-    fatal("Internal error! Wrong result in big_query\n");
+    Pike_fatal("Internal error! Wrong result in big_query\n");
     break;
   }
   /* extra safety check. Paranoia. */
@@ -1178,12 +1175,12 @@ static void f_fetch_fields(INT32 args) {
 /********/
 
 static struct program* sybase_program;
-void pike_module_exit (void) {
+PIKE_MODULE_EXIT {
   SYB_MT_EXIT(mainlock);
   if(sybase_program) free_program(sybase_program);
 }
 
-void pike_module_init (void) {
+PIKE_MODULE_INIT {
 
   sybdebug((stderr,"sybase driver release " SYBASE_DRIVER_VERSION "\n"));
 
@@ -1191,8 +1188,7 @@ void pike_module_init (void) {
   ADD_STORAGE(pike_sybase_connection);
   set_init_callback(sybase_create);
   set_exit_callback(sybase_destroy);
-  
-#ifdef ADD_FUNCTION /* pike_0.7 */
+
   /* function(void|string,void|string,void|string,void|string,int|void:void) */
   ADD_FUNCTION("create",f_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) 
                                        tOr(tVoid,tStr) tOr(tVoid,tStr)
@@ -1203,10 +1199,10 @@ void pike_module_init (void) {
                                          tOr(tInt,tVoid), tVoid),
                0);
   ADD_FUNCTION("error",f_error,tFunc(tVoid,tOr(tVoid,tStr)),
-               OPT_RETURN);
+	       0);
 
   ADD_FUNCTION("big_query",f_big_query,tFunc(tString,tOr(tInt,tObj)),
-               OPT_RETURN);
+	       0);
 
   ADD_FUNCTION("fetch_row", f_fetch_row,
                tFunc(tVoid,tOr(tVoid,tArr(tMix))), 0);
@@ -1219,24 +1215,6 @@ void pike_module_init (void) {
 
   ADD_FUNCTION("fetch_fields", f_fetch_fields,
                tFunc(tVoid,tArr(tOr(tInt,tMap(tStr,tMix)))), ID_PUBLIC);
-#else
-  add_function("create",f_create,
-               "function(void|string,void|string,void|string,void|string,int|void:void)",
-               0);
-  add_function("connect",f_connect,
-               "function(void|string,void|string,void|string,void|string,int|void:void)",
-               0);
-  add_function("error",f_error,"function(void:void|string)",OPT_RETURN);
-  add_function("big_query",f_big_query,"function(string:void|object)",
-               OPT_RETURN);
-  add_function("fetch_row", f_fetch_row,"function(void:void|array(mixed))",
-               OPT_RETURN);
-  add_function("num_fields", f_num_fields, "function(void:int)",0);
-  add_function("affected_rows",f_affected_rows,"function(void:int)",0);
-  add_function("fetch_fields",f_fetch_fields,
-               "function(void:array(int|mapping(string:mixed)))",
-               0);
-#endif
 
   /* TODO */
   /* int num_rows() */ /* looks like sybase doesn't support this one.. */
@@ -1252,8 +1230,8 @@ void pike_module_init (void) {
 
 #else /* HAVE_SYBASE */
 /* This must be included last! */
-#include "module_magic.h"
+#include "module.h"
 
-void pike_module_init (void) {}
-void pike_module_exit (void) {}
+PIKE_MODULE_INIT {}
+PIKE_MODULE_EXIT {}
 #endif /* HAVE_SYBASE */

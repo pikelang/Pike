@@ -1,6 +1,10 @@
 /*
- * $Id: acconfig.h,v 1.11 2001/05/24 20:58:55 mirar Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * System dependant definitions for the system module for Pike
  *
  * Henrik Grubbström 1997-01-20
@@ -17,6 +21,12 @@
  
 /* Define if you have OSF1 style gethostbyname_r. */
 #undef HAVE_OSF1_GETHOSTBYNAME_R
+
+/* Define if you have solaris style getservbyname_r. */
+#undef HAVE_SOLARIS_GETSERVBYNAME_R
+ 
+/* Define if you have OSF1 style getservbyname_r. */
+#undef HAVE_OSF1_GETSERVBYNAME_R
 
 /* Define if you have solaris style getspnam_r. */
 #undef HAVE_SOLARIS_GETSPNAM_R
@@ -51,7 +61,7 @@
 /* Define if ITIMER_REAL, ITIMER_VIRTUAL and ITIMER_PROF is in tInt02 */
 #undef ITIMER_TYPE_IS_02
 
-/* Define if you have the RDTSC instruction */
-#undef HAVE_RDTSC
+/* Define if syslog() might have races which makes it unsafe to run unlocked. */
+#undef MIGHT_HAVE_SYSLOG_RACES
 
 #endif /* SYSTEM_MACHINE_H */

@@ -1,8 +1,20 @@
 #pike __REAL_VERSION__
-
-#if constant(GTK)
+#require constant(GTK.Widget)
 
 #define INDEX(x) GTK[x]
+
+//! GDK wrapper module.
+//!
+//! This is a convenience module that is identical to either
+//! either the @[GDK2] or the @[GDK1] module depending on
+//! which (if any) of them is available.
+//!
+//! @seealso
+//!   @[GDK1], @[GDK2]
+
+//! @decl import GTK
+
+//! @decl constant Atom
 
 object Atom = class
 {
@@ -37,7 +49,7 @@ object Atom = class
 
 mixed `[](string what)
 {
-  if(what == "_module_value") return ([])[0];
+  if(what == "_module_value") return UNDEFINED;
   if(what == "Atom") return Atom;
   if(!zero_type(INDEX("Gdk"+what)))
     return INDEX("Gdk"+what);
@@ -45,16 +57,6 @@ mixed `[](string what)
     return INDEX("GDK_"+what);
   if(!zero_type(INDEX("GDK_"+upper_case(GTK->unsillycaps(what)))))
     return INDEX("GDK_"+upper_case(GTK->unsillycaps(what)));
-  return ([])[0];
+  return UNDEFINED;
 //   return  GDKSupport[what];
 }
-
-#else /* !constant(GTK) */
-
-static void create()
-{
-  /* Destroy ourselves. */
-  destruct();
-}
-
-#endif /* constant(GTK) */

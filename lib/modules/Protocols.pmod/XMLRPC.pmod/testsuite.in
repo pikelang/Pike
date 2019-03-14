@@ -1,0 +1,66 @@
+START_MARKER
+
+define(test_xmlrpc, [[DOTEST(EQUAL,dnl
+array params =
+({
+  4711,
+  "Poderoso caballero es don dinero.",
+  7.0,
+  ([
+    "a":76,
+    "b":77,
+    "b":81,
+    "c":92,
+    "d":({ 8.0, "Samba Pa Ti" })
+  ]),
+  ({ 1, 2, 3 })
+});
+
+string fault_string = "This is a bogus error.";
+
+mixed a() { return [[$1]]; }
+mixed b() { return [[$2]]; }
+)]])
+
+test_xmlrpc([[
+  Protocols.XMLRPC.decode_call(Protocols.XMLRPC.encode_call("f",params))->params;
+]], params)
+
+test_xmlrpc([[
+  Protocols.XMLRPC.decode_call(Protocols.XMLRPC.encode_call("f",params))->method_name;
+]], "f")
+
+test_xmlrpc([[
+  Protocols.XMLRPC.decode_response(Protocols.XMLRPC.encode_response(params));
+]], params)
+
+test_xmlrpc([[
+  Protocols.XMLRPC.decode_response(Protocols.XMLRPC.encode_response_fault
+					      (42, fault_string))->fault_code;
+]], 42)
+
+test_xmlrpc([[
+  Protocols.XMLRPC.decode_response(Protocols.XMLRPC.encode_response_fault
+					      (42, fault_string))->fault_string;
+]], fault_string)
+
+test_equal([[
+  Protocols.XMLRPC.decode_response("<?xml version=\"1.0\"?>"
+    "<methodResponse><params><param><value><struct>"
+    "<member><name>message</name><value>Thanks&#32;for&#32;the&#32;ping."
+    "</value></member>"
+    "<member><name>flerror</name><value><boolean>0</boolean></value></member>"
+    "</struct></value></param>"
+    "<param><value><array><data><value><i4>3</i4></value><value><int>4</int>"
+    "</value><value><string>5</string></value></data></array></value></param>"
+    "</params></methodResponse>") ]],
+[[ ({ ([
+ "flerror" : 0,
+ "message" : "Thanks for the ping."
+]), ({ 3, 4, "5" }) }) ]])
+
+test_equal([[
+  Protocols.XMLRPC.decode_response(Protocols.XMLRPC.encode_response(({([])})));
+]], ({([])}))
+
+END_MARKER

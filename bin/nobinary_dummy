@@ -1,0 +1,65 @@
+#!/bin/sh
+# This takes the place of the preprocessor, compiler and linker when
+# --disable-binary is used. It's designed to fake success for all
+# configure tests, so that e.g. make depend will go through all
+# modules properly.
+#
+# Created 2002-01-26 by Martin Stjernholm
+
+# First argument might be "cc", "cpp" or similar to say what should be
+# faked. If it's something else, the script has taken the place of
+# something returned by AC_CHECK_PROG.
+
+case "$1" in
+  cc)
+    shift
+
+    prog="a.out"
+    compile=""
+    source=""
+
+    while test 0 -lt "$#"
+    do
+      case "$1" in
+        -c)
+	  compile=yes
+	  ;;
+	-o)
+	  shift
+	  prog="$1"
+	  ;;
+	-o*)
+	  prog=`echo $1 | sed -e's/^-o//'`
+	  ;;
+	-[ILRDUx])
+	  shift
+	  ;;
+	-*)
+          ;;
+        +*)
+	  ;;
+	*)
+	  source="`echo \"$1\" | sed -e 's:^.*/\([^/]*\)$:\\1:'`"
+	  ;;
+      esac
+      shift
+    done
+
+    if [ yes = "$compile" -a a.out = "$prog" ]; then
+      prog="`echo \"$source\" | sed -e 's/\\..\$//'`.o"
+    fi
+
+    test x"$prog" = x || {
+      rm -f "$prog" 2>/dev/null
+      echo "#! /bin/sh" > "$prog"
+      chmod 775 "$prog"
+    }
+    ;;
+
+  *)
+    # A space causes the output to have some length, but not any
+    # characters that can confuse things if it's e.g. inserted in a
+    # program argument list.
+    echo " "
+    ;;
+esac

@@ -1,16 +1,13 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-
 /*
- * $Id: pike_macros.h,v 1.26 2001/07/22 21:36:14 mast Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef MACROS_H
 #define MACROS_H
 
-#include <global.h>
+#include "global.h"
 
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -18,9 +15,18 @@
 
 #include "pike_memory.h"
 
-#define OFFSETOF(str_type, field) ((size_t)& (((struct str_type *)0)->field))
-#define BASEOF(ptr, str_type, field)  \
-((struct str_type *)((char*)ptr - (char*)& (((struct str_type *)0)->field)))
+#define PTR_TO_INT(PTR) ((size_t) ((char *) (PTR) - (char *) NULL))
+
+#if __GNUC__ >= 4
+#  define OFFSETOF(T,X) __builtin_offsetof(struct T,X)
+#  define ALIGNOF(X) __alignof__(X)
+#else
+#  define OFFSETOF(T, X) PTR_TO_INT(& (((struct T *)NULL)->X))
+#  define ALIGNOF(X) OFFSETOF({ char ignored_; X fooo_;}, fooo_)
+#endif
+
+#define BASEOF(ptr, str_type, field) \
+   ((struct str_type *)((char*)ptr - OFFSETOF(str_type, field)))
 
 #define NELEM(a) (sizeof (a) / sizeof ((a)[0]))
 #define ALLOC_STRUCT(X) ( (struct X *)xalloc(sizeof(struct X)) )
@@ -29,22 +35,8 @@
 #define MAXIMUM(X,Y) ((X)>(Y)?(X):(Y))
 
 
-#define is8bitalnum(X)	("0000000000000000" \
-			 "0000000000000000" \
-			 "0000000000000000" \
-			 "1111111111000000" \
-			 "0111111111111111" \
-			 "1111111111100001" \
-			 "0111111111111111" \
-			 "1111111111100000" \
-			 "0000000000000000" \
-			 "0000000000000000" \
-			 "1011110101100010" \
-			 "1011011001101110" \
-			 "1111111111111111" \
-			 "1111111011111111" \
-			 "1111111111111111" \
-			 "1111111011111111"[((unsigned)(X))&0xff] == '1')
+PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
+#define is8bitalnum(X)	(Pike_is8bitalnum_vector[((unsigned)(X))&0xff] == '1')
   
 #define isidchar(X) is8bitalnum(X)
 
@@ -52,14 +44,9 @@
 #define isgraph(X)	(ispunct(X) || isupper(X) || islower(X) || isdigit(X))
 #endif /* !HAVE_ISGRAPH */
 
-/*
- * #define ALIGNOF(X) __alignof__(X)
- * #define ALIGNOF(X) (sizeof(X)>ALIGN_BOUND?ALIGN_BOUND:( 1<<my_log2(sizeof(X))))
- */
 
-#define ALIGNOF(X) ((size_t)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))
 
-#define DO_ALIGN(X,Y) (((size_t)(X)+((Y)-1)) & -(Y))
+#define DO_ALIGN(X,Y) (((size_t)(X)+((Y)-1)) & ~((Y)-1))
 #define CONSTANT_STRLEN(X) (sizeof(X) - sizeof(""))
 
 #define SET_NEXT_AND_FREE(p,free_item) do{	\
@@ -101,6 +88,7 @@
 } while (0)
 
 #define DOUBLELINK(first_object, o) do {	\
+  debug_malloc_touch(o);                        \
   o->next=first_object;				\
   o->prev=0;					\
   if(first_object) first_object->prev=o;	\
@@ -108,19 +96,21 @@
 }while(0)
 
 #define DOUBLEUNLINK(first_object,o) do{	\
+  debug_malloc_touch(o);                        \
   if(o->prev) {					\
     o->prev->next=o->next;			\
   }else {					\
     DO_IF_DEBUG(				\
-      if(first_object != o)			\
-        fatal("Linked in wrong list!\n");	\
+      if(first_object != o) {			\
+        describe(o);                            \
+        Pike_fatal("Linked in wrong list!\n");	\
+      }                                         \
     )						\
     first_object=o->next;			\
   }						\
 						\
   if(o->next) o->next->prev=o->prev;		\
 }while(0)
-
 
 #define PIKE_XCONCAT(X,Y)	PIKE_CONCAT(X,Y)
 #define PIKE_XCONCAT3(X,Y,Z)	PIKE_CONCAT(X,Y,Z)
@@ -129,7 +119,6 @@
 /* Useful to get a literal comma in an argument to a macro. */
 #define COMMA ,
 
-/* Needed for fsort_template.h */
-PMOD_EXPORT int my_log2(size_t x);
-
+/* Necessary to pass an empty argument to a macro for some preprocessors. */
+#define NOTHING
 #endif

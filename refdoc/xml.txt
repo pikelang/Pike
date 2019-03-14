@@ -132,7 +132,7 @@ The names speak for themselves, except: <modifier> which is used for modifier
 ranges: 
 
   //! Some variables:
-  static nomask { 
+  protected final {
     int x, y; 
 
     string n;  
@@ -200,7 +200,8 @@ entities:
      </class>
  
 <constant>
-   Only has a name. The element is empty (or has a <source-position> child.)
+   Has a name attribute. Contains optional <type> and
+   <source-position> child elements.
 
 <enum>
    Works as a container. Has a <doc> child element with the documentation of
@@ -288,7 +289,6 @@ the form <foo/>:
   <float/>
   <mixed/>
   <program/>
-  <string/>
   <void/>
 
 The same goes for mapping, array, function, object, multiset, &c that have 
@@ -323,6 +323,14 @@ int
      int(0..MAX)
    
      <int><min>0</min><max>MAX</max></int>
+
+string
+   A string type can have a numerical min and/or max character value. 
+   The values can be numbers or identifiers:
+
+     string(0..255)
+
+     <string><min>0</min><max>255</max></string>
 
 mapping
    The types of the indices and values are given:

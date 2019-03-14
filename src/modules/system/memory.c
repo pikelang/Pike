@@ -1,8 +1,10 @@
 /*
- * $Id: memory.c,v 1.11 2001/05/11 12:26:34 grubba Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
-/*! @module system
+/*! @module System
  */
 
 /*! @class Memory
@@ -16,8 +18,6 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.11 2001/05/11 12:26:34 grubba Exp $");
-
 #include "system_machine.h"
 
 #ifdef HAVE_UNISTD_H
@@ -39,10 +39,20 @@ RCSID("$Id: memory.c,v 1.11 2001/05/11 12:26:34 grubba Exp $");
 #include <sys/fcntl.h>
 #endif
 
-#ifdef HAVE_SYS_USER_H
-#include <sys/user.h>
+#ifdef HAVE_SYS_SHM_H
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #endif
 
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#endif
+
+#ifdef HAVE_CYGWIN_SHM_H
+#include <cygwin/ipc.h>
+#include <cygwin/shm.h>
+#define HAVE_SYS_SHM_H
+#endif
 
 /* something on AIX defines these */
 #ifdef T_INT
@@ -79,10 +89,12 @@ RCSID("$Id: memory.c,v 1.11 2001/05/11 12:26:34 grubba Exp $");
 
 #include "system.h"
 
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 static void memory__mmap(INT32 args,int complain,int private);
 static void memory_allocate(INT32 args);
+static void memory_shm(INT32 args);
 
 /*** Memory object *******************************************************/
 
@@ -94,46 +106,55 @@ static void memory_allocate(INT32 args);
 #define THISOBJ (Pike_fp->current_object)
 #define THIS ((struct memory_storage *)(Pike_fp->current_storage))
 
-static void init_memory(struct object *o)
+static void init_memory(struct object *UNUSED(o))
 {
    THIS->p=NULL;
    THIS->size=0;
    THIS->flags=0;
 }
 
+static void memory__size_object( INT32 UNUSED(args) )
+{
+    push_int(THIS->size);
+}
+
+static void MEMORY_FREE( struct memory_storage *storage )
+{
+  if( storage->flags & MEM_FREE_FREE )
+    free( storage->p );
 #ifdef HAVE_MMAP
-#define MEMORY_FREE(STORAGE)						\
-   if ((STORAGE)->p)							\
-   {									\
-      if ((STORAGE)->flags&MEM_FREE_FREE)				\
-	 free((STORAGE)->p);						\
-      else if ((STORAGE)->flags&MEM_FREE_MUNMAP)			\
-	 munmap((void*)(STORAGE)->p,(STORAGE)->size);			\
-      (STORAGE)->p=NULL;						\
-      (STORAGE)->flags=0;						\
-   }
-#else /* HAVE_MMAP */
-#define MEMORY_FREE(STORAGE)						\
-   if ((STORAGE)->p)							\
-   {									\
-      if ((STORAGE)->flags&MEM_FREE_FREE)				\
-	 free((STORAGE)->p);						\
-      (STORAGE)->p=NULL;						\
-      (STORAGE)->flags=0;						\
-   }
+  else if( storage->flags & MEM_FREE_MUNMAP )
+    munmap( (void*)storage->p, storage->size );
 #endif
+#ifdef HAVE_SYS_SHM_H
+  else if( storage->flags & MEM_FREE_SHMDEL )
+    shmdt( storage->p );
+#endif
+#ifdef WIN32SHM
+  else if( storage->flags & MEM_FREE_SHMDEL )
+  {
+    UnmapViewOfFile( storage->p );
+    CloseHandle( (HANDLE)storage->extra );
+  }
+#endif
+  storage->flags = 0;
+  storage->p = 0;
+  storage->size = 0;
+}
+
 
 #define MEMORY_VALID(STORAGE,FUNC)					\
    if (!(STORAGE->p))							\
       Pike_error("%s: no memory in this Memory object\n",FUNC);
 
-static void exit_memory(struct object *o)
+static void exit_memory(struct object *UNUSED(o))
 {
    MEMORY_FREE(THIS);
 }
 
 /*! @decl void create()
  *! @decl void create(string|Stdio.File filename_to_mmap)
+ *! @decl void create(int shmkey, int shmsize, int shmflg)
  *! @decl void create(int bytes_to_allocate)
  *!
  *!	Will call @[mmap()] or @[allocate()]
@@ -145,11 +166,14 @@ static void memory_create(INT32 args)
 {
    if (args)
    {
-      if (sp[-args].type==T_STRING ||
-	  sp[-args].type==T_OBJECT) /* filename to mmap */
-	 memory__mmap(args,1,0);
-      else if (sp[-args].type==T_INT) /* bytes to allocate */
-	 memory_allocate(args);
+      if (TYPEOF(sp[-args]) == T_STRING ||
+	  TYPEOF(sp[-args]) == T_OBJECT) /* filename to mmap */
+	memory__mmap(args,1,0);
+      else if (TYPEOF(sp[-args]) == T_INT && args==1) /* bytes to allocate */
+	memory_allocate(args);
+      else if(TYPEOF(sp[-args]) == T_INT &&
+	      TYPEOF(sp[-args+1]) == T_INT && args==2 )
+	memory_shm( args );
       else
 	 SIMPLE_BAD_ARG_ERROR("Memory",1,"int or string");
    }
@@ -171,7 +195,7 @@ static void memory_create(INT32 args)
  */
 static INLINE off_t file_size(int fd)
 {
-  struct stat tmp;
+  PIKE_STAT_T tmp;
   if((!fd_fstat(fd, &tmp)) &&
      ( tmp.st_mode & S_IFMT) == S_IFREG)
      return (off_t)tmp.st_size;
@@ -186,6 +210,75 @@ static INLINE off_t file_size(int fd)
       return;								\
    }									\
    while (0)
+
+static void memory_shm( INT32 args )
+{
+#ifdef HAVE_SYS_SHM_H
+  int id;
+
+  MEMORY_FREE(THIS);
+
+  if( args < 2 )
+    SIMPLE_TOO_FEW_ARGS_ERROR("Memory.shmat",2);
+  if (TYPEOF(Pike_sp[1-args]) != T_INT )
+    SIMPLE_BAD_ARG_ERROR("Memory.shmat",1,"int(0..)");
+  if (TYPEOF(Pike_sp[-args]) != T_INT )
+    SIMPLE_BAD_ARG_ERROR("Memory.shmat",0,"int(0..)");
+
+  if( (id = shmget( Pike_sp[0-args].u.integer,
+		    Pike_sp[1-args].u.integer,
+		    IPC_CREAT|0666 )) < 0 )
+  {
+    switch( errno )
+    {
+      case EINVAL:
+	Pike_error("Too large or small shared memory segment\n");
+	break;
+      case ENOSPC:
+	Pike_error("Out of resources, cannot create segment\n");
+	break;
+    }
+  }
+  THIS->p = shmat( id, 0, 0 );
+  THIS->size = Pike_sp[1-args].u.integer;
+  THIS->flags = MEM_READ|MEM_WRITE|MEM_FREE_SHMDEL;
+  pop_n_elems(args);
+  push_int(1);
+#else /* HAVE_SYS_SHM_H */
+#ifdef WIN32SHM
+  {
+    HANDLE handle;
+    char id[4711];
+    sprintf( id, "pike.%ld", Pike_sp[-args].u.integer );
+    THIS->size = Pike_sp[1-args].u.integer;
+    THIS->flags = MEM_READ|MEM_WRITE|MEM_FREE_SHMDEL;
+    pop_n_elems(args);
+
+    handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
+			       0, THIS->size, id);
+    if( handle != NULL )
+    {
+      THIS->extra = (void*)handle;
+      THIS->p = MapViewOfFile(handle,FILE_MAP_WRITE|FILE_MAP_READ,0,0,0);
+      if( !THIS->p )
+      {
+	THIS->flags = 0;
+	CloseHandle( handle );
+	Pike_error("Failed to create segment\n");
+      }
+    }
+    else
+    {
+	THIS->flags = 0;
+	CloseHandle( handle );
+	Pike_error("Failed to create segment\n");
+    }
+  }
+#else /* !WIN32SHM */
+   Pike_error("Memory.shmat(): system has no shmat() (sorry)\n");
+#endif /* WIN32SHM */
+#endif /* HAVE_SYS_SHM_H */
+}
 
 static void memory__mmap(INT32 args,int complain,int private)
 {
@@ -204,7 +297,7 @@ static void memory__mmap(INT32 args,int complain,int private)
       SIMPLE_TOO_FEW_ARGS_ERROR("Memory.mmap",1);
 
    if (args>=2) {
-      if (sp[1-args].type!=T_INT ||
+      if (TYPEOF(sp[1-args]) != T_INT ||
 	  sp[1-args].u.integer<0)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",2,"int(0..)");
       else
@@ -212,26 +305,26 @@ static void memory__mmap(INT32 args,int complain,int private)
    }
 
    if (args>=3) {
-      if (sp[2-args].type!=T_INT ||
+      if (TYPEOF(sp[2-args]) != T_INT ||
 	  sp[2-args].u.integer<0)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",3,"int(0..)");
       else
 	 size=sp[2-args].u.integer;
    }
 
-   if (sp[-args].type==T_OBJECT)
+   if (TYPEOF(sp[-args]) == T_OBJECT)
    {
       struct object *o=sp[-args].u.object;
       ref_push_object(o);
       push_text("query_fd");
       f_index(2);
-      if (sp[-1].type==T_INT)
+      if (TYPEOF(sp[-1]) == T_INT)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
 			      "(string or) Stdio.File (missing query_fd)");
       f_call_function(1);
-      if (sp[-1].type!=T_INT)
+      if (TYPEOF(sp[-1]) != T_INT)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
-			      "(string or) Stdio.File (wierd query_fd)");
+			      "(string or) Stdio.File (weird query_fd)");
       fd=sp[-1].u.integer;
       sp--;
       if (fd<0) {
@@ -246,13 +339,16 @@ static void memory__mmap(INT32 args,int complain,int private)
       osize=file_size(fd);
       THREADS_DISALLOW();
    }
-   else if (sp[-args].type==T_STRING)
+   else if (TYPEOF(sp[-args]) == T_STRING)
    {
       char *filename;
       get_all_args("Memory.mmap",args,"%s",&filename); /* 8 bit! */
       
       THREADS_ALLOW();
       fd = fd_open(filename,fd_RDWR,0);
+      if( fd < 0 )
+          fd = fd_open(filename,fd_RDONLY,0);
+
       if (fd>=0) osize=file_size(fd);
       THREADS_DISALLOW();
 
@@ -281,7 +377,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 #ifdef PAGE_SIZE
    if (offset%PAGE_SIZE)
       Pike_error("Memory.mmap(): mapped offset not aligned to PAGE_SIZE "
-		 "(%d aka system.PAGE_SIZE)\n",(int)offset);
+		 "(%d aka System.PAGE_SIZE)\n",(int)offset);
 #endif
 
    if (private) flags|=MAP_PRIVATE;
@@ -291,7 +387,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 #ifndef MAP_FAILED
 #define MAP_FAILED ((void*)(ptrdiff_t)-1)
 #endif
-   if ((mem==MAP_FAILED) && (errno==EACCES)) /* try without write */
+   if ((mem==(void *)MAP_FAILED) && (errno==EACCES)) /* try without write */
    {
       resflags&=~MEM_WRITE;
       mem=mmap(NULL,size,PROT_READ,flags,fd,offset);
@@ -299,7 +395,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 
    if (doclose) fd_close(fd); /* don't need this one anymore */
 
-   if (mem==MAP_FAILED)
+   if (mem==(void *)MAP_FAILED)
    {
       if (!complain)
 	 RETURN(0);
@@ -368,13 +464,13 @@ static void memory_allocate(INT32 args)
    if (size>1024*1024) /* threshold */
    {
       THREADS_ALLOW();
-      mem = (unsigned char *)xalloc(size);
+      mem = xalloc(size);
       MEMSET(mem,c,size);
       THREADS_DISALLOW();
    }
    else
    {
-      mem = (unsigned char *)xalloc(size);
+      mem = xalloc(size);
       MEMSET(mem,c,size);
    }
 
@@ -463,11 +559,10 @@ static void memory_cast(INT32 args)
       sv=ITEM(a);
       for (i=0; i<sz; i++)
       {
-	 sv->type=T_INT;
-	 sv->subtype=0;
 	 sv->u.integer=(((unsigned char*)(THIS->p)))[i];
 	 sv++;
       }
+      a->type_field = BIT_INT;
 
       push_array(a);
 
@@ -480,10 +575,13 @@ static void memory_cast(INT32 args)
  *! @decl string pread32(int(0..) pos,int(0..) len)
  *! @decl string pread16i(int(0..) pos,int(0..) len)
  *! @decl string pread32i(int(0..) pos,int(0..) len)
+ *! @decl string pread16n(int(0..) pos,int(0..) len)
+ *! @decl string pread32n(int(0..) pos,int(0..) len)
  *!
- *!	Read a string from the memory. The 16 and 32 variants
- *!	reads widestrings, 16 or 32 bits (2 or 4 bytes) wide,
- *!	the i variants in intel byteorder, the normal in network byteorder.
+ *!	Read a string from the memory. The 16 and 32 variants reads
+ *!	widestrings, 16 or 32 bits (2 or 4 bytes) wide, the i variants
+ *!	in intel byteorder, the normal in network byteorder, and the n
+ *!	variants in native byteorder.
  *!
  *!	@[len] is the number of characters, wide or not. @[pos]
  *!	is the byte position (!).
@@ -503,7 +601,7 @@ static void memory_cast(INT32 args)
    	 Pike_error(NAME": reading (some) outside allocation\n");	\
    									\
       if (!rlen)							\
-   	 push_text("");							\
+   	 push_empty_string();						\
       else								\
    	 push_string(MAKER((void*)(THIS->p+pos),len));			\
    									\
@@ -576,15 +674,14 @@ static void copy_reverse_string1_to_2(unsigned char *d,
 }
 
 #define MAKE_REVERSE_ORDER_STRINGN(N)					\
-   static struct pike_string*						\
-      make_reverse_order_string##N(unsigned char *s,size_t len)		\
+  static struct pike_string *PIKE_CONCAT(make_reverse_order_string, N)	\
+       (unsigned char *s, size_t len)					\
    {									\
-      struct pike_string *ps;						\
-      unsigned char *d;							\
-      ps=begin_wide_shared_string(len,N);				\
-      d = (unsigned char *)ps->str;					\
-      copy_reverse_string##N(ps->str, (unsigned char *)s, len);		\
-      return end_shared_string(ps);					\
+     struct pike_string *ps;						\
+     ps = begin_wide_shared_string(len, N);				\
+     PIKE_CONCAT(copy_reverse_string, N)				\
+       ((unsigned char *) PIKE_CONCAT(STR, N)(ps), s, len);		\
+     return end_shared_string(ps);					\
    }
 
 MAKE_REVERSE_ORDER_STRINGN(1)
@@ -602,6 +699,9 @@ MEMORY_PREADN(memory_pread32,"Memory.pread32",4,make_shared_binary_string2)
 MEMORY_PREADN(memory_pread16i,"Memory.pread16i",2,make_reverse_order_string1)
 MEMORY_PREADN(memory_pread32i,"Memory.pread32i",4,make_reverse_order_string2)
 #endif
+
+MEMORY_PREADN(memory_pread16n,"Memory.pread16n",2,make_shared_binary_string1)
+MEMORY_PREADN(memory_pread32n,"Memory.pread32n",4,make_shared_binary_string2)
 
 /*! @decl int pwrite(int(0..) pos,string data)
  *! @decl int pwrite16(int(0..) pos,string data)
@@ -646,34 +746,34 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 #endif
 
    if (rlen) 
-      switch (ps->size_shift*10 + shift)
+      switch (ps->size_shift*010 + shift)
       {
-	 case 22: /* 2 -> 2 */
+	 case 022: /* 2 -> 2 */
 	    if (reverse)
 	      copy_reverse_string2(d, (unsigned char *)ps->str, ps->len);
 	    else MEMCPY(d,ps->str,ps->len*4);
 	    break;
-	 case 12: /* 1 -> 2 */
+	 case 012: /* 1 -> 2 */
 	    if (reverse)
 	      copy_reverse_string1_to_2(d, (unsigned char *)ps->str, ps->len);
-	    else convert_1_to_2((p_wchar2*)d,(p_wchar1*)ps->str,ps->len);
+	    else convert_1_to_2((p_wchar2*)d, STR1(ps), ps->len);
 	    break;
-	 case 02: /* 0 -> 2 */
+	 case 002: /* 0 -> 2 */
 	    if (reverse)
 	      copy_reverse_string0_to_2(d, (unsigned char *)ps->str, ps->len);
-	    else convert_0_to_2((p_wchar2*)d,ps->str,ps->len);
+	    else convert_0_to_2((p_wchar2*)d, STR0(ps), ps->len);
 	    break;
-	 case 11: /* 1 -> 1 */
+	 case 011: /* 1 -> 1 */
 	    if (reverse)
 	      copy_reverse_string1(d, (unsigned char *)ps->str,ps->len);
 	    else MEMCPY(d,ps->str,ps->len*2);
 	    break;
-	 case 01: /* 0 -> 1 */
+	 case 001: /* 0 -> 1 */
 	    if (reverse)
 	      copy_reverse_string0_to_1(d, (unsigned char *)ps->str,ps->len);
-	    else convert_0_to_1((p_wchar1*)d,ps->str,ps->len);
+	    else convert_0_to_1((p_wchar1*)d, STR0(ps), ps->len);
 	    break;
-	 case 00:
+	 case 000:
 	    MEMCPY(d,ps->str,ps->len);
 	    break;
 	 default:
@@ -702,6 +802,8 @@ PWRITEN(memory_pwrite32,"pwrite32",2,0)
 PWRITEN(memory_pwrite16i,"pwrite16i",1,1)
 PWRITEN(memory_pwrite32i,"pwrite32i",2,1)
 #endif
+PWRITEN(memory_pwrite16n,"pwrite16n",1,0)
+PWRITEN(memory_pwrite32n,"pwrite32n",2,0)
 
 /*! @decl int `[](int pos)
  *! @decl string `[](int pos1,int pos2)
@@ -734,7 +836,7 @@ static void memory_index(INT32 args)
    else
    {
       if (THIS->size==0)
-	 push_text("");
+	 push_empty_string();
       else
       {
 	 INT_TYPE pos1,pos2;
@@ -745,11 +847,11 @@ static void memory_index(INT32 args)
 	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1; 
 	 else rpos2=(size_t)pos2;
 
-	 if (pos2<pos1)
-	    push_text("");
+	 if (rpos2<rpos1)
+	    push_empty_string();
 	 else
-	    push_string(make_shared_binary_string((char *)THIS->p+pos1,
-						  pos2-pos1+1));
+	    push_string(make_shared_binary_string((char *)THIS->p+rpos1,
+						  rpos2-rpos1+1));
       }
    }
    stack_pop_n_elems_keep_top(args);
@@ -768,7 +870,7 @@ static void memory_index_write(INT32 args)
    if (args==2)
    {
       INT_TYPE pos,ch;
-      size_t rpos;
+      size_t rpos = 0;
       get_all_args("Memory.`[]=",args,"%i%i",&pos,&ch);
       if (pos<0) 
 	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
@@ -789,29 +891,22 @@ static void memory_index_write(INT32 args)
    }
    else
    {
-      if (THIS->size==0)
-	 push_text("");
-      else
-      {
-	 INT_TYPE pos1,pos2;
-	 size_t rpos1,rpos2;
-	 struct pike_string *ps;
+     INT_TYPE pos1, pos2;
+     struct pike_string *ps;
 
-	 get_all_args("Memory.`[]=",args,"%i%i%S",&pos1,&pos2,&ps);
-	 if (pos1<0) rpos1=0; else rpos1=(size_t)pos1;
-	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1; 
-	 else rpos2=(size_t)pos2;
+     get_all_args("Memory.`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
 
-	 if (pos2<pos1 ||
-	     ps->len != pos2-pos1+1)
-	    Pike_error("Memory.`[]=: source and destination "
-		       "not equally long (%ld v/s %ld; can't resize memory)\n",
-		       DO_NOT_WARN((long)ps->len),(long)pos2-(long)pos1);
-	 else
-	    MEMCPY(THIS->p+pos1,ps->str,ps->len);
+     if (pos1 < 0) pos1 = 0;
+     if (pos2 < 0) pos2 = 0;
 
-	 ref_push_string(ps);
-      }
+     if ((pos2<pos1) || (ps->len != pos2-pos1+1))
+       Pike_error("Memory.`[]=: source and destination "
+		  "not equally long (%ld v/s %ld; can't resize memory)\n",
+		  DO_NOT_WARN((long)ps->len), (long)pos2-(long)pos1);
+     else
+       MEMCPY(THIS->p+pos1, ps->str, ps->len);
+
+     ref_push_string(ps);
    }
    stack_pop_n_elems_keep_top(args);
 }
@@ -840,6 +935,10 @@ void init_system_memory(void)
 			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
 		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)), 0);
 
+#if defined(HAVE_SYS_SHM_H) || defined(WIN32SHM)
+   ADD_FUNCTION("shmat", memory_shm, tFunc(tInt tInt, tInt), 0 );
+#endif
+
 #ifdef HAVE_MMAP
    ADD_FUNCTION("mmap",memory_mmap,
 		tFunc(tOr(tStr,tObj) 
@@ -851,6 +950,9 @@ void init_system_memory(void)
 
    ADD_FUNCTION("allocate",memory_allocate,
 		tFunc(tIntPos tOr(tByte,tVoid),tVoid),0);
+
+   ADD_FUNCTION("_size_object",memory__size_object,
+                tFunc(tVoid,tInt),0);
    
    ADD_FUNCTION("free",memory_free,tFunc(tVoid,tVoid),0);
 
@@ -874,12 +976,16 @@ void init_system_memory(void)
    ADD_FUNCTION("pread32",memory_pread32,tFunc(tInt tInt,tStr),0);
    ADD_FUNCTION("pread16i",memory_pread16i,tFunc(tInt tInt,tStr),0);
    ADD_FUNCTION("pread32i",memory_pread32i,tFunc(tInt tInt,tStr),0);
+   ADD_FUNCTION("pread16n",memory_pread16n,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pread32n",memory_pread32n,tFunc(tInt tStr,tInt),0);
 
    ADD_FUNCTION("pwrite",memory_pwrite,tFunc(tInt tStr,tInt),0);
    ADD_FUNCTION("pwrite16",memory_pwrite16,tFunc(tInt tStr,tInt),0);
    ADD_FUNCTION("pwrite32",memory_pwrite32,tFunc(tInt tStr,tInt),0);
    ADD_FUNCTION("pwrite16i",memory_pwrite16i,tFunc(tInt tStr,tInt),0);
    ADD_FUNCTION("pwrite32i",memory_pwrite32i,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pwrite16n",memory_pwrite16n,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pwrite32n",memory_pwrite32n,tFunc(tInt tStr,tInt),0);
 
    set_init_callback(init_memory);
    set_exit_callback(exit_memory);
@@ -899,4 +1005,3 @@ void init_system_memory(void)
    ADD_INT_CONSTANT("__MMAP__",1,0);
 #endif
 }
-

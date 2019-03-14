@@ -1,4 +1,4 @@
-// -*- Pike -*-
+START_MARKER
 
 define(test_parser, [[
   define([[WIDENER]], "\0")
@@ -273,6 +273,16 @@ test_parser([[
   p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
   return p->finish("<t a=\"f'o><t>" WIDENER)->read();
 ]], "f'o><t>" WIDENER);
+test_parser([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return p->finish("<t a=b=\"c=d\"='e'=f=g>" WIDENER)->read();
+]], "b=c=d=e=f=g" WIDENER);
+test_parser([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a + " " + a[""]});});
+  return p->finish("<t a=b =\"c=d\"='e'=f=g>" WIDENER)->read();
+]], "b c=d=e=f=g" WIDENER);
 test_parser([[{
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a)
@@ -581,6 +591,41 @@ test_parser([[{
   p->feed ("a<")->feed ("t>")->feed ("b")->feed (WIDENER);
   return !!catch (p->mixed_mode (0)) + p->read();
 }]], "0axb" WIDENER);
+test_parser([[{
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_tag ("t", lambda (object p, mapping a) {return ({1});});
+    return p->clone()->finish("<t>" WIDENER)->read();
+  }]], ({1, WIDENER}));
+test_parser([[{
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->feed ("foo" WIDENER)->feed ("bar");
+    p->mixed_mode (0);
+    p->finish ("gnu");
+    return p->read();
+  }]], "foo" WIDENER "bargnu");
+test_parser(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 31 + WIDENER)->read();
+  ]], ({"x"}) * 31 + ({WIDENER}));
+test_parser(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 32 + WIDENER)->read();
+  ]], ({"x"}) * 32 + ({WIDENER}));
+test_parser(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 33 + WIDENER)->read();
+  ]], ({"x"}) * 33 + ({WIDENER}));
 
 // Matching tags and quotes
 test_parser([[
@@ -1229,4 +1274,50 @@ test_any([[{
 test_parser([[{
   object p = Parser.HTML();
   return p->finish (WIDENER "<x y=")->read();
-}]], WIDENER "<x y=")
+}]], WIDENER "<x y=");
+test_program([[{
+  int i;
+  class X
+  {
+    inherit Parser.HTML;
+    void create() {i++;}
+  }
+  int a()
+  {
+    return !!X()->clone();
+  }
+}]]);
+test_any(
+[[
+  object p = Parser.HTML();
+  p->add_container ("foo", lambda () {return "";});
+  p->_set_data_callback (lambda () {});
+  return p->finish ("<foo>")->read();
+]], "");
+test_any(
+  [[
+    Parser.HTML p1 = Parser.HTML();
+    p1->add_quote_tag ("?", lambda () {return ({"p1"});}, "?");
+    Parser.HTML p2 = p1->clone();
+    p2->add_quote_tag ("?", lambda () {return ({"p2"});}, "?");
+    return p1->finish("<??>")->read();
+  ]], "p1")
+
+test_any([[
+  int|string entity_callback(object parser, string entity, object id, mixed ... extra)
+  {
+    if(entity=="&foobar;")
+    {
+      // return string ending with XML entity will crash:
+      // "&nbsp;" will crash
+      // "&nbsp; " won't crash
+      return "&nbsp;";
+    }
+    return 0;
+  };
+  object my_parser = Parser.HTML();
+  my_parser->_set_entity_callback(entity_callback);
+  return my_parser->finish("<a href=\"mailto:&foobar;\"></a>")->read();
+]], "<a href=\"mailto:&nbsp;\"></a>")
+
+END_MARKER

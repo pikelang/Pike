@@ -1,8 +1,5 @@
 #pike 7.1
 
-local inherit Array;
-local inherit String;
-
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
 int member_array(mixed needle,array(mixed) haystack,int|void start)
@@ -47,10 +44,62 @@ array(string) map_regexp(array(string) s, string reg)
   return s;
 }
 
+// used to be "inherit Array;" in Pike 7.0 Simulate.pmod:
+#define GA(X) constant X = Array.X
+
+GA(sort);
+GA(everynth);
+GA(interleave_array);
+GA(diff);
+GA(diff_longest_sequence);
+GA(diff_compare_table);
+GA(longest_ordered_sequence);
+GA(map);
+GA(filter);
+GA(splice);
+GA(transpose);
+GA(columns);
+GA(reduce);
+GA(rreduce);
+GA(shuffle);
+GA(permute);
+GA(search_array);
+GA(sum_arrays);
+GA(sort_array);
+GA(uniq);
+GA(transpose_old);
+GA(diff3);
+GA(diff3_old);
+GA(dwim_sort_func);
+GA(lyskom_sort_func);
+
+// used to be "inherit String;" in Pike 7.0 Simulate.pmod:
+#define GS(X) constant X = String.X
+
+GS(count);
+GS(width);
+GS(implode_nicely);
+GS(capitalize);
+GS(sillycaps);
+GS(strmult);
+GS(common_prefix);
+GS(String_buffer);
+GS(fuzzymatch);
+GS(trim_whites);
+GS(trim_all_whites);
+
+// used to be "inherit Process;" in Pike 7.0 Simulate.pmod:
 #define GP(X) constant X = Process.X
 
-GP(create_process);
 GP(exec);
+
+#ifndef __NT__
+GP(exece);
+GP(fork);
+GP(Spawn);
+#endif /* !__NT__ */
+
+GP(create_process);
 GP(search_path);
 GP(sh_quote);
 GP(split_quoted_string);
@@ -74,6 +123,6 @@ function l_sizeof = sizeof;
 function listp = multisetp;
 function mklist = mkmultiset;
 function aggregate_list = aggregate_multiset;
-#if efun(gethostname)
+#if constant(gethostname)
 function query_host_name=gethostname;
 #endif

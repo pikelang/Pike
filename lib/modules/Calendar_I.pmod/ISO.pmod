@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // IS-8601, international standard
 
 inherit Calendar_I.Gregorian:Gregorian;
@@ -149,20 +151,18 @@ class Day
    }
 }
 
-static private class _Day
+protected private class _Day
 {
    // FIXME: Kludge because the day object does not exist in
    // Minute and Second. This function will be shadowed in Hour.
    object day()
    {
-      return this_object()->hour()->day();
+      return this->hour()->day();
    }
 }
 
-static private class Name
+protected private class Name
 {
-   object this = this_object();
-
    string iso_name()
    {
       return this->day()->iso_name()+this->_iso_name();
@@ -244,4 +244,3 @@ class Second
       return _iso_name()-":";
    }
 }
-

@@ -1,0 +1,15 @@
+@make_variables@
+VPATH=@srcdir@
+OBJS=sqlite.o
+
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+# Reset the symbol prefix base to the empty string.
+PRECOMPILER_ARGS="--base="
+
+@dynamic_module_makefile@
+
+sqlite.o: $(SRCDIR)/sqlite.c
+
+@dependencies@

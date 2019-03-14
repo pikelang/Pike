@@ -1,16 +1,33 @@
 #pike __REAL_VERSION__
-//
-// Common routines which are useful for various install scripts based on Pike.
-//
 
+//!
+//! Common routines which are useful for various install scripts based on Pike.
+//!
+
+//! Return an array of enabled features.
+//!
+//! @note
+//!   Used by the @[master] when given the option @tt{--features@}.
+//!
+//! @seealso
+//!   @[Tools.Standalone.features]
 array(string) features()
 {
-  array a = ({});
-  
-  if(!_static_modules["Regexp"])
-    a += ({ "dynamic_modules" });
+  array a = ({}), m = ({});
 
-#if efun(thread_create)
+  mapping runtime_info = Pike.get_runtime_info();
+
+  if (runtime_info->auto_bignum)
+    a += ({"auto_bignum"});
+
+  if (!(<"default", "computed_goto">)[runtime_info->bytecode_method])
+    a += ({"machine_code"});
+
+#if constant(load_module)
+  a += ({ "dynamic_modules" });
+#endif
+
+#if constant(thread_create)
   a += ({ "threads" });
 #endif
 
@@ -31,29 +48,68 @@ array(string) features()
   a += ({ "profiling" });
 #endif
 
-  foreach(({ "_Crypto", "Dbm", "GL", "GLUT", "GTK", "Gdbm", "Gmp", "Gz",
-	     "_Image_FreeType", "_Image_GIF", "_Image_JPEG", "_Image_TIFF",
-	     "_Image_TTF", "_Image_XFace", "Image.PNG", "Java", "Mird",
-	     "Msql", "Mysql", "Odbc", "Oracle", "PDF", "Perl", "Postgres",
-	     "SANE", "Ssleay", "Yp", "sybase", "_WhiteFish", "X" }),
+#if constant(_debug)
+  a += ({ "rtl_debug" });
+#endif
+
+#if 0
+  // No use reporting stuff that always exists. This list is for
+  // things that might not be compiled in due to configure options,
+  // missing libs, etc. /mast
+  m += ({ "PostgresNative" });
+#endif
+
+  foreach(({ "Nettle", "Dbm", "DVB", "_Ffmpeg", "GL", "GLUT", "GTK1", "Gdbm",
+	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
+             "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",
+	     "Java.machine", "Mird", "Msql", "Mysql", "Odbc", "Oracle",
+	     "PDF.PDFlib", "Perl",
+             "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
+	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
+	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE", "GSSAPI",
+	     "Protocols.DNS_SD", "Gnome2", "MIME", "_PGsql", "Standards.JSON",
+	     "VCDiff", "ZXID" }),
 	  string modname)
   {
     catch
     {
-      if(([ "Java":2 ])[modname] <
-	 sizeof(indices(master()->resolv(modname) || ({})) -
+      object tmp;
+      if(sizeof(indices((tmp = master()->resolv(modname)) || ({})) -
 		({ "dont_dump_module" })))
       {
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
-	a += ({ modname });
+	m += ({ (["Java.machine":"Java"])[modname] || modname });
+
+	if (modname == "Mysql") {
+	  // Check taste of Mysql client library.
+	  //
+	  // Classic:	"MySQL (Copyright Abandoned)/3.23.49"
+	  // Mysql GPL:	"MySQL Community Server (GPL)/5.5.30"
+	  // MariaDB:	"MySQL (Copyright Abandoned)/5.5.0"
+	  string client_ver = tmp["client_info"] && tmp["client_info"]();
+	  string license = "Unknown";
+	  string version = "Unknown";
+	  sscanf(client_ver, "%*s(%s)/%s", license, version);
+	  if ((license == "Copyright Abandoned") && (version > "5")) {
+	    m += ({ "MariaDB" });
+	  }
+	}
       }
     };
   }
 
-  return a;
+  foreach (({"Regexp.PCRE.Widestring", "Java.NATIVE_METHODS"}), string symbol)
+    catch {
+      if (!zero_type(all_constants()[symbol]) ||
+	  !zero_type(master()->resolv(symbol)))
+	m += ({symbol});
+    };
+
+  return a + sort (m);
 }
 
+//!
 string make_absolute_path(string path, string|void cwd)
 {
 #if constant(getpwnam)
@@ -79,6 +135,8 @@ string make_absolute_path(string path, string|void cwd)
   return path;
 }
 
+//! A class keeping some methods and state to conveniently render
+//! ASCII progress bars to stdout.
 class ProgressBar
 {
   private int width = 45;
@@ -87,49 +145,64 @@ class ProgressBar
   private int max, cur;
   private string name;
 
+  //! Change the amount of progress without updating on stdout.
   void set_current(int _cur)
   {
     cur = _cur;
   }
 
+  //! Change the name of the progress bar without updating on stdout.
   void set_name(string _name)
   {
     name = _name;
   }
-  
+
+  //!
   void set_phase(float _phase_base, float _phase_size)
   {
     phase_base = _phase_base;
     phase_size = _phase_size;
   }
-  
-  void update(int increment)
+
+  //! Write the current look of the progressbar to stdout.
+  //! @param increment
+  //!   the number of increments closer to completion since last call
+  //! @returns
+  //!   the length (in characters) of the line with the progressbar
+  int update(int increment)
   {
     cur += increment;
     cur = min(cur, max);
-    
+
     float ratio = phase_base + ((float)cur/(float)max) * phase_size;
     if(1.0 < ratio)
       ratio = 1.0;
-    
+
     int bar = (int)(ratio * (float)width);
     int is_full = (bar == width);
 
     // int spinner = (max < 2*width ? '=' : ({ '\\', '|', '/', '-' })[cur&3]);
     int spinner = '=';
-    
-    write("\r   %-13s |%s%c%s%s %4.1f %%  ",
-	  name+":",
-	  "="*bar,
-	  is_full ? '|' : spinner,
-	  is_full ? "" : " "*(width-bar-1),
-	  is_full ? "" : "|",
-	  100.0 * ratio);
+
+    return write("\r   %-13s |%s%c%s%s %4.1f %%  ",
+		 name+":",
+		 "="*bar,
+		 is_full ? '|' : spinner,
+		 is_full ? "" : " "*(width-bar-1),
+		 is_full ? "" : "|",
+		 100.0 * ratio) - 1;
   }
 
+  //! @decl void create(string name, int cur, int max, float|void phase_base,@
+  //!                   float|void phase_size)
+  //! @param name
+  //! The name (printed in the first 13 columns of the row)
+  //! @param cur
+  //! How much progress has been made so far
+  //! @param max
+  //! The amount of progress signifying 100% done. Must be greater than zero.
   void create(string _name, int _cur, int _max,
 	      float|void _phase_base, float|void _phase_size)
-    /* NOTE: max must be greater than zero. */
   {
     name = _name;
     max = _max;
@@ -140,6 +213,7 @@ class ProgressBar
   }
 }
 
+//!
 class Readline
 {
   inherit Stdio.Readline;
@@ -147,6 +221,7 @@ class Readline
   private int match_directories_only;
   private string cwd;
 
+  //!
   void trap_signal(int n)
   {
     werror("\r\nInterrupted, exit.\r\n");
@@ -160,7 +235,7 @@ class Readline
     signal(signum("SIGINT"));
   }
 
-  static private string low_edit(string data, string|void local_prompt,
+  protected private string low_edit(string data, string|void local_prompt,
 				 array(string)|void attrs)
   {
     string r = ::edit(data, local_prompt, (attrs || ({})) | ({ "bold" }));
@@ -173,12 +248,14 @@ class Readline
     }
     return r;
   }
-  
+
+  //!
   string edit(mixed ... args)
   {
     return low_edit(@args);
   }
-  
+
+  //!
   string edit_filename(mixed ... args)
   {
     match_directories_only = 0;
@@ -189,7 +266,8 @@ class Readline
     
     return s;
   }
-  
+
+  //!
   string edit_directory(mixed ... args)
   {
     match_directories_only = 1;
@@ -200,8 +278,8 @@ class Readline
     
     return s;
   }
-  
-  static private string file_completion(string tab)
+
+  protected private string file_completion(string tab)
   {
     string text = gettext();
     int pos = getcursorpos();
@@ -209,13 +287,13 @@ class Readline
     array(string) path = make_absolute_path(text[..pos-1], cwd)/"/";
     array(string) files =
       glob(path[-1]+"*",
-	   get_dir(sizeof(path)>1? path[..sizeof(path)-2]*"/"+"/":".")||({}));
+	   get_dir(sizeof(path)>1? path[..<1]*"/"+"/":".")||({}));
 
     if(match_directories_only)
       files = Array.filter(files, lambda(string f, string p)
-				  { return (file_stat(p+f)||({0,0}))[1]==-2; },
-			   path[..sizeof(path)-2]*"/"+"/");
-    
+				  { return Stdio.is_dir(p + f); },
+			   path[..<1]*"/"+"/");
+
     switch(sizeof(files))
     {
     case 0:
@@ -223,7 +301,7 @@ class Readline
       break;
     case 1:
       insert(files[0][sizeof(path[-1])..], pos);
-      if((file_stat((path[..sizeof(path)-2]+files)*"/")||({0,0}))[1]==-2)
+      if( Stdio.is_dir( (path[..<1]+files) * "/" ) )
 	insert("/", getcursorpos());
       break;
     default:
@@ -241,16 +319,18 @@ class Readline
     }
   }
 
+  //!
   string absolute_path(string path)
   {
     return make_absolute_path(path, cwd && combine_path(getcwd(), cwd));
   }
-   
+
+  //!
   void set_cwd(string _cwd)
   {
     cwd = _cwd;
   }
-  
+
   void create(mixed ... args)
   {
     signal(signum("SIGINT"), trap_signal);

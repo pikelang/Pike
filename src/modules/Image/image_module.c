@@ -1,21 +1,29 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.12 2001/09/24 11:11:57 grubba Exp $");
+#include "module.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
 #include "program_id.h"
 #include "object.h"
 #include "operators.h"
+#include "module_support.h"
 
 #include "image.h"
 #include "assembly.h"
 #include "image_machine.h"
 
-/* This must be included last! */
-#include "module_magic.h"
+#include "encodings/encodings.h"
 
+#define sp Pike_sp
+#define fp Pike_fp
 
 #define IMAGE_INITER
 
@@ -93,7 +101,7 @@ static inline long TO_LONG(ptrdiff_t x)
 #ifdef PIKE_DEBUG
 #define IMAGE_CHECK_STACK(X)	do { \
     if (save_sp != sp) { \
-      fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
+      Pike_fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
             __FILE__, __LINE__, TO_LONG(sp - save_sp), X); \
     } \
   } while(0)
@@ -106,9 +114,9 @@ static void image_magic_index(INT32 args)
 {
    int i;
 
-   if (args!=1) 
+   if (args!=1)
       Pike_error("Image.`[]: Too few or too many arguments\n");
-   if (sp[-1].type!=T_STRING)
+   if (TYPEOF(sp[-1]) != T_STRING)
       Pike_error("Image.`[]: Illegal type of argument\n");
 
    for (i=0; i<(int)NELEM(submagic); i++)
@@ -126,11 +134,13 @@ static void image_magic_index(INT32 args)
 	 if (!submagic[i].o)
 	 {
 	    struct program *p;
+	    enter_compiler(submagic[i].ps, 0);
 	    start_new_program();
 	    (submagic[i].init)();
 	    IMAGE_CHECK_STACK(submagic[i].name);
 	    p=end_program();
 	    p->id = PROG_IMAGE_SUBMAGIC_START+i;
+	    exit_compiler();
 	    submagic[i].o=clone_object(p,0);
 	    free_program(p);
 	 }
@@ -144,23 +154,21 @@ static void image_magic_index(INT32 args)
    stack_swap();
    f_arrow(2);
 
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       pop_stack();
       stack_dup();
-      push_text("_Image_");
+      push_constant_text("_Image_");
       stack_swap();
       f_add(2);
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
+      SAFE_APPLY_MASTER("resolv",1);
    }
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       pop_stack();
       stack_dup();
-      push_text("_Image");
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
+      push_constant_text("_Image");
+      SAFE_APPLY_MASTER("resolv",1);
       stack_swap();
       f_index(2);
    }
@@ -226,7 +234,7 @@ static void init_cpuidflags( )
 }
 #endif
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
    char type_of_index[]=
       tFunc(tStr,tOr3(tObj,tPrg(tObj),""))
@@ -298,13 +306,14 @@ void pike_module_init(void)
    quick_add_function("`[]",3,image_magic_index,
 		      type_of_index,CONSTANT_STRLEN(type_of_index),0,0);
 
-   /* compat stuff */
-   add_program_constant("font",image_font_program,0); 
-   add_program_constant("image",image_program,0); 
-   add_program_constant("colortable",image_colortable_program,0);
+#ifndef FAKE_DYNAMIC_LOAD
+   PIKE_MODULE_EXPORT(Image, image_program );
+   PIKE_MODULE_EXPORT(Image, image_colortable_program);
+   PIKE_MODULE_EXPORT(Image, image_layer_program );
+#endif
 }
 
-void pike_module_exit(void) 
+PIKE_MODULE_EXIT
 {
    int i;
    for (i=0; i<(int)NELEM(initclass); i++)

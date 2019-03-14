@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -134,7 +140,7 @@ void my_uncompress(char *file,int argc, char **argv)
 	putenv(buffer);
 	break;
 	
-      case 's': /* execute */
+      case 's': /* system */
 	/* We ignore error so that we can continue with
 	 * file deletion
 	 */
@@ -278,7 +284,6 @@ int main(int argc, char **argv)
     if(next!=pos)
     {
       char *ptr=tmp;
-      struct stat buf;
 
       memcpy(ptr=tmp,pos,next-pos);
       ptr+=next-pos;

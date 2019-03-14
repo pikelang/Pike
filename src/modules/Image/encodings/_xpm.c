@@ -1,44 +1,31 @@
-#include "global.h"
-RCSID("$Id: _xpm.c,v 1.17 2001/06/13 12:57:12 grubba Exp $");
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
+#include "global.h"
 #include "image_machine.h"
 
 #include "interpret.h"
 #include "svalue.h"
-#include "pike_macros.h"
-#include "object.h"
 #include "program.h"
-#include "array.h"
 #include "pike_error.h"
-#include "constants.h"
-#include "mapping.h"
 #include "stralloc.h"
-#include "multiset.h"
-#include "pike_types.h"
-#include "rusage.h"
 #include "operators.h"
-#include "fsort.h"
-#include "callback.h"
-#include "backend.h"
-#include "main.h"
-#include "pike_memory.h"
 #include "threads.h"
-#include "time_stuff.h"
-#include "version.h"
-#include "encode.h"
 #include "module_support.h"
-#include "module.h"
-#include "opcodes.h"
-#include "cyclic.h"
-#include "signal_handler.h"
-#include "security.h"
-
 
 #include "image.h"
 #include "colortable.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
+
+#define sp Pike_sp
+
+/*! @module Image
+ *!
+ *! @module _XPM
+ */
 
 extern struct program *image_program;
 
@@ -95,18 +82,14 @@ static rgba_group decode_color( struct buffer *s )
   } 
   if(s->len==4&&(!strncmp(s->str,"None",4)||!strncmp(s->str,"none",4)))
   {
+    res.r = res.g = res.b = 0;
     res.alpha = 0;
     return res;
   }
   if(!parse_color)
   {
-    push_text("Image");
-    push_int(0);
-    SAFE_APPLY_MASTER( "resolv", 2 );
-    if(IS_ZERO(sp-1)) Pike_error("Internal error: No Image module!\n");
-    push_text("Color");
-    f_index(2);
-    if(IS_ZERO(sp-1)) Pike_error("Internal error: No Image[] function!\n");
+    push_text("Image.Color");
+    SAFE_APPLY_MASTER( "resolv_or_error", 1 );
     _parse_color = sp[-1];
     parse_color = &_parse_color;
     sp--;
@@ -114,14 +97,14 @@ static rgba_group decode_color( struct buffer *s )
   push_svalue( parse_color );
   push_string(make_shared_binary_string(s->str,s->len));
   f_index( 2 );
-  if(sp[-1].type != T_OBJECT) {
+  if(TYPEOF(sp[-1]) != T_OBJECT) {
     push_int(0);
     stack_swap();
   } else {
     push_constant_text( "array" );
     apply( sp[-2].u.object, "cast", 1 );
   }
-  if(sp[-1].type == T_ARRAY && sp[-1].u.array->size == 3)
+  if(TYPEOF(sp[-1]) == T_ARRAY && sp[-1].u.array->size == 3)
   {
     res.r = sp[-1].u.array->item[0].u.integer;
     res.g = sp[-1].u.array->item[1].u.integer;
@@ -219,6 +202,37 @@ unsigned short extract_short( unsigned char *b )
   return (b[0]<<8)|b[1];
 }
 
+/*! @decl int(0..0) _xpm_write_rows(Image.Image img, Image.Image alpha, @
+ *!                 int bpc, array(string) colors, array(string) pixels)
+ *!
+ *! Fills in @[img] and @[alpha] according to xpm data in @[bpc], @[colors]
+ *! and @[pixels].
+ *!
+ *! @param bpc
+ *!   Bytes per color. Number of bytes used to encode each color in @[pixels].
+ *!
+ *! @param colors
+ *!   Array of color definitions.
+ *!
+ *!   A color definition is on the format @tt{"ee c #RRGGBB"@},
+ *!   where @tt{ee@} is a @[bpc] long string used to encode the color,
+ *!   @tt{c@} is a literal @tt{"c"@}, and @tt{RRGGBB@} is a hexadecimal
+ *!   RGB code.
+ *!
+ *! @param pixels
+ *!   Raw picture information.
+ *!
+ *!   @array pixels
+ *!     @elem string 0
+ *!       Size information on the format
+ *!         (@expr{sprintf("%d %d %d %d", h, w, ncolors, bpn)@}).
+ *!     @elem string 1..ncolors
+ *!       Same as @[colors].
+ *!     @elem string ncolors_plus_one..ncolors_plus_h
+ *!       Line information. Strings of length @[bpn]*w with encoded
+ *!       pixels for each line.
+ *!   @endarray
+ */
 void f__xpm_write_rows( INT32 args )
 {
   struct object *img;
@@ -229,13 +243,51 @@ void f__xpm_write_rows( INT32 args )
   rgb_group *dst, *adst;
   INT_TYPE y,x,  bpc;
 
-  get_all_args("_xpm_write_rows",args,"%o%o%d%a%a",
+  get_all_args("_xpm_write_rows",args,"%o%o%i%a%a",
                &img,&alpha,&bpc,&colors,&pixels);
+
+#if 0
+  fprintf(stderr, "_xpm_write_rows(");
+  print_svalue(stderr, Pike_sp-5);
+  fprintf(stderr, ", ");
+  print_svalue(stderr, Pike_sp-4);
+  fprintf(stderr, ", ");
+  print_svalue(stderr, Pike_sp-3);
+  fprintf(stderr, ", ");
+  print_svalue(stderr, Pike_sp-2);
+  fprintf(stderr, ", ");
+  print_svalue(stderr, Pike_sp-1);
+  fprintf(stderr, ")\n");
+#endif /* 0 */
 
   iimg = (struct image *)get_storage( img, image_program );
   ialpha = (struct image *)get_storage( alpha, image_program );
   if(!iimg || !ialpha)
-    Pike_error("Sluta pilla på interna saker..\n");
+    Pike_error("Expected images as arguments\n");
+
+  if (pixels->size < iimg->ysize + colors->size) {
+    SIMPLE_ARG_ERROR("_xpm_write_rows", 5, "pixel array is too short.");
+  }
+
+  for(y = 0; y < iimg->ysize + colors->size + 1; y++) {
+    if ((TYPEOF(pixels->item[y]) != T_STRING) ||
+	(pixels->item[y].u.string->size_shift)) {
+      SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
+		       "Pixel array contains elements other than 8bit strings.");
+    }
+    if (y < colors->size) {
+      if ((TYPEOF(colors->item[y]) != T_STRING) ||
+	  (pixels->item[y].u.string->size_shift)) {
+	SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
+			 "Color array contains elements other than 8bit strings.");
+      }
+    } else if (y > colors->size) {
+      if (pixels->item[y].u.string->len < iimg->xsize*bpc) {
+	SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
+			 "Pixel array contains too short string (bad bpc?).");
+      }
+    }
+  }
 
   dst = iimg->img;
   adst = ialpha->img;
@@ -258,7 +310,7 @@ void f__xpm_write_rows( INT32 args )
           adst++;
         } else {
           dst++;
-          adst->r = adst->g = adst->b = color.alpha;
+          adst->r = adst->g = adst->b = 0;
 	  adst++;
         }
       }
@@ -268,8 +320,7 @@ void f__xpm_write_rows( INT32 args )
    {
      rgba_group **p_colors;
      int i;
-     p_colors = (rgba_group **)xalloc(sizeof(rgba_group *)*65536);
-     MEMSET(p_colors, 0, sizeof(rgba_group *)*65536);
+     p_colors = xcalloc(sizeof(rgba_group *), 65536);
      for(i=0; i<colors->size; i++)
      {
        struct pike_string *c = colors->item[i].u.string;
@@ -277,13 +328,12 @@ void f__xpm_write_rows( INT32 args )
        unsigned short id = extract_short((unsigned char *)c->str);
        if(!p_colors[id])
        {
-         p_colors[id] = (rgba_group *)xalloc(sizeof(rgba_group)*128);
-         MEMSET(p_colors[id],0,sizeof(rgba_group)*128);
+         p_colors[id] = xcalloc(sizeof(rgba_group), 128);
        }
        if(ind > 127) 
        {
-         p_colors[id] = (rgba_group *)realloc(p_colors[id],sizeof(rgba_group)*256);
-         MEMSET(p_colors[id]+sizeof(rgba_group)*128,0,sizeof(rgba_group)*128);
+         p_colors[id] = realloc(p_colors[id],sizeof(rgba_group)*256);
+         MEMSET(p_colors[id]+128, 0, sizeof(rgba_group)*128);
        }
        p_colors[id][ind]=parse_color_line( c, bpc );
      }
@@ -379,17 +429,19 @@ void f__xpm_write_rows( INT32 args )
   push_int(0);
 }
 
+/*! @decl array(string) _xpm_trim_rows(array(string) rows)
+ */
 void f__xpm_trim_rows( INT32 args )
 {
   struct array *a;
   int i,j=0;
-  get_all_args("___", args, "%a", &a );
+  get_all_args("_xpm_trim_rows", args, "%a", &a );
   for(i=0; i<a->size; i++)
   {
     int len,start;
     struct pike_string *s = a->item[i].u.string;
-    if(a->item[i].type != T_STRING)
-      Pike_error("Ajabaja\n");
+    if(TYPEOF(a->item[i]) != T_STRING)
+      Pike_error("Array must be array(string).\n");
     if(s->len > 4)
     {
       for(start=0; start<s->len; start++)
@@ -409,10 +461,17 @@ void f__xpm_trim_rows( INT32 args )
   pop_n_elems(args-1);
 }
 
+/*! @endmodule
+ *!
+ *! @endmodule
+ */
+
 void init_image__xpm( )
 {
-   add_function( "_xpm_write_rows", f__xpm_write_rows, "mixed", 0); 
-  add_function( "_xpm_trim_rows", f__xpm_trim_rows, "mixed", 0);
+   ADD_FUNCTION( "_xpm_write_rows", f__xpm_write_rows,
+		 tFunc(tObj tObj tInt tArr(tStr) tArr(tStr), tInt), 0);
+   ADD_FUNCTION( "_xpm_trim_rows", f__xpm_trim_rows,
+		 tFunc(tArr(tStr),tArr(tStr)), 0);
 }
 
 void exit_image__xpm(void)

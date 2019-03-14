@@ -1,0 +1,21 @@
+diff -U3 -Narp 7.7.orig/bin/install.pike 7.7/bin/install.pike
+--- 7.7.orig/bin/install.pike	2006-08-09 01:30:49.000000000 +0200
++++ 7.7/bin/install.pike	2006-08-09 02:10:46.491927373 +0200
+@@ -2031,7 +2031,7 @@ int pre_install(array(string) argv)
+       exec_prefix=combine_path(prefix,"bin");
+       lib_prefix=combine_path(prefix,"lib");
+       doc_prefix=combine_path(prefix,"doc");
+-      include_prefix=combine_path(prefix,"include","pike");
++      include_prefix=vars->include_prefix||combine_path(prefix,"include","pike");
+       man_prefix=combine_path(prefix,"man");
+       if (export) {
+ 	low_install_file(combine_path(vars->TMP_BINDIR,"install.pike"),
+@@ -2050,7 +2050,7 @@ int pre_install(array(string) argv)
+     prefix = getcwd();
+     exec_prefix = combine_path(prefix, "bin");
+     lib_prefix = combine_path(prefix, "lib");
+-    include_prefix = combine_path(prefix,"include","pike");
++    include_prefix = vars->include_prefix||combine_path(prefix,"include","pike");
+     make_master("lib/master.pike", "lib/master.pike.in",
+ 		lib_prefix, include_prefix);
+     status1("Installing master done.");

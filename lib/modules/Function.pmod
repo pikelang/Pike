@@ -2,24 +2,24 @@
 
 constant defined = __builtin.function_defined;
 
-//! Calls the given function with the @tt{args@} array plus the optional
+//! Calls the given function with the @[args] array plus the optional
 //! extra arguments as its arguments and returns the result.
 //!
-//! Most useful in conjunction with @ref{map@}, and particularly in combination
-//! with @ref{sscanf@} with @tt{"...%{...%}..."@} scan strings (which indeed
+//! Most useful in conjunction with @[map], and particularly in combination
+//! with @[sscanf] with @expr{"...%{...%}..."@} scan strings (which indeed
 //! was what it was invented for in the first place).
 //!
 //! @param args
-//!  The first arguments the function @tt{f@} expects
+//!  The first arguments the function @[f] expects.
 //! @param f
-//!  The function to apply the arguments on
+//!  The function to apply the arguments on.
 //! @param extra
-//!  Optional extra arguments to send to @tt{f@}
+//!  Optional extra arguments to send to @[f].
 //! @returns
-//!  Whatever the supplied function @tt{f@} returns
+//!  Whatever the supplied function @[f] returns.
 //!
 //! @example
-//!   @code{
+//! @code
 //!   class Product(string name, string version)
 //!   {
 //!     string _sprintf()
@@ -34,8 +34,83 @@ constant defined = __builtin.function_defined;
 //!	 Product(pike/7.1.11),
 //!	 Product(whitefish/0.1)
 //!   })
-//!   @}
+//! @endcode
 mixed splice_call(array args, function f, mixed|void ... extra)
 {
   return f(@args, @extra);
 }
+
+
+//! The dreaded fixpoint combinator "Y".
+//!
+//! The Y combinator is useful when writing recursive lambdas.  It
+//! converts a lambda that expects a self-reference as its first argument
+//! into one which can be called without this argument.
+//!
+//! @example
+//! This example creates a lambda that computes the faculty function.
+//! @code
+//!   Function.Y(lambda(function f, int n) { return n>1? n*f(n-1) : 1; })
+//! @endcode
+function Y(function f)
+{
+  return lambda(function p) {
+	   return lambda(mixed ... args) {
+		    return f(p(p), @args);
+		  };
+	 } (lambda(function p) {
+	      return lambda(mixed ... args) {
+		       return f(p(p), @args);
+		     };
+	    });
+}
+
+
+//! Partially evaluate a function call.
+//!
+//! This function allows N parameters to be given to a function taking
+//! M parameters (N<=M), yielding a new function taking M-N parameters.
+//!
+//! What is actually returned from this function is a function taking N
+//! parameters, and returning a function taking M-N parameters.
+//!
+//! @example
+//! This example creates a function adding 7 to its argument.
+//! @code
+//!   Function.curry(`+)(7)
+//! @endcode
+function(mixed...:function(mixed...:mixed|void)) curry(function f)
+{
+  return lambda(mixed ... args1) {
+	   return lambda(mixed ... args2) {
+		    return f(@args1, @args2);
+		  };
+	 };
+}
+
+
+//! Call a callback function, but send throws from the callback
+//! function (ie, errors) to master()->handle_error.
+//! Also accepts if f is zero (0) without error.
+//!
+//! @example
+//! @code
+//!   Functions.call_callback(the_callback,some,arguments);   
+//! @endcode
+//! equals 
+//! @code
+//!   {
+//!      mixed err=catch { if (the_callback) the_callback(some,arguments); };
+//!      if (err) master()->handle_error(err);
+//!   }
+//! @endcode
+//! (Approximately, since call_callback also calls handle_error
+//! if 0 were thrown.)
+void call_callback(function f,mixed ... args)
+{
+   if (!f) return;
+   mixed err=catch { f(@args); return; };
+   handle_error(err);
+}
+
+function handle_error = master()->handle_error;

@@ -1,11 +1,10 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-/**/
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.14 2001/09/24 16:47:27 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -20,8 +19,7 @@ RCSID("$Id: iterators.cmod,v 1.14 2001/09/24 16:47:27 grubba Exp $");
 #include "las.h"
 #include "gc.h"
 #include "stralloc.h"
-#include "security.h"
-#include "block_alloc.h"
+#include "pike_security.h"
 #include "opcodes.h"
 #include "pike_error.h"
 #include "program.h"
@@ -29,8 +27,265 @@ RCSID("$Id: iterators.cmod,v 1.14 2001/09/24 16:47:27 grubba Exp $");
 #include "builtin_functions.h"
 #include "constants.h"
 
+#define sp Pike_sp
+
 DECLARATIONS
 
+/*! @class Iterator
+ *!
+ *! This is the interface for iterator objects. They implement an
+ *! interface to a collection or stream of data items and a cursor
+ *! that can be used to iterate over and examine individual items in
+ *! the data set.
+ *!
+ *! Iterators are typically created to access a data set in some
+ *! specific object, array, mapping, multiset or string. An object can
+ *! have several iterators that access different data sets in it, or
+ *! the same in different ways. E.g. strings have both an iterator for
+ *! access char-by-char (@[String.Iterator]), and another for access
+ *! over splitted substrings (@[String.SplitIterator]).
+ *! @[lfun::_get_iterator] may be defined in an object to get an
+ *! instance of the canonical iterator type for it. It's used by e.g.
+ *! @[foreach] to iterate over objects conveniently.
+ *!
+ *! It's not an error to advance an iterator past the beginning or end
+ *! of the data set; @[`!()] will only return true then, and @[index]
+ *! and @[value] will return @[UNDEFINED]. An iterator in that state
+ *! need not keep track of positions, so it's undefined what happens
+ *! if it's "moved back" into the set of items.
+ *!
+ *! Backward movement for iterators is optional. It's supported if and
+ *! only if @[`-()] is defined, but even then it's undefined how far
+ *! back the iterator can move. Therefore iterators may support only a
+ *! limited amount of backward movement, e.g. when they access a
+ *! stream through a limited buffer. If such an iterator is moved back
+ *! past the limit then it'll behave as if it's pointing entirely
+ *! outside the data set (see above).
+ *!
+ *! An iterator that doesn't support backward movement at all should
+ *! throw an error if it's attempted.
+ *!
+ *! @seealso
+ *!   @[predef::get_iterator], @[lfun::_get_iterator],
+ *!   @[Array.Iterator], @[Mapping.Iterator], @[Multiset.Iterator],
+ *!   @[String.Iterator], @[String.SplitIterator].
+ */
+
+PIKECLASS Iterator
+{
+  /*! @decl void create (void|mixed data)
+   *!
+   *! Initialize this iterator to access a data set in @[data]. The
+   *! type of @[data] is specific to the iterator implementation. An
+   *! iterator may also access some implicit data set, in which case
+   *! @[data] isn't specified at all.
+   *!
+   *! The iterator initially points to the first item in the data set,
+   *! if there is any.
+   *!
+   *! The iterator does not need to support being reused, so this
+   *! function is typically declared @expr{protected@}.
+   */
+  PIKEFUN void create(void|mixed data)
+    flags ID_PROTECTED;
+    prototype;
+  {}
+
+  /*! @decl int(0..1) `!()
+   *!
+   *! Returns @expr{0@} (zero) when the iterator points to an item,
+   *! @expr{1@} otherwise.
+   */
+  PIKEFUN int(0..1) `!()
+    flags ID_PROTECTED;
+    prototype;
+  {}
+
+  /*! @decl optional Iterator `+ (int steps)
+   *!
+   *! Returns a clone of this iterator which is advanced the specified
+   *! number of steps. The amount may be negative to move backwards.
+   *! If the iterator doesn't support backward movement it should
+   *! throw an exception in that case.
+   *!
+   *! @seealso
+   *!   @[next], @[`+=], @[`-]
+   */
+  PIKEFUN Iterator `+(int steps)
+    flags ID_PROTECTED|ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl optional Iterator `+= (int steps)
+   *!
+   *! Advance this iterator the specified number of steps and return
+   *! it. The amount may be negative to move backwards. If the
+   *! iterator doesn't support backward movement it should throw an
+   *! exception in that case.
+   *!
+   *! @note
+   *!   @[foreach] calls this function with a step value of @expr{1@}
+   *!   if @[next()] doesn't exist for compatibility with Pike 7.6
+   *!   and earlier.
+   *!
+   *! @note
+   *!   @[foreach] will call this function even when the the
+   *!   iterator has more than one reference. If you want to
+   *!   loop over a copy of the iterator, you can create a
+   *!   copy by adding @expr{0@} (zero) to it:
+   *!   @code
+   *!     Iterator iterator;
+   *!     ...
+   *!     foreach(iterator+0; mixed index; mixed value) {
+   *!       ...
+   *!     }
+   *!   @endcode
+   *!
+   *! @note
+   *!   Even though this function is sufficient for @[foreach] to
+   *!   advance the iterator, @[next()] is the preferred API.
+   *!   @[next()] has the additional advantage of not being an
+   *!   lfun, so it is possible to advance the iterator by hand.
+   *!
+   *! @seealso
+   *!   @[next], @[`+], @[`-]
+   */
+  PIKEFUN Iterator `+=(int steps)
+    prototype;
+    flags ID_PROTECTED|ID_OPTIONAL;
+  {}
+
+  /*! @decl optional Iterator `- (int steps)
+   *!
+   *! This lfun should be defined if and only if the iterator supports
+   *! backward movement to some degree. It should back up the
+   *! specified number of steps. The amount may be negative to move
+   *! forward.
+   *!
+   *! @seealso
+   *!   @[next], @[`+], @[`+=]
+   */
+  PIKEFUN int(0..1) `-(int steps)
+    flags ID_PROTECTED|ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl mixed index()
+   *!
+   *! Returns the current index, or @[UNDEFINED] if the iterator
+   *! doesn't point to any item.
+   *!
+   *! If there's no obvious index set then the index is the current
+   *! position in the data set, counting from @expr{0@} (zero).
+   */
+  PIKEFUN mixed index()
+    prototype;
+  {}
+
+  /*! @decl mixed value()
+   *!
+   *! Returns the current value, or @[UNDEFINED] if the iterator
+   *! doesn't point to any item.
+   */
+  PIKEFUN mixed value()
+    prototype;
+  {}
+
+  /*! @decl optional int _sizeof()
+   *!
+   *! Returns the total number of items in the data set according to
+   *! this iterator. If the size of the data set is unlimited or
+   *! unknown then this function shouldn't be defined.
+   */
+  PIKEFUN int _sizeof()
+    flags ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl optional void _random()
+   *!
+   *! If this function is defined then it sets the iterator to point
+   *! to a random item in the accessible set. The random distribution
+   *! should be rectangular within that set, and the pseudorandom
+   *! sequence provided by @[random] should be used.
+   */
+  PIKEFUN void _random()
+    flags ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl optional int(0..1) first()
+   *!
+   *! If this function is defined then it resets the iterator to point
+   *! to the first item.
+   *!
+   *! @returns
+   *!   Returns zero if there are no items at all in
+   *!   the data set, one otherwise.
+   *!
+   *! @note
+   *!   It's not enough to set the iterator to the earliest accessible
+   *!   item. If the iterator doesn't support backing up to the
+   *!   original start position then this function should not be
+   *!   implemented.
+   */
+  PIKEFUN int(0..1) first()
+    flags ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl int next()
+   *!
+   *! If this function is defined it should advance the iterator one
+   *! step, just like @expr{@[`+=](1)@} would do.
+   *!
+   *! @note
+   *!   This is the preferred way to advance the iterator, since it
+   *!   reduces the overhead.
+   *!
+   *! @note
+   *!   This function was optional in Pike 7.6 and earlier.
+   *!
+   *! @returns
+   *!   Returns @tt{1@} if it succeeded in advancing, and
+   *!   @tt{0@} (zero) if it has reached the end of the iterator.
+   *!
+   *! @seealso
+   *!   @[`+], @[`+=], @[`-]
+   */
+  PIKEFUN int(0..1) next()
+    prototype;
+  {}
+
+  /*! @decl optional void set_index(zero index)
+   *!
+   *! If this function is defined it should set the iterator at
+   *! the specified index.
+   *!
+   *! @note
+   *!   It should be possible to set the index at the end of
+   *!   the iterator.
+   */
+  PIKEFUN void set_index(zero index)
+    flags ID_OPTIONAL;
+    prototype;
+  {}
+}
+
+/*! @endclass
+ */
+
+/*! @module Mapping
+ */
+/*! @class Iterator
+ *! @inherit predef::Iterator
+ *!
+ *!   An object of this class is returned by @[get_iterator()] when
+ *!   called with a mapping.
+ *!
+ *! @seealso
+ *!   @[get_iterator]
+ */
 PIKECLASS mapping_iterator
 {
   /* All variables *must* be before all functions! */
@@ -45,8 +300,7 @@ PIKECLASS mapping_iterator
 	push_svalue(& THIS->current->val);
       else
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }
     }
 
@@ -56,19 +310,43 @@ PIKECLASS mapping_iterator
 	push_svalue(& THIS->current->ind);
       else
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }
     }
 
+  PIKEFUN int _sizeof()
+    flags ID_STATIC;
+  {
+    if (THIS->md) {
+      push_int(THIS->md->size);
+    } else
+      push_undefined();
+  }
+
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+  static int mi_step(struct mapping_iterator_struct *i)
+    {
+      if(i->current == i->md->free_list) return 0;
+      if (++i->current == i->md->free_list) {
+	return 0;
+      }
+      return 1;
+    }
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
   static int step_bucket(struct mapping_iterator_struct *i)
     {
-      while(! i->current)
-      {
-	i->bucket++;
-	if(i->bucket >= i->md->hashsize)
-	  return 0;
-	i->current=i->md->hash[i->bucket];
+      if (i->md) {
+	do {
+	  while(!i->current)
+	  {
+	    i->bucket++;
+	    if(i->bucket >= i->md->hashsize)
+	      return 0;
+	    i->current=i->md->hash[i->bucket];
+	  }
+	  if (!IS_DESTRUCTED (&i->current->ind)) break;
+	  i->current = i->current->next;
+	} while (1);
       }
       return 1;
     }
@@ -79,35 +357,55 @@ PIKECLASS mapping_iterator
       i->current=i->current->next;
       return step_bucket(i);
     }
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
+
   
-  PIKEFUN object `+(int steps)
+  PIKEFUN object `+(int(0..) steps)
     {
       struct object *o=low_clone(mapping_iterator_program);
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("Mapping.Iterator.`+", 1,
+			  "This iterator doesn't support going backwards.\n");
       OBJ2_MAPPING_ITERATOR(o)[0] = *THIS;
-      add_ref(THIS->m);
-      add_ref(THIS->md);
-      THIS->md->valrefs++;
+      if (THIS->m)
+	add_ref(THIS->m);
+      if (THIS->md) {
+	add_ref(THIS->md);
+	THIS->md->valrefs++;
+      }
       while(--steps>=0 && mi_step(OBJ2_MAPPING_ITERATOR(o)));
       RETURN o;
     }
 
-  PIKEFUN object `+=(int steps)
+  PIKEFUN object `+=(int(0..) steps)
     {
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("Mapping.Iterator.`+=", 1,
+			  "This iterator doesn't support going backwards.\n");
       while(--steps>=0 && mi_step(THIS));
       REF_RETURN Pike_fp->current_object;
     }
 
   PIKEFUN int first()
     {
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+      THIS->current = MD_KEYPAIRS(THIS->md, THIS->md->hashsize);
+      RETURN (THIS->current < THIS->md->free_list);
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
       THIS->current=0;
       THIS->bucket=-1;
       RETURN step_bucket(THIS);
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
     }
 
   /* Hubbe: Should this really be destructive ?? */
   PIKEFUN object _random()
     {
-      if(THIS->md->hashsize)
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+      size_t k = my_rand() % THIS->md->size;
+      THIS->current = MD_KEYPAIRS(THIS->md, THIS->md->hashsize) + k;
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
+      if(THIS->md && THIS->md->hashsize)
       {
 	size_t k;
 	struct keypair *tmp;
@@ -117,8 +415,8 @@ PIKECLASS mapping_iterator
 	tmp=THIS->md->hash[THIS->bucket];
 	if(k)
 	{
-	  k=my_rand() % k;
-	  while(--k > 0) tmp=tmp->next;
+	  k = my_rand() % k;
+	  while(k--) tmp=tmp->next;
 	}
 	THIS->current=tmp;
       }else{
@@ -126,11 +424,18 @@ PIKECLASS mapping_iterator
 	THIS->current=0;
       }
       step_bucket(THIS);
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
       REF_RETURN Pike_fp->current_object;
     }
 
   PIKEFUN int next() { RETURN mi_step(THIS); }
-  PIKEFUN int `!() { RETURN !THIS->current; }
+  PIKEFUN int `!() {
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+    RETURN (THIS->current == THIS->md->free_list);
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
+    RETURN !THIS->current;
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
+  }
 
   PIKEFUN void create(mapping map)
     {
@@ -141,8 +446,13 @@ PIKECLASS mapping_iterator
       THIS->md=map->data;
       add_ref(THIS->md);
       THIS->md->valrefs++;
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+      THIS->current = MD_KEYPAIRS(THIS->md, THIS->md->hashsize);
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
+      THIS->current = NULL;
       THIS->bucket=-1;
       step_bucket(THIS);
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
     }
 
   INIT
@@ -154,13 +464,34 @@ PIKECLASS mapping_iterator
     }
 
   EXIT
+    gc_trivial;
     {
-      free_mapping(THIS->m);
-      THIS->md->valrefs--;
-      free_mapping_data(THIS->md);
+      if (THIS->md) {
+	THIS->md->valrefs--;
+	free_mapping_data(THIS->md);
+      }
+      if (THIS->m) {
+	free_mapping(THIS->m);
+      }
     }
 };
+/*! @endclass
+ */
+/*! @endmodule
+ */
 
+
+/*! @module Array
+ */
+/*! @class Iterator
+ *! @inherit predef::Iterator
+ *!
+ *!   An object of this class is returned by @[get_iterator()] when
+ *!   called with an array.
+ *!
+ *! @seealso
+ *!   @[get_iterator]
+ */
 PIKECLASS array_iterator
 {
   CVAR int pos;
@@ -168,10 +499,9 @@ PIKECLASS array_iterator
   
   PIKEFUN mixed value()
     {
-      if(!THIS->a || THIS->pos >= THIS->a->size) 
+      if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }else{
 	push_svalue(THIS->a->item + THIS->pos);
       }
@@ -179,20 +509,29 @@ PIKECLASS array_iterator
 
   PIKEFUN int index()
     {
-      if(!THIS->a || THIS->pos >= THIS->a->size) 
+      if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }else{
 	RETURN THIS->pos;
       }
     }
 
+  PIKEFUN int _sizeof()
+    flags ID_STATIC;
+  {
+    if (THIS->a) {
+      push_int(THIS->a->size);
+    }
+    push_undefined();
+  }
+
   PIKEFUN object `+(int steps)
     {
       struct object *o=low_clone(array_iterator_program);
       OBJ2_ARRAY_ITERATOR(o)[0]=*THIS;
-      add_ref(THIS->a);
+      if (THIS->a)
+	add_ref(THIS->a);
       OBJ2_ARRAY_ITERATOR(o)->pos+=steps;
       RETURN o;
     }
@@ -203,16 +542,35 @@ PIKECLASS array_iterator
     REF_RETURN Pike_fp->current_object;
   }
 
+  PIKEFUN object `-(int steps)
+  {
+    struct object *o=low_clone(array_iterator_program);
+    OBJ2_ARRAY_ITERATOR(o)[0]=*THIS;
+    add_ref(THIS->a);
+    OBJ2_ARRAY_ITERATOR(o)->pos-=steps;
+    RETURN o;
+  }
+
   PIKEFUN int first()
     {
       THIS->pos=0;
-      RETURN THIS->a && THIS->a->size < THIS->pos;
+      RETURN THIS->a && THIS->pos < THIS->a->size;
+    }
+
+  PIKEFUN void set_index(int pos)
+    {
+      if(!THIS->a || pos < 0 || pos > THIS->a->size)
+      {
+	Pike_error("Bad position.\n");
+      }else{
+	THIS->pos = pos;
+      }      
     }
 
   /* Hubbe: Should this really be destructive ?? */
   PIKEFUN object _random()
     {
-      if(THIS->a->size)
+      if(THIS->a && THIS->a->size)
 	THIS->pos=my_rand() % THIS->a->size;
       else
 	THIS->pos=0;
@@ -222,12 +580,12 @@ PIKECLASS array_iterator
   PIKEFUN int next()
     {
       THIS->pos++;
-      RETURN THIS->a && THIS->a->size < THIS->pos;
+      RETURN THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size;
     }
 
   PIKEFUN int `!()
     {
-      RETURN !(THIS->a && THIS->a->size < THIS->pos);
+      RETURN !(THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size);
     }
 
   PIKEFUN void create(array a)
@@ -245,102 +603,243 @@ PIKECLASS array_iterator
     }
 
   EXIT
+    gc_trivial;
     {
-      free_array(THIS->a);
+      if (THIS->a)
+	free_array(THIS->a);
     }
     
 };
 
+/*! @endclass
+ */
+/*! @endmodule
+ */
+
+/*! @module Multiset
+ */
+/*! @class Iterator
+ *! @inherit predef::Iterator
+ *!
+ *!   An object of this class is returned by @[get_iterator()] when
+ *!   called with a multiset.
+ *!
+ *! @seealso
+ *!   @[get_iterator]
+ */
 PIKECLASS multiset_iterator
 {
-  CVAR int pos;
-  CVAR struct array *a;
-  
+  CVAR struct multiset *l;
+  CVAR int lock_index;
+  CVAR ptrdiff_t nodepos;
+
   PIKEFUN int value()
     {
-      if(!THIS->a || THIS->pos >= THIS->a->size) 
-      {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
-      }else{
-	push_int(1);
-      }
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos))
+	push_undefined();
+      else
+	push_multiset_value (THIS->l, THIS->nodepos);
     }
 
   PIKEFUN mixed index()
     {
-      if(!THIS->a || THIS->pos >= THIS->a->size) 
-      {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
-      }else{
-	push_svalue(THIS->a->item + THIS->pos);
-      }
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos))
+	push_undefined();
+      else
+	push_multiset_index (THIS->l, THIS->nodepos);
     }
 
-  PIKEFUN object `+(int steps)
+  PIKEFUN int _sizeof()
+    flags ID_STATIC;
+  {
+    if (THIS->l) {
+      push_int(THIS->l->msd->size);
+    }
+    push_undefined();
+  }
+
+  static struct object *li_copy (struct multiset_iterator_struct *li)
     {
-      struct object *o=low_clone(array_iterator_program);
-      OBJ2_MULTISET_ITERATOR(o)[0]=*THIS;
-      add_ref(THIS->a);
-      OBJ2_MULTISET_ITERATOR(o)->pos+=steps;
+      struct object *o = low_clone (multiset_iterator_program);
+      struct multiset_iterator_struct *copy = OBJ2_MULTISET_ITERATOR (o);
+      if ((copy->l = li->l))
+	add_ref(li->l);
+      if ((copy->nodepos = li->nodepos) >= 0) add_msnode_ref (copy->l);
+      if ((copy->lock_index = li->lock_index)) {
+	add_ref (copy->l->msd);
+	copy->l->msd->noval_refs++;
+      }
+      return o;
+    }
+
+  static void li_step (struct multiset_iterator_struct *li, int steps)
+    {
+      ptrdiff_t newpos = li->nodepos;
+
+      if (li->nodepos < 0) return;
+
+      if (steps > 0)
+	do {
+	  newpos = multiset_next (li->l, newpos);
+	  if (newpos < 0) {
+	    sub_msnode_ref (li->l);
+	    break;
+	  }
+	} while (--steps);
+      else if (steps < 0)
+	do {
+	  newpos = multiset_prev (li->l, newpos);
+	  if (newpos < 0) {
+	    sub_msnode_ref (li->l);
+	    break;
+	  }
+	} while (++steps);
+
+      li->nodepos = newpos;
+    }
+
+  PIKEFUN object `+= (int steps)
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      li_step (THIS, steps);
+      REF_RETURN Pike_fp->current_object;
+    }
+
+  PIKEFUN object `+ (int steps)
+    {
+      struct object *o;
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      o = li_copy (THIS);
+      li_step (OBJ2_MULTISET_ITERATOR (o), steps);
       RETURN o;
     }
 
-  PIKEFUN object `+=(int steps)
-  {
-    THIS->pos+=steps;
-    REF_RETURN Pike_fp->current_object;
-  }
+  PIKEFUN object `- (int steps)
+    {
+      struct object *o;
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      o = li_copy (THIS);
+      li_step (OBJ2_MULTISET_ITERATOR (o), -steps);
+      RETURN o;
+    }
 
   PIKEFUN int first()
     {
-      THIS->pos=0;
-      RETURN THIS->a && THIS->a->size < THIS->pos;
-    }
-
-  /* Hubbe: Should this really be destructive ?? */
-  PIKEFUN object _random()
-    {
-      if(THIS->a->size)
-	THIS->pos=my_rand() % THIS->a->size;
-      else
-	THIS->pos=0;
-      REF_RETURN Pike_fp->current_object;
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos >= 0) sub_msnode_ref (THIS->l);
+      THIS->nodepos = multiset_first (THIS->l);
+      RETURN THIS->nodepos >= 0;
     }
 
   PIKEFUN int next()
     {
-      THIS->pos++;
-      RETURN THIS->a && THIS->a->size < THIS->pos;
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos >= 0) {
+	THIS->nodepos = multiset_next (THIS->l, THIS->nodepos);
+	if (THIS->nodepos >= 0) RETURN 1;
+	sub_msnode_ref (THIS->l);
+      }
+      RETURN 0;
     }
 
   PIKEFUN int `!()
     {
-      RETURN !(THIS->a && THIS->a->size < THIS->pos);
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      RETURN THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos);
     }
 
-  PIKEFUN void create(multiset m)
+  /* Hubbe: Should this really be destructive ??
+   * I let this question stand; I'm only adapting multiset_iterator. /mast */
+  PIKEFUN object _random()
     {
-      if(THIS->a)
-	Pike_error("Array iterators cannot be reused.\n");
-      
-      add_ref(THIS->a=m->ind);
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos >= 0) {
+	sub_msnode_ref (THIS->l);
+	THIS->nodepos = -1;
+      }
+      if (!multiset_is_empty (THIS->l))
+	THIS->nodepos =
+	  multiset_get_nth (THIS->l, my_rand() % multiset_sizeof (THIS->l));
+      REF_RETURN Pike_fp->current_object;
     }
-  
+
+  PIKEFUN void lock_index()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (!THIS->lock_index) {
+	add_ref (THIS->l->msd);
+	THIS->l->msd->noval_refs++;
+	THIS->lock_index = 1;
+      }
+    }
+
+  PIKEFUN void unlock_index()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->lock_index) {
+	THIS->l->msd->noval_refs--;
+	sub_ref (THIS->l->msd);
+#ifdef PIKE_DEBUG
+	if (THIS->l->msd->refs <= 0) Pike_fatal ("msd ran out of refs unexpectedly.\n");
+#endif
+	THIS->lock_index = 0;
+      }
+    }
+
+  /* FIXME: Add more functions, e.g. insert, delete, add. */
+
+  /* FIXME: Maybe the index should be locked when the iterator is used
+   * in foreach, to behave more like the mapping iterator. */
+
+  PIKEFUN void create (multiset l)
+    {
+      if (THIS->l) Pike_error ("Multiset iterators cannot be reused.\n");
+      add_ref (THIS->l = l);
+      THIS->lock_index = 0;
+      THIS->nodepos = multiset_first (THIS->l);
+    }
+
   INIT 
     {
-      THIS->a=0;
-      THIS->pos=0;
+      THIS->l = NULL;
     }
 
   EXIT
+    gc_trivial;
     {
-      free_array(THIS->a);
+      if (THIS->l) {
+	if (THIS->nodepos >= 0) sub_msnode_ref (THIS->l);
+	if (THIS->lock_index) {
+	  THIS->l->msd->noval_refs--;
+	  sub_ref (THIS->l->msd);
+#ifdef PIKE_DEBUG
+	  if (THIS->l->msd->refs <= 0) Pike_fatal ("msd ran out of refs unexpectedly.\n");
+#endif
+	}
+	free_multiset (THIS->l);
+	THIS->l = NULL;
+      }
     }
-    
 };
 
+/*! @endclass
+ */
+/*! @endmodule
+ */
+
+/*! @module String
+ */
+/*! @class Iterator
+ *! @inherit predef::Iterator
+ *!
+ *!   An object of this class is returned by @[get_iterator()] when
+ *!   called with a string.
+ *!
+ *! @seealso
+ *!   @[get_iterator]
+ */
 PIKECLASS string_iterator
 {
   CVAR int pos;
@@ -348,10 +847,9 @@ PIKECLASS string_iterator
   
   PIKEFUN int value()
     {
-      if(!THIS->s || THIS->pos >= THIS->s->len) 
+      if(!THIS->s || THIS->pos < 0 || THIS->pos >= THIS->s->len)
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }else{
 	RETURN index_shared_string(THIS->s, THIS->pos);
       }
@@ -359,14 +857,22 @@ PIKECLASS string_iterator
 
   PIKEFUN int index()
     {
-      if(!THIS->s || THIS->pos >= THIS->s->len) 
+      if(!THIS->s || THIS->pos < 0 || THIS->pos >= THIS->s->len)
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }else{
 	RETURN THIS->pos;
       }
     }
+
+  PIKEFUN int _sizeof()
+    flags ID_STATIC;
+  {
+    if (THIS->s) {
+      push_int(THIS->s->len);
+    }
+    push_undefined();
+  }
 
   PIKEFUN object `+(int steps)
     {
@@ -383,10 +889,27 @@ PIKECLASS string_iterator
     REF_RETURN Pike_fp->current_object;
   }
 
+  PIKEFUN object `-(int steps)
+  {
+    struct object *o=low_clone(string_iterator_program);
+    OBJ2_STRING_ITERATOR(o)[0]=*THIS;
+    add_ref(THIS->s);
+    OBJ2_STRING_ITERATOR(o)->pos-=steps;
+    RETURN o;
+  }
+
   PIKEFUN int first()
     {
       THIS->pos=0;
-      RETURN THIS->s && THIS->s->len < THIS->pos;
+      RETURN THIS->s && THIS->pos < THIS->s->len;
+    }
+
+  PIKEFUN void set_index(int pos)
+    {
+      if (!THIS->s || pos < 0 || pos > THIS->s->len) {
+	Pike_error("Bad position.\n");
+      }
+      THIS->pos = pos;
     }
 
   /* Hubbe: Should this really be destructive ?? */
@@ -402,12 +925,33 @@ PIKECLASS string_iterator
   PIKEFUN int next()
     {
       THIS->pos++;
-      RETURN THIS->s && THIS->s->len < THIS->pos;
+      RETURN THIS->s && THIS->pos >= 0 && THIS->pos < THIS->s->len;
     }
 
   PIKEFUN int `!()
     {
-      RETURN !(THIS->s && THIS->s->len < THIS->pos);
+      RETURN !(THIS->s && THIS->pos >= 0 && THIS->pos < THIS->s->len);
+    }
+
+  PIKEFUN int _search(string|int needle, int|void start)
+    flags ID_PROTECTED;
+    {
+      if (!THIS->s)
+	Pike_error("No data to search.\n");
+      ref_push_string(THIS->s);
+      push_svalue(needle);
+      if (start) push_svalue(start);
+      else push_int(THIS->pos);
+      f_search(3);
+      stack_pop_n_elems_keep_top(args);
+      /* Advance to the found position. */
+      if (TYPEOF(Pike_sp[-1]) == T_INT) {
+	if (Pike_sp[-1].u.integer >= 0) {
+	  THIS->pos = Pike_sp[-1].u.integer;
+	} else {
+	  THIS->pos = THIS->s->len;
+	}
+      }
     }
 
   PIKEFUN void create(string s)
@@ -425,10 +969,17 @@ PIKECLASS string_iterator
     }
 
   EXIT
+    gc_trivial;
     {
-      free_string(THIS->s);
+      if (THIS->s)
+	free_string(THIS->s);
     }
 };
+
+/*! @endclass
+ */
+/*! @endmodule
+ */
 
 /* Interal (for Stdio.File) class: Stdio.File->line_iterator.
  * Splits on lines, does only handle 8-bit characters.
@@ -457,9 +1008,9 @@ PIKECLASS file_line_iterator
       return;
 
   again:
-      start = ssi->buffer->str + start_off;
-      ptr   = ssi->buffer->str + ssi->offset;
-      eptr  = ssi->buffer->str + ssi->buffer->len;
+      start = (unsigned char*)ssi->buffer->str + start_off;
+      ptr   = (unsigned char*)ssi->buffer->str + ssi->offset;
+      eptr  = (unsigned char*)ssi->buffer->str + ssi->buffer->len;
 
       /* Loop until we find a '\n'. */
       while( ptr < eptr )
@@ -467,7 +1018,7 @@ PIKECLASS file_line_iterator
 	  ptr++;
 	else
 	{
-	  ssi->current = make_shared_binary_string( start, ptr-start );
+	  ssi->current = make_shared_binary_string( (char*)start, ptr-start );
 	  // skip the '\n'
 	  ssi->offset =  ptr - ((unsigned char *)ssi->buffer->str) + 1;
 	  ssi->index++;
@@ -475,7 +1026,7 @@ PIKECLASS file_line_iterator
 	}
 
       apply_svalue( &ssi->feed, 0 );
-      if( Pike_sp[-1].type == PIKE_T_STRING &&
+      if( TYPEOF(Pike_sp[-1]) == PIKE_T_STRING &&
 	  Pike_sp[-1].u.string->len )
       {
 	push_string(make_shared_binary_string( ssi->buffer->str+start_off,
@@ -484,6 +1035,7 @@ PIKECLASS file_line_iterator
 	stack_swap();
 	f_add( 2 );
 	ssi->buffer = Pike_sp[-1].u.string;
+	dmalloc_touch_svalue(Pike_sp-1);
 	Pike_sp--;
 
 	if( !ssi->buffer->size_shift )
@@ -492,9 +1044,16 @@ PIKECLASS file_line_iterator
 	  start_off = 0;
 	  goto again;
 	}
+	// Wide string.
       }
-      else
+      else {
+	// End of stream.
 	pop_stack();
+	if (start != ptr) {
+	  ssi->current = make_shared_binary_string((char*)start, ptr-start);
+	  ssi->index++;
+	}
+      }
       free_string( ssi->buffer );
       ssi->buffer = NULL;
       return;
@@ -505,25 +1064,26 @@ PIKECLASS file_line_iterator
       if (THIS->current) {
 	ref_push_string(THIS->current);
       } else {
-	push_int(0);
-	Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+	push_undefined();
       }
     }
 
   PIKEFUN int index()
     {
       if (!THIS->current) {
-	push_int(0);
-	Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+	push_undefined();
       }else{
 	RETURN THIS->index;
       }
     }
 
-  PIKEFUN object `+(int steps)
+  PIKEFUN object `+(int(0..) steps)
     {
       struct object *o=low_clone(file_line_iterator_program);
       struct file_line_iterator_struct *ssi;
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("Stdio.File.LineIterator.`+", 1,
+			  "This iterator doesn't support going backwards.\n");
       (ssi = OBJ2_FILE_LINE_ITERATOR(o))[0]=*THIS;
       if (THIS->buffer) {
 	add_ref(THIS->buffer);
@@ -537,26 +1097,14 @@ PIKECLASS file_line_iterator
       RETURN o;
     }
 
-  PIKEFUN object `+=(int steps)
+  PIKEFUN object `+=(int(0..) steps)
     {
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("Stdio.File.LineIterator.`+=", 1,
+			  "This iterator doesn't support going backwards.\n");
       while( steps-- )
 	fl_find_next(THIS);
       REF_RETURN Pike_fp->current_object;
-    }
-
-  PIKEFUN int first()
-    {
-      Pike_error("Not supported.\n");
-    }
-
-  PIKEFUN object _random()
-    {
-      Pike_error("Not supported.\n");
-    }
-
-  PIKEFUN int _sizeof()
-    {
-      Pike_error("Not supported.\n");
     }
 
   PIKEFUN int next()
@@ -570,16 +1118,17 @@ PIKECLASS file_line_iterator
       RETURN !THIS->current;
     }
 
-  PIKEFUN void create(function(:string)|void feed)
+  PIKEFUN void create(function(:string) feed)
     {
       if (THIS->buffer) {
 	Pike_error("iterators cannot be reused.\n");
       }
       assign_svalue( &THIS->feed, feed );
       apply_svalue( &THIS->feed, 0 );
-      if( Pike_sp[-1].type != PIKE_T_STRING )
+      if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING )
 	Pike_error("Feed function returned illegal value\n");
       THIS->buffer = Pike_sp[-1].u.string;
+      dmalloc_touch_svalue(Pike_sp-1);
       Pike_sp--;
       THIS->offset = 0;
       THIS->current = NULL;
@@ -593,11 +1142,11 @@ PIKECLASS file_line_iterator
       THIS->current = NULL;
       THIS->offset = 0;
       THIS->index = 0;
-      THIS->feed.type = T_INT;
-      THIS->feed.u.integer = 0;
+      mark_free_svalue (&THIS->feed);
     }
 
   EXIT
+    gc_trivial;
     {
       if (THIS->buffer) {
 	free_string(THIS->buffer);
@@ -608,8 +1157,7 @@ PIKECLASS file_line_iterator
 	THIS->current = NULL;
       }
       free_svalue(&THIS->feed);
-      THIS->feed.type = T_INT;
-      THIS->feed.u.integer = 0;
+      assert_free_svalue (&THIS->feed);
     }
   
   
@@ -619,6 +1167,19 @@ PIKECLASS file_line_iterator
  */
 
 /*! @class SplitIterator
+ *! @inherit predef::Iterator
+ *!
+ *! An iterator that iterates over substrings of a string, separated
+ *! by a character or several different characters.
+ *!
+ *! @note
+ *!   Typically you don't need to explicitly use the SplitIterator.
+ *!   Expressions like the following are automatically optimized into
+ *!   using a SplitIterator.
+ *!   @code
+ *!     foreach(str/"\n", string line)
+ *!       write("%s\n", line);
+ *!   @endcode
  */
 PIKECLASS string_split_iterator
 {
@@ -723,23 +1284,26 @@ PIKECLASS string_split_iterator
     SIMPLE_SCAN_PUSH(THIS, SHIFT, OFF);		\
     break
 
-#define COMPLEX_SCAN_PUSH(THIS, SHIFT, OFF)			\
-  do {								\
-    PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
-      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
-    while(OFF < THIS->buffer->len) {				\
-      int i;							\
-      p_wchar2 ch = s[OFF];					\
-      for (i=0; i < THIS->split_set_size; i++) {		\
-	if (ch == THIS->split_set[i]) {				\
-	  goto PIKE_CONCAT(break_scan,SHIFT);			\
-	}							\
-      }								\
-      OFF++;							\
-    }								\
-  PIKE_CONCAT(break_scan, SHIFT):				\
-    push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)	\
-      (s+offset, OFF-offset));					\
+#define COMPLEX_SCAN_PUSH(THIS, SHIFT, OFF)				\
+  do {									\
+    PIKE_CONCAT(p_wchar, SHIFT) *s = 					\
+      PIKE_CONCAT(STR,SHIFT)(THIS->buffer);				\
+    while(OFF < THIS->buffer->len) {					\
+      int i;								\
+      p_wchar2 ch = s[OFF];						\
+      for (i=0; i < THIS->split_set_size; i++) {			\
+	if (ch == THIS->split_set[i]) {					\
+	  push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)	\
+	    (s+offset, OFF-offset));					\
+	  goto PIKE_CONCAT(break_scan,SHIFT);				\
+	}								\
+      }									\
+      OFF++;								\
+    }									\
+    push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)		\
+      (s+offset, OFF-offset));						\
+  PIKE_CONCAT(break_scan, SHIFT):					\
+    ;									\
   } while(0)
 
 #define COMPLEX_SCAN_CASE_PUSH(THIS, SHIFT, OFF)	\
@@ -762,27 +1326,27 @@ PIKECLASS string_split_iterator
       ssi->buffer = NULL;					\
       ssi->offset = 0;						\
       offset = 0;						\
-      if (ssi->feed.type == T_INT) {				\
+      if (TYPEOF(ssi->feed) == PIKE_T_FREE) {			\
 	if (!(FLAGS)) {						\
-	  MAKE_CONSTANT_SHARED_STRING(ssi->current, "");	\
+	  copy_shared_string(ssi->current, empty_pike_string);	\
 	  ssi->index++;						\
 	}							\
 	return;							\
       } else {							\
 	/* Attempt to fill the buffer with some more. */	\
 	apply_svalue(&ssi->feed, 0);				\
-	if ((Pike_sp[-1].type == T_STRING) &&			\
+	if ((TYPEOF(Pike_sp[-1]) == T_STRING) &&		\
 	    (Pike_sp[-1].u.string->len)) {			\
 	  ssi->buffer = Pike_sp[-1].u.string;			\
+          dmalloc_touch_svalue(Pike_sp-1);			\
 	  Pike_sp--;						\
 	  goto reskip_empty;					\
 	}							\
 	free_svalue(&ssi->feed);				\
-	ssi->feed.type = T_INT;					\
-	ssi->feed.u.integer = 0;				\
+	mark_free_svalue (&ssi->feed);				\
 	pop_stack();						\
 	if (!(FLAGS)) {						\
-	  MAKE_CONSTANT_SHARED_STRING(ssi->current, "");	\
+	  copy_shared_string(ssi->current, empty_pike_string);	\
 	  ssi->index++;						\
 	}							\
 	return;							\
@@ -801,16 +1365,17 @@ PIKECLASS string_split_iterator
       COMPLEX_SCAN_PUSH(ssi, SHIFT, end);			\
     }								\
     if ((end == ssi->buffer->len) &&				\
-	(ssi->feed.type != T_INT)) {				\
+	(TYPEOF(ssi->feed) != PIKE_T_FREE)) {			\
       apply_svalue(&ssi->feed, 0);				\
-      if ((Pike_sp[-1].type == T_STRING) &&			\
+      if ((TYPEOF(Pike_sp[-1]) == T_STRING) &&			\
 	  (Pike_sp[-1].u.string->len)) {			\
 	f_add(2);						\
-	if (Pike_sp[-1].type != T_STRING) {			\
+	if (TYPEOF(Pike_sp[-1]) != T_STRING) {			\
 	  Pike_error("Bad result from concatenation!\n");	\
 	}							\
 	free_string(ssi->buffer);				\
 	ssi->buffer = Pike_sp[-1].u.string;			\
+        dmalloc_touch_svalue(Pike_sp-1);			\
 	Pike_sp--;						\
 	end -= offset;						\
 	offset = 0;						\
@@ -820,11 +1385,11 @@ PIKECLASS string_split_iterator
       								\
       /* Make sure we don't call feed() any more. */		\
       free_svalue(&ssi->feed);					\
-      ssi->feed.type = T_INT;					\
-      ssi->feed.u.integer = 0;					\
+      mark_free_svalue (&ssi->feed);				\
     }								\
     ssi->offset = end+1;					\
     ssi->current = Pike_sp[-1].u.string;			\
+    dmalloc_touch_svalue(Pike_sp-1);				\
     Pike_sp--;							\
     if (ssi->offset > ssi->buffer->len) {			\
       free_string(ssi->buffer);					\
@@ -845,11 +1410,13 @@ PIKECLASS string_split_iterator
       }
     reskip_empty:
       switch(ssi->buffer->size_shift) {
+      default:
+#ifdef PIKE_DEBUG
+	Pike_fatal("Unsupported size shift!\n");
+#endif
 	NEW_SKIP_CASE(0, ssi->flags);
 	NEW_SKIP_CASE(1, ssi->flags);
 	NEW_SKIP_CASE(2, ssi->flags);
-      default:
-	fatal("Unsupported size shift!\n");
       }
     scan_more:
       switch(ssi->buffer->size_shift)
@@ -857,8 +1424,10 @@ PIKECLASS string_split_iterator
 	NEW_SCAN_MORE_CASE(0);
 	NEW_SCAN_MORE_CASE(1);
 	NEW_SCAN_MORE_CASE(2);
+#ifdef PIKE_DEBUG
       default:
-	fatal("Unsupported size shift!\n");
+	Pike_fatal("Unsupported size shift!\n");
+#endif
       }
     }
 
@@ -867,26 +1436,27 @@ PIKECLASS string_split_iterator
       if (THIS->current) {
 	ref_push_string(THIS->current);
       } else {
-	push_int(0);
-	Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+	push_undefined();
       }
     }
 
   PIKEFUN int index()
     {
       if (!THIS->current) {
-	push_int(0);
-	Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+	push_undefined();
       }else{
 	RETURN THIS->index;
       }
     }
 
-  PIKEFUN object `+(int steps)
+  PIKEFUN object `+(int(0..) steps)
     {
       struct object *o=low_clone(string_split_iterator_program);
       int i;
       struct string_split_iterator_struct *ssi;
+      if (steps < 0)
+	SIMPLE_ARG_ERROR ("String.SplitIterator.`+", 1,
+			  "This iterator doesn't support going backwards.\n");
       (ssi = OBJ2_STRING_SPLIT_ITERATOR(o))[0]=*THIS;
       if (THIS->buffer) {
 	add_ref(THIS->buffer);
@@ -901,24 +1471,18 @@ PIKECLASS string_split_iterator
       RETURN o;
     }
 
-  PIKEFUN object `+=(int steps)
+  PIKEFUN object `+=(int(0..) steps)
   {
     int i;
+    if (steps < 0)
+      SIMPLE_ARG_ERROR ("String.SplitIterator.`+=", 1,
+			"This iterator doesn't support going backwards.\n");
     for(i = 0; i < steps; i++) {
       find_next(THIS);
     }
     REF_RETURN Pike_fp->current_object;
   }
 
-  PIKEFUN int first()
-    {
-      Pike_error("Not supported.\n");
-    }
-
-  PIKEFUN object _random()
-    {
-      Pike_error("Not supported.\n");
-    }
   PIKEFUN int next()
     {
       find_next(THIS);
@@ -941,15 +1505,14 @@ PIKECLASS string_split_iterator
 	push_int(THIS->buffer->len);
 	o_range();
       }
-      for (i = 1; THIS->feed.type != T_INT; i++) {
+      for (i = 1; TYPEOF(THIS->feed) != PIKE_T_FREE; i++) {
 	apply_svalue(&THIS->feed, 0);
-	if ((Pike_sp[-1].type != T_STRING) ||
+	if ((TYPEOF(Pike_sp[-1]) != T_STRING) ||
 	    (!Pike_sp[-1].u.string->len)) {
 	  /* End of stream marker. */
 	  pop_stack();
 	  free_svalue(&THIS->feed);
-	  THIS->feed.type = T_INT;
-	  THIS->feed.u.integer = 0;
+	  mark_free_svalue (&THIS->feed);
 	  break;
 	}
       }
@@ -957,6 +1520,7 @@ PIKECLASS string_split_iterator
       free_string(THIS->buffer);
       THIS->buffer = Pike_sp[-1].u.string;
       THIS->offset = 0;
+      dmalloc_touch_svalue(Pike_sp-1);
       Pike_sp--;
 
       /* Perform the scan. */
@@ -967,17 +1531,21 @@ PIKECLASS string_split_iterator
 	      SIMPLE_SKIP_CASE(THIS, 0, off);
 	      SIMPLE_SKIP_CASE(THIS, 1, off);
 	      SIMPLE_SKIP_CASE(THIS, 2, off);
+#ifdef PIKE_DEBUG
 	    default:
-	      fatal("Unsupported size shift!\n");
+	      Pike_fatal("Unsupported size shift!\n");
+#endif
 	    }
 	  } else {
 	    switch(THIS->buffer->size_shift) {
 	      COMPLEX_SKIP_CASE(THIS, 0, off);
 	      COMPLEX_SKIP_CASE(THIS, 1, off);
 	      COMPLEX_SKIP_CASE(THIS, 2, off);
+#ifdef PIKE_DEBUG
 	    default:
-	      fatal("Unsupported size shift!\n");
-	    }	  
+	      Pike_fatal("Unsupported size shift!\n");
+#endif
+	    }
 	  }
 	  if (off >= THIS->buffer->len) {
 	    break;
@@ -989,16 +1557,20 @@ PIKECLASS string_split_iterator
 	    SIMPLE_SCAN_CASE(THIS, 0, off);
 	    SIMPLE_SCAN_CASE(THIS, 1, off);
 	    SIMPLE_SCAN_CASE(THIS, 2, off);
+#ifdef PIKE_DEBUG
 	  default:
-	    fatal("Unsupported size shift!\n");
+	    Pike_fatal("Unsupported size shift!\n");
+#endif
 	  }
 	} else {
 	  switch(THIS->buffer->size_shift) {
 	    COMPLEX_SCAN_CASE(THIS, 0, off);
 	    COMPLEX_SCAN_CASE(THIS, 1, off);
 	    COMPLEX_SCAN_CASE(THIS, 2, off);
+#ifdef PIKE_DEBUG
 	  default:
-	    fatal("Unsupported size shift!\n");
+	    Pike_fatal("Unsupported size shift!\n");
+#endif
 	  }
 	}
       }
@@ -1013,23 +1585,36 @@ PIKECLASS string_split_iterator
     RETURN res;
   }
 
+  /*! @decl void create(string buffer, int|array(int)|multiset(int) split_set,@
+   *!                   int|void flags, function(:string)|void feed)
+   *! @param buffer
+   *!   The string to split.
+   *! @param split_set
+   *!   The character or characters to split on.
+   *! @param flags
+   *!   Skip empty elements if set.
+   *! @param feed
+   *!   Callback function that is called once the @[buffer] is used up
+   *!   and the SplitIterator wants more data.
+   */
   PIKEFUN void create(string buffer, int|array(int)|multiset(int) split_set,
 		      int|void flags, function(:string)|void feed)
     {
       if (THIS->buffer) {
 	Pike_error("String.split() iterators cannot be reused.\n");
       }
-      if (split_set->type == T_INT) {
+      if (TYPEOF(*split_set) == T_INT) {
 	THIS->split_set = (p_wchar2 *)xalloc(sizeof(p_wchar2));
 	THIS->split_set[0] = split_set->u.integer;
 	THIS->split_set_size = 1;
       } else {
 	struct array *a;
 	int i;
-	if (split_set->type == T_ARRAY) {
+	if (TYPEOF(*split_set) == T_ARRAY) {
 	  a = split_set->u.array;
-	} else if (split_set->type == T_MULTISET) {
-	  a = split_set->u.multiset->ind;
+	} else if (TYPEOF(*split_set) == T_MULTISET) {
+	  a = multiset_indices (split_set->u.multiset);
+	  push_array (a);
 	} else {
 	  SIMPLE_BAD_ARG_ERROR("String.split", 2,
 			       "int|array(int)|multiset(int)");
@@ -1039,7 +1624,7 @@ PIKECLASS string_split_iterator
 			       "int|array(int)|multiset(int)");
 	}
 	for (i=0; i < a->size; i++) {
-	  if (a->item[i].type != T_INT) {
+	  if (TYPEOF(a->item[i]) != T_INT) {
 	    SIMPLE_BAD_ARG_ERROR("String.split", 2,
 				 "int|array(int)|multiset(int)");
 	  }
@@ -1049,18 +1634,20 @@ PIKECLASS string_split_iterator
 	  THIS->split_set[i] = a->item[i].u.integer;
 	}
 	THIS->split_set_size = a->size;
+	if (TYPEOF(*split_set) == T_MULTISET) pop_stack();
       }
       add_ref(THIS->buffer = buffer);
       if (args > 2) {
-	if (flags->type == T_INT) {
+	if (flags && (TYPEOF(*flags) == T_INT)) {
 	  THIS->flags = flags->u.integer;
 	} else {
 	  THIS->flags = 0;
 	}
-	if (args > 3) {
+	if (feed) {
 	  assign_svalue(&THIS->feed, feed);
 	} else {
-	  /* NB: THIS->feed has already been set to 0 by the init code. */
+	  /* NB: THIS->feed has already been set to PIKE_T_FREE by the
+	   * init code. */
 	}
       } else {
 	THIS->flags = 0;
@@ -1080,11 +1667,11 @@ PIKECLASS string_split_iterator
       THIS->split_set = NULL;
       THIS->split_set_size = 0;
       THIS->flags = 0;
-      THIS->feed.type = T_INT;
-      THIS->feed.u.integer = 0;
+      mark_free_svalue (&THIS->feed);
     }
 
   EXIT
+    gc_trivial;
     {
       if (THIS->buffer) {
 	free_string(THIS->buffer);
@@ -1097,8 +1684,7 @@ PIKECLASS string_split_iterator
       free(THIS->split_set);
       THIS->split_set = NULL;
       free_svalue(&THIS->feed);
-      THIS->feed.type = T_INT;
-      THIS->feed.u.integer = 0;
+      mark_free_svalue (&THIS->feed);
     }
 
   OPTIMIZE
@@ -1106,8 +1692,8 @@ PIKECLASS string_split_iterator
       if (CDR(n) && (CDR(n)->token == F_ARG_LIST) &&
 	  CADR(n) && (CADR(n)->token == F_APPLY) &&
 	  CAADR(n) && (CAADR(n)->token == F_CONSTANT) &&
-	  (CAADR(n)->u.sval.type == T_FUNCTION) &&
-	  (CAADR(n)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	  (TYPEOF(CAADR(n)->u.sval) == T_FUNCTION) &&
+	  (SUBTYPEOF(CAADR(n)->u.sval) == FUNCTION_BUILTIN) &&
 	  (CAADR(n)->u.sval.u.efun->function == f_replace)) {
 	/* String.SplitIterator(replace(...),...) */
 	node *repl_args = CDADR(n);
@@ -1122,15 +1708,15 @@ PIKECLASS string_split_iterator
 
 	  if (((*to)->token == F_APPLY) &&
 	      CAR(*to) && (CAR(*to)->token == F_CONSTANT) &&
-	      (CAR(*to)->u.sval.type == T_FUNCTION) &&
-	      (CAR(*to)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	      (TYPEOF(CAR(*to)->u.sval) == T_FUNCTION) &&
+	      (SUBTYPEOF(CAR(*to)->u.sval) == FUNCTION_BUILTIN) &&
 	      (CAR(*to)->u.sval.u.efun->function == f_allocate) &&
 	      CDR(*to) && (CDR(*to)->token == F_ARG_LIST) &&
 	      CADR(*to) && (CADR(*to)->token == F_CONSTANT) &&
-	      (CADR(*to)->u.sval.type == T_INT) &&
+	      (TYPEOF(CADR(*to)->u.sval) == T_INT) &&
 	      (num = CADR(*to)->u.sval.u.integer) &&
 	      CDDR(*to) && (CDDR(*to)->token == F_CONSTANT) &&
-	      (CDDR(*to)->u.sval.type == T_STRING) &&
+	      (TYPEOF(CDDR(*to)->u.sval) == T_STRING) &&
 	      (CDDR(*to)->u.sval.u.string->len == 1)) {
 	    /* String.SplitIterator(replace(str, from, allocate(num, "x")),
 	     *                      ...) */
@@ -1138,11 +1724,11 @@ PIKECLASS string_split_iterator
 
 	    if (CDDR(n) &&
 		(((CDDR(n)->token == F_CONSTANT) &&
-		  (CDDR(n)->u.sval.type == T_INT) &&
+		  (TYPEOF(CDDR(n)->u.sval) == T_INT) &&
 		  (CDDR(n)->u.sval.u.integer == split_val)) ||
 		 ((CDDR(n)->token == F_ARG_LIST) &&
 		  CADDR(n) && (CADDR(n)->token == F_CONSTANT) &&
-		  (CADDR(n)->u.sval.type == T_INT) &&
+		  (TYPEOF(CADDR(n)->u.sval) == T_INT) &&
 		  (CADDR(n)->u.sval.u.integer == split_val)))) {
 	      /* String.SplitIterator(replace(str, from, allocate(n, "x")),
 	       *                      'x', ...)
@@ -1152,30 +1738,29 @@ PIKECLASS string_split_iterator
 
 	      switch((*from)->token) {
 	      case F_CONSTANT:
-		if (((*from)->u.sval.type == T_ARRAY) &&
+		if ((TYPEOF((*from)->u.sval) == T_ARRAY) &&
 		    ((*from)->u.sval.u.array->size == num)) {
 		  int i;
 		  for (i=0; i < num; i++) {
-		    if (((*from)->u.sval.u.array->item[i].type != T_STRING) ||
+		    if ((TYPEOF((*from)->u.sval.u.array->item[i]) != T_STRING) ||
 			((*from)->u.sval.u.array->item[i].u.string->len != 1)) {
 		      return NULL;
 		    }
 		  }
 		  split = allocate_array(num+1);
-		  split->item[0].type = T_INT;
 		  split->item[0].u.integer = split_val;
 		  for (i=0; i < num; i++) {
-		    split->item[i+1].type = T_INT;
 		    split->item[i+1].u.integer =
 		      index_shared_string((*from)->u.sval.u.array->
 					  item[i].u.string, 0);
-		  }		  
+		  }
+		  split->type_field = BIT_INT;
 		}
 		break;
 	      case F_APPLY:
 		if (CAR(*from) && (CAR(*from)->token == F_CONSTANT) &&
-		    (CAR(*from)->u.sval.type == T_FUNCTION) &&
-		    (CAR(*from)->u.sval.subtype == FUNCTION_BUILTIN)) {
+		    (TYPEOF(CAR(*from)->u.sval) == T_FUNCTION) &&
+		    (SUBTYPEOF(CAR(*from)->u.sval) == FUNCTION_BUILTIN)) {
 		  if (CAR(*from)->u.sval.u.efun->function == f_allocate) {
 		    /* FIXME: Not likely */
 		  } else if (CAR(*from)->u.sval.u.efun->function ==
@@ -1186,7 +1771,7 @@ PIKECLASS string_split_iterator
 			 tmp = CDR(tmp)) {
 		      if (!CAR(tmp)) continue;
 		      if ((CAR(tmp)->token != F_CONSTANT) || 
-			  (CAR(tmp)->u.sval.type != T_STRING) ||
+			  (TYPEOF(CAR(tmp)->u.sval) != T_STRING) ||
 			  (CAR(tmp)->u.sval.u.string->len != 1)) {
 			return NULL;
 		      }
@@ -1196,17 +1781,16 @@ PIKECLASS string_split_iterator
 		      return NULL;
 		    }
 		    split = allocate_array(num+1);
-		    split->item[0].type = T_INT;
 		    split->item[0].u.integer = split_val;
 		    tmp = CDR(*from);
 		    for (i = 1; tmp && (tmp->token == F_ARG_LIST);
 			 tmp = CDR(tmp)) {
 		      if (!CAR(tmp)) continue;
-		      split->item[i].type = T_INT;
 		      split->item[i].u.integer =
 			index_shared_string(CAR(tmp)->u.sval.u.string, 0);
 		      i++;
-		    }		    
+		    }
+		    split->type_field = BIT_INT;
 		  }
 		} else {
 		  return NULL;
@@ -1260,9 +1844,44 @@ PIKECLASS string_split_iterator
 /*! @endmodule
  */
 
-PIKEFUN object Iterator(object|array|mapping|multiset|string data)
+/*! @decl Iterator get_iterator (object|array|mapping|multiset|string data)
+ *!
+ *! Creates and returns a canonical iterator for @[data].
+ *!
+ *! @returns
+ *!   @mixed data
+ *!     @type object
+ *!       If @[data] is an object with @[lfun::_get_iterator] defined then
+ *!       it's called in it to create the iterator.
+ *!   
+ *!       If @[data] is an object that lacks @[lfun::_get_iterator] then
+ *!       it's assumed to already be an iterator object, and is simply
+ *!       returned.
+ *!     @type array
+ *!       If @[data] is an array, an @[Array.Iterator] object will be
+ *!       returned.
+ *!     @type mapping
+ *!       If @[data] is a mapping, a @[Mapping.Iterator] object will be
+ *!       returned
+ *!     @type multiset
+ *!       If @[data] is a multiset, a @[Multiset.Iterator] object will be
+ *!       returned
+ *!     @type string
+ *!       If @[data] is a string, a @[String.Iterator] object will be
+ *!       returned
+ *!   @endmixed
+ *!
+ *! @note
+ *!   This function is used by @[foreach] to get an iterator for an
+ *!   object.
+ *!
+ *! @seealso
+ *!   @[Iterator], @[lfun::_get_iterator]
+ */
+PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
+  efun;
 {
-  switch(data->type)
+  switch(TYPEOF(*data))
   {
     case PIKE_T_STRING:
       push_object(clone_object(string_iterator_program, 1));
@@ -1281,203 +1900,345 @@ PIKEFUN object Iterator(object|array|mapping|multiset|string data)
       return;
 
 
-    case PIKE_T_OBJECT:
-      if(!data->u.object->prog)
-	Pike_error("Argument 1 to Iterator() is a destructed object.\n");
+    case PIKE_T_OBJECT: {
+      int fun;
+      struct program *p;
 
-#ifdef LFUN__GET_ITERATOR
-      if(FIND_LFUN(data->u.object->prog, LFUN__GET_ITERATOR) != -1)
+      if(!(p = data->u.object->prog))
+	SIMPLE_ARG_ERROR ("get_iterator", 1, "Got a destructed object.\n");
+
+      fun = FIND_LFUN(p->inherits[SUBTYPEOF(*data)].prog, LFUN__GET_ITERATOR);
+      if (fun != -1)
       {
-	apply_lfun(data->u.object, LFUN__GET_ITERATOR, 1);
-	stack_unlink(1);
+	apply_low (data->u.object,
+		   fun + p->inherits[SUBTYPEOF(*data)].identifier_level, 0);
+	if (TYPEOF(sp[-1]) != T_OBJECT) {
+	  /* FIXME: Ought to include what we got in the error message. */
+	  pop_stack();
+	  SIMPLE_ARG_ERROR ("get_iterator", 1,
+			    "_get_iterator() didn't return an object.\n");
+	}
+	stack_pop_keep_top();
 	return;
       }
-#endif
 
       /* Assume it already is an iterator... */
       return;
+    }
 
     default:
-      SIMPLE_BAD_ARG_ERROR("Iterator", 1, "multiset|array|string|mapping|object");
+      SIMPLE_ARG_TYPE_ERROR("get_iterator", 1, "multiset|array|string|mapping|object");
   }
 }
 
 /* sp[-4] = index; sp[-2] = value */
-int foreach_iterate(struct object *o)
+int foreach_iterate(struct object *o, int do_step)
 {
-  if(!o->prog)
+  struct program *prog = o->prog;
+  int fun;
+
+  if(!prog)
     Pike_error("foreach on destructed iterator.\n");
-  if(o->prog->flags & PROGRAM_HAS_C_METHODS)
+
+  /* FIXME: This could be simplified by letting the iterators
+   *        start at one position before the first element, and
+   *        then use next() to both advance and check if we are
+   *        at the end of the iterator. The do_step flag would
+   *        then not be needed. This would also have the benefit
+   *        of not needing `!() to be implemented.
+   */
+
+  if(prog->flags & PROGRAM_HAS_C_METHODS)
   {
-    if(o->prog == mapping_iterator_program)
+    if(prog == mapping_iterator_program)
     {
       struct mapping_iterator_struct *i=OBJ2_MAPPING_ITERATOR(o);
 
-      if(i->current)
-      {
-	if(Pike_sp[-4].type != T_INT)
-	  assign_lvalue(Pike_sp-4, & i->current->ind);
-	
-	if(Pike_sp[-2].type != T_INT)
-	  assign_lvalue(Pike_sp-2, & i->current->val);
-	mi_step(i);
-	return 1;
-      }else{
-	return 0;
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+      if (i->current == i->md->free_list) return 0;
+      if (do_step && (++i->current == i->md->free_list)) return 0;
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
+      if (!i->current) return 0;
+      if (do_step) {
+	mi_step (i);
+	if (!i->current) return 0;
       }
-    } else if(o->prog == string_split_iterator_program)
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
+
+      if(TYPEOF(Pike_sp[-4]) != T_INT)
+	assign_lvalue(Pike_sp-4, & i->current->ind);
+	
+      if(TYPEOF(Pike_sp[-2]) != T_INT)
+	assign_lvalue(Pike_sp-2, & i->current->val);
+
+      return 1;
+    }
+
+    else if(prog == string_split_iterator_program)
     {
       struct string_split_iterator_struct *i=OBJ2_STRING_SPLIT_ITERATOR(o);
-      if(i->current)
-      {
-	if(Pike_sp[-4].type != T_INT)
-	{
-	  /* Black Magic... */
-	  push_int(i->index);
-	  Pike_sp--;
-	  assign_lvalue(Pike_sp-4, Pike_sp);
-	}
 
-	if(Pike_sp[-2].type != T_INT)
-	{
-	  /* Black Magic... */
-	  push_string(i->current);
-	  Pike_sp--;
-	  assign_lvalue(Pike_sp-2, Pike_sp);
-	}
-
-	find_next(i);
-	return 1;
-      }else{
-	return 0;
+      if (!i->current) return 0;
+      if (do_step) {
+	find_next (i);
+	if (!i->current) return 0;
       }
-    } else if(o->prog == file_line_iterator_program)
+
+      if(TYPEOF(Pike_sp[-4]) != T_INT)
+      {
+	/* Black Magic... */
+	push_int(i->index);
+	Pike_sp--;
+	assign_lvalue(Pike_sp-4, Pike_sp);
+      }
+
+      if(TYPEOF(Pike_sp[-2]) != T_INT)
+      {
+	/* Black Magic... */
+	push_string(i->current);
+	dmalloc_touch_svalue(Pike_sp-1);
+	Pike_sp--;
+	assign_lvalue(Pike_sp-2, Pike_sp);
+      }
+
+      return 1;
+    }
+
+    else if(prog == file_line_iterator_program)
     {
       struct file_line_iterator_struct *i=OBJ2_FILE_LINE_ITERATOR(o);
-      if(i->current)
-      {
-	if(Pike_sp[-4].type != T_INT)
-	{
-	  /* Black Magic... */
-	  push_int(i->index);
-	  Pike_sp--;
-	  assign_lvalue(Pike_sp-4, Pike_sp);
-	}
 
-	if(Pike_sp[-2].type != T_INT)
-	{
-	  /* Black Magic... */
-	  push_string(i->current);
-	  Pike_sp--;
-	  assign_lvalue(Pike_sp-2, Pike_sp);
-	}
-
-	fl_find_next(i);
-	return 1;
-      }else{
-	return 0;
+      if (!i->current) return 0;
+      if (do_step) {
+	fl_find_next (i);
+	if (!i->current) return 0;
       }
-    } else if(o->prog == array_iterator_program)
+
+      if(TYPEOF(Pike_sp[-4]) != T_INT)
+      {
+	/* Black Magic... */
+	push_int(i->index);
+	Pike_sp--;
+	assign_lvalue(Pike_sp-4, Pike_sp);
+      }
+
+      if(TYPEOF(Pike_sp[-2]) != T_INT)
+      {
+	/* Black Magic... */
+	push_string(i->current);
+	dmalloc_touch_svalue(Pike_sp-1);
+	Pike_sp--;
+	assign_lvalue(Pike_sp-2, Pike_sp);
+      }
+
+      return 1;
+    }
+
+    else if(prog == array_iterator_program)
     {
       struct array_iterator_struct *i=OBJ2_ARRAY_ITERATOR(o);
-      if(i->pos < i->a->size)
+
+      if (i->pos < 0 || i->pos >= i->a->size) return 0;
+      if (do_step)
+	if (++i->pos == i->a->size) return 0;
+
+      if(TYPEOF(Pike_sp[-4]) != T_INT)
       {
-	if(Pike_sp[-4].type != T_INT)
-	{
-	  push_int(i->pos);
-	  assign_lvalue(Pike_sp-5, Pike_sp-1);
-	  pop_stack();
-	}
-
-	if(Pike_sp[-2].type != T_INT)
-	  assign_lvalue(Pike_sp-2, i->a->item + i->pos);
-
-	i->pos++;
-	return 1;
-      }else{
-	return 0;
+	push_int(i->pos);
+	assign_lvalue(Pike_sp-5, Pike_sp-1);
+	pop_stack();
       }
-    } else if(o->prog == multiset_iterator_program)
+
+      if(TYPEOF(Pike_sp[-2]) != T_INT)
+	assign_lvalue(Pike_sp-2, i->a->item + i->pos);
+
+      return 1;
+    }
+
+    else if(prog == multiset_iterator_program)
     {
       struct multiset_iterator_struct *i=OBJ2_MULTISET_ITERATOR(o);
-      if(i->pos < i->a->size)
-      {
-	if(Pike_sp[-4].type != T_INT)
-	  assign_lvalue(Pike_sp-4, i->a->item + i->pos);
 
-	if(Pike_sp[-2].type != T_INT)
-	{
-	  push_int(1);
-	  assign_lvalue(Pike_sp-3, Pike_sp-1);
-	  pop_stack();
+      struct svalue ind;
+
+      if (i->nodepos < 0) return 0;
+      if (do_step) {
+	i->nodepos = multiset_next (i->l, i->nodepos);
+	if (i->nodepos < 0) {
+	  sub_msnode_ref (i->l);
+	  return 0;
 	}
-
-	i->pos++;
-	return 1;
-      }else{
-	return 0;
       }
-    } else if(o->prog == string_iterator_program)
+
+      if (TYPEOF(Pike_sp[-4]) != T_INT)
+	assign_lvalue (Pike_sp - 4, use_multiset_index (i->l, i->nodepos, ind));
+      if (TYPEOF(Pike_sp[-2]) != T_INT)
+	assign_lvalue (Pike_sp - 2, get_multiset_value (i->l, i->nodepos));
+
+      return 1;
+    }
+
+    else if(prog == string_iterator_program)
     {
       struct string_iterator_struct *i=OBJ2_STRING_ITERATOR(o);
-      if(i->pos < i->s->len)
+
+      if (i->pos < 0 || i->pos >= i->s->len) return 0;
+      if (do_step)
+	if (++i->pos == i->s->len) return 0;
+
+      if(TYPEOF(Pike_sp[-4]) != T_INT)
       {
-	if(Pike_sp[-4].type != T_INT)
-	{
-	  push_int(i->pos);
-	  assign_lvalue(Pike_sp-5, Pike_sp-1);
-	  pop_stack();
-	}
-
-	if(Pike_sp[-2].type != T_INT)
-	{
-	  push_int(index_shared_string(i->s, i->pos));
-	  assign_lvalue(Pike_sp-3, Pike_sp-1);
-	  pop_stack();
-	}
-
-	i->pos++;
-	return 1;
-      }else{
-	return 0;
+	push_int(i->pos);
+	assign_lvalue(Pike_sp-5, Pike_sp-1);
+	pop_stack();
       }
+
+      if(TYPEOF(Pike_sp[-2]) != T_INT)
+      {
+	push_int(index_shared_string(i->s, i->pos));
+	assign_lvalue(Pike_sp-3, Pike_sp-1);
+	pop_stack();
+      }
+
+      return 1;
     }
   }
 
   /* Generic iteration */
-  apply_lfun(o,LFUN_NOT,0);
-  if(IS_ZERO(Pike_sp-1))
-  {
-    if(Pike_sp[-4].type != T_INT)
-    {
-      apply(o,"index",0);
-      assign_lvalue(Pike_sp-5,Pike_sp-1);
-      pop_stack();
-    }
 
-    if(Pike_sp[-2].type != T_INT)
-    {
-      apply(o,"value",0);
-      assign_lvalue(Pike_sp-3,Pike_sp-1);
+  if (do_step) {
+    if ((fun = find_shared_string_identifier(MK_STRING("next"), prog)) < 0) {
+      fun = FIND_LFUN (prog, LFUN_ADD_EQ);
+      if (fun < 0)
+	Pike_error("Iterator object lacks both next() and `+=().\n");
+      push_int(1);
+      apply_low(o, fun, 1);
       pop_stack();
+      fun = FIND_LFUN(prog, LFUN_NOT);
+      if (fun < 0) Pike_error("Iterator object lacks `!.\n");
+      apply_low(o, fun, 0);
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
+      {
+	pop_stack();
+	return 0;
+      }
+    } else {
+      /* NOTE: next() returns 1 on success, and 0 on failure,
+       *       we thus don't need to call `! to see if we are at a
+       *       valid position. Note that this is the reverse of the
+       *       output from `!.
+       */
+      apply_low(o, fun, 0);
+      if(UNSAFE_IS_ZERO(Pike_sp-1))
+      {
+	pop_stack();
+	return 0;
+      }
     }
-
-    push_int(1);
-    apply_lfun(o,LFUN_ADD_EQ,1);
-    return 1;
-  }else{
-    return 0;
+#if 0
+    pop_stack();
+#else
+  } else {
+    fun = FIND_LFUN(prog, LFUN_NOT);
+    if (fun < 0) Pike_error("Iterator object lacks `!.\n");
+    apply_low(o, fun, 0);
+    if(!UNSAFE_IS_ZERO(Pike_sp-1))
+    {
+      pop_stack();
+      return 0;
+    }
+#endif
   }
+
+#if 0
+  /* We should be able to save calls to `! this way, but there are
+   * iterators where index() and value() don't return UNDEFINED as
+   * stipulated by the interface. */
+
+  fun = -1;
+
+  if(TYPEOF(Pike_sp[-4]) != T_INT)
+  {
+    fun = find_identifier ("index", prog);
+    if (fun < 0) Pike_error ("Iterator object lacks index().\n");
+    apply_low(o, fun, 0);
+    if (IS_UNDEFINED (Pike_sp - 1)) {
+      Pike_sp--;
+      return 0;
+    }
+    assign_lvalue(Pike_sp-5,Pike_sp-1);
+    pop_stack();
+  }
+
+  if(TYPEOF(Pike_sp[-2]) != T_INT)
+  {
+    fun = find_identifier ("value", prog);
+    if (fun < 0) Pike_error ("Iterator object lacks value().\n");
+    apply_low(o, fun, 0);
+    if (IS_UNDEFINED (Pike_sp - 1)) {
+      /* NOTE: If index() doesn't return UNDEFINED when value() does,
+       *       the index-lvalue will contain a value that doesn't
+       *       correspond to the value in the value-lvalue on exit
+       *       from the loop. Please refrain from writing such iterators.
+       */
+      Pike_sp--;
+      return 0;
+    }
+    assign_lvalue(Pike_sp-3,Pike_sp-1);
+    pop_stack();
+  }
+
+  if (do_step || (fun >= 0)) {
+    /* We succeeded in advancing, or index() and/or value() returned
+     * values that were not UNDEFINED. No need to call `!().
+     */
+    return 1;
+  } else {
+    int res;
+    fun = FIND_LFUN (prog, LFUN_NOT);
+    if (fun < 0) Pike_error ("Iterator object lacks `!.\n");
+    apply_low(o, fun, 0);
+    res = UNSAFE_IS_ZERO(Pike_sp-1);
+    pop_stack();
+    return res;
+  }
+
+#else
+
+  /* Only reached if the iterator is at a valid position. */
+
+  pop_stack();	/* Get rid of the return value from `!() or step(). */
+
+  if(TYPEOF(Pike_sp[-4]) != T_INT)
+  {
+    fun = find_shared_string_identifier(MK_STRING("index"), prog);
+    if (fun < 0) Pike_error ("Iterator object lacks index().\n");
+    apply_low(o, fun, 0);
+    assign_lvalue(Pike_sp-5,Pike_sp-1);
+    pop_stack();
+  }
+
+  if(TYPEOF(Pike_sp[-2]) != T_INT)
+  {
+    fun = find_shared_string_identifier(MK_STRING("value"), o->prog);
+    if (fun < 0) Pike_error ("Iterator object lacks value().\n");
+    apply_low(o, fun, 0);
+    assign_lvalue(Pike_sp-3,Pike_sp-1);
+    pop_stack();
+  }
+
+  return 1;
+#endif
 }
 
 
 void init_iterators(void)
 {
-  INIT
+  INIT;
+  add_global_program ("Iterator", Iterator_program);
 }
 
 void exit_iterators(void)
 {
   EXIT
 }
-

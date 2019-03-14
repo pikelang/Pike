@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* DiscDate.C .. converts boring normal dates to fun Discordian Date -><-
    written  the 65th day of The Aftermath in the Year of Our Lady of 
    Discord 3157 by Druel the Chaotic aka Jeremy Johnson aka
@@ -23,11 +29,6 @@
 #include <string.h>
 #include <stdio.h>
 
-/* This must be included last! */
-#include "module_magic.h"
-
-RCSID("$Id: discdate.c,v 1.9 2001/02/14 15:05:25 grubba Exp $");
-
 struct disc_time
 {
   int season; /* 0-4 */
@@ -45,24 +46,23 @@ static struct disc_time convert(int,int);
 
 /*! @decl string discdate(int time)
  */
-void f_discdate(INT32 argc) 
+void f_discdate(INT32 args)
 {
   time_t t;
   int bob,raw;
   struct disc_time hastur;
-  if (argc != 1) 
-  {
-    Pike_error("Error: discdate(time)");
-    exit(1);
-  } else {
+  if (args != 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("discdate",1);
+  else {
     struct tm *eris;
-    t=sp[-argc].u.integer;
+    t=Pike_sp[-args].u.integer;
     eris=localtime(&t);
+    if (!eris) Pike_error ("localtime() failed to convert %ld\n", (long) t);
     bob=eris->tm_yday;		/* days since Jan 1. */
     raw=eris->tm_year;		/* years since 1980 */
     hastur=convert(bob,raw);
   }
-  pop_n_elems(argc);
+  pop_n_elems(args);
   print(hastur);
 }
 
@@ -71,27 +71,16 @@ void f_discdate(INT32 argc)
 
 static char *ending(int num)
 {  
-  int temp;
-  char *this;
- 
-  this=(char *)xalloc(sizeof(char)*3);
- 
-  temp=num%10;			/* get 0-9 */  
-  switch (temp)
+  switch (num % 10)
   {
    case 1:
-    strcpy(this,"st");
-    break;
+    return "st";
    case 2:
-    strcpy(this,"nd");
-    break;
+    return "nd";
    case 3:
-    strcpy(this,"rd");
-    break;
-   default:
-    strcpy(this,"th");
+    return "rd";
   }
-  return this;
+  return "th";
 }
 
 static struct disc_time convert(int nday, int nyear)
@@ -101,8 +90,10 @@ static struct disc_time convert(int nday, int nyear)
   this.year = nyear+3066;
   this.day=nday;
   this.season=0;
-  if ((this.year%4)==2)
+  if (((this.year%4)==2) &&
+      (((this.year % 100) != 66) || ((this.year % 400) >= 300)))
   {
+    /* St. Tib's day adjustment. */
     if (this.day==59)
       this.day=-1;
     else if (this.day >59)
@@ -114,57 +105,58 @@ static struct disc_time convert(int nday, int nyear)
     this.season++;
     this.day-=73;
   }
+  this.day++;
   return this;
 }
 
-static char *days[5] = 
+static const char *days[5] =
 { 
   "Sweetmorn",
   "Boomtime",
   "Pungenday",
   "Prickle-Prickle",
   "Setting Orange"
-  };
+};
 
-static char *seasons[5] = 
+static const char *seasons[5] =
 { 
   "Chaos",
   "Discord",
   "Confusion",
   "Bureaucracy",
   "The Aftermath"
-  };
+};
 
-static char *holidays[5][2] = 
+static const char *holidays[5][2] =
 { 
   { "Mungday", "Chaoflux" },
   { "Mojoday", "Discoflux" },
   { "Syaday",  "Confuflux" },
   { "Zaraday", "Bureflux" } ,
   { "Maladay", "Afflux" }
-  };
+};
 
 static void print(struct disc_time tick)
 { 
-  if (tick.day==-1) 
+  if (!tick.day) 
   {
-    push_string(make_shared_string("St. Tib's Day!"));
+    push_text("St. Tib's Day!");
   } else { 
-    static char foo[10000], *e;
-    sprintf(foo, "%s, the %d%s day of %s",
-	    days[tick.yday%5], tick.day,
-	    e=ending(tick.day),seasons[tick.season]);
-    free(e);
-    tick.day++;
-    push_string(make_shared_string(foo));
+    struct string_builder s;
+    init_string_builder_alloc(&s, 30, 0);
+    string_builder_sprintf(&s,
+			   "%s, the %d%s day of %s",
+			   days[tick.yday%5], tick.day,
+			   ending(tick.day),seasons[tick.season]);
+    push_string(finish_string_builder(&s));
   }
   push_int(tick.year);
   if ((tick.day==5)||(tick.day==50))
   { 
     if (tick.day==5)
-      push_string(make_shared_string(holidays[tick.season][0]));
+      push_text(holidays[tick.season][0]);
     else
-      push_string(make_shared_string(holidays[tick.season][1]));
+      push_text(holidays[tick.season][1]);
   } else {
     push_int(0);
   }

@@ -1,0 +1,68 @@
+/* -*- C -*- */
+class GTK1.Style;
+
+void destroy()
+{
+  /* do nothing */
+}
+
+GTK1.Style copy();
+//!  Copy this style, and return the new style object
+GTK1.Style attach( GDK1.Window to );
+//!   Attach a style to a window; this process allocates the colors and
+//!   creates the GC's for the style - it specializes it to a
+//!   particular visual and colormap. The process may involve the
+//!   creation of a new style if the style has already been attached to
+//!   a window with a different style and colormap.
+void detach();
+//!  Undo a previous attach
+void apply_default_background( GDK1.Window window,
+                               int set_bgp, int state_type,
+                               ?GDK1.Rectangle area,
+                               int x, int y, int width, int height );
+//! Set the background of the specified window (or the subarea
+//! indicated by the rectangle) to the default background for the state
+//! specified by state_type.
+//! <p>
+//! If set_bgp is true, the background of the widget will be set,
+//! otherwise it will only be drawn into the window.</p>
+member array(&GDK1.Color(copy),size=5) fg;
+member array(&GDK1.Color(copy),size=5) bg;
+member array(&GDK1.Color(copy),size=5) light;
+member array(&GDK1.Color(copy),size=5) dark;
+member array(&GDK1.Color(copy),size=5) mid;
+member array(&GDK1.Color(copy),size=5) text;
+member array(&GDK1.Color(copy),size=5) base;
+
+member &GDK1.Color(copy) black;
+member &GDK1.Color(copy) white;
+
+member GDK1.Font(ref) font;
+
+member array(GDK1.Pixmap(ref),size=5) bg_pixmap;
+member array(GDK1.GC(ref),size=5) fg_gc;
+member array(GDK1.GC(ref),size=5) bg_gc;
+member array(GDK1.GC(ref),size=5) light_gc;
+member array(GDK1.GC(ref),size=5) dark_gc;
+member array(GDK1.GC(ref),size=5) mid_gc;
+member array(GDK1.GC(ref),size=5) text_gc;
+member array(GDK1.GC(ref),size=5) base_gc;
+member GDK1.GC(ref) black_gc;
+member GDK1.GC(ref) white_gc;
+
+%{
+/* void draw_hline( GDK1.Window window, int state_type, int x1, int x2, int y)
+ * void draw_vline( GDK1.Window window, int state_type, int y1, int y2, int x)
+ * void draw_shadow( GDK1.Window window, int state_type, int y, int y, int w, int h)
+ * void draw_arrow( GDK1.Window window, int state_type, int shadow_type, int arrow_type, int fill, int x, int y, int width, int height )
+ * void draw_diamond( GDK1.Window window, int state_type, int shadow_type, int x, int y, int width, int height )
+ * void draw_oval( GDK1.Window window, int state_type, int shadow_type, int x, int y, int width, int height )
+ * void draw_flat_box( GDK1.Window window, int state_type, int shadow_type, int x, int y, int width, int height )
+ * void draw_check( GDK1.Window window, int state_type, int shadow_type, int x, int y, int width, int height )
+ * void draw_option( GDK1.Window window, int state_type, int shadow_type, int x, int y, int width, int height );
+ * void draw_cross( GDK1.Window window, int state_type, int shadow_type, int x, int y, int width, int height );
+ * void draw_ramp( GDK1.Window window, int state_type, int shadow_type, int x, int y, int width, int height );
+ * void draw_tab( GDK1.Window window, int state_type, int shadow_type, int x, int y, int width, int height );
+ */
+%}
+

@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 import ".";
 
 Stdio.File fd;
@@ -99,20 +101,15 @@ class Record
 
    string _sprintf(int t,mapping z)
    {
-      switch (t)
-      {
-	 case 'O': 
-	    return sprintf(
-	       "Record(%s:%s%s)",
-	       _stgtoid[storage]||sprintf("%xh",storage),
-//  	       _ctoid[datatype]||sprintf("%xh",datatype),
-	       _dttoid[typeid]||sprintf("%xh",typeid),
-	       (storage==kStg_InRecordEntry)?"":
-	       sprintf(" %d+%d",offset,length)
-			   );
-	 default:
-	    return 0;
-      }
+     if(t=='O')
+       return sprintf(
+         "%O(%s:%s%s)", this_program,
+         _stgtoid[storage]||sprintf("%xh",storage),
+//       _ctoid[datatype]||sprintf("%xh",datatype),
+         _dttoid[typeid]||sprintf("%xh",typeid),
+         (storage==kStg_InRecordEntry)?"":
+           sprintf(" %d+%d",offset,length)
+         );
    }
 
    void seek(void|int n)
@@ -152,5 +149,3 @@ class Record
       return z;
    }
 }
-
-

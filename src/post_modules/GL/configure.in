@@ -1,6 +1,7 @@
-# $Id: configure.in,v 1.13 2001/01/04 14:36:13 marcus Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
+
+PIKE_FEATURE_WITHOUT(GL)
 
 AC_MODULE_INIT()
 
@@ -19,17 +20,26 @@ else
 
   old_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="$X_CFLAGS $CPPFLAGS"
-  AC_CHECK_HEADERS(windef.h wingdi.h GL/gl.h GL/glx.h)
-  CPPFLAGS="$old_CPPFLAGS"
+  AC_CHECK_HEADERS(windef.h GL/gl.h GL/glx.h)
 
-  if test "x$ac_cv_header_windef_h$ac_cv_header_wingdi_h$ac_cv_header_GL_gl_h$ac_cv_header_GL_glx_h" = "xnononono"; then
+  # MacOS X.
+  # FIXME: Should really have a separate test for -framework.
+  CPPFLAGS="-framework OpenGL $old_CPPFLAGS"
+  AC_CHECK_HEADERS(OpenGL/gl.h)
+  if test "x$ac_cv_header_OpenGL_gl_h" = "xno"; then
+    CPPFLAGS="$old_CPPFLAGS"
+  else
+    mac=1
+  fi
+
+
+  if test "x$ac_cv_header_windef_h$ac_cv_header_OpenGL_gl_h$ac_cv_header_GL_gl_h$ac_cv_header_GL_glx_h" = "xnononono"; then
     # Solaris 7 comes with libGL, but without the headerfiles by default.
     :
   else
-
-    AC_CHECK_LIB(X11,XDrawPoint)
-    AC_CHECK_LIB(Xext,XShmPutImage)
-
+    if test x$mac = x ; then
+      AC_CHECK_LIB(X11,XDrawPoint)
+      AC_CHECK_LIB(Xext,XShmPutImage)
     AC_CHECK_LIB(GL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBGL),,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
     AC_CHECK_LIB(MesaGL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBMESAGL),,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
     oldLIBS="$LIBS"
@@ -40,9 +50,6 @@ else
 #ifdef HAVE_WINDEF_H
 #include <windef.h>
 #endif /* HAVE_WINDEF_H */
-#ifdef HAVE_WINGDI_H
-#include <wingdi.h>
-#endif /* HAVE_WINGDI_H */
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
@@ -58,12 +65,10 @@ else
     AC_CACHE_VAL(pike_cv_lib_OpenGL32, [
       LIBS="$oldLIBS -lOpenGL32"
       AC_TRY_LINK([
+#include <windows.h>
 #ifdef HAVE_WINDEF_H
 #include <windef.h>
 #endif /* HAVE_WINDEF_H */
-#ifdef HAVE_WINGDI_H
-#include <wingdi.h>
-#endif /* HAVE_WINGDI_H */
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
@@ -75,20 +80,36 @@ else
     else
       AC_MSG_RESULT(no)
     fi
+    fi # End not mac
+
+    # MacOS X
+    AC_MSG_CHECKING(for glOrtho in OpenGL.framework)
+    AC_CACHE_VAL(pike_cv_framework_OpenGL, [
+      LIBS="$oldLIBS -framework OpenGL"
+      AC_TRY_LINK([
+#include <OpenGL/gl.h>
+      ], [glOrtho(0.0,0.0,0.0,0.0,0.0,0.0); ], [ pike_cv_framework_OpenGL=yes ], [ pike_cv_framework_OpenGL=no ])
+    ])
+    if test x"$pike_cv_framework_OpenGL" = xyes; then
+      AC_DEFINE(HAVE_GL)
+      PIKE_FEATURE_OK(GL)
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
     LIBS="$oldLIBS"
 
     tmp_gl_fail=no
-    if test x"$with_lib_GL" = "xyes" -a x"$ac_cv_lib_GL_glOrtho" = xyes; then
-      LIBS="-lGL $LIBS"
-      AC_DEFINE(HAVE_GL)
+    if test x"$pike_cv_framework_OpenGL" = xyes; then
+      LIBS="-framework OpenGL $LIBS"
+    elif test x"$with_lib_GL" = "xyes" -a x"$ac_cv_lib_GL_glOrtho" = xyes; then
+      LIBS="-lGL $LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
     elif test x"$with_lib_GL" = "xyes" -a x"$pike_cv_lib_OpenGL" = xyes; then
       LIBS="-lOpenGL $LIBS"
-      AC_DEFINE(HAVE_GL)
     elif test x"$with_lib_GL" = "xyes" -a x"$pike_cv_lib_OpenGL32" = xyes; then
       LIBS="-lOpenGL32 $LIBS"
-      AC_DEFINE(HAVE_GL)
     elif test x"$with_lib_MesaGL" = "xyes" -a x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
-      LIBS="-lMesaGL $LIBS"
+      LIBS="-lMesaGL $LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
     elif test x"$ac_cv_lib_GL_glOrtho" = xyes; then
       LIBS="-lGL $LIBS"
     elif test x"$pike_cv_lib_OpenGL" = xyes; then
@@ -96,14 +117,16 @@ else
     elif test x"$pike_cv_lib_OpenGL32" = xyes; then
       LIBS="-lOpenGL32 $LIBS"
     elif test x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
-      LIBS="-lMesaGL $LIBS"
+      LIBS="-lMesaGL $LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
     else
       AC_MSG_WARN([No GL or MesaGL libraries, disabling GL support.])
+      PIKE_FEATURE_NODEP(GL)
       tmp_gl_fail=yes
     fi
     
     if test x"$tmp_gl_fail" = xno; then
       AC_DEFINE(HAVE_GL)
+      PIKE_FEATURE_OK(GL)
       AUTO_OBJS="auto.o"
     fi
     

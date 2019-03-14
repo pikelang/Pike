@@ -1,21 +1,20 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "image_machine.h"
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
-RCSID("$Id: tim.c,v 1.12 2001/06/13 13:05:27 grubba Exp $");
-#include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
-#include "array.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "operators.h"
-#include "stralloc.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 
@@ -24,8 +23,6 @@ RCSID("$Id: tim.c,v 1.12 2001/06/13 13:05:27 grubba Exp $");
 
 #include "encodings.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
 
 extern struct program *image_program;
@@ -317,14 +314,14 @@ void img_tim_decode(INT32 args, int header_only)
 static void image_tim_f_decode(INT32 args)
 {
    img_tim_decode(args,0);
-   push_string(make_shared_string("image"));
+   push_constant_text("image");
    f_index(2);
 }
 
 static void image_tim_f_decode_alpha(INT32 args)
 {
    img_tim_decode(args,0);
-   push_string(make_shared_string("alpha"));
+   push_constant_text("alpha");
    f_index(2);
 }
 

@@ -1,0 +1,68 @@
+/* -*- C -*- */
+class GDK2.Bitmap;
+inherit GDK2.Drawable;
+
+%{
+#ifndef INIT_VARIABLES
+extern struct program *image_program;
+#endif
+%}
+
+
+//! A bitmap is a black and white pixmap. Most commonly used as masks
+//! for images, widgets and pixmaps.
+//!
+//! NOIMG
+
+void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
+//! Create a new GDK2.Bitmap object.
+//! Argument is either an Image.image object, or {xsisze,ysize,xbitmapdata}.
+{
+  INT_TYPE x, y;
+  struct pike_string *d;
+
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
+  if (args==3) {
+    get_all_args("create",args,"%i%i%n",&x,&y,&d);
+    if(d->len*8 < x*y)
+      Pike_error("Bitmap string is too short\n");
+  } else if (args==1) {
+    struct object *o;
+    struct image *img;
+    get_all_args("create",args,"%o",&o);
+    img=(struct image*)get_storage(o, image_program);
+    x = img->xsize;
+    y = img->ysize;
+
+    /* Now we have the image size.. Lets create the bitmap... */
+    apply(o,"tobitmap",0);
+    get_all_args("internal",1,"%n",&d);
+    args=2; /* evil me.. */
+  } else {
+    Pike_error("Wrong number of arguments to GDK2.Bitmap()\n");
+  }
+
+  THIS->obj=(void *)gdk_bitmap_create_from_data(0,d->str,x,y);
+  if (!THIS->obj)
+    Pike_error("Failed to create bitmap\n");
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+
+void ref()
+//! Add a reference
+{
+/*  gdk_bitmap_ref( (void *)THIS->obj ); */
+  g_object_ref((void *)THIS->obj);
+  RETURN_THIS();
+}
+
+void unref()
+//! Remove a reference
+{
+/*  gdk_bitmap_unref( (void *)THIS->obj ); */
+  g_object_unref((void *)THIS->obj);
+  RETURN_THIS();
+}
+

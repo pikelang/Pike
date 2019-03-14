@@ -1,0 +1,36 @@
+/* -*- C -*- */
+class GTK2.Hbox;
+inherit GTK2.Box;
+
+//! Most packing is done by creating boxes. These are invisible widget
+//! containers that we can pack our widgets into which come in two
+//! forms, a horizontal box, and a vertical box. This is the horizontal
+//! one.  When packing widgets into a horizontal box, the objects are
+//! inserted horizontally from left to right or right to left depending
+//! on the call used.
+//!
+//! IMG: GTK2.Hbox(0,0)->add(GTK2.Button("Hello"))->add(GTK2.Button("World"))->pack_end_defaults(GTK2.Button("From right"))->pack_start_defaults(GTK2.Button("From left"))
+//! IMG: GTK2.Hbox(1,0)->add(GTK2.Button("Hello"))->add(GTK2.Button("World"))->pack_end_defaults(GTK2.Button("From right"))->pack_start_defaults(GTK2.Button("From left"))
+//! IMG: GTK2.Hbox(1,40)->add(GTK2.Button("Hello"))->add(GTK2.Button("World"))->pack_end_defaults(GTK2.Button("From right"))->pack_start_defaults(GTK2.Button("From left"))
+
+void create(int|mapping(string:mixed) uniformp_or_props, ?int hpadding)
+//! Create a new horizontal box widget.
+//! If all_same_size is true, all widgets will have exactly the same size.
+//! hpadding is added to the left and right of the children.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
+      INT_TYPE uniformp,padding;
+      GtkWidget *gh;
+      get_all_args("create",args,"%i%i",&uniformp,&padding);
+      gh=gtk_hbox_new(uniformp,padding);
+      THIS->obj=G_OBJECT(gh);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_HBOX);
+    }
+    pgtk2_pop_n_elems(args);
+  }
+  pgtk2__init_this_object();
+}

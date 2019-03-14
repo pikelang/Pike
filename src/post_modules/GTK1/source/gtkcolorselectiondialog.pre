@@ -1,0 +1,23 @@
+/* -*- C -*- */
+class GTK1.ColorSelectionDialog;
+inherit GTK1.Window;
+//! The color selection dialog widget is, not surprisingly, a color selection
+//! widget in a dialog window. Use the subwidget functions below to access the
+//! different subwidgets directly.
+//! <p>
+//! TIMG: GTK1.ColorSelectionDialog("Select color")
+//! </p>
+signal color_changed;
+//! Called when the color is changed
+void create( string title );
+//! Create a new color selection dialog with the specified title.
+member GTK1.ColorSelection colorsel;
+//! Return the color selection widget
+member GTK1.Button ok_button;
+//! Return the ok button
+member GTK1.Button cancel_button;
+//! Return the cancel button widget.
+member GTK1.Button help_button;
+//! Return the help button
+
+

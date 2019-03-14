@@ -3,6 +3,7 @@
 //!	time units:
 //!	<ref>Year</ref>, <ref>Month</ref>, <ref>Week</ref>, <ref>Day</ref>
 
+#pike 7.0
 
 array(string) month_names=
    ({"January","February","March","April","May","June","July","August",
@@ -30,7 +31,7 @@ class _TimeUnit
 
 //== Year ====================================================================
 
-//! 	A @[Calendar.time_unit]. 
+//! 	A @[Calendar._TimeUnit]. 
 //!
 //!	Lesser units: <ref>Month</ref>, <ref>Week</ref>, <ref>Day</ref>
 //!	Greater units: none

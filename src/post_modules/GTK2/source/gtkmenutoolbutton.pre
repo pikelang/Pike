@@ -1,0 +1,73 @@
+/* -*- C -*- */
+require gtk26;
+
+class GTK2.MenuToolButton;
+inherit GTK2.ToolButton;
+
+//! Properties to be notified.
+//! GTK2.Menu menu
+
+signal show_menu;
+
+void create(GTK2.Widget|string|mapping(string:mixed) icon, ?string label)
+//! Create a new GTK2.MenuToolButton.
+//! If icon is a string, label should be omitted.  If it isn't,
+//! it will be igrnored.  The result will be a button from
+//! a stock item, one of CONST(GTK_STOCK).
+//! If icon is a GTK2.Widget, it will be used as the icon, and label
+//! will be the label.  The label must exist if that is the case.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    GtkToolItem *gm;
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+      char *icon;
+      get_all_args("create",args,"%s",&icon);
+      gm=gtk_menu_tool_button_new_from_stock(icon);
+      THIS->obj=G_OBJECT(gm);
+    } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+      struct pike_string *t;
+      struct object *o1;
+      get_all_args("create",args,"%o%T",&o1,&t);
+      if (t && o1) {
+	ref_push_string(t);
+	f_string_to_utf8(1);
+	gm=gtk_menu_tool_button_new(GTK_WIDGET(get_gobject(o1)),(char *)STR0(Pike_sp[-1].u.string));
+	pop_stack();
+      } else
+	Pike_error("Invalid arguments.\n");
+      THIS->obj=G_OBJECT(gm);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_MENU_TOOL_BUTTON);
+    }
+    pgtk2_pop_n_elems(args);
+  }
+  pgtk2__init_this_object();
+}
+
+void set_menu(GTK2.Widget menu);
+//! Sets the GTK2.Menu that is popped up when the user clicks on the arrow.
+
++GTK2.Widget get_menu();
+//! Returns the GTK2.Menu.
+
+void set_arrow_tooltip(GTK2.Tooltips tooltips, string tip_text, string tip_private)
+//! Sets the GTK2.Tooltips object to be used for the arrow button
+//! which pops up the menu.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    char *t1,*t2;
+    get_all_args("set_arrow_tooltip",args,"%o%s%s",&o1,&t1,&t2);
+    gtk_menu_tool_button_set_arrow_tooltip(GTK_MENU_TOOL_BUTTON(THIS->obj),
+		GTK_TOOLTIPS(get_gobject(o1)),t1,t2);
+  }
+  RETURN_THIS();
+}
+/*
+*/
+
+endrequire;
+

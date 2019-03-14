@@ -1,0 +1,11 @@
+AC_INIT(adt.cmod)
+
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+AC_SUBST(AUTO)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

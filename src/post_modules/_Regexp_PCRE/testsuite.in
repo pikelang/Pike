@@ -1,0 +1,55 @@
+START_MARKER
+cond_begin([[ master()->resolv("Regexp.PCRE.Plain") ]])
+
+   test_eq(Regexp.PCRE("b[^-]*m")->replace1("abam-boom-fooabadoom","gurka"),
+           "agurka-boom-fooabadoom")
+   test_eq(Regexp.PCRE("b[^-]*m")->replace("abam-boom-fooabadoom","gurka"),
+           "agurka-gurka-fooagurka")
+
+   test_eq(Regexp.PCRE("o+")->replace("foobar",""),"fbar");
+   test_eq(Regexp.PCRE("o*")->replace("foobar",""),"fbar");
+   test_eq(Regexp.PCRE("^o*")->replace("foobar",""),"foobar");
+   test_eq(Regexp.PCRE("o*$")->replace("foobar",""),"foobar");
+
+   test_any_equal(
+      array x=({});
+      Regexp.PCRE("o+")->matchall("foobar", lambda(mixed s) {
+        x += ({ s });
+      });
+      return x*({});, ({"oo"}))
+
+   test_any_equal(
+      array x=({});
+      Regexp.PCRE("o*")->matchall("foobar", lambda(mixed s) {
+        x += ({ s });
+      });
+      return x*({});, ({"","oo","","","",""}))
+
+   test_equal([[Regexp.PCRE ("")->exec ("foo", 2)]], [[({2, 2})]])
+   test_equal([[Regexp.PCRE ("")->exec ("foo", 3)]], [[({3, 3})]])
+   test_equal([[Regexp.PCRE ("")->exec ("foo", 4)]], -1)
+   test_equal([[Regexp.PCRE ("")->exec ("foo", 17)]], -1)
+
+   test_equal([[Regexp.PCRE ("")->replace ("xyz", "123")]], "123x123y123z123")
+
+test_any_equal([[
+  // Crash bug reported by Eiichiro ITANI.
+  object re = Regexp.PCRE("(a)?(b)");
+  return re->split("b");
+]], [[({0, "b"})]])
+
+test_equal([[Regexp.PCRE ("^(?:(.*b)|(.*c))$")->exec ("GERGXVb")]],
+	   [[({0, 7, 0, 7, -1, -1})]])
+test_equal([[Regexp.PCRE ("^(?:(.*b)|(.*c))$")->exec ("GERGXVc")]],
+	   [[({0, 7, -1, -1, 0, 7})]])
+
+cond_end // Regexp.PCRE.Plain
+
+cond_begin([[ master()->resolv("Regexp.PCRE.Widestring") ]])
+
+   test_eq(Regexp.PCRE("\1234[^-]*m")->replace("a\1234\567m-\1234oom-fooa\1234adoom","g\1234rka"),
+           "ag\1234rka-g\1234rka-fooag\1234rka")
+
+cond_end // Regexp.PCRE.Widestring
+
+END_MARKER

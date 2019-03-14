@@ -1,6 +1,9 @@
 /*
- * $Id: dynamic_load.h,v 1.4 2000/09/28 15:37:24 grubba Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef DYNAMIC_LOAD_H
 #define DYNAMIC_LOAD_H
 

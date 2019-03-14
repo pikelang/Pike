@@ -1,93 +1,119 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.27 2001/09/17 23:22:10 nilsson Exp $
-#
 # Henrik Grubbström 2001-02-02
 #
 
+BUILDDIR=
+DESTDIR=
 PIKE=pike
 
-all: html
+all: modref traditional
 
-tree-split: join _tree-split
+pike.ida.liu.se: modref pelix_modref traditional
 
-_tree-split:
-	rm -rf manual-tree-split || /bin/true
+caudium.net: modref caudium_modref traditional
+
+# These are the actual build targets for making manuals...
+
+modref: $(BUILDDIR)/modref.xml structure/modref.css structure/modref.html \
+	  presentation/make_html.pike presentation/tree-split-autodoc.pike
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_modref
+
+module_modref: $(BUILDDIR)/module_modref.xml structure/modref.css structure/module_modref.html \
+	  presentation/make_html.pike presentation/tree-split-autodoc.pike
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_module_modref
+
+low_module_modref:
+	-rm -rf $(DESTDIR)modref
+	@mkdir $(DESTDIR)modref
+	@cp structure/modref.css $(DESTDIR)modref/style.css
 	@$(PIKE) presentation/tree-split-autodoc.pike \
-	  manual.xml tree-split-template.html manual-tree-split
-	@cp tree-split-style.css manual-tree-split/style.css
-	@test -d manual-tree-split/images || mkdir manual-tree-split/images
-	cp manual/images/* manual-tree-split/images
-	@cp src_images/next.gif src_images/prev.gif manual-tree-split/images
+	  $(BUILDDIR)/module_modref.xml structure/module_modref.html $(DESTDIR)modref predef
+	@mkdir $(DESTDIR)modref/images
+	-cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
+	@for file in pike_logo.gif next.gif prev.gif unit.gif \
+          pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
+	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
 
-html: html_manual manual.xml
-	cp manual/images/* html_manual/images/
-	@$(PIKE) presentation/make_html.pike --img=images/ manual.xml
+low_modref:
+	-rm -rf $(DESTDIR)modref
+	@test -d $(DESTDIR)modref || mkdir modref
+	@cp structure/modref.css modref/style.css
+	@$(PIKE) presentation/tree-split-autodoc.pike \
+	  $(BUILDDIR)/modref.xml structure/modref.html $(DESTDIR)modref predef
+	@test -d $(DESTDIR)modref/images || mkdir $(DESTDIR)modref/images
+	-cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
+	@for file in pike_logo.gif next.gif prev.gif unit.gif \
+          pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
+	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
 
-join: recursive_join
-	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml not_extracted/*.xml`" \
-	  autodoc.xml
+pelix_modref: $(BUILDDIR)/modref.xml structure/pelix_modref.html \
+	        presentation/make_html.pike presentation/tree-split-autodoc.pike
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_pelix_modref
 
-recursive_join: images
-	@(cd build/src && $(MAKE) PIKE="$(PIKE)" join)
-	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" join)
+low_pelix_modref:
+	-rm -rf pelix_modref
+	@mkdir pelix_modref
+	@$(PIKE) presentation/tree-split-autodoc.pike \
+	  $(BUILDDIR)/modref.xml structure/pelix_modref.html pelix_modref predef
+	@mkdir pelix_modref/images
+	cp $(BUILDDIR)/doc_build/images/* pelix_modref/images
 
-images: extract
+caudium_modref: $(BUILDDIR)/modref.xml structure/caudium_modref.html \
+		presentation/make_html.pike presentation/tree-split-autodoc.pike
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_caudium_modref
+
+low_caudium_modref:
+	-rm -rf caudium_modref
+	@mkdir caudium_modref
+	@$(PIKE) presentation/tree-split-autodoc.pike \
+	  $(BUILDDIR)/modref.xml structure/caudium_modref.html caudium_modref predef
+	@mkdir pelix_modref/images
+	cp $(BUILDDIR)/doc_build/images/* caudium_modref/images
+
+one_page: onepage $(BUILDDIR)/onepage.xml presentation/make_html.pike
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_one_page
+
+low_one_page:
+	cp $(BUILDDIR)/doc_build/images/* onepage/
+	@$(PIKE) presentation/make_html.pike --img= $(BUILDDIR)/onepage.xml
+
+traditional: traditional_manual $(BUILDDIR)/traditional.xml presentation/make_html.pike
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_traditional
+
+low_traditional:
+	cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)traditional_manual/images/
+	@$(PIKE) presentation/make_html.pike --dest=$(DESTDIR) --img=images/ $(BUILDDIR)/traditional.xml
+
+# Sub targets used by the above targets.
+
+always:
+
+images: $(BUILDDIR)/doc_build/src/post_modules/GTK/refdoc/images
 	@cp ../src/post_modules/GTK/refdoc/images/*.png \
-	  build/src/post_modules/GTK/refdoc/images
-
-extract: build/src/Makefile build/lib/Makefile manual/images
-	@(cd build/src && $(MAKE) PIKE="$(PIKE)" extract)
-	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" extract)
-
-manual.xml: join structure.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure.xml autodoc.xml > manual.xml
-
-autodoc.xml: $(XMLFILES) bin/join.pike
-	@$(PIKE) bin/join.pike --post-process autodoc.xml $(XMLFILES)
-
-build/src/Makefile: Makefile.in build/src
-	@sed -e "s#@SRCDIR@#../../../src#" \
-	     -e "s#@ROOT@#../..#" \
-	     -e "s#@BUILDROOT@#..#" \
-	  <Makefile.in >build/src/Makefile
-
-build/lib/Makefile: Makefile.in build/lib
-	@sed -e "s#@SRCDIR@#../../../lib#" \
-	     -e "s#@ROOT@#../..#" \
-	     -e "s#@BUILDROOT@#..#" \
-	  <Makefile.in >build/lib/Makefile
+	  $(BUILDDIR)/doc_build/src/post_modules/GTK/refdoc/images
 
 # Directories
 
-build/src: build
-	@test -d build/src || mkdir build/src
+onepage:
+	@test -d onepage || mkdir onepage
 
-build/lib: build
-	@test -d build/lib || mkdir build/lib
+traditional_manual:
+	@test -d traditional_manual || mkdir traditional_manual
+	@test -d traditional_manual/images || mkdir traditional_manual/images
 
-build:
-	@test -d build || mkdir build
 
-manual:
-	@test -d manual || mkdir manual
+# Development targets
 
-manual/images: manual
-	@test -d manual/images || mkdir manual/images
+touch-mirardoc:
+	@touch `grep -r \\*\\*\! ../src/modules/* | cut -d: -f1 | \
+	  uniq`
+	@touch `grep -r "//\! module" ../lib/modules/* | cut -d: -f1 | \
+	  uniq`
 
-html_manual:
-	@test -d html_manual || mkdir html_manual
-	@test -d html_manual/images || mkdir html_manual/images
 
 # Cleanup
 
 clean:
-	@rm -rf build || /bin/true
-
-spotless: clean
-	@rm -f manual.xml || /bin/true
-	@rm -f autodoc.xml || /bin/true
-	@rm -rf manual || /bin/true
-	@rm -rf html_manual || /bin/true
-	@rm -rf manual-tree-split || /bin/true
+	-rm -r modref onepage traditional_manual pelix_modref autodoc.xml

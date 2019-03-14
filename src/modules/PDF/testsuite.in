@@ -1,3 +1,4 @@
-cond([[ master()->resolv("PDF")->encode ]],
-[[
-]])
+START_MARKER
+cond_begin([[ master()->resolv("PDF")->encode ]])
+cond_end
+END_MARKER

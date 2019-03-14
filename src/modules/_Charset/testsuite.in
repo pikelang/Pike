@@ -1,30 +1,779 @@
-// $Id: testsuite.in,v 1.2 2001/09/17 00:33:14 nilsson Exp $
+START_MARKER
 
-// _Charset.decoder
-test_true([[objectp(_Charset)]])
-test_true([[functionp(_Charset.decoder)]])
-test_true([[objectp(_Charset.decoder("latin1"))]])
-test_true([[functionp(_Charset.decoder("latin1")->feed)]])
-test_eq([[_Charset.decoder("latin1")->feed("xyzåäö¤ß¶")->drain()]],"xyzåäö¤ß¶")
+// Charset.decoder
+test_true([[objectp(Charset)]])
+test_true([[functionp(Charset.decoder)]])
+test_true([[objectp(Charset.decoder("latin1"))]])
+test_true([[functionp(Charset.decoder("latin1")->feed)]])
+test_eq([[Charset.decoder("latin1")->feed("xyzåäö¤ß¶")->drain()]],"xyzåäö¤ß¶")
 
-// _Charset.rfc1345
-test_eq([[_Charset.decoder("iso646-se")->feed("}{|][\\")->drain()]],"åäöÅÄÖ")
-test_eq([[_Charset.decoder("iso-ir-126")->feed("abcåäö")->drain()]],
+// 7-bit ASCII
+test_eq([[Charset.encoder("ASCII", "?", lambda(string ch) { return "&#" + ch[0] + ";"; })->feed("räksmörgås")->drain()]],"r&#228;ksm&#246;rg&#229;s")
+
+// Charset.rfc1345
+test_eq([[Charset.decoder("iso646-se")->feed("}{|][\\")->drain()]],"åäöÅÄÖ")
+test_eq([[Charset.decoder("iso-ir-126")->feed("abcåäö")->drain()]],
 	"abc\x3b5\x3b4\x3c6")
 
-// _Charset.ISO2022
-test_eq([[_Charset.decoder("iso-2022")->
+// Charset.ISO2022
+test_eq([[Charset.decoder("iso-2022")->
 	feed("\033-Aeäv\016ed\017v\033$(BF|K\\\033(Bfoo")->drain()]],
 	"eävåäv\x65e5\x672c""foo")
+// Verify that characters mapping to multiple UTF-16 characters work.
+// ISO-IR 233 aka JIS X0213.
+test_eq([[Charset.decoder("iso-2022")->
+	feed("\e$(Q$w%wy)")->drain()]],
+	"\u304b\u309a\u30ab\u309a\U0002550e")
 
-// _Charset.UTF7
-test_eq([[_Charset.decoder("utf-7")->
+// 2022 variants
+test_eq([[Charset.encoder("iso-2022-jp")->
+	feed("\x30ce\x30f4\x30f8\x30ce")->drain()]],
+	[["\33$B%N%t\33$@%t%N"]])
+test_eq([[Charset.encoder("iso-2022-cn")->
+	feed("\x5143\x6c14")->drain()]], [["\33$AT*Fx"]])
+test_eq([[Charset.encoder("iso-2022-jp")->
+	feed("\x5143\x6c17")->drain()]], [["\33$B855$"]])
+test_eq([[Charset.encoder("iso-2022-kr")->
+	feed("\x5143\x6c23")->drain()]], [["\33$(Cj*Q("]])
+test_eq([[Charset.encoder("iso-2022-jp2")->
+	feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]],
+	[["\33$B`T\33$(Dlt\33$AYd\33$(C|\\"]])
+test_eq([[Charset.encoder("iso-2022")->
+	feed("\x9ed8\x9ed5\x9ec9\x9ec3\xff76\xff85")->drain()]],
+	[["\33$B`T\33$(Dlt\33$AYd\33$(C|\\\33(I6E"]])
+test_eval_error([[Charset.encoder("iso-2022-jp")->
+		feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]])
+test_eval_error([[Charset.encoder("iso-2022-jp")->
+		feed("\xff76\xff85")->drain()]])
+test_eval_error([[Charset.encoder("iso-2022-jp2")->
+		feed("\xff76\xff85")->drain()]])
+test_any([[
+  // Test encoding (and decoding) of characters from various
+  // different character sets.
+  string vector = "\x1b7\x1f5\x2bf\x2c7\x2c9\x391\x402\x5d0";
+  return Charset.decoder("iso-2022")->
+	feed(Charset.encoder("iso-2022")->feed(vector)->drain())->drain() ==
+	vector;
+]], 1)
+
+// Charset.UTF7
+test_eq([[Charset.decoder("utf-7")->
 	feed("foobar+-xy-+--z+AOUA5AD2!+ZeVnLA-X")->drain()]],
 	"foobar+xy-+-zåäö!\x65e5\x672cX")
 
-// _Charset.UTF8
-test_eq([[_Charset.decoder("utf-8")->feed("Ã¥Ã¤Ã¶")->drain()]],"åäö")
+// Charset.UTF8
+test_eq([[Charset.decoder("utf-8")->feed("Ã¥Ã¤Ã¶")->drain()]],"åäö")
 
-// _Charset.UTF16
-test_eq([[_Charset.decoder("utf-16")->feed("\0h\0e\0j")->drain()]],"hej")
-test_eq([[_Charset.encoder("utf-16")->feed("hej")->drain()]],"\0h\0e\0j")
+test_eq(Charset.encoder ("utf-8")->feed ("\ud7ff")->drain(), "\u00ed\u009f\u00bf")
+test_eval_error(return Charset.encoder ("utf-8")->feed ("\ud800")->drain())
+test_eval_error(return Charset.encoder ("utf-8")->feed ("\udfff")->drain())
+test_eq(Charset.encoder ("utf-8")->feed ("\ue000")->drain(), "\u00ee\u0080\u0080")
+test_eq(Charset.encoder ("utf-8")->feed ("\U0010ffff")->drain(), "\u00f4\u008f\u00bf\u00bf")
+test_eval_error(return Charset.encoder ("utf-8")->feed ("\U00110000")->drain())
+
+test_eq(Charset.decoder ("utf-8")->feed ("\u00ed\u009f\u00bf")->drain(), "\ud7ff")
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\u00ed\u00a0\u0080")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\u00ed\u00bf\u00bf")->drain())
+test_eq(Charset.decoder ("utf-8")->feed ("\u00ee\u0080\u0080")->drain(), "\ue000")
+test_eq(Charset.decoder ("utf-8")->feed ("\u00f4\u008f\u00bf\u00bf")->drain(), "\U0010ffff")
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\u00f4\u0090\u0080\u0080")->drain())
+
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xc0\x80")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xc1\xbf")->drain())
+test_eq(Charset.decoder ("utf-8")->feed ("\xc2\x80")->drain(), "\x80")
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xe0\x80\x80")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xe0\x9f\xbf")->drain())
+test_eq(Charset.decoder ("utf-8")->feed ("\xe0\xa0\x80")->drain(), "\x800"))
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xf0\x80\x80\x80")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xf0\x8f\xbf\xbf")->drain())
+test_eq(Charset.decoder ("utf-8")->feed ("\xf0\x90\x80\x80")->drain(), "\x10000")
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xf8")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xfc")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xfe")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xff")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\x80")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xcf\x3f")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xcf\x7f")->drain())
+test_eval_error(return Charset.decoder ("utf-8")->feed ("\xcf\xff")->drain())
+
+// Charset.UTF16
+test_eq([[Charset.decoder("utf-16")->feed("\0h\0e\0j")->drain()]],"hej")
+test_eq([[Charset.encoder("utf-16")->feed("hej")->drain()]],"\0h\0e\0j")
+test_eq([[Charset.decoder("utf-16BE")->feed("\0h\0e\0j")->drain()]],"hej")
+test_eq([[Charset.encoder("utf-16BE")->feed("hej")->drain()]],"\0h\0e\0j")
+test_eq([[Charset.decoder("utf-16LE")->feed("h\0e\0j\0")->drain()]],"hej")
+test_eq([[Charset.encoder("utf-16LE")->feed("hej")->drain()]],"h\0e\0j\0")
+
+// Multichar
+test_eq([[Charset.decoder("gbk")->feed("hej\x81\x40")->drain()]],"hej\x4e02")
+test_eq([[Charset.decoder("949")->feed("hej\x81\x41")->drain()]],"hej\xac02")
+
+// GB18030
+test_any([[
+  import Parser.XML.Tree;
+
+  string decode_hex_attribute(SimpleNode a, string attr)
+  {
+    mapping(string:string) attrs = a->get_attributes();
+    string hex_bytes;
+    if (!(hex_bytes = attrs[attr]))
+      error("a-node lacks %s attribute.\n", attr);
+    return sprintf("%{%c%}",
+                   array_sscanf(hex_bytes, "%x "*sizeof(hex_bytes/" ")));
+  };
+
+  SimpleNode root = simple_parse_file("]]SRCDIR[[/gb-18030-2000.xml");
+
+  SimpleNode chmap = root->get_first_element("characterMapping");
+  if (!chmap) return "No characterMapping";
+  SimpleNode assignments = chmap->get_first_element("assignments");
+  if (!assignments) return "No assignments";
+  array(SimpleNode) a_nodes = assignments->get_elements("a");
+  // We're only interested in the 4-byte codes for now.
+  a_nodes = filter(a_nodes,
+                   lambda(SimpleNode a) {
+                     string b = a->get_attributes()->b;
+                     return b && (sizeof(b/" ") == 4);
+                   });
+  array(string) ucodes = map(a_nodes, decode_hex_attribute, "u");
+  array(string) bcodes = map(a_nodes, decode_hex_attribute, "b");
+
+  // Look at the range nodes too.
+  array(SimpleNode) range_nodes = assignments->get_elements("range");
+  ucodes += map(range_nodes, decode_hex_attribute, "uFirst");
+  bcodes += map(range_nodes, decode_hex_attribute, "bFirst");
+  ucodes += map(range_nodes, decode_hex_attribute, "uLast");
+  bcodes += map(range_nodes, decode_hex_attribute, "bLast");
+
+  // Pad both arrays with the 0 element to make sure the algorithm
+  // is reset between characters.
+  string ucode = ucodes * ucodes[0];
+  string bcode = bcodes * bcodes[0];
+  string dcode = Charset.decoder("GB18030")->feed(bcode)->drain();
+  if (dcode != ucode) {
+    string pref = String.common_prefix(({ucode, dcode}));
+    return sprintf("Failure for character U+%06x "
+                   "(%02x %02x %02x %02x), got U+%06x\n",
+                   ucode[sizeof(pref)],
+                   @values(bcode[sizeof(pref)*4..sizeof(pref)*4 + 3]),
+                   dcode[sizeof(pref)]);
+  }
+  return 0;
+]], 0)
+test_any([[
+  import Parser.XML.Tree;
+
+  string decode_hex_attribute(SimpleNode a, string attr)
+  {
+    mapping(string:string) attrs = a->get_attributes();
+    string hex_bytes;
+    if (!(hex_bytes = attrs[attr]))
+      error("a-node lacks %s attribute.\n", attr);
+    return sprintf("%{%c%}",
+                   array_sscanf(hex_bytes, "%x "*sizeof(hex_bytes/" ")));
+  };
+
+  SimpleNode root = simple_parse_file("]]SRCDIR[[/gb-18030-2000.xml");
+
+  SimpleNode chmap = root->get_first_element("characterMapping");
+  if (!chmap) return "No characterMapping";
+  SimpleNode assignments = chmap->get_first_element("assignments");
+  if (!assignments) return "No assignments";
+  array(SimpleNode) a_nodes = assignments->get_elements("a");
+  // We're only interested in the 2-byte codes for now.
+  a_nodes = filter(a_nodes,
+                   lambda(SimpleNode a) {
+                     string b = a->get_attributes()->b;
+                     return b && (sizeof(b/" ") == 2);
+                   });
+  array(string) ucodes = map(a_nodes, decode_hex_attribute, "u");
+  array(string) bcodes = map(a_nodes, decode_hex_attribute, "b");
+
+  // Pad both arrays with the 0 element to make sure the algorithm
+  // is reset between characters.
+  string ucode = ucodes * ucodes[0];
+  string bcode = bcodes * bcodes[0];
+  string dcode = Charset.decoder("GB18030")->feed(bcode)->drain();
+  if (dcode != ucode) {
+    string pref = String.common_prefix(({ucode, dcode}));
+    return sprintf("Failure for character U+%06x (%02x %02x), got U+%06x\n",
+                   ucode[sizeof(pref)],
+                   @values(bcode[sizeof(pref)*2..sizeof(pref)*2 + 1]),
+                   dcode[sizeof(pref)]);
+  }
+  return 0;
+]], 0)
+test_any([[
+  import Parser.XML.Tree;
+
+  string decode_hex_attribute(SimpleNode a, string attr)
+  {
+    mapping(string:string) attrs = a->get_attributes();
+    string hex_bytes;
+    if (!(hex_bytes = attrs[attr]))
+      error("a-node lacks %s attribute.\n", attr);
+    return sprintf("%{%c%}",
+                   array_sscanf(hex_bytes, "%x "*sizeof(hex_bytes/" ")));
+  };
+
+  SimpleNode root = simple_parse_file("]]SRCDIR[[/gb-18030-2000.xml");
+
+  SimpleNode chmap = root->get_first_element("characterMapping");
+  if (!chmap) return "No characterMapping";
+  SimpleNode assignments = chmap->get_first_element("assignments");
+  if (!assignments) return "No assignments";
+  array(SimpleNode) a_nodes = assignments->get_elements("a");
+  // We're only interested in the 4-byte codes for now.
+  a_nodes = filter(a_nodes,
+                   lambda(SimpleNode a) {
+                     string b = a->get_attributes()->b;
+                     return b && (sizeof(b/" ") == 4);
+                   });
+  array(string) ucodes = map(a_nodes, decode_hex_attribute, "u");
+  array(string) bcodes = map(a_nodes, decode_hex_attribute, "b");
+
+  // Look at the range nodes too.
+  array(SimpleNode) range_nodes = assignments->get_elements("range");
+  ucodes += map(range_nodes, decode_hex_attribute, "uFirst");
+  bcodes += map(range_nodes, decode_hex_attribute, "bFirst");
+  ucodes += map(range_nodes, decode_hex_attribute, "uLast");
+  bcodes += map(range_nodes, decode_hex_attribute, "bLast");
+
+  // Pad both arrays with the 0 element to make sure the algorithm
+  // is reset between characters.
+  string ucode = ucodes * ucodes[0];
+  string bcode = bcodes * bcodes[0];
+  string ecode = Charset.encoder("GB18030")->feed(ucode)->drain();
+  if (ecode != bcode) {
+    string pref = String.common_prefix(({ecode, bcode}));
+    int off = sizeof(pref) & ~3;
+    return sprintf("Failure for character U+%06x "
+                   "(%02x %02x %02x %02x), got %02x %02x %02x %02x\n",
+                   ucode[off/4],
+                   @values(bcode[off..off + 3]),
+                   @values(ecode[off..off + 3]));
+  }
+  return 0;
+]], 0)
+test_any([[
+  import Parser.XML.Tree;
+
+  string decode_hex_attribute(SimpleNode a, string attr)
+  {
+    mapping(string:string) attrs = a->get_attributes();
+    string hex_bytes;
+    if (!(hex_bytes = attrs[attr]))
+      error("a-node lacks %s attribute.\n", attr);
+    return sprintf("%{%c%}",
+                   array_sscanf(hex_bytes, "%x "*sizeof(hex_bytes/" ")));
+  };
+
+  SimpleNode root = simple_parse_file("]]SRCDIR[[/gb-18030-2000.xml");
+
+  SimpleNode chmap = root->get_first_element("characterMapping");
+  if (!chmap) return "No characterMapping";
+  SimpleNode assignments = chmap->get_first_element("assignments");
+  if (!assignments) return "No assignments";
+  array(SimpleNode) a_nodes = assignments->get_elements("a");
+  // We're only interested in the 2-byte codes for now.
+  a_nodes = filter(a_nodes,
+                   lambda(SimpleNode a) {
+                     string b = a->get_attributes()->b;
+                     return b && (sizeof(b/" ") == 2);
+                   });
+  array(string) ucodes = map(a_nodes, decode_hex_attribute, "u");
+  array(string) bcodes = map(a_nodes, decode_hex_attribute, "b");
+
+  // Pad both arrays with the 0 element to make sure the algorithm
+  // is reset between characters.
+  string ucode = ucodes * ucodes[0];
+  string bcode = bcodes * bcodes[0];
+  string ecode = Charset.encoder("GB18030")->feed(ucode)->drain();
+  if (ecode != bcode) {
+    string pref = String.common_prefix(({ecode, bcode}));
+    int off = sizeof(pref) & ~1;
+    return sprintf("Failure for character U+%06x (%02x %02x), got %02x %02x\n",
+                   ucode[off/2],
+                   @values(bcode[off..off + 1]),
+                   @values(ecode[off..off + 1]));
+  }
+  return 0;
+]], 0)
+
+// EUC-JP
+test_eq([[Charset.decoder("euc-jp")->feed("\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")->drain()]],"\x300e\x4e04\x4e05\x300f\xff76\xff85")
+test_eq([[Charset.encoder("euc-jp")->feed("\x300e\x4e04\x4e05\x300f\xff76\xff85")->drain()]],"\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")
+
+// Find codecs for all IANA names
+define(test_codec,[[
+  test_true(objectp(Charset.encoder("$1")))
+  test_true(objectp(Charset.decoder("$1")))
+  dnl When we can compare codecs with equal we could add a test to
+  dnl ensure that we at least have the same codecs in every class.
+  ifelse($#,1,,[[test_codec(shift($*))]])
+]])
+test_codec(ANSI_X3.4-1968,iso-ir-6,ANSI_X3.4-1986,ISO_646.irv:1991,dnl
+ASCII,ISO646-US,US-ASCII,us,IBM367,cp367,csASCII)
+dnl test_codec(ISO-10646-UTF-1,csISO10646UTF1)
+test_codec(ISO_646.basic:1983,ref,csISO646basic1983)
+test_codec(INVARIANT,csINVARIANT)
+test_codec(ISO_646.irv:1983,iso-ir-2,irv,csISO2IntlRefVersion)
+test_codec(BS_4730,iso-ir-4,ISO646-GB,gb,uk,csISO4UnitedKingdom)
+test_codec(NATS-SEFI,iso-ir-8-1,csNATSSEFI)
+test_codec(NATS-SEFI-ADD,iso-ir-8-2,csNATSSEFIADD)
+test_codec(NATS-DANO,iso-ir-9-1,csNATSDANO)
+test_codec(NATS-DANO-ADD,iso-ir-9-2,csNATSDANOADD)
+test_codec(SEN_850200_B,iso-ir-10,FI,ISO646-FI,ISO646-SE,se,csISO10Swedish)
+test_codec(SEN_850200_C,iso-ir-11,ISO646-SE2,se2,csISO11SwedishForNames)
+test_codec(KS_C_5601-1987,iso-ir-149,KS_C_5601-1989,KSC_5601,korean,dnl
+csKSC56011987)
+test_codec(ISO-2022-KR,csISO2022KR)
+test_codec(EUC-KR,csEUCKR)
+test_codec(ISO-2022-JP,csISO2022JP)
+test_codec(ISO-2022-JP-2,csISO2022JP2)
+test_codec(ISO-2022-CN)
+test_codec(ISO-2022-CN-EXT)
+test_codec(JIS_C6220-1969-jp,JIS_C6220-1969,iso-ir-13,katakana,x0201-7,dnl
+csISO13JISC6220jp)
+test_codec(JIS_C6220-1969-ro,iso-ir-14,jp,ISO646-JP,csISO14JISC6220ro)
+test_codec(IT,iso-ir-15,ISO646-IT,csISO15Italian)
+test_codec(PT,iso-ir-16,ISO646-PT,csISO16Portuguese)
+test_codec(ES,iso-ir-17,ISO646-ES,csISO17Spanish)
+test_codec(greek7-old,iso-ir-18,csISO18Greek7Old)
+test_codec(latin-greek,iso-ir-19,csISO19LatinGreek)
+test_codec(DIN_66003,iso-ir-21,de,ISO646-DE,csISO21German)
+test_codec(NF_Z_62-010_(1973),iso-ir-25,ISO646-FR1,csISO25French)
+test_codec(Latin-greek-1,iso-ir-27,csISO27LatinGreek1)
+test_codec(ISO_5427,iso-ir-37,csISO5427Cyrillic)
+test_codec(JIS_C6226-1978,iso-ir-42,csISO42JISC62261978)
+test_codec(BS_viewdata,iso-ir-47,csISO47BSViewdata)
+test_codec(INIS,iso-ir-49,csISO49INIS)
+test_codec(INIS-8,iso-ir-50,csISO50INIS8)
+test_codec(INIS-cyrillic,iso-ir-51,csISO51INISCyrillic)
+test_codec(ISO_5427:1981,iso-ir-54,ISO5427Cyrillic1981)
+test_codec(ISO_5428:1980,iso-ir-55,csISO5428Greek)
+test_codec(GB_1988-80,iso-ir-57,cn,ISO646-CN,csISO57GB1988)
+test_codec(GB_2312-80,iso-ir-58,chinese,csISO58GB231280)
+test_codec(NS_4551-1,iso-ir-60,ISO646-NO,no,csISO60DanishNorwegian,dnl
+csISO60Norwegian1)
+test_codec(NS_4551-2,ISO646-NO2,iso-ir-61,no2,csISO61Norwegian2)
+test_codec(NF_Z_62-010,iso-ir-69,ISO646-FR,fr,csISO69French)
+
+dnl csISO70VideotexSupp1 at IANA
+test_codec(videotex-suppl,iso-ir-70,csISO70VideotexSuppl)
+
+test_codec(PT2,iso-ir-84,ISO646-PT2,csISO84Portuguese2)
+test_codec(ES2,iso-ir-85,ISO646-ES2,csISO85Spanish2)
+test_codec(MSZ_7795.3,iso-ir-86,ISO646-HU,hu,csISO86Hungarian)
+test_codec(JIS_C6226-1983,iso-ir-87,x0208,JIS_X0208-1983,csISO87JISX0208)
+test_codec(greek7,iso-ir-88,csISO88Greek7)
+test_codec(ASMO_449,ISO_9036,arabic7,iso-ir-89,csISO89ASMO449)
+test_codec(iso-ir-90,csISO90)
+test_codec(JIS_C6229-1984-a,iso-ir-91,jp-ocr-a,csISO91JISC62291984a)
+
+dnl csISO92JISC62991984b at IANA
+test_codec(JIS_C6229-1984-b,iso-ir-92,ISO646-JP-OCR-B,jp-ocr-b,dnl
+csISO92JISC62291984b)
+
+test_codec(JIS_C6229-1984-b-add,iso-ir-93,jp-ocr-b-add,csISO93JIS62291984badd)
+test_codec(JIS_C6229-1984-hand,iso-ir-94,jp-ocr-hand,csISO94JIS62291984hand)
+test_codec(JIS_C6229-1984-hand-add,iso-ir-95,jp-ocr-hand-add,dnl
+csISO95JIS62291984handadd)
+test_codec(JIS_C6229-1984-kana,iso-ir-96,csISO96JISC62291984kana)
+test_codec(ISO_2033-1983,iso-ir-98,e13b,csISO2033)
+test_codec(ANSI_X3.110-1983,iso-ir-99,CSA_T500-1983,NAPLPS,csISO99NAPLPS)
+test_codec(ISO_8859-1:1987,iso-ir-100,ISO_8859-1,ISO-8859-1,latin1,l1,dnl
+IBM819,CP819,csISOLatin1)
+test_codec(ISO_8859-2:1987,iso-ir-101,ISO_8859-2,ISO-8859-2,latin2,l2,dnl
+csISOLatin2)
+test_codec(T.61-7bit,iso-ir-102,csISO102T617bit)
+test_codec(T.61-8bit,T.61,iso-ir-103,csISO103T618bit)
+test_codec(ISO_8859-3:1988,iso-ir-109,ISO_8859-3,ISO-8859-3,latin3,l3,dnl
+csISOLatin3)
+test_codec(ISO_8859-4:1988,iso-ir-110,ISO_8859-4,ISO-8859-4,latin4,l4,dnl
+csISOLatin4)
+test_codec(ECMA-cyrillic,iso-ir-111,csISO111ECMACyrillic)
+test_codec(CSA_Z243.4-1985-1,iso-ir-121,ISO646-CA,csa7-1,ca,csISO121Canadian1)
+test_codec(CSA_Z243.4-1985-2,iso-ir-122,ISO646-CA2,csa7-2,csISO122Canadian2)
+test_codec(CSA_Z243.4-1985-gr,iso-ir-123,csISO123CSAZ24341985gr)
+test_codec(ISO_8859-6:1987,iso-ir-127,ISO_8859-6,ISO-8859-6,ECMA-114,dnl
+ASMO-708,arabic,csISOLatinArabic)
+dnl test_codec(ISO_8859-6-E,csISO88596E,ISO-8859-6-E)
+dnl test_codec(ISO_8859-6-I,csISO88596I,ISO-8859-6-I)
+test_codec(ISO_8859-7:1987,iso-ir-126,ISO_8859-7,ISO-8859-7,ELOT_928,dnl
+ECMA-118,greek,greek8,csISOLatinGreek)
+test_codec(T.101-G2,iso-ir-128,csISO128T101G2)
+test_codec(ISO_8859-8:1988,iso-ir-138,ISO_8859-8,ISO-8859-8,hebrew,dnl
+csISOLatinHebrew,visual)
+dnl test_codec(ISO_8859-8-E,csISO88598E,ISO-8859-8-E)
+dnl test_codec(ISO_8859-8-I,csISO88598I,ISO-8859-8-I)
+test_codec(CSN_369103,iso-ir-139,csISO139CSN369103)
+test_codec(JUS_I.B1.002,iso-ir-141,ISO646-YU,js,yu,csISO141JUSIB1002)
+test_codec(ISO_6937-2-add,iso-ir-142,csISOTextComm)
+test_codec(IEC_P27-1,iso-ir-143,csISO143IECP271)
+test_codec(ISO_8859-5:1988,iso-ir-144,ISO_8859-5,ISO-8859-5,cyrillic,dnl
+csISOLatinCyrillic)
+test_codec(JUS_I.B1.003-serb,iso-ir-146,serbian,csISO146Serbian)
+test_codec(JUS_I.B1.003-mac,macedonian,iso-ir-147,csISO147Macedonian)
+test_codec(ISO_8859-9:1989,iso-ir-148,ISO_8859-9,ISO-8859-9,latin5,l5,dnl
+csISOLatin5)
+test_codec(greek-ccitt,iso-ir-150,csISO150,csISO150GreekCCITT)
+test_codec(NC_99-10:81,cuba,iso-ir-151,ISO646-CU,csISO151Cuba)
+test_codec(ISO_6937-2-25,iso-ir-152,csISO6937Add)
+test_codec(GOST_19768-74,ST_SEV_358-88,iso-ir-153,csISO153GOST1976874)
+test_codec(ISO_8859-supp,iso-ir-154,latin1-2-5,csISO8859Supp)
+test_codec(ISO_10367-box,iso-ir-155,csISO10367Box)
+test_codec(ISO-8859-10,iso-ir-157,l6,ISO_8859-10:1992,csISOLatin6,latin6)
+test_codec(latin-lap,lap,iso-ir-158,csISO158Lap)
+test_codec(JIS_X0212-1990,x0212,iso-ir-159,csISO159JISX02121990)
+test_codec(JIS_X0213-2000,iso-ir-228)
+test_codec(JIS_X0213-2004,iso-ir-233)
+test_codec(DS_2089,DS2089,ISO646-DK,dk,csISO646Danish)
+dnl test_codec(us-dk,csUSDK)
+dnl test_codec(dk-us,csDKUS)
+test_codec(JIS_X0201,X0201,csHalfWidthKatakana)
+test_codec(KSC5636,ISO646-KR,csKSC5636)
+dnl test_codec(ISO-10646-UCS-2,csUnicode)
+dnl test_codec(ISO-10646-UCS-4,csUCS4)
+test_codec(DEC-MCS,dec,csDECMCS)
+test_codec(hp-roman8,roman8,r8,csHPRoman8)
+test_codec(macintosh,mac,csMacintosh)
+test_codec(IBM037,cp037,ebcdic-cp-us,ebcdic-cp-ca,ebcdic-cp-wt,dnl
+ebcdic-cp-nl,csIBM037)
+test_codec(IBM038,EBCDIC-INT,cp038,csIBM038)
+test_codec(IBM273,CP273,csIBM273)
+test_codec(IBM274,EBCDIC-BE,CP274,csIBM274)
+test_codec(IBM275,EBCDIC-BR,cp275,csIBM275)
+test_codec(IBM277,EBCDIC-CP-DK,EBCDIC-CP-NO,csIBM277)
+test_codec(IBM278,CP278,ebcdic-cp-fi,ebcdic-cp-se,csIBM278)
+test_codec(IBM280,CP280,ebcdic-cp-it,csIBM280)
+test_codec(IBM281,EBCDIC-JP-E,cp281,csIBM281)
+test_codec(IBM284,CP284,ebcdic-cp-es,csIBM284)
+test_codec(IBM285,CP285,ebcdic-cp-gb,csIBM285)
+test_codec(IBM290,cp290,EBCDIC-JP-kana,csIBM290)
+test_codec(IBM297,cp297,ebcdic-cp-fr,csIBM297)
+test_codec(IBM420,cp420,ebcdic-cp-ar1,csIBM420)
+test_codec(IBM423,cp423,ebcdic-cp-gr,csIBM423)
+test_codec(IBM424,cp424,ebcdic-cp-he,csIBM424)
+test_codec(IBM437,cp437,437,csPC8CodePage437)
+test_codec(IBM500,CP500,ebcdic-cp-be,ebcdic-cp-ch,csIBM500)
+dnl test_codec(IBM775,cp775,csPC775Baltic)
+test_codec(IBM850,cp850,850,csPC850Multilingual)
+test_codec(IBM851,cp851,851,csIBM851)
+test_codec(IBM852,cp852,852,csPCp852)
+test_codec(IBM855,cp855,855,csIBM855)
+test_codec(IBM857,cp857,857,csIBM857)
+test_codec(IBM860,cp860,860,csIBM860)
+test_codec(IBM861,cp861,861,cp-is,csIBM861)
+test_codec(IBM862,cp862,862,csPC862LatinHebrew)
+test_codec(IBM863,cp863,863,csIBM863)
+test_codec(IBM864,cp864,csIBM864)
+test_codec(IBM865,cp865,865,csIBM865)
+test_codec(IBM866,cp866,866,csIBM866)
+test_codec(IBM868,CP868,cp-ar,csIBM868)
+test_codec(IBM869,cp869,869,cp-gr,csIBM869)
+test_codec(IBM870,CP870,ebcdic-cp-roece,ebcdic-cp-yu,csIBM870)
+test_codec(IBM871,CP871,ebcdic-cp-is,csIBM871)
+test_codec(IBM880,cp880,EBCDIC-Cyrillic,csIBM880)
+test_codec(IBM891,cp891,csIBM891)
+test_codec(IBM903,cp903,csIBM903)
+
+dnl csIBBM904 at IANA
+test_codec(IBM904,cp904,904,csIBM904)
+
+test_codec(IBM905,CP905,ebcdic-cp-tr,csIBM905)
+test_codec(IBM918,CP918,ebcdic-cp-ar2,csIBM918)
+test_codec(CP932)
+test_codec(GB18030,GBK,CP936)
+test_codec(IBM1026,CP1026,csIBM1026)
+test_codec(mysql-latin1)
+
+test_codec(EBCDIC-AT-DE,csIBMEBCDICATDE)
+test_codec(EBCDIC-AT-DE-A,csEBCDICATDEA)
+test_codec(EBCDIC-CA-FR,csEBCDICCAFR)
+test_codec(EBCDIC-DK-NO,csEBCDICDKNO)
+test_codec(EBCDIC-DK-NO-A,csEBCDICDKNOA)
+test_codec(EBCDIC-FI-SE,csEBCDICFISE)
+test_codec(EBCDIC-FI-SE-A,csEBCDICFISEA)
+test_codec(EBCDIC-FR,csEBCDICFR)
+test_codec(EBCDIC-IT,csEBCDICIT)
+test_codec(EBCDIC-PT,csEBCDICPT)
+test_codec(EBCDIC-ES,csEBCDICES)
+test_codec(EBCDIC-ES-A,csEBCDICESA)
+test_codec(EBCDIC-ES-S,csEBCDICESS)
+test_codec(EBCDIC-UK,csEBCDICUK)
+test_codec(EBCDIC-US,csEBCDICUS)
+dnl test_codec(UNKNOWN-8BIT,csUnknown8BiT)
+dnl test_codec(MNEMONIC,csMnemonic)
+dnl test_codec(MNEM,csMnem)
+dnl test_codec(VISCII,csVISCII)
+dnl test_codec(VIQR,csVIQR)
+test_codec(KOI8-R,csKOI8R)
+test_codec(KOI8-U)
+dnl test_codec(IBM00858,CCSID00858,CP00858,PC-Multilingual-850+euro)
+dnl test_codec(IBM00924,CCSID00924,CP00924,ebcdic-Latin9--euro)
+dnl test_codec(IBM01140,CCSID01140,CP01140,ebcdic-us-37+euro)
+dnl test_codec(IBM01141,CCSID01141,CP01141,ebcdic-de-273+euro)
+dnl test_codec(IBM01142,CCSID01142,CP01142,ebcdic-dk-277+euro,ebcdic-no-277+euro)
+dnl test_codec(IBM01143,CCSID01143,CP01143,ebcdic-fi-278+euro,ebcdic-se-278+euro)
+dnl test_codec(IBM01144,CCSID01144,CP01144,ebcdic-it-280+euro)
+dnl test_codec(IBM01145,CCSID01145,CP01145,ebcdic-es-284+euro)
+dnl test_codec(IBM01146,CCSID01146,CP01146,ebcdic-gb-285+euro)
+dnl test_codec(IBM01147,CCSID01147,CP01147,ebcdic-fr-297+euro)
+dnl test_codec(IBM01148,CCSID01148,CP01148,ebcdic-international-500+euro)
+dnl test_codec(IBM01149,CCSID01149,CP01149,ebcdic-is-871+euro)
+dnl test_codec(Big5-HKSCS)
+dnl test_codec(IBM1047,IBM-1047)
+dnl test_codec(PTCP154,csPTCP154,PT154,CP154,Cyrillic-Asian)
+dnl test_codec(UNICODE-1-1,csUnicode11)
+dnl test_codec(SCSU)
+test_codec(UTF-7,unicode-1-1-utf-7)
+test_codec(UTF-16BE)
+test_codec(UTF-16LE)
+test_codec(UTF-16)
+dnl test_codec(CESU-8,csCESU-8)
+dnl test_codec(UTF-32)
+dnl test_codec(UTF-32BE)
+dnl test_codec(UTF-32LE)
+dnl test_codec(BOCU-1,csBOCU-1)
+dnl test_codec(UNICODE-1-1-UTF-7,csUnicode11UTF7)
+test_codec(UTF-8,unicode-1-1-utf-8)
+test_codec(UTF-EBCDIC)
+test_codec(ISO-8859-13)
+test_codec(ISO-8859-14,iso-ir-199,ISO_8859-14:1998,ISO_8859-14,latin8,dnl
+iso-celtic,l8)
+test_codec(ISO-8859-15,ISO_8859-15,Latin-9)
+dnl test_codec(ISO-8859-16,iso-ir-226,ISO_8859-16:2001,ISO_8859-16,latin10,l10)
+dnl test_codec(GBK,CP936,MS936,windows-936)
+dnl test_codec(GB18030)
+dnl test_codec(JIS_Encoding,csJISEncoding)
+test_codec(Shift_JIS,MS_Kanji,csShiftJIS)
+test_codec(Extended_UNIX_Code_Packed_Format_for_Japanese,dnl
+csEUCPkdFmtJapanese,EUC-JP)
+dnl test_codec(Extended_UNIX_Code_Fixed_Width_for_Japanese,csEUCFixWidJapanese)
+dnl test_codec(ISO-10646-UCS-Basic,csUnicodeASCII)
+dnl test_codec(ISO-10646-Unicode-Latin1,csUnicodeLatin1,ISO-10646)
+dnl test_codec(ISO-10646-J-1)
+dnl test_codec(ISO-Unicode-IBM-1261,csUnicodeIBM1261)
+dnl test_codec(ISO-Unicode-IBM-1268,csUnicodeIBM1268)
+dnl test_codec(ISO-Unicode-IBM-1276,csUnicodeIBM1276)
+dnl test_codec(ISO-Unicode-IBM-1264,csUnicodeIBM1264)
+dnl test_codec(ISO-Unicode-IBM-1265,csUnicodeIBM1265)
+dnl test_codec(ISO-8859-1-Windows-3.0-Latin-1,csWindows30Latin1)
+dnl test_codec(ISO-8859-1-Windows-3.1-Latin-1,csWindows31Latin1)
+dnl test_codec(ISO-8859-2-Windows-Latin-2,csWindows31Latin2)
+dnl test_codec(ISO-8859-9-Windows-Latin-5,csWindows31Latin5)
+dnl test_codec(Adobe-Standard-Encoding,csAdobeStandardEncoding)
+dnl test_codec(Ventura-US,csVenturaUS)
+dnl test_codec(Ventura-International,csVenturaInternational)
+dnl test_codec(PC8-Danish-Norwegian,csPC8DanishNorwegian)
+dnl test_codec(PC8-Turkish,csPC8Turkish)
+dnl test_codec(IBM-Symbols,csIBMSymbols)
+dnl test_codec(IBM-Thai,csIBMThai)
+dnl test_codec(HP-Legal,csHPLegal)
+dnl test_codec(HP-Pi-font,csHPPiFont)
+dnl test_codec(HP-Math8,csHPMath8)
+dnl test_codec(Adobe-Symbol-Encoding,csHPPSMath)
+dnl test_codec(HP-DeskTop,csHPDesktop)
+dnl test_codec(Ventura-Math,csVenturaMath)
+dnl test_codec(Microsoft-Publishing,csMicrosoftPublishing)
+dnl test_codec(Windows-31J,csWindows31J)
+test_codec(GB2312,csGB2312)
+test_codec(Big5,csBig5)
+test_codec(windows-1250)
+test_codec(windows-1251)
+test_codec(windows-1252)
+test_codec(windows-1253)
+test_codec(windows-1254)
+test_codec(windows-1255)
+test_codec(windows-1256)
+test_codec(windows-1257)
+test_codec(windows-1258)
+dnl test_codec(TIS-620)
+dnl test_codec(HZ-GB-2312)
+
+// Find all assigned ISO-IR tables
+dnl test_codec(iso-ir-1)
+test_codec(iso-ir-2)
+test_codec(iso-ir-4)
+test_codec(iso-ir-6)
+dnl test_codec(iso-ir-7)
+test_codec(iso-ir-8-1)
+test_codec(iso-ir-8-2)
+test_codec(iso-ir-9-1)
+test_codec(iso-ir-9-2)
+test_codec(iso-ir-10)
+test_codec(iso-ir-11)
+test_codec(iso-ir-13)
+test_codec(iso-ir-14)
+test_codec(iso-ir-15)
+test_codec(iso-ir-16)
+test_codec(iso-ir-17)
+test_codec(iso-ir-18)
+test_codec(iso-ir-19)
+test_codec(iso-ir-21)
+test_codec(iso-ir-25)
+dnl test_codec(iso-ir-26)
+test_codec(iso-ir-27)
+dnl test_codec(iso-ir-31)
+dnl test_codec(iso-ir-32)
+dnl test_codec(iso-ir-33)
+dnl test_codec(iso-ir-34)
+dnl test_codec(iso-ir-35)
+dnl test_codec(iso-ir-36)
+test_codec(iso-ir-37)
+test_codec(iso-ir-38)
+test_codec(iso-ir-39)
+dnl test_codec(iso-ir-40)
+test_codec(iso-ir-42)
+test_codec(iso-ir-47)
+dnl test_codec(iso-ir-48)
+test_codec(iso-ir-49)
+test_codec(iso-ir-50)
+test_codec(iso-ir-51)
+test_codec(iso-ir-53)
+test_codec(iso-ir-54)
+test_codec(iso-ir-55)
+dnl test_codec(iso-ir-56)
+test_codec(iso-ir-57)
+test_codec(iso-ir-58)
+dnl test_codec(iso-ir-59)
+test_codec(iso-ir-60)
+test_codec(iso-ir-61)
+dnl test_codec(iso-ir-62)
+dnl test_codec(iso-ir-63)
+dnl test_codec(iso-ir-64)
+dnl test_codec(iso-ir-65)
+dnl test_codec(iso-ir-66)
+dnl test_codec(iso-ir-67)
+dnl test_codec(iso-ir-68)
+test_codec(iso-ir-69)
+test_codec(iso-ir-70)
+dnl test_codec(iso-ir-71)
+dnl test_codec(iso-ir-72)
+dnl test_codec(iso-ir-73)
+dnl test_codec(iso-ir-74)
+dnl test_codec(iso-ir-77)
+test_codec(iso-ir-84)
+test_codec(iso-ir-85)
+test_codec(iso-ir-86)
+test_codec(iso-ir-87)
+test_codec(iso-ir-88)
+test_codec(iso-ir-89)
+test_codec(iso-ir-90)
+test_codec(iso-ir-91)
+test_codec(iso-ir-92)
+test_codec(iso-ir-93)
+test_codec(iso-ir-94)
+test_codec(iso-ir-95)
+test_codec(iso-ir-96)
+test_codec(iso-ir-98)
+test_codec(iso-ir-99)
+test_codec(iso-ir-100)
+test_codec(iso-ir-101)
+test_codec(iso-ir-102)
+test_codec(iso-ir-103)
+dnl test_codec(iso-ir-104)
+dnl test_codec(iso-ir-105)
+dnl test_codec(iso-ir-106)
+dnl test_codec(iso-ir-107)
+dnl test_codec(iso-ir-108)
+test_codec(iso-ir-109)
+test_codec(iso-ir-110)
+test_codec(iso-ir-111)
+test_codec(iso-ir-121)
+test_codec(iso-ir-122)
+test_codec(iso-ir-123)
+dnl test_codec(iso-ir-124)
+dnl test_codec(iso-ir-125)
+test_codec(iso-ir-126)
+test_codec(iso-ir-127)
+test_codec(iso-ir-128)
+dnl test_codec(iso-ir-129)
+dnl test_codec(iso-ir-130)
+dnl test_codec(iso-ir-131)
+dnl test_codec(iso-ir-132)
+dnl test_codec(iso-ir-133)
+dnl test_codec(iso-ir-134)
+dnl test_codec(iso-ir-135)
+dnl test_codec(iso-ir-136)
+dnl test_codec(iso-ir-137)
+test_codec(iso-ir-138)
+test_codec(iso-ir-139)
+dnl test_codec(iso-ir-140)
+test_codec(iso-ir-141)
+test_codec(iso-ir-142)
+test_codec(iso-ir-143)
+test_codec(iso-ir-144)
+dnl test_codec(iso-ir-145)
+test_codec(iso-ir-146)
+test_codec(iso-ir-147)
+test_codec(iso-ir-148)
+test_codec(iso-ir-149)
+test_codec(iso-ir-150)
+test_codec(iso-ir-151)
+test_codec(iso-ir-152)
+test_codec(iso-ir-153)
+test_codec(iso-ir-154)
+test_codec(iso-ir-155)
+test_codec(iso-ir-156)
+test_codec(iso-ir-157)
+test_codec(iso-ir-158)
+test_codec(iso-ir-159)
+dnl test_codec(iso-ir-160)
+dnl test_codec(iso-ir-161)
+dnl test_codec(iso-ir-162)
+dnl test_codec(iso-ir-163)
+dnl test_codec(iso-ir-164)
+dnl test_codec(iso-ir-165)
+dnl test_codec(iso-ir-166)
+dnl test_codec(iso-ir-167)
+dnl test_codec(iso-ir-168)
+dnl test_codec(iso-ir-169)
+dnl test_codec(iso-ir-170)
+dnl test_codec(iso-ir-171)
+dnl test_codec(iso-ir-172)
+dnl test_codec(iso-ir-173)
+dnl test_codec(iso-ir-174)
+dnl test_codec(iso-ir-175)
+dnl test_codec(iso-ir-176)
+dnl test_codec(iso-ir-177)
+dnl test_codec(iso-ir-178)
+test_codec(iso-ir-179)
+dnl test_codec(iso-ir-180)
+dnl test_codec(iso-ir-181)
+dnl test_codec(iso-ir-182)
+dnl test_codec(iso-ir-183)
+dnl test_codec(iso-ir-184)
+dnl test_codec(iso-ir-185)
+dnl test_codec(iso-ir-186)
+dnl test_codec(iso-ir-187)
+dnl test_codec(iso-ir-188)
+dnl test_codec(iso-ir-189)
+dnl test_codec(iso-ir-190)
+dnl test_codec(iso-ir-191)
+dnl test_codec(iso-ir-192)
+dnl test_codec(iso-ir-193)
+dnl test_codec(iso-ir-194)
+dnl test_codec(iso-ir-195)
+dnl test_codec(iso-ir-196)
+dnl test_codec(iso-ir-197)
+dnl test_codec(iso-ir-198)
+test_codec(iso-ir-199)
+dnl test_codec(iso-ir-200)
+dnl test_codec(iso-ir-201)
+dnl test_codec(iso-ir-202)
+test_codec(iso-ir-203)
+dnl test_codec(iso-ir-204)
+dnl test_codec(iso-ir-205)
+dnl test_codec(iso-ir-206)
+dnl test_codec(iso-ir-207)
+dnl test_codec(iso-ir-208)
+dnl test_codec(iso-ir-209)
+test_codec(iso-ir-216)
+dnl test_codec(iso-ir-226)
+dnl test_codec(iso-ir-228)
+dnl test_codec(iso-ir-229)
+dnl test_codec(iso-ir-230)
+dnl test_codec(iso-ir-231)
+END_MARKER

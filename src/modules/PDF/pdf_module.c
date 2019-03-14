@@ -1,18 +1,24 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pdf_module.c,v 1.9 2001/07/12 14:01:45 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
 #include "object.h"
 #include "operators.h"
+#include "module.h"
 
 #include "pdf_machine.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
+#define sp Pike_sp
+#define fp Pike_fp
 
 #define PDF_INITER
 
@@ -95,7 +101,7 @@ static inline long TO_LONG(ptrdiff_t x)
 #ifdef PIKE_DEBUG
 #define PDF_CHECK_STACK(X)	do { \
     if (save_sp != sp) { \
-      fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
+      Pike_fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
             __FILE__, __LINE__, TO_LONG(sp - save_sp), X); \
     } \
   } while(0)
@@ -110,7 +116,7 @@ static void pdf_magic_index(INT32 args)
 
    if (args!=1) 
       Pike_error("PDF.`[]: Too few or too many arguments\n");
-   if (sp[-1].type!=T_STRING)
+   if (TYPEOF(sp[-1]) != T_STRING)
       Pike_error("PDF.`[]: Illegal type of argument\n");
 
    for (i=0; i<(int)NELEM(submagic); i++)
@@ -145,23 +151,21 @@ static void pdf_magic_index(INT32 args)
    stack_swap();
    f_arrow(2);
 
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       pop_stack();
       stack_dup();
       push_text("_PDF_");
       stack_swap();
       f_add(2);
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
+      SAFE_APPLY_MASTER("resolv",1);
    }
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       pop_stack();
       stack_dup();
       push_text("_PDF");
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
+      SAFE_APPLY_MASTER("resolv",1);
       stack_swap();
       f_index(2);
    }
@@ -169,7 +173,7 @@ static void pdf_magic_index(INT32 args)
    pop_stack();
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
    char type_of_index[]=
       tFunc(tStr,tOr3(tObj,tPrg(tObj),""))
@@ -240,7 +244,7 @@ void pike_module_init(void)
 		      type_of_index,CONSTANT_STRLEN(type_of_index),0,0);
 }
 
-void pike_module_exit(void) 
+PIKE_MODULE_EXIT
 {
    int i;
    for (i=0; i<(int)NELEM(initclass); i++)

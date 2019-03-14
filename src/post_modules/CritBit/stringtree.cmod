@@ -1,0 +1,71 @@
+/* vim:syntax=c
+ */
+#include "common.h"
+
+#include "critbit/string2svalue.h"
+
+/* this is only used in pike code! */
+#define CB_PRINT_CHAR(buf, str, n)			\
+    do { string_builder_sprintf((buf), "%c", CB_GET_CHAR(str, n)); } while(0)
+
+#define CB_PRINT_KEY(buf, key)				\
+	do { string_builder_shared_strcat((buf), (key).str); } while(0)
+
+static inline void cb_assign_svalue_key_string(cb_key key,
+					       struct svalue * s) {
+    if ((ptrdiff_t)key.len.chars == key.str->len) {
+	add_ref(key.str);
+	SET_SVAL(*s, PIKE_T_STRING, 0, string, key.str);
+    } else {
+	struct pike_string * prefix = string_slice(key.str, 0, key.len.chars);
+	SET_SVAL(*s, PIKE_T_STRING, 0, string, prefix);
+    }
+}
+
+#define CB_LOW_ASSIGN_SVALUE_KEY(node, s) cb_assign_svalue_key_string(node, s)
+#define CB_PUSH_KEY(key)	ref_push_string((key).str)
+#define CB_PUSH_STRING(str)	ref_push_string(str)
+#define CB_STRING_FROM_SVALUE(v)	((v)->u.string)
+#define CB_LOW_KEY_FROM_SVALUE(v)	CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(v))
+#include "tree_high.c"
+
+#define DEFAULT_CMOD_STORAGE static
+
+DECLARATIONS
+
+/*! @module ADT */
+/*! @module CritBit */
+
+PIKECLASS StringTree {
+#cmod_define iterator_class Iterator
+#cmod_define tree_class StringTree
+#cmod_define cmod_OBJ2_TREE OBJ2_STRINGTREE
+#cmod_define T_KEY BIT_STRING
+#cmod_define key_ptype string
+#cmod_define sval_type string
+#cmod_define sample_key "foo"
+#cmod_define sample_keys ({ "fooo", "bar", "ahead" })
+#cmod_define ordered_keys "ahead", "bar" and "foo"
+#cmod_define reverse_ordered_keys "foo", "bar" and "ahead"
+#cmod_define sample_value ({ 7, 8, 9 })
+#cmod_define extra_doc
+#cmod_include "redefine.H"
+
+#cmod_include "tree_header.H"
+#cmod_include "iterator_source.H"
+#undef THIS
+#define THIS THIS_STRINGTREE
+#cmod_include "prefix.H"
+#cmod_include "tree_source.H"
+}
+
+/*! @endmodule */
+/*! @endmodule */
+
+void pike_init_tree_module(void) {
+    INIT
+}
+
+void pike_exit_tree_module(void) {
+    EXIT
+}

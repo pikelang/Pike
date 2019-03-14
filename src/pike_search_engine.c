@@ -1,7 +1,12 @@
 /*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Written by Fredrik Hubinette (hubbe@lysator.liu.se)
  */
-
 
 #define HSHIFT 0
 #include "pike_search_engine2.c"
@@ -32,16 +37,15 @@ PCHARP PxC3(NAME,NSHIFT,N)(void *s,	\
     INTERCASE(NAME,1);				\
     INTERCASE(NAME,2);				\
   }                                             \
-  fatal("Illegal shift\n");                     \
+  Pike_fatal("Illegal shift\n");                     \
   return haystack;	/* NOT_REACHED */	\
 }						\
 						\
-static struct SearchMojtVtable PxC3(NAME,NSHIFT,_vtable) = {	\
+static const struct SearchMojtVtable PxC3(NAME,NSHIFT,_vtable) = {	\
   (SearchMojtFunc0)PxC3(NAME,NSHIFT,0),		\
   (SearchMojtFunc1)PxC3(NAME,NSHIFT,1),			\
   (SearchMojtFunc2)PxC3(NAME,NSHIFT,2),			\
   (SearchMojtFuncN)PxC3(NAME,NSHIFT,N),			\
-  PxC2(NAME,_free),			\
 };
 
 
@@ -73,7 +77,7 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
 
 #ifdef PIKE_DEBUG
   if(needlelen < 7)
-    fatal("hubbe search does not work with search strings shorter than 7 characters!\n");
+    Pike_fatal("hubbe search does not work with search strings shorter than 7 characters!\n");
 #endif
   
 #ifdef TUNAFISH
@@ -101,7 +105,7 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
   hsize--;
   
   if(max > (ptrdiff_t)needlelen) max=needlelen;
-  max=(max-sizeof(INT32)+1) & -sizeof(INT32);
+  max=(max-sizeof(INT32)+1) & ~(sizeof(INT32) - 1);
   if(max > MEMSEARCH_LINKS) max=MEMSEARCH_LINKS;
   
   /* This assumes 512 buckets - Hubbe */
@@ -166,7 +170,7 @@ void NameN(init_boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
 
 #ifdef PIKE_DEBUG
   if(needlelen < 2)
-    fatal("boyer-boore-hubbe search does not work with single-character search strings!\n");
+    Pike_fatal("boyer-moore-hubbe search does not work with single-character search strings!\n");
 #endif
   
 #ifdef TUNAFISH
@@ -283,6 +287,7 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
     NameN(init_memsearch)(&tmp,
 			  needle,len,
 			  max_haystacklen);
+    tmp.mojt.container = NULL;
     return tmp.mojt;
   }else{
     struct svalue *sval,stmp;
@@ -296,22 +301,73 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
 
     if((sval=low_mapping_string_lookup(memsearch_cache,hashkey)))
     {
-      if(sval->type == T_OBJECT)
+      if(TYPEOF(*sval) == T_OBJECT)
       {
 	o=sval->u.object;
 	if(o->prog == pike_search_program)
 	{
 	  s=OB2MSEARCH(sval->u.object);
+	  assert (sval->u.object == s->mojt.container);
 	  add_ref(sval->u.object);
 	  free_string(hashkey);
 	  return s->mojt;
 	}
       }
+      /* Paranoia: Junk entry in the mapping. Remove it. */
+      SET_SVAL(stmp, T_STRING, 0, string, hashkey);
+      map_delete(memsearch_cache, &stmp);
+    }
+
+    if (memsearch_cache->data->size >= memsearch_cache_threshold) {
+      /* Perform a gc of all Search objects that only are
+       * referenced from the cache.
+       * Allow the cache to grow to double the size before
+       * the next synchronous gc.
+       */
+      struct keypair *k = NULL;
+      struct mapping_data *md = memsearch_cache->data;
+      int e;
+      int count = 0;
+      /* NB: We inline some stuff from mapping.c here to avoid copying the md.
+       */
+      for (e=0; e < md->hashsize; e++) {
+	struct keypair **prev;
+	for(prev = md->hash + e; (k = *prev);) {
+	  count++;
+	  if (REFCOUNTED_TYPE(TYPEOF(k->val)) &&
+	      (*k->val.u.refs == 1)) {
+	    /* map_delete(memsearch_cache, &k->ind); */
+	    *prev = k->next;
+	    free_svalue(&k->ind);
+	    free_svalue(&k->val);
+	    mapping_free_keypair(md, k);
+	    md->size--;
+	    continue;
+	  } else if (count < 10) {
+	    // locate_references(k->val.u.refs);
+	  }
+	  prev = &k->next;
+	}
+      }
+      memsearch_cache_threshold = (memsearch_cache->data->size<<1) | 1;
+      if (memsearch_cache_threshold < MIN_MEMSEARCH_THRESHOLD) {
+	memsearch_cache_threshold = MIN_MEMSEARCH_THRESHOLD;
+      }
+    } else if ((memsearch_cache_threshold & 1) &&
+	       (memsearch_cache->data->size<<2 < memsearch_cache_threshold)) {
+      /* The real gc() has run and zapped some of our entries.
+       * Assume that all entries left in the cache have more than
+       * one reference.
+       */
+      memsearch_cache_threshold = (memsearch_cache->data->size<<1) | 1;
+      if (memsearch_cache_threshold < MIN_MEMSEARCH_THRESHOLD) {
+	memsearch_cache_threshold = MIN_MEMSEARCH_THRESHOLD;
+      }
     }
 
     o=low_clone(pike_search_program);
     s=OB2MSEARCH(o);
-    s->data.hubbe.o=o;
+    s->mojt.container = o;	/* Not refcounted self-ref. */
     s->s=hashkey;
 
     /* We use 0x7fffffff for max_haystacklen because we do
@@ -321,13 +377,10 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
     NameN(init_memsearch)(s,
 			  needle,len,
 			  0x7fffffff);
-    stmp.type = T_OBJECT;
-    stmp.subtype = 0;
-    stmp.u.object = o;
+    SET_SVAL(stmp, T_OBJECT, 0, object, o);
 
     mapping_string_insert(memsearch_cache, hashkey, &stmp);
 
     return s->mojt;
   }
 }
-

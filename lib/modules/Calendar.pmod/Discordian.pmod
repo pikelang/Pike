@@ -1,40 +1,35 @@
+#pike __REAL_VERSION__
+
+//! The Discordian calendar, as described on page 34
+//! in the fourth edition of Principia Discordia.
 //!
-//! module Calendar
-//! submodule Discordian
-//!	The Discordian calendar, as described on page 34
-//!	in the fourth edition of Principia Discordia.
+//! Chaotic enough, it's quite simpler then the @[Gregorian] calendar;
+//! weeks are 5 days, and evens up on a year. Months are 73 days.
 //!
-//!	Chaotic enough, it's quite simpler then the Gregorian calendar;
-//!	weeks are 5 days, and evens up on a year. Months are 73 days.
+//! The leap day is inserted at the 60th day of the first month 
+//! (Chaos), giving the first month 74 days. The description of
+//! the calendar is a "perpetual date converter from the gregorian
+//! to the POEE calendar", so the leap years are the same as
+//! the gregorians.
 //!
-//!	The leap day is inserted at the 60th day of the first month 
-//!	(Chaos), giving the first month 74 days. The description of
-//!	the calendar is a "perpetual date converter from the gregorian
-//!	to the POEE calendar", so the leap years are the same as
-//!	the gregorians.
+//! The Principia calls months "seasons", but for simplicity I 
+//! call them months in this calendar.
 //!
-//!	The Principia calls months "seasons", but for simplicity I 
-//!	call them months in this calendar.
-//!
-//!	If anyone know more about how to treat the leap day - now it is 
-//!	inserted in the month and week where it lands, rather then being
-//!	separated from month and weeks, I'm interested to know.
+//! If anyone know more about how to treat the leap day - now it is 
+//! inserted in the month and week where it lands, rather then being
+//! separated from month and weeks, I'm interested to know.
 //!
 //!	- Mirar, Pope of POEE.
-//!
 
 // the discordian calendar follows the gregorian years, very practical ;)
 
-#pike __REAL_VERSION__
-
-import ".";
-inherit Gregorian:Gregorian;
+inherit Calendar.Gregorian:Gregorian;
 
 #include "constants.h"
 
 string calendar_name() { return "Discordian"; }
 
-private static mixed __initstuff=lambda()
+private protected mixed __initstuff=lambda()
 {
 // language setup
    f_week_day_shortname_from_number=
@@ -48,29 +43,29 @@ private static mixed __initstuff=lambda()
    f_week_day_number_from_name="discordian_week_day_number_from_name";
 }();
 
-static int compat_week_day(int n)
+protected int compat_week_day(int n)
 {
    return n; // N/A
 }
 
 // almost as gregorian
-static array year_from_julian_day(int jd)
+protected array year_from_julian_day(int jd)
 {
    array a=::year_from_julian_day(jd);
    return ({a[0]+1166,a[1]});
 }
 
-static int julian_day_from_year(int y)
+protected int julian_day_from_year(int y)
 {
    return ::julian_day_from_year(y-1166);
 }
 
-static int year_leap_year(int y) 
+protected int year_leap_year(int y) 
 { 
    return ::year_leap_year(y-1166);
 }
 
-static array(int) year_month_from_month(int y,int m)
+protected array(int) year_month_from_month(int y,int m)
 {
 // [y,m,ndays,myd]
 
@@ -86,7 +81,7 @@ static array(int) year_month_from_month(int y,int m)
    error("month out of range\n");
 }
 
-static array(int) month_from_yday(int y,int yd)
+protected array(int) month_from_yday(int y,int yd)
 {
 // [month,day-of-month,ndays,month-year-day]
    int l=year_leap_year(y);
@@ -97,7 +92,7 @@ static array(int) month_from_yday(int y,int yd)
    return ({m,yd-(m-1)*73,73,(m-1)*73+l+1});
 }
 
-static array(int) week_from_julian_day(int jd)
+protected array(int) week_from_julian_day(int jd)
 {
 // [year,week,day-of-week,ndays,week-julian-day]
 
@@ -119,7 +114,7 @@ static array(int) week_from_julian_day(int jd)
    return ({y,w,(yday-1)%5+1,5,yjd+(w-1)*5+l});
 }
 
-static array(int) week_from_week(int y,int w)
+protected array(int) week_from_week(int y,int w)
 {
 // [year,week,1 (wd),ndays,week-julian-day]
    y+=(w-1)/73;
@@ -131,7 +126,7 @@ static array(int) week_from_week(int y,int w)
    return week_from_julian_day(yjd+(w-1)*5+(l&&w>12));
 }
 
-static int year_remaining_days(int y,int yday)
+protected int year_remaining_days(int y,int yday)
 {
    return 365+year_leap_year(y)-yday;
 }
@@ -143,6 +138,11 @@ class cYear
    int number_of_weeks()
    {
       return 73*n;
+   }
+
+   int number_of_months()
+   {
+      return 5*n;
    }
 
    TimeRange place(TimeRange what)
@@ -169,8 +169,6 @@ class cYear
 
       return ::place(what);
    }
-
-   int year_no() { return y+1166; }
 }
 
 class cDay
@@ -191,15 +189,13 @@ class cDay
       };
       return "error";
    }
-
-   int year_no() { return y+1166; }
 }
 
 class cMonth
 {
    inherit Gregorian::cMonth;
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       ::create(@args);
       if (yjd+yd-1!=jd) error("yjd=%O yday=%O jd=%O != %O\n",
@@ -235,15 +231,13 @@ class cMonth
 
       return ::place(what);
    }
-
-   int year_no() { return y+1166; }
 }
 
 class cWeek
 {
    inherit Gregorian::cWeek;
 
-   static int weeks_to_week(int y2,int w2)
+   protected int weeks_to_week(int y2,int w2)
    {
       return (y2-y)*73+w2-w;
    }
@@ -253,6 +247,4 @@ class cWeek
       [int y2,int w2,int wd2,int nd2,int jd2]=week_from_week(y,w+n);
       return jd2-jd;
    }
-
-   int year_no() { return y+1166; }
 }

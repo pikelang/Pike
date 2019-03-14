@@ -1,0 +1,58 @@
+START_MARKER
+dnl add_include_path
+dnl add_module_path
+dnl add_program_path
+
+test_eq(basename("/a/b"),"b")
+test_eq(basename("/a/"),"")
+test_eq(basename("/a"),"a")
+test_eq(basename("/"),"")
+test_eq(basename("a/b"),"b")
+test_eq(basename("a/"),"")
+test_eq(basename("a"),"a")
+test_eq(basename(""),"")
+
+test_eq(dirname("/a/b/"),"/a/b")
+test_eq(dirname("/a/b"),"/a")
+test_eq(dirname("/a/"),"/a")
+test_eq(dirname("/a"),"/")
+test_eq(dirname("/"),"/")
+test_eq(dirname(""),"")
+test_eq(dirname("a/b/"),"a/b")
+test_eq(dirname("a/b"),"a")
+test_eq(dirname("a/"),"a")
+test_eq(dirname("a"),"")
+
+test_eq( catch(error("x"))[0], "x" )
+test_eq( catch(error("X"))[1][0]->fun, master()->_main )
+test_eq( catch(error("%x", 10))[0], "a" )
+test_eval_error( error("%s", 0) )
+
+test_true( true )
+test_false( false )
+test_do( bool x=true; )
+test_do( bool x=false; )
+
+dnl is_absolute_path
+dnl normalize_path
+dnl putenv
+dnl remove_include_path
+dnl remove_module_path
+dnl remove_program_path
+
+dnl master()->set_inhibit_compile_errors
+test_any([[
+  master()->set_inhibit_compile_errors(lambda(){});
+  mixed res = catch{compile_string("dfasfqw123");};
+  master()->set_inhibit_compile_errors(0);
+  return arrayp(res)||objectp(res);
+]], 1)
+
+// - pike -e
+test_false( Process.system(RUNPIKE + " -e \"return 0;\"") )
+test_true( Process.system(RUNPIKE + " -e \"return 1;\"") )
+test_true( Process.system(RUNPIKE + " -e \"return NOT(0);\"") )
+test_true( Process.system(RUNPIKE + " -e \"return CHAR(A)==65;\"") )
+test_eq( Process.popen(RUNPIKE + " -e \"return (string)7;\""), "7\n" )
+
+END_MARKER

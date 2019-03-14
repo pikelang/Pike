@@ -1,102 +1,131 @@
-/* Decode.pmod
- *
- */
-
 #pike __REAL_VERSION__
+#pragma strict_types
+#define COMPATIBILITY
 
-#define error(msg) throw( ({ msg, backtrace() }) )
+//! Decodes a DER object.
 
-/* Decodes a DER object. DATA is an instance of ADT.struct, and types
- * is a mapping from tag numbers to classes.
- *
- * Returns either an object, or a mapping of tag and contents.
- * Throws an exception if the data could not be decoded.
- *
- * FIXME: Handling of implicit and explicit ASN.1 tagging, as well as
- * other context dependence, is next to non_existant. */
-
-#if constant(Gmp.mpz)
-
-import .Types;
-
-class primitive
+//! Primitive unconstructed ASN1 data type.
+class Primitive
 {
-  import .Types;
+  //! @decl inherit Types.Object
+  inherit .Types.Object;
 
-  constant constructed = 0;  
+  constant constructed = 0;
   int combined_tag;
-  string raw;
-  
-  string get_der() { return raw; }
-  int get_combined_tag() { return combined_tag; }
-  int get_tag() { return extract_tag(combined_tag); }
-  int get_cls() { return extract_cls(combined_tag); }
-  
-  void create(int t, string r)
-    {
-      combined_tag = t;
-      raw = r;
-    }
 
-  string debug_string() 
-    {
-      return sprintf("primitive(%d)", combined_tag);
-    }
+  string(8bit) raw;
+
+  //! Get raw encoded contents of object
+  string(8bit) get_der_content() { return raw; }
+
+  int get_combined_tag() { return combined_tag; }
+
+  //! get tag
+  int get_tag() { return .Types.extract_tag(combined_tag); }
+
+  int `tag() { return .Types.extract_tag(combined_tag); }
+
+  //! get class
+  int get_cls() { return .Types.extract_cls(combined_tag); }
+
+  int `cls() { return .Types.extract_cls(combined_tag); }
+
+  void create(int t, string(8bit) r) {
+    combined_tag = t;
+    raw = r;
+  }
+
+  protected string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%d)", this_program, combined_tag);
+  }
+
+#ifdef COMPATIBILITY
+  __deprecated__ string debug_string() {
+    return sprintf("primitive(%d)", combined_tag);
+  }
+#endif
 }
 
-class constructed
+//! Constructed type
+class Constructed
 {
-  import .Types;
-  
-  constant constructed = 1;
-  int combined_tag;
-  
-  string raw;
-  array elements;
-  
-  string get_der() { return raw; }
-  int get_combined_tag() { return combined_tag; }
-  int get_tag() { return extract_tag(combined_tag); }
-  int get_cls() { return extract_cls(combined_tag); }
+  inherit .Types.Compound;
+  constant type_name = "CONSTRUCTED";
 
-  void create(int t, string r, array e)
-    {
-      combined_tag = t;
-      raw = r;
-      elements = e;
-    }
+  int combined_tag;
+
+  //! raw encoded  contents
+  string(8bit) raw;
+
+  //! Get raw encoded contents of object
+  string(8bit) get_der_content() { return raw; }
+
+  int get_combined_tag() { return combined_tag; }
+
+  //! get tag
+  int get_tag() { return .Types.extract_tag(combined_tag); }
+
+  int `tag() { return .Types.extract_tag(combined_tag); }
+
+  //! get class
+  int get_cls() { return .Types.extract_cls(combined_tag); }
+
+  int `cls() { return .Types.extract_cls(combined_tag); }
+
+  void create(int t, string(8bit) r, array(.Types.Object) e) {
+    combined_tag = t;
+    raw = r;
+    elements = e;
+  }
 }
 
-object|mapping der_decode(object data, mapping types)
+//! @param data
+//!   an instance of ADT.struct
+//! @param types
+//!   a mapping from combined tag numbers to classes from or derived from
+//!   @[Standards.ASN1.Types]. Combined tag numbers may be generated using
+//!   @[Standards.ASN1.Types.make_combined_tag].
+//!
+//! @returns
+//!   an object from @[Standards.ASN1.Types] or
+//!   either @[Standards.ASN1.Decode.Primitive] or
+//!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
+//!   Throws an exception if the data could not be decoded.
+//!
+//! @fixme
+//!   Handling of implicit and explicit ASN.1 tagging, as well as
+//!   other context dependence, is next to non_existant.
+.Types.Object der_decode(ADT.struct data,
+                         mapping(int:program(.Types.Object)) types)
 {
   int raw_tag = data->get_uint(1);
   int len;
-  string contents;
+  string(0..255) contents;
 
 #ifdef ASN1_DEBUG
-  werror(sprintf("decoding raw_tag %x\n", raw_tag));
+  werror("decoding raw_tag %x\n", raw_tag);
 #endif
 
   if ( (raw_tag & 0x1f) == 0x1f)
-    error("ASN1.Decode: High tag numbers is not supported\n");
+    error("High tag numbers is not supported\n");
 
   len = data->get_uint(1);
   if (len & 0x80)
     len = data->get_uint(len & 0x7f);
-    
+
 #ifdef ASN1_DEBUG
-  werror(sprintf("len : %d\n", len));
+  werror("len : %d\n", len);
 #endif
   contents = data->get_fix_string(len);
-  
+
 #ifdef ASN1_DEBUG
-  werror(sprintf("contents: %O\n", contents));
+  werror("contents: %O\n", contents);
 #endif
 
-  int tag = make_combined_tag(raw_tag >> 6, raw_tag & 0x1f);
+  int tag = .Types.make_combined_tag(raw_tag >> 6, raw_tag & 0x1f);
 
-  program p = types[tag];
-  
+  program(.Types.Object) p = types[tag];
+
   if (raw_tag & 0x20)
   {
     /* Constructed encoding */
@@ -105,31 +134,40 @@ object|mapping der_decode(object data, mapping types)
     werror("Decoding constructed\n");
 #endif
 
-    array elements = ({ });
-    object struct = ADT.struct(contents);
-    
+    array(.Types.Object) elements = ({ });
+    ADT.struct struct = ADT.struct(contents);
+
     if (!p)
     {
-#ifdef ASN1_DEBUG
-      werror("Unknown constructed type\n");
-#endif
       while (!struct->is_empty())
 	elements += ({ der_decode(struct, types) });
 
+      if (((raw_tag & 0xc0) == 0x80) && (sizeof(elements) == 1)) {
+	// Context-specific constructed compound with a single element.
+	// ==> Probably a TaggedType.
+#ifdef ASN1_DEBUG
+	werror("Probable tagged type.\n");
+#endif
+	return .Types.MetaExplicit(2, raw_tag & 0x1f)(elements[0]);
+      }
+
+#ifdef ASN1_DEBUG
+      werror("Unknown constructed type.\n");
+#endif
       return constructed(tag, contents, elements);
     }
 
-    object res = p();
+    .Types.Object res = p();
     res->begin_decode_constructed(contents);
-    
+
     int i;
 
-    /* Ask object which types it expects for field i, decode it, and
-     * record the decoded object */
+    // Ask object which types it expects for field i, decode it, and
+    // record the decoded object
     for(i = 0; !struct->is_empty(); i++)
     {
 #ifdef ASN1_DEBUG
-      werror(sprintf("Element %d\n", i));
+      werror("Element %d\n", i);
 #endif
       res->decode_constructed_element
 	(i, der_decode(struct,
@@ -137,42 +175,60 @@ object|mapping der_decode(object data, mapping types)
     }
     return res->end_decode_constructed(i);
   }
-  else
-  {
+
 #ifdef ASN1_DEBUG
-    werror("Decoding primitive\n");
+  werror("Decoding Primitive\n");
 #endif
-    /* Primitive encoding */
-    return p ? p()->decode_primitive(contents)
-      : primitive(tag, contents);
-  }
+  // Primitive encoding
+  return p ? p()->decode_primitive(contents, this_object(), types)
+    : Primitive(tag, contents);
 }
 
-#define U(x) make_combined_tag(0, (x))
+#define U(x) .Types.make_combined_tag(0, (x))
 
-mapping universal_types =
-([ U(1) : asn1_boolean,
-   U(2) : asn1_integer,
-   U(3) : asn1_bit_string,
-   U(4) : asn1_octet_string,
-   U(5) : asn1_null,
-   U(6) : asn1_identifier,
-   // U(9) : asn1_real,
-   // U(10) : asn1_enumerated,
-   U(12) : asn1_utf8_string,
-   U(16) : asn1_sequence,
-   U(17) : asn1_set,
-   U(19) : asn1_printable_string,
-   U(20) : asn1_teletex_string,	// or asn1_broken_teletex_string?
-   U(22) : asn1_IA5_string,
-   U(23) : asn1_utc,
-   U(28) : asn1_universal_string,
-   U(30) : asn1_bmp_string,
+mapping(int:program(.Types.Object)) universal_types =
+([ U(1) : .Types.Boolean,
+   U(2) : .Types.Integer,
+   U(3) : .Types.BitString,
+   U(4) : .Types.OctetString,
+   U(5) : .Types.Null,
+   U(6) : .Types.Identifier,
+   // U(9) : .Types.Real,
+   // U(10) : .Types.Enumerated,
+   U(12) : .Types.UTF8String,
+   U(16) : .Types.Sequence,
+   U(17) : .Types.Set,
+   U(19) : .Types.PrintableString,
+   U(20) : .Types.TeletexString,	// or broken_teletexString?
+   U(22) : .Types.IA5String,
+   U(23) : .Types.UTC,
+   U(28) : .Types.UniversalString,
+   U(30) : .Types.BMPString,
   ]);
 
-object|mapping simple_der_decode(string data)
+//! decode a DER encoded object using universal data types
+//!
+//! @param data
+//!   a DER encoded object
+//!
+//! @param types
+//!   An optional set of application-specific types.
+//!   This set is used to extend @[universal_types].
+//!
+//! @returns
+//!   an object from @[Standards.ASN1.Types] or
+//!   either @[Standards.ASN1.Decode.Primitive] or
+//!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
+.Types.Object simple_der_decode(string(0..255) data,
+				mapping(int:program(.Types.Object))|void types)
 {
+  if (types) {
+    return der_decode(ADT.struct(data), universal_types + types);
+  }
   return der_decode(ADT.struct(data), universal_types);
 }
 
+#ifdef COMPATIBILITY
+constant primitive = Primitive;
+constant constructed = Constructed;
 #endif

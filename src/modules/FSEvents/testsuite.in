@@ -1,0 +1,5 @@
+//
+cond_begin([[ System["FSEvents"] && System["FSEvents"]["EventStream"] ]])
+  run_sub_test(({"SRCDIR/fseventstest.pike"}))
+cond_end
+

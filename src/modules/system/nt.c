@@ -1,6 +1,10 @@
 /*
- * $Id: nt.c,v 1.45 2001/09/24 14:11:24 grubba Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * NT system calls for Pike
  *
  * Fredrik Hubinette, 1998-08-22
@@ -10,22 +14,46 @@
 
 #include "system_machine.h"
 #include "system.h"
+#include "port.h"
+
+#include <errno.h>
 
 #ifdef __NT__
-
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#else
 #include <winsock.h>
+#endif
 #include <windows.h>
 #include <accctrl.h>
 #include <lm.h>
+#define SECURITY_WIN32
+#define SEC_SUCCESS(Status) ((Status) >= 0)
+#ifndef __MINGW32__
+#include <sspi.h>
+#else
+#include <security.h>
+#endif
+
+#include <shlobj.h>
+#include <objbase.h>
+
+/* These are defined by winerror.h in recent SDKs. */
+#ifndef SEC_E_INSUFFICIENT_MEMORY
+#include <issperr.h>
+#endif
 
 /*
  * Get some wrappers for functions not implemented in old versions
- * of WIN32.
+ * of WIN32. Needs a Platform SDK installed. The SDK included in 
+ * MSVS 6.0 is not enough.
  */
+#ifdef HAVE_NEWAPIS_H
 #define COMPILE_NEWAPIS_STUBS
 /* We want GetLongPathName()... */
 #define WANT_GETLONGPATHNAME_WRAPPER
 #include <NewAPIs.h>
+#endif
 
 #include "program.h"
 #include "stralloc.h"
@@ -38,9 +66,10 @@
 #include "interpret.h"
 #include "operators.h"
 #include "stuff.h"
+#include "pike_security.h"
+#include "fdlib.h"
 
-/*! @module system
- */
+#define sp Pike_sp
 
 static void throw_nt_error(char *funcname, int err)
 /*
@@ -155,19 +184,19 @@ static void throw_nt_error(char *funcname, int err)
   Pike_error("%s: %s\n", funcname, msg);
 }
 
-
 static void f_cp(INT32 args)
 {
   char *from, *to;
   int ret;
+  VALID_FILE_IO("cp","write");
   get_all_args("cp",args,"%s%s",&from,&to);
   ret=CopyFile(from, to, 0);
-  if(!ret) errno=GetLastError();
+  if(!ret) set_errno_from_win32_error (GetLastError());
   pop_n_elems(args);
   push_int(ret);
 }
 
-static void push_tchar(TCHAR *buf, DWORD len)
+static void push_tchar(const TCHAR *buf, DWORD len)
 {
   push_string(make_shared_binary_pcharp(
     MKPCHARP(buf,my_log2(sizeof(TCHAR))),len));
@@ -185,7 +214,11 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       break;
       
     case REG_SZ:
-      push_string(make_shared_binary_string(buffer,len-1));
+      if (!len) {
+	push_empty_string();
+      } else {
+	push_string(make_shared_binary_string(buffer,len-1));
+      }
       break;
       
     case REG_EXPAND_SZ:
@@ -195,13 +228,17 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
 				 DO_NOT_WARN((DWORD)(sizeof(buffer)-len-1)));
       if(type>sizeof(buffer)-len-1 || !type)
 	Pike_error("RegGetValue: Failed to expand data.\n");
-      push_string(make_shared_string(buffer+len));
+      push_text(buffer+len);
       break;
       
     case REG_MULTI_SZ:
-      push_string(make_shared_binary_string(buffer,len-1));
-      push_string(make_shared_binary_string("\000",1));
-      f_divide(2);
+      if (!len) {
+        push_empty_array();
+      } else {
+	push_string(make_shared_binary_string(buffer,len-1));
+	push_string(make_shared_binary_string("\000",1));
+	f_divide(2);
+      }
       break;
       
     case REG_DWORD_LITTLE_ENDIAN:
@@ -229,14 +266,29 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
  * (On W2k/IA64 HKEY is typedefed to struct HKEY__ *).
  *
  * NOTE: Order must match the values specified with
- * ADD_GLOBAL_INTEGER_CONSTANT() in init_pike_module() below.
+ * ADD_GLOBAL_INTEGER_CONSTANT() in init_nt_system_calls() below.
  */
 static const HKEY hkeys[] = {
   HKEY_CLASSES_ROOT,
   HKEY_LOCAL_MACHINE,
   HKEY_CURRENT_USER,
   HKEY_USERS,
+  /* HKEY_CURRENT_CONFIG */
 };
+
+/*! @decl constant HKEY_CLASSES_ROOT = 0
+ *! @decl constant HKEY_LOCAL_MACHINE = 1
+ *! @decl constant HKEY_CURRENT_USER = 2
+ *! @decl constant HKEY_USERS = 3
+ *!
+ *!   Root handles in the Windows registry.
+ *!
+ *! @note
+ *!   These constants are only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[RegGetValue()], @[RegGetValues()], @[RegGetKeyNames()]
+ */
 
 /*! @decl string|int|array(string) RegGetValue(int hkey, string key, @
  *!                                            string index)
@@ -260,13 +312,18 @@ static const HKEY hkeys[] = {
  *!
  *! @returns
  *!   Returns the value stored at the specified location in the register
- *!   if any. Throws errors on failure.
+ *!   if any. Returns @expr{UNDEFINED@} on missing keys, throws errors
+ *!   on other failures.
+ *!
+ *! @note
+ *!   This function threw errors on missing keys in Pike 7.6 and earlier
+ *!   (see @[System.RegGetValue_76()]).
  *!
  *! @note
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[RegGetValues()], @[RegGetKeyNames()]
+ *!   @[RegGetValues()], @[RegGetKeyNames()], @[System.RegGetValue_76()]
  */
 void f_RegGetValue(INT32 args)
 {
@@ -277,14 +334,20 @@ void f_RegGetValue(INT32 args)
   DWORD len,type;
   char buffer[8192];
   len=sizeof(buffer)-1;
-  get_all_args("RegQueryValue", args, "%d%s%s",
+  get_all_args("RegGetValue", args, "%i%s%s",
 	       &hkey_num, &key, &ind);
 
-  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+  if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d\n", hkey_num);
   }
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  if ((ret == ERROR_FILE_NOT_FOUND) ||
+      (ret == ERROR_PATH_NOT_FOUND)) {
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
   if(ret != ERROR_SUCCESS)
     throw_nt_error("RegOpenKeyEx", ret);
 
@@ -295,6 +358,9 @@ void f_RegGetValue(INT32 args)
   {
     pop_n_elems(args);
     push_regvalue(type, buffer, len);
+  } else if (ret == ERROR_FILE_NOT_FOUND) {
+    pop_n_elems(args);
+    push_undefined();
   }else{
     throw_nt_error("RegQueryValueEx", ret);
   }
@@ -319,17 +385,31 @@ static void do_regclosekey(HKEY key)
  *!   @endint
  *!
  *! @param key
- *!   Registry key.
+ *!   A registry key.
  *!
  *! @returns
- *!   Returns an array of value keys stored at the specified location iof any.
- *!   Throws errors on failure.
+ *!   Returns an array of value keys stored at the specified location if any.
+ *!   Returns @expr{UNDEFINED@} on missing @[key].
+ *!   Throws errors on other failures.
+ *!
+ *! @example
+ *!   > RegGetKeyNames(HKEY_CURRENT_USER, "Keyboard Layout");
+ *!  (1) Result: ({
+ *!    "IMEtoggle",
+ *!    "Preload",
+ *!    "Substitutes",
+ *!    "Toggle"
+ *!   })
+ *!
+ *! @note
+ *!   This function threw errors on missing @[key] in Pike 7.6 and earlier
+ *!   (see @[System.RegGetKeyNames_76()]).
  *!
  *! @note
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[RegGetValue()], @[RegGetValues()]
+ *!   @[RegGetValue()], @[RegGetValues()], @[System.RegGetKeyNames_76()]
  */
 void f_RegGetKeyNames(INT32 args)
 {
@@ -338,14 +418,20 @@ void f_RegGetKeyNames(INT32 args)
   int i,ret;
   HKEY new_key;
   ONERROR tmp;
-  get_all_args("RegGetKeyNames", args, "%d%s",
+  get_all_args("RegGetKeyNames", args, "%i%s",
 	       &hkey_num, &key);
 
-  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+  if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d\n", hkey_num);
   }
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  if ((ret == ERROR_FILE_NOT_FOUND) ||
+      (ret == ERROR_PATH_NOT_FOUND)) {
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
   if(ret != ERROR_SUCCESS)
     throw_nt_error("RegGetKeyNames[RegOpenKeyEx]", ret);
 
@@ -399,13 +485,25 @@ void f_RegGetKeyNames(INT32 args)
  *!
  *! @returns
  *!   Returns a mapping with all the values stored at the specified location
- *!   in the register if any. Throws errors on failure.
+ *!   in the register if any.
+ *!   Returns @expr{UNDEFINED@} on missing @[key].
+ *!   Throws errors on other failures.
+ *!
+ *! @example
+ *! > RegGetValues(HKEY_CURRENT_USER, "Keyboard Layout\\Preload");
+ *!(5) Result: ([
+ *!  "1":"0000041d"
+ *! ])
+ *!
+ *! @note
+ *!   This function threw errors on missing @[key] in Pike 7.6 and earlier
+ *!   (see @[System.RegGetValues_76()]).
  *!
  *! @note
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[RegGetValue()], @[RegGetKeyNames()]
+ *!   @[RegGetValue()], @[RegGetKeyNames()], @[System.RegGetValues_76()]
  */
 void f_RegGetValues(INT32 args)
 {
@@ -415,15 +513,21 @@ void f_RegGetValues(INT32 args)
   HKEY new_key;
   ONERROR tmp;
 
-  get_all_args("RegGetValues", args, "%d%s",
+  get_all_args("RegGetValues", args, "%i%s",
 	       &hkey_num, &key);
 
-  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+  if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d\n", hkey_num);
   }
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
 
+  if ((ret == ERROR_FILE_NOT_FOUND) ||
+      (ret == ERROR_PATH_NOT_FOUND)) {
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
   if(ret != ERROR_SUCCESS)
     throw_nt_error("RegOpenKeyEx", ret);
 
@@ -462,9 +566,172 @@ void f_RegGetValues(INT32 args)
   f_aggregate_mapping(i*2);
 }
 
+/*! @module System
+ */
+
+/*! @decl string|int|array(string) RegGetValue_76(int hkey, string key, @
+ *!                                               string index)
+ *!
+ *!   Get a single value from the register (COMPAT).
+ *!
+ *!   Pike 7.6 compatibility implementation of @[RegGetValue()].
+ *!   The difference being that this function throws errors when
+ *!   keys are missing.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[RegGetKeyNames_76()], @[RegGetValues_76()], @[RegGetValue()]
+ */
+void f_RegGetValue_76(INT32 args)
+{
+  if (args) {
+    assign_svalues_no_free(Pike_sp, Pike_sp-args, args, BIT_MIXED);
+    Pike_sp += args;
+  }
+  f_RegGetValue(args);
+  if (IS_UNDEFINED(Pike_sp-1)) {
+    /* FIXME: We don't actually know which of the two calls that failed,
+     * but the caller probably doesn't care. */
+    throw_nt_error("RegQueryValueEx", ERROR_FILE_NOT_FOUND);
+  }
+  stack_pop_n_elems_keep_top(args);
+}
+
+/*! @decl array(string) RegGetKeyNames_76(int hkey, string key)
+ *!
+ *!   Get a list of value key names from the register (COMPAT).
+ *!
+ *!   Pike 7.6 compatibility implementation of @[RegGetKeyNames()].
+ *!   The difference being that this function throws errors when
+ *!   keys are missing.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[RegGetValue()], @[RegGetValues_76()], @[RegGetKeyNames()]
+ */
+void f_RegGetKeyNames_76(INT32 args)
+{
+  if (args) {
+    assign_svalues_no_free(Pike_sp, Pike_sp-args, args, BIT_MIXED);
+    Pike_sp += args;
+  }
+  f_RegGetKeyNames(args);
+  if (IS_UNDEFINED(Pike_sp-1)) {
+    throw_nt_error("RegGetKeyNames[RegOpenKeyEx]", ERROR_FILE_NOT_FOUND);
+  }
+  stack_pop_n_elems_keep_top(args);
+}
+
+/*! @decl mapping(string:string|int|array(string)) RegGetValues_76(int hkey, @
+ *!                                                                string key)
+ *!
+ *!   Get multiple values from the register (COMPAT).
+ *!
+ *!   Pike 7.6 compatibility implementation of @[RegGetValues()].
+ *!   The difference being that this function throws errors when
+ *!   keys are missing.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[RegGetValue_76()], @[RegGetKeyNames_76()], @[RegGetValues()]
+ */
+void f_RegGetValues_76(INT32 args)
+{
+  if (args) {
+    assign_svalues_no_free(Pike_sp, Pike_sp-args, args, BIT_MIXED);
+    Pike_sp += args;
+  }
+  f_RegGetValues(args);
+  if (IS_UNDEFINED(Pike_sp-1)) {
+    throw_nt_error("RegOpenKeyEx", ERROR_FILE_NOT_FOUND);
+  }
+  stack_pop_n_elems_keep_top(args);
+}
+
+
+/*! @decl int FreeConsole()
+ *!
+ *! Detaches the calling process from its console.
+ *!
+ *! @note
+ *!  Before calling this function, @[Stdio.stderr], @[Stdio.stdout] and 
+ *!  @[Stdio.stdin] must be closed.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_FREECONSOLE
+void f_freeconsole(INT32 args)
+{
+  int rv;
+
+  rv = (int)FreeConsole();
+
+  push_int(rv);
+}
+#endif /* HAVE_FREECONSOLE */
+
+/*! @decl int AllocConsole()
+ *!
+ *! Allocates a new console for the calling process.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_ALLOCCONSOLE
+void f_allocconsole(INT32 args)
+{
+  int rv;
+
+  rv = (int)AllocConsole();
+
+  push_int(rv);
+}
+#endif /* HAVE_ALOCCONSOLE */
+
+/*! @decl int AttachConsole(int pid)
+ *!
+ *! Attaches calling process to a specific console.
+ *!
+ *! @param pid
+ *   The identifier of the process whose console is to be used.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_ATTACHCONSOLE
+void f_attachconsole(INT32 args)
+{
+  int rv;
+  int pid;
+  get_all_args("AttachConsole", args, "%d",
+               &pid);
+
+  rv = (int)AttachConsole(pid);
+
+  push_int(rv);
+}
+#endif /* HAVE_ATTACHCONSOLE */
+
+
 static struct program *token_program;
 
-#define THIS_TOKEN (*(HANDLE *)(fp->current_storage))
+#define THIS_TOKEN (*(HANDLE *)(Pike_fp->current_storage))
 
 typedef BOOL (WINAPI *logonusertype)(LPSTR,LPSTR,LPSTR,DWORD,DWORD,PHANDLE);
 typedef DWORD (WINAPI *getlengthsidtype)(PSID);
@@ -484,7 +751,7 @@ LINKFUNC(BOOL,lookupaccountsid,
 LINKFUNC(BOOL,setnamedsecurityinfo,
          (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID,PSID,PACL,PACL) );
 LINKFUNC(DWORD,getnamedsecurityinfo,
-         (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID*,PSID*,PACL*,PACL*,PSECURITY_DESCRIPTOR) );
+         (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID*,PSID*,PACL*,PACL*,PSECURITY_DESCRIPTOR*) );
 
 LINKFUNC(BOOL,initializeacl, (PACL,DWORD,DWORD) );
 LINKFUNC(BOOL,addaccessallowedace, (PACL,DWORD,DWORD,PSID) );
@@ -493,7 +760,7 @@ LINKFUNC(BOOL,addauditaccessace, (PACL,DWORD,DWORD,PSID,BOOL,BOOL) );
 
 HINSTANCE advapilib;
 
-#define THIS_PSID (*(PSID *)fp->current_storage)
+#define THIS_PSID (*(PSID *)Pike_fp->current_storage)
 static struct program *sid_program;
 static void init_sid(struct object *o)
 {
@@ -504,7 +771,7 @@ static void exit_sid(struct object *o)
 {
   if(THIS_PSID)
   {
-    free((char *)THIS_PSID);
+    free(THIS_PSID);
     THIS_PSID=0;
   }
 }
@@ -512,7 +779,7 @@ static void exit_sid(struct object *o)
 static void f_sid_eq(INT32 args)
 {
   check_all_args("system.SID->`==",args,BIT_MIXED,0);
-  if(sp[-1].type == T_OBJECT)
+  if(TYPEOF(sp[-1]) == T_OBJECT)
   {
     PSID *tmp=(PSID *)get_storage(sp[-1].u.object,sid_program);
     if(tmp)
@@ -570,8 +837,8 @@ static void f_sid_account(INT32 args)
       f_aggregate(3);
       return;
     }
-    free((char *)dom);
-    free((char *)name);
+    free(dom);
+    free(name);
   }
   errno=GetLastError();
   pop_n_elems(args);
@@ -624,14 +891,16 @@ void f_LogonUser(INT32 args)
   DWORD logontype, logonprovider;
   HANDLE x;
   BOOL ret;
-    
+
+  ASSERT_SECURITY_ROOT("System.LogonUser");
+
   check_all_args("System.LogonUser",args,
 		 BIT_STRING, BIT_INT | BIT_STRING, BIT_STRING,
 		 BIT_INT | BIT_VOID, BIT_INT | BIT_VOID,0);
 
   username=(LPTSTR)sp[-args].u.string->str;
 
-  if(sp[1-args].type==T_STRING)
+  if(TYPEOF(sp[1-args]) == T_STRING)
     domain=(LPTSTR)sp[1-args].u.string->str;
   else
     domain=0;
@@ -927,7 +1196,7 @@ static void low_encode_localgroup_members_info_0(LOCALGROUP_MEMBERS_INFO_0 *tmp)
 #define SAFE_PUSH_SID(X) do {			\
   if(getlengthsid && (X) && sid_program) {	\
     int lentmp=getlengthsid( (X) );		\
-    PSID psidtmp=(PSID)xalloc(lentmp);		\
+    PSID psidtmp=xalloc(lentmp);		\
     struct object *o=low_clone(sid_program);	\
     MEMCPY( psidtmp, (X), lentmp);		\
     (*(PSID *)(o->storage))=psidtmp;		\
@@ -1129,7 +1398,7 @@ void f_NetUserGetInfo(INT32 args)
       Pike_error("Unsupported information level in NetUserGetInfo.\n");
   }
 
-  if(sp[-args].type==T_STRING)
+  if(TYPEOF(sp[-args]) == T_STRING)
   {
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
     if(!server)
@@ -1183,8 +1452,6 @@ void f_NetUserGetInfo(INT32 args)
  *!     @value 20
  *!   @endint
  *!
- *! @param filter
- *!
  *! @returns
  *!   Returns an array on success. Throws errors on failure.
  *!
@@ -1229,7 +1496,7 @@ void f_NetUserEnum(INT32 args)
       }
 
     case 1:
-      if(sp[-args].type==T_STRING)
+      if(TYPEOF(sp[-args]) == T_STRING)
 	server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
     case 0: break;
@@ -1329,10 +1596,10 @@ void f_NetGroupEnum(INT32 args)
 
   check_all_args("NetGroupEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
 
-  if(args && sp[-args].type==T_STRING)
+  if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[1-args].type==T_INT) {
+  if(args>1 && TYPEOF(sp[1-args]) == T_INT) {
     level = sp[1-args].u.integer;
     switch(level)
     {
@@ -1431,10 +1698,10 @@ void f_NetLocalGroupEnum(INT32 args)
 
   check_all_args("NetLocalGroupEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
 
-  if(args && sp[-args].type==T_STRING)
+  if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[1-args].type==T_INT) {
+  if(args>1 && TYPEOF(sp[1-args]) == T_INT) {
     level = sp[1-args].u.integer;
     switch(level)
     {
@@ -1537,13 +1804,13 @@ void f_NetUserGetGroups(INT32 args)
 
   check_all_args("NetUserGetGroups",args,BIT_STRING|BIT_INT, BIT_STRING,BIT_INT|BIT_VOID, 0);
 
-  if(args>0 && sp[-args].type==T_STRING)
+  if(args>0 && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[-args+1].type==T_STRING)
+  if(args>1 && TYPEOF(sp[-args+1]) == T_STRING)
     user=(LPWSTR)require_wstring1(sp[-args+1].u.string,&to_free2);
 
-  if(args>2 && sp[2-args].type==T_INT) {
+  if(args>2 && TYPEOF(sp[2-args]) == T_INT) {
     level = sp[2-args].u.integer;
     switch(level)
     {
@@ -1649,13 +1916,13 @@ void f_NetUserGetLocalGroups(INT32 args)
 
   check_all_args("NetUserGetLocalGroups",args,BIT_STRING|BIT_INT, BIT_STRING,BIT_INT|BIT_VOID, BIT_INT|BIT_VOID, 0);
 
-  if(args>0 && sp[-args].type==T_STRING)
+  if(args>0 && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[-args+1].type==T_STRING)
+  if(args>1 && TYPEOF(sp[-args+1]) == T_STRING)
     user=(LPWSTR)require_wstring1(sp[-args+1].u.string,&to_free2);
 
-  if(args>2 && sp[2-args].type==T_INT) {
+  if(args>2 && TYPEOF(sp[2-args]) == T_INT) {
     level = sp[2-args].u.integer;
     switch(level)
     {
@@ -1666,7 +1933,7 @@ void f_NetUserGetLocalGroups(INT32 args)
     }
   }
 
-  if(args>3 && sp[3-args].type==T_INT)
+  if(args>3 && TYPEOF(sp[3-args]) == T_INT)
     flags = sp[3-args].u.integer;
 
   pop_n_elems(args);
@@ -1758,13 +2025,13 @@ void f_NetGroupGetUsers(INT32 args)
 
   check_all_args("NetGroupGetUsers",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING, BIT_INT|BIT_VOID,0);
 
-  if(args && sp[-args].type==T_STRING)
+  if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[1-args].type==T_STRING)
+  if(args>1 && TYPEOF(sp[1-args]) == T_STRING)
     group=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
 
-  if(args>2 && sp[2-args].type==T_INT) {
+  if(args>2 && TYPEOF(sp[2-args]) == T_INT) {
     level = sp[2-args].u.integer;
     switch(level)
     {
@@ -1875,13 +2142,13 @@ void f_NetLocalGroupGetMembers(INT32 args)
 
   check_all_args("NetLocalGroupGetMembers",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING, BIT_INT|BIT_VOID,0);
 
-  if(args && sp[-args].type==T_STRING)
+  if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[1-args].type==T_STRING)
+  if(args>1 && TYPEOF(sp[1-args]) == T_STRING)
     group=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
 
-  if(args>2 && sp[2-args].type==T_INT) {
+  if(args>2 && TYPEOF(sp[2-args]) == T_INT) {
     level = sp[2-args].u.integer;
     switch(level)
     {
@@ -1983,7 +2250,7 @@ void f_NetGetDCName(INT32 args)
 
   check_all_args("NetGetDCName",args,BIT_STRING|BIT_INT, BIT_STRING, 0);
 
-  if(sp[-args].type==T_STRING)
+  if(TYPEOF(sp[-args]) == T_STRING)
   {
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
     if(!server)
@@ -2052,7 +2319,7 @@ void f_NetGetAnyDCName(INT32 args)
 
   check_all_args("NetGetAnyDCName",args,BIT_STRING|BIT_INT, BIT_STRING, 0);
 
-  if(sp[-args].type==T_STRING)
+  if(TYPEOF(sp[-args]) == T_STRING)
   {
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
     if(!server)
@@ -2090,7 +2357,7 @@ void f_NetGetAnyDCName(INT32 args)
 
 static LPWSTR get_wstring(struct svalue *s)
 {
-  if(s->type != T_STRING) return (LPWSTR)0;
+  if(TYPEOF(*s) != T_STRING) return (LPWSTR)0;
   switch(s->u.string->size_shift)
   {
     case 0:
@@ -2261,12 +2528,6 @@ static int sizeof_wkstauser_info(int level)
  *!
  *!   Get session information.
  *!
- *! @param server
- *!
- *! @param client
- *!
- *! @param user
- *!
  *! @param level
  *!   One of
  *!   @int
@@ -2342,7 +2603,7 @@ static void f_NetSessionEnum(INT32 args)
 	  a->item[pos]=sp[-1];
 	  sp--;
 	  pos++;
-	  if(pos>=a->size) break;
+	  if((INT32)pos>=a->size) break;
 	  ptr+=sizeof_session_info(level);
 	}
 	netapibufferfree(buf);
@@ -2360,8 +2621,6 @@ static void f_NetSessionEnum(INT32 args)
 /* End netsessionenum */
 
 /*! @decl array(mixed) NetWkstaUserEnum(string|int(0..0) server, int level)
- *!
- *! @param server
  *!
  *! @param level
  *!   One of
@@ -2422,7 +2681,7 @@ static void f_NetWkstaUserEnum(INT32 args)
           a->item[pos]=sp[-1];
           sp--;
           pos++;
-          if(pos>=a->size) break;
+          if((INT32)pos>=a->size) break;
           ptr+=sizeof_wkstauser_info(level);
         }
         netapibufferfree(buf);
@@ -2439,25 +2698,34 @@ static void f_NetWkstaUserEnum(INT32 args)
 
 /*! @decl string normalize_path(string path)
  *!
- *!   Normalize an NT filesystem path.
+ *!   Normalize an existing Windows file system path.
  *!
  *!   The following transformations are currently done:
  *!   @ul
  *!     @item
- *!       Trailing slashes are removed.
+ *!       Forward slashes (@expr{'/'@}) are converted to backward
+ *!       slashes (@expr{'\'@}).
+ *!     @item
+ *!       Trailing slashes are removed, except a single slash after a
+ *!       drive letter (e.g. @expr{"C:\"@} is returned instead of
+ *!       @expr{"C:"@}).
  *!     @item
  *!       Extraneous empty extensions are removed.
  *!     @item
  *!       Short filenames are expanded to their corresponding long
  *!       variants.
  *!     @item
- *!       Forward slashes ('/') are converted to backward slashes ('\').
- *!     @item
- *!       Current- and parent-directory paths are removed ("." and "..").
- *!     @item
  *!       Relative paths are expanded to absolute paths.
  *!     @item
- *!       Case-information is restored.
+ *!       Current- and parent-directory path components (@expr{"."@}
+ *!       and @expr{".."@}) are followed, similar to @[combine_path].
+ *!     @item
+ *!       Case-information in directory and file names is restored.
+ *!     @item
+ *!       Drive letters are returned in uppercase.
+ *!     @item
+ *!       The host and share parts of UNC paths are returned in
+ *!       lowercase.
  *!   @endul
  *!
  *! @returns
@@ -2469,6 +2737,11 @@ static void f_NetWkstaUserEnum(INT32 args)
  *! @note
  *!   File fork information is currently not supported (invalid data).
  *!
+ *! @note
+ *!   In Pike 7.6 and earlier, this function didn't preserve a single
+ *!   slash after drive letters, and it didn't convert the host and
+ *!   share parts of an UNC path to lowercase.
+ *!
  *! @seealso
  *!   @[combine_path()], @[combine_path_nt()]
  */
@@ -2476,13 +2749,16 @@ static void f_normalize_path(INT32 args)
 {
   struct pike_string *str;
   struct string_builder res;
-  DWORD ret;
   char *file;
-  ptrdiff_t l;
+  ONERROR res_uwp, file_uwp;
+  DWORD ret;
 
-  get_all_args("nt_normalize_path", args, "%S", &str);
+  get_all_args("normalize_path", args, "%S", &str);
 
   init_string_builder(&res, 0);
+  SET_ONERROR (res_uwp, free_string_builder, &res);
+
+#ifdef WANT_GETLONGPATHNAME_WRAPPER
 
   file = str->str;
   if (file[str->len - 1] == '/' || file[str->len - 1] == '\\') {
@@ -2490,7 +2766,8 @@ static void f_normalize_path(INT32 args)
      * well as removing all trailing slashes (even for files), but it
      * has the benefit that we don't get the cwd when the input is
      * e.g. "c:\\". */
-    file = xalloc(str->len + 1);
+    file = xalloc(str->len + 2);
+    SET_ONERROR (file_uwp, free, file);
     MEMCPY(file, str->str, str->len);
     file[str->len] = '.';
     file[str->len + 1] = 0;
@@ -2504,24 +2781,116 @@ static void f_normalize_path(INT32 args)
      */
     ret = Emulate_GetLongPathName(file, res.s->str, res.malloced);
     if (!ret) {
-      free_string_builder(&res);
-      if (file != str->str) xfree(file);
-      throw_nt_error("normalize_path", errno = GetLastError());
+      unsigned long err = GetLastError();
+      set_errno_from_win32_error (err);
+      throw_nt_error("normalize_path", err);
     }
-  } while (ret > res.malloced);
-  if (file != str->str) xfree(file);
+  } while (ret > (size_t) res.malloced);
 
-  l = ret - 1;
-  if(l >= 0 && (res.s->str[l]=='/' || res.s->str[l]=='\\'))
-  {
-    do l--;
-    while(l && ( res.s->str[l]=='/' || res.s->str[l]=='\\' ));
-    res.s->str[l + 1]=0;
+  if (file != str->str) {
+    free (file);
+    UNSET_ONERROR (file_uwp);
   }
-  res.s->len = l + 1;
+
+#else  /* !WANT_GETLONGPATHNAME_WRAPPER */
+
+  /* Haven't got Emulate_GetLongPathName. We essentially do what it
+   * does. This appears to be the only reliable way to normalize a
+   * path. (GetLongPathName doesn't always correct upper/lower case
+   * differences, and opening the file to use e.g.
+   * GetFinalPathNameByHandle on it might not work if it's already
+   * opened for exclusive access.) */
+
+  /* First convert to an absolute path. */
+  file = xalloc (MAX_PATH);
+  SET_ONERROR (file_uwp, free, file);
+  ret = GetFullPathName (str->str, MAX_PATH, file, NULL);
+  if (ret > MAX_PATH) {
+    errno = ENAMETOOLONG;
+    throw_nt_error ("normalize_path", ERROR_BUFFER_OVERFLOW);
+  }
+  if (!ret) {
+    unsigned int err = GetLastError();
+    set_errno_from_win32_error (err);
+    throw_nt_error ("normalize_path", err);
+  }
+
+  {
+    LPSHELLFOLDER isf;
+    LPWSTR wfile;
+    ONERROR wfile_uwp;
+    size_t l;
+    PIDLIST_ABSOLUTE idl;
+    HRESULT hres;
+
+    if (SHGetDesktopFolder (&isf) != S_OK)
+      /* Use a nondescript error code. */
+      throw_nt_error ("normalize_path", errno = ERROR_INVALID_DATA);
+
+    l = strlen (file);
+    wfile = malloc ((l + 1) * 2);
+    if (!wfile) SIMPLE_OUT_OF_MEMORY_ERROR ("normalize_path", (l + 1) * 2);
+    SET_ONERROR (wfile_uwp, free, wfile);
+    wfile[l] = 0;
+    while (l--) wfile[l] = (unsigned char) file[l];
+
+    hres = isf->lpVtbl->ParseDisplayName (isf, NULL, NULL, wfile,
+					  NULL, &idl, NULL);
+    if (hres != S_OK) {
+      errno = (HRESULT_FACILITY (hres) == FACILITY_WIN32 ?
+	       HRESULT_CODE (hres) :
+	       /* Use a nondescript code if the error isn't a Win32 one. */
+	       ERROR_INVALID_DATA);
+      throw_nt_error ("normalize_path", errno);
+    }
+
+    /* FIXME: Detect and handle windows unicode mode. */
+    if (!SHGetPathFromIDList (idl, file)) {
+      CoTaskMemFree (idl);
+      throw_nt_error ("normalize_path", errno = ERROR_INVALID_DATA);
+    }
+    ret = strlen (file);
+
+    CoTaskMemFree (idl);
+    free (wfile);
+    UNSET_ONERROR (wfile_uwp);
+  }
+
+  string_builder_strcat (&res, file);
+
+  free (file);
+  UNSET_ONERROR (file_uwp);
+
+#endif	/* !WANT_GETLONGPATHNAME_WRAPPER */
+
+  /* Remove trailing slashes, except after a drive letter. */
+  {
+    ptrdiff_t l = (ptrdiff_t) ret - 1;
+    file = res.s->str;
+    if(l >= 0 && file[l]=='\\')
+    {
+      do l--;
+      while(l && file[l]=='\\');
+      if (l == 1 && file[l] == ':') l++;
+      file[l + 1]=0;
+    }
+    res.s->len = l + 1;
+  }
+
+  /* Convert host and share in an UNC path to lowercase since Windows
+   * Shell doesn't do that consistently. */
+  if (file[0] == '\\' && file[1] == '\\') {
+    size_t i;
+    for (i = 2; file[i] && file[i] != '\\'; i++)
+      file[i] = tolower (file[i]);
+    if (file[i] == '\\')
+      for (i++; file[i] && file[i] != '\\'; i++)
+	file[i] = tolower (file[i]);
+  }
 
   pop_n_elems(args);
   push_string(finish_string_builder(&res));
+  UNSET_ONERROR (res_uwp);
 }
 
 /*! @decl int GetFileAttributes(string filename)
@@ -2538,6 +2907,7 @@ static void f_GetFileAttributes(INT32 args)
 {
   char *file;
   DWORD ret;
+  VALID_FILE_IO("GetFileAttributes","read");
   get_all_args("GetFileAttributes",args,"%s",&file);
   ret=GetFileAttributes( (LPCTSTR) file);
   pop_stack();
@@ -2560,7 +2930,8 @@ static void f_SetFileAttributes(INT32 args)
   char *file;
   INT_TYPE attr, ret;
   DWORD tmp;
-  get_all_args("SetFileAttributes", args, "%s%d", &file, &attr);
+  VALID_FILE_IO("SetFileAttributes","write");
+  get_all_args("SetFileAttributes", args, "%s%i", &file, &attr);
   tmp=attr;
   ret=SetFileAttributes( (LPCTSTR) file, tmp);
   pop_stack();
@@ -2583,7 +2954,7 @@ static void f_LookupAccountName(INT32 args)
   char buffer[1];
 
   check_all_args("LookupAccountName",args,BIT_INT|BIT_STRING, BIT_STRING,0);
-  if(sp[-args].type == T_STRING)
+  if(TYPEOF(sp[-args]) == T_STRING)
   {
     if(sp[-args].u.string->size_shift != 0)
        Pike_error("LookupAccountName: System name is wide string.\n");
@@ -2608,7 +2979,7 @@ static void f_LookupAccountName(INT32 args)
 
   if(sidlen && domainlen)
   {
-    PSID sid=(PSID)xalloc(sidlen);
+    PSID sid=xalloc(sidlen);
     struct pike_string *dom=begin_shared_string(domainlen-1);
 
     if(lookupaccountname(sys,
@@ -2629,8 +3000,8 @@ static void f_LookupAccountName(INT32 args)
       f_aggregate(3);
       return;
     }
-    free((char *)dom);
-    free((char *)sid);
+    free(dom);
+    free(sid);
   }
   errno=GetLastError();
   pop_n_elems(args);
@@ -2697,22 +3068,22 @@ static PACL decode_acl(struct array *arr)
 
   for(a=0;a<arr->size;a++)
   {
-    if(arr->item[a].type != T_ARRAY)
+    if(TYPEOF(arr->item[a]) != T_ARRAY)
       Pike_error("Index %d in ACL is not an array.\n",a);
 
     if(arr->item[a].u.array->size != 4)
       Pike_error("Index %d in ACL is not of size 4.\n",a);
 
-    if(arr->item[a].u.array->item[0].type != T_STRING)
+    if(TYPEOF(arr->item[a].u.array->item[0]) != T_STRING)
       Pike_error("ACE[%d][%d] is not a string.\n",a,0);
 
-    if(arr->item[a].u.array->item[1].type != T_INT)
+    if(TYPEOF(arr->item[a].u.array->item[1]) != T_INT)
       Pike_error("ACE[%d][%d] is not an integer.\n",a,1);
 
-    if(arr->item[a].u.array->item[2].type != T_INT)
+    if(TYPEOF(arr->item[a].u.array->item[2]) != T_INT)
       Pike_error("ACE[%d][%d] is not an integer.\n",a,2);
 
-    if(arr->item[a].u.array->item[3].type != T_OBJECT)
+    if(TYPEOF(arr->item[a].u.array->item[3]) != T_OBJECT)
       Pike_error("ACE[%d][%d] is not a SID class.\n",a,3);
 
     sid=(PSID *)get_storage(arr->item[a].u.array->item[3].u.object,sid_program);
@@ -2731,7 +3102,7 @@ static PACL decode_acl(struct array *arr)
     size += getlengthsid( *sid ) - sizeof(DWORD);
   }
 
-  ret=(PACL)xalloc( size );
+  ret=xalloc( size );
 
   if(!initializeacl(ret, size, ACL_REVISION))
     Pike_error("InitializeAcl failed!\n");
@@ -2795,18 +3166,19 @@ static void f_SetNamedSecurityInfo(INT32 args)
   DWORD ret;
   SE_OBJECT_TYPE type=SE_FILE_OBJECT;
 
+  ASSERT_SECURITY_ROOT("SetNamedSecurity");
   get_all_args("SetNamedSecurityInfo",args,"%s%m",&name,&m);
 
   if((sval=simple_mapping_string_lookup(m, "type")))
   {
-    if(sval->type != T_INT)
+    if(TYPEOF(*sval) != T_INT)
       Pike_error("Bad 'type' in SetNamedSecurityInfo.\n");
     type=sval->u.integer;
   }
 
   if((sval=simple_mapping_string_lookup(m,"owner")))
   {
-    if(sval->type != T_OBJECT ||
+    if(TYPEOF(*sval) != T_OBJECT ||
        !get_storage(sval->u.object, sid_program))
       Pike_error("Bad 'owner' in SetNamedSecurityInfo.\n");
     owner=*(PSID *)get_storage(sval->u.object, sid_program);
@@ -2815,7 +3187,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
 
   if((sval=simple_mapping_string_lookup(m,"group")))
   {
-    if(sval->type != T_OBJECT ||
+    if(TYPEOF(*sval) != T_OBJECT ||
        !get_storage(sval->u.object, sid_program))
       Pike_error("Bad 'group' in SetNamedSecurityInfo.\n");
     group=*(PSID *)get_storage(sval->u.object, sid_program);
@@ -2824,7 +3196,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
 
   if((sval=simple_mapping_string_lookup(m,"dacl")))
   {
-    if(sval->type != T_ARRAY)
+    if(TYPEOF(*sval) != T_ARRAY)
       Pike_error("Bad 'dacl' in SetNamedSecurityInfo.\n");
     dacl=decode_acl(sval->u.array);
     flags |= DACL_SECURITY_INFORMATION;
@@ -2832,7 +3204,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
 
   if((sval=simple_mapping_string_lookup(m,"sacl")))
   {
-    if(sval->type != T_ARRAY)
+    if(TYPEOF(*sval) != T_ARRAY)
       Pike_error("Bad 'sacl' in SetNamedSecurityInfo.\n");
     sacl=decode_acl(sval->u.array);
     flags |= SACL_SECURITY_INFORMATION;
@@ -2934,6 +3306,7 @@ static void f_nt_uname(INT32 args)
 
   char buf[1024];
   char *machine = "unknown";
+  char *version = "??";
   OSVERSIONINFO osversion;
   SYSTEM_INFO sysinfo;
   int n=0;
@@ -2951,7 +3324,7 @@ static void f_nt_uname(INT32 args)
   switch(sysinfo.wProcessorArchitecture)
   {
     case PROCESSOR_ARCHITECTURE_INTEL:
-      sprintf(buf, "i%d", sysinfo.dwProcessorType);
+      sprintf(buf, "i%ld", sysinfo.dwProcessorType);
       push_text(buf);
       machine = "i86pc";
       break;
@@ -3033,6 +3406,13 @@ static void f_nt_uname(INT32 args)
       break;
 #endif /* PROCESSOR_ARCHITECTURE_ALPHA64 */
 
+#ifdef PROCESSOR_ARCHITECTURE_AMD64
+    case PROCESSOR_ARCHITECTURE_AMD64:
+      machine = "amd64";
+      push_text("amd64");
+      break;
+#endif
+
 #ifdef PROCESSOR_ARCHITECTURE_MSIL
     case PROCESSOR_ARCHITECTURE_MSIL:
       machine = "msil";
@@ -3056,43 +3436,62 @@ static void f_nt_uname(INT32 args)
   switch(osversion.dwPlatformId)
   {
     case VER_PLATFORM_WIN32s:
+      version = "3.1";
       push_text("Win32s");
       break;
 
     case VER_PLATFORM_WIN32_WINDOWS:
       push_text("Win32");
-      if(osversion.dwMajorVersion)
+      switch(osversion.dwMinorVersion)
       {
-	sprintf(buf,"Windows 95 %d.%d.%d",
-		osversion.dwMajorVersion,
-		osversion.dwMinorVersion,
-		osversion.dwBuildNumber & 0xffff);
-		
-      }else{
-	sprintf(buf,"Windows 98 %d.%d.%d",
-		osversion.dwMajorVersion,
-		osversion.dwMinorVersion,
-		osversion.dwBuildNumber & 0xffff);
-		
+      case 0:
+	version = "95";
+	break;
+      case 10:
+	version = "98";
+	break;
+      case 90:
+	version = "Me";
+	break;
       }
       break;
 
     case VER_PLATFORM_WIN32_NT:
       push_text("Win32");
-      sprintf(buf,"Windows NT %d.%d.%d",
-	      osversion.dwMajorVersion,
-	      osversion.dwMinorVersion,
-	      osversion.dwBuildNumber);
+      switch(osversion.dwMajorVersion)
+      {
+      case 3:
+	version = "NT 3.51";
+	break;
+      case 4:
+	version = "NT 4.0";
+	break;
+      case 5:
+	switch(osversion.dwMinorVersion)
+	{
+	case 0:
+	  version = "2000";
+	  break;
+	case 1:
+	  version = "XP";
+	  break;
+	case 2:
+	  version = "Server 2003";
+	  break;
+	}
+      }
       break;
 
     default:
       push_text("Win32");
-      sprintf(buf,"Windows ?? %d.%d.%d",
-	      osversion.dwMajorVersion,
-	      osversion.dwMinorVersion,
-	      osversion.dwBuildNumber);
       break;
   }
+
+  SNPRINTF(buf, sizeof(buf), "Windows %s %ld.%ld.%ld",
+	  version,
+	  osversion.dwMajorVersion,
+	  osversion.dwMinorVersion,
+	  osversion.dwBuildNumber & 0xffff);
 
   n+=2;
   push_text("release");
@@ -3109,6 +3508,376 @@ static void f_nt_uname(INT32 args)
 
   f_aggregate_mapping(n);
 }
+
+
+/**************************/
+/* start Security context */
+
+typedef SECURITY_STATUS (WINAPI *querysecuritypackageinfotype)(SEC_CHAR*,PSecPkgInfo*);
+typedef SECURITY_STATUS (WINAPI *acquirecredentialshandletype)(SEC_CHAR*,SEC_CHAR*,ULONG,PLUID,PVOID,SEC_GET_KEY_FN,PVOID,PCredHandle,PTimeStamp);
+typedef SECURITY_STATUS (WINAPI *freecredentialshandletype)(PCredHandle);
+typedef SECURITY_STATUS (WINAPI *acceptsecuritycontexttype)(PCredHandle,PCtxtHandle,PSecBufferDesc,ULONG,ULONG,PCtxtHandle,PSecBufferDesc,PULONG,PTimeStamp);
+typedef SECURITY_STATUS (WINAPI *completeauthtokentype)(PCtxtHandle,PSecBufferDesc);
+typedef SECURITY_STATUS (WINAPI *deletesecuritycontexttype)(PCtxtHandle);
+typedef SECURITY_STATUS (WINAPI *freecontextbuffertype)(PVOID);
+typedef SECURITY_STATUS (WINAPI *querycontextattributestype)(PCtxtHandle,ULONG,PVOID);
+
+
+static querysecuritypackageinfotype querysecuritypackageinfo;
+static acquirecredentialshandletype acquirecredentialshandle;
+static freecredentialshandletype freecredentialshandle;
+static acceptsecuritycontexttype acceptsecuritycontext;
+static completeauthtokentype completeauthtoken;
+static deletesecuritycontexttype deletesecuritycontext;
+static freecontextbuffertype freecontextbuffer;
+static querycontextattributestype querycontextattributes;
+
+HINSTANCE securlib;
+
+struct sctx_storage {
+  CredHandle hcred;
+  int        hcred_alloced;
+  CtxtHandle hctxt;
+  int        hctxt_alloced;
+  TCHAR      lpPackageName[1024];
+  DWORD      cbMaxMessage;
+  BYTE *     buf;
+  DWORD      cBuf;
+  int        done;
+  int        lastError;
+};
+
+#define THIS_SCTX ((struct sctx_storage *)Pike_fp->current_storage)
+static struct program *sctx_program;
+static void init_sctx(struct object *o)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+
+  memset(sctx, 0, sizeof(struct sctx_storage));
+}
+
+static void exit_sctx(struct object *o)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+
+  if (sctx->hctxt_alloced) {
+    deletesecuritycontext (&sctx->hctxt);
+    sctx->hctxt_alloced = 0;
+  }
+  if (sctx->hcred_alloced) {
+    freecredentialshandle (&sctx->hcred);
+    sctx->hcred_alloced = 0;
+  }
+  if (sctx->buf) {
+    free(sctx->buf);
+    sctx->buf = 0;
+  }
+}
+
+
+static void f_sctx_create(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  SECURITY_STATUS ss;
+  PSecPkgInfo     pkgInfo;
+  TimeStamp       Lifetime;
+  char *          pkgName;
+
+  get_all_args("system.SecurityContext->create",args,"%s",&pkgName);
+
+  lstrcpy(sctx->lpPackageName, pkgName);
+  ss = querysecuritypackageinfo ( sctx->lpPackageName, &pkgInfo);
+  
+  if (!SEC_SUCCESS(ss)) 
+  {
+    Pike_error("Could not query package info for %s, error 0x%08x\n",
+               sctx->lpPackageName, ss);
+  }
+  
+  sctx->cbMaxMessage = pkgInfo->cbMaxToken;
+  if (sctx->buf)
+    free(sctx->buf);
+  sctx->buf = malloc(sctx->cbMaxMessage);
+
+  freecontextbuffer(pkgInfo);
+
+  if (sctx->hcred_alloced)
+    freecredentialshandle (&sctx->hcred);
+  ss = acquirecredentialshandle (
+                                 NULL, 
+                                 sctx->lpPackageName,
+                                 SECPKG_CRED_INBOUND,
+                                 NULL, 
+                                 NULL, 
+                                 NULL, 
+                                 NULL, 
+                                 &sctx->hcred,
+                                 &Lifetime);
+
+  if (!SEC_SUCCESS (ss))
+  {
+    Pike_error("AcquireCreds failed: 0x%08x\n", ss);
+  }
+  sctx->hcred_alloced = 1;
+
+  pop_n_elems(args);
+  push_int(0);
+}
+
+
+BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
+                       BOOL *pfDone, BOOL fNewConversation)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  SECURITY_STATUS   ss;
+  TimeStamp         Lifetime;
+  SecBufferDesc     OutBuffDesc;
+  SecBuffer         OutSecBuff;
+  SecBufferDesc     InBuffDesc;
+  SecBuffer         InSecBuff;
+  ULONG             Attribs = 0;
+ 
+  /*----------------------------------------------------------------
+   * Prepare output buffers
+   */
+
+  OutBuffDesc.ulVersion = 0;
+  OutBuffDesc.cBuffers = 1;
+  OutBuffDesc.pBuffers = &OutSecBuff;
+
+  OutSecBuff.cbBuffer = *pcbOut;
+  OutSecBuff.BufferType = SECBUFFER_TOKEN;
+  OutSecBuff.pvBuffer = pOut;
+
+  /*----------------------------------------------------------------
+   * Prepare input buffers
+   */
+
+  InBuffDesc.ulVersion = 0;
+  InBuffDesc.cBuffers = 1;
+  InBuffDesc.pBuffers = &InSecBuff;
+
+  InSecBuff.cbBuffer = cbIn;
+  InSecBuff.BufferType = SECBUFFER_TOKEN;
+  InSecBuff.pvBuffer = pIn;
+
+  *pcbOut = 0;
+  *pfDone = 0;
+
+  ss = acceptsecuritycontext (&sctx->hcred,
+                              fNewConversation ? NULL : &sctx->hctxt,
+                              &InBuffDesc,
+                              Attribs, 
+                              SECURITY_NATIVE_DREP,
+                              &sctx->hctxt,
+                              &OutBuffDesc,
+                              &Attribs,
+                              &Lifetime);
+
+  if (!SEC_SUCCESS (ss))  
+  {
+    sctx->lastError = ss;
+    return FALSE;
+  }
+  sctx->hctxt_alloced = 1;
+
+  /*----------------------------------------------------------------
+   * Complete token -- if applicable
+   */
+   
+  if ((SEC_I_COMPLETE_NEEDED == ss) 
+      || (SEC_I_COMPLETE_AND_CONTINUE == ss))  
+  {
+    ss = completeauthtoken (&sctx->hctxt, &OutBuffDesc);
+    if (!SEC_SUCCESS(ss))  
+    {
+      sctx->lastError = ss;
+      return FALSE;
+    }
+  }
+
+  *pcbOut = OutSecBuff.cbBuffer;
+
+  *pfDone = !((SEC_I_CONTINUE_NEEDED == ss) 
+              || (SEC_I_COMPLETE_AND_CONTINUE == ss));
+
+/*   fprintf(stderr, "AcceptSecurityContext result = 0x%08x\n", ss); */
+
+  return TRUE;
+
+} /* end GenServerContext */
+
+
+static void f_sctx_gencontext(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  struct pike_string *in;
+  BOOL new_conversation = 0;
+
+  check_all_args("system.SecurityContext->gen_context()", args,
+                 BIT_STRING,0);
+  
+  in = Pike_sp[-1].u.string;
+  if (in->size_shift != 0)
+    Pike_error("system.SecurityContext->gen_context(): wide strings is not allowed.\n");
+  sctx->cBuf = sctx->cbMaxMessage;
+  if (!GenServerContext (in->str, in->len, sctx->buf, &sctx->cBuf, 
+                         &sctx->done, !sctx->hctxt_alloced))
+  {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+  
+  pop_n_elems(args);
+
+  push_int(sctx->done?1:0);
+  push_string(make_shared_binary_string(sctx->buf, sctx->cBuf));
+  f_aggregate(2);
+}
+
+
+static void f_sctx_getlastcontext(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  check_all_args("system.SecurityContext->get_last_context", args, 0);
+  
+  pop_n_elems(args);
+
+  if (sctx->lastError)
+  {
+    push_int(0);
+    return;
+  }
+  push_int(sctx->done?1:0);
+  push_string(make_shared_binary_string(sctx->buf, sctx->cBuf));
+  f_aggregate(2);
+}
+
+
+static void f_sctx_isdone(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  check_all_args("system.SecurityContext->is_done", args, 0);
+  
+  pop_n_elems(args);
+
+  push_int(sctx->done?1:0);
+}
+
+
+static void f_sctx_type(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  check_all_args("system.SecurityContext->type", args, 0);
+  
+  pop_n_elems(args);
+
+  push_string(make_shared_string(sctx->lpPackageName));
+}
+
+
+static void f_sctx_getusername(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  SECURITY_STATUS   ss;
+  SecPkgContext_Names name;
+
+  check_all_args("system.SecurityContext->get_username", args, 0);
+
+  pop_n_elems(args);
+
+  if (!sctx->hctxt_alloced)
+  {
+    push_int(0);
+    return;
+  }
+
+  ss = querycontextattributes(&sctx->hctxt, SECPKG_ATTR_NAMES, &name);
+  if (ss != SEC_E_OK)
+  {
+    push_int(0);
+    return;
+  }
+
+  push_text(name.sUserName);
+
+  freecontextbuffer(name.sUserName);
+}
+
+
+static void f_sctx_getlasterror(INT32 args)
+{
+  struct sctx_storage *sctx = THIS_SCTX;
+  LPVOID lpMsgBuf;
+  char buf[100];
+  check_all_args("system.SecurityContext->last_error", args, 0);
+  
+  pop_n_elems(args);
+
+  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+                FORMAT_MESSAGE_FROM_SYSTEM | 
+                FORMAT_MESSAGE_IGNORE_INSERTS,
+                NULL,
+                sctx->lastError,
+		/* Default language */
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                (LPTSTR) &lpMsgBuf,
+                0,
+                NULL 
+                );
+  sprintf(buf, "0x%04x: ", sctx->lastError);
+  push_text(buf);
+  push_text(lpMsgBuf);
+  f_add(2);
+  LocalFree(lpMsgBuf);
+}
+
+/*! @decl string GetComputerName()
+ *!
+ *! Retrieves the NetBIOS name of the local computer.
+ *!
+ *! @note
+ *!   This function is Windows specific, and is not available on all systems.
+ */
+static void f_GetComputerName(INT32 args)
+{
+  char  name[MAX_COMPUTERNAME_LENGTH + 1];
+  DWORD len = sizeof(name);
+
+  check_all_args("system.GetComputerName", args, 0);
+
+  pop_n_elems(args);
+
+  if (!GetComputerName(name, &len))
+    push_int(0);
+
+  push_string(make_shared_binary_string(name, len));
+}
+
+/*! @decl string GetUserName()
+ *!
+ *! Retrieves the name of the user associated with the current thread.
+ *!
+ *! @note
+ *!   This function is Windows specific, and is not available on all systems.
+ */
+#ifdef HAVE_GETUSERNAME
+static void f_GetUserName(INT32 args)
+{
+  char  name[UNLEN + 1];
+  DWORD len = sizeof(name);
+
+  check_all_args("system.GetUserName", args, 0);
+
+  pop_n_elems(args);
+
+  if (!GetUserName(name, &len))
+    push_int(0);
+
+  push_string(make_shared_binary_string(name, len-1));
+}
+#endif /* HAVE_GETUSERNAME */
 
 #define ADD_GLOBAL_INTEGER_CONSTANT(X,Y) \
    push_int((long)(Y)); low_add_constant(X,sp-1); pop_stack();
@@ -3163,16 +3932,43 @@ void init_nt_system_calls(void)
   ADD_EFUN("RegGetKeyNames", f_RegGetKeyNames, tFunc(tInt tStr, tArr(tStr)),
 	   OPT_EXTERNAL_DEPEND);
 
+  ADD_FUNCTION2("RegGetValue_76", f_RegGetValue_76,
+		tFunc(tInt tStr tStr, tOr3(tStr, tInt, tArr(tStr))),
+		0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+  ADD_FUNCTION2("RegGetValues_76", f_RegGetValues_76,
+		tFunc(tInt tStr, tMap(tStr, tOr3(tStr, tInt, tArr(tStr)))),
+		0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+  ADD_FUNCTION2("RegGetKeyNames_76", f_RegGetKeyNames_76,
+		tFunc(tInt tStr, tArr(tStr)),
+		0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+/* function(void:int) */
+#ifdef HAVE_FREECONSOLE
+  ADD_FUNCTION("FreeConsole", f_freeconsole, tFunc(tNone,tInt), 0);
+#endif /* HAVE_FREECONSOLE */
+
+/* function(void:int) */
+#ifdef HAVE_ALLOCCONSOLE
+  ADD_FUNCTION("AllocConsole", f_allocconsole, tFunc(tNone,tInt), 0);
+#endif /* HAVE_ALLOCCONSOLE */
+
+/* function(int:int) */
+#ifdef HAVE_ATTACHCONSOLE
+  ADD_FUNCTION("AttachConsole", f_attachconsole, tFunc(tInt,tInt), 0);
+#endif /* HAVE_ATTACHCONSOLE */
+
   ADD_EFUN("uname", f_nt_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("uname", f_nt_uname,tFunc(tNone,tMapping), 0, OPT_TRY_OPTIMIZE);
 
   ADD_FUNCTION("normalize_path", f_normalize_path, tFunc(tStr, tStr), 0);
 
   /* LogonUser only exists on NT, link it dynamically */
-  if(advapilib=LoadLibrary("advapi32"))
+  if( (advapilib=LoadLibrary("advapi32")) )
   {
     FARPROC proc;
-    if(proc=GetProcAddress(advapilib, "LogonUserA"))
+    if( (proc=GetProcAddress(advapilib, "LogonUserA")) )
     {
       logonuser=(logonusertype)proc;
 
@@ -3194,34 +3990,34 @@ void init_nt_system_calls(void)
       token_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
     }
 
-    if(proc=GetProcAddress(advapilib, "LookupAccountNameA"))
+    if( (proc=GetProcAddress(advapilib, "LookupAccountNameA")) )
       lookupaccountname=(lookupaccountnametype)proc;
 
-    if(proc=GetProcAddress(advapilib, "LookupAccountSidA"))
+    if( (proc=GetProcAddress(advapilib, "LookupAccountSidA")) )
       lookupaccountsid=(lookupaccountsidtype)proc;
 
-    if(proc=GetProcAddress(advapilib, "SetNamedSecurityInfoA"))
+    if( (proc=GetProcAddress(advapilib, "SetNamedSecurityInfoA")) )
       setnamedsecurityinfo=(setnamedsecurityinfotype)proc;
 
-    if(proc=GetProcAddress(advapilib, "GetNamedSecurityInfoA"))
+    if( (proc=GetProcAddress(advapilib, "GetNamedSecurityInfoA")) )
       getnamedsecurityinfo=(getnamedsecurityinfotype)proc;
 
-    if(proc=GetProcAddress(advapilib, "EqualSid"))
+    if( (proc=GetProcAddress(advapilib, "EqualSid")) )
       equalsid=(equalsidtype)proc;
 
-    if(proc=GetProcAddress(advapilib, "InitializeAcl"))
+    if( (proc=GetProcAddress(advapilib, "InitializeAcl")) )
       initializeacl=(initializeacltype)proc;
 
-    if(proc=GetProcAddress(advapilib, "AddAccessAllowedAce"))
+    if( (proc=GetProcAddress(advapilib, "AddAccessAllowedAce")) )
       addaccessallowedace=(addaccessallowedacetype)proc;
 
-    if(proc=GetProcAddress(advapilib, "AddAccessDeniedAce"))
+    if( (proc=GetProcAddress(advapilib, "AddAccessDeniedAce")) )
       addaccessdeniedace=(addaccessdeniedacetype)proc;
 
-    if(proc=GetProcAddress(advapilib, "AddAuditAccessAce"))
+    if( (proc=GetProcAddress(advapilib, "AddAuditAccessAce")) )
       addauditaccessace=(addauditaccessacetype)proc;
 
-    if(proc=GetProcAddress(advapilib, "GetLengthSid"))
+    if( (proc=GetProcAddress(advapilib, "GetLengthSid")) )
       getlengthsid=(getlengthsidtype)proc;
 
     if(lookupaccountname &&
@@ -3230,19 +4026,20 @@ void init_nt_system_calls(void)
     {
       start_new_program();
       set_init_callback(init_sid);
-      set_init_callback(exit_sid);
+      set_exit_callback(exit_sid);
       ADD_STORAGE(PSID);
-      add_function("`==",f_sid_eq,"function(mixed:int)",0);
-      add_function("account",f_sid_account,"function(:array(string|int))",0);
+      ADD_FUNCTION("`==",f_sid_eq,tFunc(tMix,tInt),0);
+      ADD_FUNCTION("account",f_sid_account,
+		   tFunc(tNone,tArr(tOr(tStr,tInt))),0);
       add_program_constant("SID",sid_program=end_program(),0);
 
-      add_function("LookupAccountName",f_LookupAccountName,
-		   "function(string,string:array)",0);
+      ADD_FUNCTION("LookupAccountName",f_LookupAccountName,
+		   tFunc(tStr tStr,tArray),0);
 
-      add_function("SetNamedSecurityInfo",f_SetNamedSecurityInfo,
-		   "function(string,mapping(string:mixed):array)",0);
-      add_function("GetNamedSecurityInfo",f_GetNamedSecurityInfo,
-		   "function(string,void|int:mapping)",0);
+      ADD_FUNCTION("SetNamedSecurityInfo",f_SetNamedSecurityInfo,
+		   tFunc(tStr tMap(tStr,tMix),tArray),0);
+      ADD_FUNCTION("GetNamedSecurityInfo",f_GetNamedSecurityInfo,
+		   tFunc(tStr tOr(tVoid,tInt),tMapping),0);
 
       /* FIXME: add ACE constants */
     }
@@ -3250,19 +4047,21 @@ void init_nt_system_calls(void)
   }
 
   /* NetUserGetInfo only exists on NT, link it dynamically */
-  if(netapilib=LoadLibrary("netapi32"))
+  if( (netapilib=LoadLibrary("netapi32")) )
   {
     FARPROC proc;
-    if(proc=GetProcAddress(netapilib, "NetApiBufferFree"))
+    if( (proc=GetProcAddress(netapilib, "NetApiBufferFree")) )
     {
       netapibufferfree=(netapibufferfreetype)proc;
 
-      if(proc=GetProcAddress(netapilib, "NetUserGetInfo"))
+      if( (proc=GetProcAddress(netapilib, "NetUserGetInfo")) )
       {
 	netusergetinfo=(netusergetinfotype)proc;
 	
 	/* function(string,string,int|void:string|array(string|int)) */
-  ADD_FUNCTION("NetUserGetInfo",f_NetUserGetInfo,tFunc(tStr tStr tOr(tInt,tVoid),tOr(tStr,tArr(tOr(tStr,tInt)))),0);
+	ADD_FUNCTION("NetUserGetInfo",f_NetUserGetInfo,
+		     tFunc(tStr tStr tOr(tInt,tVoid),
+			   tOr(tStr,tArr(tOr(tStr,tInt)))),0);
 	
 	SIMPCONST(USER_PRIV_GUEST);
 	SIMPCONST(USER_PRIV_USER);
@@ -3288,12 +4087,13 @@ void init_nt_system_calls(void)
 	SIMPCONST(AF_OP_ACCOUNTS);
       }
       
-      if(proc=GetProcAddress(netapilib, "NetUserEnum"))
+      if( (proc=GetProcAddress(netapilib, "NetUserEnum")) )
       {
 	netuserenum=(netuserenumtype)proc;
 	
 	/* function(string|int|void,int|void,int|void:array(string|array(string|int))) */
-  ADD_FUNCTION("NetUserEnum",f_NetUserEnum,tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),tArr(tOr(tStr,tArr(tOr(tStr,tInt))))),0);
+	ADD_FUNCTION("NetUserEnum",f_NetUserEnum,
+		     tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),tArr(tOr(tStr,tArr(tOr(tStr,tInt))))),0);
 	
 	SIMPCONST(FILTER_TEMP_DUPLICATE_ACCOUNT);
 	SIMPCONST(FILTER_NORMAL_ACCOUNT);
@@ -3302,52 +4102,70 @@ void init_nt_system_calls(void)
 	SIMPCONST(FILTER_SERVER_TRUST_ACCOUNT);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetGroupEnum"))
+      if( (proc=GetProcAddress(netapilib, "NetGroupEnum")) )
       {
 	netgroupenum=(netgroupenumtype)proc;
-	
-  	add_function("NetGroupEnum",f_NetGroupEnum,"function(string|int|void,int|void:array(string|array(string|int)))",0); 
+
+	/* function(string|int|void,int|void:array(string|array(string|int))) */
+  	ADD_FUNCTION("NetGroupEnum",f_NetGroupEnum,
+		     tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid),
+			   tArr(tOr(tStr,tArr(tOr(tStr,tInt))))), 0);
 
 	SIMPCONST(SE_GROUP_ENABLED_BY_DEFAULT);
 	SIMPCONST(SE_GROUP_MANDATORY);
 	SIMPCONST(SE_GROUP_OWNER);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetLocalGroupEnum"))
+      if( (proc=GetProcAddress(netapilib, "NetLocalGroupEnum")) )
       {
 	netlocalgroupenum=(netgroupenumtype)proc;
-	
-  	add_function("NetLocalGroupEnum",f_NetLocalGroupEnum,"function(string|int|void,int|void:array(array(string|int)))",0); 
+
+	/* function(string|int|void,int|void:array(array(string|int))) */
+  	ADD_FUNCTION("NetLocalGroupEnum",f_NetLocalGroupEnum,
+		     tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid),
+			   tArr(tArr(tOr(tStr,tInt)))), 0);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetUserGetGroups"))
+      if( (proc=GetProcAddress(netapilib, "NetUserGetGroups")) )
       {
 	netusergetgroups=(netusergetgroupstype)proc;
-	
- 	add_function("NetUserGetGroups",f_NetUserGetGroups,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
+
+	/* function(string|int,string,int|void:array(string|array(int|string))) */
+ 	ADD_FUNCTION("NetUserGetGroups",f_NetUserGetGroups,
+		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid),
+			   tArr(tOr(tStr,tArr(tOr(tInt,tStr))))), 0);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetUserGetLocalGroups"))
+      if( (proc=GetProcAddress(netapilib, "NetUserGetLocalGroups")) )
       {
 	netusergetlocalgroups=(netusergetlocalgroupstype)proc;
-	
- 	add_function("NetUserGetLocalGroups",f_NetUserGetLocalGroups,"function(string|int,string,int|void,int|void:array(string))",0); 
+
+	/* function(string|int,string,int|void,int|void:array(string)) */
+ 	ADD_FUNCTION("NetUserGetLocalGroups",f_NetUserGetLocalGroups,
+		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid) tOr(tInt,tVoid),
+			   tArr(tStr)), 0);
 
 	SIMPCONST(LG_INCLUDE_INDIRECT);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetGroupGetUsers"))
+      if( (proc=GetProcAddress(netapilib, "NetGroupGetUsers")) )
       {
 	netgroupgetusers=(netgroupgetuserstype)proc;
-	
- 	add_function("NetGroupGetUsers",f_NetGroupGetUsers,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
+
+	/* function(string|int,string,int|void:array(string|array(int|string))) */
+ 	ADD_FUNCTION("NetGroupGetUsers",f_NetGroupGetUsers,
+		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid),
+			   tArr(tOr(tStr,tArr(tOr(tInt,tStr))))), 0);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetLocalGroupGetMembers"))
+      if( (proc=GetProcAddress(netapilib, "NetLocalGroupGetMembers")) )
       {
 	netlocalgroupgetmembers=(netgroupgetuserstype)proc;
-	
- 	add_function("NetLocalGroupGetMembers",f_NetLocalGroupGetMembers,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
+
+	/* function(string|int,string,int|void:array(string|array(int|string))) */
+ 	ADD_FUNCTION("NetLocalGroupGetMembers",f_NetLocalGroupGetMembers,
+		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid),
+			   tArr(tOr(tStr,tArr(tOr(tInt,tStr))))), 0);
 
 	SIMPCONST(SidTypeUser);
 	SIMPCONST(SidTypeGroup);
@@ -3359,40 +4177,98 @@ void init_nt_system_calls(void)
 	SIMPCONST(SidTypeUnknown);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetGetDCName"))
+      if( (proc=GetProcAddress(netapilib, "NetGetDCName")) )
       {
 	netgetdcname=(netgetdcnametype)proc;
-	
- 	add_function("NetGetDCName",f_NetGetDCName,"function(string|int,string:string)",0);
+
+	/* function(string|int,string:string) */
+ 	ADD_FUNCTION("NetGetDCName",f_NetGetDCName,
+		     tFunc(tOr(tStr,tInt) tStr,tStr), 0);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetGetAnyDCName"))
+      if( (proc=GetProcAddress(netapilib, "NetGetAnyDCName")) )
       {
 	netgetanydcname=(netgetdcnametype)proc;
-	
- 	add_function("NetGetAnyDCName",f_NetGetAnyDCName,"function(string|int,string:string)",0);
+
+	/* function(string|int,string:string) */
+ 	ADD_FUNCTION("NetGetAnyDCName",f_NetGetAnyDCName,
+		     tFunc(tOr(tStr,tInt) tStr,tStr), 0);
       }
 
-
       /* FIXME: On windows 9x, netsessionenum is located in svrapi.lib */
-      if(proc=GetProcAddress(netapilib, "NetSessionEnum"))
+      if( (proc=GetProcAddress(netapilib, "NetSessionEnum")) )
       {
 	netsessionenum=(netsessionenumtype)proc;
-	
- 	add_function("NetSessionEnum",f_NetSessionEnum,"function(string,string,string,int:array(int|string))",0);
+
+	/* function(string,string,string,int:array(int|string)) */
+ 	ADD_FUNCTION("NetSessionEnum",f_NetSessionEnum,
+		     tFunc(tStr tStr tStr tInt,tArr(tOr(tInt,tStr))), 0);
 
         SIMPCONST(SESS_GUEST);
         SIMPCONST(SESS_NOENCRYPTION);
       }
 
-      if(proc=GetProcAddress(netapilib, "NetWkstaUserEnum"))
+      if( (proc=GetProcAddress(netapilib, "NetWkstaUserEnum")) )
       {
 	netwkstauserenum=(netwkstauserenumtype)proc;
-	
- 	add_function("NetWkstaUserEnum",f_NetWkstaUserEnum,"function(string,int:array(mixed))",0);
+
+	/* function(string,int:array(mixed)) */
+ 	ADD_FUNCTION("NetWkstaUserEnum",f_NetWkstaUserEnum,
+		     tFunc(tStr tInt,tArray), 0);
       }
     }
   }
+
+  /* secur32.dll is named security.dll on NT4, link it dynamically */
+  securlib=LoadLibrary("secur32");
+  if (!securlib)
+    securlib=LoadLibrary("security");
+
+  if (securlib)
+  {
+    FARPROC proc;
+
+#define LOAD_SECUR_FN(VAR, FN) do { VAR=0; \
+                                    if((proc=GetProcAddress(securlib, #FN))) \
+                                      VAR=(PIKE_CONCAT(VAR,type))proc; \
+                               } while(0)
+
+    LOAD_SECUR_FN(querysecuritypackageinfo, QuerySecurityPackageInfoA);
+    LOAD_SECUR_FN(acquirecredentialshandle, AcquireCredentialsHandleA);
+    LOAD_SECUR_FN(freecredentialshandle, FreeCredentialsHandle);
+    LOAD_SECUR_FN(acceptsecuritycontext, AcceptSecurityContext);
+    LOAD_SECUR_FN(completeauthtoken, CompleteAuthToken);
+    LOAD_SECUR_FN(deletesecuritycontext, DeleteSecurityContext);
+    LOAD_SECUR_FN(freecontextbuffer, FreeContextBuffer);
+    LOAD_SECUR_FN(querycontextattributes, QueryContextAttributesA);
+
+    if( querysecuritypackageinfo && acquirecredentialshandle &&
+        freecredentialshandle && acceptsecuritycontext &&
+        completeauthtoken && deletesecuritycontext &&
+        freecontextbuffer && querycontextattributes )
+    {
+      start_new_program();
+      set_init_callback(init_sctx);
+      set_exit_callback(exit_sctx);
+      ADD_STORAGE(struct sctx_storage);
+      ADD_FUNCTION("create",f_sctx_create,tFunc(tStr,tVoid),0);
+      ADD_FUNCTION("gen_context",f_sctx_gencontext,
+		   tFunc(tStr,tArr(tOr(tStr,tInt))),0);
+      ADD_FUNCTION("get_last_context",f_sctx_getlastcontext,
+		   tFunc(tNone,tArr(tOr(tStr,tInt))),0);
+      ADD_FUNCTION("is_done",f_sctx_isdone,tFunc(tNone,tInt),0);
+      ADD_FUNCTION("type",f_sctx_type,tFunc(tNone,tStr),0);
+      ADD_FUNCTION("get_username",f_sctx_getusername,tFunc(tNone,tStr),0);
+      ADD_FUNCTION("get_last_error",f_sctx_getlasterror,tFunc(tNone,tInt),0);
+      add_program_constant("SecurityContext",sctx_program=end_program(),0);
+    }
+  }
+
+  ADD_FUNCTION("GetComputerName",f_GetComputerName,tFunc(tVoid, tStr), 0);
+#ifdef HAVE_GETUSERNAME
+  ADD_FUNCTION("GetUserName",f_GetUserName,tFunc(tVoid, tStr), 0);
+#endif /* HAVE_GETUSERNAME */
+
 }
 
 void exit_nt_system_calls(void)
@@ -3441,6 +4317,25 @@ void exit_nt_system_calls(void)
       netlocalgroupgetmembers=0;
       netgetdcname=0;
       netgetanydcname=0;
+    }
+  }
+  if(sctx_program)
+  {
+    free_program(sctx_program);
+    sctx_program=0;
+  }
+  if(securlib)
+  {
+    if(FreeLibrary(securlib))
+    {
+      querysecuritypackageinfo=0;
+      acquirecredentialshandle=0;
+      freecredentialshandle=0;
+      acceptsecuritycontext=0;
+      completeauthtoken=0;
+      deletesecuritycontext=0;
+      freecontextbuffer=0;
+      querycontextattributes=0;
     }
   }
 }

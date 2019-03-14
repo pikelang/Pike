@@ -1,10 +1,13 @@
-/* $Id: blit_layer_include.h,v 1.6 1999/04/13 12:32:11 mirar Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* included w/ defines in blit.c, image_add_layer() */
 
 /*
 **! module Image
-**! note
-**!	$Id: blit_layer_include.h,v 1.6 1999/04/13 12:32:11 mirar Exp $
 **! class Image
 */
 

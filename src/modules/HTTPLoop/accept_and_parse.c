@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* Hohum. Here we go. This is try number four for a more optimized
  *  Roxen.
  */
@@ -9,16 +15,14 @@
 
 #include "global.h"
 	  
-#include "array.h"
 #include "bignum.h"
 #include "backend.h"
 #include "machine.h"
 #include "mapping.h"
 #include "module_support.h"
-#include "multiset.h"
 #include "object.h"
 #include "operators.h"
-#include "pike_memory.h"
+#include "pike_macros.h"
 #include "fdlib.h"
 #include "program.h"
 #include "stralloc.h"
@@ -43,6 +47,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "pike_netlib.h"
 #include "accept_and_parse.h"
 #include "log.h"
 #include "cache.h"
@@ -50,8 +55,12 @@
 #include "util.h"
 #include "timeout.h"
 
-/* This must be included last! */
-#include "module_magic.h"
+#endif /* _REENTRANT */
+
+
+#ifdef _REENTRANT
+
+#define sp Pike_sp
 
 static struct callback *my_callback;
 struct program *request_program;
@@ -64,13 +73,6 @@ struct program *accept_loop_program;
 #include "static_strings.h"
 #undef STRING
 /* there.. */
-
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-#ifndef MAX
-#define MAX(a,b) ((a)<(b)?(b):(a))
-#endif
 
 #define MAXLEN (1024*1024*10)
 static MUTEX_T queue_mutex;
@@ -265,7 +267,7 @@ static int parse(struct args *arg)
 			      arg->cache,0, NULL, NULL)) && ce->data)
 	{
 	  ptrdiff_t len = WRITE(arg->fd, ce->data->str, ce->data->len);
-	  LOG(len, arg, atoi(ce->data->str+MY_MIN(ce->data->len, 9))); 
+	  LOG(len, arg, atoi(ce->data->str+MINIMUM(ce->data->len, 9)));
 	  simple_aap_free_cache_entry( arg->cache, ce );
 	  /* if keepalive... */
 	  if((arg->res.protocol==s_http_11)
@@ -298,7 +300,7 @@ void aap_handle_connection(struct args *arg)
   if(arg->res.data && arg->res.data_len > 0)
   {
     p = buffer = arg->res.data;
-    buffer_len = MAX(arg->res.data_len,8192);
+    buffer_len = MAXIMUM(arg->res.data_len,8192);
     arg->res.data=0;
   }
   else 
@@ -353,7 +355,7 @@ void aap_handle_connection(struct args *arg)
       return;
     }
     pos += data_read;
-    if((tmp = my_memmem("\r\n\r\n", 4, MAX(p-3, buffer), 
+    if((tmp = my_memmem("\r\n\r\n", 4, MAXIMUM(p-3, buffer),
 			data_read+(p-3>buffer?3:0))))
       goto ok;
     p += data_read;
@@ -465,7 +467,7 @@ static void low_accept_loop(struct args *arg)
 	struct cache *c, *p = NULL;
 	struct log *l, *n = NULL;
 	/* oups. */
-	mt_lock_interpreter();
+	low_mt_lock_interpreter(); /* Can run even if threads_disabled. */
 	for(i=0; i<CACHE_HTABLE_SIZE; i++)
 	{
 	  e = arg->cache->htable[i];
@@ -517,7 +519,7 @@ static void low_accept_loop(struct args *arg)
 }
 
 
-static void finished_p(struct callback *foo, void *b, void *c)
+static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUSED(c))
 {
   extern void f_low_aap_reqo__init( struct c_request_object * );
 
@@ -550,7 +552,7 @@ static void finished_p(struct callback *foo, void *b, void *c)
 /*       JMP_BUF recovery; */
 
 /*       free_svalue(& throw_value); */
-/*       throw_value.type=T_INT; */
+/*       mark_free_svalue (&throw_value); */
 
 /*       if(SETJMP(recovery)) */
 /*       { */
@@ -569,7 +571,7 @@ static void f_accept_with_http_parse(INT32 nargs)
 /* From socket.c */
   struct port 
   {
-    int fd;
+    struct fd_callback_box box;
     int my_errno;
     struct svalue accept_callback;
     struct svalue id;
@@ -580,7 +582,7 @@ static void f_accept_with_http_parse(INT32 nargs)
   struct svalue *fun, *cb, *program;
   struct cache *c;
   struct args *args = LTHIS; 
-  get_all_args("accept_http_loop", nargs, "%o%*%*%*%d%d%d", &port, &program,
+  get_all_args("accept_http_loop", nargs, "%o%*%*%*%i%i%i", &port, &program,
 	       &fun, &cb, &ms, &dolog, &to);
   MEMSET(args, 0, sizeof(struct args));
   if(dolog)
@@ -599,7 +601,10 @@ static void f_accept_with_http_parse(INT32 nargs)
   first_cache = c;
   args->cache = c;
   c->max_size = ms;
-  args->fd = ((struct port *)port->storage)->fd;
+  {
+      extern struct program *port_program;
+      args->fd = ((struct port *)get_storage( port, port_program))->box.fd;
+  }
   args->filesystem = NULL;
 #ifdef HAVE_TIMEOUTS
   args->timeout = to;
@@ -660,20 +665,14 @@ void f_aap_add_filesystem( INT32 args )
 
   if(args == 4)
     get_all_args( "add_filesystem", args, 
-                  "%s%s%a%d", &basedir, &mountpoint, &noparse, &nosyms );
+                  "%s%s%a%i", &basedir, &mountpoint, &noparse, &nosyms );
   else
     get_all_args( "add_filesystem", args, 
                   "%s%s%a", &basedir, &mountpoint, &noparse );
 }
 
 
-
-
-#ifndef OFFSETOF
-#define OFFSETOF(str_type, field) ((long)& (((struct str_type *)0)->field))
-#endif
-
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef _REENTRANT
   ptrdiff_t offset;
@@ -763,10 +762,13 @@ void pike_module_init(void)
   set_init_callback( aap_init_request_object );
   set_exit_callback( aap_exit_request_object );
   add_program_constant("prog", (c_request_program = end_program()), 0);
+#else
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
 #endif /* _REENTRANT */
 }
 
-void pike_module_exit(void) 
+PIKE_MODULE_EXIT
 {
 #ifdef _REENTRANT
   struct log *log = aap_first_log;
@@ -788,9 +790,6 @@ void pike_module_exit(void)
    * pike level.
    */
   mt_lock( &queue_mutex );
-#ifdef HAVE_TIMEOUTS
-  mt_lock( &aap_timeout_mutex );
-#endif
   /* Now, in theory, if all threads are stopped, we can free all the data.
    * BUT: There is no way to know _when_ all threads are stopped, they may
    * be in read() or something similar. Also, the locking of aap_timeout_mutex
@@ -862,4 +861,3 @@ void pike_module_exit(void)
   free_program(accept_loop_program);
 #endif /* _REENTRANT */
 }
-

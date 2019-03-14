@@ -1,12 +1,13 @@
 /*
- * $Id: image_ttf.c,v 1.41 2001/09/24 12:14:42 grubba Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #include "config.h"
 
-
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.41 2001/09/24 12:14:42 grubba Exp $");
+#include "module.h"
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -50,8 +51,8 @@ static TT_Engine engine;
 
 #endif /* HAVE_LIBTTF */
 
-/* This must be included last! */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 static struct pike_string *param_baseline;
 static struct pike_string *param_quality;
@@ -244,7 +245,7 @@ static void image_ttf_make(INT32 args)
    TT_Error res;
    TT_Face face;
 
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.TTF(): illegal argument 1\n");
 
    res=TT_Open_Collection(engine, sp[-args].u.string->str, col, &face);
@@ -457,7 +458,7 @@ static void image_ttf_face_properties(INT32 args)
 **!	Might be used to save memory - the face
 **!	information is read back from disk upon need.
 **!
-**! returns the called object
+**! returns the object being called
 */
 
 static void image_ttf_face_flush(INT32 args)
@@ -554,8 +555,8 @@ static void image_ttf_face_names(INT32 args)
 
    image_ttf_face__names(args);
 
-   if (sp[-1].type!=T_ARRAY)
-      Pike_error("Image.TTF.Face->names(): internal error, wierd _names()\n");
+   if (TYPEOF(sp[-1]) != T_ARRAY)
+      Pike_error("Image.TTF.Face->names(): internal error, weird _names()\n");
 
    a=sp[-1].u.array;
 
@@ -567,7 +568,7 @@ static void image_ttf_face_names(INT32 args)
       b=a->item[i].u.array;
 
       what=b->item[3].u.integer;
-      if (what>=8 || what<0) continue; /* wierd */
+      if (what>=8 || what<0) continue; /* weird */
       switch (b->item[0].u.integer*100+b->item[1].u.integer)
       {
 	 case 301: /* M$:  unicode */
@@ -582,7 +583,7 @@ static void image_ttf_face_names(INT32 args)
 
       push_text(hasname[what]);
 
-      if (ihas==30) /* unicode, M$ but wierd enough correct byteorder */
+      if (ihas==30) /* unicode, M$ but weird enough correct byteorder */
       {
 	 ptrdiff_t n = b->item[4].u.string->len/2;
 	 struct pike_string *ps=begin_wide_shared_string(n,1);
@@ -680,7 +681,7 @@ static void image_ttf_faceinstance_create(INT32 args)
    if (!args)
       Pike_error("Image.TTF.FaceInstance(): too few arguments\n");
 
-   if (sp[-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(face_s=(struct image_ttf_face_struct*)
 	 get_storage(sp[-args].u.object,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance(): illegal argument 1\n");
@@ -703,9 +704,9 @@ static void image_ttf_faceinstance_set_height(INT32 args)
    if (!args)
       Pike_error("Image.TTF.FaceInstance->set_height(): missing arguments\n");
 
-   if (sp[-args].type==T_INT)
+   if (TYPEOF(sp[-args]) == T_INT)
       h = sp[-args].u.integer*64;
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       h = DOUBLE_TO_INT(sp[-args].u.float_number*64);
    else
       Pike_error("Image.TTF.FaceInstance->set_height(): illegal argument 1\n");
@@ -729,7 +730,7 @@ static void ttf_translate_8bit(TT_CharMap charMap,
 {
    int i;
 
-   dest[0]=(int*)xalloc(len*sizeof(int));
+   dest[0]=xalloc(len*sizeof(int));
 
    THREADS_ALLOW();
    for (i=0; i<len; i++)
@@ -746,7 +747,7 @@ static void ttf_translate_16bit(TT_CharMap charMap,
 {
    int i;
 
-   dest[0]=(int*)xalloc(len*sizeof(int));
+   dest[0]=xalloc(len*sizeof(int));
 
    THREADS_ALLOW();
    for (i=0; i<len; i++)
@@ -838,14 +839,14 @@ static void image_ttf_faceinstance_ponder(INT32 args)
 	 get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->ponder(): lost Face\n");
 
-   if (args && sp[-1].type==T_INT)
+   if (args && TYPEOF(sp[-1]) == T_INT)
    {
       base=sp[-1].u.integer;
       args--;
       pop_stack();
    }
 
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.TTF.FaceInstance->ponder(): illegal argument 1\n");
 
    switch( sp[-args].u.string->size_shift )
@@ -1003,7 +1004,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 /*      fprintf(stderr, "offset=%d\n", (int)metrics.x_scale); */
    }
 
-   if (args && sp[-1].type==T_INT)
+   if (args && TYPEOF(sp[-1]) == T_INT)
    {
       base=sp[-1].u.integer;
       args--;
@@ -1012,7 +1013,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 
    if (!args)
    {
-      push_text("");
+      push_empty_string();
       args=1;
    }
 
@@ -1029,7 +1030,7 @@ static void image_ttf_faceinstance_write(INT32 args)
      char *errs=NULL;
      TT_Glyph_Metrics metrics;
 
-      if (sp[a-args].type!=T_STRING)
+      if (TYPEOF(sp[a-args]) != T_STRING)
 	 Pike_error("Image.TTF.FaceInstance->write(): illegal argument %d\n",a+1);
 
       switch(sp[a-args].u.string->size_shift)
@@ -1047,8 +1048,6 @@ static void image_ttf_faceinstance_write(INT32 args)
 			     base);
 	 break;
        case 2:
-         free( sstr );
-         free( slen );
 	 Pike_error("Too wide string for truetype\n");
 	 break;
       }
@@ -1238,7 +1237,7 @@ static void image_ttf_faceinstance_face(INT32 args)
 /*** module init & exit & stuff *****************************************/
 
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
    free_string(param_baseline);
    free_string(param_quality);
@@ -1256,7 +1255,7 @@ void pike_module_exit(void)
 #endif /* HAVE_LIBTTF */
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_LIBTTF
    unsigned char palette[5]={0,64,128,192,255};
@@ -1276,20 +1275,15 @@ void pike_module_init(void)
      return;
    }
 
-   TT_Set_Raster_Gray_Palette(engine,(char*)palette);
+   TT_Set_Raster_Gray_Palette(engine, palette);
    TT_Init_Kerning_Extension( engine );
 
 #ifdef DYNAMIC_MODULE
-   push_string(make_shared_string("Image"));
-   push_int(0);
-   SAFE_APPLY_MASTER("resolv",2);
-   if (sp[-1].type==T_OBJECT)
-   {
-      push_string(make_shared_string("image"));
-      f_index(2);
+   push_text("Image.Image");
+   SAFE_APPLY_MASTER("resolv",1);
+   if (TYPEOF(sp[-1]) == T_PROGRAM)
       image_program=program_from_svalue(sp-1);
-   }
-   pop_n_elems(1);
+   pop_stack();
 #endif /* DYNAMIC_MODULE */
 
    if (image_program)

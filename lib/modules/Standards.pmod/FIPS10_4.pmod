@@ -18,14 +18,13 @@
 // = american standard for countries and country division codes
 
 // Updated 2001-04-17 from ...bugger, lost url
-// $Id: FIPS10_4.pmod,v 1.2 2001/04/17 18:26:16 mirar Exp $
 
 #pike __REAL_VERSION__
 
-static mapping(string:string) _region_code_to_name=0;
-static mapping(string:string) _region_name_to_code=0;
+protected mapping(string:string) _region_code_to_name=0;
+protected mapping(string:string) _region_name_to_code=0;
 
-static void mkregionmappings()
+protected void mkregionmappings()
 {
    array a=column(regions,0);
    array b=column(regions,1);
@@ -33,10 +32,10 @@ static void mkregionmappings()
    _region_name_to_code=mkmapping(b,a);
 }
 
-static mapping(string:array(string)) _division_code_to_line=0;
-static mapping(string:array(string)) _division_name_to_line=0;
+protected mapping(string:array(string)) _division_code_to_line=0;
+protected mapping(string:array(string)) _division_name_to_line=0;
 
-static void mkdivisionmappings()
+protected void mkdivisionmappings()
 {
    array a=column(divisions,1);
    array b=column(divisions,2);
@@ -44,9 +43,9 @@ static void mkdivisionmappings()
    _division_name_to_line=mkmapping(b,divisions);
 }
 
-static mapping(string:array(array(string))) _region_to_divisions=0;
+protected mapping(string:array(array(string))) _region_to_divisions=0;
 
-static void mkregiondivisionmapping()
+protected void mkregiondivisionmapping()
 {
    mapping res=([]);
    foreach (divisions,array(string) v)
@@ -102,7 +101,7 @@ string division_name_to_code(string code)
 // guessing to multiple lines is better
 //
 
-static mapping(string:array(array(string))) guess_to_lines=0;
+protected mapping(string:array(array(string))) guess_to_lines=0;
 
 array(array(string)) division_guess_to_lines(string name)
 {
@@ -129,7 +128,7 @@ array(array(string)) division_guess_to_lines(string name)
 	 map(guess_mangle(v[2]),add_guess,guess_to_lines,v);
 	 foreach (v[4..],string q)
 	    map(guess_mangle(q),add_guess,guess_to_lines,v);
-	 guess_to_lines[v[1]]=v;
+	 guess_to_lines[v[1]] = ({ v });
       }
 //        werror("%O\n",indices(guess_to_lines));
    }
@@ -156,7 +155,7 @@ array(string) region_to_division_codes(string region)
 
 // ----------------------------------------------------------------
 
-static array regions=({
+protected array(array(string)) regions = ({
    ({"AA","ARUBA"}),
    ({"AC","ANTIGUA AND BARBUDA"}),
    ({"AE","UNITED ARAB EMIRATES"}),
@@ -408,7 +407,7 @@ static array regions=({
    ({"ZI","ZIMBABWE"}),
 });
 
-static array divisions=({
+protected array(array(string)) divisions = ({
    ({"AC","AC01","Barbuda","parish",}),
    ({"AC","AC03","Saint George","parish",}),
    ({"AC","AC04","Saint John","parish",}),
@@ -4422,4 +4421,3 @@ static array divisions=({
    ({"ZI","ZI07","Matabeleland South","province",}),
    ({"ZI","ZI08","Masvingo","province",}),
 });
-

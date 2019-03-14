@@ -1,7 +1,5 @@
 /* XTools.pmod
  *
- * $Id: XTools.pmod,v 1.7 2001/04/07 00:56:32 nilsson Exp $
- *
  * Various tools that are higher level than raw X, but are lower level
  * than widgets.
  */
@@ -9,8 +7,7 @@
 /*
  *    Protocols.X, a Pike interface to the X Window System
  *
- *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
- *    Pontus Hagland, David Hedbor.
+ *    See COPYRIGHT for copyright information.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -26,10 +23,6 @@
  *    along with this program; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
-
-/* Questions, bug fixes and bug reports can be sent to the pike
- * mailing list, pike@roxen.com, or to the athors (see AUTHORS for
- * email addresses. */
 
 #pike __REAL_VERSION__
 
@@ -47,7 +40,7 @@ class Button
 
   void button_exposed(mapping event)
   {
-    redraw_callback(this_object(), pressed && (!style || inside), event);
+    redraw_callback(this, pressed && (!style || inside), event);
   }
   
   mapping button_pressed(mapping event)
@@ -57,7 +50,7 @@ class Button
       {
 	pressed = 1;
 	inside = 1;
-	redraw_callback(this_object(), 1, 0);
+	redraw_callback(this, 1, 0);
 	
 	return 0;
       }
@@ -70,9 +63,9 @@ class Button
     if (event->detail == button)
       {
 	pressed = 0;
-	redraw_callback(this_object(), 0, 0);
+	redraw_callback(this, 0, 0);
 	if (inside)
-	  clicked_callback(this_object());
+	  clicked_callback(this);
 	return 0;
       }
     else 
@@ -83,7 +76,7 @@ class Button
   {
     inside = 1;
     if (pressed && style)
-      redraw_callback(this_object(), 1, 0);
+      redraw_callback(this, 1, 0);
     return 0;
   }
 
@@ -91,7 +84,7 @@ class Button
   {
     inside = 0;
     if (pressed && style)
-      redraw_callback(this_object(), 0, 0);
+      redraw_callback(this, 0, 0);
     return 0;
   }
   

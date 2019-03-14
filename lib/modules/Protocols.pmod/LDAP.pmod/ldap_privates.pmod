@@ -2,8 +2,6 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.6 2000/09/28 03:39:03 hubbe Exp $
-//
 // Honza Petrous, hop@unibase.cz
 //
 // ----------------------------------------------------------------------
@@ -34,46 +32,41 @@
 // This is very poor defined own ASN.1 objects (not enough time to clean it!)
 //import Standards.ASN1.Encode;
 
-#if constant(Standards.ASN1.Types.asn1_integer)
+#include "ldap_globals.h"
 
 class asn1_enumerated
 {
-  inherit Standards.ASN1.Types.asn1_integer;
+  inherit Standards.ASN1.Types.Integer;
   constant tag = 10;
   constant type_name = "ENUMERATED";
 }
 
 class asn1_boolean
 {
-  inherit Standards.ASN1.Types.asn1_object;
+  inherit Standards.ASN1.Types.Object;
   constant tag = 1;
   constant type_name = "BOOLEAN";
   int value;
 
-  object init(int n) {
+  this_program init(int n) {
     if(n)
       n=0xff;
     value = n;
-    return (this_object());
+    return this;
   }
 
   string der_encode() { return build_der(value? "\377" : "\0"); }
 
-  object decode_primitive(string contents) {
-    record_der(contents);
+  this_program decode_primitive(string contents) {
+    der = contents;
     value = ( contents != "\0" );
-    return this_object();
+    return this;
   }
-
-  string debug_string() {
-    return value ? "TRUE" : "FALSE";
-  }
-
 }
 
 class asn1_application_sequence
 {
-  inherit Standards.ASN1.Types.asn1_sequence;
+  inherit Standards.ASN1.Types.Sequence;
   constant cls = 1;
   constant type_name = "APPLICATION SEQUENCE";
   int tagx;
@@ -85,11 +78,15 @@ class asn1_application_sequence
     tagx = tagid;
   }
 
+  protected string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_application_octet_string
 {
-  inherit Standards.ASN1.Types.asn1_octet_string;
+  inherit Standards.ASN1.Types.OctetString;
   constant cls = 1;
   constant type_name = "APPLICATION OCTET_STRING";
   int tagx;
@@ -101,11 +98,35 @@ class asn1_application_octet_string
     tagx = tagid;
   }
 
+  protected string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
+}
+
+class asn1_context_boolean
+{
+  inherit Standards.ASN1.Types.Boolean;
+  constant cls = 2;
+  constant type_name = "CONTEXT BOOLEAN";
+  int tagx;
+
+  int get_tag() {return tagx;}
+
+  void init(int tagid, int arg) {
+    ::init(arg);
+    tagx = tagid;
+  }
+
+  protected string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_context_integer
 {
-  inherit Standards.ASN1.Types.asn1_integer;
+  inherit Standards.ASN1.Types.Integer;
   constant cls = 2;
   constant type_name = "CONTEXT INTEGER";
   int tagx;
@@ -116,11 +137,16 @@ class asn1_context_integer
     ::init(arg);
     tagx = tagid;
   }
+
+  protected string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_context_octet_string
 {
-  inherit Standards.ASN1.Types.asn1_octet_string;
+  inherit Standards.ASN1.Types.OctetString;
   constant cls = 2;
   constant type_name = "CONTEXT OCTET_STRING";
   int tagx;
@@ -131,12 +157,16 @@ class asn1_context_octet_string
     ::init(arg);
     tagx = tagid;
   }
-}
 
+  protected string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
+}
 
 class asn1_context_sequence
 {
-  inherit Standards.ASN1.Types.asn1_sequence;
+  inherit Standards.ASN1.Types.Sequence;
   constant cls = 2;
   constant type_name = "CONTEXT SEQUENCE";
   int tagx;
@@ -148,11 +178,15 @@ class asn1_context_sequence
     tagx = tagid;
   }
 
+  protected string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
 class asn1_context_set
 {
-  inherit Standards.ASN1.Types.asn1_set;
+  inherit Standards.ASN1.Types.Set;
   constant cls = 2;
   constant type_name = "CONTEXT SET";
   int tagx;
@@ -164,27 +198,85 @@ class asn1_context_set
     tagx = tagid;
   }
 
+  protected string _sprintf(mixed ... args)
+  {
+    return sprintf("[%d]%s", tagx, ::_sprintf(@args));
+  }
 }
 
-#if 1
-object|mapping der_decode(object data, mapping types)
+class asn1_sequence
 {
+  inherit Standards.ASN1.Types.Sequence;
+  constant type_name = "SEQUENCE";
+  constant cls = 2;
+  constant tag = 0;
+
+  void init(int tagid, array arg)
+  {
+    ::init(arg);
+  }
+
+#if 0
+  string encode_length(int|object len)
+  {
+    if (len < 0x80000000) {
+      // Microsofts ldap APIs use this encoding.
+      return sprintf("\204%4c", len);
+    }
+    return ::encode_length(len);
+  }
+#endif /* 0 */
+}
+
+// Low-level decoder.
+// NOTE: API may change!
+object|mapping der_decode(object data,
+			  mapping(int(0..3):mapping(int:program|function)) types)
+{
+  //werror("LDAP:der_decode(%O)...\n", data);
   int raw_tag = data->get_uint(1);
   int len;
   string contents;
 
-  if ( (raw_tag & 0x1f) == 0x1f)
-    error("ASN1.Decode: High tag numbers is not supported\n");
+  //werror("  raw_tag: 0b%08b\n", raw_tag);
+
+  // raw_tag is [cls:2][constr:1][tag:5].
+
+  int tag = raw_tag & 0x1f;
+  int cls = (raw_tag & 0xc0)>>6;
+
+  // werror("  tag: 0x%02x\n"
+  // 	 "  cls: %d\n", tag, cls);
+
+  if ( tag == 0x1f) {
+    // Tag encoded in big-endian, base 128
+    // msb signals continuation.
+    tag = 0;
+    int val;
+    do {
+      tag <<= 7;
+      tag |= (val = data->get_uint(1)) & 0x7f;
+    } while (val & 0x80);
+    //error("LDAP.Decode: High tag numbers is not supported (0x%02x)\n", raw_tag);
+    //werror("  Decoded high tag to 0x%08x\n", tag);
+  }
 
   len = data->get_uint(1);
-  if (len & 0x80)
+
+  //werror("  len: 0x%02x\n", len);
+
+  if (len & 0x80) {
     len = data->get_uint(len & 0x7f);
+    //werror("  len: 0x%08x\n", len);
+  }
 
   contents = data->get_fix_string(len);
 
-  int tag = raw_tag & 0xdf; // Class and tag bits
+  // werror("  contents: %O\n", contents);
 
-  program p = types[tag];
+  //int tag = raw_tag & 0xdf; // Class and tag bits
+
+  program p = types[cls][tag];
 
   if (raw_tag & 0x20)
   {
@@ -204,8 +296,8 @@ object|mapping der_decode(object data, mapping types)
     object res = p();
 
     // hop: For non-universal classes we provide tag number
-    if(tag & 0xC0)
-      res = p(tag & 0x1F, ({}));
+    if(cls)
+      res = p(tag, ({}));
 
     res->begin_decode_constructed(contents);
 
@@ -219,6 +311,7 @@ object|mapping der_decode(object data, mapping types)
         (i, der_decode(struct,
                        res->element_types(i, types)));
     }
+
     return res->end_decode_constructed(i);
   }
   else
@@ -228,38 +321,51 @@ object|mapping der_decode(object data, mapping types)
       : Standards.ASN1.Decode.primitive(tag, contents);
   }
 }
-#endif
 
-static mapping ldap_type_proc =
-                    ([ 1 : asn1_boolean,
-                       2 : Standards.ASN1.Types.asn1_integer,
-                       3 : Standards.ASN1.Types.asn1_bit_string,
-                       4 : Standards.ASN1.Types.asn1_octet_string,
-                       5 : Standards.ASN1.Types.asn1_null,
-                       6 : Standards.ASN1.Types.asn1_identifier,
-                       // 9 : asn1_real,
-                       10 : asn1_enumerated,
-                       16 : Standards.ASN1.Types.asn1_sequence,
-                       17 : Standards.ASN1.Types.asn1_set,
-                       19 : Standards.ASN1.Types.asn1_printable_string,
-                       20 : Standards.ASN1.Types.asn1_teletex_string,
-                       23 : Standards.ASN1.Types.asn1_utc,
-                       65 : asn1_application_sequence,
-                       68 : asn1_application_sequence,
-                       69 : asn1_application_sequence,
-                       71 : asn1_application_sequence,
-                       73 : asn1_application_sequence,
-                       75 : asn1_application_sequence,
-                       77 : asn1_application_sequence,
-                       79 : asn1_application_sequence
-                    ]);
+// Mapping from class to mapping from tag to program.
+// NOTE: Will probably change to the same layout as in
+//       Standards.ASN1.Decode.universal_types.
+protected mapping(int(0..3):mapping(int:program|function)) ldap_type_proc = ([
+  0:([
+    1 : asn1_boolean,
+    2 : Standards.ASN1.Types.Integer,
+    3 : Standards.ASN1.Types.BitString,
+    4 : Standards.ASN1.Types.OctetString,
+    5 : Standards.ASN1.Types.Null,
+    6 : Standards.ASN1.Types.Identifier,
+    // 9 : asn1_real,
+    10 : asn1_enumerated,
+    16 : Standards.ASN1.Types.Sequence,
+    17 : Standards.ASN1.Types.Set,
+    19 : Standards.ASN1.Types.PrintableString,
+    20 : Standards.ASN1.Types.TeletexString,
+    23 : Standards.ASN1.Types.UTC,
+  ]),
+  1:([
+    1 : asn1_application_sequence,	// [1] BindResponse
+    2 : 0,				// [2] UnbindRequest
+    3 : asn1_application_sequence,	// [3] SearchRequest
+    4 : asn1_application_sequence,	// [4] SearchResultEntry
+    5 : asn1_application_sequence,	// [5] SearchResultDone
+    6 : asn1_application_sequence,	// [6] ModifyRequest
+    7 : asn1_application_sequence,	// [7] ModifyResponse
+    8 : asn1_application_sequence,	// [8] AddRequest
+    9 : asn1_application_sequence,	// [9] AddResponse
+    11 : asn1_application_sequence,	// [11] DelResponse
+    13 : asn1_application_sequence,	// [13] ModifyDNResponse
+    15 : asn1_application_sequence,	// [15] CompareResponse
+    19 : asn1_application_sequence,	// [19] SearchResultReference
+    23 : asn1_application_sequence,	// [23] ExtendedRequest
+    24 : asn1_application_sequence,	// [24] ExtendedResponse
+  ]),
+  2:([
+    0 : asn1_sequence,
+  ]),
+]);
 
 object|mapping ldap_der_decode(string data)
 {
   return der_decode(ADT.struct(data), ldap_type_proc);
 }
 
-#endif
-
 // ------------- end of ASN.1 API hack -----------------------------
-

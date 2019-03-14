@@ -1,9 +1,8 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #include "global.h"
 #include "svalue.h"
@@ -11,24 +10,36 @@
 #include "stralloc.h"
 #include "version.h"
 
-RCSID("$Id: version.c,v 1.133 2001/02/08 23:54:19 grubba Exp $");
-
-#define STR(X) #X
 /*! @decl string version()
  *!
- *! Report the version of Pike.
+ *! Report the version of Pike. Does the same as
+ *! @code
+ *! sprintf("Pike v%d.%d release %d", __REAL_VERSION__,
+ *!         __REAL_MINOR__, __REAL_BUILD__);
+ *! @endcode
  *!
  *! @seealso
  *!   @[__VERSION__], @[__MINOR__], @[__BUILD__],
  *!   @[__REAL_VERSION__], @[__REAL_MINOR__], @[__REAL_BUILD__],
  */
-void f_version(INT32 args)
+PMOD_EXPORT void f_version(INT32 args)
 {
-  char buffer[128];
-  sprintf(buffer,"Pike v%d.%d release %d",
-	  PIKE_MAJOR_VERSION,
-	  PIKE_MINOR_VERSION,
-	  PIKE_BUILD_VERSION);
   pop_n_elems(args);
-  push_text(buffer);
+  push_constant_text ("Pike v"
+		      DEFINETOSTR (PIKE_MAJOR_VERSION)
+		      "."
+		      DEFINETOSTR (PIKE_MINOR_VERSION)
+		      " release "
+		      DEFINETOSTR (PIKE_BUILD_VERSION));
+}
+
+void push_compact_version()
+{
+  push_constant_string_code (str, {
+      str = begin_wide_shared_string (3, 2);
+      STR2(str)[0] = PIKE_MAJOR_VERSION;
+      STR2(str)[1] = PIKE_MINOR_VERSION;
+      STR2(str)[2] = PIKE_BUILD_VERSION;
+      str = end_shared_string (str);
+    });
 }

@@ -1,6 +1,4 @@
 /*
- * $Id: Ports.pmod,v 1.9 2001/01/11 20:23:40 js Exp $
- *
  * IP port assignments
  *
  * Henrik Grubbström 1998-06-23

@@ -1,0 +1,743 @@
+START_MARKER
+
+// - Web.RDF
+test_any_equal([[
+  object r = Web.RDF();
+  object x = r->Resource();
+  r->add_statement( r->URIResource("http://www.example.org/index.html"),
+		    r->URIResource("http://purl.org/dc/elements/1.1/creator"),
+		    x );
+  object y = r->Resource();
+  r->add_statement( x,
+		    r->URIResource("http://www.example.org/terms/creation-date"),
+		    y );
+  r->add_statement( y,
+		    r->URIResource("http://pike.lysator.liu.se/terms/ruppar"),
+		    r->LiteralResource("August 16, 1999") );
+  r->add_statement( x,
+		    r->URIResource("http://www.example.org/terms/language"),
+		    r->LiteralResource("English") );
+  string res = r->get_n_triples();
+  while(sscanf(res, "%s_:Resource%*d %s", string a, string b)==3)
+    res = a + "RESOURCE " + b;
+  return (multiset)(res/"\n");
+]], (< /* 5 elements */
+    "",
+    "RESOURCE <http://www.example.org/terms/language> \"English\" .",
+    "RESOURCE <http://www.example.org/terms/creation-date> RESOURCE .",
+    "<http://www.example.org/index.html> <http://purl.org/dc/elements/1.1/creator> RESOURCE .",
+    "RESOURCE <http://pike.lysator.liu.se/terms/ruppar> \"August 16, 1999\" ."
+>))
+
+test_do([[ add_constant("my_rdf", Web.RDF()); ]])
+test_any([[
+  string nt="<http://www.w3.org/2001/08/rdf-test/>  "
+    "<http://purl.org/dc/elements/1.1/creator>    \"Dave Beckett\" .\n"
+    "<http://www.w3.org/2001/08/rdf-test/>  <http://purl.org/dc/elements/1.1/creator>"
+    "    \"Jan Grant\" .\n"
+    "<http://www.w3.org/2001/08/rdf-test/>  <http://purl.org/dc/elements/1.1/publisher>"
+    "  _:a .\n"
+    "_:a                                    <http://purl.org/dc/elements/1.1/title>"
+    "      \"World Wide Web Consortium\" . \n"
+    "_:a                                    <http://purl.org/dc/elements/1.1/source>"
+    "     <http://www.w3.org/> .\n";
+  return my_rdf->parse_n_triples(nt);
+]], 5)
+test_eq( sizeof(my_rdf), 5)
+test_eq([[ sizeof(my_rdf->find_statements(0,0,0)) ]], 5)
+test_eq([[ sizeof(Array.flatten(my_rdf->find_statements(0,0,0))) ]], 15)
+test_eq([[ sizeof(my_rdf->find_statements( my_rdf->
+  get_resource("http://www.w3.org/2001/08/rdf-test/"),0,0)) ]], 3)
+test_eq( my_rdf->get_resource(""), 0)
+test_eq([[ sizeof(my_rdf->find_statements(0, my_rdf->
+  get_resource("http://purl.org/dc/elements/1.1/creator"),0)) ]], 2)
+test_eq([[ sizeof(my_rdf->find_statements(0,0, my_rdf->
+  get_resource("http://www.w3.org/"))) ]], 1)
+test_true([[ my_rdf->has_statement( @my_rdf->find_statements(0,0, my_rdf->
+  get_resource("http://www.w3.org/"))[0] ) ]])
+test_any([[
+  array stmt = my_rdf->find_statements(0,0,
+    my_rdf->get_resource("http://www.w3.org/"))[0];
+  return my_rdf->has_statement( stmt[0], stmt[2], stmt[1] );
+]], 0)
+test_any([[
+  Web.RDF.Resource r;
+  r = my_rdf->find_statements(0, my_rdf->
+    get_resource("http://purl.org/dc/elements/1.1/publisher"), 0)[0][2];
+  return sizeof(my_rdf->find_statements(r,0,0));
+]], 2)
+test_do( my_rdf->add_statement( my_rdf->make_resource("Q://A"),
+  my_rdf->make_resource("Q://B"), my_rdf->make_resource("Q://C") ) )
+test_true( has_value(my_rdf->get_n_triples(), "<Q://A> <Q://B> <Q://C> .") )
+test_true( objectp( my_rdf->reify( my_rdf->get_resource("Q://A"),
+  my_rdf->get_resource("Q://B"), my_rdf->get_resource("Q://C") ) ) )
+test_any([[
+  Web.RDF.Resource r=my_rdf->find_statements(0,my_rdf->rdf_type,0)[0][0];
+  return sizeof(my_rdf->find_statements(r,0,0));
+]], 4)
+test_do([[
+  Web.RDF.Resource r=my_rdf->find_statements(0,my_rdf->rdf_type,0)[0][0];
+  my_rdf->add_statement(my_rdf->make_resource("Q://D"),
+    my_rdf->make_resource("Q://E"), r);
+]])
+test_eq( sizeof(my_rdf), 10 )
+test_equal( sort(my_rdf->get_properties()->get_n_triple_name()),
+({
+    "<Q://E>",
+    "<http://purl.org/dc/elements/1.1/creator>",
+    "<http://purl.org/dc/elements/1.1/publisher>",
+    "<http://purl.org/dc/elements/1.1/source>",
+    "<http://purl.org/dc/elements/1.1/title>",
+    "<http://www.w3.org/1999/02/22-rdf-syntax-ns#object>",
+    "<http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate>",
+    "<http://www.w3.org/1999/02/22-rdf-syntax-ns#subject>",
+    "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>"
+}) )
+test_any([[
+  Web.RDF.Resource r=my_rdf->find_statements(0,my_rdf->rdf_type,0)[0][0];
+  return my_rdf->dereify(r);
+]], 0)
+test_eq( sizeof(my_rdf), 10 )
+test_do([[
+  my_rdf->remove_statement(
+    @my_rdf->find_statements(my_rdf->get_resource("Q://D"),0,0)[0] );
+]])
+test_eq( sizeof(my_rdf), 9 )
+test_any([[
+  Web.RDF.Resource r=my_rdf->find_statements(0,my_rdf->rdf_type,0)[0][0];
+  return my_rdf->dereify(r);
+]], 1)
+test_eq( sizeof(my_rdf), 6 )
+test_do([[
+  my_rdf->remove_statement(
+    @my_rdf->find_statements(my_rdf->get_resource("Q://A"),0,0)[0] );
+]])
+test_eq( sizeof(my_rdf), 5 )
+test_do( add_constant("my_rdf"); )
+
+define(test_lassila,[[test_any([[
+  object rdf = Web.RDF();
+  rdf->parse_xml(#"$1");
+  return rdf->get_n_triples();
+]], [[ "<http://www.w3.org/Home/Lassila> "
+       "<http://description.org/schema/Creator> \"Ora Lassila\" .\n" ]]) ]])
+test_lassila([[
+<?xml version='1.0'?>
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'>
+ <rdf:Description about='http://www.w3.org/Home/Lassila'>
+   <s:Creator>Ora Lassila</s:Creator>
+ </rdf:Description>
+</rdf:RDF>
+]])
+test_lassila([[
+<?xml version='1.0'?>
+<RDF
+ xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'>
+ <Description about='http://www.w3.org/Home/Lassila'>
+   <s:Creator>Ora Lassila</s:Creator>
+ </Description>
+</RDF>
+]])
+test_lassila([[
+<?xml version='1.0'?>
+<RDF xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+ <Description about='http://www.w3.org/Home/Lassila'>
+   <s:Creator xmlns:s='http://description.org/schema/'>Ora Lassila</s:Creator>
+ </Description>
+</RDF>
+]])
+test_lassila([[
+<?xml version='1.0'?>
+<RDF xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+ <Description about='http://www.w3.org/Home/Lassila'>
+   <Creator xmlns='http://description.org/schema/'>Ora Lassila</Creator>
+ </Description>
+</RDF>
+]])
+test_lassila([[
+<RDF
+ xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'>
+ <Description about='http://www.w3.org/Home/Lassila'
+              s:Creator='Ora Lassila' />
+</RDF>
+]])
+
+define(test_xmlparse,[[
+test_any_equal([[
+  object rdf = Web.RDF();
+  rdf->parse_xml(#"$1");
+  return (multiset)(rdf->get_n_triples()/"\n") - (<"">);
+]], [[$2]])
+test_any_equal([[
+  object rdf = Web.RDF();
+  rdf->parse_xml(#"$1");
+  string nt = rdf->get_n_triples();
+  rdf = Web.RDF();
+  rdf->parse_n_triples(nt);
+  return (multiset)(rdf->get_n_triples()/"\n") - (<"">);
+]], [[$2]])
+test_any_equal([[
+  object rdf = Web.RDF();
+  rdf->parse_xml(#"$1");
+  string xml = rdf->get_xml();
+  rdf = Web.RDF();
+  rdf->parse_xml(xml);
+  return (multiset)(rdf->get_n_triples()/"\n") - (<"">);
+]], [[$2]])
+]])
+
+define(test_xmlparse2,[[
+test_any_equal([[
+  object rdf = Web.RDF();
+  rdf->parse_xml(#"$1");
+  string r = rdf->get_n_triples();
+  while(sscanf(r, "%s_:Resource%*d %s", string a, string b)==3)
+    r = a + "RESOURCE " + b;
+  return (multiset)(r/"\n") - (<"">);
+]], [[$2]])
+test_any_equal([[
+  object rdf = Web.RDF();
+  rdf->parse_xml(#"$1");
+  string nt = rdf->get_n_triples();
+  rdf = Web.RDF();
+  rdf->parse_n_triples(nt);
+  string r = rdf->get_n_triples();
+  while(sscanf(r, "%s_:Resource%*d %s", string a, string b)==3)
+    r = a + "RESOURCE " + b;
+  return (multiset)(r/"\n") - (<"">);
+]], [[$2]])
+test_any_equal([[
+  object rdf = Web.RDF();
+  rdf->parse_xml(#"$1");
+  string xml = rdf->get_xml();
+  rdf = Web.RDF();
+  rdf->parse_xml(xml);
+  string r = rdf->get_n_triples();
+  while(sscanf(r, "%s_:Resource%*d %s", string a, string b)==3)
+    r = a + "RESOURCE " + b;
+  return (multiset)(r/"\n") - (<"">);
+]], [[$2]])
+]])
+
+test_xmlparse(<RDF xmlns='http://www.w3.org/1999/02/22-rdf-syntax-ns#'/>,
+(<>))
+
+test_xmlparse([[
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'>
+  <rdf:Description about=\"http://www.w3.org\">
+    <s:Publisher>World Wide Web Consortium</s:Publisher>
+    <s:Title>W3C Home Page</s:Title>
+    <s:Date>1998-10-03T02:27</s:Date>
+  </rdf:Description>
+</rdf:RDF>
+]],[[ (<
+  "<http://www.w3.org> <http://description.org/schema/Date> \"1998-10-03T02:27\" .",
+  "<http://www.w3.org> <http://description.org/schema/Title> \"W3C Home Page\" .",
+  "<http://www.w3.org> <http://description.org/schema/Publisher> \"World Wide Web Consortium\" ."
+>) ]])
+
+test_xmlparse([[
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'>
+  <rdf:Description about=\"http://www.w3.org\"
+       s:Publisher='World Wide Web Consortium'
+       s:Title='W3C Home Page'
+       s:Date='1998-10-03T02:27'/>
+</rdf:RDF>
+]],[[ (<
+  "<http://www.w3.org> <http://description.org/schema/Date> \"1998-10-03T02:27\" .",
+  "<http://www.w3.org> <http://description.org/schema/Title> \"W3C Home Page\" .",
+  "<http://www.w3.org> <http://description.org/schema/Publisher> \"World Wide Web Consortium\" ."
+>) ]])
+
+test_xmlparse([[
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'
+ xmlns:v='http://v.com/'>
+  <rdf:Description about='http://www.w3.org/Home/Lassila'>
+    <s:Creator rdf:resource='http://www.w3.org/staffId/85740'/>
+  </rdf:Description>
+
+  <rdf:Description about='http://www.w3.org/staffId/85740'>
+    <v:Name>Ora Lassila</v:Name>
+    <v:Email>lassila@w3.org</v:Email>
+  </rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "<http://www.w3.org/staffId/85740> <http://v.com/Email> \"lassila@w3.org\" .",
+  "<http://www.w3.org/staffId/85740> <http://v.com/Name> \"Ora Lassila\" .",
+  "<http://www.w3.org/Home/Lassila> <http://description.org/schema/Creator> <http://www.w3.org/staffId/85740> ."
+>) ]])
+
+test_xmlparse([[
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'
+ xmlns:v='http://v.com/'>
+  <rdf:Description about='http://www.w3.org/Home/Lassila'>
+    <s:Creator>
+      <rdf:Description about='http://www.w3.org/staffId/85740'>
+        <v:Name>Ora Lassila</v:Name>
+        <v:Email>lassila@w3.org</v:Email>
+      </rdf:Description>
+    </s:Creator>
+  </rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "<http://www.w3.org/staffId/85740> <http://v.com/Email> \"lassila@w3.org\" .",
+  "<http://www.w3.org/staffId/85740> <http://v.com/Name> \"Ora Lassila\" .",
+  "<http://www.w3.org/Home/Lassila> <http://description.org/schema/Creator> <http://www.w3.org/staffId/85740> ."
+>) ]])
+
+test_xmlparse([[
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:s='http://description.org/schema/'
+ xmlns:v='http://v.com/'>
+  <rdf:Description about='http://www.w3.org/Home/Lassila'>
+    <s:Creator rdf:resource='http://www.w3.org/staffId/85740'
+       v:Name='Ora Lassila'
+       v:Email='lassila@w3.org' />
+  </rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "<http://www.w3.org/staffId/85740> <http://v.com/Email> \"lassila@w3.org\" .",
+  "<http://www.w3.org/staffId/85740> <http://v.com/Name> \"Ora Lassila\" .",
+  "<http://www.w3.org/Home/Lassila> <http://description.org/schema/Creator> <http://www.w3.org/staffId/85740> ."
+>) ]])
+
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+<rdf:Description rdf:about='#Continent'>
+  <rdf:type rdf:resource='http://www.w3.org/2002/07/owl#Class'/>
+</rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "<#Continent> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> ."
+>) ]])
+
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+         xmlns:owl='http://owl/foo#'>
+  <owl:Class rdf:ID='#Continent'/>
+</rdf:RDF>
+]], [[ (< "<#Continent> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://owl/foo#Class> ." >) ]])
+
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+         xmlns:foo='snmp://flopp/'
+         xmlns:owl='http://owl/foo#'>
+  <owl:Class rdf:ID='#Continent'>
+    <foo:Basun>hej</foo:Basun>
+  </owl:Class>
+</rdf:RDF>
+]], [[ (<
+  "<#Continent> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://owl/foo#Class> .",
+  "<#Continent> <snmp://flopp/Basun> \"hej\" ."
+ >) ]])
+
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+         xmlns:owl='http://owl/foo#'>
+  <owl:Class rdf:ID='#Continent'/>
+</rdf:RDF>
+]], [[ (< "<#Continent> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://owl/foo#Class> ." >) ]])
+
+// RDF/XML Syntax Specification (Revised)
+
+// Example 1
+test_xmlparse2([[
+<rdf:RDF
+ xmlns:ex='http://www.example.org/terms/'
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+
+<rdf:Description>
+  <ex:editor>
+    <rdf:Description>
+      <ex:homePage>
+        <rdf:Description>
+        </rdf:Description>
+      </ex:homePage>
+    </rdf:Description>
+  </ex:editor>
+</rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "RESOURCE <http://www.example.org/terms/editor> RESOURCE .",
+  "RESOURCE <http://www.example.org/terms/homePage> RESOURCE ."
+>) ]])
+
+// Example 2
+test_xmlparse2([[
+<rdf:RDF
+ xmlns:ex='http://www.example.org/terms/'
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+
+<rdf:Description rdf:about='http://www.w3.org/TR/rdf-syntax-grammar'>
+  <ex:editor>
+    <rdf:Description>
+      <ex:homePage>
+        <rdf:Description rdf:about='http://purl.org/net/dajobe/'>
+        </rdf:Description>
+      </ex:homePage>
+    </rdf:Description>
+  </ex:editor>
+</rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://www.example.org/terms/editor> RESOURCE .",
+  "RESOURCE <http://www.example.org/terms/homePage> <http://purl.org/net/dajobe/> ."
+>) ]])
+
+// Example 3
+test_xmlparse2([[
+<rdf:RDF
+ xmlns:ex='http://www.example.org/terms/'
+ xmlns:dc='http://purl.org/dc/elements/1.1/'
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+
+<rdf:Description rdf:about='http://www.w3.org/TR/rdf-syntax-grammar'>
+  <ex:editor>
+  <rdf:Description>
+  <ex:homePage>
+  <rdf:Description rdf:about='http://purl.org/net/dajobe/'>
+  </rdf:Description>
+  </ex:homePage>
+  </rdf:Description>
+  </ex:editor>
+  </rdf:Description>
+
+  <rdf:Description rdf:about='http://www.w3.org/TR/rdf-syntax-grammar'>
+  <ex:editor>
+  <rdf:Description>
+  <ex:fullName>Dave Beckett</ex:fullName>
+  </rdf:Description>
+  </ex:editor>
+  </rdf:Description>
+
+  <rdf:Description rdf:about='http://www.w3.org/TR/rdf-syntax-grammar'>
+  <dc:title>RDF/XML Syntax Specification (Revised)</dc:title>
+  </rdf:Description>
+
+</rdf:RDF>
+]], [[  (< /* 5 elements */
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://www.example.org/terms/editor> RESOURCE .",
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://www.example.org/terms/editor> RESOURCE .",
+  "RESOURCE <http://www.example.org/terms/homePage> <http://purl.org/net/dajobe/> .",
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> \"RDF/XML Syntax Specification (Revised)\" .",
+  "RESOURCE <http://www.example.org/terms/fullName> \"Dave Beckett\" ."
+>)
+]])
+
+// Example 4
+test_xmlparse2([[
+<rdf:RDF
+ xmlns:ex='http://www.example.org/terms/'
+ xmlns:dc='http://purl.org/dc/elements/1.1/'
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+
+<rdf:Description rdf:about='http://www.w3.org/TR/rdf-syntax-grammar'>
+  <ex:editor>
+    <rdf:Description>
+      <ex:homePage>
+        <rdf:Description rdf:about='http://purl.org/net/dajobe/'>
+        </rdf:Description>
+      </ex:homePage>
+      <ex:fullName>Dave Beckett</ex:fullName>
+    </rdf:Description>
+  </ex:editor>
+  <dc:title>RDF/XML Syntax Specification (Revised)</dc:title>
+</rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://www.example.org/terms/editor> RESOURCE .",
+  "RESOURCE <http://www.example.org/terms/homePage> <http://purl.org/net/dajobe/> .",
+  "RESOURCE <http://www.example.org/terms/fullName> \"Dave Beckett\" .",
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> \"RDF/XML Syntax Specification (Revised)\" ."
+>) ]])
+
+// Example 5
+test_xmlparse2([[
+<rdf:RDF
+ xmlns:ex='http://www.example.org/terms/'
+ xmlns:dc='http://purl.org/dc/elements/1.1/'
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+
+<rdf:Description rdf:about='http://www.w3.org/TR/rdf-syntax-grammar'>
+  <ex:editor>
+    <rdf:Description>
+      <ex:homePage rdf:resource='http://purl.org/net/dajobe/'/>
+      <ex:fullName>Dave Beckett</ex:fullName>
+    </rdf:Description>
+  </ex:editor>
+  <dc:title>RDF/XML Syntax Specification (Revised)</dc:title>
+</rdf:Description>
+
+</rdf:RDF>
+]],[[ (<
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://www.example.org/terms/editor> RESOURCE .",
+  "RESOURCE <http://www.example.org/terms/fullName> \"Dave Beckett\" .",
+  "RESOURCE <http://www.example.org/terms/homePage> <http://purl.org/net/dajobe/> .",
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> \"RDF/XML Syntax Specification (Revised)\" ."
+>)
+]])
+
+// Example 6
+test_xmlparse2([[
+<rdf:RDF
+ xmlns:ex='http://www.example.org/terms/'
+ xmlns:dc='http://purl.org/dc/elements/1.1/'
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+
+<rdf:Description rdf:about='http://www.w3.org/TR/rdf-syntax-grammar'
+                 dc:title='RDF/XML Syntax Specification (Revised)'>
+  <ex:editor>
+    <rdf:Description ex:fullName='Dave Beckett'>
+      <ex:homePage rdf:resource='http://purl.org/net/dajobe/'/>
+    </rdf:Description>
+  </ex:editor>
+</rdf:Description>
+
+</rdf:RDF>
+]], [[ (< /* 4 elements */
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> \"RDF/XML Syntax Specification (Revised)\" .",
+  "RESOURCE <http://www.example.org/terms/homePage> <http://purl.org/net/dajobe/> .",
+  "RESOURCE <http://www.example.org/terms/fullName> \"Dave Beckett\" .",
+  "<http://www.w3.org/TR/rdf-syntax-grammar> <http://www.example.org/terms/editor> RESOURCE ."
+>)
+]])
+
+// Example 9
+dnl test_xmlparse([[
+dnl <rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+dnl          xmlns:ex='http://example.org/stuff/1.0/'>
+dnl   <rdf:Description rdf:about='http://example.org/item01'>
+dnl     <ex:prop rdf:parseType='Literal'
+dnl              xmlns:a='http://example.org/a#'><a:Box required='true'>
+dnl          <a:widget size='10' />
+dnl          <a:grommit id='23' /></a:Box>
+dnl     </ex:prop>
+dnl   </rdf:Description>
+dnl </rdf:RDF>
+dnl ]],[[ (<
+dnl 	"<http://example.org/item01> <http://example.org/stuff/1.0/prop> \"<a:Box required='true'>\\n         <a:widget size='10'/>\\n         <a:grommit id='23'/></a:Box>\\n    \" ."
+dnl >)
+dnl ]])
+
+// Example 10
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+         xmlns:ex='http://example.org/stuff/1.0/'>
+  <rdf:Description rdf:about='http://example.org/item01'>
+    <ex:size rdf:datatype='http://www.w3.org/2001/XMLSchema#int'>123</ex:size>
+  </rdf:Description>
+</rdf:RDF>
+]], [[(<
+  "<http://example.org/item01> <http://example.org/stuff/1.0/size> \"123\"^^<http://www.w3.org/2001/XMLSchema#int> ."
+>) ]])
+
+// Example 11
+// NOT IMPLEMENTED
+dnl <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+dnl          xmlns:dc="http://purl.org/dc/elements/1.1/"
+dnl          xmlns:ex="http://example.org/stuff/1.0/">
+dnl   <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
+dnl 		   dc:title="RDF/XML Syntax Specification (Revised)">
+dnl     <ex:editor rdf:nodeID="abc"/>
+dnl   </rdf:Description>
+dnl 
+dnl   <rdf:Description rdf:nodeID="abc"
+dnl                    ex:fullName="Dave Beckett">
+dnl     <ex:homePage rdf:resource="http://purl.org/net/dajobe/"/>
+dnl   </rdf:Description>
+dnl </rdf:RDF>
+
+// Example 12
+// NOT IMPLEMENTED
+dnl <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+dnl          xmlns:dc="http://purl.org/dc/elements/1.1/"
+dnl          xmlns:ex="http://example.org/stuff/1.0/">
+dnl   <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
+dnl 		   dc:title="RDF/XML Syntax Specification (Revised)">
+dnl     <ex:editor rdf:parseType="Resource">
+dnl       <ex:fullName>Dave Beckett</ex:fullName>
+dnl       <ex:homePage rdf:resource="http://purl.org/net/dajobe/"/>
+dnl     </ex:editor>
+dnl   </rdf:Description>
+dnl </rdf:RDF>
+
+// Example 13
+// NOT IMPLEMENTED
+dnl test_xmlparse([[
+dnl <rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+dnl          xmlns:dc='http://purl.org/dc/elements/1.1/'
+dnl          xmlns:ex='http://example.org/stuff/1.0/'>
+dnl   <rdf:Description rdf:about='http://www.w3.org/TR/rdf-syntax-grammar'
+dnl 		   dc:title='RDF/XML Syntax Specification (Revised)'>
+dnl     <ex:editor ex:fullName='Dave Beckett' />
+dnl   </rdf:Description>
+dnl </rdf:RDF>
+dnl ]],[[ (<
+dnl >) ]])
+
+// Example 14
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+         xmlns:dc='http://purl.org/dc/elements/1.1/'
+         xmlns:ex='http://example.org/stuff/1.0/'>
+  <rdf:Description rdf:about='http://example.org/thing'>
+    <rdf:type rdf:resource='http://example.org/stuff/1.0/Document'/>
+    <dc:title>A marvelous thing</dc:title>
+  </rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "<http://example.org/thing> <http://purl.org/dc/elements/1.1/title> \"A marvelous thing\" .",
+  "<http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> ."
+>) ]])
+
+// Example 15
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+         xmlns:dc='http://purl.org/dc/elements/1.1/'
+         xmlns:ex='http://example.org/stuff/1.0/'>
+  <ex:Document rdf:about='http://example.org/thing'>
+    <dc:title>A marvelous thing</dc:title>
+  </ex:Document>
+</rdf:RDF>
+]], [[ (<
+  "<http://example.org/thing> <http://purl.org/dc/elements/1.1/title> \"A marvelous thing\" .",
+  "<http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> ."
+>) ]])
+
+// Example 17
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+  <rdf:Seq rdf:about='http://example.org/favourite-fruit'>
+    <rdf:_1 rdf:resource='http://example.org/banana'/>
+    <rdf:_2 rdf:resource='http://example.org/apple'/>
+    <rdf:_3 rdf:resource='http://example.org/pear'/>
+  </rdf:Seq>
+</rdf:RDF>
+]], [[ (<
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/banana> .",
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/apple> .",
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/pear> .",
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> ."
+>) ]])
+
+// Example 18
+test_xmlparse([[
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+  <rdf:Seq rdf:about='http://example.org/favourite-fruit'>
+    <rdf:li rdf:resource='http://example.org/banana'/>
+    <rdf:li rdf:resource='http://example.org/apple'/>
+    <rdf:li rdf:resource='http://example.org/pear'/>
+  </rdf:Seq>
+</rdf:RDF>
+]], [[ (<
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/banana> .",
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/apple> .",
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/pear> .",
+  "<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> ."
+>) ]])
+
+// Example 19
+test_xmlparse2([[
+<?xml version='1.0'?>
+<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+         xmlns:ex='http://example.org/stuff/1.0/'>
+  <rdf:Description rdf:about='http://example.org/basket'>
+    <ex:hasFruit rdf:parseType='Collection'>
+      <rdf:Description rdf:about='http://example.org/banana'/>
+      <rdf:Description rdf:about='http://example.org/apple'/>
+      <rdf:Description rdf:about='http://example.org/pear'/>
+    </ex:hasFruit>
+  </rdf:Description>
+</rdf:RDF>
+]], [[ (<
+  "<http://example.org/basket> <http://example.org/stuff/1.0/hasFruit> RESOURCE .",
+  "RESOURCE <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> RESOURCE .",
+  "RESOURCE <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> RESOURCE .",
+  "RESOURCE <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .",
+  "RESOURCE <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/banana> .",
+  "RESOURCE <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/pear> .",
+  "RESOURCE <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/apple> ."
+>) ]])
+
+test_xmlparse2([[
+<?xml version='1.0'?>
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:go='http://description.org/gene/'>
+
+     <go:term rdf:about='http://www.geneontology.org/go#GO:0003673'
+            n_associations='0'>
+  <go:accession>GO:0003673</go:accession>
+  <go:name>Gene_Ontology</go:name>
+  </go:term>
+</rdf:RDF>
+]], [[ (<
+  "<http://www.geneontology.org/go#GO:0003673> <http://description.org/gene/n_associations> \"0\" .",
+  "<http://www.geneontology.org/go#GO:0003673> <http://description.org/gene/name> \"Gene_Ontology\" .",
+  "<http://www.geneontology.org/go#GO:0003673> <http://description.org/gene/accession> \"GO:0003673\" .",
+  "<http://www.geneontology.org/go#GO:0003673> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://description.org/gene/term> .",
+>) ]])
+
+test_any_equal([[
+  object a = Web.RDF();
+  a->add_statement( a->URIResource("http://a"),
+		    a->URIResource("http://b"),
+		    a->LiteralResource("x") );
+  object b = Web.RDF();
+  b->add_statement( b->URIResource("http://a"),
+		    b->URIResource("http://b"),
+		    b->LiteralResource("x") );
+  object c = a|b;
+  return (multiset)(c->get_n_triples()/"\n");
+]], (< /* 5 elements */
+    "",
+    "<http://a> <http://b> \"x\" .",
+    "<http://a> <http://b> \"x\" .",
+>))
+
+test_any_equal([[
+  object a = Web.RDF();
+  a->add_statement( a->URIResource("http://a"),
+		    a->URIResource("http://b"),
+		    a->LiteralResource("x") );
+  object b = Web.RDF();
+  b->add_statement( b->URIResource("http://a"),
+		    b->URIResource("http://c"),
+		    b->LiteralResource("x") );
+  object c = a|b;
+  return (multiset)(c->get_n_triples()/"\n");
+]], (< /* 5 elements */
+    "",
+    "<http://a> <http://b> \"x\" .",
+    "<http://a> <http://c> \"x\" .",
+>))
+
+test_any_equal([[
+  object a = Web.RDF();
+  a->add_statement( a->URIResource("http://a"),
+		    a->URIResource("http://b"),
+		    a->URIResource("http://c") );
+  object b = Web.RDF();
+  b->add_statement( b->URIResource("http://a"),
+		    b->URIResource("http://b"),
+		    b->URIResource("http://c") );
+  object c = a|b;
+  return (multiset)(c->get_n_triples()/"\n");
+]], (< /* 5 elements */
+    "",
+    "<http://a> <http://b> <http://c> .",
+>))
+END_MARKER

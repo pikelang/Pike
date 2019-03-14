@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef PIKE_SEARCH_H
 #define PIKE_SEARCH_H
 
@@ -5,8 +11,6 @@
 #define BMLEN 768
 #define CHARS 256
 #define TUNAFISH
-
-#define generic_mem_searcher pike_mem_searcher
 
 struct hubbe_search_link
 {
@@ -17,7 +21,6 @@ struct hubbe_search_link
 
 struct hubbe_searcher
 {
-  struct object *o; /* must be first */
   void *needle;
   ptrdiff_t needlelen;
 
@@ -28,7 +31,6 @@ struct hubbe_searcher
 
 struct boyer_moore_hubbe_searcher
 {
-  struct object *o; /* must be first */
   void *needle;
   ptrdiff_t needlelen;
 
@@ -54,18 +56,18 @@ struct SearchMojtVtable
   SearchMojtFunc1 func1;
   SearchMojtFunc2 func2;
   SearchMojtFuncN funcN;
-  void (*freeme)(void *);
 };
 
 typedef struct SearchMojt
 {
-  struct SearchMojtVtable *vtab;
+  const struct SearchMojtVtable *vtab;
   void *data;
+  struct object *container;	/* Refcounted if non-NULL. */
 } SearchMojt;
 
 struct pike_mem_searcher
 {
-  SearchMojt mojt;
+  SearchMojt mojt; /* Exception: mojt.container not refcounted here. */
   struct pike_string *s; /* search string */
   union memsearcher_data
   {
@@ -89,19 +91,8 @@ PMOD_EXPORT char *my_memmem(char *needle,
 			    size_t needlelen,
 			    char *haystack,
 			    size_t haystacklen);
-PMOD_EXPORT void init_generic_memsearcher(struct generic_mem_searcher *s,
-			      void *needle,
-			      size_t needlelen,
-			      char needle_shift,
-			      size_t estimated_haystack,
-			      char haystack_shift);
-PMOD_EXPORT void *generic_memory_search(struct generic_mem_searcher *s,
-			    void *haystack,
-			    size_t haystacklen,
-			    char haystack_shift);
 void init_pike_searching(void);
 void exit_pike_searching(void);
 /* Prototypes end here */
 
 #endif
-

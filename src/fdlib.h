@@ -1,18 +1,16 @@
 /*
- * $Id: fdlib.h,v 1.39 2001/04/23 19:06:54 marcus Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef FDLIB_H
 #define FDLIB_H
 
 #include "global.h"
 #include "pike_macros.h"
 
-
-/* The sp macro conflicts with Solaris 2.5.1's <sys/file.h>. */
-#ifdef sp
-#undef sp
-#define STACKPOINTER_WAS_DEFINED
-#endif /* sp */
+#include "pike_netlib.h"
 
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
@@ -38,20 +36,18 @@
 #include <socket.h>
 #endif /* HAVE_SOCKET_H */
 
-/* Restore the sp macro */
-#ifdef STACKPOINTER_WAS_DEFINED
-#define sp Pike_sp
-#undef STACK_POINTER_WAS_DEFINED
-#endif /* STACKPOINTER_WAS_DEFINED */
+#include "pike_netlib.h"
 
 #define fd_INTERPROCESSABLE   1
 #define fd_CAN_NONBLOCK       2
 #define fd_CAN_SHUTDOWN       4
 #define fd_BUFFERED           8
 #define fd_BIDIRECTIONAL     16
+#define fd_REVERSE	     32
+#define fd_SEND_FD           64
 
 
-#ifdef HAVE_WINSOCK_H
+#if defined(HAVE_WINSOCK_H)
 
 #define HAVE_FD_FLOCK
 
@@ -64,10 +60,19 @@
 #define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
 #endif
 
-#include <winsock.h>
 #include <winbase.h>
 
 typedef int FD;
+
+#if _INTEGRAL_MAX_BITS >= 64
+typedef struct _stati64 PIKE_STAT_T;
+typedef __int64 PIKE_OFF_T;
+#define PRINTPIKEOFFT PRINTINT64
+#else
+typedef struct stat PIKE_STAT_T;
+typedef off_t PIKE_OFF_T;
+#define PRINTPIKEOFFT PRINTOFFT
+#endif
 
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
 #define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
@@ -81,7 +86,7 @@ typedef int FD;
         debug_fd_query_properties(dmalloc_touch_fd(fd),(Y))
 #define fd_stat(F,BUF) debug_fd_stat(F,BUF)
 #define fd_lstat(F,BUF) debug_fd_stat(F,BUF)
-#define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y),(Z)))
+#define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(debug_fd_socket((X),(Y),(Z)))
 #define fd_pipe(X) debug_fd_pipe( (X) DMALLOC_POS )
 #define fd_accept(X,Y,Z) dmalloc_register_fd(debug_fd_accept((X),(Y),(Z)))
@@ -109,14 +114,16 @@ typedef int FD;
 #define fd_dup(fd) dmalloc_register_fd(debug_fd_dup(dmalloc_touch_fd(fd)))
 #define fd_dup2(fd,to) dmalloc_register_fd(debug_fd_dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to)))
 #define fd_connect(fd,X,Z) debug_fd_connect(dmalloc_touch_fd(fd),(X),(Z))
+#define fd_inet_ntop(af,addr,cp,sz) debug_fd_inet_ntop(af,addr,cp,sz)
 
 
 /* Prototypes begin here */
+PMOD_EXPORT void set_errno_from_win32_error (unsigned long err);
 PMOD_EXPORT char *debug_fd_info(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init();
 void fd_exit();
-PMOD_EXPORT int debug_fd_stat(const char *file, struct stat *buf);
+PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode);
 PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto);
 PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
@@ -136,14 +143,16 @@ SOCKFUN1(listen, int)
 PMOD_EXPORT int debug_fd_close(FD fd);
 PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len);
 PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len);
-PMOD_EXPORT ptrdiff_t debug_fd_lseek(FD fd, ptrdiff_t pos, int where);
-PMOD_EXPORT int debug_fd_ftruncate(FD fd, ptrdiff_t len);
+PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where);
+PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len);
 PMOD_EXPORT int debug_fd_flock(FD fd, int oper);
-PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s);
+PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s);
 PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
 PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data);
 PMOD_EXPORT FD debug_fd_dup(FD from);
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
+PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
+					   char *cp, size_t sz);
 /* Prototypes end here */
 
 #undef SOCKFUN1
@@ -151,10 +160,6 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 #undef SOCKFUN3
 #undef SOCKFUN4
 #undef SOCKFUN5
-
-#define SEEK_SET 0
-#define SEEK_CUR 1
-#define SEEK_END 2
 
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
@@ -171,11 +176,13 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 #define fd_RDONLY 1
 #define fd_WRONLY 2
 #define fd_RDWR 3
+#define fd_ACCMODE 3
 #define fd_APPEND 4
 #define fd_CREAT 8
 #define fd_TRUNC 16
 #define fd_EXCL 32
 #define fd_BINARY 0
+#define fd_LARGEFILE 0
 
 #define fd_shutdown_read SD_RECEIVE
 #define fd_shutdown_write SD_SEND
@@ -201,7 +208,7 @@ struct my_fd_set_s
 typedef struct my_fd_set_s my_fd_set;
 
 #ifdef PIKE_DEBUG
-#define fd_check_fd(X) do { if(fd_type[X]>=0) fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
+#define fd_check_fd(X) do { if(fd_type[X]>=0) Pike_fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
 #else
 #define fd_check_fd(X)
 #endif
@@ -250,7 +257,7 @@ extern int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 
 
 /* This may be inaccurate! /Hubbe */
-#ifdef __NT__
+#if defined(__NT__) && !defined(__MINGW32__)
 #define EMULATE_DIRECT
 #endif
 
@@ -276,7 +283,10 @@ PMOD_EXPORT void closedir(DIR *dir);
 #define HAVE_POSIX_READDIR_R
 
 /* Do not use these... */
+#if 0
+/* Why not? Want to use this one for _getdrive. /mast */
 #undef HAVE_DIRECT_H
+#endif
 #undef HAVE_NDIR_H
 #undef HAVE_SYS_NDIR_H
 #undef HAVE_DIRENT_H
@@ -285,10 +295,13 @@ PMOD_EXPORT void closedir(DIR *dir);
 
 
 
-#else /* HAVE_WINSOCK */
+#else /* HAVE_WINSOCK && !__GNUC__ */
 
 
 typedef int FD;
+typedef struct stat PIKE_STAT_T;
+typedef off_t PIKE_OFF_T;
+#define PRINTPIKEOFFT PRINTOFFT
 
 #define fd_info(X) ""
 #define fd_init()
@@ -297,17 +310,33 @@ typedef int FD;
 #define fd_RDONLY O_RDONLY
 #define fd_WRONLY O_WRONLY
 #define fd_RDWR O_RDWR
+#ifdef O_ACCMODE
+#define fd_ACCMODE O_ACCMODE
+#else
+#define fd_ACCMODE (fd_RDONLY|fd_WRONLY|fd_RDWR)
+#endif
 #define fd_APPEND O_APPEND
 #define fd_CREAT O_CREAT
 #define fd_TRUNC O_TRUNC
 #define fd_EXCL O_EXCL
+
+#ifdef O_BINARY
+#define fd_BINARY O_BINARY
+#else
 #define fd_BINARY 0
+#endif
+
+#ifdef O_LARGEFILE
+#define fd_LARGEFILE O_LARGEFILE
+#else /* !O_LARGEFILE */
+#define fd_LARGEFILE 0
+#endif /* O_LARGEFILE */
 
 #define fd_query_properties(X,Y) ( fd_INTERPROCESSABLE | (Y))
 
 #define fd_stat(F,BUF) stat(F,BUF)
 #define fd_lstat(F,BUF) lstat(F,BUF)
-#define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y),(Z)))
+#define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(socket((X),(Y),(Z)))
 #define fd_pipe pipe /* FIXME */
 #define fd_accept(X,Y,Z) dmalloc_register_fd(accept((X),(Y),(Z)))
@@ -339,6 +368,9 @@ typedef int FD;
 #define fd_ioctl(fd,X,Y) ioctl(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_dup(fd) dmalloc_register_fd(dup(dmalloc_touch_fd(fd)))
 #define fd_connect(fd,X,Z) connect(dmalloc_touch_fd(fd),(X),(Z))
+#ifdef HAVE_INET_NTOP
+#define fd_inet_ntop(af,addr,cp,sz) inet_ntop(af,addr,cp,sz)
+#endif
 
 #ifdef HAVE_BROKEN_F_SETFD
 #define fd_dup2(fd,to) (set_close_on_exec(to,0), dmalloc_register_fd(dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to))))
@@ -393,9 +425,13 @@ typedef struct my_fd_set_s my_fd_set;
    MEMCPY((TO),&(FROM)->tmp,sizeof(*(TO)))
 
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
+#ifndef __amigaos__
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED | fd_CAN_NONBLOCK)
-#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
+#endif
+#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_SEND_FD)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
+
+#endif /* Don't HAVE_WINSOCK */
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
@@ -409,11 +445,25 @@ typedef struct my_fd_set_s my_fd_set;
 #define SEEK_END 2
 #endif
 
-#endif /* Don't HAVE_WINSOCK */
+#ifndef S_ISREG
+#ifdef S_IFREG
+#define S_ISREG(mode)   (((mode) & (S_IFMT)) == (S_IFREG))
+#else /* !S_IFREG */
+#define S_ISREG(mode)   (((mode) & (_S_IFMT)) == (_S_IFREG))
+#endif /* S_IFREG */
+#endif /* !S_ISREG */
 
-PMOD_PROTO extern int pike_make_pipe(int *fds);
-PMOD_PROTO extern int fd_from_object(struct object *o);
-PMOD_PROTO extern void create_proxy_pipe(struct object *o, int for_reading);
-PMOD_PROTO struct object *file_make_object_from_fd(int fd, int mode, int guess);
+#ifndef S_IFIFO
+#define S_IFIFO  0x1000
+#endif
+#ifndef S_IFSOCK
+#define S_IFSOCK 0xc000
+#endif
+
+PMOD_EXPORT int pike_make_pipe(int *fds);
+PMOD_EXPORT int fd_from_object(struct object *o);
+PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading);
+PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess);
+PMOD_EXPORT extern struct program *port_program;
 
 #endif /* FDLIB_H */

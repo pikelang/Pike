@@ -1,15 +1,27 @@
 /*
- * $Id: smartlink.c,v 1.12 2000/12/05 21:08:22 per Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * smartlink - A smarter linker.
  * Based on the /bin/sh script smartlink 1.23.
  *
  * Henrik Grubbström 1999-03-04
  */
 
+#ifdef __MINGW32__
+#error Smartlink binary does not support Mingw32.
+#endif
+
+#ifdef PIKE_CORE
+#include "machine.h"
+#else
 /* NOTE: Use confdefs.h and not machine.h, since we are compiled by configure
  */
 #include "confdefs.h"
+#endif
 
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
@@ -61,6 +73,15 @@ int add_path(char *buffer, char *path)
   return 1;
 }
 
+static int isexecutable(char *file)
+{
+  struct stat stbuf;
+
+  return !stat(file, &stbuf)
+   && !S_ISDIR(stbuf.st_mode)
+   && stbuf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH);
+}
+
 int main(int argc, char **argv)
 {
   int i;
@@ -78,6 +99,7 @@ int main(int argc, char **argv)
   int new_argc;
   int n32 = 0;
   int linking = 1;	/* Maybe */
+  int compiling = 1;	/* Maybe */
 
   prog_name = argv[0];
 
@@ -87,7 +109,6 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.12 2000/12/05 21:08:22 per Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -146,9 +167,11 @@ int main(int argc, char **argv)
   strcat(rpath, "-Wl,-R");
 #elif defined(USE_R)
   strcat(rpath, "-R");
+#elif defined(USE_Qoption)
+  strcat(rpath, "-Qoption,ld,-rpath,");
 #elif defined(USE_LD_LIBRARY_PATH)
   strcat(rpath, "LD_LIBRARY_PATH=");
-#endif /* defined(USE_Wl) || defined(USE_Wl_R) || defined(USE_R) || defined(USE_LD_LIBRARY_PATH) */
+#endif /* defined(USE_Wl) || defined(USE_Wl_R) || defined(USE_R) || defined(USE_LD_LIBRARY_PATH) || defined(USE_Qoption) */
   rpath += strlen(rpath);
 
   new_argv[new_argc++] = argv[1];
@@ -161,22 +184,22 @@ int main(int argc, char **argv)
   /* NOTE: Skip arg 1 */
   for(i=2; i<argc; i++) {
     if (argv[i][0] == '-') {
-      if ((argv[i][1] == 'R') || (argv[i][1] == 'L')) {
-	/* -R & -L */
-	if (argv[i][1] == 'L') {
-	  if (!argv[i][2]) {
-	    if (i+1 < argc) {
-	      if (add_path(lpath, argv[i+1])) {
-		new_argv[new_argc++] = argv[i];
-		new_argv[new_argc++] = argv[i+1];
-	      }
-	    }
-	  } else {
-	    if (add_path(lpath, argv[i]+2)) {
+      if (argv[i][1] == 'L') {
+	/* -L */
+	if (!argv[i][2]) {
+	  if (i+1 < argc) {
+	    if (add_path(lpath, argv[i+1])) {
 	      new_argv[new_argc++] = argv[i];
+	      new_argv[new_argc++] = argv[i+1];
 	    }
 	  }
+	} else {
+	  if (add_path(lpath, argv[i]+2)) {
+	    new_argv[new_argc++] = argv[i];
+	  }
 	}
+      } else if (argv[i][1] == 'R') {
+	/* -R */
 	if (!argv[i][2]) {
 	  i++;
 	  if (i < argc) {
@@ -196,8 +219,46 @@ int main(int argc, char **argv)
 	/* Not linking */
 	linking = 0;
       }
+    } else {
+      int len = strlen(argv[i]);
+      if (((len > 2) &&
+	   (((argv[i][len-1] == 's') ||
+	     (argv[i][len-1] == 'S')) &&
+	    (argv[i][len-2] == '.'))) ||
+	  ((len > 4) &&
+	   (argv[i][len-4] == '.') &&
+	   (argv[i][len-3] == 'a') &&
+	   (argv[i][len-2] == 's') &&
+	   (argv[i][len-1] == 'm'))) {
+	/* Assembler files involved.
+	 * gcc 3.4/sparc/Solaris 10 generates unlinkable object files
+	 * when assembling handcoded assembler files with debug.
+	 */
+	compiling = 0;
+      }
     }
     new_argv[new_argc++] = argv[i];
+  }
+
+  if (!compiling) {
+    /* Filter -g and -ggdb3 from the options. */
+    int not_so_new_argc = new_argc;
+    new_argc = 1;
+    /* Note: Skip the name of the binary at new_argv[0]. */
+    for (i=1; i < not_so_new_argc; i++) {
+      if ((new_argv[i][0] == '-') &&
+	  (new_argv[i][1] == 'g') &&
+	  (!new_argv[i][2] ||
+	   ((new_argv[i][2] == 'g') &&
+	    (new_argv[i][3] == 'd') &&
+	    (new_argv[i][4] == 'b') &&
+	    (new_argv[i][5] == '3') &&
+	    !new_argv[i][6]))) {
+	/* Skip. */
+	continue;
+      }
+      new_argv[new_argc++] = new_argv[i];
+    }
   }
 
 #ifndef USE_Wl
@@ -243,7 +304,7 @@ int main(int argc, char **argv)
   if (ld_lib_path) {
     char *p;
 
-    while (p = strchr(ld_lib_path, ':')) {
+    while ((p = strchr(ld_lib_path, ':'))) {
       *p = 0;
       rpath_in_use |= add_path(rpath, ld_lib_path);
       *p = ':';		/* Make sure LD_LIBRARY_PATH isn't modified */
@@ -277,7 +338,7 @@ int main(int argc, char **argv)
       new_argv[new_argc++] = "-Xlinker";
       new_argv[new_argc++] = rpath;
     }
-#elif defined(USE_Wl)
+#elif defined(USE_Wl) || defined(USE_Qoption)
     if (linking) {
       new_argv[new_argc++] = full_rpath;
     }
@@ -303,7 +364,6 @@ int main(int argc, char **argv)
 
   if ((argv[1][0] != '/') && path) {
     /* Perform a search in $PATH */
-    struct stat stat_buf;
     char *p;
     while ((p = strchr(path, ':'))) {
       *p = 0;
@@ -312,7 +372,7 @@ int main(int argc, char **argv)
       strcat(buffer, "/");
       strcat(buffer, argv[1]);
       /* fprintf(stderr, "Trying %s...\n", buffer); */
-      if (!stat(buffer, &stat_buf)) {
+      if (isexecutable(buffer)) {
 	/* Found. */
 	argv[1] = buffer;
 	break;
@@ -324,11 +384,31 @@ int main(int argc, char **argv)
       strcat(buffer, "/");
       strcat(buffer, argv[1]);
       /* fprintf(stderr, "Trying %s...\n", buffer); */
-      if (!stat(buffer, &stat_buf)) {
+      if (isexecutable(buffer)) {
 	/* Found */
 	argv[1] = buffer;
       }
     }
+  }
+
+#if 0	/* Enabling this messes with the definition of EOPNOTSUP */
+#ifdef USE_OSX_TWOLEVEL_NAMESPACE
+  /* Mac OS X needs to be 10.3 or better for ld to accept
+     "-undefined dynamic_lookup" */
+  if (putenv("MACOSX_DEPLOYMENT_TARGET=10.3")) {
+    fatal("Out of memory (8)!\n");
+  }
+#endif
+#endif
+
+  if (getenv("SMARTLINK_DEBUG")) {
+    int i = 0;
+    fprintf(stderr, "SMARTLINK:");
+    while (new_argv[i]) {
+      fprintf(stderr, " %s", new_argv[i]);
+      i++;
+    }
+    fprintf(stderr, "\n");
   }
 
   execv(argv[1], new_argv);

@@ -13,19 +13,23 @@ function(:void) close_callback;
 // command_callback(string cmd,string ... parameters)
 // notify_callback(string from,string type,string from,string message)
 
-void create(string server,int port,
+void create(string|object server,int port,
 	    function(string,string ...:void) _command_callback,
 	    void|function(string,string...:void) _notify_callback,
 	    void|function(:void) _close_callback)
 {
-   array aserver=gethostbyname(server);
-   if (!aserver || !sizeof(aserver[1]))
-      Error.connection("Failed to lookup host %O",server);
-   server=aserver[1][random(sizeof(aserver[1]))];
+   if (objectp(server))
+      con = server;
+   else {
+       array aserver=gethostbyname(server);
+       if (!aserver || !sizeof(aserver[1]))
+	  Error.connection("Failed to lookup host %O",server);
+       server=aserver[1][random(sizeof(aserver[1]))];
 
-   con=Stdio.File();
-   if (!con->connect(server,port))
-      Error.connection("Failed to connect",con->errno());
+       con=Stdio.File();
+       if (!con->connect(server,port))
+	  Error.connection("Failed to connect",con->errno());
+   }
 
    con->set_nonblocking(con_read,0,con_close);
 
@@ -54,7 +58,7 @@ void con_read(mixed dummy,string what)
    buf+=what;
    array lines=(buf-"\r")/"\n";
    buf=lines[-1];
-   foreach (lines[0..sizeof(lines)-2],string row)
+   foreach (lines[..<1],string row)
    {
       mixed err=catch 
       {
@@ -72,7 +76,7 @@ void con_write_callback()
    while (sizeof(write_buf))
    {
       int j=con->write(write_buf[0]);
-      if (j!=strlen(write_buf[0]))
+      if (j!=sizeof(write_buf[0]))
       {
 	 if (j==-1) 
 	 {

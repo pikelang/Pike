@@ -1,4 +1,6 @@
-// XML-RPC by Fredrik Noring. Copyright © 2001 Roxen Internet Software AB.
+#pike __REAL_VERSION__
+
+// XML-RPC by Fredrik Noring.
 // The implementation is based on specifications from http://xml-rpc.org/.
 
 //! This module implements most features of the XML-RPC standard (see
@@ -7,36 +9,38 @@
 //! Translation rules for conversions from Pike datatypes to XML-RPC
 //! datatypes:
 //!
-//! Pike @code{int@} is translated to XML-RPC @tt{<int>@}.
-//! Pike @code{string@} is translated to XML-RPC @tt{<string>@}.
-//! Pike @code{float@} is translated to XML-RPC @tt{<double>@}.
-//! Pike @code{mapping@} is translated to XML-RPC @tt{<struct>@}.
-//! Pike @code{array@} is translated to XML-RPC @tt{<array>@}.
+//! Pike @expr{int@} is translated to XML-RPC @tt{<int>@}.
+//! Pike @expr{string@} is translated to XML-RPC @tt{<string>@}.
+//! Pike @expr{float@} is translated to XML-RPC @tt{<double>@}.
+//! Pike @expr{mapping@} is translated to XML-RPC @tt{<struct>@}.
+//! Pike @expr{array@} is translated to XML-RPC @tt{<array>@}.
+//! Pike @[Calendar] object is translated to XML-RPC @tt{<dateTime.iso8601@}.
+//! Pike @expr{Val.false@} and @expr{Val.true@} is translated to
+//!   XML-RPC @tt{<boolean>@}.
 //!
 //! Translation rules for conversions from XML-RPC datatypes to Pike
 //! datatypes:
 //!
-//! XML-RPC @tt{<i4>@}, @tt{<int>@} and @tt{<boolean>@} are
-//!   translated to Pike @code{int@}.
+//! XML-RPC @tt{<i4>@} and @tt{<int>@} are translated to Pike @expr{int@}.
+//! XML-RPC @tt{<boolean>@} is translated to Pike @expr{Val.true@} and
+//!   @expr{Val.false@}.
 //! XML-RPC @tt{<string>@} and @tt{<base64>@} are translated to
-//!   Pike @code{string@}.
-//! XML_RPC @tt{<double>@} is translated to Pike @code{float@}.
-//! XML-RPC @tt{<struct>@} is translated to Pike @code{mapping@}.
-//! XML-RPC @tt{<array>@} is translated to Pike @code{array@}.
-//! XML-RPC @tt{<dateTime.iso8601>@} is translated to Pike Calendar object.
+//!   Pike @expr{string@}.
+//! XML_RPC @tt{<double>@} is translated to Pike @expr{float@}.
+//! XML-RPC @tt{<struct>@} is translated to Pike @expr{mapping@}.
+//! XML-RPC @tt{<array>@} is translated to Pike @expr{array@}.
+//! XML-RPC @tt{<dateTime.iso8601>@} is translated to Pike @[Calendar] object.
 //!
 //! @note
-//! The XML-RPC @tt{<dateTime.iso8601>@} datatype is currently only
-//! partially implemented. It is decoded but cannot be encoded. Also,
-//! the code here does not assume any particular timezone (which is
-//! correct according to the specification). The Calendar module,
-//! however, seems to assume localtime.
+//! The XML-RPC @tt{<dateTime.iso8601>@} datatype does not assume any
+//! time zone, but local time is always used in the conversion to
+//! @[Calendar] objects.
 //!
 
 //! Represents a function call made to a XML-RPC server.
 //!
 //! @seealso
-//! @[XMLRPC.decode_call()]
+//! @[decode_call()]
 class Call(string method_name, array params)
 {
   //! @decl int method_name
@@ -47,10 +51,11 @@ class Call(string method_name, array params)
   //! datatypes have been converted to equivalent or similar datatypes
   //! in Pike.
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Protocols.XMLRPC.Call(%O, %d param%s)",
-		   method_name, sizeof(params), sizeof(params) == 1 ? "" : "s");
+    return t=='O' && sprintf("%O(%O, %d param%s)", this_program,
+			     method_name, sizeof(params),
+			     sizeof(params) == 1 ? "" : "s");
   }
 }
 
@@ -58,7 +63,7 @@ class Call(string method_name, array params)
 //! from a XML-RPC function call.
 //!
 //! @seealso
-//! @[XMLRPC.decode_response()]
+//! @[decode_response()]
 class Fault(int fault_code, string fault_string)
 {
   //! @decl int fault_code
@@ -67,17 +72,18 @@ class Fault(int fault_code, string fault_string)
   //! @decl int fault_string
   //! Represents @tt{faultString@} in the XML-RPC standard.
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Protocols.XMLRPC.Fault(%O, %O)", fault_code, fault_string);
+    return t=='O' && sprintf("%O(%O, %O)", this_program,
+			     fault_code, fault_string);
   }
 }
 
 //! Decodes a XML-RPC representation of a function call and returns a
-//! @[XMLRPC.Call] object.
+//! @[Call] object.
 //!
 //! @seealso
-//! @[XMLRPC.Call]
+//! @[Call]
 Call decode_call(string xml_input)
 {
   array r = decode(xml_input, call_dtd);
@@ -88,16 +94,16 @@ Call decode_call(string xml_input)
 //! array containing response values, or a @[Fault] object.
 //!
 //! @seealso
-//! @[XMLRPC.Fault]
-array|Fault decode_response(string xml_input)
+//! @[Fault]
+array|Fault decode_response(string xml_input, int|void boolean)
 {
-  array|mapping r = decode(xml_input, response_dtd);
+  array|mapping r = decode(xml_input, response_dtd, boolean);
   if(arrayp(r))
     return r;
   return Fault(r->faultCode, r->faultString);
 }
 
-//! Encodes a function call with the name @[name] and the arguments
+//! Encodes a function call with the name @[method_name] and the arguments
 //! @[params] and returns the XML-RPC string representation.
 string encode_call(string method_name, array params)
 {
@@ -133,12 +139,12 @@ string encode_response_fault(int fault_code, string fault_string)
 
 // Internal stuff below.
 
-static constant common_dtd_fragment = #"
+protected constant common_dtd_fragment = #"
   <!ELEMENT params  (param*)>
   <!ELEMENT param   (value)>
 
-  <!ELEMENT value   (boolean|i4|int|double|string|base64|
-                     array|struct|dateTime.iso8601)>
+  <!ELEMENT value   (#PCDATA|boolean|i4|int|double|string|base64|
+                     array|struct|dateTime.iso8601)*>
 
   <!ELEMENT boolean          (#PCDATA)>
   <!ELEMENT i4               (#PCDATA)>
@@ -156,25 +162,43 @@ static constant common_dtd_fragment = #"
   <!ELEMENT name    (#PCDATA)>
 ";
 
-static constant call_dtd = #"
+protected constant call_dtd = #"
 <!DOCTYPE methodCall [
   <!ELEMENT methodCall (methodName, params)>
   <!ELEMENT methodName (#PCDATA)>
 "+common_dtd_fragment+#"]>
 ";
 
-static constant response_dtd = #"
+protected constant response_dtd = #"
 <!DOCTYPE methodResponse [
   <!ELEMENT methodResponse (params|fault)>
   <!ELEMENT fault          (value)>
 "+common_dtd_fragment+#"]>
 ";
 
-static mixed decode(string xml_input, string dtd_input)
+// One more fix because some people found the specs too easy and 
+// decided that you can have <value>test</value>
+// (that is omitting string inside a value).
+protected class StringWrap(string s){};
+
+// Same as magic_zero below
+object magic_false = class {}();
+
+// Replace all magic_false with Val.false if necessary
+void replace_magic_false(array|mapping a) {
+  replace(a,magic_false,Val.false);
+  foreach (a;; mixed b) {
+    if (mappingp(b) || arrayp(b))
+      replace_magic_false(b);
+  }
+}
+
+protected mixed decode(string xml_input, string dtd_input, int|void boolean)
 {
   // We cannot insert 0 integers directly into the parse tree, so
   // we'll use magic_zero as a placeholder and destruct it afterwards.
   object magic_zero = class {}();
+
   Parser.XML.Validating xml = Parser.XML.Validating();
   array tree = xml->
 	       parse(xml_input,
@@ -192,7 +216,7 @@ static mixed decode(string xml_input, string dtd_input)
 			     (dtd_input, lambda(mixed ... args) { return 0; });
 			   return 0;
 			 case "":
-			 case "![CDATA[":
+			 case "<![CDATA[":
 			   return data;
 			 case "<":
 			   return 0;
@@ -202,29 +226,42 @@ static mixed decode(string xml_input, string dtd_input)
 			   {
 			     case "methodResponse":
 			     case "param":
-			     case "value":
 			     case "array":
 			     case "fault":
 			       return data[0];
+			     case "value":
+			       foreach(data, mixed value)
+			         if(!stringp(value))
+				 {
+				   if(objectp(value) && value->s)
+				     return value->s;
+				   return value;
+				 }
+			       return sizeof(data)?data[0]:"";
 			     case "i4":
 			     case "int":
-			     case "boolean":
 			       return (int)(data*"") || magic_zero;
+			     case "boolean":
+			       if (!boolean)
+				 return (int)(data*"") || magic_zero;
+			       return (int)(data*"")?Val.true:magic_false;
 			     case "double":
 			       return (float)(data*"");
 			     case "string":
+			       return StringWrap(data ? data*"" : "");
 			     case "name":
 			     case "methodName":
 			       return data*"";
 			     case "base64":
-			       return MIME.decode_base64(data*"");
+			       return StringWrap(MIME.decode_base64(data*""));
 			     case "methodCall":
 			     case "params":
 			     case "member":
 			     case "data":
 			       return data;
 			     case "struct":
-			       return mkmapping(@Array.transpose(data));
+			       return sizeof (data) ?
+				 mkmapping(@Array.transpose(data)) : ([]);
 		             case "dateTime.iso8601":
 			       // FIXME: Don't assume any particular
 			       // timezone here (the Calendar module
@@ -245,17 +282,22 @@ static mixed decode(string xml_input, string dtd_input)
 		       return 0;
 		     });
   destruct(magic_zero);   // Apply Magic! Replace magic_zero with real 0:s.
+
+  if (boolean) {
+    // extra magic, change magic_false to Val.false
+    replace_magic_false(tree);
+  }
   return tree[0];
 }
 
-static string xml_encode_string(string s)
+protected string xml_encode_string(string s)
 {
   return replace(s,
 		 ({ "&", "<", ">", "\"", "\'", "\000" }),
 		 ({ "&amp;", "&lt;", "&gt;", "&#34;", "&#39;", "&#0;" }));
 }
 
-static string encode(int|float|string|mapping|array value)
+protected string encode(int|float|string|mapping|array|object value)
 {
   string r = "<value>";
   if(intp(value))
@@ -281,12 +323,17 @@ static string encode(int|float|string|mapping|array value)
       r += encode(value[name]);
     r += "</data>\n</array>\n";
   }
+  else if (objectp (value) && value->format_iso_short)
+    r += "<dateTime.iso8601>" + value->format_iso_short() +
+      "</dateTime.iso8601>";
+  else if (objectp(value) && (value->is_val_true || value->is_val_false))
+    r += sprintf("<boolean>%d</boolean>",(int)value);
   else
     error("Cannot encode %O.\n", value);
   return r+"</value>\n";
 }
 
-static string encode_params(array params)
+protected string encode_params(array params)
 {
   string r = "<params>\n";
   foreach(params, mixed param)
@@ -296,9 +343,12 @@ static string encode_params(array params)
 
 //! This class implements an XML-RPC client that uses HTTP transport.
 //!
+//! There is an optional boolean flag to get the new behavior of
+//! booleans being returned as Val instead of ints.
+//!
 //! @example
 //! @pre{
-//!   > Protocols.XMLRPC.Client client = Protocls.XMLRPC.Client("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
+//!   > Protocols.XMLRPC.Client client = Protocols.XMLRPC.Client("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
 //!   Result: Protocols.XMLRPC.Client("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
 //!   > client["system.listMethods"]();
 //!   Result: ({ /* 1 element */
@@ -315,28 +365,94 @@ static string encode_params(array params)
 //!  		    })
 //!  		})
 //! @}
-class Client(string|Standards.URI url)
+class Client(string|Standards.URI url, int|void boolean)
 {
 
-  mixed `[](string call)
+  function `[](string call)
   {
     return lambda(mixed ... args)
 	   {
-	     object c=Protocols.HTTP.do_method("POST",
-					       url,
-					       0,
-					       ([ "Content-Type":"text/xml"]),
-					       0,
-					       encode_call( call, args ));
-	     return decode_response(c->data());
+	     Protocols.HTTP.Query c=Protocols.
+	       HTTP.do_method("POST", url, 0, ([ "Content-Type":"text/xml"]),
+			      0, encode_call( call, args ));
+	     if(!c) error("Could not connect to %O\n", url);
+	     if (c->status != 200)
+	       // The xml-rpc spec says "Unless there's a lower-level
+	       // error, always return 200 OK."
+	       error ("Got invalid return code %d from %O: %O\n%O", c->status,
+		      url, c->status_desc, c->data());
+	     return decode_response(c->data(),boolean);
 	   };
   }
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Protocols.XMLRPC.Client(%O)",
-		   url);
+    return t=='O' && sprintf("%O(%O)", this_program, url);
+  }
+}
+
+//! This class implements an XML-RPC client that uses HTTP transport using
+//! non blocking sockets.
+//!
+//! There is an optional boolean flag to get the new behavior of
+//! booleans being returned Val instead of ints.
+//!
+//! @example
+//! @pre{void data_ok(mixed result)
+//!{
+//!  write("result=%O\n", result);
+//!}
+//!
+//!void fail()
+//!{
+//!  write("fail\n");
+//!}
+//!
+//!int main(int argc, array argv)
+//!{
+//!  object async_client = Protocols.XMLRPC.AsyncClient("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
+//!  async_client["system.listMethods"](data_ok, fail);
+//!  return -1;
+//!@}
+class AsyncClient
+{
+  protected Protocols.HTTP.Session http_session;
+  protected string _url;
+  protected int _boolean;
+
+  void create(string|Standards.URI|Protocols.HTTP.Session.SessionURL url, int|void boolean)
+  {
+    _url = url;
+    _boolean = boolean;
+     http_session = Protocols.HTTP.Session();
   }
 
-  
+  protected void _data_ok(function user_data_ok, object request)
+  {
+    mixed result;
+    if(request) {
+      if (request->status() == 200)
+	// The xml-rpc spec says "Unless there's a lower-level error,
+	// always return 200 OK."
+	result = decode_response(request->data(),_boolean);
+    }
+    user_data_ok(result);
+  }
+
+  function `[](string call)
+  {
+     return lambda(function data_ok, function fail, mixed ...args)
+     {
+       http_session->async_do_method_url(
+           "POST",
+           _url,
+           0,
+           encode_call( call, args ),
+           ([ "content-type":"text/xml"]),
+           0,
+           Function.curry(_data_ok)(data_ok),
+           fail,
+           ({ }));
+     };
+  }
 }

@@ -1,21 +1,16 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-
 /*
- * $Id: las.h,v 1.52 2001/08/13 23:15:58 mast Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef LAS_H
 #define LAS_H
 
 #include "global.h"
-#include "pike_types.h"
 #include "svalue.h"
 #include "dynamic_buffer.h"
-#include "program.h"
-#include "block_alloc_h.h"
+#include "block_allocator.h"
 
 #define MAX_GLOBAL_VARIABLES 1000
 typedef void (*c_fun)(INT32);
@@ -24,22 +19,41 @@ typedef void (*c_fun)(INT32);
 /* Flags used by yytype_error() */
 #define YYTE_IS_WARNING	1
 
-void yytype_error(char *msg, struct pike_type *expected_t,
-		  struct pike_type *got_t, unsigned int flags);
-void yyerror(char *s);
+struct compiler_frame;		/* Avoid gcc warning. */
+
 int islocal(struct pike_string *str);
+int low_add_local_name(struct compiler_frame *frame,
+                       struct pike_string *str,
+                       struct pike_type *type,
+                       node *def);
+int add_local_name(struct pike_string *str,
+                   struct pike_type *type,
+                   node *def);
 int verify_declared(struct pike_string *str);
+void cleanup_compiler(void);
 
 
 extern int cumulative_parse_error;
+
+
+#ifndef STRUCT_NODE_S_DECLARED
+#define STRUCT_NODE_S_DECLARED
+struct node_s;
+typedef struct node_s node;
+#endif
+
+/* local variable flags */
+#define LOCAL_VAR_IS_USED		1
 
 struct local_variable
 {
   struct pike_string *name;
   struct pike_type *type;
   node *def;
+  /* FIXME: Consider moving these two to the def node above? */
   struct pike_string *file;
   int line;
+  unsigned int flags;
 };
 
 struct compiler_frame
@@ -61,29 +75,52 @@ struct compiler_frame
   struct local_variable variable[MAX_LOCAL];
 };
 
-#ifdef SHARED_NODES_MK2
-
-struct node_hash_table
+/* Also used in struct node_identifier */
+union node_data
 {
-  struct node_identifier **table;
-  INT32 size;
-};
-
-extern struct node_hash_table node_hash;
-
-#endif /* SHARED_NODES_MK2 */
-
+  struct
+  {
+    int number;
+    struct program *prog;
+  } id;
+  struct
+  {
+    int ident;
+    struct compiler_frame *frame;
 #ifdef SHARED_NODES
-
-struct node_hash_table
-{
-  node **table;
-  INT32 size;
+    struct program *prog;
+#endif
+  } trampoline;
+  struct svalue sval;
+  struct
+  {
+    struct node_s *a, *b;
+  } node;
+  struct
+  {
+    struct node_identifier *a, *b;
+  } node_id;
+  struct
+  {
+    int a, b;
+  } integer;
 };
 
-extern struct node_hash_table node_hash;
-
-#endif /* SHARED_NODES */
+struct node_s
+{
+  unsigned INT32 refs;
+  struct pike_string *current_file;
+  struct pike_type *type;
+  struct pike_string *name;
+  struct node_s *parent;
+  INT_TYPE line_number;
+  unsigned INT16 node_info;
+  unsigned INT16 tree_info;
+  unsigned INT16 pad;
+  /* The stuff from this point on is hashed. */
+  unsigned INT16 token;
+  union node_data u;
+};
 
 #define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
 				    * only used in node_info
@@ -102,9 +139,11 @@ extern struct node_hash_table node_hash;
 #define OPT_TYPE_NOT_FIXED  0x400  /* type-field might be wrong */
 #define OPT_WEAK_TYPE	    0x800  /* don't warn even if strict types */
 #define OPT_APPLY           0x1000 /* contains apply */
-
-#define OPT_DEFROSTED	    0x4000 /* Node may be a duplicate */
-#define OPT_NOT_SHARED	    0x8000 /* Node is not to be shared */
+#define OPT_FLAG_NODE	    0x2000 /* don't optimize away unless the
+				    * parent also is optimized away */
+#define OPT_SAFE            0x4000 /* Known to not throw error (which normally
+				    * isn't counted as side effect). Only used
+				    * in tree_info. */
 
 
 /* This is a statement which got custom break/continue label handling.
@@ -114,6 +153,8 @@ extern struct node_hash_table node_hash;
 #define SCOPE_LOCAL 1
 #define SCOPE_SCOPED 2
 #define SCOPE_SCOPE_USED 4
+
+void count_memory_in_node_ss(size_t *num, size_t *size);
 
 /* Prototypes begin here */
 int car_is_node(node *n);
@@ -125,31 +166,31 @@ int check_tailrecursion(void);
 struct node_chunk;
 void free_all_nodes(void);
 void debug_free_node(node *n);
-node *debug_check_node_hash(node *n);
-node *debug_mknode(short token,node *a,node *b);
+node *debug_mknode(int token,node *a,node *b);
 node *debug_mkstrnode(struct pike_string *str);
-node *debug_mkintnode(int nr);
-node *debug_mknewintnode(int nr);
+node *debug_mkintnode(INT_TYPE nr);
+node *debug_mknewintnode(INT_TYPE nr);
 node *debug_mkfloatnode(FLOAT_TYPE foo);
 node *debug_mkprgnode(struct program *p);
 node *debug_mkapplynode(node *func,node *args);
 node *debug_mkefuncallnode(char *function, node *args);
 node *debug_mkopernode(char *oper_id, node *arg1, node *arg2);
+node *debug_mkversionnode(int major, int minor);
 node *debug_mklocalnode(int var, int depth);
 node *debug_mkidentifiernode(int i);
-node *debug_mktrampolinenode(int i);
+node *debug_mktrampolinenode(int i, struct compiler_frame *depth);
 node *debug_mkexternalnode(struct program *prog, int i);
+node *debug_mkthisnode(struct program *parent_prog, int inherit_num);
 node *debug_mkcastnode(struct pike_type *type, node *n);
 node *debug_mksoftcastnode(struct pike_type *type, node *n);
 void resolv_constant(node *n);
 void resolv_class(node *n);
 void resolv_class(node *n);
-node *recursive_add_call_arg(node *n, node *arg);
 node *index_node(node *n, char *node_name, struct pike_string *id);
 int node_is_eq(node *a,node *b);
 node *debug_mktypenode(struct pike_type *t);
-node *debug_mkconstantsvaluenode(struct svalue *s);
-node *debug_mkliteralsvaluenode(struct svalue *s);
+node *debug_mkconstantsvaluenode(const struct svalue *s);
+node *debug_mkliteralsvaluenode(const struct svalue *s);
 node *debug_mksvaluenode(struct svalue *s);
 node *copy_node(node *n);
 node *defrost_node(node *n);
@@ -166,7 +207,7 @@ void print_tree(node *n);
 struct used_vars;
 void fix_type_field(node *n);
 struct timer_oflo;
-ptrdiff_t eval_low(node *n);
+ptrdiff_t eval_low(node *n,int print_error);
 int dooptcode(struct pike_string *name,
 	      node *n,
 	      struct pike_type *type,
@@ -186,10 +227,12 @@ void resolv_program(node *n);
 #define mkapplynode(func, args) dmalloc_touch(node *, debug_mkapplynode(dmalloc_touch(node *, func),dmalloc_touch(node *, args)))
 #define mkefuncallnode(function, args) dmalloc_touch(node *, debug_mkefuncallnode(function, dmalloc_touch(node *, args)))
 #define mkopernode(oper_id, arg1, arg2) dmalloc_touch(node *, debug_mkopernode(oper_id, dmalloc_touch(node *, arg1), dmalloc_touch(node *, arg2)))
+#define mkversionnode(major, minor) dmalloc_touch(node *, debug_mkversionnode(major, minor))
 #define mklocalnode(var, depth) dmalloc_touch(node *, debug_mklocalnode(var, depth))
 #define mkidentifiernode(i) dmalloc_touch(node *, debug_mkidentifiernode(i))
-#define mktrampolinenode(i) dmalloc_touch(node *, debug_mktrampolinenode(i))
+#define mktrampolinenode(i,f) dmalloc_touch(node *, debug_mktrampolinenode(i, f))
 #define mkexternalnode(parent_prog, i) dmalloc_touch(node *, debug_mkexternalnode(parent_prog, i))
+#define mkthisnode(parent_prog, i) dmalloc_touch(node *, debug_mkthisnode(parent_prog, i))
 #define mkcastnode(type, n) dmalloc_touch(node *, debug_mkcastnode(type, dmalloc_touch(node *, n)))
 #define mksoftcastnode(type, n) dmalloc_touch(node *, debug_mksoftcastnode(type, dmalloc_touch(node *, n)))
 #define mktypenode(t)       dmalloc_touch(node *, debug_mktypenode(t))
@@ -197,12 +240,15 @@ void resolv_program(node *n);
 #define mkliteralsvaluenode(s) dmalloc_touch(node *, debug_mkliteralsvaluenode(dmalloc_touch(struct svalue *, s)))
 #define mksvaluenode(s)     dmalloc_touch(node *, debug_mksvaluenode(dmalloc_touch(struct svalue *, s)))
 
+#define COPY_LINE_NUMBER_INFO(TO, FROM) do {				\
+    node *to_ = (TO), *from_ = (FROM);					\
+    if (from_) {							\
+      to_->line_number = from_->line_number;				\
+      free_string (to_->current_file);					\
+      copy_shared_string (to_->current_file, from_->current_file);	\
+    }									\
+  } while (0)
 
-#if defined(PIKE_DEBUG) && (defined(SHARED_NODES) || defined(SHARED_NODES_MK2))
-#define check_node_hash(X)	debug_check_node_hash(X)
-#else /* !PIKE_DEBUG || (!SHARED_NODES && !SHARED_NODES_MK2) */
-#define check_node_hash(X)	(X)
-#endif /* PIKE_DEBUG && (SHARED_NODES || SHARED_NODES_MK2) */
 
 /* lvalue variants of CAR(n) & CDR(n) */
 #define _CAR(n) (dmalloc_touch(node *,(n))->u.node.a)
@@ -216,18 +262,12 @@ void resolv_program(node *n);
 #define ADD_NODE_REF(n)	do { if (n) add_ref(n); } while(0)
 #define ADD_NODE_REF2(n, code)	do { ADD_NODE_REF(n); code; } while(0)
 #else /* !SHARED_NODES */
-#define defrost_node(n) (n)
 #define ADD_NODE_REF(n)	(n = 0)
 #define ADD_NODE_REF2(n, code)	do { code; n = 0;} while(0)
 #endif /* SHARED_NODES */
 
-#ifdef SHARED_NODES
-#define CAR(n)  (check_node_hash(dmalloc_touch(node *, (n)->u.node.a)))
-#define CDR(n)  (check_node_hash(dmalloc_touch(node *, (n)->u.node.b)))
-#else /* !SHARED_NODES */
 #define CAR(n) _CAR(n)
 #define CDR(n) _CDR(n)
-#endif /* SHARED_NODES */ 
 #define CAAR(n) CAR(CAR(n))
 #define CADR(n) CAR(CDR(n))
 #define CDAR(n) CDR(CAR(n))

@@ -1,0 +1,15 @@
+
+START_MARKER
+
+test_equal( Image.Dims.get(Image.GIF.encode(Image.Image(47,11))),
+  ({ 47, 11, "gif" }) )
+cond_resolv(Image.PNG.encode,[[
+test_equal( Image.Dims.get(Image.PNG.encode(Image.Image(47,11))),
+  ({ 47, 11, "png" }) )
+]])
+cond_resolv(Image.JPEG.encode,[[
+test_equal( Image.Dims.get(Image.JPEG.encode(Image.Image(47,11))),
+  ({ 47, 11, "jpeg" }) )
+]])
+
+END_MARKER

@@ -1,23 +1,17 @@
-//!
-//! module Calendar
-//! submodule Gregorian
-//!
-//! 	This is the standard conservative christian calendar,
-//!	used regularly in some countries - USA, for instance - and 
-//!	which derivate - <ref>the ISO calendar</ref> - is used
-//!	in most of europe.
-//!
-
 #pike __REAL_VERSION__
 
-import ".";
-inherit YMD:YMD;
+//! This is the standard conservative christian calendar,
+//! used regularly in some countries - USA, for instance - and 
+//! which derivate - the @[ISO] calendar - is used in most of
+//! Europe.
+
+inherit Calendar.YMD:YMD;
 
 #include "constants.h"
 
 string calendar_name() { return "Gregorian"; }
 
-private static mixed __initstuff=lambda()
+private protected mixed __initstuff=lambda()
 {
    f_week_day_shortname_from_number="gregorian_week_day_shortname_from_number";
    f_week_day_name_from_number="gregorian_week_day_name_from_number";
@@ -32,13 +26,13 @@ private static mixed __initstuff=lambda()
    f_year_number_from_name="year_number_from_name";
 }();
 
-static int year_leap_year(int y) 
+protected int(0..1) year_leap_year(int y) 
 { 
    return (!(((y)%4) || (!((y)%100) && ((y)%400))));
 }
 
 // [y,yjd]
-static array year_from_julian_day(int jd)
+protected array(int) year_from_julian_day(int jd)
 {
    int d=jd-1721426;
 
@@ -54,18 +48,18 @@ static array year_from_julian_day(int jd)
    });
 }
 
-static int julian_day_from_year(int y)
+protected int julian_day_from_year(int y)
 {
    y--;
    return 1721426+y*365+y/4-y/100+y/400;
 }
 
-static int compat_week_day(int n)
+protected int compat_week_day(int n)
 {
    return n-1;
 }
 
-static array(int) year_month_from_month(int y,int m)
+protected array(int) year_month_from_month(int y,int m)
 {
 // [y,m,ndays,myd]
 
@@ -88,33 +82,36 @@ static array(int) year_month_from_month(int y,int m)
       case 12: return ({y,m,31,335+year_leap_year(y)});
    }
 
-   error("month out of range\n");
+   error("Month out of range.\n");
 }
 
-static array(int) month_from_yday(int y,int yd)
+protected array(int) month_from_yday(int y,int yd)
 {
 // [month,day-of-month,ndays,month-year-day]
+   while (yd <= 0) {
+      yd += 365 + year_leap_year(--y);
+   }
    int l=year_leap_year(y);
    if (yd<32) return ({1,yd,31,1});
    yd-=l;
    switch (yd)
    {
       case 0..59: return ({2,yd-31+l,28+l,32});
-      case 60..90: return ({3,yd-59,31    ,60+year_leap_year(y)}); 
-      case 91..120: return ({4,yd-90,30	  ,91+year_leap_year(y)}); 
-      case 121..151: return ({5,yd-120,31 ,121+year_leap_year(y)});
-      case 152..181: return ({6,yd-151,30 ,152+year_leap_year(y)});
-      case 182..212: return ({7,yd-181,31 ,182+year_leap_year(y)});
-      case 213..243: return ({8,yd-212,31 ,213+year_leap_year(y)});
-      case 244..273: return ({9,yd-243,30 ,244+year_leap_year(y)});
-      case 274..304: return ({10,yd-273,31,274+year_leap_year(y)});
-      case 305..334: return ({11,yd-304,30,305+year_leap_year(y)});
-      case 335..365: return ({12,yd-334,31,335+year_leap_year(y)});
+      case 60..90: return ({3,yd-59,31    ,60+l});
+      case 91..120: return ({4,yd-90,30   ,91+l});
+      case 121..151: return ({5,yd-120,31 ,121+l});
+      case 152..181: return ({6,yd-151,30 ,152+l});
+      case 182..212: return ({7,yd-181,31 ,182+l});
+      case 213..243: return ({8,yd-212,31 ,213+l});
+      case 244..273: return ({9,yd-243,30 ,244+l});
+      case 274..304: return ({10,yd-273,31,274+l});
+      case 305..334: return ({11,yd-304,30,305+l});
+      case 335..365: return ({12,yd-334,31,335+l});
    }
-   error("yday out of range\n");
+   error("yday out of range.\n");
 }
 
-static array(int) week_from_julian_day(int jd)
+protected array(int) week_from_julian_day(int jd)
 {
 // [year,week,day-of-week,ndays,week-julian-day]
 
@@ -143,7 +140,7 @@ static array(int) week_from_julian_day(int jd)
    return ({y,w,1+(yjd+yday)%7,7,wjd});
 }
 
-static array(int) week_from_week(int y,int w)
+protected array(int) week_from_week(int y,int w)
 {
 // [year,week,1 (wd),ndays,week-julian-day]
 
@@ -157,7 +154,7 @@ static array(int) week_from_week(int y,int w)
 //   fixme
 }
 
-static int year_remaining_days(int y,int yday)
+protected int year_remaining_days(int y,int yday)
 {
    return 365+year_leap_year(y)-yday;
 }
@@ -204,7 +201,10 @@ class cYear
 	       case 11:
 		  break;
 	       case 10: /* from leap to non-leap */
-		  if (yd==55 && !force) return 0; // not this year
+		  if (yd==55) {
+		    if (!force) return 0; // not this year
+		    break;
+		  }
 		  yd--;
 		  break;
 	       case 01: /* from non-leap to leap */
@@ -214,7 +214,7 @@ class cYear
 	 return Day("ymd_yd",rules,y,yjd,yjd+yd-1,yd,what->n);
       }
 
-      return ::place(what);
+      return ::place(what, force);
    }
 }
 
@@ -238,7 +238,7 @@ class cMonth
 
 // a Gregorian Month can autopromote to a year
 
-   static int months_to_month(int y2,int m2)
+   protected int months_to_month(int y2,int m2)
    {
       return (y2-y)*12+(m2-m);
    }
@@ -253,15 +253,17 @@ class cMonth
 	 {
 	    int l1=year_leap_year(what->y);
 	    int l2=year_leap_year(y);
-	    if (l1||l2)
+	    if (l1 != l2)
 	    {
-	       if (l1 && wmd==24) 
-		  if (l2) wmd=24;
-		  else { if (!force) return 0; }
+	       if (l1) {
+		 if (wmd>24) wmd--;
+		 else if (wmd==24) {
+		   if (!force) return 0;
+		 }
+	       }
 	       else
 	       {
-		  if (l1 && wmd>24) wmd--;
-		  if (l2 && wmd>24) wmd++;
+		  if (wmd>24) wmd++;
 	       }
 	    }
 	 }
@@ -269,7 +271,7 @@ class cMonth
 	 return Day("ymd_yd",rules,y,yjd,jd+wmd-1,yd+wmd-1,what->n);
       }
 
-      return ::place(what);
+      return ::place(what, force);
    }
 }
 
@@ -289,7 +291,7 @@ class cWeek
       return "error";
    }
 
-   static int weeks_to_week(int y2,int w2)
+   protected int weeks_to_week(int y2,int w2)
    {
       [int y3,int w3,int wd2,int nd2,int jd2]=week_from_week(y2,w2);
       return (jd2-jd)/7;

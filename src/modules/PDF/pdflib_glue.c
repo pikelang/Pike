@@ -1,10 +1,10 @@
 /*
- * $Id: pdflib_glue.c,v 1.6 2001/02/03 23:10:29 mirar Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #include "global.h"
-RCSID("$Id: pdflib_glue.c,v 1.6 2001/02/03 23:10:29 mirar Exp $");
-
 #include "pdf_machine.h"
 
 #if !defined(HAVE_LIBPDF)
@@ -33,7 +33,14 @@ RCSID("$Id: pdflib_glue.c,v 1.6 2001/02/03 23:10:29 mirar Exp $");
 #include "program.h"
 #include "operators.h"
 
-#include "module_magic.h"
+
+#define sp Pike_sp
+
+/*! @module PDF
+ */
+
+/*! @class PDFgen
+ */
 
 /*** PDF callabcks ******************************************************/
 
@@ -92,7 +99,8 @@ static void pdf_create(INT32 args)
    push_int(0);
 }
 
-//! method int open_file(string filename);
+/*! @decl int open_file(string filename);
+ */
 
 static void pdf_open_file(INT32 args)
 {
@@ -100,7 +108,7 @@ static void pdf_open_file(INT32 args)
    char *s;
    int n;
    if (args<1) SIMPLE_TOO_FEW_ARGS_ERROR("open_file",1);
-   if (sp[-args].type!=T_STRING || sp[-args].u.string->size_shift)
+   if (TYPEOF(sp[-args]) != T_STRING || sp[-args].u.string->size_shift)
       SIMPLE_BAD_ARG_ERROR("open_file",1,"8 bit string");
    s=sp[-args].u.string->str;
    if (!this->pdf) Pike_error("PDF not initiated\n");
@@ -111,7 +119,8 @@ static void pdf_open_file(INT32 args)
    push_int(n!=-1);
 }
 
-//! method PDF close();
+/*! @decl PDF close();
+ */
 
 static void pdf_close(INT32 args)
 {
@@ -124,18 +133,18 @@ static void pdf_close(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-//! method PDF begin_page()
-//! method PDF begin_page(float width,float height)
-//! note:
-//!	Defaults to a4, portrait
+/*! @decl PDF begin_page()
+ *! @decl PDF begin_page(float width,float height)
+ *! note:
+ *!	Defaults to a4, portrait
+ */
 
 static void pdf_begin_page(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE w=a4_width,h=a4_height;
 
-   if (args)
-      get_all_args("begin_page",args,"%f%f",&w,&h);
+   get_all_args("begin_page",args,".%f%f",&w,&h);
 
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -147,7 +156,8 @@ static void pdf_begin_page(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-//! method PDF end_page();
+/*! @decl PDF end_page();
+ */
 
 static void pdf_end_page(INT32 args)
 {
@@ -160,8 +170,9 @@ static void pdf_end_page(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-//! method float get_value(string key)
-//! method float get_value(string key,float modifier)
+/*! @decl float get_value(string key)
+ *! @decl float get_value(string key,float modifier)
+ */
 
 static void pdf_get_value(INT32 args)
 {
@@ -169,8 +180,7 @@ static void pdf_get_value(INT32 args)
    FLOAT_TYPE m=0.0;
    char *s;
 
-   if (args==1) get_all_args("get_value",args,"%s",&s);
-   else get_all_args("get_value",args,"%s%F",&s,&m);
+   get_all_args("get_value",args,"%s.%F",&s,&m);
 
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -178,15 +188,16 @@ static void pdf_get_value(INT32 args)
    stack_pop_n_elems_keep_top(args);
 }
 
-//! method float set_value(string key,float value)
+/*! @decl float set_value(string key,float value)
+ */
 
 static void pdf_set_value(INT32 args)
 {
    struct pdf_storage *this=THIS;
-   FLOAT_TYPE m=0.0;
+   FLOAT_TYPE m;
    char *s;
 
-   get_all_args("set_value",args,"%s%F",&s);
+   get_all_args("set_value",args,"%s%F",&s,&m);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    THREADS_ALLOW();
@@ -196,8 +207,9 @@ static void pdf_set_value(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-//! method string get_parameter(string key)
-//! method string get_parameter(string key,float modifier)
+/*! @decl string get_parameter(string key)
+ *! @decl string get_parameter(string key,float modifier)
+ */
 
 static void pdf_get_parameter(INT32 args)
 {
@@ -205,15 +217,15 @@ static void pdf_get_parameter(INT32 args)
    FLOAT_TYPE m=0.0;
    char *s;
 
-   if (args==1) get_all_args("get_parameter",args,"%s",&s);
-   else get_all_args("get_parameter",args,"%s%F",&s,&m);
+   get_all_args("get_parameter",args,"%s.%F",&s,&m);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    push_text(PDF_get_parameter(this->pdf,s,(float)m));
    stack_pop_n_elems_keep_top(args);
 }
 
-//! method float set_parameter(string key,string parameter)
+/*! @decl float set_parameter(string key,string parameter)
+ */
 
 static void pdf_set_parameter(INT32 args)
 {
@@ -230,7 +242,8 @@ static void pdf_set_parameter(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-//! method float set_info(string key,string info)
+/*! @decl float set_info(string key,string info)
+ */
 
 static void pdf_set_info(INT32 args)
 {
@@ -247,29 +260,21 @@ static void pdf_set_info(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-//! method int findfont(string fontname);
-//! method int findfont(string fontname,void|string encoding,void|int embed);
+/*! @decl int findfont(string fontname);
+ *! @decl int findfont(string fontname,void|string encoding,void|int embed);
+ */
 
 static void pdf_findfont(INT32 args)
 {
    struct pdf_storage *this=THIS;
-   char *encoding="host";
+   char *encoding=NULL;
    int embed=0;
    int n;
    char *fontname;
 
-   get_all_args("findfont",args,"%s",&fontname);
-   if (args>=2)
-      if (sp[1-args].type==T_STRING && 
-	  !sp[1-args].u.string->size_shift)
-	 encoding=sp[1-args].u.string->str;
-      else if (sp[1-args].type!=T_INT || sp[-args].u.integer)
-	 SIMPLE_BAD_ARG_ERROR("findfont",2,"8 bit string or void");
-   if (args>=3)
-      if (sp[2-args].type==T_INT)
-	 embed=(int)sp[2-args].u.integer;
-      else
-	 SIMPLE_BAD_ARG_ERROR("findfont",3,"int or void");
+   get_all_args("findfont",args,"%s.%s%d",&fontname,&encoding,&embed);
+   if(!encoding)
+     encoding="host";
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    THREADS_ALLOW();
@@ -279,7 +284,8 @@ static void pdf_findfont(INT32 args)
    push_int(n);
 }
 
-//! method PDF setfont(int n,float size)
+/*! @decl PDF setfont(int n,float size)
+ */
 
 static void pdf_setfont(INT32 args)
 {
@@ -296,7 +302,8 @@ static void pdf_setfont(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-//! method PDF show(string s)
+/*! @decl PDF show(string s)
+ */
 
 static void pdf_show(INT32 args)
 {
@@ -317,7 +324,8 @@ static void pdf_show(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-//! method PDF showxy(string s,float x,float y)
+/*! @decl PDF showxy(string s,float x,float y)
+ */
 
 static void pdf_showxy(INT32 args)
 {
@@ -339,7 +347,8 @@ static void pdf_showxy(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-//! method PDF continue_text(string s)
+/*! @decl PDF continue_text(string s)
+ */
 
 static void pdf_continue_text(INT32 args)
 {
@@ -360,8 +369,9 @@ static void pdf_continue_text(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-//! method int show_boxed(string text,float x,float y,float width,float height,string mode)
-//! method int show_boxed(string text,float x,float y,float width,float height,string mode,string feature)
+/*! @decl int show_boxed(string text,float x,float y,float width,float height,string mode)
+ *! @decl int show_boxed(string text,float x,float y,float width,float height,string mode,string feature)
+ */
 
 static void pdf_show_boxed(INT32 args)
 {
@@ -369,12 +379,10 @@ static void pdf_show_boxed(INT32 args)
    char *text=NULL,*mode=NULL,*feature="";
    FLOAT_TYPE x=0.0,y=0.0,width=0.0,height=0.0;
    INT_TYPE res=0;
-   if (args>=7)
-      get_all_args("show_boxed",args,"%s%F%F%F%F%s%s",
-		   &text,&x,&y,&width,&height,&mode,&feature);
-   else
-      get_all_args("show_boxed",args,"%s%F%F%F%F%s",
-		   &text,&x,&y,&width,&height,&mode);
+
+   get_all_args("show_boxed",args,"%s%F%F%F%F%s.%s",
+                &text,&x,&y,&width,&height,&mode,&feature);
+
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    res=PDF_show_boxed(this->pdf,text,(float)x,(float)y,(float)width,(float)height,mode,feature);
@@ -383,8 +391,8 @@ static void pdf_show_boxed(INT32 args)
    stack_pop_n_elems_keep_top(args);
 }
 
-
-//! method float stringwidth(string text,int font,float size)
+/*! @decl float stringwidth(string text,int font,float size)
+ */
 
 static void pdf_stringwidth(INT32 args)
 {
@@ -404,8 +412,8 @@ static void pdf_stringwidth(INT32 args)
    stack_pop_n_elems_keep_top(args);
 }
 
-
-//! method object set_text_pos(float x,float y)
+/*! @decl object set_text_pos(float x,float y)
+ */
 
 static void pdf_set_text_pos(INT32 args)
 {
@@ -420,8 +428,8 @@ static void pdf_set_text_pos(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setdash(float b,float w)
+/*! @decl object setdash(float b,float w)
+ */
 
 static void pdf_setdash(INT32 args)
 {
@@ -436,8 +444,8 @@ static void pdf_setdash(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setflat(float flatness)
+/*! @decl object setflat(float flatness)
+ */
 
 static void pdf_setflat(INT32 args)
 {
@@ -452,8 +460,8 @@ static void pdf_setflat(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setlinejoin(int linejoin)
+/*! @decl object setlinejoin(int linejoin)
+ */
 
 static void pdf_setlinejoin(INT32 args)
 {
@@ -468,8 +476,8 @@ static void pdf_setlinejoin(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setlinecap(int linecap)
+/*! @decl object setlinecap(int linecap)
+ */
 
 static void pdf_setlinecap(INT32 args)
 {
@@ -484,8 +492,8 @@ static void pdf_setlinecap(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setmiterlimit(float miter)
+/*! @decl object setmiterlimit(float miter)
+ */
 
 static void pdf_setmiterlimit(INT32 args)
 {
@@ -500,8 +508,8 @@ static void pdf_setmiterlimit(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setlinewidth(float width)
+/*! @decl object setlinewidth(float width)
+ */
 
 static void pdf_setlinewidth(INT32 args)
 {
@@ -516,8 +524,8 @@ static void pdf_setlinewidth(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object translate(float tx,float ty)
+/*! @decl object translate(float tx,float ty)
+ */
 
 static void pdf_translate(INT32 args)
 {
@@ -532,8 +540,8 @@ static void pdf_translate(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object scale(float sx,float sy)
+/*! @decl object scale(float sx,float sy)
+ */
 
 static void pdf_scale(INT32 args)
 {
@@ -548,8 +556,8 @@ static void pdf_scale(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object rotate(float phi)
+/*! @decl object rotate(float phi)
+ */
 
 static void pdf_rotate(INT32 args)
 {
@@ -564,8 +572,8 @@ static void pdf_rotate(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object skew(float alpha,float beta)
+/*! @decl object skew(float alpha,float beta)
+ */
 
 static void pdf_skew(INT32 args)
 {
@@ -580,8 +588,8 @@ static void pdf_skew(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object concat(float a,float b,float c,float d,float e,float f)
+/*! @decl object concat(float a,float b,float c,float d,float e,float f)
+ */
 
 static void pdf_concat(INT32 args)
 {
@@ -596,8 +604,8 @@ static void pdf_concat(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object moveto(float x,float y)
+/*! @decl object moveto(float x,float y)
+ */
 
 static void pdf_moveto(INT32 args)
 {
@@ -612,8 +620,8 @@ static void pdf_moveto(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object lineto(float x,float y)
+/*! @decl object lineto(float x,float y)
+ */
 
 static void pdf_lineto(INT32 args)
 {
@@ -628,8 +636,8 @@ static void pdf_lineto(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object curveto(float x1,float y1,float x2,float y2,float x3,float y3)
+/*! @decl object curveto(float x1,float y1,float x2,float y2,float x3,float y3)
+ */
 
 static void pdf_curveto(INT32 args)
 {
@@ -644,8 +652,8 @@ static void pdf_curveto(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object circle(float x,float y,float r)
+/*! @decl object circle(float x,float y,float r)
+ */
 
 static void pdf_circle(INT32 args)
 {
@@ -660,8 +668,8 @@ static void pdf_circle(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object arc(float x,float y,float r,float start,float end)
+/*! @decl object arc(float x,float y,float r,float start,float end)
+ */
 
 static void pdf_arc(INT32 args)
 {
@@ -676,8 +684,8 @@ static void pdf_arc(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object rect(float x,float y,float width,float height)
+/*! @decl object rect(float x,float y,float width,float height)
+ */
 
 static void pdf_rect(INT32 args)
 {
@@ -692,8 +700,8 @@ static void pdf_rect(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setgray_fill(float gray)
+/*! @decl object setgray_fill(float gray)
+ */
 
 static void pdf_setgray_fill(INT32 args)
 {
@@ -708,8 +716,8 @@ static void pdf_setgray_fill(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setgray_stroke(float gray)
+/*! @decl object setgray_stroke(float gray)
+ */
 
 static void pdf_setgray_stroke(INT32 args)
 {
@@ -724,8 +732,8 @@ static void pdf_setgray_stroke(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setgray(float gray)
+/*! @decl object setgray(float gray)
+ */
 
 static void pdf_setgray(INT32 args)
 {
@@ -740,8 +748,8 @@ static void pdf_setgray(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setrgbcolor_fill(float red,float green,float blue)
+/*! @decl object setrgbcolor_fill(float red,float green,float blue)
+ */
 
 static void pdf_setrgbcolor_fill(INT32 args)
 {
@@ -756,8 +764,8 @@ static void pdf_setrgbcolor_fill(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setrgbcolor_stroke(float red,float green,float blue)
+/*! @decl object setrgbcolor_stroke(float red,float green,float blue)
+ */
 
 static void pdf_setrgbcolor_stroke(INT32 args)
 {
@@ -772,8 +780,8 @@ static void pdf_setrgbcolor_stroke(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object setrgbcolor(float red,float green,float blue)
+/*! @decl object setrgbcolor(float red,float green,float blue)
+ */
 
 static void pdf_setrgbcolor(INT32 args)
 {
@@ -788,27 +796,19 @@ static void pdf_setrgbcolor(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method int open_image_file(string type,string filename)
-//! method int open_image_file(string type,string filename,void|string stringparam,void|int intparam)
+/*! @decl int open_image_file(string type,string filename)
+ *! @decl int open_image_file(string type,string filename,void|string stringparam,void|int intparam)
+ */
 
 static void pdf_open_image_file(INT32 args)
 {
    struct pdf_storage *this=THIS;
    INT_TYPE res=0,intparam=0;
-   char *type=NULL,*filename=NULL,*stringparam="";
-   get_all_args("open_image_file",args,"%s%s",&type,&filename);
-   if (args>=3)
-      if (sp[2-args].type==T_STRING && 
-	  !sp[2-args].u.string->size_shift)
-	 stringparam=sp[2-args].u.string->str;
-      else if (sp[2-args].type!=T_INT || sp[-args].u.integer)
-	 SIMPLE_BAD_ARG_ERROR("open_image_file",3,"8 bit string or void");
-   if (args>=4)
-      if (sp[3-args].type==T_INT)
-	 intparam=(int)sp[3-args].u.integer;
-      else
-	 SIMPLE_BAD_ARG_ERROR("findfont",4,"int or void");
+   char *type=NULL,*filename=NULL,*stringparam=NULL;
+   get_all_args("open_image_file",args,"%s%s.%s%d",&type,
+                &filename,&stringparam,&intparam);
+   if (!stringparam)
+     stringparam="";
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    res=PDF_open_image_file(this->pdf,type,filename,stringparam,(int)intparam);
@@ -817,8 +817,8 @@ static void pdf_open_image_file(INT32 args)
    stack_pop_n_elems_keep_top(args);
 }
 
-
-//! method int open_CCITT(string filename,int width,int height,int BitReverse,int K,int BlackIs1)
+/*! @decl int open_CCITT(string filename,int width,int height,int BitReverse,int K,int BlackIs1)
+ */
 
 static void pdf_open_CCITT(INT32 args)
 {
@@ -836,8 +836,8 @@ static void pdf_open_CCITT(INT32 args)
    stack_pop_n_elems_keep_top(args);
 }
 
-
-//! method int open_image(string type,string source,string data,int width,int height,int components,int bpc,string params)
+/*! @decl int open_image(string type,string source,string data,int width,int height,int components,int bpc,string params)
+ */
 
 static void pdf_open_image(INT32 args)
 {
@@ -860,8 +860,8 @@ static void pdf_open_image(INT32 args)
    stack_pop_n_elems_keep_top(args);
 }
 
-
-//! method object close_image(int image)
+/*! @decl object close_image(int image)
+ */
 
 static void pdf_close_image(INT32 args)
 {
@@ -876,8 +876,8 @@ static void pdf_close_image(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object place_image(int image,float x,float y,float scale)
+/*! @decl object place_image(int image,float x,float y,float scale)
+ */
 
 static void pdf_place_image(INT32 args)
 {
@@ -893,8 +893,8 @@ static void pdf_place_image(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method int add_bookmark(string text,int parent,int open)
+/*! @decl int add_bookmark(string text,int parent,int open)
+ */
 
 static void pdf_add_bookmark(INT32 args)
 {
@@ -910,8 +910,8 @@ static void pdf_add_bookmark(INT32 args)
    stack_pop_n_elems_keep_top(args);
 }
 
-
-//! method object attach_file(float llx,float lly,float urx,float ury,string filename,string description,string author,string mimetype,string icon)
+/*! @decl object attach_file(float llx,float lly,float urx,float ury,string filename,string description,string author,string mimetype,string icon)
+ */
 
 static void pdf_attach_file(INT32 args)
 {
@@ -927,8 +927,8 @@ static void pdf_attach_file(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object add_pdflink(float llx,float lly,float urx,float ury,string filename,int page,string dest)
+/*! @decl object add_pdflink(float llx,float lly,float urx,float ury,string filename,int page,string dest)
+ */
 
 static void pdf_add_pdflink(INT32 args)
 {
@@ -945,8 +945,8 @@ static void pdf_add_pdflink(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object add_locallink(float llx,float lly,float urx,float ury,int page,string dest)
+/*! @decl object add_locallink(float llx,float lly,float urx,float ury,int page,string dest)
+ */
 
 static void pdf_add_locallink(INT32 args)
 {
@@ -963,8 +963,8 @@ static void pdf_add_locallink(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object add_launchlink(float llx,float lly,float urx,float ury,string filename)
+/*! @decl object add_launchlink(float llx,float lly,float urx,float ury,string filename)
+ */
 
 static void pdf_add_launchlink(INT32 args)
 {
@@ -980,8 +980,8 @@ static void pdf_add_launchlink(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object add_weblink(float llx,float lly,float urx,float ury,string url)
+/*! @decl object add_weblink(float llx,float lly,float urx,float ury,string url)
+ */
 
 static void pdf_add_weblink(INT32 args)
 {
@@ -997,8 +997,8 @@ static void pdf_add_weblink(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object set_border_style(string style,float width)
+/*! @decl object set_border_style(string style,float width)
+ */
 
 static void pdf_set_border_style(INT32 args)
 {
@@ -1014,8 +1014,8 @@ static void pdf_set_border_style(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object set_border_color(float red,float green,float blue)
+/*! @decl object set_border_color(float red,float green,float blue)
+ */
 
 static void pdf_set_border_color(INT32 args)
 {
@@ -1030,8 +1030,8 @@ static void pdf_set_border_color(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-
-//! method object set_border_dash(float b,float w)
+/*! @decl object set_border_dash(float b,float w)
+ */
 
 static void pdf_set_border_dash(INT32 args)
 {
@@ -1045,6 +1045,35 @@ static void pdf_set_border_dash(INT32 args)
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
+
+/*! @endclass
+ */
+
+/*! @decl constant a0_width
+ *! @decl constant a0_height
+ *! @decl constant a1_width
+ *! @decl constant a1_height
+ *! @decl constant a2_width
+ *! @decl constant a2_height
+ *! @decl constant a3_width
+ *! @decl constant a3_height
+ *! @decl constant a4_width
+ *! @decl constant a4_height
+ *! @decl constant a5_width
+ *! @decl constant a5_height
+ *! @decl constant a6_width
+ *! @decl constant a6_height
+ *! @decl constant b5_width
+ *! @decl constant b5_height
+ *! @decl constant letter_width
+ *! @decl constant letter_height
+ *! @decl constant legal_width
+ *! @decl constant legal_height
+ *! @decl constant ledger_width
+ *! @decl constant ledger_height
+ *! @decl constant p11x17_width
+ *! @decl constant p11x17_height
+ */
 
 #endif /* HAVE_PDFLIB_H */
 /*** module init & exit & stuff *****************************************/
@@ -1190,3 +1219,5 @@ void init_pdf_pdflib(void)
 #endif /* HAVE_PDFLIB_H */
 }
 
+/*! @endmodule
+ */

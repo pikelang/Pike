@@ -1,0 +1,9 @@
+/* -*- C -*- */
+require pango;
+
+class Pango.Context;
+inherit G.Object;
+
+//! PangoContext.
+
+endrequire;

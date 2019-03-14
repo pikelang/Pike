@@ -1,9 +1,11 @@
 /*
- * $Id: pgresult.c,v 1.16 2001/09/06 18:47:30 nilsson Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Postgres95 support for pike/0.5 and up
- *
- * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
  * This code is provided AS IS, and may be copied and distributed freely,
  * under the terms of the GNU General Public License, version 2.
@@ -37,6 +39,9 @@
 
 #include "global.h"
 #include "pgres_config.h"
+/* Some versions of Postgres define this, and it conflicts with pike_error.h */
+#undef JMP_BUF
+
 #ifdef HAVE_POSTGRES
 
 /* #define PGRESDEBUG */
@@ -49,12 +54,19 @@
  * 20 characters', where in Postgres it means 'any string long exactly 20
  * characters'. With Postgres you have to use type varchar otherwise, but
  * this makes its SQL incompatible with other servers'.
+ *
+ * Newer versions of Postgres seem to do this by themselves already.
+ * Newer meaning at least 7.4 and later.  Since Postgres 7.4 is the oldest
+ * Postgres version that is still supported (by the Postgres team itself),
+ * we might as well drop support for any earlier versions as well.
+ *
+ * FIXME: test the CUT_TRAILING_SPACES macro, and delete it if it is already
+ * being done by the DB.
  */
 
 #define CUT_TRAILING_SPACES
 
 #include <stdio.h>
-#include <libpq-fe.h>
 
 /* Pike includes */
 #include "stralloc.h"
@@ -65,21 +77,43 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.16 2001/09/06 18:47:30 nilsson Exp $");
+/* <server/postgres_fe.h> doesn't suffice to be able to include
+ * <server/catalog/pg_type.h>.
+ */
+#ifdef HAVE_POSTGRESQL_SERVER_POSTGRES_H
+#include <postgresql/server/postgres.h>
+#elif defined(HAVE_SERVER_POSTGRES_H)
+#include <server/postgres.h>
+#elif defined(HAVE_POSTGRES_H)
+#include <postgres.h>
+#endif
+#ifdef HAVE_POSTGRESQL_SERVER_CATALOG_PG_TYPE_H
+#include <postgresql/server/catalog/pg_type.h>
+#elif defined(HAVE_SERVER_CATALOG_PG_TYPE_H)
+#include <server/catalog/pg_type.h>
+#elif defined(HAVE_CATALOG_PG_TYPE_H)
+#include <catalog/pg_type.h>
+#endif
 
 #ifdef _REENTRANT
-PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
+# ifdef PQ_THREADSAFE
+#  define PQ_FETCH() PIKE_MUTEX_T *pg_mutex = &THIS->pgod->mutex;
+#  define PQ_LOCK() mt_lock(pg_mutex)
+#  define PQ_UNLOCK() mt_unlock(pg_mutex)
+# else
+extern PIKE_MUTEX_T pike_postgres_mutex;
+#  define PQ_FETCH()
 #define PQ_LOCK() mt_lock(&pike_postgres_mutex)
 #define PQ_UNLOCK() mt_unlock(&pike_postgres_mutex)
+# endif
 #else
-#define PQ_LOCK() /**/
-#define PQ_UNLOCK() /**/
+# define PQ_FETCH()
+# define PQ_LOCK()
+# define PQ_UNLOCK()
 #endif
 
 #include "pg_types.h"
 
-/* must be included last */
-#include "module_magic.h"
 
 
 #define THIS ((struct postgres_result_object_data *) Pike_fp->current_storage)
@@ -87,17 +121,31 @@ PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;
 #ifdef PGRESDEBUG
 #define pgdebug printf
 #else
-static void pgdebug (char * a, ...) {}
+static void pgdebug (char * UNUSED(a), ...) {}
 #endif
 
-void result_create (struct object * o) {
+void result_create (struct object * UNUSED(o)) {
 	pgdebug("result_create().\n");
 	THIS->result=NULL;
 	THIS->cursor=0;
 }
 
-void result_destroy (struct object * o) {
+void result_destroy (struct object * UNUSED(o)) {
 	pgdebug("result_destroy().\n");
+	if(THIS->pgod->docommit) {
+	  PGconn * conn = THIS->pgod->dblink;
+	  PGresult * res=THIS->result;
+	  PQ_FETCH();
+	  PQclear(res);
+	  THIS->pgod->docommit=0;
+	  THREADS_ALLOW();
+	  PQ_LOCK();
+	  res=PQexec(conn,"COMMIT");
+	  PQ_UNLOCK();
+	  THREADS_DISALLOW();
+	  THIS->result=res;
+	  THIS->pgod->lastcommit=1;
+	}
 	PQclear(THIS->result);
 }
 
@@ -127,7 +175,8 @@ static void f_create (INT32 args)
 	storage=get_storage(Pike_sp[-args].u.object,postgres_program);
 	if (!storage)
 		Pike_error ("I need a Postgres object or an heir of it.\n");
-	THIS->result=((struct pgres_object_data *)storage)->last_result;
+	THIS->result=
+	  (THIS->pgod=(struct pgres_object_data *)storage)->last_result;
 	((struct pgres_object_data *) Pike_sp[-args].u.object->storage)->last_result=NULL;
 	/* no fear of memory leaks, we've only moved the pointer from there to here */
 
@@ -147,12 +196,14 @@ static void f_create (INT32 args)
 
 static void f_num_rows (INT32 args)
 {
+        int rows;
 	check_all_args("postgres_result->num_rows",args,0);
 	if (PQresultStatus(THIS->result)!=PGRES_TUPLES_OK) {
 		push_int(0);
 		return;
 	}
-	push_int(PQntuples(THIS->result));
+	rows=PQntuples(THIS->result);
+	push_int(THIS->pgod->dofetch-1>rows?THIS->pgod->dofetch-1:rows);
 	return;
 }
 
@@ -209,12 +260,15 @@ static void f_fetch_fields (INT32 args)
 	{
 		push_text("name");
 		push_text(PQfname(res,j));
-		/* no table information is availible */
-		/* no default value information is availible */
+		/* no table information is available */
+		/* no default value information is available */
 		push_text("type");
 		push_int(PQftype(res,j));
-		/* ARGH! I'd kill 'em! How am I supposed to know how types are coded
-		 * internally!?!?!?!?
+		/* ARGH! I'd kill 'em! How am I supposed to know how types are
+		 * coded internally!?!?!?!?
+		 *
+		 * The internal encoding is well defined for the standard
+		 * types (big endian).  The problem are the extended types.
 		 */
 		push_text("length");
 		tmp=PQfsize(res,j);
@@ -262,35 +316,92 @@ static void f_seek (INT32 args)
  *! You can typecast them in Pike to get the numeric value.
  *!
  *! @seealso
- *!   seek
+ *!   @[seek()]
  */
-
 static void f_fetch_row (INT32 args)
 {
-	int j,k,numfields;
-	char * value;
+	int j,numfields;
 
 	check_all_args("postgres_result->fetch_row",args,0);
-	pgdebug("f_fectch_row(); cursor=%d.\n",THIS->cursor);
+	pgdebug("f_fetch_row(); cursor=%d.\n",THIS->cursor);
 	if (THIS->cursor>=PQntuples(THIS->result)) {
-		push_int(0);
-		return;
+	  PGresult * res=THIS->result;
+	  if(THIS->pgod->dofetch) {
+	    PGconn * conn = THIS->pgod->dblink;
+	    int docommit=THIS->pgod->docommit;
+	    int dofetch=1;
+	    PQ_FETCH();
+	    THIS->result = NULL;
+	    /* FIXME: Race-condition on THIS->result. */
+	    THREADS_ALLOW();
+	    PQ_LOCK();
+	    PQclear(res);
+	    res=PQexec(conn,FETCHCMD);
+	    if(!res || PQresultStatus(res)!=PGRES_TUPLES_OK
+	       || !PQntuples(res)) {
+	      if(!docommit) {
+		PQclear(res);
+		res=PQexec(conn,"CLOSE "CURSORNAME);
+	      }
+	      dofetch=0;
+	    }
+	    PQ_UNLOCK();
+	    THREADS_DISALLOW();
+	    THIS->result = res;
+	    if(!dofetch) {
+	      THIS->pgod->dofetch=0;
+	      goto badresult;
+	    }
+	    THIS->cursor=0;
+	  } else {
+badresult:
+	    push_undefined();
+	    return;
+	  }
 	}
 	numfields=PQnfields(THIS->result);
 	for (j=0;j<numfields;j++) {
-		value=PQgetvalue(THIS->result,THIS->cursor,j);
-#ifdef CUT_TRAILING_SPACES
-		/* damn! We need to cut the trailing whitespace... */
-		for (k=PQgetlength(THIS->result,THIS->cursor,j)-1;k>=0;k--)
-			if (value[k]!=' ')
-				break;
-		push_string(make_shared_binary_string(value,k+1));
-#else
-		push_text(value);
+	  if (PQgetisnull(THIS->result, THIS->cursor, j)) {
+	    push_undefined();
+	  } else {
+#if defined(HAVE_PQUNESCAPEBYTEA) && defined(BYTEAOID)
+	    void *binbuf = 0;
+	    size_t binlen;
 #endif
+	    char *value = PQgetvalue(THIS->result, THIS->cursor, j);
+	    int len = PQgetlength(THIS->result, THIS->cursor, j);
+	    switch(PQftype(THIS->result, j)) {
+	      /* FIXME: This code is questionable, and BPCHAROID
+	       *        and BYTEAOID are usually not available
+	       *        to Postgres frontends.
+	       */
+#if defined(CUT_TRAILING_SPACES) && defined(BPCHAROID)
+	    case BPCHAROID:
+	      for(;len>0 && value[len]==' ';len--);
+	      break;
+#endif
+#if defined(HAVE_PQUNESCAPEBYTEA) && defined(BYTEAOID)
+	    case BYTEAOID:
+	      if(binbuf = PQunescapeBytea(value, &binlen)) {
+		value = binbuf;
+		len = binlen;
+	      }
+	      break;
+#endif
+	    }
+
+	    push_string(make_shared_binary_string(value, len));
+
+#if defined(HAVE_PQUNESCAPEBYTEA) && defined(BYTEAOID)
+	    if(binbuf)
+	      free(binbuf);
+#endif
+	  }
 	}
 	f_aggregate(numfields);
 	THIS->cursor++;
+	if(THIS->pgod->dofetch)
+	  THIS->pgod->dofetch++;
 	return;
 }
 
@@ -303,27 +414,31 @@ struct program * pgresult_program;
 
 void pgresult_init (void)
 {
-	start_new_program();
-	ADD_STORAGE(struct postgres_result_object_data);
-	set_init_callback(result_create);
-	set_exit_callback(result_destroy);
+  start_new_program();
+  ADD_STORAGE(struct postgres_result_object_data);
+  set_init_callback(result_create);
+  set_exit_callback(result_destroy);
 
-	/* function(object:void) */
-  ADD_FUNCTION("create",f_create,tFunc(tObj,tVoid),OPT_SIDE_EFFECT);
-	/* function(void:int) */
-  ADD_FUNCTION("num_rows",f_num_rows,tFunc(tVoid,tInt),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* function(void:int) */
-  ADD_FUNCTION("num_fields",f_num_fields,tFunc(tVoid,tInt),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* function(void:void|array(mapping(string:mixed))) */
-  ADD_FUNCTION("fetch_fields",f_fetch_fields,tFunc(tVoid,tOr(tVoid,tArr(tMap(tStr,tMix)))),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* function(int:void) */
-  ADD_FUNCTION("seek",f_seek,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
-	/* function(void:void|array(mixed)) */
-  ADD_FUNCTION("fetch_row",f_fetch_row,tFunc(tVoid,tOr(tVoid,tArr(tMix))),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
+  /* function(object:void) */
+  ADD_FUNCTION("create", f_create, tFunc(tObj,tVoid), 0);
+
+  /* function(void:int) */
+  ADD_FUNCTION("num_rows", f_num_rows, tFunc(tVoid,tInt), 0);
+
+  /* function(void:int) */
+  ADD_FUNCTION("num_fields", f_num_fields, tFunc(tVoid,tInt), 0);
+
+  /* function(void:void|array(mapping(string:mixed))) */
+  ADD_FUNCTION("fetch_fields", f_fetch_fields,
+	       tFunc(tVoid,tOr(tVoid,tArr(tMap(tStr,tMix)))), 0);
+
+  /* function(int:void) */
+  ADD_FUNCTION("seek", f_seek, tFunc(tInt,tVoid), 0);
+
+  /* function(void:void|array(mixed)) */
+  ADD_FUNCTION("fetch_row", f_fetch_row,
+	       tFunc(tVoid,tOr(tVoid,tArr(tMix))), 0);
+
   pgresult_program=end_program();
   add_program_constant("postgres_result",pgresult_program,0);
 }

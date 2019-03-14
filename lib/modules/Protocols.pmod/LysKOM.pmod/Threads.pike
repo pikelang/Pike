@@ -97,7 +97,7 @@ class Thread
       text=_text;
       conf_no=_conf_no;
       
-      textno_to_node[text->no]=this_object();
+      textno_to_node[text->no]=this;
       _text->clear_stat;
 
       unread=unread_numbers[text->no];
@@ -167,5 +167,5 @@ void create(array(Session.Text) unread_texts,
     children += ({ t->root });
   }
   foreach(children, object thread)
-    thread->parent=this_object();
+    thread->parent=this;
 }

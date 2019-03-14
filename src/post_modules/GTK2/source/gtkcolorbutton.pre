@@ -1,0 +1,116 @@
+/* -*- C -*- */
+require gtk24;
+
+class GTK2.ColorButton;
+inherit GTK2.Button;
+
+//! Properties:
+//! int alpha
+//! GDK2.Color color
+//! string title
+//! int use-alpha
+
+signal color_set;
+
+//! When a user selects a color.
+void create(GDK2.Color|mapping(string:mixed)|int|void red_or_props, ?int green, ?int blue)
+//! Create a new W(ColorButton).
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
+      GdkColor color;
+      GtkWidget *gcb;
+      INT_TYPE red, green, blue;
+      color.pixel=0;
+      get_all_args("create",args,"%i%i%i",&red,&green,&blue);
+      color.red = (guint16)red;
+      color.green = (guint16)green;
+      color.blue = (guint16)blue;
+      gcb=gtk_color_button_new_with_color(&color);
+      THIS->obj=G_OBJECT(gcb);
+    } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+      struct object *o1;
+      GdkColor *col;
+      GtkWidget *gcb;
+      get_all_args("create",args,"%o",&o1);
+      col=(GdkColor *)get_gdkobject(o1,color);
+      if (col)
+	gcb=gtk_color_button_new_with_color(col);
+      else
+	gcb=gtk_color_button_new();
+      THIS->obj=G_OBJECT(gcb);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_COLOR_BUTTON);
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gcb;
+    gcb=gtk_color_button_new();
+    THIS->obj=G_OBJECT(gcb);
+  }
+  pgtk2__init_this_object();
+}
+
+void set_color(int|GDK2.Color red, ?int green, ?int blue)
+//! Sets the current color.
+{
+  pgtk2_verify_inited();
+  {
+    GdkColor gcolor,*gc;
+ 
+    if (args==3) {
+      INT_TYPE red,green,blue;
+ 
+      get_all_args("set_color",args,"%i%i%i",&red,&green,&blue);
+      gcolor.red=red;
+      gcolor.green=green;
+      gcolor.blue=blue;
+      gc=&gcolor;
+    } else {
+      struct object *o1;
+
+      get_all_args("set_color",args,"%o",&o1);
+      gc=(GdkColor *)get_gdkobject(o1,color);
+    }
+    gtk_color_button_set_color(GTK_COLOR_BUTTON(THIS->obj),gc);
+  }
+  RETURN_THIS();
+}
+
++GDK2.Color get_color()
+//! Returns the current color.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkColor *color;
+    color=(GdkColor *)g_malloc(sizeof(GdkColor));
+    if (color==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
+    gtk_color_button_get_color(GTK_COLOR_BUTTON(THIS->obj),color);
+    push_gdkobject(color,color,1);
+  }
+}
+
+void set_alpha(int alpha);
+//! Sets the current opacity to alpha.
+
+int get_alpha();
+//! Get the current alpha value.
+
+void set_use_alpha(int use_alpha);
+//! Sets whether or not the color button should use the alpha channel.
+
+int get_use_alpha();
+//! Gets whether the color button uses the alpha channel.
+
+void set_title(string title);
+//! Sets the title for the color selection dialog.
+
+string get_title();
+//! Get the title.
+
+endrequire;
+

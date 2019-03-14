@@ -1,20 +1,4 @@
-
-// Compatibility
-// FIXME: We really need a better way to do this..
-mapping tmp;
-mixed `->(string s)
-{
-  if(s=="_module_value")
-  {
-    if(!tmp)
-    {
-      tmp=([]);
-      tmp->sql=(program)"Sql";
-    }
-    return tmp;
-  }
-}
-
+#pike __REAL_VERSION__
 
 //! The SQL module is a unified interface between pike and all
 //! its supported databases. The parts of this module that is
@@ -27,3 +11,29 @@ mixed `->(string s)
 //!    return db->query("SELECT name FROM users WHERE "
 //!                     "group=%s", group)->name * ",";
 //! }
+
+//! @ignore
+// Use getters and Val-> to ensure dynamic resolving in case the
+// values in Val.pmod are replaced.
+program `->Null() {return Val->Null;}
+Val.Null `->NULL() {return Val->null;}
+//! @endignore
+
+//! @class Null
+//!   Class used to implement the SQL NULL value.
+//!
+//! @deprecated Val.Null
+//!
+//! @seealso
+//!   @[Val.Null], @[Val.null]
+
+//! @endclass
+
+//! @decl Val.Null NULL;
+//!
+//!   The SQL NULL value.
+//!
+//! @deprecated Val.null
+//!
+//! @seealso
+//!   @[Val.null]

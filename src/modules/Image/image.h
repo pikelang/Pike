@@ -1,7 +1,7 @@
 /*
-**! module Image
-**! note
-**!	$Id: image.h,v 1.48 2001/09/24 11:22:57 grubba Exp $
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -70,6 +70,15 @@ static inline INT32 FLOAT_TO_COLORL(double X)
 	(((INT32)((X)*((float)(COLORLMAX/256))))*256+((INT32)((X)*255)))
 #endif /* __ECL */
 
+#ifdef USE_VALGRIND
+/* Workaround for valgrind false alarms: gcc (4.2.3) can generate code
+ * that reads a full native integer from memory when we retrieve an
+ * rgb_group. This makes valgrind complain if it's done past the end
+ * of an alloc'ed block, so pad some extra. */
+#define RGB_VEC_PAD (SIZEOF_CHAR_P - sizeof (rgb_group))
+#else
+#define RGB_VEC_PAD 1
+#endif
 
 #define FS_SCALE 1024
 
@@ -102,7 +111,7 @@ typedef struct
 struct image
 {
    rgb_group *img;
-   INT32 xsize,ysize;
+   INT_TYPE xsize,ysize;
    rgb_group rgb;
    unsigned char alpha;
 };

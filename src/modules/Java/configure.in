@@ -22,11 +22,11 @@ AC_ARG_WITH(java-lib-dir,
 
 PIKE_FEATURE_WITHOUT(Java)
 
-if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
+if test "x$with_java" = xyes; then
 
   PIKE_FEATURE_NODEP(Java)
 
-  AC_MSG_CHECKING(which operating system we're using)
+  AC_MSG_CHECKING(which operating system we are using)
   AC_CACHE_VAL(pike_cv_java_sysos, [
     pike_cv_java_sysos="`uname | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`"
     case "$pike_cv_java_sysos" in
@@ -35,16 +35,23 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
           5.*|6.*|7.*) pike_cv_java_sysos="solaris";
         esac
       ;;
+      *windows*)
+        pike_cv_java_sysos=windows_nt
+      ;;
     esac
   ])
   AC_MSG_RESULT($pike_cv_java_sysos)
 
-  AC_MSG_CHECKING(which architecture we're using)
+  PIKE_SELECT_ABI
+
+  AC_MSG_CHECKING(which architecture we are using)
   AC_CACHE_VAL(pike_cv_java_arch, [
     if test "x$pike_cv_java_sysos" = xwindows_nt; then
       uname=uname
-    else
+    elif test -f "/usr/bin/uname"; then
       uname=/usr/bin/uname
+    else
+      uname=/bin/uname
     fi
     if test aix = "$pike_cv_java_sysos" && aix_cputype=`/usr/sbin/lsattr -El proc0 | awk '$1=="type" { print $2; ok=1; exit } END { exit !ok }'`; then
       case "$aix_cputype" in
@@ -53,16 +60,56 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
 	*) pike_cv_java_arch="`echo $aix_cputype | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`";;
       esac
     else
-      if pike_cv_java_arch="`$uname -p || uname -p`"; then :; else pike_cv_java_arch=no; fi
+      if pike_cv_java_arch="`$uname -p || uname -p 2>/dev/null`"; then
+	# On some linuxen the output of uname -p is much too verbose
+	# eg "Intel(R) Core(TM)2 Duo CPU T7500 @ 2.20GHz"
+	# This is not useable...
+        # Let the fallback below handle it instead.
+	if test `echo "$pike_cv_java_arch"| wc -c` -gt 10; then
+	  pike_cv_java_arch=no
+	fi
+      else pike_cv_java_arch=no; fi
     fi
 
     dnl Linux kluge
-
-    if test x"$pike_cv_java_arch" = xunknown; then
-      [pike_cv_java_arch="`uname -m | sed -e 's/^i[4-9]86/i386/'`"]
+    dnl FIXME: Enable for other OSes as well?
+    if test x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xunknown:linux -o \
+	    x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xno:linux; then
+      pike_cv_java_arch="`uname -m`"
     fi
+    pike_cv_java_arch="`echo $pike_cv_java_arch|sed -e 's/^i[[4-9]]86/i386/'`"
+    pike_cv_java_arch="`echo $pike_cv_java_arch|sed -e 's/athlon/i386/'`"
+
+    # Adjust according to the ABI
+    case "x$pike_cv_java_arch:$pike_cv_abi" in
+      xi386:64)
+        # uname -p on Solaris/x86 returns i386 even when running a 64-bit
+        # kernel.
+        pike_cv_java_arch="x86_64"
+      ;;
+      xx86_64:32)
+        # 32-bit binary on a 64-bit OS.
+        pike_cv_java_arch="i386"
+      ;;
+      xsparc:64)
+        pike_cv_java_arch="sparcv9"
+      ;;
+    esac
   ])
   AC_MSG_RESULT($pike_cv_java_arch)
+
+  java_arch_dirs=$pike_cv_java_arch
+  case "x$java_arch_dirs" in
+    xx86_64)
+      # Some dists (e.g. Ubuntu and Solaris) have decided to use "amd64"
+      # as arch specifier in dirs etc even though uname -m returns "x86_64".
+      java_arch_dirs="x86_64 amd64"
+    ;;
+    xsparcv9)
+      # FIXME: Is this needed?
+      java_arch_dirs="sparcv9 sparc"
+    ;;
+  esac
 
   AC_MSG_CHECKING(what kind of threads to use)
   AC_CACHE_VAL(pike_cv_java_threads_type, [
@@ -81,6 +128,10 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
     AC_MSG_WARN([If you are unsure, please unset \$THREADS_FLAG and rerun configure.])
   fi
 
+  # Ugly hack to cut out all the library search stuff if we're
+  # remote compiling.
+  if test x"$CC" != xrntcl; then
+
   AC_MSG_CHECKING(for working ls)
   AC_CACHE_VAL(pike_cv_ls, [
     pike_cv_ls=no
@@ -97,37 +148,42 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
       fi
     done
     IFS="$ac_save_ifs"
-    if test no = "$pike_cv_ls"; then
-      AC_MSG_ERROR([no working ls found!  Use --without-java])
-      exit 1
-    else
-      :
-    fi
   ])
   AC_MSG_RESULT($pike_cv_ls)
-  LS="$pike_cv_ls"
+  if test no = "$pike_cv_ls"; then
+    AC_MSG_WARN([no working ls found!  Java configure will almost certainly fail.])
+    LS="false"
+  else
+    LS="$pike_cv_ls"
+  fi
 
   AC_MSG_CHECKING(for JAVA_HOME)
 
-  AC_CACHE_VAL(pike_cv_java_java_home, [[
+  AC_CACHE_VAL(pike_cv_java_java_home, [
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
-
-      # balance brackets: [ 
-      #
-      # I know this is bloody ugly, bug in modern (>2.13) 
-      # autoconf's changequote doesn't work (and this is 
-      # the only thing that breaks so far) /Mirar
-
-      java_home_guess="`java -verbose 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.jar[] ].*$:\1:' -e t -e d | sed -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
-      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
-        if test -d $tmp_java_home/.; then
-          if "$LS" "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
-	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
-	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1 || \
+      java_home_guess=`"$srcdir/find_java_home.sh"`
+      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/java/j2sdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* /usr/lib/j2se/*/jre /usr/lib/jvm/*/jre "$java_home_guess" "$pike_java_user_lib_directory"/..; do
+	if test -d $tmp_java_home/.; then
+	  tmp_arch_dir=nowhere
+	  for ad in $java_arch_dirs; do
+	    if test -d "$tmp_java_home/lib/$ad/."; then
+	      tmp_arch_dir="$tmp_java_home/lib/$ad"
+	      tmp_arch="$ad"
+	      break
+	    fi
+	  done
+	  if "$LS" "$tmp_arch_dir/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_arch_dir"/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_arch_dir"/classic/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/bin"/classic/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_arch_dir"/client/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/bin"/client/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_arch_dir"/server/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/bin"/server/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
 	      pike_cv_java_java_home="$tmp_java_home"
+	      java_arch_dir=$tmp_arch
 	  else
 	    :
 	  fi
@@ -141,10 +197,20 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
       else
         pike_cv_java_java_home="$JAVA_HOME"
       fi
+      for ad in $java_arch_dirs ""; do
+	if test -d "$pike_cv_java_java_home/lib/$ad/."; then
+	  java_arch_dir="$ad"
+	  break
+	fi
+      done
     fi
-  ]])
+  ])
   AC_MSG_RESULT($pike_cv_java_java_home)
+  AC_MSG_CHECKING([for Java architecture directory name])
+  AC_MSG_RESULT([$java_arch_dir])
 
+  # Known buglet: $java_arch_dir isn't cached, so the following must
+  # also be cached when $pike_cv_java_java_home is.
   AC_MSG_CHECKING(for Java libraries)
   AC_CACHE_VAL(pike_cv_java_lib_dir, [
     pike_cv_java_lib_dir=""
@@ -153,8 +219,11 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
     else
       tmp_java_lib_dir="$pike_java_user_lib_directory"
     fi
-    for i in "$pike_cv_java_arch/$pike_cv_java_threads_type" \
-             "$pike_cv_java_arch/classic" "$pike_cv_java_arch" \
+    # NOTE: Loops in reverse priority order.
+    for i in "$java_arch_dir/client" "../bin/client" \
+	     "$java_arch_dir/server" "../bin/server" \
+	     "$java_arch_dir/$pike_cv_java_threads_type" \
+             "$java_arch_dir/classic" "$java_arch_dir" \
 	     "." "../bin" "../bin/classic"; do
       if test -d "$tmp_java_lib_dir/$i/." && "$LS" $tmp_java_lib_dir/$i/lib* >/dev/null 2>&1; then
         pike_cv_java_lib_dir="$pike_cv_java_lib_dir$tmp_java_lib_dir/$i "
@@ -179,10 +248,15 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
     export LIBPATH
   fi
 
+  # FIXME: If several jvm's are installed then we can find the include
+  # files for a different one from the JAVA_HOME search above. This is
+  # not only a matter of having paths in the same order; e.g.
+  # /usr/lib/jvm/* can match more than one viable jvm's.
+
   AC_MSG_CHECKING(for the Java include directory)
   AC_CACHE_VAL(pike_cv_java_include_dir, [
     pike_cv_java_include_dir=no
-    for tmp_java_incdir in /usr/java* /usr/local/java* /usr/local/jdk* /usr/local/jre* "$pike_cv_java_java_home"/../.. "$pike_cv_java_java_home"/.. "$pike_cv_java_java_home" "$pike_java_user_include_directory"; do
+    for tmp_java_incdir in /usr/java*  /usr/local/java* /usr/local/jdk* /usr/local/jre* /usr/java/j2sdk* /usr/local/j2sdk* /usr/lib/jvm/* "$pike_cv_java_java_home"/../.. "$pike_cv_java_java_home"/.. "$pike_cv_java_java_home" "$pike_java_user_include_directory"; do
       if test -d $tmp_java_incdir/. && "$LS" "$tmp_java_incdir/include/jni.h" >/dev/null 2>&1 ; then
 	 pike_cv_java_include_dir="$tmp_java_incdir/include"
       else
@@ -206,18 +280,18 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
     else
       :
     fi
-    if test -d "$pike_cv_java_include_dir/$pike_cv_java_arch/."; then
-      echo "Adding $pike_cv_java_include_dir/$pike_cv_java_arch to the include search path."
-      CPPFLAGS="-I$pike_cv_java_include_dir/$pike_cv_java_arch ${CPPFLAGS}"
-    else
-      :
-    fi
+    for d in "$pike_cv_java_include_dir/$java_arch_dir/."; do
+      if test -d "$d"; then
+	echo "Adding $d to the include search path."
+	CPPFLAGS="-I$d ${CPPFLAGS}"
+      fi
+    done
   fi
 
   AC_MSG_CHECKING([for JavaVM (MacOS X)])
   AC_CACHE_VAL(pike_cv_java_javavm, [
     pike_cv_java_javavm=no;
-    for tmp_java_javavm in ../.. .. .; do
+    for tmp_java_javavm in ../.. .. . ../../../../Frameworks/JavaVM.framework/; do
       if test -f "$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM; then
         pike_cv_java_javavm="$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM
       else
@@ -232,7 +306,31 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
   else
     :
   fi
-  AC_CHECK_HEADERS(jni.h winbase.h setjmp.h)
+
+  else # if test x"$CC" = xrntcl
+    pike_cv_java_javavm=no
+  fi
+
+  PIKE_PKG_CONFIG(libffi)
+
+  # FFI on OS X (10.5 or newer) expects MACOSX defined
+  DO_IF_OS(Darwin,
+  [
+    AC_SYS_COMPILER_FLAG(-DMACOSX, define_macosx, CPPFLAGS)
+  ])
+
+  AC_CHECK_HEADERS(jni.h winbase.h setjmp.h ffi.h ffi/ffi.h libffi/ffi.h)
+  AC_CHECK_TYPES([ffi_arg, ffi_sarg],,,[#ifdef HAVE_FFI_H
+#include <ffi.h>
+#else
+#ifdef HAVE_FFI_FFI_H
+#include <ffi/ffi.h>
+#else
+#ifdef HAVE_LIBFFI_FFI_H
+#include <libffi/ffi.h>
+#endif
+#endif
+#endif])
 
   pike_cv_java=no
 
@@ -287,6 +385,24 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
         AC_MSG_RESULT(yes)
       else
         AC_MSG_RESULT(no)
+        AC_MSG_CHECKING([for JNI_CreateJavaVM in -lgcj])
+        AC_CACHE_VAL(ac_cv_lib_gcj_JNI_CreateJavaVM, [
+          ac_save_LIBS="$LIBS"
+          LIBS="-lgcj $LIBS"
+          AC_TRY_LINK([#include <jni.h>], dnl
+	    [JNI_CreateJavaVM((JavaVM**)0,(void**)0,(void*)0);], dnl
+	    [ac_cv_lib_gcj_JNI_CreateJavaVM=yes], dnl
+	    [ac_cv_lib_gcj_JNI_CreateJavaVM=no])
+          LIBS="$ac_save_LIBS"
+        ])
+        if test x"$ac_cv_lib_gcj_JNI_CreateJavaVM" = xyes; then
+          LIBS="-lgcj $LIBS"
+          JAVA_LIBS="-lgcj ${JAVA_LIBS}"
+          pike_cv_java=yes;
+          AC_MSG_RESULT(yes)
+        else
+          AC_MSG_RESULT(no)
+        fi
       fi
 
     fi
@@ -309,6 +425,24 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
 	LINKER_OPTIONS="${LINKER_OPTIONS} -lthread"
       ], [])
 
+      pike_java_ffi=no
+      AC_CHECK_LIB(ffi, ffi_prep_closure, [
+	if test "$ac_cv_header_ffi_h" = yes \
+             -o "$ac_cv_header_ffi_ffi_h" = yes \
+             -o "$ac_cv_header_libffi_ffi_h" = yes; then
+	  LIBS="-lffi $LIBS"
+	  JAVA_LIBS="-lffi ${JAVA_LIBS}"
+	  AC_DEFINE(HAVE_FFI)
+	  pike_java_ffi=yes
+	else
+	  :
+	fi
+      ], [])
+
+      # Java/AIX has this. For debug...
+      AC_CHECK_LIB(java, ibmFindDLL, [
+        AC_DEFINE(HAVE_IBMFINDDLL)
+      ])
     else
       :
     fi
@@ -342,6 +476,9 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
           JavaVMOption vm_options[2];
 	  jint res;
 	  jmp_buf jbuf;
+#ifndef __NT__
+	  alarm(50);
+#endif
 #ifdef __NT__
 	  switch(open_nt_dll()) {
 	    case -1:
@@ -370,16 +507,76 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
 	  }
 	  if(!setjmp(jbuf))
 	    longjmp(jbuf,1);
+#ifdef HAVE_IBMFINDDLL
+	  {
+	    /* Debug... */
+	    extern char *ibmFindDLL(void);
+	    fprintf(stderr, "ibmFindDLL: \"%s\"\n", ibmFindDLL());
+	  }
+#endif
+	  if (!env) {
+	    /* NOT_REACHED */
+	    /* Check that the headerfiles are reasonable... */
+	    /* Some versions of GCJ jni.h
+	     * lack the name parameter to DefineClass()
+	     * FIXME: Check if GCJ has some non-sun compat method.
+	     */
+	    jbyte code[] = { 0 };
+	    jobject jobj;
+	    jclass c =
+	      (*env)->DefineClass(env, "foo", jobj, code, sizeof(code));
+          }
 	  return 0;
         };
       ], [pike_cv_java_working=yes], [pike_cv_java_working=no])
       CPPFLAGS="$OLD_CPPFLAGS"
     ])
     AC_MSG_RESULT($pike_cv_java_working)
-    PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
+
+    AC_MSG_CHECKING(for known machine language)
+    AC_CACHE_VAL(pike_cv_java_cpu, [
+      case $pike_cv_java_arch  in
+        sparc) pike_cv_java_cpu=sparc;;
+        i386|x86) pike_cv_java_cpu=x86;;
+        x86_64) pike_cv_java_cpu=x86_64;;
+        powerpc|ppc) pike_cv_java_cpu=ppc;;
+        alpha) pike_cv_java_cpu=alpha;;
+        *) pike_cv_java_cpu=no;;
+      esac
+    ])
+    AC_MSG_RESULT($pike_cv_java_cpu)
+
+    case $pike_cv_java_cpu in
+      sparc) AC_DEFINE(HAVE_SPARC_CPU);;
+      x86) AC_DEFINE(HAVE_X86_CPU);;
+      x86_64) AC_DEFINE(HAVE_X86_64_CPU);;
+      ppc) AC_DEFINE(HAVE_PPC_CPU);;
+      alpha) AC_DEFINE(HAVE_ALPHA_CPU);;
+    esac
+
+    if test "x$pike_cv_sys_os" = xWindows_NT ; then
+      # We'll do LoadLibrary ourselves instead of relying on jvm.lib to
+      # do it for us.  That way we'll avoid nasty popup dialogs...
+      JAVA_LIBS="-lkernel32 -lws2_32 -ladvapi32"
+    else
+      :
+    fi
+
     if test "$pike_cv_java_working" = no; then
       pike_cv_java=no;
-      PIKE_FEATURE(Java,[no (JVM doesn't work)])
+      PIKE_FEATURE(Java,[no (JVM does not work)])
+    else
+      PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
+
+      if test "$pike_java_ffi" = no; then
+        if test "$pike_cv_java_cpu" = no -o "$pike_cv_java_cpu" = x86_64; then
+          PIKE_FEATURE(Java,[yes ($JAVA_LIBS) (no native methods)])
+        else
+          :
+        fi
+      else
+        :
+      fi
     fi
   else
     :
@@ -397,31 +594,7 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
     if test "x$pike_cv_java_java_home" = xno; then :; else
       AC_DEFINE_UNQUOTED(JAVA_HOME, "${pike_cv_java_java_home}")
     fi
-    if test "x$pike_cv_sys_os" = xWindows_NT ; then
-      dnl We'll do LoadLibrary ourselves instead of relying on jvm.lib to
-      dnl do it for us.  That way we'll avoid nasty popup dialogs...
-      JAVA_LIBS=""
-    else
-      :
-    fi
   fi
-
-  AC_MSG_CHECKING(for known machine language)
-  AC_CACHE_VAL(pike_cv_java_cpu, [
-    case $pike_cv_java_arch  in
-      sparc) pike_cv_java_cpu=sparc;;
-      i386|x86) pike_cv_java_cpu=x86;;
-      powerpc) pike_cv_java_cpu=ppc;;
-      *) pike_cv_java_cpu=no;;
-    esac
-  ])
-  AC_MSG_RESULT($pike_cv_java_cpu)
-
-  case $pike_cv_java_cpu in
-    sparc) AC_DEFINE(HAVE_SPARC_CPU);;
-    x86) AC_DEFINE(HAVE_X86_CPU);;
-    ppc) AC_DEFINE(HAVE_PPC_CPU);;
-  esac
 
   if test "x$JAVA_LIBPATH" = x; then :; else
     AC_DEFINE_UNQUOTED(JAVA_LIBPATH, "${JAVA_LIBPATH}")
@@ -432,16 +605,10 @@ else
   :
 fi
 
-if test x"$pike_cv_sys_os" = xWindows_NT ; then
-  JAVA_LIBS="-lkernel32 -lws2_32 -ladvapi32 $JAVA_LIBS"
-  PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
-fi
-
-
 LIBPATH="$OLD_LIBPATH"
 
 AC_SUBST(LINKER_OPTIONS)
 AC_SUBST(JAVA_LIBS)
 AC_SUBST(JAVA_AVAILABLE)
 
-AC_OUTPUT(Makefile module.pmod.in,echo FOO >stamp-h )
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

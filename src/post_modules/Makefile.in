@@ -1,126 +1,145 @@
-# $Id: Makefile.in,v 1.5 2001/09/01 15:20:08 mast Exp $
 
 @make_variables@
 
-MODULES=@subdirs@
+MODULES=@module_names@
 MODULE_SEGMENTS=@MODULE_SEGMENTS@
 MODULE_LINKOPTS=@MODULE_LINKOPTS@
+MY_DIR=post_modules
 
-all: linker_options modlist.h modlist_headers.h
+all: modules_target modlist.h modlist_headers.h linker_options
 
-$(MODULE_SEGMENTS) $(MODULE_LINKOPTS): modules
+$(MODULE_SEGMENTS) $(MODULE_LINKOPTS) modules_target: modules
 
 force:
 	@:
 
-$(MODULES) no : force
-	@if [ "$@" = "no" ]; then :; else \
-	  echo Making $@; \
-	  ( cd $@; \
-	    rm remake >/dev/null 2>&1 || : ; \
-	    $(MAKE) $(MAKE_FLAGS) MODNAME=$@ || \
-	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) MODNAME=$@ ) \
-	  ) || exit $$?; \
-	fi
+# If the current build type (static or dynamic) matches the build type
+# of the module then we have to start the submake without any target
+# since there are many module makefiles that depend on being able to
+# override the default target. Otherwise we specify the build type as
+# target to avoid running the default target twice.
+$(MODULES) no : Makefile force
+	@test $@ = "no" || \
+	( echo "#### Making $${MODULE_BUILD_TYPE}: $(MY_DIR)/$@"; \
+	  if [ -d $@ ]; then \
+	    rm $@.fail 2>/dev/null; \
+	  else \
+	    echo "#### You need to rerun configure to get $@." >$@.fail; \
+	    echo; echo; cat $@.fail >&2; echo; echo; \
+	    exit 0; \
+	  fi; \
+	  cd $@ && \
+	  { test -f build_type || \
+	    { rm remake >/dev/null 2>&1 || :; \
+	      $(MAKE) $(MAKE_FLAGS) build_type || \
+	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) build_type ); }; } && \
+	  if [ "x$$MODULE_BUILD_TYPE" = "x`cat build_type`" ]; then \
+	    rm remake >/dev/null 2>&1 || :; \
+	    $(MAKE) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_FLAGS) ); \
+	  else \
+	    rm remake >/dev/null 2>&1 || :; \
+	    $(MAKE) $(MAKE_FLAGS) $$MODULE_BUILD_TYPE || \
+	    ( test -f remake && $(MAKE) $(MAKE_FLAGS) $$MODULE_BUILD_TYPE ); \
+	  fi ) || exit $$?
 
-modules: $(MODULES)
+modules: Makefile $(MODULES)
 
 modlist.h: $(MODULE_SEGMENTS)
-	( for a in $(MODULES) no ; do \
-	    if [ "$$a" = "no" ]; then :; else \
-	      cat $$a/modlist_segment; \
-	    fi; \
-	  done ) >modlist.h
+	@echo 'Updating $(MY_DIR)/modlist.h'; \
+	cat $(MODULE_SEGMENTS) </dev/null >modlist.h
 
-modlist_headers.h: $(MODULE_SEGMENTS)
-	( for a in $(MODULES) no ; do \
-	    if [ "$$a" = "no" ]; then :; else \
-	      cat $$a/modlist_segment; \
-	    fi; \
-	  done \
-	) | sed -e 's/^.*{.*,\(.*\),\(.*\).*}.*$$/void \1(void),\2(void);/' >modlist_headers.h
+modlist_headers.h: $(MODULE_SEGMENTS) Makefile
+	@echo 'Updating $(MY_DIR)/modlist_headers.h'; \
+	cat $(MODULE_SEGMENTS) </dev/null | \
+	sed -e 's/^.*{.*,\(.*\),\(.*\),\(.*\)}.*$$/void \1(void),\2(void);/' >modlist_headers.h
 
 linker_options: $(MODULE_LINKOPTS)
-	( for a in $(MODULES) no ; do \
-	    if [ "$$a" = "no" ]; then :; else \
-	      cat $$a/linker_options; \
-	    fi; \
-	  done \
-	) >linker_options
+	@echo 'Updating $(MY_DIR)/linker_options'; \
+	cat $(MODULE_LINKOPTS) </dev/null >linker_options
 
-Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
+propagated_variables:
+
+make_variables: $(make_variables_in) config.status propagated_variables
+	CONFIG_FILES="make_variables:$(make_variables_in)" CONFIG_HEADERS="" ./config.status
+
+Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status make_variables
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	touch remake
 	@echo "Run make again" >&2
 	@exit 1
 
-depend:
-	@for a in $(MODULES) ; do \
-	  if test "$$a" = "no"; then :; else \
-	    ( cd $$a && { \
-	      rm -f remake; \
-	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend || \
-		if test -f remake; then ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend; else exit $$?; fi; \
-	    }); \
-	  fi; \
+$(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
+	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig --no-recursion .
+
+config.status: $(SRCDIR)/configure propagated_variables
+	./config.status --recheck
+
+depend: Makefile
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( cd $$a && { \
+	    echo "Fixing depends in $(MY_DIR)/$$a"; \
+	    rm -f remake || :; \
+	    ${MAKE} $(MAKE_FLAGS) depend || \
+	      if test -f remake; then ${MAKE} $(MAKE_FLAGS) depend; else exit $$?; fi; \
+	  }); \
 	done
 
 install:
-	@for a in $(MODULES) no ; do \
-	  if [ "$$a" = "no" ]; then :; else \
-	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a install ) ; \
-	  fi; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Installing $(MY_DIR)/$$a"; \
+	    cd $$a && ${MAKE} $(MAKE_FLAGS) install ) ; \
 	done
 
-clean:
-	@for a in $(MODULES) no ; do \
-	  if [ "$$a" = "no" ]; then :; else \
-	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; \
-	  fi; \
-	done
+clean_here:
 	-rm -f linker_options modlist.h modlist_headers.h
 
+clean: clean_here
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Cleaning $(MY_DIR)/$$a"; \
+	    cd $$a && ${MAKE} $(MAKE_FLAGS) clean ) ; \
+	done
+
+spotless: clean_here
+	-rm -f config.cache config.log config.status Makefile propagated_variables make_variables conftest.*
+	-rm -f common_module_makefile dynamic_module_makefile static_module_makefile
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Cleaning $(MY_DIR)/$$a": \
+	    cd $$a && ${MAKE} $(MAKE_FLAGS) spotless ) ; \
+	done
+
 verify:
-	@for a in $(MODULES) no ; do \
-	  if [ "$$a" = "no" ]; then :; else \
-	    ( cd $$a ; \
-	      echo verifying $$a ; \
-	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify \
-	    ) || exit $$? ; \
-	  fi; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Verifying $(MY_DIR)/$$a"; \
+	    cd $$a && ${MAKE} $(MAKE_FLAGS) verify \
+	  ) || exit $$? ; \
 	done
 
 verbose_verify:
-	@for a in $(MODULES) no ; do \
-	  if [ "$$a" = "no" ]; then :; else \
-	    ( cd $$a ; \
-	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify \
-	    ) || exit $$? ; \
-	  fi; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Verifying $(MY_DIR)/$$a"; \
+	    cd $$a && ${MAKE} $(MAKE_FLAGS) verbose_verify \
+	  ) || exit $$? ; \
 	done
 
 fdtestsuites:
-	@for a in $(MODULES) no ; do \
-	  if [ "$$a" = "no" ]; then :; else \
-	    echo $$a ; \
-	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/module_testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; \
-	  fi; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Making testsuite in $(MY_DIR)/$$a"; \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/testsuite -DSRCDIR="`echo $(SRCDIR)/$$a|$(BUILD_BASE)/posix_to_native.sh`" ) || exit $$? ; \
 	done	
 
 testsuites:
-	@for a in $(MODULES) no ; do \
-	  if [ "$$a" = "no" ]; then :; else \
-	    (cd $$a; make module_testsuite) ; \
-	  fi; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Making testsuite in $(MY_DIR)/$$a"; \
+	    cd $$a && $(MAKE) testsuite ) ; \
 	done
 
 extra_tests:
-	@for a in $(MODULES) no ; do \
-	  if [ "$$a" = "no" ]; then :; else \
-	    ( cd $$a ; \
-	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a extra_tests \
-	    ) || exit $$? ; \
-	  fi; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Making extra_tests in $(MY_DIR)/$$a"; \
+	    cd $$a && \
+	    ${MAKE} $(MAKE_FLAGS) extra_tests \
+	  ) || exit $$? ; \
 	done
 
 

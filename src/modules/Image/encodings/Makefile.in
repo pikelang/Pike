@@ -1,54 +1,25 @@
-# $Id: Makefile.in,v 1.33 2000/10/08 22:39:42 per Exp $
-SRCDIR=@srcdir@
-VPATH=@srcdir@:@srcdir@/../../..:../../..
-OBJS = pnm.o x.o xwd.o png.o any.o bmp.o tga.o pcx.o xbm.o _xpm.o ilbm.o iff.o xcf.o hrz.o avs.o psd.o gd.o wbf.o ras.o pvr.o tim.o dsi.o
 
-@SET_MAKE@
+@make_variables@
+VPATH=@srcdir@
+OBJS = pnm.o x.o xwd.o png.o any.o bmp.o tga.o pcx.o xbm.o _xpm.o ilbm.o iff.o xcf.o hrz.o avs.o psd.o wbf.o ras.o pvr.o tim.o dsi.o atari.o neo.o
 
-CC=@CC@
-CPP=@CPP@
-# AR=ar
 RANLIB=@RANLIB@
 
-PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../../.. -I$(SRCDIR)/.. -I../../.. -I.. -I. $(MODULE_CPPFLAGS) $(DEFINES) 
-CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS) @CCSHARED@ 
+MODULE_CPPFLAGS=-I$(SRCDIR)/.. -I..
+
+@dynamic_module_makefile@
 
 all: encodings.a
-
-.SUFFIXES: .c .o
-
-# GCC dumps core on some files @ OSF1
-# This kluge should work around that...
-# FIXME: Make this a configure option
-.c.o:
-	@echo "Compiling $<" ;\
-	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
-	else \
-	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2;\
-	  NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
-	fi
 
 encodings.a : $(OBJS)
 	rm -f encodings.a
 	$(AR) cq encodings.a $(OBJS)
 	$(RANLIB) encodings.a
 
-depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
-
-clean:
-	-rm -f *.o *.a *.so module.so
-
 pike: all
 	cd ../../..; $(MAKE)
 
 pure: all
 	cd ../../..; $(MAKE) pure
-
-Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
-	CONFIG_FILES=Makefile CONFIG_HEADERS= ./config.status
-	@echo "Run make again"
-	@exit 1
 
 @dependencies@

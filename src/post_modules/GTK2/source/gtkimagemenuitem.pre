@@ -1,0 +1,49 @@
+/* -*- C -*- */
+class GTK2.ImageMenuItem;
+inherit GTK2.MenuItem;
+
+//! Properties:
+//! GTK2.Widget image
+
+void create(string|mapping(string:mixed)|void label)
+//! Create a new ImageMenuItem.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+
+  if (args) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+      struct pike_string *s1;
+      GtkStockItem item;
+      GtkWidget *gi;
+      int t=0;
+
+      get_all_args("create",args,"%t",&s1);
+      if(s1->size_shift==0)
+	t=gtk_stock_lookup(CGSTR0(s1),&item);
+      if (t)
+	gi=gtk_image_menu_item_new_from_stock(CGSTR0(s1),NULL);
+      else {
+	ref_push_string(s1);
+	f_string_to_utf8(1);
+	gi=gtk_image_menu_item_new_with_label(CGSTR0(Pike_sp[-1].u.string));
+	pop_stack();
+      }
+      THIS->obj=G_OBJECT(gi);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_IMAGE_MENU_ITEM);
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gi;
+    gi=gtk_image_menu_item_new();
+    THIS->obj=G_OBJECT(gi);
+  }
+  pgtk2__init_this_object();
+}
+
++GTK2.Widget get_image();
+//! Gets the widget that is currently set as the image.
+
+void set_image(GTK2.Widget image);
+//! Sets the image of the image menu item.

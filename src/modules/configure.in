@@ -1,9 +1,11 @@
-# $Id: configure.in,v 1.6 2000/10/08 18:13:39 grubba Exp $
 AC_INIT(dynamic_module_makefile.in)
+
+PIKE_RETAIN_VARIABLES()
 
 AC_SET_MAKE
 
 dirs=
+module_names=
 MODULE_LINKOBJS=
 MODULE_SEGMENTS=
 
@@ -14,10 +16,10 @@ do
       if test -f "$srcdir/$a/configure.in"; then
   	yesno=`eval echo \\$with_$a`
   	if test "x${yesno-}" != xno ; then
-  	  dirs="$dirs $a"
   	  MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
-  	  MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_headers"
+	  MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_segment"
   	  module_names="$module_names $a"
+  	  dirs="$dirs $a"
   	fi
       fi
     fi
@@ -26,10 +28,11 @@ done
 
 AC_SUBST(MODULE_LINKOPTS)
 AC_SUBST(MODULE_SEGMENTS)
+AC_SUBST(module_names)
 
 AC_SUBST_FILE(dependencies)
 dependencies=$srcdir/dependencies
 AC_CONFIG_SUBDIRS($dirs)
 
-AC_OUTPUT(Makefile,[],dirs="$module_names")
+AC_OUTPUT(Makefile,[:],dirs="$module_names")
 

@@ -1,22 +1,48 @@
-// Copyright © 2000, Roxen IS.
 // By Martin Nilsson
 
 #pike __REAL_VERSION__
+
+//! The functions and classes in the top level of the Locale
+//! module implements a dynamic localization system, suitable
+//! for programs that needs to change locale often. It is
+//! even possible for different threads to use different locales
+//! at the same time.
+//!
+//! The highest level of the locale system is called projects.
+//! Usually one program consists of only one project, but for
+//! bigger applications, or highly modular applications it is
+//! possible for several projects to coexist.
+//!
+//! Every project in turn contains several unique tokens, each
+//! one representing an entity that is different depending on
+//! the currently selected locale.
+//!
+//! @example
+//!  // The following line tells the locale extractor what to
+//!  // look for.
+//!  // <locale-token project="my_project">LOCALE</locale-token>
+//!
+//!  // The localization macro.
+//!  #define LOCALE(X,Y) Locale.translate("my_project", \
+//!    get_lang(), X, Y)
+//!
+//!  string get_lang() { return random(2)?"eng":"swe"; }
+//!
+//!  int(0..0) main() {
+//!    write(LOCALE(0, "This is a line.")+"\n");
+//!    write(LOCALE(0, "This is another one.\n");
+//!    return 0;
+//!  }
 
 #define CLEAN_CYCLE 60*60
 //#define LOCALE_DEBUG
 //#define LOCALE_DEBUG_ALL
 
 // project_name:project_path
-static mapping(string:string) projects = ([]);
+protected mapping(string:string) projects = ([]);
 // language:(project_name:project)
-static mapping(string:mapping(string:object)) locales = ([]);
-static string default_project;
-
-static void create()
-{
-  call_out(clean_cache, CLEAN_CYCLE);
-}
+protected mapping(string:mapping(string:object)) locales = ([]);
+protected string default_project;
 
 void register_project(string name, string path, void|string path_base)
   //! Make a connection between a project name and where its
@@ -30,8 +56,8 @@ void register_project(string name, string path, void|string path_base)
   }
   if(projects[name] && projects[name]!=path) {
     // Same name, but new path. Remove all depreciated objects
-    foreach(indices(locales), string lang)
-      m_delete(locales[lang], name);
+    foreach(locales;; mapping(string:object) lang)
+      m_delete(lang, name);
 #ifdef LOCALE_DEBUG
     werror("\nChanging project %s from %s to %s\n",
 	   name, projects[name], path);
@@ -51,14 +77,14 @@ void set_default_project_path(string path)
   default_project = path;
 }
 
-static class LanguageListObject( array(string) languages )
+protected class LanguageListObject( array(string) languages )
 {
   int timestamp  = time(1);
 
-  static string _sprintf()
+  protected string _sprintf(int t)
   {
-    return sprintf("LanguageListObject(timestamp: %d, %O)",
-		   timestamp, languages);
+    return t=='O' && sprintf("%O(timestamp: %d, %O)", this_program,
+			     timestamp, languages);
   }
 }
 
@@ -68,9 +94,12 @@ array(string) list_languages(string project)
   if(!projects[project])
     return ({});
 
-  if(!locales[0])
+  if(!locales[0]) {
+    if(!sizeof(locales))
+      call_out(clean_cache, CLEAN_CYCLE);
     // language==0 not allowed, so this is good for internal data
     locales[0] = ([]);
+  }
   else if(locales[0][project] &&
 	  // Only cache list for three minutes
 	  ((3*60 + locales[0][project]->timestamp) > time(1) )) {
@@ -114,13 +143,13 @@ array(string) list_languages(string project)
 class LocaleObject
 {
   // key:string
-  static mapping(string|int:string) bindings;
+  protected mapping(string|int:string) bindings;
   // key:function
   public mapping(string:function) functions;
   int timestamp = time(1);
   constant is_locale=1;
 
-  static void create(mapping(string|int:string) _bindings,
+  protected void create(mapping(string|int:string) _bindings,
 		     void|mapping(string:function) _functions)
   {
     bindings = _bindings;
@@ -128,6 +157,10 @@ class LocaleObject
       functions = _functions;
     else
       functions = ([]);
+  }
+
+  array(string|int) list_ids() {
+    return indices(bindings);
   }
 
   string translate(string|int key)
@@ -154,21 +187,22 @@ class LocaleObject
   int estimate_size()
   {
     int size=2*64+8; //Two mappings and a timestamp
-    foreach(indices(bindings), string|int id) {
+    foreach(bindings; string|int id; string str) {
       size+=8;
-      if(stringp(id)) size+=strlen(id);
+      if(stringp(id)) size+=sizeof(id);
       else size+=4;
-      size+=strlen(bindings[id]);
+      size+=sizeof(str);
     }
     size+=32*sizeof(functions); // The actual functions are not included though...
-    size+=strlen( indices(functions)*"" );
+    size+=sizeof( indices(functions)*"" );
     return size;
   }
 
-  static string _sprintf()
+  protected string _sprintf(int t)
   {
-    return sprintf("LocaleObject(timestamp: %d, bindings: %d, functions: %d)",
-		   timestamp, sizeof(bindings), sizeof(functions) );
+    return t=='O' && sprintf("%O(timestamp: %d, bindings: %d, functions: %d)",
+			     this_program, timestamp, sizeof(bindings),
+			     sizeof(functions) );
   }
 }
 
@@ -189,6 +223,8 @@ object get_object(string project, string lang) {
   // Is there already a locale object?
   LocaleObject locale_object;
   if(!locales[lang]) {
+    if(!sizeof(locales))
+      call_out(clean_cache, CLEAN_CYCLE);
     locales[lang] = ([]);
   }
   else if(locale_object=locales[lang][project]) {
@@ -242,8 +278,7 @@ object get_object(string project, string lang) {
 	
       default:
 	object dec;
-	// FIXME: Is this the best way of using Locale.Charset.decoder ?
-	if(catch(dec = _Charset.decoder(encoding))) {
+	if(catch(dec = Charset.decoder(encoding))) {
 	  werror("\n* Warning: unknown encoding %O in %O\n",
 		 encoding, filename);
 	  break;
@@ -263,49 +298,52 @@ object get_object(string project, string lang) {
     data = line+data;
 
   string|int id;
-  function str_tag = lambda(string t, mapping m, string c) {
-		       id = 0;
-		       if(m->id && m->id!="" && c!="") {
-			 if((int)m->id) m->id = (int)m->id;
-			 id = m->id;
-			 return c;
-		       }
-		       return 0;
-		     };
-  function t_tag = lambda(string t, mapping m, string c) {
-		     if(!id) {
-		       if(!m->id)
-			 return 0;
-		       else {
-			 if((int)m->id) 
-			   id = (int)m->id;
-			 else
-			   id = m->id;
-		       }
-		     }
-		     if(String.trim_whites(c)=="")
-		       return 0;
-		     // Replace encoded entities
-		     c = replace(c, ({"&lt;","&gt;","&amp;"}),
-				 ({ "<",   ">",    "&"  }));
-		     bindings[id]=c;
-		     return 0;
-		   };
-  function pike_tag = lambda(string t, mapping m, string c) {
-			// Replace encoded entities
-			c = replace(c, ({"&lt;","&gt;","&amp;"}),
-				       ({ "<",   ">",    "&"  }));
-			object gazonk;
-			if(catch( gazonk=compile_string("class gazonk {"+
-							c+"}")->gazonk() )) {
-			  werror("\n* Warning: could not compile code in "
-				 "<pike> in %O\n", filename);
-			  return 0;
-			}
-			foreach(indices(gazonk), string name)
-			  functions[name]=gazonk[name];
-			return 0;
-		      };
+  string str_tag(string t, mapping m, string c) {
+    id = 0;
+    if(m->id && m->id!="" && c!="") {
+      if((int)m->id) m->id = (int)m->id;
+      id = m->id;
+      return c;
+    }
+    return 0;
+  };
+  string t_tag(string t, mapping m, string c) {
+    if(!id) {
+      if(!m->id)
+	return 0;
+      else {
+	if((int)m->id) 
+	  id = (int)m->id;
+	else
+	  id = m->id;
+      }
+    }
+    if(String.trim_whites(c)=="")
+      return 0;
+    // Replace encoded entities
+    c = replace(c, ({"&lt;","&gt;","&amp;"}),
+		({ "<",   ">",    "&"  }));
+    bindings[id]=c;
+    return 0;
+  };
+  string pike_tag(string t, mapping m, string c) {
+    // Replace encoded entities
+    c = replace(c, ({"&lt;","&gt;","&amp;"}),
+		({ "<",   ">",    "&"  }));
+    object wrapper;
+    if(catch( wrapper=compile_string("class gazonk {"+
+                                     c+"}")->gazonk() )) {
+      werror("\n* Warning: could not compile code in "
+	     "<pike> in %O\n", filename);
+      return 0;
+    }
+    foreach(indices(wrapper), string name) {
+      mixed f = wrapper[name];
+      if(functionp(f))
+        functions[name]=[function]f;
+    }
+    return 0;
+  };
 
   Parser.HTML xml_parser = Parser.HTML();
   xml_parser->case_insensitive_tag(1);
@@ -315,6 +353,8 @@ object get_object(string project, string lang) {
 		       "translate" : t_tag,
 		       "pike"      : pike_tag, ]) );
   xml_parser->feed(data)->finish();
+
+  xml_parser = 0;		// To avoid trampoline garbage.
 
 #ifdef LOCALE_DEBUG
   };   
@@ -332,7 +372,7 @@ mapping(string:object) get_objects(string lang)
 {
   if(!lang)
     return 0;
-  foreach(indices(projects), string project)
+  foreach(projects; string project;)
     get_object(project, lang);
   return locales[lang];
 }
@@ -377,14 +417,16 @@ function call(string project, string lang, string name,
 void clean_cache() {
   remove_call_out(clean_cache);
   int t = time(1)-CLEAN_CYCLE;
-  foreach(indices(locales), string lang) {
-    foreach(indices(locales[lang]), string proj) {
-      if(objectp(locales[lang][proj]) &&
-	 locales[lang][proj]->timestamp < t) {
+  foreach(locales; string lang_str; mapping lang) {
+    lang_str;	// Fix warning.
+    foreach(lang; string proj_str; object proj) {
+      proj_str;	// Fix warning.
+      if(objectp(proj) && proj->timestamp < t) {
 #ifdef LOCALE_DEBUG	
-	werror("\nLocale.clean_cache: Removing project %O in %O\n",proj,lang);
+	werror("\nLocale.clean_cache: Removing project %O in %O\n",
+               proj_str, lang_str);
 #endif
-	m_delete(locales[lang], proj);
+	m_delete(lang, proj);
       }
     }
   }
@@ -400,10 +442,10 @@ void flush_cache() {
   // but then things would probably stop working.
 }
 
-mapping cache_status() {
+mapping(string:int) cache_status() {
   int size=0, lp=0;
-  foreach(values(locales), mapping l)
-    foreach(values(l), object o) {
+  foreach(locales;; mapping l)
+    foreach(l;; object o) {
       if(!o->is_locale) continue;
       lp++;
       size+=o->estimate_size();
@@ -418,10 +460,10 @@ mapping cache_status() {
 
 //! This class simulates a multi-language "string".
 //! The actual language to use is determined as late as possible.
-class DeferredLocale( static string project,
-		      static function(void:string) get_lang,
-		      static string|int key,
-		      static string fallback ) 
+class DeferredLocale( protected string project,
+		      protected function(:string) get_lang,
+		      protected string|int key,
+		      protected string fallback ) 
 {
   array get_identifier( )
   //! Return the data nessesary to recreate this "string".
@@ -429,80 +471,78 @@ class DeferredLocale( static string project,
     return ({ project, get_lang, key, fallback });
   }
 
-  static int `<( mixed what )
+  protected int `<( mixed what )
   {
     return lookup() < what;
   }
 
-  static int `> ( mixed what )
+  protected int `> ( mixed what )
   {
     return lookup() > what;
   }
 
-  static int `==( mixed what )
+  protected int `==( mixed what )
   {
     return lookup() == what;
   }
 
-  static inline string lookup()
+  protected inline string lookup()
   {
     return translate(project, get_lang(), key, fallback);
   }
 
-  static string _sprintf(int c)
+  protected string _sprintf(int c)
   {
     switch(c)
     {
       case 's':
 	return lookup();
       case 'O':
-	return sprintf("DeferredLocale(%O)", lookup());
-      default:
-	error(sprintf("Illegal formatting char '%c'\n", c));
+	return sprintf("%O(%O)", this_program, lookup());
     }
   }
 
-  static string `+(mixed ... args)
+  protected string `+(mixed ... args)
   {
     return predef::`+(lookup(), @args);
   }
 
-  static string ``+(mixed ... args)
+  protected string ``+(mixed ... args)
   {
     return predef::`+(@args, lookup());
   }
 
-  static string `-(mixed ... args)
+  protected string `-(mixed ... args)
   {
     return predef::`-(lookup(), @args);
   }
 
-  static string ``-(mixed ... args)
+  protected string ``-(mixed ... args)
   {
     return predef::`-(@args, lookup());
   }
 
-  static string `*(mixed ... args)
+  protected string `*(mixed ... args)
   {
     return predef::`*(lookup(), @args);
   }
 
-  static string ``*(mixed arg)
+  protected string ``*(mixed arg)
   {
     return predef::`*(arg, lookup());
   }
 
-  static array(string) `/(mixed arg)
+  protected array(string) `/(mixed arg)
   {
     return predef::`/(lookup(), arg);
   }
 
-  static int _sizeof()
+  protected int _sizeof()
   {
     return sizeof(lookup());
   }
 
-  static int|string `[](int a,int|void b)
+  protected int|string `[](int a,int|void b)
   {
     if (query_num_arg() < 2) {
       return lookup()[a];
@@ -510,24 +550,24 @@ class DeferredLocale( static string project,
     return lookup()[a..b];
   }
 
-  static array(int) _indices()
+  protected array(int) _indices()
   {
     return indices(lookup());
   }
 
-  static array(int) _values()
+  protected array(int) _values()
   {
     return values(lookup());
   }
 
-  static mixed cast(string to)
+  protected mixed cast(string to)
   {
     if(to=="string") return lookup();
-    if(to=="mixed" || to=="object") return this_object();
-    throw( ({ "Cannot cast DeferredLocale to "+to+".\n", backtrace() }) );
+    if(to=="mixed" || to=="object") return this;
+    error( "Cannot cast DeferredLocale to "+to+".\n" );
   }
 
-  static int _is_type(string type) {
+  protected int _is_type(string type) {
     return type=="string";
   }
-};
+}

@@ -1,23 +1,38 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "fdlib.h"
 #include "pike_error.h"
 #include <math.h>
+#include <ctype.h>
 
-RCSID("$Id: fdlib.c,v 1.50 2001/09/24 14:18:52 grubba Exp $");
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif
 
-#ifdef HAVE_WINSOCK_H
+#if defined(HAVE_WINSOCK_H)
 
-#ifdef _REENTRANT
+#include <time.h>
+
+/* Old versions of the headerfiles don't have this constant... */
+#ifndef INVALID_SET_FILE_POINTER
+#define INVALID_SET_FILE_POINTER ((DWORD)-1)
+#endif
+
 #include "threads.h"
 
 static MUTEX_T fd_mutex;
-#endif
 
 HANDLE da_handle[MAX_OPEN_FILEDESCRIPTORS];
 int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 int first_free_handle;
 
 /* #define FD_DEBUG */
+/* #define FD_STAT_DEBUG */
 
 #ifdef FD_DEBUG
 #define FDDEBUG(X) X
@@ -25,9 +40,51 @@ int first_free_handle;
 #define FDDEBUG(X)
 #endif
 
+#ifdef FD_STAT_DEBUG
+#define STATDEBUG(X) X
+#else
+#define STATDEBUG(X) do {} while (0)
+#endif
+
+/* _dosmaperr is internal but still exported in the dll interface. */
+__declspec(dllimport) void __cdecl _dosmaperr(unsigned long);
+
+PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
+{
+  /* _dosmaperr handles the common I/O errors from GetLastError, but
+   * not the winsock codes. */
+  _dosmaperr (err);
+
+  /* Let through any error that _dosmaperr didn't map, and which
+   * doesn't conflict with the errno range in msvcrt. */
+  if (errno == EINVAL && err > STRUNCATE /* 80 */) {
+    switch (err) {
+      /* Special cases for the error codes above STRUNCATE that
+       * _dosmaperr actively map to EINVAL. */
+      case ERROR_INVALID_PARAMETER: /* 87 */
+      case ERROR_INVALID_HANDLE: /* 124 */
+      case ERROR_NEGATIVE_SEEK:	/* 131 */
+	return;
+    }
+
+    /* FIXME: This lets most winsock codes through as-is, e.g.
+     * WSAEWOULDBLOCK (10035) instead of EAGAIN. There are symbolic
+     * constants for all of them in the System module, but the
+     * duplicate values still complicates code on the Windows
+     * platform, so they ought to be mapped to the basic codes where
+     * possible, I think. That wouldn't be compatible, though.
+     * /mast */
+
+    errno = err;
+  }
+}
+
+#define ISSEPARATOR(a) ((a) == '\\' || (a) == '/')
+
 #ifdef PIKE_DEBUG
 static int IsValidHandle(HANDLE h)
 {
+#ifndef __GNUC__
   __try {
     HANDLE ret;
     if(DuplicateHandle(GetCurrentProcess(),
@@ -45,6 +102,7 @@ static int IsValidHandle(HANDLE h)
   __except (1) {
     return 0;
   }
+#endif /* !__GNUC__ */
 
   return 1;
 }
@@ -52,7 +110,7 @@ static int IsValidHandle(HANDLE h)
 PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h)
 {
   if(!IsValidHandle(h))
-    fatal("Invalid handle!\n");
+    Pike_fatal("Invalid handle!\n");
   return h;
 }
 #endif
@@ -81,9 +139,12 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
   {
     case FD_SOCKET:
       return fd_BUFFERED | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN;
+
     case FD_FILE:
-    case FD_CONSOLE:
       return fd_INTERPROCESSABLE;
+
+    case FD_CONSOLE:
+      return fd_CAN_NONBLOCK | fd_INTERPROCESSABLE;
 
     case FD_PIPE:
       return fd_INTERPROCESSABLE | fd_BUFFERED;
@@ -100,7 +161,7 @@ void fd_init()
   mt_lock(&fd_mutex);
   if(WSAStartup(MAKEWORD(1,1), &wsadata) != 0)
   {
-    fatal("No winsock available.\n");
+    Pike_fatal("No winsock available.\n");
   }
   FDDEBUG(fprintf(stderr,"Using %s\n",wsadata.szDescription));
   
@@ -124,15 +185,256 @@ void fd_exit()
   mt_destroy(&fd_mutex);
 }
 
-int debug_fd_stat(const char *file, struct stat *buf)
+static INLINE time_t convert_filetime_to_time_t(FILETIME *tmp)
+{
+  /* FILETIME is in 100ns since Jan 01, 1601 00:00 UTC.
+   *
+   * Offset to Jan 01, 1970 is thus 0x019db1ded53e8000 * 100ns.
+   */
+#ifdef INT64
+  return (((INT64) tmp->dwHighDateTime << 32)
+	  + tmp->dwLowDateTime
+	  - 0x019db1ded53e8000) / 10000000;
+#else
+  double t;
+  if (tmp->dwLowDateTime < 0xd53e8000UL) {
+    tmp->dwHighDateTime -= 0x019db1dfUL;	/* Note: Carry! */
+    tmp->dwLowDateTime += 0x2ac18000UL;	/* Note: 2-compl */
+  } else {
+    tmp->dwHighDateTime -= 0x019db1deUL;
+    tmp->dwLowDateTime -= 0xd53e8000UL;
+  }
+  t=tmp->dwHighDateTime * pow(2.0,32.0) + (double)tmp->dwLowDateTime;
+
+  /* 1s == 10000000 * 100ns. */
+  t/=10000000.0;
+  return DO_NOT_WARN((long)floor(t));
+#endif
+}
+
+/* The following replaces _stat in MS CRT since it's buggy on ntfs.
+ * Axel Siebert explains:
+ *
+ *   On NTFS volumes, the time is stored as UTC, so it's easy to
+ *   calculate the difference to January 1, 1601 00:00 UTC directly.
+ *
+ *   On FAT volumes, the time is stored as local time, as a heritage
+ *   from MS-DOS days. This means that this local time must be
+ *   converted to UTC first before calculating the FILETIME. During
+ *   this conversion, all Windows versions exhibit the same bug, using
+ *   the *current* DST status instead of the DST status at that time.
+ *   So the FILETIME value can be off by one hour for FAT volumes.
+ *
+ *   Now the CRT _stat implementation uses FileTimeToLocalFileTime to
+ *   convert this value back to local time - which suffers from the
+ *   same DST bug. Then the undocumented function __loctotime_t is
+ *   used to convert this local time to a time_t, and this function
+ *   correctly accounts for DST at that time(*).
+ *
+ *   On FAT volumes, the conversion error while retrieving the
+ *   FILETIME, and the conversion error of FileTimeToLocalFileTime
+ *   exactly cancel each other out, so the final result of the _stat
+ *   implementation is always correct.
+ *
+ *   On NTFS volumes however, there is no conversion error while
+ *   retrieving the FILETIME because the file system already stores it
+ *   as UTC, so the conversion error of FileTimeToLocalFileTime can
+ *   cause the final result to be 1 hour off.
+ *
+ * The following implementation tries to do the correct thing based in
+ * the filesystem type.
+ *
+ * Note also that the UTC timestamps are cached by the OS. In the case
+ * of FAT volumes that means that the current DST setting might be
+ * different when FileTimeToLocalFileTime runs than it was when the
+ * FILETIME was calculated, so the calculation errors might not cancel
+ * each other out shortly after DST changes. A reboot is necessary
+ * after a DST change to ensure that no cached timestamps remain.
+ * There is nothing we can do to correct this error. :(
+ *
+ * See also http://msdn.microsoft.com/library/en-us/sysinfo/base/file_times.asp
+ *
+ * *) Actually it doesn't in all cases: The overlapping hour(s) when
+ * going from DST to normal time are ambiguous and since there's no
+ * DST flag it has to make an arbitrary choice.
+ */
+
+static time_t local_time_to_utc (time_t t)
+/* Converts a time_t containing local time to a real time_t (i.e. UTC).
+ *
+ * Note that there's an ambiguity in the autumn transition from DST to
+ * normal time: The returned timestamp can be one hour off in the hour
+ * where the clock is "turned back". This function always consider
+ * that hour to be in normal time.
+ *
+ * Might return -1 if the time is outside the valid range.
+ */
+{
+  int tz_secs, dl_secs;
+
+  /* First adjust for the time zone. */
+#ifdef HAVE__GET_TIMEZONE
+  _get_timezone (&tz_secs);
+#else
+  tz_secs = _timezone;
+#endif
+  t += tz_secs;
+
+  /* Then DST. */
+#ifdef HAVE__GET_DAYLIGHT
+  _get_daylight (&dl_secs);
+#else
+  dl_secs = _daylight;
+#endif
+  if (dl_secs) {
+    /* See if localtime thinks this is in DST. */
+    int isdst;
+#ifdef HAVE_LOCALTIME_S
+    struct tm ts;
+    if (localtime_s (&ts, &t)) return -1;
+    isdst = ts.tm_isdst;
+#else
+    struct tm *ts;
+    /* FIXME: A mutex is necessary to avoid a race here, but we
+     * can't protect all calls to localtime anyway. */
+    if (!(ts = localtime (&t))) return -1;
+    isdst = ts->tm_isdst;
+#endif
+    if (isdst) t += dl_secs;
+  }
+
+  return t;
+}
+
+static time_t fat_filetime_to_time_t (FILETIME *in)
+{
+  FILETIME local_ft;
+  if (!FileTimeToLocalFileTime (in, &local_ft)) {
+    set_errno_from_win32_error (GetLastError());
+    return -1;
+  }
+  else {
+    time_t t = convert_filetime_to_time_t (&local_ft);
+    /* Now we have a strange creature, namely a time_t that contains
+     * local time. */
+    return local_time_to_utc (t);
+  }
+}
+
+static int fat_filetimes_to_stattimes (FILETIME *creation,
+				       FILETIME *last_access,
+				       FILETIME *last_write,
+				       PIKE_STAT_T *stat)
+{
+  time_t t;
+
+  if ((t = fat_filetime_to_time_t (last_write)) < 0)
+    return -1;
+  stat->st_mtime = t;
+
+  if (last_access->dwLowDateTime || last_access->dwHighDateTime) {
+    if ((t = fat_filetime_to_time_t (last_access)) < 0)
+      return -1;
+    stat->st_atime = t;
+  }
+  else
+    stat->st_atime = stat->st_mtime;
+
+  /* Putting the creation time in the last status change field.. :\ */
+  if (creation->dwLowDateTime || creation->dwHighDateTime) {
+    if ((t = fat_filetime_to_time_t (creation)) < 0)
+      return -1;
+    stat->st_ctime = t;
+  }
+  else
+    stat->st_ctime = stat->st_mtime;
+
+  return 0;
+}
+
+static void nonfat_filetimes_to_stattimes (FILETIME *creation,
+					   FILETIME *last_access,
+					   FILETIME *last_write,
+					   PIKE_STAT_T *stat)
+{
+  stat->st_mtime = convert_filetime_to_time_t (last_write);
+
+  if (last_access->dwLowDateTime ||
+      last_access->dwHighDateTime)
+    stat->st_atime = convert_filetime_to_time_t(last_access);
+  else
+    stat->st_atime = stat->st_mtime;
+
+  /* Putting the creation time in the last status change field.. :\ */
+  if (creation->dwLowDateTime ||
+      creation->dwHighDateTime)
+    stat->st_ctime = convert_filetime_to_time_t (creation);
+  else
+    stat->st_ctime = stat->st_mtime;
+}
+
+/*
+ * IsUncRoot - returns TRUE if the argument is a UNC name specifying a
+ *             root share.  That is, if it is of the form
+ *             \\server\share\.  This routine will also return true if
+ *             the argument is of the form \\server\share (no trailing
+ *             slash).
+ *
+ *             Forward slashes ('/') may be used instead of
+ *             backslashes ('\').
+ */
+
+static int IsUncRoot(char *path)
+{
+  /* root UNC names start with 2 slashes */
+  if ( strlen(path) >= 5 &&     /* minimum string is "//x/y" */
+       ISSEPARATOR(path[0]) &&
+       ISSEPARATOR(path[1]) )
+  {
+    char * p = path + 2 ;
+    
+    /* find the slash between the server name and share name */
+    while ( *++p )
+      if ( ISSEPARATOR(*p) )
+        break ;
+    
+    if ( *p && p[1] )
+    {
+      /* is there a further slash? */
+      while ( *++p )
+        if ( ISSEPARATOR(*p) )
+          break ;
+      
+      /* final slash (if any) */
+      if ( !*p || !p[1])
+        return 1;
+    }
+  }
+  
+  return 0 ;
+}
+
+/* Note 1: s->st_mtime is the creation time for non-root directories.
+ *
+ * Note 2: Root directories (e.g. C:\) and network share roots (e.g.
+ * \\server\foo\) have no time information at all. All timestamps are
+ * set to one year past the start of the epoch for these.
+ *
+ * Note 3: s->st_ctime is set to the file creation time. It should
+ * probably be the last access time to be closer to the unix
+ * counterpart, but the creation time is admittedly more useful. */
+int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 {
   ptrdiff_t l = strlen(file);
   char fname[MAX_PATH];
+  int drive;       		/* current = -1, A: = 0, B: = 1, ... */
+  HANDLE hFind;
+  WIN32_FIND_DATA findbuf;
 
-  if(file[l-1]=='/' || file[l-1]=='\\')
+  if(ISSEPARATOR (file[l-1]))
   {
     do l--;
-    while(l && ( file[l]=='/' || file[l]=='\\' ));
+    while(l && ISSEPARATOR (file[l]));
     l++;
     if(l+1 > sizeof(fname))
     {
@@ -143,22 +445,206 @@ int debug_fd_stat(const char *file, struct stat *buf)
     fname[l]=0;
     file=fname;
   }
-  return stat(file, buf);
+
+  /* don't allow wildcards */
+  if (strpbrk(file, "?*"))
+  {
+    errno = ENOENT;
+    return(-1);
+  }
+  
+  /* get disk from file */
+  if (file[1] == ':')
+    drive = toupper(*file) - 'A';
+  else
+    drive = -1;
+
+  STATDEBUG (fprintf (stderr, "fd_stat %s drive %d\n", file, drive));
+
+  /* get info for file */
+  hFind = FindFirstFile(file, &findbuf);
+
+  if ( hFind == INVALID_HANDLE_VALUE )
+  {
+    char abspath[_MAX_PATH + 1];
+    UINT drive_type;
+
+    STATDEBUG (fprintf (stderr, "check root dir\n"));
+
+    if (!strpbrk(file, ":./\\")) {
+      STATDEBUG (fprintf (stderr, "no path separators\n"));
+      errno = ENOENT;
+      return -1;
+    }
+
+    if (!_fullpath( abspath, file, _MAX_PATH ) ||
+	/* Neither root dir ('C:\') nor UNC root dir ('\\server\share\'). */
+	(strlen (abspath) > 3 && !IsUncRoot (abspath))) {
+      STATDEBUG (fprintf (stderr, "not a root %s\n", abspath));
+      errno = ENOENT;
+      return -1;
+    }
+
+    STATDEBUG (fprintf (stderr, "abspath: %s\n", abspath));
+
+    l = strlen (abspath);
+    if (!ISSEPARATOR (abspath[l - 1])) {
+      /* Ensure there's a slash at the end or else GetDriveType
+       * won't like it. */
+      abspath[l] = '\\';
+      abspath[l + 1] = 0;
+    }
+
+    drive_type = GetDriveType (abspath);
+    if (drive_type == DRIVE_UNKNOWN || drive_type == DRIVE_NO_ROOT_DIR) {
+      STATDEBUG (fprintf (stderr, "invalid drive type: %u\n", drive_type));
+      errno = ENOENT;
+      return -1;
+    }
+
+    STATDEBUG (fprintf (stderr, "faking root stat\n"));
+
+    /* Root directories (e.g. C:\ and \\server\share\) are faked */
+    findbuf.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+    findbuf.nFileSizeHigh = 0;
+    findbuf.nFileSizeLow = 0;
+    findbuf.cFileName[0] = '\0';
+
+    /* Don't have any timestamp info, so set it to some date. The
+     * following is ridiculously complex, but it's compatible with the
+     * stat function in MS CRT. */
+    {
+      struct tm t;
+      t.tm_year = 1980 - 1900;
+      t.tm_mon  = 0;
+      t.tm_mday = 1;
+      t.tm_hour = 0;
+      t.tm_min  = 0;
+      t.tm_sec  = 0;
+      t.tm_isdst = -1;
+      buf->st_mtime = mktime (&t);
+      buf->st_atime = buf->st_mtime;
+      buf->st_ctime = buf->st_mtime;
+    }
+  }
+
+  else {
+    char fstype[50];
+    /* Really only need room in this buffer for "FAT" and anything
+     * longer that begins with "FAT", but since GetVolumeInformation
+     * has shown to trig unreliable error codes for a too short buffer
+     * (see below), we allocate ample space. */
+
+    BOOL res;
+
+    if (drive >= 0) {
+      char root[4]; /* Room for "X:\" */
+      root[0] = drive + 'A';
+      root[1] = ':', root[2] = '\\', root[3] = 0;
+      res = GetVolumeInformation (root, NULL, 0, NULL, NULL,NULL,
+				  (LPSTR)&fstype, sizeof (fstype));
+    }
+    else
+      res = GetVolumeInformation (NULL, NULL, 0, NULL, NULL,NULL,
+				  (LPSTR)&fstype, sizeof (fstype));
+
+    STATDEBUG (fprintf (stderr, "found, vol info: %d, %s\n",
+			res, res ? fstype : "-"));
+
+    if (!res) {
+      unsigned long w32_err = GetLastError();
+      /* Get ERROR_MORE_DATA if the fstype buffer wasn't long enough,
+       * so let's ignore it. That error is also known to be reported
+       * as ERROR_BAD_LENGTH in Vista and 7. */
+      if (w32_err != ERROR_MORE_DATA && w32_err != ERROR_BAD_LENGTH) {
+	STATDEBUG (fprintf (stderr, "GetVolumeInformation failure: %d\n",
+			    w32_err));
+	set_errno_from_win32_error (w32_err);
+	FindClose (hFind);
+	return -1;
+      }
+    }
+
+    if (res && !strcmp (fstype, "FAT")) {
+      if (!fat_filetimes_to_stattimes (&findbuf.ftCreationTime,
+				       &findbuf.ftLastAccessTime,
+				       &findbuf.ftLastWriteTime,
+				       buf)) {
+	STATDEBUG (fprintf (stderr, "fat_filetimes_to_stattimes failed.\n"));
+	FindClose (hFind);
+	return -1;
+      }
+    }
+    else
+      /* Any non-fat filesystem is assumed to have sane timestamps. */
+      nonfat_filetimes_to_stattimes (&findbuf.ftCreationTime,
+				     &findbuf.ftLastAccessTime,
+				     &findbuf.ftLastWriteTime,
+				     buf);
+
+    FindClose(hFind);
+  }
+
+  if (findbuf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+    /* Always label a directory as executable. Note that this also
+     * catches special locations like root dirs and network share
+     * roots. */
+    buf->st_mode = S_IFDIR | 0111;
+  else {
+    const char *p;
+    buf->st_mode = S_IFREG;
+
+    /* Look at the extension to see if a file appears to be executable. */
+    if ((p = strrchr (file, '.')) && strlen (p) == 4) {
+      char ext[4];
+      ext[0] = tolower (p[1]);
+      ext[1] = tolower (p[2]);
+      ext[2] = tolower (p[3]);
+      ext[3] = 0;
+      if (!strcmp (ext, "exe") ||
+	  !strcmp (ext, "cmd") ||
+	  !strcmp (ext, "bat") ||
+	  !strcmp (ext, "com"))
+	buf->st_mode |= 0111;	/* Execute perm for all. */
+    }
+  }
+
+  /* The file is read/write unless the read only flag is set. */
+  if (findbuf.dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+    buf->st_mode |= 0444;	/* Read perm for all. */
+  else
+    buf->st_mode |= 0666;	/* Read and write perm for all. */
+
+  buf->st_nlink = 1;
+#ifdef INT64
+  buf->st_size = ((INT64) findbuf.nFileSizeHigh << 32) + findbuf.nFileSizeLow;
+#else
+  if (findbuf.nFileSizeHigh)
+    buf->st_size = MAXDWORD;
+  else
+    buf->st_size = findbuf.nFileSizeLow;
+#endif
+  
+  buf->st_uid = buf->st_gid = buf->st_ino = 0; /* unused entries */
+  buf->st_rdev = buf->st_dev =
+    (_dev_t) (drive >= 0 ? drive : _getdrive() - 1); /* A=0, B=1, ... */
+
+  return(0);
 }
 
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 {
   HANDLE x;
   FD fd;
-  DWORD omode,cmode,amode;
+  DWORD omode,cmode = 0,amode;
 
   ptrdiff_t l = strlen(file);
   char fname[MAX_PATH];
 
-  if(file[l-1]=='/' || file[l-1]=='\\')
+  if(ISSEPARATOR (file[l-1]))
   {
     do l--;
-    while(l && ( file[l]=='/' || file[l]=='\\' ));
+    while(l && ISSEPARATOR (file[l]));
     l++;
     if(l+1 > sizeof(fname))
     {
@@ -206,7 +692,7 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
       break;
   }
 
-  if(create_mode & 4)
+  if(create_mode & 0222)
   {
     amode=FILE_ATTRIBUTE_NORMAL;
   }else{
@@ -224,7 +710,13 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
   
   if(x == DO_NOT_WARN(INVALID_HANDLE_VALUE))
   {
-    errno=GetLastError();
+    unsigned long err = GetLastError();
+    if (err == ERROR_INVALID_NAME)
+      /* An invalid name means the file doesn't exist. This is
+       * consistent with fd_stat, opendir, and unix. */
+      errno = ENOENT;
+    else
+      set_errno_from_win32_error (err);
     return -1;
   }
 
@@ -264,7 +756,7 @@ PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto)
 
   if(s==INVALID_SOCKET)
   {
-    errno=WSAGetLastError();
+    set_errno_from_win32_error (WSAGetLastError());
     return -1;
   }
   
@@ -295,7 +787,7 @@ PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
   mt_unlock(&fd_mutex);
   if(!CreatePipe(&files[0], &files[1], NULL, 0))
   {
-    errno=GetLastError();
+    set_errno_from_win32_error (GetLastError());
     return -1;
   }
   
@@ -350,7 +842,7 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
   s=accept(s, addr, addrlen);
   if(s==INVALID_SOCKET)
   {
-    errno=WSAGetLastError();
+    set_errno_from_win32_error (WSAGetLastError());
     FDDEBUG(fprintf(stderr,"Accept failed with errno %d\n",errno));
     return -1;
   }
@@ -389,7 +881,7 @@ PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { \
   mt_unlock(&fd_mutex); \
   ret = NAME X2; \
   if(ret == SOCKET_ERROR) { \
-    errno = WSAGetLastError(); \
+    set_errno_from_win32_error (WSAGetLastError()); \
     ret = -1; \
   } \
   FDDEBUG(fprintf(stderr, #NAME " returned %d (%d)\n", ret, errno)); \
@@ -443,7 +935,7 @@ PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
   ret=(SOCKET)da_handle[fd];
   mt_unlock(&fd_mutex);
   ret=connect(ret,a,len); 
-  if(ret == SOCKET_ERROR) errno=WSAGetLastError(); 
+  if(ret == SOCKET_ERROR) set_errno_from_win32_error (WSAGetLastError());
   FDDEBUG(fprintf(stderr, "connect returned %d (%d)\n",ret,errno)); 
   return DO_NOT_WARN((int)ret);
 }
@@ -463,7 +955,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
     case FD_SOCKET:
       if(closesocket((SOCKET)h))
       {
-	errno=GetLastError();
+	set_errno_from_win32_error (GetLastError());
 	FDDEBUG(fprintf(stderr,"Closing %d (%ld) failed with errno=%d\n",
 			fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd]),
 			errno));
@@ -474,7 +966,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
     default:
       if(!CloseHandle(h))
       {
-	errno=GetLastError();
+	set_errno_from_win32_error (GetLastError());
 	return -1;
       }
   }
@@ -512,7 +1004,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 			     0);
 	if(ret<0)
 	{
-	  errno = WSAGetLastError();
+	  set_errno_from_win32_error (WSAGetLastError());
 	  FDDEBUG(fprintf(stderr, "Write on %d failed (%d)\n", fd, errno));
 	  if (errno == 1) {
 	    /* UGLY kludge */
@@ -533,7 +1025,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 		      DO_NOT_WARN((DWORD)len),
 		      &ret,0) && ret<=0)
 	{
-	  errno = GetLastError();
+	  set_errno_from_win32_error (GetLastError());
 	  FDDEBUG(fprintf(stderr, "Write on %d failed (%d)\n", fd, errno));
 	  return -1;
 	}
@@ -569,7 +1061,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 		0);
       if(rret<0)
       {
-	errno=WSAGetLastError();
+	set_errno_from_win32_error (WSAGetLastError());
 	FDDEBUG(fprintf(stderr,"Read on %d failed %ld\n",fd,errno));
 	return -1;
       }
@@ -580,12 +1072,13 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
     case FD_FILE:
     case FD_PIPE:
       ret=0;
-      if(!ReadFile(handle, to,
-		   DO_NOT_WARN((DWORD)len),
-		   &ret,0) && ret<=0)
+      if(len && !ReadFile(handle, to,
+			  DO_NOT_WARN((DWORD)len),
+			  &ret,0) && ret<=0)
       {
-	errno=GetLastError();
-	switch(errno)
+	unsigned int err = GetLastError();
+	set_errno_from_win32_error (err);
+	switch(err)
 	{
 	  /* Pretend we reached the end of the file */
 	  case ERROR_BROKEN_PIPE:
@@ -603,9 +1096,9 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
   }
 }
 
-PMOD_EXPORT ptrdiff_t debug_fd_lseek(FD fd, ptrdiff_t pos, int where)
+PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
 {
-  ptrdiff_t ret;
+  PIKE_OFF_T ret;
   HANDLE h;
 
   mt_lock(&fd_mutex);
@@ -626,21 +1119,50 @@ PMOD_EXPORT ptrdiff_t debug_fd_lseek(FD fd, ptrdiff_t pos, int where)
   h = da_handle[fd];
   mt_unlock(&fd_mutex);
 
-  ret = SetFilePointer(h,
-		       DO_NOT_WARN((LONG)pos),
-		       0, where);
-  if(!~ret)
   {
-    errno=GetLastError();
-    return -1;
+#ifdef INT64
+#ifdef HAVE_SETFILEPOINTEREX
+    /* Windows NT based. */
+    LARGE_INTEGER li_pos;
+    LARGE_INTEGER li_ret;
+    li_pos.QuadPart = pos;
+    li_ret.QuadPart = 0;
+    if(!SetFilePointerEx(h, li_pos, &li_ret, where)) {
+      set_errno_from_win32_error (GetLastError());
+      return -1;
+    }
+    ret = li_ret.QuadPart;
+#else /* !HAVE_SETFILEPOINTEREX */
+    /* Windows 9x based. */
+    LONG high = DO_NOT_WARN((LONG)(pos >> 32));
+    DWORD err;
+    pos &= ((INT64) 1 << 32) - 1;
+    ret = SetFilePointer(h, DO_NOT_WARN((LONG)pos), &high, where);
+    if (ret == INVALID_SET_FILE_POINTER &&
+	(err = GetLastError()) != NO_ERROR) {
+      set_errno_from_win32_error (err);
+      return -1;
+    }
+    ret += (INT64) high << 32;
+#endif /* HAVE_SETFILEPOINTEREX */
+#else /* !INT64 */
+    ret = SetFilePointer(h, (LONG)pos, NULL, where);
+    if(ret == INVALID_SET_FILE_POINTER)
+    {
+      set_errno_from_win32_error (GetLastError());
+      return -1;
+    }
+#endif /* INT64 */
   }
+
   return ret;
 }
 
-PMOD_EXPORT int debug_fd_ftruncate(FD fd, ptrdiff_t len)
+PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
 {
   HANDLE h;
-  LONG oldfp_lo, oldfp_hi;
+  LONG oldfp_lo, oldfp_hi, len_hi;
+  DWORD err;
 
   mt_lock(&fd_mutex);
   if(fd_type[fd]!=FD_FILE)
@@ -655,23 +1177,43 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, ptrdiff_t len)
   oldfp_hi = 0;
   oldfp_lo = SetFilePointer(h, 0, &oldfp_hi, FILE_CURRENT);
   if(!~oldfp_lo) {
-    errno=GetLastError();
-    if(errno != NO_ERROR)
+    err = GetLastError();
+    if(err != NO_ERROR) {
+      set_errno_from_win32_error (err);
       return -1;
+    }
   }
-  if(!~SetFilePointer(h,
-		      DO_NOT_WARN((LONG)len),
-		      NULL, FILE_BEGIN) ||
-     !SetEndOfFile(h)) {
-    errno=GetLastError();
+
+#ifdef INT64
+  len_hi = DO_NOT_WARN ((LONG) (len >> 32));
+  len &= ((INT64) 1 << 32) - 1;
+#else
+  len_hi = 0;
+#endif
+
+  if (SetFilePointer (h, DO_NOT_WARN ((LONG) len), &len_hi, FILE_BEGIN) ==
+      INVALID_SET_FILE_POINTER &&
+      (err = GetLastError()) != NO_ERROR) {
+    SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
+    set_errno_from_win32_error (err);
+    return -1;
+  }
+
+  if(!SetEndOfFile(h)) {
+    set_errno_from_win32_error (GetLastError());
     SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
     return -1;
   }
-  if(!~SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN)) {
-    errno=GetLastError();
-    if(errno != NO_ERROR)
-      return -1;
-  }
+
+  if (oldfp_hi < len_hi || (oldfp_hi == len_hi && oldfp_lo < len))
+    if(!~SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN)) {
+      err = GetLastError();
+      if(err != NO_ERROR) {
+	set_errno_from_win32_error (err);
+	return -1;
+      }
+    }
+
   return 0;
 }
 
@@ -697,7 +1239,7 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 		   0xffffffff,
 		   0xffffffff);
   }else{
-    DWORD flags;
+    DWORD flags = 0;
     OVERLAPPED tmp;
     MEMSET(&tmp, 0, sizeof(tmp));
     tmp.Offset=0;
@@ -718,7 +1260,7 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
   }
   if(ret<0)
   {
-    errno=GetLastError();
+    set_errno_from_win32_error (GetLastError());
     return -1;
   }
   
@@ -726,20 +1268,14 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 }
 
 
-static long convert_filetime_to_time_t(FILETIME tmp)
+/* Note: s->st_ctime is set to the file creation time. It should
+ * probably be the last access time to be closer to the unix
+ * counterpart, but the creation time is admittedly more useful. */
+PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 {
-  double t;
-  t=tmp.dwHighDateTime * pow(2.0,32.0) + (double)tmp.dwLowDateTime;
-  t/=10000000.0;
-  t-=11644473600.0;
-  return DO_NOT_WARN((long)floor(t));
-}
-
-PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s)
-{
-  DWORD x;
-
   FILETIME c,a,m;
+
+  mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr, "fstat on %d (%ld)\n",
 		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd])));
   if(fd_type[fd]!=FD_FILE)
@@ -749,7 +1285,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s)
     return -1;
   }
 
-  MEMSET(s, 0, sizeof(struct stat));
+  MEMSET(s, 0, sizeof(PIKE_STAT_T));
   s->st_nlink=1;
 
   switch(fd_type[fd])
@@ -763,27 +1299,43 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s)
       {
 	default:
 	case FILE_TYPE_UNKNOWN: s->st_mode=0;        break;
+
 	case FILE_TYPE_DISK:
-	  s->st_mode=S_IFREG; 
-	  s->st_size=GetFileSize(da_handle[fd],&x);
-	  if(x)
+	  s->st_mode=S_IFREG;
 	  {
-	    s->st_size=0x7fffffff;
+	    DWORD high, err;
+	    s->st_size=GetFileSize(da_handle[fd],&high);
+	    if (s->st_size == INVALID_FILE_SIZE &&
+		(err = GetLastError()) != NO_ERROR) {
+	      set_errno_from_win32_error (err);
+	      mt_unlock(&fd_mutex);
+	      return -1;
+	    }
+#ifdef INT64
+	    s->st_size += (INT64) high << 32;
+#else
+	    if (high) s->st_size = MAXDWORD;
+#endif
 	  }
 	  if(!GetFileTime(da_handle[fd], &c, &a, &m))
 	  {
-	    errno=GetLastError();
+	    set_errno_from_win32_error (GetLastError());
+	    mt_unlock(&fd_mutex);
 	    return -1;
 	  }
-	  s->st_ctime=convert_filetime_to_time_t(c);
-	  s->st_atime=convert_filetime_to_time_t(a);
-	  s->st_mtime=convert_filetime_to_time_t(m);
+
+	  /* FIXME: Determine the filesystem type to use
+	   * fat_filetimes_to_stattimes when necessary. */
+
+	  nonfat_filetimes_to_stattimes (&c, &a, &m, s);
 	  break;
+
 	case FILE_TYPE_CHAR:    s->st_mode=S_IFCHR;  break;
 	case FILE_TYPE_PIPE:    s->st_mode=S_IFIFO; break;
       }
   }
   s->st_mode |= 0666;
+  mt_unlock(&fd_mutex);
   return 0;
 }
 
@@ -832,7 +1384,7 @@ PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct
   ret=select(fds,a,b,c,t);
   if(ret==SOCKET_ERROR)
   {
-    errno=WSAGetLastError();
+    set_errno_from_win32_error (WSAGetLastError());
     FDDEBUG(fprintf(stderr,"select->%d, errno=%d\n",ret,errno));
     return -1;
   }
@@ -861,7 +1413,7 @@ PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
       FDDEBUG(fprintf(stderr,"ioctlsocket returned %ld (%d)\n",ret,errno));
       if(ret==SOCKET_ERROR)
       {
-	errno=WSAGetLastError();
+	set_errno_from_win32_error (WSAGetLastError());
 	return -1;
       }
       return ret;
@@ -877,17 +1429,19 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 {
   FD fd;
   HANDLE x,p=GetCurrentProcess();
+
+  mt_lock(&fd_mutex);
 #ifdef DEBUG
   if(fd_type[from]>=FD_NO_MORE_FREE)
-    fatal("fd_dup() on file which is not open!\n");
+    Pike_fatal("fd_dup() on file which is not open!\n");
 #endif
   if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
-    errno=GetLastError();
+    set_errno_from_win32_error (GetLastError());
+    mt_unlock(&fd_mutex);
     return -1;
   }
 
-  mt_lock(&fd_mutex);
   fd=first_free_handle;
   first_free_handle=fd_type[fd];
   fd_type[fd]=fd_type[from];
@@ -902,18 +1456,20 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 {
   HANDLE x,p=GetCurrentProcess();
+
+  mt_lock(&fd_mutex);
   if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
-    errno=GetLastError();
+    set_errno_from_win32_error (GetLastError());
+    mt_unlock(&fd_mutex);
     return -1;
   }
 
-  mt_lock(&fd_mutex);
   if(fd_type[to] < FD_NO_MORE_FREE)
   {
     if(!CloseHandle(da_handle[to]))
     {
-      errno=GetLastError();
+      set_errno_from_win32_error (GetLastError());
       mt_unlock(&fd_mutex);
       return -1;
     }
@@ -938,14 +1494,73 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
   return to;
 }
 
-#endif /* HAVE_WINSOCK_H */
+PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
+					   char *cp, size_t sz)
+{
+  static char *(*inet_ntop_funp)(int, void*, char *, size_t);
+  static int tried;
+  static HINSTANCE ws2_32lib;
+
+  if (!inet_ntop_funp) {
+    if (!tried) {
+      tried = 1;
+      if ((ws2_32lib = LoadLibrary("Ws2_32"))) {
+	FARPROC proc;
+	if ((proc = GetProcAddress(ws2_32lib, "InetNtopA"))) {
+	  inet_ntop_funp = (char *(*)(int, void *, char *, size_t))proc;
+	}
+      }
+    }
+    if (!inet_ntop_funp) {
+      const unsigned char *q = (const unsigned char *)addr;
+      if (af == AF_INET) {
+	snprintf(cp, sz, "%d.%d.%d.%d", q[0], q[1], q[2], q[3]);
+	return cp;
+#ifdef AF_INET6
+      } else if (af == AF_INET6) {
+	int i;
+	char *buf = cp;
+	int got_zeros = 0;
+	for (i=0; i < 8; i++) {
+	  size_t val = (q[0]<<8) | q[1];
+	  if (!val) {
+	    if (!got_zeros) {
+	      snprintf(buf, sz, ":");
+	      got_zeros = 1;
+	      goto next;
+	    } else if (got_zeros == 1) goto next;
+	  }
+	  got_zeros |= got_zeros << 1;
+	  if (i) {
+	    snprintf(buf, sz, ":%x", val);
+	  } else {
+	    snprintf(buf, sz, "%x", val);
+	  }
+	next:
+	  sz -= strlen(buf);
+	  buf += strlen(buf);
+	  q += 2;
+	}
+	if (got_zeros == 1) {
+	  snprintf(buf, sz, ":");
+	  sz -= strlen(buf);
+	}
+	return cp;
+#endif
+      }
+      return NULL;
+    }
+  }
+  return inet_ntop_funp(af, addr, cp, sz);
+}
+#endif /* HAVE_WINSOCK_H && !__GNUC__ */
 
 #ifdef EMULATE_DIRECT
 PMOD_EXPORT DIR *opendir(char *dir)
 {
   ptrdiff_t len=strlen(dir);
   char *foo;
-  DIR *ret=(DIR *)malloc(sizeof(DIR) + len+5);
+  DIR *ret=malloc(sizeof(DIR) + len+5);
   if(!ret)
   {
     errno=ENOMEM;
@@ -964,7 +1579,7 @@ PMOD_EXPORT DIR *opendir(char *dir)
   if(ret->h == DO_NOT_WARN(INVALID_HANDLE_VALUE))
   {
     errno=ENOENT;
-    free((char *)ret);
+    free(ret);
     return 0;
   }
   ret->first=1;
@@ -992,7 +1607,7 @@ PMOD_EXPORT int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d)
 PMOD_EXPORT void closedir(DIR *dir)
 {
   FindClose(dir->h);
-  free((char *)dir);
+  free(dir);
 }
 #endif
 
@@ -1008,12 +1623,12 @@ struct fd_mapper
 void init_fd_mapper(struct fd_mapper *x)
 {
   x->size=64;
-  x->data=(void **)xalloc(x->size*sizeof(void *));
+  x->data=xalloc(x->size*sizeof(void *));
 }
 
 void exit_fd_mapper(struct fd_mapper *x)
 {
-  free((char *)x->data);
+  free(x->data);
 }
 
 void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
@@ -1021,9 +1636,9 @@ void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
   while(fd>=x->size)
   {
     x->size*=2;
-    x->data=(void **)realloc((char *)x->data, x->size*sizeof(void *));
+    x->data=realloc(x->data, x->size*sizeof(void *));
     if(!x->data)
-      fatal("Out of memory.\n");
+      Pike_fatal("Out of memory.\n");
     x->data=nd;
   }
   x->data[fd]=data;
@@ -1052,13 +1667,13 @@ void init_fd_mapper(struct fd_mapper *x)
   int i;
   x->num=0;
   x->hsize=127;
-  x->data=(struct fd_mapper_data *)xalloc(x->hsize*sizeof(struct fd_mapper_data));
+  x->data=xalloc(x->hsize*sizeof(struct fd_mapper_data));
   for(i=0;i<x->hsize;i++) x->data[i].fd=-1;
 }
 
 void exit_fd_mapper(struct fd_mapper *x)
 {
-  free((char *)x->data);
+  free(x->data);
 }
 
 void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
@@ -1071,7 +1686,7 @@ void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
     int i,old_size=x->hsize;
     x->hsize*=3;
     x->num=0;
-    x->data=(struct fd_mapper_data *)xalloc(x->size*sizeof(struct fd_mapper_data *));
+    x->data=xalloc(x->size*sizeof(struct fd_mapper_data *));
     for(i=0;i<x->size;i++) x->data[i].fd=-1;
     for(i=0;i<old_size;i++)
       if(old[i].fd!=-1)
@@ -1165,7 +1780,7 @@ void store_fd_data(FD fd, int key, void *data)
     else
       hash_size*=3;
 
-    htable=(struct fd_data_hash **)xalloc(hash_size * sizeof(struct fd_data_hash *));
+    htable=xalloc(hash_size * sizeof(struct fd_data_hash *));
     
     for(h=0;h<old_hsize;h++)
     {
@@ -1175,7 +1790,7 @@ void store_fd_data(FD fd, int key, void *data)
       free_blocks=old_htable[h];
     }
     if(old_htable)
-      free((char *)old_htable);
+      free(old_htable);
   }
 
 
@@ -1349,7 +1964,7 @@ void fd_waitor_remove_customer(fd_waitor *x, FD customer)
 
   CloseHandle(x->customers[pos]);
   
-  fd_mapper_store(customer, x->fd_to_pos_key, (void *)0);
+  fd_mapper_store(customer, x->fd_to_pos_key, NULL);
   x->occupied--;
   if(x->occupied != pos)
   {

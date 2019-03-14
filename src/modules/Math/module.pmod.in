@@ -1,48 +1,45 @@
+// -*- Pike -*-
+
 #pike __REAL_VERSION__
 
 inherit @module@;
 
+final constant deg_turn = 360;
+final constant rad_turn = 2.0*pi;
+final constant gon_turn = 400;
+final constant str_turn = 6300;
+
 //! This function converts between degrees, radians and gons. The
 //! @[from] and @[to] arguments may be any of the follwoing
-//! strings: "deg", "rad" and "gon" for degrees, radians and gon
-//! respectivly. The output is not guaranteed to be within the
-//! first turn, e.g. converting 10 radians yields almost 573 degrees
-//! as output.
+//! strings: "deg", "rad", "gon" and "str" for degrees, radians, gon
+//! and streck respectivly. The output is not guaranteed to be within
+//! the first turn, e.g. converting 10 radians yields almost 573
+//! degrees as output.
 int|float convert_angle(int|float angle, string from, string to) {
-  switch(to) {
-  case "deg":
-    switch(from) {
-    case "deg": return angle;
-    case "rad": return angle * 360.0/(2.0*pi);
-    case "gon": return angle * 360.0/400.0;
-    default: throw( ({"Unknwon angle from type "+from+".\n", backtrace()}) );
-    }
-  case "rad":
-    switch(from) {
-    case "deg": return angle * (2.0*pi)/360.0;
-    case "rad": return angle;
-    case "gon": return angle * (2.0*pi)/400.0;
-    default: throw( ({"Unknwon angle from type "+from+".\n", backtrace()}) );
-    }
-  case "gon":
-    switch(from) {
-    case "deg": return angle * 400.0/360.0;
-    case "rad": return angle * 400.0/(2.0*pi);
-    case "gon": return angle;
-    default: throw( ({"Unknwon angle from type "+from+".\n", backtrace()}) );
-    }
-  default: throw( ({"Unknown angle to type "+to+".\n", backtrace()}) );
-  }
+  if(from==to) return angle;
+  float from_v = (float)this[from+"_turn"];
+  float to_v = (float)this[to+"_turn"];
+  if( from_v==0.0 )
+    error("Unknown angle from type %s.\n", from);
+  if( to_v==0.0 )
+    error("Unknown angle to type %s.\n", from);
+  if(from==to)
+    return angle;
+  return angle * to_v/from_v;
 }
 
-//! Angle
+//! Represents an angle.
 class Angle {
+
+  // --- Constants
 
   //! The actual keeper of the angle value.
   int|float angle;
 
-  //! The type of the angle value. Is either "deg", "rad" or "gon".
+  //! The type of the angle value. Is either "deg", "rad", "gon" or "str".
   string type;
+
+  // --- Basic general functions
 
   //! @decl void create()
   //! @decl void create(int|float radians)
@@ -50,12 +47,11 @@ class Angle {
   //!
   //! If an angle object is created without arguments it
   //! will have the value 0 radians.
-  void create(void|int|float _angle, void|string type) {
-    if(type) {
-      set(type, _angle);
-      return;
-    }
-    set_rad(_angle);
+  void create(void|int|float angle, void|string type) {
+    if(type)
+      set(type, angle);
+    else
+      set_rad(angle);
   }
 
   //! Returns a copy of the object.
@@ -69,8 +65,9 @@ class Angle {
     case "deg": return degree();
     case "rad": return rad();
     case "gon": return gon();
+    case "str": return streck();
     }
-    throw( ({"Unknown type "+type+".\n", backtrace()}) );
+    error("Unknown type %s.\n", type);
   }
 
   //! Sets the angle value and type to the given value
@@ -80,23 +77,31 @@ class Angle {
     case "deg": return set_degree(_angle);
     case "rad": return set_rad(_angle);
     case "gon": return set_gon(_angle);
+    case "str": return set_streck(_angle);
     }
-    throw( ({"Unknown type "+type+".\n", backtrace()}) );
+    error("Unknown type %s.\n", type);
   }
 
+  //! Normalizes the angle to be within one turn.
   void normalize() {
+    if(!type) error("No type set.\n");
     switch(type) {
     case "deg":
-      angle %= 360;
+      angle %= deg_turn;
       break;
     case "rad":
-      angle %= 2.0*pi;
+      angle %= rad_turn;
       break;
     case "gon":
-      angle %= 400;
+      angle %= gon_turn;
+      break;
+    case "str":
+      angle %= str_turn;
       break;
     }
   }
+
+  // --- Degree related functions
 
   //! Returns the number of degrees, including minutes and
   //! seconds as decimals.
@@ -120,11 +125,11 @@ class Angle {
 
   //! @decl Angle set_dms(int degrees)
   //! @decl Angle set_dms(int degrees, int minutes)
-  //! @decl Angle set_dms(int degrees, inte minutes, float seconds)
+  //! @decl Angle set_dms(int degrees, int minutes, float seconds)
   //! Set degrees, minues and seconds. Returns the current angle object.
   Angle set_dms(int degrees, void|int minutes, void|float seconds) {
     set_degree( degrees + minutes/60.0 + seconds/3600.0 );
-    return this_object();
+    return this;
   }
 
   //! Returns degrees, minutes and seconds as a string, e.g.
@@ -137,10 +142,12 @@ class Angle {
   //! Returns the current object.
   Angle set_degree(int|float degree) {
     angle = degree;
-    normalize();
     type = "deg";
-    return this_object();
+    normalize();
+    return this;
   }
+
+  // --- Gon related functions
 
   //! Returns the number of gons.
   int|float gon() {
@@ -151,10 +158,14 @@ class Angle {
   //! Returns the current angle object.
   Angle set_gon(int|float gon) {
     angle = gon;
-    normalize();
     type = "gon";
-    return this_object();
+    normalize();
+    return this;
   }
+
+  // gon is formatted as %dc%d`%.2f``
+
+  // --- Radian related functions
 
   //! Returns the number of radians.
   float rad() {
@@ -165,24 +176,43 @@ class Angle {
   //! Returns the current angle object.
   Angle set_rad(int|float rad) {
     angle = rad;
-    normalize();
     type = "rad";
-    return this_object();
+    normalize();
+    return this;
   }
 
-  //! Turns the direction of the angle half a turn. Equal to @code{add(180,"deg")@}.
+  // --- Streck related functions
+
+  //! Returns the number of strecks.
+  float|int streck() {
+    return convert_angle(angle, type, "str");
+  }
+
+  //! Set the angle to the provided strecks. Alters the type to streck.
+  //! Returns the current angle object.
+  Angle set_streck(int|float str) {
+    angle = str;
+    type = "str";
+    normalize();
+    return this;
+  }
+
+  // --- Advanced general functions
+
+  //! Turns the direction of the angle half a turn. Equal to
+  //! @expr{add(180,"deg")@}.
   void about_face() {
     add(180, "deg");
   }
 
   //! Turns the direction of the angle a quarter of a turn to the right.
-  //! Equal to @code{subtract(90,"deg")@}.
+  //! Equal to @expr{subtract(90,"deg")@}.
   void right_face() {
     subtract(90, "deg");
   }
 
   //! Turns the direction of the angle a quarter of a turn to the left.
-  //! Equal to @code{add(90,"deg")@}.
+  //! Equal to @expr{add(90,"deg")@}.
   void left_face() {
     add(90, "deg");
   }
@@ -209,7 +239,7 @@ class Angle {
     case "int": return (int)angle;
     case "string": return (string)angle;
     }
-    throw( ({"Could not cast to "+to+".\n", backtrace()}) );
+    error( "Could not cast to %s.\n", to );
   }
 
   //! Returns the sum of this angle and what it is added with. If
@@ -231,7 +261,7 @@ class Angle {
     else
       angle += convert_angle(_angle, _type, type);
     normalize();
-    return this_object();
+    return this;
   }
 
   //! Returns the difference between this angle and the provided value.
@@ -253,7 +283,7 @@ class Angle {
     else
       angle -= convert_angle(_angle, _type, type);
     normalize();
-    return this_object();
+    return this;
   }
 
   //! Returns the product between this angle and the provided value.
@@ -282,29 +312,96 @@ class Angle {
     return array_sscanf(sprintf("%8F", rad()),"%8c")[0];
   }
 
-  //!
+  //! Compares the unnormalized angle of two Angle objects.
   int `== (Angle _angle) {
     return _angle->rad() == rad();
   }
 
-  //!
+  //! Compares the unnormalized angle of two Angle objects.
   int `< (Angle _angle) {
     return rad() < _angle->rad();
   }
 
-  //!
+  //! Compares the unnormalized angle of two Angle objects.
   int `> (Angle _angle) {
     return rad() > _angle->rad();
   }
 
-  //!
   string _sprintf(int t) {
-    if(t=='O')
+    switch(t) {
+    case 'O':
       switch(type) {
       case "deg": return "Angle(" + angle + "°)";
       case "rad": return "Angle(" + angle + " rads)";
       case "gon": return "Angle(" + angle + " gons)";
+      case "str": return "Angle(" + angle + " streck)";
       }
-    return 0;
+    case 't':
+      return "Angle";
+    }
+    return UNDEFINED;
   }
+}
+
+//! Calculate binomial koefficient @[n] choose @[k].
+//!
+//! This is equvivalent to @tt{@[n]!/(@[k]!*(@[n]-@[k])!)@}.
+int choose(int n, int k)
+{
+  if (k*2 > n) k = n-k;
+  if (!k) return 1;
+  if (k < 0) return 0;
+  int val = 1;
+  for (int i=1; i <= k; i++,n--) {
+    val *= n;
+    val /= i;
+  }
+  return val;
+}
+
+//! The 10-logarithm of @[x].
+float log10(int|float x) { return log(x)/log(10.0); }
+
+//! The 2-logarithm of @[x].
+float log2(int|float x) { return log(x)/log(2.0); }
+
+//! The @[n]-logatirhm of @[x].
+float logn(int|float n, int|float x) { return log(x)/log(n); }
+
+//! Factorize the integer @[x]. The returned list of factors will
+//! be sorted biggest to smallest factor.
+//!
+//! @note
+//!   This function is only available when Pike has been compiled with
+//!   bignums.
+//!
+//! @note
+//!   In Pike versions prior to v8.0, only primes @expr{<= 8161@} were
+//!   considered.
+array(int) factor(int x) {
+  if (!x) return ({ 0 });
+  if (x==1) return ({ 1 });
+  int f = x->small_factor();
+  if(!f) {
+    /* No small factors left. */
+    if (x->probably_prime_p()) {
+      /* The remainder seems to be a prime. */
+      return ({ x });
+    }
+    array(int) ret = ({});
+    int p = 8161;	/* The largest prime known by small_factor(). */
+    while (x > p) {
+      p = (p+1)->next_prime();
+      if (!(x % p)) {
+	while (!(x % p)) {
+	  ret = ({ p }) + ret;
+	  x /= p;
+	}
+	if (x->probably_prime_p()) break;
+      }
+    }
+    if (x != 1) ret = ({ x }) + ret;
+    return ret;
+  } else
+    return factor(x/f) + ({ f });
 }

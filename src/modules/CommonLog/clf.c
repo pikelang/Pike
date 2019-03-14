@@ -1,27 +1,31 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.5 2000/12/01 08:09:56 hubbe Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
-#include "pike_macros.h"
-#include "object.h"
 #include "program.h"
 #include "interpret.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "pike_error.h"
 #include "bignum.h"
+#include "pike_security.h"
 
 #include "threads.h"
 #include <stdio.h>
 #include <fcntl.h>
 
-/* MUST BE LAST */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 /** Forward declarations of functions implementing Pike functions **/
 
-static void f_read_clf( INT32 args );
+static void f_read( INT32 args );
 
 
 /** Global tables **/
@@ -42,7 +46,6 @@ static char char_class[1<<CHAR_BIT];
 #define CLS_SLASH  7
 #define CLS_COLON  8
 #define CLS_HYPHEN 9
-#define CLS_MINUS  9
 #define CLS_PLUS   10
 
 
@@ -53,7 +56,7 @@ static char char_class[1<<CHAR_BIT];
 
 /* Initialize and start module */
 
-void pike_module_init( void )
+PIKE_MODULE_INIT
 {
   int i;
 
@@ -72,7 +75,7 @@ void pike_module_init( void )
   char_class['-'] = CLS_HYPHEN;
   char_class['+'] = CLS_PLUS;
 
-  add_function_constant( "read", f_read_clf,
+  add_function_constant( "read", f_read,
 			 "function(function(array(string|int),int|void:void),"
 			 "string|object,int|void:int)", 0 );
 }
@@ -80,16 +83,70 @@ void pike_module_init( void )
 
 /* Restore and exit module */
 
-void pike_module_exit( void )
+PIKE_MODULE_EXIT
 {
 }
 
 
 /** Functions implementing Pike functions **/
 
-/* CommonLog.read() */
+/*! @module CommonLog
+ *!
+ *! The CommonLog module is used to parse the lines in a www server's logfile,
+ *! which must be in "common log" format -- such as used by default for the
+ *! access log by Roxen, Caudium, Apache et al.
+ */
 
-static void f_read_clf( INT32 args )
+/*! @decl int read(function(array(int|string), int : void ) callback,@
+ *!            Stdio.File|string logfile, void|int offset)
+ *!
+ *! Reads the log file and calls the callback function for every parsed line.
+ *! For lines that fails to be parsed the callback is not called not is any
+ *! error thrown. The number of bytes read are returned.
+ *!
+ *! @param callback
+ *! The callbacks first argument is an array with the different parts of the
+ *! log entry.
+ *! @array
+ *!   @elem string remote_host
+ *!
+ *!   @elem int(0..0)|string ident_user
+ *!
+ *!   @elem int(0..0)|string auth_user
+ *!
+ *!   @elem int year
+ *!
+ *!   @elem int month
+ *!
+ *!   @elem int day
+ *!
+ *!   @elem int hours
+ *!
+ *!   @elem int minutes
+ *!
+ *!   @elem int seconds
+ *!
+ *!   @elem int timezone
+ *!
+ *!   @elem int(0..0)|string method
+ *!     One of "GET", "POST", "HEAD" etc.
+ *!   @elem int(0..0)|string path
+ *!
+ *!   @elem string protocol
+ *!     E.g. "HTTP/1.0"
+ *!   @elem int reply_code
+ *!     One of 200, 404 etc.
+ *!   @elem int bytes
+ *! @endarray
+ *!
+ *! The second callback argument is the current offset to the end of the
+ *! current line.
+ *!
+ *! @param offset
+ *! The position in the file where the parser should begin.
+ */
+
+static void f_read( INT32 args )
 {
   char *read_buf;
   struct svalue *logfun, *file;
@@ -109,7 +166,7 @@ static void f_read_clf( INT32 args )
   int bufsize=CLF_BLOCK_SIZE, bufpos=0;
 #endif
 
-  if(args>2 && sp[-1].type == T_INT) {
+  if(args>2 && TYPEOF(sp[-1]) == T_INT) {
     offs0 = sp[-1].u.integer;
     pop_n_elems(1);
     --args;
@@ -117,30 +174,77 @@ static void f_read_clf( INT32 args )
   old_sp = sp;
 
   get_all_args("CommonLog.read", args, "%*%*", &logfun, &file);
-  if(logfun->type != T_FUNCTION)
-    Pike_error("Bad argument 1 to CommonLog.read, expected function.\n");
+  if(TYPEOF(*logfun) != T_FUNCTION)
+    SIMPLE_BAD_ARG_ERROR("CommonLog.read", 1, "function");
 
-  if(file->type == T_OBJECT)
+  if(TYPEOF(*file) == T_OBJECT)
   {
     f = fd_from_object(file->u.object);
     
     if(f == -1)
       Pike_error("CommonLog.read: File is not open.\n");
     my_fd = 0;
-  } else if(file->type == T_STRING &&
+  } else if(TYPEOF(*file) == T_STRING &&
 	    file->u.string->size_shift == 0) {
-    THREADS_ALLOW();
+#ifdef PIKE_SECURITY
+      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+      {
+	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
+	  Pike_error("Permission denied.\n");
+	push_text("read");
+	push_int(0);
+	ref_push_string(file->u.string);
+	push_text("r");
+	push_int(00666);
+
+	safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_open",5);
+	switch(TYPEOF(Pike_sp[-1]))
+	{
+	case PIKE_T_INT:
+	  switch(Pike_sp[-1].u.integer)
+	  {
+	  case 0: /* return 0 */
+	    errno=EPERM;
+	    Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
+		       errno);
+
+	  case 2: /* ok */
+	    pop_stack();
+	    break;
+
+	  case 3: /* permission denied */
+	    Pike_error("CommonLog.read: permission denied.\n");
+
+	  default:
+	    Pike_error("Error in user->valid_open, wrong return value.\n");
+	  }
+	  break;
+
+	default:
+	  Pike_error("Error in user->valid_open, wrong return type.\n");
+
+	case PIKE_T_STRING:
+	  /*	  if(Pike_sp[-1].u.string->shift_size) */
+	  /*	    file=Pike_sp[-1]; */
+	  pop_stack();
+	}
+
+      }
+#endif
     do {
+      THREADS_ALLOW();
       f=fd_open((char *)STR0(file->u.string), fd_RDONLY, 0);
-    } while(f < 0 && errno == EINTR);
-    THREADS_DISALLOW();
-    
-    if(errno < 0)
+      THREADS_DISALLOW();
+      if (f >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
+
+    if(f < 0)
       Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
 	    errno);
-  } else 
-    Pike_error("Bad argument 1 to CommonLog.read, expected string or object .\n");
-  
+  } else
+    SIMPLE_BAD_ARG_ERROR("CommonLog.read", 2, "string|Stdio.File");
+
 #ifdef HAVE_LSEEK64
   lseek64(f, offs0, SEEK_SET);
 #else
@@ -151,11 +255,13 @@ static void f_read_clf( INT32 args )
   buf = malloc(bufsize);
 #endif
   while(1) {
-    THREADS_ALLOW();
     do {
+      THREADS_ALLOW();
       len = fd_read(f, read_buf, CLF_BLOCK_SIZE);
-    } while(len < 0 && errno == EINTR);
-    THREADS_DISALLOW();
+      THREADS_DISALLOW();
+      if (len >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
     if(len == 0)
       break; /* nothing more to read. */
     if(len < 0)
@@ -163,7 +269,7 @@ static void f_read_clf( INT32 args )
     char_pointer = read_buf;
     while(len--) {
       offs0++;
-      c = char_pointer[0];
+      c = char_pointer[0] & 0xff;
       char_pointer ++;
       cls = char_class[c];
 #ifdef TRACE_DFA
@@ -178,7 +284,7 @@ static void f_read_clf( INT32 args )
       case CLS_RBRACK: fprintf(stderr, "CLS_RBRACK"); break;
       case CLS_SLASH: fprintf(stderr, "CLS_SLASH"); break;
       case CLS_COLON: fprintf(stderr, "CLS_COLON"); break;
-      case CLS_HYPHEN: fprintf(stderr, "CLS_HYPHEN/CLS_MINUS"); break;
+      case CLS_HYPHEN: fprintf(stderr, "CLS_HYPHEN"); break;
       case CLS_PLUS: fprintf(stderr, "CLS_PLUS"); break;
       default: fprintf(stderr, "???");
       }
@@ -536,7 +642,7 @@ static void f_read_clf( INT32 args )
 	  state = (cls == CLS_CRLF? 0:14);
 	break;
       case 28:
-	if(cls>=CLS_MINUS) {
+	if(cls>=CLS_HYPHEN) {
 	  state = 29;
 	  tzs = cls!=CLS_PLUS;
 	  tz = 0;
@@ -722,6 +828,5 @@ static void f_read_clf( INT32 args )
   push_int64(offs0);
 }
 
-
-
-
+/*! @endmodule
+ */

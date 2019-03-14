@@ -1,6 +1,10 @@
 /*
- * $Id: result.c,v 1.22 2001/09/24 11:52:20 grubba Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * mysql query result
  *
  * Henrik Grubbström 1996-12-21
@@ -17,7 +21,9 @@
 /*
  * Includes
  */
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -32,7 +38,9 @@
 #ifdef HAVE_MYSQL_MYSQL_H
 #include <mysql/mysql.h>
 #else
+#ifndef DISABLE_BINARY
 #error Need mysql.h header-file
+#endif
 #endif /* HAVE_MYSQL_MYSQL_H */
 #endif /* HAVE_MYSQL_H */
 #ifndef _mysql_h
@@ -40,11 +48,6 @@
 #endif
 #endif
 
-/* dynamic_buffer.h contains a conflicting typedef for string
- * we don't use any dynamic buffers, so we have this work-around
- */
-#define DYNAMIC_BUFFER_H
-typedef struct dynamic_buffer_s dynamic_buffer;
 
 /* From the Pike-dist */
 #include "svalue.h"
@@ -56,8 +59,11 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "las.h"
+#include "port.h"
 #include "threads.h"
 #include "multiset.h"
+#include "bignum.h"
+#include "module_support.h"
 
 /* Local includes */
 #include "precompiled_mysql.h"
@@ -70,6 +76,8 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #include <memory.h>
 #endif
 
+#define sp Pike_sp
+
 /* Define this to get support for field->default. NOT SUPPORTED */
 #undef SUPPORT_DEFAULT
 
@@ -79,13 +87,30 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 /* Define this to get field_seek() and fetch_field() */
 /* #define SUPPORT_FIELD_SEEK */
 
+/* These aren't present in old mysqlclients. */
+#ifndef ZEROFILL_FLAG
+#define ZEROFILL_FLAG	64
+#endif
+#ifndef BINARY_FLAG
+#define BINARY_FLAG	128
+#endif
+#ifndef FIELD_TYPE_BIT
+#define FIELD_TYPE_BIT 16
+#endif
+#ifndef FIELD_TYPE_NEWDECIMAL
+#define FIELD_TYPE_NEWDECIMAL 246
+#endif
+#ifndef FIELD_TYPE_GEOMETRY
+#define FIELD_TYPE_GEOMETRY 255
+#endif
+
 /*
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.22 2001/09/24 11:52:20 grubba Exp $");
-
 struct program *mysql_result_program = NULL;
+
+static struct svalue mpq_program = SVALUE_INIT_FREE;
 
 /*
  * Functions
@@ -95,12 +120,12 @@ struct program *mysql_result_program = NULL;
  * State maintenance
  */
 
-static void init_res_struct(struct object *o)
+static void init_res_struct(struct object *UNUSED(o))
 {
   memset(PIKE_MYSQL_RES, 0, sizeof(struct precompiled_mysql_result));
 }
 
-static void exit_res_struct(struct object *o)
+static void exit_res_struct(struct object *UNUSED(o))
 {
   if (PIKE_MYSQL_RES->result) {
     mysql_free_result(PIKE_MYSQL_RES->result);
@@ -120,6 +145,8 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
 {
   if (field) {
     int nbits = 0;
+    struct svalue *save_sp = Pike_sp;
+
     push_text("name"); push_text(field->name);
     push_text("table"); push_text(field->table);
     if (support_default) {
@@ -135,7 +162,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     case FIELD_TYPE_DECIMAL:
       push_text("decimal");
       break;
-    case FIELD_TYPE_CHAR:
+    case FIELD_TYPE_CHAR:	/* Same as FIELD_TYPE_TINY. */
       push_text("char");
       break;
     case FIELD_TYPE_SHORT:
@@ -153,14 +180,41 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     case FIELD_TYPE_NULL:
       push_text("null");
       break;
-    case FIELD_TYPE_TIME:
-      push_text("time");
+    case FIELD_TYPE_TIMESTAMP:
+      push_text("timestamp");
       break;
     case FIELD_TYPE_LONGLONG:
       push_text("longlong");
       break;
     case FIELD_TYPE_INT24:
       push_text("int24");
+      break;
+    case FIELD_TYPE_DATE:
+      push_text("date");
+      break;
+    case FIELD_TYPE_TIME:
+      push_text("time");
+      break;
+    case FIELD_TYPE_DATETIME:
+      push_text("datetime");
+      break;
+    case FIELD_TYPE_YEAR:
+      push_text("year");
+      break;
+    case FIELD_TYPE_NEWDATE:
+      push_text("newdate");
+      break;
+    case FIELD_TYPE_BIT:
+      push_text("bit");
+      break;
+    case FIELD_TYPE_NEWDECIMAL:
+      push_text ("newdecimal");
+      break;
+    case FIELD_TYPE_ENUM:
+      push_text("enum");
+      break;
+    case FIELD_TYPE_SET:
+      push_text("set");
       break;
     case FIELD_TYPE_TINY_BLOB:
       push_text("tiny blob");
@@ -180,17 +234,25 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     case FIELD_TYPE_STRING:
       push_text("string");
       break;
+    case FIELD_TYPE_GEOMETRY:
+      push_text("geometry");
+      break;
     default:
       push_text("unknown");
       break;
     }
-    push_text("length"); push_int(field->length);
+    push_text("length"); push_int64(field->length);
     push_text("max_length"); push_int(field->max_length);
 
     push_text("flags");
     if (IS_PRI_KEY(field->flags)) {
       nbits++;
       push_text("primary_key");
+    }
+    if (field->flags & UNIQUE_KEY_FLAG)
+    {
+      push_text("unique");
+      nbits++;
     }
     if (IS_NOT_NULL(field->flags)) {
       nbits++;
@@ -200,20 +262,32 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
       nbits++;
       push_text("blob");
     }
+    if (field->flags & ZEROFILL_FLAG) {
+      nbits++;
+      push_text("zerofill");
+    }
+    if (field->flags & BINARY_FLAG) {
+      nbits++;
+      push_text("binary");
+    }
+    if (field->flags & AUTO_INCREMENT_FLAG) {
+      nbits++;
+      push_text("auto_increment");
+    }
     f_aggregate_multiset(nbits);
 
     push_text("decimals"); push_int(field->decimals);
-      
-    if (support_default) {
-      f_aggregate_mapping(8*2);
-    } else {
-      f_aggregate_mapping(7*2);
-    }
+
+#ifdef HAVE_MYSQL_FIELD_CHARSETNR
+    push_text ("charsetnr"); push_int (field->charsetnr);
+#endif
+
+    f_aggregate_mapping (Pike_sp - save_sp);
   } else {
     /*
      * Should this be an error?
      */
-    push_int(0);
+    push_undefined();
   }
 }
 
@@ -246,8 +320,20 @@ static void f_create(INT32 args)
   if (!args) {
     Pike_error("Too few arguments to mysql_result()\n");
   }
-  if (sp[-args].type != T_OBJECT) {
+  if (TYPEOF(sp[-args]) != T_OBJECT) {
     Pike_error("Bad argument 1 to mysql_result()\n");
+  }
+
+#ifdef OLD_SQL_COMPAT
+  PIKE_MYSQL_RES->typed_mode = 1;
+#else
+  PIKE_MYSQL_RES->typed_mode = 0;
+#endif
+  if (args > 1) {
+    if (TYPEOF(sp[1-args]) != T_INT) {
+      Pike_error("Bad argument 2 to mysql_result()\n");
+    }
+    PIKE_MYSQL_RES->typed_mode = !!sp[1-args].u.integer;
   }
 
   if (PIKE_MYSQL_RES->result) {
@@ -287,7 +373,7 @@ static void f_num_rows(INT32 args)
  *! Number of fields in the result.
  *!
  *! @seealso
- *!   @[mun_rows()]
+ *!   @[num_rows()]
  */
 static void f_num_fields(INT32 args)
 {
@@ -323,7 +409,7 @@ static void f_field_seek(INT32 args)
   if (!args) {
     Pike_error("Too few arguments to mysql->field_seek()\n");
   }
-  if (sp[-args].type != T_INT) {
+  if (TYPEOF(sp[-args]) != T_INT) {
     Pike_error("Bad argument 1 to mysql->field_seek()\n");
   }
   if (!PIKE_MYSQL_RES->result) {
@@ -339,7 +425,7 @@ static void f_field_seek(INT32 args)
  *!
  *! Sense end of result table.
  *!
- *! Returns @tt{1@} when all rows have been read, and @tt{0@} (zero)
+ *! Returns @expr{1@} when all rows have been read, and @expr{0@} (zero)
  *! otherwise.
  *!
  *! @seealso
@@ -348,11 +434,14 @@ static void f_field_seek(INT32 args)
 static void f_eof(INT32 args)
 {
   pop_n_elems(args);
+  push_int(PIKE_MYSQL_RES->eof);
+#if 0
   if (PIKE_MYSQL_RES->result) {
     push_int(mysql_eof(PIKE_MYSQL_RES->result));
   } else {
     push_int(0);
   }
+#endif
 }
 
 #ifdef SUPPORT_FIELD_SEEK
@@ -362,11 +451,11 @@ static void f_eof(INT32 args)
  *! Return specification of the current field.
  *!
  *! Returns a mapping with information about the current field, and
- *! advances the field cursor one step. Returns @tt{0@} (zero) if
+ *! advances the field cursor one step. Returns @expr{0@} (zero) if
  *! there are no more fields.
  *! 
  *! The mapping contains the same entries as those returned by
- *! @[Mysql.mysql->list_fields()], except that the entry @tt{"default"@}
+ *! @[Mysql.mysql->list_fields()], except that the entry @expr{"default"@}
  *! is missing.
  *!
  *! @note
@@ -385,7 +474,7 @@ static void f_fetch_field(INT32 args)
   pop_n_elems(args);
 
   if (!res) {
-    push_int(0);
+    push_undefined();
     return;
   }
 
@@ -409,10 +498,10 @@ static void f_fetch_field(INT32 args)
  *! 
  *! The returned data is similar to the data returned by
  *! @[Mysql.mysql->list_fields()], except for that the entry
- *! @tt{"default"@} is missing.
+ *! @expr{"default"@} is missing.
  *!
  *! @note
- *!   Resets the field cursor to @tt{0@} (zero).
+ *!   Resets the field cursor to @expr{0@} (zero).
  *!
  *!   This function always exists even when @[fetch_field()] and
  *!   @[field_seek()] don't.
@@ -452,20 +541,13 @@ static void f_fetch_fields(INT32 args)
  */
 static void f_seek(INT32 args)
 {
-  if (!args) {
-    Pike_error("Too few arguments to mysql_result->seek()\n");
-  }
-  if (sp[-args].type != T_INT) {
-    Pike_error("Bad argument 1 to mysql_result->seek()\n");
-  }
-  if (sp[-args].u.integer < 0) {
-    Pike_error("Negative argument 1 to mysql_result->seek()\n");
-  }
-  if (!PIKE_MYSQL_RES->result) {
-    Pike_error("Can't seek in uninitialized result object.\n");
-  }
+  INT_TYPE skip;
+  get_all_args("seek",args,"%+",&skip);
 
-  mysql_data_seek(PIKE_MYSQL_RES->result, sp[-args].u.integer);
+  if (!PIKE_MYSQL_RES->result)
+    Pike_error("Can't seek in uninitialized result object.\n");
+
+  mysql_data_seek(PIKE_MYSQL_RES->result, skip);
 
   pop_n_elems(args);
 }
@@ -477,7 +559,7 @@ static void f_seek(INT32 args)
  *! Returns an array with the contents of the next row in the result.
  *! Advances the row cursor to the next now.
  *!
- *! Returns @tt{0@} (zero) at the end of the table.
+ *! Returns @expr{0@} (zero) at the end of the table.
  *!
  *! @seealso
  *!   @[seek()]
@@ -511,26 +593,102 @@ static void f_fetch_row(INT32 args)
       if (row[i]) {
 	MYSQL_FIELD *field;
 
-	if ((field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
+	if (PIKE_MYSQL_RES->typed_mode &&
+	    (field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
 	  switch (field->type) {
-#ifdef OLD_SQL_COMPAT
 	    /* Integer types */
+          case FIELD_TYPE_LONGLONG:
+	    if (
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+		row_lengths[i]
+#else
+		strlen(row[i])
+#endif
+		>= 10) {
+	      push_text(row[i]);
+	      convert_stack_top_string_to_inumber(10);
+	      break;
+	    }
+
+	    /* FALL_THROUGH */
+	  case FIELD_TYPE_TINY:
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
 	  case FIELD_TYPE_INT24:
-#if 0
-	    /* This one will not always fit in an INT32 */
-          case FIELD_TYPE_LONGLONG:
-#endif /* 0 */
-	    push_int(atoi(row[i]));
+	    push_int(STRTOL(row[i], 0, 10));
 	    break;
+
+#if defined (HAVE_MYSQL_FETCH_LENGTHS)
+	  case FIELD_TYPE_BIT:
+	    if (row_lengths[i] <= SIZEOF_LONGEST) {
+	      unsigned LONGEST val = 0;
+	      unsigned j;
+	      for (j = 0; j < row_lengths[i]; j++)
+		val = (val << 8) | (unsigned char) row[i][j];
+	      push_ulongest (val);
+	    }
+	    else {
+	      push_string (make_shared_binary_string (row[i], row_lengths[i]));
+	      push_int (256);
+	      convert_stack_top_with_base_to_bignum();
+	      reduce_stack_top_bignum();
+	    }
+	    break;
+#endif
+
 	    /* Floating point types */
-	  case FIELD_TYPE_DECIMAL:	/* Is this a float or an int? */
 	  case FIELD_TYPE_FLOAT:
 	  case FIELD_TYPE_DOUBLE:
 	    push_float(atof(row[i]));
 	    break;
-#endif /* OLD_SQL_COMPAT */
+
+	  case FIELD_TYPE_DECIMAL:
+	  case FIELD_TYPE_NEWDECIMAL:
+	    if (!field->decimals) {
+	      if (
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+		row_lengths[i]
+#else
+		strlen(row[i])
+#endif
+		>= 10
+	      ) {
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+		push_string(make_shared_binary_string(row[i], row_lengths[i]));
+#else
+		push_text(row[i]);
+#endif
+		convert_stack_top_string_to_inumber(10);
+		break;
+	      }
+	      push_int(STRTOL(row[i], 0, 10));
+	      break;
+	    }
+
+	    /* Fixed-point number with fraction part. Make an mpq. */
+
+	    if (TYPEOF(mpq_program) == PIKE_T_FREE) {
+	      push_text ("Gmp.mpq");
+	      SAFE_APPLY_MASTER ("resolv", 1);
+	      if (TYPEOF(Pike_sp[-1]) == T_PROGRAM)
+		move_svalue (&mpq_program, --Pike_sp);
+	      else {
+		pop_stack();
+		TYPEOF(mpq_program) = T_INT;
+	      }
+	    }
+
+	    if (TYPEOF(mpq_program) == T_PROGRAM) {
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+	      push_string(make_shared_binary_string(row[i], row_lengths[i]));
+#else
+	      push_text(row[i]);
+#endif
+	      apply_svalue (&mpq_program, 1);
+	      break;
+	    }
+	    /* FALL_THROUGH */
+
 	  default:
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	    push_string(make_shared_binary_string(row[i], row_lengths[i]));
@@ -540,7 +698,7 @@ static void f_fetch_row(INT32 args)
 	    break;
 	  }
 	} else {
-	  /* Probably doesn't happen, but... */
+	  /* Everything is strings mode. */
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	  push_string(make_shared_binary_string(row[i], row_lengths[i]));
 #else
@@ -548,8 +706,12 @@ static void f_fetch_row(INT32 args)
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
 	}
       } else {
-	/* NULL? */
-	push_int(0);
+	/* NULL */
+	if (PIKE_MYSQL_RES->typed_mode) {
+	  push_object(get_val_null());
+	} else {
+	  push_undefined();
+	}
 	if(i+1<num_fields)
 	  mysql_field_seek(PIKE_MYSQL_RES->result, i+1);
       }
@@ -557,7 +719,174 @@ static void f_fetch_row(INT32 args)
     f_aggregate(num_fields);
   } else {
     /* No rows left in result */
-    push_int(0);
+    PIKE_MYSQL_RES->eof = 1;
+    push_undefined();
+  }
+
+  mysql_field_seek(PIKE_MYSQL_RES->result, 0);
+}
+
+static void json_escape(struct string_builder *res,
+			unsigned char *str, size_t len)
+{
+  size_t i;
+  // FIXME: Use string_builder_append on string segments for maximum speed
+  for (i = 0; i < len; i++) {
+    if (!(i & 0xff)) {
+      /* Optimization: Make sure that there's space for at least
+       * the rest of the string unquoted.
+       */
+      string_build_mkspace(res, len-i, 0);
+    }
+    switch (str[i]) {
+      case 0:
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, '0');
+	break;
+      case '\"':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, '\"');
+	break;
+      case '\\':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, '\\');
+	break;
+      case '\n':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, 'n');
+	break;
+      case '\b':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, 'b');
+	break;
+      case '\f':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, 'f');
+	break;
+      case '\r':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, 'r');
+	break;
+      case '\t':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, 't');
+	break;
+      case 226:
+	if (((i + 2) < len) &&
+	    (str[i+1] == 128) && ((str[i+2] & 0xfe) == 168)) {
+	  /* UTF8-encoded \u2028 or \u2029.
+	   *
+	   * Javascript-based JSON-decoders don't like these
+	   * raw in strings. cf [bug 6103] and others.
+	   */
+	  i += 2;
+	  if (str[i] & 1) {
+	    string_builder_strcat(res, "\\u2029");
+	  } else {
+	    string_builder_strcat(res, "\\u2028");
+	  }
+	  break;
+	}
+	/* FALL_THROUGH */
+      default:
+	string_builder_putchar(res, str[i]);
+	break;
+    }
+  }
+}
+
+/*! @decl string fetch_json_result()
+ *!
+ *! Fetch all remaining rows and return them as @tt{JSON@}-encoded data.
+ *!
+ *! @seealso
+ *!   @[fetch_row()]
+ *!
+ *! @note
+ *!   This function passes on string values without any charset
+ *!   conversions. That means the result is correct JSON only if the
+ *!   result charset is UTF-8 (which includes if unicode decode mode
+ *!   is enabled - see @[set_unicode_decode_mode]).
+ *!
+ *!   For many other charsets it is possible to do charset conversion
+ *!   afterwards on the result string, since all markup is in the
+ *!   ASCII range, which is typically invariant. However, that won't
+ *!   work if binary and text results are returned at the same time.
+ *!
+ *!   Also note that the characters U+2028 (LINE SEPARATOR) and U+2029
+ *!   (PARAGRAPH SEPARATOR) are passed through without being converted
+ *!   to @tt{\uxxxx@} escapes. Those two characters can cause trouble
+ *!   with some Javascript based JSON parsers since they aren't
+ *!   allowed in Javascript string literals. It is possible to use
+ *!   @[replace] on the returned string to escape them, though.
+ *!
+ *! @seealso
+ *! @[Standards.JSON.encode]
+ */
+static void f_fetch_json_result(INT32 args)
+{
+  int num_fields;
+  MYSQL_ROW row;
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+  FETCH_LENGTHS_TYPE *row_lengths;
+#endif /* HAVE_MYSQL_FETCH_LENGTHS */
+  struct string_builder res;
+  ONERROR uwp;
+  int r = 0;
+
+  if (!PIKE_MYSQL_RES->result) {
+    Pike_error("Can't fetch data from an uninitialized result object.\n");
+  }
+
+  init_string_builder(&res, 0);
+  SET_ONERROR(uwp, free_string_builder, &res);
+  string_builder_putchar(&res, '[');
+
+  num_fields = mysql_num_fields(PIKE_MYSQL_RES->result);
+  mysql_field_seek(PIKE_MYSQL_RES->result, 0);
+
+  pop_n_elems(args);
+
+next_row:
+  row = mysql_fetch_row(PIKE_MYSQL_RES->result);
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+  row_lengths = mysql_fetch_lengths(PIKE_MYSQL_RES->result);
+#endif /* HAVE_MYSQL_FETCH_LENGTHS */
+
+  if ((num_fields > 0) && row) {
+    int i;
+
+    if (r)
+	string_builder_putchar(&res, ',');
+
+    string_builder_putchar(&res, '[');
+    for (i=0; i < num_fields; i++) {
+      if (i)
+	  string_builder_putchar(&res, ',');
+      if (row[i]) {
+	string_builder_putchar(&res, '\"');
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+	json_escape(&res, (unsigned char *) row[i], row_lengths[i]);
+#else
+	json_escape(&res, (unsigned char *) row[i], strlen([i]));
+#endif /* HAVE_MYSQL_FETCH_LENGTHS */
+	string_builder_putchar(&res, '\"');
+      } else {
+	/* NULL? */
+	string_builder_putchar(&res, '0');
+	if(i+1<num_fields)
+	  mysql_field_seek(PIKE_MYSQL_RES->result, i+1);
+      }
+    }
+    string_builder_putchar(&res, ']');
+    r++;
+    goto next_row;
+  } else {
+    /* No rows left in result */
+    PIKE_MYSQL_RES->eof = 1;
+    string_builder_putchar(&res, ']');
+    UNSET_ONERROR(uwp);
+    push_string(finish_string_builder(&res));
   }
 
   mysql_field_seek(PIKE_MYSQL_RES->result, 0);
@@ -576,23 +905,6 @@ static void f_fetch_row(INT32 args)
 
 void init_mysql_res_programs(void)
 {
-  /*
-   * start_new_program();
-   *
-   * add_storage();
-   *
-   * add_function();
-   * add_function();
-   * ...
-   *
-   * set_init_callback();
-   * set_exit_callback();
-   *
-   * program = end_c_program();
-   * program->refs++;
-   *
-   */
- 
   start_new_program();
   ADD_STORAGE(struct precompiled_mysql_result);
 
@@ -618,6 +930,8 @@ void init_mysql_res_programs(void)
   ADD_FUNCTION("seek", f_seek,tFunc(tInt,tVoid), ID_PUBLIC);
   /* function(void:int|array(string|int|float)) */
   ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tVoid,tOr(tInt,tArr(tOr3(tStr,tInt,tFlt)))), ID_PUBLIC);
+  /* function(void:int|string) */
+  ADD_FUNCTION("fetch_json_result", f_fetch_json_result,tFunc(tVoid,tStr), ID_PUBLIC);
 
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);
@@ -632,6 +946,7 @@ void exit_mysql_res(void)
     free_program(mysql_result_program);
     mysql_result_program = NULL;
   }
+  free_svalue (&mpq_program);
 }
 
 #else

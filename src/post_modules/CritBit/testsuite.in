@@ -1,0 +1,205 @@
+START_MARKER
+
+test_true(programp(ADT.CritBit.StringTree))
+test_true(programp(ADT.CritBit.IntTree))
+test_true(programp(ADT.CritBit.FloatTree))
+test_true(programp(ADT.CritBit.IPv4Tree))
+
+define(test_const_loop,[[
+   test_any([[
+	mapping m = GET_SAMPLE();
+	object tree = GET_TREE();
+	function sortfun = GET_SORTFUN();
+	array a = GET_SORTED_A();
+
+	$1
+	return 1;
+    ]], 1)
+]])
+
+define(test_tree_equal,[[
+       test_equal([[$1]], [[$2]])
+       test_equal([[object_program($1)]], [[object_program($2)]])
+]])
+
+define(low_test_tree,[[
+    test_do(add_constant("GET_SAMPLE", lambda() { return all_constants()->THE_SAMPLE; }) )
+    test_do(add_constant("SET_SAMPLE", lambda(mixed m) { add_constant("THE_SAMPLE", m); }) )
+    test_do(add_constant("GET_SORTFUN", lambda() { return all_constants()->THE_SORTFUN; }) )
+    test_do(add_constant("SET_SORTFUN", lambda(mixed m) { add_constant("THE_SORTFUN", m); }) )
+    test_do(add_constant("GET_TREE", lambda() { return all_constants()->THE_TREE; }) )
+    test_do(add_constant("SET_TREE", lambda(mixed m) { add_constant("THE_TREE", m); }) )
+    test_do(add_constant("GET_SORTED_A", lambda() { return all_constants()->THE_SORTED_A; }) )
+    test_do(add_constant("SET_SORTED_A", lambda(mixed m) { add_constant("THE_SORTED_A", m); }) )
+    test_do([[
+	random_seed(4044);
+	SET_SAMPLE( $2 );
+	SET_SORTFUN( $3 );
+	SET_TREE($1(GET_SAMPLE()));
+	SET_SORTED_A($3(indices(GET_SAMPLE())));
+    ]])
+    $4
+    test_do(add_constant("GET_M") )
+    test_do(add_constant("GET_SAMPLE") )
+    test_do(add_constant("GET_SORTFUN") )
+    test_do(add_constant("GET_TREE") )
+    test_do(add_constant("GET_SORTED_A") )
+    test_do(add_constant("SET_M") )
+    test_do(add_constant("SET_SAMPLE") )
+    test_do(add_constant("SET_SORTFUN") )
+    test_do(add_constant("SET_TREE") )
+    test_do(add_constant("SET_SORTED_A") )
+
+    test_do(add_constant("THE_M") )
+    test_do(add_constant("THE_SAMPLE") )
+    test_do(add_constant("THE_SORTFUN") )
+    test_do(add_constant("THE_TREE") )
+    test_do(add_constant("THE_SORTED_A") )
+
+]])
+
+define(test_loop,[[
+    low_test_tree([[$1]], [[$2]], [[$3]], [[
+	test_equal((mapping)GET_TREE(), GET_SAMPLE())
+	test_tree_equal(GET_TREE(), GET_TREE()->get_subtree())
+	test_tree_equal(GET_TREE(), GET_TREE()->copy()))
+	test_tree_equal($1()+GET_TREE(), GET_TREE())
+	test_tree_equal(GET_TREE()+GET_TREE(), GET_TREE())
+	test_tree_equal(GET_TREE()+$1(), GET_TREE()))
+	test_tree_equal(GET_TREE()-GET_TREE(), $1())
+	test_tree_equal(GET_TREE()-$1(), GET_TREE()))
+	test_tree_qual(GET_TREE()[GET_TREE()->first()..GET_TREE()->last()], GET_TREE()))
+	test_const_loop([[
+	    foreach (GET_SAMPLE(); mixed a; mixed b) {
+		if (b != GET_TREE()[a])
+		    error("Value mismatch: (%O : %O) vs (%O : %O)\n", a, b, a, GET_TREE()[a]);
+	    }
+	]])
+	test_const_loop([[
+	    if (sizeof(GET_SAMPLE()) != sizeof(GET_TREE()))
+		error("Size mismatch: %O vs %O\n", sizeof(GET_SAMPLE()), sizeof(GET_TREE()));
+	]])
+	test_const_loop([[
+	    int i;
+	    foreach (tree; mixed key; mixed val) {
+		mixed nth = GET_TREE()->nth(i++)[0];
+		if (nth != key)
+		    error("Key mismatch in nth() vs tree order: (%O : %O) vs (%O : %O)\n", i, key, i, nth);
+	    }
+	]])
+        test_const_loop([[
+            tree = tree->copy();
+            int i;
+
+            for (i = 1; i < sizeof(a); i += 2) m_delete(tree, a[i]);
+
+            for (i = 1; i+1 < sizeof(a); i += 2) {
+                if (tree->next(a[i]) != a[i+1])
+                    error("next(%O) == %O should be %O\n", a[i], tree->next(a[i]), a[i+1]);
+                if (tree->previous(a[i]) != a[i-1])
+                    error("previous(%O) == %O should be %O\n", a[i], tree->previous(a[i]), a[i-1]);
+            }
+        ]])
+	test_const_loop([[
+	    mixed t = GET_TREE()->first();
+	    foreach (GET_SORTED_A(); int i; mixed key) {
+		if (t != key)
+		    error("Key mismatch in range iterate(): (%O : %O) vs (%O : %O)\n", i, t, i, key);
+		t = GET_TREE()->next(t);
+		if (GET_SAMPLE()[key] != GET_TREE()[key])
+		    error("Value mismatch in order: (%O : %O) vs (%O : %O)\n", key, GET_SAMPLE()[key], key, GET_TREE()[key]);
+		mixed nth = GET_TREE()->nth(i)[0];
+		if (nth != key)
+		    error("Value mismatch in nth(): (%O : %O) vs (%O : %O)\n", i, key, i, nth);
+	    }
+
+	]])
+	test_const_loop([[
+	    void test_range_operator(int step) {
+		int i = (step < 0) ? sizeof(tree)-1 : 0;
+		foreach (tree->_get_iterator(step); mixed key; mixed value) {
+		    if (GET_SORTED_A()[i] != key)
+			error("Key mismatch in range iterate(): (%O : %O) vs (%O : %O)\n", i, GET_SORTED_A()[i], i, key);
+		    if (GET_SAMPLE()[GET_SORTED_A()[i] ] != value)
+			error("Value mismatch in range iterate(): (%O : %O) vs (%O : %O)\n", i, GET_SAMPLE()[GET_SORTED_A()[i] ], i, value);
+		    i+=step;
+		}
+
+		if (step > 0) test_range_operator(-step);
+	    };
+
+	    foreach (enumerate(40, 13, 1); ; int n) {
+		if (n) test_range_operator(n);
+	    }
+	]])
+	test_const_loop([[
+	    void test_range_operator(int start, int stop, int step) {
+		int i = start;
+
+		if (step == 0) return;
+
+		foreach (tree->_get_iterator(step, a[start], a[stop]); mixed key; mixed value) {
+		    if (GET_SORTED_A()[i] != key)
+			error("Key mismatch in range iterate(): (%O : %O) vs (%O : %O)\n", i, GET_SORTED_A()[i], i, key);
+		    if (GET_SAMPLE()[GET_SORTED_A()[i] ] != value)
+			error("Value mismatch in range iterate(): (%O : %O) vs (%O : %O)\n", i, GET_SAMPLE()[GET_SORTED_A()[i] ], i, value);
+		    i+=step;
+		}
+
+#if constant(ADT.CritBit.Range)
+		object r = ADT.CritBit.Range(a[start], a[stop]);
+		object rs = ADT.CritBit.RangeSet(object_program(tree));
+		rs[r] = 1;
+		foreach (a;; mixed key) {
+		    if (equal(GET_SORTFUN()(({ key, r.b, r.a}))[1], key)) {
+			if (undefinedp(rs[key])) {
+			    error("RangeSet error. %O not within [%O,%O]\n", key, r.a, r.b);
+			}
+		    } else {
+			if (!undefinedp(rs[key])) {
+			    error("RangeSet error. %O should not be within [%O,%O]\next: %O\n", key, r.a, r.b, rs->tree->next(key));
+			}
+		    }
+		}
+#endif
+	    };
+
+	    for (int i = 0; i < 100; i++) {
+		int start = random(sizeof(a));
+		int stop = start + random(sizeof(a)-start);
+		test_range_operator(start, stop, random(stop-start));
+	    }
+	]])
+    ]])
+    low_test_tree([[$1]], [[$2]], [[$3]], [[
+	test_const_loop([[
+	    foreach (tree; mixed key; mixed val) {
+		if (val != m[key])
+		    error("Key mismatch in random delete. %O : %O vs %O\n", key, val, m[key]);
+		array t = random(tree);
+		m_delete(tree, t[0]);
+		m_delete(m, t[0]);
+		if (!zero_type(tree[t[0] ])) error("m_delete failed in random delete (key: %O)\n", t[0]);
+	    }
+	    if (sizeof(m) != sizeof(tree)) {
+		error("Size mismatch after random delete. %O vs %O\n", sizeof(m), sizeof(tree));
+	    }
+	]])
+    ]])
+]])
+
+define(test_tree, [[
+       test_loop([[$1]], [[$2]], [[$3]])
+       test_loop([[$1]], ([]), [[$3]])
+]])
+
+test_tree(ADT.CritBit.Tree, [[all_constants()+mkmapping(map(allocate(1000, 1000), random_string), enumerate(1000))]], sort)
+test_tree(ADT.CritBit.IntTree, [[mkmapping(enumerate(100)+enumerate(1000, -19, 666)+enumerate(1000, Int.NATIVE_MAX/600, Int.NATIVE_MIN), enumerate(2100))]], sort)
+test_tree(ADT.CritBit.IPv4Tree, [[mkmapping(map(enumerate(100)+enumerate(1000, -19, 666)+enumerate(1000, Int.NATIVE_MAX/600, Int.NATIVE_MIN), lambda (int i) {
+	return ADT.CritBit.get_ipv4(i, (abs(i) % 51) & 31);
+}), enumerate(2100))]], ADT.CritBit.sort_ipv4)
+test_tree(ADT.CritBit.FloatTree, [[mkmapping((array(float))(enumerate(100)+enumerate(1000, -19, 666)+enumerate(1000, Int.NATIVE_MAX/600, Int.NATIVE_MIN)), enumerate(2100))]], sort)
+test_tree(ADT.CritBit.DateTree, [[mkmapping(map(enumerate(2000, time()/3000, 1), Function.curry(Calendar.Second)("unix")), enumerate(2000))]], sort)
+
+
+END_MARKER

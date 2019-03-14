@@ -1,27 +1,19 @@
-// Msql module support stuff, (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 #pike __REAL_VERSION__
+#require constant(Msql.msql)
 
-#if constant(Msql.msql)
+//! Implements the glue needed to access the Msql-module from the generic
+//! SQL module.
+
+// Cannot dump this since the #require check may depend on the
+// presence of system libs at runtime.
+constant dont_dump_program = 1;
+
 inherit Msql.msql;
-
-//in c it's too hard, we're better off doing it in pike
-mapping(string:mapping(string:mixed)) list_fields(string table, string|void wild) {
-	mapping result = ::list_fields(table);
-	if (!wild||!strlen(wild))
-		return result;
-	array a=glob(wild,indices(result));
-	return mkmapping(a,Array.map(a,lambda(string s, mapping m) 
-			{return m[s];},result));
-}
 
 array(mapping(string:mixed)) query(string q,
                                    mapping(string|int:mixed)|void bindings) {
   if (!bindings)
     return ::query(q);
-  return ::query(.sql_util.emulate_bindings(q,bindings),this_object());
+  return ::query(.sql_util.emulate_bindings(q,bindings),this);
 }
-
-#else /* !constant(Msql.msql) */
-#error "mSQL support not available.\n"
-#endif /* constant(Msql.msql) */

@@ -1,0 +1,36 @@
+/* -*- C -*- */
+class GTK1.FontSelection;
+inherit GTK1.Notebook;
+//! IMG: GTK1.FontSelection()
+/* member GTK1.Vbox main_vbox; */
+/* member GTK1.Label font_label; */
+/* member GTK1.Entry font_entry; */
+/* member GTK1.Clist font_clist; */
+/* member GTK1.Entry font_style_entry; */
+/* member GTK1.Clist font_style_clist; */
+/* member GTK1.Entry size_entry; */
+/* member GTK1.Clist size_clist; */
+/* member GTK1.Button pixels_button; */
+/* member GTK1.Button points_button; */
+/* member GTK1.Button filter_button; */
+/* member GTK1.Entry preview_entry; */
+/* member GTK1.Label message_label; */
+/* member GTK1.Vbox info_vbox; */
+/* member GTK1.Clist info_clist; */
+/* member GTK1.Label requested_font_name; */
+/* member GTK1.Label actual_font_name; */
+/* member GTK1.Vbox filter_vbox; */
+/* member GTK1.Button type_bitmaps_button; */
+/* member GTK1.Button type_scalable_button; */
+/* member GTK1.Button type_scaled_bitmaps_button; */
+GDK1.Font get_font();
+string get_font_name();
+void set_font_name( string xlfd );
+//! This sets the currently displayed font. It should be a valid X Logical
+//! Font Description font name (anything else will be ignored), e.g.
+//! "-adobe-courier-bold-o-normal--25-*-*-*-*-*-*-*"
+void create();
+string get_preview_text();
+void set_preview_text( string text );
+
+

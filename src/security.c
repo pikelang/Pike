@@ -1,3 +1,9 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 
 /* To do:
@@ -6,16 +12,16 @@
  * controls for threads
  */
 
-/*! @module __builtin
+/*! @module Pike
  */
 
-/*! @module security
+/*! @module Security
  *!
  *! Pike has an optional internal security system, which can be
  *! enabled with the configure-option @tt{--with-security@}.
  *! 
  *! The security system is based on attaching credential objects
- *! (@[__builtin.security.Creds]) to objects, programs, arrays,
+ *! (@[Pike.Security.Creds]) to objects, programs, arrays,
  *! mappings or multisets.
  *!
  *! A credential object in essence holds three values:
@@ -27,24 +33,6 @@
  *!   @item
  *!     @tt{data_bits@} -- Data access permissions.
  *! @enddl
- *!
- *! The following security bits are currently defined:
- *! @int
- *!   @value BIT_INDEX
- *!     Allow indexing.
- *!   @value BIT_SET_INDEX
- *!     Allow setting of indices.
- *!   @value BIT_CALL
- *!     Allow calling of functions.
- *!   @value BIT_SECURITY
- *!     Allow usage of security related functions.
- *!   @value BIT_NOT_SETUID
- *!     Don't change active credentials on function call.
- *!   @value BIT_CONDITIONAL_IO
- *!     ??
- *!   @value BIT_DESTRUCT
- *!     Allow use of @[destruct()].
- *! @endint
  */
 
 #ifdef PIKE_SECURITY
@@ -56,13 +44,12 @@
 #include "mapping.h"
 #include "multiset.h"
 #include "gc.h"
-#include "security.h"
+#include "pike_security.h"
 #include "module_support.h"
 #include "constants.h"
 
 static struct program *creds_program;
 
-struct object *current_creds=0;
 #undef THIS
 #define THIS ((struct pike_creds *)(CURRENT_STORAGE))
 
@@ -75,28 +62,39 @@ static int valid_creds_object(struct object *o)
 
 static void restore_creds(struct object *creds)
 {
-  SET_CURRENT_CREDS(creds);
-  free_object(creds);
+  if(Pike_interpreter.frame_pointer)
+  {
+    if(Pike_interpreter.frame_pointer->current_creds)
+      free_object(Pike_interpreter.frame_pointer->current_creds);
+    Pike_interpreter.frame_pointer->current_creds = CHECK_VALID_UID(creds);
+  }else{
+    if(Pike_interpreter.current_creds)
+      free_object(Pike_interpreter.current_creds);
+    Pike_interpreter.current_creds = CHECK_VALID_UID(creds);
+  }
 }
 
-/*! @decl mixed call_with_creds(object(Creds) creds, mixed func, @
+/*! @decl mixed call_with_creds(Creds creds, mixed func, @
  *!                             mixed ... args)
  *!
  *! Call with credentials.
  *!
  *! Sets the current credentials to @[creds], and calls
- *! @code{@[func](@@@[args])@}. If @[creds] is @tt{0@} (zero), the
+ *! @expr{@[func](@@@[args])@}. If @[creds] is @expr{0@} (zero), the
  *! credentials from the current object will be used.
  *!
  *! @note
  *!   The current creds or the current object must have the allow bit
- *!   @tt{BIT_SECURITY@} set to allow calling with @[creds] other than
- *!   @tt{0@} (zero).
+ *!   @[BIT_SECURITY] set to allow calling with @[creds] other than
+ *!   @expr{0@} (zero).
  */
 static void f_call_with_creds(INT32 args)
 {
   struct object *o;
   ONERROR tmp;
+
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("call_with_creds", 1);
 
   switch(Pike_sp[-args].type)
   {
@@ -121,7 +119,7 @@ static void f_call_with_creds(INT32 args)
       break;
 
     default:
-      Pike_error("Bad argument 1 to call_with_creds.\n");
+      SIMPLE_BAD_ARG_ERROR("call_with_creds", 1, "int|object");
   }
     
   if(!valid_creds_object(o))
@@ -152,7 +150,7 @@ static void f_call_with_creds(INT32 args)
  *! Get the current credentials
  *!
  *! Returns the credentials that are currently active.
- *! Returns @tt{0@} (zero) if no credentials are active.
+ *! Returns @expr{0@} (zero) if no credentials are active.
  *!
  *! @seealso
  *!   @[call_with_creds()]
@@ -160,8 +158,8 @@ static void f_call_with_creds(INT32 args)
 static void f_get_current_creds(INT32 args)
 {
   pop_n_elems(args);
-  if(current_creds)
-    ref_push_object(current_creds);
+  if(CURRENT_CREDS)
+    ref_push_object(CURRENT_CREDS);
   else
     push_int(0);
 }
@@ -179,7 +177,7 @@ static void f_get_current_creds(INT32 args)
  *! Get the default credentials.
  *!
  *! Returns the default credentials object if it has been set.
- *! Returns @tt{0@} (zero) if it has not been set.
+ *! Returns @expr{0@} (zero) if it has not been set.
  *!
  *! @seealso
  *!   @[set_default_creds()]
@@ -199,7 +197,7 @@ static void get_default_creds(INT32 args)
  *!
  *! @note
  *!   The current creds must have the allow bit
- *!   @tt{BIT_SECURITY@} set.
+ *!   @[BIT_SECURITY] set.
  *!
  *! @seealso
  *!   @[get_default_creds()]
@@ -213,19 +211,25 @@ static void set_default_creds(INT32 args)
 			  ("set_default_creds: permission denied.\n"));
 
   get_all_args("init_creds",args,"%o",&o);
-  
+
   if(THIS->default_creds) free_object(THIS->default_creds);
   add_ref(THIS->default_creds=o);
   pop_n_elems(args);
 }
 
-/*! @decl void create(object user, int allow_bits, int data_bits)
+/*! @decl void create(User user, int allow_bits, int data_bits)
  *!
- *! Initialize a new credentials object
+ *! Initialize a new credentials object.
  *!
- *! @note
- *!   The current creds must have the allow bit
- *!   @tt{BIT_SECURITY@} set.
+ *! @param allow_bits
+ *!   Any of the flags @[BIT_SECURITY] and @[BIT_CONDITIONAL_IO]
+ *!   or:ed together.
+ *! @param data_bits
+ *!   Any of the flags @[BIT_INDEX], @[BIT_SET_INDEX], @[BIT_CALL],
+ *!   @[BIT_NOT_SETUID] and @[BIT_DESTRUCT] or:ed together.
+ *! @throws
+ *!   Throws an exception if the current creds doesn't have the allow
+ *!   bit @[BIT_SECURITY] set.
  */
 static void creds_create(INT32 args)
 {
@@ -284,22 +288,22 @@ static void creds_get_data_bits(INT32 args)
  *!
  *! @note
  *!   To perform this operation the current credentials needs to have the bit
- *!   @tt{BIT_SECURITY@} set, or have the same user as the old credentials
+ *!   @[BIT_SECURITY] set, or have the same user as the old credentials
  *!   and not change the user by performing the operation.
  */
 static void creds_apply(INT32 args)
 {
-  if(args < 0 || sp[-args].type > MAX_COMPLEX)
-    Pike_error("Bad argument 1 to creds->apply()\n");
+  if(args < 1 || Pike_sp[-args].type > MAX_COMPLEX)
+    Pike_error("Bad argument 1 to creds->apply().\n");
 
   if( CHECK_SECURITY(SECURITY_BIT_SECURITY) ||
-      (sp[-args].u.array->prot &&
-       (OBJ2CREDS(current_creds)->user == THIS->user) &&
-       (OBJ2CREDS(sp[-args].u.array->prot)->user == THIS->user)))
+      (Pike_sp[-args].u.array->prot &&
+       (OBJ2CREDS(CURRENT_CREDS)->user == THIS->user) &&
+       (OBJ2CREDS(Pike_sp[-args].u.array->prot)->user == THIS->user)))
   {
-    if(sp[-args].u.array->prot)
-      free_object(sp[-args].u.array->prot);
-    add_ref( sp[-args].u.array->prot=Pike_fp->current_object );
+    if(Pike_sp[-args].u.array->prot)
+      free_object(Pike_sp[-args].u.array->prot);
+    add_ref( Pike_sp[-args].u.array->prot=Pike_fp->current_object );
   }else{
     Pike_error("creds->apply(): permission denied.\n");
   }
@@ -314,14 +318,14 @@ static void creds_apply(INT32 args)
  *!
  *! Get the credentials from @[o].
  *!
- *! Returns @tt{0@} if @[o] does not have any credentials.
+ *! Returns @expr{0@} if @[o] does not have any credentials.
  */
 static void f_get_object_creds(INT32 args)
 {
   struct object *o;
-  if(args < 0 || sp[-args].type > MAX_COMPLEX)
-    Pike_error("Bad argument 1 to get_object_creds\n");
-  if((o=sp[-args].u.array->prot))
+  if(args < 1 || Pike_sp[-args].type > MAX_COMPLEX)
+    Pike_error("Bad argument 1 to get_object_creds().\n");
+  if((o=Pike_sp[-args].u.array->prot))
   {
     add_ref(o);
     pop_n_elems(args);
@@ -343,9 +347,8 @@ static void init_creds_object(struct object *o)
 
 static void creds_gc_check(struct object *o)
 {
-  if(THIS->user) debug_gc_check2(THIS->user,T_OBJECT,o,
-				 " as user of Creds object");
-  if(THIS->default_creds) debug_gc_check2(THIS->default_creds,T_OBJECT,o,
+  if(THIS->user) debug_gc_check (THIS->user, " as user of Creds object");
+  if(THIS->default_creds) debug_gc_check (THIS->default_creds,
 					  " as default creds of Creds object");
 }
 
@@ -369,6 +372,36 @@ static void exit_creds_object(struct object *o)
     THIS->default_creds=0;
   }
 }
+
+/*! @decl constant BIT_INDEX
+ *!   Allow indexing.
+ */
+
+/*! @decl constant BIT_SET_INDEX
+ *!   Allow setting of indices.
+ */
+
+/*! @decl constant BIT_CALL
+ *!   Allow calling of functions.
+ */
+
+/*! @decl constant BIT_SECURITY
+ *!   Allow usage of security related functions.
+ */
+
+/*! @decl constant BIT_NOT_SETUID
+ *!   Don't change active credentials on function call.
+ */
+
+/*! @decl constant BIT_CONDITIONAL_IO
+ *!   Allow conditional useage of I/O. The callbacks @expr{valid_open@}
+ *!   and @expr{valid_io@} will be called in the @[User] object in the
+ *!   current @[Creds] object to determine if the I/O is allowed or not.
+ */
+
+/*! @decl constant BIT_DESTRUCT
+ *!   Allow use of @[destruct].
+ */
 
 /*! @endmodule
  */
@@ -407,14 +440,17 @@ void init_pike_security(void)
   add_program_constant("Creds",creds_program, 0);
 
   
-/* function(object,mixed...:mixed) */
-  ADD_EFUN("call_with_creds",f_call_with_creds,tFuncV(tObj,tMix,tMix),OPT_SIDE_EFFECT);
+  /* function(object,mixed...:mixed) */
+  ADD_FUNCTION("call_with_creds", f_call_with_creds,
+	       tFuncV(tObj,tMix,tMix), OPT_SIDE_EFFECT);
   
-/* function(:object) */
-  ADD_EFUN("get_current_creds",f_get_current_creds,tFunc(tNone,tObj),OPT_EXTERNAL_DEPEND);
+  /* function(:object) */
+  ADD_FUNCTION("get_current_creds", f_get_current_creds,
+	       tFunc(tNone,tObj), OPT_EXTERNAL_DEPEND);
   
-/* function(mixed:object) */
-  ADD_EFUN("get_object_creds",f_get_object_creds,tFunc(tMix,tObj),OPT_EXTERNAL_DEPEND);
+  /* function(mixed:object) */
+  ADD_FUNCTION("get_object_creds", f_get_object_creds,
+	       tFunc(tMix,tObj), OPT_EXTERNAL_DEPEND);
 
 #define CONST(X) add_integer_constant("BIT_" #X,PIKE_CONCAT(SECURITY_BIT_,X),0)
   CONST(INDEX);
@@ -423,6 +459,7 @@ void init_pike_security(void)
   CONST(SECURITY);
   CONST(NOT_SETUID);
   CONST(CONDITIONAL_IO);
+  CONST(DESTRUCT);
 
   tmpp=end_program();
   add_object_constant("security",tmpo=clone_object(tmpp,0),0);

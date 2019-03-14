@@ -1,0 +1,21 @@
+/* -*- C -*- */
+class GTK2.SeparatorMenuItem;
+inherit GTK2.MenuItem;
+
+//! A separator menu item.
+
+void create(?mapping(string:mixed) props)
+//! Create a new GTK2.SeparatorMenuItem.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_SEPARATOR_MENU_ITEM);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gs;
+    gs=gtk_separator_menu_item_new();
+    THIS->obj=G_OBJECT(gs);
+  }
+  pgtk2__init_this_object();
+}

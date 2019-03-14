@@ -34,6 +34,10 @@
 
 */
 
+/* FIXME: The callback *_fun svalues ought to be registred with the
+ *        garbage_collector, and cleaned up on exit.
+ */
+
 #include "features.pike";
 #include "constants.pike";
 
@@ -164,9 +168,9 @@ array(string) gen_func(string name, string ty)
       args += ({ "(void *)&"+name+"_cb_wrapper" });
 
       after_variables =
-	"  if("+name+"_fun.type)\n"
+	"  if(TYPEOF("+name+"_fun))\n"
 	"    free_svalue(&"+name+"_fun);\n"
-	"  assign_svalue_no_free(&"+name+"_fun, &sp[-args+"+(a-1)+"]);\n";
+	"  assign_svalue_no_free(&"+name+"_fun, &Pike_sp[-args+"+(a-1)+"]);\n";
 
       i+=sizeof(internal_args)+2;
       break;
@@ -175,7 +179,7 @@ array(string) gen_func(string name, string ty)
       argt += ({"string"});
       args += ({ "arg"+a });
       res += "  char *arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.string->str;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.string->str;\n";
       a++;
       break;
 
@@ -188,28 +192,28 @@ array(string) gen_func(string name, string ty)
       argt += ({"int"});
       args += ({ "arg"+a });
       res += "  INT32 arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.integer;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.integer;\n";
       a++;
       break;
     case 'D':
       argt += ({"float"});
       args += ({ "arg"+a });
       res += "  double arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.float_number;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.float_number;\n";
       a++;
       break;
     case 'F':
       argt += ({"float"});
       args += ({ "arg"+a });
       res += "  float arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.float_number;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.float_number;\n";
       a++;
       break;
     case 'R':
       argt += ({"float"});
       args += ({ "arg"+a });
       res += "  double arg"+a+";\n";
-      got += "  arg"+a+"=(double)sp["+(a-1)+"-args].u.float_number;\n";
+      got += "  arg"+a+"=(double)Pike_sp["+(a-1)+"-args].u.float_number;\n";
       a++;
       break;
     case '+':
@@ -296,7 +300,7 @@ array(string) gen_func(string name, string ty)
   if(img_obj) {
     argt += ({"object"});
     res += "  struct zimage img;\n";
-    got += "  check_img_arg(sp["+(a-1)+"-args].u.object, &img, "+a+
+    got += "  check_img_arg(Pike_sp["+(a-1)+"-args].u.object, &img, "+a+
       ", \""+name+"\");\n";
   }
 
@@ -409,7 +413,7 @@ array(string) gen_func(string name, string ty)
   }
   res += "  pop_n_elems(args);\n";
   res += (vret? "  "+vret+"(res);\n":/*"  push_int(0);\n"*/"");
-  res += "}\n\n";
+  res += "}\n";
   if(callback)
     res = callback+"\n\n"+res;
   return ({res,prot});
@@ -430,16 +434,21 @@ string gen()
   sort(fn);
   foreach(fn, string f) {
     array(string) r = gen_func(f, ty[f]);
-    res += r[0];
+    res += sprintf("#ifndef MISSING_%s\n", upper_case(f)) +
+      r[0] +
+      sprintf("#endif /* MISSING_%s */\n\n", upper_case(f));
     prot[f]=r[1];
   }
   res += "void add_auto_funcs_glut()\n{\n";
   res += "  pre_init();\n";
   foreach(fn, string f)
-    res += "  add_function_constant(\""+f+"\", f_"+f+",\n\t\t\t\"function("+
-      prot[f]+")\", OPT_SIDE_EFFECT);\n";
+    res +=
+      sprintf("#ifndef MISSING_%s\n", upper_case(f)) +
+      "  add_function_constant(\""+f+"\", f_"+f+",\n\t\t\t\"function("+
+      prot[f]+")\", OPT_SIDE_EFFECT);\n"
+      "#endif\n";
   foreach(sort(indices(constants)), string co)
-    res += "  add_integer_constant(\""+co+"\", "+constants[co]+", 0);\n";
+    res += "  add_integer_constant(\""+co+"\", "+constants[co]+", ID_FINAL);\n";
   res += "  post_init();\n";
   res += "}\n";
   return res;

@@ -1,13 +1,10 @@
 /* Xlib.pmod
- *
- * $Id: Xlib.pmod,v 1.42 2001/04/07 00:56:32 nilsson Exp $
  */
 
 /*
  *    Protocols.X, a Pike interface to the X Window System
  *
- *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
- *    Pontus Hagland, David Hedbor.
+ *    See COPYRIGHT for copyright information.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -24,15 +21,9 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
-/* Questions, bug fixes and bug reports can be sent to the pike
- * mailing list, pike@roxen.com, or to the athors (see AUTHORS for
- * email addresses. */
-
 #pike __REAL_VERSION__
 
-#include "error.h"
-
-// #define DEBUG
+// #define XDEBUG
 
 constant XPORT = 6000;
 
@@ -55,7 +46,7 @@ class rec_buffer
 
   int needs()
   {
-    return pad + expected - strlen(buffer);
+    return pad + expected - sizeof(buffer);
   }
   
   void add_data(string data)
@@ -65,7 +56,7 @@ class rec_buffer
 
   string get_msg()
   {
-    if (strlen(buffer) < (expected + pad))
+    if (sizeof(buffer) < (expected + pad))
       return 0;
     string res = buffer[pad..pad+expected-1];
     buffer = buffer[pad+expected..];
@@ -201,9 +192,9 @@ class Display
   mapping pending_requests; /* Pending requests */
   object pending_actions;   /* Actions awaiting handling */
 
-#ifdef DEBUG
+#ifdef XDEBUG
   mapping debug_requests = ([ ]);
-  #define DEBUGREQ(X) ((X)&0xfff)
+# define DEBUGREQ(X) ((X)&0xfff)
 #endif
   
   void create()
@@ -217,20 +208,20 @@ class Display
   
   void write_callback()
   {
-    if (strlen(buffer))
+    if (sizeof(buffer))
       {
 	int written = write(buffer);
 	if (written < 0)
 	  {
 	    if (io_error_handler)
-	      io_error_handler(this_object());
+	      io_error_handler(this);
 	    close();
 	  }
 	else
 	  {
 	    // werror(sprintf("Xlib: wrote '%s'\n", buffer[..written-1]));
 	    buffer = buffer[written..];
-	    // if (!strlen(buffer))
+	    // if (!sizeof(buffer))
 	    //   set_write_callback(0);
 	  }
       }
@@ -238,9 +229,9 @@ class Display
 
   void send(string data)
   {
-    int ob = strlen(buffer);
+    int ob = sizeof(buffer);
     buffer += data;
-    if (!ob && strlen(buffer))
+    if (!ob && sizeof(buffer))
       {
 #if 0
 	set_write_callback(write_callback);
@@ -257,7 +248,7 @@ class Display
   { /* FIXME: Not thread-safe */
     set_blocking();
     int written = write(buffer);
-    if (written < strlen(buffer))
+    if (written < sizeof(buffer))
       return 0;
     buffer = "";
 
@@ -275,7 +266,6 @@ class Display
 
   void default_event_handler(object me, mapping event)
   {
-    int wid;
     object w;
     array a;
     
@@ -285,7 +275,7 @@ class Display
       {
 	foreach(a, array pair)
 	  {
-	    if (!(event = pair[1](event, this_object())))
+	    if (!(event = pair[1](event, this)))
 	      return;
 	  }
 	// FIXME: Should event be forwarded to parent or not?
@@ -293,7 +283,7 @@ class Display
       }
     else
       if (misc_event_handler)
-	misc_event_handler(event,this_object());
+	misc_event_handler(event,this);
 //       else
 // 	werror(sprintf("Ignored event %s\n", event->type));
   }
@@ -374,9 +364,9 @@ class Display
 	    for(i=0; i<numRoots; i++)
 	      {
 		int wid = struct->get_uint(4);
-		object r = .Types.RootWindow(this_object(), wid);
+		object r = .Types.RootWindow(this, wid);
 		int cm = struct->get_uint(4);
-		r->colormap = r->defaultColorMap = .Types.Colormap(this_object(), cm, 0);
+		r->colormap = r->defaultColorMap = .Types.Colormap(this, cm, 0);
 		r->colormap->autofree=0;
 		r->whitePixel = struct->get_uint(4);
 		r->blackPixel = struct->get_uint(4);
@@ -406,7 +396,7 @@ class Display
 		    for(int k=0; k<nVisuals; k++)
 		      {
 			int visualID = struct->get_uint(4);
-			object v = .Types.Visual(this_object(), visualID);
+			object v = .Types.Visual(this, visualID);
 
 			v->depth = depth;
 			v->c_class = struct->get_uint(1);
@@ -432,7 +422,7 @@ class Display
 	    foreach(values(.Extensions), program p)
 	      {
 		object e = p();
-		if(e->init( this_object() ))
+		if(e->init( this ))
 		  extensions[e->name] = e;
 		else
 		  destruct( e ) ;
@@ -451,7 +441,7 @@ class Display
 		       errorCode, m->sequenceNumber, m->resourceID,
 		       m->minorCode, m->majorCode);
 		m->errorCode = ._Xlib.error_codes[errorCode];
-#ifdef DEBUG
+#ifdef XDEBUG
 		m->failed_request = debug_requests[DEBUGREQ(m->sequenceNumber)];
 #endif
 #if 0
@@ -654,13 +644,13 @@ class Display
     switch(a[0])
       {
       case ACTION_CONNECT:
-	connect_handler(this_object(), 1);
+	connect_handler(this, 1);
 	break;
       case ACTION_CONNECT_FAILED:
-	connect_handler(this_object(), 0, a[1]);
+	connect_handler(this, 0, a[1]);
 	break;
       case ACTION_EVENT:
-	(event_handler || default_event_handler)(this_object(), a[1]);
+	(event_handler || default_event_handler)(this, a[1]);
 	break;
       case ACTION_REPLY:
 	{
@@ -671,7 +661,7 @@ class Display
 	      handler->handle_reply(a[1]);
 	    }
 	  else if(reply_handler)
-	    reply_handler(this_object(), a[1]);
+	    reply_handler(this, a[1]);
 	  else
 	    werror("Unhandled reply: "+a[1]->sequenceNumber+"\n");
 	  break;
@@ -685,7 +675,7 @@ class Display
 	      handler->handle_error(a[1]);
 	    }
 	  else
-	    (error_handler || default_error_handler)(this_object(), a[1]);
+	    (error_handler || default_error_handler)(this, a[1]);
 	  break;
 	}
       default:
@@ -705,10 +695,10 @@ class Display
   void close_callback(mixed id)
   {
     if (state == STATE_WAIT_CONNECT)
-      connect_handler(this_object(), 0);
+      connect_handler(this, 0);
     else
       if (close_handler)
-	close_handler(this_object());
+	close_handler(this);
       else
 	exit(0);
     close();
@@ -741,7 +731,7 @@ class Display
 		    fields[1]));
 
     string host;
-    if (strlen(fields[0]))
+    if (sizeof(fields[0]))
       host = fields[0];
     else
       {
@@ -804,7 +794,7 @@ class Display
     /* Always uses network byteorder (big endian) */
     string msg = sprintf("B\0%2c%2c%2c%2c\0\0%s%s",
 			 11, 0,
-			 strlen(auth_data->name), strlen(auth_data->data),
+			 sizeof(auth_data->name), sizeof(auth_data->data),
 			 ._Xlib.pad(auth_data->name), ._Xlib.pad(auth_data->data));
 
     state = STATE_WAIT_CONNECT;
@@ -849,7 +839,7 @@ class Display
   {
     string data = req->to_string();
     send(data);
-#ifdef DEBUG
+#ifdef XDEBUG
     debug_requests[DEBUGREQ(sequence_number)] = data;
 #endif
     return (sequence_number++)&0xffff; // sequence number is just 2 bytes
@@ -943,7 +933,7 @@ class Display
     if(fonts[name]) return fonts[name];
     object req = OpenFont_req(name);
     send_request(req);
-    fonts[name] = .Types.Font(this_object(), req->fid);
+    fonts[name] = .Types.Font(this, req->fid);
     return fonts[name];
   }
 
@@ -981,7 +971,7 @@ class Display
 				       foreground||({0,0,0}),
 				       background||({0xffff,0xffff,0xffff}));
     send_request(req);
-    return .Types.Cursor(this_object(), req->cid);
+    return .Types.Cursor(this, req->cid);
   }
   
   object Bell_req(int volume)

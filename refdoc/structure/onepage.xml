@@ -1,0 +1,15 @@
+<!-- This file contains information telling the final joiner how to -->
+<!-- put everything together, as well as information about how to -->
+<!-- split it up into smaller files. -->
+
+
+<manual>
+  <dir name="onepage">
+  <file name="manual.html">
+    <chapter-ref file="chapters/control_structures.xml"/>
+    <chapter-ref file="chapters/data_types.xml"/>
+    <chapter-ref file="chapters/language_reference.xml"/>
+    <chapter-ref file="chapters/autodoc.xml"/>
+  </file>
+  </dir>
+</manual>

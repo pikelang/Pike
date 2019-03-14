@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // by Mirar 
 
 inherit Calendar_I.ISO:ISO;

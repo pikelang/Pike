@@ -1,0 +1,96 @@
+/* -*- C -*- */
+require gtk24;
+
+class GTK2.ToolButton;
+inherit GTK2.ToolItem;
+
+//! Properties that can be notified:
+//! icon-widget
+//! label
+//! label-widget
+//! stock-id
+//! use-underline
+
+signal clicked;
+
+void create(GTK2.Widget|string|mapping(string:mixed) icon, ?string label)
+//! Create a new GTK2.ToolButton.
+//! If icon is a string, label should be omitted.  If it isn't,
+//! it will be ignored.  The result will be a button from
+//! a stock item, one of CONST(GTK_STOCK).
+//! If icon is a GTK2.Widget, it will be used as the icon, and label
+//! will be the label.  The label must exists if that is the case.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    GtkToolItem *gt;
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+      char *icon;
+      get_all_args("create",args,"%s",&icon);
+      gt=gtk_tool_button_new_from_stock(icon);
+      THIS->obj=G_OBJECT(gt);
+    } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+      struct pike_string *t;
+      struct object *o1;
+      get_all_args("create",args,"%o%T",&o1,&t);
+      if (t && o1) {
+	ref_push_string(t);
+	f_string_to_utf8(1);
+	gt=gtk_tool_button_new(GTK_WIDGET(get_gobject(o1)),(char *)STR0(Pike_sp[-1].u.string));
+	pop_stack();
+      } else
+        Pike_error("Invalid arguments\n");
+      THIS->obj=G_OBJECT(gt);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_TOOL_BUTTON);
+    }
+    pgtk2_pop_n_elems(args);
+  }
+  pgtk2__init_this_object();
+}
+
+void set_label(string label);
+//! Sets label as the label used for the tool button.
+
+string get_label();
+//! Returns the label used by the tool button, or empty if
+//! the tool button doesn't have a label.
+
+void set_use_underline(int use_underline);
+//! If set, an underline in the label property indicates that
+//! the next character should be used for the mnemonic
+//! accelerator key in the overflow menu.
+
+int get_use_underline();
+//! Returns whether underscores in the label property are used
+//! as mnemonics on menu items on the overflow menu.
+
+void set_stock_id(string stock_id);
+//! Sets the name of the stock item.
+
+string get_stock_id();
+//! Returns the name of the stock item.
+
+require gtk28;
+void set_icon_name(string name);
+//! Sets the icon for the tool button from a named themed icon.  The
+//! "icon-name" property only has an effect if not overridden by non-NULL
+//! "label", "icon-widget", and "stock-id" properties.
+
+string get_icon_name();
+//! Returns the name of the themed icon for the tool button.
+endrequire;
+
+void set_icon_widget(GTK2.Widget icon_widget);
+//! Sets icon_widget as the widget used as the icon on the button.
+
++GTK2.Widget get_icon_widget();
+//! Returns the widget used as the icon widget.
+
+void set_label_widget(GTK2.Widget label_widget);
+//! Sets label_widget as the widget used as the label.
+
++GTK2.Widget get_label_widget();
+//! Returns the widget used as the label.
+endrequire;

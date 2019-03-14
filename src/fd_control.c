@@ -1,21 +1,17 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #ifndef TESTING
 #include "global.h"
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.37 2001/09/24 14:30:42 grubba Exp $");
-
 #else /* TESTING */
 
 #define PMOD_EXPORT
-#define PMOD_PROTO
 
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
@@ -48,7 +44,9 @@ RCSID("$Id: fd_control.c,v 1.37 2001/09/24 14:30:42 grubba Exp $");
 #include <sys/errno.h>
 #endif
 
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -77,7 +75,7 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
   int ret;
 #ifdef PIKE_DEBUG
   if(fd<0)
-    fatal("Filedescriptor %d out of range [0,inf).\n", fd);
+    Pike_fatal("File descriptor %d out of range.\n", fd);
 #endif
 
   do 
@@ -87,22 +85,26 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
 #else
 
 #ifdef USE_FCNTL_O_NDELAY
-    ret=fcntl(fd, F_SETFL, which?O_NDELAY:0);
-#else
+#define FCNTL_NBFLAG	O_NDELAY
+#elif defined(USE_FCNTL_O_NONBLOCK)
+#define FCNTL_NBFLAG	O_NONBLOCK
+#elif defined(USE_FCNTL_FNDELAY)
+#define FCNTL_NBFLAG	FNDELAY
+#endif
 
-#ifdef USE_FCNTL_O_NONBLOCK
-    ret=fcntl(fd, F_SETFL, which?O_NONBLOCK:0);
-#else
+#ifdef FCNTL_NBFLAG
+    int flags = fcntl(fd, F_GETFL, 0);
 
-#ifdef USE_FCNTL_FNDELAY
-    ret=fcntl(fd, F_SETFL, which?FNDELAY:0);
-#else
-
+    if (which) {
+      flags |= FCNTL_NBFLAG;
+    } else {
+      flags &= ~FCNTL_NBFLAG;
+    }
+    ret = fcntl(fd, F_SETFL, flags);
+#elif !defined(DISABLE_BINARY)
 #error Do not know how to set your filedescriptors nonblocking.
+#endif
 
-#endif
-#endif
-#endif
 #endif
   } while(ret <0 && errno==EINTR);
   return ret;
@@ -113,25 +115,15 @@ PMOD_EXPORT int query_nonblocking(int fd)
   int ret;
 #ifdef PIKE_DEBUG
   if(fd<0)
-    fatal("Filedescriptor out of range.\n");
+    Pike_fatal("Filedescriptor out of range.\n");
 #endif
 
   do 
   {
-#ifdef USE_FCNTL_O_NDELAY
-    ret=fcntl(fd, F_GETFL, 0) & O_NDELAY;
+#ifdef FCNTL_NBFLAG
+    ret = fcntl(fd, F_GETFL, 0) & FCNTL_NBFLAG;
 #else
-
-#ifdef USE_FCNTL_O_NONBLOCK
-    ret=fcntl(fd, F_GETFL, 0) & O_NONBLOCK;
-#else
-
-#ifdef USE_FCNTL_FNDELAY
-    ret=fcntl(fd, F_GETFL, 0) & FNDELAY;
-#else
-  return 0;
-#endif
-#endif
+    return 0;
 #endif
   } while(ret <0 && errno==EINTR);
   return ret;
@@ -162,7 +154,7 @@ static void grow_fds_to_close(void)
   fds_to_close_size *= 2;
   fds_to_close = realloc( fds_to_close, sizeof( int ) * fds_to_close_size );
   if(!fds_to_close)
-    fatal("Out of memory in fd_control::grow_fds_to_close()\n"
+    Pike_fatal("Out of memory in fd_control::grow_fds_to_close()\n"
           "Tried to allocate %d fd_datum structs\n", fds_to_close_size);
   MEMSET( fds_to_close+(fds_to_close_size/2), 0, fds_to_close_size*sizeof(int)/2 );
 }
@@ -191,9 +183,22 @@ PMOD_EXPORT int set_close_on_exec(int fd, int which)
 {
 #ifndef HAVE_BROKEN_F_SETFD
   int ret;
+  if (which) {
+    do {
+      which = fcntl(fd, F_GETFD);
+    } while (which < 0 && errno == EINTR);
+    if (which < 0) which = FD_CLOEXEC;
+    else which |= FD_CLOEXEC;
+  } else {
+    do {
+      which = fcntl(fd, F_GETFD);
+    } while (which < 0 && errno == EINTR);
+    if (which < 0) which = 0;
+    else which &= ~FD_CLOEXEC;
+  }
   do 
   {
-    ret=fcntl(fd, F_SETFD, which ? FD_CLOEXEC : 0);
+    ret=fcntl(fd, F_SETFD, which);
   } while (ret <0 && errno==EINTR );
   return ret;
 #else /* HAVE_BROKEN_F_SETFD */
@@ -239,17 +244,25 @@ int main()
 #endif
 /* a part of the autoconf thingy */
 
-RETSIGTYPE sigalrm_handler0(int tmp) { exit(0); }
+RETSIGTYPE sigalrm_handler0(int tmp)
+{
+  signal(SIGALRM, SIG_IGN);
+  alarm(0);
+  _exit(0);
+}
 RETSIGTYPE sigalrm_handler1(int tmp)
 {
+  alarm(0);
   fprintf(stderr,"Failed in alarm handler 1\n");
-  exit(1);
+  _exit(1);
 }
 
 int main()
 {
   int tmp[2];
   char foo[1000];
+  int res = 0;
+  int e = 0;
 
   tmp[0]=0;
   tmp[1]=0;
@@ -261,12 +274,27 @@ int main()
   set_nonblocking(tmp[0],1);
   signal(SIGALRM, sigalrm_handler1);
   alarm(1);
-  read(tmp[0],foo,999);
+  res = read(tmp[0],foo,999);
+  e = errno;
+  alarm(0);
+  if ((res >= 0) || (e != EAGAIN)) {
+    fprintf(stderr,
+	    "Unexpected behaviour of nonblocking read() res:%d, errno:%d\n",
+	    res, e);
+    exit(1);
+  }
+#ifdef SHORT_TEST
+  /* Kludge for broken thread libraries.
+   * eg: Solaris 2.4/-lthread
+   */
+  exit(0);
+#endif /* SHORT_TEST */
   set_nonblocking(tmp[0],0);
   signal(SIGALRM, sigalrm_handler0);
   alarm(1);
-  read(tmp[0],foo,999);
-  fprintf(stderr,"Failed at end of main.\n");
+  res = read(tmp[0],foo,999);
+  e = errno;
+  fprintf(stderr,"Failed at end of main; res:%d, errno:%d\n", res, e);
   exit(1);
 }
 #endif

@@ -1,13 +1,19 @@
 /*
- * $Id: pikecode.h,v 1.4 2001/07/26 21:04:13 marcus Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Generic headerfile for the code-generator.
  *
- * Henrik Grubbström 20010720
+ * Henrik Grubbstrï¿½m 20010720
  */
 
 #ifndef CODE_PIKECODE_H
 #define CODE_PIKECODE_H
+
+#include "program.h"
 
 void ins_pointer(INT32 ptr);
 INT32 read_pointer(INT32 off);
@@ -19,43 +25,40 @@ void ins_data(INT32 val);
 void ins_align(INT32 align);
 
 void ins_f_byte(unsigned int b);
-void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b);
-void ins_f_byte_with_2_args(unsigned int a,
-			    unsigned INT32 c,
-			    unsigned INT32 b);
+void ins_f_byte_with_arg(unsigned int a, INT32 b);
+void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 
-/* Byte-code method identification. */
-#define PIKE_BYTECODE_DEFAULT	0
-#define PIKE_BYTECODE_GOTO	1
-#define PIKE_BYTECODE_SPARC	2
-#define PIKE_BYTECODE_IA32	3
-#define PIKE_BYTECODE_PPC32     4
-
-/* Note: PIKE_BYTECODE_METHOD gets defined to one of the above values below. */
-
-#ifdef PIKE_USE_MACHINE_CODE
-#if defined(__i386__) || defined(__i386)
-#define PIKE_BYTECODE_METHOD	PIKE_BYTECODE_IA32
+#if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_AMD64
+#ifdef __NT__
+#warning using amd64
+#endif
+#endif			    
+			    
+#if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
 #include "code/ia32.h"
-#elif defined(sparc) || defined(__sparc__) || defined(__sparc)
-#define PIKE_BYTECODE_METHOD	PIKE_BYTECODE_SPARC
+#define PIKE_BYTECODE_METHOD_NAME	"ia32"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_AMD64
+#include "code/amd64.h"
+#define PIKE_BYTECODE_METHOD_NAME	"amd64"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_SPARC
 #include "code/sparc.h"
-#elif defined(__ppc__) || defined(_POWER)
-#define PIKE_BYTECODE_METHOD	PIKE_BYTECODE_PPC32
+#define PIKE_BYTECODE_METHOD_NAME	"sparc"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC32
 #include "code/ppc32.h"
-#else /* Unsupported cpu */
-#error Unknown CPU. Run configure --without-machine-code.
-#endif /* CPU type */
-#elif defined(HAVE_COMPUTED_GOTO)
-#define PIKE_BYTECODE_METHOD	PIKE_BYTECODE_GOTO
+#define PIKE_BYTECODE_METHOD_NAME	"ppc32"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC64
+#include "code/ppc64.h"
+#define PIKE_BYTECODE_METHOD_NAME	"ppc64"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
 #include "code/computedgoto.h"
-#else /* Default */
-#define PIKE_BYTECODE_METHOD	PIKE_BYTECODE_DEFAULT
+#define PIKE_BYTECODE_METHOD_NAME	"computed_goto"
+#else
 #include "code/bytecode.h"
-#endif /* Interpreter type. */
+#define PIKE_BYTECODE_METHOD_NAME	"default"
+#endif
 
-#ifndef PIKE_BYTECODE_METHOD
-#error PIKE_BYTECODE_METHOD not defined!
-#endif /* !PIKE_BYTECODE_METHOD */
+#ifndef CHECK_RELOC
+#define CHECK_RELOC(REL, PROG_SIZE)
+#endif /* !CHECK_RELOC */
 
 #endif /* CODE_PIKECODE_H */

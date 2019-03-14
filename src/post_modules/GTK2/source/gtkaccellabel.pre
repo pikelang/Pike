@@ -1,0 +1,46 @@
+/* -*- C -*- */
+class GTK2.AccelLabel;
+inherit GTK2.Label;
+
+//! A label for accelerators.
+
+//! Properties:
+//! GTK2.Widget accel-widget
+
+
+void create(string|mapping(string:mixed) text_or_props)
+//! Creates a new W(AccelLabel).
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+      struct pike_string *t;
+      GtkWidget *ga;
+      get_all_args("create",args,"%T",&t);
+      ga=gtk_accel_label_new((char *)STR0(t));
+      THIS->obj=G_OBJECT(ga);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_ACCEL_LABEL);
+    }
+    pgtk2_pop_n_elems(args);
+  }
+  pgtk2__init_this_object();
+}
+
++GTK2.Widget get_accel_widget();
+//! Fetches the widget monitored by this accelerator label.
+
+void set_accel_widget(GTK2.Widget accel_widget);
+//! Sets the widget to be monitored.
+
+int get_accel_width();
+//! Returns the width needed to display the accelerator key(s).  This is used
+//! by menus to align all of the W(MenuItem).
+
+int refetch();
+//! Recreates the string representing the accelerator keys.  This should not
+//! be needed since the string is automatically updated whenever accelerators
+//! are added or removed from the associated widget.
+
+

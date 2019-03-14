@@ -1,7 +1,11 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "config.h"
 #include <global.h>
-#include <threads.h>
-#include <stralloc.h>
 #include <fdlib.h>
 
 #ifdef _REENTRANT
@@ -26,14 +30,13 @@
 #include "cache.h"
 #include "util.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
 struct file_ret *aap_find_file( char *s, int len, 
                                 char *ho, int hlen, 
                                 struct filesystem *f )
 {
-  struct stat s;
+  /* FIXME: Clobbering between s above and s below?? */
+  PIKE_STAT_T s;
   char *fname = alloca( fs->base.len + len + hlen + 2);
   int res;
 

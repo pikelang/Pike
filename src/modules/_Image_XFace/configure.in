@@ -1,14 +1,8 @@
-# $Id: configure.in,v 1.9 2001/09/25 00:56:00 hubbe Exp $
 AC_INIT(image_xface.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
 
 AC_MODULE_INIT()
-
-# Check if we're cross-compiling.
-
-CROSS="$ac_cv_prog_cc_cross"
-AC_SUBST(CROSS)
 
 #############################################################################
 # Copied from ../../configure.in

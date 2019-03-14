@@ -1,10 +1,12 @@
 /*
- * $Id: threads.h,v 1.115 2001/08/29 17:13:20 mast Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef THREADS_H
 #define THREADS_H
 
-#include "machine.h"
 #include "object.h"
 #include "pike_error.h"
 #include "interpret.h"
@@ -12,70 +14,51 @@
 
 #ifdef PIKE_THREADS
 
-PMOD_EXPORT extern COND_T live_threads_change;		/* Used by _disable_threads */
-PMOD_EXPORT extern COND_T threads_disabled_change;		/* Used by _disable_threads */
+#include "pike_rusage.h"
 
 struct svalue;
 struct pike_frame;
 
-extern PIKE_MUTEX_T interleave_lock;
-
-struct interleave_mutex
-{
-  struct interleave_mutex *next;
-  struct interleave_mutex *prev;
-  PIKE_MUTEX_T lock;
-};
-
-#define IMUTEX_T struct interleave_mutex
-
-#define DEFINE_IMUTEX(name) IMUTEX_T name
-
-/* If threads are disabled, we already hold the lock. */
-#define LOCK_IMUTEX(im) do { \
-    if (!threads_disabled) { \
-      THREADS_FPRINTF(0, (stderr, "Locking IMutex 0x%08p...\n", (im))); \
-      THREADS_ALLOW(); \
-      mt_lock(&((im)->lock)); \
-      THREADS_DISALLOW(); \
-    } \
-  } while(0)
-
-/* If threads are disabled, the lock will be released later. */
-#define UNLOCK_IMUTEX(im) do { \
-    if (!threads_disabled) { \
-      THREADS_FPRINTF(0, (stderr, "Unlocking IMutex 0x%08p...\n", (im))); \
-      mt_unlock(&((im)->lock)); \
-    } \
-  } while(0)
-
+/* Status values */
 #define THREAD_NOT_STARTED -1
 #define THREAD_RUNNING 0
 #define THREAD_EXITED 1
 
+/* Thread flags */
+#define THREAD_FLAG_TERM	1	/* Pending termination. */
+#define THREAD_FLAG_INTR	2	/* Pending interrupt. */
+
+#define THREAD_FLAG_SIGNAL_MASK	3	/* All of the above. */
+
+/* Debug flags */
+#define THREAD_DEBUG_LOOSE  1	/* Thread is not bound to the interpreter. */
+
 struct thread_state {
-  struct Pike_interpreter state;
-  char swapped;
-  char status;
-  COND_T status_change;
-  THREAD_T id;
+  struct Pike_interpreter_struct state;
+  struct object *thread_obj;	/* NOTE: Not ref-counted! */
   struct mapping *thread_local;
   struct thread_state *hashlink, **backlink;
-#ifdef PROFILING
-#if SIZEOF_LONG_LONG - 0 != 0
-  long long time_base;
-#else
-  long time_base;
+  struct svalue result;
+  COND_T status_change;
+  THREAD_T id;
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
+  cpu_time_t auto_gc_time;
 #endif
-#endif /* PROFILING */
+  unsigned short waiting;	/* Threads waiting on status_change. */
+  unsigned short flags;
+  char swapped;			/* Set if thread has been swapped out. */
+  signed char status;
+#ifdef PIKE_DEBUG
+  char debug_flags;
+#endif
 };
 
 
 /* Prototypes begin here */
-int low_nt_create_thread(unsigned Pike_stack_size,
-			 unsigned (TH_STDCALL *func)(void *),
-			 void *arg,
-			 unsigned *id);
+PMOD_EXPORT int low_nt_create_thread(unsigned stack_size,
+				     unsigned (TH_STDCALL *func)(void *),
+				     void *arg,
+				     unsigned *id);
 struct thread_starter;
 struct thread_local;
 void low_init_threads_disable(void);
@@ -85,12 +68,13 @@ void init_interleave_mutex(IMUTEX_T *im);
 void exit_interleave_mutex(IMUTEX_T *im);
 void thread_table_init(void);
 unsigned INT32 thread_table_hash(THREAD_T *tid);
-PMOD_EXPORT void thread_table_insert(struct object *o);
-PMOD_EXPORT void thread_table_delete(struct object *o);
+PMOD_EXPORT void thread_table_insert(struct thread_state *s);
+PMOD_EXPORT void thread_table_delete(struct thread_state *s);
 PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid);
 PMOD_EXPORT struct object *thread_for_id(THREAD_T tid);
 PMOD_EXPORT void f_all_threads(INT32 args);
 PMOD_EXPORT int count_pike_threads(void);
+PMOD_EXPORT void pike_thread_yield(void);
 TH_RETURN_TYPE new_thread_func(void * data);
 void f_thread_create(INT32 args);
 void f_thread_set_concurrency(INT32 args);
@@ -117,11 +101,17 @@ void f_thread_local_get(INT32 args);
 void f_thread_local_set(INT32 args);
 void low_th_init(void);
 void th_init(void);
+void cleanup_all_other_threads (void);
 void th_cleanup(void);
 int th_num_idle_farmers(void);
 int th_num_farmers(void);
 PMOD_EXPORT void th_farm(void (*fun)(void *), void *here);
+PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx);
+PMOD_EXPORT void enable_external_threads(void);
+PMOD_EXPORT void disable_external_threads(void);
 /* Prototypes end here */
+#else
+#define pike_thread_yield()
 
 #endif
 
@@ -130,4 +120,3 @@ PMOD_EXPORT void th_farm(void (*fun)(void *), void *here);
 #include "interpret.h"
 
 #endif /* THREADS_H */
-

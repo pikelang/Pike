@@ -1,6 +1,9 @@
 /*
- * $Id: cpp.h,v 1.4 1998/03/28 15:00:07 grubba Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef CPP_H
 #define CPP_H
 
@@ -10,20 +13,9 @@ struct hash_entry;
 #endif
 
 /* Prototypes begin here */
-struct pike_predef_s;
-struct define_part;
-struct define_argument;
-struct define;
-struct cpp;
-void cpp_error(struct cpp *this,char *err);
-void PUSH_STRING(char *str,
-		 INT32 len,
-		 dynamic_buffer *buf);
-void free_one_define(struct hash_entry *h);
 void f_cpp(INT32 args);
 void init_cpp(void);
-void add_predefine(char *s);
+void add_predefine(const char *s);
 void exit_cpp(void);
 /* Prototypes end here */
-
 #endif

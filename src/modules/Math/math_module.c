@@ -1,15 +1,17 @@
 /*
- * $Id: math_module.c,v 1.8 2001/07/31 19:31:22 marcus Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #include "global.h"
 #include "config.h"
 #include "program.h"
+#include "module.h"
 
 #include "math_module.h"
+#include "transforms.h"
 
-/* must be included last */
-#include "module_magic.h"
 
 /*** module init & exit & stuff *****************************************/
 
@@ -22,8 +24,9 @@ struct program *math_smatrix_program;
 #ifdef INT64
 struct program *math_lmatrix_program;
 #endif /* INT64 */
+struct program *math_transforms_program;
 
-static struct math_class
+static const struct math_class
 {
    char *name;
    void (*func)(void);
@@ -36,9 +39,30 @@ static struct math_class
 #endif /* INT64 */
    {"FMatrix",init_math_fmatrix,&math_fmatrix_program},
    {"SMatrix",init_math_smatrix,&math_smatrix_program},
+   {"Transforms",init_math_transforms,&math_transforms_program},
 };
 
-void pike_module_exit(void)
+/*! @module Math */
+
+/*! @decl constant pi
+ *! The constant pi (3.14159265358979323846).
+ */
+
+/*! @decl constant e
+ *! The constant e (2.7182818284590452354).
+ */
+
+/*! @decl constant inf
+ *! Floating point infinity.
+ */
+
+/*! @decl constant nan
+ *! Floating point not-a-number (e.g. inf/inf).
+ */
+
+/*! @endmodule */
+
+PIKE_MODULE_EXIT
 {
    int i;
    for (i=0; i<(int)(sizeof(sub)/sizeof(sub[0])); i++)
@@ -49,9 +73,10 @@ void pike_module_exit(void)
    exit_math_imatrix();
    exit_math_fmatrix();
    exit_math_smatrix();
+   exit_math_transforms();
 }
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
    int i;
    DECLARE_INF
@@ -74,4 +99,3 @@ void pike_module_init(void)
    add_float_constant("inf", MAKE_INF(1), 0);
    add_float_constant("nan", MAKE_NAN(), 0);
 }
-

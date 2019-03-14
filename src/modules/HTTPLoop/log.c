@@ -1,18 +1,16 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "config.h"
 #include "global.h"
 	  
-#include "array.h"
-#include "backend.h"
 #include "machine.h"
-#include "mapping.h"
 #include "module_support.h"
-#include "multiset.h"
 #include "object.h"
-#include "operators.h"
-#include "pike_memory.h"
-#include "program.h"
 #include "stralloc.h"
-#include "svalue.h"
 #include "threads.h"
 #include "fdlib.h"
 #include "builtin_functions.h"
@@ -34,13 +32,14 @@
 #include <arpa/inet.h>
 #endif
 
+#include "pike_netlib.h"
 #include "accept_and_parse.h"
 #include "log.h"
 #include "requestobject.h"
 #include "util.h"
 
-/* This must be included last! */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 int num_log_entries;
 void free_log_entry( struct log_entry *le )
@@ -72,7 +71,16 @@ static void push_log_entry(struct log_entry *le)
   lo->method = make_shared_binary_string(le->method.str, le->method.len);
   lo->protocol = le->protocol;
   le->protocol->refs++;
-  lo->from = make_shared_string( inet_ntoa(le->from.sin_addr) );
+#ifdef fd_inet_ntop
+  {
+    char buffer[64];
+    lo->from = make_shared_string( fd_inet_ntop(SOCKADDR_FAMILY(le->from),
+						SOCKADDR_IN_ADDR(le->from),
+						buffer, sizeof(buffer)) );
+  }
+#else
+  lo->from = make_shared_string( inet_ntoa(*SOCKADDR_IN_ADDR(le->from)) );
+#endif
   push_object( o );
 }
 
@@ -102,7 +110,7 @@ void f_aap_log_as_array(INT32 args)
   }
 }
 
-void f_aap_log_exists(INT32 args)
+void f_aap_log_exists(INT32 UNUSED(args))
 {
   if(LTHIS->log->log_head) 
     push_int(1);
@@ -110,7 +118,7 @@ void f_aap_log_exists(INT32 args)
     push_int(0);
 }
 
-void f_aap_log_size(INT32 args)
+void f_aap_log_size(INT32 UNUSED(args))
 {
   int n=1;
   struct log *l = LTHIS->log;
@@ -132,11 +140,11 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   struct log_entry *le;
   struct log *l = LTHIS->log;
   int n = 0;
-  int mfd, ot=0;
+  int mfd, ot = INT_MIN;
   struct object *f;
   struct tm tm;
   FILE *foo;
-  static char *month[] = {
+  static const char *month[] = {
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Oct", "Sep", "Nov", "Dec",
   };
@@ -161,6 +169,8 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   l->log_head = l->log_tail = 0;
   mt_unlock( &l->log_lock );
 
+  MEMSET(&tm, 0, sizeof(tm));
+
   while(le)
   {
     int i;
@@ -172,15 +182,18 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 #ifdef HAVE_GMTIME_R
       gmtime_r( &t, &tm );
 #else
+      struct tm *tm_p;
 #ifdef HAVE_GMTIME
-      tm = *gmtime( &t ); /* This will break if two threads run
+      tm_p = gmtime( &t ); /* This will break if two threads run
 			    gmtime() at once. */
+
 #else
 #ifdef HAVE_LOCALTIME
-      tm = *localtime( &t ); /* This will break if two threads run
+      tm_p = localtime( &t ); /* This will break if two threads run
 			       localtime() at once. */
 #endif
 #endif
+      if (tm_p) tm = *tm_p;
 #endif
       ot = le->t;
     }
@@ -195,12 +208,28 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	break;
       }
 
-    fprintf(foo, 
+#ifdef fd_inet_ntop
+    if(SOCKADDR_FAMILY(le->from) != AF_INET) {
+      char buffer[64];
+      fprintf(foo,
+	      "%s - %s [%02d/%s/%d:%02d:%02d:%02d +0000] \"%s\" %d %ld\n",
+	      fd_inet_ntop(SOCKADDR_FAMILY(le->from),
+			   SOCKADDR_IN_ADDR(le->from),
+			   buffer, sizeof(buffer)), /* hostname */
+	      "-",                          /* remote-user */
+	      tm.tm_mday, month[tm.tm_mon], tm.tm_year+1900,
+	      tm.tm_hour, tm.tm_min, tm.tm_sec, /* date */
+	      le->raw.str, /* request line */
+	      le->reply, /* reply code */
+	      DO_NOT_WARN((long)le->sent_bytes)); /* bytes transfered */
+    } else
+#endif /* fd_inet_ntop */
+    fprintf(foo,
     "%d.%d.%d.%d - %s [%02d/%s/%d:%02d:%02d:%02d +0000] \"%s\" %d %ld\n",
-	    ((unsigned char *)&le->from.sin_addr)[ 0 ],
-	    ((unsigned char *)&le->from.sin_addr)[ 1 ],
-	    ((unsigned char *)&le->from.sin_addr)[ 2 ],
-	    ((unsigned char *)&le->from.sin_addr)[ 3 ], /* hostname */
+	    ((unsigned char *)&le->from.ipv4.sin_addr)[ 0 ],
+	    ((unsigned char *)&le->from.ipv4.sin_addr)[ 1 ],
+	    ((unsigned char *)&le->from.ipv4.sin_addr)[ 2 ],
+	    ((unsigned char *)&le->from.ipv4.sin_addr)[ 3 ], /* hostname */
 	    "-",                          /* remote-user */
 	    tm.tm_mday, month[tm.tm_mon], tm.tm_year+1900,
 	    tm.tm_hour, tm.tm_min, tm.tm_sec, /* date */

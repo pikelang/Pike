@@ -1,6 +1,10 @@
-/* 
- * $Id: pike_regexp.c,v 1.20 2000/12/01 08:10:23 hubbe Exp $
- *
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * regexp.c - regular expression matching
  *
  * DESCRIPTION
@@ -67,9 +71,9 @@
 #include "pike_regexp.h"
 #include "pike_memory.h"
 #include "pike_error.h"
+#include "interpret.h"
 
-/* must be included last */
-#include "module_magic.h"
+#undef NOTHING
 
 /*
  * The "internal use only" fields in regexp.h are present to pass info from
@@ -124,6 +128,8 @@
 				 * times. */
 #define WORDSTART 11		/* node matching a start of a word          */
 #define WORDEND 12		/* node matching an end of a word           */
+#define KPLUS	13		/* node Match this (simple) thing 1 or more
+				 * times. */
 #define	OPEN	20		/* no	Mark this point in input as start of
 				 * #n. */
  /* OPEN+1 is number 1, etc. */
@@ -143,10 +149,10 @@
  * BACK		Normal "nxt" pointers all implicitly point forward; BACK
  *		exists to make loop structures possible.
  *
- * STAR		complex '*', are implemented as circular BRANCH structures 
+ * STAR,KPLUS	Complex cases are implemented as circular BRANCH structures
  *		using BACK.  Simple cases (one character per match) are 
- *		implemented with STAR for speed and to minimize recursive 
- *		plunges.
+ *		implemented with STAR or KPLUS for speed and to minimize
+ *		recursive plunges.
  *
  * OPEN,CLOSE	...are numbered at compile time.
  */
@@ -164,12 +170,6 @@
 #define	OP(p)	(*(p))
 #define	NEXT(p)	(((*((p)+1)&0377)<<8) + (*((p)+2)&0377))
 #define	OPERAND(p)	((p) + 3)
-
-/*
- * The first byte of the regexp internal "program" is actually this magic
- * number; the start node begins in the second byte.
- */
-#define	MAGIC	0234
 
 /*
  * Utility definitions.
@@ -204,7 +204,7 @@
  * Flags to be passed up and down.
  */
 #define	HASWIDTH	01	/* Known never to match null string. */
-#define	SIMPLE		02	/* Simple enough to be STAR operand. */
+#define	SIMPLE		02	/* Simple enough to be STAR or KPLUS operand. */
 #define	SPSTART		04	/* Starts with * */
 #define	WORST		0	/* Worst case. */
 
@@ -261,7 +261,7 @@ regexp *pike_regcomp(char *exp,int excompat)
     if (exp == (char *)NULL)
 	FAIL("NULL argument");
 
-    exp2=(short*)xalloc( (strlen(exp)+1) * (sizeof(short[8])/sizeof(char[8])) );
+    exp2=xalloc( (strlen(exp)+1) * sizeof(short) );
     for ( scan=exp,dest=exp2;( c= UCHARAT(scan++)); ) {
 	switch (c) {
 	    case '(':
@@ -308,7 +308,6 @@ regexp *pike_regcomp(char *exp,int excompat)
     regnpar = 1;
     regsize = 0L;
     regcode = &regdummy;
-    regc(MAGIC);
     if (reg(0, &flags) == (char *)NULL)
 	return ((regexp *)NULL);
 
@@ -317,15 +316,12 @@ regexp *pike_regcomp(char *exp,int excompat)
 	FAIL("regexp too big");
 
     /* Allocate space. */
-    r = (regexp *) xalloc(sizeof(regexp) + (unsigned) regsize);
-    if (r == (regexp *) NULL)
-	FAIL("out of space");
+    r = xalloc(sizeof(regexp) + (unsigned) regsize);
 
     /* Second pass: emit code. */
     regparse = exp2;
     regnpar = 1;
     regcode = r->program;
-    regc(MAGIC);
     if (reg(0, &flags) == NULL)
 	return ((regexp *) NULL);
 
@@ -334,7 +330,7 @@ regexp *pike_regcomp(char *exp,int excompat)
     r->reganch = 0;
     r->regmust = NULL;
     r->regmlen = 0;
-    scan = r->program + 1;	/* First BRANCH. */
+    scan = r->program;	/* First BRANCH. */
     if (OP(regnext(scan)) == END) {	/* Only one top-level choice. */
 	scan = OPERAND(scan);
 
@@ -365,7 +361,7 @@ regexp *pike_regcomp(char *exp,int excompat)
 	    r->regmlen = len;
 	}
     }
-    free((char*)exp2);
+    free(exp2);
     return (r);
 }
 
@@ -475,7 +471,7 @@ static char  *regbranch(int *flagp)
 }
 
 /*
- - regpiece - something followed by possible [*]
+ - regpiece - something followed by possible [*] or [+]
  *
  * Note that the branching code sequence used for * is somewhat optimized:  
  * they use the same NOTHING node as both the endmarker for their branch 
@@ -520,14 +516,26 @@ static char *regpiece(int *flagp)
   }
   else if(op == PLUS)
   {
-    /*  Emit a+ as (a&) where & means "self" /Fredrik Hubinette */
-    char *tmp;
-    tmp=regnode(BACK);
-    reginsert(BRANCH, tmp);
-    regtail(ret, tmp);
-    regoptail(tmp, ret);
-    regtail(ret, regnode(BRANCH));
-    regtail(ret, regnode(NOTHING));
+    if (flags & SIMPLE)
+    {
+      reginsert(KPLUS, ret);
+    }
+    else
+    {
+      /* ret ->	1: x			nxt: 2
+       * tmp ->	2: BRANCH	op: 3	nxt: 4
+       *	3: BACK			nxt: 1
+       *	4: BRANCH	op: 5	nxt: 5
+       *	5: NOTHING
+       */
+      char *tmp;
+      tmp=regnode(BACK);
+      reginsert(BRANCH, tmp);
+      regtail(ret, tmp);
+      regoptail(tmp, ret);
+      regtail(ret, regnode(BRANCH));
+      regtail(ret, regnode(NOTHING));
+    }
   }
     
   regparse++;
@@ -785,11 +793,7 @@ int pike_regexec(regexp *prog, char *string)
 	regerror("NULL parameter");
 	return (0);
     }
-    /* Check validity of program. */
-    if (UCHARAT(prog->program) != MAGIC) {
-	regerror("corrupted program");
-	return (0);
-    }
+
     /* If there is a "must appear" string, look for it. */
     if (prog->regmust != (char *)NULL) {
 	s = string;
@@ -857,7 +861,7 @@ char           *string;
 	*sp++ = (char *)NULL;
 	*ep++ = (char *)NULL;
     }
-    if (regmatch(prog->program + 1)) {
+    if (regmatch(prog->program)) {
 	prog->startp[0] = string;
 	prog->endp[0] = reginput;
 	return (1);
@@ -888,6 +892,8 @@ char           *prog;
 {
     register char  *scan;	/* Current node. */
     char           *nxt;	/* nxt node. */
+
+    check_c_stack (4 * sizeof (void *));
 
     scan = prog;
 #ifdef PIKE_DEBUG
@@ -980,6 +986,7 @@ char           *prog;
 		}
 	    }
 	    break;
+	case KPLUS:
 	case STAR:{
 		register char   nextch;
 		register ptrdiff_t no;
@@ -1172,7 +1179,7 @@ regexp         *r;
     register char   op = EXACTLY;	/* Arbitrary non-END op. */
     register char  *nxt;
 
-    s = r->program + 1;
+    s = r->program;
     while (op != END) {		/* While that wasn't END last time... */
 	op = OP(s);
 	printf("%2ld%s",	/* Where, what. */
@@ -1261,6 +1268,10 @@ char           *op;
 	p = "STAR";
 	break;
 
+    case KPLUS:
+	p = "KPLUS";
+	break;
+
     default:
         if(OP(op) >= OPEN && OP(op) < OPEN+NSUBEXP)
 	{
@@ -1301,10 +1312,7 @@ char *pike_regsub(regexp *prog, char *source, char *dest, int n)
 	regerror("NULL parm to regsub");
 	return NULL;
     }
-    if (UCHARAT(prog->program) != MAGIC) {
-	regerror("damaged regexp fed to regsub");
-	return NULL;
-    }
+
     src = source;
     dst = dest;
     while ((c = *src++) != '\0') {
@@ -1345,4 +1353,3 @@ char *pike_regsub(regexp *prog, char *source, char *dest, int n)
     *dst = '\0';
     return dst;
 }
-

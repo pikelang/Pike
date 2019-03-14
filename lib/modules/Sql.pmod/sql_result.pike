@@ -1,6 +1,4 @@
 /*
- * $Id: sql_result.pike,v 1.9 2001/09/06 20:11:00 nilsson Exp $
- *
  * Implements the generic result module of the SQL-interface
  *
  * Henrik Grubbström 1996-01-09
@@ -11,101 +9,161 @@
 //! Implements the generic result of the SQL-interface.
 //! Used for return results from SQL.sql->big_query().
 
-#define throw_error(X)	throw(({ (X), backtrace() }))
-
 //! The actual result.
-object|array master_res;
+mixed master_res;
 
-//! If the result was an array, this is the current row.
+//! This is the number of the current row. The actual semantics
+//! differs between different databases.
 int index;
 
 //! Create a new Sql.sql_result object
 //!
 //! @param res
 //!   Result to use as base.
-void create(object|array res)
+protected void create(mixed res);
+
+protected string _sprintf(int type, mapping|void flags)
 {
-  if (!(master_res = res) || (!arrayp(res) && !objectp(res))) {
-    throw_error("Bad arguments to Sql_result()\n");
-  }
-  index = 0;
+  int f = num_fields();
+  catch( int r = num_rows() );
+  int e = eof();
+  return type=='O' && master_res &&
+    sprintf("%O(/* row %d/%s, %d field%s */)",
+	    this_program, index,
+	    (!r || index==r && !e)?"?":(string)num_rows(),
+	    f = num_fields(), f!=1?"s":"");
 }
 
 //! Returns the number of rows in the result.
-int num_rows()
-{
-  if (arrayp(master_res)) {
-    return(sizeof(master_res));
-  }
-  return(master_res->num_rows());
-}
+int num_rows();
 
 //! Returns the number of fields in the result.
 int num_fields()
 {
-  if (arrayp(master_res)) {
-    return(sizeof(master_res[0]));
-  }
-  return(master_res->num_fields());
+  return master_res->num_fields();
 }
 
 //! Returns non-zero if there are no more rows.
-int eof()
-{
-  if (arrayp(master_res)) {
-    return(index >= sizeof(master_res));
-  }
-  return(master_res->eof());
-}
+int eof();
 
 //! Return information about the available fields.
-array(mapping(string:mixed)) fetch_fields()
-{
-  if (arrayp(master_res)) {
-    /* Only supports the name field */
-    array(mapping(string:mixed)) res = allocate(sizeof(master_res[0]));
-    int index = 0;
-    
-    foreach(sort(indices(master_res[0])), string name) {
-      res[index++] = ([ "name": name ]);
-    }
-    return(res);
-  }
-  return(master_res->fetch_fields());
-}
+array(mapping(string:mixed)) fetch_fields();
 
 //! Skip past a number of rows.
 //!
 //! @param skip
 //!   Number of rows to skip.
-void seek(int skip)
-{
-  if (skip < 0) {
-    throw_error("seek(): Argument 1 not positive\n");
-  }
-  if (arrayp(master_res)) {
-    index += skip;
-  } else if (functionp(master_res->seek)) {
-    master_res->seek(skip);
-  } else {
-    while (skip--) {
-      master_res->fetch_row();
-    }
+void seek(int skip) {
+  if(skip<0)
+    error("Cannot seek to negative result indices\n");
+  while(skip--) {
+    index++;
+    master_res->fetch_row();
   }
 }
 
 //! Fetch the next row from the result.
-int|array(string|int) fetch_row()
+//!
+//! @returns
+//!   Returns an array with one element per field in the same order as
+//!   reported by @[fetch_fields()]. See the @[Sql.Sql] class
+//!   documentation for more details on how different data types are
+//!   represented.
+int|array(string|int|float) fetch_row();
+
+// --- Iterator API
+
+class _get_iterator
 {
-  if (arrayp(master_res)) {
-    array res;
-      
-    if (index >= sizeof(master_res)) {
-      return 0;
-    }
-    sort(indices(master_res[index]), res = values(master_res[index]));
-    index++;
-    return(res);
+  protected int|array(string|int) row = fetch_row();
+  protected int pos = 0;
+
+  int index()
+  {
+    return pos;
   }
-  return (master_res->fetch_row());
+
+  int|array(string|int) value()
+  {
+    return row;
+  }
+
+  int(0..1) next()
+  {
+    pos++;
+    return !!(row = fetch_row());
+  }
+
+  this_program `+=(int steps)
+  {
+    if(!steps) return this;
+    if(steps<0) error("Iterator must advance a positive numbe of steps.\n");
+    if(steps>1)
+    {
+      pos += steps-1;
+      seek(steps-1);
+    }
+    next();
+    return this;
+  }
+
+  int(0..1) `!()
+  {
+    return eof();
+  }
+
+  int _sizeof()
+  {
+    return num_fields();
+  }
+}
+
+protected void encode_json(String.Buffer res, mixed msg)
+{
+  if (stringp(msg)) {
+    res->add("\"", replace(msg, ([ "\"" : "\\\"",
+                                   "\\" : "\\\\",
+                                   "\n" : "\\n",
+                                   "\b" : "\\b",
+                                   "\f" : "\\f",
+                                   "\r" : "\\r",
+                                   "\t" : "\\t" ])), "\"");
+  } else if (arrayp(msg)) {
+    res->putchar('[');
+    foreach(msg; int i; mixed val) {
+      if (i) res->putchar(',');
+      encode_json(res, val);
+    }
+    res->putchar(']');
+  } else if (mappingp(msg)) {
+    // NOTE: For reference only, not currently reached.
+    res->putchar('{');
+    foreach(sort(indices(msg)); int i; string ind) {
+      if (i) res->putchar(',');
+      encode_json(res, ind);
+      res->putchar(':');
+      encode_json(res, msg[ind]);
+    }
+    res->putchar('}');
+  } else {
+    res->add((string)msg);
+  }
+}
+
+//! Fetch remaining result as @tt{JSON@}-encoded data.
+string fetch_json_result()
+{
+  if (arrayp(master_res) || !master_res->fetch_json_result) {
+    String.Buffer res = String.Buffer();
+    res->putchar('[');
+    array row;
+    for (int i = 0; row = fetch_row(); i++) {
+      if(i) res->putchar(',');
+      encode_json(res, row);
+    }
+    res->putchar(']');
+    return string_to_utf8(res->get());
+  }
+  index = num_rows();
+  return master_res->fetch_json_result();
 }

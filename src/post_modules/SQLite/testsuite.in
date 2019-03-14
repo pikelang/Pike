@@ -1,0 +1,58 @@
+
+START_MARKER
+cond_resolv( SQLite.SQLite, [[
+
+  test_do( rm("testdb"); )
+  test_do( add_constant("db", Sql.Sql("sqlite://testdb")); )
+
+  test_eq( db->master_sql->changes(), 0 )
+  test_eq( db->master_sql->total_changes(), 0 )
+  test_do( db->master_sql->interrupt() )
+  test_true( stringp(db->server_info()); )
+  test_eq( db->master_sql->insert_id(), 0 )
+  test_eq( db->error(), "not an error" )
+  test_eval_error( db->select_db() )
+  test_eval_error( db->create_db() )
+  test_eval_error( db->drop_db() )
+  test_eval_error( db->list_dbs() )
+  test_equal( db->list_tables(), ({}) )
+  test_eval_error( db->list_fields("test") )
+
+  test_eq( db->big_query("CREATE TABLE test (aa INTEGER, bb FLOAT, cc TEXT, dd BLOB)")->fetch_row();, 0 )
+
+  test_equal( db->list_tables(), ({ "test" }) )
+  test_equal( db->list_fields("test"),[[
+#define P(X,Y) (["name":#X,"type":#Y,"table":"test", \
+	"default":"","flags":(<>),"length":0])
+ ({ P(aa,INTEGER), P(bb,FLOAT), P(cc,TEXT), P(dd,BLOB) })
+]])
+
+  test_eq( db->big_query("INSERT INTO test (aa,bb,cc,dd) VALUES (1,4.5,'xyz','xyz')")->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT * FROM test WHERE aa=1")->fetch_row();, ({"1","4.5","xyz","xyz"}) )
+
+  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (2,'blå','blå')")->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=2")->fetch_row();, ({"blå","blå"}) )
+
+  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (3,'f\x1234','f\x1234')")->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=3")->fetch_row();, ({"f\x1234","f\x1234"}) )
+
+  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (4,'f\x103456','f\x103456')")->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=4")->fetch_row();, ({"f\x103456","f\x103456"}) )
+
+  test_eq( db->big_query("INSERT INTO test (aa,bb,cc,dd) VALUES (:1,:2,:3,:4)",([1:11,2:4.5,3:"xyz",4:"xyz"]))->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT * FROM test WHERE aa=11")->fetch_row();, ({"11","4.5","xyz","xyz"}) )
+
+  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([ 1:12,2:"blå",3:"blå"]) )->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=12")->fetch_row();, ({"blå","blå"}) )
+
+  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([1:13,2:"f\x1234",3:"f\x1234"]))->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=13")->fetch_row();, ({"f\x1234","f\x1234"}) )
+
+  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([1:14,2:"f\x103456",3:"f\x103456"]))->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=14")->fetch_row();, ({"f\x103456","f\x103456"}) )
+
+  test_do( add_constant("db"); )
+  test_do( rm("testdb"); )
+
+]])
+END_MARKER

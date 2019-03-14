@@ -6,11 +6,14 @@
 /config.status
 /configure
 /dependencies
+/gb18030.h
+/gbk_tables.h
+/jisx0213_tables.h
 /linker_options
 /make_variables
 /modlist_headers
 /modlist_segment
-/module_testsuite
+/testsuite
 /remake
 /stamp-h
 /stamp-h.in

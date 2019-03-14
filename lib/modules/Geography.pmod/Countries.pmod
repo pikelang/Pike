@@ -375,7 +375,7 @@ class Country
    //! @decl string cast("string")
    //!	It is possible to cast a country to a string,
    //!	which will be the same as performing 
-   //!	@code{country->name;@}.
+   //!	@expr{country->name;@}.
    string cast(string to)
    {
       if (to[..5]=="string") return name;
@@ -384,9 +384,7 @@ class Country
 
    string _sprintf(int t)
    {
-      if (t=='O')
-	 return "Country("+name+")";
-      return 0;
+     return t=='O' && sprintf("%O(%s)", this_program, name);
    }
 
 }
@@ -428,7 +426,7 @@ class Country
 //!	<dt>COM   <dd>Commercial
 //!	</dl>
 
-static private mapping _from_domain=0;
+protected private mapping _from_domain=0;
 
 Country from_domain(string domain)
 {
@@ -455,7 +453,7 @@ Country from_domain(string domain)
 //!	The search is case-insensitive but
 //!	regards whitespace and interpunctation.
 
-static private mapping _from_name=0;
+protected private mapping _from_name=0;
 
 Country from_name(string name)
 {
@@ -498,7 +496,7 @@ Country from_name(string name)
 //! @note
 //!	Some countries are considered to be on more than one continent.
 
-static private mapping _cached_continents;
+protected private mapping _cached_continents;
 
 mapping(string:array(Country)) continents()
 {
@@ -533,7 +531,7 @@ mapping(string:array(Country)) continents()
 //!	is in the name- and domain-space and
 //!	returns that country if possible:
 //!
-//!     @tt{
+//! @code
 //! > Geography.Countries.se;    
 //! Result: Country(Sweden)
 //! > Geography.Countries.djibouti;
@@ -542,7 +540,7 @@ mapping(string:array(Country)) continents()
 //! Result: Country(United States)
 //! > Geography.Countries.wallis_and_futuna_islands->iso2;
 //! Result: "WF"
-//! 	@}
+//! @endcode
 
 Country|function(string:Country)|array(Country)|program
    `->(string what)

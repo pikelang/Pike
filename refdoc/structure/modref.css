@@ -1,0 +1,126 @@
+body {
+	margin: 0;
+	color: #343434;
+	background: #ffffff;
+	font-family: arial,helvetica,sans-serif;
+	font-size: 13px;
+}
+
+blockquote { margin-bottom: 14px; }
+.diff      { padding: 6px }
+.title     { font-size: 14px; font-weight: bold; text-decoration: none }
+
+em {
+	font-weight: bold;
+	font-style: italic;
+}
+
+.error {
+        color: #cc0000;
+}
+
+.newsDate {
+	font-size: 85%;
+	font-style: italic;
+	color: #6666cc;
+}
+
+.navbar {
+	background: #f0f0f0;
+	float: left;
+	margin-left: 22px;
+	margin-top: 3px;
+	min-width: 181px;
+	overflow: hidden;
+}
+
+.sidebar {
+	background: #f0f0f0;
+	font-size: 95%;
+	margin: 3px;
+	overflow: hidden;
+	padding: 3px;
+}
+
+.left {
+	float: left;
+}
+
+.right {
+	float: right;
+	text-align:right;
+}
+
+.contentbox {
+	margin-right: 23px;
+	min-width: 520px;
+	overflow: hidden;
+	padding-left: 23px;
+	padding-right: 23px,
+}
+
+.navbox {
+	margin-right: 23px;
+	min-width: 520px;
+	overflow: hidden;
+}
+
+.navbox .sidebar {
+	background: #e0e0e0;
+}
+
+pre,code {
+	font-family: "andale mono", "monotype.com", "courier new", monospace;
+	font-size: 90%;
+}
+
+h1 {
+	font-size: 26px;
+	font-weight: bold;
+	color: #000066;
+}
+
+h2 {
+	font-size: 125%;
+	font-weight: bold;
+	color: #000066;
+	margin-bottom: 4px;
+}
+
+h3 {
+	font-size: 110%;
+	font-weight: bold;
+	color: #000066;
+}
+
+small {
+	font-size: 75%;
+}
+
+a.small {
+	font-size: 75%;
+	text-decoration: none;
+}
+
+.tableTitle {
+	font-weight: bold;
+}
+
+.tableExtras {
+	font-size: 85%;
+	color: #FFFFFF;
+}
+
+
+textarea {
+	font-family: "andale mono", "monotype.com", "courier new", monospace;
+}
+
+input.small, select.small {
+	font-size: 75%;
+}
+
+textarea.small {
+	font-family: "andale mono", "monotype.com", "courier new", monospace;
+	font-size: 75%;
+}

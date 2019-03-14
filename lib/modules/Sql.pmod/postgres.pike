@@ -1,85 +1,114 @@
 /*
  * This is part of the Postgres module for Pike.
- * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
- *
- * $Id: postgres.pike,v 1.15 2001/09/15 22:03:36 grubba Exp $
  *
  */
 
-//! This is an interface to the Postgres (Postgres95, pgsql) database server.
-//! This module may or may not be availible on your Pike, depending
-//! whether the appropriate include and library files 
-//! could be found at compile-time. Note that you @b{do not@}
-//! need to have a Postgres server running on your host to use this module:
-//! you can connect to the database over a TCP/IP socket.
+#pike __REAL_VERSION__
+
+// Cannot dump this since the #if constant(...) check below may depend
+// on the presence of system libs at runtime.
+constant dont_dump_program = 1;
+
+#if constant(Postgres.postgres)
+
+//! This is an interface to the Postgres (Postgres95, PostgreSQL) database
+//! server. This module may or may not be available on your Pike,
+//! depending on whether or not the appropriate include and library files could
+//! be found at compile-time. Note that you @b{do not@} need to have a
+//! Postgres server running on your host to use this module: you can
+//! connect to the database over a TCP/IP socket.
 //!
 //! @note
-//! Also note that @b{this module uses blocking I/O@} I/O to connect to the server.
-//! Postgres is quite slow, and so you might want to consider this
-//! particular aspect. It is (at least should be) thread-safe, and so it can be used
-//! in a multithread environment.
+//! This driver has been @b{deprecated@}.  You should use the
+//! more advanced driver @[Sql.pgsql] to access PostgreSQL databases instead.
 //!
-//! The behavior of the Postgres C API also depends on certain environment variables
-//! defined in the environment of the pike interpreter.
+//! @note
+//! Also note that @b{this module uses blocking I/O@} to connect
+//! to the server, but it is thread-safe, and so it can be used in a
+//! multithreaded environment.
+//!
+//! The behavior of the Postgres C API also depends on certain
+//! environment variables defined in the environment of the Pike
+//! interpreter; some notice and warning notifications might are dumped
+//! on stderr.
 //!
 //! @string
 //!   @value "PGHOST"
 //!     Sets the name of the default host to connect to. It defaults
-//! 	to "localhost"
+//!     to @expr{"localhost"@}.
+//!   @value "PGHOSTADDR"
+//!     Set the numeric IP address to connect to.  This may be set instead of
+//!     or in addition to PGHOST to avoid DNS lookups.
+//!   @value "PGPORT"
+//!     Sets the default port or unix domain socket file extension to connect to,
+//!     otherwise it will use compile-time defaults (that is: the time you compiled
+//!     the postgres library, not the Pike driver).
+//!   @value "PGDATABASE"
+//!     Sets the default database to connect to.
+//!   @value "PGUSER"
+//!     Sets the default username used to connect to the database.
+//!   @value "PGPASSWORD"
+//!     Set the default password used to connect to the database.  This is not
+//!     recommended for security reasons, some operating systems allow non-root
+//!     users to see process environment variables.  Use your ~/.pgpass file instead.
+//!   @value "PGSERVICE"
+//!     Sets the service name to be looked up in pg_service.conf.  This is a
+//!     shorter way to set all the parameters.
+//!   @value "PGSSLMODE"
+//!     This determines how SSL connections will be negotiated.  If set to @b{disable@},
+//!     it will require an unencrypted connection; @b{allow@} will negotiate a non-SSL
+//!     connection, and if it fails try an SSL connection; @b{prefer@} will attempt SSL
+//!     connections first, falling back to non-SSL if SSL fails; and @b{require@} will
+//!     force an SSL connection or cause an error if SSL is not available.
 //!   @value "PGOPTIONS"
 //!     Sets some extra flags for the frontend-backend connection.
-//!     DO NOT SET unless you're sure of what you're doing.
-//!   @value "PGPORT"
-//!     Sets the default port to connect to, otherwise it will use
-//!     compile-time defaults (that is: the time you compiled the postgres
-//! 	library, not the Pike driver).
+//!     @b{do not set@} unless you're sure of what you're doing.
+//!   @value "PGREALM"
+//!     Sets the Kerberos realm for authentication, if it is different
+//!     from the local realm.  PostgreSQL will attempt to authenticate
+//!     with servers for this realm and use seperate ticket files to avoid
+//!     conflicts with local ticket files.  This variable is only used if
+//!     Keberos authentication is selected in PostgreSQL.
 //!   @value "PGTTY"
 //!     Sets the file to be used for Postgres frontend debugging.
 //!     Do not use, unless you're sure of what you're doing.
-//!   @value "PGDATABASE"
-//!     Sets the default database to connect to.
-//!   @value "PGREALM"
-//!     Sets the default realm for Kerberos authentication. I never used
-//!   	this, so I can't help you.
+//!     This variable is ignored in recent versions of PostgreSQL.
 //! @endstring
 //!
 //! Refer to the Postgres documentation for further details.
 //!
 //! @seealso
-//!  Sql.Sql, Postgres.postgres, Sql.postgres_result
-
-#pike __REAL_VERSION__
-
-#if constant(Postgres.postgres)
+//!  @[Sql.pgsql], @[Sql.Sql], @[Postgres.postgres], @[Sql.postgres_result]
 
 #define ERROR(X) throw (({X,backtrace()}))
 
 inherit Postgres.postgres: mo;
-private static mixed callout;
+private protected mixed  callout;
+private string has_relexpires = "unknown";
 
 //! @decl void select_db(string dbname)
 //!
-//! This function allows you to connect to a database. Due to restrictions
-//! of the Postgres frontend-backend protocol, you always have to be connected
-//! to a database, so in fact this function just allows you to connect
-//! to a different database on the same server.
+//! This function allows you to connect to a database. Due to
+//! restrictions of the Postgres frontend-backend protocol, you always
+//! have to be connected to a database, so in fact this function just
+//! allows you to connect to a different database on the same server.
 //!
 //! @note
-//! This function @b{can@} raise exceptions if something goes wrong (backend process
-//! not running, not enough permissions..)
+//! This function @b{can@} raise exceptions if something goes wrong
+//! (backend process not running, not enough permissions..)
 //!
 //! @seealso
-//!   create
+//!   @[create]
 
 //! @decl string error()
 //!
-//! This function returns the textual description of the last server-related
-//! error. Returns 0 if no error has occurred yet. It is not cleared upon
-//! reading (can be invoked multiple times, will return the same result
-//! until a new error occurs).
+//! This function returns the textual description of the last
+//! server-related error. Returns @expr{0@} if no error has occurred
+//! yet. It is not cleared upon reading (can be invoked multiple
+//! times, will return the same result until a new error occurs).
 //!
 //! @seealso
-//!   big_query
+//!   @[big_query]
 
 //! @decl string host_info()
 //!
@@ -92,7 +121,7 @@ private static mixed callout;
 //! a variety of reasons, for example to detect the status of a connection.
 //!
 //! @note
-//! This function is Postgres-specific, and thus it is not availible
+//! This function is Postgres-specific, and thus it is not available
 //! through the generic SQL-interface.
 
 //! @decl string version
@@ -100,57 +129,58 @@ private static mixed callout;
 //! Should you need to report a bug to the author, please submit along with
 //! the report the driver version number, as returned by this call.
 
-private static string glob_to_regexp (string glob) {
+private protected string glob_to_regexp (string glob) {
 	if (!glob||!sizeof(glob))
 		return 0;
 	return "^"+replace(glob,({"*","?","'","\\"}),({".*",".","\\'","\\\\"}))+"$";
 }
 
-static private int mkbool(string s) {
+protected private int mkbool(string s) {
 	if (s=="f")
 		return 0;
 	return 1;
 }
 
 //! @decl void create()
-//! @decl void create(string host, void|string database, void|string user, void|string password)
+//! @decl void create(string host, void|string database, void|string user,@
+//!                   void|string password, void|mapping options)
 //!
-//! With no arguments, this function initializes (reinitializes if a connection
-//! had been previously set up) a connection to the Postgres backend.
-//! Since Postgres requires a database to be selected, it will try
-//! to connect to the default database. The connection may fail however for a 
-//! variety of reasons, in this case the most likely of all is because
-//! you don't have enough authority to connect to that database.
-//! So use of this particular syntax is discouraged.
+//! With no arguments, this function initializes (reinitializes if a
+//! connection had been previously set up) a connection to the
+//! Postgres backend. Since Postgres requires a database to be
+//! selected, it will try to connect to the default database. The
+//! connection may fail however for a variety of reasons, in this case
+//! the most likely of all is because you don't have enough authority
+//! to connect to that database. So use of this particular syntax is
+//! discouraged.
 //!
-//! The host argument can have the syntax "hostname" or "hostname:portname".
-//! This allows to specify the TCP/IP port to connect to. If it is 0 or "", it
-//! will try to connect to localhost, default port.
+//! The host argument can have the syntax @expr{"hostname"@} or
+//! @expr{"hostname:portname"@}. This allows to specify the TCP/IP
+//! port to connect to. If it is @expr{0@} or @expr{""@}, it will try
+//! to connect to localhost, default port.
 //!
-//! The database argument specifies the database to connect to. If 0 or "", it
-//! will try to connect to the specified database.
-//!
-//! The username and password arguments are silently ignored, since the Postgres
-//! C API doesn't allow to connect to the server as any user different than the
-//! user running the interface.
+//! The database argument specifies the database to connect to. If
+//! @expr{0@} or @expr{""@}, it will try to connect to the specified
+//! database.
 //!
 //! @note
-//! You need to have a database selected before using the sql-object,
-//! otherwise you'll get exceptions when you try to query it.
-//! Also notice that this function @b{can@} raise exceptions if the db
-//! server doesn't respond, if the database doesn't exist or is not accessible
-//! by you.
+//! Notice that this function @b{can@} raise exceptions if the db
+//! server doesn't respond, if the database doesn't exist or is not
+//! accessible by you.
 //!
 //! You don't need bothering about syncronizing the connection to the database:
 //! it is automatically closed (and the database is sync-ed) when the
 //! object is destroyed.
 //!
 //! @seealso
-//!   Postgres.postgres, Sql.Sql, postgres->select_db
+//!   @[Sql.pgsql], @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
 void create(void|string host, void|string database, void|string user,
-		void|string pass) {
+	    void|string _pass, void|mapping options) {
+	string pass = _pass;
+	_pass = "CENSORED";
 	string real_host=host, real_db=database;
 	int port=0;
+	quote = this->_quote ? this->_quote : simple_quote;
 	if (stringp(host)&&(search(host,":")>=0))
 		if (sscanf(host,"%s:%d",real_host,port)!=2)
 			ERROR("Error in parsing the hostname argument.\n");
@@ -158,7 +188,7 @@ void create(void|string host, void|string database, void|string user,
 	mo::create(real_host||"",real_db||"",user||"",pass||"",port);
 }
 
-static void poll (int delay)
+protected void poll (int delay)
 {
 	callout=call_out(poll,delay,delay);
 	big_query("");
@@ -189,14 +219,14 @@ static void poll (int delay)
 //!
 //! The callback function must return no value, and takes a string argument,
 //! which will be the name of the table on which the notification event
-//! has occured. In future versions, support for user-specified arguments
+//! has occurred. In future versions, support for user-specified arguments
 //! will be added.
 //!
 //! @note
 //! The polling cycle can be run only if your process is in "event-driven mode"
 //! (that is, if 'main' has returned a negative number).
 //!
-//! This function is Postgres-specific, and thus it is not availible
+//! This function is Postgres-specific, and thus it is not available
 //! through the generic SQL-interface.
 //!
 //! @fixme
@@ -216,7 +246,8 @@ void set_notify_callback(int|function f, int|float|void poll_delay) {
 		poll(poll_delay);
 }
 
-string quote(string s)
+function quote;
+string simple_quote(string s)
 {
   return replace(s, ({ "\\", "'", "\0" }), ({ "\\\\", "''", "\\0" }) );
 }
@@ -225,7 +256,7 @@ string quote(string s)
 //! have enough permissions to do this).
 //!
 //! @seealso
-//!   drop_db
+//!   @[drop_db]
 void create_db(string db) {
 	big_query(sprintf("CREATE DATABASE %s",db));
 }
@@ -234,20 +265,20 @@ void create_db(string db) {
 //! we have enough permissions to do so).
 //!
 //! @seealso
-//!   create_db
+//!   @[create_db]
 void drop_db(string db) {
 	big_query(sprintf("DROP database %s",db));
 }
 
-//! This function returns a string describing the server we are talking
-//! to. It has the form "servername/serverversion" (like the HTTP protocol
-//! description) and is most useful in conjunction with the generic SQL-server
-//! module.
+//! This function returns a string describing the server we are
+//! talking to. It has the form @expr{"servername/serverversion"@}
+//! (like the HTTP protocol description) and is most useful in
+//! conjunction with the generic SQL-server module.
 string server_info () {
   return "Postgres/unknown";
 }
 
-//! Lists all the databases availible on the server.
+//! Lists all the databases available on the server.
 //! If glob is specified, lists only those databases matching it.
 array(string) list_dbs (void|string glob) {
 	array name,ret=({});
@@ -283,23 +314,20 @@ array(string) list_tables (void|string glob) {
 	return ret;
 }
 
-//! Returns a mapping, indexed on the column name, of mappings describing the
-//! attributes of a table of the current database.
-//! If a glob is specified, will return descriptions only of the columns matching
-//! it.
+//! Returns a mapping, indexed on the column name, of mappings describing
+//! the attributes of a table of the current database.
+//! If a glob is specified, will return descriptions only of the columns
+//! matching it.
 //!
-//! The current fields are:
+//! The currently defined fields are:
 //!
 //! @mapping
 //!   @member int "has_rules"
 //!
 //!   @member int "is_shared"
 //!
-//!   @member string "expires"
-//!     A string representing an internal date.
-//!
 //!   @member string "owner"
-//!     It's the textual representation of a Postgres uid.
+//!     The textual representation of a Postgres uid.
 //!
 //!   @member string "length"
 //!
@@ -307,52 +335,148 @@ array(string) list_tables (void|string glob) {
 //!     A textual description of the internal (to the server) type-name
 //!
 //!   @member mixed "default"
+//!
+//!   @member string "expires"
+//!     The "relexpires" attribute for the table. Obsolescent; modern
+//!     versions of Postgres don't seem to use this feature, so don't
+//!     count on this field to contain any useful value.
+//!
 //! @endmapping
 //!
-array(mapping(string:mixed)) list_fields (string table, void|string wild) {
-	array row, ret=({});
-	object res=big_query(
-			"SELECT a.attnum, a.attname, t.typname, a.attlen, c.relowner, "
-			"c.relexpires, c.relisshared, c.relhasrules, t.typdefault "
-			"FROM pg_class c, pg_attribute a, pg_type t "
-			"WHERE c.relname = '"+table+"' AND a.attnum > 0 "
-			"AND a.attrelid = c.oid AND a.atttypid = t.oid ORDER BY attnum");
-	while (row=res->fetch_row()) {
-		mapping m;
-    if (wild && strlen(wild) && !glob(wild,row[1]))
+array(mapping(string:mixed)) list_fields (string table, void|string wild)
+{
+  array row, ret=({});
+  string schema;
+
+  if (has_relexpires == "unknown")
+  {
+    if (catch (big_query("SELECT relexpires FROM pg_class WHERE 1 = 0")))
+      has_relexpires = "no";
+    else
+      has_relexpires = "yes";
+  }
+
+  sscanf(table, "%s.%s", schema, table);
+
+  object res = big_query(
+	"SELECT a.attnum, a.attname, t.typname, a.attlen, c.relowner, "
+	"c.relisshared, c.relhasrules, t.typdefault " +
+        (has_relexpires == "yes" ? ", c.relexpires " : "") +
+	(schema ? ", s.schemaname " : "") +
+	"FROM pg_class c, pg_attribute a, pg_type t " +
+	(schema ? ", pg_tables s " : "") +
+	"WHERE c.relname = '"+table+"' AND a.attnum > 0 " +
+	(schema ? "AND s.tablename = '"+table+"' " : "") +
+	"AND a.attrelid = c.oid AND a.atttypid = t.oid ORDER BY attnum");
+
+  while (row = res->fetch_row())
+  {
+    if (wild && sizeof(wild) && !glob(wild, row[1]))
       continue;
-		row=row[1..];
-		row[4]=mkbool(row[4]);
-		row[5]=mkbool(row[5]);
-		m=mkmapping(({"name","type","length","owner","expires","is_shared"
-				,"has_rules","default"}),row);
-		ret += ({m});
-	}
-	return ret;
+    ret +=
+      ({ ([
+	 "name":	row[1],
+         "type":	row[2],
+         "length":	row[3],
+	 "owner":	row[4],
+         "is_shared":	mkbool(row[5]),
+	 "has_rules":   mkbool(row[6]),
+	 "default":     row[7],
+         "expires":     (sizeof(row) > 8 ? row[8] : 0)
+       ]) });
+  }
+  return ret;
 }
 
 //! This is the only provided interface which allows you to query the
 //! database. If you wish to use the simpler "query" function, you need to
-//! use the Sql.sql generic sql-object.
+//! use the @[Sql.Sql] generic SQL-object.
 //!
-//! It returns a postgres_result object (which conforms to the Sql.sql_result
-//! standard interface for accessing data). I recommend using query() for
-//! simpler queries (because it is easier to handle, but stores all the result
-//! in memory), and big_query for queries you expect to return huge amounts
-//! of data (it's harder to handle, but fectches results on demand).
+//! It returns a postgres_result object (which conforms to the
+//! @[Sql.sql_result] standard interface for accessing data). I
+//! recommend using @[Sql.Sql()->query()] for simpler queries (because it is
+//! easier to handle, but stores all the result in memory), and
+//! @[big_query()] for queries you expect to return huge amounts of
+//! data (it's harder to handle, but fetches results on demand).
 //!
 //! @note
 //! This function @b{can@} raise exceptions.
 //!
 //! @seealso
-//!   Sql.Sql, Sql.sql_result
+//!   @[Sql.Sql], @[Sql.sql_result]
 int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {  
+  if(stringp(q) && String.width(q)>8)
+    q=string_to_utf8(q);
   if (!bindings)
     return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q,bindings));
+  int pi=0,rep=0;
+  array(string|int) paramValues=allocate(sizeof(bindings));
+  array(string) from=allocate(sizeof(bindings));
+  array(string) to=allocate(sizeof(bindings));
+  foreach(bindings; mixed name; mixed value) {
+    // Throws if mapping key is empty string.
+    if(stringp(name)) {
+      if(name[0]!=':')
+        name=":"+name;
+      if(name[1]=='_') {
+        // Special parameter
+        continue;
+      }
+      if(search(q,name)<0)
+	continue;			     // Omit unused references
+    }
+    from[rep]=name;
+    string rval;
+    if(multisetp(value)) {
+      rval=sizeof(value) ? indices(value)[0] : "";
+    }
+    else {
+      if(zero_type(value))
+        paramValues[pi++]=UNDEFINED;
+      else {
+        if(stringp(value) && String.width(value)>8)
+          value=string_to_utf8(value);
+        paramValues[pi++]=(string)value;
+      }
+      rval="$"+(string)pi;
+    }
+    to[rep++]=rval;
+  }
+  paramValues= pi ? paramValues[..pi-1] : UNDEFINED;
+  if(rep--) {
+    q=replace(q,from[..rep],to[..rep]);
+  }
+  return paramValues ? ::big_query(q, paramValues): ::big_query(q);
 }
 
-#else /* !constant(Postgres.postgres) */
-#error "Postgres support not available.\n"
+//! This is an alias for @[big_query()], since @[big_query()] already supports
+//! streaming.
+//!
+//! @seealso
+//!   @[big_query], @[Sql.Sql], @[Sql.sql_result]
+int|object streaming_query(object|string q,
+ mapping(string|int:mixed)|void bindings)
+{
+  return big_query(q, bindings);
+}
+
+#else
+/*
+ * If libpq wasn't available at compile time, the pgsql-module can provide
+ * near the same functionality as the postgres module.
+ */
+
+//! Maps SQL-urls for
+//!   @tt{postgres://[user[:password]@@][hostname][:port][/database]@}
+//! onto
+//!   @tt{pgsql://[user[:password]@@][hostname][:port][/database]@}
+//!
+//! The reason this happens, is because Pike was compiled without libpq
+//! support, therefore Pike falls back to the faster, smaller memory
+//! footprint, more advanced and native PostgreSQL driver called @[Sql.pgsql].
+//!
+//! @seealso
+//!   @[Sql.pgsql], @[Sql.Sql]
+inherit Sql.pgsql;
 #endif /* constant(Postgres.postgres) */

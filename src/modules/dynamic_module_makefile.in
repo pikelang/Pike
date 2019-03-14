@@ -1,170 +1,124 @@
-#
-# $Id: dynamic_module_makefile.in,v 1.76 2001/09/01 15:20:07 mast Exp $
-#
+LC_REQ=@LC_REQ@
 
+LINKAGE_CPPFLAGS=
+DYNAMIC_LINKAGE_CFLAGS=@CCSHARED@
+STATIC_LINKAGE_CFLAGS=
+LINKAGE_CFLAGS=$(DYNAMIC_LINKAGE_CFLAGS)
 
-CC=@CC@
-CPP=@CPP@
-AR=@AR@
-LIBGCC=@LIBGCC@
-REAL_LDFLAGS=@LDFLAGS@
-REAL_CFLAGS=@CFLAGS@
-REAL_CPPFLAGS=@CPPFLAGS@
+MODULE_PROGRAM=.$(MODULE_WRAPPER_PREFIX)$(MODNAME)
+MODULE_TARGET=$(TMP_MODULE_BASE)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so
 
-PIKE_SRC_DIR=$(SRCDIR)/../..
-BUILD_BASE=../..
-MODULE_BASE=..
-PIKE_INCLUDES=-I$(PIKE_SRC_DIR) -I$(BUILD_BASE)
+# The reason for this is that we can't use targets directly to specify
+# the build type; many module makefiles depend on being able to
+# override the default target.
+all:
+	@case "x$$MODULE_BUILD_TYPE" in \
+	  xstatic) $(MAKE) $(MAKE_FLAGS) static;; \
+	  xdynamic) $(MAKE) $(MAKE_FLAGS) dynamic;; \
+	  x) $(MAKE) $(MAKE_FLAGS) static dynamic;; \
+	  *) \
+	    echo "Invalid MODULE_BUILD_TYPE: $$MODULE_BUILD_TYPE" >&2; \
+	    exit 1;; \
+	esac
 
-PREFLAGS=-I. -I$(SRCDIR) $(PIKE_INCLUDES) -I. $(MODULE_CPPFLAGS) $(DEFINES)
-CFLAGS=$(MODULE_CFLAGS) $(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ 
-NOOPT_CFLAGS=$(PREFLAGS) $(NOOPTFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
+@common_module_makefile@
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) @CCSHARED@" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
+build_type: Makefile
+	@echo dynamic > build_type
 
-MODNAME=`pwd|sed -e 's@.*/@@g'`
+static: Makefile $(DUMMY) module-preamble
+	@:
 
-all: dummy
-
-force:
-	@:;
-
-$(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
-	@a=`echo $@ | sed -e 's@/[^/]*$$@@'` ; \
-	echo Making $(MODNAME)/$$a ; \
-	( rm $$a/remake >/dev/null 2>&1 ||: ; \
-	  cd $$a && ( $(MAKE) $(MAKE_FLAGS) || \
-	              ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) \
-	) || exit $$?
-
-dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
-	@tmp="$(INSTALL_NAME)" ; \
-	if test x$$tmp = x ; then tmp="$(MODNAME)"; else :; fi ;\
-	tmp2="___$$tmp" ; \
-	if [ -f $(SRCDIR)/module.pmod.in ]; then \
-	  sed -e "s/@module@/.$$tmp2/" <$(SRCDIR)/module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod ; \
-	else \
-	  if [ -f ./module.pmod.in ]; then \
-	    sed -e "s/@module@/.$$tmp2/" <./module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod; \
-	   else tmp2="$$tmp"; \
-	  fi; \
-	fi ; \
-	$(TMP_BINDIR)/install_module module.so $(TMP_LIBDIR)/modules/$$tmp2.so
-
-.SUFFIXES: .c .o .cmod
-
-.cmod.c:
-	$(BUILD_BASE)/precompile.sh precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
-
-
-# GCC dumps core on some files @ OSF1
-# This kluge should work around that...
-# FIXME: Make this a configure option
-.c.o:
-	@echo "Compiling $<" ;\
-	rm -f $@.fail >/dev/null 2>&1; \
-	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
-	else \
-	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "$(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
-	  echo "$(CC) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
-	fi
+# Depend on $(DUMMY) here too for the sake of post modules, where the
+# static target never gets called.
+dynamic: $(DUMMY) module-main
+	@:
 
 linker_options: Makefile
-	@if test "x$(LINKER_OPTIONS)" != x ; then echo "LINKER_OPTIONS+=$(LINKER_OPTIONS)" ; else : ; fi ; echo "$(LINKER_OPTIONS)" >linker_options
-
-modlist_headers: Makefile
-	@echo "" >modlist_headers
+	@if test "x$(LINKER_OPTIONS)" != x ; then \
+	  echo "echo $(LINKER_OPTIONS) > linker_options" ; \
+	else : ; fi ; \
+	echo "$(LINKER_OPTIONS)" >linker_options
 
 modlist_segment: Makefile
 	@echo "" >modlist_segment
 
-Makefile: $(MODULE_BASE)/dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies $(SRCDIR)/$(CONFIG_HEADERS).in config.status
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status
+# Can't depend on $(SRCDIR)/$(CONFIG_HEADERS).in since
+# $(CONFIG_HEADERS) isn't always used.
+Makefile: $(MODULE_BASE)/dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies make_variables config.status
+	CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status
 	touch remake
 	@echo "Run make again" >&2
 	@exit 1
 
-$(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
-	cd $(SRCDIR) && autoconf --localdir=$(PIKE_SRC_DIR)
-	if [ -f $(SRCDIR)/acconfig.h ]; then \
-	  cd $(SRCDIR) && autoheader; \
-	else :; fi
+$(MODULE_TARGET): module.so
+	@if test "x$(OBJS)" = "x" ; then \
+	  exit 0; \
+	fi; \
+	if test "x$(PIKE_EXTERNAL_MODULE)" = "x" ; then \
+	  $(TMP_BINDIR)/install_module module.so $(MODULE_TARGET) && \
+	  if [ -f $(MODNAME).pdb ]; then \
+	    cp $(MODNAME).pdb `echo "$(MODULE_TARGET)" | sed -e 's,[^/]*$$,,'`; \
+	  else :; fi; \
+	fi
 
-config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status --recheck
-
-# FIXME:
-#  Move -lc $(LIBGCC) into a configurable variable and make sure it is empty on UnixWare
-#
-
-module.so: $(OBJS)  $(MODULE_ARCHIVES)
-	@echo "Linking $(MODNAME)" ;\
-	if $(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) -lc $(LIBGCC) ; then \
+module.so: $(MODULE_ARCHIVES) $(OBJS) $(LDSHARED_MODULE_REQS)
+	@if test "x$(OBJS)" = "x" ; then \
+	  exit 0; \
+	fi; \
+	echo "Linking $(MODNAME)" ;\
+	modname="$(MODNAME)"; \
+	if $(TMP_BINDIR)/smartlink $(MOD_LDSHARED) $(LDFLAGS) -o module.@SO@ \
+	  $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) \
+	  $(LIBGCC) $(LC_REQ) $(LIBGCC) ; then \
 	  if test @SO@ != so ; then mv module.@SO@ module.so ; else :; fi ;\
 	else \
 	  echo "Linking failed:" >&2; \
-	  echo $(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) -lc $(LIBGCC) >&2 ;\
+	  echo $(TMP_BINDIR)/smartlink $(MOD_LDSHARED) $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) >&2 ;\
 	  exit 1; \
 	fi
+	$(MT_FIX_MODULE_SO)
 
-$(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
+$(OBJS): propagated_variables
 
-clean:
-	-rm -f *.o *.fail *.obj *.a *.so module.so linker_options modlist_headers modlist_segment module_testsuite $(MODULE_CLEAN_EXTRA)
-	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
+#
+# install a standard module with optional c component in the system module path
+#
+install: $(MODULE_INSTALL)
+	@if test "x$(OBJS)" != "x" ; then \
+	  $(TMP_BINDIR)/install_module module.so $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so && \
+	  if [ -f $(MODNAME).pdb ]; then \
+	    cp $(MODNAME).pdb $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX); \
+	  else :; fi; \
+	fi; \
+	if test "x$(MODULE_PMOD_IN)" != "x"; then \
+	  $(TMP_BINDIR)/install_module module.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod ;\
+	fi;
 
-
-depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c \
-	|sed -e "s@ $(PIKE_SRC_DIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(PIKE_SRC_DIR)/\1@g" \
-	|sed -e "s@ $(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(SRCDIR)/\1@g" \
-	|sed -e "s@ $(BUILD_BASE)/\([-a-zA-Z0-9.,_]*\)@ \$$(BUILD_BASE)/\1@g" \
-	|sed -e "s@$(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@\1@g" \
-	>$(SRCDIR)/dependencies
-	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
-	@for a in '' $(MODULE_SUBDIRS) ; do \
-	  if test "x$$a" = "x"; then :; else \
-	    echo making depend in $$a; \
-	    ( cd $$a && { \
-	      rm -f remake; \
-	      $(MAKE) $(MAKE_FLAGS) MODNAME=$$a depend || \
-		if test -f remake; then $(MAKE) $(MAKE_FLAGS) MODNAME=$$a depend; \
-		else exit $$?; fi; \
-	    }); \
-	  fi; \
-	done
-
-#verify / debug
-module_testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE)
-	if test "x$(REAL_TESTSUITE)" != x ; then \
-	  cp $(SRCDIR)/$(REAL_TESTSUITE) module_testsuite; \
-	else \
-	  if test "$$PIKE_PATH_TRANSLATE" = ""; then \
-	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite \
-	      -DSRCDIR=$(SRCDIR); \
-	  else \
-	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite \
-	      -DSRCDIR="`echo $(SRCDIR)|sed -e $$PIKE_PATH_TRANSLATE`"; \
-	  fi; \
+#
+# install the module in LOCAL_MODULE_PATH, creating it if it doesn't already exist.
+#
+local_install: $(MODULE_INSTALL)
+	if test ! -d "$(LOCAL_MODULE_PATH)" ; then \
+	  mkdir -p $(LOCAL_MODULE_PATH) ; \
+	fi; if test "x$(OBJS)" != "x" ; then \
+	  $(TMP_BINDIR)/install_module module.so $(LOCAL_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so && \
+	  if [ -f $(MODNAME).pdb ]; then \
+	    cp $(MODNAME).pdb $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX); \
+	  else :; fi; \
+	fi; \
+	if test "x$(MODULE_PMOD_IN)" != "x"; then \
+	  $(TMP_BINDIR)/install_module module.pmod $(LOCAL_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod ;\
 	fi
 
-extra_tests: $(MODULE_TESTS)
+dump_module: install
+	-rm -f dumpmodule.log
+	args=$${args:-"--log-file --update-only=dumpversion --report-failed"}; \
+	$(FINAL_PIKE) -x dump $$args \
+	--recursive "$(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod"
 
-verify: module_testsuite  $(MODULE_TESTS)
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite
-
-verbose_verify: module_testsuite  $(MODULE_TESTS)
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite --verbose
-
-gdb_verify: module_testsuite
-	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -DNOT_INSTALLED -m ../../lib/master.pike $(PIKEOPTS) $(SRCDIR)/../../../bin/test_pike.pike module_testsuite -v -v -f
-	gdb ../../pike
-	@rm .gdbinit
-
-
-install: $(MODULE_INSTALL)
-	$(TMP_BINDIR)/install_module module.so @prefix@/lib/pike/modules/$(MODNAME).so
-
+dump_local_module: install
+	-rm -f dumpmodule.log
+	args=$${args:-"--log-file --update-only=dumpversion --report-failed"}; \
+	$(FINAL_PIKE) -x dump $$args \
+	--recursive "$(LOCAL_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod"

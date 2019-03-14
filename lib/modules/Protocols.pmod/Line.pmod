@@ -1,6 +1,4 @@
 /*
- * $Id: Line.pmod,v 1.16 2001/04/27 13:38:40 grubba Exp $
- *
  * Line-buffered protocol handling.
  *
  * Henrik Grubbström 1998-05-27
@@ -11,22 +9,24 @@
 //! Simple nonblocking line-oriented I/O.
 class simple
 {
-  static object con;
-  static constant line_separator = "\r\n";
+  protected object con;
+
+  //! The sequence separating lines from eachother. "\r\n" by default.
+  protected constant line_separator = "\r\n";
 
   //! If this variable has been set, multiple lines will be accumulated,
-  //! until a line with a single @tt{'.'@} (period) is received.
+  //! until a line with a single @expr{"."@} (period) is received.
   //! @[handle_data()] will then be called with the accumulated data
   //! as the argument.
   //!
   //! @note
   //! @[handle_data()] is one-shot, ie it will be cleared when it is called.
   //!
-  //! The line with the single @tt{'.'@} (period) will not be in the
+  //! The line with the single @expr{"."@} (period) will not be in the
   //! accumulated data.
   //!
   //! @seealso
-  //! @[handle_command()]
+  //!   @[handle_command()]
   //!
   function(string:void) handle_data;
 
@@ -44,15 +44,15 @@ class simple
   //!
   void handle_command(string line);
 
-  static int timeout;		// Idle time before timeout.
-  static int timeout_time;	// Time at which next timeout will occur.
+  protected int timeout;		// Idle time before timeout.
+  protected int timeout_time;	// Time at which next timeout will occur.
 
   //! Queue some data to send.
   //!
   //! @seealso
-  //! @[handle_commend()], @[handle_data()], @[disconnect()]
+  //! @[handle_command()], @[handle_data()], @[disconnect()]
   //!
-  static void send(string s)
+  protected void send(string s)
   {
     send_q->put(s);
     con->set_write_callback(write_callback);
@@ -67,7 +67,7 @@ class simple
   //! @seealso
   //! @[create()], @[touch_time()]
   //!
-  static void do_timeout()
+  protected void do_timeout()
   {
     if (con) {
       catch {
@@ -83,7 +83,7 @@ class simple
     }
   }
 
-  static void _timeout_cb()
+  protected void _timeout_cb()
   {
     if (timeout > 0) {
       // Timeouts are enabled.
@@ -112,8 +112,8 @@ class simple
     }
   }
 
-  static string multi_line_buffer = "";
-  static void _handle_command(string line)
+  protected string multi_line_buffer = "";
+  protected void _handle_command(string line)
   {
     if (handle_data) {
       if (line != ".") {
@@ -130,21 +130,21 @@ class simple
     }
   }
 
-  static string read_buffer = "";
+  protected string read_buffer = "";
 
   //! Read a line from the input.
   //!
   //! @returns
-  //! Returns @tt{0@} when more input is needed.
+  //! Returns @expr{0@} when more input is needed.
   //! Returns the requested line otherwise.
   //!
   //! @note
   //! The returned line will not contain the line separator.
   //!
   //! @seealso
-  //! @[handle_command()], @[line_separator]
+  //!   @[handle_command()], @[line_separator]
   //!
-  static string read_line()
+  protected string read_line()
   {
     // FIXME: Should probably keep track of where the search ended last time.
     int i = search(read_buffer, line_separator);
@@ -164,9 +164,9 @@ class simple
   //! Calls the handle callbacks repeatedly until no more lines are available.
   //!
   //! @seealso
-  //! @[handle_data()], @[handle_command()], @[read_line()]
+  //!   @[handle_data()], @[handle_command()], @[read_line()]
   //!
-  static void read_callback(mixed ignored, string data)
+  protected void read_callback(mixed ignored, string data)
   {
     touch_time();
 
@@ -181,7 +181,7 @@ class simple
   //! Queue of data that is pending to send.
   //!
   //! The elements in the queue are either strings with data to send,
-  //! or @tt{0@} (zero) which is the end of file marker. The connection
+  //! or @expr{0@} (zero) which is the end of file marker. The connection
   //! will be closed when the end of file marker is reached.
   //!
   //! @seealso
@@ -189,8 +189,8 @@ class simple
   //!
   object(ADT.Queue) send_q = ADT.Queue();
 
-  static string write_buffer = "";
-  static void write_callback(mixed ignored)
+  protected string write_buffer = "";
+  protected void write_callback(mixed ignored)
   {
     touch_time();
 
@@ -265,7 +265,7 @@ class simple
   //! The default action is to shut down the connection on this side
   //! as well.
   //!
-  static void close_callback()
+  protected void close_callback()
   {
     if (handle_data || sizeof(read_buffer) || sizeof(multi_line_buffer)) {
       werror("close_callback(): Unexpected close!\n");
@@ -282,15 +282,15 @@ class simple
   //! @[timeout] is an optional timeout in seconds after which the connection
   //! will be closed if there has been no data sent or received.
   //!
-  //! If @[timeout] is @tt{0@} (zero), no timeout will be in effect.
+  //! If @[timeout] is @expr{0@} (zero), no timeout will be in effect.
   //!
   //! @seealso
   //! @[touch_time()], @[do_timeout()]
   //!
   void create(object(Stdio.File) con, int|void timeout)
   {
-    local::con = con;
-    local::timeout = timeout;
+    this_program::con = con;
+    this_program::timeout = timeout;
 
     // Start the timeout handler.
     touch_time();
@@ -321,8 +321,8 @@ class smtp_style
   //! If @[lines] is omitted, @[errorcodes] will be used to lookup
   //! an appropriate error-message.
   //!
-  //! If @[lines] is a string, it will be split on @tt{'\n'@} (newline),
-  //! and the error-code interspersed as appropriate.
+  //! If @[lines] is a string, it will be split on @expr{"\n"@}
+  //! (newline), and the error-code interspersed as appropriate.
   //!
   //! @seealso
   //! @[errorcodes]
@@ -367,19 +367,20 @@ class imap_style
   //! This function will be called once for every line that is received.
   //!
   //! @note
-  //! This API is provided for backward compatibility; overload
-  //! @[handle_command()] instead.
+  //!   This API is provided for backward compatibility; overload
+  //!   @[handle_command()] instead.
   //!
   //! @seealso
-  //! @[handle_command()]
+  //!   @[Protocols.Line.simple()->handle_command()]
   function(string:void) handle_line;
 
+  //! Function called once for every received line.
   void handle_command(string line)
   {
     handle_line(line);
   }
 
-  static void read_callback(mixed ignored, string data)
+  protected void read_callback(mixed ignored, string data)
   {
     touch_time();
 
@@ -388,7 +389,7 @@ class imap_style
     while(1) {
       if (handle_literal)
       {
-	if (strlen(read_buffer) < literal_length)
+	if (sizeof(read_buffer) < literal_length)
 	  return;
 	string literal = read_buffer[..literal_length - 1];
 	read_buffer = read_buffer[literal_length..];

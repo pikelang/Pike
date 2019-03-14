@@ -1,0 +1,426 @@
+dnl test
+
+AC_INIT(build_pgtk.pike)
+AC_CONFIG_HEADER(pgtk_config.h)
+
+PIKE_FEATURE_WITHOUT(GTK2)
+
+AC_MODULE_INIT()
+
+dnl AC_DEFINE(FUNCPROTO)
+dnl AC_DEFINE(HAVE_GNOME)
+dnl AC_DEFINE(HAVE_DPMS)
+dnl AC_DEFINE(PGTK_AUTO_UTF8)
+
+AC_DEFINE(FUNCPROTO)
+
+AC_HEADER_STDC
+
+# Must be before AC_CHECK_FUNCS for PIKE_FUNCS_NEED_DECLS to work.
+AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h sys/types.h sys/stat.h fcntl.h )
+
+AC_CHECK_FUNCS( gethrtime signal sigaction )
+
+AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
+
+AC_SUBST(pgtk2_have_x11)
+pgtk2_have_x11=nox11
+AC_SUBST(pgtk_has_gtk_beta)
+pgtk_has_gtk_beta=nogtk_beta
+AC_SUBST(pgtk_has_gtk216)
+pgtk_has_gtk216=nogtk216
+AC_SUBST(pgtk_has_gtk214)
+pgtk_has_gtk214=nogtk214
+AC_SUBST(pgtk_has_gtk212)
+pgtk_has_gtk212=nogtk212
+AC_SUBST(pgtk_has_gtk210)
+pgtk_has_gtk210=nogtk210
+AC_SUBST(pgtk_has_gtk28)
+pgtk_has_gtk28=nogtk28
+AC_SUBST(pgtk_has_gtk26)
+pgtk_has_gtk26=nogtk26
+AC_SUBST(pgtk_has_gtk24)
+pgtk_has_gtk24=nogtk24
+AC_SUBST(pgtk_has_gtk22)
+pgtk_has_gtk22=nogtk22
+AC_SUBST(pgtk_has_cairo)
+pgtk_has_cairo=nocairo
+AC_SUBST(pgtk_has_gnome)
+pgtk_has_gnome=nognome
+AC_SUBST(pgtk_has_pango_beta)
+pgtk_has_pango_beta=nopango_beta
+AC_SUBST(pgtk_has_pango)
+pgtk_has_pango=nopango
+AC_SUBST(pgtk_has_pango110)
+pgtk_has_pango110=nopango110
+AC_SUBST(pgtk_has_pango18)
+pgtk_has_pango18=nopango18
+AC_SUBST(pgtk_has_pango16)
+pgtk_has_pango16=nopango16
+AC_SUBST(pgtk_has_atk)
+pgtk_has_atk=noatk
+AC_SUBST(pgtk_has_atk18)
+pgtk_has_atk18=noatk18
+AC_SUBST(pgtk_has_gnomecanvas)
+pgtk_has_gnomecanvas=nognomecanvas
+AC_SUBST(pgtk_has_gnomeui)
+pgtk_has_gnomeui=nognomeui
+AC_SUBST(pgtk_has_libglade)
+pgtk_has_libglade=nolibglade
+AC_SUBST(pgtk_has_gtkdatabox)
+pgtk_has_gtkdatabox=nogtkdatabox
+AC_SUBST(pgtk_has_gtksourceview)
+pgtk_has_gtksourceview=nogtksourceview
+AC_SUBST(pgtk_has_gtksourceview11)
+pgtk_has_gtksourceview11=nogtksourceview11
+AC_SUBST(pgtk_has_gtksourceview20)
+pgtk_has_gtksourceview20=nogtksourceview20
+
+# lib, header, symbol, ok, fail, feature
+AC_DEFUN([AC_CHECK_PKG],
+[
+  AC_MSG_CHECKING([for $1])
+  AC_CACHE_VAL([pgtk2_cv_pkg_]translit([$1], [-+.], [___]), [
+    if ${ac_tool_prefix}pkg-config $1 2>/dev/null; then
+      [pgtk2_cv_pkg_]translit([$1], [-+.], [___])=yes
+    else
+      [pgtk2_cv_pkg_]translit([$1], [-+.], [___])=no
+    fi
+  ])
+  if test x"$[pgtk2_cv_pkg_]translit([$1], [-+.], [___])" = xyes; then
+    AC_MSG_RESULT(yes)
+
+    ifelse([$6],,,[PIKE_FEATURE_NODEP([$6])])dnl
+
+    # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
+    #       which gcc doesn't like...
+    #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;
+    #       both of which should already be present.
+    #   /grubba 2005-10-05
+    OLD_CFLAGS="$CFLAGS"
+    OLD_LIBS="$LIBS"
+    LIBS="`${ac_tool_prefix}pkg-config --libs $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $LIBS"
+    CFLAGS="`${ac_tool_prefix}pkg-config --cflags $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $CFLAGS"
+
+    # Header check necessary for PIKE_FUNCS_NEED_DECLS.
+    ifelse([$2],,,[AC_CHECK_HEADERS($2)])
+
+    AC_CHECK_FUNCS($3)
+    LIBS="$OLD_LIBS"
+    CFLAGS="$OLD_CFLAGS"
+    if test "x$ac_cv_func_$3" = "xyes"; then
+      gtk_final_libs="$gtk_final_libs $1"
+      ifelse([$4],,ifelse([$6],,,[PIKE_FEATURE_OK([$6])]),[$4])dnl
+    else
+      echo "Disabled use of $1."
+      ifelse([$5],,,[$5])dnl
+    fi
+  else
+    AC_MSG_RESULT(no)
+    ifelse([$5],,,[$5])dnl
+  fi
+])
+
+dnl package
+AC_DEFUN(PGTK_CHECK_VERSION, [
+  AC_MSG_CHECKING(for $1 version)
+  AC_CACHE_VAL([pgtk2_cv_ver_]translit([$1], [-+.], [___]), [
+    [pgtk2_cv_ver_]translit([$1], [-+.], [___])=`${ac_tool_prefix}pkg-config --modversion $1 2>/dev/null`
+  ])
+  AC_MSG_RESULT($[pgtk2_cv_ver_]translit([$1], [-+.], [___]))
+])
+
+WITH_GTK=0
+if test "$PKG_CONFIG" = "no" ; then
+  echo "*** pkg-config must be in your path!!!"
+else
+  gtk_test_libs="gtk+-2.0 libgnome-2.0 libglade-2.0 libgnomeui-2.0 libpanelapplet-2.0"
+  gtk_final_libs=""
+
+  AC_CHECK_PKG(gtk+-2.0, gtk/gtk.h, gtk_init, [
+    PIKE_FEATURE_OK(GTK2)
+    WITH_GTK=1
+
+    PGTK_CHECK_VERSION(gtk+-2.0)
+    OIFS="$IFS"
+    IFS="."
+    set $pgtk2_cv_ver_gtk__2_0
+    IFS="$OIFS"
+    gtkmajorvers=$1
+    gtkminorvers=$2
+    gtkpatchvers=$3
+    if test $gtkmajorvers -le 1 ; then
+      # The old betas had major 1; eg 1.3.2.
+      # We don't support the betas, since they are more compatible with
+      # Gtk 1.2 than with Gtk 2.
+      WITH_GTK=0
+      PIKE_FEATURE(GTK2, [no (too old)])
+    else
+      if test $gtkminorvers -ge 2 ; then
+	pgtk_has_gtk22=gtk22
+	AC_DEFINE(HAVE_GTK22)
+      fi
+      if test $gtkminorvers -ge 4 ; then
+	pgtk_has_gtk24=gtk24
+	AC_DEFINE(HAVE_GTK24)
+      fi
+      if test $gtkminorvers -ge 6 ; then
+	pgtk_has_gtk26=gtk26
+	AC_DEFINE(HAVE_GTK26)
+      fi
+      if test $gtkminorvers -ge 8 ; then
+        pgtk_has_gtk28=gtk28
+        AC_DEFINE(HAVE_GTK28)
+      fi
+      if test $gtkminorvers -ge 10 ; then
+	pgtk_has_gtk210=gtk210
+	AC_DEFINE(HAVE_GTK210)
+      fi
+      if test $gtkminorvers -ge 12 ; then
+	pgtk_has_gtk212=gtk212
+	AC_DEFINE(HAVE_GTK212)
+      fi
+      if test $gtkminorvers -ge 14 ; then
+	pgtk_has_gtk214=gtk214
+	AC_DEFINE(HAVE_GTK214)
+      fi
+      if test $gtkminorvers -ge 16 ; then
+	pgtk_has_gtk216=gtk216
+	AC_DEFINE(HAVE_GTK216)
+      fi
+    fi
+  ],,GTK2)
+  if test "x$WITH_GTK" = "x1"; then
+    PIKE_FEATURE_NODEP(Pango)
+    AC_CHECK_PKG(pango,, pango_font_description_new, [
+      pgtk_has_pango=pango
+      AC_DEFINE(HAVE_PANGO)
+
+      PIKE_FEATURE_OK(Pango)
+
+      PGTK_CHECK_VERSION(pango)
+      OIFS="$IFS"
+      IFS="."
+      set $pgtk2_cv_ver_pango
+      IFS="$OIFS"
+      pangomajorvers=$1
+      pangominorvers=$2
+      pangopatchvers=$3
+      if test $pangomajorvers -le 0 ; then
+	# The old betas had major 0; eg 0.13
+	pgtk_has_pango_beta=pango_beta
+	AC_DEFINE(HAVE_PANGO_BETA)
+      else
+        if test $pangominorvers -ge 10 ; then
+          pgtk_has_pango110=pango110
+          AC_DEFINE(HAVE_PANGO110)
+        fi
+        if test $pangominorvers -ge 8 ; then
+          pgtk_has_pango18=pango18
+          AC_DEFINE(HAVE_PANGO18)
+        fi
+	if test $pangominorvers -ge 6 ; then
+	  pgtk_has_pango16=pango16
+	  AC_DEFINE(HAVE_PANGO16)
+	fi
+	if test $pangominorvers -ge 4 ; then
+	  pgtk_has_pango14=pango14
+	  AC_DEFINE(HAVE_PANGO14)
+	fi
+	if test $pangominorvers -ge 2 ; then
+	  pgtk_has_pango12=pango12
+	  AC_DEFINE(HAVE_PANGO12)
+	fi
+      fi
+    ])
+    dnl FIXME: Is Atk used anywhere?
+    AC_CHECK_PKG(atk,, atk_relation_new, [
+      pgtk_has_atk=atk
+      AC_DEFINE(HAVE_ATK)
+
+      PGTK_CHECK_VERSION(atk)
+      OIFS="$IFS"
+      IFS="."
+      set $pgtk2_cv_ver_atk
+      IFS="$OIFS"
+      atkmajorvers=$1
+      atkminorvers=$2
+      atkpatchvers=$3
+      if test $atkminorvers -ge 8 ; then
+	pgtk_has_atk18=atk18
+	AC_DEFINE(HAVE_ATK18)
+      fi
+    ])
+    PIKE_FEATURE_NODEP(Gnome2)
+    AC_CHECK_PKG(libgnome-2.0, libgnomeui/libgnomeui.h, gnome_program_init, [
+      PIKE_FEATURE_OK(Gnome2)
+      AC_DEFINE(HAVE_GNOME)
+      pgtk_has_gnome=gnome
+    ])
+    AC_CHECK_PKG(cairo,, cairo_create, [
+      AC_DEFINE(HAVE_CAIRO)
+      pgtk_has_cairo=cairo
+    ])
+    PIKE_FEATURE_NODEP(GTK2.GladeXML)
+    AC_CHECK_PKG(libglade-2.0, glade/glade-init.h, glade_init, [
+      PIKE_FEATURE_OK(GTK2.GladeXML)
+      AC_DEFINE(HAVE_GLADE)
+      pgtk_has_libglade=libglade
+    ])
+    PIKE_FEATURE_NODEP(Gnome2.Client)
+    AC_CHECK_PKG(libgnomeui-2.0,, gnome_window_icon_init, [
+      PIKE_FEATURE_OK(Gnome2.Client)
+      AC_DEFINE(HAVE_GNOMEUI)
+      pgtk_has_gnomeui=gnomeui
+    ])
+    AC_CHECK_PKG(libpanelapplet-2.0, panel-applet.h, panel_applet_factory_main)
+    PIKE_FEATURE_NODEP(Gnome2.Canvas)
+    AC_CHECK_PKG(libgnomecanvas-2.0,
+		 libgnomecanvas/libgnomecanvas.h, gnome_canvas_new, [
+      PIKE_FEATURE_OK(Gnome2.Canvas)
+      AC_DEFINE(HAVE_GNOMECANVAS)
+      pgtk_has_gnomecanvas=gnomecanvas
+    ])
+    # FIXME: gtk_databox_data_add() is no longer part of the API in 0.9.1.3.
+    PIKE_FEATURE_NODEP(GTK2.Databox)
+    # This cache variable interferes with GTK1.
+    unset ac_cv_header_gtkdatabox_h
+    AC_CHECK_PKG(gtkdatabox, gtkdatabox.h, gtk_databox_data_add, [
+      PIKE_FEATURE_OK(GTK2.Databox)
+      AC_DEFINE(HAVE_GTKDATABOX)
+      pgtk_has_gtkdatabox=gtkdatabox
+    ])
+    PIKE_FEATURE_NODEP(GTK2.SourceView)
+    AC_CHECK_PKG(gtksourceview-2.0, gtksourceview/gtksourceview.h,
+		 gtk_source_view_new, [
+      PIKE_FEATURE(GTK2.SourceView, [yes (2.0)])
+      AC_DEFINE(HAVE_GTKSOURCEVIEW)
+      pgtk_has_gtksourceview=gtksourceview
+
+      PGTK_CHECK_VERSION(gtksourceview-2.0)
+      OIFS="$IFS"
+      IFS="."
+      set $pgtk2_cv_ver_gtksourceview_2_0
+      IFS="$OIFS"
+      gtksourceviewversmajorvers=$1
+      gtksourceviewversminorvers=$2
+      gtksourceviewverspatchvers=$3
+      pgtk_has_gtksourceview11=gtksourceview11
+      pgtk_has_gtksourceview20=gtksourceview20
+      AC_DEFINE(HAVE_GTKSOURCEVIEW11)
+    ], [
+      AC_CHECK_PKG(gtksourceview-1.0,
+	           gtksourceview/gtksourceview.h,
+	           gtk_source_view_new, [
+        PIKE_FEATURE(GTK2.SourceView, [yes (1.0)])
+        AC_DEFINE(HAVE_GTKSOURCEVIEW)
+        pgtk_has_gtksourceview=gtksourceview
+
+        PGTK_CHECK_VERSION(gtksourceview-1.0)
+        OIFS="$IFS"
+        IFS="."
+        set $pgtk2_cv_ver_gtksourceview_1_0
+        IFS="$OIFS"
+        gtksourceviewversmajorvers=$1
+        gtksourceviewversminorvers=$2
+        gtksourceviewverspatchvers=$3
+        if test $gtksourceviewversminorvers -ge 1 ; then
+	  pgtk_has_gtksourceview11=gtksourceview11
+	  AC_DEFINE(HAVE_GTKSOURCEVIEW11)
+        fi
+      ])
+    ])
+  
+    # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
+    #       which gcc doesn't like...
+    #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;
+    #       both of which should already be present.
+    #   /grubba 2005-10-05
+    GTK_CFLAGS="`${ac_tool_prefix}pkg-config --cflags ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
+    GTK_LIBS="`${ac_tool_prefix}pkg-config --libs ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
+
+    AC_DEFINE(PGTK_AUTO_UTF8)
+  fi
+fi
+
+# Test for API differences...
+OLD_CFLAGS="$CFLAGS"
+OLD_LIBS="$LIBS"
+CFLAGS="$CFLAGS $GTK_CFLAGS"
+LIBS="$LIBS $GTK_LIBS"
+
+AC_CHECK_FUNCS(gtk_tree_selection_unselect_range g_value_get_schar g_value_set_schar)
+
+AC_MSG_CHECKING([if g_signal_connect_data takes six args])
+AC_CACHE_VAL(pgtk2_cv_g_signal_connect_has_six_args, [
+  AC_TRY_COMPILE([
+#include <glib-object.h>
+  ],[
+    g_signal_connect_data(0,0,0,0,0,0);
+  ], [ pgtk2_cv_g_signal_connect_has_six_args="yes"
+  ], [ pgtk2_cv_g_signal_connect_has_six_args="no" ])
+])
+if test "x$pgtk2_cv_g_signal_connect_has_six_args" = "xyes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS)
+else
+  AC_MSG_RESULT(no -- old glib assumed)
+fi
+
+AC_MSG_CHECKING([if we are using X11])
+AC_CACHE_VAL(pgtk2_cv_have_x11, [
+   AC_TRY_COMPILE([
+#include <gdk/gdk.h> 
+#include <gdk/gdkx.h> 
+ ], 
+ [
+     GdkWindow *w = (GdkWindow *)0;
+     Window window = GDK_WINDOW_XWINDOW (w);
+ ], 
+ [pgtk2_cv_have_x11=x11],
+ [pgtk2_cv_have_x11=nox11])
+])
+pgtk2_have_x11="$pgtk2_cv_have_x11"
+if test "x$pgtk2_have_x11" = "xx11"; then
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
+LIBS="$OLD_LIBS"
+CFLAGS="$OLD_CFLAGS"
+
+AC_SUBST(pgtk_has_libglade)
+AC_SUBST(pgtk_has_gtk216)
+AC_SUBST(pgtk_has_gtk214)
+AC_SUBST(pgtk_has_gtk212)
+AC_SUBST(pgtk_has_gtk210)
+AC_SUBST(pgtk_has_gtk28)
+AC_SUBST(pgtk_has_gtk26)
+AC_SUBST(pgtk_has_gtk24)
+AC_SUBST(pgtk_has_gtk22)
+AC_SUBST(pgtk_has_pango)
+AC_SUBST(pgtk_has_pango110)
+AC_SUBST(pgtk_has_pango18)
+AC_SUBST(pgtk_has_pango16)
+AC_SUBST(pgtk_has_pango14)
+AC_SUBST(pgtk_has_pango12)
+AC_SUBST(pgtk_has_atk)
+AC_SUBST(pgtk_has_atk18)
+AC_SUBST(pgtk_has_gnomeui)
+AC_SUBST(pgtk_has_cairo)
+AC_SUBST(PGTK_CFLAGS)
+AC_SUBST(PGTK_LIBS)
+AC_SUBST(GTK_CFLAGS)
+AC_SUBST(GTK_LIBS)
+AC_SUBST(pgtk_has_gnome)
+AC_SUBST(pgtk_has_gnomecanvas)
+AC_SUBST(pgtk_has_gtkdatabox)
+AC_SUBST(pgtk_has_gtksourceview)
+
+AC_SUBST(WITH_GTK)
+PGTK_CFLAGS="$GTK_CFLAGS"
+PGTK_LIBS="$GTK_LIBS"
+CFLAGS="$CFLAGS $GTK_CFLAGS"
+LIBS="$MODULE_LDFLAGS $LIBS"
+AC_OUTPUT(Makefile options)

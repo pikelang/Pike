@@ -10,16 +10,47 @@ if test "x$with_freetype" = "xyes" ; then
 
   PIKE_FEATURE_NODEP(Image.FreeType)
 
-  AC_PATH_PROG(FT_CONFIG, freetype-config, no)
+  MY_AC_PATH_PROG(FT_CONFIG, ${ac_tool_prefix}freetype-config, no)
 
   if test "$FT_CONFIG" = "no" ; then
      :
   else
+    PIKE_SELECT_ABI
+    PIKE_INIT_REAL_DIRS
+
     OLDCPPFLAGS="$CPPFLAGS"
     OLDLIBS="$LIBS"
     CPPFLAGS="`$FT_CONFIG --cflags` $CPPFLAGS"
-    LIBS="`$FT_CONFIG --libs` $LIBS"
-    AC_MSG_CHECKING(If freetype actually works)
+
+    # NOTE: freetype-config is usually not ABI-aware,
+    #       so we need to repair it...
+    FTLIBS=""
+    for flag in `$FT_CONFIG --libs`; do
+      flg=`echo "x$flag" | sed -e 's/^x-\(.\).*/\1/p' -ed`
+      if test "x$flg" = "xL" -o "x$flg" = "xR"; then
+        dd=`echo "x$flag" | sed -e 's/^x-.//'`
+	if test -d "$dd"; then :; else
+	  # Not a directory. Keep as is.
+	  FTLIBS="$FTLIBS $flag"
+	  continue;
+	fi
+	for suff in $pike_cv_abi_suffixes; do
+	  d="$dd$suff"
+	  empty_real_libs=""
+	  PIKE_CHECK_ABI_DIR($d, [
+	    FTLIBS="$FTLIBS -$flg$d"
+	  ],,empty_real_libs)
+	done
+      else
+        # Not a search path directive. Keep as is.
+        FTLIBS="$FTLIBS $flag"
+      fi
+    done
+    echo "FTLIBS: $FTLIBS"
+    LIBS="$FTLIBS $LIBS"
+    AC_MSG_CHECKING(if freetype actually works)
+    
+    # The below test works only for freetype2 < 2.1.6
     AC_TRY_LINK([
 #include <freetype/freetype.h> 
 ], 
@@ -29,10 +60,40 @@ if test "x$with_freetype" = "xyes" ; then
 ], 
 [ft_ok=yes], 
 [ft_ok=no])
+
+    # The test below works for freetype2 >= 2.1.6
+    if test no = "$ft_ok" ; then
+      AC_TRY_LINK([
+#include <ft2build.h>
+#include FT_FREETYPE_H
+], 
+[
+  FT_Library library;
+  FT_Init_FreeType( &library );
+], 
+[
+ ft_ok=yes
+ AC_DEFINE(HAVE_FT_FT2BUILD)
+],
+[ft_ok=no])
+    fi
+    
     if test yes = "$ft_ok" ; then
       AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_LIBFT2)
       PIKE_FEATURE_OK(Image.FreeType)
+      AC_MSG_CHECKING(for ft_encoding_latin_1 declaration)
+      AC_CACHE_VAL(pike_cv_decl_ft_encoding_latin_1, [
+        AC_TRY_COMPILE([
+#include <freetype/freetype.h>
+int q = ft_encoding_latin_1;
+        ], [], [pike_cv_decl_ft_encoding_latin_1=yes
+        ],[pike_cv_decl_ft_encoding_latin_1=no ])
+      ])
+      AC_MSG_RESULT($pike_cv_decl_ft_encoding_latin_1)
+      if test "x$pike_cv_decl_ft_encoding_latin_1" = "xyes"; then
+        AC_DEFINE(HAVE_DECL_FT_ENCODING_LATIN_1)
+      else :; fi
     else
       AC_MSG_RESULT(no)
       CPPFLAGS="$OLDCPPFLAGS"

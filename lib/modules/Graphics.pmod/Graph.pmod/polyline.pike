@@ -1,9 +1,4 @@
-#!NOMODULE
-/*
- * name = "BG: Create pies";
- * doc = "Business Graphics sub-module providing draw functions.";
- * $Id: polyline.pike,v 1.3 2000/09/28 03:38:43 hubbe Exp $
- */
+//! Graph sub-module providing draw functions.
 
 #pike __REAL_VERSION__
 
@@ -25,36 +20,36 @@ constant PI = 3.1415926535897932384626433832795080;
 /*
  * Some optimizations for the cappings.
  *
- * /grubba (who got tired of BG beeing so slow)
+ * /grubba (who got tired of BG being so slow)
  */
 
-static array(float) init_cap_sin_table()
+protected array(float) init_cap_sin_table()
 {
   array(float) s_t = allocate(CAPSTEPS);
 
   for (int i = 0; i < CAPSTEPS; i++) {
     s_t[i] = sin(PI*i/(CAPSTEPS-1));
   }
-  return(s_t);
+  return s_t;
 }
 
-static array(float) cap_sin_table = init_cap_sin_table();
+protected array(float) cap_sin_table = init_cap_sin_table();
 
-static array(float) init_cap_cos_table()
+protected array(float) init_cap_cos_table()
 {
   array(float) c_t = allocate(CAPSTEPS);
 
   for (int i = 0; i < CAPSTEPS; i++) {
     c_t[i] = cos(PI*i/(CAPSTEPS-1));
   }
-  return(c_t);
+  return c_t;
 }
 
-static array(float) cap_cos_table = init_cap_cos_table();
+protected array(float) cap_cos_table = init_cap_cos_table();
 
 
 
-static private array(float) xyreverse(array(float) a)
+protected private array(float) xyreverse(array(float) a)
 {
   array(float) r = reverse(a);
   int n = sizeof(r)/2;

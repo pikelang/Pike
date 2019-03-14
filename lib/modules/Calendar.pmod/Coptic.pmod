@@ -1,32 +1,26 @@
-//!
-//! module Calendar
-//! submodule Coptic
-//!
-//! 	This is the Coptic Orthodox Church calendar,
-//!	that starts the 11th or 12th September and has
-//!	13 months. 
-//!
-//! note:
-//!	The (default) names of the months
-//!	are different then other the emacs calendar;
-//!	I do not know which ones are used - the difference
-//!	seem to be only the transcription of the phonetic sounds
-//!	(B &lt;-&gt; P, etc).
-//!
-//!	I do not know for how long back the calendar is valid,
-//!	either. My sources claim that the calendar is synchronized
-//!	with the <ref>Gregorian</ref> calendar, which is odd.
-//! 	
-
 #pike __REAL_VERSION__
 
-import ".";
+//! This is the Coptic Orthodox Church calendar,
+//! that starts the 11th or 12th September and has
+//! 13 months. 
+//!
+//! @note
+//! The (default) names of the months
+//! are different then other the emacs calendar;
+//! I do not know which ones are used - the difference
+//! seem to be only the transcription of the phonetic sounds
+//! (B <-> P, etc).
+//!
+//! I do not know for how long back the calendar is valid,
+//! either. My sources claim that the calendar is synchronized
+//! with the @[Gregorian] calendar, which is odd.
+
 // inherit some rules from Gregorian, like week numbering
-inherit Gregorian:Gregorian;
+inherit Calendar.Gregorian:Gregorian;
 
 string calendar_name() { return "Coptic"; }
 
-private static mixed __initstuff=lambda()
+private protected mixed __initstuff=lambda()
 {
    f_week_day_shortname_from_number="gregorian_week_day_shortname_from_number";
    f_week_day_name_from_number="gregorian_week_day_name_from_number";
@@ -39,10 +33,10 @@ private static mixed __initstuff=lambda()
    f_week_name_from_number="week_name_from_number";
 }();
 
-static constant year_offset=-284;
-static constant start=1720949;
+protected constant year_offset=-284;
+protected constant start=1720949;
 
-static array year_from_julian_day(int jd)
+protected array year_from_julian_day(int jd)
 {
    int d=jd-start;
 
@@ -58,20 +52,20 @@ static array year_from_julian_day(int jd)
    });
 }
 
-static int julian_day_from_year(int y)
+protected int julian_day_from_year(int y)
 {
    y-=year_offset;
    return start+y*365+y/4-y/100+y/400;
 }
 
-static int year_leap_year(int y) 
+protected int year_leap_year(int y) 
 { 
    y-=year_offset;
    werror("%O\n",y);
    return (!(((y)%4) || (!((y)%100) && ((y)%400))));
 }
 
-static array(int) year_month_from_month(int y,int m)
+protected array(int) year_month_from_month(int y,int m)
 {
 // [y,m,ndays,myd]
 
@@ -81,7 +75,7 @@ static array(int) year_month_from_month(int y,int m)
    return ({y,m,m==13?year_leap_year(y)+5:30,1+30*(m-1)});
 }
 
-static array(int) month_from_yday(int y,int yd)
+protected array(int) month_from_yday(int y,int yd)
 {
 // [month,day-of-month,ndays,month-year-day]
    int m=(yd-1)/30+1;

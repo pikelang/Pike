@@ -1,9 +1,11 @@
-/* $Id: matrix.c,v 1.38 2001/09/27 16:45:45 marcus Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /*
 **! module Image
-**! note
-**!	$Id: matrix.c,v 1.38 2001/09/27 16:45:45 marcus Exp $
 **! class Image
 */
 
@@ -12,21 +14,17 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "threads.h"
 #include "pike_error.h"
 
 #include "image.h"
 
-/* This must be included last! */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_program;
 #ifdef THIS
@@ -93,14 +91,14 @@ static INLINE int getrgb(struct image *img,
    if (args-args_start<3) return 0;
 
    for (i=0; i<3; i++)
-      if (sp[-args+i+args_start].type!=T_INT)
+      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
          Pike_error("Illegal r,g,b argument to %s\n",name);
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
 
    if (args-args_start>=4) {
-      if (sp[3-args+args_start].type!=T_INT) {
+     if (TYPEOF(sp[3-args+args_start]) != T_INT) {
          Pike_error("Illegal alpha argument to %s\n",name);
       }
 
@@ -118,7 +116,7 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
    INT32 i;
    if (args-args_start<3) return 0;
    for (i=0; i<3; i++)
-      if (sp[-args+i+args_start].type!=T_INT)
+      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
          Pike_error("Illegal r,g,b argument to %s\n",name);
    rgb->r=sp[-args+args_start].u.integer;
    rgb->g=sp[1-args+args_start].u.integer;
@@ -186,8 +184,8 @@ CHRONO("scale begin");
    if (newx<1) newx=1;
    if (newy<1) newy=1;
 
-   new=malloc(newx*newy*sizeof(rgbd_group) +1);
-   if (!new) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   new=xalloc(newx*newy*sizeof(rgbd_group)+1);
+
    THREADS_ALLOW();
 
    for (y=0; y<newx*newy; y++)
@@ -217,7 +215,7 @@ CHRONO("scale begin");
 			source->img, y, source->xsize);
    }
 
-   dest->img=d=malloc(newx*newy*sizeof(rgb_group) +1);
+   dest->img=d=malloc(newx*newy*sizeof(rgb_group)+RGB_VEC_PAD);
    if (d) 
    {
 
@@ -241,8 +239,8 @@ CHRONO("transfer begin");
 CHRONO("scale end");
 
    THREADS_DISALLOW();
-   if (!d) 
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   if (!d)
+     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 }
 
 /* Special, faster, case for scale=1/2 */
@@ -250,22 +248,31 @@ void img_scale2(struct image *dest, struct image *source)
 {
    rgb_group *new;
    INT32 x, y, newx, newy;
-   newx = source->xsize >> 1;
-   newy = source->ysize >> 1;
+   newx = (source->xsize+1) >> 1;
+   newy = (source->ysize+1) >> 1;
 
    if (dest->img) { free(dest->img); dest->img=NULL; }
-   if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
+   if (!THIS->img || newx<0 || newy<0) return; /* no way */
 
-   new=malloc(newx*newy*sizeof(rgb_group) +1);
-   if (!new) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   if (!newx) newx = 1;
+   if (!newy) newy = 1;
+
+   new=xalloc(newx*newy*sizeof(rgb_group)+RGB_VEC_PAD);
+
    THREADS_ALLOW();
    MEMSET(new,0,newx*newy*sizeof(rgb_group));
 
    dest->img=new;
    dest->xsize=newx;
    dest->ysize=newy;
+
+   /* Adjust for edge. */
+   newx -= source->xsize & 1;
+   newy -= source->ysize & 1;
+
+   /* The base case. */
    for (y = 0; y < newy; y++)
-      for (x = 0; x < newx; x++) 
+      for (x = 0; x < newx; x++)
       {
 	 pixel(dest,x,y).r = (COLORTYPE)
 	    (((INT32) pixel(source,2*x+0,2*y+0).r+
@@ -283,6 +290,38 @@ void img_scale2(struct image *dest, struct image *source)
 	      (INT32) pixel(source,2*x+0,2*y+1).b+
 	      (INT32) pixel(source,2*x+1,2*y+1).b) >> 2);
       }
+   /* X edge. */
+   if (source->xsize & 1) {
+     for (y = 0; y < newy; y++) {
+       pixel(dest,newx,y).r = (COLORTYPE)
+	 (((INT32) pixel(source,2*newx,2*y+0).r+
+	   (INT32) pixel(source,2*newx,2*y+1).r) >> 1);
+       pixel(dest,newx,y).g = (COLORTYPE)
+	 (((INT32) pixel(source,2*newx,2*y+0).g+
+	   (INT32) pixel(source,2*newx,2*y+1).g) >> 1);
+       pixel(dest,newx,y).g = (COLORTYPE)
+	 (((INT32) pixel(source,2*newx,2*y+0).b+
+	   (INT32) pixel(source,2*newx,2*y+1).b) >> 1);
+     }
+   }
+   /* Y edge. */
+   if (source->ysize & 1) {
+     for (x = 0; x < newx; x++) {
+       pixel(dest,x,newy).r = (COLORTYPE)
+	 (((INT32) pixel(source,2*x+0,2*newy).r+
+	   (INT32) pixel(source,2*x+1,2*newy).r) >> 1);
+       pixel(dest,x,newy).g = (COLORTYPE)
+	 (((INT32) pixel(source,2*x+0,2*newy).g+
+	   (INT32) pixel(source,2*x+1,2*newy).g) >> 1);
+       pixel(dest,x,newy).b = (COLORTYPE)
+	 (((INT32) pixel(source,2*x+0,2*newy).b+
+	   (INT32) pixel(source,2*x+1,2*newy).b) >> 1);
+     }
+   }
+   /* Last corner. */
+   if (source->xsize & source->ysize & 1) {
+     pixel(dest, newx, newy) = pixel(source, source->xsize-1, source->ysize-1);
+   }
    THREADS_DISALLOW();
 }
 
@@ -325,12 +364,13 @@ void image_scale(INT32 args)
    o=clone_object(image_program,0);
    newimg=(struct image*)(o->storage);
 
-   if (args==1 && sp[-args].type==T_INT)
+   if (args==1 && TYPEOF(sp[-args]) == T_INT)
    {
+      free_object(o);
       image_bitscale( args );
       return;
    }
-   else if (args==1 && sp[-args].type==T_FLOAT) 
+   else if (args==1 && TYPEOF(sp[-args]) == T_FLOAT)
    {
       if (sp[-args].u.float_number == 0.5)
 	 img_scale2(newimg,THIS);
@@ -338,6 +378,7 @@ void image_scale(INT32 args)
       {
          if( floor( sp[-args].u.float_number ) == sp[-args].u.float_number)
          {
+	    free_object(o);
             image_bitscale( args );
             return;
          }
@@ -347,8 +388,8 @@ void image_scale(INT32 args)
       }
    }
    else if (args>=2 &&
-	    sp[-args].type==T_INT && sp[-args].u.integer==0 &&
-	    sp[1-args].type==T_INT)
+	    TYPEOF(sp[-args]) == T_INT && sp[-args].u.integer==0 &&
+	    TYPEOF(sp[1-args]) == T_INT)
    {
       factor=((float)sp[1-args].u.integer)/THIS->ysize;
       img_scale(newimg,THIS,
@@ -356,8 +397,8 @@ void image_scale(INT32 args)
 		sp[1-args].u.integer);
    }
    else if (args>=2 &&
-	    sp[1-args].type==T_INT && sp[1-args].u.integer==0 &&
-	    sp[-args].type==T_INT)
+	    TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer==0 &&
+	    TYPEOF(sp[-args]) == T_INT)
    {
       factor=((float)sp[-args].u.integer)/THIS->xsize;
       img_scale(newimg,THIS,
@@ -365,14 +406,14 @@ void image_scale(INT32 args)
 		(INT32)(THIS->ysize*factor));
    }
    else if (args>=2 &&
-	    sp[-args].type==T_FLOAT &&
-	    sp[1-args].type==T_FLOAT)
+	    TYPEOF(sp[-args]) == T_FLOAT &&
+	    TYPEOF(sp[1-args]) == T_FLOAT)
       img_scale(newimg, THIS,
 		DOUBLE_TO_INT(THIS->xsize*sp[-args].u.float_number),
 		DOUBLE_TO_INT(THIS->ysize*sp[1-args].u.float_number));
    else if (args>=2 &&
-	    sp[-args].type==T_INT &&
-	    sp[1-args].type==T_INT)
+	    TYPEOF(sp[-args]) == T_INT &&
+	    TYPEOF(sp[1-args]) == T_INT)
       img_scale(newimg,THIS,
 		sp[-args].u.integer,
 		sp[1-args].u.integer);
@@ -412,15 +453,17 @@ void image_ccw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("ccw",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
    img->xsize=THIS->ysize;
    img->ysize=THIS->xsize;
@@ -449,7 +492,7 @@ static void img_cw(struct image *is,struct image *id)
 
    if (id->img) free(id->img);
    *id=*is;
-   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+1)))
+   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+RGB_VEC_PAD)))
       resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    id->xsize=is->ysize;
@@ -475,7 +518,7 @@ void img_ccw(struct image *is,struct image *id)
 
    if (id->img) free(id->img);
    *id=*is;
-   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+1)))
+   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+RGB_VEC_PAD)))
       resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    id->xsize=is->ysize;
@@ -519,15 +562,17 @@ void image_cw(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("cw",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
    ys=img->xsize=THIS->ysize;
    i=xs=img->ysize=THIS->xsize;
@@ -571,15 +616,17 @@ void image_mirrorx(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("mirrorx",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    i=THIS->ysize;
@@ -620,15 +667,17 @@ void image_mirrory(INT32 args)
 
    pop_n_elems(args);
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("mirrory",
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    i=THIS->ysize;
@@ -663,14 +712,14 @@ static void img_skewx(struct image *src,
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->xsize = DOUBLE_TO_INT(ceil(-diff)) + src->xsize, x0=-diff;
+      dest->xsize = DOUBLE_TO_INT(ceil(-diff)) + src->xsize, x0 = -diff;
    else
       dest->xsize = DOUBLE_TO_INT(ceil(diff)) + src->xsize, x0=0;
    dest->ysize=src->ysize;
    len=src->xsize;
 
    if (!src->xsize) dest->xsize=0;
-   d=dest->img=malloc(sizeof(rgb_group)*dest->xsize*dest->ysize+1);
+   d=dest->img=malloc(sizeof(rgb_group)*dest->xsize*dest->ysize+RGB_VEC_PAD);
    if (!d) return;
    s=src->img;
 
@@ -744,31 +793,31 @@ static void img_skewy(struct image *src,
 		      double diff,
 		      int xpn) /* expand pixel for use with alpha instead */
 {
-   double y0,ymod,ym;
-   INT32 x,len,xsz;
+   double y0,ymod,ym,y0f;
+   INT32 x,len,xsz,y0i;
    rgb_group *s,*d;
    rgb_group rgb;
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->ysize = DOUBLE_TO_INT(ceil(-diff) + src->ysize), y0 =- diff;
+      dest->ysize = DOUBLE_TO_INT(ceil(-diff)) + src->ysize, y0 = -diff;
    else
-      dest->ysize = DOUBLE_TO_INT(ceil(diff) + src->ysize), y0 = 0;
+      dest->ysize = DOUBLE_TO_INT(ceil(diff)) + src->ysize, y0 = 0;
    xsz=dest->xsize=src->xsize;
    len=src->ysize;
 
    if (!src->ysize) dest->ysize=0;
-   d=dest->img=malloc(sizeof(rgb_group)*dest->ysize*dest->xsize+1);
+   d=dest->img=malloc(sizeof(rgb_group)*dest->ysize*dest->xsize+RGB_VEC_PAD);
    if (!d) return;
    s=src->img;
-
-   THREADS_ALLOW();
-   ymod=diff/src->xsize;
-   rgb=dest->rgb;
 
    if (!src->xsize || !src->ysize) {
      return;
    }
+
+   THREADS_ALLOW();
+   ymod=diff/src->xsize;
+   rgb=dest->rgb;
 
 CHRONO("skewy begin\n");
 
@@ -776,12 +825,13 @@ CHRONO("skewy begin\n");
    while (x--)
    {
       int j;
+
       if (xpn) rgb=*s;
-      for (j = DOUBLE_TO_INT(y0); j--;) *d=rgb,d+=xsz;
-      if (!(ym=(y0-floor(y0))))
+      for (j = y0i = DOUBLE_TO_INT((y0f = floor(y0))); j--;) *d=rgb,d+=xsz;
+      if (!(ym=(y0-y0f)))
       {
 	 for (j=len; j--;) *d=*s,d+=xsz,s+=xsz;
-	 j = DOUBLE_TO_INT(dest->ysize - y0 - len);
+	 j = dest->ysize - y0i - len;
       }
       else
       {
@@ -809,10 +859,13 @@ CHRONO("skewy begin\n");
 	    d->b=ROUND(rgb.b*yn+s->b*ym);
 	 d+=xsz;
 	 s+=xsz;
-	 j = DOUBLE_TO_INT(dest->ysize - y0 - len);
+	 j = dest->ysize - y0i - len - 1;
       }
       if (xpn) rgb=s[-xsz];
-      while (j--) *d=rgb,d+=xsz;
+      if(j>0)
+	while (j--) *d=rgb,d+=xsz;
+      else
+	d += j;
       s-=len*xsz-1;
       d-=dest->ysize*xsz-1;
       y0+=ymod;
@@ -825,13 +878,13 @@ CHRONO("skewy end\n");
 
 /*
 **! method object skewx(int x)
-**! method object skewx(int yfactor)
+**! method object skewx(float yfactor)
 **! method object skewx(int x,int r,int g,int b)
-**! method object skewx(int yfactor,int r,int g,int b)
+**! method object skewx(float yfactor,int r,int g,int b)
 **! method object skewx_expand(int x)
-**! method object skewx_expand(int yfactor)
+**! method object skewx_expand(float yfactor)
 **! method object skewx_expand(int x,int r,int g,int b)
-**! method object skewx_expand(int yfactor,int r,int g,int b)
+**! method object skewx_expand(float yfactor,int r,int g,int b)
 **!	Skews an image an amount of pixels or a factor;
 **!	a skew-x is a transformation:
 **!
@@ -866,9 +919,9 @@ void image_skewx(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->ysize*sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args])== T_INT)
       diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
@@ -889,13 +942,13 @@ void image_skewx(INT32 args)
 
 /*
 **! method object skewy(int y)
-**! method object skewy(int xfactor)
+**! method object skewy(float xfactor)
 **! method object skewy(int y,int r,int g,int b)
-**! method object skewy(int xfactor,int r,int g,int b)
+**! method object skewy(float xfactor,int r,int g,int b)
 **! method object skewy_expand(int y)
-**! method object skewy_expand(int xfactor)
+**! method object skewy_expand(float xfactor)
 **! method object skewy_expand(int y,int r,int g,int b)
-**! method object skewy_expand(int xfactor,int r,int g,int b)
+**! method object skewy_expand(float xfactor,int r,int g,int b)
 **!	Skews an image an amount of pixels or a factor;
 **!	a skew-y is a transformation:
 **!
@@ -930,9 +983,9 @@ void image_skewy(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->xsize*sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
@@ -958,9 +1011,9 @@ void image_skewx_expand(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->ysize*sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
@@ -986,9 +1039,9 @@ void image_skewy_expand(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->xsize*sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
@@ -1017,9 +1070,9 @@ void img_rotate(INT32 args,int xpn)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->rotate",1);
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       angle = sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args]) == T_INT)
       angle = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->rotate",sp-args,args,0,"",sp-args,
@@ -1120,15 +1173,16 @@ void img_translate(INT32 args,int expand)
    struct image *img;
    rgb_group *s,*d;
 
-   if (args<2) Pike_error("illegal number of arguments to image->translate()\n");
+   if (args<2)
+     Pike_error("illegal number of arguments to image->translate()\n");
 
-   if (sp[-args].type==T_FLOAT) xt=sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT) xt=sp[-args].u.integer;
+   if (TYPEOF(sp[-args]) == T_FLOAT) xt=sp[-args].u.float_number;
+   else if (TYPEOF(sp[-args]) == T_INT) xt=sp[-args].u.integer;
    else bad_arg_error("image->translate",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to image->translate()\n");
 
-   if (sp[1-args].type==T_FLOAT) yt=sp[1-args].u.float_number;
-   else if (sp[1-args].type==T_INT) yt=sp[1-args].u.integer;
+   if (TYPEOF(sp[1-args]) == T_FLOAT) yt=sp[1-args].u.float_number;
+   else if (TYPEOF(sp[1-args]) == T_INT) yt=sp[1-args].u.integer;
    else bad_arg_error("image->translate",sp-args,args,2,"",sp+2-1-args,
 		"Bad argument 2 to image->translate()\n");
 
@@ -1143,15 +1197,16 @@ void img_translate(INT32 args,int expand)
    img->xsize=THIS->xsize+(xt!=0);
    img->ysize=THIS->ysize+(xt!=0);
 
-   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
-      resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("translate",
+				 sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    }
 
    if (!xt)
    {
-      memcpy(img->img,THIS->img,sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+      MEMCPY(img->img,THIS->img,sizeof(rgb_group)*THIS->xsize*THIS->ysize);
    }
    else
    {

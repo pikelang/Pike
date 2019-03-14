@@ -1,6 +1,5 @@
 # BUGS file for the sybase driver
-# By Francesco Chemolli, (C) Roxen IS
-# $Id: BUGS,v 1.1 2000/03/26 20:43:08 kinkie Exp $
+# By Francesco Chemolli
 
 While this could not be traced to a fault in the driver, we were reported
 memory leaks when running multi-threaded under Linux with 

@@ -1,10 +1,8 @@
-/*
- * $Id: module.pmod.in,v 1.14 2001/04/26 14:13:09 grubba Exp $
- *
- * YP (NIS) Functionality for Pike
- *
- * Per Hedbor & Henrik Grubbström 1996-1997
- */
+// -*- Pike -*-
+//
+// YP (NIS) Functionality for Pike
+// Per Hedbor & Henrik Grubbström 1996-1997
+//
 
 #pike __REAL_VERSION__
 inherit @module@;
@@ -44,16 +42,16 @@ class Map {
   void create(string map, string|void domain)
   {
     if (domain) {
-      local::domain = Domain(domain);
+      this_program::domain = Domain(domain);
     } else {
-      local::domain = Domain();
+      this_program::domain = Domain();
     }
     ypmap = map;
     array err;
     do {
       // Force an error if the map does not exist.
       err = catch{
-	local::domain->match(ypmap, "foo");
+	this_program::domain->match(ypmap, "foo");
 	return;
       };
     } while (ypmap = nicknames[ypmap]);
@@ -88,10 +86,10 @@ class Map {
 
   //! Call a function for each entry in the map.
   //!
-  //! For each entry in the map, call the function @[fun()].
+  //! For each entry in the map, call the function @[fun].
   //!
   //! The function will be called like
-  //!   @tt{void fun(string key, string value)@}.
+  //!   @expr{void fun(string key, string value)@}.
   //!
   void map(function(string,string:void) fun)
   {
@@ -134,8 +132,7 @@ class Map {
     case "mapping":
       return(cast_to_mapping());
     default:
-      throw(({ "Yp.YpDomain: Cast to " + type + " not supported.\n",
-		 backtrace() }));
+      error( "Cast to " + type + " not supported.\n" );
     }
   }
 }

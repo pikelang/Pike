@@ -1,8 +1,7 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.21 2001/05/10 13:09:52 grubba Exp $
 
 #pike __REAL_VERSION__
-#define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
+#define TABLE_ERR(msg) error("(Table) "+msg+"\n")
 
 //! ADT.Table is a generic module for manipulating tables.
 //!
@@ -18,10 +17,10 @@
 
 //! The table base-class.
 class table {
-  static private mapping fieldmap;
-  static private array table, fields, types;
+  protected private mapping fieldmap;
+  protected private array table, fields, types;
   
-  static private array|int remap(array|string|int cs, int|void forgive)
+  protected private array|int remap(array|string|int cs, int|void forgive)
   {
     array v = ({});
     int ap = arrayp(cs);
@@ -35,9 +34,9 @@ class table {
     return ap?v:v[0];
   }
 
-  object copy(array|void tab, array|void fie, array|void typ)
+  this_program copy(array|void tab, array|void fie, array|void typ)
   {
-    return object_program(this_object())(tab||table,fie||fields,typ||types);
+    return this_program(tab||table,fie||fields,typ||types);
   }
 
   //! This method returns a binary string representation of the table. It is
@@ -61,7 +60,7 @@ class table {
     case "array":
       return copy_value(table);
     case "string":
-      return ASCII->encode(this_object());
+      return ASCII->encode(this);
     }
   }
 
@@ -117,7 +116,7 @@ class table {
   {
     return (equal(Array.map(fields, lower_case),
 		  Array.map(indices(table), lower_case)) &&
-	    equal(local::table, values(table)));
+	    equal(this_program::table, values(table)));
   }
 
   //! This method appends two tables. The table given as an argument will be
@@ -128,7 +127,7 @@ class table {
     if(!equal(Array.map(indices(table), lower_case),
 	      Array.map(fields, lower_case)))
       TABLE_ERR("Table fields are not equal.");
-    return copy(local::table+values(table), fields, types);
+    return copy(this_program::table+values(table), fields, types);
   }
 
   //! This method appends two tables. The table given as an argument will be
@@ -136,15 +135,15 @@ class table {
   //! rows in both tables must be equal.
   object append_right(object table)
   {
-    if(sizeof(table) != sizeof(local::table))
+    if(sizeof(table) != sizeof(this_program::table))
       TABLE_ERR("Table sizes are not equal.");
     array v = values(table);
-    for(int r = 0; r < sizeof(local::table); r++)
-      v[r] = local::table[r] + v[r];
+    for(int r = 0; r < sizeof(this_program::table); r++)
+      v[r] = this_program::table[r] + v[r];
     return copy(v, fields+indices(table), types+table->all_types());
   }
 
-  static private mixed op_col(function f, int|string c, mixed ... args)
+  protected private mixed op_col(function f, int|string c, mixed ... args)
   {
     c = remap(c);
     mixed x = table[0][c];
@@ -206,13 +205,13 @@ class table {
     return copy(t, fields, types);
   }
 
-  //! This method calls the function @[f()] for each column each time a
+  //! This method calls the function @[f] for each column each time a
   //! non uniqe row will be joined. The table will be grouped by the
   //! columns not listed. The result will be returned as a new table object.
-  object group(mapping(int|string:function)|function f, mixed ... args)
+  this_program group(mapping(int|string:function)|function f, mixed ... args)
   {
     if(!sizeof(table))
-      return this_object();
+      return this;
 
     if(functionp(f)) {
       if(!arrayp(args[0]))
@@ -238,7 +237,7 @@ class table {
 
   //! This method sums all equal rows. The table will be grouped by the
   //! columns not listed. The result will be returned as a new table object.
-  object sum(int|string ... columns)
+  this_program sum(int|string ... columns)
   {
     return group(`+, columns);
   }
@@ -246,7 +245,7 @@ class table {
   //! This method groups by the given columns and returns a table with only
   //! unique rows. When no columns are given, all rows will be unique. A new
   //! table object will be returned.
-  object distinct(int|string ... columns)
+  this_program distinct(int|string ... columns)
   {
     if(!sizeof(columns))
       return sum();
@@ -258,7 +257,7 @@ class table {
     return group(m);
   }
 
-  //! This method calls the function @[f()] for all rows in the table.
+  //! This method calls the function @[f] for all rows in the table.
   //! The value returned will replace the values in the columns given
   //! as argument to map. If the function returns an array, several
   //! columns will be replaced. Otherwise the first column will be
@@ -280,10 +279,10 @@ class table {
     return copy(t, fields, types);
   }
 
-  static private object _sort(int is_reversed, int|string ... cs)
+  protected private this_program _sort(int is_reversed, int|string ... cs)
   {
     if(!sizeof(cs))
-      return this_object();
+      return this;
     int c;
     array t = copy_value(table);
     if(!catch(c = remap(cs[-1])))
@@ -298,6 +297,8 @@ class table {
 	  m[d] += ({ t[r] });
       }
       array i = indices(m), v = values(m);
+      if(types[c] && types[c]->type=="num")
+	i = (array(float))i;
       predef::sort(i, v);
       t = (is_reversed ? predef::reverse(v) : v)*({});
     }
@@ -375,8 +376,8 @@ class table {
   //! @param column_types
   //!   This is an optional array of mappings. The column type
   //!   information is only used when displaying the table. Currently, only the
-  //!   keyword @tt{"type"@} is recognized. The type can be specified as
-  //!   @tt{"text"@} or @tt{"num"@} (numerical). Text columns are left
+  //!   keyword @expr{"type"@} is recognized. The type can be specified as
+  //!   @expr{"text"@} or @expr{"num"@} (numerical). Text columns are left
   //!   adjusted, whereas numerical columns are right adjusted. If a mapping
   //!   in the array is 0 (zero), it will be assumed to be a text column.
   //!   If @[column_types] is omitted, all columns will displayed as text.
@@ -399,7 +400,7 @@ class table {
       if(!stringp(s))
 	TABLE_ERR("Field name not string");
 
-    local::table = copy_value(table);
+    this_program::table = copy_value(table);
     fields = copy_value(column_names);
     types = allocate(sizeof(column_names));
 
@@ -416,7 +417,7 @@ class table {
 }
 
 object Separated = class {
-  static private string _string(mixed x) { return (string)x; }
+  protected private string _string(mixed x) { return (string)x; }
   
   object decode(string s, void|mapping options)
   {
@@ -450,17 +451,17 @@ object ASCII = class {
 
   //! @decl string encode(object table, void|mapping options)
   //!
-  //! This method returns a table represented in ASCII suitable for human eyes.
-  //! @[options] is an optional mapping. If the keyword @tt{"indent"@} is used
-  //! with a number, the table will be indented with that number of space
-  //! characters.
+  //! This method returns a table represented in ASCII suitable for
+  //! human eyes.  @[options] is an optional mapping. If the keyword
+  //! @expr{"indent"@} is used with a number, the table will be
+  //! indented with that number of space characters.
 
   string encode(object t, void|mapping options)
   {
     options = options || ([]);
     mapping sizes = ([]);
     array fields = indices(t);
-    string indent = String.strmult(" ", options->indent);
+    string indent = " " * options->indent;
     
     t = t->copy(({ fields }) + values(t));
     for(int field = 0; field < sizeof(fields); field++)
@@ -481,7 +482,7 @@ object ASCII = class {
     string l = (indent+"-"+
 		Array.map(values(sizes),
 			  lambda(int n)
-			  { return String.strmult("-", n); })*"---"+"-");
+			  { return "-" * n; })*"---"+"-");
     array table = values(t);
     return (indent+" "+table[0]*"   "+"\n"+l+"\n"+
 	    Array.map(table[1..], lambda(array row, string indent)
@@ -518,19 +519,3 @@ object SQL = class {
     return queries;
   }
 }();
-
-// Huh? Experimental help..
-string help()
-{
-  return ("This is the experimental help system for Table.pmod.\n"
-	  "Table.pmod contains the following classes and objects:\n"
-	  "\n"
-	  "  Table.table(array(array) table, array(string) fields, "
-	  "array(mapping) types)\n"
-	  "  Table.ASCII.encode\n"
-	  "  Table.ASCII.decode\n"
-	  "  Table.Separated.decode\n"
-	  "  Table.Separated.encode\n"
-	  "  Table.SQL.decode\n"
-	  "  Table.SQL.encode\n");
-}

@@ -1,13 +1,29 @@
 /*
- * $Id: acconfig.h,v 1.93 2001/08/15 14:42:10 marcus Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef MACHINE_H
 #define MACHINE_H
 
 /* We must define this *always* */
 #ifndef POSIX_SOURCE
-#define POSIX_SOURCE
+#define POSIX_SOURCE	1
 #endif
+
+/* Get more declarations in GNU libc. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+/* Get more declarations from AIX libc. */
+#ifndef _ALL_SOURCE
+#define _ALL_SOURCE
+#endif
+
+/* Building as a library? */
+#undef LIBPIKE
 
 /* Where's the master.pike file installed? */
 #define DEFAULT_MASTER "@prefix@/lib/pike/master.pike"
@@ -15,8 +31,23 @@
 /* Define this if you want run time self tests */
 #undef PIKE_DEBUG
 
+/* Define this if you want some extra (possibly verbose) run time self tests */
+#undef PIKE_EXTRA_DEBUG
+
+/* Define to make Pike do a full cleanup at exit to detect leaks. */
+#undef DO_PIKE_CLEANUP
+
+/* Define this if you want pike to interact with valgrind. */
+#undef USE_VALGRIND
+
+/* Define this to embed DTrace probes */
+#undef USE_DTRACE
+
 /* Define this if you are going to use a memory access checker (like Purify) */
 #undef __CHECKER__
+
+/* Defined if Doug Leas malloc implementation is used. */
+#undef USE_DL_MALLOC
 
 /* Define this if you want malloc debugging */
 #undef DEBUG_MALLOC
@@ -24,14 +55,26 @@
 /* Define this if you want checkpoints */
 #undef DMALLOC_TRACE
 
+/* Define this if you want backtraces for C code in your dmalloc output. */
+#undef DMALLOC_C_STACK_TRACE
+
+/* Define this if you want dmalloc to keep track of freed memory. */
+#undef DMALLOC_TRACK_FREE
+
 /* With this, dmalloc will trace malloc(3) calls */
 #undef ENCAPSULATE_MALLOC
 
 /* With this, dmalloc will report leaks made by malloc(3) calls */
 #undef REPORT_ENCAPSULATED_MALLOC
 
+/* Define this to enable atomic svalues */
+#undef ATOMIC_SVALUE
+
 /* Define this to enable the internal Pike security system */
 #undef PIKE_SECURITY
+
+/* Define this to simulate dynamic module loading with static modules. */
+#undef USE_SEMIDYNAMIC_MODULES
 
 /* Define this to enable the internal bignum conversion */
 #undef AUTO_BIGNUM
@@ -44,6 +87,19 @@
 
 /* Define this to use the new keypair loop. */
 #undef PIKE_MAPPING_KEYPAIR_LOOP
+
+/* Define this to get portable dumped bytecode. */
+#undef PIKE_PORTABLE_BYTECODE
+
+/* Enable profiling */
+#undef PROFILING
+
+/* Enable internal profiling */
+#undef INTERNAL_PROFILING
+
+/* If possible, the expansion for a "#define short" to avoid that bison
+ * uses short everywhere internally. */
+#undef BISON_SHORT_EXPANSION
 
 /* The following USE_* are used by smartlink */
 /* Define this if your ld sets the run path with -rpath */
@@ -64,20 +120,44 @@
 /* Define this if your ld uses -R, but your cc wants -Wl,-R */
 #undef USE_Wl_R
 
+/* Define this if your ld uses -rpath, but your cc -Qoption,ld,-rpath (icc) */
+#undef USE_Qoption
+
 /* Define this if your ld uses -YP, , but your cc wants -Xlinker -YP, */
 #undef USE_XLINKER_YP_
 
 /* Define this if your ld doesn't have an option to set the run path */
 #undef USE_LD_LIBRARY_PATH
 
-/* Define this if your compiler attempts to use _chkstk, but libc contains
- * __chkstk. */
-#undef HAVE_BROKEN_CHKSTK
+/* Define this on OS X to get two-level namespace support in ld */
+#undef USE_OSX_TWOLEVEL_NAMESPACE
+
+/* Define if your tcc supports #pragma TenDRA longlong type allow. */
+#undef HAVE_PRAGMA_TENDRA_LONGLONG
+
+/* Define if your tcc supports #pragma TenDRA set longlong type : long long. */
+#undef HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE
+
+/* The worlds most stringent C compiler? */
+#ifdef __TenDRA__
+/* We want to be able to use 64bit arithmetic */
+#ifdef HAVE_PRAGMA_TENDRA_LONGLONG
+#pragma TenDRA longlong type allow
+#endif /* HAVE_PRAGMA_TENDRA_LONGLONG */
+#ifdef HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE
+#pragma TenDRA set longlong type : long long
+#endif /* HAVE_PRAGMA_TENDRA_SET_LONGLONG_TYPE */
+
+#ifdef _NO_LONGLONG
+#undef _NO_LONGLONG
+#endif /* _NO_LONGLONG */
+#endif /* __TenDRA__ */
 
 @TOP@
 
-/* Enable profiling */
-#undef PROFILING
+/* Define this if your compiler attempts to use _chkstk, but libc contains
+ * __chkstk. */
+#undef HAVE_BROKEN_CHKSTK
 
 /* Define for solaris */
 #undef SOLARIS
@@ -124,11 +204,22 @@
 /* define if you want to use long double precision floats */
 #undef WITH_LONG_DOUBLE_PRECISION_SVALUE
 
+/* define to the type of pike floats */
+#undef FLOAT_TYPE
+
+/* define to the size of pike floats */
+#undef SIZEOF_FLOAT_TYPE
+
 /* force this type upon ints */
 #undef WITH_LONG_INT
 #undef WITH_LONG_LONG_INT
-#undef WITH_SHORT_INT
 #undef WITH_INT_INT
+
+/* define to the type of pike primitive ints */
+#undef INT_TYPE
+
+/* define to the size of pike primitive ints */
+#undef SIZEOF_INT_TYPE
 
 /* If using the C implementation of alloca, define if you know the
  * direction of stack growth for your system; otherwise it will be
@@ -177,17 +268,32 @@
 /* Define if you have isless */
 #undef HAVE_ISLESS
 
+/* Define if you have isunordered */
+#undef HAVE_ISUNORDERED
+
 /* Define if you have crypt.  */
 #undef HAVE_CRYPT
 
 /* Define if you have ualarm. */
 #undef HAVE_UALARM
 
-/* Define if your ualarm takes two args.. */
+/* Define if your ualarm takes two args. */
 #undef UALARM_TAKES_TWO_ARGS
+
+/* Define if your ptrace takes four args. */
+#undef PTRACE_TAKES_FOUR_ARGS
+
+/* Define if argument 3 to ptrace is a pointer type. */
+#undef PTRACE_ADDR_TYPE_IS_POINTER
 
 /* Define if gettimeofday takes to arguments */
 #undef GETTIMEOFDAY_TAKES_TWO_ARGS
+
+/* Define if realloc(NULL, SZ) works. */
+#undef HAVE_WORKING_REALLOC_NULL
+
+/* Define if gethrvtime works (i.e. even without ptime). */
+#undef HAVE_WORKING_GETHRVTIME
 
 /* Define if you have gethrtime */
 #undef HAVE_GETHRTIME
@@ -200,6 +306,9 @@
 
 /* Define if you have a working, 8-bit-clean memcmp */
 #undef HAVE_MEMCMP
+
+/* Define if it is possible to allocate PROT_EXEC memory with mmap */
+#undef MEXEC_USES_MMAP
 
 /* Define if you have gethostname */
 #undef HAVE_GETHOSTNAME
@@ -236,11 +345,20 @@
 /* Define if your signals are one-shot */
 #undef SIGNAL_ONESHOT
 
+/* Define this if eval_instruction gets large on your platform. */
+#undef PIKE_SMALL_EVAL_INSTRUCTION
+
 /* Define if you have gcc-style computed goto, and want to use them. */
 #undef HAVE_COMPUTED_GOTO
 
 /* Define this to use machine code */
 #undef PIKE_USE_MACHINE_CODE
+
+/* Define if you have the RDTSC instruction */
+#undef HAVE_RDTSC
+
+/* Define this to one of the available bytecode methods. */
+#undef PIKE_BYTECODE_METHOD
 
 /* You have gcc-type function attributes? */
 #undef HAVE_FUNCTION_ATTRIBUTES
@@ -248,8 +366,17 @@
 /* You have cl-type __declspec? */
 #undef HAVE_DECLSPEC
 
-/* Do your compiler grock 'volatile' */
+/* Your va_list is a state pointer? */
+#undef VA_LIST_IS_STATE_PTR
+
+/* Defined if va_copy exists in stdarg.h. */
+#undef HAVE_VA_COPY
+
+/* Does your compiler grock 'volatile' */
 #define VOLATILE volatile
+
+/* Define to empty if your compiler doesn't support C99's restrict keyword. */
+#undef restrict
 
 /* Define this if your compiler doesn't allow cast of void * to function pointer */
 #undef NO_CAST_TO_FUN
@@ -293,11 +420,11 @@
 /* Define if we can declare 'extern char **environ' */
 #undef DECLARE_ENVIRON
 
-/* What byteorder does your machie use most machines use 4321, PC use 1234 */
+/* The byteorder your machine use, most use 4321, PC use 1234 */
 #define PIKE_BYTEORDER 0
 
-/* What alignment do 32-bit integers need */
-#define PIKE_INT32_ALIGNMENT 4
+/* What alignment do pointers need */
+#define PIKE_POINTER_ALIGNMENT 4
 
 /* Assembler prefix for general purpose registers */
 #undef PIKE_CPU_REG_PREFIX
@@ -311,10 +438,28 @@
 /* define this if your struct tm has a tm_gmtoff */
 #undef STRUCT_TM_HAS_GMTOFF
 
+/* define this if your struct tm has a __tm_gmtoff */
+#undef STRUCT_TM_HAS___TM_GMTOFF
+
 /* Define if you have struct timeval */
 #undef HAVE_STRUCT_TIMEVAL
 
-/* Define this to the max value of an unsigned short unles <limits.h> does.. */
+/* Define if you have struct sockaddr_in6 */
+#undef HAVE_STRUCT_SOCKADDR_IN6
+
+/* Define this if you have a struct iovec */
+#undef HAVE_STRUCT_IOVEC
+
+/* Define this if you have a struct msghdr */
+#undef HAVE_STRUCT_MSGHDR
+
+/* Define this if you have a struct msghdr with 'msg_control' member */
+#undef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+
+/* Define this if you have a struct msghdr with 'msg_accrights' member */
+#undef HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS
+
+/* Define this to the max value of an unsigned short unless <limits.h> does.. */
 #undef USHRT_MAX
 
 /* Define these if you are going to use threads */
@@ -335,14 +480,20 @@
 /* Define this if you have Windows NT threads */
 #undef NT_THREADS
 
+/* Use DDLs for dynamically linked modules on NT. */
+#undef USE_DLL
+
+/* Define this if your THREAD_T type is a pointer type. */
+#undef PIKE_THREAD_T_IS_POINTER
+
+/* Define to the flag to get an error checking mutex, if supported. */
+#undef PIKE_MUTEX_ERRORCHECK
+
+/* Define to the flag to get a recursive mutex, if supported. */
+#undef PIKE_MUTEX_RECURSIVE
+
 /* Define this if your pthreads have pthread_condattr_default */
 #undef HAVE_PTHREAD_CONDATTR_DEFAULT
-
-/* Define if your pthreads have PTHREAD_MUTEX_RECURSIVE */
-#undef HAVE_PTHREAD_MUTEX_RECURSIVE
-
-/* Define if your pthreads have PTHREAD_MUTEX_RECURSIVE_NP */
-#undef HAVE_PTHREAD_MUTEX_RECURSIVE_NP
 
 /* Define this if you need to use &pthread_condattr_default in cond_init() */
 #undef HAVE_PTHREAD_CONDATTR_DEFAULT_AIX
@@ -358,6 +509,9 @@
 
 /* Define if you have the pthread_yield function.  */
 #undef HAVE_PTHREAD_YIELD
+
+/* Define if you have the pthread_yield_np function.  */
+#undef HAVE_PTHREAD_YIELD_NP
 
 /* Hack for stupid glibc linuxthreads */
 #undef HAVE_PTHREAD_INITIAL_THREAD_BOS
@@ -383,6 +537,12 @@
 /* Use poll() instead of select() ? */
 #undef HAVE_AND_USE_POLL
 
+/* Enable use of /dev/epoll on Linux. */
+#undef WITH_EPOLL
+
+/* Define to the poll device (eg "/dev/poll") */
+#undef PIKE_POLL_DEVICE
+
 /* This works on Solaris or any UNIX where
  * waitpid can report ECHILD when running more than one at once
  * (or any UNIX where waitpid actually works)
@@ -394,12 +554,6 @@
  * less annoying ways than Solaris.
  */
 #undef USE_SIGCHILD
-
-/* Enable code to handle Out-Of-Band data */
-#undef WITH_OOB
-
-/* Enable individual tracing of threads */
-#undef THREAD_TRACE
 
 /* Enable tracing of the compiler */
 #undef YYDEBUG
@@ -419,25 +573,40 @@
 /* Define if you have the <sys/resource.h> header file.  */
 #undef HAVE_SYS_RESOURCE_H
 
-/* Define if you want to enable use of the struct pike_type (EXPERIMENTAL) */
-#undef USE_PIKE_TYPE
-
 /* set this to the modifier type string to print size_t, like "" or "l" */
 #undef PRINTSIZET
 
 /* set this to the modifier type string to print ptrdiff_t, like "" or "l" */
 #undef PRINTPTRDIFFT
 
-/* set this to the modifier type string to print INT_TYPE, like "" or "ll" */
-#undef PRINTPIKEINT
+/* set this to the modifier type string to print off_t if that type exists */
+#undef PRINTOFFT
 
-/* set this to the modifier type string to print FLOAT_TYPE, like "L" or "" */
-#undef PRINTPIKEFLOAT
+/* set this to the modifier type string to print INT64 if that type exists */
+#undef PRINTINT64
 
 /* Define if the compiler understand union initializations. */
 #undef HAVE_UNION_INIT
 
+/* Define when binary --disable-binary is used. */
+#undef DISABLE_BINARY
+
+/* Define to the size of the overhead for a malloc'ed block. (Slightly
+ * too much is better than slightly too little.) */
+#undef PIKE_MALLOC_OVERHEAD
+
+/* Define to the page size (handled efficiently by malloc). */
+#undef PIKE_MALLOC_PAGE_SIZE
+
+/* PIKE_YES if the number reported by fallback_get_cpu_time (rusage.c)
+ * is thread local, PIKE_NO if it isn't, PIKE_UNKNOWN if it couldn't
+ * be established. */
+#undef FB_CPU_TIME_IS_THREAD_LOCAL
+
 @BOTTOM@
+
+/* Define to the size of the c-stack for new threads */
+#undef PIKE_THREAD_C_STACK_SIZE
 
 /* NT stuff */
 #undef HAVE_GETSYSTEMTIMEASFILETIME
@@ -446,6 +615,15 @@
 #undef HAVE_GETPROCADDRESS
 #undef DL_EXPORT
 #undef USE_MY_WIN32_DLOPEN
+
+/* CygWin kludge. */
+#if defined(HAVE_UNISTD_H) && defined(HAVE_WINDOWS_H)
+#undef HAVE_WINDOWS_H
+#undef HAVE_WINBASE_H
+#undef HAVE_WINSOCK_H
+#undef HAVE_WINSOCK2_H
+#undef HAVE_FD_FLOCK
+#endif /* HAVE_SYS_UNISTD_H && HAVE_WINDOWS_H */
 
 /* How to set a socket non-blocking */
 #undef USE_IOCTL_FIONBIO
@@ -463,60 +641,39 @@
  */
 #define PIKE_OOB_WORKS -1
 
-/* We want to use errno later */
-#ifdef _SGI_SPROC_THREADS
-/* Magic define of _SGI_MP_SOURCE above might redefine errno below */
-#include <errno.h>
-#if defined(HAVE_OSERROR) && !defined(errno)
-#define errno (oserror())
-#endif /* HAVE_OSERROR && !errno */
-#endif /* _SGI_SPROC_THREADS */
+/* dlmalloc has mallinfo. */
+#if defined(USE_DL_MALLOC) && !defined(HAVE_MALLINFO)
+#define HAVE_MALLINFO
 
-/* This macro is only provided for compatibility with
- * Windows PreRelease. Use ALIGNOF() instead!
- * (Needed for va_arg().)
- */
-#ifndef __alignof
-#define __alignof(X) ((size_t)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))
-#endif /* __alignof */
+#if defined (HAVE_MALLOC_H) && defined (HAVE_STRUCT_MALLINFO)
+#include <malloc.h>
+#else /* HAVE_MALLOC_H && HAVE_STRUCT_MALLINFO */
 
-#ifdef HAVE_FUNCTION_ATTRIBUTES
-#define ATTRIBUTE(X) __attribute__ (X)
-#else
-#define ATTRIBUTE(X)
+#ifndef MALLINFO_FIELD_TYPE
+#define MALLINFO_FIELD_TYPE size_t
+#endif  /* MALLINFO_FIELD_TYPE */
+
+#ifdef HAVE_STDDEF_H
+/* Needed for size_t. */
+#include <stddef.h>
 #endif
 
-#ifdef HAVE_DECLSPEC
-#define DECLSPEC(X) __declspec(X)
-#else /* !HAVE_DECLSPEC */
-#define DECLSPEC(X)
-#endif /* HAVE_DECLSPEC */
+/* dlmalloc definition of struct mallinfo. */
+struct mallinfo {
+  MALLINFO_FIELD_TYPE arena;    /* non-mmapped space allocated from system */
+  MALLINFO_FIELD_TYPE ordblks;  /* number of free chunks */
+  MALLINFO_FIELD_TYPE smblks;   /* always 0 */
+  MALLINFO_FIELD_TYPE hblks;    /* always 0 */
+  MALLINFO_FIELD_TYPE hblkhd;   /* space in mmapped regions */
+  MALLINFO_FIELD_TYPE usmblks;  /* maximum total allocated space */
+  MALLINFO_FIELD_TYPE fsmblks;  /* always 0 */
+  MALLINFO_FIELD_TYPE uordblks; /* total allocated space */
+  MALLINFO_FIELD_TYPE fordblks; /* total free space */
+  MALLINFO_FIELD_TYPE keepcost; /* releasable (via malloc_trim) space */
+};
 
-#ifndef HAVE_WORKING___FUNC__
-#ifdef HAVE_WORKING___FUNCTION__
-#define __func__	__FUNCTION__
-#else /* !HAVE_WORKING___FUNCTION__ */
-#define __func__	"unknown"
-#endif /* HAVE_WORKING___FUNCTION__ */
-#endif /* !HAVE_WORKING___FUNC__ */
+#endif /* HAVE_USR_INCLUDE_MALLOC_H */
 
-/* NOTE:
- *    PIKE_CONCAT doesn't get defined if there isn't any way to
- *    concatenate symbols
- */
-#ifdef HAVE_ANSI_CONCAT
-#define PIKE_CONCAT(X,Y)	X##Y
-#define PIKE_CONCAT3(X,Y,Z)	X##Y##Z
-#define PIKE_CONCAT4(X,Y,Z,Q)	X##Y##Z##Q
-#else
-#ifdef HAVE_KR_CONCAT
-#define PIKE_CONCAT(X,Y)	X/**/Y
-#define PIKE_CONCAT3(X,Y,Z)	X/**/Y/**/Z
-#define PIKE_CONCAT4(X,Y,Z,Q)	X/**/Y/**/Z/**/Q
-#endif /* HAVE_KR_CONCAT */
-#endif /* HAVE_ANSI_CONCAT */
-
-#define TOSTR(X)	#X
-#define DEFINETOSTR(X)	TOSTR(X)
+#endif
 
 #endif /* MACHINE_H */

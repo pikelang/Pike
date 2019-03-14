@@ -1,14 +1,13 @@
-/* -*- C -*-
- *
- * $Id: auto.c.in,v 1.17 2000/12/05 21:08:41 per Exp $
- *
- */
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.17 2000/12/05 21:08:41 per Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -19,23 +18,31 @@ RCSID("$Id: auto.c.in,v 1.17 2000/12/05 21:08:41 per Exp $");
 #include "module_support.h"
 #include "operators.h"
 #include "mapping.h"
+#include "pike_types.h"
 
 #ifdef HAVE_WINDEF_H
-#include <windef.h>
+#include <windows.h>
 #endif /* HAVE_WINDEF_H */
-#ifdef HAVE_WINGDI_H
-#include <wingdi.h>
-#endif /* HAVE_WINGDI_H */
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
+#ifdef HAVE_OPENGL_GL_H
+#include <OpenGL/gl.h>
+#endif /* HAVE_OPENGL_GL_H */
 
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 #define ZT_INT    1
 #define ZT_FLOAT  2
 #define ZT_DOUBLE 4
 #define ZT_ARRAY  8
+
+union zvalue {
+  GLint i;
+  GLfloat f;
+  GLdouble d;
+};
 
 struct zvalue4 {
   union {
@@ -65,7 +72,7 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
   struct svalue *s;
   int i, tt, tr=0;
 
-  if(args==1 && sp[-1].type==T_ARRAY) {
+  if(args==1 && TYPEOF(sp[-1]) == T_ARRAY) {
     struct array *a = sp[-1].u.array;
     args = a->size;
     if(args<mn || args>mx)
@@ -77,7 +84,7 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
     s = sp-args;
   }
   for(i=0; i<args; i++)
-    if(!((tt=1<<s[i].type)&ty)) {
+    if(!((tt=1<<TYPEOF(s[i]))&ty)) {
       char buf[32];
       int n=0;
       buf[0]='\0';
@@ -89,7 +96,7 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
 	  strcat(buf, get_name_of_type(tt));
 	}
       Pike_error("%s: got %s, expected %s.\n", func,
-	    get_name_of_type(s[i].type), buf);
+		 get_name_of_type(TYPEOF(s[i])), buf);
     } else
       tr|=tt;
   if(tr==(BIT_INT|BIT_FLOAT))
@@ -110,10 +117,10 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
       ret->v.i[i]=s[i].u.integer;
       break;
     case ZT_FLOAT:
-      ret->v.f[i]=(s[i].type==T_INT?(float)s[i].u.integer:s[i].u.float_number);
+      ret->v.f[i]=(TYPEOF(s[i]) == T_INT?(float)s[i].u.integer:s[i].u.float_number);
       break;      
     case ZT_DOUBLE:
-      ret->v.d[i]=(s[i].type==T_INT?(double)s[i].u.integer:
+      ret->v.d[i]=(TYPEOF(s[i]) == T_INT?(double)s[i].u.integer:
 		   s[i].u.float_number);
       break;      
     }
@@ -139,6 +146,8 @@ static void img_init()
   img_inited=1;
 }
 
+static struct program *shm_program=NULL;
+
 static void check_img_arg(struct svalue *a, struct zimage *img,
 			  int arg, const char *func)
 {
@@ -146,6 +155,10 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     void *img;
     INT_TYPE w, h;
   } *rgbstor = NULL, *lumstor = NULL, *astor = NULL;
+  struct {
+    unsigned char *p;
+    size_t size;
+  } *stor_mem;
   unsigned char *pp;
   struct { unsigned char r, g, b; } *p1, *p2;
   INT32 cnt;
@@ -153,24 +166,19 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
   static struct program *image_program=NULL;
 
   if(image_program == NULL) {
-    push_string(make_shared_string("Image")); push_int(0);
-    SAFE_APPLY_MASTER("resolv",2);
-    if (sp[-1].type==T_OBJECT) 
-    {
-      push_string(make_shared_string("image"));
-      f_index(2);
-      image_program=program_from_svalue(sp-1);
-      pop_stack();
-    }
+    push_text("Image.Image");
+    SAFE_APPLY_MASTER("resolv",1);
+    image_program=program_from_svalue(sp-1);
+    pop_stack();
     if(image_program == NULL)
-      Pike_error("%s: Can't resolve Image.image!\n", func);
+      Pike_error("%s: Can't resolve Image.Image!\n", func);
   }
 
   img->alloc = 0;
-  if(a->type == T_MAPPING) {
+  if(TYPEOF(*a) == T_MAPPING) {
     struct svalue *v;
     if((v=simple_mapping_string_lookup(a->u.mapping, "rgb"))) {
-      if(v->type == T_OBJECT &&
+      if(TYPEOF(*v) == T_OBJECT &&
 	 (rgbstor = (void *)get_storage(v->u.object, image_program)) != NULL &&
 	 rgbstor->img != NULL)
 	;
@@ -178,7 +186,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
 	Pike_error("Bad argument %d to %s.\n", arg, func);
     }
     if((v=simple_mapping_string_lookup(a->u.mapping, "luminance"))) {
-      if(v->type == T_OBJECT &&
+      if(TYPEOF(*v) == T_OBJECT &&
 	 (lumstor = (void *)get_storage(v->u.object, image_program)) != NULL &&
 	 lumstor->img != NULL)
 	;
@@ -186,14 +194,65 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
 	Pike_error("Bad argument %d to %s.\n", arg, func);
     }
     if((v=simple_mapping_string_lookup(a->u.mapping, "alpha"))) {
-      if(v->type == T_OBJECT &&
+      if(TYPEOF(*v) == T_OBJECT &&
 	 (astor = (void *)get_storage(v->u.object, image_program)) != NULL &&
 	 astor->img != NULL)
 	;
       else
 	Pike_error("Bad argument %d to %s.\n", arg, func);
     }
-  } else if(a->type == T_OBJECT &&
+    if( (v=simple_mapping_string_lookup(a->u.mapping, "mem" )) ) {
+
+      if(shm_program == NULL) {
+	push_text("System.Memory");
+	SAFE_APPLY_MASTER("resolv",1);
+	shm_program=program_from_svalue(sp-1);
+	pop_stack();
+	if(shm_program == NULL)
+	  Pike_error("%s: Can't resolve System.Memory!\n", func);
+      }
+
+      if( TYPEOF(*v) == T_OBJECT &&
+	  (stor_mem = (void *)get_storage( v->u.object, shm_program ) ) )
+      {
+	INT_TYPE x=0, y=0, row=0;
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_w" )) )
+	  img->width = v->u.integer;
+	else
+	  Pike_error("Need mem_w for memory texture\n");
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_h" )) )
+	  img->height = v->u.integer;
+	else
+	  Pike_error("Need mem_h for memory texture\n");
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_format" )) )
+	  img->format = v->u.integer;
+	else
+	  Pike_error("Need mem_format for memory texture\n");
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_type" )) )
+	  img->type = v->u.integer;
+	else
+	  Pike_error("Need mem_type for memory texture\n");
+	img->pixels = stor_mem->p;
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_offset" )) )
+	  img->pixels = (char *)img->pixels + v->u.integer;
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_x" )) )
+	  x = v->u.integer;
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_y" )) )
+	  y = v->u.integer;
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_row" )) )
+	  row = v->u.integer;
+	if(!img_inited)
+	  img_init();
+	if(x != 0 || y != 0 || row != 0) {
+	  glPixelStorei(GL_UNPACK_ROW_LENGTH, row);
+	  glPixelStorei(GL_UNPACK_SKIP_ROWS, y);
+	  glPixelStorei(GL_UNPACK_SKIP_PIXELS, x);
+	  img_inited = 0; /* Need to reset these later... */
+	}
+	return;
+      }
+    }
+  } else if(TYPEOF(*a) == T_OBJECT &&
 	    (rgbstor = (void *)get_storage(a->u.object, image_program)) !=
 	    NULL && rgbstor->img != NULL)
     ;
@@ -223,10 +282,11 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     /* RGBA */
     img->width = rgbstor->w;
     img->height = rgbstor->h;
-    img->pixels = pp = xalloc(img->width*img->height*4);
+    cnt = img->width * img->height;
+    img->pixels = pp = xalloc( cnt*4 );
+    img->alloc = 1;
     img->format = GL_RGBA;
     img->type = GL_UNSIGNED_BYTE;
-    cnt = img->width * img->height;
     p1 = rgbstor->img;
     p2 = astor->img;
     while(cnt--) {
@@ -239,10 +299,11 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     /* Y */
     img->width = lumstor->w;
     img->height = lumstor->h;
-    img->pixels = pp = xalloc(img->width*img->height);
+    cnt = img->width * img->height;
+    img->pixels = pp = xalloc( cnt );
+    img->alloc = 1;
     img->format = GL_LUMINANCE;
     img->type = GL_UNSIGNED_BYTE;
-    cnt = img->width * img->height;
     p1 = lumstor->img;
     while(cnt--)
       *pp++ = p1++->r;
@@ -250,10 +311,11 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     /* A */
     img->width = astor->w;
     img->height = astor->h;
-    img->pixels = pp = xalloc(img->width*img->height);
+    cnt = img->width * img->height;
+    img->pixels = pp = xalloc( cnt );
+    img->alloc = 1;
     img->format = GL_ALPHA;
     img->type = GL_UNSIGNED_BYTE;
-    cnt = img->width * img->height;
     p1 = astor->img;
     while(cnt--)
       *pp++ = p1++->r;
@@ -261,10 +323,11 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     /* YA */
     img->width = lumstor->w;
     img->height = lumstor->h;
-    img->pixels = pp = xalloc(img->width*img->height*2);
+    cnt = img->width * img->height;
+    img->pixels = pp = xalloc( cnt*2 );
+    img->alloc = 1;
     img->format = GL_LUMINANCE_ALPHA;
     img->type = GL_UNSIGNED_BYTE;
-    cnt = img->width * img->height;
     p1 = lumstor->img;
     p2 = astor->img;
     while(cnt--) {
@@ -275,6 +338,30 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
   if(!img_inited)
     img_init();
 }
+
+static void *get_mem_object( struct svalue *x )
+{
+  struct {
+    unsigned char *p;
+    size_t size;
+  } *stor_mem;
+
+  if(shm_program == NULL)
+  {
+    push_text("System.Memory");
+    SAFE_APPLY_MASTER("resolv",1);
+    shm_program=program_from_svalue(sp-1);
+    pop_stack();
+    if(shm_program == NULL)
+      Pike_error("Can't resolve System.Memory!\n");
+  }
+  if( TYPEOF(*x) != T_OBJECT ||
+      !(stor_mem = (void *)get_storage( x->u.object, shm_program ) ) )
+    Pike_error("Expected System.Memory object\n");
+  return stor_mem->p;
+}
+    
+
 
 static void release_img(struct zimage *img)
 {
@@ -291,7 +378,7 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
   if(args!=1)
     Pike_error("%s: too %s arguments.\n", func, (args<1? "few":"many"));
   
-  if(sp[-1].type==T_ARRAY) {
+  if(TYPEOF(sp[-1]) == T_ARRAY) {
     struct array *a = sp[-1].u.array;
     args = a->size;
     if(args>16)
@@ -302,7 +389,7 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
     s = sp-args;
 
   for(i=0; i<args; i++)
-    if(!((tt=1<<s[i].type)&ty)) {
+    if(!((tt=1<<TYPEOF(s[i]))&ty)) {
       char buf[32];
       int n=0;
       buf[0]='\0';
@@ -314,7 +401,7 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 	  strcat(buf, get_name_of_type(tt));
 	}
       Pike_error("%s: got %s, expected %s.\n", func,
-	    get_name_of_type(s[i].type), buf);
+		 get_name_of_type(TYPEOF(s[i])), buf);
     } else
       tr|=tt;
   if(tr==(BIT_INT|BIT_FLOAT))
@@ -335,14 +422,91 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
       ret->i[i]=s[i].u.integer;
       break;
     case ZT_FLOAT:
-      ret->f[i]=(s[i].type==T_INT?(float)s[i].u.integer:s[i].u.float_number);
+      ret->f[i]=(TYPEOF(s[i]) == T_INT?(float)s[i].u.integer:s[i].u.float_number);
       break;      
     case ZT_DOUBLE:
-      ret->d[i]=(s[i].type==T_INT?(double)s[i].u.integer:s[i].u.float_number);
+      ret->d[i]=(TYPEOF(s[i]) == T_INT?(double)s[i].u.integer:s[i].u.float_number);
       break;      
     }  
 
   return tt|(arr?ZT_ARRAY:0);
+}
+
+/*
+ * This function copies an array from pike into a zvalue array. It
+ * allocates all the memory needed to do the transfer and copies the
+ * data.
+ *
+ */
+static int check_1unlimited_args(char *func, INT32 args, int ty, int rty,
+			 union zvalue **ret)
+{
+  int i, tt, tr=0, arr=0;
+  struct svalue *s;
+
+  if(args!=1)
+    Pike_error("%s: too %s arguments.\n", func, (args<1? "few":"many"));
+  
+  /* Make sure we were sent an array */
+  if(TYPEOF(sp[-1]) == T_ARRAY) {
+    struct array *a = sp[-1].u.array;
+    args = a->size;
+    arr++;
+    s = ITEM(a);
+  } else
+    Pike_error("%s: expected array.\n", func);
+
+  /* Check what types of arguments that are in the array */
+  for(i=0; i<args; i++)
+    if(!((tt=1<<TYPEOF(s[i]))&ty)) {
+      char buf[32];
+      int n=0;
+      buf[0]='\0';
+      for(tt=0; ty; tt++)
+	if(ty&(1<<tt)) {
+	  ty&=~(1<<tt);
+	  if(n++)
+	    strcat(buf, " or ");
+	  strcat(buf, get_name_of_type(tt));
+	}
+      Pike_error("%s: got %s, expected %s.\n", func,
+		 get_name_of_type(TYPEOF(s[i])), buf);
+    } else
+      tr|=tt;
+  if(tr==(BIT_INT|BIT_FLOAT))
+    tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
+  else if(tr==BIT_FLOAT)
+    tt=((rty&ZT_FLOAT)? ZT_FLOAT:ZT_DOUBLE);
+  else if(tr!=BIT_INT)
+    Pike_error("Internal error in check_1unlimited_args for %s!\n", func);
+  else if(rty&ZT_INT)
+    tt=ZT_INT;
+  else 
+    tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
+
+  ret[0] = (void *)xalloc(args * sizeof(union zvalue));
+  for(i=0; i<args; i++)
+    switch(tt)
+    {
+    case ZT_INT:
+      ((GLint *)ret[0])[i]=s[i].u.integer;
+      break;
+    case ZT_FLOAT:
+      ((GLfloat *)ret[0])[i]=(TYPEOF(s[i]) == T_INT?(float)s[i].u.integer:s[i].u.float_number);
+      break;      
+    case ZT_DOUBLE:
+      ((GLdouble *)ret[0])[i]=(TYPEOF(s[i]) == T_INT?(double)s[i].u.integer:s[i].u.float_number);
+      break;      
+    }  
+
+  return tt|(arr?ZT_ARRAY:0);
+}
+
+inline static void my_push_text(char * str) {
+  if(!str)
+    push_int(0);
+  else
+    push_text(str);
 }
 
 #define glClearColor3v(f) glClearColor((f)[0], (f)[1], (f)[2], 0.0)
@@ -352,8 +516,24 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 #define glEvalPoint1v(i) glEvalPoint1((i)[0]);
 #define glEvalPoint2v(i) glEvalPoint2((i)[0], (i)[1]);
 
+static void my_glFrustum(INT32 args);
+
+static void my_glDeleteTextures( INT32 args );
+static void my_glGenTextures( INT32 args );
+static void my_glCallLists( INT32 args );
+
 static void pre_init()
 {
+  add_function_constant("glFrustum", my_glFrustum,
+			"function(float,float,float,float,float,float:void)",
+			OPT_SIDE_EFFECT);
+  add_function_constant("glDeleteTextures", my_glDeleteTextures,
+			"function(int...:void)",
+			OPT_SIDE_EFFECT);
+  add_function_constant("glCallLists", my_glCallLists,"function(int...:void)",
+			OPT_SIDE_EFFECT);
+  add_function_constant("glGenTextures", my_glGenTextures,
+			"function(int:array(int))", OPT_EXTERNAL_DEPEND);
 }
 
 static void post_init()
@@ -361,4 +541,100 @@ static void post_init()
 }
 
 @@
+static void my_glGenTextures( INT32 args )
+{
+  GLint *res;
+  struct array *a;
+  int ntexts;
+  int i;
+  if( args != 1 || TYPEOF(Pike_sp[-1]) != PIKE_T_INT )
+    Pike_error("Illegal argument to glGenTextures. Expected integer\n");
+  ntexts = Pike_sp[-1].u.integer;
+  pop_stack();
 
+  res = xcalloc( sizeof( GLint ), ntexts );
+  glGenTextures( ntexts, res );
+  a = allocate_array( ntexts );
+  for( i = 0; i<ntexts; i++ )
+    a->item[i].u.integer =  res[i];
+  push_array( a );
+  free( res );
+}
+
+static void my_glDeleteTextures( INT32 args )
+{
+  /* optimize the (valid) args==0 case. */
+  if( args )
+  {
+    GLuint *ls = (GLuint *)xalloc( sizeof( GLint ) * args );
+    int i;
+    for( i = 0; i<args; i++ )
+    {
+      if( TYPEOF(Pike_sp[i-args]) != PIKE_T_INT ) {
+	free( ls );
+	SIMPLE_BAD_ARG_ERROR("glDeleteTextures", i+1, "int");
+      }
+      ls[i] = Pike_sp[i-args].u.integer;
+    }
+    pop_n_elems(args);
+    glDeleteTextures( args, ls );
+    free( ls );
+  }
+}
+
+static void my_glCallLists( INT32 args )
+{
+  /* optimize the (valid) args==0 case. */
+  if( args )
+  {
+    GLint *ls = (GLint *)xalloc( sizeof( GLint ) * args );
+    int i;
+    for( i = 0; i<args; i++ )
+    {
+      if( TYPEOF(Pike_sp[i-args]) != PIKE_T_INT ) {
+	free( ls );
+	SIMPLE_BAD_ARG_ERROR("glCallLists", i+1, "int");
+      }
+      ls[i] = Pike_sp[i-args].u.integer;
+    }
+    pop_n_elems(args);
+    glCallLists( args, GL_INT, ls );
+    free( ls );
+  }
+}
+
+static void my_glFrustum(INT32 args)
+{
+  FLOAT_TYPE right,left,bottom,top,close,away;
+  GLdouble m[16];
+  get_all_args("glFrustum", args, "%f%f%f%f%f%f",
+	       &left, &right, &bottom, &top, &close, &away);
+
+  if (right == left) {
+    SIMPLE_ARG_ERROR("glFrustum", 2,
+		     "Arguments right and left must not be equal.");
+  }
+
+  if (bottom == top) {
+    SIMPLE_ARG_ERROR("glFrustum", 4,
+		     "Arguments bottom and top must not be equal.");
+  }
+
+  if (close == away) {
+    SIMPLE_ARG_ERROR("glFrustum", 6,
+		     "Arguments near and away must not be equal.");
+  }
+
+
+  memset( m, 0, sizeof(m) );
+  m[0] = 2*close/(right-left);
+  m[5] = 2*close/(top-bottom);
+  m[8] = (right+left)/(right-left);
+  m[9] = (top+bottom)/(top-bottom);
+  m[10] = -(away+close)/(away-close);
+  m[11] = -1.0;
+  m[14] = -2*away*close/(away-close);
+
+  glMultMatrixd( m );
+  pop_n_elems(args);
+}

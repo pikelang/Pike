@@ -1,39 +1,75 @@
 #!/bin/sh
-# Runs Pike directly from the build directory.
-#
-# If the first argument is --gdb, Pike will be loaded inside a gdb
-# session with the remaining arguments. If --gdb has a value, e.g.
-# --gdb=run, the value will be passed as a command to be executed
-# initially by gdb.
 
 BUILDDIR="BUILDDIR"
 
-if test $BUILDDIR = BUILDDIR; then
-  echo Run make in the parent directory to generate this script.
+if test "$BUILDDIR" = BUILDDIR; then
+  echo "Run make in the parent directory to generate this script."
   exit 1
 fi
 
-if expr x"$1" : 'x--gdb' >/dev/null; then
-  gdbarg=`expr "$1" : '--gdb=\(.*\)'`
-  shift
-  args="set args '-m$BUILDDIR/master.pike'"
-  for arg do
-    arg=`sed -e s/\'/\'\"\'\"\'/g <<EOF
-$arg
-EOF`
+for arg
+do
+  case "$arg" in
+    --gdb*)
+      gdb="$arg"
+      shift
+      ;;
+
+    --valgrind*)
+      valgrind="${VALGRIND:-valgrind}"
+      vgargs=`expr "$arg" : '--valgrind=\(.*\)'`
+      shift
+      ;;
+
+    --help*)
+      cat <<EOF
+Runs Pike directly from the build directory. Some arguments are
+handled by this script if they occur before any other:
+
+--gdb[=cmd]
+  Pike is loaded inside a gdb session with the remaining arguments. If
+  a value is given, e.g. --gdb=run, it's passed as a command to be
+  executed initially by gdb.
+
+--valgrind[=args]
+  Pike is loaded inside the memory leak detector Valgrind. If a value
+  is given, e.g. --valgrind="--num-callers=20 -v", it's split and
+  passed as arguments to valgrind.
+
+--help
+  Shows this message. It's not removed from the argument list, so Pike
+  will also act on it.
+
+Note: It's typically not very useful to specify both --gdb and
+--valgrind. You probably want to try --valgrind="--gdb-attach=yes"
+instead.
+
+EOF
+      break
+      ;;
+
+    *)
+      break
+      ;;
+  esac
+done
+
+if test "x$gdb" != "x"; then
+  args="-DPRECOMPILED_SEARCH_MORE '-m$BUILDDIR/master.pike'"
+  for arg
+  do
+    arg=`echo "$arg" | sed -e s/\'/\'\"\'\"\'/g`
     args="$args '$arg'"
   done
-  if test -f .gdbinit; then
-    mv .gdbinit .gdbinit.orig
-    cp .gdbinit.orig .gdbinit
+  echo "set args $args" >> .gdbinit.$$
+  echo break debug_fatal >> .gdbinit.$$
+  echo break pike_gdb_breakpoint >> .gdbinit.$$
+  gdbcmd=`expr "$gdb" : '--gdb=\(.*\)'`
+  if test x"$gdbcmd" != x; then
+    echo "$gdbcmd" >> .gdbinit.$$
   fi
-  echo $args >> .gdbinit
-  if test x"$gdbarg" != x; then
-    echo "$gdbarg" >> .gdbinit
-  fi
-  gdb "$BUILDDIR/pike"
-  rm .gdbinit
-  test -f .gdbinit.orig && mv .gdbinit.orig .gdbinit
+  $valgrind $vgargs ${GDB:-gdb} -x .gdbinit.$$ "$BUILDDIR/pike"
+  rm .gdbinit.$$
 else
-  exec "$BUILDDIR/pike" "-m$BUILDDIR/master.pike" "$@"
+  exec $valgrind $vgargs "$BUILDDIR/pike" "-DPRECOMPILED_SEARCH_MORE" "-m$BUILDDIR/master.pike" "$@"
 fi

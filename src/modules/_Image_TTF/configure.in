@@ -1,6 +1,3 @@
-#
-# $Id: configure.in,v 1.9 2001/02/13 15:44:18 mirar Exp $
-#
 AC_INIT(image_ttf.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(ttflib,     [  --with(out)-ttflib       Support TTF via ttf.lib (freetype) (Image.TTF)],[],[with_ttflib=yes])
@@ -12,17 +9,101 @@ PIKE_FEATURE_WITHOUT(Image.TTF)
 if test x$with_ttflib = xyes ; then
   PIKE_FEATURE_NODEP(Image.TTF)
 
+  # Try adding freetype1 to the include path.
+  real_include_dirs=''
+  for flag in $CPPFLAGS; do
+    case "$flag" in
+      -I*)
+	d="`echo Q$flag|sed -e 's/^Q-I//'`/freetype1"
+        AC_MSG_CHECKING($d)
+	if test -d "$d/."; then
+	  REALDIR="`cd $d/. ; /bin/pwd`"
+          if test "x$REALDIR" = x ; then
+            REALDIR=UNKNOWN
+          else
+            :
+          fi
+
+          case " $CPPFLAGS $real_include_dirs " in
+            *\ -I$d\ * | *\ -I$REALDIR\ *)
+               AC_MSG_RESULT(already added)
+            ;;
+            *)
+	      OLD_CPPFLAGS="${CPPFLAGS}"
+              CPPFLAGS="${CPPFLAGS} -I$d"
+	      AC_TRY_CPP([include <stdio.h>], [
+                AC_MSG_RESULT(added)
+                if test "x$REALDIR" != xUNKNOWN; then
+                  real_include_dirs="${real_include_dirs} -I$REALDIR"
+                else
+                  :
+                fi
+	      ], [
+	        AC_MSG_RESULT(fails)
+		CPPFLAGS="${OLD_CPPFLAGS}"
+	      ])
+            ;;
+	  esac
+	else
+	  AC_MSG_RESULT(no)
+	fi
+      ;;
+    esac
+  done
+
   AC_CHECK_HEADERS(freetype.h ftxkern.h freetype/freetype.h freetype/ftxkern.h)
 
   parent="$ac_cv_header_ftxkern_h$ac_cv_header_freetype_h"
   subdir="$ac_cv_header_freetype_ftxkern_h$ac_cv_header_freetype_freetype_h"
   freetype_h="$ac_cv_header_freetype_h$ac_cv_header_freetype_freetype_h"
 
-  if test "$parent" = "yesyes" -o "$subdir" = "yesyes"; then
+  if test "$parent" = "yesyes" -o "$subdir" = "yesyes" ; then
     AC_CHECK_LIB(ttf, TT_Open_Collection, [
-      AC_DEFINE(HAVE_LIBTTF) 
       LIBS="${LIBS-} -lttf"
-      PIKE_FEATURE_OK(Image.TTF)
+      AC_MSG_CHECKING([if libttf actually works])
+      AC_CACHE_VAL(pike_cv_lib_ttf_works, [
+        AC_TRY_RUN([
+#include <stdio.h>
+#if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
+
+#include <freetype/freetype.h>
+#include <freetype/ftxkern.h>
+
+#else /* !HAVE_FREETYPE_FREETYPE_H || !HAVE_FREETYPE_FTXKERN_H */
+
+#include <freetype.h>
+#include <ftxkern.h>
+
+#endif /* HAVE_FREETYPE_FREETYPE_H && HAVE_FREETYPE_FTXKERN_H */
+
+          int main(int argc, char **argv)
+          {
+            unsigned char palette[5] = {0,64,128,192,255};
+            TT_Error errcode;
+	    TT_Engine engine;
+
+            if ((errcode = TT_Init_FreeType(&engine))) {
+              fprintf(stderr, "TT_Init_FreeType() failed with code 0x%02lx\n",
+          	      (unsigned long)errcode);
+              exit(1);
+            }
+            /* Irix libttf breaks here... */
+            TT_Set_Raster_Gray_Palette(engine,(char*)palette);
+            TT_Init_Kerning_Extension( engine );
+            exit(0);
+          }
+        ], [ pike_cv_lib_ttf_works=yes ], [ pike_cv_lib_ttf_works=no ], [
+	  # Assume working when cross-compiling.
+          pike_cv_lib_ttf_works=yes
+        ])
+      ])
+      AC_MSG_RESULT([$pike_cv_lib_ttf_works])
+      if test "x$pike_cv_lib_ttf_works" = "xyes"; then
+        AC_DEFINE(HAVE_LIBTTF) 
+        PIKE_FEATURE_OK(Image.TTF)
+      else
+        PIKE_FEATURE([Image.TTF], [no (broken library)])
+      fi
     ])
     AC_MSG_CHECKING([if TT_Horizontal_Header has the member Reserved0])
     AC_CACHE_VAL(pike_cv_tt_hh_reserved0, [

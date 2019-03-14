@@ -1,13 +1,10 @@
 /* XImage.pmod
- *
- * $Id: XImage.pmod,v 1.18 2001/04/07 00:56:32 nilsson Exp $
  */
 
 /*
  *    Protocols.X, a Pike interface to the X Window System
  *
- *    Copyright (C) 1998, Niels Möller, Per Hedbor, Marcus Comstedt,
- *    Pontus Hagland, David Hedbor.
+ *    See COPYRIGHT for copyright information.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -24,13 +21,7 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
-/* Questions, bug fixes and bug reports can be sent to the pike
- * mailing list, pike@roxen.com, or to the athors (see AUTHORS for
- * email addresses. */
-
 #pike __REAL_VERSION__
-
-#include "error.h"
 
 // Image --> X module.
 // Needs: Pike 0.6
@@ -97,7 +88,7 @@ class Image_wrapper
   mixed `->( string ind )
   {
     mixed x;
-    if((x = `[](this_object(),ind)))
+    if((x = `[](this,ind)))
       return x;
     return funcall(image[ind]);
   }
@@ -113,7 +104,7 @@ class XImage
   object /*(Types.RootWindow)*/ root; // extends window
   object /*(Types.Visual)*/ visual;
   object /*(Types.Colormap)*/ colormap;
-  object (Image.colortable) ccol;
+  Image.Colortable ccol;
   object /*(Types.GC)*/ dgc;
 
   int best;
@@ -130,7 +121,7 @@ class XImage
     if(type == "best") best=1;
   }
 
-  object allocate_colortable()
+  Image.Colortable allocate_colortable()
   {
 //     werror("Allocating colortable\n");
     array wanted;
@@ -141,7 +132,7 @@ class XImage
 
     if(sizeof(wanted) < 10) 
     {
-      object i = Image.image(100,100);
+      object i = Image.Image(100,100);
       i->tuned_box(0,0, 100, 50,
 		   ({ ({0,255,255 }),({255,255,255 }),
 		      ({0,0,255 }),({255,0,255 }) }));
@@ -169,7 +160,7 @@ class XImage
     foreach(values(colormap->alloced), mapping m)
       if(m) res[ m->pixel ] = ({ m->red/257, m->green/257, m->blue/257 });
 
-    object ct = Image.colortable( res );
+    Image.Colortable ct = Image.Colortable( res );
     ct->cubicles(12, 12, 12);
     if(best)
       ct->floyd_steinberg();
@@ -291,10 +282,10 @@ class XImage
     switch(_Xlib.visual_classes[visual->c_class])
     {
      case "StaticGray":
-       ccol = Image.colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
+       ccol = Image.Colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
        converter = Image.X.encode_pseudocolor;
        break;
-//     ccol = Image.colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
+//     ccol = Image.Colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
 //     converter = Image.X.encode_pseudocolor;
 //     break;
      case "GrayScale":
@@ -306,7 +297,7 @@ class XImage
        if(depth <= 16)
        {
 #define BITS(Y) (Image.X.examine_mask(Y)[0])
-	 ccol = Image.colortable(1<<BITS(rmask),
+	 ccol = Image.Colortable(1<<BITS(rmask),
 				 1<<BITS(gmask),
 				 1<<BITS(bmask));
 	 ccol->ordered();
@@ -431,4 +422,3 @@ void ShapedWindowImage(object in, object color, object|void alpha,
     }
   }
 }
-                      

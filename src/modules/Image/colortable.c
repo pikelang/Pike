@@ -1,11 +1,13 @@
-#include "global.h"
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
-/* $Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $ */
+#include "global.h"
 
 /*
 **! module Image
-**! note
-**!	$Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,8 +23,6 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $");
-
 #include <math.h> /* fabs() */
 
 #include "image_machine.h"
@@ -30,12 +30,9 @@ RCSID("$Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "array.h"
 #include "mapping.h"
-#include "threads.h"
 #include "builtin_functions.h"
 #include "pike_error.h"
 #include "module_support.h"
@@ -47,9 +44,8 @@ RCSID("$Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $");
 #include "colortable.h"
 #include "initstuff.h"
 
-/* This must be included last! */
-#include "module_magic.h"
 
+#define sp Pike_sp
 
 #define WEIGHT_NEEDED (nct_weight_t)(0x10000000)
 #define WEIGHT_REMOVE (nct_weight_t)(0x10000001)
@@ -76,12 +72,9 @@ RCSID("$Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $");
 #define RIGID_DEFAULT_G 16
 #define RIGID_DEFAULT_B 16
 
-#ifndef MAX
-#define MAX(X,Y) ((X)>(Y)?(X):(Y))
-#endif
-
 #define SQ(x) ((x)*(x))
 static INLINE ptrdiff_t sq(ptrdiff_t x) { return x*x; }
+static INLINE int sq_int(int x) { return x*x; }
 
 #ifdef THIS
 #undef THIS /* Needed for NT */
@@ -182,12 +175,12 @@ static void colortable_init_stuff(struct neo_colortable *nct)
    nct->dither_type=NCTD_NONE;
 }
 
-static void init_colortable_struct(struct object *obj)
+static void init_colortable_struct(struct object *UNUSED(obj))
 {
    colortable_init_stuff(THIS);
 }
 
-static void exit_colortable_struct(struct object *obj)
+static void exit_colortable_struct(struct object *UNUSED(obj))
 {
    free_colortable_struct(THIS);
 }
@@ -304,19 +297,18 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 				rgbd_group position,rgbd_group space,
 				enum nct_reduce_method type)
 {
-   ptrdiff_t n, i, m, g;
+   ptrdiff_t n, i, m;
    rgbl_group sum={0,0,0},diff={0,0,0};
    rgbl_group min={256,256,256},max={0,0,0};
-   size_t mmul,tot=0;
-   ptrdiff_t gdiff=0;
+   nct_weight_t mmul,tot=0;
+   INT32 g, gdiff=0;
    ptrdiff_t left, right;
    enum { SORT_R,SORT_G,SORT_B,SORT_GREY } st;
    rgbd_group newpos1,newpos2;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr, "COLORTABLE%*s reduce_recurse %lx,%lx, %ld,%ld\n",
-	   level, "", (unsigned long)src, (unsigned long)dest,
-	   (long)src_size, (long)target_size);
+   fprintf(stderr, "COLORTABLE%*s reduce_recurse %p,%p, %ld,%ld\n",
+	   level, "", src, dest, (long)src_size, (long)target_size);
 #if 0
    stderr_print_entries(src,src_size);
 #endif
@@ -342,6 +334,10 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	    n++;
 	 }
 
+#ifdef COLORTABLE_REDUCE_DEBUG
+      fprintf(stderr, "COLORTABLE%*s reduce_recurse %ld>=%ld -> %ld\n",
+              level, "", (long)n, (long)target_size, (long)n);
+#endif
       if (n>=target_size) return n;
 
       switch (type)
@@ -349,21 +345,29 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	 case NCT_REDUCE_MEAN:
 	    /* get the mean color */
 
-	    if ((mmul=src_size)>10240) mmul=10240;
+ 	    if (src_size > 10240) {
+	       mmul = 10240;
+	    } else {
+	       mmul = DO_NOT_WARN((nct_weight_t)src_size);
+	    }
 	    
 	    for (i=0; i<src_size; i++)
 	    {
-	       nct_weight_t mul=src[i].weight;
+	       nct_weight_t mul = src[i].weight;
 	       
-	       sum.r += DO_NOT_WARN((INT32)(src[i].color.r*mul));
-	       sum.g += DO_NOT_WARN((INT32)(src[i].color.g*mul));
-	       sum.b += DO_NOT_WARN((INT32)(src[i].color.b*mul));
+	       sum.r += src[i].color.r*mul;
+	       sum.g += src[i].color.g*mul;
+	       sum.b += src[i].color.b*mul;
 	       tot += mul;
 	    }
-	    
-	    dest->color.r = DO_NOT_WARN((INT32)(sum.r/tot));
-	    dest->color.g = DO_NOT_WARN((INT32)(sum.g/tot));
-	    dest->color.b = DO_NOT_WARN((INT32)(sum.b/tot));
+	    if (tot) {
+	      dest->color.r = sum.r/tot;
+	      dest->color.g = sum.g/tot;
+	      dest->color.b = sum.b/tot;
+	    } else {
+	      /* Unlikely to actually happen, but... */
+	      dest->color.r = dest->color.g = dest->color.b = 0;
+	    }
 	    dest->weight = tot;
 	    dest->no = -1;
 
@@ -430,12 +434,12 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
    tot=0;
    for (i=0; i<src_size; i++)
    {
-      size_t mul;
+      nct_weight_t mul;
       if ((mul=src[i].weight)==WEIGHT_NEEDED)
 	 mul=mmul;
-      sum.r += DO_NOT_WARN((INT32)(src[i].color.r*mul));
-      sum.g += DO_NOT_WARN((INT32)(src[i].color.g*mul));
-      sum.b += DO_NOT_WARN((INT32)(src[i].color.b*mul));
+      sum.r += src[i].color.r*mul;
+      sum.g += src[i].color.g*mul;
+      sum.b += src[i].color.b*mul;
       tot += mul;
    }
 
@@ -444,10 +448,10 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	   level, "", sum.r, sum.g, sum.b);
 #endif
 
-   g=(sum.r*sf.r+sum.g*sf.g+sum.b*sf.b)/tot;
-   sum.r = DO_NOT_WARN((INT32)(sum.r/tot));
-   sum.g = DO_NOT_WARN((INT32)(sum.g/tot));
-   sum.b = DO_NOT_WARN((INT32)(sum.b/tot));
+   g = (sum.r*sf.r+sum.g*sf.g+sum.b*sf.b)/tot;
+   sum.r = sum.r/tot;
+   sum.g = sum.g/tot;
+   sum.b = sum.b/tot;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
    fprintf(stderr, "COLORTABLE%*s mean=%d,%d,%d,%ld tot=%ld\n",
@@ -456,26 +460,26 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 
    for (i=0; i<src_size; i++)
    {
-      size_t mul;
+      nct_weight_t mul;
       if ((mul=src[i].weight)==WEIGHT_NEEDED)
 	 mul=mmul;
-      diff.r += DO_NOT_WARN((INT32)((sq(src[i].color.r-(INT32)sum.r)/8)*mul));
-      diff.g += DO_NOT_WARN((INT32)((sq(src[i].color.g-(INT32)sum.g)/8)*mul));
-      diff.b += DO_NOT_WARN((INT32)((sq(src[i].color.b-(INT32)sum.b)/8)*mul));
-      gdiff+=(sq(src[i].color.r*sf.r+src[i].color.g*sf.g+
-		 src[i].color.b*sf.b-g)/8)*mul;
+      diff.r += (sq(src[i].color.r-(INT32)sum.r)/8)*mul;
+      diff.g += (sq(src[i].color.g-(INT32)sum.g)/8)*mul;
+      diff.b += (sq(src[i].color.b-(INT32)sum.b)/8)*mul;
+      gdiff  += (sq(src[i].color.r*sf.r+src[i].color.g*sf.g+
+		    src[i].color.b*sf.b-g)/8)*mul;
       tot+=mul;
    }
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr, "COLORTABLE%*s pure diff=%d,%d,%d,%ld sort=?\n",
+   fprintf(stderr, "COLORTABLE%*s pure diff=%d,%d,%d,%d sort=?\n",
 	   level, "", diff.r, diff.g, diff.b, gdiff);
 #endif
 
    diff.r*=DIFF_R_MULT;
    diff.g*=DIFF_G_MULT;
    diff.b*=DIFF_B_MULT;
-   gdiff=(gdiff*DIFF_GREY_MULT)/(sq(sf.r+sf.g+sf.b));
+   gdiff = (gdiff*DIFF_GREY_MULT)/(sq(sf.r+sf.g+sf.b));
 
    if (diff.r > diff.g) 
       if (diff.r > diff.b) 
@@ -488,7 +492,7 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       else 
 	 if (diff.b > gdiff) st=SORT_B; else st=SORT_GREY;
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr, "COLORTABLE%*s diff=%d,%d,%d,%ld sort=%d\n",
+   fprintf(stderr, "COLORTABLE%*s diff=%d,%d,%d,%d sort=%d\n",
 	   level, "", diff.r, diff.g, diff.b, gdiff, st);
 #endif
 
@@ -500,9 +504,11 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 #define HALFSORT(C) \
       while (left<right) \
       { \
-         struct nct_flat_entry tmp; \
-         if ((ptrdiff_t)src[left].color.C>sum.C)  \
-	    tmp=src[left],src[left]=src[right],src[right--]=tmp; \
+         if (src[left].color.C > sum.C) { \
+	    struct nct_flat_entry tmp = src[left]; \
+            src[left] = src[right]; \
+            src[right--] = tmp; \
+         } \
          else left++; \
       } \
       space.C/=2.0; \
@@ -518,10 +524,12 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       case SORT_GREY:
          while (left<right) 
 	 { 
-	    struct nct_flat_entry tmp; 
-	    if ((ptrdiff_t)(src[left].color.r*sf.r+src[left].color.g*sf.g+
-			    src[left].color.b*sf.b)>(ptrdiff_t)g)  
-	       tmp=src[left],src[left]=src[right],src[right--]=tmp; 
+	    if ((src[left].color.r*sf.r + src[left].color.g*sf.g +
+		 src[left].color.b*sf.b) > g) {
+	       struct nct_flat_entry tmp = src[left];
+	       src[left] = src[right];
+	       src[right--] = tmp;
+	    }
 	    else left++; 
 	 } 
 	 space.r/=2.0;
@@ -541,7 +549,7 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
    fprintf(stderr, "COLORTABLE%*s left=%d right=%d\n", level, "", left, right);
 #endif
 
-   if (left==0) left++;
+   if (!left) left++;
    while (left &&
 	  src[left].color.r==src[left-1].color.r &&
 	  src[left].color.g==src[left-1].color.g &&
@@ -634,8 +642,13 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
    newe=malloc(sizeof(struct nct_flat_entry)*flat.numentries);
    if (!newe) { return flat; }
 
-   i = reduce_recurse(flat.entries,newe, flat.numentries, maxcols, 0, sf,
+   i = reduce_recurse(flat.entries, newe, flat.numentries, maxcols, 0, sf,
 		      pos, space, NCT_REDUCE_WEIGHT);
+   if (!i)
+   {
+     free(newe);
+     return flat;
+   }
 
    free(flat.entries);
 
@@ -742,13 +755,13 @@ static INLINE struct color_hash_entry *insert_in_hash_mask(rgb_group rgb,
 
 static INLINE rgb_group get_mask_of_level(int level)
 {
-   static unsigned char strip_r[24]=
+   static const unsigned char strip_r[24]=
    { 0xff, 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 0xf0,
      0xf0, 0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
-   static unsigned char strip_g[24]=
+   static const unsigned char strip_g[24]=
    { 0xff, 0xff, 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 
      0xf0, 0xf0, 0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
-   static unsigned char strip_b[24]=
+   static const unsigned char strip_b[24]=
    { 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 0xf0, 0xf0, 
      0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
 
@@ -761,7 +774,7 @@ static INLINE rgb_group get_mask_of_level(int level)
 }
 
 static struct nct_flat _img_get_flat_from_image(struct image *img,
-						unsigned long maxcols)
+						unsigned long UNUSED(maxcols))
 {
    struct color_hash_entry *hash;
    unsigned long hashsize=DEFAULT_COLOR_HASH_SIZE;
@@ -809,7 +822,10 @@ rerun_rehash:
 	    if (oldhash[j].pixels)
 	    {
 	       mark=insert_in_hash(oldhash[j].color,hash,hashsize);
-	       if (!mark) goto rerun_rehash;
+	       if (!mark) {
+                   free(hash);
+                   goto rerun_rehash;
+               }
 	       mark->pixels=oldhash[j].pixels;
 	    }
 	 
@@ -853,7 +869,10 @@ rerun_mask:
 	 if (oldhash[j].pixels)
 	 {
 	    mark=insert_in_hash_mask(oldhash[j].color,hash,hashsize,rgb_mask);
-	    if (!mark) goto rerun_mask; /* increase mask level inst of hash */
+	    if (!mark) {
+                free( oldhash );
+                goto rerun_mask; /* increase mask level inst of hash */
+            }
 	    mark->pixels+=oldhash[j].pixels-1;
 	 }
 
@@ -908,7 +927,9 @@ rerun_mask:
 
 static struct nct_flat _img_get_flat_from_array(struct array *arr)
 {
+#if 0
    struct svalue s,s2;
+#endif
    struct nct_flat flat;
    int i,n=0;
 
@@ -916,10 +937,13 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
 
-   s2.type=s.type=T_INT;
+#if 0
+   SET_SVAL_TYPE(s, T_INT);
+   SET_SVAL_TYPE(s2, T_INT);
+#endif
    for (i=0; i<arr->size; i++)
    {
-      if (arr->item[i].type==T_INT && !arr->item[i].u.integer)
+      if (TYPEOF(arr->item[i]) == T_INT && !arr->item[i].u.integer)
 	 continue;
 
       if (!image_color_svalue(arr->item+i,
@@ -951,7 +975,7 @@ static struct nct_flat _img_get_flat_from_string(struct pike_string *str)
 
    flat.numentries = str->len/3;
    if (flat.numentries<1) 
-      Pike_error("Can't make a colortable with less then one (1) color.\n");
+      Pike_error("Can't make a colortable with less than one (1) color.\n");
 
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
@@ -975,7 +999,7 @@ static struct nct_flat _img_get_flat_from_bgr_string(struct pike_string *str)
 
    flat.numentries=str->len/3;
    if (flat.numentries<1) 
-      Pike_error("Can't make a colortable with less then one (1) color.\n");
+      Pike_error("Can't make a colortable with less than one (1) color.\n");
 
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
@@ -999,7 +1023,7 @@ static struct nct_flat _img_get_flat_from_bgrz_string(struct pike_string *str)
 
    flat.numentries=str->len/4;
    if (flat.numentries<1) 
-      Pike_error("Can't make a colortable with less then one (1) color.\n");
+      Pike_error("Can't make a colortable with less than one (1) color.\n");
 
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
@@ -1020,7 +1044,7 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 				   int *dist,int *no,
 				   rgbl_group sf)
 {
-   ptrdiff_t mindist;
+   int mindist;
    struct nct_scale *s;
    int nc;
 
@@ -1028,9 +1052,10 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 
    if (cube.r&&cube.g&&cube.b)
    {
-      mindist = sf.r*sq((((rgb.r*cube.r+cube.r/2)>>8)*255)/(cube.r-1)-rgb.r)+
-	        sf.g*sq((((rgb.g*cube.g+cube.g/2)>>8)*255)/(cube.g-1)-rgb.g)+
-	        sf.b*sq((((rgb.b*cube.b+cube.b/2)>>8)*255)/(cube.b-1)-rgb.b);
+      mindist =
+	sf.r*sq_int((((rgb.r*cube.r+cube.r/2)>>8)*255)/(cube.r-1)-rgb.r)+
+	sf.g*sq_int((((rgb.g*cube.g+cube.g/2)>>8)*255)/(cube.g-1)-rgb.g)+
+	sf.b*sq_int((((rgb.b*cube.b+cube.b/2)>>8)*255)/(cube.b-1)-rgb.b);
 
       *no=((INT32)(rgb.r*cube.r+cube.r/2)>>8)+
 	  ((INT32)(rgb.g*cube.g+cube.g/2)>>8)*cube.r+
@@ -1038,7 +1063,7 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 
       if (mindist<cube.disttrig)
       {
-	 *dist = DO_NOT_WARN((int)mindist);
+	 *dist = mindist;
 	 return;
       }
    }
@@ -1067,10 +1092,10 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
       if (s->no[n]>=nc) 
       {
 	 int steps=s->steps;
-	 ptrdiff_t ldist =
-	   sf.r*sq(rgb.r-((int)(s->high.r*n+s->low.r*(steps-n-1))/(steps-1)))+
-	   sf.g*sq(rgb.g-((int)(s->high.g*n+s->low.g*(steps-n-1))/(steps-1)))+
-	   sf.b*sq(rgb.b-((int)(s->high.b*n+s->low.b*(steps-n-1))/(steps-1)));
+	 int ldist =
+	   sf.r*sq_int(rgb.r-((s->high.r*n+s->low.r*(steps-n-1))/(steps-1)))+
+	   sf.g*sq_int(rgb.g-((s->high.g*n+s->low.g*(steps-n-1))/(steps-1)))+
+	   sf.b*sq_int(rgb.b-((s->high.b*n+s->low.b*(steps-n-1))/(steps-1)));
 
 	 if (ldist<mindist)
 	 {
@@ -1083,7 +1108,7 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
       s=s->next;
    }
   
-   *dist = DO_NOT_WARN((int)mindist);
+   *dist = mindist;
 }
 
 static struct nct_cube _img_get_cube_from_args(INT32 args)
@@ -1097,9 +1122,9 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
    INT32 ap;
 
    if (args<3 ||
-       sp[-args].type!=T_INT ||
-       sp[1-args].type!=T_INT ||
-       sp[2-args].type!=T_INT)
+       TYPEOF(sp[-args]) != T_INT ||
+       TYPEOF(sp[1-args]) != T_INT ||
+       TYPEOF(sp[2-args]) != T_INT)
       Pike_error("Image.Colortable->create (get cube from args): Illegal argument(s) 1, 2 or 3\n");
 
    cube.r=sp[-args].u.integer;
@@ -1138,7 +1163,7 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
 	 SIMPLE_BAD_ARG_ERROR("colortable",1,"color");
       if (!image_color_arg(1-args,&high))
 	 SIMPLE_BAD_ARG_ERROR("colortable",2,"color");
-      if (sp[2+ap-args].type!=T_INT)
+      if (TYPEOF(sp[2+ap-args]) != T_INT)
 	 Pike_error("illegal argument(s) %d, %d or %d\n",ap,ap+1,ap+2);
 
       steps=isteps=sp[2+ap-args].u.integer;
@@ -1227,6 +1252,7 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
       np=&(s->next);
    }
    cube.numentries=no;
+   cube.weight = WEIGHT_NEEDED;
 
    return cube;
 }
@@ -1340,9 +1366,10 @@ static void _img_add_colortable(struct neo_colortable *rdest,
       if (!(mark=insert_in_hash_nd(en->color,hash,hashsize)))
       {
 	 struct color_hash_entry *oldhash=hash;
-	 j=hashsize;
+	 size_t oldhashsize = hashsize;
 
 rerun_rehash_add_1:
+	 j = oldhashsize;
 
 	 hashsize*=2;
 
@@ -1361,7 +1388,10 @@ rerun_rehash_add_1:
 	    if (oldhash[j].pixels)
 	    {
 	       mark=insert_in_hash_nd(oldhash[j].color,hash,hashsize);
-	       if (!mark) goto rerun_rehash_add_1;
+	       if (!mark) {
+		 free(hash);
+		 goto rerun_rehash_add_1;
+	       }
 	       mark->no=oldhash[i].no;
 	       mark->pixels=oldhash[i].pixels;
 	    }
@@ -1386,9 +1416,10 @@ rerun_rehash_add_1:
       if (!(mark=insert_in_hash_nd(en->color,hash,hashsize)))
       {
 	 struct color_hash_entry *oldhash=hash;
-	 j=hashsize;
+	 size_t oldhashsize = hashsize;
 
 rerun_rehash_add_2:
+	 j = oldhashsize;
 
 	 hashsize*=2;
 
@@ -1407,7 +1438,10 @@ rerun_rehash_add_2:
 	    if (oldhash[j].pixels)
 	    {
 	       mark=insert_in_hash_nd(oldhash[j].color,hash,hashsize);
-	       if (!mark) goto rerun_rehash_add_2;
+	       if (!mark) {
+		 free(hash);
+		 goto rerun_rehash_add_2;
+	       }
 	       if (mark->pixels!=1)
 		  mark->no=oldhash[i].no;
 	       mark->pixels=oldhash[i].pixels;
@@ -1725,7 +1759,7 @@ static void dither_floyd_steinberg_newline(struct nct_dither *dith,
    fprintf(stderr,"\n");
 #endif
 
-   if (dith->u.floyd_steinberg.dir==0)
+   if (!dith->u.floyd_steinberg.dir)
    {
       dith->u.floyd_steinberg.currentdir=*cd=-*cd;
       switch (*cd)
@@ -1804,7 +1838,7 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
 }
 
 static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
-					   int rowpos,
+					   int UNUSED(rowpos),
 					   rgb_group s)
 {
    rgbl_group rgb;
@@ -1819,7 +1853,7 @@ static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
 }
 
 static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
-					   int rowpos,
+					   int UNUSED(rowpos),
 					   rgb_group s)
 {
    rgbl_group rgb;
@@ -1836,13 +1870,13 @@ static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
 }
 
 static void dither_ordered_newline(struct nct_dither *dith,
-				   int *rowpos,
-				   rgb_group **s,
-				   rgb_group **drgb,
-				   unsigned char **d8bit,
-				   unsigned short **d16bit,
-				   unsigned INT32 **d32bit,
-				   int *cd)
+				   int *UNUSED(rowpos),
+				   rgb_group **UNUSED(s),
+				   rgb_group **UNUSED(drgb),
+				   unsigned char **UNUSED(d8bit),
+				   unsigned short **UNUSED(d16bit),
+				   unsigned INT32 **UNUSED(d32bit),
+				   int *UNUSED(cd))
 {
    dith->u.ordered.row++;
 }
@@ -1922,9 +1956,9 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 fprintf(stderr, "COLORTABLE image_colortable_initiate_dither: "
 		 "FLOYD_STEINBERG\n");
 #endif /* COLORTABLE_DEBUG */
-	 dith->u.floyd_steinberg.errors=malloc(rowlen*sizeof(rgbd_group));
+	 dith->u.floyd_steinberg.errors=malloc(rowlen*sizeof(rgbd_group)+1);
 	 if (!dith->u.floyd_steinberg.errors) return 0;
-	 dith->u.floyd_steinberg.nexterrors=malloc(rowlen*sizeof(rgbd_group));
+	 dith->u.floyd_steinberg.nexterrors=malloc(rowlen*sizeof(rgbd_group)+1);
 	 if (!dith->u.floyd_steinberg.nexterrors)
 	    { free(dith->u.floyd_steinberg.errors);  return 0; }
 
@@ -2120,7 +2154,7 @@ void image_colortable_free_dither(struct nct_dither *dith)
 
 static void image_colortable_add(INT32 args)
 {
-   if (!args) 
+   if (!args)
    {
       pop_n_elems(args);
       ref_push_object(THISOBJ);
@@ -2131,7 +2165,7 @@ static void image_colortable_add(INT32 args)
    {
       struct object *o;
 
-      if (sp[-args].type==T_OBJECT)
+      if (TYPEOF(sp[-args]) == T_OBJECT)
       {
 	 struct neo_colortable *ct2;
 	 ct2=(struct neo_colortable*)
@@ -2139,7 +2173,7 @@ static void image_colortable_add(INT32 args)
 	 if (ct2)
 	 {
 #ifdef COLORTABLE_DEBUG
-	    fprintf(stderr,"COLORTABLE added %lx and %lx to %lx (args=%d)\n",
+	    fprintf(stderr,"COLORTABLE added %p and %p to %p (args=%d)\n",
 		           THIS,ct2,THIS,args);
 #endif
 	    _img_add_colortable(THIS,ct2);
@@ -2151,7 +2185,7 @@ static void image_colortable_add(INT32 args)
 
 #ifdef COLORTABLE_DEBUG
       fprintf(stderr,
-	      "COLORTABLE %lx isn't empty; create new and add (args=%d)\n",
+	      "COLORTABLE %p isn't empty; create new and add (args=%d)\n",
 	      THIS,args);
 #endif
       o=clone_object(image_colortable_program,args);
@@ -2159,19 +2193,18 @@ static void image_colortable_add(INT32 args)
       image_colortable_add(1);
 
 #ifdef COLORTABLE_DEBUG
-      fprintf(stderr,
-	      "COLORTABLE done (%lx isn't empty...)\n",
-	      THIS,args);
+      fprintf(stderr, "COLORTABLE done (%p isn't empty...)\n", THIS);
 #endif
       return;
    }
 
    /* initiate */
 #ifdef COLORTABLE_DEBUG
-   fprintf(stderr,"COLORTABLE %lx created with %d args, sp-args=%lx\n",THIS,args,sp-args);
+   fprintf(stderr, "COLORTABLE %p created with %d args, sp-args=%p\n",
+	   THIS, args, sp-args);
 #endif
 
-   if (sp[-args].type==T_OBJECT)
+   if (TYPEOF(sp[-args]) == T_OBJECT)
    {
       struct neo_colortable *ct2;
       struct image *img;
@@ -2187,7 +2220,7 @@ static void image_colortable_add(INT32 args)
       {
 	 /* get colors from image */
 	 if (args>=2) 
-	    if (sp[1-args].type==T_INT)
+	    if (TYPEOF(sp[1-args]) == T_INT)
 	    {
 	       int numcolors=sp[1-args].u.integer;
 	       if (args>2)
@@ -2220,7 +2253,7 @@ static void image_colortable_add(INT32 args)
 
 		  push_object(o);
 		  image_colortable_add(1);
-		  pop_n_elems(1);
+		  pop_stack();
 		  /* we will keep flat... */
 		  args=2;
 
@@ -2254,16 +2287,16 @@ static void image_colortable_add(INT32 args)
       else bad_arg_error("Image",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to Image()\n");
    }
-   else if (sp[-args].type==T_ARRAY)
+   else if (TYPEOF(sp[-args]) == T_ARRAY)
    {
       THIS->u.flat=_img_get_flat_from_array(sp[-args].u.array);
       THIS->type=NCT_FLAT;
    }
-   else if (sp[-args].type==T_STRING)
+   else if (TYPEOF(sp[-args]) == T_STRING)
    {
       if (args>1)
       {
-	 if (sp[1-args].type!=T_INT)
+	 if (TYPEOF(sp[1-args]) != T_INT)
 	    SIMPLE_BAD_ARG_ERROR("Image.Colortable",2,"int");
 	 switch (sp[1-args].u.integer)
 	 {
@@ -2285,7 +2318,7 @@ static void image_colortable_add(INT32 args)
 	 THIS->u.flat=_img_get_flat_from_string(sp[-args].u.string);
       THIS->type=NCT_FLAT;
    }
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args]) == T_INT)
    {
       THIS->u.cube=_img_get_cube_from_args(args);
       THIS->type=NCT_CUBE;
@@ -2296,7 +2329,8 @@ static void image_colortable_add(INT32 args)
    ref_push_object(THISOBJ);
 
 #ifdef COLORTABLE_DEBUG
-   fprintf(stderr,"COLORTABLE done (%lx created, %d args was left, sp-1=%lx)\n",THIS,args,sp-1);
+   fprintf(stderr, "COLORTABLE done (%p created, %d args was left, sp-1=%p)\n",
+	   THIS, args, sp-1);
 #endif
 
 }
@@ -2304,7 +2338,9 @@ static void image_colortable_add(INT32 args)
 void image_colortable_create(INT32 args)
 {
    if (args)  /* optimize */
-      image_colortable_add(args); 
+      image_colortable_add(args);
+   else
+      push_undefined();
 }
 
 /*
@@ -2341,14 +2377,14 @@ void image_colortable_reduce(INT32 args)
    int numcolors=0;
 
    if (args) 
-     if (sp[-args].type!=T_INT) 
+     if (TYPEOF(sp[-args]) != T_INT)
 	SIMPLE_BAD_ARG_ERROR("Image.Colortable->reduce",1,"int");
      else
 	 numcolors=sp[-args].u.integer;
    else
       numcolors=1293791; /* a lot */
    
-   o=clone_object(THISOBJ->prog,0);
+   o=clone_object_from_object(THISOBJ,0);
    nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
    
    switch (nct->type = THIS->type)
@@ -2382,7 +2418,7 @@ void image_colortable_reduce_fs(INT32 args)
    struct neo_colortable *nct;
 
    if (args) {
-     if (sp[-args].type!=T_INT) 
+     if (TYPEOF(sp[-args]) != T_INT)
 	SIMPLE_BAD_ARG_ERROR("Image.Colortable->reduce",1,"int");
      else
 	numcolors=sp[-args].u.integer;
@@ -2430,19 +2466,19 @@ void image_colortable_operator_plus(INT32 args)
    int i;
 
    ref_push_object(THISOBJ);
-   o=clone_object(THISOBJ->prog,1);
+   o=clone_object_from_object(THISOBJ,1);
    dest=(struct neo_colortable*)get_storage(o,image_colortable_program);
 
    for (i=0; i<args; i++)
    {
-      if (sp[i-args].type==T_OBJECT &&
+      if (TYPEOF(sp[i-args]) == T_OBJECT &&
 	  (src=(struct neo_colortable*)
 	   get_storage(sp[i-args].u.object,image_colortable_program)))
       {
 	 tmpo=NULL;
       }
-      else if (sp[i-args].type==T_ARRAY ||
-	       sp[i-args].type==T_OBJECT)
+      else if (TYPEOF(sp[i-args]) == T_ARRAY ||
+	       TYPEOF(sp[i-args]) == T_OBJECT)
       {
 	 struct svalue *sv=sp+i-args;
 	 push_svalue(sv);
@@ -2483,11 +2519,11 @@ void image_colortable_operator_minus(INT32 args)
    int i;
 
    ref_push_object(THISOBJ);
-   o=clone_object(THISOBJ->prog,1);
+   o=clone_object_from_object(THISOBJ,1);
    dest=(struct neo_colortable*)get_storage(o,image_colortable_program);
 
    for (i=0; i<args; i++)
-      if (sp[i-args].type==T_OBJECT)
+      if (TYPEOF(sp[i-args]) == T_OBJECT)
       {
 	 src=(struct neo_colortable*)
 	    get_storage(sp[i-args].u.object,image_colortable_program);
@@ -2680,6 +2716,17 @@ void image_colortable_cast_to_string(struct neo_colortable *nct)
    push_string(end_shared_string(str));
 }
 
+static void image_colortable__encode( INT32 UNUSED(args) )
+{
+    image_colortable_cast_to_string( THIS );
+}
+
+static void image_colortable__decode( INT32 args )
+{
+    image_colortable_create( args );
+}
+
+
 /*
 **! method object cast(string to)
 **!	cast the colortable to an array or mapping,
@@ -2698,21 +2745,21 @@ void image_colortable_cast(INT32 args)
 {
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.Colortable->cast",1);
-   if (sp[-args].type==T_STRING||sp[-args].u.string->size_shift)
+   if (TYPEOF(sp[-args]) == T_STRING || sp[-args].u.string->size_shift)
    {
-      if (strncmp(sp[-args].u.string->str,"array",5)==0)
+      if (!strncmp(sp[-args].u.string->str,"array",5))
       {
 	 pop_n_elems(args);
 	 image_colortable_cast_to_array(THIS);
 	 return;
       }
-      if (strncmp(sp[-args].u.string->str,"string",6)==0)
+      if (!strncmp(sp[-args].u.string->str,"string",6))
       {
 	 pop_n_elems(args);
 	 image_colortable_cast_to_string(THIS);
 	 return;
       }
-      if (strncmp(sp[-args].u.string->str,"mapping",7)==0)
+      if (!strncmp(sp[-args].u.string->str,"mapping",7))
       {
 	 pop_n_elems(args);
 	 image_colortable_cast_to_mapping(THIS);
@@ -2732,7 +2779,7 @@ void image_colortable_cast(INT32 args)
 **!     algorithm time: O[n*m], where n is numbers of colors 
 **!	and m is number of pixels
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! see also: cubicles, map
 **! note
@@ -2769,7 +2816,7 @@ void image_colortable_full(INT32 args)
 **!	It has a high init-cost and low use-cost.
 **!	The structure is initiated at first usage.
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! see also: cubicles, map, full
 **! note
@@ -2863,7 +2910,7 @@ void image_colortable_rigid(INT32 args)
 **!	<td>accuracy=200</td>
 **!	</tr></table>
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! arg int r
 **! arg int g
@@ -2894,16 +2941,16 @@ void image_colortable_cubicles(INT32 args)
 
    if (args) 
       if (args>=3 && 
-	  sp[-args].type==T_INT &&
-	  sp[2-args].type==T_INT &&
-	  sp[1-args].type==T_INT)
+	  TYPEOF(sp[-args]) == T_INT &&
+	  TYPEOF(sp[2-args]) == T_INT &&
+	  TYPEOF(sp[1-args]) == T_INT)
       {
-	 THIS->lu.cubicles.r=MAX(sp[-args].u.integer,1);
-	 THIS->lu.cubicles.g=MAX(sp[1-args].u.integer,1);
-	 THIS->lu.cubicles.b=MAX(sp[2-args].u.integer,1);
+	 THIS->lu.cubicles.r=MAXIMUM(sp[-args].u.integer,1);
+	 THIS->lu.cubicles.g=MAXIMUM(sp[1-args].u.integer,1);
+	 THIS->lu.cubicles.b=MAXIMUM(sp[2-args].u.integer,1);
 	 if (args>=4 &&
-	     sp[3-args].type==T_INT)
-	    THIS->lu.cubicles.accur=MAX(sp[3-args].u.integer,1);
+	     TYPEOF(sp[3-args]) == T_INT)
+	    THIS->lu.cubicles.accur=MAXIMUM(sp[3-args].u.integer,1);
 	 else
 	    THIS->lu.cubicles.accur=CUBICLE_DEFAULT_ACCUR;
       }
@@ -2924,118 +2971,6 @@ void image_colortable_cubicles(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-static  int _cub_find_2cub_add(int *i,int *p,
-			       int *p2,int n2,
-			       struct nct_flat_entry *fe,
-			       rgbl_group sf,
-			       int r,int g,int b)
-{
-   int mindist=256*256*100; /* max dist is 256²*3 */
-   int c=0;
-   int *p1=p;
-   int n=*i;
-   int k=1;
-
-   while (n--)
-   {
-      int dist=sf.r*SQ(fe[*p1].color.r-r)+
-	       sf.g*SQ(fe[*p1].color.g-g)+
-	       sf.b*SQ(fe[*p1].color.b-b);
-      
-      if (dist<mindist)
-      {
-	 c=*p1;
-	 mindist=dist;
-	 if (!dist) break;
-      }
-
-      p1++;
-   }
-   if (mindist) while (n2--)
-   {
-      int dist=sf.r*SQ(fe[*p2].color.r-r)+
-	       sf.g*SQ(fe[*p2].color.g-g)+
-	       sf.b*SQ(fe[*p2].color.b-b);
-      
-      if (dist<mindist)
-      {
-	 c=*p2;
-	 k=0;
-	 if (!dist) break;
-	 mindist=dist;
-      }
-
-      p2++;
-   }
-
-   if (!k)
-   {
-      n=*i;
-      while (n--)
-	 if (*p==c) return c; else p++;
-
-      *p=c;
-      (*i)++;
-   }
-
-   return c;
-}
-
-static void _cub_add_cs_2cub_recur(int *i,int *p,
-				   int *p2,int n2,
-				   struct nct_flat_entry *fe,
-				   int rp,int gp,int bp,
-				   int rd1,int gd1,int bd1,
-				   int rd2,int gd2,int bd2,
-				   ptrdiff_t *a, ptrdiff_t *b,
-				   ptrdiff_t *c, ptrdiff_t *d,
-				   rgbl_group sf,
-				   int accur)
-{
-
-/* a-h-b -> 2
- | |   |
- v e f g
- 1 |   |
-   c-j-d */
-
-   ptrdiff_t e=-1,f=-1,g=-1,h=-1,j=-1;
-   int rm1,gm1,bm1;
-   int rm2,gm2,bm2;
-
-   if (*a==-1) *a=_cub_find_2cub_add(i,p,p2,n2,fe,sf, rp,gp,bp); /* 0,0 */   
-   if (*b==-1) *b=_cub_find_2cub_add(i,p,p2,n2,fe,sf,
-                		     rp+rd2,gp+gd2,bp+bd2); /* 0,1 */
-   if (*c==-1) *c=_cub_find_2cub_add(i,p,p2,n2,fe,sf,
-                		     rp+rd1,gp+gd1,bp+bd1); /* 1,0 */
-   if (*d==-1) *d=_cub_find_2cub_add(i,p,p2,n2,fe,sf,
-				   rp+rd2+rd1,gp+gd2+gd1,bp+bd2+bd1); /* 1,1 */
-
-   if (rd1+gd1+bd1<=accur && rd2+gd2+bd2<=accur) return;
-
-   if (*a==*b) h=*a;
-   if (*c==*d) j=*c;
-
-   if (h!=-1 && h==j) return; /* all done */
-
-   if (*a==*c) e=*a;
-   if (*b==*d) g=*b;
-   if (*a==*d) f=*a;
-   if (*b==*c) f=*b;
-
-   rm1=rd1-(rd1>>1); rd1>>=1;
-   gm1=gd1-(gd1>>1); gd1>>=1;
-   bm1=bd1-(bd1>>1); bd1>>=1;
-   rm2=rd2-(rd2>>1); rd2>>=1;
-   gm2=gd2-(gd2>>1); gd2>>=1;
-   bm2=bd2-(bd2>>1); bd2>>=1;
-
-   _cub_add_cs_2cub_recur(i,p,p2,n2,fe, rp,gp,bp, rd1,gd1,bd1, rd2,gd2,bd2, a,&h,&e,&f,sf,accur);
-   _cub_add_cs_2cub_recur(i,p,p2,n2,fe, rp+rd2,gp+gd2,bp+bd2, rd2?rm1:rd1,gd2?gm1:gd1,bd2?bm1:bd1, rd2?rm2:rd2,gd2?gm2:gd2,bd2?bm2:bd2, &h,b,&f,&g,sf,accur);
-   _cub_add_cs_2cub_recur(i,p,p2,n2,fe, rp+rd1,gp+gd1,bp+bd1, rd1?rm1:rd1,gd1?gm1:gd1,bd1?bm1:bd1, rd1?rm2:rd2,gd1?gm2:gd2,bd1?bm2:bd2, &e,&f,c,&j,sf,accur);
-   _cub_add_cs_2cub_recur(i,p,p2,n2,fe, rp+rd2+rd1,gp+gd2+gd1,bp+bd2+bd1, rm1,gm1,bm1, rm2,gm2,bm2, &f,&g,&j,d,sf,accur);
-}
-
 static INLINE ptrdiff_t _cub_find_full_add(int **pp, int *i, int *p,
 					   ptrdiff_t n,
 					   struct nct_flat_entry *fe,
@@ -3043,7 +2978,7 @@ static INLINE ptrdiff_t _cub_find_full_add(int **pp, int *i, int *p,
 					   rgbl_group sf)
 {
    int mindist=256*256*100; /* max dist is 256²*3 */
-   ptrdiff_t c = 0;
+   int c = 0;
 
    while (n--)
       if (fe->no==-1) fe++;
@@ -3068,7 +3003,7 @@ static INLINE ptrdiff_t _cub_find_full_add(int **pp, int *i, int *p,
    while (n--)
       if (*p==c) return c; else p++;
 
-   *p = DO_NOT_WARN((int)c);
+   *p = c;
    (*i)++;
    (*pp)++;
 
@@ -3080,8 +3015,8 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
 				   int rp,int gp,int bp,
 				   int rd1,int gd1,int bd1,
 				   int rd2,int gd2,int bd2,
-				   ptrdiff_t *a, ptrdiff_t *b,
-				   ptrdiff_t *c, ptrdiff_t *d,
+				   INT32 *a, INT32 *b,
+				   INT32 *c, INT32 *d,
 				   rgbl_group sf,
 				   int accur)
 {
@@ -3094,7 +3029,7 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
    c-i-d
  */
 
-   ptrdiff_t e,f,g,h,j;
+   INT32 e,f,g,h,j;
    int rm1,gm1,bm1;
    int rm2,gm2,bm2;
 
@@ -3140,7 +3075,7 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
 }
 
 static INLINE void _cub_add_cs(struct neo_colortable *nct,
-			       struct nctlu_cubicle *cub,
+			       struct nctlu_cubicle *UNUSED(cub),
 			       int **pp,int *i,int *p,
 			       int ri,int gi,int bi,
 			       int red,int green,int blue,
@@ -3148,7 +3083,7 @@ static INLINE void _cub_add_cs(struct neo_colortable *nct,
 			       int rd1,int gd1,int bd1,
 			       int rd2,int gd2,int bd2)
 {
-   ptrdiff_t a=-1,b=-1,c=-1,d=-1;
+   INT32 a=-1,b=-1,c=-1,d=-1;
 #ifdef CUBICLE_DEBUG
    fprintf(stderr,
 	   " _cub_add_cs %d,%d,%d %d,%d,%d, %d,%d,%d, %d,%d,%d, %d,%d,%d\n",
@@ -3190,13 +3125,11 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    int bmin,bmax;
 
    struct nct_flat_entry *fe=nct->u.flat.entries;
-   ptrdiff_t n=nct->u.flat.numentries;
+   INT32 n = nct->u.flat.numentries;
 
    int i=0;
-   int *p=malloc(n*sizeof(struct nctlu_cubicle));
+   int *p = xalloc(n * sizeof(INT32));
    int *pp; /* write */
-
-   if (!p) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    rmin=(r*256)/red;   rmax=((r+1)*256)/red-1;
    gmin=(g*256)/green; gmax=((g+1)*256)/green-1;
@@ -3248,11 +3181,11 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    while (0);
 #endif
 
-   cub->n=i;
-   cub->index=realloc(p,i*sizeof(struct nctlu_cubicle));
+   cub->n = i;
+   cub->index = realloc(p, i * sizeof(INT32));
 
    if (!cub->index) 
-      cub->index=p; /* out of memory, or wierd */
+      cub->index=p; /* out of memory, or weird */
 }
 
 void build_rigid(struct neo_colortable *nct)
@@ -3266,7 +3199,7 @@ void build_rigid(struct neo_colortable *nct)
    int rc,gc,bc;
    int di,hdi,hhdi;
 
-   if (nct->lu.rigid.index) fatal("rigid is initialized twice");
+   if (nct->lu.rigid.index) Pike_fatal("rigid is initialized twice.\n");
 
    index=malloc(sizeof(int)*r*g*b);
    dist=malloc(sizeof(int)*r*g*b);
@@ -3292,7 +3225,7 @@ void build_rigid(struct neo_colortable *nct)
 	 for (gi=0; gi<g; gi++)
 	 {
 	    hdi=hhdi+(gc-gi*COLORMAX/g)*(gc-gi*COLORMAX/g);
-	    if (i==0)
+	    if (!i)
 	       for (ri=0; ri<r; ri++)
 	       {
 		  *(ddist++)=di=hdi+(rc-ri*COLORMAX/r)*(rc-ri*COLORMAX/r);
@@ -3600,7 +3533,7 @@ void image_colortable_map(INT32 args)
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("colortable->map",1);
 
-   if (sp[-args].type==T_STRING)
+   if (TYPEOF(sp[-args]) == T_STRING)
    {
       struct object *o;
       struct pike_string *ps=sp[-args].u.string;
@@ -3670,7 +3603,7 @@ void image_colortable_map(INT32 args)
       return;
    }
 
-   if (sp[-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
        ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("colortable->map",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to colortable->map()\n");
@@ -3682,7 +3615,7 @@ void image_colortable_map(INT32 args)
    dest=(struct image*)(o->storage);
    *dest=*src;
 
-   dest->img=malloc(sizeof(rgb_group)*src->xsize*src->ysize +1);
+   dest->img=malloc(sizeof(rgb_group)*src->xsize*src->ysize+RGB_VEC_PAD);
    if (!dest->img)
    {
       free_object(o);
@@ -3707,7 +3640,7 @@ void image_colortable_index_32bit(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("Colortable.index",1);
-   if (sp[-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
        ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
       SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"image object");
 
@@ -3715,7 +3648,7 @@ void image_colortable_index_32bit(INT32 args)
       SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
 
    if (sizeof(unsigned INT32)!=4)
-      fatal("INT32 isn't 32 bits (sizeof is %ld)\n",
+      Pike_fatal("INT32 isn't 32 bits (sizeof is %ld)\n",
 	    (long)TO_UINT32(sizeof(unsigned INT32)));
 
    ps=begin_wide_shared_string(src->xsize*src->ysize,2);
@@ -3724,7 +3657,7 @@ void image_colortable_index_32bit(INT32 args)
 					   (unsigned INT32 *)ps->str,
 					   src->xsize*src->ysize,src->xsize))
    {
-      free_string(end_shared_string(ps));
+      do_free_unlinked_pike_string (ps);
       SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
       return;
    }
@@ -3743,7 +3676,7 @@ void image_colortable_index_32bit(INT32 args)
 **!	Default factors are 3, 4 and 1; blue is much 
 **!	darker than green. Compare with <ref>Image.Image->grey</ref>().
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! note
 **!	This has no sanity check. Some functions may bug
@@ -3758,9 +3691,9 @@ void image_colortable_spacefactors(INT32 args)
    if (args<3)
       SIMPLE_TOO_FEW_ARGS_ERROR("colortable->spacefactors",1);
 
-   if (sp[0-args].type!=T_INT ||
-       sp[1-args].type!=T_INT ||
-       sp[2-args].type!=T_INT)
+   if (TYPEOF(sp[0-args]) != T_INT ||
+       TYPEOF(sp[1-args]) != T_INT ||
+       TYPEOF(sp[2-args]) != T_INT)
       bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
 
@@ -3805,7 +3738,7 @@ void image_colortable_spacefactors(INT32 args)
 **!	Error will increase if more than 1.0 and decrease if less than 1.0.
 **!	A value of 0.0 will cancel any dither effects.
 **!     Default is 0.95.
-**! returns the called object
+**! returns the object being called
 **/
 
 void image_colortable_floyd_steinberg(INT32 args)
@@ -3815,7 +3748,7 @@ void image_colortable_floyd_steinberg(INT32 args)
    THIS->dither_type=NCTD_NONE;
 
    if (args>=1) 
-      if (sp[-args].type!=T_INT) 
+      if (TYPEOF(sp[-args]) != T_INT)
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
       else 
@@ -3823,9 +3756,9 @@ void image_colortable_floyd_steinberg(INT32 args)
    else 
       THIS->du.floyd_steinberg.dir=0;
    if (args>=6) {
-      if (sp[5-args].type==T_FLOAT)
+      if (TYPEOF(sp[5-args]) == T_FLOAT)
 	 factor = sp[5-args].u.float_number;
-      else if (sp[5-args].type==T_INT)
+      else if (TYPEOF(sp[5-args]) == T_INT)
 	 factor = (double)sp[5-args].u.integer;
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
@@ -3833,30 +3766,30 @@ void image_colortable_floyd_steinberg(INT32 args)
    }
    if (args>=5)
    {
-      if (sp[1-args].type==T_FLOAT)
+      if (TYPEOF(sp[1-args]) == T_FLOAT)
 	 forward = sp[1-args].u.float_number;
-      else if (sp[1-args].type==T_INT)
+      else if (TYPEOF(sp[1-args]) == T_INT)
 	 forward = (double)sp[1-args].u.integer;
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
-      if (sp[2-args].type==T_FLOAT)
+      if (TYPEOF(sp[2-args]) == T_FLOAT)
 	 downforward = sp[2-args].u.float_number;
-      else if (sp[2-args].type==T_INT)
+      else if (TYPEOF(sp[2-args]) == T_INT)
 	 downforward = (double)sp[2-args].u.integer;
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
-      if (sp[3-args].type==T_FLOAT)
+      if (TYPEOF(sp[3-args]) == T_FLOAT)
 	 down = sp[3-args].u.float_number;
-      else if (sp[3-args].type==T_INT)
+      else if (TYPEOF(sp[3-args]) == T_INT)
 	 down = (double)sp[3-args].u.integer;
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
 		"Bad arguments to colortable->spacefactors()\n");
-      if (sp[4-args].type==T_FLOAT)
+      if (TYPEOF(sp[4-args]) == T_FLOAT)
 	 downback = sp[4-args].u.float_number;
-      else if (sp[4-args].type==T_INT)
+      else if (TYPEOF(sp[4-args]) == T_INT)
 	 downback = (double)sp[4-args].u.integer;
       else
 	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
@@ -3893,7 +3826,7 @@ void image_colortable_internal_floyd_steinberg(struct neo_colortable *nct)
 **! method object nodither()
 **!	Set no dithering (default).
 **!
-**! returns the called object
+**! returns the object being called
 **/
 
 void image_colortable_nodither(INT32 args)
@@ -3955,7 +3888,7 @@ void image_colortable_nodither(INT32 args)
 **! arg int err
 **!	The maximum error. Default is 32, or colorcube step.
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! see also: ordered, nodither, floyd_steinberg, create
 **!
@@ -3970,9 +3903,9 @@ void image_colortable_randomcube(INT32 args)
    THIS->dither_type=NCTD_NONE;
 
    if (args>=3) 
-      if (sp[-args].type!=T_INT||
-	  sp[1-args].type!=T_INT||
-	  sp[2-args].type!=T_INT)
+      if (TYPEOF(sp[-args]) != T_INT||
+	  TYPEOF(sp[1-args]) != T_INT||
+	  TYPEOF(sp[2-args]) != T_INT)
 	 bad_arg_error("Image.Colortable->randomcube",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Colortable->randomcube()\n");
       else
@@ -4006,7 +3939,7 @@ void image_colortable_randomgrey(INT32 args)
    THIS->dither_type=NCTD_NONE;
 
    if (args) 
-      if (sp[-args].type!=T_INT)
+      if (TYPEOF(sp[-args]) != T_INT)
 	 bad_arg_error("Image.Colortable->randomgrey",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Colortable->randomgrey()\n");
       else
@@ -4027,18 +3960,19 @@ static int* ordered_calculate_errors(int dxs,int dys)
    int *src,*dest;
    int sxs,sys;
 
-   static int errors2x1[2]={0,1};
-   static int errors2x2[4]={0,2,3,1};
-   static int errors3x1[3]={1,0,2};
-   static int errors3x2[6]={4,0,2,1,5,3};
-   static int errors3x3[9]={6,8,4,1,0,3,5,2,7};
+   static const int errors2x1[2]={0,1};
+   static const int errors2x2[4]={0,2,3,1};
+   static const int errors3x1[3]={1,0,2};
+   static const int errors3x2[6]={4,0,2,1,5,3};
+   static const int errors3x3[9]={6,8,4,1,0,3,5,2,7};
 
-   int szx,szy,*errs,sz,*d,*s;
+   const int *errs;
+   int szx,szy,sz,*d,*s;
    int xf,yf;
    int x,y;
    
-   src=malloc(sizeof(int)*dxs*dys);
-   dest=malloc(sizeof(int)*dxs*dys);
+   src=calloc(sizeof(int),dxs*dys);
+   dest=calloc(sizeof(int),dxs*dys);
 
    if (!src||!dest) 
    {
@@ -4049,8 +3983,6 @@ static int* ordered_calculate_errors(int dxs,int dys)
 
    *src=0;
    sxs=sys=1;
-   MEMSET(src,0,sizeof(int)*dxs*dys);
-   MEMSET(dest,0,sizeof(int)*dxs*dys);
 
    for (;;)
    {
@@ -4075,8 +4007,7 @@ static int* ordered_calculate_errors(int dxs,int dys)
 	 case 6: errs=errors3x2; break;
 	 case 9: errs=errors3x3; break;
 	 default:
-	   fatal("impossible case in colortable ordered dither generator.\n");
-	   return NULL; /* uh<tm> (not in {x|x={1,2,3}*{1,2,3}}) */
+	   Pike_fatal("impossible case in colortable ordered dither generator.\n");
       }
       
       sz=sxs*sys;
@@ -4085,13 +4016,13 @@ static int* ordered_calculate_errors(int dxs,int dys)
 
       for (y=0; y<sys; y++)
       {
-	 int *errq=errs;
+	 const int *errq=errs;
 	 for (yf=0; yf<szy; yf++)
 	 {
 	    int *sd=s;
 	    for (x=0; x<sxs; x++)
 	    {
-	       int *errp=errq;
+	       const int *errp=errq;
 	       for (xf=0; xf<szx; xf++)
 		  *(d++)=*sd+sz**(errp++);
 	       sd++;
@@ -4105,10 +4036,11 @@ static int* ordered_calculate_errors(int dxs,int dys)
       sys*=szy;
 
       /* ok, rotate... */
-
-      errs=src;
-      src=dest;
-      dest=errs;
+      {
+	int *tmp=src;
+	src=dest;
+	dest=tmp;
+      }
    }
 
 #if 0
@@ -4135,7 +4067,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
    int n=sz;
    double q;
 
-   d=dest=(int*)malloc(sizeof(int)*sz);
+   d=dest=malloc(sizeof(int)*sz);
    if (!d) return d;
 
    if (sz!=1) q = DO_NOT_WARN(1.0/(sz-1)); else q=1.0;
@@ -4220,7 +4152,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **!	Offset for the error matrix. <tt>x</tt> and <tt>y</tt> is for
 **!	both red, green and blue values, the other is individual.
 **!
-**! returns the called object
+**! returns the object being called
 **!
 **! see also: randomcube, nodither, floyd_steinberg, create
 **/
@@ -4235,9 +4167,9 @@ void image_colortable_ordered(INT32 args)
    THIS->dither_type=NCTD_NONE;
 
    if (args>=3) 
-      if (sp[-args].type!=T_INT||
-	  sp[1-args].type!=T_INT||
-	  sp[2-args].type!=T_INT) 
+      if (TYPEOF(sp[-args]) != T_INT ||
+	  TYPEOF(sp[1-args]) != T_INT ||
+	  TYPEOF(sp[2-args]) != T_INT)
       {
 	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Colortable->ordered()\n");
@@ -4277,25 +4209,25 @@ void image_colortable_ordered(INT32 args)
 
    if (args>=5)
    {
-      if (sp[3-args].type!=T_INT||
-	  sp[4-args].type!=T_INT)
+      if (TYPEOF(sp[3-args]) != T_INT ||
+	  TYPEOF(sp[4-args]) != T_INT)
 	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Colortable->ordered()\n");
       else
       {
-	 xsize=MAX(sp[3-args].u.integer,1);
-	 ysize=MAX(sp[4-args].u.integer,1);
+	 xsize=MAXIMUM(sp[3-args].u.integer,1);
+	 ysize=MAXIMUM(sp[4-args].u.integer,1);
       }
    }
 
    if (args>=11)
    {
-      if (sp[5-args].type!=T_INT||
-	  sp[6-args].type!=T_INT||
-	  sp[7-args].type!=T_INT||
-	  sp[8-args].type!=T_INT||
-          sp[9-args].type!=T_INT||
-	  sp[10-args].type!=T_INT)
+      if (TYPEOF(sp[5-args]) != T_INT ||
+	  TYPEOF(sp[6-args]) != T_INT ||
+	  TYPEOF(sp[7-args]) != T_INT ||
+	  TYPEOF(sp[8-args]) != T_INT ||
+          TYPEOF(sp[9-args]) != T_INT ||
+	  TYPEOF(sp[10-args]) != T_INT)
 	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Colortable->ordered()\n");
       else
@@ -4310,8 +4242,8 @@ void image_colortable_ordered(INT32 args)
    }
    else if (args>=7)
    {
-      if (sp[5-args].type!=T_INT||
-	  sp[6-args].type!=T_INT)
+      if (TYPEOF(sp[5-args]) != T_INT||
+	  TYPEOF(sp[6-args]) != T_INT)
 	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Colortable->ordered()\n");
       else
@@ -4406,7 +4338,7 @@ void image_colortable_image(INT32 args)
    {
       dest->r=flat.entries[i].color.r;
       dest->g=flat.entries[i].color.g;
-      dest->g=flat.entries[i].color.b;
+      dest->b=flat.entries[i].color.b;
       dest++;
    }
 
@@ -4470,14 +4402,53 @@ void image_colortable_corners(INT32 args)
       free(flat.entries);
 }
 
+/*
+**! method int(0..1) greyp()
+**!	Returns true if this colortable only contains greyscale.
+**/
+
+static void image_colortable_greyp( INT32 args )
+{
+   struct nct_flat flat;
+   int i, bw=1;
+   
+   if (THIS->type==NCT_NONE) {
+      pop_n_elems(args);
+      /* An empty table does not contain colors that are not grey. */
+      push_int(1);
+      return;
+   }
+
+   if (THIS->type==NCT_CUBE)
+      flat=_img_nct_cube_to_flat(THIS->u.cube);
+   else
+      flat=THIS->u.flat;
+
+   for (i=0; i<flat.numentries; i++)
+   {
+      if( flat.entries[i].color.r != flat.entries[i].color.g ||
+          flat.entries[i].color.r != flat.entries[i].color.b )
+      {
+        bw=0;
+        break;
+      }
+   }
+
+   if (THIS->type==NCT_CUBE)
+      free(flat.entries);
+
+   pop_n_elems(args);
+   push_int(bw);
+}
+
 static void image_colortable__sprintf( INT32 args )
 {
   int x;
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
-  if (sp[-args].type!=T_INT)
+  if (TYPEOF(sp[-args]) != T_INT)
     SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
-  if (sp[1-args].type!=T_MAPPING)
+  if (TYPEOF(sp[1-args]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
 
   x = sp[-2].u.integer;
@@ -4532,13 +4503,16 @@ void init_image_colortable(void)
 		"function(int,int,int,void|int ...:void) */
    ADD_FUNCTION("create",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tOr(tArr(tColor),tStr),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
 
+
+   ADD_FUNCTION("_encode", image_colortable__encode,tFunc(tNone,tStr),0);
+   ADD_FUNCTION("_decode", image_colortable__decode,tFunc(tStr,tVoid),0);
    ADD_FUNCTION("_sprintf", image_colortable__sprintf, 
                 tFunc(tInt tMapping, tString ), 0 );
    /* function(void:void)|"
 		"function(array(array(int)|string|object):void)|"
 		"function(object,void|int,mixed ...:void)|"
 		"function(int,int,int,void|int ...:void) */
-   ADD_FUNCTION("add",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tColor),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
+   ADD_FUNCTION("add",image_colortable_add,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tColor),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
 
    /* function(int:object) */
    ADD_FUNCTION("reduce",image_colortable_reduce,tFunc(tInt,tObj),0);
@@ -4553,6 +4527,7 @@ void init_image_colortable(void)
 
    /* info */
    ADD_FUNCTION("_sizeof",image_colortable__sizeof,tFunc(tNone,tInt),0);
+   ADD_FUNCTION("greyp",image_colortable_greyp,tFunc(tNone,tInt01),0);
 
    /* lookup modes */
    ADD_FUNCTION("cubicles",image_colortable_cubicles,tOr(tFunc(tNone,tObj),tFunc(tInt tInt tInt tOr(tVoid,tInt),tObj)),0);
@@ -4604,4 +4579,3 @@ void exit_image_colortable(void)
    free_string(s_mapping);
    free_string(s_string);
 }
-

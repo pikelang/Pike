@@ -1,18 +1,13 @@
-# $Id: configure.in,v 1.20 2001/04/18 22:12:21 ian Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
 AC_SET_MAKE
 
-AC_CONFIG_SUBDIRS(encodings)
-
 AC_MODULE_INIT()
-
-PIKE_FEATURE_OK(Image)
 
 AC_FUNC_MMAP
 
-AC_CHECK_HEADERS(math.h sys/fcntl.h fcntl.h stdlib.h netinet/in.h winsock.h)
+AC_CHECK_HEADERS(math.h sys/fcntl.h fcntl.h stdlib.h netinet/in.h winsock.h winsock2.h)
 
 AC_CHECK_LIB(m, abs, [], [])
 
@@ -21,20 +16,30 @@ AC_SUBST(ASSEMBLY_OBJECTS)
 ASSEMBLY_OBJECTS=""
 AC_MSG_CHECKING( [if nasm can be used] )
 
-if nasm -f elf -o assembly.o $srcdir/assembly.s ; then
-  # nasm/ia64 can compile ia32 code...
-  if test "`uname -m`" = "ia64"; then
-    AC_MSG_RESULT([yes, but we are on an IA64 machine])
-  elif test "`uname -s`" = "OpenBSD"; then
-    #nasm on OpenBSD is braindamaged
-    AC_MSG_RESULT(no)
-  else
-    ASSEMBLY_OBJECTS=assembly.o
-    AC_DEFINE(ASSEMBLY_OK)
-    AC_MSG_RESULT(yes)
-  fi
-else
+if test "x$with_machine_code" = "xno" ; then
   AC_MSG_RESULT(no)
+else
+  if nasm -f elf -g -o assembly.o $srcdir/assembly.s ; then
+    if test x"$pike_cv_sys_os" = x"Darwin"; then
+      # Darwin x86 can output ELF even though we can't use it
+      # FIXME: Investigate using nasm -f macho for Mach-O output
+      AC_MSG_RESULT([no, Mach-O not yet supported])
+    elif test x"$pike_cv_machine_code_arch" != x"ia32"; then
+      # target is not ia32...
+      AC_MSG_RESULT([yes, but we are not on an IA32 machine])
+    elif test x"$pike_cv_sys_os" = x"OpenBSD"; then
+      #nasm on OpenBSD is braindamaged
+      AC_MSG_RESULT(no)
+    elif test x"${with_valgrind:-no}" != xno; then
+      AC_MSG_RESULT([no - valgrind is used])
+    else
+      ASSEMBLY_OBJECTS=assembly.o
+      AC_DEFINE(ASSEMBLY_OK)
+      AC_MSG_RESULT(yes)
+    fi
+  else
+    AC_MSG_RESULT(no)
+  fi
 fi
 
 # Perform this test by hand since Sun cc fails otherwise.
@@ -71,5 +76,7 @@ fi
 
 
 AC_SUBST(RANLIB)
+
+AC_CONFIG_SUBDIRS(encodings)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

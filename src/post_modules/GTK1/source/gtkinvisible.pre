@@ -1,0 +1,11 @@
+/* -*- C -*- */
+class GTK1.Invisible;
+inherit GTK1.Bin;
+//! An invisible container, useful, eh? :)
+%{
+#include <gtk/gtkinvisible.h>
+%}
+void create();
+//! Create a new invisible widget
+
+

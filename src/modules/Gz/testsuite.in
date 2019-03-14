@@ -1,6 +1,6 @@
-// $Id: testsuite.in,v 1.15 2001/02/16 12:17:38 noring Exp $
+START_MARKER
 
-cond([[ master()->resolv("Gz")->deflate ]],
+cond_resolv(Gz.deflate,
 [[
   test_true(Gz.deflate())
   test_true(Gz.deflate()->deflate)
@@ -23,12 +23,73 @@ define(dotest,[[
 
   test_false(Process.system(RUNPIKE+" SRCDIR/flushtest.pike"))
   test_false(Process.system(RUNPIKE+" SRCDIR/buffertest.pike"))
-]])
 
-cond([[  master()->resolv("Gz")->deflate && master()->resolv("Crypto") && master()->resolv("Crypto")["randomness"] ]],
+  test_true(Gz.File)
+  test_any([[
+    string orig = ((string) Array.enumerate(256)) * 1024;
+    object f = Gz.File("gz_test.gz", "wb");
+    f->write(orig);
+    f->close();
+    f = Gz.File("gz_test.gz", "rb");
+    rm("gz_test.gz");
+    string readback = f->read();
+    f->close();
+    return orig==readback;
+]], 1)
+
+  dotest(random_string(32768))
+  dotest(random_string(524288))
+
+  test_eq(Gz.uncompress(Gz.compress("hello")),"hello")
+  test_eq(Gz.uncompress(Gz.compress("")),"")
+  test_eq(Gz.uncompress(Gz.compress("hello",1),1),"hello")
+  test_eq(Gz.uncompress(Gz.compress("",1),1),"")
+  test_eq(Gz.uncompress(Gz.compress("a test",0,0)),"a test")
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9)),"a test")
+  test_eq(Gz.compress("a test",0,9,Gz.DEFAULT_STRATEGY),Gz.compress("a test",0,9))
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.FILTERED)),"a test")
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.HUFFMAN_ONLY)),"a test")
+]])
+cond_resolv(Gz.RLE,
 [[
-  dotest(Crypto.randomness.pike_random()->read(32768))
-
-    dotest(Crypto.randomness.pike_random()->read(524288))
-    dotest(Crypto.randomness.pike_random()->read(8388500))
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.RLE)),"a test")
 ]])
+cond_resolv(Gz.FIXED,
+[[
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.FIXED)),"a test")
+]])
+cond_resolv(Gz.deflate,
+[[
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.DEFAULT_STRATEGY,8)),"a test")
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.DEFAULT_STRATEGY,15)),"a test")
+
+  test_eval_error(Gz.uncompress("");)
+  test_eval_error(Gz.uncompress("x");)
+  test_eval_error(Gz.uncompress(Gz.compress("x",1)))
+  test_eval_error(Gz.uncompress(Gz.compress("x"),1))
+  test_eval_error([[
+int x = 1 + max(Gz.FILTERED, Gz.HUFFMAN_ONLY
+#if constant(Gz.RLE)
+Gz.RLE,
+#endif
+#if constant(Gz.FIXED)
+Gz.FIXED,
+#endif
+);
+return Gz.compress("x",0,9,x);
+]])
+  test_eval_error(return Gz.compress("x",0,-1);)
+  test_eval_error(return Gz.compress("x",0,10);)
+  test_eval_error(return Gz.compress("x",0,-1);)
+  test_eval_error(return Gz.compress("x",0,9,Gz.DEFAULT_STRATEGY,7);)
+  test_eval_error(return Gz.compress("x",0,9,Gz.DEFAULT_STRATEGY,16);)
+
+]])
+cond_resolv(Gz.crc32,
+[[
+  dnl Some known collisions taken from http://blog.trungson.com/?p=99
+  test_eq(Gz.crc32("a1sellers"), Gz.crc32("advertees"))
+  test_eq(Gz.crc32("fc0591"), Gz.crc32("123rainerbommert"))
+  test_not_eq(Gz.crc32("a1sellers"), Gz.crc32("123rainerbommert"))
+]])
+END_MARKER

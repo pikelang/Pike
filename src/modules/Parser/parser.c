@@ -1,18 +1,25 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: parser.c,v 1.12 2001/07/12 14:02:16 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
 #include "program_id.h"
 #include "object.h"
 #include "operators.h"
+#include "module.h"
 
 #include "parser.h"
 
-/* must be included last */
-#include "module_magic.h"
+
+#define sp Pike_sp
+#define fp Pike_fp
 
 #define PARSER_INITER
 
@@ -83,7 +90,7 @@ static struct
 #ifdef PIKE_DEBUG
 #define PARSER_CHECK_STACK(X)	do { \
     if (save_sp != sp) { \
-      fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
+      Pike_fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
             __FILE__, __LINE__, \
             PTRDIFF_T_TO_LONG(sp - save_sp), X); \
     } \
@@ -92,6 +99,22 @@ static struct
 #define PARSER_CHECK_STACK(X)
 #endif /* PIKE_DEBUG */
 
+/*! @module Parser
+ */
+
+/*! @module _parser
+ *!
+ *! Low-level helpers for parsers.
+ *!
+ *! @note
+ *!   You probably don't want to use the modules contained in
+ *!   this module directly, but instead use the other @[Parser]
+ *!   modules. See instead the modules below.
+ *!
+ *! @seealso
+ *!   @[Parser], @[Parser.C], @[Parser.Pike], @[Parser.RCS],
+ *!   @[Parser.HTML], @[Parser.XML]
+ */
 
 static void parser_magic_index(INT32 args)
 {
@@ -99,7 +122,7 @@ static void parser_magic_index(INT32 args)
 
    if (args!=1) 
       Pike_error("Parser.`[]: Too few or too many arguments\n");
-   if (sp[-1].type!=T_STRING)
+   if (TYPEOF(sp[-1]) != T_STRING)
       Pike_error("Parser.`[]: Illegal type of argument\n");
 
    for (i=0; i<(int)NELEM(submagic)-1; i++)
@@ -134,25 +157,23 @@ static void parser_magic_index(INT32 args)
    stack_swap();
    f_arrow(2);
 
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       pop_stack();
       stack_dup();
-      push_text("_Parser_");
+      push_constant_text("_Parser_");
       stack_swap();
       f_add(2);
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
+      SAFE_APPLY_MASTER("resolv",1);
    }
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       pop_stack();
       stack_dup();
-      push_text("_Parser");
-      push_int(0);
-      SAFE_APPLY_MASTER("resolv",2);
+      push_constant_text("_Parser");
+      SAFE_APPLY_MASTER("resolv",1);
       stack_swap();
-      if(sp[-2].type == T_INT)
+      if(TYPEOF(sp[-2]) == T_INT)
       {
 	pop_stack();
       }else{
@@ -163,7 +184,13 @@ static void parser_magic_index(INT32 args)
    pop_stack();
 }
 
-void pike_module_init(void)
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+PIKE_MODULE_INIT
 {
 #ifdef PIKE_DEBUG
    struct svalue *save_sp = sp;
@@ -219,7 +246,7 @@ void pike_module_init(void)
 		tFunc(tString,tMixed),0);
 }
 
-void pike_module_exit(void) 
+PIKE_MODULE_EXIT
 {
    int i;
    for (i=0; i<(int)NELEM(initclass); i++)

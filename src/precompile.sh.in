@@ -1,21 +1,11 @@
 #!/bin/sh
 
 #set -x
+if [ x"$1" = x--cache ]; then
+  shift 1
+fi
 
 exec 5>&1 1>&2
-
-SCRIPT="$1"
-shift 1
-
-INPUT="`eval echo \"\\$$#\"`"
-TMPOUTPUT="${INPUT}.compiled"
-
-if [ -f "$TMPOUTPUT" ]; then
-  if [ "`ls -1t $TMPOUTPUT $INPUT $SCRIPT 2>/dev/null | head -1`" = "`ls -1t $TMPOUTPUT`" ]; then
-    cat "$TMPOUTPUT" >&5
-    exit 0
-  fi
-fi
 
 TMP_BUILDDIR="@BUILDDIR@"
 TMP_BINDIR="@BINDIR@"
@@ -30,32 +20,43 @@ export SRCDIR
 retries=.
 
 if test "@CROSS@" = "yes"; then
-  method="QQQQ"
+  method="QQQQQ"
   retries="....."
 else :; fi
 
-if test -f "$TMP_BUILDDIR/precompile-method" ; then
-  . "$TMP_BUILDDIR/precompile-method"
-else
-  :
-fi
-
-old_method="${method-}"
-
-OLD="-DOLD=\"`pwd|sed 's@/[^/]*@../@g'`$SRCDIR\""
 OLD_RUNPIKE="$RUNPIKE"
 
-trap 'rm -rf "$TMPOUTPUT" ; exit 1' 1 2 15
+SCRIPT="$1"
+shift 1
+
+case "$SCRIPT" in
+  /*|./*)
+    if test -f "$SCRIPT"; then :; else
+      echo "Script $SCRIPT not found."
+      exit 1
+    fi
+  ;;
+  *)
+    if test -f ./$SCRIPT ; then
+      :
+    elif test -f "$TMP_BINDIR/$SCRIPT"; then
+      SCRIPT="$TMP_BINDIR/$SCRIPT"
+    else
+      echo "Script $SCRIPT neither found in the current directory nor in $TMP_BINDIR."
+      exit 1
+    fi
+  ;;
+esac
 
 while test "$retries" != .............. ; do
 
 RUNPIKE=
 case $method in
   Q)
-    RUNPIKE="$TMP_BUILDDIR/pike -DNOT_INSTALLED -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
+    RUNPIKE="$TMP_BUILDDIR/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
   ;;
   QQ)
-    RUNPIKE="$TMP_BUILDDIR/tpike -DNOT_INSTALLED -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
+    RUNPIKE="$TMP_BUILDDIR/tpike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
   ;;
   QQQ)
     RUNPIKE=$TMP_BUILDDIR/test-pike
@@ -72,22 +73,37 @@ case $method in
   QQQQQ)
     LAST_PIKE=pike
     method=QQQQQQ
-    RUNPIKE="$LAST_PIKE $OLD"
+    RUNPIKE="$LAST_PIKE"
   ;;
   QQQQQQ)
-    RUNPIKE="$LAST_PIKE $OLD"
+    RUNPIKE="$LAST_PIKE"
+    LAST_PIKE=pike
   ;;
   QQQQQQQ)
+   if [ "x$UNIQPATH" = "x" ] ; then 
+    UNIQPATH=""
     ifs_save="${IFS- 	}"
-    IFS=" :"
-    for dir in $PATH
+    IFS=" @PATH_SEPARATOR@"
+    for dir in $PATH; do
+     if echo "@PATH_SEPARATOR@$UNIQPATH@PATH_SEPARATOR@" | \
+        grep "@PATH_SEPARATOR@$dir@PATH_SEPARATOR@" >/dev/null; then :; else
+       if [ ":$UNIQPATH:" = "::" ]; then
+         UNIQPATH="$dir"
+       else
+         UNIQPATH="$UNIQPATH@PATH_SEPARATOR@$dir"
+       fi
+     fi
+     done
+   fi
+    for p in pike pike79 pike78 pike77 pike76 pike75 pike74 \
+             pike73 pike72 pike71 pike70
     do
-      for p in pike pike7 pike70 pike71 pike07 pike06 pike-mirar
+      for dir in $UNIQPATH
       do
         if [ -x $dir/$p ]; then
           if [ "x$LAST_PIKE" = xpike ] ; then
             LAST_PIKE=$dir/$p
-            RUNPIKE="$dir/$p $OLD"
+            RUNPIKE="$dir/$p"
             break
           fi
 
@@ -97,7 +113,8 @@ case $method in
         fi
       done
       if [ "x$RUNPIKE" != x ]; then
-        method=QQQQQQ
+        # We found a binary, so retry this method on failure.
+	method=QQQQQQ
         break
       fi
     done
@@ -108,65 +125,14 @@ case $method in
   ;;
 esac
 
-#
-# By linking these two files to the current directory I can make
-# $SCRIPT work with older versions of Pike - Hubbe
-#
-
-case "$SCRIPT" in
-  /*|./*)
-    if test -f "$SCRIPT"; then :; else
-      echo Script "$SCRIPT" not found.
-      exit 1
-    fi
-  ;;
-  *)
-    if test -f ./$SCRIPT ; then
-      :
-    else
-      SCRIPT="$TMP_BINDIR/$SCRIPT"
-    fi
-  ;;
-esac
-
-if test -f $SRCDIR/C.pmod ; then
-  :
-else
-  rm $SRCDIR/C.pmod 2>/dev/null
-  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" $SRCDIR/C.pmod; then :; else
-    # We might be on a filesystem that doesn't support symlinks (eg FAT).
-    echo "Trying copying instead..."
-    cp "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" $SRCDIR/C.pmod
-  fi
-fi
-
-if test -f $SRCDIR/Pike.pmod ; then
-  :
-else
-  rm $SRCDIR/Pike.pmod 2>/dev/null
-  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" $SRCDIR/Pike.pmod; then :; else
-    # We might be on a filesystem that doesn't support symlinks (eg FAT).
-    echo "Trying copying instead..."
-    cp "$LIBDIR_SRC/modules/Parser.pmod/Pike.pmod" $SRCDIR/Pike.pmod
-  fi
-fi
-
 if test "x${RUNPIKE-}" != x ; then
-echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
-if $RUNPIKE $SCRIPT "$@" >"$TMPOUTPUT" ; then
+  echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
 
-cat > "$TMP_BUILDDIR/precompile-method.$$" <<EOF && \
-  mv "$TMP_BUILDDIR/precompile-method.$$" "$TMP_BUILDDIR/precompile-method"
-LAST_PIKE="$LAST_PIKE"
-method="$method"
-#retries="$retries"
-EOF
+    $RUNPIKE $SCRIPT "$@" >&5
 
-  cat "$TMPOUTPUT" >&5
-exit 0
-else
-  rm "$TMPOUTPUT"
-fi
+  if [ $? = 0 ]; then
+    exit 0
+  fi
 fi
 
 method="Q$method"
@@ -174,5 +140,7 @@ retries=".$retries"
 
 done # retry
 # Total failure
+
+echo "Failed to find a Pike executable that could run $SCRIPT."
 
 exit 1

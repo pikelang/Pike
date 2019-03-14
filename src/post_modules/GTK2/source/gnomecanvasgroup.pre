@@ -1,0 +1,5 @@
+/* -*- C -*- */
+require gnomecanvas;
+
+class Gnome2.CanvasGroup;
+inherit Gnome2.CanvasItem;

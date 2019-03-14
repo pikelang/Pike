@@ -1,0 +1,22 @@
+/* -*- C -*- */
+class GTK2.Vseparator;
+inherit GTK2.Separator;
+
+//! Simply creates a vertical separator. No bells or whistles.
+//! IMG: GTK2.Vseparator()->set_size_request(3,50)
+
+void create(?mapping(string:mixed) props)
+//! Used to create a new vseparator widget.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_VSEPARATOR);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gv;
+    gv=gtk_vseparator_new();
+    THIS->obj=G_OBJECT(gv);
+  }
+  pgtk2__init_this_object();
+}

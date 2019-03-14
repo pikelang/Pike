@@ -1,13 +1,57 @@
 /*
- * $Id: ia32.h,v 1.13 2001/08/16 18:49:47 marcus Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
-#define PIKE_OPCODE_T	unsigned INT8
 /* #define ALIGN_PIKE_JUMPS 8 */
 
-#define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)
-#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + sizeof(INT32)))
+#include "pike_cpulib.h"
+
+#define OPCODE_INLINE_BRANCH
+#define OPCODE_RETURN_JUMPADDR
+
+#if !defined (CL_IA32_ASM_STYLE) && !defined (GCC_IA32_ASM_STYLE)
+#error Dont know how to inline assembler with this compiler
+#endif
+
+#ifdef CL_IA32_ASM_STYLE
+
+#define DEF_PROG_COUNTER void *ia32_pc; \
+                         _asm { _asm mov ia32_pc,ebp }
+#define PROG_COUNTER  (((unsigned char **)ia32_pc)[1])
+
+#else  /* GCC_IA32_ASM_STYLE */
+
+#define OPCODE_INLINE_RETURN
+void ia32_ins_entry(void);
+#define INS_ENTRY()	ia32_ins_entry()
+/* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
+#define ENTRY_PROLOGUE_SIZE	0x09
+
+#ifdef OPCODE_RETURN_JUMPADDR
+/* Don't need an lvalue in this case. */
+#define PROG_COUNTER ((unsigned char *)__builtin_return_address(0))
+#else
+#error This method to tweak the jump address does not work with gcc >= 4.x
 #define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
+#endif
+
+#endif	/* GCC_IA32_ASM_STYLE */
+
+#ifdef OPCODE_RETURN_JUMPADDR
+/* Adjust for the machine code inserted after the call for I_JUMP opcodes. */
+#define JUMP_EPILOGUE_SIZE 2
+#define JUMP_SET_TO_PC_AT_NEXT(PC) \
+  ((PC) = PROG_COUNTER + JUMP_EPILOGUE_SIZE)
+#else
+#define JUMP_EPILOGUE_SIZE 0
+#endif
+
+#define LOW_GET_JUMP()							\
+  EXTRACT_INT(PROG_COUNTER + JUMP_EPILOGUE_SIZE)
+#define LOW_SKIPJUMP()							\
+  (SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + sizeof(INT32)))
 
 
 #define ins_pointer(PTR)	ins_int((PTR), (void (*)(char))add_to_program)
@@ -20,73 +64,21 @@
   } while(0)
 #define ins_byte(VAL)		add_to_program(VAL)
 #define ins_data(VAL)		ins_int((VAL), (void (*)(char))add_to_program)
+#define read_program_data(PTR, OFF)	EXTRACT_INT((PTR) + (sizeof(INT32)*(OFF)))
 
+void ia32_update_pc(void);
 
-#define MOV2EAX(ADDR) do {				\
-    add_to_program(0xa1 /* mov $xxxxx, %eax */);	\
-    ins_pointer( (INT32)&(ADDR));			\
-}while(0)
+#define UPDATE_PC() ia32_update_pc()
 
-#define MOV2EDX(ADDR) do {				\
-    add_to_program(0x8b);  /* mov $xxxxx, %edx */	\
-    add_to_program(0x15);	                        \
-    ins_pointer( (INT32)&(ADDR));			\
-}while(0)
+extern ptrdiff_t ia32_prev_stored_pc;
 
-
-#define SET_MEM_REL_EAX(OFFSET, VALUE) do {		\
-  INT32 off_ = (OFFSET);				\
-  add_to_program(0xc7); /* movl $xxxxx, yy%(eax) */	\
-  if(off_) 						\
-  {							\
-    add_to_program(0x40);				\
-    add_to_program(OFFSET);				\
-  }else{						\
-    add_to_program(0x0);				\
-  }							\
-  ins_pointer(VALUE);					\
-}while(0)
-
-#define SET_MEM_REL_EDX(OFFSET, VALUE) do {		\
-  INT32 off_ = (OFFSET);				\
-  add_to_program(0xc7); /* movl $xxxxx, yy%(edx) */	\
-  if(off_) 						\
-  {							\
-    add_to_program(0x42);				\
-    add_to_program(OFFSET);				\
-  }else{						\
-    add_to_program(0x02);				\
-  }							\
-  ins_pointer(VALUE);					\
-}while(0)
-
-#define REG_IS_SP 1
-#define REG_IS_FP 2
-#define REG_IS_MARK_SP 3
-#define REG_IS_UNKNOWN -1
-
-extern int ia32_reg_eax;
-extern int ia32_reg_ecx;
-extern int ia32_reg_edx;
-
-#if 0
-/* For some reason, this does not work - Hubbe*/
-#define UPDATE_PC() do {				\
-    INT32 tmp=PIKE_PC;					\
-    if(ia32_reg_edx != REG_IS_FP)                      \
-      MOV2EDX(Pike_interpreter.frame_pointer);		\
-    ia32_reg_edx=REG_IS_FP;                             \
-    SET_MEM_REL_EDX(OFFSETOF(pike_frame, pc), tmp);	\
-}while(0)
-#else
-#define UPDATE_PC() do {				\
-   INT32 tmp=PIKE_PC;					\
-   if(ia32_reg_eax != REG_IS_FP)                      \
-     MOV2EAX(Pike_interpreter.frame_pointer);		\
-   ia32_reg_eax=REG_IS_FP;                             \
-   SET_MEM_REL_EAX(OFFSETOF(pike_frame, pc), tmp);	\
-}while(0)
-#endif
+#define ADJUST_PIKE_PC(pc) do {						\
+    ia32_prev_stored_pc = pc;						\
+    DO_IF_DEBUG(							\
+      if (a_flag >= 60)							\
+	fprintf (stderr, "pc %d  adjusted\n", ia32_prev_stored_pc);	\
+    );									\
+  } while (0)
 
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)
@@ -116,23 +108,73 @@ void ia32_decode_program(struct program *p);
 #define ENCODE_PROGRAM(P, BUF)	ia32_encode_program(P, BUF)
 #define DECODE_PROGRAM(P)	ia32_decode_program(p)
 
-INT32 ins_f_jump(unsigned int b);
-void update_f_jump(INT32 offset, INT32 to_offset);
-INT32 read_f_jump(INT32 offset);
+INT32 ia32_ins_f_jump(unsigned int op, int backward_jump);
+INT32 ia32_ins_f_jump_with_arg(unsigned int op, unsigned INT32 a, int backward_jump);
+INT32 ia32_ins_f_jump_with_two_args(unsigned int op,
+				    unsigned INT32 a, unsigned INT32 b,
+				    int backward_jump);
+void ia32_update_f_jump(INT32 offset, INT32 to_offset);
+INT32 ia32_read_f_jump(INT32 offset);
 
-#define INS_F_JUMP ins_f_jump
-#define UPDATE_F_JUMP update_f_jump
-#define READ_F_JUMP read_f_jump
+#define INS_F_JUMP ia32_ins_f_jump
+#define INS_F_JUMP_WITH_ARG ia32_ins_f_jump_with_arg
+#define INS_F_JUMP_WITH_TWO_ARGS ia32_ins_f_jump_with_two_args
+#define UPDATE_F_JUMP ia32_update_f_jump
+#define READ_F_JUMP ia32_read_f_jump
+
+#if 0
+/* This is apparently not necessary. */
+void ia32_flush_instruction_cache(void *start, size_t len);
+#define FLUSH_INSTRUCTION_CACHE ia32_flush_instruction_cache
+void ia32_init_interpreter_state(void);
+#define INIT_INTERPRETER_STATE ia32_init_interpreter_state
+#endif
 
 void ia32_flush_code_generator(void);
 #define FLUSH_CODE_GENERATOR_STATE ia32_flush_code_generator
 
+void ia32_flush_instruction_cache(void *addr, size_t len);
+#define FLUSH_INSTRUCTION_CACHE	ia32_flush_instruction_cache
+
+void ia32_init_interpreter_state(void);
+#define INIT_INTERPRETER_STATE	ia32_init_interpreter_state
+
+#ifdef INS_ENTRY
+
+#define CALL_MACHINE_CODE(pc)                                           \
+  do {                                                                  \
+    ((int (*)(void))(pc)) ();						\
+  } while(0)
+
+#else /* !INS_ENTRY */
+
+#ifdef CL_IA32_ASM_STYLE
+
+#define CALL_MACHINE_CODE(pc)                                   \
+  __asm {                                                       \
+    __asm sub esp,12                                            \
+    __asm inc ebx /* dummy: forces the compiler to save ebx */  \
+    __asm jmp pc                                                \
+  }
+
+#define EXIT_MACHINE_CODE()                                     \
+  __asm { __asm add esp,12 }
+
+#else  /* GCC_IA32_ASM_STYLE */
+
 #define CALL_MACHINE_CODE(pc)						\
-  /* This code does not clobber %eax, %ecx & %edx, but			\
+  /* This code does not clobber %eax, %ebx, %ecx & %edx, but		\
    * the code jumped to does.						\
    */									\
-  __asm__ __volatile__( "	sub $8,%%esp\n"				\
+  __asm__ __volatile__( "	sub $16,%%esp\n"			\
 			"	jmp *%0"				\
 			: "=m" (pc)					\
 			:						\
-			: "cc", "memory", "eax", "ecx", "edx" )
+			: "cc", "memory", "eax", "ebx", "ecx", "edx" )
+
+#define EXIT_MACHINE_CODE()						\
+  __asm__ __volatile__( "add $16,%%esp\n" : : )
+
+#endif /* INS_ENTRY */
+
+#endif /* GCC_IA32_ASM_STYLE */

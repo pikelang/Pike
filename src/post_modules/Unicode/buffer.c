@@ -1,7 +1,12 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: buffer.c,v 1.2 2001/07/03 23:54:32 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -22,7 +27,7 @@ static void buffer_mkspace( struct buffer *d, int n )
   }
 }
 
-void uc_buffer_write( struct buffer *d, INT32 data )
+void uc_buffer_write( struct buffer *d, p_wchar2 data )
 {
   buffer_mkspace( d, 1 );
   d->data[d->size++] = data;
@@ -63,7 +68,7 @@ struct buffer *uc_buffer_write_pikestring( struct buffer *d,
   {
     case 0:
       {
-	unsigned char *p = s->str;
+	p_wchar0 *p = STR0(s);
 	int i;
 	for( i = 0; i<s->len; i++ )
 	  uc_buffer_write( d, p[i] );
@@ -71,7 +76,7 @@ struct buffer *uc_buffer_write_pikestring( struct buffer *d,
       break;
     case 1:
       {
-	unsigned short *p = (unsigned short *)s->str;
+	p_wchar1 *p = STR1(s);
 	int i;
 	for( i = 0; i<s->len; i++ )
 	  uc_buffer_write( d, p[i] );
@@ -79,7 +84,7 @@ struct buffer *uc_buffer_write_pikestring( struct buffer *d,
       break;
     case 2:
       {
-	int *p = (int *)s->str;
+	p_wchar2 *p = STR2(s);
 	int i;
 	for( i = 0; i<s->len; i++ )
 	  uc_buffer_write( d, p[i] );
@@ -102,7 +107,7 @@ struct pike_string *uc_buffer_to_pikestring( struct buffer *d )
   return s;
 }
 
-void uc_buffer_insert( struct buffer *b, unsigned int pos, int c )
+void uc_buffer_insert( struct buffer *b, unsigned int pos, p_wchar2 c )
 {
   unsigned int i;
   if( pos == b->size )
@@ -110,9 +115,8 @@ void uc_buffer_insert( struct buffer *b, unsigned int pos, int c )
   else
   {
     uc_buffer_write( b, 0 );
-    for( i = b->size-1; i>=pos; i-- )
+    for( i = b->size-1; i>pos; i-- )
       b->data[i] = b->data[i-1];
     b->data[pos] = c;
   }
 }
-

@@ -1,15 +1,72 @@
 #pike __REAL_VERSION__
+#require constant(Crypto.Random)
 
 import ".";
 
 Raw raw;
-string pass=MIME.encode_base64(Crypto.randomness.reasonably_random()->read(6));
+//FIXME: Unknown what this default password is good for. Probably not needed.
+string pass=MIME.encode_base64(Crypto.Random.random_string(6));
 
 mapping options;
 
 mapping channels=([]);
 
-void create(string _server,void|mapping _options)
+//! @decl void create(string|object server, void|mapping(string:mixed) options)
+//! @param server
+//!   The IRC server to connect to.
+//!   If server is an object, it is assumed to be a newly established
+//!   connection to the IRC server to be used. Pass @[SSL.sslfile]
+//!   connections here to connect to SSL secured IRC networks.
+//! @param options
+//!   An optional mapping with additional IRC client options.
+//!   @mapping
+//!     @member int "port"
+//!       Defaults to 6667.
+//!     @member string "user"
+//!       Defaults to @expr{"unknown"@} on systems without @[getpwuid] and
+//!       @[getuid] and to @expr{getpwuid(getuid())[0]@} on systems with.
+//!     @member string "nick"
+//!       Defaults to @expr{"Unknown"@} on systems without @[getpwuid] and
+//!       @[getuid] and to @expr{String.capitalize(getpwuid(getuid())[0])@}
+//!       on systems with.
+//!     @member string "pass"
+//!       Server password, if any. Public servers seldom require this.
+//!     @member string "realname"
+//!       Defaults to @expr{"Mr. Anonymous"@} on systems without @[getpwuid]
+//!       and @[getuid] and to @expr{getpwuid(getuid())[4]@} on systems with.
+//!     @member string "host"
+//!       Defaults to @expr{"localhost"@} on systems without @[uname] and
+//!       to @expr{uname()->nodename@} on systems with.
+//!     @member int "ping_interval"
+//!       Defaults to 120.
+//!     @member int "ping_timeout"
+//!       Defaults to 120.
+//!     @member function(void:void) "connection_lost"
+//!       This function is called when the connection to the IRC server is
+//!       lost or when a ping isn't answered with a pong within the time
+//!       set by the @tt{ping_timeout@} option. The default behaviour is
+//!       to complain on stderr and self destruct.
+//!     @member function(mixed ...:void) "error_notify"
+//!       This function is called when a KILL or ERROR command is recieved
+//!       from the IRC server.
+//!     @member function(string,void|string:void) "system_notify"
+//!
+//!     @member function(string,void|string:void) "motd_notify"
+//!
+//!     @member function(string) "error_nickinuse"
+//!
+//!     @member function(string,string,string,string,string) "generic_notify"
+//!       The arguments are from, type, to, message and extra.
+//!     @member function(string,string) "quit_notify"
+//!       The arguments are who and why.
+//!     @member function(Person,string,string) "privmsg_notify"
+//!       The arguments are originator, message and to.
+//!     @member function(Person,string,string) "notice_notify"
+//!       The arguments are originator, message and to.
+//!     @member function(Person,string) "nick_notify"
+//!       The arguments are originator and to.
+//!   @endmapping
+void create(string|object _server,void|mapping(string:mixed) _options)
 {
    options=
       ([
@@ -45,13 +102,21 @@ void create(string _server,void|mapping _options)
 
    cmd->create(raw);
 
-   cmd->pass(pass); 
+   cmd->pass(options->pass||pass); 
    cmd->nick(options->nick);
-   cmd->user(options->user,options->host,options->server,options->realname);
+   // If a connection object was passed as 'server' parameter to the
+   // constructor, we just pretend to the other server that we reached it
+   // by connecting to "localhost".
+   // There could be a special config mapping entry for it, but I doubt
+   // that this information really is used much anywhere anyway.
+   cmd->user(options->user,options->host,
+	     stringp(options->server) ? options->server : "localhost",
+	     options->realname);
 
    call_out(da_ping,options->ping_interval || 60);
 }
 
+//! Closes the connection to the server.
 void close()
 {
    if (raw->con) raw->con->close();
@@ -66,7 +131,7 @@ void da_ping()
    call_out(da_ping,options->ping_interval || 120);
    call_out(no_ping_reply,options->ping_timeout || 120); // timeout
    cmd->ping(expecting_pong=
-	     options->host+" "+Array.shuffle("pike""IRC""client"/"")*"");
+	     options->host+" "+Array.shuffle("pikeIRCclient"/1)*"");
 }
 
 void no_ping_reply()
@@ -85,7 +150,7 @@ void connection_lost()
       werror("destructing self\n");
       catch { destruct(raw->con); };
       destruct(raw);
-      destruct(this_object());
+      destruct(this);
    }
 }
 
@@ -125,7 +190,7 @@ void got_notify(string from,string type,
       return;
    }
 
-   object originator=person(@(from/"!"));
+   Person originator=person(@(from/"!"));
 
    switch (type)
    {
@@ -139,7 +204,7 @@ void got_notify(string from,string type,
       case "473": // failed to join
 	 if ((c=channels[lower_case(message||"")]))
 	 {
-	    c->not_failed_to_join();
+	    c->not_failed_to_join(@extra);
 	    return;
 	 }
 	 break;
@@ -188,6 +253,7 @@ void got_notify(string from,string type,
 	 break;
 
       case "474": // "cannot join channel"
+	werror("%O\n",extra);
 	 if ((c=channels[lower_case(message||"")]))
 	 {
 	    if (c->not_join_fail) c->not_join_fail(extra*" ");
@@ -223,7 +289,8 @@ void got_notify(string from,string type,
 	 if ((c=channels[lower_case(to||"")]))
 	 {
 	    // who, mode, by
-	    c->not_mode(extra[0]?person(extra[0]):originator,message+( ({""})+extra)*" ",originator);
+	    c->not_mode(extra[0]?person(extra[0]):originator,
+			message+( ({""})+extra)*" ",originator);
 	    return;
 	 }
 	 break;
@@ -309,10 +376,24 @@ void got_notify(string from,string type,
 	 nick2person[to]=originator;
 	 if (err) throw(err);
 	 return;
+
+      case "INVITE":
+	 if ((c=channels[lower_case(message||"")]))
+	 {
+	    c->not_invite(originator,@extra);
+	    return;
+	 }
+	 if (!options->notice_invite) break;
+	 options->notice_invite(originator,message,@extra);
+	 return;
+
+      default:
+	 werror("got unknown message: %O, %O, %O, %O\n",from,type,to,message);
    }
 //    werror("got notify: %O, %O, %O, %O\n",from,type,to,message);
    if (options->generic_notify)
-      options->generic_notify(from,type,to,message,extra[0]);
+      options->generic_notify(from,type,to,message,
+                              (extra&&sizeof(extra))?extra[0]:0);
 }
 
 object cmd=class
@@ -353,7 +434,7 @@ object cmd=class
       mixed `()(mixed ...args)
       {
    	 object req=prog();
-   	 req->async(this_object(),@args);
+   	 req->async(this,@args);
    	 return req;
       }
    }
@@ -371,7 +452,7 @@ object cmd=class
       {
    	 object req=prog();
    	 req->callback=callback;
-   	 req->async(this_object(),@args);
+   	 req->async(this,@args);
    	 return req;
       }
    }
@@ -382,7 +463,7 @@ object cmd=class
 
 
       if ( (p=Requests[request]) )
-   	 return SyncRequest(p,this_object());
+   	 return SyncRequest(p,this);
       else if ( request[..5]=="async_" &&
    		(p=Requests[request[6..]]) )
    	 return AsyncRequest(p);
@@ -433,15 +514,9 @@ class Person
 
    string _sprintf(int t)
    {
-      switch (t)
-      {
-	 case 'O':
-	    return sprintf("Person(%s!%s@%s%s)",
-			   nick,user||"?",ip||"?",
-			   (realname!="?")?"("+realname+")":"");
-	 default:
-	    return 0;
-      }
+     return t=='O' && sprintf("%O(%s!%s@%s%s)", this_program,
+			      nick,user||"?",ip||"?",
+			      (realname!="?")?"("+realname+")":"");
    }
 }
 

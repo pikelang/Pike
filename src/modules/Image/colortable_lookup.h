@@ -1,14 +1,15 @@
-/* $Id: colortable_lookup.h,v 1.17 2001/09/24 11:19:06 grubba Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
-**! note
-**!	$Id: colortable_lookup.h,v 1.17 2001/09/24 11:19:06 grubba Exp $
 **! class colortable
 */
-
-
 
 void NCTLU_FLAT_CUBICLES_NAME(rgb_group *s,
 			      NCTLU_DESTINATION *d,
@@ -20,7 +21,7 @@ void NCTLU_FLAT_CUBICLES_NAME(rgb_group *s,
    struct nctlu_cubicles *cubs;
    struct nctlu_cubicle *cub;
    int red,green,blue;
-   int hred,hgreen,hblue;
+   int redm,greenm,bluem;
    int redgreen;
    struct nct_flat_entry *fe=nct->u.flat.entries;
    int mindist;
@@ -52,9 +53,9 @@ CHRONO("init flat/cubicles");
 
 CHRONO("begin flat/cubicles");
 
-   red=cubs->r;   hred=red/2;
-   green=cubs->g; hgreen=green/2;
-   blue=cubs->b;  hblue=blue/2;
+   red=cubs->r;   redm=red-1;
+   green=cubs->g; greenm=green-1;
+   blue=cubs->b;  bluem=blue-1;
    redgreen=red*green;
 
    if (dith->firstline)
@@ -91,9 +92,9 @@ CHRONO("begin flat/cubicles");
 
       lc->src=*s;
       
-      r=((val.r*red+hred)>>8);
-      g=((val.g*green+hgreen)>>8);
-      b=((val.b*blue+hblue)>>8);
+      r=((val.r*red+redm)>>8);
+      g=((val.g*green+greenm)>>8);
+      b=((val.b*blue+bluem)>>8);
 
       cub=cubs->cubicles+r+g*red+b*redgreen;
       
@@ -531,7 +532,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 		 DEFINETOSTR(NCTLU_DESTINATION) " => "
 		 DEFINETOSTR(NCTLU_CUBE_NAME) "\n");
 #endif /* COLORTABLE_DEBUG */
-	 return NCTLU_CUBE_NAME;
+	 return &NCTLU_CUBE_NAME;
       case NCT_FLAT:
          switch (nct->lookup_mode)
 	 {
@@ -542,7 +543,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 		      DEFINETOSTR(NCTLU_DESTINATION) " => "
 		      DEFINETOSTR(NCTLU_FLAT_FULL_NAME) "\n");
 #endif /* COLORTABLE_DEBUG */
-	       return NCTLU_FLAT_FULL_NAME;
+	       return &NCTLU_FLAT_FULL_NAME;
 	    case NCT_RIGID:
 #ifdef COLORTABLE_DEBUG
 	      fprintf(stderr,
@@ -550,7 +551,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 		      DEFINETOSTR(NCTLU_DESTINATION) " => "
 		      DEFINETOSTR(NCTLU_FLAT_RIGID_NAME) "\n");
 #endif /* COLORTABLE_DEBUG */
-	       return NCTLU_FLAT_RIGID_NAME;
+	       return &NCTLU_FLAT_RIGID_NAME;
 	    case NCT_CUBICLES:
 #ifdef COLORTABLE_DEBUG
 	      fprintf(stderr,
@@ -558,10 +559,12 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 		      DEFINETOSTR(NCTLU_DESTINATION) " => "
 		      DEFINETOSTR(NCTLU_FLAT_CUBICLES_NAME) "\n");
 #endif /* COLORTABLE_DEBUG */
-	       return NCTLU_FLAT_CUBICLES_NAME;
+	       return &NCTLU_FLAT_CUBICLES_NAME;
 	 }
+	 /* FALL_THROUGH */
+
       default:
-	 fatal("lookup select (%s:%d) couldn't find the lookup mode\n",
+	 Pike_fatal("lookup select (%s:%d) couldn't find the lookup mode\n",
 	       __FILE__,__LINE__);
    }
    /* NOT_REACHED */

@@ -1,0 +1,636 @@
+/*! @module System
+ */
+
+/*! @module FSEvents
+ */
+
+#include "global.h"
+#include "interpret.h"
+#include "module.h"
+#include "program.h"
+#include "stralloc.h"
+#include "svalue.h"
+#include "threads.h"
+#include "object.h"
+#include "pike_types.h"
+#include "builtin_functions.h"
+
+#include "fsevents_config.h"
+
+#define ADD_ICONST(name) do {                   \
+        add_integer_constant(#name, name, 0);   \
+} while(0);
+
+#ifdef HAVE_FRAMEWORK_CORESERVICES
+#import <CoreServices/CoreServices.h>
+#endif /* HAVE_FRAMEWORK_CORESERVICES */
+
+DECLARATIONS
+#ifdef HAVE_FRAMEWORK_CORESERVICES
+
+void low_stop();
+struct pike_string * string_from_cfstring(CFStringRef cfString);
+
+struct event_callback_ctx 
+{
+  ConstFSEventStreamRef streamRef;
+  void *clientCallBackInfo;
+  size_t numEvents;
+  void *eventPaths;
+  const FSEventStreamEventFlags * eventFlags;
+  const FSEventStreamEventId * eventIds;
+};
+
+static void do_event_callback(struct event_callback_ctx * ctx);
+
+static void event_callback(ConstFSEventStreamRef streamRef,
+                             void *clientCallBackInfo,
+                             size_t numEvents,
+                             void *eventPaths,
+                             const FSEventStreamEventFlags eventFlags[],
+                             const FSEventStreamEventId eventIds[]);
+
+/*! @class EventStream
+ */
+
+PIKECLASS EventStream
+{
+  CVAR CFRunLoopRef runLoop;
+  CVAR FSEventStreamRef stream;
+  CVAR int isRunning;
+  CVAR CFArrayRef _paths;
+  CVAR FSEventStreamEventId _sinceWhen;
+  CVAR FSEventStreamCreateFlags _flags;
+  CVAR CFAbsoluteTime _latency;
+
+  PIKEVAR function callback_func;
+
+/*! @decl int is_started()
+ *! Has start() been called?
+ */
+PIKEFUN int is_started()
+{
+  RETURN(THIS->isRunning);
+}
+
+/*! @decl void flush_async()
+ *!
+ *! Requests that the FS Events service to flush out any events that have occurred but have not yet been 
+ *! delivered, due to the latency parameter that was supplied when the stream was created. 
+ *!
+ *! This flushing occurs asynchronously -- events most likely will not have been delivered
+ *! by the time this call returns. 
+ *!
+ *! @note 
+ *! Only call this function after the stream has been started, via start().
+ */
+PIKEFUN void flush_async()
+{
+  if(THIS->stream)
+	FSEventStreamFlushAsync(THIS->stream);
+  else
+    Pike_error("FSEvents.EventStream: not started\n");
+}
+
+/*! @decl void flush_sync()
+ *!
+ *! Requests that the FS Events service to flush out any events that have occurred but have not yet been 
+ *! delivered, due to the latency parameter that was supplied when the stream was created. 
+ *!
+ *! Flushing synchronously when using this method; clients will have received all the callbacks by 
+ *! the time this call returns to them.
+ *!
+ *! @note 
+ *! Only call this function after the stream has been started, via start().
+ *!
+ */
+PIKEFUN void flush_sync()
+{
+  if(THIS->stream)
+	FSEventStreamFlushSync(THIS->stream);
+  else
+    Pike_error("FSEvents.EventStream: not started\n");
+}
+
+/*! @decl void create(array(string) paths, float latency, int|void since_when, int|void flags)
+ *!   Creates a new Public.System.FSEvents.EventStream object
+ *!
+ *! @param paths
+ *! An array with each element containing a path to a directory, signifying the root of a 
+ *! filesystem hierarchy to be watched for modifications.
+ *!
+ *! Additional paths may be added later using @[add_path()], though only if the stream is stopped.
+ *!
+ *! @param latency
+ *! The number of seconds the service should wait after hearing about an event from the kernel 
+ *! before passing it along to the client via its callback. Specifying a larger value may 
+ *! result in more effective temporal coalescing, resulting in fewer callbacks and greater 
+ *! overall efficiency.
+ *!
+ *! @param since_when
+ *! The service will supply events that have happened after the given event ID. To ask for events
+ *! "since now" pass the constant kFSEventStreamEventIdSinceNow. Do not pass zero for this value
+ *! unless you want to receive events for the requested directories "since the beginning of time".
+ *!
+ *! @param flags
+ *! Flags that modify the behavior of the stream being created. See Apple's FSEvents documentation
+ *! for details of the various flags available.
+ */
+PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void flags)
+{
+  int idx = 0, cnt = 0;
+  
+  THIS->isRunning = 0;
+  THIS->_latency = latency;
+
+  if(sinceWhen && sinceWhen->type == T_INT)
+  {
+    THIS->_sinceWhen = sinceWhen->u.integer;
+  }
+  else
+  {
+    THIS->_sinceWhen = kFSEventStreamEventIdSinceNow;
+  }
+
+  if(flags && flags->type == T_INT)
+  {
+    THIS->_flags = flags->u.integer;
+  }
+  else
+  {
+    THIS->_flags = kFSEventStreamCreateFlagNone;
+  }
+  
+  THIS->_paths = CFArrayCreateMutable(NULL, 0, NULL);
+  CFRetain(THIS->_paths);
+
+  if(paths && paths->size)
+  {
+    for(idx = 0; idx < paths->size; idx++)
+    {
+      struct svalue sv;
+      CFStringRef str;
+      if(ITEM(paths)[idx].type != T_STRING) continue;
+      sv = ITEM(paths)[idx];
+      push_svalue(&sv);
+      f_string_to_utf8(1);
+      str = CFStringCreateWithBytes(NULL, (const UInt8 *)(Pike_sp[-1].u.string->str), (CFIndex)Pike_sp[-1].u.string->len, kCFStringEncodingUTF8, false);
+      pop_stack();
+      CFArrayInsertValueAtIndex( (CFMutableArrayRef)THIS->_paths, cnt, str);
+      cnt++;
+    }
+  }
+	
+  pop_n_elems(args);
+
+  return;
+}
+
+/*! @decl void add_path(string path)
+ *!   Add a path to the monitor list.
+ *!
+ *! @param path
+ *!
+ *!  @note
+ *!    this can only be called when the monitor is stopped.
+ */
+PIKEFUN void add_path(string path)
+{
+  if(THIS->isRunning)
+  {
+    Pike_error("Cannot add paths while monitor is started.\n");
+  }
+
+  if(path && path->len)
+  {
+    int size;
+    CFStringRef str;
+    f_string_to_utf8(1);
+    str = CFStringCreateWithBytes(NULL, (const UInt8 *)(Pike_sp[-1].u.string->str), (CFIndex)Pike_sp[-1].u.string->len, kCFStringEncodingUTF8, false);
+    size = CFArrayGetCount(THIS->_paths);
+    CFArrayInsertValueAtIndex( (CFMutableArrayRef)THIS->_paths, size, str);
+  }
+  pop_stack();
+}
+
+/*! @decl void set_callback(function callback)
+ *! Sets the function that will be called when a file notification event is received.
+ *! 
+ *! The method signature for the callback is:
+ *! 
+ *! void event_callback(string path, int flags, int event_id)
+ */
+PIKEFUN void set_callback(function callback)
+{
+  assign_svalue(&THIS->callback_func, callback);
+  pop_stack();
+}
+
+/*
+ *   TODO we should allow the runloop to be specified.
+ */
+
+/*! @decl void start()
+ *!
+ *! Requests that new events be delivered to this EventStream.
+ *! 
+ *! If a value was supplied for the since_when parameter then "historical" events will be sent via 
+ *! your callback first, then a HistoryDone event, then "contemporary" events will be sent on 
+ *! an ongoing basis.
+ */
+PIKEFUN void start()
+{
+  FSEventStreamContext context;
+
+  if(THIS->isRunning)
+  {
+    Pike_error("EventStream: monitor is already running.\n");
+  }
+
+  if(!THIS->_paths)
+    Pike_error("EventStream: no paths.\n");
+
+  if(!THIS->_sinceWhen)
+    Pike_error("EventStream: no startdate.\n");
+				
+  if(!THIS->_latency)
+    Pike_error("EventStream: no latency.\n");
+
+  if(CFArrayGetCount(THIS->_paths))
+  {	
+    THIS->runLoop = CFRunLoopGetCurrent();
+    CFRetain(THIS->runLoop);
+ 
+    context.version = 0; 
+    context.info = THIS;
+    context.retain = NULL;
+    context.release = NULL;
+    context.copyDescription = NULL;
+
+    THIS->stream = FSEventStreamCreate(kCFAllocatorDefault,
+      &event_callback,
+      &context,
+      THIS->_paths,
+      THIS->_sinceWhen,
+      THIS->_latency,
+      THIS->_flags |
+      kFSEventStreamCreateFlagUseCFTypes
+    );
+
+    THIS->isRunning = 1;
+    FSEventStreamScheduleWithRunLoop(THIS->stream, THIS->runLoop, kCFRunLoopDefaultMode);
+    FSEventStreamStart(THIS->stream);
+  }
+  else
+  {
+    Pike_error("EventStream: No paths registered for monitoring.\n");
+  }
+}
+
+/*! @decl void stop()
+ *! Stops watching for new events.
+ */
+PIKEFUN void stop()
+{
+  low_stop();
+}
+
+void low_stop()
+{
+  if(THIS->isRunning)
+  {
+    FSEventStreamStop(THIS->stream);
+    FSEventStreamUnscheduleFromRunLoop(THIS->stream, THIS->runLoop, kCFRunLoopDefaultMode);
+	FSEventStreamInvalidate(THIS->stream);
+  	FSEventStreamRelease(THIS->stream);
+    CFRelease(THIS->runLoop);
+    THIS->isRunning = 0;
+  }
+}
+
+/**
+ * FSEvents callback function. The frequency at which this callback is
+ * called depends upon the notification latency value. This callback is usually
+ * called with more than one event and so multiple calls to the callback occur.
+ *
+ * @param streamRef          The calling stream reference
+ * @param clientCallBackInfo Any client callback info that was supplied when the stream was created
+ * @param numEvents          The number of events being supplied
+ * @param eventPaths         An array of the event's paths
+ * @param eventFlags         An array of flags associated with the events
+ * @param eventIds           An array of IDs associated with the events
+ */
+
+static void event_callback(ConstFSEventStreamRef streamRef,
+                              void *clientCallBackInfo,
+                              size_t numEvents,
+                              void *eventPaths,
+                              const FSEventStreamEventFlags eventFlags[],
+                              const FSEventStreamEventId eventIds[])
+{
+  struct event_callback_ctx ctx;
+  struct event_callback_ctx * ctx_ptr;
+
+  ctx.streamRef = streamRef;
+  ctx.clientCallBackInfo = clientCallBackInfo;
+  ctx.numEvents = numEvents;
+  ctx.eventPaths = eventPaths;
+  ctx.eventFlags = eventFlags;
+  ctx.eventIds = eventIds;
+ 
+  ctx_ptr = &ctx;
+
+  call_with_interpreter((void *)&do_event_callback, (void *)ctx_ptr);  
+/*
+      do_event_callback(streamRef, clientCallBackInfo, numEvents, eventPaths, eventFlags, eventIds);
+*/
+}
+
+static void do_event_callback(struct event_callback_ctx * ctx)
+{
+   size_t cnt = 0;
+
+  for(cnt = 0; cnt < ctx->numEvents; cnt++)
+  {
+     CFStringRef eventPath;
+     struct pike_string * str;
+     const char * u8s;
+	 struct FSEvents_EventStream_struct * eventStreamObj;
+
+	 eventPath = CFArrayGetValueAtIndex(ctx->eventPaths, (CFIndex)cnt);
+	 str = string_from_cfstring(eventPath);
+	 push_string(str);
+	 f_utf8_to_string(1);
+	 push_int(ctx->eventFlags[cnt]);
+	 push_int(ctx->eventIds[cnt]);
+	 eventStreamObj = (struct FSEvents_EventStream_struct *)(ctx->clientCallBackInfo);
+ 	 apply_svalue(&eventStreamObj->callback_func, 3);
+  }
+}
+
+struct pike_string * string_from_cfstring(CFStringRef cfString)
+{
+  const char *useUTF8StringPtr = NULL;
+  UInt8 *freeUTF8StringPtr = NULL;
+  struct pike_string * str = NULL;
+  long utf8Length;
+
+  CFIndex stringLength = CFStringGetLength(cfString), usedBytes = 0L;
+
+  if((useUTF8StringPtr = CFStringGetCStringPtr(cfString, kCFStringEncodingUTF8)) == NULL) {
+    if((freeUTF8StringPtr = malloc(stringLength + 1L)) != NULL) {
+      CFStringGetBytes(cfString, CFRangeMake(0L, stringLength), kCFStringEncodingUTF8, '?', false, freeUTF8StringPtr, stringLength, &usedBytes);
+      freeUTF8StringPtr[usedBytes] = 0;
+      useUTF8StringPtr = (const char *)freeUTF8StringPtr;
+    }
+  }
+
+  utf8Length = (long)((freeUTF8StringPtr != NULL) ? usedBytes : stringLength);
+
+  if(useUTF8StringPtr != NULL) {
+    /*
+     *  useUTF8StringPtr points to a NULL terminated UTF8 encoded string.
+     *  utf8Length contains the length of the UTF8 string.
+     */
+    str = make_shared_binary_string(useUTF8StringPtr, utf8Length);
+  }
+
+  if(freeUTF8StringPtr != NULL) { free(freeUTF8StringPtr); freeUTF8StringPtr = NULL; }
+
+  return str;
+}
+
+#endif /* HAVE_FRAMEWORK_CORESERVICES */
+
+  INIT
+  {
+  }
+
+  EXIT
+  {
+#ifdef HAVE_FRAMEWORK_CORESERVICES
+    low_stop();
+    if(THIS->_paths) CFRelease(THIS->_paths);
+#endif /* HAVE_FRAMEWORK_CORESERVICES */
+  }
+
+}
+
+PIKE_MODULE_INIT
+{
+  INIT;
+/*! @decl constant kFSEventStreamEventFlagNone 
+ */
+
+/*! @decl constant kFSEventStreamEventFlagMustScanSubDirs 
+ */
+
+/*! @decl constant kFSEventStreamEventFlagUserDropped 
+ */
+
+/*! @decl constant kFSEventStreamEventFlagKernelDropped
+ */
+
+/*! @decl constant kFSEventStreamEventFlagEventIdsWrapped 
+ */
+
+/*! @decl constant kFSEventStreamEventFlagHistoryDone
+ */
+
+/*! @decl constant kFSEventStreamEventFlagRootChanged
+ */
+
+/*! @decl constant kFSEventStreamEventFlagMount
+ */
+
+/*! @decl constant kFSEventStreamEventFlagUnmount
+ */
+
+/*! @decl constant kFSEventStreamEventFlagItemCreated
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamEventFlagItemRemoved 
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamEventFlagInodeMetaMod
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamEventFlagRenamed
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamEventFlagItemModified 
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamEventFlagFinderInfoMod
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamEventFlagChangeOwner
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamEventFlagXattrMod 
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamEventFlagIsFile
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamEventFlagIsDir
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamEventFlagIsSymlink
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamCreateFlagFileEvents 
+ *! Available in MacOS X 10.7 and newer.
+ */
+
+/*! @decl constant kFSEventStreamCreateFlagIgnoreSelf
+ *! Available in MacOS X 10.6 and newer.
+ */
+
+/*! @decl constant kFSEventStreamCreateFlagWatchRoot
+ */
+
+/*! @decl constant kFSEventStreamCreateFlagNoDefer
+ */
+
+/*! @decl constant kFSEventStreamCreateFlagNone
+ */
+
+/*! @decl constant kFSEventStreamEventIdSinceNow
+ */
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGNONE
+ ADD_ICONST(kFSEventStreamEventFlagNone);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTMUSTSCANSUBDIRS
+ ADD_ICONST(kFSEventStreamEventFlagMustScanSubDirs);
+#endif 
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGUSERDROPPED
+ ADD_ICONST(kFSEventStreamEventFlagUserDropped);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGKERNELDROPPED
+ ADD_ICONST(kFSEventStreamEventFlagKernelDropped);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGEVENTIDSWRAPPED
+ ADD_ICONST(kFSEventStreamEventFlagEventIdsWrapped);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGHISTORYDONE
+ ADD_ICONST(kFSEventStreamEventFlagHistoryDone);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGROOTCHANGED
+ ADD_ICONST(kFSEventStreamEventFlagRootChanged);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGMOUNT
+ ADD_ICONST(kFSEventStreamEventFlagMount);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGUNMOUNT
+ ADD_ICONST(kFSEventStreamEventFlagUnmount);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMCREATED
+ ADD_ICONST(kFSEventStreamEventFlagItemCreated);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMREMOVED
+ ADD_ICONST(kFSEventStreamEventFlagItemRemoved);
+#endif 
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGINODEMETAMOD
+ ADD_ICONST(kFSEventStreamEventFlagItemInodeMetaMod);
+#endif 
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMRENAMED
+ ADD_ICONST(kFSEventStreamEventFlagItemRenamed);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMMODIFIED
+ ADD_ICONST(kFSEventStreamEventFlagItemModified);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGFINDERINFOMOD
+ ADD_ICONST(kFSEventStreamEventFlagItemFinderInfoMod);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMCHANGEOWNER
+ ADD_ICONST(kFSEventStreamEventFlagItemChangeOwner);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMXATTRMOD
+ ADD_ICONST(kFSEventStreamEventFlagItemXattrMod);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMISFILE
+ ADD_ICONST(kFSEventStreamEventFlagItemIsFile);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMISDIR
+ ADD_ICONST(kFSEventStreamEventFlagItemIsDir);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTFLAGITEMISSYMLINK
+ ADD_ICONST(kFSEventStreamEventFlagItemIsSymlink);
+#endif
+
+/*
+ * flags for the stream creation
+ */
+
+#if HAVE_DECL_KFSEVENTSTREAMCREATEFLAGFILEEVENTS
+ ADD_ICONST(kFSEventStreamCreateFlagFileEvents);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMCREATEFLAGIGNORESELF
+ ADD_ICONST(kFSEventStreamCreateFlagIgnoreSelf);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMCREATEFLAGWATCHROOT
+ ADD_ICONST(kFSEventStreamCreateFlagWatchRoot);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMCREATEFLAGNODEFER
+ ADD_ICONST(kFSEventStreamCreateFlagNoDefer);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMCREATEFLAGNONE
+
+ ADD_ICONST(kFSEventStreamCreateFlagNone);
+#endif
+
+#if HAVE_DECL_KFSEVENTSTREAMEVENTIDSINCENOW
+  ADD_ICONST(kFSEventStreamEventIdSinceNow);
+#endif
+
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+}
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */

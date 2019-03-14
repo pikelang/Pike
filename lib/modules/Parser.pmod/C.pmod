@@ -1,23 +1,53 @@
-/* This file needs to support pikes that don't understand "#pike".
- * Some of them fail when they see an unknown cpp directive.
- */
-/* #pike __REAL_VERSION__ */
+//
+// This file needs to support old pikes that e.g. don't understand
+// "#pike". Some of them fail when they see an unknown cpp directive.
+//
+// #pike __REAL_VERSION__
+//
 
-mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
-
-array(string) split(string data)
+//! Splits the @[data] string into an array of tokens. An additional
+//! element with a newline will be added to the resulting array of
+//! tokens. If the optional argument @[state] is provided the split
+//! function is able to pause and resume splitting inside /**/ tokens.
+//! The @[state] argument should be an initially empty mapping, in
+//! which split will store its state between successive calls.
+array(string) split(string data, void|mapping state)
 {
   int start;
   int line=1;
   array(string) ret=({});
   int pos;
+  if(data=="") return ({"\n"});
   data += "\n\0";	/* End sentinel. */
+
+  if(state && state->in_token) {
+    switch(state->remains[0..1]) {
+
+    case "/*":
+      if(sizeof(state->remains)>2 && state->remains[-1]=='*'
+	 && data[0]=='/') {
+	ret += ({ state->remains + "/" });
+	pos++;
+	m_delete(state, "remains");
+	break;
+      }
+      pos = search(data, "*/");
+      if(pos==-1) {
+	state->in_token = 1;
+	state->remains += data[..<1];
+	return ret;
+      }
+      ret += ({ state->remains + data[..pos+1] });
+      m_delete(state, "remains");
+      pos+=2;
+      break;
+    }
+    state->in_token = 0;
+  }
 
   while(1)
   {
     int start=pos;
-
-//    werror("::::%c\n",data[pos]);
 
     switch(data[pos])
     {
@@ -30,7 +60,8 @@ array(string) split(string data)
 	if(pos==-1)
 	  error("Failed to find end of preprocessor statement.\n");
 
-	while(data[pos-1]=='\\') pos=search(data,"\n",pos+1);
+	while(data[pos-1]=='\\' || (data[pos-1]=='\r' && data[pos-2]=='\\'))
+	  pos=search(data,"\n",pos+1);
 	break;
 
       case 'a'..'z':
@@ -92,13 +123,20 @@ array(string) split(string data)
 	  if(data[pos]=='e' || data[pos]=='E')
 	  {
 	    pos++;
+	    if(data[pos]=='-') pos++;
 	    while(data[pos]>='0' && data[pos]<='9') pos++;
 	  }
+	  break;
+	}
+	if(data[pos]=='e' || data[pos]=='E')
+	{
+	  pos++;
+	  while(data[pos]>='0' && data[pos]<='9') pos++;
 	}
 	break;
 
       default:
-	throw( ({sprintf("Unknown token %O\n",data[pos..pos+20]) }) );
+	error("Unknown token %O\n",data[pos..pos+20]);
 
       case  '`':
 	while(data[pos]=='`') data[pos]++;
@@ -128,12 +166,20 @@ array(string) split(string data)
 
 	  case "/*":
 	    pos=search(data,"*/",pos);
+	    if(pos==-1) {
+	      if(state) {
+		state->remains = data[start..<2];
+		state->in_token = 1;
+		return ret;
+	      }
+	      error("Failed to find end of comment.\n");
+	    }
 	    pos+=2;
 	    break;
 
 	  case "<<": case ">>":
 	    if(data[pos+2]=='=') pos++;
-	  case "==": case "<=": case ">=":
+	  case "==": case "!=": case "<=": case ">=":
 	  case "*=": case "/=": case "%=":
 	  case "&=": case "|=": case "^=":
 	  case "+=": case "-=":
@@ -170,10 +216,10 @@ array(string) split(string data)
 
 	case '\'':
 	  pos++;
-	  if(data[pos]=='\\') pos++;
-          int end=search(data, "'", pos+1)+1;
+	  if(data[pos]=='\\') pos+=2;
+          int end=search(data, "'", pos)+1;
           if(!end)
-            throw( ({sprintf("Unknown token %O\n",data[pos-1..pos+19]) }) );
+            throw( ({sprintf("Unknown token: %O\n",data[pos-1..pos+19]) }) );
           pos=end;
           break;
 
@@ -184,8 +230,8 @@ array(string) split(string data)
 	  {
 	    q=search(data,"\"",pos+1);
 	    s=search(data,"\\",pos+1);
-	    if(q==-1) q=strlen(data)-1;
-	    if(s==-1) s=strlen(data)-1;
+	    if(q==-1) q=sizeof(data)-1;
+	    if(s==-1) s=sizeof(data)-1;
 
 	    if(q<s)
 	    {
@@ -204,14 +250,24 @@ array(string) split(string data)
   }
 }
 
-
+//! Represents a C token, along with a selection of associated data and
+//! operations.
 class Token
 {
+  //! The line where the token was found.
   int line;
+
+  //! The actual token.
   string text;
+
+  //! The file in which the token was found.
   string file;
+
+  //! Trailing whitespaces.
   string trailing_whitespaces="";
 
+  //! @decl void create(string text, void|int line, void|string file,@
+  //!   void|string trailing_whitespace)
   void create(string t, void|int l, void|string f, void|string space)
     {
       text=t;
@@ -220,6 +276,7 @@ class Token
       if(space) trailing_whitespaces=space;
     }
 
+  //! If the object is printed as %s it will only output its text contents.
   string _sprintf(int how)
     {
       switch(how)
@@ -227,58 +284,81 @@ class Token
 	case 's':
 	  return text;
 	case 'O':
-	  return sprintf("Token(%O,%O,%d)",text,file,line);
+	  return sprintf("%O(%O,%O,%d)",this_program,text,file,line);
       }
     }
 
+  //! Tokens are considered equal if the text contents are equal. It
+  //! is also possible to compare the Token object with a text string
+  //! directly.
   int `==(mixed foo)
     {
       return (objectp(foo) ? foo->text : foo) == text;
     }
 
+  //! A string can be added to the Token, which will be added to the
+  //! text contents.
   string `+(string ... s)
     {
       return predef::`+(text,@s);
     }
 
+  //! A string can be added to the Token, which will be added to the
+  //! text contents.
   string ``+(string ... s)
     {
       return predef::`+(@s,text);
     }
 
+  //! It is possible to case a Token object to a string. The text content
+  //! will be returned.
   mixed cast(string to)
     {
       if(to=="string") return text;
     }
+
+  //! Characters and ranges may be indexed from the text contents of the token.
+  int|string `[](int a, void|int b) {
+    if(zero_type(b)) return text[a];
+    return text[a..b];
+  }
 }
 
-/* FIXME:
- */
+//! Returns an array of @[Token] objects given an array of string tokens.
 array(Token) tokenize(array(string) s, void|string file)
 {
   array(Token) ret=allocate(sizeof(s));
   int line=1;
-  for(int e=0;e<sizeof(s);e++)
+  foreach(s; int e; string str)
   {
-    ret[e]=Token(s[e],line,file);
-    if(s[e][0]=='#')
+    ret[e]=Token(str,line,file);
+    if(str[0]=='#')
     {
-      if( (sscanf(s[e],"#%*[ \t\14]%d%*[ \t\14]\"%s\"", line,file) == 4) ||
-          (sscanf(s[e],"#%*[ \t\14]line%*[ \t\14]%d%*[ \t\14]\"%s\"",line,file)==5))
+      if( (sscanf(str,"#%*[ \t\14]%d%*[ \t\14]\"%s\"", line,file) == 4) ||
+          (sscanf(str,"#%*[ \t\14]line%*[ \t\14]%d%*[ \t\14]\"%s\"",line,file)==5))
         line--;
     }
-    line+=sizeof(s[e]/"\n")-1;
+    line+=sizeof(str/"\n")-1;
   }
   return ret;
 }
 
-array group(array(string|Token) tokens, void|mapping groupings)
+protected constant global_groupings = ([ "{":"}", "(":")", "[":"]" ]);
+
+//! Fold sub blocks of an array of tokens into sub arrays,
+//! for grouping purposes.
+//! @param tokens
+//!   The token array to fold.
+//! @param groupings
+//!   Supplies the tokens marking the boundaries of blocks to fold.
+//!   The indices of the mapping mark the start of a block, the
+//!   corresponding values mark where the block ends. The sub arrays
+//!   will start and end in these tokens. If no groupings mapping is
+//!   provided, {}, () and [] are used as block boundaries.
+array(Token|array) group(array(string|Token) tokens,
+			 void|mapping(string:string) groupings)
 {
-#if constant(ADT.Stack)
   ADT.Stack stack=ADT.Stack();
-#else
-  Stack.stack stack=Stack.stack();
-#endif
   array(Token) ret=({});
   mapping actions=([]);
 
@@ -300,12 +380,9 @@ array group(array(string|Token) tokens, void|mapping groupings)
 	if (!sizeof(ret) || !stack->ptr ||
 	    (groupings[(string)ret[0]] != (string)token)) {
 	  // Mismatch
-	  werror(sprintf("**** Grouping mismatch token=%O\n"
-			 "**** tokens: ({ %{%O, %}})\n"
-			 "**** ret: ({ %{%O, %}})\n"
-			 "**** stackdepth: %d\n",
-			 token->text, tokens->text,
-			 ret->text, stack->ptr));
+	  werror ("%s:%d: Expected %O, got %O\n",
+		  token->file||"-", token->line,
+		  groupings[(string)ret[0]], (string) token);
 	  return ret;
 	}
 	ret=stack->pop()+({ ret + ({token}) });
@@ -317,9 +394,11 @@ array group(array(string|Token) tokens, void|mapping groupings)
 /* FIXME:
  * This actually strips all preprocessing tokens
  */
-array strip_line_statements(array tokens)
+
+//! Strips off all (preprocessor) line statements from a token array.
+array(Token|array) strip_line_statements(array(Token|array) tokens)
 {
-  array(Token) ret=({});
+  array(Token|array) ret=({});
   foreach(tokens, array|object(Token) t)
     {
       if(arrayp(t))
@@ -331,9 +410,9 @@ array strip_line_statements(array tokens)
       }
     }
   return ret;
-  
 }
 
+//! Folds all whitespace tokens into the previous token's trailing_whitespaces.
 array hide_whitespaces(array tokens)
 {
   array(Token) ret=({tokens[0]});
@@ -348,6 +427,7 @@ array hide_whitespaces(array tokens)
 	  case ' ':
 	  case '\t':
 	  case '\14':
+	  case '\r':
 	  case '\n':
 	    mixed tmp=ret[-1];
 	    while(arrayp(tmp)) tmp=tmp[-1];
@@ -362,23 +442,13 @@ array hide_whitespaces(array tokens)
   return ret;
 }
 
-/* This module must work with Pike 7.0 */
-#if constant(Array.flatten)
-#define FLATTEN Array.flatten
-#else
-#define FLATTEN flatten
-array flatten(array a)
-{
-  array ret=({});
-  foreach(a, a) ret+=arrayp(a)?flatten(a):({a});
-  return ret;
-}
-#endif
-
+//! Reconstitutes the token array into a plain string again; essentially
+//! reversing @[split()] and whichever of the @[tokenize], @[group] and
+//! @[hide_whitespaces] methods may have been invoked.
 string simple_reconstitute(array(string|object(Token)|array) tokens)
 {
   string ret="";
-  foreach(FLATTEN(tokens), mixed tok)
+  foreach(Array.flatten(tokens), mixed tok)
     {
       if(objectp(tok))
 	tok=tok->text + tok->trailing_whitespaces;
@@ -388,27 +458,30 @@ string simple_reconstitute(array(string|object(Token)|array) tokens)
   return ret;
 }
 
+//! Like @[simple_reconstitute], but adding additional @tt{#line n "file"@}
+//! preprocessor statements in the output whereever a new line or
+//! file starts.
 string reconstitute_with_line_numbers(array(string|object(Token)|array) tokens)
 {
   int line=1;
   string file;
   string ret="";
-  foreach(FLATTEN(tokens), mixed tok)
+  foreach(Array.flatten(tokens), mixed tok)
     {
       if(objectp(tok))
       {
 	if((tok->line && tok->line != line) ||
 	   (tok->file && tok->file != file))
 	{
-	  if(strlen(ret) && ret[-1]!='\n') ret+="\n";
+	  if(sizeof(ret) && ret[-1]!='\n') ret+="\n";
 	  line=tok->line;
 	  if(tok->file) file=tok->file;
-	  ret+=sprintf("#line %d %O\n",line,file);
+	  ret+=sprintf("#line %d %O\n",line,file||"-");
 	}
 	tok=tok->text + tok->trailing_whitespaces;
       }
       ret+=tok;
-      line+=sizeof(tok/"\n")-1;
+      line+=String.count(tok,"\n");
     }
 
   return ret;

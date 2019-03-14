@@ -1,17 +1,17 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* fsort- a smarter quicksort /Hubbe */
 /* Optimized for minimum amount of compares */
 
 #include "global.h"
 #include "pike_error.h"
 #include "fsort.h"
-#include "main.h"
-
-RCSID("$Id: fsort.c,v 1.15 2000/12/01 08:09:47 hubbe Exp $");
+#include "pike_embed.h"
+#include "pike_macros.h"
 
 #define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )
 #define EXTRA_ARGS ,fsortfun cmpfun
@@ -61,8 +61,8 @@ RCSID("$Id: fsort.c,v 1.15 2000/12/01 08:09:47 hubbe Exp $");
 #undef EXTRA_ARGS
 #undef XARGS
 
-#define EXTRA_ARGS ,fsortfun cmpfun,long size, char *tmp_area
-#define XARGS ,cmpfun,size,tmp_area
+#define EXTRA_ARGS , fsortfun cmpfun, char *tmp_area, long size
+#define XARGS , cmpfun, tmp_area, size
 
 #define SWAP(X,Y) do { \
     MEMCPY(tmp_area,X,size); \
@@ -80,10 +80,10 @@ RCSID("$Id: fsort.c,v 1.15 2000/12/01 08:09:47 hubbe Exp $");
 #undef EXTRA_ARGS
 #undef XARGS
 
-void fsort(void *base,
-	   long elms,
-	   long elmSize,
-	   fsortfun cmpfunc)
+PMOD_EXPORT void fsort(void *base,
+		       long elms,
+		       long elmSize,
+		       fsortfun cmpfunc)
 {
 
   if(elms<=0) return;
@@ -108,9 +108,18 @@ void fsort(void *base,
   case 16: fsort_16((B16_T *)base,(elms-1)+(B16_T *)base, cmpfunc); break;
 #endif
   default:
-    fsort_n((char *)base,((char *)base) + elmSize * (elms - 1), cmpfunc, elmSize, (char *)alloca(elmSize));
+    {
+      /* NOTE: We need to put the alloca'd value in a variable,
+       *       otherwise cc/HPUX will generate broken code.
+       *       Hmm, that didn't work, but reordering the arguments,
+       *       putting size last seems to have fixed the problem...
+       *       /grubba hunting compiler bugs 2002-09-03
+       */
+      char *buf = alloca(elmSize);
+
+      fsort_n((char *)base,((char *)base) + elmSize * (elms - 1),
+	      cmpfunc, buf, elmSize);
+    }
   }
 
 }
-
-

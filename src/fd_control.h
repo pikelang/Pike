@@ -1,12 +1,9 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-
 /*
- * $Id: fd_control.h,v 1.6 2000/12/16 05:24:40 marcus Exp $
- */
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #ifndef FD_CONTROL_H
 #define FD_CONTROL_H
 

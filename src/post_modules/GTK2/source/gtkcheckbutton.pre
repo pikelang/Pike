@@ -1,0 +1,52 @@
+/* -*- C -*- */
+class GTK2.CheckButton;
+inherit GTK2.ToggleButton;
+
+//! Check buttons inherent many properties and functions from the the
+//! toggle buttons, but look a little different. Rather than
+//! being buttons with text inside them, they are small squares with
+//! the text to the right of them. These are often used for toggling
+//! options on and off in applications.
+//! IMG: GTK2.CheckButton( "title" )
+
+//! Style properties:
+//! int indicator-size
+//! int indicator-spacing
+
+void create(string|mapping|void label_or_props, ?int mnemonic)
+//! The argument, if specified, is the label of the item.
+//! If no label is specified, use object->add() to add some
+//! other widget (such as an pixmap or image widget)
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
+      struct pike_string *t;
+      GtkWidget *gcb;
+      INT_TYPE nem=0;
+
+      get_all_args("create",args,"%T.%i",&t,&nem);
+      if (t) {
+	ref_push_string(t);
+	f_string_to_utf8(1);
+	if (nem)
+	  gcb=gtk_check_button_new_with_mnemonic(CGSTR0(Pike_sp[-1].u.string));
+	else
+	  gcb=gtk_check_button_new_with_label(CGSTR0(Pike_sp[-1].u.string));
+	pop_stack();
+      } else
+	gcb=gtk_check_button_new();
+      THIS->obj=G_OBJECT(gcb);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_CHECK_BUTTON);
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gcb;
+    gcb=gtk_check_button_new();
+    THIS->obj=G_OBJECT(gcb);
+  }
+  pgtk2__init_this_object();
+}
+

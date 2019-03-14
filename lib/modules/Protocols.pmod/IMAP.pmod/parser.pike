@@ -266,7 +266,7 @@ mapping get_any(int max_depth, int eol, int accept_options, function c)
   case "list":
     return collect_list(max_depth - 1, ')', accept_options, handle_list(c))->collect();
   default:
-    throw( ({ "IMAP: Internal error!\n", backtrace() }) );
+    error( "IMAP: Internal error!\n" );
   }
 }
 

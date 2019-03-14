@@ -28,7 +28,7 @@ Event.Event make_event(string source)
 	     "\"%s\"%*[ \t]%[^\n]",
 	     id,flags,s,rule)!=9)
       error("Events: rule error; unknown format:\n%O\n",source);
-   if (search(rule,"\"")!=-1) 
+   if (has_value(rule, "\""))
    {
       if (sscanf(source, "%*[ \t]Event%*[ \t]"
 		 "\"%[^\"]\"%*[ \t]%[-a-z]%*[ \t]"
@@ -67,9 +67,10 @@ Event.Event make_event(string source)
 
       case "WDRel":
    // WDRel May Fri 1st
+	 days=1;
 	 if (sscanf(rule,
 		    "WDRel%*[ \t]%s%*[ \t]%s%*[ \t]%d%*[a-z]%*[ \t]%d days",
-		    mn,wd,n,days)>=5 &&
+		    mn,wd,n,days)>=7 &&
 	     month2n[mn] && wd2n[wd] && n>0)
 	 {
 	    Event.Event e=
@@ -79,9 +80,10 @@ Event.Event make_event(string source)
 	    return e;
 	 }
    // WDRel May Fri last
+	 days=1;
 	 if (sscanf(rule,
 		    "WDRel%*[ \t]%s%*[ \t]%s%*[ \t]%s%*[ \t]%d days",
-		    mn,wd,a,days)>=5 && a=="last" &&
+		    mn,wd,a,days)>=6 && a=="last" &&
 	     (m=month2n[mn]) && wd2n[wd])
 	 {
 	    m=(m%12)+1;
@@ -92,11 +94,12 @@ Event.Event make_event(string source)
 	    return e;
 	 }
    // WDRel May 17 Fri +17 excl
-	 days=a=0;
+	 a=0;
+	 days=1;
 	 if (sscanf(rule,
 		    "WDRel%*[ \t]%[A-z]%*[ \t]%d%*[ \t]%s%*[ \t]"
 		    "%d%*[ \t]%[a-z]%*[ \t]%d days",
-		    mn,md,wd,n,a,days)>=9 && a && a!="" &&
+		    mn,md,wd,n,a,days)>=10 && a && a!="" &&
 	     (m=month2n[mn]) && wd2n[wd])
 	 {
 	    if (!(<"incl","excl">)[a])
@@ -111,10 +114,11 @@ Event.Event make_event(string source)
 	    return e;
 	 }
    // WDRel May 17 Fri +17
+	 days=1;
 	 if (sscanf(rule,
 		    "WDRel%*[ \t]%[A-z]%*[ \t]%d%*[ \t]%[^ \t]%*[ \t]"
 		    "%d%*[ \t]%d days",
-		    mn,md,wd,n,days)>=7 && 
+		    mn,md,wd,n,days)>=8 && 
 	     (m=month2n[mn]) && wd2n[wd])
 	 {
 	    m=(m%12)+1;
@@ -137,7 +141,29 @@ Event.Event make_event(string source)
 		    n,days)>=2)
 	    return Event.Easter_Relative(id,s,n);
 	 error("Events: rule error; unknown rule format:\n%O\n",source);
-	 
+
+      case "Equinox":
+	 if (sscanf(rule, "Equinox%*[ \t]%s", string type)) {
+	    switch(String.trim_all_whites(type)) {
+	    case "Vernal": case "Northward":
+	       return Event.Solar(0);
+	    case "Autumnal": case "Southward":
+	       return Event.Solar(2);
+	    }
+	 }
+	 error("Events: rule error; unknown rule format:\n%O\n",source);
+
+      case "Solstice":
+	 if (sscanf(rule, "Solstice%*[ \t]%s", string type)) {
+	    switch(String.trim_all_whites(type)) {
+	    case "Summer": case "Northern":
+	       return Event.Solar(1);
+	    case "Winter": case "Southern":
+	       return Event.Solar(3);
+	    }
+	 }
+	 error("Events: rule error; unknown rule format:\n%O\n",source);
+
       case "Weekday":
 	 if (sscanf(rule,"Weekday%*[ \t]%s%*[ \t]%d days",
 		    wd,days)>=2 && (n=wd2n[wd]))
@@ -184,10 +210,10 @@ Event.Namedays find_namedays(string region)
    string all=read_all_namedays();
 
    int i=search(all,"\nRegion \""+region+"\"");
-   if (i==-1) return ([])[0]; // not found
+   if (i==-1) return UNDEFINED; // not found
 
    int i2=search(all,"\nRegion",i+1);
-   if (i2==-1) i2=strlen(all)-1;
+   if (i2==-1) i2=sizeof(all)-1;
 
    array(array(string)) names=0;
    int start=-1,stop=-1;
@@ -210,7 +236,7 @@ Event.Namedays find_namedays(string region)
 	    break;
 	 case "charset":
 	    sscanf(s,"%s",charset);
-	    object dec=Locale.Charset.decoder(charset);
+	    object dec=Charset.decoder(charset);
 	    decoder=lambda(string s)
 		    {
 		       return dec->feed(s)->drain();
@@ -279,7 +305,7 @@ Event.Event find_event(string s)
       return find_namedays(s[9..]);
 
    int i=search(all_data,sprintf("Event %O",s));
-   if (i==-1) return ([])[0];
+   if (i==-1) return UNDEFINED;
    
    int j=search(all_data,"\n",i);
    if (j==-1) j=0x7fffffff;
@@ -294,13 +320,13 @@ Event.Event find_region(string c)
    if (!all_data) read_all_data();
 
    int i=search(all_data,sprintf("\nRegion %O",c));
-   if (i==-1) return ([])[0];
+   if (i==-1) return UNDEFINED;
    
    int j=search(all_data,"\nRegion \"",i+1);
    if (j==-1) j=0x7fffffff;
 
-   array(Event) events=({});
-   mapping(Event:multiset(string)) eflags=([]);
+   array(Event.Event) events=({});
+   mapping(Event.Event:multiset(string)) eflags=([]);
    mapping(string:multiset(string)) flagy=([]);
 
    foreach ( (all_data[i..j]/"\n")[2..], string line)
@@ -371,7 +397,7 @@ program|Event.Event `[](string s)
 {
    return ::`[](s) || magic_event(s);
 }
-function `-> = `[];
+program|Event.Event `-> (string s) {return `[] (s);}
 
 // Don't load Geogrphy.Countries unless we have to
 object country_lookup=0;
@@ -394,7 +420,7 @@ Event.Event|Event.Namedays magic_event(string s)
    if (s=="tzshift") 
       return loaded_events->tzshift=Event.TZShift_Event();
 
-   return ([])[0];
+   return UNDEFINED;
 }
 
 Event.SuperEvent country(string s)
@@ -410,4 +436,3 @@ Event.SuperEvent event(string s)
 }
 
 mapping made_events=([]);
-

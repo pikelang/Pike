@@ -1,19 +1,8 @@
-# $Id: configure.in,v 1.28 2001/09/25 00:55:59 hubbe Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
-AC_ARG_WITH(bignums, [  --with(out)-bignums    Support automatic bignum conversion],[],[with_bignums=yes])
 
 AC_MODULE_INIT()
-
-# Check if we're cross-compiling.
-
-CROSS="$ac_cv_prog_cc_cross"
-# newer autoconf
-if test x"$CROSS" = x; then
-   CROSS="$cross_compiling"
-fi
-AC_SUBST(CROSS)
 
 #############################################################################
 # Copied from ../../configure.in
@@ -85,27 +74,20 @@ __MPN(PiKe)
       AC_DEFINE_UNQUOTED(PIKE_MPN_PREFIX, $PIKE_PREFIX_NAME)
     fi
 
-dnl 
-dnl  Autoconf 2.52 seems to barf on this undefine for
-dnl  some unknown reason. This file should work just
-dnl  as well without it.
-dnl
-dnl    undefine(PIKE_PREFIX_NAME)
-
     AC_MSG_CHECKING(working <$2>)
     AC_CACHE_VAL(pike_cv_working_$1,[
       OLDLIBS="${LIBS-}"
       LIBS="${LIBS-} -l$1"
       AC_TRY_RUN([
-#include <stdio.h>
-
-/* Kludge for some compilers only defining __STDC__ in strict mode. */
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
 #if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
 #define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#define PIKE_MPN_CONCAT(x,y)		PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)			PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
 #endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
+#include <stdio.h>
 #include <$2>
 int main(int argc, char **argv)
 {
@@ -119,20 +101,20 @@ int main(int argc, char **argv)
  mpz_mul(tmp,tmp,tmp2);
  mpz_mul(tmp,tmp,tmp2);
  /* fprintf(stderr,"FNORD: %d\n",mpz_sizeinbase(tmp,10)); */
-  exit( mpz_sizeinbase(tmp,10) !=  9*4+1 );
+  return mpz_sizeinbase(tmp,10) !=  9*4+1;
 }
 
       ],pike_cv_working_$1=yes,pike_cv_working_$1=no,
         AC_TRY_LINK([
-#include <stdio.h>
-
-/* Kludge for some compilers only defining __STDC__ in strict mode. */
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
 #if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
 #define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#define PIKE_MPN_CONCAT(x,y)		PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)			PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
 #endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
+#include <stdio.h>
 #include <$2>
 
         ],[
@@ -146,90 +128,270 @@ int main(int argc, char **argv)
    	  mpz_mul(tmp,tmp,tmp2);
    	  mpz_mul(tmp,tmp,tmp2);
    	  /* fprintf(stderr,"FNORD: %d\n",mpz_sizeinbase(tmp,10)); */
-  	  exit( mpz_sizeinbase(tmp,10) !=  9*4+1 );
+  	  return mpz_sizeinbase(tmp,10) !=  9*4+1;
         ],pike_cv_working_$1=yes,pike_cv_working_$1=no)
       )
     ])
     LIBS="$OLDLIBS"
     if test "x$pike_cv_working_$1" = xyes; then
-      PIKE_FEATURE_OK([Gmp (bignums)])
       AC_MSG_RESULT(yes)
-      AC_DEFINE(translit(HAVE_LIB$1,[a-z],[A-Z]))
       LIBS="${LIBS-} -l$1"
+
+      AC_MSG_CHECKING([gmp version])
+dnl figure out version; not necessary, but pretty
+      rm config.gmpversion 2>/dev/null
+      AC_TRY_RUN([
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)		PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)			PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
+#include <gmp.h>
+#include <stdio.h>
+
+int main()
+{
+   FILE *ver=fopen("config.gmpversion","w+");
+   fprintf(ver,"%s\n",gmp_version);
+   return 0;
+}],[],[],[:])
+      if test -f config.gmpversion; then
+	 gmpversion=`cat config.gmpversion`
+	 AC_MSG_RESULT($gmpversion)
+	 PIKE_FEATURE([Gmp (bignums)],[yes (version $gmpversion, using lib$1)])
+      else
+         AC_MSG_RESULT(unknown)
+         PIKE_FEATURE([Gmp (bignums)],[yes (using lib$1)])
+      fi
+      AC_DEFINE(translit(HAVE_LIB$1,[a-z],[A-Z]))
       done=yes
     else
       AC_MSG_RESULT(no)
     fi
-  ])
+  ],,[
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)		PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)			PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
+#include <stdio.h>
+])
 
   if test "x$done" = "xno"; then
     $3
     :
+  else
+    # Now we can enable the __STDC__ kludge globally.
+    echo >>confdefs.h '
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)		PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)			PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
+'
+  fi
+])
+
+define(CHECK_GMP_FUNC,
+[
+  AC_MSG_CHECKING([for $1])
+  AC_CACHE_VAL([pike_cv_have_gmp_$1], [
+    AC_TRY_LINK([
+#ifdef HAVE_GMP2_GMP_H
+#include <gmp2/gmp.h>
+#elif defined (HAVE_GMP_H)
+#include <gmp.h>
+#endif
+      ], [$2], [pike_cv_have_gmp_$1=yes], [pike_cv_have_gmp_$1=no])
+  ])
+  AC_MSG_RESULT([$pike_cv_have_gmp_$1])
+  if test x"$pike_cv_have_gmp_$1" = xyes; then
+    AC_DEFINE(HAVE_[]translit($1,[a-z],[A-Z]))
   fi
 ])
 
 PIKE_FEATURE_WITHOUT([Gmp (bignums)])
 
-if test x$with_gmp = xyes -a "x$enable_binary" != "xno" ; then
+if test x$with_gmp = xyes ; then
   PIKE_FEATURE_NODEP([Gmp (bignums)])
-  AC_CHECK_GMP(gmp2,gmp2/gmp.h,[
-    AC_CHECK_GMP(gmp,gmp.h,[
-      if test "x$with_bignums" = xyes ; then
-        AC_MSG_ERROR([Cannot compile --with-bignums without the GMP library
-It is highly recommended that you install a working GMP
-library on your system as that will add features to Pike
-required by many applications.  (Such as Roxen) However,
-if you know that you do not need GMP, you may re-run configure
-with the option --without-bignums instead.
-])
-      fi
-    ])
+
+  # Kludge for yet more autoconf breakage: We need this dummy use of
+  # AC_TRY_LINK since it in (at least) autoconf 2.64 expands to a
+  # function definition the first time it's used, but if that is
+  # inside a branch that never is executed (such as the
+  # cross-compilation case inside AC_CHECK_GMP above), we become
+  # unhappy afterwards.
+  AC_TRY_LINK([], [], [], [])
+
+  AC_CHECK_GMP(gmp2, gmp2/gmp.h, [
+    AC_CHECK_GMP(gmp, gmp.h)
   ])
-  AC_CHECK_FUNC(__gmpz_popcount, AC_DEFINE_UNQUOTED(HAVE_MPZ_POPCOUNT))
+  if test "$ac_cv_header_gmp2_gmp_h:$pike_cv_working_gmp2" = "yes:yes" \
+       -o "$ac_cv_header_gmp_h:$pike_cv_working_gmp" = "yes:yes"; then
+  CHECK_GMP_FUNC(mpz_popcount, [mpz_t a; mpz_popcount(a)])
+  CHECK_GMP_FUNC(mpz_xor, [mpz_t a, b, c; mpz_xor(a, b, c)])
+  CHECK_GMP_FUNC(mpz_import, [mpz_t a; mpz_import(a, 1, 1, 1, 0, 0, 0)])
+  CHECK_GMP_FUNC(mpz_fits_ulong_p, [mpz_t a; mpz_fits_ulong_p (a)])
+  CHECK_GMP_FUNC(mpz_bin_ui, [mpz_t a, b; mpz_bin_ui(a, b, 1)])
+  CHECK_GMP_FUNC(mpz_divisible_p, [mpz_t a, b; mpz_divisible_p(a, b)])
+
+  echo >>confdefs.h '
+#ifdef HAVE_GMP2_GMP_H
+#include <gmp2/gmp.h>
+#elif defined (HAVE_GMP_H)
+#include <gmp.h>
+#endif'
+
+  AC_CHECK_SIZEOF(mp_limb_t, 0)
+
+  # Some packages of gmp have a gmp.h that lies about the number
+  # bits in limbs when running with the non-default ABI.
+  # (eg /opt/csw/include/gmp.h on Solaris 10/sparc).
+  AC_MSG_CHECKING(if GMP_NUMB_BITS is valid and lacks nails)
+  AC_CACHE_VAL([pike_cv_gmp_numb_bits_valid], [
+    AC_TRY_COMPILE([
+#if GMP_NUMB_BITS != (SIZEOF_MP_LIMB_T * CHAR_BIT)
+#error Cannot cope with GMP using nail bits.
+#error GMP_NUMB_BITS != (SIZEOF_MP_LIMB_T * CHAR_BIT)
+#endif
+    ], [], [pike_cv_gmp_numb_bits_valid=yes], [pike_cv_gmp_numb_bits_valid=no])
+  ])
+  AC_MSG_RESULT($pike_cv_gmp_numb_bits_valid)
+
+  if test "x$pike_cv_gmp_numb_bits_valid" = "xno"; then
+    AC_DEFINE(PIKE_GMP_LIMB_BITS_INVALID)
+
+    AC_MSG_CHECKING(for the actual number of numb bits)
+    AC_CACHE_VAL([pike_cv_actual_gmp_numb_bits], [
+      rm -f confdefs.out.2
+      AC_TRY_RUN([
+#include <stdio.h>
+
+        int main(int argc, char **argv)
+	{
+	  mpz_t mpz;
+	  mp_limb_t limb;
+	  int bits = 0;
+	  FILE *fp = fopen("confdefs.out.2", "w");
+	  /* weird filename to circumvent configure weirdness */
+	  if (!fp) return 1;
+
+	  mpz_init(mpz);
+	  mpz_set_ui(mpz, 1);
+	  limb = mpz_getlimbn(mpz, 0);
+	  while ((mpz->_mp_size < 2) || !(mpz_getlimbn(mpz, 1) & 1)) {
+	    mpz_mul_2exp(mpz, mpz, 1);
+	    bits++;
+	  }
+	  fprintf(fp, "%d\n", bits);
+	  return 0;
+	}
+      ], [
+        pike_cv_actual_gmp_numb_bits="`cat confdefs.out.2`"
+	rm -f confdefs.out.2
+      ], [
+        pike_cv_actual_gmp_numb_bits=""
+      ], [
+        pike_cv_actual_gmp_numb_bits=""
+      ])
+    ])
+    if test "x$pike_cv_actual_gmp_numb_bits" = "x"; then
+      AC_MSG_RESULT([unknown - using $ac_cv_sizeof_mp_limb_t * CHAR_BIT])
+    else
+      AC_MSG_RESULT($pike_cv_actual_gmp_numb_bits)
+      AC_DEFINE_UNQUOTED(PIKE_GMP_NUMB_BITS, $pike_cv_actual_gmp_numb_bits)
+    fi
+  fi
+
+  AC_MSG_CHECKING([if mpz_getlimbn works])
+  AC_CACHE_VAL([pike_cv_mpz_getlimbn_works], [
+    rm -f confdefs.out.2 2>/dev/null
+    AC_TRY_RUN([
+#ifdef HAVE_GMP2_GMP_H
+#include <gmp2/gmp.h>
+#elif defined (HAVE_GMP_H)
+#include <gmp.h>
+#endif
+
+#include <stdio.h>
+
+int main()
+{
+  mpz_t mpz;
+  mpz_init (mpz);
+  mpz_set_si (mpz, -1);
+  /* mpz_getlimbn in e.g. gmp 2.0 does not understand that negative numbers
+   * have negative size fields. */
+  return mpz_getlimbn (mpz, 0) == 0;
+}],
+      [pike_cv_mpz_getlimbn_works=yes],
+      [pike_cv_mpz_getlimbn_works=no],
+      [pike_cv_mpz_getlimbn_works=no])
+  ])
+  AC_MSG_RESULT([$pike_cv_mpz_getlimbn_works])
+  if test "$pike_cv_mpz_getlimbn_works" = yes; then
+    AC_DEFINE(MPZ_GETLIMBN_WORKS)
+  fi
+
+  AC_MSG_CHECKING([if mpz_set_si works])
+  AC_CACHE_VAL([pike_cv_mpz_set_si_works], [
+    rm -f confdefs.out.2 2>/dev/null
+    AC_TRY_RUN([
+#ifdef HAVE_GMP2_GMP_H
+#include <gmp2/gmp.h>
+#elif defined (HAVE_GMP_H)
+#include <gmp.h>
+#endif
+
+#include <stdio.h>
+#include <limits.h>
+
+int main()
+{
+  mpz_t mpz;
+  mpz_init (mpz);
+  mpz_set_si (mpz, LONG_MIN);
+  /* mpz_set_si in e.g. gmp 2.0 stores LONG_MIN with sign extension in the limb,
+   * which breaks if the mp_limb_t is bigger than long. */
+  return mpz->_mp_d[0] != (mp_limb_t) (unsigned long) LONG_MIN;
+}],
+      [pike_cv_mpz_set_si_works=yes],
+      [pike_cv_mpz_set_si_works=no],
+      [pike_cv_mpz_set_si_works=no])
+  ])
+  AC_MSG_RESULT([$pike_cv_mpz_set_si_works])
+  if test "$pike_cv_mpz_set_si_works" = yes; then
+    AC_DEFINE(MPZ_SET_SI_WORKS)
+  fi
+  else
+    AC_MSG_ERROR([Cannot compile bignums without the GMP library. To
+compile Pike you are required to install a working GMP
+library on your system.
+    ])
+  fi
+
+  AC_MSG_CHECKING([if mpz_t has _mp_alloc])
+  AC_CACHE_VAL(pike_cv_mpz_t_has__mp_alloc, [
+    AC_TRY_COMPILE([
+    ],[
+      int s;
+      mpz_t foo;
+      s = foo[0]._mp_alloc;
+    ], pike_cv_mpz_t_has__mp_alloc=yes, pike_cv_mpz_t_has__mp_alloc=no)
+  ])
+  AC_MSG_RESULT($pike_cv_mpz_t_has__mp_alloc)
+  if test "$pike_cv_mpz_t_has__mp_alloc" = "yes"; then
+    AC_DEFINE(MPZ_T_HAS__MP_ALLOC)
+  fi
 fi
 
-AC_MSG_CHECKING(if INT_TYPE is bigger then signed long int)
-
-AC_CACHE_VAL(pike_cv_big_pike_int, [
-
-  AC_TRY_RUN([
-  #include "global.h"
-  
-  int main()
-  {
-     return !(sizeof(INT_TYPE)<=sizeof(signed long int));
-  }],[
-    pike_cv_big_pike_int=no
-  ],[
-    AC_TRY_RUN([
-    #include "global.h"
-    
-    int main()
-    {
-       return !(sizeof(INT_TYPE)>sizeof(signed long int));
-    }],[
-      pike_cv_big_pike_int=yes
-    ],[
-      :
-    ],[
-      :
-    ])
-  ], [
-    # FIXME: Add proper test.
-    :
-  ])
-])
-  
-if test "x$pike_cv_big_pike_int" = "xyes"; then
-  AC_DEFINE(BIG_PIKE_INT)
-  AC_MSG_RESULT(yes)
-else
-  if test "x$pike_cv_big_pike_int" = "xno"; then
-    AC_MSG_RESULT(no)
-  else
-    AC_MSG_RESULT(unknown)
-  fi
-fi  
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

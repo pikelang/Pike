@@ -1,30 +1,43 @@
+#pike __REAL_VERSION__
+
 //! Display a image on the screen. Requires GTK.
 
+#if constant(GTK2.Window)
+// Toplevel compat for GTK2
+constant GTK = GTK2;
+class GDK { constant Pixmap = GTK2.GdkPixmap; }
+#define USE_GTK2
+#endif
+
 inherit GTK.Window;
+
+#ifdef USE_GTK2
+// Compat for old Window functions
+void set_background(GTK2.GdkPixmap p) { get_window()->set_background(p); }
+GTK2.GdkWindow get_gdkwindow() { return get_window(); }
+void set_policy( int a, int b, int c ) { set_resizable(a||b); }
+void set_usize(int w, int h) { set_size_request(w, h); }
+void set_app_paintable(int flag) { (flag? set_flags:unset_flags)(GTK2.APP_PAINTABLE); }
+#endif
 
 typedef Standards.URI|string|Image.Image|Image.Layer|array(Image.Layer) PVImage;
 //! The image types accepted. If the image is a string, it is assumed
 //! to be a filename of a image that can be loaded with Image.load. 
 //! This includes URLs.
 
-enum AlphaMode {
-  Squares,
-  Solid,
-  None,
-  AlphaOnly,
-};
 //! The alpha combination modes.
 //!
-//! Squares: Checkerboard pattern
-//! Solid: Solid color
-//! None: Ignore alpha
-//! AlphaOnly: Only show the alpha channel, if any.
-//!
-//! Use @[set_alpha_mode] to change the mode.
+//! Use @[set_alpha_mode()] to change the mode.
+enum AlphaMode {
+  Squares,	//! Checkerboard pattern (default).
+  Solid,	//! Solid color.
+  None,		//! Ignore alpha.
+  AlphaOnly,	//! Only show the alpha channel (if any).
+};
 
 
 #define STEP 30
-static {
+protected {
  GDK.Pixmap pixmap;
  PVImage old_image;
  AlphaMode alpha_mode;
@@ -63,9 +76,9 @@ static {
    }
  }
 
- string _sprintf( )
+ string _sprintf(int t)
  {
-   return sprintf( "Tools.PV(%O)", old_image );
+   return t=='O' && sprintf( "%O(%O)", this_program, old_image );
  }
 
  void create( PVImage i )
@@ -92,7 +105,10 @@ void set_alpha_mode( AlphaMode m )
 
 void set_alpha_colors( Image.Color.Color c1, Image.Color.Color|void c2 )
 //! Set the colors used for the alpha combination. @[c2] is only used
-//! for the @[Squares] mode,
+//! for the @[Squares] alpha mode.
+//!
+//! @seealso
+//!   @[set_alpha_mode()]
 {
   if( c1 ) alpha_color1 = c1;
   if( c2 ) alpha_color2 = c2;

@@ -1,0 +1,44 @@
+diff -U3 -Narp 7.7.orig/bin/smartlink 7.7/bin/smartlink
+--- 7.7.orig/bin/smartlink	2006-03-19 18:01:51.000000000 +0100
++++ 7.7/bin/smartlink	2006-08-09 02:07:32.940847999 +0200
+@@ -162,9 +162,8 @@ if test x$# != x0 ; then
+      LDOPTS="$LDOPTS -R$RPATH"
+    ;;
+    Linux\ 2.*)
+-     if test x$LINKING != xno -a "x$RPATH" != x ; then
+-      LDOPTS="$LDOPTS -Wl,-rpath,$RPATH"
+-     fi
++     LD_LIBRARY_PATH="$RPATH"
++     export LD_LIBRARY_PATH
+    ;;
+    UnixWare\ 7.*)
+      if test x$LINKING != xno -a "x$RPATH" != x ; then
+diff -U3 -Narp 7.7.orig/src/smartlink.c 7.7/src/smartlink.c
+--- 7.7.orig/src/smartlink.c	2006-08-09 01:30:57.000000000 +0200
++++ 7.7/src/smartlink.c	2006-08-09 02:07:32.940847999 +0200
+@@ -151,7 +151,7 @@ int main(int argc, char **argv)
+   full_rpath = rpath;
+ 
+ #ifdef USE_Wl
+-  strcat(rpath, "-Wl,-rpath,");
++  /* strcat(rpath, "-Wl,-rpath,"); */
+ #elif defined(USE_Wl_R)
+   strcat(rpath, "-Wl,-R");
+ #elif defined(USE_R)
+@@ -293,7 +293,7 @@ int main(int argc, char **argv)
+     }
+     rpath_in_use |= add_path(rpath, ld_lib_path);
+   }
+-
++#if 0
+   if (rpath_in_use) {
+     /* Delete the terminating ':' */
+     rpath[strlen(rpath) - 1] = 0;
+@@ -340,6 +340,7 @@ int main(int argc, char **argv)
+ #error Unknown method
+ #endif
+   }
++#endif
+ 
+   new_argv[new_argc++] = NULL;
+ 

@@ -1,9 +1,11 @@
-/* $Id: x.c,v 1.36 2001/06/29 15:15:31 marcus Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /*
 **! module Image
-**! note
-**!	$Id: x.c,v 1.36 2001/06/29 15:15:31 marcus Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -25,30 +27,28 @@
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.36 2001/06/29 15:15:31 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "pike_error.h"
-
-
-
 
 #include "image.h"
 #include "colortable.h"
 #include "builtin_functions.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
+#define sp Pike_sp
 
 /* #define BITDEBUG */
 
@@ -109,7 +109,7 @@ extern struct program *image_program;
 **! 
 */
 
-static unsigned char swap_bits[256] = 
+static const unsigned char swap_bits[256] =
 { 0,128,64,192,32,160,96,224,16,144,80,208,48,176,112,
   240,8,136,72,200,40,168,104,232,24,152,88,216,56,184,
   120,248,4,132,68,196,36,164,100,228,20,148,84,212,52,
@@ -144,65 +144,65 @@ static void image_x_encode_truecolor(INT32 args)
    if (args<10)
       Pike_error("Image.X.encode_truecolor: too few arguments (expected 10 arguments)\n");
    
-   if (sp[-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.X.encode_truecolor: illegal argument 1 (expected image object)\n");
    if (args>10)
-      if (sp[10-args].type!=T_OBJECT ||
+      if (TYPEOF(sp[10-args]) != T_OBJECT ||
 	  !(nct=(struct neo_colortable*)
 	    get_storage(sp[10-args].u.object,image_colortable_program)))
 	 Pike_error("Image.X.encode_truecolor: illegal argument 10 (expected colortable object)\n");
 	 
-   if (sp[1-args].type!=T_INT)
+   if (TYPEOF(sp[1-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor: illegal argument 2 (expected integer)\n");
    else
       bpp=sp[1-args].u.integer;
 
-   if (sp[2-args].type!=T_INT)
+   if (TYPEOF(sp[2-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor: illegal argument 3 (expected integer)\n");
    else
       alignbits=sp[2-args].u.integer;
 
    if (!alignbits) alignbits=1;
 
-   if (sp[3-args].type!=T_INT)
+   if (TYPEOF(sp[3-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor: illegal argument 4 (expected integer)\n");
    else
       swap_bytes=sp[3-args].u.integer;
 
-   if (sp[4-args].type!=T_INT)
+   if (TYPEOF(sp[4-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor: illegal argument 5 (expected integer)\n");
    else
       rbits=sp[4-args].u.integer;
 
-   if (sp[5-args].type!=T_INT)
+   if (TYPEOF(sp[5-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor: illegal argument 6 (expected integer)\n");
    else
       rshift=sp[5-args].u.integer;
 
-   if (sp[6-args].type!=T_INT)
+   if (TYPEOF(sp[6-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor: illegal argument 7 (expected integer)\n");
    else
       gbits=sp[6-args].u.integer;
 
-   if (sp[7-args].type!=T_INT)
+   if (TYPEOF(sp[7-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor: illegal argument 8 (expected integer)\n");
    else
       gshift=sp[7-args].u.integer;
 
-   if (sp[8-args].type!=T_INT)
+   if (TYPEOF(sp[8-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor: illegal argument 9 (expected integer)\n");
    else
       bbits=sp[8-args].u.integer;
 
-   if (sp[9-args].type!=T_INT)
+   if (TYPEOF(sp[9-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor: illegal argument 10 (expected integer)\n");
    else
       bshift=sp[9-args].u.integer;
 
    if (nct) 
    {
-      tmp=(rgb_group*)xalloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
+      tmp=xalloc(sizeof(rgb_group)*img->xsize*img->ysize +RGB_VEC_PAD);
       if (!image_colortable_map_image(nct,img->img,tmp,
 				      img->xsize*img->ysize,img->xsize))
       {
@@ -373,7 +373,7 @@ static INLINE void image_x_examine_mask(struct svalue *mask,
 					int *bits,int *shift)
 {
    unsigned long x;
-   if (mask->type!=T_INT)
+   if (TYPEOF(*mask) != T_INT)
       Pike_error("Image.X.encode_truecolor_masks: illegal %s (expected integer)\n",what);
 
    x=(unsigned long)mask->u.integer;
@@ -393,7 +393,7 @@ static INLINE void image_x_examine_mask(struct svalue *mask,
 static void image_x_call_examine_mask(INT32 args)
 {
    int bits,shift;
-   if (args<1 || sp[-args].type!=T_INT)
+   if (args<1 || TYPEOF(sp[-args]) != T_INT)
       Pike_error("Image.X.examine_mask: illegal argument(s)\n");
 
    image_x_examine_mask(sp-args,"argument 1",&bits,&shift);
@@ -411,21 +411,21 @@ static void image_x_encode_truecolor_masks(INT32 args)
 
    if (args<7) 
       Pike_error("Image.X.encode_truecolor_masks: too few arguments (expected 7 arguments)\n");
-   if (sp[-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
        !get_storage(sp[-args].u.object,image_program))
       Pike_error("Image.X.encode_truecolor_masks: illegal argument 1 (expected image object)\n");
 
    if (args>7)
-      if (sp[7-args].type!=T_OBJECT ||
+      if (TYPEOF(sp[7-args]) != T_OBJECT ||
 	  !get_storage(ct=sp[7-args].u.object,image_colortable_program))
 	 Pike_error("Image.X.encode_truecolor_masks: illegal argument 8 (expected colortable object)\n");
  
-   if (sp[1-args].type!=T_INT)
+   if (TYPEOF(sp[1-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor_masks: illegal argument 2 (expected integer)\n");
-   if (sp[2-args].type!=T_INT)
+   if (TYPEOF(sp[2-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor_masks: illegal argument 3 (expected integer)\n");
 
-   if (sp[3-args].type!=T_INT)
+   if (TYPEOF(sp[3-args]) != T_INT)
       Pike_error("Image.X.encode_truecolor_masks: illegal argument 4 (expected integer)\n");
 
    image_x_examine_mask(sp+4-args,"argument 3 (red mask)",&rbits,&rshift);
@@ -489,8 +489,8 @@ static void image_x_encode_pseudocolor_1byte_exact(INT32 args,
 					  (unsigned char*)(dest->str),
 					  img->xsize*img->ysize,img->xsize))
    {
-      free_string(end_shared_string(dest));
-      Pike_error("Image.x.encode_pseudocolor: colortable not initialised");
+      do_free_unlinked_pike_string (dest);
+      Pike_error("Image.x.encode_pseudocolor: colortable not initialised.\n");
    }
 
    if (!translate && !linemod)
@@ -534,7 +534,7 @@ static void image_x_encode_pseudocolor_1byte_exact(INT32 args,
 	 while (m--) *(d++)=0;
       }
 
-      free_string(end_shared_string(dest));
+      do_free_unlinked_pike_string (dest);
       pop_n_elems(args);
       push_string(end_shared_string(dest2));
    }
@@ -561,8 +561,8 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
 					  (unsigned char*)(dest->str),
 					  img->xsize*img->ysize,img->xsize))
    {
-      free_string(end_shared_string(dest));
-      Pike_error("Image.x.encode_pseudocolor: colortable not initialised");
+      do_free_unlinked_pike_string (dest);
+      Pike_error("Image.x.encode_pseudocolor: colortable not initialised.\n");
    }
 
    dest2=begin_shared_string(((img->xsize*bpp+blinemod)*img->ysize+7)/8);
@@ -586,7 +586,7 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
 	 x=img->xsize; 
 	 while (x--) 
 	 {
-	    b = (translate[*(s++)]<<(32-vbpp)) && 0xffffffff;
+	    b = (translate[*(s++)]<<(32-vbpp)) & 0xffffffff;
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
@@ -605,7 +605,7 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
 	 x=img->xsize; 
 	 while (x--) 
 	 {
-	    b = ((*(s++))<<(32-bpp)) & 0xffffffff;
+	    b = (((unsigned long)*(s++))<<(32-bpp)) & 0xffffffff;
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
@@ -637,7 +637,7 @@ static void image_x_encode_pseudocolor_1byte(INT32 args,
       if (bit==8) *(++d)=0,bit=0;
    }
 
-   free_string(end_shared_string(dest));
+   do_free_unlinked_pike_string (dest);
    pop_n_elems(args);
    push_string(end_shared_string(dest2));
 }
@@ -662,8 +662,8 @@ static void image_x_encode_pseudocolor_2byte(INT32 args,
 					  (unsigned char*)(dest->str),
 					  img->xsize*img->ysize,img->xsize))
    {
-      free_string(end_shared_string(dest));
-      Pike_error("Image.x.encode_pseudocolor: colortable not initialised");
+      do_free_unlinked_pike_string (dest);
+      Pike_error("Image.x.encode_pseudocolor: colortable not initialised.\n");
    }
 
    dest2=begin_shared_string(((img->xsize*bpp+blinemod)*img->ysize+7)/8);
@@ -681,7 +681,10 @@ static void image_x_encode_pseudocolor_2byte(INT32 args,
 	 x=img->xsize; 
 	 while (x--) 
 	 {
-	    b=ntohs(translate[*(s++)])<<(32-vbpp); 
+	   /* NOTE: The ntohs macro may evaluate it's argument more
+	    * than once. */
+	    unsigned short t = translate[*(s++)];
+	    b=(unsigned long)ntohs(t)<<(32-vbpp); 
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
@@ -700,7 +703,7 @@ static void image_x_encode_pseudocolor_2byte(INT32 args,
 	 x=img->xsize; 
 	 while (x--) 
 	 {
-	    b=(*(s++))<<(32-bpp); 
+	    b=(unsigned long)(*(s++))<<(32-bpp); 
 	    bp = bpp;
 	    while (bp>8-bit)
 	    {
@@ -720,7 +723,7 @@ static void image_x_encode_pseudocolor_2byte(INT32 args,
       if (bit==8) *(++d)=0,bit=0;
    }
 
-   free_string(end_shared_string(dest));
+   do_free_unlinked_pike_string (dest);
    pop_n_elems(args);
    push_string(end_shared_string(dest2));
 }
@@ -734,27 +737,27 @@ void image_x_encode_pseudocolor(INT32 args)
    
    if (args<5) 
       Pike_error("Image.X.encode_pseudocolor: too few arguments");
-   if (sp[1-args].type!=T_INT)
+   if (TYPEOF(sp[1-args]) != T_INT)
       Pike_error("Image.X.encode_pseudocolor: illegal argument 2 (expected integer)\n");
-   if (sp[2-args].type!=T_INT)
+   if (TYPEOF(sp[2-args]) != T_INT)
       Pike_error("Image.X.encode_pseudocolor: illegal argument 3 (expected integer)\n");
-   if (sp[3-args].type!=T_INT)
+   if (TYPEOF(sp[3-args]) != T_INT)
       Pike_error("Image.X.encode_pseudocolor: illegal argument 4 (expected integer)\n");
    bpp=sp[1-args].u.integer;
    alignbits=sp[2-args].u.integer;
    vbpp=sp[3-args].u.integer;
    if (!alignbits) alignbits=1;
 
-   if (sp[-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.X.encode_pseudocolor: illegal argument 1 (expected image object)\n");
-   if (sp[4-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[4-args]) != T_OBJECT ||
        !(nct=(struct neo_colortable*)
 	 get_storage(sp[4-args].u.object,image_colortable_program)))
       Pike_error("Image.X.encode_pseudocolor: illegal argument 4 (expected colortable object)\n");
 
    if (args>5) {
-      if (sp[5-args].type!=T_STRING)
+      if (TYPEOF(sp[5-args]) != T_STRING)
 	 Pike_error("Image.X.encode_pseudocolor: illegal argument 6 (expected string)\n");
       else if (sp[5-args].u.string->len!=((vbpp>8)?2:1)<<vbpp)
 	 Pike_error("Image.X.encode_pseudocolor: illegal argument 6 "
@@ -765,7 +768,7 @@ void image_x_encode_pseudocolor(INT32 args)
 	 translate=sp[5-args].u.string->str;
    } 
    if ( vbpp==8 && bpp==8 && !((bpp*img->xsize)%alignbits) )
-      image_x_encode_pseudocolor_1byte_exact(args,img,nct,vbpp,bpp,alignbits,
+      image_x_encode_pseudocolor_1byte_exact(args,img,nct,bpp,vbpp,alignbits,
 					     (unsigned char*)translate);
    else if (vbpp<=8) 
       image_x_encode_pseudocolor_1byte(args,img,nct,bpp,vbpp,alignbits,
@@ -800,9 +803,10 @@ static void image_x_decode_truecolor(INT32 args)
 
    if (args<12) 
       Pike_error("Image.X.decode_truecolor: too few arguments\n");
-   if (sp[-args].type!=T_STRING) Pike_error("Image.X.decode_truecolor: illegal argument 1\n");
+   if (TYPEOF(sp[-args]) != T_STRING)
+      Pike_error("Image.X.decode_truecolor: illegal argument 1\n");
    for (i=1; i<12; i++)
-      if (sp[i-args].type!=T_INT) 
+      if (TYPEOF(sp[i-args]) != T_INT)
 	 Pike_error("Image.X.decode_truecolor: illegal argument %d\n",i+1);
 
    ps=sp[-args].u.string;
@@ -827,7 +831,7 @@ static void image_x_decode_truecolor(INT32 args)
 
    if (args>12)
    {
-      if (sp[12-args].type!=T_OBJECT ||
+      if (TYPEOF(sp[12-args]) != T_OBJECT ||
 	  !(nct=(struct neo_colortable*)
 	    get_storage(sp[12-args].u.object,image_colortable_program)))
 	 Pike_error("Image.X.decode_truecolor: illegal argument 13, expected colortable\n");
@@ -934,8 +938,8 @@ static void image_x_decode_truecolor(INT32 args)
 	 COLORTYPE *gtbl=alloca(1<<gbits);
 	 COLORTYPE *btbl=alloca(1<<bbits);
 	 if (!rtbl || !gtbl || !btbl)
-	    resource_error(NULL,0,0,"memory",(1<<rbits)+(1<<rbits)+(1<<rbits),
-			   "Out of memory.\n");
+	   SIMPLE_OUT_OF_MEMORY_ERROR("decode_truecolor",
+				      (1<<rbits)+(1<<rbits)+(1<<rbits));
 
 	 for (j=0,i=24-rbits; i>0; i-=rbits) j+=1<<i;
 	 for (i=0; i<(1<<rbits); i++) rtbl[i]=(j*i)>>16;
@@ -979,20 +983,20 @@ void image_x_decode_truecolor_masks(INT32 args)
 
    if (args<9) 
       Pike_error("Image.X.decode_truecolor_masks: too few arguments (expected 7 arguments)\n");
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.X.decode_truecolor_masks: illegal argument 1 (expected image object)\n");
 
    if (args>9)
-      if (sp[9-args].type!=T_OBJECT ||
+      if (TYPEOF(sp[9-args]) != T_OBJECT ||
 	  !get_storage(ct=sp[9-args].u.object,image_colortable_program))
 	 Pike_error("Image.X.decode_truecolor_masks: illegal argument 8 (expected colortable object)\n");
  
-   if (sp[6-args].type!=T_INT)
+   if (TYPEOF(sp[6-args]) != T_INT)
       Pike_error("Image.X.decode_truecolor_masks: illegal argument 7 (expected integer)\n");
-   if (sp[7-args].type!=T_INT)
+   if (TYPEOF(sp[7-args]) != T_INT)
       Pike_error("Image.X.decode_truecolor_masks: illegal argument 8 (expected integer)\n");
 
-   if (sp[8-args].type!=T_INT)
+   if (TYPEOF(sp[8-args]) != T_INT)
       Pike_error("Image.X.decode_truecolor_masks: illegal argument 9 (expected integer)\n");
 
    image_x_examine_mask(sp+6-args,"argument 7 (red mask)",&rbits,&rshift);
@@ -1038,11 +1042,12 @@ void image_x_decode_pseudocolor(INT32 args)
 
    if (args<7) 
       Pike_error("Image.X.decode_pseudocolor: too few arguments\n");
-   if (sp[-args].type!=T_STRING) Pike_error("Image.X.decode_pseudocolor: illegal argument 1\n");
+   if (TYPEOF(sp[-args]) != T_STRING)
+      Pike_error("Image.X.decode_pseudocolor: illegal argument 1\n");
    for (i=1; i<6; i++)
-      if (sp[i-args].type!=T_INT) 
+      if (TYPEOF(sp[i-args]) != T_INT)
 	 Pike_error("Image.X.decode_pseudocolor: illegal argument %d\n",i+1);
-   if (sp[6-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[6-args]) != T_OBJECT ||
        !(nct=(struct neo_colortable*)
 	 get_storage(ncto=sp[6-args].u.object,image_colortable_program)))
       Pike_error("Image.X.decode_pseudocolor: illegal argument 7\n");
@@ -1151,7 +1156,7 @@ void image_x_encode_bitmap(INT32 args)
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.X.encode_bitmap",1);
 
-   if (sp[-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       SIMPLE_BAD_ARG_ERROR("Image.X.encode_bitmap",1,"image object");
 
@@ -1195,27 +1200,32 @@ struct program *image_x_module_program=NULL;
 
 void init_image_x(void)
 {
-   add_function("encode_truecolor",image_x_encode_truecolor,
-		"function(object,int,int,int,int,int,int,int,int,int,void|object:string)",0);
-   add_function("encode_truecolor_masks",image_x_encode_truecolor_masks,
-		"function(object,int,int,int,int,int,int,void|object:string)",0);
-   add_function("encode_pseudocolor",image_x_encode_pseudocolor,
-		"function(object,int,int,int,object,void|string:string)",0);
+   ADD_FUNCTION("encode_truecolor",image_x_encode_truecolor,
+		tFunc(tObj tInt tInt tInt
+		      tInt tInt tInt tInt tInt tInt tOr(tObj,tVoid), tStr), 0);
 
-   add_function("encode_bitmap",image_x_encode_bitmap,
-		"function(object:object)",0);
+   ADD_FUNCTION("encode_truecolor_masks",image_x_encode_truecolor_masks,
+		tFunc(tObj tInt tInt tInt
+		      tInt tInt tInt tOr(tObj,tVoid), tStr), 0);
 
-   add_function("examine_mask",image_x_call_examine_mask,
-		"function(int:array(int))",0);
+   ADD_FUNCTION("encode_pseudocolor",image_x_encode_pseudocolor,
+		tFunc(tObj tInt tInt tInt tObj tOr(tStr,tVoid), tStr), 0);
 
-   add_function("decode_truecolor",image_x_decode_truecolor,
-		"function(string,int,int,int,int,int,int,int,int,int,int,int:object)",0);
+   ADD_FUNCTION("encode_bitmap",image_x_encode_bitmap, tFunc(tObj,tObj), 0);
 
-   add_function("decode_truecolor_masks",image_x_decode_truecolor_masks,
-		"function(string,int,int,int,int,int,int,int,int:object)",0);
+   ADD_FUNCTION("examine_mask",image_x_call_examine_mask,
+		tFunc(tInt,tArr(tInt)), 0);
 
-   add_function("decode_pseudocolor",image_x_decode_pseudocolor,
-		"function(string,int,int,int,int,int,object:object)",0);
+   ADD_FUNCTION("decode_truecolor",image_x_decode_truecolor,
+		tFunc(tStr tInt tInt tInt tInt tInt tInt
+		      tInt tInt tInt tInt tInt, tObj), 0);
+
+   ADD_FUNCTION("decode_truecolor_masks",image_x_decode_truecolor_masks,
+		tFunc(tStr tInt tInt tInt tInt
+		      tInt tInt tInt tInt, tObj), 0);
+
+   ADD_FUNCTION("decode_pseudocolor",image_x_decode_pseudocolor,
+		tFunc(tStr tInt tInt tInt tInt tInt tObj,tObj), 0);
 }
 
 void exit_image_x(void)

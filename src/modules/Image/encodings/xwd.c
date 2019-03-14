@@ -1,9 +1,11 @@
-/* $Id: xwd.c,v 1.20 2001/04/07 00:58:13 nilsson Exp $ */
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
 /*
 **! module Image
-**! note
-**!	$Id: xwd.c,v 1.20 2001/04/07 00:58:13 nilsson Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,14 +27,9 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.20 2001/04/07 00:58:13 nilsson Exp $");
-#include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
-#include "array.h"
 #include "pike_error.h"
 #include "mapping.h"
 
@@ -41,9 +38,8 @@ RCSID("$Id: xwd.c,v 1.20 2001/04/07 00:58:13 nilsson Exp $");
 #include "operators.h"
 #include "encodings.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
 
+#define sp Pike_sp
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
@@ -62,7 +58,7 @@ void image_x_decode_pseudocolor(INT32 args);
 **!		PseudoColor / ZPixmap
 **!
 **!	If someone sends me files of other formats, these formats
-**!	may be implemented. <tt>:)</tt> /<tt>mirar@roxen.com</tt>
+**!	may be implemented. <tt>:)</tt> /<tt>mirar+pike@mirar.org</tt>
 **!
 **! see also: decode
 **!
@@ -74,7 +70,7 @@ void image_x_decode_pseudocolor(INT32 args);
 
 static INLINE unsigned long int_from_32bit(unsigned char *data)
 {
-   return (data[0]<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]);
+   return ((unsigned long)data[0]<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]);
 }
 
 static INLINE unsigned long int_from_16bit(unsigned char *data)
@@ -132,8 +128,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    ONERROR uwp;
 
-   if (args<1 ||
-       sp[-args].type!=T_STRING)
+   if (args<1 || TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.XWD._decode(): Illegal arguments\n");
    
    s=sp[-args].u.string;
@@ -252,7 +247,8 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    /* header.ncolors XWDColor structs */
 
-   if (!skipcmap || 
+   /* NB: The cmap needs to be decoded if the image is to be decoded. */
+   if (!skipcmap || !header_only ||
        header.visual_class==3 || 
        header.visual_class==5)
    {
@@ -307,7 +303,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
       push_text("image");
 
       if (s->len-(int)(header.header_size+header.ncolors*12)<0)
-	 push_text("");
+	 push_empty_string();
       else
 	 push_string(make_shared_binary_string(
 	    s->str+(header.header_size+header.ncolors*12),
@@ -357,8 +353,13 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 	    push_int(header.bits_per_pixel);
 	    push_int(header.bitmap_pad);
 	    push_int(header.byte_order==1);
-	    ref_push_object(co);
-	    image_x_decode_pseudocolor(7);
+	    if (!co)
+	       image_x_decode_pseudocolor(6);
+	    else
+	    {
+	       ref_push_object(co);
+	       image_x_decode_pseudocolor(7);
+	    }
 	    break;
 	 default:
 	    pop_stack();
@@ -405,14 +406,13 @@ struct program *image_xwd_module_program=NULL;
 
 void init_image_xwd(void)
 {
-   add_function("_decode",image_xwd__decode,
-		"function(string,void|int:mapping(string:int|array|object))",0);
-   add_function("decode",image_xwd_decode,
-		"function(string:object)",0);
+   ADD_FUNCTION("_decode",image_xwd__decode,
+		tFunc(tStr tOr(tInt,tVoid),
+		      tMap(tStr,tOr3(tInt,tArray,tObj))),0);
 
-   add_function("decode_header",image_xwd_decode_header,
-		"function(string:object)",0);
+   ADD_FUNCTION("decode",image_xwd_decode,tFunc(tStr,tObj),0);
 
+   ADD_FUNCTION("decode_header",image_xwd_decode_header,tFunc(tStr,tObj),0);
 }
 
 void exit_image_xwd(void)

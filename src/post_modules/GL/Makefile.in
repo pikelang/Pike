@@ -1,23 +1,24 @@
-# $Id: Makefile.in,v 1.9 2001/01/04 14:37:02 marcus Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
-MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+VPATH=@srcdir@
 OBJS=top.o @AUTO_OBJS@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 MODULE_CFLAGS=@X_CFLAGS@
 
 override:
+#	@echo "Original CFLAGS:$(CFLAGS)"
+#	@echo "Modified CFLAGS: `echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g' -e 's/ -O[^ ]*//g'` -O `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`"
 	@$(MAKE) \
-	  CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O" \
+	  CFLAGS="`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g' -e 's/ -O[^ ]*//g'` -O `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`" \
 	  all
 
 @dynamic_module_makefile@
 
-$(SRCDIR)/auto.c : $(SRCDIR)/auto.c.in $(SRCDIR)/features.pike $(SRCDIR)/constants.pike $(SRCDIR)/gen.pike
-	$(RUNPIKE) $(SRCDIR)/gen.pike < $(SRCDIR)/auto.c.in > $(SRCDIR)/auto.c
+auto.c : $(SRCDIR)/auto.c.in $(SRCDIR)/features.pike $(SRCDIR)/constants.pike $(SRCDIR)/gen.pike
+	$(RUNPIKE) $(SRCDIR)/gen.pike $(SRCDIR)/auto.c.in > auto.c.tmp
+	mv -f auto.c.tmp auto.c
 
 # Compatibility with stupid makes..
-auto.o: $(SRCDIR)/auto.c
+auto.o: auto.c
 
 @dependencies@

@@ -1,6 +1,5 @@
-# $Id: Makefile.in,v 1.5 1999/11/18 07:58:46 hubbe Exp $
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=gdbmmod.o
 

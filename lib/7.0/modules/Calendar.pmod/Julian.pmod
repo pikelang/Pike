@@ -1,3 +1,5 @@
+#pike 7.0
+
 inherit Calendar.Gregorian;
 
 class Year

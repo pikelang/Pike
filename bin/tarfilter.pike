@@ -1,4 +1,4 @@
-#!/usr/local/bin/pike
+#! /usr/bin/env pike
 
 //
 // Filters a tar file applying root/root ownership.
@@ -13,35 +13,44 @@ void copydata(Stdio.File in, Stdio.File out, int size)
       exit(1);
     }
     out->write(s);
-    size -= strlen(s);
+    size -= sizeof(s);
   }
 }
 
 void doit(Stdio.File in, Stdio.File out)
 {
+  int written;
   for(;;) {
     string s = in->read(512);
     if(s == "")
       break;
-    if(strlen(s) != 512) {
+    if(sizeof(s) != 512) {
       werror("READ ERROR on input\n");
       exit(1);
     }
-    if(s-"\0" == "") {
-      out->write(s);
+    if(s == "\0"*512) {
+      written += out->write(s);
       break;
     }
     array a =
       array_sscanf(s, "%100s%8s%8s%8s%12s%12s%8s%c%100s%8s%32s%32s%8s%8s");
-    int csum, size;
+    int csum, size, perm;
+    sscanf(a[1], "%o", perm);
     sscanf(a[4], "%o", size);
     sscanf(a[6], "%o", csum);
+    //werror("%O (%d bytes, 0%03o) csum:%d\n", a[0], size, perm, csum);
     s=s[..147]+"        "+s[156..];
     if(`+(@values(s[..511])) != csum) {
-      werror("CHECKSUM ERROR on input!\n");
+      werror("CHECKSUM ERROR on input (got %d, expected %d(%s))!\n",
+	     `+(@values(s[..511])), csum, a[6]);
+      werror("%{  %{%02x %}\n%}", ({(((array)s)/16)[*]}));
       exit(1);
     }
-    a[1] = sprintf("%6o \0", array_sscanf(a[1], "%o")[0] & 0x3f1ff);
+    /* Normalize the permission flags. */
+    perm &= 0x3f1ff;
+    if (perm & 0444) perm |= 0444;	/* Propagate r. */
+    if (perm & 0111) perm |= 0111;	/* Propagate x. */
+    a[1] = sprintf("%6o \0", perm);
     a[2] = "     0 \0";
     a[3] = "     0 \0";
     if((a[9]/"\0")[0]-" " == "ustar") {
@@ -51,10 +60,26 @@ void doit(Stdio.File in, Stdio.File out)
     a[6] = "        ";
     s = sprintf("%100s%8s%8s%8s%12s%12s%8s%c%100s%8s%32s%32s%8s%8s", @a)+
       s[345..];
-    out->write(s[..147]+sprintf("%07o\0", `+(@values(s[..511])))+s[156..]);
+    written +=
+      out->write(s[..147]+sprintf("%07o\0", `+(@values(s[..511])))+s[156..]);
+    size = (size + 511) & -512;
     copydata(in, out, size);
-    if(size & 511)
-      copydata(in, out, 512-(size & 511));
+    written += size;
+  }
+  // tar on AIX 5L 5.1.0.0/ia64 pads with junk
+  for(;;) {
+    string s = in->read(512);
+    if(s == "")
+      break;
+    if(sizeof(s) != 512) {
+      werror("READ ERROR on input\n");
+      exit(1);
+    }
+    written += out->write("\0"*512);
+  }
+  // GNU tar 1.14 complains if we don't pad to an even 20 of blocks.
+  if (written % 10240) {
+    out->write("\0" * (10240 - (written % 10240)));
   }
 }
 

@@ -1,16 +1,14 @@
-/*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
-\*/
-/**/
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "pike_macros.h"
 #include "callback.h"
 #include "pike_error.h"
-#include "block_alloc.h"
-
-RCSID("$Id: callback.c,v 1.23 2001/09/05 01:39:20 hubbe Exp $");
+#include "block_allocator.h"
 
 struct callback_list fork_child_callback;
 
@@ -31,31 +29,50 @@ struct callback
 };
 
 #define CALLBACK_CHUNK 128
+#if 0
 #ifdef PIKE_DEBUG
 #undef PRE_INIT_BLOCK
 #define PRE_INIT_BLOCK(X) X->free_func=(callback_func)remove_callback;
 #endif
-BLOCK_ALLOC(callback, CALLBACK_CHUNK)
+#endif
+
+static struct block_allocator callback_allocator
+    = BA_INIT(sizeof(struct callback), CALLBACK_CHUNK);
+
+void count_memory_in_callbacks(size_t * num, size_t * size) {
+    ba_count_all(&callback_allocator, num, size);
+}
 
 
 #ifdef PIKE_DEBUG
 extern int d_flag;
 
+#if 0
 static int is_in_free_list(struct callback * c)
 {
-  struct callback *foo;
+  struct callback_block *bar;
   int e;
-  for(foo=free_callbacks;foo;foo=foo->next)
-    if(foo==c)
-      return 1;
+
+  if (!c) return 0;
+
+  for (bar = callback_blocks; bar; bar=bar->next) {
+    if ((bar->x <= c) && ((c - bar->x) < CALLBACK_CHUNK)) {
+      struct callback *foo;
+      for (foo = bar->free_callbacks; foo;
+	   foo = (void *)foo->next) {
+	if (foo == c) return 1;
+      }
+      return 0;
+    }
+  }
 
   return 0;
 }
+#endif
 
 static void check_callback_chain(struct callback_list *lst)
 {
-  int e,len=0;
-  struct callback_block *tmp;
+  int len=0;
   struct callback *foo;
   if(d_flag>4)
   {
@@ -67,15 +84,26 @@ static void check_callback_chain(struct callback_list *lst)
 	struct callback *tmp;
 	for(tmp=foo->next;tmp && len2<=len;tmp=tmp->next)
 	{
+#ifdef PIKE_DEBUG
 	  if(tmp==foo)
-	    fatal("Callback list is cyclic!!!\n");
+	    Pike_fatal("Callback list is cyclic!!!\n");
+#endif
 	}
       }
       len++;
     }
-    
+
+#if 0
+    /* The checks doesn't work with memory checkers like valgrind.
+     * It's also not compatible with the delayed free in block_alloc
+     * when dmalloc is used. Something like this should perhaps be
+     * provided by a consistency check function in block_alloc.
+     * /mast */
+    {
+      struct callback_block *tmp;
     for(tmp=callback_blocks;tmp;tmp=tmp->next)
     {
+      int e;
       for(e=0;e<CALLBACK_CHUNK;e++)
       {
 	int d;
@@ -84,15 +112,15 @@ static void check_callback_chain(struct callback_list *lst)
 	if(tmp->x[e].free_func == (callback_func)remove_callback)
 	{
 	  if(!is_in_free_list(tmp->x+e))
-	    fatal("Lost track of a struct callback!\n");
+	    Pike_fatal("Lost track of a struct callback!\n");
 
 	  if(tmp->x[e].next &&
 	     !is_in_free_list(tmp->x[e].next))
-	    fatal("Free callback has next in Z'ha'dum!\n");
+	    Pike_fatal("Free callback has next in Z'ha'dum!\n");
 
 	}else{
 	  if(is_in_free_list(tmp->x[e].next))
-	    fatal("Non-free callback has next in free list!\n");
+	    Pike_fatal("Non-free callback has next in free list!\n");
 	}
 	
 	if(tmp->x[e].next)
@@ -110,10 +138,12 @@ static void check_callback_chain(struct callback_list *lst)
 	  }
 	  
 	  if(d == CALLBACK_CHUNK)
-	    fatal("Callback next pointer pointing to Z'ha'dum\n");
+	    Pike_fatal("Callback next pointer pointing to Z'ha'dum\n");
 	}
       }
     }
+    }
+#endif
   }
 }
 #else
@@ -152,19 +182,22 @@ PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg)
       while(*ptr != l)
       {
 	ptr=&(ptr[0]->next);
+#ifdef PIKE_DEBUG
 	if(!*ptr)
 	{
 	  /* We totally failed to find where we are in the linked list.. */
-	  fatal("Callback linked list breakdown.\n");
+	  Pike_fatal("Callback linked list breakdown.\n");
 	}
+#endif
       }
 
       *ptr=l->next;
-      really_free_callback(l);
-
+#if 0
 #ifdef PIKE_DEBUG
       l->free_func=(callback_func)remove_callback;
 #endif
+#endif
+      ba_free(&callback_allocator, l);
     }else{
       ptr=& l->next;
     }
@@ -179,13 +212,16 @@ PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
 				       callback_func free_func)
 {
   struct callback *l;
-  l=alloc_callback();
+  l=ba_alloc(&callback_allocator);
   l->call=call;
   l->arg=arg;
   l->free_func=free_func;
 
+#if 0
+  /* This is meaningless - free_func should never be free(). */
   DO_IF_DMALLOC( if(l->free_func == (callback_func)free)
 		 l->free_func=(callback_func)dmalloc_free; )
+#endif
 
   l->next=lst->callbacks;
   lst->callbacks=l;
@@ -200,7 +236,6 @@ PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
  */
 PMOD_EXPORT void *remove_callback(struct callback *l)
 {
-  dmalloc_unregister(l,1);
   l->call=0;
   l->free_func=0;
   return l->arg;
@@ -217,12 +252,11 @@ void free_callback_list(struct callback_list *lst)
     if(l->free_func)
       l->free_func(l, l->arg, 0);
     *ptr=l->next;
-    really_free_callback(l);
+    ba_free(&callback_allocator, l);
   }
 }
 
 void cleanup_callbacks(void)
 {
-  free_all_callback_blocks();
+  ba_destroy(&callback_allocator);
 }
-

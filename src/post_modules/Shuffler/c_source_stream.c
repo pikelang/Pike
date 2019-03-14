@@ -1,0 +1,196 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+#include "bignum.h"
+#include "object.h"
+#include "interpret.h"
+
+#include "fdlib.h"
+#include "fd_control.h"
+#include "backend.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include "shuffler.h"
+
+#define CHUNK 8192
+
+
+/* Source: Stream
+ * Argument: Stdio.File instance pointing to a stream
+ *           of some kind (network socket, named pipes, stdin etc)
+ */
+
+
+struct fd_source
+{
+  struct source s;
+
+  struct object *obj;
+  char _read_buffer[CHUNK], _buffer[CHUNK];
+  int available;
+  int fd;
+
+  void (*when_data_cb)( void *a );
+  void *when_data_cb_arg;
+  INT64 len, skip;
+};
+
+
+static void read_callback( int fd, struct fd_source *s );
+static void setup_callbacks( struct source *src )
+{
+  struct fd_source *s = (struct fd_source *)src;
+  if( !s->available )
+    set_read_callback( s->fd, (void*)read_callback, s );
+}
+
+static void remove_callbacks( struct source *src )
+{
+  struct fd_source *s = (struct fd_source *)src;
+  set_read_callback( s->fd, 0, 0 );
+}
+
+
+static struct data get_data( struct source *src, off_t UNUSED(len) )
+{
+  struct fd_source *s = (struct fd_source *)src;
+  struct data res;
+  res.off = res.do_free = 0;
+  res.len = s->available;
+  res.data = NULL;
+
+  if( s->available ) /* There is data in the buffer. Return it. */
+  {
+    res.data = s->_buffer;
+    MEMCPY( res.data, s->_read_buffer, res.len );
+    s->available = 0;
+    setup_callbacks( src );
+  }
+  else if( !s->len )
+    s->s.eof = 1;
+  else
+  /* No data available, but there should be in the future (no EOF, nor
+   * out of the range of data to send as specified by the arguments to
+   * source_stream_make)
+   */
+    res.len = -2;
+
+  return res;
+}
+
+
+static void free_source( struct source *src )
+{
+  remove_callbacks( src );
+  free_object(((struct fd_source *)src)->obj);
+}
+
+static void read_callback( int UNUSED(fd), struct fd_source *s )
+{
+  int l;
+  remove_callbacks( (struct source *)s );
+
+  if( s->s.eof )
+  {
+    if( s->when_data_cb )
+      s->when_data_cb( s->when_data_cb_arg );
+    return;
+  }
+
+  l = fd_read( s->fd, s->_read_buffer, CHUNK );
+
+  if( l <= 0 )
+  {
+    s->s.eof = 1;
+    s->available = 0;
+  }
+  else if( s->skip )
+  {
+    if( ((ptrdiff_t)s->skip) >= l )
+    {
+      s->skip -= l;
+      return;
+    }
+    MEMCPY( s->_read_buffer, s->_read_buffer+s->skip, l-s->skip );
+    l-=s->skip;
+    s->skip = 0;
+  }
+  if( s->len > 0 )
+  {
+    if( ((ptrdiff_t)s->len) < l )
+      l = s->len;
+    s->len -= l;
+    if( !s->len )
+      s->s.eof = 1;
+  }
+  s->available = l;
+  if( s->when_data_cb )
+    s->when_data_cb( s->when_data_cb_arg );
+}
+
+static void set_callback( struct source *src, void (*cb)( void *a ), void *a )
+{
+  struct fd_source *s = (struct fd_source *)src;
+  s->when_data_cb = cb;
+  s->when_data_cb_arg = a;;
+}
+
+static int is_stdio_file(struct object *o)
+{
+  struct program *p = o->prog;
+  INT32 i = p->num_inherits;
+  while( i-- )
+  {
+    if( p->inherits[i].prog->id == PROG_STDIO_FD_ID ||
+        p->inherits[i].prog->id == PROG_STDIO_FD_REF_ID )
+      return 1;
+  }
+  return 0;
+}
+
+struct source *source_stream_make( struct svalue *s,
+				   INT64 start, INT64 len )
+{
+  struct fd_source *res;
+  if(TYPEOF(*s) != PIKE_T_OBJECT)
+    return 0;
+
+  if(!is_stdio_file(s->u.object))
+    return 0;
+
+  if (find_identifier("query_fd", s->u.object->prog) < 0)
+    return 0;
+
+  res = calloc( 1, sizeof( struct fd_source ) );
+  if (!res) return NULL;
+
+  apply( s->u.object, "query_fd", 0 );
+  res->fd = Pike_sp[-1].u.integer;
+  pop_stack();
+  
+  res->len = len;
+  res->skip = start;
+
+  res->s.get_data = get_data;
+  res->s.free_source = free_source;
+  res->s.set_callback = set_callback;
+  res->s.setup_callbacks = setup_callbacks;
+  res->s.remove_callbacks = remove_callbacks;
+  res->obj = s->u.object;
+  add_ref(res->obj);
+  return (struct source *)res;
+}
+
+void source_stream_exit( )
+{
+}
+
+void source_stream_init( )
+{
+}

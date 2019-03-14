@@ -1,28 +1,25 @@
-/*
- * A GBM-based storage manager.
- * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
- *
- * $Id: Gdbm.pike,v 1.7 2001/01/02 17:53:09 grubba Exp $
- *
- * This storage manager provides the means to save data to memory.
- * In this manager I'll add reference documentation as comments to
- * interfaces. It will be organized later in a more comprehensive format
- *
- * Settings will be added later.
- * TODO: verify dependants' implementation.
- */
+//! A GBM-based storage manager.
+//!
+//! This storage manager provides the means to save data to memory.
+//! In this manager I'll add reference documentation as comments to
+//! interfaces. It will be organized later in a more comprehensive format
+//!
+//! Settings will be added later.
+//!
+//! @thanks
+//!   Thanks to Francesco Chemolli <kinkie@@roxen.com> for the contribution.
 
 #pike __REAL_VERSION__
+#require constant(Gdbm.gdbm)
 
 //after this many deletion ops, the databases will be compacted.
 #define CLUTTERED 1000
 
-#if constant(Gdbm.gdbm)
 Gdbm.gdbm db, metadb;
 int deletion_ops=0; //every 1000 deletion ops, we'll reorganize.
 int have_dependants=0;
 
+//!
 class Data {
   inherit Cache.Data;
 
@@ -55,8 +52,8 @@ class Data {
     sync();
   }
   
-  void create(string key, Gdbm.gdbm data_db, 
-              Gdbm.gdbm metadata_db, string dumped_metadata) {
+  protected void create(string key, Gdbm.gdbm data_db, 
+		     Gdbm.gdbm metadata_db, string dumped_metadata) {
     mapping m=decode_value(dumped_metadata);
     _key=key;
     db=data_db;
@@ -173,13 +170,11 @@ void delete(string key, void|int(0..1) hard) {
   }
 }
 
-//A GDBM storage-manager must be hooked to a GDBM Database.
+//! A GDBM storage-manager must be hooked to a GDBM Database.
 void create(string path) {
   db=Gdbm.gdbm(path+".db","rwcf");
   metadb=Gdbm.gdbm(path+"_meta.db","rwcf");
 }
-
-#endif // constant(Gdbm.gdbm)
 
 /**************** thoughts and miscellanea ******************/
 //maybe we should split the database into two databases, one for the data

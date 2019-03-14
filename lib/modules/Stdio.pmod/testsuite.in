@@ -1,0 +1,197 @@
+
+START_MARKER
+
+test_eq([[ Stdio.append_path("../foo/", "../bar") ]], "../foo/bar")
+test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz") ]], "../foo/bar/baz")
+test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz", "../fie/../faz") ]], "../foo/bar/baz/faz")
+test_eq([[ Stdio.append_path_nt("c:/foo", "z:/bar") ]], "c:/foo/z/bar")
+test_eq([[ Stdio.append_path_nt("c:/foo", "//bar") ]], "c:/foo/bar")
+
+// Peek is missing on windows. When it exists, turn on peek-dependent
+// code in module.pmod
+test_true( !Stdio.File()->peek || functionp(Stdio.File()->peek) )
+
+// Stdio.FILE gets/ngets tests
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_any_equal([[
+  Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  v+=({r->gets()});
+  r->ungets("hipp");
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({"hej","hipp","hopp","gazonk"}))
+
+test_any_equal([[
+  Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  v+=({r->gets()});
+  r->ungets("hipp\nhurra");
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({"hej","hipp","hurra","hopp","gazonk"}))
+
+test_any_equal([[
+  Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  r->ungets("hipp");
+  v+=({r->gets()});
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({"hipp","hej","hopp","gazonk"}))
+
+test_any_equal([[
+  Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+  Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+  array v=({});
+  r->ungets("h\nh\nhi");
+  v+=({r->getchar(),r->getchar(),r->getchar()});
+  v+=({r->gets()});
+  r->ungets("oj\noj");
+  v+=({r->getchar()});
+  while (string s=r->gets())
+     v+=({s});
+  return v;
+]],({'h','\n','h',"",'o',"j","oj","hi","hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp",        // 59 is a prime number:
+	"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!\n"*400);
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!"})*400)
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp",
+	"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!\n"*400);
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!"})*400)
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp", "\n"*400);
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({""})*400)
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","\n"*400);
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({""})*400)
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   array v=({});
+   while (string s=r->gets())
+      v+=({s});
+   return v;
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets();
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets(100);
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_equal([[
+lambda()
+{
+   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
+   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
+   return r->ngets(100);
+}()
+]],({"hej","hopp","gazonk"}))
+
+test_true(rm("testsuite.tmp"))
+
+test_any([[
+#pike 7.8
+  return !!files.Fd;
+]], 1)
+
+
+// Stdio.FakeFile
+
+test_true(Stdio.FakeFile("")->is_fake_file)
+test_do( Stdio.File f = Stdio.FakeFile(""); )
+test_any([[
+  object f=Stdio.FakeFile("");
+  int r = f->write("hej");
+  f->seek(0);
+  return r==3 && f->read()=="hej";
+]], 1)
+
+test_eq( Stdio.FakeFile("abc")->read(600), "abc" )
+test_any([[
+  object x=Stdio.FakeFile("abc");
+  x->read(600);
+  return x->read(600);
+]], "")
+test_any([[
+  object x=Stdio.FakeFile("abc");
+  x->read(2);
+  return x->read(2);
+]], "c")
+
+END_MARKER

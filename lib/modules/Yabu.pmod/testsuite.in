@@ -1,0 +1,83 @@
+START_MARKER
+
+test_do([[ Yabu.db("test.db", "wct")->purge(); ]])
+test_do([[ add_constant("db", Yabu.db("test.db", "wct")) ]])
+test_do([[ add_constant("table", db["Aces"]) ]])
+
+test_eq([[ table["Blixt"]="Gordon" ]], "Gordon")
+test_equal([[ indices(table) ]], [[ ({ "Blixt" }) ]])
+test_equal([[ values(table) ]], [[ ({ "Gordon" }) ]])
+
+dnl **** Start transactions test
+test_do([[ add_constant("trans", table->transaction()) ]])
+test_equal([[ indices(table) ]], [[ ({ "Blixt" }) ]])
+test_equal([[ values(table) ]], [[ ({ "Gordon" }) ]])
+test_equal([[ indices(trans) ]], [[ ({ "Blixt" }) ]])
+
+test_do([[ trans["Buck"] = "Rogers"; ]])
+
+test_equal([[ indices(table) ]], [[ ({ "Blixt" }) ]])
+test_equal([[ indices(trans) ]], [[ ({ "Blixt", "Buck" }) ]])
+test_eq([[ table["Buck"] ]], 0)
+test_eq([[ trans["Buck"] ]], "Rogers")
+test_eq([[ table["Blixt"] ]], "Gordon")
+test_eq([[ trans["Blixt"] ]], "Gordon")
+
+test_do([[
+  // Test multiple commands.
+  mapping(string:mapping(string:int)) m = ([]);
+  mapping(string:mapping(string:int)) multi;
+  for(int i = 0; i < 10; i++) {
+    string s = (string)(i%3);
+    m[s] = m[s] || ([]);
+    object t = db[s];
+    if((i%3 == 0))
+      table->reorganize(1.0);
+    for(int j = 0; j < 100; j++) {
+      string q = (string)(j%43);
+      m[s][q] += 1;
+      t[q] = t[q]+1;
+    }
+    if(i == 7)
+      t->sync();
+    multi = m;
+  }
+  add_constant("multi", multi);
+]])
+
+test_do([[ trans->commit(); ]])
+test_eq([[ table["Buck"] ]], "Rogers")
+test_eq([[ table["Blixt"] ]], "Gordon")
+test_equal([[ mkmapping(indices(table),values(table)) ]], [[ ([ "Blixt":"Gordon", "Buck":"Rogers" ]) ]])
+dnl **** End transactions test
+
+test_eval_error([[ object db = Yabu.db("test.db", "wct") ]])
+
+define(check_db, [[ test_do([[
+  for(int i = 0; i < 10; i++) {
+    string s = (string)(i%3);
+    object t = db[s];
+    for(int j = 0; j < 100; j++) {
+      string q = (string)(j%43);
+      if(t[q] != multi[s][q])
+	error("Table diff #10!\n");
+    }
+  }
+]]) ]])
+
+check_db()
+test_do([[ destruct(db); ]])
+test_do([[ add_constant("db", Yabu.db("test.db", "w")) ]])
+check_db()
+test_do([[ db->reorganize(1.0); ]])
+test_do([[ destruct(db); ]])
+test_do([[ add_constant("db", Yabu.db("test.db", "wct")) ]])
+check_db()
+
+dnl Cleanup
+test_do([[ db->purge(); ]])
+test_do( add_constant("multi") )
+test_do( add_constant("trans") )
+test_do( add_constant("table") )
+test_do( add_constant("db") )
+END_MARKER

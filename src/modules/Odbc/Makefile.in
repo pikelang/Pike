@@ -1,10 +1,6 @@
-#
-# $Id: Makefile.in,v 1.4 1999/11/18 08:00:22 hubbe Exp $
-#
 
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
-MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+VPATH=@srcdir@
 OBJS=odbc.o odbc_result.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 

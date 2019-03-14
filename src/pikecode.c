@@ -1,9 +1,13 @@
 /*
- * $Id: pikecode.c,v 1.3 2001/07/26 21:04:13 marcus Exp $
- *
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*
  * Generic strap for the code-generator.
  *
- * Henrik Grubbström 20010720
+ * Henrik Grubbstrï¿½m 20010720
  */
 
 #include "global.h"
@@ -11,23 +15,23 @@
 #include "opcodes.h"
 #include "docode.h"
 #include "interpret.h"
-#include "language.h"
 #include "lex.h"
+#include "pike_embed.h"
 
 #include "pikecode.h"
 
-#ifdef PIKE_USE_MACHINE_CODE
-#if defined(__i386__) || defined(__i386)
+#if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
 #include "code/ia32.c"
-#elif defined(sparc) || defined(__sparc__) || defined(__sparc)
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_AMD64
+#include "code/amd64.c"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_SPARC
 #include "code/sparc.c"
-#elif defined(__ppc__) || defined(_POWER)
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC32
 #include "code/ppc32.c"
-#else /* Unsupported cpu */
-#error Unknown CPU
-#endif /* CPU type */
-#elif defined(HAVE_COMPUTED_GOTO)
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC64
+#include "code/ppc64.c"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
 #include "code/computedgoto.c"
-#else /* Default */
+#else
 #include "code/bytecode.c"
-#endif /* Interpreter type. */
+#endif

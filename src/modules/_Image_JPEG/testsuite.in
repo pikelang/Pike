@@ -1,3 +1,4 @@
-cond([[ master()->resolv("_Image_JPEG")->encode ]],
-[[
-]])
+START_MARKER
+cond_begin([[ master()->resolv("_Image_JPEG")->encode ]])
+cond_end
+END_MARKER

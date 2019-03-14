@@ -1,17 +1,18 @@
-#include "global.h"
-RCSID("$Id: pcx.c,v 1.16 2001/06/13 12:56:42 grubba Exp $");
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
+#include "global.h"
 #include "image_machine.h"
 
-#include "pike_macros.h"
 #include "object.h"
-#include "constants.h"
 #include "module_support.h"
 #include "interpret.h"
 #include "object.h"
 #include "svalue.h"
 #include "threads.h"
-#include "array.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
@@ -19,14 +20,13 @@ RCSID("$Id: pcx.c,v 1.16 2001/06/13 12:56:42 grubba Exp $");
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
-#include "dynamic_buffer.h"
 #include "bignum.h"
 
 #include "image.h"
 #include "colortable.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
@@ -129,7 +129,7 @@ void get_rle_decoded_from_data( unsigned char *dest, struct buffer * source,
 static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b, 
                           rgb_group *dest )
 {
-  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
+  unsigned char *line = xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   int width, height;
   int x, y;
@@ -157,7 +157,7 @@ static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b,
 static void load_mono_pcx( struct pcx_header *hdr, struct buffer *b,
                            rgb_group *dest)
 {
-  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
+  unsigned char *line = xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   int width, height;
   int x, y;
@@ -184,7 +184,7 @@ static void load_mono_pcx( struct pcx_header *hdr, struct buffer *b,
 static void load_planar_palette_pcx( struct pcx_header *hdr, struct buffer *b,
                                      rgb_group *dest)
 {
-  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
+  unsigned char *line = xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   rgb_group * palette = (rgb_group *)hdr->palette;
   int width, height;
@@ -215,7 +215,7 @@ static void load_planar_palette_pcx( struct pcx_header *hdr, struct buffer *b,
 static void load_palette_pcx( struct pcx_header *hdr, struct buffer *b,
                              rgb_group *dest)
 {
-  unsigned char *line = (unsigned char *)xalloc(hdr->bytesperline*hdr->planes);
+  unsigned char *line = xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   /* It's at the end of the 'file' */
   rgb_group * palette = (rgb_group *)(b->str+b->len-(256*3)); 
@@ -251,13 +251,13 @@ static struct object *low_pcx_decode( struct pike_string *data )
   if(b.len < sizeof(struct pcx_header))
     Pike_error("There is not enough data available for this to be a PCX image\n");
   pcx_header = *((struct pcx_header *)get_chunk(&b,sizeof(struct pcx_header)));
-#if BYTEORDER == 1234
-  SWAP_S(pcx_header.x1);
-  SWAP_S(pcx_header.x2);
-  SWAP_S(pcx_header.y1);
-  SWAP_S(pcx_header.y2);
-  SWAP_S(pcx_header.bytesperline);
-  SWAP_S(pcx_header.color);
+#if PIKE_BYTEORDER == 1234
+  pcx_header.x1 = SWAP_S(pcx_header.x1);
+  pcx_header.x2 = SWAP_S(pcx_header.x2);
+  pcx_header.y1 = SWAP_S(pcx_header.y1);
+  pcx_header.y2 = SWAP_S(pcx_header.y2);
+  pcx_header.bytesperline = SWAP_S(pcx_header.bytesperline);
+  pcx_header.color = SWAP_S(pcx_header.color);
 #endif
 
   if((pcx_header.manufacturer != 10) || (pcx_header.reserved) ||
@@ -434,7 +434,7 @@ static void f_rle_encode( INT32 args )
 
 static struct pike_string *encode_pcx_24( struct pcx_header *pcx_header,
                                           struct image *data,
-                                          struct options *opts )
+                                          struct options *UNUSED(opts) )
 {
   struct pike_string *b;
   int x, y;
@@ -443,10 +443,10 @@ static struct pike_string *encode_pcx_24( struct pcx_header *pcx_header,
   
   pcx_header->planes = 3;
 
-  push_string( make_shared_binary_string( (char *)pcx_header, 
+  buffer = xalloc(data->xsize*data->ysize*3);
+  push_string( make_shared_binary_string( (char *)pcx_header,
                                           sizeof(struct pcx_header) ) );
   
-  buffer = malloc(data->xsize*data->ysize*3);
   s = data->img;
   for(y=0; y<data->ysize; y++)
   {
@@ -480,11 +480,10 @@ static struct pike_string *encode_pcx_8( struct pcx_header *pcx_header,
   char *buffer;
 
   pcx_header->planes = 1;
-  push_string( make_shared_binary_string( (char *)pcx_header, 
+  buffer = xalloc(data->xsize*data->ysize);
+  push_string( make_shared_binary_string( (char *)pcx_header,
                                           sizeof(struct pcx_header) ) );
 
-
-  buffer = malloc(data->xsize*data->ysize);
   image_colortable_index_8bit_image( opts->colortable, data->img,
 				     (unsigned char *)buffer,
 				     data->xsize*data->ysize, data->xsize );
@@ -525,15 +524,15 @@ static struct pike_string *low_pcx_encode(struct image *data,struct options *opt
   MEMSET(pcx_header.palette, 0, 48);
   MEMSET(pcx_header.filler, 0, 58);
   pcx_header.color = 1;
-#if BYTEORDER == 1234
-  SWAP_S(pcx_header.hdpi);
-  SWAP_S(pcx_header.vdpi);
-  SWAP_S(pcx_header.x1);
-  SWAP_S(pcx_header.y1);
-  SWAP_S(pcx_header.x2);
-  SWAP_S(pcx_header.y2);
-  SWAP_S(pcx_header.bytesperline);
-  SWAP_S(pcx_header.color);
+#if PIKE_BYTEORDER == 1234
+  pcx_header.hdpi = SWAP_S(pcx_header.hdpi);
+  pcx_header.vdpi = SWAP_S(pcx_header.vdpi);
+  pcx_header.x1 = SWAP_S(pcx_header.x1);
+  pcx_header.y1 = SWAP_S(pcx_header.y1);
+  pcx_header.x2 = SWAP_S(pcx_header.x2);
+  pcx_header.y2 = SWAP_S(pcx_header.y2);
+  pcx_header.bytesperline = SWAP_S(pcx_header.bytesperline);
+  pcx_header.color = SWAP_S(pcx_header.color);
 #endif
   if(!opts->colortable)
     return encode_pcx_24( &pcx_header, data, opts );
@@ -545,7 +544,7 @@ static int parameter_int(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
-   if (!v || v->type!=T_INT) 
+   if (!v || TYPEOF(*v) != T_INT) 
      return 0;
    *p=v->u.integer;
    return 1;
@@ -556,7 +555,7 @@ static int parameter_colortable(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
-   if (!v || v->type!=T_OBJECT) return 0;
+   if (!v || TYPEOF(*v) != T_OBJECT) return 0;
    if( !(*p = (struct neo_colortable *)get_storage( v->u.object, image_colortable_program )))
      return 0;
    return 1;
@@ -576,7 +575,7 @@ void image_pcx_encode( INT32 args )
 
   img = ((struct image *)get_storage( i, image_program ));
   
-  MEMSET(&c, sizeof(c), 0);
+  MEMSET(&c, 0, sizeof(c));
   c.hdpi = 150;
   c.vdpi = 150;
   c.raw = 0;
@@ -585,7 +584,7 @@ void image_pcx_encode( INT32 args )
   if(args > 1)
   {
     int dpy;
-    if(sp[-args+1].type != T_MAPPING)
+    if(TYPEOF(sp[-args+1]) != T_MAPPING)
       Pike_error("Invalid argument 2 to Image.PCX.encode. Expected mapping.\n");
     parameter_int( sp-args+1, opt_raw, &c.raw );
     if(parameter_int( sp-args+1, opt_dpy, &dpy ))
@@ -604,14 +603,12 @@ void image_pcx_encode( INT32 args )
 static struct program *image_encoding_pcx_program=NULL;
 void init_image_pcx( )
 {
-  add_function( "_decode", image_pcx__decode, 
-                "function(string:mapping(string:object))", 0);
-  add_function( "decode", image_pcx_decode, 
-                "function(string:object)", 0);
-  add_function( "encode", image_pcx_encode, 
-                "function(object,mapping|void:string)", 0);
-  add_function( "_encode", image_pcx_encode, 
-                "function(object,mapping|void:string)", 0);
+  ADD_FUNCTION( "_decode", image_pcx__decode, tFunc(tStr,tMap(tStr,tObj)), 0);
+  ADD_FUNCTION( "decode", image_pcx_decode, tFunc(tStr,tObj), 0);
+  ADD_FUNCTION( "encode", image_pcx_encode,
+		tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
+  ADD_FUNCTION( "_encode", image_pcx_encode,
+		tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
 
   opt_raw=make_shared_string("raw");
   opt_dpy=make_shared_string("dpy");

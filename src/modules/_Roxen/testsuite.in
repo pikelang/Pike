@@ -1,3 +1,64 @@
-// -*- Pike -*-
+START_MARKER
 
-test_eq(_Roxen.html_encode_string (10), "10");
+test_eq(_Roxen.html_encode_string (0), "0")
+test_eq(_Roxen.html_encode_string (""), "")
+test_eq(_Roxen.html_encode_string (10), "10")
+test_eq(_Roxen.html_encode_string("a&b<c>d"), "a&amp;b&lt;c&gt;d")
+
+test_eq(_Roxen.http_decode_string(""), "")
+test_eq(_Roxen.http_decode_string("abc+d%20e%41"), "abc+d eA")
+test_eq(_Roxen.http_decode_string(""), "")
+test_eq(_Roxen.http_decode_string("+"), "+")
+test_do(_Roxen.http_decode_string("%"))
+test_do(_Roxen.http_decode_string("%0"))
+test_do(_Roxen.http_decode_string("%%"))
+test_do(_Roxen.http_decode_string("%%%"))
+test_do(_Roxen.http_decode_string("%41%"))
+test_do(_Roxen.http_decode_string("%41%0"))
+test_do(_Roxen.http_decode_string("%41%%"))
+test_do(_Roxen.http_decode_string("%41%%%"))
+test_do(_Roxen.http_decode_string("%u"))
+test_do(_Roxen.http_decode_string("%u0"))
+test_do(_Roxen.http_decode_string("%u00"))
+test_do(_Roxen.http_decode_string("%u000"))
+test_do(_Roxen.http_decode_string("%u000_"))
+test_do(_Roxen.http_decode_string("%41%u"))
+test_do(_Roxen.http_decode_string("%41%u0"))
+test_do(_Roxen.http_decode_string("%41%u00"))
+test_do(_Roxen.http_decode_string("%41%u000"))
+test_do(_Roxen.http_decode_string("%41%u000_"))
+test_eq(_Roxen.http_decode_string("%u12345"), "\x1234""5")
+test_eq(_Roxen.http_decode_string("%U12345"), "\x1234""5")
+
+define(test_mkhttp,[[
+  test_any_equal([[
+    string x=_Roxen.make_http_headers($1);
+    if(!has_suffix(x, "\r\n")) return -1;
+    return sort(x/"\r\n"-({""}));
+  ]],$2)
+]])
+
+test_eval_error(_Roxen.make_http_headers(0))
+
+test_mkhttp( ([]), ({}) )
+test_mkhttp( (["":""]), ({": "}) )
+test_mkhttp( (["a":"1","b":"2"]), ({"a: 1","b: 2"}) )
+test_mkhttp( (["a":"1","b":({"2","3"})]), ({"a: 1","b: 2","b: 3"}) )
+test_mkhttp( (["a":"1","b":({"2","2"})]), ({"a: 1","b: 2","b: 2"}) )
+
+define(test_hp,[[
+  test_do( add_constant("hp", _Roxen.HeaderParser()) )
+  test_equal( hp->feed( $1 ), $2)
+  test_do( add_constant("hp") )
+]])
+
+test_hp( "GET / HTTP/1.0\r\nblaha: foo\nbar\r\nzonk: 1\r\n\r\n",
+({ "", "GET / HTTP/1.0", ([ "blaha":"foo", "zonk":"1" ]) }) )
+
+test_hp( "GET / HTTP/1.0\r\nblaha: foo\r\nzonk: 1\r\n\r\n",
+({ "", "GET / HTTP/1.0", ([ "blaha":"foo", "zonk":"1" ]) }) )
+
+test_hp( "GET / HTTP/1.0\r\nblaha: foo\n\rblaha: bar\r\n\r\n",
+({ "", "GET / HTTP/1.0", ([ "blaha":({ "foo", "bar" }) ]) }) )
+
+END_MARKER

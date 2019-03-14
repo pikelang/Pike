@@ -1,15 +1,19 @@
-#
-# $Id: configure.in,v 1.1 2000/02/28 08:11:56 per Exp $
-#
 AC_INIT(sane.c)
 AC_CONFIG_HEADER(config.h)
 
+PIKE_FEATURE_WITHOUT(SANE)
 AC_ARG_WITH(sane,     [  --with(out)-sane       Support SANE],[],[with_sane=yes])
 
 AC_MODULE_INIT()
 if test x$with_sane = xyes ; then
+  PIKE_FEATURE_NODEP(SANE)
   AC_CHECK_HEADERS(sane/sane.h sane.h)
+  AC_CHECK_LIB(sane, sane_open)
+  if test "x$ac_cv_header_sane_h:$ac_cv_header_sane_sane_h" = "xno:no"; then
+    :
+  elif test "x$av_cv_lib_sane_sane_open" = "xyes"; then
+    PIKE_FEATURE_OK(SANE)
+  fi
 fi
-AC_CHECK_LIB( sane, sane_open )
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

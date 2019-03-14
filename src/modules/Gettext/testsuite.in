@@ -1,0 +1,67 @@
+START_MARKER
+
+cond_resolv(Gettext.gettext,[[
+
+test_eq(Gettext.gettext(""),"")
+test_eq(Gettext.gettext("hej"),"hej")
+test_eq(Gettext.gettext("",""),"")
+test_eq(Gettext.gettext("hej","hopp"),"hej")
+test_eq(Gettext.gettext("hej","hopp",Gettext.LC_ALL),"hej")
+
+test_eq(Gettext.dgettext("",""),"")
+test_eq(Gettext.dgettext("hej","hopp"),"hopp")
+
+test_eq(Gettext.dcgettext("","",Gettext.LC_ALL),"")
+test_eq(Gettext.dcgettext("hej","hopp",Gettext.LC_ALL),"hopp")
+
+test_eq(Gettext.textdomain(),"messages")
+test_eq(Gettext.textdomain("hopp"),"hopp")
+test_eq(Gettext.textdomain(),"hopp")
+test_eq(Gettext.textdomain(""),"messages")
+
+test_eq(Gettext.bindtextdomain(0,0),0)
+test_true(stringp(Gettext.bindtextdomain("hopp",getcwd())))
+test_any([[
+  mixed err = catch {
+    return Gettext.bindtextdomain("hopp",0);
+  };
+  // Ugly way to ignore this particular error.
+  if (describe_error (err) ==
+      "Pike has been compiled with a version of libintl "
+      "that doesn't support NULL as directory name.\n")
+    return getcwd();
+  throw (err);
+]],getcwd())
+
+test_true(Gettext.setlocale(Gettext.LC_ALL,"C"))
+
+define(test_conv,[[
+  test_false(zero_type(Gettext.localeconv()->$1))
+]])
+test_conv(n_cs_precedes)
+test_conv(frac_digits)
+test_conv(mon_decimal_point)
+test_conv(p_sep_by_space)
+test_conv(int_frac_digits)
+test_conv(mon_thousands_sep)
+test_conv(negative_sign)
+test_conv(positive_sign)
+test_conv(currency_symbol)
+test_conv(decimal_point)
+test_conv(int_curr_symbol)
+test_conv(thousands_sep)
+test_conv(n_sign_posn)
+test_conv(p_sign_posn)
+test_conv(n_sep_by_space)
+test_conv(p_cs_precedes)
+
+test_true( intp(Gettext.LC_ALL) )
+test_true( intp(Gettext.LC_COLLATE) )
+test_true( intp(Gettext.LC_CTYPE) )
+test_true( intp(Gettext.LC_MESSAGES) )
+test_true( intp(Gettext.LC_MONETARY) )
+test_true( intp(Gettext.LC_NUMERIC) )
+test_true( intp(Gettext.LC_TIME) )
+
+]])
+END_MARKER

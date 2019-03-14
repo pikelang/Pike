@@ -1,10 +1,24 @@
-#include "global.h"
-RCSID("$Id: threads.c,v 1.168 2001/09/25 14:17:47 grubba Exp $");
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
 
-PMOD_EXPORT int num_threads = 1;
-PMOD_EXPORT int threads_disabled = 0;
+#include "global.h"
+
+/* #define PICKY_MUTEX */
 
 #ifdef _REENTRANT
+
+#include "pike_error.h"
+
+/* Define to get a debug trace of thread operations. Debug levels can be 0-2. */
+/* #define VERBOSE_THREADS_DEBUG 1 */
+
+/* #define PROFILE_CHECK_THREADS */
+
+#ifndef CONFIGURE_TEST
+
 #include "threads.h"
 #include "array.h"
 #include "mapping.h"
@@ -21,19 +35,73 @@ PMOD_EXPORT int threads_disabled = 0;
 #include "pike_types.h"
 #include "operators.h"
 #include "bignum.h"
+#include "signal_handler.h"
+#include "backend.h"
+#include "pike_rusage.h"
+#include "pike_cpulib.h"
 
 #include <errno.h>
+#include <math.h>
 
-PMOD_EXPORT int live_threads = 0;
-PMOD_EXPORT COND_T live_threads_change;
-PMOD_EXPORT COND_T threads_disabled_change;
-PMOD_EXPORT size_t thread_stack_size=256 * 1204;
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif /* HAVE_SYS_PRCTL_H */
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
+
+#else  /* CONFIGURE_TEST */
+#include "pike_threadlib.h"
+#endif
+
+#ifndef VERBOSE_THREADS_DEBUG
+#define THREADS_FPRINTF(LEVEL,FPRINTF_ARGS)
+#else
+#define THREADS_FPRINTF(LEVEL,FPRINTF_ARGS) do {			\
+    if ((VERBOSE_THREADS_DEBUG + 0) >= (LEVEL)) {			\
+      /* E.g. THREADS_DISALLOW is used in numerous places where the */	\
+      /* value in errno must not be clobbered. */			\
+      int saved_errno = errno;						\
+      fprintf (stderr, "[%"PRINTSIZET"x] ", (size_t) th_self());	\
+      fprintf FPRINTF_ARGS;						\
+      errno = saved_errno;						\
+    }									\
+  } while(0)
+#endif /* VERBOSE_THREADS_DEBUG */
+
+#ifndef PIKE_THREAD_C_STACK_SIZE
+#define PIKE_THREAD_C_STACK_SIZE (256 * 1024)
+#endif
+
+PMOD_EXPORT size_t thread_stack_size=PIKE_THREAD_C_STACK_SIZE;
+
+PMOD_EXPORT void thread_low_error (int errcode, const char *cmd,
+				   const char *fname, int lineno)
+{
+#ifdef CONFIGURE_TEST
+  fprintf (stderr, "%s:%d: %s\n"
+	   "Unexpected error from thread function: %d\n",
+	   fname, lineno, cmd, errcode);
+  abort();
+#else
+  debug_fatal ("%s:%d: Fatal error: %s\n"
+	       "Unexpected error from thread function: %d\n",
+	       fname, lineno, cmd, errcode);
+#endif
+}
 
 /* SCO magic... */
 int  __thread_sys_behavior = 1;
 
+#ifndef CONFIGURE_TEST
+
 #if !defined(HAVE_PTHREAD_ATFORK) && !defined(th_atfork)
 #include "callback.h"
+#define PIKE_USE_OWN_ATFORK
 
 
 static struct callback_list atfork_prepare_callback;
@@ -64,12 +132,14 @@ void th_atfork_child(void)
 }
 #endif
 
+#endif	/* !CONFIGURE_TEST */
+
 #ifdef __NT__
 
-int low_nt_create_thread(unsigned Pike_stack_size,
-			 unsigned (TH_STDCALL *fun)(void *),
-			 void *arg,
-			 unsigned *id)
+PMOD_EXPORT int low_nt_create_thread(unsigned Pike_stack_size,
+				     unsigned (TH_STDCALL *fun)(void *),
+				     void *arg,
+				     unsigned *id)
 {
   HANDLE h = (HANDLE)_beginthreadex(NULL, Pike_stack_size, fun, arg, 0, id);
   if(h)
@@ -79,14 +149,9 @@ int low_nt_create_thread(unsigned Pike_stack_size,
   }
   else
   {
-    return 1;
+    return errno;
   }
 }
-
-
-#ifdef PIKE_DEBUG
-PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
-#endif
 
 #endif
 
@@ -108,6 +173,9 @@ PMOD_EXPORT int co_wait(COND_T *c, MUTEX_T *m)
 
   mt_unlock(& c->lock);
   mt_unlock(m);
+
+  /* NB: No race here since the event is manually reset. */
+
   event_wait(&me.event);
   mt_lock(m);
 
@@ -116,7 +184,50 @@ PMOD_EXPORT int co_wait(COND_T *c, MUTEX_T *m)
 
 #ifdef PIKE_DEBUG
   if(me.next)
-    fatal("Wait on event return prematurely!!\n");
+    Pike_fatal("Wait on event return prematurely!!\n");
+#endif
+
+  return 0;
+}
+
+PMOD_EXPORT int co_wait_timeout(COND_T *c, MUTEX_T *m, long s, long nanos)
+{
+  struct cond_t_queue me;
+  event_init(&me.event);
+  me.next=0;
+  mt_lock(& c->lock);
+
+  if(c->tail)
+  {
+    c->tail->next=&me;
+    c->tail=&me;
+  }else{
+    c->head=c->tail=&me;
+  }
+
+  mt_unlock(& c->lock);
+  mt_unlock(m);
+  if (s || nanos) {
+    DWORD msec;
+    /* Check for overflow (0xffffffff/1000). */
+    if (s >= 4294967) {
+      msec = INFINITE;
+    } else {
+      msec = s*1000 + nanos/1000000;
+      if (!msec) msec = 1;	/* Underflow. */
+    }
+    event_wait_msec(&me.event, msec);
+  } else {
+    event_wait(&me.event);
+  }
+  mt_lock(m);
+
+  event_destroy(& me.event);
+  /* Cancellation point?? */
+
+#ifdef PIKE_DEBUG
+  if(me.next)
+    Pike_fatal("Wait on event return prematurely!!\n");
 #endif
 
   return 0;
@@ -167,38 +278,113 @@ PMOD_EXPORT int co_destroy(COND_T *c)
   return 0;
 }
 
-#endif
+#else /* !SIMULATE_COND_WITH_EVENT */
 
+#ifndef CONFIGURE_TEST
+PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, long s, long nanos)
+{
+  struct timeval ct;
+#ifdef POSIX_THREADS
+  struct timespec timeout;
+#ifdef HAVE_PTHREAD_COND_RELTIMEDWAIT_NP
+  /* Solaris extension: relative timeout. */
+  timeout.tv_sec = s;
+  timeout.tv_nsec = nanos;
+  return pthread_cond_reltimedwait_np(c, m, &timeout);
+#else /* !HAVE_PTHREAD_COND_RELTIMEDWAIT_NP */
+  /* Absolute timeout. */
+  ACCURATE_GETTIMEOFDAY(&ct);
+  timeout.tv_sec = ct.tv_sec + s;
+  timeout.tv_nsec = ct.tv_usec * 1000 + nanos;
+  return pthread_cond_timedwait(c, m, &timeout);
+#endif /* HAVE_PTHREAD_COND_RELTIMEDWAIT_NP */
+#else /* !POSIX_THREADS */
+#error co_wait_timeout does not support this thread model.
+#endif /* POSIX_THREADS */
+}
+#endif /* !CONFIGURE_TEST */
 
-#define THIS_THREAD ((struct thread_state *)CURRENT_STORAGE)
+#endif /* SIMULATE_COND_WITH_EVENT */
 
-static struct callback *threads_evaluator_callback=0;
-int thread_id_result_variable;
-
-int th_running = 0;
-#ifdef PIKE_DEBUG
-int debug_interpreter_is_locked = 0;
-THREAD_T debug_locking_thread;
-#endif
-PMOD_EXPORT MUTEX_T interpreter_lock;
-MUTEX_T thread_table_lock, interleave_lock;
-struct program *mutex_key = 0;
-PMOD_EXPORT struct program *thread_id_prog = 0;
-struct program *thread_local_prog = 0;
 #ifdef POSIX_THREADS
 pthread_attr_t pattr;
 pthread_attr_t small_pattr;
 #endif
-PMOD_EXPORT ptrdiff_t thread_storage_offset;
 
-struct thread_starter
+static void really_low_th_init(void)
 {
-  struct object *id;
-  struct array *args;
-#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
-  int euid, egid;
-#endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
-};
+#ifdef SGI_SPROC_THREADS
+#error /* Need to specify a filename */
+  us_cookie = usinit("");
+#endif /* SGI_SPROC_THREADS */
+
+#ifdef POSIX_THREADS
+#ifdef HAVE_PTHREAD_INIT
+  pthread_init();
+#endif /* HAVE_PTHREAD_INIT */
+#endif /* POSIX_THREADS */
+
+#ifdef POSIX_THREADS
+  pthread_attr_init(&pattr);
+#ifndef CONFIGURE_TEST
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+  pthread_attr_setstacksize(&pattr, thread_stack_size);
+#endif
+#endif
+  pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
+
+  pthread_attr_init(&small_pattr);
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+  pthread_attr_setstacksize(&small_pattr, 4096*sizeof(char *));
+#endif
+  pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
+#endif
+}
+
+static void cleanup_thread_state (struct thread_state *th);
+
+#ifndef CONFIGURE_TEST
+
+#if defined(HAVE_CLOCK) &&						\
+    (defined (RDTSC) ||							\
+     (!defined(HAVE_GETHRTIME) &&					\
+      !(defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO))))
+static clock_t thread_start_clock = 0;
+static THREAD_T last_clocked_thread = 0;
+#define USE_CLOCK_FOR_SLICES
+#ifdef RDTSC
+static int use_tsc_for_slices;
+#define TSC_START_INTERVAL 100000
+static INT64 prev_tsc;	   /* TSC and */
+static clock_t prev_clock; /* clock() at the beg of the last tsc interval */
+#endif
+#endif
+
+#define THIS_THREAD ((struct thread_state *)CURRENT_STORAGE)
+
+static struct callback *threads_evaluator_callback=0;
+
+PMOD_EXPORT int num_threads = 1;
+PMOD_EXPORT int threads_disabled = 0;
+
+#ifdef PIKE_DEBUG
+static THREAD_T threads_disabled_thread = 0;
+#endif
+#ifdef INTERNAL_PROFILING
+PMOD_EXPORT unsigned long thread_yields = 0;
+#endif
+static int th_running = 0;
+static MUTEX_T interpreter_lock;
+static MUTEX_T interpreter_lock_wanted;
+MUTEX_T thread_table_lock;
+static MUTEX_T interleave_lock;
+static struct program *mutex_key = 0;
+PMOD_EXPORT struct program *thread_id_prog = 0;
+static struct program *thread_local_prog = 0;
+PMOD_EXPORT ptrdiff_t thread_storage_offset;
+static int live_threads = 0;
+static COND_T live_threads_change;
+static COND_T threads_disabled_change;
 
 struct thread_local
 {
@@ -207,6 +393,446 @@ struct thread_local
 
 static volatile IMUTEX_T *interleave_list = NULL;
 
+#define THREADSTATE2OBJ(X) ((X)->thread_obj)
+
+#if defined(PIKE_DEBUG)
+
+/* This is a debug wrapper to enable checks that the interpreter lock
+ * is held by the current thread. */
+static int debug_is_locked;
+static THREAD_T debug_locking_thread;
+#define SET_LOCKING_THREAD (debug_is_locked = 1,			\
+			    debug_locking_thread = th_self())
+#define UNSET_LOCKING_THREAD (debug_is_locked = 0)
+static INLINE void check_interpreter_lock (DLOC_DECL)
+{
+  if (th_running) {
+    THREAD_T self;
+    if (!debug_is_locked)
+      pike_fatal_dloc ("Interpreter not locked.\n");
+    self = th_self();
+    if (!th_equal (debug_locking_thread, self))
+      pike_fatal_dloc ("Interpreter not locked by this thread.\n");
+  }
+}
+
+static unsigned LONGEST thread_swaps = 0;
+static unsigned LONGEST check_threads_calls = 0;
+static unsigned LONGEST check_threads_yields = 0;
+static unsigned LONGEST check_threads_swaps = 0;
+static void f__thread_swaps (INT32 args)
+  {push_ulongest (thread_swaps);}
+static void f__check_threads_calls (INT32 args)
+  {push_ulongest (check_threads_calls);}
+static void f__check_threads_yields (INT32 args)
+  {push_ulongest (check_threads_yields);}
+static void f__check_threads_swaps (INT32 args)
+  {push_ulongest (check_threads_swaps);}
+
+#else
+
+#define SET_LOCKING_THREAD 0
+#define UNSET_LOCKING_THREAD 0
+static INLINE void check_interpreter_lock (DLOC_DECL) {}
+
+#endif
+
+PMOD_EXPORT INLINE void pike_low_lock_interpreter (DLOC_DECL)
+{
+  /* The double locking here is to ensure that when a thread releases
+   * the interpreter lock, a different thread gets it first. Thereby
+   * we ensure a thread switch in check_threads, if there are other
+   * threads waiting. */
+  mt_lock (&interpreter_lock_wanted);
+  mt_lock (&interpreter_lock);
+  mt_unlock (&interpreter_lock_wanted);
+
+  SET_LOCKING_THREAD;
+  THREADS_FPRINTF (1, (stderr, "Got iplock" DLOC_PF(" @ ",) "\n"
+		       COMMA_DLOC_ARGS_OPT));
+}
+
+PMOD_EXPORT INLINE void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
+{
+  THREADS_FPRINTF (1, (stderr,
+		       "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
+		       cond COMMA_DLOC_ARGS_OPT));
+  UNSET_LOCKING_THREAD;
+
+  /* FIXME: Should use interpreter_lock_wanted here as well. The
+   * problem is that few (if any) thread libs lets us atomically
+   * unlock a mutex and wait, and then lock a different mutex. */
+  co_wait (cond, &interpreter_lock);
+
+  SET_LOCKING_THREAD;
+  THREADS_FPRINTF (1, (stderr,
+		       "Got signal on cond %p with iplock" DLOC_PF(" @ ",) "\n",
+		       cond COMMA_DLOC_ARGS_OPT));
+}
+
+PMOD_EXPORT INLINE int pike_low_timedwait_interpreter (COND_T *cond,
+						       long sec, long nsec
+						       COMMA_DLOC_DECL)
+{
+  int res;
+  THREADS_FPRINTF (1, (stderr,
+		       "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
+		       cond COMMA_DLOC_ARGS_OPT));
+  UNSET_LOCKING_THREAD;
+
+  /* FIXME: Should use interpreter_lock_wanted here as well. The
+   * problem is that few (if any) thread libs lets us atomically
+   * unlock a mutex and wait, and then lock a different mutex. */
+  res = co_wait_timeout (cond, &interpreter_lock, sec, nsec);
+
+  SET_LOCKING_THREAD;
+  THREADS_FPRINTF (1, (stderr,
+		       "Got signal on cond %p with iplock" DLOC_PF(" @ ",) "\n",
+		       cond COMMA_DLOC_ARGS_OPT));
+  return res;
+}
+
+static void threads_disabled_wait (DLOC_DECL)
+{
+  assert (threads_disabled);
+  do {
+    THREADS_FPRINTF (1, (stderr,
+			 "Waiting on threads_disabled" DLOC_PF(" @ ",) "\n"
+			 COMMA_DLOC_ARGS_OPT));
+    UNSET_LOCKING_THREAD;
+    co_wait (&threads_disabled_change, &interpreter_lock);
+    SET_LOCKING_THREAD;
+  } while (threads_disabled);
+  THREADS_FPRINTF (1, (stderr,
+		       "Continue after threads_disabled" DLOC_PF(" @ ",) "\n"
+		       COMMA_DLOC_ARGS_OPT));
+}
+
+PMOD_EXPORT INLINE void pike_lock_interpreter (DLOC_DECL)
+{
+  pike_low_lock_interpreter (DLOC_ARGS_OPT);
+  if (threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
+}
+
+PMOD_EXPORT INLINE void pike_unlock_interpreter (DLOC_DECL)
+{
+  THREADS_FPRINTF (1, (stderr, "Releasing iplock" DLOC_PF(" @ ",) "\n"
+		       COMMA_DLOC_ARGS_OPT));
+  UNSET_LOCKING_THREAD;
+  mt_unlock (&interpreter_lock);
+}
+
+PMOD_EXPORT INLINE void pike_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
+{
+  int owner = threads_disabled;
+  pike_low_wait_interpreter (cond COMMA_DLOC_ARGS_OPT);
+  if (!owner && threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
+}
+
+PMOD_EXPORT INLINE int pike_timedwait_interpreter (COND_T *cond,
+						   long sec, long nsec
+						   COMMA_DLOC_DECL)
+{
+  int owner = threads_disabled;
+  int res = pike_low_timedwait_interpreter (cond, sec, nsec
+					    COMMA_DLOC_ARGS_OPT);
+  if (!owner && threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
+  return res;
+}
+
+PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
+{
+  /* NB: Assumes that there's a temporary Pike_interpreter_struct
+   *     in Pike_interpreter_pointer, which we copy, and replace
+   *     with ourselves.
+   */
+  Pike_interpreter.thread_state = ts;
+  ts->state = Pike_interpreter;
+  Pike_interpreter_pointer = &ts->state;
+  ts->id = th_self();
+  ts->status = THREAD_RUNNING;
+  ts->swapped = 0;
+#ifdef PIKE_DEBUG
+  ts->debug_flags = 0;
+  thread_swaps++;
+#endif
+#ifdef USE_CLOCK_FOR_SLICES
+  /* Initialize thread_start_clock to zero instead of clock() since we
+   * don't know for how long the thread already has run. */
+  thread_start_clock = 0;
+  last_clocked_thread = ts->id;
+#ifdef RDTSC
+  prev_tsc = 0;
+#endif
+#ifdef PROFILE_CHECK_THREADS
+  fprintf (stderr, "[%d:%f] pike_init_thread_state: tsc reset\n",
+	   getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS));
+#endif
+#endif
+}
+
+PMOD_EXPORT void pike_swap_out_thread (struct thread_state *ts
+				       COMMA_DLOC_DECL)
+{
+  THREADS_FPRINTF (2, (stderr, "Swap out %sthread %p" DLOC_PF(" @ ",) "\n",
+		       ts == Pike_interpreter.thread_state ? "current " : "",
+		       ts
+		       COMMA_DLOC_ARGS_OPT));
+
+#ifdef PROFILING
+  if (!ts->swapped) {
+    cpu_time_t now = get_cpu_time();
+#ifdef PROFILING_DEBUG
+    fprintf(stderr, "%p: Swap out at: %" PRINT_CPU_TIME
+	    " unlocked: %" PRINT_CPU_TIME "\n",
+	    ts, now, ts->state.unlocked_time);
+#endif
+    ts->state.unlocked_time -= now;
+  }
+#endif
+
+  ts->swapped=1;
+
+  Pike_interpreter_pointer = NULL;
+}
+
+PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
+				      COMMA_DLOC_DECL)
+{
+  THREADS_FPRINTF (2, (stderr, "Swap in thread %p" DLOC_PF(" @ ",) "\n",
+		       ts COMMA_DLOC_ARGS_OPT));
+
+#ifdef PIKE_DEBUG
+  if (Pike_interpreter_pointer)
+    pike_fatal_dloc ("Thread %"PRINTSIZET"x swapped in "
+		     "over existing thread %"PRINTSIZET"x.\n",
+		     (size_t) ts->id,
+		     (size_t) (Pike_interpreter.thread_state ?
+			       Pike_interpreter.thread_state->id : 0));
+#endif
+
+#ifdef PROFILING
+  if (ts->swapped) {
+    cpu_time_t now = get_cpu_time();
+#ifdef PROFILING_DEBUG
+    fprintf(stderr, "%p: Swap in at: %" PRINT_CPU_TIME
+	    " unlocked: %" PRINT_CPU_TIME "\n",
+	    ts, now, ts->state.unlocked_time);
+#endif
+/* This will not work, since Pike_interpreter_pointer is always null here... */
+/* #ifdef PIKE_DEBUG */
+/*     if (now < -Pike_interpreter.unlocked_time) { */
+/*           pike_fatal_dloc("Time at swap in is before time at swap out." */
+/*                           " %" PRINT_CPU_TIME " < %" PRINT_CPU_TIME */
+/*                           "\n", now, -Pike_interpreter.unlocked_time); */
+/*     } */
+/* #endif */
+    ts->state.unlocked_time += now;
+  }
+#endif
+
+  ts->swapped=0;
+  Pike_interpreter_pointer = &ts->state;
+#ifdef PIKE_DEBUG
+  thread_swaps++;
+#endif
+
+#ifdef USE_CLOCK_FOR_SLICES
+  if (last_clocked_thread != ts->id) {
+    thread_start_clock = clock();
+    last_clocked_thread = ts->id;
+#ifdef RDTSC
+    RDTSC (prev_tsc);
+    prev_clock = thread_start_clock;
+#endif
+  }
+#endif
+}
+
+PMOD_EXPORT void pike_swap_in_current_thread (struct thread_state *ts
+					      COMMA_DLOC_DECL)
+{
+#ifdef PIKE_DEBUG
+  THREAD_T self = th_self();
+  if (!th_equal (ts->id, self))
+    pike_fatal_dloc ("Swapped in thread state %p into wrong thread "
+		     "%"PRINTSIZET"x - should be %"PRINTSIZET"x.\n",
+		     ts, th_self(), ts->id);
+#endif
+
+  pike_swap_in_thread (ts COMMA_DLOC_ARGS_OPT);
+}
+
+#ifdef PIKE_DEBUG
+
+PMOD_EXPORT void pike_assert_thread_swapped_in (DLOC_DECL)
+{
+  struct thread_state *ts=thread_state_for_id(th_self());
+  if(ts->swapped)
+    pike_fatal_dloc ("Thread is not swapped in.\n");
+  if (ts->debug_flags & THREAD_DEBUG_LOOSE)
+    pike_fatal_dloc ("Current thread is not bound to the interpreter. "
+		     "Nested use of ALLOW_THREADS()?\n");
+}
+
+PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL)
+{
+  struct thread_state *ts=thread_state_for_id(th_self());
+  if (ts->debug_flags & THREAD_DEBUG_LOOSE)
+    pike_fatal_dloc ("Current thread is not bound to the interpreter. "
+		     "Nested use of ALLOW_THREADS()?\n");
+  if(ts != Pike_interpreter.thread_state) {
+    debug_list_all_threads();
+    Pike_fatal ("Thread states mixed up between threads.\n");
+  }
+  check_interpreter_lock (DLOC_ARGS_OPT);
+}
+
+#endif	/* PIKE_DEBUG */
+
+PMOD_EXPORT void pike_threads_allow (struct thread_state *ts COMMA_DLOC_DECL)
+{
+#ifdef DO_PIKE_CLEANUP
+  /* Might get here after th_cleanup() when reporting leaks. */
+  if (!ts) return;
+#endif
+
+#ifdef PIKE_DEBUG
+  pike_debug_check_thread (DLOC_ARGS_OPT);
+  if (Pike_in_gc > 50 && Pike_in_gc < 300)
+    pike_fatal_dloc ("Threads allowed during garbage collection (pass %d).\n",
+		     Pike_in_gc);
+  if (pike_global_buffer.s.str)
+    pike_fatal_dloc ("Threads allowed while the global dynamic buffer "
+		     "is in use.\n");
+  ts->debug_flags |= THREAD_DEBUG_LOOSE;
+#endif
+
+  if (num_threads > 1 && !threads_disabled) {
+    pike_swap_out_thread (ts COMMA_DLOC_ARGS_OPT);
+    pike_unlock_interpreter (DLOC_ARGS_OPT);
+  }
+
+#if defined (PIKE_DEBUG) && !(defined(__ia64) && defined(__xlc__))
+  else {
+    /* Disabled in xlc 5.5.0.0/ia64 due to a code generation bug. */
+    THREAD_T self = th_self();
+    if (threads_disabled && !th_equal(threads_disabled_thread, self))
+      pike_fatal_dloc ("Threads allowed from a different thread "
+		       "while threads are disabled. "
+		       "(self: %"PRINTSIZET"x, disabler: %"PRINTSIZET"x)\n",
+		       (size_t) self, (size_t) threads_disabled_thread);
+  }
+#endif
+}
+
+PMOD_EXPORT void pike_threads_disallow (struct thread_state *ts COMMA_DLOC_DECL)
+{
+#ifdef DO_PIKE_CLEANUP
+  if (!ts) return;
+#endif
+
+  if (ts->swapped) {
+    pike_lock_interpreter (DLOC_ARGS_OPT);
+    pike_swap_in_thread (ts COMMA_DLOC_ARGS_OPT);
+  }
+
+#ifdef PIKE_DEBUG
+  ts->debug_flags &= ~THREAD_DEBUG_LOOSE;
+  pike_debug_check_thread (DLOC_ARGS_OPT);
+#endif
+}
+
+PMOD_EXPORT void pike_threads_allow_ext (struct thread_state *ts
+					 COMMA_DLOC_DECL)
+{
+#ifdef DO_PIKE_CLEANUP
+  /* Might get here after th_cleanup() when reporting leaks. */
+  if (!ts) return;
+#endif
+
+#ifdef PIKE_DEBUG
+  pike_debug_check_thread (DLOC_ARGS_OPT);
+  if (Pike_in_gc > 50 && Pike_in_gc < 300)
+    pike_fatal_dloc ("Threads allowed during garbage collection (pass %d).\n",
+		     Pike_in_gc);
+  if (pike_global_buffer.s.str)
+    pike_fatal_dloc ("Threads allowed while the global dynamic buffer "
+		     "is in use.\n");
+  ts->debug_flags |= THREAD_DEBUG_LOOSE;
+#endif
+
+  if (num_threads > 1 && !threads_disabled) {
+    pike_swap_out_thread (ts COMMA_DLOC_ARGS_OPT);
+    live_threads++;
+    THREADS_FPRINTF (1, (stderr, "Increased live threads to %d\n",
+			 live_threads));
+    pike_unlock_interpreter (DLOC_ARGS_OPT);
+  }
+
+#if defined (PIKE_DEBUG) && !(defined(__ia64) && defined(__xlc__))
+  else {
+    /* Disabled in xlc 5.5.0.0/ia64 due to a code generation bug. */
+    THREAD_T self = th_self();
+    if (threads_disabled && !th_equal(threads_disabled_thread, self))
+      pike_fatal_dloc ("Threads allowed from a different thread "
+		       "while threads are disabled. "
+		       "(self: %"PRINTSIZET"x, disabler: %"PRINTSIZET"x)\n",
+		       (size_t) self, (size_t) threads_disabled_thread);
+  }
+#endif
+}
+
+PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
+					    COMMA_DLOC_DECL)
+{
+#ifdef DO_PIKE_CLEANUP
+  if (!ts) return;
+#endif
+
+  if (ts->swapped) {
+    pike_low_lock_interpreter (DLOC_ARGS_OPT);
+    live_threads--;
+    THREADS_FPRINTF (1, (stderr, "Decreased live threads to %d\n",
+			 live_threads));
+    co_broadcast (&live_threads_change);
+    if (threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
+    pike_swap_in_thread (ts COMMA_DLOC_ARGS_OPT);
+  }
+
+#ifdef PIKE_DEBUG
+  ts->debug_flags &= ~THREAD_DEBUG_LOOSE;
+  pike_debug_check_thread (DLOC_ARGS_OPT);
+#endif
+}
+
+PMOD_EXPORT void pike_lock_imutex (IMUTEX_T *im COMMA_DLOC_DECL)
+{
+  struct thread_state *ts = Pike_interpreter.thread_state;
+
+  /* If threads are disabled, we already hold the lock. */
+  if (threads_disabled) return;
+
+  THREADS_FPRINTF(0, (stderr, "Locking IMutex %p...\n", im));
+  pike_threads_allow (ts COMMA_DLOC_ARGS_OPT);
+  mt_lock(&((im)->lock));
+  pike_threads_disallow (ts COMMA_DLOC_ARGS_OPT);
+  THREADS_FPRINTF(1, (stderr, "Locked IMutex %p\n", im));
+}
+
+PMOD_EXPORT void pike_unlock_imutex (IMUTEX_T *im COMMA_DLOC_DECL)
+{
+  /* If threads are disabled, we already hold the lock. */
+  if (threads_disabled) return;
+
+  THREADS_FPRINTF(0, (stderr, "Unlocking IMutex %p" DLOC_PF(" @ ",) "\n",
+		      im COMMA_DLOC_ARGS_OPT));
+  mt_unlock(&(im->lock));
+}
+
+/* This is a variant of init_threads_disable that blocks all other
+ * threads that might run pike code, but still doesn't block the
+ * THREADS_ALLOW_UID threads. */
 void low_init_threads_disable(void)
 {
   /* Serious black magic to avoid dead-locks */
@@ -215,7 +841,7 @@ void low_init_threads_disable(void)
     THREADS_FPRINTF(0,
 		    (stderr, "low_init_threads_disable(): Locking IM's...\n"));
 
-    if (Pike_interpreter.thread_id) {
+    if (Pike_interpreter.thread_state) {
       /* Threads have been enabled. */
 
       IMUTEX_T *im;
@@ -255,6 +881,9 @@ void low_init_threads_disable(void)
 			"low_init_threads_disable(): Disabling threads.\n"));
 
     threads_disabled = 1;
+#ifdef PIKE_DEBUG
+    threads_disabled_thread = th_self();
+#endif
   } else {
     threads_disabled++;
   }
@@ -266,33 +895,43 @@ void low_init_threads_disable(void)
 
 /*! @decl object(_disable_threads) _disable_threads()
  *!
- *! This function first posts a notice to all threads that it is time to stop.
- *! It then waits until all threads actually *have* stopped, and then then 
- *! returns an object. All other threads will be blocked from running until
- *! that object has been freed/destroyed.
+ *! This function first posts a notice to all threads that it is time
+ *! to stop. It then waits until all threads actually *have* stopped,
+ *! and then then returns a lock object. All other threads will be
+ *! blocked from running until that object has been freed/destroyed.
+ *!
+ *! It's mainly useful to do things that require a temporary uid/gid
+ *! change, since on many OS the effective user and group applies to
+ *! all threads.
  *!
  *! @note
- *! This function can completely block Pike if used incorrectly.
- *! Use with extreme caution.
+ *! You should make sure that the returned object is freed even if
+ *! some kind of error is thrown. That means in practice that it
+ *! should only have references (direct or indirect) from function
+ *! local variables. Also, it shouldn't be referenced from cyclic
+ *! memory structures, since those are only destructed by the periodic
+ *! gc. (This advice applies to mutex locks in general, for that
+ *! matter.)
  */
-void init_threads_disable(struct object *o)
+void init_threads_disable(struct object *UNUSED(o))
 {
   low_init_threads_disable();
 
   if(live_threads) {
     SWAP_OUT_CURRENT_THREAD();
     while (live_threads) {
-      THREADS_FPRINTF(0,
+      THREADS_FPRINTF(1,
 		      (stderr,
 		       "_disable_threads(): Waiting for %d threads to finish\n",
 		       live_threads));
-      co_wait_interpreter(&live_threads_change);
+      low_co_wait_interpreter (&live_threads_change);
     }
+    THREADS_FPRINTF(0, (stderr, "_disable_threads(): threads now disabled\n"));
     SWAP_IN_CURRENT_THREAD();
   }
 }
 
-void exit_threads_disable(struct object *o)
+void exit_threads_disable(struct object *UNUSED(o))
 {
   THREADS_FPRINTF(0, (stderr, "exit_threads_disable(): threads_disabled:%d\n",
 		      threads_disabled));
@@ -302,21 +941,23 @@ void exit_threads_disable(struct object *o)
 
       /* Order shouldn't matter for unlock, so no need to do it backwards. */
       while(im) {
-	THREADS_FPRINTF(0,
-			(stderr,
-			 "exit_threads_disable(): Unlocking IM 0x%08p\n", im));
+	THREADS_FPRINTF(0, (stderr,
+			    "exit_threads_disable(): Unlocking IM %p\n", im));
 	mt_unlock(&(im->lock));
 	im = im->next;
       }
 
       mt_unlock(&interleave_lock);
 
-      THREADS_FPRINTF(0, (stderr, "_exit_threads_disable(): Wake up!\n"));
+      THREADS_FPRINTF(0, (stderr, "exit_threads_disable(): Wake up!\n"));
       co_broadcast(&threads_disabled_change);
+#ifdef PIKE_DEBUG
+      threads_disabled_thread = 0;
+#endif
     }
 #ifdef PIKE_DEBUG
   } else {
-    fatal("exit_threads_disable() called too many times!\n");
+    Pike_fatal("exit_threads_disable() called too many times!\n");
 #endif /* PIKE_DEBUG */
   }
 }
@@ -330,8 +971,7 @@ void init_interleave_mutex(IMUTEX_T *im)
 
   init_threads_disable(NULL);
 
-  THREADS_FPRINTF(0, (stderr,
-		      "init_interleave_mutex(): Locking IM 0x%08p\n", im));
+  THREADS_FPRINTF(0, (stderr, "init_interleave_mutex(): Locking IM %p\n", im));
 
   /* Lock it so that it can be unlocked by exit_threads_disable() */
   mt_lock(&(im->lock));
@@ -370,10 +1010,8 @@ void exit_interleave_mutex(IMUTEX_T *im)
 
 /* Thread hashtable */
 
-#define THREAD_TABLE_SIZE 127  /* Totally arbitrary prime */
-
-static struct thread_state *thread_table_chains[THREAD_TABLE_SIZE];
-static int num_pike_threads=0;
+struct thread_state *thread_table_chains[THREAD_TABLE_SIZE];
+int num_pike_threads=0;
 
 void thread_table_init(void)
 {
@@ -387,34 +1025,20 @@ unsigned INT32 thread_table_hash(THREAD_T *tid)
   return th_hash(*tid) % THREAD_TABLE_SIZE;
 }
 
-#ifdef PIKE_DEBUG
-static void dumpmem(char *desc, void *x, int size)
+PMOD_EXPORT void thread_table_insert(struct thread_state *s)
 {
-  int e;
-  unsigned char *tmp=(unsigned char *)x;
-  fprintf(stderr,"%s: ",desc);
-  for(e=0;e<size;e++)
-    fprintf(stderr,"%02x",tmp[e]);
-  fprintf(stderr,"\n");
-}
-#endif
-
-
-PMOD_EXPORT void thread_table_insert(struct object *o)
-{
-  struct thread_state *s = OBJ2THREAD(o);
   unsigned INT32 h = thread_table_hash(&s->id);
 #ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
-    fatal("thread_table_hash failed miserably!\n");
+    Pike_fatal("thread_table_hash failed miserably!\n");
   if(thread_state_for_id(s->id))
   {
     if(thread_state_for_id(s->id) == s)
-      fatal("Registring thread twice!\n");
+      Pike_fatal("Registring thread twice!\n");
     else
-      fatal("Forgot to unregister thread!\n");
+      Pike_fatal("Forgot to unregister thread!\n");
   }
-/*  dumpmem("thread_table_insert",&s->id, sizeof(THREAD_T)); */
+/*  fprintf(stderr, "thread_table_insert: %"PRINTSIZET"x\n", (size_t) s->id); */
 #endif
   mt_lock( & thread_table_lock );
   num_pike_threads++;
@@ -425,10 +1049,9 @@ PMOD_EXPORT void thread_table_insert(struct object *o)
   mt_unlock( & thread_table_lock );  
 }
 
-PMOD_EXPORT void thread_table_delete(struct object *o)
+PMOD_EXPORT void thread_table_delete(struct thread_state *s)
 {
-  struct thread_state *s = OBJ2THREAD(o);
-/*  dumpmem("thread_table_delete",&s->id, sizeof(THREAD_T)); */
+/*  fprintf(stderr, "thread_table_delete: %"PRINTSIZET"x\n", (size_t) s->id); */
   mt_lock( & thread_table_lock );
   num_pike_threads--;
   if(s->hashlink != NULL)
@@ -443,11 +1066,11 @@ PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid)
   struct thread_state *s = NULL;
 #if 0
   if(num_threads>1)
-    dumpmem("thread_state_for_id: ",&tid,sizeof(tid));
+    fprintf (stderr, "thread_state_for_id: %"PRINTSIZET"x\n", (size_t) tid);
 #endif
 #ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
-    fatal("thread_table_hash failed miserably!\n");
+    Pike_fatal("thread_table_hash failed miserably!\n");
 #endif
   mt_lock( & thread_table_lock );
   if(thread_table_chains[h] == NULL)
@@ -481,7 +1104,8 @@ PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid)
   mt_unlock( & thread_table_lock );
 #if 0
   if(num_threads>1 && s)
-    dumpmem("thread_state_for_id return value: ",&s->id,sizeof(tid));
+    fprintf (stderr, "thread_state_for_id return value: %"PRINTSIZET"x\n",
+	     (size_t) s->id);
 #endif
   return s;
   /* NOTEZ BIEN:  Return value only guaranteed to remain valid as long
@@ -522,6 +1146,83 @@ PMOD_EXPORT struct object *thread_for_id(THREAD_T tid)
      by incrementing refcount though. */
 }
 
+PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
+{
+  struct thread_state *state;
+
+  if((state = thread_state_for_id(th_self()))!=NULL) {
+    /* This is a pike thread.  Do we have the interpreter lock? */
+    if(!state->swapped) {
+      /* Yes.  Go for it... */
+#ifdef PIKE_DEBUG
+      /* Ensure that the thread isn't loose. */
+      int is_loose = state->debug_flags & THREAD_DEBUG_LOOSE;
+      state->debug_flags &= ~THREAD_DEBUG_LOOSE;
+#endif
+
+      func(ctx);
+
+#ifdef PIKE_DEBUG
+      /* Restore the looseness property of the thread. */
+      state->debug_flags |= is_loose;
+#endif
+    } else {
+      /* Nope, let's get it... */
+      mt_lock_interpreter();
+      SWAP_IN_THREAD(state);
+      DO_IF_DEBUG(state->debug_flags &= ~THREAD_DEBUG_LOOSE;)
+
+      func(ctx);
+
+      /* Restore */
+      DO_IF_DEBUG(state->debug_flags |= THREAD_DEBUG_LOOSE;)
+      SWAP_OUT_THREAD(state);
+      mt_unlock_interpreter();
+    }
+  } else {
+    /* Not a pike thread.  Create a temporary thread_id... */
+    struct object *thread_obj;
+    struct Pike_interpreter_struct new_interpreter;
+
+    mt_lock_interpreter();
+    Pike_interpreter_pointer = &new_interpreter;
+    init_interpreter();
+    Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
+    Pike_interpreter.recoveries = NULL;
+    thread_obj = fast_clone_object(thread_id_prog);
+    INIT_THREAD_STATE((struct thread_state *)(thread_obj->storage +
+                                              thread_storage_offset));
+    num_threads++;
+    thread_table_insert(Pike_interpreter.thread_state);
+
+    func(ctx);
+
+    cleanup_interpret();        /* Must be done before EXIT_THREAD_STATE */
+    Pike_interpreter.thread_state->status=THREAD_EXITED;
+    co_signal(&Pike_interpreter.thread_state->status_change);
+    thread_table_delete(Pike_interpreter.thread_state);
+    EXIT_THREAD_STATE(Pike_interpreter.thread_state);
+    Pike_interpreter.thread_state=NULL;
+    free_object(thread_obj);
+    thread_obj = NULL;
+    num_threads--;
+    mt_unlock_interpreter();
+#ifdef PIKE_DEBUG
+    Pike_interpreter_pointer = NULL;
+#endif
+  }
+}
+
+PMOD_EXPORT void enable_external_threads(void)
+{
+  num_threads++;  
+}
+
+PMOD_EXPORT void disable_external_threads(void)
+{
+  num_threads--;
+}
+
 /*! @module Thread
  */
 
@@ -530,137 +1231,552 @@ PMOD_EXPORT struct object *thread_for_id(THREAD_T tid)
  *! This function returns an array with the thread ids of all threads.
  *!
  *! @seealso
- *!   @[Thread.Thread()]
+ *!   @[Thread()]
  */
 PMOD_EXPORT void f_all_threads(INT32 args)
 {
   /* Return an unordered array containing all threads that was running
      at the time this function was invoked */
 
-  INT32 x;
   struct svalue *oldsp;
   struct thread_state *s;
 
   pop_n_elems(args);
   oldsp = Pike_sp;
-  mt_lock( & thread_table_lock );
-  for(x=0; x<THREAD_TABLE_SIZE; x++)
-    for(s=thread_table_chains[x]; s; s=s->hashlink) {
+  FOR_EACH_THREAD (s, {
       struct object *o = THREADSTATE2OBJ(s);
-      ref_push_object(o);
-    }
-  mt_unlock( & thread_table_lock );
+      if (o) {
+	ref_push_object(o);
+      }
+    });
   f_aggregate(DO_NOT_WARN(Pike_sp - oldsp));
 }
 
+#ifdef PIKE_DEBUG
+PMOD_EXPORT void debug_list_all_threads(void)
+{
+  INT32 x;
+  struct thread_state *s;
+  THREAD_T self = th_self();
+
+  fprintf(stderr,"--Listing all threads--\n");
+  fprintf (stderr, "Current thread: %"PRINTSIZET"x\n", (size_t) self);
+  fprintf(stderr,"Current interpreter thread state: %p%s\n",
+	  Pike_interpreter.thread_state,
+	  Pike_interpreter.thread_state == (struct thread_state *) (ptrdiff_t) -1 ?
+	  " (swapped)" : "");
+  fprintf(stderr,"Current thread state according to thread_state_for_id(): %p\n",
+	  thread_state_for_id (self));
+  fprintf(stderr,"Current thread obj: %p\n",
+	  (Pike_interpreter.thread_state &&
+	   Pike_interpreter.thread_state != (struct thread_state *) (ptrdiff_t) -1) ?
+	  Pike_interpreter.thread_state->thread_obj : NULL);
+  fprintf(stderr,"Current thread hash: %d\n",thread_table_hash(&self));
+  fprintf(stderr,"Current stack pointer: %p\n",&self);
+  for(x=0; x<THREAD_TABLE_SIZE; x++)
+  {
+    for(s=thread_table_chains[x]; s; s=s->hashlink) {
+      struct object *o = THREADSTATE2OBJ(s);
+      fprintf(stderr,"ThTab[%d]: state=%p, obj=%p, "
+	      "swapped=%d, sp=%p (%+"PRINTPTRDIFFT"d), fp=%p, stackbase=%p, "
+	      "id=%"PRINTSIZET"x\n",
+	      x, s, o, s->swapped,
+	      s->state.stack_pointer,
+	      s->state.stack_pointer - s->state.evaluator_stack,
+	      s->state.frame_pointer,
+	      s->state.stack_top,
+	      (size_t) s->id);
+    }
+  }
+  fprintf(stderr,"-----------------------\n");
+}
+#endif
 
 PMOD_EXPORT int count_pike_threads(void)
 {
   return num_pike_threads;
 }
 
-static void check_threads(struct callback *cb, void *arg, void * arg2)
+static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *UNUSED(arg2))
 {
+#ifdef PROFILE_CHECK_THREADS
+  static unsigned long calls = 0, yields = 0;
+  static unsigned long clock_checks = 0, no_clock_advs = 0;
+#if 0
+  static unsigned long slice_int_n = 0; /* Slice interval length. */
+  static double slice_int_mean = 0.0, slice_int_m2 = 0.0;
+  static unsigned long tsc_int_n = 0; /* Actual tsc interval length. */
+  static double tsc_int_mean = 0.0, tsc_int_m2 = 0.0;
+  static unsigned long tsc_tgt_n = 0; /* Target tsc interval length. */
+  static double tsc_tgt_mean = 0.0, tsc_tgt_m2 = 0.0;
+#endif
+  static unsigned long tps = 0, tps_int_n = 0;  /* TSC intervals per slice. */
+  static double tps_int_mean = 0.0, tps_int_m2 = 0.0;
+  calls++;
+#endif
+#ifdef PIKE_DEBUG
+  check_threads_calls++;
+#endif
+
+#if defined (USE_CLOCK_FOR_SLICES) && defined (PIKE_DEBUG)
+  if (last_clocked_thread != th_self())
+    Pike_fatal ("Stale thread %08lx in last_clocked_thread (self is %08lx)\n",
+		(unsigned long) last_clocked_thread, (unsigned long) th_self());
+#endif
+
+#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+  /* We can get here as often as 30+ thousand times per second;
+     let's try to avoid doing as many clock(3)/times(2) syscalls
+     by using the TSC. */
+
+  if (use_tsc_for_slices) {
+     static INT64 target_int = TSC_START_INTERVAL;
+     INT64 tsc_now, tsc_elapsed;
+
+     /* prev_tsc is normally always valid here, but it can be zero
+      * after a tsc jump reset and just after a thread has been
+      * "pike-ified" with INIT_THREAD_STATE (in which case
+      * thread_start_clock is zero too). */
+
+     RDTSC(tsc_now);
+     tsc_elapsed = tsc_now - prev_tsc;
+
+     if (tsc_elapsed < target_int) {
+       if (tsc_elapsed < 0) {
+	 /* The counter jumped back in time, so reset and continue. In
+	  * the worst case this keeps happening all the time, and then
+	  * the only effect is that we always fall back to
+	  * clock(3). */
+#ifdef PROFILE_CHECK_THREADS
+	 fprintf (stderr, "[%d:%f] TSC backward jump detected "
+		  "(now: %"PRINTINT64"d, prev: %"PRINTINT64"d, "
+		  "target_int: %"PRINTINT64"d) - resetting\n",
+		  getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+		  tsc_now, prev_tsc, target_int);
+#endif
+	 target_int = TSC_START_INTERVAL;
+	 prev_tsc = 0;
+       }
+       else
+	 return;
+     }
+
+#ifdef PROFILE_CHECK_THREADS
+#if 0
+     if (prev_tsc) {
+       double delta = tsc_elapsed - tsc_int_mean;
+       tsc_int_n++;
+       tsc_int_mean += delta / tsc_int_n;
+       tsc_int_m2 += delta * (tsc_elapsed - tsc_int_mean);
+     }
+#endif
+     clock_checks++;
+     tps++;
+#endif
+
+     {
+       clock_t clock_now = clock();
+
+       /* Aim tsc intervals at 1/20th of a thread time slice interval,
+	* i.e. at 1/400 sec. That means the time is checked with
+	* clock(3) approx 20 times per slice. That still cuts the vast
+	* majority of the clock() calls and we're still fairly safe
+	* against tsc inconsistencies of different sorts, like cpu clock
+	* rate changes (on older cpu's with variable tsc),
+	* unsynchronized tsc's between cores, OS tsc resets, etc -
+	* individual intervals can be off by more than an order of
+	* magnitude in either direction without affecting the final time
+	* slice length appreciably.
+	*
+	* Note that the real interval lengths will always be longer.
+	* One reason is that we won't get calls exactly when they run
+	* out. Another is the often lousy clock(3) resolution. */
+
+       if (prev_tsc) {
+	 if (clock_now > prev_clock) {
+	   /* Estimate the next interval just by extrapolating the
+	    * tsc/clock ratio of the last one. This adapts very
+	    * quickly but is also very "jumpy". That shouldn't matter
+	    * due to the approach with dividing the time slice into
+	    * ~20 tsc intervals.
+	    *
+	    * Note: The main source of the jumpiness is probably that
+	    * clock(3) has so lousy resolution on many platforms, i.e.
+	    * it may step forward very large intervals very seldom
+	    * (100 times/sec on linux/glibc 2.x). It also has the
+	    * effect that the actual tsc intervals will be closer to
+	    * 1/200 sec. */
+	   clock_t tsc_interval_time = clock_now - prev_clock;
+	   INT64 new_target_int =
+	     (tsc_elapsed * (CLOCKS_PER_SEC / 400)) / tsc_interval_time;
+	   if (new_target_int < target_int << 2)
+	     target_int = new_target_int;
+	   else {
+	     /* The most likely cause for this is high variance in the
+	      * interval lengths due to low clock(3) resolution. */
+#ifdef PROFILE_CHECK_THREADS
+	     fprintf (stderr, "[%d:%f] Capping large TSC interval increase "
+		      "(from %"PRINTINT64"d to %"PRINTINT64"d)\n",
+		      getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+		      target_int, new_target_int);
+#endif
+	     /* The + 1 is paranoia just in case it has become zero somehow. */
+	     target_int = (target_int << 2) + 1;
+	   }
+	   prev_tsc = tsc_now;
+	   prev_clock = clock_now;
+#if 0
+#ifdef PROFILE_CHECK_THREADS
+	   {
+	     double delta = target_int - tsc_tgt_mean;
+	     tsc_tgt_n++;
+	     tsc_tgt_mean += delta / tsc_tgt_n;
+	     tsc_tgt_m2 += delta * (target_int - tsc_tgt_mean);
+	   }
+#endif
+#endif
+	 }
+	 else {
+	   /* clock(3) can have pretty low resolution and might not
+	    * have advanced during the tsc interval. Just do another
+	    * round on the old estimate, keeping prev_tsc and
+	    * prev_clock fixed to get a longer interval for the next
+	    * measurement. */
+	   if (clock_now < prev_clock) {
+	     /* clock() wraps around fairly often as well. We still
+	      * keep the old interval but update the baselines in this
+	      * case. */
+	     prev_tsc = tsc_now;
+	     prev_clock = clock_now;
+	   }
+	   target_int += tsc_elapsed;
+#ifdef PROFILE_CHECK_THREADS
+	   no_clock_advs++;
+#endif
+	 }
+       }
+       else {
+#ifdef PROFILE_CHECK_THREADS
+	 fprintf (stderr, "[%d:%f] Warning: Encountered zero prev_tsc "
+		  "(thread_start_clock: %"PRINTINT64"d, "
+		  "clock_now: %"PRINTINT64"d)\n",
+		  getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+		  (INT64) thread_start_clock, (INT64) clock_now);
+#endif
+	 prev_tsc = tsc_now;
+       }
+
+       if (clock_now < thread_start_clock)
+	 /* clock counter has wrapped since the start of the time
+	  * slice. Let's reset and yield. */
+	 thread_start_clock = 0;
+       else if (clock_now - thread_start_clock <
+		(clock_t) (CLOCKS_PER_SEC / 20))
+	 return;
+     }
+
+#ifdef PROFILE_CHECK_THREADS
+     {
+       double delta = tps - tps_int_mean;
+       tps_int_n++;
+       tps_int_mean += delta / tps_int_n;
+       tps_int_m2 += delta * (tps - tps_int_mean);
+       tps = 0;
+     }
+#endif
+
+     goto do_yield;
+  }
+#endif	/* RDTSC && USE_CLOCK_FOR_SLICES */
+
 #ifdef HAVE_GETHRTIME
-  static long long last_;
-  if( gethrtime()-last_ < 50000000 ) /* 0.05s slice */
-    return;
-  last_ = gethrtime();
+  {
+    static hrtime_t last_ = 0;
+    hrtime_t now = gethrtime();
+    if( now-last_ < 50000000 ) /* 0.05s slice */
+      return;
+    last_ = now;
+  }
+#elif defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO)
+  {
+    static struct timeval         last_check = { 0, 0 };
+    task_thread_times_info_data_t info;
+    mach_msg_type_number_t        info_size = TASK_THREAD_TIMES_INFO_COUNT;
+    
+    /* Before making an expensive call to task_info() we perform a
+       preliminary check that at least 35 ms real time has passed. If
+       not yet true we'll postpone the next check a full interval. */
+    struct timeval                tv;
+    ACCURATE_GETTIMEOFDAY(&tv);
+    {
+#ifdef INT64
+      static INT64 real_time_last_check = 0;
+      INT64 real_time_now = tv.tv_sec * 1000000 + tv.tv_usec;
+      if (real_time_now - real_time_last_check < 35000)
+	return;
+      real_time_last_check = real_time_now;
+#else
+      static struct timeval real_time_last_check = { 0, 0 };
+      struct timeval diff;
+      timersub(&real_time_now, &real_time_last_check, &diff);
+      if (diff.tv_usec < 35000 && diff.tv_sec == 0)
+	return;
+      real_time_last_check = tv;
+#endif
+    }
+    
+    /* Get user time and test if 50 ms has passed since last check. */
+    if (task_info(mach_task_self(), TASK_THREAD_TIMES_INFO,
+		  (task_info_t) &info, &info_size) == 0) {
+#ifdef INT64
+      static INT64 last_check = 0;
+      INT64 now =
+	info.user_time.seconds * 1000000 +
+	info.user_time.microseconds +
+	info.system_time.seconds * 1000000 +
+	info.system_time.microseconds;
+      if (now - last_check < 50000)
+	return;
+      last_check = now;
+#else
+      /* Compute difference by converting kernel time_info_t to timeval. */
+      static struct timeval last_check = { 0, 0 };
+      struct timeval user, sys, now;
+      struct timeval diff;
+      user.tv_sec = info.user_time.seconds;
+      user.tv_usec = info.user_time.microseconds;
+      sys.tv_sec = info.system_time.seconds;
+      sys.tv_usec = info.system_time.microseconds;
+      timeradd (&user, &sys, &now);
+      timersub(&now, &last_check, &diff);
+      if (diff.tv_usec < 50000 && diff.tv_sec == 0)
+	return;
+      last_check = now;
+#endif
+    }
+  }
+#elif defined (USE_CLOCK_FOR_SLICES)
+  {
+    clock_t clock_now = clock();
+    if (clock_now < thread_start_clock)
+      /* clock counter has wrapped since the start of the time slice.
+       * Let's reset and yield. */
+      thread_start_clock = 0;
+    else if (clock_now - thread_start_clock < (clock_t) (CLOCKS_PER_SEC / 20))
+      return;
+  }
 #else
   static int div_;
   if(div_++ & 255)
     return;
 #endif
 
-#ifdef DEBUG
-  if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
-    fatal("thread_for_id() (or Pike_interpreter.thread_id) failed!\n")
-
-  if(Pike_interpreter.backlink != OBJ2THREAD(Pike_interpreter.thread_id))
-    fatal("Hashlink is wrong!\n");
+  do_yield:;
+#ifdef PIKE_DEBUG
+  check_threads_yields++;
 #endif
+
+#ifdef PROFILE_CHECK_THREADS
+  {
+    static long last_time;
+    struct timeval now;
+
+    yields++;
+
+#if 0
+#ifdef USE_CLOCK_FOR_SLICES
+    if (thread_start_clock) {
+      double slice_time =
+	(double) (clock() - thread_start_clock) / CLOCKS_PER_SEC;
+      double delta = slice_time - slice_int_mean;
+      slice_int_n++;
+      slice_int_mean += delta / slice_int_n;
+      slice_int_m2 += delta * (slice_time - slice_int_mean);
+    }
+#endif
+#endif
+
+    ACCURATE_GETTIMEOFDAY (&now);
+    if (now.tv_sec > last_time) {
+      fprintf (stderr, "[%d:%f] check_threads: %lu calls, "
+	       "%lu clocks, %lu no advs, %lu yields"
+#if 0
+	       ", slice %.3f:%.1e, tsc int %.2e:%.1e, tsc tgt %.2e:%.1e"
+#endif
+	       ", tps %g:%.1e\n",
+	       getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+	       calls, clock_checks, no_clock_advs, yields,
+#if 0
+	       slice_int_mean,
+	       slice_int_n > 1 ? sqrt (slice_int_m2 / (slice_int_n - 1)) : 0.0,
+	       tsc_int_mean,
+	       tsc_int_n > 1 ? sqrt (tsc_int_m2 / (tsc_int_n - 1)) : 0.0,
+	       tsc_tgt_mean,
+	       tsc_tgt_n > 1 ? sqrt (tsc_tgt_m2 / (tsc_tgt_n - 1)) : 0.0,
+#endif
+	       tps_int_mean,
+	       tps_int_n > 1 ? sqrt (tps_int_m2 / (tps_int_n - 1)) : 0.0);
+      last_time = (unsigned long) now.tv_sec;
+      calls = yields = clock_checks = no_clock_advs = 0;
+    }
+  }
+#endif
+
+  {
+#ifdef PIKE_DEBUG
+    unsigned LONGEST old_thread_swaps = thread_swaps;
+#endif
+    pike_thread_yield();
+#ifdef PIKE_DEBUG
+    if (thread_swaps != old_thread_swaps)
+      check_threads_swaps++;
+#endif
+  }
+}
+
+PMOD_EXPORT void pike_thread_yield(void)
+{
+  DEBUG_CHECK_THREAD();
 
   THREADS_ALLOW();
   /* Allow other threads to run */
-#ifdef HAVE_THR_YIELD
-  thr_yield();
-#endif
+  /* FIXME: Ought to use condition vars or something to get another
+   * thread to run. yield functions are notoriously unreliable and
+   * poorly defined. It might not really yield we need it to. It might
+   * make us yield to another process instead of just another thread.
+   * It might even make us sleep for a short while. */
+  th_yield();
   THREADS_DISALLOW();
 
-#ifdef DEBUG
-  if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
-    fatal("thread_for_id() (or Pike_interpreter.thread_id) failed!\n")
+#ifdef USE_CLOCK_FOR_SLICES
+  /* If we didn't yield then give ourselves a new time slice. If we
+   * did yield then thread_start_clock is the current clock anyway
+   * after the thread swap in. */
+  thread_start_clock = clock();
+#ifdef RDTSC
+  RDTSC (prev_tsc);
+  prev_clock = thread_start_clock;
 #endif
+#ifdef PIKE_DEBUG
+  if (last_clocked_thread != th_self())
+    Pike_fatal ("Stale thread %08lx in last_clocked_thread (self is %08lx)\n",
+		(unsigned long) last_clocked_thread, (unsigned long) th_self());
+#endif
+#endif
+
+  DEBUG_CHECK_THREAD();
 }
 
-TH_RETURN_TYPE new_thread_func(void * data)
+struct thread_starter
+{
+  struct thread_state *thread_state;	/* State of the thread. */
+  struct array *args;			/* Arguments passed to the thread. */
+#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
+  int euid, egid;
+#endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
+};
+
+/* Thread func starting new Pike-level threads. */
+TH_RETURN_TYPE new_thread_func(void *data)
 {
   struct thread_starter arg = *(struct thread_starter *)data;
+  struct object *thread_obj;
+  struct thread_state *thread_state;
   JMP_BUF back;
-  INT32 tmp;
 
-  THREADS_FPRINTF(0, (stderr,"THREADS_DISALLOW() Thread %08x created...\n",
-		      (unsigned int)arg.id));
+  THREADS_FPRINTF(0, (stderr,"new_thread_func(): Thread %p created...\n",
+		      arg.thread_state));
 
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
   /* Work-around for Linux's pthreads not propagating the
    * effective uid & gid.
    */
   if (!geteuid()) {
-    setegid(arg.egid);
-    seteuid(arg.euid);
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+    /* The sete?id calls will clear the dumpable state that we might
+     * have set with system.dumpable. */
+    int current = prctl(PR_GET_DUMPABLE);
+#ifdef PIKE_DEBUG
+    if (current == -1)
+      fprintf (stderr, "%s:%d: Unexpected error from prctl(2). errno=%d\n",
+	       __FILE__, __LINE__, errno);
+#endif
+#endif
+#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
+    if( setegid(arg.egid) != 0 || seteuid(arg.euid) != 0 )
+    {
+      fprintf (stderr, "%s:%d: Unexpected error from setegid(2). errno=%d\n",
+	       __FILE__, __LINE__, errno);
+    }
+#endif
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+    if (current != -1 && prctl(PR_SET_DUMPABLE, current) == -1) {
+#if defined(PIKE_DEBUG)
+      fprintf (stderr, "%s:%d: Unexpected error from prctl(2). errno=%d\n",
+	       __FILE__, __LINE__, errno);
+#endif
+    }
+#endif
   }
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
-  
-  if((tmp=mt_lock_interpreter()))
-    fatal("Failed to lock interpreter, return value=%d, errno=%d\n",tmp,
-#ifdef __NT__
-	  GetLastError()
-#else
-	  errno
+
+  /* Lock the interpreter now, but don't wait on
+   * threads_disabled_change since the spawning thread might be
+   * holding it. */
+  low_mt_lock_interpreter();
+
+#if defined(PIKE_DEBUG)
+  if(d_flag) {
+    THREAD_T self = th_self();
+    if( !th_equal(arg.thread_state->id, self) )
+      Pike_fatal("Current thread is wrong. %lx %lx\n",
+		 (long)arg.thread_state->id, (long)self);
+  }
 #endif
-	  );
-  SWAP_IN_THREAD(OBJ2THREAD(arg.id)); /* Init struct */
-  init_interpreter();
-  Pike_interpreter.thread_id=arg.id;
+
+  arg.thread_state->swapped = 0;
+  Pike_interpreter_pointer = &arg.thread_state->state;
+
 #ifdef PROFILING
   Pike_interpreter.stack_bottom=((char *)&data);
 #endif
   Pike_interpreter.stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION;
   Pike_interpreter.recoveries = NULL;
-  SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */
-  OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
 
-#if defined(PIKE_DEBUG)
-  if(d_flag)
-    {
-      THREAD_T self = th_self();
+  add_ref(thread_obj = arg.thread_state->thread_obj);
+  INIT_THREAD_STATE(thread_state = arg.thread_state);
 
-      if( Pike_interpreter.thread_id && !th_equal( OBJ2THREAD(Pike_interpreter.thread_id)->id, self) )
-	fatal("Current thread is wrong. %lx %lx\n",
-	      (long)OBJ2THREAD(Pike_interpreter.thread_id)->id, (long)self);
-	
-      if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
-	fatal("thread_for_id() (or Pike_interpreter.thread_id) failed in new_thread_func! "
-	      "%p != %p\n", thread_for_id(self), Pike_interpreter.thread_id);
-    }
-#endif
+  /* Inform the spawning thread that we are now running. */
+  co_broadcast(&thread_state->status_change);
 
-#ifdef THREAD_TRACE
-  {
-    t_flag = default_t_flag;
+  /* After signalling the status change to the spawning thread we may
+   * now wait if threads are disabled. */
+  if (threads_disabled) {
+    SWAP_OUT_CURRENT_THREAD();
+    threads_disabled_wait (DLOC);
+    SWAP_IN_CURRENT_THREAD();
   }
-#endif /* THREAD_TRACE */
 
-  THREADS_FPRINTF(0, (stderr,"THREAD %08x INITED\n",(unsigned int)Pike_interpreter.thread_id));
+  DEBUG_CHECK_THREAD();
+
+  THREADS_FPRINTF(0, (stderr,"new_thread_func(): Thread %p inited\n",
+		      arg.thread_state));
+
   if(SETJMP(back))
   {
-    if(throw_severity < THROW_EXIT)
+    if(throw_severity <= THROW_ERROR)
       call_handle_error();
-    if(throw_severity == THROW_EXIT)
+    else if(throw_severity == THROW_EXIT)
     {
-      free((char *) data);
+      /* This is too early to get a clean exit if DO_PIKE_CLEANUP is
+       * active. Otoh it cannot be done later since it requires the
+       * evaluator stacks in the gc calls. It's difficult to solve
+       * without handing over the cleanup duty to the main thread. */
       pike_do_exit(throw_value.u.integer);
+    } else if (thread_state->thread_obj) {
+      /* Copy the thrown exit value to the thread_state here,
+       * if the thread hasn't been destructed. */
+      assign_svalue(&thread_state->result, &throw_value);
     }
   } else {
     INT32 args=arg.args->size;
@@ -669,45 +1785,70 @@ TH_RETURN_TYPE new_thread_func(void * data)
     arg.args=0;
     f_call_function(args);
 
-    /* copy return value to the Pike_interpreter.thread_id here */
-    object_low_set_index(Pike_interpreter.thread_id,
-			 thread_id_result_variable,
-			 Pike_sp-1);
+    /* Copy return value to the thread_state here, if the thread
+     * object hasn't been destructed. */
+    if (thread_state->thread_obj)
+      assign_svalue(&thread_state->result, Pike_sp-1);
     pop_stack();
   }
 
-  if(OBJ2THREAD(Pike_interpreter.thread_id)->thread_local != NULL) {
-    free_mapping(OBJ2THREAD(Pike_interpreter.thread_id)->thread_local);
-    OBJ2THREAD(Pike_interpreter.thread_id)->thread_local = NULL;
-  }
-
-   OBJ2THREAD(Pike_interpreter.thread_id)->status=THREAD_EXITED;
-   co_broadcast(& OBJ2THREAD(Pike_interpreter.thread_id)->status_change);
-
-  free((char *)data); /* Moved by per, to avoid some bugs.... */
   UNSETJMP(back);
 
-  THREADS_FPRINTF(0, (stderr,"THREADS_ALLOW() Thread %08x done\n",
-		      (unsigned int)Pike_interpreter.thread_id));
+  DEBUG_CHECK_THREAD();
 
-  cleanup_interpret();
-  DO_IF_DMALLOC(
-    SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* de-Init struct */
-    OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
-    )
-  thread_table_delete(Pike_interpreter.thread_id);
-  free_object(Pike_interpreter.thread_id);
-  Pike_interpreter.thread_id=0;
+  if(thread_state->thread_local != NULL) {
+    free_mapping(thread_state->thread_local);
+    thread_state->thread_local = NULL;
+  }
+
+  thread_state->status = THREAD_EXITED;
+  co_broadcast(&thread_state->status_change);
+
+  THREADS_FPRINTF(0, (stderr,"new_thread_func(): Thread %p done\n",
+		      arg.thread_state));
+
+  /* This thread is now officially dead. */
+
+  while(Pike_fp)
+    POP_PIKE_FRAME();
+
+  reset_evaluator();
+
+  low_cleanup_interpret(&thread_state->state);
+
+  if (!thread_state->thread_obj)
+    /* Do this only if exit_thread_obj already has run. */
+    cleanup_thread_state (thread_state);
+
+  thread_table_delete(thread_state);
+  EXIT_THREAD_STATE(thread_state);
+  Pike_interpreter.thread_state = thread_state = NULL;
+  Pike_interpreter_pointer = NULL;
+
+  /* Free ourselves.
+   * NB: This really ought to run in some other thread...
+   */
+
+  free_object(thread_obj);
+  thread_obj = NULL;
+
   num_threads--;
   if(!num_threads && threads_evaluator_callback)
   {
     remove_callback(threads_evaluator_callback);
     threads_evaluator_callback=0;
   }
+
+#ifdef INTERNAL_PROFILING
+  fprintf (stderr, "Thread usage summary:\n");
+  debug_print_rusage (stderr);
+#endif
+
+  /* FIXME: What about threads_disable? */
   mt_unlock_interpreter();
   th_exit(0);
   /* NOT_REACHED, but removes a warning */
-  return(0);
+  return 0;
 }
 
 #ifdef UNIX_THREADS
@@ -717,7 +1858,7 @@ int num_lwps = 1;
 /*! @class Thread
  */
 
-/* @decl void create(function(mixed...:void) f, mixed ... args)
+/*! @decl void create(function(mixed...:void) f, mixed ... args)
  *!
  *! This function creates a new thread which will run simultaneously
  *! to the rest of the program. The new thread will call the function
@@ -730,7 +1871,7 @@ int num_lwps = 1;
  *!
  *! @returns
  *!   The returned value will be the same as the return value of
- *!   @[Thread.this_thread()] for the new thread.
+ *!   @[this_thread()] for the new thread.
  *!
  *! @note
  *!   This function is only available on systems with POSIX or UNIX or WIN32
@@ -741,28 +1882,40 @@ int num_lwps = 1;
  */
 void f_thread_create(INT32 args)
 {
-  struct thread_starter *arg;
+  struct thread_starter arg;
+  struct thread_state *thread_state =
+    (struct thread_state *)Pike_fp->current_storage;
   int tmp;
-  arg = ALLOC_STRUCT(thread_starter);
-  arg->args=aggregate_array(args);
-  arg->id=clone_object(thread_id_prog,0);
-  OBJ2THREAD(arg->id)->status=THREAD_RUNNING;
+
+  if (thread_state->status != THREAD_NOT_STARTED) {
+    Pike_error("Threads can not be restarted (status:%d).\n",
+	       thread_state->status);
+  }
+
+  arg.args = aggregate_array(args);
+  arg.thread_state = thread_state;
+
+  if (low_init_interpreter(&thread_state->state)) {
+    free_array(arg.args);
+    Pike_error("Out of memory allocating stack.\n");
+  }
 
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
-  arg->euid = geteuid();
-  arg->egid = getegid();
+  arg.euid = geteuid();
+  arg.egid = getegid();
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
 
   do {
-    tmp = th_create(& OBJ2THREAD(arg->id)->id,
+    tmp = th_create(&thread_state->id,
 		    new_thread_func,
-		    arg);
+		    &arg);
+    if (tmp == EINTR) check_threads_etc();
   } while( tmp == EINTR );
 
   if(!tmp)
   {
     num_threads++;
-    thread_table_insert(arg->id);
+    thread_table_insert(thread_state);
 
     if(!threads_evaluator_callback)
     {
@@ -770,15 +1923,31 @@ void f_thread_create(INT32 args)
 						 check_threads, 0,0);
       dmalloc_accept_leak(threads_evaluator_callback);
     }
-    ref_push_object(arg->id);
-    THREADS_FPRINTF(0, (stderr, "THREAD_CREATE -> t:%08x\n",
-			(unsigned int)arg->id));
+
+    /* Wait for the thread to start properly.
+     * so that we can avoid races.
+     *
+     * The main race is the one on current_object,
+     * since it at this point only has one reference.
+     *
+     * We also want the stuff in arg to be copied properly
+     * before we exit the function...
+     */
+    SWAP_OUT_CURRENT_THREAD();
+    THREADS_FPRINTF(0, (stderr, "f_thread_create %p waiting...\n",
+			thread_state));
+    while (thread_state->status == THREAD_NOT_STARTED)
+      low_co_wait_interpreter (&thread_state->status_change);
+    THREADS_FPRINTF(0, (stderr, "f_thread_create %p continue\n", thread_state));
+    SWAP_IN_CURRENT_THREAD();
   } else {
-    free_object(arg->id);
-    free_array(arg->args);
-    free((char *)arg);
-    Pike_error("Failed to create thread (errno = %d).\n",tmp);
+    low_cleanup_interpret(&thread_state->state);
+    free_array(arg.args);
+    Pike_error("Failed to create thread (errno = %d).\n", tmp);
   }
+
+  THREADS_FPRINTF(0, (stderr, "f_thread_create %p done\n", thread_state));
+  push_int(0);
 }
 
 /*! @endclass
@@ -786,12 +1955,17 @@ void f_thread_create(INT32 args)
 
 #ifdef UNIX_THREADS
 /*! @decl void thread_set_concurrency(int concurrency)
+ *!
+ *! @fixme
+ *!   Document this function
  */
 void f_thread_set_concurrency(INT32 args)
 {
   int c=1;
-  if(args) c=Pike_sp[-args].u.integer;
-  else Pike_error("No argument to thread_set_concurrency(int concurrency);\n");
+  if(args)
+    c=Pike_sp[-args].u.integer;
+  else
+    SIMPLE_TOO_FEW_ARGS_ERROR("thread_set_concurrency", 1);
   pop_n_elems(args);
   num_lwps=c;
   th_setconcurrency(c);
@@ -803,12 +1977,17 @@ void f_thread_set_concurrency(INT32 args)
  *! This function returns the object that identifies this thread.
  *!
  *! @seealso
- *! @[Thread.Thread()]
+ *! @[Thread()]
  */
 PMOD_EXPORT void f_this_thread(INT32 args)
 {
   pop_n_elems(args);
-  ref_push_object(Pike_interpreter.thread_id);
+  if (Pike_interpreter.thread_state) {
+    ref_push_object(Pike_interpreter.thread_state->thread_obj);
+  } else {
+    /* Threads not enabled yet/anylonger */
+    push_undefined();
+  }
 }
 
 #define THIS_MUTEX ((struct mutex_storage *)(CURRENT_STORAGE))
@@ -824,12 +2003,15 @@ struct mutex_storage
 {
   COND_T condition;
   struct object *key;
+  int num_waiting;
 };
 
 struct key_storage
 {
   struct mutex_storage *mut;
-  struct object *owner;
+  struct object *mutex_obj;
+  struct thread_state *owner;
+  struct object *owner_obj;
   int initialized;
 };
 
@@ -837,7 +2019,7 @@ struct key_storage
 
 /*! @class Mutex
  *!
- *! @[Thread.Mutex] is a class that implements mutual exclusion locks.
+ *! @[Mutex] is a class that implements mutual exclusion locks.
  *! Mutex locks are used to prevent multiple threads from simultaneously
  *! execute sections of code which access or change shared data. The basic
  *! operations for a mutex is locking and unlocking. If a thread attempts
@@ -858,9 +2040,8 @@ struct key_storage
  *! This function attempts to lock the mutex. If the mutex is already
  *! locked by a different thread the current thread will sleep until the
  *! mutex is unlocked. The value returned is the 'key' to the lock. When
- *! the key is destructed or has no more references the lock will
- *! automatically be unlocked. The key will also be destructed if the lock
- *! is destructed.
+ *! the key is destructed or has no more references the mutex will
+ *! automatically be unlocked.
  *!
  *! The @[type] argument specifies what @[lock()] should do if the
  *! mutex is already locked by this thread:
@@ -876,6 +2057,21 @@ struct key_storage
  *!     to unspecified locking order and therefore a risk for deadlocks.
  *! @endint
  *!
+ *! @note
+ *! If the mutex is destructed while it's locked or while threads are
+ *! waiting on it, it will continue to exist internally until the last
+ *! thread has stopped waiting and the last @[MutexKey] has
+ *! disappeared, but further calls to the functions in this class will
+ *! fail as is usual for destructed objects.
+ *!
+ *! @note
+ *! Pike 7.4 and earlier destructed any outstanding lock when the
+ *! mutex was destructed, but threads waiting in @[lock] still got
+ *! functioning locks as discussed above. This is inconsistent no
+ *! matter how you look at it, so it was changed in 7.6. The old
+ *! behavior is retained in compatibility mode for applications that
+ *! explicitly destruct mutexes to unlock them.
+ *!
  *! @seealso
  *!   @[trylock()]
  */
@@ -884,6 +2080,8 @@ void f_mutex_lock(INT32 args)
   struct mutex_storage  *m;
   struct object *o;
   INT_TYPE type;
+
+  DEBUG_CHECK_THREAD();
 
   m=THIS_MUTEX;
   if(!args)
@@ -895,19 +2093,17 @@ void f_mutex_lock(INT32 args)
   {
     default:
       bad_arg_error("mutex->lock", Pike_sp-args, args, 2, "int(0..2)", Pike_sp+1-args,
-		  "Unknown mutex locking style: %d\n",type);
+		  "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
       
 
     case 0:
     case 2:
-      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_id)
+      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_state)
       {
 	THREADS_FPRINTF(0,
-			(stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
-			 (unsigned int)OB2KEY(m->key),
-			 (unsigned int)m,
-			 (unsigned int)OB2KEY(m->key)->mut,
-			 (unsigned int) Pike_interpreter.thread_id));
+			(stderr, "Recursive LOCK k:%p, m:%p(%p), t:%p\n",
+			 OB2KEY(m->key), m, OB2KEY(m->key)->mut,
+			 Pike_interpreter.thread_state));
 
 	if(type==0) Pike_error("Recursive mutex locks!\n");
 
@@ -922,37 +2118,47 @@ void f_mutex_lock(INT32 args)
   /* Needs to be cloned here, since create()
    * might use threads.
    */
-  o=clone_object(mutex_key,0);
+  o=fast_clone_object(mutex_key);
 
-  DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
-	       fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; )
+  DEBUG_CHECK_THREAD();
 
   if(m->key)
   {
+    m->num_waiting++;
     if(threads_disabled)
     {
       free_object(o);
       Pike_error("Cannot wait for mutexes when threads are disabled!\n");
     }
-    SWAP_OUT_CURRENT_THREAD();
     do
     {
-      THREADS_FPRINTF(1, (stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
+      THREADS_FPRINTF(1, (stderr,"WAITING TO LOCK m:%p\n",m));
+      SWAP_OUT_CURRENT_THREAD();
       co_wait_interpreter(& m->condition);
+      SWAP_IN_CURRENT_THREAD();
+      check_threads_etc();
     }while(m->key);
-    SWAP_IN_CURRENT_THREAD();
+    m->num_waiting--;
   }
+
+#ifdef PICKY_MUTEX
+  if (!Pike_fp->current_object->prog) {
+    free_object (o);
+    if (!m->num_waiting)
+      co_destroy (&m->condition);
+    Pike_error ("Mutex was destructed while waiting for lock.\n");
+  }
+#endif
+
   m->key=o;
   OB2KEY(o)->mut=m;
+  add_ref (OB2KEY(o)->mutex_obj = Pike_fp->current_object);
 
-  DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
-	       fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; )
+  DEBUG_CHECK_THREAD();
 
-  THREADS_FPRINTF(1, (stderr, "LOCK k:%08x, m:%08x(%08x), t:%08x\n",
-		      (unsigned int)OB2KEY(o),
-		      (unsigned int)m,
-		      (unsigned int)OB2KEY(m->key)->mut,
-		      (unsigned int)Pike_interpreter.thread_id));
+  THREADS_FPRINTF(1, (stderr, "LOCK k:%p, m:%p(%p), t:%p\n",
+		      OB2KEY(o), m, OB2KEY(m->key)->mut,
+		      Pike_interpreter.thread_state));
   pop_n_elems(args);
   push_object(o);
 }
@@ -989,10 +2195,10 @@ void f_mutex_trylock(INT32 args)
   {
     default:
       bad_arg_error("mutex->trylock", Pike_sp-args, args, 2, "int(0..2)", Pike_sp+1-args,
-		  "Unknown mutex locking style: %d\n",type);
+		  "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
 
     case 0:
-      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_id)
+      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_state)
       {
 	Pike_error("Recursive mutex locks!\n");
       }
@@ -1007,6 +2213,7 @@ void f_mutex_trylock(INT32 args)
   if(!m->key)
   {
     OB2KEY(o)->mut=m;
+    add_ref (OB2KEY(o)->mutex_obj = Pike_fp->current_object);
     m->key=o;
     i=1;
   }
@@ -1028,7 +2235,7 @@ void f_mutex_trylock(INT32 args)
  *! has locked the mutex. 0 is returned if the mutex isn't locked.
  *!
  *! @seealso
- *! @[Thread.Thread()]
+ *! @[Thread()]
  */
 PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
 {
@@ -1037,18 +2244,18 @@ PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
   pop_n_elems(args);
 
   if (m->key && OB2KEY(m->key)->owner)
-    ref_push_object(OB2KEY(m->key)->owner);
+    ref_push_object(OB2KEY(m->key)->owner->thread_obj);
   else
     push_int(0);
 }
 
-/*! @decl Thread.Thread current_locking_key()
+/*! @decl Thread.MutexKey current_locking_key()
  *!
  *! This mutex method returns the key object currently governing
  *! the lock on this mutex. 0 is returned if the mutex isn't locked.
  *!
  *! @seealso
- *! @[Thread.Thread()]
+ *! @[Thread()]
  */
 PMOD_EXPORT void f_mutex_locking_key(INT32 args)
 {
@@ -1062,61 +2269,141 @@ PMOD_EXPORT void f_mutex_locking_key(INT32 args)
     push_int(0);
 }
 
-void init_mutex_obj(struct object *o)
+void init_mutex_obj(struct object *UNUSED(o))
 {
   co_init(& THIS_MUTEX->condition);
   THIS_MUTEX->key=0;
+  THIS_MUTEX->num_waiting = 0;
 }
 
-void exit_mutex_obj(struct object *o)
+void exit_mutex_obj(struct object *UNUSED(o))
 {
-  THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%08x\n",
-		      (unsigned int)THIS_MUTEX));
-  if(THIS_MUTEX->key) destruct(THIS_MUTEX->key);
-  THIS_MUTEX->key=0;
-  co_destroy(& THIS_MUTEX->condition);
+  struct mutex_storage *m = THIS_MUTEX;
+  struct object *key = m->key;
+
+  THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%p\n", THIS_MUTEX));
+
+#ifndef PICKY_MUTEX
+  if (key) {
+    /* The last key will destroy m->condition in its exit hook. */
+    THREADS_FPRINTF(1, (stderr, "Destructed mutex is in use - delaying cleanup\n"));
+  }
+  else {
+#ifdef PIKE_DEBUG
+    if (m->num_waiting)
+      Pike_error ("key/num_waiting confusion.\n");
+#endif
+    co_destroy(& m->condition);
+  }
+#else
+  if(key) {
+    m->key=0;
+    destruct(key); /* Will destroy m->condition if m->num_waiting is zero. */
+    if(m->num_waiting)
+    {
+      THREADS_FPRINTF(1, (stderr, "Destructed mutex is being waited on.\n"));
+      /* exit_mutex_key_obj has already signalled, but since the
+       * waiting threads will throw an error instead of making a new
+       * lock we need to double it to a broadcast. The last thread
+       * that stops waiting will destroy m->condition. */
+      co_broadcast (&m->condition);
+    }
+  }
+  else
+    co_destroy(& m->condition);
+#endif
+}
+
+void exit_mutex_obj_compat_7_4(struct object *UNUSED(o))
+{
+  struct mutex_storage *m = THIS_MUTEX;
+  struct object *key = m->key;
+
+  THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%p\n", THIS_MUTEX));
+
+  if(key) {
+    m->key=0;
+    destruct(key); /* Will destroy m->condition if m->num_waiting is zero. */
+  }
+  else {
+#ifdef PIKE_DEBUG
+    if (m->num_waiting)
+      Pike_error ("key/num_waiting confusion.\n");
+#endif
+    co_destroy(& m->condition);
+  }
 }
 
 /*! @endclass
  */
 
+/*! @class MutexKey
+ *!
+ *! Objects of this class are returned by @[Mutex()->lock()]
+ *! and @[Mutex()->trylock()]. They are also passed as arguments
+ *! to @[Condition()->wait()].
+ *!
+ *! As long as they are held, the corresponding mutex will be locked.
+ *!
+ *! The corresponding mutex will be unlocked when the object
+ *! is destructed (eg by not having any references left).
+ *!
+ *! @seealso
+ *!   @[Mutex], @[Condition]
+ */
 #define THIS_KEY ((struct key_storage *)(CURRENT_STORAGE))
-void init_mutex_key_obj(struct object *o)
+void init_mutex_key_obj(struct object *UNUSED(o))
 {
-  THREADS_FPRINTF(1, (stderr, "KEY k:%08x, o:%08x\n",
-		      (unsigned int)THIS_KEY, (unsigned int)Pike_interpreter.thread_id));
+  THREADS_FPRINTF(1, (stderr, "KEY k:%p, t:%p\n",
+		      THIS_KEY, Pike_interpreter.thread_state));
   THIS_KEY->mut=0;
-  add_ref(THIS_KEY->owner=Pike_interpreter.thread_id);
+  THIS_KEY->mutex_obj = NULL;
+  THIS_KEY->owner = Pike_interpreter.thread_state;
+  add_ref(THIS_KEY->owner_obj = Pike_interpreter.thread_state->thread_obj);
   THIS_KEY->initialized=1;
 }
 
-void exit_mutex_key_obj(struct object *o)
+void exit_mutex_key_obj(struct object *DEBUGUSED(o))
 {
-  THREADS_FPRINTF(1, (stderr, "UNLOCK k:%08x m:(%08x) t:%08x o:%08x\n",
-		      (unsigned int)THIS_KEY,
-		      (unsigned int)THIS_KEY->mut,
-		      (unsigned int)Pike_interpreter.thread_id,
-		      (unsigned int)THIS_KEY->owner));
+  THREADS_FPRINTF(1, (stderr, "UNLOCK k:%p m:(%p) t:%p o:%p\n",
+		      THIS_KEY, THIS_KEY->mut,
+		      Pike_interpreter.thread_state, THIS_KEY->owner));
   if(THIS_KEY->mut)
   {
     struct mutex_storage *mut = THIS_KEY->mut;
+    struct object *mutex_obj;
 
 #ifdef PIKE_DEBUG
-    if(mut->key != o)
-      fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
+    /* Note: mut->key can be NULL if our corresponding mutex
+     *       has been destructed.
+     */
+    if(mut->key && (mut->key != o))
+      Pike_fatal("Mutex unlock from wrong key %p != %p!\n",
+		 THIS_KEY->mut->key, o);
 #endif
     mut->key=0;
     if (THIS_KEY->owner) {
-      free_object(THIS_KEY->owner);
-      THIS_KEY->owner=0;
+      THIS_KEY->owner = NULL;
+    }
+    if (THIS_KEY->owner_obj) {
+      free_object(THIS_KEY->owner_obj);
+      THIS_KEY->owner_obj=0;
     }
     THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
-    co_signal(& mut->condition);
+    mutex_obj = THIS_KEY->mutex_obj;
+    THIS_KEY->mutex_obj = NULL;
+    if (mut->num_waiting)
+      co_signal(&mut->condition);
+    else if (mutex_obj && !mutex_obj->prog)
+      co_destroy (&mut->condition);
+    if (mutex_obj)
+      free_object(mutex_obj);
   }
 }
 
-#define THIS_COND ((COND_T *)(CURRENT_STORAGE))
+/*! @endclass
+ */
 
 /*! @class Condition
  *!
@@ -1131,82 +2418,141 @@ void exit_mutex_key_obj(struct object *o)
  *!   can't be done accurately without continuations.
  *!
  *! @seealso
- *!   @[Thread.Mutex]
+ *!   @[Mutex]
  */
 
-/*! @decl void wait()
- *! @decl void wait(Thread.MutexKey mutex_key)
+struct pike_cond {
+  COND_T cond;
+  int wait_count;
+};
+
+#define THIS_COND ((struct pike_cond *)(CURRENT_STORAGE))
+
+/*! @decl void wait(Thread.MutexKey mutex_key)
+ *! @decl void wait(Thread.MutexKey mutex_key, int(0..)|float seconds)
+ *! @decl void wait(Thread.MutexKey mutex_key, int(0..) seconds, @
+ *!                 int(0..999999999) nanos)
  *!
- *! Wait for contition.
+ *! Wait for condition.
  *!
  *! This function makes the current thread sleep until the condition
- *! variable is signalled. The optional argument should be the 'key'
- *! to a mutex lock. If present the mutex lock will be unlocked before
- *! waiting for the condition in one atomic operation. After waiting
- *! for the condition the mutex referenced by mutex_key will be re-locked.
+ *! variable is signalled or the timeout is reached.
+ *!
+ *! @param mutex_key
+ *!   A @[Thread.MutexKey] object for a @[Thread.Mutex]. It will be
+ *!   unlocked atomically before waiting for the signal and then
+ *!   relocked atomically when the signal is received or the timeout
+ *!   is reached.
+ *!
+ *! @param seconds
+ *!   Seconds to wait before the timeout is reached.
+ *!
+ *! @param nanos
+ *!   Nano (1/1000000000) seconds to wait before the timeout is reached.
+ *!   This value is added to the number of seconds specified by @[seconds].
+ *!
+ *! A timeout of zero seconds disables the timeout.
+ *!
+ *! The thread that sends the signal should have the mutex locked
+ *! while sending it. Otherwise it's impossible to avoid races where
+ *! signals are sent while the listener(s) haven't arrived to the
+ *! @[wait] calls yet.
+ *!
+ *! @note
+ *!   The support for timeouts was added in Pike 7.8.121, which was
+ *!   after the first public release of Pike 7.8.
+ *!
+ *! @note
+ *!   Note that the timeout is approximate (best effort), and may
+ *!   be exceeded if eg the mutex is busy after the timeout.
+ *!
+ *! @note
+ *!   In Pike 7.2 and earlier it was possible to call @[wait()]
+ *!   without arguments. This possibility was removed in later
+ *!   versions since it unavoidably leads to programs with races
+ *!   and/or deadlocks.
+ *!
+ *! @note
+ *!   Note also that any threads waiting on the condition will be
+ *!   woken up when it gets destructed.
  *!
  *! @seealso
- *!   @[Thread.Mutex->lock()]
+ *!   @[Mutex->lock()]
  */
 void f_cond_wait(INT32 args)
 {
-  COND_T *c;
+  struct object *key, *mutex_obj;
+  struct mutex_storage *mut;
+  struct pike_cond *c;
+  INT_TYPE seconds = 0, nanos = 0;
 
   if(threads_disabled)
     Pike_error("Cannot wait for conditions when threads are disabled!\n");
+
+  if (args <= 2) {
+    FLOAT_TYPE fsecs = 0.0;
+    get_all_args("condition->wait", args, "%o.%F", &key, &fsecs);
+    seconds = (INT_TYPE) fsecs;
+    nanos = (INT_TYPE)((fsecs - seconds)*1000000000);
+  } else {
+    /* FIXME: Support bignum nanos. */
+    get_all_args("condition->wait", args, "%o%i%i", &key, &seconds, &nanos);
+  }
       
+  if ((key->prog != mutex_key) ||
+      (!(OB2KEY(key)->initialized)) ||
+      (!(mut = OB2KEY(key)->mut))) {
+    Pike_error("Bad argument 1 to condition->wait()\n");
+  }
+
   if(args > 1) {
     pop_n_elems(args - 1);
     args = 1;
   }
 
-  c=THIS_COND;
+  c = THIS_COND;
 
-  if((args > 0) && !IS_ZERO(Pike_sp-1))
-  {
-    struct object *key;
-    struct mutex_storage *mut;
-
-    if(Pike_sp[-1].type != T_OBJECT)
-      Pike_error("Bad argument 1 to condition->wait()\n");
+  /* Unlock mutex */
+  mutex_obj = OB2KEY(key)->mutex_obj;
+  mut->key=0;
+  OB2KEY(key)->mut=0;
+  OB2KEY(key)->mutex_obj = NULL;
+  co_signal(& mut->condition);
     
-    key=Pike_sp[-1].u.object;
-    
-    if(key->prog != mutex_key)
-      Pike_error("Bad argument 1 to condition->wait()\n");
-
-    if (OB2KEY(key)->initialized) {
-
-      mut = OB2KEY(key)->mut;
-      if(!mut)
-	Pike_error("Bad argument 1 to condition->wait()\n");
-
-      /* Unlock mutex */
-      mut->key=0;
-      OB2KEY(key)->mut=0;
-      co_signal(& mut->condition);
-    
-      /* Wait and allow mutex operations */
-      SWAP_OUT_CURRENT_THREAD();
-      co_wait_interpreter(c);
-    
-      /* Lock mutex */
-      while(mut->key)
-	co_wait_interpreter(& mut->condition);
-      mut->key=key;
-      OB2KEY(key)->mut=mut;
-      
-      SWAP_IN_CURRENT_THREAD();
-      pop_n_elems(args);
-      return;
-    }
-  }
-
+  /* Wait and allow mutex operations */
   SWAP_OUT_CURRENT_THREAD();
-  co_wait_interpreter(c);
+  c->wait_count++;
+  if (seconds || nanos) {
+    co_wait_interpreter_timeout(&(c->cond), seconds, nanos);
+  } else {
+    co_wait_interpreter(&(c->cond));
+  }
+  c->wait_count--;
   SWAP_IN_CURRENT_THREAD();
+    
+  /* Lock mutex */
+  mut->num_waiting++;
+  while(mut->key) {
+    SWAP_OUT_CURRENT_THREAD();
+    co_wait_interpreter(& mut->condition);
+    SWAP_IN_CURRENT_THREAD();
+    check_threads_etc();
+  }
+  mut->key=key;
+  OB2KEY(key)->mut=mut;
+  OB2KEY(key)->mutex_obj = mutex_obj;
+  mut->num_waiting--;
 
-  pop_n_elems(args);
+#ifdef PICKY_MUTEX
+  if (!mutex_obj->prog) {
+    if (!mut->num_waiting)
+      co_destroy (&mut->condition);
+    Pike_error ("Mutex was destructed while waiting for lock.\n");
+  }
+#endif
+      
+  pop_stack();
+  return;
 }
 
 /*! @decl void signal()
@@ -1220,7 +2566,11 @@ void f_cond_wait(INT32 args)
  *! @seealso
  *!   @[broadcast()]
  */
-void f_cond_signal(INT32 args) { pop_n_elems(args); co_signal(THIS_COND); }
+void f_cond_signal(INT32 args)
+{
+  pop_n_elems(args);
+  co_signal(&(THIS_COND->cond));
+}
 
 /*! @decl void broadcast()
  *!
@@ -1229,10 +2579,42 @@ void f_cond_signal(INT32 args) { pop_n_elems(args); co_signal(THIS_COND); }
  *! @seealso
  *!   @[signal()]
  */
-void f_cond_broadcast(INT32 args) { pop_n_elems(args); co_broadcast(THIS_COND); }
+void f_cond_broadcast(INT32 args)
+{
+  pop_n_elems(args);
+  co_broadcast(&(THIS_COND->cond));
+}
 
-void init_cond_obj(struct object *o) { co_init(THIS_COND); }
-void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
+void init_cond_obj(struct object *UNUSED(o))
+{
+  co_init(&(THIS_COND->cond));
+  THIS_COND->wait_count = 0;
+}
+
+void exit_cond_obj(struct object *UNUSED(o))
+{
+  /* Wake up any threads that might be waiting on this cond.
+   *
+   * Note that we are already destructed (o->prog == NULL),
+   * so wait_count can't increase.
+   *
+   * FIXME: This code wouldn't be needed if exit callbacks were called
+   *        only when the ref count reaches zero.
+   *	/grubba 2006-01-29
+   */
+  while (THIS_COND->wait_count) {
+    co_broadcast(&(THIS_COND->cond));
+
+    THREADS_ALLOW();
+#ifdef HAVE_NO_YIELD
+    sleep(0);
+#else /* HAVE_NO_YIELD */
+    th_yield();
+#endif /* HAVE_NO_YIELD */
+    THREADS_DISALLOW();
+  }
+  co_destroy(&(THIS_COND->cond));
+}
 
 /*! @endclass
  */
@@ -1252,12 +2634,12 @@ void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
  */
 void f_thread_backtrace(INT32 args)
 {
-  void low_backtrace(struct Pike_interpreter *);
+  void low_backtrace(struct Pike_interpreter_struct *);
   struct thread_state *foo = THIS_THREAD;
 
   pop_n_elems(args);
 
-  if(foo->state.thread_id == Pike_interpreter.thread_id)
+  if(foo == Pike_interpreter.thread_state)
   {
     f_backtrace(0);
   }
@@ -1273,6 +2655,15 @@ void f_thread_backtrace(INT32 args)
 }
 
 /*! @decl int status()
+ *!
+ *! Returns the status of the thread.
+ *!
+ *! @returns
+ *!   @int
+ *!     @value Thread.THREAD_NOT_STARTED
+ *!     @value Thread.THREAD_RUNNING
+ *!     @value Thread.THREAD_EXITED
+ *!   @endint
  */
 void f_thread_id_status(INT32 args)
 {
@@ -1280,20 +2671,27 @@ void f_thread_id_status(INT32 args)
   push_int(THIS_THREAD->status);
 }
 
-/*! @decl static string _sprintf(int c)
+/*! @decl protected string _sprintf(int c)
  *!
  *! Returns a string identifying the thread.
  */
 void f_thread_id__sprintf (INT32 args)
 {
+  int c = 0;
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
+    c = Pike_sp[-args].u.integer;
   pop_n_elems (args);
+  if(c != 'O') {
+    push_undefined();
+    return;
+  }
   push_constant_text ("Thread.Thread(");
-  push_int64((ptrdiff_t)THIS_THREAD->id);
+  push_int64(PTR_TO_INT(THREAD_T_TO_PTR(THIS_THREAD->id)));
   push_constant_text (")");
   f_add (3);
 }
 
-/*! @decl static int id_number()
+/*! @decl protected int id_number()
  *!
  *! Returns an id number identifying the thread.
  *!
@@ -1303,85 +2701,201 @@ void f_thread_id__sprintf (INT32 args)
 void f_thread_id_id_number(INT32 args)
 {
   pop_n_elems(args);
-  push_int64((ptrdiff_t)THIS_THREAD->id);
+  push_int64(PTR_TO_INT(THREAD_T_TO_PTR(THIS_THREAD->id)));
 }
 
-/*! @decl mixed result()
+/*! @decl mixed wait()
  *!
  *! Waits for the thread to complete, and then returns
  *! the value returned from the thread function.
  */
-static void f_thread_id_result(INT32 args)
+static void f_thread_id_result(INT32 UNUSED(args))
 {
   struct thread_state *th=THIS_THREAD;
 
-  SWAP_OUT_CURRENT_THREAD();
+  if (threads_disabled) {
+    Pike_error("Cannot wait for threads when threads are disabled!\n");
+  }
 
-  while(th->status != THREAD_EXITED)
+  th->waiting++;
+
+  THREADS_FPRINTF(0, (stderr, "Thread->wait(): Waiting for thread_state %p "
+		      "(state:%d).\n", th, th->status));
+  while(th->status != THREAD_EXITED) {
+    SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter(&th->status_change);
+    SWAP_IN_CURRENT_THREAD();
+    check_threads_etc();
+    THREADS_FPRINTF(0,
+		    (stderr, "Thread->wait(): Waiting for thread_state %p "
+		     "(state:%d).\n", th, th->status));
+  }
 
-  SWAP_IN_CURRENT_THREAD();
-
-  low_object_index_no_free(Pike_sp,
-			   Pike_fp->current_object, 
-			   thread_id_result_variable);
+  assign_svalue_no_free(Pike_sp, &th->result);
   Pike_sp++;
+  dmalloc_touch_svalue(Pike_sp-1);
+
+  th->waiting--;
+
+  if (!th->thread_obj)
+    /* Do this only if exit_thread_obj already has run. */
+    cleanup_thread_state (th);
 }
 
-void init_thread_obj(struct object *o)
+static int num_pending_interrupts = 0;
+static struct callback *thread_interrupt_callback = NULL;
+
+static void check_thread_interrupt(struct callback *foo,
+				   void *UNUSED(bar), void *UNUSED(gazonk))
 {
-  MEMSET(THIS_THREAD, 0, sizeof(struct Pike_interpreter));
+  if (Pike_interpreter.thread_state->flags & THREAD_FLAG_SIGNAL_MASK) {
+    if (Pike_interpreter.thread_state->flags & THREAD_FLAG_TERM) {
+      throw_severity = THROW_THREAD_EXIT;
+    } else {
+      throw_severity = THROW_ERROR;
+    }
+    Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
+    if (!--num_pending_interrupts) {
+      remove_callback(foo);
+      thread_interrupt_callback = NULL;
+    }
+    if (throw_severity == THROW_ERROR) {
+      Pike_error("Interrupted.\n");
+    } else {
+      push_int(-1);
+      assign_svalue(&throw_value, Pike_sp-1);
+      pike_throw();
+    }
+  }
+}
+
+/*! @decl void interrupt()
+ *! @decl void interrupt(string msg)
+ *!
+ *! Interrupt the thread with the message @[msg].
+ *!
+ *! @fixme
+ *!   The argument @[msg] is currently ignored.
+ *!
+ *! @note
+ *!   Interrupts are asynchronous, and are currently not queued.
+ */
+static void f_thread_id_interrupt(INT32 args)
+{
+  /* FIXME: The msg argument is not supported yet. */
+  pop_n_elems(args);
+
+  if (!(THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK)) {
+    THIS_THREAD->flags |= THREAD_FLAG_INTR;
+    num_pending_interrupts++;
+    if (!thread_interrupt_callback) {
+      thread_interrupt_callback =
+	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
+    }
+    /* FIXME: Actually interrupt the thread. */
+  }
+  push_int(0);
+}
+
+static void low_thread_kill (struct thread_state *th)
+{
+  if (!(th->flags & THREAD_FLAG_SIGNAL_MASK)) {
+    num_pending_interrupts++;
+    if (!thread_interrupt_callback) {
+      thread_interrupt_callback =
+	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
+    }
+    /* FIXME: Actually interrupt the thread. */
+  }
+  th->flags |= THREAD_FLAG_TERM;
+}
+
+/*! @decl void kill()
+ *!
+ *! Interrupt the thread, and terminate it.
+ *!
+ *! @note
+ *!   Interrupts are asynchronous, and are currently not queued.
+ */
+static void f_thread_id_kill(INT32 args)
+{
+  pop_n_elems(args);
+  low_thread_kill (THIS_THREAD);
+  push_int(0);
+}
+
+void init_thread_obj(struct object *UNUSED(o))
+{
+  MEMSET(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter_struct));
+  THIS_THREAD->thread_obj = Pike_fp->current_object;
+  THIS_THREAD->swapped = 0;
   THIS_THREAD->status=THREAD_NOT_STARTED;
+  THIS_THREAD->flags = 0;
+  THIS_THREAD->waiting = 0;
+  SET_SVAL(THIS_THREAD->result, T_INT, NUMBER_UNDEFINED, integer, 0);
   co_init(& THIS_THREAD->status_change);
   THIS_THREAD->thread_local=NULL;
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
+  THIS_THREAD->auto_gc_time = 0;
+#endif
 }
 
-
-void exit_thread_obj(struct object *o)
+static void cleanup_thread_state (struct thread_state *th)
 {
+#ifdef PIKE_DEBUG
+  if (th->thread_obj) Pike_fatal ("Thread state still active.\n");
+#endif
+
+  /* Don't clean up if the thread is running or if someone is waiting
+   * on status_change. They should call cleanup_thread_state later. */
+  if (th->status == THREAD_RUNNING || th->waiting)
+    return;
+
+  if (THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK) {
+    Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
+    if (!--num_pending_interrupts) {
+      remove_callback(thread_interrupt_callback);
+      thread_interrupt_callback = NULL;
+    }    
+  }
+
+  co_destroy(& THIS_THREAD->status_change);
+  th_destroy(& THIS_THREAD->id);
+}
+
+void exit_thread_obj(struct object *UNUSED(o))
+{
+  THIS_THREAD->thread_obj = NULL;
+
+  cleanup_thread_state (THIS_THREAD);
+
   if(THIS_THREAD->thread_local != NULL) {
     free_mapping(THIS_THREAD->thread_local);
     THIS_THREAD->thread_local = NULL;
   }
-  co_destroy(& THIS_THREAD->status_change);
-  th_destroy(& THIS_THREAD->id);
 }
 
 /*! @endclass
  */
 
-static void thread_was_recursed(struct object *o)
+static void thread_was_recursed(struct object *UNUSED(o))
 {
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
     gc_recurse_mapping(tmp->thread_local);
 }
 
-static void thread_was_checked(struct object *o)
+static void thread_was_checked(struct object *UNUSED(o))
 {
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
-    debug_gc_check2(tmp->thread_local, T_OBJECT, o,
+    debug_gc_check (tmp->thread_local,
 		    " as mapping for thread local values in thread");
 
 #ifdef PIKE_DEBUG
   if(tmp->swapped)
-  {
-    struct pike_frame *f;
-    debug_malloc_touch(o);
-    debug_gc_xmark_svalues(tmp->state.evaluator_stack,
-			   tmp->state.stack_pointer-tmp->state.evaluator_stack-1,
-			   " in idle thread stack");
-    
-    for(f=tmp->state.frame_pointer;f;f=f->next)
-    {
-      debug_malloc_touch(f);
-      if(f->context.parent)
-	gc_external_mark2(f->context.parent,0," in Pike_fp->context.parent of idle thread");
-      gc_external_mark2(f->current_object,0," in Pike_fp->current_object of idle thread");
-      gc_external_mark2(f->context.prog,0," in Pike_fp->context.prog of idle thread");
-    }
-  }
+    gc_mark_stack_external (tmp->state.frame_pointer, tmp->state.stack_pointer,
+			    tmp->state.evaluator_stack);
 #endif
 }
 
@@ -1391,7 +2905,7 @@ static void thread_was_checked(struct object *o)
  *!
  *! This class allows you to have variables which are separate for each
  *! thread that uses it. It has two methods: @[get()] and @[set()]. A value
- *! stored in an instance of @[Thread.Local] can only be retrieved by that
+ *! stored in an instance of @[Local] can only be retrieved by that
  *! same thread.
  *!
  *! @note
@@ -1420,7 +2934,7 @@ PMOD_EXPORT void f_thread_local(INT32 args)
  *!
  *! Get the thread local value.
  *!
- *! This returns the value prevoiusly stored in the @[Thread.Local] object by
+ *! This returns the value prevoiusly stored in the @[Local] object by
  *! the @[set()] method by this thread.
  *!
  *! @seealso
@@ -1430,16 +2944,14 @@ void f_thread_local_get(INT32 args)
 {
   struct svalue key;
   struct mapping *m;
-  key.u.integer = ((struct thread_local *)CURRENT_STORAGE)->id;
-  key.type = T_INT;
-  key.subtype = NUMBER_NUMBER;
+  SET_SVAL(key, T_INT, NUMBER_NUMBER, integer,
+	   ((struct thread_local *)CURRENT_STORAGE)->id);
   pop_n_elems(args);
-  if(Pike_interpreter.thread_id != NULL &&
-     (m = OBJ2THREAD(Pike_interpreter.thread_id)->thread_local) != NULL)
+  if(Pike_interpreter.thread_state != NULL &&
+     (m = Pike_interpreter.thread_state->thread_local) != NULL)
     mapping_index_no_free(Pike_sp++, m, &key);
   else {
-    push_int(0);
-    Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+    push_undefined();
   }
 }
 
@@ -1466,19 +2978,18 @@ void f_thread_local_set(INT32 args)
 {
   struct svalue key;
   struct mapping *m;
-  key.u.integer = ((struct thread_local *)CURRENT_STORAGE)->id;
-  key.type = T_INT;
-  key.subtype = NUMBER_NUMBER;
+  SET_SVAL(key, T_INT, NUMBER_NUMBER, integer,
+	   ((struct thread_local *)CURRENT_STORAGE)->id);
   if(args>1)
     pop_n_elems(args-1);
   else if(args<1)
-    Pike_error("Too few arguments to Thread.Local.set()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("Thread.Local.set", 1);
 
-  if(Pike_interpreter.thread_id == NULL)
+  if(Pike_interpreter.thread_state == NULL)
     Pike_error("Trying to set Thread.Local without thread!\n");
 
-  if((m = OBJ2THREAD(Pike_interpreter.thread_id)->thread_local) == NULL)
-    m = OBJ2THREAD(Pike_interpreter.thread_id)->thread_local =
+  if((m = Pike_interpreter.thread_state->thread_local) == NULL)
+    m = Pike_interpreter.thread_state->thread_local =
       allocate_mapping(4);
 
   mapping_insert(m, &key, &Pike_sp[-1]);
@@ -1490,25 +3001,18 @@ void gc_check_thread_local (struct object *o)
   /* Only used by with locate_references. */
   if (Pike_in_gc == GC_PASS_LOCATE) {
     struct svalue key, *val;
-    INT32 x;
     struct thread_state *s;
 
-    key.u.integer = ((struct thread_local *)CURRENT_STORAGE)->id;
-    key.type = T_INT;
-    key.subtype = NUMBER_NUMBER;
+    SET_SVAL(key, T_INT, NUMBER_NUMBER, integer,
+	     ((struct thread_local *)CURRENT_STORAGE)->id);
 
-    /* Hmm, should this be used here? We know we always got the
-     * interpreter lock. */
-    /* mt_lock( & thread_table_lock ); */
-    for(x=0; x<THREAD_TABLE_SIZE; x++)
-      for(s=thread_table_chains[x]; s; s=s->hashlink) {
+    FOR_EACH_THREAD (s, {
 	if (s->thread_local &&
 	    (val = low_mapping_lookup(s->thread_local, &key)))
-	  debug_gc_check_svalues2(val, 1, T_OBJECT, o,
+	  debug_gc_check_svalues (val, 1,
 				  " as thread local value in Thread.Local object"
 				  " (indirect ref)");
-      }
-    /* mt_unlock( & thread_table_lock ); */
+      });
   }
 }
 #endif
@@ -1547,14 +3051,28 @@ static TH_RETURN_TYPE farm(void *_a)
    * effective uid & gid.
    */
   if (!geteuid()) {
-    setegid(me->egid);
-    seteuid(me->euid);
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+    /* The sete?id calls will clear the dumpable state that we might
+     * have set with system.dumpable. */
+    int current = prctl(PR_GET_DUMPABLE);
+#endif
+#ifdef HAVE_BROKEN_LINUX_THREAD_EUID
+    if( setegid(arg.egid) != 0 || seteuid(arg.euid) != 0 )
+    {
+      fprintf (stderr, "%s:%d: Unexpected error from setegid(2). errno=%d\n",
+	       __FILE__, __LINE__, errno);
+    }
+#endif
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+    if (prctl(PR_SET_DUMPABLE, current) == -1)
+      Pike_fatal ("Didn't expect prctl to go wrong. errno=%d\n", errno);
+#endif
   }
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
 
   do
   {
-/*     if(farmers == me) fatal("Ouch!\n"); */
+/*     if(farmers == me) Pike_fatal("Ouch!\n"); */
 /*     fprintf(stderr, "farm_begin %p\n",me ); */
     me->harvest( me->field );
 /*     fprintf(stderr, "farm_end %p\n", me); */
@@ -1598,7 +3116,7 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
 
   if (!me) {
     /* Out of memory */
-    fatal("new_farmer(): Out of memory!\n");
+    Pike_fatal("new_farmer(): Out of memory!\n");
   }
 
   dmalloc_accept_leak(me);
@@ -1620,7 +3138,9 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
 
 PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
 {
-  if(!fun) fatal("The farmers don't known how to handle empty fields\n");
+#ifdef PIKE_DEBUG
+  if(!fun) Pike_fatal("The farmers don't known how to handle empty fields\n");
+#endif
   mt_lock( &rosie );
   if(farmers)
   {
@@ -1642,44 +3162,45 @@ PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
 
 void low_th_init(void)
 {
-#ifdef SGI_SPROC_THREADS
-#error /* Need to specify a filename */
-  us_cookie = usinit("");
-#endif /* SGI_SPROC_THREADS */
+  THREADS_FPRINTF(0, (stderr, "Initializing threads.\n"));
 
-  THREADS_FPRINTF(0, (stderr, "THREADS_DISALLOW() Initializing threads.\n"));
-
-#ifdef POSIX_THREADS
-#ifdef HAVE_PTHREAD_INIT
-  pthread_init();
-#endif /* HAVE_PTHREAD_INIT */
-#endif /* POSIX_THREADS */
+  really_low_th_init();
 
   mt_init( & interpreter_lock);
-  mt_lock_interpreter();
+  mt_init( & interpreter_lock_wanted);
+  low_mt_lock_interpreter();
   mt_init( & thread_table_lock);
   mt_init( & interleave_lock);
   mt_init( & rosie);
   co_init( & live_threads_change);
   co_init( & threads_disabled_change);
-
   thread_table_init();
-#ifdef POSIX_THREADS
-  pthread_attr_init(&pattr);
-#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-  pthread_attr_setstacksize(&pattr, thread_stack_size);
-#endif
-  pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
 
-  pthread_attr_init(&small_pattr);
-#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-  pthread_attr_setstacksize(&small_pattr, 4096*sizeof(char *));
+#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+  {
+    INT32 cpuid[4];
+    x86_get_cpuid (1, cpuid);
+    /* fprintf (stderr, "cpuid 1: %x\n", cpuid[2]); */
+    use_tsc_for_slices = cpuid[2] & 0x10; /* TSC exists */
+#if 0
+    /* Skip tsc invariant check - the current tsc interval method
+     * should be robust enough to cope with variable tsc rates. */
+    if (use_tsc_for_slices) {
+      x86_get_cpuid (0x80000007, cpuid);
+      /* fprintf (stderr, "cpuid 0x80000007: %x\n", cpuid[2]); */
+      use_tsc_for_slices = cpuid[2] & 0x100; /* TSC is invariant */
+    }
 #endif
-  pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
+    /* fprintf (stderr, "use tsc: %d\n", use_tsc_for_slices); */
+  }
+#endif
 
   th_running = 1;
-#endif
 }
+
+static struct object *backend_thread_obj = NULL;
+
+static struct Pike_interpreter_struct *original_interpreter = NULL;
 
 void th_init(void)
 {
@@ -1687,8 +3208,18 @@ void th_init(void)
 
 #ifdef UNIX_THREADS
   
-/* function(int:void) */
   ADD_EFUN("thread_set_concurrency",f_thread_set_concurrency,tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
+#endif
+
+#ifdef PIKE_DEBUG
+  ADD_EFUN("_thread_swaps", f__thread_swaps,
+	   tFunc(tVoid,tInt), OPT_SIDE_EFFECT);
+  ADD_EFUN("_check_threads_calls", f__check_threads_calls,
+	   tFunc(tVoid,tInt), OPT_SIDE_EFFECT);
+  ADD_EFUN("_check_threads_yields", f__check_threads_yields,
+	   tFunc(tVoid,tInt), OPT_SIDE_EFFECT);
+  ADD_EFUN("_check_threads_swaps", f__check_threads_swaps,
+	   tFunc(tVoid,tInt), OPT_SIDE_EFFECT);
 #endif
 
   START_NEW_PROGRAM_ID(THREAD_MUTEX_KEY);
@@ -1696,45 +3227,53 @@ void th_init(void)
   /* This is needed to allow the gc to find the possible circular reference.
    * It also allows a thread to take over ownership of a key.
    */
-  map_variable("_owner", "object", 0,
-	       mutex_key_offset + OFFSETOF(key_storage, owner), T_OBJECT);
+  PIKE_MAP_VARIABLE("_owner",
+		    mutex_key_offset + OFFSETOF(key_storage, owner_obj),
+		    tObjIs_THREAD_ID, T_OBJECT, 0);
+  PIKE_MAP_VARIABLE("_mutex", mutex_key_offset + OFFSETOF(key_storage, mutex_obj),
+		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=Pike_compiler->new_program;
   add_ref(mutex_key);
   end_class("mutex_key", 0);
   mutex_key->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
-#ifdef PIKE_DEBUG
-  if(!mutex_key)
-    fatal("Failed to initialize mutex_key program!\n");
-#endif
 
   START_NEW_PROGRAM_ID(THREAD_MUTEX);
   ADD_STORAGE(struct mutex_storage);
-  /* function(int(0..2)|void:object(mutex_key)) */
   ADD_FUNCTION("lock",f_mutex_lock,
 	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
-  /* function(int(0..2)|void:object(mutex_key)) */
   ADD_FUNCTION("trylock",f_mutex_trylock,
 	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
-  /* function(:object(Pike_interpreter.thread_id)) */
   ADD_FUNCTION("current_locking_thread",f_mutex_locking_thread,
 	   tFunc(tNone,tObjIs_THREAD_ID), 0);
-  /* function(:object(Pike_interpreter.thread_id)) */
   ADD_FUNCTION("current_locking_key",f_mutex_locking_key,
 	   tFunc(tNone,tObjIs_THREAD_MUTEX_KEY), 0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
   end_class("mutex", 0);
 
+  START_NEW_PROGRAM_ID(THREAD_MUTEX_COMPAT_7_4);
+  ADD_STORAGE(struct mutex_storage);
+  ADD_FUNCTION("lock",f_mutex_lock,
+	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
+  ADD_FUNCTION("trylock",f_mutex_trylock,
+	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
+  ADD_FUNCTION("current_locking_thread",f_mutex_locking_thread,
+	   tFunc(tNone,tObjIs_THREAD_ID), 0);
+  ADD_FUNCTION("current_locking_key",f_mutex_locking_key,
+	   tFunc(tNone,tObjIs_THREAD_MUTEX_KEY), 0);
+  set_init_callback(init_mutex_obj);
+  set_exit_callback(exit_mutex_obj_compat_7_4);
+  end_class("mutex_compat_7_4", 0);
+
   START_NEW_PROGRAM_ID(THREAD_CONDITION);
-  ADD_STORAGE(COND_T);
-  /* function(void|object(mutex_key):void) */
+  ADD_STORAGE(struct pike_cond);
   ADD_FUNCTION("wait",f_cond_wait,
-	       tFunc(tOr(tVoid,tObjIs_THREAD_MUTEX_KEY),tVoid),0);
-  /* function(:void) */
+	       tOr(tFunc(tObjIs_THREAD_MUTEX_KEY tOr3(tVoid, tIntPos, tFloat),
+			 tVoid),
+		   tFunc(tObjIs_THREAD_MUTEX_KEY tIntPos tIntPos, tVoid)),0);
   ADD_FUNCTION("signal",f_cond_signal,tFunc(tNone,tVoid),0);
-  /* function(:void) */
   ADD_FUNCTION("broadcast",f_cond_broadcast,tFunc(tNone,tVoid),0);
   set_init_callback(init_cond_obj);
   set_exit_callback(exit_cond_obj);
@@ -1758,30 +3297,32 @@ void th_init(void)
   ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tSetvar(1,tMix),tVar(1)),0);
   ADD_FUNCTION("create", f_thread_local_create,
-	       tFunc(tVoid,tVoid), ID_STATIC);
+	       tFunc(tVoid,tVoid), ID_PROTECTED);
 #ifdef PIKE_DEBUG
   set_gc_check_callback(gc_check_thread_local);
 #endif
   thread_local_prog=Pike_compiler->new_program;
   add_ref(thread_local_prog);
   end_class("thread_local", 0);
-  if(!thread_local_prog)
-    fatal("Failed to initialize thread_local program!\n");
   ADD_EFUN("thread_local", f_thread_local,
 	   tFunc(tNone,tObjIs_THREAD_LOCAL),
 	   OPT_EXTERNAL_DEPEND);
 
   START_NEW_PROGRAM_ID(THREAD_ID);
   thread_storage_offset=ADD_STORAGE(struct thread_state);
-  thread_id_result_variable=simple_add_variable("result","mixed",0);
-  /* function(:array) */
+  PIKE_MAP_VARIABLE("result", OFFSETOF(thread_state, result),
+		    tMix, T_MIXED, 0);
+  ADD_FUNCTION("create",f_thread_create,
+	       tFuncV(tNone,tMixed,tVoid),
+	       ID_PROTECTED);
   ADD_FUNCTION("backtrace",f_thread_backtrace,tFunc(tNone,tArray),0);
-  /* function(:mixed) */
   ADD_FUNCTION("wait",f_thread_id_result,tFunc(tNone,tMix),0);
-  /* function(:int) */
   ADD_FUNCTION("status",f_thread_id_status,tFunc(tNone,tInt),0);
   ADD_FUNCTION("_sprintf",f_thread_id__sprintf,tFunc(tNone,tStr),0);
   ADD_FUNCTION("id_number",f_thread_id_id_number,tFunc(tNone,tInt),0);
+  ADD_FUNCTION("interrupt", f_thread_id_interrupt,
+	       tFunc(tOr(tVoid,tStr), tVoid), 0);
+  ADD_FUNCTION("kill", f_thread_id_kill, tFunc(tNone, tVoid), 0);
   set_gc_recurse_callback(thread_was_recursed);
   set_gc_check_callback(thread_was_checked);
   set_init_callback(init_thread_obj);
@@ -1791,17 +3332,13 @@ void th_init(void)
   add_ref(thread_id_prog);
   end_class("thread_id", 0);
 
-  /* function(mixed ...:object(Pike_interpreter.thread_id)) */
-  ADD_EFUN("thread_create",f_thread_create,
-	   tFuncV(tNone,tMixed,tObjIs_THREAD_ID),
-	   OPT_SIDE_EFFECT);
+  /* Backward compat... */
+  add_global_program("thread_create", thread_id_prog);
 
-  /* function(:object(Pike_interpreter.thread_id)) */
   ADD_EFUN("this_thread",f_this_thread,
 	   tFunc(tNone,tObjIs_THREAD_ID),
 	   OPT_EXTERNAL_DEPEND);
 
-  /* function(:array(object(Pike_interpreter.thread_id))) */
   ADD_EFUN("all_threads",f_all_threads,
 	   tFunc(tNone,tArr(tObjIs_THREAD_ID)),
 	   OPT_EXTERNAL_DEPEND);
@@ -1811,26 +3348,68 @@ void th_init(void)
   add_integer_constant("THREAD_RUNNING", THREAD_RUNNING, 0);
   add_integer_constant("THREAD_EXITED", THREAD_EXITED, 0);
 
-  if(!mutex_key)
-    fatal("Failed to initialize thread program!\n");
-
-  Pike_interpreter.thread_id=clone_object(thread_id_prog,0);
-  SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */
-  OBJ2THREAD(Pike_interpreter.thread_id)->id=th_self();
-  OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
-  thread_table_insert(Pike_interpreter.thread_id);
+  original_interpreter = Pike_interpreter_pointer;
+  backend_thread_obj = fast_clone_object(thread_id_prog);
+  INIT_THREAD_STATE((struct thread_state *)(backend_thread_obj->storage +
+					    thread_storage_offset));
+  thread_table_insert(Pike_interpreter.thread_state);
 }
+
+#ifdef DO_PIKE_CLEANUP
+void cleanup_all_other_threads (void)
+{
+  int i, num_kills = num_pending_interrupts;
+  time_t timeout = time (NULL) + 2;
+
+  mt_lock (&thread_table_lock);
+  for (i = 0; i < THREAD_TABLE_SIZE; i++) {
+    struct thread_state *th;
+    for (th = thread_table_chains[i]; th; th = th->hashlink)
+      if (th != Pike_interpreter.thread_state) {
+	low_thread_kill (th);
+	num_kills++;
+      }
+  }
+  mt_unlock (&thread_table_lock);
+
+  while (num_pending_interrupts && time (NULL) < timeout) {
+    THREADS_ALLOW();
+    sysleep(1.0);
+    THREADS_DISALLOW();
+  }
+
+#if 0
+  if (num_kills) {
+    fprintf (stderr, "Killed %d thread(s) in exit cleanup",
+	     num_kills - num_pending_interrupts);
+    if (num_pending_interrupts)
+      fprintf (stderr, ", %d more haven't responded", num_pending_interrupts);
+    fputs (".\n", stderr);
+  }
+#endif
+}
+#endif
 
 void th_cleanup(void)
 {
   th_running = 0;
 
-  if(Pike_interpreter.thread_id)
+  if (Pike_interpreter.thread_state) {
+    thread_table_delete(Pike_interpreter.thread_state);
+    Pike_interpreter.thread_state = NULL;
+  }
+
+  if(backend_thread_obj)
   {
-    thread_table_delete(Pike_interpreter.thread_id);
-    destruct(Pike_interpreter.thread_id);
-    free_object(Pike_interpreter.thread_id);
-    Pike_interpreter.thread_id=0;
+    /* Switch back to the original interpreter struct. */
+    *original_interpreter = Pike_interpreter;
+
+    destruct(backend_thread_obj);
+    free_object(backend_thread_obj);
+    backend_thread_obj = NULL;
+
+    Pike_interpreter_pointer = original_interpreter;
+
     destruct_objects_to_destruct_cb();
   }
 
@@ -1851,7 +3430,14 @@ void th_cleanup(void)
     free_program(thread_id_prog);
     thread_id_prog=0;
   }
+
+#ifdef PIKE_USE_OWN_ATFORK
+  free_callback_list(&atfork_prepare_callback);
+  free_callback_list(&atfork_parent_callback);
+  free_callback_list(&atfork_child_callback);
+#endif
 }
 
-#endif
+#endif	/* !CONFIGURE_TEST */
 
+#endif

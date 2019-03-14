@@ -1,15 +1,20 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 /* New memory searcher functions */
 
 #include "global.h"
 #include "stuff.h"
 #include "mapping.h"
 #include "object.h"
-#include "block_alloc.h"
 #include "pike_memory.h"
 #include "stralloc.h"
+#include "interpret.h"
 #include "pike_error.h"
 #include "module_support.h"
-#include "interpret.h"
 #include "pike_macros.h"
 #include "pike_search.h"
 #include "bignum.h"
@@ -18,48 +23,53 @@ ptrdiff_t pike_search_struct_offset;
 #define OB2MSEARCH(O) ((struct pike_mem_searcher *)((O)->storage+pike_search_struct_offset))
 #define THIS_MSEARCH ((struct pike_mem_searcher *)(Pike_fp->current_storage))
 
+/* NB: We use the least significant bit of memsearch_cache_threshold
+ *     to indicate whether we are at MIN_MEMSEARCH_THRESHOLD or not.
+ */
+#define MIN_MEMSEARCH_THRESHOLD	128
+static int memsearch_cache_threshold;
+
 static struct mapping *memsearch_cache;
-struct program *pike_search_program;
+static struct program *pike_search_program;
 
 
-void *nil_search(void *no_data,
-		 void *haystack,
-		 ptrdiff_t haystacklen)
+static void *nil_search(void *UNUSED(no_data),
+			void *haystack,
+			ptrdiff_t UNUSED(haystacklen))
 {
   return haystack;
 }
 
-void nil_search_free(void *data) {}
-#define memchr_memcmp2_free nil_search_free
-#define memchr_memcmp3_free nil_search_free
-#define memchr_memcmp4_free nil_search_free
-#define memchr_memcmp5_free nil_search_free
-#define memchr_memcmp6_free nil_search_free
-#define memchr_search_free nil_search_free
+/* Needed on architectures where struct returns have
+ * incompatible calling conventions (sparc v8).
+ */
+static PCHARP nil_searchN(void *UNUSED(no_data),
+			  PCHARP haystack,
+			  ptrdiff_t UNUSED(haystacklen))
+{
+  return haystack;
+}
 
-
-struct SearchMojtVtable nil_search_vtable = {
+static const struct SearchMojtVtable nil_search_vtable = {
   (SearchMojtFunc0) nil_search,
   (SearchMojtFunc1) nil_search,
   (SearchMojtFunc2) nil_search,
-  (SearchMojtFuncN) nil_search,
-  nil_search_free
+  (SearchMojtFuncN) nil_searchN,
 };
 
-
-void free_mem_searcher(void *m)
-{
-  free_object(*(struct object **)m);
-}
-
-#define boyer_moore_hubbe_free free_mem_searcher
-#define hubbe_search_free  free_mem_searcher
-
 /* magic stuff for hubbesearch */
+/* NOTE: GENERIC_GET4_CHARS(PTR) must be compatible with
+ *       the GET_4_{,UN}ALIGNED_CHARS0() variants!
+ */
+#if PIKE_BYTEORDER == 4321
 #define GENERIC_GET4_CHARS(PTR) \
  ( ((PTR)[0] << 24) + ( (PTR)[1] << 16 ) +( (PTR)[2] << 8 ) +  (PTR)[3] )
+#else /* PIKE_BYTEORDER != 4321 */
+#define GENERIC_GET4_CHARS(PTR) \
+ ( ((PTR)[3] << 24) + ( (PTR)[2] << 16 ) +( (PTR)[1] << 8 ) +  (PTR)[0] )
+#endif /* PIKE_BYTEORDER == 4321 */
 
-#define HUBBE_ALIGN0(q) q=(char *)( ((ptrdiff_t)q) & -sizeof(INT32))
+#define HUBBE_ALIGN0(q) q=(p_wchar0 *)(PTR_TO_INT(q) & ~(sizeof(INT32) - 1))
 #define GET_4_ALIGNED_CHARS0(PTR)  (*(INT32 *)(PTR))
 #define GET_4_UNALIGNED_CHARS0(PTR)  EXTRACT_INT(PTR)
 
@@ -132,6 +142,9 @@ PMOD_EXPORT void pike_init_memsearch(struct pike_mem_searcher *s,
       init_memsearch2(s,(p_wchar2*)needle.ptr, needlelen, max_haystacklen);
       return;
   }
+#ifdef PIKE_DEBUG
+  Pike_fatal("Illegal shift\n");
+#endif
 }
 
 PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
@@ -141,14 +154,18 @@ PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
 {
   switch(needle.shift)
   {
+    default:
+#ifdef PIKE_DEBUG
+      Pike_fatal("Illegal shift\n");
     case 0:
+#endif
       return compile_memsearcher0((p_wchar0*)needle.ptr, needlelen, max_haystacklen,hashkey);
     case 1:
       return compile_memsearcher1((p_wchar1*)needle.ptr, needlelen, max_haystacklen,hashkey);
     case 2:
       return compile_memsearcher2((p_wchar2*)needle.ptr, needlelen, max_haystacklen,hashkey);
   }
-  fatal("Illegal shift\n");
+  /* NOTREACHED */
 }
 
 PMOD_EXPORT SearchMojt simple_compile_memsearcher(struct pike_string *str)
@@ -168,107 +185,22 @@ PMOD_EXPORT char *my_memmem(char *needle,
 			    size_t haystacklen)
 {
   struct pike_mem_searcher tmp;
-  init_memsearch0(&tmp, needle, (ptrdiff_t)needlelen, (ptrdiff_t)haystacklen);
-  return tmp.mojt.vtab->func0(tmp.mojt.data, haystack, (ptrdiff_t)haystacklen);
+  init_memsearch0(&tmp, (p_wchar0 *) needle, (ptrdiff_t)needlelen,
+		  (ptrdiff_t)haystacklen);
+  return (char *) tmp.mojt.vtab->func0(tmp.mojt.data, (p_wchar0 *) haystack,
+				       (ptrdiff_t)haystacklen);
   /* No free required - Hubbe */
-}
-
-/*! @module __builtin
- */
-
-/*! @class Search
- */
-
-/*! @decl int(-1..) `()(string key, int|void start)
- *!
- *! Search for the string @[key] in the data. Start searching at
- *! offset @[start].
- *!
- *! @returns
- *!   Returns the offset where a match was found, or @tt{-1@} on
- *!   failure.
- *!
- *! @seealso
- *!   @[search()]
- */
-static void f_pike_search(INT32 args)
-{
-  PCHARP ret, in;
-  ptrdiff_t start=0;
-  struct pike_string *s;
-
-  check_all_args("Search->`()",args,BIT_STRING, BIT_VOID | BIT_INT, 0);
-  s=Pike_sp[-args].u.string;
-
-  if(args>1)
-  {
-    start=Pike_sp[1-args].u.integer;
-    if(start < 0)
-    {
-      bad_arg_error("Search->`()", Pike_sp-args, args, 2, "int(0..)",
-		    Pike_sp+2-args,
-		    "Start must be greater or equal to zero.\n");
-    }
-    if(start >= sp[-args].u.string->len)
-    {
-      pop_n_elems(args);
-      push_int(-1);
-      return;
-    }
-  }
-
-  in=MKPCHARP_STR(s);
-  ret=THIS_MSEARCH->mojt.vtab->funcN(THIS_MSEARCH->mojt.data,
-				     ADD_PCHARP(in,start),
-				     s->len - start);
-
-  pop_n_elems(args);
-  push_int64( SUBTRACT_PCHARP(in, ret) );  
-}
-
-/*! @endclass
- */
-
-/*! @endmodule
- */
-
-/* Compatibility: All functions using these two functions
- * should really be updated to use compile_memsearcher instead.
- * -Hubbe
- * These two functions are thread-safe.
- */
-PMOD_EXPORT void init_generic_memsearcher(struct generic_mem_searcher *s,
-			      void *needle,
-			      size_t needlelen,
-			      char needle_shift,
-			      size_t estimated_haystack,
-			      char haystack_shift)
-{
-  pike_init_memsearch(s,
-		      MKPCHARP(needle, needle_shift),
-		      (ptrdiff_t)needlelen,
-		      estimated_haystack);
-}
-
-void *generic_memory_search(struct generic_mem_searcher *s,
-			    void *haystack,
-			    size_t haystacklen,
-			    char haystack_shift)
-{
-  return ( s->mojt.vtab->funcN(s->mojt.data,
-			       MKPCHARP(haystack, haystack_shift),
-			       (ptrdiff_t)haystacklen) ).ptr;
 }
 
 void init_pike_searching(void)
 {
   start_new_program();
   pike_search_struct_offset=ADD_STORAGE(struct pike_mem_searcher);
-  map_variable("__s","string",0,
-	       pike_search_struct_offset + OFFSETOF(pike_mem_searcher,s), PIKE_T_STRING);
-  ADD_FUNCTION("`()",f_pike_search,tFunc(tStr tOr(tInt,tVoid), tInt),0);
+  MAP_VARIABLE("__s", tStr, 0,
+	       pike_search_struct_offset + OFFSETOF(pike_mem_searcher,s),
+	       PIKE_T_STRING);
   pike_search_program=end_program();
-  add_program_constant("Search",pike_search_program,0);
+  add_program_constant("Search",pike_search_program,ID_PROTECTED);
 
   memsearch_cache=allocate_mapping(10);
   memsearch_cache->data->flags |= MAPPING_FLAG_WEAK;

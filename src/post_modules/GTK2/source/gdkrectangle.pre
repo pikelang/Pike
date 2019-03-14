@@ -1,0 +1,77 @@
+/* -*- C -*- */
+class GDK2.Rectangle;
+
+//! Rectangle class.
+
+void create(int x, int y, int width, int height)
+//! Create a new rectangle
+//!
+//! NOIMG
+{
+  GdkRectangle *r;
+  INT_TYPE x,y,w,h;
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
+  THIS->obj=(void *)(r=(GdkRectangle *)g_malloc(sizeof(GdkRectangle)));
+  THIS->owned = 1;
+  if (r==NULL)
+    SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GdkRectangle));
+  get_all_args("create",args,"%i%i%i%i",&x,&y,&w,&h);
+  r->x=x;
+  r->y=y;
+  r->width=w;
+  r->height=h;
+  pgtk2_pop_n_elems(args);
+}
+
+void set(int x, int y, int width, int height )
+//! Set the upper left corner and the size of the rectangle.
+{
+  GdkRectangle *r=(GdkRectangle *)THIS->obj;
+  INT_TYPE x,y,w,h;
+  get_all_args("set",args, "%i%i%i%i",&x,&y,&w,&h);
+  r->x=x;
+  r->y=y;
+  r->width=w;
+  r->height=h;
+  RETURN_THIS();
+}
+
+mixed cast(string type)
+//! Normally used like (mapping)rectangle or (array)rectangle.
+{
+  struct pike_string *type;
+  GdkRectangle *r=(GdkRectangle *)THIS->obj;
+  get_all_args("cast",args,"%t",&type);
+
+  if (is_same_string(type,_STR("mapping"))) {
+    pgtk2_pop_n_elems(args);
+    ref_push_string(_STR("x"));
+    push_int(r->x);
+    ref_push_string(_STR("y"));
+    push_int(r->y);
+    ref_push_string(_STR("width"));
+    push_int(r->width);
+    ref_push_string(_STR("height"));
+    push_int(r->height);
+    f_aggregate_mapping(8);
+  } else if(is_same_string(type, _STR("array"))) {
+    pgtk2_pop_n_elems(args);
+    push_int(r->x);
+    push_int(r->y);
+    push_int(r->width);
+    push_int(r->height);
+    f_aggregate(4);
+  } else {
+    Pike_error("Cannot cast to %S.\n",type);
+  }
+}
+
+void destroy()
+{
+  if( THIS->obj && THIS->owned )
+      g_free(THIS->obj);
+  pgtk2_pop_n_elems(args);
+  push_int(0);
+}
+
