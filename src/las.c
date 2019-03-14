@@ -3841,10 +3841,11 @@ void fix_type_field(node *n)
 	free_type(f);
 	if(n->token == F_AUTO_MAP)
 	{
+	  type_stack_mark();
 	  push_finished_type(n->type);
 	  push_type(T_ARRAY);
 	  free_type(n->type);
-	  n->type = pop_type();
+	  n->type = pop_unfinished_type();
 	}
 	break;
       }
