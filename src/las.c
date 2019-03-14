@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.268 2001/09/28 00:01:45 hubbe Exp $");
+RCSID("$Id$");
 
 #include "language.h"
 #include "interpret.h"
@@ -3385,10 +3385,11 @@ void fix_type_field(node *n)
 	free_type(f);
 	if(n->token == F_AUTO_MAP)
 	{
+	  type_stack_mark();
 	  push_finished_type(n->type);
 	  push_type(T_ARRAY);
 	  free_type(n->type);
-	  n->type = pop_type();
+	  n->type = pop_unfinished_type();
 	}
 	break;
       }
@@ -3422,10 +3423,11 @@ void fix_type_field(node *n)
 
 	if(n->token == F_AUTO_MAP)
 	{
+	  type_stack_mark();
 	  push_finished_type(n->type);
 	  push_type(T_ARRAY);
 	  free_type(n->type);
-	  n->type = pop_type();
+	  n->type = pop_unfinished_type();
 	}
 
 	break;
