@@ -10095,7 +10095,8 @@ void init_builtin_efuns(void)
 	   tFunc(tInt,tIntPos), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
   ADD_EFUN("_dump_program_tables", f__dump_program_tables,
-	   tFunc(tPrg(tObj) tIntPos,tVoid), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tPrg(tObj) tOr(tIntPos, tVoid), tVoid),
+	   OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
 #ifdef YYDEBUG
   
