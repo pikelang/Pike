@@ -802,7 +802,7 @@ extern struct program *gc_internal_program;
 
 /* Prototypes begin here */
 PMOD_EXPORT void do_free_program (struct program *p);
-void ins_int(INT32 i, void (*func)(char tmp));
+void ins_int(INT32 i, void (*func)(unsigned char tmp));
 void add_relocated_int_to_program(INT32 i);
 void use_module(struct svalue *s);
 void unuse_modules(INT32 howmany);

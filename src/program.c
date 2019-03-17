@@ -1768,7 +1768,7 @@ void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
     add_to_program(ARG);					\
   } while(0)
 
-void ins_int(INT32 i, void (*func)(char tmp))
+void ins_int(INT32 i, void (*func)(unsigned char tmp))
 {
   int e;
   unsigned char *p = (unsigned char *)&i;
@@ -1882,7 +1882,7 @@ static int add_identifier(struct compilation *c,
 void add_relocated_int_to_program(INT32 i)
 {
   add_to_relocations(Pike_compiler->new_program->num_program);
-  ins_int(i, (void (*)(char))add_to_program);
+  ins_int(i, add_to_program);
 }
 
 void use_module(struct svalue *s)
