@@ -111,6 +111,14 @@
 #define     PROG_STRING_BUFFER_ID				    057
 #define tObjImpl_STRING_BUFFER                "\003\000\000\000\000\057"
 
+/* Classes in cpp.cmod. */
+#define     PROG_STACK_ID					    064
+#define tObjImpl_STACK			      "\003\000\000\000\000\064"
+#define     PROG_DEFINE_ID					    065
+#define tObjImpl_DEFINE			      "\003\000\000\000\000\065"
+#define     PROG_CPP_ID						    066
+#define tObjImpl_CPP			      "\003\000\000\000\000\066"
+
 /* Classes in pike_compiler.cmod. */
 #define     PROG_COMPILERENVIRONMENT_ID					    070
 #define     PROG_COMPILERENVIRONMENT_PIKECOMPILER_ID			    071
