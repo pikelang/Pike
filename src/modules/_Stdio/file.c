@@ -442,18 +442,16 @@ static void init_fd(int fd, int open_mode, int flags)
 
 /* Use ptrdiff_t for the fd since we're passed a void * and should
  * read it as an integer of the same size. */
-static int do_close_fd(ptrdiff_t fd)
+static void do_close_fd(void *_fd)
 {
   int ret;
-  int preve;
-  if (fd < 0) return 0;
+  ptrdiff_t fd = (ptrdiff_t)_fd;
+
+  if (fd < 0) return;
   errno = 0;
   do {
-    preve = errno;
     ret = fd_close(fd);
   } while ((ret == -1) && (errno == EINTR));
-  if ((ret == -1) && preve) return 0;
-  return ret;
 }
 
 #ifdef HAVE_PIKE_SEND_FD
@@ -464,7 +462,7 @@ static void do_close_fd_info(int *fd_info)
   int num_fds = fd_info[1];
   int *fds = fd_info + 2;
   while (num_fds) {
-    do_close_fd(fds[--num_fds]);
+    do_close_fd((void*)(ptrdiff_t)fds[--num_fds]);
 #ifdef PIKE_DEBUG
     fds[num_fds] = -1;
 #endif
