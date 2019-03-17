@@ -5992,7 +5992,7 @@ void do_debug(void)
   if(default_backend)
     backend_do_debug(default_backend);
 
-  if(d_flag>3) do_gc(NULL, 1);
+  if(d_flag>3) do_gc(1);
 
   current_do_debug_cycle=0;
 }

@@ -3401,7 +3401,7 @@ static void warn_bad_cycles(void)
 #endif
 }
 
-size_t do_gc(void *UNUSED(ignored), int explicit_call)
+size_t do_gc(int explicit_call)
 {
   ALLOC_COUNT_TYPE start_allocs;
   size_t start_num_objs, unreferenced;
@@ -4102,6 +4102,12 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   }
 
   return unreferenced;
+}
+
+void do_gc_callback(struct callback *UNUSED(cb), void *UNUSED(arg1),
+                    void *UNUSED(arg2))
+{
+    do_gc(0);
 }
 
 /*! @decl mapping(string:int|float) gc_status()

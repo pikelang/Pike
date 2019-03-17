@@ -5492,7 +5492,7 @@ void f_gc(INT32 args)
     break;
   default:
     pop_n_elems(args);
-    res = do_gc(NULL, 1);
+    res = do_gc(1);
     break;
   }
   push_int(res);
@@ -5830,7 +5830,7 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
 #ifdef PIKE_DEBUG
   do_debug();			/* Calls do_gc() since d_flag > 3. */
 #else
-  do_gc(NULL, 1);
+  do_gc(1);
 #endif
   d_flag=tmp;
   pop_n_elems(args);

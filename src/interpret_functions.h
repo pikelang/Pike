@@ -164,7 +164,7 @@
 #define DO_RETURN DO_DUMB_RETURN
 #else
 #define DO_RETURN {				\
-  if(d_flag>3) do_gc(NULL, 0);			\
+  if(d_flag>3) do_gc(0);			\
   if(d_flag>4) do_debug();			\
   DO_DUMB_RETURN;				\
 }
@@ -1781,7 +1781,7 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local", I_UPDATE_SP|I_UPDATE_FP, {
      * call return -1, so we must call the callbacks here to
      * prevent false alarms! /Hubbe
      */
-    if(d_flag>3) do_gc(NULL, 0);
+    if(d_flag>3) do_gc(0);
     if(d_flag>4) do_debug();
     );
   if (!(Pike_fp->flags & PIKE_FRAME_SAVE_LOCALS)) {

@@ -146,7 +146,7 @@ static void exit_builtin_modules(void)
   free_svalue(& throw_value);
   mark_free_svalue (&throw_value);
 
-  do_gc(NULL, 1);
+  do_gc(1);
 
   if (exit_with_cleanup)
   {
@@ -172,7 +172,7 @@ static void exit_builtin_modules(void)
      * in exit_modules, nothing should be left after the run above, so
      * only one more run is necessary. */
     gc_keep_markers = 1;
-    do_gc (NULL, 1);
+    do_gc (1);
 
 #define STATIC_ARRAYS &empty_array, &weak_empty_array,
 
@@ -324,7 +324,7 @@ static void exit_builtin_modules(void)
 
 #undef ZAP_LINKED_LIST_LEAKS
 
-    do_gc (NULL, 1);
+    do_gc (1);
 
     gc_keep_markers = 0;
     exit_gc();
@@ -491,9 +491,9 @@ void exit_modules(void)
     cleanup_all_other_threads();
 #endif
     gc_destruct_everything = 1;
-    count = do_gc (NULL, 1);
+    count = do_gc (1);
     while (count) {
-      size_t new_count = do_gc (NULL, 1);
+      size_t new_count = do_gc (1);
       if (new_count >= count) {
 	fprintf (stderr, "Some _destruct function is creating new objects "
 		 "during final cleanup - can't exit cleanly.\n");
