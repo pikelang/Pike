@@ -273,6 +273,11 @@ void do_pop(int x)
   modify_stack_depth(-x);
 }
 
+static void do_pop_cleanup(void *x)
+{
+  do_pop((int)(ptrdiff_t)x);
+}
+
 static void do_pop_mark(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
@@ -1708,7 +1713,7 @@ static int do_docode2(node *n, int flags)
 	modify_stack_depth(2);
       }
 
-      PUSH_CLEANUP_FRAME(do_pop, 5);
+      PUSH_CLEANUP_FRAME(do_pop_cleanup, 5);
 
       PUSH_STATEMENT_LABEL;
       current_switch.jumptable=0;
@@ -1772,7 +1777,7 @@ static int do_docode2(node *n, int flags)
     emit0(F_CONST0);
     modify_stack_depth(1);
   foreach_arg_pushed:
-    PUSH_CLEANUP_FRAME(do_pop, 4);
+    PUSH_CLEANUP_FRAME(do_pop_cleanup, 4);
 
     PUSH_STATEMENT_LABEL;
     current_switch.jumptable=0;
@@ -1803,7 +1808,7 @@ static int do_docode2(node *n, int flags)
     BLOCK_BEGIN;
 
     do_docode(CAR(n),0);
-    PUSH_CLEANUP_FRAME(do_pop, 3);
+    PUSH_CLEANUP_FRAME(do_pop_cleanup, 3);
 
     PUSH_STATEMENT_LABEL;
     current_switch.jumptable=0;
