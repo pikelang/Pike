@@ -5923,6 +5923,11 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   encode_struct_tm(tm, 0);
 }
 
+static void my_putenv(void *s)
+{
+  putenv(s);
+}
+
 /*! @decl mapping(string:int) localtime(int timestamp)
  *!
  *!   Convert seconds since 00:00:00 UTC, 1 Jan 1970 into components.
@@ -6034,7 +6039,7 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 	orig_tz = "TZ";
 #endif
       }
-      SET_ONERROR(uwp, putenv, orig_tz);
+      SET_ONERROR(uwp, my_putenv, orig_tz);
       /* NB: No need to call tzset(); mktime() will call it. */
       retval = mktime_zone(date, 0, 0);
       CALL_AND_UNSET_ONERROR(uwp);
