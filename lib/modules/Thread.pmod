@@ -3,17 +3,17 @@
 #if constant(__builtin.thread_id)
 constant Thread=__builtin.thread_id;
 
-optional constant MutexKey=__builtin.mutex_key;
-optional constant Mutex=__builtin.mutex;
-optional constant Condition=__builtin.condition;
-optional constant _Disabled=__builtin.threads_disabled;
-optional constant Local=__builtin.thread_local;
+constant MutexKey=__builtin.mutex_key;
+constant Mutex=__builtin.mutex;
+constant Condition=__builtin.condition;
+constant _Disabled=__builtin.threads_disabled;
+constant Local=__builtin.thread_local;
 
-optional constant thread_create = predef::thread_create;
-optional constant this_thread = predef::this_thread;
-optional constant all_threads = predef::all_threads;
-optional constant get_thread_quanta = predef::get_thread_quanta;
-optional constant set_thread_quatna = predef::set_thread_quanta;
+constant thread_create = predef::thread_create;
+constant this_thread = predef::this_thread;
+constant all_threads = predef::all_threads;
+constant get_thread_quanta = predef::get_thread_quanta;
+constant set_thread_quatna = predef::set_thread_quanta;
 
 constant THREAD_NOT_STARTED = __builtin.THREAD_NOT_STARTED;
 constant THREAD_RUNNING = __builtin.THREAD_RUNNING;
@@ -27,7 +27,7 @@ constant THREAD_EXITED = __builtin.THREAD_EXITED;
 //! @seealso
 //!   @[Queue]
 //!
-optional class Fifo {
+class Fifo {
   inherit Condition : r_cond;
   inherit Condition : w_cond;
   inherit Mutex : lock;
@@ -238,7 +238,7 @@ optional class Fifo {
 //! @seealso
 //!   @[Fifo], @[ADT.Queue]
 //!
-optional class Queue {
+class Queue {
   inherit Condition : r_cond;
   inherit Mutex : lock;
 
@@ -397,7 +397,7 @@ optional class Queue {
 
 
 //! A thread farm.
-optional class Farm
+class Farm
 {
   protected Mutex mutex = Mutex();
   protected Condition ft_cond = Condition();
@@ -860,7 +860,7 @@ optional class Farm
 //! @seealso
 //!   @[ResourceCount], @[MutexKey]
 //!
-optional class ResourceCountKey {
+class ResourceCountKey {
 
   private inherit __builtin.DestructImmediate;
 
@@ -883,7 +883,7 @@ optional class ResourceCountKey {
 //!
 //! @seealso
 //!   @[ResourceCountKey], @[Condition], @[Mutex]
-optional class ResourceCount {
+class ResourceCount {
   /*semi*/final int _count;
   /*semi*/final Condition _cond = Condition();
   /*semi*/final Mutex _mutex = Mutex();
@@ -935,7 +935,7 @@ optional class ResourceCount {
 // Simulations of some of the classes for nonthreaded use.
 
 /* Fallback implementation of Thread.Local */
-optional class Local
+class Local
 {
   protected mixed data;
   mixed get() {return data;}
@@ -943,7 +943,7 @@ optional class Local
 }
 
 /* Fallback implementation of Thread.MutexKey */
-optional class MutexKey (protected function(:void) dec_locks)
+class MutexKey (protected function(:void) dec_locks)
 {
   inherit Builtin.DestructImmediate;
 
@@ -963,7 +963,7 @@ optional class MutexKey (protected function(:void) dec_locks)
 }
 
 /* Fallback implementation of Thread.Mutex */
-optional class Mutex
+class Mutex
 {
   protected int locks = 0;
   protected void dec_locks() {locks--;}
@@ -1007,7 +1007,7 @@ optional class Mutex
 }
 
 // Fallback implementation of Thread.Fifo.
-optional class Fifo
+class Fifo
 {
   array buffer;
   int ptr, num;
@@ -1092,7 +1092,7 @@ optional class Fifo
 }
 
 // Fallback implementation of Thread.Queue.
-optional class Queue
+class Queue
 {
   array buffer=allocate(16);
   int r_ptr, w_ptr;
