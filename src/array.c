@@ -22,7 +22,7 @@
 #include "security.h"
 #include "stuff.h"
 
-RCSID("$Id: array.c,v 1.54 1999/09/16 23:56:08 hubbe Exp $");
+RCSID("$Id$");
 
 struct array empty_array=
 {
@@ -1385,7 +1385,7 @@ node *make_node_from_array(struct array *a)
   if(a->type_field == BIT_INT)
   {
     for(e=0; e<a->size; e++)
-      if(ITEM(a)[e].u.integer != 0)
+      if(ITEM(a)[e].u.integer || SUBTYPEOF(ITEM(a)[e]))
 	break;
     if(e == a->size)
     {
@@ -1399,9 +1399,11 @@ node *make_node_from_array(struct array *a)
     {
       case BIT_INT:
 	for(e=1; e<a->size; e++)
-	  if(ITEM(a)[e].u.integer != ITEM(a)[0].u.integer)
+	  if((ITEM(a)[e].u.integer != ITEM(a)[0].u.integer) ||
+	     (SUBTYPEOF(ITEM(a)[e]) != SUBTYPEOF(ITEM(a)[0]))) {
 	    break;
-	if(e==a->size && ITEM(a)[0].u.integer==0)
+	  }
+	if(e==a->size && ITEM(a)[0].u.integer==0 && !SUBTYPEOF(ITEM(a)[0]))
 	  return mkefuncallnode("allocate",mkintnode(a->size));
 	break;
 	

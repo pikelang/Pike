@@ -105,7 +105,6 @@ testfont binary
 /src/acconfig.h foreign_ident
 /src/aclocal.m4 foreign_ident
 /src/alloca.c foreign_ident
-/src/array.c foreign_ident
 /src/array.h foreign_ident
 /src/backend.c foreign_ident
 /src/backend.h foreign_ident
