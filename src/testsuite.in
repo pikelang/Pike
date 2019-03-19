@@ -10625,26 +10625,30 @@ test_callablep(String.Buffer, 1)
 test_callablep( class { void `()() { } }(), 1)
 test_callablep(String.Buffer(), 0)
 test_callablep( ({}), 1 )
-test_callablep( ({ 0,0 }), 1 )
-test_callablep( ({ 0,1 }), 1 )
+test_callablep( ({ 0,0 }), 0 )
+test_callablep( ({ 0,1 }), 0 )
+test_callablep( ({ UNDEFINED, UNDEFINED }), 1 )
+test_callablep( ({ UNDEFINED,1 }), 0 )
 test_callablep( ({ time }), 1 )
-test_callablep( ({ time, 0 }), 1 )
+test_callablep( ({ time, UNDEFINED }), 1 )
 test_callablep( ({ "a", time }), 0 )
 test_callablep( ({ "" }), 0 )
 test_callablep( "", 0 )
 test_callablep( 3.14, 0 )
 test_callablep( (< time >), 0 )
 test_callablep( 0, 0 )
+test_callablep( UNDEFINED, 0 )
 test_callablep( 7, 0 )
-test_callablep( ({ ({ 0, 1, time }) }), 1 )
+test_callablep( ({ ({ 0, 1, time }) }), 0 )
+test_callablep( ({ ({ UNDEFINED, time }) }), 1 )
 test_callablep( ({ ({ 0, "" }) }), 0 )
 test_any([[
-  array a = ({ 0, 0 });
+  array a = ({ UNDEFINED, UNDEFINED });
   a[1] = a;
   return callablep(a);
 ]], 1)
 test_any([[
-  array a = ({ 0, 0 });
+  array a = ({ UNDEFINED, UNDEFINED });
   a[1] = a;
   return equal(a(), a);
 ]], 1)
