@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * An LR(1) Parser in Pike
  *
  * Henrik Grubbström 1996-11-23
@@ -82,7 +80,7 @@ array(array(string|int)) g_init = ({
   ({ 5, "7" }),
   ({ 5, "8" }),
   ({ 5, "9" }),
-#endif 
+#endif
 });
 
 array(int|function(mixed ...:mixed)) action_init = ({
@@ -124,7 +122,7 @@ string a_init(string ... args)
   }
 }
 
-string symbol_to_string(int|string symbol) 
+string symbol_to_string(int|string symbol)
 {
   if (intp(symbol)) {
     if (symbol < sizeof(nonterminals))
@@ -140,7 +138,7 @@ void create()
   g = Parser();
 
   g->set_symbol_to_string(symbol_to_string);
-  
+
 #if 0
   foreach (g_init, array(string|int) i) {
     g->add_rule(Rule(i[0], i[1..], a_init));

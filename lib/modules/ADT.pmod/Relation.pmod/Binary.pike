@@ -1,4 +1,3 @@
-// $Id$
 // An abstract data type for binary relations.
 
 #pike __REAL_VERSION__
@@ -10,7 +9,7 @@ private int     need_recount = 0;
 
 constant is_binary_relation = 1;
 
-//! Return true/false: does the relation "@[left] R @[right]" exist? 
+//! Return true/false: does the relation "@[left] R @[right]" exist?
 mixed contains(mixed left, mixed right)
 {
   return val[left] && val[left][right];
@@ -54,7 +53,7 @@ this_program remove(mixed left, mixed right)
 //! the returned array will have its elements in no particular
 //! order. If you need to know which relation entry produced which
 //! result in the array, you have to make that information part
-//! of the value that @[f] returns. 
+//! of the value that @[f] returns.
 array map(function f)
 {
   array a = ({});
@@ -108,17 +107,6 @@ mixed _sizeof()
     items = i;
   }
   return items;
-}
-
-//! The expression `rel1 <= rel2' returns true if every relation entry
-//! in rel1 is also present in rel2.
-mixed `<=(object rel)
-{
-  foreach(indices(val), mixed left)
-    foreach(indices(val[left]), mixed right)
-      if (!rel(left, right))
-        return 0;
-  return 1;
 }
 
 int(0..1) `==(mixed rel)
@@ -321,11 +309,9 @@ protected class _get_iterator {
   }
 }
 
-mixed cast(string to) {
-  switch(to) {
-  case "mapping":
+mixed cast(string to)
+{
+  if( to=="mapping" )
     return copy_value(val);
-  default:
-    error("Can not cast ADT.Relation.Binary to %O.\n", to);
-  }
+  return UNDEFINED;
 }

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* The basic IDEA transformation
@@ -15,11 +14,11 @@
  **********************************************************************
  *
  *    idea.c - C source code for IDEA block cipher.
- *      IDEA (International Data Encryption Algorithm), formerly known as 
+ *      IDEA (International Data Encryption Algorithm), formerly known as
  *      IPES (Improved Proposed Encryption Standard).
  *      Algorithm developed by Xuejia Lai and James L. Massey, of ETH Zurich.
- *      This implementation modified and derived from original C code 
- *      developed by Xuejia Lai.  
+ *      This implementation modified and derived from original C code
+ *      developed by Xuejia Lai.
  *      Zero-based indexing added, names changed from IPES to IDEA.
  *      CFB functions added.  Random number routines added.
  *
@@ -32,8 +31,6 @@
  */
 
 #include "global.h"
-#include <string.h>
-
 #include "idea.h"
 
 /*-------------------------------------------------------------*/
@@ -76,7 +73,7 @@ mul(unsigned INT16 a, unsigned INT16 b)
  * iteration, and some subtracts of t have been changed to adds.
  */
 static unsigned INT16
-inv(unsigned INT16 x)     
+inv(unsigned INT16 x)
 {
   unsigned INT16 t0, t1;
   unsigned INT16 q, y;
@@ -111,7 +108,7 @@ idea_expand(unsigned INT16 *ctx,
 	    const unsigned INT8 *userkey)
 {
   int i,j;
-  
+
   for (j=0; j<8; j++) {
     ctx[j] = (userkey[0]<<8) + userkey[1];
     userkey += 2;
@@ -171,12 +168,12 @@ idea_invert(unsigned INT16 *d,
   *--p = t2;
   *--p = t1;
   /* Copy and destroy temp copy */
-  MEMCPY(d, temp, sizeof(temp));
+  memcpy(d, temp, sizeof(temp));
   memset(temp, 0, sizeof(temp));
 } /* idea_invert */
 
 /*
- * MUL(x,y) computes x = x*y, modulo 0x10001.  Requires two temps, 
+ * MUL(x,y) computes x = x*y, modulo 0x10001.  Requires two temps,
  * t16 and t32.  x is modified, and must me a side-effect-free lvalue.
  * y may be anything, but unlike x, must be strictly 16 bits even if
  * low16() is #defined.
@@ -209,12 +206,12 @@ idea_invert(unsigned INT16 *d,
      do { \
 	    (dest) = *(p)++ << 8; (dest) |= *(p)++; \
 	} while(0)
-     
+
 #define word2char(src, p) \
      do { \
 	    *(p)++ = (src) >> 8; *(p)++ = (src) & 0xff; \
 	} while(0)
-     
+
 /*	IDEA encryption/decryption algorithm */
 /* Note that in and out can be the same buffer */
 static void
@@ -223,12 +220,12 @@ idea_crypt(const unsigned INT16 *key,
 	   const unsigned INT8 *src)
 {
   register unsigned INT16 x1, x2, x3, x4, s2, s3;
-  
+
   /* Setup */
-    
+
   char2word(x1, src); char2word(x2, src);
   char2word(x3, src); char2word(x4, src);
-  
+
   /* Encrypt */
   {
 #ifndef SMALL_CACHE

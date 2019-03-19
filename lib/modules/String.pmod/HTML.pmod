@@ -1,4 +1,3 @@
-// $Id$
 
 #pike __REAL_VERSION__
 
@@ -260,6 +259,6 @@ class OBox {
       return rows;
     if(to=="string")
       return render();
-    error("Could not cast OBox object to %s.\n", to);
+    return UNDEFINED;
   }
 }

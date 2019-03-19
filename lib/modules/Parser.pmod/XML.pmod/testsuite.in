@@ -1,5 +1,4 @@
 START_MARKER
-// $Id$
 
 // DOM
 
@@ -45,6 +44,119 @@ class A {
 return sizeof(A("<!-- --><!-- --><x/>")->mChildren);
 ]], 3)
 
+// Tests of namespace handling in normal-mode.
+test_any([[
+  // InfoKOM 731715
+  object root = Parser.XML.Tree.simple_parse_input("<root/>");
+  object sub =
+    Parser.XML.Tree.SimpleNode(Parser.XML.Tree.XML_ELEMENT, "sub",
+                               ([ "foo" : "bar" ]), "");
+  root->get_elements("root")[0]->add_child(sub);
+  return root->render_xml();
+]], "<root><sub foo='bar'/></root>")
+
+test_any([[
+  // InfoKOM 731484
+  return Parser.XML.Tree.simple_parse_input(
+    "<feed xmlns='http://www.w3.org/2005/Atom'\n"
+    "      xmlns:example='http://www.example.com/example'>\n"
+    "  <entry>\n"
+    "   <category example:test='yes' label='Test' example:test='yes' term='test' />\n"
+    "  </entry>\n"
+    "</feed>")->render_xml();
+]], "<feed xmlns='http://www.w3.org/2005/Atom'"
+    " xmlns:example='http://www.example.com/example'>\n"
+    "  <entry>\n"
+    "   <category example:test='yes' label='Test' term='test'/>\n"
+    "  </entry>\n"
+    "</feed>")
+
+test_do([[
+	add_constant("xmlblob",
+#"<?xml version='1.0' encoding='utf-8'?><feed xmlns='http://www.w3.org/2005/Atom' xmlns:A='http://example.com/dtd'>
+  <generator>Grubba</generator>
+  <id>urn:uuid:4baeaeb4-7125-463a-9b68-a7005a7548bb</id>
+  <title>Namespace Test</title>
+  <updated>2012-09-28T16:02:16+02:00</updated>
+  <entry>
+    <title>Namespace Test</title>
+    <id>urn:uuid:e73d603c-c287-47c8-b17c-c9e35981d64a</id>
+    <link href='urn:uuid:e73d603c-c287-47c8-b17c-c9e35981d64a' rel='self'/>
+    <updated>2012-09-28T16:02:16+02:00</updated>
+    <author>
+      <name>Grubba</name>
+    </author>
+    <A:user user-name='grubba'>Grubba</A:user>
+    <category A:example='yes' A:priority='300' scheme='http://example.com/dtd' term='example'/>
+    <A:a>
+      <A:b date='2010-10-01'>
+        <A:c yes='no'/>
+      </A:b>
+    </A:a>
+    <content type='xhtml'>
+      <div xmlns='http://www.w3.org/1999/xhtml'>
+        <div A:id='1' class='text' id='e73ab900-f76d-41f7-8576-6be10519e31b' name='text'>
+          <h1 class='headline'>Namespace Test</h1>
+          <p class='normal'>This is a test of whether namespaces work in Parser.XML.Tree.</p>
+        </div>
+        <div class='image' id='68788699-d986-418a-8ca2-2a058ab86625' name='image'>
+          <img class='image' src='/some/path/to/an/image.jpg'/>
+        </div>
+      </div>
+    </content>
+  </entry>
+</feed>");
+]])
+
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
+	 Parser.XML.Tree.PARSE_ENABLE_NAMESPACES)->render_xml()]], xmlblob)
+
+// Test of implicit xml: namespace.
+test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
+	 Parser.XML.Tree.PARSE_ENABLE_NAMESPACES)->render_xml()]], xmlblob)
+
+// Test InfoKOM 803815.
+test_do([[add_constant("xmlblob", #"<?xml version='1.0' encoding='UTF-8'?><foo xmlns='http://bar.com/test' xmlns:bar='http://foo.com/bar/'>
+  <hej bar:gazonk='hopp' xml:lang='sv-SE'>
+    <tag>test</tag>
+  </hej>
+</foo>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
+	 Parser.XML.Tree.PARSE_ENABLE_NAMESPACES)->render_xml()]], xmlblob)
+
+// Test of explicit xml: namespace.
+test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:xml='http://www.w3.org/XML/1998/namespace'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
+	 Parser.XML.Tree.PARSE_ENABLE_NAMESPACES)->render_xml()]], xmlblob)
+
+// Test detection of invalid namespaces.
+test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:xml='http://www.w3.org/XML/1998/invalid'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
+test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
+		  Parser.XML.Tree.PARSE_ENABLE_NAMESPACES);]])
+test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:invalid='http://www.w3.org/XML/1998/namespace'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
+test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
+		  Parser.XML.Tree.PARSE_ENABLE_NAMESPACES);]])
+test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:xmlns='http://www.w3.org/2000/xmlns/'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
+test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
+		  Parser.XML.Tree.PARSE_ENABLE_NAMESPACES);]])
+test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:xmlns='http://www.w3.org/2000/invalid/'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
+test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
+		  Parser.XML.Tree.PARSE_ENABLE_NAMESPACES);]])
+test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:invalid='http://www.w3.org/2000/xmlns/'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
+test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
+		  Parser.XML.Tree.PARSE_ENABLE_NAMESPACES);]])
+
+test_do([[add_constant("xmlblob");]])
 
 // NSTree
 
@@ -123,7 +235,7 @@ object x=Parser.XML.NSTree.parse_input(#"<?xml version=\"1.0\"?>
 <!-- all elements here are explicitly in the HTML namespace -->
 <html:html xmlns:html='http://www.w3.org/TR/REC-html40'>
   <html:head><html:title>Frobnostication</html:title></html:head>
-  <html:body><html:p>Moved to 
+  <html:body><html:p>Moved to
     <html:a href='http://frob.com'>here.</html:a></html:p></html:body>
 </html:html>");
 x=x[2];
@@ -198,7 +310,7 @@ return r;
 test_any_equal([[
 object x=Parser.XML.NSTree.parse_input(#"
 <!-- http://www.w3.org is bound to n1 and is the default -->
-<x xmlns:n1=\"http://www.w3.org\" 
+<x xmlns:n1=\"http://www.w3.org\"
    xmlns=\"http://www.w3.org\" >
     <good a=\"1\"     n1:a=\"2\" />
 </x>");
@@ -217,7 +329,7 @@ array args = ({
   "xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'",
   "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'",
   "xmlns:xsd='http://www.w3.org/2001/XMLSchema'",
-  "xmlns:soapenc='http://schemas.xmlsoap.org/soap/encoding/'",                      
+  "xmlns:soapenc='http://schemas.xmlsoap.org/soap/encoding/'",
   "soap:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'" });
 for(int i; i<120; i++)
   Parser.XML.NSTree.parse_input("<soap:Envelope "+Array.permute(args,i)*" "+"/>");

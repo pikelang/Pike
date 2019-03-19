@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(pike_regexp.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -11,5 +10,3 @@ REGEXP_OBJS="pike_regexp.o"
 AC_SUBST(REGEXP_OBJS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

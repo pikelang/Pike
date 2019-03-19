@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* AutoDoc generated from OpenGL man pages */
@@ -100,7 +99,7 @@
  *!All accumulation buffer operations are limited
  *!to the area of the current scissor box and applied identically to
  *!the red, green, blue, and alpha components of each pixel.
- *!If a @[glAccum] operation results in a value outside the range [-1, 1], 
+ *!If a @[glAccum] operation results in a value outside the range [-1, 1],
  *!the contents of an accumulation buffer pixel component are undefined.
  *!
  *!The operations are as follows:
@@ -117,7 +116,7 @@
  *!in the accumulation buffer,
  *!thereby updating the accumulation buffer.
  *!</c></r>
- *!<r><c><ref>GL_LOAD</ref> 
+ *!<r><c><ref>GL_LOAD</ref>
  *!</c><c>Similar to <ref>GL_ACCUM</ref>,
  *!except that the current value in the accumulation buffer is not used
  *!in the calculation of the new value.
@@ -127,16 +126,16 @@
  *!and then stored in the corresponding accumulation buffer cell,
  *!overwriting the current value.
  *!</c></r>
- *!<r><c><ref>GL_ADD</ref> 
+ *!<r><c><ref>GL_ADD</ref>
  *!</c><c>Adds <i>value</i> to each R, G, B, and A
- *!in the accumulation buffer. 
+ *!in the accumulation buffer.
  *!</c></r>
- *!<r><c><ref>GL_MULT</ref> 
+ *!<r><c><ref>GL_MULT</ref>
  *!</c><c>Multiplies each R, G, B, and A
  *!in the accumulation buffer by <i>value</i> and returns the scaled component
  *!to its corresponding accumulation buffer location.
  *!</c></r>
- *!<r><c><ref>GL_RETURN</ref> 
+ *!<r><c><ref>GL_RETURN</ref>
  *!</c><c>Transfers accumulation buffer values
  *!to the color buffer or buffers currently selected for writing.
  *!Each R, G, B, and A component is multiplied by <i>value</i>,
@@ -153,7 +152,7 @@
  *!
  *!To clear the accumulation buffer, call @[glClearAccum] with R, G, B,
  *!and A values to set it to, then call @[glClear] with the
- *!accumulation buffer enabled. 
+ *!accumulation buffer enabled.
  *!
  *!@param op
  *!
@@ -190,8 +189,8 @@
  *!between an incoming fragment's alpha value and a constant reference value.
  *!@[glAlphaFunc] specifies the reference value and the comparison function.
  *!The comparison is performed only if alpha testing is enabled. By
- *!default, it is not enabled. 
- *!(See 
+ *!default, it is not enabled.
+ *!(See
  *!@[glEnable] and @[glDisable] of @[GL_ALPHA_TEST].)
  *!
  *!@i{func@} and @i{ref@} specify the conditions under which
@@ -200,14 +199,14 @@
  *!using the function specified by @i{func@}.
  *!If the value passes the comparison,
  *!the incoming fragment is drawn
- *!if it also passes subsequent stencil and depth buffer tests. 
+ *!if it also passes subsequent stencil and depth buffer tests.
  *!If the value fails the comparison,
  *!no change is made to the frame buffer at that pixel location. The
- *!comparison functions are as follows: 
+ *!comparison functions are as follows:
  *!
  *!@xml{<matrix>
  *!<r><c><ref>GL_NEVER</ref>
- *!</c><c>Never passes. 
+ *!</c><c>Never passes.
  *!</c></r>
  *!<r><c><ref>GL_LESS</ref>
  *!</c><c>Passes if the incoming alpha value is less than the reference value.
@@ -218,7 +217,7 @@
  *!<r><c><ref>GL_LEQUAL</ref>
  *!</c><c>Passes if the incoming alpha value is less than or equal to the reference value.
  *!</c></r>
- *!<r><c><ref>GL_GREATER</ref> 
+ *!<r><c><ref>GL_GREATER</ref>
  *!</c><c>Passes if the incoming alpha value is greater than the reference value.
  *!</c></r>
  *!<r><c><ref>GL_NOTEQUAL</ref>
@@ -229,7 +228,7 @@
  *!the reference value.
  *!</c></r>
  *!<r><c><ref>GL_ALWAYS</ref>
- *!</c><c>Always passes (initial value). 
+ *!</c><c>Always passes (initial value).
  *!</c></r>
  *!</matrix>@}
  *!
@@ -279,10 +278,10 @@
  *!@[glArrayElement] commands are used within @[glBegin]/@[glEnd] pairs to
  *!specify vertex and attribute data for point, line, and polygon
  *!primitives. If @[GL_VERTEX_ARRAY] is enabled when @[glArrayElement] is called, a
- *!single vertex is drawn, using 
+ *!single vertex is drawn, using
  *!vertex and attribute data taken from location @i{i@} of the enabled
  *!arrays. If @[GL_VERTEX_ARRAY] is not enabled, no drawing occurs but
- *!the attributes corresponding to the enabled arrays are modified. 
+ *!the attributes corresponding to the enabled arrays are modified.
  *!
  *!Use @[glArrayElement] to construct primitives by indexing vertex data, rather than
  *!by streaming through arrays of data in first-to-last order. Because
@@ -290,29 +289,29 @@
  *!specify per-primitive attributes such as a single normal per
  *!individual triangle.
  *!
- *!Changes made to array data between the execution of @[glBegin] and the 
+ *!Changes made to array data between the execution of @[glBegin] and the
  *!corresponding execution of @[glEnd] may affect calls to @[glArrayElement] that are made
  *!within the same @[glBegin]/@[glEnd] period in non-sequential ways.
- *!That is, a call to 
+ *!That is, a call to
  *!
- *!@[glArrayElement] that precedes a change to array data may 
- *!access the changed data, and a call that follows a change to array data 
+ *!@[glArrayElement] that precedes a change to array data may
+ *!access the changed data, and a call that follows a change to array data
  *!may access original data.
  *!
  *!@param i
  *!
- *!Specifies an index into the enabled vertex data arrays. 
+ *!Specifies an index into the enabled vertex data arrays.
  *!
  *!
  */
 
 /*!@decl void glBindTexture(int target, int texture)
  *!
- *!@[glBindTexture] lets you create or use a named texture. Calling @[glBindTexture] with 
+ *!@[glBindTexture] lets you create or use a named texture. Calling @[glBindTexture] with
  *!
  *!@i{target@} set to
  *!@[GL_TEXTURE_1D] or @[GL_TEXTURE_2D] and @i{texture@} set to the name
- *!of the newtexture binds the texture name to the target.  
+ *!of the newtexture binds the texture name to the target.
  *!When a texture is bound to a target, the previous binding for that
  *!target is automatically broken.
  *!
@@ -331,7 +330,7 @@
  *!1-dimensional and a texture first bound to @[GL_TEXTURE_2D] becomes
  *!2-dimensional. The state of a 1-dimensional texture
  *!immediately after it is first bound is equivalent to the state of the
- *!default @[GL_TEXTURE_1D] at GL initialization, and similarly for 
+ *!default @[GL_TEXTURE_1D] at GL initialization, and similarly for
  *!2-dimensional textures.
  *!
  *!While a texture is bound, GL operations on the target to which it is
@@ -366,7 +365,7 @@
  *!
  *!@param texture
  *!
- *!Specifies the name of a texture. 
+ *!Specifies the name of a texture.
  *!
  *!@throws
  *!
@@ -411,7 +410,7 @@
  *!
  *!.RS
  *!.ce
- *!k sub c ~=~ 2 sup m sub c - 1 
+ *!k sub c ~=~ 2 sup m sub c - 1
  *!.RE
  *!
  *!and
@@ -433,7 +432,7 @@
  *!center box ;
  *!ci | ci
  *!c | c .
- *!parameter	(f sub R , ~~ f sub G , ~~ f sub B , ~~ f sub A ) 
+ *!parameter	(f sub R , ~~ f sub G , ~~ f sub B , ~~ f sub A )
  *!=
  *!@[GL_ZERO]	(0, ~0, ~0, ~0 )
  *!@[GL_ONE]	(1, ~1, ~1, ~1 )
@@ -569,7 +568,7 @@
 /*!@decl void glClear(int mask)
  *!
  *!@[glClear] sets the bitplane area of the window to values previously selected
- *!by @[glClearColor], @[glClearIndex], @[glClearDepth], 
+ *!by @[glClearColor], @[glClearIndex], @[glClearDepth],
  *!@[glClearStencil], and @[glClearAccum].
  *!Multiple color buffers can be cleared simultaneously by selecting
  *!more than one buffer at a time using @[glDrawBuffer].
@@ -588,7 +587,7 @@
  *!@[glClear] takes a single argument that is the bitwise OR of several
  *!values indicating which buffer is to be cleared.
  *!
- *!The values are as follows: 
+ *!The values are as follows:
  *!
  *!@xml{<matrix>
  *!<r><c><ref>GL_COLOR_BUFFER_BIT</ref>
@@ -599,7 +598,7 @@
  *!</c><c>Indicates the depth buffer.
  *!</c></r>
  *!<r><c><ref>GL_ACCUM_BUFFER_BIT</ref>
- *!</c><c>Indicates the accumulation buffer. 
+ *!</c><c>Indicates the accumulation buffer.
  *!</c></r>
  *!<r><c><ref>GL_STENCIL_BUFFER_BIT</ref>
  *!</c><c>Indicates the stencil buffer.
@@ -607,7 +606,7 @@
  *!</matrix>@}
  *!
  *!The value to which each buffer is cleared depends on the setting of the
- *!clear value for that buffer.  
+ *!clear value for that buffer.
  *!
  *!@param mask
  *!
@@ -632,10 +631,10 @@
 
 /*!@decl void glClearAccum(float|array(float) red, float|void green, float|void blue, float|void alpha)
  *!
- *!@[glClearAccum] specifies the red, green, blue, and alpha values used by @[glClear] 
+ *!@[glClearAccum] specifies the red, green, blue, and alpha values used by @[glClear]
  *!to clear the accumulation buffer.
  *!
- *!Values specified by @[glClearAccum] are clamped to the 
+ *!Values specified by @[glClearAccum] are clamped to the
  *!range [-1,1].
  *!
  *!@param red
@@ -881,7 +880,7 @@
  *!
  *!@[glCopyPixels] copies values from each pixel with the lower left-hand corner at
  *!(@i{x@} + i, @i{y@} + j) for 0\(<=i<@i{width@}  and 0\(<=j<@i{height@}.
- *!This pixel is said to be the ith pixel in the jth row. 
+ *!This pixel is said to be the ith pixel in the jth row.
  *!Pixels are copied in row order from the lowest to the highest row,
  *!left to right in each row.
  *!
@@ -917,7 +916,7 @@
  *!and component value 0 to 0.0.
  *!The resulting floating-point color values are then multiplied
  *!by GL_c_SCALE and added to GL_c_BIAS,
- *!where <i>c</i> is RED, GREEN, BLUE, and ALPHA 
+ *!where <i>c</i> is RED, GREEN, BLUE, and ALPHA
  *!for the respective color components.
  *!The results are clamped to the range [0,1].
  *!If <ref>GL_MAP_COLOR</ref> is true,
@@ -990,7 +989,7 @@
  *!</matrix>@}
  *!
  *!The rasterization described thus far assumes pixel zoom factors of 1.0.
- *!If 
+ *!If
  *!
  *!@[glPixelZoom] is used to change the x and y pixel zoom factors,
  *!pixels are converted to fragments as follows.
@@ -1004,12 +1003,12 @@
  *!(x sub r + zoom sub x i, y sub r + zoom sub y j)
  *!.sp .5
  *!.ce
- *! and 
+ *! and
  *!.sp .5
  *!.ce
  *!(x sub r + zoom sub x (i + 1), y sub r + zoom sub y ( j + 1 ))
  *!
- *!where zoom sub x is the value of @[GL_ZOOM_X] and 
+ *!where zoom sub x is the value of @[GL_ZOOM_X] and
  *!zoom sub y is the value of @[GL_ZOOM_Y].
  *!
  *!@param x
@@ -1057,7 +1056,7 @@
  *!@[GL_READ_BUFFER].
  *!
  *!The screen-aligned pixel row with left corner at ("x", "y")
- *!and with a length of "width"~+~2~*~"border" 
+ *!and with a length of "width"~+~2~*~"border"
  *!defines the texture array
  *!at the mipmap level specified by @i{level@}.
  *!@i{internalFormat@} specifies the internal format of the texture array.
@@ -1069,7 +1068,7 @@
  *!and then converted to the texture's internal format for storage in the texel
  *!array.
  *!
- *!Pixel ordering is such that lower x screen coordinates correspond to 
+ *!Pixel ordering is such that lower x screen coordinates correspond to
  *!lower texture coordinates.
  *!
  *!If any of the pixels within the specified row of the current
@@ -1115,7 +1114,7 @@
  *!@[GL_INTENSITY16],
  *!@[GL_RGB],
  *!@[GL_R3_G3_B2],
- *!@[GL_RGB4], 
+ *!@[GL_RGB4],
  *!@[GL_RGB5],
  *!@[GL_RGB8],
  *!@[GL_RGB10],
@@ -1152,18 +1151,18 @@
  *!allowable values.
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{level@} is less than 0.
- *!.P 
+ *!.P
  *!@[GL_INVALID_VALUE] may be generated if @i{level@} is greater
  *!than log sub 2 max,
  *!where max is the returned value of @[GL_MAX_TEXTURE_SIZE].
- *!.P 
+ *!.P
  *!@[GL_INVALID_VALUE] is generated if @i{internalFormat@} is not an
- *!allowable value.  
+ *!allowable value.
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{width@} is less than 0
- *!or greater than 
+ *!or greater than
  *!2 + @[GL_MAX_TEXTURE_SIZE],
- *!or if it cannot be represented as 2 ** n ~+~ 2~*~("border") 
+ *!or if it cannot be represented as 2 ** n ~+~ 2~*~("border")
  *!for some integer value of @i{n@}.
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{border@} is not 0 or 1.
@@ -1182,7 +1181,7 @@
  *!
  *!The screen-aligned pixel rectangle with lower left corner at (@i{x@},
  *!@i{y@}) and with a width of @i{width@}~+~2~*~@i{border@} and a height of
- *!@i{height@}~+~2~*~@i{border@} 
+ *!@i{height@}~+~2~*~@i{border@}
  *!defines the texture array
  *!at the mipmap level specified by @i{level@}.
  *!@i{internalFormat@} specifies the internal format of the texture array.
@@ -1194,7 +1193,7 @@
  *!and then converted to the texture's internal format for storage in the texel
  *!array.
  *!
- *!Pixel ordering is such that lower x and y screen coordinates correspond to 
+ *!Pixel ordering is such that lower x and y screen coordinates correspond to
  *!lower s and t texture coordinates.
  *!
  *!If any of the pixels within the specified rectangle of the current
@@ -1281,7 +1280,7 @@
  *!@[GL_INVALID_ENUM] is generated if @i{target@} is not @[GL_TEXTURE_2D].
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{level@} is less than 0.
- *!.P 
+ *!.P
  *!@[GL_INVALID_VALUE] may be generated if @i{level@} is greater
  *!than log sub 2 max,
  *!where max is the returned value of @[GL_MAX_TEXTURE_SIZE].
@@ -1312,8 +1311,8 @@
  *!The screen-aligned pixel row with left corner at (@i{x@},\ @i{y@}), and with
  *!length @i{width@} replaces the portion of the
  *!texture array with x indices @i{xoffset@} through "xoffset" ~+~ "width" ~-~ 1,
- *!inclusive. The destination in the texture array may not 
- *!include any texels outside the texture array as it was 
+ *!inclusive. The destination in the texture array may not
+ *!include any texels outside the texture array as it was
  *!originally specified.
  *!
  *!The pixels in the row are processed exactly as if
@@ -1365,17 +1364,17 @@
  *!been defined by a previous @[glTexImage1D] or @[glCopyTexImage1D] operation.
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{level@} is less than 0.
- *!.P 
+ *!.P
  *!@[GL_INVALID_VALUE] may be generated if @i{level@}>log sub 2@i{ max@},
  *!where @i{max@} is the returned value of @[GL_MAX_TEXTURE_SIZE].
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{y@} ~<~ ~-b
- *!or if @i{width@} ~<~ ~-b, where b 
+ *!or if @i{width@} ~<~ ~-b, where b
  *!is the border width of the texture array.
  *!
- *!@[GL_INVALID_VALUE] is generated if "xoffset" ~<~ ~-b, or 
+ *!@[GL_INVALID_VALUE] is generated if "xoffset" ~<~ ~-b, or
  *!("xoffset"~+~"width") ~>~ (w-b),
- *!where w is the @[GL_TEXTURE_WIDTH], and b is the @[GL_TEXTURE_BORDER] 
+ *!where w is the @[GL_TEXTURE_WIDTH], and b is the @[GL_TEXTURE_BORDER]
  *!of the texture image being modified.
  *!Note that w includes twice the border width.
  *!
@@ -1419,7 +1418,7 @@
  *!@param target
  *!
  *!Specifies the target texture.
- *!Must be @[GL_TEXTURE_2D] 
+ *!Must be @[GL_TEXTURE_2D]
  *!
  *!@param level
  *!
@@ -1450,27 +1449,27 @@
  *!
  *!@throws
  *!
- *!@[GL_INVALID_ENUM] is generated if @i{target@} is not @[GL_TEXTURE_2D]. 
+ *!@[GL_INVALID_ENUM] is generated if @i{target@} is not @[GL_TEXTURE_2D].
  *!
  *!@[GL_INVALID_OPERATION] is generated if the texture array has not
  *!been defined by a previous @[glTexImage2D] or @[glCopyTexImage2D] operation.
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{level@} is less than 0.
- *!.P 
+ *!.P
  *!@[GL_INVALID_VALUE] may be generated if @i{level@} is greater
  *!than log sub 2 max,
  *!where max is the returned value of @[GL_MAX_TEXTURE_SIZE].
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{x@} ~<~ ~-b or if
- *!@i{y@} ~<~ ~-b, 
+ *!@i{y@} ~<~ ~-b,
  *!where b is the border width of the texture array.
  *!
  *!@[GL_INVALID_VALUE] is generated if "xoffset" ~<~ -b,
- *!(@i{xoffset@}~+~@i{width@})~>~(w ~-~b), 
- *!@i{yoffset@}~<~ ~-b, or 
+ *!(@i{xoffset@}~+~@i{width@})~>~(w ~-~b),
+ *!@i{yoffset@}~<~ ~-b, or
  *!(@i{yoffset@}~+~@i{height@})~>~(h ~-~b),
- *!where w is the @[GL_TEXTURE_WIDTH], 
- *!h is the  @[GL_TEXTURE_HEIGHT], 
+ *!where w is the @[GL_TEXTURE_WIDTH],
+ *!h is the  @[GL_TEXTURE_HEIGHT],
  *!and b is the @[GL_TEXTURE_BORDER]
  *!of the texture image being modified.
  *!Note that w and h
@@ -1614,7 +1613,7 @@
  *!@[GL_TRIANGLES],
  *!@[GL_QUAD_STRIP],
  *!@[GL_QUADS],
- *!and @[GL_POLYGON] are accepted. 
+ *!and @[GL_POLYGON] are accepted.
  *!
  *!@param first
  *!
@@ -1689,7 +1688,7 @@
  *!Other pixel store parameters specify different read pointer advancements,
  *!both before the first pixel is read
  *!and after all @i{width@} pixels are read.
- *!See the 
+ *!See the
  *!
  *!@[glPixelStore] reference page for details on these options.
  *!
@@ -1723,8 +1722,8 @@
  *!result.
  *!
  *!If the GL is in RGBA mode,
- *!the resulting index is converted to an RGBA pixel 
- *!with the help of the <ref>GL_PIXEL_MAP_I_TO_R</ref>, 
+ *!the resulting index is converted to an RGBA pixel
+ *!with the help of the <ref>GL_PIXEL_MAP_I_TO_R</ref>,
  *!<ref>GL_PIXEL_MAP_I_TO_G</ref>,
  *!<ref>GL_PIXEL_MAP_I_TO_B</ref>,
  *!and <ref>GL_PIXEL_MAP_I_TO_A</ref> tables.
@@ -1743,8 +1742,8 @@
  *!.sp
  *!.RS
  *!.ce
- *!x sub n ~=~ x sub r ~+~ n ~ roman mod ~ "width" 
- *!.sp 
+ *!x sub n ~=~ x sub r ~+~ n ~ roman mod ~ "width"
+ *!.sp
  *!.ce
  *!y sub n ~=~ y sub r ~+~ \(lf ~ n / "width" ~ \(rf
  *!.ce 0
@@ -1789,7 +1788,7 @@
  *!
  *!.RS
  *!.ce
- *!x sub n ~=~ x sub r ~+~ n ~ roman mod ~ "width" 
+ *!x sub n ~=~ x sub r ~+~ n ~ roman mod ~ "width"
  *!.sp
  *!.ce
  *!y sub n ~=~ y sub r ~+~ \(lf ~ n / "width" ~ \(rf
@@ -1826,7 +1825,7 @@
  *!
  *!.RS
  *!.ce
- *!x sub n ~=~ x sub r ~+~ n ~ roman mod ~ "width" 
+ *!x sub n ~=~ x sub r ~+~ n ~ roman mod ~ "width"
  *!.sp
  *!.ce
  *!y sub n ~=~ y sub r ~+~ \(lf ~ n / "width" ~ \(rf
@@ -1845,7 +1844,7 @@
  *!@xml{<matrix>
  *!<r><c><ref>GL_RGBA</ref>
  *!</c><c>Each pixel is a four-component group: for <ref>GL_RGBA</ref>, the red
- *!component is first, followed by green, followed by blue, followed by 
+ *!component is first, followed by green, followed by blue, followed by
  *!alpha.
  *!Floating-point values are converted directly to an internal floating-point
  *!format with unspecified precision.
@@ -1877,7 +1876,7 @@
  *!
  *!.RS
  *!.ce
- *!x sub n ~=~ x sub r ~+~ n ~ roman mod ~ "width" 
+ *!x sub n ~=~ x sub r ~+~ n ~ roman mod ~ "width"
  *!.sp
  *!.ce
  *!y sub n ~=~ y sub r ~+~ \(lf ~ n / "width" ~ \(rf
@@ -1977,12 +1976,12 @@
  *!GL_SHORT	signed 16-bit integer
  *!GL_UNSIGNED_INT	unsigned 32-bit integer
  *!GL_INT	32-bit integer
- *!GL_FLOAT	single-precision floating-point 
+ *!GL_FLOAT	single-precision floating-point
  *!.TE
  *!.sp
  *!
  *!The rasterization described so far assumes pixel zoom factors of 1.
- *!If 
+ *!If
  *!
  *!@[glPixelZoom] is used to change the x and y pixel zoom factors,
  *!pixels are converted to fragments as follows.
@@ -1994,7 +1993,7 @@
  *!.sp
  *!.RS
  *!.ce
- *!(x sub r + zoom sub x n, y sub r + zoom sub y m) 
+ *!(x sub r + zoom sub x n, y sub r + zoom sub y m)
  *!.sp
  *!.ce
  *!(x sub r + zoom sub x (n + 1), y sub r + zoom sub y ( m + 1 ))
@@ -2002,7 +2001,7 @@
  *!.sp
  *!.RE
  *!
- *!where zoom sub x is the value of @[GL_ZOOM_X] and 
+ *!where zoom sub x is the value of @[GL_ZOOM_X] and
  *!zoom sub y is the value of @[GL_ZOOM_Y].
  *!
  *!@param width
@@ -2135,7 +2134,7 @@
  *!and if any of
  *!@[GL_MAP1_TEXTURE_COORD_1],
  *!@[GL_MAP1_TEXTURE_COORD_2],
- *!@[GL_MAP1_TEXTURE_COORD_3], 
+ *!@[GL_MAP1_TEXTURE_COORD_3],
  *!@[GL_MAP1_TEXTURE_COORD_4],
  *!@[GL_MAP2_TEXTURE_COORD_1],
  *!@[GL_MAP2_TEXTURE_COORD_2],
@@ -2187,10 +2186,10 @@
  *!    Pp   Pp
  *!m = -- X --
  *!    Pu   Pv
- *!.sp 
+ *!.sp
  *!.fi
  *!
- *!Then the generated normal  n  is 
+ *!Then the generated normal  n  is
  *!
  *!
  *!n = m over ~ over { ||  m || }
@@ -2202,7 +2201,7 @@
  *!if enabled,
  *!is used to produce a normal.
  *!If neither automatic normal generation nor a normal map is enabled,
- *!no normal is generated for 
+ *!no normal is generated for
  *!@[glEvalCoord] commands.
  *!
  *!@param u
@@ -2237,10 +2236,10 @@
  *!
  *!glEvalCoord1(i . DELTA u + u );
  *!                            1
- *!where 
+ *!where
  *!
  *!DELTA u = (u - u  ) / n
- *!            2   1 
+ *!            2   1
  *!
  *!and n, u , and u
  *!        1       2
@@ -2248,7 +2247,7 @@
  *!.fi
  *!are the arguments to the most recent @[glMapGrid1] command.
  *!The one absolute numeric requirement is that if i~=~n,
- *!then the value computed from 
+ *!then the value computed from
  *!.nf
  *!i . DELTA u + u  is exactly u .
  *!               1             2
@@ -2257,7 +2256,7 @@
  *!
  *!In the two-dimensional case,
  *!@[glEvalPoint],
- *!let 
+ *!let
  *!.nf
  *!DELTA u = (u  - u )/n
  *!            2    1
@@ -2265,7 +2264,7 @@
  *!DELTA v = (v  - v )/m
  *!            2    1
  *!
- *!where n, u , u , m, v , and v 
+ *!where n, u , u , m, v , and v
  *!          1   2      1       2
  *!
  *!.fi
@@ -2278,14 +2277,14 @@
  *!
  *!.fi
  *!The only absolute numeric requirements are that if i~=~n,
- *!then the value computed from 
+ *!then the value computed from
  *!.nf
  *!
  *!i . DELTA u + u  is exactly u ,
  *!               1             2
  *!.fi
  *!and if j~=~m,
- *!then the value computed from 
+ *!then the value computed from
  *!.nf
  *!
  *!j cdot DELTA v + v  is exactly v .
@@ -2309,7 +2308,7 @@
  *!While enabled, fog affects rasterized geometry,
  *!bitmaps, and pixel blocks, but not buffer clear operations. To enable
  *!and disable fog, call @[glEnable] and @[glDisable] with argument
- *!@[GL_FOG]. 
+ *!@[GL_FOG].
  *!
  *!@[glFog] assigns the value or values in @i{params@} to the fog parameter
  *!specified by @i{pname@}.
@@ -2400,14 +2399,14 @@
  *!.sp
  *!.ce
  *!.EQ
- *!{C sub r} prime ~=~ f C sub r + (1 - f) C sub f 
+ *!{C sub r} prime ~=~ f C sub r + (1 - f) C sub f
  *!.EN
  *!
  *!In color index mode, the fragment's color index i sub r is replaced by
  *!.sp
  *!.ce
  *!.EQ
- *!{i sub r} prime ~=~ i sub r + (1 - f) i sub f 
+ *!{i sub r} prime ~=~ i sub r + (1 - f) i sub f
  *!.EN
  *!
  *!
@@ -2450,7 +2449,7 @@
  *!@[GL_INVALID_ENUM] is generated if @i{pname@} is not an accepted value,
  *!or if @i{pname@} is @[GL_FOG_MODE] and @i{params@} is not an accepted value.
  *!
- *!@[GL_INVALID_VALUE] is generated if @i{pname@} is @[GL_FOG_DENSITY], 
+ *!@[GL_INVALID_VALUE] is generated if @i{pname@} is @[GL_FOG_DENSITY],
  *!and @i{params@} is negative.
  *!
  *!@[GL_INVALID_OPERATION] is generated if @[glFog]
@@ -2641,8 +2640,8 @@
  *!In all other cases,
  *!the command generating the error is ignored and has no effect on the GL state
  *!or frame buffer contents.
- *!If the generating command returns a value, it returns 0.  
- *!If @[glGetError] itself generates an error, it returns 0. 
+ *!If the generating command returns a value, it returns 0.
+ *!If @[glGetError] itself generates an error, it returns 0.
  *!
  *!@throws
  *!
@@ -2686,7 +2685,7 @@
  *!performance characteristics of these platforms.
  *!Strings @[GL_VENDOR] and @[GL_RENDERER] together uniquely specify
  *!a platform. They do not change from release to release and should be used
- *!by platform-recognition algorithms. 
+ *!by platform-recognition algorithms.
  *!
  *!Some applications want to make use of features that
  *!are not part of the standard GL. These features
@@ -2697,22 +2696,22 @@
  *!
  *!The @[GL_VERSION] string begins with a version number.
  *!The version number uses one
- *!of these forms: 
+ *!of these forms:
  *!
- *!@i{major_number.minor_number@}  
+ *!@i{major_number.minor_number@}
  *!
  *!@i{major_number.minor_number.release_number@}
  *!
  *!Vendor-specific information may follow the version
- *!number. Its format depends on the implementation, but 
- *!a space always separates the version number and 
+ *!number. Its format depends on the implementation, but
+ *!a space always separates the version number and
  *!the vendor-specific information.
  *!
  *!All strings are null-terminated.
  *!
  *!@param name
  *!
- *!Specifies a symbolic constant, one of 
+ *!Specifies a symbolic constant, one of
  *!@[GL_VENDOR], @[GL_RENDERER], @[GL_VERSION], or @[GL_EXTENSIONS].
  *!
  *!@throws
@@ -2733,10 +2732,10 @@
  *!when there is room for interpretation,
  *!can be controlled with hints.
  *!A hint is specified with two arguments.
- *!@i{target@} is a symbolic 
+ *!@i{target@} is a symbolic
  *!constant indicating the behavior to be controlled,
  *!and @i{mode@} is another symbolic constant indicating the desired
- *!behavior. The initial value for each @i{target@} is @[GL_DONT_CARE]. 
+ *!behavior. The initial value for each @i{target@} is @[GL_DONT_CARE].
  *!@i{mode@} can be one of the following:
  *!
  *!@xml{<matrix>
@@ -2782,7 +2781,7 @@
  *!<r><c><ref>GL_POINT_SMOOTH_HINT</ref>
  *!</c><c>Indicates the sampling quality of antialiased points.
  *!If a larger filter function is applied, hinting <ref>GL_NICEST</ref> can
- *!result in more pixel fragments being generated during rasterization, 
+ *!result in more pixel fragments being generated during rasterization,
  *!</c></r>
  *!<r><c><ref>GL_POLYGON_SMOOTH_HINT</ref>
  *!</c><c>Indicates the sampling quality of antialiased polygons.
@@ -2795,18 +2794,18 @@
  *!@param target
  *!
  *!Specifies a symbolic constant indicating the behavior to be controlled.
- *!@[GL_FOG_HINT],	
+ *!@[GL_FOG_HINT],
  *!@[GL_LINE_SMOOTH_HINT],
  *!@[GL_PERSPECTIVE_CORRECTION_HINT],
  *!@[GL_POINT_SMOOTH_HINT], and
- *!@[GL_POLYGON_SMOOTH_HINT] are accepted. 
+ *!@[GL_POLYGON_SMOOTH_HINT] are accepted.
  *!
  *!@param mode
  *!
  *!Specifies a symbolic constant indicating the desired behavior.
- *!@[GL_FASTEST], 
- *!@[GL_NICEST], and 
- *!@[GL_DONT_CARE] are accepted. 
+ *!@[GL_FASTEST],
+ *!@[GL_NICEST], and
+ *!@[GL_DONT_CARE] are accepted.
  *!
  *!@throws
  *!
@@ -2826,10 +2825,10 @@
  *!@[glIndex] updates the current (single-valued) color index.
  *!It takes one argument, the new value for the current color index.
  *!
- *!The current index is stored as a floating-point value. 
+ *!The current index is stored as a floating-point value.
  *!Integer values are converted directly to floating-point values,
  *!with no special mapping.
- *!The initial value is 1. 
+ *!The initial value is 1.
  *!
  *!Index values outside the representable range of the color index buffer
  *!are not clamped.
@@ -2861,7 +2860,7 @@
  *!specify a mask.
  *!Where a 1 (one) appears in the mask,
  *!it's possible to write to the corresponding bit in the color index
- *!buffer (or buffers). 
+ *!buffer (or buffers).
  *!Where a 0 (zero) appears,
  *!the corresponding bit is write-protected.
  *!
@@ -3013,7 +3012,7 @@
  *!When it is enabled,
  *!light sources that are enabled contribute to the lighting calculation.
  *!Light source i is enabled and disabled using @[glEnable] and
- *!@[glDisable] with argument @[GL_LIGHT]i. 
+ *!@[glDisable] with argument @[GL_LIGHT]i.
  *!
  *!The ten light parameters are as follows:
  *!
@@ -3038,7 +3037,7 @@
  *!Neither integer nor floating-point values are clamped.
  *!The initial value
  *!for <ref>GL_LIGHT0</ref> is (1, 1, 1, 1); for other lights, the
- *!initial value is (0, 0, 0, 0). 
+ *!initial value is (0, 0, 0, 0).
  *!</c></r>
  *!<r><c><ref>GL_SPECULAR</ref>
  *!</c><c><i>params</i> contains four integer or floating-point values that specify
@@ -3050,7 +3049,7 @@
  *!Neither integer nor floating-point values are clamped.
  *!The initial value
  *!for <ref>GL_LIGHT0</ref> is (1, 1, 1, 1); for other lights, the
- *!initial value is (0, 0, 0, 0). 
+ *!initial value is (0, 0, 0, 0).
  *!</c></r>
  *!<r><c><ref>GL_POSITION</ref>
  *!</c><c><i>params</i> contains four integer or floating-point values that specify
@@ -3253,7 +3252,7 @@
  *!
  *!In RGBA mode, the lighted color of a vertex is the sum of
  *!the material emission intensity,
- *!the product of the material ambient reflectance and the lighting model full-scene 
+ *!the product of the material ambient reflectance and the lighting model full-scene
  *!ambient intensity,
  *!and the contribution of each enabled light source.
  *!Each light source contributes the sum of three terms:
@@ -3327,7 +3326,7 @@
  *!The masking is achieved by using three parameters:
  *!the 16-bit line stipple pattern @i{pattern@},
  *!the repeat count @i{factor@},
- *!and an integer stipple counter s. 
+ *!and an integer stipple counter s.
  *!
  *!Counter s is reset to 0 whenever @[glBegin] is called,
  *!and before each line segment of a @[glBegin](@[GL_LINES])/@[glEnd]
@@ -3337,7 +3336,7 @@
  *!The i fragments associated with count s are masked out if
  *!.sp
  *!.ce
- *!@i{pattern@} bit (s ~/~ "factor") ~roman mod~ 16 
+ *!@i{pattern@} bit (s ~/~ "factor") ~roman mod~ 16
  *!.sp
  *!is 0, otherwise these fragments are sent to the frame buffer.
  *!Bit zero of @i{pattern@} is the least significant bit.
@@ -3386,10 +3385,10 @@
  *!lines.
  *!Using a line width other than 1 has different effects,
  *!depending on whether line antialiasing is enabled.
- *!To enable and disable line antialiasing, call 
+ *!To enable and disable line antialiasing, call
  *!@[glEnable] and @[glDisable]
  *!with argument @[GL_LINE_SMOOTH]. Line antialiasing is initially
- *!disabled. 
+ *!disabled.
  *!
  *!If line antialiasing is disabled,
  *!the actual width is determined by rounding the supplied width
@@ -3414,9 +3413,9 @@
  *!The coverage value for each fragment is the window coordinate area
  *!of the intersection of the rectangular region with the corresponding
  *!pixel square.
- *!This value is saved and used in the final rasterization step. 
+ *!This value is saved and used in the final rasterization step.
  *!
- *!Not all widths can be supported when line antialiasing is enabled. 
+ *!Not all widths can be supported when line antialiasing is enabled.
  *!If an unsupported width is requested,
  *!the nearest supported width is used.
  *!Only width 1 is guaranteed to be supported;
@@ -3425,7 +3424,7 @@
  *!supported widths within the range, call
  *!@[glGet] with arguments
  *!@[GL_LINE_WIDTH_RANGE] and
- *!@[GL_LINE_WIDTH_GRANULARITY]. 
+ *!@[GL_LINE_WIDTH_GRANULARITY].
  *!
  *!@param width
  *!
@@ -3479,7 +3478,7 @@
  *!For instance, assume M refers to the modelview matrix.
  *!If  v ~=~ (v[0], v[1], v[2], v[3]) is the set of object coordinates
  *!of a vertex,
- *!and @i{m@} points to an array of 16 
+ *!and @i{m@} points to an array of 16
  *!single- or double-precision
  *!floating-point values m[0], m[1],. . .,m[15],
  *!then the modelview transformation M(v) does the following:
@@ -3488,7 +3487,7 @@
  *!.ce
  *!.EQ
  *!down 130
- *!{M(v)  ~ = ~ 
+ *!{M(v)  ~ = ~
  *!{{ left (  matrix {
  *!   ccol { ~m[0] above m[1] above m[2] above m[3] ~}
  *!   ccol { ~m[4] above m[5] above m[6] above m[7] ~}
@@ -3509,7 +3508,7 @@
  *!@param m
  *!
  *!Specifies a pointer to 16 consecutive values, which are used as the
- *!elements of a 4 times 4 column-major matrix. 
+ *!elements of a 4 times 4 column-major matrix.
  *!
  *!@throws
  *!
@@ -3650,7 +3649,7 @@
  *!These three values,
  *!and <ref>GL_SHININESS</ref>,
  *!are the only material values used by the color index mode lighting equation.
- *!Refer to the <ref>glLightModel</ref> reference page for a discussion 
+ *!Refer to the <ref>glLightModel</ref> reference page for a discussion
  *!of color index lighting.
  *!</c></r></matrix>@}
  *!
@@ -3720,8 +3719,8 @@
  *!
  *!@param m
  *!
- *!Points to 16 consecutive values that are used as the elements of 
- *!a 4 times 4 column-major matrix. 
+ *!Points to 16 consecutive values that are used as the elements of
+ *!a 4 times 4 column-major matrix.
  *!
  *!@throws
  *!
@@ -3739,7 +3738,7 @@
  *!Display lists are created with @[glNewList].
  *!All subsequent commands are placed in the display list,
  *!in the order issued,
- *!until @[glEndList] is called. 
+ *!until @[glEndList] is called.
  *!
  *!@[glNewList] has two arguments.
  *!The first argument,
@@ -3749,7 +3748,7 @@
  *!and tested for uniqueness with @[glIsList].
  *!The second argument,
  *!@i{mode@},
- *!is a symbolic constant that can assume one of two values: 
+ *!is a symbolic constant that can assume one of two values:
  *!
  *!@xml{<matrix>
  *!<r><c><ref>GL_COMPILE</ref>
@@ -3788,8 +3787,8 @@
  *!@[glVertexPointer],
  *!and all of the @[glGet] commands.
  *!
- *!Similarly, 
- *!@[glTexImage2D] and @[glTexImage1D] 
+ *!Similarly,
+ *!@[glTexImage2D] and @[glTexImage1D]
  *!are executed immediately and not compiled into the display list when their
  *!first argument is @[GL_PROXY_TEXTURE_2D] or
  *!@[GL_PROXY_TEXTURE_1D], respectively.
@@ -3797,7 +3796,7 @@
  *!When @[glEndList] is encountered,
  *!the display-list definition is completed by associating the list
  *!with the unique name @i{list@}
- *!(specified in the @[glNewList] command). 
+ *!(specified in the @[glNewList] command).
  *!If a display list with name @i{list@} already exists,
  *!it is replaced only when @[glEndList] is called.
  *!
@@ -3819,7 +3818,7 @@
  *!@[GL_INVALID_ENUM] is generated if @i{mode@} is not an accepted value.
  *!
  *!@[GL_INVALID_OPERATION] is generated if @[glEndList] is called
- *!without a preceding @[glNewList], 
+ *!without a preceding @[glNewList],
  *!or if @[glNewList] is called while a display list is being defined.
  *!
  *!@[GL_INVALID_OPERATION] is generated if @[glNewList] or @[glEndList]
@@ -3830,7 +3829,7 @@
  *!compile the display list. If the GL version is 1.1 or greater, no
  *!change is made to the previous contents of the display list, if any,
  *!and no other change is made to the GL state. (It is as if no attempt
- *!had been made to create the new display list.) 
+ *!had been made to create the new display list.)
  *!
  *!
  */
@@ -3903,7 +3902,7 @@
  *!
  *!.RE
  *!
- *!Typically, the matrix mode is @[GL_PROJECTION], and 
+ *!Typically, the matrix mode is @[GL_PROJECTION], and
  *!(@i{left@}, @i{bottom@},  -@i{zNear@}) and (@i{right@}, @i{top@},  -@i{zNear@})
  *!specify the points on the near clipping plane that are mapped
  *!to the lower left and upper right corners of the window,
@@ -3931,7 +3930,7 @@
  *!@throws
  *!
  *!@[GL_INVALID_OPERATION] is generated if @[glOrtho]
- *!is executed between the execution of 
+ *!is executed between the execution of
  *!@[glBegin]
  *!and the corresponding execution of @[glEnd].
  *!
@@ -3950,15 +3949,15 @@
  *!information about primitives that would have been rasterized
  *!is fed back to the application using the GL.
  *!See the @[glFeedbackBuffer] reference page for a description of the
- *!feedback buffer and the values in it.  
+ *!feedback buffer and the values in it.
  *!
  *!@[glPassThrough] inserts a user-defined marker in the feedback buffer
- *!when it is executed in feedback mode.  
+ *!when it is executed in feedback mode.
  *!@i{token@} is returned as if it were a primitive;
  *!it is indicated with its own unique identifying value:
  *!@[GL_PASS_THROUGH_TOKEN].
  *!The order of @[glPassThrough] commands with respect to the specification
- *!of graphics primitives is maintained.  
+ *!of graphics primitives is maintained.
  *!
  *!@param token
  *!
@@ -3979,10 +3978,10 @@
  *!During the execution of @[glDrawPixels] or @[glCopyPixels],
  *!if (xr , yr ) is the current raster position,
  *!and a given element is in the mth row and nth column of the pixel rectangle,
- *!then pixels whose centers are in the rectangle with corners at 
+ *!then pixels whose centers are in the rectangle with corners at
  *!.sp
  *!.ce
- *!(xr ~+~ n cdot "xfactor", yr ~+~ m cdot "yfactor") 
+ *!(xr ~+~ n cdot "xfactor", yr ~+~ m cdot "yfactor")
  *!.sp
  *!.ce
  *!(xr ~+~ (n+1) cdot "xfactor", yr ~+~ (m+1) cdot "yfactor")
@@ -4014,7 +4013,7 @@
  *!points.
  *!Using a point size other than 1 has different effects,
  *!depending on whether point antialiasing is enabled.
- *!To enable and disable point antialiasing, call 
+ *!To enable and disable point antialiasing, call
  *!@[glEnable] and @[glDisable]
  *!with argument @[GL_POINT_SMOOTH]. Point antialiasing is initially disabled.
  *!
@@ -4055,11 +4054,11 @@
  *!( x sub w ,  y sub w ).
  *!The coverage value for each fragment is the window coordinate area
  *!of the intersection of the circular region with the corresponding pixel square.
- *!This value is saved and used in the final rasterization step. 
- *!The data associated with each fragment is the data associated with 
+ *!This value is saved and used in the final rasterization step.
+ *!The data associated with each fragment is the data associated with
  *!the point being rasterized.
  *!
- *!Not all sizes are supported when point antialiasing is enabled. 
+ *!Not all sizes are supported when point antialiasing is enabled.
  *!If an unsupported size is requested,
  *!the nearest supported size is used.
  *!Only size 1 is guaranteed to be supported;
@@ -4164,13 +4163,13 @@
  *!fragment's @i{depth@} value will be offset after it is interpolated
  *!from the @i{depth@} values of the appropriate vertices.
  *!The value of the offset is "factor" ~*~ DZ ~~+~~ r ~*~ "units",
- *!where DZ~ is a measurement of the change in depth relative to the screen 
+ *!where DZ~ is a measurement of the change in depth relative to the screen
  *!area of the polygon, and r is the smallest value that is guaranteed to
  *!produce a resolvable offset for a given implementation.
  *!The offset is added before the depth test is performed and before
  *!the value is written into the depth buffer.
  *!
- *!@[glPolygonOffset] is useful for rendering hidden-line images, for applying decals 
+ *!@[glPolygonOffset] is useful for rendering hidden-line images, for applying decals
  *!to surfaces, and for rendering solids with highlighted edges.
  *!
  *!@param factor
@@ -4270,7 +4269,7 @@
  *!	@[GL_STENCIL_TEST] flag
  *!	@[GL_TEXTURE_1D] flag
  *!	@[GL_TEXTURE_2D] flag
- *!	Flags @[GL_TEXTURE_GEN_]@i{x@} where @i{x@} is S, T, R, or Q 
+ *!	Flags @[GL_TEXTURE_GEN_]@i{x@} where @i{x@} is S, T, R, or Q
  *!
  *!@[GL_EVAL_BIT]	@[GL_MAP1_]@i{x@} enable bits, where @i{x@} is a map type
  *!	@[GL_MAP2_]@i{x@} enable bits, where @i{x@} is a map type
@@ -4358,7 +4357,7 @@
  *!	Magnification function for each texture image
  *!	Texture coordinates and wrap mode for each texture image
  *!	Color and mode for each texture environment
- *!	Enable bits @[GL_TEXTURE_GEN_]@i{x@}, @i{x@} is S, T, R, and Q 
+ *!	Enable bits @[GL_TEXTURE_GEN_]@i{x@}, @i{x@} is S, T, R, and Q
  *!	@[GL_TEXTURE_GEN_MODE] setting for S, T, R, and Q
  *!	@[glTexGen] plane equations for S, T, R, and Q
  *!	Current texture bindings (for example, @[GL_TEXTURE_2D_BINDING])
@@ -4408,7 +4407,7 @@
  *!
  *!@[glPushClientAttrib] takes one argument,
  *!a mask that indicates which groups of client-state variables
- *!to save on the client attribute stack. 
+ *!to save on the client attribute stack.
  *!Symbolic constants are used to set bits in the mask.
  *!@i{mask@}
  *!is typically constructed by OR'ing several of these constants together.
@@ -4423,7 +4422,7 @@
  *!
  *!@[GL_CLIENT_VERTEX_ARRAY_BIT]	Vertex arrays (and enables)
  *!
- *!@[glPopClientAttrib] restores the values of the client-state variables 
+ *!@[glPopClientAttrib] restores the values of the client-state variables
  *!saved with the last @[glPushClientAttrib].
  *!Those not saved are left unchanged.
  *!
@@ -4457,12 +4456,12 @@
  *!It consists of an ordered set of unsigned integers and is initially empty.
  *!
  *!@[glPushName] causes @i{name@} to be pushed onto the name stack.
- *!@[glPopName] pops one name off the top of the stack. 
+ *!@[glPopName] pops one name off the top of the stack.
  *!
  *!The maximum name stack depth is implementation-dependent; call
  *!@[GL_MAX_NAME_STACK_DEPTH] to find out the value for a particular
  *!implementation. It is an
- *!error to push a name onto a full stack, 
+ *!error to push a name onto a full stack,
  *!or to pop a name off an empty stack.
  *!It is also an error to manipulate the name stack between the execution of
  *!@[glBegin] and the corresponding execution of @[glEnd].
@@ -4520,7 +4519,7 @@
  *!then it is projected and scaled to window coordinates,
  *!which become the new current raster position,
  *!and the @[GL_CURRENT_RASTER_POSITION_VALID] flag is set.
- *!If the vertex 
+ *!If the vertex
  *!.I is
  *!culled,
  *!then the valid bit is cleared and the current raster position
@@ -4534,10 +4533,10 @@
  *!or @[GL_CURRENT_RASTER_INDEX]
  *!(in color index mode)
  *!is set to the color produced by the lighting calculation
- *!(see @[glLight], @[glLightModel], and 
+ *!(see @[glLight], @[glLightModel], and
  *!
  *!@[glShadeModel]).
- *!If lighting is disabled, 
+ *!If lighting is disabled,
  *!current color
  *!(in RGBA mode, state variable @[GL_CURRENT_COLOR])
  *!or color index
@@ -4590,15 +4589,15 @@
 
 /*!@decl void glRotate(float|int|array(float|int) angle, float|int|void x, float|int|void y, float|int|void z)
  *!
- *!@[glRotate] produces a rotation of @i{angle@} degrees around 
+ *!@[glRotate] produces a rotation of @i{angle@} degrees around
  *!the vector ("x", "y", "z").
- *!The current matrix (see @[glMatrixMode]) is multiplied by a rotation 
+ *!The current matrix (see @[glMatrixMode]) is multiplied by a rotation
  *!matrix with the product
  *!replacing the current matrix, as if @[glMultMatrix] were called
  *!with the following matrix as its argument:
  *!
  *!.ce
- *!.EQ 
+ *!.EQ
  *!left ( ~ down 20 matrix {
  *!   ccol { "x" "x" (1 - c)+ c above  "y" "x" (1 - c)+ "z" s above   "x" "z" (1 - c)-"y" s above ~0 }
  *!   ccol {"x" "y" (1 - c)-"z" s above  "y" "y"  (1 - c)+ c above   "y" "z" (1 - c)+ "x" s above ~0 }
@@ -4608,8 +4607,8 @@
  *!.EN
  *!
  *!.sp
- *!Where c ~=~ cos("angle"), s ~=~ sine("angle"), and 
- *!||(~"x", "y", "z"~)|| ~=~ 1 (if not, the GL 
+ *!Where c ~=~ cos("angle"), s ~=~ sine("angle"), and
+ *!||(~"x", "y", "z"~)|| ~=~ 1 (if not, the GL
  *!will normalize this vector).
  *!.sp
  *!.sp
@@ -4625,7 +4624,7 @@
  *!
  *!@param x
  *!
- *!Specify the @i{x@}, @i{y@}, and @i{z@} coordinates of a vector, respectively. 
+ *!Specify the @i{x@}, @i{y@}, and @i{z@} coordinates of a vector, respectively.
  *!
  *!@throws
  *!
@@ -4639,7 +4638,7 @@
 /*!@decl void glScale(float|int|array(float|int) x, float|int|void y, float|int|void z)
  *!
  *!@[glScale] produces a nonuniform scaling along the @i{x@}, @i{y@}, and
- *!@i{z@} axes. 
+ *!@i{z@} axes.
  *!The three parameters indicate the desired scale factor along
  *!each of the three axes.
  *!
@@ -4652,7 +4651,7 @@
  *!
  *!
  *!.ce
- *!.EQ 
+ *!.EQ
  *!left ( ~ down 20 matrix {
  *!   ccol { ~"x" above ~0 above ~0 above ~0 }
  *!   ccol { ~0 above ~"y" above ~0 above ~0 }
@@ -4674,7 +4673,7 @@
  *!@throws
  *!
  *!@[GL_INVALID_OPERATION] is generated if @[glScale]
- *!is executed between the execution of 
+ *!is executed between the execution of
  *!@[glBegin]
  *!and the corresponding execution of @[glEnd].
  *!
@@ -4688,18 +4687,18 @@
  *!The first two arguments,
  *!@i{x@} and @i{y@},
  *!specify the lower left corner of the box.
- *!@i{width@} and @i{height@} specify the width and height of the box. 
+ *!@i{width@} and @i{height@} specify the width and height of the box.
  *!
  *!To enable and disable the scissor test, call
  *!@[glEnable] and @[glDisable] with argument
- *!@[GL_SCISSOR_TEST]. The test is initially disabled. 
+ *!@[GL_SCISSOR_TEST]. The test is initially disabled.
  *!While the test is enabled, only pixels that lie within the scissor box
  *!can be modified by drawing commands.
  *!Window coordinates have integer values at the shared corners of
  *!frame buffer pixels.
  *!\f7glScissor(0,0,1,1)\fP allows modification of only the lower left
  *!pixel in the window, and \f7glScissor(0,0,0,0)\fP doesn't allow
- *!modification of any pixels in the window.  
+ *!modification of any pixels in the window.
  *!
  *!When the scissor test is disabled,
  *!it is as though the scissor box includes the entire window.
@@ -4757,7 +4756,7 @@
  *!@i{mask@} is bitwise ANDed with both the reference value
  *!and the stored stencil value,
  *!with the ANDed values participating in the comparison.
- *!.P 
+ *!.P
  *!If @i{stencil@} represents the value stored in the corresponding
  *!stencil buffer location,
  *!the following list shows the effect of each comparison function
@@ -4776,7 +4775,7 @@
  *!</c><c>Always fails.
  *!</c></r>
  *!<r><c><ref>GL_LESS</ref>
- *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) &lt; ( <i>stencil</i> &amp; <i>mask</i> ). 
+ *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) &lt; ( <i>stencil</i> &amp; <i>mask</i> ).
  *!</c></r>
  *!<r><c><ref>GL_LEQUAL</ref>
  *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) \(&lt;= ( <i>stencil</i> &amp; <i>mask</i> ).
@@ -4809,7 +4808,7 @@
  *!@[GL_GEQUAL],
  *!@[GL_EQUAL],
  *!@[GL_NOTEQUAL], and
- *!@[GL_ALWAYS]. The initial value is @[GL_ALWAYS]. 
+ *!@[GL_ALWAYS]. The initial value is @[GL_ALWAYS].
  *!
  *!@param ref
  *!
@@ -4822,7 +4821,7 @@
  *!
  *!Specifies a mask that is ANDed with both the reference value
  *!and the stored stencil value when the test is done. The initial value
- *!is all 1's. 
+ *!is all 1's.
  *!
  *!@throws
  *!
@@ -4921,7 +4920,7 @@
  *!
  *!The other two arguments to @[glStencilOp] specify stencil buffer actions
  *!that depend on whether subsequent depth buffer tests succeed (@i{zpass@})
- *!or fail (@i{zfail@}) (see 
+ *!or fail (@i{zfail@}) (see
  *!
  *!@[glDepthFunc]).
  *!The actions are specified using the same six symbolic constants as @i{fail@}.
@@ -4940,7 +4939,7 @@
  *!@[GL_REPLACE],
  *!@[GL_INCR],
  *!@[GL_DECR], and
- *!@[GL_INVERT]. The initial value is @[GL_KEEP]. 
+ *!@[GL_INVERT]. The initial value is @[GL_KEEP].
  *!
  *!@param zfail
  *!
@@ -4975,27 +4974,27 @@
  *!one,
  *!two,
  *!three, or
- *!four dimensions.  
+ *!four dimensions.
  *!@[glTexCoord1] sets the current texture coordinates to
  *!(@i{s@}, 0, 0, 1);
- *!a call to 
+ *!a call to
  *!
  *!@[glTexCoord2] sets them to
  *!(@i{s@}, @i{t@}, 0, 1).
  *!Similarly, @[glTexCoord3] specifies the texture coordinates as
  *!(@i{s@}, @i{t@}, @i{r@}, 1), and
  *!@[glTexCoord4] defines all four components explicitly as
- *!(@i{s@}, @i{t@}, @i{r@}, @i{q@}). 
+ *!(@i{s@}, @i{t@}, @i{r@}, @i{q@}).
  *!
  *!The current texture coordinates are part of the data
  *!that is associated with each vertex and with the current
- *!raster position. 
- *!Initially, the values for 
+ *!raster position.
+ *!Initially, the values for
  *!@i{s@},
  *!@i{t@},
  *!@i{r@}, and
  *!@i{q@}
- *!are (0, 0, 0, 1). 
+ *!are (0, 0, 0, 1).
  *!
  *!
  *!@param s
@@ -5026,8 +5025,8 @@
  *!If @i{pname@} is @[GL_TEXTURE_ENV_MODE],
  *!then @i{params@} is (or points to) the symbolic name of a texture function.
  *!Four texture functions may be specified:
- *!@[GL_MODULATE], 
- *!@[GL_DECAL], 
+ *!@[GL_MODULATE],
+ *!@[GL_DECAL],
  *!@[GL_BLEND], and
  *!@[GL_REPLACE].
  *!
@@ -5046,7 +5045,7 @@
  *!
  *!A texture image can have up to four components per texture element
  *!(see @[glTexImage1D], @[glTexImage2D], @[glCopyTexImage1D], and
- *!@[glCopyTexImage2D]). 
+ *!@[glCopyTexImage2D]).
  *!In a one-component image,
  *!L sub t indicates that single component.
  *!A two-component image uses L sub t and A sub t.
@@ -5060,7 +5059,7 @@
  *!ci || ci s s s
  *!ci || c c c c
  *!c || c | c | c | c.
- *!Base internal:Texture functions       
+ *!Base internal:Texture functions
  *!format:@[GL_MODULATE]:@[GL_DECAL]:@[GL_BLEND]:@[GL_REPLACE]
  *!=
  *!@[GL_ALPHA]:C sub v = C sub f:undefined:C sub v =  C sub f:C sub v = C sub f
@@ -5068,7 +5067,7 @@
  *!_
  *!@[GL_LUMINANCE]:C sub v = L sub t C sub f:undefined:C sub v = ( 1 - L sub t ) C sub f:C sub v = L sub t
  *!1: : :+ L sub t C sub c:
- *!: : : : 
+ *!: : : :
  *!: A sub v = A sub f:\^: A sub v = A sub f:A sub v = A sub f
  *!_
  *!@[GL_LUMINANCE]:C sub v = L sub t C sub f:undefined:C sub v = ( 1 - L sub t ) C sub f :C sub v = L sub t
@@ -5117,7 +5116,7 @@
  *!
  *!@param param
  *!
- *!Specifies a single symbolic constant, one of @[GL_MODULATE], 
+ *!Specifies a single symbolic constant, one of @[GL_MODULATE],
  *!@[GL_DECAL], @[GL_BLEND], or @[GL_REPLACE].
  *!
  *!
@@ -5164,17 +5163,17 @@
  *!@i{pname@} must be one of three symbolic constants:
  *!@[GL_TEXTURE_GEN_MODE],
  *!@[GL_OBJECT_PLANE], or
- *!@[GL_EYE_PLANE]. 
+ *!@[GL_EYE_PLANE].
  *!If @i{pname@} is @[GL_TEXTURE_GEN_MODE],
  *!then @i{params@} chooses a mode,
  *!one of
  *!@[GL_OBJECT_LINEAR],
  *!@[GL_EYE_LINEAR], or
- *!@[GL_SPHERE_MAP]. 
+ *!@[GL_SPHERE_MAP].
  *!If @i{pname@} is either @[GL_OBJECT_PLANE] or @[GL_EYE_PLANE],
  *!@i{params@} contains coefficients for the corresponding
  *!texture generation function.
- *!.P 
+ *!.P
  *!If the texture generation function is @[GL_OBJECT_LINEAR],
  *!the function
  *!
@@ -5194,9 +5193,9 @@
  *!w sub o are the object coordinates of the vertex.
  *!This function can be used, for example, to texture-map terrain using sea level
  *!as a reference plane
- *!(defined by p sub 1, p sub 2, p sub 3, and p sub 4). 
+ *!(defined by p sub 1, p sub 2, p sub 3, and p sub 4).
  *!The altitude of a terrain vertex is computed by the @[GL_OBJECT_LINEAR]
- *!coordinate generation function as its distance from sea level; 
+ *!coordinate generation function as its distance from sea level;
  *!that altitude can then be used to index the texture image to map white snow
  *!onto peaks and green grass onto foothills.
  *!
@@ -5206,7 +5205,7 @@
  *!g = {p sub 1} sup prime ~x sub e + {p sub 2} sup prime ~y sub e + {p sub 3} sup prime ~z sub e + {p sub 4} sup prime ~w sub e
  *!
  *!
- *!is used, where 
+ *!is used, where
  *!
  *!.ce
  *!$( {p sub 1} sup prime
@@ -5229,21 +5228,21 @@
  *!texture coordinates generated by the resulting function may be inaccurate
  *!or undefined.
  *!
- *!Note that the values in @i{params@} define a reference plane in eye coordinates. 
+ *!Note that the values in @i{params@} define a reference plane in eye coordinates.
  *!The modelview matrix that is applied to them may not be the same one
- *!in effect when the polygon vertices are transformed. 
+ *!in effect when the polygon vertices are transformed.
  *!This function establishes a field of texture coordinates
  *!that can produce dynamic contour lines on moving objects.
  *!
  *!If @i{pname@} is @[GL_SPHERE_MAP] and @i{coord@} is either
  *!@[GL_S] or
  *!@[GL_T],
- *!s and t texture coordinates are generated as follows. 
+ *!s and t texture coordinates are generated as follows.
  *!Let @i{u@} be the unit vector pointing from the origin to the polygon vertex
- *!(in eye coordinates). 
+ *!(in eye coordinates).
  *!Let @i{n@} sup prime be the current normal,
- *!after transformation to eye coordinates. 
- *!Let 
+ *!after transformation to eye coordinates.
+ *!Let
  *!
  *!.ce
  *!f ~=~ ( f sub x~~f sub y~~f sub z ) sup T
@@ -5253,7 +5252,7 @@
  *!f ~=~  u ~-~ 2 n sup prime n sup prime sup T u
  *!
  *!
- *!Finally, let  m ~=~ 2 sqrt { f sub x sup {~2} + f sub y sup {~2} + (f sub z + 1 ) sup 2}. 
+ *!Finally, let  m ~=~ 2 sqrt { f sub x sup {~2} + f sub y sup {~2} + (f sub z + 1 ) sup 2}.
  *!Then the values assigned to the s and t texture coordinates are
  *!
  *!.ce 1
@@ -5268,10 +5267,10 @@
  *!(@[GL_TEXTURE_GEN_S],
  *!@[GL_TEXTURE_GEN_T],
  *!@[GL_TEXTURE_GEN_R], or
- *!@[GL_TEXTURE_GEN_Q]) as the argument. 
+ *!@[GL_TEXTURE_GEN_Q]) as the argument.
  *!When enabled,
  *!the specified texture coordinate is computed
- *!according to the generating function associated with that coordinate. 
+ *!according to the generating function associated with that coordinate.
  *!When disabled,
  *!subsequent vertices take the specified texture coordinate
  *!from the current set of texture coordinates. Initially, all texture
@@ -5288,12 +5287,12 @@
  *!@param pname
  *!
  *!Specifies the symbolic name of the texture-coordinate generation function.
- *!Must be @[GL_TEXTURE_GEN_MODE]. 
+ *!Must be @[GL_TEXTURE_GEN_MODE].
  *!
  *!@param param
  *!
  *!Specifies a single-valued texture generation parameter,
- *!one of @[GL_OBJECT_LINEAR], @[GL_EYE_LINEAR], or @[GL_SPHERE_MAP]. 
+ *!one of @[GL_OBJECT_LINEAR], @[GL_EYE_LINEAR], or @[GL_SPHERE_MAP].
  *!
  *!
  *!@param coord
@@ -5308,7 +5307,7 @@
  *!Must be
  *!@[GL_TEXTURE_GEN_MODE],
  *!@[GL_OBJECT_PLANE], or
- *!@[GL_EYE_PLANE]. 
+ *!@[GL_EYE_PLANE].
  *!
  *!@param params
  *!
@@ -5318,7 +5317,7 @@
  *!one of
  *!@[GL_OBJECT_LINEAR],
  *!@[GL_EYE_LINEAR], or
- *!@[GL_SPHERE_MAP]. 
+ *!@[GL_SPHERE_MAP].
  *!Otherwise,
  *!@i{params@} holds the coefficients for the texture-coordinate generation function
  *!specified by @i{pname@}.
@@ -5348,7 +5347,7 @@
  *!To enable and disable two-dimensional texturing, call @[glEnable]
  *!and @[glDisable] with argument @[GL_TEXTURE_2D].
  *!
- *!To define texture images, call @[glTexImage2D]. 
+ *!To define texture images, call @[glTexImage2D].
  *!The arguments describe the parameters of the texture image,
  *!such as height,
  *!width,
@@ -5361,29 +5360,29 @@
  *!
  *!If @i{target@} is @[GL_PROXY_TEXTURE_2D], no data is read from @i{pixels@}, but
  *!all of the texture image state is recalculated, checked for
- *!consistency, and checked 
+ *!consistency, and checked
  *!against the implementation's capabilities. If the implementation cannot
  *!handle a texture of the requested texture size, it sets
  *!all of the image state to 0,
  *!but does not generate an error (see @[glGetError]). To query for an
  *!entire mipmap array, use an image array level greater than or equal to
- *!1. 
- *!.P 
+ *!1.
+ *!.P
  *!If @i{target@} is @[GL_TEXTURE_2D],
  *!data is read from @i{pixels@} as a sequence of signed or unsigned bytes,
  *!shorts,
  *!or longs,
  *!or single-precision floating-point values,
- *!depending on @i{type@}. 
+ *!depending on @i{type@}.
  *!These values are grouped into sets of one,
  *!two,
  *!three,
  *!or four values,
  *!depending on @i{format@},
- *!to form elements. 
+ *!to form elements.
  *!If @i{type@} is @[GL_BITMAP],
  *!the data is considered as a string of unsigned bytes (and
- *!@i{format@} must be @[GL_COLOR_INDEX]). 
+ *!@i{format@} must be @[GL_COLOR_INDEX]).
  *!Each data byte is treated as eight 1-bit elements,
  *!with bit ordering determined by @[GL_UNPACK_LSB_FIRST]
  *!(see @[glPixelStore]).
@@ -5402,14 +5401,14 @@
  *!@xml{<matrix>
  *!<r><c><ref>GL_COLOR_INDEX</ref>
  *!</c><c>Each element is a single value,
- *!a color index. 
+ *!a color index.
  *!The GL converts it to fixed point
  *!(with an unspecified number of zero bits to the right of the binary point),
  *!shifted left or right depending on the value and sign of <ref>GL_INDEX_SHIFT</ref>,
  *!and added to <ref>GL_INDEX_OFFSET</ref>
- *!(see 
+ *!(see
  *!
- *!<ref>glPixelTransfer</ref>). 
+ *!<ref>glPixelTransfer</ref>).
  *!The resulting index is converted to a set of color components
  *!using the
  *!<ref>GL_PIXEL_MAP_I_TO_R</ref>,
@@ -5419,34 +5418,34 @@
  *!and clamped to the range [0,1].
  *!</c></r>
  *!<r><c><ref>GL_RED</ref>
- *!</c><c>Each element is a single red component. 
+ *!</c><c>Each element is a single red component.
  *!The GL converts it to floating point and assembles it into an RGBA element
- *!by attaching 0 for green and blue, and 1 for alpha. 
+ *!by attaching 0 for green and blue, and 1 for alpha.
  *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
  *!added to the signed bias <ref>GL_c_BIAS</ref>,
  *!and clamped to the range [0,1]
  *!(see <ref>glPixelTransfer</ref>).
  *!</c></r>
  *!<r><c><ref>GL_GREEN</ref>
- *!</c><c>Each element is a single green component. 
+ *!</c><c>Each element is a single green component.
  *!The GL converts it to floating point and assembles it into an RGBA element
- *!by attaching 0 for red and blue, and 1 for alpha. 
+ *!by attaching 0 for red and blue, and 1 for alpha.
  *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
  *!added to the signed bias <ref>GL_c_BIAS</ref>,
  *!and clamped to the range [0,1]
  *!(see <ref>glPixelTransfer</ref>).
  *!</c></r>
  *!<r><c><ref>GL_BLUE</ref>
- *!</c><c>Each element is a single blue component. 
+ *!</c><c>Each element is a single blue component.
  *!The GL converts it to floating point and assembles it into an RGBA element
- *!by attaching 0 for red and green, and 1 for alpha. 
+ *!by attaching 0 for red and green, and 1 for alpha.
  *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
  *!added to the signed bias <ref>GL_c_BIAS</ref>,
  *!and clamped to the range [0,1]
  *!(see <ref>glPixelTransfer</ref>).
  *!</c></r>
  *!<r><c><ref>GL_ALPHA</ref>
- *!</c><c>Each element is a single alpha component. 
+ *!</c><c>Each element is a single alpha component.
  *!The GL converts it to floating point and assembles it into an RGBA element
  *!by attaching 0 for red, green, and blue.
  *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
@@ -5461,7 +5460,7 @@
  *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
  *!added to the signed bias <ref>GL_c_BIAS</ref>,
  *!and clamped to the range [0,1]
- *!(see 
+ *!(see
  *!
  *!<ref>glPixelTransfer</ref>).
  *!</c></r>
@@ -5476,7 +5475,7 @@
  *!</c><c>Each element is a single luminance value.
  *!The GL converts it to floating point,
  *!then assembles it into an RGBA element by replicating the luminance value
- *!three times for red, green, and blue and attaching 1 for alpha. 
+ *!three times for red, green, and blue and attaching 1 for alpha.
  *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
  *!added to the signed bias <ref>GL_c_BIAS</ref>,
  *!and clamped to the range [0,1]
@@ -5490,7 +5489,7 @@
  *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
  *!added to the signed bias <ref>GL_c_BIAS</ref>,
  *!and clamped to the range [0,1]
- *!(see 
+ *!(see
  *!
  *!<ref>glPixelTransfer</ref>).
  *!</c></r>
@@ -5517,10 +5516,10 @@
  *!If the texture cannot be accommodated, texture state is set to 0.
  *!
  *!A one-component texture image uses only the red component of the RGBA
- *!color extracted from @i{pixels@}. 
+ *!color extracted from @i{pixels@}.
  *!A two-component image uses the R and A values.
  *!A three-component image uses the R, G, and B values.
- *!A four-component image uses all of the RGBA components. 
+ *!A four-component image uses all of the RGBA components.
  *!
  *!@param target
  *!
@@ -5642,13 +5641,13 @@
  *!@i{format@} is not @[GL_COLOR_INDEX].
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{level@} is less than 0.
- *!.P 
- *!.P 
+ *!.P
+ *!.P
  *!@[GL_INVALID_VALUE] may be generated if @i{level@} is greater than $log
  *!sub 2$@i{max@},
  *!where @i{max@} is the returned value of @[GL_MAX_TEXTURE_SIZE].
  *!
- *!@[GL_INVALID_VALUE] is generated if @i{internalformat@} is not 1, 2, 3, 4, or one of the 
+ *!@[GL_INVALID_VALUE] is generated if @i{internalformat@} is not 1, 2, 3, 4, or one of the
  *!accepted resolution and format symbolic constants.
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{width@} or @i{height@} is less than 0
@@ -5668,14 +5667,14 @@
 /*!@decl void glTexParameter(int target, int pname, float|int|array(float|int) param)
  *!
  *!Texture mapping is a technique that applies an image onto an object's surface
- *!as if the image were a decal or cellophane shrink-wrap. 
+ *!as if the image were a decal or cellophane shrink-wrap.
  *!The image is created in texture space,
- *!with an (s, t) coordinate system. 
+ *!with an (s, t) coordinate system.
  *!A texture is a one- or two-dimensional image and a set of parameters
  *!that determine how samples are derived from the image.
  *!
  *!@[glTexParameter] assigns the value or values in @i{params@} to the texture parameter
- *!specified as @i{pname@}. 
+ *!specified as @i{pname@}.
  *!@i{target@} defines the target texture,
  *!either @[GL_TEXTURE_1D] or @[GL_TEXTURE_2D].
  *!The following symbols are accepted in @i{pname@}:
@@ -5683,25 +5682,25 @@
  *!@xml{<matrix>
  *!<r><c><ref>GL_TEXTURE_MIN_FILTER</ref>
  *!</c><c>The texture minifying function is used whenever the pixel being textured
- *!maps to an area greater than one texture element. 
+ *!maps to an area greater than one texture element.
  *!There are six defined minifying functions.
  *!Two of them use the nearest one or nearest four texture elements
- *!to compute the texture value. 
+ *!to compute the texture value.
  *!The other four use mipmaps.
  *!
  *!A mipmap is an ordered set of arrays representing the same image
- *!at progressively lower resolutions. 
+ *!at progressively lower resolutions.
  *!If the texture has dimensions 2 sup n times 2 sup m, there are
- *! bold max ( n, m ) + 1  mipmaps. 
+ *! bold max ( n, m ) + 1  mipmaps.
  *!The first mipmap is the original texture,
- *!with dimensions 2 sup n times 2 sup m. 
+ *!with dimensions 2 sup n times 2 sup m.
  *!Each subsequent mipmap has dimensions 2 sup { k - 1 } times 2 sup { l - 1 },
  *!where 2 sup k times 2 sup l are the dimensions of the previous mipmap,
  *!until either k = 0 or l=0.
  *!At that point,
- *!subsequent mipmaps have dimension  1 times 2 sup { l - 1 } 
+ *!subsequent mipmaps have dimension  1 times 2 sup { l - 1 }
  *!or  2 sup { k - 1} times 1  until the final mipmap,
- *!which has dimension 1 times 1. 
+ *!which has dimension 1 times 1.
  *!To define the mipmaps, call <ref>glTexImage1D</ref>, <ref>glTexImage2D</ref>,
  *!<ref>glCopyTexImage1D</ref>, or <ref>glCopyTexImage2D</ref>
  *!with the <i>level</i> argument indicating the order of the mipmaps.
@@ -5740,7 +5739,7 @@
  *!</c><c>Chooses the two mipmaps that most closely match the size of the pixel
  *!being textured and uses the <ref>GL_NEAREST</ref> criterion
  *!(the texture element nearest to the center of the pixel)
- *!to produce a texture value from each mipmap. 
+ *!to produce a texture value from each mipmap.
  *!The final texture value is a weighted average of those two values.
  *!</c></r>
  *!<r><c><ref>GL_LINEAR_MIPMAP_LINEAR</ref>
@@ -5753,12 +5752,12 @@
  *!.RE
  *!
  *!As more texture elements are sampled in the minification process,
- *!fewer aliasing artifacts will be apparent. 
+ *!fewer aliasing artifacts will be apparent.
  *!While the <ref>GL_NEAREST</ref> and <ref>GL_LINEAR</ref> minification functions can be
  *!faster than the other four,
  *!they sample only one or four texture elements to determine the texture value
  *!of the pixel being rendered and can produce moire patterns
- *!or ragged transitions. 
+ *!or ragged transitions.
  *!The initial value of <ref>GL_TEXTURE_MIN_FILTER</ref> is
  *!<ref>GL_NEAREST_MIPMAP_LINEAR</ref>.
  *!</c></r>
@@ -5767,9 +5766,9 @@
  *!maps to an area less than or equal to one texture element.
  *!It sets the texture magnification function to either <ref>GL_NEAREST</ref>
  *!or <ref>GL_LINEAR</ref> (see below). <ref>GL_NEAREST</ref> is generally faster
- *!than <ref>GL_LINEAR</ref>, 
+ *!than <ref>GL_LINEAR</ref>,
  *!but it can produce textured images with sharper edges
- *!because the transition between texture elements is not as smooth. 
+ *!because the transition between texture elements is not as smooth.
  *!The initial value of <ref>GL_TEXTURE_MAG_FILTER</ref> is <ref>GL_LINEAR</ref>.
  *!.RS 10
  *!</c></r>
@@ -5796,10 +5795,10 @@
  *!<ref>GL_CLAMP</ref> or <ref>GL_REPEAT</ref>.
  *!<ref>GL_CLAMP</ref> causes s coordinates to be clamped to the range [0,1]
  *!and is useful for preventing wrapping artifacts when mapping
- *!a single image onto an object. 
+ *!a single image onto an object.
  *!<ref>GL_REPEAT</ref> causes the integer part of the s coordinate to be ignored;
  *!the GL uses only the fractional part,
- *!thereby creating a repeating pattern. 
+ *!thereby creating a repeating pattern.
  *!Border texture elements are accessed only if wrapping is set to <ref>GL_CLAMP</ref>.
  *!Initially, <ref>GL_TEXTURE_WRAP_S</ref> is set to <ref>GL_REPEAT</ref>.
  *!</c></r>
@@ -5810,13 +5809,13 @@
  *!<r><c><ref>GL_TEXTURE_WRAP_T</ref>
  *!</c><c>Sets the wrap parameter for texture coordinate <i>t</i> to either
  *!<ref>GL_CLAMP</ref> or <ref>GL_REPEAT</ref>.
- *!See the discussion under <ref>GL_TEXTURE_WRAP_S</ref>. 
+ *!See the discussion under <ref>GL_TEXTURE_WRAP_S</ref>.
  *!Initially, <ref>GL_TEXTURE_WRAP_T</ref> is set to <ref>GL_REPEAT</ref>.
  *!</c></r>
  *!<r><c><ref>GL_TEXTURE_BORDER_COLOR</ref>
  *!</c><c>Sets a border color.
  *!<i>params</i> contains four values that comprise the RGBA color
- *!of the texture border. 
+ *!of the texture border.
  *!Integer color components are interpreted linearly such that the most
  *!positive integer maps to 1.0,
  *!and the most negative integer maps to -1.0.
@@ -5841,7 +5840,7 @@
  *!@i{pname@} can be one of the following:
  *!@[GL_TEXTURE_MIN_FILTER],
  *!@[GL_TEXTURE_MAG_FILTER],
- *!@[GL_TEXTURE_WRAP_S], 
+ *!@[GL_TEXTURE_WRAP_S],
  *!@[GL_TEXTURE_WRAP_T], or
  *!@[GL_TEXTURE_PRIORITY].
  *!
@@ -5862,7 +5861,7 @@
  *!@[GL_TEXTURE_MIN_FILTER],
  *!@[GL_TEXTURE_MAG_FILTER],
  *!@[GL_TEXTURE_WRAP_S],
- *!@[GL_TEXTURE_WRAP_T], 
+ *!@[GL_TEXTURE_WRAP_T],
  *!@[GL_TEXTURE_BORDER_COLOR], or
  *!@[GL_TEXTURE_PRIORITY].
  *!
@@ -5897,7 +5896,7 @@
  *!The texels referenced by @i{pixels@} replace the portion of the
  *!existing texture array with x indices @i{xoffset@} and "xoffset"~+~"width"~-~1,
  *!inclusive,
- *!and y indices @i{yoffset@} and "yoffset"~+~"height"~-~1, inclusive. 
+ *!and y indices @i{yoffset@} and "yoffset"~+~"height"~-~1, inclusive.
  *!This region may not include any texels outside the range of the
  *!texture array as it was originally specified.
  *!It is not an error to specify a subtexture with zero width or height, but
@@ -5963,23 +5962,23 @@
  *!
  *!@throws
  *!
- *!@[GL_INVALID_ENUM] is generated if @i{target@} is not @[GL_TEXTURE_2D]. 
+ *!@[GL_INVALID_ENUM] is generated if @i{target@} is not @[GL_TEXTURE_2D].
  *!
  *!@[GL_INVALID_OPERATION] is generated if the texture array has not
  *!been defined by a previous @[glTexImage2D] operation.
  *!
  *!@[GL_INVALID_VALUE] is generated if @i{level@} is less than 0.
- *!.P 
- *!P 
+ *!.P
+ *!P
  *!@[GL_INVALID_VALUE] may be generated if @i{level@} is greater
  *!than log sub 2@i{max@},
  *!where @i{max@} is the returned value of @[GL_MAX_TEXTURE_SIZE].
  *!
  *!@[GL_INVALID_VALUE] is generated if "xoffset" ~<~ ~-b,
- *!("xoffset"~+~"width") ~>~ (w~-~b), 
+ *!("xoffset"~+~"width") ~>~ (w~-~b),
  *!"yoffset" ~<~ ~-b, or ("yoffset" ~+~ "height") ~>~ (h~-~b).
- *!Where w is the @[GL_TEXTURE_WIDTH], 
- *!h is the @[GL_TEXTURE_HEIGHT], and b is the border width 
+ *!Where w is the @[GL_TEXTURE_WIDTH],
+ *!h is the @[GL_TEXTURE_HEIGHT], and b is the border width
  *!of the texture image being modified.
  *!Note that w and h include twice the border width.
  *!
@@ -6002,10 +6001,10 @@
 
 /*!@decl void glTranslate(float|int|array(float|int) x, float|int|void y, float|int|void z)
  *!
- *!@[glTranslate] produces a translation by 
+ *!@[glTranslate] produces a translation by
  *!("x","y","z").
  *!The current matrix
- *!(see 
+ *!(see
  *!
  *!@[glMatrixMode])
  *!is multiplied by this translation matrix,
@@ -6027,7 +6026,7 @@
  *!If the matrix mode is either @[GL_MODELVIEW] or @[GL_PROJECTION],
  *!all objects drawn after a call to @[glTranslate] are translated.
  *!
- *!Use @[glPushMatrix] and 
+ *!Use @[glPushMatrix] and
  *!@[glPopMatrix] to save and restore
  *!the untranslated coordinate system.
  *!
@@ -6236,7 +6235,7 @@
  *!quadrilaterals,
  *!and polygons that are incompletely specified are not drawn.
  *!Incomplete specification results when either too few vertices are
- *!provided to specify even a single primitive or when an incorrect multiple 
+ *!provided to specify even a single primitive or when an incorrect multiple
  *!of vertices is specified. The incomplete primitive is ignored; the rest are drawn.
  *!
  *!The minimum specification of vertices
@@ -6272,7 +6271,7 @@
  *!
  *!@[GL_INVALID_ENUM] is generated if @i{mode@} is set to an unaccepted value.
  *!
- *!@[GL_INVALID_OPERATION] is generated if @[glBegin] is executed between a 
+ *!@[GL_INVALID_OPERATION] is generated if @[glBegin] is executed between a
  *!@[glBegin]
  *!and the corresponding execution of @[glEnd].
  *!
@@ -6295,7 +6294,7 @@
  *!the execution of @[glBegin] and the corresponding
  *!execution @[glEnd].
  *!
- *!Execution of 
+ *!Execution of
  *!@[glEnableClientState],
  *!@[glDisableClientState],
  *!@[glEdgeFlagPointer],
@@ -6320,7 +6319,7 @@
  *!Display lists are created with @[glNewList].
  *!All subsequent commands are placed in the display list,
  *!in the order issued,
- *!until @[glEndList] is called. 
+ *!until @[glEndList] is called.
  *!
  *!@[glNewList] has two arguments.
  *!The first argument,
@@ -6330,7 +6329,7 @@
  *!and tested for uniqueness with @[glIsList].
  *!The second argument,
  *!@i{mode@},
- *!is a symbolic constant that can assume one of two values: 
+ *!is a symbolic constant that can assume one of two values:
  *!
  *!@xml{<matrix>
  *!<r><c><ref>GL_COMPILE</ref>
@@ -6369,8 +6368,8 @@
  *!@[glVertexPointer],
  *!and all of the @[glGet] commands.
  *!
- *!Similarly, 
- *!@[glTexImage2D] and @[glTexImage1D] 
+ *!Similarly,
+ *!@[glTexImage2D] and @[glTexImage1D]
  *!are executed immediately and not compiled into the display list when their
  *!first argument is @[GL_PROXY_TEXTURE_2D] or
  *!@[GL_PROXY_TEXTURE_1D], respectively.
@@ -6378,7 +6377,7 @@
  *!When @[glEndList] is encountered,
  *!the display-list definition is completed by associating the list
  *!with the unique name @i{list@}
- *!(specified in the @[glNewList] command). 
+ *!(specified in the @[glNewList] command).
  *!If a display list with name @i{list@} already exists,
  *!it is replaced only when @[glEndList] is called.
  *!
@@ -6400,7 +6399,7 @@
  *!@[GL_INVALID_ENUM] is generated if @i{mode@} is not an accepted value.
  *!
  *!@[GL_INVALID_OPERATION] is generated if @[glEndList] is called
- *!without a preceding @[glNewList], 
+ *!without a preceding @[glNewList],
  *!or if @[glNewList] is called while a display list is being defined.
  *!
  *!@[GL_INVALID_OPERATION] is generated if @[glNewList] or @[glEndList]
@@ -6411,7 +6410,7 @@
  *!compile the display list. If the GL version is 1.1 or greater, no
  *!change is made to the previous contents of the display list, if any,
  *!and no other change is made to the GL state. (It is as if no attempt
- *!had been made to create the new display list.) 
+ *!had been made to create the new display list.)
  *!
  *!
  */
@@ -6450,7 +6449,7 @@
  *!all of their previously issued commands completed.
  *!For example,
  *!call @[glFlush] before waiting for user input that depends on
- *!the generated image. 
+ *!the generated image.
  *!
  *!@throws
  *!
@@ -6587,7 +6586,7 @@
  *!	@[GL_STENCIL_TEST] flag
  *!	@[GL_TEXTURE_1D] flag
  *!	@[GL_TEXTURE_2D] flag
- *!	Flags @[GL_TEXTURE_GEN_]@i{x@} where @i{x@} is S, T, R, or Q 
+ *!	Flags @[GL_TEXTURE_GEN_]@i{x@} where @i{x@} is S, T, R, or Q
  *!
  *!@[GL_EVAL_BIT]	@[GL_MAP1_]@i{x@} enable bits, where @i{x@} is a map type
  *!	@[GL_MAP2_]@i{x@} enable bits, where @i{x@} is a map type
@@ -6675,7 +6674,7 @@
  *!	Magnification function for each texture image
  *!	Texture coordinates and wrap mode for each texture image
  *!	Color and mode for each texture environment
- *!	Enable bits @[GL_TEXTURE_GEN_]@i{x@}, @i{x@} is S, T, R, and Q 
+ *!	Enable bits @[GL_TEXTURE_GEN_]@i{x@}, @i{x@} is S, T, R, and Q
  *!	@[GL_TEXTURE_GEN_MODE] setting for S, T, R, and Q
  *!	@[glTexGen] plane equations for S, T, R, and Q
  *!	Current texture bindings (for example, @[GL_TEXTURE_2D_BINDING])
@@ -6725,7 +6724,7 @@
  *!
  *!@[glPushClientAttrib] takes one argument,
  *!a mask that indicates which groups of client-state variables
- *!to save on the client attribute stack. 
+ *!to save on the client attribute stack.
  *!Symbolic constants are used to set bits in the mask.
  *!@i{mask@}
  *!is typically constructed by OR'ing several of these constants together.
@@ -6740,7 +6739,7 @@
  *!
  *!@[GL_CLIENT_VERTEX_ARRAY_BIT]	Vertex arrays (and enables)
  *!
- *!@[glPopClientAttrib] restores the values of the client-state variables 
+ *!@[glPopClientAttrib] restores the values of the client-state variables
  *!saved with the last @[glPushClientAttrib].
  *!Those not saved are left unchanged.
  *!
@@ -6785,7 +6784,7 @@
  *!the matrix on top of the stack is identical to the one below it.
  *!
  *!@[glPopMatrix] pops the current matrix stack,
- *!replacing the current matrix with the one below it on the stack. 
+ *!replacing the current matrix with the one below it on the stack.
  *!
  *!Initially, each of the stacks contains one matrix, an identity matrix.
  *!
@@ -6816,12 +6815,12 @@
  *!It consists of an ordered set of unsigned integers and is initially empty.
  *!
  *!@[glPushName] causes @i{name@} to be pushed onto the name stack.
- *!@[glPopName] pops one name off the top of the stack. 
+ *!@[glPopName] pops one name off the top of the stack.
  *!
  *!The maximum name stack depth is implementation-dependent; call
  *!@[GL_MAX_NAME_STACK_DEPTH] to find out the value for a particular
  *!implementation. It is an
- *!error to push a name onto a full stack, 
+ *!error to push a name onto a full stack,
  *!or to pop a name off an empty stack.
  *!It is also an error to manipulate the name stack between the execution of
  *!@[glBegin] and the corresponding execution of @[glEnd].
@@ -6869,7 +6868,7 @@
  *!the matrix on top of the stack is identical to the one below it.
  *!
  *!@[glPopMatrix] pops the current matrix stack,
- *!replacing the current matrix with the one below it on the stack. 
+ *!replacing the current matrix with the one below it on the stack.
  *!
  *!Initially, each of the stacks contains one matrix, an identity matrix.
  *!
@@ -7010,7 +7009,7 @@
  *!quadrilaterals,
  *!and polygons that are incompletely specified are not drawn.
  *!Incomplete specification results when either too few vertices are
- *!provided to specify even a single primitive or when an incorrect multiple 
+ *!provided to specify even a single primitive or when an incorrect multiple
  *!of vertices is specified. The incomplete primitive is ignored; the rest are drawn.
  *!
  *!The minimum specification of vertices
@@ -7046,7 +7045,7 @@
  *!
  *!@[GL_INVALID_ENUM] is generated if @i{mode@} is set to an unaccepted value.
  *!
- *!@[GL_INVALID_OPERATION] is generated if @[glBegin] is executed between a 
+ *!@[GL_INVALID_OPERATION] is generated if @[glBegin] is executed between a
  *!@[glBegin]
  *!and the corresponding execution of @[glEnd].
  *!
@@ -7069,7 +7068,7 @@
  *!the execution of @[glBegin] and the corresponding
  *!execution @[glEnd].
  *!
- *!Execution of 
+ *!Execution of
  *!@[glEnableClientState],
  *!@[glDisableClientState],
  *!@[glEdgeFlagPointer],
@@ -7134,7 +7133,7 @@
  *!
  *!@xml{<matrix>
  *!<r><c><ref>GL_NEVER</ref>
- *!</c><c>Never passes. 
+ *!</c><c>Never passes.
  *!</c></r>
  *!<r><c><ref>GL_LESS</ref>
  *!</c><c>Passes if the incoming depth value is less than the stored depth value.
@@ -7146,7 +7145,7 @@
  *!</c><c>Passes if the incoming depth value is less than or equal to
  *!the stored depth value.
  *!</c></r>
- *!<r><c><ref>GL_GREATER</ref> 
+ *!<r><c><ref>GL_GREATER</ref>
  *!</c><c>Passes if the incoming depth value is greater than the stored depth value.
  *!</c></r>
  *!<r><c><ref>GL_NOTEQUAL</ref>
@@ -7157,7 +7156,7 @@
  *!the stored depth value.
  *!</c></r>
  *!<r><c><ref>GL_ALWAYS</ref>
- *!</c><c>Always passes. 
+ *!</c><c>Always passes.
  *!</c></r>
  *!</matrix>@}
  *!
@@ -7165,7 +7164,7 @@
  *!Initially, depth testing is disabled.
  *!.NOTES
  *!Even if the depth buffer exists and the depth mask is non-zero, the
- *!depth buffer is not updated if the depth test is disabled. 
+ *!depth buffer is not updated if the depth test is disabled.
  *!
  *!@param func
  *!
@@ -7198,7 +7197,7 @@
  *!Use @[glIsEnabled] or @[glGet] to determine the current setting
  *!of any capability. The initial value for each capability with the
  *!exception of @[GL_DITHER] is @[GL_FALSE]. The initial value for
- *!@[GL_DITHER] is @[GL_TRUE]. 
+ *!@[GL_DITHER] is @[GL_TRUE].
  *!
  *!Both @[glEnable] and @[glDisable] take a single argument, @i{cap@},
  *!which can assume one of the following values:
@@ -7213,7 +7212,7 @@
  *!</c><c>If enabled,
  *!generate normal vectors when either
  *!<ref>GL_MAP2_VERTEX_3</ref> or
- *!<ref>GL_MAP2_VERTEX_4</ref> is used to generate vertices. 
+ *!<ref>GL_MAP2_VERTEX_4</ref> is used to generate vertices.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_BLEND</ref>
@@ -7238,19 +7237,19 @@
  *!</c></r>
  *!<r><c><ref>GL_CULL_FACE</ref>
  *!</c><c>If enabled,
- *!cull polygons based on their winding in window coordinates. 
+ *!cull polygons based on their winding in window coordinates.
  *!See <ref>glCullFace</ref>.
  *!</c></r>
  *!<r><c><ref>GL_DEPTH_TEST</ref>
  *!</c><c>If enabled,
  *!do depth comparisons and update the depth buffer. Note that even if
- *!the depth buffer exists and the depth mask is non-zero, the 
+ *!the depth buffer exists and the depth mask is non-zero, the
  *!depth buffer is not updated if the depth test is disabled. See
- *!<ref>glDepthFunc</ref> and 
+ *!<ref>glDepthFunc</ref> and
  *!
- *!<ref>glDepthRange</ref>. 
+ *!<ref>glDepthRange</ref>.
  *!</c></r>
- *!<r><c><ref>GL_DITHER</ref>	
+ *!<r><c><ref>GL_DITHER</ref>
  *!</c><c>If enabled,
  *!dither color components or indices before they are written to the
  *!color buffer.
@@ -7263,7 +7262,7 @@
  *!<r><c><ref>GL_INDEX_LOGIC_OP</ref>
  *!</c><c>If enabled,
  *!apply the currently selected logical operation to the incoming index and color
- *!buffer indices. See 
+ *!buffer indices. See
  *!
  *!<ref>glLogicOp</ref>.
  *!</c></r>
@@ -7276,7 +7275,7 @@
  *!</c><c>If enabled,
  *!use the current lighting parameters to compute the vertex color or index.
  *!Otherwise, simply associate the current color or index with each
- *!vertex. See 
+ *!vertex. See
  *!
  *!<ref>glMaterial</ref>, <ref>glLightModel</ref>, and <ref>glLight</ref>.
  *!</c></r>
@@ -7290,7 +7289,7 @@
  *!<r><c><ref>GL_LINE_STIPPLE</ref>
  *!</c><c>If enabled,
  *!use the current line stipple pattern when drawing lines. See
- *!<ref>glLineStipple</ref>. 
+ *!<ref>glLineStipple</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_COLOR_4</ref>
  *!</c><c>If enabled,
@@ -7486,25 +7485,25 @@
  *!</c><c>If enabled, and if the polygon is rendered in
  *!<ref>GL_FILL</ref> mode, an offset is added to depth values of a polygon's
  *!fragments before the depth comparison is performed. See
- *!<ref>glPolygonOffset</ref>. 
+ *!<ref>glPolygonOffset</ref>.
  *!</c></r>
  *!<r><c><ref>GL_POLYGON_OFFSET_LINE</ref>
  *!</c><c>If enabled, and if the polygon is rendered in
  *!<ref>GL_LINE</ref> mode, an offset is added to depth values of a polygon's
- *!fragments before the depth comparison is performed. See <ref>glPolygonOffset</ref>. 
+ *!fragments before the depth comparison is performed. See <ref>glPolygonOffset</ref>.
  *!</c></r>
  *!<r><c><ref>GL_POLYGON_OFFSET_POINT</ref>
  *!</c><c>If enabled, an offset is added to depth values of a polygon's fragments
- *!before the depth comparison is performed, if the polygon is rendered in 
- *!<ref>GL_POINT</ref> mode. See 
+ *!before the depth comparison is performed, if the polygon is rendered in
+ *!<ref>GL_POINT</ref> mode. See
  *!
- *!<ref>glPolygonOffset</ref>. 
+ *!<ref>glPolygonOffset</ref>.
  *!</c></r>
  *!<r><c><ref>GL_POLYGON_SMOOTH</ref>
  *!</c><c>If enabled, draw polygons with proper filtering.
  *!Otherwise, draw aliased polygons. For correct anti-aliased polygons,
  *!an alpha buffer is needed and the polygons must be sorted front to
- *!back. 
+ *!back.
  *!</c></r>
  *!<r><c><ref>GL_POLYGON_STIPPLE</ref>
  *!</c><c>If enabled,
@@ -7513,12 +7512,12 @@
  *!</c></r>
  *!<r><c><ref>GL_SCISSOR_TEST</ref>
  *!</c><c>If enabled,
- *!discard fragments that are outside the scissor rectangle. 
+ *!discard fragments that are outside the scissor rectangle.
  *!See <ref>glScissor</ref>.
  *!</c></r>
  *!<r><c><ref>GL_STENCIL_TEST</ref>
  *!</c><c>If enabled,
- *!do stencil testing and update the stencil buffer. 
+ *!do stencil testing and update the stencil buffer.
  *!See <ref>glStencilFunc</ref> and <ref>glStencilOp</ref>.
  *!</c></r>
  *!<r><c><ref>GL_TEXTURE_1D</ref>
@@ -7548,7 +7547,7 @@
  *!</c><c>If enabled,
  *!the <i>s</i> texture coordinate is computed using
  *!the texture generation function defined with <ref>glTexGen</ref>.
- *!Otherwise, the current <i>s</i> texture coordinate is used. 
+ *!Otherwise, the current <i>s</i> texture coordinate is used.
  *!See <ref>glTexGen</ref>.
  *!</c></r>
  *!<r><c><ref>GL_TEXTURE_GEN_T</ref>
@@ -7586,44 +7585,44 @@
  *!@[glEnableClientState] and @[glDisableClientState]
  *!enable or disable individual client-side capabilities. By default, all
  *!client-side capabilities are disabled.
- *!Both 
+ *!Both
  *!@[glEnableClientState] and @[glDisableClientState] take a
  *!single argument, @i{cap@}, which can assume one of the following
- *!values: 
+ *!values:
  *!
  *!@xml{<matrix>
  *!<r><c><ref>GL_COLOR_ARRAY</ref>
  *!</c><c>If enabled, the color array is enabled for writing and used during
- *!rendering when <ref>glDrawArrays</ref> or 
+ *!rendering when <ref>glDrawArrays</ref> or
  *!<ref>glDrawElement</ref> is called. See
- *!<ref>glColorPointer</ref>. 
+ *!<ref>glColorPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_EDGE_FLAG_ARRAY</ref>
  *!</c><c>If enabled, the edge flag array is enabled for writing and used during
  *!rendering when <ref>glDrawArrays</ref> or <ref>glDrawElements</ref> is called. See
- *!<ref>glEdgeFlagPointer</ref>. 
+ *!<ref>glEdgeFlagPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_INDEX_ARRAY</ref>
  *!</c><c>If enabled, the index array is enabled for writing and used during
- *!rendering when <ref>glDrawArrays</ref> or 
+ *!rendering when <ref>glDrawArrays</ref> or
  *!<ref>glDrawElements</ref> is called. See
- *!<ref>glIndexPointer</ref>. 
+ *!<ref>glIndexPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_NORMAL_ARRAY</ref>
  *!</c><c>If enabled, the normal array is enabled for writing and used during
  *!rendering when <ref>glDrawArrays</ref> or <ref>glDrawElements</ref> is called. See
- *!<ref>glNormalPointer</ref>. 
+ *!<ref>glNormalPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_TEXTURE_COORD_ARRAY</ref>
  *!</c><c>If enabled, the texture coordinate array is enabled for writing and
  *!used for rendering when <ref>glDrawArrays</ref> or <ref>glDrawElements</ref> is
- *!called. See <ref>glTexCoordPointer</ref>. 
+ *!called. See <ref>glTexCoordPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_VERTEX_ARRAY</ref>
  *!</c><c>If enabled, the vertex array is enabled for writing and used during
  *!rendering when <ref>glDrawArrays</ref> or
  *!<ref>glDrawElements</ref> is called. See
- *!<ref>glVertexPointer</ref>. 
+ *!<ref>glVertexPointer</ref>.
  *!</c></r></matrix>@}
  *!
  *!
@@ -7637,7 +7636,7 @@
  *!@[GL_NORMAL_ARRAY],
  *!@[GL_TEXTURE_COORD_ARRAY], and
  *!@[GL_VERTEX_ARRAY]
- *!are accepted. 
+ *!are accepted.
  *!
  *!
  *!@param cap
@@ -7717,8 +7716,8 @@
  *!then blending or logical operations are computed and applied independently
  *!for each color buffer and can produce different results in each buffer.
  *!
- *!Monoscopic contexts include only 
- *!.I left 
+ *!Monoscopic contexts include only
+ *!.I left
  *!buffers, and stereoscopic contexts include both
  *!.I left
  *!and
@@ -7726,7 +7725,7 @@
  *!buffers.
  *!Likewise, single-buffered contexts include only
  *!.I front
- *!buffers, and double-buffered contexts include both 
+ *!buffers, and double-buffered contexts include both
  *!.I front
  *!and
  *!.I back
@@ -7737,7 +7736,7 @@
  *!
  *!Specifies up to four color buffers to be drawn into.
  *!Symbolic constants
- *!@[GL_NONE], 
+ *!@[GL_NONE],
  *!@[GL_FRONT_LEFT],
  *!@[GL_FRONT_RIGHT],
  *!@[GL_BACK_LEFT],
@@ -7774,7 +7773,7 @@
  *!Use @[glIsEnabled] or @[glGet] to determine the current setting
  *!of any capability. The initial value for each capability with the
  *!exception of @[GL_DITHER] is @[GL_FALSE]. The initial value for
- *!@[GL_DITHER] is @[GL_TRUE]. 
+ *!@[GL_DITHER] is @[GL_TRUE].
  *!
  *!Both @[glEnable] and @[glDisable] take a single argument, @i{cap@},
  *!which can assume one of the following values:
@@ -7789,7 +7788,7 @@
  *!</c><c>If enabled,
  *!generate normal vectors when either
  *!<ref>GL_MAP2_VERTEX_3</ref> or
- *!<ref>GL_MAP2_VERTEX_4</ref> is used to generate vertices. 
+ *!<ref>GL_MAP2_VERTEX_4</ref> is used to generate vertices.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_BLEND</ref>
@@ -7814,19 +7813,19 @@
  *!</c></r>
  *!<r><c><ref>GL_CULL_FACE</ref>
  *!</c><c>If enabled,
- *!cull polygons based on their winding in window coordinates. 
+ *!cull polygons based on their winding in window coordinates.
  *!See <ref>glCullFace</ref>.
  *!</c></r>
  *!<r><c><ref>GL_DEPTH_TEST</ref>
  *!</c><c>If enabled,
  *!do depth comparisons and update the depth buffer. Note that even if
- *!the depth buffer exists and the depth mask is non-zero, the 
+ *!the depth buffer exists and the depth mask is non-zero, the
  *!depth buffer is not updated if the depth test is disabled. See
- *!<ref>glDepthFunc</ref> and 
+ *!<ref>glDepthFunc</ref> and
  *!
- *!<ref>glDepthRange</ref>. 
+ *!<ref>glDepthRange</ref>.
  *!</c></r>
- *!<r><c><ref>GL_DITHER</ref>	
+ *!<r><c><ref>GL_DITHER</ref>
  *!</c><c>If enabled,
  *!dither color components or indices before they are written to the
  *!color buffer.
@@ -7839,7 +7838,7 @@
  *!<r><c><ref>GL_INDEX_LOGIC_OP</ref>
  *!</c><c>If enabled,
  *!apply the currently selected logical operation to the incoming index and color
- *!buffer indices. See 
+ *!buffer indices. See
  *!
  *!<ref>glLogicOp</ref>.
  *!</c></r>
@@ -7852,7 +7851,7 @@
  *!</c><c>If enabled,
  *!use the current lighting parameters to compute the vertex color or index.
  *!Otherwise, simply associate the current color or index with each
- *!vertex. See 
+ *!vertex. See
  *!
  *!<ref>glMaterial</ref>, <ref>glLightModel</ref>, and <ref>glLight</ref>.
  *!</c></r>
@@ -7866,7 +7865,7 @@
  *!<r><c><ref>GL_LINE_STIPPLE</ref>
  *!</c><c>If enabled,
  *!use the current line stipple pattern when drawing lines. See
- *!<ref>glLineStipple</ref>. 
+ *!<ref>glLineStipple</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_COLOR_4</ref>
  *!</c><c>If enabled,
@@ -8062,25 +8061,25 @@
  *!</c><c>If enabled, and if the polygon is rendered in
  *!<ref>GL_FILL</ref> mode, an offset is added to depth values of a polygon's
  *!fragments before the depth comparison is performed. See
- *!<ref>glPolygonOffset</ref>. 
+ *!<ref>glPolygonOffset</ref>.
  *!</c></r>
  *!<r><c><ref>GL_POLYGON_OFFSET_LINE</ref>
  *!</c><c>If enabled, and if the polygon is rendered in
  *!<ref>GL_LINE</ref> mode, an offset is added to depth values of a polygon's
- *!fragments before the depth comparison is performed. See <ref>glPolygonOffset</ref>. 
+ *!fragments before the depth comparison is performed. See <ref>glPolygonOffset</ref>.
  *!</c></r>
  *!<r><c><ref>GL_POLYGON_OFFSET_POINT</ref>
  *!</c><c>If enabled, an offset is added to depth values of a polygon's fragments
- *!before the depth comparison is performed, if the polygon is rendered in 
- *!<ref>GL_POINT</ref> mode. See 
+ *!before the depth comparison is performed, if the polygon is rendered in
+ *!<ref>GL_POINT</ref> mode. See
  *!
- *!<ref>glPolygonOffset</ref>. 
+ *!<ref>glPolygonOffset</ref>.
  *!</c></r>
  *!<r><c><ref>GL_POLYGON_SMOOTH</ref>
  *!</c><c>If enabled, draw polygons with proper filtering.
  *!Otherwise, draw aliased polygons. For correct anti-aliased polygons,
  *!an alpha buffer is needed and the polygons must be sorted front to
- *!back. 
+ *!back.
  *!</c></r>
  *!<r><c><ref>GL_POLYGON_STIPPLE</ref>
  *!</c><c>If enabled,
@@ -8089,12 +8088,12 @@
  *!</c></r>
  *!<r><c><ref>GL_SCISSOR_TEST</ref>
  *!</c><c>If enabled,
- *!discard fragments that are outside the scissor rectangle. 
+ *!discard fragments that are outside the scissor rectangle.
  *!See <ref>glScissor</ref>.
  *!</c></r>
  *!<r><c><ref>GL_STENCIL_TEST</ref>
  *!</c><c>If enabled,
- *!do stencil testing and update the stencil buffer. 
+ *!do stencil testing and update the stencil buffer.
  *!See <ref>glStencilFunc</ref> and <ref>glStencilOp</ref>.
  *!</c></r>
  *!<r><c><ref>GL_TEXTURE_1D</ref>
@@ -8124,7 +8123,7 @@
  *!</c><c>If enabled,
  *!the <i>s</i> texture coordinate is computed using
  *!the texture generation function defined with <ref>glTexGen</ref>.
- *!Otherwise, the current <i>s</i> texture coordinate is used. 
+ *!Otherwise, the current <i>s</i> texture coordinate is used.
  *!See <ref>glTexGen</ref>.
  *!</c></r>
  *!<r><c><ref>GL_TEXTURE_GEN_T</ref>
@@ -8162,44 +8161,44 @@
  *!@[glEnableClientState] and @[glDisableClientState]
  *!enable or disable individual client-side capabilities. By default, all
  *!client-side capabilities are disabled.
- *!Both 
+ *!Both
  *!@[glEnableClientState] and @[glDisableClientState] take a
  *!single argument, @i{cap@}, which can assume one of the following
- *!values: 
+ *!values:
  *!
  *!@xml{<matrix>
  *!<r><c><ref>GL_COLOR_ARRAY</ref>
  *!</c><c>If enabled, the color array is enabled for writing and used during
- *!rendering when <ref>glDrawArrays</ref> or 
+ *!rendering when <ref>glDrawArrays</ref> or
  *!<ref>glDrawElement</ref> is called. See
- *!<ref>glColorPointer</ref>. 
+ *!<ref>glColorPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_EDGE_FLAG_ARRAY</ref>
  *!</c><c>If enabled, the edge flag array is enabled for writing and used during
  *!rendering when <ref>glDrawArrays</ref> or <ref>glDrawElements</ref> is called. See
- *!<ref>glEdgeFlagPointer</ref>. 
+ *!<ref>glEdgeFlagPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_INDEX_ARRAY</ref>
  *!</c><c>If enabled, the index array is enabled for writing and used during
- *!rendering when <ref>glDrawArrays</ref> or 
+ *!rendering when <ref>glDrawArrays</ref> or
  *!<ref>glDrawElements</ref> is called. See
- *!<ref>glIndexPointer</ref>. 
+ *!<ref>glIndexPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_NORMAL_ARRAY</ref>
  *!</c><c>If enabled, the normal array is enabled for writing and used during
  *!rendering when <ref>glDrawArrays</ref> or <ref>glDrawElements</ref> is called. See
- *!<ref>glNormalPointer</ref>. 
+ *!<ref>glNormalPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_TEXTURE_COORD_ARRAY</ref>
  *!</c><c>If enabled, the texture coordinate array is enabled for writing and
  *!used for rendering when <ref>glDrawArrays</ref> or <ref>glDrawElements</ref> is
- *!called. See <ref>glTexCoordPointer</ref>. 
+ *!called. See <ref>glTexCoordPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_VERTEX_ARRAY</ref>
  *!</c><c>If enabled, the vertex array is enabled for writing and used during
  *!rendering when <ref>glDrawArrays</ref> or
  *!<ref>glDrawElements</ref> is called. See
- *!<ref>glVertexPointer</ref>. 
+ *!<ref>glVertexPointer</ref>.
  *!</c></r></matrix>@}
  *!
  *!
@@ -8213,7 +8212,7 @@
  *!@[GL_NORMAL_ARRAY],
  *!@[GL_TEXTURE_COORD_ARRAY], and
  *!@[GL_VERTEX_ARRAY]
- *!are accepted. 
+ *!are accepted.
  *!
  *!
  *!@param cap
@@ -8282,7 +8281,7 @@
  *!when enabled,
  *!is applied between the incoming color index or RGBA color
  *!and the color index or RGBA color at the corresponding location in the
- *!frame buffer. 
+ *!frame buffer.
  *!To enable or disable the logical operation, call
  *!@[glEnable] and @[glDisable]
  *!using the symbolic constant @[GL_COLOR_LOGIC_OP] for RGBA mode or
@@ -8402,7 +8401,7 @@
  *!@[glReadBuffer] specifies a color buffer as the source for subsequent
  *!@[glReadPixels], @[glCopyTexImage1D], @[glCopyTexImage2D],
  *!@[glCopyTexSubImage1D], @[glCopyTexSubImage2D], and
- *!@[glCopyPixels] commands. 
+ *!@[glCopyPixels] commands.
  *!@i{mode@} accepts one of twelve or more predefined values.
  *!(@[GL_AUX0] through @[GL_AUX3] are always defined.)
  *!In a fully configured system,
@@ -8416,7 +8415,7 @@
  *!
  *!Nonstereo double-buffered configurations have only a front left and a
  *!back left buffer.
- *!Single-buffered configurations have a front left and a front right 
+ *!Single-buffered configurations have a front left and a front right
  *!buffer if stereo, and only a front left buffer if nonstereo.
  *!It is an error to specify a nonexistent buffer to @[glReadBuffer].
  *!
@@ -8458,7 +8457,7 @@
  *!@[glRenderMode] sets the rasterization mode.
  *!It takes one argument,
  *!@i{mode@},
- *!which can assume one of three predefined values: 
+ *!which can assume one of three predefined values:
  *!
  *!@xml{<matrix>
  *!<r><c><ref>GL_RENDER</ref>
@@ -8468,14 +8467,14 @@
  *!This is the normal mode
  *!and also the default mode.
  *!</c></r>
- *!<r><c><ref>GL_SELECT</ref> 
+ *!<r><c><ref>GL_SELECT</ref>
  *!</c><c>Selection mode.
  *!No pixel fragments are produced,
  *!and no change to the frame buffer contents is made.
  *!Instead,
  *!a record of the names of primitives that would have been drawn
  *!if the render mode had been <ref>GL_RENDER</ref> is returned in a select buffer,
- *!which must be created (see <ref>glSelectBuffer</ref>) before selection mode 
+ *!which must be created (see <ref>glSelectBuffer</ref>) before selection mode
  *!is entered.
  *!</c></r>
  *!<r><c><ref>GL_FEEDBACK</ref>
@@ -8555,7 +8554,7 @@
  *!In either case, the computed color of a vertex is the result of
  *!lighting if lighting is enabled,
  *!or it is the current color at the time the vertex was specified if
- *!lighting is disabled. 
+ *!lighting is disabled.
  *!
  *!Flat and smooth shading are indistinguishable for points.
  *!Starting when @[glBegin] is issued and counting vertices and
@@ -8578,7 +8577,7 @@
  *!Triangle fan	i + 2
  *!Independent triangle	 3 i
  *!Quad strip	2 i + 2
- *!Independent quad 	 4 i 
+ *!Independent quad 	 4 i
  *!.TE
  *!.sp
  *!Flat and smooth shading are specified by @[glShadeModel] with @i{mode@} set to

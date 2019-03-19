@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -50,23 +49,23 @@
 
 #ifdef DECLARE
 #define IMEMBER(X,Y,Z) Z,
-#define STACKMEMBER(X,Y,Z) Z,
+#define STACKMEMBER(X,Y,Z) 0,
 #define ZMEMBER(X,Y,Z) Z,
 #define SNAME(X,Y) \
   extern struct X PIKE_CONCAT(Y,_base); \
   struct X * Y = & PIKE_CONCAT(Y,_base); \
-  struct X PIKE_CONCAT(Y,_base) = { 0, 
+  struct X PIKE_CONCAT(Y,_base) = { 0,
 #define SEND };
 #endif
 
 #ifdef PUSH
 #define IMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
 #define STACKMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
-#define ZMEMBER(X,Y,Z) /* Zapped by the MEMSET in SNAME() below. */;
+#define ZMEMBER(X,Y,Z) /* Zapped by the memset in SNAME() below. */;
 #define SNAME(X,Y) { \
       struct X *nEw; \
       nEw=ALLOC_STRUCT(X); \
-      MEMSET((char *)nEw, 0, sizeof(struct X)); \
+      memset((char *)nEw, 0, sizeof(struct X)); \
       nEw->previous=Pike_compiler;
 #define SEND \
       Pike_compiler=nEw; \
@@ -76,8 +75,8 @@
 
 
 #ifdef POP
-#define IMEMBER(X,Y,Z) 
-#define ZMEMBER(X,Y,Z) 
+#define IMEMBER(X,Y,Z)
+#define ZMEMBER(X,Y,Z)
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
     if(Pike_compiler->Y < oLd->Y) \
@@ -101,9 +100,9 @@
 #ifdef INIT
 #define IMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
 #define STACKMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
-#define ZMEMBER(X,Y,Z) /* Zapped by the MEMSET in SNAME() below. */;
+#define ZMEMBER(X,Y,Z) /* Zapped by the memset in SNAME() below. */;
 #define SNAME(X,Y) { \
-      MEMSET(c, 0, sizeof(struct X));		\
+      memset(c, 0, sizeof(struct X));		\
       c->previous = Pike_compiler;
 #define SEND \
       Pike_compiler = c; \
@@ -113,8 +112,8 @@
 
 
 #ifdef EXIT
-#define IMEMBER(X,Y,Z) 
-#define ZMEMBER(X,Y,Z) 
+#define IMEMBER(X,Y,Z)
+#define ZMEMBER(X,Y,Z)
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
     if(c->Y < oLd->Y) \
@@ -150,7 +149,7 @@
 #endif
 
   SNAME(program_state,Pike_compiler)
-  ZMEMBER(INT32,last_line,0)
+  ZMEMBER(INT_TYPE,last_line,0)
   STRMEMBER(last_file,0)
   ZMEMBER(struct object *,fake_object,0)
   ZMEMBER(struct program *,new_program,0)
@@ -164,6 +163,7 @@
   ZMEMBER(int,local_class_counter,0)
   ZMEMBER(int,catch_level,0)
   ZMEMBER(INT32,current_modifiers,0)
+  ZMEMBER(node *,current_attributes,0)
   ZMEMBER(int,varargs,0)
   ZMEMBER(int, num_create_args, 0)
   ZMEMBER(int, num_inherits, 0)	/* Used during second pass. */
@@ -176,6 +176,7 @@
   IMEMBER(int, compat_minor, PIKE_MINOR_VERSION)
   ZMEMBER(int, flags, 0)
   ZMEMBER(struct compilation *,compiler,0)
+  ZMEMBER(struct block_allocator, node_allocator, BA_INIT_PAGES(sizeof(struct node_s), 2))
   SEND
 
 #undef PCODE

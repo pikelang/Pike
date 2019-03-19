@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id$
+// -*- pike -*-
 #pike __REAL_VERSION__
 
 constant description = "CFLAGS for C module compilation";

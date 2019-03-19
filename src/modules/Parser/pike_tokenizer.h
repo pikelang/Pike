@@ -158,14 +158,14 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
       case '+': case '&':  case '|':
 	if( data[pos+1] == data[pos] ) pos++;
 	else if( data[pos+1] == '=' ) pos++;
+	/* FALL_THROUGH */
 
-
-      case '*': case '%':  
+      case '*': case '%':
       case '^': case '!':  case '~':  case '=':
 	if( data[pos+1] == '=' )
 	  pos++;
 	break;
-	
+
       case ' ':
       case '\n':
       case '\r':
@@ -216,7 +216,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	if( pos >= len )
 	  goto failed_to_find_end;
 	break;
-	
+
       case '#':
 	pos++;
 	SKIPWHT();
@@ -229,7 +229,29 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  if (pos >= len)
 	    goto failed_to_find_end;
 	  break;
-	}
+        }
+        {
+          char end = 0;
+          switch( data[pos] )
+          {
+          case '(': end=')'; break;
+          case '[': end=']'; break;
+          case '{': end='}'; break;
+          }
+          if(end)
+          {
+            for (pos++; pos<len-1; pos++)
+              if (data[pos] == '#' && data[pos+1] == end)
+              {
+                pos++;
+                end=0;
+                break;
+              }
+            if (end)
+              goto failed_to_find_end;
+            break;
+          }
+        }
 	if( data[pos] == 's' &&
 	    data[pos+1] == 't' &&
 	    data[pos+2] == 'r' &&
@@ -247,6 +269,9 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  else if(data[pos]=='<') {
 	    for(pos++; pos<len; pos++)
 	      if(data[pos]=='>') break;
+	  } else if (!data[pos]) {
+	    pos--;
+	    break;
 	  }
 	  else
 	    Pike_error("Illegal character after #string\n");

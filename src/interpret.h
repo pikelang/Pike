@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef INTERPRET_H
@@ -38,7 +37,6 @@ struct Pike_interpreter_struct {
   struct thread_state *thread_state;
 #endif
   char *stack_top;
-  DO_IF_SECURITY(struct object *current_creds;)
 
   struct catch_context *catch_ctx;
   LOW_JMP_BUF *catching_eval_jmpbuf;
@@ -93,11 +91,9 @@ struct pike_frame
   struct inherit *context;
   char *current_storage;
 
-  DO_IF_SECURITY(struct object *current_creds;)
 #if defined(PROFILING)
   cpu_time_t children_base;	/** Accounted time when the frame started. */
   cpu_time_t start_time;	/** Adjusted time when thr frame started. */
-  cpu_time_t self_time_base;	/* ??? */
 #endif
 };
 
@@ -120,13 +116,15 @@ extern struct op_2_f {
 } *opcode_to_fcode;
 #endif /* HAVE_COMPUTED_GOTO */
 
+
+
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern const char msg_stack_error[];
 #define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)Pike_fatal("%s", msg_stack_error);}while(0)
 #define check__positive(X,Y) if((X)<0) Pike_fatal Y
 #else
 #define check__positive(X,Y)
-#define debug_check_stack() 
+#define debug_check_stack()
 #endif
 
 #define low_stack_check(X) \
@@ -191,7 +189,7 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
     if (Pike_sp != save_stack_level + (depth)) {			\
       Pike_fatal("Unexpected stack level! "				\
 		 "Actual: %d, expected: %d\n",				\
-		 DO_NOT_WARN((int)(Pike_sp - save_stack_level)),	\
+                 (int)(Pike_sp - save_stack_level),                     \
 		 (depth));						\
     }									\
   } while(0)
@@ -202,9 +200,9 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 #endif /* PIKE_DEBUG */
 
 #ifdef __CHECKER__
-#define IF_CHECKER(X)	X
+#define SET_SVAL_TYPE_CHECKER(S,T) SET_SVAL_TYPE_SUBTYPE(S,T,0)
 #else
-#define IF_CHECKER(X)
+#define SET_SVAL_TYPE_CHECKER(S,T) SET_SVAL_TYPE_DC(S,T)
 #endif
 
 #define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); }while(0)
@@ -272,50 +270,44 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct program *_=(P);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_PROGRAM);			\
     _sp_->u.program=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_PROGRAM);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_int(I) do{							\
     INT_TYPE _=(I);							\
     struct svalue *_sp_ = Pike_sp++;					\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_INT,NUMBER_NUMBER);		\
     _sp_->u.integer=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_INT);					\
-    SET_SVAL_SUBTYPE(*_sp_, NUMBER_NUMBER);				\
   }while(0)
 
 #define push_undefined() do{						\
     struct svalue *_sp_ = Pike_sp++;					\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_INT,NUMBER_UNDEFINED);		\
     _sp_->u.integer=0;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_INT);					\
-    SET_SVAL_SUBTYPE(*_sp_, NUMBER_UNDEFINED);				\
   }while(0)
 
 #define push_obj_index(I) do{						\
     int _=(I);								\
     struct svalue *_sp_ = Pike_sp++;					\
+    SET_SVAL_TYPE_CHECKER(*_sp_, T_OBJ_INDEX);				\
     _sp_->u.identifier=_;						\
-    SET_SVAL_TYPE(*_sp_, T_OBJ_INDEX);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_mapping(M) do{						\
     struct mapping *_=(M);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_MAPPING);			\
     _sp_->u.mapping=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_MAPPING);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_array(A) do{						\
     struct array *_=(A);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_ARRAY);				\
     _sp_->u.array=_ ;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_ARRAY);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_empty_array() ref_push_array(&empty_array)
@@ -324,9 +316,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct multiset *_=(L);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_MULTISET);			\
     _sp_->u.multiset=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_MULTISET);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_string(S) do {						\
@@ -337,9 +328,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 		  Pike_fatal("Pushing string with bad shift: %d\n",	\
 			     _->size_shift);				\
 		});							\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_STRING,0);			\
     _sp_->u.string=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
   }while(0)
 
 #define push_empty_string() ref_push_string(empty_pike_string)
@@ -348,52 +338,35 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct pike_type *_=(S);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_TYPE);				\
     _sp_->u.type=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_TYPE);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
-#define push_object(O) do {						\
-    struct object *_=(O);						\
-    struct svalue *_sp_ = Pike_sp++;					\
-    debug_malloc_touch(_);						\
-    _sp_->u.object=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
-  }while(0)
+#define push_object(O) push_object_inherit(O,0)
 
 #define push_object_inherit(O, INH_NUM) do {				\
     struct object *_ = (O);						\
     struct svalue *_sp_ = Pike_sp++;					\
     int _inh_ = (INH_NUM);						\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_OBJECT,_inh_);			\
     _sp_->u.object = _;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
-    SET_SVAL_SUBTYPE(*_sp_, _inh_);					\
   }while(0)
 
 #define push_float(F) do{						\
     FLOAT_TYPE _=(F);							\
     struct svalue *_sp_ = Pike_sp++;					\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_FLOAT);				\
     _sp_->u.float_number=_;						\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_FLOAT);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
-#define push_text(T) do {						\
-    const char *_ = (T);						\
-    struct svalue *_sp_ = Pike_sp++;					\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
-    _sp_->u.string=make_shared_binary_string(_,strlen(_));		\
-    debug_malloc_touch(_sp_->u.string);					\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
-  }while(0)
+PMOD_EXPORT extern void push_text( const char *x );
+PMOD_EXPORT extern void push_static_text( const char *x );
 
 #define push_constant_text(T) do{					\
     struct svalue *_sp_ = Pike_sp++;					\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_STRING,0);			\
     REF_MAKE_CONST_STRING(_sp_->u.string,T);				\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
   }while(0)
 
 #define push_constant_string_code(STR, CODE) do{			\
@@ -406,45 +379,40 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct object *_=(OBJ);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_FUNCTION,(FUN));  	        \
     _sp_->u.object=_;							\
-    SET_SVAL_SUBTYPE(*_sp_, (FUN));					\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_FUNCTION);				\
   } while (0)
 
 #define ref_push_program(P) do{						\
     struct program *_=(P);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_PROGRAM);			\
     _sp_->u.program=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_PROGRAM);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_mapping(M) do{						\
     struct mapping *_=(M);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_MAPPING);			\
     _sp_->u.mapping=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_MAPPING);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_array(A) do{						\
     struct array *_=(A);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_ARRAY);				\
     _sp_->u.array=_ ;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_ARRAY);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_multiset(L) do{					\
     struct multiset *_=(L);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
+    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_MULTISET);			\
     _sp_->u.multiset=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_MULTISET);				\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_string(S) do{						\
@@ -455,46 +423,34 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 			     _->size_shift);				\
 		});							\
     add_ref(_);								\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_STRING,0);			\
     _sp_->u.string=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
   }while(0)
 
 #define ref_push_type_value(S) do{					\
     struct pike_type *_=(S);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_TYPE,0);			\
     _sp_->u.type=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_TYPE);					\
-    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
-#define ref_push_object(O) do{						\
-    struct object  *_=(O);						\
-    struct svalue *_sp_ = Pike_sp++;					\
-    add_ref(_);								\
-    _sp_->u.object=_;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
-    SET_SVAL_SUBTYPE(*_sp_, 0);						\
-  }while(0)
+#define ref_push_object(O) ref_push_object_inherit(O,0)
 
 #define ref_push_object_inherit(O, INH_NUM) do{				\
     struct object  *_ = (O);						\
     struct svalue *_sp_ = Pike_sp++;					\
-    int _inh_ = (INH_NUM);						\
     add_ref(_);								\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_OBJECT, (INH_NUM));		\
     _sp_->u.object = _;							\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
-    SET_SVAL_SUBTYPE(*_sp_, _inh_);					\
   }while(0)
 
 #define ref_push_function(OBJ, FUN) do {				\
     struct object *_=(OBJ);						\
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
+    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_FUNCTION,(FUN));		\
     _sp_->u.object=_;							\
-    SET_SVAL_SUBTYPE(*_sp_, (FUN));					\
-    SET_SVAL_TYPE(*_sp_, PIKE_T_FUNCTION);				\
   } while (0)
 
 #define push_svalue(S) do {						\
@@ -512,29 +468,43 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     _sp_[-2]=_;								\
   } while(0)
 
+#define stack_revroll(args) do {					\
+    struct svalue *_sp_ = Pike_sp;					\
+    int _args_ = (args); struct svalue _=_sp_[-1];			\
+    memmove(_sp_-_args_+1, _sp_-_args_, (_args_-1)*sizeof(struct svalue)); \
+    _sp_[-_args_]=_;							\
+  } while(0)
+
+#if PIKE_T_INT+NUMBER_NUMBER==0 && defined(HAS___BUILTIN_MEMSET)
+#define push_zeroes(N) do{					\
+    ptrdiff_t num_ = (N);					\
+    __builtin_memset(Pike_sp,0,sizeof(struct svalue)*(num_));	\
+    Pike_sp+=num_;						\
+  } while(0);
+#else
 #define push_zeroes(N) do{			\
-    struct svalue *s_=Pike_sp;			\
+    struct svalue *s_ = Pike_sp;		\
     ptrdiff_t num_= (N);			\
     for(;num_-- > 0;s_++)			\
     {						\
-      SET_SVAL_TYPE(*s_, PIKE_T_INT);		\
-      SET_SVAL_SUBTYPE(*s_, NUMBER_NUMBER);	\
+      SET_SVAL_TYPE_SUBTYPE(*s_, PIKE_T_INT,NUMBER_NUMBER);	\
+      s_->u.integer=0;				\
+    }						\
+    Pike_sp=s_;					\
+}while(0)
+#endif
+
+#define push_undefines(N) do{			\
+    struct svalue *s_ = Pike_sp;		\
+    ptrdiff_t num_= (N);			\
+    for(;num_-- > 0;s_++)			\
+    {						\
+      SET_SVAL_TYPE_SUBTYPE(*s_, PIKE_T_INT,NUMBER_UNDEFINED);	\
       s_->u.integer=0;				\
     }						\
     Pike_sp=s_;					\
 }while(0)
 
-#define push_undefines(N) do{			\
-    struct svalue *s_=Pike_sp;			\
-    ptrdiff_t num_= (N);			\
-    for(;num_-- > 0;s_++)			\
-    {						\
-      SET_SVAL_TYPE(*s_, PIKE_T_INT);		\
-      SET_SVAL_SUBTYPE(*s_, NUMBER_UNDEFINED);	\
-      s_->u.integer=0;				\
-    }						\
-    Pike_sp=s_;					\
-}while(0)
 
 #define free_pike_frame(F) do{ struct pike_frame *f_=(F); if(!sub_ref(f_)) really_free_pike_frame(f_); }while(0)
 
@@ -627,14 +597,30 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 		  });							\
       Pike_interpreter.accounted_time += self_time;			\
       /* FIXME: Can context->prog be NULL? */				\
-      function = _fp_->context->prog->identifiers + _fp_->ident;		\
-      /* function->total_time =						\
-	 Pike_fp->self_time_base + time_passed; */			\
-      function->total_time += time_passed;				\
+      function = _fp_->context->prog->identifiers + _fp_->ident;	\
+      if (!--function->recur_depth)					\
+	function->total_time += time_passed;				\
       function->self_time += self_time;					\
     });									\
   LOW_POP_PIKE_FRAME (_fp_);						\
  }while(0)
+
+#define ASSIGN_CURRENT_STORAGE(VAR, TYPE, INH, EXPECTED_PROGRAM)	\
+  do {									\
+    int inh__ = (INH);							\
+    DO_IF_DEBUG(							\
+      struct program *prog__ = (EXPECTED_PROGRAM);			\
+      if ((inh__ < 0) ||						\
+	  (inh__ >= Pike_fp->context->prog->num_inherits))		\
+	Pike_fatal("Inherit #%d out of range [0..%d]\n",		\
+		   inh__, Pike_fp->context->prog->num_inherits-1);	\
+      if (prog__ && (Pike_fp->context[inh__].prog != prog__))		\
+	Pike_fatal("Inherit #%d has wrong program %p != %p.\n",		\
+		   Pike_fp->context[inh__].prog, prog__);		\
+    );									\
+    VAR = ((TYPE *)(Pike_fp->current_object->storage +			\
+		    Pike_fp->context[inh__].storage_offset));		\
+  } while(0)
 
 
 enum apply_type
@@ -642,7 +628,7 @@ enum apply_type
   APPLY_STACK, /* The function is the first argument */
   APPLY_SVALUE, /* arg1 points to an svalue containing the function */
   APPLY_SVALUE_STRICT, /* Like APPLY_SVALUE, but does not return values for void functions */
-   APPLY_LOW    /* arg1 is the object pointer,(int)arg2 the function */
+  APPLY_LOW    /* arg1 is the object pointer,(int)arg2 the function */
 };
 
 #define APPLY_MASTER(FUN,ARGS) \
@@ -708,7 +694,7 @@ PMOD_EXPORT extern unsigned long evaluator_callback_calls;
 #define low_check_threads_etc() do { \
   DO_IF_INTERNAL_PROFILING (evaluator_callback_calls++); \
   call_callback(& evaluator_callbacks, NULL); \
-}while(0) 
+}while(0)
 
 #define check_threads_etc() do {					\
     DO_IF_DEBUG (if (Pike_interpreter.trace_level > 2)			\
@@ -751,7 +737,6 @@ extern int fast_check_threads_counter;
  * ordinary code. */
 #define FAST_CHECK_THREADS_ON_BRANCH() fast_check_threads_etc (8)
 
-#include "block_alloc_h.h"
 /* Prototypes begin here */
 void push_sp_mark(void);
 ptrdiff_t pop_sp_mark(void);
@@ -759,21 +744,29 @@ void gc_mark_stack_external (struct pike_frame *frame,
 			     struct svalue *stack_p, struct svalue *stack);
 PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter_struct *interpreter);
 PMOD_EXPORT void init_interpreter(void);
-void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval);
+int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval);
 PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from);
 PMOD_EXPORT union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
 void print_return_value(void);
 void reset_evaluator(void);
+#ifdef PIKE_DEBUG
 struct backlog;
-void dump_backlog(void);
-BLOCK_ALLOC (catch_context, 0);
-BLOCK_ALLOC(pike_frame,128);
+PMOD_EXPORT void dump_backlog(void);
+#endif /* PIKE_DEBUG */
+struct catch_context *alloc_catch_context(void);
+PMOD_EXPORT void really_free_catch_context( struct catch_context *data );
+PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X );
+void count_memory_in_catch_contexts(size_t*, size_t*);
+void count_memory_in_pike_frames(size_t*, size_t*);
+
+/*BLOCK_ALLOC (catch_context, 0);*/
+/*BLOCK_ALLOC(pike_frame,128);*/
 
 #ifdef PIKE_USE_MACHINE_CODE
-void call_check_threads_etc();
+void call_check_threads_etc(void);
 #if defined(OPCODE_INLINE_BRANCH) || defined(INS_F_JUMP) || \
     defined(INS_F_JUMP_WITH_ARG) || defined(INS_F_JUMP_WITH_TWO_ARGS)
-void branch_check_threads_etc();
+void branch_check_threads_etc(void);
 #endif
 #ifdef OPCODE_INLINE_RETURN
 PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr);
@@ -787,14 +780,18 @@ void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2);
 
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
+struct pike_frame *alloc_pike_frame(void);
 void really_free_pike_scope(struct pike_frame *scope);
-int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun );
+void *low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void low_return(void);
 void low_return_pop(void);
 void unlink_previous_frame(void);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 
+PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer();
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2);
 PMOD_EXPORT void f_call_function(INT32 args);
 PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int safe_apply_low(struct object *o,int fun,int args);
@@ -836,7 +833,7 @@ void really_clean_up_interpret(void);
 #ifdef __ECL
 static INLINE void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
 {
-  mega_apply(APPLY_LOW, args, (void*)o, (void*)fun);
+  mega_apply_low(args, (void*)o, fun);
 }
 
 static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
@@ -845,7 +842,7 @@ static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
 }
 #else /* !__ECL */
 #define apply_low(O,FUN,ARGS) \
-  mega_apply(APPLY_LOW, (ARGS), (void*)(O),(void*)(ptrdiff_t)(FUN))
+  mega_apply_low((ARGS), (void*)(O),(FUN))
 
 #define strict_apply_svalue(SVAL,ARGS) \
   mega_apply(APPLY_SVALUE, (ARGS), (void*)(SVAL),0)
@@ -866,24 +863,15 @@ static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
 		  (FUN) + Pike_fp->context->identifier_level,	\
 		  (ARGS), (FUNNAME))
 
-PMOD_EXPORT extern int d_flag; /* really in main.c */
-
 PMOD_EXPORT extern int Pike_stack_size;
 struct callback;
 PMOD_EXPORT extern struct callback_list evaluator_callbacks;
 
-/* Things to try:
- * we could reduce thread swapping to a pointer operation if
- * we do something like:
- *   #define Pike_interpreter (*Pike_interpreter_pointer)
- *
- * Since global variables are usually accessed through indirection
- * anyways, it might not make any speed differance.
- *
- * The above define could also be used to facilitate dynamic loading
- * on Win32..
- */
-PMOD_EXPORT extern struct Pike_interpreter_struct *Pike_interpreter_pointer;
+PMOD_EXPORT extern struct Pike_interpreter_struct *
+#if defined(__GNUC__) && __GNUC__ >= 3
+    __restrict
+#endif
+    Pike_interpreter_pointer;
 #define Pike_interpreter (*Pike_interpreter_pointer)
 
 #define Pike_sp Pike_interpreter.stack_pointer
@@ -920,6 +908,6 @@ struct Pike_stack
   while(Pike_sp > Pike_interpreter.current_stack->stack)		   \
     *(old_stack_->save_ptr++) = *--Pike_sp;				   \
   Pike_interpreter.current_stack=Pike_interpreter.current_stack->previous; \
-}while(0)  
+}while(0)
 
 #endif

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef FDLIB_H
@@ -13,9 +12,7 @@
 
 #include "pike_netlib.h"
 
-#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#endif
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
@@ -58,7 +55,10 @@
 #define SOCKET_CAPABILITIES (fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
 #ifndef FD_SETSIZE
-#define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
+/*
+ * in reality: almost unlimited actually.
+ */
+#define FD_SETSIZE 65536
 #endif
 
 #include <winbase.h>
@@ -87,10 +87,11 @@ typedef off_t PIKE_OFF_T;
         debug_fd_query_properties(dmalloc_touch_fd(fd),(Y))
 #define fd_stat(F,BUF) debug_fd_stat(F,BUF)
 #define fd_lstat(F,BUF) debug_fd_stat(F,BUF)
-#define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y),(Z)))
+#define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(debug_fd_socket((X),(Y),(Z)))
 #define fd_pipe(X) debug_fd_pipe( (X) DMALLOC_POS )
 #define fd_accept(X,Y,Z) dmalloc_register_fd(debug_fd_accept((X),(Y),(Z)))
+#define fd_accept4(X,Y,Z,F) dmalloc_register_fd(accept4((X),(Y),(Z),(F)))
 
 #define fd_bind(fd,X,Y) debug_fd_bind(dmalloc_touch_fd(fd), (X), (Y))
 #define fd_getsockopt(fd,X,Y,Z,Q) debug_fd_getsockopt(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q))
@@ -122,8 +123,8 @@ typedef off_t PIKE_OFF_T;
 PMOD_EXPORT void set_errno_from_win32_error (unsigned long err);
 PMOD_EXPORT char *debug_fd_info(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
-void fd_init();
-void fd_exit();
+void fd_init(void);
+void fd_exit(void);
 PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode);
 PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto);
@@ -203,7 +204,7 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 
 struct my_fd_set_s
 {
-  char bits[MAX_OPEN_FILEDESCRIPTORS/8];
+  char bits[FD_SETSIZE/8];
 };
 
 typedef struct my_fd_set_s my_fd_set;
@@ -216,31 +217,31 @@ typedef struct my_fd_set_s my_fd_set;
 #define my_FD_CLR(FD,S) ((S)->bits[(FD)>>3]&=~ (1<<(FD&7)))
 #define my_FD_SET(FD,S) do{ fd_check_fd(FD); ((S)->bits[(FD)>>3]|= (1<<(FD&7))); }while(0)
 #define my_FD_ISSET(FD,S) ((S)->bits[(FD)>>3]&(1<<(FD&7)))
-#define my_FD_ZERO(S) MEMSET(& (S)->bits, 0, sizeof(my_fd_set))
+#define my_FD_ZERO(S) memset(& (S)->bits, 0, sizeof(my_fd_set))
 
-#define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) do {			\
-   int e_,d_,max_=MINIMUM(MAX_OPEN_FILEDESCRIPTORS>>3,(max+7)>>3);	\
-   (TO)->fd_count=0;							\
-   for(e_=0;e_<max_;e_++)						\
-   {									\
-     int b_=(FROM)->bits[e_];						\
-     if(b_)								\
-     {									\
-       for(d_=0;d_<8;d_++)						\
-       {								\
-         if(b_ & (1<<d_))						\
-         {								\
-           int fd_=(e_<<3)+d_;						\
-           fd_check_fd(fd_);						\
-           (TO)->fd_array[(TO)->fd_count++]=(SOCKET)da_handle[fd_];	\
-         }								\
-       }								\
-     }									\
-   }									\
-}while(0)
+#define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) do {                   \
+    int e_,d_,max_=MINIMUM(FD_SETSIZE>>3,(max+7)>>3);                   \
+    (TO)->fd_count=0;							\
+    for(e_=0;e_<max_;e_++)						\
+    {									\
+      int b_=(FROM)->bits[e_];						\
+      if(b_)								\
+      {									\
+        for(d_=0;d_<8;d_++)						\
+        {								\
+          if(b_ & (1<<d_))						\
+          {								\
+            int fd_=(e_<<3)+d_;						\
+            fd_check_fd(fd_);						\
+            (TO)->fd_array[(TO)->fd_count++]=(SOCKET)da_handle[fd_];	\
+          }								\
+        }								\
+      }									\
+    }									\
+  }while(0)
 
-extern HANDLE da_handle[MAX_OPEN_FILEDESCRIPTORS];
-extern int fd_type[MAX_OPEN_FILEDESCRIPTORS];
+extern HANDLE da_handle[FD_SETSIZE];
+extern int fd_type[FD_SETSIZE];
 
 #define fd_FD_CLR(X,Y) FD_CLR((SOCKET)da_handle[X],Y)
 #define fd_FD_SET(X,Y) \
@@ -320,7 +321,13 @@ typedef off_t PIKE_OFF_T;
 #define fd_CREAT O_CREAT
 #define fd_TRUNC O_TRUNC
 #define fd_EXCL O_EXCL
+
+#ifdef O_BINARY
+#define fd_BINARY O_BINARY
+#else
 #define fd_BINARY 0
+#endif
+
 #ifdef O_LARGEFILE
 #define fd_LARGEFILE O_LARGEFILE
 #else /* !O_LARGEFILE */
@@ -331,10 +338,11 @@ typedef off_t PIKE_OFF_T;
 
 #define fd_stat(F,BUF) stat(F,BUF)
 #define fd_lstat(F,BUF) lstat(F,BUF)
-#define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y),(Z)))
+#define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y)|fd_BINARY,(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(socket((X),(Y),(Z)))
 #define fd_pipe pipe /* FIXME */
 #define fd_accept(X,Y,Z) dmalloc_register_fd(accept((X),(Y),(Z)))
+#define fd_accept4(X,Y,Z,F) dmalloc_register_fd(accept4((X),(Y),(Z),(F)))
 
 #define fd_bind(fd,X,Y) bind(dmalloc_touch_fd(fd), (X), (Y))
 #define fd_getsockopt(fd,X,Y,Z,Q) getsockopt(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q))
@@ -417,7 +425,7 @@ typedef struct my_fd_set_s my_fd_set;
 #define my_FD_ZERO(S) FD_ZERO(& (S)->tmp)
 
 #define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) \
-   MEMCPY((TO),&(FROM)->tmp,sizeof(*(TO)))
+   memcpy((TO),&(FROM)->tmp,sizeof(*(TO)))
 
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
 #ifndef __amigaos__

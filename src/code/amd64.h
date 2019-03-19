@@ -2,6 +2,7 @@
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR
 #define OPCODE_INLINE_RETURN
+#define USE_APPLY_N
 
 #if defined(_M_X64) && !defined(__GNUC__)
 
@@ -22,12 +23,15 @@
 
 #define CALL_MACHINE_CODE(pc)						\
   do {									\
-    /* The test is needed to get the labels to work... */		\
-    if (pc) {								\
-      ((int (*)(struct Pike_interpreter_struct *))(pc)) (Pike_interpreter_pointer);	\
-      goto inter_return_label;						\
-    }									\
+    ((int (*)(struct Pike_interpreter_struct *))(pc)) (Pike_interpreter_pointer);	\
   } while(0)
+
+
+void amd64_start_function(int no_pc);
+void amd64_end_function(int no_pc);
+
+#define START_NEW_FUNCTION amd64_start_function
+#define END_FUNCTION       amd64_end_function
 
 void amd64_ins_entry(void);
 #define INS_ENTRY()	amd64_ins_entry()
@@ -86,6 +90,3 @@ void amd64_update_pc(void);
 extern ptrdiff_t amd64_prev_stored_pc;
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)
-
-
-

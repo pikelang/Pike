@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -186,7 +185,7 @@ void push_pwent(struct passwd *ent)
     if(foo)
       push_text(foo->sp_pwdp);
     else
-      push_text("x");
+      push_static_text("x");
   } else
 #endif /* Shadow password support */
   SAFE_PUSH_TEXT(ent->pw_passwd);
@@ -197,7 +196,7 @@ void push_pwent(struct passwd *ent)
 #ifdef HAVE_PW_GECOS
   SAFE_PUSH_TEXT(ent->pw_gecos);
 #else /* !HAVE_PW_GECOS */
-  push_text("Mister Anonymous");
+  push_static_text("Mister Anonymous");
 #endif /* HAVE_PW_GECOS */
   SAFE_PUSH_TEXT(ent->pw_dir);
   SAFE_PUSH_TEXT(ent->pw_shell);
@@ -219,7 +218,7 @@ void push_grent(struct group *ent)
   {
     char **cp = ent->gr_mem;
     int i=0;
-    while(cp[i]) push_text(cp[i++]);
+    while(cp && cp[i]) push_text(cp[i++]);
     f_aggregate(i);
   }
   f_aggregate(4);

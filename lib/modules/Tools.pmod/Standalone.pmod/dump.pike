@@ -6,7 +6,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 constant description = "Dumps Pike files into object files.";
@@ -190,9 +189,8 @@ do_dump: {
 	  break do_dump;
 	}
 	else {
-	  logmsg ("Is an unreadable directory (not dumped recursively): %s.\n",
-		  strerror (errno()));
-	  break do_dump;
+          logmsg("Is an unreadable directory (not dumped recursively): %m.\n");
+          break do_dump;
 	}
       }
       else if (!s->isreg)
@@ -231,9 +229,8 @@ do_dump: {
 	  string dir = combine_path (outfile, "..");
 	  if (!Stdio.is_dir (fakeroot(dir)))
 	    if (!Stdio.mkdirhier (fakeroot(dir))) {
-	      logmsg ("Failed to create target directory %O: %s.\n",
-		      dir, strerror (errno()));
-	      break do_dump;
+              logmsg ("Failed to create target directory %O: %m.\n", dir);
+              break do_dump;
 	    }
 
 	  Stdio.write_file(fakeroot(outfile)+".o",s);

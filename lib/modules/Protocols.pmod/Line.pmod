@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Line-buffered protocol handling.
  *
  * Henrik Grubbström 1998-05-27
@@ -61,7 +59,7 @@ class simple
   }
 
   //! This function is called when a timeout occurrs.
-  //! 
+  //!
   //! Overload this function as appropriate.
   //!
   //! The default action is to shut down the connection immediately.
@@ -175,7 +173,7 @@ class simple
     read_buffer += data;
 
     string line;
-    
+
     while( (line = read_line()) )
       _handle_command(line);
   }
@@ -189,7 +187,7 @@ class simple
   //! @seealso
   //! @[send()], @[disconnect()]
   //!
-  object(ADT.Queue) send_q = ADT.Queue();
+  ADT.Queue send_q = ADT.Queue();
 
   protected string write_buffer = "";
   protected void write_callback(mixed ignored)
@@ -233,7 +231,7 @@ class simple
     } else {
       // Failed to write!
       werror("write_callback(): write() failed!\n");
-		     
+
       con->set_write_callback(0);
       con->close();
       con = 0;
@@ -258,7 +256,7 @@ class simple
     con->set_write_callback(write_callback);
     con->set_read_callback(0);
   }
-    
+
   //! This function is called when the connection has been closed
   //! at the other end.
   //!
@@ -289,10 +287,10 @@ class simple
   //! @seealso
   //! @[touch_time()], @[do_timeout()]
   //!
-  void create(object(Stdio.File) con, int|void timeout)
+  void create(Stdio.File con, int|void timeout)
   {
-    this_program::con = con;
-    this_program::timeout = timeout;
+    this::con = con;
+    this::timeout = timeout;
 
     // Start the timeout handler.
     touch_time();

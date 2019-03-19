@@ -74,7 +74,7 @@ GTK2.Table attach_defaults( GTK2.Widget subwidget, int left, int right, int top,
 //!
 //!
 
-static GTK2.Table create( int|mapping width_or_props, int|void height, int|void homogeneousp );
+protected GTK2.Table create( int|mapping width_or_props, int|void height, int|void homogeneousp );
 //! Used to create a new table widget. An initial size must be given by
 //! specifying how many rows and columns the table should have,
 //! although this can be changed later with resize().

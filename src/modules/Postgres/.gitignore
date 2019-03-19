@@ -10,6 +10,8 @@
 /testsuite
 /pgres_config.h
 /pgres_config.h.in
+/pgresult.c
+/postgres.c
 /remake
 /stamp-h
 /stamp-h.in

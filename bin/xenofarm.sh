@@ -1,6 +1,5 @@
 #! /bin/sh
 
-# $Id$
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 

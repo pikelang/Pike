@@ -4,7 +4,7 @@
 
 inherit G.Object;
 
-static GTK2.TextChildAnchor create( );
+protected GTK2.TextChildAnchor create( );
 //! Creates a new W(TextChildAnchor).  Usually you would then insert it into
 //! W(TextBuffer) with W(TextBuffer)->insert_child_anchor().  To perform the
 //! creation and insertion in one step, use the convenience function

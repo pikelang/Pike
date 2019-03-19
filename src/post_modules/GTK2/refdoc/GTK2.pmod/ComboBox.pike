@@ -6,10 +6,13 @@
 //! int has-frame
 //! GTK2.TreeModel model
 //! int row-span-column
+//! string tearoff-title
 //! int wrap-width
 //! 
 //! Style properties:
 //! int appears-as-list
+//! int arrow-size
+//! int shadow-type
 //!
 //!
 //!  Signals:
@@ -29,7 +32,7 @@ GTK2.ComboBox append_text( string text );
 //!
 //!
 
-static GTK2.ComboBox create( GTK2.TreeModel model_or_props );
+protected GTK2.ComboBox create( GTK2.TreeModel model_or_props );
 //! Create a new ComboBox, either empty or with a model.  If a string is passed
 //! int instead, it will create a new W(ComboBox) with only text strings.
 //! If you do so, you should only manipulate it with the following functions:
@@ -81,6 +84,11 @@ GTK2.TreeModel get_model( );
 
 int get_row_span_column( );
 //! Returns the column with row span information.
+//!
+//!
+
+string get_title( );
+//! Gets the current title of the menu in tearoff mode.
 //!
 //!
 
@@ -158,7 +166,7 @@ GTK2.ComboBox set_model( GTK2.TreeModel model );
 //!
 //!
 
-GTK2.ComboBox set_row_separator_func( function f, mixed user_data );
+GTK2.ComboBox set_row_separator_func( function(GTK2.TreeModel, GTK2.TreeIter, mixed : int) f, mixed user_data );
 //! Sets the row separator function, which is used to determine whether a
 //! row should be drawn as a separator.  If the row separator function is 0
 //! no separators are drawn.  This is the default value.
@@ -169,6 +177,11 @@ GTK2.ComboBox set_row_span_column( int row_span );
 //! Sets the column with row span information.  The row span column
 //! contains integers which indicate how many rows an item
 //! should span.
+//!
+//!
+
+GTK2.ComboBox set_title( string title );
+//! Sets the menu's title in tearoff mode.
 //!
 //!
 

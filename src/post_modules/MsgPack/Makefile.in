@@ -1,0 +1,20 @@
+
+@make_variables@
+
+VPATH=@srcdir@
+MODNAME=MsgPack
+MODDIR=Standards.pmod/
+MODULE_PMOD_IN=$(SRCDIR)/MsgPack.pmod.in
+MODULE_WRAPPER_PREFIX=_
+OBJS=msgpack.o
+
+@dynamic_module_makefile@
+
+# Ragel targets
+
+# Enable this to include ragel in the build chain.
+#ENABLE_RAGEL=yes
+
+msgpack.o : $(SRCDIR)/msgpack.c
+
+@dependencies@

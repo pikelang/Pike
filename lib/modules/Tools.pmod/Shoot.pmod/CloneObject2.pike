@@ -10,15 +10,11 @@ class Target
   int swap(){ flag = !flag; }
 }
 
-int n = 300000;
 
-void perform()
+int perform()
 {
+  int n = 300000;
   for( int i = 0; i<n; i++ )
     Target(i); //->swap();
-}
-
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
-{
-   return sprintf("%.0f/s",ntot/useconds);
+  return n;
 }

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
  *
@@ -116,13 +114,13 @@ class Rule
   //!
   //! @example
   //!   The rule
-  //! 
+  //!
   //!	   rule : nonterminal ":" symbols ";" { add_rule };
-  //! 
+  //!
   //!   might be created as
-  //! 
+  //!
   //!	   rule(4, ({ 9, ":", 5, ";" }), "add_rule");
-  //! 
+  //!
   //!   where 4 corresponds to the nonterminal "rule", 9 to "nonterminal"
   //!   and 5 to "symbols", and the function "add_rule" is too be called
   //!   when this rule is reduced.
@@ -203,9 +201,8 @@ class ErrorHandler
   //!   @[verbose]
   protected void create(int(-1..1)|void verbosity)
   {
-    if (!zero_type(verbosity)) {
+    if (!undefinedp(verbosity))
       verbose = verbosity;
-    }
   }
 }
 
@@ -392,7 +389,7 @@ class Parser
 	  if (!rules[r]) {
 
 	    Item new_item = Item();
-	
+
 	    new_item->r = r;
 	    new_item->item_id = r->number;
 
@@ -456,7 +453,7 @@ class Parser
 
 	if (!new_state) {
 	  known_states[kernel_hash] = new_state = Kernel();
-    
+
 	  foreach (indices(items), Item i) {
 	    int|string lookahead;
 
@@ -632,11 +629,11 @@ class Parser
   //!
   //! @param type
   //!   Type to cast to.
-  mixed cast(string type)
+  protected mixed cast(string type)
   {
     if (type == "string")
       return _sprintf();
-    error("Cast to %s not supported\n", type);
+    return UNDEFINED;
   }
 
   /* Here come the functions that actually do some work */
@@ -1033,7 +1030,7 @@ class Parser
 	   "Conflicts on (< %s >)",
 	   state_to_string(state),
 	   map(indices(conflicts), symbol_to_string) * ", ");
-  
+
     foreach (indices(conflicts), int|string symbol) {
       int reduce_count = 0;
       int shift_count = 0;
@@ -1272,7 +1269,7 @@ class Parser
 	conflict_set[symbol] = 1;
       }
     }
-  
+
     if (sizeof(indices(conflict_set))) {
       report(ERROR, "repair",
 	     "Still conflicts remaining in state\n%s\n"
@@ -1471,9 +1468,9 @@ class Parser
 	foreach (s_q->arr[index]->items, Item i) {
 	  if (i->offset == sizeof(i->r->symbols)) {
 	    /* Reduction item (always a master item) */
-	  
+
 	    /* Calculate Look-ahead for all items in look-back set */
-	
+
 	    i->direct_lookahead=`|(i->direct_lookahead,
 				   @indices(i->relation)->direct_lookahead);
 	  }
@@ -1487,7 +1484,7 @@ class Parser
       /* Check for conflicts */
       for (int index = 0; index < s_q->tail; index++) {
 	Kernel state = s_q->arr[index];
-    
+
 	conflicts = (<>);
 	symbols = (<>);
 

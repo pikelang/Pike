@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -11,6 +10,19 @@
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
 **!	of the <ref>Image</ref> module.
+**!
+**! ILBM is a subtype of the Interchange File Format (IFF) used for
+**! storing picture data. ILBM stands for InterLeaved BitMap which
+**! refers to the way the pictures are stored. The image data is
+**! stored as a varying number of bitplanes, each storing one bit of
+**! data for each pixel in the image. The format supports horizontal
+**! and vertical RLE (Run Length Encoding) compression.
+**!
+**! The format also natively supports images using the somewhat
+**! esoteric image modes of the original Commodore Amiga, such as HAM
+**! (Hold And Modify)
+**!
+**! The format was commonly used for images on the Amiga.
 **!
 **! see also: Image, Image.Image, Image.Colortable
 */
@@ -72,7 +84,7 @@ struct BMHD {
 **! method array __decode();
 **!     Decodes an ILBM image structure down to chunks and
 **!     returns an array containing the ILBM structure;
-**!	
+**!
 **!     <pre>
 **!	({int xsize,int ysize,      // 0: size of image drawing area
 **!	  string bitmapheader,      // 2: BMHD chunk
@@ -183,7 +195,7 @@ static void parse_bmhd(struct BMHD *bmhd, unsigned char *s, ptrdiff_t len)
 	  "xAspect = %d, yAspect = %d, pageWidth = %d, pageHeight = %d\n",
 	  bmhd->w, bmhd->h, bmhd->x, bmhd->y, bmhd->nPlanes, bmhd->masking,
 	  bmhd->compression, bmhd->pad1, bmhd->transparentColor, bmhd->xAspect,
-	  bmhd->yAspect, bmhd->pageWidth, bmhd->pageHeight);	  
+	  bmhd->yAspect, bmhd->pageWidth, bmhd->pageHeight);
 #endif
 }
 
@@ -298,7 +310,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
     if(alpha != NULL)
       switch(bmhd->masking) {
       case mskNone:
-	memset((char *)adest, ~0, bmhd->w*sizeof(*adest));
+	memset(adest, ~0, bmhd->w*sizeof(*adest));
 	adest += bmhd->w;
 	break;
       case mskHasMask:
@@ -365,7 +377,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
 	      break;
 	    }
 	} else {
-	  /* HAM5/HAM6 */	  
+	  /* HAM5/HAM6 */
 	  rgb_group hold;
 	  int clr;
 	  size_t numcolors = ctable->u.flat.numentries;
@@ -441,7 +453,7 @@ static void image_ilbm__decode(INT32 args)
     image_ilbm___decode(args);
     args = 1;
   }
-  
+
   get_all_args("_decode", args, "%a", &arr);
 
   if(args>1)
@@ -456,20 +468,20 @@ static void image_ilbm__decode(INT32 args)
 
   parse_bmhd(&bmhd, STR0(ITEM(arr)[2].u.string), ITEM(arr)[2].u.string->len);
 
-  push_text("image");
+  push_static_text("image");
   push_int(bmhd.w);
   push_int(bmhd.h);
   o=clone_object(image_program,2);
-  img=(struct image*)get_storage(o,image_program);
+  img=get_storage(o,image_program);
   push_object(o);
   n++;
 
   if(bmhd.masking != mskNone) {
-    push_text("alpha");
+    push_static_text("alpha");
     push_int(bmhd.w);
     push_int(bmhd.h);
     o=clone_object(image_program,2);
-    alpha=(struct image*)get_storage(o,image_program);
+    alpha=get_storage(o,image_program);
     push_object(o);
     n++;
   }
@@ -482,12 +494,12 @@ static void image_ilbm__decode(INT32 args)
   }
 
   if((camg & CAMG_HAM)) {
-    push_text("ham");
+    push_static_text("ham");
     push_int(1);
     n++;
   }
   if((camg & CAMG_EHB)) {
-    push_text("ehb");
+    push_static_text("ehb");
     push_int(1);
     n++;
   }
@@ -503,7 +515,7 @@ static void image_ilbm__decode(INT32 args)
       mcol >>= 1;
     if(ncol>mcol)
       ncol = mcol;
-    push_text("palette");
+    push_static_text("palette");
     for(col=0; col<ncol; col++) {
       push_int(*pal++);
       push_int(*pal++);
@@ -520,9 +532,9 @@ static void image_ilbm__decode(INT32 args)
       }
       ncol <<= 1;
     }
-    f_aggregate(DO_NOT_WARN((INT32)ncol));
+    f_aggregate((INT32)ncol);
     push_object(clone_object(image_colortable_program,1));
-    ctable=(struct neo_colortable*)get_storage(sp[-1].u.object,
+    ctable=get_storage(sp[-1].u.object,
 					       image_colortable_program);
     n++;
   }
@@ -541,7 +553,7 @@ static void image_ilbm__decode(INT32 args)
 **! method object decode(array _decoded)
 **! method object decode(array __decoded)
 **!	Decodes ILBM data and creates an image object.
-**! 	
+**!
 **! see also: encode
 **!
 **! note
@@ -563,7 +575,7 @@ void img_ilbm_decode(INT32 args)
      image_ilbm__decode(args);
      args = 1;
    }
-     
+
    if (TYPEOF(sp[-args]) != T_MAPPING)
      Pike_error("Image.ILBM.decode: illegal argument\n");
 
@@ -587,7 +599,7 @@ void img_ilbm_decode(INT32 args)
 /*
 **! method string encode(object image)
 **! method string encode(object image, mapping options)
-**! 	Encodes an ILBM image. 
+**! 	Encodes an ILBM image.
 **!
 **!     The <tt>options</tt> argument may be a mapping
 **!	containing zero or more encoding options:
@@ -692,13 +704,13 @@ static void chunky2planar(INT32 *src, int w,
 }
 
 static struct pike_string *make_body(struct BMHD *bmhd,
-				     struct image *img, struct image *alpha,
+				     struct image *img, struct image *UNUSED(alpha),
 				     struct neo_colortable *ctable)
 {
   unsigned int x, y;
   int rbyt = ((bmhd->w+15)&~15)>>3;
   int eplanes = (bmhd->masking == mskHasMask? bmhd->nPlanes+1:bmhd->nPlanes);
-  unsigned char *line = alloca(rbyt*eplanes);
+  unsigned char *line = xcalloc(rbyt, eplanes);
   INT32 *cptr, *cline = alloca((rbyt<<3)*sizeof(INT32));
   rgb_group *src = img->img;
   struct string_builder bldr;
@@ -711,7 +723,6 @@ static struct pike_string *make_body(struct BMHD *bmhd,
     ctfunc = image_colortable_index_32bit_function(ctable);
   }
 
-  memset(line, 0, rbyt*eplanes);
   init_string_builder(&bldr, 0);
   for(y=0; y<bmhd->h; y++) {
     if(ctfunc != NULL) {
@@ -733,6 +744,7 @@ static struct pike_string *make_body(struct BMHD *bmhd,
   }
   if(ctable != NULL)
     image_colortable_free_dither(&dith);
+  free(line);
   return finish_string_builder(&bldr);
 }
 
@@ -751,18 +763,18 @@ static void image_ilbm_encode(INT32 args)
   get_all_args("encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])? "%o%m":"%o"),
 	       &imgo, &optm);
 
-  if((img=(struct image*)get_storage(imgo, image_program))==NULL)
+  if((img=get_storage(imgo, image_program))==NULL)
      Pike_error("Image.ILBM.encode: illegal argument 1\n");
 
   if(optm != NULL) {
     struct svalue *s;
     if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(TYPEOF(*s) != T_OBJECT ||
-	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
+	 (alpha=get_storage(s->u.object, image_program))==NULL)
 	Pike_error("Image.ILBM.encode: option (arg 2) \"alpha\" has illegal type\n");
     if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(TYPEOF(*s) != T_OBJECT ||
-	 (ct=(struct neo_colortable*)
+	 (ct=
 	  get_storage(s->u.object, image_colortable_program))==NULL)
 	Pike_error("Image.ILBM.encode: option (arg 2) \"palette\" has illegal type\n");
   }

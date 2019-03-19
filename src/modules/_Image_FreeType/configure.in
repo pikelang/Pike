@@ -49,16 +49,16 @@ if test "x$with_freetype" = "xyes" ; then
     echo "FTLIBS: $FTLIBS"
     LIBS="$FTLIBS $LIBS"
     AC_MSG_CHECKING(if freetype actually works)
-    
+
     # The below test works only for freetype2 < 2.1.6
     AC_TRY_LINK([
-#include <freetype/freetype.h> 
-], 
+#include <freetype/freetype.h>
+],
 [
   FT_Library library;
   FT_Init_FreeType( &library );
-], 
-[ft_ok=yes], 
+],
+[ft_ok=yes],
 [ft_ok=no])
 
     # The test below works for freetype2 >= 2.1.6
@@ -66,18 +66,18 @@ if test "x$with_freetype" = "xyes" ; then
       AC_TRY_LINK([
 #include <ft2build.h>
 #include FT_FREETYPE_H
-], 
+],
 [
   FT_Library library;
   FT_Init_FreeType( &library );
-], 
+],
 [
  ft_ok=yes
  AC_DEFINE(HAVE_FT_FT2BUILD)
 ],
 [ft_ok=no])
     fi
-    
+
     if test yes = "$ft_ok" ; then
       AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_LIBFT2)

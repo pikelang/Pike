@@ -1,5 +1,4 @@
 START_MARKER
-// $Id$
 
 cond_resolv(Gz.deflate,
 [[
@@ -21,9 +20,6 @@ define(dotest,[[
   dotest("foo")
   dotest(sprintf("%'fomp'1000n"))
   dotest(sprintf("%'fomp'100000n"))
-
-  test_false(Process.system(RUNPIKE+" SRCDIR/flushtest.pike"))
-  test_false(Process.system(RUNPIKE+" SRCDIR/buffertest.pike"))
 
   test_true(Gz.File)
   test_any([[
@@ -85,5 +81,17 @@ return Gz.compress("x",0,9,x);
   test_eval_error(return Gz.compress("x",0,9,Gz.DEFAULT_STRATEGY,7);)
   test_eval_error(return Gz.compress("x",0,9,Gz.DEFAULT_STRATEGY,16);)
 
+]])
+cond_resolv(Gz.crc32,
+[[
+  test_eq(Gz.crc32(""), 0)
+  test_eq(Gz.crc32("a"), 0xe8b7be43)
+  test_eq(Gz.crc32("abc"), 0x352441c2)
+  test_eq(Gz.crc32("12345678901234567890123456789012345678901234567890123456789012345678901234567890"), 0x7ca94a72)
+
+  test_eq(Gz.adler32(""), 1)
+  test_eq(Gz.adler32("a"), 0x620062)
+  test_eq(Gz.adler32("abc"), 0x24d0127)
+  test_eq(Gz.adler32("12345678901234567890123456789012345678901234567890123456789012345678901234567890"), 0x97b61069)
 ]])
 END_MARKER

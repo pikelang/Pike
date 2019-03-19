@@ -7,7 +7,7 @@
 
 inherit G.Object;
 
-static GDK2.Image create( int|void fast_mode, Image.Image|void image );
+protected GDK2.Image create( int|void fast_mode, Image.Image|void image );
 //! Create a new GDK2.Image object. The first argument is either 0, which
 //! indicates that you want a 'slow' image. If you use '1', you
 //! indicate that you want a 'fast' image. Fast images are stored in
@@ -22,7 +22,6 @@ static GDK2.Image create( int|void fast_mode, Image.Image|void image );
 //! If the second argument is specified, it is the actual image data.
 //!
 //!
-
 
 int get_pixel( int x, int y );
 //! Get the pixel value of a pixel as a X-pixel value.

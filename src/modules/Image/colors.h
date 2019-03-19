@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 COLOR("red"                 ,255,0,0)
@@ -351,6 +350,7 @@ COLOR("red"                 ,255,0,0)
    COLOR("purple2"             ,145,44,238)
    COLOR("purple3"             ,125,38,205)
    COLOR("purple4"             ,85,26,139)
+   COLOR("rebeccapurple"       ,102,51,153)
    COLOR("red1"                ,255,0,0)
    COLOR("red2"                ,238,0,0)
    COLOR("red3"                ,205,0,0)

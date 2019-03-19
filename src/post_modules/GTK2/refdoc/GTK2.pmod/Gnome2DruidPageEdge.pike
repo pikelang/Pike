@@ -2,7 +2,7 @@
 
 inherit Gnome2.DruidPage;
 
-static Gnome2.DruidPageEdge create( int position, int|void anti_alias );
+protected Gnome2.DruidPageEdge create( int position, int|void anti_alias );
 //! Create a new Gnome2.DruidPageEdge, with optional anti-aliasing.
 //!
 //!
@@ -23,7 +23,7 @@ Gnome2.DruidPageEdge set_logo_bg_color( GTK2.GdkColor color );
 //!
 //!
 
-Gnome2.DruidPageEdge set_text( string text );
+Gnome2.DruidPageEdge set_text( sprintf_format text, sprintf_args... fmt );
 //! Sets the contents of the text portion.
 //!
 //!

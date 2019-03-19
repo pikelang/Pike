@@ -13,15 +13,13 @@ require gtk216;
 //! int use-action-apperance
 
 
-//! Gets the related action
 GTK2.Action get_related_action( );
+//! Gets the related action
 
+int get_use_action_appearance( );
 //! Gets whether this activatable should reset its layout and
 //! appearance when setting the related action or when the action
 //! changes appearance.
-int get_use_action_appearance( );
-
-
 
 void set_related_action( GTK2.Action a );
 //! Sets the related action

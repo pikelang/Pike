@@ -1,6 +1,6 @@
 //! module Calendar
-
-// $Id$
+//!
+//! submodule TimeRanges
 
 #pike __REAL_VERSION__
 
@@ -12,7 +12,7 @@ string calendar_name() { return "TimeRanges"; }
 
 object calendar_object=this;
 
-string _sprintf(int t) { return (t=='O')?calendar_name():0; }
+protected string _sprintf(int t) { return t=='O' && calendar_name(); }
 
 Calendar.Ruleset default_rules=Calendar.default_rules;
 
@@ -26,7 +26,7 @@ Calendar.Ruleset default_rules=Calendar.default_rules;
 //!	A TimeRange doubles as both a fixed period in
 //!	time, and an amount of time. For instance,
 //!	a week plus a day moves the week-period one day
-//!	ahead (unaligning it with the week period, 
+//!	ahead (unaligning it with the week period,
 //!	and thereby reducing it to just 7 days),
 //!	no matter when in time the actual day were.
 //!
@@ -45,9 +45,9 @@ class TimeRange
 //!	the time range in the same unit, seconds.
 //!
 //! method void create("julian",int|float julian_day)
-//!	Create the timerange from a julian day, the 
+//!	Create the timerange from a julian day, the
 //!	standardized method of counting days. If
-//!	the timerange is more then a day, it will 
+//!	the timerange is more then a day, it will
 //!	at least enclose the day.
 //!
 //! method void create(TimeRange from)
@@ -56,7 +56,7 @@ class TimeRange
 //!	This is useful when converting objects from
 //!	one calendar to another. Note that the ruleset will be
 //!	transferred to the new object, so this method
-//!	can't be used to convert between timezones 
+//!	can't be used to convert between timezones
 //!	or languges - use <ref>set_timezone</ref>,
 //!	<ref>set_language</ref> or <ref>set_ruleset</ref>
 //!	to achieve this.
@@ -69,7 +69,7 @@ class TimeRange
    protected void create_unixtime_default(int unixtime);
    protected void create_julian_day(int jd);
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (sizeof(args)) switch (args[0])
       {
@@ -132,18 +132,18 @@ class TimeRange
       } else if (other->julian_day) {
 	 rules = other->ruleset();
          create_julian_day(other->julian_day());
-      } else 
+      } else
 	 error("Can't convert %O->%s.%O\n",other,
 	       calendar_name(), this_program);
    }
 
 //! method TimeRange set_size(TimeRange size)
 //! method TimeRange set_size(int n,TimeRange size)
-//!	Gives back a new (or the same, if the size matches) 
-//!	timerange with the new size. 
+//!	Gives back a new (or the same, if the size matches)
+//!	timerange with the new size.
 //!	If <i>n</i> are given, the resulting size
 //!	will be <i>n</i> amounts of the given size.
-//! note:	
+//! note:
 //!	A negative size is not permitted; a zero one are.
 
 // virtual
@@ -154,8 +154,8 @@ class TimeRange
    {
       function|object(TimeRange) x;
       int(0..0x7fffffff) n;
-      if (!b) 
-	 if (intp(a)) 
+      if (!b)
+	 if (intp(a))
 	    x=this,n=[int(0..0x7fffffff)]a;
 	 else
 	    x=a,n=1;
@@ -174,7 +174,7 @@ class TimeRange
 //!
 //!	It is not recommended to loop by adding the increment
 //!	time period to a shorter period; this can cause faults,
-//!	if the shorter time period doesn't exist in the incremented 
+//!	if the shorter time period doesn't exist in the incremented
 //!	period. (Like week 53, day 31 of a month or the leap day of a year.)
 //!
 //!	Recommended use are like this:
@@ -198,8 +198,8 @@ class TimeRange
    {
       function|object(this_program) x;
       int n;
-      if (!b) 
-	 if (intp(a)) 
+      if (!b)
+	 if (intp(a))
 	   x=this,n=[int]a;
 	 else
 	    x=a,n=1;
@@ -212,7 +212,7 @@ class TimeRange
 //! method TimeRange place(TimeRange this)
 //! method TimeRange place(TimeRange this,int(0..1) force)
 //!	This will place the given timerange in this timerange,
-//!	for instance, day 37 in the year - 
+//!	for instance, day 37 in the year -
 //!	<tt>Year(1934)->place(Day(1948 d37)) => Day(1934 d37)</tt>.
 //!
 //! note:
@@ -226,7 +226,7 @@ class TimeRange
 //! method TimeRange `+(TimeRange offset)
 //! method TimeRange `-(int m)
 //! method TimeRange `-(TimeRange x)
-//!	This calculates the (promoted) time period 
+//!	This calculates the (promoted) time period
 //!	either n step away or with a given offset.
 //!	These functions does use <ref>add</ref> to really
 //!	do the job:
@@ -238,7 +238,7 @@ class TimeRange
 //!	n+t         t->add(n)
 //!	n-t         illegal
 //!	offset+t    offset->add(1,t)      | note this!
-//!	offset-t    offset->add(-1,t)     | 
+//!	offset-t    offset->add(-1,t)     |
 //!	</pre>
 //!
 //!	Mathematic rules:
@@ -246,7 +246,7 @@ class TimeRange
 //!	x+(t-x) == t    x is an integer or a time period
 //!	(x+t)-x == t    t is a time period
 //!	(t+x)-x == t
-//!	o-(o-t) == t    o is a time period 
+//!	o-(o-t) == t    o is a time period
 //!     t++ == t+1
 //!     t-- == t-1
 //!	</pre>
@@ -301,7 +301,7 @@ class TimeRange
    }
 
 //! method TimeRange `*(int n)
-//!	This changes the amount of time in 
+//!	This changes the amount of time in
 //!	the time period. <tt>t*17</tt> is
 //!	the same as doing <tt>t-><ref>set_size</ref>(t,17)</tt>.
 
@@ -320,7 +320,7 @@ class TimeRange
 //!     will be multiples of that range (except for the last one).
 //!
 //! known bugs:
-//!	These are currently not defined for 
+//!	These are currently not defined for
 //!	<ref to=SuperTimeRange>supertimeranges</ref>.
 
 //! method int `/(TimeRange with)
@@ -342,7 +342,7 @@ class TimeRange
 
       TimeRange start=beginning();
       TimeRange end=end();
-      
+
 // find low and high 2^n
       int nn=16;
       int low,high;
@@ -390,9 +390,9 @@ class TimeRange
 	 nn=(low+high)/2;
 
 	 t=start+with*nn;
-  	 if (t==end) return nn; 
+  	 if (t==end) return nn;
 	 if (t<end) low=nn+1;
-	 else high=nn-1; 
+	 else high=nn-1;
 
 	 if (low>high) return high; // can't go further
       }
@@ -408,7 +408,7 @@ class TimeRange
 //!	Calculates offset to x; this compares
 //!	two timeranges and gives the integer offset
 //!	between the two starting points.
-//!	
+//!
 //!	This is true for suitable a and b:
 //!	<tt>a+a->offset_to(b)==b</tt>
 //!
@@ -429,7 +429,7 @@ class TimeRange
 //!	This gives back the zero-sized beginning
 //!	or end of the called time period.
 //!
-//!	rule: 
+//!	rule:
 //!	<tt>range(t->beginning(),t->end())==t</tt>
 
    TimeRange beginning();
@@ -478,16 +478,16 @@ class TimeRange
 //!	of time on the timeline.
 //!
 //! <pre>
-//!           case            predicates 
+//!           case            predicates
 //!
 //!  &lt;-- past       future -&gt;
 //!
 //!  |----A----|              A strictly preceeds B,
 //!               |----B----| A preceeds B
 //!
-//!  |----A----|              A strictly preceeds B, A preceeds B, 
+//!  |----A----|              A strictly preceeds B, A preceeds B,
 //!            |----B----|    A is previous to B, A touches B
-//!                           
+//!
 //!      |----A----|          A preceeds B,
 //!            |----B----|    A overlaps B, A touches B
 //!
@@ -503,27 +503,27 @@ class TimeRange
 //!      |-------A-------|    A succeeds B, A starts with B
 //!      |----B----|          A overlaps B, A contains B, A touches B
 //!
-//!            |----A----|    A succeeds B, 
+//!            |----A----|    A succeeds B,
 //!      |----B----|          A overlaps B, A touches B
 //!
 //!            |----A----|    A strictly succeeds B, A succeeds B
 //!  |----B----|              A is next to B, A touches B
 //!
-//!              |----A----|  A strictly succeeds B, 
+//!              |----A----|  A strictly succeeds B,
 //!  |----B----|              A succeeds B
 //!
 //!  </pre>
 //!
 //! note:
-//!	These methods only check the range of the first to the 
+//!	These methods only check the range of the first to the
 //!	last time in the period;
 //!	use of combined time periods (<ref>SuperTimeRange</ref>s)
-//!	might not give you the result you want. 
+//!	might not give you the result you want.
 //!
 //! see also: `&
 
 
-//- internal method 
+//- internal method
 //- returns [-1,0,1] for comparison between
 //- (in order) begin/begin,begin/end,end/begin and end/end
 
@@ -620,7 +620,7 @@ class TimeRange
    int(0..1) touches(TimeRange what)
    {
       array(int(-1..1)) a=_compare(what);
-      return 
+      return
 	 (a[BEGIN_END]<=0 && a[END_END]>=0) ||
 	 (a[END_BEGIN]>=0 && a[BEGIN_BEGIN]<=0);
    }
@@ -639,9 +639,9 @@ class TimeRange
 
 //! method int(0..1) `<(TimeRange compared_to)
 //! method int(0..1) `>(TimeRange compared_to)
-//!	These operators sorts roughty on the 
+//!	These operators sorts roughty on the
 //!	periods place in time. The major use
-//!	might be to get multiset to work, 
+//!	might be to get multiset to work,
 //!	besides sorting events clearly defined in time.
 
    int(0..1) `<(TimeRange compared_to)
@@ -675,23 +675,23 @@ class TimeRange
 //!	true if a and b are the same timerange, exactly the same
 //!	as the <ref>equals</ref> method.
 //!
-//!	The <tt>__hash</tt> method is also present, 
+//!	The <tt>__hash</tt> method is also present,
 //!	to make timeranges possible to use as keys in mappings.
 //!
 //! known bugs:
 //!	_equal is not currently possible to overload,
 //!	due to weird bugs, so equal uses `== for now.
 
-   int(0..1) `==(mixed what) 
+   int(0..1) `==(mixed what)
    {
      return objectp(what) && functionp(what->ruleset) &&
-       what->ruleset()==ruleset() && equals(what); 
+       what->ruleset()==ruleset() && equals(what);
    }
 
    int __hash();
 
-//     int(0..1) _equal(TimeRange what) 
-//     { 
+//     int(0..1) _equal(TimeRange what)
+//     {
 //        return equals(what);
 //     }
 
@@ -701,7 +701,7 @@ class TimeRange
 //!	zero if the two periods doesn't overlap.
 //!     <pre>
 //!    &gt;- the past          the future -&lt;
-//!	|-------called-------|         
+//!	|-------called-------|
 //!	     |-------other--------|
 //!          &gt;----- cut -----&lt;
 //!	</pre>
@@ -710,10 +710,10 @@ class TimeRange
     {return `& (with, @extra);}
    TimeRange|zero `&(TimeRange with, mixed ...extra)
    {
-      if (with->is_nulltimerange) 
+      if (with->is_nulltimerange)
 	 return with;
       array(int(-1..1)) a=_compare(with);
-      if (a[END_BEGIN]<0 || a[BEGIN_END]>0) 
+      if (a[END_BEGIN]<0 || a[BEGIN_END]>0)
 	 return nulltimerange; // no overlap, no extra
 
       if (with->is_supertimerange)
@@ -738,7 +738,7 @@ class TimeRange
 //!	and another time period.
 //!     <pre>
 //!    &gt;- the past          the future -&lt;
-//!	|-------called-------|         
+//!	|-------called-------|
 //!	     |-------other--------|
 //!     &lt;----------union----------&gt;
 //!	</pre>
@@ -746,7 +746,7 @@ class TimeRange
    TimeRange ``| (TimeRange with, mixed... extra) {return `| (with, @extra);}
    TimeRange `|(TimeRange with,mixed ...extra)
    {
-      if (with->is_nulltimerange) 
+      if (with->is_nulltimerange)
 	 return sizeof(extra)?`|(@extra):this;
       array(int(-1..1)) a=_compare(with);
       TimeRange from,to;
@@ -773,11 +773,11 @@ class TimeRange
 //! method TimeRange `^(TimeRange with)
 //!	Gives the exclusive-or on the called time period
 //!	and another time period, ie the union without
-//!	the cut. The result is zero if the 
+//!	the cut. The result is zero if the
 //!	two periods were the same.
 //!     <pre>
 //!    &gt;- the past          the future -&lt;
-//!	|-------called-------|         
+//!	|-------called-------|
 //!	     |-------other--------|
 //!     &lt;----|               |---->   - exclusive or
 //!	</pre>
@@ -787,13 +787,13 @@ class TimeRange
    {
       if (with->is_supertimerange)
 	 return `^(with,this,@extra); // let it handle that...
-      if (with->is_nulltimerange) 
+      if (with->is_nulltimerange)
 	 return sizeof(extra)?`^(@extra):this;
 
       TimeRange res;
 
       array(int(-1..1)) a=_compare(with);
-      
+
 //        write(_describe_compare(a,this,with));
 
       TimeRange first,second;
@@ -809,15 +809,15 @@ class TimeRange
       else
       {
    // from the first beginning to the second beginning
-	 if (a[BEGIN_BEGIN]<0) 
-	    first=distance(with); 
-	 else 
+	 if (a[BEGIN_BEGIN]<0)
+	    first=distance(with);
+	 else
 	    first=with->distance(this);
 
 // and from the first end to the last end
-	 if (a[END_END]<0) 
-	    second=end()->range(with); 
-	 else 
+	 if (a[END_END]<0)
+	    second=end()->range(with);
+	 else
 	    second=with->end()->range(this);
 	 res=first|second;
       }
@@ -830,11 +830,11 @@ class TimeRange
 //!	This subtracts a period of time from another;
 //!     <pre>
 //!     &gt;- the past          the future -&lt;
-//!	|-------called-------|         
+//!	|-------called-------|
 //!	     |-------other--------|
 //!     &lt;----&gt;  &lt;- called-&gt;subtract(other)
 //!
-//!	|-------called-------|         
+//!	|-------called-------|
 //!	     |---third---|
 //!     &lt;----&gt;           &lt;---> &lt;- called->subtract(third)
 //!	</pre>
@@ -862,13 +862,13 @@ class TimeRange
 //        write(_describe_compare(a,this,what));
 
       if (a[BEGIN_BEGIN]>=0)      // it preceeds us
-	 if (a[END_END]<=0) 
+	 if (a[END_END]<=0)
 	    return nulltimerange; // full overlap
 	 else                     // half overlap at start
 	    res=what->end()->range(this);
       else if (a[END_END]<=0)     // it succeeds us
 	 res=distance(what);
-      else 
+      else
       {
 //  	 werror("%O..\n..%O\n%O..\n..%O\n",
 //  		beginning(),what->beginning(),
@@ -884,7 +884,7 @@ class TimeRange
 //! method TimeRange set_ruleset(Ruleset r)
 //! method TimeRange ruleset(Ruleset r)
 //!	Set or get the current ruleset.
-//! note: 
+//! note:
 //!	this may include timezone shanges,
 //!	and change the time of day.
 
@@ -899,7 +899,7 @@ class TimeRange
 //! method TimeZone timezone()
 //!	Set or get the current timezone (including dst) rule.
 //!
-//! note: 
+//! note:
 //!	The time-of-day may very well
 //!	change when you change timezone.
 //!
@@ -944,7 +944,7 @@ class TimeRange
    }
 
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -981,7 +981,7 @@ class cSuperTimeRange
 //!	two time ranges. Otherwise, it's either not
 //!	a time period at all or a normal time period.
 
-   void create(array(TimeRange) _parts)
+   protected void create(array(TimeRange) _parts)
    {
       if (sizeof(_parts->is_supertimerange-({0})))
 	 error("one part is super\n%O\n",_parts);
@@ -1041,8 +1041,8 @@ class cSuperTimeRange
       switch (sizeof(r))
       {
 	 case 0: return nulltimerange;
-	 case 1: return r[0]; 
-	 default: return SuperTimeRange(r); 
+	 case 1: return r[0];
+	 default: return SuperTimeRange(r);
       }
    }
 
@@ -1055,7 +1055,7 @@ class cSuperTimeRange
 	 return this;
       else
 	 res=mend_overlap(sort( ({with})+parts ));
-      if (sizeof(extra)) 
+      if (sizeof(extra))
 	 return predef::`|(res,@extra);
       return res;
    }
@@ -1078,7 +1078,7 @@ class cSuperTimeRange
       return r;
    }
 
-// == checks if equal 
+// == checks if equal
 
    int `==(TimeRange with,mixed ...extra)
    {
@@ -1111,8 +1111,8 @@ class cSuperTimeRange
       if (a[3]<0) return 1;
       if (a[3]>0) return 0;
       if (!with->is_supertimerange) return 1; // always
-      if (sizeof(parts)>sizeof(with->parts)) return 1; 
-      if (sizeof(parts)<sizeof(with->parts)) return 0; 
+      if (sizeof(parts)>sizeof(with->parts)) return 1;
+      if (sizeof(parts)<sizeof(with->parts)) return 0;
       for (int i=0; i<sizeof(parts); i++)
 	 if (parts[i]<with->parts[i]) return 1;
       return 0;
@@ -1126,19 +1126,19 @@ class cSuperTimeRange
       if (a[3]>0) return 1;
       if (a[3]<0) return 0;
       if (!with->is_supertimerange) return 0; // always
-      if (sizeof(parts)<sizeof(with->parts)) return 1; 
-      if (sizeof(parts)>sizeof(with->parts)) return 0; 
+      if (sizeof(parts)<sizeof(with->parts)) return 1;
+      if (sizeof(parts)>sizeof(with->parts)) return 0;
       for (int i=0; i<sizeof(parts); i++)
 	 if (parts[i]>with->parts[i]) return 1;
       return 0;
    }
 
-   int __hash()
+   protected int __hash()
    {
       return predef::`+(@map(parts,"__hash"));
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1161,7 +1161,7 @@ class cSuperTimeRange
 
 //! module Calendar
 //! constant TimeRange nulltimerange
-//!	This represents the null time range, 
+//!	This represents the null time range,
 //!	which, to differ from the zero time range
 //!	(the zero-length time range), isn't placed
 //!	in time. This is the result of for instance
@@ -1180,7 +1180,7 @@ protected class cNullTimeRange
    constant is_nulltimerange=1;
 
 // overload
-   void create()
+   protected void create()
    {
    }
 
@@ -1259,7 +1259,7 @@ protected class cNullTimeRange
       return 1;
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {

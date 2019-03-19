@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef DOCODE_H
@@ -32,7 +31,6 @@ int do_jump(int token,INT32 lbl);
 void modify_stack_depth(int delta);
 void do_pop(int x);
 int do_docode(node *n, int flags);
-void do_cond_jump(node *n, int label, int iftrue, int flags);
 INT32 do_code_block(node *n);
 INT32 docode(node *n);
 /* Prototypes end here */

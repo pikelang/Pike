@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 
 @make_variables@
 VPATH=@srcdir@
@@ -10,4 +7,9 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
+
+$(srcdir)/odbc.c: odbc.cmod
+
+$(srcdir)/odbc_result.c: odbc_result.cmod
+
 @dependencies@

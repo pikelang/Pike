@@ -2,11 +2,9 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
-
 #include "config.h"
 
 #ifdef HAVE_GL
@@ -21,9 +19,6 @@
 #undef INT16
 #undef INT8
 
-#ifdef HAVE_WINDEF_H
-#include <windows.h>
-#endif /* HAVE_WINDEF_H */
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "config.h"
@@ -13,7 +12,6 @@
 #elif defined(HAVE_SANE_H)
 #include <sane.h>
 #endif
-#include <stdio.h>
 
 #include "global.h"
 #include "stralloc.h"
@@ -29,6 +27,7 @@
 #include "multiset.h"
 #include "backend.h"
 #include "operators.h"
+#include "pike_types.h"
 #include "module_support.h"
 #include "builtin_functions.h"
 
@@ -50,7 +49,7 @@ struct scanner
   SANE_Handle h;
 };
 
-static void init_sane()
+static void init_sane(void)
 {
   if( sane_init( NULL, NULL ) )
     Pike_error( "Sane init failed.\n" );
@@ -59,10 +58,10 @@ static void init_sane()
 
 static void push_device( SANE_Device *d )
 {
-  push_text( "name" );    push_text( d->name );
-  push_text( "vendor" );  push_text( d->vendor );
-  push_text( "model" );   push_text( d->model );
-  push_text( "type" );    push_text( d->type );
+  push_static_text( "name" );    push_text( d->name );
+  push_static_text( "vendor" );  push_text( d->vendor );
+  push_static_text( "model" );   push_text( d->model );
+  ref_push_string( literal_type_string );    push_text( d->type );
   f_aggregate_mapping( 8 );
 }
 
@@ -89,7 +88,7 @@ static void push_device( SANE_Device *d )
  *!            ])
  *!        })
  */
-static void f_list_scanners( INT32 args )
+static void f_list_scanners( INT32 UNUSED(args) )
 {
   SANE_Device **devices;
   int i = 0;
@@ -112,74 +111,74 @@ static void push_option_descriptor( const SANE_Option_Descriptor *o )
 {
   int i;
   struct svalue *osp = sp;
-  push_text( "name" );
+  push_static_text( "name" );
   if( o->name )
     push_text( o->name );
   else
     push_int( 0 );
-  push_text( "title" );
+  push_static_text( "title" );
   if( o->title )
     push_text( o->title );
   else
     push_int( 0 );
-  push_text( "desc" );
+  push_static_text( "desc" );
   if( o->desc )
     push_text( o->desc );
   else
     push_int( 0 );
-  push_text( "type" );
+  ref_push_string( literal_type_string );
   switch( o->type )
   {
-   case SANE_TYPE_BOOL:   push_text( "boolean" ); break;
-   case SANE_TYPE_INT:    push_text( "int" );     break;
-   case SANE_TYPE_FIXED:  push_text( "float" );   break;
-   case SANE_TYPE_STRING: push_text( "string" );  break;
-   case SANE_TYPE_BUTTON: push_text( "button" );  break;
-   case SANE_TYPE_GROUP:  push_text( "group" );   break;
+   case SANE_TYPE_BOOL:   push_static_text( "boolean" ); break;
+   case SANE_TYPE_INT:    ref_push_string( literal_int_string );     break;
+   case SANE_TYPE_FIXED:  ref_push_string( literal_float_string );   break;
+   case SANE_TYPE_STRING: ref_push_string( literal_string_string );  break;
+   case SANE_TYPE_BUTTON: push_static_text( "button" );  break;
+   case SANE_TYPE_GROUP:  push_static_text( "group" );   break;
   }
 
 
-  push_text( "unit" );
+  push_static_text( "unit" );
   switch( o->unit )
   {
-   case SANE_UNIT_NONE:  	push_text( "none" ); 		break;
-   case SANE_UNIT_PIXEL:  	push_text( "pixel" ); 		break;
-   case SANE_UNIT_BIT:  	push_text( "bit" ); 		break;
-   case SANE_UNIT_MM:  		push_text( "mm" ); 		break;
-   case SANE_UNIT_DPI:          push_text( "dpi" ); 		break;
-   case SANE_UNIT_PERCENT:      push_text( "percent" );   	break;
-   case SANE_UNIT_MICROSECOND:  push_text( "microsecond" ); 	break;
+   case SANE_UNIT_NONE:  	push_static_text( "none" ); 		break;
+   case SANE_UNIT_PIXEL:  	push_static_text( "pixel" ); 		break;
+   case SANE_UNIT_BIT:  	push_static_text( "bit" ); 		break;
+   case SANE_UNIT_MM:  		push_static_text( "mm" ); 		break;
+   case SANE_UNIT_DPI:          push_static_text( "dpi" ); 		break;
+   case SANE_UNIT_PERCENT:      push_static_text( "percent" );   	break;
+   case SANE_UNIT_MICROSECOND:  push_static_text( "microsecond" ); 	break;
   }
 
-  push_text( "size" );   push_int( o->size );
+  push_static_text( "size" );   push_int( o->size );
 
-  push_text( "cap" );
+  push_static_text( "cap" );
   {
     struct svalue *osp = sp;
-    if( o->cap & SANE_CAP_SOFT_SELECT )  push_text( "soft_select" );
-    if( o->cap & SANE_CAP_HARD_SELECT )  push_text( "hard_select" );
-    if( o->cap & SANE_CAP_EMULATED )     push_text( "emulated" );
-    if( o->cap & SANE_CAP_AUTOMATIC )    push_text( "automatic" );
-    if( o->cap & SANE_CAP_INACTIVE )     push_text( "inactive" );
-    if( o->cap & SANE_CAP_ADVANCED )     push_text( "advanced" );
+    if( o->cap & SANE_CAP_SOFT_SELECT )  push_static_text( "soft_select" );
+    if( o->cap & SANE_CAP_HARD_SELECT )  push_static_text( "hard_select" );
+    if( o->cap & SANE_CAP_EMULATED )     push_static_text( "emulated" );
+    if( o->cap & SANE_CAP_AUTOMATIC )    push_static_text( "automatic" );
+    if( o->cap & SANE_CAP_INACTIVE )     push_static_text( "inactive" );
+    if( o->cap & SANE_CAP_ADVANCED )     push_static_text( "advanced" );
     f_aggregate_multiset( sp - osp );
   }
 
-  push_text( "constaint" );
+  push_static_text( "constaint" );
   switch( o->constraint_type )
   {
    case SANE_CONSTRAINT_NONE:  push_int( 0 ); break;
    case SANE_CONSTRAINT_RANGE:
-     push_text( "type" );  push_text( "range" );
-     push_text( "min" );   push_int( o->constraint.range->min );
-     push_text( "max" );   push_int( o->constraint.range->max );
-     push_text( "quant" ); push_int( o->constraint.range->quant );
+     ref_push_string( literal_type_string );  push_static_text( "range" );
+     push_static_text( "min" );   push_int( o->constraint.range->min );
+     push_static_text( "max" );   push_int( o->constraint.range->max );
+     push_static_text( "quant" ); push_int( o->constraint.range->quant );
      f_aggregate_mapping( 8 );
      break;
    case SANE_CONSTRAINT_WORD_LIST:
-     push_text( "type" );
-     push_text( "list" );
-     push_text( "list" );
+     ref_push_string( literal_type_string );
+     push_static_text( "list" );
+     push_static_text( "list" );
      for( i = 0; i<o->constraint.word_list[0]; i++ )
        if( o->type == SANE_TYPE_FIXED )
          push_float( SANE_UNFIX(o->constraint.word_list[i+1]) );
@@ -189,9 +188,9 @@ static void push_option_descriptor( const SANE_Option_Descriptor *o )
      f_aggregate_mapping( 4 );
      break;
    case SANE_CONSTRAINT_STRING_LIST:
-     push_text( "type" );
-     push_text( "list" );
-     push_text( "list" );
+     ref_push_string( literal_type_string );
+     push_static_text( "list" );
+     push_static_text( "list" );
      for( i = 0; o->constraint.string_list[i]; i++ )
        push_text( o->constraint.string_list[i] );
      f_aggregate( i );
@@ -351,8 +350,6 @@ static void f_scanner_set_option( INT32 args )
     int_value = 1;
     sane_control_option( THIS->h, no, SANE_ACTION_SET_AUTO, &int_value, &tmp );
   }
-  pop_n_elems( args );
-  push_int( 0 );
 }
 
 
@@ -413,25 +410,26 @@ static void f_scanner_get_parameters( INT32 args )
   SANE_Parameters p;
   pop_n_elems( args );
   sane_get_parameters( THIS->h, &p );
-  push_text( "format" );          push_int( p.format );
-  push_text( "last_frame" );      push_int( p.last_frame );
-  push_text( "lines" );           push_int( p.lines );
-  push_text( "depth" );           push_int( p.depth );
-  push_text( "pixels_per_line" ); push_int( p.pixels_per_line );
-  push_text( "bytes_per_line" );  push_int( p.bytes_per_line );
+  push_static_text( "format" );          push_int( p.format );
+  push_static_text( "last_frame" );      push_int( p.last_frame );
+  push_static_text( "lines" );           push_int( p.lines );
+  push_static_text( "depth" );           push_int( p.depth );
+  push_static_text( "pixels_per_line" ); push_int( p.pixels_per_line );
+  push_static_text( "bytes_per_line" );  push_int( p.bytes_per_line );
   f_aggregate_mapping( 12 );
 }
 
 
 static struct program *image_program;
 
-static void get_grey_frame( SANE_Handle h, SANE_Parameters *p, char *data )
+static void get_grey_frame( SANE_Handle h, SANE_Parameters *p,
+			    SANE_Byte *data )
 {
-  char buffer[8000];
+  SANE_Byte buffer[8000];
   int nbytes = p->lines * p->bytes_per_line, amnt_read;
   while( nbytes )
   {
-    char *pp = buffer;
+    SANE_Byte *pp = buffer;
     if( sane_read( h, buffer, MINIMUM(8000,nbytes), &amnt_read ) )
       return;
     while( amnt_read-- && nbytes--)
@@ -443,13 +441,14 @@ static void get_grey_frame( SANE_Handle h, SANE_Parameters *p, char *data )
   }
 }
 
-static void get_rgb_frame( SANE_Handle h, SANE_Parameters *p, char *data )
+static void get_rgb_frame( SANE_Handle h, SANE_Parameters *p,
+			   SANE_Byte *data )
 {
-  char buffer[8000];
+  SANE_Byte buffer[8000];
   int nbytes = p->lines * p->bytes_per_line, amnt_read;
   while( nbytes )
   {
-    char *pp = buffer;
+    SANE_Byte *pp = buffer;
     if( sane_read( h, buffer, MINIMUM(8000,nbytes), &amnt_read ) )
       return;
     while( amnt_read-- && nbytes--)
@@ -457,13 +456,14 @@ static void get_rgb_frame( SANE_Handle h, SANE_Parameters *p, char *data )
   }
 }
 
-static void get_comp_frame( SANE_Handle h, SANE_Parameters *p, char *data )
+static void get_comp_frame( SANE_Handle h, SANE_Parameters *p,
+			    SANE_Byte *data )
 {
-  char buffer[8000];
+  SANE_Byte buffer[8000];
   int nbytes = p->lines * p->bytes_per_line, amnt_read;
   while( nbytes )
   {
-    char *pp = buffer;
+    SANE_Byte *pp = buffer;
     if( sane_read( h, buffer, MINIMUM(8000,nbytes), &amnt_read ) )
       return;
     while( amnt_read-- && nbytes--)
@@ -474,11 +474,11 @@ static void get_comp_frame( SANE_Handle h, SANE_Parameters *p, char *data )
   }
 }
 
-static void assert_image_program()
+static void assert_image_program(void)
 {
   if( !image_program )
   {
-    push_text( "Image.Image" );
+    push_static_text( "Image.Image" );
     APPLY_MASTER( "resolv", 1 );
     image_program = program_from_svalue( sp - 1  );
     sp--;/* Do not free image program.. */
@@ -494,8 +494,7 @@ static void f_scanner_simple_scan( INT32 args )
   SANE_Parameters p;
   SANE_Handle h = THIS->h;
   struct object *o;
-  rgb_group *r;
-
+  SANE_Byte *r;	/* Actually an rgb_group *. */
 
   assert_image_program();
 
@@ -509,7 +508,7 @@ static void f_scanner_simple_scan( INT32 args )
   push_int( p.pixels_per_line );
   push_int( p.lines );
   o = clone_object( image_program, 2 );
-  r = ((struct image *)o->storage)->img;
+  r = (SANE_Byte *)((struct image *)o->storage)->img;
 
   THREADS_ALLOW();
   do
@@ -517,21 +516,21 @@ static void f_scanner_simple_scan( INT32 args )
     switch( p.format )
     {
      case SANE_FRAME_GRAY:
-       get_grey_frame( h, &p, (char *)r );
+       get_grey_frame( h, &p, r );
        p.last_frame = 1;
        break;
      case SANE_FRAME_RGB:
-       get_rgb_frame(  h, &p, (char *)r );
+       get_rgb_frame( h, &p, r );
        p.last_frame = 1;
        break;
      case SANE_FRAME_RED:
-       get_comp_frame( h, &p, ((char *)r) );
+       get_comp_frame( h, &p, r );
        break;
      case SANE_FRAME_GREEN:
-       get_comp_frame( h, &p, ((char *)r)+1 );
+       get_comp_frame( h, &p, r + 1 );
        break;
      case SANE_FRAME_BLUE:
-       get_comp_frame( h, &p, ((char *)r)+2 );
+       get_comp_frame( h, &p, r + 2 );
        break;
     }
   }
@@ -549,7 +548,7 @@ static void f_scanner_row_scan( INT32 args )
   SANE_Handle h = THIS->h;
   struct svalue *s;
   struct object *o;
-  rgb_group *r, or;
+  SANE_Byte *r; /* Actually an rgb_group *. */
   int i, nr;
 
   if( sane_start( THIS->h ) )               Pike_error("Start failed\n");
@@ -571,7 +570,7 @@ static void f_scanner_row_scan( INT32 args )
   push_int( p.pixels_per_line );
   push_int( 1 );
   o = clone_object( image_program, 2 );
-  r = ((struct image *)o->storage)->img;
+  r = (SANE_Byte *)((struct image *)o->storage)->img;
 
   nr = p.lines;
   p.lines=1;
@@ -582,10 +581,10 @@ static void f_scanner_row_scan( INT32 args )
     switch( p.format )
     {
      case SANE_FRAME_GRAY:
-       get_grey_frame( h, &p, (char *)r );
+       get_grey_frame( h, &p, r );
        break;
      case SANE_FRAME_RGB:
-       get_rgb_frame(  h, &p, (char *)r );
+       get_rgb_frame( h, &p, r );
        break;
      case SANE_FRAME_RED:
      case SANE_FRAME_GREEN:
@@ -600,8 +599,6 @@ static void f_scanner_row_scan( INT32 args )
     pop_stack();
   }
   free_object( o );
-  pop_n_elems( args );
-  push_int( 0 );
 }
 
 struct row_scan_struct
@@ -612,7 +609,7 @@ struct row_scan_struct
   struct object *o;
   struct object *t;
   int current_row;
-  char *buffer;
+  SANE_Byte *buffer;
   int bufferpos, nonblocking;
   struct svalue callback;
 };
@@ -649,7 +646,7 @@ static void nonblocking_row_scan_callback( int fd, void *_c )
            }
            break;
          case SANE_FRAME_RGB:
-           MEMCPY( (char *)c->r, c->buffer, c->p.bytes_per_line );
+           memcpy( c->r, c->buffer, c->p.bytes_per_line );
            break;
          default:break;
         }
@@ -687,7 +684,7 @@ static void nonblocking_row_scan_callback( int fd, void *_c )
 
 /*! @decl void nonblocking_row_scan(function(Image.Image,int,Scanner,int:void) callback)
  */
-static void f_scanner_nonblocking_row_scan( INT32 args )
+static void f_scanner_nonblocking_row_scan( INT32 UNUSED(args) )
 {
   SANE_Parameters p;
   SANE_Handle h = THIS->h;
@@ -739,12 +736,11 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
   }
   set_read_callback( fd, (file_callback)nonblocking_row_scan_callback,
 		     (void*)rsp );
-  push_int( 0 );
 }
 
 /*! @decl void cancel_scan()
  */
-static void f_scanner_cancel_scan( INT32 args )
+static void f_scanner_cancel_scan( INT32 UNUSED(args) )
 {
   sane_cancel( THIS->h );
 }
@@ -762,12 +758,12 @@ static void f_scanner_cancel_scan( INT32 args )
 /*! @endmodule
  */
 
-static void init_scanner_struct( struct object *p )
+static void init_scanner_struct( struct object *UNUSED(p) )
 {
   THIS->h = 0;
 }
 
-static void exit_scanner_struct( struct object *p )
+static void exit_scanner_struct( struct object *UNUSED(p) )
 {
   if( THIS->h )
     sane_close( THIS->h );
@@ -829,8 +825,7 @@ PIKE_MODULE_EXIT
 #include "module.h"
 #include "module_support.h"
 PIKE_MODULE_INIT {
-  if(!TEST_COMPAT(7,6))
-    HIDE_MODULE();
+  HIDE_MODULE();
 }
 PIKE_MODULE_EXIT {}
 #endif

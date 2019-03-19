@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "config.h"
@@ -246,7 +245,7 @@ static void image_ttf_make(INT32 args)
    TT_Error res;
    TT_Face face;
 
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.TTF(): illegal argument 1\n");
 
    res=TT_Open_Collection(engine, sp[-args].u.string->str, col, &face);
@@ -268,8 +267,8 @@ static void image_ttf_make(INT32 args)
 */
 
 #define THISOBJ (Pike_fp->current_object)
-#define THISf ((struct image_ttf_face_struct*)get_storage(THISOBJ,image_ttf_face_program))
-#define THISi ((struct image_ttf_faceinstance_struct*)get_storage(THISOBJ,image_ttf_faceinstance_program))
+#define THISf ((struct image_ttf_face_struct *)get_storage(THISOBJ,image_ttf_face_program))
+#define THISi ((struct image_ttf_faceinstance_struct *)get_storage(THISOBJ,image_ttf_faceinstance_program))
 
 static void image_ttf_face_exit(struct object *o)
 {
@@ -309,137 +308,137 @@ static void image_ttf_face_properties(INT32 args)
    res=TT_Get_Face_Properties(THISf->face,&prop);
    if (res) my_tt_error("Image.TTF.Face->properties()","",res);
 
-   push_text("num_Glyphs");   push_int(prop.num_Glyphs);
-   push_text("max_Points");   push_int(prop.max_Points);
-   push_text("max_Contours");   push_int(prop.max_Contours);
-   push_text("num_Faces");   push_int(prop.num_Faces);
+   push_static_text("num_Glyphs");   push_int(prop.num_Glyphs);
+   push_static_text("max_Points");   push_int(prop.max_Points);
+   push_static_text("max_Contours");   push_int(prop.max_Contours);
+   push_static_text("num_Faces");   push_int(prop.num_Faces);
 
-   push_text("header");
+   push_static_text("header");
    if (prop.header)
    {
-      push_text("Table_Version"); push_int(prop.header->Table_Version);
-      push_text("Font_Revision"); push_int(prop.header->Font_Revision);
-      push_text("CheckSum_Adjust"); push_int(prop.header->CheckSum_Adjust);
-      push_text("Magic_Number"); push_int(prop.header->Magic_Number);
-      push_text("Flags"); push_int(prop.header->Flags);
-      push_text("Units_Per_EM"); push_int(prop.header->Units_Per_EM);
-      push_text("Created");
+      push_static_text("Table_Version"); push_int(prop.header->Table_Version);
+      push_static_text("Font_Revision"); push_int(prop.header->Font_Revision);
+      push_static_text("CheckSum_Adjust"); push_int(prop.header->CheckSum_Adjust);
+      push_static_text("Magic_Number"); push_int(prop.header->Magic_Number);
+      push_static_text("Flags"); push_int(prop.header->Flags);
+      push_static_text("Units_Per_EM"); push_int(prop.header->Units_Per_EM);
+      push_static_text("Created");
       push_int(prop.header->Created[0]);
       push_int(prop.header->Created[1]);
       f_aggregate(2);
-      push_text("Modified");
+      push_static_text("Modified");
       push_int(prop.header->Modified[0]);
       push_int(prop.header->Modified[1]);
       f_aggregate(2);
-      push_text("xMin"); push_int(prop.header->xMin);
-      push_text("yMin"); push_int(prop.header->yMin);
-      push_text("xMax"); push_int(prop.header->xMax);
-      push_text("yMax"); push_int(prop.header->yMax);
-      push_text("Mac_Style"); push_int(prop.header->Mac_Style);
-      push_text("Lowest_Rec_PPEM"); push_int(prop.header->Lowest_Rec_PPEM);
-      push_text("Font_Direction"); push_int(prop.header->Font_Direction);
-      push_text("Index_To_Loc_Format");
+      push_static_text("xMin"); push_int(prop.header->xMin);
+      push_static_text("yMin"); push_int(prop.header->yMin);
+      push_static_text("xMax"); push_int(prop.header->xMax);
+      push_static_text("yMax"); push_int(prop.header->yMax);
+      push_static_text("Mac_Style"); push_int(prop.header->Mac_Style);
+      push_static_text("Lowest_Rec_PPEM"); push_int(prop.header->Lowest_Rec_PPEM);
+      push_static_text("Font_Direction"); push_int(prop.header->Font_Direction);
+      push_static_text("Index_To_Loc_Format");
       push_int(prop.header->Index_To_Loc_Format);
-      push_text("Glyph_Data_Format");
+      push_static_text("Glyph_Data_Format");
       push_int(prop.header->Glyph_Data_Format);
       f_aggregate_mapping(17*2);
    }
    else push_int(0);
 
-   push_text("horizontal");
+   push_static_text("horizontal");
    if (prop.horizontal)
    {
-      push_text("Version"); push_int(prop.horizontal->Version);
-      push_text("Ascender"); push_int(prop.horizontal->Ascender);
-      push_text("Descender"); push_int(prop.horizontal->Descender);
-      push_text("Line_Gap"); push_int(prop.horizontal->Line_Gap);
-      push_text("advance_Width_Max"); push_int(prop.horizontal->advance_Width_Max);
-      push_text("min_Left_Side_Bearing"); push_int(prop.horizontal->min_Left_Side_Bearing);
-      push_text("min_Right_Side_Bearing"); push_int(prop.horizontal->min_Right_Side_Bearing);
-      push_text("xMax_Extent"); push_int(prop.horizontal->xMax_Extent);
-      push_text("caret_Slope_Rise"); push_int(prop.horizontal->caret_Slope_Rise);
-      push_text("caret_Slope_Run"); push_int(prop.horizontal->caret_Slope_Run);
-      push_text("metric_Data_Format"); push_int(prop.horizontal->metric_Data_Format);
-      push_text("number_Of_HMetrics"); push_int(prop.horizontal->number_Of_HMetrics);
+      push_static_text("Version"); push_int(prop.horizontal->Version);
+      push_static_text("Ascender"); push_int(prop.horizontal->Ascender);
+      push_static_text("Descender"); push_int(prop.horizontal->Descender);
+      push_static_text("Line_Gap"); push_int(prop.horizontal->Line_Gap);
+      push_static_text("advance_Width_Max"); push_int(prop.horizontal->advance_Width_Max);
+      push_static_text("min_Left_Side_Bearing"); push_int(prop.horizontal->min_Left_Side_Bearing);
+      push_static_text("min_Right_Side_Bearing"); push_int(prop.horizontal->min_Right_Side_Bearing);
+      push_static_text("xMax_Extent"); push_int(prop.horizontal->xMax_Extent);
+      push_static_text("caret_Slope_Rise"); push_int(prop.horizontal->caret_Slope_Rise);
+      push_static_text("caret_Slope_Run"); push_int(prop.horizontal->caret_Slope_Run);
+      push_static_text("metric_Data_Format"); push_int(prop.horizontal->metric_Data_Format);
+      push_static_text("number_Of_HMetrics"); push_int(prop.horizontal->number_Of_HMetrics);
       f_aggregate_mapping(13*2);
    }
    else push_int(0);
 
-   push_text("os2");
+   push_static_text("os2");
    if (prop.os2)
    {
-      push_text("version"); push_int(prop.os2->version);
-      push_text("xAvgCharWidth"); push_int(prop.os2->xAvgCharWidth);
-      push_text("usWeightClass"); push_int(prop.os2->usWeightClass);
-      push_text("usWidthClass"); push_int(prop.os2->usWidthClass);
-      push_text("fsType"); push_int(prop.os2->fsType);
-      push_text("ySubscriptXSize"); push_int(prop.os2->ySubscriptXSize);
-      push_text("ySubscriptYSize"); push_int(prop.os2->ySubscriptYSize);
-      push_text("ySubscriptXOffset"); push_int(prop.os2->ySubscriptXOffset);
-      push_text("ySubscriptYOffset"); push_int(prop.os2->ySubscriptYOffset);
-      push_text("ySuperscriptXSize"); push_int(prop.os2->ySuperscriptXSize);
-      push_text("ySuperscriptYSize"); push_int(prop.os2->ySuperscriptYSize);
-      push_text("ySuperscriptXOffset"); push_int(prop.os2->ySuperscriptXOffset);
-      push_text("ySuperscriptYOffset"); push_int(prop.os2->ySuperscriptYOffset);
-      push_text("yStrikeoutSize"); push_int(prop.os2->yStrikeoutSize);
-      push_text("yStrikeoutPosition"); push_int(prop.os2->yStrikeoutPosition);
-      push_text("sFamilyClass"); push_int(prop.os2->sFamilyClass);
+      push_static_text("version"); push_int(prop.os2->version);
+      push_static_text("xAvgCharWidth"); push_int(prop.os2->xAvgCharWidth);
+      push_static_text("usWeightClass"); push_int(prop.os2->usWeightClass);
+      push_static_text("usWidthClass"); push_int(prop.os2->usWidthClass);
+      push_static_text("fsType"); push_int(prop.os2->fsType);
+      push_static_text("ySubscriptXSize"); push_int(prop.os2->ySubscriptXSize);
+      push_static_text("ySubscriptYSize"); push_int(prop.os2->ySubscriptYSize);
+      push_static_text("ySubscriptXOffset"); push_int(prop.os2->ySubscriptXOffset);
+      push_static_text("ySubscriptYOffset"); push_int(prop.os2->ySubscriptYOffset);
+      push_static_text("ySuperscriptXSize"); push_int(prop.os2->ySuperscriptXSize);
+      push_static_text("ySuperscriptYSize"); push_int(prop.os2->ySuperscriptYSize);
+      push_static_text("ySuperscriptXOffset"); push_int(prop.os2->ySuperscriptXOffset);
+      push_static_text("ySuperscriptYOffset"); push_int(prop.os2->ySuperscriptYOffset);
+      push_static_text("yStrikeoutSize"); push_int(prop.os2->yStrikeoutSize);
+      push_static_text("yStrikeoutPosition"); push_int(prop.os2->yStrikeoutPosition);
+      push_static_text("sFamilyClass"); push_int(prop.os2->sFamilyClass);
 
-      push_text("panose");
+      push_static_text("panose");
       push_string(make_shared_binary_string(prop.os2->panose,10));
 
-      push_text("ulUnicodeRange1"); push_int(prop.os2->ulUnicodeRange1);
-      push_text("ulUnicodeRange2"); push_int(prop.os2->ulUnicodeRange2);
-      push_text("ulUnicodeRange3"); push_int(prop.os2->ulUnicodeRange3);
-      push_text("ulUnicodeRange4"); push_int(prop.os2->ulUnicodeRange4);
+      push_static_text("ulUnicodeRange1"); push_int(prop.os2->ulUnicodeRange1);
+      push_static_text("ulUnicodeRange2"); push_int(prop.os2->ulUnicodeRange2);
+      push_static_text("ulUnicodeRange3"); push_int(prop.os2->ulUnicodeRange3);
+      push_static_text("ulUnicodeRange4"); push_int(prop.os2->ulUnicodeRange4);
 
-      push_text("achVendID");
+      push_static_text("achVendID");
       push_string(make_shared_binary_string(prop.os2->achVendID,4));
 
-      push_text("fsSelection"); push_int(prop.os2->fsSelection);
-      push_text("usFirstCharIndex"); push_int(prop.os2->usFirstCharIndex);
-      push_text("usLastCharIndex"); push_int(prop.os2->usLastCharIndex);
-      push_text("sTypoAscender"); push_int(prop.os2->sTypoAscender);
-      push_text("sTypoDescender"); push_int(prop.os2->sTypoDescender);
-      push_text("sTypoLineGap"); push_int(prop.os2->sTypoLineGap);
-      push_text("usWinAscent"); push_int(prop.os2->usWinAscent);
-      push_text("usWinDescent"); push_int(prop.os2->usWinDescent);
-      push_text("ulCodePageRange1"); push_int(prop.os2->ulCodePageRange1);
-      push_text("ulCodePageRange2"); push_int(prop.os2->ulCodePageRange2);
+      push_static_text("fsSelection"); push_int(prop.os2->fsSelection);
+      push_static_text("usFirstCharIndex"); push_int(prop.os2->usFirstCharIndex);
+      push_static_text("usLastCharIndex"); push_int(prop.os2->usLastCharIndex);
+      push_static_text("sTypoAscender"); push_int(prop.os2->sTypoAscender);
+      push_static_text("sTypoDescender"); push_int(prop.os2->sTypoDescender);
+      push_static_text("sTypoLineGap"); push_int(prop.os2->sTypoLineGap);
+      push_static_text("usWinAscent"); push_int(prop.os2->usWinAscent);
+      push_static_text("usWinDescent"); push_int(prop.os2->usWinDescent);
+      push_static_text("ulCodePageRange1"); push_int(prop.os2->ulCodePageRange1);
+      push_static_text("ulCodePageRange2"); push_int(prop.os2->ulCodePageRange2);
 
       f_aggregate_mapping(32*2);
    }
    else push_int(0);
 
-   push_text("postscript");
+   push_static_text("postscript");
    if (prop.postscript)
    {
-      push_text("FormatType"); push_int(prop.postscript->FormatType);
-      push_text("italicAngle"); push_int(prop.postscript->italicAngle);
-      push_text("underlinePosition"); push_int(prop.postscript->underlinePosition);
-      push_text("underlineThickness"); push_int(prop.postscript->underlineThickness);
-      push_text("isFixedPitch"); push_int(prop.postscript->isFixedPitch);
-      push_text("minMemType42"); push_int(prop.postscript->minMemType42);
-      push_text("maxMemType42"); push_int(prop.postscript->maxMemType42);
-      push_text("minMemType1"); push_int(prop.postscript->minMemType1);
-      push_text("maxMemType1"); push_int(prop.postscript->maxMemType1);
+      push_static_text("FormatType"); push_int(prop.postscript->FormatType);
+      push_static_text("italicAngle"); push_int(prop.postscript->italicAngle);
+      push_static_text("underlinePosition"); push_int(prop.postscript->underlinePosition);
+      push_static_text("underlineThickness"); push_int(prop.postscript->underlineThickness);
+      push_static_text("isFixedPitch"); push_int(prop.postscript->isFixedPitch);
+      push_static_text("minMemType42"); push_int(prop.postscript->minMemType42);
+      push_static_text("maxMemType42"); push_int(prop.postscript->maxMemType42);
+      push_static_text("minMemType1"); push_int(prop.postscript->minMemType1);
+      push_static_text("maxMemType1"); push_int(prop.postscript->maxMemType1);
       f_aggregate_mapping(9*2);
    }
    else push_int(0);
 
-   push_text("hdmx");
+   push_static_text("hdmx");
    if (prop.hdmx)
    {
       int i;
 
-      push_text("version"); push_int(prop.hdmx->version);
-      push_text("num_records"); push_int(prop.hdmx->num_records);
-      push_text("records");
+      push_static_text("version"); push_int(prop.hdmx->version);
+      push_static_text("num_records"); push_int(prop.hdmx->num_records);
+      push_static_text("records");
 
       for (i=0; i<prop.hdmx->num_records; i++)
       {
-	 push_text("ppem"); push_int(prop.hdmx->records[i].ppem);
-	 push_text("max_width"); push_int(prop.hdmx->records[i].max_width);
+	 push_static_text("ppem"); push_int(prop.hdmx->records[i].ppem);
+	 push_static_text("max_width"); push_int(prop.hdmx->records[i].max_width);
 	 /*	 push_text("widths"); push_int(prop.hdmx->records[i].widths);*/
 	 f_aggregate_mapping(2*2);
       }
@@ -556,7 +555,7 @@ static void image_ttf_face_names(INT32 args)
 
    image_ttf_face__names(args);
 
-   if (sp[-1].type!=T_ARRAY)
+   if (TYPEOF(sp[-1]) != T_ARRAY)
       Pike_error("Image.TTF.Face->names(): internal error, weird _names()\n");
 
    a=sp[-1].u.array;
@@ -682,9 +681,8 @@ static void image_ttf_faceinstance_create(INT32 args)
    if (!args)
       Pike_error("Image.TTF.FaceInstance(): too few arguments\n");
 
-   if (sp[-args].type!=T_OBJECT ||
-       !(face_s=(struct image_ttf_face_struct*)
-	 get_storage(sp[-args].u.object,image_ttf_face_program)))
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
+       !(face_s=get_storage(sp[-args].u.object,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance(): illegal argument 1\n");
 
    if ((res=TT_New_Instance(face_s->face,&(face_i->instance))))
@@ -705,16 +703,15 @@ static void image_ttf_faceinstance_set_height(INT32 args)
    if (!args)
       Pike_error("Image.TTF.FaceInstance->set_height(): missing arguments\n");
 
-   if (sp[-args].type==T_INT)
+   if (TYPEOF(sp[-args]) == T_INT)
       h = sp[-args].u.integer*64;
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       h = DOUBLE_TO_INT(sp[-args].u.float_number*64);
    else
       Pike_error("Image.TTF.FaceInstance->set_height(): illegal argument 1\n");
    if (h<1) h=1;
 
-   if (!(face_s=(struct image_ttf_face_struct*)
-	 get_storage(THISi->faceobj,image_ttf_face_program)))
+   if (!(face_s=get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->write(): lost Face\n");
 
    ttf_instance_setc(face_s,face_i,h,"Image.TTF.FaceInstance->set_height()");
@@ -731,7 +728,7 @@ static void ttf_translate_8bit(TT_CharMap charMap,
 {
    int i;
 
-   dest[0]=(int*)xalloc(len*sizeof(int));
+   dest[0]=xalloc(len*sizeof(int));
 
    THREADS_ALLOW();
    for (i=0; i<len; i++)
@@ -748,7 +745,7 @@ static void ttf_translate_16bit(TT_CharMap charMap,
 {
    int i;
 
-   dest[0]=(int*)xalloc(len*sizeof(int));
+   dest[0]=xalloc(len*sizeof(int));
 
    THREADS_ALLOW();
    for (i=0; i<len; i++)
@@ -809,7 +806,7 @@ static void ttf_please_translate_8bit(TT_Face face,
    TT_CharMap charMap;
 
    ttf_get_nice_charmap(face,&charMap,where);
-   (*dlen) = DO_NOT_WARN(s->len);
+   (*dlen) = s->len;
    ttf_translate_8bit(charMap,(unsigned char*)(s->str),dest,*dlen,base);
 }
 
@@ -822,7 +819,7 @@ static void ttf_please_translate_16bit(TT_Face face,
    TT_CharMap charMap;
 
    ttf_get_nice_charmap(face,&charMap,where);
-   (*dlen) = DO_NOT_WARN(s->len);
+   (*dlen) = s->len;
    ttf_translate_16bit(charMap,(unsigned short*)(s->str),dest,*dlen,base);
 }
 
@@ -836,18 +833,17 @@ static void image_ttf_faceinstance_ponder(INT32 args)
 
    int xmin=1000,xmax=-1000,pos=0;
 
-   if (!(face_s=(struct image_ttf_face_struct*)
-	 get_storage(THISi->faceobj,image_ttf_face_program)))
+   if (!(face_s=get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->ponder(): lost Face\n");
 
-   if (args && sp[-1].type==T_INT)
+   if (args && TYPEOF(sp[-1]) == T_INT)
    {
       base=sp[-1].u.integer;
       args--;
       pop_stack();
    }
 
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.TTF.FaceInstance->ponder(): illegal argument 1\n");
 
    switch( sp[-args].u.string->size_shift )
@@ -990,8 +986,7 @@ static void image_ttf_faceinstance_write(INT32 args)
    unsigned char* pixmap;
    int maxcharwidth = 0;
 
-   if (!(face_s=(struct image_ttf_face_struct*)
-	 get_storage(THISi->faceobj,image_ttf_face_program)))
+   if (!(face_s=get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->write(): lost Face\n");
 
    if(!TT_Get_Kerning_Directory( face_s->face, &kerning ))
@@ -1005,7 +1000,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 /*      fprintf(stderr, "offset=%d\n", (int)metrics.x_scale); */
    }
 
-   if (args && sp[-1].type==T_INT)
+   if (args && TYPEOF(sp[-1]) == T_INT)
    {
       base=sp[-1].u.integer;
       args--;
@@ -1031,7 +1026,7 @@ static void image_ttf_faceinstance_write(INT32 args)
      char *errs=NULL;
      TT_Glyph_Metrics metrics;
 
-      if (sp[a-args].type!=T_STRING)
+      if (TYPEOF(sp[a-args]) != T_STRING)
 	 Pike_error("Image.TTF.FaceInstance->write(): illegal argument %d\n",a+1);
 
       switch(sp[a-args].u.string->size_shift)
@@ -1039,13 +1034,13 @@ static void image_ttf_faceinstance_write(INT32 args)
        case 0:
 	 ttf_translate_8bit(charMap,(unsigned char*)sp[a-args].u.string->str,
 			    sstr+a,
-			    DO_NOT_WARN(slen[a]=sp[a-args].u.string->len),
+                            slen[a]=sp[a-args].u.string->len,
 			    base);
 	 break;
        case 1:
 	 ttf_translate_16bit(charMap,(unsigned short*)sp[a-args].u.string->str,
 			     sstr+a,
-			     DO_NOT_WARN(slen[a]=sp[a-args].u.string->len),
+                             slen[a]=sp[a-args].u.string->len,
 			     base);
 	 break;
        case 2:
@@ -1137,7 +1132,7 @@ static void image_ttf_faceinstance_write(INT32 args)
       push_int(width);
       push_int(height);
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
       d=img->img;
 
       for (a=0; a<args; a++)
@@ -1164,7 +1159,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 	    if ((res=TT_Get_Glyph_Metrics(glyph,&metrics)))
 	       { errs="TT_Get_Glyph_Metrics: "; break; }
 
-	    MEMSET(pixmap,0,rastermap.size);
+	    memset(pixmap,0,rastermap.size);
 
 	    if ((res=TT_Get_Glyph_Pixmap(glyph,
 					 &rastermap,
@@ -1280,9 +1275,9 @@ PIKE_MODULE_INIT
    TT_Init_Kerning_Extension( engine );
 
 #ifdef DYNAMIC_MODULE
-   push_text("Image.Image");
+   push_static_text("Image.Image");
    SAFE_APPLY_MASTER("resolv",1);
-   if (sp[-1].type==T_PROGRAM)
+   if (TYPEOF(sp[-1]) == T_PROGRAM)
       image_program=program_from_svalue(sp-1);
    pop_stack();
 #endif /* DYNAMIC_MODULE */

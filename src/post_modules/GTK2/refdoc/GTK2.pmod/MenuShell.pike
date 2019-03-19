@@ -30,6 +30,8 @@
 //! specified.
 //!
 //!
+//! @b{move_selected@}
+//!
 //! @b{selection_done@}
 //! This signal is emitted when a selection has been completed within a
 //! menu shell.

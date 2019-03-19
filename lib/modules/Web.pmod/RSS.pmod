@@ -1,4 +1,3 @@
-// $Id$
 
 #pike __REAL_VERSION__
 
@@ -14,12 +13,12 @@ protected class Thing {
   constant thing = "";
 
   mixed `[](string i) {
-    if(!zero_type(attributes[i])) return attributes[i];
+    if(has_index(attributes, i)) return attributes[i];
     return ::`[](i);
   }
 
   void `[]=(string i, mixed v) {
-    if(!zero_type(attributes[i])) {
+    if(has_index(attributes, i)) {
       if(!stringp(v) && !objectp(v))
 	error("Variable %O is string|Standards.URI.\n", i);
 

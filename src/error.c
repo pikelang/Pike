@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,6 +22,7 @@
 #include "module_support.h"
 #include "threads.h"
 #include "gc.h"
+#include "pike_types.h"
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */
@@ -32,7 +32,7 @@
 /* #define ERROR_DEBUG */
 
 PMOD_EXPORT const char msg_fatal_error[] =
-  "%s:%d: Fatal error:\n";
+  "%s:%ld: Fatal error:\n";
 #ifdef PIKE_DEBUG
 PMOD_EXPORT const char msg_unsetjmp_nosync_1[] =
   "UNSETJMP out of sync! (last SETJMP at %s)!\n";
@@ -75,7 +75,7 @@ PMOD_EXPORT void check_recovery_context(void)
      TESTILITEST > 0) {
     fprintf(stderr, "Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
 	    Pike_interpreter.recoveries, &foo,
-	    DO_NOT_WARN((long)TESTILITEST));
+            (long)TESTILITEST);
     fprintf(stderr, "Last recovery was added at %s:%d\n",
 	    Pike_interpreter.recoveries->file,
 	    Pike_interpreter.recoveries->line);
@@ -86,13 +86,18 @@ PMOD_EXPORT void check_recovery_context(void)
     pop_stack();
     Pike_fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, C sp=%p, %ld)!\n",
 	  Pike_interpreter.recoveries, &foo,
-	  DO_NOT_WARN((long)TESTILITEST));
+          (long)TESTILITEST);
   }
 
   /* Add more stuff here when required */
 }
 #endif
 
+/*! @decl void _gdb_breakpoint()
+ *!
+ *! This function only exists so that it is possible to set a gdb
+ *! breakpoint on the function pike_gdb_breakpoint.
+ */
 PMOD_EXPORT void pike_gdb_breakpoint(INT32 args)
 {
   pop_n_elems(args);
@@ -125,6 +130,7 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_INI
   return r;
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 {
 #ifdef TRACE_UNFINISHED_TYPE_FIELDS
@@ -204,7 +210,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
   /* This will tell us where the value was caught (I hope) */
-  if(TYPEOF(throw_value) <= MAX_REF_TYPE)
+  if(REFCOUNTED_TYPE(TYPEOF(throw_value)))
   {
     debug_malloc_update_location(throw_value.u.refs,
 				 Pike_interpreter.recoveries->file);
@@ -238,9 +244,10 @@ PMOD_EXPORT void push_error(const char *description)
 }
 
 PMOD_EXPORT struct svalue throw_value = SVALUE_INIT_FREE;
-int throw_severity;
+PMOD_EXPORT int throw_severity;
 static const char *in_error;
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn))
 {
   push_error(buf);
@@ -261,6 +268,7 @@ PMOD_EXPORT void va_make_error (const char *fmt, va_list args)
   f_aggregate(2);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT void DECLSPEC(noreturn) va_error(const char *fmt, va_list args)
   ATTRIBUTE((noreturn))
 {
@@ -307,6 +315,7 @@ PMOD_EXPORT void make_error (const char *fmt, ...)
   va_end (args);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn))
 {
   va_list args;
@@ -315,6 +324,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((n
   va_end(args);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
 					      const char *text,
 					      struct svalue *oldsp,
@@ -370,7 +380,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
     push_int(0);
 
   for (i=-args; i; i++) {
-    if (TYPEOF(oldsp[i]) <= PIKE_T_FLOAT) {
+    if (TYPEOF(oldsp[i]) <= MAX_TYPE) {
       push_svalue(oldsp + i);
     } else {
       char buffer[50];
@@ -397,6 +407,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
 
 static int inhibit_errors = 0;
 
+/* coverity[+kill] */
 PMOD_EXPORT void exit_on_error(const void *msg)
 {
   ONERROR tmp;
@@ -470,6 +481,7 @@ PMOD_EXPORT void fatal_on_error(const void *msg)
   do_abort();
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
   static int in_fatal = 0;
@@ -479,7 +491,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   /* Prevent double fatal. */
   if (in_fatal)
   {
-    if (fmt) (void)VFPRINTF(stderr, fmt, args);
+    if (fmt) (void)vfprintf(stderr, fmt, args);
     do_abort();
   }
 
@@ -490,7 +502,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
     if (fmt) {
       va_list a;
       va_copy (a, args);
-      (void)VFPRINTF(stderr, fmt, a);
+      (void)vfprintf(stderr, fmt, a);
       va_end (a);
     }
 #endif
@@ -498,7 +510,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   }
 #endif
 
-  if (fmt) (void)VFPRINTF(stderr, fmt, args);
+  if (fmt) (void)vfprintf(stderr, fmt, args);
 
   if(Pike_in_gc)
     fprintf(stderr,"Pike was in GC stage %d when this fatal occurred.\n",Pike_in_gc);
@@ -515,8 +527,10 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
      * evaluator stuff while we let the master describe the backtrace
      * below. Doing it the naughty way without going through
      * init_threads_disable etc to avoid hanging on runaway locks. */
+#ifdef PIKE_THREADS
     threads_disabled++;
-    MEMSET (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
+#endif
+    memset (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
     if (SETJMP (jmp))
       fprintf(stderr,"Got exception when trying to describe backtrace.\n");
     else {
@@ -527,7 +541,9 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
 	write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
     }
     UNSETJMP (jmp);
+#ifdef PIKE_THREADS
     threads_disabled--;
+#endif
     evaluator_callbacks = saved_eval_cbs;
   }else{
     fprintf(stderr,"No stack - no backtrace.\n");
@@ -536,6 +552,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   do_abort();
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn))
 {
   va_list args;
@@ -619,16 +636,17 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  */
 static void f_error_cast(INT32 args)
 {
-  char *s;
-  get_all_args("error->cast",args,"%s",&s);
-  if(!strncmp(s,"array",5))
+  if(Pike_sp[-args].u.string == literal_array_string)
   {
-    pop_n_elems(args);
+    pop_stack();
     apply_current (generic_err_message_fun, 0);
     apply_current (generic_err_backtrace_fun, 0);
     f_aggregate(2);
-  }else{
-    SIMPLE_BAD_ARG_ERROR("error->cast", 1, "the value \"array\"");
+  }
+  else
+  {
+    pop_stack();
+    push_undefined();
   }
 }
 
@@ -653,7 +671,7 @@ static void f_error_cast(INT32 args)
 static void f_error_index(INT32 args)
 {
   INT_TYPE ind;
-  get_all_args("error->`[]",args,"%i",&ind);
+  get_all_args("`[]",args,"%i",&ind);
 
   switch(ind)
   {
@@ -666,10 +684,32 @@ static void f_error_index(INT32 args)
       apply_current (generic_err_backtrace_fun, 0);
       break;
     default:
-      index_error("error->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+      index_error("`[]", Pike_sp-args, args, NULL, Pike_sp-args,
 		  "Index %"PRINTPIKEINT"d is out of range 0..1.\n", ind);
       break;
   }
+}
+
+static void f_error__sizeof(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(2);
+}
+
+static void f_error__indices(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(0);
+  push_int(1);
+  f_aggregate(2);
+}
+
+static void f_error__values(INT32 args)
+{
+  pop_n_elems(args);
+  apply_current(generic_err_message_fun, 0);
+  apply_current(generic_err_backtrace_fun, 0);
+  f_aggregate(2);
 }
 
 /*! @decl string describe()
@@ -755,7 +795,7 @@ static void f_error__sprintf(INT32 args)
     }
   }
 
-  push_constant_text("(%O)");
+  push_static_text("(%O)");
   if(GENERIC_ERROR_THIS->error_message)
     ref_push_string(GENERIC_ERROR_THIS->error_message);
   else
@@ -850,13 +890,9 @@ static void f_error_create(INT32 args)
       assign_svalue_no_free( & ERROR_STRUCT(STRUCT,o)->X, X); \
     } else { \
       SET_SVAL(ERROR_STRUCT(STRUCT, o)->X, PIKE_T_INT, NUMBER_UNDEFINED, \
-	       integer, 0); \ 
+	       integer, 0); \
     } \
   } while (0)
-
-
-#define ERROR_COPY_REF(STRUCT,X) \
-  add_ref( ERROR_STRUCT(STRUCT,o)->X=X )
 
 
 /* This prepares the passed object o, which is assumed to inherit
@@ -872,12 +908,12 @@ static void f_error_create(INT32 args)
  *    fmt_args using string_builder_vsprintf. (fmt_args is passed as a
  *    va_list pointer to be able to pass NULL if fmt is NULL.)
  */
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   struct object *o, const char *func, const struct svalue *base_sp, int args,
   const char *fmt, va_list *fmt_args)
 {
-  struct generic_error_struct *err =
-    (struct generic_error_struct *) get_storage (o, generic_error_program);
+  struct generic_error_struct *err = get_storage (o, generic_error_program);
 
 #ifdef PIKE_DEBUG
   if (!err)
@@ -948,6 +984,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
  *       At least fast_clone_object() MUST have been used, or the object
  *       data must have been properly initialized in some other way!
  */
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
   const char *func,
@@ -961,6 +998,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -970,6 +1008,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -983,6 +1022,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -1004,6 +1044,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -1021,6 +1062,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -1028,13 +1070,14 @@ PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
   size_t howmuch_,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
-  INT_TYPE howmuch = DO_NOT_WARN((INT_TYPE)howmuch_);
+  INT_TYPE howmuch = (INT_TYPE)howmuch_;
   INIT_ERROR(resource);
   ERROR_COPY(resource, howmuch);
   ERROR_STRUCT(resource,o)->resource_type=make_shared_string(resource_type);
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
   const char *func,
   struct svalue *base_sp, int args,
@@ -1047,6 +1090,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected)
 {
   if(expected>args)
@@ -1062,7 +1106,7 @@ PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expe
 }
 
 #ifdef PIKE_DEBUG
-static void gc_check_throw_value(struct callback *foo, void *bar, void *gazonk)
+static void gc_check_throw_value(struct callback *UNUSED(foo), void *UNUSED(bar), void *UNUSED(gazonk))
 {
   gc_mark_external_svalues(&throw_value,1," in the throw value");
 }

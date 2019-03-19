@@ -1,12 +1,51 @@
-//
 // Argument parser
 // By Martin Nilsson
-// $Id$
 //
+
+//! Argument parsing module
+//! This module supports two rather different methods of argument parsing.
+//! The first is suitable quick argument parsing without much in the way of checking:
+//!
+//! @code
+//! int main( int c, array(string) argv )
+//! {
+//!   mapping arguments = Arg.parse(argv);
+//!   array files = arguments[Arg.REST];
+//!   if( arguments->help ) print_help();
+//!   ...
+//! }
+//! @endcode
+//!
+//! The @[Arg.parse] method will return a mapping from argument name
+//! to the argument value, if any.
+//!
+//! Non-option arguments will be placed in the index Arg.REST
+//!
+//! The second way to use this module is to inherit the LowOptions
+//! class and then start adding supported arguments:
+//!
+//! @code
+//! class MyArguments {
+//!    inherit Arg.LowOptions;
+//!    Opt verbose = NoOpt("-v")|NoOpt("--verbose");
+//!    Opt help = MaybeOpt("--help");
+//!    Opt output = HasOpt("--output")|HasOpt("-o");
+//! };
+//! @endcode
+//!
+//! Then, in main:
+//!
+//! @code
+//! MyArguments args = MyArguments(argv);
+//! @endcode
+//!
+//! See the documentation for @[OptLibrary] for details about the various
+//! Opt classes.
 
 #pike __REAL_VERSION__
 
 class OptLibrary
+//!
 {
 
   //! Base class for parsing an argument. Inherit this class to create
@@ -19,11 +58,13 @@ class OptLibrary
     //! Should return 1 for set options or a string containing the
     //! value of the option. Returning 0 means the option was not set
     //! (or matched). To properly chain arguments parsers, return
-    //! @expr{::get_value(argv, env)@} instead of @expr{0@}, unless
-    //! you want to explicitly stop the chain and not set this option.
-    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    //! @expr{::get_value(argv, env, previous)@} instead of @expr{0@},
+    //! unless you want to explicitly stop the chain and not set this
+    //! option.
+    mixed get_value(array(string) argv, mapping(string:string) env,
+                         int|string previous)
     {
-      if(next) return next->get_value(argv, env);
+      if(next) return next->get_value(argv, env, previous);
       return 0;
     }
 
@@ -89,18 +130,18 @@ class OptLibrary
       opt = _opt;
     }
 
-    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
     {
-      if( !sizeof(argv) ) return ::get_value(argv, env);
+      if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
       if( double )
       {
         if( argv[0]==opt )
         {
           argv[0] = 0;
-          return 1;
+          return (int)previous+1;
         }
-        return ::get_value(argv, env);
+        return previous || ::get_value(argv, env, previous);
       }
 
       if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
@@ -111,11 +152,11 @@ class OptLibrary
           parts[0] -= opt[1..1];
           argv[0] = parts*"=";
           if(argv[0]=="-") argv[0] = 0;
-          return 1;
+          return (int)previous+1;
         }
       }
 
-      return ::get_value(argv, env);
+      return previous || ::get_value(argv, env, previous);
     }
 
     array(string) get_opts()
@@ -144,10 +185,10 @@ class OptLibrary
       name = _name;
     }
 
-    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
     {
       if( env[name] ) return env[name];
-      return ::get_value(argv, env);
+      return ::get_value(argv, env, previous);
     }
 
     protected string __sprintf()
@@ -170,7 +211,7 @@ class OptLibrary
       value = _value;
     }
 
-    string get_value(array(string) argv, mapping(string:string) env)
+    string get_value(array(string) argv, mapping(string:string) env, mixed previous)
     {
       return value;
     }
@@ -192,9 +233,9 @@ class OptLibrary
   {
     inherit NoOpt;
 
-    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
     {
-      if( !sizeof(argv) ) return ::get_value(argv, env);
+      if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
       if( double )
       {
@@ -202,17 +243,18 @@ class OptLibrary
         if( argv[0]==opt )
         {
           argv[0] = 0;
-          return 1;
+          return (int)previous+1;
         }
 
         // --foo=bar
         if( sscanf(argv[0], opt+"=%s", string ret)==1 )
         {
           argv[0] = 0;
+          // FIXME: Make an array if previous is set?
           return ret;
         }
 
-        return ::get_value(argv, env);
+        return previous || ::get_value(argv, env, previous);
       }
 
       // -x
@@ -228,7 +270,7 @@ class OptLibrary
           parts[0] -= opt[1..1];
           argv[0] = parts*"=";
           if(argv[0]=="-") argv[0] = 0;
-          return 1;
+          return (int)previous+1;
         }
         else if( sizeof(parts)>1 && parts[0][-1]==opt[1] )
         {
@@ -241,10 +283,10 @@ class OptLibrary
           return parts[1..]*"=";
         }
 
-        return ::get_value(argv, env);
+        return previous || ::get_value(argv, env, previous);
       }
 
-      return ::get_value(argv, env);
+      return previous || ::get_value(argv, env, previous);
     }
 
     protected string __sprintf()
@@ -262,9 +304,9 @@ class OptLibrary
   {
     inherit NoOpt;
 
-    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
     {
-      if( !sizeof(argv) ) return ::get_value(argv, env);
+      if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
       if( double )
       {
@@ -287,7 +329,7 @@ class OptLibrary
           argv[0] = 0;
           return ret;
         }
-        return ::get_value(argv, env);
+        return previous || ::get_value(argv, env, previous);
       }
 
       if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
@@ -311,7 +353,7 @@ class OptLibrary
             }
 
             // Fail. "-y" without any more elements in argv.
-            return ::get_value(argv, env);
+            return previous || ::get_value(argv, env, previous);
           }
           else
           {
@@ -326,7 +368,7 @@ class OptLibrary
         }
       }
 
-      return ::get_value(argv, env);
+      return previous || ::get_value(argv, env, previous);
     }
 
     protected string __sprintf()
@@ -344,18 +386,32 @@ object REST = class {
     }
   }();
 
+//! @decl constant REST = REST();
+//!
+//! Constant used by Arg.parse() to indicate the remaining objects.
+
+
 // FIXME: Support for rc files? ( Opt x = Opt("--x")|INIFile(path, name); )
 // FIXME: Support for type casts? ( Opt level = Integer(Opt("--level"));
 
 class LowOptions
+  //!
 {
   protected inherit OptLibrary;
 
+  //!
   protected mapping(string:Opt) opts = ([]);
+
+  //!
   protected mapping(string:int(1..1)|string) values = ([]);
+
+  //!
   protected array(string) argv;
+
+  //!
   protected string application;
 
+  //!
   protected void create(array(string) _argv, void|mapping(string:string) env)
   {
     if(!env)
@@ -364,7 +420,7 @@ class LowOptions
     // Make a list of all the arguments we can parse.
     foreach(::_indices(2), string index)
     {
-      mixed val = ::`[](index, 2);
+      mixed val = ::`[](index, this, 0);
       if(objectp(val) && val->is_opt) opts[index]=val;
     }
 
@@ -372,30 +428,27 @@ class LowOptions
     argv = _argv[1..];
     mapping(string:Opt) unset = opts+([]);
 
-    while(1)
+    while(sizeof(argv))
     {
-      if(!sizeof(argv)) break;
-
-      int(0..1)|string value;
-      foreach(unset; string index; Opt arg)
+      array(string) pre = argv+({});
+      foreach(opts; string index; Opt arg)
       {
-        value = arg->get_value(argv, env);
+        int(0..1)|string value = arg->get_value(argv, env, values[index]);
         if(value)
         {
           m_delete(unset, index);
           values[index] = value;
-          break;
+          argv -= ({ 0 });
         }
       }
+      argv -= ({ 0 });
 
-      if(!value)
-        value = unhandled_argument(argv, env);
-
-      if(!value)
-        break;
-      else
-        while( sizeof(argv) && argv[0] == 0 )
-          argv = argv[1..];
+      if(equal(pre, argv))
+      {
+        unhandled_argument(argv, env);
+        if(equal(pre, argv))
+          break;
+      }
     }
 
     if( sizeof(unset) )
@@ -403,17 +456,15 @@ class LowOptions
       int(0..1)|string value;
       foreach(unset; string index; Opt arg)
       {
-        value = arg->get_value(({}), env);
+        value = arg->get_value(({}), env, values[index]);
         if(value)
-        {
-          m_delete(unset, index);
           values[index] = value;
-        }
       }
     }
 
   }
 
+  //!
   protected int(0..1) unhandled_argument(array(string) argv,
                                       mapping(string:string) env)
   {
@@ -443,11 +494,13 @@ class Options
   {
     return values[id];
   }
+
   protected string|int `->(string id)
   {
     return values[id];
   }
 
+  //!
   protected int(0..1)|string unhandled_argument(array(string) argv,
                                              mapping(string:string) env)
   {
@@ -472,7 +525,7 @@ class Options
 
   protected string index(string i)
   {
-    string s = ::`[](i, 2);
+    string s = ::`[](i, this, 0);
     if( !s ) return 0;
     if( !stringp(s) ) error("%O is not a string.\n", i);
     if( sizeof(s) )
@@ -489,9 +542,12 @@ class Options
 // --- Simple interface
 
 class SimpleOptions
+//! Options parser with a unhandled_argument implementation that
+//! parses most common argument formats.
 {
   inherit LowOptions;
 
+ //! Handles arguments as described in @[Arg.parse]
   int(0..1) unhandled_argument(array(string) argv, mapping(string:string) env)
   {
     string arg = argv[0];
@@ -503,7 +559,10 @@ class SimpleOptions
     {
       sscanf( arg, "--%s=%s", name, value ) || sscanf( arg, "--%s", name );
       if(!name) return 0; // arg == "--"
-      values[name] = value||1;
+      if( value )
+        values[name] = value;
+      else
+        values[name]++;
       argv[0]=0;
       return 1;
     }
@@ -511,10 +570,12 @@ class SimpleOptions
     sscanf( arg, "-%s=%s", name, value ) || sscanf( arg, "-%s", name );
     if( !name || !sizeof(name) ) return 0;
     foreach( name/1; int pos; string c )
-      if( pos == sizeof(name)-1 )
-        values[c] = value||1;
+    {
+      if( value && pos == sizeof(name)-1 )
+        values[c] = value;
       else
-        values[c] = 1;
+        values[c]++;
+    }
     argv[0]=0;
     return 1;
   }
@@ -526,8 +587,10 @@ class SimpleOptions
 // -bar          ->  "b":1,"a":1,"r":1
 // -bar=foo      ->  "b":1,"a":1,"r":"foo" (?)
 // --foo --bar   ->  "foo":1,"bar":1
-// --foo - --bar -> "foo":1
-// --foo x --bar -> "foo":1 (?)
+// --foo - --bar ->  "foo":1
+// --foo x --bar ->  "foo":1 (?)
+// -foo          ->  "f":1,"o":2
+// -x -x -x      ->  "x":3
 //
 // void main(int n, array argv)
 // {
@@ -535,8 +598,39 @@ class SimpleOptions
 //   argv = opts[Arg.REST];
 // }
 
-
-mapping(string:string|int(1..1)) parse(array(string) argv)
+//! Convenience function for simple argument parsing.
+//!
+//! Handles the most common cases.
+//!
+//! The return value is a mapping from option name to the option value.
+//!
+//! The special index Arg.REST will be set to the remaining arguments
+//! after all options have been parsed.
+//!
+//! The following argument syntaxes are supported:
+//!
+//! @code
+//! --foo         ->  "foo":1
+//! --foo=bar     ->  "foo":"bar"
+//! -bar          ->  "b":1,"a":1,"r":1
+//! -bar=foo      ->  "b":1,"a":1,"r":"foo" (?)
+//! --foo --bar   ->  "foo":1,"bar":1
+//! --foo - --bar ->  "foo":1
+//! --foo x --bar ->  "foo":1 (?)
+//! -foo          ->  "f":1,"o":2
+//! -x -x -x      ->  "x":3
+//! @endcode
+//!
+//! @example
+//! @code
+//! void main(int n, array argv)
+//! {
+//!   mapping opts = Arg.parse(argv);
+//!   argv = opts[Arg.REST];
+//!   if( opts->help ) /*... */
+//! }
+//! @endcode
+mapping(string:string|int(1..)) parse(array(string) argv)
 {
   return (mapping)SimpleOptions(argv);
 }

@@ -1,5 +1,6 @@
 /* -*- C -*- */
 require gtksourceview;
+not gtksourceview20;
 
 class GTK2.SourceTagTable;
 inherit GTK2.TextTagTable;
@@ -35,7 +36,7 @@ void add_tags(array(GTK2.TextTag) tags)
       Pike_error("Empty array!\n");
     for (i=0; i<a->size; i++) {
       sv=(ITEM(a)+i);
-      if (sv->type!=PIKE_T_OBJECT)
+      if (TYPEOF(*sv) != PIKE_T_OBJECT)
 	continue;
       if (G_TYPE_FROM_INSTANCE(get_gobject(sv->u.object))!=GTK_TYPE_TEXT_TAG)
 	continue;

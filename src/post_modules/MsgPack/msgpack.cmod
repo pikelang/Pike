@@ -1,0 +1,826 @@
+#include "global.h"
+#include "cyclic.h"
+#include "pike_memory.h"
+#include "interpret.h"
+#include "pike_float.h"
+#include "pike_types.h"
+#include "bitvector.h"
+#include "builtin_functions.h"
+#include "mapping.h"
+#include "array.h"
+#include "bignum.h"
+#include "module_support.h"
+#include "modules/_Stdio/buffer.h"
+
+#define DEFAULT_CMOD_STORAGE static
+
+DECLARATIONS
+
+struct mpack_decode_context;
+
+typedef void (*extension_decode_callback)(struct svalue *, signed char, const unsigned char **,
+                                          size_t, const struct mpack_decode_context *);
+
+struct mpack_decode_context {
+    extension_decode_callback cb;
+    void *data;
+    struct object *buffer;
+    Buffer *io;
+};
+
+static struct object *mpack_get_subbuf(struct object *buffer, size_t len) {
+    struct object *o;
+
+    push_int64(len);
+    apply(buffer, "read_buffer", 1);
+
+    if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
+        Pike_error("Some data went missing.\n");
+
+    o = Pike_sp[-1].u.object;
+    Pike_sp--;
+    return o;
+}
+
+static size_t mpack_low_decode(struct svalue *dst, size_t dst_len,
+                               const unsigned char **_src, size_t *_src_len,
+                               const struct mpack_decode_context *ctx);
+
+static int mpack_decode_map(struct svalue *dst, size_t len, const unsigned char **_src, size_t *_src_len,
+                            const struct mpack_decode_context *ctx) {
+    struct mapping *m;
+
+    check_c_stack (1024);
+
+    if (len > INT_MAX) {
+        ref_push_object(ctx->buffer);
+        push_int(*_src - io_read_pointer(ctx->io));
+        push_text("Found mapping with more than %d entries");
+        push_int(INT_MAX);
+	apply (Pike_fp->current_object, "decode_error", 4);
+    }
+
+    m = allocate_mapping(len); 
+
+    if (len > 0) {
+        struct svalue tmp[2];
+
+        push_mapping(m);
+
+        do {
+            size_t n = mpack_low_decode(tmp, 2, _src, _src_len, ctx);
+
+            if (n < 2) {
+                size_t i;
+                for (i = 0; i < n; i++) free_svalue(tmp+i);
+                free_mapping(m);
+                Pike_sp--;
+                return 0;
+            }
+
+            low_mapping_insert(m, tmp, tmp+1, 2);
+            free_svalue(tmp);
+            free_svalue(tmp+1);
+        } while (--len);
+
+        Pike_sp--;
+    }
+    SET_SVAL(*dst, PIKE_T_MAPPING, 0, mapping, m);
+    return 1;
+}
+
+static int mpack_decode_array(struct svalue *dst, size_t len,
+                              const unsigned char **_src, size_t *_src_len,
+                              const struct mpack_decode_context *ctx) {
+    struct array *a;
+
+    check_c_stack (1024);
+
+    if (len > INT_MAX) {
+        ref_push_object(ctx->buffer);
+        push_int(*_src - io_read_pointer(ctx->io));
+        push_text("Found array with more than %d entries");
+        push_int(INT_MAX);
+	apply (Pike_fp->current_object, "decode_error", 4);
+    }
+    
+    a = allocate_array(len);
+
+    if (len > 0) {
+        push_array(a);
+
+        if (len != mpack_low_decode(ITEM(a), len, _src, _src_len, ctx)) {
+            free_array(a);
+            Pike_sp--;
+            return 0;
+        }
+
+        Pike_sp--;
+    }
+
+    SET_SVAL(*dst, PIKE_T_ARRAY, 0, array, a);
+
+    return 1;
+}
+
+static int mpack_decode_string(struct svalue *dst, size_t len,
+                               const unsigned char **_src, size_t *_src_len) {
+    size_t src_len = *_src_len;
+    struct pike_string *s;
+
+    if (src_len < len) return 0;
+
+    s = make_shared_binary_string((const char*)*_src, len);
+
+    push_string(s);
+    f_utf8_to_string(1);
+
+    Pike_sp --;
+    *dst = *Pike_sp;
+
+    src_len -= len;
+
+    *_src_len = src_len;
+    *_src += len;
+
+    return 1;
+}
+
+static int mpack_decode_extension(struct svalue *dst, signed char type,
+                                  const unsigned char **src, size_t src_len,
+                                  const struct mpack_decode_context *ctx) {
+    if (ctx->cb) {
+        
+        ctx->cb(dst, type, src, src_len, ctx);
+
+        if (!ctx->buffer->prog) Pike_error("Buffer object has been destructed.\n");
+
+        return 1;
+    }
+
+    return 0;
+}
+
+static size_t mpack_low_decode(struct svalue *dst, size_t dst_len,
+                               const unsigned char **_src, size_t *_src_len,
+                               const struct mpack_decode_context *ctx) {
+
+    const unsigned char *src = *_src;
+    size_t src_len = *_src_len;
+    unsigned char tag;
+    size_t num_decoded;
+
+    for (num_decoded = 0; src_len > 0 && num_decoded < dst_len; num_decoded ++, dst++) {
+        tag = src[0];
+
+        src_len --;
+        src ++;
+
+        if (tag <= 0x7f || tag >= 0xe0) {
+            /* fixnum */
+            SET_SVAL(*dst, PIKE_T_INT, NUMBER_NUMBER, integer, (signed char)tag);
+            continue;
+        }
+        
+        switch (tag) {
+        case 0x80: case 0x81: case 0x82: case 0x83:
+        case 0x84: case 0x85: case 0x86: case 0x87:
+        case 0x88: case 0x89: case 0x8a: case 0x8b:
+        case 0x8c: case 0x8d: case 0x8e: case 0x8f:
+            {
+                /* fixmap */
+                size_t tlen = tag & 0xf;
+                if (tlen > src_len) goto RETURN;
+
+                if (!mpack_decode_map(dst, tlen, &src, &src_len, ctx))
+                    goto RETURN;
+            }
+            break;
+        case 0x90: case 0x91: case 0x92: case 0x93:
+        case 0x94: case 0x95: case 0x96: case 0x97:
+        case 0x98: case 0x99: case 0x9a: case 0x9b:
+        case 0x9c: case 0x9d: case 0x9e: case 0x9f:
+            {
+                /* fixarray */
+                size_t tlen = tag & 0xf;
+                if (tlen > src_len) goto RETURN;
+
+                if (!mpack_decode_array(dst, tlen, &src, &src_len, ctx))
+                    goto RETURN;
+            }
+            break;
+        case 0xa0: case 0xa1: case 0xa2: case 0xa3:
+        case 0xa4: case 0xa5: case 0xa6: case 0xa7:
+        case 0xa8: case 0xa9: case 0xaa: case 0xab:
+        case 0xac: case 0xad: case 0xae: case 0xaf:
+        case 0xb0: case 0xb1: case 0xb2: case 0xb3:
+        case 0xb4: case 0xb5: case 0xb6: case 0xb7:
+        case 0xb8: case 0xb9: case 0xba: case 0xbb:
+        case 0xbc: case 0xbd: case 0xbe: case 0xbf:
+            {
+                /* fixstr */
+                size_t tlen = tag & 0x1f;
+                if (!mpack_decode_string(dst, tlen, &src, &src_len))
+                    goto RETURN;
+            }
+            break;
+        case 0xc0:
+            /* nil */
+            SET_SVAL(*dst, PIKE_T_OBJECT, 0, object, get_val_null());
+            break;
+        case 0xc1:
+            /* unused */
+            goto RETURN;
+            break;
+        case 0xc2:
+            /* false */
+            SET_SVAL(*dst, PIKE_T_OBJECT, 0, object, get_val_false());
+            break;
+        case 0xc3:
+            /* true */
+            SET_SVAL(*dst, PIKE_T_OBJECT, 0, object, get_val_true());
+            break;
+        case 0xc4:
+            /* bin8 */
+            {
+                size_t dlen;
+                if (src_len < 1) goto RETURN;
+                dlen = src[0];
+                src++;
+                src_len--;
+                if (src_len < dlen) goto RETURN;
+                io_consume(ctx->io, src - io_read_pointer(ctx->io));
+                SET_SVAL(*dst, PIKE_T_OBJECT, 0, object, mpack_get_subbuf(ctx->buffer, dlen));
+                src = io_read_pointer(ctx->io);
+            }
+            break;
+        case 0xc5:
+            /* bin16 */
+            {
+                size_t dlen;
+                if (src_len < 2) goto RETURN;
+                dlen = get_unaligned_be16(src);
+                src += 2;
+                src_len -= 2;
+                if (src_len < dlen) goto RETURN;
+                io_consume(ctx->io, src - io_read_pointer(ctx->io));
+                SET_SVAL(*dst, PIKE_T_OBJECT, 0, object, mpack_get_subbuf(ctx->buffer, dlen));
+                src = io_read_pointer(ctx->io);
+            }
+            break;
+        case 0xc6:
+            /* bin32 */
+            {
+                size_t dlen;
+                if (src_len < 4) goto RETURN;
+                dlen = get_unaligned_be32(src);
+                src += 4;
+                src_len -= 4;
+                if (src_len < dlen) goto RETURN;
+                io_consume(ctx->io, src - io_read_pointer(ctx->io));
+                SET_SVAL(*dst, PIKE_T_OBJECT, 0, object, mpack_get_subbuf(ctx->buffer, dlen));
+                src = io_read_pointer(ctx->io);
+            }
+            break;
+        case 0xc7:
+            /* ext8 */
+            {
+                size_t dlen;
+                signed char type;
+                if (src_len < 2) goto RETURN;
+                dlen = src[0];
+                type = src[1];
+                src += 2;
+                src_len -= 2;
+                if (src_len < dlen) goto RETURN;
+                if (!mpack_decode_extension(dst, type, &src, dlen, ctx)) goto RETURN;
+                src_len -= dlen;
+            }
+            break;
+        case 0xc8:
+            /* ext16 */
+            {
+                size_t dlen;
+                signed char type;
+                if (src_len < 3) goto RETURN;
+                dlen = get_unaligned_be16(src);
+                type = src[2];
+                src += 3;
+                src_len -= 3;
+                if (src_len < dlen) goto RETURN;
+                if (!mpack_decode_extension(dst, type, &src, dlen, ctx)) goto RETURN;
+                src_len -= dlen;
+            }
+            break;
+        case 0xc9:
+            /* ext32 */
+            {
+                size_t dlen;
+                signed char type;
+                if (src_len < 5) goto RETURN;
+                dlen = get_unaligned_be32(src);
+                type = src[4];
+                src += 5;
+                src_len -= 5;
+                if (src_len < dlen) goto RETURN;
+                if (!mpack_decode_extension(dst, type, &src, dlen, ctx)) goto RETURN;
+                src_len -= dlen;
+            }
+            break;
+        case 0xca:
+            /* float32 */
+            {
+                float f;
+                unsigned INT32 v;
+                if (src_len < 4) goto RETURN;
+                v = get_unaligned_be32(src);
+                memcpy(&f, &v, sizeof(f));
+                SET_SVAL_TYPE(*dst, PIKE_T_FLOAT);
+                dst->u.float_number = f;
+                src_len -= 4;
+                src += 4;
+            }
+            break;
+        case 0xcb: 
+            /* float64 */
+            {
+                double f;
+                unsigned INT64 v;
+                if (src_len < 8) goto RETURN;
+                v = get_unaligned_be64(src);
+                memcpy(&f, &v, sizeof(f));
+                SET_SVAL_TYPE(*dst, PIKE_T_FLOAT);
+                dst->u.float_number = f;
+                src_len -= 8;
+                src += 8;
+            }
+            break;
+        case 0xcc:
+            /* uint8 */
+            if (src_len < 1) goto RETURN;
+            /* this is automatically promoted to int */
+            SET_SVAL(*dst, PIKE_T_INT, NUMBER_NUMBER, integer, src[0]);
+            src_len --;
+            src ++;
+            break;
+        case 0xcd:
+            /* uint16 */
+            if (src_len < 2) goto RETURN;
+            /* this is automatically promoted to int */
+            SET_SVAL(*dst, PIKE_T_INT, NUMBER_NUMBER, integer, get_unaligned_be16(src));
+            src_len -= 2;
+            src += 2;
+            break;
+        case 0xce:
+            /* uint32 */
+            if (src_len < 4) goto RETURN;
+#if SIZEOF_INT_TYPE > 4
+            SET_SVAL(*dst, PIKE_T_INT, NUMBER_NUMBER, integer, (INT_TYPE)get_unaligned_be32(src));
+#else
+            push_ulongest(get_unaligned_be32(src));
+            move_svalue(dst, --Pike_sp);
+#endif
+            src_len -= 4;
+            src += 4;
+            break;
+        case 0xcf:
+            /* uint64 */
+            if (src_len < 8) goto RETURN;
+            push_ulongest(get_unaligned_be64(src));
+            move_svalue(dst, --Pike_sp);
+            src_len -= 8;
+            src += 8;
+            break;
+        case 0xd0:
+            /* int8 */
+            if (src_len < 1) goto RETURN;
+            SET_SVAL(*dst, PIKE_T_INT, NUMBER_NUMBER, integer, (signed char)src[0]);
+            src++;
+            src_len --;
+            break;
+        case 0xd1:
+            /* int16 */
+            if (src_len < 2) goto RETURN;
+            SET_SVAL(*dst, PIKE_T_INT, NUMBER_NUMBER, integer, (short)get_unaligned_be16(src));
+            src += 2;
+            src_len -= 2;
+            break;
+        case 0xd2:
+            /* int32 */
+            if (src_len < 4) goto RETURN;
+            SET_SVAL(*dst, PIKE_T_INT, NUMBER_NUMBER, integer, (int)get_unaligned_be32(src));
+            src += 4;
+            src_len -= 4;
+            break;
+        case 0xd3:
+            /* int64 */
+            if (src_len < 8) goto RETURN;
+#if SIZEOF_INT_TYPE >= 8
+            SET_SVAL(*dst, PIKE_T_INT, NUMBER_NUMBER, integer, (INT_TYPE)get_unaligned_be64(src));
+#else
+            push_int64(get_unaligned_be64(src));
+            move_svalue(dst, --Pike_sp);
+#endif
+            src += 8;
+            src_len -= 8;
+            break;
+        case 0xd4:
+        case 0xd5:
+        case 0xd6:
+        case 0xd7:
+        case 0xd8:
+            /* fixext1 - fixext16*/
+            {
+                size_t dlen = 1 + (1 << (tag - 0xd4));
+                signed char type;
+                if (src_len < dlen+1) goto RETURN;
+                type = src[0];
+                src ++;
+                src_len--;
+                if (!mpack_decode_extension(dst, type, &src, dlen, ctx)) goto RETURN;
+                src_len -= dlen;
+            }
+            break;
+        case 0xd9:
+            /* str8 */
+            {
+                size_t tlen;
+                if (src_len < 1) goto RETURN;
+                tlen = src[0];
+                src += 1;
+                src_len -= 1;
+
+                if (!mpack_decode_string(dst, tlen, &src, &src_len))
+                    goto RETURN;
+            }
+            break;
+        case 0xda:
+            /* str16 */
+            {
+                size_t tlen;
+                if (src_len < 2) goto RETURN;
+                tlen = get_unaligned_be16(src);
+                src += 2;
+                src_len -= 2;
+
+                if (!mpack_decode_string(dst, tlen, &src, &src_len))
+                    goto RETURN;
+            }
+            break;
+        case 0xdb:
+            /* str32 */
+            {
+                size_t tlen;
+                if (src_len < 4) goto RETURN;
+                tlen = get_unaligned_be32(src);
+                src += 4;
+                src_len -= 4;
+
+                if (!mpack_decode_string(dst, tlen, &src, &src_len))
+                    goto RETURN;
+            }
+            break;
+        case 0xdc:
+            /* array16 */
+            {
+                size_t tlen;
+                if (src_len < 2) goto RETURN;
+                tlen = get_unaligned_be16(src);
+                src += 2;
+                src_len -= 2;
+
+                if (!mpack_decode_array(dst, tlen, &src, &src_len, ctx))
+                    goto RETURN;
+            }
+            break;
+        case 0xdd:
+            /* array32 */
+            {
+                size_t tlen;
+                if (src_len < 4) goto RETURN;
+                tlen = get_unaligned_be32(src);
+                src += 4;
+                src_len -= 4;
+
+                if (!mpack_decode_array(dst, tlen, &src, &src_len, ctx))
+                    goto RETURN;
+            }
+            break;
+        case 0xde:
+            /* map16 */
+            {
+                size_t tlen;
+                if (src_len < 2) goto RETURN;
+                tlen = get_unaligned_be16(src);
+                src += 2;
+                src_len -= 2;
+
+                if (!mpack_decode_map(dst, tlen, &src, &src_len, ctx))
+                    goto RETURN;
+            }
+            break;
+        case 0xdf:
+            /* map32 */
+            {
+                size_t tlen;
+                if (src_len < 4) goto RETURN;
+                tlen = get_unaligned_be32(src);
+                src += 4;
+                src_len -= 4;
+
+                if (!mpack_decode_map(dst, tlen, &src, &src_len, ctx))
+                    goto RETURN;
+            }
+            break;
+        }
+    }
+
+RETURN:
+    *_src = src;
+    *_src_len = src_len;
+    return num_decoded;
+}
+
+struct mpack_encode_context {
+    struct svalue *handler;
+    struct object *buffer;
+    Buffer *io;
+};
+
+static void mpack_low_encode(const struct mpack_encode_context *ctx,
+                             const struct svalue *value, size_t len) {
+    size_t i; 
+    unsigned char *dst;
+    Buffer *io = ctx->io;
+
+    check_c_stack (1024);
+
+    for (i = 0; i < len; i++, value++) {
+        switch (TYPEOF(*value)) {
+        case PIKE_T_INT:
+            {
+                INT_TYPE n = value->u.integer;
+
+                if (n <= 0x7f && n >= -31) {
+                    dst = io_add_space(io, 1, 0);
+                    io->len ++;
+                    *dst = (signed char)n;
+                } else if (n >= MIN_INT8 && n <= MAX_INT8) {
+                    dst = io_add_space(io, 2, 0);
+                    io->len += 2;
+                    dst[0] = 0xd0;
+                    dst[1] = (signed char)n;
+                } else if (n >= MIN_INT16 && n <= MAX_INT16) {
+                    INT16 tmp = n;
+                    dst = io_add_space(io, 3, 0);
+                    io->len += 3;
+                    dst[0] = 0xd1;
+                    set_unaligned_be16(dst+1, tmp);
+                } else if (n >= MIN_INT32 && n <= MAX_INT32) {
+                    INT32 tmp = n;
+                    dst = io_add_space(io, 5, 0);
+                    io->len += 5;
+                    dst[0] = 0xd2;
+                    set_unaligned_be32(dst+1, tmp);
+                } else {
+                    INT64 tmp = n;
+                    dst = io_add_space(io, 9, 0);
+                    io->len += 9;
+                    dst[0] = 0xd3;
+                    set_unaligned_be64(dst+1, tmp);
+                }
+            }
+            break;
+        case PIKE_T_STRING:
+            {
+                struct pike_string *s;
+                size_t len;
+                ref_push_string(value->u.string);
+                f_string_to_utf8(1);
+
+                s = Pike_sp[-1].u.string;
+                len = s->len;
+
+                dst = io_add_space(io, MAXIMUM(len, 1), 0);
+
+                if (len <= 31) {
+                    io->len ++;
+                    *(dst++) = 0xa0 + len;
+                } else if (len < MAX_UINT16) {
+                    io->len += 3;
+                    *(dst++) = 0xda;
+                    set_unaligned_be16(dst, len);
+                } else if (len < MAX_UINT32) {
+                    io->len += 5;
+                    *(dst++) = 0xdb;
+                    set_unaligned_be32(dst, len);
+                } else Pike_error("String is too large.\n");
+
+                memcpy(io_add_space(io, len, 0), STR0(s), len);
+                io->len += len;
+
+                pop_stack();
+            }
+            break;
+        case PIKE_T_ARRAY:
+            {
+                struct array *a = value->u.array;
+                size_t len = a->size;
+
+                /* this is enough to fit any header */
+                dst = io_add_space(io, MAXIMUM(len, 1), 0);
+
+                if (len <= 15) {
+                    io->len++;
+                    *(dst++) = 0x90 + len;
+                } else if (len < MAX_UINT16) {
+                    io->len += 3;
+                    *(dst++) = 0xdc;
+                    set_unaligned_be16(dst, len);
+                } else if (len < MAX_UINT32) {
+                    io->len += 5;
+                    *(dst++) = 0xdd;
+                    set_unaligned_be32(dst, len);
+                } else Pike_error("Array too large.\n");
+
+                mpack_low_encode(ctx, ITEM(a), a->size);
+            }
+            break;
+        case PIKE_T_MAPPING:
+            {
+                struct mapping *m = value->u.mapping;
+                size_t len = m_sizeof(m);
+                INT32 e;
+                const struct keypair *k=0;
+
+                /* this is enough to fit any header */
+                dst = io_add_space(io, MAXIMUM(len, 1), 0);
+
+                if (len <= 15) {
+                    io->len++;
+                    *(dst++) = 0x80 + len;
+                } else if (len < MAX_UINT16) {
+                    io->len += 3;
+                    *(dst++) = 0xde;
+                    set_unaligned_be16(dst, len);
+                } else if (len < MAX_UINT32) {
+                    io->len += 5;
+                    *(dst++) = 0xdf;
+                    set_unaligned_be32(dst, len);
+                } else Pike_error("Array too large.\n");
+
+                NEW_MAPPING_LOOP(m->data) {
+                    mpack_low_encode(ctx, &k->ind, 1);
+                    mpack_low_encode(ctx, &k->val, 1);
+                }
+            }
+            break;
+        case PIKE_T_FLOAT:
+            {
+#if SIZEOF_FLOAT_TYPE == 4
+                unsigned INT32 tmp;
+                memcpy(&tmp, &value->u.float_number, sizeof(tmp));
+                dst = io_add_space(io, 5, 0);
+                io->len += 5;
+                *(dst++) = 0xca;
+                set_unaligned_be32(dst, tmp);
+#else
+                unsigned INT64 tmp;
+                memcpy(&tmp, &value->u.float_number, sizeof(tmp));
+                dst = io_add_space(io, 9, 0);
+                io->len += 9;
+                *(dst++) = 0xcb;
+                set_unaligned_be64(dst, tmp);
+#endif
+            }
+            break;
+        case PIKE_T_OBJECT:
+            {
+                void *src;
+                size_t dlen;
+                int shift;
+                enum memobj_type type = get_memory_object_memory(value->u.object, &src, &dlen, &shift); 
+
+                if (type != MEMOBJ_NONE) {
+                    if (type != MEMOBJ_STRING_BUFFER) {
+                        /* binary */
+
+                        if (ctx->buffer == value->u.object)
+                            Pike_error("Cannot encode itself.\n");
+
+                        if (dlen < MAX_UINT8) {
+                            dst = io_add_space(io, dlen + 2, 0);
+                            io->len += dlen + 2;
+                            *(dst++) = 0xc4;
+                            *(dst++) = dlen;
+                        } else if (dlen < MAX_UINT16) {
+                            dst = io_add_space(io, dlen + 3, 0);
+                            io->len += dlen + 3;
+                            *(dst++) = 0xc5;
+                            set_unaligned_be16(dst, dlen);
+                            dst += 2; 
+                        } else if (dlen < MAX_UINT32) {
+                            dst = io_add_space(io, 5, 0);
+                            io->len += 5;
+                            *(dst++) = 0xc6;
+                            set_unaligned_be32(dst, dlen);
+                            dst += 4;
+                            dst = io_add_space(io, dlen, 0);
+                            io->len += dlen;
+                        } else Pike_error("Too large binary data.\n");
+
+                        memcpy(dst, src, dlen);
+                        dst += dlen;
+                    } else {
+                        push_string(make_shared_binary_pcharp(MKPCHARP(src, shift), dlen));
+                        mpack_low_encode(ctx, Pike_sp-1, 1);
+                        pop_stack();
+                    }
+
+                    break;
+                }
+            }
+            /* FALL THROUGH */
+        default:
+            /* we pass anything else to the handler */
+            ref_push_object(ctx->buffer);
+            push_svalue(value);
+            apply_svalue(ctx->handler, 2);
+            pop_stack();
+            if (!ctx->buffer->prog) Pike_error("Buffer object was destructed.\n");
+            break;
+        }
+    }
+}
+
+static void decode_extension_svalue(struct svalue *dst, signed char type, const unsigned char **src, size_t len,
+                             const struct mpack_decode_context *ctx) {
+    struct svalue *handler = ctx->data;
+
+    io_consume(ctx->io, *src - io_read_pointer(ctx->io));
+
+    push_int(type);
+    push_int64(len);
+    apply(ctx->buffer, "read_buffer", 1);
+
+    *src = io_read_pointer(ctx->io);
+
+    apply_svalue(handler, 2);
+    move_svalue(dst, --Pike_sp);
+}
+
+/*! @module Standards */
+
+/*! @module MsgPack */
+
+PIKEFUN mixed decode_from(object buffer, void|function|object handler) {
+    struct mpack_decode_context ctx;
+    Buffer *io = io_buffer_from_object(buffer);
+    const unsigned char *src;
+    size_t len;
+
+    if (!io) SIMPLE_BAD_ARG_ERROR("decode_from", 1, "object(Stdio.Buffer)");
+
+    ctx.buffer = buffer;
+    ctx.io = io;
+
+    if (handler) {
+        ctx.cb = decode_extension_svalue;
+        ctx.data = handler;
+    } else {
+        ctx.cb = NULL;
+    }
+
+    len = io_len(io);
+    src = io_read_pointer(io);
+
+    push_undefined();
+
+    if (mpack_low_decode(Pike_sp-1, 1, &src, &len, &ctx) != 1) {
+        ref_push_object(buffer);
+        push_int(src - io_read_pointer(io));
+        push_text("EOF");
+	apply (Pike_fp->current_object, "decode_error", 3);
+        return;
+    }
+
+    /* NOTE: possible overflow? */
+    io_consume(io, src - io_read_pointer(io));
+}
+
+PIKEFUN void encode_to(object to, mixed value, function|object handler) {
+    struct mpack_encode_context ctx;
+    Buffer *io = io_buffer_from_object(to);
+
+    if (!io) SIMPLE_BAD_ARG_ERROR("encode_to", 1, "object(Stdio.Buffer)");
+
+    ctx.buffer = to;
+    ctx.io = io;
+    ctx.handler = handler;
+
+    mpack_low_encode(&ctx, value, 1);
+}
+
+/*! @endmodule */
+
+/*! @endmodule */

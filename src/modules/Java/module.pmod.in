@@ -1,6 +1,10 @@
 // -*- Pike -*-
 
 #pike __REAL_VERSION__
+
+constant dont_dump_program = 1;
+
+#if constant(@module@.jvm)
 inherit @module@;
 
 object machine;
@@ -408,7 +412,7 @@ protected class jconstructor {
 
   protected object cls, con;
   protected mapping(string:mixed) info;
-  
+
   object `()(mixed ... args)
   {
     object o = cls->_alloc();
@@ -692,18 +696,18 @@ protected class package {
 
       cls = find_class("java/lang/reflect/Field", i);
       i->fieldgetname_method = get_method(cls, "getName",
-					  "()Ljava/lang/String;", i); 
+					  "()Ljava/lang/String;", i);
       i->fieldgettype_method = get_method(cls, "getType",
 					  "()Ljava/lang/Class;", i);
       i->fieldgetmodifiers_method = get_method(cls, "getModifiers", "()I", i);
 
       cls = find_class("java/lang/reflect/Method", i);
       i->methodgetname_method = get_method(cls, "getName",
-					   "()Ljava/lang/String;", i); 
+					   "()Ljava/lang/String;", i);
       i->methodgetreturntype_method = get_method(cls, "getReturnType",
-						 "()Ljava/lang/Class;", i); 
+						 "()Ljava/lang/Class;", i);
       i->methodgetparametertypes_method =
-	get_method(cls, "getParameterTypes", "()[Ljava/lang/Class;", i); 
+	get_method(cls, "getParameterTypes", "()[Ljava/lang/Class;", i);
       i->methodgetmodifiers_method = get_method(cls, "getModifiers", "()I", i);
 
       cls = find_class("java/lang/reflect/Constructor", i);
@@ -788,10 +792,9 @@ object pkg;
 
 protected void create()
 {
-  program jvm = this->jvm;
-  if(jvm)
-    machine = jvm(getenv("CLASSPATH"));
+  machine = jvm(getenv("CLASSPATH"));
   if(machine)
     pkg = package("", (["jvm":machine]));
 }
 
+#endif /* Java.jvm */

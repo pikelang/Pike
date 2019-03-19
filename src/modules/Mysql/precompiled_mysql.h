@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -45,43 +44,12 @@
 #endif
 #endif
 
-/* From the Pike-dist */
-
 /*
- * Structures
+ * Macros
  */
 
-struct precompiled_mysql {
-#ifdef PIKE_THREADS
-  DEFINE_MUTEX(lock);
-#endif /* PIKE_THREADS */
-
-  MYSQL		*mysql;
-  struct pike_string	*host, *database, *user, *password;	/* Reconnect */
-  struct mapping   *options;
-  struct pike_string *conn_charset;
-};
-
-struct precompiled_mysql_result {
-  struct object *connection;
-  MYSQL_RES	*result;
-  int eof;
-  int typed_mode;
-};
-
-/*
- * Defines
- */
-
-#define PIKE_MYSQL	((struct precompiled_mysql *)(Pike_fp->current_storage))
-#define PIKE_MYSQL_RES	((struct precompiled_mysql_result *)(Pike_fp->current_storage))
-
-/*
- * Globals
- */
-
-extern struct program *mysql_program;
-extern struct program *mysql_result_program;
+#define PIKE_MYSQL_FLAG_STORE_RESULT	1
+#define PIKE_MYSQL_FLAG_TYPED_RESULT	2
 
 /*
  * Prototypes
@@ -89,6 +57,9 @@ extern struct program *mysql_result_program;
 
 /* From result.c */
 
+struct object *make_mysql_result(struct object *mysql,
+				 MYSQL_RES *result,
+				 int flags);
 void init_mysql_res_efuns(void);
 void init_mysql_res_programs(void);
 void exit_mysql_res(void);

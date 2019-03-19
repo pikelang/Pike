@@ -4,8 +4,6 @@
 
   creator: Honza Petrous, hop@unibase.cz
 
-  $Id$
-
  */
 
 #pike __REAL_VERSION__
@@ -20,7 +18,7 @@
 		  "decoder": ({ "_Ffmpeg.ffmpeg", _Ffmpeg.CODEC_ID_PCM_S16LE })
 		])
 #endif
-  	
+
   ]);
 
 #if constant(_Ffmpeg.ffmpeg)
@@ -59,13 +57,19 @@ class decoder {
     string cn = upper_case(codecname);
 
 #if 0
-    if(zero_type(codec_map[cn]) || !codec_map[cn]->decoder)
+    if(!has_index(codec_map, cn) || !codec_map[cn]->decoder)
       error("Decoder codec '"+codecname+"' isn't supported.\n");
 
     err = catch(codec = _Ffmpeg.ffmpeg(codec_map[cn]->decoder[1], 0));
 #else
     foreach(Array.filter(_Ffmpeg.list_codecs(), lambda(mapping m, string n) { return m->name == n; }, codecname), mapping fc)
-      if(!fc->encoder_flg && fc->type == _Ffmpeg.CODEC_TYPE_AUDIO) {
+      if(!fc->encoder_flg &&
+#if constant(_Ffmpeg.AVMEDIA_TYPE_AUDIO)
+	 fc->type == _Ffmpeg.AVMEDIA_TYPE_AUDIO
+#else
+	 fc->type == _Ffmpeg.CODEC_TYPE_AUDIO
+#endif
+	 ) {
         err = catch(codec = _Ffmpeg.ffmpeg(fc->id, 0));
 	break;
       }

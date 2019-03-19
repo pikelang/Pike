@@ -1,49 +1,49 @@
-/*
- * A GBM-based storage manager.
- * by Francesco Chemolli <kinkie@roxen.com>
- *
- * $Id$
- *
- * This storage manager provides the means to save data to memory.
- * In this manager I'll add reference documentation as comments to
- * interfaces. It will be organized later in a more comprehensive format
- *
- * Settings will be added later.
- * TODO: verify dependants' implementation.
- */
+//! A GBM-based storage manager.
+//!
+//! This storage manager provides the means to save data to memory.
+//! In this manager I'll add reference documentation as comments to
+//! interfaces. It will be organized later in a more comprehensive format
+//!
+//! Settings will be added later.
+//!
+//! @thanks
+//!   Thanks to Francesco Chemolli <kinkie@@roxen.com> for the contribution.
 
 #pike __REAL_VERSION__
+#require constant(Gdbm.gdbm)
 
 //after this many deletion ops, the databases will be compacted.
 #define CLUTTERED 1000
 
-#if constant(Gdbm.gdbm)
+inherit Cache.Storage.Base;
+
 Gdbm.gdbm db, metadb;
 int deletion_ops=0; //every 1000 deletion ops, we'll reorganize.
 int have_dependants=0;
 
+//!
 class Data {
   inherit Cache.Data;
 
   int _size=0;
   string _key=0;
   mixed _data=0;
-  
+
   int size() {
     return _size; //it's guarranteed to be set. See set()
   }
-  
+
   mixed data() {
     if (!_data)
       _data=decode_value(db[_key]);
     return _data;
   }
-  
+
   private inline string metadata_dump () {
     return encode_value( (["size":_size,"atime":atime,
                            "ctime":ctime,"etime":etime,"cost":cost]) );
   }
-  
+
   //dumps the metadata if necessary.
   void sync() {
     metadb[_key]=metadata_dump();
@@ -53,8 +53,8 @@ class Data {
     atime=time(1);
     sync();
   }
-  
-  protected void create(string key, Gdbm.gdbm data_db, 
+
+  protected void create(string key, Gdbm.gdbm data_db,
 		     Gdbm.gdbm metadata_db, string dumped_metadata) {
     mapping m=decode_value(dumped_metadata);
     _key=key;
@@ -66,7 +66,7 @@ class Data {
     etime=m->etime;
     cost=(float)(m->cost||1);
   }
-  
+
 }
 
 
@@ -107,7 +107,7 @@ void set(string key, mixed value,
   db[key]=tmp;
   meta=(["size":sizeof(tmp),"atime":tm,"ctime":tm]);
   if (expire_time) meta->etime=expire_time;
-  if (preciousness||!zero_type(preciousness))
+  if (preciousness||!undefinedp(preciousness))
     meta->cost=preciousness;
   else
     meta->cost=1.0;
@@ -115,7 +115,7 @@ void set(string key, mixed value,
     meta->dependants=dependants;
     have_dependants=1;
   }
-  
+
   metadb[key]=encode_value(meta);
 }
 
@@ -163,7 +163,7 @@ void delete(string key, void|int(0..1) hard) {
     //werror("Done chain-deleteing\n");
     return;                   // return so that reorg takes place at the end
   }
-  
+
   if (deletion_ops > CLUTTERED) {
     //werror("Reorganizing database\n");
     db->reorganize();
@@ -172,15 +172,11 @@ void delete(string key, void|int(0..1) hard) {
   }
 }
 
-//A GDBM storage-manager must be hooked to a GDBM Database.
+//! A GDBM storage-manager must be hooked to a GDBM Database.
 void create(string path) {
   db=Gdbm.gdbm(path+".db","rwcf");
   metadb=Gdbm.gdbm(path+"_meta.db","rwcf");
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif // constant(Gdbm.gdbm)
 
 /**************** thoughts and miscellanea ******************/
 //maybe we should split the database into two databases, one for the data

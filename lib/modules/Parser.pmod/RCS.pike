@@ -1,8 +1,6 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id$
-
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
 
@@ -95,7 +93,11 @@ string rcs_file_name;
 //!   initialization will be performed at all. If no value is given at
 //!   all, but @[file_name] was provided, that file will be loaded and
 //!   parsed for object initialization.
-void create(string|void file_name, string|int(0..0)|void file_contents)
+//! @param max_revisions
+//!   Maximum number of revisions to process. If unset, all revisions
+//!   will be processed.
+void create(string|void file_name, string|int(0..0)|void file_contents,
+            void|int max_revisions)
 {
   if(!file_name)
   {
@@ -105,14 +107,14 @@ void create(string|void file_name, string|int(0..0)|void file_contents)
   else
   {
     rcs_file_name = file_name;
-    if(!zero_type(file_contents) && !file_contents)
+    if(!undefinedp(file_contents) && !file_contents)
       return;
     if(!file_contents)
       file_contents = Stdio.read_file(file_name);
     if(!file_contents)
       error("Couldn't read %s\n", file_name);
   }
-  parse(tokenize(file_contents));
+  parse(tokenize(file_contents), 0, max_revisions);
 }
 
 //! Lower-level API function for parsing only the admin section (the
@@ -151,7 +153,7 @@ loop:
 	      break;
 	  case "symbols":
 	      tags = parse_mapping( raw[i][1..] );
-	      foreach(tags; string name; string revision ) 
+	      foreach(tags; string name; string revision )
 	      {
 		  if(revision == "1.1.1")
 		      branches[revision] = name; // the vendor branch
@@ -198,6 +200,9 @@ loop:
 //! @param raw
 //!   The tokenized RCS file, with admin section removed. (See
 //!   @[parse_admin_section].)
+//! @param max_revisions
+//!   Maximum number of revisions to process. If unset, all revisions
+//!   will be processed.
 //! @returns
 //!   The rest of the RCS file, delta sections removed.
 //! @seealso
@@ -205,11 +210,11 @@ loop:
 //!   @[parse], @[create]
 //! @fixme
 //!   Does not handle rcsfile(5) newphrase skipping.
-array parse_delta_sections(array raw)
+array parse_delta_sections(array raw, void|int max_revisions)
 {
   string revision, ptr;
   revisions = ([]);
-  
+
   int i;
   Revision R;
 loop:
@@ -239,6 +244,9 @@ loop:
 	  default:
 	      if( sizeof(raw[i])>2 && raw[i][1] == "date" )
 	      {
+                  if (max_revisions && sizeof (revisions) >= max_revisions)
+                    break loop;
+
 		  R = Revision();
 		  R->revision = revision = raw[i][0];
 		  if( String.count( revision, "." ) == 1)
@@ -263,23 +271,26 @@ loop:
   {
     if(ptr = R->rcs_next)
     {
-      Revision N = revisions[ptr];
-      N->rcs_prev = R->revision;	// The reverse of rcs_next.
+      if (Revision N = revisions[ptr]) {
+        N->rcs_prev = R->revision;	// The reverse of rcs_next.
 
-      if(String.count(R->revision, ".") > 1)
-      {
-	R->next = ptr; // on a branch, the next pointer means the successor
-	N->ancestor = R->revision;
-      }
-      else // current revision is on the trunk:
-      {
-	R->ancestor = ptr; // on the trunk, the next pointer is the ancestor
-	N->next = R->revision;
+        if(String.count(R->revision, ".") > 1)
+        {
+	  R->next = ptr; // on a branch, the next pointer means the successor
+	  N->ancestor = R->revision;
+        }
+        else // current revision is on the trunk:
+        {
+	  R->ancestor = ptr; // on the trunk, the next pointer is the ancestor
+	  N->next = R->revision;
+        }
       }
     }
     foreach(R->branches, string branch_point) {
-      revisions[branch_point]->rcs_prev = R->revision;
-      revisions[branch_point]->ancestor = R->revision;
+      if (revisions[branch_point]) {
+        revisions[branch_point]->rcs_prev = R->revision;
+        revisions[branch_point]->ancestor = R->revision;
+      }
     }
   }
 
@@ -297,7 +308,7 @@ loop:
   }
 #endif
 
-  return raw[i][2..];
+  return raw[-1][2..];
 }
 
 //! @decl array(array(string)) tokenize( string data )
@@ -452,14 +463,14 @@ class DeltatextIterator
 	  return 0;
 
       this_rev = raw[o];
+      Revision current = revisions[this_rev];
+      if (!current) return 0;
 
       if(callback)
 	  if(callback_args)
 	      callback(this_rev, @callback_args);
 	  else
 	      callback(this_rev);
-
-      Revision current = revisions[this_rev];
 
       if( raw[o+1] != "log" )  return 0;
 
@@ -528,6 +539,9 @@ class DeltatextIterator
 //!   The unprocessed RCS file.
 //! @param progress_callback
 //!   Passed on to @[parse_deltatext_sections].
+//! @param max_revisions
+//!   Maximum number of revisions to process. If unset, all revisions
+//!   will be processed.
 //! @returns
 //!   The fully initialized object (only returned for API convenience;
 //!   the object itself is destructively modified to match the data
@@ -535,9 +549,11 @@ class DeltatextIterator
 //! @seealso
 //!   @[parse_admin_section], @[parse_delta_sections],
 //!   @[parse_deltatext_sections], @[create]
-this_program parse(array raw, void|function(string:void) progress_callback)
+this_program parse(array raw, void|function(string:void) progress_callback,
+                   void|int max_revisions)
 {
-  parse_deltatext_sections(parse_delta_sections(parse_admin_section(raw)),
+  parse_deltatext_sections(parse_delta_sections(parse_admin_section(raw),
+                                                max_revisions),
 			   progress_callback);
   return this;
 }
@@ -548,88 +564,115 @@ this_program parse(array raw, void|function(string:void) progress_callback)
 // manual calls to gc().                                     / jhs, 2004-02-24
 
 //! Returns the file contents from the revision @[rev], without performing
-//! any keyword expansion.
+//! any keyword expansion. If @[dont_cache_data] is set we will not keep
+//! intermediate revisions in memory unless they already existed. This will
+//! cut down memory use at the expense of slow access to older revisions.
 //! @seealso
 //!   @[expand_keywords_for_revision()]
-string get_contents_for_revision( string|Revision rev )
+string get_contents_for_revision( string|Revision rev,
+				  void|int(0..1) dont_cache_data)
 {
   if( stringp( rev ) ) rev = revisions[rev];
   if( !rev ) return 0;
   if( rev->text ) return rev->text;
-  Revision parent = revisions[rev->rcs_prev];
-  string old = get_contents_for_revision( parent ), diff = rev->rcs_text;
-  String.Buffer new = String.Buffer();
-  function append = new->add;
-  int op, of, ot, dt, at, cnt, from, lines;
-  while( sizeof( diff ) )
-  {
-    sscanf( diff, "%c%d %d\n%s", op, from, lines, diff );
-    if( op == 'd' )
-    {
-      cnt = from - at - 1; // possibly scan forward past a few lines...
-      if( cnt && of < sizeof(old) )
-      {
-	ot = of - 1;
-	while( cnt-- )
-	{
-	  ot = search( old, "\n", ++ot );
-	  if( ot == -1 )
-	  {
-	    ot = sizeof( old );
+
+  //  Find first revision with expanded text content and apply subsequent
+  //  diffs.
+  string base;
+  array(Revision) diff_revs = ({ rev });
+  Revision cur = rev;
+  do {
+    if (cur = revisions[cur->rcs_prev]) {
+      base = cur->text;
+      if (!base)
+	diff_revs += ({ cur });
+    }
+  } while (cur && !base);
+  if (!base)
+    return 0;
+
+  Revision clear_in_next_iter = 0;
+  foreach (reverse(diff_revs), Revision cur) {
+    string diff = cur->rcs_text;
+    String.Buffer new = String.Buffer();
+    string old = base;
+    function append = new->add;
+    int op, of, ot, dt, at, cnt, from, lines;
+    while (sizeof(diff)) {
+      sscanf( diff, "%c%d %d\n%s", op, from, lines, diff );
+      if( op == 'd' ) {
+	cnt = from - at - 1; // possibly scan forward past a few lines...
+	if( cnt && of < sizeof(old) ) {
+	  ot = of - 1;
+	  while( cnt-- ) {
+	    ot = search( old, "\n", ++ot );
+	    if( ot == -1 ) {
+	      ot = sizeof( old );
+	      break;
+	    }
+	  }
+	  append( old[of..ot++] ); // ...who were intact since last rev...
+	  of = ot;
+	}
+	at = from + lines - 1; // ...to the [lines] lines from line [at]...
+	while( lines-- ) {
+	  of = search( old, "\n", of );
+	  if( of == -1 ) {
+	    of = sizeof( old );
+	    break;
+	  }
+	  of++;
+	} // ...that should simply be deleted (not passed on to [new])
+      } else {
+	// op == 'a'
+	cnt = from - at; // possibly scan forward past a few lines...
+	if( cnt && of < sizeof(old) ) {
+	  ot = of - 1;
+	  while( cnt-- ) {
+	    ot = search( old, "\n", ++ot );
+	    if(ot == -1) {
+	      ot = sizeof( old );
+	      break;
+	    }
+	  }
+	  append( old[of..ot++] ); // ...who were intact since last rev...
+	  of = ot;
+	}
+	at = from; // ...to the line...
+	dt = -1;
+	while( lines-- ) {
+	  dt = search( diff, "\n", ++dt );
+	  if(dt == -1) {
+	    dt = sizeof( diff );
 	    break;
 	  }
 	}
-	append( old[of..ot++] ); // ...who were intact since last rev...
-	of = ot;
+	append( diff[..dt++] ); // ...where we should add [lines] new rows.
+	diff = diff[dt..];
       }
-      at = from + lines - 1; // ...to the [lines] lines from line [at]...
-      while( lines-- )
-      {
-	of = search( old, "\n", of );
-	if( of == -1 )
-	{
-	  of = sizeof( old );
-	  break;
-	}
-	of++;
-      } // ...that should simply be deleted (not passed on to [new])
     }
-    else // op == 'a'
-    {
-      cnt = from - at; // possibly scan forward past a few lines...
-      if( cnt && of < sizeof(old) )
-      {
-	ot = of - 1;
-	while( cnt-- )
-	{
-	  ot = search( old, "\n", ++ot );
-	  if(ot == -1)
-	  {
-	    ot = sizeof( old );
-	    break;
-	  }
-	}
-	append( old[of..ot++] ); // ...who were intact since last rev...
-	of = ot;
-      }
-      at = from; // ...to the line...
-      dt = -1;
-      while( lines-- )
-      {
-	dt = search( diff, "\n", ++dt );
-	if(dt == -1)
-	{
-	  dt = sizeof( diff );
-	  break;
-	}
-      }
-      append( diff[..dt++] ); // ...where we should add [lines] new rows.
-      diff = diff[dt..];
+    append( old[of..] );
+    base = new->get();
+
+    //  Caller may request that intermediate revisions are not stored
+    //  in memory longer than necessary.
+    if (dont_cache_data) {
+      if (clear_in_next_iter)
+	clear_in_next_iter->text = 0;
+      if (!cur->text)
+	clear_in_next_iter = cur;
     }
+    cur->text = base;
   }
-  append( old[of..] );
-  return rev->text = new->get();
+
+  //  Return for requested revision
+  string res = rev->text;
+  if (dont_cache_data)
+    rev->text = 0;
+  return res;
 }
+
+
 
 protected string kwchars = Array.uniq(sort("Author" "Date" "Header" "Id" "Name"
 					"Locker" /*"Log"*/ "RCSfile"

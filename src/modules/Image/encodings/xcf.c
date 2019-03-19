@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -22,6 +21,7 @@
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "bignum.h"
+#include "pike_types.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -66,11 +66,17 @@ static struct program *substring_program;
 
 static void f_substring_cast( INT32 args )
 {
-  /* FIXME: assumes string */
-  struct substring *s = SS(fp->current_object);
-  pop_n_elems( args );
-  push_string( make_shared_binary_string( (((char *)s->s->str)+s->offset),
-                                          s->len ) );
+  struct pike_string *type = sp[-args].u.string;
+  pop_n_elems(args); /* type have at least one more reference. */
+
+  if( type == literal_string_string )
+  {
+    struct substring *s = SS(fp->current_object);
+    push_string( make_shared_binary_string( (((char *)s->s->str)+s->offset),
+                                            s->len ) );
+  }
+  else
+    push_undefined();
 }
 
 static void f_substring_index( INT32 args )
@@ -81,8 +87,7 @@ static void f_substring_index( INT32 args )
 
   if( i < 0 ) i = s->len + i;
   if( i >= s->len ) {
-    Pike_error("Index out of bounds, %ld > %ld\n", i,
-	  DO_NOT_WARN((long)s->len-1) );
+    Pike_error("Index out of bounds, %ld > %ld\n", i, (long)s->len-1 );
   }
   push_int( ((unsigned char *)s->s->str)[s->offset+i] );
 }
@@ -95,7 +100,7 @@ static void f_substring__sprintf( INT32 args )
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(sp[-2]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
   if (TYPEOF(sp[-1]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
   x = sp[-2].u.integer;
@@ -104,23 +109,23 @@ static void f_substring__sprintf( INT32 args )
   switch( x )
   {
    case 't':
-     push_constant_text("SubString");
+     push_static_text("SubString");
      return;
    case 'O':
-     push_constant_text("SubString( %O /* [+%d .. %d] */ )" );
-     push_text("string"); f_substring_cast( 1 );
+     push_static_text("SubString( %O /* [+%d .. %d] */ )" );
+     ref_push_string(literal_string_string); f_substring_cast( 1 );
 
      push_int64( s->len );
      push_int64( s->offset );
      f_sprintf( 4 );
      return;
-   default: 
+   default:
      push_int(0);
      return;
   }
 }
 
-static void f_substring_get_int( INT32 args )
+static void f_substring_get_int( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   int res;
@@ -135,7 +140,7 @@ static void f_substring_get_int( INT32 args )
 }
 
 
-static void f_substring_get_uint( INT32 args )
+static void f_substring_get_uint( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   unsigned int res;
@@ -149,7 +154,7 @@ static void f_substring_get_uint( INT32 args )
   push_int64( res );
 }
 
-static void f_substring_get_ushort( INT32 args )
+static void f_substring_get_ushort( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   unsigned short res;
@@ -163,7 +168,7 @@ static void f_substring_get_ushort( INT32 args )
   push_int( res );
 }
 
-static void f_substring_get_short( INT32 args )
+static void f_substring_get_short( INT32 UNUSED(args) )
 {
   struct substring *s = SS(fp->current_object);
   short res;
@@ -177,7 +182,7 @@ static void f_substring_get_short( INT32 args )
   push_int( res );
 }
 
-static void push_substring( struct pike_string *s, 
+static void push_substring( struct pike_string *s,
                             ptrdiff_t offset,
                             ptrdiff_t len )
 {
@@ -190,7 +195,7 @@ static void push_substring( struct pike_string *s,
   push_object( o );
 }
 
-static void free_substring(struct object *o)
+static void free_substring(struct object *UNUSED(o))
 {
   if( SS(fp->current_object)->s )
   {
@@ -315,8 +320,7 @@ static char *read_data( struct buffer *from, size_t len )
 {
   char *res;
   if( from->len < len )
-    Pike_error("Not enough space for %lu bytes\n",
-	  DO_NOT_WARN((unsigned long)len));
+    Pike_error("Not enough space for %lu bytes\n", (unsigned long)len);
   res = (char *)from->str;
   from->str += len;
   from->len -= len;
@@ -507,7 +511,7 @@ static struct level read_level( struct buffer *buff,
   int offset;
   struct tile *last_tile = NULL;
 /*   int all_tiles_eq = 0; */
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
 
@@ -517,7 +521,7 @@ static struct level read_level( struct buffer *buff,
   {
     struct buffer ob = *initial;
     int offset2 = read_uint( buff );
-    struct tile *tile = (struct tile *)xalloc(sizeof(struct tile));
+    struct tile *tile = xalloc(sizeof(struct tile));
     read_data( &ob, offset );
     if(last_tile)
       last_tile->next = tile;
@@ -539,7 +543,7 @@ static struct hierarchy read_hierarchy( struct buffer *buff,
   unsigned int offset;
   struct buffer ob;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.bpp = read_uint( buff );
@@ -558,7 +562,7 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
   int offset;
   struct property tmp;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.name = read_string( buff );
@@ -569,7 +573,7 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
     tmp = read_property( buff );
     if(tmp.type)
     {
-      struct property *s = (struct property *)xalloc(sizeof(struct property));
+      struct property *s = xalloc(sizeof(struct property));
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -595,7 +599,7 @@ static struct channel read_channel( struct buffer *buff,
   int offset;
   struct property tmp;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.name = read_string( buff );
@@ -606,7 +610,7 @@ static struct channel read_channel( struct buffer *buff,
     tmp = read_property( buff );
     if(tmp.type)
     {
-      struct property *s =(struct property *)xalloc( sizeof(struct property ));
+      struct property *s = xalloc( sizeof(struct property ));
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -632,7 +636,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
   int h_offset;
   ONERROR err;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   SET_ONERROR( err, free_layer, &res );
   res.width = read_uint( buff );
   res.height = read_uint( buff );
@@ -645,7 +649,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
     tmp = read_property( buff );
     if(tmp.type)
     {
-      struct property *s=(struct property *)xalloc( sizeof(struct property ));
+      struct property *s=xalloc( sizeof(struct property ));
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -658,10 +662,10 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
   if(lm_offset)
   {
     struct buffer loffset = *initial;
-    struct layer_mask *m=(struct layer_mask *)xalloc(sizeof(struct layer_mask));
+    struct layer_mask *m=xalloc(sizeof(struct layer_mask));
     res.mask = m;
     read_data( &loffset, lm_offset );
-    MEMSET(m, 0, sizeof( struct layer_mask ));
+    memset(m, 0, sizeof( struct layer_mask ));
     *m = read_layer_mask( &loffset, initial );
   }
 
@@ -685,7 +689,7 @@ static struct gimp_image read_image( struct buffer * data )
   unsigned int offset;
   ONERROR err;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   initial = *data;
   if(data->len < 34)
     Pike_error("This is not an xcf file (to little data)\n");
@@ -713,7 +717,7 @@ static struct gimp_image read_image( struct buffer * data )
     tmp = read_property( data );
     if(tmp.type)
     {
-      struct property *s= (struct property *)xalloc( sizeof(struct property ));
+      struct property *s=xalloc( sizeof(struct property ));
       *s = tmp;
       s->next = res.first_property;
       res.first_property = s;
@@ -728,7 +732,7 @@ static struct gimp_image read_image( struct buffer * data )
     tmp = read_layer( &layer_data, &initial );
     if( tmp.width && tmp.height )
     {
-      struct layer *s = (struct layer *)xalloc( sizeof(struct layer));
+      struct layer *s = xalloc( sizeof(struct layer));
       *s = tmp;
       s->next = res.first_layer;
       res.first_layer = s;
@@ -743,7 +747,7 @@ static struct gimp_image read_image( struct buffer * data )
     tmp = read_channel( &channel_data, &initial );
     if( tmp.width && tmp.height )
     {
-      struct channel *s = (struct channel *)xalloc( sizeof(struct channel));
+      struct channel *s = xalloc( sizeof(struct channel));
       *s = tmp;
       s->next = res.first_channel;
       res.first_channel = s;
@@ -769,7 +773,7 @@ static void push_properties( struct property *p )
     f_aggregate_mapping( 4 );
     p = p->next;
   }
-  f_aggregate(DO_NOT_WARN((INT32)(sp - osp)));
+  f_aggregate((INT32)(sp - osp));
 }
 
 static void push_tile( struct tile *t )
@@ -796,8 +800,8 @@ static void push_hierarchy( struct hierarchy * h )
     push_tile( t );
     t=t->next;
   }
-  f_aggregate(DO_NOT_WARN((INT32)(sp - tsp)));
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
+  f_aggregate((INT32)(sp - tsp));
+  f_aggregate_mapping((INT32)(sp - osp));
 }
 
 static void push_layer_mask(struct layer_mask *i)
@@ -810,7 +814,7 @@ static void push_layer_mask(struct layer_mask *i)
   ref_push_string( s_name );  push_buffer( &i->name );
   ref_push_string( s_image_data );
   push_hierarchy( &i->image_data );
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
+  f_aggregate_mapping((INT32)(sp-osp));
 }
 
 static void push_channel(struct channel *i)
@@ -823,7 +827,7 @@ static void push_channel(struct channel *i)
   ref_push_string( s_name );  push_buffer( &i->name );
   ref_push_string( s_image_data );
   push_hierarchy( &i->image_data );
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
+  f_aggregate_mapping((INT32)(sp-osp));
 }
 
 static void push_layer(struct layer *i)
@@ -842,7 +846,7 @@ static void push_layer(struct layer *i)
     ref_push_string( s_mask );
     push_layer_mask( i->mask );
   }
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
+  f_aggregate_mapping((INT32)(sp - osp));
 }
 
 
@@ -877,7 +881,7 @@ static void push_image( struct gimp_image *i )
     c = c->next;
   }
   f_aggregate( nitems );
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
+  f_aggregate_mapping((INT32)(sp-osp));
 }
 
 
@@ -1185,15 +1189,14 @@ void image_xcf_f__decode_tiles( INT32 args )
                 &io, &ao, &tiles, &rle, &bpp, &cmapo, &shrink, &rxs, &rys);
 
 
-  if( !(i = (struct image *)get_storage( io, image_program )))
+  if( !(i = get_storage( io, image_program )))
     Pike_error("Wrong type object argument 1 (image)\n");
 
-  if(ao && !(a = (struct image *)get_storage( ao, image_program )))
+  if(ao && !(a = get_storage( ao, image_program )))
     Pike_error("Wrong type object argument 2 (image)\n");
 
   if( cmapo &&
-      !(cmap=(struct neo_colortable *)get_storage(cmapo,
-                                                  image_colortable_program)))
+      !(cmap=get_storage(cmapo, image_colortable_program)))
     Pike_error("Wrong type object argument 4 (colortable)\n");
 
   for(l=0; l<(unsigned int)tiles->size; l++)
@@ -1240,7 +1243,7 @@ void image_xcf_f__decode_tiles( INT32 args )
       int i;
       od.s = NULL;
       od.len = eheight*ewidth*bpp;  /* Max and only size, really */
-      df = (char *)(od.str = (unsigned char *)xalloc( eheight*ewidth*bpp+1 ));
+      df = (char *)(od.str = xalloc( eheight*ewidth*bpp+1 ));
       d = od;
 
       for(i=0; i<bpp; i++)
@@ -1330,7 +1333,7 @@ void image_xcf_f__decode_tiles( INT32 args )
          LOOP_INIT();
          pix = colortable[s[ind]];
          LOOP_EXIT();
-       } 
+       }
        else
        {
          LOOP_INIT();
@@ -1384,9 +1387,9 @@ void image_xcf_f__decode_tiles( INT32 args )
     }
 
     if( df )
-    { 
-      free(df); 
-      df=0; 
+    {
+      free(df);
+      df=0;
     }
     x += TILE_WIDTH;
 
@@ -1408,7 +1411,7 @@ void image_xcf_f__decode_tiles( INT32 args )
 
 
 static struct program *image_encoding_xcf_program=NULL;
-void init_image_xcf()
+void init_image_xcf(void)
 {
   ADD_FUNCTION( "___decode", image_xcf____decode, tFunc(tStr,tMapping), 0);
 
@@ -1491,7 +1494,7 @@ void init_image_xcf()
 
   start_new_program();
   ADD_STORAGE( struct substring );
-  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tMix), 0);
+  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tStr), ID_PRIVATE);
   ADD_FUNCTION("`[]", f_substring_index, tFunc(tInt,tInt), 0);
   ADD_FUNCTION("get_short", f_substring_get_short, tFunc(tInt,tInt), 0 );
   ADD_FUNCTION("get_ushort", f_substring_get_ushort, tFunc(tInt,tInt), 0 );
@@ -1501,11 +1504,11 @@ void init_image_xcf()
 
 /*   set_init_callback(init_substring); */
   set_exit_callback(free_substring);
-  substring_program = end_program();  
+  substring_program = end_program();
 }
 
 
-void exit_image_xcf()
+void exit_image_xcf(void)
 {
 #define STRING(X) free_string(s_##X)
 #include "xcf_constant_strings.h"

@@ -478,10 +478,6 @@ int main(int argc, array(string) argv)
       ret+=sprintf("  (void *)& %s,\n",expr->name,expr->name);
     ret+="0 };\n\n";
     
-    /* Fixme: touch module_magic.h if we need to
-     * recompile all the modules.
-     */
-    
     Stdio.write_file("export_functions.c",ret);
     
     ret="PMOD_EXPORT extern void **PikeSymbol;\n";

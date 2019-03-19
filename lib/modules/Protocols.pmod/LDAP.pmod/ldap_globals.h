@@ -1,20 +1,14 @@
 // -*- pike -*-
 
 // --------------- Standards.ASN1.Types private add-on --------------------
-// This is very poor defined own ASN.1 objects (not enough time to clean it!)
 
-//import .ldap_privates;
-
-#define ASN1_BOOLEAN			.ldap_privates.asn1_boolean
-#define ASN1_ENUMERATED			.ldap_privates.asn1_enumerated
-
-#define ASN1_APPLICATION_SEQUENCE	.ldap_privates.asn1_application_sequence
-#define ASN1_APPLICATION_OCTET_STRING	.ldap_privates.asn1_application_octet_string
-#define ASN1_CONTEXT_SEQUENCE		.ldap_privates.asn1_context_sequence
-#define ASN1_CONTEXT_BOOLEAN		.ldap_privates.asn1_context_boolean
-#define ASN1_CONTEXT_INTEGER		.ldap_privates.asn1_context_integer
-#define ASN1_CONTEXT_OCTET_STRING	.ldap_privates.asn1_context_octet_string
-#define ASN1_CONTEXT_SET		.ldap_privates.asn1_context_set
+#define ASN1_APPLICATION_SEQUENCE(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.Sequence, 1, T, A)
+#define ASN1_APPLICATION_OCTET_STRING(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.OctetString, 1, T, A)
+#define ASN1_CONTEXT_SEQUENCE(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.Sequence, 2, T, A)
+#define ASN1_CONTEXT_BOOLEAN(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.Boolean, 2, T, A)
+#define ASN1_CONTEXT_INTEGER(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.Integer, 2, T, A)
+#define ASN1_CONTEXT_OCTET_STRING(T,A)	.ldap_privates.asn1_factory(Standards.ASN1.Types.OctetString, 2, T, A)
+#define ASN1_CONTEXT_SET(T,A)		.ldap_privates.asn1_factory(Standards.ASN1.Types.Set, 2, T, A)
 
 // ------------- end of ASN.1 API hack -----------------------------
 
@@ -29,14 +23,14 @@
 #define ENABLE_PAGED_SEARCH
 
 #ifdef DEBUG_PIKE_PROTOCOL_LDAP
-#define DWRITE(X...)		werror("Protocols.LDAP: "+X)
-#define DWRITE_HI(X...)		werror("Protocols.LDAP: "+X)
+#define DWRITE(X...)		werror("Protocols.LDAP: " X)
+#define DWRITE_HI(X...)		werror("Protocols.LDAP: " X)
 #else
 #define DWRITE(X...)
 #define DWRITE_HI(X...)
 #endif
 
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
 #define DO_IF_DEBUG(X...) X
 #else
 #define DO_IF_DEBUG(X...)
@@ -47,5 +41,5 @@
 #define THROW(X)        throw(X)
 #define ERROR(X...)     predef::error (X)
 // --- Enable profiling ---
-//#define DWRITE_PROF(X,Y)        werror(sprintf("Protocols.LDAP:Profile: "+X,Y))
+//#define DWRITE_PROF(X,Y)        werror("Protocols.LDAP:Profile: "+X,Y)
 #define DWRITE_PROF(X,Y)

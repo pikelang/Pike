@@ -11,7 +11,7 @@
 
 inherit GTK2.Vbox;
 
-static GTK2.FontSelection create( mapping|void props );
+protected GTK2.FontSelection create( mapping|void props );
 //! Create a new GTK2.FontSelection widget.
 //!
 //!

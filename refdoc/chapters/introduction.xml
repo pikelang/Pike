@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
 <chapter title="Introduction">
 
 <p>This introduction will give you some background about Pike and
@@ -28,7 +29,7 @@ memory-efficient language, and thus LPC (Lars Pensjö C) was born. About a
 year later Fredrik Hübinette (Hubbe) started playing one of these games and
 found that the language was the most easy-to-use language he had ever
 encountered. He liked the language so much that he started improving it and
-before long he had made my own LPC dialect called LPC4. LPC4 was still geared
+before long he had made his own LPC dialect called LPC4. LPC4 was still geared
 towards writing adventure games, but was quite useful for writing other
 things as well. A major problem with LPC4 was the copyright, since it was
 based on Lars Pensjö's code. It had a license that did not allow it to be

@@ -2,6 +2,8 @@
 #include "remote.h"
 import ".";
 
+//! Remote RPC Client.
+
 int connected = 0;
 
 //! @decl Remote.Connection con
@@ -11,6 +13,7 @@ object con;
 
 function close_callback = 0;
 
+//! Get a named object from the remote server.
 object get(string name)
 {
   if(!connected)

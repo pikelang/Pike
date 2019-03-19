@@ -2,6 +2,7 @@
 require gnomeui;
 
 class Gnome2.Client;
+//!
 inherit GTK2.Object;
 
 signal connect;

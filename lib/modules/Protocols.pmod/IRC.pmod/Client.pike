@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
-
-#if constant(Crypto.Random)
+#require constant(Crypto.Random)
 
 import ".";
 
@@ -12,9 +11,12 @@ mapping options;
 
 mapping channels=([]);
 
-//! @decl void create(string server, void|mapping(string:mixed) options)
+//! @decl void create(string|object server, void|mapping(string:mixed) options)
 //! @param server
 //!   The IRC server to connect to.
+//!   If server is an object, it is assumed to be a newly established
+//!   connection to the IRC server to be used. Pass @[SSL.File]
+//!   connections here to connect to SSL secured IRC networks.
 //! @param options
 //!   An optional mapping with additional IRC client options.
 //!   @mapping
@@ -64,7 +66,7 @@ mapping channels=([]);
 //!     @member function(Person,string) "nick_notify"
 //!       The arguments are originator and to.
 //!   @endmapping
-void create(string _server,void|mapping(string:mixed) _options)
+void create(string|object _server,void|mapping(string:mixed) _options)
 {
    options=
       ([
@@ -100,9 +102,16 @@ void create(string _server,void|mapping(string:mixed) _options)
 
    cmd->create(raw);
 
-   cmd->pass(options->pass||pass); 
+   cmd->pass(options->pass||pass);
    cmd->nick(options->nick);
-   cmd->user(options->user,options->host,options->server,options->realname);
+   // If a connection object was passed as 'server' parameter to the
+   // constructor, we just pretend to the other server that we reached it
+   // by connecting to "localhost".
+   // There could be a special config mapping entry for it, but I doubt
+   // that this information really is used much anywhere anyway.
+   cmd->user(options->user,options->host,
+	     stringp(options->server) ? options->server : "localhost",
+	     options->realname);
 
    call_out(da_ping,options->ping_interval || 60);
 }
@@ -221,7 +230,7 @@ void got_notify(string from,string type,
 	 break;
 
       case "352": // who list
-	 if (sizeof(extra)>2 && 
+	 if (sizeof(extra)>2 &&
 	     message && (c=channels[lower_case(message||"")]))
 	 {
 	    Person p=person(extra[3],extra[0]+"@"+extra[1]);
@@ -264,7 +273,7 @@ void got_notify(string from,string type,
 	    return;
 	 }
 	 break;
-	 
+
 
 	 /* --- */
 
@@ -327,7 +336,7 @@ void got_notify(string from,string type,
 
 	 foreach (values(channels),c)
 	    if (c)
-	       if (c->not_quit || c->not_part) 
+	       if (c->not_quit || c->not_part)
 		  (c->not_quit||c->not_part)(originator,message,originator);
 
 	 break;
@@ -396,13 +405,13 @@ object cmd=class
    {
       program prog;
       object ret;
-   	    
+
       void create(program p,object _ret)
       {
    	 prog=p;
    	 ret=_ret;
       }
-   
+
       mixed `()(mixed ...args)
       {
    	 mixed m;
@@ -412,16 +421,16 @@ object cmd=class
    	 else return m;
       }
    }
-   	 
+
    class AsyncRequest
    {
       program prog;
-   	    
+
       void create(program p)
       {
    	 prog=p;
       }
-   
+
       mixed `()(mixed ...args)
       {
    	 object req=prog();
@@ -429,16 +438,16 @@ object cmd=class
    	 return req;
       }
    }
-   
+
    class AsyncCBRequest
    {
       program prog;
-   
+
       void create(program p)
       {
    	 prog=p;
       }
-   
+
       mixed `()(function callback,mixed ...args)
       {
    	 object req=prog();
@@ -447,7 +456,7 @@ object cmd=class
    	 return req;
       }
    }
-   
+
    mixed `->(string request)
    {
       mixed|program p;
@@ -540,7 +549,3 @@ void forget_person(object p)
 {
    m_delete(nick2person,p->nick);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif // constant(Crypto.Random.random_string)

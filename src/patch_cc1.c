@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -30,11 +29,6 @@ int main(int argc, char **argv)
     fprintf(stderr, "Usage:\n"
 	    "\t%s <cc1>\n", argv[0]);
     exit(1);
-  }
-
-  if (!strcmp(argv[1], "-v")) {
-    fprintf(stdout, "$Id$\n");
-    exit(0);
   }
 
   if ((fd = open(argv[1], O_RDONLY)) < 0) {

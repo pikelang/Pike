@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -26,20 +25,12 @@
 #include "mapping.h"
 #include "threads.h"
 #include "builtin_functions.h"
-#include "dmalloc.h"
 #include "operators.h"
+#include "stuff.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 #include "image.h"
-
-#ifdef TRY_USE_MMX
-#ifdef HAVE_MMX_H
-#include <mmx.h>
-#else
-#include <asm/mmx.h>
-#endif
-#endif
-
 
 extern struct program *image_program;
 extern struct program *image_layer_program;
@@ -202,7 +193,7 @@ struct layer_mode_desc
     "D=S*L applied with alpha, aD=aS"},
    {"divide",        lm_divide,        1, NULL,
     "D=S/L applied with alpha, aD=aS"},
-   {"negdivide",     lm_negdivide,     1, NULL, 
+   {"negdivide",     lm_negdivide,     1, NULL,
     "D=1.0-S/L applied with alpha, aD=aS"},
    {"modulo",        lm_modulo,        1, NULL,
     "D=S%L applied with alpha, aD=aS"},
@@ -301,7 +292,7 @@ struct layer_mode_desc
    {"overlay",       lm_overlay,       1, NULL,
     "(1-(1-a)*(1-b)-a*b)*a+a*b applied with alpha, aD=aS"},
    {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha, 1, NULL,
-    "aD=aL+aS applied with alpha, D=L+S;" 
+    "aD=aL+aS applied with alpha, D=L+S;"
     " experimental, may change or be removed"},
 
    {"equal",         lm_equal,         0, NULL,
@@ -593,8 +584,8 @@ static INLINE void hls_to_rgb(double h,double l,double s,rgb_group *rgb)
 }
 
 static INLINE void rgb_to_hls(rgb_group color,
-			      double *hue, 
-			      double *lightness, 
+			      double *hue,
+			      double *lightness,
 			      double *saturation)
 {
    int    r, g, b;
@@ -651,8 +642,8 @@ static INLINE void rgb_to_hls(rgb_group color,
    *hue        = h;
    *lightness  = l;
    *saturation = s;
-}       
-             
+}
+
 
 /*** helper ***********************************************/
 
@@ -670,7 +661,7 @@ static int really_optimize_p(struct layer *l)
 
 /*** layer object : init and exit *************************/
 
-static void init_layer(struct object *dummy)
+static void init_layer(struct object *UNUSED(dummy))
 {
    THIS->xsize=0;
    THIS->ysize=0;
@@ -693,7 +684,7 @@ static void init_layer(struct object *dummy)
    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
 }
 
-static void free_layer(struct layer *l)
+static void free_layer(struct layer *UNUSED(l))
 {
    if (THIS->image) free_object(THIS->image);
    if (THIS->alpha) free_object(THIS->alpha);
@@ -704,7 +695,7 @@ static void free_layer(struct layer *l)
    THIS->alp=NULL;
 }
 
-static void exit_layer(struct object *dummy)
+static void exit_layer(struct object *UNUSED(dummy))
 {
    free_layer(THIS);
 }
@@ -741,11 +732,9 @@ static void image_layer_set_image(INT32 args)
       {
 	 if (TYPEOF(Pike_sp[-args]) != T_INT ||
 	     Pike_sp[-args].u.integer!=0)
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",1,
-				 "object(Image)|int(0)");
+	    SIMPLE_BAD_ARG_ERROR("set_image",1,"Image.Image|int(0..0)");
       }
-      else if ((img=(struct image*)
-		get_storage(Pike_sp[-args].u.object,image_program)))
+      else if ((img=get_storage(Pike_sp[-args].u.object,image_program)))
       {
 	 THIS->image=Pike_sp[-args].u.object;
 	 add_ref(THIS->image);
@@ -754,8 +743,7 @@ static void image_layer_set_image(INT32 args)
 	 THIS->ysize=img->ysize;
       }
       else
-	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",1,
-			      "object(Image)|int(0)");
+	 SIMPLE_BAD_ARG_ERROR("set_image",1, "Image.Image|int(0..0)");
    }
 
    if (args>=2) {
@@ -763,17 +751,14 @@ static void image_layer_set_image(INT32 args)
       {
 	 if (TYPEOF(Pike_sp[1-args]) != T_INT ||
 	     Pike_sp[1-args].u.integer!=0)
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
-				 "object(Image)|int(0)");
+	    SIMPLE_BAD_ARG_ERROR("set_image",2, "Image.Image|int(0..0)");
       }
-      else if ((img=(struct image*)
-		get_storage(Pike_sp[1-args].u.object,image_program)))
+      else if ((img=get_storage(Pike_sp[1-args].u.object,image_program)))
       {
 	 if (THIS->img &&
 	     (img->xsize!=THIS->xsize ||
 	      img->ysize!=THIS->ysize))
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
-				 "image of same size");
+	    SIMPLE_BAD_ARG_ERROR("set_image",2, "image of same size");
 	 if (!THIS->img)
 	 {
 	    THIS->xsize=img->xsize;
@@ -784,8 +769,7 @@ static void image_layer_set_image(INT32 args)
 	 THIS->alp=img;
       }
       else
-	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
-			      "object(Image)|int(0)");
+	 SIMPLE_BAD_ARG_ERROR("set_image",2,"Image.Image|int(0..0)");
    }
 
    pop_n_elems(args);
@@ -857,9 +841,9 @@ static void image_layer_alpha(INT32 args)
 static void image_layer_set_alpha_value(INT32 args)
 {
    FLOAT_TYPE f;
-   get_all_args("Image.Layer->set_alpha_value",args,"%F",&f);
+   get_all_args("set_alpha_value",args,"%F",&f);
    if (f<0.0 || f>1.0)
-      SIMPLE_BAD_ARG_ERROR("Image.Layer->set_alpha_value",1,"float(0..1)");
+      SIMPLE_BAD_ARG_ERROR("set_alpha_value",1,"float(0..1)");
    THIS->alpha_value=f;
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1070,9 +1054,9 @@ static void image_layer_set_mode(INT32 args)
 {
    int i;
    if (args!=1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->set_mode",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("set_mode",1);
    if (TYPEOF(Pike_sp[-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("Image.Layer->set_mode",1,"string");
+      SIMPLE_BAD_ARG_ERROR("set_mode",1,"string");
 
    for (i=0; i<LAYER_MODES; i++)
       if (Pike_sp[-args].u.string==layer_mode[i].ps)
@@ -1086,7 +1070,7 @@ static void image_layer_set_mode(INT32 args)
 	 return;
       }
 
-   SIMPLE_BAD_ARG_ERROR("Image.Layer->set_mode",1,"existing mode");
+   SIMPLE_BAD_ARG_ERROR("set_mode",1,"existing mode");
 }
 
 static void image_layer_mode(INT32 args)
@@ -1143,13 +1127,13 @@ static void image_layer_descriptions(INT32 args)
 static void image_layer_set_fill(INT32 args)
 {
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->set_fill",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("set_fill",1);
 
    if (TYPEOF(Pike_sp[-args]) == T_INT && !Pike_sp[-args].u.integer)
       THIS->fill=black;
    else
       if (!image_color_arg(-args,&(THIS->fill)))
-	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_fill",1,"color");
+	 SIMPLE_BAD_ARG_ERROR("set_fill",1,"Image.Color");
 
    smear_color(THIS->sfill,THIS->fill,SNUMPIXS);
 
@@ -1161,7 +1145,7 @@ static void image_layer_set_fill(INT32 args)
 	 if (!image_color_arg(1-args,&(THIS->fill_alpha)))
 	 {
 	    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_fill",2,"color");
+	    SIMPLE_BAD_ARG_ERROR("set_fill",2,"Image.Color");
 	 }
    }
    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
@@ -1212,7 +1196,7 @@ static void image_layer_fill_alpha(INT32 args)
 
 static void image_layer_set_offset(INT32 args)
 {
-   get_all_args("Image.Layer->set_offset",args,"%d%d", /* INT32! */
+   get_all_args("set_offset",args,"%d%d", /* INT32! */
 		&(THIS->xoffs),&(THIS->yoffs));
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1253,7 +1237,7 @@ static void image_layer_ysize(INT32 args)
 static void image_layer_set_tiled(INT32 args)
 {
    INT_TYPE tiled;
-   get_all_args("Image.Layer->set_offset",args,"%i",&tiled);
+   get_all_args("set_tiled",args,"%i",&tiled);
    THIS->tiled=!!tiled;
    THIS->really_optimize_alpha=really_optimize_p(THIS);
    pop_n_elems(args);
@@ -1367,23 +1351,21 @@ static void image_layer_create(INT32 args)
       try_parameter_pair("xoffset","yoffset",image_layer_set_offset);
       try_parameter_pair("fill","fill_alpha",image_layer_set_fill);
       try_parameter("tiled",image_layer_set_tiled);
-      pop_stack();
-      return;
    }
    else if (TYPEOF(Pike_sp[-args]) == T_INT && args>1
 	    && TYPEOF(Pike_sp[1-args]) == T_INT)
    {
       rgb_group col=black,alpha=white;
 
-      get_all_args("Image.Layer",args,"%d%d", /* watch the type: INT32 */
+      get_all_args("create",args,"%d%d", /* watch the type: INT32 */
 		   &(THIS->xsize),&(THIS->ysize));
       if (args>2)
 	 if (!image_color_arg(2-args,&col))
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer",3,"Image.Color");
+	    SIMPLE_BAD_ARG_ERROR("create",3,"Image.Color");
 
       if (args>3)
 	 if (!image_color_arg(3-args,&alpha))
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer",4,"Image.Color");
+	    SIMPLE_BAD_ARG_ERROR("create",4,"Image.Color");
 
       push_int(THIS->xsize);
       push_int(THIS->ysize);
@@ -1400,8 +1382,6 @@ static void image_layer_create(INT32 args)
       push_object(clone_object(image_program,5));
 
       image_layer_set_image(2);
-
-      pop_n_elems(args);
    }
    else if (TYPEOF(Pike_sp[-args]) == T_OBJECT || args>1)
    {
@@ -1412,10 +1392,9 @@ static void image_layer_create(INT32 args)
 	 args=2;
       }
       image_layer_set_image(args);
-      pop_stack();
    }
    else
-      SIMPLE_BAD_ARG_ERROR("Image.Layer",1,"mapping|int|Image.Image");
+      SIMPLE_BAD_ARG_ERROR("create",1,"mapping|int|Image.Image");
 }
 
 /*** layer object *****************************************/
@@ -1436,76 +1415,72 @@ static void image_layer_create(INT32 args)
  */
 static void image_layer_cast(INT32 args)
 {
-   if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->cast",1);
-   if (TYPEOF(Pike_sp[-args]) == T_STRING ||
-       Pike_sp[-args].u.string->size_shift)
-   {
-      if (strncmp(Pike_sp[-args].u.string->str,"mapping",7)==0)
-      {
-	 int n=0;
-	 pop_n_elems(args);
+  struct pike_string *type;
 
-	 push_constant_text("xsize");       push_int(THIS->xsize);         n++;
-	 push_constant_text("ysize");       push_int(THIS->ysize);         n++;
-	 push_constant_text("image");       image_layer_image(0);          n++;
-	 push_constant_text("alpha");       image_layer_alpha(0);          n++;
-	 push_constant_text("xoffset");     push_int(THIS->xoffs);         n++;
-	 push_constant_text("yoffset");     push_int(THIS->yoffs);         n++;
-	 push_constant_text("alpha_value"); push_float(THIS->alpha_value); n++;
-	 push_constant_text("fill");        image_layer_fill(0);           n++;
-	 push_constant_text("fill_alpha");  image_layer_fill_alpha(0);     n++;
-	 push_constant_text("tiled");       push_int(THIS->tiled);         n++;
-	 push_constant_text("mode");        image_layer_mode(0);           n++;
+  if (!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("cast",1);
 
-	 f_aggregate_mapping(n*2);
+  type = Pike_sp[-args].u.string;
+  pop_n_elems(args); /* type have at least one more reference. */
 
-	 return;
+  if (type == literal_mapping_string)
+  {
+    int n=0;
+
+    push_static_text("xsize");       push_int(THIS->xsize);         n++;
+    push_static_text("ysize");       push_int(THIS->ysize);         n++;
+    push_static_text("image");       image_layer_image(0);          n++;
+    push_static_text("alpha");       image_layer_alpha(0);          n++;
+    push_static_text("xoffset");     push_int(THIS->xoffs);         n++;
+    push_static_text("yoffset");     push_int(THIS->yoffs);         n++;
+    push_static_text("alpha_value"); push_float(THIS->alpha_value); n++;
+    push_static_text("fill");        image_layer_fill(0);           n++;
+    push_static_text("fill_alpha");  image_layer_fill_alpha(0);     n++;
+    push_static_text("tiled");       push_int(THIS->tiled);         n++;
+    push_static_text("mode");        image_layer_mode(0);           n++;
+
+    f_aggregate_mapping(n*2);
+  }
+  else if (type == literal_string_string)
+  {
+    size_t size = THIS->xsize*THIS->ysize, i;
+    struct pike_string *s = begin_shared_string(size*4);
+    rgb_group *img = 0;
+    rgb_group *alp = 0;
+
+    if(THIS->img)
+      img = THIS->img->img;
+    if(THIS->alp)
+      alp = THIS->alp->img;
+
+    if(img && alp)
+      for(i=0; i<size; i++) {
+        s->str[i*4+0] = img[i].r;
+        s->str[i*4+1] = img[i].g;
+        s->str[i*4+2] = img[i].b;
+        s->str[i*4+3] = alp[i].r;
       }
-      else if (strncmp(Pike_sp[-args].u.string->str,"string",6)==0)
-      {
-	size_t size = THIS->xsize*THIS->ysize, i;
-	struct pike_string *s = begin_shared_string(size*4);
-	rgb_group *img = 0;
-	rgb_group *alp = 0;
-
-	pop_n_elems(args);
-	if(THIS->img)
-	  img = THIS->img->img;
-	if(THIS->alp)
-	  alp = THIS->alp->img;
-
-	if(img && alp)
-	  for(i=0; i<size; i++) {
-	    s->str[i*4+0] = img[i].r;
-	    s->str[i*4+1] = img[i].g;
-	    s->str[i*4+2] = img[i].b;
-	    s->str[i*4+3] = alp[i].r;
-	  }
-	else if(img)
-	  for(i=0; i<size; i++) {
-	    s->str[i*4+0] = img[i].r;
-	    s->str[i*4+1] = img[i].g;
-	    s->str[i*4+2] = img[i].b;
-	    s->str[i*4+3] = 255;
-	  }
-	else if(alp)
-	  for(i=0; i<size; i++) {
-	    s->str[i*4+0] = 255;
-	    s->str[i*4+1] = 255;
-	    s->str[i*4+2] = 255;
-	    s->str[i*4+3] = alp[i].r;
-	  }
-	else
-	  memset(s->str, 0, size*4);
-
-	push_string(end_shared_string(s));
-	return;
+    else if(img)
+      for(i=0; i<size; i++) {
+        s->str[i*4+0] = img[i].r;
+        s->str[i*4+1] = img[i].g;
+        s->str[i*4+2] = img[i].b;
+        s->str[i*4+3] = 255;
       }
-   }
-   SIMPLE_BAD_ARG_ERROR("Image.Colortable->cast",1,
-			"string(\"mapping\"|\"string\")");
+    else if(alp)
+      for(i=0; i<size; i++) {
+        s->str[i*4+0] = 255;
+        s->str[i*4+1] = 255;
+        s->str[i*4+2] = 255;
+        s->str[i*4+3] = alp[i].r;
+      }
+    else
+      memset(s->str, 0, size*4);
 
+    push_string(end_shared_string(s));
+  }
+  else
+    push_undefined();
 }
 
 /*** layer mode definitions ***************************/
@@ -1519,8 +1494,8 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
    if (alpha==0.0) /* optimized */
    {
 #ifdef LAYERS_DUAL
-      MEMCPY(d,s,sizeof(rgb_group)*len);
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(d,s,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #endif
       return;
    }
@@ -1528,7 +1503,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
    {
       if (!la)  /* no layer alpha => full opaque */
       {
-	 MEMCPY(d,l,sizeof(rgb_group)*len);
+	 memcpy(d,l,sizeof(rgb_group)*len);
 	 smear_color(da,white,len);
       }
       else
@@ -1589,7 +1564,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #if defined(__ECL) && 0
 #define WARN_TRACE(X)	static char PIKE_CONCAT(foo__, X) (double d) { return (char)d; };
 #else /* !__ECL */
-#define WARN_TRACE(X) 
+#define WARN_TRACE(X)
 #endif /* __ECL */
 
 /* operators from template */
@@ -1607,6 +1582,7 @@ WARN_TRACE(1)
 #undef L_TRUNC
 #undef L_OPER
 
+#if 0
 #define LM_FUNC lm_a_add
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) ((A)+(int)(B))
@@ -1617,6 +1593,7 @@ WARN_TRACE(1)
 #undef LM_FUNC
 #undef L_TRUNC
 #undef L_OPER
+#endif
 
 #define LM_FUNC lm_subtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
@@ -2093,7 +2070,7 @@ WARN_TRACE(26)
 
 #undef LM_HSV_DO
 
-/******************************************************************/ 
+/******************************************************************/
 
 #define LM_HLS_DO(HLS_X,S,L,D,A,V)                                       \
    do {									 \
@@ -2113,7 +2090,7 @@ WARN_TRACE(26)
       (D).b = MAXIMUM(MINIMUM(tb,255),0);                                \
    } while (0)
 
-	
+
 #define LM_FUNC lm_hls_replace
 #define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sh=lh;sl=ll;ss=ls,S,L,D,A,V)
 #include "layer_channel.h"
@@ -2226,8 +2203,8 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
    if (alpha==0.0)
    {
 #ifdef LAYERS_DUAL
-      MEMCPY(d,s,sizeof(rgb_group)*len);
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(d,s,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #endif
       return;
    }
@@ -2235,13 +2212,13 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
    {
       if (!la)  /* no layer alpha => full opaque */
       {
-	 MEMCPY(d,l,sizeof(rgb_group)*len);
+	 memcpy(d,l,sizeof(rgb_group)*len);
 	 smear_color(da,white,len);
       }
       else
 	 while (len--)
 	 {
-	    if ((my_rand()%(255*255)) <
+            if (my_rand(255*255) <
 		(unsigned)(la->r*87 + la->g*127 + la->b*41))
 	       *d=*l,*da=white;
 	    else
@@ -2255,7 +2232,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       if (!la)  /* no layer alpha => full opaque */
 	 while (len--)
 	 {
-	    if ((my_rand()&255) < (unsigned)v)
+            if (my_rand(256) < (unsigned)v)
 	       *d=*l,*da=white;
 	    else
 	       *d=*s,*da=*sa;
@@ -2265,7 +2242,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       {
 	 while (len--)
 	 {
-	    if ((my_rand()%(255*255)) <
+            if (my_rand(255*255) <
 		(unsigned)((la->r*87 + la->g*127 + la->b*41)>>8)*v)
 	       *d=*l,*da=white;
 	    else
@@ -2285,8 +2262,8 @@ static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
    if (alpha==0.0) /* optimized */
    {
 #ifdef LAYERS_DUAL
-      MEMCPY(d,s,sizeof(rgb_group)*len);
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(d,s,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #endif
       return;
    }
@@ -2348,14 +2325,14 @@ static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
       }
 }
 
-static void lm_erase(rgb_group *s,rgb_group *l,rgb_group *d,
+static void lm_erase(rgb_group *UNUSED(s),rgb_group *UNUSED(l),rgb_group *UNUSED(d),
 		     rgb_group *sa,rgb_group *la,rgb_group *da,
 		     int len,double alpha)
 {
    /* la may be NULL, no other */
 
 #ifdef LAYERS_DUAL
-   MEMCPY(d,s,sizeof(rgb_group)*len);
+   memcpy(d,s,sizeof(rgb_group)*len);
 #endif
 
    if (alpha==1.0)
@@ -2399,8 +2376,8 @@ static void lm_spec_burn_alpha(struct layer *ly,
    if (!la)
    {
 #ifdef LAYERS_DUAL
-      MEMCPY(d,s,len*sizeof(rgb_group));
-      MEMCPY(da,sa,len*sizeof(rgb_group));
+      memcpy(d,s,len*sizeof(rgb_group));
+      memcpy(da,sa,len*sizeof(rgb_group));
 #endif
       return;
    }
@@ -2425,7 +2402,7 @@ static void lm_spec_burn_alpha(struct layer *ly,
 	 else
 	 {
 #ifdef LAYERS_DUAL
-	    MEMCPY(d,s,len*sizeof(rgb_group));
+	    memcpy(d,s,len*sizeof(rgb_group));
 #endif
 	    while (len--)
 	    {
@@ -2530,9 +2507,9 @@ static INLINE void img_lay_first_line(struct layer *l,
       }
       if (len<xsize) /* copy bit, fill right */
       {
-	 if (s) MEMCPY(d,s,len*sizeof(rgb_group));
+	 if (s) memcpy(d,s,len*sizeof(rgb_group));
 	 else smear_color(d,l->fill,len);
-	 if (sa) MEMCPY(da,sa,len*sizeof(rgb_group));
+	 if (sa) memcpy(da,sa,len*sizeof(rgb_group));
 	 else smear_color(da,white,len);
 
 	 smear_color(d+len,l->fill,xsize-len);
@@ -2540,9 +2517,9 @@ static INLINE void img_lay_first_line(struct layer *l,
       }
       else /* copy rest */
       {
-	 if (s) MEMCPY(d,s,xsize*sizeof(rgb_group));
+	 if (s) memcpy(d,s,xsize*sizeof(rgb_group));
 	 else smear_color(d,l->fill,xsize);
-	 if (sa) MEMCPY(da,sa,xsize*sizeof(rgb_group));
+	 if (sa) memcpy(da,sa,xsize*sizeof(rgb_group));
 	 else smear_color(da,white,xsize);
       }
       return;
@@ -2567,22 +2544,22 @@ static INLINE void img_lay_first_line(struct layer *l,
       {
 	 int len=l->xsize-xoffs;
 	 if (len>l->xsize) len=l->xsize;
-	 if (s) MEMCPY(d,s+xoffs,len*sizeof(rgb_group));
-	 if (sa) MEMCPY(da,sa+xoffs,len*sizeof(rgb_group));
+	 if (s) memcpy(d,s+xoffs,len*sizeof(rgb_group));
+	 if (sa) memcpy(da,sa+xoffs,len*sizeof(rgb_group));
 	 da+=len;
 	 d+=len;
 	 xsize-=len;
       }
       while (xsize>l->xsize)
       {
-	 if (s) MEMCPY(d,s,l->xsize*sizeof(rgb_group));
-	 if (sa) MEMCPY(d,sa,l->xsize*sizeof(rgb_group));
+	 if (s) memcpy(d,s,l->xsize*sizeof(rgb_group));
+	 if (sa) memcpy(d,sa,l->xsize*sizeof(rgb_group));
 	 da+=l->xsize;
 	 d+=l->xsize;
 	 xsize-=l->xsize;
       }
-      if (s) MEMCPY(d,s,xsize*sizeof(rgb_group));
-      if (sa) MEMCPY(d,sa,xsize*sizeof(rgb_group));
+      if (s) memcpy(d,s,xsize*sizeof(rgb_group));
+      if (sa) memcpy(d,sa,xsize*sizeof(rgb_group));
    }
 }
 
@@ -2613,8 +2590,8 @@ static INLINE void img_lay_stroke(struct layer *ly,
    {
 /*       fprintf(stderr,"fast skip ly->yoffs=%d\n",ly->yoffs); */
 #ifdef LAYERS_DUAL
-      MEMCPY(d,s,len*sizeof(rgb_group));
-      MEMCPY(da,sa,len*sizeof(rgb_group));
+      memcpy(d,s,len*sizeof(rgb_group));
+      memcpy(da,sa,len*sizeof(rgb_group));
 #endif
       return;
    }
@@ -2626,15 +2603,14 @@ static INLINE void img_lay_stroke(struct layer *ly,
    {
       while (len>SNUMPIXS)
       {
-	 (ly->row_func)(s,l?l:ly->sfill,d,sa,NULL,da,
-			SNUMPIXS,ly->alpha_value);
+	 (ly->row_func)(s, ly->sfill, d, sa, NULL, da,
+			SNUMPIXS, ly->alpha_value);
 	 s+=SNUMPIXS; d+=SNUMPIXS;
 	 sa+=SNUMPIXS;da+=SNUMPIXS;
-	 if (l) l+=SNUMPIXS;
 	 len-=SNUMPIXS;
       }
       if (len)
-	 (ly->row_func)(s,l?l:ly->sfill,d,sa,NULL,da,len,ly->alpha_value);
+	 (ly->row_func)(s, ly->sfill, d, sa, NULL, da, len, ly->alpha_value);
    }
    else
    {
@@ -2642,17 +2618,16 @@ static INLINE void img_lay_stroke(struct layer *ly,
 
       while (len>SNUMPIXS)
       {
-	 (ly->row_func)(s,l?l:ly->sfill,d,sa,la?la:ly->sfill_alpha,da,
-			SNUMPIXS,ly->alpha_value);
+	 (ly->row_func)(s, ly->sfill, d, sa, la?la: ly->sfill_alpha, da,
+			SNUMPIXS, ly->alpha_value);
 	 s+=SNUMPIXS; d+=SNUMPIXS;
 	 sa+=SNUMPIXS; da+=SNUMPIXS;
-	 if (l) l+=SNUMPIXS;
 	 if (la) la+=SNUMPIXS;
 	 len-=SNUMPIXS;
       }
       if (len)
-	 (ly->row_func)(s,l?l:ly->sfill,d,sa,la?la:ly->sfill_alpha,
-			da,len,ly->alpha_value);
+	 (ly->row_func)(s, ly->sfill, d, sa, la?la: ly->sfill_alpha,
+			da, len, ly->alpha_value);
    }
 }
 
@@ -2914,20 +2889,19 @@ void image_lay(INT32 args)
    ONERROR err;
 
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.lay",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("lay",1);
 
    if (TYPEOF(Pike_sp[-args]) != T_ARRAY)
-      SIMPLE_BAD_ARG_ERROR("Image.lay",1,
-			   "array(Image.Layer|mapping)");
+      SIMPLE_BAD_ARG_ERROR("lay",1,"array(Image.Layer|mapping)");
 
    if (args>1)
    {
-      get_all_args("Image.lay",args-1,"%i%i%i%i",
+      get_all_args("lay",args-1,"%i%i%i%i",
 		   &xoffset,&yoffset,&xsize,&ysize);
       if (xsize<1)
-	 SIMPLE_BAD_ARG_ERROR("Image.lay",4,"int(1..)");
+	 SIMPLE_BAD_ARG_ERROR("lay",4,"int(1..)");
       if (ysize<1)
-	 SIMPLE_BAD_ARG_ERROR("Image.lay",5,"int(1..)");
+	 SIMPLE_BAD_ARG_ERROR("lay",5,"int(1..)");
    }
 
    layers=(a=Pike_sp[-args].u.array)->size;
@@ -2947,9 +2921,9 @@ void image_lay(INT32 args)
    {
       if (TYPEOF(a->item[i]) == T_OBJECT)
       {
-	 if (!(l[j]=(struct layer*)get_storage(a->item[i].u.object,
+	 if (!(l[j]=get_storage(a->item[i].u.object,
 					       image_layer_program)))
-	    SIMPLE_BAD_ARG_ERROR("Image.lay",1,
+	    SIMPLE_BAD_ARG_ERROR("lay",1,
 				 "array(Image.Layer|mapping)");
       }
       else if (TYPEOF(a->item[i]) == T_MAPPING)
@@ -2957,10 +2931,10 @@ void image_lay(INT32 args)
 	 push_svalue(a->item+i);
 	 push_object(o=clone_object(image_layer_program,1));
 	 args++;
-	 l[j]=(struct layer*)get_storage(o,image_layer_program);
+	 l[j]=get_storage(o,image_layer_program);
       }
       else
-	 SIMPLE_BAD_ARG_ERROR("Image.lay",1,
+	 SIMPLE_BAD_ARG_ERROR("lay",1,
 			      "array(Image.Layer|mapping)");
       if (l[j]->xsize && l[j]->ysize)
 	 j++;
@@ -3013,7 +2987,7 @@ void image_lay(INT32 args)
    push_int(ysize);
    push_object(o=clone_object(image_layer_program,2));
 
-   dest=(struct layer*)get_storage(o,image_layer_program);
+   dest=get_storage(o,image_layer_program);
    dest->xoffs=xoffset;
    dest->yoffs=yoffset;
 
@@ -3032,7 +3006,7 @@ void image_lay(INT32 args)
 static INLINE struct layer *push_new_layer(void)
 {
    push_object(clone_object(image_layer_program,0));
-   return (struct layer*)get_storage(Pike_sp[-1].u.object,image_layer_program);
+   return get_storage(Pike_sp[-1].u.object,image_layer_program);
 }
 
 static INLINE struct layer *clone_this_layer(void)
@@ -3052,8 +3026,8 @@ static INLINE struct layer *clone_this_layer(void)
    l->alpha_value=THIS->alpha_value;
    l->fill=THIS->fill;
    l->fill_alpha=THIS->fill_alpha;
-   MEMCPY(l->sfill,THIS->sfill,sizeof(rgb_group)*SNUMPIXS);
-   MEMCPY(l->sfill_alpha,THIS->sfill_alpha,sizeof(rgb_group)*SNUMPIXS);
+   memcpy(l->sfill,THIS->sfill,sizeof(rgb_group)*SNUMPIXS);
+   memcpy(l->sfill_alpha,THIS->sfill_alpha,sizeof(rgb_group)*SNUMPIXS);
    l->tiled=THIS->tiled;
    l->row_func=THIS->row_func;
    l->optimize_alpha=THIS->optimize_alpha;
@@ -3099,7 +3073,7 @@ static void image_layer_crop(INT32 args)
    int zot=0;
    struct image *img = NULL;
 
-   get_all_args("Image.Layer->crop",args,"%i%i%i%i",&x,&y,&xz,&yz);
+   get_all_args("crop",args,"%i%i%i%i",&x,&y,&xz,&yz);
 
    l=clone_this_layer();
    if (x<=l->xoffs) x=l->xoffs; else zot++;
@@ -3126,7 +3100,7 @@ static void image_layer_crop(INT32 args)
       push_int(THIS->fill.b);
       f_call_function(8);
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-	  !(img=(struct image*)get_storage(Pike_sp[-1].u.object,image_program)))
+	  !(img=get_storage(Pike_sp[-1].u.object,image_program)))
 	 Pike_error("No image returned from image->copy\n");
       if (img->xsize!=xz || img->ysize!=yz)
 	 Pike_error("Image returned from image->copy had "
@@ -3155,7 +3129,7 @@ static void image_layer_crop(INT32 args)
       push_int(THIS->fill_alpha.b);
       f_call_function(8);
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-	  !(img=(struct image*)get_storage(Pike_sp[-1].u.object,image_program)))
+	  !(img=get_storage(Pike_sp[-1].u.object,image_program)))
 	 Pike_error("No image returned from alpha->copy\n");
       if (img->xsize!=xz || img->ysize!=yz)
 	 Pike_error("Image returned from alpha->copy had "
@@ -3260,7 +3234,7 @@ static void image_layer__sprintf( INT32 args )
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(Pike_sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
   if (TYPEOF(Pike_sp[1-args]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
 
@@ -3270,10 +3244,10 @@ static void image_layer__sprintf( INT32 args )
   switch( x )
   {
    case 't':
-     push_constant_text("Image.Layer");
+     push_static_text("Image.Layer");
      return;
    case 'O':
-     push_constant_text( "Image.Layer(%O i=%O a=%O)" );
+     push_static_text( "Image.Layer(%O i=%O a=%O)" );
      image_layer_mode(0);
      if( THIS->image ) ref_push_object( THIS->image ); else push_int( 0 );
      if( THIS->alpha ) ref_push_object( THIS->alpha ); else push_int( 0 );
@@ -3312,7 +3286,7 @@ void init_image_layers(void)
    ADD_FUNCTION("_sprintf",image_layer__sprintf,
                 tFunc(tInt tMapping,tString),0);
    ADD_FUNCTION("cast",image_layer_cast,
-		tFunc(tString,tMapping),0);
+                tFunc(tString,tOr(tMapping,tString)),ID_PROTECTED);
 
 
    ADD_FUNCTION("clone",image_layer_clone,

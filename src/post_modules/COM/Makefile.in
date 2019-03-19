@@ -1,9 +1,5 @@
-#
-# $Id$
-#
-
 @make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
+VPATH=@srcdir@@PATH_SEPARATOR@@srcdir@/../..@PATH_SEPARATOR@../..
 MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
 OBJS=com.o
 MODULE_LDFLAGS=@LDFLAGS@ @COM_LIBS@

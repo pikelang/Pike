@@ -1,18 +1,40 @@
-// $Id$
 #pike __REAL_VERSION__
 
-static function(string,int:string) blobfeeder(Search.Database.Base db,
-                                              array words)
+
+protected string debug_blob(string b)
 {
-  mapping state = mkmapping(words,allocate(sizeof(words)));
+  if (!b)
+    return "Blob(empty)";
+  string res = "Blob(";
+  while (sizeof(b) >= 5) {
+    array hits = ({ });
+    sscanf(b, "%4c%c%s", int docid, int nhits, b);
+    int iter = nhits;
+    while (iter-- && sizeof(b) >= 2) {
+      sscanf(b, "%2c%s", int hit, b);
+      hits += ({ (string) hit });
+    }
+    res += sprintf("[docid:%O hits:%s]", docid, hits * ",");
+  }
+  res += ")";
+  return res;
+}
+
+
+protected function(string,int,int:string) blobfeeder(Search.Database.Base db,
+						  array words)
+{
+  //  Create state per word and stream so multiple occurrences of the same
+  //  word are kept apart.
+  mapping state = mkmapping(words, allocate(sizeof(words), ([ ]) ));
   mapping(string:mapping(int:string)) blobcache = ([ ]);
-  return lambda( string word, int foo )
+  return lambda( string word, int foo, int blob_stream_id )
          {
-           return db->get_blob(word, state[word]++, blobcache);
+           return db->get_blob(word, state[word][blob_stream_id]++, blobcache);
          };
 }
- 
-static array(string) uniq_preserve_order(array(string) a) {
+
+protected array(string) uniq_preserve_order(array(string) a) {
   array(string) result = ({});
   foreach (a, string s)
     if (search(result, s) < 0)
@@ -63,11 +85,11 @@ enum search_order
   RELEVANCE=1, DATE_ASC, DATE_DESC, NONE, PUBL_DATE_ASC, PUBL_DATE_DESC
 };
 
-static Search.ResultSet sort_resultset(Search.ResultSet resultset,
+protected Search.ResultSet sort_resultset(Search.ResultSet resultset,
                                        search_order order,
                                        Search.Database.Base db)
 {
-  
+
 }
 
 
@@ -87,8 +109,8 @@ static Search.ResultSet sort_resultset(Search.ResultSet resultset,
 //!       All wanted words in the query. (I.e. not the words that were
 //!       preceded by minus.)
 //!     @elem array(mapping) 2
-//!       All wanted globs in the query. (I.e. not the globs that were 
-//!       preceded by minus.)       
+//!       All wanted globs in the query. (I.e. not the globs that were
+//!       preceded by minus.)
 //!   @endarray
 //!
 array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
@@ -103,7 +125,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     Search.Grammar.remove_stop_words(q, stop_words);
 
   q = Search.Grammar.optimize(q);
-  
+
   if (!q)                                        // The query was a null query
     return ({ Search.ResultSet(), ({}), ({}) }); // so return an empty resultset
 
@@ -112,13 +134,13 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     throw (error);
 
   array(Search.ResultSet|array(string)) res =  class {
-    static Search.RankingProfile defaultRanking;
-    static Search.Database.Base db;
+    protected Search.RankingProfile defaultRanking;
+    protected Search.Database.Base db;
 
     // Used when search is limited to another field than "any:".
-    static Search.RankingProfile specialRanking;
+    protected Search.RankingProfile specialRanking;
 
-    static void create(Search.Database.Base _db, Search.RankingProfile _defaultRanking) {
+    protected void create(Search.Database.Base _db, Search.RankingProfile _defaultRanking) {
       db = _db;
       defaultRanking = _defaultRanking;
       specialRanking = defaultRanking->copy();
@@ -126,7 +148,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
       push = stack->push;
     }
 
-    static array(array(string)) split_words(array(string) words)
+    protected array(array(string)) split_words(array(string) words)
     {
       array a=({}),b=({});
       foreach(words, string word)
@@ -136,14 +158,14 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
           a+=({ word });
       return ({ a, b });
     }
-    
-    static constant ParseNode = Search.Grammar.ParseNode;
 
-    static array(array(string)|string) words = ({ });
-    static array(array(string)|string) glob_words = ({ });
-    static ADT.Stack stack = ADT.Stack();
-    static function(Search.ResultSet:void) push;
-    static function(void:Search.ResultSet) pop;
+    protected constant ParseNode = Search.Grammar.ParseNode;
+
+    protected array(array(string)|string) words = ({ });
+    protected array(array(string)|string) glob_words = ({ });
+    protected ADT.Stack stack = ADT.Stack();
+    protected function(Search.ResultSet:void) push;
+    protected function(void:Search.ResultSet) pop;
 
     array(Search.ResultSet|array(string)) execute(ParseNode q) {
       exec(q);
@@ -216,7 +238,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	      t_low  = year->unix_time();
 	      t_high = year->next()->unix_time()-1;
 	    };
-	  
+
 	  if(t_low <= 0 || t_high <= 0 ||
 	     object_program(t_low) || object_program(t_high))
 	    // Guard against out-of-bounds and bignums.
@@ -224,7 +246,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	    push(_WhiteFish.DateSet());
 	    break;
 	  }
-	  
+
 	  _WhiteFish.DateSet restriction;
 	  switch(q->operator[1])
 	  {
@@ -252,7 +274,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	  }
 	  push(restriction || _WhiteFish.DateSet());
           break;
-          
+
         case "text":
           {
             Search.RankingProfile ranking = defaultRanking;
@@ -283,7 +305,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	      push(Search.ResultSet());
 	      break;
 	    }
-	    
+
             int hasPlus = sizeof(q->plusWords) || sizeof(q->plusPhrases);
             int hasOrdinary = sizeof(q->words) || sizeof(q->phrases);
             int hasMinus = sizeof(q->minusWords) || sizeof(q->minusPhrases);
@@ -305,11 +327,10 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	      plusWordGlobs -= ({ "*" });
 	      ordinaryWordGlobs -= ({ "*" });
 	    }
-	    
-	    foreach(Array.uniq(plusWordGlobs || ({}) | 
-			       ordinaryWordGlobs || ({})), string w)
+
+	    foreach (Array.uniq(plusWordGlobs | ordinaryWordGlobs), string w)
 	      glob_words += ({ ([ q->field : w]) });
-	    
+
             if(hasPlus)
             {
               int first = 1;
@@ -344,7 +365,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
                 first = 0;
               }
             }
-            
+
             if(hasOrdinary)
             {
               int first = 1;
@@ -378,7 +399,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
                 first = 0;
               }
             }
-            
+
             if(hasPlus && hasOrdinary)
             {
               Search.ResultSet r2 = pop();
@@ -387,7 +408,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
               // it's ranking is increased.
               push(r1->add_ranking(r2));
             }
-            
+
             if((hasPlus || hasOrdinary || hasEverything) && hasMinus)
             {
               int first = 1;
@@ -435,7 +456,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 
   if(!order)
     order = RELEVANCE;
-  
+
   if(order!=NONE)
     switch(order)
     {
@@ -459,7 +480,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
         else
           res[0]->sort_rev();
 
-	
+
       case NONE:
     }
 

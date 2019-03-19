@@ -1,0 +1,19 @@
+START_MARKER
+
+test_true(Debug.refs(""));
+test_true(Debug.refs(({})));
+test_true(Debug.refs(([])));
+test_true(Debug.refs(this))
+test_true(arrayp( Debug.next(({})) || Debug.prev(({}))))
+test_do(object o=this; while(o=Debug.next(o)))
+test_do(object o=this; while(o=Debug.prev(o)))
+
+test_true(objectp(Debug.next_object()) || intp(Debug.next_object()) && Debug.next_object())
+test_any([[
+  object o=Debug.next_object();
+  for(int e=0; e<10000 && (objectp(o) || intp(o) && o); e++)
+    o=Debug.next_object(o);
+  return o;
+]], 0)
+
+END_MARKER

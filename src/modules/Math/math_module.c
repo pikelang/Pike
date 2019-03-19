@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -82,7 +81,7 @@ PIKE_MODULE_INIT
    int i;
    DECLARE_INF
    DECLARE_NAN
-   
+
    for (i=0; i<(int)(sizeof(sub)/sizeof(sub[0])); i++)
    {
       struct program *p;

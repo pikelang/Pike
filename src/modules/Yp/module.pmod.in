@@ -3,7 +3,6 @@
 // YP (NIS) Functionality for Pike
 // Per Hedbor & Henrik Grubbström 1996-1997
 //
-// $Id$
 
 #pike __REAL_VERSION__
 inherit @module@;
@@ -43,16 +42,16 @@ class Map {
   void create(string map, string|void domain)
   {
     if (domain) {
-      this_program::domain = Domain(domain);
+      this::domain = Domain(domain);
     } else {
-      this_program::domain = Domain();
+      this::domain = Domain();
     }
     ypmap = map;
     array err;
     do {
       // Force an error if the map does not exist.
       err = catch{
-	this_program::domain->match(ypmap, "foo");
+	this::domain->match(ypmap, "foo");
 	return;
       };
     } while (ypmap = nicknames[ypmap]);
@@ -80,6 +79,7 @@ class Map {
   {
     return(domain->all(ypmap));
   }
+
   mapping(string:string) cast_to_mapping()
   {
     return(domain->all(ypmap));
@@ -127,14 +127,12 @@ class Map {
     return(values(domain->all(ypmap)));
   }
 
-  mixed cast(string type)
+  //! Convert the map to a mapping
+  protected mapping cast(string type)
   {
-    switch(type) {
-    case "mapping":
-      return(cast_to_mapping());
-    default:
-      error( "Cast to " + type + " not supported.\n" );
-    }
+    if( type=="mapping" )
+      return cast_to_mapping();
+    return UNDEFINED;
   }
 }
 

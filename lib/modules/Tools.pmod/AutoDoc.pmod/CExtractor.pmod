@@ -34,7 +34,7 @@ protected private class Extractor {
   protected array(.DocParser.Parse) tokens = ({});
 
   protected void create(string s, string filename) {
-    this_program::filename = filename;
+    this::filename = filename;
 
     array(string) ctokens = Parser.C.split(s);
     array(array(SourcePosition|string)) a = ({});
@@ -114,10 +114,14 @@ protected private class Extractor {
         parseClassBody(c, root);
         .DocParser.Parse p = tokens[0];
         MetaData endmeta = p ? p->metadata() : 0;
-        if (!endmeta || endmeta->type != "end" + meta->type)
+        if (!endmeta)
           extractorErrorAt(token->currentPosition,
                            "'@%s %s' without matching '@end%s'",
                            meta->type, meta->name, meta->type);
+        if (endmeta->type != "end" + meta->type)
+          extractorErrorAt(token->currentPosition,
+                           "'@%s %s' without matching '@end%s', got '@%s'",
+                           meta->type, meta->name, meta->type, endmeta->type);
         if (endmeta->name && endmeta->name != meta->name)
           extractorErrorAt(token->currentPosition,
                            "'@end%s %s' does not match '@%s %s'",
@@ -152,7 +156,7 @@ protected private class Extractor {
 	    extractorErrorAt(token->currentPosition,
 			     "enum can not be grouped"
 			     " with other declarations");
-	
+
 	  if (contexts["inherit"])
 	    extractorErrorAt(token->currentPosition,
 			     "inherit can not be grouped"
@@ -200,7 +204,7 @@ protected private class Extractor {
           if (search(root->children, a[1]) < 0)
             root->AddChild([object(NameSpace)]a[1]);
           break;
-	  
+
         case "class":
         case "module":
         case "enum":
@@ -220,7 +224,8 @@ protected private class Extractor {
   }
 }
 
-AutoDoc extract(string s, string|void filename, string|void namespace)
+AutoDoc extract(string s, string|void filename, string|void namespace,
+		.Flags|void flags)
 {
   Extractor e = Extractor(s, filename);
 

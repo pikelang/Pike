@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* Use cpp to RLE-encode... */
@@ -1162,4 +1161,3 @@ const unsigned char image_default_font[] = {
   64,FF4,96,24,255,96,136,FF4,216,12,208,40,244,FF4,255,96,
   16,144,FF4,255,255,160,0,220,255,
 };
-

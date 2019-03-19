@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "config.h"
@@ -12,12 +11,7 @@
 #include <signal.h>
 
 #ifdef _REENTRANT
-#include <stdlib.h>
 #include <errno.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -46,9 +40,9 @@
 #endif /* HAVE_POLL */
 
 
-MUTEX_T aap_timeout_mutex;
+static MUTEX_T aap_timeout_mutex;
 
-struct timeout 
+struct timeout
 {
   int raised;
   int when;
@@ -61,14 +55,14 @@ struct timeout
 
 
 #define CHUNK 100
-int num_timeouts;
+static int num_timeouts;
 
 static struct timeout *new_timeout(THREAD_T thr, int secs) /* running locked */
 {
-  struct timeout *t = aap_malloc(sizeof(struct timeout));
+  struct timeout *t = malloc(sizeof(struct timeout));
   num_timeouts++;
   t->thr = thr;
-  t->raised = 0;   
+  t->raised = 0;
   t->next = NULL;
   t->when = aap_get_time()+secs;
 
@@ -89,7 +83,7 @@ static struct timeout *new_timeout(THREAD_T thr, int secs) /* running locked */
 static void free_timeout( struct timeout *t ) /* running locked */
 {
   num_timeouts--;
-  aap_free( t );
+  free( t );
 }
 
 int *aap_add_timeout_thr(THREAD_T thr, int secs)
@@ -163,7 +157,7 @@ static volatile int aap_time_to_die = 0;
 
 static COND_T aap_timeout_thread_is_dead;
 
-static void *handle_timeouts(void *ignored)
+static void *handle_timeouts(void *UNUSED(ignored))
 {
   while(1)
   {

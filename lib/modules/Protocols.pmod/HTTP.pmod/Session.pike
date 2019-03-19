@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 import Protocols.HTTP;
 
 typedef string|Standards.URI|SessionURL URL;
@@ -20,7 +18,7 @@ typedef string|Standards.URI|SessionURL URL;
 //!	@[Request.follow_redirects]
 int follow_redirects=20;
 
-//! Default HTTP headers. 
+//! Default HTTP headers.
 mapping default_headers = ([
    "user-agent":"Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
    " Pike/"+__REAL_MAJOR__+"."+__REAL_MINOR__+"."+__REAL_BUILD__,
@@ -38,7 +36,7 @@ class Request
    Standards.URI url_requested;
 
 //!	Number of redirects to follow;
-//!	the request will perform another request if the 
+//!	the request will perform another request if the
 //!	HTTP answer is a 3xx redirect.
 //!	Default from the parent @[Session.follow_redirects].
 //!
@@ -53,7 +51,7 @@ class Request
 //!	Cookie callback. When a request is performed,
 //!	the result is checked for cookie changes and
 //!	additions. If a cookie is encountered, this
-//!	function is called. Default is to call 
+//!	function is called. Default is to call
 //!	@[set_http_cookie] in the @[Session] object.
    function(string,Standards.URI:mixed) cookie_encountered=set_http_cookie;
 
@@ -63,7 +61,7 @@ class Request
 //!	and returns the parameters to use with @[do_sync],
 //!	@[do_async] or @[do_thread].
 //!
-//!	This method will also use cookie information from the 
+//!	This method will also use cookie information from the
 //!	parent @[Session], and may reuse connections (keep-alive).
    array(string|int|mapping) prepare_method(
       string method,
@@ -76,12 +74,12 @@ class Request
 	 url=Standards.URI(url);
       url_requested=url;
 
-#if constant(SSL.sslfile) 	
+#if constant(SSL.File)
       if(url->scheme!="http" && url->scheme!="https")
 	 error("Protocols.HTTP can't handle %O or any other "
 	       "protocols than HTTP or HTTPS\n",
 	       url->scheme);
-  
+
       if(!con) con=give_me_connection(url_requested);
       con->https= (url->scheme=="https")? 1 : 0;
 #else
@@ -89,7 +87,7 @@ class Request
 	 error("Protocols.HTTP can't handle %O or any other "
 	       "protocol than HTTP\n",
 	       url->scheme);
-#endif
+#endif /* constant(SSL.File) */
       mapping request_headers = copy_value(default_headers);
       if (url->referer)
 	 request_headers->referer=(string)url->referer;
@@ -103,7 +101,7 @@ class Request
 	 (time_to_keep_unused_connections<=0)?"Close":"Keep-Alive";
 
       request_headers->host=url->host;
-  
+
       if (extra_headers)
 	 request_headers|=extra_headers;
 
@@ -129,7 +127,7 @@ class Request
       return ({url->host,
 	       url->port,
 	       method+" "+path+(query?("?"+query):"")+" HTTP/1.1",
-	       request_headers, 
+	       request_headers,
 	       data});
    }
 
@@ -197,7 +195,7 @@ class Request
 //!     @[do_thread]
    Request wait()
    {
-      if (con->`()()) 
+      if (con->`()())
       {
 	 check_for_cookies();
 	 return this;
@@ -217,8 +215,8 @@ class Request
 //!	and got data headers; @[data] will be called when the request
 //!	got the amount of data it's supposed to get and @[fail] is
 //!	called whenever the request failed.
-//!	
-//!	Note here that an error message from the server isn't 
+//!
+//!	Note here that an error message from the server isn't
 //!	considered a failure, only a failed TCP connection.
    void set_callbacks(function(mixed...:mixed) headers,
 		      function(mixed...:mixed) data,
@@ -230,8 +228,8 @@ class Request
       fail_callback=fail;
       extra_callback_arguments=callback_arguments;
    }
-   
-//!	Start a request asyncroneously. It will perform in 
+
+//!	Start a request asyncroneously. It will perform in
 //!	the background using callbacks (make sure the backend
 //!	thread is free).
 //!	Call @[set_callbacks] to setup the callbacks.
@@ -258,7 +256,7 @@ class Request
       con->async_request(@args);
       return this;
    }
-   
+
    protected void async_ok(object q)
    {
       check_for_cookies();
@@ -357,7 +355,7 @@ class Request
    void check_for_cookies()
    {
       if (!con->ok || !con->headers || !cookie_encountered) return;
-      
+
       foreach (con->headers["set-cookie"]||({});;string cookie)
 	 cookie_encountered(cookie,url_requested);
    }
@@ -478,7 +476,7 @@ class Cookie
 
 
 //!	Parse and set a cookie received in the HTTP protocol.
-//!	The cookie will be checked against current security levels et al. 
+//!	The cookie will be checked against current security levels et al.
 void set_http_cookie(string cookie,Standards.URI at)
 {
    object c=Cookie();
@@ -486,7 +484,7 @@ void set_http_cookie(string cookie,Standards.URI at)
    set_cookie(c,at);
 }
 
-//!	Set a cookie. 
+//!	Set a cookie.
 //!	The cookie will be checked against current security levels et al,
 //!	using the parameter @[who].
 //!	If @[who] is zero, no security checks will be performed.
@@ -538,7 +536,7 @@ void decode_cookies(string data,void|int(0..1) no_clear)
 //!	for this url. They are presented in the form suitable
 //!	for HTTP headers (as an array).
 //!	This will also take in count expiration of cookies,
-//!	and delete expired cookies from the @[Session] unless 
+//!	and delete expired cookies from the @[Session] unless
 //!	@[no_delete] is true.
 array(string) get_cookies(Standards.URI|SessionURL for_url,
 			  void|int(0..1) no_delete)
@@ -594,7 +592,7 @@ int maximum_connections_per_server=10;
 //!	Defaults to 50 connections.
 int maximum_total_connections=50;
 
-//!	Maximum times a connection is reused. 
+//!	Maximum times a connection is reused.
 //!	Defaults to 1000000. <2 means no reuse at all.
 int maximum_connection_reuse=1000000;
 
@@ -707,7 +705,7 @@ protected inline void freed_connection(string lookup_freed)
 	  connections_host_n[lookup]<
 	  maximum_connections_per_server)
       {
-	 freed_connection_callbacks-=({v}); 
+	 freed_connection_callbacks-=({v});
 	 callback(@args);
 	 return;
       }
@@ -721,7 +719,7 @@ void return_connection(Standards.URI url,Query query)
 {
    connections_inuse_n--;
    string lookup=connection_lookup(url);
-   if (query && query->con && query->is_sessionquery && query->headers) 
+   if (query && query->con && query->is_sessionquery && query->headers)
    {
       if (query->headers->connection &&
 	  lower_case(query->headers->connection)=="keep-alive" &&
@@ -759,7 +757,7 @@ Request do_method_url(string method,
 	 (["content-type":"application/x-www-form-urlencoded"])+
 	 (extra_headers||([]));
    }
-   
+
    Request p=Request();
    p->do_sync(p->prepare_method(method,url,query_variables,
 				extra_headers,data));
@@ -776,7 +774,7 @@ Request do_method_url(string method,
 //!                          void|mapping query_variables)
 //! 	Sends a HTTP GET, POST, PUT or DELETE request to the server in the URL
 //!	and returns the created and initialized @[Request] object.
-//!	0 is returned upon failure. 
+//!	0 is returned upon failure.
 //!
 
 Request get_url(URL url,
@@ -814,7 +812,7 @@ Request post_url(URL url,
 //! @decl string post_url_data(URL url, @
 //!                            mapping|string query_variables)
 //!	Returns an array of @expr{({content_type,data})@} and
-//!     just the data string respective, 
+//!     just the data string respective,
 //!	after calling the requested server for the information.
 //!	@expr{0@} is returned upon failure.
 //!
@@ -916,14 +914,14 @@ Request async_do_method_url(string method,
 //!
 //! 	Sends a HTTP GET, POST, PUT or DELETE request to the server in
 //!     the URL asynchroneously, and call the corresponding callbacks
-//!	when result arrives (or not). The callbacks will receive 
-//!	the created Request object as first argument, then 
+//!	when result arrives (or not). The callbacks will receive
+//!	the created Request object as first argument, then
 //!	the given @[callback_arguments], if any.
-//!	
-//!	@[callback_headers_ok] is called when the HTTP request has received
-//!	headers. 
 //!
-//!	@[callback_data_ok] is called when the HTTP request has been 
+//!	@[callback_headers_ok] is called when the HTTP request has received
+//!	headers.
+//!
+//!	@[callback_data_ok] is called when the HTTP request has been
 //!	received completely, data and all.
 //!
 //!	@[callback_fail] is called when the HTTP request has failed,
@@ -1006,7 +1004,7 @@ class SessionURL
 class SessionQuery
 {
    inherit Query;
-   
+
    int n_used=1;
    constant is_sessionquery=1;
 }

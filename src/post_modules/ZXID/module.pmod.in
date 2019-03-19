@@ -1,5 +1,10 @@
-inherit @module@;
+#pike __REAL_VERSION__
 
+inherit @module@ : ZXID;
+
+final constant dont_dump_module = 1;
+
+#if constant(@module@.Configuration)
 //! Convert a mapping of query variables to a query string.
 string(0..255) mapping_to_query(mapping(string(0..255):string(0..255)) map)
 {
@@ -10,17 +15,20 @@ string(0..255) mapping_to_query(mapping(string(0..255):string(0..255)) map)
 		     }) * "&";
 }
 
+//!
 class Configuration
 {
-  inherit ::Configuration;
+  inherit ZXID::Configuration : Configuration;
 
   mapping(string(0..255):string(0..255)|array(string(0..255)))
   parse_conf_file(string file)
   {
     mapping(string(0..255):string(0..255)) conf = ([]);
 
+    if (!Stdio.exist(file)) return conf;
+
     Stdio.File f = Stdio.File(file, "r");
-    foreach(f->line_iterator(1), string line) {
+    foreach(f->line_iterator(1);; string line) {
       foreach(line/"&", string frag) {
 	sscanf(frag, "%*[ \t]%s=%s", string name, string val);
 	if (!sizeof(name) || (name[0] == '#') || !val) continue;
@@ -30,11 +38,14 @@ class Configuration
     return conf;
   }
 
+  protected string url = "/";
+
   // Perform some parsing here.
   protected void create(mapping(string(0..255):string(0..255)|array(string(0..255))) conf)
   {
     conf += ([]);
     while(1) {
+      url = conf->URL || url;
       if (stringp(conf->REDIRECT_HACK_ZXID_URL)) {
 	array(string(0..255)) a = conf->REDIRECT_HACK_ZXID_URL/"?";
 	if (sizeof(a) > 1) {
@@ -57,10 +68,85 @@ class Configuration
     }
   }
 
-  string(0..255) authenticate(string(0..255)|mapping(string(0..255):string(0..255)) query)
+  //!
+  class Session
   {
-    if (mappingp(query)) query = mapping_to_query(query);
-    return ::authenticate(query);
+    inherit Configuration::Session;
+
+    //!
+    mapping(string:mixed) auth_info;
+
+    //!
+    mapping(string:mixed) get_auth_info()
+    {
+      return auth_info;
+    }
+
+    //! Authenticate via SAML given the query-string @[query].
+    //!
+    //! @returns
+    //!   @mixed
+    //!     @type mapping(string(0..255):string(0..255))
+    //!       Returns a mapping when interaction with the browser
+    //!       is needed.
+    //!     @type string
+    //!       Returns a string to ask for some specific actions.
+    //!     @type zero
+    //!       Returns @expr{0@} (zero) on successfull authentication.
+    //!       @[auth_info] will be set with the corresponding user information.
+    //!   @endmixed
+    //!
+    //! @throws
+    //!   Throws errors on most error conditions.
+    mixed authenticate(string(0..255) uri_path,
+		       string(0..255)|mapping(string(0..255):string(0..255)) query)
+    {
+      if (mappingp(query)) query = mapping_to_query(query);
+      string raw_res = ::authenticate(uri_path, query);
+
+      switch(sizeof(raw_res) && raw_res[0]) {
+      case '*':	// Error.
+	error("SAML authentication failure: %s\n", raw_res[1..]);
+      case '<':	// HTML-content.
+	return ([ "data":raw_res, "type":"text/html" ]);
+      case 'L':	// Location header.
+	if (!has_prefix(raw_res, "Location:")) break;
+	raw_res =
+	  String.trim_all_whites((raw_res/"\r\n")[0][sizeof("Location:")..]);
+
+	if (has_prefix(raw_res, "?")) {
+	  // Prefix with the URL.
+	  raw_res = url + raw_res;
+	}
+	return ([ "error":Protocols.HTTP.HTTP_FOUND,
+		  "rettext":"Redirect to " + raw_res,
+		  "extra_heads":([ "Location":raw_res ]) ]);
+      case 'n':	// NOOP.
+	break;
+      case 'b':	// Send SP metadata.
+	// Should be handled by the C-layer already.
+	break;
+      case 'c':	// Send SP CARML declaration.
+	// Should be handled by the C-layer already.
+	break;
+      case 'e':	// Send IdP selection page.
+	break;
+      case 'a':	// Send authentication page (usually on the IdP).
+	break;
+      case 'd':	// Authentication completed. LDIF-entry.
+	break;
+      case 'z':	// Authentication failure.
+	auth_info = UNDEFINED;
+	return 0;
+      case '{':	// Success, JSON result.
+	auth_info = Standards.JSON.decode(raw_res);
+	return 0;
+      default:
+	error("Unknown SAML response: %O\n", raw_res[..30]);
+      }
+      return raw_res;
+    }
   }
 
 }
+#endif

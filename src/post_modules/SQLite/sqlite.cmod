@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -15,19 +14,12 @@
 #include "mapping.h"
 #include "threads.h"
 #include "bignum.h"
+#include "pike_types.h"
 
 #if defined(HAVE_SQLITE3_H) && defined(HAVE_LIBSQLITE3)
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
 #endif
 
 #include <sqlite3.h>
@@ -119,11 +111,7 @@ static void bind_arguments(sqlite3 *db,
 	       db);
 	  pop_stack();
 	  break;
-#ifdef PIKE_DEBUG
-	default:
-	  Pike_error("Unknown size_shift.\n");
-#endif
-	}
+        }
       }
       break;
     case T_FLOAT:
@@ -133,6 +121,29 @@ static void bind_arguments(sqlite3 *db,
     default:
       Pike_error("Can only bind string|int|float.\n");
     }
+  }
+}
+
+static void push_field(sqlite3_stmt *stmt, int field)
+{
+  switch( sqlite3_column_type(stmt, field) ) {
+  case SQLITE_INTEGER:
+    push_int64( sqlite3_column_int64(stmt, field) );
+    break;
+  case SQLITE_FLOAT:
+    push_float( sqlite3_column_double(stmt, field) );
+    break;
+  case SQLITE_BLOB:
+  case SQLITE_TEXT:
+    push_string( make_shared_binary_string
+                 ( sqlite3_column_blob(stmt, field),
+                   sqlite3_column_bytes(stmt, field) ) );
+    if( sqlite3_column_type(stmt, field)==SQLITE_TEXT )
+      f_utf8_to_string(1);
+    break;
+  case SQLITE_NULL:
+    push_int(0); /* Val.Null instead? */
+    break;
   }
 }
 
@@ -215,7 +226,7 @@ PIKECLASS ResObj
       push_constant_text("name");
       push_text(sqlite3_column_name(THIS->stmt, i));
       f_utf8_to_string(1);
-      push_constant_text("type");
+      ref_push_string(literal_type_string);
       t = sqlite3_column_type(THIS->stmt, i);
       switch(t)
       {
@@ -223,7 +234,7 @@ PIKECLASS ResObj
         push_constant_text("integer");
         break;
       case SQLITE_FLOAT:
-        push_constant_text("float");
+        ref_push_string(literal_float_string);
         break;
       case SQLITE_BLOB:
         push_constant_text("blob");
@@ -235,7 +246,7 @@ PIKECLASS ResObj
         push_constant_text("text");
         break;
       default:
-        push_constant_text("unknown");
+        push_static_text("unknown");
         break;
       }
       f_aggregate_mapping(4);
@@ -284,13 +295,8 @@ PIKECLASS ResObj
       ResObj_handle_error();
     }
 
-    for(i=0; i<THIS->columns; i++) {
-      push_string( make_shared_binary_string
-		   ( sqlite3_column_blob(stmt, i),
-		     sqlite3_column_bytes(stmt, i) ) );
-      if( sqlite3_column_type(stmt, i)==SQLITE_TEXT )
-	f_utf8_to_string(1);
-    }
+    for(i=0; i<THIS->columns; i++)
+      push_field(stmt, i);
     f_aggregate(THIS->columns);
   }
 
@@ -333,14 +339,14 @@ PIKECLASS ResObj
    *!
    *! Open the SQLite database stored at @[path].
    */
-  PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c)
+ PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c,
+		     mapping|void options)
     flags ID_PROTECTED;
   {
     pop_n_elems(args-1);
     f_string_to_utf8(1);
     /* FIXME: Does the following work if THIS->db is already open? */
     ERR( sqlite3_open(path->str, &THIS->db), THIS->db );
-    pop_stack();
   }
 
   /*! @decl array|int query(string query, @
@@ -368,7 +374,7 @@ PIKECLASS ResObj
     ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
 	 THIS->db);
     if( tail[0] )
-      Pike_error("Sql.SQLite->big_query: Trailing query data (\"%s\")\n",
+      Pike_error("Sql.SQLite->query: Trailing query data (\"%s\")\n",
 		 tail);
     pop_stack();
 
@@ -398,14 +404,10 @@ PIKECLASS ResObj
 
 	case SQLITE_ROW:
 	  for(i=0; i<columns; i++) {
-		push_text(sqlite3_column_name(stmt, i));
-		f_utf8_to_string(1);
-	    push_string( make_shared_binary_string
-			 ( sqlite3_column_blob(stmt, i),
-			   sqlite3_column_bytes(stmt, i) ) );
-	    if( sqlite3_column_type(stmt, i)==SQLITE_TEXT )
-	      f_utf8_to_string(1);
-	  }
+            push_text(sqlite3_column_name(stmt, i));
+            f_utf8_to_string(1);
+            push_field(stmt, i);
+          }
 	  f_aggregate_mapping(columns*2);
 	  DO_AGGREGATE_ARRAY(100);
 	  break;
@@ -522,7 +524,7 @@ PIKECLASS ResObj
   PIKEFUN string server_info()
     optflags OPT_TRY_OPTIMIZE;
   {
-    push_constant_text(sqlite3_libversion());
+    push_text(sqlite3_libversion());
   }
 
   /*! @decl int insert_id()
@@ -535,7 +537,7 @@ PIKECLASS ResObj
   PIKEFUN int insert_id()
     optflags OPT_EXTERNAL_DEPEND;
   {
-    push_longest (sqlite3_last_insert_rowid(THIS->db));
+    push_int64 (sqlite3_last_insert_rowid(THIS->db));
   }
 
   /*! @decl string error()
@@ -624,6 +626,11 @@ PIKECLASS ResObj
     }
   }
 
+}
+
+PIKEFUN string library_version()
+{
+    push_text(sqlite3_libversion());
 }
 
 /*! @endclass

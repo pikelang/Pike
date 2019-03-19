@@ -36,8 +36,8 @@ void test_ipv6()
 }
 
 void f(string sym, void|string name) {
-  int x = !zero_type(all_constants()[sym]) ||
-    !zero_type(master()->resolv(sym));
+  int x = has_index(all_constants(), sym) ||
+    !undefinedp(master()->resolv(sym));
   item(name||sym, x);
 }
 
@@ -57,7 +57,7 @@ int main(int num, array(string) args) {
 
   write("Compilation options\n");
   f("Debug.reset_dmalloc", "DEBUG_MALLOC");
-  f("_leak", "PIKE_DEBUG");
+  f("Debug.HAVE_DEBUG", "PIKE_DEBUG");
   f("get_profiling_info", "PROFILING");
   f("load_module", "USE_DYNAMIC_MODULES");
 
@@ -128,8 +128,25 @@ int main(int num, array(string) args) {
   write("\nBz2\n");
   M(Bz2.Deflate);
 
+  write("\nCOM\n");
+  M(COM.com);
+
   write("\nCrypto\n");
+  F(Crypto.AES.GCM);
+  F(Crypto.Blowfish);
+  F(Crypto.Camellia);
+  F(Crypto.ChaCha20);
+  F(Crypto.ECC.Curve);
+  F(Crypto.GOST94);
   F(Crypto.IDEA);
+  F(Crypto.RIPEMD160);
+  F(Crypto.SALSA20);
+  F(Crypto.SALSA20R12);
+  F(Crypto.Serpent);
+  F(Crypto.SHA224);
+  F(Crypto.SHA384);
+  F(Crypto.SHA512);
+  F(Crypto.SHA3_512);
 
   write("\nDebug\n");
   F(Debug.assembler_debug);
@@ -146,6 +163,9 @@ int main(int num, array(string) args) {
 
   write("\nDVB\n");
   M(DVB.dvb);
+
+  write("\nFFmpeg\n");
+  M(_Ffmpeg.list_codecs);
 
   write("\nFuse\n");
   M(Fuse.Operations);
@@ -177,27 +197,32 @@ int main(int num, array(string) args) {
   // require HAVE_APPLET_QUEUE_RESIZE
 #endif
 
-  write("\nGTK\n");
-  M(GTK.gtk_init);
-  F(GTK.Databox);
-  F(GTK.GladeXML);
-  F(GTK.GLArea);
-  F(GTK.HandleBox);
+  write("\nGnome2\n");
+  F(Gnome2.Canvas);
+  F(Gnome2.Client);
+
+  write("\nGSSAPI\n");
+  M(GSSAPI.Context);
 
   write("\nGTK2\n");
   M(GTK2.gtk_init);
+  F(GTK2.Databox);
+  F(GTK2.GladeXML);
+  F(GTK2.HandleBox);
 
   write("\nGz\n");
   M(Gz.crc32);
 
   write("\nImage\n");
   M(Image.FreeType.Face);
+  M(Image.GIF.decode);
   M(Image.JPEG.decode);
   f("Image.JPEG.FLIP_H", "JPEG transforms");
   M(Image.PNG.decode);
   M(Image.SVG.decode);
   M(Image.TIFF.decode);
   f("Image.TTF->`()","Image.TTF"); // FIXME: Does this work? Fix _Image.Fonts
+  M(Image.WebP.decode);
   M(Image.XFace.decode);
 
   write("\nJava\n");
@@ -211,6 +236,9 @@ int main(int num, array(string) args) {
   M(Math.Transforms.FFT);
   F(Math.LMatrix);
 
+  write("\nMIME\n");
+  M(MIME.Message);
+
   write("\nMird\n");
   M(Mird.Mird);
 
@@ -223,17 +251,29 @@ int main(int num, array(string) args) {
 
   write("\nMysql\n");
   M(Mysql.mysql);
-  object mysql_obj = master()->resolv("Mysql.mysql");
+  object mysql_obj = master()->resolv("Mysql");
+  // Classic:	"MySQL (Copyright Abandoned)/3.23.49"
+  // Mysql GPL:	"MySQL Community Server (GPL)/5.5.30"
+  // MariaDB:	"MySQL (Copyright Abandoned)/5.5.0"
+  string license = "Unknown";
+  string version = "Unknown";
+  string client_info = mysql_obj?->client_info && mysql_obj->client_info();
+  if (client_info) {
+    sscanf(client_info, "%*s(%s)%*s/%s", license, version);
+  }
+  item("Version: " + version, !!client_info);
+  item("License: " + license, !!client_info);
+  mysql_obj = master()->resolv("Mysql.mysql");
   int mysql_db_fun = mysql_obj && mysql_obj->MYSQL_NO_ADD_DROP_DB;
   item("Mysql.mysql->create_db", mysql_db_fun);
   item("Mysql.mysql->drop_db", mysql_db_fun);
-  item("SSL support", mysql_obj && mysql_obj->CLIENT_SSL);
+  item("Mysql SSL support", mysql_obj && mysql_obj->CLIENT_SSL);
 
   write("\nNettle\n");
   M(Nettle.Yarrow);
   // F(Nettle.IDEA_Info); // Expose as Crypto.IDEA
 
-  write("\nODBC\n");
+  write("\nOdbc\n");
   M(Odbc.odbc);
 
   write("\nOracle\n");
@@ -242,9 +282,6 @@ int main(int num, array(string) args) {
   // PDF
 
   // Perl
-
-  write("\nPike\n");
-  F(Pike.Security);
 
   // Pipe
 
@@ -257,10 +294,11 @@ int main(int num, array(string) args) {
 
   write("\nPostgres\n");
   M(Postgres.postgres);
+  M(_PGsql.PGsql);
 
   write("\nRegexp\n");
   f("_Regexp_PCRE._pcre", "Regexp.PCRE");
-  f("_Regexp_PCRE.UTF8", "PCRE wide string support");
+  f("_Regexp_PCRE.Widestring", "PCRE wide string support");
 
   write("\nSANE\n");
   M(SANE.list_scanners);
@@ -269,9 +307,10 @@ int main(int num, array(string) args) {
   M(SDL.init);
   F(SDL.Joystick);
   F(SDL.Music);
-  F(SDL.open_audio);
+  F(SDL.open_audio);	/* Aka SDL_mixer */
 
-  // Ssleay
+  write("\nStandards\n");
+  M(Standards.JSON.encode);
 
   write("\nStdio\n");
   F(Stdio.DN_ACCESS);
@@ -332,7 +371,7 @@ int main(int num, array(string) args) {
   write("     System.setitimer types: ");
   array itimer_types = ({});
 #define ITIMER(X) \
-  if(!zero_type(System.ITIMER_##X)) itimer_types += ({ #X })
+  if(!undefinedp(System.ITIMER_##X)) itimer_types += ({ #X })
   ITIMER(REAL);
   ITIMER(VIRTUAL);
   ITIMER(PROF);
@@ -348,8 +387,14 @@ int main(int num, array(string) args) {
   // System.Memory.PAGE_MASK
   // System.Memory.__MMAP__
 
+  write("\nVCDiff\n");
+  M(VCDiff.Encoder);
+
   write("\nYp\n");
   M(Yp.default_domain);
+
+  write("\nZXID\n");
+  M(ZXID.Configuration);
 
   return 0;
 }

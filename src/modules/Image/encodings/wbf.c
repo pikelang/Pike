@@ -2,13 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
 
 #include <math.h>
-#include <stdio.h>
 #include <ctype.h>
 
 #include "stralloc.h"
@@ -34,7 +32,12 @@ extern struct program *image_program;
  */
 
 /*! @module WBMP
- *! WAP bitmap format - WBMP.
+ *! Wireless Application Protocol Bitmap Format - WAP bitmap format - WBMP.
+ *!
+ *! Wireless Application Protocol Bitmap Format (shortened to Wireless
+ *! Bitmap and with file extension .wbmp) is a monochrome graphics
+ *! file format that was optimized for the extremely low-end mobile
+ *! computing devices that were common in the early days of the mobile web.
  */
 
 struct buffer
@@ -67,7 +70,7 @@ static void read_string( struct buffer *from, unsigned int len, char *to )
 {
   if( from->len < len )
     Pike_error("Invalid data format\n");
-  MEMCPY( from->str, to, len );
+  memcpy( from->str, to, len );
   from->str += len;
   from->len -= len;
 }
@@ -101,9 +104,9 @@ static int wbf_read_int( struct buffer *from )
 
 static void push_ext_header( struct ext_header *eh )
 {
-  push_constant_text( "identifier" );
+  push_static_text( "identifier" );
   push_string( make_shared_binary_string( eh->name, eh->name_len ) );
-  push_constant_text( "value" );
+  push_static_text( "value" );
   push_string( make_shared_binary_string( eh->value, eh->value_len ) );
   f_aggregate_mapping( 4 );
 }
@@ -122,7 +125,7 @@ static struct wbf_header decode_header( struct buffer *data )
 {
   struct wbf_header res;
   ONERROR err;
-  MEMSET( &res, 0, sizeof(res) );
+  memset( &res, 0, sizeof(res) );
   res.type = wbf_read_int( data );
   res.fix_header_field = read_uchar( data );
   SET_ONERROR(err, free_wbf_header_contents, &res);
@@ -139,13 +142,12 @@ static struct wbf_header decode_header( struct buffer *data )
      case 3: /* Array of parameter/value */
        {
          int q = 0x80;
-         
+
          while( q & 0x80 )
          {
            struct ext_header *eh;
            q = read_uchar( data );
-           eh = xalloc( sizeof( struct ext_header ) );
-           MEMSET( eh, 0, sizeof( struct ext_header ) );
+           eh = xcalloc( 1, sizeof( struct ext_header ) );
            eh->next = res.first_ext_header;
            res.first_ext_header = eh;
            eh->name_len = ((q>>4) & 0x7) + 1;
@@ -174,13 +176,13 @@ static void low_image_f_wbf_decode_type0( struct wbf_header *wh,
   push_int( wh->width );
   push_int( wh->height );
   io = clone_object( image_program, 2 );
-  i = (struct image*)get_storage(io,image_program);
+  i = get_storage(io,image_program);
   id = i->img;
 
   white.r = 255;
   white.g = 255;
   white.b = 255;
-  
+
   for( y = 0; y<wh->height; y++ )
   {
     unsigned char q = 0; /* avoid warning */
@@ -218,10 +220,10 @@ static void low_image_f_wbf_decode( int args, int mode )
 
   switch( wh.type )
   {
-   case 0: 
-     /* 
-        The only supported format. B/W uncompressed bitmap 
-      
+   case 0:
+     /*
+        The only supported format. B/W uncompressed bitmap
+
          No compresson.
          Colour: 1 = white, 0 = black.
          Depth: 1 bit.
@@ -236,37 +238,37 @@ static void low_image_f_wbf_decode( int args, int mode )
         return;
 
       case 1: /* Image and header */
-        push_constant_text( "image" );
+        push_static_text( "image" );
         low_image_f_wbf_decode_type0( &wh, &buff );
         map_num_elems++;
-        
+
       case 0: /* Header only */
-        push_constant_text( "format" );
-        push_constant_text( "image/x-wap.wbmp; type=0" );
+        push_static_text( "format" );
+        push_static_text( "image/x-wap.wbmp; type=0" );
         map_num_elems++;
-        
-        push_constant_text( "xsize" );
+
+        push_static_text( "xsize" );
         push_int( wh.width );
         map_num_elems++;
 
-        push_constant_text( "ysize" );
+        push_static_text( "ysize" );
         push_int( wh.height );
         map_num_elems++;
 
         if( wh.fix_header_field )
         {
-          push_constant_text( "fix_header_field" );
+          push_static_text( "fix_header_field" );
           push_int( wh.fix_header_field );
           map_num_elems++;
         }
 
         if( wh.ext_header_field )
         {
-          push_constant_text( "ext_header_field" );
+          push_static_text( "ext_header_field" );
           push_int( wh.ext_header_field );
           map_num_elems++;
         }
-        
+
         if( wh.first_ext_header )
         {
           int num_headers = 0;
@@ -295,10 +297,9 @@ static void low_image_f_wbf_decode( int args, int mode )
   }
 }
 
-/*! @decl object decode(string image)
+/*! @decl Image.Image decode(string image)
  *!
- *! @fixme
- *!   Document this function.
+ *! Decode the given image
  */
 
 static void image_f_wbf_decode( int args )
@@ -308,8 +309,17 @@ static void image_f_wbf_decode( int args )
 
 /*! @decl mapping _decode(string image)
  *!
- *! @fixme
- *!   Document this function.
+ *! Decode the given image
+ *! @returns
+ *!   @mapping
+ *!     @member Image.Image "img"
+ *!     @member string "format"
+ *!       The MIME type and encoding for the image, e.g. "image/x-wap.wbmp; type=0".
+ *!     @member int "xsize"
+ *!     @member int "ysize"
+ *!     @member int "fix_header_field"
+ *!     @member int "ext_header_field"
+ *!  @endmapping
  */
 
 static void image_f_wbf__decode( int args )
@@ -349,7 +359,7 @@ void push_wap_integer( unsigned int i )
   while( i )
   {
     data[pos] = (i&0x7f) | 0x80;
-    i>>=7; 
+    i>>=7;
     pos++;
   }
   data[0] &= 0x7f;
@@ -362,8 +372,7 @@ static void push_wap_type0_image_data( struct image *i )
   int x, y;
   unsigned char *data, *p;
   rgb_group *is;
-  data = xalloc( i->ysize * (i->xsize+7)/8 );
-  MEMSET( data, 0, i->ysize * (i->xsize+7)/8 );
+  data = xcalloc( i->ysize, (i->xsize+7)/8 );
   is = i->img;
   for( y = 0; y<i->ysize; y++ )
   {
@@ -382,8 +391,8 @@ static void push_wap_type0_image_data( struct image *i )
 /*! @decl string encode(object image, void|mapping args)
  *! @decl string _encode(object image, void|mapping args)
  *!
- *! @fixme
- *!  Document this function.
+ *! Encode the given image as a WBMP image. All pixels that are not
+ *! black will be encoded as white.
  */
 
 static void image_f_wbf_encode( int args )
@@ -401,7 +410,7 @@ static void image_f_wbf_encode( int args )
     Pike_error("No image given to encode.\n");
 
   o = sp[-args].u.object;
-  i = (struct image*)get_storage(o,image_program);
+  i = get_storage(o,image_program);
   if(!i)
     Pike_error("Wrong type object argument\n");
   if( args == 2 )
@@ -415,8 +424,8 @@ static void image_f_wbf_encode( int args )
   num_strings=0;
   push_wap_integer( 0 ); num_strings++; /* type */
   push_wap_integer( 0 ); num_strings++; /* extra header */
-  push_wap_integer( i->xsize ); num_strings++; 
-  push_wap_integer( i->ysize ); num_strings++; 
+  push_wap_integer( i->xsize ); num_strings++;
+  push_wap_integer( i->ysize ); num_strings++;
   push_wap_type0_image_data( i ); num_strings++;
   f_add( num_strings );
   if( options ) free_mapping( options );
@@ -429,7 +438,7 @@ static void image_f_wbf_encode( int args )
 /*! @endmodule
  */
 
-void init_image_wbf()
+void init_image_wbf(void)
 {
   ADD_FUNCTION( "encode", image_f_wbf_encode,
 		tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
@@ -441,6 +450,6 @@ void init_image_wbf()
 		tFunc(tStr,tMapping), 0);
 }
 
-void exit_image_wbf()
+void exit_image_wbf(void)
 {
 }

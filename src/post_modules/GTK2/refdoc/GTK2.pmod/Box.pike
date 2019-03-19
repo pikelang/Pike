@@ -68,7 +68,7 @@ GTK2.Box set_child_packing( GTK2.Widget child_widget, int expandp, int fillp, in
 //! If exand is true, the widget will be expanded when the box is resized.
 //! If 'fill' is true, the widget will be resized to fill up all available
 //! space. Padding is the amount of padding to use, and pack_type is
-//! one of @[PACK_END] and @[PACK_START].
+//! one of @[PACK_DIRECTION_BTT], @[PACK_DIRECTION_LTR], @[PACK_DIRECTION_RTL], @[PACK_DIRECTION_TTB], @[PACK_END] and @[PACK_START].
 //! 
 //! You can emulate pack_start and pack_end with add and set_child_packing.
 //!

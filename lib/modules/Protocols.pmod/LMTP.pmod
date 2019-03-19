@@ -1,7 +1,3 @@
-//
-// $Id$
-//
-
 #pike __REAL_VERSION__
 class Configuration {
   inherit .SMTP.Configuration;
@@ -12,13 +8,13 @@ class Connection {
   // The commands this module supports
   mapping(string:function) commands = ([
          "lhlo": ehlo,
-	 "mail": mail, 
+	 "mail": mail,
 	 "rcpt": rcpt,
 	 "data": data,
 	 "rset": rset,
 	 "vrfy": vrfy,
 	 "quit": quit,
-	 "noop": noop 
+	 "noop": noop
   ]);
   constant protocol = "LMTP";
 
@@ -33,9 +29,9 @@ class Connection {
       return 0;
     }
     // LMTP as well as SMTP encode '.' by another '.' when it is the first
-    // character of a line so we have to decode it 
+    // character of a line so we have to decode it
     // We don't decode for SMTP since it can be usefull not to encode it for
-    // sending again the mail 
+    // sending again the mail
     content = replace(replace(content, "\r\n", "\n"), "\n..", "\n.");
     MIME.Message message = low_message(content);
     if(!message) return;
@@ -62,11 +58,13 @@ class Connection {
 
 //! A LMTP server. It has been fairly well tested against Postfix client.
 //! Actually this module is only an extention to the @[SMTP] server.
+//!
+//! It implements @rfc{2821@}, @rfc{2822@}, @rfc{2033@} and @rfc{1854@}.
 class Server {
-   static object fdport;
+   protected object fdport;
    Configuration config;
 
-   static void accept_callback()
+   protected void accept_callback()
    {
      object fd = fdport->accept();
      if(!fd)
@@ -78,9 +76,8 @@ class Server {
    //! @decl void create(array(string) _domains, void|int port,@
    //!        void|string ip, function _cb_mailfrom,@
    //!        function _cb_rcptto, function _cb_data)
-   //!  Create a receiving LMTP server. It implements RFC 2821, 2822, 2033 and 
-   //!  1854.
-   //! 
+   //!  Create a receiving LMTP server.
+   //!
    //! @param domain
    //!   Domains name this server relay, you need to provide at least one
    //!   domain (the first one will be used for MAILER-DAEMON address).
@@ -106,9 +103,9 @@ class Server {
    //!  int|array cb_data(object mime, string sender, string recipient, void|string rawdata)
    //!  object mime : the mime data object
    //!  string sender : sender of the mail (from the mailfrom command)
-   //!  string recipient : one recipient given by one rcpt 
+   //!  string recipient : one recipient given by one rcpt
    //!     command.
-   //! return : SMTP code to output to the client. If you return an array 
+   //! return : SMTP code to output to the client. If you return an array
    //!   the first element is the SMTP code and the second is the error string
    //!   to display. Note that to comply with LMTP protocol you must output a
    //!   code each time this function is called.
@@ -125,10 +122,10 @@ class Server {
    //!   // check the user's mailbox here
    //!   return 250;
    //! }
-   //! 
+   //!
    //! int cb_data(object mime, string sender, string recipient)
    //! {
-   //!   write(sprintf("smtpd: mailfrom=%s, to=%s, headers=%O\ndata=%s\n", 
+   //!   write(sprintf("smtpd: mailfrom=%s, to=%s, headers=%O\ndata=%s\n",
    //!   sender, recipient, mime->headers, mime->getdata()));
    //!   // check the data and deliver the mail here
    //!   if(mime->body_parts)
@@ -139,7 +136,7 @@ class Server {
    //!   }
    //!   return 250;
    //! }
-   //! 
+   //!
    //! int main(int argc, array(string) argv)
    //! {
    //!   Protocols.LMTP.Server(({ "ece.fr" }), 2500, "127.0.0.1", @

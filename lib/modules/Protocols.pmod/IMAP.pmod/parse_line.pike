@@ -35,7 +35,7 @@ int eolp()
 int get_number()
 {
   skip_whitespace();
-      
+
   if (!sizeof(buffer))
     return -1;
 
@@ -43,11 +43,11 @@ int get_number()
   for(i = 0; i<sizeof(buffer); i++)
     if ( (buffer[i] < '0') || ('9' < buffer[i]) )
       break;
-      
+
   // Disallow too large numbers
   if (!i || (i > 9) )
     return -1;
-      
+
   int res = array_sscanf(buffer[..i-1], "%d")[0];
   buffer = buffer[i..];
   return res;
@@ -65,7 +65,7 @@ string get_atom(int|void with_options)
 	  : "%*[ \t]%[^(){ \0-\037\177%\"]%s"),
 	 atom, buffer);
 
-  werror(sprintf("=> atom: %O\n", atom));
+  werror("=> atom: %O\n", atom);
   return sizeof(atom) && atom;
 }
 
@@ -77,7 +77,7 @@ string|object get_string()
 
   if (!sizeof(buffer))
     return 0;
-      
+
   switch(buffer[0])
   {
   case '"':
@@ -119,7 +119,7 @@ string|object get_string()
 string|object get_astring()
 {
   werror("get_astring: buffer = '%s'\n", buffer);
-      
+
   skip_whitespace();
   if (!sizeof(buffer))
     return 0;
@@ -132,14 +132,14 @@ string|object get_astring()
     return get_atom();
   }
 }
-  
+
 /* Returns a set object. */
 object get_set()
 {
   string atom = get_atom();
   if (!atom)
     return 0;
-      
+
   return .types.imap_set()->init(atom);
 }
 
@@ -155,7 +155,7 @@ mapping get_token(int eol, int accept_options)
   skip_whitespace();
   if (!sizeof(buffer))
     return (eol == -1) && ([ "type" : "eol", "eol" : 1 ]);
-  
+
   if (eol && (buffer[0] == eol))
   {
     buffer = buffer[1..];
@@ -198,11 +198,11 @@ mapping get_range(mapping atom)
     return 0;
 
   buffer = buffer[1..];
-      
+
   int size = get_number();
   if ((size <= 0) || !sizeof(buffer) || (buffer[0] != '>'))
     return 0;
-      
+
   buffer = buffer[1..];
 
   atom->range = ({ start, size });
@@ -255,7 +255,7 @@ array(string) get_flag_list()
  * FIXME: This function is used to read fetch commands. This breaks
  * rfc-2060 compliance, as the names of headers can be represented
  * as string literals. */
-  
+
 mapping get_simple_list(int max_depth)
 {
   skip_whitespace();
@@ -281,17 +281,17 @@ array do_parse_simple_list(int max_depth, int terminator)
 {
   array a = ({ });
 
-  werror(sprintf("do_parse_simple_list(%d, '%c')\n", max_depth, terminator));
-      
+  werror("do_parse_simple_list(%d, '%c')\n", max_depth, terminator);
+
   buffer = buffer[1..];
 
   while(1)
   {
     skip_whitespace();
-	
+
     if (!sizeof(buffer))
       return 0;
-	
+
     if (buffer[0] == terminator)
     {
       buffer = buffer[1..];
@@ -307,7 +307,7 @@ array do_parse_simple_list(int max_depth, int terminator)
 
     mapping m = get_simple_list(max_depth);
     if (!m) {
-      werror(sprintf("get_simple_list(%d) failed\n", max_depth));
+      werror("get_simple_list(%d) failed\n", max_depth);
     } else {
       a += ({ m });
     }
@@ -337,10 +337,10 @@ mapping get_atom_options(int max_depth)
     res->raw = atom;
     return res;
   }
-      
+
   /* Parse options */
   string option_start = buffer;
-      
+
   array options = do_parse_simple_list(max_depth - 1, ']');
 
   if (!options) {
@@ -354,7 +354,7 @@ mapping get_atom_options(int max_depth)
   res->raw = atom +
     option_start[..<sizeof(buffer)];
 
-      
+
   if (!sizeof(buffer) || (buffer[0] != '<'))
     return res;
 
@@ -366,11 +366,11 @@ mapping get_atom_options(int max_depth)
     return 0;
 
   buffer = buffer[1..];
-      
+
   int size = get_number();
   if ((size < 0) || !sizeof(buffer) || (buffer[0] != '>'))
     return 0;
-      
+
   buffer = buffer[1..];
 
   res->range = ({ start, size });

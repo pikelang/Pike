@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 
 # This line is needed on some machines.
 @SET_MAKE@
@@ -45,7 +42,7 @@ PRECOMPILER_ARGS=--api=3
 # documentation! This variable is prepended to the install path.
 # Please note that Pike will not work until moved into the proper
 # place.  -Hubbe
-# 
+#
 buildroot=
 
 prefix = @prefix@
@@ -58,7 +55,8 @@ man_prefix = @mandir@
 include_prefix = @includedir@/pike
 
 # Arguments for test_pike.pike used by the verify targets.
-# TESTARGS = -F -a
+TESTARGS_NOFORK = -a -a$(SRCDIR) -a$(LIBDIR_SRC) -v
+TESTARGS_FORK = -F $(TESTARGS_NOFORK)
 
 # Arguments for install.pike used by the install targets.
 INSTALLARGS = --new-style
@@ -89,9 +87,6 @@ DEFINES=@CPPFLAGS@ -DPIKE_CORE
 
 # -O should work with all compilers
 OPTIMIZE=@OPTIMIZE@
-
-# interpret.o can't have -fomit-frame-pointer
-INTERPRET_DEOPTIMIZE=@INTERPRET_DEOPTIMIZE@
 
 # Set to a flag for parallelizing make, e.g. -j2. It's given to make
 # at the level where it's most effective.
@@ -140,7 +135,6 @@ MAKE_FLAGS=
 #
 CORE_OBJ= \
  language.o \
- security.o \
  bignum.o \
  pike_cpulib.o \
  interpret.o \
@@ -167,10 +161,12 @@ CORE_OBJ= \
  pike_types.o \
  pike_embed.o \
  mapping.o \
+ block_allocator.o \
  pike_memory.o \
  module_support.o \
  pikecode.o \
  object.o \
+ stack_allocator.o \
  opcodes.o \
  operators.o \
  pike_float.o \
@@ -178,6 +174,7 @@ CORE_OBJ= \
  program.o \
  rbtree.o \
  rusage.o \
+ sprintf.o \
  sscanf.o \
  stralloc.o \
  stuff.o \
@@ -186,11 +183,10 @@ CORE_OBJ= \
  queue.o \
  builtin.o \
  iterators.o \
- facetgroup.o \
  svalue.o \
  las.o \
  builtin_functions.o \
- peep.o @DLOPEN_O@ @EXTRA_OBJS@
+ peep.o @EXTRA_OBJS@
 
 OBJ=$(CORE_OBJ) @MODULE_O@
 
@@ -208,6 +204,8 @@ MODULE_REQUIREMENTS= \
   $(SRCDIR)/interpret_protos.h \
   lib @EXTRA_MODULE_REQUIREMENTS@
 
+PMOD_TARGETS=@PMOD_TARGETS@
+
 SRC_TARGETS= \
  $(SRCDIR)/language.c \
  $(SRCDIR)/language.h \
@@ -216,7 +214,7 @@ SRC_TARGETS= \
  $(SRCDIR)/peep_engine.c \
  $(SRCDIR)/case_info.h \
  $(SRCDIR)/whitespace.h \
- $(SRCDIR)/treeopt.h @PMOD_TARGETS@
+ $(SRCDIR)/treeopt.h $(PMOD_TARGETS)
 
 
 #
@@ -224,7 +222,7 @@ SRC_TARGETS= \
 #
 
 # Update the dumped modules, but only if dump_modules has been used earlier.
-all: module_objects post_module_objects pike-complete-stamp tools
+all: module_objects post_module_objects pike-complete-stamp
 	@if [ -f dumpversion ]; then \
 	  echo "$(MAKE) $(MAKE_FLAGS) dump_modules"; \
 	  $(MAKE) $(MAKE_FLAGS) dump_modules; \
@@ -244,35 +242,29 @@ documentation: onepage.xml traditional.xml modref.xml
 	cd $(DOCDIR) && $(MAKE) $(MAKE_FLAGS) PIKE="$(RUNPIKE)" \
 	  BUILDDIR="$(TMP_BUILDDIR)" $(DOCTARGET)
 
-# Creation of bundles/include/pike/.
+# Creation of include/.
 
-headerfiles-stamp: bundles/include/pike machine.h global.h $(SRC_TARGETS) force
+headerfiles-stamp: include machine.h global.h $(SRC_TARGETS) force
 	@$(MAKE) $(MAKE_FLAGS) headerfiles_low HEADERS="machine.h" HEADERSOURCE="`pwd`"
 	@$(MAKE) $(MAKE_FLAGS) headerfiles_low HEADERS="`cd $(SRCDIR) && echo *.h`" HEADERSOURCE="$(SRCDIR)"
 	@test -f headerfiles-stamp || echo foo > headerfiles-stamp
 
 headerfiles_low: force
 	@for f in $(HEADERS); do \
-	  if [ -h "bundles/include/pike/$$f" ]; then continue; fi; \
-	  if cmp "$(HEADERSOURCE)/$$f" "bundles/include/pike/$$f" >/dev/null 2>&1 ; then continue; fi; \
-	  rm -f bundles/include/pike/$$f 2>/dev/null; \
-	  echo "Creating bundles/include/pike/$$f"; \
-	  if ln -s "$(HEADERSOURCE)/$$f" "bundles/include/pike/$$f" && \
-	     ls -L "bundles/include/pike/$$f" >/dev/null 2>&1; then :; else \
+	  if [ -h "include/$$f" ]; then continue; fi; \
+	  if cmp "$(HEADERSOURCE)/$$f" "include/$$f" >/dev/null 2>&1 ; then continue; fi; \
+	  rm -f include/$$f 2>/dev/null; \
+	  echo "Creating include/$$f"; \
+	  if ln -s "$(HEADERSOURCE)/$$f" "include/$$f" && \
+	     ls -L "include/$$f" >/dev/null 2>&1; then :; else \
 	    echo "Symlink failed."; \
-	    cp "$(HEADERSOURCE)/$$f" "bundles/include/pike/$$f" || exit 1; \
+	    cp "$(HEADERSOURCE)/$$f" "include/$$f" || exit 1; \
 	  fi; \
 	  echo foo > headerfiles-stamp; \
 	done
 
-bundles/include/pike: bundles/include
-	test -d bundles/include/pike/. || mkdir bundles/include/pike
-
-bundles/include: bundles
-	test -d bundles/include/. || mkdir bundles/include
-
-bundles:
-	test -d bundles/. || mkdir bundles
+include:
+	test -d include/. || mkdir include
 
 compiler-warnings : clean
 	@echo Summarizing compiler warnings.
@@ -297,18 +289,20 @@ compiler-warnings : clean
 # if you want to install the framework in a standard location, like /Library/Frameworks, you will
 # need to use install_name_tool to change the location. don't blame me, blame dyld.
 #
+# the following target assumes MacOS X 10.6 or higher, and is configured to use garbage collection
 framework: OCPikeInterpreter.o $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	@echo "Linking Pike.framework";\
-	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa -dynamiclib -Wl,-single_module \
-	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.7 -install_name @executable_path/../Frameworks/Pike.framework/Pike \
-	  -isysroot /Developer/SDKs/MacOSX10.4u.sdk 
+	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa \
+	  -dynamiclib -Wl,-no_pie -mpic-no-dynamic -Wl,-single_module \
+	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.9 -install_name @executable_path/../Frameworks/Pike.framework/Pike \
+	  -isysroot /Developer/SDKs/MacOSX10.6.sdk
 	ls -l Pike
 	if test -x Pike.framework ; then rm -rf Pike.framework; fi
 	mkdir Pike.framework
 	mkdir Pike.framework/Versions
 	mkdir Pike.framework/Versions/7.7
 	mkdir Pike.framework/Versions/7.7/Headers
-	mkdir Pike.framework/Versions/7.7/Resources	
+	mkdir Pike.framework/Versions/7.7/Resources
 	mkdir Pike.framework/Versions/7.7/Resources/lib
 	mv Pike Pike.framework/Versions/7.7
 	cd Pike.framework/Versions && ln -s 7.7 Current
@@ -352,11 +346,11 @@ tpike-real: main.o $(CORE_OBJ) tmodule.o modules/linker_options
 	-@rm -f tpike tpike.exe
 	$(LD) $(LDFLAGS) main.o $(CORE_OBJ) tmodule.o \
 	  `cat modules/linker_options` \
-	  $(LIBS) -o tpike
+	  $(LIBS) -o tpike@EXEEXT@
 
 # Only want tpike to exist for use with $(RUNPIKE) in the modules. We
 # don't want to require it actually being up-to-date.
-tpike: master-stamp
+tpike@EXEEXT@: master-stamp
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
 
 # If we build without dynamic modules then tpike is built first with
@@ -375,18 +369,17 @@ tpike: master-stamp
 #
 # @LDSHARED_BASE_REQS@ expands to pike.lib if dynamic DLL modules are
 # used on NT.
-pike pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@ @PIKE_ICON_RES@
+pike@EXEEXT@ pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@ @PIKE_ICON_RES@
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.exe ] ; then mv pike.exe pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
-#	$(LD) $(LDFLAGS) main.o @DLOPEN_O@ -o pike
 	$(LD) $(LDFLAGS) main.o $(OBJ) \
 	  `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
 	  $(LIBS) @PIKE_ICON_RES@ -o pike
 	@MT_FIX_PIKE_EXE@
 # The dumped modules are removed whenever Pike is relinked since some
-# of the bytecode methods (e.g. ia32) stores absolute addresses to
+# of the bytecode methods (e.g. ia32) store absolute addresses to
 # global structs. That should probably be fixed in them so that dumped
 # modules aren't link order dependent.
 	@if [ -f dumpversion ]; then \
@@ -395,7 +388,7 @@ pike pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STAT
 	else :; fi
 
 # gcov
-gcov: 
+gcov:
 	@for f in `cd "$(SRCDIR)" && find . -type f -name '*.c' -print`; do \
 	  if test -f `echo $$f | sed -e 's/\.$$/.bb/'`; then \
 	    for gf in `gcov $$f | sed -e 's/Creating \(.*\)\.gcov.*/\1.gcov/p' -ed`; do \
@@ -422,18 +415,18 @@ gcov:
 
 # purify
 pure: $(OBJ) master-stamp module_objects
-	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike
+	-@mv pike@EXEEXT@ pike.old@EXEEXT@ 2>/dev/null || true
+	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike@EXEEXT@
 
 # purecov
 cover: $(OBJ) master-stamp module_objects
-	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike
+	-@mv pike@EXEEXT@ pike.old@EXEEXT@ 2>/dev/null || true
+	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike@EXEEXT@
 
 # quantify
 quant: $(OBJ) master-stamp module_objects
-	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike
+	-@mv pike@EXEEXT@ pike.old@EXEEXT@ 2>/dev/null || true
+	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike@EXEEXT@
 
 splint:
 	splint $(PREFLAGS) -warnposix +charintliteral -realcompare -boolops -predboolint $(FILE)
@@ -449,18 +442,6 @@ pixie: pike-complete-stamp
 	mv pike pike.pre-pixie
 	mv pike.pixie.threads pixie
 	@echo Make sure you have '.' in your LD_LIBRARY_PATH.
-
-tools: hilfe rsif
-
-hilfe: $(TMP_BINDIR)/hilfe Makefile
-	@echo "Creating hilfe..."; \
-	( sed -e 's!/usr/bin/env pike!$(bindir)/pike!' \
-	  <$(TMP_BINDIR)/hilfe >./hilfe && chmod 755 ./hilfe) || exit 1 ;
-
-rsif: $(TMP_BINDIR)/rsif Makefile
-	@echo "Creating rsif..."; \
-	( sed -e 's!pike!$(bindir)/pike!' <$(TMP_BINDIR)/rsif \
-	  >./rsif && chmod 755 ./rsif) || exit 1 ;
 
 dump_modules: pike-complete-stamp master-stamp
 	-rm dumpmodule.log
@@ -501,57 +482,34 @@ undump_modules: delete_dumped_modules
 # First try compiling with optimization and if that doesn't work, without.
 # GCC dumps core on some files @ OSF1
 # This kluge should work around that...
-# Extra kludge added: interpret.o gets special flags (deoptimization)
 .c.o:
 	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
 	rm -f $@.fail >/dev/null 2>&1; \
-	if test "x$@" = "xinterpret.o"; then EXTRAFLAGS="$(INTERPRET_DEOPTIMIZE)"; else EXTRAFLAGS=; fi; \
 	if $(CC) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
 	  status=$$?; \
-	  if test x"@noopt_retry@" = xyes ; then \
-	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
-	      status=$$?; \
-	      echo "Compilation command was:" >&2;\
-	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -c $< -o $@" >&2 ;\
-	      exit $$status; \
-	    fi; \
-	  else \
-	    echo "Compilation command was:" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@" >&2 ;\
-	    exit $$status; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@" >&2 ;\
+	  exit $$status; \
 	fi
 
 .m.o:
 	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
 	rm -f $@.fail >/dev/null 2>&1; \
-	if test "x$@" = "xinterpret.o"; then EXTRAFLAGS="$(INTERPRET_DEOPTIMIZE)"; else EXTRAFLAGS=; fi; \
-	if $(CC) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@ ; then : ; else \
+	if $(CC) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -fobjc-gc -c $< -o $@ ; then : ; else \
 	  status=$$?; \
-	  if test x"@noopt_retry@" = xyes ; then \
-	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
-	      status=$$?; \
-	      echo "Compilation command was:" >&2;\
-	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >&2 ;\
-	      exit $$status; \
-	    fi; \
-	  else \
-	    echo "Compilation command was:" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >&2 ;\
-	    exit $$status; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >&2 ;\
+	  exit $$status; \
 	fi
+
+$(PMOD_TARGETS): precompile.sh-stamp $(TMP_BINDIR)/precompile.pike $(PIKE_SRC_DIR)/../lib/modules/Tools.pmod/Standalone.pmod/precompile.pike Makefile.in
 
 #
 # Please note that this must be accompanied by a dependency rule as
 # The .c file will not be created in the SOURCE directory otherwise.
 # -Hubbe
 #
-.cmod.c: precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
+.cmod.c:
 	./precompile.sh --cache precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
 # The same applies to this.
@@ -663,7 +621,7 @@ pike_icon.res: pike.ico
 	$(RCEXE) /fo $@ pike_icon.rc
 
 # install
-install: pike-complete-stamp tools
+install: pike-complete-stamp
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	include_prefix="$(include_prefix)" \
@@ -675,7 +633,7 @@ install: pike-complete-stamp tools
 	cflags="@DYNAMIC_MODULE_FLAGS@" ldflags="" \
 	$(INSTALLARGS)
 
-install_interactive: pike-complete-stamp tools
+install_interactive: pike-complete-stamp
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
 	exec_prefix="$(bindir)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
@@ -701,8 +659,8 @@ clean_here: tidy doc_clean
 	-rm -f confdefs.h
 	-rm -rf test-install test-pike tpike tpike.* *.pdb
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
-	-rm -f hilfe rsif master.pike compiler-warnings dumpmodule.log
-	-rm -f interpreter_debug.h lexer?.h
+	-rm -f master.pike compiler-warnings dumpmodule.log
+	-rm -f interpreter_debug.h
 	-rm -f import-stamp master-stamp headerfiles-stamp
 	-rm -f static-modules-stamp dynamic-modules-stamp post-modules-stamp
 	-rm -f post-module-pike-stamp pike-complete-stamp
@@ -728,23 +686,12 @@ spotless: clean_here clean_pike
 	-rm -f Makefile config.* make_variables specs pike.syms
 	-rm -f .pure stamp-h
 	-rm -f lexical.c mon.out *.ln
-	-rm -f pike pike.exe pike.old pike.old.exe l.outa* num_files_to_install
+	-rm -f pike.old pike.old.exe l.outa* num_files_to_install
 	-rm -f *.msm *.msi
 	-rm -f precompile.sh precompile.sh-stamp smartlink
 	-rm -rf tlib extra_tests lib precompile
 
 distclean: spotless
-
-# FIXME: Use .gitignore instead.
-gitclean: distclean
-	( for d in `cd $(SRCDIR) && find . -type d -print`; do \
-	    if test -f "$(SRCDIR)/$$d/.cvsignore" ; then \
-	      (cd "$$d" && rm -f `cat "$(SRCDIR)/$$d/.cvsignore"`); \
-	      (cd "$(SRCDIR)/$$d" && rm -f `cat "$(SRCDIR)/$$d/.cvsignore"`); \
-	    else :; fi; \
-	  done)
-
-cvsclean: gitclean
 
 # create tags
 tags:
@@ -767,12 +714,12 @@ testsuites:
 	   --destdir=extra_tests --bindir=$(TMP_BINDIR) ) ; fi;
 
 just_verify: testsuites master-stamp
-	if test "x$(TESTARGS)" = x ; then args="-F -a -v" ; \
+	if test "x$(TESTARGS)" = x ; then args="$(TESTARGS_FORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) -x test_pike $$args
 
 valgrind_just_verify: testsuites master-stamp
-	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
+	if test "x$(TESTARGS)" = x ; then args="$(TESTARGS_NOFORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args
 
@@ -789,8 +736,8 @@ dynloadtest.sh: $(SRCDIR)/test_dynamic_loading.in
 
 dynloadtest.c: dynamic_load.c
 
-dynloadtest: dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o
-	$(LD) $(LDFLAGS) dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o $(LIBS) -o dynloadtest
+dynloadtest@EXEEXT@: dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o
+	$(LD) $(LDFLAGS) dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o $(LIBS) -o $@
 
 
 tinstall: master-stamp
@@ -821,7 +768,7 @@ just-tinstall: master-stamp
 
 verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
-	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
+	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
 	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
@@ -835,7 +782,7 @@ verify: testsuites tinstall
 
 valgrind_verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
-	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
+	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
 	  $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args ; \
@@ -855,7 +802,7 @@ bench: tinstall
 	fi
 
 verify_installed: testsuites master-stamp
-	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
+	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	$(bindir)/pike $(PIKEOPTS) -x test_pike $$args
 
@@ -865,8 +812,8 @@ sure: verify
 
 # verify / debug verbose
 verbose_verify: testsuites master-stamp
-	if test "$(TESTARGS)" = "" ; then args="-F -a" ; else args="$(TESTARGS)" ; fi; \
-	$(RUNPIKE) -x test_pike -v -v $$args
+	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else args="$(TESTARGS)" ; fi; \
+	$(RUNPIKE) -x test_pike -v $$args
 
 # verify & debug VERBOSE
 gdb_verify: testsuites master-stamp
@@ -879,7 +826,7 @@ gdb_verify: testsuites master-stamp
 	else :; fi
 	@echo >>.gdbinit break debug_fatal
 	@echo >>.gdbinit break pike_gdb_breakpoint
-	@if test "$(TESTARGS)" = "" ; then args="-a -v -v" ; else \
+	@if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK) -v" ; else \
 	  args="$(TESTARGS)" ; fi;  \
 	echo >>.gdbinit set args \
 	  -m`echo "$(TMP_BUILDDIR)/master.pike" | ./posix_to_native.sh` \
@@ -904,7 +851,7 @@ gdb_hilfe: master.pike
 # fast test
 fast_verify_testsuite: testsuite
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
-	if test "$(TESTARGS)" = "" ; then args="-F -a" ; \
+	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
 	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
@@ -949,7 +896,7 @@ master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	LC_ALL=C; export LC_ALL; \
 	cmd="sed -e 's!#lib_prefix#!`echo '$(TMP_LIBDIR)' | ./posix_to_native.sh`!' \
 	  -e 's!#share_prefix#!`echo '$(LIBDIR_SRC)' | ./posix_to_native.sh`!' \
-	  -e 's!#include_prefix#!`echo '$(TMP_BUILDDIR)/bundles/include/pike' | ./posix_to_native.sh`!' \
+	  -e 's!#include_prefix#!`echo '$(TMP_BUILDDIR)/include' | ./posix_to_native.sh`!' \
 	  -e '$$u'"; \
 	echo "$$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike"; \
 	eval $$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike || { rm "master.pike"; exit 1; }
@@ -978,7 +925,7 @@ modref.xml: autodoc.xml $(DOCDIR)/structure/modref.xml
 	  $(RUNPIKE) -x assemble_autodoc structure/modref.xml \
 	    $(TMP_BUILDDIR)/autodoc.xml) >modref.xml || { rm "$@"; exit 1; }
 
-autodoc.xml: pike-complete-stamp doc_build/src doc_build/lib doc_build/images images1 images2 force
+autodoc.xml: pike-complete-stamp doc_build/src doc_build/lib doc_build/images images2 force
 	$(RUNPIKE) -x extract_autodoc -q --srcdir=$(SRCDIR) \
 	  --imgsrc=$(DOCDIR)/src_images --builddir=doc_build/src \
 	  --imgdir=doc_build/images
@@ -990,10 +937,6 @@ autodoc.xml: pike-complete-stamp doc_build/src doc_build/lib doc_build/images im
 autodoc-stamp:
 	@test -f autodoc.xml || $(MAKE) autodoc.xml
 	@test -f autodoc-stamp || echo foo > autodoc-stamp
-
-images1: doc_build/src/post_modules/GTK1/refdoc/images
-	@cp $(SRCDIR)/post_modules/GTK1/refdoc/images/*.png \
-	  doc_build/src/post_modules/GTK1/refdoc/images/
 
 images2: doc_build/src/post_modules/GTK2/refdoc/images
 	@cp $(SRCDIR)/post_modules/GTK2/refdoc/images/*.png \
@@ -1013,17 +956,9 @@ doc_build/lib: doc_build
 doc_build/images: doc_build
 	@test -d doc_build/images || mkdir doc_build/images
 
-doc_build/src/post_modules: doc_build/src 
+doc_build/src/post_modules: doc_build/src
 	@test -d doc_build/src/post_modules || \
 	  mkdir doc_build/src/post_modules
-
-doc_build/src/post_modules/GTK1/refdoc/images: doc_build/src/post_modules
-	@test -d doc_build/src/post_modules/GTK1 || \
-	  mkdir doc_build/src/post_modules/GTK1
-	@test -d doc_build/src/post_modules/GTK1/refdoc || \
-	  mkdir doc_build/src/post_modules/GTK1/refdoc
-	@test -d doc_build/src/post_modules/GTK1/refdoc/images || \
-	  mkdir doc_build/src/post_modules/GTK1/refdoc/images
 
 doc_build/src/post_modules/GTK2/refdoc/images: doc_build/src/post_modules
 	@test -d doc_build/src/post_modules/GTK2 || \
@@ -1034,7 +969,8 @@ doc_build/src/post_modules/GTK2/refdoc/images: doc_build/src/post_modules
 	  mkdir doc_build/src/post_modules/GTK2/refdoc/images
 
 doc_clean:
-	-rm -f onepage.xml traditional.xml modref.xml autodoc.xml resolution.log
+	-rm -f onepage.xml traditional.xml modref.xml autodoc.xml \
+		autodoc.xml.stamp resolution.log
 	-rm -rf doc_build
 
 
@@ -1070,7 +1006,7 @@ snapshot_export: source
 
 export: full_export
 
-bin_export: 
+bin_export:
 	@rm -f *.burk
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
@@ -1117,22 +1053,6 @@ $(SRCDIR)/treeopt.h: $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
 
 las.o: $(SRCDIR)/treeopt.h
 
-# This dependency is here to make sure that lexer[012].h are generated.
-# The reason for the split is that some compilers (read cl) generate
-# better code then. Strange, but true.
-lex.o: lexer0.h lexer1.h lexer2.h
-
-lex.protos: lexer0.h lexer1.h lexer2.h
-
-lexer0.h: lexer.h
-	cp "$(SRCDIR)/lexer.h" "$@"
-
-lexer1.h: lexer.h
-	cp "$(SRCDIR)/lexer.h" "$@"
-
-lexer2.h: lexer.h
-	cp "$(SRCDIR)/lexer.h" "$@"
-
 
 # unbug needs interpreter_nd.h to be able to
 # set separate breakpoints in eval_instruction_with/without_debug
@@ -1157,22 +1077,37 @@ depend: $(SRC_TARGETS)
 	  $(MAKE) $(MAKE_FLAGS) depend || \
 	    { test -f remake && $(MAKE) $(MAKE_FLAGS) depend; }; \
 	})
-	@if [ "x$(RUNPIKE)" != "x$(DEFAULT_RUNPIKE)" -o -x $(TMP_BUILDDIR)/pike ]; then \
-	  $(MAKE) $(MAKE_FLAGS) post_modules_depend; \
+	@if [ "x$(RUNTPIKE)" = "x$(USE_TPIKE)" ]; then \
+	  if [ -x $(TMP_BUILDDIR)/pike ]; then \
+	    $(MAKE) $(MAKE_FLAGS) post_modules_depend; \
+	  else \
+	    echo "Skipping make depend in post_modules since a fresh pike is"; \
+	    echo "needed to make the autogenerated sources there."; \
+	    :; \
+	  fi \
 	else \
 	  echo "Skipping make depend in post_modules since a fresh pike is"; \
-	  echo "needed to make the autogenerated sources there."; \
+	  echo "needed to make the autogenerated sources there, and we are"; \
+	  echo "cross-compiling or --disable-binary."; \
 	  :; \
 	fi
 
 post_modules_depend:
-	@if [ "x$(RUNPIKE)" != "x$(DEFAULT_RUNPIKE)" -o -x $(TMP_BUILDDIR)/pike ]; then :; \
-	else $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike; fi
-	@( cd post_modules && { \
-	  rm -f remake; \
-	  $(MAKE) $(MAKE_FLAGS) depend || \
-	    { test -f remake && $(MAKE) $(MAKE_FLAGS) depend; }; \
-	})
+	@if [ "x$(RUNTPIKE)" != "x$(USE_TPIKE)" ]; then :; \
+	  echo "Skipping make depend in post_modules since a fresh pike is"; \
+	  echo "needed to make the autogenerated sources there, and we are"; \
+	  echo "cross-compiling or --disable-binary."; \
+	  :; \
+	else \
+	  if [ -x $(TMP_BUILDDIR)/pike ]; then :; \
+	  else $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike@EXEEXT@; \
+	  fi; \
+	  ( cd post_modules && { \
+	    rm -f remake; \
+	    $(MAKE) $(MAKE_FLAGS) depend || \
+	      { test -f remake && $(MAKE) $(MAKE_FLAGS) depend; }; \
+	  }); \
+	fi
 
 #
 # Pike internal targets
@@ -1238,7 +1173,7 @@ tmodule.o:  modules/modlist_headers.h modules/modlist.h
 # Backward compat.
 post_modules: post_module_objects
 
-post_module_objects: $(MODULE_REQUIREMENTS) post-module-pike-stamp @LDSHARED_BASE_REQS@
+post_module_objects: pike@EXEEXT@ $(MODULE_REQUIREMENTS) post-module-pike-stamp @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=@POST_MODULE_BUILD_TYPE@; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
@@ -1247,7 +1182,7 @@ post_module_objects: $(MODULE_REQUIREMENTS) post-module-pike-stamp @LDSHARED_BAS
 	) || exit $$?
 	@touch post-modules-stamp
 
-post-modules-stamp: $(MODULE_REQUIREMENTS) post-module-pike-stamp @LDSHARED_BASE_REQS@
+post-modules-stamp: pike@EXEEXT@ $(MODULE_REQUIREMENTS) post-module-pike-stamp @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=@POST_MODULE_BUILD_TYPE@; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
@@ -1296,8 +1231,6 @@ $(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompil
 builtin.o: $(SRCDIR)/builtin.c $(SRCDIR)/whitespace.h
 
 iterators.o: $(SRCDIR)/iterators.c
-
-facetgroup.o: $(SRCDIR)/facetgroup.c
 
 backend.o: $(SRCDIR)/backend.c
 
@@ -1383,7 +1316,7 @@ precompile.sh: $(SRCDIR)/precompile.sh.in ./config.status
 # recursive use of make.
 precompile.sh-stamp:
 	@if [ -f precompile.sh ]; then :; else $(MAKE) precompile.sh; fi
-	@touch 0101010185 precompile.sh-stamp 2>/dev/null
+	@touch -t 198501010101 precompile.sh-stamp 2>/dev/null
 
 $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	@if test -f $(SRCDIR)/machine.h.in; then :; else \
@@ -1445,13 +1378,13 @@ HFILES=						\
   rusage.protos					\
   cyclic.protos					\
   lex.protos						\
-  security.protos					\
   signal_handler.protos				\
   pike_search.protos				\
   docode.protos					\
   main.protos					\
   stralloc.protos					\
   mapping.protos					\
+  block_allocator.protos					\
   stuff.protos					\
   dynamic_buffer.protos				\
   svalue.protos					\
@@ -1466,7 +1399,6 @@ HFILES=						\
   version.protos                                    \
   builtin.protos					\
   iterators.protos				\
-  facetgroup.protos				\
   rbtree.protos
 
 $(HFILES): precompile.sh-stamp

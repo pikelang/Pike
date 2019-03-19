@@ -1,4 +1,4 @@
-// $Id$
+#pike __REAL_VERSION__
 
 //! This module contains special values used by various modules, e.g.
 //! a null value used both by @[Sql] and @[Standards.JSON].

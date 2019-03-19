@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef PIKE_COMPILER_H
@@ -21,7 +20,7 @@ struct compilation
   struct program *target;		/* Program being compiled. */
   struct object *placeholder;
   int flags;
-  
+
   struct program *p;			/* Compiled program or NULL. */
   struct lex lex;
   int compilation_inherit;		/* Inherit in supporter->self containing
@@ -34,9 +33,10 @@ struct compilation
 
   int compilation_depth;		/* Current class nesting depth. */
 
-  int saved_threads_disabled;
-  struct mapping *resolve_cache_save;
-
+#ifdef PIKE_THREADS
+  int saved_lock_depth;
+#endif
+  struct mapping *resolve_cache;
 };
 
 #ifdef PIKE_DEBUG

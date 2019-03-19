@@ -46,7 +46,6 @@
 #define   tObjIs_STDIO_STAT                   "\003\001\000\000\000\012"
 
 #define     PROG_BACKTRACE_FRAME_ID				    013
-#define     PROG_BUFFER_ID					    014
 #define     PROG_MULTI_STRING_REPLACE_ID			    015
 #define     PROG_BACKEND_ID					    016
 #define tObjImpl_BACKEND		      "\003\000\000\000\000\016"
@@ -93,6 +92,9 @@
 #define     PROG_GMP_MPZ_ID                                         040
 #define tObjImpl_GMP_MPZ                      "\003\000\000\000\000\040"
 #define   tObjIs_GMP_MPZ                      "\003\001\000\000\000\040"
+#define     PROG_GMP_BIGNUM_ID                                      041
+#define tObjImpl_GMP_BIGNUM                   "\003\000\000\000\000\041"
+#define   tObjIs_GMP_BIGNUM                   "\003\001\000\000\000\041"
 
 /* Classes in builtin.cmod. */
 #define     PROG_SINGLE_STRING_REPLACE_ID			    050
@@ -105,18 +107,18 @@
 #define     PROG_LIST_ID					    055
 #define tObjImpl_LIST			      "\003\000\000\000\000\055"
 #define     PROG_LIST__GET_ITERATOR_ID				    056
-#define tObjImpl_LIST__GET_ITERATOR_ID	      "\003\000\000\000\000\056"
+#define tObjImpl_LIST__GET_ITERATOR	      "\003\000\000\000\000\056"
 
 /* Common modules. */
 #define     PROG_MODULE_MIME_ID					   0100
-#define     PROG_MODULE_FILES_ID				   0101
+#define     PROG_MODULE_STDIO_ID				   0101
 
 #define	    PROG_BASIC_TOKENIZER_ID				   0110
 #define	    PROG_TOKEN_ID					   0111
 #define tObjImpl_TOKEN			      "\003\000\000\000\000\111"
 
 /* NOTE: 0144 == 100. */
-/* 100 - 300 reserverd for Image.Image */
+/* 100 - 299 reserverd for Image.Image */
 
 
 /* 100-119: Classes */
@@ -141,10 +143,40 @@
 /* 160 - : Submagic */
 #define PROG_IMAGE_SUBMAGIC_START       160
 
-/* 200 - 300: Submodule programs */
+/* 200 - 299: Submodule programs */
 #define     PROG_IMAGE_COLOR_COLOR_ID                      0310 /* 200 */
-#define tObjImpl_IMAGE_COLOR_COLOR_ID "\003\000\000\000\000\310"
-#define   tObjIs_IMAGE_COLOR_COLOR_ID "\003\001\000\000\000\310"
+#define tObjImpl_IMAGE_COLOR_COLOR    "\003\000\000\000\000\310"
+#define   tObjIs_IMAGE_COLOR_COLOR    "\003\001\000\000\000\310"
+
+/* 300 - 399 reserved for Nettle */
+#define     PROG_NETTLE_HASH_ID					0454 /* 300 */
+#define tObjImpl_NETTLE_HASH		   "\003\000\000\000\001\054"
+#define     PROG_NETTLE_HASH_STATE_ID				0455 /* 301 */
+#define tObjImpl_NETTLE_HASH_STATE	   "\003\000\000\000\001\055"
+#define     PROG_NETTLE_CIPHER_ID				0466 /* 310 */
+#define tObjImpl_NETTLE_CIPHER		   "\003\000\000\000\001\066"
+#define     PROG_NETTLE_CIPHER_STATE_ID				0467 /* 311 */
+#define tObjImpl_NETTLE_CIPHER_STATE       "\003\000\000\000\001\067"
+#define     PROG_NETTLE_BUFFEREDCIPHER_ID			0470 /* 312 */
+#define tObjImpl_NETTLE_BUFFERCIPHER       "\003\000\000\000\001\070"
+#define     PROG_NETTLE_BUFFEREDCIPHER_CQ__BUFFER_ID		0471 /* 313 */
+#define tObjImpl_NETTLE_BUFFEREDCIPHER_CQ__BUFFER "\003\000\000\000\001\071"
+#define     PROG_NETTLE_BUFFEREDCIPHER_CQ__BUFFER_STATE_ID	0472 /* 314 */
+#define tObjImpl_NETTLE_BUFFEREDCIPHER_CQ__BUFFER_STATE "\003\000\000\000\001\072"
+#define     PROG_NETTLE_BLOCKCIPHER_ID				0473 /* 315 */
+#define tObjImpl_NETTLE_BLOCKCIPHER        "\003\000\000\000\001\073"
+#define     PROG_NETTLE_BLOCKCIPHER_CQ__CBC_ID			0474 /* 316 */
+#define tObjImpl_NETTLE_BLOCKCIPHER_CQ__CBC "\003\000\000\000\001\074"
+#define     PROG_NETTLE_BLOCKCIPHER_CQ__PCBC_ID			0475 /* 317 */
+#define tObjImpl_NETTLE_BLOCKCIPHER_CQ__PCBC "\003\000\000\000\001\075"
+#define     PROG_NETTLE_MAC_ID					0500 /* 320 */
+#define tObjImpl_NETTLE_MAC                "\003\000\000\000\001\100"
+#define     PROG_NETTLE_MAC_STATE_ID				0501 /* 321 */
+#define tObjImpl_NETTLE_MAC_STATE          "\003\000\000\000\001\101"
+#define     PROG_NETTLE_AEAD_ID					0512 /* 330 */
+#define tObjImpl_NETTLE_AEAD               "\003\000\000\000\001\112"
+#define     PROG_NETTLE_AEAD_STATE_ID				0513 /* 331 */
+#define tObjImpl_NETTLE_AEAD_STATE         "\003\000\000\000\001\113"
 
 /* 1000 - 1999 reserved for GTK. */
 /* 2000 - 2999 reserved for GTK2. */

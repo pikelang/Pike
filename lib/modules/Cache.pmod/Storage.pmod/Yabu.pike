@@ -1,23 +1,23 @@
-/*
- * A Yabu-based storage manager.
- * by Francesco Chemolli <kinkie@roxen.com>
- *
- * $Id$
- *
- * Settings will be added later.
- * 
- */
+//! A Yabu-based storage manager.
+//!
+//! Settings will be added later.
+//!
+//! @thanks
+//!   Thanks to Francesco Chemolli <kinkie@@roxen.com> for the contribution.
 
 #pike __REAL_VERSION__
 
 #define CLUTTERED 200
 
+inherit Cache.Storage.Base;
+
 Yabu.Table db, metadb;
-Yabu.db yabudb;
+Yabu.DB yabudb;
 
 int deletion_ops=0;
 int have_dependants=0;
 
+//!
 class Data {
   inherit Cache.Data;
   //metadata is kept around, data loaded on demand.
@@ -26,22 +26,22 @@ class Data {
   string _key=0;
   mixed _data=0;
   private Yabu.Table db, metadb;
-  
+
   int size() {
     return _size;               // it's guarranteed to be computed in set()
   }
-  
+
   mixed data() {
-    if (!_data) 
+    if (!_data)
       _data=db->get(_key);
     return _data;
   }
-  
+
   private inline mapping metadata_dump () {
     return (["size":_size,"atime":atime,
              "ctime":ctime,"etime":etime,"cost":cost]);
   }
-  
+
   //dumps the metadata if necessary.
   void sync() {
     metadb->set(_key,metadata_dump());
@@ -52,7 +52,7 @@ class Data {
     sync();
   }
   //m contains the metadata
-  void create(string key, Yabu.Table data_db, Yabu.Table metadata_db, 
+  void create(string key, Yabu.Table data_db, Yabu.Table metadata_db,
               mapping m) {
     _key=key;
     db=data_db;
@@ -63,7 +63,7 @@ class Data {
     etime=m->etime;
     cost=m->cost||1.0;
   }
-  
+
 }
 
 
@@ -112,7 +112,7 @@ void set(string key, mixed value,
    //maybe we could lazy-ify this
    meta=(["size":sizeof(encode_value(value)), "atime":tm,"ctime":tm]);
    if (expire_time) meta->etime=expire_time;
-   if (preciousness||!zero_type(preciousness))
+   if (preciousness||!undefinedp(preciousness))
      meta->cost=preciousness;
    else
      meta->cost=1.0;
@@ -144,20 +144,20 @@ void aget(string key,
 void delete(string key, void|int(0..1) hard) {
 
   multiset dependants=0;
-  
+
   if (have_dependants) {
     mapping emeta=metadb->get(key);
     if (!emeta)
       return;
     dependants=emeta->dependants;
   }
-  
+
   if (keys)
     keys[key]=0;
   db->delete(key);              // maybe we should be transactional?
   metadb->delete(key);
   deletion_ops++;
-  
+
   if (have_dependants && dependants && sizeof(dependants)) {
     foreach((array)dependants, string chain) {
       //werror("chain-deleteing %s\n",chain);
@@ -166,15 +166,16 @@ void delete(string key, void|int(0..1) hard) {
     //werror("done chain-deleting\n");
     return;
   }
-  
+
   if (deletion_ops > CLUTTERED) {
     yabudb->reorganize();
     deletion_ops=0;
   }
 }
 
+//!
 void create(string path) {
-  yabudb=Yabu.db(path+".yabu","wcSQ"); //let's hope I got the mode right.
+  yabudb=Yabu.DB(path+".yabu","wcSQ"); //let's hope I got the mode right.
   db=yabudb["data"];
   metadb=yabudb["metadata"];
 }

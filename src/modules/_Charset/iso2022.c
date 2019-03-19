@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifdef HAVE_CONFIG_H
@@ -23,7 +22,7 @@
 #define sp Pike_sp
 #define fp Pike_fp
 
-#define PRGM_NAME "Locale.Charset.ISO2022"
+#define PRGM_NAME "Charset.ISO2022"
 
 
 static struct program *iso2022dec_program = NULL;
@@ -75,12 +74,10 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
 	EMIT(DEFCHAR);
     }
     return 0;
-    break;
   case MODE_96:
     while(srclen--)
       EMIT(DEFCHAR);
     return 0;
-    break;
   case MODE_9494:
     while(srclen>1) {
       char hi, lo;
@@ -124,7 +121,6 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
       }
     }
     return 0;
-    break;
   case MODE_96:
     while(srclen--) {
       UNICHAR c;
@@ -140,7 +136,6 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
       }
     }
     return 0;
-    break;
   case MODE_9494:
     while(srclen>1) {
       char hi, lo;
@@ -203,7 +198,7 @@ static INT32 parse_esc(unsigned char *src, ptrdiff_t srclen,
   if(srclen<2)
     return 0;
 
-  if(src[1]>=0x40) 
+  if(src[1]>=0x40)
     switch(src[1]) {
     case 'n':
       /* LS2 */
@@ -814,10 +809,11 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	      s->r[1].map = NULL;
 	    }
 	    lat = 0;
-	  } else if(!asc && c>' ' && c<0x7f) {
+	  } else if(!asc && c>' ' && c<0x7f)
 #else
-	  if(!asc) {
+	  if(!asc)
 #endif
+	  {
 	    string_builder_strcat(&s->strbuild, "\033(B");
 	    s->g[0].transl = map_ANSI_X3_4_1968;
 	    s->g[0].mode = MODE_94;
@@ -845,6 +841,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
     break;
   case 1:
     s1++;
+    /* FALL_THROUGH */
   case 2:
     {
       char *p = str->str;
@@ -945,7 +942,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		index = 0x13;
 	      } else if(c < 0x200 || c >= 0x9fa1) {
 		mode = MODE_9494;
-		index = 0x14;		
+		index = 0x14;
 	      } else if((c >= 0x386 && c < 0x400) || c == 0x201b) {
 		mode = MODE_96;
 		index = 0x16;
@@ -966,7 +963,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		switch(c) {
 		case 0x2039: case 0x203a: case 0x203e: case 0x223c:
 		case 0x22ef: case 0x2329: case 0x232a: case 0x2571:
-		case 0x2572: case 0x25ca: case 0x3004: case 0x30f8:	
+		case 0x2572: case 0x25ca: case 0x3004: case 0x30f8:
 		  index = 0x10;
 		  break;
 		default:
@@ -986,7 +983,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		index = 0x13;
 		break;
 	      }
-	      break;		
+	      break;
 	    case VARIANT_JP:
 	      switch(c) {
 	      case 0x2013: case 0x2039: case 0x203a: case 0x203e:
@@ -999,6 +996,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	      default:
 		mode = MODE_9494;
 		index = 0x12;
+		break;
 	      }
 	      break;
 	    case VARIANT_KR:
@@ -1008,6 +1006,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    case VARIANT_CN:
 	      mode = MODE_9494;
 	      index = 0x11;
+	      break;
 	    }
 	  else if(c>=0x3000) {
 
@@ -1040,7 +1039,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	      index = 0x13;
 	    } else {
 	      mode = MODE_9494;
-	      index = 0x14;		
+	      index = 0x14;
 	    }
 
 	  } else if(c<0x180) {
@@ -1154,8 +1153,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  if(index!=0 && (ttab = transltab[mode][index-0x10])!=NULL) {
 	    switch(mode) {
 	    case MODE_94:
-	      rmap = (p_wchar1 *)xalloc((0x10000-0x100)*sizeof(p_wchar1));
-	      memset(rmap, 0, (0x10000-0x100)*sizeof(p_wchar1));
+	      rmap = xcalloc(0x10000-0x100, sizeof(p_wchar1));
 	      for(ch=0; ch<94; ch++)
 		if(ttab[ch]>=0x100 && ttab[ch]!=0xfffd)
 		  rmap[ttab[ch]-0x100]=ch+33;
@@ -1175,8 +1173,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		ttab = NULL;
 	      break;
 	    case MODE_96:
-	      rmap = (p_wchar1 *)xalloc((0x10000-0x100)*sizeof(p_wchar1));
-	      memset(rmap, 0, (0x10000-0x100)*sizeof(p_wchar1));
+	      rmap = xcalloc(0x10000-0x100, sizeof(p_wchar1));
 	      for(ch=0; ch<96; ch++)
 		if(ttab[ch]>=0x100 && ttab[ch]!=0xfffd)
 		  rmap[ttab[ch]-0x100]=ch+32;
@@ -1196,8 +1193,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		ttab = NULL;
 	      break;
 	    case MODE_9494:
-	      rmap = (p_wchar1 *)xalloc((0x10000-0x100)*sizeof(p_wchar1));
-	      memset(rmap, 0, (0x10000-0x100)*sizeof(p_wchar1));
+	      rmap = xcalloc(0x10000-0x100, sizeof(p_wchar1));
 	      for(ttt=ttab, ch=0; ch<94; ch++)
 		for(ch2=0; ch2<94; ch2++, ttt++)
 		if(*ttt>=0x100 && *ttt!=0xfffd)
@@ -1224,8 +1220,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		ttab = NULL;
 	      break;
 	    case MODE_9696:
-	      rmap = (p_wchar1 *)xalloc((0x10000-0x100)*sizeof(p_wchar1));
-	      memset(rmap, 0, (0x10000-0x100)*sizeof(p_wchar1));
+	      rmap = xcalloc(0x10000-0x100, sizeof(p_wchar1));
 	      for(ttt=ttab, ch=0; ch<96; ch++)
 		for(ch2=0; ch2<96; ch2++, ttt++)
 		if(*ttt>=0x100 && *ttt!=0xfffd)
@@ -1259,10 +1254,6 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
       }
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Illegal shift size!\n");
-#endif
   }
 }
 
@@ -1270,7 +1261,7 @@ static void f_feed(INT32 args)
 {
   struct pike_string *str;
 
-  get_all_args(PRGM_NAME"Dec->feed()", args, "%S", &str);
+  get_all_args("feed", args, "%S", &str);
 
   eat_string(str, (struct iso2022_stor *)fp->current_storage);
 
@@ -1325,6 +1316,8 @@ static void f_drain(INT32 args)
 	}
       }
       break;
+    case 0: /* Dummy case to silence clang warning */
+      break;
     }
   }
 
@@ -1367,7 +1360,7 @@ static void f_clear(INT32 args)
   }
 
   reset_string_builder(&s->strbuild);
-  
+
   push_object(this_object());
 }
 
@@ -1376,7 +1369,7 @@ static void f_enc_feed(INT32 args)
 {
   struct pike_string *str;
 
-  get_all_args(PRGM_NAME"Enc->feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
   if( str->len )
     eat_enc_string(str, (struct iso2022enc_stor *)fp->current_storage,
 		   ((struct iso2022enc_stor *)fp->current_storage)->replace,
@@ -1419,7 +1412,7 @@ static void f_enc_clear(INT32 args)
   s->g[0].index = 0x12;
 
   reset_string_builder(&s->strbuild);
-  
+
   push_object(this_object());
 }
 
@@ -1471,9 +1464,6 @@ static void f_create(INT32 args)
 
   if(args>2 && TYPEOF(sp[2-args]) == T_FUNCTION)
     assign_svalue(&s->repcb, &sp[2-args]);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_set_repcb(INT32 args)
@@ -1485,11 +1475,9 @@ static void f_set_repcb(INT32 args)
 
   if(args>0)
     assign_svalue(&s->repcb, &sp[-args]);
-
-  pop_n_elems(args);
 }
 
-static void init_stor(struct object *o)
+static void init_stor(struct object *UNUSED(o))
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
 
@@ -1501,7 +1489,7 @@ static void init_stor(struct object *o)
   pop_n_elems(1);
 }
 
-static void exit_stor(struct object *o)
+static void exit_stor(struct object *UNUSED(o))
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
 
@@ -1513,7 +1501,7 @@ static void exit_stor(struct object *o)
   free_string_builder(&s->strbuild);
 }
 
-static void init_enc_stor(struct object *o)
+static void init_enc_stor(struct object *UNUSED(o))
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
   int i;
@@ -1528,7 +1516,7 @@ static void init_enc_stor(struct object *o)
   pop_n_elems(1);
 }
 
-static void exit_enc_stor(struct object *o)
+static void exit_enc_stor(struct object *UNUSED(o))
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
   int i;

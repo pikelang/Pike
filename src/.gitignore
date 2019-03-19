@@ -19,7 +19,6 @@ autom4te.cache
 /conftest.h
 /dependencies
 /dumpmodule.log
-/facetgroup.c
 /hilfe
 /hsort_template.h
 /interpret_functions_fixed.h
@@ -36,9 +35,6 @@ autom4te.cache
 /language.h.nolines
 /language.h_src
 /language.h_src.nolines
-/lexer0.h
-/lexer1.h
-/lexer2.h
 /lib
 /machine.h
 /machine.h.in

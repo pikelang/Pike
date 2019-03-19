@@ -1,10 +1,10 @@
+#pike __REAL_VERSION__
+#require constant(System._Inotify.parse_event)
+
 /* vim:syntax=lpc
  */
 
 //! @ignore
-#if !constant (System._Inotify.parse_event)
-constant this_program_does_not_exist = 1;
-#else
 inherit System._Inotify;
 //! @endignore
 
@@ -15,86 +15,86 @@ inherit System._Inotify;
 string describe_mask(int mask) {
     array(string) list = ({});
 
-    foreach (indices(this_program);; string name) {
+    foreach (sort(indices(this_program));; string name) {
 	if (has_prefix(name, "IN_")) {
 	    int value = `[](this_program, name);
 
-	    if (value & mask) list += ({ name });
+	    if (value == (value & mask)) list += ({ name });
 	}
     }
 
     return list * "|";
 }
 
+class Watch {
+    string name;
+    function(int, int, string, mixed ...:void) callback;
+    int mask;
+    array extra;
+
+    void create(string name, int mask,
+		function(int, int, string, mixed ...:void) callback,
+		array extra) {
+	this::name = name;
+	this::mask = mask;
+	this::callback = callback;
+	this::extra = extra;
+    }
+}
+
+class DirWatch {
+    inherit Watch;
+
+    void handle_event(int wd, int mask, int cookie,
+		      int|string name) {
+	if (name) {
+	    name = (has_suffix(this::name, "/")
+		    ? this::name : (this::name+"/")) + name;
+	} else {
+	    name = this::name;
+	}
+
+	callback(mask, cookie, name, @extra);
+    }
+}
+
+class FileWatch {
+    inherit Watch;
+
+    void handle_event(int wd, int mask, int cookie,
+		      int|string name) {
+	callback(mask, cookie, this::name, @extra);
+    }
+}
+
 //! More convenient interface to inotify(7). Automatically reads events
 //! from the inotify file descriptor and parses them.
 //!
+//! @note
+//!	Objects of this class will be destructed when they go out of external
+//!	references. As such they behave differently from other classes which use
+//!	callbacks, e.g. @[Stdio.File].
+//! @note
+//!	The number of inotify instances is limited by ulimits.
 class Instance {
-    protected object instance;
-    protected Stdio.File file;
+    inherit _Instance;
+    protected mapping(int:object) watches = ([]);
 
-    class Watch {
-	string name;
-	function(int, int, string, mixed ...:void) callback;
-	int mask;
-	array extra;
-
-	void create(string name, int mask,
-		    function(int, int, string, mixed ...:void) callback,
-		    array extra) {
-	    this_program::name = name;
-	    this_program::mask = mask;
-	    this_program::callback = callback;
-	    this_program::extra = extra;
-	}
-    }
-
-    class DirWatch {
-	inherit Watch;
-
-	void handle_event(int wd, int mask, int cookie,
-			  int|string name) {
-	    if (name) {
-		name = (has_suffix(this_program::name, "/")
-			? this_program::name
-			: (this_program::name+"/")) + name;
-	    } else {
-		name = this_program::name;
+    void event_callback(int wd, int event, int cookie, string path)
+    {
+	Watch watch = watches[wd];
+	if (watch) {
+	    if (event == IN_IGNORED) {
+		m_delete(watches, wd);
+		werror("Watch %O (wd: %d) deleted.\n", watch, wd);
 	    }
-
-	    callback(mask, cookie, name, @extra);
-	}
-    }
-
-    class FileWatch {
-	inherit Watch;
-
-	void handle_event(int wd, int mask, int cookie,
-			  int|string name) {
-	    callback(mask, cookie, this_program::name, @extra);
-	}
-    }
-
-    mapping(int:object) watches = ([]);
-
-    void parse(mixed id, string data) {
-	while (sizeof(data)) {
-	    array a = parse_event(data);
-	    object watch;
-
-	    if (watch = watches[a[0]]) {
-		watch->handle_event(a[0], a[1], a[2], a[3]);
-	    }
-
-	    data = data[a[4]..];
+	    watch->handle_event(wd, event, cookie, path);
 	}
     }
 
     void create() {
-	instance = _Instance();
-	file = Stdio.File(instance->get_fd(), "r");
-	file->set_nonblocking();
-	file->set_read_callback(parse);
+	set_event_callback(event_callback);
+	set_nonblocking();
     }
 
      //! Add a watch for a certain file and a set of events specified by
@@ -119,8 +119,9 @@ class Instance {
      //!
     int add_watch(string filename, int mask,
 		  function(int, int, string, mixed ...:void) callback,
-		  mixed ... extra) {
-	int wd = instance->add_watch(filename, mask);
+		  mixed ... extra)
+    {
+	int wd = ::add_watch(filename, mask);
 
 //! @ignore
 # if constant(@module@.IN_MASK_ADD)
@@ -141,15 +142,4 @@ class Instance {
 
 	return wd;
     }
-
-    //! Remove the watch associated with the watch descriptor @expr{wd@}.
-    void rm_watch(int wd) {
-	if (!has_index(watches, wd)) {
-	    error("Watch %d does not exist.\n", wd);
-	}
-
-	m_delete(watches, wd);
-	instance->rm_watch(wd);
-    }
 }
-#endif

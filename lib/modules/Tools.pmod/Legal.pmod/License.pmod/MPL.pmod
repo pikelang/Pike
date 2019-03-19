@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 protected constant name = "Mozilla Public License 1.1";
 protected constant text = #string "mpl.txt";
 

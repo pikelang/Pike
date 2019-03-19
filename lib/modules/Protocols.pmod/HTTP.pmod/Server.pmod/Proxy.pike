@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// example HTTP proxy implementation 
+// example HTTP proxy implementation
 
 inherit Protocols.HTTP.Server.Port;
 
@@ -63,7 +63,7 @@ class Proxify
       {
 // 	 werror("%s: client close\n",rid->full_query);
 	 destruct(con);
-	 destruct(this_object());
+	 destruct(this);
       }
 
       void async_close()
@@ -105,7 +105,7 @@ class Proxify
 				     "can't understand URL (not http?)"]) );
 	 return;
       }
-      
+
       string path=url->path;
       if(path=="") path="/";
 

@@ -2,8 +2,6 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id$
- *
  */
 
 //! This module serves as a front-end to different kinds of caching systems.
@@ -100,7 +98,7 @@ void alookup(string key,
 //! a request by Martin Stjerrholm, and their purpose is to have some
 //! weak form of referential integrity. Simply speaking, they are a list
 //! of keys which (if present) will be deleted when the stored entry is
-//! deleted (either forcibly or not). They must be handled by the storage 
+//! deleted (either forcibly or not). They must be handled by the storage
 //! manager.
 void store(string key, mixed value, void|int max_life,
             void|float preciousness, void|multiset(string) dependants ) {

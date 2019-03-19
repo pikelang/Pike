@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(Nettle.DES)
 
 //! DES is the old Data Encryption Standard, specified by NIST. It
 //! uses a block size of 64 bits (8 octets), and a key size of 56
@@ -17,14 +18,4 @@
 //!
 //! DES also has some weak keys.
 
-#if constant(Nettle) && constant(Nettle.DES_Info)
-
-// NOTE: Depends on the order of INIT invocations.
-inherit Nettle.DES_Info;
-inherit .Cipher;
-
-.CipherState `()() { return Nettle.DES_State(); }
-
-#else
-constant this_program_does_not_exist=1;
-#endif
+inherit Nettle.DES;

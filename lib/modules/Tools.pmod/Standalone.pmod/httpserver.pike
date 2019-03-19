@@ -28,7 +28,8 @@ int main(int argc, array(string) argv)
          default:
              my_port=(int)argv[-1];
         }
-    Protocols.HTTP.Server.Port(handle_request, my_port);
+
+    Protocols.HTTP.Server.Port(handle_request, my_port, NetUtils.ANY);
     write("%s is now accessible on port %d through http, "
           "without password.\n", getcwd(), my_port);
     return -1;
@@ -36,7 +37,7 @@ int main(int argc, array(string) argv)
 
 string dirlist( string dir )
 {
-    string res = 
+    string res =
 	"<html><head>\n"
         "<style>a { text-decoration: none;  }\n"
         ".odd { background-color:#efefef; }\n"
@@ -49,22 +50,22 @@ string dirlist( string dir )
 	"<th align='right'>Type</th>"
 	"<th align='right'>Size</th></tr>\n";
 
-    foreach( get_dir( dir ); int i; string fn )
+    foreach( sort( get_dir( dir ) ); int i; string fn )
     {
         Stdio.Stat s = file_stat( combine_path(dir, fn) );
-        if( !s ) 
+        if( !s )
             continue;
 
         string t = s->isdir?"":Protocols.HTTP.Server.filename_to_type(fn);
         if( t == "application/octet-stream" )
             t = "<span style='color:darkgrey'>unknown</span>";
 
-        res += 
+        res +=
             sprintf("<tr class='%s'><td><a href='%s%s'>%s%[2]s</a></td>"
 		    "<td align='right'>%s</td>"
-		    "<td align='right'>%s</td></tr>\n", 
+		    "<td align='right'>%s</td></tr>\n",
                     (i&1?"odd":"even"),
-                    Protocols.HTTP.uri_encode(fn), s->isdir?"/":"", 
+                    Protocols.HTTP.uri_encode(fn), s->isdir?"/":"",
 		    Parser.encode_html_entities(fn), t,
                     s->isdir?"":String.int2size(s->size));
     }

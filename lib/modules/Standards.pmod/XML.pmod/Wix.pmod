@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -295,7 +294,7 @@ class Directory
 
   Directory low_add_path(array(string) path, string|void dir_id)
   {
-    Directory d = this_object();
+    Directory d = this;
     foreach(path; int i; string dir) {
       if (dir == ".") continue;
       d = (d->sub_dirs[dir] ||
@@ -436,7 +435,7 @@ class Directory
   {
     if (!parent) parent = "";
     parent += "/" + name;
-    
+
     mapping(string:string) attrs = ([
       "Name":short_name||name,
       "Id":id,

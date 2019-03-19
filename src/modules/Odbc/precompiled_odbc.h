@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -62,6 +61,10 @@
 
 extern struct program *odbc_program;
 extern struct program *odbc_result_program;
+extern struct program *odbc_typed_result_program;
+
+extern int odbc_result_fun_num;
+extern int odbc_typed_result_fun_num;
 
 /*
  * Typedefs
@@ -107,37 +110,29 @@ typedef HSTMT	SQLHSTMT;
  * Structures
  */
 
+typedef void (*field_factory_func)(int);
+
 struct field_info {
   SWORD type;
+  SWORD bin_type;
+  SWORD scale;
   SQLULEN size;
+  SQLULEN bin_size;
+  field_factory_func factory;
 };
 
-struct precompiled_odbc {
-  SQLHDBC hdbc;
-  SQLLEN affected_rows;
-  unsigned int flags;
-  struct pike_string *last_error;
-};
-
-struct precompiled_odbc_result {
-  struct object *obj;
-  struct precompiled_odbc *odbc;
-  SQLHSTMT hstmt;
-  SWORD num_fields;
-  SQLLEN num_rows;
-  struct array *fields;
-  struct field_info *field_info;
-};
+struct Odbc_odbc_struct;
 
 /*
  * Defines
  */
 
-#define PIKE_ODBC	((struct precompiled_odbc *)(Pike_fp->current_storage))
-#define PIKE_ODBC_RES	((struct precompiled_odbc_result *)(Pike_fp->current_storage))
+#define PIKE_ODBC	THIS_ODBC_ODBC
+#define PIKE_ODBC_RES	THIS_ODBC_RESULT
 
 /* Flags */
-#define PIKE_ODBC_CONNECTED	1
+#define PIKE_ODBC_CONNECTED      1
+#define PIKE_ODBC_OLD_TDS_KLUDGE 2
 
 /* http://msdn2.microsoft.com/en-us/library/ms715361.aspx says:
  *
@@ -155,11 +150,12 @@ struct precompiled_odbc_result {
 /*
  * Prototypes
  */
-#ifdef SQL_WCHAR
+SQLHDBC pike_odbc_get_hdbc(struct Odbc_odbc_struct *odbc);
+void pike_odbc_set_affected_rows(struct Odbc_odbc_struct *odbc, SQLLEN rows);
+unsigned int pike_odbc_get_flags(struct Odbc_odbc_struct *odbc);
 void push_sqlwchar(SQLWCHAR *str, size_t num_bytes);
-#endif /* SQL_WCHAR */
 void odbc_error(const char *fun, const char *msg,
-		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
+		struct Odbc_odbc_struct *odbc, SQLHSTMT hstmt,
 		RETCODE code, void (*clean)(void *), void *clean_arg);
 
 void init_odbc_res_programs(void);

@@ -3,7 +3,6 @@
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-// $Id$
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -265,7 +264,9 @@ protected mapping CANON_D30_MAKERNOTE = ([
   0x0008:	({"MN_ImageNumber", 	    	}),
   0x0009:	({"MN_OwnerName", 	    	}),
   0x000C:	({"MN_CameraSerialNumber",  	}),
-  //  0x000F:       ({"MN_CustomFunctions",         "CUSTOM", canon_custom }),
+  0x000D:       ({"MN_CameraInfo",              }),
+  0x000F:       ({"MN_CustomFunctions",         }),
+  0x0010:       ({"MN_ModelID",                 }),
 ]);
 
 protected mapping NIKON_D_MAKERNOTE = ([
@@ -306,28 +307,9 @@ protected mapping NIKON_D_MAKERNOTE = ([
 protected mapping|string nikon_D70_makernote(string data, mapping real_tags) {
   object f = Stdio.FakeFile(data);
   if(f->read(10)!="Nikon\0\2\20\0\0") return data;
-  string order = f->read(2);
-  string code = f->read(2);
-  if(sizeof(code)!=2 || short_value(code, order)!=42) return data;
 
-  mapping tags = ([]);
-  int offset=long_value(f->read(4), order);
-  while(offset>0)
-  {
-    exif_seek(f,offset,10);
-    int num_entries=short_value(f->read(2), order);
-    for(int i=0; i<num_entries; i++)
-      tags|=parse_tag(f, tags, NIKON_D_MAKERNOTE, 10, order);
-
-    offset=long_value(f->read(4), order);
-
-    if(offset == 0)
-      if(tags["ExifOffset"])
-      {
-	offset=(int)tags["ExifOffset"];
-	m_delete(tags, "ExifOffset");
-      }
-  }
+  mapping tags = low_get_properties(f, NIKON_D_MAKERNOTE, 0);
+  if(!tags) return data;
 
   foreach(tags; string name; mixed value)
     if(has_prefix(name, "MN_"))
@@ -909,50 +891,44 @@ protected mapping TAG_TYPE_INFO =
 	       12:	({"DOUBLE",	8}),
 	     ]);
 
-protected int short_value(string str, string order)
-{
-  if(order=="MM")
-    return (str[0]<<8)|str[1];
-  else
-    return (str[1]<<8)|str[0];
-}
-
-protected int long_value(string str, string order)
-{
-  if(order=="MM")
-    return (str[0]<<24)|(str[1]<<16)|(str[2]<<8)|str[3];
-  else
-    return (str[3]<<24)|(str[2]<<16)|(str[1]<<8)|str[0];
-}
-
-protected void exif_seek(Stdio.File file, int offset, int exif_offset)
-{
-  file->seek(offset+exif_offset);
-}
-
 protected string format_bytes(string str)
 {
   return str;
 }
 
-protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
-		  int exif_offset, string order)
+protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info,
+                            int discard_unknown)
 {
-  int tag_id=short_value(file->read(2), order);
-  int tag_type=short_value(file->read(2), order);
-  int tag_count=long_value(file->read(4), order);
+  int tag_id=file->read_short();
+  int tag_type=file->read_short();
+  int tag_count=file->read_long();
   string make,model;
 
+  // Attempt to fix files with incorrect byteorder.
   if(!TAG_TYPE_INFO[tag_type]) {
-    tag_id = Int.swap_word(tag_id);
     tag_type = Int.swap_word(tag_type);
+    if(!TAG_TYPE_INFO[tag_type]) return tags;
+    tag_id = Int.swap_word(tag_id);
     tag_count = Int.swap_long(tag_count);
   }
 
+  [string tag_type_name, int tag_type_len] =
+     TAG_TYPE_INFO[tag_type];
+
+  int tag_len=tag_type_len * tag_count;
+
+  // Using the tag id, now look up how we should interpret the
+  // data. Note that the tag format is our own invention: MAKE_MODEL,
+  // TAGS, MAP, CUSTOM, BIAS, FLOAT, EXPOSURE.
   string tag_name, tag_format;
   mapping|function tag_map;
   array temp = exif_info[tag_id];
   if(!temp || !sizeof(temp)) {
+    if( discard_unknown )
+    {
+      file->read(4);
+      return tags;
+    }
     tag_name = sprintf("%s0x%04x", (exif_info->prefix||"Tag"), tag_id);
     tag_format = 0;
     tag_map = ([]);
@@ -976,25 +952,23 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
       [tag_format,tag_map]=tag_map[""];
   }
 
-  [string tag_type_name, int tag_type_len] =
-     TAG_TYPE_INFO[tag_type];
-
-  int tag_len=tag_type_len * tag_count;
-  
   int pos=file->tell();
   if(tag_len>4)
-    exif_seek(file, long_value(file->read(4), order), exif_offset);
+    file->exif_seek(file->read_long());
 
-  if(tag_type==1 || tag_type==6 || tag_type==7)
+  switch(tag_type)
   {
+  case 1: // BYTE
+  case 6: // SBYTE
+  case 7: // UNDEF
     if(tag_count==1)
       tags[tag_name]=(string)file->read(1)[0];
     else if(tag_format == "TAGS")
     {
-      int num_entries=short_value(file->read(2), order);
+      int num_entries=file->read_short();
       for(int i=0; i<num_entries; i++) {
 	catch {
-	  tags|=parse_tag(file, tags, tag_map, exif_offset, order);
+          tags|=parse_tag(file, tags, tag_map, discard_unknown);
 	};
       }
     }
@@ -1012,71 +986,84 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 	}
       else if(tag_format=="CUSTOM") {
 	mixed res = tag_map(str,tags);
-	if(!zero_type(res))
+	if(!undefinedp(res))
 	  tags[tag_name]=res;
       }
       else
 	tags[tag_name]=format_bytes(str);
     }
-  }
+    break;
 
-  if(tag_type==2) // ASCII
+  case 2: // ASCII
     tags[tag_name]=String.trim_whites(file->read(tag_count-1))-"\0";
-  
-  if(tag_type==3 || tag_type==8) // (S)SHORT
-  {
-    if(tag_count>0xffff) return ([]); // Impossible amount of tags.
-    array a=allocate(tag_count);
-    for(int i=0; i<tag_count; i++)
-      a[i]=short_value(file->read(2), order);
-    
-    if(tag_format=="MAP")
-      for(int i=0; i<tag_count; i++)
-	if(tag_map[a[i]])
-	  tags[tag_name]=tag_map[a[i]];
-	else
-	{
-	  make = tags["Make"];
-	  model = tags["Model"];
-	  tags[tag_name]= tag_map[make+"_"+model] || tag_map[make] || (string)a[i];
-	}
-    else if(tag_format=="CUSTOM")
-      tags|=tag_map(a);
-    else
-      tags[tag_name]=(array(string))a*", ";
-  }
-  
-  if(tag_type==4 || tag_type==9) // (S)LONG
-    for(int i=0;i<tag_count; i++)
-      tags[tag_name]=(string)long_value(file->read(4), order);
+    break;
 
-  if(tag_type==5 || tag_type==10) // (S)RATIONAL
-  {
+  case 3: // SHORT
+  case 8: // SSHORT
+    {
+      if(tag_count>0xffff) return ([]); // Impossible amount of tags.
+      array a=allocate(tag_count);
+      for(int i=0; i<tag_count; i++)
+        a[i]=file->read_short();
+
+      if(tag_format=="MAP")
+        for(int i=0; i<tag_count; i++)
+          if(tag_map[a[i]])
+            tags[tag_name]=tag_map[a[i]];
+          else
+          {
+            make = tags["Make"];
+            model = tags["Model"];
+            tags[tag_name]= tag_map[make+"_"+model] || tag_map[make] || (string)a[i];
+          }
+      else if(tag_format=="CUSTOM")
+        tags|=tag_map(a);
+      else
+        tags[tag_name]=(array(string))a*", ";
+    }
+    break;
+
+  case 4: // LONG
+  case 9: // SLONG
+    for(int i=0;i<tag_count; i++)
+      tags[tag_name]=(string)file->read_long();
+    break;
+
+  case 5: // RATIONAL
+  case 10: // SRATIONAL
     for(int i=0;i<tag_count; i++)
     {
-      int long1=long_value(file->read(4), order);
-      int long2=long_value(file->read(4), order);
+      int long1=file->read_long();
+      int long2=file->read_long();
+      if (!long2) {
+	if (long1 < 0) {
+	  tags[tag_name] = "-Inf";
+	} else {
+	  tags[tag_name] = "Inf";
+	}
+	continue;
+      }
       switch(tag_format)
       {
-  	case "BIAS":
-  	  if(long1>0)
-  	    tags[tag_name] = sprintf("+%3.1f", long1*1.0/long2);
-  	  else if(long1 < 0)
-  	    tags[tag_name] = sprintf("-%3.1f", -long1*1.0/long2);
-  	  else
-  	    tags[tag_name] = "0.0";
-  	  break;
-  	  
-  	case "FLOAT":
-  	  if(long2==0)
-  	    tags[tag_name]="0";
-  	  else
-  	    tags[tag_name]=sprintf("%g", long1*1.0/long2);
-  	  break;
-  	  
-  	case "EXPOSURE":
-  	  tags[tag_name] = sprintf("%d/%d", long1,long2);
-	  break;
+      case "BIAS":
+        if(long1>0)
+          tags[tag_name] = sprintf("+%3.1f", long1*1.0/long2);
+        else if(long1 < 0)
+          tags[tag_name] = sprintf("-%3.1f", -long1*1.0/long2);
+        else
+          tags[tag_name] = "0.0";
+        break;
+
+      case "FLOAT":
+        if(long2==0)
+          tags[tag_name]="0";
+        else
+          tags[tag_name]=sprintf("%g", long1*1.0/long2);
+        break;
+
+      case "EXPOSURE":
+        tags[tag_name] = sprintf("%d/%d", long1,long2);
+        break;
 //  	  break;
 //    	  if(long1>=long2)
 //    	    tags[tag_name]=sprintf("%g", long1*1.0/long2);
@@ -1086,62 +1073,145 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 //    	    else
 //    	      tags[tag_name]=sprintf("1/%d", long1);
 //    	  break;
-  	  
-  	default:
-  	  tags[tag_name] = sprintf("%.2f", (float)long1/(float)long2);
-  	  break;
+
+      default:
+        tags[tag_name] = sprintf("%.2f", (float)long1/(float)long2);
+        break;
       }
     }
+    break;
   }
 
   file->seek(pos+4);
   return tags;
 }
 
-//! Retrieve the EXIF properties of the given file.
-//! @param file
-//!   The Stdio.File object containing wanted EXIF properties.
-//! @returns
-//!   A mapping with all found EXIF properties.
-mapping get_properties(Stdio.File file)
+protected class TIFF
 {
-  int exif_offset=12;
+  protected int start, order;
+  protected Stdio.File file;
 
-  string skip=file->read(12);  // skip the jpeg header
-
-  if (skip[sizeof(skip)-6..]!="Exif\0\0")
+  protected int read_number(int size)
   {
-     skip=file->read(100);
-     int z=search(skip,"Exif\0\0");
-     if (z==-1) return ([]); // no exif header?
-     exif_offset=z+18;
-     file->seek(z+18);
+    string data = file->read(size);
+    if(sizeof(data)!=size) error("End of file.\n");
+    int ret;
+    if(order)
+      sscanf(data, "%-"+size+"c", ret);
+    else
+      sscanf(data, "%"+size+"c", ret);
+    return ret;
   }
 
-  string order=file->read(2);  // tiff order magic
-  string code=file->read(2);   // tiff magic 42
-  mapping tags=([]);
+  int read_short() { return read_number(2); }
+  int read_long() { return read_number(4); }
 
-  if(sizeof(code)==2 && short_value(code, order)==42)
+  protected void create(Stdio.File f)
   {
-    int offset=long_value(file->read(4), order);
-    while(offset>0)
+    file = f;
+    start = f->tell();
+    string o = f->read(2);
+
+    switch(o)
     {
-      exif_seek(file,offset,exif_offset);
-      int num_entries=short_value(file->read(2), order);
-      for(int i=0; i<num_entries; i++)
-	tags|=parse_tag(file, tags, TAG_INFO, exif_offset, order);
+    case "MM": order = 0; break; // big endian
+    case "II": order = 1; break; // little endian
+    default: file = 0; return;
+    }
 
-      offset=long_value(file->read(4), order);
+    // TIFF magic number
+    if(read_short() != 42)
+      file = 0;
+  }
 
-      if(offset == 0)
-	if(tags["ExifOffset"])
-	{
-	  offset=(int)tags["ExifOffset"];
-	  m_delete(tags, "ExifOffset");
-	}
+  int is_valid() { return !!file; }
+
+  string read(int len) { return file->read(len); }
+  int tell() { return file->tell(); }
+  void seek(int position) { file->seek(position); }
+
+  void exif_seek(int position) { file->seek(start+position); }
+}
+
+protected int read_marker(Stdio.File f)
+{
+  string x;
+  do {
+    x = f->read(1);
+    if(!sizeof(x)) return 0;
+  } while( x == "\xff" );
+  return x[0];
+}
+
+//! Parses and returns all EXIF properties.
+//! @param file
+//!   A JFIF file positioned at the start.
+//! @param tags
+//!   An optional list of tags to process. If given, all unknown tags
+//!   will be ignored.
+//! @returns
+//!   A mapping with all found EXIF properties.
+mapping(string:mixed) get_properties(Stdio.File file, void|mapping tags)
+{
+ loop: while(1)
+  {
+    int marker = read_marker(file);
+    switch(marker)
+    {
+    case 0: // read_marker EOF
+    case 0xd9: // End of Image
+    case 0xda: // Start of Scan
+      return ([]);
+    case 0xd8: // Start of Image
+      continue;
+    default:
+      int size;
+      sscanf(file->read(2), "%2c", size);
+      if( marker==0xe1 && file->read(6) == "Exif\0\0" )
+      {
+        file = Stdio.FakeFile(file->read(size-2-6));
+        break loop;
+      }
+      file->read(size-2);
+      continue;
     }
   }
 
-  return tags;
+  int discard_unknown = 0;
+  if( tags )
+    discard_unknown = 1;
+  else
+    tags = TAG_INFO;
+
+  return low_get_properties(file, tags, discard_unknown) || ([]);
+}
+
+protected mapping low_get_properties(Stdio.File file, mapping tags,
+                                     int discard_unknown)
+{
+  TIFF tiff = TIFF(file);
+  if(!tiff->is_valid()) return 0;
+
+  mapping ret = ([]);
+  multiset seent = (<>);
+
+  int offset=tiff->read_long();
+  seent[offset]=1;
+  while(offset>0)
+  {
+    tiff->exif_seek(offset);
+    int num_entries=tiff->read_short();
+    for(int i=0; i<num_entries; i++)
+      ret|=parse_tag(tiff, ret, tags, discard_unknown);
+
+    offset=tiff->read_long();
+
+    if(offset == 0 && ret["ExifOffset"])
+      offset=(int)m_delete(ret, "ExifOffset");
+
+    if( seent[offset] ) return ret;
+    seent[offset]=1;
+  }
+
+  return ret;
 }

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -22,11 +21,6 @@
  * the pthread_sigsetmask() prototype on Solaris 2.x.
  */
 #include <signal.h>
-
-#ifdef HAVE_SYS_TYPES_H
-/* Needed for pthread_t on OSF/1 */
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 
 #ifdef PIKE_THREADS
 
@@ -83,6 +77,9 @@
 #include <sched.h>
 #endif
 
+#ifdef USE_DARWIN_THREADS_WITHOUT_MACH
+/* OSX Threads don't get along with mach headers! */
+#else
 #ifdef HAVE_MACH_TASK_INFO_H
 #include <mach/task_info.h>
 #endif
@@ -92,6 +89,7 @@
 #ifdef HAVE_MACH_MACH_INIT_H
 #include <mach/mach_init.h>
 #endif
+#endif /* USE_DARWIN_THREADS_WITHOUT_MACH */
 
 /* Restore the fp macro. */
 #ifdef FRAMEPOINTER_WAS_DEFINED
@@ -100,6 +98,8 @@
 #endif /* FRAMEPOINTER_WAS_DEFINED */
 
 PMOD_EXPORT extern int threads_disabled;
+PMOD_EXPORT extern cpu_time_t threads_disabled_acc_time;
+PMOD_EXPORT extern cpu_time_t threads_disabled_start;
 PMOD_EXPORT extern ptrdiff_t thread_storage_offset;
 PMOD_EXPORT extern struct program *thread_id_prog;
 PMOD_EXPORT extern int num_threads;
@@ -181,7 +181,7 @@ void th_atfork_child(void);
  * with only one CPU. Otherwise, only systemcalls are actually
  * threaded.
  */
-#define th_setconcurrency(X) 
+#define th_setconcurrency(X)
 #ifdef HAVE_SCHED_YIELD
 #define low_th_yield() sched_yield()
 #elif defined (HAVE_PTHREAD_YIELD)
@@ -299,7 +299,6 @@ PMOD_EXPORT extern pthread_attr_t small_pattr;
 #ifdef NT_THREADS
 
 #include <process.h>
-#include <windows.h>
 
 #define LOW_THREAD_CHECK_ZERO_ERROR(CALL) do {			\
     if (!(CALL))						\
@@ -405,7 +404,7 @@ PMOD_EXPORT int co_destroy(COND_T *c);
 #endif
 
 #ifndef th_equal
-#define th_equal(X,Y) (!MEMCMP(&(X),&(Y),sizeof(THREAD_T)))
+#define th_equal(X,Y) (!memcmp(&(X),&(Y),sizeof(THREAD_T)))
 #endif
 
 #ifndef th_hash
@@ -576,6 +575,45 @@ PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL);
 #define DEBUG_CHECK_THREAD() do { } while (0)
 #endif
 
+/* THREADS_ALLOW and THREADS_DISALLOW unlocks the interpreter lock so
+ * that other threads may run in the pike interpreter. Must be used
+ * around code that might block, and may be used around code that just
+ * takes a lot of time. Note though in the latter case that the
+ * locking overhead is significant - the work should be on the order
+ * of microseconds or else it might even get slower.
+ *
+ * Between THREADS_ALLOW and THREADS_DISALLOW, you may not change any
+ * data structure that might be accessible by other threads, and you
+ * may not access any data they could possibly change.
+ *
+ * The following rules are just some special cases of the preceding
+ * statement:
+ *
+ * o  You may not throw pike exceptions, not even if you catch them
+ *    yourself.
+ * o  You may not create instances of any pike data type, because that
+ *    always implicitly modifies global structures (e.g. the doubly
+ *    linked lists that link together all arrays, mappings, multisets,
+ *    objects, and programs).
+ * o  You may not change the refcount of any pike structure, unless
+ *    all its other references are from your own code (see also last
+ *    item below).
+ * o  If you (prior to THREADS_ALLOW) have added your own ref to some
+ *    structure, you can assume that it continues to exist. Refs from
+ *    your own stack count in this regard, because you know that they
+ *    will remain until THREADS_DISALLOW. Note that even objects are
+ *    guaranteed to continue to exist, but they may be destructed at
+ *    any time.
+ * o  Only immutable data in structs you have refs to may be read, and
+ *    nothing may be changed.
+ * o  If you before THREADS_ALLOW have created your own instance of
+ *    some data type, i.e. so that you got the only ref to it, you can
+ *    safely change it. But changes that have effect on global
+ *    structures are still verboten - that includes freeing any pike
+ *    data type, and calling functions like finish_string_builder,
+ *    just to name one.
+ */
+
 /* The difference between THREADS_ALLOW and THREADS_ALLOW_UID is that
  * _disable_threads waits for the latter to hold in
  * THREADS_DISALLOW_UID before returning. Otoh, THREADS_ALLOW sections
@@ -639,6 +677,7 @@ PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
 #define DEFINE_MUTEX(X)
 #define DEFINE_IMUTEX(X)
 #define init_interleave_mutex(X)
+#define exit_interleave_mutex(X)
 #define LOCK_IMUTEX(X)
 #define UNLOCK_IMUTEX(X)
 #define mt_init(X)

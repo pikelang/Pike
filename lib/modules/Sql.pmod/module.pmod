@@ -37,3 +37,28 @@ Val.Null `->NULL() {return Val->null;}
 //!
 //! @seealso
 //!   @[Val.null]
+
+//! Redact the password (if any) from an Sql-url.
+//!
+//! @param sql_url
+//!   Sql-url possibly containing an unredacted password.
+//!
+//! @returns
+//!   Returns the same Sql-url but with the password (if any)
+//!   replaced by the string @expr{"CENSORED"@}.
+string censor_sql_url(string sql_url)
+{
+  array(string) a = sql_url/"://";
+  string prot = a[0];
+  string host = a[1..] * "://";
+  a = host/"@";
+  if (sizeof(a) > 1) {
+    host = a[-1];
+    a = (a[..<1] * "@")/":";
+    string user = a[0];
+    if (sizeof(a) > 1) {
+      sql_url = prot + "://" + user + ":CENSORED@" + host;
+    }
+  }
+  return sql_url;
+}

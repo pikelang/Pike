@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -121,20 +120,20 @@ void img_clear(rgb_group *dest, rgb_group rgb, ptrdiff_t size)
   if(!size) return;
   THREADS_ALLOW();
   if( ( rgb.r == rgb.g && rgb.r == rgb.b ) )
-    MEMSET(dest, rgb.r, size*sizeof(rgb_group) );
+    memset(dest, rgb.r, size*sizeof(rgb_group) );
   else if(size)
   {
     int increment = 1;
     rgb_group *from = dest;
     *(dest++)=rgb;
     size -= 1;
-    while (size>increment) 
+    while (size>increment)
     {
-      MEMCPY(dest,from,increment*sizeof(rgb_group));
+      memcpy(dest,from,increment*sizeof(rgb_group));
       size-=increment,dest+=increment;
       if (increment<1024) increment *= 2;
     }
-    if(size>0) MEMCPY(dest,from,size*sizeof(rgb_group));
+    if(size>0) memcpy(dest,from,size*sizeof(rgb_group));
   }
   THREADS_DISALLOW();
 }
@@ -163,12 +162,12 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 	 if(!length)
 	   break;	/* Break to the while(0). */
 	 for(x=0; x<length; x++)  *(foo+x) = rgb;
-	 while(--y)  MEMCPY((foo+=xs), from, length*sizeof(rgb_group)); 
+	 while(--y)  memcpy((foo+=xs), from, length*sizeof(rgb_group));
        } while(0);
        THREADS_DISALLOW();
      }
-   } 
-   else 
+   }
+   else
    {
      THREADS_ALLOW();
      do {
@@ -190,11 +189,11 @@ CHRONO("image_blit begin");
 
    THREADS_ALLOW();
    if(!moddest && !modsrc)
-     MEMCPY(dest,src,sizeof(rgb_group)*width*lines);
+     memcpy(dest,src,sizeof(rgb_group)*width*lines);
    else
      while (lines--)
      {
-       MEMCPY(dest,src,sizeof(rgb_group)*width);
+       memcpy(dest,src,sizeof(rgb_group)*width);
        dest+=moddest;
        src+=modsrc;
      }
@@ -223,7 +222,7 @@ void img_crop(struct image *dest,
    {
       *dest=*img;
       THREADS_ALLOW();
-      MEMCPY(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
+      memcpy(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
       THREADS_DISALLOW();
       dest->img=new;
       return;
@@ -240,20 +239,20 @@ void img_crop(struct image *dest,
    ys=MAXIMUM(0,y1);
 
    if( ! (( x2 < 0) || (y2 < 0) || (x1>=img->xsize) || (y1>=img->ysize))) {
-     
-     if (x1<0) x1=0; else if (x1>=img->xsize) x1=img->xsize-1;
-     if (y1<0) y1=0; else if (y1>=img->ysize) y1=img->ysize-1;
-     if (x2<0) x2=0; else if (x2>=img->xsize) x2=img->xsize-1;
-     if (y2<0) y2=0; else if (y2>=img->ysize) y2=img->ysize-1;
-     
+
+     if (x1<0) x1=0;
+     if (y1<0) y1=0;
+     if (x2>=img->xsize) x2=img->xsize-1;
+     if (y2>=img->ysize) y2=img->ysize-1;
+
      img_blit(new+xp+yp*dest->xsize,
 	      img->img+xs+(img->xsize)*ys,
 	      x2-x1+1,
 	      y2-y1+1,
 	      dest->xsize,
 	      img->xsize);
-     
-   }     
+
+   }
    dest->img=new;
 }
 
@@ -262,7 +261,7 @@ void img_clone(struct image *newimg,struct image *img)
    if (newimg->img) free(newimg->img);
    newimg->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    THREADS_ALLOW();
-   MEMCPY(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
+   memcpy(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
    THREADS_DISALLOW();
    newimg->xsize=img->xsize;
    newimg->ysize=img->ysize;
@@ -292,20 +291,20 @@ void image_paste(INT32 args)
 
    if (args<1
        || TYPEOF(sp[-args]) != T_OBJECT
-       || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      bad_arg_error("image->paste",sp-args,args,1,"",sp+1-1-args,
-		"Bad argument 1 to image->paste()\n");
+       || !(img=get_storage(sp[-args].u.object,image_program)))
+     bad_arg_error("paste",sp-args,args,1,"",sp+1-1-args,
+                   "Bad argument 1 to paste.\n");
    if (!THIS->img) return;
 
    if (!img->img) return;
 
    if (args>1)
    {
-      if (args<3 
+      if (args<3
 	  || TYPEOF(sp[1-args]) != T_INT
 	  || TYPEOF(sp[2-args]) != T_INT)
-         bad_arg_error("image->paste",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->paste()\n");
+        bad_arg_error("paste",sp-args,args,0,"",sp-args,
+                      "Bad arguments to paste.\n");
       x1=sp[1-args].u.integer;
       y1=sp[2-args].u.integer;
    }
@@ -316,7 +315,7 @@ void image_paste(INT32 args)
      pop_n_elems(args);
      ref_push_object(THISOBJ);
      return;
-   }   
+   }
    x2=x1+img->xsize-1;
    y2=y1+img->ysize-1;
 
@@ -325,10 +324,10 @@ void image_paste(INT32 args)
      pop_n_elems(args);
      ref_push_object(THISOBJ);
      return;
-   }   
+   }
    blitwidth=MINIMUM(x2,THIS->xsize-1)-MAXIMUM(x1,0)+1;
    blitheight=MINIMUM(y2,THIS->ysize-1)-MAXIMUM(y1,0)+1;
-   
+
    img_blit(THIS->img+MAXIMUM(0,x1)+(THIS->xsize)*MAXIMUM(0,y1),
 	    img->img+MAXIMUM(0,-x1)+(x2-x1+1)*MAXIMUM(0,-y1),
 	    blitwidth,
@@ -345,8 +344,8 @@ void image_paste(INT32 args)
 **! method object paste_alpha(object image,int alpha,int x,int y)
 **!    	Pastes a given image over the current image, with
 **!    	the specified alpha channel value.
-**!	
-**!    	An alpha channel value of 0 leaves nothing of the original 
+**!
+**!    	An alpha channel value of 0 leaves nothing of the original
 **!     image in the paste area, 255 is meaningless and makes the
 **!	given image invisible.
 **!
@@ -371,20 +370,20 @@ void image_paste_alpha(INT32 args)
    if (args<2
        || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
-       || !(img=(struct image*)get_storage(sp[-args].u.object,image_program))
+       || !(img=get_storage(sp[-args].u.object,image_program))
        || TYPEOF(sp[1-args]) != T_INT)
-      bad_arg_error("image->paste_alpha",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->paste_alpha()\n");
+      bad_arg_error("paste_alpha",sp-args,args,0,"",sp-args,
+                    "Bad arguments to paste_alpha.\n");
    if (!THIS->img) return;
    if (!img->img) return;
    THIS->alpha=(unsigned char)(sp[1-args].u.integer);
-   
+
    if (args>=4)
    {
       if (TYPEOF(sp[2-args]) != T_INT
 	  || TYPEOF(sp[3-args]) != T_INT)
-         bad_arg_error("image->paste_alpha",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->paste_alpha()\n");
+        bad_arg_error("paste_alpha",sp-args,args,0,"",sp-args,
+                      "Bad arguments to paste_alpha.\n");
       x1=sp[2-args].u.integer;
       y1=sp[3-args].u.integer;
    }
@@ -395,7 +394,7 @@ void image_paste_alpha(INT32 args)
      pop_n_elems(args);
      ref_push_object(THISOBJ);
      return;
-   }   
+   }
 
 /* tråda här nåndag.. Ok /Per */
 
@@ -428,8 +427,8 @@ void image_paste_alpha(INT32 args)
 **! method object paste_mask(object image,object mask)
 **! method object paste_mask(object image,object mask,int x,int y)
 **!    Pastes a given image over the current image,
-**!    using the given mask as opaque channel.  
-**!    
+**!    using the given mask as opaque channel.
+**!
 **!    A pixel value of 255 makes the result become a pixel
 **!    from the given image, 0 doesn't change anything.
 **!
@@ -460,18 +459,18 @@ CHRONO("image_paste_mask init");
    if (args<2)
       Pike_error("illegal number of arguments to image->paste_mask()\n");
    if (TYPEOF(sp[-args]) != T_OBJECT
-       || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      bad_arg_error("image->paste_mask",sp-args,args,1,"",sp+1-1-args,
-		"Bad argument 1 to image->paste_mask()\n");
+       || !(img=get_storage(sp[-args].u.object,image_program)))
+      bad_arg_error("paste_mask",sp-args,args,1,"",sp+1-1-args,
+                    "Bad argument 1 to paste_mask.\n");
    if (TYPEOF(sp[1-args]) != T_OBJECT
-       || !(mask=(struct image*)get_storage(sp[1-args].u.object,image_program)))
-      bad_arg_error("image->paste_mask",sp-args,args,2,"",sp+2-1-args,
-		"Bad argument 2 to image->paste_mask()\n");
+       || !(mask=get_storage(sp[1-args].u.object,image_program)))
+      bad_arg_error("paste_mask",sp-args,args,2,"",sp+2-1-args,
+                    "Bad argument 2 to paste_mask.\n");
    if (!THIS->img) return;
 
    if (!mask->img) return;
    if (!img->img) return;
-   
+
    if (args>=4)
    {
       if (TYPEOF(sp[2-args]) != T_INT
@@ -530,11 +529,11 @@ CHRONO("image_paste_mask end");
 **! method object paste_alpha_color(object mask,Color color)
 **! method object paste_alpha_color(object mask,Color color,int x,int y)
 **!    Pastes a given color over the current image,
-**!    using the given mask as opaque channel.  
-**!    
+**!    using the given mask as opaque channel.
+**!
 **!    A pixel value of 255 makes the result become the color given,
 **!    0 doesn't change anything.
-**!    
+**!
 **!    The masks red, green and blue values are used separately.
 **!    If no color are given, the current is used.
 **!
@@ -566,15 +565,15 @@ void image_paste_alpha_color(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->paste_alpha_color",1);
    if (TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
-       || !(mask=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      bad_arg_error("image->paste_alpha_color",sp-args,args,1,"",sp+1-1-args,
-		"Bad argument 1 to image->paste_alpha_color()\n");
+       || !(mask=get_storage(sp[-args].u.object,image_program)))
+     bad_arg_error("paste_alpha_color",sp-args,args,1,"",sp+1-1-args,
+                   "Bad argument 1 to paste_alpha_color.\n");
    if (!THIS->img) return;
    if (!mask->img) return;
 
    if (args==6 || args==4 || args==2 || args==3) /* color at arg 2.. */
       arg=1+getrgb(THIS,1,args,3,"image->paste_alpha_color()\n");
-   if (args>arg+1) 
+   if (args>arg+1)
    {
       if (TYPEOF(sp[arg-args]) != T_INT
 	  || TYPEOF(sp[1+arg-args]) != T_INT)
@@ -583,7 +582,7 @@ void image_paste_alpha_color(INT32 args)
       y1=sp[1+arg-args].u.integer;
    }
    else x1=y1=0;
-   
+
    x2=MINIMUM(THIS->xsize-x1,mask->xsize);
    y2=MINIMUM(THIS->ysize-y1,mask->ysize);
 
@@ -625,7 +624,7 @@ CHRONO("image_paste_alpha_color end");
 }
 
 void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
-{   
+{
    if (x1>x2) x1^=x2,x2^=x1,x1^=x2;
    if (y1>y2) y1^=y2,y2^=y1,y1^=y2;
    if (x2 >= THIS->xsize) x2 = THIS->xsize-1;

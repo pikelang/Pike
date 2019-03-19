@@ -1,4 +1,3 @@
-# $Id$
 # by Francesco Chemolli <kinkie@roxen.com>
 
 @make_variables@
@@ -10,4 +9,7 @@ OBJS=sybase.o
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
+
+$(SRCDIR)/sybase.c: sybase.cmod
+
 @dependencies@

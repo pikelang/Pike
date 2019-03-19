@@ -1,0 +1,13 @@
+/Makefile
+/config.log
+/config.status
+/configure
+/dependencies
+/floattree.c
+/inttree.c
+/stringtree.c
+/bignumtree.c
+/make_variables
+/propagated_variables
+/stamp-h
+/stamp-h.in

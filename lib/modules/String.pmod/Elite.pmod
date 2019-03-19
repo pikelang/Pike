@@ -1,4 +1,3 @@
-// $Id$
 
 #pike __REAL_VERSION__
 
@@ -172,7 +171,7 @@ mapping(string:array(string)) elite_char8 =
 //! translation (no "cool" to "kewl").
 string elite_word(string in, void|int(0..100) leetp, void|int(0..2) eightbit)
 {
-  if (zero_type(leetp)) leetp=50; // aim for 50% leetness
+  if (undefinedp(leetp)) leetp=50; // aim for 50% leetness
   else if (!leetp)
     return replace(in,"\1001\1002\1003"/1,"fpl"/1);
 
@@ -200,13 +199,13 @@ string elite_word(string in, void|int(0..100) leetp, void|int(0..2) eightbit)
     error("argument 3: illegal value (expected eightbit 0..2)\n");
   }
 
-   
+
   multiset leet=(<>);
   multiset unleet=(<>);
   foreach (v;int i;array(string) d)
     if (!d || !sizeof(d)) unleet[i]=1;
     else leet[i]=1;
-   
+
   // lower leet level to target leetness
   while (100*sizeof(leet)/sizeof(in)>leetp)
   {
@@ -247,7 +246,7 @@ string elite_word(string in, void|int(0..100) leetp, void|int(0..2) eightbit)
 //! calls elite_word on the resulting words.
 string elite_string(string in, void|int(0..100) leetp, void|int(0..1) eightbit)
 {
-  if (zero_type(leetp)) leetp=50; // aim for 50% leetness
+  if (undefinedp(leetp)) leetp=50; // aim for 50% leetness
 
   in=" "+in+" ";
   foreach (elite_short;;[string what,array(string)|string dest])
@@ -283,7 +282,7 @@ string elite_string(string in, void|int(0..100) leetp, void|int(0..1) eightbit)
     }
     in=res+in;
   }
-   
+
   in=map(in/" "-({""}),elite_word,leetp,eightbit)*" ";
 
   return in;

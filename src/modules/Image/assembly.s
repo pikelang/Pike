@@ -19,7 +19,8 @@
 ;  void image_get_cpuid(int oper,int *cpuid1,int *cpuid2,int *cpuid3,int *a )
 ;
 image_get_cpuid:
-	enter 0,0
+	push ebp
+	mov ebp, esp
 	pushf
 	pop  eax
 	mov  ecx, eax
@@ -40,7 +41,7 @@ image_get_cpuid:
 	leave
 	ret
 
-.ok:	
+.ok:
 	push ebx
  	mov eax, [ebp+8]
 	cpuid
@@ -53,7 +54,7 @@ image_get_cpuid:
 	mov [eax], ebx
 
 	mov eax, [ebp+16]
-	mov [eax], edx	
+	mov [eax], edx
 
 	mov eax, [ebp+20]
 	mov [eax], ecx
@@ -64,11 +65,12 @@ image_get_cpuid:
 
 
 ;  Clear an image to a solid color
-;  void image_clear_buffer_mmx_x86asm_eq( char *d, 
+;  void image_clear_buffer_mmx_x86asm_eq( char *d,
 ;                                         int npixels_div_8,
 ;                                         int colv );
 image_clear_buffer_mmx_x86asm_eq:
-	enter 0,0
+	push ebp
+	mov ebp, esp
 	mov ecx, [ebp+12]
 	mov eax, [ebp+16]
 	;;  now in eax:	  00 xx
@@ -101,7 +103,8 @@ image_clear_buffer_mmx_x86asm_eq:
 
 
 image_clear_buffer_mmx_x86asm_from:
-	enter 0,0
+	push ebp
+	mov ebp, esp
 	mov eax, [ebp+8]
 	mov ecx, [ebp+12]
 
@@ -136,11 +139,12 @@ image_clear_buffer_mmx_x86asm_from:
 ; Add two images
 ;
 ; void image_add_buffers_mmx_x86asm( char *d,
-;		                     char *s1, char *s2, 
+;		                     char *s1, char *s2,
 ;                                    int npixels_mult_3_div_8 )
 ;
 image_add_buffers_mmx_x86asm:
-	enter 0,0
+	push ebp
+	mov ebp, esp
 	push ebx
 	mov ebx, [ebp+8]
 	mov eax, [ebp+12]
@@ -156,24 +160,25 @@ image_add_buffers_mmx_x86asm:
 	movq	[ebx],mm0
 	add	ebx, 8
 	loopnz .loop,ecx
-		
+
 	emms
 	pop ebx
 	leave
 	ret
 
 
-	
-	
+
+
 ; Multiply two images
 
 ; Add a fixed rgb value to an image
-; 
-; void image_mult_buffers_mmx_x86asm( char *d, char *s1, char *s2, 
+;
+; void image_mult_buffers_mmx_x86asm( char *d, char *s1, char *s2,
 ;				      int npixels_div_4 )
 ;
 image_mult_buffers_mmx_x86asm:
-	enter 0,0
+	push ebp
+	mov ebp, esp
 	push ebx
 	mov ebx, [ebp+8]
 	mov eax, [ebp+12]

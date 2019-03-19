@@ -3,13 +3,12 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id$
 
 
-//! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
+//! @rfc{1521@}, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
 //! structure which is the base for all messages read and written by
 //! modern mail and news programs.  It is also partly the base for the
-//! HTTP protocol.  Just like RFC822, MIME declares that a message should
+//! HTTP protocol.  Just like @rfc{822@}, MIME declares that a message should
 //! consist of two entities, the headers and the body.  In addition, the
 //! following properties are given to these two entities:
 //!
@@ -73,7 +72,7 @@ protected class StringRange
   {
     if (start == end) {
       data = "";
-      this_program::start = this_program::end = 0;
+      this::start = this::end = 0;
       return;
     }
     if (start < 0) start = 0;
@@ -91,8 +90,8 @@ protected class StringRange
       start = 0;
     }
     data = s;
-    this_program::start = start;
-    this_program::end = end;
+    this::start = start;
+    this::end = end;
   }
   protected int _sizeof()
   {
@@ -114,9 +113,9 @@ protected class StringRange
     if (high < 0) high = 0;
     if (low > len) low = len;
     if (high > len) high = len;
-    if (!low && (high == len)) return this_object();
+    if (!low && (high == len)) return this;
     if ((high - low) < 65536) return data[start+low..start+high-1];
-    return StringRange(this_object(), low, high);
+    return StringRange(this, low, high);
   }
   protected int `[](int pos)
   {
@@ -136,14 +135,9 @@ protected class StringRange
   }
   protected mixed cast(string type)
   {
-    switch(type) {
-    case "string":
+    if( type == "string" )
       return data[start..end-1];
-    case "object":
-      return this_object();
-    default:
-      error("StringRange: Unsupported cast to %s.\n", type);
-    }
+    return UNDEFINED;
   }
   protected int _search(string frag, int|void pos)
   {
@@ -163,7 +157,7 @@ protected class StringRange
     if (c == 'O')
       return sprintf("StringRange(%d bytes[%d..%d] %O)",
 		     data && sizeof(data), start, end-1, data && data[..40]);
-    return (string)this_object();
+    return (string)this;
   }
 }
 
@@ -276,7 +270,7 @@ string encode( string data, string encoding, void|string filename,
 }
 
 //! Extracts the textual content and character set from an @i{encoded word@}
-//! as specified by RFC1522.  The result is an array where the first element
+//! as specified by @rfc{1522@}.  The result is an array where the first element
 //! is the raw text, and the second element the name of the character set.
 //! If the input string is not an encoded word, the result is still an array,
 //! but the char set element will be set to 0.
@@ -309,7 +303,7 @@ array(string) decode_word( string word )
     return ({ word, 0 });
 }
 
-//! Create an @i{encoded word@} as specified in RFC1522 from an array
+//! Create an @i{encoded word@} as specified in @rfc{1522@} from an array
 //! containing a raw text string and a char set name.
 //!
 //! The text will be transfer encoded according to the encoding argument,
@@ -350,7 +344,7 @@ string encode_word( string|array(string) word, string encoding )
 protected string remap(array(string) item)
 {
   if (sizeof(item)>1 && item[1])
-    return Locale.Charset.decoder(item[1])->feed(item[0])->drain();
+    return Charset.decoder(item[1])->feed(item[0])->drain();
   else
     return item[0];
 }
@@ -362,7 +356,7 @@ protected array(string) reremap(string word, string|function(string:string) sele
     return ({ word,0 });
   string s = stringp(selector)? selector : selector(word);
   return s?
-    ({ Locale.Charset.encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
+    ({ Charset.encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
     ({ word,0 });
 }
 
@@ -390,13 +384,27 @@ array(array(string)) decode_words_text( string txt )
     else
       res = ({ w }) + res;
   }
-  return (sizeof(txt)? ({ ({ txt, 0 }) }) : ({ })) + res;
+  a = res;
+  res = ({});
+  if (sizeof(txt)) res = ({ ({ txt, 0 }) });
+  foreach(a, array(string) word) {
+    if (sizeof(res) && res[-1][1] && (res[-1][1] == word[1])) {
+      // Same character set as previous word -- Join the fragments.
+      // This is a workaround for MUA's that split
+      // the text in the middle of encoded characters.
+      // eg PHPMailer [version 1.73]
+      res[-1][0] += word[0];
+    } else {
+      res += ({ word });
+    }
+  }
+  return res;
 }
 
 //! Like @[MIME.decode_words_text()], but the extracted strings are
 //! also remapped from their specified character encoding into UNICODE,
 //! and then pasted together.  The result is thus a string in the original
-//! text format, without RFC1522 escapes, and with all characters in UNICODE
+//! text format, without @rfc{1522@} escapes, and with all characters in UNICODE
 //! encoding.
 //!
 //! @seealso
@@ -429,7 +437,7 @@ array(array(string)|int) decode_words_tokenized( string phrase, int|void flags )
 //! Like @[MIME.decode_words_tokenized()], but the extracted atoms are
 //! also remapped from their specified character encoding into UNICODE.
 //! The result is thus identical to that of @[MIME.tokenize()], but
-//! without RFC1522 escapes, and with all characters in UNICODE encoding.
+//! without @rfc{1522@} escapes, and with all characters in UNICODE encoding.
 //!
 //! @seealso
 //! @[MIME.decode_words_tokenized_labled_remapped]
@@ -488,7 +496,7 @@ decode_words_tokenized_labled( string phrase, int|void flags )
 //! Like @[MIME.decode_words_tokenized_labled()], but the extracted words are
 //! also remapped from their specified character encoding into UNICODE.
 //! The result is identical to that of @[MIME.tokenize_labled()], but
-//! without RFC1522 escapes, and with all characters in UNICODE encoding.
+//! without @rfc{1522@} escapes, and with all characters in UNICODE encoding.
 //!
 array(array(string|int))
 decode_words_tokenized_labled_remapped(string phrase, int|void flags)
@@ -550,9 +558,9 @@ string encode_words_text(array(string|array(string)) phrase, string encoding)
 //!   Either the name of a character set to use, or a function returning
 //!   a character set to use given a text fragment as input.
 //! @param replacement
-//!   The @[replacement] argument to use when calling @[Locale.Charset.encoder]
+//!   The @[replacement] argument to use when calling @[Charset.encoder]
 //! @param repcb
-//!   The @[repcb] argument to use when calling @[Locale.Charset.encoder]
+//!   The @[repcb] argument to use when calling @[Charset.encoder]
 //!
 //! @seealso
 //! @[MIME.encode_words_tokenized_remapped]
@@ -707,7 +715,7 @@ string encode_words_quoted_labled_remapped(array(array(string|int)) phrase,
 
 //! Provide a reasonable default for the subtype field.
 //!
-//! Some pre-RFC1521 mailers provide only a type and no subtype in the
+//! Some pre-@rfc{1521@} mailers provide only a type and no subtype in the
 //! Content-Type header field.  This function can be used to obtain a
 //! reasonable default subtype given the type of a message.  (This is done
 //! automatically by the @[MIME.Message] class.)
@@ -757,22 +765,23 @@ string guess_subtype( string type )
 //! unless @[use_multiple] has been specified, in which case the contents will
 //! be arrays.
 //!
-array(mapping(string:string|array(string))|string|StringRange) 
+array(mapping(string:string|array(string))|string|StringRange)
   parse_headers(string|StringRange message, void|int(1..1) use_multiple)
 {
   string head, header, hname, hcontents;
   string|StringRange body;
+  int mesgsep;
   if (has_prefix(message, "\r\n") || has_prefix(message, "\n")) {
     // No headers.
     return ({ ([]), message[1 + (message[0] == '\r')..] });
   } else {
     int mesgsep1 = search(message, "\r\n\r\n");
     int mesgsep2 = search(message, "\n\n");
-    int mesgsep = (mesgsep1<0? mesgsep2 :
-		   (mesgsep2<0? mesgsep1 :
-		    (mesgsep1<mesgsep2? mesgsep1 : mesgsep2)));
+    mesgsep = (mesgsep1<0? mesgsep2 :
+               (mesgsep2<0? mesgsep1 :
+                (mesgsep1<mesgsep2? mesgsep1 : mesgsep2)));
     if (mesgsep<0) {
-      // No body.
+      // No body, or only body.
       head = (string)message;
       body = "";
     } else if (mesgsep) {
@@ -782,20 +791,23 @@ array(mapping(string:string|array(string))|string|StringRange)
   }
   mapping(string:string|array) headers = ([ ]);
   foreach( replace(head, ({"\r", "\n ", "\n\t"}),
-		   ({"", " ", " "}))/"\n", header ) 
+		   ({"", " ", " "}))/"\n", header )
   {
     if(4==sscanf(header, "%[!-9;-~]%*[ \t]:%*[ \t]%s", hname, hcontents))
     {
+      hname = lower_case(hname);
       if (use_multiple)
-	headers[hname=lower_case(hname)]
-	  = (headers[hname]||({}))+({hcontents});
+	headers[hname] += ({hcontents});
       else
-	if(headers[lower_case(hname)])
-	  headers[lower_case(hname)] += "\0"+hcontents;
+	if(headers[hname])
+	  headers[hname] += "\0"+hcontents;
 	else
-	  headers[lower_case(hname)] = hcontents;
+	  headers[hname] = hcontents;
     }
   }
+
+  if( mesgsep<0 && !sizeof(headers) )
+    return ({ ([]), (string)message });
   return ({ headers, body });
 }
 
@@ -1046,7 +1058,7 @@ class Message {
     if (decoded_data && !encoded_data)
       encoded_data = encode( (string)decoded_data, transfer_encoding,
 			     get_filename() );
-    return encoded_data;
+    return (string)encoded_data;
   }
 
   //! Select a new transfer encoding for this message.
@@ -1064,7 +1076,7 @@ class Message {
   {
     if(encoded_data && !decoded_data)
       decoded_data = getdata( );
-    headers["content-transfer-encoding"] = transfer_encoding = 
+    headers["content-transfer-encoding"] = transfer_encoding =
       lower_case( encoding );
     encoded_data = 0;
   }
@@ -1173,18 +1185,18 @@ class Message {
   //!
   //! @seealso
   //! @[create()]
-  string cast( string dest_type )
+  protected string cast( string dest_type )
   {
     string data;
     object body_part;
-    
+
     if (dest_type != "string")
-      error( "Can't cast Message to %s.\n", dest_type);
-    
+      return UNDEFINED;
+
     data = getencoded( );
-    
+
     if (body_parts) {
-      
+
       if (!boundary) {
 	if (type != "multipart") {
 	  type = "multipart";
@@ -1192,13 +1204,13 @@ class Message {
 	}
 	setboundary( generate_boundary( ) );
       }
-      
+
       data += "\r\n";
       foreach( body_parts, body_part )
 	data += "--"+boundary+"\r\n"+((string)body_part)+"\r\n";
       data += "--"+boundary+"--\r\n";
     }
-    
+
     headers["content-length"] = ""+sizeof(data);
 
     return map( indices(headers),
@@ -1370,6 +1382,13 @@ class Message {
       array(array(string|int)) arr =
 	tokenize(headers["content-type"]) / ({';'});
       array(string|int) p;
+      if (guess && sizeof(arr[0]) > 3) {
+	// Workspace Webmail 5.6.17 is known to be able to
+	// send attachments with the content-type header
+	// "application/msword application; name=\"Foo.doc\";"
+	// Strip the extraneous tokens.
+	arr[0] = arr[0][..2];
+      }
       if(sizeof(arr[0])!=3 || arr[0][1]!='/' ||
 	 !stringp(arr[0][0]) || !stringp(arr[0][2]))
 	if(sizeof(arr[0])==1 && stringp(arr[0][0]) &&
@@ -1378,7 +1397,7 @@ class Message {
 	else if(!guess)
 	  error("invalid Content-Type %O\n", headers["content-type"]);
 	else
-	  arr = ({ ({ "text", '/', "plain" }) }) + arr[1..];
+	  arr = ({ ({ "application", '/', "octet-stream" }) }) + arr[1..];
       type = lower_case(arr[0][0]);
       subtype = lower_case(arr[0][2]);
       foreach( arr[1..], p )
@@ -1402,7 +1421,7 @@ class Message {
 	arr = arr2;
 	arr2 = 0;
       }
-      
+
       array(string|int) p;
       if(sizeof(arr[0])!=1 || !stringp(arr[0][0]))
       {
@@ -1509,7 +1528,7 @@ class Message {
   {
     if (c == 'O')
       return sprintf("Message(%O)", disp_params);
-    return (string)this_object();
+    return (string)this;
   }
 }
 
@@ -1595,4 +1614,18 @@ int|object reconstruct_partial(array(object) collection)
     }
     return reconstructed;
   } else return (maxgot>total? -1 : total-got);
+}
+
+//! Encode strings according to @rfc{4648@} base64url encoding.
+string encode_base64url(string x)
+{
+  x = replace(encode_base64(x,1),({ "+", "/" }),({ "-", "_" }));
+  while( sizeof(x) && x[-1]=='=' ) x=x[..<1];
+  return x;
+}
+
+//! Decode strings according to @rfc{4648@} base64url encoding.
+string decode_base64url(string x)
+{
+  return decode_base64(replace(x,({ "-", "_" }),({ "+", "/" })));
 }

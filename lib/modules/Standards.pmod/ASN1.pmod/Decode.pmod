@@ -1,181 +1,176 @@
-//
-// $Id$
-//
-
 #pike __REAL_VERSION__
 #pragma strict_types
-#define COMPATIBILITY
+
+#ifdef ASN1_DEBUG
+#define DBG werror
+#else
+#define DBG(X ...)
+#endif
 
 //! Decodes a DER object.
 
-#if constant(Gmp.mpz)
-
 //! Primitive unconstructed ASN1 data type.
-class Primitive
+class Primitive (int cls, int tag, string(8bit) raw)
 {
   //! @decl inherit Types.Object
   inherit .Types.Object;
 
-  constant constructed = 0;
-  int combined_tag;
-
-  string raw;
-
-  //! get raw encoded contents of object
-  string get_der() { return raw; }
-  int get_combined_tag() { return combined_tag; }
-
-  //! get tag
-  int get_tag() { return .Types.extract_tag(combined_tag); }
-
-  //! get class
-  int get_cls() { return .Types.extract_cls(combined_tag); }
-
-  void create(int t, string r) {
-    combined_tag = t;
-    raw = r;
-  }
+  //! Get raw encoded contents of object
+  string(8bit) get_der_content() { return raw; }
 
   protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%d)", this_program, combined_tag);
+    return t=='O' && sprintf("%O(%d)", this_program, get_combined_tag());
   }
 
-#ifdef COMPATIBILITY
-  string debug_string() {
-    return sprintf("primitive(%d)", combined_tag);
+  array _encode()
+  {
+    return ({ cls, tag, raw });
   }
-#endif
+
+  void _decode(array(int|string(8bit)) x)
+  {
+    [ cls, tag, raw ] = x;
+  }
 }
 
 //! Constructed type
-class Constructed
+class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elements)
 {
-  //! @decl inherit Types.Object
-  inherit .Types.Object;
+  inherit .Types.Compound;
+  constant type_name = "CONSTRUCTED";
 
-  constant constructed = 1;
-  int combined_tag;
+  //! Get raw encoded contents of object
+  string(8bit) get_der_content() { return raw; }
+}
 
-  //! raw encoded  contents
-  string raw;
+protected int read_varint(Stdio.Buffer data)
+{
+  int ret, byte;
+  do {
+    ret <<= 7;
+    byte = data->read_int8();
+    ret |= (byte & 0x7f);
+  } while (byte & 0x80);
+  return ret;
+}
 
-  //! elements of object
-  array elements;
+// @returns
+// @array
+//   @elem int 1
+//     Class
+//   @elem bool 2
+//     Constructed
+//   @elem int 3
+//     Tag
+// @endarray
+protected array(int) read_identifier(Stdio.Buffer data)
+{
+  int byte = data->read_int8();
 
-  string get_der() { return raw; }
-  int get_combined_tag() { return combined_tag; }
+  int cls = byte >> 6;
+  int constructed = (byte >> 5) & 1;
+  int tag = byte & 0x1f;
 
-  //! get tag
-  int get_tag() { return .Types.extract_tag(combined_tag); }
+  if( tag == 0x1f )
+    tag = read_varint(data);
 
-  //! get class
-  int get_cls() { return .Types.extract_cls(combined_tag); }
-
-  void create(int t, string r, array e) {
-    combined_tag = t;
-    raw = r;
-    elements = e;
-  }
-
-  protected string _sprintf(int t) {
-    return t=='O' && sprintf("%O(%d)", this_program, combined_tag);
-  }
+  return ({ cls, constructed, tag });
 }
 
 //! @param data
-//!   an instance of ADT.struct
+//!   An instance of Stdio.Buffer containing the DER encoded data.
+//!
 //! @param types
-//!   a mapping from combined tag numbers to classes from or derived from
-//!   @[Standards.ASN1.Types]. Combined tag numbers may be generated using
-//!   @[Standards.ASN1.Types.make_combined_tag].
+//!   A mapping from combined tag numbers to classes from or derived
+//!   from @[Standards.ASN1.Types]. Combined tag numbers may be
+//!   generated using @[Standards.ASN1.Types.make_combined_tag].
 //!
 //! @returns
-//!   an object from @[Standards.ASN1.Types] or
-//!   either @[Standards.ASN1.Decode.Primitive] or
-//!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
+//!   An object from @[Standards.ASN1.Types] or, either
+//!   @[Standards.ASN1.Decode.Primitive] or
+//!   @[Standards.ASN1.Decode.constructed], if the type is unknown.
 //!   Throws an exception if the data could not be decoded.
 //!
 //! @fixme
 //!   Handling of implicit and explicit ASN.1 tagging, as well as
 //!   other context dependence, is next to non_existant.
-.Types.Object der_decode(ADT.struct data,
+.Types.Object der_decode(Stdio.Buffer data,
                          mapping(int:program(.Types.Object)) types)
 {
-  int raw_tag = data->get_uint(1);
-  int len;
-  string contents;
+  [int(0..3) cls, int constructed, int(0..) tag] = read_identifier(data);
 
-#ifdef ASN1_DEBUG
-  werror("decoding raw_tag %x\n", raw_tag);
-#endif
-
-  if ( (raw_tag & 0x1f) == 0x1f)
-    error("High tag numbers is not supported\n");
-
-  len = data->get_uint(1);
+  int len = data->read_int8();
+  // if( !cls && !constructed && !tag && !len )
+  //   error("End-of-contents not supported.\n");
+  if( !cls && !tag )
+    error("Tag 0 reserved for BER encoding.\n");
   if (len & 0x80)
-    len = data->get_uint(len & 0x7f);
-
-#ifdef ASN1_DEBUG
-  werror("len : %d\n", len);
-#endif
-  contents = data->get_fix_string(len);
-
-#ifdef ASN1_DEBUG
-  werror("contents: %O\n", contents);
-#endif
-
-  int tag = .Types.make_combined_tag(raw_tag >> 6, raw_tag & 0x1f);
-
-  program(.Types.Object) p = types[tag];
-
-  if (raw_tag & 0x20)
   {
-    /* Constructed encoding */
+    if (len == 0xff)
+      error("Illegal size.\n");
+    if (len == 0x80)
+      error("Indefinite length form not supported.\n");
+    len = data->read_int(len & 0x7f);
+  }
+  DBG("class %O, constructed=%d, tag=%d, length=%d\n",
+      ({"universal","application","context","private"})[cls],
+      constructed, tag, len);
 
-#ifdef ASN1_DEBUG
-    werror("Decoding constructed\n");
-#endif
+  data = [object(Stdio.Buffer)]data->read_buffer(len);
 
-    array(.Types.Object) elements = ({ });
-    ADT.struct struct = ADT.struct(contents);
+  program(.Types.Object) p = types[ .Types.make_combined_tag(cls, tag) ];
+
+  if (constructed)
+  {
+    DBG("Decoding constructed %O\n", p);
 
     if (!p)
     {
-#ifdef ASN1_DEBUG
-      werror("Unknown constructed type\n");
-#endif
-      while (!struct->is_empty())
-	elements += ({ der_decode(struct, types) });
+      array(.Types.Object) elements = ({ });
 
-      return constructed(tag, contents, elements);
+      while (sizeof(data))
+	elements += ({ der_decode(data, types) });
+
+      if (cls==2 && sizeof(elements)==1)
+      {
+	// Context-specific constructed compound with a single element.
+	// ==> Probably a TaggedType.
+	DBG("Probable tagged type.\n");
+	return .Types.MetaExplicit(2, tag)(elements[0]);
+      }
+
+      DBG("Unknown constructed type.\n");
+      return Constructed(cls, tag, (string(8bit))data, elements);
     }
 
     .Types.Object res = p();
-    res->begin_decode_constructed(contents);
-
-    int i;
+    res->cls = cls;
+    res->tag = tag;
+    res->begin_decode_constructed((string(8bit))data);
 
     // Ask object which types it expects for field i, decode it, and
     // record the decoded object
-    for(i = 0; !struct->is_empty(); i++)
+    for(int i = 0; sizeof(data); i++)
     {
-#ifdef ASN1_DEBUG
-      werror("Element %d\n", i);
-#endif
+      DBG("Element %d\n", i);
       res->decode_constructed_element
-	(i, der_decode(struct,
+	(i, der_decode(data,
 		       res->element_types(i, types)));
     }
-    return res->end_decode_constructed(i);
+    return res;
   }
 
-#ifdef ASN1_DEBUG
-  werror("Decoding Primitive\n");
-#endif
-  // Primitive encoding
-  return p ? p()->decode_primitive(contents, this_object(), types)
-    : Primitive(tag, contents);
+  DBG("Decoding Primitive\n");
+
+  if (p)
+  {
+    .Types.Object res = p();
+    res->cls = cls;
+    res->tag = tag;
+    return res->decode_primitive((string(8bit))data, this, types);
+  }
+
+  return Primitive(cls, tag, (string(8bit))data);
 }
 
 #define U(x) .Types.make_combined_tag(0, (x))
@@ -187,37 +182,67 @@ mapping(int:program(.Types.Object)) universal_types =
    U(4) : .Types.OctetString,
    U(5) : .Types.Null,
    U(6) : .Types.Identifier,
-   // U(9) : .Types.Real,
-   // U(10) : .Types.Enumerated,
+   // 7 : Object descriptor type
+   // 8 : External type / instance-of
+   U(9) : .Types.Real,
+   U(10) : .Types.Enumerated,
+   // 11 : Embedded-pdv
    U(12) : .Types.UTF8String,
+   // 13 : Relative object identifier
+   // 14 : Time
+   // 15 : reserved
    U(16) : .Types.Sequence,
    U(17) : .Types.Set,
    U(19) : .Types.PrintableString,
-   U(20) : .Types.TeletexString,	// or broken_teletexString?
+   U(20) : .Types.BrokenTeletexString,
    U(22) : .Types.IA5String,
    U(23) : .Types.UTC,
+   U(24) : .Types.GeneralizedTime,
    U(28) : .Types.UniversalString,
+   // 29 : UnrestrictedCharacterString
    U(30) : .Types.BMPString,
+   // 31 : DATE
+   // 32 : TIME-OF-DAY
+   // 33 : DATE-TIME
+   // 34 : DURATION
+   // 35 : OID internationalized resource identifier
+   // 36 : Relative OID internationalized resource identifier
   ]);
 
 //! decode a DER encoded object using universal data types
 //!
 //! @param data
 //!   a DER encoded object
+//!
+//! @param types
+//!   An optional set of application-specific types. Should map
+//!   combined tag numbers to classes from or derived from
+//!   @[Standards.ASN1.Types]. Combined tag numbers may be generated
+//!   using @[Standards.ASN1.Types.make_combined_tag]. This set is
+//!   used to extend @[universal_types].
+//!
 //! @returns
 //!   an object from @[Standards.ASN1.Types] or
 //!   either @[Standards.ASN1.Decode.Primitive] or
-//!   @[Standards.ASN1.Decode.constructed] if the type is unknown.
-.Types.Object simple_der_decode(string data)
+//!   @[Standards.ASN1.Decode.Constructed] if the type is unknown.
+.Types.Object simple_der_decode(string(0..255) data,
+				mapping(int:program(.Types.Object))|void types)
 {
-  return der_decode(ADT.struct(data), universal_types);
+  types = types ? universal_types+types : universal_types;
+  return der_decode(Stdio.Buffer(data)->set_error_mode(1), types);
 }
 
-#ifdef COMPATIBILITY
-constant primitive = Primitive;
-constant constructed = Constructed;
-#endif
-
-#else
-constant this_program_does_not_exist=1;
-#endif
+//! Works just like @[simple_der_decode], except it will return
+//! @expr{0@} if there is trailing data in the provided ASN.1 @[data].
+//!
+//! @seealso
+//!   @[simple_der_decode]
+.Types.Object secure_der_decode(string(0..255) data,
+				mapping(int:program(.Types.Object))|void types)
+{
+  types = types ? universal_types+types : universal_types;
+  Stdio.Buffer buf = Stdio.Buffer(data);
+  .Types.Object ret = der_decode(buf, types);
+  if( sizeof(buf) ) return 0;
+  return ret;
+}

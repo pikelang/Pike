@@ -1,5 +1,6 @@
 /* -*- C -*- */
 require gtksourceview;
+not gtksourceview20;
 
 class GTK2.KeywordListTag;
 inherit GTK2.SourceTag;
@@ -32,7 +33,7 @@ void create(string id, string name, array(string) keywords,
       return;
     }
     for (i=0; i<a->size; i++) {
-      if ((ITEM(a)+i)->type!=PIKE_T_STRING)
+      if (TYPEOF(ITEM(a)[i]) != PIKE_T_STRING)
 	continue;
       gsl=g_slist_prepend(gsl,STR0((ITEM(a)+i)->u.string));
     }

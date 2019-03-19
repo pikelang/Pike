@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Pike embedding API.
  *
  * Henrik Grubbström 2004-12-27
@@ -30,7 +28,6 @@
 #include "main.h"
 #include "operators.h"
 #include "rbtree.h"
-#include "pike_security.h"
 #include "constants.h"
 #include "version.h"
 #include "program.h"
@@ -39,12 +36,7 @@
 #include "opcodes.h"
 #include "pike_memory.h"
 #include "pike_cpulib.h"
-
 #include "pike_embed.h"
-
-#ifdef AUTO_BIGNUM
-#include "bignum.h"
-#endif
 
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
@@ -52,16 +44,8 @@
 
 #include "las.h"
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#endif
-
-#ifdef HAVE_LOCALE_H
 #include <locale.h>
-#endif
 
 #include "time_stuff.h"
 
@@ -78,8 +62,6 @@
 int try_use_mmx;
 #endif
 
-#undef ATTRIBUTE
-#define ATTRIBUTE(X)
 
 /* Define this to trace the execution of main(). */
 /* #define TRACE_MAIN */
@@ -131,27 +113,16 @@ void init_pike(char **argv, const char *file)
   init_rusage();
 
   /* Attempt to make sure stderr is unbuffered. */
-#ifdef HAVE_SETVBUF
   setvbuf(stderr, NULL, _IONBF, 0);
-#else /* !HAVE_SETVBUF */
-#ifdef HAVE_SETBUF
-  setbuf(stderr, NULL);
-#endif /* HAVE_SETBUF */
-#endif /* HAVE_SETVBUF */
-
-  TRACE((stderr, "Init CPU lib...\n"));
-  
-  init_pike_cpulib();
 
 #ifdef TRY_USE_MMX
   TRACE((stderr, "Init MMX...\n"));
-  
   try_use_mmx=mmx_ok();
 #endif
+
 #ifdef OWN_GETHRTIME
 /* initialize our own gethrtime conversion /Mirar */
   TRACE((stderr, "Init gethrtime...\n"));
-  
   own_gethrtime_init();
 #endif
 
@@ -159,30 +130,10 @@ void init_pike(char **argv, const char *file)
   master_file = file;
 
   TRACE((stderr, "Main init...\n"));
-  
   fd_init();
   {
-    extern void init_mapping_blocks(void);
-    extern void init_callable_blocks(void);
-    extern void init_gc_rec_frame_blocks(void);
-    extern void init_ba_mixed_frame_blocks(void);
-    extern void init_pike_frame_blocks(void);
     extern void init_node_s_blocks(void);
-    extern void init_object_blocks(void);
-    extern void init_callback_blocks(void);
-
-    init_mapping_blocks();
-    init_callable_blocks();
-    init_gc_rec_frame_blocks();
-    init_ba_mixed_frame_blocks();
-    init_catch_context_blocks();
-    init_pike_frame_blocks();
     init_node_s_blocks();
-    init_object_blocks();
-#if !defined(DEBUG_MALLOC) || !defined(_REENTRANT)
-    /* This has already been done by initialize_dmalloc(). */
-    init_callback_blocks();
-#endif /* !DEBUG_MALLOC */
     init_multiset();
     init_builtin_constants();
   }
@@ -191,7 +142,6 @@ void init_pike(char **argv, const char *file)
   tzset();
 #endif /* HAVE_TZSET */
 
-#ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC
   setlocale(LC_NUMERIC, "C");
 #endif
@@ -207,7 +157,6 @@ void init_pike(char **argv, const char *file)
 #ifdef LC_MESSAGES
   setlocale(LC_MESSAGES, "");
 #endif
-#endif
 }
 
 static void (*pike_exit_cb)(int);
@@ -220,7 +169,7 @@ void init_pike_runtime(void (*exit_cb)(int))
   pike_exit_cb = exit_cb;
 
   TRACE((stderr, "Init C stack...\n"));
-  
+
   Pike_interpreter.stack_top = (char *)&exit_cb;
 
   /* Adjust for anything already pushed on the stack.
@@ -307,8 +256,8 @@ void init_pike_runtime(void (*exit_cb)(int))
 	/* Linux glibc threads are limited to a 4 Mb stack
 	 * __pthread_initial_thread_bos is the actual limit
 	 */
-	
-	if(__pthread_initial_thread_bos && 
+
+	if(__pthread_initial_thread_bos &&
 	   (__pthread_initial_thread_bos - Pike_interpreter.stack_top) *STACK_DIRECTION < 0)
 	{
 	  Pike_interpreter.stack_top=__pthread_initial_thread_bos;
@@ -339,63 +288,31 @@ void init_pike_runtime(void (*exit_cb)(int))
 #endif /* STACK_DEBUG */
 #endif /* HAVE_GETRLIMIT && RLIMIT_STACK */
 
-#if 0
-#if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
-#define RLIMIT_NOFILE RLIMIT_OFILE
-#endif
-
-#if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
-  {
-    struct rlimit lim;
-    long tmp;
-    if(!getrlimit(RLIMIT_NOFILE, &lim))
-    {
-#ifdef RLIM_INFINITY
-      if(lim.rlim_max == RLIM_INFINITY)
-	lim.rlim_max=MAX_OPEN_FILEDESCRIPTORS;
-#endif
-      tmp=MINIMUM(lim.rlim_max, MAX_OPEN_FILEDESCRIPTORS);
-      lim.rlim_cur=tmp;
-      setrlimit(RLIMIT_NOFILE, &lim);
-    }
-  }
-#endif
-#endif
-  
   TRACE((stderr, "Init time...\n"));
-  
-  GETTIMEOFDAY(&current_time);
+  UPDATE_CURRENT_TIME();
 
   TRACE((stderr, "Init threads...\n"));
-
   low_th_init();
 
   TRACE((stderr, "Init strings...\n"));
-  
   init_shared_string_table();
 
   TRACE((stderr, "Init interpreter...\n"));
-
   init_interpreter();
 
   TRACE((stderr, "Init types...\n"));
-
   init_types();
 
   TRACE((stderr, "Init opcodes...\n"));
-
   init_opcodes();
 
   TRACE((stderr, "Init destruct...\n"));
-
   low_init_object();
 
   TRACE((stderr, "Init programs...\n"));
-
   init_program();
 
   TRACE((stderr, "Init objects...\n"));
-
   init_object();
 
   if(SETJMP(back))
@@ -414,7 +331,6 @@ void init_pike_runtime(void (*exit_cb)(int))
     back.severity=THROW_EXIT;
 
     TRACE((stderr, "Init modules...\n"));
-
     init_modules();
 
 #ifdef TEST_MULTISET
@@ -432,7 +348,7 @@ void init_pike_runtime(void (*exit_cb)(int))
 /* FIXME: Thread specific limit? */
 static unsigned long instructions_left = 0;
 
-static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
+static void time_to_exit(struct callback *UNUSED(cb), void *UNUSED(tmp), void *UNUSED(ignored))
 {
   if(!(instructions_left--))
   {
@@ -483,7 +399,7 @@ void gdb_break_on_pike_stack_record(long stack_size)
 static unsigned int samples[8200];
 long record;
 
-static void sample_stack(struct callback *cb,void *tmp,void *ignored)
+static void sample_stack(struct callback *cb,void *UNUSED(tmp),void *UNUSED(ignored))
 {
   long stack_size=( ((char *)&cb) - Pike_interpreter.stack_bottom) * STACK_DIRECTION;
   stack_size>>=10;
@@ -506,7 +422,7 @@ void pike_enable_stack_profiling(void)
 {
 #ifdef PROFILING
   add_to_callback(&evaluator_callbacks, sample_stack, 0, 0);
-#endif	    
+#endif
 }
 
 static struct callback_list exit_callbacks;
@@ -598,7 +514,7 @@ static SAVEDS LONG scan_amigaos_environment_func(struct Hook *REG(a0,hook),
   if(msg->sv_GDir[0] == '\0' ||
      !strcmp(msg->sv_GDir, "ENV:")) {
     push_text(msg->sv_Name);
-    push_constant_text("=");
+    push_static_text("=");
     push_string(make_shared_binary_string(msg->sv_Var, msg->sv_VarLen));
     f_add(3);
   }

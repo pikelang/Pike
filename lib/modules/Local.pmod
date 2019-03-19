@@ -1,20 +1,27 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 //! @[Local] gives a local module namespace used for locally
-//! installed pike modules. Modules are searched for in
-//! the directory @tt{pike_modules@} which can be located in
-//! the user's home directory or profile directory, or in any
-//! of the system directories @tt{/opt/share, /usr/local/share,
-//! /opt@} or @tt{/usr/local/@}. The user's home directory is
-//! determined by examining the environment variable HOME, and
-//! if that fails the environment variable USERPROFILE. If the 
-//! environment variable PIKE_LOCAL_PATH is set, the paths specified
-//! there will be searched first.
+//! installed pike modules.
+//!
+//! Modules are searched for in the directory @tt{pike_modules@} which
+//! can be located in the user's home directory or profile directory,
+//! or in any of the system directories @tt{/opt/share,
+//! /usr/local/share, /opt@} or @tt{/usr/local/@}.
+//!
+//! The user's home directory is determined by examining the
+//! environment variable HOME, and if that fails the environment
+//! variable USERPROFILE.
+//!
+//! If the environment variable PIKE_LOCAL_PATH is set, the paths
+//! specified there will be searched first.
+//!
+//! @example
+//!  If the user has installed the pike module @tt{Mine.pmod@} in the
+//!  directory @tt{$HOME/pike_modules@}.  it can be accessed as
+//!  @tt{Local.Mine@}.
+//!
 //! @seealso
 //!   @[Local.add_path()], @[Local.remove_path()]
-//!
 
 inherit __joinnode;
 
@@ -40,7 +47,7 @@ protected void create()
 
   if(tmp = [string]getenv("PIKE_LOCAL_PATH") ) {
     array to_add=reverse(tmp/":"); // preserve order
-    add_path( to_add[*] ); 
+    add_path( to_add[*] );
   }
 }
 

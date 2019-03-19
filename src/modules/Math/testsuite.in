@@ -8,24 +8,24 @@ test_any([[
       Math.Matrix a=]]$1[[;
       Math.Matrix b=]]$2[[;
       Math.Matrix r=]]$3[[;
-      Math.Matrix r1=a->convolve(b);					
-      Math.Matrix r2=b->convolve(a);					
-      if (!]]MATRIX_EQUAL(r1,r2)[[)					
-	 error("convolving \na=%O,\nb=%O\n"				
-	       "gave different results depending on order:\n"		
-	       "a->convolve(b):\n%O\n"					
-	       "b->convolve(a):\n%O\n"					
-	       "expected:\n%O\n",					
-	       a,b,r1,r2,r);						
-      if (!]]MATRIX_EQUAL(r1,r)[[)					
-	 error("convolving \n%O,\n%O\n"					
-	       "gave erranous result,\n%O,\nexpected\n%O\n",		
-	       a,b,r1,r);						
+      Math.Matrix r1=a->convolve(b);
+      Math.Matrix r2=b->convolve(a);
+      if (!]]MATRIX_EQUAL(r1,r2)[[)
+	 error("convolving \na=%O,\nb=%O\n"
+	       "gave different results depending on order:\n"
+	       "a->convolve(b):\n%O\n"
+	       "b->convolve(a):\n%O\n"
+	       "expected:\n%O\n",
+	       a,b,r1,r2,r);
+      if (!]]MATRIX_EQUAL(r1,r)[[)
+	 error("convolving \n%O,\n%O\n"
+	       "gave erranous result,\n%O,\nexpected\n%O\n",
+	       a,b,r1,r);
       return 1;
   ]],1)
 ]])
 
-   
+
 MATRIX_CONVOLVE_TEST(
    Math.Matrix( ({0,0,0, 0,1,0, 0,0,0})/3 ),
    Math.Matrix( ({0,0,0, 0,1,0, 0,0,0})/3 ),
@@ -74,23 +74,23 @@ MATRIX_CONVOLVE_TEST(
 MATRIX_CONVOLVE_TEST(
    Math.Matrix( ({1,2,3,4})/2 ),
    Math.Matrix( ({10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25})/4 ),
-   Math.Matrix( ({ ({     10,     31,     34,     37,     26}), 
-                   ({     44,    116,    126,    136,     86}), 
-                   ({     60,    156,    166,    176,    110}), 
-                   ({     76,    196,    206,    216,    134}), 
+   Math.Matrix( ({ ({     10,     31,     34,     37,     26}),
+                   ({     44,    116,    126,    136,     86}),
+                   ({     60,    156,    166,    176,    110}),
+                   ({     76,    196,    206,    216,    134}),
                    ({     66,    157,    164,    171,    100}) }) )
                      );
 MATRIX_CONVOLVE_TEST(
    Math.Matrix( ({1,2,3,4})/2 ),
    Math.Matrix( ({10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25})/2 ),
-   Math.Matrix( ({ ({     10,     31,     22}), 
-                   ({     42,    110,     70}), 
-                   ({     50,    130,     82}), 
-                   ({     58,    150,     94}), 
-                   ({     66,    170,    106}), 
-                   ({     74,    190,    118}), 
-                   ({     82,    210,    130}), 
-                   ({     90,    230,    142}), 
+   Math.Matrix( ({ ({     10,     31,     22}),
+                   ({     42,    110,     70}),
+                   ({     50,    130,     82}),
+                   ({     58,    150,     94}),
+                   ({     66,    170,    106}),
+                   ({     74,    190,    118}),
+                   ({     82,    210,    130}),
+                   ({     90,    230,    142}),
                    ({     72,    171,    100}) }) )
                      );
 
@@ -240,4 +240,10 @@ test_approx(Math.logn(3.0, 81.0), 4.0)
 
 test_true( floatp(Math.e) )
 test_true( floatp(Math.pi) )
+
+test_equal(Math.factor(-1), ({ -1 }))
+test_equal(Math.factor(0), ({ 0 }))
+test_equal(Math.factor(1), ({ 1 }))
+test_equal(sort(Math.factor(10003)), ({ 7, 1429 }))
+
 END_MARKER

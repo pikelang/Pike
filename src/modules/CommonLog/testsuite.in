@@ -1,5 +1,4 @@
 START_MARKER
-dnl $Id$
 
 test_do([[
 Stdio.write_file("clf",#"

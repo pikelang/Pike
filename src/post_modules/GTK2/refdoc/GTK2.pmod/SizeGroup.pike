@@ -46,7 +46,7 @@ GTK2.SizeGroup add_widget( GTK2.Widget widget );
 //!
 //!
 
-static GTK2.SizeGroup create( int|mapping mode_or_props );
+protected GTK2.SizeGroup create( int|mapping mode_or_props );
 //! Create a new group.
 //!
 //!
@@ -58,6 +58,11 @@ int get_ignore_hidden( );
 
 int get_mode( );
 //! Gets the current mode.
+//!
+//!
+
+array get_widgets( );
+//! Returns the list of widgets associated with this size group.
 //!
 //!
 

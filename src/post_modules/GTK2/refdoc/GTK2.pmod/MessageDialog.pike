@@ -4,7 +4,9 @@
 //! much effort, but GTK2.MessageDialog saves typing.
 //! Properties:
 //! int buttons
+//! GTK2.Widget image
 //! int message-type
+//! string secondary-text
 //! 
 //! Style properties:
 //! int message-border
@@ -14,11 +16,11 @@
 
 inherit GTK2.Dialog;
 
-static GTK2.MessageDialog create( mapping|int flags, int|void type, int|void buttons, string|void message, GTK2.Window parent );
+protected GTK2.MessageDialog create( mapping|int flags, int|void type, int|void buttons, string|void message, GTK2.Window parent );
 //! Creates a new message dialog, which is a simple dialog with an icon
 //! indicating the dialog type (error, warning, etc) and some text the user
 //! may want to see.  When the user clicks a button a "response" signal is
-//! emitted with response IDs from .  See
+//! emitted with response IDs from @[RESPONSE_ACCEPT], @[RESPONSE_APPLY], @[RESPONSE_CANCEL], @[RESPONSE_CLOSE], @[RESPONSE_DELETE_EVENT], @[RESPONSE_HELP], @[RESPONSE_NO], @[RESPONSE_NONE], @[RESPONSE_OK], @[RESPONSE_REJECT] and @[RESPONSE_YES].  See
 //! GTK2.Dialog for more details.
 //!
 //!
@@ -37,6 +39,11 @@ GTK2.MessageDialog format_secondary_text( string text );
 //! 
 //! Note that setting a secondary text makes the primary text become bold,
 //! unless you have provided explicit markup.
+//!
+//!
+
+GTK2.MessageDialog set_image( GTK2.Widget image );
+//! Sets the dialog's image to image.
 //!
 //!
 

@@ -1,4 +1,3 @@
-# $Id$
 
 AC_INIT(gssapi.cmod)
 AC_CONFIG_HEADER(gssapi_config.h)
@@ -40,17 +39,17 @@ if test x$ac_cv_header_gssapi_h = xyes -o \
     AC_MSG_CHECKING([for OID $1])
     AC_CACHE_VAL(pike_cv_have_oid_$1, [
       AC_TRY_LINK([
-#ifdef HAVE_GSSAPI_H
-#include <gssapi.h>
-#elif defined(HAVE_GSSAPI_GSSAPI_H)
+#ifdef HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>
+#elif defined(HAVE_GSSAPI_H)
+#include <gssapi.h>
 #elif defined(HAVE_GSSGLUE_GSSAPI_GSSAPI_H)
 #include <gssglue/gssapi/gssapi.h>
 #endif
-#ifdef HAVE_GSSAPI_KRB5_H
-#include <gssapi_krb5.h>
-#elif defined(HAVE_GSSAPI_GSSAPI_KRB5_H)
+#ifdef HAVE_GSSAPI_GSSAPI_KRB5_H
 #include <gssapi/gssapi_krb5.h>
+#elif defined(HAVE_GSSAPI_KRB5_H)
+#include <gssapi_krb5.h>
 #elif defined(HAVE_GSSGLUE_GSSAPI_GSSAPI_KRB5_H)
 #include <gssglue/gssapi/gssapi_krb5.h>
 #endif

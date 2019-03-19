@@ -72,10 +72,10 @@ mapping(string:int) get_current_color()
     gtk_color_selection_get_current_color(GTK_COLOR_SELECTION(THIS->obj),
 		&color);
     pgtk2_pop_n_elems(args);
-    push_text("pixel"); push_int(color.pixel);
-    push_text("red"); push_int(color.red);
-    push_text("green"); push_int(color.green);
-    push_text("blue"); push_int(color.blue);
+    push_static_text("pixel"); push_int(color.pixel);
+    push_static_text("red"); push_int(color.red);
+    push_static_text("green"); push_int(color.green);
+    push_static_text("blue"); push_int(color.blue);
     f_aggregate_mapping(8);
   }
 }

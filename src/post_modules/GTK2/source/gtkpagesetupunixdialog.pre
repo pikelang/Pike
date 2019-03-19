@@ -9,7 +9,7 @@ void create(string|mapping(string:mixed) title_or_props, ?GTK2.Window parent)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   {
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *t;
       GtkWidget *gp;
       struct object *o1=NULL;

@@ -1,4 +1,4 @@
- 
+
 #pike __REAL_VERSION__
 
 //! The IrDA® Object Exchange Protocol.
@@ -68,7 +68,7 @@ typedef mapping(HeaderIdentifier:string|int|array) Headers;
 string encode_headers(Headers h)
 {
   string r0 = "", r = "";
-  object e = Locale.Charset.encoder("utf16-be");
+  object e = Charset.encoder("utf16-be");
   foreach(h; HeaderIdentifier hi; string|int|array va)
     foreach(arrayp(va)? va:({va}), string|int v) {
       string vv;
@@ -98,7 +98,7 @@ string encode_headers(Headers h)
 Headers decode_headers(string h)
 {
   Headers r = ([]);
-  object d = Locale.Charset.decoder("utf16-be");
+  object d = Charset.decoder("utf16-be");
   while(sizeof(h)) {
     HeaderIdentifier hi = h[0];
     string|int v = 0;
@@ -128,7 +128,7 @@ Headers decode_headers(string h)
       h = h[5..];
       break;
     }
-    if(zero_type(r[hi]))
+    if(!has_index(r, hi))
       r[hi] = v;
     else if(arrayp(r[hi]))
       r[hi] += ({ v });
@@ -173,7 +173,7 @@ array(string) split_headers(string h, int chunklen)
     h = h[l..];
   }
 
-  return r + (sizeof(acc) || !sizeof(r)? ({ acc }) : ({ }));  
+  return r + (sizeof(acc) || !sizeof(r)? ({ acc }) : ({ }));
 }
 
 
@@ -417,7 +417,7 @@ class Client
   array(int|Headers) do_session(Headers|void headers)
   {
     return do_request(REQ_SESSION, headers);
-  }  
+  }
 
   //! Establish a new connection using the @[REQ_CONNECT] opcode to
   //! negotiate transfer parameters
@@ -467,7 +467,7 @@ class Client
     if(rc != 200)
       return 0;
 
-    connected = 0;    
+    connected = 0;
 
 #ifdef OBEX_DEBUG
     werror("OBEX disconnected.\n");
@@ -493,7 +493,6 @@ class Client
     if(!connect())
       error("Failed to establish OBEX connection\n");
   }
-  
 }
 
 

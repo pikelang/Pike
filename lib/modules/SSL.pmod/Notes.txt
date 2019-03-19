@@ -1,0 +1,235 @@
+Pike SSL/TLS Implementation Notes
+=================================
+
+SSL/TLS Standard Documents and Amount of Coverage
+-------------------------------------------------
+
+  SSL and TLS are specified in quite a few documents;
+  the following is an attempt to list them all, and
+  the level of implementation in Pike.
+
+Legend:
+
+ [ ] Not implemented at present.
+
+ [-] Not implemented and will not be implemented.
+     Typically an obsolete or insecure standard.
+
+ [/] Partially implemented.
+
+ [X] Fully implemented.
+
+ NB: Constants from documents marked as not implemented may
+     still be added to SSL.Constants for debug purposes.
+
+The SSL 2.0 protocol was specified in the following document:
+
+ [-] SSL 2.0				draft-hickman-netscape-ssl-00.txt
+
+The SSL 3.0 Protocol was specified in the following draft (later an RFC):
+
+ [X] SSL 3.0				draft-freier-ssl-version3-02.txt
+ [X] SSL 3.0				RFC 6101
+
+The TLS 1.0 Protocol is specified in the following RFCs:
+
+ [X] SSL 3.1/TLS 1.0			RFC 2246
+ [/] Kerberos for TLS 1.0		RFC 2712
+ [X] AES Ciphers for TLS 1.0		RFC 3268
+ [/] Extensions for TLS 1.0		RFC 3546
+ [X] TLS Compression Methods		RFC 3749
+ [ ] LZS Compression for TLS		RFC 3943
+ [X] Camellia Cipher for TLS		RFC 4132
+ [ ] SEED Cipher for TLS 1.0		RFC 4162
+ [X] Pre-Shared Keys for TLS		RFC 4279
+
+The TLS 1.1 Protocol is specified in the following RFCs:
+
+ [X] SSL 3.2/TLS 1.1			RFC 4346
+ [/] Extensions for TLS 1.1		RFC 4366
+ [X] ECC Ciphers for TLS 1.1		RFC 4492
+ [ ] Session Resumption			RFC 4507
+ [ ] TLS Handshake Message		RFC 4680
+ [ ] User Mapping Extension		RFC 4681
+ [X] PSK with NULL for TLS 1.1		RFC 4785
+ [ ] SRP with TLS 1.1			RFC 5054
+ [ ] Session Resumption			RFC 5077
+ [ ] OpenPGP Authentication		RFC 5081
+ [X] Authenticated Encryption		RFC 5116
+
+The DTLS 1.0 Protocol is specified in the following RFCs:
+
+ [ ] DTLS 1.0				RFC 4347
+ [ ] DTLS over DCCP			RFC 5238
+
+The TLS 1.2 Protocol is specified in the following RFCs:
+
+ [X] SSL 3.3/TLS 1.2			RFC 5246
+ [X] AES GCM Cipher for TLS		RFC 5288
+ [X] ECC with SHA256/384 & GCM		RFC 5289
+ [/] Suite B Profile for TLS		RFC 5430
+ [X] DES and IDEA for TLS		RFC 5469
+ [X] Pre-Shared Keys with GCM		RFC 5487
+ [X] ECDHE_PSK Cipher for TLS		RFC 5489
+ [ ] Renegotiation Extension		RFC 5746
+ [ ] Authorization Extensions		RFC 5878
+ [X] Camellia Cipher for TLS		RFC 5932
+ [ ] KeyNote Auth for TLS		RFC 6042
+ [ ] TLS Extension Definitions		RFC 6066
+ [ ] OpenPGP Authentication		RFC 6091
+ [ ] ARIA Cipher for TLS		RFC 6209
+ [ ] Additional Master Secrets		RFC 6358
+ [X] Camellia Cipher for TLS		RFC 6367
+ [/] Suite B Profile for TLS		RFC 6460
+ [X] Heartbeat Extension		RFC 6520
+ [X] AES-CCM Cipher for TLS		RFC 6655
+ [ ] Multiple Certificates		RFC 6961
+ [ ] Certificate Transparency		RFC 6962
+ [ ] ECC Brainpool Curves		RFC 7027
+ [ ] Raw Public Keys in (D)TLS		RFC 7250
+ [X] AES-CCM ECC Suites for TLS		RFC 7251
+ [X] TLS ALPN Extension			RFC 7301
+ [X] TLS Encrypt-then-MAC		RFC 7366
+ [ ] Known Attacks on TLS and DTLS	RFC 7457
+ [X] Prohibit RC4			RFC 7465
+ [X] TLS Fallback SCSV			RFC 7507
+ [ ] Recommendations for TLS and DTLS	RFC 7525
+ [/] Session Hash and Extended MS	RFC 7627
+ [X] TLS Padding			RFC 7685
+
+The DTLS 1.2 Protocol is specified in the following RFCs:
+
+ [ ] DTLS 1.2				RFC 6347
+
+Drafts (in order of age, oldest first):
+ [/] 56-bit Export Cipher		draft-ietf-tls-56-bit-ciphersuites-01.txt
+ [-] Next Protocol Negotiation  	draft-agl-tls-nextprotoneg
+ [ ] Chacha20Poly1305			draft-agl-tls-chacha20poly1305-04.txt
+ [X] Negotiated FF-DHE Parameters	draft-ietf-tls-negotiated-ff-dhe
+ [/] SSL 3.4/TLS 1.3			draft-ietf-tls-tls13-06.txt
+
+The TLS parameters registry:
+  http://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
+
+
+SSL.File and Stdio.File Emulation Overview
+------------------------------------------
+
+Stream:
+	The underlying stream object is always in nonblocking
+	mode, to avoid risk of hanging in Stdio.Buffer.
+
+Buffering:
+	All I/O-ops are always buffered with Stdio.Buffer.
+
+Internal Callback Handling in Nonblocking Mode:
+	In nonblocking mode all internal callback handling is
+	performed directly with the real_backend.
+
+	If the main backend has been started (ie master()->asyncp()
+	is true), we assume that it will handle I/O.
+	Otherwise if nonthreaded or we are on the backend thread
+	(master()->backend_thread()), we rotate the real_backend
+	once with 0.0 timeout per I/O-op.
+
+	Note that this may cause problems when using custom
+	backends without having started the main backend.
+	Detect?
+
+Internal Callback Handling in Blocking Mode:
+	In blocking mode all internal callback handling is
+	performed with a dedicated local_backend.
+
+	The local_backend is created when the SSL.File is
+	switched to blocking mode.
+
+	The local_backend is then rotated until the blocking
+	call is done.
+
+User Callback Handling:
+	All user installed callbacks are called via call_out()
+	on internal_poll() in the real_backend.
+
+read():
+	Get data from user_read_buffer, install ssl_read_callback
+	on underflow. In blocking mode rotate the local backend
+	until all data is available. In nonblocking mode
+	attempt to rotate the local backend once if no callbacks
+	are installed.
+
+write():
+	Fill write_buffer, install ssl_write_callback.
+	In blocking mode rotate the local backend until
+	the write_buffer is empty. In nonblocking mode
+	attempt to rotate the local backend once if
+	no callbacks are installed.
+
+close():
+	Schedule a close packet, and block further calls to
+	write. If both directions block also further calls
+	to read. Install both ssl_write_callback and
+	ssl_read_callback and rotate the local backend until
+	connection closed from other end, or linger time expires.
+
+destroy()
+	Clear user callbacks and switch to nonblocking mode.
+	Attempt to send a close packet. Terminate the
+	internal_poll() call_out-loop.
+
+ssl_read_callback():
+	Decode received data and add it to user_read_buffer.
+	Schedule read_callback with real_backend call_out.
+	Uninstall on user_read_buffer full.
+
+ssl_write_callback():
+	Send data from write_buffer, uninstall on write_buffer empty.
+	Schedule write_callback with real_backend call_out.
+	On send failure, block futher calls of write.
+
+ssl_close_callback():
+	Schedule close_callback if close() has not been called yet.
+	Block further calls of read.
+
+ssl_close_alert_callback():
+	As ssl_close_callback, but allow use of stream when done.
+
+
+Known Problems and Missing Features
+-----------------------------------
+
+	Nonblocking mode without callbacks.
+
+	Support for set_buffer_mode() et al not yet supported,
+	neither directly nor in the embedded stream.
+
+	Session objects should be possible to serialize with
+	encode_value() to allow multiple frontend nodes to share the
+	session cache. (Overloading the session cache functionality in
+	Context is already easy to do)
+
+	The handshake message hash should be streaming and discard raw
+	data after each packet. Also, it is probably possible to find
+	only one place in the code where data can be fed to the
+	streaming hash.
+
+	Currently Pike will always try to maximize the number of bits
+	used for certificates, key exchanges, cipher keys and
+	hashes. Another popular approach that should be supported is
+	to minimize the bits used, above the set threashold. The
+	rationale is that everything allowed is good enough and the
+	capability negotiation should optimize on consumed resources.
+
+	Servers with different certificates and parameters can sit on
+	the same port with different SNI, or with different ALPN. We
+	should make it possible to select Context based on negotiation
+	(made tricky, as the negotiation depends on the Context).
+
+	It should be possible to lazy load certificates to increase
+	startup time and reduce memory usage for servers with many
+	sites. Dynamic loading and unloaded could be part of the same
+	mechanism as the Context selection mentioned above.
+
+	Truncated HMAC is only supported on the server side. It has
+	however been mentioned on the IETF TLS mailing list that there
+	are security issues with truncated HMAC, so this is only
+	lacking for completeness.

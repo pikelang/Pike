@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -21,14 +20,12 @@
 #include "program.h"
 #include "bignum.h"
 #include "backend.h"
+#include "pike_types.h"
 
 #ifdef HAVE_LIBFUSE
-/* Attempt to use FUSE API version 2.6 (if possible). */
-#define FUSE_USE_VERSION 26
+/* Attempt to use FUSE API version 2.9 (if possible). */
+#define FUSE_USE_VERSION 29
 #include <fuse.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <errno.h>
@@ -47,20 +44,10 @@ struct fuse_cmd_storage
     struct fuse_cmd *cmd;
 };
 
-static void f_fuse_cmd_process( INT32 args )
+static void f_fuse_cmd_process( INT32 UNUSED(args) )
 {
     struct svalue *sp = Pike_sp;
     fuse_process_cmd(THISC->f, THISC->cmd);
-    pop_n_elems( Pike_sp-sp );
-    push_int(0);
-}
-
-static void push_fuse_cmd(struct fuse_cmd *cmd, struct fuse *f)
-{
-    struct object *o = clone_object( fuse_cmd_program, 0);
-    ((struct fuse_cmd_storage *)o->storage)->cmd = cmd;
-    ((struct fuse_cmd_storage *)o->storage)->f = f;
-    push_object( o );
 }
 
 static struct object *global_fuse_obj; // There Can Be Only One
@@ -74,7 +61,7 @@ static int pf_getattr(const char *path, struct stat *stbuf)
     push_text( path );
     apply( global_fuse_obj, "getattr", 1 );
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
-	!(st = (struct stat *)get_storage( Pike_sp[-1].u.object, stat_program)) )
+	!(st = get_storage( Pike_sp[-1].u.object, stat_program)) )
 	DEFAULT_ERRNO();
     *stbuf = *st;
     return 0;
@@ -226,6 +213,7 @@ static int pf_truncate(const char *path, off_t size)
     return -Pike_sp[-1].u.integer;
 }
 
+#if FUSE_VERSION < 26
 static int pf_utime(const char *path, struct utimbuf *buf)
 {
     push_text( path );
@@ -236,7 +224,18 @@ static int pf_utime(const char *path, struct utimbuf *buf)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
-
+#else
+static int pf_utimens(const char *path, const struct timespec tv[2])
+{
+    push_text( path );
+    push_int64( (INT64)tv[0].tv_sec*(INT64)1000000000 + (INT64)tv[0].tv_nsec );
+    push_int64( (INT64)tv[1].tv_sec*(INT64)1000000000 + (INT64)tv[1].tv_nsec );
+    apply( global_fuse_obj, "utimens", 3 );
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
+	DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+}
+#endif
 
 static int pf_open(const char *path, struct fuse_file_info *fi)
 {
@@ -249,13 +248,13 @@ static int pf_open(const char *path, struct fuse_file_info *fi)
 }
 
 static int pf_read(const char *path, char *buf, size_t size, off_t offset,
-                    struct fuse_file_info *fi)
+                    struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     push_int( size );
     push_int64( offset );
     apply( global_fuse_obj, "read", 3 );
-    
+
     if( (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
@@ -267,7 +266,7 @@ static int pf_read(const char *path, char *buf, size_t size, off_t offset,
 }
 
 static int pf_write(const char *path, const char *buf, size_t size,
-		    off_t offset, struct fuse_file_info *fi)
+		    off_t offset, struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     push_string( make_shared_binary_string(buf, size ) );
@@ -313,7 +312,7 @@ static int pf_statfs(const char *path, struct statvfs *stbuf)
     return 0;
 }
 
-static int pf_release(const char *path, struct fuse_file_info *fi)
+static int pf_release(const char *path, struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     apply( global_fuse_obj, "release", 1 );
@@ -323,7 +322,7 @@ static int pf_release(const char *path, struct fuse_file_info *fi)
 }
 
 static int pf_fsync(const char *path, int isdatasync,
-                     struct fuse_file_info *fi)
+                     struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     push_int( isdatasync );
@@ -345,7 +344,7 @@ static int pf_setxattr(const char *path, const char *name, const char *value,
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
- 
+
 static int pf_getxattr(const char *path, const char *name, char *value,
 		       size_t size)
 {
@@ -398,26 +397,6 @@ static int pf_removexattr(const char *path, const char *name)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_flush( const char *path, struct fuse_file_info *fi)
-{
-    push_text( path );
-    push_int( fi->flags );
-    apply( global_fuse_obj, "flush", 2 );
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
-    return -Pike_sp[-1].u.integer;
-}
-
-static int pf_opendir( const char *path, struct fuse_file_info *fi)
-{
-    push_text( path );
-    push_int( fi->flags );
-    apply( global_fuse_obj, "opendir", 2 );
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
-    return -Pike_sp[-1].u.integer;
-}
-
 static int pf_creat( const char *path, mode_t mode, struct fuse_file_info *fi)
 {
     push_text( path );
@@ -439,33 +418,39 @@ static int pf_access( const char *path, int mode)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_releasedir( const char *path, struct fuse_file_info *fi)
+static int pf_lock( const char *path, struct fuse_file_info *fi, int cmd, struct flock *lck )
 {
-    push_text( path );
-    apply( global_fuse_obj, "releasedir", 1 );
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
-    return -Pike_sp[-1].u.integer;
-}
+  push_text( path );
+  push_int( cmd );
 
-static int pf_fsyncdir( const char *path, int nometa, struct fuse_file_info *fi)
-{
-    push_text( path );
-    push_int( nometa );
-    apply( global_fuse_obj, "fsyncdir", 2 );
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
-    return -Pike_sp[-1].u.integer;
-}
+  push_static_text("owner"); push_int( fi->lock_owner );
+  ref_push_string(literal_type_string);  push_int( lck->l_type );
+  push_static_text("whence");push_int( lck->l_whence );
+  push_static_text("start");   push_int( lck->l_start );
+  push_static_text("len");   push_int( lck->l_len );
+  push_static_text("pid");   push_int( lck->l_pid );
+  f_aggregate_mapping( 6 * 2 );
+  apply( global_fuse_obj, "lock", 3 );
 
-/* static int pf_readdir( const char *path,  */
-/* 		       struct fuse_fill_dir_t fill, off_t off,  */
-/* 		       struct fuse_file_info *info ) */
-/* { */
-/*     push_text( path ); */
-/*     push_int( off ); */
-    
-/* } */
+  if( TYPEOF(Pike_sp[-1]) == PIKE_T_MAPPING )
+  {
+    struct svalue *tmp;
+#define COUT(X)                                                         \
+    if((tmp=simple_mapping_string_lookup(Pike_sp[-1].u.mapping,#X))     \
+       && TYPEOF(*tmp)==PIKE_T_INT) lck->l_##X = tmp->u.integer;
+    COUT(type);  COUT(whence);
+    COUT(start);  COUT(len);
+    COUT(pid);
+#undef COUT
+    return 0;
+  }
+  else
+  {
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
+      DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+  }
+}
 
 static struct fuse_operations pike_fuse_oper = {
     .getattr	= pf_getattr,
@@ -481,29 +466,31 @@ static struct fuse_operations pike_fuse_oper = {
     .chmod	= pf_chmod,
     .chown	= pf_chown,
     .truncate	= pf_truncate,
+#if FUSE_VERSION >= 26
+    .utimens	= pf_utimens,
+#else
     .utime	= pf_utime,
+#endif
+#if FUSE_VERSION >= 26
+    .lock	= pf_lock,
+#endif
     .open	= pf_open,
     .read	= pf_read,
     .write	= pf_write,
     .statfs	= pf_statfs,
-/*     .flush	= pf_flush, */
     .release	= pf_release,
     .fsync	= pf_fsync,
     .setxattr	= pf_setxattr,
     .getxattr	= pf_getxattr,
     .listxattr	= pf_listxattr,
     .removexattr= pf_removexattr,
-/*     .opendir    = pf_opendir, */
-/*     .readdir    = pf_readdir, */
-/*     .releasedir = pf_releasedir, */
-/*     .fsyncdir   = pf_fsyncdir, */
     .access     = pf_access,
-    .create     = pf_creat, 
+    .create     = pf_creat,
 };
 
 struct passon {
     struct fuse *f;
-    struct fuse_cmd *cmd; 
+    struct fuse_cmd *cmd;
 };
 
 static void low_dispatch_fuse_command( void *ptr )
@@ -514,32 +501,12 @@ static void low_dispatch_fuse_command( void *ptr )
     pop_n_elems( Pike_sp - old );
 }
 
-static void dispatch_fuse_command( struct fuse *f, struct fuse_cmd *cmd, void *a )
+static void dispatch_fuse_command( struct fuse *f, struct fuse_cmd *cmd, void *UNUSED(a) )
 {
     struct passon x = {
 	.f = f,
 	.cmd = cmd
     };
-    struct thread_state *state;
-
-    if((state = thread_state_for_id(th_self()))==NULL) 
-    {
-	struct object *thread_obj;
-	fprintf( stderr, "Creating a new pike-thread\n");
-
-	mt_lock_interpreter();
-	init_interpreter();
-	Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
-	Pike_interpreter.recoveries = NULL;
-	thread_obj = fast_clone_object(thread_id_prog);
-	INIT_THREAD_STATE((struct thread_state *)(thread_obj->storage +
-						  thread_storage_offset));
-	num_threads++;
-	thread_table_insert(Pike_interpreter.thread_state);
-	state = Pike_interpreter.thread_state;
-	SWAP_OUT_THREAD(state);
-	mt_unlock_interpreter();
-    }
 
     call_with_interpreter(low_dispatch_fuse_command, &x );
 }
@@ -583,7 +550,7 @@ static void f_fuse_run( INT32 nargs )
 	}
 	argv[i] = args->item[i].u.string->str;
     }
-    fuse = fuse_setup(args->size, argv, &pike_fuse_oper, sizeof(pike_fuse_oper), 
+    fuse = fuse_setup(args->size, argv, &pike_fuse_oper, sizeof(pike_fuse_oper),
 		      &mountpoint, &multi, &fd );
     free( argv );
 
@@ -608,7 +575,7 @@ static void f_fuse_run( INT32 nargs )
     fuse_teardown( fuse, mountpoint);
 #endif
     global_fuse = NULL;
-    exit(0); 
+    exit(0);
     global_fuse_obj=NULL;
 }
 
@@ -617,6 +584,12 @@ PIKE_MODULE_EXIT
   free_program( getdir_program );
   free_program( fuse_cmd_program );
 }
+
+/*! @decl constant FUSE_MAJOR_VERSION
+ *! @decl constant FUSE_MINOR_VERSION
+ *!
+ *!  The version of FUSE
+ */
 
 PIKE_MODULE_INIT
 {
@@ -636,6 +609,12 @@ PIKE_MODULE_INIT
     }
     fuse_cmd_program = end_program();
 
+    add_integer_constant("F_RDLCK", F_GETLK, 0 );
+    add_integer_constant("F_WRLCK", F_WRLCK, 0 );
+    add_integer_constant("F_UNLCK", F_UNLCK, 0 );
+    add_integer_constant("F_GETLK", F_GETLK, 0 );
+    add_integer_constant("F_SETLK", F_SETLK, 0 );
+    add_integer_constant("F_SETLKW", F_SETLKW, 0 );
     add_integer_constant("FUSE_MAJOR_VERSION", FUSE_MAJOR_VERSION, 0);
     add_integer_constant("FUSE_MINOR_VERSION", FUSE_MINOR_VERSION, 0);
 }
@@ -646,7 +625,6 @@ PIKE_MODULE_EXIT
 
 PIKE_MODULE_INIT
 {
-  if(!TEST_COMPAT(7,6))
-    HIDE_MODULE();
+  HIDE_MODULE();
 }
 #endif /* HAVE_LIBFUSE */

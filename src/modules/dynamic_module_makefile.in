@@ -1,7 +1,3 @@
-#
-# $Id$
-#
-
 LC_REQ=@LC_REQ@
 
 LINKAGE_CPPFLAGS=
@@ -27,7 +23,7 @@ all:
 
 @common_module_makefile@
 
-build_type:
+build_type: Makefile
 	@echo dynamic > build_type
 
 static: Makefile $(DUMMY) module-preamble

@@ -1,11 +1,11 @@
+#pike __REAL_VERSION__
+
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id$
 //
 // 2010-01-25 Henrik Grubbström
 //
-
 //! Filesystem monitor with support for symbolic links.
 //!
 //! This module extends @[Filesystem.Monitor.basic] with
@@ -128,10 +128,10 @@ inherit "basic.pike" : basic;
 //!
 //! @seealso
 //!   @[monitor()]
-protected class Monitor
+protected class DefaultMonitor
 {
-  //! Based on @[Filesystem.Monitor.basic.Monitor].
-  inherit basic::Monitor;
+  //! Based on @[Filesystem.Monitor.basic.DefaultMonitor].
+  inherit basic::DefaultMonitor;
 
   //! Mask of symlink ids that can reach this monitor.
   int symlinks;
@@ -443,9 +443,10 @@ protected class Monitor
   protected void monitor(string path, int flags, int max_dir_interval,
 			 int file_interval_factor, int stable_time)
   {
+    object m;
     ::monitor(path, flags, max_dir_check_interval,
 	      file_interval_factor, stable_time);
-    monitors[path]->symlinks |= symlinks;
+    if((m = monitors[path])) m->symlinks |= symlinks;
   }
 
   //! Called when the status has changed for an existing file.

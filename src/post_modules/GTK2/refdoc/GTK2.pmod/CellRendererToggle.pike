@@ -16,7 +16,7 @@
 
 inherit GTK2.CellRenderer;
 
-static GTK2.CellRendererToggle create( mapping|void props );
+protected GTK2.CellRendererToggle create( mapping|void props );
 //! Creates a new W(CellRendererToggle).  Adjust rendering parameters using
 //! object properties.  Object properties can be set globally with
 //! set().

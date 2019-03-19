@@ -1,10 +1,17 @@
 #!/bin/sh
 
-echo "/* File generated on `date`
+cat <<END
+/* File generated on `date`
 by getwhitespace <UnicodeData.txt */
-"
 
-echo '#define SPACECASE16	SPACECASE8 \'
+#define SPACECASE8							\\
+       case ' ':case '\\t':case '\\r':case '\\n':case '\\v':case '\\f':	\\
+       case 0x85:case 0xa0:
+END
+
+cat <<END
+#define SPACECASE16	SPACECASE8 \\
+END
 sed -n -e '
 s/^\([0-9A-Fa-f]*\);[^;]*;[^;]*;[^;]*;\([^;]*\);/\1 \2 /
 /;INFORMATION SEPARATOR /d

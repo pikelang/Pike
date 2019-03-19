@@ -248,12 +248,12 @@ the modem by using the functions <tt>write</tt> and <tt>gets</tt>.</p>
 
 <p><tt>Foreach</tt> is unique in that it does not have an explicit test expression
 evaluated for each iteration in the loop. Instead, <tt>foreach</tt> executes
-the statement once for each element in an array. <tt>Foreach</tt> looks like
-this:</p>
+the statement once for each element in a set. <tt>Foreach</tt> has two
+syntaxes, the first of which look like this:</p>
 
 <example>
 foreach ( array_expression, variable )
-  statement ;
+  statement;
 </example>
 
 <p>We have already seen an example of <tt>foreach</tt> in the <tt>find_song</tt>
@@ -273,13 +273,34 @@ function in chapter 2. What foreach does is:</p>
 doing the same thing with a <tt>for</tt> loop, as shown here:</p>
 
 <example>
-array tmp1= array_expression;
+array tmp1 = array_expression;
 for ( tmp2 = 0; tmp2 &lt; sizeof(tmp1); tmp2++ )
 {
   variable = tmp1 [ tmp2 ];
   statement;
 }
 </example>
+
+<p>The second syntax for <tt>foreach</tt> is the more flexible iterator syntax,
+which can be used to iterate over arrays, mappings, multisets and strings as
+well as some objects. It also has the option of providing the index value:</p>
+
+<example>
+foreach ( iterable_expression; optional_index_variable; optional_value_variable )
+  statement;
+</example>
+
+<p>This is approximately equivalent to:</p>
+
+<example>
+for (Iterator iter = get_iterator(iterable_expression); iter; iter->next()) {
+  optional_index_variable = iter->index();
+  optional_value_variable = iter->value();
+  statement;
+}
+</example>
+
+<p>See <ref>get_iterator()</ref> for further details.</p>
 
 </subsection>
 </section>
@@ -292,9 +313,9 @@ that is still missing is the ability to exit a loop in the middle of it.
 There are three ways to do this:</p>
 
 <subsection title="break">
-<p><tt>break</tt> exits a loop or switch statement immediately and continues
-executing after the loop. <tt>Break</tt> can not be used outside of a loop or
-switch. It is quite useful in conjunction with <tt>while(1)</tt> to
+<p><tt>break</tt> exits a loop, switch, or catch statement immediately and continues
+executing after the loop. <tt>Break</tt> can not be used outside of one of these.
+It is quite useful in conjunction with <tt>while(1)</tt> to
 construct command parsing loops for instance:</p>
 
 <example>
@@ -326,6 +347,11 @@ a:if(sizeof(arr1) >= sizeof(arr2))
   // execution continues here
 }
 </example>
+
+<p>Inside a <tt>catch</tt> block, <tt>break</tt> will terminate the block with no
+exception being thrown; <tt>catch</tt> will return zero, as if execution had
+continued to the end of the block.</p>
+
 </subsection>
 
 <subsection title="continue">

@@ -1,5 +1,4 @@
 START_MARKER
-// $Id$
 
 // MIME
 test_true([[objectp(MIME)]])
@@ -13,11 +12,23 @@ test_eq([[(MIME.parse_headers("\r\nBody\r\n\r\nMore Body\r\n")[1])]],
 test_eq([[(MIME.parse_headers("\nBody\n\nMore Body\n")[1])]],
           "Body\n\nMore Body\n")
 
-test_eq([[MIME.decode_base64("Zm9vCg==")]],"foo\n")
-test_eq([[MIME.encode_base64("bar")]],"YmFy")
-test_eq([[MIME.encode_base64("bar ")]],"YmFyIA==")
-test_eq([[MIME.encode_base64("bar  ")]],"YmFyICA=")
-test_eq([[MIME.encode_base64("bar   ")]],"YmFyICAg")
+define(test_base64,[[
+  test_eq(MIME.encode_base64($1),$2)
+  test_eq(MIME.decode_base64($2),$1)
+]])
+
+// Test vectors from RFC 4648
+test_base64("","")
+test_base64("f","Zg==")
+test_base64("fo","Zm8=")
+test_base64("foo","Zm9v")
+test_base64("foob","Zm9vYg==")
+test_base64("fooba","Zm9vYmE=")
+test_base64("foobar","Zm9vYmFy")
+
+test_base64("\0\0\0", "AAAA")
+test_base64("\0\377", "AP8=")
+test_eval_error(MIME.encode_base64("\400"))
 test_eq([[MIME.encode_base64("How much wood could a woodchuck "
 	"chuck if a woodchuck could chuck wood?")]],
 	"SG93IG11Y2ggd29vZCBjb3VsZCBhIHdvb2RjaHVjayBjaHVjayBpZiBhI"
@@ -26,8 +37,6 @@ test_eq([[MIME.encode_base64("How much wood could a woodchuck "
 	"chuck if a woodchuck could chuck wood?", 1)]],
 	"SG93IG11Y2ggd29vZCBjb3VsZCBhIHdvb2RjaHVjayBjaHVjayBpZiBhI"
 	"Hdvb2RjaHVjayBjb3VsZCBjaHVjayB3b29kPw==")
-test_any([[string data=Stdio.read_file("Makefile");
-	return MIME.decode_base64(MIME.encode_base64(data))==data]],1)
 
 test_eq([[MIME.decode_qp("AbC=3a=4C=25z=\nxyz")]],"AbC:L%zxyz")
 test_eq([[MIME.encode_qp("Â‰ˆ≈ƒ÷=Ff")]],"=E5=E4=F6=C5=C4=D6=3DFf")
@@ -39,8 +48,6 @@ test_eq([[MIME.encode_qp("How much wood could a woodchuck "
 	"chuck if a woodchuck could chuck wood?", 1)]],
 	"How=20much=20wood=20could=20a=20woodchuck=20chuck=20if=20"
 	"a=20woodchuck=20could=20chuck=20wood?")
-test_any([[string data=Stdio.read_file("Makefile");
-	return MIME.decode_qp(MIME.encode_qp(data))==data]],1)
 
 test_eq([[MIME.decode_uue("begin 644 foo\n#8F%R\n`\nend\n")]], "bar")
 test_eq([[MIME.encode_uue("fie")]],
@@ -58,8 +65,6 @@ test_eq([[MIME.encode_uue("How much wood could a woodchuck "
 	[["begin 644 WOOD\r\nM2&]W\050&UU8V@@=V]O9\"!C;W5L9\"!A\050'=O;V1C:'5C:"
 	  "R!C:'5C:R!I9B!A\050'=O\r\n9;V1C:'5C:R!C;W5L9\"!C:'5C:R!W;V]D/P``"
 	  "\r\n`\r\nend\r\n"]])
-test_any([[string data=Stdio.read_file("Makefile");
-	return MIME.decode_uue(MIME.encode_uue(data, "foo bar"))==data]],1)
 
 test_equal([[MIME.tokenize("foo&bar,fu.m:\"asdf(z\\\"\\\\)x\"afn(xy(z))ds")]],
 	({"foo&bar",44,"fu.m",58,"asdf(z\"\\)x","afn","ds"}))

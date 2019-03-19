@@ -2,8 +2,9 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
+
+#include "stuff.h"
 
 #ifdef SORT_BY_INDEX
 /* Sort by index. */
@@ -41,19 +42,19 @@
 #define MKNAME(X) MKNAME2(ID,X)
 #define MKNAME2(X,Y) PIKE_CONCAT(X,Y)
 
-static void MKNAME(_do_sort)(register PTYPE bas,
-			       register PTYPE last,
-			       int max_recursion
+static void MKNAME(_do_sort)(PTYPE bas,
+                             PTYPE last,
+                             int max_recursion
 #ifdef EXTRA_ARGS
-			       EXTRA_ARGS
+                             EXTRA_ARGS
 #else
 #define UNDEF_XARGS
 #define XARGS
 #endif
   )
 {
-  register PTYPE a;
-  register PTYPE b;
+  PTYPE a;
+  PTYPE b;
 #ifdef EXTRA_LOCALS
   EXTRA_LOCALS
 #endif
@@ -71,7 +72,7 @@ static void MKNAME(_do_sort)(register PTYPE bas,
 	ptrdiff_t howmany,x,y,z;
 	howmany=((((char *)last)-((char *)bas))/SIZE)+1;
 	if(howmany<2) return;
-	
+
 	for(x=PARENT(howmany-1);x>=0;x--)
 	{
 	  y=x;
@@ -85,7 +86,7 @@ static void MKNAME(_do_sort)(register PTYPE bas,
 	    y=z;
 	  }
 	}
-	
+
 	for(x=howmany-1;x;x--)
 	{
 	  SWAP( STEP(bas,x), bas);
@@ -100,14 +101,14 @@ static void MKNAME(_do_sort)(register PTYPE bas,
 	    y=z;
 	  }
 	}
-	
+
 #ifdef PIKE_DEBUG
 	if(d_flag>1)
 	  for(x=howmany-1;x;x--)
 	    if( CMP( STEP(bas,x-1), STEP(bas,x)  ) > 0)
 	      Pike_fatal("Sorting failed!\n");
 #endif
-	
+
 	return;
       }
 
@@ -150,7 +151,7 @@ static void MKNAME(_do_sort)(register PTYPE bas,
       if( a != bas ) {
 	SWAP(a,bas);
 	DEC(a);
-      
+
 	if(  (char *)a - (char *)bas < (char *)last - (char *)b )
         {
 	  MKNAME(_do_sort)(bas,a,max_recursion XARGS);
@@ -176,8 +177,8 @@ static void MKNAME(_do_sort)(register PTYPE bas,
   }
 }
 
-void ID(register PTYPE bas,
-	register PTYPE last
+void ID(PTYPE bas,
+	PTYPE last
 #ifdef EXTRA_ARGS
 	EXTRA_ARGS
 #endif

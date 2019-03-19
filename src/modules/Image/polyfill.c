@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -12,10 +11,6 @@
 /* Should really exist in math.h. This prototype might conflict with
  * dllimport stuff on Windows. /mast */
 extern double floor(double);
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
 #endif
 
 #include <math.h>
@@ -98,8 +93,8 @@ static struct vertex *vertex_new(double x, double y, struct vertex **top)
 {
    struct vertex *c;
    while (*top && (*top)->y<y) top=&((*top)->next);
-   
-   if (*top && 
+
+   if (*top &&
        (*top)->x==x && (*top)->y==y) return *top; /* found one */
 
    c=malloc(sizeof(struct vertex));
@@ -149,17 +144,17 @@ static void vertex_connect(struct vertex *above,
 
 static INLINE double line_xmax(struct line_list *v, double yp, double *ydest)
 {
-   if (v->dx>0.0) 
+   if (v->dx>0.0)
       if (v->below->y>yp+1.0+1e-10)
 	 return v->above->x+v->dx*((*ydest=(yp+1.0))-v->above->y);
       else
 	 return (*ydest=v->below->y),v->below->x;
-   else if (v->dx<0.0) 
+   else if (v->dx<0.0)
       if (v->above->y<yp-1e-10)
 	 return v->above->x+v->dx*((*ydest=yp)-v->above->y);
       else
 	 return (*ydest=v->above->y),v->above->x;
-   else if (v->below->y>yp+1.0+1e-10) 
+   else if (v->below->y>yp+1.0+1e-10)
       return (*ydest=yp+1.0),v->above->x;
    else
       return (*ydest=v->below->y),v->below->x;
@@ -167,17 +162,17 @@ static INLINE double line_xmax(struct line_list *v, double yp, double *ydest)
 
 static INLINE double line_xmin(struct line_list *v, double yp, double *ydest)
 {
-   if (v->dx<0.0) 
+   if (v->dx<0.0)
       if (v->below->y>yp+1.0+1e-10)
 	 return v->above->x+v->dx*((*ydest=(yp+1.0))-v->above->y);
       else
 	 return (*ydest=v->below->y),v->below->x;
-   else if (v->dx>0.0) 
+   else if (v->dx>0.0)
       if (v->above->y<yp-1e-10)
 	 return v->above->x+v->dx*((*ydest=yp)-v->above->y);
       else
 	 return (*ydest=v->above->y),v->above->x;
-   else if (v->above->y<yp-1e-10) 
+   else if (v->above->y<yp-1e-10)
       return (*ydest=yp),v->above->x;
    else
       return (*ydest=v->above->y),v->above->x;
@@ -223,7 +218,7 @@ static void add_vertices(struct line_list **first,
       {
 	 /* case: -what-> <-ins- */
 	 BECAUSE("what is left of ins");
-	 if ((*ins)->xmin>=what->xmax)  
+	 if ((*ins)->xmin>=what->xmax)
 	    break; /* place left of */
 
 	 /* case: -what-    */
@@ -251,31 +246,31 @@ static void add_vertices(struct line_list **first,
 	 /* case: -what-    */
 	 /*          <-ins- */
 	 if ((*ins)->xmin>what->xmin)
-	 { 
+	 {
 	    BECAUSE("ins is below (right) what");
-	    if ((*ins)->yxmin>VY(what,(*ins)->xmin)) break; 
+	    if ((*ins)->yxmin>VY(what,(*ins)->xmin)) break;
 	 }
 	 /* case:   <-what-    */
 	 /*       -ins-        */
-	 else 
+	 else
 	 {
 	    BECAUSE("what is above ins (left)");
-	    if (VY((*ins),what->xmin)>what->yxmin) break; 
+	    if (VY((*ins),what->xmin)>what->yxmin) break;
 	 }
 
 	 /* case: -what->    */
 	 /*           -ins-  */
 	 if ((*ins)->xmax>what->xmax)
-	 { 
+	 {
 	    BECAUSE("what is above ins (right)");
-	    if (VY((*ins),what->xmax)>what->yxmax) break; 
+	    if (VY((*ins),what->xmax)>what->yxmax) break;
 	 }
 	 /* case:    -what-    */
 	 /*       -ins->       */
-	 else 
+	 else
 	 {
 	    BECAUSE("ins is below (left) what");
-	    if ((*ins)->yxmax>VY(what,(*ins)->xmax)) break; 
+	    if ((*ins)->yxmax>VY(what,(*ins)->xmax)) break;
 	 }
 
 	 ins=&((*ins)->next);
@@ -305,7 +300,7 @@ static void add_vertices(struct line_list **first,
 
 static void sub_vertices(struct line_list **first,
 			 struct vertex *below,
-			 double yp)
+			 double UNUSED(yp))
 {
    struct line_list **ins,*c;
 
@@ -317,7 +312,7 @@ static void sub_vertices(struct line_list **first,
 
    while (*ins)
    {
-      if ((*ins)->below==below) 
+      if ((*ins)->below==below)
       {
 #ifdef POLYDEBUG
 	 fprintf(stderr,"   removing %lx,[%g,%g-%g,%g] %lx,%lx \n",
@@ -330,8 +325,8 @@ static void sub_vertices(struct line_list **first,
 	 *ins=(*ins)->next;
 	 free(c);
       }
-      else 
-      { 
+      else
+      {
 	 ins=&((*ins)->next);
       }
    }
@@ -377,7 +372,7 @@ static INLINE void polyfill_slant_add(double *buf,
    }
    else if (xmin_i>=0)
    {
-      double dx = DO_NOT_WARN(1.0 - (xmin-((double)xmin_i)));
+      double dx = 1.0 - (xmin-((double)xmin_i));
       buf[xmin_i] += lot*(y1+dy*dx/2.0)*dx;
       y1 += dy*dx;
       for (i=xmin_i+1; i<xmax_i; i++) {
@@ -481,7 +476,7 @@ static int polyfill_event(double xmin,
    {
 #ifdef POLYDEBUG
 	 fprintf(stderr,"  fill %g..%g with 1.0\n",xmin,xmax);
-#endif	 
+#endif
       polyfill_row_add(buf,xmin,xmax,1.0);
    }
 
@@ -500,16 +495,15 @@ static int polyfill_event(double xmin,
 		 c->xmin,c->yxmin,c->xmax,c->yxmax,
 		 c->above->x,c->above->y,c->below->x,c->below->y,
 		 xmin,y1,xmax,y2,(tog?-1.0:1.0)*((y1+y2)/2.0-yp));
-#endif	 
-	 polyfill_slant_add(buf,xmin,xmax,
-			    DO_NOT_WARN(tog?-1.0:1.0),
+#endif
+         polyfill_slant_add(buf,xmin,xmax,tog?-1.0:1.0,
 			    (yp+1)-y1,-c->dy);
 	 tog=!tog;
       }
       if (c->xmin>xmax) break; /* skip the rest */
       c=c->next;
    }
-   
+
 
    return mtog;
 }
@@ -523,8 +517,8 @@ static void polyfill_some(struct image *img,
    double ixmax = (double)img->xsize;
    struct vertex *to_add=v,*to_loose=v;
    /* beat row for row */
-   
-   if (y+1.0+1e-10<v->y) 
+
+   if (y+1.0+1e-10<v->y)
       y = DOUBLE_TO_INT(v->y);
 
    while (y<img->ysize && (to_loose||to_add) )
@@ -536,7 +530,7 @@ static void polyfill_some(struct image *img,
       int tog=0;
       int i;
 
-#ifdef POLYDEBUG      
+#ifdef POLYDEBUG
       fprintf(stderr,"\nline %d..%d\n",y,y+1);
 #endif
 
@@ -557,7 +551,7 @@ static void polyfill_some(struct image *img,
 	 add_vertices(&ll,vx->below,yp);
       }
 
-#ifdef POLYDEBUG      
+#ifdef POLYDEBUG
       c=ll;
       while (c)
       {
@@ -566,7 +560,7 @@ static void polyfill_some(struct image *img,
 		 c->above->x,c->above->y,c->below->x,c->below->y);
 	 c=c->next;
       }
-      
+
 #endif
 
       if (!ll)
@@ -636,13 +630,13 @@ static void polyfill_some(struct image *img,
 
 	 if (xmax>ixmax) xmax=ixmax;
 	 tog=polyfill_event(xmin,xmax,yp,buf,&ll,tog);
-	 
+
 	 /* shift to get next event */
 	 xmin = xmax;
-	 xmax = DO_NOT_WARN(xmin - 1.0);
+         xmax = xmin - 1.0;
       }
-      
-      
+
+
       /* remove any old vertices */
       while (to_loose!=to_add && to_loose->y<yp+1.0-1e-10)
       {
@@ -745,9 +739,9 @@ static INLINE struct vertex *polyfill_add(struct vertex **top,
      return NULL;
    }
 
-   if (a->size<6) 
+   if (a->size<6)
    {
-      return *top; 
+      return *top;
 #if 0
       polyfill_free(*top);
       Pike_error("Illegal argument %d to %s, too few vertices (min 3)\n", arg, what);
@@ -757,9 +751,7 @@ static INLINE struct vertex *polyfill_add(struct vertex **top,
 
 #define POINT(A,N) ((TYPEOF((A)->item[N]) == T_FLOAT)?((A)->item[N].u.float_number):((FLOAT_TYPE)((A)->item[N].u.integer)))
 
-   last = first = vertex_new(DO_NOT_WARN(POINT(a,0)),
-			     DO_NOT_WARN(POINT(a,1)),
-			     top);
+   last = first = vertex_new(POINT(a,0), POINT(a,1), top);
 
    if (!last) {
       return NULL;
@@ -767,9 +759,7 @@ static INLINE struct vertex *polyfill_add(struct vertex **top,
 
    for (n=2; n+1<a->size; n+=2)
    {
-      cur = vertex_new(DO_NOT_WARN(POINT(a,n)),
-		       DO_NOT_WARN(POINT(a,n+1)),
-		       top);
+      cur = vertex_new(POINT(a,n), POINT(a,n+1), top);
       if (!cur) {
 	 return NULL;
       }
@@ -838,7 +828,7 @@ void image_polyfill(INT32 args)
    }
 
    polyfill_some(THIS,v,buf);
-   
+
    polyfill_free(v);
 
    UNSET_ONERROR(err);

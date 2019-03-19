@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 AC_INIT(dvb.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -19,7 +16,7 @@ if test x$with_dvb = xyes ; then
   if test x$pike_dvb_include_dir != x; then
     AC_MSG_RESULT(user-provided: $pike_dvb_include_dir)
   else
-    AC_MSG_RESULT(include dir wasn't specified.)
+    AC_MSG_RESULT(include dir was not specified.)
   fi
 
   if test x$pike_dvb_include_dir != x; then
@@ -32,13 +29,13 @@ dnl some better way: FIXME!!1!¡ /Mirar
 
   dnl Checking for version 2+ API
   AC_CHECK_HEADERS(linux/dvb/version.h,
-      [[ 
+      [[
         AC_CHECK_HEADERS(linux/dvb/sec.h,
 	      [PIKE_FEATURE(DVB,[yes (version 2 api)])],
 	      [PIKE_FEATURE(DVB,[no (missing linux/dvb/sec.h - version 3 api?)]) ])
       ]])
 
-	  
+
   AC_CHECK_HEADERS(ost/frontend.h,
       [ PIKE_FEATURE(DVB,[yes (version 1 api)]) ])
 

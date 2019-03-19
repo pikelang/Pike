@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
 #include "zlib_machine.h"
 #include "module.h"
 #include "program.h"
+#include "mapping.h"
 #include "module_support.h"
 
 #if !defined(HAVE_LIBZ) && !defined(HAVE_LIBGZ)
@@ -28,6 +28,7 @@
 #include "threads.h"
 #include "dynamic_buffer.h"
 #include "operators.h"
+#include "bignum.h"
 
 #include <zlib.h>
 
@@ -39,10 +40,17 @@ struct zipper
   int  level;
   int  state;
   struct z_stream_s gz;
-  struct pike_string *epilogue;
+  struct pike_string *epilogue, *dict;
 #ifdef _REENTRANT
   DEFINE_MUTEX(lock);
 #endif /* _REENTRANT */
+};
+
+struct memobj
+{
+  void *ptr;
+  size_t len;
+  int shift;
 };
 
 #define BUF 32768
@@ -73,22 +81,27 @@ struct zipper
 
 /*! @class deflate
  *!
- *! Gz_deflate is a builtin program written in C. It interfaces the
- *! packing routines in the libz library.
+ *! This class interfaces with the compression routines in the libz
+ *! library.
  *!
  *! @note
  *! This class is only available if libz was available and found when
  *! Pike was compiled.
  *!
  *! @seealso
- *! @[Gz.inflate()]
+ *! @[Gz.inflate()], @[Gz.compress()], @[Gz.uncompress()]
  */
 
 /*! @decl void create(int(-9..9)|void level, int|void strategy,@
  *!                   int(8..15)|void window_size)
+ *! @decl void create(mapping options)
  *!
  *! This function can also be used to re-initialize a Gz.deflate object
  *! so it can be re-used.
+ *!
+ *! If a mapping is passed as the only argument, it will accept the
+ *! parameters described below as indices, and additionally it accepts
+ *! a @expr{string@} as @expr{dictionary@}.
  *!
  *! @param level
  *!   Indicates the level of effort spent to make the data compress
@@ -143,6 +156,9 @@ static void gz_deflate_create(INT32 args)
 /*     mt_unlock(& THIS->lock); */
   }
 
+  do_free_string(THIS->dict);
+  THIS->dict = NULL;
+
   if(args>2)
   {
     if(TYPEOF(sp[2-args]) != T_INT)
@@ -153,20 +169,59 @@ static void gz_deflate_create(INT32 args)
       Pike_error("Invalid window size for gz_deflate->create().\n");
   }
 
+#define TTS(type)	(((type) == PIKE_T_STRING && "string")	\
+		      || ((type) == PIKE_T_MAPPING && "mapping")\
+		      || ((type) == PIKE_T_ARRAY && "array")	\
+		      || ((type) == PIKE_T_FLOAT && "float")	\
+		      || ((type) == PIKE_T_INT && "int")	\
+		      || ((type) == PIKE_T_OBJECT && "object")	\
+		      || "mixed")
+#define GET_TYPE(type, name)	((tmp = simple_mapping_string_lookup(m, name)) \
+   && (TYPEOF(*(tmp)) == PIKE_T_##type || (Pike_error("Expected type %s,"\
+       "got type %s for " name ".", TTS(PIKE_T_##type), TTS(TYPEOF(*tmp))), 0)))
   if(args)
   {
-    if(TYPEOF(sp[-args]) != T_INT)
-      Pike_error("Bad argument 1 to gz->create()\n");
-    THIS->level=sp[-args].u.integer;
-    if( THIS->level < 0 )
-    {
-      wbits = -wbits;
-      THIS->level = -THIS->level;
-    }
-    if(THIS->level < Z_NO_COMPRESSION ||
-       THIS->level > Z_BEST_COMPRESSION)
-    {
-      Pike_error("Compression level out of range for gz_deflate->create()\n");
+    if (TYPEOF(sp[-args]) == T_MAPPING && args == 1) {
+      struct mapping *m = sp[-args].u.mapping;
+      struct svalue *tmp;
+
+      if (GET_TYPE(INT, "strategy")) strategy = tmp->u.integer;
+      if (GET_TYPE(INT, "window_size"))
+      {
+	wbits = tmp->u.integer;
+	if (wbits == 0) wbits = 15;
+	if (wbits < 8 || wbits > 15)
+	  Pike_error("Invalid window size for gz_deflate->create().\n");
+      }
+      if (GET_TYPE(STRING, "dictionary"))
+      {
+	if (tmp->u.string->size_shift)
+	  Pike_error("dictionary cannot be a wide string in "
+		     "gz_deflate->create().\n");
+	THIS->dict = tmp->u.string;
+	add_ref(THIS->dict);
+      }
+      if (GET_TYPE(INT, "level"))
+      {
+	  THIS->level = tmp->u.integer;
+	  goto LVL_CHECK;
+      }
+    } else {
+      if(TYPEOF(sp[-args]) != T_INT)
+	Pike_error("Bad argument 1 to gz->create()\n");
+      THIS->level=sp[-args].u.integer;
+LVL_CHECK:
+      if( THIS->level < 0 )
+      {
+	wbits = -wbits;
+	THIS->level = -THIS->level;
+      }
+      if(THIS->level < Z_NO_COMPRESSION ||
+	 THIS->level > Z_BEST_COMPRESSION)
+      {
+	Pike_error("Compression level out of range for "
+		   "gz_deflate->create()\n");
+      }
     }
   }
 
@@ -193,7 +248,6 @@ static void gz_deflate_create(INT32 args)
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
 
-  pop_n_elems(args);
 /*   mt_lock(& THIS->lock); */
   do {
     tmp=deflateInit2(&THIS->gz, THIS->level, Z_DEFLATED, wbits, 9, strategy );
@@ -210,6 +264,14 @@ static void gz_deflate_create(INT32 args)
   switch(tmp)
   {
   case Z_OK:
+    if (THIS->dict) {
+      int err;
+      err = deflateSetDictionary(&THIS->gz, (const Bytef*)THIS->dict->str,
+				 THIS->dict->len);
+      if (err != Z_OK) {
+	Pike_error("failed to set dictionary in deflate init.\n");
+      }
+    }
     return;
 
   case Z_VERSION_ERROR:
@@ -280,8 +342,8 @@ static int do_deflate(dynamic_buffer *buf,
    return ret;
 }
 
-void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
-		  int level, int strategy, int wbits)
+void low_zlibmod_pack(struct memobj data, dynamic_buffer *buf,
+                      int level, int strategy, int wbits)
 {
   struct zipper z;
   int ret;
@@ -305,12 +367,12 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
   if( wbits<0 ? (wbits<-15 || wbits>-8) : (wbits<8 || wbits>15 ) )
     Pike_error("Invalid window size value %d for pack.\n", wbits);
 
-  MEMSET(&z, 0, sizeof(z));
+  memset(&z, 0, sizeof(z));
   z.gz.zalloc = Z_NULL;
   z.gz.zfree = Z_NULL;
 
-  z.gz.next_in = (Bytef *)data->str;
-  z.gz.avail_in = (unsigned INT32)(data->len);
+  z.gz.next_in = (Bytef *)data.ptr;
+  z.gz.avail_in = (unsigned INT32)(data.len);
 
   do {
     ret = deflateInit2(&z.gz, level, Z_DEFLATED, wbits, 9, strategy);
@@ -356,22 +418,33 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
     Pike_error("Error while deflating data (%d).\n",ret);
 }
 
+void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
+                  int level, int strategy, int wbits)
+{
+  struct memobj lowdata;
+  lowdata.ptr = data->str;
+  lowdata.len = data->len;
+  lowdata.shift = data->size_shift;
+  low_zlibmod_pack(lowdata, buf, level, strategy, wbits);
+}
+
 /*! @endclass
  */
 
-/*! @decl string compress(string data, void|int(0..1) raw, @
- *!                       void|int(0..9) level, void|int strategy, @
- *!                       void|int(8..15) window_size)
+/*! @decl string(8bit) compress(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer data, @
+ *!                             void|int(0..1) raw, @
+ *!                             void|int(0..9) level, void|int strategy, @
+ *!                             void|int(8..15) window_size)
  *!
  *! Encodes and returns the input @[data] according to the deflate
- *! format defined in RFC 1951.
+ *! format defined in @rfc{1951@}.
  *!
  *! @param data
  *!   The data to be encoded.
  *!
  *! @param raw
  *!   If set, the data is encoded without the header and footer
- *!   defined in RFC 1950. Example of uses is the ZIP container
+ *!   defined in @rfc{1950@}. Example of uses is the ZIP container
  *!   format.
  *!
  *! @param level
@@ -410,10 +483,13 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
  *!   Defines the size of the LZ77 window from 256 bytes to 32768
  *!   bytes, expressed as 2^x.
  *!
+ *! @seealso
+ *!   @[deflate], @[inflate], @[uncompress]
  */
 static void gz_compress(INT32 args)
 {
-  struct pike_string *data;
+  struct svalue *data_arg;
+  struct memobj data;
   dynamic_buffer buf;
   ONERROR err;
 
@@ -422,8 +498,33 @@ static void gz_compress(INT32 args)
   int level = 8;
   int strategy = Z_DEFAULT_STRATEGY;
 
-  get_all_args("compress", args, "%n.%d%d%d%d", &data, &raw, &level, &strategy,
+  get_all_args("compress", args, "%*.%d%d%d%d", &data_arg, &raw, &level, &strategy,
                &wbits);
+
+  switch (TYPEOF(*data_arg))
+  {
+    case PIKE_T_STRING:
+    {
+      struct pike_string *s = data_arg->u.string;
+      data.ptr = (unsigned char*)s->str;
+      data.len = s->len;
+      data.shift = s->size_shift;
+      break;
+    }
+    case PIKE_T_OBJECT:
+    {
+      enum memobj_type t = get_memory_object_memory(data_arg->u.object,
+                                                    &data.ptr, &data.len,
+                                                    &data.shift);
+      if (t != MEMOBJ_NONE)
+        break;
+      // fall through
+    }
+    default:
+      SIMPLE_BAD_ARG_ERROR("compress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
+  }
+  if (data.shift)
+    Pike_error("Cannot input wide string to compress\n");
 
   if( !wbits )
     wbits = 15;
@@ -433,7 +534,7 @@ static void gz_compress(INT32 args)
 
   initialize_buf(&buf);
   SET_ONERROR(err, toss_buffer, &buf);
-  zlibmod_pack(data, &buf, level, strategy, wbits);
+  low_zlibmod_pack(data, &buf, level, strategy, wbits);
   UNSET_ONERROR(err);
 
   pop_n_elems(args);
@@ -443,7 +544,8 @@ static void gz_compress(INT32 args)
 /*! @class deflate
  */
 
-/*! @decl string deflate(string data, int|void flush)
+/*! @decl string(8bit) deflate(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer data, @
+ *!                            int|void flush)
  *!
  *! This function performs gzip style compression on a string @[data] and
  *! returns the packed data. Streaming can be done by calling this
@@ -461,15 +563,12 @@ static void gz_compress(INT32 args)
  *!     All input is packed and an 'end of data' marker is appended.
  *! @endint
  *!
- *! @note
- *!   Data must not be wide string.
- *!
  *! @seealso
  *! @[Gz.inflate->inflate()]
  */
 static void gz_deflate(INT32 args)
 {
-  struct pike_string *data;
+  struct memobj data;
   int flush, fail;
   struct zipper *this=THIS;
   dynamic_buffer buf;
@@ -488,18 +587,37 @@ static void gz_deflate(INT32 args)
   if(args<1)
     Pike_error("Too few arguments to gz_deflate->deflate()\n");
 
-  if(TYPEOF(sp[-args]) != T_STRING)
-    Pike_error("Bad argument 1 to gz_deflate->deflate()\n");
+  switch (TYPEOF(Pike_sp[-args]))
+  {
+    case PIKE_T_STRING:
+    {
+      struct pike_string *s = Pike_sp[-args].u.string;
+      data.ptr = (unsigned char*)s->str;
+      data.len = s->len;
+      data.shift = s->size_shift;
+      break;
+    }
+    case PIKE_T_OBJECT:
+    {
+      enum memobj_type t = get_memory_object_memory(Pike_sp[-args].u.object,
+                                                    &data.ptr, &data.len,
+                                                    &data.shift);
+      if (t != MEMOBJ_NONE)
+        break;
+      // fall through
+    }
+    default:
+      Pike_error("Bad argument 1 to gz_deflate->deflate()\n");
+  }
 
-  data=sp[-args].u.string;
-  if (data->size_shift)
+  if (data.shift)
     Pike_error("Cannot input wide string to gz_deflate->deflate()\n");
-  
+
   if(args>1)
   {
     if(TYPEOF(sp[1-args]) != T_INT)
       Pike_error("Bad argument 2 to gz_deflate->deflate()\n");
-    
+
     flush=sp[1-args].u.integer;
 
     switch(flush)
@@ -517,15 +635,15 @@ static void gz_deflate(INT32 args)
     flush=Z_FINISH;
   }
 
-  this->gz.next_in=(Bytef *)data->str;
-  this->gz.avail_in = DO_NOT_WARN((unsigned INT32)(data->len));
+  this->gz.next_in=(Bytef *)data.ptr;
+  this->gz.avail_in = (unsigned INT32)(data.len);
 
   initialize_buf(&buf);
 
   SET_ONERROR(err,toss_buffer,&buf);
   fail=do_deflate(&buf,this,flush);
   UNSET_ONERROR(err);
-  
+
   if(fail != Z_OK && fail != Z_STREAM_END)
   {
     toss_buffer(&buf);
@@ -544,10 +662,10 @@ static void gz_deflate(INT32 args)
 }
 
 
-static void init_gz_deflate(struct object *o)
+static void init_gz_deflate(struct object *UNUSED(o))
 {
   mt_init(& THIS->lock);
-  MEMSET(& THIS->gz, 0, sizeof(THIS->gz));
+  memset(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
@@ -556,11 +674,13 @@ static void init_gz_deflate(struct object *o)
   THIS->epilogue = NULL;
 }
 
-static void exit_gz_deflate(struct object *o)
+static void exit_gz_deflate(struct object *UNUSED(o))
 {
 /*   mt_lock(& THIS->lock); */
   deflateEnd(&THIS->gz);
   do_free_string(THIS->epilogue);
+  do_free_string(THIS->dict);
+  THIS->dict = NULL;
 /*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
@@ -572,18 +692,23 @@ static void exit_gz_deflate(struct object *o)
 
 /*! @class inflate
  *!
- *! Gz_deflate is a builtin program written in C. It interfaces the
- *! unpacking routines in the libz library.
+ *! This class interfaces with the uncompression routines in the libz library.
  *!
  *! @note
  *! This program is only available if libz was available and found when
  *! Pike was compiled.
  *!
  *! @seealso
- *!   @[deflate]
+ *!   @[deflate], @[compress], @[uncompress]
  */
 
 /*! @decl void create(int|void window_size)
+ *! @decl void create(mapping options)
+ *!
+ *! If called with a mapping as only argument, @expr{create@} accepts
+ *! the entries @expr{window_size@} (described below) and
+ *! @expr{dictionary@}, which is a string to be set as dictionary.
+ *!
  *! The window_size value is passed down to inflateInit2 in zlib.
  *!
  *! If the argument is negative, no header checks are done, and no
@@ -604,10 +729,17 @@ static void exit_gz_deflate(struct object *o)
  *! To decompress files compressed with level 9 compression, a 32Kb
  *! window size is needed. level 1 compression only requires a 256
  *! byte window.
+ *!
+ *! If the @[options] version is used you can specify your own dictionary in addition to the window size.
+ *!
+ *! @mapping options
+ *! @member string dictionary
+ *! @member int window_size
+ *! @endmapping
  */
 static void gz_inflate_create(INT32 args)
 {
-  int tmp;
+  int tmp, *tmp_p = &tmp;
   if(THIS->gz.state)
   {
 /*     mt_lock(& THIS->lock); */
@@ -619,21 +751,51 @@ static void gz_inflate_create(INT32 args)
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
-  if( args  && TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
+  if( args  && TYPEOF(Pike_sp[-1]) == PIKE_T_MAPPING)
   {
-    tmp=inflateInit2(& THIS->gz, Pike_sp[-1].u.integer);
+    struct mapping *m = Pike_sp[-1].u.mapping;
+    struct svalue *tmp;
+
+    if (GET_TYPE(STRING, "dictionary")) {
+      if (tmp->u.string->size_shift)
+	Pike_error("dictionary cannot be a wide string in "
+		   "gz_inflate->create().\n");
+      THIS->dict = tmp->u.string;
+      add_ref(THIS->dict);
+    }
+    if (GET_TYPE(INT, "window_size"))
+      *tmp_p=inflateInit2(& THIS->gz, tmp->u.integer);
+    else
+      *tmp_p=inflateInit( &THIS->gz );
   }
   else
   {
-    tmp=inflateInit( &THIS->gz );
+    if( args && TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
+    {
+      tmp=inflateInit2(& THIS->gz, Pike_sp[-1].u.integer);
+    }
+    else
+    {
+      tmp=inflateInit( &THIS->gz );
+    }
   }
-  pop_n_elems(args);
 
 /*    mt_lock(& THIS->lock);  */
 /*    mt_unlock(& THIS->lock); */
   switch(tmp)
   {
   case Z_OK:
+#if 0 /* this apparently works with newer zlibs only. */
+    if (THIS->dict) {
+      int err;
+
+      err = inflateSetDict(&THIS->gz, (const Bytef*)THIS->dict->str,
+			   THIS->dict->len);
+
+      if (err != Z_OK)
+	    Pike_error("inflateSetDict on startup failed.\n");
+    }
+#endif
     return;
 
   case Z_VERSION_ERROR:
@@ -692,7 +854,7 @@ static int do_inflate(dynamic_buffer *buf,
       fprintf(stderr,"INFLATE[%d]: mode=%d\n",fnord,
 	      this->gz.state ? *(int *)(this->gz.state) : -1);
 #endif
-	      
+
       ret=inflate(& this->gz, flush);
 #if 0
       fprintf(stderr,"Result [%d]: avail_out=%7d  avail_in=%7d  ret=%d\n",
@@ -706,6 +868,11 @@ static int do_inflate(dynamic_buffer *buf,
       low_make_buf_space(-((ptrdiff_t)this->gz.avail_out), buf);
 
       if(ret == Z_BUF_ERROR) ret=Z_OK;
+
+      if (ret == Z_NEED_DICT && this->dict)
+	ret = inflateSetDictionary(&this->gz,
+				   (const Bytef*)this->dict->str,
+				   this->dict->len);
 
       if(ret != Z_OK)
       {
@@ -721,17 +888,17 @@ static int do_inflate(dynamic_buffer *buf,
   return fail;
 }
 
-void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
+void low_zlibmod_unpack(struct memobj data, dynamic_buffer *buf, int raw)
 {
   struct zipper z;
   int ret;
 
-  MEMSET(&z, 0, sizeof(z));
+  memset(&z, 0, sizeof(z));
   z.gz.zalloc = Z_NULL;
   z.gz.zfree = Z_NULL;
 
-  z.gz.next_in=(Bytef *)data->str;
-  z.gz.avail_in = DO_NOT_WARN((unsigned INT32)(data->len));
+  z.gz.next_in=(Bytef *)data.ptr;
+  z.gz.avail_in = (unsigned INT32)(data.len);
 
   if( raw )
     ret = inflateInit2(&z.gz, -15);
@@ -771,26 +938,56 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
     Pike_error("Failed to inflate data (%d).\n", ret);
 }
 
+void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
+{
+  struct memobj lowdata;
+  lowdata.ptr = data->str;
+  lowdata.len = data->len;
+  lowdata.shift = data->size_shift;
+  low_zlibmod_unpack(lowdata, buf, raw);
+}
+
 /*! @endclass
 */
 
-/*! @decl string uncompress(string data, void|int(0..1) raw)
+/*! @decl string(8bit) uncompress(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer data, void|int(0..1) raw)
  *!
  *! Uncompresses the @[data] and returns it. The @[raw] parameter
  *! tells the decoder that the indata lacks the data header and footer
- *! defined in RFC 1950.
+ *! defined in @rfc{1950@}.
  */
 static void gz_uncompress(INT32 args)
 {
   dynamic_buffer buf;
+  struct memobj data;
   ONERROR err;
   int raw = 0;
 
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("uncompress", 1);
-  if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-    SIMPLE_BAD_ARG_ERROR("uncompress", 1, "string");
-  if (Pike_sp[-args].u.string->size_shift)
+  switch (TYPEOF(Pike_sp[-args]))
+  {
+    case PIKE_T_STRING:
+    {
+      struct pike_string *s = Pike_sp[-args].u.string;
+      data.ptr = (unsigned char*)s->str;
+      data.len = s->len;
+      data.shift = s->size_shift;
+      break;
+    }
+    case PIKE_T_OBJECT:
+    {
+      enum memobj_type t = get_memory_object_memory(Pike_sp[-args].u.object,
+                                                    &data.ptr, &data.len,
+                                                    &data.shift);
+      if (t != MEMOBJ_NONE)
+        break;
+      // fall through
+    }
+    default:
+      SIMPLE_BAD_ARG_ERROR("uncompress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
+  }
+  if (data.shift)
     Pike_error("Cannot input wide string to uncompress\n");
   if(args>1)
   {
@@ -802,7 +999,7 @@ static void gz_uncompress(INT32 args)
 
   initialize_buf(&buf);
   SET_ONERROR(err, toss_buffer, &buf);
-  zlibmod_unpack(Pike_sp[-args].u.string, &buf, raw);
+  low_zlibmod_unpack(data, &buf, raw);
   UNSET_ONERROR(err);
 
   pop_n_elems(args);
@@ -813,26 +1010,28 @@ static void gz_uncompress(INT32 args)
 /*! @class inflate
  */
 
-/*! @decl string inflate(string data)
+/*! @decl string(8bit) inflate(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer data)
  *!
  *! This function performs gzip style decompression. It can inflate
  *! a whole file at once or in blocks.
  *!
  *! @example
  *! // whole file
+ *! @code
  *! write(Gz.inflate()->inflate(stdin->read(0x7fffffff));
  *!
  *! // streaming (blocks)
  *! function inflate=Gz.inflate()->inflate;
  *! while(string s=stdin->read(8192))
  *!   write(inflate(s));
+ *! @endcode
  *!
  *! @seealso
- *! @[Gz.deflate->deflate()]
+ *! @[Gz.deflate->deflate()], @[Gz.decompress]
  */
 static void gz_inflate(INT32 args)
 {
-  struct pike_string *data;
+  struct memobj data;
   int fail;
   struct zipper *this=THIS;
   dynamic_buffer buf;
@@ -844,15 +1043,34 @@ static void gz_inflate(INT32 args)
   if(args<1)
     Pike_error("Too few arguments to gz_inflate->inflate()\n");
 
-  if(TYPEOF(sp[-args]) != T_STRING)
-    Pike_error("Bad argument 1 to gz_inflate->inflate()\n");
+  switch (TYPEOF(Pike_sp[-args]))
+  {
+    case PIKE_T_STRING:
+    {
+      struct pike_string *s = Pike_sp[-args].u.string;
+      data.ptr = (unsigned char*)s->str;
+      data.len = s->len;
+      data.shift = s->size_shift;
+      break;
+    }
+    case PIKE_T_OBJECT:
+    {
+      enum memobj_type t = get_memory_object_memory(Pike_sp[-args].u.object,
+                                                    &data.ptr, &data.len,
+                                                    &data.shift);
+      if (t != MEMOBJ_NONE)
+        break;
+      // fall through
+    }
+    default:
+      Pike_error("Bad argument 1 to gz_inflate->inflate()\n");
+  }
 
-  data=sp[-args].u.string;
-  if (data->size_shift)
+  if (data.shift)
     Pike_error("Cannot input wide string to gz_inflate->inflate()\n");
 
-  this->gz.next_in=(Bytef *)data->str;
-  this->gz.avail_in = DO_NOT_WARN((unsigned INT32)(data->len));
+  this->gz.next_in=(Bytef *)data.ptr;
+  this->gz.avail_in = (unsigned INT32)(data.len);
 
   initialize_buf(&buf);
 
@@ -889,15 +1107,9 @@ static void gz_inflate(INT32 args)
     else
       pop_stack();
   }
-
-  if(fail != Z_STREAM_END && fail!=Z_OK && !sp[-1].u.string->len)
-  {
-    pop_stack();
-    push_int(0);
-  }
 }
 
-/*! @decl string end_of_stream()
+/*! @decl string(8bit) end_of_stream()
  *!
  *! This function returns 0 if the end of stream marker has not yet
  *! been encountered, or a string (possibly empty) containg any extra data
@@ -915,10 +1127,10 @@ static void gz_end_of_stream(INT32 args)
     push_int(0);
 }
 
-static void init_gz_inflate(struct object *o)
+static void init_gz_inflate(struct object *UNUSED(o))
 {
   mt_init(& THIS->lock);
-  MEMSET(& THIS->gz, 0, sizeof(THIS->gz));
+  memset(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
@@ -927,11 +1139,13 @@ static void init_gz_inflate(struct object *o)
   THIS->epilogue = NULL;
 }
 
-static void exit_gz_inflate(struct object *o)
+static void exit_gz_inflate(struct object *UNUSED(o))
 {
 /*   mt_lock(& THIS->lock); */
   inflateEnd(& THIS->gz);
   do_free_string(THIS->epilogue);
+  do_free_string(THIS->dict);
+  THIS->dict = NULL;
 /*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
@@ -939,12 +1153,9 @@ static void exit_gz_inflate(struct object *o)
 /*! @endclass
  */
 
-/*! @decl int crc32(string data, void|int start_value)
+/*! @decl int crc32(string(8bit) data, void|int(0..) start_value)
  *!
  *!   This function calculates the standard ISO3309 Cyclic Redundancy Check.
- *!
- *! @note
- *!   Data must not be wide string.
  */
 static void gz_crc32(INT32 args)
 {
@@ -961,20 +1172,76 @@ static void gz_crc32(INT32 args)
 	 crc=(unsigned INT32)sp[1-args].u.integer;
    } else
       crc=0;
-	 
+
    crc=crc32(crc,
 	     (unsigned char*)sp[-args].u.string->str,
-	     DO_NOT_WARN((unsigned INT32)(sp[-args].u.string->len)));
+             (unsigned INT32)(sp[-args].u.string->len));
 
    pop_n_elems(args);
-   push_int((INT32)crc);
+   push_int64((INT64)crc);
+}
+
+/*! @decl int adler32(string(8bit) data, void|int(0..) start_value)
+ *!
+ *!   This function calculates the Adler-32 Cyclic Redundancy Check.
+ */
+static void gz_adler32(INT32 args)
+{
+   unsigned INT32 crc;
+   if (!args || TYPEOF(sp[-args]) != T_STRING)
+      Pike_error("Gz.adler32: illegal or missing argument 1 (expected string)\n");
+  if (sp[-args].u.string->size_shift)
+    Pike_error("Cannot input wide string to Gz.adler32\n");
+
+   if (args>1) {
+      if (TYPEOF(sp[1-args]) != T_INT)
+         Pike_error("Gz.adler32: illegal argument 2 (expected integer)\n");
+      else
+	 crc=(unsigned INT32)sp[1-args].u.integer;
+   } else
+      crc=1;
+
+   crc=adler32(crc,
+               (unsigned char*)sp[-args].u.string->str,
+               (unsigned INT32)(sp[-args].u.string->len));
+
+   pop_n_elems(args);
+   push_int64((INT64)crc);
+}
+
+static void gz_deflate_size( INT32 args )
+{
+#define L_CODES (256 + 29 + 1)
+#define HEAP_SIZE (2*L_CODES+1)
+
+    pop_n_elems(args);
+    /* estimation, from reading deflate.h. We could get a rather exact
+     * value if we saved memlevel + windowbits somewhere.
+     */
+    push_int(
+        /* internal_state structure, estimating alignment */
+        (47 * 4) + sizeof(void*)*16 + (4*HEAP_SIZE) + (4*121) + (4*(2*19+1)) + 16*2 +
+        (2*L_CODES+1)*5 +
+        /* d_buf <memlevel+6>, l_buf<memlevel+6>, window<windowbits>, hash<memlevel+7> */
+        16384*2 + 16384*2 + 65536*2 + 32768*2);
+}
+
+static void gz_inflate_size( INT32 args )
+{
+    pop_n_elems(args);
+    /* low-order estimation, from reading inflate.h */
+    push_int(
+        /* inflate_state structure. */
+        ((28 * sizeof(void*)) + (320 * 2) + (288 * 2)) +
+        /* codes[] */
+        (2048 * 4) +
+        /* window, really 1<<wbits, max wbits is 16. */
+        65536);
 }
 
 /*! @endmodule
  */
 #endif
-
-PIKE_MODULE_EXIT {}
 
 PIKE_MODULE_INIT
 {
@@ -985,11 +1252,12 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct zipper);
-  
+
   /* function(int|void,int|void:void) */
-  ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid),0);
-  /* function(string,int|void:string) */
-  ADD_FUNCTION("deflate",gz_deflate,tFunc(tStr tOr(tInt,tVoid),tStr),0);
+  ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tMapping, tOr(tInt,tVoid)) tOr(tInt,tVoid),tVoid),0);
+  /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,int|void:string(8bit)) */
+  ADD_FUNCTION("deflate",gz_deflate,tFunc(tOr(tStr8,tObj) tOr(tInt,tVoid),tStr8),0);
+  ADD_FUNCTION("_size_object", gz_deflate_size, tFunc(tVoid,tInt), 0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
@@ -999,7 +1267,7 @@ PIKE_MODULE_INIT
   add_integer_constant("FILTERED", Z_FILTERED,0);
   add_integer_constant("HUFFMAN_ONLY", Z_HUFFMAN_ONLY,0);
 
-  MEMSET(&z, 0, sizeof(z));
+  memset(&z, 0, sizeof(z));
 #ifdef Z_RLE
   if (deflateInit2(&z, 8, Z_DEFLATED, 9, 9, Z_RLE) == Z_OK) {
     have_rle = 1;
@@ -1022,13 +1290,14 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct zipper);
-  
+
   /* function(int|void:void) */
-  ADD_FUNCTION("create",gz_inflate_create,tFunc(tOr(tInt,tVoid),tVoid),0);
-  /* function(string:string) */
-  ADD_FUNCTION("inflate",gz_inflate,tFunc(tStr,tStr),0);
-  /* function(:string) */
-  ADD_FUNCTION("end_of_stream",gz_end_of_stream,tFunc(tNone,tStr),0);
+  ADD_FUNCTION("create",gz_inflate_create,tFunc(tOr(tMapping,tOr(tInt,tVoid)),tVoid),0);
+  /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer:string(8bit)) */
+  ADD_FUNCTION("inflate",gz_inflate,tFunc(tOr(tStr8,tObj),tStr8),0);
+  /* function(:string(8bit)) */
+  ADD_FUNCTION("end_of_stream",gz_end_of_stream,tFunc(tNone,tStr8),0);
+  ADD_FUNCTION("_size_object", gz_inflate_size, tFunc(tVoid,tInt), 0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
@@ -1058,23 +1327,25 @@ PIKE_MODULE_INIT
   }
 #endif
 
-  /* function(string,void|int:int) */
-  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr tOr(tVoid,tInt),tInt),0);
+  /* function(string(8bit),void|int:int) */
+  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr8 tOr(tVoid,tIntPos),tIntPos),0);
+  ADD_FUNCTION("adler32",gz_adler32,tFunc(tStr8 tOr(tVoid,tIntPos),tIntPos),0);
 
-  /* function(string,void|int(0..1),void|int,void|int:string) */
-  ADD_FUNCTION("compress",gz_compress,tFunc(tStr tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr),0);
+  /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,void|int(0..1),void|int,void|int:string(8bit)) */
+  ADD_FUNCTION("compress",gz_compress,tFunc(tOr(tStr8,tObj) tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr8),0);
 
-  /* function(string,void|int(0..1):string) */
-  ADD_FUNCTION("uncompress",gz_uncompress,tFunc(tStr tOr(tVoid,tInt01),tStr),0);
+  /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,void|int(0..1):string(8bit)) */
+  ADD_FUNCTION("uncompress",gz_uncompress,tFunc(tOr(tStr8,tObj) tOr(tVoid,tInt01),tStr8),0);
 
   PIKE_MODULE_EXPORT(Gz, crc32);
   PIKE_MODULE_EXPORT(Gz, zlibmod_pack);
   PIKE_MODULE_EXPORT(Gz, zlibmod_unpack);
 #else
-  if(!TEST_COMPAT(7,6))
-    HIDE_MODULE();
+  HIDE_MODULE();
 #endif
 }
+
+PIKE_MODULE_EXIT {}
 
 #if defined(HAVE___VTBL__9TYPE_INFO) || defined(HAVE___T_9__NOTHROW)
 /* Super-special kluge for IRIX 6.3 */

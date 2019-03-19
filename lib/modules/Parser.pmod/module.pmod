@@ -1,6 +1,3 @@
-//
-// $Id$
-
 #pike __REAL_VERSION__
 
 // inherit Parser._parser;
@@ -388,7 +385,7 @@ HTML html_entity_parser(void|int noerror)
 
 string parse_html_entities(string in,void|int noerror)
 {
-   return html_entity_parser(noerror)->finish(in)->read();
+   return string_filter_non_unicode(html_entity_parser(noerror)->finish(in)->read());
 }
 
 protected mapping(int:string) rev_html_entities;

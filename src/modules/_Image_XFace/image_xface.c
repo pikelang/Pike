@@ -2,21 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
 #include "module.h"
 #include "config.h"
-
-
-#if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
-#define USE_GMP2
-#else /* !HAVE_GMP2_GMP_H || !HAVE_LIBGMP2 */
-#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
-#define USE_GMP
-#endif /* HAVE_GMP_H && HAVE_LIBGMP */
-#endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
 
 #include "pike_macros.h"
 #include "object.h"
@@ -31,43 +21,22 @@
 #include "dynamic_buffer.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "pike_types.h"
 
-#if defined(USE_GMP) || defined(USE_GMP2)
+/* Includes <gmp.h> */
+#include "bignum.h"
 
 #include "../Image/image.h"
-
-/* Kludge for some compilers only defining __STDC__ in strict mode,
- * which leads to <gmp.h> using the wrong token concat method.
- */
-#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
-#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
-#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
-#undef _PROTO
-#define _PROTO(x) x
-
-#ifdef USE_GMP2
-#include <gmp2/gmp.h>
-#else /* !USE_GMP2 */
-#include <gmp.h>
-#endif /* USE_GMP2 */
-
-#endif /* USE_GMP || USE_GMP2 */
-
 
 #define sp Pike_sp
 
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
 #else
-extern struct program *image_program; 
+extern struct program *image_program;
 /* Image module is probably linked static too. */
 #endif
 
-
-#if defined(USE_GMP) || defined(USE_GMP2)
 
 /*
 **! module Image
@@ -249,7 +218,7 @@ static void pushg(mpz_t val, unsigned char *face, int s)
     pushg(val, face+s*49, s);
     pushg(val, face+s*48, s);
     pushg(val, face+s, s);
-    pushg(val, face, s);    
+    pushg(val, face, s);
   } else
     push(val, botprob,
 	 (face[0])|((face[1])<<1)|((face[48])<<2)|((face[49])<<3));
@@ -386,7 +355,7 @@ static struct pike_string *encodeface(rgb_group *in)
 /*
 **! method object decode(string data)
 **! method object decode(string data, mapping options)
-**! 	Decodes an X-Face image. 
+**! 	Decodes an X-Face image.
 **!
 **!     The <tt>options</tt> argument may be a mapping
 **!	containing zero options.
@@ -399,15 +368,15 @@ static void image_xface_decode(INT32 args)
   struct image *img;
 
   if(args<1 || TYPEOF(sp[-args]) != T_STRING)
-    Pike_error("Image.XFace.decode: Illegal arguments\n");
+    Pike_error("Illegal arguments\n");
 
   o=clone_object(image_program,0);
-  img=(struct image*)get_storage(o,image_program);
+  img=get_storage(o,image_program);
   if (!img) Pike_error("image no image? foo?\n"); /* should never happen */
   img->img=malloc(sizeof(rgb_group)*48*48);
   if (!img->img) {
     free_object(o);
-    Pike_error("Image.XFace.decode: out of memory\n");
+    Pike_error("Out of memory\n");
   }
   img->xsize=48;
   img->ysize=48;
@@ -420,7 +389,7 @@ static void image_xface_decode(INT32 args)
 /*
 **! method string encode(object img)
 **! method string encode(object img, mapping options)
-**! 	Encodes an X-Face image. 
+**! 	Encodes an X-Face image.
 **!
 **!     The <tt>img</tt> argument must be an image of the dimensions
 **!     48 by 48 pixels.  All non-black pixels will be considered white.
@@ -435,18 +404,17 @@ static void image_xface_encode(INT32 args)
   struct image *img=NULL;
   struct pike_string *res;
 
-  if (args<1 
+  if (args<1
       || TYPEOF(sp[-args]) != T_OBJECT
-      || !(img=(struct image*)
-	   get_storage(sp[-args].u.object,image_program))
+      || !(img=get_storage(sp[-args].u.object,image_program))
       || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
-    Pike_error("Image.XFace.encode: Illegal arguments\n");
-  
+    Pike_error("Illegal arguments\n");
+
   if (!img->img)
-    Pike_error("Image.XFace.encode: Given image is empty.\n");
-  
+    Pike_error("Given image is empty.\n");
+
   if (img->xsize != 48 || img->ysize != 48)
-    Pike_error("Image.XFace.encode: Wrong image dimensions (must be 48 by 48).\n");
+    Pike_error("Wrong image dimensions (must be 48 by 48).\n");
 
   res = encodeface(img->img);
 
@@ -462,7 +430,7 @@ static void image_xface_encode(INT32 args)
 /*
 **! method object decode_header(string data)
 **! method object decode_header(string data, mapping options)
-**! 	Decodes an X-Face image header. 
+**! 	Decodes an X-Face image header.
 **!
 **!	<pre>
 **!	    "xsize":int
@@ -484,24 +452,21 @@ static void image_xface_encode(INT32 args)
 static void image_xface_decode_header(INT32 args)
 {
   if(args<1 || TYPEOF(sp[-args]) != T_STRING)
-    Pike_error("Image.XFace.decode: Illegal arguments\n");
+    Pike_error("Illegal arguments\n");
 
   pop_n_elems(args);
 
-  push_text("type"); 
-  push_text("image/x-xface");
+  ref_push_string(literal_type_string);
+  push_static_text("image/x-xface");
 
-  push_text("xsize");
+  push_static_text("xsize");
   push_int(48);
 
-  push_text("ysize");
+  push_static_text("ysize");
   push_int(48);
 
   f_aggregate_mapping(6);
 }
-
-
-#endif /* USE_GMP || USE_GMP2 */
 
 
 /*** module init & exit & stuff *****************************************/
@@ -512,9 +477,8 @@ PIKE_MODULE_EXIT
 
 PIKE_MODULE_INIT
 {
-#if defined(USE_GMP) || defined(USE_GMP2)
 #ifdef DYNAMIC_MODULE
-   push_text("Image.Image");
+   push_static_text("Image.Image");
    SAFE_APPLY_MASTER("resolv",1);
    if (TYPEOF(sp[-1]) == T_PROGRAM)
       image_program=program_from_svalue(sp-1);
@@ -530,7 +494,4 @@ PIKE_MODULE_INIT
       /* function(object,void|mapping(string:int):string) */
   ADD_FUNCTION("encode",image_xface_encode,tFunc(tObj tOr(tVoid,tMap(tStr,tInt)),tStr),0);
    }
-
-#endif /* USE_GMP || USE_GMP2 */
-
 }

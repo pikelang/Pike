@@ -1,7 +1,5 @@
 # -*- Makefile -*-
 #
-# $Id$
-#
 # Start of make_variables.in
 #
 # Note: This template is actually used only for make_variables in the

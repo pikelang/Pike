@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -78,22 +77,22 @@ PIKECLASS FFT
       if (args<1)
 	SIMPLE_TOO_FEW_ARGS_ERROR("rFFT", 1);
 
-      if (Pike_sp[-args].type==PIKE_T_ARRAY)
+      if (TYPEOF(Pike_sp[-args]) == PIKE_T_ARRAY)
 	{
 	  struct array *a = Pike_sp[-args].u.array;
 	  int n = a->size;
-	  THIS->r_in = malloc(sizeof(fftw_real)*n);
+	  THIS->r_in = calloc(n, sizeof(fftw_real));
 
 	  for(i=0; i<n; i++)
 	    {
-	      if (a->item[i].type == PIKE_T_INT)
+	      if (TYPEOF(a->item[i]) == PIKE_T_INT)
 		THIS->r_in[i] = (fftw_real)a->item[i].u.integer;
 
-	      if (a->item[i].type == PIKE_T_FLOAT)
+	      if (TYPEOF(a->item[i]) == PIKE_T_FLOAT)
 		THIS->r_in[i] = (fftw_real)a->item[i].u.float_number;
 	    };
 
-	  THIS->r_out = malloc(sizeof(fftw_real)*n);
+	  THIS->r_out = calloc(n, sizeof(fftw_real));
 
 	  if (THIS->r_rc_plan_size != n)
 	    {
@@ -169,8 +168,8 @@ PIKECLASS FFT
       struct array *p;
       int n;
 
-      if (myarray->item[0].type!=PIKE_T_ARRAY ||
-	  myarray->item[1].type!=PIKE_T_ARRAY ||
+      if (TYPEOF(myarray->item[0]) != PIKE_T_ARRAY ||
+	  TYPEOF(myarray->item[1]) != PIKE_T_ARRAY ||
 	  myarray->item[0].u.array->size != myarray->item[1].u.array->size)
 	Pike_error("Argument error!\n");
 
@@ -178,30 +177,31 @@ PIKECLASS FFT
       p = myarray->item[1].u.array;
       n = r->size;
 
-      THIS->r_in = malloc(sizeof(fftw_real)*n);
-      memset(THIS->r_in,0,sizeof(fftw_real)*n);
+      free(THIS->r_in);
+      THIS->r_in = NULL; /* Needs to be NULL if xcalloc throws */
+      THIS->r_in = xcalloc(sizeof(fftw_real), n);
 
       for(i=0; i<=n/2; i++)
 	{
-	  if (r->item[i].type == PIKE_T_INT)
+	  if (TYPEOF(r->item[i]) == PIKE_T_INT)
 	    THIS->r_in[i] = (fftw_real)r->item[i].u.integer;
-	  else if (r->item[i].type == PIKE_T_FLOAT)
+	  else if (TYPEOF(r->item[i]) == PIKE_T_FLOAT)
 	    THIS->r_in[i] = (fftw_real)r->item[i].u.float_number;
 	  else Pike_error("Invalid type in array!\n");
 	}
 
       for(;i<n;i++, j++)
 	{
-	  if (p->item[j].type == PIKE_T_INT)
+	  if (TYPEOF(p->item[j]) == PIKE_T_INT)
 	    THIS->r_in[n-j] = (fftw_real)p->item[j].u.integer;
-	  else if (p->item[j].type == PIKE_T_FLOAT)
+	  else if (TYPEOF(p->item[j]) == PIKE_T_FLOAT)
 	    THIS->r_in[n-j] = (fftw_real)p->item[j].u.float_number;
 	  else Pike_error("Invalid type in array!\n");
 	}
 
-
-      THIS->r_out = malloc(sizeof(fftw_real)*n);
-      memset(THIS->r_out,0,sizeof(fftw_real)*n);
+      free(THIS->r_out);
+      THIS->r_out = NULL; /* Needs to be NULL if xcalloc throws */
+      THIS->r_out = xcalloc(sizeof(fftw_real), n);
 
       if (THIS->r_cr_plan_size!=n)
 	{
@@ -268,7 +268,6 @@ PIKECLASS FFT
 	THIS->r_rc_plan = rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, t);
 	THIS->r_cr_plan = rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, t);
       }
-    pop_n_elems(args);
   }
 
   INIT
@@ -284,10 +283,8 @@ PIKECLASS FFT
 	rfftw_destroy_plan(THIS->r_cr_plan);
       if (THIS->r_rc_plan_size>0)
 	rfftw_destroy_plan(THIS->r_rc_plan);
-      if (THIS->r_out!=NULL)
-	free(THIS->r_out);
-      if (THIS->r_out!=NULL)
-	free(THIS->r_in);
+      free(THIS->r_out);
+      free(THIS->r_in);
     }
 }
 

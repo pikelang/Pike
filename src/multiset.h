@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef MULTISET_H
@@ -18,10 +17,6 @@
 #include "svalue.h"
 #include "dmalloc.h"
 #include "rbtree.h"
-#include "block_alloc_h.h"
-
-/* Keep this defined so that code can test which multiset API is in use. */
-#define PIKE_NEW_MULTISETS
 
 /* Note: Don't access the ind svalue (or at least not its type field)
  * in the following directly, since the rbtree flags overlay that. Use
@@ -33,17 +28,10 @@ struct msnode_ind
   struct svalue ind;		/* Must be second. */
 };
 
-struct msnode_indval
-{
-  struct msnode_indval *prev, *next; /* Must be first. */
-  struct svalue ind;		/* Must be second. */
-  struct svalue val;
-};
-
 union msnode
 {
   struct msnode_ind i;
-  struct msnode_indval iv;
+  struct rb_node_hdr rb_hdr;
 };
 
 #define MULTISET_FLAG_MARKER	0x1000
@@ -54,9 +42,6 @@ union msnode
 struct multiset_data
 {
   INT32 refs, noval_refs;
-#ifdef PIKE_RUN_UNLOCKED
-#error multiset_data has not been adapted for running unlocked.
-#endif
   union msnode *root, *free_list;
   struct svalue cmp_less;
   INT32 size, allocsize;
@@ -68,7 +53,7 @@ struct multiset_data
 
 struct multiset
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  INT32 refs;
   struct multiset_data *msd;
   struct multiset *next, *prev;
   INT32 node_refs;
@@ -140,12 +125,8 @@ struct multiset
  *    remembered even after it has been deleted.
  */
 
-/* The following are compatible with PIKE_WEAK_INDICES and PIKE_WEAK_VALUES. */
 #define MULTISET_WEAK_INDICES	2
-#define MULTISET_WEAK_VALUES	4
-#define MULTISET_WEAK		6
-
-#define MULTISET_INDVAL		8
+#define MULTISET_WEAK		2
 
 extern struct multiset *first_multiset;
 extern struct multiset *gc_internal_multiset;
@@ -154,7 +135,7 @@ PMOD_EXPORT void multiset_clear_node_refs (struct multiset *l);
 
 #ifdef PIKE_DEBUG
 /* To get good type checking. */
-static INLINE union msnode *msnode_check (union msnode *x)
+static INLINE union msnode PIKE_UNUSED_ATTRIBUTE *msnode_check (union msnode *x)
   {return x;}
 PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
 #else
@@ -162,14 +143,13 @@ PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
 #endif
 
 #define MULTISET_STEP_FUNC(FUNC, NODE)					\
-  ((union msnode *) FUNC ((struct rb_node_hdr *) msnode_check (NODE)))
+  ((union msnode *) FUNC (&(msnode_check(NODE)->rb_hdr)))
 #define low_multiset_first(MSD) MULTISET_STEP_FUNC (rb_first, (MSD)->root)
 #define low_multiset_last(MSD) MULTISET_STEP_FUNC (rb_last, (MSD)->root)
 #define low_multiset_prev(NODE) MULTISET_STEP_FUNC (rb_prev, NODE)
 #define low_multiset_next(NODE) MULTISET_STEP_FUNC (rb_next, NODE)
 #define low_multiset_get_nth(MSD, N)					\
-  ((union msnode *) rb_get_nth ((struct rb_node_hdr *) (MSD)->root, (N)))
-union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);
+  ((union msnode *) rb_get_nth (&((MSD)->root->rb_hdr), (N)))
 
 #define low_assign_multiset_index_no_free(TO, NODE) do {		\
     struct svalue *_ms_index_to_ = (TO);				\
@@ -197,21 +177,13 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);
    &(VAR))
 
 #define low_get_multiset_value(MSD, NODE)				\
-  ((MSD)->flags & MULTISET_INDVAL ? &(NODE)->iv.val :			\
-   /* Caller better not try to change this. */				\
+  (/* Caller better not try to change this. */				\
    (struct svalue *) &svalue_int_one)
-#define low_set_multiset_value(MSD, NODE, VAL) do {			\
-    if ((MSD)->flags & MULTISET_INDVAL)					\
-      assign_svalue (&(NODE)->iv.val, VAL);				\
-  } while (0)
 
 #define OFF2MSNODE(MSD, OFFSET)						\
-  ((MSD)->flags & MULTISET_INDVAL ?					\
-   (union msnode *) (&(MSD)->nodes->iv + (OFFSET)) :			\
-   (union msnode *) (&(MSD)->nodes->i + (OFFSET)))
+  ((MSD)->nodes + (OFFSET))
 #define MSNODE2OFF(MSD, NODE)						\
-  ((MSD)->flags & MULTISET_INDVAL ?					\
-   &(NODE)->iv - &(MSD)->nodes->iv : &(NODE)->i - &(MSD)->nodes->i)
+  ((NODE) - (MSD)->nodes)
 
 PMOD_EXPORT INT32 multiset_sizeof (struct multiset *l);
 #define l_sizeof(L) multiset_sizeof (L)
@@ -219,7 +191,6 @@ PMOD_EXPORT INT32 multiset_sizeof (struct multiset *l);
 #define multiset_val_types(L) ((L)->msd->val_types)
 #define multiset_get_flags(L) ((L)->msd->flags)
 #define multiset_get_cmp_less(L) (&(L)->msd->cmp_less)
-#define multiset_indval(L) ((L)->msd->flags & MULTISET_INDVAL)
 
 /* This is somewhat faster than using multiset_sizeof just to
  * check whether or not the multiset has no elements at all. */
@@ -231,7 +202,8 @@ PMOD_EXPORT INT32 multiset_sizeof (struct multiset *l);
 #define free_multiset(M) do_free_multiset (M)
 #else
 
-void really_free_multiset (struct multiset *l);
+PMOD_EXPORT void really_free_multiset (struct multiset *l);
+PMOD_EXPORT void count_memory_in_multisets (size_t * n, size_t * s);
 
 #define free_multiset(L) do {						\
     struct multiset *_ms_ = (L);					\
@@ -261,8 +233,6 @@ PMOD_EXPORT union msnode *debug_check_msnode (
 #define access_msnode(L, NODEPOS) OFF2MSNODE ((L)->msd, (NODEPOS))
 
 #endif
-
-BLOCK_ALLOC_FILL_PAGES (multiset, 2);
 
 /* See rbtree.h for a description of the operations.
  *
@@ -309,11 +279,6 @@ BLOCK_ALLOC_FILL_PAGES (multiset, 2);
  */
 
 /* Returns the node offset, or -1 if no match was found. */
-PMOD_EXPORT ptrdiff_t multiset_find_eq (struct multiset *l, struct svalue *key);
-PMOD_EXPORT ptrdiff_t multiset_find_lt (struct multiset *l, struct svalue *key);
-PMOD_EXPORT ptrdiff_t multiset_find_gt (struct multiset *l, struct svalue *key);
-PMOD_EXPORT ptrdiff_t multiset_find_le (struct multiset *l, struct svalue *key);
-PMOD_EXPORT ptrdiff_t multiset_find_ge (struct multiset *l, struct svalue *key);
 PMOD_EXPORT ptrdiff_t multiset_first (struct multiset *l);
 PMOD_EXPORT ptrdiff_t multiset_last (struct multiset *l);
 PMOD_EXPORT ptrdiff_t multiset_prev (struct multiset *l, ptrdiff_t nodepos);
@@ -354,14 +319,8 @@ PMOD_EXPORT int msnode_is_deleted (struct multiset *l, ptrdiff_t nodepos);
    &(VAR))
 
 #define get_multiset_value(L, NODEPOS)					\
-  ((L)->msd->flags & MULTISET_INDVAL ?					\
-   &access_msnode ((L), (NODEPOS))->iv.val :				\
-   /* Caller better not try to change this. */				\
+  (/* Caller better not try to change this. */				\
    (struct svalue *) &svalue_int_one)
-#define set_multiset_value(L, NODEPOS, VAL) do {			\
-    if ((L)->msd->flags & MULTISET_INDVAL)				\
-      assign_svalue (&access_msnode ((L), (NODEPOS))->iv.val, VAL);	\
-  } while (0)
 /* Note: It's intentional that the value is silently ignored for
  * index-only multisets. */
 
@@ -382,42 +341,20 @@ PMOD_EXPORT struct multiset *real_allocate_multiset (int allocsize,
 PMOD_EXPORT void do_free_multiset (struct multiset *l);
 PMOD_EXPORT void multiset_fix_type_field (struct multiset *l);
 PMOD_EXPORT void multiset_set_flags (struct multiset *l, int flags);
-PMOD_EXPORT void multiset_set_cmp_less (struct multiset *l,
-					struct svalue *cmp_less);
 PMOD_EXPORT struct multiset *mkmultiset (struct array *indices);
-PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
-					   struct array *values,
-					   struct svalue *cmp_less);
 PMOD_EXPORT void multiset_insert (struct multiset *l,
 				  struct svalue *ind);
-PMOD_EXPORT ptrdiff_t multiset_insert_2 (struct multiset *l,
-					 struct svalue *ind,
-					 struct svalue *val,
-					 int replace);
-PMOD_EXPORT ptrdiff_t multiset_add (struct multiset *l,
-				    struct svalue *ind,
-				    struct svalue *val);
-PMOD_EXPORT ptrdiff_t multiset_add_after (struct multiset *l,
-					  ptrdiff_t node,
-					  struct svalue *ind,
-					  struct svalue *val);
 PMOD_EXPORT int multiset_delete (struct multiset *l,
 				 struct svalue *ind);
 PMOD_EXPORT int multiset_delete_2 (struct multiset *l,
 				   struct svalue *ind,
 				   struct svalue *removed_val);
-PMOD_EXPORT void multiset_delete_node (struct multiset *l,
-				       ptrdiff_t node);
-PMOD_EXPORT int multiset_member (struct multiset *l,
-				 struct svalue *key);
 PMOD_EXPORT struct svalue *multiset_lookup (struct multiset *l,
 					    struct svalue *key);
+PMOD_EXPORT int multiset_member (struct multiset *l,
+				 struct svalue *key);
 struct array *multiset_indices (struct multiset *l);
 struct array *multiset_values (struct multiset *l);
-struct array *multiset_range_indices (struct multiset *l,
-				      ptrdiff_t beg, ptrdiff_t end);
-struct array *multiset_range_values (struct multiset *l,
-				     ptrdiff_t beg, ptrdiff_t end);
 PMOD_EXPORT void check_multiset_for_destruct (struct multiset *l);
 PMOD_EXPORT struct multiset *copy_multiset (struct multiset *l);
 PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
@@ -427,7 +364,6 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *argp, int count);
 PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
 				  struct processing *p);
 void describe_multiset (struct multiset *l, struct processing *p, int indent);
-void simple_describe_multiset (struct multiset *l);
 int multiset_is_constant (struct multiset *l, struct processing *p);
 node *make_node_from_multiset (struct multiset *l);
 PMOD_EXPORT void f_aggregate_multiset (int args);
@@ -435,7 +371,7 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
 					    struct mapping *p);
 PMOD_EXPORT ptrdiff_t multiset_get_nth (struct multiset *l, size_t n);
 
-PMOD_EXPORT void visit_multiset (struct multiset *l, int action);
+PMOD_EXPORT void visit_multiset (struct multiset *l, int action, void *extra);
 unsigned gc_touch_all_multisets (void);
 void gc_check_all_multisets (void);
 void gc_mark_multiset_as_referenced (struct multiset *l);
@@ -445,9 +381,9 @@ void real_gc_cycle_check_multiset (struct multiset *l, int weak);
 void gc_cycle_check_all_multisets (void);
 size_t gc_free_all_unreferenced_multisets (void);
 
-#define visit_multiset_ref(L, REF_TYPE)				\
+#define visit_multiset_ref(L, REF_TYPE, EXTRA)			\
   visit_ref (pass_multiset (L), (REF_TYPE),			\
-	     (visit_thing_fn *) &visit_multiset, NULL)
+	     (visit_thing_fn *) &visit_multiset, (EXTRA))
 #define gc_cycle_check_multiset(X, WEAK) \
   gc_cycle_enqueue ((gc_cycle_check_cb *) real_gc_cycle_check_multiset, (X), (WEAK))
 

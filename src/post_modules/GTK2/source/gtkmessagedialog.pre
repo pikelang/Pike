@@ -26,7 +26,7 @@ void create(mapping(string:mixed)|int flags, ?int type, ?int buttons,
 //! Creates a new message dialog, which is a simple dialog with an icon
 //! indicating the dialog type (error, warning, etc) and some text the user
 //! may want to see.  When the user clicks a button a "response" signal is
-//! emitted with response IDs from CONST(GTK2.RESPONSE_).  See
+//! emitted with response IDs from CONST(GTK_RESPONSE_).  See
 //! GTK2.Dialog for more details.
 {
   pgtk2_verify_not_inited();

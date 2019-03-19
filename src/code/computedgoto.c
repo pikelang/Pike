@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -48,7 +47,7 @@ void ins_f_byte(unsigned int b)
   if(b>255)
     Pike_error("Instruction too big %d\n",b);
 #endif
-    
+
   add_to_program(fcode_to_opcode[b]);
 }
 

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifdef HAVE_CONFIG_H
@@ -54,7 +53,7 @@ static size_t rfc_charset_name_offs = 0;
 static struct array *double_custom_chars = NULL;
 static struct array *double_combiner_chars = NULL;
 
-struct std_cs_stor { 
+struct std_cs_stor {
   struct string_builder strbuild;
   struct pike_string *retain, *replace;
   struct svalue repcb;
@@ -124,9 +123,6 @@ static void f_create(INT32 args)
 
   if(args>1 && TYPEOF(sp[1-args]) == T_FUNCTION)
     assign_svalue(&s->repcb, &sp[1-args]);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_set_repcb(INT32 args)
@@ -138,8 +134,6 @@ static void f_set_repcb(INT32 args)
 
   if(args>0)
     assign_svalue(&s->repcb, &sp[-args]);
-
-  pop_n_elems(args);
 }
 
 static int call_repcb(struct svalue *repcb, p_wchar2 ch)
@@ -167,10 +161,10 @@ static void DECLSPEC(noreturn) transcode_error_va (
 
   if (encode) {
     if (TYPEOF(encode_err_prog) == T_INT) {
-      push_text ("Locale.Charset.EncodeError");
+      push_static_text ("Charset.EncodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
       if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
-	Pike_error ("Failed to resolve Locale.Charset.EncodeError "
+	Pike_error ("Failed to resolve Charset.EncodeError "
 		    "to a program - unable to throw an encode error.\n");
       move_svalue (&encode_err_prog, --sp);
     }
@@ -179,10 +173,10 @@ static void DECLSPEC(noreturn) transcode_error_va (
 
   else {
     if (TYPEOF(decode_err_prog) == T_INT) {
-      push_text ("Locale.Charset.DecodeError");
+      push_static_text ("Charset.DecodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
       if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
-	Pike_error ("Failed to resolve Locale.Charset.DecodeError "
+	Pike_error ("Failed to resolve Charset.DecodeError "
 		    "to a program - unable to throw an decode error.\n");
       move_svalue (&decode_err_prog, --sp);
     }
@@ -236,7 +230,7 @@ void DECLSPEC(noreturn) transcoder_error (
     } else if(rep != NULL)						\
       func(ctx, sb, rep, NULL, NULL);					\
     else								\
-      transcoder_error (str, pos, 1, "Unsupported character.\n");	\
+      transcoder_error (str, pos, 1, "Unsupported character %d.\n",ch);	\
   } while (0)
 
 #define MKREPCB(c) (TYPEOF(c) == T_FUNCTION? &(c):NULL)
@@ -302,7 +296,7 @@ static void f_drain_rfc1345(INT32 args)
 		s->strbuild.s->len--;
 		break;
 	      }
-	    } 
+	    }
 	  }
 	}
       }
@@ -354,6 +348,8 @@ static void f_drain_rfc1345(INT32 args)
 	}
       }
       break;
+    case 0: /* Dummy case to silence clang warning */
+      break;
     }
   }
   f_drain(args);
@@ -383,11 +379,11 @@ static void f_clear(INT32 args)
   }
 
   reset_string_builder(&s->strbuild);
-  
+
   push_object(this_object());
 }
 
-static void init_stor(struct object *o)
+static void init_stor(struct object *UNUSED(o))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
 
@@ -397,7 +393,7 @@ static void init_stor(struct object *o)
   init_string_builder(&s->strbuild,0);
 }
 
-static void exit_stor(struct object *o)
+static void exit_stor(struct object *UNUSED(o))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
 
@@ -421,7 +417,7 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(struct pike_string *,
   struct pike_string *str;
   ptrdiff_t l;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   if(str->size_shift>0)
     Pike_error("Can't feed on wide strings!\n");
@@ -715,7 +711,7 @@ static ptrdiff_t feed_utf7(struct pike_string *str, struct std_cs_stor *s)
 	--p;
       } else
 	if(l==0)
-	  break;	
+	  break;
     } else {
       while(l-->0 && *p!='+')
 	string_builder_putchar(&s->strbuild, *p++);
@@ -750,14 +746,14 @@ static void f_clear_utf7(INT32 args)
     (struct utf7_stor *)(fp->current_storage+utf7_stor_offs);
 
   f_clear(args);
-  
+
   u7->dat = 0;
   u7->surro = 0;
   u7->shift = 0;
   u7->datbit = 0;
 }
 
-static void utf7_init_stor(struct object *o)
+static void utf7_init_stor(struct object *UNUSED(o))
 {
   struct utf7_stor *u7 =
     (struct utf7_stor *)(fp->current_storage+utf7_stor_offs);
@@ -850,7 +846,7 @@ static ptrdiff_t feed_euc(struct pike_string *str, struct std_cs_stor *s)
       if(l<2)
 	return l;
       ch = (*p++)|0x80;
-      if(ch > 0xa0 && ch < 0xff)
+      if(map2 && (ch > 0xa0 && ch < 0xff))
 	ch = map2[ch-0xa1];
       else
 	ch = 0xfffd;
@@ -862,7 +858,7 @@ static ptrdiff_t feed_euc(struct pike_string *str, struct std_cs_stor *s)
 	return l;
       ch = (*p++)|0x80;
       lo = (*p++)|0x80;
-      if(ch > 0xa0 && ch < 0xff && lo > 0xa0 && lo < 0xff)
+      if(map3 && (ch > 0xa0 && ch < 0xff && lo > 0xa0 && lo < 0xff))
 	ch = map3[(ch-0xa1)*94+(lo-0xa1)];
       else
 	ch = 0xfffd;
@@ -910,18 +906,15 @@ static void f_create_euc(INT32 args)
   if(s->table == NULL)
     Pike_error("Unknown charset in EUCDec\n");
 
-  if(s->table == iso2022_9494[2]) {
-    s->table2 = iso2022_94[9];
-    s->table3 = iso2022_9494[4];
+  if(s->table == iso2022_9494[2]) {	/* jis-x0208 */
+    s->table2 = iso2022_94[9];		/* jis-x0201 */
+    s->table3 = iso2022_9494[4];	/* jis-x0212 */
   } else {
     s->table2 = NULL;
     s->table3 = NULL;
   }
 
   copy_shared_string (s->name, sp[1-args].u.string);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_create_multichar(INT32 args)
@@ -930,7 +923,7 @@ static void f_create_multichar(INT32 args)
   const struct multichar_def *def = multichar_map;
   struct multichar_stor *s = (struct multichar_stor *)(fp->current_storage + multichar_stor_offs);
 
-  get_all_args("create()", args, "%s", &name);
+  get_all_args("create", args, "%s", &name);
 
   while(1) {
     if(def->name == 0)
@@ -945,9 +938,6 @@ static void f_create_multichar(INT32 args)
   s->is_gb18030 = (def == multichar_map);
 
   copy_shared_string (s->name, sp[-args].u.string);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 #include "gb18030.h"
@@ -1166,10 +1156,6 @@ static void feed_gb18030e(struct std_cs_stor *cs, struct string_builder *sb,
       }
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Illegal shift size!\n");
-#endif
   }
 }
 
@@ -1178,7 +1164,7 @@ static void f_feed_gb18030e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_gb18030e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -1247,10 +1233,6 @@ static void feed_gbke(struct std_cs_stor *cs, struct string_builder *sb,
       }
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Illegal shift size!\n");
-#endif
   }
 }
 
@@ -1259,7 +1241,7 @@ static void f_feed_gbke(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_gbke(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -1276,8 +1258,7 @@ static void f_create_sjise(INT32 args)
   s->lo = 0x5c;
   s->hi = 0xfffd;
 
-  memset((s->revtab = (p_wchar1 *)xalloc((s->hi-s->lo)*sizeof(p_wchar1))), 0,
-	 (s->hi-s->lo)*sizeof(p_wchar1));
+  s->revtab = xcalloc(s->hi-s->lo, sizeof(p_wchar1));
 
   for(z=0, i=33; i<=126; i++, z+=94)
     for(j=33; j<=126; j++) {
@@ -1303,10 +1284,8 @@ static void f_create_sjise(INT32 args)
    * quirky inherit structure. /mast */
   REF_MAKE_CONST_STRING (*(struct pike_string **) (fp->current_storage +
 						   rfc_charset_name_offs),
-			 "shiftjis");
-
+                         "shiftjis");
   f_create(args);
-  push_int(0);
 }
 
 static void f_create_euce(INT32 args)
@@ -1345,8 +1324,7 @@ static void f_create_euce(INT32 args)
   s->lo = 128;
   s->hi = 128;
 
-  memset((s->revtab = (p_wchar1 *)xalloc((65536-s->lo)*sizeof(p_wchar1))), 0,
-	 (65536-s->lo)*sizeof(p_wchar1));
+  s->revtab = xcalloc(65536-s->lo, sizeof(p_wchar1));
 
   for(z=0, i=33; i<=126; i++, z+=94)
     for(j=33; j<=126; j++) {
@@ -1388,8 +1366,6 @@ static void f_create_euce(INT32 args)
 		      sp[1-args].u.string);
 
   f_create(args-2);
-  pop_stack();
-  push_int(0);
 }
 
 static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)
@@ -1403,8 +1379,7 @@ static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)
   pop_n_elems(allargs);
   push_object(o);
   s8 = (struct std8e_stor *)(sp[-1].u.object->storage+std8e_stor_offs);
-  memset((s8->revtab = (p_wchar0 *)xalloc((hi-lo)*sizeof(p_wchar0))), 0,
-	 (hi-lo)*sizeof(p_wchar0));
+  s8->revtab = xcalloc(hi-lo, sizeof(p_wchar0));
   s8->lo = lo;
   s8->hi = hi;
   s8->lowtrans = 0;
@@ -1422,8 +1397,7 @@ static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi
   pop_n_elems(allargs);
   push_object(o);
   s16 = (struct std16e_stor *)(sp[-1].u.object->storage+std16e_stor_offs);
-  memset((s16->revtab = (p_wchar1 *)xalloc((hi-lo)*sizeof(p_wchar1))), 0,
-	 (hi-lo)*sizeof(p_wchar1));
+  s16->revtab = xcalloc(hi-lo, sizeof(p_wchar1));
   s16->lo = lo;
   s16->hi = hi;
   s16->lowtrans = 0;
@@ -1463,15 +1437,15 @@ static void f_rfc1345(INT32 args)
 	default:
 	  Pike_fatal("Internal error in rfc1345\n");
 	}
-	
+
 	if(hi2) {
 	  struct std16e_stor *s16;
 	  s16 = push_std_16bite((args>2? args-2:0), args, lowtrans, 65536);
-	  
+
 	  s16->lowtrans = lowtrans;
 	  s16->lo = lowtrans;
 	  s16->hi = lowtrans;
-	  
+
 	  for(z=0, i=lo; i<=hi; i++, z+=(hi2-lo2+1))
 	    for(j=lo2; j<=hi2; j++)
 	      if((c=charset_map[mid].table[z+j-lo2])!=0xfffd && c>=s16->lo) {
@@ -1482,11 +1456,11 @@ static void f_rfc1345(INT32 args)
 	} else {
 	  struct std8e_stor *s8;
 	  s8 = push_std_8bite((args>2? args-2:0), args, lowtrans, 65536);
-	  
+
 	  s8->lowtrans = lowtrans;
 	  s8->lo = lowtrans;
 	  s8->hi = lowtrans;
-	  
+
 	  for(i=lo; i<=hi; i++)
 	    if((c=charset_map[mid].table[i-lo])!=0xfffd && c>=s8->lo) {
 	      s8->revtab[c-s8->lo]=i;
@@ -1785,7 +1759,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
         else {
 	  string_builder_putchar(sb, 0xc0|(c>>6));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  string_builder_putchar(sb, 0x80|(c&0x3f));
 	}
     }
     break;
@@ -1797,11 +1771,11 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c<=0x7ff) {
 	  string_builder_putchar(sb, 0xc0|(c>>6));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  string_builder_putchar(sb, 0x80|(c&0x3f));
 	} else if (c <= 0xd7ff || c >= 0xe000) {
       	  string_builder_putchar(sb, 0xe0|(c>>12));
 	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  string_builder_putchar(sb, 0x80|(c&0x3f));
 	} else
 	  REPLACE_CHAR(c, feed_utf8e, cs, str, p - STR1(str) - 1);
     }
@@ -1816,7 +1790,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	}
 	else if(c<=0x7ff) {
 	  string_builder_putchar(sb, 0xc0|(c>>6));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  string_builder_putchar(sb, 0x80|(c&0x3f));
 	  continue;
 	} else if(c<=0xffff) {
 	  if (c <= 0xd7ff || c >= 0xe000) {
@@ -1829,17 +1803,13 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, 0xf0|(c>>18));
 	  string_builder_putchar(sb, 0x80|((c>>12)&0x3f));
 	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  string_builder_putchar(sb, 0x80|(c&0x3f));
 	  continue;
 	}
 	REPLACE_CHAR(c, feed_utf8e, cs, str, p - STR2(str) - 1);
       }
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Illegal shift size!\n");
-#endif
   }
 }
 
@@ -1848,7 +1818,7 @@ static void f_feed_utf8e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_utf8e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -1972,10 +1942,6 @@ static void feed_utf_ebcdice(struct std_cs_stor *cs, struct string_builder *sb,
       }
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Illegal shift size!\n");
-#endif
   }
 }
 
@@ -1984,7 +1950,7 @@ static void f_feed_utf_ebcdice(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_utf_ebcdice(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -2007,7 +1973,7 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
         else {
 	  string_builder_putchar(sb, 0xa0|(c>>6));
-	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));
 	}
     }
     break;
@@ -2019,11 +1985,11 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c<=0x3ff) {
 	  string_builder_putchar(sb, 0xa0|(c>>6));
-	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));
 	} else {
       	  string_builder_putchar(sb, 0xb0|(c>>12));
 	  string_builder_putchar(sb, 0xc0|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));
 	}
     }
     break;
@@ -2035,20 +2001,16 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c<=0x3ff) {
 	  string_builder_putchar(sb, 0xa0|(c>>6));
-	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));
 	} else if(c<=0xffff) {
 	  string_builder_putchar(sb, 0xb0|(c>>12));
 	  string_builder_putchar(sb, 0xc0|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));
 	} else
 	  REPLACE_CHAR(c, feed_utf7_5e, cs, str, p - STR2(str) - 1);
       /* FIXME: Encode using surrogates? */
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Illegal shift size!\n");
-#endif
   }
 }
 
@@ -2057,7 +2019,7 @@ static void f_feed_utf7_5e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_utf7_5e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -2088,7 +2050,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	    }
 	    if(c>='+' && c<='z' && rev64t[c-'+']>=0)
 	      string_builder_putchar(sb, '-');
-	    shift = 0;  
+	    shift = 0;
 	  }
 	  string_builder_putchar(sb, c);
 	} else if(c==43 && !shift) {
@@ -2124,7 +2086,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	    }
 	    if(c>='+' && c<='z' && rev64t[c-'+']>=0)
 	      string_builder_putchar(sb, '-');
-	    shift = 0;  
+	    shift = 0;
 	  }
 	  string_builder_putchar(sb, c);
 	} else if(c==43 && !shift) {
@@ -2160,7 +2122,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	    }
 	    if(c>='+' && c<='z' && rev64t[c-'+']>=0)
 	      string_builder_putchar(sb, '-');
-	    shift = 0;  
+	    shift = 0;
 	  }
 	  string_builder_putchar(sb, c);
 	} else if(c==43 && !shift) {
@@ -2201,10 +2163,6 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	}
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Illegal shift size!\n");
-#endif
   }
 
   u7->dat = dat;
@@ -2217,7 +2175,7 @@ static void f_feed_utf7e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_utf7e((struct utf7_stor *)(((char*)fp->current_storage)+utf7_stor_offs),
 	     &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
@@ -2239,12 +2197,12 @@ static void f_drain_utf7e(INT32 args)
       u7->datbit=0;
     }
     string_builder_putchar(&cs->strbuild, '-');
-    u7->shift = 0;  
+    u7->shift = 0;
   }
   f_drain(args);
 }
 
-static void std_8bite_init_stor(struct object *o)
+static void std_8bite_init_stor(struct object *UNUSED(o))
 {
   struct std8e_stor *s8 =
     (struct std8e_stor *)(fp->current_storage+std8e_stor_offs);
@@ -2256,7 +2214,7 @@ static void std_8bite_init_stor(struct object *o)
   s8->zero_char = 0xfffd;
 }
 
-static void std_8bite_exit_stor(struct object *o)
+static void std_8bite_exit_stor(struct object *UNUSED(o))
 {
   struct std8e_stor *s8 =
     (struct std8e_stor *)(fp->current_storage+std8e_stor_offs);
@@ -2318,10 +2276,6 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR2(str) - 1);
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Illegal shift size!\n");
-#endif
   }
 }
 
@@ -2330,7 +2284,7 @@ static void f_feed_std8e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_std8e((struct std8e_stor *)(((char*)fp->current_storage)+
 				   std8e_stor_offs),
@@ -2340,7 +2294,7 @@ static void f_feed_std8e(INT32 args)
   push_object(this_object());
 }
 
-static void std_16bite_init_stor(struct object *o)
+static void std_16bite_init_stor(struct object *UNUSED(o))
 {
   struct std16e_stor *s16 =
     (struct std16e_stor *)(fp->current_storage+std16e_stor_offs);
@@ -2352,7 +2306,7 @@ static void std_16bite_init_stor(struct object *o)
   s16->sshift = 0;
 }
 
-static void std_16bite_exit_stor(struct object *o)
+static void std_16bite_exit_stor(struct object *UNUSED(o))
 {
   struct std16e_stor *s16 =
     (struct std16e_stor *)(fp->current_storage+std16e_stor_offs);
@@ -2427,10 +2381,6 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	  REPLACE_CHAR(c, feed_std16e, s16, str, p - STR2(str) - 1);
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Illegal shift size!\n");
-#endif
   }
 }
 
@@ -2439,7 +2389,7 @@ static void f_feed_std16e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_std16e((struct std16e_stor *)(((char*)fp->current_storage)+
 				     std16e_stor_offs),
@@ -2750,7 +2700,7 @@ PIKE_MODULE_EXIT
 
   if(std_9696_program != NULL)
     free_program(std_9696_program);
-  
+
   if(std_big5_program != NULL)
     free_program(std_big5_program);
 

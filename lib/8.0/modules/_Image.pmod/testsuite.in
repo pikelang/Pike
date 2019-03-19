@@ -1,0 +1,14 @@
+START_MARKER(8.0)
+
+dnl test_do([[
+dnl   string fn = "/tmp/pike_ts_img_"+getpid();
+dnl   Stdio.write_file(fn, Image.GIF.encode(Image.Image(47,11)));
+dnl   add_constant("PATH",fn);
+dnl ]])
+dnl test_equal( Image.Dims.get(PATH), ({ 47, 11, "gif" }) )
+dnl test_do([[
+dnl   rm(PATH);
+dnl   add_constant("PATH");
+dnl ]])
+
+END_MARKER

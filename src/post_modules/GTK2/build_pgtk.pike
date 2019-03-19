@@ -1,6 +1,5 @@
 #!/usr/bin/env pike
 
-
 string destination_dir = "";
 
 /* Start of relevant parts of program_id.h */
@@ -73,7 +72,6 @@ string make_c_string( string from )
      case '.':
      case 'a'..'z':
      case 'A'..'Z':
-     case 0300..0376: // 377 breaks some versions of gcc.
      case '_': case ' ':
        line += from[i..i];
        break;
@@ -232,7 +230,6 @@ class Function(Class parent,
      case "_index": names += ({ "`[]", "`->" }); break;
     }
 
-
     foreach( names, string n ) low_do_emit( n );
     return res;
   }
@@ -242,7 +239,6 @@ class Function(Class parent,
     if( c->c_name() == "" )
       return "pgtk";
     return "p"+c->c_name();
-    
   }
 
   string c_name( )
@@ -486,7 +482,7 @@ class Member( string name, Type type, int set,
     return fmt=='O' && sprintf("Member( %O /* %O */ )",name,type );
   }
 }
-  
+
 class Property( string name, Type type, int set,
 		string file, int line, Class parent )
 {
@@ -511,7 +507,7 @@ class Property( string name, Type type, int set,
 	  break;
 	default:
 	  break;
-      }     
+      }
       ret+=type->c_pass_to_function(0)+",NULL);\n  RETURN_THIS();\n}\n";
       return ret;
     } else {
@@ -537,10 +533,10 @@ class Type
 
   // Pushed variables aren't freed unless there's a "free" modifier.
   int pushed;
-  
+
   string name;
   string modifiers;
-  
+
   array _s_modifiers;
 
   string doc_type( )
@@ -553,7 +549,9 @@ class Type
     switch( name )
     {
       case "uint":
-	return "int"+optp;
+	return "int(0..)"+optp;
+      case "bool":
+	return "int(0..1)"+optp;
       case "array":
 	if( array_type )
 	  return "array("+array_type->doc_type()+")"+optp;
@@ -594,8 +592,12 @@ class Type
       optp = "|void";
     switch( name )
     {
+      case "Stdio.Buffer":
+         return "object";
       case "uint":
-	return "int"+optp;
+	return "int(0..)"+optp;
+      case "bool":
+        return "int(0..1)";
       case "array":
 	if( !nc && !c_inited )
 	  catch(c_init());
@@ -608,7 +610,7 @@ class Type
       case "mixed":
       case "mixed...":
       case "mapping":
-      case "float": 
+      case "float":
       case "object":
 	return name+optp;
       case "sprintf_format":
@@ -650,7 +652,7 @@ class Type
 	  else
 	    return (is ? classes[ name ]->pike_type(1) :
 		    (classes[ name ]->pike_type(0)+ "|zero"));
-	throw(sprintf("Unknown type %O", this_object()));
+	throw(sprintf("Unknown type %O", this));
 	return "mixed"+optp;
     }
   }
@@ -724,7 +726,7 @@ class Type
       _s_modifiers[i] = Array.flatten(_s_modifiers[i])->text*"";
     return _s_modifiers;
   }
-  
+
   protected string declare, fetch, pass, free, _push;
   protected int consumed = 1;
   protected int c_inited, c_declared;
@@ -741,8 +743,8 @@ class Type
      case "array":
        if( !array_size )
          throw(sprintf("Cannot push array of unknown size (%O)",
-                       this_object()));
-       if( !array_type )   throw("Cannot push array(mixed)"); 
+                       this));
+       if( !array_type )   throw("Cannot push array(mixed)");
        return
          "  {\n"
          "    int i;\n"
@@ -797,6 +799,7 @@ class Type
 
      case "int":
      case "uint":
+     case "bool":
        return sprintf( (_push = "  PGTK_PUSH_INT( %s );"), vv );
 
      case "float":
@@ -808,19 +811,18 @@ class Type
 	 return sprintf( (_push="  push_gobject( %s );"), vv );
        if( classes[name] )
          return classes[name]->push( vv );
-       throw(sprintf("Cannot push %O, %s is not a class", this_object(),
+       throw(sprintf("Cannot push %O, %s is not a class", this,
                      name));
     }
   }
 
-  
   protected void c_init()
   {
     c_inited = 1;
     if( subtypes )
     {
       throw(sprintf("Complex types cannot be handled automatically (%O)\n",
-                    this_object()));
+                    this));
     }
     if( Class c = classes[ name ] )
     {
@@ -841,7 +843,7 @@ class Type
        if( modifiers != "callback" )
        {
          throw(sprintf("Complex types cannot be handled automatically (%O)\n",
-                       this_object()));
+                       this));
        }
 
        /* Fallthrough */
@@ -861,6 +863,11 @@ class Type
        if( name == "uint")
          declare = " guint a%[0]d = 0;\n";
        fetch = "  a%[0]d = (gint)PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
+       pass =  "a%[0]d";
+       break;
+     case "bool":
+       declare = "  gboolean a%[0]d = 0;\n";
+       fetch = " a%[0]d = !!(gint)PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
        pass =  "a%[0]d";
        break;
 
@@ -967,7 +974,7 @@ class Type
          }
 //          if(!sub && !array_type)
 //          {
-//            throw( sprintf("Cannot push %O", this_object()) );
+//            throw( sprintf("Cannot push %O", this) );
 //          }
          declare = "  int _i%[0]d;\n  struct array *_a%[0]d = 0;\n  " +
                  "CONST "+sub+"\n";
@@ -1014,7 +1021,7 @@ class Type
         free = "  if( args > %[0]d ) {\n"+ indent(free,2) +" }\n";
     } else if( declare )
       declare = replace( declare, " = 0", "");
-      
+
     if( star )  pass = "*"+pass;
     if( amp )   pass = "&"+pass;
   }
@@ -1024,16 +1031,15 @@ class Type
     if( !c_inited )c_init();
     return consumed;
   }
-  string c_declare( int a, int|void const )
+  string c_declare( int a, int|void is_const )
   {
     if( !c_inited )c_init();
     c_declared = 1;
     if(!declare) return 0;
-    if( const &&
+    if( is_const &&
 	(!free || (pushed && !has_value (get_modifiers(), "free"))) )
       return sprintf( replace( declare, "CONST", "const" ), a );
     return sprintf( replace( declare, "CONST", "" ), a );
-           
   }
 
   string c_free( int a )
@@ -1088,7 +1094,7 @@ class Class( string name, string file, int line )
 
 
   int _class_id;
-  
+
   int class_id()
   {
     if( _class_id ) return _class_id;
@@ -1102,7 +1108,7 @@ class Class( string name, string file, int line )
 //     return "object("+(is?"is ":"implements ")+class_id()+")";
     return "object(implements "+class_id()+")";
   }
-  
+
   string doc_name()
   {
     return name;
@@ -1119,7 +1125,7 @@ class Class( string name, string file, int line )
   void create_default_sprintf( )
   {
     if( name == "_global" || mixin_for ) return 0;
-    add_function( Function(this_object(),
+    add_function( Function(this,
                            "_sprintf",
                            Type("string"), ({
                              Type("int"),
@@ -1137,7 +1143,7 @@ class Class( string name, string file, int line )
                            "Not normally called directly, used by sprintf()",
                            file, line ) );
   }
-  
+
   void create_init_exit( )
   {
     if( !sizeof(inherits) && name != "_global" )
@@ -1148,10 +1154,10 @@ class Class( string name, string file, int line )
 		   file) + init;
 
     if( sizeof(init) )
-      add_function( Function(this_object(), "_init", 0, ({}), ({}),
+      add_function( Function(this, "_init", 0, ({}), ({}),
 			     init, ({}), "", file, line ) );
     if( sizeof(exit) )
-      add_function( Function(this_object(), "_exit", 0, ({}), ({}),
+      add_function( Function(this, "_exit", 0, ({}), ({}),
 			     exit, ({}), "", file, line ) );
   }
 
@@ -1323,14 +1329,12 @@ class Class( string name, string file, int line )
     if( star)  x = "*("+x+")";
     return push( x );
   }
-  
 
   protected string _sprintf(int fmt)
   {
     return fmt=='O' && sprintf("Class( %O /* %d funcs. */ )",name,
 			       sizeof(functions)+sizeof(members)+
 			       sizeof(properties));
-	
   }
 
   class Ref( string file, int line, Class c ) {  }
@@ -1340,43 +1344,43 @@ class Class( string name, string file, int line )
   Class add_function( object f )
   {
     functions[ f->name ] = f;
-    return this_object();
+    return this;
   }
 
   Class add_signal( Signal s )
   {
     signals[ s->name ] = s;
-    return this_object();
+    return this;
   }
-  
+
   Class add_member( Member m )
   {
     members[ m->name ] = m;
-    return this_object();
+    return this;
   }
-  
+
   Class add_property( Property p )
   {
     properties[ p->name ] = p;
-    return this_object();
+    return this;
   }
 
   Class add_ref( string f, int l, Class c )
   {
     references += ({ Ref( f, l, c ) });
-    return this_object();
+    return this;
   }
 
   Class add_init( array code )
   {
     init += code;
-    return this_object();
+    return this;
   }
 
   Class add_exit( array code )
   {
     exit += code;
-    return this_object();
+    return this;
   }
 }
 
@@ -1505,6 +1509,7 @@ Type parse_type( mixed t )
    case "Stdio.File":
    case "Image.Image":
    case "Image.Color.Color":
+   case "bool":
      break;
    default:
      if( ty->name[0..0] != "G" && ty->name[0..0] != "P" && ty->name[0..0] != "A" )
@@ -1652,10 +1657,12 @@ string parse_pre_file( string file )
          current_unrequire += ({ (q->text*" ") });
          continue;
        case "endrequire":
+	 if (!sizeof(current_require)) SYNTAX("endrequire without matching require",token);
          current_require = current_require[ .. sizeof(current_require)-2 ];
          SEMICOLON("endrequire");
          continue;
        case "endnot":
+         if (!sizeof(current_unrequire)) SYNTAX("endnot without matching not",token);
          current_unrequire = current_unrequire[ .. sizeof(current_unrequire)-2 ];
          SEMICOLON("endnot");
          continue;
@@ -1734,7 +1741,7 @@ string parse_pre_file( string file )
          GOBBLE();
          SEMICOLON("DISABLED");
          break;
-         
+
        case "add_global":
          tk = GOBBLE();
          if( !arrayp(tk) || tk[0] != "{" || tk[-1] != "}" )
@@ -1742,7 +1749,7 @@ string parse_pre_file( string file )
          SEMICOLON("add_global");
          global_pre += tk[1..sizeof(tk)-2];
          break;
-         
+
        case "inherit":
          NEED_CLASS("inherit");
          tk = GOBBLE();
@@ -2021,7 +2028,7 @@ void main(int argc, array argv)
   add_constant( "Constant", Constant );
   add_constant( "COMPOSE", Parser.Pike.reconstitute_with_line_numbers );
   object output_plugin = ((program)output)( source_dir, destination_dir,
-                                            this_object() );
+                                            this );
 
   if (string files = Stdio.read_file (destination_dir + "/files_to_compile")) {
     int ok = 1;

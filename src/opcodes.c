@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -243,16 +242,16 @@ const struct keyword instr_names[]=
 #ifndef PIKE_PRECOMPILER
 #include "interpret_protos.h"
 #endif /* !PIKE_PRECOMPILER */
-{ "%=",			F_MOD_EQ,0 NULLADDR },	
-{ "&=",			F_AND_EQ,0 NULLADDR },	
-{ "|=",			F_OR_EQ,0 NULLADDR },	
-{ "*=",			F_MULT_EQ,0 NULLADDR },	
-{ "+=",			F_ADD_EQ,0 NULLADDR },	
-{ "-=",			F_SUB_EQ,0 NULLADDR },	
-{ "/=",			F_DIV_EQ,0 NULLADDR },	
-{ "<<=",		F_LSH_EQ,0 NULLADDR },	
-{ ">>=",		F_RSH_EQ,0 NULLADDR },	
-{ "^=",			F_XOR_EQ,0 NULLADDR },	
+{ "%=",			F_MOD_EQ,0 NULLADDR },
+{ "&=",			F_AND_EQ,0 NULLADDR },
+{ "|=",			F_OR_EQ,0 NULLADDR },
+{ "*=",			F_MULT_EQ,0 NULLADDR },
+{ "+=",			F_ADD_EQ,0 NULLADDR },
+{ "-=",			F_SUB_EQ,0 NULLADDR },
+{ "/=",			F_DIV_EQ,0 NULLADDR },
+{ "<<=",		F_LSH_EQ,0 NULLADDR },
+{ ">>=",		F_RSH_EQ,0 NULLADDR },
+{ "^=",			F_XOR_EQ,0 NULLADDR },
 { "arg+=1024",		F_PREFIX_1024,0 NULLADDR },
 { "arg+=256",		F_PREFIX_256,0 NULLADDR },
 { "arg+=256*X",		F_PREFIX_CHARX256,0 NULLADDR },
@@ -269,26 +268,46 @@ const struct keyword instr_names[]=
 { "arg+=512",		F_PREFIX2_512,0 NULLADDR },
 { "arg+=768",		F_PREFIX2_768,0 NULLADDR },
 
-{ "break",		F_BREAK,0 NULLADDR },	
-{ "case",		F_CASE,0 NULLADDR },	
-{ "continue",		F_CONTINUE,0 NULLADDR },	
-{ "default",		F_DEFAULT,0 NULLADDR },	
-{ "do-while",		F_DO,0 NULLADDR },	
+{ "[i..]",		F_RANGE_FROM_BEG, 0 NULLADDR },
+{ "[<i..]",		F_RANGE_FROM_END, 0 NULLADDR },
+{ "[..]",		F_RANGE_OPEN, 0 NULLADDR },
+
+{ "break",		F_BREAK,0 NULLADDR },
+{ "case",		F_CASE,0 NULLADDR },
+{ "case_range",		F_CASE_RANGE,0 NULLADDR },
+{ "continue",		F_CONTINUE,0 NULLADDR },
+{ "default",		F_DEFAULT,0 NULLADDR },
+{ "do-while",		F_DO,0 NULLADDR },
 { "for",		F_FOR,0 NULLADDR },
+
+{ "auto_map",		F_AUTO_MAP, 0 NULLADDR },
+{ "auto_map_marker",	F_AUTO_MAP_MARKER, 0 NULLADDR },
+{ "volatile_return",	F_VOLATILE_RETURN, 0 NULLADDR },
+{ "version",		F_VERSION, 0 NULLADDR },
 
 { "pointer",		F_POINTER, I_ISPOINTER NULLADDR },
 { "data",		F_DATA, I_DATA NULLADDR },
 { "byte",		F_BYTE, I_DATA NULLADDR },
-{ "lvalue_list",	F_LVALUE_LIST,0 NULLADDR },	
+{ "lvalue_list",	F_LVALUE_LIST,0 NULLADDR },
+{ "arg_list",		F_ARG_LIST, 0 NULLADDR },
+{ "comma_expr",		F_COMMA_EXPR, 0 NULLADDR },
+{ "val_lval",		F_VAL_LVAL, 0 NULLADDR },
+{ "multi_assign",	F_MULTI_ASSIGN, 0 NULLADDR },
+{ "assign_self",	F_ASSIGN_SELF, 0 NULLADDR },
 { "label",		F_LABEL,I_HASARG NULLADDR },
+{ "stmt_label",		F_NORMAL_STMT_LABEL,I_HASARG NULLADDR },
+{ "custom_label",	F_CUSTOM_STMT_LABEL,I_HASARG NULLADDR },
 { "align",		F_ALIGN, I_HASARG NULLADDR },
 { "nop",                F_NOP,0 NULLADDR },
 { "entry",		F_ENTRY,0 NULLADDR },
 { "filename", 		F_FILENAME, 0 NULLADDR },
 { "line",		F_LINE, 0 NULLADDR },
 { "get/set",		F_GET_SET, 0 NULLADDR },
+{ "call_efun",		F_EFUN_CALL, 0 NULLADDR },
 { "function start",     F_START_FUNCTION,0 NULLADDR },
 { "notreached!",        F_NOTREACHED, 0 NULLADDR },
+{ "opcode_max",		F_MAX_OPCODE, 0 NULLADDR },
+{ "instr_max",		F_MAX_INSTR, 0 NULLADDR },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];
@@ -296,10 +315,11 @@ struct instr instrs[F_MAX_INSTR - F_OFFSET];
 size_t instrs_checksum;
 #endif /* PIKE_USE_MACHINE_CODE */
 
+#ifdef PIKE_DEBUG
 const char *low_get_f_name(int n, struct program *p)
 {
   static char buf[30];
-  
+
   if (n<F_MAX_OPCODE)
   {
     if ((n >= F_OFFSET) && instrs[n-F_OFFSET].name)
@@ -366,6 +386,7 @@ const char *get_token_name(int n)
     return buf;
   }
 }
+#endif /* PIKE_DEBUG */
 
 void init_opcodes(void)
 {
@@ -380,7 +401,7 @@ void init_opcodes(void)
   for(i=0; i<NELEM(instr_names);i++)
   {
 #ifdef PIKE_DEBUG
-    if(instr_names[i].token >= F_MAX_INSTR)
+    if(instr_names[i].token > F_MAX_INSTR)
     {
       fprintf(stderr,"Error in instr_names[%u]\n\n",i);
       fatal_later++;
@@ -393,7 +414,9 @@ void init_opcodes(void)
     }
 #endif
 
+#ifdef PIKE_DEBUG
     instrs[instr_names[i].token - F_OFFSET].name = instr_names[i].word;
+#endif
     instrs[instr_names[i].token - F_OFFSET].flags=instr_names[i].flags;
 #ifdef PIKE_USE_MACHINE_CODE
     instrs[instr_names[i].token - F_OFFSET].address=instr_names[i].address;
@@ -407,7 +430,7 @@ void init_opcodes(void)
 #endif /* PIKE_USE_MACHINE_CODE */
 
 #ifdef PIKE_DEBUG
-  for(i=1; i<F_MAX_OPCODE-F_OFFSET;i++)
+  for(i=1; i<F_MAX_INSTR-F_OFFSET;i++)
   {
     if(!instrs[i].name)
     {

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include <global.h>
@@ -13,12 +12,7 @@
 #include <fdlib.h>
 
 #ifdef _REENTRANT
-#include <stdlib.h>
 #include <errno.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -83,6 +77,7 @@ int aap_get_header(struct args *req, char *header, int operation, void *res)
        /* in[os..i-1] == the header */
        if(i-os == hl)
        {
+	 /* Inlined strncasecmp(header, in + os, hl). */
 	 ptrdiff_t j;
 	 for(j=0;j<hl; j++)
 	   if((in[os+j]&95) != (header[j]&95))
@@ -108,11 +103,13 @@ int aap_get_header(struct args *req, char *header, int operation, void *res)
 	   }
 	 }
        }
+       break;
+
      case '\r':
      case '\n':
        os = i+1;
     }
   }
   return 0;
-} 
+}
 #endif

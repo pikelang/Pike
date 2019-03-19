@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Create strapping code for a list of symbols in pike.so,
  * and the pike headerfiles.
  *

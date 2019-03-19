@@ -176,7 +176,7 @@ this_program set_ACA_K4_key(string key1, string key2, void|int offset,
 }
 
 //! Encrypts the message @[m].
-string encrypt(string m) {
+string(0..255) encrypt(string(0..255) m) {
   if(is_expandable || null_fq) {
     String.Buffer ret = String.Buffer(sizeof(m));
     foreach(m/1, string c) {
@@ -196,7 +196,7 @@ string encrypt(string m) {
 }
 
 //! Decrypts the cryptogram @[c].
-string decrypt(string c) {
+string(0..255) decrypt(string(0..255) c) {
   c = (c/1 - null_chars)*"";
   return replace(c, dec_key);
 }
@@ -226,7 +226,7 @@ this_program set_decrypt_key(mapping(string:string|array(string)) key) {
   return set_key(key);
 }
 
-string crypt(string x) {
+string(0..255) crypt(string(0..255) x) {
   if(mode)
     return decrypt(x);
   else

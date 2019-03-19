@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -65,13 +64,13 @@ static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
    else
    {
 #ifdef GIF_DEBUG
-      fprintf(stderr,"codeno=%x lastout=%x outbit=%d codebits=%d\n",
+      fprintf(stderr,"codeno=%x lastout=%lx outbit=%ld codebits=%ld\n",
 	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
 #endif
       lzw->lastout=(lzw->lastout<<lzw->codebits)|codeno;
       lzw->outbit+=lzw->codebits;
 #ifdef GIF_DEBUG
-      fprintf(stderr,"-> codeno=%x lastout=%x outbit=%d codebits=%d\n",
+      fprintf(stderr,"-> codeno=%x lastout=%lx outbit=%ld codebits=%ld\n",
 	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
 #endif
       while (lzw->outbit>8)
@@ -80,7 +79,8 @@ static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
 	    (unsigned char)(lzw->lastout>>(lzw->outbit-8));
 	 lzw->outbit-=8;
 #ifdef GIF_DEBUG
-      fprintf(stderr,"(shiftout) codeno=%x lastout=%x outbit=%d codebits=%d\n",
+      fprintf(stderr,
+              "(shiftout) codeno=%x lastout=%lx outbit=%ld codebits=%ld\n",
 	      codeno,lzw->lastout,lzw->outbit,lzw->codebits);
 #endif
       }
@@ -129,7 +129,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
       for (i=0; i<(1L<<lzw->bits); i++)
 	 lzw->code[i].firstchild=LZWCNULL;
       lzw->codes=(1L<<lzw->bits)+2;
-      
+
       /* output clearcode, 1000... (bits) */
       lzw_output(lzw, (lzwcode_t)(1L<<lzw->bits));
 
@@ -146,7 +146,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
    lzw_output(lzw,lzw->current);
 
    lno=lzw->code[lzw->current].firstchild;
-   lno2 = DO_NOT_WARN((lzwcode_t)lzw->codes);
+   lno2 = (lzwcode_t)lzw->codes;
    l=lzw->code+lno2;
    l->next=lno;
    l->firstchild=LZWCNULL;
@@ -154,7 +154,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
    lzw->code[lzw->current].firstchild=lno2;
 
    lzw->codes++;
-   if (lzw->codes+lzw->earlychange>(unsigned long)(1L<<lzw->codebits)) 
+   if (lzw->codes+lzw->earlychange>(unsigned long)(1L<<lzw->codebits))
       lzw->codebits++;
 
    lzw->current=c;
@@ -172,7 +172,7 @@ void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
    lzw->codes=(1L<<bits)+2;
    lzw->bits=bits;
    lzw->codebits=bits+1;
-   lzw->code=(struct gif_lzwc*) malloc(sizeof(struct gif_lzwc)*4096);
+   lzw->code=malloc(sizeof(struct gif_lzwc)*4096);
 
    if (!lzw->code) { lzw->broken=1; return; }
 
@@ -202,10 +202,10 @@ void image_gif_lzw_finish(struct gif_lzw *lzw)
    if (lzw->outbit)
    {
       if (lzw->reversebits)
-	 lzw->out[lzw->outpos++] = DO_NOT_WARN((lzwcode_t)(lzw->lastout<<
-							   (8-lzw->outbit)));
+         lzw->out[lzw->outpos++] = (lzwcode_t)(lzw->lastout<<
+                                               (8-lzw->outbit));
       else
-	 lzw->out[lzw->outpos++] = DO_NOT_WARN((lzwcode_t)lzw->lastout);
+         lzw->out[lzw->outpos++] = (lzwcode_t)lzw->lastout;
    }
 }
 

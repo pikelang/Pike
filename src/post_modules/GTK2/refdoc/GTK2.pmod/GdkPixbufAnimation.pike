@@ -4,7 +4,7 @@
 
 inherit G.Object;
 
-static GDK2.PixbufAnimation create( string filename );
+protected GDK2.PixbufAnimation create( string filename );
 //! Create a new PixbufAnimation.
 //!
 //!

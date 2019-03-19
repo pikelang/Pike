@@ -2,7 +2,7 @@
 // to modify after the local setup.
 
 // Note that you should modify this file
-// in pike's source location 
+// in pike's source location
 // (.../lib/modules/Calendar.pmod/localization.pmod)
 // and reinstall, so the byte-compiling gets correct.
 
@@ -30,7 +30,7 @@ string default_calendar="ISO";
 // used unless you mean it - that summer time ruleset
 // might not be what you want.
 
-string default_timezone="locale"; 
+string default_timezone="locale";
 // string default_timezone="Europe/Stockholm";
 
 
@@ -39,10 +39,4 @@ string default_timezone="locale";
 // not be modified, since more then one program will
 // assume the language is english (=ISO).
 
-string default_language="ISO"; 
-
-
-
-
-
-
+string default_language="ISO";

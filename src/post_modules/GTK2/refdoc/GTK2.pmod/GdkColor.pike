@@ -11,7 +11,7 @@ int blue( );
 //!
 //!
 
-static GDK2.Color create( object|int color_or_r, int|void g, int|void b );
+protected GDK2.Color create( object|int color_or_r, int|void g, int|void b );
 //! r g and b are in the range 0 to 255, inclusive.
 //! If color is specified, it should be an Image.Color object, and the
 //! only argument.

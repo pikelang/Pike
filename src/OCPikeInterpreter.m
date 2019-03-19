@@ -1,57 +1,92 @@
 #import "OCPikeInterpreter.h"
 #import <Foundation/NSString.h>
 #import <Foundation/NSBundle.h>
+#import <Foundation/NSException.h>
 
-static OCPikeInterpreter * si = NULL;
+PMOD_EXPORT OCPikeInterpreter * sharedInstance = nil;
+
+struct Pike_interpreter_struct * Pike_interpreter_pointer;
  
 static void set_master(const char *file)
 {
   if (strlen(file) >= MAXPATHLEN*2 ) {
-    fprintf(stderr, "Too long path to master: \"%s\" (limit:%"PRINTPTRDIFFT"d)\n",
+    fprintf(stderr, "Too long path to master: \"%s\" (limit:%d)\n",
             file, MAXPATHLEN*2 );
     exit(1);
   }
 //  strcpy(master_location, file);
 }
 
-
-static void set_default_master(void)
+ void set_default_master(void)
 {
 }
 
-
-
 @implementation OCPikeInterpreter
-- (id) init 
-{	
-  self = [super init];
-  if(self) 
-  {
-    [self retain];
-    master_location = NULL;
-  }
-
-  return self;
-}
 
 +(OCPikeInterpreter *)sharedInterpreter
 {
-  if ( si == nil )
-    si = [[self alloc] init];
+  @synchronized(self)
+  {
+    if ( sharedInstance == nil )
+      [[self alloc] init];
 	
-  return si;
+  }
+  return sharedInstance;
 }
 
++ (id)allocWithZone:(NSZone *)zone
+{
+  @synchronized(self) {
+    if (sharedInstance == nil) {
+      sharedInstance = [super allocWithZone:zone];
+      return sharedInstance;
+    }
+  }
+ 
+  return nil;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+  return self;
+}
+
+- (id)retain
+{
+  return self;
+}
+ 
+- (void)release
+{
+  // do nothing
+}
+ 
+- (id)autorelease
+{
+  return self;
+}
+ 
+- (NSUInteger)retainCount
+{
+  return NSUIntegerMax; // This is sooo not zero
+}
+
+- (struct Pike_interpreter_struct *) getInterpreter
+{
+  return pike_get_interpreter_pointer();
+}
 
 - (void)setMaster:(id) master
 {
+	
   if ([master length] >= MAXPATHLEN*2 ) 
   {
-    fprintf(stderr, "Too long path to master: \"%s\" (limit:%"PRINTPTRDIFFT"d)\n",
+    fprintf(stderr, "Too long path to master: \"%s\" (limit:%d)\n",
             [master UTF8String], MAXPATHLEN*2 );
 	    exit(1);
    }
    master_location = [master copy];
+
 }
 
 void shared_interpreter_cleanup(int exitcode)
@@ -65,37 +100,38 @@ void shared_interpreter_cleanup(int exitcode)
    int num = 0;
    struct object *m;
    char ** argv = NULL;
-	
-   id ml;
+   char * master;	
    id this_bundle;
-   this_bundle = [NSBundle bundleForClass: [self class]];
 
+   objc_registerThreadWithCollector();
+
+   this_bundle = [NSBundle bundleForClass: [self class]];
    if(!this_bundle || this_bundle == nil)
    {
-	NSException * exception = [NSException exceptionWithName:@"Error finding bundle!" reason:@"bundleForClass: returned nil." userInfo: nil];
-	@throw exception;
+	   NSException * exception = [NSException exceptionWithName:@"Error finding bundle!" reason:@"bundleForClass: returned nil." userInfo: nil];
+  	 @throw exception;
    }
+
    if(!master_location)
    {
-     ml = [[NSMutableString alloc] initWithCapacity: 200];
-     [ml setString: [this_bundle resourcePath]];
-     [ml appendString: @"/lib/master.pike"];
+     id masterPath;
+     masterPath = [[this_bundle resourcePath] stringByAppendingString: @"/lib/master.pike"];     
+     [self setMaster: masterPath];   
+   }
 
-     [self setMaster: ml];
-		
-     [ml release];
-    }
-
-    init_pike(argv, [master_location UTF8String]);
+    master = (char *)[master_location UTF8String];
+    init_pike(argv, master);
     init_pike_runtime(shared_interpreter_cleanup);
 
+    Pike_interpreter_pointer = get_interpreter_pointer();
+
     add_pike_string_constant("__embedded_resource_directory",
-				[[this_bundle resourcePath] UTF8String],
-				strlen([[this_bundle resourcePath] UTF8String]));
-								
+        master,
+        strlen(master));
+
     add_pike_string_constant("__master_cookie",
-	                           [master_location UTF8String], 
-				strlen([master_location UTF8String]));
+                             master,
+                            strlen(master));
 
     if(SETJMP(jmploc))
     {
@@ -116,8 +152,7 @@ void shared_interpreter_cleanup(int exitcode)
 
 		move_svalue (Pike_sp++, &throw_value);
 		mark_free_svalue (&throw_value);
-	        err = (struct generic_error_struct *)
-	          get_storage (Pike_sp[-1].u.object, generic_error_program);
+	        err = get_storage (Pike_sp[-1].u.object, generic_error_program);
 
 	        t.type = PIKE_T_STRING;
 	        t.u.string = err->error_message;
@@ -137,15 +172,6 @@ void shared_interpreter_cleanup(int exitcode)
 
 	    if ((m = load_pike_master())) {
 	      back.severity=THROW_EXIT;
-//	      pike_push_argv(argc, argv);
-#if 0
-	      // Ok, I've no idea how this is supposed to work since I
-	      // can't find the actual _main call anywhere, but it
-	      // does not expect to receive an environment array
-	      // anymore. /mast
-	      pike_push_env();
-#endif
-
 		}
    return YES;
 }
@@ -162,7 +188,7 @@ void shared_interpreter_cleanup(int exitcode)
 - (struct program *)compileString: (id)code
 {
   struct program * p = NULL;
-  push_text([code UTF8String]);
+  push_static_text([code UTF8String]);
   f_utf8_to_string(1);
   f_compile(1);
   if(Pike_sp[-1].type==T_PROGRAM)
@@ -181,17 +207,16 @@ void shared_interpreter_cleanup(int exitcode)
     struct program * p;
     struct svalue * s;
     struct svalue * res;
-    id desc;
+    id desc, c;
 
-    id c = [[NSMutableString alloc] initWithCapacity: 200];
+    objc_registerThreadWithCollector();
+    c = [[NSMutableString alloc] initWithCapacity: 200];
 
     [c setString: @"mixed foo(){ return("];
     [c appendString: expression];
     [c appendString: @");}"];
 
     p = [self compileString: c];
-
-    [c release];
 
     if(!p) return NULL;
  
@@ -229,20 +254,24 @@ void shared_interpreter_cleanup(int exitcode)
 
 /*
 
-	following is a simple example of how to use OCPikeInterpreter to embed a pike interpreter into your application.
+	following is a simple example of how to use OCPikeInterpreter to embed a pike interpreter into your application,
+	this code relies on GC present in Mac OSX 10.5 +
 
          make framework
          cp -rf Pike.framework /Library/Frameworks
 
-         gcc -I . -c test.m -o test.o
+         gcc -I . -fobjc-gc -c test.m -o test.o
          gcc test.o -o test -framework Pike  -framework Foundation
 
 */
 
 /*
+
 #import <Pike/OCPikeInterpreter.h>
 #import <Foundation/NSString.h>
-#import <Foundation/NSAutoreleasePool.h>
+#import <objc/objc-auto.h>
+
+struct Pike_interpreter_struct * Pike_interpreter_pointer;
 
 int main()
 {
@@ -250,11 +279,12 @@ int main()
   struct svalue * sv;
 
   // required for console mode objective c applications
-  NSAutoreleasePool *innerPool = [[NSAutoreleasePool alloc] init];
+  objc_startCollectorThread();
 
   // these 3 lines set up and start the interpreter.
   i = [OCPikeInterpreter sharedInterpreter];
   [i startInterpreter];
+  Pike_interpreter_pointer = [i getInterpreter];
 
   // ok, now that we have things set up, let's use it.
   // first, an example of calling pike c level apis directly.  
@@ -269,7 +299,7 @@ int main()
 
   // finally, we clean up.
   [i stopInterpreter];
-  [innerPool release];
+
   return 0;
 }
 

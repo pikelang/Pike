@@ -6,16 +6,16 @@
 //! Chaotic enough, it's quite simpler then the @[Gregorian] calendar;
 //! weeks are 5 days, and evens up on a year. Months are 73 days.
 //!
-//! The leap day is inserted at the 60th day of the first month 
+//! The leap day is inserted at the 60th day of the first month
 //! (Chaos), giving the first month 74 days. The description of
 //! the calendar is a "perpetual date converter from the gregorian
 //! to the POEE calendar", so the leap years are the same as
 //! the gregorians.
 //!
-//! The Principia calls months "seasons", but for simplicity I 
+//! The Principia calls months "seasons", but for simplicity I
 //! call them months in this calendar.
 //!
-//! If anyone know more about how to treat the leap day - now it is 
+//! If anyone know more about how to treat the leap day - now it is
 //! inserted in the month and week where it lands, rather then being
 //! separated from month and weeks, I'm interested to know.
 //!
@@ -60,8 +60,8 @@ protected int julian_day_from_year(int y)
    return ::julian_day_from_year(y-1166);
 }
 
-protected int year_leap_year(int y) 
-{ 
+protected int year_leap_year(int y)
+{
    return ::year_leap_year(y-1166);
 }
 
@@ -105,11 +105,11 @@ protected array(int) week_from_julian_day(int jd)
 	 return ({y,12,6,6,yjd+55});
       else if (yday>55 && yday<62)
 	 return ({y,12,(yday==61)?5:yday-55,6,yjd+55});
-      else if (yday>60) 
+      else if (yday>60)
 	 yday--;
       else
 	 l=0;
-   
+
    int w=(yday+4)/5;
    return ({y,w,(yday-1)%5+1,5,yjd+(w-1)*5+l});
 }
@@ -181,7 +181,7 @@ class cDay
       {
 	 if (m==CALUNKNOWN) make_month();
 	 if (wd==CALUNKNOWN) make_week();
-	 return 
+	 return
 	    sprintf("%s %d of %s %s",
 		    week_day_shortname(),
 		    md,month_shortname(),
@@ -195,7 +195,7 @@ class cMonth
 {
    inherit Gregorian::cMonth;
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       ::create(@args);
       if (yjd+yd-1!=jd) error("yjd=%O yday=%O jd=%O != %O\n",
@@ -215,7 +215,7 @@ class cMonth
 	    int l2=year_leap_year(y);
 	    if (l1||l2)
 	    {
-	       if (l1 && wmd==60) 
+	       if (l1 && wmd==60)
 		  if (l2) wmd=60;
 		  else { if (!force) return 0; }
 	       else

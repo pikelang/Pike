@@ -14,7 +14,9 @@
 
 inherit GTK2.Bin;
 
-static GTK2.ToolItem create( mapping|void props );
+inherit GTK2.Activatable;
+
+protected GTK2.ToolItem create( mapping|void props );
 //! Creates a new GTK2.ToolItem.
 //!
 //!

@@ -5,7 +5,7 @@
 
 inherit GTK2.MenuItem;
 
-static GTK2.ImageMenuItem create( string|mapping label );
+protected GTK2.ImageMenuItem create( string|mapping label );
 //! Create a new ImageMenuItem.
 //!
 //!

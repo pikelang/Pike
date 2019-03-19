@@ -39,11 +39,11 @@ void create(array(mixed) types)
     for (i=sd->n_cols=0; i<a->size; i++) {
       if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING) {
         const struct pike_string *str = (ITEM(a)+i)->u.string;
-	if (is_same_string(_STR("int"),str)) {
+	if (str == literal_int_string) {
 	  sd->types[sd->n_cols++]=G_TYPE_INT;
 	} else if (is_same_string(_STR("uint"),str)) {
 	  sd->types[sd->n_cols++]=G_TYPE_UINT;
-	} else if (is_same_string(_STR("float"),str)) {
+	} else if (str == literal_float_string) {
 	  sd->types[sd->n_cols++]=G_TYPE_FLOAT;
 	} else if (is_same_string(_STR("double"),str)) {
 	  sd->types[sd->n_cols++]=G_TYPE_DOUBLE;
@@ -53,13 +53,13 @@ void create(array(mixed) types)
 	  sd->types[sd->n_cols++]=G_TYPE_LONG;
 	} else if (is_same_string(_STR("ulong"),str)) {
 	  sd->types[sd->n_cols++]=G_TYPE_ULONG;
-	} else if (is_same_string(_STR("string"),str)) {
+	} else if (str == literal_string_string) {
 	  sd->types[sd->n_cols++]=G_TYPE_STRING;
 	} else if (is_same_string(_STR("char"),str)) {
 	  sd->types[sd->n_cols++]=G_TYPE_CHAR;
 	} else if (is_same_string(_STR("uchar"),str)) {
 	  sd->types[sd->n_cols++]=G_TYPE_UCHAR;
-	} else if (is_same_string(_STR("object"),str)) {
+	} else if (str == literal_object_string) {
 	  sd->types[sd->n_cols++]=G_TYPE_POINTER;
 	} else {
 	  sd->types[sd->n_cols]=g_type_from_name(CGSTR0((ITEM(a)+i)->u.string));

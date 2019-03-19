@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -16,18 +15,17 @@
 #error Smartlink binary does not support Mingw32.
 #endif
 
+#ifdef PIKE_CORE
+#include "machine.h"
+#else
 /* NOTE: Use confdefs.h and not machine.h, since we are compiled by configure
  */
 #include "confdefs.h"
+#endif
 
 #include <stdio.h>
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif /* HAVE_STDLIB_H */
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif /* HAVE_STRING_H */
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -106,13 +104,12 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id$\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
     exit(0);
   }
-  
+
   if (putenv("LD_PXDB=/dev/null")) {
     fatal("Out of memory (1)!\n");
   }
@@ -260,7 +257,7 @@ int main(int argc, char **argv)
   }
 
 #ifndef USE_Wl
-  /* This code strips '-Wl,' from arguments if the 
+  /* This code strips '-Wl,' from arguments if the
    * linker is '*ld'
    */
   if(linking)
@@ -302,7 +299,7 @@ int main(int argc, char **argv)
   if (ld_lib_path) {
     char *p;
 
-    while (p = strchr(ld_lib_path, ':')) {
+    while ((p = strchr(ld_lib_path, ':'))) {
       *p = 0;
       rpath_in_use |= add_path(rpath, ld_lib_path);
       *p = ':';		/* Make sure LD_LIBRARY_PATH isn't modified */
@@ -389,15 +386,15 @@ int main(int argc, char **argv)
     }
   }
 
-#if 0	/* Enabling this messes with the definition of EOPNOTSUP */
-#ifdef USE_OSX_TWOLEVEL_NAMESPACE
-  /* Mac OS X needs to be 10.3 or better for ld to accept
-     "-undefined dynamic_lookup" */
-  if (putenv("MACOSX_DEPLOYMENT_TARGET=10.3")) {
-    fatal("Out of memory (8)!\n");
+  if (getenv("SMARTLINK_DEBUG")) {
+    int i = 0;
+    fprintf(stderr, "SMARTLINK:");
+    while (new_argv[i]) {
+      fprintf(stderr, " %s", new_argv[i]);
+      i++;
+    }
+    fprintf(stderr, "\n");
   }
-#endif
-#endif
 
   execv(argv[1], new_argv);
   fprintf(stderr, "%s: exec of %s failed!\n", argv[0], argv[1]);

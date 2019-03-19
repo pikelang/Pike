@@ -7,6 +7,24 @@
 
 protected constant DOC_COMMENT = "//!";
 
+//! Flags affecting autodoc extractor behaviour.
+//!
+//! @seealso
+//!   @[ProcessXML.extractXML()], @[MirarDocParser],
+//!   @[Tools.Standalone.extract_autodoc()]
+enum Flags {
+  FLAG_QUIET = 0,	//! Keep quiet about non-fatal errors.
+  FLAG_NORMAL = 1,	//! Normal verbosity.
+  FLAG_VERBOSE = 2,	//! Extra verbosity.
+  FLAG_DEBUG = 3,	//! Full verbosity.
+  FLAG_VERB_MASK = 3,	//! Verbosity mask.
+  FLAG_KEEP_GOING = 4,	//! Attempt to keep going after errors.
+  FLAG_COMPAT = 8,	//! Attempt to be compatible with old Pike.
+  FLAG_NO_DYNAMIC = 16,	//! Reduce the amount of dynamic information
+			//! in the generated files (line numbers,
+			//! extractor version, extraction time, etc).
+}
+
 protected int isDigit(int c) { return '0' <= c && c <= '9'; }
 
 protected int isDocComment(string s) {
@@ -29,6 +47,12 @@ protected int isIdent(string s) {
         return 0;
   }
   return 1;
+}
+
+protected int(0..1) isVersion(string s)
+{
+  string trailer = "";
+  return (sscanf(s, "%*d.%*d%s", trailer) == 3) && (trailer == "");
 }
 
 protected int(0..1) isFloat(string s)
@@ -94,9 +118,9 @@ class SourcePosition {
       werror("**********************************************************\n");
       werror("**********************************************************\n");
     }
-    this_program::filename = filename;
-    this_program::firstline = firstline;
-    this_program::lastline = lastline; 
+    this::filename = filename;
+    this::firstline = firstline;
+    this::lastline = lastline;
   }
 
   //! @returns
@@ -118,7 +142,8 @@ class SourcePosition {
 
   //! @returns
   //!   Returns a string with an XML-fragment describing the source position.
-  string xml() {
+  string xml(Flags|void flags) {
+    if (flags & FLAG_NO_DYNAMIC) return "";
     mapping(string:string) m = ([]);
     m["file"] = filename || "?";
     if (firstline) m["first-line"] = (string) firstline;

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -92,7 +91,7 @@ PMOD_EXPORT struct rb_node_hdr *rb_link_next (struct rb_node_hdr *node);
 
 #ifdef PIKE_DEBUG
 /* To get good type checking. */
-static INLINE struct rb_node_hdr *rb_node_check (struct rb_node_hdr *node)
+static INLINE struct rb_node_hdr PIKE_UNUSED_ATTRIBUTE *rb_node_check (struct rb_node_hdr *node)
   {return node;}
 #else
 #define rb_node_check(node) ((struct rb_node_hdr *) (node))
@@ -226,7 +225,7 @@ extern size_t rb_num_traverses, rb_num_traverse_ops;
 extern size_t rbstack_slice_allocs;
 extern size_t rb_num_adds, rb_add_rebalance_cnt;
 extern size_t rb_num_deletes, rb_del_rebalance_cnt;
-void reset_rb_stats();
+void reset_rb_stats(void);
 void print_rb_stats (int reset);
 #define DO_IF_RB_STATS(X) X
 #else

@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 //! The MIME content types this class can filter.
@@ -12,7 +11,7 @@ constant contenttypes = ({ });
 string my_popen(array(string) args, string|void cwd, int|void wait_for_exit,
 		array(string)|void watchdog_args)
   // A smarter version of Process.popen: No need to quote arguments.
-{    
+{
   Stdio.File pipe0 = Stdio.File();
   Stdio.File pipe1 = pipe0->pipe(Stdio.PROP_IPC);
   if(!pipe1)
@@ -31,16 +30,16 @@ string my_popen(array(string) args, string|void cwd, int|void wait_for_exit,
       replace(watchdog_args + ({ }), "%p", (string) proc->pid());
     watchdog = Process.spawn_pike(wd_args);
   }
-  
+
   string result = pipe0->read();
   if(!result)
     error("my_popen failed with error "+pipe0->errno()+".\n");
   pipe0->close();
   if (wait_for_exit)
     proc->wait();
-  
+
   if (watchdog)
     watchdog->kill(9);
-  
+
   return result;
 }

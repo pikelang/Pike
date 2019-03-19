@@ -4,6 +4,27 @@ require gtksourceview;
 class GTK2.SourceView;
 inherit GTK2.TextView;
 
+/* For reference:
+ *
+ * Ref doc for 1.0:
+ *	http://gtksourceview.sourceforge.net/docs/index.html
+ *
+ * Ref doc for 2.0:
+ *	http://www.vala-project.org/doc/docu/gtksourceview-2.0.vapi/index.html
+ *
+ * Ref doc for 3.0:
+ *	http://developer.gnome.org/gtksourceview/stable/
+ *
+ * The major incompatibility between 1.0 and 2.0 seems to be
+ * that SourceTag and SourceTagTable are gone in 2.0, where
+ * their parents TextTag and TextTagTable are used instead.
+ *
+ * Another incompatibility is that SourceMarker was renamed SourceMark.
+ *
+ * To be backward compatible with code for 1.0, we should
+ * probably add some aliases.
+ */
+
 //! Properties:
 //! int auto-indent
 //! int highlight-current-line
@@ -50,17 +71,21 @@ void set_show_line_numbers(int setting);
 int get_show_line_numbers();
 //! Returns whether line numbers are displayed beside the text.
 
+not gtksourceview20;
 void set_show_line_markers(int setting);
 //! If true, line makers will be displayed beside the text.
+endnot;
 
 int get_show_line_numbers();
 //! Returns whether line markers are displayed beside the text.
 
+not gtksourceview20;
 void set_tabs_width(int width);
 //! Sets the width of tabulation in characters.
 
 int get_tabs_width();
 //! Returns the width of tabulation in characters.
+endnot;
 
 void set_auto_indent(int setting);
 //! If true, auto indentation of text is enabled.
@@ -76,6 +101,7 @@ int get_insert_spaces_instead_of_tabs();
 //! Returns whether when inserting a tabulator character it should be replaced
 //! by a group of space characters.
 
+not gtksourceview20;
 void set_show_margin(int setting);
 //! If true, a margin is displayed.
 
@@ -118,6 +144,7 @@ GDK2.Pixbuf get_marker_pixbuf(string type)
       push_int(0);
   }
 }
+endnot;
 
 void set_smart_home_end(int setting);
 //! If true, HOME and END keys will move to the first/last non-space character
@@ -127,6 +154,7 @@ int get_smart_home_end();
 //! Returns whether HOME and END keys will move to the first/last non-space
 //! character of the line before moving to the start/end.
 
+not gtksourceview20;
 /* from GtkSourceStyleScheme */
 GTK2.SourceStyleScheme get_default()
 //! Gets the default style scheme.
@@ -139,3 +167,4 @@ GTK2.SourceStyleScheme get_default()
     push_gobjectclass(gss,pgtk2_source_style_scheme_program);
   }
 }
+endnot;

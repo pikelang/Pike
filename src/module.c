@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -18,7 +17,6 @@
 #include "mapping.h"
 #include "program_id.h"
 #include "lex.h"
-#include "pike_security.h"
 #include "cpp.h"
 #include "backend.h"
 #include "threads.h"
@@ -54,9 +52,6 @@
 static void init_builtin_modules(void)
 {
   void init_iterators(void);
-#ifdef WITH_FACETS
-  void init_facetgroup(void);
-#endif
 
 #ifdef DEBUG_MALLOC
   /* Make some statically allocated structs known to dmalloc. These
@@ -71,75 +66,53 @@ static void init_builtin_modules(void)
 #endif
 
   TRACE((stderr, "Init cpp...\n"));
-
   init_cpp();
 
-  TRACE((stderr, "Init backend...\n"));
+  TRACE((stderr, "Init memory counter...\n"));
+  init_mc();
 
+  TRACE((stderr, "Init backend...\n"));
   init_backend();
 
   TRACE((stderr, "Init iterators...\n"));
-
   init_iterators();
 
   TRACE((stderr, "Init searching...\n"));
-
   init_pike_searching();
 
   TRACE((stderr, "Init error handling...\n"));
-
   init_error();
 
-  TRACE((stderr, "Init security system...\n"));
-
-  init_pike_security();
-
   TRACE((stderr, "Init threads...\n"));
-
   th_init();
 
   TRACE((stderr, "Init operators...\n"));
-
   init_operators();
 
-
   TRACE((stderr, "Init builtin...\n"));
-
   init_builtin();
 
-
   TRACE((stderr, "Init efuns...\n"));
-
   init_builtin_efuns();
 
   TRACE((stderr, "Init signal handling...\n"));
-
   init_signals();
 
   TRACE((stderr, "Init dynamic loading...\n"));
-
   init_dynamic_load();
-#ifdef WITH_FACETS
 
-  TRACE((stderr, "Init facets...\n"));
-
-  init_facetgroup();
-#endif
+  TRACE((stderr, "Init sprintf...\n"));
+  init_sprintf();
 }
 
 static void exit_builtin_modules(void)
 {
 #ifdef DO_PIKE_CLEANUP
   void exit_iterators(void);
-#ifdef WITH_FACETS
-  void exit_facetgroup(void);
-#endif
 
   /* Clear various global references. */
 
-#ifdef AUTO_BIGNUM
-  exit_auto_bignum();
-#endif
+  exit_sprintf();
   exit_pike_searching();
   exit_object();
   exit_signals();
@@ -151,13 +124,11 @@ static void exit_builtin_modules(void)
   cleanup_module_support();
   exit_operators();
   exit_iterators();
-#ifdef WITH_FACETS
-  exit_facetgroup();
-#endif
   cleanup_program();
   cleanup_compiler();
   cleanup_error();
   exit_backend();
+  exit_mc();
   cleanup_gc();
   cleanup_pike_types();
 
@@ -168,7 +139,6 @@ static void exit_builtin_modules(void)
 #endif
   free_all_pike_list_node_blocks();
 
-  exit_pike_security();
   free_svalue(& throw_value);
   mark_free_svalue (&throw_value);
 
@@ -361,9 +331,10 @@ static void exit_builtin_modules(void)
 
   really_clean_up_interpret();
 
+  late_exit_object();
+
   cleanup_callbacks();
   free_all_callable_blocks();
-  exit_destroy_called_mark_hash();
 
   cleanup_pike_type_table();
   cleanup_shared_string_table();
@@ -386,15 +357,65 @@ struct static_module
   char *name;
   modfun init;
   modfun exit;
+  int semidynamic;
 };
 
 static const struct static_module module_list[] = {
-  { "Builtin", init_builtin_modules, exit_builtin_modules }
+  { "Builtin", init_builtin_modules, exit_builtin_modules, 0 }
 #include "modules/modlist.h"
 #ifndef PRE_PIKE
 #include "post_modules/modlist.h"
 #endif
 };
+
+/* The follwing are used to simulate dlopen() et al. */
+
+const struct static_module *find_semidynamic_module(const char *name, int namelen)
+{
+  unsigned int e;
+  for(e=0;e<NELEM(module_list);e++) {
+    if (module_list[e].semidynamic &&
+	!strncmp(module_list[e].name, name, namelen) &&
+	!module_list[e].name[namelen]) {
+      TRACE((stderr, "Found semidynamic module #%d: \"%s\"...\n",
+	     e, module_list[e].name));
+      return module_list+e;
+    }
+  }
+  return NULL;
+}
+
+void *get_semidynamic_init_fun(const struct static_module *sm)
+{
+  if (!sm) return NULL;
+  return sm->init;
+}
+
+void *get_semidynamic_exit_fun(const struct static_module *sm)
+{
+  if (!sm) return NULL;
+  return sm->exit;
+}
+
+
+/*! @decl object _static_modules
+ *!
+ *! This is an object containing the classes for all static
+ *! (ie non-dynamic) C-modules.
+ *!
+ *! In a typic Pike with support for dynamic modules the contained
+ *! module classes are:
+ *! @dl
+ *!   @item @[Builtin]
+ *!   @item @[Gmp]
+ *!   @item @[_Stdio]
+ *!   @item @[_math]
+ *!   @item @[_system]
+ *! @enddl
+ *!
+ *! If the Pike binary lacks support for dynamic modules, all C-modules
+ *! will show up here.
+ */
 
 void init_modules(void)
 {
@@ -413,6 +434,7 @@ void init_modules(void)
       start_new_program();
       p = Pike_compiler->new_program;
     }
+    if (module_list[e].semidynamic) continue;
     if(SETJMP(recovery)) {
       /* FIXME: We could loop here until we find p. */
       free_program(end_program());
@@ -438,7 +460,7 @@ void init_modules(void)
     UNSETJMP(recovery);
   }
   if (p) free_program(end_program());
-  push_text("_static_modules");
+  push_static_text("_static_modules");
   push_object(low_clone(p=end_program()));
   f_add_constant(2);
   free_program(p);
@@ -496,6 +518,7 @@ void exit_modules(void)
 
   for(e=NELEM(module_list)-1;e>=0;e--)
   {
+    if (module_list[e].semidynamic) continue;
     if(SETJMP(recovery))
       call_handle_error();
     else {

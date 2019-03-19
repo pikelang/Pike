@@ -1,8 +1,8 @@
 //
 // snmp_globals.h
 //
-// $Id$
-//
+
+#define ASN1_CONTEXT_SEQUENCE(T,A) Protocols.LDAP.ldap_privates.asn1_factory(Standards.ASN1.Types.Sequence, 2, T, A)
 
 #define SNMP_DEFAULT_PORT       161
 #define SNMP_DEFAULT_TRAPPORT   162
@@ -31,6 +31,3 @@
 #define DWRITE(X,Y ...)
 #define ERROR(X)
 #endif
-
-
-

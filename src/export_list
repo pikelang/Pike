@@ -1,9 +1,8 @@
-# $Id$
 # This file lists the files and directories that should be
 # added to source dists. Used by bin/export.pike.
 
 /README
-/README-CVS
+/README-GIT
 /ANNOUNCE
 /CHANGES
 /COMMITTERS
@@ -13,10 +12,11 @@
 /src
 /lib
 /bin
-/bundles
 /man
 /packaging
 /refdoc/chapters
+/refdoc/doxfilter.sh
+/refdoc/doxygen.cfg
 /refdoc/presentation
 /refdoc/src_images
 /refdoc/structure

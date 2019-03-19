@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -28,7 +27,7 @@
 #define PDF_CLASS(name,init,exit,prog) \
     void init(void); void exit(void); struct program *prog;
 #define PDF_SUBMODULE(name,init,exit)  \
-    void init(void); void exit(void); 
+    void init(void); void exit(void);
 #define PDF_SUBMODMAG(name,init,exit) \
     void init(void); void exit(void);
 #define PDF_FUNCTION(name,func,def0,def1) \
@@ -37,7 +36,7 @@
 
 static struct program *pdf_sentinel = NULL;
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -49,7 +48,7 @@ static struct
 #undef PDF_SUBMODULE
 #undef PDF_FUNCTION
 #undef PDF_SUBMODMAG
-#define PDF_SUBMODMAG(a,b,c) 
+#define PDF_SUBMODMAG(a,b,c)
 #define PDF_FUNCTION(a,b,c,d)
 #define PDF_CLASS(name,init,exit,prog) { name,init,exit,&prog },
 #define PDF_SUBMODULE(a,b,c)
@@ -57,7 +56,7 @@ static struct
   PDF_CLASS(NULL,NULL,NULL,pdf_sentinel)
 };
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -66,13 +65,13 @@ static struct
 {
 #undef PDF_CLASS
 #undef PDF_SUBMODULE
-#define PDF_CLASS(name,init,exit,prog) 
+#define PDF_CLASS(name,init,exit,prog)
 #define PDF_SUBMODULE(name,init,exit) { name,init,exit },
 #include "initstuff.h"
   PDF_SUBMODULE(NULL,NULL,NULL)
 };
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -89,21 +88,11 @@ static struct
   PDF_SUBMODMAG(NULL,NULL,NULL)
 };
 
-/* Avoid loss of precision warnings. */
-#ifdef __ECL
-static inline long TO_LONG(ptrdiff_t x)
-{
-  return DO_NOT_WARN((long)x);
-}
-#else /* !__ECL */
-#define TO_LONG(x)	((long)(x))
-#endif /* __ECL */
-
 #ifdef PIKE_DEBUG
 #define PDF_CHECK_STACK(X)	do { \
     if (save_sp != sp) { \
       Pike_fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
-            __FILE__, __LINE__, TO_LONG(sp - save_sp), X); \
+            __FILE__, __LINE__, PTRDIFF_T_TO_LONG(sp - save_sp), X); \
     } \
   } while(0)
 #else
@@ -115,7 +104,7 @@ static void pdf_magic_index(INT32 args)
 {
    int i;
 
-   if (args!=1) 
+   if (args!=1)
       Pike_error("PDF.`[]: Too few or too many arguments\n");
    if (TYPEOF(sp[-1]) != T_STRING)
       Pike_error("PDF.`[]: Illegal type of argument\n");
@@ -142,7 +131,7 @@ static void pdf_magic_index(INT32 args)
 	    submagic[i].o=clone_object(p,0);
 	    free_program(p);
 	 }
-	 
+
 	 ref_push_object(submagic[i].o);
 	 return;
       }
@@ -156,7 +145,7 @@ static void pdf_magic_index(INT32 args)
    {
       pop_stack();
       stack_dup();
-      push_text("_PDF_");
+      push_static_text("_PDF_");
       stack_swap();
       f_add(2);
       SAFE_APPLY_MASTER("resolv",1);
@@ -165,7 +154,7 @@ static void pdf_magic_index(INT32 args)
    {
       pop_stack();
       stack_dup();
-      push_text("_PDF");
+      push_static_text("_PDF");
       SAFE_APPLY_MASTER("resolv",1);
       stack_swap();
       f_index(2);
@@ -181,7 +170,7 @@ PIKE_MODULE_INIT
 
 #undef PDF_FUNCTION
 #undef PDF_SUBMODMAG
-#define PDF_SUBMODMAG(name,init,exit) 
+#define PDF_SUBMODMAG(name,init,exit)
 #define PDF_FUNCTION(name,func,def0,def1) tOr(def0,"")
 #include "initstuff.h"
       tFunc(tStr,tMixed); /* this */
@@ -218,7 +207,7 @@ PIKE_MODULE_INIT
       fprintf(stderr,"PDF: initiating submodule \"PDF.%s\"...\n",
 	      initsubmodule[i].name);
 #endif
-      
+
       start_new_program();
       (initsubmodule[i].init)();
       PDF_CHECK_STACK(initsubmodule[i].name);
@@ -231,7 +220,7 @@ PIKE_MODULE_INIT
       pop_stack();
    }
 
-   for (i=0; i<(int)NELEM(submagic); i++) 
+   for (i=0; i<(int)NELEM(submagic); i++)
    {
       if(!submagic[i].name) continue;
       submagic[i].ps=make_shared_string(submagic[i].name);

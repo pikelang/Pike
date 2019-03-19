@@ -1,4 +1,0 @@
-# Ignore both the dist archives, and the extracted archives.
-/gmp-*
-/libffi-*
-/nettle-*

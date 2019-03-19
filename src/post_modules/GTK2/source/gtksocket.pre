@@ -54,9 +54,9 @@ int id()
 //! Returns the window id, to be sent to the application providing the plug.
 //! <br />You must realize this widget before calling this function.
 {
-  void *wid = (void *)(ptrdiff_t)gtk_socket_get_id(GTK_SOCKET(THIS->obj));
+  ptrdiff_t wid = (ptrdiff_t)gtk_socket_get_id(GTK_SOCKET(THIS->obj));
   pgtk2_pop_n_elems(args);
-  push_longest ((ptrdiff_t) wid);
+  push_int64 (wid);
 }
 
 void add_id(int wid);

@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 //! Returns the provided string with Python code as
 //! an array with tokens.
 array(string) split(string data) {

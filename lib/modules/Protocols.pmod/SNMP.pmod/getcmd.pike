@@ -17,7 +17,7 @@ void rc(mapping rdata, int idx) {
   rv = o->read_response(idx);
 
   write("Returned object: %O\n", rv);
- 
+
   exit(0);
 }
 
@@ -34,7 +34,7 @@ int main(int argc, array(string) argv) {
 
   string host = sizeof(argv) > 1 ? argv[1] : "localhost";
   string comm = sizeof(argv) > 2 ? argv[2] : "public";
-  
+
   o = Protocols.SNMP.protocol();
   o->snmp_community = comm;
   int idx = o->get_request(({
@@ -43,7 +43,7 @@ int main(int argc, array(string) argv) {
     "1.3.6.1.2.1.6.9.0"		// tcp.tcpCurrEstab -> Gauge
    }), host,161);
 write("Index: "+(string)idx+"\n");
-  
+
 #define NONBLOCK
 #ifdef NONBLOCK
   o->set_read_callback(rc, idx);

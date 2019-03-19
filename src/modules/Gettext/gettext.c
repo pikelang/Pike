@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -13,9 +12,8 @@
 #ifdef HAVE_LIBINTL_H
 #include <libintl.h>
 #endif
-#ifdef HAVE_LOCALE_H
+
 #include <locale.h>
-#endif
 
 #include "stralloc.h"
 #include "pike_error.h"
@@ -65,11 +63,6 @@
  *! of the specified @[domain] and current locale. If there is no
  *! translation available, @[msg] is returned.
  *!
- *! @note
- *!   Prior to Pike 7.3 this function only accepted one argument,
- *!   and the other functionality was provided by @[dgettext()]
- *!   and @[dcgettext()].
- *!
  *! @seealso
  *!   @[bindtextdomain], @[textdomain], @[setlocale], @[localeconv]
  */
@@ -78,7 +71,7 @@ void f_gettext(INT32 args)
   const char *domain = NULL, *msg;
   int cat = 0;
 
-  get_all_args("Locale.Gettext.gettext", args, "%c.%C%D", &msg, &domain, &cat);
+  get_all_args("gettext", args, "%c.%C%D", &msg, &domain, &cat);
 
   if (domain) {
     if (args > 2 && SUBTYPEOF(Pike_sp[2-args]) == NUMBER_NUMBER)
@@ -107,7 +100,7 @@ void f_gettext(INT32 args)
 void f_dgettext(INT32 args)
 {
   const char *domain, *msg;
-  get_all_args("Locale.Gettext.dgettext", args, "%c%c", &domain, &msg);
+  get_all_args("dgettext", args, "%c%c", &domain, &msg);
 
   push_text(dgettext(domain, msg));
 
@@ -134,8 +127,7 @@ void f_dcgettext(INT32 args)
   const char *domain, *msg;
   int category;
 
-  get_all_args("Locale.Gettext.dcgettext", args, "%c%c%d",
-	       &domain, &msg, &category);
+  get_all_args("dcgettext", args, "%c%c%d", &domain, &msg, &category);
 
   push_text(dcgettext(domain, msg, category));
 
@@ -148,7 +140,7 @@ void f_dcgettext(INT32 args)
  *! current domain of the active @[LC_MESSAGES] locale category. The
  *! @[domain] argument is a string that can contain only the
  *! characters allowed in legal filenames.
- *! 
+ *!
  *! The domain argument is the unique name of a domain on the
  *! system. If there are multiple versions of the same domain on
  *! one system, namespace collisions can be avoided by using
@@ -172,7 +164,7 @@ void f_textdomain(INT32 args)
 {
   const char *domain = NULL;
   char *returnstring;
-  get_all_args ("Locale.Gettext.textdomain", args, ".%C", &domain);
+  get_all_args ("textdomain", args, ".%C", &domain);
   returnstring = textdomain(domain);
   pop_n_elems(args);
   push_text(returnstring);
@@ -185,7 +177,7 @@ void f_textdomain(INT32 args)
  *!
  *! If @[domainname] is a non-empty string and has not been bound
  *! previously, bindtextdomain() binds @[domainname] with @[dirname].
- *! 
+ *!
  *! If @[domainname] is a non-empty string and has been bound previously,
  *! bindtextdomain() replaces the old binding with @[dirname].
  *!
@@ -213,8 +205,7 @@ void f_bindtextdomain(INT32 args)
 {
   char *returnstring;
   const char *domain = NULL, *dirname = NULL;
-  get_all_args ("Locale.Gettext.bindtextdomain", args,
-		".%C%C", &domain, &dirname);
+  get_all_args ("bindtextdomain", args,	".%C%C", &domain, &dirname);
 
   if (!domain || !*domain)
     returnstring = NULL;
@@ -235,7 +226,7 @@ void f_bindtextdomain(INT32 args)
   pop_n_elems(args);
   if(returnstring == NULL)
     push_int(0);
-  else 
+  else
     push_text(returnstring);
 }
 
@@ -244,10 +235,10 @@ void f_bindtextdomain(INT32 args)
  *! The setlocale() function is used to set the program's
  *! current locale. If @[locale] is "C" or "POSIX", the current
  *! locale is set to the portable locale.
- *! 
+ *!
  *! If @[locale] is "", the locale is set to the default locale which
  *! is selected from the environment variable LANG.
- *! 
+ *!
  *! The argument @[category] determines which functions are
  *! influenced by the new locale are @[LC_ALL], @[LC_COLLATE], @[LC_CTYPE],
  *! @[LC_MONETARY], @[LC_NUMERIC] and @[LC_TIME].
@@ -263,7 +254,7 @@ void f_setlocale(INT32 args)
   char *returnstring;
   const char *locale;
   int category;
-  get_all_args("Locale.Gettext.setlocale", args, "%d%c", &category, &locale);
+  get_all_args("setlocale", args, "%d%c", &category, &locale);
 
   returnstring = setlocale(category, locale);
   pop_n_elems(args);
@@ -272,7 +263,7 @@ void f_setlocale(INT32 args)
   else
     push_int(1);
 }
-  
+
 /*! @decl mapping localeconv()
  *!
  *! The localeconv() function returns a mapping with settings for
@@ -346,7 +337,7 @@ void f_setlocale(INT32 args)
  *!     Set to 1 or 0 if the currency_symbol respectively
  *!     is or is not separated by a space from the value
  *!     for a negative formatted monetary quantity.
- *! 
+ *!
  *!   @member int(0..4) "p_sign_posn"
  *!     Set to a value indicating the positioning of the
  *!     positive_sign for a non-negative formatted
@@ -384,11 +375,11 @@ void f_localeconv(INT32 args)
   locale = localeconv();
 
 #define MAPSTR(key) do {		\
-    push_constant_text(TOSTR(key));	\
+    push_text(TOSTR(key));	\
     push_text(locale->key);		\
   } while(0)
 #define MAPINT(key) do {		\
-    push_constant_text(TOSTR(key));	\
+    push_text(TOSTR(key));	\
     push_int(locale->key);		\
   } while(0)
 
@@ -511,8 +502,7 @@ PIKE_MODULE_EXIT
 #include "program.h"
 
 PIKE_MODULE_INIT {
-  if(!TEST_COMPAT(7,6))
-    HIDE_MODULE();
+  HIDE_MODULE();
 }
 
 PIKE_MODULE_EXIT {}

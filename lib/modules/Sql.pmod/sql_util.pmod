@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
  *
@@ -26,6 +24,93 @@ void fallback()
   error( "Function not supported in this database." );
 }
 
+//! Wrapper to handle zero.
+//!
+//! @seealso
+//!   @[zero]
+protected class ZeroWrapper
+{
+  //! @returns
+  //!   Returns the following:
+  //!   @string
+  //!     @value "NULL"
+  //!       If @[fmt] is @expr{'s'@}.
+  //!     @value "ZeroWrapper()"
+  //!       If @[fmt] is @expr{'O'@}.
+  //!   @endstring
+  //!   Otherwise it formats a @expr{0@} (zero).
+  protected string _sprintf(int fmt, mapping(string:mixed) params)
+  {
+    if (fmt == 's') return "NULL";
+    if (fmt == 'O') return "ZeroWrapper()";
+    return sprintf(sprintf("%%*%c", fmt), params, 0);
+  }
+}
+
+//! Instance of @[ZeroWrapper] used by @[handle_extraargs()].
+protected ZeroWrapper zero = ZeroWrapper();
+
+protected class NullArg
+{
+  protected string _sprintf (int fmt)
+    {return fmt == 'O' ? "NullArg()" : "NULL";}
+}
+protected NullArg null_arg = NullArg();
+
+//! Handle @[sprintf]-based quoted arguments
+//!
+//! @param query
+//!   The query as sent to one of the query functions.
+//!
+//! @param extraargs
+//!   The arguments following the query.
+//!
+//! @param bindings
+//!   Optional bindings mapping to which additional bindings will be
+//!   added. It's returned as the second element in the return value.
+//!   A new mapping is used if this isn't specified.
+//!
+//! @returns
+//!   Returns an array with two elements:
+//!   @array
+//!     @elem string 0
+//!       The query altered to use bindings-syntax.
+//!     @elem mapping(string|int:mixed) 1
+//!       A bindings mapping. Zero if no bindings were added.
+//!   @endarray
+array(string|mapping(string|int:mixed))
+  handle_extraargs(string query, array(mixed) extraargs,
+		   void|mapping(string|int:mixed) bindings) {
+
+  array(mixed) args=allocate(sizeof(extraargs));
+  if (!bindings) bindings = ([]);
+
+  int a, new_bindings;
+  foreach(extraargs; int j; mixed s) {
+    if (stringp(s) || multisetp(s)) {
+      string bind_name;
+      do {
+	bind_name = ":arg"+(a++);
+      } while (has_index (bindings, bind_name));
+      args[j]=bind_name;
+      bindings[bind_name] = s;
+      new_bindings = 1;
+      continue;
+    }
+    if (intp(s) || floatp(s)) {
+      args[j] = s || zero;
+      continue;
+    }
+    if (objectp (s) && s->is_val_null) {
+      args[j] = null_arg;
+      continue;
+    }
+    error("Wrong type to query argument %d: %O\n", j + 1, s);
+  }
+
+  return ({sprintf(query,@args), new_bindings && bindings});
+}
+
 //! Build a raw SQL query, given the cooked query and the variable bindings
 //! It's meant to be used as an emulation engine for those drivers not
 //! providing such a behaviour directly (i.e. Oracle).
@@ -49,8 +134,14 @@ string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
   function my_quote=(driver&&driver->quote?driver->quote:quote);
   v=map(values(bindings),
 	lambda(mixed m) {
-          if(zero_type(m))
-            return "NULL";
+	  if(undefinedp(m))
+	    return "NULL";
+	  if (objectp (m) && m->is_val_null)
+	    // Note: Could need bug compatibility here - in some cases
+	    // we might be passed a null object that can be cast to
+	    // "", and before this it would be. This is an observed
+	    // compat issue in comment #7 in [bug 5900].
+	    return "NULL";
 	  if(multisetp(m))
 	    return sizeof(m) ? indices(m)[0] : "";
 	  return "'"+(intp(m)?(string)m:my_quote((string)m))+"'";
@@ -149,7 +240,7 @@ class UnicodeWrapper (
   }
 }
 
-#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+#if constant (___Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
 
 class MySQLUnicodeWrapper
 //! Result wrapper for MySQL that performs UTF-8 decoding of all

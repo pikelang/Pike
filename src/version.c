@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -23,10 +22,10 @@
  *!   @[__VERSION__], @[__MINOR__], @[__BUILD__],
  *!   @[__REAL_VERSION__], @[__REAL_MINOR__], @[__REAL_BUILD__],
  */
-void f_version(INT32 args)
+PMOD_EXPORT void f_version(INT32 args)
 {
   pop_n_elems(args);
-  push_constant_text ("Pike v"
+  push_static_text ("Pike v"
 		      DEFINETOSTR (PIKE_MAJOR_VERSION)
 		      "."
 		      DEFINETOSTR (PIKE_MINOR_VERSION)
@@ -34,13 +33,15 @@ void f_version(INT32 args)
 		      DEFINETOSTR (PIKE_BUILD_VERSION));
 }
 
-void push_compact_version()
+void push_compact_version(void)
 {
   push_constant_string_code (str, {
+      p_wchar2 *wstr;
       str = begin_wide_shared_string (3, 2);
-      STR2(str)[0] = PIKE_MAJOR_VERSION;
-      STR2(str)[1] = PIKE_MINOR_VERSION;
-      STR2(str)[2] = PIKE_BUILD_VERSION;
+      wstr = STR2(str);
+      wstr[0] = PIKE_MAJOR_VERSION;
+      wstr[1] = PIKE_MINOR_VERSION;
+      wstr[2] = PIKE_BUILD_VERSION;
       str = end_shared_string (str);
     });
 }

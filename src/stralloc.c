@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -16,31 +15,19 @@
 #include "stuff.h"
 #include "bignum.h"
 #include "interpret.h"
-#include "block_alloc.h"
 #include "operators.h"
 #include "pike_float.h"
-#include "port.h"
+#include "pike_types.h"
+#include "block_allocator.h"
 
 #include <errno.h>
-#include <float.h>
 #include <ctype.h>
 #include <math.h>
 
-/* #define STRALLOC_USE_PRIMES */
-
-#ifdef STRALLOC_USE_PRIMES 
-
-#define SET_HSIZE(X) htable_size=hashprimes[(X)]
-#define HMODULO(X) ((X) % htable_size)
-
-#else
-
-#define SET_HSIZE(X) htable_mask=(htable_size=(1<<(X)))-1
+#define SET_HSIZE(X) htable_mask=(htable_size=(X))-1
 #define HMODULO(X) ((X) & (htable_mask))
 
 static unsigned INT32 htable_mask;
-
-#endif
 
 #if (SIZEOF_LONG == 4) && defined(_LP64)
 /* Kludge for gcc and the system header files not using the same model... */
@@ -52,58 +39,206 @@ static unsigned INT32 htable_mask;
 #define ULONG_MAX	UINT_MAX
 #endif
 
-#if PIKE_RUN_UNLOCKED
-/* Make this bigger when we get lightweight threads */
-#define BUCKET_LOCKS 2048
-static PIKE_MUTEX_T *bucket_locks;
+#define BEGIN_HASH_SIZE 1024
 
-#define BUCKETLOCK(HVAL) \
- (bucket_locks + (HMODULO(hval__) & (BUCKET_LOCKS-1)))
-
-#define LOCK_BUCKET(HVAL) do {						    \
-  size_t hval__=(HVAL);							    \
-  PIKE_MUTEX_T *bucket_lock;						    \
-  while(1)								    \
-  {									    \
-    bucket_lock=BUCKETLOCK(hval__);                                         \
-    mt_lock(bucket_lock);						    \
-    if(bucket_lock == BUCKETLOCK(hval__))                                   \
-      break;								    \
-    mt_unlock(bucket_lock);						    \
-  }									    \
-}while(0)
-
-#define UNLOCK_BUCKET(HVAL) do {			\
-  size_t hval__=(HVAL);					\
-  mt_unlock(BUCKETLOCK(hval__));                        \
-}while(0)
-
-#else
-#define LOCK_BUCKET(HVAL)
-#define UNLOCK_BUCKET(HVAL)
-#endif
-
-#define BEGIN_HASH_SIZE 997
-#define MAX_AVG_LINK_LENGTH 2
-
-/* Experimental dynamic hash length */
-#ifndef HASH_PREFIX
-static unsigned int HASH_PREFIX=64;
+static unsigned int hash_prefix_len=64;
 static unsigned int need_more_hash_prefix_depth=0;
-#endif
+
+static unsigned int need_new_hashkey_depth=0;
+static size_t hashkey = 0;
 
 static unsigned INT32 htable_size=0;
-static unsigned int hashprimes_entry=0;
 static struct pike_string **base_table=0;
 static unsigned INT32 num_strings=0;
 PMOD_EXPORT struct pike_string *empty_pike_string = 0;
 
+struct substring_pike_string {
+  struct pike_string str;
+  struct pike_string *parent;
+};
+
 /*** Main string hash function ***/
 
 #define StrHash(s,len) low_do_hash(s,len,0)
-#define low_do_hash(STR,LEN,SHIFT) hashmem( (STR), (LEN)<<(SHIFT), HASH_PREFIX<<(SHIFT) )
+#define low_do_hash(STR,LEN,SHIFT) low_hashmem( (STR), (LEN)<<(SHIFT), hash_prefix_len<<(SHIFT), hashkey )
 #define do_hash(STR) low_do_hash(STR->str,STR->len,STR->size_shift)
 
+static INLINE int string_is_block_allocated(const struct pike_string * s) {
+  return (s->alloc_type == STRING_ALLOC_BA);
+}
+
+static INLINE int PIKE_UNUSED_ATTRIBUTE string_is_malloced(const struct pike_string * s) {
+ return (s->alloc_type == STRING_ALLOC_MALLOC);
+}
+
+static INLINE int string_is_static(const struct pike_string * s) {
+    return s->alloc_type == STRING_ALLOC_STATIC;
+}
+
+static INLINE int string_is_substring(const struct pike_string * s) {
+    return s->alloc_type == STRING_ALLOC_SUBSTRING;
+}
+
+static struct pike_string *substring_content_string(const struct pike_string *s)
+{
+  return ((struct substring_pike_string*)s)->parent;
+}
+
+static INLINE int string_may_modify(const struct pike_string * s)
+{
+    return !string_is_static(s) && !string_is_substring(s)
+      && s->refs == 1;
+}
+
+static INLINE int string_may_modify_len(const struct pike_string * s)
+{
+    return s->refs == 1;
+}
+
+
+/* Returns true if str could contain n. */
+PMOD_EXPORT int string_range_contains( struct pike_string *str, int n )
+{
+  INT32 min, max;
+  check_string_range( str, 1, &min, &max );
+  if( n >= min && n <= max )
+    return 1;
+  return 0;
+}
+
+/* Returns true if str2 could be in str1. */
+PMOD_EXPORT int string_range_contains_string( struct pike_string *str1,
+                                              struct pike_string *str2 )
+{
+  INT32 max1, min1;
+  INT32 max2, min2;
+  if( !str2->len ) return 1; /* Empty string is part of every string */
+  check_string_range( str1, 1, &min1, &max1 );
+  check_string_range( str2, 1, &min2, &max2 );
+  if( (min2 < min1) || (max2 > max1) )
+  {
+    if( (str1->flags & STRING_CONTENT_CHECKED) ==
+        (str2->flags & STRING_CONTENT_CHECKED) )
+      return 0;
+    /* fallback to simple size-shift check.  */
+    return str1->size_shift >= str2->size_shift;
+  }
+  return 1;
+}
+
+PMOD_EXPORT void check_string_range( struct pike_string *str,
+                                     int loose,
+                                     INT32 *min, INT32 *max )
+{
+  INT32 s_min = MAX_INT32;
+  INT32 s_max = MIN_INT32;
+  ptrdiff_t i;
+
+  if( loose || ((str->flags & STRING_CONTENT_CHECKED ) && (!str->size_shift || !max)) )
+  {
+    if( str->flags & STRING_CONTENT_CHECKED )
+    {
+      switch (str->size_shift) {
+      case eightbit:
+        s_min = str->min;
+        s_max = str->max;
+        break;
+      case sixteenbit:
+        s_min = str->min;
+        s_max = str->max;
+        s_min *= 256;
+        s_max *= 256;
+        s_max += 255;
+        break;
+      case thirtytwobit: {
+        unsigned INT32 tmp;
+
+        tmp = str->min;
+        tmp *= (1 << 24);
+        s_min = tmp;
+
+        tmp = str->max;
+        tmp *= (1 << 24);
+        tmp += (1 << 24) - 1;
+        s_max = tmp;
+        break;
+      }
+      }
+    }
+    else
+    {
+      switch( str->size_shift )
+      {
+        case 2: s_min = MIN_INT32; s_max=MAX_INT32; break;
+        case 1: s_min = 0; s_max = 65535; break;
+        case 0: s_min = 0; s_max = 255; break;
+      }
+    }
+  }
+  else
+  {
+    str->flags |= STRING_CONTENT_CHECKED;
+
+    switch( str->size_shift )
+    {
+      case 0:
+       {
+         p_wchar0 *p = (p_wchar0*)str->str;
+         int upper = 0, lower = 0;
+         for( i=0; i<str->len; i++,p++ )
+         {
+           /* For 7-bit strings it's easy to check for
+            * lower/uppercase, so do that here as well.
+            */
+           if( *p >= 'A' && *p <= 'Z') upper++;
+           if( *p >= 'a' && *p <= 'z') lower++;
+
+           if( *p > s_max ) s_max = *p;
+           if( *p < s_min ) s_min = *p;
+         }
+
+         if( s_max < 128 )
+         {
+           if( !lower )
+             str->flags |= STRING_IS_UPPERCASE;
+           if( !upper )
+             str->flags |= STRING_IS_LOWERCASE;
+         }
+       }
+       str->min = s_min;
+       str->max = s_max;
+       break;
+
+      case 1:
+       {
+         p_wchar1 *p = (p_wchar1*)str->str;
+         for( i=0; i<str->len; i++,p++ )
+         {
+           if( *p > s_max ) s_max = *p;
+           if( *p < s_min ) s_min = *p;
+         }
+       }
+       str->min = s_min / 256;
+       str->max = s_max / 256;
+       break;
+
+      case 2:
+       {
+         p_wchar2 *p = (p_wchar2*)str->str;
+         for( i=0; i<str->len; i++,p++ )
+         {
+           if( *p > s_max ) s_max = *p;
+           if( *p < s_min ) s_min = *p;
+         }
+       }
+       str->min = (unsigned INT32)s_min / (1 << 24);
+       str->max = (unsigned INT32)s_max / (1 << 24);
+       break;
+    }
+  }
+  if( min ) *min = s_min;
+  if( max ) *max = s_max;
+}
 
 static INLINE int find_magnitude1(const p_wchar1 *s, ptrdiff_t len)
 {
@@ -133,48 +268,12 @@ static INLINE int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
   return 0;
 }
 
-static INLINE int min_magnitude(p_wchar2 c)
+static INLINE enum size_shift min_magnitude(const unsigned c)
 {
-  if(c<0) return 2;
-  if(c<256) return 0;
-  if(c<65536) return 1;
-  return 2;
+  return LIKELY(c<256) ? 0 : LIKELY(c<65536) ? 1 : 2;
 }
 
-static INLINE p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
-{
-  switch(size)
-  {
-    case 0: return ((p_wchar0 *)str)[pos];
-    case 1: return ((p_wchar1 *)str)[pos];
-    case 2: return ((p_wchar2 *)str)[pos];
-  }
-#ifdef PIKE_DEBUG
-  Pike_fatal("Illegal shift size!\n");
-#endif
-  return 0;
-}
-
-PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s,
-					 ptrdiff_t pos)
-{
-#ifdef PIKE_DEBUG
-  if(pos > s->len || pos<0) {
-    if (s->len) {
-      Pike_fatal("String index %"PRINTPTRDIFFT"d is out of "
-		 "range 0..%"PRINTPTRDIFFT"d.\n",
-		 pos, s->len-1);
-    } else {
-      Pike_fatal("Attempt to index the empty string with %"PRINTPTRDIFFT"d.\n",
-		 pos);
-    }
-  }
-#endif
-  return generic_extract(s->str,s->size_shift,pos);
-}
-
-PMOD_EXPORT void low_set_index(struct pike_string *s, ptrdiff_t pos,
-			       int value)
+void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
 {
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0) {
@@ -191,26 +290,22 @@ PMOD_EXPORT void low_set_index(struct pike_string *s, ptrdiff_t pos,
   if(pos == s->len && value)
     Pike_fatal("string zero termination foul!\n");
 #endif
-  switch(s->size_shift)
-  {
-    case 0: STR0(s)[pos]=value; break;
-    case 1: STR1(s)[pos]=value; break;
-    case 2: STR2(s)[pos]=value; break;
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal("Illegal shift size!\n");
-#endif
-  }
   s->flags |= STRING_NOT_HASHED;
+
+  if(!s->size_shift)
+    STR0(s)[pos]=value;
+  else if(s->size_shift == 1)
+    STR1(s)[pos]=value;
+  else
+    STR2(s)[pos]=value;
 }
 
 #ifdef PIKE_DEBUG
-PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a,
-						       int shift)
+PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string *a, enum size_shift shift)
 {
   if(a->size_shift != shift)
     Pike_fatal("Wrong STRX macro used!\n");
-  return a;
+  return (struct pike_string*)a;
 }
 #endif
 
@@ -242,13 +337,12 @@ CONVERT(2,1)
 #define TWO_SIZES(X,Y) (((X)<<2)+(Y))
 
 void generic_memcpy(PCHARP to,
-                    PCHARP from,
+                    const PCHARP from,
                     ptrdiff_t len)
 {
 #ifdef PIKE_DEBUG
   if(len<0)
-    Pike_fatal("Cannot copy %ld bytes!\n",
-	  DO_NOT_WARN((long)len));
+    Pike_fatal("Cannot copy %ld bytes!\n", (long)len);
 #endif
 
   switch(TWO_SIZES(from.shift,to.shift))
@@ -285,7 +379,7 @@ void generic_memcpy(PCHARP to,
   }
 }
 
-PMOD_EXPORT void pike_string_cpy(PCHARP to, struct pike_string *from)
+PMOD_EXPORT void pike_string_cpy(PCHARP to, const struct pike_string *from)
 {
   generic_memcpy(to,MKPCHARP_STR(from),from->len);
 }
@@ -298,7 +392,34 @@ PMOD_EXPORT void pike_string_cpy(PCHARP to, struct pike_string *from)
 #define DM(X)
 #endif
 
-static void locate_problem(int (*isproblem)(struct pike_string *))
+PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s,
+                                         ptrdiff_t pos)
+{
+  if(pos > s->len || pos<0) {
+    if (s->len) {
+      Pike_fatal("String index %"PRINTPTRDIFFT"d is out of "
+		 "range 0..%"PRINTPTRDIFFT"d.\n",
+		 pos, s->len-1);
+    } else {
+      Pike_fatal("Attempt to index the empty string with %"PRINTPTRDIFFT"d.\n",
+		 pos);
+    }
+  }
+  return generic_extract(s->str,s->size_shift,pos);
+}
+
+PMOD_EXPORT p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
+{
+  switch(size)
+  {
+    case 0: return ((p_wchar0 *)str)[pos];
+    case 1: return ((p_wchar1 *)str)[pos];
+    case 2: return ((p_wchar2 *)str)[pos];
+  }
+  UNREACHABLE(return 0);
+}
+
+static void locate_problem(int (*isproblem)(const struct pike_string *))
 {
   unsigned INT32 e;
   struct pike_string *s;
@@ -307,7 +428,6 @@ static void locate_problem(int (*isproblem)(struct pike_string *))
 
   for(e=0;e<htable_size;e++)
   {
-    LOCK_BUCKET(e);
     for(s=base_table[e];s;s=s->next)
     {
       if(isproblem(s))
@@ -319,7 +439,6 @@ static void locate_problem(int (*isproblem)(struct pike_string *))
 	DM(add_marks_to_memhdr(no,s));
       }
     }
-    UNLOCK_BUCKET(e);
   }
 
   DM(fprintf(stderr,"Plausible problem location(s):\n"));
@@ -329,43 +448,43 @@ static void locate_problem(int (*isproblem)(struct pike_string *))
   DM(dump_memhdr_locations(yes,no,0));
 }
 
-static int bad_pointer(struct pike_string *s)
+static int bad_pointer(const struct pike_string *s)
 {
   return (((ptrdiff_t)s)&(sizeof(struct pike_string *)-1));
 }
 
-static int has_zero_refs(struct pike_string *s)
+static int has_zero_refs(const struct pike_string *s)
 {
   return s->refs<=0;
 }
-static int wrong_hash(struct pike_string *s)
+static int wrong_hash(const struct pike_string *s)
 {
   return s->hval != do_hash(s);
 }
-static int improper_zero_termination(struct pike_string *s)
+static int improper_zero_termination(const struct pike_string *s)
 {
   return index_shared_string(s,s->len);
 }
 #else
 #define locate_problem(X)
-#endif
+#endif /* PIKE_DEBUG */
 
 /* Find a string in the shared string table.
- * This assumes that the string is minimized!!!! 
+ * This assumes that the string is minimized!!!!
  */
-static INLINE struct pike_string *internal_findstring(const char *s,
-						      ptrdiff_t len,
-						      int size_shift,
-						      size_t hval)
+static struct pike_string *internal_findstring(const char *s,
+                                               ptrdiff_t len,
+                                               enum size_shift size_shift,
+                                               size_t hval)
 {
-  struct pike_string *curr,**prev, **base;
-#ifndef HASH_PREFIX
+  struct pike_string *curr;
+//,**prev, **base;
   unsigned int depth=0;
-#endif
+  unsigned int prefix_depth=0;
+
   size_t h;
-  LOCK_BUCKET(hval);
   h=HMODULO(hval);
-  for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
+  for(curr = base_table[h]; curr; curr = curr->next)
   {
 #ifdef PIKE_DEBUG
     if(curr->refs<1)
@@ -377,79 +496,82 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 #endif
     debug_malloc_touch(curr);
 
-    if (hval == curr->hval &&
-	len==curr->len &&
-	size_shift==curr->size_shift &&
-	( curr->str == s ||
-	  !MEMCMP(curr->str, s,len<<size_shift))) /* found it */
-    {
-      *prev = curr->next;
-      curr->next = *base;
-      *base = curr;
-      UNLOCK_BUCKET(hval);
-      return curr;		/* pointer to string */
-    }
-#ifndef HASH_PREFIX
-    if (curr->len > (ptrdiff_t)HASH_PREFIX)
-      depth++;
-#endif
+    if ( len == curr->len &&
+        size_shift == curr->size_shift &&
+         hval == curr->hval &&
+        ( curr->str == s ||
+          !memcmp(curr->str, s,len<<size_shift))) /* found it */
+      return curr;
+
+    depth++;
+    if (curr->len > (ptrdiff_t)hash_prefix_len)
+      prefix_depth++;
   }
-#ifndef HASH_PREFIX
+  if (depth > need_new_hashkey_depth) {
+    /* Keep track of whether the hashtable is getting unbalanced. */
+    need_new_hashkey_depth = depth;
+  }
   /* These heuruistics might require tuning! /Hubbe */
-  if (depth > need_more_hash_prefix_depth)
+  if (prefix_depth > need_more_hash_prefix_depth)
   {
 #if 0
     fprintf(stderr,
-	    "depth=%d  num_strings=%d need_more_hash_prefix_depth=%d\n"
-	    "  HASH_PREFIX=%d\n",
-	    depth, num_strings, need_more_hash_prefix_depth,
-	    HASH_PREFIX);
+	    "prefix_depth=%d  num_strings=%d need_more_hash_prefix_depth=%d\n"
+	    "  hash_prefix_len=%d\n",
+	    prefix_depth, num_strings, need_more_hash_prefix_depth,
+	    hash_prefix_len);
 #endif /* 0 */
-    need_more_hash_prefix_depth = depth;
+    need_more_hash_prefix_depth = prefix_depth;
   }
-#endif /* !HASH_PREFIX */
-  UNLOCK_BUCKET(hval);
   return 0; /* not found */
 }
 
-PMOD_EXPORT struct pike_string *binary_findstring(const char *foo, ptrdiff_t l)
+struct pike_string *binary_findstring(const char *foo, ptrdiff_t l)
 {
   return internal_findstring(foo, l, 0, StrHash(foo,l));
 }
 
-PMOD_EXPORT struct pike_string *findstring(const char *foo)
+struct pike_string *binary_findstring_pcharp(PCHARP foo, ptrdiff_t l)
 {
-  return binary_findstring(foo, strlen(foo));
+  int in = foo.shift;
+  void *tmp = NULL;
+  struct pike_string *res;
+  if( !foo.shift )
+    return binary_findstring( (void*)foo.ptr, l );
+
+  if( UNLIKELY(foo.shift == 2) )
+    foo.shift=find_magnitude2( (void*)foo.ptr, l );
+  else if( foo.shift == 1 )
+    foo.shift=find_magnitude1( (void*)foo.ptr, l );
+
+  if( UNLIKELY(foo.shift != in) )
+  {
+    tmp = malloc( l * (1<<foo.shift) );
+    switch(in)
+    {
+      case 1:
+	convert_1_to_0( tmp, (void*)foo.ptr, l );
+	break;
+      case 2:
+	if( foo.shift == 1 )
+	  convert_2_to_1( tmp, (void*)foo.ptr, l );
+	else
+	  convert_2_to_0( tmp, (void*)foo.ptr, l );
+    }
+    foo.ptr = tmp;
+  }
+
+  res=internal_findstring((void*)foo.ptr, l, foo.shift,
+			  low_do_hash(foo.ptr,l,foo.shift));
+
+  if( tmp )
+    free( tmp );
+  return res;
 }
 
-/*
- * find a string that is already shared and move it to the head
- * of that list in the hastable
- */
-static struct pike_string *propagate_shared_string(const struct pike_string *s,
-						   ptrdiff_t h)
+struct pike_string *findstring(const char *foo)
 {
-  struct pike_string *curr, **prev, **base;
-
-  for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
-  {
-    if (curr == s) /* found it */
-    {
-      *prev=curr->next;
-      curr->next=*base;
-      *base=curr;
-      return curr;
-    }
-#ifdef PIKE_DEBUG
-    if(curr->refs<1)
-    {
-      debug_dump_pike_string(curr, 70);
-      locate_problem(has_zero_refs);
-      Pike_fatal("String with no references.\n");
-    }
-#endif
-  }
-  return 0; /* not found */
+  return binary_findstring(foo, strlen(foo));
 }
 
 /*** rehash ***/
@@ -486,26 +608,9 @@ static void stralloc_rehash(void)
   old=htable_size;
   old_base=base_table;
 
-#ifdef PIKE_RUN_UNLOCKED
-  mt_lock(bucket_locks);
-  if(old != htable_size)
-  {
-    /* Someone got here before us */
-    mt_lock(bucket_locks);
-    return;
-  }
+  SET_HSIZE(htable_size<<1);
 
-  /* Now that we have bucket zero, the hash table
-   * cannot change, go ahead and lock ALL buckets.
-   * NOTE: bucket zero is already locked
-   */
-  for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
-#endif
-
-  SET_HSIZE( ++hashprimes_entry );
-
-  base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
-  MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
+  base_table=xcalloc(sizeof(struct pike_string *), htable_size);
 
   need_more_hash_prefix_depth = 0;
 
@@ -513,122 +618,63 @@ static void stralloc_rehash(void)
     rehash_string_backwards(old_base[h]);
 
   if(old_base)
-    free((char *)old_base);
-
-#ifdef PIKE_RUN_UNLOCKED
-  for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
-#endif
+    free(old_base);
 }
 
 /* Allocation of strings */
 
-/* Without the str at the end, to get the size of the header. */
-struct pike_string_hdr {
-  PIKE_STRING_CONTENTS;
-};
+#define STRING_BLOCK	2048
 
-/* Allocate some fixed string sizes with BLOCK_ALLOC. */
 
-/* Use the BLOCK_ALLOC() stuff for short strings */
+static struct block_allocator string_allocator =
+  BA_INIT_PAGES(sizeof(struct pike_string), 2);
+static struct block_allocator substring_allocator =
+  BA_INIT_PAGES(sizeof(struct substring_pike_string), 1);
 
-#undef INIT_BLOCK
-#ifdef ATOMIC_SVALUE
-#define INIT_BLOCK(NEW_STR) do {				\
-    (NEW_STR)->ref_type = T_STRING;				\
-    (NEW_STR)->refs = 0;					\
-    add_ref((NEW_STR));						\
-    (NEW_STR)->flags =						\
-      STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;	\
-  } while(0)
-#else /* !ATOMIC_SVALUE */
-#define INIT_BLOCK(NEW_STR) do {				\
-    (NEW_STR)->refs = 0;					\
-    add_ref((NEW_STR));						\
-    (NEW_STR)->flags =						\
-      STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;	\
-  } while(0)
-#endif
+static void free_string_content(struct pike_string * s)
+{
+  switch (s->alloc_type)
+  {
+   case STRING_ALLOC_STATIC:
+     break;
+   case STRING_ALLOC_MALLOC:
+     free(s->str);
+     break;
+   case STRING_ALLOC_BA:
+     ba_free(&string_allocator, s->str);
+     break;
+   case STRING_ALLOC_SUBSTRING:
+     free_string(((struct substring_pike_string*)s)->parent);
+     break;
+  }
+}
 
-#define SHORT_STRING_BLOCK	256
-#define SHORT_STRING_THRESHOLD	15 /* % 4 === -1 */
+static void free_unlinked_pike_string(struct pike_string * s)
+{
+  free_string_content(s);
+  switch(s->struct_type)
+  {
+   case STRING_STRUCT_STRING:
+     ba_free(&string_allocator, s);
+     break;
+   case STRING_STRUCT_SUBSTRING:
+     ba_free(&substring_allocator, s);
+     break;
+  }
+}
 
-struct short_pike_string0 {
-  PIKE_STRING_CONTENTS;
-  p_wchar0 str[SHORT_STRING_THRESHOLD+1];
-};
-
-struct short_pike_string1 {
-  PIKE_STRING_CONTENTS;
-  p_wchar1 str[SHORT_STRING_THRESHOLD+1];
-};
-
-struct short_pike_string2 {
-  PIKE_STRING_CONTENTS;
-  p_wchar2 str[SHORT_STRING_THRESHOLD+1];
-};
-
-BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
-BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK)
-BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
-
-#undef INIT_BLOCK
-#define INIT_BLOCK(x)
-
-#define really_free_short_pike_string(s) do { \
-     if (!s->size_shift) { \
-       really_free_short_pike_string0((struct short_pike_string0 *)s); \
-     } else if (s->size_shift == 1) { \
-       really_free_short_pike_string1((struct short_pike_string1 *)s); \
-     DO_IF_DEBUG( \
-     } else if (s->size_shift != 2) { \
-       Pike_fatal("Unsupported string shift: %d\n", s->size_shift); \
-     ) \
-     } else { \
-       really_free_short_pike_string2((struct short_pike_string2 *)s); \
-     } \
-   } while(0)
-
-#define free_unlinked_pike_string(s) do { \
-    if (s->len <= SHORT_STRING_THRESHOLD) { \
-      really_free_short_pike_string(s); \
-    } else { \
-      debug_free((char *)s, DMALLOC_LOCATION(), 1); \
-    } \
-  } while(0)
 
 /* note that begin_shared_string expects the _exact_ size of the string,
  * not the maximum size
  */
 PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
 {
-  struct pike_string *t;
-#ifdef PIKE_DEBUG
-  extern int d_flag;
-  if(d_flag>10)
-    verify_shared_strings_tables();
-#endif
-  if (len <= SHORT_STRING_THRESHOLD) {
-    t=(struct pike_string *)alloc_short_pike_string0();
-  } else {
-    t=(struct pike_string *)xalloc(len + 1 + sizeof(struct pike_string_hdr));
-    t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED;
-  }
-#ifdef ATOMIC_SVALUE
-  t->ref_type = T_STRING;
-#endif
-  t->refs = 0;
-  add_ref(t);	/* For DMALLOC */
-  t->str[len]=0;
-  t->len=len;
-  t->size_shift=0;
-  DO_IF_DEBUG(t->next = NULL);
-  return t;
+  return debug_begin_wide_shared_string(len, 0);
 }
 
 static void link_pike_string(struct pike_string *s, size_t hval)
 {
   size_t h;
-
 #ifdef PIKE_DEBUG
   if (!(s->flags & STRING_NOT_SHARED)) {
     debug_dump_pike_string(s, 70);
@@ -639,27 +685,34 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     Pike_fatal ("Got undefined contents in pike string %p.\n", s);
 #endif
 
-  LOCK_BUCKET(hval);
   h=HMODULO(hval);
   s->next = base_table[h];
   base_table[h] = s;
   s->hval=hval;
   s->flags &= ~(STRING_NOT_HASHED|STRING_NOT_SHARED);
   num_strings++;
-  UNLOCK_BUCKET(hval);
 
-  if(num_strings > MAX_AVG_LINK_LENGTH * htable_size)
+  if(num_strings > htable_size) {
     stralloc_rehash();
+  }
 
-#ifndef HASH_PREFIX
   /* These heuristics might require tuning! /Hubbe */
-  if(need_more_hash_prefix_depth > MAX_AVG_LINK_LENGTH * 4)
+  if((need_more_hash_prefix_depth > 4) ||
+     (need_new_hashkey_depth > 128))
   {
     /* Changed heuristic 2005-01-17:
      *
-     *   Increase HASH_PREFIX if there's some bucket containing
-     *   more than MAX_AVG_LINK_LENGTH * 4 strings that are longer
-     *   than HASH_PREFIX.
+     *   Increase hash_prefix_len if there's some bucket containing
+     *   more than 4 strings that are longer
+     *   than hash_prefix_len.
+     * /grubba
+     *
+     * Changed heuristic 2011-12-30:
+     *
+     *   Generate a new hash key if there's some bucket containing
+     *   more than  16 strings. This ought to
+     *   suffice to alleviate the #hashdos vulnerability.
+     *
      * /grubba
      */
 
@@ -667,26 +720,19 @@ static void link_pike_string(struct pike_string *s, size_t hval)
      * /Hubbe
      */
 
-#ifdef PIKE_RUN_UNLOCKED
-    mt_lock(bucket_locks);
-    if(need_more_hash_prefix_depth <= MAX_AVG_LINK_DEPTH * 4)
-    {
-      /* Someone got here before us */
-      mt_lock(bucket_locks);
-      return;
+    if (need_new_hashkey_depth > 128) {
+      /* A simple mixing function. */
+      hashkey ^= (hashkey << 5) ^ (current_time.tv_sec ^ current_time.tv_usec);
+      need_new_hashkey_depth = 0;
     }
-    for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
-#endif
 
-    /* NOTE: No need to update to the corect value, since that will
+    if (need_more_hash_prefix_depth > 4)
+      hash_prefix_len=hash_prefix_len*2;
+
+    /* NOTE: No need to update to the correct values, since that will
      *       be done on demand.
      */
     need_more_hash_prefix_depth=0;
-    HASH_PREFIX=HASH_PREFIX*2;
-#if 0
-    fprintf(stderr, "Doubling HASH_PREFIX to %d and rehashing\n",
-	    HASH_PREFIX);
-#endif /* 0 */
 
     for(h=0;h<htable_size;h++)
     {
@@ -705,55 +751,93 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 	base_table[h2]=tmp2;
       }
     }
-#ifdef PIKE_RUN_UNLOCKED
-    for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
-#endif
   }
-#endif
 }
 
-PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift)
+PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum size_shift shift)
 {
   struct pike_string *t = NULL;
+  size_t bytes;
+  ONERROR fe;
+
+  if ((ptrdiff_t)len < 0 || DO_SIZE_T_ADD_OVERFLOW(len, 1, &bytes) ||
+      DO_SIZE_T_MUL_OVERFLOW(bytes, 1 << shift, &bytes)) {
+    Pike_error("String is too large.\n");
+  }
+
 #ifdef PIKE_DEBUG
-  extern int d_flag;
   if(d_flag>10)
     verify_shared_strings_tables();
 #endif
-  if (len <= SHORT_STRING_THRESHOLD) {
-    if (!shift) {
-      t = (struct pike_string *)alloc_short_pike_string0();
-    } else if (shift == 1) {
-      t = (struct pike_string *)alloc_short_pike_string1();
 #ifdef PIKE_DEBUG
-    } else if (shift != 2) {
+    if (shift > 2)
       Pike_fatal("Unsupported string shift: %d\n", shift);
 #endif /* PIKE_DEBUG */
-    } else {
-      t = (struct pike_string *)alloc_short_pike_string2();
-    }
+  t=ba_alloc(&string_allocator);
+  /* we mark the string as static here, to avoid double free if the
+   * allocations fail
+   */
+  t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+  t->alloc_type = STRING_ALLOC_STATIC;
+  t->struct_type = STRING_STRUCT_STRING;
+  SET_ONERROR(fe,free_unlinked_pike_string,t);
+  if (bytes <= sizeof(struct pike_string))
+  {
+    t->str = ba_alloc(&string_allocator);
+    t->alloc_type = STRING_ALLOC_BA;
   } else {
-    t=(struct pike_string *)xalloc(((len + 1)<<shift) +
-				   sizeof(struct pike_string_hdr));
-    t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+    t->str = xalloc(bytes);
+    t->alloc_type = STRING_ALLOC_MALLOC;
   }
-#ifdef ATOMIC_SVALUE
-  t->ref_type = T_STRING;
-#endif
   t->refs = 0;
+  t->size_shift=shift;
   add_ref(t);	/* For DMALLOC */
   t->len=len;
-  t->size_shift=shift;
   DO_IF_DEBUG(t->next = NULL);
+  UNSET_ONERROR(fe);
   low_set_index(t,len,0);
   return t;
 }
 
-PMOD_EXPORT void hash_string(struct pike_string *s)
+static struct pike_string * make_static_string(const char * str, size_t len,
+                                               enum size_shift shift)
 {
-  if (!(s->flags & STRING_NOT_HASHED)) return;
-  s->hval=do_hash(s);
-  s->flags &= ~STRING_NOT_HASHED;
+  struct pike_string * t = ba_alloc(&string_allocator);
+
+  t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+  t->size_shift = shift;
+  t->alloc_type = STRING_ALLOC_STATIC; 
+  t->struct_type = STRING_STRUCT_STRING;
+  t->str = (char *)str;
+  t->refs = 0;
+  t->len = len;
+  add_ref(t);  /* For DMALLOC */
+
+  return t;
+}
+
+PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size_t len,
+                                                           enum size_shift shift)
+{
+  struct pike_string *s;
+  ptrdiff_t h = StrHash(str, len);
+
+  s = internal_findstring(str,len,shift,h);
+
+  if (!s) {
+    s = make_static_string(str, len, shift);
+    link_pike_string(s, h);
+  } else {
+    if (!string_is_static(s))
+    {
+      free_string_content(s);
+      s->alloc_type = STRING_ALLOC_STATIC;
+      s->str = (char*)str;
+    }
+    add_ref(s);
+  }
+
+  return s;
 }
 
 /*
@@ -770,23 +854,23 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
   if (d_flag) {
     switch (s->size_shift) {
       case 0:
-	break;
+       break;
 
       case 1:
-	if(!find_magnitude1(STR1(s),s->len))
-	  Pike_fatal ("String %p that should have shift 1 really got 0.\n", s);
-	break;
+       if(!find_magnitude1(STR1(s),s->len))
+         Pike_fatal ("String %p that should have shift 1 really got 0.\n", s);
+       break;
 
       case 2: {
-	int m = find_magnitude2 (STR2 (s), s->len);
-	if (m != 2)
-	  Pike_fatal ("String %p that should have shift 2 really got %d.\n",
-		      s, m);
-	break;
+       int m = find_magnitude2 (STR2 (s), s->len);
+       if (m != 2)
+         Pike_fatal ("String %p that should have shift 2 really got %d.\n",
+                     s, m);
+       break;
       }
 
       default:
-	Pike_fatal("ARGHEL! size_shift:%d\n", s->size_shift);
+       Pike_fatal("ARGHEL! size_shift:%d\n", s->size_shift);
     }
   }
 #endif
@@ -798,7 +882,7 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
   }
   s2 = internal_findstring(s->str, len, s->size_shift, h);
 #ifdef PIKE_DEBUG
-  if(s2==s) 
+  if(s2==s)
     Pike_fatal("end_shared_string called twice! (or something like that)\n");
 #endif
 
@@ -812,7 +896,6 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
   }
 
   return s;
-  
 }
 
 /*
@@ -823,39 +906,34 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 {
   struct pike_string *s2;
 
-  switch(s->size_shift)
+  switch(UNLIKELY(s->size_shift))
   {
-    default:
-#ifdef PIKE_DEBUG
-      Pike_fatal("ARGHEL! size_shift:%d\n", s->size_shift);
-
     case 2:
-#endif
       switch(find_magnitude2(STR2(s),s->len))
       {
-	case 0:
-	  s2=begin_shared_string(s->len);
-	  convert_2_to_0(STR0(s2),STR2(s),s->len);
-	  free_string(s);
-	  s=s2;
-	  break;
+       case 0:
+         s2=begin_shared_string(s->len);
+         convert_2_to_0(STR0(s2),STR2(s),s->len);
+         free_string(s);
+         s=s2;
+         break;
 
-	case 1:
-	  s2=begin_wide_shared_string(s->len,1);
-	  convert_2_to_1(STR1(s2),STR2(s),s->len);
-	  free_string(s);
-	  s=s2;
-	  /* Fall though */
+       case 1:
+         s2=begin_wide_shared_string(s->len,1);
+         convert_2_to_1(STR1(s2),STR2(s),s->len);
+         free_string(s);
+         s=s2;
+         /* Fall though */
       }
       break;
-      
+
     case 1:
       if(!find_magnitude1(STR1(s),s->len))
       {
-	s2=begin_shared_string(s->len);
-	convert_1_to_0(STR0(s2),STR1(s),s->len);
-	free_string(s);
-	s=s2;
+       s2=begin_shared_string(s->len);
+       convert_1_to_0(STR0(s2),STR1(s),s->len);
+       free_string(s);
+       s=s2;
       }
       break;
 
@@ -865,18 +943,6 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
   return low_end_shared_string(s);
 }
 
-#if 0
-PMOD_EXPORT struct pike_string *defer_end_string(struct pike_string *s)
-{
-#ifdef STRING_DEFER_THRESHOLD
-  if (s->len > STRING_DEFER_THRESHOLD) {
-    return s;
-  }
-#endif
-  return end_shared_string(s);
-}
-#endif
-
 PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string *str, ptrdiff_t len)
 {
   struct pike_string *tmp;
@@ -884,24 +950,10 @@ PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string 
   if(len > str->len)
     Pike_fatal("Cannot extend string here!\n");
 #endif
-  if( (str->len <= SHORT_STRING_THRESHOLD) ||
-      ((len > SHORT_STRING_THRESHOLD) && (str->len <= (len<<1))) )
-  {
-    /* Short string before and after or
-     * long string and at least half the length of the buffer.
-     *
-     * NOTE: We lose track of the actual buffer length here, so don't
-     *       use this function to shorten a string in decrements.
-     */
-    str->len=len;
-    SET_INDEX_PCHARP(MKPCHARP_STR(str), len, 0);
-    return end_shared_string(str);
-  }
   tmp = make_shared_binary_pcharp(MKPCHARP_STR(str),len);
   free_string(str);
   return tmp;
 }
-
 
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str,size_t len)
 {
@@ -909,10 +961,10 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str
   ptrdiff_t h = StrHash(str, len);
 
   s = internal_findstring(str,len,0,h);
-  if (!s) 
+  if (!s)
   {
     s=begin_shared_string(len);
-    MEMCPY(s->str, str, len);
+    memcpy(s->str, str, len);
     link_pike_string(s, h);
   } else {
     add_ref(s);
@@ -931,13 +983,8 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP st
       return make_shared_binary_string1((p_wchar1 *)(str.ptr),  len);
     case 2:
       return make_shared_binary_string2((p_wchar2 *)(str.ptr),  len);
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal("Unknown string width!\n");
-#endif
   }
-  /* NOT REACHED */
-  return NULL;	/* Keep the compiler happy */
+  UNREACHABLE(return NULL);
 }
 
 PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str)
@@ -966,10 +1013,10 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1
   h=low_do_hash(str, len, 1);
 
   s = internal_findstring((char *)str,len,1,h);
-  if (!s) 
+  if (!s)
   {
     s=begin_wide_shared_string(len,1);
-    MEMCPY(s->str, str, len<<1);
+    memcpy(s->str, str, len<<1);
     link_pike_string(s, h);
   } else {
     add_ref(s);
@@ -1001,10 +1048,10 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2
   h=low_do_hash(str, len, 2);
 
   s = internal_findstring((char *)str,len,2,h);
-  if (!s) 
+  if (!s)
   {
     s=begin_wide_shared_string(len,2);
-    MEMCPY(s->str, str, len<<2);
+    memcpy(s->str, str, len<<2);
     link_pike_string(s, h);
   } else {
     add_ref(s);
@@ -1041,21 +1088,28 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 
 static void unlink_pike_string(struct pike_string *s)
 {
-  size_t h;
-  LOCK_BUCKET(s->hval);
-  h= HMODULO(s->hval);
-  propagate_shared_string(s,h);
-#ifdef PIKE_DEBUG
-  if (base_table[h] != s) {
-    Pike_fatal("propagate_shared_string() failed. Probably got bogus pike_string.\n");
+  size_t h=HMODULO(s->hval);
+  struct pike_string *tmp=base_table[h], *p=NULL;
+
+  while( tmp )
+  {
+    if( tmp == s )
+    {
+      if( p )
+        p->next = s->next;
+      else
+        base_table[h] = s->next;
+      break;
+    }
+    p = tmp;
+    tmp = tmp->next;
   }
-#endif /* PIKE_DEBUG */
-  base_table[h]=s->next;
-#ifdef PIKE_DEBUG
+
+  if( !tmp )
+    Pike_fatal("unlink on non-shared string\n");
+
   s->next=(struct pike_string *)(ptrdiff_t)-1;
-#endif
   num_strings--;
-  UNLOCK_BUCKET(s->hval);
   s->flags |= STRING_NOT_SHARED;
 }
 
@@ -1074,7 +1128,6 @@ PMOD_EXPORT void do_free_unlinked_pike_string(struct pike_string *s)
 PMOD_EXPORT void really_free_string(struct pike_string *s)
 {
 #ifdef PIKE_DEBUG
-  extern int d_flag;
   if (s->refs) {
 #ifdef DEBUG_MALLOC
     describe_something(s, T_STRING, 0,2,0, NULL);
@@ -1089,18 +1142,19 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
     if(((ptrdiff_t)s->next) & 1)
       Pike_fatal("Freeing shared string again, memory corrupt or other bug!\n");
   }
-  if ((s->size_shift < 0) || (s->size_shift > 2)) {
+  if (s->size_shift > 2) {
     Pike_fatal("Freeing string with bad shift (0x%08x); could it be a type?\n",
-	  s->size_shift);
+         s->size_shift);
   }
 #endif
   if (!(s->flags & STRING_NOT_SHARED))
     unlink_pike_string(s);
   if (s->flags & STRING_CLEAR_ON_EXIT)
-    MEMSET(s->str, 0, s->len<<s->size_shift);
+    guaranteed_memset(s->str, 0, s->len<<s->size_shift);
   free_unlinked_pike_string(s);
   GC_FREE_SIMPLE_BLOCK(s);
 }
+
 
 void do_really_free_string(struct pike_string *s)
 {
@@ -1114,64 +1168,114 @@ PMOD_EXPORT void debug_free_string(struct pike_string *s)
     really_free_string(s);
 }
 
-
 /*
  * String table status
  */
 struct pike_string *add_string_status(int verbose)
 {
-  dynamic_buffer save_buf;
-  char b[200];
-
-  init_buf(&save_buf);
+  struct string_builder s;
+  init_string_builder(&s, 0);
 
   if (verbose)
   {
-    int allocd_strings=0;
-    int allocd_bytes=0;
-    int num_distinct_strings=0;
-    int bytes_distinct_strings=0;
-    ptrdiff_t overhead_bytes = 0;
+    long alloced_strings[8] = {0,0,0,0,0,0,0,0};
+    long alloced_bytes[8] = {0,0,0,0,0,0,0,0};
+    long num_distinct_strings[8] = {0,0,0,0,0,0,0,0};
+    long bytes_distinct_strings[8] = {0,0,0,0,0,0,0,0};
+    long overhead_bytes[8] = {0,0,0,0,0,0,0,0};
     unsigned INT32 e;
     struct pike_string *p;
     for(e=0;e<htable_size;e++)
     {
-      LOCK_BUCKET(e);
       for(p=base_table[e];p;p=p->next)
       {
-	num_distinct_strings++;
-	bytes_distinct_strings+=DO_ALIGN(p->len,sizeof(void *));
-	allocd_strings+=p->refs;
-	allocd_bytes+=p->refs*DO_ALIGN(p->len+3,sizeof(void *));
+	int key = p->size_shift + (string_is_malloced(p)?4:0);
+       num_distinct_strings[key]++;
+        alloced_bytes[key] += p->refs*sizeof(struct pike_string);
+       alloced_strings[key] += p->refs;
+        if (string_is_block_allocated(p)) {
+          alloced_bytes[key] +=
+            p->refs*sizeof(struct pike_string);
+        } else {
+          alloced_bytes[key] +=
+            p->refs*DO_ALIGN((p->len+3) << p->size_shift,sizeof(void *));
+        }
       }
-      UNLOCK_BUCKET(e);
     }
-    overhead_bytes=sizeof(struct pike_string_hdr)*num_distinct_strings;
-    my_strcat("\nShared string hash table:\n");
-    my_strcat("-------------------------\t Strings    Bytes\n");
+    string_builder_sprintf(&s,
+                          "\nShared string hash table:\n"
+                          "-------------------------\n"
+                          "\n"
+                          "Type          Count Distinct    Bytes   Actual Overhead    %%\n"
+                          "------------------------------------------------------------\n");
+    for(e = 0; e < 8; e++) {
+      int shift = e & 3;
+      ptrdiff_t overhead;
+      if (!num_distinct_strings[e]) continue;
+      if (shift != 3) {
+       if (e < 4) {
+         string_builder_sprintf(&s, "Short/%-2d   ", 8<<shift);
+       } else {
+         string_builder_sprintf(&s, "Long/%-2d    ", 8<<shift);
+       }
 
-    sprintf(b,"Total asked for\t\t\t%8ld %8ld\n",
-	    (long)allocd_strings, (long)allocd_bytes);
-    my_strcat(b);
-    sprintf(b,"Strings malloced\t\t%8ld %8ld + %ld overhead\n",
-	    (long)num_distinct_strings,
-	    (long)bytes_distinct_strings,
-	    DO_NOT_WARN((long)overhead_bytes));
-    my_strcat(b);
-    sprintf(b, "Space actually required/total string bytes %ld%%\n",
-	    DO_NOT_WARN((long)((bytes_distinct_strings + overhead_bytes)*100 /
-			       allocd_bytes)));
-    my_strcat(b);
+       overhead_bytes[e] =
+         (long)sizeof(struct pike_string) * num_distinct_strings[e];
+
+       alloced_strings[e|3] += alloced_strings[e];
+       alloced_bytes[e|3] += alloced_bytes[e];
+       num_distinct_strings[e|3] += num_distinct_strings[e];
+       bytes_distinct_strings[e|3] += bytes_distinct_strings[e];
+       overhead_bytes[e|3] += overhead_bytes[e];
+      } else {
+       if (e < 4) {
+         string_builder_sprintf(&s, "Total short");
+       } else {
+         string_builder_sprintf(&s, "Total long ");
+       }
+      }
+      string_builder_sprintf(&s,
+                            "%8ld %8ld %8ld %8ld %8ld ",
+                            alloced_strings[e], num_distinct_strings[e],
+                            alloced_bytes[e], bytes_distinct_strings[e],
+                            overhead_bytes[e]);
+      if (alloced_bytes[e]) {
+       string_builder_sprintf(&s, "%4d\n",
+                              (bytes_distinct_strings[e] +
+                               overhead_bytes[e]) * 100 /
+                              alloced_bytes[e]);
+      } else {
+       string_builder_strcat(&s, "   -\n");
+      }
+    }
+    alloced_strings[7] += alloced_strings[3];
+    alloced_bytes[7] += alloced_bytes[3];
+    num_distinct_strings[7] += num_distinct_strings[3];
+    bytes_distinct_strings[7] += bytes_distinct_strings[3];
+    overhead_bytes[7] += overhead_bytes[3];
+    string_builder_sprintf(&s,
+                          "------------------------------------------------------------\n"
+                          "Total      %8ld %8ld %8ld %8ld %8ld ",
+                          alloced_strings[7], num_distinct_strings[7],
+                          alloced_bytes[7], bytes_distinct_strings[7],
+                          overhead_bytes[7]);
+    if (alloced_bytes[7]) {
+      string_builder_sprintf(&s, "%4d\n",
+                            (bytes_distinct_strings[7] +
+                             overhead_bytes[7]) * 100 /
+                            alloced_bytes[7]);
+    } else {
+      string_builder_strcat(&s, "   -\n");
+    }
   }
 /*
   sprintf(b,"Searches: %ld    Average search length: %6.3f\n",
       (long)num_str_searches, (double)search_len / num_str_searches);
   my_strcat(b);
 */
-  return free_buf(&save_buf);
+  return finish_string_builder(&s);
 }
 
-/*** PIKE_DEBUG ***/
 #ifdef PIKE_DEBUG
 
 static long last_stralloc_verify=0;
@@ -1187,25 +1291,25 @@ PMOD_EXPORT void check_string(struct pike_string *s)
 
     switch (s->size_shift) {
       case 0:
-	break;
+       break;
       case 1: {
-	ptrdiff_t i;
-	p_wchar1 *str = STR1 (s);
-	for (i = 0; i < s->len; i++)
-	  if (str[i] > 0xff)
-	    goto size_shift_check_done;
-	Pike_fatal ("Shared string is too wide.\n");
+       ptrdiff_t i;
+       p_wchar1 *str = STR1 (s);
+       for (i = 0; i < s->len; i++)
+         if (str[i] > 0xff)
+           goto size_shift_check_done;
+       Pike_fatal ("Shared string is too wide.\n");
       }
       case 2: {
-	ptrdiff_t i;
-	p_wchar2 *str = STR2 (s);
-	for (i = 0; i < s->len; i++)
-	  if ((str[i] > 0xffff) || (str[i] < 0))
-	    goto size_shift_check_done;
-	Pike_fatal ("Shared string is too wide.\n");
+       ptrdiff_t i;
+       p_wchar2 *str = STR2 (s);
+       for (i = 0; i < s->len; i++)
+         if ((str[i] > 0xffff) || (str[i] < 0))
+           goto size_shift_check_done;
+       Pike_fatal ("Shared string is too wide.\n");
       }
       default:
-	Pike_fatal ("Invalid size shift %d.\n", s->size_shift);
+       Pike_fatal ("Invalid size shift %d.\n", s->size_shift);
     }
   size_shift_check_done:;
 
@@ -1214,7 +1318,7 @@ PMOD_EXPORT void check_string(struct pike_string *s)
       locate_problem(wrong_hash);
       Pike_fatal("Hash value changed?\n");
     }
-    
+
     if(debug_findstring(s) !=s)
       Pike_fatal("Shared string not shared.\n");
 
@@ -1236,136 +1340,90 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
   for(e=0;e<htable_size;e++)
   {
     h=0;
-    LOCK_BUCKET(e);
     for(s=base_table[e];s;s=s->next)
     {
       num++;
       h++;
 
       if (bad_pointer(s)) {
-	Pike_fatal("Odd string pointer in string table!\n");
+       Pike_fatal("Odd string pointer in string table!\n");
       }
 
       if(s->len < 0)
-	Pike_fatal("Shared string shorter than zero bytes.\n");
+       Pike_fatal("Shared string shorter than zero bytes.\n");
 
       if(s->refs <= 0)
       {
-	locate_problem(has_zero_refs);
-	Pike_fatal("Shared string had too few references.\n");
+       locate_problem(has_zero_refs);
+       Pike_fatal("Shared string had too few references.\n");
       }
 
       if(index_shared_string(s,s->len))
       {
-	locate_problem(improper_zero_termination);
-	Pike_fatal("Shared string didn't end with a zero.\n");
+       locate_problem(improper_zero_termination);
+       Pike_fatal("Shared string didn't end with a zero.\n");
       }
 
       if(do_hash(s) != s->hval)
       {
-	locate_problem(wrong_hash);
-	Pike_fatal("Shared string hashed to other number.\n");
+       locate_problem(wrong_hash);
+       Pike_fatal("Shared string hashed to other number.\n");
       }
 
       if(HMODULO(s->hval) != e)
       {
-	locate_problem(wrong_hash);
-	Pike_fatal("Shared string hashed to wrong place.\n");
+       locate_problem(wrong_hash);
+       Pike_fatal("Shared string hashed to wrong place.\n");
       }
 
       if(h>10000)
       {
-	struct pike_string *s2;
-	for(s2=s;s2;s2=s2->next)
-	  if(s2 == s)
-	    Pike_fatal("Shared string table is cyclic.\n");
-	h=0;
+       struct pike_string *s2;
+       for(s2=s;s2;s2=s2->next)
+         if(s2 == s)
+           Pike_fatal("Shared string table is cyclic.\n");
+       h=0;
       }
     }
-    UNLOCK_BUCKET(e);
   }
   if(num != num_strings)
     Pike_fatal("Num strings is wrong %d!=%d\n",num,num_strings);
 }
 
-int safe_debug_findstring(struct pike_string *foo)
+int safe_debug_findstring(const struct pike_string *foo)
 {
   unsigned INT32 e;
   if(!base_table) return 0;
   for(e=0;e<htable_size;e++)
   {
     struct pike_string *p;
-    LOCK_BUCKET(e);
     for(p=base_table[e];p;p=p->next)
     {
       if(p==foo)
       {
-	UNLOCK_BUCKET(e);
-	return 1;
+       return 1;
       }
     }
-    UNLOCK_BUCKET(e);
   }
   return 0;
 }
 
-struct pike_string *debug_findstring(const struct pike_string *foo)
+/* for once, this is actually a debug function! */
+const struct pike_string *debug_findstring(const struct pike_string *foo)
 {
-  struct pike_string *tmp;
-  tmp=propagate_shared_string(foo, HMODULO(foo->hval));
-
-#if 0
-  if(!tmp)
-  {
-    unsigned INT32 e;
-    struct pike_string *tmp2;
-    fprintf(stderr,"String %p %ld %ld %s\n",
-	    foo,
-	    (long)foo->hval,
-	    (long)foo->len,
-	    foo->str);
-
-    LOCK_BUCKET(foo->hval);
-    fprintf(stderr,"------ %p %ld\n",
-	    base_table[HMODULO(foo->hval)],
-	    foo->hval);
-    for(tmp2=base_table[HMODULO(foo->hval)];tmp2;tmp2=tmp2->next)
-    {
-      if(tmp2 == tmp)
-	fprintf(stderr,"!!%p!!->",tmp2);
-      else
-	fprintf(stderr,"%p->",tmp2);
-    }
-    fprintf(stderr,"0\n");
-    UNLOCK_BUCKET(foo->hval);
-
-    for(e=0;e<htable_size;e++)
-    {
-      LOCK_BUCKET(e);
-      for(tmp2=base_table[e];tmp2;tmp2=tmp2->next)
-      {
-	if(tmp2 == tmp)
-	  fprintf(stderr,"String found in hashbin %ld (not %ld)\n",
-		  (long)e,
-		  (long)HMODULO(foo->hval));
-      }
-      UNLOCK_BUCKET(e);
-    }
-  }
-#endif
-  return tmp;
+  return safe_debug_findstring(foo) ? foo : 0;
 }
 
-PMOD_EXPORT void debug_dump_pike_string(struct pike_string *s, INT32 max)
+PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max)
 {
   INT32 e;
   fprintf(stderr,"0x%p: %ld refs, len=%ld, size_shift=%d, hval=%lux (%lx)\n",
-	  s,
-	  (long)s->refs,
-	  DO_NOT_WARN((long)s->len),
-	  s->size_shift,
-	  DO_NOT_WARN((unsigned long)s->hval),
-	  DO_NOT_WARN((unsigned long)StrHash(s->str, s->len)));
+         s,
+         (long)s->refs,
+         (long)s->len,
+         s->size_shift,
+         (unsigned long)s->hval,
+         (unsigned long)StrHash(s->str, s->len));
   fprintf(stderr," \"");
   for(e=0;e<s->len && max>0;e++)
   {
@@ -1378,14 +1436,14 @@ PMOD_EXPORT void debug_dump_pike_string(struct pike_string *s, INT32 max)
       case '\b': fprintf(stderr,"\\b"); max-=2; break;
 
       default:
-	if(is8bitalnum(c) || c==' ' || isgraph(c))
-	{
-	  putc(c,stderr);
-	  max--;
-	}else{
-	  fprintf(stderr,"\\%03o",c);
-	  max-=4;
-	}
+       if(is8bitalnum(c) || c==' ' || isgraph(c))
+       {
+         putc(c,stderr);
+         max--;
+       }else{
+         fprintf(stderr,"\\%03o",c);
+         max-=4;
+       }
     }
   }
   if(!max)
@@ -1400,80 +1458,60 @@ void dump_stralloc_strings(void)
   struct pike_string *p;
   for(e=0;e<htable_size;e++)
   {
-    LOCK_BUCKET(e);
     for(p=base_table[e];p;p=p->next) {
       debug_dump_pike_string(p, 70);
 #ifdef DEBUG_MALLOC
       debug_malloc_dump_references (p, 2, 1, 0);
 #endif
     }
-    UNLOCK_BUCKET(e);
   }
 }
 
-#endif
+#endif /* PIKE_DEBUG */
 
 
 /*** String compare functions ***/
 
 /* does not take locale into account */
-PMOD_EXPORT int low_quick_binary_strcmp(char *a, ptrdiff_t alen,
-					char *b, ptrdiff_t blen)
+int low_quick_binary_strcmp(const char *a, ptrdiff_t alen,
+                           const char *b, ptrdiff_t blen)
 {
   int tmp;
   if(alen > blen)
   {
-    tmp=MEMCMP(a, b, blen);
+    tmp=memcmp(a, b, blen);
     if(tmp) return tmp;
     return 1;
   }else if(alen < blen){
-    tmp=MEMCMP(a, b, alen);
+    tmp=memcmp(a, b, alen);
     if(tmp) return tmp;
     return -1;
   }else{
-    return MEMCMP(a, b, alen);
+    return memcmp(a, b, alen);
   }
 }
 
 
 /* does not take locale into account */
 ptrdiff_t generic_quick_binary_strcmp(const char *a,
-						  ptrdiff_t alen, int asize,
-						  const char *b,
-						  ptrdiff_t blen, int bsize)
+                                      ptrdiff_t alen, int asize,
+                                      const char *b,
+                                      ptrdiff_t blen, int bsize)
 {
+  ptrdiff_t pos;
   if(!asize && !bsize)
+    return low_quick_binary_strcmp(a, alen, b, blen);
+
+  for(pos=0;pos< MINIMUM(alen,blen) ;pos++)
   {
-    int tmp;
-    /* FIXME: Does MEMCMP() guarantee that the characters
-     *        are compared as unsigned?
-     *	/grubba 2006-03-11
-     */
-    if(alen > blen)
-    {
-      tmp=MEMCMP(a, b, blen);
-      if(tmp) return tmp;
+    p_wchar2 ac=generic_extract(a,asize,pos);
+    p_wchar2 bc=generic_extract(b,bsize,pos);
+    if(ac != bc) {
+      if (ac < bc) return -1;
       return 1;
-    }else if(alen < blen){
-      tmp=MEMCMP(a, b, alen);
-      if(tmp) return tmp;
-      return -1;
-    }else{
-      return MEMCMP(a, b, alen);
     }
-  }else{
-    ptrdiff_t pos;
-    for(pos=0;pos< MINIMUM(alen,blen) ;pos++)
-    {
-      p_wchar2 ac=generic_extract(a,asize,pos);
-      p_wchar2 bc=generic_extract(b,bsize,pos);
-      if(ac != bc) {
-	if (ac < bc) return -1;
-	return 1;
-      }
-    }
-    return alen-blen;
   }
+  return alen-blen;
 }
 
 /* Does not take locale into account
@@ -1484,26 +1522,26 @@ ptrdiff_t generic_quick_binary_strcmp(const char *a,
  * This can be used by eg replace_many() to speed up the comparisons.
  */
 ptrdiff_t generic_find_binary_prefix(const char *a,
-						 ptrdiff_t alen, int asize,
-						 const char *b,
-						 ptrdiff_t blen, int bsize)
+                                     ptrdiff_t alen, int asize,
+                                     const char *b,
+                                     ptrdiff_t blen, int bsize)
 {
   ptrdiff_t pos;
   ptrdiff_t len = MINIMUM(alen, blen);
   switch(TWO_SIZES(asize, bsize)) {
-#define CASE(AZ, BZ)				\
-    case TWO_SIZES(AZ, BZ): {			\
-      PIKE_CONCAT(p_wchar, AZ) *a_arr =		\
-	(PIKE_CONCAT(p_wchar, AZ) *)a;		\
-      PIKE_CONCAT(p_wchar, BZ) *b_arr =		\
-	(PIKE_CONCAT(p_wchar, BZ) *)b;		\
-      for (pos=0; pos<len; pos++) {		\
-	if (a_arr[pos] == b_arr[pos])		\
-	  continue;				\
-	if (a_arr[pos] < b_arr[pos])		\
-	  return ~pos;				\
-	return pos+1;				\
-      }						\
+#define CASE(AZ, BZ)                           \
+    case TWO_SIZES(AZ, BZ): {                  \
+      PIKE_CONCAT(p_wchar, AZ) *a_arr =                \
+       (PIKE_CONCAT(p_wchar, AZ) *)a;          \
+      PIKE_CONCAT(p_wchar, BZ) *b_arr =                \
+       (PIKE_CONCAT(p_wchar, BZ) *)b;          \
+      for (pos=0; pos<len; pos++) {            \
+       if (a_arr[pos] == b_arr[pos])           \
+         continue;                             \
+       if (a_arr[pos] < b_arr[pos])            \
+         return ~pos;                          \
+       return pos+1;                           \
+      }                                                \
     } break
     CASE(0,0);
     CASE(0,1);
@@ -1521,148 +1559,91 @@ ptrdiff_t generic_find_binary_prefix(const char *a,
   return blen+1;
 }
 
-PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)
+PMOD_EXPORT int c_compare_string(const struct pike_string *s,
+                                 const char *foo, int len)
 {
-  return s->len == len && s->size_shift == 0 && !MEMCMP(s->str,foo,len);
+  return s->len == len && s->size_shift == 0 && !memcmp(s->str,foo,len);
 }
-
-#ifndef HAVE_STRCOLL
-/* No locale function available */
-static int low_binary_strcmp(char *a, ptrdiff_t alen,
-			     char *b, ptrdiff_t blen)
-{
-  low_quick_binary_strcmp(a,alen,b,blen);
-}
-#else
-
-/* takes locale into account */
-static int low_binary_strcmp(char *a, ptrdiff_t alen,
-			     char *b, ptrdiff_t blen)
-{
-  while(alen>0 && blen>0)
-  {
-    int tmp1 = strcoll(a,b);
-    ptrdiff_t tmp2;
-    if(tmp1) return (int)tmp1;
-    tmp2 = strlen(a)+1;
-    a += tmp2;
-    b += tmp2;
-    alen -= tmp2;
-    blen -= tmp2;
-  }
-  if(alen==blen) return 0;
-  if(alen > blen) return 1;
-  return -1;
-}
-#endif
 
 /* Does not take locale into account */
-
-PMOD_EXPORT ptrdiff_t my_quick_strcmp(struct pike_string *a,
-				      struct pike_string *b)
+PMOD_EXPORT ptrdiff_t my_quick_strcmp(const struct pike_string *a,
+                                     const struct pike_string *b)
 {
   if(a==b) return 0;
 
   return generic_quick_binary_strcmp(a->str, a->len, a->size_shift,
-				     b->str, b->len, b->size_shift);
+                                    b->str, b->len, b->size_shift);
 }
 
-/* Does take locale into account */
-PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
+
+struct pike_string *realloc_unlinked_string(struct pike_string *a,
+                                           ptrdiff_t size)
 {
-  if(a==b) return 0;
+  char * s = NULL;
+  size_t nbytes = (size_t)(size+1) << a->size_shift;
+  size_t obytes = (size_t)(a->len+1) << a->size_shift;
 
-  switch(TWO_SIZES(a->size_shift,b->size_shift))
+  if( size < a->len && size-a->len<(signed)sizeof(void*) )
+    goto done;
+
+  if( nbytes < sizeof(struct pike_string) )
   {
-    case TWO_SIZES(0,0):
-      return low_binary_strcmp(a->str,a->len,b->str,b->len);
-
-    default:
-    {
-      ptrdiff_t e, l = MINIMUM(a->len, b->len);
-      for(e=0;e<l;e++)
-      {
-	INT32 ac=index_shared_string(a,e);
-	INT32 bc=index_shared_string(b,e);
-
-#ifdef HAVE_STRCOLL
-	if(ac < 256 && bc < 256)
-	{
-	  char atmp[2],btmp[2];
-	  int tmp;
-	  atmp[0]=ac;
-	  btmp[0]=bc;
-	  atmp[1]=0;
-	  btmp[1]=0;
-	  if((tmp=strcoll(atmp,btmp)))
-	     return tmp;
-	}else
-#endif
-	  if(ac-bc) return ac-bc;
-      }
-      return a->len - b->len;
-    }
+    if( a->alloc_type == STRING_ALLOC_BA )
+      goto done;
+    s = ba_alloc(&string_allocator);
+    memcpy(s,a->str,nbytes);
+    free_string_content(a);
+    a->alloc_type = STRING_ALLOC_BA;
   }
+  else if( a->alloc_type == STRING_ALLOC_MALLOC)
+  {
+    s = xrealloc(a->str,nbytes);
+  }
+  else
+  {
+    s = xalloc(nbytes);
+    memcpy(s,a->str,MINIMUM(nbytes,obytes));
+    free_string_content(a);
+    a->alloc_type = STRING_ALLOC_MALLOC;
+  }
+  a->str = s;
+done:
+  a->len=size;
+  low_set_index(a,size,0);
+ 
+   return a;
 }
 
-PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
-							ptrdiff_t size)
-{
-  struct pike_string *r = NULL;
-
-  if (a->len <= SHORT_STRING_THRESHOLD) {
-    if (size <= SHORT_STRING_THRESHOLD) {
-      /* There's already space enough. */
-      a->len = size;
-      low_set_index(a, size, 0);
-      return a;
-    }
-  } else if (size > SHORT_STRING_THRESHOLD) {
-    r=(struct pike_string *)realloc((char *)a,
-				    sizeof(struct pike_string_hdr)+
-				    ((size+1)<<a->size_shift));
-  }
-	
-  if(!r)
-  {
-    r=begin_wide_shared_string(size, a->size_shift);
-    if (a->len <= size) {
-      MEMCPY(r->str, a->str, a->len<<a->size_shift);
-    } else {
-      MEMCPY(r->str, a->str, size<<a->size_shift);
-    }
-    free_string(a);
-  }
-
-  r->len=size;
-  low_set_index(r,size,0);
-  return r;
-}
 
 /* Returns an unlinked string ready for end_shared_string */
 static struct pike_string *realloc_shared_string(struct pike_string *a,
                                                  ptrdiff_t size)
 {
-  struct pike_string *r;
-  if(a->refs==1)
+  if(string_may_modify_len(a))
   {
     unlink_pike_string(a);
     return realloc_unlinked_string(a, size);
   }else{
-    r=begin_wide_shared_string(size,a->size_shift);
+    struct pike_string *r=begin_wide_shared_string(size,a->size_shift);
     MEMCPY(r->str, a->str, a->len<<a->size_shift);
+    r->flags |= a->flags & STRING_CHECKED_MASK;
+    r->min = a->min;
+    r->max = a->max;
     free_string(a);
     return r;
   }
 }
 
-struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, int shift)
+struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, enum size_shift shift)
 {
   struct pike_string *r;
   if(shift == a->size_shift) return realloc_shared_string(a,size);
 
   r=begin_wide_shared_string(size,shift);
   pike_string_cpy(MKPCHARP_STR(r),a);
+  r->flags |= (a->flags & STRING_CHECKED_MASK);
+  r->min = a->min;
+  r->max = a->max;
   free_string(a);
   return r;
 }
@@ -1684,7 +1665,6 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   if(index<0 || index>=a->len)
     Pike_fatal("Index out of range in modify_shared_string()\n");
 #endif
-
 
   old_value=index_shared_string(a,index);
   if(old_value==c) return a;
@@ -1734,13 +1714,13 @@ struct pike_string *modify_shared_string(struct pike_string *a,
    * if all characters in the new string can fit in a string
    * of a lower magnitude, it must be shrunk
    */
-     
+
   if(min_magnitude(old_value) == a->size_shift &&
      min_magnitude(c) < min_magnitude(old_value))
   {
     /* We *might* need to shrink the string */
     struct pike_string *b;
-    int size,tmp;
+    unsigned int size,tmp;
 
     switch(a->size_shift)
     {
@@ -1752,7 +1732,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 	if(find_magnitude1(STR1(a),index)) break;
 	if(find_magnitude1(STR1(a)+index+1,a->len-index-1))
 	  break;
-	
+
 	b=begin_shared_string(a->len);
 	convert_1_to_0((p_wchar0 *)b->str,STR1(a),a->len);
 	b->str[index]=c;
@@ -1785,24 +1765,25 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 	}
     }
   }
-     
+
 
   /* We now know that the string has the right character size */
-  if(a->refs==1)
+  if(string_may_modify(a))
   {
     /* One ref - destructive mode */
 
     unlink_pike_string(a);
     low_set_index(a, index, c);
-    if((((unsigned int)index) >= HASH_PREFIX) && (index < a->len-8))
+    CLEAR_STRING_CHECKED(a);
+    if((((unsigned int)index) >= hash_prefix_len) && (index < a->len-8) )
     {
       struct pike_string *old;
+      /* Doesn't change hash value - sneak it in there */
 #ifdef PIKE_DEBUG
       if (wrong_hash(a)) {
 	Pike_fatal("Broken hash optimization.\n");
       }
 #endif
-      /* Doesn't change hash value - sneak it in there */
       old = internal_findstring(a->str, a->len, a->size_shift, a->hval);
       if (old) {
 	/* The new string is equal to some old string. */
@@ -1818,16 +1799,58 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   }else{
     struct pike_string *r;
     r=begin_wide_shared_string(a->len,a->size_shift);
-    MEMCPY(r->str, a->str, a->len << a->size_shift);
+    memcpy(r->str, a->str, a->len << a->size_shift);
     low_set_index(r,index,c);
     free_string(a);
     return end_shared_string(r);
   }
 }
 
+static void set_flags_for_add( struct pike_string *ret,
+                               unsigned char aflags,
+                               unsigned char amin,
+                               unsigned char amax,
+                               const struct pike_string *b)
+{
+  if( !b->len ) {
+    ret->flags |= aflags & ~15;
+    ret->min = amin;
+    ret->max = amax;
+    return;
+  }
+  if( aflags & b->flags & STRING_CONTENT_CHECKED )
+  {
+    ret->min = MINIMUM( amin, b->min );
+    ret->max = MAXIMUM( amax, b->max );
+    ret->flags |= STRING_CONTENT_CHECKED;
+  }
+  else
+    ret->flags &= ~STRING_CONTENT_CHECKED;
+
+  ret->flags &= ~(STRING_IS_LOWERCASE | STRING_IS_UPPERCASE);
+  ret->flags |= (aflags & b->flags & (STRING_IS_LOWERCASE | STRING_IS_UPPERCASE));
+}
+
+void update_flags_for_add( struct pike_string *a, const struct pike_string *b)
+{
+  if( !b->len ) return;
+  if( a->flags & STRING_CONTENT_CHECKED )
+  {
+    if(b->flags & STRING_CONTENT_CHECKED)
+    {
+      if( b->min < a->min ) a->min = b->min;
+      if( b->max > a->max ) a->max = b->max;
+    }
+    else
+      a->flags &= ~STRING_CONTENT_CHECKED;
+  }
+
+  a->flags &= ~(STRING_IS_LOWERCASE | STRING_IS_UPPERCASE) | b->flags;
+}
+
 /*** Add strings ***/
-PMOD_EXPORT struct pike_string *add_shared_strings(struct pike_string *a,
-					 struct pike_string *b)
+PMOD_EXPORT struct pike_string *add_shared_strings(const struct pike_string *a,
+                                                   const struct pike_string *b)
 {
   struct pike_string *ret;
   PCHARP tmp;
@@ -1838,17 +1861,19 @@ PMOD_EXPORT struct pike_string *add_shared_strings(struct pike_string *a,
   pike_string_cpy(tmp,a);
   INC_PCHARP(tmp,a->len);
   pike_string_cpy(tmp,b);
+  set_flags_for_add( ret, a->flags, a->min, a->max, b );
   return low_end_shared_string(ret);
 }
 
 PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *a,
-						struct pike_string *b)
+                                                            struct pike_string *b)
 {
   ptrdiff_t alen = a->len;
   if(a->size_shift == b->size_shift)
   {
-    a = realloc_shared_string(a,alen + b->len);
-    MEMCPY(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
+    a = realloc_shared_string(a, alen + b->len);
+    update_flags_for_add( a, b );
+    memcpy(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
     free_string(b);
     a->flags |= STRING_NOT_HASHED;
     return end_shared_string(a);
@@ -1868,8 +1893,10 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
   SearchMojt mojt;
   char *r;
 
-  if(needle->size_shift > haystack->size_shift ||
-     start + needle->len > haystack->len)
+  if( !string_range_contains_string( haystack, needle ) )
+    return -1;
+
+  if(start + needle->len > haystack->len)
     return -1;
 
   if(!needle->len) return start;
@@ -1894,6 +1921,44 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
   return (r-haystack->str)>>haystack->size_shift;
 }
 
+static struct pike_string *make_shared_substring( struct pike_string *s,
+						  ptrdiff_t start,
+						  ptrdiff_t len,
+						  enum size_shift shift)
+{
+  struct pike_string *existing;
+  struct substring_pike_string *res;
+  void *strstart = s->str+(start<<shift);
+  size_t hval =  low_do_hash(strstart,len,shift);
+  if( (existing = 
+       internal_findstring(strstart, len, shift, hval)) )
+  {
+    add_ref(existing);
+    return existing;
+  }
+  res = ba_alloc(&substring_allocator);
+  res->parent = s;
+  add_ref(s);
+  existing = &res->str;
+
+  existing->flags = STRING_NOT_SHARED;
+  existing->size_shift = shift;
+  existing->alloc_type = STRING_ALLOC_SUBSTRING;
+  existing->struct_type = STRING_STRUCT_SUBSTRING;
+  existing->hval = hval;
+  existing->str = strstart;
+  existing->len = len;
+#ifdef PIKE_DEBUG
+  if( existing->len + start != s->len )
+    Pike_fatal("Substrings must be terminated at end of string for now.\n");
+#endif
+  existing->refs = 0;
+  add_ref(existing);
+  link_pike_string(existing,hval);
+  return existing;
+}
+
+
 PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 					     ptrdiff_t start,
 					     ptrdiff_t len)
@@ -1902,9 +1967,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
   if(start < 0 || len<0 || start+len>s->len )
   {
     Pike_fatal("string_slice, start = %ld, len = %ld, s->len = %ld\n",
-	  DO_NOT_WARN((long)start),
-	  DO_NOT_WARN((long)len),
-	  DO_NOT_WARN((long)s->len));
+          (long)start, (long)len, (long)s->len);
   }
 #endif
   if( len == 0)
@@ -1919,6 +1982,32 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
     return s;
   }
 
+  /* Actually create a substring. */
+
+  /* If the string to take a substring of is
+     a substring, take from the original. */
+  if( s->alloc_type == STRING_ALLOC_SUBSTRING )
+  {
+    struct pike_string *pr= substring_content_string(s);
+    /* Note: If substrings are ever anywhere except at the end,
+       this might need to change.
+    */
+    start += s->str-pr->str;
+    s = pr;
+  }
+
+  if( (len+start == s->len)
+      && start < (s->len>>1)
+      && (!s->size_shift
+	  || (s->size_shift==1 &&
+	      find_magnitude1(((p_wchar1*)s->str)+start,len)==1)
+	  || (s->size_shift==2 &&
+	      find_magnitude2(((p_wchar2*)s->str)+start,len)==2)))
+  {
+    /* If there is no change of maginute, make a substring. */
+    return make_shared_substring( s, start, len, s->size_shift );
+  }
+
   switch(s->size_shift)
   {
     case 0:
@@ -1930,30 +2019,27 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
     case 2:
       return make_shared_binary_string2(STR2(s)+start,len);
   }
-#ifdef PIKE_DEBUG
-  Pike_fatal("Illegal shift size!\n");
-#endif
-  return 0;
+  UNREACHABLE(return 0);
 }
 
 /*** replace function ***/
 typedef char *(* replace_searchfunc)(void *,void *,size_t);
 PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
-				   struct pike_string *del,
-				   struct pike_string *to)
+                                               struct pike_string *del,
+                                               struct pike_string *to)
 {
   struct pike_string *ret;
   char *s,*tmp,*end;
   PCHARP r;
-  int shift;
+  enum size_shift shift;
   SearchMojt mojt;
   ONERROR mojt_uwp;
   replace_searchfunc f = (replace_searchfunc)0;
 
-  if(!str->len)
+  if(!str->len || !string_range_contains_string(str, del))
   {
-    add_ref(empty_pike_string);
-    return empty_pike_string;
+    add_ref(str);
+    return str;
   }
 
   shift=MAXIMUM(str->size_shift,to->size_shift);
@@ -1989,9 +2075,6 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
       case 0: f=(replace_searchfunc)mojt.vtab->func0; break;
       case 1: f=(replace_searchfunc)mojt.vtab->func1; break;
       case 2: f=(replace_searchfunc)mojt.vtab->func2; break;
-#ifdef PIKE_DEBUG
-      default: Pike_fatal("Illegal shift.\n");
-#endif
     }
 
   }else{
@@ -2007,9 +2090,6 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
       case 0: f=(replace_searchfunc)mojt.vtab->func0; break;
       case 1: f=(replace_searchfunc)mojt.vtab->func1; break;
       case 2: f=(replace_searchfunc)mojt.vtab->func2; break;
-#ifdef PIKE_DEBUG
-      default: Pike_fatal("Illegal shift.\n");
-#endif
     }
 
     while((s = f(mojt.data, s, (end-s)>>str->size_shift)))
@@ -2017,7 +2097,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
       delimeters++;
       s+=del->len << str->size_shift;
     }
-    
+
     if(!delimeters)
     {
       CALL_AND_UNSET_ONERROR (mojt_uwp);
@@ -2051,21 +2131,11 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 /*** init/exit memory ***/
 void init_shared_string_table(void)
 {
-  init_short_pike_string0_blocks();
-  init_short_pike_string1_blocks();
-  init_short_pike_string2_blocks();
-  for(hashprimes_entry=0;hashprimes[hashprimes_entry]<BEGIN_HASH_SIZE;hashprimes_entry++);
-  SET_HSIZE(hashprimes_entry);
-  base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
-  MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
-#ifdef PIKE_RUN_UNLOCKED
-  {
-    int h;
-    bucket_locks=(PIKE_MUTEX_T *)xalloc(sizeof(PIKE_MUTEX_T)*BUCKET_LOCKS);
-    for(h=0;h<BUCKET_LOCKS;h++) mt_init(bucket_locks + h);
-  }
-#endif
+  SET_HSIZE(BEGIN_HASH_SIZE);
+  base_table=xcalloc(sizeof(struct pike_string *), htable_size);
+
   empty_pike_string = make_shared_string("");
+  empty_pike_string->flags |= STRING_IS_LOWERCASE | STRING_IS_UPPERCASE;
 }
 
 #ifdef DO_PIKE_CLEANUP
@@ -2109,74 +2179,99 @@ void cleanup_shared_string_table(void)
 
   for(e=0;e<htable_size;e++)
   {
-    LOCK_BUCKET(e);
     for(s=base_table[e];s;s=next)
     {
       next=s->next;
-#ifdef REALLY_FREE
-      free_unlinked_pike_string(s);
-#else
       s->next=0;
-#endif
     }
     base_table[e]=0;
-    UNLOCK_BUCKET(e);
   }
-  free((char *)base_table);
+  free(base_table);
   base_table=0;
   num_strings=0;
 
 #ifdef DO_PIKE_CLEANUP
-  free_all_short_pike_string0_blocks();
-  free_all_short_pike_string1_blocks();
-  free_all_short_pike_string2_blocks();
+  ba_destroy(&string_allocator);
 #endif /* DO_PIKE_CLEANUP */
 }
 
-static INLINE size_t memory_in_string (struct pike_string *s)
-{
-  if (s->len <= SHORT_STRING_THRESHOLD)
-    switch (s->size_shift) {
-      case 0: return sizeof (struct short_pike_string0);
-      case 1: return sizeof (struct short_pike_string1);
-      default: return sizeof (struct short_pike_string2);
-    }
-  else
-    return sizeof (struct pike_string_hdr) + ((s->len + 1) << s->size_shift);
+void count_string_types() {
+  unsigned INT32 e;
+  size_t num_static = 0, num_short = 0, num_substring = 0, num_malloc = 0;
+
+  for (e = 0; e < htable_size; e++) {
+      struct pike_string * s;
+
+      for (s = base_table[e]; s; s = s->next)
+          switch (s->alloc_type) {
+          case STRING_ALLOC_BA:
+              num_short ++;
+              break;
+          case STRING_ALLOC_STATIC:
+              num_static ++;
+              break;
+          case STRING_ALLOC_SUBSTRING:
+              num_substring ++;
+              break;
+          case STRING_ALLOC_MALLOC:
+              num_malloc ++;
+              break;
+          }
+  }
+
+  push_static_text("num_short_strings");
+  push_ulongest(num_short);
+  push_static_text("num_static_strings");
+  push_ulongest(num_static);
+  push_static_text("num_substrings");
+  push_ulongest(num_substring);
+  push_static_text("num_malloced_strings");
+  push_ulongest(num_malloc);
 }
 
-void count_memory_in_strings(size_t *num, size_t *size)
+size_t count_memory_in_string(const struct pike_string * s) {
+  size_t size = sizeof(struct pike_string);
+
+  switch (s->alloc_type) {
+  case STRING_ALLOC_SUBSTRING:
+      size += sizeof( struct pike_string *);
+      break;
+  case STRING_ALLOC_BA:
+      size += sizeof(struct pike_string);
+      break;
+  case STRING_ALLOC_MALLOC:
+      size += PIKE_ALIGNTO(((s->len + 1) << s->size_shift), 4);
+      break;
+  case STRING_ALLOC_STATIC:
+      break;
+  }
+
+  return size;
+}
+
+void count_memory_in_strings(size_t *num, size_t *_size)
 {
   unsigned INT32 e;
-  size_t num_=0, size_=0;
-  if(!base_table)
-  {
-    *num=*size=0;
-    return;
+  size_t size = 0;
+  *num = num_strings;
+
+  size+=htable_size * sizeof(struct pike_string *);
+
+  for (e = 0; e < htable_size; e++) {
+      struct pike_string * s;
+
+      for (s = base_table[e]; s; s = s->next) {
+          size += count_memory_in_string(s);
+      }
   }
-  size_+=htable_size * sizeof(struct pike_string *);
-  for(e=0;e<htable_size;e++)
-  {
-    struct pike_string *p;
-    LOCK_BUCKET(e);
-    for(p=base_table[e];p;p=p->next)
-    {
-      num_++;
-      size_ += memory_in_string (p);
-    }
-    UNLOCK_BUCKET(e);
-  }
-#ifdef PIKE_DEBUG
-  if(num_strings != num_)
-    Pike_fatal("Num strings is wrong! %d!=%d.\n",num_strings, num_);
-#endif
-  num[0]=num_;
-  size[0]=size_;
+
+  *_size = size;
 }
 
-PMOD_EXPORT void visit_string (struct pike_string *s, int action)
+PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra)
 {
-  switch (action) {
+  visit_enter(s, T_STRING, extra);
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
@@ -2185,9 +2280,10 @@ PMOD_EXPORT void visit_string (struct pike_string *s, int action)
       break;
 #endif
     case VISIT_COUNT_BYTES:
-      mc_counted_bytes += memory_in_string (s);
+      mc_counted_bytes += count_memory_in_string (s);
       break;
   }
+  visit_leave(s, T_STRING, extra);
 }
 
 #ifdef PIKE_DEBUG
@@ -2216,17 +2312,15 @@ void gc_mark_all_strings(void)
 }
 #endif
 
-struct pike_string *next_pike_string (struct pike_string *s)
+PMOD_EXPORT struct pike_string *next_pike_string (const struct pike_string *s)
 {
   struct pike_string *next = s->next;
   if (!next) {
     size_t h = s->hval;
     do {
       h++;
-      LOCK_BUCKET(h);
       h = HMODULO(h);
       next = base_table[h];
-      UNLOCK_BUCKET(h);
     } while (!next);
   }
   return next;
@@ -2247,12 +2341,12 @@ PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag)
 }
 
 PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
-					  struct string_builder *from)
+					  const struct string_builder *from)
 {
   to->malloced = from->malloced;
   to->s = begin_wide_shared_string (from->malloced, from->s->size_shift);
   to->s->len = from->s->len;
-  MEMCPY (to->s->str, from->s->str, (from->s->len + 1) << from->s->size_shift);
+  memcpy (to->s->str, from->s->str, (from->s->len + 1) << from->s->size_shift);
   to->known_shift = from->known_shift;
 }
 
@@ -2261,9 +2355,10 @@ PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
 PMOD_EXPORT int init_string_builder_with_string (struct string_builder *s,
 						 struct pike_string *str)
 {
-  if (str->refs == 1 && str->len > SHORT_STRING_THRESHOLD) {
+  if (string_may_modify(str)) {
     /* Unlink the string and use it as buffer directly. */
     unlink_pike_string (str);
+    str->flags = STRING_NOT_SHARED;
     s->s = str;
     s->malloced = str->len;
     s->known_shift = str->size_shift;
@@ -2279,13 +2374,15 @@ PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
   if(mag > s->s->size_shift)
   {
     struct pike_string *n;
-    ptrdiff_t l = s->s->len + chars + s->malloced;
+    ptrdiff_t l = s->s->len + chars;
+    if (l < s->malloced)
+      l = s->malloced;
     n=begin_wide_shared_string(l,mag);
     pike_string_cpy(MKPCHARP_STR(n),s->s);
     n->len=s->s->len;
     s->s->len = s->malloced;	/* Restore the real length */
-    free_string(s->s);
     s->malloced=l;
+    free_string(s->s);
     s->s=n;
   }
   else if(s->s->len+chars > s->malloced)
@@ -2314,7 +2411,7 @@ PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t ch
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 {
   ptrdiff_t i;
-  int mag = min_magnitude(ch);
+  enum size_shift mag = min_magnitude(ch);
 
   string_build_mkspace(s, 1, mag);
   if (mag > s->known_shift) {
@@ -2322,15 +2419,13 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
   }
   i = s->s->len++;
   low_set_index(s->s,i,ch);
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
 					 ptrdiff_t count)
 {
   ptrdiff_t len = s->s->len;
-  int mag = min_magnitude(ch);
+  enum size_shift mag = min_magnitude(ch);
 
   /* This is not really expected to happen. But since we are doing
    * memset here, a negative argument should be avoided. */
@@ -2345,7 +2440,7 @@ PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
 
   switch (s->s->size_shift) {
     case 0:
-      MEMSET (STR0 (s->s) + s->s->len, ch, count);
+      memset (STR0 (s->s) + s->s->len, ch, count);
       break;
     case 1: {
       int i;
@@ -2362,8 +2457,6 @@ PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
   }
 
   s->s->len += count;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 
@@ -2376,14 +2469,8 @@ PMOD_EXPORT void string_builder_binary_strcat0(struct string_builder *s,
     case 0: convert_0_to_0(STR0(s->s)+s->s->len,str,len); break;
     case 1: convert_0_to_1(STR1(s->s)+s->s->len,str,len); break;
     case 2: convert_0_to_2(STR2(s->s)+s->s->len,str,len); break;
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal ("Illegal magnitude! (%d)\n", s->s->size_shift);
-#endif
   }
   s->s->len+=len;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
@@ -2394,8 +2481,6 @@ PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
       string_build_mkspace (s, len, 0);
       convert_1_to_0 (STR0(s->s) + s->s->len, str, len);
       s->s->len += len;
-      /* Ensure NUL-termination */
-      s->s->str[s->s->len] = 0;
       return;
     }
     s->known_shift = 1;
@@ -2413,15 +2498,13 @@ PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
     convert_1_to_2 (STR2(s->s)+s->s->len, str, len);
   }
   s->s->len += len;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_binary_strcat2(struct string_builder *s,
 					       const p_wchar2 *str, ptrdiff_t len)
 {
   if (s->s->size_shift < 2) {
-    int shift = find_magnitude2 (str, len);
+    enum size_shift shift = find_magnitude2 (str, len);
 
     if (shift > s->s->size_shift) {
       string_build_mkspace (s, len, shift);
@@ -2456,15 +2539,13 @@ PMOD_EXPORT void string_builder_binary_strcat2(struct string_builder *s,
   }
 
   s->s->len += len;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_append(struct string_builder *s,
-				       PCHARP from,
+				       const PCHARP from,
 				       ptrdiff_t len)
 {
-  int shift = from.shift;
+  enum size_shift shift = from.shift;
   if (shift > s->s->size_shift) {
     if (shift == 1) {
       shift = find_magnitude1((p_wchar1 *)from.ptr, len);
@@ -2477,18 +2558,16 @@ PMOD_EXPORT void string_builder_append(struct string_builder *s,
   string_build_mkspace(s, len, shift);
   generic_memcpy(MKPCHARP_STR_OFF(s->s,s->s->len), from, len);
   s->s->len+=len;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 				     ptrdiff_t howmany,
-				     PCHARP from,
+				     const PCHARP from,
 				     ptrdiff_t len,
 				     ptrdiff_t offset)
 {
   ptrdiff_t tmp;
-  int shift;
+  enum size_shift shift;
 
 #ifdef PIKE_DEBUG
   if(len<=0)
@@ -2500,11 +2579,9 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
      len == 1 &&
      (!from.shift || !min_magnitude(EXTRACT_PCHARP(from))))
   {
-    MEMSET(string_builder_allocate(s,howmany,0),
+    memset(string_builder_allocate(s,howmany,0),
 	   EXTRACT_PCHARP(from),
 	   howmany);
-    /* Ensure NUL-termination */
-    s->s->str[s->s->len << s->s->size_shift] = 0;
     return;
   }
 
@@ -2538,7 +2615,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
     while(howmany > 0)
     {
       tmp = MINIMUM(len, howmany);
-      MEMCPY(s->s->str + (s->s->len << s->s->size_shift),
+      memcpy(s->s->str + (s->s->len << s->s->size_shift),
 	     to.ptr,
 	     tmp << s->s->size_shift);
       len+=tmp;
@@ -2546,8 +2623,6 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
       s->s->len+=tmp;
     }
   }
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 /* Append a NUL-terminated UTF16 string possibly containing surrogates. */
@@ -2578,24 +2653,23 @@ PMOD_EXPORT void string_builder_utf16_strcat(struct string_builder *s,
   }
 }
 
-PMOD_EXPORT void string_builder_strcat(struct string_builder *s, char *str)
+PMOD_EXPORT void string_builder_strcat(struct string_builder *s, const char *str)
 {
   string_builder_binary_strcat(s,str,strlen(str));
 }
 
-PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str)
+PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s,
+                                              const struct pike_string *str)
 {
   string_build_mkspace(s,str->len,str->size_shift);
 
   pike_string_cpy(MKPCHARP_STR_OFF(s->s,s->s->len), str);
   s->known_shift=MAXIMUM(s->known_shift,str->size_shift);
   s->s->len+=str->len;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
-						  struct pike_string *str,
+						  const struct pike_string *str,
 						  ptrdiff_t i,
 						  ptrdiff_t max_len,
 						  int flags)
@@ -2607,7 +2681,7 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
     if (ch < 0 || ch > 0xffff) {
       /* Huge character. */
       string_builder_binary_strcat(buf, "\\U", 2);
-      string_builder_append_integer(buf, ch, 16, APPEND_ZERO_PAD, 8, 8);
+      string_builder_append_integer(buf, (unsigned INT32)ch, 16, APPEND_ZERO_PAD, 8, 8);
     } else if (ch > 0xff) {
       /* Unicode character. */
       string_builder_binary_strcat(buf, "\\u", 2);
@@ -2696,6 +2770,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 
   tmp = val;
   if (base & (base - 1)) {
+    size_t cnt;
     /* Calculate the output length.
      * Use do-while to ensure that zero isn't output as an empty string.
      */
@@ -2709,11 +2784,15 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
     if (len < precision) len = precision;
 
     /* Perform padding. */
-    if ((len < min_width) && !(flags & APPEND_LEFT)) {
-      string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
-			  4, 0);
+    if (!(flags & APPEND_LEFT)) {
+      if (len < min_width) {
+	string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+			    4, 0);
+      }
       min_width = 0;
     }
+
+    cnt = len;
 
     tmp = val;
     switch(s->s->size_shift) {
@@ -2721,27 +2800,27 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
       {
 	p_wchar0 *p = string_builder_allocate(s, len, 0);
 	do {
-	  p[--len] = numbers[tmp%base];
+	  p[--cnt] = numbers[tmp%base];
 	  tmp /= base;
-	} while (len);
+	} while (cnt);
       }
       break;
     case 1:
       {
 	p_wchar1 *p = string_builder_allocate(s, len, 0);
 	do {
-	  p[--len] = numbers[tmp%base];
+	  p[--cnt] = numbers[tmp%base];
 	  tmp /= base;
-	} while (len);
+	} while (cnt);
       }
       break;
     case 2:
       {
 	p_wchar2 *p = string_builder_allocate(s, len, 0);
 	do {
-	  p[--len] = numbers[tmp%base];
+	  p[--cnt] = numbers[tmp%base];
 	  tmp /= base;
-	} while (len);
+	} while (cnt);
       }
       break;
     }
@@ -2763,7 +2842,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
     else shift = delta;
 
     /* Calculate actual number of digits and initial shift. */
-    for (; tmp >> shift && shift < SIZEOF_LONGEST * 8; shift += delta, len++)
+    for (; shift < SIZEOF_LONGEST * 8 && tmp >> shift; shift += delta, len++)
       ;
 
     if ((len < min_width) && !(flags & APPEND_LEFT)) {
@@ -2828,8 +2907,46 @@ static LONGEST pike_va_int(VA_LIST_PTR args, int flags)
   }
   Pike_fatal("string_builder_append_integerv(): Unsupported flags: 0x%04x\n",
 	     flags);
-  return 0;
+  UNREACHABLE(return 0);
 }
+
+/* Standard formats supported by string_builder_{v,}sprintf():
+ *
+ *   '%'	Insert %.
+ *   'a'	Insert double.
+ *   'c'	Insert character.
+ *   'd'	Insert decimal integer.
+ *   'e'	Insert double.
+ *   'f'	Insert double.
+ *   'g'	Insert double.
+ *   'o'	Insert octal integer.
+ *   's'	Insert string.
+ *   'u'	Insert unsigned decimal integer.
+ *   'x'	Insert lower-case hexadecimal integer.
+ *   'E'	Insert double.
+ *   'G'	Insert double.
+ *   'X'	Insert upper-case hexadecimal integer.
+ *
+ * Format modifiers supported by string_builder_{v,}sprintf():
+ *
+ *   '+'	Explicit sign for non-negative numeric values.
+ *   '-'	Align left.
+ *   '0'	Zero pad.
+ *   '0'..'9'	Field width.
+ *   '.'	Precision field width follows.
+ *   'h'	Half-width input.
+ *   'l'	Long(-er) input.
+ *   't'	Pointer-width input (ptrdiff_t).
+ *   'w'	Wide input (same as 'l', but only for strings).
+ *   'z'	Pointer-width input (size_t).
+ *
+ * Extended formats supported by string_builder_{v,}sprintf():
+ *
+ *   'b'	Insert binary integer.
+ *   'O'	Insert description of svalue.
+ *   'S'	Insert pike_string.
+ *   'T'	Insert pike_type.
+ */
 
 /* Values used internally in string_builder_vsprintf() */
 #define STATE_MIN_WIDTH	1
@@ -2845,7 +2962,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
       size_t min_width = 0;
       size_t precision = 0;
       int state = 0;
-      
+
       fmt++;
       while (1) {
 	switch (*(fmt++)) {
@@ -2897,7 +3014,12 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case 'z':	/* size_t */
 	  flags = (flags & ~APPEND_WIDTH_MASK) | APPEND_WIDTH_PTR;
 	  continue;
-	  
+
+	case 'T':	/* struct pike_type */
+	  /* FIXME: Doesn't care about field or integer widths yet. */
+	  low_describe_type(s, va_arg(args, struct pike_type *));
+	  break;
+
 	case 'O':
 	  {
 	    /* FIXME: Doesn't care about field or integer widths yet. */
@@ -3029,7 +3151,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	    if (val < 0.0) {
 	      string_builder_putchar(s, '-');
 	      val = -val;
-	    } else if (flags & APPEND_SIGNED) {
+	    } else if (flags & APPEND_POSITIVE) {
 	      string_builder_putchar(s, '+');
 	    }
 	    if ((val+val == val) && (val > 0.0)) {
@@ -3038,9 +3160,9 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	      break;
 	    }
 	    /* FIXME: Field lengths and precision. */
-	    if ((bytes = SNPRINTF(NULL, 0, nfmt, val))) {
+	    if ((bytes = snprintf(NULL, 0, nfmt, val))) {
 	      p_wchar0 *p = string_builder_allocate(s, bytes, 0);
-	      size_t check = SNPRINTF((char*)p, bytes+1, nfmt, val);
+	      size_t check = snprintf((char*)p, bytes+1, nfmt, val);
 	      if (check != bytes) {
 		Pike_fatal("string_builder_vsprintf(): snprintf(\"%s\", %f) "
 			   "is not trustworthy: "
@@ -3095,8 +3217,6 @@ PMOD_EXPORT void reset_string_builder(struct string_builder *s)
 {
   s->known_shift=0;
   s->s->len=0;
-  /* Ensure NUL-termination */
-  low_set_index (s->s, 0, 0);
 }
 
 PMOD_EXPORT void free_string_builder(struct string_builder *s)
@@ -3109,29 +3229,23 @@ PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
 {
   ptrdiff_t len = s->s->len;
   if (len != s->malloced) {
-    s->s->len = s->malloced;
+    s->s->len = s->malloced;	/* Restore the allocated length. */
     s->s = realloc_unlinked_string(s->s, len);
   }
-  else
-    /* Ensure NUL-termination */
-    low_set_index(s->s,s->s->len,0);
   if(s->known_shift == s->s->size_shift)
     return low_end_shared_string(s->s);
   return end_shared_string(s->s);
 }
 
-PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
+PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len)
 {
   switch(ptr.shift)
   {
-    case 0: return MKPCHARP(MEMCHR(ptr.ptr,chr,len),0);
+    case 0: return MKPCHARP(memchr(ptr.ptr,chr,len),0);
     case 1: return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
     case 2: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
   }
-#ifdef PIKE_DEBUG
-  Pike_fatal("Illegal shift in MEMCHR_PCHARP.\n");
-#endif
-  return MKPCHARP(0,0); /* make wcc happy */
+  UNREACHABLE(MKPCHARP(0,0));
 }
 
 #define DIGIT(x)	(WIDE_ISDIGIT(x) ? (x) - '0' : \
@@ -3140,7 +3254,7 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
 
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
 {
-  /* Note: Code duplication in STRTOL and pcharp_to_svalue_inumber. */
+  /* Note: Code duplication in strtol and pcharp_to_svalue_inumber. */
 
   unsigned long val, mul_limit;
   int c;
@@ -3219,30 +3333,12 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   }
 }
 
-/*
-static int string_to_svalue_inumber(struct svalue *r,
-			     char * str,
-			     char **ptr,
-			     int base,
-			     int maxlength)
-{
-  PCHARP tmp;
-  int ret=pcharp_to_svalue_inumber(r,
-				   MKPCHARP(str,0),
-				   &tmp,
-				   base,
-				   maxlength);
-  if(ptr) *ptr=(char *)tmp.ptr;
-  return ret;
-}
-*/
-
 int wide_string_to_svalue_inumber(struct svalue *r,
-					      void * str,
-					      void *ptr,
-					      int base,
-					      ptrdiff_t maxlength,
-					      int shift)
+                                  void * str,
+                                  void *ptr,
+                                  int base,
+                                  ptrdiff_t maxlength,
+                                  enum size_shift shift)
 {
   PCHARP tmp;
   int ret=pcharp_to_svalue_inumber(r,
@@ -3259,7 +3355,7 @@ int safe_wide_string_to_svalue_inumber(struct svalue *r,
 				       void *ptr,
 				       int base,
 				       ptrdiff_t maxlength,
-				       int shift)
+				       enum size_shift shift)
 /* For use from the lexer where we can't let errors be thrown. */
 {
   PCHARP tmp;
@@ -3292,10 +3388,10 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 int base,
 					 ptrdiff_t maxlength)
 {
-  /* Note: Code duplication in STRTOL and STRTOL_PCHARP. */
+  /* Note: Code duplication in strtol and STRTOL_PCHARP. */
 
   PCHARP str_start;
-  
+
   unsigned INT_TYPE val, mul_limit;
   int c;
   int xx, neg = 0, add_limit, overflow = 0;
@@ -3307,10 +3403,10 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   SET_SVAL(*r, T_INT, NUMBER_NUMBER, integer, 0);
   if(ptr != 0)
     *ptr = str;
-  
+
   if(base < 0 || MBASE < base)
     return 0;
-  
+
   if(!WIDE_ISALNUM(c = EXTRACT_PCHARP(str)))
   {
     while(WIDE_ISSPACE(c))
@@ -3318,7 +3414,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
       INC_PCHARP(str,1);
       c = EXTRACT_PCHARP(str);
     }
-    
+
     switch (c)
     {
     case '-':
@@ -3329,7 +3425,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
       c = EXTRACT_PCHARP(str);
     }
   }
-  
+
   if(base == 0)
   {
     if(c != '0')
@@ -3341,19 +3437,19 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     else
       base = 8;
   }
-  
+
   /*
    * For any base > 10, the digits incrementally following
    * 9 are assumed to be "abc...z" or "ABC...Z".
    */
   if(!WIDE_ISALNUM(c) || (xx = DIGIT(c)) >= base)
     return 0;   /* No number formed. */
-  
-  if((base==16 || base == 2) && c == '0' &&
-     INDEX_PCHARP(str,2) < 256 && /* Don't trust isxdigit... */
-     isxdigit(INDEX_PCHARP(str,2)) &&
+
+  if(c == '0' &&
      ((base==16 && (INDEX_PCHARP(str,1)=='x' || INDEX_PCHARP(str,1)=='X')) ||
-      (base==2 && (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B'))))
+      (base==2 && (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B'))) &&
+     INDEX_PCHARP(str,2) < 256 && /* Don't trust isxdigit... */
+     isxdigit(INDEX_PCHARP(str,2)))
   {
     /* Skip over leading "0x", "0X", "0b" or "0B". */
     INC_PCHARP(str,2);
@@ -3369,7 +3465,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     mul_limit = MAX_INT_TYPE / base;
     add_limit = (int) (MAX_INT_TYPE % base);
   }
-  
+
   for(val = DIGIT(c);
       (INC_PCHARP(str,1), WIDE_ISALNUM(c = EXTRACT_PCHARP(str) )) &&
 	(xx = DIGIT(c)) < base &&
@@ -3380,12 +3476,11 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     else
       val = base * val + xx;
   }
-  
+
   if(ptr != 0)
     *ptr = str;
 
   if (overflow) {
-#ifdef AUTO_BIGNUM
     push_string(make_shared_binary_pcharp(str_start,
 					  SUBTRACT_PCHARP(str,str_start)));
     /* Note that this can conceivably throw errors()
@@ -3398,12 +3493,9 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     push_int(base);
     convert_stack_top_with_base_to_bignum();
     if(neg) o_negate();
-    
+
     *r = *--Pike_sp;
     dmalloc_touch_svalue (r);
-#else  /* !AUTO_BIGNUM */
-    r->u.integer = neg ? MIN_INT_TYPE : MAX_INT_TYPE;
-#endif
   }
   else {
     if (neg)
@@ -3424,9 +3516,9 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
 
   if(TYPEOF(Pike_sp[-1]) != T_STRING)
     Pike_error("Cannot convert stack top to integer number.\n");
-  
+
   i=pcharp_to_svalue_inumber(&r, MKPCHARP_STR(Pike_sp[-1].u.string), 0, base, 0);
-  
+
   free_string(Pike_sp[-1].u.string);
   Pike_sp[-1] = r;
 
@@ -3435,11 +3527,11 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
 
 /* Convert PCHARP to a double.  If ENDPTR is not NULL, a pointer to the
    character after the last one used in the number is put in *ENDPTR.  */
-PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
+PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 {
-  /* Note: Code duplication in STRTOD. */
+  /* Note: Code duplication in strtod. */
 
-  register PCHARP s;
+  PCHARP s;
   short int sign;
 
   /* The number so far.  */
@@ -3483,7 +3575,7 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 	   gotten as many digits as can be represented in a `double'.
 	   This doesn't necessarily mean the result will overflow.
 	   The exponent may reduce it to within range.
-	   
+
 	   We just need to record that there was another
 	   digit so that we can multiply by 10 later.  */
 	++exponent;
@@ -3521,7 +3613,7 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 	/* The exponent overflowed a `long int'.  It is probably a safe
 	   assumption that an exponent that cannot be represented by
 	   a `long int' exceeds the limits of a `double'.  */
-	/* NOTE: Don't trust the value returned from STRTOL.
+	/* NOTE: Don't trust the value returned from strtol.
 	 * We need to find the sign of the exponent by hand.
 	 */
 	p_wchar2 c;
@@ -3579,13 +3671,9 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 
  underflow:
   /* Return an underflow error.  */
-#if 0
-  if (endptr != NULL)
-    *endptr = nptr;
-#endif
   errno = ERANGE;
   return 0.0;
-  
+
  noconv:
   /* There was no number.  */
   if (endptr != NULL)
@@ -3594,8 +3682,8 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 }
 
 
-PMOD_EXPORT p_wchar0 *require_wstring0(struct pike_string *s,
-			   char **to_free)
+PMOD_EXPORT p_wchar0 *require_wstring0(const struct pike_string *s,
+                                       char **to_free)
 {
   switch(s->size_shift)
   {
@@ -3605,17 +3693,12 @@ PMOD_EXPORT p_wchar0 *require_wstring0(struct pike_string *s,
     case 1:
     case 2:
       return 0;
-
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal("Illegal shift size in string.\n");
-#endif
   }
-  return 0;
+  UNREACHABLE(return 0);
 }
 
-PMOD_EXPORT p_wchar1 *require_wstring1(struct pike_string *s,
-			   char **to_free)
+PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,
+                                       char **to_free)
 {
   switch(s->size_shift)
   {
@@ -3630,18 +3713,13 @@ PMOD_EXPORT p_wchar1 *require_wstring1(struct pike_string *s,
 
     case 2:
       return 0;
-
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal("Illegal shift size in string.\n");
-#endif
   }
-  return 0;
+  UNREACHABLE(return 0);
 }
 
 
-PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
-			   char **to_free)
+PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
+                                       char **to_free)
 {
   switch(s->size_shift)
   {
@@ -3658,11 +3736,6 @@ PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
     case 2:
       *to_free=0;
       return STR2(s);
-
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal("Illegal shift size in string.\n");
-#endif
   }
-  return 0;
+  UNREACHABLE(return 0);
 }

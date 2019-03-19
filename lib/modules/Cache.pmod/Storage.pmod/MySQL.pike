@@ -1,23 +1,23 @@
-/*
- * An SQL-based storage manager
- * by Francesco Chemolli <kinkie@roxen.com>
- *
- * $Id$
- *
- * This storage manager provides the means to save data to an SQL-based 
- * backend.
- * 
- * For now it's mysql only, dialectization will be added at a later time.
- * Serialization should be taken care of by the low-level SQL drivers.
- *
- * Notice: the administrator is supposed to create the database and give
- * the roxen user enough privileges to write to it. It will be care
- * of this driver to create the database itself.
- *
- * 
- */
+
+//! An SQL-based storage manager
+//!
+//! This storage manager provides the means to save data to an SQL-based
+//! backend.
+//!
+//! For now it's mysql only, dialectization will be added at a later time.
+//! Serialization should be taken care of by the low-level SQL drivers.
+//!
+//! @note
+//!   An administrator is supposed to create the database and give
+//!   the user enough privileges to write to it. It will be care
+//!   of this driver to create the database tables itself.
+//!
+//! @thanks
+//!   Thanks to Francesco Chemolli <kinkie@@roxen.com> for the contribution.
 
 #pike __REAL_VERSION__
+
+inherit Cache.Storage.Base;
 
 #define MAX_KEY_SIZE "255"
 #define CREATION_QUERY "create table cache ( \
@@ -45,8 +45,8 @@ int have_dependants=0;
 #endif // 1
 
 
-//database manipulation is done externally. This class only returns
-//values, with some lazy decoding.
+//! Database manipulation is done externally. This class only returns
+//! values, with some lazy decoding.
 class Data {
   inherit Cache.Data;
   private int _size;
@@ -99,7 +99,7 @@ int(0..0)|string next() {
   if (res=enum_result->fetch_row())
     return res[0];
   enum_result=0;                // enumeration finished
-  return 0;  
+  return 0;
 }
 
 //unfortunately with MySQL we can't optimize much,
@@ -113,7 +113,7 @@ int(0..0)|string next() {
 // to be a problem for HUGE caches. Let's hope it won't happen..
 void delete(string key, void|int(0..1) hard, void|multiset already_deleted) {
   multiset dependants=0;
-  
+
   debug("deleting %s\n",key);
   if (have_dependants) {
     if (already_deleted && already_deleted[key]) // already deleted. Skip
@@ -124,10 +124,10 @@ void delete(string key, void|int(0..1) hard, void|multiset already_deleted) {
     }
     if (!already_deleted) already_deleted=(<>);
   }
-  
+
   if (already_deleted) already_deleted[key]=1;
   db->query("delete from cache where cachekey='%s'",key);
-  
+
   if (dependants) {
     foreach (indices(dependants),string dep) {
       werror("chain-deleting %s\n",dep);
@@ -179,7 +179,7 @@ void aget(string key,
 }
 
 
-
+//!
 void create(string sql_url) {
   array result=0;
   mixed err=0;

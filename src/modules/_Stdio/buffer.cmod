@@ -1,0 +1,2648 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+#include "fdlib.h"
+#include "pike_netlib.h"
+#include "object.h"
+#include "interpret.h"
+#include "operators.h"
+#include "bignum.h"
+#include "sscanf.h"
+#include "builtin_functions.h"
+#include "interpret.h"
+#include "cyclic.h"
+#include "backend.h"
+#include "fd_control.h"
+#include "file_machine.h"
+#include "file.h"
+#include "whitespace.h"
+#include "pike_types.h"
+#include "pike_threadlib.h"
+#include "buffer.h"
+#include "module_support.h"
+#include "bitvector.h"
+
+/* Includes <gmp.h> */
+#include "bignum.h"
+
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif /* HAVE_ARPA_INET_H */
+
+#define DEFAULT_CMOD_STORAGE static
+DECLARATIONS
+
+struct sysmem {
+  unsigned char *p;
+  size_t size;
+};
+
+static struct program *buffer_error_program;
+
+/*! @module Stdio
+ */
+
+/*! @class Buffer
+ *!
+ *! A buffer to use as input or buffering when doing I/O. It is
+ *! similar to @[String.Buffer], but can only contain 8bit data and is
+ *! designed for protocol parsing. It is optimized for reading from
+ *! the beginning and adding to the end, and will try to minimize the
+ *! amount of data copying that is done.
+ *!
+ *! The class maintains two separate offsets, one for reading and one
+ *! for writing. The functions that add data all do so at the write
+ *! offset (the end of the buffer), and reading is done from the read
+ *! offset (the start of the buffer).
+ *!
+ *! The class can also be used to directly read from and write to
+ *! filedescriptors if so desired. This eliminates at least one memory
+ *! copy.
+ *!
+ *! @note
+ *!  The "avoid copy" part means that a Buffer will never shrink
+ *!  unless you call the @[trim] function.
+ *!
+ */
+PIKECLASS Buffer
+{
+#if PRECOMPILE_API_VERSION > 5
+  PIKEVAR int b.num_malloc;
+  PIKEVAR int b.num_move;
+#endif
+
+  CVAR Buffer b;
+
+  EXTRA
+  {
+    PIKE_MAP_VARIABLE("__output", OFFSETOF(Buffer_struct, b.output),
+		      tMix, PIKE_T_MIXED, ID_PRIVATE|ID_HIDDEN|ID_PROTECTED);
+  }
+
+  static void io_set_error_mode( Buffer *io, struct program *m )
+  {
+    if( m ) add_ref(m);
+    if( io->error_mode ) free_program( io->error_mode );
+    io->error_mode = m;
+  }
+
+  PMOD_EXPORT Buffer *io_buffer_from_object(struct object *o) {
+    return get_storage(o, Buffer_program);
+  }
+
+
+  static void io_unlock( Buffer *io )
+  {
+    io->locked--;
+  }
+
+  static void io_lock( Buffer *io )
+  {
+    io->locked++;
+  }
+
+  static void io_was_locked( )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_was_locked( )
+  {
+      Pike_error("Can not modify the buffer right now, "
+                 " there are active subbuffers.\n");
+  }
+
+  static void io_ensure_unlocked(Buffer *io)
+  {
+    if( io->locked )
+      io_was_locked( );
+  }
+
+  PMOD_EXPORT void io_trim( Buffer *io )
+    ATTRIBUTE((noinline));
+
+  static int io_is_whitespace( Buffer *io, size_t pos )
+  {
+    if( pos > io_len( io ) )
+      return -1;
+    switch( io->buffer[io->offset+pos] )
+    {
+      SPACECASE8
+        return 1;
+    }
+    return 0;
+  }
+
+  PMOD_EXPORT void io_trim( Buffer *io )
+  {
+      if( io->malloced && (io->offset > 64 || io->len > 64) && !io->locked)
+      {
+          if( io->offset > 64 && (!io->locked_move && (io->offset > io_len(io))))
+          {
+              memmove( io->buffer, io_read_pointer(io), io_len(io) );
+              io->len -= io->offset;
+              io->num_move++;
+              io->offset = 0;
+          }
+          if( io->len > 64 && ((io->allocated > (io->len)*(1.0+io->max_waste))))
+          {
+              io->buffer = xrealloc( io->buffer, io->len );
+              io->num_malloc++;
+              io->allocated = io->len;
+          }
+      }
+  }
+
+  static void io_unlink_external_storage( Buffer *io )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_unlink_external_storage( Buffer *io )
+  {
+      if( io->sub ) {
+          io_unlock( get_storage(io->sub,Buffer_program ) );
+          free_object( io->sub );
+      }
+      if( io->source ) free_object( io->source );
+      if( io->str ) free_string( io->str );
+      io->source = 0;
+      io->sub = 0;
+      io->str = 0;
+  }
+
+  PMOD_EXPORT void io_ensure_malloced( Buffer *io, size_t bytes )
+  {
+    if( UNLIKELY(!io->malloced) )
+    {
+      /* convert to malloced buffer from a shared one. */
+        unsigned char *old = io->buffer;
+
+        bytes += io->len;
+
+        if (bytes < io->len || bytes + 100 < bytes)
+            Pike_error(msg_out_of_mem_2, bytes + 100);
+
+        bytes += 100;
+
+        io->buffer = xalloc( bytes );
+        io->malloced = 1;
+        io->allocated = bytes;
+        io->num_malloc++;
+        memcpy( io->buffer, old, io->len );
+        io_unlink_external_storage(io);
+    }
+  }
+
+  PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
+    ATTRIBUTE((noclone,noinline));
+  PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
+  {
+    if( bytes && io->len+bytes < io->len )
+      Pike_error("Too large buffer, can not have more than %lu bytes",
+                 (size_t)-1);
+
+
+    io_ensure_unlocked(io);
+    io_ensure_malloced(io, bytes);
+
+    /*
+     * It is actually not certain that checking this is a good idea.
+     *
+     * The reason being that if the current buffer size is very small
+     * (io_len(io)) and the bytes added is large and there is an
+     * offset, it makes sense to move now when we do not have to copy
+     * as much.
+     *
+     */
+    if( LIKELY(!io->locked_move) )
+    {
+      if( UNLIKELY((force && io->offset) || (io->offset > io->len)) )
+      {
+        /* more than 50% of the buffer is available before the read pointer,
+         * and we can discard that data. Move the data to the beginning, making
+         * room for more data.
+         */
+        memmove( io->buffer, io_read_pointer(io), io_len(io) );
+        io->num_move++;
+        io->len -= io->offset;
+        io->offset = 0;
+      }
+    }
+
+    if( UNLIKELY(io->len + bytes > io->allocated) )
+    {
+      /* Actually grow the buffer. */
+      size_t growth =
+          (io->allocated>>1) +
+          (io->allocated>>3);/* io->allocated * 0.625 */
+
+      if( growth < bytes )
+          growth = bytes + (bytes>>1);
+
+      if( io->allocated + growth < io->allocated )
+      {
+          growth = bytes+1;
+          if( io->allocated + growth < io->allocated )
+              Pike_error("Overflow in buffer size calculations\n");
+      }
+      io->buffer = xrealloc( io->buffer, io->allocated + growth );
+      io->num_malloc++;
+      io->allocated += growth;
+    }
+    return io->buffer+io->len;
+  }
+
+  /*! @decl protected bool range_error( int howmuch )
+   *!
+   *! This function is called when an attempt is made to read out of bounds.
+   *!
+   *! The default implementation simply returns @expr{0@} (zero).
+   *!
+   *! Override this function to change the behavior.
+   *!
+   *! @param howmuch
+   *! The argument @[howmuch] indicates how much data is needed:
+   *!
+   *! @int
+   *!  @value 1..
+   *!   Need @[howmuch] bytes more
+   *!  @value 0
+   *!   The amount of data needed is not certain.
+   *!   This most often happens when  @[sscanf] or @[read_json] is used
+   *!  @value ..-1
+   *!   Tried to @[unread] -@[howmuch] bytes. There is usually no way to satisfy
+   *!   the requested range.
+   *!
+   *!   The only supported way is to extract the data from the buffer,
+   *!   add the requested amount of "go backbuffer", add the data
+   *!   back, and forward -@[howmuch] bytes.
+   *! @endint
+   *!
+   *! @returns
+   *!
+   *! @[true] if the operation should be retried, @[false] otherwise.
+   *!
+   *! Do not return true unless you have added data to the buffer,
+   *! doing so could result in an infinite loop (since no data is
+   *! added, the range_error will be called again immediately).
+   */
+  PIKEFUN int(0..1) range_error( int range )
+      flags ID_PROTECTED;
+  {
+    Pike_sp[-1].u.integer = 0;
+  }
+
+  static void io_range_error_throw( Buffer *io, int howmuch )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_range_error_throw( Buffer *io, int howmuch )
+  {
+    if( io->error_mode )
+    {
+      struct object *err;
+      if( howmuch > 0 )
+      {
+        push_static_text("Trying to read %d bytes outside allowed range\n");
+        push_int(howmuch);
+        f_sprintf(2);
+      }
+      else
+        push_static_text("Illegal arguments\n");
+
+      if( io->error_mode != buffer_error_program )
+      {
+        ref_push_object( io->this );
+        err = clone_object(io->error_mode,2);
+      }
+      else
+        err = clone_object(io->error_mode,1);
+
+      push_object(err);
+      f_throw(1);
+    }
+  }
+
+  static struct pike_string *io_read_string( Buffer *io, ptrdiff_t len )
+    ATTRIBUTE((noclone,noinline));
+  static size_t io_rewind( Buffer *io, INT_TYPE n );
+
+  static void io_do_rewind_on_error( struct rewind_to *e )
+  {
+    e->io->locked_move--;
+    e->io->offset = e->rewind_to;
+    free( e );
+  }
+
+  static void io_rewind_on_error( Buffer *io, ONERROR *x )
+  {
+    struct rewind_to *rew = xalloc( sizeof( struct rewind_to ) );
+    io->locked_move++;
+#if defined(PIKE_DEBUG)
+    rew->old_locked_move = io->locked_move;
+#endif
+    rew->io = io;
+    rew->rewind_to = io->offset;
+    SET_ONERROR( (*x), io_do_rewind_on_error, rew );
+  }
+
+  static void io_unset_rewind_on_error( Buffer *io, ONERROR *x )
+  {
+    struct rewind_to *rew = x->arg;
+#if defined(PIKE_DEBUG)
+    if( io->locked_move != rew->old_locked_move )
+      Pike_fatal( "Invalid io_rewind_on_error nesting\n");
+#endif
+    free( rew );
+    UNSET_ONERROR( (*x) );
+    io->locked_move--;
+  }
+
+  static void io_do_unwrite_on_error( struct rewind_to *e )
+  {
+    e->io->len = e->rewind_to;
+    free( e );
+  }
+
+  static void io_unwrite_on_error( Buffer *io, ONERROR *x )
+  {
+    struct rewind_to *rew = xalloc( sizeof( struct rewind_to ) );
+    rew->io = io;
+    rew->rewind_to = io->len;
+    SET_ONERROR( (*x), io_do_unwrite_on_error, rew );
+  }
+
+  static void io_unset_unwrite_on_error( Buffer *UNUSED(io), ONERROR *x )
+  {
+    UNSET_ONERROR( (*x) );
+    free( x->arg );
+  }
+
+  static ptrdiff_t io_call_write( Buffer *io, struct svalue *fun,
+				  ptrdiff_t nbytes )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_set_events( Buffer *io, struct my_file *fd, int extra, int set )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_set_events( Buffer *UNUSED(io), struct my_file *fd, int extra, int set )
+  {
+    fd->box.revents &= ~((1<<set)|extra);
+    if(!SAFE_IS_ZERO(&fd->event_cbs[set]) && fd->box.backend)
+      set_fd_callback_events(&fd->box, fd->box.events|(1<<set), 0);
+  }
+
+  static ptrdiff_t io_call_write( Buffer *io, struct svalue *fun,
+				  ptrdiff_t bytes )
+  {
+    if( bytes > 0 )
+    {
+      ptrdiff_t l = 0;
+      struct pike_string *s;
+
+      io->locked_move++;
+      s = io_read_string( io,bytes );
+
+      if( s )
+      {
+        io->output_triggered = 1;
+        push_string( s );
+        apply_svalue( fun, 1 );
+	if (UNLIKELY(TYPEOF(Pike_sp[-1]) != PIKE_T_INT)) {
+          io->locked_move--;
+	  Pike_error("Invalid return value from write callback.\n");
+	}
+        l = Pike_sp[-1].u.integer;
+        pop_stack();
+        if( l < 0 )
+        {
+          io->locked_move--;
+          io_rewind( io, bytes );
+          return -1;
+        }
+        if( bytes > l )
+        {
+          io_rewind( io, bytes-l );
+        }
+      }
+      io->locked_move--;
+      return l;
+    }
+    return -1;
+  }
+
+  static ptrdiff_t io_actually_trigger_output( Buffer *io )
+    ATTRIBUTE((noclone,noinline));
+
+  static ptrdiff_t io_actually_trigger_output( Buffer *io )
+  {
+    struct program *prog;
+    struct reference *ref;
+    struct inherit *inh;
+
+    if (UNLIKELY(!(prog = io->output.u.object->prog))) {
+      /* Destructed object. */
+      free_svalue(&io->output);
+      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+      return 0;
+    }
+    ref = PTR_FROM_INT(prog, SUBTYPEOF(io->output));
+    inh = INHERIT_FROM_PTR(prog, ref);
+    if ((inh->prog == file_program) &&
+	(ref->identifier_offset == fd_write_identifier_offset)) {
+      /* Stdio.Fd::write */
+      struct my_file *fd =
+	get_inherit_storage( io->output.u.object, ref->inherit_offset );
+      io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE );
+      io->output_triggered = 1;
+      return 0;
+    }
+    else
+      return io_call_write( io, &io->output, MINIMUM( io_len(io), 100 ) );
+  }
+
+  static ptrdiff_t io_trigger_output( Buffer *io )
+  {
+    if( UNLIKELY(io->output.u.object) && UNLIKELY(!io->output_triggered) )
+      return io_actually_trigger_output(io);
+    return 0;
+  }
+
+  static int io_range_error( Buffer *io, ptrdiff_t howmuch )
+    ATTRIBUTE((noclone,noinline));
+
+  static int io_range_error( Buffer *io, ptrdiff_t howmuch )
+  {
+      int res;
+      struct svalue *osp = Pike_sp;
+
+      push_int64( howmuch );
+      apply_current( f_Buffer_range_error_fun_num, 1 );
+      res = Pike_sp[-1].u.integer;
+      pop_n_elems( Pike_sp-osp );
+      if( !res ) io_range_error_throw( io, howmuch );
+
+      return res;
+  }
+
+  static int io_avail( Buffer *io, ptrdiff_t len )
+  {
+    if( len < 0 || len + io->offset > io->len )
+    {
+        if( len < 0 )
+            io_range_error_throw( io, 0 );
+        else if( io_range_error( io, len+io->len-io->offset ) )
+            return io_avail(io,len);
+        return 0;
+    }
+    return 1;
+  }
+
+  static int io_avail_mul( Buffer *io, ptrdiff_t len, ptrdiff_t each  )
+  {
+    /* safely check if len*each is available. */
+    size_t total = io_len(io);
+    if( len < 0 || each <= 0 )
+    {
+      io_range_error_throw( io, 0 );
+      return 0;
+    }
+
+    if( (total/(size_t)each) < (size_t)len )
+    {
+        if( io_range_error( io, len+io->len-io->offset ) )
+          return io_avail_mul(io,len,each);
+        return 0;
+    }
+    return 1;
+  }
+
+  static void io_append( Buffer *io, const void *p, size_t bytes )
+  {
+    memcpy( io_add_space( io, bytes, 0 ), p, bytes );
+    io->len += bytes;
+    io_trigger_output( io );
+  }
+
+  static size_t io_read( Buffer *io, void *to, size_t len  )
+  {
+    if( !io_avail(io,len))
+      return 0;
+    memcpy( to, io_read_pointer(io), len );
+    io_consume( io, len );
+    return len;
+  }
+
+  static struct pike_string *io_read_string( Buffer *io, ptrdiff_t len )
+  {
+    struct pike_string *s;
+
+    if( len > 0x7fffffff )
+      Pike_error("This region is too large to convert to a string.\n");
+
+    if( len < 0 )
+      return make_shared_binary_string(NULL,0);
+
+    if( !io_avail(io,len))
+     return NULL;
+
+    s = begin_shared_string( len );
+    io_read( io, s->str, len );
+    return end_shared_string(s);
+  }
+
+  static struct object *io_read_buffer( Buffer *io, size_t len, int do_copy )
+  {
+    struct object *b;
+    Buffer *to;
+    if( !io_avail(io,len))
+      return NULL;
+
+    b = low_clone( Buffer_program );
+    to = get_storage(b,Buffer_program);
+
+    io_lock( io );
+
+    to->buffer = io_read_pointer(io);
+    to->len = len;
+    to->sub = Pike_fp->current_object;
+    add_ref(to->sub);
+    io_consume( io, len );
+
+    if( do_copy )
+      io_ensure_malloced( to, 0 );
+
+    return b;
+  }
+
+  static int io_read_byte_uc( Buffer *io )
+  {
+    return io->buffer[io->offset++];
+  }
+
+  static INT_TYPE io_read_number_uc( Buffer *io, size_t len )
+  {
+    LONGEST res = 0;
+    while( LIKELY(len--) ) {
+      res <<= 8;
+      res |= io_read_byte_uc(io);
+    }
+    return res;
+  }
+
+  static INT_TYPE io_read_signed_number_uc( Buffer *io, size_t len )
+  {
+    INT_TYPE res = 0;
+    if( LIKELY(len--) ) {
+      res = (INT8)io_read_byte_uc(io);
+      while( LIKELY(len--) ) {
+        res <<= 8;
+        res |= io_read_byte_uc(io);
+      }
+    }
+    return res;
+  }
+
+  static LONGEST io_read_number( Buffer *io, size_t len )
+  {
+    LONGEST res;
+    if( !io_avail(io, len) )
+      return -1;
+    /* ensure only leading 0:s */
+    for (; UNLIKELY(len > SIZEOF_INT_TYPE); len--)
+      if( UNLIKELY(io_read_byte_uc(io)) )
+        Pike_error("Integer (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
+
+    res = io_read_number_uc( io, len );
+
+    if ( UNLIKELY(res < 0) )
+      Pike_error("Signed (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
+    return res;
+  }
+
+  static struct object *io_read_bignum( Buffer *io, size_t len )
+  {
+    struct object *o;
+    MP_INT *i;
+    unsigned char *p;
+    LONGEST res;
+
+    if( !io_avail(io,len) ) return NULL;
+    o = fast_clone_object(bignum_program);
+    i = (void*)o->storage;
+    mpz_import( i, len, 1, 1, 0, 0, io_read_pointer(io) );
+    io_consume(io,len);
+    return o;
+  }
+
+  static void io_add_bignum( Buffer *io, struct object *o, int width )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_add_bignum( Buffer *io, struct object *o, int width )
+  {
+    MP_INT *i = (void*)o->storage;
+    MP_INT tmp;
+    int free;
+    unsigned char*d;
+    struct pike_string *s;
+    int pad = 0;
+    ptrdiff_t bytes;
+    size_t exp;
+
+    if( mpz_sgn( i ) < 0 )
+    {
+      mpz_init( &tmp );
+      mpz_add_ui( &tmp, i, 1);
+      pad = 0xff;
+      i = &tmp;
+    }
+
+    bytes = (mpz_sizeinbase( i, 2 )+7) / 8;
+
+    if( bytes > width )
+      Pike_error("Number too large to store in %d bits\n", width*8);
+
+    d = io_add_space( io, width, 0 );
+    io->len += width;
+
+    if( width > bytes )
+    {
+      memset( d, pad, width-bytes );
+      d += width-bytes;
+    }
+
+    mpz_export( d, &exp, 1, 1, 1, 0, i );
+    if( !exp )
+    {
+      /* if i is 0 mpz_export will not write anything.
+         Handle that by zeroing the byte that should have been written.
+      */
+#ifdef PIKE_DEBUG
+      if( bytes != 1 )
+        Pike_fatal("Oddities abound\n");
+#endif
+      *d = pad;
+    }
+    if( pad )
+    {
+      while(exp--)
+        *d++ ^= 0xff; /* pad, but that is 0xff */
+      mpz_clear(&tmp);
+    }
+  }
+
+  static void io_add_int_uc( Buffer *io, ptrdiff_t i, size_t bytes )
+  {
+    unsigned char *x = io->buffer+io->len;
+    io->len += bytes;
+    while(bytes--)
+    {
+      x[bytes] = i;
+      i>>=8;
+    }
+  }
+
+  static size_t io_add_int( Buffer *io, ptrdiff_t i, size_t bytes )
+  {
+    io_add_space(io, bytes, 0);
+    io_add_int_uc( io, i, bytes );
+    io_trigger_output( io );
+    return io_len( io );
+  }
+
+  static size_t io_rewind( Buffer *io, INT_TYPE n )
+  {
+    if( n < 0 || (io->offset < (unsigned)n) )
+    {
+        if( n < 0 )
+            io_range_error_throw( io, 0 );
+        else if( io_range_error(io,-(long)(n-io->offset)) )
+          return io_rewind( io, n );
+      return -1;
+    }
+    io->offset -= n;
+    io_trigger_output( io );
+    return io->offset;
+  }
+
+  static void io_append_byte_uc( Buffer *io, unsigned char byte )
+  {
+      io->buffer[io->len++] = byte;
+  }
+
+  static void io_append_short_uc( Buffer *io, unsigned short shrt )
+  {
+    set_unaligned16( io->buffer+io->len, htons(shrt));
+    io->len+=2;
+  }
+
+  static void io_append_int_uc( Buffer *io, unsigned INT32 i )
+  {
+    set_unaligned32( io->buffer+io->len, htonl(i));
+    io->len+=4;
+  }
+
+
+  static size_t io_svalue_len( Buffer *io, struct svalue *p )
+  {
+    switch( TYPEOF(*p) ) {
+      case PIKE_T_INT:
+        return 1;
+      case PIKE_T_STRING:
+        if( !p->u.string->size_shift )
+          return p->u.string->len;
+        break;
+      case PIKE_T_ARRAY: {
+        size_t len;
+        struct array *argp = p->u.array;
+        INT_TYPE i;
+        DECLARE_CYCLIC();
+
+        if (BEGIN_CYCLIC(io, argp))
+          Pike_error("Attempt to append a cyclic array to a buffer.\n");
+
+        for(len=i=0; i<argp->size; i++ )
+          len += io_svalue_len( io, argp->item+i );
+
+        END_CYCLIC();
+        return len;
+      }
+      case PIKE_T_OBJECT: {
+        size_t len;
+        if( get_memory_object_memory( p->u.object, NULL, &len, NULL ) )
+          return len;
+        break;
+      }
+    }
+    Pike_error("Illegal argument (not an 8bit string or 8bit buffer object)\n");
+  }
+
+  /* NOTE: Can return negative integers. */
+  static INT_TYPE get_small_int( struct svalue *s )
+    ATTRIBUTE((noclone,noinline));
+
+  static INT_TYPE get_small_int( struct svalue *s )
+  {
+    if( LIKELY(TYPEOF(*s) == PIKE_T_INT) )
+      return s->u.integer;
+
+    if( is_bignum_object_in_svalue( s ) )
+    {
+      INT64 i64;
+      if( int64_from_bignum( &i64, s->u.object ) )
+        return i64;
+      Pike_error("Too big bignum, can not fit in indicated width\n");
+    }
+    Pike_error("Non integer argument\n");
+  }
+
+  static void io_append_svalue( Buffer *io, struct svalue *p )
+    ATTRIBUTE((noinline));
+
+  static void io_append_svalue( Buffer *io, struct svalue *p )
+  {
+    switch( TYPEOF(*p) )
+    {
+      case PIKE_T_STRING:
+        {
+          struct pike_string *s = p->u.string;
+	  if( !s->len ) return;
+          if( s->size_shift ) Pike_error("Buffer only handles 8bit data\n");
+          if( !io->buffer )
+          {
+#ifdef PIKE_DEBUG
+	    if (io->str) Pike_fatal("Buffer with string but NULL buffer.\n");
+#endif
+            io->str = s;
+            io->buffer = (unsigned char*)s->str;
+            io->len = s->len;
+            add_ref(s);
+            io_trigger_output( io );
+          }
+          else
+            io_append( io, s->str, s->len );
+        }
+        break;
+      case PIKE_T_ARRAY:
+        {
+          struct array *argp = p->u.array;
+          INT_TYPE i;
+	  DECLARE_CYCLIC();
+
+	  if (BEGIN_CYCLIC(io, argp))
+	    Pike_error("Attempt to append a cyclic array to a buffer.\n");
+
+          for(i=0; i<argp->size; i++ )
+            io_append_svalue( io, argp->item+i );
+
+	  END_CYCLIC();
+        }
+        break;
+      case PIKE_T_OBJECT:
+        {
+          size_t len;
+          void *ptr;
+          struct sysmem *s;
+          enum memobj_type t = get_memory_object_memory( p->u.object, &ptr, &len, NULL );
+
+          if( !io->buffer && t==MEMOBJ_SYSTEM_MEMORY )
+          {
+            io->buffer = ptr;
+            io->len = len;
+
+            io->source = p->u.object;
+            add_ref(io->source);
+            return;
+          }
+          if( t != MEMOBJ_NONE )
+            io_append( io, ptr, len );
+          else
+            Pike_error("Unsupported argument type\n");
+        }
+        break;
+      case PIKE_T_INT:
+        {
+          unsigned char a = p->u.integer;
+          io_append( io, &a, 1 );
+        }
+    }
+  }
+
+#undef THIS
+#define THIS (&(((struct Buffer_struct *)Pike_fp->current_storage)->b))
+
+
+  /* pike functions */
+
+  /*! @decl int(-1..) input_from( Stdio.Stream f, int|void nbytes )
+   *!
+   *! Read data from @[f] into this buffer. If @[nbytes] is not
+   *! specified, read until there is no more data to read (currently).
+   *!
+   *! Returns the amount of data that was read, or @expr{-1@} on
+   *! read error.
+   *!
+   *! @note
+   *! Please note that this funcition will read all data from the
+   *! filedescriptor unless it's set to be non-blocking.
+   */
+  PIKEFUN int(-1..) input_from( object f, int|void _nbytes, int|void _once )
+  {
+    Buffer *io = THIS;
+    size_t sz = io_len( io );
+    size_t bread = 0, nbytes = (size_t)-1;
+    struct my_file *fd;
+    int once = 0;
+
+    if( _nbytes ) {
+        nbytes = _nbytes->u.integer;
+	if (!nbytes) RETURN 0;
+    }
+
+    if( _once )
+        once = _once->u.integer;
+
+    if( (fd = get_storage( f, file_program )) )
+    {
+      while( 1 )
+      {
+        unsigned char *ptr = io_add_space( io, 4096, 0 );
+        int res;
+
+        res = fd_read( fd->box.fd, ptr, MINIMUM(4096,nbytes) );
+
+        if( res == -1 && errno == EINTR )
+          continue;
+
+        if( res <= 0 )
+          break;
+
+        nbytes -= res;
+        io->len += res;
+        bread += res;
+        if( res != 4096 || once || !nbytes )
+            break;
+      }
+      io_set_events( io, fd, PIKE_BIT_FD_READ_OOB, PIKE_FD_READ );
+    }
+    else
+    {
+      /* some other object. Just call read */
+      while( nbytes )
+      {
+        push_int( MINIMUM(4096,nbytes) );
+        safe_apply( f, "read", 1 );
+        if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING || Pike_sp[-1].u.string->len == 0 )
+          break;
+        if( Pike_sp[-1].u.string->size_shift )
+            Pike_error("Can not handle non-8bit data\n");
+        io_append( io, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len );
+        nbytes -= Pike_sp[-1].u.string->len;
+        pop_stack();
+      }
+    }
+
+    if (!bread) RETURN -1;
+
+    RETURN bread;
+  }
+
+  /*! @decl int __fd_set_output( object|function(string:int) write_callback )
+   *!
+   *! This tells the buffer to trigger the write callback for the
+   *! specified filedescriptor when data is added to the buffer.
+   *!
+   *! This is used internally by Stdio.File to handle nonblocking
+   *! buffered mode, and is not really intended to be used directly.
+   *!
+   *! If @[write_callback] is @expr{0@} (zero) the state is cleared.
+   */
+  PIKEFUN void __fd_set_output( int(0..0)|object|function f )
+  {
+    Buffer *io = THIS;
+    if( TYPEOF(*f) == PIKE_T_OBJECT ) {
+      struct program *p = f->u.object->prog;
+      if (p) {
+	struct inherit *inh = p->inherits + SUBTYPEOF(*f);
+	int write_fun_num;
+	p = inh->prog;
+	if ((write_fun_num = find_identifier("write", p)) == -1) {
+	  Pike_error("Function \"write\" not available in object.\n");
+	}
+	SET_SVAL_TYPE_SUBTYPE(*f, PIKE_T_FUNCTION, write_fun_num);
+      }
+    } else if (TYPEOF(*f) != PIKE_T_FUNCTION) {
+      push_int(0);
+      f = Pike_sp-1;
+    }
+    assign_svalue(&io->output, f);
+    io->output_triggered = 0;
+  }
+
+  /*! @decl int(-1..) output_to( Stdio.Stream|function(string:int) fun, @
+   *!                            int(0..)|void nbytes )
+   *!
+   *! Write data from the buffer to the indicated file.
+   *!
+   *! @param fun
+   *!   Write function. Either one of:
+   *!   @mixed
+   *!     @type Stdio.Stream
+   *!       A file object in which the function @expr{write()@} will
+   *!       be called.
+   *!     @type function(string:int)
+   *!       A function which will be called with a @expr{string(8bit)@}
+   *!       to write and is expected to return an @expr{int@} indicating
+   *!       the number of bytes successfully written or @expr{-1@} on
+   *!       failure.
+   *!   @endmixed
+   *!
+   *! @param nbytes
+   *!   If @[nbytes] is not specified the whole buffer will be written
+   *!   if possible.  Otherwise at most @[nbytes] will be written.
+   *!
+   *! @returns
+   *! Will return the number of bytes that have been written successfully.
+   *!
+   *! If no bytes have been written successfully and @expr{fun()@} failed
+   *! with an error, @expr{-1@} will be returned.
+   */
+  PIKEFUN int(-1..) output_to( object|function(string:int) f, int|void nbytes )
+  {
+    Buffer *io = THIS;
+    ptrdiff_t written = 0;
+    ptrdiff_t sz = io_len( io );
+    int write_fun_num = -1;
+
+    if( !sz )
+    {
+      io_range_error(io,  sz);
+      sz = io_len(io);
+    }
+    if( nbytes )
+      sz = MINIMUM(nbytes->u.integer, sz);
+
+    if( TYPEOF(*f) == PIKE_T_OBJECT ) {
+      struct program *p = f->u.object->prog;
+      if (LIKELY(p)) {
+	struct inherit *inh = p->inherits + SUBTYPEOF(*f);
+	p = inh->prog;
+	if ((write_fun_num = find_identifier("write", p)) == -1) {
+	  Pike_error("Function \"write\" not available in object.\n");
+	}
+	SET_SVAL_TYPE_SUBTYPE(*f, PIKE_T_FUNCTION, write_fun_num);
+      } else {
+	SIMPLE_BAD_ARG_ERROR("output_to", 1, "object|function");
+      }
+    } else if (UNLIKELY(TYPEOF(*f) != PIKE_T_FUNCTION)) {
+      SIMPLE_BAD_ARG_ERROR("output_to", 1, "object|function");
+    } else {
+      write_fun_num = SUBTYPEOF(*f);
+    }
+
+    if (write_fun_num != FUNCTION_BUILTIN) {
+      struct program *prog = f->u.object->prog;
+      struct reference *ref = PTR_FROM_INT(prog, write_fun_num);
+      struct inherit *inh = INHERIT_FROM_PTR(prog, ref);
+
+      if( (inh->prog == file_program) &&
+	  (ref->identifier_offset == fd_write_identifier_offset) ) {
+	struct my_file *fd =
+	  get_inherit_storage( f->u.object, ref->inherit_offset );
+	while( sz > written )
+	{
+	  ptrdiff_t rd = MINIMUM(sz-written,4096);
+	  unsigned char *ptr = io_read_pointer( io );
+	  ptrdiff_t res;
+	  res = fd_write( fd->box.fd, ptr, rd );
+	  if( res == -1 && errno == EINTR )
+	    continue;
+	  if( res <= 0 ) {
+	    fd->my_errno = errno;
+	    if (!written) written = -1;
+	    break;
+	  }
+	  io_consume( io, res );
+	  written += res;
+	  io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE);
+	}
+	RETURN written;
+      }
+    }
+
+    /* Some other object or function. Just call it. */
+    while( sz > written )
+    {
+      size_t rd = MINIMUM(sz-written,4096);
+      ptrdiff_t wr = io_call_write( io, f, rd );
+      if( wr <= 0 )
+      {
+	if (!written) written = -1;
+	break;
+      }
+      written += wr;
+      if( wr < 4096 )
+	break;
+    }
+    RETURN written;
+  }
+
+  /*! @decl int(-1..) try_output()
+   *!
+   *! Try to write some data from the buffer to the file
+   *! registered with @[__fd_set_output()].
+   *!
+   *! This is typically called from backend callbacks when it
+   *! seems that it is possible to write some data to the file.
+   *!
+   *! @returns
+   *!   Returns @expr{-1@} on write error, and otherwise
+   *!   the number of bytes written to the file.
+   *!
+   *! @seealso
+   *!   @[__fd_set_output()]
+   */
+  PIKEFUN int(-1..) try_output()
+  {
+    Buffer *io = THIS;
+    if (LIKELY(io->output.u.object) && LIKELY(!io->output_triggered))
+      RETURN io_actually_trigger_output(io);
+    RETURN 0;
+  }
+
+  /*! @decl int read_sint( int size )
+   *!
+   *! Read a network byte order two:s complement signed number of size n*8 bits, then
+   *! return it.
+   *!
+   *! Will return UNDEFINED if there is not enough buffer space
+   *! available unless error mode is set to throw errors.
+   */
+  PIKEFUN int read_sint( int nbytes )
+  {
+    Buffer *io = THIS;
+    struct pike_string *tmp;
+    Pike_sp--;
+    if( !io_avail( io, nbytes ) )
+    {
+      push_undefined();
+      return;
+    }
+    if( nbytes <= SIZEOF_INT_TYPE )
+    {
+      push_int( io_read_signed_number_uc( io,nbytes ) );
+      return;
+    }
+
+    // It's a bignum.
+    // We should probably optimize this. :)
+    tmp = io_read_string( io, nbytes );
+    if( tmp->str[0]&0x80 )
+    {
+      push_int(-1);
+      push_int( nbytes * 8 );
+      o_lsh();
+    }
+    ref_push_string( tmp );
+    push_int( 256 );
+    push_object( clone_object( bignum_program, 2 ) );
+    if( tmp->str[0]&0x80 )
+      o_xor();
+    free_string( tmp );
+  }
+
+  PIKEFUN int(0..) _size_object( )
+  {
+      RETURN THIS->malloced ? THIS->allocated : 0;
+  }
+
+  /*! @decl Buffer add_padding( int(0..) nbytes, int(0..255)|void byte )
+   *!
+   *! Add @[nbytes] bytes of padding, if @[byte] is not specified the
+   *! area will be filled with 0's, otherwise the specified byte will
+   *! be repeated.
+   */
+  PIKEFUN Buffer add_padding( int(0..) nbytes, int|void _byte )
+  {
+    Buffer *io = THIS;
+    int byte = 0;
+    if( _byte ) byte = _byte->u.integer;
+
+    if( nbytes < 0 )
+      Pike_error("Cannot add negative padding.\n");
+
+    memset( io_add_space( io, nbytes,0), byte, nbytes );
+    io->len += nbytes;
+    Pike_sp -= args;
+    ref_push_object( io->this );
+  }
+
+  /*! @decl Buffer add( AddArgument ... data )
+   *! @code
+   *!  private typedef @[System.Memory]|@[Stdio.Buffer]|@[String.Buffer] BufferObject;
+   *!  private typedef BufferObject|string(8bit)|int(8bit)|array(AddArgument) AddArgument;
+   *! @endcode
+   *!
+   *! Add the items in data to the end of the buffer.
+   *!
+   *! The supported argument types are:
+   *!
+   *! @mixed
+   *!  @type string(0..255)
+   *!   An eight bit string.
+   *!  @type int(0..255)
+   *!   A single byte
+   *!  @type System.Memory
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type Stdio.Buffer
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type String.Buffer
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type array(AddArgument)
+   *!   Add all elements in the array individually. Each element may be
+   *!   any one of the types listed here.
+   *! @endmixed
+   *!
+   *! @seealso
+   *! @[sprintf], @[add_int8], @[add_int16], @[add_int32], @[add_int]
+   *! and
+   *! @[add_hstring]
+   */
+  PIKEFUN Buffer add( object|string|int|array(object|string|int) ... argp)
+  {
+    int i;
+    Buffer *io = THIS;
+
+    for(i=0; i<args; i++ )
+      io_append_svalue( io, argp+i );
+
+    pop_stack();
+    ref_push_object(io->this);
+  }
+
+  /*! @decl Buffer add_int8( int(0..255) )
+   *! Adds a single byte to the buffer.
+   */
+  PIKEFUN Buffer add_int8( int i )
+  {
+    Buffer *io = THIS;
+    *io_add_space(io,1,0)=i;
+    io->len++;
+    Pike_sp--;
+    ref_push_object(Pike_fp->current_object);
+  }
+
+  /*! @decl Buffer add_int16( int(0..65535) )
+   *!
+   *! Add a 16-bit network byte order value to the buffer
+   */
+  PIKEFUN Buffer add_int16( int i )
+  {
+    Buffer *io = THIS;
+    unsigned char *p = io_add_space(io,2,0);
+    p[0] = i>>8;
+    p[1] = i;
+    io->len += 2;
+    ref_push_object(Pike_fp->current_object);
+  }
+
+  /*! @decl Buffer add_int32( int i )
+   *! Adds a 32 bit network byte order value to the buffer
+   */
+  PIKEFUN Buffer add_int32( int i )
+  {
+    Buffer *io = THIS;
+    unsigned char *p = io_add_space(io,4,0);
+    p[0] = i>>24;
+    p[1] = i>>16;
+    p[2] = i>>8;
+    p[3] = i;
+    io->len += 4;
+    ref_push_object(Pike_fp->current_object);
+  }
+
+  /*! @decl Buffer add_hstring( string(0..255) data, int size_size )
+   *! @decl Buffer add_hstring( Stdio.Buffer data, int size_size )
+   *! @decl Buffer add_hstring( System.Memory data, int size_size )
+   *! @decl Buffer add_hstring( String.Buffer data, int size_size )
+   *! @decl Buffer add_hstring( int(0..255) data, int size_size )
+   *! @decl Buffer add_hstring( array data, int size_size )
+   *! @decl Buffer add_hstring( int|string(0..255)|Stdio.Buffer|System.Memory|array data, int size_size, int offset )
+   *!
+   *! Adds length of data followed by @[data] to the buffer.
+   *!
+   *! This is identical to
+   *! @tt{sprintf("%"+size_size+"H",(string)Stdio.Buffer(data))@} but
+   *! significantly faster.
+   *!
+   *! @[size_size] is the number of bytes used to represent the length of the data.
+   *! It must be less than Int.NATIVE_MAX.
+   *!
+   *! @[offset] is added to the length of the data prior to writing out
+   *! the length.  Typical usage involves adding @[size_size] to account
+   *! for the room used by the size.
+   *!
+   *! The supported @[data] argument types are
+   *!
+   *! @mixed
+   *!  @type int(0..255)
+   *!   An eight bit character.
+   *!  @type string(0..255)
+   *!   An eight bit string.
+   *!  @type System.Memory
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type Stdio.Buffer
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type String.Buffer
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type array
+   *!   Add all elements in the array individually. Each element may be
+   *!   any one of the types listed here.
+   *! @endmixed
+   */
+
+  /* we can not use the actual type here.
+
+     the reason is that this class is loaded before the master is, so
+     we cannot possibly use things that require the master (such as
+     resolving things.)
+  */
+  PIKEFUN Buffer add_hstring(
+   int|string|object|array(int|string|Buffer|array) str,
+   int size_size, void|int offset )
+  {
+    Buffer *io = THIS;
+    size_t len = io_svalue_len(io, str);
+
+    if( offset )
+      len += offset->u.integer;
+
+    if( size_size < (int)sizeof(size_t) &&
+        len > (((size_t)1)<<(8*size_size))-1 )
+      Pike_error("Too long string, need larger size field\n");
+
+    io_add_int( io, len, size_size );
+    io_append_svalue( io, str );
+    pop_n_elems(args);
+    ref_push_object(io->this);
+  }
+
+  /*! @decl Buffer add_int( int i, int(0..) width )
+   *!
+   *! Adds a generic integer to the buffer as an (width*8)bit
+   *! network byteorder number.
+   *!
+   *! @[width] must be less than Int.NATIVE_MAX.
+   *!
+   */
+  PIKEFUN Buffer add_int( object|int i, int width )
+  {
+    pop_stack(); /* width */
+    if( TYPEOF(*i) == PIKE_T_INT )
+    {
+      io_add_int( THIS, i->u.integer, width );
+      Pike_sp--;
+    }
+    else
+    {
+      convert_stack_top_to_bignum();
+      io_add_bignum( THIS, i->u.object, width );
+      pop_stack(); /* o. */
+    }
+    ref_push_object(Pike_fp->current_object);
+  }
+
+  /*! @decl Buffer add_hint( int i, int(0..) size_width )
+   *!
+   *! First add the size of the integer when encoded to base 256 as a
+   *! @[size_width] integer, then add the integer to the buffer, both
+   *! in network byte order.
+   *!
+   *! @[size_width] must be less than Int.NATIVE_MAX.
+   *!
+   */
+  PIKEFUN Buffer add_hint( object|int i, int len_width )
+  {
+    int width;
+    pop_stack(); /* width */
+    if( TYPEOF(*i) == PIKE_T_INT )
+    {
+      INT_TYPE ui = i->u.integer;
+      if (!ui) {
+	io_add_int( THIS, 0, len_width );
+      } else {
+	for( width=1; width<SIZEOF_INT_TYPE; width++ )
+	  if( ui < (((INT_TYPE)1)<<(width*8)) &&
+	      ui >= -(((INT_TYPE)1)<<(width*8-1)) )
+	    break;
+	io_add_int( THIS, width, len_width );
+	io_add_int( THIS, i->u.integer, width );
+      }
+      Pike_sp--;
+    }
+    else
+    {
+      convert_stack_top_to_bignum();
+      width = (mpz_sizeinbase( (void*)i->u.object->storage, 2)+7)/8;
+      io_add_int( THIS, width, len_width );
+      io_add_bignum( THIS, i->u.object, width );
+      pop_stack(); /* o. */
+    }
+    ref_push_object(Pike_fp->current_object);
+  }
+
+  /*! @decl Buffer add_ints( array(int) integers, int(0..255) len )
+   *!
+   *! Add the integers in the specified array, @[len] bytes per int.
+   *! Equivalent to calling @[add_int] for each integer, but faster,
+   *! and if an error occurs the buffer will contain no new
+   *! data. Either all or none of the integers will be added.
+   *!
+   *! Errors can occur if one of the elements in @[integers] is not
+   *! actually an integer, if sizeof(integers)*len is bigger than can
+   *! be represented in a size_t, or if the buffer cannot grow due to
+   *! an out of memory condition.
+   */
+  PIKEFUN Buffer add_ints( array(int) a, int bpi )
+  {
+    int i,l = a->size;
+    struct svalue *it = a->item;
+    unsigned char *ptr;
+    ptrdiff_t n=0;
+    ONERROR e;
+    Buffer *io = THIS;
+
+    io_unwrite_on_error(io, &e);
+
+    if( bpi < 0 )
+      Pike_error("Illegal int width\n");
+
+#if SIZEOF_LONG == 4
+      if( DO_INT32_MUL_OVERFLOW( l, bpi, &n ) )
+#else
+      if( DO_INT64_MUL_OVERFLOW( l, bpi, &n ) )
+#endif
+        Pike_error("Result size exceeds ptrdiff_t size\n");
+
+    io_add_space( io, n, 0 );
+    switch( bpi )
+    {
+      case 1:
+        for( i=0; i<l; i++ )
+          io_append_byte_uc( io, get_small_int(it+i) );
+        break;
+      case 2:
+        for( i=0; i<l; i++ )
+          io_append_short_uc( io, get_small_int(it+i) );
+        break;
+      case 4:
+        for( i=0; i<l; i++ )
+          io_append_int_uc( io, get_small_int(it+i) );
+        break;
+      case 3:
+#if SIZEOF_INT_TYPE > 4
+      case 5:
+      case 6:
+      case 7:
+#endif
+        for( i=0; i<l; i++ )
+          io_add_int_uc( io, get_small_int(it+i), bpi );
+        break;
+
+      default:
+        /* bignums. */
+        for( i=0; i<l; i++ )
+        {
+          if( LIKELY(TYPEOF(it[i]) == PIKE_T_INT) )
+            io_add_int_uc( io, it[i].u.integer, bpi);
+          else if( LIKELY(TYPEOF(it[i]) == PIKE_T_OBJECT) )
+            io_add_bignum( io, it[i].u.object, bpi );
+          else
+            Pike_error("Illegal argument.\n");
+        }
+    }
+    io_unset_unwrite_on_error( io, &e );
+    io_trigger_output( io );
+    Pike_sp--;
+    pop_stack();
+    ref_push_object(io->this);
+  }
+
+  /*! @decl protected int `[](int off)
+   *!
+   *! Return the character at the specified offset.
+   */
+  PIKEFUN int(0..255) `[]( int off )
+    flags ID_PROTECTED;
+  {
+    Buffer *io = THIS;
+    if( off < 0 )
+      off = io_len(io)-off;
+
+    if( io_avail( io, off ) )
+      Pike_sp[-1].u.integer = io_read_pointer(io)[off];
+    else
+      Pike_sp[-1].u.integer = -1;
+  }
+
+  /*! @decl protected int `[]=(int off, int char)
+   *!
+   *! Set the character at the specified offset to @[char].
+   */
+  PIKEFUN int(0..255) `[]=( int off, int val )
+    flags ID_PROTECTED;
+  {
+    Buffer *io = THIS;
+
+    io_ensure_malloced( io, 0 );
+
+    if( off < 0 )  off = io_len(io)-off;
+  again:
+    if( io_avail( io, off ) )
+    {
+      io_read_pointer(io)[off]=(val&0xff);
+    }
+    else
+    {
+      /* hm, well. We could extend the buffer. Should we? */
+      if( io_range_error(io, off ) )
+        goto again;
+      Pike_error("Writing outside buffer\n");
+    }
+  }
+
+  /*! @decl int _sizeof()
+   *!
+   *! Returns the buffer size, in bytes.
+   *! This is how much you can read from the buffer until it runs out of data.
+   */
+  PIKEFUN int(0..) _sizeof()
+    flags ID_PROTECTED;
+  {
+    push_int64(io_len(THIS));
+  }
+
+  /*! @decl string cast(string type)
+   *!
+   *! Convert the buffer to a string.
+   *!
+   *!@note
+   *! This only works for buffers whose length is less than 0x7fffffff.
+   */
+  PIKEFUN string(0..255) cast(string to)
+    flags ID_PROTECTED;
+  {
+    if( to != literal_string_string )
+    {
+      push_undefined();
+      return;
+    }
+    if( io_len(THIS) > 0x7fffffff )
+      Pike_error("This buffer is too large to convert to a string.\n");
+    push_string(make_shared_binary_string((void*)io_read_pointer(THIS),
+                                          (INT32)io_len(THIS)));
+  }
+
+
+  /*! @decl Buffer set_error_mode(int m)
+   *! @decl Buffer set_error_mode(program m)
+   *!
+   *! Set the error mode of this buffer to @[m].
+   *!
+   *! If true operations that would normally return 0 (like trying to
+   *! read too much) will instead throw an error. If @[m] is a program
+   *! a clone of it will be thrown on error.
+   *!
+   *! This is useful when parsing received data, you do not have to
+   *! verify that each and every read operation suceeds.
+   *!
+   *! However, the non-error mode is more useful when checking to see
+   *! if a packet/segment/whatever has arrived.
+   *!
+   *! The thrown error object will have the constant buffer_error set
+   *! to a non-false value.
+   *!
+   *! @example
+   *! @code
+   *! void read_callback(int i, string new_data)
+   *! {
+   *!   inbuffer->add( new_data );
+   *!
+   *!   while( Buffer packet = inbuffer->read_hbuffer(2) )
+   *!   {
+   *!     packet->set_error_mode(Buffer.THROW_ERROR);
+   *!     if( mixed e = catch( handle_packet( packet ) ) )
+   *!       if( e->buffer_error )
+   *!         protocol_error(); // illegal data in packet
+   *!       else
+   *!         throw(e); // the other code did something bad
+   *!    }
+   *! }
+   *!
+   *!
+   *! void handle_packet( Buffer pack )
+   *! {
+   *!   switch( pack->read_int8() )
+   *!   {
+   *!     ...
+   *!   case HEADER_FRAME:
+   *!     int num_headers = pack->read_int32();
+   *!     for( int i = 0; i<num_headers; i++ )
+   *!      headers[pack->read_hstring(2)] = pack->read_hstring(2);
+   *!     ...
+   *!   }
+   *! }
+   *! @endcode
+   */
+  PIKEFUN Buffer set_error_mode( int|program m )
+  {
+    if( TYPEOF(*m) == PIKE_T_INT )
+      io_set_error_mode( THIS, m->u.integer ? buffer_error_program : 0 );
+    else
+      io_set_error_mode( THIS, program_from_svalue(m));
+
+    pop_stack();
+    ref_push_object(Pike_fp->current_object);
+  }
+
+  /*! @decl object lock()
+   *!
+   *! Makes this buffer read only until the returned object is released.
+   *!
+   *! @note
+   *!  This currently simply returns a 0-length subbuffer.
+   */
+  PIKEFUN Buffer lock()
+  {
+    push_object( io_read_buffer( THIS, 0, 0 ) );
+  }
+
+  PIKEFUN string(0..255) _sprintf(int o, mapping UNUSED)
+    flags ID_PROTECTED;
+  {
+    size_t bytes;
+    pop_n_elems(args-1);
+    Pike_sp--;
+    switch( o )
+    {
+      case 'O':
+        {
+          push_static_text("%O(%d bytes, read=[..%d] data=[%d..%d] free=[%d..%d] %s%s)");
+          ref_push_program(Pike_fp->current_object->prog);
+          /* io_len [..offset] [offset..len] [..allocated] */
+          push_int(io_len(THIS));
+          push_int(THIS->offset-1);
+          push_int(THIS->offset);
+
+          push_int(THIS->len-1);
+          push_int(THIS->len);
+          push_int(THIS->allocated);
+          push_static_text( (THIS->str ? "string" : THIS->malloced ? "allocated" : "subbuffer" ) );
+          if( THIS->locked )
+            push_static_text(" (read only)");
+          else
+            push_static_text("");
+          f_sprintf(10);
+        }
+        break;
+
+      case 's':
+	bytes = io_len(THIS);
+	THIS->locked_move++;
+        push_string( io_read_string(THIS, bytes) );
+	io_rewind(THIS, bytes);
+	THIS->locked_move--;
+        break;
+
+      case 'q':
+        push_static_text("%q");
+	bytes = io_len(THIS);
+	THIS->locked_move++;
+        push_string( io_read_string(THIS, bytes) );
+	io_rewind(THIS, bytes);
+	THIS->locked_move--;
+        f_sprintf(2);
+        break;
+      default:
+        push_undefined();
+    }
+  }
+
+  /*! @decl string(8bit) read_hstring( int(0..) n, void|int offset )
+   *!
+   *! Identical in functionality to @[read](@[read_number](@[n])) but
+   *! faster.
+   *!
+   *! Read a network byte order number of size n*8 bits, then return the
+   *! indicated number of bytes as a string.
+   *!
+   *! @[offset] is substracted from the specified length prior to reading the
+   *! string.  Typical usage involves substracting @[n] to account
+   *! for the room used by the size.
+   *!
+   *! If there is not enough data available return 0.
+   *!
+   *! Note that pike string can not be longer than 0x7fffffff bytes (~2Gb).
+   */
+  PIKEFUN string(0..255) read_hstring( int bytes, void|int offset )
+  {
+    LONGEST len;
+    Buffer *io = THIS;
+    struct pike_string *s;
+    ONERROR e;
+
+    io_rewind_on_error( io, &e );
+    len = io_read_number( io, bytes );
+
+    if (offset)
+      len -= offset->u.integer;
+
+    if (len < 0) {
+      /* io_avail() in io_read_number() failed. */
+      CALL_AND_UNSET_ONERROR(e);
+      Pike_sp[-1].u.integer = 0;
+      return;
+    }
+
+    /* NB: We assume that io_avail() in io_read_string() doesn't throw. */
+    s = io_read_string( io, len );
+
+    if( s ) {
+      io_unset_rewind_on_error( io, &e );
+      Pike_sp--;
+      push_string(s);
+    } else {
+      CALL_AND_UNSET_ONERROR(e);
+      Pike_sp[-1].u.integer = 0;
+    }
+  }
+
+  /*! @decl string(8bit) read_cstring(void|int sentinel)
+   *!
+   *! Reads a \0 terminated C-string and returns the
+   *! string excluding the terminating \0.
+   *!
+   *! If there is not enough data available return UNDEFINED.
+   *!
+   *! Note that pike string can not be longer than 0x7fffffff bytes (~2Gb).
+   *!
+   *! @param sentinel
+   *! A different character can be used as end sentinel of the string.
+   */
+  PIKEFUN string(0..255) read_cstring(void|int sentinel)
+  {
+    LONGEST len;
+    Buffer *io = THIS;
+    struct pike_string *s;
+    ONERROR e;
+    int end = 0;
+    if( sentinel )
+      end = sentinel->u.integer;
+
+    io_rewind_on_error( io, &e );
+    len = 0;
+    do {
+      /* search the amount of data we know we have for each call to io_avail */
+      while( io_len(io) )
+      {
+        if( io_read_byte_uc(io)==end )
+          goto found_end;
+        len++;
+      }
+    }
+    while( io_avail( io, 1 ) );
+    goto fail;
+
+  found_end:
+    io_rewind( io, len+1 );
+    s = io_read_string( io, len );
+
+    if( LIKELY(s) ) {
+      io_read_byte_uc(io);		  /* consume the terminating byte */
+      io_unset_rewind_on_error( io, &e );
+      push_string(s);
+    } else {
+fail: CALL_AND_UNSET_ONERROR(e);
+      push_undefined();
+    }
+  }
+
+  /*! @decl Buffer read_hbuffer( int n )
+   *! @decl Buffer read_hbuffer( int n, bool copy )
+   *!
+   *! Same as @[read_hstring], but returns the result as an Buffer.
+   *!
+   *! No data is copied unless @[copy] is specified and true, the new
+   *! buffer points into the old one.
+   *!
+   *! @note
+   *!  As long as the subbuffer exists no data can be added to the
+   *!  main buffer.
+   *!
+   *!  Usually this is OK, since it often represents something that
+   *!  should be parsed before the next whatever is extracted from
+   *!  the buffer, but do take care.
+   *!
+   *!  If you need to unlink the new buffer after it has been
+   *!  created, call @[trim] in it.
+   */
+  PIKEFUN Buffer read_hbuffer( int bytes, int|void copy )
+  {
+    LONGEST len;
+    int do_copy = 0;
+    Buffer *io = THIS;
+    ONERROR e;
+
+    io_rewind_on_error( io, &e );
+
+    if( copy )  do_copy = copy->u.integer;
+    Pike_sp-=args;
+
+    len = io_read_number( io, bytes );
+    if( len >= 0 && io_avail( io, len ) )
+    {
+      push_object( io_read_buffer( io, len, do_copy ) );
+      io_unset_rewind_on_error( io, &e );
+      return;
+    }
+    CALL_AND_UNSET_ONERROR(e);
+    push_int(0);
+  }
+
+  /*! @decl Buffer read_buffer( int n )
+   *! @decl Buffer read_buffer( int n, bool copy )
+   *!
+   *! Same as @[read], but returns the result as an Buffer.
+   *!
+   *! No data is copied unless @[copy] is specified and true, the new buffer
+   *! points into the old one.
+   *!
+   *! @note
+   *!  As long as the subbuffer exists no data can be added to the main buffer.
+   *!
+   *!  Usually this is OK, since it often represents something that
+   *!  should be parsed before the next whatever is extracted from
+   *!  the buffer, but do take care.
+   */
+  PIKEFUN Buffer read_buffer( int bytes, int|void copy )
+  {
+    int do_copy = 0;
+    struct object *o;
+    if( copy )
+      do_copy = copy->u.integer;
+    Pike_sp-=args;
+    if( (o = io_read_buffer( THIS, bytes, do_copy )) )
+      push_object(o);
+    else
+      push_int(0);
+  }
+
+  /*! @decl Buffer sprintf(strict_sprintf_format format, sprintf_args ... args)
+   *!
+   *! Appends the output from @[sprintf] at the end of the buffer.
+   *!
+   *! This is somewhat faster than add(sprintf(...)) since no
+   *! intermediate string is created.
+   */
+  PIKEFUN Buffer sprintf(mixed ... ignored)
+    rawtype tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
+                   tAttr("sprintf_args", tMix), tObjIs_BUFFER);
+  {
+    ONERROR _e;
+    struct string_builder tmp;
+    init_string_builder(&tmp,0);
+    SET_ONERROR(_e, free_string_builder, &tmp);
+    low_f_sprintf(args, &tmp);
+    if( tmp.s->size_shift )
+      Pike_error("Buffer only handles 8bit data\n");
+    io_append( THIS, tmp.s->str, tmp.s->len );
+    pop_n_elems(args);
+    CALL_AND_UNSET_ONERROR(_e);
+    ref_push_object(Pike_fp->current_object);
+  }
+
+  /*! @decl array sscanf(string(8bit) format)
+   *!
+   *! Reads data from the beginning of the buffer to match the
+   *! specifed format, then return an array with the matches.
+   *!
+   *! The non-matching data will be left in the buffer.
+   *!
+   *! See @[array_sscanf] for more information.
+   */
+  PIKEFUN array sscanf( string format )
+  {
+    INT32 i;
+    ptrdiff_t num_used;
+    struct svalue *start = Pike_sp;
+  retry:
+    i = low_sscanf_pcharp(
+      MKPCHARP(io_read_pointer(THIS), 0), io_len(THIS),
+      MKPCHARP(format->str,format->size_shift), format->len,
+      &num_used);
+
+    if( !num_used )
+    {
+      if( io_range_error(THIS,0) )
+          goto retry;
+      pop_n_elems(Pike_sp-start);
+      push_int(0);
+    }
+    else
+    {
+      io_consume( THIS, num_used );
+      f_aggregate(Pike_sp-start);
+    }
+  }
+
+
+  /*! @decl mixed read_json(int|void require_whitespace_separator)
+   *!
+   *! Read a single JSON expression from the buffer and return it.
+   *!
+   *! If @[require_whitespace_separator] is true there must be a whitespace
+   *! after each json value (as an example, newline or space).
+   *!
+   *! The JSON is assumed to be utf-8 encoded.
+   *!
+   *! @returns
+   *! UNDEFINED if no data is available to read.
+   *! The read value otherwise.
+   *!
+   *! @note
+   *! Unless whitespaces are required this function only really work correctly
+   *! with objects, arrays and strings.
+   *!
+   *! There is really no  way to see where one value starts and the other ends
+   *! for most other cases
+   */
+  PIKEFUN mixed read_json(int|void require_whitespace)
+  {
+    int stop, whites = 0;
+    static ptrdiff_t(*parse_json_pcharp)(PCHARP,size_t,int,char**);
+    char *err = NULL;
+    if( require_whitespace )
+      whites = require_whitespace->u.integer;
+
+    Pike_sp-=args;
+    if( !parse_json_pcharp )
+      parse_json_pcharp = PIKE_MODULE_IMPORT(Standards.JSON, parse_json_pcharp );
+  retry:
+    stop = parse_json_pcharp( MKPCHARP(io_read_pointer(THIS),0),
+                              io_len(THIS), 1|8, &err ); /* json_utf8 */
+
+    if( stop < 0 )
+    {
+      if( -stop == (ptrdiff_t)io_len(THIS) || (err && !strncmp(err,"Unterminated",12)))
+      {
+        if( io_range_error(THIS,0) )
+            goto retry;
+        push_undefined();
+      }
+      else
+      {
+        /* FIXME: Use real json error? */
+        if( err )
+          Pike_error("Syntax error in json at offset %d: %s\n", -stop, err );
+        else
+          Pike_error("Syntax error in json at offset %d\n", -stop );
+      }
+    }
+    else
+    {
+      if( whites &&
+          (io_is_whitespace(THIS,stop)<=0 && io_is_whitespace(THIS,stop-1)<=0))
+      {
+        if( stop == (ptrdiff_t)io_len(THIS) )
+        {
+          if( io_range_error(THIS,0) )
+              goto retry;
+          pop_stack();
+          push_undefined();
+        }
+        else
+          Pike_error("Missing whitespace between json values at offset %d\n", stop );
+      }
+      else
+      {
+        if( whites )
+          while( io_is_whitespace( THIS, stop ) )
+            stop++;
+        io_consume( THIS, stop );
+      }
+    }
+  }
+
+  /*! @decl mixed match(string(8bit) format)
+   *!
+   *! Reads data from the beginning of the buffer to match the
+   *! specifed format, then return the match.
+   *!
+   *! The non-matching data will be left in the buffer.
+   *!
+   *! This function is very similar to @[sscanf], but the
+   *! result is the sum of the matches. Most useful to match
+   *! a single value.
+   *!
+   *! @example
+   *! @code
+   *!  // get the next whitespace separated word from the buffer.
+   *!  buffer->match("%*[ \t\r\n]%[^ \t\r\n]");
+   *! @endcode
+   */
+  PIKEFUN string(0..255)|int|float|array match( string format )
+  {
+    INT32 i;
+    ptrdiff_t num_used;
+    struct svalue *start = Pike_sp;
+  retry:
+    i = low_sscanf_pcharp(
+      MKPCHARP(io_read_pointer(THIS), 0), io_len(THIS),
+      MKPCHARP(format->str,format->size_shift), format->len,
+      &num_used);
+
+    if( !num_used )
+    {
+      if( io_range_error(THIS,0) )
+          goto retry;
+      pop_n_elems(Pike_sp-start);
+      push_int(0);
+    }
+    else
+    {
+      io_consume( THIS, num_used );
+      if( Pike_sp-start > 1 )
+        f_add(Pike_sp-start);
+    }
+  }
+
+  /*! @decl void clear()
+   *!
+   *! Clear the buffer.
+   */
+  PIKEFUN void clear(  )
+  {
+    Buffer *io = THIS;
+    io->offset = io->len = 0;
+  }
+
+  /*! @decl void set_max_waste(float factor)
+   *!
+   *! Configure how much free space should be allowed, at most, as a
+   *! factor of the current buffer size.
+   *!
+   *! The default is 0.5, leaving at most half the buffer as waste.
+   *!
+   */
+  PIKEFUN void set_max_waste(float howmuch)
+  {
+      Buffer *io = THIS;
+      io->max_waste = howmuch;
+      io_add_space( io, 0, 1 );
+      io_consume( io, 0 );
+  }
+
+  /*! @decl void trim()
+   *!
+   *! Frees unused memory.
+   *!
+   *! Note that calling this function excessively will slow things
+   *! down, since the data often has to be copied.
+   *!
+   *! @note
+   *!  This function could possibly throw an out-of-memory error
+   *!  if the realloc fails to find a new (smaller) memory area.
+   */
+  PIKEFUN void trim(  )
+  {
+    Buffer *io = THIS;
+
+    io_add_space( io, 0, 1 );
+    io_trim(io);
+  }
+
+  /*! @decl int(0..)|int(-1..-1) consume( int(0..) n )
+   *!
+   *! Discard the first @[n] bytes from the buffer
+   *!
+   *! Returns -1 on error and the amount of space still left otherwise.
+   */
+  PIKEFUN int(-1..) consume( int n )
+  {
+    Pike_sp--;
+    if( !io_avail( THIS, n ) )
+      push_int(-1);
+    else
+      push_int64( io_consume( THIS, n ) );
+  }
+
+  /*! @decl int(0..)|int(-1..-1) truncate( int(0..) n )
+   *!
+   *! Truncates the buffer to a length of @[n] bytes.
+   *!
+   *! Returns -1 on error and the number of bytes removed otherwise.
+   */
+  PIKEFUN int(-1..) truncate( int(0..) n )
+  {
+    Buffer *io = THIS;
+    ptrdiff_t diff = io_len(io) - n;
+    Pike_sp--;
+
+    if( diff < 0 || io_len(io) < (size_t)diff )
+      push_int(-1);
+    else {
+      io->len -= diff;
+      push_int64( diff );
+    }
+  }
+
+  /*! @decl int(0..)|int(-1..-1) unread( int(0..) n )
+   *!
+   *! Rewind the buffer @[n] bytes.
+   *!
+   *! @returns
+   *!
+   *! This function returns how many more bytes of buffer is
+   *! available to rewind, or -1 on error.
+   *!
+   *! @note
+   *!
+   *! Unless you add new data to the buffer using any of the add
+   *! functions you can always rewind.
+   *!
+   *! You can call @[unread(0)] to see how much.
+   */
+  PIKEFUN int(-1..) unread( int bytes )
+  {
+    Pike_sp--;
+    push_int64( io_rewind( THIS, bytes ) );
+  }
+
+  /*! @decl string(8bit) read( int n )
+   *!
+   *! Read @[bytes] bytes of data from the buffer.
+   *!
+   *! If there is not enough data available this returns 0.
+   *!
+   *! @seealso
+   *!   @[try_read()]
+   */
+  PIKEFUN string(0..255) read( int bytes )
+  {
+    struct pike_string *s;
+    Pike_sp--;
+    s = io_read_string(THIS, bytes );
+    if( s )
+      push_string( s );
+    else
+      push_undefined();
+  }
+
+  /*! @decl string(8bit) read( )
+   *!
+   *! Read all data from the buffer.
+   *!
+   *! If there is not enough data available this returns 0.
+   *!
+   *! This is basically equivalent to (string)buffer, but it also
+   *! removes the data from the buffer.
+   *!
+   *! @seealso
+   *!   @[try_read()]
+   */
+  PIKEFUN string(0..255) read()
+  {
+    push_string( io_read_string(THIS, io_len(THIS)) );
+  }
+
+  /*! @decl string(8bit) try_read(int len)
+   *!
+   *! Attempt to read some data from the buffer.
+   *!
+   *! @param len
+   *!   Read at most @[len] bytes from the buffer.
+   *!
+   *! @returns
+   *!   If the buffer contains less than @[len] bytes
+   *!   of data, the entire buffer contents are returned.
+   *!   Otherwise the first @[len] bytes are returned.
+   *!
+   *! @seealso
+   *!   @[read()]
+   */
+  PIKEFUN string(0..255) try_read( int bytes )
+  {
+    Buffer *this = THIS;
+    struct pike_string *s;
+    Pike_sp--;
+    /* Hm. signed/unsigned comparisons abound. */
+    if( bytes > 0 && (size_t)bytes > io_len(this) )
+      bytes = io_len(this);
+    push_string( io_read_string(this, bytes ) );
+  }
+
+  /*! @decl int(8bit) read_int8()
+   */
+  PIKEFUN int(8bit) read_int8( )
+  {
+    Buffer *io = THIS;
+    if( LIKELY(io_avail( io, 1 )) )
+      push_int( io_read_byte_uc(io) );
+    else
+      push_int(-1);
+  }
+
+  /*! @decl int(16bit) read_int16()
+   */
+  PIKEFUN int(0..65535) read_int16( )
+  {
+    Buffer *io = THIS;
+    if( LIKELY(io_avail( io, 2 )) )
+      push_int( io_read_number_uc(io,2) );
+    else
+      push_int(-1);
+  }
+
+  /*! @decl int(24bit) read_int24()
+   */
+  PIKEFUN int(0..16777215) read_int24( )
+  {
+    Buffer *io = THIS;
+    if( LIKELY(io_avail( io, 3 )) )
+      push_int( io_read_number_uc(io,3) );
+    else
+      push_int(-1);
+  }
+
+  /*! @decl int(32bit) read_int32()
+   */
+  PIKEFUN int(0..4294967295) read_int32( )
+  {
+    Buffer *io = THIS;
+    if( LIKELY(io_avail( io, 4 )) )
+    {
+      push_int( io_read_number_uc(io,4) );
+#if SIZEOF_INT_TYPE < 5
+      if( UNLIKELY(Pike_sp[-1].u.integer < 0) )
+      {
+	io_rewind( io, 4 );
+	pop_stack();
+	push_object( io_read_bignum(io, 4) );
+      }
+#endif
+    }
+    else
+      push_int(-1);
+  }
+
+  /*! @decl int read_int( int n )
+   *!
+   *! Read a network byte order unsigned number of size n*8 bits, then
+   *! return it.
+   *!
+   *! Will return -1 if there is not enough buffer space available
+   *! unless error mode is set to throw errors.
+   */
+  PIKEFUN int(0..) read_int( int len )
+  {
+    Buffer *io = THIS;
+    struct object *o;
+
+    Pike_sp--;
+
+    if( len < SIZEOF_INT_TYPE-1 ) /* will for sure fit. */
+    {
+      push_int( io_read_number( io, len ) );
+      return;
+    }
+
+    if( (o = io_read_bignum(io, len )) )
+    {
+      push_object(o);
+      reduce_stack_top_bignum();
+      return;
+    }
+    push_int(-1);
+  }
+
+  /*! @decl int read_hint( int n )
+   *!
+   *! Read a network byte order unsigned number of size n*8 bits, then
+   *! read another network byte order number of the size indicated by
+   *! the first size.
+   *!
+   *! Will return -1 if there is not enough buffer space available
+   *! unless error mode is set to throw errors.
+   */
+  PIKEFUN int(0..) read_hint( int size_len )
+  {
+    Buffer *io = THIS;
+    ONERROR e;
+    INT_TYPE len;
+    struct object *o;
+
+    io_rewind_on_error( io, &e );
+
+    len = io_read_number( io, size_len );
+    if( len >= 0 )
+    {
+      if( len < SIZEOF_INT_TYPE )
+      {
+        if( (Pike_sp[-1].u.integer = io_read_number( io, len )) == -1 )
+          goto neg_one;
+      }
+      else if( (o = io_read_bignum( io, len )) )
+      {
+        Pike_sp--;
+        push_object(o);
+        reduce_stack_top_bignum();
+      }
+      else
+        goto neg_one;
+      io_unset_rewind_on_error( io, &e );
+      return;
+    }
+  neg_one:
+    Pike_sp[-1].u.integer = -1;
+    CALL_AND_UNSET_ONERROR(e);
+  }
+
+  /*! @decl array(int) read_ints( int n, int width )
+   *!
+   *! Read a list of @[n] network byte order unsigned numbers each of
+   *! size @[width]*8 bits, then return it.
+   *!
+   *! Will return 0 if there is not enough buffer space available
+   *! unless error mode is set to throw errors.
+   */
+  PIKEFUN array(int(0..)) read_ints( int num, int len )
+  {
+    Buffer *io = THIS;
+    INT_TYPE i;
+    struct object *o;
+    struct array *a;
+
+    Pike_sp-=2;
+
+    if( !io_avail_mul( io, num, len ) )
+    {
+      push_int(0);
+      return;
+    }
+
+    if( len < SIZEOF_INT_TYPE-1 ) /* will for sure fit. */
+    {
+      push_array(a = allocate_array(num));
+      for( i=0;i<num;i++ )
+        a->item[i].u.integer = io_read_number_uc( io, len );
+      return;
+    }
+
+    for( i=0; i<num; i++ )
+    {
+      push_object(io_read_bignum( io, len ));
+      reduce_stack_top_bignum();
+    }
+    f_aggregate(num);
+  }
+
+/*! @decl string _encode()
+ *! @decl void _decode(string x)
+ *!
+ *! Encode and decode Stdio.Buffer objects.
+ *! Only the buffer data is kept, no other state is saved.
+ */
+  PIKEFUN string _encode()
+  {
+    push_string(io_read_string(THIS, io_len(THIS)));
+  }
+
+  PIKEFUN void _decode(string(0..255) x)
+  {
+    Buffer *this = THIS;
+    if( this->buffer )
+      Pike_error("Can not initialize twice.\n");
+    if( x->size_shift )
+      Pike_error("Can not handle non-8bit data.\n");
+    this->buffer = (unsigned char*)x->str;
+    this->len = x->len;
+    this->malloced = 0;
+    this->str = x;
+    add_ref(x);
+  }
+
+  /*! @decl void read_only()
+   *!
+   *! Make the buffer permanently read only.
+   *! @note
+   *! You can use lock() to do this temporarily.
+   */
+  PIKEFUN void read_only()
+  {
+    io_lock( THIS );
+  }
+
+
+  static struct object* io_create_rewind_key( Buffer *io, int how );
+
+  /*! @decl RewindKey rewind_on_error()
+   *! @decl RewindKey rewind_key()
+   *!
+   *! These functions are very similar. The @[rewind_on_error] edition
+   *! will create an object that, when it goes out of scope without
+   *! having been destructed explicitly, will cause the buffer to
+   *! rewind to the location it had when this function is called.
+   *!
+   *! This will happen if you throw an error @i{or@} otherwise let the
+   *! object fall out of scope.
+   *!
+   *! Use @[destruct(RewindKey)] or @[RewindKey.release] to stop the
+   *! buffer from being rewound.
+   *!
+   *! The second version (@[rewind_key]) requires you to explicitly
+   *! call @[RewindKey.rewind] to do the rewind.
+   *!
+   *! Take some care with these objects, if you create multiple ones
+   *! at once the results might be somewhat confusing if you do not
+   *! release them in the reverse order they were created in (then
+   *! again, you almost certainly really only need one)
+   *!
+   *! You can call @[RewindKey.update] in the generated object to
+   *! change where it will be rewound to.
+   *!
+   *! The typical use-case of this functionality is when parsing a
+   *! packet protocol with variable length packets where the length is
+   *! not immediately known. It saves you from keeping track of how
+   *! much to rewind if you had not actually gotten the whole packet
+   *! yet.
+   *!
+   *! @example
+   *! @code
+   *! void parse_packet( Stdio.Buffer b )
+   *! {
+   *!   Stdio.Buffer.RewindKey rewind = b->rewind_on_error();
+   *!   b->set_error_mode(1);
+   *!
+   *!   switch( b->read_int8() ) // packet type
+   *!   {
+   *!     case DATA:
+   *!       int channel = b->read_int8();
+   *!       Stdio.Buffer data = b->read_hbuffer( 4 );
+   *!       // we have read the whole packet, so no longer rewind on error.
+   *!       rewind->release();
+   *!       return handle_data_packet( channel, data );
+   *!   }
+   *! }
+   *! @endcode
+   *! @note
+   *! Just calling @[rewind_on_error] without assigning the return
+   *! value to something will not do anything. You need to keep the
+   *! object around while the rewind-to position is still valid.
+   *!
+   *! Keeping the object around forbids the buffer from moving data
+   *! inside itself, this means that it can only grow. So do not keep
+   *! the rewind key when it is not needed.
+   */
+  PIKEFUN object(Buffer.RewindKey) rewind_on_error()
+  {
+    push_object( io_create_rewind_key( THIS, 1 ) );
+  }
+
+  PIKEFUN object(Buffer.RewindKey) rewind_key()
+  {
+    push_object( io_create_rewind_key( THIS, 0 ) );
+  }
+
+  /*! @decl void create( int|void len )
+   *! @decl void create( string(8bit) contents )
+   *! @decl void create( System.Memory|String.Buffer contents )
+   *!
+   *! If passed an integer or no argument, create a buffer of that
+   *! size, or if no argument is given, 226 bytes.
+   *!
+   *! If @[contents] are specified a new buffer with the contents of
+   *! the given string/System.Memory or String.Buffer will be created.
+   *!
+   *! @note
+   *! In the @[String.Buffer] case the data has to be copied unless
+   *! there is only one reference to the String.Buffer object, since
+   *! modifications of the String.Buffer would cause the Buffer to
+   *! point into invalid memory.
+   *!
+   *! In all other cases this will not copy the string data, instead
+   *! data will be read from the source until it needs to be modified,
+   *! so the buffer creation is fast regardless of the length of the
+   *! string.
+   *!
+   *! However, as an example, if the buffer is created with a 100Gb
+   *! @[System.Memory] mmap:ed file as the @[contents] and you later on
+   *! try to modify the buffer using one of the @[add] functions (or
+   *! @[sprintf] and similar) the old contents @b{will@} be copied.
+   *!
+   *! You can use @[read_only()] to avoid accidents.
+   */
+  PIKEFUN void create( int|void|string|object|array x )
+    flags ID_PROTECTED;
+  {
+    Buffer *this = THIS;
+    if( this->buffer )
+      Pike_error("Can not initialize twice.\n");
+    if( !x )
+    {
+      this->buffer = xalloc(256-32);
+      this->allocated = 256-32;
+      this->malloced = 1;
+    }
+    else if( TYPEOF(*x) == PIKE_T_INT )
+    {
+      INT_TYPE len = x->u.integer;
+      if(  len <= 0 )
+        this->buffer = xalloc(1);
+      else
+        this->buffer = xalloc(len);
+      this->allocated = MAXIMUM(len,1);
+      this->malloced = 1;
+    }
+    else
+      io_append_svalue( THIS, x );
+  }
+
+  INIT {
+    Buffer *this = THIS;
+    memset( this, 0, sizeof(Buffer));
+    this->max_waste = 0.615;
+    this->this = Pike_fp->current_object;
+  }
+
+  EXIT {
+    Buffer *this = THIS;
+    io_unlink_external_storage( this );
+    if( this->error_mode )
+        free_program( this->error_mode );
+    if( this->malloced )
+      free( this->buffer );
+  }
+
+
+/*! @class RewindKey
+ *!
+ *! The return value of @[Buffer.rewind_on_error()] and
+ *! @[Buffer.rewind_key()]
+ *!
+ *! This object will cause the buffer to unwind to the position it was
+ *! at when the object was created either when it is released (when it
+ *! falls out of scope, explicit destruct does not count) or when
+ *! @[rewind] is called, depending on which function was used to
+ *! create it.
+ */
+
+  PIKECLASS RewindKey
+    flags PROGRAM_DESTRUCT_IMMEDIATE;
+  {
+    CVAR Buffer *io;
+    CVAR struct object *obj;
+    CVAR size_t rewind_to;
+    CVAR int auto_mode;
+
+    /*! @decl void release()
+     *!  Do not rewind if the object is released.
+     *! @note
+     *!  This is equivalent to calling destruct() on the object
+     */
+    PIKEFUN void release()
+    {
+      destruct_object(Pike_fp->current_object, DESTRUCT_EXPLICIT);
+    }
+
+    /*! @decl void update()
+     *!
+     *! Update the location the buffer will be rewound to to the current
+     *! position of the buffer.
+     */
+    PIKEFUN void update()
+    {
+      if( THIS->obj->prog && THIS->io )
+        THIS->rewind_to = THIS->io->offset;
+    }
+
+    EXIT {
+      if( THIS->io && THIS->obj->prog )
+        THIS->io->locked_move--;
+      free_object( THIS->obj );
+    }
+
+    PIKEFUN void destroy( int reason )
+      flags ID_PRIVATE;
+    {
+      if( reason > 1 && THIS->auto_mode ) /* no refs or gc */
+      {
+        if( THIS->io && THIS->obj->prog )
+          THIS->io->offset = THIS->rewind_to;
+      }
+    }
+
+    /*! @decl void rewind()
+     *! Rewinds the buffer explicitly.
+     *! @note
+     *!    Destructs this @[RewindKey]
+     */
+    PIKEFUN void rewind() {
+      THIS->auto_mode = 1;
+      destruct_object(Pike_fp->current_object, DESTRUCT_GC);
+    }
+
+    PIKEFUN void create()
+      flags ID_PRIVATE;
+    {
+      /* FIXME: The following zeroing isn't safe! */
+      THIS->obj = 0;
+      THIS->io = 0;
+      Pike_error("Not supported\n");
+    }
+  }
+}
+
+
+
+static struct object* io_create_rewind_key( Buffer *io, int auto_mode )
+{
+  struct object *o = fast_clone_object( Buffer_RewindKey_program );
+  struct Buffer_RewindKey_struct *s = (void*)o->storage;
+  add_ref(io->this);
+  s->obj = io->this;
+  s->rewind_to = io->offset;
+  s->io = io;
+  s->auto_mode = auto_mode;
+  io->locked_move++;
+  return o;
+}
+
+/*! @endclass
+ * RewindKey
+ */
+
+/*! @endclass
+ * Buffer
+ */
+
+
+/*! @endmodule
+ * Stdio
+ */
+
+
+void init_stdio_buffer(void)
+{
+  INIT
+  start_new_program();
+  low_inherit(generic_error_program,0,0,0,0,0);
+  add_integer_constant( "buffer_error", 1, 0 );
+  buffer_error_program = end_program();
+}
+
+
+void exit_stdio_buffer(void)
+{
+  free_program( buffer_error_program );
+  EXIT
+}

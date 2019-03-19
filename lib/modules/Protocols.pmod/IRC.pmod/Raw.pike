@@ -13,19 +13,23 @@ function(:void) close_callback;
 // command_callback(string cmd,string ... parameters)
 // notify_callback(string from,string type,string from,string message)
 
-void create(string server,int port,
+void create(string|object server,int port,
 	    function(string,string ...:void) _command_callback,
 	    void|function(string,string...:void) _notify_callback,
 	    void|function(:void) _close_callback)
 {
-   array aserver=gethostbyname(server);
-   if (!aserver || !sizeof(aserver[1]))
-      Error.connection("Failed to lookup host %O",server);
-   server=aserver[1][random(sizeof(aserver[1]))];
+   if (objectp(server))
+      con = server;
+   else {
+       array aserver=gethostbyname(server);
+       if (!aserver || !sizeof(aserver[1]))
+	  Error.connection("Failed to lookup host %O",server);
+       server=aserver[1][random(sizeof(aserver[1]))];
 
-   con=Stdio.File();
-   if (!con->connect(server,port))
-      Error.connection("Failed to connect",con->errno());
+       con=Stdio.File();
+       if (!con->connect(server,port))
+	  Error.connection("Failed to connect",con->errno());
+   }
 
    con->set_nonblocking(con_read,0,con_close);
 
@@ -56,7 +60,7 @@ void con_read(mixed dummy,string what)
    buf=lines[-1];
    foreach (lines[..<1],string row)
    {
-      mixed err=catch 
+      mixed err=catch
       {
 	 handle_command(row);
       };
@@ -74,7 +78,7 @@ void con_write_callback()
       int j=con->write(write_buf[0]);
       if (j!=sizeof(write_buf[0]))
       {
-	 if (j==-1) 
+	 if (j==-1)
 	 {
 #ifdef IRC_DEBUG
 	    werror("<- (write error)\n");
@@ -111,10 +115,10 @@ void con_write(string s)
    int j=con->write(s);
    if (j!=sizeof(s))
    {
-      if (j==-1) 
+      if (j==-1)
       {
 #ifdef IRC_DEBUG
-	 werror("<- (write error; %O)\n",strerror(con->errno()));
+         werror("<- (write error; %s)\n",strerror(con->errno()));
 #endif
 	 return; // connection broken?
       }
@@ -139,7 +143,7 @@ void handle_command(string cmd)
 {
    string a,b;
    if (cmd=="") return;
-   if (cmd[0]==':') 
+   if (cmd[0]==':')
    {
       if (!notify_callback) return;
       if (sscanf(cmd,":%s :%s",a,b)==2)

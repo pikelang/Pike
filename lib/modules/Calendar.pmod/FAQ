@@ -145,17 +145,21 @@ A:  ->format_xxx();
       > Calendar.Day()->format_time();
       Result: "2001-01-10 00:00:00"
 
-    This is all the formats:
+    These are all the formats:
 
+    format_commonlog      "10/Jan/2001:10:49:57 +0100"
     format_ext_time       "Wednesday, 10 January 2001 10:49:57"
     format_ext_time_short "Wed, 10 Jan 2001 10:49:57 CET"
     format_ext_ymd        "Wednesday, 10 January 2001"
     format_iso_time       "2001-01-10 (Jan) -W02-3 (Wed) 10:49:57 UTC+1"
     format_iso_ymd        "2001-01-10 (Jan) -W02-3 (Wed)"
+    format_iso_short      "20010110T10:49:57"
     format_mod            "10:49"
     format_month          "2001-01"
     format_month_short    "200101"
     format_mtime          "2001-01-10 10:49"
+    format_nice           "10 Jan 2001 10:49:57"
+    format_nicez          "10 Jan 2001 10:49:57 CET"
     format_time           "2001-01-10 10:49:57"
     format_time_short     "20010110 10:49:57"
     format_time_xshort    "010110 10:49:57"
@@ -176,6 +180,10 @@ A:  ->format_xxx();
     format_ctime          "Wed Jan 10 10:49:57 2001\n"
     format_smtp           "Wed, 10 Jan 2001 10:49:57 +0100"
     format_http           "Wed, 10 Jan 2001 09:49:57 GMT"
+
+    For objects with a size, e.g. when taking the distance between two
+    time points, the format_elapsed function can also be called to get
+    something similar to "35d8:06:41.547".
 
 -------------------------------------------------------------------------  
 

@@ -13,6 +13,15 @@ test_any([[
     return "nosegfault";
 ]],"nosegfault")
 
+test_any([[
+    Stdio.File f = Stdio.File()->pipe();
+    Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( f );
+    sf->start();
+
+    Pike.DefaultBackend( 1.0 );
+    return "nosegfault";
+]],"nosegfault")
+
 cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
   test_any([[
     Pike.PollDeviceBackend pb = Pike.PollDeviceBackend();

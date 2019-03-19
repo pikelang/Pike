@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -14,7 +13,6 @@
 #include "fdlib.h"
 #include "fd_control.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #include "shuffler.h"
@@ -25,8 +23,6 @@
 /* Source: Normal file
  * Argument: Stdio.File instance pointing to a normal file
  */
-
-static struct program *Fd_ref_program = NULL;
 
 struct fd_source
 {
@@ -72,6 +68,19 @@ static void free_source( struct source *src )
   free_object(((struct fd_source *)src)->obj);
 }
 
+static int is_stdio_file(struct object *o)
+{
+  struct program *p = o->prog;
+  INT32 i = p->num_inherits;
+  while( i-- )
+  {
+    if( p->inherits[i].prog->id == PROG_STDIO_FD_ID ||
+        p->inherits[i].prog->id == PROG_STDIO_FD_REF_ID )
+      return 1;
+  }
+  return 0;
+}
+
 struct source *source_normal_file_make( struct svalue *s,
 					INT64 start, INT64 len )
 {
@@ -80,27 +89,14 @@ struct source *source_normal_file_make( struct svalue *s,
   if(TYPEOF(*s) != PIKE_T_OBJECT)
     return 0;
 
-  if (!Fd_ref_program)
-  {
-    push_text("files.Fd_ref");
-    SAFE_APPLY_MASTER("resolv",1);
-    Fd_ref_program = program_from_svalue(Pike_sp-1);
-    if (!Fd_ref_program) {
-      pop_stack();
-      return 0;
-    }
-    add_ref(Fd_ref_program);
-    pop_stack( );
-  }
-
-  if (!get_storage( s->u.object, Fd_ref_program ) )
+  if(!is_stdio_file(s->u.object))
     return 0;
 
   if (find_identifier("query_fd", s->u.object->prog) < 0)
     return 0;
 
-  res = malloc( sizeof( struct fd_source ) );
-  MEMSET( res, 0, sizeof( struct fd_source ) );
+  res = calloc( 1, sizeof( struct fd_source ) );
+  if( !res ) return NULL;
 
   apply( s->u.object, "query_fd", 0 );
   res->fd = Pike_sp[-1].u.integer;
@@ -117,7 +113,7 @@ struct source *source_normal_file_make( struct svalue *s,
   if( !S_ISREG(st.st_mode) )
   {
     goto fail;
-  }  
+  }
   if( len > 0 )
   {
     if( len > st.st_size-start )
@@ -144,9 +140,6 @@ fail:
 
 void source_normal_file_exit( )
 {
-  if (Fd_ref_program) {
-    free_program( Fd_ref_program );
-  }
 }
 
 void source_normal_file_init( )

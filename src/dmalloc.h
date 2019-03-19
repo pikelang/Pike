@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef DMALLOC_H
@@ -29,7 +28,7 @@ typedef void *c_stack_frame;
 #else
 #undef DMALLOC_C_STACK_TRACE
 #define DUMP_C_STACK_TRACE() do {} while (0)
-#endif
+#endif /* defined (HAVE_EXECINFO_H) && defined (HAVE_BACKTRACE) */
 
 #define DMALLOC_NAMED_LOCATION(NAME)	\
     (("NS" __FILE__ ":" DEFINETOSTR(__LINE__) NAME )+1)
@@ -43,7 +42,7 @@ typedef void *c_stack_frame;
  * 'T': memory map template
  * 'M': memory map
  */
-typedef char *LOCATION;
+typedef const char *LOCATION;
 #define LOCATION_TYPE(X) ((X)[0])
 #define LOCATION_NAME(X) ((X)+1)
 #define LOCATION_IS_DYNAMIC(X)						\
@@ -61,8 +60,8 @@ extern size_t dmalloc_tracelogptr;
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern int gc_external_refs_zapped;
-PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
-#endif
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line);
+#endif /* PIKE_DEBUG */
 
 #ifdef DO_PIKE_CLEANUP
 extern int exit_with_cleanup;
@@ -70,7 +69,7 @@ extern int exit_cleanup_in_progress;
 #define DO_IF_PIKE_CLEANUP(X) X
 #else
 #define DO_IF_PIKE_CLEANUP(X)
-#endif
+#endif /* DO_PIKE_CLEANUP */
 
 typedef void describe_block_fn (void *);
 
@@ -95,9 +94,6 @@ PMOD_EXPORT void debug_free(void *, LOCATION, int);
 PMOD_EXPORT char *debug_strdup(const char *, LOCATION);
 void reset_debug_malloc(void);
 PMOD_EXPORT int dmalloc_check_allocated (void *p, int must_be_freed);
-#if 0
-void dmalloc_check_block_free(void *, LOCATION, char *, describe_block_fn *);
-#endif
 PMOD_EXPORT void dmalloc_free(void *p);
 PMOD_EXPORT int debug_malloc_touch_fd(int, LOCATION);
 PMOD_EXPORT int debug_malloc_register_fd(int, LOCATION);
@@ -108,13 +104,13 @@ PMOD_EXPORT int dmalloc_mark_as_free(void*,int);
 PMOD_EXPORT void *debug_malloc_update_location(void *, LOCATION);
 PMOD_EXPORT void *debug_malloc_update_location_ptr(void *, ptrdiff_t, LOCATION);
 PMOD_EXPORT void *debug_malloc_update_location_bt (void *p, const char *file,
-						   int line, const char *name);
+						   INT_TYPE line, const char *name);
 void search_all_memheaders_for_references(void);
 
 /* Beware! names of named memory regions are never ever freed!! /Hubbe */
-PMOD_EXPORT void *debug_malloc_name(void *p, const char *fn, int line);
+PMOD_EXPORT void *debug_malloc_name(void *p, const char *fn, INT_TYPE line);
 PMOD_EXPORT int debug_malloc_copy_names(void *p, void *p2);
-char *dmalloc_find_name(void *p);
+const char *dmalloc_find_name(void *p);
 
 /* glibc 2.1 defines this as a macro. */
 #ifdef strdup
@@ -142,6 +138,9 @@ char *dmalloc_find_name(void *p);
 
 #define xalloc(X) ((void *)debug_malloc_update_location((void *)debug_xalloc(X), DMALLOC_NAMED_LOCATION(" xalloc")))
 #define xcalloc(N, S) ((void *)debug_malloc_update_location((void *)debug_xcalloc(N, S), DMALLOC_NAMED_LOCATION(" xcalloc")))
+#define xmalloc(X) ((void *)debug_malloc_update_location((void *)debug_xmalloc(X), DMALLOC_NAMED_LOCATION(" xmalloc")))
+#define xrealloc(N, S) ((void *)debug_malloc_update_location((void *)debug_xrealloc(N, S), DMALLOC_NAMED_LOCATION(" xrealloc")))
+#define xstrdup(X) ((void *)debug_malloc_update_location((void *)debug_xstrdup(X), DMALLOC_NAMED_LOCATION(" xstrdup")))
 #define xfree(X) debug_xfree(debug_malloc_update_location((X), DMALLOC_NAMED_LOCATION(" free")))
 PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
 #define dmalloc_touch(TYPE,X) ((TYPE) debug_malloc_pass (X))
@@ -149,13 +148,13 @@ PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, in
 void debug_malloc_dump_fd(int fd);
 #define dmalloc_touch_svalue(X) do {		\
     const struct svalue *_tmp = (X);		\
-    if (TYPEOF(*_tmp) <= MAX_REF_TYPE) {	\
+    if (REFCOUNTED_TYPE(TYPEOF(*_tmp))) {	\
       debug_malloc_touch(_tmp->u.refs);		\
     }						\
   } while(0)
 #define dmalloc_touch_svalue_named(X,NAME) do {		\
     const struct svalue *_tmp = (X);			\
-    if (TYPEOF(*_tmp) <= MAX_REF_TYPE) {		\
+    if (REFCOUNTED_TYPE(TYPEOF(*_tmp))) {		\
       debug_malloc_touch_named(_tmp->u.refs,NAME);	\
     }							\
   } while(0)
@@ -175,7 +174,7 @@ void dmalloc_set_mmap(void *ptr, struct memory_map *m);
 void dmalloc_set_mmap_template(void *ptr, struct memory_map *m);
 void dmalloc_set_mmap_from_template(void *p, void *p2);
 void dmalloc_describe_location(void *p, int offset, int indent);
-struct memory_map *dmalloc_alloc_mmap(char *name, int line);
+struct memory_map *dmalloc_alloc_mmap(char *name, INT_TYPE line);
 void dmalloc_add_mmap_entry(struct memory_map *m,
 			    char *name,
 			    int offset,
@@ -196,6 +195,7 @@ PMOD_EXPORT void* dlrealloc(void*, size_t);
 PMOD_EXPORT void* dlmemalign(size_t, size_t);
 PMOD_EXPORT void* dlvalloc(size_t);
 PMOD_EXPORT void* dlpvalloc(size_t);
+PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define malloc	  dlmalloc
 #define free	  dlfree
 #define calloc    dlcalloc
@@ -203,11 +203,13 @@ PMOD_EXPORT void* dlpvalloc(size_t);
 #define memalign  dlmemalign
 #define valloc	  dlvalloc
 #define pvalloc	  dlpvalloc
+/* No define for mallinfo since there's a struct with the same name. */
 #ifdef strdup
 #undef strdup
 #endif
 #define strdup    debug_xstrdup
-#endif
+
+#endif /* USE_DL_MALLOC */
 
 #define dmalloc_touch_fd(X) (X)
 #define dmalloc_register_fd(X) (X)
@@ -215,25 +217,23 @@ PMOD_EXPORT void* dlpvalloc(size_t);
 #define dmalloc_close_fd(X) (X)
 #define dmfree(X) free((X))
 #define dmalloc_accept_leak(X) (void)(X)
-#define DMALLOC_LINE_ARGS 
-#define DMALLOC_POS 
+#define DMALLOC_LINE_ARGS
+#define DMALLOC_POS
 #define DMALLOC_PROXY_ARGS
 #define debug_malloc_dump_references(X,x,y,z)
 #define debug_malloc_dump_fd(fd)
 #define xalloc debug_xalloc
 #define xcalloc debug_xcalloc
+#define xrealloc debug_xrealloc
+#define xstrdup debug_xstrdup
 
 #if defined(DYNAMIC_MODULE) && defined(__NT__) && !defined(USE_DLL)
 #define xmalloc debug_xmalloc
-#define xrealloc debug_xrealloc
 #define xfree debug_xfree
-#define xstrdup debug_xstrdup
 #else
 #define xmalloc malloc
-#define xrealloc realloc
 #define xfree free
-#define xstrdup strdup
-#endif
+#endif /* defined(DYNAMIC_MODULE) && defined(__NT__) && !defined(USE_DLL) */
 
 #define dbm_main main
 #define DO_IF_DMALLOC(X)

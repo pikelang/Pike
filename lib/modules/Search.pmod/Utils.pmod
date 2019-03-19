@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 #if !constant(report_error)
@@ -124,12 +123,12 @@ class ProfileEntry {
 
     ADTSet add (string|int|float in) {
       vals[in] = 1;
-      return this_object();
+      return this;
     }
 
     ADTSet sub (string|int|float out) {
       m_delete(vals, out);
-      return this_object();
+      return this;
     }
 
     ADTSet `+(mixed in) {
@@ -137,7 +136,7 @@ class ProfileEntry {
 	add(in);
       else
 	map((array)in, add);
-      return this_object();
+      return this;
     }
 
     ADTSet `-(mixed out) {
@@ -145,16 +144,15 @@ class ProfileEntry {
 	sub(out);
       else
 	map((array)out, sub);
-      return this_object();
+      return this;
     }
 
-    mixed cast(string to) {
+    protected mixed cast(string to) {
       switch(to) {
-      case "object": return this_object();
       case "array": return indices(vals);
       case "multiset": return (multiset)indices(vals);
       default:
-	error("Can not cast ADTSet to "+to+".\n");
+	return UNDEFINED;
       }
     }
   }
@@ -250,7 +248,7 @@ class ProfileCache (string db_name) {
     profile_stat[profile_id] = (int)res[0]->altered;
 
     // Query profile
-    if((int)res[0]->type == 2) 
+    if((int)res[0]->type == 2)
     {
       m_delete(value_cache, profile_id);
       foreach(indices(entry_cache), string id)
@@ -318,7 +316,7 @@ class ProfileCache (string db_name) {
   {
     /*
       if (time() - last_query_prof_stat < 5*60)
-      return indices(query_profile_names);*/    
+      return indices(query_profile_names);*/
     array res = get_db()->query("SELECT name, id FROM profile WHERE type=1");
     query_profile_names = mkmapping( res->name, (array(int)) res->id );
     if(sizeof(query_profile_names))
@@ -381,7 +379,7 @@ class ProfileCache (string db_name) {
 	 up_to_datep(query)) return entry;
     }
 
-    entry = ProfileEntry( db, query, this_object() );
+    entry = ProfileEntry( db, query, this );
     return entry_cache[query +":"+ db] = entry;
   }
 
@@ -697,14 +695,14 @@ class Logger {
     stderr_logging = _stderr_logging;
 
     // create table eventlog (event int unsigned auto_increment primary key,
-    // at timestamp(14) not null, code int unsigned not null, extra varchar(255))
+    // at timestamp not null, code int unsigned not null, extra varchar(255))
 
     Sql.Sql db = get_db();
 
     if(catch(db->query("SELECT code FROM eventlog WHERE event=0")))
       db->query("CREATE TABLE eventlog ("
 		"event int unsigned auto_increment primary key,"
-		"at timestamp(14) not null,"
+		"at timestamp not null,"
 		"profile int unsigned not null,"
 		"code int unsigned not null,"
 		"type enum('error','warning','notice') not null,"
@@ -740,13 +738,13 @@ class Logger {
     if (t2 - t1 > 10) // More than 10 s is somewhat slow, report warning.
       report_warning("Search log purge took %d s.\n", t2-t1);
   }
-  
+
     //!
   void log_event( int code, string type, void|string extra, void|int log_profile ) {
     Sql.Sql db = get_db();
     if(!db) return;
 
-    if(zero_type(log_profile))
+    if(undefinedp(log_profile))
       log_profile = profile;
 
     if(stderr_logging)
@@ -861,7 +859,7 @@ class Logger {
     1003: "Too large content file -- indexing metadata only. (%s)",
     1100: "Failed to connect to %s.",
   ]);
-    
+
 
   //!
   array(array(string|int)) get_log( int profile, array(string) types,

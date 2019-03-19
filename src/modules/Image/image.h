@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -14,8 +13,8 @@
 /* Various X86 dialects. */
 #define IMAGE_MMX   1
 #define IMAGE_SSE   2
-#define IMAGE_3DNOW 4 
-#define IMAGE_EMMX  8 
+#define IMAGE_3DNOW 4
+#define IMAGE_EMMX  8
 extern int image_cpuid;
 
 
@@ -42,34 +41,41 @@ extern int image_cpuid;
 #ifdef __ECL
 static inline int DOUBLE_TO_INT(double d)
 {
-  return DO_NOT_WARN((int)d);
+  return (int)d;
 }
 static inline char DOUBLE_TO_CHAR(double d)
 {
-  return DO_NOT_WARN((char)d);
+  return (char)d;
 }
 static inline COLORTYPE DOUBLE_TO_COLORTYPE(double d)
 {
-  return DO_NOT_WARN((COLORTYPE)d);
+  return (COLORTYPE)d;
 }
 static inline COLORTYPE FLOAT_TO_COLOR(double X)
 {
-  return DO_NOT_WARN((COLORTYPE)((X)*((double)COLORMAX+0.4)));
-}
-static inline INT32 FLOAT_TO_COLORL(double X)
-{
-  /* stupid floats */
-  return (DO_NOT_WARN((INT32)((X)*((double)(COLORLMAX/256))))*256+
-	  DO_NOT_WARN((INT32)((X)*255)));
+  return (COLORTYPE)((X)*((double)COLORMAX+0.4));
 }
 #else /* !__ECL */
 #define DOUBLE_TO_INT(D)	((int)(D))
 #define DOUBLE_TO_CHAR(D)	((char)(D))
 #define DOUBLE_TO_COLORTYPE(D)	((COLORTYPE)(D))
 #define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
-#define FLOAT_TO_COLORL(X) /* stupid floats */ \
-	(((INT32)((X)*((float)(COLORLMAX/256))))*256+((INT32)((X)*255)))
 #endif /* __ECL */
+static inline INT32 PIKE_UNUSED_ATTRIBUTE FLOAT_TO_COLORL(double X)
+{
+  /* stupid floats */
+  /* The problem here is that the range of X is 0.0 - 1.0 inclusive,
+   * while it would be simpler if the max value wasn't reachable.
+   *
+   * A straight multiplication with COLORLMAX would map too few
+   * colors to COLORLMAX. We thus multiply with the size of the
+   * COLORL range (0 - COLORLMAX, ie (COLORLMAX + 1)) and check
+   * for the special case of X == 1.0.
+   */
+  unsigned INT32 tmp = X * ((double)COLORLMAX + 1.0);
+  if (UNLIKELY(tmp > (unsigned INT32)COLORLMAX)) return COLORLMAX;
+  return (INT32)tmp;
+}
 
 #ifdef USE_VALGRIND
 /* Workaround for valgrind false alarms: gcc (4.2.3) can generate code
@@ -83,13 +89,13 @@ static inline INT32 FLOAT_TO_COLORL(double X)
 
 #define FS_SCALE 1024
 
-typedef struct 
+typedef struct
 {
    COLORTYPE r,g,b;
 /*   COLORTYPE __padding_dont_use__;*/
 } rgb_group;
 
-typedef struct 
+typedef struct
 {
    COLORTYPE r,g,b,alpha;
 } rgba_group;
@@ -146,9 +152,9 @@ void image_paste_alpha_color(INT32 args);
 
 void image_add_layers(INT32 args);
 enum layer_method
-   { LAYER_NOP=0, LAYER_MAX=1, LAYER_MIN=2, 
+   { LAYER_NOP=0, LAYER_MAX=1, LAYER_MIN=2,
      LAYER_MULT=3, LAYER_ADD=4, LAYER_DIFF=5 };
-	 
+
 
 /* matrix.c */
 
@@ -175,7 +181,7 @@ void image_frompnm(INT32 args);
 /* x.c */
 
 void image_x_encode_pseudocolor(INT32 args);
- 
+
 /* pattern.c */
 
 void image_noise(INT32 args);
@@ -237,7 +243,7 @@ void image_orient4(INT32 args);
 
 int image_color_svalue(struct svalue *v,rgb_group *rgb_dest);
 int image_color_arg(int arg,rgb_group *rgb_dest);
-void _image_make_rgb_color(INT32 r,INT32 g,INT32 b); 
+void _image_make_rgb_color(INT32 r,INT32 g,INT32 b);
 
 /* search.c */
 

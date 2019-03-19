@@ -1,11 +1,9 @@
 START_MARKER
-// $Id$
 
 // gdbm
 cond_begin([[ master()->resolv("Gdbm") ]])
 
   test_true(programp(Gdbm.gdbm))
-  test_do(destruct(Gdbm.gdbm()))
 
   define([[GDBMTESTS]],
   [[
@@ -45,7 +43,7 @@ cond_begin([[ master()->resolv("Gdbm") ]])
     test_do(GDBMBASE->reorganize())
     test_do(GDBMBASE->sync())
     test_do(GDBMBASE->close())
-    test_do(GDBMBASE->create("test.gdbm"))
+    test_do(add_constant("GDBMBASE",Gdbm.gdbm("test.gdbm")))
   ]])
 
   GDBMTESTS

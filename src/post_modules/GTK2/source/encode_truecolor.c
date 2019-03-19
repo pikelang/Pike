@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 static const unsigned char swap_bits[256] =
@@ -41,7 +40,7 @@ static void encode_truecolor_24_rgb( rgb_group *s,
                                      unsigned char *d,
                                      int q, int w )
 {
-  MEMCPY(d,(unsigned char *)s,q);
+  memcpy(d,s,q);
 }
 
 static void encode_truecolor_24_rgb_al32_swapped( rgb_group *s,
@@ -72,8 +71,9 @@ static void encode_truecolor_24_rgb_al32( rgb_group *s,
   {
     for(l=0; l<(q/w)/3; l++)
     {
-      MEMCPY(d,(unsigned char *)s,w*3);
+      memcpy(d,s,w*3);
       d += (w*3+3)&~3;
+      q--;
     }
   }
 }
@@ -202,9 +202,9 @@ ENCODE_8(242,bgr,(((s->b>>5)<<4) | (s->g>>4))<<2 | (s->r>>6));
 ENCODE_8(233,bgr,(((s->b>>5)<<3) | (s->g>>4))<<3 | (s->r>>5));
 
 
-static void encode_truecolor_generic(int rbits, int rshift, int gbits, 
-                                     int gshift, int bbits, int bshift, 
-                                     int bpp, int alignbits,int swap_bytes, 
+static void encode_truecolor_generic(int rbits, int rshift, int gbits,
+                                     int gshift, int bbits, int bshift,
+                                     int bpp, int alignbits,int swap_bytes,
                                      struct image *img, unsigned char *dest,
                                      int len)
 {
@@ -292,10 +292,10 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
        x=img->xsize;
        while (x--)
        {
-         register unsigned long b =
-           ((((s->r&rfmask)>>rzshift)<<rfshift)|
-            (((s->g&gfmask)>>gzshift)<<gfshift)|
-            (((s->b&bfmask)>>bzshift)<<bfshift))<<bpshift;
+         unsigned long b =
+           ((unsigned long)((((s->r&rfmask)>>rzshift)<<rfshift)|
+			    (((s->g&gfmask)>>gzshift)<<gfshift)|
+			    (((s->b&bfmask)>>bzshift)<<bfshift)))<<bpshift;
          bp = bpp;
          while (bp>8-bit)
          {
@@ -309,7 +309,7 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
 	   d++;
          }
 	 if(bit)
-	   *d|=b>>(24+bit); 
+	   *d|=b>>(24+bit);
 	 else
 	   *d=b>>24;
          bit+=bp;
@@ -356,7 +356,7 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
           x-=2;
         }
         break;
-      case 1: 
+      case 1:
         while (x--) {*(d)=swap_bits[*d]; d++; }
         break;
      }
@@ -365,8 +365,8 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
 
 static INLINE void examine_mask(unsigned int x, int *bits,int *shift)
 {
-   *bits=0; 
-   *shift=0; 
+   *bits=0;
+   *shift=0;
    if (!x) return;
    while (!(x&1)) x>>=1,(*shift)++;
    while (x&1) x>>=1,(*bits)++;
@@ -406,7 +406,7 @@ void pgtk2_encode_truecolor_masks(struct image *i,
 				  unsigned int red_mask,
 				  unsigned int green_mask,
 				  unsigned int blue_mask,
-				  unsigned char *buffer, 
+				  unsigned char *buffer,
 				  int debug_len)
 {
    int rbits,rshift,gbits,gshift,bbits,bshift;

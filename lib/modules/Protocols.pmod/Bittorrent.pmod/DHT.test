@@ -1,0 +1,410 @@
+// -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
+//
+// DHT testsuite
+//
+
+constant routing_table_data = #"346a9f2acb261ab701e6a912a481955396f53756	127.0.0.1   	  7000	 1	0
+23519e8b5424632049d52b8c1539ee04bd57cb6c	127.0.0.1   	  7001	 1	1   
+168ac50916731543d425c30efb206e3ba7362695	127.0.0.1   	  7002	 1	2   
+9a70c6c90209f413a15874c2bac8d6278e4ca096	127.0.0.1   	  7003	 1	3   
+6f921bb4be55658d1ffe0da920b9d3b0ee2f0287	127.0.0.1   	  7004	 1	4   
+77df6db3ddc3831c72faeaf5a983f79e494c5a93	127.0.0.1   	  7005	 1	5   
+0438235400fe63dee72401537a662247899e4f21	127.0.0.1   	  7006	 1	6   
+51d3f9d64b3f28da6b116bfb99111aaefb52eecf	127.0.0.1   	  7007	 1	7   
+90726e846ee8e840886b0eec1bbca242c9683a62	127.0.0.1   	  7008	 1	8   
+8b03cb5b5f2daebecdcddb9d106d07cbb7e2fc85	127.0.0.1   	  7009	 1	9   
+4ff6ed87256ebf6a346649d3993bda7c39567518	127.0.0.1   	  7010	 1	10  
+ed2c9d66cd85d8f4e514c0786fa94b1cba4423a7	127.0.0.1   	  7011	 1	11  
+58e008891322ab0158fd26b6a36502d3b7e96e98	127.0.0.1   	  7012	 1	12  
+5446c46a9d757bc150d2009a9a0e0f7bbca5861a	127.0.0.1   	  7013	 1	13  
+d1b3985b082bf4de24dca9af2bc664abe2865289	127.0.0.1   	  7014	 1	14  
+932668f8cb84af1711d237431d4b7267c703916e	127.0.0.1   	  7015	 1	15  
+2077b71538f26c39eb93e3efd405f0025cd9c93e	127.0.0.1   	  7016	 1	16  
+55c9587506349fc88bfa8897fd1a094d6d7a34d7	127.0.0.1   	  7017	 1	17  
+fd3cd70433f4ca9ccfbb7e8182462ac25b2b5609	127.0.0.1   	  7018	 1	18  
+a9d8dd8301acf2a712b18c44cd29ade24c8c0369	127.0.0.1   	  7019	 1	19  
+75c466a8fb6176346c817bcc8ad4dd6bbbd1fc11	127.0.0.1   	  7020	 1	20  
+5d22b5c0c999b2a34763795bc811271e8e788f00	127.0.0.1   	  7021	 1	21  
+57f11b182ea19d7c23ae8b3f4a27245ead3abbd3	127.0.0.1   	  7022	 1	22  
+f9ae7b0bd1267dcd89dd867050183fc26c9dee6a	127.0.0.1   	  7023	 1	23  
+db67ede1e7716c20f43d9419f3f553238f004f09	127.0.0.1   	  7024	 1	24  
+a385c74693d68996c8bd803890a9a25ce5e082c3	127.0.0.1   	  7025	 1	25  
+79f9d45662c4d4808625c968077fbc2c89c508e1	127.0.0.1   	  7026	 1	26  
+d1ddcb021afefb59d33d18afa207332e9c80a918	127.0.0.1   	  7027	 1	27  
+d4f1d926d2f5ccfbaa89287e8f63af0e7c275add	127.0.0.1   	  7028	 1	28  
+6f13e3c56a5ec6d0d5d24d7f453fe847f8eed3f1	127.0.0.1   	  7029	 1	29  
+e37f9720555120202dc475ddcb49829add61a6e5	127.0.0.1   	  7030	 1	30  
+64fa4c8576428d4707e3bf06f2de74406f0cf00e	127.0.0.1   	  7031	 1	31  
+2bad7382e53933bb4e6a8870b56c2818680c4531	127.0.0.1   	  7032	 1	32  
+75fb5083a8cd0b4cb8537307ac03ac4e574450f7	127.0.0.1   	  7033	 1	33  
+36b2d9349529ffa08d231663a2476134a17ae4a8	127.0.0.1   	  7034	 1	34  
+5c52634e9a84ff1a53320b9cd7888dd4336bac2b	127.0.0.1   	  7035	 1	35  
+ef160b4d056ebc5450d7e10e79033b245b2a8588	127.0.0.1   	  7036	 1	36  
+638c2def2b1b8b695f5403b95af674a3e52ab2a2	127.0.0.1   	  7037	 1	37  
+b72dcfb525fc9a614005b0634e40d8b89a00bae3	127.0.0.1   	  7038	 1	38  
+a9f04e84305f4c2f1cbe31aa48d4e32032075894	127.0.0.1   	  7039	 1	39  
+4bf7022bb1a93e63b9efb1bf7599e3e1e6413699	127.0.0.1   	  7040	 1	40  
+7fb301e33b04ebb5a32519752996a3ac468475cd	127.0.0.1   	  7041	 1	41  
+cf51126e824de36b1f562acb40da6ef685f238db	127.0.0.1   	  7042	 1	42  
+ad581c4056e2dce36fea45977a59b8f63b3b23c7	127.0.0.1   	  7043	 1	43  
+278224714026f88e1aaad7b5a927ab444f57889f	127.0.0.1   	  7044	 1	44  
+dde8aaed9e13c5f52452fce622ec9721ec9ac334	127.0.0.1   	  7045	 1	45  
+df1e58ec0407186c26aac8d5ae2b72da6212fcbf	127.0.0.1   	  7046	 1	46  
+284237694ecdfb151e1d9bded63f46f10c2687c6	127.0.0.1   	  7047	 1	47  
+c3e248b84ea0dc776e12caa26a76c6f909f1e444	127.0.0.1   	  7048	 1	48  
+ce783796a51fb9d250a83fa9e9dd4e9c81f44a9f	127.0.0.1   	  7049	 1	49  
+bd4e26d93da3c8094f110048849eeac4bc65975d	127.0.0.1   	  7050	 1	50  
+a9d25fe1736f72d92d7a81d3e301a55677c8fde1	127.0.0.1   	  7051	 1	51  
+721c0b44d8429e864e94c6b76170507eb805f3c9	127.0.0.1   	  7052	 1	52  
+a97f583a2852c646c5c643c8c7e4f4854f09915b	127.0.0.1   	  7053	 1	53  
+cc10d9fc7f374f0d1b177ac39a6a18d13d6c387e	127.0.0.1   	  7054	 1	54  
+e9e61210923eabc2b88b94e6230f558e34d5f583	127.0.0.1   	  7055	 1	55  
+d7deb4a06190f2fbccca07003648b9d9d286ccf1	127.0.0.1   	  7056	 1	56  
+6ecc80c613b77814858a66dfd779282cd5b0b5a3	127.0.0.1   	  7057	 1	57  
+ae419bf8909655c50be2ca4d43d470232fc3183b	127.0.0.1   	  7058	 1	58  
+85c9623e2ddd67640b29796050efcc8a082d3258	127.0.0.1   	  7059	 1	59  
+c9791cffe54812936ef27dc3fd0244f880736516	127.0.0.1   	  7060	 1	60  
+d3b3643cda4676762388a88963c22665ea881c0b	127.0.0.1   	  7061	 1	61  
+a020df5b202f8dbc6be7386630ab44a9f99fa1a0	127.0.0.1   	  7062	 1	62  
+edbd1bf4e779d35690238f284594f5249b763ca2	127.0.0.1   	  7063	 1	63  
+c4a21d67e2d6b7779d00a73e44aa7a7b75e23451	127.0.0.1   	  7064	 1	64  
+ca85beb5c13fa7a4e12476e4c08c4e219b342ad8	127.0.0.1   	  7065	 1	65  
+815e79c58485b254053f8cf729b915267c60259d	127.0.0.1   	  7066	 1	66  
+dad2a5f8bea9d6762f8eb434e63fe7633e87050f	127.0.0.1   	  7067	 1	67  
+f8996c381c57b5a040016796e2d044349fec4175	127.0.0.1   	  7068	 1	68  
+d4f56ed1bbacc48e8b5b3a591576beaa95d8fc71	127.0.0.1   	  7069	 1	69  
+c3c6c0cd3ebe69ef030ce3a97f3e12beeebbb794	127.0.0.1   	  7070	 1	70  
+7ebf47d2e2a229aac1d6008cd8814b6fb3778c00	127.0.0.1   	  7071	 1	71  
+bcf467e5b5fd652d79ac1cd868bacee67928ee7f	127.0.0.1   	  7072	 1	72  
+7395ab1e6a22437f180f16b0e8a18bf83eb74242	127.0.0.1   	  7073	 1	73  
+0ff146608a3eace96c4f6c70e17daf443d01704e	127.0.0.1   	  7074	 1	74  
+f94d43152be2b54c97bfb38d6be13e04e56cd4ca	127.0.0.1   	  7075	 1	75  
+049f93797c7c360aabd321a036426a4b4833c245	127.0.0.1   	  7076	 1	76  
+52fa96fd3edca86dc889d427e26025362e4484e2	127.0.0.1   	  7077	 1	77  
+b69f33e12ec8d20b9d7a6321dc86d05e30f46533	127.0.0.1   	  7078	 1	78  
+f3768e911891ea3b541e00e026df46c54f167036	127.0.0.1   	  7079	 1	79  
+349c235f63d1f5dab3d7377ba9734b65cfcbc134	127.0.0.1   	  7080	 1	80  
+e56a48fa801b46b61365e4d94fca456b07f22ae5	127.0.0.1   	  7081	 1	81  
+a827f017311d292ea89af8eecd6ea56b38f9eae2	127.0.0.1   	  7082	 1	82  
+453a264f3cd8b7abc3d5cbbce0c9f1a29d5d72ae	127.0.0.1   	  7083	 1	83  
+9f3d44e330d0fe41e496a422ffc60410a80b64bf	127.0.0.1   	  7084	 1	84  
+bde22092e52f0701ac35ef6c2dc5ded303e925e1	127.0.0.1   	  7085	 1	85  
+dc60e48625415afd3c708a2cbd7d8daf6b343963	127.0.0.1   	  7086	 1	86  
+0ea1e6b578a2cc87279b56b2c80db49bdf07c2e7	127.0.0.1   	  7087	 1	87  
+e54e7945ffdaac927fc7d46f903d80af9ef44325	127.0.0.1   	  7088	 1	88  
+63554bf2c3d4562257888a045fce95d0d0d0396d	127.0.0.1   	  7089	 1	89  
+9ebe165962310cf7cf02728a1b14a68ac97308bc	127.0.0.1   	  7090	 1	90  
+cc39e354fa887ac0fd0c4bb0ed5f0a2211ff128c	127.0.0.1   	  7091	 1	91  
+4f4ad3c996d37862a41ebd0c8c09bbd314324331	127.0.0.1   	  7092	 1	92  
+95b03a73f8182989d7a20ecc1a8c6c1bff947b25	127.0.0.1   	  7093	 1	93  
+110dff70671fc5a0b9ad17fb9f1eed2ba9fa0b29	127.0.0.1   	  7094	 1	94  
+d9d5ff9e5b9544a9f13d2b17c0221ce280c906c4	127.0.0.1   	  7095	 1	95  
+215f55c6b4483183cfcfeef2571c3eb9d9c3fd81	127.0.0.1   	  7096	 1	96  
+0e82d8c92ce16e49b5d4c91eac2e655fc7ffd5e2	127.0.0.1   	  7097	 1	97  
+bac194308b31f9649461391a11dc0623a120bf9a	127.0.0.1   	  7098	 1	98  
+ff83b010f1e5c734adf29ee21a7f3d22290d3ce4	127.0.0.1   	  7099	 1	99  
+52e7ba6279988a98ee59f9e5be459d5c36aa350a	127.0.0.1   	  7100	 1	100 
+b527692ae0a62923ba907272097a58083a96038e	127.0.0.1   	  7101	 1	101 
+1dfd80b99cc3c8f2d06059716e9d45986cf78126	127.0.0.1   	  7102	 1	102 
+cf2eea9cb01ddc02ff97dec252f661644d8adcfc	127.0.0.1   	  7103	 1	103 
+970f0850f58b2e23a8e8427521ec813b32f6f643	127.0.0.1   	  7104	 1	104 
+92b8b851583c00ca7b25470db5d43e50f46f2e00	127.0.0.1   	  7105	 1	105 
+fcc9ff087dd72bd8f9f3f490ac27543f9de883fc	127.0.0.1   	  7106	 1	106 
+1c094db346de51349065a47806fa3cc35a736657	127.0.0.1   	  7107	 1	107 
+dfd8168f66a115373469ce74f547ef140931a4a6	127.0.0.1   	  7108	 1	108 
+a9a7071e3f864cacc58736413be970ceeccb3b64	127.0.0.1   	  7109	 1	109 
+97f08f1127b26a88ab1509a85734ccda6b9bfd95	127.0.0.1   	  7110	 1	110 
+dfe5c1c59c4b0e71b94d4a39be68030ea5c71cae	127.0.0.1   	  7111	 1	111 
+b678e138a18f6e0532bf48f953139da302b47911	127.0.0.1   	  7112	 1	112 
+e09fac6ac7a2759adc58b91da7cb5c71c3e02c7b	127.0.0.1   	  7113	 1	113 
+1c3da8ee25601424c9ee90d65df810c67ccc379f	127.0.0.1   	  7114	 1	114 
+4d6ecc30a88abf13910735ffed7df9d363c396a1	127.0.0.1   	  7115	 1	115 
+979c7a096a2271f962dba7c1f489215482d71fe2	127.0.0.1   	  7116	 1	116 
+dda815c724744e1231d8d3970fab1ef6bafe6889	127.0.0.1   	  7117	 1	117 
+1788770faf0cc82b59a68c965fd8e289617c0787	127.0.0.1   	  7118	 1	118 
+e9312e98028f2487ce436b05a00b74617b18c0df	127.0.0.1   	  7119	 1	119 
+d15eccef8fa13db938ec6b17b45a248de0cde087	127.0.0.1   	  7120	 1	120 
+1458a3d34b89a032aad5db9e9c729aebde47a733	127.0.0.1   	  7121	 1	121 
+38db056d5b4522af00ee4e4c251a45bc3b6a5368	127.0.0.1   	  7122	 1	122 
+8ee964c309da42a7b5f854a89fcc399f08247f52	127.0.0.1   	  7123	 1	123 
+39f838686beda53a97c2b4b5b3122b2ae86487c8	127.0.0.1   	  7124	 1	124 
+f0b1014e70962f20962c9f3c99f132d6ec8153d0	127.0.0.1   	  7125	 1	125 
+60b391794a2a4b3d6188006aa5a0aeb7d0b1b6d5	127.0.0.1   	  7126	 1	126 
+c0436cc1a433e607f2be9185fe27a4252887b9de	127.0.0.1   	  7127	 1	127 
+90dd528efd6482d5e62026d42efa21e5da75fa9b	127.0.0.1   	  7128	 1	128 
+cab7d07e05fdc63d32ee3db58f5b467fb79e4300	127.0.0.1   	  7129	 1	129 
+983aca6e0c78ca45acd323f88cecdb7905ed04ee	127.0.0.1   	  7130	 1	130 
+5e6466f1c7059af111539b6b386ae36ce0d57127	127.0.0.1   	  7131	 1	131 
+e9a9f1cd383b65282333af2c577dc9a081ff7aab	127.0.0.1   	  7132	 1	132 
+8adb317428c2c8e46a14a56b908ca61008ffebee	127.0.0.1   	  7133	 1	133 
+9fdaea3924785b305191b5644a282b472230797d	127.0.0.1   	  7134	 1	134 
+32962f3223c4b26165355d1bd001c507e331f063	127.0.0.1   	  7135	 1	135 
+1764a9af5547a16092769fd5fe5cc7020b2f2af7	127.0.0.1   	  7136	 1	136 
+ac38ac35b653150a192fe640253b0ff33da36893	127.0.0.1   	  7137	 1	137 
+83ba77855fa3a71e1a0bfc376b00e0810cab4586	127.0.0.1   	  7138	 1	138 
+2ded88c47a13f19e12ac3fd98219d708ed799020	127.0.0.1   	  7139	 1	139 
+f9b0d6f75553a20d0e3e1177376429494c48b8cd	127.0.0.1   	  7140	 1	140 
+b57cc7669581d7b8956e03460c45d85905356f30	127.0.0.1   	  7141	 1	141 
+f053c730cbf6a754a679024b0f51bd7443620ecb	127.0.0.1   	  7142	 1	142 
+2cd834778fde6e8f049a40e92d215dc35bce5d45	127.0.0.1   	  7143	 1	143 
+13baf4d6afcb9f98e0c5dade5aaf8075a7ea101e	127.0.0.1   	  7144	 1	144 
+2bb346bd615da6a04e5551ffd64bef597a457b6d	127.0.0.1   	  7145	 1	145 
+2b77d4b148f7b33b91ed723fc6b4adf64c3be2c3	127.0.0.1   	  7146	 1	146 
+338a7f36b7a8925f5b8728317d531c40bf5fed13	127.0.0.1   	  7147	 1	147 
+72727e5ea0e7838b992d65db8cc1de3be5e35017	127.0.0.1   	  7148	 1	148 
+80198295478158641072d72feb5dabbe6dd2fc6e	127.0.0.1   	  7149	 1	149 
+1d29b7ee3b0779d463f154128423e83d3aa023fc	127.0.0.1   	  7150	 1	150 
+7643228b9bb8f9289f297cdc54050c7046038a90	127.0.0.1   	  7151	 1	151 
+5300d736a0593c320bf9a925cba1f6043daf0678	127.0.0.1   	  7152	 1	152 
+810f73f7712a2dab9ccb66aa97adf44bb833a938	127.0.0.1   	  7153	 1	153 
+52807d16b7ffa107a3f239daecbaa0046ff88a53	127.0.0.1   	  7154	 1	154 
+e3db478a8aa603d7669bb251f86490378cc59abc	127.0.0.1   	  7155	 1	155 
+ae5705184dddad45aa25672a3b16a4c1b47cd566	127.0.0.1   	  7156	 1	156 
+bb27128960b5bb0c6a26e885e93c7bc18d9f555a	127.0.0.1   	  7157	 1	157 
+30ad8047ea7c0db9dc4d34b822833f02a1c96a88	127.0.0.1   	  7158	 1	158 
+024d9b6dcd3454ca66f5ee1e32a3479cf9e6ded6	127.0.0.1   	  7159	 1	159 
+195c8d35f43140f58483cdd639b92f672a48e3ac	127.0.0.1   	  7160	 1	160 
+8faab28797eff9490b6f85165fe3e7113ff68629	127.0.0.1   	  7161	 1	161 
+67ce63dd11f7b9c2d1e90d3e76543ae227c0dacc	127.0.0.1   	  7162	 1	162 
+925ff821e6f890cefbf82930245d72f18ee055fa	127.0.0.1   	  7163	 1	163 
+6f78971aa215a28fc7b8542bd0d837402ea64729	127.0.0.1   	  7164	 1	164 
+5905ca93d4a16475e7974da97311a7b1911b14f4	127.0.0.1   	  7165	 1	165 
+72b2ab1e5174eb096c583464594a0794907f54c5	127.0.0.1   	  7166	 1	166 
+d13689da0cf417be9309f81804c136328282045e	127.0.0.1   	  7167	 1	167 
+c6be9433115fbebc6c43023a9cd72a7ce5d3a808	127.0.0.1   	  7168	 1	168 
+5e121732e49cb81b7576c1562cbdb01ecf91044f	127.0.0.1   	  7169	 1	169 
+8ed60d238a5ca19c2f97f05578ecf35dff92f0f9	127.0.0.1   	  7170	 1	170 
+ed2fe2fd52e5a4ca4040edb250a89bcfedfa128b	127.0.0.1   	  7171	 1	171 
+332a9cbe5c7205a5f962a4e1f5c176ff4b112733	127.0.0.1   	  7172	 1	172 
+84e02ea535e58db0f708738661dfb37fed93d3bb	127.0.0.1   	  7173	 1	173 
+db86afcfcf2b618dfe19e3ed60816181ae9bcb21	127.0.0.1   	  7174	 1	174 
+3a9d2b351c8d71ae304353e75f287fa57160dcae	127.0.0.1   	  7175	 1	175 
+71d4919e7b9140ee576a406834a5f96f0f039fa4	127.0.0.1   	  7176	 1	176 
+7f264194290cc59689244917290f4c911e14d3d5	127.0.0.1   	  7177	 1	177 
+5a49b8394f56861dbfab1060cc96b36edac049a0	127.0.0.1   	  7178	 1	178 
+240e071269e9246e923fde874c5d91cfc15936a5	127.0.0.1   	  7179	 1	179 
+e94785b6df6d4fbfe5aef18ecdc2e84f4e223be7	127.0.0.1   	  7180	 1	180 
+351c8482dbf63cba5b5a8e91af1378e8ef9626c2	127.0.0.1   	  7181	 1	181 
+a4d7f6c6abce40eaf2f9ffdcd7847d0d86e67d48	127.0.0.1   	  7182	 1	182 
+5661da4b770a370f5206430badd088b099dd30ba	127.0.0.1   	  7183	 1	183 
+27142903ff830a2dd83f23d98b518a71b6c0305d	127.0.0.1   	  7184	 1	184 
+88a7aa70caa39cd437f1853828e6230a5a47d90e	127.0.0.1   	  7185	 1	185 
+acceda4af12ed6e45a47c8102b8cd4c2c0a1659c	127.0.0.1   	  7186	 1	186 
+e5eacd5cda976f77365064c83ac195ebcdcb01f4	127.0.0.1   	  7187	 1	187 
+a63dfdf444901c5dfafd1a5141c34d83368b7391	127.0.0.1   	  7188	 1	188 
+f946fd9db33dc90f2e4aabe9ad83a96103ff4284	127.0.0.1   	  7189	 1	189 
+c1da69aa017552ff8d9bc91d461592e89ac2d9fb	127.0.0.1   	  7190	 1	190 
+c8392bea174d3a7243896a61aa7b7258b3e909c9	127.0.0.1   	  7191	 1	191 
+716a4a5b801577905a8be1dfd3630e43ce281751	127.0.0.1   	  7192	 1	192 
+1662f5697808bd4a6a2926cfe9276cc1cabf7d22	127.0.0.1   	  7193	 1	193 
+2e5b1e7032f655f1dbbf3feca20970b91a013535	127.0.0.1   	  7194	 1	194 
+6a22b9801206d3be898ffad9588989444026cb07	127.0.0.1   	  7195	 1	195 
+e12c4b00e6b7f7efa9db3ae863eef82794e46ff8	127.0.0.1   	  7196	 1	196 
+1e38c53bfd2ba14e7d1e7759d51a5d7c3ca43c96	127.0.0.1   	  7197	 1	197 
+ade978ab93264c501bcc92cad3d7f13932a9c990	127.0.0.1   	  7198	 1	198 
+30881deb3e38112a04d527a7dba0da2ee84615a2	127.0.0.1   	  7199	 1	199 
+";
+constant random_hashes = ({ /* 20 elements */
+  "3aeff9b24358e2586e4edee97a17a926c99ce8d1",
+  "ca2f5457b38654f94a078f0e61710c3a6b06a6b3",
+  "f9f8b28cf15443740c5b7e0b1c7c00b6a476a0f0",
+  "72f7d978d95f2490db3dbb53a3f6fbcc95ce734b",
+  "0ee0c45aaf2526f21e22c98af181031f96fbfdb0",
+  "555dcdc9a558ea3d2e508e74d111615deaaf161a",
+  "9a1d81dbfb9e82d4ec3c04e68ead53b953a2880b",
+  "9a709947df4dad05fb815c0542bfd76621ea9b0c",
+  "41181ddbf0de4eecedf0ccd7c2e2b09bf520d870",
+  "6a9021e8e95bf31f06fad8b4072e79b17e1867b5",
+  "780ac24d57fd793c45c279d34d75f31a36e8d7e3",
+  "a42d32c5f94f0c02bc00c6963c0e6e400882fc9d",
+  "8ad3b9d747a93e0a703194e1caa2284c5767ee84",
+  "fb917cc9b54847f90356abc135b16c6050423ed8",
+  "323881772a60b0eb82191082a024cdc3d72982db",
+  "5ca1c7a5b4136f85c54d4b0b08d8a4787cf9f883",
+  "f55ab43864dbbda57d4687e08ba3919ae43a3886",
+  "e4a0704301b0656e41d6963f42b95029f64c4c6e",
+  "b7b471e6af30c496dcf639dee72ca2a142bf5cb2",
+  "f53eeea763629e57a4167c6d3619bcc50d735280"
+});
+
+array(mapping) dhts = ({});
+mapping(string:object) dhts_by_id = ([]);
+
+System.Timer timer = System.Timer();
+int good, bad;
+
+object mt;
+
+mixed state;
+
+int test_state = 0;
+void run_tests() {
+
+  switch(test_state) {
+  case 0:
+    state = ([
+      "nodes" : dhts->dht,
+    ]);
+    test_state++;
+    Tools.Testsuite.log_status("Testing bootstrap node searches...");
+
+  case 1: // Run find_nodes on a few instances
+    if (sizeof(state->nodes)) {
+      object dht = state->nodes[0];
+      state->nodes = state->nodes[1..];
+      state->op = dht->FindNode(dht->get_node_id(),
+				lambda(object q) {
+				  if (!q || !sizeof(q->result)) {
+				    // Query failed somehow
+                                    bad++;
+				    Tools.Testsuite.log_msg("Failed to perform bootstrap request on node %s\n",
+							    String.string2hex(dht->get_node_id()));
+				    run_tests();
+				  }
+				  state->op = 0;
+                                  good++;
+				  run_tests();
+				})->execute();
+      break;
+    } else {
+      test_state++;
+    }
+
+  case 2: // Announce
+    state = ([
+      "hashes" : String.hex2string(random_hashes[*]),
+    ]);
+    test_state++;
+    Tools.Testsuite.log_status("Announcing hashes to nodes...");
+
+  case 3:
+    // As long as we have a hash to announce, we pick a random
+    // instance and initiate the announce there.
+    if (sizeof(state->hashes)) {
+      string next_hash = state->hashes[0];
+      state->hashes = state->hashes[1..];
+      object dht = random(dhts)->dht;
+      dht->announce(next_hash, 4711);
+      call_out(run_tests, 0.1);
+      break;
+    } else {
+      test_state++;
+    }
+
+  case 4: // Attempt to find peers for the hash
+    state = ([
+      "nodes" : dhts->dht,
+    ]);
+    test_state++;
+
+
+  case 5:
+    // We want to test all hashes from all nodes, so reset the hashes
+    // and pick the next node
+    if( timer->peek() > 1.0 )
+    {
+      timer->get();
+      Tools.Testsuite.log_status("Attempting to lookup hashes from all nodes."
+                                 " %d left.", sizeof(state->nodes));
+    }
+    if (sizeof(state->nodes)) {
+      state->hashes = String.hex2string(random_hashes[*]);
+      state->node = state->nodes[0];
+      state->nodes = state->nodes[1..];
+      test_state++;
+    } else {
+      // Out of nodes to announce to...
+      test_state = 1000;
+      run_tests();
+      break;
+    }
+
+  case 6:
+    if (sizeof(state->hashes)) {
+      string hash = state->hashes[0];
+      state->hashes = state->hashes[1..];
+      state->op = state->node->GetPeers(hash,
+					lambda(object q) {
+					  if (!q || !sizeof(q->result)) {
+					    // Query failed somehow
+                                            bad++;
+					    Tools.Testsuite.log_msg("Failed to perform peer lookup on %s for hash %s\n",
+								    state->node->get_node_id(),
+								    hash);
+					    run_tests();
+					  }
+					  state->op = 0;
+                                          good++;
+					  run_tests();
+					})->execute();
+    } else {
+      // Reset hashes...
+      test_state--;
+      run_tests();
+    }
+    break;
+
+
+  case 999:
+
+  default:
+    Tools.Testsuite.report_result(good,bad);
+    exit(0);
+  }
+}
+
+//
+// Utility method that parses the textual routing table and attempts
+// to add the nodes to the given DHT instance.
+void restore_routing_table(string data, object dht) {
+  foreach(data/"\n" - ({ "" }); int i; string l) {
+    array node_info = array_sscanf(l, "%s%*[\t ]%s%*[\t ]%d%*[\t ]%d");
+    // werror("%O\n", node_info);
+    if (1 || node_info[3] != 0) {
+      // We ignore bad nodes
+      node_info[0] = String.hex2string(node_info[0]);
+      if (node_info[0] != dht->my_node_id) {
+	// Avoid adding ourselves to the node
+	dht->add_node(@node_info[0..2]);
+      }
+    }
+  }
+}
+
+
+int main(int argc, array(string) argv) {
+
+  // Generate a dummy routing table.
+  foreach(routing_table_data/"\n" - ({ "" });int i; string l) {
+    sscanf(l, "%s\t%s\t%d%*s", string node_id, string ip, int port);
+    node_id = String.hex2string(node_id);
+    mapping tmp = ([
+      "node_id" : node_id,
+      "port"    : port,
+      "dht"     : Protocols.Bittorrent.DHT(node_id),
+    ]);
+    dhts += ({ tmp });
+    dhts_by_id[node_id] = tmp->dht;
+  }
+
+  Tools.Testsuite.log_status("Binding ports for all DHT instances.");
+  // Go thru all the nodes and install the routing table.
+  foreach(dhts, mapping di){
+    object dht = di->dht;
+    restore_routing_table(routing_table_data, dht);
+    mixed err = catch {
+	dht->start(di->port);
+      };
+
+    if (err) {
+      Tools.Testsuite.log_msg("Failed to bind port %d: %s\n", di->port, strerror(errno()));
+      Tools.Testsuite.report_result(0,1);
+      exit(4);
+    }
+  }
+
+  // At this point, we have a private DHT cloud we can work with.
+
+  mt = Thread.thread_create(run_tests);
+  return -1;
+}

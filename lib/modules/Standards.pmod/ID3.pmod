@@ -1,8 +1,3 @@
-// ID3.pmod
-//
-//  $Id$
-//
-
 #pike __REAL_VERSION__
 
 //! ID3 decoder/encoder.
@@ -1212,7 +1207,7 @@ class Tagv1 {
 }
 
 class Framev1 {
-  
+
   string id;
   int size;
   FrameDatav1 data;

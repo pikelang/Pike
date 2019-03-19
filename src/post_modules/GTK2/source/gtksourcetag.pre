@@ -1,5 +1,6 @@
 /* -*- C -*- */
 require gtksourceview;
+not gtksourceview20;
 
 class GTK2.SourceTag;
 inherit GTK2.TextTag;
@@ -68,12 +69,12 @@ void set_style(mapping(string:mixed) style)
       sts->mask=PGTK_GETINT(sv);
     sv=low_mapping_string_lookup(m,_STR("foreground"));
     if (sv) {
-      if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+      if (TYPEOF(*sv) == PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
 	sts->foreground=*(GdkColor *)get_gdkobject(sv->u.object,color);
     }
     sv=low_mapping_string_lookup(m,_STR("background"));
     if (sv) {
-      if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+      if (TYPEOF(*sv) == PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
 	sts->background=*(GdkColor *)get_gdkobject(sv->u.object,color);
     }
     sv=low_mapping_string_lookup(m,_STR("italic"));

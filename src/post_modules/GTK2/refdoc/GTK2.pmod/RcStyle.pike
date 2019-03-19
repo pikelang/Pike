@@ -9,7 +9,7 @@ GTK2.RcStyle copy( );
 //!
 //!
 
-static GTK2.RcStyle create( );
+protected GTK2.RcStyle create( );
 //! Creates a new W(Rc).
 //!
 //!

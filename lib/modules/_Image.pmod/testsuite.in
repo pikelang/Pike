@@ -1,15 +1,44 @@
-
 START_MARKER
 
-test_equal( Image.Dims.get(Image.GIF.encode(Image.Image(47,11))),
-  ({ 47, 11, "gif" }) )
-cond_resolv(Image.PNG.encode,[[
-test_equal( Image.Dims.get(Image.PNG.encode(Image.Image(47,11))),
-  ({ 47, 11, "png" }) )
+test_do(add_constant("GIF",MIME.decode_base64("R0lGODlhAQACAIAAAAAAAAAAACwAAAAAAQACAAACAgQKADs=")))
+test_do(add_constant("PNG",MIME.decode_base64("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAIAAAAW4yFwAAAAC0lEQVR42mNggAAAAAgAAST8BHIAAAAASUVORK5CYII=")))
+test_do(add_constant("JPEG",MIME.decode_base64("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAACAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAj/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJ/AB//Z")))
+test_do(add_constant("WebP_lossy",MIME.decode_base64("UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAIAAgA0JaQAA3AA/vv9UAA=")))
+test_do(add_constant("WebP_lossless",MIME.decode_base64("UklGRhoAAABXRUJQVlA4TA4AAAAvAEAAAAcQEf0PRET/Aw==")))
+test_do(add_constant("WebP_alpha",MIME.decode_base64("UklGRkoAAABXRUJQVlA4WAoAAAAQAAAAAAAAAQAAQUxQSAsAAAABBxAREYiI/gcAAABWUDggGAAAADABAJ0BKgEAAgACADQlpAADcAD++/1QAA==")))
+
+test_equal( Image.Dims.get(GIF), ({ 1, 2, "gif" }) )
+test_equal( Image.Dims.get_GIF(Stdio.FakeFile(GIF)), ({ 1, 2 }) )
+test_false( Image.Dims.get_GIF(Stdio.FakeFile(PNG)) )
+
+test_equal( Image.Dims.get(PNG), ({ 1, 2, "png" }) )
+test_equal( Image.Dims.get_PNG(Stdio.FakeFile(PNG)), ({ 1, 2 }) )
+test_false( Image.Dims.get_PNG(Stdio.FakeFile(GIF)) )
+
+test_equal( Image.Dims.get(JPEG), ({ 1, 2, "jpeg" }) )
+test_equal( Image.Dims.get_JPEG(Stdio.FakeFile(JPEG)), ({ 1, 2 }) )
+test_false( Image.Dims.get_JPEG(Stdio.FakeFile(GIF)) )
+
+test_equal( Image.Dims.get(WebP_lossy), ({ 1, 2, "webp" }) )
+test_equal( Image.Dims.get(WebP_lossless), ({ 1, 2, "webp" }) )
+test_equal( Image.Dims.get(WebP_alpha), ({ 1, 2, "webp" }) )
+test_equal( Image.Dims.get_WebP(Stdio.FakeFile(WebP_lossy)), ({ 1, 2 }) )
+test_equal( Image.Dims.get_WebP(Stdio.FakeFile(WebP_lossless)), ({ 1, 2 }) )
+test_equal( Image.Dims.get_WebP(Stdio.FakeFile(WebP_alpha)), ({ 1, 2 }) )
+test_false( Image.Dims.get_WebP(Stdio.FakeFile(GIF)) )
+
+
+test_do([[
+  add_constant("GIF");
+  add_constant("PNG");
+  add_constant("JPEG");
+  add_constant("WebP_lossy");
+  add_constant("WebP_lossless");
+  add_constant("WebP_alpha");
 ]])
-cond_resolv(Image.JPEG.encode,[[
-test_equal( Image.Dims.get(Image.JPEG.encode(Image.Image(47,11))),
-  ({ 47, 11, "jpeg" }) )
-]])
+
+dnl Missing test for JPEG with EXIF rotation data.
+dnl Missing test for TIFF in both byte orders.
+dnl Missing test for PSD
 
 END_MARKER

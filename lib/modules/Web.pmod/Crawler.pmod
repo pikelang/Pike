@@ -10,7 +10,7 @@
 //!     Supports the /robots.txt exclusion standard
 //!   @item
 //!     Extensible
-//!     @dl 
+//!     @dl
 //!       @item
 //!         URI Queues
 //!       @item
@@ -33,7 +33,6 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id$
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -48,15 +47,15 @@
 class Stats(int window_width,
 	    int granularity)
 {
-  
+
   class FloatingAverage
   {
     // Cache
     protected private int amount;
     protected private int amount_last_calculated;
-    
+
     protected private int num_slots;
-    
+
     protected private array(int) amount_floating;
 
     void create(int _window_width,
@@ -67,17 +66,17 @@ class Stats(int window_width,
       num_slots = window_width/granularity;
       amount_floating =  allocate(num_slots);
     }
-    
+
     void add(int n, int when)
     {
       amount_floating[(when % window_width) / granularity] += n;
     }
-    
+
     int get()
     {
       if(time()==amount_last_calculated)
 	return amount;
-      
+
       amount=amount/window_width;
       return amount;
     }
@@ -86,7 +85,7 @@ class Stats(int window_width,
 
   protected private FloatingAverage bps_average = FloatingAverage(10,1);
   protected private mapping(string:FloatingAverage) host_bps_average;
-  
+
   int bits_per_second(string|void host)
   {
     if(host)
@@ -116,12 +115,12 @@ class Stats(int window_width,
     concurrent_fetchers_per_host[host]++;
     concurrent_fetchers_total++;
   }
-  
+
   //! This callback is called when data has arrived for a presently crawled
   //! URI, but no more often than once a second.
   void bytes_read_callback(Standards.URI uri, int num_bytes_read)
   {
-    
+
   }
 
   //! This callback is called whenever the crawling of a URI is finished or
@@ -131,7 +130,7 @@ class Stats(int window_width,
     concurrent_fetchers_per_host[uri->host]--;
     concurrent_fetchers_total--;
   }
-  
+
 }
 
 //! The crawler policy object.
@@ -231,7 +230,7 @@ class Rule
 //! GlobRule("http://pike.lysator.liu.se/*.xml");
 class GlobRule(string pattern)
 {
-  inherit Rule;  
+  inherit Rule;
 
   int check(string|Standards.URI uri)
   {
@@ -246,7 +245,7 @@ class RegexpRule
 
   protected private Regexp regexp;
 
-//!  
+//!
 //! @param re
 //!   a string describing the @[Regexp] expression
   void create(string re)
@@ -271,7 +270,7 @@ class RuleSet
     rules[rule]=1;
   }
 
-//! remove a rule from the ruleset  
+//! remove a rule from the ruleset
   void remove_rule(Rule rule)
   {
     rules[rule]=0;
@@ -282,7 +281,7 @@ class RuleSet
     foreach(indices(rules), Rule rule)
       if(rule->check(uri))
 	return 1;
-    return 0;	 
+    return 0;
   }
 }
 
@@ -295,9 +294,9 @@ class MySQLQueue
 
   string host;
   string table;
-  
+
   Sql.Sql db;
-  
+
   inherit Queue;
 
 //!
@@ -395,7 +394,7 @@ class MySQLQueue
     }
     if(!objectp(uri))
       uri=Standards.URI(uri);
-    
+
     add_uri(uri);
   }
 
@@ -421,7 +420,7 @@ class MemoryQueue
     deny=_deny;
     allow=_allow;
   }
-  
+
   inherit Queue;
 
   private mapping ready_uris=([]);
@@ -430,12 +429,12 @@ class MemoryQueue
   mapping stage=([]);
 
   void set_stage(Standards.URI real_uri, int s)
-  { 
+  {
     ready_uris[(string)real_uri]=s;
   }
 
   int get_stage(Standards.URI real_uri)
-  { 
+  {
     if(ready_uris[(string)real_uri])
       return ready_uris[(string)real_uri];
   }
@@ -443,13 +442,13 @@ class MemoryQueue
   void debug()
   {
     werror("ready_uris: %O\n",ready_uris);
-    werror("done_uris: %O\n",done_uris); 
+    werror("done_uris: %O\n",done_uris);
   }
-  
+
   //! Get the next URI to index.
   //! Returns -1 if there are no URIs to index at the time of the function call,
   //! with respect to bandwidth throttling, outstanding requests and other limits.
-  //! Returns 0 if there are no more URIs to index. 
+  //! Returns 0 if there are no more URIs to index.
   int|Standards.URI get()
   {
     if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
@@ -480,7 +479,7 @@ class MemoryQueue
         put(_uri);
       return;
     }
-    
+
     Standards.URI ouri;
 
     if(objectp(uri))
@@ -511,7 +510,7 @@ class ComplexQueue(Stats stats, Policy policy)
   {
     werror("Queue: %O\n",stats);
   }
-  
+
   protected private ADT.Heap host_heap=ADT.Heap();
   protected private mapping(string:URIStack) hosts=([]);
 
@@ -548,7 +547,7 @@ class ComplexQueue(Stats stats, Policy policy)
 	uris_md5[do_md5(uri)]=0;
       return uri;
     }
-          
+
     int `<(mixed other)
     {
       if(policy->max_concurrent_fetchers_per_host &&
@@ -567,7 +566,7 @@ class ComplexQueue(Stats stats, Policy policy)
   {
     hosts[uri->host]->num_active--;
   }
-  
+
   int|Standards.URI get()
   {
 //      if(policy->max_concurrent_fetchers &&
@@ -582,7 +581,7 @@ class ComplexQueue(Stats stats, Policy policy)
     URIStack uri_stack = host_heap->pop();
     if(!uri_stack->size())
       return 0;
-    
+
     if(policy->max_concurrent_fetchers_per_host &&
        uri_stack->num_active >=
        policy->max_concurrent_fetchers_per_host)
@@ -597,7 +596,7 @@ class ComplexQueue(Stats stats, Policy policy)
     uri=Standards.URI(uri);
     return uri;
   }
-  
+
   void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
   {
     CRAWLER_MSGS("SimpleQueue->put(%O)",uri);
@@ -613,9 +612,9 @@ class ComplexQueue(Stats stats, Policy policy)
     if(!hosts[uri->host])
     {
       hosts[uri->host]=URIStack();
-      host_heap->push( hosts[uri->host] ); 
+      host_heap->push( hosts[uri->host] );
     }
-    
+
     URIStack uri_stack = hosts[uri->host];
     uri_stack->push( (string)uri );
     if(uri_stack->size()==1)
@@ -648,7 +647,7 @@ class RobotExcluder
 		  ([ "Host":base_uri->host+":"+base_uri->port,
 		     "user-agent":user_agent ]));
   }
-  
+
   int check(string uri)
   {
     foreach(reject_globs, string gl)
@@ -656,7 +655,7 @@ class RobotExcluder
 	return 0;
     return 1;
   }
-  
+
   void request_ok(object httpquery, int gotdata)
   {
     if(!gotdata)
@@ -668,17 +667,17 @@ class RobotExcluder
       else
  	reject_globs=parse_robot_txt(httpquery->data(), base_uri);
       got_reply=1;
-      
+
       done_cb(this, @args);
     }
   }
-  
+
   void request_fail(object httpquery)
   {
     failed=0;
     done_cb(this);
   }
-      
+
   // Given the contents of a /robots.txt file and it's corresponding
   // base URI, return an array of globs. Any URI that matches any of
   // these globs should not be fetched.  See
@@ -687,7 +686,7 @@ class RobotExcluder
   {
     array(string) collect_rejected=({});
     int rejected=0,
-      parsed_disallow=0; 
+      parsed_disallow=0;
     robottxt = replace(robottxt, ({ "\r\n", "\r" }), "\n");
     foreach( robottxt/"\n"-({""}), string line )
     {
@@ -742,7 +741,7 @@ class Crawler
   Queue queue;
   function page_cb, done_cb, error_cb;
   function prepare_cb;
-  
+
   array(mixed) args;
 
   mapping _hostname_cache=([]);
@@ -752,7 +751,7 @@ class Crawler
   {
     inherit Protocols.HTTP.Query;
     Standards.URI uri, real_uri;
-    
+
     void got_data()
     {
       queue->stats->close_callback(real_uri);
@@ -770,12 +769,12 @@ class Crawler
       if(queue->get_stage(real_uri)<=1)
 	queue->set_stage(real_uri, 5);
     }
-    
+
     void request_ok(object httpquery)
     {
       async_fetch(got_data);
     }
-    
+
     void request_fail(object httpquery)
     {
       queue->stats->close_callback(real_uri);
@@ -783,7 +782,7 @@ class Crawler
       if(queue->get_stage(real_uri)<=1)
 	queue->set_stage(real_uri, 6);
     }
-    
+
     void create(Standards.URI _uri, void|Standards.URI _real_uri, mapping extra_headers)
     {
       uri=_uri;
@@ -837,7 +836,7 @@ class Crawler
   {
     get_next_uri(excl->base_uri, _real_uri, _headers);
   }
-  
+
   void get_next_uri(void|Standards.URI _uri, void|Standards.URI _real_uri,
 		    void|mapping _headers)
   {
@@ -920,7 +919,7 @@ class Crawler
       queue->stats->close_callback(real_uri);
 //      queue->set_stage(real_uri, 5);
     }
-  
+
     call_out(get_next_uri,0);
 
       }) {
@@ -932,19 +931,19 @@ class Crawler
     }
   }
 
-//!  
+//!
 //!  @param _page_cb
-//!    function called when a page is retreived. Arguments are: 
-//!    Standards.URI uri, mixed data, mapping headers, mixed ... args. 
+//!    function called when a page is retreived. Arguments are:
+//!    Standards.URI uri, mixed data, mapping headers, mixed ... args.
 //!    should return an array containing additional links found within data
 //!    that will be analyzed for insertion into the crawler queue (assuming
 //!    they are allowed by the allow/deny rulesets.
 //!  @param _error_cb
 //!    function called when an error is received from a server. Arguments are:
 //!    Standards.URI real_uri, int status_code, mapping headers,
-//!    mixed ... args. Returns void. 
+//!    mixed ... args. Returns void.
 //!  @param _done_cb
-//!    function called when crawl is complete. Accepts mixed ... args and 
+//!    function called when crawl is complete. Accepts mixed ... args and
 //!    returns void.
 //!  @param _prepare_cb
 //!    argument called before a uri is retrieved. may be used to alter
@@ -954,11 +953,11 @@ class Crawler
 //!  @param start_uri
 //!    location to start the crawl from.
 //!  @param _args
-//!    optional arguments sent as the last argument to the callback 
+//!    optional arguments sent as the last argument to the callback
 //!    functions.
   void create(Queue _queue,
 	      function _page_cb, function _error_cb,
-	      function _done_cb, function _prepare_cb, 
+	      function _done_cb, function _prepare_cb,
 	      string|array(string)|Standards.URI|
 	      array(Standards.URI) start_uri,
 	      mixed ... _args)
@@ -969,7 +968,7 @@ class Crawler
     error_cb=_error_cb;
     done_cb=_done_cb;
     prepare_cb=_prepare_cb;
-    
+
     queue->put(start_uri);
     call_out(get_next_uri,0);
   }

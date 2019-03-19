@@ -1,6 +1,6 @@
 // By Martin Nilsson
 
-// Updated 2008-12-28 from http://lcweb.loc.gov/standards/iso639-2/
+// Updated 2014-08-06 from http://lcweb.loc.gov/standards/iso639-2/
 
 #pike __REAL_VERSION__
 
@@ -177,7 +177,7 @@ protected constant languages = ([
   "heb":"Hebrew",
   "her":"Herero",
   "hil":"Hiligaynon",
-  "him":"Himachali",
+  "him":"Himachal",
   "hin":"Hindi",
   "hit":"Hittite",
   "hmn":"Hmong",
@@ -481,6 +481,7 @@ protected constant languages = ([
   "zap":"Zapotec",
   "zbl":"Bliss",
   "zen":"Zenaga",
+  "zgh":"Standard Moroccan Tamazight",
   "zha":"Zhuang",
   "zho":"Chinese",
   "znd":"Zande languages",

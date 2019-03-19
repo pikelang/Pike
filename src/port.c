@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -18,10 +17,6 @@
 #include "pike_error.h"
 #include "pike_macros.h"
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
 #ifdef __MINGW32__
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
@@ -31,21 +26,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <errno.h>
-#include <float.h>
-#include <string.h>
 #include <time.h>
-
-#ifndef HAVE_ISSPACE
-PMOD_EXPORT const char Pike_isspace_vector[] =
-  "0012345678SSSSS456789012345678901"
-   "S3456789012345678901234567890123"
-   "45678901234567890123456789012345"
-   "67890123456789012345678901234567"
-   "89012345678901234567890123456789"
-   "01234567890123456789012345678901"
-   "23456789012345678901234567890123"
-   "45678901234567890123456789000000";
-#endif
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -96,70 +77,10 @@ void GETTIMEOFDAY(struct timeval *t)
 #endif
 #endif
 
-#ifndef HAVE_TIME
-time_t TIME(time_t *t)
-{
-  struct timeval tv;
-  GETTIMEOFDAY(&tv);
-  if(t) *t=tv.tv_sec;
-  return tv.tv_sec;
-}
-#endif
-
-static unsigned INT32 RandSeed1 = 0x5c2582a4;
-static unsigned INT32 RandSeed2 = 0x64dff8ca;
-
-static unsigned INT32 slow_rand(void)
-{
-  RandSeed1 = ((RandSeed1 * 13 + 1) ^ (RandSeed1 >> 9)) + RandSeed2;
-  RandSeed2 = (RandSeed2 * RandSeed1 + 13) ^ (RandSeed2 >> 13);
-  return RandSeed1;
-}
-
-static void slow_srand(INT32 seed)
-{
-  RandSeed1 = (seed - 1) ^ 0xA5B96384UL;
-  RandSeed2 = (seed + 1) ^ 0x56F04021UL;
-}
-
-#define RNDBUF 250
-#define RNDSTEP 7
-#define RNDJUMP 103
-
-static unsigned INT32 rndbuf[ RNDBUF ];
-static int rnd_index;
-
-PMOD_EXPORT void my_srand(INT32 seed)
-{
-  int e;
-  unsigned INT32 mask;
-
-  slow_srand(seed);
-  
-  rnd_index = 0;
-  for (e=0;e < RNDBUF; e++) rndbuf[e]=slow_rand();
-
-  mask = (unsigned INT32) -1;
-
-  for (e=0;e< (int)sizeof(INT32)*8 ;e++)
-  {
-    int d = RNDSTEP * e + 3;
-    rndbuf[d % RNDBUF] &= mask;
-    mask>>=1;
-    rndbuf[d % RNDBUF] |= (mask+1);
-  }
-}
-
-PMOD_EXPORT unsigned INT32 my_rand(void)
-{
-  if( ++rnd_index == RNDBUF) rnd_index=0;
-  return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
-}
-
 PMOD_EXPORT void sysleep(double left)
 {
 #ifdef __NT__
-  Sleep(DO_NOT_WARN((int)(left*1000+0.5)));
+  Sleep((int)(left*1000+0.5));
 #elif defined(HAVE_NANOSLEEP)
   {
     struct timespec req;
@@ -185,98 +106,17 @@ PMOD_EXPORT void sysleep(double left)
 
 #ifndef CONFIGURE_TEST
 
+#ifndef HAVE_WORKING_REALLOC_NULL
 PMOD_EXPORT /*@null@*/ void *pike_realloc(void *ptr, size_t sz)
 {
   if (!ptr) return malloc(sz);
-#ifndef HAVE_WORKING_REALLOC_NULL
 #undef realloc
-#endif	/* !HAVE_WORKING_REALLOC_NULL */
   return realloc(ptr, sz);
-#ifndef HAVE_WORKING_REALLOC_NULL
 #define realloc(PTR, SZ)	pike_realloc((PTR),(SZ))
-#endif	/* !HAVE_WORKING_REALLOC_NULL */
 }
+#endif
 
 #endif	/* !CONFIGURE_TEST */
-
-#define DIGIT(x)	(isdigit(x) ? (x) - '0' : \
-			islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
-#define MBASE	('z' - 'a' + 1 + 10)
-
-PMOD_EXPORT long STRTOL(const char *str, char **ptr, int base)
-{
-  /* Note: Code duplication in STRTOL_PCHARP and pcharp_to_svalue_inumber. */
-
-  unsigned long val, mul_limit;
-  int c;
-  int xx, neg = 0, add_limit, overflow = 0;
-
-  if (ptr != (char **)NULL)
-    *ptr = (char *)str;		/* in case no number is formed */
-  if (base < 0 || base > MBASE)
-    return 0;		/* base is invalid -- should be a fatal error */
-  if (!isalnum(c = *str & 0xff)) {
-    while (ISSPACE(c))
-      c = *++str & 0xff;
-    switch (c) {
-    case '-':
-      neg++;
-      /*@fallthrough@*/
-    case '+':
-      c = *++str & 0xff;
-    }
-  }
-
-  if (base == 0) {
-    if (c != '0')
-      base = 10;
-    else if (str[1] == 'x' || str[1] == 'X')
-      base = 16;
-    else
-      base = 8;
-  }
-
-  /*
-   * for any base > 10, the digits incrementally following
-   *	9 are assumed to be "abc...z" or "ABC...Z"
-   */
-  if (!isalnum(c) || (xx = DIGIT(c)) >= base)
-    return (0);			/* no number formed */
-  if (base == 16 && c == '0' && isxdigit(str[2] & 0xff) &&
-      (str[1] == 'x' || str[1] == 'X'))
-    c = *(str += 2) & 0xff;		/* skip over leading "0x" or "0X" */
-
-  mul_limit = LONG_MAX / base;
-  add_limit = (int) (LONG_MAX % base);
-  
-  if (neg) {
-    if (++add_limit == base) {
-      mul_limit++;
-      add_limit = 0;
-    }
-  }
-
-  for (val = (unsigned long)DIGIT(c);
-       isalnum(c = *++str & 0xff) && (xx = DIGIT(c)) < base; ) {
-    if (val > mul_limit || (val == mul_limit && xx > add_limit))
-      overflow = 1;
-    else
-      val = base * val + xx;
-  }
-
-  if (ptr != (char **)NULL)
-    *ptr = (char *)str;
-  if (overflow) {
-    errno = ERANGE;
-    return neg ? LONG_MIN : LONG_MAX;
-  }
-  else {
-    if (neg)
-      return (long)(~val + 1);
-    else
-      return (long) val;
-  }
-}
 
 #ifndef HAVE_STRCASECMP
 PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
@@ -296,417 +136,18 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#ifndef HAVE_STRNLEN
-size_t STRNLEN(const char *s, size_t maxlen)
-{
-  char *tmp=MEMCHR(s,0,maxlen);
-  if(tmp) return tmp-s;
-  return maxlen;
-}
-#endif
-
-#ifndef HAVE_STRNCMP
-int STRNCMP(const char *a, const char *b, size_t maxlen)
-{
-  size_t alen=STRNLEN(a,maxlen);
-  size_t blen=STRNLEN(b,maxlen);
-  int ret=MEMCMP(a,b, alen < blen ? alen : blen);
-  if(ret) return ret;
-  return DO_NOT_WARN((int)(alen - blen));
-}
-#endif
-
-#ifndef HAVE_MEMSET
-void *MEMSET(void *s,int c,size_t n)
-{
-  char *t;
-  for(t=s;n;n--) *(t++)=c;
-  return s;
-}
-#endif
-
-#if (0 && defined(TRY_USE_MMX)) || !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
-#ifdef TRY_USE_MMX
-#ifdef HAVE_MMX_H
-#include <mmx.h>
-#else
-#include <asm/mmx.h>
-#endif
-#endif
-PMOD_EXPORT void MEMCPY(void *bb,const void *aa,size_t s)
-{
-  if(!s) return;
-#ifdef TRY_USE_MMX
-  {
-    extern int try_use_mmx;
-    if( (s>64) && !(((int)bb)&7) && !(((int)aa)&7) && try_use_mmx )
-    {
-      unsigned char *source=(char *)aa;
-      unsigned char *dest=(char *)bb;
-
-/*       fprintf(stderr, "mmx memcpy[%d]\n",s); */
-      while( s > 64 )
-      {
-        movq_m2r(*source, mm0);      source += 8;
-        movq_m2r(*source, mm1);      source += 8;
-        movq_m2r(*source, mm2);      source += 8;
-        movq_m2r(*source, mm3);      source += 8;
-        movq_m2r(*source, mm4);      source += 8;
-        movq_m2r(*source, mm5);      source += 8;
-        movq_m2r(*source, mm6);      source += 8;
-        movq_m2r(*source, mm7);      source += 8;
-        movq_r2m(mm0,*dest);         dest += 8;
-        movq_r2m(mm1,*dest);         dest += 8;
-        movq_r2m(mm2,*dest);         dest += 8;
-        movq_r2m(mm3,*dest);         dest += 8;
-        movq_r2m(mm4,*dest);         dest += 8;
-        movq_r2m(mm5,*dest);         dest += 8;
-        movq_r2m(mm6,*dest);         dest += 8;
-        movq_r2m(mm7,*dest);         dest += 8;
-        s -= 64;
-      }
-      if( s > 31 )
-      {
-        movq_m2r(*source, mm0);      source += 8;
-        movq_m2r(*source, mm1);      source += 8;
-        movq_m2r(*source, mm2);      source += 8;
-        movq_m2r(*source, mm3);      source += 8;
-        movq_r2m(mm0,*dest);         dest += 8;
-        movq_r2m(mm1,*dest);         dest += 8;
-        movq_r2m(mm2,*dest);         dest += 8;
-        movq_r2m(mm3,*dest);         dest += 8;
-        s -= 32;
-      }
-      if( s > 15 )
-      {
-        movq_m2r(*source, mm0);      source += 8;
-        movq_m2r(*source, mm1);      source += 8;
-        movq_r2m(mm0,*dest);         dest += 8;
-        movq_r2m(mm1,*dest);         dest += 8;
-        s -= 16;
-      }
-      if( s > 7 )
-      {
-        movq_m2r(*source, mm0);      source += 8;
-        movq_r2m(mm0,*dest);         dest += 8;
-        s -= 8;
-      }
-      emms();
-      while( s )
-      {
-        *(dest++) = *(source++);
-        s-=1;
-      }
-    }
-    else 
-    {
-#endif
-#ifdef HAVE_MEMCPY
-      /*     fprintf(stderr, "plain ol' memcpy\n"); */
-      memcpy( bb, aa, s );
-#else
-      {
-	char *b=(char *)bb;
-	char *a=(char *)aa;
-	for(;s;s--) *(b++)=*(a++);
-      }
-#endif
-#ifdef TRY_USE_MMX
-    }
-  }
-#endif
-}
-#endif
-
-#ifndef HAVE_MEMMOVE
-PMOD_EXPORT void MEMMOVE(void *b,const void *aa,size_t s)
-{
-  char *t=(char *)b;
-  char *a=(char *)aa;
-  if(a>t)
-    for(;s;s--) *(t++)=*(a++);
-  else
-    if(a<t)
-      for(t+=s,a+=s;s;s--) *(--t)=*(--a);
-}
-#endif
-
-
-#ifndef HAVE_MEMCMP
-PMOD_EXPORT int MEMCMP(const void *bb,const void *aa,size_t s)
-{
-  unsigned char *a=(unsigned char *)aa;
-  unsigned char *b=(unsigned char *)bb;
-  for(;s;s--,b++,a++)
-  {
-    if(*b!=*a)
-    {
-      if(*b<*a) return -1;
-      return 1;
-    }
-  }
-  return 0;
-}
-#endif
-
-#ifndef HAVE_MEMCHR
-PMOD_EXPORT void *MEMCHR(const void *p,char c,size_t e)
-{
-  const char *t = p;
-  while(e--) if(*(t++)==c) return t-1;
-  return (char *)NULL;
-}
-#endif
-
-
-#if !defined(HAVE_INDEX) && !defined(HAVE_STRCHR)
-PMOD_EXPORT char *STRCHR(char *s,int c)
-{
-  for(;*s;s++) if(*s==c) return s;
-  return NULL;
-}
-#endif
-
-/* Convert NPTR to a double.  If ENDPTR is not NULL, a pointer to the
-   character after the last one used in the number is put in *ENDPTR.  */
-PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
-{
-  /* Note: Code duplication in STRTOD_PCHARP. */
-
-  register const unsigned char *s;
-  short int sign;
-
-  /* The number so far.  */
-  double num;
-
-  int got_dot;      /* Found a decimal point.  */
-  int got_digit;    /* Seen any digits.  */
-
-  /* The exponent of the number.  */
-  long int exponent;
-
-  if (nptr == NULL)
-  {
-    errno = EINVAL;
-    goto noconv;
-  }
-
-  s = (const unsigned char *)nptr;
-
-  /* Eat whitespace.  */
-  while (ISSPACE(*s)) ++s;
-
-  /* Get the sign.  */
-  sign = *s == '-' ? -1 : 1;
-  if (*s == '-' || *s == '+')
-    ++s;
-
-  num = 0.0;
-  got_dot = 0;
-  got_digit = 0;
-  exponent = 0;
-  for (;; ++s)
-  {
-    if (isdigit(*s))
-    {
-      got_digit = 1;
-
-      /* Make sure that multiplication by 10 will not overflow.  */
-      if (num > DBL_MAX * 0.1)
-	/* The value of the digit doesn't matter, since we have already
-	   gotten as many digits as can be represented in a `double'.
-	   This doesn't necessarily mean the result will overflow.
-	   The exponent may reduce it to within range.
-	   
-	   We just need to record that there was another
-	   digit so that we can multiply by 10 later.  */
-	++exponent;
-      else
-	num = (num * 10.0) + (*s - '0');
-
-      /* Keep track of the number of digits after the decimal point.
-	 If we just divided by 10 here, we would lose precision.  */
-      if (got_dot)
-	--exponent;
-    }
-    else if (!got_dot && (*s == '.'))
-      /* Record that we have found the decimal point.  */
-      got_dot = 1;
-    else
-      /* Any other character terminates the number.  */
-      break;
-  }
-
-  if (!got_digit)
-    goto noconv;
-
-  if (tolower(*s) == 'e')
-    {
-      /* Get the exponent specified after the `e' or `E'.  */
-      int save = errno;
-      char *end;
-      long int exp;
-
-      errno = 0;
-      ++s;
-      exp = STRTOL((const char *)s, &end, 10);
-      if (errno == ERANGE)
-      {
-	/* The exponent overflowed a `long int'.  It is probably a safe
-	   assumption that an exponent that cannot be represented by
-	   a `long int' exceeds the limits of a `double'.  */
-	/* NOTE: Don't trust the value returned from STRTOL.
-	 * We need to find the sign of the exponent by hand.
-	 */
-	while(ISSPACE(*s)) {
-	  s++;
-	}
-	if (endptr != NULL)
-	  *endptr = end;
-	if (*s == '-')
-	  goto underflow;
-	else
-	  goto overflow;
-      }
-      else if (end == (char *)s)
-	/* There was no exponent.  Reset END to point to
-	   the 'e' or 'E', so *ENDPTR will be set there.  */
-	end = (char *) s - 1;
-      errno = save;
-      s = (unsigned char *)end;
-      exponent += exp;
-    }
-
-  if (endptr != NULL)
-    *endptr = (char *) s;
-
-  if (num == 0.0)
-    return 0.0 * sign;
-
-  /* Multiply NUM by 10 to the EXPONENT power,
-     checking for overflow and underflow.  */
-
-  if (exponent < 0)
-  {
-    if (num < DBL_MIN * pow(10.0, (double) -exponent))
-      goto underflow;
-
-    num /= pow(10.0, (double) -exponent);
-  }
-  else if (exponent > 0)
-  {
-    if (num > DBL_MAX * pow(10.0, (double) -exponent))
-      goto overflow;
-    num *= pow(10.0, (double) exponent);
-  }
-
-  return num * sign;
-
- overflow:
-  /* Return an overflow error.  */
-  errno = ERANGE;
-  return HUGE_VAL * sign;
-
- underflow:
-  /* Return an underflow error.  */
-#if 0
-  if (endptr != NULL)
-    *endptr = (char *) nptr;
-#endif
-  errno = ERANGE;
-  return 0.0;
-  
- noconv:
-  /* There was no number.  */
-  if (endptr != NULL)
-    *endptr = (char *) nptr;
-  return 0.0;
-}
-
-#ifndef HAVE_VSPRINTF
-PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args)
-{
-  char *b=buf;
-  char *s;
-
-  int tmpA;
-  char fmt2[120];
-  char *fmt2p;
-
-  fmt2[0]='%';
-  for(;(s=STRCHR(fmt,'%'));fmt=s)
-  {
-    MEMCPY(buf,fmt,s-fmt);
-    buf+=s-fmt;
-    fmt=s;
-    fmt2p=fmt2+1;
-    s++;
-  unknown_character:
-    switch((*(fmt2p++)=*(s++)))
-    {
-    default:
-      goto unknown_character;
-
-    case '*':
-      fmt2p--;
-      sprintf(fmt2p,"%d",va_arg(args,int));
-      fmt2p+=strlen(fmt2p);
-      goto unknown_character;
-
-    case 0:
-      Pike_fatal("Error in vsprintf format.\n");
-      return 0;
-
-    case '%':
-      *(buf++)='%';
-      break;
-
-    case 'p':
-    case 's':
-      *fmt2p=0;
-      sprintf(buf,fmt2,va_arg(args,char *));
-      buf+=strlen(buf);
-      break;
-
-    case 'd':
-    case 'c':
-    case 'x':
-    case 'X':
-      *fmt2p=0;
-      sprintf(buf,fmt2,va_arg(args,int));
-      buf+=strlen(buf);
-      break;
-
-    case 'f':
-    case 'e':
-    case 'E':
-    case 'g':
-      *fmt2p=0;
-      sprintf(buf,fmt2,va_arg(args,double));
-      buf+=strlen(buf);
-      break;
-    }
-  }
-  tmpA=strlen(fmt);
-  MEMCPY(buf,fmt,tmpA);
-  buf+=tmpA;
-  *buf=0;
-  return buf-b;
-}
-#endif
-
 #ifndef HAVE_VSNPRINTF
 /* Warning: It's possible to trick this with something like
  * snprintf("...%c...", 0). */
-PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args)
+PMOD_EXPORT int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 {
   int res;
   if (!size) {
     buf = alloca(size=1000);
   }
   buf[size - 1] = 0;
-  res = VSPRINTF (buf, fmt, args);
-  if (buf[size - 1]) Pike_fatal ("Buffer overflow in VSPRINTF.\n");
+  res = vsprintf (buf, fmt, args);
+  if (buf[size - 1]) Pike_fatal ("Buffer overflow in vsprintf.\n");
   return res;
 }
 #endif
@@ -714,46 +155,37 @@ PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args)
 #ifndef HAVE_SNPRINTF
 /* Warning: It's possible to trick this with something like
  * snprintf("...%c...", 0). */
-PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...)
+PMOD_EXPORT int snprintf(char *buf, size_t size, const char *fmt, ...)
 {
   int res;
   va_list args;
   va_start (args, fmt);
-  res = VSNPRINTF (buf, size, fmt, args);
+  res = vsnprintf (buf, size, fmt, args);
   va_end (args);
   return res;
 }
 #endif
 
-#ifndef HAVE_VFPRINTF
-PMOD_EXPORT int VFPRINTF(FILE *f,const char *s,va_list args)
-{
-  char buffer[10000];
-  VSNPRINTF(buffer,sizeof(buffer),s,args);
-  return fwrite(buffer,i,1,f);
-}
-#endif
-
 #if defined(PIKE_DEBUG) && !defined(HANDLES_UNALIGNED_MEMORY_ACCESS)
 
-PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(unsigned char *p)
+PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(const unsigned char *p)
 {
   unsigned INT16 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 
-PMOD_EXPORT INT16 EXTRACT_WORD_(unsigned char *p)
+PMOD_EXPORT INT16 EXTRACT_WORD_(const unsigned char *p)
 {
   INT16 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 
-PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p)
+PMOD_EXPORT INT32 EXTRACT_INT_(const unsigned char *p)
 {
   INT32 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 #endif
@@ -825,12 +257,12 @@ void own_gethrtime_init()
 {
    int fd;
 
-   GETTIMEOFDAY(&hrtime_timeval_zero);
+   ACCURATE_GETTIMEOFDAY(&hrtime_timeval_zero);
    hrtime_rtsc_zero=rtsc();
    hrtime_rtsc_last = hrtime_rtsc_base = hrtime_rtsc_zero;
 #ifdef RTSC_DEBUG
    fprintf(stderr,"init: %lld\n",hrtime_rtsc_zero);
-#endif   
+#endif
 
    do {
      fd = fd_open("/proc/cpuinfo", fd_RDONLY, 0);
@@ -851,7 +283,7 @@ void own_gethrtime_init()
        p = STRSTR(buf, "\ncpu MHz");
        if (p) {
 	 p += sizeof("\ncpu MHz");
-	 p += STRCSPN(p, "0123456789\n");
+	 p += strcspn(p, "0123456789\n");
 	 if (*p != '\n') {
 	   long long hz = 0;
 
@@ -894,7 +326,7 @@ void own_gethrtime_update(struct timeval *ptr)
    static double w_c_c_sum = 0.0;
    static int count = -COUNT_THRESHOLD;
 
-   GETTIMEOFDAY(ptr);
+   ACCURATE_GETTIMEOFDAY(ptr);
    now=rtsc();
 
 #ifdef RTSC_DEBUG
@@ -1039,23 +471,6 @@ long long gethrtime()
 
 #endif	/* OWN_GETHRTIME */
 
-#ifndef HAVE_LDEXP
-double LDEXP(double x, int exp)
-{
-  return x * pow(2.0,(double)exp);
-}
-#endif
-
-#ifndef HAVE_FREXP
-double FREXP(double x, int *exp)
-{
-  double ret;
-  *exp = DO_NOT_WARN((int)ceil(log(fabs(x))/log(2.0)));
-  ret = (x*pow(2.0,(double)-*exp));
-  return ret;
-}
-#endif
-
 #ifdef __MINGW32__
 struct errmapping {
         const int winerr;
@@ -1156,4 +571,18 @@ void _dosmaperr(int err) {
 
   /* FIXME: Set generic error? */
 }
-#endif
+#endif /* __MINGW32__ */
+
+#if !defined(HAVE_STRDUP) && !defined(HAVE__STRDUP)
+char *strdup(const char *str)
+{
+  char *res = NULL;
+  if (str) {
+    int len = strlen(str)+1;
+
+    res = xalloc(len);
+    memcpy(res, str, len);
+  }
+  return(res);
+}
+#endif /* !HAVE_STRDUP */

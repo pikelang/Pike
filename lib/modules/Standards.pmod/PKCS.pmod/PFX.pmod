@@ -1,14 +1,8 @@
-//
-// $Id$
-//
 
-#if 0 // This code is broken. (Missing mac identifier for sha)
+#if 1 // This code is broken. (Missing mac identifier for sha)
 
 /*
- * M$ Personal Exchange Syntax and Protocol Standard, aka PKCS#12
- *
- * Subsets of PKCS#12 and PKCS#7 needed to import keys and
- * certificates into Netscape and IE.
+ * PKCS #12: Personal Information Exchange Syntax v1.1, @rfc{7292@}
  *
  */
 
@@ -16,36 +10,35 @@ import Standards.ASN1.Types;
 
 #pike __REAL_VERSION__
 
-object pkcs_7_id = .Identifiers.pkcs_id->append(7);
-object data_id = pkcs_7_id->append(1);
-object signed_data_id = pkcs_7_id->append(2);
-object enveloped_data_id = pkcs_7_id->append(3);
-object signed_and_enveloped_data_id = pkcs_7_id->append(4);
-object digested_data_id = pkcs_7_id->append(5);
-object encrypted_data_id = pkcs_7_id->append(7);
+Identifier pkcs_7_id = .Identifiers.pkcs_id->append(7);
+Identifier data_id = pkcs_7_id->append(1);
+Identifier signed_data_id = pkcs_7_id->append(2);
+Identifier enveloped_data_id = pkcs_7_id->append(3);
+Identifier signed_and_enveloped_data_id = pkcs_7_id->append(4);
+Identifier digested_data_id = pkcs_7_id->append(5);
+Identifier encrypted_data_id = pkcs_7_id->append(7);
 
-object pkcs_12_id = .Identifiers.pkcs_id->append(12);
-object pkcs_12_pbe_id = pkcs_12_id->append(1);
-object pbe_sha_rc4 = pkcs_12_pbe_id->append(1);
-object pbe_sha_rc4_weak = pkcs_12_pbe_id->append(2);
-object pbe_sha_3tripledes = pkcs_12_pbe_id->append(3);
-object pbe_sha_2triple_des = pkcs_12_pbe_id->append(4);
-object pbe_sha_rc2= pkcs_12_pbe_id->append(5);
-object pbe_sha_rc2_weak = pkcs_12_pbe_id->append(6);
+Identifier pkcs_12_id = .Identifiers.pkcs_id->append(12);
+Identifier pkcs_12_pbe_id = pkcs_12_id->append(1);
+Identifier pbe_sha1_128rc4 = pkcs_12_pbe_id->append(1);
+Identifier pbe_sha1_40rc4 = pkcs_12_pbe_id->append(2);
+Identifier pbe_sha1_3_3des_cbc = pkcs_12_pbe_id->append(3);
+Identifier pbe_sha1_2_3des_cbc = pkcs_12_pbe_id->append(4);
+Identifier pbe_sha1_128rc2= pkcs_12_pbe_id->append(5);
+Identifier pbe_sha1_40rc2 = pkcs_12_pbe_id->append(6);
 
-object pkcs_12_version1_id = pkcs_12_id->append(10);
-object pkcs_12_bag_id = pkcs_12_version1_id->append(1);
-object keybag_id = pkcs_12_bag_id->append(1);
-object pkcs_8_shroudedkeybag_id = pkcs_12_bag_id->append(2);
-object certbag_id = pkcs_12_bag_id->append(3);
-object crlbag_id = pkcs_12_bag_id->append(4);
-object secretbag_id = pkcs_12_bag_id->append(5);
-object safebag_id = pkcs_12_bag_id->append(6);
+Identifier pkcs_12_bagtypes_id = pkcs_12_id->append(10)->append(1);
+Identifier keybag_id = pkcs_12_bagtypes_id->append(1);
+Identifier pkcs_8_shroudedkeybag_id = pkcs_12_bagtypes_id->append(2);
+Identifier certbag_id = pkcs_12_bagtypes_id->append(3);
+Identifier crlbag_id = pkcs_12_bagtypes_id->append(4);
+Identifier secretbag_id = pkcs_12_bagtypes_id->append(5);
+Identifier safebag_id = pkcs_12_bagtypes_id->append(6);
 
-object pkcs_9_id = .Identifiers.pkcs_id->append(9);
+Identifier pkcs_9_id = .Identifiers.pkcs_id->append(9);
 
-object certTypes_id = pkcs_9_id->append(22);
-object x509Certificate_id = certTypes_id->append(1);
+Identifier certTypes_id = pkcs_9_id->append(22);
+Identifier x509Certificate_id = certTypes_id->append(1);
 
 /* Perhaps ContentInfo should be moved into a separate module, with
    other PKCS#7 stuff? */
@@ -59,7 +52,7 @@ class ContentInfo_meta
   class `()
     {
       inherit Standards.ASN1.Types.Sequence;
-  
+
       mapping element_types(int i, mapping t)
 	{
 	  switch(i)
@@ -72,7 +65,7 @@ class ContentInfo_meta
 	    error("Bad index\n");
 	  }
 	}
-      
+
       this_program set_types(mapping(string:function) types)
 	{
 	  content_types = types;
@@ -85,7 +78,7 @@ class ContentInfo_meta
 	    error("ContentInfo->end_decode_constructed: Bad index\n");
 	  return this;
 	}
-  
+
 #if 0
       object decode_constructed(array contents, string raw)
 	{
@@ -115,7 +108,7 @@ class ContentInfo_meta
       object init(object type, object contents)
 	{
 	  /* Neglects the valid_types field of meta_explicit */
-	  return ::init( ({ type, meta_explicit(0, 0)()->init(contents) }) );
+	  return ::init( ({ type, MetaExplicit(0, 0)()->init(contents) }) );
 	}
 
 #if 0
@@ -126,7 +119,7 @@ class ContentInfo_meta
 #endif
 
     }
-  
+
   void create(mapping|void types)
     {
       content_types = types;
@@ -134,7 +127,7 @@ class ContentInfo_meta
 }
 
 /* PFX definition, taken from the preview of PKCS#12 version 3
-   
+
    PFX ::= SEQUENCE {
    	       version         Version    -- V3(3) for this version.  This
                                           -- field is not optional.
@@ -142,8 +135,8 @@ class ContentInfo_meta
    			       -- SignedData in public-key integrity mode
    			       -- Data in password integrity mode
    	       macData         MacData OPTIONAL }
-   
-   
+
+
    MacData ::= SEQUENCE {
    	       mac      DigestInfo,    -- from PKCS #7 v1.5
    	       macSalt  OCTET STRING,
@@ -156,18 +149,18 @@ class ContentInfo_meta
    	       -- than 1 for any password-based encryption in the PDU that
    	       -- uses the same password as is used for password-based
    	       -- authentication
-   
+
    AuthenticatedSafes ::= 	SEQUENCE OF ContentInfo    -- from PKCS #7 v1.5
    			   -- Data if unencrypted
    			   -- EncryptedData if password-encrypted
    			   -- EnvelopedData if public-key-encrypted
-   
-   
+
+
    pkcs-12PbeParams ::= SEQUENCE {
    	       salt           OCTET STRING,
    	       iterationCount INTEGER }
-   
-   
+
+
    pkcs-12PbeIds OBJECT IDENTIFIER ::= { pkcs-12 1 }
    pbeWithSHA1And128BitRC4 OBJECT IDENTIFIER ::= { pkcs-12PbeIds 1 }
    pbeWithSHA1And40BitRC4 OBJECT IDENTIFIER ::= { pkcs-12PbeIds 2 }
@@ -184,51 +177,51 @@ class ContentInfo_meta
    -- size of 40 bits, as well as a 40-bit key
    pbeWithSHA1And40BitRC2-CBC OBJECT IDENTIFIER ::=
      { pkcs-12PbeIds 6 }
-   
-   
+
+
    SafeContents ::= SEQUENCE OF SafeBag
-   
+
    SafeBag ::= SEQUENCE {
    	       bagType       OBJECT IDENTIFIER,
    	       bagContent    [0] EXPLICIT ANY DEFINED BY bagType,
    	       bagAttributes Attributes OPTIONAL }
-   
-   
+
+
    Attributes ::= SET OF Attribute    -- from X.501
    -- in pre-1994 ASN.1, Attribute looks like:
    -- Attribute ::= SEQUENCE {
    --      type OBJECT IDENTIFIER,
    --      values SET OF ANY DEFINED BY type }
-   
-   
+
+
    FriendlyName ::= BMPString    -- a friendlyName has a single attr. value
    LocalKeyID   ::= OCTET STRING    -- a localKeyID has a single attr.
    value
-   
-   
+
+
    friendlyName OBJECT IDENTIFIER ::= { PKCS-9 20 }
    localKeyID   OBJECT IDENTIFIER ::= { PKCS-9 21 }
-   
-   
+
+
    KeyBag ::= PrivateKeyInfo    -- from PKCS #8 v1.2
-   
+
    PKCS-8ShroudedKeyBag ::= EncryptedPrivateKeyInfo    -- from PKCS #8 v1.2
-   
+
    CertBag   ::= SEQUENCE {
    	     certType    OBJECT IDENTIFIER,
    	     cert        EXPLICIT [0] ANY DEFINED BY certType }
-   
+
    CRLBag    ::= SEQUENCE {
    	     crlType     OBJECT IDENTIFIER,
    	     crl         EXPLICIT [0] ANY DEFINED BY crlType }
-   
+
    SecretBag ::= SEQUENCE {
    	     secretType  OBJECT IDENTIFIER,
    	     secret      EXPLICIT [0] ANY DEFINED BY secretType }
-   
+
    SafeContentsBag ::= SafeContents
-   
-   
+
+
    pkcs-12Version1      OBJECT IDENTIFIER ::= { pkcs-12 10 }
    pkcs-12BagIds        OBJECT IDENTIFIER ::= { pkcs-12Version1 1}
    keyBag               OBJECT IDENTIFIER ::= { pkcs-12BagIds 1 }
@@ -237,15 +230,15 @@ class ContentInfo_meta
    crlBag               OBJECT IDENTIFIER ::= { pkcs-12BagIds 4 }
    secretBag            OBJECT IDENTIFIER ::= { pkcs-12BagIds 5 }
    safeContentsBag      OBJECT IDENTIFIER ::= { pkcs-12BagIds 6 }
-   
-   
+
+
    certTypes       OBJECT IDENTIFIER ::= { PKCS-9 22 }
    X509Certificate                   ::= OCTET STRING
    SDSICertificate                   ::= IA5String
    x509Certificate OBJECT IDENTIFIER ::= { certTypes 1 }
    sdsiCertificate OBJECT IDENTIFIER ::= { certTypes 2 }
-   
-   
+
+
    crlTypes OBJECT IDENTIFIER ::= { PKCS-9 23 }
    X509Crl                    ::= OCTET STRING
    x509Crl  OBJECT IDENTIFIER ::= { crlTypes 1 }
@@ -271,7 +264,7 @@ class KeyBag
 }
 
 /* Defaults for generated MAC:s */
-   
+
 #define SALT_SIZE 17
 #define MAC_COUNT 1
 
@@ -296,7 +289,7 @@ class PFX
      * by a null character */
     return "\0" + (s/"") * "\0" + "\0\0";
   }
-  
+
   /* passwd is assumed to be latin 1 */
   void set_passwd(string s) {
     passwd = latin1_to_bmp(passwd);
@@ -313,7 +306,7 @@ class PFX
     }
     return d;
   }
-  
+
   string generate_key(string salt, int id, int count, int needed)
     { /* Supports only SHA-1 */
       string D = sprintf("%c", id) * 64;
@@ -323,23 +316,23 @@ class PFX
       string A = D+I;
 
       for(int i; i<count; i++)
-	A = Crypto.sha()->update(A)->digest;
+	A = Crypto.SHA1.hash(A);
 
       if (sizeof(A)<needed)
 	error("PFX: Step 6c) of section 6.1 not implemented.\n");
 
-      return A[..ndeded-1];
+      return A[..needed-1];
     }
 
   string get_hmac(string salt, int count)
     {
       string key = generate_key(salt, 3, count, 20);
 
-      return Crypto.hmac(Crypto.sha)(key)
+      return Crypto.SHA1.HMAC(key)
 	// Extract value from the data field
 	(elements[1]->elements[1]->value);
     }
-  
+
   string der_encode()
     {
       elements = allocate(2 + !!passwd);
@@ -347,16 +340,16 @@ class PFX
       elements[1] = safes;
       if (passwd)
       {	/* Password-integrity mode */
-	salt = Crypto.Random.random_string(SALT_SIZE);
+	string salt = Crypto.Random.random_string(SALT_SIZE);
 
 	elements[2] = Sequence(
 	  ({ Sequence(
-	    ({ Identifiers.sha_id,
+	    ({ .Identifiers.sha1_id,
 	       OctetString(get_hmac(salt, MAC_COUNT)) }) ),
 	     OctetString(salt)
 	     /* , optional count, default = 1 */
 	  }) );
-	
+
       } else {
 	error("Only passwd authentication supported\n");
       }
@@ -366,10 +359,10 @@ class PFX
     {
       return elements[1]->elements[0] == data_id;
     }
-  
+
   int verify_passwd()
     {
-      if (elements[2]->elements[0]->elements[0] != Identifiers.sha1_id)
+      if (elements[2]->elements[0]->elements[0] != .Identifiers.sha1_id)
 	error("Unexpected hash algorithm\n");
       string salt = elements[2]->elements[1]->value;
       int count = (sizeof(elements[2]->elements) == 3)
@@ -394,7 +387,7 @@ Sequence make_safe_bag(object id, object contents, object|void attributes)
   return Sequence( ({ id, contents })
 		   + (attributes ? ({ attributes }) : ({ }) ));
 }
-  
+
 /* A SafeBag instance, with type of KeyBag */
 Sequence make_key_bag(array keys, object|void attributes)
 {
@@ -412,9 +405,9 @@ Sequence make_x509_cert_bag(string cert, object|void attributes)
 /* Makes a PFX of unencrypted bags */
 PFX simple_make_pfx(array bags, string passwd)
 {
-  Sequence safe_contents = Sequence(bags);
-  
-  PFX pfx = PFX(ContentInfo_meta()(data_id, String(safes->get_der())));
+  Sequence safe = Sequence(bags);
+
+  PFX pfx = PFX(ContentInfo_meta()(data_id, String(safe->get_der())));
   pfx->set_passwd(passwd);
   return pfx;
 }

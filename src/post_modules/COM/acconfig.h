@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Config-file for the COM module.
  *
  * Tomas Nilsson

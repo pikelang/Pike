@@ -1,12 +1,9 @@
-//
-// $Id$
-
 #pike __REAL_VERSION__
 
 //!  	This is a handy simple parser of SGML-like
 //!	syntax like HTML. It doesn't do anything advanced,
 //!	but finding the corresponding end-tags.
-//!	
+//!
 //!	It's used like this:
 //! @code
 //! array res=Parser.SGML()->feed(string)->finish()->result();
@@ -14,12 +11,12 @@
 //!
 //!	The resulting structure is an array of atoms,
 //!	where the atom can be a string or a tag.
-//!	A tag contains a similar array, as data. 
-//!     
+//!	A tag contains a similar array, as data.
+//!
 //! @example
 //!	A string
 //!     @expr{"<gat>&nbsp;<gurka>&nbsp;</gurka>&nbsp;<banan>&nbsp;<kiwi>&nbsp;</gat>"@}
-//!     results in 
+//!     results in
 //!@code
 //!({
 //!    tag "gat" object with data:
@@ -39,7 +36,7 @@
 //!    })
 //!})
 //!@endcode
-//!             
+//!
 //!	ie, simple "tags" (not containers) are not detected,
 //!	but containers are ended implicitely by a surrounding
 //!	container _with_ an end tag.
@@ -125,7 +122,7 @@
       if (name!="" && name[0]=='/')
       {
 	 int i=search(tagstack->name,name[1..]);
-	 if (i!=-1) 
+	 if (i!=-1)
 	 {
 	    tagstack[i]->open=0;
 	    i++;

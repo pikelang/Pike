@@ -26,8 +26,8 @@ private protected mixed __initstuff=lambda()
                 "current_century":0, "past_century":0 ]);
 }();
 
-protected int year_leap_year(int y) 
-{ 
+protected int year_leap_year(int y)
+{
    // the beginning of the year is the day of the spring equinox
    // leap years are those where an extra day is needed to get up to the next
    // spring equinox.
@@ -45,14 +45,14 @@ protected array year_from_julian_day(int jd)
    // calendar we add the necessary offsets to the data so we can use the take
    // the gregorian formula
    // gregorian year starts 286 days later march 21st -> january 1st
-   int d=jd+286-1721426; 
+   int d=jd+286-1721426;
 
    int century=(4*d+3)/146097;
    int century_jd=(century*146097)/4;
    int century_day=d-century_jd;
    int century_year=(100*century_day+75)/36525;
 
-   return 
+   return
    ({
       (century*100+century_year+1)-1844, // but 1844 years earlier
       1721426-286+century_year*365+century_year/4+century_jd,
@@ -95,7 +95,7 @@ protected array(int) year_month_from_month(int y,int m)
 protected array(int) month_from_yday(int y,int yd)
 {
 // [month,day-of-month,ndays,month-year-day]
-   if (yd<1) 
+   if (yd<1)
      return month_from_yday(--y, yd+365+year_leap_year(y));
    int ly = year_leap_year(y);
    switch (yd)
@@ -116,7 +116,7 @@ protected array(int) week_from_julian_day(int jd)
 
    [int y,int yjd]=year_from_julian_day(jd);
    int yday=jd-yjd+1;
-   int wjd=jd-(jd+2)%7;  // +2 is the offset from the julian day week 
+   int wjd=jd-(jd+2)%7;  // +2 is the offset from the julian day week
                          // starting on monday.
 
    int k=4+(yjd-2)%7;
@@ -124,7 +124,7 @@ protected array(int) week_from_julian_day(int jd)
 
    //werror("jd %d: y%O yjd%O yday%O, k%O w%O wjd%O, wd%O:%O\n",jd,y,yjd,yday,k,w,wjd, 1+(jd+2)%7, 1+(1+yjd+yday)%7);
 
-   if (!w) 
+   if (!w)
    {
 // handle the case that the day is in the previous year;
 // years previous to years staring on saturday,
@@ -165,9 +165,9 @@ protected int year_remaining_days(int y,int yday)
    return 365+year_leap_year(y)-yday;
 }
 
-//! function method int daystart_offset()
+//! @decl int daystart_offset()
 //!     Returns the offset to the start of the time range object
-//!     
+//!
 int daystart_offset()
 {
   return -21600; // 6 hours earlier
@@ -178,7 +178,7 @@ class cFraction
    inherit YMD::cFraction;
 
    TimeRange make_base()
-   {  
+   {
       base=Day("unix_r",ux-daystart_offset(),rules);
       if (len) base=base->range(Day("unix_r",ux-daystart_offset()+len,rules));
       return base;
@@ -196,7 +196,7 @@ class cSecond
    inherit YMD::cSecond;
 
    TimeRange make_base()
-   {  
+   {
       base=Day("unix_r",ux-daystart_offset(),rules);
       if (len) base=base->range(Day("unix_r",ux-daystart_offset()+len,rules));
       return base;
@@ -214,7 +214,7 @@ class cMinute
    inherit YMD::cMinute;
 
    TimeRange make_base()
-   {  
+   {
       base=Day("unix_r",ux-daystart_offset(),rules);
       if (len) base=base->range(Day("unix_r",ux-daystart_offset()+len,rules));
       return base;
@@ -245,7 +245,7 @@ class cHour
    inherit YMD::cHour;
 
    TimeRange make_base()
-   {  
+   {
       base=Day("unix_r",ux-daystart_offset(),rules);
       if (len) base=base->range(Day("unix_r",ux-daystart_offset()+len,rules));
       return base;
@@ -357,7 +357,7 @@ class cMonth
    }
 
    string nice_print()
-   {  
+   {
       return sprintf("%s(%d) %s", month_name(), month_no(), year_name());
    }
 
@@ -370,16 +370,16 @@ class cMonth
          int wmd=what->month_day();
          if (md==CALUNKNOWN) make_month();
          if (what->m==2 && m==2 && wmd>=24)
-         {  
+         {
             int l1=year_leap_year(what->y);
             int l2=year_leap_year(y);
             if (l1||l2)
-            {  
+            {
                if (l1 && wmd==24)
                   if (l2) wmd=24;
                   else { if (!force) return 0; }
                else
-               {  
+               {
                   if (l1 && wmd>24) wmd--;
                   if (l2 && wmd>24) wmd++;
                }
@@ -394,7 +394,7 @@ class cMonth
 }
 
 class cYear
-{  
+{
    inherit YMD::cYear;
 
    // identical to gregorian
@@ -404,7 +404,7 @@ class cYear
       {
          case 0: return 0;
          case 1: return 365+leap_year();
-         default: 
+         default:
             return julian_day_from_year(y+n)-yjd;
       }
    }
@@ -414,14 +414,14 @@ class cYear
    {
       if (!n) return 1;
       if (n==1) return 53+(yjd%7==5 && leap_year());
-      return 
+      return
          Week("julian",jd)
          ->range(Week("julian",julian_day_from_year(y+n)-1))
          ->number_of_weeks();
    }
 
    int number_of_months()
-   {  
+   {
       return 19*n;
    }
 
@@ -456,8 +456,8 @@ class cYear
       return ::place(what);
    }
 
-   Vahid vahid(void|int m) 
-   { 
+   Vahid vahid(void|int m)
+   {
       if (!m || (!n&&m==-1))
          return Vahid("ymd_yn",rules,y,1);
 
@@ -515,7 +515,7 @@ class Vahid
 
    int julian_day_from_vahid(int v)
    {
-     return julian_day_from_year(v*19-18);     
+     return julian_day_from_year(v*19-18);
    }
 
    void create_julian_day(int|float _jd)
@@ -544,12 +544,12 @@ class Vahid
       return sprintf("v%d", v);
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
          case 'O':
-//            if (n!=1) 
+//            if (n!=1)
 //               return sprintf("Vahid(%s)",nice_print_period());
             return sprintf("Vahid(%s)",nice_print());
          case 't':
@@ -564,19 +564,19 @@ class Vahid
       return vahid_name();
    }
 
-//! method Year year()
-//! method Year year(int n)
-//! method Year year(string name)
-//!     return a year in the vahid by number or name:
+//! @decl Year year()
+//! @decl Year year(int n)
+//! @decl Year year(string name)
+//!     Return a year in the vahid by number or name:
 //!
-//!     <tt>vahid-&gt;year("Alif")</tt>
+//!     @tt{vahid->year("Alif")@}
    cYear year(int|string ... yp)
    {
       int num;
-      if (sizeof(yp) && 
+      if (sizeof(yp) &&
           stringp(yp[0]))
       {
-         num=((int)yp[0]) || 
+         num=((int)yp[0]) ||
             rules->language[f_year_number_from_name](yp[0]);
          if (!num)
             error("no such year %O in %O\n",yp[0],this);
@@ -586,7 +586,7 @@ class Vahid
 
       if (!sizeof(yp) || (num==-1 && !n))
          return Year("ymd_y",rules,v*19-18,yd,1);
-    
+
       if (num<0) num+=1+number_of_years();
       if(0 < num && num < 20)
         return Year("ymd_yn",rules,v*19-18+num-1,1);
@@ -596,14 +596,14 @@ class Vahid
    }
 
    array(cYear) years(int ...range)
-   {  
+   {
       int from=1,n=number_of_years(),to=n;
 
       if (sizeof(range))
          if (sizeof(range)<2)
             error("Illegal numbers of arguments to years()\n");
          else
-         {  
+         {
             [from,to]=range;
             if (from>n) return ({}); else if (from<1) from=1;
             if (to>n) to=n; else if (to<from) return ({});
@@ -626,7 +626,7 @@ class Vahid
 
    TimeRange _move(int m,YMD step)
    {
-      if (!step->n || !m) 
+      if (!step->n || !m)
          return this;
 
       if (step->is_vahid)
@@ -646,7 +646,7 @@ class Vahid
          return Day("ymd_jd",rules,
                     vjd+m*step->number_of_days(),number_of_days())
             ->autopromote();
-      
+
       error("_move: Incompatible type %O\n",step);
    }
 

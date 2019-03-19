@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -27,7 +26,6 @@
 
 #ifdef HAVE_DVB
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
@@ -45,7 +43,9 @@
 
 #if HAVE_DVB > 19
 #  include <linux/dvb/version.h>
-#  include <linux/dvb/sec.h>
+#  ifdef HAVE_LINUX_DVB_SEC_H
+#    include <linux/dvb/sec.h>
+#  endif
 #  include <linux/dvb/frontend.h>
 #  include <linux/dvb/dmx.h>
 #  include <linux/dvb/audio.h>
@@ -76,9 +76,39 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 #include "operators.h"
+#include "pike_types.h"
 
 #include "dvb.h"
 
+#if HAVE_DVB >= 30
+/* Compat with old DVB. */
+/* frontend.h */
+typedef struct dvb_frontend_info FrontendInfo;
+typedef struct dvb_frontend_parameters FrontendParameters;
+typedef struct dvb_frontend_event FrontendEvent;
+#define minFrequency frequency_min
+#define maxFrequency frequency_max
+#define minSymbolRate symbol_rate_min
+#define maxSymbolRate symbol_rate_max
+#define hwType type
+#define Frequency frequency
+#define SymbolRate symbol_rate
+#define FEC_inner fec_inner
+/* audio.h */
+typedef audio_status_t audioStatus_t;
+typedef audio_mixer_t audioMixer_t;
+#define AVSyncState AV_sync_state
+#define muteState mute_state
+#define playState play_state
+#define streamSource stream_source
+#define channelSelect channel_select
+#define bypassMode bypass_mode
+/* dmx.h */
+typedef __u16 dvb_pid_t;
+#define dmxSctFilterParams dmx_sct_filter_params
+#define dmxPesFilterParams dmx_pes_filter_params
+#define pesType pes_type
+#endif
 
 /* WARNING: It is a design limit of DVB-S full cards! */
 #define MAX_PES_FD	8
@@ -193,14 +223,11 @@ dvb_stream_data *sl_getstream(dvb_data *parent, unsigned int pid) {
 
 }
 
-char *mk_devname(int devno, char *basename) {
+static char devname_buf[24];
 
-  char *devname;
-
-  if((devname = malloc(sizeof(basename)+4)) == NULL)
-      return NULL;
-  sprintf(devname, "%s%d", basename, devno); /* FIXME: uncorrect for v2.0+ !! */
-  return devname;
+static INLINE char *mk_devname(int devno, const char *basename) {
+  sprintf(devname_buf, "%s%d", basename, devno); /* FIXME: uncorrect for v2.0+ !! */
+  return devname_buf;
 }
 
 
@@ -232,29 +259,27 @@ char *mk_devname(int devno, char *basename) {
  */
 static void f_create(INT32 args) {
 
-  int fefd;
+  int fefd, devno;
   char *devname;
 
   if(DVB->cardn != -1)
     Pike_error("Create already called!\n");
 
-  DVB->cardn = 0;
+  devno = 0;
   if(args) {
-    if(Pike_sp[-1].type != T_INT)
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 1, expected int.\n");
     else
-      DVB->cardn = (u_short)Pike_sp[-1].u.integer;
+      devno = (u_short)Pike_sp[-1].u.integer;
   }
 
-  if((devname = mk_devname(DVB->cardn, FRONTENDDEVICE)) == NULL)
-      Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(devno, FRONTENDDEVICE);
   fefd = open (devname, O_RDWR | O_NONBLOCK);
   if (fefd < 0) {
-      DVB->cardn = -1;
-      /* free(devname); */
       Pike_error("Opening frontend '%s' failed.\n", devname);
   }
   DVB->fefd = fefd;
+  DVB->cardn = devno;
 
   /* Make sure this fd gets closed on exec. */
   set_close_on_exec(fefd, 1);
@@ -304,34 +329,37 @@ static void f_fe_status(INT32 args) {
   if(ret < 0)
     push_int(0);
   else {
-    push_text("power"); push_int(!!(status & ~FE_HAS_POWER));
-    push_text("signal"); push_int(!!(status & ~FE_HAS_SIGNAL));
+    push_static_text("signal"); push_int(!!(status & ~FE_HAS_SIGNAL));
+    push_static_text("carrier"); push_int(!!(status & ~FE_HAS_CARRIER));
+    push_static_text("viterbi"); push_int(!!(status & ~FE_HAS_VITERBI));
+    push_static_text("lock"); push_int(!!(status & ~FE_HAS_LOCK));
+    push_static_text("sync"); push_int(!!(status & ~FE_HAS_SYNC));
+    cnt = 5;
     /*push_text("spectrum_inverse"); push_int(status & ~FE_HAS_SPECTRUM_INV);*/
-    push_text("lock"); push_int(!!(status & ~FE_HAS_LOCK));
-    push_text("carrier"); push_int(!!(status & ~FE_HAS_CARRIER));
-    push_text("viterbi"); push_int(!!(status & ~FE_HAS_VITERBI));
-    push_text("sync"); push_int(!!(status & ~FE_HAS_SYNC));
-    push_text("tuner_lock"); push_int(!!(status & ~FE_TUNER_HAS_LOCK));
-    cnt = 7;
+#if HAVE_DVB < 30
+    push_static_text("power"); push_int(!!(status & ~FE_HAS_POWER));
+    push_static_text("tuner_lock"); push_int(!!(status & ~FE_TUNER_HAS_LOCK));
+    cnt += 2;
+#endif
     THREADS_ALLOW();
     ret = ioctl(dvb->fefd, FE_READ_BER, &status);
     THREADS_DISALLOW();
     if(ret > -1) {
-      push_text("ber"); push_int(status);
+      push_static_text("ber"); push_int(status);
       cnt++;
     }
     THREADS_ALLOW();
     ret = ioctl(dvb->fefd, FE_READ_SNR, &status);
     THREADS_DISALLOW();
     if(ret > -1) {
-      push_text("snr"); push_int(status);
+      push_static_text("snr"); push_int(status);
       cnt++;
     }
     THREADS_ALLOW();
     ret = ioctl(dvb->fefd, FE_READ_SIGNAL_STRENGTH, &status);
     THREADS_DISALLOW();
     if(ret > -1) {
-      push_text("signal_strength"); push_int(status);
+      push_static_text("signal_strength"); push_int(status);
       cnt++;
     }
 
@@ -360,26 +388,38 @@ static void f_fe_info(INT32 args) {
   if(ret < 0)
     push_int(0);
   else {
-    push_text("frequency");
-      push_text("min"); push_int(info.minFrequency);
-      push_text("max"); push_int(info.maxFrequency);
+    push_static_text("frequency");
+      push_static_text("min");
+      push_int(info.minFrequency);
+      push_static_text("max");
+      push_int(info.maxFrequency);
       f_aggregate_mapping(2 * 2);
-    push_text("sr");
-      push_text("min"); push_int(info.minSymbolRate);
-      push_text("max"); push_int(info.maxSymbolRate);
+    push_static_text("sr");
+      push_static_text("min");
+      push_int(info.minSymbolRate);
+      push_static_text("max");
+      push_int(info.maxSymbolRate);
       f_aggregate_mapping(2 * 2);
-    push_text("hardware");
-      push_text("type"); push_int(info.hwType);
-      push_text("version"); push_int(info.hwVersion);
+    push_static_text("hardware");
+      ref_push_string(literal_type_string);
+      push_int(info.hwType);
+#if HAVE_DVB < 30
+      push_static_text("version");
+      push_int(info.hwVersion);
       f_aggregate_mapping(2 * 2);
+#else
+      /* FIXME: Where is the version in the new DVB API? */
+      f_aggregate_mapping(1 * 2);
+#endif
     f_aggregate_mapping(2 * 3);
   }
 }
 
 /* digital satellite equipment control,
- * specification is available from http://www.eutelsat.com/ 
+ * specification is available from http://www.eutelsat.com/
  */
 static int diseqc (int secfd, int sat_no, int pol, int hi_lo) {
+#if HAVE_DVB < 30
   struct secCmdSequence secseq;
   struct secCommand scmd;
 
@@ -401,7 +441,27 @@ static int diseqc (int secfd, int sat_no, int pol, int hi_lo) {
   secseq.commands = &scmd;
 
   if (ioctl (secfd, SEC_SEND_SEQUENCE, &secseq) == -1)
-    return 0; 
+    return 0;
+#else
+  struct dvb_diseqc_master_cmd cmd;
+  cmd.msg[0] = 0xe0;	/* framing (master, no reply expected, first send) */
+  cmd.msg[1] = 0x10;	/* address (any switch) */
+  cmd.msg[2] = 0x38;	/* command (set port group 0) */
+  /* param: high nibble: reset bits, low nibble set bits,
+   * bits are: option, position, polarizaion, band
+   */
+  cmd.msg[3] = 0xF0 | (((sat_no * 4) & 0x0F)
+                                    | (hi_lo?1:0) | (pol?0:2));
+  cmd.msg_len = 4;
+
+  if (ioctl (secfd, FE_DISEQC_SEND_MASTER_CMD, &cmd) == -1) {
+    /* tone/volt for backwards compatiblity with non-diseqc LNBs */
+    if (ioctl (secfd, FE_SET_VOLTAGE, pol ? SEC_VOLTAGE_13 : SEC_VOLTAGE_18) == -1)
+      return 0;
+    if (ioctl (secfd, FE_SET_TONE, hi_lo ? SEC_TONE_ON : SEC_TONE_OFF) == -1)
+      return 0;
+  }
+#endif
   return 1;
 }
 
@@ -449,14 +509,20 @@ static int do_tune(int fefd, uint ifreq, uint sr)
       return 0;
   }
 
+#if HAVE_DVB < 30
   if (ev.type != FE_COMPLETION_EV) {
       snprintf (DVB->low_errmsg, MAX_ERR_LEN, "tuning failed\n");
       return 0;
   }
+#else
+  if (ev.status != FE_HAS_LOCK) {
+      snprintf (DVB->low_errmsg, MAX_ERR_LEN, "tuning failed\n");
+      return 0;
+  }
+#endif
 
   return 1;
 }
-
 
 /*! @decl int tune(int(0..3) lnb, int freq, int(0..1)|string pol, int sr)
  *!
@@ -495,7 +561,7 @@ static void f_zap(INT32 args) {
   sr = (u_short)Pike_sp[-1].u.integer * 1000;
   Pike_sp--;
 
-  if(Pike_sp[-1].type == T_INT)
+  if(TYPEOF(Pike_sp[-1]) == T_INT)
       pol = (u_short)Pike_sp[-1].u.integer;
   else
       pol = Pike_sp[-1].u.string->str[0] == 'V' ||
@@ -507,13 +573,16 @@ static void f_zap(INT32 args) {
 
   satno = (u_short)Pike_sp[-1].u.integer;
 
-  if((devname = mk_devname(dvb->cardn, SECDEVICE)) == NULL)
-      Pike_error("Internal error: can't malloc buffer.\n");
+#if HAVE_DVB < 30
+  devname = mk_devname(dvb->cardn, SECDEVICE);
   secfd = open (devname, O_RDWR);
   /* free(devname); */
   if (secfd == -1) {
       Pike_error ("opening SEC device failed\n");
   }
+#else
+  secfd = dvb->fefd;
+#endif
   THREADS_ALLOW();
   result = ioctl (dvb->fefd, FE_GET_INFO, &fe_info);
   THREADS_DISALLOW();
@@ -541,7 +610,6 @@ static void f_zap(INT32 args) {
   push_int(result);
 }
 
-
 /*! @decl mapping|int get_pids()
  *!
  *! Returns mapping with info of currently tuned program's pids.
@@ -551,14 +619,13 @@ static void f_zap(INT32 args) {
  */
 static void f_get_pids(INT32 args) {
 
-  dvb_pid_t pids[7];
+  dvb_pid_t pids[5];
   int cnt = 0, dmx, ret;
   char *devname;
 
   pop_n_elems(args);
   if(!sl_count(DVB)) {
-    if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
-        Pike_error("Internal error: can't malloc buffer.\n");
+    devname = mk_devname(DVB->cardn, DEMUXDEVICE);
     dmx = open (devname, O_RDWR | O_NONBLOCK);
     /* free(devname); */
     if (dmx < 0)
@@ -575,22 +642,17 @@ static void f_get_pids(INT32 args) {
   }
 
   if(DVB->cardn != -1) {
-    push_text("audio");		push_int( pids[DMX_PES_AUDIO] & 0x1fff );
+    push_static_text("audio");		push_int( pids[DMX_PES_AUDIO] & 0x1fff );
     cnt++;
-    push_text("video");		push_int( pids[DMX_PES_VIDEO] & 0x1fff );
+    push_static_text("video");		push_int( pids[DMX_PES_VIDEO] & 0x1fff );
     cnt++;
-    push_text("teletext");	push_int( pids[DMX_PES_TELETEXT] & 0x1fff );
+    push_static_text("teletext");	push_int( pids[DMX_PES_TELETEXT] & 0x1fff );
     cnt++;
-    push_text("subtitle");	push_int( pids[DMX_PES_SUBTITLE] & 0x1fff );
+    push_static_text("subtitle");	push_int( pids[DMX_PES_SUBTITLE] & 0x1fff );
     cnt++;
-    push_text("pcr");		push_int( pids[DMX_PES_PCR] & 0x1fff );
+    push_static_text("pcr");		push_int( pids[DMX_PES_PCR] & 0x1fff );
     cnt++;
-    push_text("other");		push_int( pids[DMX_PES_OTHER] & 0x1fff );
-    cnt++;
-    if(cnt)
-      f_aggregate_mapping( 2 * cnt );
-    else
-      push_int(0);
+    f_aggregate_mapping( 2 * cnt );
   } else
     push_int(0);
   if(!sl_count(DVB))
@@ -739,7 +801,7 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
       return -1;
     }
 
-    if (cks && crc32(buffer+1,n) != 0)
+    if (cks && crc32((char *)buffer+1,n) != 0)
     {
       fprintf(stderr,"crc error\n"); /* FIXME: ??? */
       continue;
@@ -770,10 +832,8 @@ static void f_parse_pat(INT32 args) {
   char *devname;
 
   pop_n_elems(args);
-  if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
-     Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(DVB->cardn, DEMUXDEVICE);
   dmx = open (devname, O_RDWR | O_NONBLOCK);
-  /* free(devname); */
   if (dmx < 0) {
     snprintf (DVB->low_errmsg, MAX_ERR_LEN, "DMX SET SECTION FILTER.\n");
     push_int(0);
@@ -833,7 +893,7 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
 
   struct ECMINFO *e = NULL;
 
-#ifdef DVB_DEBUG 
+#ifdef DVB_DEBUG
     printf("DEB: dvb: ca_descr:");
     for (j=0; j<length; j++) printf(" %02x",data[j]);
     printf("\n");
@@ -856,7 +916,7 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
         e->id = (data[j+2] << 8) | data[j+3];
         e->next = st->ecminfo;
         st->ecminfo = e;
-      }        
+      }
       break;
     case VIACCESS_CA_SYSTEM:
       j = 4;
@@ -915,7 +975,7 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
  *! @seealso
  *!   @[analyze_pat()]
  */
-static void f_parse_pmt(INT32 args) 
+static void f_parse_pmt(INT32 args)
 {
   unsigned char buffer[4096];
   unsigned int length,info_len,data_len, index;
@@ -934,15 +994,16 @@ static void f_parse_pmt(INT32 args)
 
   check_all_args("DVB.dvb->analyze_pmt", args, BIT_INT, BIT_INT, 0);
 
-  if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
-     Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(DVB->cardn, DEMUXDEVICE);
   dmx = open (devname, O_RDWR | O_NONBLOCK);
-  /* free(devname); */
   if (dmx < 0) {
     snprintf (DVB->low_errmsg, MAX_ERR_LEN, "DMX SET SECTION FILTER.\n");
     push_int(0);
     return;
   }
+
+  /* Clear the stream, and most notably, set stream.ecminfo to NULL. */
+  memset(&stream, 0, sizeof(stream));
 
   pmt_pid = (u_short)Pike_sp[-1].u.integer;
   Pike_sp--;
@@ -959,7 +1020,7 @@ static void f_parse_pmt(INT32 args)
       n = read_t(dmx,buffer,sizeof(buffer),1);
     }
     while (n>=2 && (buffer[0]!=0 || buffer[1]!=0x02));
-   
+
     length = ((buffer[2] & 0x0F) << 8) | buffer[3];
     if (length+4 > sizeof(buffer))
       n = -1;
@@ -999,29 +1060,29 @@ static void f_parse_pmt(INT32 args)
   {
     cnt = 0;
     pid = ((buffer[index+1] & 0x1f) << 8) + buffer[index+2];
-    push_text("pid"); push_int(pid); cnt++;
+    push_static_text("pid"); push_int(pid); cnt++;
 
     switch(buffer[index]) {
       case 2:
-        push_text("type"); push_int(DMX_PES_VIDEO); cnt++;
-        push_text("desc"); push_text("video"); cnt++;
+        ref_push_string(literal_type_string); push_int(DMX_PES_VIDEO); cnt++;
+        push_static_text("desc"); push_static_text("video"); cnt++;
 	break;
       case 3:
       case 4:
-        push_text("type"); push_int(DMX_PES_AUDIO); cnt++;
-        push_text("desc"); push_text("audio"); cnt++;
+        ref_push_string(literal_type_string); push_int(DMX_PES_AUDIO); cnt++;
+        push_static_text("desc"); push_static_text("audio"); cnt++;
 	break;
       case 6:
-        push_text("type"); push_int(DMX_PES_TELETEXT); cnt++;
-        push_text("desc"); push_text("teletext"); cnt++;
+        ref_push_string(literal_type_string); push_int(DMX_PES_TELETEXT); cnt++;
+        push_static_text("desc"); push_static_text("teletext"); cnt++;
 	break;
       case 129:
-        push_text("type"); push_int(_DMX_PES_RDS); cnt++;
-        push_text("desc"); push_text("_rds"); cnt++;
+        ref_push_string(literal_type_string); push_int(_DMX_PES_RDS); cnt++;
+        push_static_text("desc"); push_static_text("_rds"); cnt++;
 	break;
       default:
-        push_text("unknown_type"); push_int(buffer[index]); cnt++;
-        push_text("desc"); push_text("unknown"); cnt++;
+        push_static_text("unknown_type"); push_int(buffer[index]); cnt++;
+        push_static_text("desc"); push_static_text("unknown"); cnt++;
     }
 
     data_len = ((buffer[index+3] & 0x0F) << 8) + buffer[index+4];
@@ -1034,8 +1095,8 @@ static void f_parse_pmt(INT32 args)
         {
           case 0x0a:
             if (buffer[index]==3 || buffer[index]==4) {
-	      push_text("lang");
-	      push_string(make_shared_binary_string(&buffer[i+2], 3)); cnt++;
+	      push_static_text("lang");
+	      push_string(make_shared_binary_string((char *)&buffer[i+2], 3)); cnt++;
             }
             break;
           case 0x09:
@@ -1118,7 +1179,7 @@ static void f_stream_attach(INT32 args) {
   push_int(ptype);
   push_object( clone_object(dvb_stream_program, 4 ) );
 
-  if(Pike_sp[-1].type!=PIKE_T_OBJECT)
+  if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
     Pike_error("Failed to create Stream object!\n");
 
 }
@@ -1134,28 +1195,28 @@ static void f__sprintf(INT32 args) {
   pop_n_elems(args);
   switch (x) {
     case 'O':
-            n++; push_text("DVB.dvb(");
+            n++; push_static_text("DVB.dvb(");
             n++; push_text(mk_devname(DVB->cardn, DEMUXDEVICE));
-	    n++; push_text(": ");
+	    n++; push_static_text(": ");
 	    cnt = 0;
 	    while(st != NULL) {
 	      n++; push_int(st->pid);
-	      n++; push_text("/");
+	      n++; push_static_text("/");
 	      n++; switch(st->stype) {
-		     case DMX_PES_AUDIO: push_text("a"); break;
-		     case DMX_PES_VIDEO: push_text("v"); break;
-		     case DMX_PES_TELETEXT: push_text("t"); break;
-		     case DMX_PES_SUBTITLE: push_text("s"); break;
-		     case DMX_PES_OTHER: push_text("o"); break;
-		     default: push_text("?");
+		     case DMX_PES_AUDIO: push_static_text("a"); break;
+		     case DMX_PES_VIDEO: push_static_text("v"); break;
+		     case DMX_PES_TELETEXT: push_static_text("t"); break;
+		     case DMX_PES_SUBTITLE: push_static_text("s"); break;
+		     case DMX_PES_OTHER: push_static_text("o"); break;
+		     default: push_static_text("?");
 		   }
 	      cnt++;
 	      if(cnt < sl_count(DVB)) {
-		n++; push_text(",");
+		n++; push_static_text(",");
 	      }
 	      st = st->next;
 	    }
-            n++; push_text(")");
+            n++; push_static_text(")");
             f_add(n);
             return;
      default:
@@ -1173,12 +1234,12 @@ static void f__sprintf(INT32 args) {
  */
 
 /*  @decl int set_buffer(int len)
- * 
+ *
  *  Sets stream's internal buffer.
- * 
+ *
  *  @note
  *    The size is 4096 by default.
- * 
+ *
  *  @seealso
  *    @[read()]
  */
@@ -1224,13 +1285,11 @@ static void f_stream_create(INT32 args) {
 
   dvbprog = Pike_sp[-1].u.object;
   Pike_sp--;
-  if( !dvbprog || !(dvbstor = (dvb_data *)get_storage( dvbprog, dvb_program )) )
+  if( !dvbprog || !(dvbstor = get_storage( dvbprog, dvb_program )) )
     Pike_error("This class cannot be instantiated directly\n");
 
-  if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
-     Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(DVB->cardn, DEMUXDEVICE);
   fd = open (devname, O_RDWR /*| O_NONBLOCK*/);
-  /* free(devname); */
   if (fd < 0) {
       Pike_error("Opening DEMUX failed.\n");
   }
@@ -1310,7 +1369,7 @@ static void f_stream_read(INT32 args) {
 
   dvb_stream_data *dvb_stream = DVBStream;
   int all = 1, ret, e, cnt, ix = 0;
-  char buf[MAX_DVB_READ_SIZE], *bufptr;
+  unsigned char buf[MAX_DVB_READ_SIZE], *bufptr;
 
   if(dvb_stream->fd < 0)
     Pike_error("Object destroyed!\n");
@@ -1434,16 +1493,14 @@ static void f_audio_create(INT32 args) {
     Pike_error("Create already called!\n");
 
   if(args) {
-    if(Pike_sp[-1].type != T_INT)
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 1, expected int.\n");
     else
       devno = (u_short)Pike_sp[-1].u.integer;
   }
   pop_n_elems(args);
-  if((devname = mk_devname(devno, AUDIODEVICE)) == NULL)
-     Pike_error("Internal error: can't malloc buffer.\n");
+  devname = mk_devname(devno, AUDIODEVICE);
   DVBAudio->fd = open( devname, O_RDWR );
-  /* free(devname); */
   if (DVBAudio->fd < 0) {
       DVB->cardn = -1;
       Pike_error("Opening audio device failed.\n");
@@ -1499,37 +1556,37 @@ static void f_audio_status(INT32 args) {
   if(ret < 0)
     push_int(0);
   else {
-    push_text("av_sync"); push_int(status.AVSyncState);
-    push_text("mute"); push_int(status.muteState);
-    push_text("state"); 
+    push_static_text("av_sync"); push_int(status.AVSyncState);
+    push_static_text("mute"); push_int(status.muteState);
+    push_static_text("state");
       switch(status.playState) {
-	case AUDIO_STOPPED: push_text("stopped");
+	case AUDIO_STOPPED: push_static_text("stopped");
 			    break;
-	case AUDIO_PLAYING: push_text("playing");
+	case AUDIO_PLAYING: push_static_text("playing");
 			    break;
-	case AUDIO_PAUSED: push_text("paused");
+	case AUDIO_PAUSED: push_static_text("paused");
 			    break;
-	default: push_text("unknown");
+	default: push_static_text("unknown");
       }
-    push_text("source");
+    push_static_text("source");
       switch(status.streamSource) {
-	case AUDIO_SOURCE_DEMUX: push_text("demux");
+	case AUDIO_SOURCE_DEMUX: push_static_text("demux");
 			    break;
-	case AUDIO_SOURCE_MEMORY: push_text("memory");
+	case AUDIO_SOURCE_MEMORY: push_static_text("memory");
 			    break;
-	default: push_text("unknown");
+	default: push_static_text("unknown");
       }
-    push_text("channels");
+    push_static_text("channels");
       switch(status.channelSelect) {
-	case AUDIO_STEREO: push_text("stereo");
+	case AUDIO_STEREO: push_static_text("stereo");
 			    break;
-	case AUDIO_MONO_LEFT: push_text("left");
+	case AUDIO_MONO_LEFT: push_static_text("left");
 			    break;
-	case AUDIO_MONO_RIGHT: push_text("right");
+	case AUDIO_MONO_RIGHT: push_static_text("right");
 			    break;
-	default: push_text("unknown");
+	default: push_static_text("unknown");
       }
-    push_text("bypass"); push_int(status.bypassMode);
+    push_static_text("bypass"); push_int(status.bypassMode);
     f_aggregate_mapping( 2 * 6 );
   }
 
@@ -1543,9 +1600,9 @@ static void f_audio_ctrl(INT32 args) {
 
   check_all_args("DVB.dvb->ctrl", args, BIT_INT | BIT_STRING, 0);
 
-  if(Pike_sp[-1].type == T_INT)
+  if(TYPEOF(Pike_sp[-1]) == T_INT)
     cw = (u_short)Pike_sp[-1].u.integer;
-  else 
+  else
     if(!strcmp(Pike_sp[-1].u.string->str, "play"))
       cw = AUDIO_PLAY;
     else
@@ -1610,7 +1667,7 @@ static void f_audio_mixer(INT32 args) {
 /*! @endmodule
  */
 
-static void init_dvb_data(struct object *obj) {
+static void init_dvb_data(struct object *UNUSED(obj)) {
 
   unsigned int i;
 
@@ -1620,7 +1677,7 @@ static void init_dvb_data(struct object *obj) {
 }
 
 static void exit_dvb_stream(struct object *obj);
-static void exit_dvb_data(struct object *obj) {
+static void exit_dvb_data(struct object *UNUSED(obj)) {
 
   dvb_stream_data *s;
 
@@ -1634,17 +1691,17 @@ static void exit_dvb_data(struct object *obj) {
   }
 }
 
-static void init_dvb_audio(struct object *obj) {
+static void init_dvb_audio(struct object *UNUSED(obj)) {
   DVBAudio->fd = -1;
   memset(&DVBAudio->low_errmsg, '\0', sizeof(DVBAudio->low_errmsg));
 }
 
-static void exit_dvb_audio(struct object *obj) {
+static void exit_dvb_audio(struct object *UNUSED(obj)) {
   if(DVBAudio->fd != -1)
     close(DVBAudio->fd);
 }
 
-static void init_dvb_stream(struct object *obj) {
+static void init_dvb_stream(struct object *UNUSED(obj)) {
 
   DVBStream->parent = NULL;
   DVBStream->next = NULL;
@@ -1657,7 +1714,7 @@ static void init_dvb_stream(struct object *obj) {
 }
 
 
-static void exit_dvb_stream(struct object *obj) {
+static void exit_dvb_stream(struct object *UNUSED(obj)) {
 
   struct ECMINFO *e;
   unsigned int i;
@@ -1674,7 +1731,7 @@ static void exit_dvb_stream(struct object *obj) {
       free(DVBStream->ecminfo);
       DVBStream->ecminfo = e;
     } while (e != NULL);
-  
+
 }
 
 /*
@@ -1737,7 +1794,7 @@ PIKE_MODULE_INIT {
     add_function("read", f_stream_read, "function(int|void:string|int)", 0);
     add_function("set_buffer", f_stream_set_buffer, "function(int:int)", 0);
     add_function("info", f_stream_info, "function(int:mapping|int)", 0);
-    add_function("close", f_stream_info, "function(:void)", 0);
+    add_function("close", f_stream_close, "function(:void)", 0);
 
   dvb_stream_program = end_program();
   add_program_constant("Stream", dvb_stream_program, 0);
@@ -1760,6 +1817,10 @@ PIKE_MODULE_INIT {
 
 PIKE_MODULE_EXIT {
 
+  if(dvb_stream_program) {
+    free_program(dvb_stream_program);
+    dvb_stream_program = NULL;
+  }
   if(dvb_program) {
     free_program(dvb_program);
     dvb_program = NULL;
@@ -1772,8 +1833,7 @@ PIKE_MODULE_EXIT {
 #include "module_support.h"
 
 PIKE_MODULE_INIT {
-  if(!TEST_COMPAT(7,6))
-    HIDE_MODULE();
+  HIDE_MODULE();
 }
 
 PIKE_MODULE_EXIT {

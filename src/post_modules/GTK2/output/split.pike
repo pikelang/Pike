@@ -213,8 +213,8 @@ array(string) output( mapping(string:Class) classes,
     foreach( strings; string str; int idx )
     {
       initfun += sprintf("\n  /* %O */\n", str);
-      initfun += "  pgtk2_pstr_vector[" + idx + "] = make_shared_binary_string(" +
-        S(str,0,2) + "," + sizeof(str) + ");\n";
+      initfun += "  pgtk2_pstr_vector[" + idx + "] = make_shared_static_string(" +
+        S(str,1,2) + "," + sizeof(str) + ",0);\n";
     }
     exitfun += #"
   {

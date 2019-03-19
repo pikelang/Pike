@@ -1,62 +1,63 @@
 #pike __REAL_VERSION__
+#require constant(SSL.Port)
 
-#if constant(SSL.Cipher.CipherAlgorithm)
+inherit SSL.Port;
 
 import ".";
 
-MySSLPort port;
 int portno;
-string|int(0..0) interface;
+string interface;
 function(Request:void) callback;
 
-program request_program=Request;
+//!
+object|function|program request_program=Request;
 
-//! The simplest SSL server possible. Binds a port and calls
-//! a callback with @[Request] objects.
+//! A very simple SSL server. Binds a port and calls a callback with
+//! @[request_program] objects.
 
 //! Create a HTTPS (HTTP over SSL) server.
 //!
-//! @param _callback
+//! @param callback
 //!   The function run when a request is received.
 //!   takes one argument of type @[Request].
-//! @param _portno
+//! @param port
 //!   The port number to bind to, defaults to 443.
-//! @param _interface
+//! @param interface
 //!   The interface address to bind to.
 //! @param key
 //!   An optional SSL secret key, provided in binary format, such
 //!   as that created by @[Standards.PKCS.RSA.private_key()].
 //! @param certificate
-//!   An optional SSL certificate or chain of certificates with the host 
+//!   An optional SSL certificate or chain of certificates with the host
 //!   certificate first, provided in binary format.
-void create(function(Request:void) _callback,
-	    void|int _portno,
-	    void|string _interface, void|string key, void|string|array certificate)
+//! @param share
+//!   If true, the connection will be shared if possible. See
+//!   @[Stdio.Port.bind] for more information
+protected void create(function(Request:void) callback,
+                      void|int port,
+                      void|string interface,
+                      void|string|Crypto.Sign.State key,
+                      void|string|array(string) certificate,
+                      void|int share)
 {
-   portno=_portno;
-   if (!portno) portno=443; // default HTTPS port
+  ::create();
 
-   callback=_callback;
-   interface=_interface;
+  portno = port || 443;
+  this::callback=callback;
+  this::interface=interface;
 
-   port=MySSLPort();
-   port->set_default_keycert();
-   if(key)
-     port->set_key(key);
-   if(certificate)
-     port->set_certificate(certificate);
+  if( key && certificate )
+  {
+    if( stringp(certificate) )
+      certificate = ({ certificate });
+    ctx->add_cert( key, certificate, ({"*"}) );
+  }
+  else
+    set_default_keycert();
 
-   if (!port->bind(portno,new_connection,[string]interface))
-      error("HTTP.Server.SSLPort: failed to bind port %s%d: %s\n",
-	    interface?interface+":":"",
-	    portno,strerror(port->errno()));
-}
-
-//! Closes the HTTP port.
-void close()
-{
-   destruct(port);
-   port=0;
+  if (!bind(portno, new_connection, this::interface, share))
+    error("Failed to bind port %s%d: %s\n",
+          interface?interface+":":"", portno, strerror(errno()));
 }
 
 void destroy() { close(); }
@@ -64,87 +65,44 @@ void destroy() { close(); }
 //! The port accept callback
 protected void new_connection()
 {
-   SSL.sslfile fd=port->accept();
+   SSL.File fd=accept();
    Request r=request_program();
    r->attach_fd(fd,this,callback);
 }
 
-//!
-class MySSLPort
+protected void set_default_keycert()
 {
-
-  inherit SSL.sslport;
-
-  string my_certificate = MIME.decode_base64(
-  "MIIBxDCCAW4CAQAwDQYJKoZIhvcNAQEEBQAwbTELMAkGA1UEBhMCREUxEzARBgNV\n"
-  "BAgTClRodWVyaW5nZW4xEDAOBgNVBAcTB0lsbWVuYXUxEzARBgNVBAoTClRVIEls\n"
-  "bWVuYXUxDDAKBgNVBAsTA1BNSTEUMBIGA1UEAxMLZGVtbyBzZXJ2ZXIwHhcNOTYw\n"
-  "NDMwMDUzNjU4WhcNOTYwNTMwMDUzNjU5WjBtMQswCQYDVQQGEwJERTETMBEGA1UE\n"
-  "CBMKVGh1ZXJpbmdlbjEQMA4GA1UEBxMHSWxtZW5hdTETMBEGA1UEChMKVFUgSWxt\n"
-  "ZW5hdTEMMAoGA1UECxMDUE1JMRQwEgYDVQQDEwtkZW1vIHNlcnZlcjBcMA0GCSqG\n"
-  "SIb3DQEBAQUAA0sAMEgCQQDBB6T7bGJhRhRSpDESxk6FKh3iKKrpn4KcDtFM0W6s\n"
-  "16QSPz6J0Z2a00lDxudwhJfQFkarJ2w44Gdl/8b+de37AgMBAAEwDQYJKoZIhvcN\n"
-  "AQEEBQADQQB5O9VOLqt28vjLBuSP1De92uAiLURwg41idH8qXxmylD39UE/YtHnf\n"
-  "bC6QS0pqetnZpQj1yEsjRTeVfuRfANGw\n");
-
-  string my_key = MIME.decode_base64(
-  "MIIBOwIBAAJBAMEHpPtsYmFGFFKkMRLGToUqHeIoqumfgpwO0UzRbqzXpBI/PonR\n"
-  "nZrTSUPG53CEl9AWRqsnbDjgZ2X/xv517fsCAwEAAQJBALzUbJmkQm1kL9dUVclH\n"
-  "A2MTe15VaDTY3N0rRaZ/LmSXb3laiOgBnrFBCz+VRIi88go3wQ3PKLD8eQ5to+SB\n"
-  "oWECIQDrmq//unoW1+/+D3JQMGC1KT4HJprhfxBsEoNrmyIhSwIhANG9c0bdpJse\n"
-  "VJA0y6nxLeB9pyoGWNZrAB4636jTOigRAiBhLQlAqhJnT6N+H7LfnkSVFDCwVFz3\n"
-  "eygz2yL3hCH8pwIhAKE6vEHuodmoYCMWorT5tGWM0hLpHCN/z3Btm38BGQSxAiAz\n"
-  "jwsOclu4b+H8zopfzpAaoB8xMcbs0heN+GNNI0h/dQ==\n");
-
-/* PKCS#1 Private key structure:
-
-RSAPrivateKey ::= SEQUENCE {
-  version Version,
-  modulus INTEGER, -- n
-  publicExponent INTEGER, -- e
-  privateExponent INTEGER, -- d
-  prime1 INTEGER, -- p
-  prime2 INTEGER, -- q
-  exponent1 INTEGER, -- d mod (p-1)
-  exponent2 INTEGER, -- d mod (q-1)
-  coefficient INTEGER -- (inverse of q) mod p }
-
-Version ::= INTEGER
-
-*/
-
-  //!
-  void set_default_keycert()
+  foreach(({ Crypto.RSA(), Crypto.DSA(),
+#if constant(Crypto.ECC.Curve)
+             Crypto.ECC.SECP_521R1.ECDSA(),
+#endif
+          }), Crypto.Sign private_key)
   {
-    set_key(my_key);
-    set_certificate(my_certificate);
-  }
+    switch(private_key->name()) {
+    case "RSA":
+      private_key->generate_key(4096);
+      break;
+    case "DSA":
+      private_key->generate_key(4096, 160);
+      break;
+    default:
+      // ECDSA.
+      private_key->generate_key();
+      break;
+    }
 
-  //!
-  void set_key(string skey)
-  {
-    rsa = Standards.PKCS.RSA.parse_private_key(skey);
-  }
+    mapping a = ([
+      "organizationName" : "Pike TLS server",
+      "commonName" : "*",
+    ]);
 
-  //!
-  void set_certificate(string|array(string) certificate)
-  {
-    if(arrayp(certificate))
-      certificates = [array(string)]certificate;
-    else
-      certificates = ({ [string]certificate });
-  }
+    string c = Standards.X509.make_selfsigned_certificate(private_key,
+                                                          3600*24*365, a);
 
-  void create()
-  {
-    sslport::create();
-    random = Crypto.Random.random_string;
+    ctx->add_cert( private_key, ({ c }) );
   }
-
 }
 
-string _sprintf(int t) {
+protected string _sprintf(int t) {
   return t=='O' && sprintf("%O(%O:%d)", this_program, interface, portno);
 }
-
-#endif

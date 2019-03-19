@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -22,7 +21,7 @@ static INLINE HCHAR *NameNH(MEMCHR)(HCHAR *p, NCHAR c, ptrdiff_t e)
 static INLINE int NameNH(MEMCMP)(NCHAR *a, HCHAR *b, ptrdiff_t e)
 {
 #if NSHIFT == HSHIFT
-  return MEMCMP(a, b, sizeof(HCHAR)*e);
+  return memcmp(a, b, sizeof(HCHAR)*e);
 #else
   for(;e;e--,b++,a++)
   {
@@ -33,7 +32,7 @@ static INLINE int NameNH(MEMCMP)(NCHAR *a, HCHAR *b, ptrdiff_t e)
     }
   }
   return 0;
-  
+
 #endif
 }
 
@@ -42,11 +41,14 @@ HCHAR *NameNH(memchr_search)(void *data,
 				    ptrdiff_t haystacklen)
 {
   return NameNH(MEMCHR)(haystack,
-			DO_NOT_WARN((NCHAR)(ptrdiff_t) PTR_TO_INT(data)),
+                        (NCHAR)(ptrdiff_t) PTR_TO_INT(data),
 			haystacklen);
 }
 
 
+#ifndef DEBUG_CLANG
+static /* works around clang 3.0 compilation/linking error. */
+#endif
 INLINE HCHAR *NameNH(memchr_memcmp)(NCHAR *needle,
 				    ptrdiff_t needlelen,
 				    HCHAR *haystack,
@@ -100,19 +102,19 @@ HCHAR *NameNH(boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
   ptrdiff_t hlen=haystacklen;
   if(nlen > plen)
     hlen -= nlen-plen;
-  
+
  restart:
   while(i<hlen)
   {
     ptrdiff_t k,j;
-    
+
     if((k=s->d1[ NameNH(BMHASH)( haystack[i] ) ]))
       i+=k;
     else
     {
 #if NSHIFT == 0
       j=plen-1;
-      
+
 #ifdef PIKE_DEBUG
       if(needle[j] != haystack[i])
 	Pike_fatal("T2BM failed!\n");
@@ -122,7 +124,7 @@ HCHAR *NameNH(boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
       i++;
       j=plen;
 #endif
-      
+
       while(needle[--j] == haystack[--i])
       {
 	if(!j)
@@ -143,7 +145,7 @@ HCHAR *NameNH(boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
 	  }
 	}
       }
-      
+
       i+=
 	(s->d1[ NameNH(BMHASH)(haystack[i]) ] >= s->d2[j]) ?
 	(s->d1[ NameNH(BMHASH)(haystack[i]) ]):
@@ -165,27 +167,27 @@ HCHAR *NameNH(hubbe_search)(struct hubbe_searcher *s,
 
   INT32 tmp, h;
   HCHAR *q, *end;
-  register struct hubbe_search_link *ptr;
-  
+  struct hubbe_search_link *ptr;
+
   end=haystack+haystacklen;
   q=haystack + max - 4;
 
   NameH(HUBBE_ALIGN)(q);
 
-  for(;q<=end-sizeof(INT32);q+=max)
+  for(;q<=(HCHAR*)(((char *)end)-sizeof(INT32));q+=max)
   {
     h=tmp=NameH(GET_4_ALIGNED_CHARS)(q);
-    
+
     h+=h>>7;
     h+=h>>17;
     h&=hsize;
-    
+
     for(ptr=s->set[h];ptr;ptr=ptr->next)
     {
       HCHAR *where;
-      
+
       if(ptr->key != tmp) continue;
-      
+
       where=q-ptr->offset;
 
       /* FIXME: This if statement is not required
@@ -194,7 +196,7 @@ HCHAR *NameNH(hubbe_search)(struct hubbe_searcher *s,
       if(where<haystack) continue;
 
       if(where+nlen>end) return 0;
-      
+
       if(!NameNH(MEMCMP)(needle,where,nlen))
 	return where;
     }

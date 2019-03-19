@@ -1,0 +1,214 @@
+START_MARKER(8.0)
+
+test_any([[
+  ADT.Heap h = ADT.Heap();
+  h->push(4);
+  h->push(7);
+  h->push(1);
+  h->push(1);
+  if( h->size()!=4 ) return 1;
+  if( h->top()!=1 ) return 2;
+  if( h->size()!=3 ) return 3;
+  if( h->top()!=1 ) return 4;
+  if( h->size()!=2 ) return 5;
+  if( h->top()!=4 ) return 6;
+  if( h->size()!=1 ) return 7;
+  if( h->top()!=7 ) return 8;
+  if( h->size()!=0 ) return 9;
+  return -1;
+]], -1)
+
+test_any([[
+  ADT.struct s = ADT.struct("xxxx");
+  if( s->get_uint(1) != 'x' )
+    return 1;
+  if( s->buffer != "xxx" )
+    return s->buffer;
+  return -1;
+]], -1)
+
+define(test_cert, ([[
+  test_any([[
+    string der = Standards.PEM.Messages(#"$1")->get_certificate();
+    object o = decode_value(encode_value(Standards.X509.decode_certificate(der)));
+    return (o->public_key->rsa || o->public_key->dsa) && 1;
+  ]], 1)
+]]))
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -md5 -newkey rsa:2048 -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
+MIIC+TCCAeGgAwIBAgIJAK9S+nXAkU+DMA0GCSqGSIb3DQEBBAUAMBMxETAPBgNV
+BAMMCFBpa2VDZXJ0MB4XDTEzMTEyMTIxMjM1MFoXDTE0MTEyMTIxMjM1MFowEzER
+MA8GA1UEAwwIUGlrZUNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDacxSu60OEhmtfBd+p9oaQ+4w13Cwp70dwRrjPb/y33sFWKN3YZ+rq/8aNXPUO
+GLOyVF6z/BlOBS8t6KBI6lNvozVFqp5cwjA6vncbwMODqB8ZZffgA/dbSTM/xtbb
+CSno4ylr4wLVk1tnwZIOS4F2mIR/po1QzwIqTAGdkMEvUkmknqEM2Ifqdb6pNjWh
+Icma7MqtYnv7/UBib8Gt8j7hk6Yrv5tj3vOHFTs2MogfIfvRnBkhSR5nMbLorLpc
+JqfVr9ZNHX66RzSKl8KHDL8/MvI96lM9eFp0utdjIUU2ApSy94U5BqhrCCzBZxHa
+dBQEvUkeX8gYHwmVudSHR5O1AgMBAAGjUDBOMB0GA1UdDgQWBBTvujHuucSU+THc
+h188CYrgV2vghjAfBgNVHSMEGDAWgBTvujHuucSU+THch188CYrgV2vghjAMBgNV
+HRMEBTADAQH/MA0GCSqGSIb3DQEBBAUAA4IBAQCY8Ix17qoiAEDqV9HdyBzNRaPW
+/b7iN5bKjy7Vq1AP0RWIc9Wjcn5cKhk/4d7e7KRYT+Pq3ayLgppoYySA6dXERGj/
+fu5ocOR5ZAjNLJG48dV2HzOe3mjFEbfw+SPR8AnNRH4qm0yNhds0e0K8MhrX7uNB
+6eZ58rt6uIUVTOKTO1HHlxX7AasgQuiT5CajLReYM6DH/F2YXLF5I4iwTRa2p5Zi
+GDAm2I6N+Txm/adCVLjpFtV2b2Mu73yzqjEVm5ruknYPfT/HPnqbmNYJySi8mCd+
+Nwq6nXBlwd7hqkELVjumX7/xyRcLY2S9wW2rTwcsQ443KGFYQqJv0/pqGC2g
+-----END CERTIFICATE-----)
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -newkey dsa:dsaparam.txt -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
+MIICszCCAnGgAwIBAgIJAOthAQ79O7mMMAkGByqGSM44BAMwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTMxMTE5MTc0MDIwWhcNMTQxMTE5MTc0MDIwWjATMREwDwYD
+VQQDDAhQaWtlQ2VydDCCAbYwggErBgcqhkjOOAQBMIIBHgKBgQC6vqxjXhAMZSEV
+P4pzp0KY+qYnTjM9ieZ27myet+M5qXIjcEg2/XLwLPmPIYOGTm6OlPXADdaEZzOf
+j6RLB2PJD6GghC5NbdrewsgGMAuVM7h5uEXRswsbpwxFm2MuPqKtA699cs6fa5hZ
+pNZUQPSlrFfkb6/95s/EofMGMQgQmwIVAPUBXOFLS/MYisyLR0Yw/poPC3HlAoGA
+EqdyVSDZRLMCONHc7UXNYMecOVgpcy8W9DEg4YfTx6SMp/Ey1mXG/cvvH47NbINS
+f88QXrBuJJEzhnQir+AUh31Mj2q/Uy2WKP8IP+kJGNjtFuxyO6YZx2OAc9lHrdvb
+AtOD//jnVOjijOG6fnAfBxMkkKWKYojMcDYWsijI6nYDgYQAAoGAWocMqiSNXmuc
+wIfYetPQitrmZRDTWizuit/sIcmvIPM0OnqFcxp50QWOaiZmAuL3pEB4CiV2HpIS
+Rer5N3/Vp+zMQGgRM1zFKD2qbdmMTOMWUGc3g1AjGGFvDuTYGOIY4RmftR0gt8Y4
+E2Dqqk0XbF3CeCrVhmVfa7ej0ByVYhmjUDBOMB0GA1UdDgQWBBRjbUSrAPUt1p8i
+8PfVzFv4Dl03LjAfBgNVHSMEGDAWgBRjbUSrAPUt1p8i8PfVzFv4Dl03LjAMBgNV
+HRMEBTADAQH/MAkGByqGSM44BAMDMQAwLgIVALDFfQRihjOCqi1vFUi5rnYig/zk
+AhUAijRxsj+Q6LEF43H8Wq4quhnZ5wQ=
+-----END CERTIFICATE-----)
+
+test_true( Standards.PKCS.Certificate.get_certificate_issuer )
+test_true( Standards.PKCS.Certificate.get_certificate_subject )
+
+define(test_asn1, ([[
+  test_eq( Standards.ASN1.Types.$1()->record_der("hi"), "hi")
+  test_do( Standards.ASN1.Types.$1()->end_decode_constructed(7); )
+  test_true( "$1"!="Object" ? stringp(Standards.ASN1.Types.$1()->debug_string()) : 1 )
+]]))
+
+test_asn1(Object)
+test_asn1(Compound)
+test_asn1(String)
+test_asn1(Boolean)
+test_asn1(Integer)
+test_asn1(Enumerated)
+test_asn1(Real)
+test_asn1(BitString)
+test_asn1(OctetString)
+test_asn1(Null)
+test_asn1(Identifier)
+test_asn1(UTF8String)
+test_asn1(Sequence)
+test_asn1(Set)
+test_asn1(PrintableString)
+test_asn1(BrokenTeletexString)
+test_asn1(TeletexString)
+test_asn1(IA5String)
+test_asn1(VisibleString)
+test_asn1(UTC)
+test_asn1(GeneralizedTime)
+test_asn1(UniversalString)
+test_asn1(BMPString)
+test_asn1(MetaExplicit(1,1,0))
+
+test_eq( Standards.ASN1.Decode.primitive(1,0)->record_der("hi"), "hi")
+test_do( Standards.ASN1.Decode.primitive(1,0)->end_decode_constructed(7); )
+test_true( stringp(Standards.ASN1.Decode.primitive(1,0)->debug_string()) )
+
+test_eq( Standards.ASN1.Decode.constructed(1,0,0)->record_der("hi"), "hi")
+test_do( Standards.ASN1.Decode.constructed(1,0,0)->end_decode_constructed(7); )
+test_true( stringp(Standards.ASN1.Decode.constructed(1,0,0)->debug_string()) )
+
+test_any([[
+  object aes_cbc = Crypto.CBC(Crypto.AES);
+  aes_cbc->set_decrypt_key(String.hex2string("0"*32));
+  aes_cbc->set_iv(String.hex2string("0"*32));
+  string ct = String.hex2string("0"*32);
+  for(int i = 0; i < 10000; i++) {
+    ct = aes_cbc->crypt(ct);
+  }
+  return ct;
+]], [[ String.hex2string("FACA37E0B0C85373DF706E73F7C9AF86") ]])
+
+test_any([[
+  object b1 = Crypto.Buffer(Crypto.AES);
+  object b2 = Crypto.AES();
+  b1->set_encrypt_key("A"*32);
+  b2->set_decrypt_key("A"*32);
+
+  if(sizeof(b1->crypt("AA"))) error("Data returned.\n");
+  string x = b1->pad();
+  return b2->crypt(x)[-1];
+]], 13)
+
+test_any([[
+  object ctx = SSL.Context();
+  object rsa = Crypto.RSA();
+  rsa->set_random(random_string);
+  rsa->generate_key( 1024 );
+
+  array attrs = ({
+    (["organizationName":Standards.ASN1.Types.PrintableString("Test")]),
+    (["commonName":Standards.ASN1.Types.PrintableString("*")]),
+  });
+
+  string cert =
+    Standards.X509.make_selfsigned_certificate(rsa, 3600*24, attrs);
+
+  ctx->certificates = ({ cert });
+  ctx->rsa = rsa;
+
+  if( ctx->rsa != rsa ) return 1;
+  if( ctx->certificates[0] != cert) return 2;
+  ctx->rsa_mode();
+  return -1;
+]], -1)
+
+test_do( add_constant("DSA", Crypto.DSA()) )
+test_do( DSA->generate_key(1024,160) )
+test_true( DSA->verify_rsaref("hej", DSA->sign_rsaref("hej")) )
+test_true( DSA->verify_ssl( "hej", DSA->sign_ssl("hej")) )
+test_do( add_constant("DSA") )
+
+test_do([[
+  add_constant("RSA", Crypto.RSA( ([
+    "n" : 10588888331020461259101034476930572457011730409788549532849659893905161911154672417202942105424945821079252670936349550462687819966887488545942896908218393,
+    "e" : 65537,
+    "d" : 7751052686330539816940871980130160863027354669099685471403889926153353561557795043673415048073491838131770171329370882648176449810825275532498961917484673,
+    "p" : 97750271641919848679269914194398278573690911907402330873485849340967732317193,
+    "q" : 108325922303416443787144089373580885049960897088966376929599332764260754368401
+  ]) ))
+]])
+test_eq( RSA->cooked_get_n(), [["\312-hs\344\r2x>S\253w^\207\331\323Wv\307\326\345\333\221\210\273\4\220#7\345F\20\213\265]\206\256\254k\\\205M\271\321\270\"Y\26\225\223[\f\270(\354\374C\224KO\6\334\260\31"]] )
+test_eq( RSA->cooked_get_e(), "\1\0\1" )
+test_eq( RSA->cooked_get_d(), [["\223\376[8\202\26\32\374\243\373\21G\306\335\300\330\220l\265j\34E\366\251T\344\311""1\316\207\271\31\263\370\356,\255\335X\312kP\273\360\353\0^\352\b\362k\376e\331\314\356zrY\321\240g\36\201"]] )
+test_eq( RSA->cooked_get_p(), [["\330\34\261p\16E\330\306\v\227\216""1?\224\377J!\234\252\303=\210\243\6H\206NY\34\363\f\t"]] )
+test_eq( RSA->cooked_get_q(), [["\357~L\234\336\0\320\335""3\341'9\351\205T\251\265v\366\270\347\v\33\204j\206\270\246y\321\247\221"]] )
+test_eq( RSA->cooked_sign("hej"), [["\2\223\252\312\270;\356\237\333\36\276\25j)\213U\3\314(\6\363""6j\330\303""6w3Bs\303$\317""0\367\203\fo\v\255td5\220\202j\257T\350w\27VWEK\17\304\351\275\251V:\234*"]] )
+test_eq( RSA->query_blocksize(), 61 )
+test_eq( RSA->rsa_size(), 512 )
+test_eq( RSA->md5_verify("hej",RSA->md5_sign("hej",7)), 1)
+test_eq( RSA->sha_verify("hej",RSA->sha_sign("hej",7)), 1)
+test_eq( RSA->verify("hej",Crypto.MD4,RSA->sign("hej",Crypto.MD4)), 1 )
+test_do( add_constant("RSA") )
+
+test_eq( Crypto.DH.MODPGroup1->order, Crypto.DH.MODPGroup1->q )
+
+test_true( Tools.X509.make_time )
+test_true( Tools.PEM.simple_build_pem )
+
+test_eq( sizeof(Crypto.Random.blocking_random_string(10)), 10 )
+
+test_true( functionp(Yabu.db) )
+test_true( functionp(Yabu.lookup) )
+
+test_equal( sort(indices(Locale.Charset)), sort(indices(Charset)) )
+
+test_eq( Parser.XML.Validating()->get_external_entity(""), 0 )
+
+cond_resolv([[
+  test_true( Sql.sybase()->select_db )
+  test_true( Sql.sybase()->create_db )
+  test_true( Sql.sybase()->drop_db )
+]])
+
+test_true( Stdio.File()->set_peek_file_before_read_callback(0) )
+
+END_MARKER

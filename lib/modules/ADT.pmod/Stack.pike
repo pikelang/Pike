@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 //! This class implements a simple stack. Instead of adding and removing
 //! elements to an array, and thus making it vary in size for every push
 //! and pop operation, this stack tries to keep the stack size constant.
@@ -76,7 +74,7 @@ mixed pop(void|int val)
   } else {
     if(--ptr < 0)
 	error("Stack underflow\n");
-  
+
     ret = arr[ptr];
     arr[ptr]=0; /* Don't waste references */
   }
@@ -120,6 +118,19 @@ array _values() {
   return arr[..ptr-1];
 }
 
+//! Return the stack-depth to @[item].
+//!
+//! This function makes it possible to use
+//! eg @[search()] and @[has_value()] on the stack.
+protected int _search(mixed item)
+{
+  int i;
+  for (i = ptr; i--;) {
+    if (arr[i] == item) return ptr-(i+1);
+  }
+  return -1;
+}
+
 //! A stack added with another stack yields a third
 //! a third stack will all the stack elements from
 //! the two first stacks.
@@ -130,13 +141,11 @@ this_program `+(this_program s) {
   return ns;
 }
 
-mixed cast(string to) {
-  switch(to) {
-  case "array":
-      return _values();
-  default:
-      error("Cannot cast to %s.\n", to);
-  }
+protected mixed cast(string to)
+{
+  if( to=="array" )
+    return _values();
+  return UNDEFINED;
 }
 
 string _sprintf(int t) {

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -12,18 +11,10 @@
 #include "global.h"
 
 #undef CJUMP
-#undef AUTO_BIGNUM_LOOP_TEST
 #undef LOOP
 #undef COMPARISON
 #undef MKAPPLY
 #undef DO_CALL_BUILTIN
-
-#undef DO_IF_BIGNUM
-#ifdef AUTO_BIGNUM
-#define DO_IF_BIGNUM(CODE)	CODE
-#else /* !AUTO_BIGNUM */
-#define DO_IF_BIGNUM(CODE)
-#endif /* AUTO_BIGNUM */
 
 #undef DO_IF_ELSE_COMPUTED_GOTO
 #ifdef HAVE_COMPUTED_GOTO
@@ -104,6 +95,10 @@
 #define LOCAL_VAR(X)	X
 #endif
 
+#ifndef MACHINE_CODE_FORCE_FP
+#define MACHINE_CODE_FORCE_FP()	0
+#endif
+
 #ifndef OVERRIDE_JUMPS
 
 #undef GET_JUMP
@@ -123,19 +118,19 @@
 
 #else /* !PIKE_DEBUG */
 
-#define GET_JUMP() (/*write_to_stderr("GET_JUMP\n", 9),*/ LOW_GET_JUMP())
-#define SKIPJUMP() (/*write_to_stderr("SKIPJUMP\n", 9),*/ LOW_SKIPJUMP())
+#define GET_JUMP() (LOW_GET_JUMP())
+#define SKIPJUMP() (LOW_SKIPJUMP())
 
 #endif /* PIKE_DEBUG */
 
 #define DOJUMP() do { \
     PIKE_OPCODE_T *addr;						\
-    INT32 tmp; \
+    INT32 tmp;                                                          \
     JUMP_SET_TO_PC_AT_NEXT (addr);					\
-    tmp = GET_JUMP(); \
-    SET_PROG_COUNTER(addr + tmp); \
-    FETCH; \
-    if(tmp < 0) \
+    tmp = GET_JUMP();                                                   \
+    SET_PROG_COUNTER(addr + tmp);                                       \
+    FETCH;                                                              \
+    if(tmp < 0)                                                         \
       FAST_CHECK_THREADS_ON_BRANCH();					\
   } while(0)
 
@@ -249,7 +244,7 @@ OPCODE1(F_NUMBER, "push int", I_UPDATE_SP, {
 #if SIZEOF_INT_TYPE > 4
 OPCODE2(F_NUMBER64, "push 64-bit int", I_UPDATE_SP, {
    push_int( (INT_TYPE)
-	     (( ((unsigned INT_TYPE)arg1) << 32) 
+	     (( ((unsigned INT_TYPE)arg1) << 32)
 	      | ((unsigned INT32)arg2)) );
 });
 #else
@@ -273,12 +268,12 @@ OPCODE1(F_CONSTANT, "constant", I_UPDATE_SP, {
  */
 OPCODE2(F_REARRANGE,"rearrange",0,{
   check_stack(arg2);
-  MEMCPY(Pike_sp,Pike_sp-arg1-arg2,sizeof(struct svalue)*arg2);
-  MEMMOVE(Pike_sp-arg1-arg2,Pike_sp-arg1,sizeof(struct svalue)*arg1);
-  MEMCPY(Pike_sp-arg2,Pike_sp,sizeof(struct svalue)*arg2);
+  memcpy(Pike_sp,Pike_sp-arg1-arg2,sizeof(struct svalue)*arg2);
+  memmove(Pike_sp-arg1-arg2,Pike_sp-arg1,sizeof(struct svalue)*arg1);
+  memcpy(Pike_sp-arg2,Pike_sp,sizeof(struct svalue)*arg2);
 });
 
-/* The rest of the basic 'push value' instructions */	
+/* The rest of the basic 'push value' instructions */
 
 OPCODE1_TAIL(F_MARK_AND_STRING, "mark & string", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
@@ -340,7 +335,7 @@ OPCODE2(F_TRAMPOLINE, "trampoline", I_UPDATE_SP, {
   while(arg2--) {
     DO_IF_DEBUG({
       if (!f->scope) {
-	Pike_fatal("F_TRAMPOLINE %d, %d: Missing %d levels of scope!\n", 
+	Pike_fatal("F_TRAMPOLINE %d, %d: Missing %d levels of scope!\n",
 	      arg1, arg2_, arg2+1);
       }
     });
@@ -364,6 +359,120 @@ OPCODE1_TAIL(F_MARK_AND_GLOBAL, "mark & global", I_UPDATE_SP|I_UPDATE_M_SP, {
   });
 });
 
+OPCODE1(F_PRIVATE_GLOBAL, "global <private>", I_UPDATE_SP, {
+    struct svalue *sp;
+    struct object *co = Pike_fp->current_object;
+    if(!co->prog) /* note: generate an error. */
+      object_low_set_index(co,0,0);
+    sp = (struct svalue *)(co->storage + Pike_fp->context->storage_offset + arg1);
+    push_svalue( sp );
+    print_return_value();
+});
+
+OPCODE2(F_PRIVATE_IF_DIRECT_GLOBAL, "global <private if direct>",
+	I_UPDATE_SP, {
+    struct object *co = Pike_fp->current_object;
+    struct inherit *cx = Pike_fp->context;
+    if(!co->prog) /* note: generate an error. */
+      object_low_set_index(co,0,0);
+    if( co->prog != cx->prog )
+    {
+      low_index_current_object_no_free(Pike_sp, arg2);
+      Pike_sp++;
+      print_return_value();
+    }
+    else
+    {
+      struct svalue *sp;
+      sp = (struct svalue *)(co->storage + cx->storage_offset + arg1);
+      push_svalue( sp );
+      print_return_value();
+    }
+});
+
+OPCODE2(F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL,
+	"assign global <private if direct>", 0,
+   {
+     struct object *co = Pike_fp->current_object;
+     struct inherit *cx = Pike_fp->context;
+
+     if( co->prog != cx->prog )
+     {
+       object_low_set_index(co, arg2 + cx->identifier_level, Pike_sp-1);
+     }
+     else
+     {
+       struct svalue *tmp;
+       tmp = (struct svalue *)(co->storage + cx->storage_offset + arg1);
+       assign_svalue(tmp,Pike_sp-1);
+      }
+   });
+
+OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP, "assign global <private,typed> and pop", I_UPDATE_SP, {
+   /* lazy mode. */
+  union anything  *tmp_s;
+  LOCAL_VAR(struct object *o);
+  o = Pike_fp->current_object;
+  if(!o->prog) /* note: generate an error. */
+    object_low_set_index(o,0,0);
+  tmp_s = (union anything *)(o->storage + Pike_fp->context->storage_offset + arg1);
+  assign_to_short_svalue( tmp_s, arg2, Pike_sp-1 );
+  pop_stack();
+});
+
+OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL, "assign global <private,typed>", 0, {
+  union anything  *tmp;
+  LOCAL_VAR(struct object *o);
+  o = Pike_fp->current_object;
+  if(!o->prog) /* note: generate an error. */
+    object_low_set_index(o,0,0);
+  tmp = (union anything *)(o->storage + Pike_fp->context->storage_offset + arg1);
+  assign_to_short_svalue( tmp, arg2, Pike_sp-1);
+});
+
+
+#if SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE
+#define DO_IF_ELSE_SIZEOF_FLOAT_INT(EQ, NEQ)	do { NEQ; } while(0)
+#else
+#define DO_IF_ELSE_SIZEOF_FLOAT_INT(EQ, NEQ)	do { EQ; } while(0)
+#endif
+
+OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
+    void *ptr;
+    LOCAL_VAR(struct object *o);
+
+    o = Pike_fp->current_object;
+    ptr = (void *)(o->storage + Pike_fp->context->storage_offset + arg1);
+    if( arg2 < MIN_REF_TYPE )
+    {
+      DO_IF_ELSE_SIZEOF_FLOAT_INT(
+	SET_SVAL_TYPE_SUBTYPE(Pike_sp[0], arg2, 0);
+	Pike_sp[0].u.integer = *(INT_TYPE*)ptr;
+	Pike_sp++;
+      ,
+	if( UNLIKELY(arg2)==PIKE_T_INT )
+	  push_int( *(INT_TYPE*)ptr );
+	else
+	  push_float( *(FLOAT_TYPE*)ptr )
+      );
+    }
+    else
+    {
+      INT32 *refs = *(INT32**)ptr;
+      if( !refs )
+	push_undefined();
+      else
+      {
+	struct svalue tmp;
+	SET_SVAL_TYPE_SUBTYPE(tmp,arg2,0);
+	tmp.u.refs = refs;
+	push_svalue(&tmp);
+      }
+    }
+
+    print_return_value();
+});
+
 OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
 
@@ -372,8 +481,7 @@ OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", I_UPDATE_SP|I_UPDATE_M_SP, 
 
     loc.o=Pike_fp->current_object;
     loc.parent_identifier=Pike_fp->fun;
-    if (loc.o->prog)
-      loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+    loc.inherit=Pike_fp->context;
     find_external_context(&loc, arg2);
 
     DO_IF_DEBUG({
@@ -401,8 +509,7 @@ OPCODE2(F_EXTERNAL_LVALUE, "& external", I_UPDATE_SP, {
 
   loc.o=Pike_fp->current_object;
   loc.parent_identifier=Pike_fp->fun;
-  if (loc.o->prog)
-    loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+  loc.inherit=Pike_fp->context;
   find_external_context(&loc, arg2);
 
   if (!loc.o->prog)
@@ -491,18 +598,13 @@ OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]", I_UPDATE_SP, {
   Pike_sp++;
 });
 
-OPCODE1(F_CLEAR_2_LOCAL, "clear 2 local", 0, {
-  free_mixed_svalues(Pike_fp->locals + arg1, 2);
-  SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-  SET_SVAL(Pike_fp->locals[arg1+1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-});
-
-OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local", 0, {
+OPCODE2(F_CLEAR_N_LOCAL, "clear n local", 0, {
+  struct svalue *locals = Pike_fp->locals;
   int e;
-  free_mixed_svalues(Pike_fp->locals + arg1, 4);
-  for(e = 0; e < 4; e++)
+  free_mixed_svalues(locals + arg1, arg2);
+  for(e = 0; e < arg2; e++)
   {
-    SET_SVAL(Pike_fp->locals[arg1+e], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+    SET_SVAL(locals[arg1+e], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   }
 });
 
@@ -511,73 +613,150 @@ OPCODE1(F_CLEAR_LOCAL, "clear local", 0, {
   SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 });
 
-OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
-  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
-      )
-      )
+OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
+{
+  struct svalue *dst = Pike_fp->locals+arg1;
+  struct svalue *src = Pike_fp->locals+arg2;
+  /* NB: The following test only works because PIKE_T_INT == 0! */
+  if( (TYPEOF(*dst)|TYPEOF(*src)) == PIKE_T_INT
+      && !INT_TYPE_ADD_OVERFLOW(src->u.integer,dst->u.integer) )
   {
-    push_int(++(Pike_fp->locals[arg1].u.integer));
-    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
+    dst->u.integer += src->u.integer;
+  }
+  else if(TYPEOF(*dst) == TYPEOF(*src) && TYPEOF(*dst) == PIKE_T_STRING )
+  {
+      struct pike_string *srcs = src->u.string;
+      struct pike_string *dsts = dst->u.string;
+      if( dsts->len && srcs->len )
+      {
+          size_t tmp = dsts->len;
+          size_t tmp2 = srcs->len;
+          /*
+           * in case srcs==dsts
+           *  pike_string_cpy(MKPCHARP_STR_OFF(dsts,tmp), srcs);
+           * does bad stuff
+           */
+          dsts = new_realloc_shared_string( dsts, tmp+srcs->len, MAXIMUM(srcs->size_shift,dsts->size_shift) );
+          update_flags_for_add( dsts, srcs );
+          generic_memcpy(MKPCHARP_STR_OFF(dsts,tmp), MKPCHARP_STR(srcs), tmp2);
+          dst->u.string = low_end_shared_string( dsts );
+      }
+      else if( !dsts->len )
+      {
+          free_string( dsts );
+          dst->u.string = srcs;
+          srcs->refs++;
+      }
+  }
+  else
+  {
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
+    push_svalue( src );
+    f_add(2);
+    *dst = *--Pike_sp;
+  }
+});
+
+OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( TYPEOF(*dst) == PIKE_T_INT
+      && !INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2) )
+  {
+    SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
+    dst->u.integer += arg2;
+  }
+  else
+  {
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
+    push_int( arg2 );
+    f_add(2);
+    *dst = *--Pike_sp;
+  }
+});
+
+OPCODE2(F_ADD_LOCAL_INT, "local += number local", 0,{
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( TYPEOF(*dst) == PIKE_T_INT
+      && !INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2) )
+  {
+    SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
+    dst->u.integer += arg2;
+    push_int( dst->u.integer );
+  }
+  else
+  {
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
+    push_int( arg2 );
+    f_add(2);
+    *dst = *--Pike_sp;
+  }
+});
+
+OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( (TYPEOF(*dst) == PIKE_T_INT)
+      && !INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1) )
+  {
+    push_int(++dst->u.integer);
+    SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
-    push_svalue(Pike_fp->locals+arg1);
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int(1);
     f_add(2);
-    assign_svalue(Pike_fp->locals+arg1,Pike_sp-1);
+    assign_svalue(dst, Pike_sp-1);
   }
 });
 
 OPCODE1(F_POST_INC_LOCAL, "local++", I_UPDATE_SP, {
-  push_svalue( Pike_fp->locals + arg1);
-
-  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
-      )
-      )
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( (TYPEOF(*dst) == PIKE_T_INT)
+      && !INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1) )
   {
-    Pike_fp->locals[arg1].u.integer++;
-    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    push_int( dst->u.integer++ );
+    SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
-    push_svalue(Pike_fp->locals + arg1);
+    push_svalue( dst );
+    push_svalue( dst );
     push_int(1);
     f_add(2);
-    stack_pop_to(Pike_fp->locals + arg1);
+    stack_pop_to(dst);
   }
 });
 
 OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop", 0, {
-  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
-      )
-      )
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( (TYPEOF(*dst) == PIKE_T_INT)
+      && !INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1) )
   {
-    Pike_fp->locals[arg1].u.integer++;
-    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    dst->u.integer++;
+    SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
-    push_svalue( Pike_fp->locals + arg1);
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int(1);
     f_add(2);
-    stack_pop_to(Pike_fp->locals + arg1);
+    *dst = *--Pike_sp;
   }
 });
 
 OPCODE1(F_DEC_LOCAL, "--local", I_UPDATE_SP, {
-  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
-      )
-      )
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( (TYPEOF(*dst) == PIKE_T_INT)
+      && !INT_TYPE_SUB_OVERFLOW(dst->u.integer, 1) )
   {
-    push_int(--(Pike_fp->locals[arg1].u.integer));
-    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    push_int(--(dst->u.integer));
+    SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
-    push_svalue(Pike_fp->locals+arg1);
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int(1);
     o_subtract();
-    assign_svalue(Pike_fp->locals+arg1,Pike_sp-1);
+    assign_svalue(dst,Pike_sp-1);
   }
 });
 
@@ -585,10 +764,7 @@ OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP, {
   push_svalue( Pike_fp->locals + arg1);
 
   if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
-      )
-      )
+      && !INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1) )
   {
     Pike_fp->locals[arg1].u.integer--;
     SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -601,19 +777,18 @@ OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP, {
 });
 
 OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop", 0, {
-  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
-      DO_IF_BIGNUM(
-      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
-      )
-      )
+  struct svalue *dst = Pike_fp->locals+arg1;
+  if( (TYPEOF(*dst) == PIKE_T_INT)
+      && !INT_TYPE_SUB_OVERFLOW(dst->u.integer, 1) )
   {
-    Pike_fp->locals[arg1].u.integer--;
-    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    --dst->u.integer;
+    SET_SVAL_SUBTYPE(*dst, NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
-    push_svalue(Pike_fp->locals + arg1);
+    *Pike_sp++ = *dst;
+    SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int(1);
     o_subtract();
-    stack_pop_to(Pike_fp->locals + arg1);
+    *dst = *--Pike_sp;
   }
 });
 
@@ -734,9 +909,7 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
   if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT &&
       TYPEOF(Pike_sp[-2]) == PIKE_T_INT  )
   {
-    DO_IF_BIGNUM(
     if(!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
-    )
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
       INT_TYPE val = (Pike_sp[-1].u.integer += Pike_sp[-2].u.integer);
@@ -801,9 +974,7 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
   if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT &&
       TYPEOF(Pike_sp[-2]) == PIKE_T_INT  )
   {
-    DO_IF_BIGNUM(
     if(!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
-    )
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
       Pike_sp[-1].u.integer += Pike_sp[-2].u.integer;
@@ -863,11 +1034,9 @@ OPCODE1(F_GLOBAL_LVALUE, "& global", I_UPDATE_SP, {
 
 OPCODE0(F_INC, "++x", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
-     )
-     )
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = ++u->integer;
     pop_2_elems();
@@ -883,11 +1052,9 @@ OPCODE0(F_INC, "++x", I_UPDATE_SP, {
 
 OPCODE0(F_DEC, "--x", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
-     )
-     )
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = --u->integer;
     pop_2_elems();
@@ -903,11 +1070,9 @@ OPCODE0(F_DEC, "--x", I_UPDATE_SP, {
 
 OPCODE0(F_DEC_AND_POP, "x-- and pop", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
-     )
-)
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
   {
     --u->integer;
     pop_2_elems();
@@ -922,11 +1087,9 @@ OPCODE0(F_DEC_AND_POP, "x-- and pop", I_UPDATE_SP, {
 
 OPCODE0(F_INC_AND_POP, "x++ and pop", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
-     )
-     )
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
   {
     ++u->integer;
     pop_2_elems();
@@ -941,11 +1104,9 @@ OPCODE0(F_INC_AND_POP, "x++ and pop", I_UPDATE_SP, {
 
 OPCODE0(F_POST_INC, "x++", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
-     )
-     )
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = u->integer++;
     pop_2_elems();
@@ -964,11 +1125,9 @@ OPCODE0(F_POST_INC, "x++", I_UPDATE_SP, {
 
 OPCODE0(F_POST_DEC, "x--", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u
-     DO_IF_BIGNUM(
-     && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
-     )
-     )
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = u->integer--;
     pop_2_elems();
@@ -997,9 +1156,26 @@ OPCODE0(F_ASSIGN, "assign", I_UPDATE_SP, {
   Pike_sp-=2;
 });
 
-OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP, "apply, assign local and pop", I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1(F_ASSIGN_INDICES, "assign[]", I_UPDATE_SP, {
+  if(TYPEOF(Pike_sp[-2]) != PIKE_T_ARRAY )
+      PIKE_ERROR("[*]=", "Destination is not an array.\n", Pike_sp, 1);
+  if(TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY )
+      PIKE_ERROR("[*]=", "Source is not an array.\n", Pike_sp-1, 1);
+  assign_array_level( Pike_sp[-2].u.array, Pike_sp[-1].u.array, arg1 );
+  pop_stack(); /* leaves arr on stack. */
+});
+
+OPCODE1(F_ASSIGN_ALL_INDICES, "assign[*]", I_UPDATE_SP, {
+  if(TYPEOF(Pike_sp[-2]) != PIKE_T_ARRAY )
+      PIKE_ERROR("[*]=", "Destination is not an array.\n", Pike_sp, 1);
+  assign_array_level_value( Pike_sp[-2].u.array, Pike_sp-1, arg1 );
+  pop_stack(); /* leaves arr on stack. */
+});
+
+OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP,
+	"apply, assign local and pop", I_UPDATE_SP|I_UPDATE_M_SP, {
   apply_svalue(&((Pike_fp->context->prog->constants + arg1)->sval),
-	       DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+               (INT32)(Pike_sp - *--Pike_mark_sp));
   free_svalue(Pike_fp->locals+arg2);
   move_svalue (Pike_fp->locals + arg2, Pike_sp - 1);
   Pike_sp--;
@@ -1007,7 +1183,7 @@ OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP, "apply, assign local and pop", I_UPDATE_SP
 
 OPCODE2(F_APPLY_ASSIGN_LOCAL, "apply, assign local", I_UPDATE_ALL, {
   apply_svalue(&((Pike_fp->context->prog->constants + arg1)->sval),
-	       DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+               (INT32)(Pike_sp - *--Pike_mark_sp));
   assign_svalue(Pike_fp->locals+arg2, Pike_sp-1);
 });
 
@@ -1022,6 +1198,11 @@ OPCODE1(F_ASSIGN_LOCAL_AND_POP, "assign local and pop", I_UPDATE_SP, {
   Pike_sp--;
 });
 
+OPCODE2(F_ASSIGN_LOCAL_NUMBER_AND_POP, "assign local number and pop", 0, {
+  free_svalue(Pike_fp->locals + arg1);
+  SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, 0, integer, arg2);
+});
+
 OPCODE1(F_ASSIGN_GLOBAL, "assign global", 0, {
   object_low_set_index(Pike_fp->current_object,
 		       arg1 + Pike_fp->context->identifier_level,
@@ -1033,6 +1214,36 @@ OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop", I_UPDATE_SP, {
 		       arg1 + Pike_fp->context->identifier_level,
 		       Pike_sp-1);
   pop_stack();
+});
+
+OPCODE1(F_ASSIGN_PRIVATE_GLOBAL_AND_POP,
+	"assign private global and pop", I_UPDATE_SP, {
+  struct svalue *tmp;
+  struct object *co;
+  co = Pike_fp->current_object;
+  if(!co->prog) /* note: generate an error. */
+    object_low_set_index(co,0,0);
+  tmp = (struct svalue *)(co->storage + Pike_fp->context->storage_offset + arg1);
+  free_svalue(tmp);
+  *tmp = *--Pike_sp;
+});
+
+OPCODE1(F_ASSIGN_PRIVATE_GLOBAL, "assign private global", I_UPDATE_SP, {
+  struct svalue *tmp;
+  struct object *co;
+  co = Pike_fp->current_object;
+  if(!co->prog) /* note: generate an error. */
+    object_low_set_index(co,0,0);
+  tmp = (struct svalue *)(co->storage +Pike_fp->context->storage_offset +arg1);
+  assign_svalue( tmp, Pike_sp-1 );
+});
+
+OPCODE2(F_ASSIGN_GLOBAL_NUMBER_AND_POP, "assign global number and pop", 0, {
+  LOCAL_VAR(struct svalue tmp);
+  SET_SVAL(tmp,PIKE_T_INT,0,integer,arg2);
+  object_low_set_index(Pike_fp->current_object,
+		       arg1 + Pike_fp->context->identifier_level,
+		       &tmp);
 });
 
 
@@ -1100,6 +1311,7 @@ OPCODE0(F_CLEAR_STRING_SUBTYPE, "clear string subtype", 0, {
 
       /* Jumps */
 OPCODE0_BRANCH(F_BRANCH, "branch", 0, {
+  MACHINE_CODE_FORCE_FP();
   DO_BRANCH();
 });
 
@@ -1117,7 +1329,7 @@ OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
   OPCODE0_TAILBRANCH(F_BRANCH_WHEN_ZERO, "branch if zero", I_UPDATE_SP, {
     if(!UNSAFE_IS_ZERO(Pike_sp-1))
     {
-      /* write_to_stderr("foreach\n", 8); */
+      MACHINE_CODE_FORCE_FP();
       DONT_BRANCH();
     }else{
       DO_BRANCH();
@@ -1126,11 +1338,29 @@ OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
   });
 });
 
-      
+OPCODE0_BRANCH(F_QUICK_BRANCH_WHEN_ZERO, "(Q) branch if zero", I_UPDATE_SP, {
+    if(Pike_sp[-1].u.integer)
+    {
+      DONT_BRANCH();
+    }else{
+      DO_BRANCH();
+    }
+    pop_stack();
+  });
+
+OPCODE0_BRANCH(F_QUICK_BRANCH_WHEN_NON_ZERO, "(Q) branch if not zero", I_UPDATE_SP, {
+  if(Pike_sp[-1].u.integer)
+  {
+    DO_BRANCH();
+  }else{
+    DONT_BRANCH();
+  }
+  pop_stack();
+});
+
 OPCODE0_BRANCH(F_BRANCH_WHEN_NON_ZERO, "branch if not zero", I_UPDATE_SP, {
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1158,7 +1388,6 @@ OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", I_UPDATE_SP, {
   }
   if(TYPEOF(Pike_sp[-1]) == arg1)
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1169,7 +1398,6 @@ OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", I_UPDATE_SP, {
 OPCODE1_BRANCH(F_BRANCH_IF_LOCAL, "branch if local", 0, {
   if(UNSAFE_IS_ZERO(Pike_fp->locals + arg1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1179,7 +1407,6 @@ OPCODE1_BRANCH(F_BRANCH_IF_LOCAL, "branch if local", 0, {
 OPCODE1_BRANCH(F_BRANCH_IF_NOT_LOCAL, "branch if !local", 0, {
   if(!UNSAFE_IS_ZERO(Pike_fp->locals + arg1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1191,7 +1418,6 @@ OPCODE1_BRANCH(F_BRANCH_IF_NOT_LOCAL, "branch if !local", 0, {
     if(Y(Pike_sp-2,Pike_sp-1)) { \
       DO_BRANCH(); \
     }else{ \
-      /* write_to_stderr("foreach\n", 8); */	\
       DONT_BRANCH(); \
     } \
     pop_2_elems(); \
@@ -1207,7 +1433,6 @@ CJUMP(F_BRANCH_WHEN_GE, "branch if >=", is_ge);
 OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero", 0, {
   if(!UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1218,7 +1443,6 @@ OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero", 0, {
 OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_NON_ZERO, "branch & pop if !zero", 0, {
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }else{
     DO_BRANCH();
@@ -1229,7 +1453,6 @@ OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_NON_ZERO, "branch & pop if !zero", 0, {
 OPCODE0_BRANCH(F_LAND, "&&", I_UPDATE_SP, {
   if(!UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
     pop_stack();
   }else{
@@ -1240,7 +1463,6 @@ OPCODE0_BRANCH(F_LAND, "&&", I_UPDATE_SP, {
 OPCODE0_BRANCH(F_LOR, "||", I_UPDATE_SP, {
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
     pop_stack();
   }else{
@@ -1251,7 +1473,6 @@ OPCODE0_BRANCH(F_LOR, "||", I_UPDATE_SP, {
 OPCODE0_BRANCH(F_EQ_OR, "==||", I_UPDATE_SP, {
   if(!is_eq(Pike_sp-2,Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
     pop_2_elems();
   }else{
@@ -1264,7 +1485,6 @@ OPCODE0_BRANCH(F_EQ_OR, "==||", I_UPDATE_SP, {
 OPCODE0_BRANCH(F_EQ_AND, "==&&", I_UPDATE_SP, {
   if(is_eq(Pike_sp-2,Pike_sp-1))
   {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
     pop_2_elems();
   }else{
@@ -1456,18 +1676,11 @@ OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local", 0, {
 });
 
 
-#ifdef AUTO_BIGNUM
-#define AUTO_BIGNUM_LOOP_TEST(X,Y) INT_TYPE_ADD_OVERFLOW(X,Y)
-#else
-#define AUTO_BIGNUM_LOOP_TEST(X,Y) 0
-#endif
-
-      /* FIXME: Does this need bignum tests? /Fixed - Hubbe */
       /* LOOP(OPCODE, INCREMENT, OPERATOR, IS_OPERATOR) */
 #define LOOP(ID, DESC, INC, OP2, OP4)					\
   OPCODE0_BRANCH(ID, DESC, 0, {						\
     union anything *i=get_pointer_if_this_type(Pike_sp-2, T_INT);	\
-    if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC) &&			\
+    if(i && !INT_TYPE_ADD_OVERFLOW(i->integer,INC) &&			\
        TYPEOF(Pike_sp[-3]) == T_INT)					\
     {									\
       i->integer += INC;						\
@@ -1475,7 +1688,6 @@ OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local", 0, {
       {									\
   	DO_BRANCH();							\
       }else{								\
-	/* write_to_stderr("loop\n", 8); */				\
   	DONT_BRANCH();							\
       }									\
     }else{								\
@@ -1487,7 +1699,6 @@ OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local", 0, {
       {									\
   	DO_BRANCH();							\
       }else{								\
-	/* write_to_stderr("loop\n", 8); */				\
   	DONT_BRANCH();							\
       }									\
       pop_stack();							\
@@ -1517,7 +1728,6 @@ OPCODE0_BRANCH(F_LOOP, "loop", I_UPDATE_SP, { /* loopcnt */
     o_subtract();
     DO_BRANCH();
   } else {
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
     pop_2_elems();
   }
@@ -1528,9 +1738,9 @@ OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, i */
     PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
   if(Pike_sp[-1].u.integer < Pike_sp[-4].u.array->size)
   {
-    if(Pike_sp[-1].u.integer < 0)
+    DO_IF_DEBUG(if(Pike_sp[-1].u.integer < 0)
       /* Isn't this an internal compiler error? /mast */
-      Pike_error("Foreach loop variable is negative!\n");
+                  Pike_error("Foreach loop variable is negative!\n"));
     assign_lvalue(Pike_sp-3, Pike_sp[-4].u.array->item + Pike_sp[-1].u.integer);
     DO_BRANCH();
     Pike_sp[-1].u.integer++;
@@ -1539,7 +1749,6 @@ OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, i */
 	Pike_fatal ("Got unexpected subtype in loop variable.\n");
     );
   }else{
-    /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
   }
 });
@@ -1590,6 +1799,7 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local", I_UPDATE_SP|I_UPDATE_FP, {
   if(Pike_fp->expendible <= Pike_fp->locals + arg1)
   {
     pop_n_elems(Pike_sp-1 - (Pike_fp->locals + arg1));
+    DO_IF_DEBUG(Pike_fp->num_locals = arg1);
   }else{
     push_svalue(Pike_fp->locals + arg1);
   }
@@ -1624,14 +1834,12 @@ OPCODE0_RETURN(F_DUMB_RETURN,"dumb return", I_UPDATE_FP, {
 OPCODE0(F_NEGATE, "unary minus", 0, {
   if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
   {
-    DO_IF_BIGNUM(
-      if(INT_TYPE_NEG_OVERFLOW(Pike_sp[-1].u.integer))
-      {
-	convert_stack_top_to_bignum();
-	o_negate();
-      }
-      else
-    )
+    if(INT_TYPE_NEG_OVERFLOW(Pike_sp[-1].u.integer))
+    {
+      convert_stack_top_to_bignum();
+      o_negate();
+    }
+    else
     {
       Pike_sp[-1].u.integer =- Pike_sp[-1].u.integer;
       SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -1699,10 +1907,7 @@ OPCODE0(F_ADD, "+", I_UPDATE_SP, {
 /* Used with F_LTOSVAL*_AND_FREE - must not release interpreter lock. */
 OPCODE0(F_ADD_INTS, "int+int", I_UPDATE_SP, {
   if(TYPEOF(Pike_sp[-1]) == T_INT && TYPEOF(Pike_sp[-2]) == T_INT
-     DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
-      )
-    )
+     && !INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
   {
     Pike_sp[-2].u.integer+=Pike_sp[-1].u.integer;
     SET_SVAL_SUBTYPE(Pike_sp[-2], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -1734,12 +1939,54 @@ OPCODE0_ALIAS(F_MULTIPLY, "*", I_UPDATE_SP, o_multiply);
 OPCODE0_ALIAS(F_DIVIDE, "/", I_UPDATE_SP, o_divide);
 OPCODE0_ALIAS(F_MOD, "%", I_UPDATE_SP, o_mod);
 
+OPCODE1(F_SUBTRACT_INT, "- int", 0, {
+    push_int( arg1 );
+    o_subtract();
+});
+
+OPCODE1(F_AND_INT, "& int", 0, {
+    push_int( arg1 );
+    o_and();
+});
+
+OPCODE1(F_OR_INT, "| int", 0, {
+    push_int( arg1 );
+    o_or();
+});
+
+OPCODE1(F_XOR_INT, "^ int", 0, {
+    push_int( arg1 );
+    o_xor();
+});
+
+OPCODE1(F_MULTIPLY_INT, "* int", 0, {
+    push_int( arg1 );
+    o_multiply();
+});
+
+OPCODE1(F_DIVIDE_INT, "/ int", 0, {
+    push_int( arg1 );
+    o_divide();
+});
+
+OPCODE1(F_MOD_INT, "% int", 0, {
+    push_int( arg1 );
+    o_mod();
+});
+
+OPCODE1(F_RSH_INT, ">> int", 0, {
+    push_int( arg1 );
+    o_rsh();
+});
+
+OPCODE1(F_LSH_INT, "<< int", 0, {
+    push_int( arg1 );
+    o_lsh();
+});
+
 OPCODE1(F_ADD_INT, "add integer", 0, {
   if(TYPEOF(Pike_sp[-1]) == T_INT
-     DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, arg1))
-      )
-     )
+     && !INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, arg1))
   {
     Pike_sp[-1].u.integer+=arg1;
     SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -1751,10 +1998,7 @@ OPCODE1(F_ADD_INT, "add integer", 0, {
 
 OPCODE1(F_ADD_NEG_INT, "add -integer", 0, {
   if(TYPEOF(Pike_sp[-1]) == T_INT
-     DO_IF_BIGNUM(
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, -arg1))
-      )
-     )
+     && !INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, -arg1))
   {
     Pike_sp[-1].u.integer-=arg1;
     SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
@@ -1765,7 +2009,6 @@ OPCODE1(F_ADD_NEG_INT, "add -integer", 0, {
 });
 
 OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
-  int i;
   LOCAL_VAR(struct object *o);
   LOCAL_VAR(struct program *p);
 
@@ -1773,8 +2016,10 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
   {
   default:
     PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
-    
+
   case PIKE_T_OBJECT:
+    {
+    int i;
     if(!(p = (o = Pike_sp[-1].u.object)->prog) ||
        (i = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-1])].prog,
 		      LFUN__VALUES)) == -1)
@@ -1786,6 +2031,7 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
     free_svalue(Pike_sp-2);
     move_svalue (Pike_sp - 2, Pike_sp - 1);
     Pike_sp--;
+    }
     break;
 
   case PIKE_T_ARRAY: break;
@@ -1797,6 +2043,10 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
 
 OPCODE0(F_APPEND_ARRAY, "append array", I_UPDATE_SP|I_UPDATE_M_SP, {
     o_append_array(Pike_sp - *(--Pike_mark_sp));
+  });
+
+OPCODE0(F_APPEND_MAPPING, "append mapping", I_UPDATE_SP|I_UPDATE_M_SP, {
+    o_append_mapping(Pike_sp - *(--Pike_mark_sp));
   });
 
 OPCODE2(F_LOCAL_LOCAL_INDEX, "local[local]", I_UPDATE_SP, {
@@ -1830,11 +2080,12 @@ OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
 });
 
 OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP, {
+  struct pike_frame *fp = Pike_fp;
   LOCAL_VAR(struct svalue tmp);
   SET_SVAL(tmp, PIKE_T_STRING, 1, string,
-	   Pike_fp->context->prog->strings[arg1]);
+	   fp->context->prog->strings[arg1]);
   mark_free_svalue (Pike_sp++);
-  index_no_free(Pike_sp-1,Pike_fp->locals+arg2, &tmp);
+  index_no_free(Pike_sp-1,fp->locals+arg2, &tmp);
   print_return_value();
 });
 
@@ -1949,8 +2200,14 @@ OPCODE0(F_INDIRECT, "indirect", I_UPDATE_SP, {
   }
   print_return_value();
 });
-      
+
 OPCODE0(F_SIZEOF, "sizeof", 0, {
+  INT_TYPE val = pike_sizeof(Pike_sp-1);
+  pop_stack();
+  push_int(val);
+});
+
+OPCODE0(F_SIZEOF_STRING, "sizeof(string)", 0, {
   INT_TYPE val = pike_sizeof(Pike_sp-1);
   pop_stack();
   push_int(val);
@@ -1960,105 +2217,218 @@ OPCODE1(F_SIZEOF_LOCAL, "sizeof local", I_UPDATE_SP, {
   push_int(pike_sizeof(Pike_fp->locals+arg1));
 });
 
-OPCODE2_ALIAS(F_SSCANF, "sscanf", I_UPDATE_SP, o_sscanf);
+OPCODE1(F_SIZEOF_LOCAL_STRING, "sizeof local string", I_UPDATE_SP, {
+  push_int(pike_sizeof(Pike_fp->locals+arg1));
+});
 
-#define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
-  PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_,OPCODE),NAME,			\
-			I_UPDATE_ALL, {					\
-JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);				\
-if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),    \
-		  ARG2, ARG3))						   \
-{									   \
-  Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;				   \
-  DO_JUMP_TO(Pike_fp->pc);						   \
-}									   \
-else {									\
-  DO_JUMP_TO_NEXT;							\
-}									\
-});									   \
-									   \
-  PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop", \
-			I_UPDATE_ALL, {					\
-  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);			\
-  if(low_mega_apply(TYPE, DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)), \
-		    ARG2, ARG3))					   \
-  {									   \
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
-    DO_JUMP_TO(Pike_fp->pc);						   \
-  }else{								   \
-    pop_stack();							   \
-    DO_JUMP_TO_NEXT;							\
-  }									   \
-});									   \
-									   \
-PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		   \
-			NAME " & return",				\
-			I_UPDATE_ALL, {	\
-  if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),  \
-		    ARG2,ARG3))						   \
-  {									   \
-    PIKE_OPCODE_T *addr = Pike_fp->pc;					   \
-    DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
-    unlink_previous_frame();						   \
-    DO_JUMP_TO(addr);							   \
-  }else{								   \
-    DO_DUMB_RETURN;							   \
-  }									   \
-})
+OPCODE1_ALIAS(F_SSCANF, "sscanf", I_UPDATE_SP, o_sscanf);
 
-
-#define MKAPPLY2(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
-									   \
-MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3);			           \
-									   \
-PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, \
-		      I_UPDATE_ALL, {					\
-  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);			\
-  if(low_mega_apply(TYPE, 0,						   \
-		    ARG2, ARG3))					   \
-  {									   \
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;			   \
-    DO_JUMP_TO(Pike_fp->pc);						   \
-  }									   \
-  else {								\
+#define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)                       \
+PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_,OPCODE),NAME,I_UPDATE_ALL,         \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *addr);                                       \
+  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);                        \
+  if((addr=low_mega_apply(TYPE,(INT32)(Pike_sp - *--Pike_mark_sp),      \
+                          ARG2, ARG3)))                                 \
+  {                                                                     \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;                       \
+    DO_JUMP_TO(addr);                                                   \
+  }                                                                     \
+  else {                                                                \
     DO_JUMP_TO_NEXT;							\
   }									\
-});									   \
-									   \
-PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),		\
-		      "mark, " NAME " & pop",				\
-		      I_UPDATE_ALL, {					\
+ });                                                                    \
+                                                                        \
+PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop",   \
+                      I_UPDATE_ALL,                                     \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *addr);                                       \
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);			\
-  if(low_mega_apply(TYPE, 0,						   \
-		    ARG2, ARG3))					   \
-  {									   \
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
-    DO_JUMP_TO(Pike_fp->pc);						   \
-  }else{								   \
-    pop_stack();							   \
-    DO_JUMP_TO_NEXT;							\
-  }									   \
-});									   \
-									   \
-PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	   \
-			"mark, " NAME " & return",			\
-			I_UPDATE_ALL, {			\
-  if(low_mega_apply(TYPE, 0,						   \
-		    ARG2,ARG3))						   \
-  {									   \
-    PIKE_OPCODE_T *addr = Pike_fp->pc;					   \
-    DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
-    unlink_previous_frame();						   \
-    DO_JUMP_TO(addr);							   \
-  }else{								   \
-    DO_DUMB_RETURN;							   \
-  }									   \
+  if((addr=low_mega_apply(TYPE, (INT32)(Pike_sp - *--Pike_mark_sp),     \
+                          ARG2, ARG3)))                                 \
+  {                                                                     \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP; \
+    DO_JUMP_TO(addr);                                                   \
+  }                                                                     \
+  else {                                                                \
+    pop_stack();                                                        \
+    DO_JUMP_TO_NEXT;                                                    \
+  }                                                                     \
+});								        \
+                                                                        \
+PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		\
+                        NAME " & return",I_UPDATE_ALL,                  \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *addr);                                       \
+  if((addr = low_mega_apply(TYPE, (INT32)(Pike_sp - *--Pike_mark_sp),   \
+                            ARG2,ARG3)))                                \
+  {                                                                     \
+    DO_IF_DEBUG(Pike_fp->next->pc=0);                                   \
+    unlink_previous_frame();                                            \
+    DO_JUMP_TO(addr);                                                   \
+  }                                                                     \
+  else {                                                                \
+    DO_DUMB_RETURN;                                                     \
+  }                                                                     \
 })
 
 
-MKAPPLY2(OPCODE1,CALL_LFUN,"call lfun",APPLY_LOW,
-	 Pike_fp->current_object,
-	 (void *)(ptrdiff_t)(arg1+Pike_fp->context->identifier_level));
+#define MKAPPLY2(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			\
+                                                                        \
+MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3);			        \
+                                                                        \
+PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME,	\
+                      I_UPDATE_ALL,                                     \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *addr);                                       \
+  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);                        \
+  if((addr=low_mega_apply(TYPE, 0, ARG2, ARG3)))                        \
+  {								        \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;                       \
+    DO_JUMP_TO(addr);                                                   \
+  }                                                                     \
+  else {                                                                \
+    DO_JUMP_TO_NEXT;                                                    \
+  }                                                                     \
+});                                                                     \
+                                                                        \
+PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),		\
+                      "mark, " NAME " & pop",I_UPDATE_ALL,              \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *addr);                                       \
+  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);			\
+  if((addr=low_mega_apply(TYPE, 0, ARG2, ARG3)))                        \
+  {									\
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP; \
+    DO_JUMP_TO(addr);                                                   \
+  }                                                                     \
+  else {                                                                \
+    pop_stack();                                                        \
+    DO_JUMP_TO_NEXT;                                                    \
+  }                                                                     \
+});                                                                     \
+                                                                        \
+PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	\
+                        "mark, " NAME " & return",I_UPDATE_ALL,         \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *pc);                                         \
+  if((pc=low_mega_apply(TYPE, 0, ARG2, ARG3)))                          \
+  {									\
+    DO_IF_DEBUG(Pike_fp->next->pc=0);                                   \
+    unlink_previous_frame();                                            \
+    DO_JUMP_TO(pc);                                                     \
+  }                                                                     \
+  else {                                                                \
+    DO_DUMB_RETURN;                                                     \
+  }                                                                     \
+})
+
+
+OPCODE1_JUMP(F_CALL_LFUN , "call lfun", I_UPDATE_ALL, {
+        LOCAL_VAR(PIKE_OPCODE_T *addr);
+        JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
+        if((addr = lower_mega_apply((INT32)(Pike_sp - *--Pike_mark_sp),
+                            Pike_fp->current_object,
+                                    (arg1+Pike_fp->context->identifier_level) )))
+        {
+            Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
+            DO_JUMP_TO(addr);
+        }
+        else
+        {
+            DO_JUMP_TO_NEXT;
+        }
+    });
+
+OPCODE2_JUMP(F_CALL_LFUN_N , "call lfun <n>", I_UPDATE_ALL, {
+        LOCAL_VAR(PIKE_OPCODE_T *addr);
+        JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
+        if((addr = lower_mega_apply(arg2,
+                                    Pike_fp->current_object,
+                                    (arg1+Pike_fp->context->identifier_level) )))
+        {
+            Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
+            DO_JUMP_TO(addr);
+        }
+        else
+        {
+            DO_JUMP_TO_NEXT;
+        }
+    });
+
+OPCODE1_JUMP(F_CALL_LFUN_AND_POP, "call lfun & pop", I_UPDATE_ALL, {
+        LOCAL_VAR(PIKE_OPCODE_T *addr);
+        JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
+        if((addr = lower_mega_apply((INT32)(Pike_sp - *--Pike_mark_sp),
+                                         Pike_fp->current_object,
+                                    (arg1+Pike_fp->context->identifier_level))))
+        {
+            Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
+            DO_JUMP_TO(addr);
+        }
+        else
+        {
+            pop_stack();
+            DO_JUMP_TO_NEXT;
+        }
+    });
+
+OPCODE1_RETURN(F_CALL_LFUN_AND_RETURN , "call lfun & return", I_UPDATE_ALL, {
+        LOCAL_VAR(PIKE_OPCODE_T *addr);
+        if((addr = lower_mega_apply((INT32)(Pike_sp - *--Pike_mark_sp),
+                            Pike_fp->current_object,
+                                    (arg1+Pike_fp->context->identifier_level))))
+        {
+            DO_IF_DEBUG(Pike_fp->next->pc=0);
+            unlink_previous_frame();
+            DO_JUMP_TO(addr);
+        }else{
+            DO_DUMB_RETURN;
+        }
+  });
+
+OPCODE1_JUMP(F_MARK_CALL_LFUN, "mark, call lfun" , I_UPDATE_ALL, {
+    LOCAL_VAR(PIKE_OPCODE_T *addr);
+    JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
+    if((addr = lower_mega_apply(0, Pike_fp->current_object,
+                             (arg1+Pike_fp->context->identifier_level)))) {
+      Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
+      DO_JUMP_TO(addr);
+    } else {
+      DO_JUMP_TO_NEXT;
+    }
+  });
+
+OPCODE1_JUMP( F_MARK_CALL_LFUN_AND_POP , "mark, call lfun & pop", I_UPDATE_ALL, {
+    LOCAL_VAR(PIKE_OPCODE_T *addr);
+    JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
+    if((addr = lower_mega_apply(0, Pike_fp->current_object,
+                             (arg1+Pike_fp->context->identifier_level) )))
+    {
+      Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
+      DO_JUMP_TO(addr);
+    }
+    else
+    {
+      pop_stack();
+      DO_JUMP_TO_NEXT;
+    }
+  });
+
+OPCODE1_RETURN(F_MARK_CALL_LFUN_AND_RETURN , "mark, call lfun & return", I_UPDATE_ALL, {
+    LOCAL_VAR(PIKE_OPCODE_T *addr);
+    if((addr = lower_mega_apply(0, Pike_fp->current_object,
+                                (arg1+Pike_fp->context->identifier_level))))
+    {
+      DO_IF_DEBUG(Pike_fp->next->pc=0);
+      unlink_previous_frame();
+      DO_JUMP_TO(addr);
+    }
+    else
+    {
+        DO_DUMB_RETURN;
+    }
+  });
 
 MKAPPLY2(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
 	 &((Pike_fp->context->prog->constants + arg1)->sval),0);
@@ -2066,7 +2436,7 @@ MKAPPLY2(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
 MKAPPLY(OPCODE0,CALL_FUNCTION,"call function",APPLY_STACK, 0,0);
 
 OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
-  INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   LOCAL_VAR(struct svalue *s);
   s = Pike_sp-args;
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
@@ -2080,17 +2450,18 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
       p = p->inherits[SUBTYPEOF(*s)].prog;
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
       {
+        PIKE_OPCODE_T *addr;
 	int fun;
 	fun=find_shared_string_identifier(Pike_fp->context->prog->strings[arg1],
 					  p);
 	if(fun >= 0)
 	{
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
-	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
+	  if((addr = lower_mega_apply(args-1, o, fun)))
 	  {
 	    Pike_fp->save_sp--;
 	    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
-	    DO_JUMP_TO(Pike_fp->pc);
+	    DO_JUMP_TO(addr);
 	  }
 	  stack_pop_keep_top();
 	  DO_JUMP_TO_NEXT;
@@ -2102,7 +2473,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
   {
     LOCAL_VAR(struct svalue tmp);
     LOCAL_VAR(struct svalue tmp2);
-
+    LOCAL_VAR(PIKE_OPCODE_T *addr);
     SET_SVAL(tmp, PIKE_T_STRING, 1, string,
 	     Pike_fp->context->prog->strings[arg1]);
 
@@ -2111,10 +2482,10 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
     move_svalue (s, &tmp2);
     print_return_value();
 
-    if(low_mega_apply(APPLY_STACK, args, 0, 0))
+    if((addr = low_mega_apply(APPLY_STACK, args, 0, 0)))
     {
       Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
-      DO_JUMP_TO(Pike_fp->pc);
+      DO_JUMP_TO(addr);
     }
     else {
       DO_JUMP_TO_NEXT;
@@ -2123,7 +2494,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
 });
 
 OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
-  INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   LOCAL_VAR(struct svalue *s);
   s = Pike_sp-args;
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
@@ -2138,18 +2509,19 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
       {
 	int fun;
+        PIKE_OPCODE_T *addr;
 	fun=find_shared_string_identifier(Pike_fp->context->prog->strings[arg1],
 					  p);
 	if(fun >= 0)
 	{
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
-	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
+	  if((addr = lower_mega_apply(args-1, o, fun)))
 	  {
 	    Pike_fp->save_sp--;
 	    Pike_fp->flags |=
 	      PIKE_FRAME_RETURN_INTERNAL |
 	      PIKE_FRAME_RETURN_POP;
-	    DO_JUMP_TO(Pike_fp->pc);
+	    DO_JUMP_TO(addr);
 	  }
 	  pop_2_elems();
 	  DO_JUMP_TO_NEXT;
@@ -2161,6 +2533,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
   {
     LOCAL_VAR(struct svalue tmp);
     LOCAL_VAR(struct svalue tmp2);
+    LOCAL_VAR(PIKE_OPCODE_T *addr);
 
     SET_SVAL(tmp, PIKE_T_STRING, 1, string,
 	     Pike_fp->context->prog->strings[arg1]);
@@ -2170,10 +2543,10 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
     move_svalue (s, &tmp2);
     print_return_value();
 
-    if(low_mega_apply(APPLY_STACK, args, 0, 0))
+    if((addr = low_mega_apply(APPLY_STACK, args, 0, 0)))
     {
       Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
-      DO_JUMP_TO(Pike_fp->pc);
+      DO_JUMP_TO(addr);
     }
     else {
       pop_stack();
@@ -2183,7 +2556,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
 });
 
 OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
-  INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   LOCAL_VAR(struct svalue *s);
   s = Pike_sp - args;
   if(TYPEOF(*s) == T_OBJECT)
@@ -2197,14 +2570,14 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
       {
 	int fun;
+        PIKE_OPCODE_T *addr;
 	fun=find_shared_string_identifier(Pike_fp->context->prog->strings[arg1],
 					  p);
 	if(fun >= 0)
 	{
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
-	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
+	  if((addr = lower_mega_apply(args-1, o, fun)))
 	  {
-	    PIKE_OPCODE_T *addr = Pike_fp->pc;
 	    Pike_fp->save_sp--;
 	    DO_IF_DEBUG(Pike_fp->next->pc=0);
 	    unlink_previous_frame();
@@ -2220,7 +2593,7 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   {
     LOCAL_VAR(struct svalue tmp);
     LOCAL_VAR(struct svalue tmp2);
-
+    LOCAL_VAR(PIKE_OPCODE_T *addr);
     SET_SVAL(tmp, PIKE_T_STRING, 1, string,
 	     Pike_fp->context->prog->strings[arg1]);
 
@@ -2229,9 +2602,8 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
     move_svalue (s, &tmp2);
     print_return_value();
 
-    if(low_mega_apply(APPLY_STACK, args, 0, 0))
+    if((addr = low_mega_apply(APPLY_STACK, args, 0, 0)))
     {
-      PIKE_OPCODE_T *addr = Pike_fp->pc;
       DO_IF_DEBUG(Pike_fp->next->pc=0);
       unlink_previous_frame();
       DO_JUMP_TO(addr);
@@ -2311,18 +2683,18 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 
 OPCODE1(F_CALL_BUILTIN, "call builtin", I_UPDATE_ALL, {
   FAST_CHECK_THREADS_ON_CALL();
-  DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+  DO_CALL_BUILTIN((INT32)(Pike_sp - *--Pike_mark_sp));
 });
 
 OPCODE1(F_CALL_BUILTIN_AND_POP,"call builtin & pop", I_UPDATE_ALL, {
   FAST_CHECK_THREADS_ON_CALL();
-  DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+  DO_CALL_BUILTIN((INT32)(Pike_sp - *--Pike_mark_sp));
   pop_stack();
 });
 
 OPCODE1_RETURN(F_CALL_BUILTIN_AND_RETURN,"call builtin & return", I_UPDATE_ALL, {
   FAST_CHECK_THREADS_ON_CALL();
-  DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+  DO_CALL_BUILTIN((INT32)(Pike_sp - *--Pike_mark_sp));
   DO_DUMB_RETURN;
 });
 
@@ -2350,6 +2722,15 @@ OPCODE1(F_CALL_BUILTIN1, "call builtin 1", I_UPDATE_ALL, {
   DO_CALL_BUILTIN(1);
 });
 
+OPCODE2(F_CALL_BUILTIN_N, "call builtin N", I_UPDATE_ALL, {
+  FAST_CHECK_THREADS_ON_CALL();
+  DO_CALL_BUILTIN(arg2);
+});
+
+OPCODE2( F_APPLY_N, "apply N", I_UPDATE_ALL, {
+   mega_apply( APPLY_SVALUE_STRICT, arg2, &((Pike_fp->context->prog->constants + arg1)->sval), 0 );
+});
+
 OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(1);
@@ -2358,7 +2739,7 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
 
 OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
 	I_UPDATE_ALL, {
-  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
   ONERROR uwp;
 
   /* Give other threads a chance to run now, before we temporarily
@@ -2404,7 +2785,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
 
 OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
 	"ltosval, call builtin, assign & pop", I_UPDATE_ALL, {
-  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
   ONERROR uwp;
 
   /* Give other threads a chance to run now, before we temporarily
@@ -2450,46 +2831,25 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
 
 #define DO_RECUR(XFLAGS) do{						   \
   PIKE_OPCODE_T *addr;							   \
-  register struct pike_frame *new_frame;				   \
-  ptrdiff_t args;							   \
-									   \
-  DO_IF_SECURITY(CHECK_DATA_SECURITY_OR_ERROR(Pike_fp->current_object,	   \
-					      SECURITY_BIT_CALL,	   \
-				("Function call permission denied.\n")));  \
+  struct pike_frame *new_frame;                                            \
+  INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);                         \
 									   \
   FAST_CHECK_THREADS_ON_CALL();						   \
   check_stack(256);							   \
 									   \
   new_frame=alloc_pike_frame();						   \
-									   \
-  new_frame->refs=1;	/* FIXME: Is this needed? */			   \
   new_frame->next=Pike_fp;						   \
 									   \
-  JUMP_SET_TO_PC_AT_NEXT (addr);					\
-  Pike_fp->return_addr = (PIKE_OPCODE_T *)(((INT32 *) addr) + 1);	\
-  addr += GET_JUMP();							\
+  JUMP_SET_TO_PC_AT_NEXT (addr);                                           \
+  Pike_fp->return_addr = (PIKE_OPCODE_T *)(((INT32 *) addr) + 1);          \
+  addr += GET_JUMP();                                                      \
 									   \
-  new_frame->num_locals = READ_INCR_BYTE(addr);				   \
-  args = READ_INCR_BYTE(addr);						   \
   addr += ENTRY_PROLOGUE_SIZE;						   \
-									   \
-  new_frame->num_args = new_frame->args = args;				   \
+                                                                           \
+  new_frame->args = args;                                                  \
   new_frame->locals=new_frame->save_sp=new_frame->expendible=Pike_sp-args; \
   new_frame->save_mark_sp = new_frame->mark_sp_base = Pike_mark_sp;	   \
-									   \
-  push_zeroes(new_frame->num_locals - args);				   \
-                                                                           \
-  DO_IF_DEBUG({								   \
-    if(Pike_interpreter.trace_level > 3)				   \
-      fprintf(stderr,"-    Allocating %d extra locals.\n",		   \
-	      new_frame->num_locals - new_frame->num_args);		   \
-    if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {		   \
-      fatal("New locals below old locals: %p < %p\n",			   \
-	    new_frame->locals, Pike_fp->locals);			   \
-    }									   \
-  });									   \
-									   \
-                                                                           \
+  DO_IF_DEBUG(new_frame->num_args=0;new_frame->num_locals=0;);             \
   SET_PROG_COUNTER(addr);						   \
   new_frame->fun=Pike_fp->fun;						   \
   DO_IF_PROFILING( new_frame->ident=Pike_fp->ident );			   \
@@ -2500,11 +2860,14 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   new_frame->context = Pike_fp->context;				   \
 									   \
   DO_IF_PROFILING({							   \
+      struct identifier *func;						   \
       new_frame->start_time =						   \
 	get_cpu_time() - Pike_interpreter.unlocked_time;		   \
       new_frame->ident = Pike_fp->ident;				   \
       new_frame->children_base = Pike_interpreter.accounted_time;	   \
-      new_frame->context->prog->identifiers[new_frame->ident].num_calls++;  \
+      func = new_frame->context->prog->identifiers + new_frame->ident;	   \
+      func->num_calls++;						   \
+      func->recur_depth++;						   \
       DO_IF_PROFILING_DEBUG({						   \
 	  fprintf(stderr, "%p{: Push at %" PRINT_CPU_TIME		   \
 		  " %" PRINT_CPU_TIME "\n",				   \
@@ -2516,12 +2879,12 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   Pike_fp=new_frame;							   \
   new_frame->flags=PIKE_FRAME_RETURN_INTERNAL | XFLAGS;			   \
 									   \
-  DO_IF_SECURITY(if(!CHECK_DATA_SECURITY(Pike_fp->current_object,	   \
-					 SECURITY_BIT_NOT_SETUID))	   \
-		   SET_CURRENT_CREDS(Pike_fp->current_object->prot));	   \
+  if (UNLIKELY(Pike_interpreter.trace_level > 3)) {                        \
+    fprintf(stderr, "-    Addr = 0x%lx\n", (unsigned long) addr);	   \
+  }									   \
 									   \
   FETCH;								   \
-  JUMP_DONE;								\
+  JUMP_DONE;								   \
 }while(0)
 
 /* Assume that the number of arguments is correct */
@@ -2552,23 +2915,19 @@ OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_UPDATE_ALL, {
      (ID_FROM_INT(p, arg1+Pike_fp->context->identifier_level)->
       identifier_flags & IDENTIFIER_SCOPE_USED))
   {
-    PIKE_OPCODE_T *faddr;
     ptrdiff_t num_locals;
-    ptrdiff_t args;
-
+    PIKE_OPCODE_T *faddr;
+    PIKE_OPCODE_T *addr2;
+    INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
     JUMP_SET_TO_PC_AT_NEXT (faddr);
     faddr += GET_JUMP();
-    num_locals = READ_INCR_BYTE(faddr);	/* ignored */
-    args = READ_INCR_BYTE(faddr);
 
-    if(low_mega_apply(APPLY_LOW,
-		      args,
-		      Pike_fp->current_object,
-		      (void *)(ptrdiff_t)(arg1+
-					  Pike_fp->context->identifier_level)))
+    if((addr2 = lower_mega_apply(args,
+                               Pike_fp->current_object,
+                                 (arg1+Pike_fp->context->identifier_level))))
     {
       Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
-      addr = Pike_fp->pc;
+      addr = addr2;
     }
     DO_JUMP_TO(addr);
   }
@@ -2591,16 +2950,13 @@ OPCODE0_PTRJUMP(F_RECUR_AND_POP, "recur & pop", I_UPDATE_ALL, {
 /* Assume that the number of arguments is correct */
 /* FIXME: adjust Pike_mark_sp */
 OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
-  INT32 num_locals;
   PIKE_OPCODE_T *addr;
-  INT32 args;
+  INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
 
   FAST_CHECK_THREADS_ON_CALL();
 
   JUMP_SET_TO_PC_AT_NEXT (addr);
   addr += GET_JUMP();
-  num_locals = READ_INCR_BYTE(addr);
-  args = READ_INCR_BYTE(addr);
   addr += ENTRY_PROLOGUE_SIZE;
   SET_PROG_COUNTER(addr);
 
@@ -2615,25 +2971,9 @@ OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
     pop_n_elems(Pike_sp - (Pike_fp->locals + args));
   }
 
-  push_zeroes(num_locals - args);
-
-  DO_IF_DEBUG({
-    if(Pike_sp != Pike_fp->locals + Pike_fp->num_locals)
-      Pike_fatal("Sp whacked!\n");
-  });
-
   FETCH;
   JUMP_DONE;
 });
-
-#if 0
-/* This opcode needs mending if it is to work with machine code. */
-OPCODE0_JUMP(F_BREAKPOINT, "breakpoint", 0, {
-  extern void o_breakpoint(void);
-  o_breakpoint();
-  DO_JUMP_TO(PROG_COUNTER-1);
-});
-#endif
 
 OPCODE1(F_THIS_OBJECT, "this_object", I_UPDATE_SP, {
     int level;
@@ -2653,11 +2993,42 @@ OPCODE1(F_THIS_OBJECT, "this_object", I_UPDATE_SP, {
     ref_push_object(o);
   });
 
+OPCODE0(F_UNDEFINEDP,"undefinedp",0, {
+    int undef;
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
+    {
+      pop_stack();
+      push_int(0);
+    }
+    else
+    {
+      undef = SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED;
+      SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer,
+	       undef);
+    }
+});
+
+OPCODE0(F_DESTRUCTEDP,"destructedp",0, {
+  if(TYPEOF(Pike_sp[-1]) != T_INT)
+  {
+    if(IS_DESTRUCTED(Pike_sp-1))
+    {
+      pop_stack();
+      push_int(1);
+    }else{
+      pop_stack();
+      push_int(0);
+    }
+  }else{
+    SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer,
+	     NUMBER_DESTRUCTED == SUBTYPEOF(Pike_sp[-1]));
+  }
+});
+
 OPCODE0(F_ZERO_TYPE, "zero_type", 0, {
   if(TYPEOF(Pike_sp[-1]) != T_INT)
   {
-    if((TYPEOF(Pike_sp[-1]) == T_OBJECT || TYPEOF(Pike_sp[-1]) == T_FUNCTION)
-       && !Pike_sp[-1].u.object->prog)
+    if(IS_DESTRUCTED(Pike_sp-1))
     {
       pop_stack();
       push_int(NUMBER_DESTRUCTED);
@@ -2684,8 +3055,7 @@ OPCODE2(F_THIS, "this", I_UPDATE_SP, {
 
     loc.o = Pike_fp->current_object;
     loc.parent_identifier = Pike_fp->fun;
-    if (loc.o->prog)
-      loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
+    loc.inherit = Pike_fp->context;
     find_external_context(&loc, arg1);
 
     DO_IF_DEBUG({
@@ -2705,6 +3075,30 @@ OPCODE2(F_THIS, "this", I_UPDATE_SP, {
 OPCODE2(F_MAGIC_TYPES, "::_types", I_UPDATE_SP, {
   push_magic_index(magic_types_program, arg2, arg1);
 });
+
+OPCODE2(F_INIT_FRAME, "init_frame", 0, {
+    Pike_fp->num_args = arg1;
+    Pike_fp->num_locals = arg2;
+  });
+
+OPCODE1(F_PROTECT_STACK, "protect_stack", 0, {
+    Pike_fp->expendible = Pike_fp->locals + arg1;
+  });
+
+OPCODE2(F_FILL_STACK, "fill_stack", I_UPDATE_SP, {
+    INT32 tmp = (Pike_fp->locals + arg1) - Pike_sp;
+    if (tmp > 0) {
+      if (arg2) {
+	push_undefines(tmp);
+      } else {
+	push_zeroes(tmp);
+      }
+    }
+  });
+
+OPCODE1(F_MARK_AT, "mark_at", I_UPDATE_SP, {
+    *(Pike_mark_sp++) = Pike_fp->locals + arg1;
+  });
 
 /*
 #undef PROG_COUNTER

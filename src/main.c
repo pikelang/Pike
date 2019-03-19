@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -29,7 +28,6 @@
 #include "main.h"
 #include "operators.h"
 #include "rbtree.h"
-#include "pike_security.h"
 #include "constants.h"
 #include "version.h"
 #include "program.h"
@@ -37,18 +35,11 @@
 #include "module_support.h"
 #include "opcodes.h"
 
-#ifdef AUTO_BIGNUM
-#include "bignum.h"
-#endif
-
 #include "pike_embed.h"
 
 #ifdef LIBPIKE
 #if defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
-#elif !defined(USE_DLL) && defined(USE_MY_WIN32_DLOPEN)
-#include "pike_dlfcn.h"
-#else
 #undef LIBPIKE
 #endif
 #endif
@@ -58,13 +49,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_ERRNO_H
-#include <errno.h>
-#endif
 
-#ifdef HAVE_LOCALE_H
+#include <errno.h>
 #include <locale.h>
-#endif
 
 #include "time_stuff.h"
 
@@ -98,16 +85,21 @@
 #define MAXPATHLEN 32768
 #endif
 
-static char master_location[MAXPATHLEN * 2] = MASTER_COOKIE;
+static const char _master_location[MAXPATHLEN+CONSTANT_STRLEN(MASTER_COOKIE)] = MASTER_COOKIE;
+static const char *master_file_location = _master_location + CONSTANT_STRLEN(MASTER_COOKIE);
 
 static void set_master(const char *file)
 {
-  if (strlen(file) >= MAXPATHLEN*2 - CONSTANT_STRLEN(MASTER_COOKIE)) {
-    fprintf(stderr, "Too long path to master: \"%s\" (limit:%"PRINTPTRDIFFT"d)\n",
-	    file, MAXPATHLEN*2 - CONSTANT_STRLEN(MASTER_COOKIE));
-    exit(1);
-  }
-  strcpy(master_location + CONSTANT_STRLEN(MASTER_COOKIE), file);
+  if( master_file_location != _master_location+CONSTANT_STRLEN(MASTER_COOKIE))
+    free((void*)master_file_location);
+#ifdef DEBUG_MALLOC
+#undef strdup /* We can't use dmalloc strdup before pike_memory is initialized. */
+#endif /* DEBUG_MALLOC */
+#if defined(__NT__) && !defined(strdup)
+  /* strdup() is broken on WIN32, but _strdup() isn't... */
+#define strdup _strdup
+#endif /* __NT__ */
+  master_file_location = strdup( file );
 }
 
 #ifdef __NT__
@@ -143,13 +135,10 @@ static void get_master_key(HKEY cat)
 
 static void set_default_master(const char *bin_name)
 {
-  char *mp = master_location + CONSTANT_STRLEN (MASTER_COOKIE);
-
-#ifdef HAVE_GETENV
-  if(!*mp && getenv("PIKE_MASTER")) {
+#define mp master_file_location
+  if(getenv("PIKE_MASTER")) {
     set_master(getenv("PIKE_MASTER"));
   }
-#endif
 
 #ifdef __NT__
   if(!*mp) get_master_key(HKEY_CURRENT_USER);
@@ -158,11 +147,13 @@ static void set_default_master(const char *bin_name)
 
   if(!*mp && strncmp(DEFAULT_MASTER, "NONE/", 5))
   {
-    SNPRINTF (mp, sizeof (master_location) - CONSTANT_STRLEN (MASTER_COOKIE),
+    char tmp[CONSTANT_STRLEN( DEFAULT_MASTER ) + 10 + 10 + 10];
+    snprintf (tmp, sizeof(tmp)-1,
 	      DEFAULT_MASTER,
 	      PIKE_MAJOR_VERSION,
 	      PIKE_MINOR_VERSION,
 	      PIKE_BUILD_VERSION);
+    set_master( tmp );
   }
 
 #ifdef __NT__
@@ -175,28 +166,29 @@ static void set_default_master(const char *bin_name)
       char tmp[MAXPATHLEN * 2];
       char *p = strrchr (exepath, '\\');
       if (p) *p = 0;
-      SNPRINTF (tmp, sizeof (tmp), "%s/%s", exepath, mp);
-      strncpy (mp, tmp,
-	       sizeof (master_location) - CONSTANT_STRLEN (MASTER_COOKIE));
+      snprintf (tmp, sizeof (tmp), "%s/%s", exepath, mp);
+      set_master( tmp );
     }
   }
 #else
   if (!*mp) {
     /* Attempt to find a master via the path to the binary. */
     /* Note: We assume that MAXPATHLEN is > 18 characters. */
-    if (strlen(bin_name) < (2*MAXPATHLEN -
-			    CONSTANT_STRLEN(MASTER_COOKIE "master.pike"))) {
+    if (strlen(bin_name) + CONSTANT_STRLEN("master.pike") < MAXPATHLEN) {
+      char tmp[MAXPATHLEN];
       char *p;
-      strcpy(mp, bin_name);
-      p = strrchr(mp, '/');
-      if (!p) p = mp;
+      strcpy(tmp, bin_name);
+      p = strrchr(tmp, '/');
+      if (!p) p = tmp;
       else p++;
       strcpy(p, "master.pike");
+      set_master( tmp );
     }
   }
 #endif
 
   TRACE((stderr, "Default master at \"%s\"...\n", mp));
+#undef mp
 }
 
 #ifdef LIBPIKE
@@ -231,20 +223,20 @@ static void find_lib_dir(int argc, char **argv)
   int e;
 
   TRACE((stderr, "find_lib_dir...\n"));
-  
+
   set_default_master(argv[0]);
 
   for(e=1; e<argc; e++)
   {
     TRACE((stderr, "Parse argument %d:\"%s\"...\n", e, argv[e]));
-  
+
     if(argv[e][0] != '-') break;
 
     switch(argv[e][1])
     {
     default:
       break;
-	  
+
     case 'm':
       if(argv[e][2])
       {
@@ -277,8 +269,7 @@ static void find_lib_dir(int argc, char **argv)
   {
     char *p;
     char *dir;
-    memcpy(libpike_file, master_location + CONSTANT_STRLEN(MASTER_COOKIE),
-	   sizeof(master_location) - CONSTANT_STRLEN(MASTER_COOKIE));
+    strcpy(libpike_file, master_file_location);
     for (p = dir = libpike_file; *p; p++) {
       if ((*p == '/')
 #ifdef __NT__
@@ -304,9 +295,7 @@ int main(int argc, char **argv)
   JMP_BUF back;
   int e, num;
   char *p;
-
 #ifdef PIKE_EXTRA_DEBUG
-#ifdef HAVE_SIGNAL
   if (sizeof(void *) == 8) {
     /* 64-bit Solaris 10 in Xenofarm fails with SIGPIPE.
      * Force a core dump.
@@ -314,10 +303,33 @@ int main(int argc, char **argv)
     signal(SIGPIPE, abort);
   }
 #endif
+
+#ifdef HAVE_MALLOPT
+  TRACE((stderr, "Init malloc...\n"));
+
+  /* The malloc implementation in recent glibc (eg Linux)
+   * defaults to using one arena / thread. This means that
+   * memory once allocated from one thread can't later be
+   * allocated by another thread.
+   *
+   * cf [bug 6045] and http://sourceware.org/bugzilla/show_bug.cgi?id=11261
+   *
+   * We try to alleviate the problem by reducing the number
+   * of arenas as much as possible.
+   */
+
+#ifdef M_ARENA_TEST
+  /* NB: Some versions of glibc don't support setting M_ARENA_TEST to 0. */
+  /* Note also that the test is inverted since mallopt returns 0 on success. */
+  mallopt(M_ARENA_TEST, 0) && mallopt(M_ARENA_TEST, 1);
 #endif
+#ifdef M_ARENA_MAX
+  mallopt(M_ARENA_MAX, 1);
+#endif
+#endif /* HAVE_MALLOPT */
 
   TRACE((stderr, "Init master...\n"));
-  
+
   find_lib_dir(argc, argv);
 
 #ifdef LIBPIKE
@@ -353,17 +365,17 @@ int main(int argc, char **argv)
 #define init_pike_runtime init_pike_runtime_var
   LOOKUP(add_predefine);
 #define add_predefine add_predefine_var
-  
+
 #endif /* LIBPIKE */
 
   TRACE((stderr, "init_pike()\n"));
 
-  init_pike(argv, master_location + CONSTANT_STRLEN(MASTER_COOKIE));
+  init_pike(argv, master_file_location);
 
   for(e=1; e<argc; e++)
   {
     TRACE((stderr, "Parse argument %d:\"%s\"...\n", e, argv[e]));
-  
+
     if(argv[e][0]=='-')
     {
       for(p=argv[e]+1; *p;)
@@ -374,7 +386,7 @@ int main(int argc, char **argv)
 	  add_predefine(p+1);
 	  p+=strlen(p);
 	  break;
-	  
+
 	case 'm':
 	  if(p[1])
 	  {
@@ -417,13 +429,13 @@ int main(int argc, char **argv)
 		p++;
 	      }
 #ifdef _REENTRANT
-	      thread_stack_size=STRTOL(p,&p,0);
+	      thread_stack_size=strtol(p,&p,0);
 #endif
 	      p+=strlen(p);
 	      break;
 	    }
 	  }
-	  Pike_stack_size=STRTOL(p,&p,0);
+	  Pike_stack_size=strtol(p,&p,0);
 	  p+=strlen(p);
 
 	  if(Pike_stack_size < 256)
@@ -446,7 +458,7 @@ int main(int argc, char **argv)
 	  }else{
 	    p++;
 	  }
-	  set_pike_evaluator_limit(STRTOL(p, &p, 0));
+	  set_pike_evaluator_limit(strtol(p, &p, 0));
 	  p+=strlen(p);
 	  break;
 
@@ -456,14 +468,14 @@ int main(int argc, char **argv)
 	  {
 	    case '0': case '1': case '2': case '3': case '4':
 	    case '5': case '6': case '7': case '8': case '9':
-	      d_flag+=STRTOL(p+1,&p,10);
+	      d_flag+=strtol(p+1,&p,10);
 	      break;
 
 	    case 'c':
 	      p++;
-#if defined(YYDEBUG) || defined(PIKE_DEBUG)
+#if (defined(YYDEBUG) && (YYDEBUG==1)) && defined(PIKE_DEBUG)
 	      yydebug++;
-#endif /* YYDEBUG || PIKE_DEBUG */
+#endif /* YYDEBUG && PIKE_DEBUG */
 	      break;
 
 	    case 's':
@@ -505,7 +517,7 @@ int main(int argc, char **argv)
 
 	case 'r':
 	more_r_flags:
-	  switch(p[1]) 
+	  switch(p[1])
           {
 	  case 't':
 	    set_pike_runtime_options(RUNTIME_CHECK_TYPES, RUNTIME_CHECK_TYPES);
@@ -526,7 +538,7 @@ int main(int argc, char **argv)
 
 	case 'a':
 	  if(p[1]>='0' && p[1]<='9')
-	    a_flag+=STRTOL(p+1,&p,10);
+	    a_flag+=strtol(p+1,&p,10);
 	  else
 	    a_flag++,p++;
 	  break;
@@ -536,7 +548,7 @@ int main(int argc, char **argv)
 	  switch (p[1]) {
 	    case '0': case '1': case '2': case '3': case '4':
 	    case '5': case '6': case '7': case '8': case '9':
-	      Pike_interpreter.trace_level+=STRTOL(p+1,&p,10);
+	      Pike_interpreter.trace_level+=strtol(p+1,&p,10);
 	      break;
 
 	    case 'g':
@@ -559,7 +571,7 @@ int main(int argc, char **argv)
 	    p+=strlen(p);
 	  }else{
 	    if(p[1]>='0' && p[1]<='9')
-	      p_flag+=STRTOL(p+1,&p,10);
+	      p_flag+=strtol(p+1,&p,10);
 	    else
 	      p_flag++,p++;
 	  }
@@ -567,7 +579,7 @@ int main(int argc, char **argv)
 
 	case 'l':
 	  if(p[1]>='0' && p[1]<='9')
-	    l_flag+=STRTOL(p+1,&p,10);
+	    l_flag+=strtol(p+1,&p,10);
 	  else
 	    l_flag++,p++;
 	  break;
@@ -613,7 +625,7 @@ int main(int argc, char **argv)
    *       the MASTER_COOKIE string in the binary.
    */
   add_pike_string_constant("__master_cookie",
-			   master_location, CONSTANT_STRLEN(MASTER_COOKIE));
+			   _master_location, CONSTANT_STRLEN(MASTER_COOKIE));
 
   if(SETJMP(back))
   {
@@ -634,7 +646,7 @@ int main(int argc, char **argv)
 
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
-	err = (struct generic_error_struct *)
+	err =
 	  get_storage (Pike_sp[-1].u.object, generic_error_program);
 
 	SET_SVAL(t, PIKE_T_STRING, 0, string, err->error_message);

@@ -19,7 +19,6 @@
 #include "mapping.h"
 #include "stralloc.h"
 #include "program_id.h"
-#include "block_alloc.h"
 #include <ctype.h>
 
 #include "parser.h"
@@ -84,7 +83,7 @@ INLINE static int m_isidchar2( unsigned int x )
 static void do_free_arrayptr( struct array **x )
 {
   free_array( *x );
-}			   
+}
 
 /*! @decl array(array(string)|string) tokenize(string code)
  *!
@@ -115,7 +114,7 @@ static void f_tokenize( INT32 args )
 
   res = allocate_array_no_init( 0, 128 );
   SET_ONERROR(tmp, do_free_arrayptr, &res);
-  
+
   switch(data->size_shift)
   {
     case 0:
@@ -130,10 +129,6 @@ static void f_tokenize( INT32 args )
       left = tokenize2(&res,STR2(data), data->len);
       left_s = make_shared_binary_string2(STR2(data)+left, data->len-left);
       break;
-#ifdef PIKE_DEBUG
-    default:
-      Pike_error("Unknown shift size %d.\n", data->size_shift);
-#endif
   }
 
   UNSET_ONERROR(tmp);

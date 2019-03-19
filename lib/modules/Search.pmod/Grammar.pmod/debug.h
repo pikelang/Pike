@@ -1,4 +1,3 @@
-// $Id$
 
 #define TRACE werror("### %s:%d\n"	\
                      "  %O()\n"		\

@@ -2,7 +2,7 @@
 //!  Retrieves information about a CGI request from the environment
 //!  and creates an object with the request information easily
 //!  formatted.
-//! 
+//!
 
 #pike __REAL_VERSION__
 
@@ -17,7 +17,7 @@ mapping(string:int|string|array(string)) misc = ([ ]);
 //!
 string query, rest_query;
 
-//! 
+//!
 string data;
 
 //! If used with Roxen or Caudium webservers, this field will be
@@ -76,7 +76,8 @@ protected void decode_query() {
       else
 	rest_query = http_decode_string( v );
   }
-  rest_query=replace(rest_query, "+", "\0"); /* IDIOTIC STUPID STANDARD */
+  rest_query =
+    rest_query && replace(rest_query, "+", "\0"); /* IDIOTIC STUPID STANDARD */
 }
 
 protected void decode_cookies(string data)
@@ -104,7 +105,7 @@ protected void decode_post()
   if(!data) data="";
   int wanted_data=misc->len;
   int have_data=sizeof(data);
-  if(have_data < misc->len) // \r are included. 
+  if(have_data < misc->len) // \r are included.
   {
     werror("WWW.CGI parse: Short stdin read.\n");
     return;
@@ -120,7 +121,7 @@ protected void decode_post()
 	{
 	  a = http_decode_string( a );
 	  b = http_decode_string( b );
-	  
+
 	  add_variable(a, b);
 	}
     }
@@ -174,7 +175,7 @@ protected void create()
 
   remoteaddr = getenv("REMOTE_ADDR") || "unknown";
   referer = (contents = getenv("HTTP_REFERER")) ? contents/" " : ({});
-  
+
   contents = getenv("SUPPORTS");
   if(contents && sizeof(contents))
     supports = mkmultiset(contents / " ");
@@ -183,7 +184,7 @@ protected void create()
   if(contents)
     client = contents / " ";
 
-  contents = getenv("HTTP_COOKIE"); 
+  contents = getenv("HTTP_COOKIE");
   if(contents && sizeof(contents)) {
     misc->cookies = contents;
     decode_cookies(contents);
@@ -212,7 +213,7 @@ protected void create()
     if(contents = getenv(s)) {
       misc[lower_case(s)] = contents;
     }
-  
+
   foreach(({ "HTTP_ACCEPT", "HTTP_ACCEPT_CHARSET", "HTTP_ACCEPT_LANGUAGE",
 	       "HTTP_ACCEPT_ENCODING", }), string header)
     if(contents = getenv(header)) {
@@ -220,11 +221,11 @@ protected void create()
 		       ({"http_", "_"}), ({"", "-"}));
       misc[header] = (contents-" ") / ",";
     }
-  
-  
+
+
   if(misc->len)
     data = Stdio.stdin->read(misc->len);
-  
+
   decode_query(); // Decode the query string
 
   if(misc->len && method == "POST")

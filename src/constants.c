@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -15,10 +14,8 @@
 #include "interpret.h"
 #include "mapping.h"
 #include "pike_error.h"
-#include "pike_security.h"
 #include "gc.h"
-
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 struct mapping *builtin_constants = 0;
 
@@ -26,6 +23,7 @@ struct mapping *builtin_constants = 0;
 struct callable *first_callable = NULL;
 #endif
 
+/* This is the mapping returned by all_constants(). */
 PMOD_EXPORT struct mapping *get_builtin_constants(void)
 {
   return builtin_constants;
@@ -69,21 +67,26 @@ PMOD_EXPORT void add_global_program(const char *name, struct program *p)
   low_add_constant(name, p?&s:NULL);
 }
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(X) do {						\
-    DO_IF_DEBUG (DOUBLELINK (first_callable, X));			\
-  } while (0)
+static struct block_allocator callable_allocator
+    = BA_INIT_PAGES(sizeof(struct callable), 2);
 
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(X) do {		\
-  DO_IF_DEBUG (DOUBLEUNLINK (first_callable, X)); \
-  free_type(X->type);			\
-  free_string(X->name);			\
-  X->name=0;				\
-  EXIT_PIKE_MEMOBJ(X);                  \
-}while(0)
+void really_free_callable(struct callable * c) {
+#ifdef PIKE_DEBUG
+    DOUBLEUNLINK (first_callable, c);
+#endif
+    free_type(c->type);
+    free_string(c->name);
+    c->name=0;
+    EXIT_PIKE_MEMOBJ(c);
+    ba_free(&callable_allocator, c);
+}
 
-BLOCK_ALLOC_FILL_PAGES(callable,2)
+void count_memory_in_callables(size_t * num, size_t * size) {
+    ba_count_all(&callable_allocator, num, size);
+}
+void free_all_callable_blocks(void) {
+    ba_destroy(&callable_allocator);
+}
 
 int global_callable_flags=0;
 
@@ -95,7 +98,10 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 					       optimize_fun optimize,
 					       docode_fun docode)
 {
-  struct callable *f=alloc_callable();
+  struct callable *f=ba_alloc(&callable_allocator);
+#ifdef PIKE_DEBUG
+  DOUBLELINK(first_callable, f);
+#endif
   INIT_PIKE_MEMOBJ(f, T_STRUCT_CALLABLE);
   f->function=fun;
   f->name=name;
@@ -135,16 +141,15 @@ PMOD_EXPORT struct callable *make_callable(c_fun fun,
 			   flags, optimize, docode);
 }
 
-PMOD_EXPORT struct callable *add_efun2(const char *name,
-			    c_fun fun,
-			    const char *type,
-			    int flags,
-			    optimize_fun optimize,
-			    docode_fun docode)
+PMOD_EXPORT void add_efun2(const char *name,
+                           c_fun fun,
+                           const char *type,
+                           int flags,
+                           optimize_fun optimize,
+                           docode_fun docode)
 {
   struct svalue s;
   struct pike_string *n;
-  struct callable *ret;
 
   n=make_shared_string(name);
   SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
@@ -152,25 +157,23 @@ PMOD_EXPORT struct callable *add_efun2(const char *name,
   low_add_efun(n, &s);
   free_svalue(&s);
   free_string(n);
-  return ret;
 }
 
-PMOD_EXPORT struct callable *add_efun(const char *name, c_fun fun, const char *type, int flags)
+PMOD_EXPORT void add_efun(const char *name, c_fun fun, const char *type, int flags)
 {
-  return add_efun2(name,fun,type,flags,0,0);
+  add_efun2(name,fun,type,flags,0,0);
 }
 
-PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_length,
-					    c_fun fun,
-					    const char *type, ptrdiff_t type_length,
-					    int flags,
-					    optimize_fun optimize,
-					    docode_fun docode)
+PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
+                                c_fun fun,
+                                const char *type, ptrdiff_t UNUSED(type_length),
+                                int flags,
+                                optimize_fun optimize,
+                                docode_fun docode)
 {
   struct svalue s;
   struct pike_string *n;
   struct pike_type *t;
-  struct callable *ret;
 
 #ifdef PIKE_DEBUG
   if(simple_mapping_string_lookup(builtin_constants, name))
@@ -179,21 +182,18 @@ PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_len
 
   n = make_shared_binary_string(name, name_length);
   t = make_pike_type(type);
-#ifdef DEBUG
-  check_type_string(t);
-#endif
   add_ref(n);
   SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
-	   ret = low_make_callable(fun, n, t, flags, optimize, docode));
+	   low_make_callable(fun, n, t, flags, optimize, docode));
   mapping_string_insert(builtin_constants, n, &s);
   free_svalue(&s);
   free_string(n);
-  return ret;
 }
 
-PMOD_EXPORT void visit_callable (struct callable *c, int action)
+PMOD_EXPORT void visit_callable (struct callable *c, int action, void *extra)
 {
-  switch (action) {
+  visit_enter(c, T_STRUCT_CALLABLE, extra);
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
@@ -207,35 +207,28 @@ PMOD_EXPORT void visit_callable (struct callable *c, int action)
   }
 
   if (!(action & VISIT_COMPLEX_ONLY)) {
-    visit_type_ref (c->type, REF_TYPE_NORMAL);
-    visit_string_ref (c->name, REF_TYPE_NORMAL);
+    visit_type_ref (c->type, REF_TYPE_NORMAL, extra);
+    visit_string_ref (c->name, REF_TYPE_NORMAL, extra);
   }
 
   /* Looks like the c->prog isn't refcounted..? */
   /* visit_program_ref (c->prog, REF_TYPE_NORMAL); */
+  visit_leave(c, T_STRUCT_CALLABLE, extra);
 }
 
 #ifdef PIKE_DEBUG
 void present_constant_profiling(void)
 {
-  struct callable_block *b;
-  size_t e;
-  for(b=callable_blocks;b;b=b->next)
-  {
-    for(e=0;e<NELEM(b->x);e++)
-    {
-      if(b->x[e].name)
-      {
-	fprintf(stderr,"%010ld @E@: %s\n",b->x[e].runs, b->x[e].name->str);
-      }
-    }
+  struct callable *c;
+  for (c = first_callable; c; c = c->next) {
+    fprintf(stderr,"%010ld @E@: %s\n",c->runs, c->name->str);
   }
 }
 #endif
 
 void init_builtin_constants(void)
 {
-  builtin_constants = allocate_mapping(300);
+  builtin_constants = allocate_mapping(325);
 }
 
 void exit_builtin_constants(void)

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* MUST BE FIRST */
@@ -15,10 +14,8 @@
 #include "module_support.h"
 #include "pike_error.h"
 #include "bignum.h"
-#include "pike_security.h"
 
 #include "threads.h"
-#include <stdio.h>
 #include <fcntl.h>
 
 
@@ -61,7 +58,7 @@ PIKE_MODULE_INIT
 {
   int i;
 
-  MEMSET(char_class, CLS_TOKEN, sizeof(char_class));
+  memset(char_class, CLS_TOKEN, sizeof(char_class));
   for(i='\0'; i<=' '; i++)
     char_class[i] = CLS_WSPACE;
   for(i='0'; i<='9'; i++)
@@ -161,7 +158,7 @@ static void f_read( INT32 args )
 #ifdef DYNAMIC_BUF
   dynamic_buffer buf;
 #else
-#define BUFSET(X) do { if(bufpos == bufsize) { bufsize *= 2; buf = realloc(buf, bufsize+1); } buf[bufpos++] = c; } while(0)
+#define BUFSET(X) do { if(bufpos == bufsize) { bufsize *= 2; buf = xrealloc(buf, bufsize+1); } buf[bufpos++] = c; } while(0)
 #define PUSHBUF() do { push_string( make_shared_binary_string( buf,bufpos ) ); bufpos=0; } while(0)
   char *buf;
   int bufsize=CLF_BLOCK_SIZE, bufpos=0;
@@ -174,64 +171,19 @@ static void f_read( INT32 args )
   }
   old_sp = sp;
 
-  get_all_args("CommonLog.read", args, "%*%*", &logfun, &file);
+  get_all_args("read", args, "%*%*", &logfun, &file);
   if(TYPEOF(*logfun) != T_FUNCTION)
-    SIMPLE_BAD_ARG_ERROR("CommonLog.read", 1, "function");
+    SIMPLE_BAD_ARG_ERROR("read", 1, "function");
 
   if(TYPEOF(*file) == T_OBJECT)
   {
     f = fd_from_object(file->u.object);
-    
+
     if(f == -1)
-      Pike_error("CommonLog.read: File is not open.\n");
+      Pike_error("File is not open.\n");
     my_fd = 0;
   } else if(TYPEOF(*file) == T_STRING &&
 	    file->u.string->size_shift == 0) {
-#ifdef PIKE_SECURITY
-      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-      {
-	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
-	  Pike_error("Permission denied.\n");
-	push_text("read");
-	push_int(0);
-	ref_push_string(file->u.string);
-	push_text("r");
-	push_int(00666);
-
-	safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_open",5);
-	switch(TYPEOF(Pike_sp[-1]))
-	{
-	case PIKE_T_INT:
-	  switch(Pike_sp[-1].u.integer)
-	  {
-	  case 0: /* return 0 */
-	    errno=EPERM;
-	    Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
-		       errno);
-
-	  case 2: /* ok */
-	    pop_stack();
-	    break;
-
-	  case 3: /* permission denied */
-	    Pike_error("CommonLog.read: permission denied.\n");
-
-	  default:
-	    Pike_error("Error in user->valid_open, wrong return value.\n");
-	  }
-	  break;
-
-	default:
-	  Pike_error("Error in user->valid_open, wrong return type.\n");
-
-	case PIKE_T_STRING:
-	  /*	  if(Pike_sp[-1].u.string->shift_size) */
-	  /*	    file=Pike_sp[-1]; */
-	  pop_stack();
-	}
-
-      }
-#endif
     do {
       THREADS_ALLOW();
       f=fd_open((char *)STR0(file->u.string), fd_RDONLY, 0);
@@ -241,10 +193,10 @@ static void f_read( INT32 args )
     } while (1);
 
     if(f < 0)
-      Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
-	    errno);
+      Pike_error("Failed to open file for reading (errno=%d).\n",
+                 errno);
   } else
-    SIMPLE_BAD_ARG_ERROR("CommonLog.read", 2, "string|Stdio.File");
+    SIMPLE_BAD_ARG_ERROR("read", 2, "string|Stdio.File");
 
 #ifdef HAVE_LSEEK64
   lseek64(f, offs0, SEEK_SET);
@@ -731,9 +683,9 @@ static void f_read( INT32 args )
 	  state = 34;
 	else if(cls == CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); 
+	  push_string( low_free_buf( &buf ) );
 #else
-	  PUSHBUF(); 
+	  PUSHBUF();
 #endif
 	  state = 0;
 	} else if(cls == CLS_WSPACE) {
@@ -743,7 +695,7 @@ static void f_read( INT32 args )
 	  PUSHBUF();  /* path */
 #endif
 	  state = 35;
-	} else	
+	} else
 #ifdef DYNAMIC_BUF
 	  low_my_putchar( c, &buf );
 #else
@@ -764,24 +716,24 @@ static void f_read( INT32 args )
 	  state = 33;
 	} else if(cls == CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); 
+	  push_string( low_free_buf( &buf ) );
 #else
-	  PUSHBUF(); 
+	  PUSHBUF();
 #endif
 	  state = 0;
 	} else {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); 
+	  push_string( low_free_buf( &buf ) );
 #else
-	  PUSHBUF(); 
+	  PUSHBUF();
 #endif
-	  push_text("HTTP/0.9");
+	  push_static_text("HTTP/0.9");
 	  state = 10;
 	}
 	break;
       case 35:
 	if(cls == CLS_QUOTE) {
-	  push_text("HTTP/0.9");
+	  push_static_text("HTTP/0.9");
 	  state = 10;
 	} else if(cls >= CLS_TOKEN) {
 #ifdef DYNAMIC_BUF
@@ -805,9 +757,9 @@ static void f_read( INT32 args )
      state == 8 || state == 9 ||
      state == 31 || state == 33 || state == 34) {
 #ifdef DYNAMIC_BUF
-    push_string( low_free_buf( &buf ) ); 
+    push_string( low_free_buf( &buf ) );
 #else
-    PUSHBUF(); 
+    PUSHBUF();
 #endif
   }
   if(sp == old_sp + 15) {
@@ -825,7 +777,7 @@ static void f_read( INT32 args )
      * want to free it.
      */
     fd_close(f);
-  pop_n_elems(sp-old_sp+args);  
+  pop_n_elems(sp-old_sp+args);
   push_int64(offs0);
 }
 

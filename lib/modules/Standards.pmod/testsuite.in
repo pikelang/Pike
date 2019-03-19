@@ -1,5 +1,4 @@
 START_MARKER
-test_true([["$Id$"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -16,7 +15,42 @@ class A {
       if(languages[symbol]) error("Overlap in symbol %s\n", symbol);
   }
 }(); )
-    
+
+
+// - Standards.PEM
+test_any_equal([[
+string pem = #"-----BEGIN PRIVACY-ENHANCED MESSAGE-----
+Proc-Type: 4,ENCRYPTED
+Content-Domain: RFC822
+DEK-Info: DES-CBC,F8143EDE5960C597
+Originator-ID-Symmetric: linn@zendia.enet.dec.com,,
+Recipient-ID-Symmetric: linn@zendia.enet.dec.com,ptf-kmc,3
+Key-Info: DES-ECB,RSA-MD2,9FD3AAD2F2691B9A,
+          B70665BB9BF7CBCDA60195DB94F727D3
+Recipient-ID-Symmetric: pem-dev@tis.com,ptf-kmc,4
+Key-Info: DES-ECB,RSA-MD2,161A3F75DC82EF26,
+          E2EF532C65CBCFF79F83A2658132DB47
+
+LLrHB0eJzyhP+/fSStdW8okeEnv47jxe7SJ/iN72ohNcUk2jHEUSoH1nvNSIWL9M
+8tEjmF/zxB+bATMtPjCUWbz8Lr9wloXIkjHUlBLpvXR0UrUzYbkNpk0agV2IzUpk
+J6UiRRGcDSvzrsoK+oNvqu6z7Xs5Xfz5rDqUcMlK1Z6720dcBWGGsDLpTpSCnpot
+dXd/H5LMDWnonNvPCwQUHt==
+-----END PRIVACY-ENHANCED MESSAGE-----";
+object o = Standards.PEM.Message(pem);
+return o->headers + ([ "pre" : o->pre, "post" : o->post, "body" : o->body ]);
+]],[[ ([ /* 9 elements */
+  "body": ",\272\307\aG\211\317(O\373\367\322J\327V\362\211\36\22{\370\356<^\355\"\177\210\336\366\242\23\\RM\243\34E\22\240}g\274\324\210X\277L\362\321#\230_\363\304\37\233\1""3->0\224Y\274\374.\277p\226\205\310\222""1\324\224\22\351\275ttR\265""3a\271\r\246M\32\201]\210\315Jd'\245\"E\21\234\r+\363\256\312\n"
+    "\372\203o\252\356\263\355{9]\374\371\254:\224p\311J\325\236\273\333G\\\5a\206\260""2\351N\224\202\236\232-uw\177\37\222\314\ri\350\234\333\317\v\4\24\36",
+  "content-domain": "RFC822",
+  "dek-info": "DES-CBC,F8143EDE5960C597",
+  "key-info": "DES-ECB,RSA-MD2,9FD3AAD2F2691B9A,          B70665BB9BF7CBCDA60195DB94F727D3\0DES-ECB,RSA-MD2,161A3F75DC82EF26,          E2EF532C65CBCFF79F83A2658132DB47",
+  "originator-id-symmetric": "linn@zendia.enet.dec.com,,",
+  "post": "PRIVACY-ENHANCED MESSAGE",
+  "pre": "PRIVACY-ENHANCED MESSAGE",
+  "proc-type": "4,ENCRYPTED",
+  "recipient-id-symmetric": "linn@zendia.enet.dec.com,ptf-kmc,3\0pem-dev@tis.com,ptf-kmc,4"
+]) ]])
+
 
 // - Standards.URI
 test_equal((string)Standards.URI("g:h",           "http://a/b/c/d;p?q"), "g:h")
@@ -61,18 +95,50 @@ test_equal((string)Standards.URI("g?y/../x",      "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("g#s/./x",       "http://a/b/c/d;p?q"), "http://a/b/c/g#s/./x")
 test_equal((string)Standards.URI("g#s/../x",      "http://a/b/c/d;p?q"), "http://a/b/c/g#s/../x")
 test_equal((string)Standards.URI("http:g",        "http://a/b/c/d;p?q"), "http:g")
+test_equal((string)Standards.URI("c?d=e", "http://a.b"), "http://a.b/c?d=e")
 test_equal(Standards.URI("http://www.com/")->get_query_variables(),([]))
 test_equal(Standards.URI("http://www.com/?a=b")->get_query_variables(),(["a":"b"]))
 test_equal(Standards.URI("http://www.com/?a=b&a=b")->get_query_variables(),(["a":"b"]))
 test_equal(Standards.URI("http://www.com/?a=b&c")->get_query_variables(),(["a":"b","c":0]))
+test_equal(Standards.URI("http://www.com/?foo")->get_http_path_query(),"/?foo")
+test_equal(Standards.URI("http://www.com/?")->get_http_path_query(),"/?")
+test_equal(Standards.URI("http://www.com/")->get_http_path_query(),"/")
+test_equal((string)Standards.URI("://"), "://")
+test_equal((string)Standards.URI("/", "://"), ":///")
+test_equal((string)Standards.URI("foo.bar", ":///"), ":///foo.bar")
+test_equal(Standards.URI(":///foo/")->combine_uri_path("", "/foo/"), "/foo/")
 test_eval_error(Standards.URI("www.com"))
 test_eq((string)Standards.URI("www.com","http://"),"http://www.com")
+test_eq((string)Standards.URI("www.com/x?a=b#y","http://"),"http://www.com/x?a=b#y")
 test_eq((string)Standards.URI("ftp://www.com/x?a=b#y","http://"),"ftp://www.com/x?a=b#y")
 // Some tests of empty path followed by a query.
 test_eq(Standards.URI("http://user:??@host?query")->query, "query")
 test_eq(Standards.URI("http://user:??@host?query")->password, "??")
 test_eq(Standards.URI("http://user:??@host?query")->path, "")
 test_eq(Standards.URI("HTTP://WWW.COM/")->scheme, "http")
+// test `==
+test_true(Standards.URI("a://b:c@d:1/e?f=g&h")==
+          Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_true(Standards.URI("A://b:c@D:01/e?f=g&h")==
+          Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("x://b:c@d:1/e?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://x:c@d:1/e?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:x@d:1/e?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:c@x:1/e?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:c@d:2/e?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:c@d:1/x?f=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+test_false(Standards.URI("a://b:c@d:1/e?x=g&h")==
+           Standards.URI("a://b:c@d:1/e?f=g&h"))
+// codec
+test_true(decode_value(encode_value(Standards.URI("a://b:c@d:1/e?f=g&h")))==
+          Standards.URI("a://b:c@d:1/e?f=g&h"))
+
 
 test_eval_error(Standards.URI(""))
 test_eval_error(Standards.URI("#foo"))
@@ -150,5 +216,519 @@ test_eq(Standards.UUID.make_null()->str(),
 // - TLD
 test_equal(Standards.TLD.cc.se, "Sweden")
 test_true(Standards.TLD.generic.com)
+
+// - X509
+
+test_any_equal([[
+  string pem = #"-----BEGIN CERTIFICATE-----
+MIICPDCCAaUCED9pHoGc8JpK83P/uUii5N0wDQYJKoZIhvcNAQEFBQAwXzELMAkG
+A1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMTcwNQYDVQQLEy5DbGFz
+cyAxIFB1YmxpYyBQcmltYXJ5IENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTk2
+MDEyOTAwMDAwMFoXDTI4MDgwMjIzNTk1OVowXzELMAkGA1UEBhMCVVMxFzAVBgNV
+BAoTDlZlcmlTaWduLCBJbmMuMTcwNQYDVQQLEy5DbGFzcyAxIFB1YmxpYyBQcmlt
+YXJ5IENlcnRpZmljYXRpb24gQXV0aG9yaXR5MIGfMA0GCSqGSIb3DQEBAQUAA4GN
+ADCBiQKBgQDlGb9to1ZhLZlIcfZn3rmN67eehoAKkQ76OCWvRoiC5XOooJskXQ0f
+zGVuDLDQVoQYh5oGmxChc9+0WDlrbsH2FdWoqD+qEgaNMax/sDTXjzRniAnNFBHi
+TkVWaR94AoDa3EeRKbs2yWNcxeDXLYd7obcysHswuiovMaruo2fa2wIDAQABMA0G
+CSqGSIb3DQEBBQUAA4GBAFgVKTk8d6PaXCUDfGD67gmZPCcQcMgMCeazh88K4hiW
+NWLMv5sneYlfycQJ9M61Hd8qveXbhpxoJeUwfLaJFf5n0a3hUKw8fGJLj7qE1xIV
+Gx/KXQ/BUpQqEZnae88MNhPVNdwQGVnqlMEAv3WP2fr9dgTbYruQagPZRjXZ+Hxb
+-----END CERTIFICATE-----";
+  object o = Standards.PEM.Message(pem);
+  object t = Standards.X509.decode_certificate(o->body);
+  return ([ "der" : stringp(t->der), "version" : t->version, "serial":t->serial->digits(16), "algorithm":t->algorithm[0], "issuer":t->issuer[2][0][1]->value, "not_after":t->not_after, "not_before":t->not_before, "subject":t->subject[2][0][1]->value, "extensions":t->extensions])
+]],[[
+([ /* 9 elements */
+  "algorithm": Standards.ASN1.Types.Identifier(1,2,840,113549,1,1,5),
+  "der": 1,
+  "issuer": "Class 1 Public Primary Certification Authority",
+  "extensions": ([]),
+  "not_after": 1848873599,
+  "not_before": 822873600,
+  "serial": "3f691e819cf09a4af373ffb948a2e4dd",
+  "subject": "Class 1 Public Primary Certification Authority",
+  "version": 1
+])
+]])
+test_any_equal([[
+  object rsa = Crypto.RSA();
+  rsa->set_public_key(Gmp.mpz(10091719133288484609038014264477683817475840711323254929480453433408142690559279434827127011542800608968367637399409601909209406663819557863705925738798431), 65537);
+
+  array attrs = ({
+    ([ "organizationName" : Standards.ASN1.Types.PrintableString("Test") ]),
+    ([ "commonName" : Standards.ASN1.Types.PrintableString("*") ]),
+  });
+
+  string c = Standards.X509.make_selfsigned_certificate(rsa, 3600*24*365, attrs, 0, 0, 5);
+
+  object t = Standards.X509.decode_certificate(c);
+  mapping ext = t->extensions;
+  foreach(ext; string id; object value) ext[id]=value->get_der();
+  return ([
+    "version" : t->version,
+    "serial":t->serial->digits(16),
+    "algorithm":t->algorithm[0],
+    "issuer":t->issuer[0][0][1]->value,
+    "subject":t->subject[0][0][1]->value,
+    "extensions":ext,
+    "public_key":(int)t->public_key->pkc->public_key_equal(rsa),
+    "ext_bc" : t->ext_basicConstraints,
+    "ext_bc_ca" : t->ext_basicConstraints_cA,
+    "ext_bc_len" : t->ext_basicComnstraints_pathLenConstraint,
+    "ext_subkey" : t->ext_subjectKeyIdentifier,
+    "ext_ku" : t->ext_keyUsage,
+  ])
+]],[[ ([
+  "version" : 3,
+  "serial" : "5",
+  "algorithm": Standards.ASN1.Types.Identifier(1,2,840,113549,1,1,11),
+  "issuer" : "Test",
+  "subject" : "Test",
+  "extensions" : ([
+      Standards.ASN1.Types.Identifier(2,5,29,14): "\4\24\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
+      Standards.ASN1.Types.Identifier(2,5,29,15): "\3\2\5\240",
+      Standards.ASN1.Types.Identifier(2,5,29,19): "0\0"
+  ]),
+  "public_key": 1,
+  "ext_bc" : 1,
+  "ext_bc_ca" : 0,
+  "ext_bc_len" : 0,
+  "ext_subkey" : "\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
+  "ext_ku" : Standards.X509.KU_digitalSignature|Standards.X509.KU_keyEncipherment,
+]) ]])
+
+test_any_equal([[
+  object rsa = Crypto.RSA();
+  rsa->set_public_key(Gmp.mpz(10091719133288484609038014264477683817475840711323254929480453433408142690559279434827127011542800608968367637399409601909209406663819557863705925738798431), 65537);
+
+  array attrs = ({
+    ([ "organizationName" : Standards.ASN1.Types.PrintableString("Test") ]),
+    ([ "commonName" : Standards.ASN1.Types.PrintableString("*") ]),
+  });
+
+  string c = Standards.X509.make_root_certificate(rsa, 3600*24*365, attrs, 0, 0, 5);
+
+  object t = Standards.X509.decode_certificate(c);
+  return ([
+    "ext_bc" : t->ext_basicConstraints,
+    "ext_bc_ca" : t->ext_basicConstraints_cA,
+    "ext_bc_len" : t->ext_basicComnstraints_pathLenConstraint,
+    "ext_ku" : t->ext_keyUsage,
+  ])
+]],[[ ([
+  "ext_bc" : 1,
+  "ext_bc_ca" : 1,
+  "ext_bc_len" : 0,
+  "ext_ku" : Standards.X509.KU_keyCertSign|Standards.X509.KU_cRLSign,
+]) ]])
+
+test_any([[
+  Crypto.DSA dsa = Crypto.DSA();
+  dsa->generate_key(1024,160);
+
+  foreach( ({ 0, Crypto.SHA1,
+#if constant(Crypto.SHA224)
+    Crypto.SHA224,
+#endif
+    Crypto.SHA256 }), object h)
+  {
+    string s=Standards.X509.make_selfsigned_certificate(dsa, 3600, ([ "commonName":"*" ]), 0, h);
+    if( !Standards.X509.verify_certificate(s, ([])) )
+      return h;
+  }
+  return 1;
+]], 1)
+
+test_any([[
+  Crypto.RSA rsa = Crypto.RSA();
+  rsa->generate_key(1024);
+
+  foreach( ({ 0,
+#if constant(Crypto.MD2)
+    Crypto.MD2,
+#endif
+    Crypto.MD5,
+    Crypto.SHA1,
+    Crypto.SHA256,
+#if constant(Crypto.SHA384)
+    Crypto.SHA384,
+#endif
+#if constant(Crypto.SHA512)
+    Crypto.SHA512,
+#endif
+     }), object h)
+  {
+    string s=Standards.X509.make_selfsigned_certificate(rsa, 3600, ([ "commonName":"*" ]), 0, h);
+    if( !Standards.X509.verify_certificate(s, ([])) )
+      return h;
+  }
+  return 1;
+]], 1)
+
+cond_resolv( Crypto.ECC, [[
+test_any([[
+  Crypto.Sign key = Crypto.ECC.SECP_521R1.ECDSA()->generate_key();
+
+  foreach( ({ 0,
+    Crypto.SHA1,
+#if constant(Crypto.SHA224)
+    Crypto.SHA224,
+#endif
+    Crypto.SHA256,
+#if constant(Crypto.SHA384)
+    Crypto.SHA384,
+#endif
+#if constant(Crypto.SHA512)
+    Crypto.SHA512,
+#endif
+  }), object h)
+  {
+    string s = Standards.X509.make_selfsigned_certificate(key, 3600, ([ "commonName":"*" ]), 0, h);
+    if( !Standards.X509.verify_certificate(s, ([])) )
+      return h;
+  }
+  return 1;
+]], 1)
+]])
+
+test_any([[
+  Crypto.RSA root_rsa = Crypto.RSA();
+  root_rsa->generate_key(512);
+  string root = Standards.X509.make_root_certificate(root_rsa, 3600, ([ "commonName":"DaRoot" ]));
+  object rtbs = Standards.X509.decode_certificate(root);
+
+  Crypto.RSA cert_rsa = Crypto.RSA();
+  cert_rsa->generate_key(512);
+  string c = Standards.X509.make_site_certificate(rtbs, root_rsa, cert_rsa, 3600, ([ "commonName":"*" ]));
+
+  mapping auths = ([ rtbs->subject->get_der() : rtbs->public_key ]);
+
+  mapping m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(!m->verified || m->error_code || m->self_signed)
+    return m+(["line":__LINE__]);
+
+  c = Standards.X509.make_selfsigned_certificate(cert_rsa, 3600, ([ "commonName":"*" ]));
+  m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(m->verified || m->error_code!=Standards.X509.CERT_ROOT_UNTRUSTED)
+    return m+(["line":__LINE__]);
+
+  c = Standards.X509.make_site_certificate(rtbs, root_rsa, cert_rsa, -3600, ([ "commonName":"*" ]));
+  m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(m->verified || m->error_code!=Standards.X509.CERT_TOO_OLD)
+    return m+(["line":__LINE__]);
+
+  {
+    object dn = Standards.PKCS.Certificate.build_distinguished_name(
+      ([ "commonName" : "*" ]) );
+    object val = Standards.ASN1.Types.Sequence( ({
+                   Standards.ASN1.Types.UTC()->set_posix( time()+1000 ),
+                   Standards.ASN1.Types.UTC()->set_posix( time()+2000 ),
+                 }) );
+    object tbs = Standards.X509.make_tbs(rtbs->subject,
+		   cert_rsa->pkcs_signature_algorithm_id(Crypto.SHA256),
+		   dn, cert_rsa->pkcs_public_key(),
+		   Standards.ASN1.Types.Integer(1), val, 0);
+    c = Standards.X509.sign_tbs(tbs, root_rsa, Crypto.SHA256)->get_der();
+  }
+  m = Standards.X509.verify_certificate_chain( ({ c }), auths, 1);
+  if(m->verified || m->error_code!=Standards.X509.CERT_TOO_NEW)
+    return m+(["line":__LINE__]);
+
+  return 1;
+]], 1)
+
+test_true(mappingp(Standards.X509.load_authorities()))
+
+define(test_cert, ([[
+  test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE[0]->body, ([])))
+  test_any([[
+    string der = Standards.PEM.Messages(#"$1")->get_certificate();
+    object o = decode_value(encode_value(Standards.X509.decode_certificate(der)));
+    /* TBS does not contain the full certificate... */
+    /* if( o->get_der() != der ) return -1; */
+
+    if( o->ext_basicConstraints != 1) return 2;
+    if( !o->public_key->pkc ) return 3;
+    return 1;
+  ]], 1)
+]]))
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -md5 -newkey rsa:2048 -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
+MIIC+TCCAeGgAwIBAgIJAK9S+nXAkU+DMA0GCSqGSIb3DQEBBAUAMBMxETAPBgNV
+BAMMCFBpa2VDZXJ0MB4XDTEzMTEyMTIxMjM1MFoXDTE0MTEyMTIxMjM1MFowEzER
+MA8GA1UEAwwIUGlrZUNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDacxSu60OEhmtfBd+p9oaQ+4w13Cwp70dwRrjPb/y33sFWKN3YZ+rq/8aNXPUO
+GLOyVF6z/BlOBS8t6KBI6lNvozVFqp5cwjA6vncbwMODqB8ZZffgA/dbSTM/xtbb
+CSno4ylr4wLVk1tnwZIOS4F2mIR/po1QzwIqTAGdkMEvUkmknqEM2Ifqdb6pNjWh
+Icma7MqtYnv7/UBib8Gt8j7hk6Yrv5tj3vOHFTs2MogfIfvRnBkhSR5nMbLorLpc
+JqfVr9ZNHX66RzSKl8KHDL8/MvI96lM9eFp0utdjIUU2ApSy94U5BqhrCCzBZxHa
+dBQEvUkeX8gYHwmVudSHR5O1AgMBAAGjUDBOMB0GA1UdDgQWBBTvujHuucSU+THc
+h188CYrgV2vghjAfBgNVHSMEGDAWgBTvujHuucSU+THch188CYrgV2vghjAMBgNV
+HRMEBTADAQH/MA0GCSqGSIb3DQEBBAUAA4IBAQCY8Ix17qoiAEDqV9HdyBzNRaPW
+/b7iN5bKjy7Vq1AP0RWIc9Wjcn5cKhk/4d7e7KRYT+Pq3ayLgppoYySA6dXERGj/
+fu5ocOR5ZAjNLJG48dV2HzOe3mjFEbfw+SPR8AnNRH4qm0yNhds0e0K8MhrX7uNB
+6eZ58rt6uIUVTOKTO1HHlxX7AasgQuiT5CajLReYM6DH/F2YXLF5I4iwTRa2p5Zi
+GDAm2I6N+Txm/adCVLjpFtV2b2Mu73yzqjEVm5ruknYPfT/HPnqbmNYJySi8mCd+
+Nwq6nXBlwd7hqkELVjumX7/xyRcLY2S9wW2rTwcsQ443KGFYQqJv0/pqGC2g
+-----END CERTIFICATE-----)
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha256 -newkey rsa:2048 -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
+MIIC+TCCAeGgAwIBAgIJANOmQYB8BiA6MA0GCSqGSIb3DQEBCwUAMBMxETAPBgNV
+BAMMCFBpa2VDZXJ0MB4XDTEzMTExOTEzNDQxOVoXDTE0MTExOTEzNDQxOVowEzER
+MA8GA1UEAwwIUGlrZUNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQC8sZtnnq7b8tBSZIM9MC5h9in8zF5jerv1JmS5aU85O3GYfN/862GxR4i6sxhM
+7kGlS/qGv65iGp/ld2vBwGZnQVa/Q+d51dyPPsgGzU3DsHsHogdwrKKDuo4RbFcB
+AgTSzmZtHaEzaKQdl9l3fxAdcH0uLxLswYD0hvIHcTLJQKg+YNUIMWlGOiEfY8N9
+NV+CD1pUHRUi8t3jvst7IzPL2XfcsBa504lR6qTOaLFKGzlVRJ9tZGnM7OOLCRPB
+s0SH/gEhz7BXtAwS7AZLyClTND84peGyc+yNEbl3KAcGjSgWQUmCFskWgLKSl4vF
+/86Gw/pUne4MXOXj4GymIft1AgMBAAGjUDBOMB0GA1UdDgQWBBT2CgtRG0/MHJwJ
+MoaBbbusDfjNHjAfBgNVHSMEGDAWgBT2CgtRG0/MHJwJMoaBbbusDfjNHjAMBgNV
+HRMEBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQClIqFapK5qFrAs0hvcHBBnHofn
+zOe/+w6iEDfZfDr0HPnJ82ud/jze1h5oqWOjfVJxU1uerexr1zY9CAw02r5lbPDY
+MQpq+dh+QEl47TXmfPRLhP1VDrhf4imZRiOBy7VMXJ9ry3VixclN3nkntcx3SbB9
+Qo2hMzbvtyF1uleBIyZhECN4THU5O2+FDwFOX4ZQGxQK/ANCNDN1rCAb5ndcYcKk
+sMC/92tm3x5q8EHS1Yil4Q8BIiuj+2psKX9UZGAbMxB1czubQkyl9mNiV9V8PpGc
+Vue27gwE5EFxe0/5NwQmjkyH6xD6KQx71T1pRdLr8MiAD1YhPsXx61VkDgtm
+-----END CERTIFICATE-----)
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha384 -newkey rsa:2048 -out certfile.cer
+cond_resolv(Crypto.SHA384, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIC+TCCAeGgAwIBAgIJAL7hTIcdxBC2MA0GCSqGSIb3DQEBDAUAMBMxETAPBgNV
+BAMMCFBpa2VDZXJ0MB4XDTEzMTExOTEzNDkyMFoXDTE0MTExOTEzNDkyMFowEzER
+MA8GA1UEAwwIUGlrZUNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDrtRukBd5IMIJiKYDDnPYKOyxL1prfDZQK7imVUaPaJ7nFC4xEAdmslALwqatl
+u17imWe/cVeL6Hrk6hfpbIIKTD21JaJDIeSfdBhnB5PrRrf2t7w7i9ycP17tPc+X
+f24OIJLdSnG8hIhFfFF3ycKSAP95C6o+bMufPcHfbo4krDRC6sH9CmYjzTad7yLd
+5XZxQDZWzVrEGPDBqICie4dxXr3Z8cGaX8K0yJ/EcRit4JJ0DCEjqw5VzAcp0Ueb
+7cJBqR3RdjICfEzIk9b7JRGCxfzYdInE6lFdiz+qD7oZfKnLqJnxa0Bko5p7dLNl
+68AB0PhdSPlf/+OCq/CORVNvAgMBAAGjUDBOMB0GA1UdDgQWBBRrbb+EgxdZHmib
+f6S9MXaLlz6gbjAfBgNVHSMEGDAWgBRrbb+EgxdZHmibf6S9MXaLlz6gbjAMBgNV
+HRMEBTADAQH/MA0GCSqGSIb3DQEBDAUAA4IBAQBA/Bi+wAm4gvb2nQ2krHRX9Mqn
+/shpH9ac3XtaZqTxcgmQngCWJCalYetHIwyTghMijDfwZv4fVx2I7Ss9Ay3rB5a0
+EocTN81NI3zQ7tCXvh99lEKXkZ0SwYdCHRFOr3C7yadoFRrXFOkjKKkv44AZptc6
+dddT4IhF0ccFNVops9yUkgdiSaZL+iWBKzPxNSP2m785ldzfpAaBfkIjtQm0LUtP
+Mc8wNpKQCO3ldK2Paq+At0aaPXlRVIUtS9/w0MYL90w/3iDzR3OtTvb85I87G3A1
+xuStSBwdb6EpBU2Ige9qw5TVaulCBjAmdOUIJRwU5UoWTktcmrsM0aqjf+/R
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha512 -newkey rsa:2048 -out certfile.cer
+cond_resolv(Crypto.SHA512, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIC+TCCAeGgAwIBAgIJANPdhgZsaxbZMA0GCSqGSIb3DQEBDQUAMBMxETAPBgNV
+BAMMCFBpa2VDZXJ0MB4XDTEzMTExOTEzNTg1M1oXDTE0MTExOTEzNTg1M1owEzER
+MA8GA1UEAwwIUGlrZUNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQCh38qv4Sycmsg7mWX3uH5yV+lBcu9YK1Mr2RxomZ3Qmh0SNWHkUqySXZ6UAgy/
+rptf938jqtEm3XQ6BRwjGqcSjoPo0IaE/Zm3LmJHf0vDEckn0pz8yA5gXHVxVxlL
+M40VtTH+LYrW8ZagwUUj2KppZSbWC91JJ61l8hody8zEIiwhm4Y4G2FYhFZZNPGK
+btEL6cJCoFplkocWjHidnW2X33EGrY5vtp5W3bGbpzfxKjSAZVDGiCbfnam7GrhU
+8jDWpZEaCPiFVT2hY5Hz509FQlZpyOqzjhgfQPU5bGWphBzHpnma3ehvATdo5tjE
+yHNXJLtlBR31ysfSHWUilvNhAgMBAAGjUDBOMB0GA1UdDgQWBBTlPPi9ZZPq3quZ
+R6kgGV/jitgxPjAfBgNVHSMEGDAWgBTlPPi9ZZPq3quZR6kgGV/jitgxPjAMBgNV
+HRMEBTADAQH/MA0GCSqGSIb3DQEBDQUAA4IBAQBe5mgQx+xZFZ48nNLJCUhNxpM4
+1Z9ru0SM/aQwQOHm6Ewhg89E2VjbvefqhdPkNF6hQTLsjcF3hh0oxDI4pXQE4QFK
+ouS5lbSm8PGjSG9XmFu1j8wcO7XhgOxEnV+7aTtD0SbRogsxAKoeV2eINcWYbJp7
+aCBpDINBOdGmnLiBxN1x9Q7EPP3pLbba1/bo2Od3ptd3GWUlmoufjuLezgSRni52
+9lj8H5z7G8tvU2OZKYHI6y3n5Q6SUh+LRUAwYnKaO54WVsjO6oA6DD0Z6HovzQfN
+AWbDAMbePGe4sM6h5f3MO/v3Wbxkv1scn2PuvHQ1xpTfp7z+yAc8kB4udUnC
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl dsaparam -genkey -out dsaparam 1024
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -newkey dsa:dsaparam.txt -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
+MIICszCCAnGgAwIBAgIJAOthAQ79O7mMMAkGByqGSM44BAMwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTMxMTE5MTc0MDIwWhcNMTQxMTE5MTc0MDIwWjATMREwDwYD
+VQQDDAhQaWtlQ2VydDCCAbYwggErBgcqhkjOOAQBMIIBHgKBgQC6vqxjXhAMZSEV
+P4pzp0KY+qYnTjM9ieZ27myet+M5qXIjcEg2/XLwLPmPIYOGTm6OlPXADdaEZzOf
+j6RLB2PJD6GghC5NbdrewsgGMAuVM7h5uEXRswsbpwxFm2MuPqKtA699cs6fa5hZ
+pNZUQPSlrFfkb6/95s/EofMGMQgQmwIVAPUBXOFLS/MYisyLR0Yw/poPC3HlAoGA
+EqdyVSDZRLMCONHc7UXNYMecOVgpcy8W9DEg4YfTx6SMp/Ey1mXG/cvvH47NbINS
+f88QXrBuJJEzhnQir+AUh31Mj2q/Uy2WKP8IP+kJGNjtFuxyO6YZx2OAc9lHrdvb
+AtOD//jnVOjijOG6fnAfBxMkkKWKYojMcDYWsijI6nYDgYQAAoGAWocMqiSNXmuc
+wIfYetPQitrmZRDTWizuit/sIcmvIPM0OnqFcxp50QWOaiZmAuL3pEB4CiV2HpIS
+Rer5N3/Vp+zMQGgRM1zFKD2qbdmMTOMWUGc3g1AjGGFvDuTYGOIY4RmftR0gt8Y4
+E2Dqqk0XbF3CeCrVhmVfa7ej0ByVYhmjUDBOMB0GA1UdDgQWBBRjbUSrAPUt1p8i
+8PfVzFv4Dl03LjAfBgNVHSMEGDAWgBRjbUSrAPUt1p8i8PfVzFv4Dl03LjAMBgNV
+HRMEBTADAQH/MAkGByqGSM44BAMDMQAwLgIVALDFfQRihjOCqi1vFUi5rnYig/zk
+AhUAijRxsj+Q6LEF43H8Wq4quhnZ5wQ=
+-----END CERTIFICATE-----)
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha224 -newkey dsa:dsaparam.txt -out certfile.cer
+cond_resolv(Crypto.SHA224, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIICtzCCAnSgAwIBAgIJAOX731WMZ8z4MAsGCWCGSAFlAwQDATATMREwDwYDVQQD
+DAhQaWtlQ2VydDAeFw0xMzExMjEyMjQ4MzlaFw0xNDExMjEyMjQ4MzlaMBMxETAP
+BgNVBAMMCFBpa2VDZXJ0MIIBtzCCASsGByqGSM44BAEwggEeAoGBALq+rGNeEAxl
+IRU/inOnQpj6pidOMz2J5nbubJ634zmpciNwSDb9cvAs+Y8hg4ZObo6U9cAN1oRn
+M5+PpEsHY8kPoaCELk1t2t7CyAYwC5UzuHm4RdGzCxunDEWbYy4+oq0Dr31yzp9r
+mFmk1lRA9KWsV+Rvr/3mz8Sh8wYxCBCbAhUA9QFc4UtL8xiKzItHRjD+mg8LceUC
+gYASp3JVINlEswI40dztRc1gx5w5WClzLxb0MSDhh9PHpIyn8TLWZcb9y+8fjs1s
+g1J/zxBesG4kkTOGdCKv4BSHfUyPar9TLZYo/wg/6QkY2O0W7HI7phnHY4Bz2Uet
+29sC04P/+OdU6OKM4bp+cB8HEySQpYpiiMxwNhayKMjqdgOBhQACgYEAl2nhlto4
+OVVC6LL3dbTDzuPoGTPXrc/O79rgN+Tqk6xyDZp8OCsv3iCixFQSuEzB1FYtpRW6
+h88BtW+XQLwXDtnutMB5f7XxsmUl4bBAQtsgsj8zDLXeZwW2asJx4lNUChLy4ugI
+fHbiv2c0tG/ehdl7/5oWeWfTJ8W++DdOChqjUDBOMB0GA1UdDgQWBBSxIQL2L5SV
+hXWv/TjSQJyMjDyj9jAfBgNVHSMEGDAWgBSxIQL2L5SVhXWv/TjSQJyMjDyj9jAM
+BgNVHRMEBTADAQH/MAsGCWCGSAFlAwQDAQMwADAtAhUAiaubShILTT032QiN0839
+FjXjMH4CFG58nH+vm7Sm19iEmkyAIuxCSWLt
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha256 -newkey dsa:dsaparam.txt -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
+MIICtjCCAnOgAwIBAgIJAKNFDJCk2PapMAsGCWCGSAFlAwQDAjATMREwDwYDVQQD
+DAhQaWtlQ2VydDAeFw0xMzExMjEyMjUzMTFaFw0xNDExMjEyMjUzMTFaMBMxETAP
+BgNVBAMMCFBpa2VDZXJ0MIIBtjCCASsGByqGSM44BAEwggEeAoGBALq+rGNeEAxl
+IRU/inOnQpj6pidOMz2J5nbubJ634zmpciNwSDb9cvAs+Y8hg4ZObo6U9cAN1oRn
+M5+PpEsHY8kPoaCELk1t2t7CyAYwC5UzuHm4RdGzCxunDEWbYy4+oq0Dr31yzp9r
+mFmk1lRA9KWsV+Rvr/3mz8Sh8wYxCBCbAhUA9QFc4UtL8xiKzItHRjD+mg8LceUC
+gYASp3JVINlEswI40dztRc1gx5w5WClzLxb0MSDhh9PHpIyn8TLWZcb9y+8fjs1s
+g1J/zxBesG4kkTOGdCKv4BSHfUyPar9TLZYo/wg/6QkY2O0W7HI7phnHY4Bz2Uet
+29sC04P/+OdU6OKM4bp+cB8HEySQpYpiiMxwNhayKMjqdgOBhAACgYBTJAHvGtEO
+7GSzGTozkjxnZo26ihiYsiIHiC1oD4VJd9l0Vu223QXVOgAuJtzgTOxZfFQB6Miq
+KugJ+2qcmykLcNG5TTHUkJ1HKYhuP1iiYUMY97Q1b2Uz+MOQ+shimvXdoK+9ZBOf
+5a2tZDCYLAI1xdF6A35C0wSZiT78yP8BhKNQME4wHQYDVR0OBBYEFCWcSXcij0Vj
+Zt8leQB4DR+YGM+qMB8GA1UdIwQYMBaAFCWcSXcij0VjZt8leQB4DR+YGM+qMAwG
+A1UdEwQFMAMBAf8wCwYJYIZIAWUDBAMCAzAAMC0CFQDQLFyJApRqu2RgJrpDBNBp
+m7GVvwIUYpUR6uKR45jxvAgL6W4yvRRP7vI=
+-----END CERTIFICATE-----)
+
+dnl openssl ecparam -out ec_key.pem -name prime192v1 -genkey
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
+cond_resolv(Crypto.ECC, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBSzCCAQKgAwIBAgIJAMj9iSOoOhP/MAkGByqGSM49BAEwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTQwMjIwMjMwMzUwWhcNMTUwMjIwMjMwMzUwWjATMREwDwYD
+VQQDDAhQaWtlQ2VydDBJMBMGByqGSM49AgEGCCqGSM49AwEBAzIABO8Nc4TWmi6n
+SOzblmAc9JFj5bDpmh9d93iHQUQIAUZ7LNTKv1V9tTNM+jZAYrr/+6NQME4wHQYD
+VR0OBBYEFEedlGtZ8r6IqvFJyZz2bTGgo0wIMB8GA1UdIwQYMBaAFEedlGtZ8r6I
+qvFJyZz2bTGgo0wIMAwGA1UdEwQFMAMBAf8wCQYHKoZIzj0EAQM4ADA1AhkA0FYQ
+k2RmcnzBakhpsxneFHHW1zYIKmBIAhgDcmopMyY+DdGfY1PyjZQAMK6wd2apnxA=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl ecparam -out ec_key.pem -name secp224r1 -genkey
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
+cond_resolv(Crypto.ECC, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBWTCCAQegAwIBAgIJAKy2vVL0uZPvMAkGByqGSM49BAEwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTQwMjIwMjIyODEzWhcNMTUwMjIwMjIyODEzWjATMREwDwYD
+VQQDDAhQaWtlQ2VydDBOMBAGByqGSM49AgEGBSuBBAAhAzoABLBH4yk4C3aO0tsM
+zek5hOHT4QTLT0JXN6ISNcMKqUCRVKpCvGSzeEXNJxapMiYWHdjLYD+4JVrxo1Aw
+TjAdBgNVHQ4EFgQUjokv7Vc49VVyQxypwozb6K2WmsgwHwYDVR0jBBgwFoAUjokv
+7Vc49VVyQxypwozb6K2WmsgwDAYDVR0TBAUwAwEB/zAJBgcqhkjOPQQBA0EAMD4C
+HQC2JfGfDizRP3ZHxaoZghBK/7dnHcT322QuFR6iAh0A4LJK8jnqAMRI0PD1JKDm
+dfPFb1cNwHMDje6/kw==
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha224 -out cert.pem
+cond_resolv(Crypto.ECC, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBWjCCAQigAwIBAgIJAOha9wA3a+TQMAoGCCqGSM49BAMBMBMxETAPBgNVBAMM
+CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTMxNVoXDTE1MDIyMDIyNTMxNVowEzERMA8G
+A1UEAwwIUGlrZUNlcnQwTjAQBgcqhkjOPQIBBgUrgQQAIQM6AASwR+MpOAt2jtLb
+DM3pOYTh0+EEy09CVzeiEjXDCqlAkVSqQrxks3hFzScWqTImFh3Yy2A/uCVa8aNQ
+ME4wHQYDVR0OBBYEFI6JL+1XOPVVckMcqcKM2+itlprIMB8GA1UdIwQYMBaAFI6J
+L+1XOPVVckMcqcKM2+itlprIMAwGA1UdEwQFMAMBAf8wCgYIKoZIzj0EAwEDQAAw
+PQIdALIF/yYyUXiMvY8wEkBrtXpksqsfDqrWALd7U1ACHGaRu/84qvnQwzyAvl+j
+b5Z/So1yqBUf4XBq0Es=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha256 -out cert.pem
+cond_resolv(Crypto.ECC, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBWjCCAQigAwIBAgIJAJPEMg5QZ2AoMAoGCCqGSM49BAMCMBMxETAPBgNVBAMM
+CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTQzOFoXDTE1MDIyMDIyNTQzOFowEzERMA8G
+A1UEAwwIUGlrZUNlcnQwTjAQBgcqhkjOPQIBBgUrgQQAIQM6AASwR+MpOAt2jtLb
+DM3pOYTh0+EEy09CVzeiEjXDCqlAkVSqQrxks3hFzScWqTImFh3Yy2A/uCVa8aNQ
+ME4wHQYDVR0OBBYEFI6JL+1XOPVVckMcqcKM2+itlprIMB8GA1UdIwQYMBaAFI6J
+L+1XOPVVckMcqcKM2+itlprIMAwGA1UdEwQFMAMBAf8wCgYIKoZIzj0EAwIDQAAw
+PQIdALQKF7WnOEjWGfCEwsJu4H7TleWwjBdSQhZSHHACHFzkyw1hf7mI05liXDoB
+kgzS9dNkRDh/CNvJidE=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha384 -out cert.pem
+cond_resolv(Crypto.ECC, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBWjCCAQigAwIBAgIJALahVk/hu/hnMAoGCCqGSM49BAMDMBMxETAPBgNVBAMM
+CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTU0NFoXDTE1MDIyMDIyNTU0NFowEzERMA8G
+A1UEAwwIUGlrZUNlcnQwTjAQBgcqhkjOPQIBBgUrgQQAIQM6AASwR+MpOAt2jtLb
+DM3pOYTh0+EEy09CVzeiEjXDCqlAkVSqQrxks3hFzScWqTImFh3Yy2A/uCVa8aNQ
+ME4wHQYDVR0OBBYEFI6JL+1XOPVVckMcqcKM2+itlprIMB8GA1UdIwQYMBaAFI6J
+L+1XOPVVckMcqcKM2+itlprIMAwGA1UdEwQFMAMBAf8wCgYIKoZIzj0EAwMDQAAw
+PQIcQ9LlOcOtKZlTqZiH8mLYT2aR61dFcAdqxqpRXQIdAK9x8HwlpDIoDn/BI1mC
+XRYzQ3xFhbfJ8HcxTbw=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha512 -out cert.pem
+cond_resolv(Crypto.ECC, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBWjCCAQigAwIBAgIJAIDLkTGU0TRQMAoGCCqGSM49BAMEMBMxETAPBgNVBAMM
+CFBpa2VDZXJ0MB4XDTE0MDIyMDIyNTcwNVoXDTE1MDIyMDIyNTcwNVowEzERMA8G
+A1UEAwwIUGlrZUNlcnQwTjAQBgcqhkjOPQIBBgUrgQQAIQM6AASwR+MpOAt2jtLb
+DM3pOYTh0+EEy09CVzeiEjXDCqlAkVSqQrxks3hFzScWqTImFh3Yy2A/uCVa8aNQ
+ME4wHQYDVR0OBBYEFI6JL+1XOPVVckMcqcKM2+itlprIMB8GA1UdIwQYMBaAFI6J
+L+1XOPVVckMcqcKM2+itlprIMAwGA1UdEwQFMAMBAf8wCgYIKoZIzj0EAwQDQAAw
+PQIcU0QhBUpHiMyHO5CbDrUhHralI2PsWJ3uxdVQqAIdAJqfn4ZOA1GL7GS8M/qz
+Nsv1aJAwJPuGLiymoU4=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl ecparam -out ec_key.pem -name prime256v1 -genkey
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
+cond_resolv(Crypto.ECC, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBazCCARKgAwIBAgIJAM1x4Mn082OeMAkGByqGSM49BAEwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTQwMjIwMjMwNTU4WhcNMTUwMjIwMjMwNTU4WjATMREwDwYD
+VQQDDAhQaWtlQ2VydDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABIJ+nZxoPPQM
+MJnOyOrDX7WSy6bHc9N5nR4yresTNgnQUlXTP8Ew3RcVpNlfAHhqzCvw7O7KTQ/1
+KTkQi3ad7y6jUDBOMB0GA1UdDgQWBBQdqJlyddJwwi0zmnidBkWzO1+LezAfBgNV
+HSMEGDAWgBQdqJlyddJwwi0zmnidBkWzO1+LezAMBgNVHRMEBTADAQH/MAkGByqG
+SM49BAEDSAAwRQIgPKBNFDgNeKuPxrXy4s8JK8IUxMjm9IopfE83FwtS090CIQC9
++0YHz9XhIlDO/P/M/C8MN0B7UMclhORDsUwuB7UWNg==
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl ecparam -out ec_key.pem -name secp384r1 -genkey
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
+cond_resolv(Crypto.ECC, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIBqDCCAS+gAwIBAgIJANvhD1nHQbI5MAkGByqGSM49BAEwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTQwMjIwMjI1OTIyWhcNMTUwMjIwMjI1OTIyWjATMREwDwYD
+VQQDDAhQaWtlQ2VydDB2MBAGByqGSM49AgEGBSuBBAAiA2IABBt1/QmpRtdKGu7Q
+79jLjyqjoq8srnaXIWQLLxHO42BwvXEprey0Jfpw0ckTkDjc7i6949Bbp0nGz/7i
+t5+AGxwXvoGkqbJnChlAEyFfKnQCd6mTmdJ2TSpR9OZcvwV0UaNQME4wHQYDVR0O
+BBYEFDyKXEk69swxYjAw5/CIEprBAyvzMB8GA1UdIwQYMBaAFDyKXEk69swxYjAw
+5/CIEprBAyvzMAwGA1UdEwQFMAMBAf8wCQYHKoZIzj0EAQNoADBlAjEA+T1yj7A3
+nj6PzbohEjh9Tu6yMrCw2bgPVli5WNzuu19/zTfx+DWtt/18ULG4X54oAjAlQTnu
+sO5NVHxzBVp4KKpeSo+GYCAxRVgYGWk5OSvNtM7ymVmcMXtzg18atpBaMaw=
+-----END CERTIFICATE-----)
+]])
+
+dnl openssl ecparam -out ec_key.pem -name secp521r1 -genkey
+dnl openssl req -new -key ec_key.pem -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -out cert.pem
+cond_resolv(Crypto.ECC, [[
+test_cert(-----BEGIN CERTIFICATE-----
+MIIB8jCCAVWgAwIBAgIJANiMssVQFtzxMAkGByqGSM49BAEwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTQwMjIwMjMwMDQ1WhcNMTUwMjIwMjMwMDQ1WjATMREwDwYD
+VQQDDAhQaWtlQ2VydDCBmzAQBgcqhkjOPQIBBgUrgQQAIwOBhgAEAZIjDKupLtSo
+n+rHVD685yCjuYzkEurcuxoPXFNqQ445BRj5FcV3o9+YtFUGTr+Zyr0A083x3khS
+A4/ztz7jzIqWAFWj0tFeckWNxxYbl4zIPaTIsSLV+EZhhpia6OoYtzKQeIN8NwI2
+RNC2IzEe9kxFPOJ6A2FNqWojevI1eGSS9nUBo1AwTjAdBgNVHQ4EFgQU+71Yb0C9
+d8sIZnqP7UrREpyyqEkwHwYDVR0jBBgwFoAU+71Yb0C9d8sIZnqP7UrREpyyqEkw
+DAYDVR0TBAUwAwEB/zAJBgcqhkjOPQQBA4GLADCBhwJBS1pKdJcRD10CL+hvzbfZ
+CyfO2yKeE5wCOnw4OKhKAUkNXyG4yNUeTu4DERxiu7NmS7dIPiOF4/EuN48yUu5o
+oYwCQgEl0Y76aF2udd6/IP2kSHonzmWyspaD77/N1cBlkJ95ztgZQZw+EquafiCV
+1osuk7lVUdguih1HssW1BjTkGeD4+g==
+-----END CERTIFICATE-----)
+]])
 
 END_MARKER

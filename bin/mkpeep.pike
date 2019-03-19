@@ -2,8 +2,6 @@
 
 #pragma strict_types
 
-// $Id$
-
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
 void err(string e, mixed ... a) {
@@ -150,6 +148,26 @@ array(string) tokenize(string line) {
 	line = line[i+1..];
       }
       break;
+
+      // Error message
+    case '"':
+      int i;
+      for (i = 1; (i < sizeof(line)); i++) {
+	if (line[i] == '"') break;
+	if (line[i] == '\\') i++;
+      }
+      t += ({ line[..i] });
+      line = line[i+1..];
+      break;
+
+    case ' ': case '\t': case '\r': case '\n':
+      break;
+
+    default:
+      werror("Unsupported character: '%c' (%d)\n",
+	     line[0], line[0]);
+      line = line[1..];
+      break;
     }
 
     SKIPWHITE(line);
@@ -290,7 +308,7 @@ class Switch(string test) {
 
   void make_fun() {
     made_fun = ++function_serial;
-    functions += "INLINE static int _asm_peep_"+made_fun+"(void)\n{\n";
+    functions += "static int _asm_peep_"+made_fun+"(void)\n{\n";
     functions += make_switch(2);
     functions +=
       "  return 0;\n"
@@ -299,7 +317,7 @@ class Switch(string test) {
   }
 
   int made_fun;
-  string get_string(int ind) {
+  string get_string(int(0..) ind) {
     if(made_fun) {
       string ret = "";
       ret += sprintf("%*nif (_asm_peep_%d())\n"
@@ -311,15 +329,39 @@ class Switch(string test) {
     return make_switch(ind);
   }
 
-  string make_switch(int ind) {
+  string make_switch(int(0..) ind) {
     string ret = "";
     ret += sprintf("%*nswitch(%s)\n", ind, test);
     ret += sprintf("%*n{\n", ind);
 
+    mapping(string:array(string)) rev = ([]);
+    foreach(sort(indices(cases)), string c)
+    {
+      if(`+(@cases[c]->is_switch)) continue;
+      string code = cases[c]->get_string(0)*"";
+      while( sscanf(code, "%s/*%*s*/%s", code, string tail)==3 )
+        code = code+tail;
+      rev[ code ] += ({ c });
+    }
+    mapping(string:array(string)) alias = ([]);
+    foreach(rev;; array(string) cs)
+    {
+      if( sizeof(cs)>1 )
+      {
+        alias[cs[0]] = cs[1..];
+        foreach(cs[1..], string c)
+          m_delete(cases, c);
+      }
+    }
+
     foreach(sort(indices(cases)), string c) {
       ret += sprintf("%*ncase %s:\n", ind, c);
+      if( alias[c] )
+        foreach( alias[c], string c )
+          ret += sprintf("%*ncase %s:\n", ind, c);
+
       foreach(cases[c], object(Switch)|object(Breakable) b)
-	  ret += b->get_string(ind+2);
+	ret += b->get_string([int(0..)](ind+2));
       ret += sprintf("%*n  break;\n"
 		     "\n",
 		     ind);
@@ -340,14 +382,14 @@ class Breakable {
       lines += ({ a });
   }
 
-  string get_string(int ind) {
+  string get_string(int(0..) ind) {
     string ret = "";
     foreach(lines, string|array(string) line)
       if(stringp(line)) {
 	if(String.trim_all_whites([string]line)=="")
-	  ret += line;
+	  ret += [string]line;
 	else
-	  ret += sprintf("%*n%s\n", ind, line);
+	  ret += sprintf("%*n%s\n", ind, [string]line);
       }
       else {
 	array(string) line = [array(string)]line;
@@ -428,7 +470,7 @@ array(Switch|Breakable) make_switches(array(Rule) data)
   if(sizeof(data))
   {
     Breakable buf = Breakable();
-    int ind;
+    int(0..) ind;
     foreach(data, Rule d)
     {
       buf->add_line(" "*ind+"/* ", d->line, " */");
@@ -444,13 +486,19 @@ array(Switch|Breakable) make_switches(array(Rule) data)
 
       for(int i=0; i<sizeof(d->to); i++)
       {
-	array args=({});
+	array(string) args=({});
 	string fcode=d->to[i];
 	if(i+1<sizeof(d->to) && d->to[i+1][0]=='(')
 	{
 	  string tmp=d->to[i+1];
 	  args=explode_comma_expr(tmp[1..sizeof(tmp)-2]);
 	  i++;
+	}
+	if (fcode[0] == '"') {
+	  buf->add_line(" "*ind+"my_yyerror(",
+			({ fcode, @map(args,treat)[*]+"" }) * ", ",
+			");");
+	  continue;
 	}
 	ops += ({ ({ sizeof(args)+1+", ", fcode+", ",
 		     @map(args,treat)[*]+", " }) });
@@ -467,6 +515,24 @@ array(Switch|Breakable) make_switches(array(Rule) data)
   return ret;
 }
 
+void check_duplicates(array(Rule) data)
+{
+  int err;
+  mapping(string:Rule) froms = ([]);
+  foreach(data;; Rule r)
+  {
+    if(froms[r->from*","])
+    {
+      werror("Collision between\n  %O and\n  %O.\n",
+             froms[r->from*","]->line, r->line);
+      err=1;
+    }
+    froms[r->from*","] = r;
+  }
+
+  if(err)
+    exit(1, "Found %d rule collisions.\n", err);
+}
 
 int main(int argc, array(string) argv)
 {
@@ -486,6 +552,8 @@ int main(int argc, array(string) argv)
     }
   }
 
+  check_duplicates(data);
+
   write("\n\n/* Generated from %s by mkpeep.pike\n   %s\n*/\n\n",
 	argv[1], Calendar.ISO.now()->format_time());
 
@@ -495,7 +563,7 @@ int main(int argc, array(string) argv)
 
   write( functions );
 
-  write("INLINE static int low_asm_opt(void) {\n");
+  write("static int low_asm_opt(void) {\n");
   map(a->get_string(2), write);
 
   write("  return 0;\n"

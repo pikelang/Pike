@@ -1,6 +1,5 @@
-dnl $Id$
 
-AC_INIT(postgres.c)
+AC_INIT(postgres.cmod)
 AC_CONFIG_HEADER(pgres_config.h)
 
 AC_MODULE_INIT()
@@ -12,10 +11,10 @@ echo "Configuring Postgres module"
 AC_ARG_WITH(postgres,
 	[  --with(out)-postgres               postgres95 DB server support],
 	[],[with_postgres=yes])
-AC_ARG_WITH(postgres-include-dir, 
+AC_ARG_WITH(postgres-include-dir,
 	[  --with-postgres-include-dir=dir    look for header-files in dir],
 	[pike_postgres_user_include_directory=$withval])
-AC_ARG_WITH(libpq-dir, 
+AC_ARG_WITH(libpq-dir,
 	[  --with-libpq-dir=dir               look for library-files in dir],
 	[pike_postgres_user_lib_directory=$withval])
 
@@ -74,26 +73,14 @@ dnl see if we can find the include files in any of the standard locations
     AC_MSG_RESULT(not found.)
   fi
 
-dnl last ditch. The locator could be confused e.g. by pike include files
-dnl unluckily there is no way out of it.
-  if test x$pike_cv_pgres_include_dir$pike_try_locate = xnoyes; then
-    AC_MSG_CHECKING(whether we can locate it anyway...)
-    for pike_cv_pgres_locate_include_file in `locate libpq-fe.h`; do
-dnl check it not to be a stale entry
-      if test -f $pike_cv_pgres_locate_include_file; then
-	pike_cv_pgres_include_dir=`dirname $pike_cv_pgres_locate_include_file`
-	break
-      fi
-    done
-    if test x$pike_cv_pgres_include_dir != xno; then
-      AC_MSG_RESULT(found in $pike_cv_pgres_include_dir.)
-    else
-      AC_MSG_RESULT(not found.)
-    fi
-  fi
-
   if test x$pike_cv_pgres_include_dir != xno; then
     CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir"
+    if test -d "$pike_cv_pgres_include_dir/server/utils/."; then
+      # NB: postgresql 9.3.3 has a <server/common/fe_memutils.h>
+      #     that expects <server/utils/palloc.h> to be available
+      #     as <utils/palloc.h>.
+      CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir/server"
+    fi
   fi
 
 dnl final ckeck, just to be sure we did not mess up
@@ -105,7 +92,7 @@ dnl final ckeck, just to be sure we did not mess up
 		   postgresql/server/catalog/pg_type.h \
 		   server/pg_config.h postgresql/server/pg_config.h \
 		   pg_config.h libpq-fe.h)
-  
+
 dnl check whether we have Postgres 7.2 or newer.
   HAVE_PG72=no
   AC_EGREP_CPP([\"7\.[2-9].*], [
@@ -157,7 +144,7 @@ PG_VERSION
           ac_pike_postgres_works=no
       ])
   fi
-  
+
   echo "Have Postgres 7.2? $HAVE_PG72"
   if test "x$ac_cv_header_libpq_fe_h" = xno -o \
 	  "x$HAVE_PG72$ac_cv_header_postgres_h$ac_cv_header_postgres_fe_h$ac_cv_header_server_postgres_h$ac_cv_header_server_postgres_fe_h" = xnonononono ; then

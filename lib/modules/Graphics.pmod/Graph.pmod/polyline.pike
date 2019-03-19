@@ -1,6 +1,4 @@
 //! Graph sub-module providing draw functions.
-//!
-//! $Id$
 
 #pike __REAL_VERSION__
 
@@ -102,7 +100,7 @@ array(array(float)) make_polygon_from_line(float h, array(float) coords,
 	break;
       case CAP_ROUND:
 	array(float) initial_cap = allocate(CAPSTEPS*2);
-	
+
 	int j=0;
 	for(int i=0; i<CAPSTEPS; i++) {
 	  initial_cap[j++] = ox + sx*cap_cos_table[i] - sy*cap_sin_table[i];
@@ -134,7 +132,7 @@ array(array(float)) make_polygon_from_line(float h, array(float) coords,
 	s2y = sy;
       }
 
-      float mdiv = (sx*s2y-sy*s2x); 
+      float mdiv = (sx*s2y-sy*s2x);
       if(mdiv == 0.0) {
 	left += ({ tx+sx, ty+sy, tx+s2x, ty+s2y });
 	right += ({ tx-sx, ty-sy, tx-s2x, ty-s2y });
@@ -195,7 +193,7 @@ array(array(float)) make_polygon_from_line(float h, array(float) coords,
 	break;
       case CAP_ROUND:
 	array(float) end_cap = allocate(CAPSTEPS*2);
-	
+
 	int j=0;
 	for(int i=0; i<CAPSTEPS; i++) {
 	  end_cap[j++] = ox - sx*cap_cos_table[i] + sy*cap_sin_table[i];

@@ -18,7 +18,7 @@ GDK2.Display close( );
 //!
 //!
 
-static GDK2.Display create( );
+protected GDK2.Display create( );
 //! Get the default display.
 //!
 //!
@@ -165,9 +165,21 @@ int supports_cursor_color( );
 //!
 //!
 
+int supports_input_shapes( );
+//! Returns true if GDK2.Window->input_shape_combine_mask() can be used to
+//! modify the input shape of windows.
+//!
+//!
+
 int supports_selection_notification( );
 //! Returns whether GdkEventOwnerChange events will be sent when the owner
 //! of a selection changes.
+//!
+//!
+
+int supports_shapes( );
+//! Returns true if GDK2.Window->shape_combine_mask() can be used to create
+//! shaped windows.
 //!
 //!
 

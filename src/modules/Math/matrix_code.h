@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -39,13 +38,13 @@ struct matrixX(_storage)
 
 static void matrixX(_mult)( INT32 args );
 
-static void Xmatrix(init_)(struct object *o)
+static void Xmatrix(init_)(struct object *UNUSED(o))
 {
    THIS->xsize=THIS->ysize=0;
    THIS->m=NULL;
 }
 
-static void Xmatrix(exit_)(struct object *o)
+static void Xmatrix(exit_)(struct object *UNUSED(o))
 {
    if (THIS->m) free(THIS->m);
 }
@@ -63,7 +62,7 @@ static void matrixX(_create)(INT32 args)
    if (THIS->m)
       bad_arg_error(PNAME, Pike_sp-args, args, 1, "", Pike_sp-args,
 		    "Has already been called.\n");
-   
+
    if (TYPEOF(Pike_sp[-args]) == T_ARRAY)
    {
       ys=THIS->ysize=Pike_sp[-args].u.array->size;
@@ -71,7 +70,7 @@ static void matrixX(_create)(INT32 args)
       if (ys<1 || TYPEOF(Pike_sp[-args].u.array->item[0]) != T_ARRAY)
       {
 	 push_svalue(Pike_sp-args);
-	 f_aggregate(THIS->ysize=ys=1); 
+	 f_aggregate(THIS->ysize=ys=1);
 	 free_svalue(Pike_sp-args-1);
 	 Pike_sp[-args-1]=Pike_sp[-1];
 	 Pike_sp--;
@@ -82,10 +81,10 @@ static void matrixX(_create)(INT32 args)
 	struct array *a;
 	 if (TYPEOF(Pike_sp[-args].u.array->item[i]) != T_ARRAY)
 	    SIMPLE_BAD_ARG_ERROR(PNAME,1,"array(array)");
-	 if (i==0) 
+	 if (i==0)
 	 {
 	    xs=Pike_sp[-args].u.array->item[i].u.array->size;
-	    THIS->m=m=malloc(sizeof(FTYPE)*xs*ys);
+	    THIS->m=m=calloc(xs*ys, sizeof(FTYPE));
 	    if (!m)
 	       SIMPLE_OUT_OF_MEMORY_ERROR(PNAME,
 					  sizeof(FTYPE)*xs*ys);
@@ -96,7 +95,7 @@ static void matrixX(_create)(INT32 args)
 				    "array of equal sized arrays");
 
 	 a = Pike_sp[-args].u.array->item[i].u.array;
-	 
+
 	 for (j=0; j<xs; j++)
 	    switch (TYPEOF(a->item[j]))
 	    {
@@ -109,9 +108,7 @@ static void matrixX(_create)(INT32 args)
 	      case T_OBJECT:
 		{
 		  INT64 x;
-#ifdef AUTO_BIGNUM
-		  if (a->item[j].u.object->prog != get_auto_bignum_program()) {
-#endif
+		  if (is_bignum_object_in_svalue(&a->item[j])) {
 		    /* Use push_svalue() so that we support subtypes... */
 		    push_svalue(a->item+j);
 		    o_cast_to_int();
@@ -119,23 +116,17 @@ static void matrixX(_create)(INT32 args)
 		      *(m++) = (FTYPE)Pike_sp[-1].u.integer;
 		      pop_stack();
 		      break;
-#ifdef AUTO_BIGNUM
-		    } else if ((TYPEOF(Pike_sp[-1]) == T_OBJECT) &&
-			       (Pike_sp[-1].u.object->prog ==
-				get_auto_bignum_program()) &&
+		    } else if (is_bignum_object_in_svalue(&Pike_sp[-1]) &&
 			       int64_from_bignum(&x, Pike_sp[-1].u.object)) {
 		      *(m++) = (FTYPE)x;
 		      pop_stack();
 		      break;
-#endif
 		    }
 		    pop_stack();
-#ifdef AUTO_BIGNUM
 		  } else if (int64_from_bignum(&x, a->item[j].u.object)) {
 		    *(m++) = (FTYPE)x;
 		    break;
 		  }
-#endif
 		}
 		/* FALL_THROUGH */
 	      default:
@@ -147,7 +138,7 @@ static void matrixX(_create)(INT32 args)
    }
    else if (TYPEOF(Pike_sp[-args]) == T_INT)
    {
-      FTYPE z = DO_NOT_WARN((FTYPE)0.0);
+      FTYPE z = (FTYPE)0.0;
 
       if (args<2)
 	 SIMPLE_TOO_FEW_ARGS_ERROR(PNAME,2);
@@ -155,15 +146,12 @@ static void matrixX(_create)(INT32 args)
 	 SIMPLE_BAD_ARG_ERROR(PNAME,2,"int");
 
       if ((THIS->xsize=xs=Pike_sp[-args].u.integer)<=0)
-	 SIMPLE_BAD_ARG_ERROR(PNAME,1,"int > 0");
+	 SIMPLE_BAD_ARG_ERROR(PNAME,1,"int(1..)");
       if ((THIS->ysize=ys=Pike_sp[1-args].u.integer)<=0)
-	 SIMPLE_BAD_ARG_ERROR(PNAME,2,"int > 0");
+	 SIMPLE_BAD_ARG_ERROR(PNAME,2,"int(1..)");
 
-      THIS->m=m=malloc(sizeof(FTYPE)*xs*ys);
-      if (!m)
-	 SIMPLE_OUT_OF_MEMORY_ERROR(PNAME,
-				    sizeof(FTYPE)*xs*ys);
-      
+      THIS->m=m=xcalloc(sizeof(FTYPE),xs*ys);
+
       if (args>2) {
 	 if (TYPEOF(Pike_sp[2-args]) == T_INT)
 	    z=(FTYPE)Pike_sp[2-args].u.integer;
@@ -174,7 +162,6 @@ static void matrixX(_create)(INT32 args)
 	    if (Pike_sp[2-args].u.string==s__clr)
 	    {
 	       /* internal call: don't care */
-	       MEMSET(m,0,xs*ys*sizeof(FTYPE));
 	       goto done_made;
 	    }
 	    else if (Pike_sp[2-args].u.string==s_identity)
@@ -190,7 +177,7 @@ static void matrixX(_create)(INT32 args)
 	 else
 	    SIMPLE_BAD_ARG_ERROR(PNAME,3,"int|float|string");
       }
-      
+
       xs*=ys;
       while (xs--) *(m++)=z;
 
@@ -198,7 +185,7 @@ static void matrixX(_create)(INT32 args)
       {
 	 xs=THIS->xsize;
 	 for (i=0; i<xs && i<ys; i++)
-	    THIS->m[i*(xs+1)] = DO_NOT_WARN((FTYPE)1.0);
+            THIS->m[i*(xs+1)] = (FTYPE)1.0;
       }
 
 done_made:
@@ -214,14 +201,14 @@ done_made:
 	 get_all_args(PNAME,args,"%s%i",&dummy,&side);
 
 	 THIS->xsize=THIS->ysize=side;
-	 THIS->m=m=malloc(sizeof(FTYPE)*side*side);
+	 THIS->m=m=calloc(side*side, sizeof(FTYPE));
 	 if (!m) SIMPLE_OUT_OF_MEMORY_ERROR(PNAME,sizeof(FTYPE)*side*side);
 
   	 n=side*side;
-	 while (n--) *(m++) = DO_NOT_WARN((FTYPE)0.0); 
+         while (n--) *(m++) = (FTYPE)0.0;
 	 n=side*side;
 	 for (i=0; i<n; i+=side+1)
-	    THIS->m[i] = DO_NOT_WARN((FTYPE)1.0);
+            THIS->m[i] = (FTYPE)1.0;
       }
       else if (Pike_sp[-args].u.string==s_rotate)
       {
@@ -233,12 +220,11 @@ done_made:
 	 /* "rotate",size,degrees,x,y,z */
 
 	 if (args>3 && TYPEOF(Pike_sp[3-args]) == T_OBJECT &&
-	     ((mx=(struct matrixX(_storage)*)
-	       get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+	     ((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
 	 {
 	    if (mx->xsize*mx->ysize!=3)
 	       SIMPLE_BAD_ARG_ERROR(PNAME,4,"Matrix of size 1x3 or 3x1");
-	    
+
 	    x = mx->m[0];
 	    y = mx->m[1];
 	    z = mx->m[2];
@@ -248,32 +234,32 @@ done_made:
 	 else
 	    get_all_args(PNAME,args,"%s%i%F%F%F%F",
 			 &dummy,&side,&r,&x,&y,&z);
-	 
+
 	 if (side<2)
 	    SIMPLE_BAD_ARG_ERROR(PNAME,2,"int(2..)");
 
 	 THIS->xsize=THIS->ysize=side;
-	 THIS->m=m=malloc(sizeof(FTYPE)*side*side);
+	 THIS->m=m=calloc(side*side, sizeof(FTYPE));
 	 if (!m) SIMPLE_OUT_OF_MEMORY_ERROR(PNAME,sizeof(FTYPE)*side*side);
 
 	 n=side*side;
-	 while (n--) *(m++) = DO_NOT_WARN((FTYPE)0.0);
+         while (n--) *(m++) = (FTYPE)0.0;
 	 for (i=3; i<side; i++)
-	    THIS->m[i*(side) + i] = DO_NOT_WARN((FTYPE)1.0);
+            THIS->m[i*(side) + i] = (FTYPE)1.0;
 	 c = cos(r);
 	 s = sin(r);
 
-	 THIS->m[0+0*side] = DO_NOT_WARN((FTYPE)(x*x*(1-c)+c));
-	 THIS->m[1+0*side] = DO_NOT_WARN((FTYPE)(x*y*(1-c)-z*s));
-	 THIS->m[0+1*side] = DO_NOT_WARN((FTYPE)(y*x*(1-c)+z*s));
-	 THIS->m[1+1*side] = DO_NOT_WARN((FTYPE)(y*y*(1-c)+c));
+         THIS->m[0+0*side] = (FTYPE)(x*x*(1-c)+c);
+         THIS->m[1+0*side] = (FTYPE)(x*y*(1-c)-z*s);
+         THIS->m[0+1*side] = (FTYPE)(y*x*(1-c)+z*s);
+         THIS->m[1+1*side] = (FTYPE)(y*y*(1-c)+c);
 	 if (side>2)
 	 {
-	    THIS->m[2+0*side] = DO_NOT_WARN((FTYPE)(x*z*(1-c)+y*s));
-	    THIS->m[2+1*side] = DO_NOT_WARN((FTYPE)(y*z*(1-c)-x*s));
-	    THIS->m[0+2*side] = DO_NOT_WARN((FTYPE)(z*x*(1-c)-y*s));
-	    THIS->m[1+2*side] = DO_NOT_WARN((FTYPE)(z*y*(1-c)+x*s));
-	    THIS->m[2+2*side] = DO_NOT_WARN((FTYPE)(z*z*(1-c)+c));
+            THIS->m[2+0*side] = (FTYPE)(x*z*(1-c)+y*s);
+            THIS->m[2+1*side] = (FTYPE)(y*z*(1-c)-x*s);
+            THIS->m[0+2*side] = (FTYPE)(z*x*(1-c)-y*s);
+            THIS->m[1+2*side] = (FTYPE)(z*y*(1-c)+x*s);
+            THIS->m[2+2*side] = (FTYPE)(z*z*(1-c)+c);
 	 }
       }
       else
@@ -282,9 +268,6 @@ done_made:
    }
    else
       SIMPLE_BAD_ARG_ERROR(PNAME,1,"array|int");
-
-   pop_n_elems(args);
-   push_int(0);
 }
 
 
@@ -296,29 +279,30 @@ void matrixX(_cast)(INT32 args)
       push_int(0);
    }
 
-   if (args)
-      if (TYPEOF(Pike_sp[-1]) == T_STRING) {
-	 if (Pike_sp[-1].u.string==s_array)
-	 {
-	    int i,j;
-	    int xs=THIS->xsize,ys=THIS->ysize;
-	    FTYPE *m=THIS->m;
-	    check_stack(DO_NOT_WARN((long)(xs+ys)));
-	    pop_n_elems(args);
-	    for (i=0; i<ys; i++)
-	    {
-	      for (j=0; j<xs; j++)
-		PUSH_ELEM(*(m++));
-	      f_aggregate(xs);
-	    }
-	    f_aggregate(ys);
-	    return;
-	 }
-         else
-           Pike_error("Can only cast to array.\n");
-      }
+   if( !args || TYPEOF(Pike_sp[-1]) != T_STRING )
+     SIMPLE_BAD_ARG_ERROR("cast",1,"string");
 
-   SIMPLE_BAD_ARG_ERROR("cast",1,"string");
+   if( Pike_sp[-1].u.string != literal_array_string )
+   {
+     pop_n_elems(args);
+     push_undefined();
+     return;
+   }
+
+   {
+     int i,j;
+     int xs=THIS->xsize,ys=THIS->ysize;
+     FTYPE *m=THIS->m;
+     check_stack((long)(xs+ys));
+     pop_n_elems(args);
+     for (i=0; i<ys; i++)
+     {
+       for (j=0; j<xs; j++)
+         PUSH_ELEM(*(m++));
+       f_aggregate(xs);
+     }
+     f_aggregate(ys);
+   }
 }
 
 
@@ -336,7 +320,7 @@ void matrixX(_vect)(INT32 args)
       int i;
       int xs=THIS->xsize,ys=THIS->ysize;
       FTYPE *m=THIS->m;
-      check_stack(DO_NOT_WARN((long)(xs*ys)));
+      check_stack((long)(xs*ys));
       for (i=0; i<xs * ys; i++)
 	PUSH_ELEM(*(m++));
       f_aggregate(ys*xs);
@@ -366,7 +350,7 @@ void matrixX(__sprintf)(INT32 args)
 	    return;
 	 }
 
-	 push_constant_text("Math." PNAME "( ({ ({ ");
+	 push_static_text("Math." PNAME "( ({ ({ ");
 	 n=1;
 	 for (y=0; y<THIS->ysize; y++)
 	 {
@@ -377,10 +361,10 @@ void matrixX(__sprintf)(INT32 args)
 	       push_text(buf); n++;
 	    }
 	    if (y<THIS->ysize-1)
-	       push_constant_text("}),\n                ({ "); 
+	       push_static_text("}),\n                ({ ");
 	    n++;
 	 }
-	 push_constant_text("}) }) )"); 
+	 push_static_text("}) }) )");
 	 f_add(n);
 	 stack_pop_n_elems_keep_top(args);
 	 return;
@@ -442,13 +426,13 @@ static void matrixX(_norm)(INT32 args)
    if (!(THIS->xsize==1 || THIS->ysize==1))
       math_error("norm",Pike_sp-args,args,0,
 		 "Cannot compute norm of non 1xn or nx1 matrices.\n");
-   
+
    z=0.0;
    s=THIS->m;
    while (n--)
       z+=*s**s,s++;
 
-   push_float(DO_NOT_WARN((FLOAT_TYPE)sqrt(z)));
+   push_float((FLOAT_TYPE)sqrt(z));
 }
 
 static void matrixX(_norm2)(INT32 args)
@@ -462,13 +446,13 @@ static void matrixX(_norm2)(INT32 args)
   if (!(THIS->xsize==1 || THIS->ysize==1))
       math_error("norm2",Pike_sp-args,args,0,
 		 "Cannot compute norm of non 1xn or nx1 matrices.\n");
-   
+
    z=0.0;
    s=THIS->m;
    while (n--)
       z+=*s**s,s++;
 
-   push_float(DO_NOT_WARN((FLOAT_TYPE)z));
+   push_float((FLOAT_TYPE)z);
 }
 
 static void matrixX(_normv)(INT32 args)
@@ -483,7 +467,7 @@ static void matrixX(_normv)(INT32 args)
    else
    {
       Pike_sp[-1].u.float_number =
-	DO_NOT_WARN((FLOAT_TYPE)(1.0/Pike_sp[-1].u.float_number));
+        (FLOAT_TYPE)(1.0/Pike_sp[-1].u.float_number);
       matrixX(_mult)(1);
    }
 }
@@ -512,8 +496,7 @@ static void matrixX(_add)(INT32 args)
    }
 
    if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-       !((mx=(struct matrixX(_storage)*)
-	  get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+       !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
       SIMPLE_BAD_ARG_ERROR("`+",1,"object(Math.Matrix)");
 
    if (mx->xsize != THIS->xsize || mx->ysize != THIS->ysize)
@@ -541,7 +524,7 @@ static void matrixX(_sub)(INT32 args)
    int n,i;
    FTYPE *s1,*s2=NULL,*d;
 
-   if (args) 
+   if (args)
    {
       if (args>1) /* one subtract per argument */
       {
@@ -556,8 +539,7 @@ static void matrixX(_sub)(INT32 args)
       }
 
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-	  !((mx=(struct matrixX(_storage)*)
-	     get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+	  !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
 	 SIMPLE_BAD_ARG_ERROR("`-",1,"object(Math.Matrix)");
 
       if (mx->xsize != THIS->xsize ||
@@ -567,7 +549,7 @@ static void matrixX(_sub)(INT32 args)
 
       s2=mx->m;
    }
-   
+
    dmx=matrixX(_push_new_)(THIS->xsize,THIS->ysize);
 
    s1=THIS->m;
@@ -600,7 +582,7 @@ static void matrixX(_sum)(INT32 args)
    s=THIS->m;
    while (n--)
       sum+=*(s++);
-   
+
    PUSH_ELEM(sum);
 }
 
@@ -618,7 +600,7 @@ static void matrixX(_max)(INT32 args)
 		      "Cannot do max() from a zero-sized matrix.\n");
    max=*(s++);
    while (--n) { if (*s>max) max=*s; s++; }
-   
+
    PUSH_ELEM(max);
 }
 
@@ -637,7 +619,7 @@ static void matrixX(_min)(INT32 args)
 		      "Cannot do min() from a zero-sized matrix.\n");
    min=*(s++);
    while (--n) { if (*s<min) min=*s; s++; }
-   
+
    PUSH_ELEM(min);
 }
 
@@ -677,7 +659,7 @@ static void matrixX(_mult)(INT32 args)
 scalar_mult:
 
       dmx=matrixX(_push_new_)(THIS->xsize,THIS->ysize);
-      
+
       s1=THIS->m;
       d=dmx->m;
       n=THIS->xsize*THIS->ysize;
@@ -688,10 +670,9 @@ scalar_mult:
       pop_stack();
       return;
    }
-	 
+
    if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-       !((mx=(struct matrixX(_storage)*)
-	  get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+       !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
       SIMPLE_BAD_ARG_ERROR("`*",1,"object(Math.Matrix)");
 
    if (mx->xsize != THIS->ysize)
@@ -734,8 +715,7 @@ static void matrixX(_cross)(INT32 args)
    pop_n_elems(args-1); /* shouldn't be needed */
 
    if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-       !((mx=(struct matrixX(_storage)*)
-	  get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+       !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
       SIMPLE_BAD_ARG_ERROR("cross",1,"object(Math.Matrix)");
 
    if (mx->xsize*mx->ysize != 3 ||
@@ -747,7 +727,7 @@ static void matrixX(_cross)(INT32 args)
    a=THIS->m;
    b=mx->m;
    d=dmx->m;
-   
+
    d[0]=a[1]*b[2] - a[2]*b[1];
    d[1]=a[2]*b[0] - a[0]*b[2];
    d[2]=a[0]*b[1] - a[1]*b[0];
@@ -762,33 +742,32 @@ static void matrixX(_dot)(INT32 args)
   int num,i;
   FTYPE res;
   FTYPE *a,*b;
-  
+
   if (args<1)
      SIMPLE_TOO_FEW_ARGS_ERROR("dot_product",1);
-  
-  pop_n_elems(args-1); 
-  
+
+  pop_n_elems(args-1);
+
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
-      !((mx=(struct matrixX(_storage)*)
-	 get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
+      !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
     SIMPLE_BAD_ARG_ERROR("dot_product",1,"object(Math.Matrix)");
-  
+
   if(!(mx->xsize==THIS->xsize &&
        mx->ysize==THIS->ysize &&
        (mx->xsize==1 || mx->ysize==1)))
     math_error("dot_product",Pike_sp-args,args,0,
 	       "Matrices must be the same sizes, and one-dimensional.\n");
-  
+
   res=(FTYPE)0;
   num=THIS->xsize+THIS->ysize;
   a=THIS->m;
   b=mx->m;
-  
+
   for(i=0;i<num;i++)
     res+=a[i]*b[i];
-  
+
   PUSH_ELEM(res);
-  
+
   stack_swap();
   pop_stack();
 }
@@ -806,8 +785,7 @@ static void matrixX(_convolve)(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("convolve",1);
 
    if (TYPEOF(Pike_sp[-args]) != T_OBJECT ||
-       !((bmx=(struct matrixX(_storage)*)
-	  get_storage(Pike_sp[-args].u.object,XmatrixY(math_,_program)))))
+       !((bmx=get_storage(Pike_sp[-args].u.object,XmatrixY(math_,_program)))))
       SIMPLE_BAD_ARG_ERROR("convolve",1,"object(Math.Matrix)");
 
    if (bmx->xsize==0 || bmx->ysize==0 ||
@@ -831,7 +809,7 @@ static void matrixX(_convolve)(INT32 args)
 /* matrix a source pointer: forwards */
    as=amx->m-axz*(byz-1)-(bxz-1);
 /* matrix b source pointer: backwards */
-   bs=bmx->m+bxz*byz-1; 
+   bs=bmx->m+bxz*byz-1;
 
 /*
 
@@ -839,17 +817,17 @@ static void matrixX(_convolve)(INT32 args)
    bb#aaa   -> ......  ax=-bxz+1
      aaaa      ......  ay=-byz+1
 
-    bbb        :d....  
+    bbb        :d....
     b##aa   -> ......  ax=-axz+1 +1
-     aaaa      ......  
+     aaaa      ......
 
-     bbb       :d....  
+     bbb       :d....
      ###a   -> ......  ax=0
-     aaaa      ......  
+     aaaa      ......
 
       bbb      :::d..
      a###  ->  ......  ax=axz-bxz
-     aaaa      ......  
+     aaaa      ......
 ...
         bbb    :::::d  ax=axz-1
      aaa#bb -> ......
@@ -919,7 +897,7 @@ static void matrixX(_convolve)(INT32 args)
    ayb=ayz-byz+1; /* 0,0-axb,ayb         */
    axb=axz-bxz+1; /* doesn't need checks */
 
-   for (ay=-byz+1; ay<0; ay++) 
+   for (ay=-byz+1; ay<0; ay++)
    {
       for (ax=-bxz+1; ax<0; ax++)
 	 DO_SOME_CONVOLVING(1,1);
@@ -930,7 +908,7 @@ static void matrixX(_convolve)(INT32 args)
       as-=bxz-1;
    }
 
-   for (; ay<ayb; ay++) 
+   for (; ay<ayb; ay++)
    {
       for (ax=-bxz+1; ax<0; ax++)
 	 DO_SOME_CONVOLVING(1,0);
@@ -941,7 +919,7 @@ static void matrixX(_convolve)(INT32 args)
       as-=bxz-1;
    }
 
-   for (; ay<ayz; ay++) 
+   for (; ay<ayz; ay++)
    {
       for (ax=-bxz+1; ax<0; ax++)
 	 DO_SOME_CONVOLVING(1,1);
@@ -974,8 +952,6 @@ static void matrixX(_ysize)(INT32 args)
 void Xmatrix(init_math_)(void)
 {
 #define MKSTR(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
-  if( !s_array )
-    s_array=MKSTR("array");
   if( !s_rotate )
     s_rotate=MKSTR("rotate");
   if( !s__clr )
@@ -984,7 +960,7 @@ void Xmatrix(init_math_)(void)
     s_identity=MKSTR("identity");
 
    ADD_STORAGE(struct matrixX(_storage));
-   
+
    set_init_callback(Xmatrix(init_));
    set_exit_callback(Xmatrix(exit_));
 
@@ -995,7 +971,7 @@ void Xmatrix(init_math_)(void)
 		      tFunc(tInt1Plus tInt1Plus tOr4(tInt,tFloat,tString,tVoid), tVoid)), ID_PROTECTED);
 
    ADD_FUNCTION("cast",matrixX(_cast),
-		tFunc(tStr, tArr(tArr(tFloat))), 0);
+		tFunc(tStr, tArr(tArr(tFloat))), ID_PROTECTED);
    ADD_FUNCTION("vect",matrixX(_vect), tFunc(tNone,tArr(PTYPE)), 0);
    ADD_FUNCTION("_sprintf",matrixX(__sprintf), tFunc(tInt tMapping, tStr), 0);
 
@@ -1022,33 +998,22 @@ void Xmatrix(init_math_)(void)
    ADD_FUNCTION("``*",matrixX(_mult),
 		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
 
-   ADD_FUNCTION("`·",matrixX(_dot),
-		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
-   ADD_FUNCTION("``·",matrixX(_dot),
-		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
-
    ADD_FUNCTION("dot_product",matrixX(_dot), tFunc(tObj, tObj), 0);
 
    ADD_FUNCTION("convolve",matrixX(_convolve), tFunc(tObj, tObj), 0);
-   
+
    ADD_FUNCTION("cross",matrixX(_cross), tFunc(tObj, tObj), 0);
-   ADD_FUNCTION("`×",matrixX(_cross), tFunc(tObj, tObj), 0);
-   ADD_FUNCTION("``×",matrixX(_cross), tFunc(tObj, tObj), 0);
 
    ADD_FUNCTION("xsize", matrixX(_xsize), tFunc(tNone, tInt), 0);
    ADD_FUNCTION("ysize", matrixX(_ysize), tFunc(tNone, tInt), 0);
 
-   Pike_compiler->new_program->flags |= 
+   Pike_compiler->new_program->flags |=
      PROGRAM_CONSTANT |
      PROGRAM_NO_EXPLICIT_DESTRUCT ;
 }
 
 void Xmatrix(exit_math_)(void)
 {
-  if (s_array) {
-    free_string(s_array);
-    s_array = NULL;
-  }
   if (s_rotate) {
     free_string(s_rotate);
     s_rotate = NULL;

@@ -1,5 +1,4 @@
 START_MARKER
-// $Id$
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -56,7 +55,7 @@ define(test_hilfe_setup,[[
   test_hilfe_setup_low()
   test_hilfe(".", version() + " running Hilfe v3.5 (Incremental Pike Frontend)\n");
   test_hilfe([["set format sprintf \"%s\""]], "");
-]])  
+]])
 
 test_hilfe_setup()
 test_hilfe("1;", "1")
@@ -72,6 +71,8 @@ test_hilfe( ({ "int c // =3;", "=4;" }), "")
 test_hilfe("c;", "4")
 test_hilfe( ({ "string a=#\"hej", "san\";" }), "")
 test_hilfe("a;", "\"hej\\n\"\n\"san\"")
+test_hilfe( ({ "string a=#{hopp","san#};" }), "")
+test_hilfe("a;", "\"hopp\\n\"\n\"san\"")
 test_hilfe("class A{}", "")
 test_hilfe("A();", "HilfeInput()->A()")
 test_hilfe("A a=A();", "")
@@ -138,7 +139,7 @@ test_hilfe("i;", "1")
 
 test_hilfe("mixed x=\"bar\";", "")
 test_hilfe("void foo(mixed x){ x?werror(\"\"):werror(\"\");};","")
-test_hilfe("foo(1);", 
+test_hilfe("foo(1);",
   "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
   "0")
 
@@ -195,6 +196,11 @@ test_hilfe("new", "")
 test_hilfe("int a = 3;", "")
 test_hilfe("int b = 23;", "")
 test_hilfe("a & b;", "3")
+
+test_hilfe("switch(a) { case 2: return 1; case 3: return 2; }", "Ok.\n")
+
+test_hilfe("String.Buffer b = String.Buffer();", "")
+test_hilfe("String.Buffer b = String.Buffer();", "")
 
 test_do( add_constant("testhilfe") )
 

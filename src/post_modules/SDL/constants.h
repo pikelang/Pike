@@ -2,10 +2,9 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
-void init_sdl_constants() {
+void init_sdl_constants(void) {
   /* Video related flags */
   add_integer_constant("SWSURFACE", SDL_SWSURFACE, 0);
   add_integer_constant("HWSURFACE", SDL_HWSURFACE, 0);
@@ -42,7 +41,7 @@ void init_sdl_constants() {
   add_integer_constant( "GL_BLUE_SIZE", SDL_GL_BLUE_SIZE, 0 );
   add_integer_constant( "GL_DEPTH_SIZE", SDL_GL_DEPTH_SIZE, 0 );
   add_integer_constant( "GL_DOUBLEBUFFER", SDL_GL_DOUBLEBUFFER, 0 );
-  
+
   /* Init related constants */
   /* TIMER is disabled because Pike doesn't need that functionality.
      add_integer_constant("INIT_TIMER", SDL_INIT_TIMER, 0);
@@ -59,7 +58,7 @@ void init_sdl_constants() {
   add_integer_constant("APPMOUSEFOCUS", SDL_APPMOUSEFOCUS, 0);
   add_integer_constant("APPINPUTFOCUS", SDL_APPINPUTFOCUS, 0);
   add_integer_constant("APPACTIVE", SDL_APPACTIVE, 0);
-  
+
   /* Audio related constants */
   add_integer_constant("AUDIO_U8", AUDIO_U8, 0);
   add_integer_constant("AUDIO_S8", AUDIO_S8, 0);
@@ -71,7 +70,7 @@ void init_sdl_constants() {
   add_integer_constant("AUDIO_S16", AUDIO_S16, 0);
   add_integer_constant("AUDIO_U16SYS", AUDIO_U16SYS, 0);
   add_integer_constant("AUDIO_S16SYS", AUDIO_S16SYS, 0);
- 
+
   /* Joystick hat constants */
   add_integer_constant("HAT_CENTERED", SDL_HAT_CENTERED, 0);
   add_integer_constant("HAT_UP", SDL_HAT_UP, 0);
@@ -81,15 +80,15 @@ void init_sdl_constants() {
   add_integer_constant("HAT_RIGHTUP", SDL_HAT_RIGHTUP, 0);
   add_integer_constant("HAT_RIGHTDOWN", SDL_HAT_RIGHTDOWN, 0);
   add_integer_constant("HAT_LEFTUP", SDL_HAT_LEFTUP, 0);
-  add_integer_constant("HAT_LEFTDOWN", SDL_HAT_LEFTDOWN, 0);  
-  
+  add_integer_constant("HAT_LEFTDOWN", SDL_HAT_LEFTDOWN, 0);
+
   /* Event related constants */
   add_integer_constant("ALLEVENTS", SDL_ALLEVENTS, 0);
   add_integer_constant("QUERY", SDL_QUERY, 0);
   add_integer_constant("IGNORE", SDL_IGNORE, 0);
   add_integer_constant("DISABLE", SDL_DISABLE, 0);
   add_integer_constant("ENABLE", SDL_ENABLE, 0);
-  
+
   add_integer_constant("NOEVENT", SDL_NOEVENT, 0);
   add_integer_constant("ACTIVEEVENT", SDL_ACTIVEEVENT, 0);
   add_integer_constant("KEYDOWN", SDL_KEYDOWN, 0);
@@ -126,7 +125,7 @@ void init_sdl_constants() {
   add_integer_constant("QUITMASK", SDL_QUITMASK, 0);
   add_integer_constant("SYSWMEVENTMASK", SDL_SYSWMEVENTMASK, 0);
 
-  /* Byte order related constants */ 
+  /* Byte order related constants */
   add_integer_constant("LIL_ENDIAN", SDL_LIL_ENDIAN, 0);
   add_integer_constant("BIG_ENDIAN", SDL_BIG_ENDIAN, 0);
   add_integer_constant("BYTEORDER", SDL_BYTEORDER, 0);
@@ -141,7 +140,7 @@ void init_sdl_constants() {
   add_integer_constant("CD_PLAYING", CD_PLAYING, 0);
   add_integer_constant("CD_PAUSED", CD_PAUSED, 0);
   add_integer_constant("CD_ERROR", CD_ERROR, 0);
-  
+
   /* Mouse related constants */
   add_integer_constant("BUTTON_LEFT", SDL_BUTTON_LEFT, 0);
   add_integer_constant("BUTTON_MIDDLE", SDL_BUTTON_MIDDLE, 0);
@@ -154,7 +153,7 @@ void init_sdl_constants() {
   add_integer_constant("MAJOR_VERSION", SDL_MAJOR_VERSION, 0);
   add_integer_constant("MINOR_VERSION", SDL_MINOR_VERSION, 0);
   add_integer_constant("PATCHLEVEL", SDL_PATCHLEVEL, 0);
-  
+
   /* Keyboard constants */
   add_integer_constant("ALL_HOTKEYS", SDL_ALL_HOTKEYS, 0);
   add_integer_constant("DEFAULT_REPEAT_DELAY", SDL_DEFAULT_REPEAT_DELAY, 0);
@@ -395,7 +394,7 @@ void init_sdl_constants() {
   add_integer_constant("K_EURO", SDLK_EURO, 0);
   /*  add_integer_constant("K_UNDO", SDLK_UNDO, 0); */
 
-  /* Key modifers : FIXME - autogenerate */  
+  /* Key modifers : FIXME - autogenerate */
   add_integer_constant("KMOD_NONE", KMOD_NONE, 0);
   add_integer_constant("KMOD_LSHIFT", KMOD_LSHIFT, 0);
   add_integer_constant("KMOD_RSHIFT", KMOD_RSHIFT, 0);

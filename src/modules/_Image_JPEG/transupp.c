@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -56,14 +55,11 @@
 #endif
 
 #ifdef HAVE_JCONFIG_H_HAVE_BOOLEAN
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
 #ifdef HAVE_WTYPES_H
 /* jconfig.h has probably been compiled without WIN32_LEAN_AND_MEAN...
  * So we need this one to get the boolean typedef.
  */
 #include <wtypes.h>
-#endif
 #endif
 #endif
 
@@ -966,7 +962,7 @@ jtransform_parse_crop_spec (jpeg_transform_info *info, const char *spec)
       return FALSE;
     info->crop_width_set = JCROP_POS;
   }
-  if (*spec == 'x' || *spec == 'X') {	
+  if (*spec == 'x' || *spec == 'X') {
     /* fetch height */
     spec++;
     if (! jt_read_integer(&spec, &info->crop_height))
@@ -1590,10 +1586,11 @@ jtransform_execute_transform (j_decompress_ptr srcinfo,
  */
 
 #ifndef TRANSFORMS_NOT_SUPPORTED
+
+#ifdef SAVE_MARKERS_SUPPORTED
 GLOBAL(void)
 jcopy_markers_setup (j_decompress_ptr srcinfo, JCOPY_OPTION option)
 {
-#ifdef SAVE_MARKERS_SUPPORTED
   int m;
 
   /* Save comments except under NONE option */
@@ -1605,8 +1602,11 @@ jcopy_markers_setup (j_decompress_ptr srcinfo, JCOPY_OPTION option)
     for (m = 0; m < 16; m++)
       jpeg_save_markers(srcinfo, JPEG_APP0 + m, 0xFFFF);
   }
-#endif /* SAVE_MARKERS_SUPPORTED */
 }
+#else
+GLOBAL(void)
+jcopy_markers_setup (j_decompress_ptr UNUSED(srcinfo), JCOPY_OPTION UNUSED(option)) {}
+#endif /* SAVE_MARKERS_SUPPORTED */
 
 /* Copy markers saved in the given source object to the destination object.
  * This should be called just after jpeg_start_compress() or
@@ -1617,7 +1617,7 @@ jcopy_markers_setup (j_decompress_ptr srcinfo, JCOPY_OPTION option)
 
 GLOBAL(void)
 jcopy_markers_execute (j_decompress_ptr srcinfo, j_compress_ptr dstinfo,
-		       JCOPY_OPTION option)
+		       JCOPY_OPTION UNUSED(option))
 {
   jpeg_saved_marker_ptr marker;
 

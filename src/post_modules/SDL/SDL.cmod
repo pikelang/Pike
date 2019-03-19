@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -66,8 +65,7 @@ static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 
    color = clone_object(image_color_program,0);
 
-   cs=(struct color_struct*)
-      get_storage(color, image_color_program);
+   cs= get_storage(color, image_color_program);
 
    cs->rgb.r=(COLORTYPE)r;
    cs->rgb.g=(COLORTYPE)g;
@@ -97,16 +95,6 @@ static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 
 #define THIS_OBJ Pike_interpreter.frame_pointer->current_object
 #define RET_THIS() do { pop_n_elems(args); ref_push_object(THIS_OBJ); return; } while(0)
-
-/* Fall back to a normal index on this object, in case
- * someone inherited us. */
- #define OBJ_INDEX() do { \
-      struct svalue res; \
-      object_index_no_free2 (&res, Pike_fp->current_object, 0, Pike_sp-1); \
-      pop_stack(); \
-      *Pike_sp++ = res; \
-    } while(0) \
-
 
 #define CHECK_CLASS(o, name, arg)\
   if(o->prog != PIKE_CONCAT(name, _program)) { \
@@ -168,13 +156,13 @@ PIKEFUN void init(int flags) {
   }
 }
 
-/*! @decl void|string get_error()
+/*! @decl string get_error()
  *!
  *! Get the last internal SDL error.
  *! @returns
  *!   The error string, or zero if there was no error.
  */
-PIKEFUN void|string get_error() {
+PIKEFUN string get_error() {
   const char *err = SDL_GetError();
   pop_n_elems(args);
   if(err != NULL) {
@@ -463,44 +451,37 @@ PIKECLASS Rect {
     THIS->rect.h = value;
   }
 
-  /*! @decl mixed cast(string type)
+  /*! @decl array|mapping cast(string type)
    *!
    *! It is possible to cast a Rect object to an @tt{array@} or
    *! to a @tt{mapping@}. The array will have the values in the
    *! order x, y, w, h and the mapping will have the values
    *! associated with the corresponding names.
    */
-  PIKEFUN mixed cast( string type )
+  PIKEFUN array|mapping cast( string type )
+    flags ID_PROTECTED;
   {
-    struct pike_string *array_t;
-    struct pike_string *mapping_t;
-    REF_MAKE_CONST_STRING( array_t, "array" );
-    REF_MAKE_CONST_STRING( mapping_t, "mapping" );
-
-    if( type == array_t )
+    pop_stack(); /* type as at least one more reference. */
+    if( type == literal_array_string )
     {
-      pop_n_elems( args );
       push_int(THIS->rect.x);
       push_int(THIS->rect.y);
       push_int(THIS->rect.w);
       push_int(THIS->rect.h);
       f_aggregate(4);
-      return;
-    } else if( type == mapping_t ) {
-      pop_n_elems( args );
-      push_text("x");
+    } else if( type == literal_mapping_string ) {
+      push_static_text("x");
       push_int(THIS->rect.x);
-      push_text("y");
+      push_static_text("y");
       push_int(THIS->rect.y);
-      push_text("w");
+      push_static_text("w");
       push_int(THIS->rect.w);
-      push_text("h");
+      push_static_text("h");
       push_int(THIS->rect.h);
       f_aggregate_mapping(8);
-      return;
     }
-
-    Pike_error("Cannot cast to %S\n", type);
+    else
+      push_undefined();
   }
 }
 /*! @endclass Rect */
@@ -876,9 +857,9 @@ PIKECLASS PixelFormat {
     Uint8 r, g, b, a;
     SDL_GetRGBA((Uint32)pixel, THIS->fmt, &r, &g, &b, &a);
     pop_n_elems(args);
-    push_text("color");
+    push_static_text("color");
     push_object(image_make_rgb_color(r, g, b));
-    push_text("alpha");
+    push_static_text("alpha");
     push_int(CONVERT_ALPHA(a));
     f_aggregate_mapping(4);
   }
@@ -1801,7 +1782,7 @@ PIKEFUN int set_gamma(float red, float green, float blue) {
   RETURN SDL_SetGamma(red, green, blue);
 }
 
-/*! @decl void|object get_video_surface()
+/*! @decl object get_video_surface()
  *!
  *! Returns the current display surface.
  *!
@@ -1814,7 +1795,7 @@ PIKEFUN int set_gamma(float red, float green, float blue) {
  *! @seealso
  *!   @[SDL.set_video_mode()]
  */
-PIKEFUN void|object get_video_surface()
+PIKEFUN object get_video_surface()
 {
   SDL_Surface *screen = SDL_GetVideoSurface();
   if(screen != NULL) {
@@ -1828,14 +1809,14 @@ PIKEFUN void|object get_video_surface()
   push_int(0);
 }
 
-/*! @decl void|object get_video_info()
+/*! @decl object get_video_info()
  *!
  *! @returns
  *!  Returns an @[SDL.VideoInfo] object, which holds information about the video
  *!  hardware, or 0 if the video device has not yet been initialized (with a
  *!  call to @[SDL.init()]).
  */
-PIKEFUN void|object get_video_info()
+PIKEFUN object get_video_info()
 {
   const SDL_VideoInfo *vidinfo = SDL_GetVideoInfo();
   if(vidinfo != NULL) {
@@ -2058,7 +2039,7 @@ PIKEFUN int blit_surface(object src, object dst,
 			 OBJ2_SURFACE(dst)->_s, dstrect);
 }
 
-/*! @decl void|string video_driver_name()
+/*! @decl string video_driver_name()
  *!
  *! Obtains the name of the video driver.  This is a simple one-word identifier
  *! such as 'x11' or 'windib'.
@@ -2067,7 +2048,7 @@ PIKEFUN int blit_surface(object src, object dst,
  *!  The name of the video driver, or 0 if video has not yet been initialized
  *!  (with a call to @[SDL.init()]).
  */
-PIKEFUN void|string video_driver_name() {
+PIKEFUN string video_driver_name() {
   char tmp[256];
   tmp[0] = 0;
   SDL_VideoDriverName(tmp, 255);
@@ -2952,7 +2933,7 @@ PIKECLASS Music {
       if(TYPEOF(*_loops) == PIKE_T_INT) {
 	loops = _loops->u.integer;
       } else {
-	SIMPLE_BAD_ARG_ERROR("Music.play", 1, "void|int");
+	SIMPLE_BAD_ARG_ERROR("play", 1, "void|int");
       }
     }
     Mix_PlayMusic(THIS->music, loops);
@@ -2991,7 +2972,7 @@ PIKECLASS Music {
       if(TYPEOF(*_loops) == PIKE_T_INT) {
 	loops = _loops->u.integer;
       } else {
-	SIMPLE_BAD_ARG_ERROR("Music.fade_in", 2, "void|int");
+	SIMPLE_BAD_ARG_ERROR("fade_in", 2, "void|int");
       }
     }
     Mix_FadeInMusic(THIS->music, loops, ms);

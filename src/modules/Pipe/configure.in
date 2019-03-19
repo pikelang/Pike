@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(pipe.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -8,5 +7,3 @@ AC_HAVE_HEADERS(sys/mman.h linux/mman.h sys/id.h sys/file.h)
 AC_HAVE_FUNCS(mmap munmap geteuid seteuid setresuid madvise)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

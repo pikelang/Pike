@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* The lower level api for using rbtree. This is in a separate file
@@ -272,31 +271,30 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 	rb_find_depth++;						\
       );								\
       {cmp;}								\
-      if (cmp_res < 0)							\
-	if ((node)->flags & RB_THREAD_PREV)				\
-	  if (found_eq_)						\
+      if (cmp_res < 0) {						\
+	if ((node)->flags & RB_THREAD_PREV) {				\
+	  if (found_eq_) {						\
 	    (node) = (node)->prev;					\
-	  else {							\
+	  } else {							\
 	    {got_gt;}							\
 	    break;							\
 	  }								\
-	else {								\
+	} else {							\
 	  (node) = (node)->prev;					\
 	  continue;							\
 	}								\
-      else								\
-	if ((node)->flags & RB_THREAD_NEXT)				\
-	  if (!cmp_res)							\
-	    {}								\
-	  else {							\
+      } else {								\
+	if ((node)->flags & RB_THREAD_NEXT) {				\
+	  if (cmp_res) {						\
 	    {got_lt;}							\
 	    break;							\
 	  }								\
-	else {								\
+	} else {							\
 	  if (!cmp_res) found_eq_ = 1;					\
 	  (node) = (node)->next;					\
 	  continue;							\
 	}								\
+      }									\
       {got_eq;}								\
       break;								\
     }									\
@@ -324,8 +322,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 	  break;							\
 	}								\
 	(node) = (node)->prev;						\
-      }									\
-      else {								\
+      } else {								\
 	DO_IF_DEBUG (if (!cmp_res) Pike_fatal ("cmp_res 0 not expected.\n")); \
 	if ((node)->flags & RB_THREAD_NEXT) {				\
 	  {got_lt;}							\
@@ -408,8 +405,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 	RBSTACK_POP_IGNORE (rbstack);					\
 	DO_IF_RB_STATS (rb_num_sidetrack_ops++);			\
       }									\
-    }									\
-    else {								\
+    } else {								\
       node = node->next;						\
       while (1) {							\
 	RBSTACK_PUSH (rbstack, node);					\
@@ -434,8 +430,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 	RBSTACK_POP_IGNORE (rbstack);					\
 	DO_IF_RB_STATS (rb_num_sidetrack_ops++);			\
       }									\
-    }									\
-    else {								\
+    } else {								\
       node = node->prev;						\
       while (1) {							\
 	RBSTACK_PUSH (rbstack, node);					\
@@ -529,14 +524,13 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 	else								\
 	  goto PIKE_CONCAT (label, _free_b);				\
       }									\
-      else								\
-	if (a)								\
-	  if (operation & (PIKE_ARRAY_OP_A << 8))			\
-	    goto PIKE_CONCAT (label, _copy_a);				\
-	  else								\
-	    goto PIKE_CONCAT (label, _free_a);				\
+      else if (a) {							\
+	if (operation & (PIKE_ARRAY_OP_A << 8))				\
+	  goto PIKE_CONCAT (label, _copy_a);				\
 	else								\
-	  break;							\
+	  goto PIKE_CONCAT (label, _free_a);				\
+      } else								\
+	break;								\
 									\
       if (op_ & PIKE_ARRAY_OP_B) {					\
 	PIKE_CONCAT (label, _copy_b):;					\

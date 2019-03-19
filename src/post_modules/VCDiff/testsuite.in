@@ -1,0 +1,46 @@
+START_MARKER
+
+cond_resolv(VCDiff.Encoder, [[
+
+define(test_codec, [[
+  test_any([[
+    string dict = $1;
+    string data = $2;
+
+    VCDiff.Encoder vcenc = VCDiff.Encoder (dict);
+
+    string compressed = "";
+    foreach (data / 100.0, string chunk) {
+      compressed += vcenc->encode_chunk (chunk);
+    }
+    compressed += vcenc->encode_chunk();
+
+    VCDiff.Decoder vcdec = VCDiff.Decoder (dict);
+
+    string decompressed = "";
+    foreach (compressed / 10.0, string chunk) {
+      decompressed += vcdec->decode_chunk (chunk);
+    }
+    decompressed += vcdec->decode_chunk();
+
+    return decompressed == data;
+  ]], 1)
+]])
+
+test_codec([[ "" ]], [[ "ABC" ]])
+test_codec([[ "ABC" ]], [[ "ABC" ]])
+test_codec([[ "ABCDEFGHIJKL" ]], [[ "ABCDEFGHIJKL" * 1000 ]])
+
+test_eval_error([[
+  VCDiff.Encoder vcenc = VCDiff.Encoder ("foobar"*10);
+  string s = vcenc->encode_chunk ("foobar" * 30);
+  s += vcenc->encode_chunk();
+
+  // Decoding with the wrong dictionary should fail.
+  VCDiff.Decoder vcdec = VCDiff.Decoder ("blabla");
+  return vcdec->decode_chunk (s);
+]])
+
+]])
+
+END_MARKER

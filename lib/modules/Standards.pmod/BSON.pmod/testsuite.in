@@ -1,0 +1,39 @@
+START_MARKER
+
+test_do( add_constant("E", Standards.BSON.encode); )
+
+define(test_codec,[[
+  test_equal( E($1), $2 )
+  test_equal( Standards.BSON.decode($2), $1 )
+]])
+
+test_codec( ([]), "\5\0\0\0\0" )
+test_eval_error( E( ([ 1:2 ]) ) )
+test_eval_error( E( ([ "\0":2 ]) ) )
+test_eval_error( E( ([ "$":2 ]) ) )
+test_eval_error( E( ([ ".":2 ]) ) )
+
+test_codec( ([ "a":"b" ]), "\16\0\0\0\2a\0\2\0\0\0b\0\0" )
+
+test_codec( ([ "\xe5":"\xf6" ]), "\20\0\0\0\2\303\245\0\3\0\0\0\303\266\0\0" )
+
+test_codec( ([ "a":"\0$." ]), "\20\0\0\0\2a\0\4\0\0\0\0$.\0\0" )
+test_codec( ([ "a":1.0 ]), "\20\0\0\0\1a\0\0\0\0\0\0\0\360?\0" )
+test_codec( ([ "a":(["b":"c"]) ]),
+ "\26\0\0\0\3a\0\16\0\0\0\2b\0\2\0\0\0c\0\0\0" )
+test_codec( ([ "a":({}) ]), "\r\0\0\0\4a\0\5\0\0\0\0\0")
+
+dnl mapping order isn't stable, so arrays are not stable.
+dnl test_codec( ([ "a":({"x","y"}) ]),
+dnl  "\37\0\0\0\4a\0\27\0\0\0\2""1\0\2\0\0\0y\0\2""0\0\2\0\0\0x\0\0\0" )
+
+test_codec( ([ "a":0 ]), "\f\0\0\0\20a\0\0\0\0\0\0" )
+test_codec( ([ "a":2147383666 ]), "\20\0\0\0\22a\0ry\376\177\0\0\0\0\0" )
+
+test_codec( ([ "a": Val.null ]), "\b\0\0\0\na\0\0" )
+test_codec( ([ "a": Val.true ]), "\t\0\0\0\ba\0\1\0" )
+test_codec( ([ "a": Val.false ]),"\t\0\0\0\ba\0\0\0" )
+
+test_do( add_constant("E") )
+
+END_MARKER

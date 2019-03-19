@@ -21,6 +21,7 @@
 #import <Foundation/NSObject.h>
 #import <Foundation/NSException.h>
 
+PMOD_EXPORT
 @interface OCPikeInterpreter : NSObject
 {
   int is_started;
@@ -29,11 +30,17 @@
 }
 
 + (OCPikeInterpreter *)sharedInterpreter;
-- (id)init;
++ (id)allocWithZone:(NSZone *)zone;
+- (id)copyWithZone:(NSZone *)zone;
+- (id)retain;
+- (void)release;
+- (id)autorelease;
+- (NSUInteger)retainCount;
 - (void)setMaster:(id)master;
 - (BOOL)startInterpreter;
 - (BOOL)isStarted;
 - (BOOL)stopInterpreter;
+- (struct Pike_interpreter_struct *) getInterpreter;
 - (struct program *)compileString: (id)code;
 - (struct svalue *)evalString: (id)expression;
 

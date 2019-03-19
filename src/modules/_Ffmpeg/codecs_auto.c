@@ -1,6 +1,6 @@
 /* this file only includes the header files, to use
- * sed in the Makefile to find the various codecs 
- * (that are enum'ed and not #defined and can't be detected otherwise) 
+ * sed in the Makefile to find the various codecs
+ * (that are enum'ed and not #defined and can't be detected otherwise)
  */
 
 #include "config.h"
@@ -20,4 +20,3 @@
 #endif
 #endif
 #endif
-

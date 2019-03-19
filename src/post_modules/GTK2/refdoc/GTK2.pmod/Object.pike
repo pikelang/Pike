@@ -9,5 +9,5 @@
 //! @b{destroy@}
 //!
 
-inherit G.Object;
+inherit G.InitiallyUnowned;
 

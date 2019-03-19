@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Hungarian language locale by Zsolt Varga.
-
-// $Id$
 
 inherit "abstract";
 
@@ -53,13 +50,13 @@ string date(int timestamp, string|void m)
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
     return "ma, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
     return "tegnap, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
     return "holnap, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["year"] != t2["year"])
     return ( (t1["year"]+1900) + ". " + month(t1["mon"]+1) );
 
@@ -96,9 +93,9 @@ string number(int num)
    case 80: return "nyolcvan";
    case 90: return "kilencven";
 
-   case 31..39: case 41..49: case 51..59: 
-   case 61..69: case 71..79: case 81..89: 
-   case 91..99: 
+   case 31..39: case 41..49: case 51..59:
+   case 61..69: case 71..79: case 81..89:
+   case 91..99:
      return number((num/10)*10)+number(num%10);
 
    case 100..999:
@@ -107,7 +104,7 @@ string number(int num)
    case 1000..999999:
      return number(num/1000)+"ezer"+number(num%1000);
 
-   case 1000000..999999999: 
+   case 1000000..999999999:
      return number(num/1000000)+"millió-"+number(num%1000000);
 
    default:

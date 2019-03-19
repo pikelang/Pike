@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef REGEXP_H
@@ -30,9 +29,8 @@ typedef struct regexp
 
 
 /* Prototypes begin here */
-regexp *pike_regcomp(char *exp,int excompat);
+regexp *pike_regcomp(const char *exp);
 int pike_regexec(regexp *prog, char *string);
-char *pike_regsub(regexp *prog, char *source, char *dest, int n);
 /* Prototypes end here */
 
 #endif

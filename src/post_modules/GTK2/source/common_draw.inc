@@ -125,8 +125,8 @@ void draw_text(GDK2.GC gc, int x, int y, string|Pango.Layout text)
     f_string_to_utf8(1);
     pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),
 		CGSTR0(Pike_sp[-1].u.string));
-  } else {
-    pl=(PangoLayout *)(get_gobject(sv->u.object));
+  } else if (TYPEOF(*sv) != PIKE_T_OBJECT || !(pl = (PangoLayout *)(get_gobject(sv->u.object)))) {
+    SIMPLE_ARG_TYPE_ERROR("draw_text", 4, "string|Pango.Layout");
   }
 /*
   ref_push_string(text);
@@ -166,7 +166,7 @@ void draw_pixbuf(GDK2.GC gc, GDK2.Pixbuf pixbuf, int xsrc, int ysrc,
   INT_TYPE xs,ys,xd,yd,w,h;
   get_all_args("draw_pixbuf",args,"%o%o%+%+%+%+%i%i",
 		&g,&p,&xs,&ys,&xd,&yd,&w,&h);
-  if (w>0 && h>0)
+  if ((w>0 && h>0) || (w==-1 && h==-1))
       gdk_draw_pixbuf(TWIN,GC(g),GDK_PIXBUF(get_gobject(p)),xs,ys,xd,yd,w,h,
 		    GDK_RGB_DITHER_NONE,0,0);
   RETURN_THIS();

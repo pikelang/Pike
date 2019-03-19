@@ -1,6 +1,3 @@
-//
-// $Id$
-
 #pike __REAL_VERSION__
 
 #if constant(SDL.Surface)
@@ -25,7 +22,7 @@ protected mapping(int:int) keymap = ([]);
 protected void event_handler()
 {
 #ifndef THREAD_EVENTS
-  call_out( event_handler, 0.02 );  
+  call_out( event_handler, 0.02 );
   low_handle_events();
 #else
   thread_create( low_handle_events );
@@ -86,7 +83,7 @@ void low_handle_events()
 	      res->data = sprintf("%c", sym->unicode);
 	    else if( sym->unicode )
 	      res->data = sprintf("%c", X_sym(sym));
-	    
+
 	    pressed[ sym->scancode ] = (evt->type == SDL.KEYDOWN);
 	    key_evt( res );
 	  }
@@ -182,7 +179,7 @@ void low_handle_events()
 	case SDL.ACTIVEEVENT:
  	  configure_event( 0,0,!evt->gain );
 	  break;
-	case SDL.VIDEOEXPOSE: 
+	case SDL.VIDEOEXPOSE:
 	  // This will be handled shortly anyway.
 	  break;
         case SDL.QUIT:
@@ -238,9 +235,9 @@ void exit() { SDL.quit(); }
 
 void init(void|string title, void|string icon)
 {
-  SDL.init( SDL.INIT_VIDEO 
+  SDL.init( SDL.INIT_VIDEO
 #if constant(SDL.Joystick)
-	    | SDL.INIT_JOYSTICK 
+	    | SDL.INIT_JOYSTICK
 #endif
 	    /*| SDL.INIT_EVENTTHREAD*/ );
   SDL.enable_unicode( 1 );
@@ -273,20 +270,20 @@ protected int X_sym( SDL.Keysym sym )
 #endif
   return ([
     SDL.K_F1:F1,  SDL.K_F2:F2,   SDL.K_F3:F3,     SDL.K_F4:F4,
-    SDL.K_F5:F5,  SDL.K_F6:F6,   SDL.K_F7:F7,     SDL.K_F8:F8,  
-    SDL.K_F9:F9,  SDL.K_F10:F10, SDL.K_F11:F11,   SDL.K_F12:F12,    
+    SDL.K_F5:F5,  SDL.K_F6:F6,   SDL.K_F7:F7,     SDL.K_F8:F8,
+    SDL.K_F9:F9,  SDL.K_F10:F10, SDL.K_F11:F11,   SDL.K_F12:F12,
     SDL.K_BACKSPACE:BACKSPACE,  SDL.K_DELETE:DELETE,SDL.K_TAB:TAB,
     SDL.K_ESCAPE:ESCAPE,SDL.K_UP:UP,SDL.K_DOWN:DOWN,SDL.K_RIGHT:RIGHT,
-    SDL.K_LEFT:LEFT,SDL.K_PAGEUP:PGUP, SDL.K_PAGEDOWN:PGDWN, 
+    SDL.K_LEFT:LEFT,SDL.K_PAGEUP:PGUP, SDL.K_PAGEDOWN:PGDWN,
     SDL.K_RETURN:ENTER,SDL.K_HOME:HOME,SDL.K_END:END,SDL.K_BREAK:PAUSE,
     SDL.K_PAUSE:PAUSE,SDL.K_INSERT:INSERT, SDL.K_SYSREQ:SYS_REQ,
     SDL.K_CAPSLOCK:CAPSLOCK,SDL.K_MENU:MENU,SDL.K_NUMLOCK:NUMLOCK,
     SDL.K_PRINT:PRINT_SCRN,
 
-    SDL.K_LSHIFT:LSHIFT, SDL.K_RSHIFT:RSHIFT, 
-    SDL.K_LCTRL:LCTRL, SDL.K_RCTRL:RCTRL, 
-    SDL.K_LALT:LALT, SDL.K_RALT:RALT, 
-    SDL.K_LMETA:LALT, SDL.K_RMETA:RALT, 
+    SDL.K_LSHIFT:LSHIFT, SDL.K_RSHIFT:RSHIFT,
+    SDL.K_LCTRL:LCTRL, SDL.K_RCTRL:RCTRL,
+    SDL.K_LALT:LALT, SDL.K_RALT:RALT,
+    SDL.K_LMETA:LALT, SDL.K_RMETA:RALT,
 
 #ifdef __NT__
     SDL.K_BACKQUOTE:167,

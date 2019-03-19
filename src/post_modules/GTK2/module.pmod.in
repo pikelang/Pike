@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * GTK2 glue code.
  */
 
@@ -21,7 +19,7 @@ string unsillycaps(string what)
 
 inherit @module@;
 
-#define INDEX(x) predef::`->(this_object(),(x))
+#define INDEX(x) predef::`->(this,(x))
 
 array(string) setup_gtk(array(string)|string|void name, int|void norc)
 {

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -21,6 +20,7 @@
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 #include "image.h"
 
@@ -35,11 +35,11 @@ extern struct program *image_program;
 **! module Image
 **! submodule PVR
 **!
-**! 	Handle encoding and decoding of PVR images.
-**! 
-**! 	PVR is the texture format of the NEC PowerVR system
-**! 	It is a rather simple, uncompressed, truecolor
-**!     format. 
+**! Handle encoding and decoding of PVR images.
+**!
+**! PVR is the texture format of the NEC PowerVR system
+**! It is a rather simple, uncompressed, truecolor
+**! format.
 */
 
 /*
@@ -55,14 +55,14 @@ extern struct program *image_program;
 **!	<pre>
 **!        "image":object            - image object    \- not decode_header
 **!	   "alpha":object            - decoded alpha   /
-**!	   
+**!
 **!	   "type":"image/x-pvr"      - image type
 **!	   "xsize":int               - horisontal size in pixels
 **!	   "ysize":int               - vertical size in pixels
 **!	   "attr":int		     - texture attributes
 **!	   "global_index":int	     - global index (if present)
 **!	</pre>
-**!	  
+**!
 **!
 **! method string encode(object image)
 **! method string encode(object image,mapping options)
@@ -583,17 +583,17 @@ void image_pvr_f_encode(INT32 args)
   unsigned char *dst;
   struct gla_state *gla_st = NULL;
 
-  get_all_args("Image.PVR.encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])?
-					  "%o%m":"%o"), &imgo, &optm);
+  get_all_args("encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])?
+                                "%o%m":"%o"), &imgo, &optm);
 
-  if((img=(struct image*)get_storage(imgo, image_program))==NULL)
+  if((img=get_storage(imgo, image_program))==NULL)
     Pike_error("Image.PVR.encode: illegal argument 1\n");
 
   if(optm != NULL) {
     struct svalue *s;
     if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(TYPEOF(*s) != T_OBJECT ||
-	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
+	 (alpha=get_storage(s->u.object, image_program))==NULL)
 	Pike_error("Image.PVR.encode: option (arg 2) \"alpha\" has illegal type\n");
     if((s = simple_mapping_string_lookup(optm, "global_index"))!=NULL &&
        !IS_UNDEFINED(s)) {
@@ -727,7 +727,7 @@ void image_pvr_f_encode(INT32 args)
 }
 
 static void pvr_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
-			    INT32 stride, unsigned int h, unsigned int w)
+			    INT32 UNUSED(stride), unsigned int h, unsigned int w)
 {
   INT32 cnt = h * w;
   switch(attr&0xff) {
@@ -909,7 +909,7 @@ static void pvr_decode_twiddled(INT32 attr, unsigned char *s, rgb_group *dst,
 }
 
 static void pvr_decode_alpha_rect(INT32 attr, unsigned char *src,
-				  rgb_group *dst, INT32 stride,
+				  rgb_group *dst, INT32 UNUSED(stride),
 				  unsigned int h, unsigned int w)
 {
   INT32 cnt = h * w;
@@ -1037,7 +1037,7 @@ void img_pvr_decode(INT32 args,int header_only)
    INT32 attr;
    unsigned int h, w, x;
 
-   get_all_args("Image.PVR._decode", args, "%S", &str);
+   get_all_args("_decode", args, "%S", &str);
    s = (unsigned char *)str->str;
    len = str->len;
    pop_n_elems(args-1);
@@ -1045,8 +1045,8 @@ void img_pvr_decode(INT32 args,int header_only)
    if(len >= 12 && !strncmp((char *)s, "GBIX", 4)) {
      INT32 l = s[4]|(s[5]<<8)|(s[6]<<16)|(s[7]<<24);
      if(l>=4 && l<=len-8) {
-       push_text("global_index");
-       push_int(s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24));
+       push_static_text("global_index");
+       push_int((INT32)(s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24)));
        n++;
        len -= l+8;
        s += l+8;
@@ -1064,26 +1064,31 @@ void img_pvr_decode(INT32 args,int header_only)
      len = l+8;
    }
 
-   push_text("type");
-   push_text("image/x-pvr");
+   ref_push_string(literal_type_string);
+   push_static_text("image/x-pvr");
    n++;
 
    attr = s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24);
    w = s[12]|(s[13]<<8);
    h = s[14]|(s[15]<<8);
 
+   if (!w)
+     Pike_error("Invalid xsize.\n");
+   if (!h)
+     Pike_error("Invalid ysize.\n");
+
    s += 16;
    len -= 16;
 
-   push_text("attr");
+   push_static_text("attr");
    push_int(attr);
    n++;
-   push_text("xsize");
+   push_static_text("xsize");
    push_int(w);
-   n++;   
-   push_text("ysize");
+   n++;
+   push_static_text("ysize");
    push_int(h);
-   n++;   
+   n++;
 
    if(!header_only) {
      int twiddle=0, hasalpha=0, bpp=0, compress=0;
@@ -1095,10 +1100,12 @@ void img_pvr_decode(INT32 args,int header_only)
      switch(attr&0xff00) {
       case MODE_TWIDDLE_MIPMAP:
 	mipmap = 1;
+	/* FALL_THROUGH */
       case MODE_TWIDDLE:
 	twiddle = 1;
 	if(w != h || w<8 || w>1024 || (w&(w-1)))
 	  Pike_error("invalid size for twiddle texture\n");
+	/* FALL_THROUGH */
       case MODE_RECTANGLE:
       case MODE_STRIDE:
 	break;
@@ -1110,12 +1117,13 @@ void img_pvr_decode(INT32 args,int header_only)
 	break;
       case MODE_COMPRESSED_MIPMAP:
 	mipmap = 1;
+	/* FALL_THROUGH */
       case MODE_COMPRESSED:
 	compress = 1;
 	twiddle = 1;
 	if((w<h && (w<8 || w>1024 || (w&(w-1)) || h%w)) ||
 	   (h>=w && (h<8 || h>1024 || (h&(h-1)) || w%h)))
-	  Pike_error("invalid size for vq texture\n");	  
+	  Pike_error("invalid size for vq texture\n");
 	break;
       case MODE_CLUT4:
       case MODE_CLUT4_MIPMAP:
@@ -1130,6 +1138,7 @@ void img_pvr_decode(INT32 args,int header_only)
       case MODE_ARGB1555:
       case MODE_ARGB4444:
 	hasalpha=1;
+	/* FALL_THROUGH */
       case MODE_RGB565:
       case MODE_RGB555:
 	bpp=2; break;
@@ -1162,17 +1171,17 @@ void img_pvr_decode(INT32 args,int header_only)
 
      s += (bpp*mipmap)>>compress;
 
-     push_text("image");
+     push_static_text("image");
      push_int(w);
      push_int(h);
      o=clone_object(image_program,2);
-     img=(struct image*)get_storage(o,image_program);
+     img=get_storage(o,image_program);
      push_object(o);
      n++;
 
      if(twiddle && !twiddleinited)
        init_twiddletab();
-     
+
      if(twiddle)
        if(h<w)
 	 for(x=0; x<w; x+=h)
@@ -1185,14 +1194,14 @@ void img_pvr_decode(INT32 args,int header_only)
 
      if(hasalpha) {
 
-       push_text("alpha");
+       push_static_text("alpha");
        push_int(w);
        push_int(h);
        o=clone_object(image_program,2);
-       img=(struct image*)get_storage(o,image_program);
+       img=get_storage(o,image_program);
        push_object(o);
        n++;
-       
+
        if(twiddle)
 	 if(h<w)
 	   for(x=0; x<w; x+=h)

@@ -1,5 +1,6 @@
-// Only do the following tests if we have System.Inotify.
-cond([[ master()->resolv("System")["Inotify"] ]], [[
+START_MARKER
+
+cond_resolv(System.Inotify, [[
 
 test_true(functionp(System.Inotify.parse_event));
 test_true(programp(System.Inotify._Instance));
@@ -32,7 +33,8 @@ test_any([[ // stole this from pikes Stdio.File testsuite.
   prefix += "conftest_pike_dir_";
   for(i = 0; i < 32; i++) {
     string testdir = prefix + i;
-    if (mkdir(testdir)) {
+    rm(testdir);
+    if (mkdir(testdir) || rm(testdir + "/conftest")) {
       add_constant("testdir", testdir + "/");
       add_constant("testfile", testdir + "/conftest");
       return 1;
@@ -41,16 +43,30 @@ test_any([[ // stole this from pikes Stdio.File testsuite.
   add_constant("testfile", "conftest");
   return 0;
 ]], 1)
+
 test_any([[
 	object i = System.Inotify._Instance();
-	object file = Stdio.File(i->get_fd(), "r");
+	array a;
+	i->set_event_callback(lambda(mixed ... args) { a = args; });
+#if constant(testdir)
 	i->add_watch(testdir, System.Inotify.IN_CREATE);
+#else
+	i->add_watch(".", System.Inotify.IN_CREATE);
+#endif
 	Stdio.write_file(testfile, "test");
-	array a = System.Inotify.parse_event(file->read(4096, 1));
-
+	i->poll();
 	return a[3] == "conftest" && a[1] == System.Inotify.IN_CREATE;
 ]], 1)
-test_do(add_constant("testdir"))
+
+test_true(rm(testfile))
 test_do(add_constant("testfile"))
 
 ]]) // System.Inotify
+
+ifefun(testdir,
+[[
+  test_true(rm(testdir));
+  test_do(add_constant("testdir"));
+]])
+
+END_MARKER

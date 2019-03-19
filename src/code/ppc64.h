@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -38,6 +37,7 @@
 #define STW(S,A,d) PPC_INSTR_D_FORM(36,S,A,d)
 #define LHA(D,A,d) PPC_INSTR_D_FORM(42,D,A,d)
 #define LD(D,A,ds) PPC_INSTR_DS_FORM(58,D,A,ds,0)
+#define LDU(D,A,ds) PPC_INSTR_DS_FORM(58,D,A,ds,1)
 #define STD(S,A,ds) PPC_INSTR_DS_FORM(62,S,A,ds,0)
 
 #define RLWINM(S,A,SH,MB,ME) PPC_INSTR_M_FORM(21,S,A,SH,MB,ME,0)

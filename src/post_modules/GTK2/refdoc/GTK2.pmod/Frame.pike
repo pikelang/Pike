@@ -27,7 +27,7 @@
 
 inherit GTK2.Bin;
 
-static GTK2.Frame create( string|mapping label_or_props );
+protected GTK2.Frame create( string|mapping label_or_props );
 //! Create a new W(Frame) widget.
 //!
 //!

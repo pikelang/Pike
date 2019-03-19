@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -60,11 +59,11 @@ struct memory_storage
 {
    unsigned char *p;
    size_t size;
-   
+
 #define MEM_READ        0x01
 #define MEM_WRITE       0x02
 #define MEM_FREE_FREE   0x10
-#define MEM_FREE_MUNMAP 0x20   
+#define MEM_FREE_MUNMAP 0x20
 #define MEM_FREE_SHMDEL 0x40
    unsigned long flags;
 #ifdef WIN32SHM

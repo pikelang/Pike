@@ -76,7 +76,7 @@ GTK2.TreeViewColumn clicked( );
 //!
 //!
 
-static GTK2.TreeViewColumn create( string|mapping title_or_props, GTK2.CellRenderer renderer, string|void property, int|void col );
+protected GTK2.TreeViewColumn create( string|mapping title_or_props, GTK2.CellRenderer renderer, string|void property, int|void col );
 //! Creates a new W(TreeViewColumn).
 //!
 //!
@@ -161,6 +161,11 @@ int get_spacing( );
 
 string get_title( );
 //! Returns the title of the widget.
+//!
+//!
+
+GTK2.Widget get_tree_view( );
+//! Returns the W(TreeView) that this TreeViewColumn has been inserted into.
 //!
 //!
 

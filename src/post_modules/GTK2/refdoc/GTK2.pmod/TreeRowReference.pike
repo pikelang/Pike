@@ -7,7 +7,7 @@ GTK2.TreeRowReference copy( );
 //!
 //!
 
-static GTK2.TreeRowReference create( GTK2.TreeModel model, GTK2.TreePath path );
+protected GTK2.TreeRowReference create( GTK2.TreeModel model, GTK2.TreePath path );
 //! Creates a row reference based on path.  This reference
 //! will keep pointing to the node pointed to by path, so
 //! long as it exists.

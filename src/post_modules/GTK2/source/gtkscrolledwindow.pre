@@ -3,14 +3,14 @@ class GTK2.ScrolledWindow;
 inherit GTK2.Bin;
 
 //! Scrolled windows are used to create a scrollable area with another
-//! widget insite it.  You may insert any type of widget into a scrolled
-//! window, and it will be accessible regardless of the size by using
+//! widget inside it.  You may insert any type of widget into a scrolled
+//! window, and it will be accessible regardless of its size by using
 //! the scrollbars.
 //!<p>
 //! IMG: GTK2.ScrolledWindow(GTK2.Adjustment(),GTK2.Adjustment())->add(GTK2.Label("A small label"))->set_policy(GTK2.POLICY_AUTOMATIC,GTK2.POLICY_AUTOMATIC)
 //! IMG: GTK2.ScrolledWindow(GTK2.Adjustment(),GTK2.Adjustment())->add(GTK2.Label("A small label"))->set_policy(GTK2.POLICY_AUTOMATIC,GTK2.POLICY_AUTOMATIC)
 //! IMG: GTK2.ScrolledWindow(GTK2.Adjustment(),GTK2.Adjustment())->add(GTK2.Label("A small label"))
-//! IMG: GTK2.ScrolledWindow(GTK2.Adjustment(),GTK2.Adjustment())->add(GTK2.Label("a ver huge label"))
+//! IMG: GTK2.ScrolledWindow(GTK2.Adjustment(),GTK2.Adjustment())->add(GTK2.Label("a very huge label"))
 //! </p>
 
 //! Properties:

@@ -79,7 +79,7 @@ int add_ui_from_string( string buffer );
 //!
 //!
 
-static GTK2.UiManager create( mapping|void props );
+protected GTK2.UiManager create( mapping|void props );
 //! Creates a new ui manager object.
 //!
 //!

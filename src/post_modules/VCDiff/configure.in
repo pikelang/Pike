@@ -1,0 +1,52 @@
+AC_INIT(vcdiff.cmod)
+AC_ARG_WITH(vcdiff,     [  --without-vcdiff       Disable VCDiff],[],[with_vcdiff=yes])
+
+AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(VCDiff)
+
+CXX_OBJS=""
+
+if test x$with_vcdiff = xyes ; then
+  PIKE_FEATURE(VCDiff,[no (missing lib)])
+
+  AC_LANG(C++)
+
+  AC_CHECK_HEADERS(google/vcencoder.h google/vcdecoder.h)
+
+  if test $ac_cv_header_google_vcencoder_h = yes ; then
+    PIKE_FEATURE(VCDiff,[no (broken lib)])
+
+    AC_CHECK_LIB(stdc++, main)
+    AC_MSG_CHECKING(if the library works)
+    AC_CACHE_VAL(pike_cv_vcdiff_works, [
+      ac_save_LIBS="$LIBS"
+      LIBS="-lvcdenc -lvcddec -lvcdcom $LIBS"
+      AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([#include <google/vcencoder.h>
+#include <google/vcdecoder.h>],
+	  [
+open_vcdiff::VCDiffEncoder *enc =
+  new open_vcdiff::VCDiffEncoder ("A", 1);
+open_vcdiff::VCDiffDecoder *dec =
+  new open_vcdiff::VCDiffDecoder ();
+
+])],
+      [pike_cv_vcdiff_works=yes],
+      [pike_cv_vcdiff_works=no])
+      LIBS="$ac_save_LIBS"
+    ])
+    AC_MSG_RESULT($pike_cv_vcdiff_works)
+
+    if test $pike_cv_vcdiff_works = yes ; then
+      AC_DEFINE(HAVE_VCDIFF)
+      PIKE_FEATURE(VCDiff,[yes])
+      CXX_OBJS="vcdiff_wrapper.o"
+      LIBS="-lvcdenc -lvcddec -lvcdcom $LIBS"
+    fi
+  fi
+fi
+
+AC_SUBST(CXX_OBJS)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

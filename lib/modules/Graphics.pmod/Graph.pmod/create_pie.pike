@@ -1,5 +1,4 @@
 //! Graph sub-module for drawing pie-charts.
-// $Id$
 //
 // These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
 // Create_pie can draw pie charts in different forms.
@@ -49,7 +48,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 
 
 
-  
+
   array(object) text;
   object notext;
   int ymaxtext;
@@ -81,10 +80,10 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   //create the text objects
   if (names)
     text=allocate(sizeof(names));
-   
+
   if (diagram_data["3Ddepth"]>diagram_data->ysize/5)
     diagram_data["3Ddepth"]=diagram_data->ysize/5;
-  
+
   notext=GETFONT(xnamesfont);
   if (names)
     if (notext)
@@ -108,12 +107,12 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	  if (text[i]->ysize()>diagram_data->ysize/5-diagram_data["3Ddepth"])
 	    text[i]=text[i]->scale(0, (int)diagram_data->ysize/5-
 				   diagram_data["3Ddepth"]);
-	  
+
 	  if (xmaxtext<(text[i]->xsize()))
 	    xmaxtext=text[i]->xsize();
 	  if (ymaxtext<(text[i]->ysize()))
 	    ymaxtext=text[i]->ysize();
-	  
+
 	}
     else
       error("Missing font or similar error!\n");
@@ -125,7 +124,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
     {
       xc=diagram_data->xsize/2;
       yc=diagram_data->ysize/2+nameheight/2;
-      xr=(int)min(xc-xmaxtext-ymaxtext-1-diagram_data->linewidth, 
+      xr=(int)min(xc-xmaxtext-ymaxtext-1-diagram_data->linewidth,
 		  yc-2*ymaxtext-
 		  1-diagram_data->linewidth-nameheight);
       yr=xr;
@@ -134,10 +133,10 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
     {
       xc=diagram_data->xsize/2;
       yc=diagram_data->ysize/2-diagram_data["3Ddepth"]/2+nameheight/2;
-      yr=(int)(min(xc-xmaxtext-ymaxtext-1-diagram_data["3Ddepth"]/2, 
+      yr=(int)(min(xc-xmaxtext-ymaxtext-1-diagram_data["3Ddepth"]/2,
 		   yc-2*ymaxtext-1-nameheight)
 	       -diagram_data->linewidth);
-      xr=(int)(min(xc-xmaxtext-ymaxtext-1, 
+      xr=(int)(min(xc-xmaxtext-ymaxtext-1,
 		   yc+diagram_data["3Ddepth"]/2-
 		   2*ymaxtext-1-nameheight)-
 	       diagram_data->linewidth);
@@ -149,7 +148,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	  "Try smaller font or bigger image!\n");
 
   //initiate the 0.25*% for different numbers:
-  //Ex: If numbers is ({3,3}) pnumbers will be ({200, 200}) 
+  //Ex: If numbers is ({3,3}) pnumbers will be ({200, 200})
   sum=`+(@ numbers);
   int i;
 
@@ -161,8 +160,8 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	  pnumbers[i]=(int)floor(t);
 	  numbers[i]=t-floor(t);
 	}
-      
-      
+
+
       //Now the rests are in the numbers-array
       //We now make sure that the sum of pnumbers is 400.
       sort(numbers, order);
@@ -172,7 +171,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	{
 	  pnumbers[order[--i]]++;
 	  sum2++;
-	}  
+	}
     }
   else
     if (sizeof(numbers)>1)
@@ -185,12 +184,12 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
       }
     else
       pnumbers=({400});
-  
+
   //Initiate the piediagram!
   float FI=0;
   if (diagram_data->center)
     {
-      //If to great center integer is given, module is used. 
+      //If to great center integer is given, module is used.
       // Center should not be greater than sizeof(data[0]).
       diagram_data->center%=(1+sizeof(numbers));
       FI=(400-`+(0,@pnumbers[0..diagram_data->center-2])
@@ -218,7 +217,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
       sizeof(diagram_data->data[0]))
     diagram_data->datacolors=diagram_data->datacolors
       [..sizeof(diagram_data->data[0])-1];
-  
+
   int t=sizeof(diagram_data->datacolors);
 
   float miniwxr;
@@ -248,15 +247,15 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
       skugg=Image.Image(piediagram->xsize(),piediagram->ysize(), 255,255,255);
       object foo;
       foo=Image.Image(piediagram->xsize(),piediagram->ysize(), 255,255,255);
-      skugg->tuned_box(xc,yc-yr-1,xc+xr+1,1+yc+yr+diagram_data["3Ddepth"],  
-		       ({			 
+      skugg->tuned_box(xc,yc-yr-1,xc+xr+1,1+yc+yr+diagram_data["3Ddepth"],
+		       ({
 			 ({255,255,255}),
 			 ({100,100,100}),
 			 ({255,255,255}),
-			 ({100,100,100})		      
+			 ({100,100,100})
 		       }));
-      skugg->tuned_box(xc-xr-1,yc-yr-1,xc,1+yc+yr+diagram_data["3Ddepth"],  
-		       ({			 
+      skugg->tuned_box(xc-xr-1,yc-yr-1,xc,1+yc+yr+diagram_data["3Ddepth"],
+		       ({
 			 ({100,100,100}),
 			 ({255,255,255}),
 			 ({100,100,100}),
@@ -281,14 +280,14 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 		      ({0,piediagram->ysize()-1,xc,piediagram->ysize()-1
 		      })
 		      );
-      
+
       edge_nr=0;
       for(i=0; i<t; i++)
 	{
 	  piediagram->setcolor(
 			       @diagram_data->datacolors[i]
 			       );
-	  
+
 	  if (pnumbers[i])
 	    {
 	      piediagram->
@@ -307,15 +306,15 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
       piediagram->polyfill(
 			   make_polygon_from_line(diagram_data->linewidth,
 						  ({
-						    xc+(xr+w/2.0), 
+						    xc+(xr+w/2.0),
 						    yc})+
 						  arrfoo[200..
 							601]+
-						  ({xc-(xr+w/2.0), 
+						  ({xc-(xr+w/2.0),
 						    yc}),
 						  0,1)[0]);
     }
-    
+
   edge_nr=0;
   for(i=0; i<t; i++)
     {
@@ -325,7 +324,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 					arr[2*edge_nr..2*(edge_nr+pnumbers[i]+2)+1]);
       edge_nr+=pnumbers[i];
     }
-  
+
 
 
   edge_nr=pnumbers[0];
@@ -359,7 +358,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 					    ,
 					    0, 1)[0]
 		     );
-	  
+
 	  edge_nr+=pnumbers[i];
 	}
       piediagram->polygone(arr[..401]
@@ -367,16 +366,16 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
       piediagram->polygone(arr[400..]
 			   +arr3[..401]);
     }
-  
+
   piediagram->setcolor(255,255,255);
-  
+
   //And now some shading!
   if (!twoD)
     {
       array(int) b=({70,70,70});
       array(int) a=({0,0,0});
-      
-      
+
+
       object tbild;
 
       int imxsize=piediagram->xsize(); //diagram_data->xsize;
@@ -384,8 +383,8 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 
       if(tone)
 	{
-	  
-	  
+
+
 	  tbild=Image.Image(imxsize, imysize, 255, 255, 255)->
 	    tuned_box(0, 0 , 1, imysize,
 		      ({a,a,b,b}));
@@ -396,7 +395,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	  tbild=tbild->paste(tbild->copy(0,0,15, imysize), 16, 0);
 	  if (imxsize>32)
 	    tbild=tbild->paste(tbild->copy(0,0,31, imysize), 32, 0);
-      
+
 	  if (imxsize>64)
 	    tbild->
 	      paste(tbild->copy(0,0,63, imysize), 64, 0);
@@ -416,7 +415,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	{
 	  if (sin(-PI/2+edge_nr*2.0*PI/400.0)>0)
 	    {
-	      
+
 	      float x1=xc+(xr+w/2.0)*sin((edge_nr*2.0*PI/400.0));
 	      float y1=yc+(w/2.0+yr)*sin(-PI/2+edge_nr*2.0*PI/400.0);
 	      float x2=xc+(miniwxr-w/2.0)*sin((edge_nr*2.0*PI/400.0));
@@ -432,14 +431,14 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 						,
 						0, 1)[0]
 			 );
-	      
+
 	    }
 	  edge_nr+=pnumbers[i];
 	}
-      
+
     }
 
-  
+
   //write the text!
   int|float place;
   sum=0;
@@ -457,18 +456,18 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	  }
 	piediagram=piediagram->setcolor(255,0, 0);
 
-	
+
 	t=(place<202)?0:-text[i]->xsize();
 	int yt=0;
 	if (((place>100)&&(place<300))&&
 	    (!twoD))
 	  yt=diagram_data["3Ddepth"];
-	
+
 	int ex=text[i]->ysize();
 	int x=(int)(xc +t+ (xr+ex)*sin(place*PI*2.0/400.0+0.0001));
-	int y=(int)(-text[i]->ysize()/2+yc +yt+ 
+	int y=(int)(-text[i]->ysize()/2+yc +yt+
 		    (yr+ex)*sin(-PI/2.0+place*PI*2.0/400.0+0.0001));
-      
+
 	piediagram=piediagram->paste_alpha_color(text[i], @fg, x, y);
       }
 

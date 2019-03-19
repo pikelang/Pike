@@ -1,3 +1,4 @@
+#pike __REAL_VERSION__
 
 //! @appears predef::Image.TIFF
 

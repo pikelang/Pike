@@ -44,5 +44,5 @@ class Connection
 }
 
 void connection(mixed ...args) { throw(Connection(@args)); }
-void internal(string format,mixed ...args) 
+void internal(string format,mixed ...args)
    { throw(StdErr(sprintf(format+" (internal error)",@args))); }

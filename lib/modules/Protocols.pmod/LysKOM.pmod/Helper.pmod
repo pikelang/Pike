@@ -19,7 +19,7 @@ string B(int(0..1) ... z) // encode bitfield
    return res;
 }
 
-array(string) A(array z) // encode array 
+array(string) A(array z) // encode array
 {
    return ({ ""+sizeof(z), "{ "+encode(@Array.flatten(z))+" }" });
 }
@@ -49,7 +49,7 @@ class LysKOMError
    {
       return LysKOMError(no,name,desc,status);
    }
-   
+
    mixed `[](mixed z)
    {
       switch (z)

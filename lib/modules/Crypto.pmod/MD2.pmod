@@ -1,21 +1,14 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(Nettle.MD2)
 
 //! MD2 is a message digest function constructed by Burton Kaliski,
-//! and is described in RFC 1319. It outputs message digests of 128
+//! and is described in @rfc{1319@}. It outputs message digests of 128
 //! bits, or 16 octets.
 
-#if constant(Nettle) && constant(Nettle.MD2_Info)
+inherit Nettle.MD2;
 
-// NOTE: Depends on the order of INIT invocations.
-inherit Nettle.MD2_Info;
-inherit .Hash;
-
-.HashState `()() { return Nettle.MD2_State(); }
-
-// urn:oid:1.2.840.113549.2.2
-string asn1_id() { return "*\206H\206\367\r\2\2"; }
-
-#else
-constant this_program_does_not_exist=1;
-#endif
+Standards.ASN1.Types.Identifier pkcs_hash_id()
+{
+  return Standards.PKCS.Identifiers.md2_id;
+}

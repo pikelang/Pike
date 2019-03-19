@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef LAS_H
@@ -11,7 +10,7 @@
 #include "global.h"
 #include "svalue.h"
 #include "dynamic_buffer.h"
-#include "block_alloc_h.h"
+#include "block_allocator.h"
 
 #define MAX_GLOBAL_VARIABLES 1000
 typedef void (*c_fun)(INT32);
@@ -57,6 +56,7 @@ struct local_variable
   unsigned int flags;
 };
 
+/* Keeps track of local variables and similar for the current function. */
 struct compiler_frame
 {
   struct compiler_frame *previous;
@@ -107,6 +107,10 @@ union node_data
   } integer;
 };
 
+#ifdef PIKE_DEBUG
+#include "opcodes.h"
+#endif
+
 struct node_s
 {
   unsigned INT32 refs;
@@ -114,11 +118,16 @@ struct node_s
   struct pike_type *type;
   struct pike_string *name;
   struct node_s *parent;
-  unsigned INT16 line_number;
+  INT_TYPE line_number;
   unsigned INT16 node_info;
   unsigned INT16 tree_info;
+  unsigned INT16 pad;
   /* The stuff from this point on is hashed. */
+#ifdef PIKE_DEBUG
+  enum Pike_opcodes token : 16;
+#else
   unsigned INT16 token;
+#endif
   union node_data u;
 };
 
@@ -154,7 +163,7 @@ struct node_s
 #define SCOPE_SCOPED 2
 #define SCOPE_SCOPE_USED 4
 
-BLOCK_ALLOC_FILL_PAGES(node_s, 2);
+void count_memory_in_node_ss(size_t *num, size_t *size);
 
 /* Prototypes begin here */
 int car_is_node(node *n);

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -42,7 +41,7 @@ static const double pi=3.14159265358979323846;
 /*
 **! method object dct(int newx,int newy)
 **!	Scales the image to a new size.
-**!	
+**!
 **!	Method for scaling is rather complex;
 **!	the image is transformed via a cosine transform,
 **!	and then resampled back.
@@ -58,7 +57,7 @@ static const double pi=3.14159265358979323846;
 **!	true experiment, but works...
 **!
 **! note
-**!	Do NOT use this function if you don't know what 
+**!	Do NOT use this function if you don't know what
 **!     you're dealing with! Read some signal theory first...
 **!
 **!	It doesn't use any fct (compare: fft) algorithms.
@@ -84,8 +83,8 @@ void image_dct(INT32 args)
 
 #ifdef DCT_DEBUG
    fprintf(stderr,"%lu bytes, %lu bytes\n",
-	   DO_NOT_WARN((unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize)),
-	   DO_NOT_WARN((unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)));
+           (unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize),
+           (unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1));
 #endif
 
    area=xalloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize+1);
@@ -99,8 +98,8 @@ void image_dct(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
    *img=*THIS;
-   
-   if (args>=2 
+
+   if (args>=2
        && TYPEOF(sp[-args]) == T_INT
        && TYPEOF(sp[1-args]) == T_INT)
    {
@@ -115,8 +114,8 @@ void image_dct(INT32 args)
 		   "Bad arguments to image->dct()\n");
    }
 
-   if (!(img->img=(rgb_group*)malloc(sizeof(rgb_group)*
-				     img->xsize*img->ysize+RGB_VEC_PAD)))
+   if (!(img->img=malloc(sizeof(rgb_group)*
+                         img->xsize*img->ysize+RGB_VEC_PAD)))
    {
       free(area);
       free(costbl);
@@ -139,7 +138,7 @@ void image_dct(INT32 args)
 	 d=(u?1:c0)*(v?1:c0)/4.0;
 	 sum.r=sum.g=sum.b=0;
 	 pix=THIS->img;
-	 
+
 	 for (x=0; x<THIS->xsize; x++)
 	    costbl[x]=cos( (2*x+1)*u*pi/xsz2 );
 
@@ -192,10 +191,10 @@ void image_dct(INT32 args)
 	    for (u=0; u<THIS->xsize; u++)
 	    {
 	       double z;
-	       z = (u?1:c0) * costbl[u] * z0; 
-	       sum.r += DO_NOT_WARN((float)(val->r*z));
-	       sum.g += DO_NOT_WARN((float)(val->g*z));
-	       sum.b += DO_NOT_WARN((float)(val->b*z));
+	       z = (u?1:c0) * costbl[u] * z0;
+               sum.r += (float)(val->r*z);
+               sum.g += (float)(val->g*z);
+               sum.b += (float)(val->b*z);
 	       val++;
 	    }
 	 }

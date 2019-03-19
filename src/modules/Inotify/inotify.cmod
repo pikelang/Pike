@@ -1,10 +1,7 @@
-/* vim:syntax=c
- */
 /* -*- c -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* Module for the linux inotify api.
@@ -26,11 +23,25 @@
 #include "object.h"
 #include "pike_types.h"
 #include "builtin_functions.h"
+#include "fdlib.h"
+#include "fd_control.h"
+#include "pike_threadlib.h"
 
 #ifdef HAVE_SYS_INOTIFY_H
 
 #include <sys/inotify.h>
 #include <errno.h>
+
+/* Autoconf helpfully litters generated files with colliding defines. */
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_URL
+#undef PACKAGE_VERSION
+
+#include "modules/_Stdio/file_machine.h"
+#include "modules/_Stdio/file.h"
 
 DECLARATIONS
 
@@ -106,8 +117,9 @@ DECLARATIONS
  *! 	@endarray
  */
 PIKEFUN array(string|int) parse_event(string data) {
-    struct inotify_event * event;
+    struct inotify_event event;
     size_t len;
+    const char * d;
 
     if (data->size_shift)
 	Pike_error("Inotify events should not be wide.\n");
@@ -115,24 +127,28 @@ PIKEFUN array(string|int) parse_event(string data) {
     if ((size_t)data->len < sizeof(struct inotify_event))
 	Pike_error("Malformed data.\n");
 
-    event = (struct inotify_event *)data->str;
-    pop_n_elems(args);
+    d = data->str;
 
-    if (event->len > data->len - sizeof(struct inotify_event))
-	Pike_error("Data missing.\n");
+    memcpy(&event, d, sizeof(struct inotify_event));
 
-    push_int((int)event->wd);
-    push_int((int)event->mask);
-    push_int((int)event->cookie);
+    push_int(event.wd);
+    push_int((int)event.mask);
+    push_int((int)event.cookie);
 
-    if (event->len && (len = strlen(event->name)))
-	push_string(make_shared_binary_string(event->name, len));
-    else
-	push_int(0);
+    if (event.len) {
+        if (event.len > data->len - sizeof(struct inotify_event))
+            Pike_error("Data missing. Got %u expected %u bytes.\n", (unsigned)(data->len - sizeof(struct inotify_event)), event.len);
+        d += sizeof(struct inotify_event);
+	push_string(make_shared_binary_string(d, strnlen(d, event.len)));
+    } else {
+        push_int(0);
+    }
 
-    push_int((int)(event->len + sizeof(struct inotify_event)));
+    push_int((int)(event.len + sizeof(struct inotify_event)));
 
     f_aggregate(5);
+    stack_swap();
+    pop_stack();
 }
 
 /*! @class _Instance
@@ -147,7 +163,34 @@ PIKEFUN array(string|int) parse_event(string data) {
  *!     @[System.Inotify.Instance]
  */
 PIKECLASS _Instance {
-    CVAR int fd;
+    CVAR struct fd_callback_box box;
+    CVAR struct string_builder buf;
+
+    /*! @decl private function(int, int, int, string:void) event_callback
+     *!
+     *! Callback function that is called when an event is triggered.
+     *!
+     *! @seealso
+     *!   @[set_event_callback()], @[query_event_callback()]
+     */
+    PIKEVAR function(int, int, int, string:void) event_callback
+      flags ID_PRIVATE;
+    static int event_callback_fun_num;
+
+    EXTRA
+    {
+      /* NB: Inlined isidentifier() due to it not being exported. */
+      event_callback_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("event_callback"),
+						 Pike_compiler->new_program,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (event_callback_fun_num == -1) {
+	Pike_fatal("Inotify: Event callback variable not mapped!\n");
+      }
+      /* We don't want to count references to ourselves. */
+      ID_FROM_INT(Pike_compiler->new_program, event_callback_fun_num)->
+	identifier_flags |= IDENTIFIER_NO_THIS_REF;
+    }
 
     /*! @decl int add_watch(string file, int mask)
      *! Add a watch for a certain file or directory and specific events.
@@ -179,7 +222,7 @@ PIKECLASS _Instance {
 	if (file->size_shift)
 	    Pike_error("Widestring filenames are not allowed.\n");
 
-	err = inotify_add_watch(THIS->fd, file->str, (INT32)mask);
+	err = inotify_add_watch(THIS->box.fd, file->str, mask);
 
 	if (err == -1)
 	    Pike_error("inotify_add_watch failed: %s\n",
@@ -188,13 +231,13 @@ PIKECLASS _Instance {
 	    RETURN err;
     }
 
-    /*! @decl int get_fd()
+
+    /*! @decl int query_fd()
      *! @returns
-     *!	    Returns the file descriptor that is associated to the inotify
-     *!	    instance.
+     *!	    Returns the file descriptor associated with this inotify instance.
      */
-    PIKEFUN int get_fd() {
-	RETURN THIS->fd;
+    PIKEFUN int query_fd() {
+	push_int(THIS->box.fd);
     }
 
     /*! @decl int rm_watch(int wd)
@@ -205,33 +248,220 @@ PIKECLASS _Instance {
     PIKEFUN void rm_watch(int wd) {
 	INT32 err;
 
-	err = inotify_rm_watch(THIS->fd, wd);
+	err = inotify_rm_watch(THIS->box.fd, wd);
 
-	if (err == 0) {
+	if (!err || (errno == EINVAL)) {
+	    /* NB: EINVAL typically means that the watch descriptor is
+	     *     invalid, and is often triggered by the descriptor
+	     *     having been automatically removed.
+	     */
 	    return;
 	}
 
-	if (errno == EINVAL) {
-	    Pike_error("Wrong argument to rm_watch().\n");
-	} else if (errno == EBADF) {
+	if (errno == EBADF) {
 	    Pike_error("Oups. I feel funny inside.\n");
 	}
+	Pike_error("Unexpected error: %d.\n", errno);
+    }
+
+    /*! @decl void set_event_callback(function(int, int, int, string:void) cb)
+     *!
+     *! Set the @[event_callback].
+     *!
+     *! @seealso
+     *!   @[get_event_callback()], @[event_callback], @[poll()]
+     */
+    PIKEFUN void set_event_callback(function(int, int, int, string:void) cb)
+    {
+      /* Use object indexing to handle circular reference counting correctly. */
+      object_low_set_index(Pike_fp->current_object,
+			   Pike_fp->context->identifier_level +
+			   event_callback_fun_num,
+			   cb);
+    }
+
+    /*! @decl function(int, int, int, string:void) get_event_callback()
+     *!
+     *! Get the current @[event_callback].
+     *!
+     *! @seealso
+     *!   @[set_event_callback()], @[event_callback], @[poll()]
+     */
+    PIKEFUN function(int, int, int, string:void) get_event_callback()
+    {
+      push_svalue(&THIS->event_callback);
+    }
+
+    /*! @decl void set_backend(Pike.Backend backend)
+     *!
+     *! Set the backend used for callbacks.
+     *!
+     *! @seealso
+     *!   @[set_event_callback()], @[set_nonblocking()], @[poll()]
+     */
+    PIKEFUN void set_backend(object backend_object)
+    {
+	struct Backend_struct *backend =
+	    get_storage(backend_object, Backend_program);
+	if (!backend)
+	    SIMPLE_BAD_ARG_ERROR("set_backend", 1, "Pike.Backend");
+	change_backend_for_box(&THIS->box, backend);
+    }
+
+    /*! @decl void set_nonblocking()
+     *!
+     *! Enable backend callback mode.
+     *!
+     *! The configured backend will call @[poll()] automatically
+     *! as soon as there are events pending.
+     *!
+     *! @seealso
+     *!   @[set_blocking()], @[poll()]
+     */
+    PIKEFUN void set_nonblocking()
+    {
+      set_fd_callback_events(&THIS->box, PIKE_BIT_FD_READ, 0);
+    }
+
+    /*! @decl void set_blocking()
+     *!
+     *! Disable backend callback mode.
+     *!
+     *! The configured backend will stop calling @[poll()], so
+     *! @[poll()] will need to be called by hand.
+     *!
+     *! @seealso
+     *!   @[set_blocking()], @[poll()]
+     */
+    PIKEFUN void set_blocking()
+    {
+      set_fd_callback_events(&THIS->box, 0, 0);
+    }
+
+    /*! @decl void poll()
+     *!
+     *! Check for any pending events.
+     *!
+     *! Any pending events will be read and parsed, and @[event_callback] will
+     *! be called once for each event. The arguments to the @[event_callback]
+     *! will be:
+     *! @array
+     *!   @elem int 1
+     *!     The watch descriptor that was triggered.
+     *!   @elem int 2
+     *!     The event that was triggerend (one of @tt{IN_*@}).
+     *!   @elem int 3
+     *!     An integer cookie used to identify grouped events.
+     *!   @elem string 4
+     *!     The name of the path segment (if any).
+     *! @endarray
+     *!
+     *! @note
+     *!   This function is called by the backend when there are events
+     *!   pending.
+     *!
+     *! @seealso
+     *!   @[set_event_callback()]
+     */
+    PIKEFUN void poll()
+    {
+	ptrdiff_t off = 0;
+	ptrdiff_t bytes;
+	do {
+	    string_build_mkspace(&THIS->buf, 1024, 0);
+	    do {
+		bytes = read(THIS->box.fd,
+			     THIS->buf.s->str + THIS->buf.s->len,
+			     1024);
+	    } while ((bytes == -1) && (errno == EINTR));
+	    if (bytes > 0) {
+	      THIS->buf.s->len += bytes;
+	    }
+	    while (THIS->buf.s->len >=
+		   (off + (ptrdiff_t)sizeof(struct inotify_event))) {
+	        /* NB: Assumes that e->len has a valid alignment
+		 *     for the struct. This could cause problems
+		 *     on non-x86 systems and injected data.
+		 */
+		struct inotify_event *e = (void *)(THIS->buf.s->str + off);
+		const char *path = (char *)(e + 1);
+		ptrdiff_t new_off = off + sizeof(struct inotify_event) + e->len;
+		if (new_off > THIS->buf.s->len) {
+		    /* Not enough data for the filename yet. */
+		    break;
+		}
+		off = new_off;
+
+		push_int(e->wd);
+		push_int(e->mask);
+		push_int(e->cookie);
+		push_string(make_shared_binary_string(path,
+						      strnlen(path, e->len)));
+		safe_apply_svalue(&THIS->event_callback, 4, 1);
+		pop_stack();
+	    }
+	    if (off == THIS->buf.s->len) {
+		/* End of data reached. Restart at beginning of buffer. */
+		off = THIS->buf.s->len = 0;
+	    }
+	} while (bytes > 0);
+	if (off) {
+	    /* Unlikely, but... */
+	    THIS->buf.s->len -= off;
+	    memmove(THIS->buf.s->str, THIS->buf.s->str + off,
+		    THIS->buf.s->len);
+	}
+    }
+
+    static int got_inotify_event(struct fd_callback_box *box, int UNUSED(event))
+    {
+	apply(box->ref_obj, "poll", 0);
+	pop_stack();
+	return 0;
     }
 
     INIT {
-	THIS->fd = inotify_init();
+	THIS->box.fd = -1;
+	init_string_builder_alloc(&THIS->buf, 1024, 0);
+	INIT_FD_CALLBACK_BOX(&THIS->box, default_backend,
+			     Pike_fp->current_object,
+			     inotify_init(), 0, got_inotify_event, 0);
 
-	if (THIS->fd == -1) switch (errno) {
-	case EMFILE:
+	if (THIS->box.fd == -1) {
+	  switch (errno) {
+	  case EMFILE:
 	    Pike_error("User limit on inotify instances reached.\n");
-	case ENFILE:
+	    break;
+	  case ENFILE:
 	    Pike_error("User limit on file descriptors reached.\n");
-	case ENOMEM: Pike_error("No free kernel memory available.\n");
+	    break;
+	  case ENOMEM:
+	    Pike_error("No free kernel memory available.\n");
+	    break;
+	  default:
+	    Pike_error("Failed to initialize.\n");
+	    break;
+	  }
 	}
+	set_nonblocking(THIS->box.fd, 1);
     }
 
     EXIT {
-	close(THIS->fd);
+	if (THIS->box.fd != -1) {
+	    int fd = THIS->box.fd;
+	    set_fd_callback_events(&THIS->box, 0, 0);
+	    change_fd_for_box(&THIS->box, -1);
+	    unhook_fd_callback_box(&THIS->box);
+	    /*
+	     * Currently (linux 3.4.9) closing an inotify fd takes
+	     * on the order of 100 ms
+	     */
+	    THREADS_ALLOW();
+	    while ((close(fd) == -1) && (errno == EINTR))
+	      ;
+	    THREADS_DISALLOW();
+	}
+	free_string_builder(&THIS->buf);
     }
 }
 

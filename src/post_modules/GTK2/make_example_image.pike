@@ -39,7 +39,8 @@ void grab(object w, string s)
 
 void got_size_alloc( mixed a, mixed b, object e )
 {
-  geom = (mapping)b[0];
+  if (arrayp(b)) b = b[0];
+  geom = (mapping)b;
 }
 
 void got_event( mixed a, mixed b, object e )

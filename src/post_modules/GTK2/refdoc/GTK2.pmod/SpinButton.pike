@@ -66,7 +66,7 @@ GTK2.SpinButton configure( GTK2.Adjustment range, float climb_rate, int precisio
 //!
 //!
 
-static GTK2.SpinButton create( GTK2.Adjustment range_or_min_or_props, float climb_rate_or_max, int|float precision_or_step );
+protected GTK2.SpinButton create( GTK2.Adjustment range_or_min_or_props, float climb_rate_or_max, int|float precision_or_step );
 //!  The climb_rate argument take a value between 0.0 and 1.0 and
 //!  indicates the amount of acceleration that the Spin Button has. The
 //!  digits argument specifies the number of decimal places to which

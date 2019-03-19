@@ -1,5 +1,4 @@
 // Compatibility namespace
-// $Id$
 
 #pike 7.9
 
@@ -8,11 +7,37 @@
 //! The symbols in this namespace will appear in
 //! programs that use @tt{#pike 7.8@} or lower.
 
-//! @decl inherit predef::
+//! @decl inherit 8.0::
+
+array|mapping|multiset|string map(array|mapping|multiset|string|object|program stuff, function(mixed,mixed...:mixed) f, mixed ... args)
+{
+  if(objectp(stuff))
+  {
+    if( catch { stuff = (array)stuff; } )
+      if( catch { stuff = (mapping)stuff; } )
+        if( catch { stuff = (multiset)stuff; } )
+          if( catch {
+              object o = stuff;
+              stuff = allocate(sizeof(o));
+              for( int i; i<sizeof(stuff); i++ )
+                stuff[i] = o[i];
+            } )
+           error("Bad argument 1 to map. Expected object that works in map.\n");
+  }
+  return 7.9::map(stuff, f, @args);
+}
+
+object master()
+{
+  return __REAL_VERSION__::master()->get_compat_master(7, 8);
+}
 
 protected Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
+			    "all_constants" : all_constants,
+                            "map" : map,
+			    "master" : master,
 			  ]), 1);
 
 mapping(string:mixed) all_constants()

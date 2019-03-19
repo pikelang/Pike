@@ -26,51 +26,52 @@ float long;
 //! is up. Zero is the shell of the current ellipsoid.
 float alt;
 
-//! @decl void create(float lat, float long, void|float alt)
+//! @decl void create(int|float lat, int|float long, void|int|float alt)
 //! @decl void create(string lat, string long)
-//! @decl void create(string both)
+//! @decl void create(string position)
+//! @decl void create()
 //!
 //! Constructor for this class. If fed with strings,
 //! it will perform a dwim scan on the strings. If they
 //! fails to be understood, there will be an exception.
 //!
-void create(void|int|float|string _lat,
-	    void|int|float|string _long, void|float _alt)
+
+protected void create()
 {
-   if(zero_type(_lat)) return;
-   if (stringp(_lat))
-   {
-      if (zero_type(_long))
-      {
-	 string tmp;
-	 if (sscanf(_lat,"%sN %s",tmp,_long)==2) _lat=tmp+"N";
-	 else if (sscanf(_lat,"%sS %s",tmp,_long)==2) _lat=tmp+"S";
-	 else if (sscanf(_lat,"%sW %s",tmp,_lat)==2) _long=tmp+"W";
-	 else if (sscanf(_lat,"%sE %s",tmp,_lat)==2) _long=tmp+"N";
-	 else if (sscanf(_lat,"%s %s",tmp,_long)==2) _lat=tmp;
-      }
-      _lat=dwim(_lat,"NS");
-      if (stringp(_lat))
-	 error("Failed to understand latitude %O\n",lat);
-   }
-   if (stringp(_long))
-   {
-      _long=dwim(_long,"EW");
-      if (stringp(_long))
-	 error("Failed to understand longitude %O\n",long);
-   }
-   lat=(float)_lat;
-   long=(float)_long;
-   alt=(float)_alt;
-   set_ellipsoid("WGS 84");
+  create(0, 0);
 }
 
-private float|string dwim(string what,string direction)
+protected variant void create(string pos)
+{
+  string tmp, lat, long;
+  if (sscanf(pos, "%sN %s", tmp, long)==2) lat=tmp+"N";
+  else if (sscanf(pos, "%sS %s", tmp, long)==2) lat=tmp+"S";
+  else if (sscanf(pos, "%sW %s", tmp, lat)==2)  long=tmp+"W";
+  else if (sscanf(pos, "%sE %s", tmp, lat)==2)  long=tmp+"N";
+  else if (sscanf(pos, "%s %s",  tmp, long)==2) lat=tmp;
+  create(lat, long);
+}
+
+protected variant void create(string lat, string long)
+{
+  create(dwim(lat,"NS"), dwim(long,"EW"));
+}
+
+protected variant void create(int|float lat, int|float long,
+                              void|int|float alt)
+{
+  this::lat=(float)lat;
+  this::long=(float)long;
+  this::alt=(float)alt;
+  set_ellipsoid("WGS 84");
+}
+
+private float dwim(string what,string direction)
 {
    float d,m,s;
    string dir=0;
    int neg=0;
-#define DIV "%*[ \t\r\n'`°\":.]"
+#define DIV "%*[ \t\r\n'`\260\":.]"
 
    if (sscanf(what,"-%s",what)) neg=1;
 
@@ -95,14 +96,14 @@ string prettyprint(float what,int n,string directions)
    {
       case -1: return sprintf("%.5g",what);
       case 1:
-	 return sprintf("%.3f°%s",what,directions);
+	 return sprintf("%.3f\260%s",what,directions);
       case 3:
-	 return sprintf("%d°%d'%.1f\"%s",
+	 return sprintf("%d\260%d'%.1f\"%s",
 			(int)floor(what),(int)floor(60*(what-floor(what))),
 			3600*(what-floor(60*what)/60),
 			directions);
       default:
-	 return sprintf("%d°%.3f'%s",
+	 return sprintf("%d\260%.3f'%s",
 			(int)floor(what),60*(what-floor(what)),
 			directions);
    }
@@ -165,13 +166,15 @@ float eccentricity_squared() {
   return 2*f - pow(f,2);
 }
 
+// FIXME: Consider adding models from http://epsg-registry.org/.
+
 //! A mapping with reference ellipsoids, which can be fed to the
 //! UTM converter. The mapping maps the name of the ellipsoid to
 //! an array where the first element is a float describing the
 //! equatorial radius and the second element is a float describing
 //! the polar radius.
 //!
-constant ellipsoids = 
+constant ellipsoids =
   ([ "Airy 1830" : ({ 6377563.396, 6356256.91 }),
      "ATS77" : ({ 6378135.0, 6356750.304922 }),
      "Australian National" : ({ 6378160.0, 6356774.719 }),
@@ -344,9 +347,9 @@ array(float) UTM_offset() {
   float A = cos(LatRad)*(LongRad-LongOriginRad);
 
   float M = equatorial_radius *
-    ((1 - ecc/4        - 3*ecc*ecc/64    - 5*ecc*ecc*ecc/256)*LatRad 
+    ((1 - ecc/4        - 3*ecc*ecc/64    - 5*ecc*ecc*ecc/256)*LatRad
      - (3*ecc/8        + 3*ecc*ecc/32    + 45*ecc*ecc*ecc/1024)*sin(2*LatRad)
-     + (15*ecc*ecc/256 + 45*ecc*ecc*ecc/1024)*sin(4*LatRad) 
+     + (15*ecc*ecc/256 + 45*ecc*ecc*ecc/1024)*sin(4*LatRad)
      - (35*ecc*ecc*ecc/3072)*sin(6*LatRad));
 
   float UTME = (k0*N*(A+(1-T+C)*A*A*A/6
@@ -367,8 +370,9 @@ array(float) UTM_offset() {
 //! "32T 442063.562 5247479.500"
 //! where the parts are zone number + zone designator,
 //! easting and northing.
-string UTM() {
-  return sprintf("%d%s %f %f", UTM_zone_number(), UTM_zone_designator(),
+string UTM(int precision) {
+  return sprintf("%d%s %."+precision+"f %."+precision+"f",
+                 UTM_zone_number(), UTM_zone_designator(),
 		 @UTM_offset());
 }
 
@@ -391,7 +395,7 @@ void set_from_UTM(int zone_number, string zone_designator, float UTME, float UTM
   float M = UTMN / k0;
   float mu = M/(equatorial_radius*(1-ecc/4-3*ecc*ecc/64-5*ecc*ecc*ecc/256));
 
-  float phi1Rad = mu + (3*e1/2-27*e1*e1*e1/32)*sin(2*mu) 
+  float phi1Rad = mu + (3*e1/2-27*e1*e1*e1/32)*sin(2*mu)
     + (21*e1*e1/16-55*e1*e1*e1*e1/32)*sin(4*mu)
     +(151*e1*e1*e1/96)*sin(6*mu);
   float phi1 = phi1Rad * 180/Math.pi;
@@ -567,31 +571,32 @@ array(float) ECEF() {
 
 // --- "Technical" methods --------------
 
-string|array cast(string to)
+protected string|array cast(string to)
 {
-   if (to[..4]=="array")
-      return ({lat,long});
-
-   if (to[..5]=="string")
-      return latitude()+" "+longitude();
-
-   error("can't cast to %O\n",to);
+  switch(to)
+  {
+  case "array":
+    return ({lat,long});
+  case "string":
+    return latitude()+" "+longitude();
+  }
+  return UNDEFINED;
 }
 
 //!
-int __hash()
+protected int __hash()
 {
    return (int)(lat*3600000+long*3600000);
 }
 
 //!
-int `==(object pos)
+protected int `==(object pos)
 {
    return (objectp(pos) && pos->lat==lat && pos->long==long);
 }
 
 //!
-int `<(object pos)
+protected int `<(object pos)
 {
    if (pos->lat>lat) return 1;
    else if (pos->lat==lat && pos->long>long) return 1;
@@ -599,7 +604,7 @@ int `<(object pos)
 }
 
 //!
-int `>(object pos)
+protected int `>(object pos)
 {
    if (pos->lat<lat) return 1;
    else if (pos->lat==lat && pos->long<long) return 1;
@@ -607,7 +612,7 @@ int `>(object pos)
 }
 
 //!
-string _sprintf(int|void t)
+protected string _sprintf(int|void t)
 {
   return t=='O' && sprintf("%O(%s, %s)", this_program,
 			   latitude(), longitude());
@@ -623,5 +628,15 @@ float euclidian_distance(this_program p)
 }
 
 // encoder
-array(float) _encode() { return ({lat,long,alt}); }
-void _decode(array(float) v) { create(@v); }
+array(float) _encode()
+{
+  return ({ lat, long, alt, polar_radius, equatorial_radius });
+}
+void _decode(array(float) v) {
+  create(@v[..2]);
+  if( sizeof(v)==5 )
+  {
+    polar_radius = v[3];
+    equatorial_radius = v[4];
+  }
+}

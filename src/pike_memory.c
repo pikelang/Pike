@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -11,7 +10,8 @@
 #include "pike_macros.h"
 #include "gc.h"
 #include "fd_control.h"
-#include "dmalloc.h"
+#include "block_allocator.h"
+#include "pike_cpulib.h"
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -28,22 +28,6 @@
 #include <errno.h>
 
 int page_size;
-
-/* strdup() is used by several modules, so let's provide it */
-#ifndef HAVE_STRDUP
-#undef strdup
-char *strdup(const char *str)
-{
-  char *res = NULL;
-  if (str) {
-    int len = strlen(str)+1;
-
-    res = xalloc(len);
-    MEMCPY(res, str, len);
-  }
-  return(res);
-}
-#endif /* !HAVE_STRDUP && !strdup */
 
 ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz)
 {
@@ -78,9 +62,9 @@ static void swap(char *a, char *b, size_t size)
   while(size)
   {
     tmp = MINIMUM((size_t)sizeof(tmpbuf), size);
-    MEMCPY(tmpbuf,a,tmp);
-    MEMCPY(a,b,tmp);
-    MEMCPY(b,tmpbuf,tmp);
+    memcpy(tmpbuf,a,tmp);
+    memcpy(a,b,tmp);
+    memcpy(b,tmpbuf,tmp);
     size-=tmp;
     a+=tmp;
     b+=tmp;
@@ -155,7 +139,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   for(e=0;e<nitems;e++) to[e]=from[order[e]];	\
   break;					\
  }
-  
+
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)
@@ -178,94 +162,14 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 #endif
 
   default:
-    for(e=0;e<nitems;e++) MEMCPY(tmp+e*size, memory+order[e]*size, size);
+    for(e=0;e<nitems;e++) memcpy(tmp+e*size, memory+order[e]*size, size);
   }
 
-  MEMCPY(memory, tmp, size * nitems);
+  memcpy(memory, tmp, size * nitems);
   free(tmp);
 }
 
-#if SIZEOF_CHAR_P == 4
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 3)
-#else /* sizeof(char *) != 4 */
-#if SIZEOF_CHAR_P == 8
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 4)
-#else /* sizeof(char *) != 8 */
-#define DIVIDE_BY_2_CHAR_P(X)	(X /= 2*sizeof(size_t))
-#endif /* sizeof(char *) == 8 */
-#endif /* sizeof(char *) == 4 */
-
-/* MLEN is the length of the longest prefix of A to use for hashing.
- * (If A is longer then additionally some bytes at the end are
- * included.) */
-/* NB: RET should be an lvalue of type size_t. */
-#define DO_HASHMEM(RET, A, LEN, MLEN)			\
-  do {							\
-    const unsigned char *a = A;				\
-    size_t len = LEN;					\
-    size_t mlen = MLEN;					\
-    size_t ret;						\
-  							\
-    ret = 9248339*len;					\
-    if(len<=mlen)					\
-      mlen=len;						\
-    else						\
-    {							\
-      switch(len-mlen)					\
-      {							\
-  	default: ret^=(ret<<6) + a[len-7];		\
-  	case 7:						\
-  	case 6: ret^=(ret<<7) + a[len-5];		\
-  	case 5:						\
-  	case 4: ret^=(ret<<4) + a[len-4];		\
-  	case 3: ret^=(ret<<3) + a[len-3];		\
-  	case 2: ret^=(ret<<3) + a[len-2];		\
-  	case 1: ret^=(ret<<3) + a[len-1];		\
-      }							\
-    }							\
-    a += mlen & 7;					\
-    switch(mlen&7)					\
-    {							\
-      case 7: ret^=a[-7];				\
-      case 6: ret^=(ret<<4)+a[-6];			\
-      case 5: ret^=(ret<<7)+a[-5];			\
-      case 4: ret^=(ret<<6)+a[-4];			\
-      case 3: ret^=(ret<<3)+a[-3];			\
-      case 2: ret^=(ret<<7)+a[-2];			\
-      case 1: ret^=(ret<<5)+a[-1];			\
-    }							\
-  							\
-    DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(			\
-      {							\
-  	size_t *b;					\
-  	b=(size_t *)a;					\
-    							\
-  	for(DIVIDE_BY_2_CHAR_P(mlen);mlen--;)		\
-  	{						\
-  	  ret^=(ret<<7)+*(b++);				\
-  	  ret^=(ret>>6)+*(b++);				\
-  	}						\
-      }							\
-    ,							\
-      for(mlen >>= 3; mlen--;)				\
-      {							\
-  	register size_t t1;				\
-  	register size_t t2;				\
-  	t1= a[0];					\
-  	t2= a[1];					\
-  	t1=(t1<<5) + a[2];				\
-  	t2=(t2<<4) + a[3];				\
-  	t1=(t1<<7) + a[4];				\
-  	t2=(t2<<5) + a[5];				\
-  	t1=(t1<<3) + a[6];				\
-  	t2=(t2<<4) + a[7];				\
-  	a += 8;						\
-  	ret^=(ret<<7) + (ret>>6) + t1 + (t2<<6);	\
-      }							\
-    )							\
-  							\
-    RET = ret;						\
-  } while(0)
+#include "siphash24.c"
 
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
 /*
@@ -304,22 +208,17 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
         :"=S"(H) :"0"(H), "c"(*(P)))
 #endif
 
-#define __cpuid(level, a, b, c, d)                      \
-    __asm__ ("cpuid"                                    \
-             : "=a" (a), "=b" (b), "=c" (c), "=d" (d)   \
-             : "a" (level))
-
 #define bit_SSE4_2 (1<<20)
 
-__attribute__((const)) static inline int supports_sse42( ) 
+ATTRIBUTE((const)) static inline int supports_sse42( )
 {
-    unsigned int ignore, cpuid_ecx;
-    __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
-    return cpuid_ecx & bit_SSE4_2;
+  INT32 cpuid[4];
+  x86_get_cpuid (1, cpuid);
+  return cpuid[3] & bit_SSE4_2;
 }
 
 #ifdef __i386__
-__attribute__((fastcall))
+ATTRIBUTE((fastcall))
 #endif
 #ifdef HAVE_CRC32_INTRINSICS
 /*
@@ -327,115 +226,120 @@ The intrinsics are only available if -msse4 is specified.
 However, specifying that option on the command-line makes the whole runtime-test here
 pointless, since gcc will use other sse4 instructions when suitable.
 */
-__attribute__((target("sse4")))
+ATTRIBUTE((target("sse4")))
 #endif
-__attribute__((hot))
-__attribute__((target("sse4,arch=core2")))
-static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbytes )
+ATTRIBUTE((hot))
+static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
+					     size_t nbytes, size_t key )
 {
-    unsigned int h = len;
-    const unsigned int *p = s;
-    if( nbytes >= len )
-    {
-        /* Hash the whole memory area */
-        const unsigned int *e = p + (len>>2);
-        const unsigned char *c = (const unsigned char*)e;
+  unsigned int h = len;
+  const unsigned int *p = s;
 
-        /* .. all full intgers .. */
-        while( p<e )
-            CRC32SI(h, p++ );
+  if( key )
+      return low_hashmem_siphash24(s,len,nbytes,key);
 
-        len &= 3;
+  if( nbytes >= len )
+  {
+    /* Hash the whole memory area */
+    const unsigned int *e = p + (len>>2);
+    const unsigned char *c = (const unsigned char*)e;
 
-        /* any remaining bytes. */
-        while( len-- )
-            CRC32SQ( h, c++ );
-        return h;
+    /* .. all full integers .. */
+    while( p<e ) {
+      CRC32SI(h, p++ );
     }
-    else
-    {
-        const unsigned int *e = p+(nbytes>>2);
+
+    len &= 3;
+
+    /* any remaining bytes. */
+    while( len-- )
+      CRC32SQ( h, c++ );
+    return h;
+  }
+  else
+  {
+    const unsigned int *e = p+(nbytes>>2);
 #ifdef PIKE_DEBUG
-        /*
-           This code makes assumputions that is not true if nbytes & 3 is true.
+    /*
+      This code makes assumputions that is not true if nbytes & 3 is true.
 
-           Specifically, it will not read enough (up to 3 bytes too
-           little) n the first loop.
+      Specifically, it will not read enough (up to 3 bytes too
+      little) in the first loop.
 
-           Also, if nbytes < 8 the end CRC32SI will read too much.
+      Also, if nbytes < 32 the unroll assumptions do not hold
 
-           This could easily be fixed, but all calls to hashmem tends
-           to use either power-of-two values or the length of the
-           whole memory area.
-        */
-        if( nbytes & 3 )
-            Pike_fatal("do_hash_ia32_crc32: nbytes & 3 should be 0.\n");
-        if( nbytes < 8 )
-            Pike_fatal("do_hash_ia32_crc32: nbytes is less than 8.\n");
+      This could easily be fixed, but all calls to hashmem tend
+      to use either power-of-two values or the length of the
+      whole memory area.
+    */
+    if( nbytes & 3 )
+      Pike_fatal("do_hash_ia32_crc32: nbytes & 3 should be 0.\n");
+    if( nbytes < 32 )
+      Pike_fatal("do_hash_ia32_crc32: nbytes is less than 32.\n");
 #endif
-        while( p<e )
-            CRC32SI(h,p++);
-
-        /* include 8 bytes from the end. Note that this might be a
-         * duplicate of the previous bytes.
-         *
-         * Also note that this means we are rather likely to read
-         * unaligned memory.  That is OK, however.
-         */
-        e = (const unsigned int *)((const unsigned char *)s+len-8);
-        CRC32SI(h,e++);
-        CRC32SI(h,e);
+    while( p+7 < e )
+    {
+      CRC32SI(h,&p[0]);
+      CRC32SI(h,&p[1]);
+      CRC32SI(h,&p[2]);
+      CRC32SI(h,&p[3]);
+      CRC32SI(h,&p[4]);
+      CRC32SI(h,&p[5]);
+      CRC32SI(h,&p[6]);
+      CRC32SI(h,&p[7]);
+      p+=8;
     }
+    /* include 8 bytes from the end. Note that this might be a
+     * duplicate of the previous bytes.
+     *
+     * Also note that this means we are rather likely to read
+     * unaligned memory.  That is OK, however.
+     */
+    e = (const unsigned int *)((const unsigned char *)s+len-8);
+    CRC32SI(h,e++);
+    CRC32SI(h,e);
+  }
 #if SIZEOF_CHAR_P > 4
     /* FIXME: We could use the long long crc32 instructions that work on 64 bit values.
      * however, those are only available when compiling to amd64.
      */
-    return (((size_t)h)<<32) | h;
+  return (((size_t)h)<<32) | h;
 #endif
-    return h;
+  return h;
 }
 
 #ifdef __i386__
-__attribute__((fastcall))
+ATTRIBUTE((fastcall))
 #endif
-__attribute__((hot))
-static size_t hashmem_generic(const void *a, size_t len_, size_t mlen_)
-{
-    const unsigned char*a_ = a;
-    size_t ret_;
-    DO_HASHMEM(ret_, a_, len_, mlen_);
-    return ret_;
-}
-
-#ifdef __i386__
-__attribute__((fastcall))
-#endif
-size_t (*hashmem)(const void *, size_t, size_t);
+  size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 
 static void init_hashmem()
 {
   if( supports_sse42() )
-    hashmem = hashmem_ia32_crc32;
+    low_hashmem = low_hashmem_ia32_crc32;
   else
-    hashmem = hashmem_generic;
+    low_hashmem = low_hashmem_siphash24;
 }
 #else
 static void init_hashmem(){}
 
 ATTRIBUTE((hot))
-size_t hashmem(const void *a, size_t len_, size_t mlen_)
+  size_t low_hashmem(const void *a, size_t len_, size_t mlen_, size_t key_)
 {
-    const unsigned char *a_ = a;
-    size_t ret_;
-    DO_HASHMEM(ret_, a_, len_, mlen_);
-    return ret_;
+    return low_hashmem_siphash24(a, len_, mlen_, key_);
 }
 #endif
+
+ATTRIBUTE((hot))
+  size_t hashmem(const void *a, size_t len_, size_t mlen_)
+{
+  return low_hashmem(a, len_, mlen_, 0);
+}
 
 PMOD_EXPORT void *debug_xalloc(size_t size)
 {
   void *ret;
-  if(!size) 
+  if(!size)
      Pike_error("Allocating zero bytes.\n");
 
   ret=(void *)malloc(size);
@@ -457,13 +361,16 @@ PMOD_EXPORT void *debug_xmalloc(size_t s)
 
 PMOD_EXPORT void *debug_xrealloc(void *m, size_t s)
 {
-  return realloc(m,s);
+  void *ret = realloc(m,s);
+  if (ret) return ret;
+  Pike_error(msg_out_of_mem_2, s);
+  return NULL;
 }
 
 PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
 {
   void *ret;
-  if(!n || !s) 
+  if(!n || !s)
      Pike_error("Allocating zero bytes.\n");
 
   ret=(void *)calloc(n, s);
@@ -473,56 +380,33 @@ PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
   return 0;
 }
 
+PMOD_EXPORT void *xalloc_aligned(size_t size, size_t alignment) {
+    void * ret;
+
+    if (!size) return 0;
+
+#ifdef HAVE_POSIX_MEMALIGN
+    if (posix_memalign(&ret, alignment, size)) {
+	Pike_error(msg_out_of_mem_2, size);
+    }
+#else
+    if ((ret = memalign(alignment, size)) == NULL) {
+	Pike_error(msg_out_of_mem_2, size);
+    }
+#endif
+
+    return ret;
+}
+
 PMOD_EXPORT char *debug_xstrdup(const char *src)
 {
   char *dst = NULL;
   if (src) {
     int len = strlen (src) + 1;
-    dst = malloc (len);
-    MEMCPY (dst, src, len);
+    dst = xalloc (len);
+    memcpy (dst, src, len);
   }
   return dst;
-}
-
-char *debug_qalloc(size_t size)
-{
-  char *ret;
-  if(!size) return 0;
-
-  ret=(char *)malloc(size);
-  if(ret) return ret;
-
-#ifdef SOFTLIM
-  {
-    struct rlim lim;
-    if(getrlimit(RLIMIT_DATA,&lim)>= 0)
-    {
-      if(lim.rlim_cur < lim.rlim_max)
-      {
-	lim.rlim_cur+=size;
-	while(1)
-	{
-	  softlim_should_be=lim.rlim_cur;
-	  if(lim.rlim_cur > lim.rlim_max)
-	    lim.rlim_cur=lim.rlim_max;
-	  
-	  if(setrlimit(RLIM_DATA, &lim)>=0)
-	  {
-	    ret=(char *)malloc(size);
-	    if(ret) return ret;
-	  }
-	  if(lim.rlim_cur >= lim.rlim_max) break;
-	  lim.rlim_cur+=4096;
-	}
-      }
-    }
-  }
-#endif
-
-  Pike_fatal("Completely out of memory - "
-	     "failed to allocate %"PRINTSIZET"d bytes!\n", size);
-  /* NOT_REACHED */
-  return NULL;	/* Keep the compiler happy. */
 }
 
 /*
@@ -595,9 +479,6 @@ static INLINE void *mexec_do_alloc (void *start, size_t length)
 static size_t sep_allocs = 0, grow_allocs = 0, total_size = 0;
 #endif
 
-#if 0
-#define MEXEC_MAGIC	0xdeadfeedf00dfaddLL
-#endif /* 0 */
 struct mexec_block {
   struct mexec_hdr *hdr;
   ptrdiff_t size;
@@ -618,41 +499,41 @@ static struct mexec_hdr {
 
 #ifdef PIKE_DEBUG
 static void low_verify_mexec_hdr(struct mexec_hdr *hdr,
-				 const char *file, int line)
+				 const char *file, INT_TYPE line)
 {
   struct mexec_free_block *ptr;
   char *blk_ptr;
   if (!hdr) return;
   if (d_flag) {
     if (hdr->bottom > ((char *)hdr) + hdr->size) {
-      Pike_fatal("%s:%d:Bad bottom %p > %p\n",
-		 file, line,
+      Pike_fatal("%s:%ld:Bad bottom %p > %p\n",
+		 file, (long)line,
 		 hdr->bottom, ((char *)hdr) + hdr->size);
     }
     for (blk_ptr = (char *)(hdr+1); blk_ptr < hdr->bottom;) {
       struct mexec_free_block *blk = (struct mexec_free_block *)blk_ptr;
       if (blk->size <= 0) {
-	Pike_fatal("%s:%d:Bad block size: %p\n",
-		   file, line,
+	Pike_fatal("%s:%ld:Bad block size: %p\n",
+		   file, (long)line,
 		   (void *)blk->size);
       }
       blk_ptr += blk->size;
     }
     if (blk_ptr != hdr->bottom) {
-      Pike_fatal("%s:%d:Block reaches past bottom! %p > %p\n",
-		 file, line,
+      Pike_fatal("%s:%ld:Block reaches past bottom! %p > %p\n",
+		 file, (long)line,
 		 blk_ptr, hdr->bottom);
     }
     if (d_flag > 1) {
       for (ptr = hdr->free; ptr; ptr = ptr->next) {
 	if (ptr < (struct mexec_free_block *)(hdr+1)) {
-	  Pike_fatal("%s:%d:Free block before start of header. %p < %p\n",
-		     file, line,
+	  Pike_fatal("%s:%ld:Free block before start of header. %p < %p\n",
+		     file, (long)line,
 		     ptr, hdr+1);
 	}
 	if (((char *)ptr) >= hdr->bottom) {
-	  Pike_fatal("%s:%d:Free block past bottom. %p >= %p\n",
-		     file, line,
+	  Pike_fatal("%s:%ld:Free block past bottom. %p >= %p\n",
+		     file, (long)line,
 		     ptr, hdr->bottom);
 	}
       }
@@ -689,7 +570,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
     verify_mexec_hdr(base);
     wanted = (struct mexec_hdr *)(((char *)base) + base->size);
   }
-  
+
   hdr = mexec_do_alloc (wanted, sz);
   if (!hdr) return NULL;
   if (hdr == wanted) {
@@ -741,7 +622,7 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
 {
   struct mexec_free_block **free;
   struct mexec_block *res;
-    
+
   /* fprintf(stderr, "low_mexec_alloc(%p, %p)\n", hdr, (void *)sz); */
   if (!hdr) return NULL;
   verify_mexec_hdr(hdr);
@@ -843,13 +724,6 @@ PMOD_EXPORT void mexec_free(void *ptr)
       /* Join with bottom. */
       hdr->bottom = (char *)blk;
       hdr->free = blk->next;
-#if 0
-      if (hdr->bottom == (char *)(hdr + 1)) {
-	/* The entire mmapped block is free.
-	 * FIXME: Consider unmapping it.
-	 */
-      }
-#endif /* 0 */
     } else {
       hdr->free = blk;
     }
@@ -1225,7 +1099,7 @@ void *fake_malloc(size_t x)
     LOWDEBUG3("fakemalloc --> ",ret);
     return ret;
   }
-    
+
   if(!x) return 0;
 
   if(!fake_free_list) init_fake_malloc();
@@ -1337,7 +1211,7 @@ PMOD_EXPORT void *realloc(void *x,size_t y)
     if(old_size >= y) return x;
     ret=malloc(y);
     if(!ret) return 0;
-    MEMCPY(ret, x, old_size);
+    memcpy(ret, x, old_size);
     if(x) free(x);
   }else{
     ret=debug_realloc(x, y, DMALLOC_LOCATION());
@@ -1364,7 +1238,7 @@ void *fake_realloc(void *x,size_t y)
     if(old_size >= y) return x;
     ret=malloc(y);
     if(!ret) return 0;
-    MEMCPY(ret, x, old_size);
+    memcpy(ret, x, old_size);
     if(x) free(x);
   }else{
     ret=real_realloc(x,y);
@@ -1382,7 +1256,7 @@ void *calloc(size_t x, size_t y)
   LOWDEBUG3("calloc x",x);
   LOWDEBUG3("calloc y",y);
   ret=malloc(x*y);
-  if(ret) MEMSET(ret,0,x*y);
+  if(ret) memset(ret,0,x*y);
 #ifndef REPORT_ENCAPSULATED_MALLOC
   dmalloc_accept_leak(ret);
 #endif
@@ -1394,7 +1268,7 @@ void *fake_calloc(size_t x, size_t y)
 {
   void *ret;
   ret=fake_malloc(x*y);
-  if(ret) MEMSET(ret,0,x*y);
+  if(ret) memset(ret,0,x*y);
 #ifndef REPORT_ENCAPSULATED_MALLOC
   dmalloc_accept_leak(ret);
 #endif
@@ -1441,13 +1315,6 @@ void *fake_calloc(size_t x, size_t y)
 static struct memhdr *my_find_memhdr(void *, int);
 static void dump_location_bt (LOCATION l, int indent, const char *prefix);
 
-#include "block_alloc_h.h"
-
-BLOCK_ALLOC_FILL_PAGES(memloc, n/a);
-BLOCK_ALLOC_FILL_PAGES(memory_map, n/a);
-BLOCK_ALLOC_FILL_PAGES(memory_map_entry, n/a);
-
-#include "block_alloc.h"
 
 int verbose_debug_malloc = 0;
 int debug_malloc_check_all = 0;
@@ -1519,7 +1386,19 @@ struct memloc
 #define MEM_TRACE			64
 #define MEM_SCANNED			128
 
-BLOCK_ALLOC_FILL_PAGES(memloc, 64)
+static struct block_allocator memloc_allocator = BA_INIT_PAGES(sizeof(struct memloc), 64);
+
+static struct memloc * alloc_memloc() {
+    return ba_alloc(&memloc_allocator);
+}
+
+static void really_free_memloc(struct memloc * ml) {
+    ba_free(&memloc_allocator, ml);
+}
+
+void count_memory_in_memlocs(size_t * n, size_t * s) {
+    ba_count_all(&memloc_allocator, n, s);
+}
 
 struct memhdr
 {
@@ -1572,12 +1451,12 @@ char *do_pad(char *mem, long size)
   else {
     unsigned long q,e;
     q= (((long)mem) ^ 0x555555) + (size * 9248339);
-  
+
     /*  fprintf(stderr,"Padding  %p(%d) %ld\n",mem, size, q); */
 #if 1
     q%=RNDSIZE;
-    MEMCPY(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD);
-    MEMCPY(mem + size, rndbuf+q, DEBUG_MALLOC_PAD);
+    memcpy(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD);
+    memcpy(mem + size, rndbuf+q, DEBUG_MALLOC_PAD);
 #else
     for(e=0;e< DEBUG_MALLOC_PAD; e+=4)
     {
@@ -1630,12 +1509,12 @@ void check_pad(struct memhdr *mh, int freeok)
 /*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
 #if 1
   /* optimization? */
-  if(MEMCMP(mem - DEBUG_MALLOC_PAD, mem+size, DEBUG_MALLOC_PAD))
+  if(memcmp(mem - DEBUG_MALLOC_PAD, mem+size, DEBUG_MALLOC_PAD))
   {
     q= (((long)mem) ^ 0x555555) + (size * 9248339);
-    
+
     q%=RNDSIZE;
-    if(MEMCMP(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD))
+    if(memcmp(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD))
     {
       out_biking=1;
       fprintf(stderr,"Pre-padding overwritten for "
@@ -1643,8 +1522,8 @@ void check_pad(struct memhdr *mh, int freeok)
       describe(mem);
       abort();
     }
-    
-    if(MEMCMP(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
+
+    if(memcmp(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
     {
       out_biking=1;
       fprintf(stderr,"Post-padding overwritten for "
@@ -1716,6 +1595,8 @@ static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
   return l;
 }
 
+#include "block_alloc.h"
+
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
 
@@ -1769,6 +1650,7 @@ static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
 
 #undef BLOCK_ALLOC_HSIZE_SHIFT
 #define BLOCK_ALLOC_HSIZE_SHIFT 1
+
 PTR_HASH_ALLOC_FILL_PAGES(memhdr, 128)
 
 #undef INIT_BLOCK
@@ -1841,7 +1723,7 @@ static struct memloc *find_location(struct memhdr *mh, LOCATION location)
 
   return NULL;
 }
-				 
+
 static void add_location(struct memhdr *mh,
 			 LOCATION location)
 {
@@ -1903,59 +1785,7 @@ static void add_location(struct memhdr *mh,
   return;
 }
 
-static void remove_location(struct memhdr *mh, LOCATION location)
-{
-  struct memloc *ml,**prev;
-  unsigned long l;
-
-#if defined(DMALLOC_VERIFY_INTERNALS) && !defined(__NT__) && defined(PIKE_THREADS)
-  if(!mt_trylock(& debug_malloc_mutex))
-    Pike_fatal("remove_location running unlocked!\n");
-#endif
-  
-#if DEBUG_MALLOC - 0 < 2
-  if(find_location(&no_leak_memlocs, location)) return;
-#endif
-
-  if (!(ml = find_location(mh, location))) {
-    return;
-  }
-
-  /* Unlink from the hashtable. */
-  if ((ml->hash_prev[0] = ml->hash_next)) {
-    ml->hash_next->hash_prev = ml->hash_prev;
-  }
-
-  prev=&mh->locations;
-  while((ml=*prev))
-  {
-#ifdef DMALLOC_VERIFY_INTERNALS
-    if (ml->mh != mh) {
-      Pike_fatal("Non-owned memloc in location list!\n");
-    }
-#endif
-
-    if(ml->location==location)
-    {
-      *prev=ml->next;
-#ifdef DMALLOC_VERIFY_INTERNALS
-      mh->times -= ml->times;
-#endif
-#ifdef DMALLOC_TRACE_MEMLOC
-      if (ml == DMALLOC_TRACE_MEMLOC) {
-        fprintf(stderr, "rem_loc: Freeing memloc %p location %s memhdr: %p data: %p\n",
-		ml, ml->location, ml->mh, ml->mh->data);
-      }
-#endif /* DMALLOC_TRACE_MEMLOC */
-      really_free_memloc(ml);
-      return;
-    }else{
-      prev=&ml->next;
-    }
-  }
-}
-
-LOCATION dmalloc_default_location=0;
+PMOD_EXPORT LOCATION dmalloc_default_location=0;
 
 static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
 #ifdef DMALLOC_C_STACK_TRACE
@@ -1984,7 +1814,7 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
   mh->gc_generation=gc_generation * 1000 + Pike_in_gc;
 #ifdef DMALLOC_C_STACK_TRACE
   if (bt_len > 0) {
-    MEMCPY (mh->alloc_bt, bt, bt_len * sizeof (c_stack_frame));
+    memcpy (mh->alloc_bt, bt, bt_len * sizeof (c_stack_frame));
     mh->alloc_bt_len = bt_len;
   }
   else
@@ -2100,7 +1930,7 @@ PMOD_EXPORT int dmalloc_unregister(void *p, int already_gone)
   return ret;
 }
 
-static int low_dmalloc_mark_as_free(void *p, int already_gone)
+static int low_dmalloc_mark_as_free(void *p, int UNUSED(already_gone))
 {
   struct memhdr *mh=find_memhdr(p);
   if(mh)
@@ -2158,6 +1988,15 @@ static void flush_blocks_to_free(void)
   }
 }
 
+MALLOC_FUNCTION
+PMOD_EXPORT void * system_malloc(size_t n) {
+    return real_malloc(n);
+}
+
+PMOD_EXPORT void system_free(void * p) {
+    real_free(p);
+}
+
 PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
 {
   char *m;
@@ -2186,8 +2025,7 @@ PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
 
   if(verbose_debug_malloc)
     fprintf(stderr, "malloc(%ld) => %p  (%s)\n",
-	    DO_NOT_WARN((long)s),
-	    m, LOCATION_NAME(location));
+            (long)s, m, LOCATION_NAME(location));
 
   mt_unlock(&debug_malloc_mutex);
   return m;
@@ -2197,13 +2035,11 @@ PMOD_EXPORT void *debug_calloc(size_t a, size_t b, LOCATION location)
 {
   void *m=debug_malloc(a*b,location);
   if(m)
-    MEMSET(m, 0, a*b);
+    memset(m, 0, a*b);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "calloc(%ld, %ld) => %p  (%s)\n",
-	    DO_NOT_WARN((long)a),
-	    DO_NOT_WARN((long)b),
-	    m, LOCATION_NAME(location));
+            (long)a, (long)b, m, LOCATION_NAME(location));
 
   return m;
 }
@@ -2236,9 +2072,7 @@ PMOD_EXPORT void *debug_realloc(void *p, size_t s, LOCATION location)
   }
   if(verbose_debug_malloc)
     fprintf(stderr, "realloc(%p, %ld) => %p  (%s)\n",
-	    p,
-	    DO_NOT_WARN((long)s),
-	    m, LOCATION_NAME(location));
+            p, (long)s, m, LOCATION_NAME(location));
   mt_unlock(&debug_malloc_mutex);
   return m;
 }
@@ -2270,7 +2104,7 @@ PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
     if (PIKE_MEM_CHECKER())
       PIKE_MEM_NA_RANGE(p, mh->size);
     else
-      MEMSET(p, 0x55, mh->size);
+      memset(p, 0x55, mh->size);
     if(mh->size < MAX_UNFREE_MEM/FREE_DELAY)
     {
       add_location(mh, location);
@@ -2293,7 +2127,7 @@ PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
       }
     }
   }
-  
+
   if(mh)
   {
     PIKE_MEM_RW_RANGE((char *) p - DEBUG_MALLOC_PAD,
@@ -2328,32 +2162,6 @@ PMOD_EXPORT int dmalloc_check_allocated (void *p, int must_be_freed)
   return res;
 }
 
-#if 0
-/* Disabled since it isn't used. */
-void dmalloc_check_block_free(void *p, LOCATION location,
-			      char *struct_name, describe_block_fn *describer)
-{
-  struct memhdr *mh;
-  mt_lock(&debug_malloc_mutex);
-  mh=my_find_memhdr(p,0);
-
-  if(mh && mh->size>=0)
-  {
-    if(!(mh->flags & MEM_IGNORE_LEAK))
-    {
-      fprintf(stderr, "Freeing %s still in use %p at %s.\n",
-	      struct_name ? struct_name : "small block", p, LOCATION_NAME(location));
-      if (describer) describer (p);
-      debug_malloc_dump_references(p,0,2,0);
-    }
-    mh->flags |= MEM_FREE | MEM_IGNORE_LEAK;
-    mh->size = ~mh->size;
-  }
-
-  mt_unlock(&debug_malloc_mutex);
-}
-#endif
-
 PMOD_EXPORT void dmalloc_free(void *p)
 {
   debug_free(p, DMALLOC_LOCATION(), 0);
@@ -2365,7 +2173,7 @@ PMOD_EXPORT char *debug_strdup(const char *s, LOCATION location)
   long length;
   length=strlen(s);
   m=(char *)debug_malloc(length+1,location);
-  MEMCPY(m,s,length+1);
+  memcpy(m,s,length+1);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "strdup(\"%s\") => %p  (%s)\n", s, m, LOCATION_NAME(location));
@@ -2404,7 +2212,7 @@ struct parsed_location
 {
   const char *file;
   size_t file_len;
-  int line;
+  INT_TYPE line;
   const char *extra;
 };
 
@@ -2413,17 +2221,17 @@ static void parse_location (struct memloc *l, struct parsed_location *pl)
   const char *p;
   pl->file = LOCATION_NAME (l->location);
 
-  p = STRCHR (pl->file, ' ');
+  p = strchr (pl->file, ' ');
   if (p)
     pl->extra = p;
   else
-    pl->extra = STRCHR (pl->file, 0);
+    pl->extra = strchr (pl->file, 0);
 
-  p = STRCHR (pl->file, ':');
+  p = strchr (pl->file, ':');
   if (p && p < pl->extra) {
     const char *pp;
-    while ((pp = STRCHR (p + 1, ':')) && pp < pl->extra) p = pp;
-    pl->line = atoi (p + 1);
+    while ((pp = strchr (p + 1, ':')) && pp < pl->extra) p = pp;
+    pl->line = strtol (p + 1, NULL, 10);
     pl->file_len = p - pl->file;
   }
   else {
@@ -2501,7 +2309,7 @@ void dump_memhdr_locations(struct memhdr *from,
     if(notfrom && find_location(notfrom, l->location))
       continue;
 
-    
+
     fprintf(stderr,"%*s%s %s (%d times)%s\n",
 	    indent,"",
 	    LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
@@ -2568,7 +2376,7 @@ static void find_references_to(void *block, int indent, int depth, int flags)
 	}
 	continue;
       }
-      
+
       if( ! ((sizeof(void *)-1) & (long) p ))
       {
 	if(m->size > 0)
@@ -2613,7 +2421,7 @@ void *dmalloc_find_memblock_base(void *ptr)
       unsigned int e;
       struct memhdr *tmp;
       char *p=(char *)m->data;
-      
+
       if( ! ((sizeof(void *)-1) & (long) p ))
       {
 	if( p <= lookfor && lookfor < p + m->size)
@@ -2665,7 +2473,7 @@ PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, in
   }
 }
 
-void list_open_fds(void)
+PMOD_EXPORT void list_open_fds(void)
 {
   unsigned long h;
   mt_lock(&debug_malloc_mutex);
@@ -2679,7 +2487,7 @@ void list_open_fds(void)
       struct memloc *l;
       void *p=m->data;
       if(m->flags & MEM_FREE) continue;
-      
+
       if( 1 & (long) p )
       {
 	if( FD2PTR( PTR2FD(p) ) == p)
@@ -2728,57 +2536,6 @@ static void low_search_all_memheaders_for_references(void)
       }
       if( ! ((sizeof(void *)-1) & (size_t)p ))
       {
-#if 0
-	if(m->size > 0)
-	{
-#if defined(__NT__) && !defined(__GNUC__)
-	  __try {
-#endif
-#ifdef PIKE_EXTRA_DEBUG
-	    fprintf(stderr, "PIKE_EXTRA_DEBUG:\n"
-		    "  Scanning memory block at %p, %ld bytes, "
-		    "generation %d, flags: 0x%08x\n",
-		    m->data, m->size, m->gc_generation, m->flags);
-#endif /* PIKE_EXTRA_DEBUG */
-	    for(e=0;e<m->size/sizeof(void *);e++) {
-	      void *addr = p[e];
-	      if (!addr || ((sizeof(void *)-1) & (size_t)addr)) {
-		/* No need to hunt for memhdrs for NULL or
-		 * unaligned addresses.
-		 * This also filters out memory areas that have
-		 * been cleared by block_alloc.h:really_free_*() et al.
-		 *	/grubba 2003-03-15
-		 */
-		continue;
-	      }
-	      /* NOTE: We must not use find_memhdr() here,
-	       *       since it might alter the data-structure
-	       *       we're looping over...
-	       *
-	       *       A specific case is a bucket containing two
-	       *       self-referring memhdrs, using find_memhdr()
-	       *       will then cause an infinite loop.
-	       *	/grubba 2003-03-16
-	       */
-	      if((tmp=just_find_memhdr(addr)))
-		tmp->flags |= MEM_REFERENCED;
-	    }
-#if defined(__NT__) && !defined(__GNUC__)
-	  }
-	  __except( 1 ) {
-	    fprintf(stderr,"*** DMALLOC memory access error ***\n");
-	    fprintf(stderr,"Failed to access this memory block:\n");
-	    fprintf(stderr,"Block: %p, size=%ld, gc_generation=%d, flags=%d\n",
-		    m->data,
-		    m->size,
-		    m->gc_generation,
-		    m->flags);
-	    dump_memhdr_locations(m, 0, 0);
-	    fprintf(stderr,"-----------------------------------\n");
-	  }
-#endif
-	}
-#endif
       }
     }
   }
@@ -2844,7 +2601,7 @@ static void cleanup_memhdrs(void)
 	  fprintf(stderr, "possibly referenced memory: (%p) %ld bytes\n",p, m->size);
 	else
 	  fprintf(stderr, "==LEAK==: (%p) %ld bytes\n",p, m->size);
-	  
+
 	if( 1 & (long) p )
 	{
 	  if( FD2PTR( PTR2FD(p) ) == p)
@@ -2870,7 +2627,7 @@ static void cleanup_memhdrs(void)
 	  h--;
 	  break;
 	}
-	
+
 	find_references_to(p,0,0,0);
 	dump_memhdr_locations(m, 0,0);
       }
@@ -2881,7 +2638,7 @@ static void cleanup_memhdrs(void)
     {
       INT32 num,mem;
       long free_memhdr=0, ignored_memhdr=0, total_memhdr=0;
-      
+
       fprintf(stderr,"add_location %d cache %d (%3.3f%%) new: %d (%3.3f%%)\n",
 	      add_location_calls,
 	      add_location_cache_hits,
@@ -2895,7 +2652,7 @@ static void cleanup_memhdrs(void)
 
       count_memory_in_memhdrs(&num,&mem);
       fprintf(stderr,"memhdrs:  %8ld, %10ld bytes\n",(long)num,(long)mem);
-      
+
       for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
       {
 	struct memhdr *m;
@@ -2918,7 +2675,6 @@ static void cleanup_memhdrs(void)
 
   }
   mt_unlock(&debug_malloc_mutex);
-  mt_destroy(&debug_malloc_mutex);
 }
 
 #ifdef _REENTRANT
@@ -2943,35 +2699,22 @@ static void initialize_dmalloc(void)
 #ifdef DMALLOC_REMEMBER_LAST_LOCATION
     th_key_create(&dmalloc_last_seen_location, 0);
 #endif
-    init_memloc_blocks();
-    init_memory_map_blocks();
-    init_memory_map_entry_blocks();
     init_memhdr_hash();
-    MEMSET(mlhash, 0, sizeof(mlhash));
+    memset(mlhash, 0, sizeof(mlhash));
 
     for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
-    
+
 #if DEBUG_MALLOC_PAD & 3
     fprintf(stderr,"DEBUG_MALLOC_PAD not dividable by four!\n");
     exit(99);
 #endif
-    
+
 #ifdef _REENTRANT
 #ifdef mt_init_recursive
     mt_init_recursive(&debug_malloc_mutex);
 #else
     mt_init(&debug_malloc_mutex);
 #endif
-
-    /* NOTE: th_atfork() may be a simulated function, which
-     *       utilizes callbacks. We thus need to initialize
-     *       the callback blocks before we perform the call
-     *       to th_atfork().
-     */
-    {
-      extern void init_callback_blocks(void);
-      init_callback_blocks();
-    }
 
     th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
 #endif
@@ -3023,7 +2766,8 @@ struct dmalloc_string
 
 static struct dmalloc_string *dstrhash[DSTRHSIZE];
 
-static LOCATION low_dynamic_location(char type, const char *file, int line,
+static LOCATION low_dynamic_location(char type, const char *file,
+				     INT_TYPE line,
 				     const char *name,
 				     const unsigned char *bin_data,
 				     unsigned int bin_data_len)
@@ -3046,14 +2790,14 @@ static LOCATION low_dynamic_location(char type, const char *file, int line,
   for(prev = dstrhash + h; (str=*prev); prev = &str->next)
   {
     if(hval == str->hval &&
-       !STRNCMP(str->str+1, file, len) &&
+       !strncmp(str->str+1, file, len) &&
        str->str[len+1]==':' &&
        LOCATION_TYPE (str->str) == type &&
-       atoi(str->str+len+2) == line)
+       strtol(str->str+len+2, NULL, 10) == line)
     {
 
       if (name) {
-	char *s = STRCHR (str->str + len + 2, ' ');
+	char *s = strchr (str->str + len + 2, ' ');
 	if (!s) continue;
 	s++;
 	if (strcmp (s, name)) continue;
@@ -3067,7 +2811,7 @@ static LOCATION low_dynamic_location(char type, const char *file, int line,
 	unsigned int str_bin_len = EXTRACT_UWORD (str_bin_base);
 	str_bin_base += 2;
 	if (str_bin_len != bin_data_len ||
-	    MEMCMP (bin_data, str_bin_base, str_bin_len))
+	    memcmp (bin_data, str_bin_base, str_bin_len))
 	  continue;
       }
 
@@ -3077,13 +2821,13 @@ static LOCATION low_dynamic_location(char type, const char *file, int line,
       break;
     }
   }
-  
+
   if(!str)
   {
     char line_str[30];
     size_t l;
 
-    sprintf (line_str, "%d", line);
+    sprintf (line_str, "%ld", (long)line);
     l = len + strlen (line_str) + 2;
     if (name) l += name_len + 1;
     str=malloc (sizeof (struct dmalloc_string) + l +
@@ -3100,7 +2844,7 @@ static LOCATION low_dynamic_location(char type, const char *file, int line,
 	Pike_fatal ("Too long bin_data blob: %u\n", bin_data_len);
       ((unsigned char *) str->str)[l + 1] = ((unsigned char *) &bl)[0];
       ((unsigned char *) str->str)[l + 2] = ((unsigned char *) &bl)[1];
-      MEMCPY (str->str + l + 3, bin_data, bin_data_len);
+      memcpy (str->str + l + 3, bin_data, bin_data_len);
     }
 
     str->hval=hval;
@@ -3113,13 +2857,13 @@ static LOCATION low_dynamic_location(char type, const char *file, int line,
   return str->str;
 }
 
-LOCATION dynamic_location(const char *file, int line)
+PMOD_EXPORT LOCATION dynamic_location(const char *file, INT_TYPE line)
 {
   return low_dynamic_location('D',file,line, NULL, NULL, 0);
 }
 
 
-PMOD_EXPORT void * debug_malloc_name(void *p,const char *file, int line)
+PMOD_EXPORT void * debug_malloc_name(void *p,const char *file, INT_TYPE line)
 {
   if(p)
   {
@@ -3127,7 +2871,7 @@ PMOD_EXPORT void * debug_malloc_name(void *p,const char *file, int line)
     LOCATION loc=dynamic_location(file, line);
 
     mt_lock(&debug_malloc_mutex);
-      
+
     if((mh=my_find_memhdr(p,0)))
       add_location(mh, loc);
 
@@ -3167,9 +2911,9 @@ PMOD_EXPORT int debug_malloc_copy_names(void *p, void *p2)
   return names;
 }
 
-char *dmalloc_find_name(void *p)
+const char *dmalloc_find_name(void *p)
 {
-  char *name=0;
+  const char *name=0;
   if(p)
   {
     struct memhdr *mh;
@@ -3194,7 +2938,8 @@ char *dmalloc_find_name(void *p)
 }
 
 PMOD_EXPORT void *debug_malloc_update_location_bt (void *p, const char *file,
-						   int line, const char *name)
+						   INT_TYPE line,
+						   const char *name)
 {
   LOCATION l;
 #ifdef DMALLOC_C_STACK_TRACE
@@ -3211,16 +2956,16 @@ PMOD_EXPORT void *debug_malloc_update_location_bt (void *p, const char *file,
   return debug_malloc_update_location (p, l);
 }
 
+#ifdef DMALLOC_C_STACK_TRACE
 static void dump_location_bt (LOCATION location, int indent, const char *prefix)
 {
-#ifdef DMALLOC_C_STACK_TRACE
   if (LOCATION_TYPE (location) == 'B') {
     c_stack_frame bt[BT_MAX_FRAMES];
     int i, frames;
     unsigned char *bin_base =
       (unsigned char *) location + strlen (location) + 1;
     unsigned int bin_len = EXTRACT_UWORD (bin_base);
-    MEMCPY ((unsigned char *) bt, bin_base + 2, bin_len);
+    memcpy (bt, bin_base + 2, bin_len);
     frames = bin_len / sizeof (c_stack_frame);
 
     for (i = 0; i < frames; i++) {
@@ -3228,8 +2973,12 @@ static void dump_location_bt (LOCATION location, int indent, const char *prefix)
       backtrace_symbols_fd (bt + i, 1, 2);
     }
   }
-#endif
 }
+#else
+static void dump_location_bt (LOCATION UNUSED(location), int UNUSED(indent),
+                              const char *UNUSED(prefix))
+{ }
+#endif
 
 PMOD_EXPORT int debug_malloc_touch_fd(int fd, LOCATION location)
 {
@@ -3251,7 +3000,7 @@ PMOD_EXPORT void debug_malloc_accept_leak_fd(int fd)
   dmalloc_accept_leak(FD2PTR(fd));
 }
 
-PMOD_EXPORT int debug_malloc_close_fd(int fd, LOCATION location)
+PMOD_EXPORT int debug_malloc_close_fd(int fd, LOCATION UNUSED(location))
 {
   if(fd==-1) return fd;
 #ifdef DMALLOC_TRACK_FREE
@@ -3305,8 +3054,26 @@ struct memory_map_entry
   struct memory_map *recur;
 };
 
-BLOCK_ALLOC_FILL_PAGES(memory_map, 8)
-BLOCK_ALLOC_FILL_PAGES(memory_map_entry, 16)
+static struct block_allocator memory_map_allocator = BA_INIT_PAGES(sizeof(struct memory_map), 8);
+
+static struct memory_map * alloc_memory_map() {
+    return ba_alloc(&memory_map_allocator);
+}
+
+void count_memory_in_memory_maps(size_t * n, size_t * s) {
+    ba_count_all(&memory_map_allocator, n, s);
+}
+
+static struct block_allocator memory_map_entry_allocator
+    = BA_INIT_PAGES(sizeof(struct memory_map_entry), 16);
+
+static struct memory_map_entry * alloc_memory_map_entry() {
+    return ba_alloc(&memory_map_entry_allocator);
+}
+
+void count_memory_in_memory_map_entrys(size_t * n, size_t * s) {
+    ba_count_all(&memory_map_entry_allocator, n, s);
+}
 
 void dmalloc_set_mmap(void *ptr, struct memory_map *m)
 {
@@ -3399,7 +3166,7 @@ void dmalloc_describe_location(void *p, int offset, int indent)
   }
 }
 
-struct memory_map *dmalloc_alloc_mmap(char *name, int line)
+struct memory_map *dmalloc_alloc_mmap(char *name, INT_TYPE line)
 {
   struct memory_map *m;
   mt_lock(&debug_malloc_mutex);
@@ -3411,7 +3178,7 @@ struct memory_map *dmalloc_alloc_mmap(char *name, int line)
   m->refs=0;
 
   if(strlen(m->name)+12<sizeof(m->name))
-    sprintf(m->name+strlen(m->name),":%d",line);
+    sprintf(m->name+strlen(m->name), ":%ld", (long)line);
 
   m->entries=0;
   mt_unlock(&debug_malloc_mutex);
@@ -3453,10 +3220,9 @@ static void cleanup_debug_malloc(void)
 {
   size_t i;
 
-  free_all_memloc_blocks();
+  ba_destroy(&memloc_allocator);
+  ba_destroy(&memory_map_allocator);
   exit_memhdr_hash();
-  free_all_memory_map_blocks();
-  free_all_memory_map_entry_blocks();
 
   for (i = 0; i < DSTRHSIZE; i++) {
     struct dmalloc_string *str = dstrhash[i], *next;
@@ -3466,6 +3232,8 @@ static void cleanup_debug_malloc(void)
       str = next;
     }
   }
+
+  mt_destroy(&debug_malloc_mutex);
 }
 
 #endif	/* DEBUG_MALLOC */

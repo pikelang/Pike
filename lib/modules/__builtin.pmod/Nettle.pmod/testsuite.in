@@ -1,0 +1,119 @@
+START_MARKER
+
+test_do(add_constant("S",String.string2hex))
+test_do(add_constant("H",String.hex2string))
+
+test_do([[
+class HASH(object alg)
+{
+  inherit __builtin.Nettle.Hash;
+
+  Standards.ASN1.Types.Identifier pkcs_hash_id()
+  {
+    return alg->pkcs_hash_id();
+  }
+
+  string name() { return alg->name(); }
+  int(0..) digest_size() { return alg->digest_size(); }
+  int(1..) block_size() { return alg->block_size(); }
+
+  class State
+  {
+    object h;
+
+    protected void create(void|string data)
+    {
+      h = alg();
+      if(data) update(data);
+    }
+
+    this_program init(string|void data)
+    {
+      create(data);
+      return this;
+    }
+
+    this_program update(string data)
+    {
+      h->update(data);
+      return this;
+    }
+
+    string digest(int|void length)
+    {
+      return h->digest(length);
+    }
+
+    string name() { return h->name(); }
+    int(0..) digest_size() { return h->digest_size(); }
+    int(1..) block_size() { return h->block_size(); }
+  }
+};
+add_constant("SHA256", HASH(Crypto.SHA256));
+add_constant("SHA512", HASH(Crypto.SHA512));
+]])
+
+test_eq(S(SHA256->hash("foo"*1000)),
+        "8db466bdfc3265dd1347843b31ed34af0a0c2e6ff0fd4d6a5853755f0e68b8a0")
+test_eq(S(SHA256->hash(Stdio.Buffer("foo"*1000))),
+        "8db466bdfc3265dd1347843b31ed34af0a0c2e6ff0fd4d6a5853755f0e68b8a0")
+dnl Test String.Buffer
+dnl Test System.Memory
+
+test_eq(S(SHA256->HMAC("hello")("hi")),
+        "42eb9553cf9288e53d3389208d00db1ac80d3666f1fa74fe02e1038672d0c83a")
+test_eq(SHA256->crypt_hash("Hello world!", "saltstring", 5000),
+        "5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5")
+test_eq(SHA512->crypt_hash("Hello world!", "saltstring", 5000),
+        "svn8UoSVapNtMuq1ukKS4tPQd8iKwSMHWjl/O817G3uBnIFNjnQJuesI68u4OTLiBFdcbYEdFCoEOfaS35inz1")
+test_eq(S(SHA256->pbkdf1("aaaa","bbbb",64,16)),
+        "d879716a511f8e1cf23d6974802a6e6e")
+test_eq(S(SHA256->pbkdf2("aaaa","bbbb",64,16)),
+        "458592c0b81415bd3d752d5bd2a894b0")
+test_eq(S(SHA256->hkdf("aaaa","bbbb","cccc",16)),
+        "57ccec229e98b315ab330a97d7fcfedf")
+test_eq(S(SHA256->openssl_pbkdf("aaaa","bbbb",64,16)),
+        "098c455f22f5a62b1047982b4dd2481c")
+test_eq(S(SHA256->P_hash("aaaa","bbbb",64,16)),
+        "82aa3c312a3571bdd3f2b347b9b780ac")
+
+test_eq(S(SHA256->pkcs_digest("hi")),
+"3031300d0609608648016503040201050004208f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4")
+
+test_do(add_constant("SHA512"))
+test_do(add_constant("SHA256"))
+
+dnl From pkcs-1v2-1d2-vec: pss-int.txt
+test_eq([[S(Crypto.SHA1.emsa_pss_encode(H(#"
+85 9e ef 2f d7 8a ca 00 30 8b dc 47 11 93 bf 55 bf 9d 78 db 8f 8a 67 2b
+48 46 34 f3 c9 c2 6e 64 78 ae 10 26 0f e0 dd 8c 08 2e 53 a5 29 3a f2 17
+3c d5 0c 6d 5d 35 4f eb f7 8b 26 02 1c 25 c0 27 12 e7 8c d4 69 4c 9f 46
+97 77 e4 51 e7 f8 e9 e0 4c d3 73 9c 6b bf ed ae 48 7f b5 56 44 e9 ca 74
+ff 77 a5 3c b7 29 80 2f 6e d4 a5 ff a8 ba 15 98 90 fc"-" "-"\n"), 1024,
+H("e3 b5 d5 d0 02 c1 bc e5 0c 2b 65 ef 88 a1 88 d8 3b ce 7e 61"-" ")))]],
+#"
+66 e4 67 2e 83 6a d1 21 ba 24 4b ed 65 76 b8 67 d9 a4 47 c2 8a 6e 66 a5
+b8 7d ee 7f bc 7e 65 af 50 57 f8 6f ae 89 84 d9 ba 7f 96 9a d6 fe 02 a4
+d7 5f 74 45 fe fd d8 5b 6d 3a 47 7c 28 d2 4b a1 e3 75 6f 79 2d d1 dc e8
+ca 94 44 0e cb 52 79 ec d3 18 3a 31 1f c8 96 da 1c b3 93 11 af 37 ea 4a
+75 e2 4b db fd 5c 1d a0 de 7c ec df 1a 89 6f 9d 8b c8 16 d9 7c d7 a2 c4
+3b ad 54 6f be 8c fe bc"-" "-"\n")
+
+test_eq([[Crypto.SHA1.emsa_pss_verify(H(#"
+85 9e ef 2f d7 8a ca 00 30 8b dc 47 11 93 bf 55 bf 9d 78 db 8f 8a 67 2b
+48 46 34 f3 c9 c2 6e 64 78 ae 10 26 0f e0 dd 8c 08 2e 53 a5 29 3a f2 17
+3c d5 0c 6d 5d 35 4f eb f7 8b 26 02 1c 25 c0 27 12 e7 8c d4 69 4c 9f 46
+97 77 e4 51 e7 f8 e9 e0 4c d3 73 9c 6b bf ed ae 48 7f b5 56 44 e9 ca 74
+ff 77 a5 3c b7 29 80 2f 6e d4 a5 ff a8 ba 15 98 90 fc"-" "-"\n"),
+H(#"
+66 e4 67 2e 83 6a d1 21 ba 24 4b ed 65 76 b8 67 d9 a4 47 c2 8a 6e 66 a5
+b8 7d ee 7f bc 7e 65 af 50 57 f8 6f ae 89 84 d9 ba 7f 96 9a d6 fe 02 a4
+d7 5f 74 45 fe fd d8 5b 6d 3a 47 7c 28 d2 4b a1 e3 75 6f 79 2d d1 dc e8
+ca 94 44 0e cb 52 79 ec d3 18 3a 31 1f c8 96 da 1c b3 93 11 af 37 ea 4a
+75 e2 4b db fd 5c 1d a0 de 7c ec df 1a 89 6f 9d 8b c8 16 d9 7c d7 a2 c4
+3b ad 54 6f be 8c fe bc"), 1024, 20)]], 1)
+
+test_do(add_constant("S"))
+test_do(add_constant("H"))
+
+END_MARKER

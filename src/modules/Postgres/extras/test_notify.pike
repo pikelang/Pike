@@ -1,6 +1,5 @@
 #include <postgres.h>
-/* $Id$
- *
+/*
  * This simple program connects to the template1 database "template1"
  * (it comes default with postgres95) and sits there waiting for
  * someone to issue a notify sql command on a table named "prova".

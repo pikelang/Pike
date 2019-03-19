@@ -1,7 +1,6 @@
+#charset utf-8
 #pike __REAL_VERSION__
 
-//   $Id$
-//
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Sch�n, <js@roxen.com>.
 //
@@ -28,6 +27,7 @@
 #define M_EOI   0xD9		/* End Of Image (end of datastream) */
 #define M_SOS   0xDA		/* Start Of Scan (begins compressed data) */
 #define M_COM   0xFE		/* COMment */
+#define M_APP1  0xE1
 
 protected int(0..255) read_1_byte(Stdio.File f)
 {
@@ -38,13 +38,6 @@ protected int(0..65535) read_2_bytes(Stdio.File f)
 {
   int c;
   sscanf( f->read(2), "%2c", c );
-  return c;
-}
-
-protected int(0..65535) read_2_bytes_intel(Stdio.File f)
-{
-  int c;
-  sscanf( f->read(2), "%-2c", c);
   return c;
 }
 
@@ -60,7 +53,7 @@ protected int(0..65535) read_2_bytes_intel(Stdio.File f)
 protected int first_marker(Stdio.File f)
 {
   int c1, c2;
-    
+
   sscanf(f->read(2), "%c%c", c1, c2);
   if (c1==0xFF||c2==M_SOI) return 1;
   return 0;
@@ -97,7 +90,7 @@ protected int skip_variable(Stdio.File f)
   int length = read_2_bytes(f);
   if (length < 2) return 0;  // Length includes itself, so must be at least 2.
   length -= 2;
-  f->seek(f->tell()+length);
+  f->seek(length, Stdio.SEEK_CUR);
   return 1;
 }
 
@@ -107,7 +100,9 @@ array(int) get_JPEG(Stdio.File f)
 {
   if (!first_marker(f))
     return 0;
-    
+
+  mapping exif;
+
   /* Scan miscellaneous markers until we reach SOS. */
   for (;;)
   {
@@ -127,15 +122,35 @@ array(int) get_JPEG(Stdio.File f)
     case M_SOF15:		/* Differential lossless, arithmetic */
       int image_height, image_width;
       sscanf(f->read(7), "%*3s%2c%2c", image_height, image_width);
+      if( exif && has_value(exif, "Orientation") &&
+          (< "5", "6", "7", "8" >)[exif->Orientation] )
+      {
+        // Picture has been rotated/flipped 90 or 270 degrees, so
+        // exchange width and height to reflect that.
+        int tmp = image_height;
+        image_height = image_width;
+        image_width = tmp;
+      }
       return ({ image_width,image_height });
       break;
-	
+
+    case M_APP1:
+      int pos = f->tell();
+      f->seek(pos-2);
+      catch {
+        exif = Standards.EXIF.get_properties(f, ([ 0x0112 :
+                                                   ({ "Orientation" }) ]));
+      };
+      f->seek(pos);
+      if(!skip_variable(f)) return 0;
+      break;
+
     case M_SOS:			/* stop before hitting compressed data */
       return 0;
 
     case M_EOI:			/* in case it's a tables-only JPEG stream */
       return 0;
-	
+
     default:			/* Anything else just gets skipped */
       if(!skip_variable(f)) return 0; // we assume it has a parameter count...
       break;
@@ -161,9 +176,8 @@ array(int) get_JPEG(Stdio.File f)
 //! width and height, or if the file isn't a valid image, 0.
 array(int) get_GIF(Stdio.File f)
 {
-  int offs=f->tell();
   if(f->read(3)!="GIF") return 0;
-  f->seek(offs+6);
+  f->seek(3, Stdio.SEEK_CUR);
   return array_sscanf(f->read(4), "%-2c%-2c");
 }
 
@@ -172,9 +186,8 @@ array(int) get_GIF(Stdio.File f)
 array(int) get_PNG(Stdio.File f)
 {
   int offs=f->tell();
-  f->seek(offs+1);
-  if(f->read(3)!="PNG") return 0;
-  f->seek(offs+12);
+  if(f->read(6)!="\211PNG\r\n") return 0;
+  f->seek(6, Stdio.SEEK_CUR);
   if(f->read(4)!="IHDR") return 0;
   return array_sscanf(f->read(8), "%4c%4c");
 }
@@ -188,9 +201,9 @@ array(int) get_TIFF(Stdio.File f)
  int val = 0;
  string bo2b;
  string bo4b;
- 
+
  buf = f->read(2);
- if(buf == "II") 
+ if(buf == "II")
  {
    /* Byte order for Little endian */
    bo2b = "%2-c";
@@ -202,42 +215,42 @@ array(int) get_TIFF(Stdio.File f)
    bo2b = "%2c";
    bo4b = "%4c";
  }
- else 
+ else
  {
    /* Not a TIFF */
    return 0;
  }
- 
+
  sscanf(f->read(2), bo2b, buf);
  if(buf != 42)
  {
    /* Wrong magic number */
    return 0;
  }
- 
+
  /* offset to first IFD */
  sscanf(f->read(4), bo4b, buf);
  f->seek(buf);
- 
+
  /* number of entries */
  sscanf(f->read(2), bo2b, entries);
- 
- for(int i = 0; i < entries; i++) 
+
+ for(int i = 0; i < entries; i++)
  {
    sscanf(f->read(2), bo2b, int tag);
-   if(tag == 256 || tag == 257) 
+   if(tag == 256 || tag == 257)
    {
      sscanf(f->read(2), bo2b, buf);
      /* Count value must be one(1) */
      sscanf(f->read(4), bo4b, int count);
-     if(count == 1) 
+     if(count == 1)
      {
-       if(buf == 3) 
+       if(buf == 3)
        {
 	 /* Type short */
 	 sscanf(f->read(2), bo2b, buf);
 	 /* Skip to the end of the entry */
-	 f->seek(f->tell() + 2);
+         f->seek(2, Stdio.SEEK_CUR);
        }
        else if(buf == 4)
        {
@@ -248,8 +261,8 @@ array(int) get_TIFF(Stdio.File f)
        {
 	 /* Wrong type */
 	 return 0;
-       }  
-     
+       }
+
        if(tag == 256)
        {
 	 /* ImageWidth */
@@ -273,10 +286,10 @@ array(int) get_TIFF(Stdio.File f)
        return 0;
      }
    }
-   else 
+   else
    {
      /* Skip to next entry */
-     f->seek(f->tell() + 10);
+     f->seek(10, Stdio.SEEK_CUR);
    }
  }
  /* ImageWidth and ImageLength not found */
@@ -289,24 +302,61 @@ array(int) get_PSD(Stdio.File f)
 {
   //  4 bytes signature + 2 bytes version
   if (f->read(6) != "8BPS\0\1") return 0;
-  
+
   //  6 bytes reserved
   //  2 bytes channel count
   f->read(8);
-  
+
   //  4 bytes height, 4 bytes width (big-endian)
   return reverse(array_sscanf(f->read(8), "%4c%4c"));
 }
 
-//! Read dimensions from a JPEG, GIF, PNG, TIFF or PSD file and return an
-//! array with width and height, or if the file isn't a valid image,
-//! @expr{0@}. The argument @[file] should be file object or the data
-//! from a file. The offset pointer will be assumed to be at the start
-//! of the file data and will be modified by the function.
+//! Reads the dimensions from a WebP file and returns an array with
+//! width and height, or if the file isn't a valid image, 0.
+array(int) get_WebP(Stdio.File f)
+{
+  if (f->read(4) != "RIFF") return 0;
+  f->read(4);
+  if (f->read(4) != "WEBP") return 0;
+
+  switch(f->read(4))
+  {
+  case "VP8 ":
+    /* Lossy coding */
+    f->read(4); // Size of chunk. Not in Google documentation.
+    f->read(3); // Frame tag.
+    if(f->read(3)!="\x9d\x01\x2a") return 0;
+    // Ignore the scaling factor, as it is upscaling and not actual
+    // image information.
+    return array_sscanf(f->read(4), "%-2c%-2c")[*] & 0x3fff;
+    break;
+  case "VP8L":
+    /* Lossless coding */
+    f->read(4);
+    if( f->read(1) != "/" ) return 0;
+
+    string data = f->read(4);
+    int width = (data[0] | (data[1] & 0x3f)<<8) + 1;
+    int height = (data[1]>>6 | data[2]<<2 | (data[3] & 0x0f)<<10) + 1;
+    return ({ width, height });
+    break;
+  case "VP8X":
+    /* Extended VP8 */
+    f->read(4);
+    f->read(4); // flags and reserved
+    return array_sscanf(f->read(6), "%-3c%-3c")[*]+1;
+    break;
+  }
+  return 0;
+}
+
+//! Read dimensions from a JPEG, GIF, PNG, WebP, TIFF or PSD file and
+//! return an array with width and height, or if the file isn't a
+//! valid image, @expr{0@}. The argument @[file] should be file object
+//! or the data from a file. The offset pointer will be assumed to be
+//! at the start of the file data and will be modified by the
+//! function.
 //!
-//! As a compatibility measure, if the @[file] is a path to an image
-//! file, it will be loaded and processed once the processing of the
-//! path as data has failed.
 //! @returns
 //!   @array
 //!     @elem int 0
@@ -315,56 +365,56 @@ array(int) get_PSD(Stdio.File f)
 //!       Image height.
 //!     @elem string 2
 //!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@},
-//!       @expr{"jpeg"@} and @expr{"psd"@}.
+//!       @expr{"jpeg"@}, @expr{"webp"@} and @expr{"psd"@}.
 //!   @endarray
-array(int) get(string|Stdio.File file) {
-  string fn;
-  if(stringp(file)) {
-    fn = file;
+array(int|string) get(string|Stdio.File file) {
+
+  if(stringp(file))
     file = Stdio.FakeFile(file);
+
+  array ret;
+  switch(file->read(2))
+  {
+  case "GI":
+    if( (< "F87a", "F89a" >)[file->read(4)] )
+      return array_sscanf(file->read(4), "%-2c%-2c") + ({ "gif" });
+    break;
+
+  case "\x89P":
+    if(file->read(4)=="NG\r\n")
+    {
+      file->read(6+4);
+      return array_sscanf(file->read(8), "%4c%4c") + ({ "png" });
+    }
+    break;
+
+  case "8B":
+    if(file->read(4)=="PS\0\1")
+    {
+      file->read(6+2);
+      return reverse(array_sscanf(file->read(8), "%4c%4c")) + ({ "psd" });
+    }
+    break;
+
+  case "II":
+  case "MM":
+    file->seek(-2, Stdio.SEEK_CUR);
+    ret = get_TIFF(file);
+    if(ret) return ret+({ "tiff" });
+    break;
+
+  case "\xff\xd8":
+    file->seek(-2, Stdio.SEEK_CUR);
+    ret = get_JPEG(file);
+    if(ret) return ret+({ "jpeg" });
+    break;
+
+  case "RI":
+    file->seek(-2, Stdio.SEEK_CUR);
+    ret = get_WebP(file);
+    if(ret) return ret+({ "webp" });
+    break;
   }
 
-  switch(file->read(6)) {
-
-  case "GIF87a":
-  case "GIF89a":
-    return array_sscanf(file->read(4), "%-2c%-2c") + ({ "gif" });
-
-  case "\x89PNG\r\n":
-    file->read(6+4); // offset+IHDR
-    return array_sscanf(file->read(8), "%4c%4c") + ({ "png" });
-
-  case "8BPS\0\1":
-    //  Photoshop PSD
-    //
-    //  4 bytes signature + 2 bytes version
-    //  6 bytes reserved
-    //  2 bytes channel count
-    file->read(6 + 2);
-    
-    //  4 bytes height, 4 bytes width (big-endian)
-    return reverse(array_sscanf(file->read(8), "%4c%4c")) + ({ "psd" });
-
-  default:
-     string buf;
-     array ret;
-     file->seek(file->tell()-6);
-     buf = file->read(2);
-     file->seek(file->tell()-2);
-     if(buf == "II" || buf== "MM")
-     {
-       ret = get_TIFF(file);
-       if(ret) return ret+({ "tiff" });
-       
-     }
-     else
-     {
-      ret = get_JPEG(file);
-      if(ret) return ret+({ "jpeg" });
-     }
-     
-    if(!fn) return 0;
-    file = Stdio.File(fn);
-    if(file) return get(file);   
-  }
+  return 0;
 }

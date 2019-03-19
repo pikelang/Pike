@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -16,6 +15,7 @@
 #include "operators.h"
 #include "threads.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -25,7 +25,7 @@
 
 /*! @module Image
  *!
- *! @module _XPM
+ *! @module XPM
  */
 
 extern struct program *image_program;
@@ -80,7 +80,7 @@ static rgba_group decode_color( struct buffer *s )
        break;
     }
     return res;
-  } 
+  }
   if(s->len==4&&(!strncmp(s->str,"None",4)||!strncmp(s->str,"none",4)))
   {
     res.r = res.g = res.b = 0;
@@ -89,7 +89,7 @@ static rgba_group decode_color( struct buffer *s )
   }
   if(!parse_color)
   {
-    push_text("Image.Color");
+    push_static_text("Image.Color");
     SAFE_APPLY_MASTER( "resolv_or_error", 1 );
     _parse_color = sp[-1];
     parse_color = &_parse_color;
@@ -102,8 +102,9 @@ static rgba_group decode_color( struct buffer *s )
     push_int(0);
     stack_swap();
   } else {
-    push_constant_text( "array" );
-    apply( sp[-2].u.object, "cast", 1 );
+    ref_push_type_value(array_type_string);
+    stack_swap();
+    f_cast();
   }
   if(TYPEOF(sp[-1]) == T_ARRAY && sp[-1].u.array->size == 3)
   {
@@ -261,10 +262,10 @@ void f__xpm_write_rows( INT32 args )
   fprintf(stderr, ")\n");
 #endif /* 0 */
 
-  iimg = (struct image *)get_storage( img, image_program );
-  ialpha = (struct image *)get_storage( alpha, image_program );
+  iimg = get_storage( img, image_program );
+  ialpha = get_storage( alpha, image_program );
   if(!iimg || !ialpha)
-    Pike_error("Sluta pilla på interna saker..\n");
+    Pike_error("Expected images as arguments\n");
 
   if (pixels->size < iimg->ysize + colors->size) {
     SIMPLE_ARG_ERROR("_xpm_write_rows", 5, "pixel array is too short.");
@@ -317,12 +318,11 @@ void f__xpm_write_rows( INT32 args )
       }
     }
     break;
-   case 3: 
+   case 3:
    {
      rgba_group **p_colors;
      int i;
-     p_colors = (rgba_group **)xalloc(sizeof(rgba_group *)*65536);
-     MEMSET(p_colors, 0, sizeof(rgba_group *)*65536);
+     p_colors = xcalloc(sizeof(rgba_group *), 65536);
      for(i=0; i<colors->size; i++)
      {
        struct pike_string *c = colors->item[i].u.string;
@@ -330,13 +330,12 @@ void f__xpm_write_rows( INT32 args )
        unsigned short id = extract_short((unsigned char *)c->str);
        if(!p_colors[id])
        {
-         p_colors[id] = (rgba_group *)xalloc(sizeof(rgba_group)*128);
-         MEMSET(p_colors[id],0,sizeof(rgba_group)*128);
+         p_colors[id] = xcalloc(sizeof(rgba_group), 128);
        }
-       if(ind > 127) 
+       if(ind > 127)
        {
-         p_colors[id] = (rgba_group *)realloc(p_colors[id],sizeof(rgba_group)*256);
-         MEMSET(p_colors[id]+sizeof(rgba_group)*128,0,sizeof(rgba_group)*128);
+         p_colors[id] = realloc(p_colors[id],sizeof(rgba_group)*256);
+         memset(p_colors[id]+128, 0, sizeof(rgba_group)*128);
        }
        p_colors[id][ind]=parse_color_line( c, bpc );
      }
@@ -377,7 +376,7 @@ void f__xpm_write_rows( INT32 args )
 
      for(i=0; i<colors->size; i++)
      {
-       unsigned short id = 
+       unsigned short id =
          extract_short((unsigned char*)colors->item[i].u.string->str);
        p_colors[id] = parse_color_line( colors->item[i].u.string, bpc );
      }

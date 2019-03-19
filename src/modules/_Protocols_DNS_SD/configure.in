@@ -1,4 +1,3 @@
-# $Id$
 
 AC_INIT(sd.c)
 AC_CONFIG_HEADER(config.h)
@@ -13,7 +12,7 @@ if test x$with_dnssd = xyes ; then
   PIKE_FEATURE(DNS-SD,[no (dns_sd.h or howl.h not found)])
 
   AC_CHECK_HEADERS(dns_sd.h howl.h)
-  
+
   if test x$ac_cv_header_dns_sd_h = xyes; then
     PIKE_FEATURE(DNS-SD,[no (libdns_sd not found)])
     AC_CHECK_FUNC(DNSServiceRegister, [

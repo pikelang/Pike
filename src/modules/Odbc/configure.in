@@ -1,12 +1,10 @@
 #
-# $Id$
-#
 # Configure script for the odbc-module
 #
 # Henrik Grubbström
 #
 
-AC_INIT(odbc.c)
+AC_INIT(odbc.cmod)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
@@ -46,22 +44,22 @@ ODBC support enabled.
 EOF
     fi
   else
-  
+
     pike_cv_odbc=no;
-  
+
     AC_MSG_CHECKING(for the ODBC include-directory)
-  
+
     AC_CACHE_VAL(pike_cv_odbc_include_dir, [
-      if test "x$INFORMIXDIR" = "x" ; then 
+      if test "x$INFORMIXDIR" = "x" ; then
   	foodir=''
       else
   	foodir=$INFORMIXDIR/cli/include
       fi
-  
+
       pike_cv_odbc_include_dir=''
-  
+
       # MIMER doesn't include the odbc header files.
-  
+
       for bardir in $foodir $with_root/opt/*odbc/*/include \
   	  $with_root/usr/opt/*odbc/*/include $with_root/opt/*odbc/include \
 	  $with_root/usr/opt/*odbc/include $with_root/usr/local/include \
@@ -85,31 +83,31 @@ EOF
   	fi
       done
     ])
-  
+
     AC_MSG_RESULT($pike_cv_odbc_include_dir)
-  
+
     if test "x$pike_cv_odbc_include_dir" = x; then :; else
       for bardir in $pike_cv_odbc_include_dir; do
   	echo Adding $bardir to the include search path.
   	CPPFLAGS="-I$bardir ${CPPFLAGS}"
       done
     fi
-  
+
     AC_MSG_CHECKING(for ODBC library-directory)
-  
+
     AC_CACHE_VAL(pike_cv_odbc_lib_dir, [
-  
+
       pike_cv_odbc_lib_dir=''
-  
+
       # ${INFORMIXDIR:+$INFORMIXDIR/cli/dlls} does not work with stupid sh
       # /Hubbe
-  
-      if test "x$INFORMIXDIR" = "x" ; then 
+
+      if test "x$INFORMIXDIR" = "x" ; then
   	foodir=''
       else
   	foodir=$INFORMIXDIR/cli/dlls
       fi
-  
+
       for bardir in $foodir $with_root/opt/*odbc/*/lib \
 	  $with_root/usr/opt/*odbc/*/lib $with_root/opt/*odbc/lib \
 	  $with_root/usr/opt/*odbc/lib $with_root/usr/local/lib \
@@ -127,29 +125,29 @@ EOF
   	fi
       done
     ])
-  
+
     AC_MSG_RESULT($pike_cv_odbc_lib_dir)
-  
+
     if test "x$pike_cv_odbc_lib_dir" = x; then :; else
       for bardir in $pike_cv_odbc_lib_dir; do
   	echo Adding $bardir to the library search path.
   	LDFLAGS="-L$bardir -R$bardir ${LDFLAGS}"
       done
     fi
-  
+
     AC_CHECK_HEADERS(isql.h isqlext.h)
-  
+
     pike_cv_odbc=no;
-  
+
     if test "$ac_cv_header_isql_h$ac_cv_header_isqlext_h" = "yesyes"; then
-  
+
       AC_CHECK_LIB(iodbcinst, SQLGetConfigMode)
-  
+
       AC_CHECK_LIB(iodbc, SQLConnect, [
   	LIBS="-liodbc $LIBS"
   	pike_cv_odbc=yes;
       ], [])
-  
+
     else
       :
     fi
@@ -157,15 +155,15 @@ EOF
     if test "x$pike_cv_odbc" = xyes; then
       :
     else
-  
+
       # Header file
-  
+
       AC_CHECK_HEADERS(windows.h qeodbc.h sql.h sqlext.h)
-  
+
       if test "$ac_cv_header_sql_h$ac_cv_header_sqlext_h" = "yesyes"; then
-  
+
   	# System libs which might be needed
-  
+
   	if echo $LIBS|grep -- -lsocket >&5 2>&5; then
   	  :
   	else
@@ -187,7 +185,7 @@ EOF
   	    LIBS="-lm $LIBS"
   	  ], [])
   	fi
-  
+
   	AC_CHECK_LIB(odbc, SQLConnect, [
   	  LIBS="-lodbc $LIBS"
   	  pike_cv_odbc=yes;
@@ -195,7 +193,7 @@ EOF
       else
   	:
       fi
-  
+
     fi
 
     if test x$pike_cv_odbc = xno; then

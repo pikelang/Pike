@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -27,6 +26,11 @@ extern struct program *image_program;
 **! module Image
 **! submodule HRZ
 **!
+**! HRZ is rather trivial, and not really useful, but:
+**!
+**! The HRZ file is always 256x240 with RGB values from 0 to 63.
+**! No compression, no header, just the raw RGB data.
+**! HRZ is (was?) used for amateur radio slow-scan TV.
 */
 
 /*
@@ -35,11 +39,6 @@ extern struct program *image_program;
 **! method string encode(object image)
 **!
 **! Handle encoding and decoding of HRZ images.
-**! HRZ is rather trivial, and not really useful, but:
-**!
-**! The HRZ file is always 256x240 with RGB values from 0 to 63.
-**! No compression, no header, just the raw RGB data.
-**! HRZ is (was?) used for amatuer radio slow-scan TV.
 */
 
 void image_hrz_f_decode(INT32 args)
@@ -48,7 +47,7 @@ void image_hrz_f_decode(INT32 args)
   struct pike_string *s;
   int c;
   get_all_args( "decode", args, "%S", &s);
-  
+
   if(s->len != 256*240*3) Pike_error("This is not a HRZ file\n");
 
   push_int( 256 );
@@ -70,7 +69,7 @@ void image_hrz_f_decode(INT32 args)
 void image_hrz_f__decode(INT32 args)
 {
   image_hrz_f_decode(args);
-  push_constant_text("image");
+  push_static_text("image");
   stack_swap();
   f_aggregate_mapping(2);
 }
@@ -82,13 +81,13 @@ void image_hrz_f_encode(INT32 args )
   struct pike_string *s;
   int x,y;
   get_all_args( "encode", args, "%o", &io);
-  
-  if(!(i = (struct image *)get_storage( io, image_program)))
+
+  if(!(i = get_storage( io, image_program)))
     Pike_error("Wrong argument 1 to Image.HRZ.encode\n");
-  
+
   s = begin_shared_string( 256*240*3 );
-  
-  MEMSET(s->str, 0, s->len );
+
+  memset(s->str, 0, s->len );
   for(y=0; y<240; y++)
     if(y < i->ysize)
       for(x=0; x<256; x++)
@@ -104,13 +103,13 @@ void image_hrz_f_encode(INT32 args )
   push_string( end_shared_string(s) );
 }
 
-void init_image_hrz()
+void init_image_hrz(void)
 {
   ADD_FUNCTION( "decode", image_hrz_f_decode, tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "_decode", image_hrz_f__decode, tFunc(tStr,tMapping), 0);
   ADD_FUNCTION( "encode", image_hrz_f_encode, tFunc(tObj,tStr), 0);
 }
 
-void exit_image_hrz()
+void exit_image_hrz(void)
 {
 }

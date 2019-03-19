@@ -1,9 +1,8 @@
 START_MARKER
-dnl $Id$
 
 dnl NOTE:
-dnl   *every* time the Calendar tests have failed, it's not the 
-dnl   Calendar module that had any errors. Please don't commit 
+dnl   *every* time the Calendar tests have failed, it's not the
+dnl   Calendar module that had any errors. Please don't commit
 dnl   your Pike until you've got Calendar to compile again. /Mirar
 
 test_true(Calendar.Day())
@@ -29,19 +28,28 @@ test_do(Calendar.TimeRange t = Calendar.now())
 dnl Some more or less odd timezones encountered by Xenofarm:
 define(test_dwim,[[
   test_eq(Calendar.ISO.set_timezone("CET")->dwim_time($1)->format_time(),"2002-11-19 07:04:03")
-  test_eq(Calendar.ISO.set_timezone("CET")->dwim_time($1)->tzname(),$2)
+  ifelse($2,,,[[
+    test_eq(Calendar.ISO.set_timezone("CET")->dwim_time($1)->tzname(),$2)
+  ]])
 ]])
 test_dwim("Tue Nov 19 07:04:03 MET 2002","MET")
 test_dwim("Tue Nov 19 07:04:03 CST 2002","CST")
 test_dwim("Tue Nov 19 07:04:03 CET 2002","CET")
 test_dwim("Tue Nov 19 07:04:03  2002","CET")
-test_dwim("Tue Nov 19 07:04:03 NFT 2002","NFT")
-dnl test_dwim("Tue Nov 19 07:04:03 DFT 2002","DFT")
+dnl NFT (Norway-France Time) is the name for CET on AIX.
+test_dwim("Tue Nov 19 07:04:03 NFT 2002","CET")
+test_dwim("Tue Nov 19 07:04:03 DFT 2002","CET")
 test_dwim("Tue Nov 19 07:04:03 MET DST 2002","MET")
 test_dwim("Tue Nov 19 07:04:03 METDST 2002","MET")
 test_dwim([["Tue, 19 Nov 2002 07:04:03 GMT"]],"GMT")
 test_dwim([["Tuesday, 19-Nov-02 07:04:03 GMT"]],"GMT")
 test_dwim("Tue Nov 19 07:04:03 2002","GMT")
+test_dwim("20021119T070403 GMT","GMT")
+test_dwim("20021119T070403")
+test_dwim("2002-11-19T07:04:03+0000","UTC")
+test_dwim("2002-11-19T07:04:03")
+test_dwim("20021119 070403 GMT","GMT")
+test_dwim("20021119 070403")
 
 define(test_http,[[
   test_eq(Calendar.ISO.http_time($1)->format_time(),$2)
@@ -63,8 +71,8 @@ test_eq( Calendar.dwim_day("1/2/3"), Calendar.Day(2003,1,2) )
 test_eq( Calendar.dwim_day("1 aug 2001"), Calendar.Day(2001,8,1) )
 test_false( Calendar.dwim_day("1 aug 2001")==Calendar.Day(2001,8,2) )
 dnl Missing two dwim_time tests
-test_eq( Calendar.parse("%Y-%M-%D %h:%m","2040-11-08 2:46"),
-  Calendar.Minute(2040,11,8,2,46) )
+test_eq( Calendar.set_timezone("UTC")->parse("%Y-%M-%D %h:%m","2040-11-08 2:46"),
+  Calendar.set_timezone("UTC")->Minute(2040,11,8,2,46) )
 test_false( Calendar.parse("%Y w%W %e %h:%m %p %z","1913 w4 monday 2:14 pm CET")
   < Calendar.set_timezone("CET")->Minute(1913,1,20,14,14) )
 test_false( Calendar.parse("%Y w%W %e %h:%m %p %z","1913 w4 monday 2:14 pm CET")
@@ -77,6 +85,8 @@ test_equal( Calendar.ISO.parse("%dT%h:%m:%s", "19980717T14:08:55")->set_timezone
 test_equal( Calendar.ISO.set_timezone("UTC")->parse("%dT%h:%m:%s", "19980717T14:08:55"),
             Calendar.ISO.set_timezone("UTC")->parse("%dT%h:%m:%s", "19980717T14:08:55") )
 
+test_eq(Calendar.parse ("%Y %M %a", "2005 Oct  7"), Calendar.Day (2005, 10, 7))
+test_eq(Calendar.parse ("%Y %a", "2005 7"), Calendar.Day (2005, 1, 7))
 
 
 
@@ -351,5 +361,66 @@ test_eq([[Calendar.ISO.Month (2005, 2)->place (Calendar.ISO.Day (2004, 2, 26))]]
 test_eq([[Calendar.ISO.Month (2005, 2)->place (Calendar.ISO.Day (2004, 2, 29))]], 0)
 test_eq([[Calendar.ISO.Month (2005, 2)->place (Calendar.ISO.Day (2004, 2, 29), 1)]], Calendar.ISO.Day (2005, 2, 28))
 test_eq([[Calendar.ISO.Month (2005, 3)->place (Calendar.ISO.Day (2004, 3, 1), 1)]], Calendar.ISO.Day (2005, 3, 1))
+
+dnl Calendar.ISO.deltat
+dnl
+dnl year, deltat, error
+define([[test_deltat]], [[
+  test_any([[
+    int t = ($1 - 1970) * 31556952;
+    float dt = Calendar.ISO.deltat(t) + $3;
+    if (dt < $2) return dt;
+    return 0;
+  ]], 0)
+  test_any([[
+    int t = ($1 - 1970) * 31556952;
+    float dt = Calendar.ISO.deltat(t) - $3;
+    if (dt > $2) return dt;
+    return 0;
+  ]], 0)
+]])
+
+dnl Table 2-1 from http://eclipse.gsfc.nasa.gov/5MCSE/5MCSE-Text11.pdf
+test_deltat( -500, 17190, 430)
+test_deltat( -400, 15530, 390)
+test_deltat( -300, 14080, 360)
+test_deltat( -200, 12790, 330)
+test_deltat( -100, 11640, 290)
+test_deltat(    0, 10580, 260)
+test_deltat(  100,  9600, 240)
+test_deltat(  200,  8640, 210)
+test_deltat(  300,  7680, 180)
+test_deltat(  400,  6700, 160)
+test_deltat(  500,  5710, 140)
+test_deltat(  600,  4740, 120)
+test_deltat(  700,  3810, 100)
+test_deltat(  800,  2960, 80)
+test_deltat(  900,  2200, 70)
+test_deltat( 1000,  1570, 55)
+test_deltat( 1100,  1090, 40)
+test_deltat( 1200,   740, 30)
+test_deltat( 1300,   490, 20)
+test_deltat( 1400,   320, 20)
+test_deltat( 1500,   200, 20)
+test_deltat( 1600,   120, 20)
+test_deltat( 1700,     9, 5)
+test_deltat( 1750,    13, 2)
+test_deltat( 1800,    14, 1)
+test_deltat( 1850,     7, 1)
+test_deltat( 1900,    -3, 1)
+test_deltat( 1950,    29, 0.1)
+
+dnl Table 2-2 from http://eclipse.gsfc.nasa.gov/5MCSE/5MCSE-Text11.pdf
+test_deltat(1955, 31.1, 0.08)
+test_deltat(1960, 33.2, 0.10)
+test_deltat(1965, 35.7, 0.09)
+test_deltat(1970, 40.2, 0.05)
+test_deltat(1975, 45.5, 0.06)
+test_deltat(1980, 50.5, 0.05)
+test_deltat(1985, 54.3, 0.05)
+test_deltat(1990, 56.9, 0.05)
+test_deltat(1995, 60.8, 0.05)
+test_deltat(2000, 63.8, 0.08)
+test_deltat(2005, 64.7, 0.05)
 
 END_MARKER

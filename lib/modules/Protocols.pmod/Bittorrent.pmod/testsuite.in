@@ -1,4 +1,3 @@
-dnl $Id$
 
 START_MARKER
 
@@ -23,5 +22,21 @@ test_eq( id("BLZ123"), "Blizzard 123")
 test_eq( id("\0"*20), "Experimental 3.1" )
 
 test_do( add_constant("id") )
+
+test_do( add_constant("d", Protocols.Bittorrent.Bencoding.decode) )
+test_equal( d("4:spamx"), "spam" )
+test_equal( d("4:spa"), 0 )
+test_equal( d("i0ex"), 0 )
+test_equal( d("i0"), 0 )
+test_equal( d("i-3ex"), -3 )
+test_equal( d("i1234567890ex"), 1234567890 )
+test_equal( d("l4:spam4:eggsex"), ({ "spam", "eggs" }) )
+test_equal( d("l4:spam4:eggs"), ({ "spam", "eggs" }) )
+test_equal( d("d3:cow3:moo4:spam4:eggsex"), ([ "cow":"moo", "spam":"eggs" ]) )
+test_equal( d("d3:cow3:moo4:spam4:eggs"), ([ "cow":"moo", "spam":"eggs" ]) )
+test_equal( d("d4:spaml1:a1:bee"), ([ "spam" : ({ "a", "b" }) ]) )
+test_eval_error( d("x") )
+test_do( add_constant("d") )
+
 
 END_MARKER

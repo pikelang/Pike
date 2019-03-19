@@ -38,6 +38,8 @@
 //! int has-forward-stepper
 //! int has-secondary-backward-stepper
 //! int has-secondary-forward-stepper
+//! int tab-curvature
+//! int tab-overlap
 //!
 //!
 //!  Signals:
@@ -69,13 +71,18 @@ GTK2.Notebook append_page_menu( GTK2.Widget contents, GTK2.Widget label, GTK2.Wi
 //!
 //!
 
-static GTK2.Notebook create( mapping|void props );
+protected GTK2.Notebook create( mapping|void props );
 //! Create a W(Notebook) widget with no pages.
 //!
 //!
 
 int get_current_page( );
 //! Returns the index of the currently selected page
+//!
+//!
+
+int get_group_id( );
+//! Gets the current group identifier.
 //!
 //!
 
@@ -114,6 +121,11 @@ int get_show_tabs( );
 //!
 //!
 
+int get_tab_detachable( GTK2.Widget child );
+//! Returns whether the tab contents can be detached.
+//!
+//!
+
 GTK2.Widget get_tab_label( GTK2.Widget page );
 //! Returns the tab label widget.
 //!
@@ -126,6 +138,11 @@ string get_tab_label_text( GTK2.Widget child );
 
 int get_tab_pos( );
 //! Gets the edge at which the tabs are located.
+//!
+//!
+
+int get_tab_reorderable( GTK2.Widget child );
+//! Gets whether the tab can be reordered via drag and drop or not.
 //!
 //!
 
@@ -197,6 +214,14 @@ GTK2.Notebook reorder_child( GTK2.Widget child, int position );
 
 GTK2.Notebook set_current_page( int pos );
 //! Go to the specified page
+//!
+//!
+
+GTK2.Notebook set_group_id( int id );
+//! Sets an group identifier for notebook; notebooks sharing the same group
+//! identifier will be able to exchange tabs via drag and drop. A notebook
+//! with group identifier -1 will not be able to exchange tabs with any other
+//! notebook.
 //!
 //!
 

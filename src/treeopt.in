@@ -2,7 +2,6 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id$
 //
 // The tree optimizer
 //
@@ -85,7 +84,7 @@ F_APPLY(0 = F_CONSTANT
 		F_ARG_LIST(2 = +[pike_types_le($$->type, int_type_string)],
 			   3 = +[!match_types(object_type_string, $$->type)]))):
   F_APPLY($1, F_ARG_LIST($2, F_APPLY($0, $3)));
-			   
+
 // sizeof(`*(A,B))  =>  `*(sizeof(A), B)  if typeof(B) <= int
 F_APPLY(0 = F_CONSTANT
 	[TYPEOF($$->u.sval) == T_FUNCTION]
@@ -99,19 +98,6 @@ F_APPLY(0 = F_CONSTANT
 			   3 = +[pike_types_le($$->type, int_type_string)]))):
   F_APPLY($1, F_ARG_LIST(F_APPLY($0, $2), $3));
 
-// Some convenience stuff:
-F_LT(0, 1):
-  {
-    $$ = mkopernode("`<", $0, $1);
-  }
-  ;
-
-F_GT(0, 1):
-  {
-    $$ = mkopernode("`<", $0, $1);
-  }
-  ;
-		   
 // search(indices(map), key) < 0)  =>  zero_type(map[key]) if typeof(map) <= mapping
 F_LT(F_APPLY(F_CONSTANT
 	     [TYPEOF($$->u.sval) == T_FUNCTION]
@@ -129,7 +115,7 @@ F_LT(F_APPLY(F_CONSTANT
 {
   $$ = mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1));
 };
-			   
+
 // search(indices(map), key) == -1)  =>  zero_type(map[key]) if typeof(map) <= mapping
 F_EQ(F_APPLY(F_CONSTANT
 	     [TYPEOF($$->u.sval) == T_FUNCTION]
@@ -147,7 +133,7 @@ F_EQ(F_APPLY(F_CONSTANT
 {
   $$ = mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1));
 };
-			   
+
 // search(indices(map), key) >= 0)  =>  !zero_type(map[key]) if typeof(map) <= mapping
 F_GE(F_APPLY(F_CONSTANT
 	     [TYPEOF($$->u.sval) == T_FUNCTION]
@@ -189,13 +175,12 @@ F_GE(F_APPLY(F_CONSTANT
 //   =>
 //
 // (sscanf(s, "%*!" + A + "s" + "xxxx", ...) || 1) - 1
-F_SSCANF(':'(4 = +,
-	     F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
-						     string_type_string)],
-				':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
-									  int_type_string)], -),
-				    F_RANGE_OPEN)),
-			2 = +)), 3):
+F_SSCANF(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
+                                                 string_type_string)],
+                            ':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
+                                                                      int_type_string)], -),
+                                F_RANGE_OPEN)),
+                    2 = +), 3):
 {
   struct pike_string *percent_star_string;
   struct pike_string *s_string;
@@ -204,7 +189,6 @@ F_SSCANF(':'(4 = +,
   $$ = mkopernode("`-",
 		  mknode(F_LOR,
 			 mknode(F_SSCANF,
-				mknode(':', $4,
 				mknode(F_ARG_LIST, $0,
 				       mkopernode("`+",
 						  mknode(F_ARG_LIST,
@@ -212,7 +196,7 @@ F_SSCANF(':'(4 = +,
 							 $1),
 						  mknode(F_ARG_LIST,
 							 mkstrnode(s_string),
-							 $2)))),
+							 $2))),
 				$3),
 			 mkintnode(1)),
 		  mkintnode(1));
@@ -432,7 +416,7 @@ F_CAST(0 = +[$$->type == void_type_string], *):
 // 		 mkcastnode(type, $2));
 // }
 // ;
-// 
+//
 // // Propagate casts toward the leaves
 // 0 = F_CAST('?'(1, ':'(2, 3)), *):
 // {
@@ -455,7 +439,7 @@ F_CAST(0 = +[$$->type == void_type_string], *):
 // 		     mknode(F_COMMA_EXPR, $1, $2));
 // }
 // ;
-// 
+//
 // F_CAST[$$->type == void_type_string]
 // 	 (F_APPLY(F_CONSTANT[($$->node_info &
 // 			      (OPT_SIDE_EFFECT|
@@ -502,7 +486,7 @@ F_RANGE(0, ':'(F_RANGE_FROM_BEG(1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT], *),
     }
   }
 }
-;			              
+;
 
 F_COMMA_EXPR(-, 0):
   $0;
@@ -553,7 +537,7 @@ F_COMMA_EXPR(0, 1 = F_CAST(2, *)):
 // F_COMMA_EXPR(+[!($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|OPT_CASE|
 // 				     OPT_CONTINUE|OPT_BREAK|OPT_RETURN))], 0 = +):
 //   $0;
-// 
+//
 // F_COMMA_EXPR(F_COMMA_EXPR(0, +[!($$->tree_info & (OPT_SIDE_EFFECT|
 // 						     OPT_ASSIGNMENT|OPT_CASE|
 // 						     OPT_CONTINUE|OPT_BREAK|
@@ -949,11 +933,11 @@ F_NOT(-, *):
 F_NOT(F_LT(0 [pike_types_le($$->type, int_type_string)],
 	   1 [pike_types_le($$->type, int_type_string)]), *):
   F_GE($0, $1);
- 
+
 F_NOT(F_GT(0 [pike_types_le($$->type, int_type_string)],
 	   1 [pike_types_le($$->type, int_type_string)]), *):
   F_LE($0, $1);
- 
+
 F_NOT(F_LE(0 [pike_types_le($$->type, int_type_string)],
 	   1 [pike_types_le($$->type, int_type_string)]), *):
   F_GT($0, $1);
@@ -1008,6 +992,21 @@ F_ADD_EQ(0, F_APPLY(F_CONSTANT
 		    [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		    [$$->u.sval.u.efun->function == debug_f_aggregate], 1)):
   F_APPEND_ARRAY($0, $1);
+
+
+// a += ([ args... ])  ->  F_APPEND_MAPPING(a, args...)
+F_ADD_EQ(0, F_APPLY(F_CONSTANT
+		    [TYPEOF($$->u.sval) == T_FUNCTION]
+		    [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
+		    [$$->u.sval.u.efun->function == f_aggregate_mapping], 1)):
+  F_APPEND_MAPPING($0, $1);
+
+// a += ([ args... ])  ->  F_APPEND_MAPPING(a, args...)
+F_OR_EQ(0, F_APPLY(F_CONSTANT
+                   [TYPEOF($$->u.sval) == T_FUNCTION]
+                   [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
+                   [$$->u.sval.u.efun->function == f_aggregate_mapping], 1)):
+  F_APPEND_MAPPING($0, $1);
 
 F_INDEX(-, 0 = *):
   F_COMMA_EXPR(F_POP_VALUE($0, -), 0);
@@ -1064,8 +1063,21 @@ F_DO(-, 0 = +[node_is_true($$)]):
 
 
 // No body -- No reason to loop...
-F_FOREACH(F_VAL_LVAL(0, *), -):
-  F_POP_VALUE($0, -);
+F_FOREACH(F_VAL_LVAL(0 = +[!($$->node_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT))],
+		     1 = +[($$->token != ':')]), -):
+{
+  // Note: We still need to set the loop variable as if the last
+  //       turn of the loop has executed, in case it is used later.
+  $$ = mknode(F_POP_VALUE,
+	      mknode('?',
+		     mkefuncallnode("sizeof", $0),
+		     mknode(':',
+			    mknode(F_ASSIGN,
+				   mknode(F_INDEX, $0, mkintnode(-1)), $1),
+			    NULL)),
+	      0);
+}
+;
 F_LOOP(0, -):
   F_POP_VALUE($0, -);
 
@@ -1383,7 +1395,7 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
       }else{
 	node **tmparg;
 	/* for(; x op y; y++) p; -> for(; y op^-1 x; y++) p; */
-	
+
 	switch(oper)
 	{
 	case F_LT: oper = F_GT; break;
@@ -1391,7 +1403,7 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 	case F_GT: oper = F_LT; break;
 	case F_GE: oper = F_LE; break;
 	}
-	    
+
 	tmparg = arg1;
 	arg1 = arg2;
 	arg2 = tmparg;
@@ -1583,8 +1595,8 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 		NULL);
   }
 ;
-			       
-	  
+
+
 
 // Prepare for the return if true optimization.
 //
@@ -1612,3 +1624,89 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
   }
 }
 ;
+
+// convert all X_EQ(1,2) to $1 = $1 X $2
+// These are all identical except for the chosen operanodetype.
+//
+// IMPORTANT: If the generated nodes ever change, you have to
+// also change the code for F_ASSIGN_SELF in docode.c.
+//
+// It _knows_ what the nodes look like.
+F_ADD_EQ(0 = +, 1) :
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`+", $0, $1 )), $0 );
+};
+
+F_SUB_EQ(0 = +, 1) :
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`-", $0, $1 )), $0 );
+};
+
+F_AND_EQ(0 = +, 1) :
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`&", $0, $1 )), $0 );
+};
+
+F_OR_EQ(0 = +, 1)  :
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`|", $0, $1 )), $0 );
+};
+
+F_XOR_EQ(0 = +, 1) :
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`^", $0, $1 )), $0 );
+};
+
+F_LSH_EQ(0 = +, 1) :
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`<<", $0, $1)), $0 );
+};
+F_RSH_EQ(0 = +, 1) :
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`>>", $0, $1)), $0 );
+};
+
+F_MULT_EQ(0 = +, 1):
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`*", $0, $1 )), $0 );
+};
+
+F_MOD_EQ(0 = +, 1) :
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`%", $0, $1 )), $0 );
+};
+
+F_DIV_EQ(0 = +, 1) :
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`/", $0, $1 )), $0 );
+};

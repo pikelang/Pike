@@ -9,7 +9,7 @@ inherit GTK2.Widget;
 
 inherit GTK2.CellLayout;
 
-static GTK2.CellView create( string|GdkPixbuf|mapping text, int|void markup );
+protected GTK2.CellView create( string|GdkPixbuf|mapping text, int|void markup );
 //! Create a new W(CellView) widget.
 //!
 //!

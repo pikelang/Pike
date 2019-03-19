@@ -1,0 +1,157 @@
+START_MARKER
+
+test_do([[
+  class TestMonitor
+  {
+    inherit Filesystem.Monitor.symlinks;
+
+    enum Event {
+      EVT_DATA_CHANGED = 1,
+      EVT_ATTR_CHANGED,
+      EVT_FILE_EXISTS,
+      EVT_FILE_CREATED,
+      EVT_FILE_DELETED,
+      EVT_STABLE_DATA_CHANGE
+    }
+
+    protected array(mapping(Event:string)) evts = ({});
+
+    void clear_events()
+    {
+      evts = ({});
+    }
+
+    int(0..1) wait_for_stable_event (string path)
+    {
+#if constant(System.FSEvents.EventStream) || constant(System.Inotify)
+      int timeout = gethrtime() + 5000000; // 5 secs
+#else
+      int timeout = gethrtime() + 10000000; // 10 secs.
+#endif
+      int got_path;
+
+      while (gethrtime() < timeout) {
+        Pike.DefaultBackend(0.005);
+        if (has_value (stable_data_change_evts(), path)) {
+          got_path = 1;
+          break;
+        }
+      }
+
+      return got_path;
+    }
+
+    array(string) stable_data_change_evts()
+    {
+      return map (evts,
+                  lambda(mapping(Event:string) evt)
+                  {
+                    return evt[EVT_STABLE_DATA_CHANGE];
+                  }) - ({ 0 });
+    }
+
+    void data_changed (string path)
+    {
+      evts += ({ ([ EVT_DATA_CHANGED: path ]) });
+    }
+
+    void attr_changed (string path, Stdio.Stat st)
+    {
+      evts += ({ ([ EVT_ATTR_CHANGED: path ]) });
+    }
+
+    void file_exists (string path, Stdio.Stat st)
+    {
+      evts += ({ ([ EVT_FILE_EXISTS: path ]) });
+    }
+
+    void file_created (string path, Stdio.Stat st)
+    {
+      evts += ({ ([ EVT_FILE_CREATED: path ]) });
+    }
+
+    void file_deleted (string path)
+    {
+      evts += ({ ([ EVT_FILE_DELETED: path ]) });
+    }
+
+    void stable_data_change (string path, Stdio.Stat st)
+    {
+      evts += ({ ([ EVT_STABLE_DATA_CHANGE: path ]) });
+    }
+  };
+
+  string basedir = combine_path (getcwd(), "testsuite.dir/");
+  add_constant("test_basedir", basedir);
+  Stdio.mkdirhier(basedir);
+  Stdio.mkdirhier(basedir + "preexisting/foo/bar/");
+  Stdio.write_file(basedir + "preexisting/test", "1234");
+
+  sleep (2);
+
+  TestMonitor mon = TestMonitor();
+
+  mon->monitor(basedir, 3,
+#if constant(System.FSEvents.EventStream) || constant(System.Inotify)
+               3600, // High interval to make sure acceleration is enabled.
+#else
+               1,
+#endif
+               1,
+               1);
+
+  mon->set_nonblocking (0);
+
+  add_constant("test_mon", mon);
+]])
+
+test_true([[
+            lambda() {
+              test_mon->clear_events();
+              Stdio.write_file (test_basedir + "preexisting/foo/bar/test",
+                                "12345");
+              return test_mon->wait_for_stable_event (test_basedir +
+                                                      "preexisting/foo/bar/test");
+            }();
+            ]])
+
+test_true([[
+            lambda() {
+              test_mon->clear_events();
+              Stdio.write_file (test_basedir + "preexisting/test", "12345");
+              return test_mon->wait_for_stable_event (test_basedir +
+                                                      "preexisting/test");
+            }();
+            ]])
+
+test_true([[
+            lambda() {
+              test_mon->clear_events();
+              Stdio.write_file (test_basedir + "foo", "12345");
+              return test_mon->wait_for_stable_event (test_basedir + "foo");
+            }();
+]])
+
+test_true([[
+            lambda() {
+              test_mon->clear_events();
+              Stdio.mkdirhier (test_basedir + "bar/fie");
+              Stdio.write_file (test_basedir + "bar/fie/gaz", "12345");
+              return test_mon->wait_for_stable_event (test_basedir + "bar/fie/gaz");
+            }();
+            ]])
+
+test_true([[
+            lambda() {
+              test_mon->clear_events();
+              Stdio.write_file (test_basedir + "bar/fie/gaz", "12347");
+              return test_mon->wait_for_stable_event (test_basedir + "bar/fie/gaz");
+            }();
+	    ]])
+
+test_do([[
+  add_constant("test_mon");
+  add_constant("test_basedir");
+]])
+
+END_MARKER

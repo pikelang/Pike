@@ -1,0 +1,79 @@
+class A(string(8bit) payload) {
+    string _sprintf(int t) {
+        return sprintf("A(%O)", payload);
+    }
+}
+
+mixed extension_handler(int type, Stdio.Buffer data) {
+    if (type == 23) {
+        return A(data->read());
+    }
+
+    error("Cannot handle extension %O\n", type);
+}
+
+void encode_handler(Stdio.Buffer buf, mixed v) {
+    if (objectp(v) && object_program(v) == A) {
+        Standards.MsgPack.add_extension_header(buf, 23, sizeof(v->payload));
+        buf->add(v->payload);
+    } else Standards.MsgPack.default_handler(buf, v);
+}
+
+int(0..1) test_mapping() {
+    Stdio.Buffer buf = Stdio.Buffer();
+
+    mixed data = ([
+        4: A("foo"),
+        3: Val.true,
+        5: A("bar"),
+        6: A("flu"),
+        7: Stdio.Buffer("foobar"),
+        8: ({ A("123"), A("456") }),
+    ]);
+
+    Standards.MsgPack.encode_to(buf, data, encode_handler);
+
+    mixed v = Standards.MsgPack.decode_from(buf, extension_handler);
+
+    if (!equal(data - ({ 7 }), v - ({ 7 })) || data[7]->read() != v[7]->read()) {
+        Tools.Testsuite.log_msg("%O vs %O\n", data, v);
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+int(0..1) test_extension() {
+    Stdio.Buffer buf = Stdio.Buffer();
+
+    mixed data = A("foobar");
+    Standards.MsgPack.encode_to(buf, data, encode_handler);
+    mixed v = Standards.MsgPack.decode_from(buf, extension_handler);
+
+    if (!equal(data, v)) {
+        Tools.Testsuite.log_msg("%O vs %O\n", data, v);
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+
+int main(int argc, array(string) argv) {
+    int good, bad;
+
+    foreach (sort(indices(this));; string name) {
+        if (has_prefix(name, "test_")) {
+            mixed v = this[name];
+            if (v()) {
+                good++;
+            } else {
+                bad++;
+            }
+        }
+    }
+
+    Tools.Testsuite.report_result(good, bad);
+
+    return !!bad;
+}

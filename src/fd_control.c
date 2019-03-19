@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef TESTING
@@ -79,7 +78,7 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
     Pike_fatal("File descriptor %d out of range.\n", fd);
 #endif
 
-  do 
+  do
   {
 #if defined(USE_IOCTL_FIONBIO) || defined(__NT__)
     ret=fd_ioctl(fd, FIONBIO, &which);
@@ -113,21 +112,20 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
 
 PMOD_EXPORT int query_nonblocking(int fd)
 {
-  int ret;
+  int ret = 0;
 #ifdef PIKE_DEBUG
   if(fd<0)
     Pike_fatal("Filedescriptor out of range.\n");
 #endif
 
-  do 
-  {
 #ifdef FCNTL_NBFLAG
-    ret = fcntl(fd, F_GETFL, 0) & FCNTL_NBFLAG;
-#else
-    return 0;
-#endif
+  do {
+    ret = fcntl(fd, F_GETFL, 0);
   } while(ret <0 && errno==EINTR);
+  return ret & FCNTL_NBFLAG;
+#else
   return ret;
+#endif
 }
 
 /* The following code doesn't link without help, and
@@ -157,7 +155,7 @@ static void grow_fds_to_close(void)
   if(!fds_to_close)
     Pike_fatal("Out of memory in fd_control::grow_fds_to_close()\n"
           "Tried to allocate %d fd_datum structs\n", fds_to_close_size);
-  MEMSET( fds_to_close+(fds_to_close_size/2), 0, fds_to_close_size*sizeof(int)/2 );
+  memset( fds_to_close+(fds_to_close_size/2), 0, fds_to_close_size*sizeof(int)/2 );
 }
 
 void do_close_on_exec(void)
@@ -197,7 +195,7 @@ PMOD_EXPORT int set_close_on_exec(int fd, int which)
     if (which < 0) which = 0;
     else which &= ~FD_CLOEXEC;
   }
-  do 
+  do
   {
     ret=fcntl(fd, F_SETFD, which);
   } while (ret <0 && errno==EINTR );
@@ -224,6 +222,22 @@ PMOD_EXPORT int set_close_on_exec(int fd, int which)
   return 0;
 #endif /* !HAVE_BROKEN_F_SETFD */
 }
+
+#ifndef HAVE_ACCEPT4
+int accept4(int fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen, int flags)
+{
+  fd = fd_accept(fd, addr, addrlen);
+  if (!flags || (fd < 0)) return fd;
+  if (((flags & SOCK_NONBLOCK) && (set_nonblocking(fd, 1) < 0)) ||
+      ((flags & SOCK_CLOEXEC) && (set_close_on_exec(fd, 1) < 0))) {
+    int e = errno;
+    fd_close(fd);
+    errno = e;
+    return -1;
+  }
+  return fd;
+}
+#endif /* !HAVE_ACCEPT4 */
 
 #endif /* !TESTING */
 

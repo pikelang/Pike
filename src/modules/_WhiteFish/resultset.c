@@ -10,6 +10,7 @@
 #include "bignum.h"
 #include "module_support.h"
 #include "fsort.h"
+#include "pike_types.h"
 
 #include "config.h"
 
@@ -24,7 +25,7 @@
 /*! @class ResultSet
  *!
  *! A resultset is basically an array of hits from the search.
- *! 
+ *!
  *! Note: inheriting this class is _not_ supported (for performance
  *! reasons)
  */
@@ -44,7 +45,7 @@ struct program *resultset_program;
 struct object *wf_not_resultset( struct object *o )
 {
   fatal("%p is not a resultset!\n", o );
-  return 0; /* not reached */
+  UNREACHABLE(return 0);
 }
 #else
 static struct program *resultset_program;
@@ -68,14 +69,12 @@ void wf_resultset_add( struct object *o,
     d = T(o)->d;
   }
   ind = d->num_docs;
-  
+
   if( T(o)->allocated_size == ind )
   {
     T(o)->allocated_size += 2048;
-    d = T(o)->d = realloc( d, 4 + /* num_docs */
-			   4*T(o)->allocated_size*2 ); /* hits */
-    if( !d )
-      Pike_error( "Out of memory" );
+    d = T(o)->d = xrealloc( d, 4 + /* num_docs */
+                            4*T(o)->allocated_size*2 ); /* hits */
   }
   d->hits[ind].doc_id = document;
   d->hits[ind].ranking = weight;
@@ -138,7 +137,7 @@ void wf_resultset_clear( struct object *o )
   T(o)->d->num_docs = 0;
 }
 
-struct object *wf_resultset_new( )
+struct object *wf_resultset_new(void)
 {
   struct object *o;
   o = clone_object( resultset_program, 0 );
@@ -146,13 +145,13 @@ struct object *wf_resultset_new( )
   return o;
 }
 
-static void init_rs( )
+static void init_rs(struct object *UNUSED(o))
 {
   THIS->d = 0;
   THIS->allocated_size = 0;
 }
 
-static void free_rs()
+static void free_rs(struct object *UNUSED(o))
 {
   THIS->allocated_size = 0;
   if( THIS->d )  free( THIS->d );
@@ -215,15 +214,22 @@ static void f_resultset_create( INT32 args )
 static void f_resultset_slice( INT32 args );
 
 static void f_resultset_cast( INT32 args )
-/*! @decl string cast( string type )
+/*! @decl array cast( string type )
  *! Only works when type == @expr{"array"@}. Returns the resultset
  *! data as a array.
  */
 {
-  pop_n_elems( args );
-  push_int(0);
-  push_int( 0x7fffffff );
-  f_resultset_slice(2);
+  struct pike_string *type = Pike_sp[-args].u.string;
+  pop_stack(); /* type have at least one more reference. */
+
+  if( type==literal_array_string )
+  {
+    push_int(0);
+    push_int( 0x7fffffff );
+    f_resultset_slice(2);
+  }
+  else
+    push_undefined();
 }
 
 static void f_resultset_memsize( INT32 args )
@@ -237,7 +243,7 @@ static void f_resultset_memsize( INT32 args )
 
 static void f_resultset_test( INT32 args )
 /*! @decl ResultSet test( int nelems, int start, int incr )
- *! 
+ *!
  *! Fills the resulttest with nelems entries, the document IDs are
  *! strictly raising, starting with @[start], ending with
  *! @[start]+@[nelems]*@[incr].
@@ -370,7 +376,7 @@ static void f_resultset_dup( INT32 args )
   if(THIS->d)
   {
     ResultSet *d = malloc( THIS->d->num_docs * 8 + 4 );
-    MEMCPY( d, THIS->d, THIS->d->num_docs * 8 + 4 );
+    memcpy( d, THIS->d, THIS->d->num_docs * 8 + 4 );
     T(o)->d = d;
     T(o)->allocated_size = T(o)->d->num_docs;
   }
@@ -426,7 +432,7 @@ static void duplicate_resultset( struct object *dest,
     int size = 4+4*T(src)->allocated_size*2;
     T(dest)->allocated_size = T(src)->allocated_size;
     T(dest)->d              = malloc( size );
-    MEMCPY( (char *)T(dest)->d, (char *)T(src)->d, size );
+    memcpy( T(dest)->d, T(src)->d, size );
   }
 }
 
@@ -476,7 +482,7 @@ static void f_resultset_or( INT32 args )
 
   left_size = set_l->num_docs;
   right_size = set_r->num_docs;
-  
+
   while( left_left || right_left )
   {
     if( left_left && left_used ) /* New from left */
@@ -513,7 +519,6 @@ static void f_resultset_or( INT32 args )
 	right_rank = set_r->hits[rp].ranking;
 	right_used = 0;
 	if( !left_rank ) left_rank = right_rank;
-	if( !right_left )right_rank = left_rank;
       }
     }
 
@@ -536,12 +541,6 @@ static void f_resultset_or( INT32 args )
       right_used=1;
     }
   }
-  if( !left_used )
-    if(left_doc!=last)
-      wf_resultset_add( res, (last = left_doc), left_rank );
-  if( !right_used )
-    if(right_doc!=last)
-      wf_resultset_add( res, (last = right_doc), right_rank );
   pop_n_elems( args );
   wf_resultset_push( res );
 }
@@ -584,55 +583,53 @@ static void f_resultset_intersect( INT32 args )
 
   while( left_left && right_left )
   {
-    if( left_left && left_used ) /* New from left */
+    if( left_used ) /* New from left */
     {
       if( ++lp == left_size )
       {
 	left_left = 0;
-	continue;
+	break;
       }
       else
       {
 	left_doc = set_l->hits[lp].doc_id;
 	left_rank = set_l->hits[lp].ranking;
 	if( !left_rank ) left_rank = right_rank;
-	if( !right_left )right_rank = left_rank;
 	left_used = 0;
       }
     }
 
-    if( right_left && right_used ) /* New from right */
+    if( right_used ) /* New from right */
     {
       if( ++rp == right_size )
       {
 	right_left = 0;
-	continue;
+	break;
       }
       else
       {
 	right_doc = set_r->hits[rp].doc_id;
 	right_rank = set_r->hits[rp].ranking;
 	if( !right_rank ) right_rank = left_rank;
-	if( !left_left ) left_rank = right_rank;
 	right_used = 0;
       }
     }
 
-    if(!right_left || (left_doc <= right_doc))
+    if(left_doc <= right_doc)
     {
       if( left_doc == right_doc )
-      {	
+      {
 	if(left_doc>last)
 	  wf_resultset_add( res, (last = left_doc),
-			    left_rank+right_rank ); 
+			    left_rank+right_rank );
       }
       left_used=1;
     }
 
-    if(!left_left || (right_doc <= left_doc))
+    if(right_doc <= left_doc)
     {
       if( right_doc == left_doc )
-      {	
+      {
 	if(right_doc>last)
 	  wf_resultset_add( res, (last = right_doc),
 			    left_rank+right_rank );
@@ -647,7 +644,7 @@ static void f_resultset_intersect( INT32 args )
 static void f_resultset_add_ranking( INT32 args )
 /*! @decl ResultSet add_ranking( ResultSet a )
  *!
- *! Return a new resultset. All entries are the same as in this set, 
+ *! Return a new resultset. All entries are the same as in this set,
  *! but if an entry exists in @[a], the ranking from @[a] is added to
  *! the ranking of the entry
  */
@@ -683,18 +680,18 @@ static void f_resultset_add_ranking( INT32 args )
     wf_resultset_push(res);
     return;
   }
-  
+
   left_size = set_l->num_docs;
   right_size = set_r->num_docs;
-  
+
   while( left_left )
   {
-    if( left_left && left_used ) /* New from left */
+    if( left_used ) /* New from left */
     {
       if( ++lp == left_size )
       {
 	left_left = 0;
-	continue;
+	break;
       }
       else
       {
@@ -709,8 +706,6 @@ static void f_resultset_add_ranking( INT32 args )
       if( ++rp == right_size )
       {
 	right_left = 0;
-	if( !left_left )
-	  continue;
       }
       else
       {
@@ -724,7 +719,7 @@ static void f_resultset_add_ranking( INT32 args )
     if(!right_left || (left_doc <= right_doc))
     {
       if( left_doc != right_doc )
-      {	
+      {
 	if( left_doc > last )
 	  wf_resultset_add( res, (last = left_doc), left_rank );
       } else
@@ -736,9 +731,6 @@ static void f_resultset_add_ranking( INT32 args )
     if( right_doc <= left_doc )
       right_used=1;
   }
-  if( !left_used )
-    if(left_doc!=last)
-      wf_resultset_add( res, (last = left_doc), left_rank );
   pop_n_elems( args );
   wf_resultset_push( res );
 }
@@ -785,10 +777,10 @@ static void f_resultset_sub( INT32 args )
     wf_resultset_push(res);
     return;
   }
-  
+
   left_size = set_l->num_docs;
   right_size = set_r->num_docs;
-  
+
   while( left_left )
   {
     if( left_left && left_used ) /* New from left */
@@ -796,7 +788,7 @@ static void f_resultset_sub( INT32 args )
       if( ++lp == left_size )
       {
 	left_left = 0;
-	continue;
+	break;
       }
       else
       {
@@ -811,8 +803,6 @@ static void f_resultset_sub( INT32 args )
       if( ++rp == right_size )
       {
 	right_left = 0;
-	if( !left_left )
-	  continue;
       }
       else
       {
@@ -825,7 +815,7 @@ static void f_resultset_sub( INT32 args )
     if(!right_left || (left_doc <= right_doc))
     {
       if( left_doc != right_doc )
-      {	
+      {
 	if(left_doc>last)
 	  wf_resultset_add( res, (last = left_doc), left_rank );
       }
@@ -835,9 +825,6 @@ static void f_resultset_sub( INT32 args )
     if( right_doc <= left_doc )
       right_used=1;
   }
-  if( !left_used )
-    if(left_doc!=last)
-      wf_resultset_add( res, (last = left_doc), left_rank );
   pop_n_elems( args );
   wf_resultset_push( res );
 }
@@ -872,17 +859,6 @@ static struct object *dup_dateset()
 }
 
 static void f_dateset_finalize( INT32 args )
-{
-  int i;
-  ResultSet *source = THIS->d;
-  if (source) {
-    for( i = 0; i<source->num_docs; i++ )
-      source->hits[i].ranking = 0;
-  }
-  RETURN_THIS();
-}
-
-static void f_resultset_set( INT32 args )
 {
   int i;
   ResultSet *source = THIS->d;
@@ -1021,9 +997,9 @@ static void f_resultset_add_many( INT32 args )
 void init_resultset_program(void)
 {
   start_new_program();
-  {  
+  {
     ADD_STORAGE( struct result_set_p );
-    add_function("cast", f_resultset_cast, "function(string:mixed)", 0 );
+    add_function("cast", f_resultset_cast, "function(string:mixed)", ID_PRIVATE );
     add_function("create",f_resultset_create,
 		 "function(void|array(int|array(int)):void)",0);
 

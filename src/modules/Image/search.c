@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -52,7 +51,7 @@ static void chrono(char *x)
    getrusage(RUSAGE_SELF,&r);
    fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
 	   (long)r.ru_utime.tv_sec,(long)r.ru_utime.tv_usec,
-	   
+
 	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
 		  +r.ru_utime.tv_sec-rold.ru_utime.tv_sec),
 	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
@@ -79,14 +78,14 @@ static void chrono(char *x)
 **!	where
 **!     <pre>
 **!            max  falling   min  rising
-**!     value=  0     64      128   192 
+**!     value=  0     64      128   192
 **!     </pre>
-**!   
+**!
 **!     0 is set if there is no way to determine
 **!     if it is rising or falling. This is done
 **!     for the every red, green and blue part of
 **!     the image.
-**! 
+**!
 **!     Phase images can be used to create ugly
 **!     effects or to find meta-information
 **!     in the orginal image.
@@ -107,7 +106,7 @@ static void chrono(char *x)
 **!	<td>phasehv()</td>
 **!	</tr>
 **!	</table>
-**! 
+**!
 **! returns the new image object
 **  see also: match_phase
 **! bugs
@@ -116,7 +115,6 @@ static void chrono(char *x)
 **!	<b>experimental status</b>; may not be exact the same
 **!	output in later versions
 */
-static INLINE int sq(int a) { return a*a; }
 static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 
 /* phase-image creating functions */
@@ -154,11 +152,11 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 **! method object match(int|float scale, object needle, object haystack_cert, object needle_cert, object haystack_avoid, int foo)
 **!
 **!     This method creates an image that describes the
-**!     match in every pixel in the image and the 
+**!     match in every pixel in the image and the
 **!     needle-Image.
 **!
 **!     <pre>
-**!        new pixel value = 
+**!        new pixel value =
 **!          sum( my_abs(needle_pixel-haystack_pixel))
 **!     </pre>
 **!
@@ -171,13 +169,13 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 **!     the size of the neadle.
 **!
 **! arg object needle
-**!	The image to use for the matching. 
+**!	The image to use for the matching.
 **!
 **! arg object haystack_cert
 **!	This image should be the same size as
 **!     the image itselves. A non-white-part of the
 **!     haystack_cert-image modifies the output
-**!     by lowering it. 
+**!     by lowering it.
 **!
 **! arg object needle_cert
 **!	The same, but for the needle-image.
@@ -214,14 +212,14 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 
 #define NAME "match_norm"
 #define INAME image_match_norm
-#define NEEDLEAVRCODE 
+#define NEEDLEAVRCODE
 #define PIXEL_VALUE_DISTANCE(CO)  \
  (my_abs(( haystacki[j].CO-tempavr )-( needlei[ny*nxs+nx].CO-needle_average)))
 #include "match.h"
 
 #define NAME "match_norm_corr"
 #define INAME image_match_norm_corr
-#undef SCALE_MODIFY 
+#undef SCALE_MODIFY
 #define SCALE_MODIFY(x) (1.0/MAXIMUM(1.0,x))
 #define PIXEL_VALUE_DISTANCE(CO)  \
        (((haystacki[j].CO-tempavr)/2+128) \
@@ -234,7 +232,7 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 /*
 **! method string make_ascii(object orient1,object orient2,object orient3,object orient4,int|void tlevel,int|void xsize,int|void ysize)
 **!
-**!     This method creates a string that looks like 
+**!     This method creates a string that looks like
 **!     the image. Example:
 **!     <pre>
 **!        //Stina is an image with a cat.
@@ -257,7 +255,7 @@ void image_make_ascii(INT32 args)
 {
   struct object *objs[4];
   struct image *img[4];
-  INT32 xchar_size=0; 
+  INT32 xchar_size=0;
   INT32 ychar_size=0;
   INT32 tlevel=0;
   int i, x, y,xy=0,y2=0, xmax=0,ymax=0,max;
@@ -268,7 +266,7 @@ void image_make_ascii(INT32 args)
 	       &tlevel, &xchar_size, &ychar_size);
 
   for(i=0; i<4; i++) {
-    img[i]=(struct image*)get_storage(objs[i],image_program);
+    img[i]=get_storage(objs[i],image_program);
     if(!img[i])
       SIMPLE_BAD_ARG_ERROR("make_ascii",i+1,"Image.Image");
     if(i!=0 &&
@@ -286,17 +284,17 @@ void image_make_ascii(INT32 args)
   ymax=((img[0]->ysize-1)/ychar_size+1);
   max=xmax*ymax;
   s=begin_shared_string(max);
-  
-  THREADS_ALLOW();  
+
+  THREADS_ALLOW();
 
   /*fix /n at each row*/
   for(i=xmax-1; i<max; i+=xmax)
     s->str[i]='\n';
-  
+
   for(x=0; x<xmax-1; x++)
     {
       for(y=0; y<ymax-1; y++)
-	{	
+	{
 	  int dir0,dir1,dir2,dir3;
 	  int xstop=0,ystop=0;
 	  char t=' ';
@@ -304,7 +302,7 @@ void image_make_ascii(INT32 args)
 	  dir1=0;
 	  dir2=0;
 	  dir3=0;
-	  
+
 	  ystop=y*ychar_size+ychar_size;
 	  for(y2=y*ychar_size; y2<(ystop); y2++)
 	    {
@@ -318,7 +316,7 @@ void image_make_ascii(INT32 args)
 		  dir3+=img[3]->img[xy].r;
 		}
 	    }
-	  
+
 	  /*set a part of the string*/
 	  if ((dir0<=tlevel)&&
 	      (dir1<=tlevel)&&
@@ -367,9 +365,9 @@ void image_make_ascii(INT32 args)
 	      else
 		t='\\';
 	    }
-	      
+
 	  s->str[y*xmax+x]=t;
-	  
+
 	}
     }
 
@@ -380,19 +378,19 @@ void image_make_ascii(INT32 args)
 
 
   /*fix end of rows*/
-  
+
   /*fix middle*/
-  
-  
+
+
   /*fix last row*/
-  
-  /*fix last position*/ 
+
+  /*fix last position*/
   /*
 **!     <pre>      |      /    -    \
 **!          hue=  0     64   128  192  (=red in an hsv image)
 **!	</pre>
   */
-  
+
   THREADS_DISALLOW();
 
   pop_n_elems(args);
@@ -507,7 +505,7 @@ void img_apply_max(struct image *dest,
    int widthheight;
    double sumr,sumg,sumb;
    double qr,qg,qb;
-   register double r=0,g=0,b=0;
+   double r=0,g=0,b=0;
 
    d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
 
@@ -530,7 +528,7 @@ THREADS_ALLOW();
    by=height/2;
    ex=width-bx;
    ey=height-by;
-   
+
    for (y=by; y<img->ysize-ey; y++)
    {
       dp=d+y*img->xsize+bx;
@@ -619,41 +617,41 @@ void image_apply_max(INT32 args)
 
    if (args<1 ||
        TYPEOF(sp[-args]) != T_ARRAY)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+     bad_arg_error("apply_max",sp-args,args,0,"",sp-args,
+                   "Bad arguments to apply_max.\n");
 
-   if (args>3) 
+   if (args>3)
       if (TYPEOF(sp[1-args]) != T_INT ||
 	  TYPEOF(sp[2-args]) != T_INT ||
 	  TYPEOF(sp[3-args]) != T_INT)
-	 Pike_error("Illegal argument(s) (2,3,4) to Image.Image->apply_max()\n");
+	 Pike_error("Illegal argument(s) (2,3,4) to apply_max.\n");
       else
       {
 	 default_rgb.r=sp[1-args].u.integer;
 	 default_rgb.g=sp[1-args].u.integer;
 	 default_rgb.b=sp[1-args].u.integer;
       }
-   else 
+   else
    {
       default_rgb.r=0;
       default_rgb.g=0;
       default_rgb.b=0;
    }
 
-   if (args>4 
+   if (args>4
        && TYPEOF(sp[4-args]) == T_INT)
    {
       div=sp[4-args].u.integer;
       if (!div) div=1;
    }
-   else if (args>4 
+   else if (args>4
 	    && TYPEOF(sp[4-args]) == T_FLOAT)
    {
       div=sp[4-args].u.float_number;
       if (!div) div=1;
    }
    else div=1;
-   
+
    height=sp[-args].u.array->size;
    width=-1;
    for (i=0; i<height; i++)

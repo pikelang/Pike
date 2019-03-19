@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -40,5 +39,8 @@
 
 /* Define if AVCodecContext contains the field frame_rate. */
 #undef HAVE_AVCODECCONTEXT_FRAME_RATE
+
+/* Define if AVCodec contains the field encode2. */
+#undef HAVE_AVCODEC_ENCODE2
 
 #endif

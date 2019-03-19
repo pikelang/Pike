@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef OBJECT_H
@@ -10,7 +9,6 @@
 
 #include "global.h"
 #include "svalue.h"
-#include "dmalloc.h"
 
 /* a destructed object has no program */
 
@@ -19,7 +17,8 @@
 #endif
 struct object
 {
-  PIKE_MEMORY_OBJECT_MEMBERS; /* Must be first */
+  INT32 refs;
+  size_t flags;
   struct program *prog;
   struct object *next;
   struct object *prev;
@@ -29,9 +28,12 @@ struct object
   char *storage;
 };
 
+/* Flags used in object->flags. */
+#define OBJECT_CLEAR_ON_EXIT	1	/* Overwrite before free. */
+
 PMOD_EXPORT extern struct object *first_object;
 extern struct object *gc_internal_object;
-extern struct object *objects_to_destruct;
+PMOD_EXPORT extern struct object *objects_to_destruct;
 extern struct object *master_object;
 extern struct program *master_program;
 extern struct program *magic_index_program;
@@ -41,7 +43,7 @@ extern struct program *magic_values_program;
 extern struct program *magic_types_program;
 #ifdef DO_PIKE_CLEANUP
 PMOD_EXPORT extern int gc_external_refs_zapped;
-PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line);
 #endif
 
 #define free_object(O) do{						\
@@ -75,8 +77,11 @@ enum object_destruct_reason {
 };
 
 #include "block_alloc_h.h"
-/* Prototypes begin here */
-BLOCK_ALLOC_FILL_PAGES(object, 2);
+
+ATTRIBUTE((malloc)) struct object * alloc_object();
+void really_free_object(struct object * o);
+void count_memory_in_objects(size_t *_num, size_t *_size);
+void free_all_object_blocks(void);
 PMOD_EXPORT struct object *low_clone(struct program *p);
 PMOD_EXPORT void call_c_initializers(struct object *o);
 PMOD_EXPORT void call_prog_event(struct object *o, int event);
@@ -90,6 +95,7 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
 					       int args);
 PMOD_EXPORT struct object *clone_object_from_object(struct object *o, int args);
 struct object *decode_value_clone_object(struct svalue *prog);
+struct pike_string *low_read_file(const char *file);
 PMOD_EXPORT struct object *get_master(void);
 PMOD_EXPORT struct object *debug_master(void);
 struct destroy_called_mark;
@@ -97,20 +103,20 @@ PTR_HASH_ALLOC(destroy_called_mark,128);
 PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct object * o);
 PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason reason);
 #define destruct(o) destruct_object (o, DESTRUCT_EXPLICIT)
-void low_destruct_objects_to_destruct(void);
+PMOD_EXPORT void low_destruct_objects_to_destruct(void);
 void destruct_objects_to_destruct_cb(void);
 PMOD_EXPORT void schedule_really_free_object(struct object *o);
-PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
-					  struct object *o,
-					  ptrdiff_t f);
-PMOD_EXPORT void object_index_no_free2(struct svalue *to,
-				       struct object *o,
-				       int inherit_level,
-				       struct svalue *key);
-PMOD_EXPORT void object_index_no_free(struct svalue *to,
+PMOD_EXPORT int low_object_index_no_free(struct svalue *to,
+					 struct object *o,
+					 ptrdiff_t f);
+PMOD_EXPORT int object_index_no_free2(struct svalue *to,
 				      struct object *o,
 				      int inherit_level,
 				      struct svalue *key);
+PMOD_EXPORT int object_index_no_free(struct svalue *to,
+				     struct object *o,
+				     int inherit_level,
+				     struct svalue *key);
 PMOD_EXPORT void object_low_set_index(struct object *o,
 				      int f,
 				      struct svalue *from);
@@ -130,10 +136,22 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
 PMOD_EXPORT struct array *object_indices(struct object *o, int inherit_level);
 PMOD_EXPORT struct array *object_values(struct object *o, int inherit_level);
 PMOD_EXPORT struct array *object_types(struct object *o, int inherit_level);
-PMOD_EXPORT void visit_object (struct object *o, int action);
-PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type);
+PMOD_EXPORT void visit_object (struct object *o, int action, void *extra);
+PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type,
+				 void *extra);
 PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o);
 PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak);
+
+enum memobj_type{
+    MEMOBJ_NONE,
+    MEMOBJ_SYSTEM_MEMORY,
+    MEMOBJ_STRING_BUFFER,
+    MEMOBJ_STDIO_IOBUFFER,
+};
+
+PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **ptr, size_t *len, int *shift );
+
+
 unsigned gc_touch_all_objects(void);
 void gc_check_all_objects(void);
 void gc_mark_all_objects(void);
@@ -145,6 +163,7 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level);
 void low_init_object(void);
 void init_object(void);
 void exit_object(void);
+void late_exit_object(void);
 void check_object_context(struct object *o,
 			  struct program *context_prog,
 			  char *current_storage);
@@ -164,9 +183,9 @@ void check_all_objects(void);
 #define master() debug_master()
 #endif
 
-#define visit_object_ref(O, REF_TYPE)				\
+#define visit_object_ref(O, REF_TYPE, EXTRA)			\
   visit_ref (pass_object (O), (REF_TYPE),			\
-	     (visit_thing_fn *) &visit_object, NULL)
+	     (visit_thing_fn *) &visit_object, (EXTRA))
 #define gc_cycle_check_object(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_object, (X), (WEAK))
 

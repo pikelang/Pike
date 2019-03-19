@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef SIGNAL_H
@@ -22,6 +21,7 @@ struct pid_status;
 struct perishables;
 struct plimit;
 struct perishables;
+PMOD_EXPORT void restore_signal_handler(int sig);
 PMOD_EXPORT void low_init_signals(void);
 void f_set_priority( INT32 args );
 void f_create_process(INT32 args);

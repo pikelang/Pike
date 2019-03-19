@@ -1,7 +1,7 @@
 //! module Calendar
 //! submodule Timezone
 //!
-//! 	This module contains all the predefined timezones. 	
+//! 	This module contains all the predefined timezones.
 //!	Index it with whatever timezone you want to use.
 //!
 //!	Example:
@@ -9,7 +9,7 @@
 //!	    Calendar.ISO->set_timezone(Calendar.Timezone["Europe/Stockholm"]);
 //!	</tt>
 //!
-//!	A simpler way of selecting timezones might be 
+//!	A simpler way of selecting timezones might be
 //!	to just give the string to
 //!	<ref to=Ruleset.set_timezone>set_timezone</ref>;
 //!	<ref to=Ruleset.set_timezone>it</ref> indexes by itself:
@@ -32,12 +32,12 @@
 //!	There are about 504 timezones with 127 different daylight
 //!	saving rules. Most of them historic.
 //!
-//!	The timezone information comes from 
+//!	The timezone information comes from
 //!	<a href=ftp://elsie.nci.nih.gov/pub/>ftp://elsie.nci.nih.gov/pub/</a>
 //!	and are not made up from scratch. Timezone bugs may be reported
-//!	to the timezone mailing list, 
+//!	to the timezone mailing list,
 //!	<a href=mailto:tz@elsie.nci.nih.gov>tz@elsie.nci.nih.gov</a>,
-//!	preferable with a <tt>cc</tt> to 
+//!	preferable with a <tt>cc</tt> to
 //!	<a href=mailto:mirar+pike@mirar.org>mirar+pike@mirar.org</a>. /Mirar
 //!
 //! see also: TZnames
@@ -50,19 +50,19 @@
 //!	This is a special timezone, that uses <ref>localtime</ref>()
 //!	and <ref>tzname</ref>
 //!	to find out what current offset and timezone string to use.
-//!	
+//!
 //!	<ref>locale</ref> uses this if there is no other
 //!	way of finding a better timezone to use.
 //!
-//!	This timezone is limited by <ref>localtime</ref> and 
-//!	libc to the range of <tt>time_t</tt>, 
+//!	This timezone is limited by <ref>localtime</ref> and
+//!	libc to the range of <tt>time_t</tt>,
 //!	which is a MAXINT on most systems - 13 Dec 1901 20:45:52
 //!	to 19 Jan 2038 3:14:07, UTC.
 
 #pike __REAL_VERSION__
 
 // ----------------------------------------------------------------
-// static
+// protected
 
 Calendar.Rule.Timezone UTC=Calendar.Rule.Timezone(0,"UTC");
 
@@ -101,7 +101,7 @@ protected function(:Calendar.Rule.Timezone) _locale()
 	     line = (line/"#")[0];	// Strip comments.
 	     if (sscanf(s, "%*s" + var_name + "=%s", s) == 2) {
 	       sscanf(s, "\"%s\"", s);	// Strip quotes (if any).
-	       if (tz = `[](s)) 
+	       if (tz = `[](s))
 	       {
 		 // werror("=>%O\n",tz);
 		 return tz;
@@ -130,7 +130,7 @@ protected function(:Calendar.Rule.Timezone) _locale()
 #endif /* __NT__ */
 
 #if constant(tzname)
-   mapping l=predef::localtime(time()); 
+   mapping l=predef::localtime(time());
    array(string) tzn=tzname();
 
    tz=::`[](tzn[0]);
@@ -138,9 +138,9 @@ protected function(:Calendar.Rule.Timezone) _locale()
 #endif
 #endif
 
-   // run an expert system try on the localtime() rules, 
+   // run an expert system try on the localtime() rules,
    // default to localtime()
-   return expert(localtime()); 
+   return expert(localtime());
 };
 
 Calendar.Rule.Timezone tz_from_tzfile(string tzfile)
@@ -171,7 +171,7 @@ protected Calendar.Rule.Timezone timezone_expert_rec(Calendar.Rule.Timezone try,
 		     ->utc_offset(); })
 	 return timezone_select(try,timezone_collect(tree),cal);
    }
-   else 
+   else
       uo=cal->Second(t)->set_timezone(try)->utc_offset();
 
    if (!(tree=tree[uo]))
@@ -182,7 +182,7 @@ protected Calendar.Rule.Timezone timezone_expert_rec(Calendar.Rule.Timezone try,
 
    if (arrayp(tree))
       return timezone_select(try,tree,cal);
-   
+
 // stringp
    return `[](tree);
 }
@@ -298,7 +298,10 @@ class localtime
 #endif
    }
 
-   string _sprintf(int t) { return (t=='O')?"Timezone.localtime()":0; }
+   protected string _sprintf(int t)
+   {
+      return t=='O' && "Timezone.localtime()";
+   }
 
    int raw_utc_offset(); // N/A but needed for interface
 }
@@ -309,10 +312,10 @@ class localtime
 class Timezone_Encapsule
 {
    Calendar.Rule.Timezone what;
- 
+
    constant is_timezone=1;
    constant is_dst_timezone=1; // ask me
-  
+
    protected string extra_name;
    protected int extra_offset;
    string name;
@@ -337,9 +340,9 @@ class Timezone_Encapsule
       return ({z[0]+extra_offset,z[1]+extra_name});
    }
 
-   string _sprintf(int t) 
-   { 
-      return (t=='O')?sprintf("%O%s",what,extra_name || ""):0;
+   protected string _sprintf(int t)
+   {
+      return t=='O' && sprintf("%O%s",what,extra_name || "");
    }
 
    int raw_utc_offset() { return what->raw_utc_offset()+extra_offset; }
@@ -361,9 +364,9 @@ Calendar.Rule.Timezone make_new_timezone(Calendar.Rule.Timezone z,int plusminus)
    if (plusminus==0)
       return z;
    string s;
-   if (plusminus%60) 
+   if (plusminus%60)
       s=sprintf("%+d:%02d:%02d",plusminus/3600,plusminus/60%60,plusminus%60);
-   else if (plusminus/60%60) 
+   else if (plusminus/60%60)
       s=sprintf("%+d:%02d",plusminus/3600,plusminus/60%60);
    else
       s=sprintf("%+d",plusminus/3600);
@@ -372,10 +375,10 @@ Calendar.Rule.Timezone make_new_timezone(Calendar.Rule.Timezone z,int plusminus)
 }
 
 protected private constant _military_tz=
-([ "Y":"UTC-12", "X":"UTC-11", "W":"UTC-10", "V":"UTC-9", "U":"UTC-8", 
-   "T":"UTC-7", "S":"UTC-6", "R":"UTC-5", "Q":"UTC-4", "P":"UTC-3", 
-   "O":"UTC-2", "N":"UTC-1", "Z":"UTC", "A":"UTC+1", "B":"UTC+2", 
-   "C":"UTC+3", "D":"UTC+4", "E":"UTC+5", "F":"UTC+6", "G":"UTC+7", 
+([ "Y":"UTC-12", "X":"UTC-11", "W":"UTC-10", "V":"UTC-9", "U":"UTC-8",
+   "T":"UTC-7", "S":"UTC-6", "R":"UTC-5", "Q":"UTC-4", "P":"UTC-3",
+   "O":"UTC-2", "N":"UTC-1", "Z":"UTC", "A":"UTC+1", "B":"UTC+2",
+   "C":"UTC+3", "D":"UTC+4", "E":"UTC+5", "F":"UTC+6", "G":"UTC+7",
    "H":"UTC+8", "I":"UTC+9", "K":"UTC+10", "L":"UTC+11", "M":"UTC+12",
    "J":"locale" ]);
 
@@ -428,7 +431,7 @@ protected private Calendar.Rule.Timezone _magic_timezone(string tz)
 	 {
 	    case 2: return _magic_timezone("UTC"+a+b[..1]);
 	    case 4: return _magic_timezone("UTC"+a+b[..1]+":"+b[2..]);
-	    case 6: 
+	    case 6:
 	       return _magic_timezone("UTC"+a+b[..1]+":"+b[2..3]+":"+b[4..]);
 	 }
       }
@@ -451,7 +454,7 @@ Calendar.Rule.Timezone `[](string tz)
 
 // ================================================================
 // this is to runtime-compile timezones
-// it's not very nice; based on the one-time-compilation 
+// it's not very nice; based on the one-time-compilation
 // utility I wrote first - but that method was too slow :/
 // ================================================================
 
@@ -461,7 +464,7 @@ class Runtime_timezone_compiler
    function Year=cal->Year;
    object nleapy=Year(1999);
 
-   int is_leap_year(int y) 
+   int is_leap_year(int y)
    { return (!(((y)%4) || (!((y)%100) && ((y)%400)))); }
 
 #define FIXED(D)   (yjd+((D)-1))
@@ -524,7 +527,7 @@ class Runtime_timezone_compiler
       string s;
       string comment;
 
-      void create(array a)
+      protected void create(array a)
       {
 	 switch (sizeof(a))
 	 {
@@ -551,13 +554,12 @@ class Runtime_timezone_compiler
 	 }
       }
 
-      string _sprintf(int t) 
-      { 
-	 return (t=='O')?
+      protected string _sprintf(int t)
+      {
+	 return t=='O' &&
 	    sprintf("Shift(%s,%d%s,%+d,%O)",
 		    dayrule || "<unset>", time,
-		    timetype || "<unset>", offset, s):
-	    0;
+		    timetype || "<unset>", offset, s);
       }
 
       int `==(Shift other)
@@ -591,7 +593,7 @@ class Runtime_timezone_compiler
 	    int wd=wday[ds];
 	    if (!wd) complain("unknown weekday %O (last%s)\n",ds,ds);
 
-	    if (mon=="Jan") 
+	    if (mon=="Jan")
 	       return "LDAY ("+31+","+wd+")";
 
 	    return "LDAYL("+nleapy->month(mon)->day(-1)->year_day()+
@@ -605,7 +607,7 @@ class Runtime_timezone_compiler
 	    if (d>24 && mon=="Feb")
 	       complain("can't handle Feb %d in a >= rule\n",d);
 
-	    if (mon=="Jan") 
+	    if (mon=="Jan")
 	       return "LDAY ("+(nleapy->month(mon)->day(d)->year_day()+6)+
 		  ","+wd+")";
 
@@ -669,13 +671,13 @@ class Runtime_timezone_compiler
 	 int a,b,c;
 	 if (sscanf(dayrule,"LDAYL(%d,%d)",a,b)==2 &&
 	     sscanf(t->dayrule,"FIX_L(%d)",c)==1)
-	    if (ldayl_is_fix_l(a,b,c,y0,y1)) 
+	    if (ldayl_is_fix_l(a,b,c,y0,y1))
 	       return this; // ldayl
 	    else
 	       return 0; // no
 	 if (sscanf(t->dayrule,"LDAYL(%d,%d)",a,b)==2 &&
 	     sscanf(dayrule,"FIX_L(%d)",c)==1)
-	    if (ldayl_is_fix_l(a,b,c,y1,y0)) 
+	    if (ldayl_is_fix_l(a,b,c,y1,y0))
 	       return t; // ldayl
 	    else
 	       return 0; // no
@@ -698,14 +700,14 @@ class Runtime_timezone_compiler
 	    case "s": t=sprintf("UO%+d",time); break;
 	    case "u": t=""+time; break;
 	    case "w": t=sprintf("UO%+d",(time-lastoffset)); break;
-	    default: error("illegal state\n");      
+	    default: error("illegal state\n");
 	 }
 	 string r=dayrule;
 	 if (l!=2)
 	 {
 	    int d,w;
 	    if (sscanf(r,"FIX_L(%d)",d)) r=sprintf("FIXED(%d)",d+l);
-	    else if (sscanf(r,"LDAYL(%d,%d)",d,w)==2) 
+	    else if (sscanf(r,"LDAYL(%d,%d)",d,w)==2)
 	       r=sprintf("LDAY (%d,%d)",d+l,w);
 	 }
 	 return sprintf("({%-12s,%-10s,%-5d,%-6O}),  %s",
@@ -728,23 +730,22 @@ class Runtime_timezone_compiler
 
   }();
 
-   class Rule
+   class Rule(string id)
    {
-      string id;
-
-      mapping rules=([]);
-
       array(string) lines = ({});
-
-      int amt=0;
-
-      void create(string _id) { id=_id; }
 
       void add_line(string line)
       {
 	 lines += ({ line });
       }
-   
+   };
+
+   class RuleCompiler(string id, array(string) lines)
+   {
+      mapping rules=([]);
+
+      int amt=0;
+
       void add(string line)
       {
 	 array a= array_sscanf(line, replace("%s %s %s %s %s %s %s %[^\t ]",
@@ -762,8 +763,8 @@ class Runtime_timezone_compiler
 
 	 int y1=(int)a[0] || NUL_YEAR;
 	 int y2;
-	 if (a[1]=="max") y2=INF_YEAR; 
-	 else if (a[1]=="only") y2=y1; 
+	 if (a[1]=="max") y2=INF_YEAR;
+	 else if (a[1]=="only") y2=y1;
 	 else if (!(y2=(int)a[1]))
 	    complain("unknown year %O\n",a[1]);
 	 else if (y2>=INF_YEAR)
@@ -774,13 +775,13 @@ class Runtime_timezone_compiler
 	 switch (a[2])
 	 {
 	    case "-": for (;y1<=y2;y1++) rules[y1]+=sh; break;
-	    case "odd": 
+	    case "odd":
 	       if (!(y1&1)) y1++;
-	       for (;y1<=y2;y1+=2) rules[y1]+=sh; 
+	       for (;y1<=y2;y1+=2) rules[y1]+=sh;
 	       break;
-	    case "even": 
+	    case "even":
 	       if ((y1&1)) y1++;
-	       for (;y1<=y2;y1+=2) rules[y1]+=sh; 
+	       for (;y1<=y2;y1+=2) rules[y1]+=sh;
 	       break;
 	    default:
 	       complain("unknown year type %O\n",a[2]);
@@ -854,15 +855,15 @@ class Runtime_timezone_compiler
 		     else if (y0==y1)
 			tr+=({"         case "+y0+":\n"});
 		     else if (y1==INF_YEAR)
-		     { 
+		     {
 			if (y0>lastyear) lastyear=y0;
-		  
-			if (!my[NUL_YEAR]) 
-			   tr+=({"         case "+y0,"..:\n"}); 
-			else 
-			   tr[0]=replace(tr[0],"½½½",(string)y0); 
+
+			if (!my[NUL_YEAR])
+			   tr+=({"         case "+y0,"..:\n"});
+			else
+			   tr[0]=replace(tr[0],"½½½",(string)y0);
 		     }
-		     else 		  
+		     else
 			tr+=({"         case "+y0,".."+y1+":\n"});
 
 		     y0=y1;
@@ -901,7 +902,7 @@ class Runtime_timezone_compiler
 
       int join_periods(array s,array t,int y0,int y1)
       {
-	 if (equal(s,t)) 
+	 if (equal(s,t))
 	    return 1;
 	 if (sizeof(s)!=sizeof(t)) return 0;
 	 if (s[0]!=t[0]) return 0;
@@ -923,7 +924,7 @@ class Runtime_timezone_compiler
       {
 	 if (!s) s=({});
 	 if (!arrayp(s)) s=({s});
-      
+
 	 sort(map(s,lambda(Shift s)
 		    {
 		       return array_sscanf(s->dayrule,"%*[^(](%d")[0];
@@ -946,6 +947,9 @@ class Runtime_timezone_compiler
 #ifdef RTTZC_TIMING
        float t1=time(t);
 #endif
+#ifdef RTTZC_DEBUG
+       werror("Compiling rule %s\n", id);
+#endif
 
        foreach(lines, string line) add(line);
 
@@ -964,7 +968,7 @@ class Runtime_timezone_compiler
        mixed err=catch { p=compile_string(c, 0, compile_handler); };
        if (err)
        {
-	 int i=0; 
+	 int i=0;
 	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
 	 error(err);
        }
@@ -981,13 +985,11 @@ class Runtime_timezone_compiler
    {
       string id;
 
-      array rules=({});
-
       array(string) lines = ({});
 
       array(string) aliases = ({});
 
-      void create(string _id) {
+      protected void create(string _id) {
 	id=_id;
 	aliases = ({ id });
       }
@@ -1001,6 +1003,11 @@ class Runtime_timezone_compiler
       {
 	 lines += ({ line });
       }
+   };
+
+   class ZoneCompiler(string id, array(string) lines, array(string) aliases)
+   {
+      array rules=({});
 
       void add(string line)
       {
@@ -1008,7 +1015,7 @@ class Runtime_timezone_compiler
 					     " ","%*[ \t]"));
 	 if (sizeof(a)<4)
 	    complain("parse error\n");
-      
+
 	 a=({parse_offset(a[0]), // offset
 		   a[1], // rule or added offset
 		   a[2], // string
@@ -1029,7 +1036,7 @@ class Runtime_timezone_compiler
 	 else if (sscanf(a[1],"-%d:%d",h,m)==2) roff=h*3600+m*60;
 	 else if (sscanf(a[1],"%d:%d",h,m)==2) roff=h*3600+m*60;
 
-	 if (roff==-17) // based on DST rule 
+	 if (roff==-17) // based on DST rule
 	    return sprintf(
 	       "TZrules.%s(%d,%O)",
 	       FIXID(a[1]),-a[0],a[2]);
@@ -1069,10 +1076,10 @@ class Runtime_timezone_compiler
 	 {
 	    case "u":     // utc time
 	 //  	    a[3]=sprintf("[%d+%d=%d] %s\n",utc0,t,utc0+t,a[3]);
-	       return (string)(utc0+t); break;  
+	       return (string)(utc0+t); break;
 	    case "s":     // local standard time
 	 //  	    a[3]=sprintf("[%d+%d-%d=%d] %s\n",utc0,t,a[0],utc0+t-a[0],a[3]);
-	       return (string)(utc0+t-a[0]); break; 
+	       return (string)(utc0+t-a[0]); break;
 	    case "w": case "":       // with rule; check rule
 	       int h,m,s,roff=-17;
 	       if (a[1]=="-") roff=0;
@@ -1093,9 +1100,9 @@ class Runtime_timezone_compiler
 
 	    //  	       werror("Using %O:%O\n",rules,roff);
 
-		  return (string)(utc0+t-roff); 
+		  return (string)(utc0+t-roff);
 	       }
-	       return (string)(utc0+t-a[0]-roff); 
+	       return (string)(utc0+t-a[0]-roff);
 
 	    default:
 	       complain("unknown time of day modifier %O\n",ty);
@@ -1117,11 +1124,11 @@ class Runtime_timezone_compiler
 
 	 mapping rname=([]);
 	 int n=1;
-      
+
 	 foreach (rules,array a)
 	    if (rname[a[4]]) a[6]=rname[a[4]];
 	    else a[6]=rname[a[4]]="tz"+n++;
-      
+
 	 res+=({ "inherit TZHistory;\n"
 		 "Rule.Timezone ",
 		 sort(values(rname))*",",";\n"
@@ -1172,8 +1179,8 @@ class Runtime_timezone_compiler
 	    res+=({a[5]+","});
 	 res+=({"});\n",
 		sprintf(
-		   "string _sprintf(int t) { return (t=='O')?"
-		   "%O:0; }\n"
+		   "protected string _sprintf(int t) { return t=='O' &&"
+		   "%O; }\n"
 		   "string zoneid=%O;\n","Rule.Timezone("+id+")",id)});
 
 	 return res*"";
@@ -1187,7 +1194,11 @@ class Runtime_timezone_compiler
 #ifdef RTTZC_TIMING
        float t1=time(t);
 #endif
+#ifdef RTTZC_DEBUG
+       werror("Compiling zone %s\n", zone_name);
+#endif
 
+       rules = ({});
        foreach(lines, string line) add(line);
 
        string c=dump();
@@ -1206,9 +1217,9 @@ class Runtime_timezone_compiler
        mixed err=catch { p=compile_string(c, 0, compile_handler); };
        if (err)
        {
-	 int i=0; 
+	 int i=0;
 	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
-	 error(err);
+	 throw(err);
        }
        object zo=p();
        if (zo->thezone) zo=zo->thezone;
@@ -1230,6 +1241,7 @@ class Runtime_timezone_compiler
       "asia",
       "australasia",
       "backward",
+      "backzone",
       "etcetera",
       "europe",
       "northamerica",
@@ -1270,8 +1282,8 @@ class Runtime_timezone_compiler
       float t1=time(t);
 #endif
 
-      rule_cache = ([]);
-      zone_cache = ([]);
+      mapping(string:Zone) new_zones = ([]);
+      mapping(string:Rule) new_rules = ([]);
 
       mapping(string:string) zone_aliases = ([]);
 
@@ -1282,13 +1294,13 @@ class Runtime_timezone_compiler
 
 	if (has_prefix(line, "Rule")) {
 	  current_zone = 0;
-	  
+
 	  string rule_name, interval;
 	  if (sscanf(line, "Rule%*[ \t]%[^ \t]%*[ \t]%s",
 		     rule_name, interval) == 4) {
-	    Rule r = rules[rule_name];
+	    Rule r = new_rules[rule_name];
 	    if (!r) {
-	      r = rules[rule_name] = Rule(rule_name);
+	      r = new_rules[rule_name] = Rule(rule_name);
 	    }
 	    r->add_line(interval);
 	  } else {
@@ -1299,7 +1311,7 @@ class Runtime_timezone_compiler
 	  if (sscanf(line, "Zone%*[ \t]%[^ \t]%*[ \t]%s",
 		     zone_name, zone_info) == 4) {
 	    // werror("Creating zone %O.\n", zone_name);
-	    Zone z = current_zone = zones[zone_name] = Zone(zone_name);
+	    Zone z = current_zone = new_zones[zone_name] = Zone(zone_name);
 	    z->add_line(zone_info);
 	  } else {
 	    werror("Failed to parse directive %O.\n", line);
@@ -1311,9 +1323,7 @@ class Runtime_timezone_compiler
 	    Zone z = zones[zone_name];
 	    if (z) {
 	      z->add_alias(zone_alias);
-	      zones[zone_alias] = z;
-	    } else if (zone_cache[zone_name]) {
-	      zone_cache[zone_alias] = zone_cache[zone_name];
+	      new_zones[zone_alias] = z;
 	    } else {
 	      // werror("Deferred alias: %O ==> %O.\n", zone_alias, zone_name);
 	      zone_aliases[zone_alias] = zone_name;
@@ -1339,14 +1349,20 @@ class Runtime_timezone_compiler
       // Fixup the zone aliases.
       foreach(zone_aliases; string zone_alias; string zone_name) {
 	Zone z;
-	if ((z = zones[zone_name])) {
+	if ((z = new_zones[zone_name])) {
 	  z->add_alias(zone_alias);
-	  zones[zone_alias] = z;
-	} else if (!(zone_cache[zone_alias] = zone_cache[zone_name])) {
+	  new_zones[zone_alias] = z;
+	} else {
 	  werror("Zone %O is a link to a nonexistant zone %O.\n",
 		 zone_alias, zone_name);
 	}
       }
+
+      zones = new_zones;
+      rules = new_rules;
+
+      rule_cache = ([]);
+      zone_cache = ([]);
    }
 
    object find_zone(string s)
@@ -1356,10 +1372,18 @@ class Runtime_timezone_compiler
 #endif
       if (!zone_cache) parse_all_rules();
       object ret = zone_cache[s];
-      if (ret) return ret;
+      if (!undefinedp(ret)) return ret || UNDEFINED;
       Zone z;
-      if (!(z = zones[s])) return UNDEFINED;
-      ret = z->compile();
+      if (!(z = zones[s])) {
+	// Check if it's a known alias.
+	// Note: TZnames.abbr2zones is sorted with
+	//       the most recent user first.
+	array(string) a = .TZnames.abbr2zones[s];
+	if (a && sizeof(a))
+	  return zone_cache[s] = find_zone(a[0]);
+	return UNDEFINED;
+      }
+      ret = ZoneCompiler(z->id, z->lines, z->aliases)->compile();
       foreach(z->aliases, string zone_alias) {
 	zone_cache[zone_alias] = ret;
 	m_delete(zones, zone_alias);
@@ -1376,7 +1400,7 @@ class Runtime_timezone_compiler
       if (ret) return ret;
       Rule r;
       if (!(r = rules[s])) return UNDEFINED;
-      ret = rule_cache[s] = r->compile();
+      ret = rule_cache[s] = RuleCompiler(s, r->lines)->compile();
       m_delete(rules, s);
       return ret;
    }
@@ -1399,14 +1423,14 @@ class Runtime_timezone_compiler
    {
       constant is_timezone=1;
       constant is_dst_timezone=1;
-      protected int offset_to_utc;  
+      protected int offset_to_utc;
       string name;
 
       protected array names;
 
 
 // ----------------------------------------------------------------
-// all rules are based on the gregorian calendar, so 
+// all rules are based on the gregorian calendar, so
 // this is the needed gregorian rule:
 // ----------------------------------------------------------------
 
@@ -1421,7 +1445,7 @@ class Runtime_timezone_compiler
 
 	 int y=century*100+century_year+1;
 
-	 return 
+	 return
 	    ({
 	       y,
 	       1721426+century_year*365+century_year/4+century_jd,
@@ -1439,10 +1463,10 @@ class Runtime_timezone_compiler
 	    return sprintf(name,s);
       }
 
-      protected void create(int offset,string _name) 
-      { 
-	 offset_to_utc=offset; 
-	 name=_name;
+      protected void create(int offset,string name)
+      {
+	 offset_to_utc=offset;
+	 this::name=name;
 	 if (has_value(name, "/"))
 	 {
 	    names=name/"/";
@@ -1489,7 +1513,10 @@ class Runtime_timezone_compiler
 	 return ({offset_to_utc-a[i][2],tzformat(a[i][3])});
       }
 
-      string _sprintf(int t) { return (t=='O')?"Rule.Timezone("+name+")":0; }
+      protected string _sprintf(int t)
+      {
+        return t=='O' && "Rule.Timezone("+name+")";
+      }
 
       int raw_utc_offset() { return offset_to_utc; }
    }

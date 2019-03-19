@@ -30,7 +30,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	    pos--;
 	  break;
 	}
-	
+
 	/* fallthrough. */
       case '1':  case '2':    case '3':  case '4':
       case '5':  case '6':    case '7':  case '8':
@@ -80,6 +80,8 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	    break;
 	  default: break;
 	}
+	break;
+
       case '{': case '}':
       case '[': case ']':
       case '(': case ')':
@@ -109,13 +111,14 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 
       case '+': case '&':  case '|':
 	if( data[pos+1] == data[pos] ) pos++;
+	/* fallthrough. */
 
-      case '*': case '%':  
+      case '*': case '%':
       case '^': case '!':  case '~':  case '=':
 	if( data[pos+1] == '=' )
 	  pos++;
 	break;
-	
+
       case ' ':
       case '\n':
       case '\r':
@@ -164,7 +167,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	if( pos >= len )
 	  goto failed_to_find_end;
 	break;
-	
+
       case '#':
 	NEWLINE();
 	while( data[pos-1]=='\\' || (pos>1 && data[pos-1]=='\r' && data[pos-2]=='\\') )

@@ -21,12 +21,12 @@ protected int verbosity =
   lambda () {
     string v = getenv()->TEST_VERBOSITY;
     // Default to 1 in case test scripts are run standalone.
-    return zero_type (v) ? 1 : (int) v;
+    return undefinedp (v) ? 1 : (int) v;
   }();
 protected int on_tty =
   lambda () {
     string v = getenv()->TEST_ON_TTY;
-    return zero_type (v) ? 1 : (int) v;
+    return undefinedp (v) ? 1 : (int) v;
   }();
 
 protected string last_log;
@@ -39,7 +39,7 @@ protected int last_line_length;
 
 protected int last_line_inplace =
   lambda () {
-    if (verbosity == 1 && !zero_type (getenv()->TEST_VERBOSITY))
+    if (verbosity == 1 && !undefinedp (getenv()->TEST_VERBOSITY))
       // Initialize to 1 on verbosity level 1 when it looks like we're
       // being run from the main testsuite, since it typically logs an
       // "in place" message just before spawning the subtest.
@@ -52,8 +52,8 @@ protected int last_line_inplace =
 
 void log_start (int verbosity, int on_tty)
 {
-  this_program::verbosity = verbosity;
-  this_program::on_tty = on_tty;
+  this::verbosity = verbosity;
+  this::on_tty = on_tty;
   last_line_inplace = 0;
 }
 
@@ -83,6 +83,24 @@ protected void unlocked_log_msg_cont (string msg)
     // assumes 1 char == 1 position.
     last_line_length -= sizeof (msg_lines[-1]);
   }
+}
+
+// Cut strings to below 4K
+void log_msg_result (string msg, mixed ... args)
+{
+  array a = msg/"%";
+  foreach(a; int pos; string part)
+  {
+    if(pos==0) continue;
+    if(has_prefix(part, "O") && pos-1<=sizeof(args) &&
+       stringp(args[pos-1]) && sizeof(args[pos-1])>4000)
+    {
+      part[0] = 's';
+      a[pos] = part;
+      args[pos-1] = sprintf("%O...", args[pos-1][..4000-1]);
+    }
+  }
+  log_msg(a*"%", @args);
 }
 
 void log_msg (string msg, mixed... args)
@@ -296,7 +314,7 @@ array(int) low_run_script (array(string) command, mapping opts)
 			   Stdio.PROP_BIDIRECTIONAL);
 #endif /* __NT__ */
   if(!p2) {
-    werror("Failed to create pipe: %s\n", strerror (p->errno()));
+    werror("Failed to create pipe: %s.\n", strerror (p->errno()));
     return ({0, 1, 0});
   }
 
@@ -331,7 +349,7 @@ array(int) low_run_script (array(string) command, mapping opts)
       {
 	all_constants()->__signal_watchdog();
 	if (p->errno()) {
-	  werror ("Error reading output from subprocess: %s\n",
+          werror ("Error reading output from subprocess: %s.\n",
 		  strerror (p->errno()));
 	  failed++;
 	}
@@ -372,24 +390,24 @@ array(int) low_run_script (array(string) command, mapping opts)
     // The subprocess didn't use report_result, probably.
     all_constants()->__watchdog_show_last_test();
     if (err == -1) {
-      werror("No result from subprocess (died of signal %s)\n",
+      werror("\nNo result from subprocess (died of signal %s)\n",
 	     signame (pid->last_signal()) || (string) pid->last_signal());
     } else {
-      werror("No result from subprocess (exited with error code %d).\n", err);
+      werror("\nNo result from subprocess (exited with error code %d).\n", err);
     }
     return 0;
   }
 
   else if (err == -1) {
     all_constants()->__watchdog_show_last_test();
-    werror ("Subprocess died of signal %s.\n",
+    werror ("\nSubprocess died of signal %s.\n",
 	    signame (pid->last_signal()) || (string) pid->last_signal());
     subresult->failed++;
   }
 
   else if (err && !subresult->failed) {
     all_constants()->__watchdog_show_last_test();
-    werror ("Subprocess exited with error code %d.\n", err);
+    werror ("\nSubprocess exited with error code %d.\n", err);
     subresult->failed++;
   }
 
@@ -397,4 +415,197 @@ array(int) low_run_script (array(string) command, mapping opts)
     all_constants()->__watchdog_show_last_test();
 
   return ({subresult->succeeded, subresult->failed, subresult->skipped});
+}
+
+//! Rerpesents a test in a testsuite.
+class Test
+{
+  //! The file the testsuite (source) resides in.
+  string file;
+
+  //! The line number offset to this test in the file.
+  int(1..) line;
+
+  //! The test number in this file.
+  int(1..) number;
+
+  //! The type of the test. Any of
+  //! @string
+  //!   @value "COMPILE"
+  //!     Compiles the source and make verifies there are no warnings
+  //!     or errors.
+  //!   @value "COMPILE_ERROR"
+  //!     Compiles the source and expects to get a compilation error.
+  //!   @value "COMPILE_WARNING"
+  //!     Compiles the source and expects to get a compilation warning.
+  //!   @value "EVAL_ERROR"
+  //!     Evaluates the method a of the source source and expects an
+  //!     evaluation error.
+  //!   @value "FALSE"
+  //!     Verifies that the response from method a of the source is false.
+  //!   @value "TRUE"
+  //!     Verifies that the response from method a of the source is true.
+  //!   @value "PUSH_WARNING"
+  //!     Evaluate the method a and take the resulting string and push
+  //!     it to the set of ignored warnings. The same warning can be
+  //!     pushed multiple times, but must be popped multiple times.
+  //!   @value "POP_WARNING"
+  //!     Evaluate the method a and take the resulting string and pop
+  //!     the warning from the set of ignored warnings. When popped
+  //!     the same number of times as it has been pushed, the warning
+  //!     is no longer ignored.
+  //!   @value "RUN"
+  //!     Compiles and evaluates method a of the source, but ignores
+  //!     the result.
+  //!   @value "RUNCT"
+  //!     Compiles and evaluates method a od source, and expects an
+  //!     array(int) of two or three elements back.
+  //!     @array
+  //!       @elem int 0
+  //!         The number of successful tests performed.
+  //!       @elem int 1
+  //!         The number of failed tests,
+  //!       @elem int 2
+  //!         Optionally the number of skipped tests.
+  //!     @endarray
+  //!   @value "EQ"
+  //!     Compares the result of the method a and b with @[==].
+  //!   @value "EQUAL"
+  //!     Compares the result of the method a and b with @[equal].
+  //! @endstring
+  string type;
+
+  //! The list of conditions that has to be met for this test to not
+  //! be skipped. Each condition should be an expression.
+  array(string) conditions = ({});
+
+  //! The source code that is to be compiled and evaluated.
+  string source;
+
+  //!
+  optional void create(string file, int line, int number, string type,
+                       string source, void|array(string) cond)
+  {
+    this::file = file;
+    this::line = line;
+    this::number = number;
+    this::type = type;
+    this::source = source;
+    if( cond )
+      conditions = cond;
+  }
+
+  protected class AdjustLine()
+  {
+    void compile_error(string file, int _line, string text) {
+      log_msg("%s:%d: %s\n", file, _line+line-1, text);
+    }
+  }
+
+  program compile(string src)
+  {
+    return master()->get_inhibit_compile_errors() ?
+      compile_string(src, file) :
+      compile_string(src, file, AdjustLine());
+  }
+
+  array(Plugin) plugins = ({});
+  void add_plugin(Plugin p)
+  {
+    if( p->active(this) )
+      plugins += ({ p });
+  }
+
+  string prepare_source()
+  {
+    string src = source;
+    foreach(plugins;; Plugin plugin)
+      src = plugin->preprocess(src);
+    return src;
+  }
+
+  protected void dmalloc_name(int set)
+  {
+#if constant(Debug.dmalloc_set_name)
+    if( set )
+      Debug.dmalloc_set_name(name(),1);
+    else
+      Debug.dmalloc_set_name();
+#endif
+  }
+
+  int(0..1)|object inhibit_errors = 1;
+
+  Error.Compilation compilation_error;
+  variant program compile()
+  {
+    program ret;
+    master()->set_inhibit_compile_errors(inhibit_errors);
+    dmalloc_name(1);
+    compilation_error = catch {
+        ret = compile(prepare_source());
+      };
+    dmalloc_name(0);
+    master()->set_inhibit_compile_errors(0);
+    return ret;
+  }
+
+  string name()
+  {
+    string n = file + ":" + line + ": Test " + number;
+    foreach(plugins;; Plugin plugin)
+      n = plugin->process_name(n);
+    return n;
+  }
+}
+
+//! Represents a test case from a "testsuite" file, after m4
+//! processing.
+class M4Test
+{
+  inherit Test;
+
+  string real_file;
+
+  //! @param data
+  //! The data from a testsuite file, after start/stop markers have
+  //! been stripped and the file splitted on "...." tokens. From this
+  //! the conditions, file, line, number, type and source will be
+  //! parsed.
+  //!
+  //! @param real_file
+  //! The testsuite file, i.e. not the testsuite.in file.
+  void create(string data, string real_file)
+  {
+    this::real_file = real_file;
+    if( sscanf(data, "COND %s\n%s", string cond, data)==2 )
+      conditions += ({ cond });
+    if( sscanf(data, "%s:%d: test %d, expected result: %s\n%s",
+               file, line, number, type, data)!=5 )
+      {
+        sscanf(data, "%s\n", data);
+        error("Illegal format. %O\n", data);
+      }
+    source = data;
+  }
+
+  program compile(string src)
+  {
+    return master()->get_inhibit_compile_errors() ?
+      compile_string(src, real_file) :
+      compile_string(src, real_file, AdjustLine());
+  }
+
+  variant program compile()
+  {
+    return ::compile();
+  }
+}
+
+class Plugin
+{
+  int(0..1) active(Test t) { return 1; }
+  string process_name(string name) { return name; }
+  string preprocess(string source) { return source; }
+  int(0..1) inspect(Test t, object o) { return 1; }
 }

@@ -1,0 +1,9 @@
+START_MARKER
+
+// Test case from RFC 6920
+test_eq(MIME.encode_base64url(Crypto.SHA256.hash("Hello World!")),
+  "f4OxZX_x_FO5LcGBSKHWXfwtSx-j1ncoSt3SABJtkGk")
+test_eq(MIME.decode_base64url("f4OxZX_x_FO5LcGBSKHWXfwtSx-j1ncoSt3SABJtkGk"),
+  Crypto.SHA256.hash("Hello World!"))
+
+END_MARKER

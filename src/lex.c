@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -16,21 +15,27 @@
 
 #define LEXDEBUG 0
 
-/* Must do like this since at least gcc is a little too keen on
- * optimizing INT_TYPE_MUL_OVERFLOW otherwise. */
-static unsigned INT32 eight = 8, sixteen = 16, ten = 10;
-
 /* Make lexers for shifts 0, 1 and 2. */
 
 #define SHIFT	0
-#include "lexer0.h"
+#include "lexer.h"
 #undef SHIFT
 #define SHIFT	1
-#include "lexer1.h"
+#include "lexer.h"
 #undef SHIFT
 #define SHIFT	2
-#include "lexer2.h"
+#include "lexer.h"
 #undef SHIFT
+
+int parse_esc_seq_pcharp (PCHARP buf, p_wchar2 *chr, ptrdiff_t *len)
+{
+  if(LIKELY(buf.shift == 0))
+    return parse_esc_seq0((void*)buf.ptr,chr,len);
+  if( buf.shift == 1 )
+    return parse_esc_seq1((void*)buf.ptr,chr,len);
+  return parse_esc_seq2((void*)buf.ptr,chr,len);
+  /* UNREACHABLE */
+}
 
 int yylex(YYSTYPE *yylval)
 {

@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Italian language locale by Francesco Chemolli
-
-// $Id$
 
 inherit "abstract";
 
@@ -68,12 +65,12 @@ string number (int num)
       tmp=number(num-(num%10));
       tmp=tmp[..<1]; //need to cut the last char
       return tmp+number(num%10);
-    case 22..27: case 29: case 32..37: case 39: case 42..47: case 49: 
-    case 52..57: case 59: case 62..67: case 69: case 72..77: case 79: 
+    case 22..27: case 29: case 32..37: case 39: case 42..47: case 49:
+    case 52..57: case 59: case 62..67: case 69: case 72..77: case 79:
     case 82..87: case 89: case 92..97: case 99:
       return number(num-(num%10))+number(num%10);
 
-    case 101..999: 
+    case 101..999:
       if (!(num%100))
 	return (number (num/100)+"cento");
       return (number(num-(num%100))+number(num%100));
@@ -135,13 +132,13 @@ string date(int timestamp, string|void m)
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
     return "oggi, alle "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
     return "ieri, alle "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
     return "domani, alle "+ ctime(timestamp)[11..15];
-  
+
   if(t1["year"] != t2["year"])
     return gendered_num(t1["mday"])+ " " +
       month(t1["mon"]+1) + " " +

@@ -1,0 +1,20 @@
+
+START_MARKER
+
+test_eq( Geography.Position()->UTM(0), "31N 166021 0" )
+test_true( glob( "23Q 77896? 195929?",
+ Geography.Position("17\260""42.19'N 42\260""22.2'W")->UTM(0)) )
+test_true( glob( "23Q 77896? 195929?",
+ Geography.Position("17\260""42.19'N", "42\260""22.2'W")->UTM(0)) )
+test_true( glob( "23Q 77896? 195929?",
+ Geography.Position(17.70316667, -42.37)->UTM(0)) )
+
+test_any([[
+Geography.Countries.continents();
+foreach (Geography.Countries.countries, object co)
+  if (!co->_continent)
+    return sprintf("No continent: %O %O\n",co->iso2,co);
+return 1;
+]], 1)
+
+END_MARKER

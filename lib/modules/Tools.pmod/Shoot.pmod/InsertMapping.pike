@@ -3,21 +3,13 @@ inherit Tools.Shoot.Test;
 
 constant name="Insert in mapping";
 
-int k = 5; /* variable to tune the time of the test */
-int m = 100000; /* the target size of the mapping */
-int n = m*k; // for reporting
-
-void perform()
+int perform()
 {
-   for (int i=0; i<k; i++)
+   for (int i=0; i<50; i++)
    {
       mapping v=([]);
-      for (int j=0; j<m; j++)
-	 v[j]=42;
+      for (int j=0; j<100000; j++)
+          v[j]=42;
    }
-}
-
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
-{
-   return sprintf("%.0f/s",ntot/useconds);
+   return 50 * 100000;
 }

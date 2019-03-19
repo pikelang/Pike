@@ -1,3 +1,4 @@
+#pike __REAL_VERSION__
 
 //! This object is returned from @[Search.Filter] plugins.
 

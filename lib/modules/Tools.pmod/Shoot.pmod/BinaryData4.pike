@@ -5,16 +5,11 @@ constant name="Read binary INT16";
 
 int k = 100;
 int m = 10000;
-int n = m*k; // for reporting
 
-void perform()
+int perform()
 {
    array v;
    for (int i=0; i<k; i++)
       v=array_sscanf(random_string(2*m),"%2c"*m);
-}
-
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
-{
-   return sprintf("%.0f/s",ntot/useconds);
+   return m*k;
 }

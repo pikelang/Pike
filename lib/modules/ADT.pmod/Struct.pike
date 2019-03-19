@@ -1,7 +1,6 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id$
 //
 
 #pike __REAL_VERSION__
@@ -50,7 +49,7 @@ int id = ADT.get_item_id();
 //!   either be a file object or a string.
 optional protected void create(void|string|object file) {
   foreach(::_indices(2), string index) {
-    mixed val = ::`[](index, 2);
+    mixed val = ::`[](index, this, 0);
     if(objectp(val) && val->is_item) names[index]=val;
   }
   items = values(names);
@@ -78,19 +77,19 @@ string encode() {
 
 // --- LFUN overloading.
 
-//! @decl static mixed `[](string item)
-//! @decl static mixed `->(string item)
+//! @decl protected mixed `[](string item)
+//! @decl protected mixed `->(string item)
 //! The struct can be indexed by item name to get the
 //! associated value.
 
-//! @decl static mixed `[]=(string item)
-//! @decl static mixed `->=(string item)
+//! @decl protected mixed `[]=(string item)
+//! @decl protected mixed `->=(string item)
 //! It is possible to assign a new value to a struct
 //! item by indexing it by name and assign a value.
 
 protected mixed `[](string id) {
   if(names[id]) return names[id]->get();
-  return ::`[](id, 2);
+  return ::`[](id, this, 0);
 }
 
 this_program get() { return this; }
@@ -131,6 +130,7 @@ protected mixed cast(string to) {
   case "string": return encode();
   case "array": return items->encode();
   }
+  return UNDEFINED;
 }
 
 
@@ -257,14 +257,19 @@ class SWord {
     set(initial_value);
   }
 
-  void set(int(0..) in) {
-    if(in<-~(1<<size*8-1) || in>~((-1)<<size*8-1))
+  void set(int in) {
+    int negmask;
+
+    for (int i; i < size; i++) {
+      negmask = (negmask << 8) | 0xff;
+    }
+    if(in<-(~(1<<size*8-1)&negmask) || in>~((-1)<<size*8-1))
       error("Value %d out of bound (%d..%d).\n",
-	    in, -~(1<<size*8-1), ~((-1)<<size*8-1));
+	    in, -(~(1<<size*8-1)&negmask), ~((-1)<<size*8-1));
     value = in;
   }
   void decode(object f) { sscanf(f->read(size), "%+"+size+"c", value); }
-  string encode() { return sprintf("%+"+size+"c", value); }
+  string encode() { return sprintf("%"+size+"c", value); }
 
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d)", this_program, value);
@@ -325,7 +330,7 @@ class Chars {
   protected Item dynsize;
   protected string value;
 
-  //! @decl static void create(int|Item size, void|string value)
+  //! @decl protected void create(int|Item size, void|string value)
   //! @[size] is the number of bytes that are part of this struct
   //! item, or optionally an earlier Item that will be looked up in
   //! runtime.

@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Norwegian language locale
-
-// $Id$
 
 inherit "abstract";
 
@@ -51,13 +48,13 @@ string date(int timestamp, string|void m)
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
     return "i dag, klokken " + ctime(timestamp)[11..15];
-  
+
   if(t1["yday"] == t2["yday"]-1 && t1["year"] == t2["year"])
     return "i går, klokken " + ctime(timestamp)[11..15];
-  
+
   if(t1["yday"] == t2["yday"]+1 && t1["year"] == t2["year"])
     return "i morgen, ved "  + ctime(timestamp)[11..15];
-  
+
   if(t1["year"] != t2["year"])
     return month(t1["mon"]+1) + " " + (t1["year"]+1900);
 

@@ -1,28 +1,37 @@
-/*
- * $Id$
- */
-
 #pike __REAL_VERSION__
 
-constant EXTRACT_SKIP_MODE = 1;
-constant EXTRACT_SKIP_EXT_MODE = 2;
-constant EXTRACT_SKIP_MTIME = 4;
-constant EXTRACT_CHOWN = 8;
-constant EXTRACT_ERR_ON_UNKNOWN = 16;
-
-//! @decl void create(string filename, void|Filesystem.Base parent,@
-//!                   void|object file)
 //! Filesystem which can be used to mount a Tar file.
 //!
-//! @param filename
-//! The tar file to mount.
-//! @param parent
-//! The parent filesystem. If non is given, the normal system
-//! filesystem is assumed. This allows mounting a TAR-file within
-//! a tarfile.
-//! @param file
-//! If specified, this should be an open file descriptor. This object
-//! could e.g. be a @[Stdio.File], @[Gz.File] or @[Bz2.File] object.
+//! Two kinds of extended tar file records are supported:
+//! @string
+//!   @value "ustar\0\60\60"
+//!	POSIX ustar (Version 0?).
+//!   @value "ustar  \0"
+//!     GNU tar (POSIX draft)
+//! @endstring
+//!
+//! @note
+//!   For a quick start, you probably want to use @[`()()].
+//!
+//! @seealso
+//!   @[`()()]
+
+constant EXTRACT_SKIP_MODE = 1;
+//! Don't set any permission bits from the tar records.
+
+constant EXTRACT_SKIP_EXT_MODE = 2;
+//! Don't set set-user-ID, set-group-ID, or sticky bits from
+//! the tar records.
+
+constant EXTRACT_SKIP_MTIME = 4;
+//! Don't set mtime from the tar records.
+
+constant EXTRACT_CHOWN = 8;
+//! Set owning user and group from the tar records.
+
+constant EXTRACT_ERR_ON_UNKNOWN = 16;
+//! Throw an error if an entry of an unsupported type is
+//! encountered. This is ignored otherwise.
 
 //! Low-level Tar Filesystem.
 class _Tar
@@ -151,7 +160,7 @@ class _Tar
     // Header description:
     //
     // Fieldno	Offset	len	Description
-    // 
+    //
     // 0	0	100	Filename
     // 1	100	8	Mode (octal)
     // 2	108	8	uid (octal)
@@ -271,16 +280,16 @@ class _Tar
 
   void create(object fd, string filename, object parent)
   {
-    this_program::filename = filename;
+    this::filename = filename;
     // read all entries
 
-    this_program::fd = fd;
+    this::fd = fd;
     int pos = 0; // fd is at position 0 here
     string next_name;
     for(;;)
     {
       Record r;
-      string s = this_program::fd->read(512);
+      string s = this::fd->read(512);
 
       if(s=="" || sizeof(s)<512 || sscanf(s, "%*[\0]%*2s")==1)
 	break;
@@ -302,7 +311,7 @@ class _Tar
       pos += 512 + r->size;
       if(pos%512)
 	pos += 512 - (pos%512);
-      if (this_program::fd->seek(pos) < 0)
+      if (this::fd->seek(pos) < 0)
 	error ("Failed to seek to position %d in %O.\n", pos, fd);
     }
 
@@ -325,8 +334,36 @@ class _Tar
     filenames = indices(filename_to_entry);
   }
 
-  protected void extract_bits (string dest, Record r, int which_bits)
+  protected void extract_bits (string dest, Stdio.Stat r, int which_bits)
   {
+    if (!r->RECORDSIZE) {
+      // This is just a Stdio.Stat and not a Record.
+      //
+      // Just restore the mode bits.
+      which_bits = ~(EXTRACT_SKIP_MODE | EXTRACT_SKIP_EXT_MODE);
+    }
+#if constant (utime)
+    if (!(which_bits & EXTRACT_SKIP_MTIME)) {
+      mixed err = catch {
+	  utime (dest, r->mtime, r->mtime, 1);
+	};
+      if (err) {
+#ifdef __NT__
+	// utime() is currently not supported for directories on WIN32.
+	if (!r->isdir)
+#endif
+	  werror("Tar: Failed to set modification time for %O.\n", dest);
+      }
+    }
+#endif
+
+    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk) {
+      if (which_bits & EXTRACT_SKIP_EXT_MODE)
+	chmod (dest, r->mode & 0777);
+      else
+	chmod (dest, r->mode & 07777);
+    }
+
 #if constant (chown)
     if (which_bits & EXTRACT_CHOWN) {
       int uid;
@@ -344,21 +381,13 @@ class _Tar
       chown (dest, uid, gid, 1);
     }
 #endif
-
-#if constant (chmod)
-    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk()) {
-      if (which_bits & EXTRACT_SKIP_EXT_MODE)
-	chmod (dest, r->mode & 0777);
-      else
-	chmod (dest, r->mode & 07777);
-    }
-#endif
-
-#if constant (utime)
-    if (!(which_bits & EXTRACT_SKIP_MTIME))
-      utime (dest, r->mtime, r->mtime, 1);
-#endif
   }
+
+#if !constant(access)
+  // Probably NT or similar single-user OS,
+  // so pretend we can access anything.
+  protected int access(string path, string|void flags) { return 1; }
+#endif
 
   void extract (string src_dir, string dest_dir,
 		void|string|function(string,Filesystem.Stat:int|string) filter,
@@ -423,100 +452,205 @@ class _Tar
       (flags & (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME|EXTRACT_CHOWN)) !=
       (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME);
 
-    mapping(string:Record) dirs = ([]);
+    mapping(string:Stdio.Stat) restore_bits = ([]);
 
-    foreach (entries, Record r) {
-      string fullpath = r->fullpath;
-      if (has_prefix (fullpath, src_dir)) {
-	string subpath = fullpath[sizeof (src_dir) - 1..];
-	string|int filter_res;
-
-	if (!filter ||
-	    (stringp (filter) ? glob (filter, subpath) :
-	     (filter_res = filter (subpath, r)))) {
-	  string destpath = dest_dir +
-	    (stringp (filter_res) ? filter_res : subpath);
-
-	  if (r->isdir()) {
-	    if (!Stdio.mkdirhier (destpath))
-	      error ("Failed to create directory %q: %s\n",
-		     destpath, strerror (errno()));
-
-	    // Set bits etc afterwards on dirs.
-	    if (do_extract_bits)
-	      dirs[destpath] = r;
-	  }
-
-	  else {
-	    string dest_dir = (destpath / "/")[..<1] * "/";
-	    if (!Stdio.is_dir (dest_dir))
-	      if (!Stdio.mkdirhier (dest_dir))
-		error ("Failed to create directory %q: %s\n",
-		       destpath, strerror (errno()));
-
-	    if (r->isreg()) {
-	      Stdio.File o = Stdio.File();
-	      if (!o->open (destpath, "wct"))
-		error ("Failed to create %q: %s\n",
-		       destpath, strerror (o->errno()));
-
-	      Stdio.BlockFile i = r->open ("r");
-	      do {
-		string data = i->read (1024 * 1024);
-		if (data == "") break;
-		if (o->write (data) != sizeof (data))
-		  error ("Failed to write %q: %s\n",
-			 destpath, strerror (o->errno()));
-	      } while (1);
-
-	      i->close();
-	      o->close();
-
-	      if (do_extract_bits)
-		extract_bits (destpath, r, flags);
-	    }
-
-#if constant (symlink)
-	    else if (r->islnk()) {
-	      symlink (r->arch_linkname, destpath);
-
-	      if (do_extract_bits)
-		extract_bits (destpath, r, flags);
-	    }
+    // Similar to Stdio.mkdirhier(), but ensures that we have
+    // read, write and execute permission on the resulting directory.
+    //
+    // The original directory permissions (if altered)
+    // are registered in the variable "restore_bits" above.
+    int mkdirhier(string pathname)
+    {
+      string path = "";
+#ifdef __NT__
+      pathname = replace(pathname, "\\", "/");
+      if (pathname[1..2] == ":/" && `<=("A", upper_case(pathname[..0]), "Z"))
+	path = pathname[..2], pathname = pathname[3..];
 #endif
-
-	    else if (flags & EXTRACT_ERR_ON_UNKNOWN)
-	      error ("Failed to extract entry of unsupported type %x: %O\n",
-		     r->mode & 0xf000, r);
+      if (pathname == "") pathname = ".";
+      array(string) segments = pathname/"/";
+      if (segments[0] == "") {
+	path += "/";
+	pathname = pathname[1..];
+	segments = segments[1..];
+      }
+      // FIXME: An alternative could be a binary search,
+      //        but since it is usually only the last few
+      //        segments of the path that are missing, we
+      //        just do a linear search from the end.
+      int i = sizeof(segments);
+      while (i--) {
+	string p = path + segments[..i]*"/";
+	Stdio.Stat st;
+	if ((st = file_stat(p))) {
+	  if (!st->isdir) return 0;
+	  if (!access(p, "rwx")) {
+	    // We're not allowed to write.
+	    // Attempt to adjust the permissions temporarily.
+	    catch {
+	      chmod(p, st->mode | 0700);
+	      if (!restore_bits[p]) {
+		// Register p for permission restoration.
+		restore_bits[p] = st;
+	      }
+	    };
+	  }
+	  break;
+	}
+      }
+      if (!i && !sizeof(path) && !access(".", "rwx")) {
+	// We're not allowed to write.
+	// Attempt to adjust the permissions temporarily.
+	catch {
+	  Stdio.Stat st = file_stat(".");
+	  chmod(".", st->mode | 0700);
+	  if (!restore_bits["."]) {
+	    // Register "." for permission restoration.
+	    restore_bits["."] = st;
+	  }
+	};
+      }
+      i++;
+      while (i < sizeof(segments)) {
+	string p = path + segments[..i++] * "/";
+	if (!mkdir(p, 0777)) {
+	  if (errno() != System.EEXIST)
+	    return 0;
+	  else {
+	    Stdio.Stat st;
+	    if ((st = file_stat(p))) {
+	      if (!st->isdir) return 0;
+	      // Directory exists, but we couldn't access it
+	      // in the earlier loop, so it was probably hidden.
+	      if (!access(path, "rw")) {
+		// We're not allowed to write.
+		// Attempt to adjust the permissions temporarily.
+		catch {
+		  chmod(p, st->mode | 0700);
+		  if (!restore_bits[p]) {
+		    // Register p for permission restoration.
+		    restore_bits[p] = st;
+		  }
+		};
+	      }
+	    }
 	  }
 	}
       }
+      return Stdio.is_dir(path + pathname) && access(path + pathname, "rwx");
+    };
+
+    mixed err = catch {
+	foreach (entries, Record r) {
+	  string fullpath = r->fullpath;
+	  if (has_prefix (fullpath, src_dir)) {
+	    string subpath = fullpath[sizeof (src_dir) - 1..];
+	    string|int filter_res;
+
+	    if (!filter ||
+		(stringp (filter) ? glob (filter, subpath) :
+		 (filter_res = filter (subpath, r)))) {
+	      string destpath = dest_dir +
+		(stringp (filter_res) ? filter_res : subpath);
+
+	      if (r->isdir) {
+		if (!mkdirhier(destpath))
+                  error ("Failed to create directory %q: %m.\n",
+                         destpath);
+
+		// Set bits etc afterwards on dirs.
+		if (do_extract_bits)
+		  restore_bits[destpath] = r;
+	      }
+
+	      else {
+		string dest_dir = (destpath / "/")[..<1] * "/";
+		if (!mkdirhier(dest_dir))
+                  error ("Failed to create directory %q: %m.\n",
+                         destpath);
+
+		if (r->isreg) {
+		  Stdio.File o = Stdio.File();
+		  if (!o->open (destpath, "wct")) {
+		    // Could be because the file exists, but
+		    // with bad access permissions for us.
+		    Stdio.Stat st = file_stat(destpath);
+		    if (!st || catch {
+			chmod(destpath, st->mode | 0600);
+			if (!do_extract_bits)
+			  restore_bits[destpath] = st;
+		      } || !o->open (destpath, "wct")) {
+                      error ("Failed to create %q: %s.\n",
+			     destpath, strerror (o->errno()));
+		    }
+		  }
+
+		  Stdio.BlockFile i = r->open ("r");
+		  do {
+		    string data = i->read (1024 * 1024);
+		    if (data == "") break;
+		    if (o->write (data) != sizeof (data))
+                      error ("Failed to write %q: %s.\n",
+			     destpath, strerror (o->errno()));
+		  } while (1);
+
+		  i->close();
+		  o->close();
+
+		  if (do_extract_bits)
+		    extract_bits (destpath, r, flags);
+		}
+
+#if constant (symlink)
+		else if (r->islnk) {
+		  symlink (r->arch_linkname, destpath);
+
+		  if (do_extract_bits)
+		    extract_bits (destpath, r, flags);
+		}
+#endif
+
+		else if (flags & EXTRACT_ERR_ON_UNKNOWN)
+		  error ("Failed to extract entry of unsupported type %x: %O\n",
+			 r->mode & 0xf000, r);
+	      }
+	    }
+	  }
+	}
+      };
+
+    // Make sure to restore directory permissions, etc
+    // even if we've failed.
+    if (sizeof(restore_bits)) {
+      array(string) paths = indices(restore_bits);
+      foreach (reverse(sort(paths)), string destpath) {
+	mixed e = catch {
+	    extract_bits(destpath, restore_bits[destpath], flags);
+	  };
+	if (!err) err = e;
+      }
     }
 
-    if (do_extract_bits) {
-      array(string) dirpaths = indices (dirs);
-      sort (map (dirpaths, sizeof), dirpaths);
-      dirpaths = reverse (dirpaths);
-      foreach (dirpaths, string destpath)
-	extract_bits (destpath, dirs[destpath], flags);
-    }
+    if (err) throw(err);
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("_Tar(/* filename=%O */)", filename);
   }
 }
 
+//!
 class _TarFS
 {
   inherit Filesystem.System;
 
   _Tar tar;
 
-  void create(_Tar _tar,
-	      string _wd, string _root,
-	      Filesystem.Base _parent)
+  //!
+  protected void create(_Tar _tar,
+			string _wd, string _root,
+			Filesystem.Base _parent)
   {
     tar = _tar;
 
@@ -529,7 +663,7 @@ class _TarFS
     parent = _parent;
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return  t=='O' && sprintf("_TarFS(/* root=%O, wd=%O */)", root, wd);
   }
@@ -554,7 +688,7 @@ class _TarFS
   {
     Filesystem.Stat st = stat(directory);
     if(!st) return 0;
-    if(st->isdir()) // stay in this filesystem
+    if(st->isdir) // stay in this filesystem
     {
       object new = _TarFS(tar, st->fullpath, root, parent);
       return new;
@@ -574,14 +708,20 @@ class _TarFS
     return 1; // sure
   }
 
+  //! @fixme
+  //!   Not implemented yet.
   int rm(string filename)
   {
   }
 
+  //! @fixme
+  //!   Not implemented yet.
   void chmod(string filename, int|string mode)
   {
   }
 
+  //! @fixme
+  //!   Not implemented yet.
   void chown(string filename, int|object owner, int|object group)
   {
   }
@@ -591,22 +731,32 @@ class `()
 {
   inherit _TarFS;
 
-  void create(string|object filename, void|Filesystem.Base parent,
-	      void|object f)
+  //! @decl void create(string filename, void|Filesystem.Base parent,@
+  //!                   void|object file)
+  //!
+  //! @param filename
+  //!   The tar file to mount.
+  //!
+  //! @param parent
+  //!   The parent filesystem. If none is given, the normal system
+  //!   filesystem is assumed. This allows mounting a TAR-file within
+  //!   a tarfile.
+  //!
+  //! @param file
+  //!   If specified, this should be an open file descriptor. This object
+  //!   could e.g. be a @[Stdio.File], @[Gz.File] or @[Bz2.File] object.
+  protected void create(string|object filename, void|Filesystem.Base parent,
+			void|object file)
   {
     if(!parent) parent = Filesystem.System();
 
-    object fd;
+    if(!file)
+      file = parent->open(filename, "r");
 
-    if(f)
-      fd = f;
-    else 
-      fd = parent->open(filename, "r");
-
-    if(!fd)
+    if(!file)
       error("Not a Tar file\n");
 
-    _Tar tar = _Tar(fd, filename, this);
+    _Tar tar = _Tar(file, filename, this);
 
     _TarFS::create(tar, "/", "", parent);
   }

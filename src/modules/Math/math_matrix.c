@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -17,6 +16,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
+#include "pike_types.h"
 
 #include "math_module.h"
 
@@ -29,7 +29,6 @@
  *! Matrix representation with double precision floating point values.
  */
 
-static struct pike_string *s_array;
 static struct pike_string *s__clr;
 static struct pike_string *s_identity;
 static struct pike_string *s_rotate;
@@ -153,8 +152,8 @@ extern struct program *math_lmatrix_program;
 
 /* ---------------------------------------------------------------- */
 
-/*! @decl array(array) cast(string to_what)
- *! @decl array(array) cast(string to_what)
+/*! @decl array(array(float)) cast(string to_what)
+ *! @decl array(array(float)) cast(string to_what)
  *!
  *! It is possible to cast the matrix to an array and get back a
  *! double array of floats with the matrix values.

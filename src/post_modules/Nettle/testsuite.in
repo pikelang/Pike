@@ -1,257 +1,2080 @@
 START_MARKER
-// Nettle
-test_true([[objectp(Nettle)]])
 
-// MD2
-cond_resolv( Nettle.MD2_State, [[
 
-  test_true([[objectp(Nettle.MD2_State())]])
-  test_eq([[Nettle.MD2_State()->update("")->digest()]],
-  	  [[String.hex2string("8350e5a3e24c153df2275c9f80692773")]])
-  test_eq([[Nettle.MD2_State()->update("The quick brown fox jumps over the lazy dog")->digest()]],
-  	  [[String.hex2string("03d85a0d629d2c442e987525319fc471")]])
-  test_eq([[Nettle.MD2_State()->update("The quick brown fox jumps over the lazy cog")->digest()]],
-  	  [[String.hex2string("6b890c9292668cdbbfda00a4ebf31f05")]])
+dnl The point of these tests are just to make a basic validation that
+dnl the cryptography works. We assume that the Nettle library itself
+dnl is good, so no need for full NIST test vectors or similar.
+
+test_compile_error( H )
+test_compile_error( S )
+test_do( add_constant( "H", String.hex2string ) )
+test_do( add_constant( "S", String.string2hex ) )
+
+// Hashes
+
+define(test_hash, [[
+  cond_resolv(Nettle.$1, [[
+      test_eq(Nettle.$1()->hash(""),H(#"$2"))
+      test_eq(Nettle.$1()->hash((string)enumerate(256)*2),H(#"$3"))
+      test_eq(Nettle.$1()->hash("abc"),H(#"$4"))
+  ]])
 ]])
 
-// MD4
-cond_resolv( Nettle.MD4_State, [[
+test_hash(MD2,
+8350e5a3e24c153df2275c9f80692773,
+babf93aebc7745aa7e4569e590e6047f,
+da853b0d3f88d99b30283a69e6ded6bb)
 
-  test_true([[objectp(Nettle.MD4_State())]])
-  test_eq([[Nettle.MD4_State()->update("")->digest()]],
-  	  [[String.hex2string("31d6cfe0d16ae931b73c59d7e0c089c0")]])
-  test_eq([[Nettle.MD4_State()->update("a")->digest()]],
-  	  [[String.hex2string("bde52cb31de33e46245e05fbdbd6fb24")]])
-  test_eq([[Nettle.MD4_State()->update("abc")->digest()]],
-  	  [[String.hex2string("a448017aaf21d8525fc10ae87aa6729d")]])
-  test_eq([[Nettle.MD4_State()->update("message digest")->digest()]],
-  	  [[String.hex2string("d9130a8164549fe818874806e1c7014b")]])
-  test_eq([[Nettle.MD4_State()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
-  	  [[String.hex2string("d79e1c308aa5bbcdeea8ed63df412da9")]])
-  test_eq([[Nettle.MD4_State()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  		"abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
-	[[String.hex2string("043f8582f241db351ce627e153e7f0e4")]])
-  test_eq([[Nettle.MD4_State()->update("1234567890123456789012345678901234567890"
-		"1234567890123456789012345678901234567890")->digest()]],
-	  [[String.hex2string("e33b4ddc9c38f2199c3e7b164fcc0536")]])
+test_hash(MD4,
+31d6cfe0d16ae931b73c59d7e0c089c0,
+a1d29a83b83c408e21a056e456036266,
+a448017aaf21d8525fc10ae87aa6729d)
+
+test_hash(MD5,
+d41d8cd98f00b204e9800998ecf8427e,
+f5c8e3c31c044bae0e65569560b54332,
+900150983cd24fb0d6963f7d28e17f72)
+
+test_hash(SHA1,
+da39a3ee 5e6b4b0d 3255bfef 95601890 afd80709,
+dbe649daba340bce7a44b809016d914839b99f10,
+a9993e36 4706816a ba3e2571 7850c26c 9cd0d89d)
+
+test_hash(SHA224,
+d14a028c 2a3a2bc9 476102bb 288234c4 15a2b01f 828ea62a c5b3e42f,
+b8060ccc82d40c576156f7ca0333e4389e410df027d2fb8f764fa603,
+23097d22 3405d822 8642a477 bda255b3 2aadbce4 bda0b3f7 e36c9da7)
+
+test_hash(SHA256,
+e3b0c442 98fc1c14 9afbf4c8 996fb924 27ae41e4 649b934c a495991b 7852b855,
+110009dcee21620b166f3abfecb5eff7a873be729d1c2d53822e7acc5f34eb9b,
+ba7816bf 8f01cfea 414140de 5dae2223 b00361a3 96177a9c b410ff61 f20015ad)
+
+test_hash(SHA384,
+38b060a751ac9638 4cd9327eb1b1e36a 21fdb71114be0743 4c0cc7bf63f6e1da 274edebfe76f65fb d51ad2f14898b95b,
+4582fc82430e526886a1853411e60645fef7e8ea0c8546b7c9ba0c8416d9a98fb52ebd0c605fbb70749c4e3e5da3dbac,
+cb00753f45a35e8b b5a03d699ac65007 272c32ab0eded163 1a8b605a43ff5bed 8086072ba1e7cc23 58baeca134c825a7)
+
+test_hash(SHA512,
+cf83e1357eefb8bd f1542850d66d8007 d620e4050b5715dc 83f4a921d36ce9ce 47d0d13c5d85f2b0 ff8318d2877eec2f 63b931bd47417a81 a538327af927da3e,
+edb9bed721aa6a5f6fbc6619d3a3c2be3d043043f05a9aebc7b1197a2aa9c49a57d5ddd4674c1785785088d9f1ff42c797a02adc9b817a139a50970da6c99524,
+ddaf35a193617aba cc417349ae204131 12e6fa4e89a97ea2 0a9eeee64b55d39a 2192992a274fc1a8 36ba3c23a3feebbd 454d4423643ce80e 2a9ac94fa54ca49f)
+
+test_hash(SHA512_224,
+6ed0dd02806fa89e25de060c19d3ac86cabb87d6a0ddd05c333b84f4,
+250a468d45f55953784ab1f037e0522d981808b992e1d5148bd7ed9c,
+4634270f707b6a54daae7530460842e20e37ed265ceee9a43e8924aa)
+
+test_hash(SHA512_256,
+c672b8d1ef56ed28ab87c3622c5114069bdd3ad7b8f9737498d0c01ecef0967a,
+1d14911d41b1f56cf027a66fb8dda80ed7a90d9c77961899edfaf3e9f708dc3b,
+53048e2681941ef99b2e29b76b4c7dabe4c2d0c634fc6d46e0e2f13107e7af23)
+
+test_hash(SHA3_224,
+f71837502ba8e108 37bdd8d365adb855 91895602fc552b48 b7390abd,
+745758db0a62b782f84ba9456749c48d78055734b0383f6c19ce419b,
+c30411768506ebe1 c2871b1ee2e87d38 df342317300a9b97 a95ec6a8)
+
+test_hash(SHA3_256,
+c5d2460186f7233c 927e7db2dcc703c0 e500b653ca82273b 7bfad8045d85a470,
+f55ba327291604f0e5be6651752398b7be2331aad65f5763ce067df95cc13be1,
+4e03657aea45a94f c7d47ba826c8d667 c0d1e6e33a64a036 ec44f58fa12d6c45)
+
+test_hash(SHA3_384,
+2c23146a63a29acf 99e73b88f8c24eaa 7dc60aa771780ccc 006afbfa8fe2479b 2dd2b21362337441 ac12b515911957ff,
+9f74dfc9c6998ba66259906d271b2a2c17195e1682b7bd43774bb7121ead7feeae0399a565b07a7a2b670436d708c960,
+f7df1165f033337b e098e7d288ad6a2f 74409d7a60b49c36 642218de161b1f99 f8c681e4afaf31a3 4db29fb763e3c28e)
+
+test_hash(SHA3_512,
+0eab42de4c3ceb92 35fc91acffe746b2 9c29a8c366b7c60e 4e67c466f36a4304 c00fa9caf9d87976 ba469bcbe06713b4 35f091ef2769fb16 0cdab33d3670680e,
+6f317fd02d2e47a9a2e0aef8ad4f18d17656e8bcc2251599a5767a19fbeda91b496fe56b286cdb26d74f42f0226f8f8da2f6c24987e55f1badb02c4b60991785,
+18587dc2ea106b9a 1563e32b3312421c a164c7f1f07bc922 a9c83d77cea3a1e5 d0c6991073902537 2dc14ac964262937 9540c17e2a65b19d 77aa511a9d00bb96)
+
+test_hash(GOST94,
+ce85b99cc46752fffee35cab9a7b0278abb4c2d2055cff685af4912c49490f8d,
+5242e01f27145a783bf3b0f931f69318ef112ac33ecfa0a3b764e47f3caef9a7,
+f3134348c44fb1b2a277729e2285ebb5cb5e0f29c975bc753b70497c06a4d51d)
+
+test_hash(RIPEMD160,
+9c1185a5c5e9fc54612808977ee8f548b2258d31,
+e18472c9792fdc6e9dc2f46d53daee9ea60a999e,
+8eb208f7e05d987a9b044a8e98c6b087f15a0bfc)
+
+// PBKDFs
+
+dnl Pbkdf, password, salt, rounds, bytes, result
+define(test_pbkdf, [[
+  cond_resolv($1, [[
+    test_eq([[
+      S($1(H($2),
+	stringp($3)?H((string)$3):$3,
+	stringp($4)?H((string)$4):$4, $5))
+    ]], lower_case($6-" "-"\n"))
+  ]])
 ]])
 
-// MD5
-cond_resolv( Nettle.MD5_State, [[
+// PBKDF2 HMAC-SHA1 Test Vectors from RFC 6070.
 
-  test_true([[objectp(Nettle.MD5_State())]])
-  test_eq([[Nettle.MD5_State()->update("")->digest()]],
-  	  [[String.hex2string("d41d8cd98f00b204e9800998ecf8427e")]])
-  test_eq([[Nettle.MD5_State()->update("a")->digest()]],
-  	  [[String.hex2string("0cc175b9c0f1b6a831c399e269772661")]])
-  test_eq([[Nettle.MD5_State()->update("abc")->digest()]],
-  	  [[String.hex2string("900150983cd24fb0d6963f7d28e17f72")]])
-  test_eq([[Nettle.MD5_State()->update("message digest")->digest()]],
-  	  [[String.hex2string("f96b697d7cb7938d525a2f31aaf161d0")]])
-  test_eq([[Nettle.MD5_State()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
-  	  [[String.hex2string("c3fcd3d76192e4007dfb496cca67e13b")]])
-  test_eq([[Nettle.MD5_State()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  		"abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
-	[[String.hex2string("d174ab98d277d9f5a5611c2c9f419d9f")]])
-  test_eq([[Nettle.MD5_State()->update("1234567890123456789012345678901234567890"
-		"1234567890123456789012345678901234567890")->digest()]],
-	  [[String.hex2string("57edf4a22be3c955ac49da2e2107b67a")]])
+test_pbkdf(Crypto.SHA1.pbkdf2,
+	"70617373776f7264", "73616c74", 1, 20,
+	"0c 60 c8 0f 96 1f 0e 71"
+	"f3 a9 b5 24 af 60 12 06"
+	"2f e0 37 a6")
+
+test_pbkdf(Crypto.SHA1.pbkdf2,
+	"70617373776f7264", "73616c74", 2, 20,
+	"ea 6c 01 4d c7 2d 6f 8c"
+	"cd 1e d9 2a ce 1d 41 f0"
+	"d8 de 89 57")
+
+test_pbkdf(Crypto.SHA1.pbkdf2,
+	"70617373776f7264", "73616c74", 4096, 20,
+	"4b 00 79 01 b7 65 48 9a"
+	"be ad 49 d9 26 f7 21 d0"
+	"65 a4 29 c1")
+
+test_pbkdf(Crypto.SHA1.pbkdf2,
+	"70617373776f7264 50415353574f5244 70617373776f7264",
+	"73616c7453414c54 73616c7453414c54 73616c7453414c54"
+	"73616c7453414c54 73616c74", 4096, 25,
+	"3d 2e ec 4f e4 1c 84 9b"
+	"80 c8 d8 36 62 c0 e4 4a"
+	"8b 29 1a 96 4c f2 f0 70"
+	"38")
+
+test_pbkdf(Crypto.SHA1.pbkdf2,
+	"7061737300776f7264", "7361006c74", 4096, 16,
+	"56 fa 6a a7 55 48 09 9d"
+	"cc 37 d7 f0 34 25 e0 c3")
+
+// PBKDF2 HMAC-SHA256 Test Vectors from Stack-Overflow.
+// http://stackoverflow.com/questions/5130513/pbkdf2-hmac-sha2-test-vectors
+
+test_pbkdf(Crypto.SHA256.pbkdf2,
+	"70617373776f7264", "73616c74", 1, 32,
+	"12 0f b6 cf fc f8 b3 2c"
+	"43 e7 22 52 56 c4 f8 37"
+	"a8 65 48 c9 2c cc 35 48"
+	"08 05 98 7c b7 0b e1 7b")
+
+test_pbkdf(Crypto.SHA256.pbkdf2,
+	"70617373776f7264", "73616c74", 2, 32,
+	"ae 4d 0c 95 af 6b 46 d3"
+	"2d 0a df f9 28 f0 6d d0"
+	"2a 30 3f 8e f3 c2 51 df"
+	"d6 e2 d8 5a 95 47 4c 43")
+
+test_pbkdf(Crypto.SHA256.pbkdf2,
+	"70617373776f7264", "73616c74", 4096, 32,
+	"c5 e4 78 d5 92 88 c8 41"
+	"aa 53 0d b6 84 5c 4c 8d"
+	"96 28 93 a0 01 ce 4e 11"
+	"a4 96 38 73 aa 98 13 4a")
+
+test_pbkdf(Crypto.SHA256.pbkdf2,
+	"70617373776f7264 50415353574f5244 70617373776f7264",
+	"73616c7453414c54 73616c7453414c54 73616c7453414c54"
+	"73616c7453414c54 73616c74", 4096, 40,
+	"34 8c 89 db cb d3 2b 2f"
+	"32 d8 14 b8 11 6e 84 cf"
+	"2b 17 34 7e bc 18 00 18"
+	"1c 4e 2a 1f b8 dd 53 e1"
+	"c6 35 51 8c 7d ac 47 e9")
+
+test_pbkdf(Crypto.SHA256.pbkdf2,
+	"7061737300776f7264", "7361006c74", 4096, 16,
+	"89 b6 9d 05 16 f8 29 89"
+	"3c 69 62 26 65 0a 86 87")
+
+// HKDF test vectors from RFC 5869
+
+test_pbkdf(Crypto.SHA256.hkdf,
+	"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+	"000102030405060708090a0b0c",
+	"f0f1f2f3f4f5f6f7f8f9",
+	42,
+	"3cb25f25faacd57a90434f64d0362f2a"
+        "2d2d0a90cf1a5a4c5db02d56ecc4c5bf"
+        "34007208d5b887185865")
+
+test_pbkdf(Crypto.SHA256.hkdf,
+	"000102030405060708090a0b0c0d0e0f"
+	"101112131415161718191a1b1c1d1e1f"
+	"202122232425262728292a2b2c2d2e2f"
+	"303132333435363738393a3b3c3d3e3f"
+	"404142434445464748494a4b4c4d4e4f",
+	"606162636465666768696a6b6c6d6e6f"
+	"707172737475767778797a7b7c7d7e7f"
+	"808182838485868788898a8b8c8d8e8f"
+	"909192939495969798999a9b9c9d9e9f"
+	"a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+	"b0b1b2b3b4b5b6b7b8b9babbbcbdbebf"
+	"c0c1c2c3c4c5c6c7c8c9cacbcccdcecf"
+	"d0d1d2d3d4d5d6d7d8d9dadbdcdddedf"
+	"e0e1e2e3e4e5e6e7e8e9eaebecedeeef"
+	"f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+	82,
+	"b11e398dc80327a1c8e7f78c596a4934"
+	"4f012eda2d4efad8a050cc4c19afa97c"
+	"59045a99cac7827271cb41c65e590e09"
+	"da3275600c2f09b8367793a9aca3db71"
+	"cc30c58179ec3e87c14c01d5c1f3434f"
+	"1d87")
+
+test_pbkdf(Crypto.SHA256.hkdf,
+	"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+	0, 0, 42,
+	"8da4e775a563c18f715f802a063c5a31"
+	"b8a11f5c5ee1879ec3454e5f3c738d2d"
+	"9d201395faa4b61a96c8")
+
+test_pbkdf(Crypto.SHA1.hkdf,
+	"0b0b0b0b0b0b0b0b0b0b0b",
+	"000102030405060708090a0b0c",
+	"f0f1f2f3f4f5f6f7f8f9",
+	42,
+	"085a01ea1b10f36933068b56efa5ad81"
+	"a4f14b822f5b091568a9cdd4f155fda2"
+	"c22e422478d305f3f896")
+
+test_pbkdf(Crypto.SHA1.hkdf,
+	"000102030405060708090a0b0c0d0e0f"
+	"101112131415161718191a1b1c1d1e1f"
+	"202122232425262728292a2b2c2d2e2f"
+	"303132333435363738393a3b3c3d3e3f"
+	"404142434445464748494a4b4c4d4e4f",
+	"606162636465666768696a6b6c6d6e6f"
+	"707172737475767778797a7b7c7d7e7f"
+	"808182838485868788898a8b8c8d8e8f"
+	"909192939495969798999a9b9c9d9e9f"
+	"a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+	"b0b1b2b3b4b5b6b7b8b9babbbcbdbebf"
+	"c0c1c2c3c4c5c6c7c8c9cacbcccdcecf"
+	"d0d1d2d3d4d5d6d7d8d9dadbdcdddedf"
+	"e0e1e2e3e4e5e6e7e8e9eaebecedeeef"
+	"f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+	82,
+	"0bd770a74d1160f7c9f12cd5912a06eb"
+	"ff6adcae899d92191fe4305673ba2ffe"
+	"8fa3f1a4e5ad79f3f334b3b202b2173c"
+	"486ea37ce3d397ed034c7f9dfeb15c5e"
+	"927336d0441f4c4300e2cff0d0900b52"
+	"d3b4")
+
+test_pbkdf(Crypto.SHA1.hkdf,
+	"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+	0, 0, 42,
+	"0ac1af7002b3d761d1e55298da9d0506"
+	"b9ae52057220a306e07b6b87e8df21d0"
+	"ea00033de03984d34918")
+
+// MACs
+
+dnl Mac, key, nonce, input, hash, [truncation]
+define(test_mac, [[
+  cond_resolv($1, [[
+      test_any([[
+        object state =
+	  $1.State(H(#"$2"));
+	if (sizeof(H(#"$3"))) {
+	  state->set_iv(H(#"$3"));
+	}
+	state->update(H(#"$4"));
+	return state->digest($6);
+      ]], H(#"$5"))
+  ]])
 ]])
 
-// SHA1
-cond_resolv( Nettle.SHA1_State, [[
-
-  test_true([[objectp(Nettle.SHA1_State())]])
-  test_eq([[Nettle.SHA1_State()->update("")->digest()]],
-   	[[String.hex2string("da39a3ee5e6b4b0d3255bfef95601890afd80709")]])
-  test_eq([[Nettle.SHA1_State()->update("abc")->digest()]],
-   	[[String.hex2string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
+dnl key, [nonce], input,
+dnl hmac-sha224, hmac-sha256, hmac-sha384, hmac-sha512,
+dnl [truncation]
+define(test_hmac_sha2, [[
+  test_mac(Crypto.SHA224.HMAC,$1,$2,$3,$4,$8)
+  test_mac(Crypto.SHA256.HMAC,$1,$2,$3,$5,$8)
+  test_mac(Crypto.SHA384.HMAC,$1,$2,$3,$6,$8)
+  test_mac(Crypto.SHA512.HMAC,$1,$2,$3,$7,$8)
 ]])
 
-cond_resolv( Nettle.SHA1_State, [[
-test_tests(
-  array(int) a() {
-    return Tools.Testsuite.run_script ("]]SRCDIR[[/sha1test.pike");
-  }
-)
+dnl Cipher, key, nonce, input, umac32, umac64, umac96, umac128
+define(test_umac, [[
+  test_mac($1.UMAC32, $2, $3, $4, $5)
+  test_mac($1.UMAC64, $2, $3, $4, $6)
+  test_mac($1.UMAC96, $2, $3, $4, $7)
+  test_mac($1.UMAC128, $2, $3, $4, $8)
+]])
+
+dnl HMAC-MD5 Test vectors from RFC 2104.
+
+test_mac(Crypto.MD5.HMAC,
+0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b,,
+4869205468657265,
+9294727a3638bb1c13f48ef8158bfc9d)
+
+test_mac(Crypto.MD5.HMAC,
+4a656665,,
+7768617420646f2079612077616e7420666f72206e6f7468696e673f,
+750c783e6ab0b503eaa86e310a5db738)
+
+test_mac(Crypto.MD5.HMAC,
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,,
+DDDDDDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDDDDDD
+DDDDDDDDDDDDDDDDDDDD,
+56be34521d144c88dbb8c733f0e8b3f6)
+
+dnl HMAC-SHA1 Test vectors from RFC 2202.
+
+test_mac(Crypto.SHA1.HMAC,
+0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b,,
+4869205468657265,
+b617318655057264e28bc0b6fb378c8ef146be00)
+
+test_mac(Crypto.SHA1.HMAC,
+4a656665,,
+7768617420646f2079612077616e7420666f72206e6f7468696e673f,
+effcdf6ae5eb2fa2d27416d5f184df9c259a7c79)
+
+dnl HMAC-SHA2 Test vectors from RFC 4231.
+
+test_hmac_sha2(0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b,,
+4869205468657265,
+896fb1128abbdf196832107cd49df33f
+47b4b1169912ba4f53684b22,
+b0344c61d8db38535ca8afceaf0bf12b
+881dc200c9833da726e9376c2e32cff7,
+afd03944d84895626b0825f4ab46907f
+15f9dadbe4101ec682aa034c7cebc59c
+faea9ea9076ede7f4af152e8b2fa9cb6,
+87aa7cdea5ef619d4ff0b4241a1d6cb0
+2379f4e2ce4ec2787ad0b30545e17cde
+daa833b7d6b8a702038b274eaea3f4e4
+be9d914eeb61f1702e696c203a126854)
+
+test_hmac_sha2(4a656665,,
+7768617420646f2079612077616e7420
+666f72206e6f7468696e673f,
+a30e01098bc6dbbf45690f3a7e9e6d0f
+8bbea2a39e6148008fd05e44,
+5bdcc146bf60754e6a042426089575c7
+5a003f089d2739839dec58b964ec3843,
+af45d2e376484031617f78d2b58a6b1b
+9c7ef464f5a01b47e42ec3736322445e
+8e2240ca5e69e2c78b3239ecfab21649,
+164b7a7bfcf819e2e395fbe73b56e0a3
+87bd64222e831fd610270cd7ea250554
+9758bf75c05a994a6d034f65f8f0e6fd
+caeab1a34d4a6b4b636e070a38bce737)
+
+test_hmac_sha2(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,,
+dddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddd
+dddd,
+7fb3cb3588c6c1f6ffa9694d7d6ad264
+9365b0c1f65d69d1ec8333ea,
+773ea91e36800e46854db8ebd09181a7
+2959098b3ef8c122d9635514ced565fe,
+88062608d3e6ad8a0aa2ace014c8a86f
+0aa635d947ac9febe83ef4e55966144b
+2a5ab39dc13814b94e3ab6e101a34f27,
+fa73b0089d56a284efb0f0756c890be9
+b1b5dbdd8ee81a3655f83e33b2279d39
+bf3e848279a722c806b485a47e67c807
+b946a337bee8942674278859e13292fb)
+
+test_hmac_sha2(0102030405060708090a0b0c0d0e0f10
+111213141516171819,,
+cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd
+cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd
+cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd
+cdcd,
+6c11506874013cac6a2abc1bb382627c
+ec6a90d86efc012de7afec5a,
+82558a389a443c0ea4cc819899f2083a
+85f0faa3e578f8077a2e3ff46729665b,
+3e8a69b7783c25851933ab6290af6ca7
+7a9981480850009cc5577c6e1f573b4e
+6801dd23c4a7d679ccf8a386c674cffb,
+b0ba465637458c6990e5a8c5f61d4af7
+e576d97ff94b872de76f8050361ee3db
+a91ca5c11aa25eb4d679275cc5788063
+a5f19741120c4f2de2adebeb10a298dd)
+
+test_hmac_sha2(0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c
+0c0c0c0c,,
+546573742057697468205472756e6361
+74696f6e,
+0e2aea68a90c8d37c988bcdb9fca6fa8,
+a3b6167473100ee06e0c796c2955552b,
+3abf34c3503b2a23a46efc619baef897,
+415fad6271580a531d4179bc891d87a6, 16)
+
+test_hmac_sha2(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaa,,
+54657374205573696e67204c61726765
+72205468616e20426c6f636b2d53697a
+65204b6579202d2048617368204b6579
+204669727374,
+95e9a0db962095adaebe9b2d6f0dbce2
+d499f112f2d2b7273fa6870e,
+60e431591ee0b67f0d8a26aacbf5b77f
+8e0bc6213728c5140546040f0ee37f54,
+4ece084485813e9088d2c63a041bc5b4
+4f9ef1012a2b588f3cd11f05033ac4c6
+0c2ef6ab4030fe8296248df163f44952,
+80b24263c7c1a3ebb71493c1dd7be8b4
+9b46d1f41b4aeec1121b013783f8f352
+6b56d037e05f2598bd0fd2215d6a1e52
+95e64f73f63f0aec8b915a985d786598)
+
+test_hmac_sha2(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaa,,
+54686973206973206120746573742075
+73696e672061206c6172676572207468
+616e20626c6f636b2d73697a65206b65
+7920616e642061206c61726765722074
+68616e20626c6f636b2d73697a652064
+6174612e20546865206b6579206e6565
+647320746f2062652068617368656420
+6265666f7265206265696e6720757365
+642062792074686520484d414320616c
+676f726974686d2e,
+3a854166ac5d9f023f54d517d0b39dbd
+946770db9c2b95c9f6f565d1,
+9b09ffa71b942fcb27635fbcd5b0e944
+bfdc63644f0713938a7f51535c3a35e2,
+6617178e941f020d351e2f254e8fd32c
+602420feb0b8fb9adccebb82461e99c5
+a678cc31e799176d3860e6110c46523e,
+e37b6a775dc87dbaa4dfa9f96e5e3ffd
+debd71f8867289865df5a32d20cdc944
+b6022cac3c4982b10d5eeb55c3e4de15
+134676fb6de0446065c97440fa8c6a58)
+
+dnl POLY1305-AES Test vectors from cr.yp.to/mac/poly1305-20050329.pdf
+dnl Appendix B.
+
+test_mac(Crypto.AES.POLY1305,
+ec074c83 55807417 01425b62 3235add6
+851fc40c 3467ac0b e05cc204 04f3f700,
+fb447350 c4e868c5 2ac3275c f9d4327e,
+f3f6,
+f4c633c3 044fc145 f84f335c b81953de)
+
+test_mac(Crypto.AES.POLY1305,
+75deaa25 c09f208e 1dc4ce6b 5cad3fbf
+a0f30800 00f46400 d0c7e907 6c834403,
+61ee0921 8d29b0aa ed7e154a 2c5509cc,,
+dd3fab22 51f11ac7 59f08871 29cc2ee7)
+
+test_mac(Crypto.AES.POLY1305,
+6acb5f61 a7176dd3 20c5c1eb 2edcdc74
+48443d0b b0d21109 c89a100b 5ce2c208,
+ae212a55 39972959 5dea458b c621ff0e,
+663cea19 0ffb83d8 9593f3f4 76b6bc24
+d7e67910 7ea26adb 8caf6652 d0656136,
+0ee1c16b b73f0f4f d1988175 3c01cdbe)
+
+test_mac(Crypto.AES.POLY1305,
+e1a5668a 4d5b66a5 f68cc542 4ed5982d
+12976a08 c4426d0c e8a82407 c4f48207,
+9ae831e7 43978d3a 23527c71 28149e3a,
+ab081272 4a7f1e34 2742cbed 374d94d1 36c6b879 5d45b381 9830f2c0 4491faf0
+990c62e4 8b8018b2 c3e4a0fa 3134cb67 fa83e158 c994d961 c4cb2109 5c1bf9,
+5154ad0d 2cb26e01 274fc511 48491f1b)
+
+dnl UMAC-AES Test vectors from RFC 4418 Appendix.
+dnl UMAC128 results added by hand.
+
+test_umac(Crypto.AES, 6162636465666768696a6b6c6d6e6f70, 6263646566676869,
+	,
+	113145FB, 6E155FAD26900BE1, 32FEDB100C79AD58F07FF764,
+	32fedb100c79ad58f07ff7643cc60465)
+test_umac(Crypto.AES, 6162636465666768696a6b6c6d6e6f70, 6263646566676869,
+	616161,
+	3B91D102, 44B5CB542F220104, 185E4FE905CBA7BD85E4C2DC,
+	185e4fe905cba7bd85e4c2dc3d117d8d)
+test_umac(Crypto.AES, 6162636465666768696a6b6c6d6e6f70, 6263646566676869,
+	616263,
+	ABF3A3A0, D4D7B9F6BD4FBFCF, 883C3D4B97A61976FFCF2323,
+	883c3d4b97a61976ffcf232308cba5a5)
+
+// Ciphers
+
+dnl Crypto, key, plain, cipher, force/ekb
+define(test_cipher,[[
+  test_eq(ifelse([[$5]],,
+                 [[Nettle.$1()()->set_encrypt_key(H($2))
+		   ->crypt(H($3))]],
+		 [[Nettle.$1()()->set_encrypt_key(H($2), $5)
+		   ->crypt(H($3))]]),
+	  [[H($4-" ")]])
+  test_eq(ifelse([[$5]],,
+		 [[Nettle.$1()()->set_decrypt_key(H($2))
+		   ->crypt(H($4))]],
+		 [[Nettle.$1()()->set_decrypt_key(H($2), $5)
+		   ->crypt(H($4))]]),
+	  [[H($3-" ")]])
+]])
+
+dnl Crypto, key, iv, plain, cipher
+define(test_crypto_cipher,[[
+  cond_resolv($1, [[
+  test_true(objectp($1()));
+  test_eq(ifelse([[$3]],,
+                 [[$1()->set_encrypt_key(H($2))
+		   ->crypt(H($4))]],
+		 [[$1()->set_encrypt_key(H($2))
+		   ->set_iv(H($3))
+		   ->crypt(H($4))]]),
+	  [[H($5)]])
+  test_eq(ifelse([[$3]],,
+		 [[$1()->set_decrypt_key(H($2))
+		   ->crypt(H($5))]],
+		 [[$1()->set_decrypt_key(H($2))
+		   ->set_iv(H($3))
+		   ->crypt(H($5))]]),
+	  [[H($4)]])
+  ]])
+]])
+
+test_do(add_constant("test_data", random_string(1024)))
+
+define(test_generic_cipher,[[
+  cond_resolv($1, [[
+    test_any([[
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_encrypt_key(key);
+      d->set_decrypt_key(key);
+
+      return d->crypt(c->crypt(test_data)) == test_data;
+    ]], 1)
+    test_any([[
+      // Check that block handling works in encrypt-mode.
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_encrypt_key(key);
+      d->set_encrypt_key(key);
+
+      string res = "";
+      foreach(test_data/$1.block_size(), string block) {
+        // Make sure that the state isn't confused by the empty string.
+        if (c->crypt("") != "") {
+	  error("Crypt on empty string should return the empty string.\n");
+	}
+        res += c->crypt(block);
+      }
+
+      return d->crypt(test_data) == res;
+    ]], 1)
+    test_any([[
+      // Check that block handling works in decrypt-mode.
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_decrypt_key(key);
+      d->set_decrypt_key(key);
+
+      string res = "";
+      foreach(test_data/$1.block_size(), string block) {
+        // Make sure that the state isn't confused by the empty string.
+        if (c->crypt("") != "") {
+	  error("Crypt on empty string should return the empty string.\n");
+	}
+        res += c->crypt(block);
+      }
+
+      return d->crypt(test_data) == res;
+    ]], 1)
+  ]])
+]])
+
+dnl Test cipher modes that support partial last blocks.
+define(test_generic_cipher_autopad,[[
+  test_generic_cipher($1)
+  cond_resolv($1, [[
+    test_any([[
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_encrypt_key(key);
+      d->set_decrypt_key(key);
+
+      for(int i = 0; i < 5*c->block_size(); i++) {
+        string plain = test_data[..i];
+        if (d->crypt(c->crypt(plain)) != plain) {
+	  error("Data size %d failed.\n", i);
+	}
+      }
+      return 1;
+    ]], 1)
+  ]])
 ]])
 
 // AES
-cond_resolv( Nettle.AES_State, [[
-  test_true([[objectp(Nettle.AES_State())]])
-  test_eq([[Nettle.AES_State()
-  	    ->set_encrypt_key(String.hex2string(
-  		  "00010203050607080A0B0C0D0F101112"))
-  	    ->crypt(String.hex2string("506812A45F08C889B97F5980038B8359"))]],
-  	  [[String.hex2string("D8F532538289EF7D06B506A4FD5BE9C9")]])
-  
-  test_eq([[Nettle.AES_State()
-  	    ->set_decrypt_key(String.hex2string(
-  		  "14151617191A1B1C1E1F202123242526"))
-  	    ->crypt(String.hex2string("59AB30F4D4EE6E4FF9907EF65B1FB68C"))]],
-  	  [[String.hex2string("5C6D71CA30DE8B8B00549984D2EC7D4B")]])
+test_generic_cipher(Crypto.AES)
+test_generic_cipher(Crypto.AES.CBC)
+test_generic_cipher(Crypto.AES.PCBC)
+test_generic_cipher_autopad(Crypto.AES.CFB)
+test_generic_cipher_autopad(Crypto.AES.OFB)
+test_generic_cipher_autopad(Crypto.AES.CTR)
+cond_resolv( Nettle.AES, [[
+  test_true([[objectp(Nettle.AES()())]])
+  test_cipher(AES,
+	      "00010203050607080A0B0C0D0F101112",
+	      "506812A45F08C889B97F5980038B8359",
+	      "D8F532538289EF7D06B506A4FD5BE9C9")
+  test_cipher(AES,
+	      "14151617191A1B1C1E1F202123242526",
+	      "5C6D71CA30DE8B8B00549984D2EC7D4B",
+	      "59AB30F4D4EE6E4FF9907EF65B1FB68C")
+
+  // AES-CTR Test vectors from RFC 3686 Section 6.
+
+  dnl Test Vector #1: Encrypting 16 octets using AES-CTR with 128-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "AE6852F8 121067CC 4BF7A576 5577F39E",
+		     "00000030 00000000 00000000 00000001",
+		     "53696E67 6C652062 6C6F636B 206D7367",
+		     "E4095D4F B7A7B379 2D6175A3 261311B8")
+
+  dnl Test Vector #2: Encrypting 32 octets using AES-CTR with 128-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "7E240678 17FAE0D7 43D6CE1F 32539163",
+		     "006CB6DB C0543B59 DA48D90B 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F",
+		     "5104A106 168A72D9 790D41EE 8EDAD388"
+		     "EB2E1EFC 46DA57C8 FCE630DF 9141BE28")
+
+  dnl Test Vector #3: Encrypting 36 octets using AES-CTR with 128-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "7691BE03 5E5020A8 AC6E6185 29F9A0DC",
+		     "00E0017B 27777F3F 4A1786F0 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F"
+		     "20212223",
+		     "C1CF48A8 9F2FFDD9 CF4652E9 EFDB72D7"
+		     "4540A42B DE6D7836 D59A5CEA AEF31053"
+		     "25B2072F")
+
+  dnl Test Vector #4: Encrypting 16 octets using AES-CTR with 192-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "16AF5B14 5FC9F579 C175F93E 3BFB0EED"
+		     "863D06CC FDB78515",
+		     "00000048 36733C14 7D6D93CB 00000001",
+		     "53696E67 6C652062 6C6F636B 206D7367",
+		     "4B55384F E259C9C8 4E7935A0 03CBE928")
+
+  dnl Test Vector #5: Encrypting 32 octets using AES-CTR with 192-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "7C5CB240 1B3DC33C 19E73408 19E0F69C"
+		     "678C3DB8 E6F6A91A",
+		     "0096B03B 020C6EAD C2CB500D 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F",
+		     "453243FC 609B2332 7EDFAAFA 7131CD9F"
+		     "8490701C 5AD4A79C FC1FE0FF 42F4FB00")
+
+  dnl Test Vector #6: Encrypting 36 octets using AES-CTR with 192-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "02BF391E E8ECB159 B959617B 0965279B"
+		     "F59B60A7 86D3E0FE",
+		     "0007BDFD 5CBD6027 8DCC0912 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F"
+		     "20212223",
+		     "96893FC5 5E5C722F 540B7DD1 DDF7E758"
+		     "D288BC95 C6916588 4536C811 662F2188"
+		     "ABEE0935")
+
+  dnl Test Vector #7: Encrypting 16 octets using AES-CTR with 256-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "776BEFF2 851DB06F 4C8A0542 C8696F6C"
+		     "6A81AF1E EC96B4D3 7FC1D689 E6C1C104",
+		     "00000060 DB5672C9 7AA8F0B2 00000001",
+		     "53696E67 6C652062 6C6F636B 206D7367",
+		     "145AD01D BF824EC7 560863DC 71E3E0C0")
+
+  dnl Test Vector #8: Encrypting 32 octets using AES-CTR with 256-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "F6D66D6B D52D59BB 07963658 79EFF886"
+		     "C66DD51A 5B6A9974 4B50590C 87A23884",
+		     "00FAAC24 C1585EF1 5A43D875 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F",
+		     "F05E231B 3894612C 49EE000B 804EB2A9"
+		     "B8306B50 8F839D6A 5530831D 9344AF1C")
+
+  dnl Test Vector #9: Encrypting 36 octets using AES-CTR with 256-bit key
+  test_crypto_cipher(Crypto.AES.CTR,
+		     "FF7A617C E69148E4 F1726E2F 43581DE2"
+		     "AA62D9F8 05532EDF F1EED687 FB54153D",
+		     "001CC5B7 51A51D70 A1C11148 00000001",
+		     "00010203 04050607 08090A0B 0C0D0E0F"
+		     "10111213 14151617 18191A1B 1C1D1E1F"
+		     "20212223",
+		     "EB6C5282 1D0BBBF7 CE759446 2ACA4FAA"
+		     "B407DF86 6569FD07 F48CC0B5 83D6071F"
+		     "1EC0E6B8")
+]])
+cond_resolv( Nettle.AES, [[
+  // AES-CFB Test vectors from NIST AESMMT:CFB128MMT128.
+
+  dnl Test Vector #0
+  test_crypto_cipher(Crypto.AES.CFB,
+		     "085b8af6788fa6bc1a0b47dcf50fbd35",
+		     "58cb2b12bb52c6f14b56da9210524864",
+		     "4b5a872260293312eea1a570fd39c788",
+		     "e92c80e0cfb6d8b1c27fd58bc3708b16")
+
+  dnl Test Vector #1
+  test_crypto_cipher(Crypto.AES.CFB,
+		     "701ccc4c0e36e512ce077f5af6ccb957",
+		     "5337ddeaf89a00dd4d58d860de968469",
+		     "cc1172f2f80866d0768b25f70fcf6361"
+		     "aab7c627c8488f97525d7d88949beeea",
+		     "cdcf093bb7840df225683b58a479b00d"
+		     "5de5553a7e85eae4b70bf46dc729dd31")
+
+  dnl Test Vector #2
+  test_crypto_cipher(Crypto.AES.CFB,
+		     "0a8e8876c96cddf3223069002002c99f",
+		     "b125a20ecd79e8b5ae91af738037acf7",
+		     "4fd0ecac65bfd321c88ebca0daea35d2"
+		     "b061205d696aab08bea68320db65451a"
+		     "6d6c3679fdf633f37cf8ebcf1fa94b91",
+		     "cdd1ba252b2c009f34551a6a200602d7"
+		     "1ffbf13e684a5e60478cdf74ffe61dfd"
+		     "ed344bdc7e8000c3b0b67552917f3e4c")
+
+  dnl Test Vector #3
+  test_crypto_cipher(Crypto.AES.CFB,
+		     "b9ba9fa32cc491d8ac2beb5f99193d57",
+		     "95511452b71e53e93afad07ba1aa4d98",
+		     "b40382705aaeea41097c309da6cd0601"
+		     "0f15e09c0130fa4b3af69cc8da109d1f"
+		     "0f0a2661f1a8b89bab7e7009dcbb8a88"
+		     "3d46254a830c45cd87981e0ea4e490fa",
+		     "800bf8840a73c9279a9cdb61436f8af2"
+		     "0ae17c5a9b95bf25e456f48cc3cc2f9d"
+		     "ffd86c48645fa187cac5becd058e4655"
+		     "4ae3b4825a1ef4467849c9d13536adfc")
+
+  dnl Test Vector #4
+  test_crypto_cipher(Crypto.AES.CFB,
+		     "5947bbd78b06bb5ea2fc67ed7b24216e",
+		     "8e4722ad2230b15f2eea302173bc1795",
+		     "9e69423653c20c982794ed35d63c1a78"
+		     "e8ac14f37e1888ae4bf273bfe119891b"
+		     "2e4ed8ac46e7a9a463c7a710298d43b0"
+		     "2f0c5606bcfc08adceeef2ec61867f8b"
+		     "ede498e53163803f2f86fc58782fb841",
+		     "b23f0fdfc1519c408ee7a8ba46ea79f2"
+		     "cbea0032685af82f76a7e2b377741aaa"
+		     "618ef3953edbe39e8df1dd283b2e54a0"
+		     "f1327ce332188f6572574ce59428636f"
+		     "3b6e37054a4705b02bedf377e465e5f6")
+
+]])
+cond_resolv( Nettle.AES, [[
+  // AES-OFB Test vectors from NIST AESMMT:OFB128MMT128.
+
+  dnl Test Vector #0
+  test_crypto_cipher(Crypto.AES.OFB,
+		     "d7d57bd847154af9722a8df096e61a42",
+		     "fdde201c91e401d9723868c2a612b77a",
+		     "81883f22165282ba6a442a8dd2a768d4",
+		     "84cc130b6867623696aa8f523d968ade")
+
+  dnl Test Vector #1
+  test_crypto_cipher(Crypto.AES.OFB,
+		     "c9f4ce21b4c7daaa4f93e292dc605bc5",
+		     "5e5a8cf2808c720e01c1ed92d470a45d",
+		     "8e19c5cacd015a662e7f40cdecadbf79"
+		     "a68081c06d9544b41c2dd248e77633b4",
+		     "885dc48add7ee6a1839bc5c5e03beae0"
+		     "71301ecf91a0111520cde0d3a112f5d2")
+
+  dnl Test Vector #2
+  test_crypto_cipher(Crypto.AES.OFB,
+		     "7a70cc6b261eeccb05c57117d5763197",
+		     "bb7b9667fbd76d5ee204828769a341b1",
+		     "823cbaae3760c85512a3c83fd60bb54b"
+		     "7cfc739b295b63e05ef435d86e19fd15"
+		     "368c89ff08a0f21ce89a728ffb5d75df",
+		     "f5c49aae8a026bf05e525a12ab7e195e"
+		     "ea8a1b71a8d32a5113aa8974858f2cfc"
+		     "0339805003a0cb1a7be19f376d4604eb")
+
+  dnl Test Vector #3
+  test_crypto_cipher(Crypto.AES.OFB,
+		     "85dbd5a6e73681a51a4a7d4e93ca7d0c",
+		     "89d897c5aa9e0a5d5586d4b4664fc927",
+		     "e3dbfc6ae1a879870fd22644c8135fe0"
+		     "63355dfc0a8dad45c9c6e052e6e085cf"
+		     "717754dc1b49acb04cf340826ffb0da9"
+		     "91138f022a9c34923a6a116c98c7d3d5",
+		     "48a34bd814dd4e1b92a5aa04218136bc"
+		     "d428fd34ca151a78e0eb2c8f24d4f070"
+		     "978aacd5e1351c909c818db45d25b34f"
+		     "c21cb06a3984f969ab825ef795888da9")
+
+  dnl Test Vector #4
+  test_crypto_cipher(Crypto.AES.OFB,
+		     "18b9887a34438fb2e759027e54e334b6",
+		     "a5be8621e58dae325c6b868fd783e2cd",
+		     "8cd659df925950b516f737fc92d2fafa"
+		     "008c008c9dfe0e75ed2d68f6ff79399f"
+		     "f2183464b8c37cf31aafc145fcbfac73"
+		     "e3f87eccb435f424bf1c6d6efb504e8e"
+		     "93e8a668a2210e3d3b4fd437ad1a5842",
+		     "82736a8fd3c07941b1173c9c51bfe0d8"
+		     "590f237ae36e7b93481b7b4ad88da9d6"
+		     "8f427305b95e4b90f7212dba00f6d6bd"
+		     "e7e39a74da702012f36c4cd0a0c27756"
+		     "052ac1bd3bf1501c86c1186a69a7296c")
+
 ]])
 
-cond_resolv( Nettle.CBC, [[
-  test_eval_error( Nettle.CBC( class{} ) )
-  test_eval_error( object o=class{}(); Nettle.CBC(o); )
-  test_eval_error([[
-    class A {
-      int block_size() { return 0; }
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      string crypt(string data) {}
-    };
-    Nettle.CBC(A);
-  ]])
-  test_eval_error([[
-    class A {
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      string crypt(string data) {}
-    };
-    Nettle.CBC(A);
-  ]])
-  test_do([[
-    class A {
-      int block_size() { return 512; }
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      int `()() { return 0; }
-      string crypt(string data) {}
-    };
-    Nettle.CBC(A);
-  ]])
-  test_eq( Nettle.CBC(Crypto.AES())->block_size(), 16)
-  test_eq( Nettle.CBC(Crypto.AES)->block_size(), 16)
-  test_eq( Nettle.CBC(Crypto.AES())->key_size(), 0)
-  test_eq( Nettle.CBC(Crypto.AES)->key_size(), 0)
-  test_any([[
-    object cbc=Nettle.CBC(Crypto.AES());
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    return cbc->key_size();]], 32)
-  test_any([[
-    object cbc=Nettle.CBC(Crypto.AES);
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    return cbc->key_size();]], 32)
-  test_eval_error([[
-    object cbc=Nettle.CBC(Crypto.AES());
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    cbc->crypt("123");
-  ]])
-  test_eval_error([[
-    object cbc=Nettle.CBC(Crypto.AES);
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    cbc->crypt("123");
-  ]])
-  test_any([[
-    object cbc=Nettle.CBC(Crypto.AES());
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    return String.string2hex(cbc->crypt("0123456789abcdef"));
-  ]], "b71a7f6d29d66bd468294ed9cfda2af1")
-  test_any([[
-    object cbc=Nettle.CBC(Crypto.AES);
-    cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    return String.string2hex(cbc->crypt("0123456789abcdef"));
-  ]], "b71a7f6d29d66bd468294ed9cfda2af1")
-  
+// ARCFOUR
+test_generic_cipher(Crypto.Arcfour)
+
+// ARCTWO
+// Test vectors from RFC 2268.
+test_generic_cipher(Crypto.Arctwo)
+test_generic_cipher(Crypto.Arctwo.CBC)
+test_generic_cipher(Crypto.Arctwo.PCBC)
+test_generic_cipher_autopad(Crypto.Arctwo.CFB)
+test_generic_cipher_autopad(Crypto.Arctwo.OFB)
+test_generic_cipher_autopad(Crypto.Arctwo.CTR)
+cond_resolv( Nettle.ARCTWO, [[
+  test_true([[objectp(Crypto.Arctwo.State())]])
+  test_cipher(ARCTWO,
+	      "0000000000000000",
+	      "0000000000000000",
+	      "ebb773f993278eff",
+	      63)
+  test_cipher(ARCTWO,
+	      "ffffffffffffffff",
+	      "ffffffffffffffff",
+	      "278b27e42e2f0d49",
+	      64)
+  test_cipher(ARCTWO,
+	      "3000000000000000",
+	      "1000000000000001",
+	      "30649edf9be7d2c2",
+	      64)
+  test_cipher(ARCTWO,
+	      "88",
+	      "0000000000000000",
+	      "61a8a244adacccf0",
+	      64)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a",
+	      "0000000000000000",
+	      "6ccf4308974c267f",
+	      64)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a7f0f79c384627bafb2",
+	      "0000000000000000",
+	      "1a807d272bbe5db1",
+	      64)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a7f0f79c384627bafb2",
+	      "0000000000000000",
+	      "2269552ab0f85ca6",
+	      128)
+  test_cipher(ARCTWO,
+	      "88bca90e90875a7f 0f79c384627bafb2"
+	      "16f80a6f85920584 c42fceb0be255daf 1e",
+	      "0000000000000000",
+	      "5b78d3a43dfff1f1",
+	      129)
 ]])
 
-cond_resolv( Nettle.Proxy, [[
-  test_eval_error( Nettle.Proxy( class{} ) )
-  test_eval_error( object o=class{}(); Nettle.Proxy(o); )
-  test_eval_error([[
-    class A {
-      int block_size() { return 0; }
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      string crypt(string data) {}
-    };
-    Nettle.Proxy(A);
-  ]])
-  test_eval_error([[
-    class A {
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      string crypt(string data) {}
-    };
-    Nettle.Proxy(A);
-  ]])
-  test_do([[
-    class A {
-      int block_size() { return 512; }
-      int key_size() { return 0; }
-      void set_encrypt_key(string key) { }
-      void set_decrypt_key(string key) { }
-      int `()() { return 0; }
-      string crypt(string data) {}
-    };
-    Nettle.Proxy(A);
-  ]])
-  test_eq( Nettle.Proxy(Crypto.AES())->block_size(), 16)
-  test_eq( Nettle.Proxy(Crypto.AES)->block_size(), 16)
-  test_eq( Nettle.Proxy(Crypto.AES())->key_size(), 0)
-  test_eq( Nettle.Proxy(Crypto.AES)->key_size(), 0)
+// BLOWFISH
+test_generic_cipher(Crypto.Blowfish)
+test_generic_cipher(Crypto.Blowfish.CBC)
+test_generic_cipher(Crypto.Blowfish.PCBC)
+test_generic_cipher_autopad(Crypto.Blowfish.CFB)
+test_generic_cipher_autopad(Crypto.Blowfish.OFB)
+test_generic_cipher_autopad(Crypto.Blowfish.CTR)
+
+// CAMELLIA
+// Test vectors from RFC 3713. 128, 192 and 256 bits.
+test_generic_cipher(Crypto.Camellia)
+test_generic_cipher(Crypto.Camellia.CBC)
+test_generic_cipher(Crypto.Camellia.PCBC)
+test_generic_cipher_autopad(Crypto.Camellia.CFB)
+test_generic_cipher_autopad(Crypto.Camellia.OFB)
+test_generic_cipher_autopad(Crypto.Camellia.CTR)
+cond_resolv( Nettle.CAMELLIA, [[
+  test_true([[objectp(Nettle.CAMELLIA()())]])
+  test_cipher(CAMELLIA,
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "67 67 31 38 54 96 69 73 08 57 06 56 48 ea be 43")
+  test_cipher(CAMELLIA,
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10"
+              "00 11 22 33 44 55 66 77",
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "b4 99 34 01 b3 e9 96 f8 4e e5 ce e7 d7 9b 09 b9")
+  test_cipher(CAMELLIA,
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10"
+              "00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff",
+              "01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10",
+              "9a cc 23 7d ff 16 d7 6c 20 ef 7c 91 9e 3a 75 09")
+]])
+
+// CAST128
+test_generic_cipher(Crypto.CAST)
+test_generic_cipher(Crypto.CAST.CBC)
+test_generic_cipher(Crypto.CAST.PCBC)
+test_generic_cipher_autopad(Crypto.CAST.CFB)
+test_generic_cipher_autopad(Crypto.CAST.OFB)
+test_generic_cipher_autopad(Crypto.CAST.CTR)
+
+// CHACHA
+test_generic_cipher(Crypto.ChaCha20)
+test_generic_cipher(Crypto.ChaCha20.CBC)
+test_generic_cipher(Crypto.ChaCha20.PCBC)
+test_generic_cipher_autopad(Crypto.ChaCha20.CFB)
+test_generic_cipher_autopad(Crypto.ChaCha20.OFB)
+test_generic_cipher_autopad(Crypto.ChaCha20.CTR)
+cond_resolv( Nettle.CHACHA, [[
+  test_true([[objectp(Nettle.CHACHA()())]])
+  // From RFC 7539 A.2
+  test_cipher(CHACHA, "00"*32, "00"*64,
+	      "76 b8 e0 ad a0 f1 3d 90 40 5d 6a e5 53 86 bd 28"
+	      "bd d2 19 b8 a0 8d ed 1a a8 36 ef cc 8b 77 0d c7"
+	      "da 41 59 7c 51 57 48 8d 77 24 e0 3f b8 d8 4a 37"
+	      "6a 43 b8 f4 15 18 a1 1c c3 87 b6 69 b2 ee 65 86")
+]])
+
+// DES
+
+// DES3
+
+// IDEA
+test_generic_cipher(Crypto.IDEA)
+test_generic_cipher(Crypto.IDEA.CBC)
+test_generic_cipher(Crypto.IDEA.PCBC)
+test_generic_cipher_autopad(Crypto.IDEA.CFB)
+test_generic_cipher_autopad(Crypto.IDEA.OFB)
+test_generic_cipher_autopad(Crypto.IDEA.CTR)
+
+// SALSA20
+test_generic_cipher(Crypto.SALSA20)
+test_generic_cipher(Crypto.SALSA20.CBC)
+test_generic_cipher(Crypto.SALSA20.PCBC)
+test_generic_cipher_autopad(Crypto.SALSA20.CFB)
+test_generic_cipher_autopad(Crypto.SALSA20.OFB)
+test_generic_cipher_autopad(Crypto.SALSA20.CTR)
+dnl From the official ECRYPT project site SVN.
+dnl http://www.ecrypt.eu.org/stream/svn/viewcvs.cgi/ecrypt/trunk/submissions/salsa20/full/verified.test-vectors?rev=210&view=markup
+dnl 128 bit key, 64 bit IV
+dnl set 1, vector #0
+cond_resolv( Nettle.SALSA20 [[
   test_any([[
-    object proxy=Nettle.Proxy(Crypto.AES());
+    object o = Nettle.SALSA20()();
+    o->set_encrypt_key(H("80000000000000000000000000000000"));
+    o->set_iv(H("0000000000000000"));
+    string res = "";
+    for(int i; i<8; i++)
+      res += o->crypt("\0"*64);
+    res = res[0..63] + res[192..255] + res[256..319] + res[448..511];
+    return res);
+  ]], [[ H(#"
+ 4DFA5E481DA23EA09A31022050859936
+ DA52FCEE218005164F267CB65F5CFD7F
+ 2B4F97E0FF16924A52DF269515110A07
+ F9E460BC65EF95DA58F740B7D1DBB0AA
+ DA9C1581F429E0A00F7D67E23B730676
+ 783B262E8EB43A25F55FB90B3E753AEF
+ 8C6713EC66C51881111593CCB3E8CB8F
+ 8DE124080501EEEB389C4BCB6977CF95
+ 7D5789631EB4554400E1E025935DFA7B
+ 3E9039D61BDC58A8697D36815BF1985C
+ EFDF7AE112E5BB81E37ECF0616CE7147
+ FC08A93A367E08631F23C03B00A8DA2F
+ B375703739DACED4DD4059FD71C3C47F
+ C2F9939670FAD4A46066ADCC6A564578
+ 3308B90FFB72BE04A6B147CBE38CC0C3
+ B9267C296A92A7C69873F9F263BE9703"); ]])
+]])
+
+dnl 256 bit key, 64 bit IV
+dnl set 1, vector #0
+cond_resolv( Nettle.SALSA20 [[
+  test_any([[
+    object o = Nettle.SALSA20()();
+    o->set_encrypt_key(H("80000000000000000000000000000000"
+                         "00000000000000000000000000000000"));
+    o->set_iv(H("0000000000000000"));
+    string res = "";
+    for(int i; i<8; i++)
+      res += o->crypt("\0"*64);
+    res = res[0..63] + res[192..255] + res[256..319] + res[448..511];
+    return res);
+  ]], [[ H(#"
+ E3BE8FDD8BECA2E3EA8EF9475B29A6E7
+ 003951E1097A5C38D23B7A5FAD9F6844
+ B22C97559E2723C7CBBD3FE4FC8D9A07
+ 44652A83E72A9C461876AF4D7EF1A117
+ 57BE81F47B17D9AE7C4FF15429A73E10
+ ACF250ED3A90A93C711308A74C6216A9
+ ED84CD126DA7F28E8ABF8BB63517E1CA
+ 98E712F4FB2E1A6AED9FDC73291FAA17
+ 958211C4BA2EBD5838C635EDB81F513A
+ 91A294E194F1C039AEEC657DCE40AA7E
+ 7C0AF57CACEFA40C9F14B71A4B3456A6
+ 3E162EC7D8D10B8FFB1810D71001B618
+ 696AFCFD0CDDCC83C7E77F11A649D79A
+ CDC3354E9635FF137E929933A0BD6F53
+ 77EFA105A3A4266B7C0D089D08F1E855
+ CC32B15B93784A36E56A76CC64BC8477"); ]])
+]])
+
+// SALSA20 R12
+test_generic_cipher(Crypto.SALSA20R12)
+test_generic_cipher(Crypto.SALSA20R12.CBC)
+test_generic_cipher(Crypto.SALSA20R12.PCBC)
+test_generic_cipher_autopad(Crypto.SALSA20R12.CFB)
+test_generic_cipher_autopad(Crypto.SALSA20R12.OFB)
+test_generic_cipher_autopad(Crypto.SALSA20R12.CTR)
+
+// SERPENT
+test_generic_cipher(Crypto.Serpent)
+test_generic_cipher(Crypto.Serpent.CBC)
+test_generic_cipher(Crypto.Serpent.PCBC)
+test_generic_cipher_autopad(Crypto.Serpent.CFB)
+test_generic_cipher_autopad(Crypto.Serpent.OFB)
+test_generic_cipher_autopad(Crypto.Serpent.CTR)
+
+// Twofish
+test_generic_cipher(Crypto.Twofish)
+test_generic_cipher(Crypto.Twofish.CBC)
+test_generic_cipher(Crypto.Twofish.PCBC)
+test_generic_cipher_autopad(Crypto.Twofish.CFB)
+test_generic_cipher_autopad(Crypto.Twofish.OFB)
+test_generic_cipher_autopad(Crypto.Twofish.CTR)
+
+// CBC
+
+test_eq( Crypto.AES.CBC()->block_size(), 16)
+test_eq( Crypto.AES.CBC()->key_size(), 0)
+test_any([[
+  object cbc=Crypto.AES.CBC();
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return cbc->key_size();]], 32)
+test_eval_error([[
+  object cbc=Crypto.AES.CBC();
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  cbc->crypt("123");
+]])
+test_any([[
+  object cbc=Crypto.AES.CBC();
+  cbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  cbc->set_iv("\0"*16);
+  return S(cbc->
+    crypt("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
+]], "b71a7f6d29d66bd468294ed9cfda2af1764fcf6942fb6a411d4ed241755b723a1ff29c680d9cc485ac01022c8eab870110ff067f03941501e53dd1a72051f63e")
+
+// PCBC
+
+test_eq( Crypto.AES.PCBC()->block_size(), 16)
+test_eq( Crypto.AES.PCBC()->key_size(), 0)
+test_any([[
+  object pcbc=Crypto.AES.PCBC();
+  pcbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  return pcbc->key_size();]], 32)
+test_eval_error([[
+  object pcbc=Crypto.AES.PCBC();
+  pcbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  pcbc->crypt("123");
+]])
+test_any([[
+  object pcbc=Crypto.AES.PCBC();
+  pcbc->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
+  pcbc->set_iv("ABCDEFGHIJKLMNOP");
+  return S(pcbc->
+    crypt("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
+]], "618b81a13bb1b4e2890dd9fe98017197b24e5a154bbf32c3b79734ab96f5fc33ad413014b195a85029ae55b1316dc907c9c41a5997924c75a96f6e79f9a73f7d")
+
+// AEAD
+
+test_do(add_constant("test_adata", test_data[..116]);)
+test_do(add_constant("test_data", test_data[117..]);)
+
+define(test_generic_aead,[[
+  cond_resolv($1, [[
+    test_any([[
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_encrypt_key(key);
+      d->set_decrypt_key(key);
+
+      string iv = test_data[$1.iv_size()*4..$1.iv_size()*5-1];
+      c->set_iv(iv);
+      d->set_iv(iv);
+
+      c->update(test_adata);
+      d->update(test_adata);
+
+      return (d->crypt(c->crypt(test_data)) + c->digest()) ==
+	(test_data + d->digest());
+    ]], 1)
+  ]])
+]])
+
+dnl aead, key, iv, adata, plaintext, crypted, hash, [trunc]
+define(test_aead, [[
+  cond_resolv($1,[[
+  test_any([[
+    object o = $1();
+    o->set_encrypt_key(H($2));
+    o->set_iv(H($3));
+    o->update(H($4));
+    return S(o->crypt(H($5))) +
+      "|"+S(o->digest($8));
+    ]], lower_case($6-" "-"\n"+"|"+$7-" "-"\n"))
+  test_any([[
+    object o = $1();
+    o->set_decrypt_key(H($2));
+    o->set_iv(H($3));
+    o->update(H($4));
+    return S(o->crypt(H($6))) +
+      "|"+S(o->digest($8));
+    ]], lower_case($5-" "-"\n"+"|"+$7-" "-"\n"))
+  ]])
+]])
+
+// AES-CCM8 Testvectors from RFC 3610.
+
+test_generic_aead(Crypto.AES.CCM)
+test_generic_aead(Crypto.AES.CCM8)
+test_aead(Crypto.AES.CCM8,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 03  02 01 00 A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07",
+	"08 09 0A 0B  0C 0D 0E 0F  10 11 12 13  14 15 16 17"
+	"18 19 1A 1B  1C 1D 1E",
+        "58 8C 97 9A  61 C6 63 D2  F0 66 D0 C2  C0 F9 89 80"
+	"6D 5F 6B 61  DA C3 84",
+	"17 E8 D1 2C  FD F9 26 E0")
+
+test_aead(Crypto.AES.CCM8,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 04  03 02 01 A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07",
+	"08 09 0A 0B  0C 0D 0E 0F  10 11 12 13  14 15 16 17"
+	"18 19 1A 1B  1C 1D 1E 1F",
+	"72 C9 1A 36  E1 35 F8 CF  29 1C A8 94  08 5C 87 E3"
+	"CC 15 C4 39  C9 E4 3A 3B",
+	"A0 91 D5 6E  10 40 09 16")
+
+test_aead(Crypto.AES.CCM8,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 05  04 03 02 A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07",
+	"08 09 0A 0B  0C 0D 0E 0F  10 11 12 13  14 15 16 17"
+	"18 19 1A 1B  1C 1D 1E 1F  20",
+	"51 B1 E5 F4  4A 19 7D 1D  A4 6B 0F 8E  2D 28 2A E8"
+	"71 E8 38 BB  64 DA 85 96  57",
+	"4A DA A7 6F  BD 9F B0 C5")
+
+test_aead(Crypto.AES.CCM8,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 06  05 04 03 A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07  08 09 0A 0B",
+	"0C 0D 0E 0F  10 11 12 13  14 15 16 17  18 19 1A 1B  1C 1D 1E",
+	"A2 8C 68 65  93 9A 9A 79  FA AA 5C 4C  2A 9D 4A 91  CD AC 8C",
+	"96 C8 61 B9  C9 E6 1E F1")
+
+test_aead(Crypto.AES.CCM8,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 07  06 05 04 A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07  08 09 0A 0B",
+	"0C 0D 0E 0F  10 11 12 13  14 15 16 17  18 19 1A 1B  1C 1D 1E 1F",
+	"DC F1 FB 7B  5D 9E 23 FB  9D 4E 13 12  53 65 8A D8  6E BD CA 3E",
+	"51 E8 3F 07  7D 9C 2D 93")
+
+test_aead(Crypto.AES.CCM8,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 08  07 06 05 A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07  08 09 0A 0B",
+	"0C 0D 0E 0F  10 11 12 13  14 15 16 17  18 19 1A 1B  1C 1D 1E 1F  20",
+	"6F C1 B0 11  F0 06 56 8B  51 71 A4 2D  95 3D 46 9B  25 70 A4 BD  87",
+	"40 5A 04 43  AC 91 CB 94")
+
+test_aead(Crypto.AES.CCM,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 09  08 07 06 A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07",
+	"08 09 0A 0B  0C 0D 0E 0F  10 11 12 13  14 15 16 17"
+	"18 19 1A 1B  1C 1D 1E",
+	"01 35 D1 B2  C9 5F 41 D5  D1 D4 FE C1  85 D1 66 B8"
+	"09 4E 99 9D  FE D9 6C",
+	"04 8C 56 60  2C 97 AC BB  74 90", 10)
+
+test_aead(Crypto.AES.CCM,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 0A  09 08 07 A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07",
+	"08 09 0A 0B  0C 0D 0E 0F  10 11 12 13  14 15 16 17"
+	"18 19 1A 1B  1C 1D 1E 1F",
+	"7B 75 39 9A  C0 83 1D D2  F0 BB D7 58  79 A2 FD 8F"
+	"6C AE 6B 6C  D9 B7 DB 24",
+	"C1 7B 44 33  F4 34 96 3F  34 B4", 10)
+
+test_aead(Crypto.AES.CCM,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 0B  0A 09 08 A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07",
+	"08 09 0A 0B  0C 0D 0E 0F  10 11 12 13  14 15 16 17"
+	"18 19 1A 1B  1C 1D 1E 1F  20",
+	"82 53 1A 60  CC 24 94 5A  4B 82 79 18  1A B5 C8 4D"
+	"F2 1C E7 F9  B7 3F 42 E1  97",
+	"EA 9C 07 E5  6B 5E B1 7E  5F 4E", 10)
+
+test_aead(Crypto.AES.CCM,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 0C  0B 0A 09 A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07  08 09 0A 0B",
+	"0C 0D 0E 0F  10 11 12 13  14 15 16 17  18 19 1A 1B  1C 1D 1E",
+	"07 34 25 94  15 77 85 15  2B 07 40 98  33 0A BB 14  1B 94 7B",
+	"56 6A A9 40  6B 4D 99 99  88 DD", 10)
+
+test_aead(Crypto.AES.CCM,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 0D  0C 0B 0A A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07  08 09 0A 0B",
+	"0C 0D 0E 0F  10 11 12 13  14 15 16 17  18 19 1A 1B  1C 1D 1E 1F",
+	"67 6B B2 03  80 B0 E3 01  E8 AB 79 59  0A 39 6D A7  8B 83 49 34",
+	"F5 3A A2 E9  10 7A 8B 6C  02 2C", 10)
+
+test_aead(Crypto.AES.CCM,
+	"C0 C1 C2 C3  C4 C5 C6 C7  C8 C9 CA CB  CC CD CE CF",
+	"00 00 00 0E  0D 0C 0B A0  A1 A2 A3 A4  A5",
+	"00 01 02 03  04 05 06 07  08 09 0A 0B",
+	"0C 0D 0E 0F  10 11 12 13  14 15 16 17  18 19 1A 1B  1C 1D 1E 1F  20",
+	"C0 FF A0 D6  F0 5B DB 67  F2 4D 43 A4  33 8D 2A A4  BE D7 B2 0E  43",
+	"CD 1A A3 16  62 E7 AD 65  D6 DB", 10)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 41 2B 4E  A9 CD BE 3C  96 96 76 6C  FA",
+	"0B E1 A8 8B  AC E0 18 B1",
+	"08 E8 CF 97  D8 20 EA 25  84 60 E9 6A  D9 CF 52 89"
+	"05 4D 89 5C  EA C4 7C",
+	"4C B9 7F 86  A2 A4 68 9A  87 79 47 AB  80 91 EF 53"
+	"86 A6 FF BD  D0 80 F8",
+	"E7 8C F7 CB  0C DD D7 B3", 8)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 33 56 8E  F7 B2 63 3C  96 96 76 6C  FA",
+	"63 01 8F 76  DC 8A 1B CB",
+	"90 20 EA 6F  91 BD D8 5A  FA 00 39 BA  4B AF F9 BF"
+	"B7 9C 70 28  94 9C D0 EC",
+	"4C CB 1E 7C  A9 81 BE FA  A0 72 6C 55  D3 78 06 12"
+	"98 C8 5C 92  81 4A BC 33",
+	"C5 2E E8 1D  7D 77 C0 8A", 8)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 10 3F E4  13 36 71 3C  96 96 76 6C  FA",
+	"AA 6C FA 36  CA E8 6B 40",
+	"B9 16 E0 EA  CC 1C 00 D7  DC EC 68 EC  0B 3B BB 1A"
+	"02 DE 8A 2D  1A A3 46 13  2E",
+	"B1 D2 3A 22  20 DD C0 AC  90 0D 9A A0  3C 61 FC F4"
+	"A5 59 A4 41  77 67 08 97  08",
+	"A7 76 79 6E  DB 72 35 06", 8)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 76 4C 63  B8 05 8E 3C  96 96 76 6C  FA",
+	"D0 D0 73 5C  53 1E 1B EC  F0 49 C2 44",
+	"12 DA AC 56  30 EF A5 39  6F 77 0C E1  A6 6B 21 F7  B2 10 1C",
+	"14 D2 53 C3  96 7B 70 60  9B 7C BB 7C  49 91 60 28  32 45 26",
+	"9A 6F 49 97  5B CA DE AF", 8)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 F8 B6 78  09 4E 3B 3C  96 96 76 6C  FA",
+	"77 B6 0F 01  1C 03 E1 52  58 99 BC AE",
+	"E8 8B 6A 46  C7 8D 63 E5  2E B8 C5 46  EF B5 DE 6F  75 E9 CC 0D",
+	"55 45 FF 1A  08 5E E2 EF  BF 52 B2 E0  4B EE 1E 23  36 C7 3E 3F",
+	"76 2C 0C 77  44 FE 7E 3C", 8)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 D5 60 91  2D 3F 70 3C  96 96 76 6C  FA",
+	"CD 90 44 D2  B7 1F DB 81  20 EA 60 C0",
+	"64 35 AC BA  FB 11 A8 2E  2F 07 1D 7C  A4 A5 EB D9  3A 80 3B A8  7F",
+	"00 97 69 EC  AB DF 48 62  55 94 C5 92  51 E6 03 57  22 67 5E 04  C8",
+	"47 09 9E 5A  E0 70 45 51", 8)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 42 FF F8  F1 95 1C 3C  96 96 76 6C  FA",
+	"D8 5B C7 E6  9F 94 4F B8",
+	"8A 19 B9 50  BC F7 1A 01  8E 5E 67 01  C9 17 87 65"
+	"98 09 D6 7D  BE DD 18",
+	"BC 21 8D AA  94 74 27 B6  DB 38 6A 99  AC 1A EF 23"
+	"AD E0 B5 29  39 CB 6A",
+	"63 7C F9 BE  C2 40 88 97  C6 BA", 10)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 92 0F 40  E5 6C DC 3C  96 96 76 6C  FA",
+	"74 A0 EB C9  06 9F 5B 37",
+	"17 61 43 3C  37 C5 A3 5F  C1 F3 9F 40  63 02 EB 90"
+	"7C 61 63 BE  38 C9 84 37",
+	"58 10 E6 FD  25 87 40 22  E8 03 61 A4  78 E3 E9 CF"
+	"48 4A B0 4F  44 7E FF F6",
+	"F0 A4 77 CC  2F C9 BF 54  89 44", 10)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 27 CA 0C  71 20 BC 3C  96 96 76 6C  FA",
+	"44 A3 AA 3A  AE 64 75 CA",
+	"A4 34 A8 E5  85 00 C6 E4  15 30 53 88  62 D6 86 EA"
+	"9E 81 30 1B  5A E4 22 6B  FA",
+	"F2 BE ED 7B  C5 09 8E 83  FE B5 B3 16  08 F8 E2 9C"
+	"38 81 9A 89  C8 E7 76 F1  54",
+	"4D 41 51 A4  ED 3A 8B 87  B9 CE", 10)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 5B 8C CB  CD 9A F8 3C  96 96 76 6C  FA",
+	"EC 46 BB 63  B0 25 20 C3  3C 49 FD 70",
+	"B9 6B 49 E2  1D 62 17 41  63 28 75 DB  7F 6C 92 43  D2 D7 C2",
+	"31 D7 50 A0  9D A3 ED 7F  DD D4 9A 20  32 AA BF 17  EC 8E BF",
+	"7D 22 C8 08  8C 66 6B E5  C1 97", 10)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 3E BE 94  04 4B 9A 3C  96 96 76 6C  FA",
+	"47 A6 5A C7  8B 3D 59 42  27 E8 5E 71",
+	"E2 FC FB B8  80 44 2C 73  1B F9 51 67  C8 FF D7 89  5E 33 70 76",
+	"E8 82 F1 DB  D3 8C E3 ED  A7 C2 3F 04  DD 65 07 1E  B4 13 42 AC",
+	"DF 7E 00 DC  CE C7 AE 52  98 7D", 10)
+
+test_aead(Crypto.AES.CCM,
+	"D7 82 8D 13  B2 B0 BD C3  25 A7 62 36  DF 93 CC 6B",
+	"00 8D 49 3B  30 AE 8B 3C  96 96 76 6C  FA",
+	"6E 37 A6 EF  54 6D 95 5D  34 AB 60 59",
+	"AB F2 1C 0B  02 FE B8 8F  85 6D F4 A3  73 81 BC E3  CC 12 85 17  D4",
+	"F3 29 05 B8  8A 64 1B 04  B9 C9 FF B5  8C C3 90 90  0F 3D A1 2A  B1",
+	"6D CE 9E 82  EF A1 6D A6  20 59", 10)
+
+test_generic_aead(Crypto.AES.EAX)
+
+dnl EAX-AES128 test vectors from www.cs.ucdavis.edu/~rogaway/papers/eax.pdf.
+
+test_aead(Crypto.AES.EAX,
+	"233952DEE4D5ED5F9B9C6D6FF80FF478",
+	"62EC67F9C3A4A407FCB2A8C49031A8B3",
+	"6BFB914FD07EAE6B",
+	"",
+	"",
+	"E037830E8389F27B025A2D6527E79D01")
+
+test_aead(Crypto.AES.EAX,
+	"91945D3F4DCBEE0BF45EF52255F095A4",
+	"BECAF043B0A23D843194BA972C66DEBD",
+	"FA3BFD4806EB53FA",
+	"F7FB",
+	"19DD",
+	"5C4C9331049D0BDAB0277408F67967E5")
+
+test_aead(Crypto.AES.EAX,
+	"01F74AD64077F2E704C0F60ADA3DD523",
+	"70C3DB4F0D26368400A10ED05D2BFF5E",
+	"234A3463C1264AC6",
+	"1A47CB4933",
+	"D851D5BAE0",
+	"3A59F238A23E39199DC9266626C40F80")
+
+test_aead(Crypto.AES.EAX,
+	"D07CF6CBB7F313BDDE66B727AFD3C5E8",
+	"8408DFFF3C1A2B1292DC199E46B7D617",
+	"33CCE2EABFF5A79D",
+	"481C9E39B1",
+	"632A9D131A",
+	"D4C168A4225D8E1FF755939974A7BEDE")
+
+test_aead(Crypto.AES.EAX,
+	"35B6D0580005BBC12B0587124557D2C2",
+	"FDB6B06676EEDC5C61D74276E1F8E816",
+	"AEB96EAEBE2970E9",
+	"40D0C07DA5E4",
+	"071DFE16C675",
+	"CB0677E536F73AFE6A14B74EE49844DD")
+
+test_aead(Crypto.AES.EAX,
+	"BD8E6E11475E60B268784C38C62FEB22",
+	"6EAC5C93072D8E8513F750935E46DA1B",
+	"D4482D1CA78DCE0F",
+	"4DE3B35C3FC039245BD1FB7D",
+	"835BB4F15D743E350E728414",
+	"ABB8644FD6CCB86947C5E10590210A4F")
+
+test_aead(Crypto.AES.EAX,
+	"7C77D6E813BED5AC98BAA417477A2E7D",
+	"1A8C98DCD73D38393B2BF1569DEEFC19",
+	"65D2017990D62528",
+	"8B0A79306C9CE7ED99DAE4F87F8DD61636",
+	"02083E3979DA014812F59F11D52630DA30",
+	"137327D10649B0AA6E1C181DB617D7F2")
+
+test_aead(Crypto.AES.EAX,
+	"5FFF20CAFAB119CA2FC73549E20F5B0D",
+	"DDE59B97D722156D4D9AFF2BC7559826",
+	"54B9F04E6A09189A",
+	"1BDA122BCE8A8DBAF1877D962B8592DD2D56",
+	"2EC47B2C4954A489AFC7BA4897EDCDAE8CC3",
+	"3B60450599BD02C96382902AEF7F832A")
+
+test_aead(Crypto.AES.EAX,
+	"A4A4782BCFFD3EC5E7EF6D8C34A56123",
+	"B781FCF2F75FA5A8DE97A9CA48E522EC",
+	"899A175897561D7E",
+	"6CF36720872B8513F6EAB1A8A44438D5EF11",
+	"0DE18FD0FDD91E7AF19F1D8EE8733938B1E8",
+	"E7F6D2231618102FDB7FE55FF1991700")
+
+test_aead(Crypto.AES.EAX,
+	"8395FCF1E95BEBD697BD010BC766AAC3",
+	"22E7ADD93CFC6393C57EC0B3C17D6B44",
+	"126735FCC320D25A",
+	"CA40D7446E545FFAED3BD12A740A659FFBBB3CEAB7",
+	"CB8920F87A6C75CFF39627B56E3ED197C552D295A7",
+	"CFC46AFC253B4652B1AF3795B124AB6E")
+
+test_generic_aead(Crypto.AES.GCM)
+
+cond_resolv( Crypto.AES.GCM, [[
+  test_eq( Crypto.AES.GCM()->block_size(), 16 )
+  test_eq( Crypto.AES.GCM()->key_size(), 0 )
+
+  dnl NIST GCM AES test vectors
+
+  test_any([[
+    object o = Crypto.AES.GCM();
+    o->set_encrypt_key(H("00000000000000000000000000000000"));
+    o->set_iv(H("000000000000000000000000"));
+    return S(o->digest())]], "58e2fccefa7e3061367f1d57a4e7455a")
+
+dnl 1
+test_aead(Crypto.AES.GCM,
+"00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"",
+"",
+"58e2fccefa7e3061367f1d57a4e7455a")
+
+test_aead(Crypto.AES.GCM,
+"00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"0388dace60b6a392f328c2b971b2fe78",
+"ab6e47d42cec13bdf53a67b21257bddf")
+
+dnl 2
+test_aead(Crypto.AES.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b391aafd255",
+#"42831ec2217774244b7221b784d0d49c
+e3aa212f2c02a4e035c17e2329aca12e
+21d514b25466931c7d8f6a5aac84aa05
+1ba30b396a0aac973d58e091473f5985",
+"4d5c2af327cd64a62cf35abd2ba6fab4")
+
+dnl 3
+test_aead(Crypto.AES.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+#"feedfacedeadbeeffeedfacedeadbeef
+abaddad2",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b39",
+#"42831ec2217774244b7221b784d0d49c
+e3aa212f2c02a4e035c17e2329aca12e
+21d514b25466931c7d8f6a5aac84aa05
+1ba30b396a0aac973d58e091",
+"5bc94fbc3221a5db94fae95ae7121a47")
+
+dnl 4
+test_aead(Crypto.AES.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbad",
+#"feedfacedeadbeeffeedfacedeadbeef
+abaddad2",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b39",
+#"61353b4c2806934a777ff51fa22a4755
+699b2a714fcdc6f83766e5f97b6c7423
+73806900e49f24b22b097544d4896b42
+4989b5e1ebac0f07c23f4598",
+"3612d2e79e3b0785561be14aaca2fccb")
+
+dnl 5
+test_aead(Crypto.AES.GCM,
+"feffe9928665731c6d6a8f9467308308",
+#"9313225df88406e555909c5aff5269aa
+6a7a9538534f7da1e4c303d2a318a728
+c3c0c95156809539fcf0e2429a6b5254
+16aedbf5a0de6a57a637b39b",
+#"feedfacedeadbeeffeedfacedeadbeef
+abaddad2",
+#"d9313225f88406e5a55909c5aff5269a
+86a7a9531534f7da2e4c303d8a318a72
+1c3c0c95956809532fcf0e2449a6b525
+b16aedf5aa0de657ba637b39",
+#"8ce24998625615b603a033aca13fb894
+be9112a5c3a211a8ba262a3cca7e2ca7
+01e4a9a4fba43c90ccdcb281d48c7c6f
+d62875d2aca417034c34aee5",
+"619cc5aefffe0bfa462af43c1699d050")
+
+dnl 7
+test_aead(Crypto.AES.GCM,
+#"00000000000000000000000000000000
+0000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"98e7247c07f0fe411c267e4384b0f600",
+"2ff58d80033927ab8ef4d4587514f0fb")
+
+dnl 14
+test_aead(Crypto.AES.GCM,
+#"00000000000000000000000000000000
+00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"cea7403d4d606b6e074ec5d3baf39d18",
+"d0d1c8a799996bf0265b98b5d48ab919")
+
+]])
+
+test_generic_aead(Crypto.ChaCha20.POLY1305)
+cond_resolv( Crypto.ChaCha20.POLY1305, [[
+  test_eq( Crypto.ChaCha20.POLY1305()->block_size(), 64 )
+  test_eq( Crypto.ChaCha20.POLY1305()->key_size(), 0 )
+
+  dnl Test vector from RFC 7539 section 2.8.2.
+
+  test_aead(Crypto.ChaCha20.POLY1305,
+#"80 81 82 83 84 85 86 87 88 89 8a 8b 8c 8d 8e 8f
+90 91 92 93 94 95 96 97 98 99 9a 9b 9c 9d 9e 9f",
+"07 00 00 00"
+"40 41 42 43 44 45 46 47",
+"50 51 52 53 c0 c1 c2 c3 c4 c5 c6 c7",
+#"4c 61 64 69 65 73 20 61 6e 64 20 47 65 6e 74 6c
+65 6d 65 6e 20 6f 66 20 74 68 65 20 63 6c 61 73
+73 20 6f 66 20 27 39 39 3a 20 49 66 20 49 20 63
+6f 75 6c 64 20 6f 66 66 65 72 20 79 6f 75 20 6f
+6e 6c 79 20 6f 6e 65 20 74 69 70 20 66 6f 72 20
+74 68 65 20 66 75 74 75 72 65 2c 20 73 75 6e 73
+63 72 65 65 6e 20 77 6f 75 6c 64 20 62 65 20 69
+74 2e",
+#"d3 1a 8d 34 64 8e 60 db 7b 86 af bc 53 ef 7e c2
+a4 ad ed 51 29 6e 08 fe a9 e2 b5 a7 36 ee 62 d6
+3d be a4 5e 8c a9 67 12 82 fa fb 69 da 92 72 8b
+1a 71 de 0a 9e 06 0b 29 05 d6 a5 b6 7e cd 3b 36
+92 dd bd 7f 2d 77 8b 8c 98 03 ae e3 28 09 1b 58
+fa b3 24 e4 fa d6 75 94 55 85 80 8b 48 31 d7 bc
+3f f4 de f0 8e 4b 7a 9d e5 76 d2 65 86 ce c6 4b
+61 16",
+"1a e1 0b 59 4f 09 e2 6a 7e 90 2e cb d0 60 06 91")
+
+]])
+
+test_generic_aead(Crypto.Camellia.CCM)
+test_generic_aead(Crypto.Camellia.CCM8)
+test_generic_aead(Crypto.Camellia.EAX)
+test_generic_aead(Crypto.Camellia.GCM)
+cond_resolv( Crypto.Camellia.GCM, [[
+  test_eq( Crypto.Camellia.GCM()->block_size(), 16 )
+  test_eq( Crypto.Camellia.GCM()->key_size(), 0 )
+
+  dnl Test vectors from draft-kato-ipsec-camellia-gcm-03 section 4
+
+  dnl Spec Test Case 1 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"",
+"",
+"f5574acc3148dfcb9015200631024df9")
+
+  dnl Spec Test Case 2 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"00000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"defe3e0b5c54c94b4f2a0f5a46f6210d",
+"f672b94d192266c7c8c8dbb427cc989a")
+
+  dnl Spec Test Case 3 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
+"d0d94a13b632f337a0cc9955b94fa020c815f903aab12f1efaf2fe9d90f729a6"
+"cccbfa986ef2ff2c33de418d9a2529091cf18fe652c1cfde13f8260614bab815",
+"86e318012dd8329dc9dae6a170f61b24")
+
+  dnl Spec Test Case 4 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"d0d94a13b632f337a0cc9955b94fa020c815f903aab12f1efaf2fe9d90f729a6"
+"cccbfa986ef2ff2c33de418d9a2529091cf18fe652c1cfde13f82606",
+"9f458869431576ea6a095456ec6b8101")
+
+  dnl Spec Test Case 5 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbad",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"28fd7434d5cd424a5353818fc21a982460d20cf632eb1e6c4fbfca17d5abcf6a"
+"52111086162fe9570e7774c7a912aca3dfa10067ddaad40688645bdd",
+"e86f8f2e730c49d536f00fb5225d28b1")
+
+  dnl Spec Test Case 6 (Camellia-128)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308",
+"9313225df88406e555909c5aff5269aa6a7a9538534f7da1e4c303d2a318a728"
+"c3c0c95156809539fcf0e2429a6b525416aedbf5a0de6a57a637b39b",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"2e582b8417c93f2ff4f6f7ee3c361e4496e710ee12433baa964987d02f42953e"
+"402e6f4af407fe08cd2f35123696014c34db19128df4056faebcd647",
+"ceae5569b2af8641572622731aed3e53")
+]])
+
+cond_resolv( Crypto.Camellia.GCM, [[
+  dnl Spec Test Case 7 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"000000000000000000000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"",
+"",
+"ba9ae89fddce4b51131e17c4d65ce587")
+
+  dnl Spec Test Case 8 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"000000000000000000000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"8f9c0aa2549714c88bb2665e8af86d41",
+"783cff5c5aca7197320658a74279ab37")
+
+  dnl Spec Test Case 9 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c",
+"cafebabefacedbaddecaf888",
+"",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
+"0f009e88410d84ad93c90d55efbe20ffa855492f4dfd0fb485c4f02f536feffb"
+"b4d967729e5c67f1de0750255cc500716ba483eb3b0a2bf607af28f6a60bb2e9",
+"8d645a0b0e48d3c3b60a014157cb49b4")
+
+  dnl Spec Test Case 10 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c",
+"cafebabefacedbaddecaf888",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"0f009e88410d84ad93c90d55efbe20ffa855492f4dfd0fb485c4f02f536feffb"
+"b4d967729e5c67f1de0750255cc500716ba483eb3b0a2bf607af28f6",
+"01b15bb5ab6fac0c422014e91eacbf2b")
+
+  dnl Spec Test Case 11 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c",
+"cafebabefacedbad",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"678b3dcb270faa206dc5f6fbb5014996e86d6f3e35cdcdfeb03b37b9b06ff4ff"
+"2682248823bd3c84124dc76af7bde3dd440c228b5efbc795dd80dfb6",
+"f876143d933214a5035ff0bb96ff650b")
+
+  dnl Spec Test Case 12 (Camellia-192)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c",
+"9313225df88406e555909c5aff5269aa6a7a9538534f7da1e4c303d2a318a728"
+"c3c0c95156809539fcf0e2429a6b525416aedbf5a0de6a57a637b39b",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"9733ea567c3bad2259ccd63ef7012f5de709e50b1fdc31f1a16db02ede1b66f1"
+"1dcc4d953f2d4d4671587b65882afbf9545fdb6deab22413d091b703",
+"4b72e520b2521e63d240ed5c903216fa")
+]])
+
+cond_resolv( Crypto.Camellia.GCM, [[
+  dnl Spec Test Case 13 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"0000000000000000000000000000000000000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"",
+"",
+"9cdb269b5d293bc5db9c55b057d9b591")
+
+  dnl Spec Test Case 14 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"0000000000000000000000000000000000000000000000000000000000000000",
+"000000000000000000000000",
+"",
+"00000000000000000000000000000000",
+"3d4b2cde666761ba5dfb305178e667fb",
+"284b63bb143c40ce100fb4dea6bb617b")
+
+  dnl Spec Test Case 15 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255",
+"ad142c11579dd95e41f3c1f324dabc255864d920f1b65759d8f560d4948d4477"
+"58dfdcf77aa9f62581c7ff572a037f810cb1a9c4b3ca6ed638179b776549e092",
+"c912686270a2b9966415fca3be75c468")
+
+  dnl Spec Test Case 16 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbaddecaf888",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"ad142c11579dd95e41f3c1f324dabc255864d920f1b65759d8f560d4948d4477"
+"58dfdcf77aa9f62581c7ff572a037f810cb1a9c4b3ca6ed638179b77",
+"4e4b178d8fe26fdc95e2e7246dd94bec")
+
+  dnl Spec Test Case 17 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
+"cafebabefacedbad",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"6ca95fbb7d16577a9ef2fded94dc85b5d40c629f6bef2c649888e3cbb0ededc7"
+"810c04b12c2983bbbbc482e16e45c9215ae12c15c55f2f4809d06652",
+"e6472b8ebd331bfcc7c0fa63ce094461")
+
+  dnl Spec Test Case 18 (Camellia-256)
+  test_aead(Crypto.Camellia.GCM,
+"feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
+"9313225df88406e555909c5aff5269aa6a7a9538534f7da1e4c303d2a318a728"
+"c3c0c95156809539fcf0e2429a6b525416aedbf5a0de6a57a637b39b",
+"feedfacedeadbeeffeedfacedeadbeefabaddad2",
+"d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72"
+"1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+"e0cddd7564d09c4dc522dd65949262bbf9dcdb07421cf67f3032becb7253c284"
+"a16e5bf0f556a308043f53fab9eebb526be7f7ad33d697ac77c67862",
+"5791883f822013f8bd136fc36fb9946b")
+
+]])
+
+test_generic_aead(Crypto.Serpent.CCM)
+test_generic_aead(Crypto.Serpent.CCM8)
+test_generic_aead(Crypto.Serpent.EAX)
+test_generic_aead(Crypto.Serpent.GCM)
+
+test_generic_aead(Crypto.Twofish.CCM)
+test_generic_aead(Crypto.Twofish.CCM8)
+test_generic_aead(Crypto.Twofish.EAX)
+test_generic_aead(Crypto.Twofish.GCM)
+
+// Buffer
+
+cond_resolv( Crypto.AES.Buffer, [[
+  test_eq( Crypto.AES.Buffer()->block_size(), 16)
+  test_eq( Crypto.AES.Buffer()->key_size(), 0)
+  test_any([[
+    object proxy=Crypto.AES.Buffer();
     proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     return proxy->key_size();]], 32)
   test_any([[
-    object proxy=Nettle.Proxy(Crypto.AES);
-    proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
-    return proxy->key_size();]], 32)
-  test_any([[
-    object proxy=Nettle.Proxy(Crypto.AES());
+    object proxy=Crypto.AES.Buffer();
     proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     string r = "";
     foreach( "0123456789abcdefg"/1, string str )
       r += proxy->crypt(str);
     return r;
-  ]], String.hex2string("b71a7f6d29d66bd468294ed9cfda2af1"))
+  ]], H("b71a7f6d29d66bd468294ed9cfda2af1"))
   test_any([[
-    object proxy=Nettle.Proxy(Crypto.AES);
+    object proxy=Crypto.AES.Buffer();
     proxy->set_encrypt_key("qwertyuiopasdfghjklzxcvbnm123456");
     return proxy->crypt("123");
   ]], "")
-  
 ]])
-	  
-cond_resolv( Nettle.CBC, [[
-test_tests(
-  array(int) a() {
-    return Tools.Testsuite.run_script (({"]]SRCDIR[[/rijndaeltest.pike",
-				         "--quick"}));
-  }
-)
 
 test_do([[
-  object x = Nettle.CBC (Crypto.AES);
+  object x = Crypto.AES.CBC();
   x->set_encrypt_key ("\0" * 16);
   x->set_iv ("\0" * 16);
   x->crypt ("x" * 10000000);
 ]])
-]])
 
-cond_resolv(Nettle.Proxy, [[
+cond_resolv(Crypto.AES.Buffer, [[
   test_do([[
-    object x = Crypto.Buffer (Crypto.AES);
+    object x = Crypto.AES.Buffer();
     x->set_encrypt_key ("0" * 32);
     x->crypt ("x" * 10000000);
   ]])
 ]])
 
+// Random numbers
+
 cond_resolv( Nettle.Yarrow, [[
   test_any_equal([[
     object y = Nettle.Yarrow()->seed("What happen? Somebody set up us the bomb.");
     return ({ y->get_seed(), y->random_string(20), y->get_seed(), y->random_string(20) });
-  ]], [[({String.hex2string("73a35b2f896a8061be0ad434a592a43a82b81b9ed6c018f1c5a51300bbc8d53d"),
-	  String.hex2string("7847458e32fb789ff6b6cd6e1c8cc3712ba532a8"),
-	  String.hex2string("73a35b2f896a8061be0ad434a592a43a82b81b9ed6c018f1c5a51300bbc8d53d"),
-	  String.hex2string("49a090656a6d93782e169994f41005a3616d3cd7")})]])
+  ]], [[({H("73a35b2f896a8061be0ad434a592a43a82b81b9ed6c018f1c5a51300bbc8d53d"),
+	  H("7847458e32fb789ff6b6cd6e1c8cc3712ba532a8"),
+	  H("49a090656a6d93782e169994f41005a3616d3cd7bc8af11449745936f0024189"),
+	  H("b859cc92c600a1064527baba8f6415681cb77319")})]])
 ]])
+
+test_do( add_constant("F",Nettle.Fortuna()); )
+dnl Fortuna starts with "\0"*32 as key and "\0"*16 as counter.
+test_equal( Crypto.AES()->set_encrypt_key("\0"*32)->crypt("\0"*16), F->random_string(16) )
+dnl One rekey event. Counter is 3.
+test_any([[
+  object aes=Crypto.AES()->set_encrypt_key("\0"*32);
+  string key = aes->crypt("\0"*15+"\1") + aes->crypt("\0"*15+"\2");
+  return aes->set_encrypt_key(key)->crypt("\0"*15+"\3");
+]], F->random_string(16))
+test_eq( sizeof(F->random_string(0)), 0)
+test_eq( sizeof(F->random_string(1)), 1)
+test_eq( sizeof(F->random_string(15)), 15)
+test_eq( sizeof(F->random_string(16)), 16)
+test_eq( sizeof(F->random_string(17)), 17)
+test_do( add_constant("F"); )
+
+// crypt_md5
+
+test_eq(Nettle.crypt_md5("",""), "qRPK7m23GJusamGpoGLby/")
+test_eq(Nettle.crypt_md5("","",""), "oF5jz0K0HEfDANLadsTNI.")
+test_eq(Nettle.crypt_md5("","","$1$"), "qRPK7m23GJusamGpoGLby/")
+
+dnl From openssl passwd examples for option -1 (BSD)
+test_eq(Nettle.crypt_md5("password","xxxxxxxx"), "UYCIxa628.9qXjpQCjM4a.")
+dnl From openssl passwd examples for option -apr1
+test_eq(Nettle.crypt_md5("password","xxxxxxxx","$apr1$"), "dxHfLAsjHkDRmG83UXe8K0")
+dnl From John's sample hashes on http://openwall.info/wiki/
+test_eq(Nettle.crypt_md5("password","O3JMY.Tw"), "AdLnLjQ/5jXF9.MTp3gHv/")
+dnl GNU test vector
+test_eq(Nettle.crypt_md5("GNU libc manual","/iSaq7rB"), "EoUw5jJPPvAPECNaaWzMK/")
+dnl From cpan.org MD5Crypt.pm
+test_eq(Nettle.crypt_md5("passphrase","Vd3f8aG6"), "GcsdF4YCXb0PM2UmXjIoI1")
+dnl From PHP CRYPT_MD5 crypt() example
+test_eq(Nettle.crypt_md5("rasmuslerdorf","rasmusle"), "rISCgZzpwk3UhDidwXvin0")
+dnl From Python passlib.hash.md5_crypt
+test_eq(Nettle.crypt_md5("password","3azHgidD"), "SrJPt7B.9rekpmwJwtON31")
+
+// hogweed
+test_eval_error(Nettle.dsa_generate_keypair(256,160,random_string)
+&&Nettle.dsa_generate_keypair(1024,1,random_string))
+test_eval_error(Nettle.rsa_generate_keypair(512,4,random_string))
+test_eval_error(Nettle.rsa_generate_keypair(512,1,random_string))
+test_eval_error(Nettle.rsa_generate_keypair(88,0x10001,random_string))
+test_eq(Nettle.rsa_unpad(H("01ffffffffffffffff00"),1),0)
+test_eq(Nettle.rsa_unpad(H("01ffffffffffffffff0064"),1),10)
+test_eq(Nettle.rsa_unpad(H("01ffffffffffffffff000064"),1),10)
+test_eq(Nettle.rsa_unpad(H("01fffeffffffffffff0064"),1),0)
+test_eq(Nettle.rsa_unpad(H("02fffeffffffffffff0064"),1),0)
+test_eq(Nettle.rsa_unpad(H("02fffeffffffffffff0064"),2),10)
+test_eq(Nettle.rsa_unpad(H("01ffffffffffffff000064"),1),0)
+cond_resolv(Nettle.ECC_Curve, [[
+  test_eval_error(Nettle.ECC_Curve(5))
+]])
+
+test_do([[
+  add_constant("T",
+	       lambda(string in) {
+	         return Gmp.bignum(in-" "-"\n",16);
+	       });
+]])
+
+dnl test_ecdsa(curve, gwx, gwy, w, k, hash, r, s)
+define(test_ecdsa,[[
+test_do([[
+  add_constant("C", Nettle.ECC_Curve(Nettle.$1));
+]])
+test_eq([[
+  // Verify derivation of the public key.
+  (C * T(#"$4"))->get_x()
+]], [[
+  T(#"$2")
+]])
+test_eq([[
+  // Verify derivation of the public key.
+  (C * T(#"$4"))->get_y()
+]], [[
+  T(#"$3")
+]])
+test_any([[
+  // Validate signing.
+  object e = C.ECDSA();
+  e->set_private_key(T(#"$4")); // w
+  string pool = H(#"$5"); // k
+  string rnd(int s) {
+    if(s==0) error("random called with 0.\n");
+    if(s>sizeof(pool)) error("More random than needed requested.\n");
+    string r = pool[..s-1];
+    pool = pool[s..];
+    return r;
+  };
+  e->set_random(rnd);
+  array rs = e->raw_sign(H(#"$6")); // hash
+  return rs[0]==T(#"$7") && rs[1]==T(#"$8"); // r, s
+]], 1)
+test_any([[
+  // Validate the signature check.
+  object e = C.ECDSA();
+  e->set_public_key(T(#"$2"), T(#"$3")); // gwx, gwy
+  return e->raw_verify(H(#"$6"), T(#"$7"), T(#"$8"));
+]], 1)
+test_do([[ add_constant("C"); ]])
+]])
+
+cond_resolv(Nettle.ECC_Curve, [[
+
+// RFC 4754
+test_ecdsa(SECP256R1,
+2442A5CC 0ECD015F A3CA31DC 8E2BBC70 BF42D60C BCA20085 E0822CB0 4235E970,
+6FC98BD7 E50211A4 A27102FA 3549DF79 EBCB4BF2 46B80945 CDDFE7D5 09BBFD7D,
+DC51D386 6A15BACD E33D96F9 92FCA99D A7E6EF09 34E70975 59C27F16 14C88A7F,
+9E56F509 196784D9 63D1C0A4 01510EE7 ADA3DCC5 DEE04B15 4BF61AF1 D5A6DECE,
+BA7816BF 8F01CFEA 414140DE 5DAE2223 B00361A3 96177A9C B410FF61 F20015AD,
+CB28E099 9B9C7715 FD0A80D8 E47A7707 9716CBBF 917DD72E 97566EA1 C066957C,
+86FA3BB4 E26CAD5B F90B7F81 899256CE 7594BB1E A0C89212 748BFF3B 3D5B0315)
+
+test_ecdsa(SECP384R1,
+96281BF8 DD5E0525 CA049C04 8D345D30 82968D10 FEDF5C5A CA0C64E6 465A97EA
+ 5CE10C9D FEC21797 41571072 1F437922,
+447688BA 94708EB6 E2E4D59F 6AB6D7ED FF9301D2 49FE49C3 3096655F 5D502FAD
+ 3D383B91 C5E7EDAA 2B714CC9 9D5743CA,
+0BEB6466 34BA8773 5D77AE48 09A0EBEA 865535DE 4C1E1DCB 692E8470 8E81A5AF
+ 62E528C3 8B2A81B3 5309668D 73524D9F,
+B4B74E44 D71A13D5 68003D74 89908D56 4C7761E2 29C58CBF A1895009 6EB7463B
+ 854D7FA9 92F934D9 27376285 E63414FA,
+CB00753F 45A35E8B B5A03D69 9AC65007 272C32AB 0EDED163 1A8B605A 43FF5BED
+ 8086072B A1E7CC23 58BAECA1 34C825A7,
+FB017B91 4E291494 32D8BAC2 9A514640 B46F53DD AB2C6994 8084E293 0F1C8F7E
+ 08E07C9C 63F2D21A 07DCB56A 6AF56EB3,
+B263A130 5E057F98 4D38726A 1B468741 09F417BC A112674C 528262A4 0A629AF1
+ CBB9F516 CE0FA7D2 FF630863 A00E8B9F)
+
+test_ecdsa(SECP521R1,
+0151518F 1AF0F563 517EDD54 85190DF9 5A4BF57B 5CBA4CF2 A9A3F647 4725A35F
+ 7AFE0A6D DEB8BEDB CD6A197E 592D4018 8901CECD 650699C9 B5E456AE A5ADD190
+ 52A8,
+006F3B14 2EA1BFFF 7E2837AD 44C9E4FF 6D2D34C7 3184BBAD 90026DD5 E6E85317
+ D9DF45CA D7803C6C 20035B2F 3FF63AFF 4E1BA64D 1C077577 DA3F4286 C58F0AEA
+ E643,
+0065FDA3 409451DC AB0A0EAD 45495112 A3D813C1 7BFD34BD F8C1209D 7DF58491
+ 20597779 060A7FF9 D704ADF7 8B570FFA D6F062E9 5C7E0C5D 5481C5B1 53B48B37
+ 5FA1,
+00C1C2B3 05419F5A 41344D7E 4359933D 734096F5 56197A9B 244342B8 B62F46F9
+ 373778F9 DE6B6497 B1EF825F F24F42F9 B4A4BD73 82CFC337 8A540B1B 7F0C1B95
+ 6C2F,
+DDAF35A1 93617ABA CC417349 AE204131 12E6FA4E 89A97EA2 0A9EEEE6 4B55D39A
+ 2192992A 274FC1A8 36BA3C23 A3FEEBBD 454D4423 643CE80E 2A9AC94F A54CA49F,
+0154FD38 36AF92D0 DCA57DD5 341D3053 988534FD E8318FC6 AAAAB68E 2E6F4339
+ B19F2F28 1A7E0B22 C269D93C F8794A92 78880ED7 DBB8D936 2CAEACEE 54432055
+ 2251,
+017705A7 030290D1 CEB605A9 A1BB03FF 9CDD521E 87A696EC 926C8C10 C8362DF4
+ 97536710 1F67D1CF 9BCCBF2F 3D239534 FA509E70 AAC851AE 01AAC68D 62F86647
+ 2660)
+
+test_any([[
+  object c=Nettle.ECC_Curve(Nettle.SECP192R1);
+  object p=c*17;
+  return S(p->encode());
+]], "0444275cd2e1f46dc3f9f57636c2b4213b8bb445930510ff8aefad8348fde30c87de438612a818e98d9b76a67ad25ddfd0")
+
+test_any_equal([[
+  object p=Nettle.ECC_Curve(Nettle.SECP192R1)->Point(Stdio.Buffer(H("0444275cd2e1f46dc3f9f57636c2b4213b8bb445930510ff8aefad8348fde30c87de438612a818e98d9b76a67ad25ddfd0")));
+  return ({ p->get_x(), p->get_y() })
+]],[[ ({ 1671125335834827806091558150169784167134350298655600213898, 5876882175903236860388081433302259871828398972419132219344 }) ]])
+
+test_any_equal([[
+  object p=Nettle.ECC_Curve(Nettle.SECP192R1)->Point(H("0444275cd2e1f46dc3f9f57636c2b4213b8bb445930510ff8aefad8348fde30c87de438612a818e98d9b76a67ad25ddfd0"));
+  return ({ p->get_x(), p->get_y() })
+]],[[ ({ 1671125335834827806091558150169784167134350298655600213898, 5876882175903236860388081433302259871828398972419132219344 }) ]])
+
+]]) dnl Nettle.ECC_Curve
+
+test_do( add_constant( "test_adata" ) )
+test_do( add_constant( "test_data" ) )
+test_do( add_constant( "T" ) )
+test_do( add_constant( "H" ) )
+test_do( add_constant( "S" ) )
+
+test_eq( Nettle.crc32c(""), 0 )
+test_eq( Nettle.crc32c("123456789"), 0xe3069283 )
+
 END_MARKER

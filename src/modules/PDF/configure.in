@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 AC_INIT(pdflib_glue.c)
 AC_CONFIG_HEADER(pdf_machine.h)
 AC_ARG_WITH(libpdf,     [  --with(out)-libpdf       Support PDF through PDFlib],[],[with_libpdf=yes])
@@ -24,7 +21,7 @@ if test x$with_libpdf = xyes ; then
 
 # now check
     AC_SEARCH_LIBS(PDF_boot, pdf pdflib, [
-      AC_DEFINE(HAVE_LIBPDF) 
+      AC_DEFINE(HAVE_LIBPDF)
       PIKE_FEATURE_OK(PDF.PDFlib)
     ])
 
@@ -45,7 +42,7 @@ if test x$with_libpanda = xyes ; then
 
 # now check
     AC_CHECK_LIB(panda, settitle, [
-      AC_DEFINE(HAVE_LIBPANDA) 
+      AC_DEFINE(HAVE_LIBPANDA)
       LIBS="${LIBS-} -lpanda"
 
       PIKE_FEATURE(PDF.Panda,[yes (but not implemented)])
@@ -61,5 +58,3 @@ if test x$with_libpanda = xyes ; then
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

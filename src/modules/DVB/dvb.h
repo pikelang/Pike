@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef DVB_H
@@ -49,7 +48,7 @@
 
 #define P2P_LENGTH 2048
 
-enum{ 
+enum{
 	DVB_PES_TYPE_NOPES,
 	DVB_PES_TYPE_AUDIO,
 	DVB_PES_TYPE_VIDEO,

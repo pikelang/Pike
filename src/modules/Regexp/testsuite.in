@@ -1,72 +1,64 @@
 START_MARKER
-dnl $Id$
-
-dnl - Here we try the Regexp module
-test_true(objectp(Regexp))
-test_true([[objectp(Regexp("foo"))]])
-test_any([[object o; o=Regexp(); destruct(o); return 1]],1)
-
-dnl Regexp->create
-test_any([[object o; o=Regexp("^.*$"); destruct(o); return 1]],1)
 
 dnl Regexp->match
-test_eq([[Regexp("^.*$")->match("")]],1)
-test_eq([[Regexp(".*")->match("foo")]],1)
-test_eq([[Regexp("^.*$")->match("a")]],1)
-test_eq([[Regexp("^.*$")->match("-")]],1)
-test_eq([[Regexp("^$")->match("")]],1)
-test_eq([[Regexp("^.$")->match("a")]],1)
-test_eq([[Regexp("^.$")->match("-")]],1)
-test_eq([[Regexp("^[abc]$")->match("-")]],0)
-test_eq([[Regexp("^[abc]$")->match("a")]],1)
-test_eq([[Regexp("^[abc]$")->match("c")]],1)
-test_eq([[Regexp("^[^abc]$")->match("-")]],1)
-test_eq([[Regexp("^[^abc]$")->match("a")]],0)
-test_eq([[Regexp("^[^abc]$")->match("c")]],0)
-test_eq([[Regexp("^a*$")->match("aaaa")]],1)
-test_eq([[Regexp("^(a|bb)*$")->match("aabbabb")]],1)
-test_eq([[Regexp("^(a|bb)*$")->match("")]],1)
-test_eq([[Regexp("^(a|bb)+$")->match("")]],0)
-test_eq([[Regexp("^(a|bb)+$")->match("aaa")]],1)
-test_eq([[Regexp("^(a|bb)+$")->match("bbb")]],0)
-test_eq([[Regexp("^(a|bb)+$")->match("bbaabba")]],1)
-test_eq([[Regexp("^a|b$")->match("a")]],1)
-test_eq([[Regexp("^a|b$")->match("b")]],1)
+test_eq(Regexp("")->match(""),1)
+test_eq(Regexp(".*hej")->match("hej"),1)
+test_eq(Regexp(".*hej")->match("ohej"),1)
+test_eq(Regexp("^hej")->match("hej"),1)
+test_eq(Regexp("^hej")->match("ohej"),0)
+test_eq(Regexp(".hej")->match("hej"),0)
+test_eq(Regexp(".hej")->match("ohej"),1)
+test_eq(Regexp("^.*$")->match(""),1)
+test_eq(Regexp(".*")->match("foo"),1)
+test_eq(Regexp("^.*$")->match("a"),1)
+test_eq(Regexp("^.*$")->match("-"),1)
+test_eq(Regexp("^$")->match(""),1)
+test_eq(Regexp("^.$")->match("a"),1)
+test_eq(Regexp("^.$")->match("-"),1)
+test_eq(Regexp("^[abc]$")->match("-"),0)
+test_eq(Regexp("^[abc]$")->match("a"),1)
+test_eq(Regexp("^[abc]$")->match("c"),1)
+test_eq(Regexp("^[^abc]$")->match("-"),1)
+test_eq(Regexp("^[^abc]$")->match("a"),0)
+test_eq(Regexp("^[^abc]$")->match("c"),0)
+test_eq(Regexp("^a*$")->match("aaaa"),1)
+test_eq(Regexp("^(a|bb)*$")->match("aabbabb"),1)
+test_eq(Regexp("^(a|bb)*$")->match(""),1)
+test_eq(Regexp("^(a|bb)+$")->match(""),0)
+test_eq(Regexp("^(a|bb)+$")->match("aaa"),1)
+test_eq(Regexp("^(a|bb)+$")->match("bbb"),0)
+test_eq(Regexp("^(a|bb)+$")->match("bbaabba"),1)
+test_eq(Regexp("^a|b$")->match("a"),1)
+test_eq(Regexp("^a|b$")->match("b"),1)
 
-test_equal([[Regexp("x")->match(({ "a", "b", "c" }))]],({}))
-test_equal([[Regexp("a")->match(({ "a", "b", "c" }))]],({ "a" }))
-test_equal([[Regexp("c|a")->match(({ "a", "b", "c" }))]],({ "a", "c" }))
+test_equal(Regexp("x")->match(({ "a", "b", "c" })),({}))
+test_equal(Regexp("a")->match(({ "a", "b", "c" })),({ "a" }))
+test_equal(Regexp("c|a")->match(({ "a", "b", "c" })),({ "a", "c" }))
 
 dnl Regexp->split
-test_equal([[Regexp("^(a*)[^a]*$")->split("aaabbb")]],({"aaa"}))
+test_equal(Regexp("^(a*)[^a]*$")->split("aaabbb"),({"aaa"}))
+test_equal(Regexp("(a)"*39)->split("a"*50),({"a"})*39)
+test_eval_error(Regexp("(a)"*40)->split("a"*50))
 
 dnl Regexp->replace
-test_equal([[ Regexp(".*")->replace("abrakadabra", "·") ]], "·")
-test_equal([[ Regexp("^ab")->replace("abrakadabra", "·") ]], "·rakadabra")
-test_equal([[ Regexp("(a)")->replace("abrakadabra", "·") ]], "·br·k·d·br·")
-test_equal([[ Regexp(".*")->replace("abrakadabra", "·") ]], "·")
-test_equal([[ Regexp("k|br")->replace("abrakadabra", "·") ]], "a·a·ada·a")
-test_equal([[ Regexp("k|br")->replace("abrakadabra",
-              lambda(string s) { return "["+upper_case(s)+"]"; }) ]],
+test_equal( Regexp(".*")->replace("abrakadabra", "·"), "·")
+test_equal( Regexp("^ab")->replace("abrakadabra", "·"), "·rakadabra")
+test_equal( Regexp("(a)")->replace("abrakadabra", "·"), "·br·k·d·br·")
+test_equal( Regexp(".*")->replace("abrakadabra", "·"), "·")
+test_equal( Regexp("k|br")->replace("abrakadabra", "·"), "a·a·ada·a")
+test_equal( Regexp("k|br")->replace("abrakadabra",
+              lambda(string s) { return "["+upper_case(s)+"]"; }),
                                                       "a[BR]a[K]ada[BR]a")
 
 dnl test non-crash
-test_do([[Regexp("^((.*)[ ]|)(.*)[ ]")->split("abcdef")]])
+test_do(Regexp("^((.*)[ ]|)(.*)[ ]")->split("abcdef"))
 
 dnl Shortcuts
 cond_resolv(Regexp.match, [[
-  test_eq([[Regexp.match("^[abc]$","-")]],0)
-  test_eq([[Regexp.match("^[abc]$","a")]],1)
-  test_equal([[Regexp.split("^(a*)[^a]*$","aaabbb")]],({"aaa"}))
-  test_equal([[ Regexp.replace("(a)", "abrakadabra", "·") ]], "·br·k·d·br·")
+  test_eq(Regexp.match("^[abc]$","-"),0)
+  test_eq(Regexp.match("^[abc]$","a"),1)
+  test_equal(Regexp.split("^(a*)[^a]*$","aaabbb"),({"aaa"}))
+  test_equal( Regexp.replace("(a)", "abrakadabra", "·"), "·br·k·d·br·")
 ]])
 
-dnl Compat
-test_false([[
-#pike 0.6
-# 1 "-" // Prevent "." from being imported
-Regexp()->replace ]])
-test_true([[
-#pike 7.4
-programp(Regexp) ]])
 END_MARKER

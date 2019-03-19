@@ -10,7 +10,7 @@
 
 inherit GDK2.Drawable;
 
-static GDK2.Pixmap create( int|object image );
+protected GDK2.Pixmap create( int|object image );
 //! Create a new GDK2.Pixmap object.
 //! Argument is a GDK2.Image object or a Image.Image object
 //!

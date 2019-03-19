@@ -9,7 +9,7 @@ inherit GTK2.CellLayout;
 
 inherit GTK2.CellEditable;
 
-static GTK2.ComboBoxEntry create( string|TreeModel|mapping model, int|void text_column );
+protected GTK2.ComboBoxEntry create( string|TreeModel|mapping model, int|void text_column );
 //! Create a new ComboBoxEntry, either empty or with a model.
 //!
 //!

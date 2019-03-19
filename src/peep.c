@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -16,7 +15,6 @@
 #include "lex.h"
 #include "pike_memory.h"
 #include "peep.h"
-#include "dmalloc.h"
 #include "stuff.h"
 #include "bignum.h"
 #include "opcodes.h"
@@ -24,6 +22,7 @@
 #include "constants.h"
 #include "interpret.h"
 #include "pikecode.h"
+#include "pike_compiler.h"
 
 #ifdef PIKE_DEBUG
 static int hasarg(int opcode)
@@ -79,7 +78,7 @@ void exit_bytecode(void)
     c[e].file = (void *)(ptrdiff_t)~0;
 #endif
   }
-  
+
   toss_buffer(&instrbuf);
 }
 
@@ -98,7 +97,7 @@ ptrdiff_t insert_opcode(p_instr *opcode)
 ptrdiff_t insert_opcode2(unsigned int f,
 			 INT32 b,
 			 INT32 c,
-			 INT32 current_line,
+			 INT_TYPE current_line,
 			 struct pike_string *current_file)
 {
   p_instr *p;
@@ -129,7 +128,7 @@ ptrdiff_t insert_opcode2(unsigned int f,
 
 ptrdiff_t insert_opcode1(unsigned int f,
 			 INT32 b,
-			 INT32 current_line,
+			 INT_TYPE current_line,
 			 struct pike_string *current_file)
 {
 #ifdef PIKE_DEBUG
@@ -140,7 +139,8 @@ ptrdiff_t insert_opcode1(unsigned int f,
   return insert_opcode2(f,b,0,current_line,current_file);
 }
 
-ptrdiff_t insert_opcode0(int f,int current_line, struct pike_string *current_file)
+ptrdiff_t insert_opcode0(int f, INT_TYPE current_line,
+			 struct pike_string *current_file)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
@@ -156,7 +156,7 @@ void update_arg(int instr,INT32 arg)
 #ifdef PIKE_DEBUG
   if(instr > (long)instrbuf.s.len / (long)sizeof(p_instr) || instr < 0)
     Pike_fatal("update_arg outside known space.\n");
-#endif  
+#endif
   p=(p_instr *)instrbuf.s.str;
   p[instr].arg=arg;
 }
@@ -174,9 +174,7 @@ INT32 assemble(int store_linenumbers)
   INT32 *labels, *jumps, *uses, *aliases;
   ptrdiff_t e, length;
   p_instr *c;
-#ifdef PIKE_PORTABLE_BYTECODE
   struct pike_string *tripples = NULL;
-#endif /* PIKE_PORTABLE_BYTECODE */
 #ifdef PIKE_DEBUG
   INT32 max_pointer=-1;
   int synch_depth = 0;
@@ -184,6 +182,9 @@ INT32 assemble(int store_linenumbers)
 #endif
   int relabel;
   int reoptimize = relabel = !(debug_options & NO_PEEP_OPTIMIZING);
+  struct lex *lex;
+  CHECK_COMPILER();
+  lex = &THIS_COMPILATION->lex;
 
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
@@ -193,8 +194,8 @@ INT32 assemble(int store_linenumbers)
   {
     for (e = 0; e < length; e++) {
       if (c[e].opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr, "~~~%4d %4lx %*s", c[e].line,
-	      DO_NOT_WARN((unsigned long)e), synch_depth, "");
+      fprintf(stderr, "~~~%4ld %4lx %*s", (long)c[e].line,
+              (unsigned long)e, synch_depth, "");
       dump_instr(c+e);
       fprintf(stderr,"\n");
       if (c[e].opcode == F_SYNCH_MARK) synch_depth++;
@@ -205,12 +206,11 @@ INT32 assemble(int store_linenumbers)
   }
 #endif
 
-#ifdef PIKE_PORTABLE_BYTECODE
   /* No need to do this for constant evaluations. */
   if (store_linenumbers) {
     p_wchar2 *current_tripple;
     struct pike_string *previous_file = NULL;
-    int previous_line = 0;
+    INT_TYPE previous_line = 0;
     ptrdiff_t num_linedirectives = 0;
 
     /* Count the number of F_FILENAME/F_LINE pseudo-ops we need to add. */
@@ -229,7 +229,7 @@ INT32 assemble(int store_linenumbers)
     /* fprintf(stderr, "length:%d directives:%d\n",
      *         length, num_linedirectives);
      */
-      
+
     if (!(tripples = begin_wide_shared_string(3*(length+num_linedirectives),
 					      2))) {
       Pike_fatal("Failed to allocate wide string of length %d 3*(%d + %d).\n",
@@ -253,7 +253,11 @@ INT32 assemble(int store_linenumbers)
       if (c[e].line != previous_line) {
 	current_tripple[0] = F_LINE;
 	current_tripple[1] = c[e].line;
-	current_tripple[2] = 0;
+#if SIZEOF_INT_TYPE > 4
+	current_tripple[2] = c[e].line>>32;
+#else
+        current_tripple[2] = 0;
+#endif
 	current_tripple += 3;
 	previous_line = c[e].line;
       }
@@ -272,8 +276,6 @@ INT32 assemble(int store_linenumbers)
 #endif /* PIKE_DEBUG */
     tripples = end_shared_string(tripples);
   }
-  
-#endif /* PIKE_PORTABLE_BYTECODE */
 
   for(e=0;e<length;e++,c++) {
     if(c->opcode == F_LABEL) {
@@ -297,8 +299,8 @@ INT32 assemble(int store_linenumbers)
     c=(p_instr *)instrbuf.s.str;
     for(e=0;e<length;e++,c++) {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr, " * %4d %4lx ",
-	      c->line, DO_NOT_WARN((unsigned long)e));
+      fprintf(stderr, " * %4ld %4lx ",
+              (long)c->line, (unsigned long)e);
       dump_instr(c);
       if ((instrs[c->opcode - F_OFFSET].flags & I_POINTER) &&
 	  (c->arg > max_label)) {
@@ -308,7 +310,7 @@ INT32 assemble(int store_linenumbers)
       }
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
     }
-    
+
     Pike_fatal("Reference to undefined label %d > %d\n",
 	       max_pointer, max_label);
   }
@@ -320,11 +322,10 @@ INT32 assemble(int store_linenumbers)
     if (c->opcode == F_ENTRY) c->opcode = F_NOP;
 #endif
 
-  labels=(INT32 *)xalloc(sizeof(INT32) * 4 * (max_label+2));
+  labels=xalloc(sizeof(INT32) * 4 * (max_label+2));
   jumps = labels + max_label + 2;
   uses = jumps + max_label + 2;
   aliases = uses + max_label + 2;
-
   while(relabel)
   {
     /* First do the relabel pass. */
@@ -333,24 +334,24 @@ INT32 assemble(int store_linenumbers)
       labels[e]=jumps[e]= aliases[e] = -1;
       uses[e]=0;
     }
-    
+
     c=(p_instr *)instrbuf.s.str;
     length=instrbuf.s.len / sizeof(p_instr);
     for(e=0;e<length;e++)
       if(c[e].opcode == F_LABEL && c[e].arg>=0) {
 	INT32 l = c[e].arg;
-	labels[l]=DO_NOT_WARN((INT32)e);
+        labels[l]=(INT32)e;
 	while (e+1 < length &&
 	       c[e+1].opcode == F_LABEL && c[e+1].arg >= 0) {
 	  /* aliases is used to compact several labels at the same
 	   * position to one label. That's necessary for some peep
 	   * optimizations to work well. */
 	  e++;
-	  labels[c[e].arg] = DO_NOT_WARN((INT32)e);
+          labels[c[e].arg] = (INT32)e;
 	  aliases[c[e].arg] = l;
 	}
       }
-    
+
     for(e=0;e<length;e++)
     {
       if(instrs[c[e].opcode-F_OFFSET].flags & I_POINTER)
@@ -361,39 +362,41 @@ INT32 assemble(int store_linenumbers)
 	{
 	  int tmp;
 	  tmp=labels[c[e].arg];
-	  
+
 	  while(tmp<length &&
 		(c[tmp].opcode == F_LABEL ||
 		 c[tmp].opcode == F_NOP)) tmp++;
-	  
+
 	  if(tmp>=length) break;
-	  
+
 	  if(c[tmp].opcode==F_BRANCH)
 	  {
 	    c[e].arg=c[tmp].arg;
 	    continue;
 	  }
-	  
+
 #define TWOO(X,Y) (((X)<<8)+(Y))
-	  
+
 	  switch(TWOO(c[e].opcode,c[tmp].opcode))
 	  {
 	    case TWOO(F_LOR,F_BRANCH_WHEN_NON_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_NON_ZERO;
+	      /* FALL_THROUGH */
 	    case TWOO(F_LOR,F_LOR):
 	      c[e].arg=c[tmp].arg;
 	      continue;
-	      
+
 	    case TWOO(F_LAND,F_BRANCH_WHEN_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_ZERO;
+	      /* FALL_THROUGH */
 	    case TWOO(F_LAND,F_LAND):
 	      c[e].arg=c[tmp].arg;
 	      continue;
-	      
+
 	    case TWOO(F_LOR, F_RETURN):
 	      c[e].opcode=F_RETURN_IF_TRUE;
 	      goto pointer_opcode_done;
-	      
+
 	    case TWOO(F_BRANCH, F_RETURN):
 	    case TWOO(F_BRANCH, F_RETURN_0):
 	    case TWOO(F_BRANCH, F_RETURN_1):
@@ -419,7 +422,7 @@ INT32 assemble(int store_linenumbers)
       }
     pointer_opcode_done:;
     }
-    
+
     for(e=0;e<=max_label;e++)
     {
       if(!uses[e] && labels[e]>=0)
@@ -460,25 +463,27 @@ INT32 assemble(int store_linenumbers)
   }
 
   /* Time to create the actual bytecode. */
-
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
 
   for(e=0;e<=max_label;e++) labels[e]=jumps[e]=-1;
-  
+
+
+#ifdef START_NEW_FUNCTION
+  START_NEW_FUNCTION(store_linenumbers);
+#endif
+
 #ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
-  while( ( (((INT32) PIKE_PC)+2) & (ALIGN_PIKE_JUMPS-1)))
+  while( ( (((INT32) PIKE_PC)+4) & (ALIGN_PIKE_JUMPS-1)))
     ins_byte(0);
 #endif
 
-#ifdef PIKE_PORTABLE_BYTECODE
   if (store_linenumbers) {
     ins_data(store_prog_string(tripples));
     free_string(tripples);
   } else {
     ins_data(0);
   }
-#endif /* PIKE_PORTABLE_BYTECODE */
 
   entry_point = PIKE_PC;
 
@@ -494,11 +499,13 @@ INT32 assemble(int store_linenumbers)
 		 "0x%04"PRINTPTRDIFFT"x != 0x%04"PRINTPTRDIFFT"x\n",
 		 e, c - ((p_instr *)instrbuf.s.str));
     }
-    if((a_flag > 2 && store_linenumbers) || a_flag > 3)
+    if(((a_flag > 2) && store_linenumbers) ||
+       (a_flag > 3) ||
+       (lex->pragmas & ID_DISASSEMBLE))
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr, "===%4d %4lx %*s", c->line,
-	      DO_NOT_WARN((unsigned long)PIKE_PC), synch_depth, "");
+      fprintf(stderr, "===%4ld %4lx %*s", (long)c->line,
+              (unsigned long)PIKE_PC, synch_depth, "");
       dump_instr(c);
       fprintf(stderr,"\n");
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
@@ -557,10 +564,11 @@ INT32 assemble(int store_linenumbers)
 	Pike_fatal("Duplicate label!\n");
 #endif
       FLUSH_CODE_GENERATOR_STATE();
-      labels[c->arg] = DO_NOT_WARN((INT32)PIKE_PC);
+      labels[c->arg] = (INT32)PIKE_PC;
       if ((e+1 < length) &&
 	  (c[1].opcode != F_LABEL) &&
 	  (c[1].opcode != F_BYTE) &&
+	  (c[1].opcode != F_ENTRY) &&
 	  (c[1].opcode != F_DATA)) {
 	/* Don't add redundant code before labels or raw data. */
 	UPDATE_PC();
@@ -577,7 +585,7 @@ INT32 assemble(int store_linenumbers)
       if(c->arg > max_label || c->arg < 0)
 	Pike_fatal("Jump to unknown label?\n");
 #endif
-      tmp = DO_NOT_WARN((INT32)PIKE_PC);
+      tmp = (INT32)PIKE_PC;
       ins_pointer(jumps[c->arg]);
       jumps[c->arg]=tmp;
       break;
@@ -602,7 +610,7 @@ INT32 assemble(int store_linenumbers)
 	if(c->arg > max_label || c->arg < 0)
 	  Pike_fatal("Jump to unknown label?\n");
 #endif
-	tmp = DO_NOT_WARN((INT32)PIKE_PC);
+        tmp = (INT32)PIKE_PC;
 	ins_pointer(jumps[c->arg]);
 	jumps[c->arg]=tmp;
 	break;
@@ -711,11 +719,11 @@ INT32 assemble(int store_linenumbers)
 	case F_RETURN_0:
 	case F_RETURN_1:
 	case F_RETURN_LOCAL:
-	  
+
 #define CALLS(X) \
       case PIKE_CONCAT3(F_,X,_AND_RETURN): \
       case PIKE_CONCAT3(F_MARK_,X,_AND_RETURN):
-	  
+
 	  CALLS(APPLY)
 	    CALLS(CALL_FUNCTION)
 	    CALLS(CALL_LFUN)
@@ -725,7 +733,7 @@ INT32 assemble(int store_linenumbers)
       }
     }
 #endif
-    
+
     c++;
   }
 
@@ -757,7 +765,11 @@ INT32 assemble(int store_linenumbers)
     }
   }
 
-  free((char *)labels);
+  free(labels);
+
+#ifdef END_FUNCTION
+  END_FUNCTION(store_linenumbers);
+#endif
 
 #ifdef PIKE_DEBUG
   if (a_flag > 6) {
@@ -806,7 +818,7 @@ static p_instr *instructions;
 /* insopt{0,1,2} push an instruction on instrstack. */
 
 static INLINE p_instr *insopt2(int f, INT32 a, INT32 b,
-			       int cl, struct pike_string *cf)
+			       INT_TYPE cl, struct pike_string *cf)
 {
   p_instr *p;
 
@@ -832,7 +844,8 @@ static INLINE p_instr *insopt2(int f, INT32 a, INT32 b,
   return p;
 }
 
-static INLINE p_instr *insopt1(int f, INT32 a, int cl, struct pike_string *cf)
+static INLINE p_instr *insopt1(int f, INT32 a, INT_TYPE cl,
+			       struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(!hasarg(f) && a)
@@ -842,7 +855,7 @@ static INLINE p_instr *insopt1(int f, INT32 a, int cl, struct pike_string *cf)
   return insopt2(f,a,0,cl, cf);
 }
 
-static INLINE p_instr *insopt0(int f, int cl, struct pike_string *cf)
+static INLINE p_instr *insopt0(int f, INT_TYPE cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
@@ -946,13 +959,13 @@ static void do_optimization(int topop, int topush, ...)
   int q=0;
   int oplen;
   struct pike_string *cf;
-  INT32 cl=instr(0)->line;
+  INT_TYPE cl=instr(0)->line;
 
 #ifdef PIKE_DEBUG
   if(a_flag>5)
   {
     int e;
-    fprintf(stderr,"PEEP at %d:",cl);
+    fprintf(stderr, "PEEP at %ld:", cl);
     for(e = topop; e--;)
     {
       fprintf(stderr," ");
@@ -978,7 +991,7 @@ static void do_optimization(int topop, int topush, ...)
   pop_n_opcodes(topop);
 
   va_start(arglist, topush);
-  
+
   while((oplen = va_arg(arglist, int)))
   {
     q++;
@@ -1065,7 +1078,7 @@ static int asm_opt(void)
     for(e=0;e<length;e++,c++)
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr,"<<<%4d: %*s",c->line,synch_depth,"");
+      fprintf(stderr,"<<<%4ld: %*s",(long)c->line,synch_depth,"");
       dump_instr(c);
       fprintf(stderr,"\n");
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
@@ -1083,9 +1096,7 @@ static int asm_opt(void)
 #ifdef PIKE_DEBUG
     if(a_flag>6) {
       int e;
-      fprintf(stderr, "#%ld,%ld:",
-              DO_NOT_WARN((long)eye),
-              stack_depth);
+      fprintf(stderr, "#%ld,%ld:", (long)eye, stack_depth);
       for(e = 4;e--;) {
         fprintf(stderr," ");
         dump_instr(instr(e));
@@ -1098,7 +1109,7 @@ static int asm_opt(void)
     relabel |= low_asm_opt();
   }
 
-  free((char *)instructions);
+  free(instructions);
 
 #ifdef PIKE_DEBUG
   if(a_flag > 4)
@@ -1114,7 +1125,7 @@ static int asm_opt(void)
     for(e=0;e<length;e++,c++)
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr,">>>%4d: %*s",c->line,synch_depth,"");
+      fprintf(stderr,">>>%4ld: %*s",(long)c->line,synch_depth,"");
       dump_instr(c);
       fprintf(stderr,"\n");
       if (c->opcode == F_SYNCH_MARK) synch_depth++;

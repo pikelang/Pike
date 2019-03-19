@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -64,5 +63,8 @@
 
 /* Define if MYSQL has a net.vio member */
 #undef HAVE_MYSQL_FIELD_NET_VIO
+
+/* Define to 1 if you have the <mysql/mysqld_ername.h> header file. */
+#undef HAVE_MYSQL_MYSQLD_ERNAME_H
 
 #endif /* PIKE_MYSQL_CONFIG_H */

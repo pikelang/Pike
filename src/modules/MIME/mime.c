@@ -2,11 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
- * RFC1521 functionality for Pike
+ * @rfc{1521@} functionality for Pike
  *
  * Marcus Comstedt 1996-1999
  */
@@ -121,19 +120,25 @@ PIKE_MODULE_INIT
     rfc822ctype[(int)"<>@,;:\\/?"[i]] = CT_SPECIAL;
 
   /* Add global functions */
-  add_function_constant( "decode_base64", f_decode_base64,
-			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_base64", f_encode_base64,
-			 "function(string,void|int:string)",OPT_TRY_OPTIMIZE );
+
+  /* Really tFunc(tStr7, tStr8), but cut down on warnings for now. */
+  ADD_FUNCTION2( "decode_base64", f_decode_base64,
+                 tFunc(tStr, tStr8), 0, OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "encode_base64", f_encode_base64,
+                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+
   add_function_constant( "decode_qp", f_decode_qp,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_qp", f_encode_qp,
-			 "function(string,void|int:string)",OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "encode_qp", f_encode_qp,
+                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+
   add_function_constant( "decode_uue", f_decode_uue,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
-  add_function_constant( "encode_uue", f_encode_uue,
-			 "function(string,void|string:string)",
-			 OPT_TRY_OPTIMIZE);
+
+  ADD_FUNCTION2( "encode_uue", f_encode_uue,
+                 tFunc(tStr tOr(tVoid,tStr),tStr7), 0, OPT_TRY_OPTIMIZE );
 
   add_integer_constant("TOKENIZE_KEEP_ESCAPES", TOKENIZE_KEEP_ESCAPES, 0);
 
@@ -187,7 +192,7 @@ static void f_decode_base64( INT32 args )
     SIGNED char *src;
     ptrdiff_t cnt;
     INT32 d = 1;
-    int pads = 0;
+    int pads = 3;
 
     init_string_builder( &buf, 0 );
 
@@ -203,16 +208,31 @@ static void f_decode_base64( INT32 args )
 	  d=1;
 	}
       } else if (*src=='=') {
-	/* A pad character has been encountered.
-	   Increase pad count, and remove unused bits from d. */
-	pads++;
-	d>>=2;
+	/* A pad character has been encountered. */
+        break;
       }
 
     /* If data size not an even multiple of 3 bytes, output remaining data */
+    if (d & 0x3f000000) {
+      /* NOT_REACHED, but here for symmetry. */
+      pads = 0;
+    } else if (d & 0xfc0000) {
+      pads = 1;
+      /* Remove unused bits from d. */
+      d >>= 2;
+    } else if (d & 0x3f000) {
+      pads = 2;
+      /* Remove unused bits from d. */
+      d >>= 4;
+    }
     switch(pads) {
+    case 0:
+      /* NOT_REACHED, but here for symmetry. */
+      string_builder_putchar( &buf, (d>>16)&0xff );
+      /* FALL_THROUGH */
     case 1:
       string_builder_putchar( &buf, (d>>8)&0xff );
+      /* FALL_THROUGH */
     case 2:
       string_builder_putchar( &buf, d&0xff );
     }
@@ -314,6 +334,7 @@ static void f_encode_base64( INT32 args )
       switch (last) {
       case 1:
 	*--dest = '=';
+	/* FALL_THROUGH */
       case 2:
 	*--dest = '=';
       }
@@ -442,7 +463,7 @@ static void f_encode_qp( INT32 args )
 	col = 0;
       }
     }
-    
+
     /* Return the result */
     pop_n_elems( args );
     push_string( finish_string_builder( &buf ) );
@@ -560,12 +581,10 @@ static void do_uue_encode(ptrdiff_t groups, unsigned char **srcp, char **destp,
 
     if (g<15) {
       /* The line isn't filled completely.  Add space for the "last" bytes */
-      *dest++ = ' ' +
-	DO_NOT_WARN((char)(3*g + last));
+      *dest++ = ' ' + (char)(3*g + last);
       last = 0;
     } else
-      *dest++ = ' ' + 
-	DO_NOT_WARN((char)(3*g));
+      *dest++ = ' ' + (char)(3*g);
 
     groups -= g;
 
@@ -675,6 +694,7 @@ static void f_encode_uue( INT32 args )
       switch (last) {
       case 1:
 	dest[-2] = '`';
+	/* FALL_THROUGH */
       case 2:
 	dest[-1] = '`';
       }
@@ -734,7 +754,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
       if (l>0) {
 	/* Yup.  It's an encoded word, so it must be an atom.  */
 	if(mode)
-	  push_constant_text("encoded-word");
+	  push_static_text("encoded-word");
 	push_string( make_shared_binary_string( (char *)src, l ) );
 	if(mode)
 	  f_aggregate(2);
@@ -743,12 +763,13 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 	cnt -= l;
 	break;
       }
+      /* FALL_THROUGH */
     case CT_SPECIAL:
     case CT_RBRACK:
     case CT_RPAR:
       /* Individual special character, push as a char (= int) */
       if(mode)
-	push_constant_text("special");
+	push_static_text("special");
       push_int( *src++ );
       if(mode)
 	f_aggregate(2);
@@ -763,7 +784,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 	  break;
 
       if(mode)
-	push_constant_text("word");
+	push_static_text("word");
       push_string( make_shared_binary_string( (char *)src, l ) );
       if(mode)
 	f_aggregate(2);
@@ -786,7 +807,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 
       /* Push the resulting string */
       if(mode)
-	push_constant_text("word");
+	push_static_text("word");
 
       if (e) {
 	/* l is the distance to the ending ", and e is the number of	\
@@ -824,7 +845,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
       if (l >= cnt) {
 	/* No ]; seems that this was no domain literal after all... */
 	if(mode)
-	  push_constant_text("special");
+	  push_static_text("special");
 	push_int( *src++ );
 	if(mode)
 	  f_aggregate(2);
@@ -843,7 +864,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 
       /* Push the resulting string */
       if(mode)
-	push_constant_text("domain-literal");
+	push_static_text("domain-literal");
       push_string( end_shared_string( str ) );
       if(mode)
 	f_aggregate(2);
@@ -871,7 +892,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 	  }
 
       if(mode) {
-	push_constant_text("comment");
+	push_static_text("comment");
 
 	str = begin_shared_string( l-e-1 );
 
@@ -912,7 +933,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 
 /*! @decl array(string|int) tokenize(string header, int|void flags)
  *!
- *! A structured header field, as specified by RFC822, is constructed from
+ *! A structured header field, as specified by @rfc{822@}, is constructed from
  *! a sequence of lexical elements.
  *!
  *! @param header
@@ -955,10 +976,10 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
  *! domain-literal @tt{[127.0.0.1]@} from the quoted-string
  *! @tt{"[127.0.0.1]"@}. Hopefully this won't cause any problems.
  *! Domain-literals are used seldom, if at all, anyway...
- *! 
- *! The set of special-characters is the one specified in RFC1521
+ *!
+ *! The set of special-characters is the one specified in @rfc{1521@}
  *! (i.e. @expr{"<", ">", "@@", ",", ";", ":", "\", "/", "?", "="@}),
- *! and not the set specified in RFC822.
+ *! and not the set specified in @rfc{822@}.
  *!
  *! @seealso
  *!   @[MIME.quote()], @[tokenize_labled()],
@@ -1272,7 +1293,7 @@ static void f_quote_labled( INT32 args )
       string_builder_putchar( &buf, ')' );
 
       prev_atom = 0;
-      
+
     } else if (c_compare_string( item->u.array->item[0].u.string,
 				 "domain-literal", 14 )) {
 

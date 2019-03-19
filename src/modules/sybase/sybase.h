@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -33,7 +32,7 @@ typedef struct {
   CS_CONNECTION *connection;
   CS_COMMAND *cmd;
   char busy; /* only one pending command per connection */
-  
+
   char had_error; /* non-zero if had error */
   char error[256]; /* The last error string. The size is determined by the */
                     /* sybase API */

@@ -35,7 +35,7 @@ Gnome2.Appbar clear_stack( );
 //!
 //!
 
-static Gnome2.Appbar create( int has_progress, int has_status, int interactivity );
+protected Gnome2.Appbar create( int has_progress, int has_status, int interactivity );
 //! Create a new GNOME application status bar. If has_progress is TRUE,
 //! a small progress bar widget will be created, and placed on the left
 //! side of the appbar. If has_status is TRUE, a status bar, possibly

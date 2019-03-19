@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -23,6 +22,7 @@
 #include "pike_error.h"
 #include "mapping.h"
 #include "operators.h"
+#include "bignum.h"
 
 #include "image.h"
 #include "builtin_functions.h"
@@ -35,12 +35,17 @@ extern struct program *image_program;
 **! module Image
 **! submodule AVS
 **!
+**! An AVS file is a raw (uncompressed) 24 bit image file with alpha.
+**!
+**! The file starts with width and height as 32-bit ingegers, followed
+**! by 4 x width x height bytes of image data. The format is big
+**! endian.
 */
 
 /*
 **! method object decode(string data)
 **! method mapping _decode(string data)
-**! method string encode(object image)
+**! method string encode(object image, object|void alpha)
 **!
 **! Handle encoding and decoding of AVS-X images.
 **! AVS is rather trivial, and not really useful, but:
@@ -58,19 +63,22 @@ void image_avs_f__decode(INT32 args)
   int w, h;
   unsigned char *q;
   get_all_args( "decode", args, "%S", &s);
-  
+
+  if (s->len < 12)	/* Width + height + one pixel */
+    Pike_error("This is not an AVS file.\n");
+
   q = (unsigned char *)s->str;
   w = q[0]<<24 | q[1]<<16 | q[2]<<8 | q[3];
   h = q[4]<<24 | q[5]<<16 | q[6]<<8 | q[7];
 
-  /* Check for under and overflow. */
-  if ((w <= 0) || (h <= 0) || (w>>16)*(h>>16))
+  /* Check for under- and overflow. */
+  if ((w <= 0) || (h <= 0) || INT32_MUL_OVERFLOW(w, h) ||
+      ((w * h) & -0x40000000))
     Pike_error("This is not an AVS file (w=%d; h=%d)\n", w, h);
 
-  if((size_t)w*h*4+8 != (size_t)s->len)
+  if((size_t)w*h*4 != (size_t)(s->len-8))
     Pike_error("This is not an AVS file (w=%d; h=%d; s=%ld)\n",
-	  w, h,
-	  DO_NOT_WARN((long)s->len));
+          w, h, (long)s->len);
 
   push_int( w );
   push_int( h );
@@ -90,9 +98,9 @@ void image_avs_f__decode(INT32 args)
     ((struct image *)ao->storage)->img[c] = apix;
   }
   pop_n_elems(args);
-  push_constant_text("image");
+  push_static_text("image");
   push_object( io );
-  push_constant_text("alpha");
+  push_static_text("alpha");
   push_object( ao );
   f_aggregate_mapping( 4 );
 }
@@ -100,7 +108,7 @@ void image_avs_f__decode(INT32 args)
 void image_avs_f_decode(INT32 args)
 {
   image_avs_f__decode(args);
-  push_constant_text("image");
+  push_static_text("image");
   f_index(2);
 }
 
@@ -113,13 +121,20 @@ void image_avs_f_encode(INT32 args )
   int x,y;
   unsigned int *q;
   rgb_group apix = {255, 255, 255};
-  get_all_args( "encode", args, "%o", &io);
-  
-  if(!(i = (struct image *)get_storage( io, image_program)))
+  get_all_args( "encode", args, "%o.%o", &io, &ao);
+
+  if(!(i = get_storage( io, image_program)))
     Pike_error("Wrong argument 1 to Image.AVS.encode\n");
-  
+
+  if(ao) {
+    if (!(a = get_storage( ao, image_program)))
+      Pike_error("Wrong argument 2 to Image.AVS.encode\n");
+    if ((a->xsize != i->xsize) || (a->ysize != i->ysize))
+      Pike_error("Bad size for alpha channel to Image.AVS.encode.\n");
+  }
+
   s = begin_shared_string( i->xsize*i->ysize*4+8 );
-  MEMSET(s->str, 0, s->len );
+  memset(s->str, 0, s->len );
 
   q = (unsigned int *)s->str;
   *(q++) = htonl( i->xsize );
@@ -131,7 +146,7 @@ void image_avs_f_encode(INT32 args )
   for(y=0; y<i->ysize; y++)
     for(x=0; x<i->xsize; x++)
     {
-      register int rv = 0;
+      unsigned int rv = 0;
       rgb_group pix = *(is++);
       if(as) apix = *(as++);
       rv = ((apix.g<<24)|(pix.r<<16)|(pix.g<<8)|pix.b);
@@ -141,13 +156,14 @@ void image_avs_f_encode(INT32 args )
   push_string( end_shared_string(s) );
 }
 
-void init_image_avs()
+void init_image_avs(void)
 {
   ADD_FUNCTION( "decode",  image_avs_f_decode,  tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "_decode", image_avs_f__decode, tFunc(tStr,tMapping), 0);
-  ADD_FUNCTION( "encode",  image_avs_f_encode,  tFunc(tObj,tStr), 0);
+  ADD_FUNCTION( "encode",  image_avs_f_encode,
+		tFunc(tObj tOr(tObj,tVoid),tStr), 0);
 }
 
-void exit_image_avs()
+void exit_image_avs(void)
 {
 }

@@ -1,5 +1,4 @@
 START_MARKER
-dnl $Id$
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -8,6 +7,63 @@ Image.PNM.decode("P4\n5 5\nx¸Øèð") )
 test_eq([[ Image.GIF.decode(MIME.decode_base64(
   "R0lGODlhBQAFAIAAAAAAAP///ywAAAAABQAFAAACCAxwEWrY8BwoADs=")) ]],
 Image.PNM.decode("P4\n5 5\nx\00èØèð") )
+
+dnl netpbm wikipedia examples
+test_do(add_constant("IMAGE",lambda(string in) { return decode_value(Gz.uncompress(String.hex2string(in))); }))
+test_eq(Image.PNM.decode(#{P1
+# This is an example bitmap of the letter "J"
+6 10
+0 0 0 0 1 0
+0 0 0 0 1 0
+0 0 0 0 1 0
+0 0 0 0 1 0
+0 0 0 0 1 0
+0 0 0 0 1 0
+1 0 0 0 1 0
+0 1 1 1 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+#}), IMAGE("78dadb969d6a90fc9423e1010713071bdb86ff48808181e13f2aa0ae08b2389ccd0003ff89060072d39782"))
+
+test_eq(Image.PNM.decode(#{P2
+# Shows the word "FEEP" (example from Netpbm man page on PGM)
+24 7
+15
+0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+0  3  3  3  3  0  0  7  7  7  7  0  0 11 11 11 11  0  0 15 15 15 15  0
+0  3  0  0  0  0  0  7  0  0  0  0  0 11  0  0  0  0  0 15  0  0 15  0
+0  3  3  3  0  0  0  7  7  7  0  0  0 11 11 11  0  0  0 15 15 15 15  0
+0  3  0  0  0  0  0  7  0  0  0  0  0 11  0  0  0  0  0 15  0  0  0  0
+0  3  0  0  0  0  0  7  7  7  7  0  0 11 11 11 11  0  0 15  0  0  0  0
+0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+#}), IMAGE("78dadb969d6a90fc9423e101870807b31bc31706ea01632400112947021091dd480022f21f09c0cd413319ae1d0ee0dae100ae1dd91c64c720bb07d91c64c7d0c23dc8e183690e31e1c34003000052ea5e1c"))
+
+test_eq(Image.PNM.decode(#{P3
+# The P3 means colors are in ASCII, then 3 columns and 2 rows,
+# then 255 for max color, then RGB triplets
+3 2
+255
+255   0   0     0 255   0     0   0 255
+255 255   0   255 255 255     0   0   0
+#}), IMAGE("78dadb969d6a90fc9423e1c18b156c7cff191818c0f8ff7f3066600000dfef0de3"))
+
+test_eq(Image.PNM.decode(#{P3
+# The same image with width 3 and height 2,
+# using 0 or 1 per color (red, green, blue)
+3 2 1
+1 0 0   0 1 0   0 0 1
+1 1 0   1 1 1   0 0 0
+#}), IMAGE("78dadb969d6a90fc9423e1c18b156c7cff191818c0f8ff7f3066600000dfef0de3"))
+
+test_eq(Image.PNM.decode("P3 3 2 1  1 0 0   0 1 0   0 0 1  1 1 0   1 1 1   0 0 0"), IMAGE("78dadb969d6a90fc9423e1c18b156c7cff191818c0f8ff7f3066600000dfef0de3"))
+
+test_eval_error(Image.PNM.decode("P2 1 1 0 0"))
+
+test_eq(Image.PNM.decode("P4\n"
+ "3 3\n"
+ "\240@\240"), IMAGE("78dadb969d6a90fc9423e1c10b7d3671060686ffffff63250165b1116f"))
+
+test_do(add_constant("IMAGE"))
 
 test_true( objectp(Image.Image()) )
 test_false( Image.Image()->xsize() )
@@ -236,7 +292,7 @@ test_any_equal([[
 test_any([[
   object img=Image.Image(100,100,0,0,0);
   foreach (({40,50,60}),int z)
-  { 
+  {
      img->line(50-z,0,50,50,255,255,255);
      img->line(50-z,100,50,50,255,255,255);
      img->line(100,50+z,50,50,255,255,255);
@@ -261,7 +317,7 @@ test_do( add_constant("img") )
 test_any([[
   object img=Image.Image(100,100,0,0,0);
   foreach (({40,60,50}),int z)
-  { 
+  {
      img->box(z,0,50,50,255,z,255);
      img->box(z,100,50,50,255,z,0);
      img->box(100,z,50,50,0,z,255);
@@ -304,12 +360,12 @@ test_any_equal([[
 		 ({20+x,15+y,25+x,15+y,20+x,10+y}),
 		 ({10+x,20+y,15+x,20+y,15+x,25+y}),
 		 ({20+x,25+y,25+x,20+y,20+x,20+y}),
-		 
+
 		 ({30+2*10+x,15+y,30+2*15+x,10+y,30+2*15+x,15+y}),
 		 ({30+2*20+x,15+y,30+2*25+x,15+y,30+2*20+x,10+y}),
 		 ({30+2*10+x,20+y,30+2*15+x,20+y,30+2*15+x,25+y}),
 		 ({30+2*20+x,25+y,30+2*25+x,20+y,30+2*20+x,20+y}),
-		 
+
 		 ({10+x,30+2*15+y,15+x,30+2*10+y,15+x,30+2*15+y}),
 		 ({20+x,30+2*15+y,25+x,30+2*15+y,20+x,30+2*10+y}),
 		 ({10+x,30+2*20+y,15+x,30+2*20+y,15+x,30+2*25+y}),
@@ -332,12 +388,12 @@ test_any_equal([[
 		 ({20+x,15+y,25+x,15+y,20+x,10+y}),
 		 ({10+x,20+y,15+x,20+y,15+x,25+y}),
 		 ({20+x,25+y,25+x,20+y,20+x,20+y}),
-		 
+
 		 ({30+2*10+x,15+y,30+2*15+x,10+y,30+2*15+x,15+y}),
 		 ({30+2*20+x,15+y,30+2*25+x,15+y,30+2*20+x,10+y}),
 		 ({30+2*10+x,20+y,30+2*15+x,20+y,30+2*15+x,25+y}),
 		 ({30+2*20+x,25+y,30+2*25+x,20+y,30+2*20+x,20+y}),
-		 
+
 		 ({10+x,30+2*15+y,15+x,30+2*10+y,15+x,30+2*15+y}),
 		 ({20+x,30+2*15+y,25+x,30+2*15+y,20+x,30+2*10+y}),
 		 ({10+x,30+2*20+y,15+x,30+2*20+y,15+x,30+2*25+y}),
@@ -546,7 +602,6 @@ test_do( Image.Image(100,100)->setcolor(255,0,0,128)->
   polyfill( ({20,20, 80,20, 80,80 }) ) )
 
 test_true( img()->random() != img()->random() )
-test_true( img()->random(17) == img()->random(17) )
 
 test_do( img()->randomgrey() )
 
@@ -701,6 +756,30 @@ test_false( Image.Colortable(Image.Image(10,10,255,0,0))->greyp() )
 
 dnl #### Encodings
 
+define(test_image_any,[[
+  test_any([[
+    return Image.ANY.decode(Image.$1.encode(Image.Image(10,10)))->xsize();
+  ]],10)
+  test_any([[
+    mapping m=Image.ANY._decode(Image.$1.encode(Image.Image(10,10)));
+    if(!m->image || !m->type) return -1;
+    if(!has_prefix(m->type, "image/")) return -2;
+    return 1;
+  ]], 1)
+]])
+
+; Missing tests for XCF, PSD, TIM, XWD
+test_image_any(PNM)
+test_image_any(JPEG)
+test_image_any(PNG)
+test_image_any(GIF)
+test_image_any(ILBM)
+test_image_any(BMP)
+test_image_any(RAS)
+test_image_any(PVR)
+test_image_any(PCX)
+
+
 define(test_encoding,[[
   cond( (master()->resolv("Image.$1")||([]))->encode,[[
     test_any([[
@@ -784,7 +863,7 @@ cond( (master()->resolv("Image.JPEG")||([]))->encode,[[
   test_any([[
     object img=Image.Image(100,100)->test(43);
     object img1=Image.JPEG.decode(Image.JPEG.encode(img,(["quality":100])));
-    return img-img1<10;
+    return img-img1<20;
   ]],1)
 ]])
 
@@ -807,26 +886,38 @@ test_encoding(XBM,[[
   img=c*img;
 ]],)
 
-test_equal( Image.PNG.decode_header(Image.PNG.encode(Image.Image(20,20))),
-(["bpp":8, "type":2, "xsize":20, "ysize":20 ]) )
+cond_resolv( Image.PNG.decode_header, [[
+  test_equal( Image.PNG.decode_header(Image.PNG.encode(Image.Image(20,20))),
+  (["bpp":8, "type":2, "xsize":20, "ysize":20 ]) )
+]])
 
-test_true( Image.PNG.encode(Image.Image(5,5)) )
-test_true( Image.PNG.encode(Image.Image(5,5), ([])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["alpha":0])) )
-test_eval_error( Image.PNG.encode(Image.Image(5,5), (["alpha":"x"])) )
-test_eval_error( Image.PNG.encode(Image.Image(5,5), (["alpha":Image.Image(4,4)])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["alpha":Image.Image(5,5)])) )
-dnl FIXME: Test that alpha is actually encoded
-dnl FIXME: Test "palette" attribute
-test_eval_error( Image.PNG.encode(Image.Image(5,5), (["zlevel":"x"])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":0])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":9])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.DEFAULT_STRATEGY])) )
-test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.FILTERED])) )
+cond_resolv( Image.PNG.encode, [[
+  test_true( Image.PNG.encode(Image.Image(5,5)) )
+  test_true( Image.PNG.encode(Image.Image(5,5), ([])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["alpha":0])) )
+  test_eval_error( Image.PNG.encode(Image.Image(5,5), (["alpha":"x"])) )
+  test_eval_error( Image.PNG.encode(Image.Image(5,5), (["alpha":Image.Image(4,4)])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["alpha":Image.Image(5,5)])) )
+  dnl FIXME: Test that alpha is actually encoded
+  dnl FIXME: Test "palette" attribute
+  test_eval_error( Image.PNG.encode(Image.Image(5,5), (["zlevel":"x"])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":0])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":9])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.DEFAULT_STRATEGY])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.FILTERED])) )
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.HUFFMAN_ONLY])) )
+]])
+
+cond_resolv( Image.PSD.decode, [[
+  test_true( arrayp(Image.decode_layers(Stdio.read_bytes("SRCDIR/corner2.psd"),
+					([ "crop_to_bounds":1 ]))) )
+]])
+
+dnl ACK!  cond_resolv does not nest.  But if Gz.RLE or Gz.FIXED exists, it
+dnl means the Gz module is there, and in that case Image.PNG should be too...
 cond_resolv( Gz.RLE, [[
   test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.RLE])) )
 ]])
-test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.HUFFMAN_ONLY])) )
 cond_resolv( Gz.FIXED, [[
   test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.FIXED])) )
 ]])
@@ -842,7 +933,7 @@ cond( (master()->resolv("Image.XFace")||([]))->encode,[[
 ]])
 
 test_encoding(XPM,[[
-  object c=Image.Colortable(16,16,16);	
+  object c=Image.Colortable(16,16,16);
   img=c*img;
 ]],[[,(["colortable":c]) ]])
 test_encoding(TIFF,,)

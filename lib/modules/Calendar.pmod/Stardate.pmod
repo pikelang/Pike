@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//! This implements TNG stardates. 
+//! This implements TNG stardates.
 
 protected constant TNGSTARPERJULIAN=1000.0/365.2425;
 protected constant TNGSTARPERSECOND=TNGSTARPERJULIAN/86400;
@@ -41,7 +41,7 @@ class cTick
   //! @endcode
 
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       switch (sizeof(args))
       {
@@ -132,9 +132,9 @@ class cTick
    protected Calendar.TimeRange _add(int n,void|this_program step)
    {
       float x;
-      if (!step) 
+      if (!step)
 	 x=len;
-      else 
+      else
       {
 	 if (!step->is_stardate)
 	    error("add: Incompatible type %O\n",step);
@@ -221,7 +221,7 @@ class cTick
       float b2,e2;
       if (with->is_stardate)
 	 b2=with->t,e2=b2+with->len;
-      else 
+      else
 	 ::_compare(with);
 #define CMP(A,B) ( ((A)<(B))?-1:((A)>(B))?1:0 )
       return ({ CMP(b1,b2),CMP(b1,e2),CMP(e1,b2),CMP(e1,e2) });
@@ -234,12 +234,12 @@ class cTick
       return Tick("stardate",r,t,len);
    }
 
-   string _sprintf(int t, mapping m)
+   protected string _sprintf(int t, mapping m)
    {
       switch (t)
       {
 	 case 'O':
-	    if (len!=0.0) 
+	    if (len!=0.0)
 	       return sprintf("Tick(%s)",nice_print_period());
 	    return sprintf("Tick(%s)",nice_print());
 	 default:

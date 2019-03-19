@@ -2,14 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
  * Lexical analyzer template.
- * Based on lex.c 1.62
- *
- * Henrik Grubbström 1999-02-20
  */
 
 #ifndef SHIFT
@@ -22,8 +18,8 @@
 
 /* Generic */
 #define GOBBLE(c) (LOOK()==c?(SKIP(),1):0)
-#define SKIPSPACE() do { while(ISSPACE(LOOK()) && LOOK()!='\n') SKIP(); }while(0)
-#define SKIPWHITE() do { while(ISSPACE(LOOK())) SKIP(); }while(0)
+#define SKIPSPACE() do { while(isspace(LOOK()) && LOOK()!='\n') SKIP(); }while(0)
+#define SKIPWHITE() do { while(isspace(LOOK())) SKIP(); }while(0)
 #define SKIPUPTO(X) do { while(LOOK()!=(X) && LOOK()) SKIP(); }while(0)
 
 #if (SHIFT == 0)
@@ -36,7 +32,7 @@
 #define SKIPN(N) (lex->pos += (N))
 
 #define READBUF(X) do {				\
-  register int C;				\
+  int C;				\
   buf = lex->pos;				\
   while((C = LOOK()) && (X))			\
     lex->pos++;					\
@@ -44,7 +40,7 @@
 } while(0)
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
-#define ISWORD(X) ((len == strlen(X)) && !MEMCMP(buf,X,strlen(X)))
+#define ISWORD(X) ((len == CONSTANT_STRLEN(X)) && !memcmp(buf,X,len))
 
 /*
  * Function renaming
@@ -54,7 +50,7 @@
 #define yylex yylex0
 #define low_yylex low_yylex0
 #define lex_atoi atoi
-#define lex_strtol STRTOL
+#define lex_strtol strtol
 #define lex_strtod my_strtod
 #define lex_isidchar isidchar
 
@@ -62,11 +58,11 @@
 
 #define LOOK() INDEX_CHARP(lex->pos,0,SHIFT)
 #define SKIP() (lex->pos += (1<<SHIFT))
-#define SKIPN(N) (lex->pos += ((N)<<SHIFT))
+#define SKIPN(N) (lex->pos += (N) < 0 ? -(-(N) << SHIFT) : ((N)<<SHIFT))
 #define GETC() (SKIP(),INDEX_CHARP(lex->pos-(1<<SHIFT),0,SHIFT))
 
 #define READBUF(X) do {				\
-  register int C;				\
+  int C;                                        \
   buf = lex->pos;				\
   while((C = LOOK()) && (X))			\
     SKIP();					\
@@ -75,7 +71,7 @@
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
 
-#define ISWORD(X) ((len == strlen(X)) && low_isword(buf, X, strlen(X)))
+#define ISWORD(X) ((len == strlen(X)) && low_isword(buf, X, len))
 
 #if (SHIFT == 1)
 
@@ -195,6 +191,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 {
   ptrdiff_t l = 1;
   p_wchar2 c;
+  int of = 0;
 
   switch ((c = *buf))
   {
@@ -213,13 +210,17 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
-      unsigned of = 0;
       unsigned INT32 n = c-'0';
-      for (l = 1; buf[l] >= '0' && buf[l] <= '8'; l++) {
-	if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, eight);
-	n = 8 * n + buf[l] - '0';
+      for (l = 1; buf[l] >= '0' && buf[l] < '8'; l++) {
+	if (DO_UINT32_MUL_OVERFLOW(n, 8, &n))
+	  of = 1;
+	else
+	  n += buf[l] - '0';
       }
-      if (of) {*len = l; return 4;}
+      if (of) {
+	*len = l;
+	return 4;
+      }
       c = (p_wchar2)n;
       break;
     }
@@ -228,47 +229,58 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
       if( Pike_compiler->compiler_pass == 1 )
 	yywarning("%c is not a valid octal digit.", c);
       break;
-      
+
     case 'x': {
-      unsigned of = 0;
       unsigned INT32 n=0;
       for (l = 1;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, sixteen);
-	    n = 16 * n + buf[l] - '0';
+	    if (DO_UINT32_MUL_OVERFLOW(n, 16, &n))
+	      of = 1;
+            else
+	      n += buf[l] - '0';
 	    continue;
 	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, sixteen);
-	    n = 16 * n + buf[l] - 'a' + 10;
+	    if (DO_UINT32_MUL_OVERFLOW(n, 16, &n))
+	      of = 1;
+            else
+	      n += buf[l] - 'a' + 10;
 	    continue;
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, sixteen);
-	    n = 16 * n + buf[l] - 'A' + 10;
+	    if (DO_UINT32_MUL_OVERFLOW(n, 16, &n))
+	      of = 1;
+            else
+	      n += buf[l] - 'A' + 10;
 	    continue;
 	}
 	break;
       }
-      if (of) {*len = l; return 5;}
+      if (of) {
+	*len = l;
+	return 5;
+      }
       c = (p_wchar2)n;
       break;
     }
 
     case 'd': {
-      unsigned of = 0;
       unsigned INT32 n=0;
       for (l = 1;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (n, ten);
-	    n = 10 * n + buf[l] - '0';
+	    if (DO_UINT32_MUL_OVERFLOW(n, 10, &n) || DO_UINT32_ADD_OVERFLOW(n, buf[l] - '0', &n)) {
+	      of = 1;
+            }
 	    continue;
 	}
 	break;
       }
-      if (of) {*len = l; return 6;}
+      if (of) {
+	*len = l;
+	return 6;
+      }
       c = (p_wchar2)n;
       break;
     }
@@ -277,6 +289,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     case 'U': {
       /* FIXME: Do we need compat goo to turn this off? */
       /* Note: Code dup in gobble_identifier in preprocessor.h. */
+      unsigned INT32 n = 0;
       int stop, longq;
       l = 1;
       if (buf[1] == c) {
@@ -297,23 +310,23 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	stop = l + 8;
 	longq = 1;
       }
-      c = 0;
       for (; l < stop; l++)
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    c = 16 * c + buf[l] - '0';
+	    n = 16 * n + buf[l] - '0';
 	    break;
 	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	    c = 16 * c + buf[l] - 'a' + 10;
+	    n = 16 * n + buf[l] - 'a' + 10;
 	    break;
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	    c = 16 * c + buf[l] - 'A' + 10;
+	    n = 16 * n + buf[l] - 'A' + 10;
 	    break;
 	  default:
 	    *len = l;
 	    return longq ? 8 : 7;
 	}
+      c = (p_wchar2)n;
     }
   }
 
@@ -342,16 +355,16 @@ static p_wchar2 char_const(struct lex *lex)
       return 0;
     case 4: case 5: case 6:
       if( Pike_compiler->compiler_pass == 1 )
-        yywarning ("Too large character value in escape.");
+        yyerror ("Too large character value in escape.");
       c = -1;
       break;
     case 7:
       if( Pike_compiler->compiler_pass == 1 )
-        yywarning ("Too few hex digits in \\u escape.");
+        yyerror ("Too few hex digits in \\u escape.");
       return '\\';
     case 8:
       if( Pike_compiler->compiler_pass == 1 )
-        yywarning ("Too few hex digits in \\U escape.");
+        yyerror ("Too few hex digits in \\U escape.");
       return '\\';
   }
   SKIPN (l);
@@ -367,7 +380,7 @@ static struct pike_string *readstring(struct lex *lex)
 #endif /* SHIFT != 0 */
 
   init_string_builder(&tmp,0);
-  
+
   while(1)
   {
     char *buf;
@@ -388,19 +401,19 @@ static struct pike_string *readstring(struct lex *lex)
       lex->pos -= (1<<SHIFT);
       yyerror("End of file in string.");
       break;
-      
+
     case '\n':
       lex->current_line++;
       yyerror("Newline in string.");
       break;
-      
+
     case '\\':
       string_builder_putchar(&tmp, char_const(lex));
       continue;
-      
+
     case '"':
       break;
-      
+
     default:
 #ifdef PIKE_DEBUG
       Pike_fatal("Default case in readstring() reached. c:%d\n", c);
@@ -414,7 +427,9 @@ static struct pike_string *readstring(struct lex *lex)
 
 
 
+#if LEXDEBUG>4
 static int low_yylex(struct lex *lex, YYSTYPE *);
+#endif /* LEXDEBUG>4 */
 int yylex(struct lex *lex, YYSTYPE *yylval)
 #if LEXDEBUG>4
 {
@@ -441,7 +456,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
   char *buf;
 
 #ifdef __CHECKER__
-  MEMSET((char *)yylval,0,sizeof(YYSTYPE));
+  memset(yylval,0,sizeof(YYSTYPE));
 #endif
 #ifdef MALLOC_DEBUG
   check_sfltable();
@@ -469,6 +484,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('a','r'):
 	  if(ISWORD("array")) return TOK_ARRAY_ID;
 	  break;
+	case TWO_CHAR('a','u'):
+	  if(ISWORD("auto")) {
+	    if (Pike_compiler->compiler_pass == 1) {
+	      yywarning("auto will soon be a reserved keyword.");
+	    }
+	    break;
+	  }
+	  break;
 	case TWO_CHAR('b','r'):
 	  if(ISWORD("break")) return TOK_BREAK;
 	  break;
@@ -482,6 +505,12 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('c','o'):
 	  if(ISWORD("constant")) return TOK_CONSTANT;
 	  if(ISWORD("continue")) return TOK_CONTINUE;
+	  if(ISWORD("const")) {
+	    if (Pike_compiler->compiler_pass == 1) {
+	      yywarning("const will soon be a reserved keyword.");
+	    }
+	    break;
+	  }
 	  break;
 	case TWO_CHAR('d','e'):
 	  if(ISWORD("default")) return TOK_DEFAULT;
@@ -498,12 +527,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('e','x'):
 	  if(ISWORD("extern")) return TOK_EXTERN;
 	  break;
-#ifdef WITH_FACETS
-#warning "facet" keyword needs compat if enabled by default
-	case TWO_CHAR('f','a'):
-	  if(ISWORD("facet")) return TOK_FACET;
-	  break;
-#endif
 	case TWO_CHAR('f','i'):
 	  if(ISWORD("final")) return TOK_FINAL_ID;
 	  break;
@@ -521,7 +544,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  if(ISWORD("gauge")) return TOK_GAUGE;
 	  break;
 	case TWO_CHAR('g','l'):
-	  if (ISWORD("global") && !TEST_COMPAT(7,2)) return TOK_GLOBAL;
+	  if (ISWORD("global")) return TOK_GLOBAL;
 	  break;
 	case TWO_CHAR('i','f'):
 	  if(ISWORD("if")) return TOK_IF;
@@ -548,9 +571,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('m','u'):
 	  if(ISWORD("multiset")) return TOK_MULTISET_ID;
-	  break;
-	case TWO_CHAR('n','o'):
-	  if(ISWORD("nomask")) return TOK_NO_MASK;
 	  break;
 	case TWO_CHAR('o','b'):
 	  if(ISWORD("object")) return TOK_OBJECT_ID;
@@ -594,7 +614,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  if(ISWORD("while")) return TOK_WHILE;
 	  break;
 	case TWO_CHAR('_','_'):
-	  if (TEST_COMPAT(7,6)) break;
 	  if(len < 5) break;
 	  if(ISWORD("__attribute__"))
 	    return TOK_ATTRIBUTE_ID;
@@ -629,7 +648,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	     * - Upper case is used for symbols intended for #if constant().
 	     */
 	    if (tmp->size_shift) {
-	      free_string(tmp);	    
+	      free_string(tmp);
 	      return TOK_IDENTIFIER;
 	    }
 	    while(len--) {
@@ -639,7 +658,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 		return TOK_IDENTIFIER;
 	      }
 	    }
-	    free_string(tmp);	    
+	    free_string(tmp);
 	  }
 	  return TOK_RESERVED;
 	}
@@ -704,9 +723,19 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 
       switch(len>0?INDEX_CHARP(buf, 0, SHIFT):0)
       {
+      case 'l':
+	if (ISWORD("line"))
+	{
+	  SKIPSPACE();
+
+	  if (LOOK() < '0' || LOOK() > '9') goto unknown_directive;
+
+	  READBUF(C!='\n' && C!=' ' && C!='\t');
+	  /* fallthrough */
+	} else goto unknown_directive;
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-	lex->current_line=lex_atoi(buf)-1;
+	lex->current_line = lex_strtol(buf, NULL, 10)-1;
 	SKIPSPACE();
 	if(GOBBLE('"'))
 	{
@@ -735,7 +764,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  {
 	    lex->pragmas |= ID_INLINE;
 	  }
-	  else if (ISWORD("all_final") || ISWORD("all_nomask"))
+	  else if (ISWORD("all_final"))
 	  {
 	    lex->pragmas |= ID_FINAL;
 	  }
@@ -758,6 +787,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  else if (ISWORD("deprecation_warnings"))
 	  {
 	    lex->pragmas &= ~ID_NO_DEPRECATION_WARNINGS;
+	  }
+	  else if (ISWORD("disassemble"))
+	  {
+	    lex->pragmas |= ID_DISASSEMBLE;
+	  }
+	  else if (ISWORD("no_disassemble"))
+	  {
+	    lex->pragmas &= ~ID_DISASSEMBLE;
 	  }
           else
           {
@@ -792,30 +829,18 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	/* FALL_THROUGH */
 
       default:
-	/* FIXME: This doesn't look all that safe...
-	 * buf isn't NUL-terminated, and it won't work on wide strings.
-	 * /grubba 1999-02-20
-	 * It also modified a shared string... ie. this code was not
-	 * good at all. Fixed.
-	 * /grubba 2000-11-19 (in Versailles)
-	 */
+unknown_directive:
 	if (len < 256) {
 #if (SHIFT == 0)
 	  struct pike_string *dir =
 	    make_shared_binary_string(buf, len);
-#else /* SHIFT != 0 */
-#if (SHIFT == 1)
+#elif (SHIFT == 1)
 	  struct pike_string *dir =
 	    make_shared_binary_string1((p_wchar1 *)buf, len);
-#else /* SHIFT != 1 */
-#if (SHIFT == 2)
+#elif (SHIFT == 2)
 	  struct pike_string *dir =
 	    make_shared_binary_string2((p_wchar2 *)buf, len);
-#else /* SHIFT != 2 */
-#error Unsupported SHIFT.
-#endif /* SHIFT == 2 */
-#endif /* SHIFT == 1 */
-#endif /* SHIFT == 0 */
+#endif
 	  my_yyerror("Unknown preprocessor directive %S.", dir);
 	  free_string(dir);
 	} else {
@@ -831,27 +856,65 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
       continue;
 
     case '\'':
-      switch(c=GETC())
       {
-      case 0:
-	lex->pos -= (1<<SHIFT);
-	yyerror("Unexpected end of file\n");
-	break;
+        unsigned int l = 0;
+        struct svalue res = svalue_int_zero;
+        MP_INT bigint;
 
-      case '\\':
-	c = char_const(lex);
-	break;
+        while(1)
+        {
+          INT32 tmp;
+          switch( (tmp=GETC()) )
+          {
+            case 0:
+              lex->pos -= (1<<SHIFT);
+              yyerror("Unexpected end of file\n");
+              goto return_char;
 
-      case '\'':
-	yyerror("Zero-length character constant.");
-	debug_malloc_pass( yylval->n=mkintnode(0) );
-	return TOK_NUMBER;
+            case '\\':
+              tmp = char_const(lex);
+              /* fallthrough. */
+            default:
+              l++;
+              if( l == sizeof(INT_TYPE)-1 )
+              {
+                /* overflow possible. Switch to bignums. */
+                mpz_init(&bigint);
+                mpz_set_ui(&bigint,res.u.integer);
+                TYPEOF(res) = PIKE_T_OBJECT;
+              }
+
+              if( l >= sizeof(INT_TYPE)-1 )
+              {
+                mpz_mul_2exp(&bigint,&bigint,8);
+                mpz_add_ui(&bigint,&bigint,tmp);
+              }
+              else
+              {
+                res.u.integer <<= 8;
+                res.u.integer |= tmp;
+              }
+              break;
+
+            case '\'':
+              if( l == 0 )
+                yyerror("Zero-length character constant.");
+              goto return_char;
+          }
+        }
+      return_char:
+        if( TYPEOF(res) == PIKE_T_OBJECT )
+        {
+          push_bignum( &bigint );
+          mpz_clear(&bigint);
+          reduce_stack_top_bignum();
+          res = *--Pike_sp;
+        }
+        debug_malloc_pass( yylval->n=mksvaluenode(&res) );
+        free_svalue( &res );
+        return TOK_NUMBER;
       }
-      if(!GOBBLE('\''))
-	yyerror("Unterminated character constant.");
-      debug_malloc_pass( yylval->n=mkintnode(c) );
-      return TOK_NUMBER;
-	
+      UNREACHABLE();
     case '"':
     {
       struct pike_string *s=readstring(lex);
@@ -859,7 +922,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
       free_string(s);
       return TOK_STRING;
     }
-  
+
     case ':':
       if(GOBBLE(':')) return TOK_COLON_COLON;
       return c;
@@ -872,16 +935,15 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
       }
       if (((c = INDEX_CHARP(lex->pos, 0, SHIFT)) <= '9') &&
 	  (c >= '0')) {
-	/* FIXME: Only in Pike 7.7 and later mode? */
-	lex->pos -= (1<<SHIFT);
+        lex->pos -= (1<<SHIFT);
 	goto read_float;
       }
       return '.';
-  
+
     case '0':
     {
       int base = 0;
-      
+
       if(GOBBLE('b') || GOBBLE('B'))
       {
 	base = 2;
@@ -905,13 +967,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	return TOK_NUMBER;
       }
     }
-  
+    /* FALL_THROUGH */
+
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
       char *p1, *p2;
       double f;
-      long l = 0;		/* GCC thinks l is unitialized here. Hmm..? */
+      long l;
       struct svalue sval;
 
       lex->pos -= (1<<SHIFT);
@@ -952,7 +1015,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 					     SHIFT);
 	  dmalloc_touch_svalue(&sval);
 	  if ((TYPEOF(sval) == PIKE_T_INT) && (p3 > p2)) {
-	    for (l=0; ISSPACE(INDEX_CHARP(p3, l, SHIFT)); l++)
+	    for (l=0; isspace(INDEX_CHARP(p3, l, SHIFT)); l++)
 	      ;
 	    if ((INDEX_CHARP(p3, l, SHIFT) == ':') &&
 		(INDEX_CHARP(p3, l+1, SHIFT) == ':')) {
@@ -971,8 +1034,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 #endif /* 0 */
 	lex->pos=p1;
 	if (lex_isidchar (LOOK())) {
-	  my_yyerror ("Invalid char '%c' in constant.",
-		      INDEX_CHARP (lex->pos, l, SHIFT));
+	  my_yyerror ("Invalid char '%c' in constant.", LOOK());
 	  do SKIP(); while (lex_isidchar (LOOK()));
 	}
 	return TOK_FLOAT;
@@ -982,9 +1044,17 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	free_svalue(&sval);
 	debug_malloc_touch(yylval->n);
 	lex->pos=p2;
-	if (lex_isidchar (LOOK())) {
-	  my_yyerror ("Invalid char '%c' in constant.",
-		      INDEX_CHARP (lex->pos, l, SHIFT));
+	if (lex_isidchar (LOOK()))
+        {
+          if( GOBBLE('b') )
+            if( GOBBLE( 'i' ) )
+              if( GOBBLE( 't' ) )
+              {
+                GOBBLE('s');
+                return TOK_BITS;
+              }
+
+	  my_yyerror ("Invalid char '%c' in constant.", LOOK());
 	  do SKIP(); while (lex_isidchar (LOOK()));
 	}
 	return TOK_NUMBER;
@@ -996,17 +1066,17 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
       if(GOBBLE('>')) return TOK_ARROW;
       if(GOBBLE('-')) return TOK_DEC;
       return '-';
-  
+
     case '+':
       if(GOBBLE('=')) return TOK_ADD_EQ;
       if(GOBBLE('+')) return TOK_INC;
       return '+';
-  
+
     case '&':
       if(GOBBLE('=')) return TOK_AND_EQ;
       if(GOBBLE('&')) return TOK_LAND;
       return '&';
-  
+
     case '|':
       if(GOBBLE('=')) return TOK_OR_EQ;
       if(GOBBLE('|')) return TOK_LOR;
@@ -1015,7 +1085,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
     case '^':
       if(GOBBLE('=')) return TOK_XOR_EQ;
       return '^';
-  
+
     case '*':
       if(GOBBLE('=')) return TOK_MULT_EQ;
       return '*';
@@ -1023,15 +1093,15 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
     case '%':
       if(GOBBLE('=')) return TOK_MOD_EQ;
       return '%';
-  
+
     case '/':
       if(GOBBLE('=')) return TOK_DIV_EQ;
       return '/';
-  
+
     case '=':
       if(GOBBLE('=')) return TOK_EQ;
       return '=';
-  
+
     case '<':
       if(GOBBLE('<'))
       {
@@ -1040,7 +1110,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
       }
       if(GOBBLE('=')) return TOK_LE;
       return '<';
-  
+
     case '>':
       if(GOBBLE(')')) return TOK_MULTISET_END;
       if(GOBBLE('=')) return TOK_GE;
@@ -1059,16 +1129,42 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
       if(GOBBLE('<')) return TOK_MULTISET_START;
       return '(';
 
-    case ']':
     case '?':
+      if(GOBBLE(':'))
+        return TOK_LOR;
+
+      if(GOBBLE('-') ) /* safe index: ?->  or ?[] */
+      {
+        if( GOBBLE( '>' ) ) /* ?-> */
+            return TOK_SAFE_INDEX;
+        SKIPN(-1); /* Undo GOBBLE('-') above */
+      }
+
+      /* Probably wanted:
+
+         ?.   for safe constant index
+         ?[]  for safe [] index
+
+         They however conflict with valid ?: syntaxes.
+      */
+
+      /* if( GOBBLE('.' ) ) */
+      /*   return TOK_SAFE_INDEX; */
+
+    case ']':
     case ',':
     case '~':
     case '@':
     case ')':
-    case '[':
+
     case '{':
     case ';':
     case '}': return c;
+
+    case '[':
+      if( GOBBLE('?' ) )
+        return TOK_SAFE_START_INDEX;
+      return c;
 
     case '`':
     {
@@ -1080,7 +1176,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  offset--;
 	}
       }
-      
+
       switch(c = GETC())
       {
       case '/': tmp="```/"; break;
@@ -1118,13 +1214,13 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 
       case '(':
 	tmp="```()";
-	if(GOBBLE(')')) 
+	if(GOBBLE(')'))
 	{
 	  break;
 	}
 	yyerror("Illegal ` identifier. Expected `().");
 	break;
-	
+
       case '-':
 	if(GOBBLE('>'))
 	{
@@ -1222,7 +1318,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
       }
     }
 
-  
+
     default:
       {
 	if (c > 31) {

@@ -100,15 +100,15 @@ static void f_blobs_add_words( INT32 args )
 /*! @decl void add_words( int docid, array(string) words, int field_id )
  *!
  *! Add all the words in the 'words' array to the blobs
- */ 
+ */
 {
-  INT_TYPE docid;
+  int docid;
   struct array *words;
-  INT_TYPE field_id;
+  int field_id;
 
   int i;
   struct blobs *blbl = THIS;
-  
+
   get_all_args( "add_words", args, "%d%a%d",
 		&docid, &words, &field_id);
 
@@ -128,7 +128,7 @@ static void f_blobs_add_words( INT32 args )
 	wf_buffer_wbyte( x->buffer, 0 );
 	x->word_data_offset = x->buffer->size-1;
       }
-      if( x->buffer->data[x->word_data_offset] < 255 )
+      if( (unsigned char)x->buffer->data[x->word_data_offset] < 255 )
       {
 	unsigned short s;
 	x->buffer->data[x->word_data_offset]++;
@@ -210,7 +210,7 @@ static int compare_wordarrays( const void *_a, const void *_b )
  *! the blobs struct once. Also, once you have called @[read] or @[read_all_sorted],
  *! @[add_words] will no longer work as expected.
  */
-static void f_blobs_read_all_sorted( INT32 args )
+static void f_blobs_read_all_sorted( INT32 UNUSED(args) )
 {
   struct array *g = allocate_array( THIS->nwords );
   int i;
@@ -232,23 +232,23 @@ static void f_blobs_read_all_sorted( INT32 args )
 /*! @endmodule
  */
 
-static void init_blobs_struct( )
+static void init_blobs_struct(struct object *UNUSED(o))
 {
-  MEMSET( THIS, 0, sizeof( struct blobs ) );
+  memset( THIS, 0, sizeof( struct blobs ) );
   THIS->size = sizeof( struct blobs ) + 128;
 }
 
-static void exit_blobs_struct( )
+static void exit_blobs_struct(struct object *o)
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
     if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-  init_blobs_struct();
+  init_blobs_struct(o);
 }
 
 static struct program *blobs_program;
-void init_blobs_program()
+void init_blobs_program(void)
 {
   start_new_program();
   ADD_STORAGE( struct blobs );
@@ -263,7 +263,7 @@ void init_blobs_program()
   add_program_constant( "Blobs", blobs_program, 0 );
 }
 
-void exit_blobs_program()
+void exit_blobs_program(void)
 {
   free_program( blobs_program );
 }

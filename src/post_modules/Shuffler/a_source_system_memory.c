@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -24,7 +23,7 @@ struct sm_source
 
   struct object *obj;
   struct {
-    unsigned char *data;
+    char *data;
     size_t len;
   } *mem;
 
@@ -35,11 +34,11 @@ static struct data get_data( struct source *src, off_t len )
 {
   struct sm_source *s = (struct sm_source *)src;
   struct data res;
-  
+
   res.do_free = 0;
   res.off = 0;
   res.data = s->mem->data + s->offset;
-  
+
   if( len > s->len )
   {
     len = s->len;
@@ -68,7 +67,7 @@ struct source *source_system_memory_make( struct svalue *s,
     return 0;
 
   if (!shm_program) {
-    push_text("System.Memory");
+    push_static_text("System.Memory");
     SAFE_APPLY_MASTER("resolv", 1);
     shm_program = program_from_svalue(Pike_sp - 1);
     if (!shm_program) {
@@ -79,10 +78,10 @@ struct source *source_system_memory_make( struct svalue *s,
     pop_stack();
   }
 
-  res = malloc( sizeof( struct sm_source ) );
-  MEMSET( res, 0, sizeof( struct sm_source ) );
+  res = calloc( 1, sizeof( struct sm_source ) );
+  if( !res ) return NULL;
 
-  if( !(res->mem = (void*)get_storage( s->u.object, shm_program ) ) )
+  if( !(res->mem = get_storage( s->u.object, shm_program ) ) )
   {
     free(res);
     return 0;
@@ -93,7 +92,7 @@ struct source *source_system_memory_make( struct svalue *s,
     free(res);
     return 0;
   }
-  
+
   res->s.free_source = free_source;
   res->s.get_data = get_data;
   res->obj = s->u.object;

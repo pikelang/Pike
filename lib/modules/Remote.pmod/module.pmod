@@ -1,6 +1,8 @@
 #pike __REAL_VERSION__
 #include "remote.h"
 
+//! Remote RPC system.
+
 //! Wrapper for a remote function.
 class Call {
  constant is_remote_call = 1;
@@ -11,7 +13,19 @@ class Call {
   object ctx;
   int _async;
 
+  //! Call the wrapped function.
   //!
+  //! @param args
+  //!   Arguments to pass to the wrapped function.
+  //!
+  //! This function can operate in two modes depending
+  //! on whether asynchronous mode has been activated
+  //! or not. If it has it is equivalent to a call of
+  //! @[async()] and if not of @[sync()] with the same
+  //! arguments.
+  //!
+  //! @seealso
+  //!   @[async()], @[sync()], @[is_async()], @[set_async()]
   mixed `() (mixed ... args)
   {
     mixed data = ctx->encode_call(objectid, name, args,
@@ -23,34 +37,58 @@ class Call {
     return 0;
   }
 
+  //! Call the wrapped remote function synchronously.
   //!
+  //! @param args
+  //!   Arguments to send to the remote function.
+  //!
+  //! @returns
+  //!   Returns (the possibly wrapped) result from
+  //!   the remote function.
+  //!
+  //! @seealso
+  //!   @[async()], @[`()()]
   mixed sync(mixed ... args)
   {
     mixed data = ctx->encode_call(objectid, name, args, CTX_CALL_SYNC);
     return con->call_sync(data);
   }
 
+  //! Call the wrapped remote function asynchronously.
   //!
+  //! @param args
+  //!   Arguments to send to the remote function.
+  //!
+  //! @seealso
+  //!   @[sync()], @[`()()]
   void async(mixed ... args)
   {
     mixed data = ctx->encode_call(objectid, name, args, CTX_CALL_ASYNC);
     con->call_async(data);
   }
 
-  //!
+  //! Check whether the wrapped function actually
+  //! exists at the other end.
   int exists()
   {
     mixed data = ctx->encode_call(objectid, name, ({}), CTX_EXISTS);
     return con->call_sync(data);
   }
 
+  //! @returns
+  //!   Whether asynchronous mode is active or not.
   //!
+  //! @seealso
+  //!   @[set_async()]
   int is_async()
   {
     return _async;
   }
 
+  //! Change to/from asynchronous mode.
   //!
+  //! @seealso
+  //!   @[is_async()]
   void set_async(int a)
   {
     _async = a;
@@ -377,7 +415,7 @@ class Connection {
   mixed get_result(int refno)
   {
     mixed r = finished_calls[refno];
-    if (zero_type(r))
+    if (undefinedp(r))
       error("Tried to get a result too early.\n");
     m_delete(finished_calls, refno);
     return r;
@@ -463,7 +501,7 @@ class Connection {
     {
       sscanf(read_buffer, "%4c%s", request_size, read_buffer);
     }
-  
+
     if (request_size && sizeof(read_buffer) >= request_size && !closed)
     {
       array data = decode_value(read_buffer[0..request_size-1]);
@@ -474,7 +512,7 @@ class Connection {
 
       case CTX_ERROR:
 	error( "Remote error: "+data[1]+"\n" );
-      
+
       case CTX_CALL_SYNC:
       case CTX_CALL_ASYNC:
 #if constant(thread_create)
@@ -614,12 +652,12 @@ class Connection {
 #endif
       send(sprintf("%4c%s", sizeof(s), s)); // Locks write_buffer_cond_mutex.
 #if constant(thread_create)
-      while(!closed && zero_type(finished_calls[refno]))
+      while(!closed && !has_index(finished_calls, refno))
 	finished_calls_cond->wait(lock);
       lock = 0;
 #else
       con->set_blocking();
-      while(!closed && zero_type(finished_calls[refno]))
+      while(!closed && !has_index(finished_calls, refno))
 	read_once();
 #endif
       if (errors[refno]) {
@@ -641,7 +679,7 @@ class Connection {
       throw (err || err2);
     }
     //   werror("call_sync["+con->query_address()+"]["+refno+"] done\n");
-    if (zero_type(finished_calls[refno])) {
+    if (!has_index(finished_calls, refno)) {
       DEBUGMSG("connection closed in sync call " + refno + "\n");
       catch(get_result(refno));
       if (!nice)
@@ -670,7 +708,10 @@ class Connection {
   }
 }
 
+//! Remote context tracker.
 //!
+//! This class keeps track of what local things correspond
+//! to what remote things, and the reverse.
 class Context {
   object server_context;
   object con;
@@ -701,7 +742,7 @@ class Context {
       DEBUGMSG(sprintf("id_for(%O) found in server_context: %s\n", thing, id));
       return id;
     }
-  
+
     val2id[thing] = id = (base+(counter++));
     id2val[id] = thing;
     DEBUGMSG(sprintf("id_for(%O) not found; added %s locally\n", thing, id));

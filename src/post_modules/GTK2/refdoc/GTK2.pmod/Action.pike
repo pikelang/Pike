@@ -44,7 +44,7 @@ GTK2.Action connect_proxy( GTK2.Widget proxy );
 //!
 //!
 
-static GTK2.Action create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id );
+protected GTK2.Action create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id );
 //! Creates a new object.
 //!
 //!
@@ -52,6 +52,13 @@ static GTK2.Action create( string|mapping name_or_props, string|void label, stri
 GTK2.Widget create_icon( int icon_size );
 //! This function is intended for use by action implementations to create
 //! icons displayed in the proxy widgets.  One of @[ICON_SIZE_BUTTON], @[ICON_SIZE_DIALOG], @[ICON_SIZE_DND], @[ICON_SIZE_INVALID], @[ICON_SIZE_LARGE_TOOLBAR], @[ICON_SIZE_MENU] and @[ICON_SIZE_SMALL_TOOLBAR].
+//!
+//!
+
+GTK2.Widget create_menu( );
+//! If this action provides a W(Menu) widget as a submenu for the menu item 
+//! or the toolbar item it creates, this function returns an instance of 
+//! that menu.
 //!
 //!
 

@@ -1,9 +1,9 @@
-#include "hsize.h"
 
-void main()
+void main(int argc, array(string) argv)
 {
+  function write = Stdio.File(argv[2], "wct")->write;
   mapping classes = ([]);
-  foreach( Stdio.stdin.read()/"\n", string line )
+  foreach( Stdio.read_file(argv[1])/"\n", string line )
   {
     sscanf( line, "%s#", line );
     if( !sizeof( line ) )
@@ -20,7 +20,6 @@ void main()
 
   write( "static const struct canonical_cl _ca[] = {\n" );
   mapping top=([]);
-  int i;
   foreach( reverse(sort( indices( classes ) )), int c )
     write( "{%d,%d},\n", c, classes[c]);
   write( "};\n" );

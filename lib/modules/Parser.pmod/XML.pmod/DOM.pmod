@@ -94,8 +94,11 @@ class NodeList
   }
   protected Node `[](int index) { return item(index); }
   protected int _sizeof() { return get_length(); }
-  protected array(Node) cast(string to) {
-    return to[..4] == "array" && values(this);
+  protected array(Node) cast(string to)
+  {
+    if(to == "array")
+      return values(this);
+    return UNDEFINED;
   }
 
   Node item(int index)
@@ -160,8 +163,11 @@ class NamedNodeMap
   }
 
   protected int _sizeof() { return get_length(); }
-  protected mapping(string:Node) cast(string to) {
-    return to[..6] == "mapping" && copy_value(map);
+  protected mapping(string:Node) cast(string to)
+  {
+    if(to == "mapping")
+      return copy_value(map);
+    return UNDEFINED;
   }
 
   Node item(int index)
@@ -302,7 +308,7 @@ class Node
 	new_child->_set_owner_document(this);
       else
 	throw(DOMException(DOMException.WRONG_DOCUMENT_ERR));
-    
+
     if(new_child->get_node_type() == DOCUMENT_FRAGMENT_NODE) {
       array(Node) new_children = values(new_child->get_child_nodes());
       foreach(new_children, Node nc)
@@ -385,7 +391,7 @@ class DocumentFragment
 class Document
 {
   inherit Node;
-  
+
   protected program ElementImpl = Element;
   protected program DocumentFragmentImpl = DocumentFragment;
   protected program TextImpl = Text;
@@ -527,7 +533,7 @@ class CharacterData
     if(offset + count >= get_length())
       set_data(substring_data(0, offset));
     else
-      set_data(substring_data(0, offset) + 
+      set_data(substring_data(0, offset) +
 	       substring_data(offset+count, get_length()));
   }
 
@@ -539,10 +545,15 @@ class CharacterData
       set_data(substring_data(0, offset) + arg);
     else
       set_data(substring_data(0, offset) + arg +
-	       substring_data(offset+count, get_length()));    
+	       substring_data(offset+count, get_length()));
   }
 
-  string cast(string to) { return to == "string" && get_data(); }
+  protected string cast(string to)
+  {
+    if(to == "string")
+      return get_data();
+    return UNDEFINED;
+  }
 }
 
 class Attr
@@ -873,9 +884,11 @@ class Entity
   string get_notation_name() { return notation_name; }
   protected int is_readonly() { return name != 0; }
 
-  string cast(string to)
+  protected string cast(string to)
   {
-    return to == "string" && ((array(string))get_child_nodes())*"";
+    if(to == "string")
+      return ((array(string))get_child_nodes())*"";
+    return UNDEFINED;
   }
 
   protected int child_is_allowed(Node child)
@@ -913,11 +926,11 @@ class EntityReference
     return owner_document->create_entity_reference(name);
   }
 
-  string cast(string to)
+  protected string cast(string to)
   {
-    return to == "string" &&
-      (entity? (string)entity :
-       "&"+name+";");
+    if(to == "string")
+      return (entity? (string)entity : "&"+name+";");
+    return UNDEFINED;
   }
 
   NodeList get_child_nodes() { return entity && entity->get_child_nodes(); }
@@ -1019,26 +1032,26 @@ class ParseException
 }
 
 class InputSource {
-  
+
   protected string sysid, pubid, encoding;
   protected Stdio.File file;
-  
+
   string get_public_id() { return pubid; }
   string get_system_id() { return sysid; }
   string get_encoding() { return encoding; }
   void set_public_id(string id) { pubid = id; }
   void set_system_id(string id) { sysid = id; }
   void set_encoding(string enc) { encoding = enc; }
-  
+
   Stdio.File get_file() { return file; }
   void set_file(Stdio.File f) { file = f; }
-  
+
   string get_data()
   {
     string data = get_file()->read();
     return data;
   }
-  
+
   protected Stdio.File get_external_file(string sysid, string|void pubid)
   {
     Stdio.File f = Stdio.File();
@@ -1046,7 +1059,7 @@ class InputSource {
       throw(ParseException(sysid+": file not found", sysid, pubid));
     return f;
   }
-  
+
   protected void create(Stdio.File|string|void input)
   {
     if(input)
@@ -1130,7 +1143,7 @@ class AbstractDOMParser
          DocumentType doctype = document->get_implementation()->
 	   create_document_type(name, attributes->PUBLIC,
 				attributes->SYSTEM);
-	 
+
 	 current_node->append_child(doctype);
 
 	 if(contents)

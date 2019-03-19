@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object
@@ -107,7 +106,7 @@ void set_id(mixed _id) { id = _id; }
 //! @seealso
 //!   @[Stdio.File()->read_function()]
 function(:string) read_function(int nbytes) {
-  return lambda() { read(nbytes); };
+  return lambda() { return read(nbytes); };
 }
 
 //! @seealso
@@ -127,9 +126,10 @@ string query_address(void|int(0..1) is_local) { return 0; }
 //!   @[Stdio.File()->read()]
 string read(void|int(0..) len, void|int(0..1) not_all) {
   if(!r) return 0;
+  if (len < 0) error("Cannot read negative number of characters.\n");
   int start=ptr;
   ptr += len;
-  if(zero_type(len) || ptr>sizeof(data))
+  if(undefinedp(len) || ptr>sizeof(data))
     ptr = sizeof(data);
 
   // FIXME: read callback
@@ -186,18 +186,36 @@ void unread(string s) {
 
 //! @seealso
 //!   @[Stdio.File()->seek()]
-int seek(int pos, void|int mult, void|int add) {
-  if(mult)
-    pos = pos*mult+add;
-  if(pos<0)
+int seek(int pos, string|void how) {
+  if( !how )
   {
-    pos = sizeof(data)+pos;
-    if( pos < 0 )
-	pos = 0;
+      how = Stdio.SEEK_SET;
+      if( pos < 0 )
+          how = Stdio.SEEK_END;
   }
-  ptr = pos;
-  if( ptr > strlen( data ) )
-      ptr = strlen(data);
+  switch( how )
+  {
+      case Stdio.SEEK_SET:
+          ptr = pos;
+          if( ptr > strlen( data ) )
+              ptr = strlen(data);
+          break;
+      case Stdio.SEEK_END:
+          ptr = sizeof(data)+pos;
+          if( ptr < 0 )
+              ptr = 0;
+          break;
+      case Stdio.SEEK_CUR:
+          ptr += pos;
+          if( ptr > strlen( data ) )
+              ptr = strlen(data);
+          break;
+#if Stdio.SEEK_HOLE
+      case Stdio.SEEK_HOLE:
+      case Stdio.SEEK_DATA:
+          return -1;
+#endif
+  }
   return ptr;
 }
 
@@ -319,12 +337,10 @@ string _sprintf(int t) {
 // FakeFile specials.
 
 //! A FakeFile can be casted to a string.
-mixed cast(string to) {
-  switch(to) {
-  case "string": return data;
-  case "object": return this;
-  }
-  error("Can not cast object to %O.\n", to);
+protected mixed cast(string to) {
+  if( to == "string" )
+    return data;
+  return UNDEFINED;
 }
 
 //! Sizeof on a FakeFile returns the size of its contents.

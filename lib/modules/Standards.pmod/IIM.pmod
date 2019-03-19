@@ -1,13 +1,14 @@
 // Extracts IPTC Information Interchange Model data (aka "IPTC
 // headers") from JPEG files created with PhotoShop.
-// 
-// http://www.iptc.org/IIM/
-//
-// $Id$
 //
 // Anders Johansson & Henrik Grubbström
 
 #pike __REAL_VERSION__
+
+//! IPTC Information Interchange Model data
+//! (aka "IPTC header") extraction.
+//!
+//! @url{http://www.iptc.org/IIM/@}
 
 mapping(int:mapping(int:string)) fields =
   ([
@@ -140,7 +141,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
     string block_type_2;
     int block_length;
     string info;
-    
+
     if (block[0]) {
       // Photoshop 6.0 format with header description text of variable length.
       // The two bytes after the description text is zero padding, then comes
@@ -207,8 +208,33 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 	(string)record_set + ":" + (string)id;
 
       if (label == "coded character set") {
-	if (data == "\e%5") {
-	  res->charset = (res->charset || ({})) + ({ "iso-8859-1" });
+	string charset = ([
+	  "\e%/@": "UTF-16",	// ISO-IR 162 (NB: Actually UCS-2 level 1)
+	  "\e%/A": "UTF-32",	// ISO-IR 163 (NB: Actually UCS-4 level 1)
+	  "\e%/B": "ISO-8859-1",// ISO-IR 125 (NB: Actually binary)
+	  "\e%/C": "UTF-16",	// ISO-IR 174 (NB: Actually UCS-2 level 2)
+	  "\e%/D": "UTF-32",	// ISO-IR 175 (NB: Actually UCS-4 level 2)
+	  "\e%/E": "UTF-16",	// ISO-IR 176 (NB: Actually UCS-2 level 3)
+	  "\e%/F": "UTF-32",	// ISO-IR 177 (NB: Actually UCS-4 level 3)
+	  "\e%/G": "UTF-8",	// ISO-IR 190 (NB: Actually UTF-8 level 1)
+	  "\e%/H": "UTF-8",	// ISO-IR 191 (NB: Actually UTF-8 level 2)
+	  "\e%/I": "UTF-8",	// ISO-IR 192 (NB: Actually UTF-8 level 3)
+	  "\e%/J": "UTF-16",	// ISO-IR 193 (NB: Actually UTF-16 level 1)
+	  "\e%/K": "UTF-16",	// ISO-IR 194 (NB: Actually UTF-16 level 2)
+	  "\e%/L": "UTF-16",	// ISO-IR 195 (NB: Actually UTF-16 level 3)
+	  "\e%5": "ISO-8859-1",
+	  "\e%@": "ISO-2022",	// ISO-IR 108, ISO-IR 178
+	  "\e%A": "NAPLPS",	// ISO-IR 108
+	  "\e%B": "UTF-1",	// ISO-IR 178
+	  "\e%C": "T.101 DS1",	// ISO-IR 131
+	  "\e%D": "T.101 DS2",	// ISO-IR 145
+	  "\e%E": "T.101 PHOTO",// ISO-IR 160
+	  "\e%F": "T.101 AUDIO",// ISO-IR 161
+	  "\e%G": "UTF-8",	// ISO-IR 196
+	  "\e%H": "T.107 VEMMI",// ISO-IR 188
+	])[data];
+	if (charset) {
+	  res->charset = (res->charset || ({})) + ({ charset });
 	}
       }
 
@@ -232,6 +258,21 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
   return res;
 }
 
+//! Get IPTC information from an open file.
+//!
+//! Supported embedding formats are:
+//!
+//! @ul
+//!   @item
+//!     PhotoShop Document (aka PSD).
+//!   @item
+//!     Postscript and Embedded Postscript.
+//!   @item
+//!     Joint Picture Experts Group (aka JPEG).
+//! @endul
+//!
+//! @returns
+//!   Returns a mapping containing any found IPTC IIM data.
 mapping get_information(Stdio.File fd)
 {
   string marker = fd->read(2);
@@ -258,22 +299,11 @@ mapping get_information(Stdio.File fd)
       if (line[0] != '%') continue;
       if (bytes < 0) sscanf(line, "%%BeginPhotoshop:%*[ ]%d", bytes);
       else if (has_prefix(line, "%EndPhotoshop")) {
-	break;
-      } else if (has_prefix(line, "% ")) {
-#if constant(String.hex2string)
-	photoshop_data += String.hex2string(line[2..]);
-#else
-	photoshop_data += Crypto.hex_to_string(line[2..]);
-#endif
-	if (sizeof(photoshop_data) >= bytes) break;
-      } else {
-#if constant(String.hex2string)
-	photoshop_data += String.hex2string(line[1..]);
-#else
-	photoshop_data += Crypto.hex_to_string(line[1..]);
-#endif
-	if (sizeof(photoshop_data) >= bytes) break;
+        break;
       }
+      // Let hex2string swollow "%" and possible " ".
+      photoshop_data += String.hex2string(line);
+      if (sizeof(photoshop_data) >= bytes) break;
     }
   } else if (marker == "\xff\xd8") {
     do {
@@ -284,9 +314,11 @@ mapping get_information(Stdio.File fd)
       int length;
       if (sizeof(length_s) == 2)
 	length = short_value(length_s);
+      else
+	break;
       //werror ("length: %O\n", short_value(length_s));
 
-      string data = fd->read(length-2);
+      string data = fd->read((length-2) & 0xffff);
       if (app == "\xff\xed") // APP14 Photoshop
       {
 	//werror("data: %O\n", data);
@@ -294,6 +326,12 @@ mapping get_information(Stdio.File fd)
 	break;
       }
     } while (1);
+  } else if (marker == "8B") {
+    //  May be a native PSD file. It should start with "8BPS\0\1" to be valid.
+    string marker2 = fd->read(4);
+    if (marker2 == "PS\0\1") {
+      photoshop_data = "8BPS\0\1" + fd->read();
+    }
   } else {
     //werror("unknown marker: %O neither JPEG nor Postscript\n", marker);
     return ([]);
@@ -354,11 +392,12 @@ mapping get_information(Stdio.File fd)
       charset = ([
 	"cp_1252":"windows1252",
 	"cp_2":"macintosh",
+	"cp_utf8": "utf8",
       ])[charset] || charset;
     }
     //werror("Charset: %O\n", charset);
     res->charset = ({ charset });
-    object decoder = Locale.Charset.decoder(charset);
+    object decoder = Charset.decoder(charset);
     foreach(res; string key; array(string) vals) {
       res[key] = map(vals,
 		     lambda(string val, object decoder) {

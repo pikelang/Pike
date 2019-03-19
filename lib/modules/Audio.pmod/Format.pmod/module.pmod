@@ -4,7 +4,6 @@
 //
 // Author: Honza Petrous, hop@unibase.cz
 //
-// $Id$
 
 //#define AUDIO_FORMAT_DEBUG
 #ifdef AUDIO_FORMAT_DEBUG
@@ -139,7 +138,7 @@ class vbuffer {
   int seek(int val) {
       return fd->seek(val);
   }
-    
+
   // Peeks data from buffer
   //
   // @param n
@@ -166,6 +165,7 @@ class vbuffer {
   //  1 = string, 0 or void = integer
   string|int getbytes( int n, int|void s ) {
     DEBUG("getbytes: n: %d, s: %d\n", n, s);
+    if(n < 1) throw(Error.Generic("Must read at least something.\n"));
     if( !buffer || !sizeof(buffer) ) {
       if(!fd)
         return -1;

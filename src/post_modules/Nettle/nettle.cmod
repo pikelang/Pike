@@ -1,5 +1,4 @@
 /* nettle.cmod -*- c -*- */
-/* $Id$ */
 
 #include "global.h"
 #include "interpret.h"
@@ -9,6 +8,8 @@
 #include "operators.h"
 #include "module_support.h"
 #include "threads.h"
+#include "pike_memory.h"
+#include "pike_cpulib.h"
 
 #include "nettle_config.h"
 
@@ -18,9 +19,6 @@
 
 #include <nettle/yarrow.h>
 #include <nettle/knuth-lfib.h>
-
-#include <stdio.h>
-#include <stdarg.h>
 
 DECLARATIONS
 
@@ -35,45 +33,18 @@ DECLARATIONS
  *! Yarrow is a family of pseudo-randomness generators, designed for
  *! cryptographic use, by John Kelsey, Bruce Schneier and Niels Ferguson.
  *! Yarrow-160 is described in a paper at
- *! @url{http://www.counterpane.com/yarrow.html@}, and it uses SHA1 and
+ *! @url{http://www.schneier.com/paper-yarrow.html@}, and it uses SHA1 and
  *! triple-DES, and has a 160-bit internal state. Nettle implements
  *! Yarrow-256, which is similar, but uses SHA256 and AES to get an
  *! internal state of 256 bits.
  */
 PIKECLASS Yarrow
+program_flags PROGRAM_CLEAR_STORAGE;
 {
   CVAR struct yarrow256_ctx ctx;
   CVAR struct yarrow_source *sources;
 
-#ifndef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
-  /* NOTE: Nettle 2.0 does not have the automatic seed_file maintenance
-   *       that Nettle 1.x had. This stuff is needed since it affected
-   *       the state emitted by random_string(). When Nettle 2.0 is the
-   *       default, consider implementing this via overloading of the
-   *       various seeding functions instead, since it does have a bit
-   *       of overhead.
-   *
-   *	/grubba 2009-07-05
-   */
-  PIKEVAR string seed_file flags ID_PRIVATE|ID_STATIC;
-#endif
-
   DECLARE_STORAGE;
-
-#ifndef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
-  static void pike_generate_seed_file(void)
-  {
-    struct pike_string *seed_file =
-      begin_shared_string(YARROW256_SEED_FILE_SIZE);
-    yarrow256_random(&THIS->ctx, YARROW256_SEED_FILE_SIZE, STR0(seed_file));
-    if (THIS->seed_file) {
-      free_string(THIS->seed_file);
-    }
-    THIS->seed_file = end_shared_string(seed_file);
-  }
-#else
-#define pike_generate_seed_file()
-#endif
 
   /*! @decl void create(void|int sources)
    *! The number of entropy sources that will feed entropy to the
@@ -104,18 +75,19 @@ PIKECLASS Yarrow
     yarrow256_init(&THIS->ctx, num, THIS->sources);
   }
 
-  /*! @decl Yarrow seed(string data)
-   *! The random generator needs to be seeded before
-   *! it can be used. The seed must be at least 32
-   *! characters long. The seed could be stored from
-   *! a previous run by inserting the value returned
-   *! from @[get_seed].
+  /*! @decl Yarrow seed(string(0..255) data)
+   *!
+   *! The random generator needs to be seeded before it can be used.
+   *! The seed must be at least 32 characters long. The seed could be
+   *! stored from a previous run by inserting the value returned from
+   *! previous @[random_string] call.
+   *!
    *! @returns
    *!   Returns the called object.
    *! @seealso
-   *!   @[min_seed_size], @[get_seed], @[is_seeded]
+   *!   @[min_seed_size], @[is_seeded]
    */
-  PIKEFUN object seed(string data)
+  PIKEFUN object seed(string(0..255) data)
     optflags OPT_SIDE_EFFECT;
   {
     if(data->len < YARROW256_SEED_FILE_SIZE)
@@ -124,7 +96,6 @@ PIKECLASS Yarrow
 
     NO_WIDE_STRING(data);
     yarrow256_seed(&THIS->ctx, data->len, STR0(data));
-    pike_generate_seed_file();
     RETURN this_object();
   }
 
@@ -138,33 +109,6 @@ PIKECLASS Yarrow
     optflags OPT_TRY_OPTIMIZE;
   {
     RETURN YARROW256_SEED_FILE_SIZE;
-  }
-
-  /*! @decl string(0..255) get_seed()
-   *!   Returns part of the internal state so that it can
-   *!   be saved for later seeding.
-   *!
-   *! @seealso
-   *!   @[seed()], @[random_string()]
-   */
-  PIKEFUN string get_seed()
-    optflags OPT_EXTERNAL_DEPEND;
-    rawtype tDeprecated(tFunc(tNone, tStr8));
-  {
-    if( !yarrow256_is_seeded(&THIS->ctx) )
-      Pike_error("Random generator not seeded.\n");
-
-#ifdef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
-    RETURN make_shared_binary_string(THIS->ctx.seed_file,
-                                     YARROW256_SEED_FILE_SIZE);
-#else
-    if (THIS->seed_file) {
-      REF_RETURN THIS->seed_file;
-    } else {
-      struct pike_string *s = begin_shared_string(YARROW256_SEED_FILE_SIZE);
-      RETURN end_shared_string(s);
-    }
-#endif /* HAVE_STRUCT_YARROW256_CTX_SEED_FILE */
   }
 
   /*! @decl int(0..1) is_seeded()
@@ -199,16 +143,15 @@ PIKECLASS Yarrow
 #else
     yarrow256_force_reseed(&THIS->ctx);
 #endif
-    pike_generate_seed_file();
   }
 
-  /*! @decl int(0..1) update(string data, int source, int entropy)
+  /*! @decl int(0..1) update(string(0..255) data, int source, int entropy)
    *! Inject additional entropy into the random number generator.
    *!
    *! @seealso
    *!   @[create]
    */
-  PIKEFUN int(0..1) update(string data, int source, int entropy)
+  PIKEFUN int(0..1) update(string(0..255) data, int source, int entropy)
     optflags OPT_SIDE_EFFECT;
   {
     int ret;
@@ -224,9 +167,6 @@ PIKECLASS Yarrow
       Pike_error("Impossibly large entropy value.\n");
     ret = yarrow256_update(&THIS->ctx, source, entropy, data->len,
 			   (const uint8_t *)data->str);
-    if (ret) {
-      pike_generate_seed_file();
-    }
     RETURN ret;
   }
 
@@ -240,10 +180,10 @@ PIKECLASS Yarrow
     RETURN yarrow256_needed_sources(&THIS->ctx);
   }
 
-  /*! @decl string random_string(int length)
+  /*! @decl string(0..255) random_string(int length)
    *! Returns a pseudo-random string of the requested @[length].
    */
-  PIKEFUN string random_string(int length)
+  PIKEFUN string(0..255) random_string(int length)
     optflags OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT;
   {
     struct pike_string *rnd;
@@ -254,6 +194,23 @@ PIKECLASS Yarrow
     rnd = begin_shared_string(length);
     yarrow256_random(&THIS->ctx, length, (uint8_t *)rnd->str);
     RETURN end_shared_string(rnd);
+  }
+
+  /*! @decl string(0..255) get_seed()
+   *!   Returns part of the internal state so that it can be saved for
+   *!   later seeding. This method is deprecated. Instead read the
+   *!   @[min_seed_size] number of bytes from the @[random_string]
+   *!   method.
+   *!
+   *! @seealso
+   *!   @[seed()], @[random_string()]
+   */
+  PIKEFUN string(0..255) get_seed()
+    optflags OPT_EXTERNAL_DEPEND;
+    rawtype tDeprecated(tFunc(tNone, tStr8));
+  {
+    push_int(YARROW256_SEED_FILE_SIZE);
+    f_Nettle_Yarrow_random_string(1);
   }
 
   INIT
@@ -275,776 +232,326 @@ PIKECLASS Yarrow
 /*! @endclass
  */
 
-/*! @decl string crypt_md5(string password, string salt)
- *! Does the crypt_md5 abrakadabra (MD5 + snakeoil).
- *! It is assumed that @[salt] does not contain "$".
+#define INCREMENT(size, ctr)			\
+  do {						\
+    unsigned increment_i = (size) - 1;		\
+    if (++(ctr)[increment_i] == 0)		\
+      while (increment_i > 0			\
+	     && ++(ctr)[--increment_i] == 0 )	\
+	;					\
+  } while (0)
+
+/*! @class Fortuna
+ *!
+ *! Implements the Fortuna PRNG generator, designed by Niels Ferguson and
+ *! Bruce Schneier and described in Practical Cryptography. Web
+ *! published exerpt at https://www.schneier.com:443/fortuna.pdf
+ *!
+ *! This implementation uses AES256 to generate output and SHA256 to
+ *! generate keys.
+ *!
+ *! To use this class an entropy accumulator needs to be implemented
+ *! and supply the @[reseed()] method with new entopy.
  */
-PIKEFUN string crypt_md5(string pw, string salt)
+PIKECLASS Fortuna
+program_flags PROGRAM_CLEAR_STORAGE;
+{
+  CVAR struct aes_ctx aes_ctx;
+  CVAR struct sha256_ctx sha_ctx;
+  CVAR uint8_t *key;
+  CVAR uint8_t *ctr;
+  CVAR uint8_t *data;
+
+  DECLARE_STORAGE;
+
+#ifndef AES256_KEY_SIZE
+#define AES256_KEY_SIZE	(256>>3)
+#endif
+
+  static void fortuna_generate(void)
+  {
+    aes_encrypt(&THIS->aes_ctx, 16, THIS->data, THIS->ctr);
+    INCREMENT(16, THIS->ctr);
+  }
+
+  static void fortuna_rekey(void)
+  {
+    fortuna_generate();
+    memcpy(THIS->key, THIS->data, 16);
+    fortuna_generate();
+    memcpy(THIS->key+16, THIS->data, 16);
+    aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+  }
+
+  /*! @decl void reseed(string(8bit) data)
+   *! Updated the internal key with the provided additional entropy.
+   */
+  PIKEFUN void reseed(string(8bit) data)
+  {
+    sha256_update(&THIS->sha_ctx, 32, THIS->key);
+    sha256_update(&THIS->sha_ctx, data->len, (const uint8_t *)data->str);
+    sha256_digest(&THIS->sha_ctx, 32, THIS->key);
+    aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+    INCREMENT(16, THIS->ctr);
+  }
+
+  /*! @decl string(8bit) random_string(int(0..) len)
+   *!
+   *! Generates @[len] amount of pseudo random data. In contrast with
+   *! the Fortuna PseudoRandomData function, which only allows 2^20
+   *! bytes of random data per call, the necessary rekey operations
+   *! are here performed internally, so no such restrictions apply.
+   */
+  PIKEFUN string(8bit) random_string(int len)
+  {
+    int stored = 0;
+    struct string_builder s;
+
+    if(len<0) Pike_error("Length has to be positive.\n");
+    init_string_builder_alloc(&s, len, 0);
+
+    while( stored < len )
+    {
+      fortuna_generate();
+      string_builder_binary_strcat(&s, (const char *)THIS->data,
+                                   MINIMUM(16, (len-stored)));
+
+      /* This should really be MINIMUM(16, (len-stored)) instead of
+         16, but it is only less than 16 in the last round, so it
+         doesn't matter if we rekey here or not. */
+      stored += 16;
+
+      if( !(stored % (1<<20)) )
+        fortuna_rekey();
+    }
+
+    /* Inverse of the above conditional, to avoid having fortuna_rekey
+       applied twice in the rare condition that the string length is a
+       multiple of 1<<20. */
+    if( (stored % (1<<20)) )
+      fortuna_rekey();
+
+    RETURN finish_string_builder(&s);
+  }
+
+  INIT
+  {
+    THIS->ctr = xcalloc(1,16);
+    THIS->key = xcalloc(1,32);
+    aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+    sha256_init(&THIS->sha_ctx);
+    THIS->data = xalloc(16);
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    free(THIS->ctr);
+    free(THIS->key);
+    free(THIS->data);
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @decl int(0..) rsa_unpad(string(0..255) data, int(1..2) type)
+ *!
+ *! Unpads a message that has been padded according to
+ *! RSAES-PKCS1-V1_5-ENCODE(message) in PKCS#1 v2.2, but without the
+ *! null byte prefix. The padding method used on the original message
+ *! must be provided in the @[type] parameter. All content dependent
+ *! processing is done in constant time for the same padding type and
+ *! @[data] length.
+ *!
+ *! @returns
+ *!   Returns the position in the string where the first non-padding
+ *!   character is, or 0.
+ */
+PIKEFUN int(0..) rsa_unpad(string(0..255) data, int type)
+{
+  int i, pad=0, nonpad=0, pos=0;
+  unsigned char *str;
+
+  NO_WIDE_STRING(data);
+
+  /* Indata is smaller than minimum size, so we can exit immediately
+     without timing issue. 1 type + 8 padding + 1 delimiter + 1 value
+     = 11 bytes. */
+  if(data->len < 11 ) RETURN 0;
+  str = (unsigned char*)data->str + data->len - 1;
+
+  for(i=data->len-1; i>0; i--,str--)
+  {
+    switch(*str)
+    {
+    case 0:     pos=i; break;
+    case 0xff:  pad=i; break;
+    default: nonpad=i; break;
+    }
+  }
+
+  if( type==2 )
+  {
+    nonpad=pos+1;
+    pad=1;
+  }
+
+  if( (pad==1) + (nonpad>pos) + (*str==type) + (pos>8) == 4 )
+    RETURN pos+1;
+  RETURN 0;
+}
+
+
+/*! @decl string(0..127) crypt_md5(string(0..255) password, @
+ *!                                string(0..255) salt,@
+ *!                                void|string(0..255) magic)
+ *! Does the crypt_md5 abrakadabra (MD5 + snakeoil). It is assumed
+ *! that @[salt] does not contain "$".
+ *!
+ *! The @[password] memory will be cleared before released.
+ */
+PIKEFUN string(0..127) crypt_md5(string(0..255) pw, string(0..255) salt,
+				 void|string(0..255) magic)
      optflags OPT_TRY_OPTIMIZE;
 {
   char *hash;
   NO_WIDE_STRING(pw);
   NO_WIDE_STRING(salt);
-  hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str);
+
+  pw->flags |= STRING_CLEAR_ON_EXIT;
+
+  if(!magic)
+  {
+    hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str,
+                          3, "$1$");
+  }
+  else
+  {
+    NO_WIDE_STRING(magic);
+    hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str,
+                          magic->len, magic->str);
+  }
+
   push_text(hash);
 }
 
+#ifdef HAVE_CRC32_INTRINSICS
+static int supports_sse42 = 0;
 
-static const char *crypto_functions[] = {
-  "block_size",
-  "key_size",
-  "set_encrypt_key",
-  "set_decrypt_key",
-  "crypt",
-  0
+ATTRIBUTE((target("sse4")))
+  unsigned int intel_crc32c(const unsigned int *p, size_t len)
+{
+  unsigned int h=0xffffffff;
+  const unsigned int *e = p + (len>>2);
+  const unsigned char *c = (const unsigned char*)e;
+
+  /* .. all full integers .. */
+  while( p<e )
+    h = __builtin_ia32_crc32si(h, *(p++));
+
+  len &= 3;
+
+  /* any remaining bytes. */
+  while( len-- )
+    h = __builtin_ia32_crc32qi(h, *(c++));
+
+  return h ^ 0xffffffff;
+}
+#endif /* HAVE_CRC32_INTRINSICS */
+
+/* Copyright 2001, D. Otis.  Use this program, code or tables    */
+/* extracted from it, as desired without restriction.            */
+static const INT32 crc[256] = {
+  0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4,
+  0xC79A971F, 0x35F1141C, 0x26A1E7E8, 0xD4CA64EB,
+  0x8AD958CF, 0x78B2DBCC, 0x6BE22838, 0x9989AB3B,
+  0x4D43CFD0, 0xBF284CD3, 0xAC78BF27, 0x5E133C24,
+  0x105EC76F, 0xE235446C, 0xF165B798, 0x030E349B,
+  0xD7C45070, 0x25AFD373, 0x36FF2087, 0xC494A384,
+  0x9A879FA0, 0x68EC1CA3, 0x7BBCEF57, 0x89D76C54,
+  0x5D1D08BF, 0xAF768BBC, 0xBC267848, 0x4E4DFB4B,
+  0x20BD8EDE, 0xD2D60DDD, 0xC186FE29, 0x33ED7D2A,
+  0xE72719C1, 0x154C9AC2, 0x061C6936, 0xF477EA35,
+  0xAA64D611, 0x580F5512, 0x4B5FA6E6, 0xB93425E5,
+  0x6DFE410E, 0x9F95C20D, 0x8CC531F9, 0x7EAEB2FA,
+  0x30E349B1, 0xC288CAB2, 0xD1D83946, 0x23B3BA45,
+  0xF779DEAE, 0x05125DAD, 0x1642AE59, 0xE4292D5A,
+  0xBA3A117E, 0x4851927D, 0x5B016189, 0xA96AE28A,
+  0x7DA08661, 0x8FCB0562, 0x9C9BF696, 0x6EF07595,
+  0x417B1DBC, 0xB3109EBF, 0xA0406D4B, 0x522BEE48,
+  0x86E18AA3, 0x748A09A0, 0x67DAFA54, 0x95B17957,
+  0xCBA24573, 0x39C9C670, 0x2A993584, 0xD8F2B687,
+  0x0C38D26C, 0xFE53516F, 0xED03A29B, 0x1F682198,
+  0x5125DAD3, 0xA34E59D0, 0xB01EAA24, 0x42752927,
+  0x96BF4DCC, 0x64D4CECF, 0x77843D3B, 0x85EFBE38,
+  0xDBFC821C, 0x2997011F, 0x3AC7F2EB, 0xC8AC71E8,
+  0x1C661503, 0xEE0D9600, 0xFD5D65F4, 0x0F36E6F7,
+  0x61C69362, 0x93AD1061, 0x80FDE395, 0x72966096,
+  0xA65C047D, 0x5437877E, 0x4767748A, 0xB50CF789,
+  0xEB1FCBAD, 0x197448AE, 0x0A24BB5A, 0xF84F3859,
+  0x2C855CB2, 0xDEEEDFB1, 0xCDBE2C45, 0x3FD5AF46,
+  0x7198540D, 0x83F3D70E, 0x90A324FA, 0x62C8A7F9,
+  0xB602C312, 0x44694011, 0x5739B3E5, 0xA55230E6,
+  0xFB410CC2, 0x092A8FC1, 0x1A7A7C35, 0xE811FF36,
+  0x3CDB9BDD, 0xCEB018DE, 0xDDE0EB2A, 0x2F8B6829,
+  0x82F63B78, 0x709DB87B, 0x63CD4B8F, 0x91A6C88C,
+  0x456CAC67, 0xB7072F64, 0xA457DC90, 0x563C5F93,
+  0x082F63B7, 0xFA44E0B4, 0xE9141340, 0x1B7F9043,
+  0xCFB5F4A8, 0x3DDE77AB, 0x2E8E845F, 0xDCE5075C,
+  0x92A8FC17, 0x60C37F14, 0x73938CE0, 0x81F80FE3,
+  0x55326B08, 0xA759E80B, 0xB4091BFF, 0x466298FC,
+  0x1871A4D8, 0xEA1A27DB, 0xF94AD42F, 0x0B21572C,
+  0xDFEB33C7, 0x2D80B0C4, 0x3ED04330, 0xCCBBC033,
+  0xA24BB5A6, 0x502036A5, 0x4370C551, 0xB11B4652,
+  0x65D122B9, 0x97BAA1BA, 0x84EA524E, 0x7681D14D,
+  0x2892ED69, 0xDAF96E6A, 0xC9A99D9E, 0x3BC21E9D,
+  0xEF087A76, 0x1D63F975, 0x0E330A81, 0xFC588982,
+  0xB21572C9, 0x407EF1CA, 0x532E023E, 0xA145813D,
+  0x758FE5D6, 0x87E466D5, 0x94B49521, 0x66DF1622,
+  0x38CC2A06, 0xCAA7A905, 0xD9F75AF1, 0x2B9CD9F2,
+  0xFF56BD19, 0x0D3D3E1A, 0x1E6DCDEE, 0xEC064EED,
+  0xC38D26C4, 0x31E6A5C7, 0x22B65633, 0xD0DDD530,
+  0x0417B1DB, 0xF67C32D8, 0xE52CC12C, 0x1747422F,
+  0x49547E0B, 0xBB3FFD08, 0xA86F0EFC, 0x5A048DFF,
+  0x8ECEE914, 0x7CA56A17, 0x6FF599E3, 0x9D9E1AE0,
+  0xD3D3E1AB, 0x21B862A8, 0x32E8915C, 0xC083125F,
+  0x144976B4, 0xE622F5B7, 0xF5720643, 0x07198540,
+  0x590AB964, 0xAB613A67, 0xB831C993, 0x4A5A4A90,
+  0x9E902E7B, 0x6CFBAD78, 0x7FAB5E8C, 0x8DC0DD8F,
+  0xE330A81A, 0x115B2B19, 0x020BD8ED, 0xF0605BEE,
+  0x24AA3F05, 0xD6C1BC06, 0xC5914FF2, 0x37FACCF1,
+  0x69E9F0D5, 0x9B8273D6, 0x88D28022, 0x7AB90321,
+  0xAE7367CA, 0x5C18E4C9, 0x4F48173D, 0xBD23943E,
+  0xF36E6F75, 0x0105EC76, 0x12551F82, 0xE03E9C81,
+  0x34F4F86A, 0xC69F7B69, 0xD5CF889D, 0x27A40B9E,
+  0x79B737BA, 0x8BDCB4B9, 0x988C474D, 0x6AE7C44E,
+  0xBE2DA0A5, 0x4C4623A6, 0x5F16D052, 0xAD7D5351,
 };
 
-static const char *assert_is_crypto_object(struct program *p,
-				    const char *const *required) {
-  while (*required) {
-    if (find_identifier( (char *) *required, p) < 0)
-      return *required;
-    required++;
-  }
-  return 0;
-}
-
-static struct object *make_cipher_object(INT32 args) {
-  ptrdiff_t fun;
-  const char *missing;
-  struct svalue *top = Pike_sp-args;
-  struct object *obj;
-
-  switch(TYPEOF(*top))
-  {
-    case T_PROGRAM:
-      obj = clone_object(top->u.program, args-1);
-      break;
-
-    case T_FUNCTION:
-      apply_svalue(Pike_sp - args, args-1);
-
-      /* Check return value */
-      if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
-	Pike_error("Returned value is not an object.\n");
-
-      add_ref(obj = Pike_sp[-1].u.object);
-      break;
-
-    case T_OBJECT:
-      fun = -1;
-      missing = assert_is_crypto_object(top->u.object->prog,
-					crypto_functions);
-      if(missing)
-	fun = FIND_LFUN(top->u.object->prog, LFUN_CALL);
-      if(fun!=-1) {
-	apply_low(top->u.object, fun, args-1);
-	stack_swap();
-	pop_stack();
-      }
-      else
-	if(args!=1) Pike_error("Too many arguments.\n");
-
-      add_ref(obj = top->u.object);
-      break;
-    default:
-      SIMPLE_BAD_ARG_ERROR("create", 1, "program|object|function");
-    }
-
-  pop_stack();
-
-  missing = assert_is_crypto_object(obj->prog, crypto_functions);
-  if(missing) {
-    free_object(obj);
-    Pike_error("Object is missing identifier \"%s\"\n", missing);
-  }
-
-  return obj;
-}
-
-
-/*! @class CBC
- *! @belongs Crypto
- *! Implementation of the cipher block chaining mode (CBC). Works as
- *! a wrapper for the cipher algorithm put in create.
+/*! @decl int(0..) crc32c(string(8bit) data)
+ *! Implements the Castagnoli CRC, CRC32C. Hardware optimized on Intel
+ *! CPUs with SSE 4.2.
  */
-PIKECLASS CBC
+PIKEFUN int(0..) crc32c(string(8bit) data)
 {
-  CVAR struct object *object;
-  CVAR unsigned INT8 *iv;
-  CVAR INT32 block_size;
-  CVAR INT32 mode;
-
-  INIT
+#ifdef HAVE_CRC32_INTRINSICS
+  if(supports_sse42)
   {
-    THIS->object = NULL;
-    THIS->iv = NULL;
-    THIS->block_size = 0;
-    THIS->mode = 0;
+    RETURN intel_crc32c((const unsigned int *)data->str, data->len);
   }
-
-  EXIT
-    gc_trivial;
+  else
+#endif /* HAVE_CRC32_INTRISINCS */
   {
-    if(THIS->object) {
-      free_object(THIS->object);
-    }
-    if(THIS->iv) {
-      MEMSET(THIS->iv, 0, THIS->block_size);
-      free(THIS->iv);
-    }
-  }
-
-  INLINE static void cbc_encrypt_step(const unsigned INT8 *const source,
-				      unsigned INT8 *dest)
-  {
-    INT32 block_size = THIS->block_size;
-    INT32 i;
-
-    for(i=0; i < block_size; i++)
-      THIS->iv[i] ^= source[i];
-
-    push_string(make_shared_binary_string((INT8 *)THIS->iv, block_size));
-    safe_apply(THIS->object, "crypt", 1);
-
-    if(TYPEOF(Pike_sp[-1]) != T_STRING)
-      Pike_error("Expected string from crypt()\n");
-
-    if(Pike_sp[-1].u.string->len != block_size) {
-      Pike_error("Bad string length %ld returned from crypt()\n",
-		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-    }
-    MEMCPY(THIS->iv, Pike_sp[-1].u.string->str, block_size);
-    MEMCPY(dest, Pike_sp[-1].u.string->str, block_size);
-    pop_stack();
-  }
-
-  INLINE static void cbc_decrypt_step(const unsigned INT8 *const source,
-				      unsigned INT8 *dest)
-  {
-    INT32 block_size = THIS->block_size;
-    INT32 i;
-
-    push_string(make_shared_binary_string((const INT8 *)source, block_size));
-    safe_apply(THIS->object, "crypt", 1);
-
-    if(TYPEOF(Pike_sp[-1]) != T_STRING)
-      Pike_error("Expected string from crypt()\n");
-
-    if(Pike_sp[-1].u.string->len != block_size) {
-      Pike_error("Bad string length %ld returned from crypt()\n",
-		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-    }
-
-    for(i=0; i < block_size; i++)
-      dest[i] = THIS->iv[i] ^ Pike_sp[-1].u.string->str[i];
-
-    pop_stack();
-    MEMCPY(THIS->iv, source, block_size);
-  }
-
-  /*! @decl void create(program|object|function cipher, mixed ... args)
-   *! Initialize the CBC wrapper with a cipher algorithm. If it is a
-   *! program, an object will be instantiated with @[args] as arguments.
-   *! If it is an object that doesn't conform to the cipher API, but has
-   *! an @[LFUN::`()], that LFUN will be called. If it is a function,
-   *! that function will be called with @[args] as arguments.
-   */
-  PIKEFUN void create(program|object|function cipher, mixed ... more)
-    flags ID_PROTECTED;
-  {
-    int old_block_size = THIS->block_size;
-    THIS->object = make_cipher_object(args);
-
-    safe_apply(THIS->object, "block_size", 0);
-
-    if(TYPEOF(Pike_sp[-1]) != T_INT)
-      Pike_error("block_size() didn't return an int.\n");
-
-    THIS->block_size = Pike_sp[-1].u.integer;
-
-    pop_stack();
-
-    if ((!THIS->block_size) ||
-	(THIS->block_size > 4096))
-      Pike_error("Bad block size %d.\n", THIS->block_size);
-
-    if(THIS->iv) {
-      MEMSET(THIS->iv, 0, old_block_size);
-      free(THIS->iv);
-    }
-    THIS->iv = (unsigned INT8 *)xalloc(THIS->block_size);
-    MEMSET(THIS->iv, 0, THIS->block_size);
-  }
-
-  /*! @decl string name()
-   *! Returns the string @expr{"CBC(x)"@} where x is the
-   *! encapsulated algorithm.
-   */
-  PIKEFUN string name()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    push_constant_text("CBC(");
-    safe_apply(THIS->object, "name", 0);
-    push_constant_text(")");
-    f_add(3);
-  }
-
-  /*! @decl int block_size()
-   *! Reurns the block size of the encapsulated cipher.
-   */
-  PIKEFUN int block_size()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    RETURN THIS->block_size;
-  }
-
-  /*! @decl int key_size()
-   *! Returns the key size of the encapsulated cipher.
-   */
-  PIKEFUN int key_size()
-    optflags OPT_EXTERNAL_DEPEND;
-  {
-    safe_apply(THIS->object, "key_size", args);
-  }
-
-  /*! @decl this_program set_encrypt_key(string key)
-   *! Prepare the cipher and the wrapper for encrypting
-   *! with the given @[key].
-   */
-  PIKEFUN object set_encrypt_key(string key)
-    optflags OPT_SIDE_EFFECT;
-  {
-    assert(THIS->block_size);
-    THIS->mode = 0;
-    safe_apply(THIS->object, "set_encrypt_key", args);
-    pop_stack();
-    RETURN this_object();
-  }
-
-  /*! @decl this_program set_decrypt_key(string key)
-   *! Prepare the cipher and the wrapper for decrypting
-   *! with the given @[key].
-   */
-  PIKEFUN object set_decrypt_key(string key)
-    optflags OPT_SIDE_EFFECT;
-  {
-    assert(THIS->block_size);
-    THIS->mode = 1;
-    safe_apply(THIS->object, "set_decrypt_key", args);
-    pop_stack();
-    RETURN this_object();
-  }
-
-  /*! @decl this_program set_iv(string iv)
-   *! Set the initialization vector to @[iv].
-   */
-  PIKEFUN object set_iv(string iv)
-    optflags OPT_SIDE_EFFECT;
-  {
-    assert(THIS->iv);
-    NO_WIDE_STRING(iv);
-    if(iv->len != THIS->block_size)
-      Pike_error("Argument incompatible with cipher block size.\n");
-    MEMCPY(THIS->iv, iv->str, THIS->block_size);
-    RETURN this_object();
-  }
-
-  /*! @decl string crypt(string data)
-   *! Encrypt/decrypt @[data] and return the result. @[data] must
-   *! be an integral number of blocks.
-   */
-  PIKEFUN string crypt(string data) {
-    unsigned INT8 *result;
-    INT32 offset = 0;
-    ONERROR uwp;
-
-    NO_WIDE_STRING(data);
-
-    if(data->len % THIS->block_size)
-      Pike_error("Data length not multiple of block size.\n");
-
-    if(!(result = malloc(data->len)))
-      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len);
-    SET_ONERROR (uwp, free, result);
-
-    if(THIS->mode == 0) {
-      while (offset < data->len) {
-	cbc_encrypt_step((const unsigned INT8 *)data->str + offset,
-			 result + offset);
-	offset += THIS->block_size;
-      }
-    }
-    else {
-      while (offset < data->len) {
-	cbc_decrypt_step((const unsigned INT8 *)data->str + offset,
-			 result + offset);
-	offset += THIS->block_size;
-      }
-    }
-
-    pop_n_elems(args);
-    push_string(make_shared_binary_string((INT8 *)result, offset));
-    MEMSET(result, 0, offset);
-
-    CALL_AND_UNSET_ONERROR (uwp);
+    unsigned int h=0xffffffff, i=0;
+    for(; i<data->len; i++)
+      h = (h>>8)^crc[(h^data->str[i])&0xFF];
+    RETURN h ^ 0xffffffff;
   }
 }
-
-/*! @endclass
- */
-
-/*! @class Buffer
- *! @belongs Crypto
- *! Acts as a buffer so that data can be fed to a cipher in blocks
- *! that don't correspond to cipher block sizes.
- */
-PIKECLASS Proxy {
-  CVAR struct object *object;
-  CVAR int block_size;
-  CVAR unsigned char *backlog;
-  CVAR int backlog_len;
-
-  INIT {
-    THIS->object = NULL;
-    THIS->block_size = 0;
-    THIS->backlog = NULL;
-    THIS->backlog_len = 0;
-  }
-
-  EXIT
-    gc_trivial;
-  {
-    if(THIS->backlog) {
-      MEMSET(THIS->backlog, 0, THIS->block_size);
-      free(THIS->backlog);
-      THIS->backlog = NULL;
-    }
-    if(THIS->object) {
-      free_object(THIS->object);
-      THIS->object = NULL;
-    }
-  }
-
-  /*! @decl void create(program|object|function cipher, mixed ... args)
-   *! Initialize the Proxy wrapper with a cipher algorithm. If it is a
-   *! program, an object will be instantiated with @[args] as arguments.
-   *! If it is an object that doesn't conform to the cipher API, but has
-   *! an @[LFUN::`()], that LFUN will be called. If it is a function,
-   *! that function will be called with @[args] as arguments.
-   */
-  PIKEFUN void create(program|object|function cipher, mixed ... more)
-    flags ID_PROTECTED;
-  {
-    exit_Proxy_struct();
-    THIS->object = make_cipher_object(args);
-
-    safe_apply(THIS->object, "block_size", 0);
-    if (TYPEOF(Pike_sp[-1]) != T_INT)
-      Pike_error("block_size() didn't return an int\n");
-    THIS->block_size = Pike_sp[-1].u.integer;
-
-    pop_stack();
-
-    if ((!THIS->block_size) ||
-	(THIS->block_size > 4096))
-      Pike_error("Bad block size %ld\n", DO_NOT_WARN((long)THIS->block_size));
-
-    THIS->backlog = (unsigned char *)xalloc(THIS->block_size);
-    THIS->backlog_len = 0;
-    MEMSET(THIS->backlog, 0, THIS->block_size);
-  }
-
-  /*! @decl string name()
-   *! Returns the string @expr{"Proxy(x)"@} where x is the
-   *! encapsulated algorithm.
-   */
-  PIKEFUN string name()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    push_constant_text("Proxy(");
-    safe_apply(THIS->object, "name", 0);
-    push_constant_text(")");
-    f_add(3);
-  }
-
-  /*! @decl int block_size()
-   *!
-   *! Get the block size of the contained block crypto.
-   */
-  PIKEFUN int block_size()
-    optflags OPT_TRY_OPTIMIZE;
-  {
-    RETURN THIS->block_size;
-  }
-
-  /*! @decl int key_size()
-   *!
-   *! Get the key size of the contained block crypto.
-   */
-  PIKEFUN int key_size()
-    optflags OPT_EXTERNAL_DEPEND;
-  {
-    safe_apply(THIS->object, "key_size", args);
-  }
-
-  /*! @decl this_program set_encrypt_key(string key)
-   *!
-   *! Set the encryption key.
-   *!
-   *! @note
-   *!   As a side-effect any buffered data will be cleared.
-   */
-  PIKEFUN object set_encrypt_key(string key)
-    optflags OPT_SIDE_EFFECT;
-  {
-    MEMSET(THIS->backlog, 0, THIS->block_size);
-    THIS->backlog_len = 0;
-    safe_apply(THIS->object, "set_encrypt_key", args);
-    pop_stack();
-    RETURN this_object();
-  }
-
-  /*! @decl this_program set_decrypt_key(string key)
-   *!
-   *! Set the decryption key.
-   *!
-   *! @note
-   *!   As a side-effect any buffered data will be cleared.
-   */
-  PIKEFUN object set_decrypt_key(string key)
-    optflags OPT_SIDE_EFFECT;
-  {
-    MEMSET(THIS->backlog, 0, THIS->block_size);
-    THIS->backlog_len = 0;
-    safe_apply(THIS->object, "set_decrypt_key", args);
-    pop_stack();
-    RETURN this_object();
-  }
-
-  /*! @decl string crypt(string data)
-   *!
-   *! Encrypt some data.
-   *!
-   *! Adds data to be encrypted to the buffer. If there's enough
-   *! data to en/decrypt a block, that will be done, and the result
-   *! returned. Any uncrypted data will be left in the buffer.
-   */
-  PIKEFUN string crypt(string data) {
-    unsigned char *result;
-    ptrdiff_t roffset = 0;
-    ptrdiff_t soffset = 0;
-    ptrdiff_t len;
-    ONERROR uwp;
-
-    if (!(result = malloc(data->len + THIS->block_size)))
-      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len + THIS->block_size);
-    SET_ONERROR (uwp, free, result);
-
-    if (THIS->backlog_len) {
-      if (data->len >= (THIS->block_size - THIS->backlog_len)) {
-	MEMCPY(THIS->backlog + THIS->backlog_len, data->str,
-	       (THIS->block_size - THIS->backlog_len));
-	soffset += (THIS->block_size - THIS->backlog_len);
-	THIS->backlog_len = 0;
-	push_string(make_shared_binary_string((char *)THIS->backlog,
-					      THIS->block_size));
-	safe_apply(THIS->object, "crypt", 1);
-	if (TYPEOF(Pike_sp[-1]) != T_STRING)
-	  Pike_error("crypt() did not return string\n");
-	if (Pike_sp[-1].u.string->len != THIS->block_size)
-	  Pike_error("Unexpected string length %ld\n",
-		     DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-
-	MEMCPY(result, Pike_sp[-1].u.string->str, THIS->block_size);
-	roffset = THIS->block_size;
-	pop_stack();
-	MEMSET(THIS->backlog, 0, THIS->block_size);
-      } else {
-	MEMCPY(THIS->backlog + THIS->backlog_len,
-	       data->str, data->len);
-	THIS->backlog_len += data->len;
-	pop_n_elems(args);
-	push_empty_string();
-	CALL_AND_UNSET_ONERROR (uwp);
-	return;
-      }
-    }
-  
-    len = (Pike_sp[-1].u.string->len - soffset);
-    len -= len % THIS->block_size;
-
-    if (len) {
-      push_string(make_shared_binary_string(Pike_sp[-1].u.string->str +
-					    soffset, len));
-      soffset += len;
-
-      safe_apply(THIS->object, "crypt", 1);
-
-      if (TYPEOF(Pike_sp[-1]) != T_STRING)
-	Pike_error("crypt() did not return string.\n");
-      if (Pike_sp[-1].u.string->len != len)
-	Pike_error("crypt() Unexpected string length %ld.\n",
-		   DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-
-      MEMCPY(result + roffset, Pike_sp[-1].u.string->str, len);
-
-      pop_stack();
-    }
-
-    if (soffset < Pike_sp[-1].u.string->len) {
-      MEMCPY(THIS->backlog, Pike_sp[-1].u.string->str + soffset,
-	     Pike_sp[-1].u.string->len - soffset);
-      THIS->backlog_len = Pike_sp[-1].u.string->len - soffset;
-    }
-
-    pop_n_elems(args);
-
-    push_string(make_shared_binary_string((char *)result, roffset + len));
-    MEMSET(result, 0, roffset + len);
-    CALL_AND_UNSET_ONERROR (uwp);
-  }
-
-  /*! @decl string pad(void|int method)
-   *!
-   *! Pad and encrypt any data left in the buffer.
-   *!
-   *! @param method
-   *! The type of padding to apply to the buffer.
-   *! @int
-   *!   @value Crypto.PAD_SSL
-   *!   @value Crypto.PAD_ISO_10126
-   *!   @value Crypto.PAD_ANSI_X923
-   *!   @value Crypto.PAD_PKCS7
-   *!   @value Crypto.PAD_ZERO
-   *! @endint
-   *! Defaults to Crypto.PAD_SSL for compatibility reasons.
-   *!
-   *! @seealso
-   *!   @[unpad()]
-   */
-  PIKEFUN string pad(void|int method) {
-    ptrdiff_t i;
-    int m = 0;
-    int size = THIS->block_size - THIS->backlog_len;
-
-    if(method)
-    {
-      if(TYPEOF(*method) != PIKE_T_INT)
-        Pike_error("Bad argument type.\n");
-      m = method->u.integer;
-    }
-
-    switch(m)
-    {
-    case 0:
-      size--;
-      break;
-    case 4:
-      if( THIS->backlog_len>0 && 
-          THIS->backlog[THIS->backlog_len-1] == 0 )
-        Pike_error("Using zero padding on a zero terminated string.\n");
-      size = 0;
-      break;
-    }
-
-    for (i = THIS->backlog_len; i < THIS->block_size - 1; i++)
-      switch(m)
-      {
-      default:
-        Pike_error("Unknown method.\n");
-      case 0:
-      case 1:
-        /* ISO 10126 */
-        THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
-        break;
-      case 2:
-        /* ANSI X.923 */
-        THIS->backlog[i] = 0;
-        break;
-      case 3:
-        /* PKCS7 / RFC 3852 */
-        THIS->backlog[i] = DO_NOT_WARN((unsigned char)size);
-        break;
-      case 4:
-        /* Null only */
-        THIS->backlog[i] = 0;
-        break;
-      }
-
-  
-    THIS->backlog[THIS->block_size - 1] = DO_NOT_WARN((unsigned char)size);
-
-    push_string(make_shared_binary_string((const char *)THIS->backlog,
-					  THIS->block_size));
-
-    MEMSET(THIS->backlog, 0, THIS->block_size);
-    THIS->backlog_len = 0;
-
-    safe_apply(THIS->object, "crypt", 1);
-  }
-
-  /*! @decl string unpad(string data, void|int method)
-   *!
-   *! Decrypt and unpad a block of data.
-   *!
-   *! This performs the reverse operation of @[pad()].
-   *!
-   *! @param method
-   *! The type of padding that was applied to the original buffer.
-   *! @int
-   *!   @value Crypto.PAD_SSL
-   *!   @value Crypto.PAD_ISO_10126
-   *!   @value Crypto.PAD_ANSI_X923
-   *!   @value Crypto.PAD_PKCS7
-   *!   @value Crypto.PAD_ZERO
-   *! @endint
-   *! Defaults to Crypto.PAD_SSL for compatibility reasons.
-   *!
-   *! @seealso
-   *!   @[pad()]
-   */
-  PIKEFUN string unpad(string str, void|int method) {
-    ptrdiff_t len;
-    int m = 0;
-
-    len = str->len;
-    if( len % THIS->block_size)
-      Pike_error("String must be integral numbers of blocks.\n");
-
-    if( method!=NULL )
-    {
-      m = method->u.integer;
-      pop_stack();
-      args--;
-    }
-
-    safe_apply(THIS->object, "crypt", 1);
-    if (TYPEOF(Pike_sp[-1]) != T_STRING)
-      Pike_error("crypt() did not return string.\n");
-    if (Pike_sp[-1].u.string->len != len)
-      Pike_error("crypt() Unexpected string length %ld.\n",
-		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
-    str = Pike_sp[-1].u.string;
-
-    if( m==0 )
-    {
-      if (str->str[len - 1]+1 > THIS->block_size)
-        Pike_error("Invalid padding (%d > %d)\n",
-                   str->str[len-1]+1, THIS->block_size-1);
-    }
-    else
-      if (str->str[len - 1] > THIS->block_size)
-        Pike_error("Invalid padding (%d > %d)\n",
-                   str->str[len-1], THIS->block_size-1);
-
-
-    len -= str->str[len - 1];
-    switch( m )
-    {
-    case 0:
-      len--;
-      break;
-    case 4:
-      {
-        int c=THIS->block_size;
-        while( str->str[len-1]==0 && c>0 )
-        {
-          c--;
-          len--;
-        }
-      }
-    }
-
-    if (len < 0)
-      Pike_error("String too short to unpad\n");
-  
-    add_ref(str);
-    pop_stack();
-    push_string(make_shared_binary_string(str->str, len));
-    free_string(str);
-  }
-
-  /*! @decl this_program set_iv(string iv)
-   *! Set the initialization vector to @[iv].
-   */
-  PIKEFUN object set_iv(string iv)
-    optflags OPT_SIDE_EFFECT;
-  {
-    apply(THIS->object, "set_iv", args);
-    args = 1;
-    RETURN this_object();
-  }
-
-}
-
-/*! @endclass
- */
-
-#if 0
-
-/* @class LFib
- * The Donald Knuth Lagged Fibonacci pseudo random number generator.
- * This is @b{not@} a source for cryptographic randomness. Use
- * @[Crypto.Yarrow] instead.
- */
-PIKECLASS LFib
-{
-  CVAR struct knuth_lfib_ctx *ctx;
-
-  INIT {
-    THIS->ctx = xalloc(sizeof(struct knuth_lfib_ctx));
-  }
-
-  EXIT
-    gc_trivial;
-  {
-    free(THIS->ctx);
-  }
-
-  /* @decl void create(int seed)
-   * The Lfib generator must be seeded with a number.
-   */
-  PIKEFUN void create(int seed)
-    flags ID_PROTECTED;
-  {
-    knuth_lfib_init(THIS->ctx, seed);
-  }
-
-  /* @decl this_program reseed(int s)
-   * Reseed this object with seed @[s].
-   * @return
-   *   Returns the current object.
-   */
-  PIKEFUN object reseed(int s) {
-    knuth_lfib_init(THIS->ctx, s);
-    RETURN this_object();
-  }
-
-  /* Get one 32bit pseudorandom integer.
-   */
-  PIKEFUN int get() {
-    RETURN knuth_lfib_get(THIS->ctx);
-  }
-
-  /* Get a pseudorandom string of length @[len].
-   */
-  PIKEFUN string get_string(int len) {
-    struct pike_string *s = begin_shared_string(len);
-    knuth_lfib_random(THIS->ctx, len, s->str);
-    push_string(end_shared_string(s));
-  }
-}
-
-/* @endclass
- */
-
-#endif
 
 /*! @endmodule
  */
-
-
 
 #endif /* HAVE_LIBNETTLE */
 
@@ -1057,7 +564,9 @@ PIKE_MODULE_INIT
   INIT;
 #ifdef HAVE_LIBNETTLE
   hash_init();
+  mac_init();
   cipher_init();
+  aead_init();
 #endif /* HAVE_LIBNETTLE */
 #ifdef __NT__
   start_new_program();
@@ -1067,16 +576,33 @@ PIKE_MODULE_INIT
   free_object(nt_object);
   free_program(nt_program);
 #endif /* __NT__ */
+#ifdef HAVE_LIBHOGWEED
+  hogweed_init();
+#endif
+
+#ifdef HAVE_CRC32_INTRINSICS
+#define bit_SSE4_2 (1<<20)
+  {
+    INT32 cpuid[4];
+    x86_get_cpuid (1, cpuid);
+    supports_sse42 = cpuid[3] & bit_SSE4_2;
+  }
+#endif /* HAVE_CRC32_INTRISINCS */
 }
 
 PIKE_MODULE_EXIT
 {
 #ifdef HAVE_LIBNETTLE
+  aead_exit();
   cipher_exit();
+  mac_exit();
   hash_exit();
 #endif /* HAVE_LIBNETTLE */
 #ifdef __NT__
   nt_exit();
 #endif /* __NT__ */
+#ifdef HAVE_LIBHOGWEED
+  hogweed_exit();
+#endif
   EXIT;
 }

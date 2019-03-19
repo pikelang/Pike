@@ -2,21 +2,29 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "config.h"
-#include "global.h"
-#include "module.h"
-#include "pike_error.h"
 
 #ifdef HAVE_LIBFT2
 #ifndef HAVE_FT_FT2BUILD
 #include <freetype/freetype.h>
+#include <freetype/ftsnames.h>
+#include <freetype/ttnameid.h>
 #else
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_SFNT_NAMES_H
+#include FT_TRUETYPE_IDS_H
 #endif
+
+/* Freetype 2.6 defines a conflicting TYPEOF() macro. */
+#undef TYPEOF
+#endif /* HAVE_LIBFT2 */
+
+#include "global.h"
+#include "module.h"
+#include "pike_error.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -30,7 +38,6 @@
 #include "module_support.h"
 #include "operators.h"
 #include "../Image/image.h"
-#endif /* HAVE_LIBFT2 */
 
 
 #ifdef HAVE_LIBFT2
@@ -101,12 +108,12 @@ static void image_ft_error(const char *msg, FT_Error errcode)
  *! A FreeType font face. We recommend using the more generic font handling
  *! interfaces in @[Image.Fonts] instead.
  */
-static void image_ft_face_init( struct object *o )
+static void image_ft_face_init( struct object *UNUSED(o) )
 {
   TFACE = NULL;
 }
 
-static void image_ft_face_free( struct object *o )
+static void image_ft_face_free( struct object *UNUSED(o) )
 {
   FT_Done_Face( TFACE );
 }
@@ -167,14 +174,14 @@ static void image_ft_face_write_char( INT32 args )
   } else
     Pike_error("Unhandled bitmap format received from renderer\n");
 
-  push_text( "img" ); push_object( o );
-  push_text( "x" )  ; push_int( slot->bitmap_left );
-  push_text( "y" )  ; push_int( slot->bitmap_top );
-  push_text( "advance" )  ; push_int( (slot->advance.x+62) >> 6 );
-  push_text( "descender" ); push_int( TFACE->size->metrics.descender>>6 );
-  push_text( "ascender" ); push_int( TFACE->size->metrics.ascender>>6 );
-  push_text( "height" ); push_int( TFACE->size->metrics.height>>6 );
-  
+  push_static_text( "img" ); push_object( o );
+  push_static_text( "x" )  ; push_int( slot->bitmap_left );
+  push_static_text( "y" )  ; push_int( slot->bitmap_top );
+  push_static_text( "advance" )  ; push_int( (slot->advance.x+62) >> 6 );
+  push_static_text( "descender" ); push_int( TFACE->size->metrics.descender>>6 );
+  push_static_text( "ascender" ); push_int( TFACE->size->metrics.ascender>>6 );
+  push_static_text( "height" ); push_int( TFACE->size->metrics.height>>6 );
+
   f_aggregate_mapping( 14 );
 }
 
@@ -204,8 +211,6 @@ static void image_ft_face_attach_file( INT32 args )
   get_all_args( "attach_file", args, "%s", &path );
   if ((errcode = FT_Attach_File( TFACE, path )))
     image_ft_error("Failed to attach file", errcode);
-  pop_n_elems( args );
-  push_int( 0 );
 }
 
 /*! @decl Face set_size(int width, int height)
@@ -237,7 +242,7 @@ static void image_ft_face_list_encodings( INT32 args )
     if(e == ft_encoding_none)
       push_int( 0 );
     else {
-      push_constant_text( "%4c" );
+      push_static_text( "%4c" );
       push_int( e );
       f_sprintf( 2 );
     }
@@ -262,7 +267,6 @@ static void image_ft_face_select_encoding( INT32 args )
     p_wchar0 *s = STR0(sp[-args].u.string);
     FT_ENC_TAG( e, s[0], s[1], s[2], s[3] );
   }
-  pop_n_elems( args );
   er = FT_Select_Charmap(TFACE, e);
   if( er )
     image_ft_error("Character encoding not available in this font", er);
@@ -276,44 +280,90 @@ static void image_ft_face_select_encoding( INT32 args )
  *!     @member string "style_name"
  *!       The name of the font style, or "unknown"
  *!     @member int "face_flags"
+ *!     @member int "face_count"
+ *!       The number of faces contained within the font file.
  *!     @member int "style_flags"
  *!       The sum of all face/style flags respectively.
  *!   @endmapping
  */
 static void image_ft_face_info( INT32 args )
 {
+  int element_count = 10;
+
   pop_n_elems( args );
-  push_text( "family" );
+  push_static_text( "family" );
   if( TFACE->family_name )
     push_text( TFACE->family_name );
   else
-    push_text( "unknown" );
-  push_text( "style" );
+    push_static_text( "unknown" );
+  push_static_text( "face_count" );
+  push_int(TFACE->num_faces);
+  push_static_text( "style" );
   if( TFACE->style_name )
     push_text( TFACE->style_name );
   else
-    push_text( "unknown" );
-  push_text( "face_flags" );  push_int( TFACE->face_flags );
-  push_text( "style_flags" );  push_int( TFACE->style_flags );
-  f_aggregate_mapping( 8 );
+    push_static_text( "unknown" );
+  push_static_text( "face_flags" );  push_int( TFACE->face_flags );
+  push_static_text( "style_flags" );  push_int( TFACE->style_flags );
+
+  if (1) /* get ps_name attribute also, if possible */
+  {
+    int sfnt_count = FT_Get_Sfnt_Name_Count(TFACE);
+    char ps_name[64];
+    int i;
+
+    for(i = 0; i < sfnt_count; ++i)
+    {
+      FT_SfntName name;
+      unsigned int len;
+
+      if (FT_Get_Sfnt_Name(TFACE, i, &name) != 0)
+        continue; /* skip if getting name failed */
+      if (name.name_id != TT_NAME_ID_PS_NAME)
+        continue; /* skip if it isn't the interesting bit */
+
+      len = name.string_len;
+      if (len >= sizeof(ps_name))
+        len = sizeof(ps_name)-1;
+
+      memcpy(ps_name, name.string, len);
+      ps_name[len] = 0;
+      push_static_text("ps_name");
+      push_text(ps_name);
+      element_count += 2;
+      break;
+    }
+
+  }
+
+  f_aggregate_mapping( element_count );
 }
 
-/*! @decl void create(string font)
+/*! @decl void create(string(8bit) font, int(0..)|void face_number)
  *! @param font
  *!   The path of the font file to use
+ *! @param face_number
+ *!   The face number within the font to load, if supported
+ *!   by the font format.
  */
 static void image_ft_face_create( INT32 args )
 {
   int er;
+  char *font;
+  int face_number = 0;
   FT_Encoding best_enc = ft_encoding_none;
   int enc_no, enc_score, best_enc_score = -2;
-  if( !args || TYPEOF(sp[-args]) != T_STRING )
-    Pike_error("Illegal argument 1 to FreeType.Face. Expected string.\n");
-  er = FT_New_Face( library, sp[-args].u.string->str, 0, &TFACE );
+
+  get_all_args("create", args, "%s.%d", &font, &face_number);
+
+  if (face_number < 0)
+    SIMPLE_BAD_ARG_ERROR("create", 2, "int(0..)");
+
+  er = FT_New_Face( library, font, face_number, &TFACE );
   if( er == FT_Err_Unknown_File_Format )
-    Pike_error("Failed to parse the font file %S\n", sp[-args].u.string);
+    Pike_error("Failed to parse the font file %s\n", font);
   else if( er )
-    Pike_error("Failed to open the font file %S\n", sp[-args].u.string);
+    Pike_error("Failed to open the font file %s\n", font);
   for(enc_no=0; enc_no<TFACE->num_charmaps; enc_no++) {
     switch(TFACE->charmaps[enc_no]->encoding) {
     case ft_encoding_symbol: enc_score = -1; break;
@@ -346,8 +396,6 @@ static void image_ft_face_create( INT32 args )
   if( er )
     Pike_error("Failed to set a character map for the font %S\n",
 	       sp[-args].u.string);
-  pop_n_elems( args );
-  push_int( 0 );
 }
 
 /*! @endclass */
@@ -383,7 +431,7 @@ PIKE_MODULE_INIT
 {
   if( !FT_Init_FreeType( &library ) )
   {
-#ifdef DYNAMIC_MODULE
+#ifndef FAKE_DYNAMIC_LOAD
     image_program = PIKE_MODULE_IMPORT(Image, image_program);
     if(!image_program) {
       yyerror("Could not load Image module.");
@@ -394,7 +442,7 @@ PIKE_MODULE_INIT
     start_new_program( );
     ADD_STORAGE( struct face );
 
-    ADD_FUNCTION("create",image_ft_face_create, tFunc(tStr,tVoid), 0 );
+    ADD_FUNCTION("create",image_ft_face_create, tFunc(tStr8 tOr(tIntPos,tVoid),tVoid), 0 );
     ADD_FUNCTION("set_size",image_ft_face_set_size,tFunc(tInt tInt,tObj),0);
     ADD_FUNCTION("attach_file",image_ft_face_attach_file,tFunc(tString,tVoid),0);
     ADD_FUNCTION("list_encodings",image_ft_face_list_encodings,tFunc(tNone,tArr(tString)),0);
@@ -403,14 +451,14 @@ PIKE_MODULE_INIT
     ADD_FUNCTION("write_char",image_ft_face_write_char,tFunc(tInt,tObj),0);
     ADD_FUNCTION("get_kerning",image_ft_face_get_kerning,
                  tFunc(tInt tInt,tInt),0);
-    
+
     set_init_callback( image_ft_face_init );
     set_exit_callback( image_ft_face_free );
 
     face_program = end_program();
     add_program_constant("Face", face_program, 0 );
     add_integer_constant( "FACE_FLAG_SCALABLE", FT_FACE_FLAG_SCALABLE, 0 );
-    add_integer_constant( "FACE_FLAG_FIXED_WIDTH", FT_FACE_FLAG_FIXED_WIDTH ,0); 
+    add_integer_constant( "FACE_FLAG_FIXED_WIDTH", FT_FACE_FLAG_FIXED_WIDTH ,0);
     add_integer_constant( "FACE_FLAG_SFNT", FT_FACE_FLAG_SFNT, 0 );
     add_integer_constant( "FACE_FLAG_HORIZONTAL", FT_FACE_FLAG_HORIZONTAL, 0 );
     add_integer_constant( "FACE_FLAG_VERTICAL", FT_FACE_FLAG_VERTICAL, 0 );

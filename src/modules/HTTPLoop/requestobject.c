@@ -2,12 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
 #include "config.h"
-	  
+
 #include "machine.h"
 #include "mapping.h"
 #include "module_support.h"
@@ -22,12 +21,7 @@
 #include "fdlib.h"
 #include "builtin_functions.h"
 
-#include <stdlib.h>
 #include <errno.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -53,7 +47,7 @@
 #include "requestobject.h"
 
 /* Used when Pike_fatal() can't be. */
-#define DWERROR(X)	write(2, X, sizeof(X) - sizeof(""))
+#define DWERROR(X)	fd_write(2, X, sizeof(X) - sizeof(""))
 
 /* All current implementations of sendfile(2) are broken. */
 #ifndef HAVE_BROKEN_SENDFILE
@@ -159,7 +153,7 @@ void f_aap_scan_for_query(INT32 args)
   int c;
   if(args)
   {
-    get_all_args("HTTP C object->scan_for_query(string f)", args, "%S", &_s);
+    get_all_args("scan_for_query", args, "%S", &_s);
     s = (char *)_s->str;
     len = _s->len;
   }
@@ -169,9 +163,9 @@ void f_aap_scan_for_query(INT32 args)
     len = THIS->request->res.url_len;
   }
 
-  /*  [http://host:port]/(pre,states)/[url[?query]] */
-  work_area = aap_malloc(len);
-  
+  /*  [http://host:port]/[url[?query]] */
+  work_area = malloc(len);
+
   /* find '?' if any */
   for(j=i=0;i<len;i++)
   {
@@ -190,42 +184,9 @@ void f_aap_scan_for_query(INT32 args)
   }
 
  done:
-
-/* Now find prestates, if any */
-  j--;
-  if(j > 3 && work_area[1] == '(' && work_area[0]=='/')
-  {
-    ptrdiff_t k, n=0, last=2;
-    for(k = 2; k < j; k++)
-    {
-      switch(work_area[k])
-      {
-       case ',':
-	 push_string(make_shared_binary_string(work_area+last,k-last));
-	 n++;
-	 last = k+1;
-	 break;
-       case ')':
-	 push_string(make_shared_binary_string(work_area+last,k-last));
-	 n++;
-	 begin = k+1;
-	 f_aggregate_multiset(DO_NOT_WARN((INT32)n));
-	 goto done2;
-      }
-    }
-    pop_n_elems(DO_NOT_WARN(n));
-    f_aggregate_multiset( 0 );
-  } else {
-    f_aggregate_multiset( 0 );
-  }
- done2:
-  push_string(s_prestate);
-  mapping_insert(THIS->misc_variables, sp-1, sp-2);
-  sp--; pop_stack();
-
   TINSERT(THIS->misc_variables, s_not_query, work_area+begin, j-begin+1);
-  aap_free(work_area);
-  
+  free(work_area);
+
   if(i < len)
     TINSERT(THIS->misc_variables, s_query, s+i+1, (len-i)-1);
   else
@@ -253,7 +214,7 @@ void f_aap_scan_for_query(INT32 args)
 
 
 static void decode_x_url_mixed(char *in, ptrdiff_t l, struct mapping *v,
-			       char *dec, char *rest_query, char **rp)
+			       char *dec, char *UNUSED(rest_query), char **rp)
 {
   ptrdiff_t pos = 0, lamp = 0, leq=0, dl;
 
@@ -264,7 +225,7 @@ static void decode_x_url_mixed(char *in, ptrdiff_t l, struct mapping *v,
     {
      case '=': leq = dl; break;
      case '+': c = ' '; break;
-     case '&': 
+     case '&':
        if(leq)
        {
 	 VAR_MAP_INSERT();
@@ -307,39 +268,20 @@ static void parse_query(void)
 
   if(TYPEOF(*q) == T_STRING)
   {
-    char *dec = aap_malloc(q->u.string->len*2+1);
+    char *dec = malloc(q->u.string->len*2+1);
     char *rest_query = dec+q->u.string->len+1, *rp=rest_query;
     decode_x_url_mixed(q->u.string->str,q->u.string->len,v,dec,rest_query,&rp);
     push_string(make_shared_binary_string(rest_query,rp-rest_query));
     push_string(s_rest_query);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
     sp--; pop_stack();
-    aap_free(dec);
+    free(dec);
   } else {
     push_int(0); push_string(s_rest_query);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
     sp--; pop_stack();
   }
 
-  if(THIS->request->res.content_len &&
-     THIS->request->res.data[1]=='O')
-  {
-    struct pstring ct;
-    int nope = 0;
-    if(aap_get_header(THIS->request, "content-type", T_STRING, &ct))
-    {
-      if(ct.str[0]=='m') /* multipart is not wanted here... */
-	nope=1;
-    }
-    if(!nope)
-    {
-      char *tmp = aap_malloc(THIS->request->res.content_len);
-      decode_x_url_mixed(THIS->request->res.data+
-			 THIS->request->res.body_start,
-			 THIS->request->res.content_len,v,tmp,0,0);
-      aap_free(tmp);
-    }
-  }
   push_mapping(v); push_string(s_variables);
   mapping_insert(THIS->misc_variables, sp-1, sp-2);
   sp--; pop_stack();
@@ -387,7 +329,7 @@ void f_aap_index_op(INT32 args)
   struct pike_string *s;
   if (!args) Pike_error("HTTP C object->`[]: too few args\n");
   pop_n_elems(args-1);
-  if(!THIS->misc_variables) 
+  if(!THIS->misc_variables)
   {
     struct svalue s;
     object_index_no_free2(&s, Pike_fp->current_object, 0, sp-1);
@@ -403,11 +345,11 @@ void f_aap_index_op(INT32 args)
     assign_svalue_no_free( sp++, res );
     return;
   }
-  
+
   if(!THIS->request) Pike_error("Reply called. No data available\n");
   get_all_args("`[]", args, "%S", &s);
-  
-  if(s == s_not_query || s==s_query || s==s_prestate)
+
+  if(s == s_not_query || s==s_query )
   {
     f_aap_scan_for_query(0);
     f_aap_index_op(1);
@@ -416,7 +358,7 @@ void f_aap_index_op(INT32 args)
 
   if(s == s_my_fd)
   {
-    /* 0x3800 is from modules/files/file.h, 
+    /* 0x3800 is from modules/files/file.h,
      * FILE_READ|FILE_WRITE|FILE_SET_CLOSE_ON_EXEC
      */
     push_object(file_make_object_from_fd
@@ -432,12 +374,14 @@ void f_aap_index_op(INT32 args)
   {
 #ifdef fd_inet_ntop
     char buffer[64];
-    push_text(fd_inet_ntop(SOCKADDR_FAMILY(THIS->request->from),
-			   SOCKADDR_IN_ADDR(THIS->request->from),
-			   buffer, sizeof(buffer)) );
-#else
-    push_text(inet_ntoa(*SOCKADDR_IN_ADDR(THIS->request->from)));
+    if (fd_inet_ntop(SOCKADDR_FAMILY(THIS->request->from),
+		     SOCKADDR_IN_ADDR(THIS->request->from),
+		     buffer, sizeof(buffer)))
+      push_text(buffer);
+    else
 #endif
+      push_text(inet_ntoa(*SOCKADDR_IN_ADDR(THIS->request->from)));
+
     push_string(s_remoteaddr);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
     sp--;
@@ -480,15 +424,6 @@ void f_aap_index_op(INT32 args)
     return;
   }
 
-  /* FIXME: Not actually implemented */
-/*   if(s == s_cookies || s == s_config) */
-/*   { */
-/*     if(!THIS->headers_parsed) parse_headers(); */
-
-/*     f_aap_index_op(1); */
-/*     return; */
-/*   } */
-
   if(s == s_pragma)
   {
     struct svalue *tmp;
@@ -515,7 +450,7 @@ void f_aap_index_op(INT32 args)
     push_string(s_user_agent);
     if((tmp = low_mapping_lookup(THIS->done_headers, sp-1)))
       assign_svalue_no_free( sp-1, tmp );
-    else 
+    else
     {
       sp--;
       f_aggregate(0);
@@ -542,7 +477,7 @@ void f_aap_index_op(INT32 args)
     sp--;
     return;
   }
-  
+
   if(s == s_since)
   {
     struct svalue *tmp;
@@ -566,61 +501,6 @@ void f_aap_index_op(INT32 args)
     return;
   }
 
-  if( s == s_supports )
-  {
-    struct svalue *tmp;
-    pop_stack();
-    push_constant_text("roxen");
-    if((tmp = low_mapping_lookup(get_builtin_constants(), sp-1)) 
-       && TYPEOF(*tmp) == T_OBJECT)
-    {
-      pop_stack( );
-      ref_push_object( tmp->u.object );
-      push_constant_text( "find_supports" );
-      f_index( 2 );
-      ref_push_string(s_client);
-      f_aap_index_op( 1 );
-      push_empty_string();
-      f_multiply( 2 );
-      apply_svalue( sp-2, 1 );
-      push_string(s_supports);
-      mapping_insert(THIS->misc_variables, sp-1, sp-2);
-      sp--;
-      stack_swap();
-      pop_stack();
-
-    } else {
-      pop_stack();
-      f_aggregate_multiset( 0 );
-      push_string(s_supports);
-      mapping_insert(THIS->misc_variables, sp-1, sp-2);
-      sp--;
-    }
-
-
-
-      /* 
-         if(contents = o->misc["accept-encoding"])
-         {
-         foreach((contents-" ")/",", string e) {
-         if (lower_case(e) == "gzip") {
-         o->supports["autogunzip"] = 1;
-         }
-         }
-         }
-      */
-
-    return;
-  }
-
-
-/*   if(s == s_realauth || s == s_rawauth) */
-/*   { */
-/*     pop_stack(); */
-/*     push_int(0); */
-/*     return; */
-/*   } */
-
   if(s == s_data)
   {
     pop_stack();
@@ -641,24 +521,19 @@ void f_aap_index_op(INT32 args)
   }
 }
 
-/* static void f_index_equal_op(INT32 args) */
-/* { */
-  
-/* } */
-
-void f_aap_end(INT32 args)
+void f_aap_end(INT32 UNUSED(args))
 {
   /* end connection. */
 }
 
-void f_aap_output(INT32 args)
+void f_aap_output(INT32 UNUSED(args))
 {
   if(TYPEOF(sp[-1]) != T_STRING) Pike_error("Bad argument 1 to output\n");
   WRITE(THIS->request->fd, sp[-1].u.string->str, sp[-1].u.string->len);
 }
 
 #define BUFFER 8192
-struct thread_args *done;
+static struct thread_args *done;
 
 struct send_args
 {
@@ -671,22 +546,22 @@ struct send_args
 };
 
 static int num_send_args;
-struct send_args *new_send_args(void)
+static struct send_args *new_send_args(void)
 {
   num_send_args++;
-  return aap_malloc( sizeof( struct send_args ) );
+  return malloc( sizeof( struct send_args ) );
 }
 
-void free_send_args(struct send_args *s)
+static void free_send_args(struct send_args *s)
 {
   num_send_args--;
   if( s->data )    aap_enqueue_string_to_free( s->data );
   if( s->from_fd ) fd_close( s->from_fd );
-  aap_free( s );
+  free( s );
 }
 
 /* WARNING! This function is running _without_ any stack etc. */
-void actually_send(struct send_args *a)
+static void actually_send(struct send_args *a)
 {
   int first=0;
   char foo[10];
@@ -730,7 +605,7 @@ void actually_send(struct send_args *a)
        */
       off = 0;
     }
-    
+
     if (sendfile(a->from_fd, a->to->fd, off, len,
 		 &headers, &sent, 0) < 0) {
       /* FIXME: We aren't looking very hard at the errno, since
@@ -801,15 +676,19 @@ void actually_send(struct send_args *a)
 #endif
   if(data)
   {
-    MEMCPY(foo, data+MINIMUM((data_len-4),9), 4);
+    memcpy(foo, data+MINIMUM((data_len-4),9), 4);
     first=1;
-#ifdef TCP_CORK
+#if !defined(SOL_TCP) && defined(IPPROTO_TCP)
+    /* SOL_TCP isn't defined in Solaris. */
+#define SOL_TCP	IPPROTO_TCP
+#endif
+#if defined(TCP_CORK) && defined(SOL_TCP)
 #ifdef AAP_DEBUG
     fprintf(stderr, "cork... \n");
 #endif
     {
       int true=1;
-      setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, 4 );
+      fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, sizeof(true) );
     }
 #endif
     fail = WRITE(a->to->fd, (char *)data, data_len);
@@ -828,7 +707,7 @@ void actually_send(struct send_args *a)
     if(!first)
     {
       first=1;
-      fail = read(a->from_fd, foo, 10);
+      fail = fd_read(a->from_fd, foo, 10);
       if(fail < 0)
         goto end;
       WRITE( a->to->fd, foo, fail );
@@ -864,7 +743,7 @@ void actually_send(struct send_args *a)
   if(a->len > (65536*4))
     directio(a->from_fd, DIRECTIO_ON);
 #endif
-  
+
   /*
    * Ugly optimization...
    * Removes the sign-bit from the len.
@@ -884,7 +763,7 @@ void actually_send(struct send_args *a)
     if(!first)
     {
       first=1;
-      MEMCPY(foo,a->buffer+9,5);
+      memcpy(foo,a->buffer+9,5);
     }
     if(nread <= 0)
     {
@@ -909,10 +788,10 @@ void actually_send(struct send_args *a)
 #ifdef AAP_DEBUG
   fprintf(stderr, "all written.. \n");
 #endif
-#ifdef TCP_CORK
+#if defined(TCP_CORK) && defined(SOL_TCP)
   {
     int false = 0;
-    setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &false, 4 );
+    fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &false, sizeof(false) );
   }
 #endif
   {
@@ -920,7 +799,7 @@ void actually_send(struct send_args *a)
     LOG(a->sent, a->to, atoi(foo));
     free_send_args( a );
 
-    if(!fail && 
+    if(!fail &&
        ((arg->res.protocol==s_http_11)||
         aap_get_header(arg, "connection", H_EXISTS, 0)))
     {
@@ -966,7 +845,7 @@ void f_aap_reply(INT32 args)
     safe_apply(sp[-2].u.object, "query_fd", 0);
     if((TYPEOF(sp[-1]) != T_INT) || (sp[-1].u.integer <= 0))
     {
-      aap_free(q);
+      free(q);
       Pike_error("Bad fileobject to request_object->reply()\n");
     }
     if((q->from_fd = fd_dup(sp[-1].u.integer)) == -1)
@@ -1045,7 +924,7 @@ void f_aap_reply_with_cache(INT32 args)
       }
     }
     ce = new_cache_entry();
-    MEMSET(ce, 0, sizeof(struct cache_entry));
+    memset(ce, 0, sizeof(struct cache_entry));
     ce->stale_at = t+time_to_keep;
 
     ce->data = reply;
@@ -1069,16 +948,16 @@ void f_low_aap_reqo__init(struct c_request_object *o)
   if(o->request->res.protocol)
     SINSERT(o->misc_variables, s_prot, o->request->res.protocol);
   IINSERT(o->misc_variables, s_time, aap_get_time());
-  TINSERT(o->misc_variables, s_rawurl, 
+  TINSERT(o->misc_variables, s_rawurl,
 	  o->request->res.url, o->request->res.url_len);
 }
 
-void aap_init_request_object(struct object *o)
+void aap_init_request_object(struct object *UNUSED(o))
 {
-  MEMSET(THIS, 0, sizeof(*THIS));
+  memset(THIS, 0, sizeof(*THIS));
 }
 
-void aap_exit_request_object(struct object *o)
+void aap_exit_request_object(struct object *UNUSED(o))
 {
   if(THIS->request)
     free_args( THIS->request );

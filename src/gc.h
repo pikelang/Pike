@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef GC_H
@@ -57,6 +56,20 @@ extern double gc_average_slowness;
  * threshold if it takes a while until the gc can run. */
 #define GC_MAX_ALLOC_THRESHOLD (ALLOC_COUNT_TYPE_MAX - 10000000)
 
+/* Callback called when gc() starts. */
+extern struct svalue gc_pre_cb;
+
+/* Callback called when the mark and sweep phase of the gc() is done. */
+extern struct svalue gc_post_cb;
+
+/* Callback called for each object that is to be destructed explicitly
+ * by the gc().
+ */
+extern struct svalue gc_destruct_cb;
+
+/* Callback called when the gc() is about to exit. */
+extern struct svalue gc_done_cb;
+
 /* #define GC_MARK_DEBUG */
 
 /* If we only have 32 bits we need to make good use of them for the
@@ -67,15 +80,15 @@ extern double gc_average_slowness;
 #ifdef INT64
 #define ALLOC_COUNT_TYPE INT64
 #define ALLOC_COUNT_TYPE_MAX MAX_INT64
-#define PRINT_ALLOC_COUNT_TYPE "%"PRINTINT64"d"
+#define PRINT_ALLOC_COUNT_TYPE PRINTINT64"d"
 #else
 #define ALLOC_COUNT_TYPE unsigned long
 #define ALLOC_COUNT_TYPE_MAX ULONG_MAX
-#define PRINT_ALLOC_COUNT_TYPE "%lu"
+#define PRINT_ALLOC_COUNT_TYPE "lu"
 #endif
 
 extern int num_objects, got_unlinked_things;
-extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold;
+extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold, saved_alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
 extern int gc_generation;
 extern int gc_trace, gc_debug;
@@ -99,7 +112,6 @@ extern int gc_keep_markers;
 #define ADD_GC_CALLBACK() do { if(!gc_evaluator_callback)  gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0); }while(0)
 
 #define LOW_GC_ALLOC(OBJ) do {						\
- extern int d_flag;							\
  num_objects++;								\
  num_allocs++;								\
  DO_IF_DEBUG(								\
@@ -129,7 +141,6 @@ extern int gc_keep_markers;
  * gc_mark function on. The new block must take over all references
  * that pointed to the old block. */
 #define GC_REALLOC_BLOCK(OLDPTR, NEWPTR) do {				\
-  extern int d_flag;							\
   if (d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
     gc_move_marker ((OLDPTR), (NEWPTR));				\
@@ -138,7 +149,6 @@ extern int gc_keep_markers;
 /* Use this when freeing blocks that you've used any gc_check or
  * gc_mark function on and that can't contain references. */
 #define GC_FREE_SIMPLE_BLOCK(PTR) do {					\
-  extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc == GC_PASS_CHECK)					\
     Pike_fatal("No free is allowed in this gc pass.\n");		\
@@ -149,7 +159,6 @@ extern int gc_keep_markers;
 /* Use this when freeing blocks that you've used any gc_check or
  * gc_mark function on and that can contain references. */
 #define GC_FREE_BLOCK(PTR) do {						\
-  extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
     Pike_fatal("Freeing objects within gc is not allowed.\n");		\
@@ -291,6 +300,9 @@ extern size_t gc_ext_weak_refs;
 typedef void gc_cycle_check_cb (void *data, int weak);
 
 struct gc_frame;
+void count_memory_in_ba_mixed_frames(size_t *num, size_t *size);
+void count_memory_in_gc_rec_frames(size_t *num, size_t *size);
+void count_memory_in_mc_markers(size_t *num, size_t *size);
 struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func);
@@ -312,13 +324,13 @@ void low_describe_something(void *a,
 			    void *inblock);
 void describe_something(void *a, int t, int indent, int depth, int flags, void *inblock);
 PMOD_EXPORT void describe(void *x);
-void debug_describe_svalue(struct svalue *s);
-void gc_watch(void *a);
+PMOD_EXPORT void debug_describe_svalue(struct svalue *s);
+PMOD_EXPORT void gc_watch(void *a);
 void debug_gc_touch(void *a);
 PMOD_EXPORT int real_gc_check(void *a);
 PMOD_EXPORT int real_gc_check_weak(void *a);
 void exit_gc(void);
-void locate_references(void *a);
+PMOD_EXPORT void locate_references(void *a);
 void debug_gc_add_extra_ref(void *a);
 void debug_gc_free_extra_ref(void *a);
 int debug_gc_is_referenced(void *a);
@@ -339,6 +351,7 @@ size_t do_gc(void *ignored, int explicit_call);
 void f__gc_status(INT32 args);
 void f_implicit_gc_real_time (INT32 args);
 void f_count_memory (INT32 args);
+void f_identify_cycle(INT32 args);
 void cleanup_gc(void);
 
 #if defined (PIKE_DEBUG) && defined (DEBUG_MALLOC)
@@ -371,8 +384,8 @@ void cleanup_gc(void);
 #ifdef GC_MARK_DEBUG
 
 void gc_mark_enqueue (queue_call fn, void *data);
-void gc_mark_run_queue();
-void gc_mark_discard_queue();
+void gc_mark_run_queue(void);
+void gc_mark_discard_queue(void);
 
 #else  /* !GC_MARK_DEBUG */
 
@@ -392,9 +405,9 @@ extern struct pike_queue gc_mark_queue;
 
 #if defined (PIKE_DEBUG) || defined (GC_MARK_DEBUG)
 
-extern void *gc_found_in;
-extern int gc_found_in_type;
-extern const char *gc_found_place;
+PMOD_EXPORT extern void *gc_found_in;
+PMOD_EXPORT extern int gc_found_in_type;
+PMOD_EXPORT extern const char *gc_found_place;
 
 #define GC_ENTER(THING, TYPE)						\
   do {									\
@@ -410,7 +423,7 @@ extern const char *gc_found_place;
     gc_found_in_type = orig_gc_found_in_type;				\
   } while (0)
 
-static INLINE int debug_gc_check (void *a, const char *place)
+static INLINE int PIKE_UNUSED_ATTRIBUTE debug_gc_check (void *a, const char *place)
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
@@ -420,7 +433,7 @@ static INLINE int debug_gc_check (void *a, const char *place)
   return res;
 }
 
-static INLINE int debug_gc_check_weak (void *a, const char *place)
+static INLINE int PIKE_UNUSED_ATTRIBUTE debug_gc_check_weak (void *a, const char *place)
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
@@ -491,32 +504,33 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
    gc_cycle_check_svalues((S), (N)) :					\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_svalues((S), (N)) :						\
-   (visit_svalues ((S), (N), REF_TYPE_NORMAL), 0))
+   (visit_svalues ((S), (N), REF_TYPE_NORMAL, NULL), 0))
 #define gc_recurse_short_svalue(U,T)					\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
    gc_cycle_check_short_svalue((U), (T)) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_short_svalue((U), (T)) :					\
-   visit_short_svalue ((U), (T), REF_TYPE_NORMAL))
+   visit_short_svalue ((U), (T), REF_TYPE_NORMAL, NULL))
 #define gc_recurse_weak_svalues(S,N)					\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
    gc_cycle_check_weak_svalues((S), (N)) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_weak_svalues((S), (N)) :					\
-   (visit_svalues ((S), (N), REF_TYPE_WEAK), 0))
+   (visit_svalues ((S), (N), REF_TYPE_WEAK, NULL), 0))
 #define gc_recurse_weak_short_svalue(U,T)				\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
    gc_cycle_check_weak_short_svalue((U), (T)) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    gc_mark_weak_short_svalue((U), (T)) :				\
-   visit_short_svalue ((U), (T), REF_TYPE_WEAK))
+   visit_short_svalue ((U), (T), REF_TYPE_WEAK, NULL))
 
 #define GC_RECURSE_THING(V, T)						\
   (DMALLOC_TOUCH_MARKER(V, Pike_in_gc == GC_PASS_CYCLE) ?		\
    PIKE_CONCAT(gc_cycle_check_, T)(V, 0) :				\
    Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
    PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V) :			\
-   PIKE_CONCAT3 (visit_,T,_ref) (debug_malloc_pass (V), REF_TYPE_NORMAL))
+   PIKE_CONCAT3 (visit_,T,_ref) (debug_malloc_pass (V),			\
+				 REF_TYPE_NORMAL, NULL))
 #define gc_recurse_array(V) GC_RECURSE_THING((V), array)
 #define gc_recurse_mapping(V) GC_RECURSE_THING((V), mapping)
 #define gc_recurse_multiset(V) GC_RECURSE_THING((V), multiset)
@@ -610,12 +624,17 @@ extern int gc_in_cycle_check;
  * use thread local storage when the time comes. */
 
 /* A visit_thing_fn is made for every type of refcounted block. An
- * INT32 refcounter is assumed to be first in every block. The
+ * INT32 refcounter is assumed to be first in every block.
+ * The visit_thing_fn should start by calling the visit_enter function
+ * with src_thing, the base type and extra as arguments. Then
  * visit_thing_fn should call visit_ref exactly once for every
  * refcounted ref inside src_thing, in a stable order. dst_thing is
  * then the target of the ref, ref_type describes the type of the ref
  * itself (REF_TYPE_*), visit_dst is the visit_thing_fn for the target
  * block, and extra is an arbitrary value passed along to visit_dst.
+ * After visit_ref has been called for all refcounted things, visit_leave
+ * should be called with the same arguments as the initial call of
+ * visit_enter.
  *
  * action identifies some action that the visit_thing_fn should take
  * (VISIT_*). Also, visit_ref_cb is likely to get a return value that
@@ -625,9 +644,13 @@ extern int gc_in_cycle_check;
  * immediately, queued and called later, or not called at all. */
 
 typedef void visit_thing_fn (void *src_thing, int action, void *extra);
+typedef void visit_enter_cb (void *thing, int type, void *extra);
 typedef void visit_ref_cb (void *dst_thing, int ref_type,
 			   visit_thing_fn *visit_dst, void *extra);
+typedef void visit_leave_cb (void *thing, int type, void *extra);
+PMOD_EXPORT extern visit_enter_cb *visit_enter;
 PMOD_EXPORT extern visit_ref_cb *visit_ref;
+PMOD_EXPORT extern visit_leave_cb *visit_leave;
 
 #define REF_TYPE_STRENGTH 0x03	/* Bits for normal/weak/strong. */
 #define REF_TYPE_NORMAL	0x00	/* Normal (nonweak and nonstrong) ref. */
@@ -656,54 +679,65 @@ PMOD_EXPORT extern visit_ref_cb *visit_ref;
  * mc_counted_bytes, then visit the refs. Never combined with
  * VISIT_COMPLEX_ONLY. */
 
+#define VISIT_MODE_MASK 0x0F
+/* Bitmask for visit mode selection. The rest is flags. */
+
+#define VISIT_NO_REFS 0x10
+/* Don't visit any refs. Typically set when lookahead is negative as
+   an optimization. */
+
+#define VISIT_FLAGS_MASK 0xF0
+/* Bitmask for visit flags. */
+
 /* Map between type and visit function for the standard ref types. */
-PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1];
+PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_TYPE + 1];
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);
 
 PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
-					   int ref_type);
+					   int ref_type, void *extra);
 
-static INLINE int real_visit_short_svalue (union anything *u, TYPE_T t,
-					   int ref_type)
+static INLINE int PIKE_UNUSED_ATTRIBUTE real_visit_short_svalue (union anything *u, TYPE_T t,
+								   int ref_type, void *extra)
 {
   check_short_svalue (u, t);
-  if (t <= MAX_REF_TYPE)
-    visit_ref (u->ptr, ref_type, visit_fn_from_type[t], NULL);
+  if (REFCOUNTED_TYPE(t))
+    visit_ref (u->ptr, ref_type, visit_fn_from_type[t], extra);
   return 0;
 }
-#define visit_short_svalue(U, T, REF_TYPE) \
-  (real_visit_short_svalue (debug_malloc_pass ((U)->ptr), (T), (REF_TYPE)))
+#define visit_short_svalue(U, T, REF_TYPE, EXTRA)				\
+  (real_visit_short_svalue (debug_malloc_pass ((U)), (T), (REF_TYPE), (EXTRA)))
 
 #ifdef DEBUG_MALLOC
-static INLINE TYPE_FIELD dmalloc_visit_svalues (struct svalue *s, size_t num,
-						int ref_type, char *l)
+static INLINE TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_visit_svalues (struct svalue *s, size_t num,
+									int ref_type, char *l, void *extra)
 {
-  return real_visit_svalues (dmalloc_check_svalues (s, num, l), num, ref_type);
+  return real_visit_svalues (dmalloc_check_svalues (s, num, l),
+			     num, ref_type, extra);
 }
-#define visit_svalues(S, NUM, REF_TYPE)					\
-  dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), DMALLOC_LOCATION())
-static INLINE void dmalloc_visit_svalue (struct svalue *s,
-					 int ref_type, char *l)
+#define visit_svalues(S, NUM, REF_TYPE, EXTRA)				\
+  dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), (EXTRA), DMALLOC_LOCATION())
+static INLINE void PIKE_UNUSED_ATTRIBUTE dmalloc_visit_svalue (struct svalue *s,
+								 int ref_type, void *extra, char *l)
 {
   int t = TYPEOF(*s);
   check_svalue (s);
   dmalloc_check_svalue (s, l);
-  if (t <= MAX_REF_TYPE) {
-    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
-    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
+  if (REFCOUNTED_TYPE(t)) {
+    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type, extra);
+    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], extra);
   }
 }
-#define visit_svalue(S, REF_TYPE) \
-  dmalloc_visit_svalue ((S), (REF_TYPE), DMALLOC_LOCATION())
+#define visit_svalue(S, REF_TYPE, EXTRA)				\
+  dmalloc_visit_svalue ((S), (REF_TYPE), (EXTRA), DMALLOC_LOCATION())
 #else
 #define visit_svalues real_visit_svalues
-static INLINE void visit_svalue (struct svalue *s, int ref_type)
+static INLINE void PIKE_UNUSED_ATTRIBUTE visit_svalue (struct svalue *s, int ref_type, void *extra)
 {
   int t = TYPEOF(*s);
   check_svalue (s);
-  if (t <= MAX_REF_TYPE) {
-    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
-    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
+  if (REFCOUNTED_TYPE(t)) {
+    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type, extra);
+    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], extra);
   }
 }
 #endif
@@ -714,5 +748,8 @@ static INLINE void visit_svalue (struct svalue *s, int ref_type)
 PMOD_EXPORT extern int mc_pass;
 PMOD_EXPORT extern size_t mc_counted_bytes;
 PMOD_EXPORT int mc_count_bytes (void *thing);
+
+void init_mc(void);
+void exit_mc(void);
 
 #endif

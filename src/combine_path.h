@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -105,7 +104,7 @@ static void APPEND_PATH(struct string_builder *s,
   size_t from=0;
   int tmp, abs;
 
-  /* First, check if path is absolute, 
+  /* First, check if path is absolute,
    * if so ignore anything already in 's'
    */
   abs=IS_ABS(MKPCHARP_STR(s->s));
@@ -209,13 +208,13 @@ static void APPEND_PATH(struct string_builder *s,
 	      } else if (IS_SEP(index_shared_string(s->s, 0))) {
 		tmp++;
 	      }
-	      
+
 	      if (tmp < abs)
 		tmp = abs;
 	      else
 		if ((tmp+1 < s->s->len) &&
 		    (index_shared_string(s->s,tmp)=='.') &&
-		    (index_shared_string(s->s,tmp+1)=='.') && 
+		    (index_shared_string(s->s,tmp+1)=='.') &&
 		    ( (tmp+2 == s->s->len) ||
 		      IS_SEP(index_shared_string(s->s,tmp+2))))
 		  break;
@@ -232,7 +231,7 @@ static void APPEND_PATH(struct string_builder *s,
 	      continue;
 	    }
 	    break;
-	    
+
 	  case 0:
 	  case '/':
 #ifdef NT_COMBINE_PATH
@@ -253,7 +252,7 @@ static void APPEND_PATH(struct string_builder *s,
      !IS_SEP(INDEX_PCHARP(path, from-1)) &&
      IS_SEP(LAST_PUSHED()))
     s->s->len--;
-  
+
   if(!s->s->len)
   {
     if(abs)
@@ -308,7 +307,7 @@ void F_FUNC(COMBINE_PATH)(INT32 args)
     }
   }
 #endif
-  
+
   while(root<args)
   {
     APPEND_PATH(&ret,

@@ -15,7 +15,7 @@ define(test_codec2,[[
      string uncompressed=$1;
      array(string) vcompressed=$2;
      string result, result2;
-     
+
      foreach (vcompressed;;string compressed)
        if ((result=Bz2.Inflate()->inflate(compressed))!=uncompressed)
          error("Bz2 inflate failed:\n%O -> %O, expected %O\n",
@@ -70,7 +70,7 @@ test_any([[
   int flush_count = 0;
 
   in_data = random_string(100000);
-  
+
   while(i + defl_chunk_size < sizeof(in_data)){
     if(flush_count != 7){
       defl->feed(in_data[i..i + defl_chunk_size - 1]);
@@ -82,9 +82,9 @@ test_any([[
     }
     i += defl_chunk_size;
   }
-  
+
   packed += defl->finish(in_data[i..sizeof(in_data) - 1]);
-  
+
   __signal_watchdog();
 
   while(j + infl_chunk_size < sizeof(packed))
@@ -93,9 +93,9 @@ test_any([[
     j += infl_chunk_size;
   }
   out_data += infl->inflate(packed[j..sizeof(packed)-1]);
-  
+
   return(out_data == in_data);
- 
+
 ]],1)
 
 cond_end // Bz2.Deflate
@@ -108,10 +108,10 @@ test_any([[
   string out_data = "";
   Bz2.File write_file = Bz2.File();
   Bz2.File read_file = Bz2.File();
-  
+
   in_data = "jglaksdjalsdkfjwoeiruwoiurbenrbwenrwikerhwkeurwhfksnASDFASJFKSDJFASIGHSFGAFD34535234523426FSFGSFDGSDRHTWGDASDFASDF";
   in_data = in_data * 1000;	// ~115k
-  
+
   write_file->write_open("test_data_tmp.bz2");
   write_file->write(in_data);
   write_file->close();
@@ -120,6 +120,8 @@ test_any([[
 
   read_file->read_open("test_data_tmp.bz2");
   out_data = read_file->read();
+  string empty = read_file->read();
+  if( empty!="" ) return 0;
   read_file->close();
   Stdio.recursive_rm("test_data_tmp.bz2");
   return(in_data == out_data);

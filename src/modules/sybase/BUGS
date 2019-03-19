@@ -1,6 +1,5 @@
 # BUGS file for the sybase driver
 # By Francesco Chemolli
-# $Id$
 
 While this could not be traced to a fault in the driver, we were reported
 memory leaks when running multi-threaded under Linux with 

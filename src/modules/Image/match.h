@@ -2,17 +2,16 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
-/* 
+/*
 This file is incuded in search.c with the following defines set:
 
 NAME The name of the match function. This is undef:ed at end of this file
-INAME The name of the match c-function. This is nudef:ed at end of this file
-PIXEL_VALUE_DISTANCE The inner loop code for each pixel. 
+INAME The name of the match c-function. This is undef:ed at end of this file
+PIXEL_VALUE_DISTANCE The inner loop code for each pixel.
                      undef:ed at end of this file
-NEEDLEAVRCODE If this is set, needle_average is calculated. 
+NEEDLEAVRCODE If this is set, needle_average is calculated.
               Not undef:ed at end
 NORMCODE code used for normalizing in the haystack. Not undef:ed at end
 SCALE_MODIFY(x) This modifies the output in each pixel
@@ -23,17 +22,17 @@ SCALE_MODIFY(x) This modifies the output in each pixel
 void INAME(INT32 args)
 {
   struct object *o;
-  struct image *img,*needle=0, *haystack_cert=0, *haystack_avoid=0, 
+  struct image *img,*needle=0, *haystack_cert=0, *haystack_avoid=0,
     *haystack=0, *needle_cert=0, *this;
-  rgb_group *imgi=0, *needlei=0, *haystack_certi=0, *haystack_avoidi=0, 
+  rgb_group *imgi=0, *needlei=0, *haystack_certi=0, *haystack_avoidi=0,
     *haystacki=0, *needle_certi=0, *thisi=0;
 
   int type=0; /* type==1 : (int|float scale, needle)
-		 type==2 : (int|float scale, needle, 
+		 type==2 : (int|float scale, needle,
                             haystack_cert, needle_cert)
 		 type==3 : (int|float scale, needle, haystack_avoid, int foo)
-		 type==4 : (int|float scale, needle, 
-                            haystack_cert, needle_cert, 
+		 type==4 : (int|float scale, needle,
+                            haystack_cert, needle_cert,
 		            haystack_avoid, int foo) */
 
   int xs,ys, y, x; /* for this & img */
@@ -41,15 +40,15 @@ void INAME(INT32 args)
   int foo=0;
   double scale = 1.0;
   int needle_average=0;
-  int needle_size=0;
-  
+  int needle_size=1;
+
   if (!THIS->img) { Pike_error("no image\n");  return; }
   this=THIS;
   haystacki=this->img;
   haystack=this;
   if (!args) { Pike_error("Missing arguments to image->"NAME"\n");  return; }
   else if (args<2) { Pike_error("Too few arguments to image->"NAME"\n");  return; }
-  else 
+  else
     {
       if (TYPEOF(sp[-args]) == T_INT)
 	scale = (double)sp[-args].u.integer;
@@ -59,8 +58,7 @@ void INAME(INT32 args)
 	Pike_error("Illegal argument 1 to image->"NAME"\n");
 
       if ((TYPEOF(sp[1-args]) != T_OBJECT)
-	  || !(needle=
-	       (struct image*)get_storage(sp[1-args].u.object,image_program)))
+	  || !(needle=get_storage(sp[1-args].u.object,image_program)))
 	Pike_error("Illegal argument 2 to image->"NAME"()\n");
 
       if ((needle->xsize>haystack->xsize)||
@@ -74,15 +72,14 @@ void INAME(INT32 args)
       else
 	{
 	  if ((TYPEOF(sp[2-args]) != T_OBJECT) ||
-		   !(haystack_cert=
-		     (struct image*)get_storage(sp[2-args].u.object,image_program)))
+		   !(haystack_cert=get_storage(sp[2-args].u.object,image_program)))
 	    Pike_error("Illegal argument 3 to image->"NAME"()\n");
 	  else
 	    if ((haystack->xsize!=haystack_cert->xsize)||
 		(haystack->ysize!=haystack_cert->ysize))
 	      Pike_error("Argument 3 must be the same size as haystack error in image->"NAME"()\n");
-	  
-	  if ((TYPEOF(sp[3-args]) == T_INT))
+
+	  if (TYPEOF(sp[3-args]) == T_INT)
 	    {
 	      foo=sp[3-args].u.integer;
 	      type=3;
@@ -90,8 +87,7 @@ void INAME(INT32 args)
 	      haystack_cert=0;
 	    }
 	  else if ((TYPEOF(sp[3-args]) != T_OBJECT) ||
-		   !(needle_cert=
-		     (struct image*)get_storage(sp[3-args].u.object,image_program)))
+		   !(needle_cert=get_storage(sp[3-args].u.object,image_program)))
 	    Pike_error("Illegal argument 4 to image->"NAME"()\n");
 	  else
 	    {
@@ -107,11 +103,10 @@ void INAME(INT32 args)
 		  foo=sp[5-args].u.integer;
 		  type=4;
 		}
-	      else 
+	      else
 		Pike_error("Illegal argument 6 to image->"NAME"()\n");
 	      if ((TYPEOF(sp[4-args]) != T_OBJECT) ||
-		  !(haystack_avoid=
-		    (struct image*)get_storage(sp[4-args].u.object,image_program)))
+		  !(haystack_avoid=get_storage(sp[4-args].u.object,image_program)))
 		Pike_error("Illegal argument 5 to image->"NAME"()\n");
 	      else
 		if ((haystack->xsize!=haystack_avoid->xsize)||
@@ -122,12 +117,12 @@ void INAME(INT32 args)
       push_int(this->xsize);
       push_int(this->ysize);
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
       imgi=img->img;
 
 
-      pop_n_elems(args);	  
-      
+      pop_n_elems(args);
+
 
       if (haystack_cert)
 	haystack_certi=haystack_cert->img;
@@ -136,18 +131,19 @@ void INAME(INT32 args)
       if (needle_cert)
 	needle_certi=needle_cert->img;
 
-THREADS_ALLOW();  
+THREADS_ALLOW();
       nxs=needle->xsize;
       nys=needle->ysize;
       xs=this->xsize;
       ys=this->ysize-nys;
 
-      /* This sets needle_average to something nice :-) */ 
+      /* This sets needle_average to something nice :-) */
       /* match and match_phase don't use this */
 #ifdef NEEDLEAVRCODE
       needle_size=nxs*nys;
       for(x=0; x<needle_size; x++)
 	needle_average+=needlei[x].r+needlei[x].g+needlei[x].b;
+      if (!needle_size) needle_size = 1;
       needle_average=(int)(((float)needle_average)/(3*needle_size));
 
 #define NORMCODE for(ny=0; ny<nys; ny++) \
@@ -194,7 +190,7 @@ THREADS_ALLOW();
    }
 
 
-#define AVOID_IS_TOO_BIG ((haystack_avoidi[i].r)>(foo)) 
+#define AVOID_IS_TOO_BIG ((haystack_avoidi[i].r)>(foo))
 
       if (type==1)
 	DOUBLE_LOOP(0,1,1, *1, *1, *1)
@@ -209,7 +205,7 @@ THREADS_ALLOW();
 #undef AVOID_IS_TOO_BIG
 #undef PIXEL_VALUE_DISTANCE
 #undef DOUBLE_LOOP
-   
+
 THREADS_DISALLOW();
     }
   push_object(o);

@@ -4,8 +4,6 @@
 
 //! Japanese language locale.
 
-// $Id$
-
 inherit "abstract";
 
 constant name = "日本語";

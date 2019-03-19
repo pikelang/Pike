@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -38,7 +37,6 @@
 
 #include "bignum.h"
 #include "builtin_functions.h"
-#include "dmalloc.h"
 #include "interpret.h"
 #include "mapping.h"
 #include "module.h"
@@ -47,9 +45,9 @@
 #include "operators.h"
 #include "pike_error.h"
 #include "pike_threadlib.h"
-#include "port.h"
 #include "threads.h"
 #include "version.h"
+#include "module_support.h"
 
 #define DEFAULT_CMOD_STORAGE static
 
@@ -57,10 +55,10 @@ DECLARATIONS
 
 #ifdef HAVE_GSSAPI
 
-#ifdef HAVE_GSSAPI_H
-#include <gssapi.h>
-#elif defined (HAVE_GSSAPI_GSSAPI_H)
+#ifdef HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>
+#elif defined (HAVE_GSSAPI_H)
+#include <gssapi.h>
 #elif defined (HAVE_GSSGLUE_GSSAPI_GSSAPI_H)
 #include <gssglue/gssapi/gssapi.h>
 #endif
@@ -72,10 +70,10 @@ DECLARATIONS
   };									\
   static const gss_OID_desc * const NAME = &PIKE_CONCAT (NAME, _desc)
 
-#ifdef HAVE_GSSAPI_KRB5_H
-#include <gssapi_krb5.h>
-#elif defined (HAVE_GSSAPI_GSSAPI_KRB5_H)
+#ifdef HAVE_GSSAPI_GSSAPI_KRB5_H
 #include <gssapi/gssapi_krb5.h>
+#elif defined (HAVE_GSSAPI_KRB5_H)
+#include <gssapi_krb5.h>
 #elif defined (HAVE_GSSGLUE_GSSAPI_GSSAPI_KRB5_H)
 #include <gssglue/gssapi/gssapi_krb5.h>
 #elif !defined(HAVE_GSS_KRB5_NT_PRINCIPAL_NAME)
@@ -179,7 +177,7 @@ DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
 
 static struct svalue int_pos_inf = SVALUE_INIT_FREE;
 
-static void resolve_syms();
+static void resolve_syms(void);
 
 #define RESOLVE_SYMS() do {						\
     if (TYPEOF(int_pos_inf) == PIKE_T_FREE) resolve_syms();		\
@@ -261,14 +259,14 @@ static void cleanup_oid_set (gss_OID_set *oid_set)
 
 #define IS_SAME_OID(A, B)						\
   (A == B || (A->length == B->length &&					\
-	      !MEMCMP (A->elements, B->elements, A->length)))
+	      !memcmp (A->elements, B->elements, A->length)))
 
 #define COPY_OID(DST, SRC) do {						\
     gss_OID dst_ = (DST), src_ = (SRC);					\
     size_t l_ = src_->length;						\
     dst_->length = l_;							\
     dst_->elements = xalloc (l_);					\
-    MEMCPY (dst_->elements, src_->elements, l_);			\
+    memcpy (dst_->elements, src_->elements, l_);			\
   } while (0)
 
 /* Support code to map between gss_OID's and the dotted-decimal
@@ -427,7 +425,7 @@ static void convert_from_oid_set_and_push (gss_OID_set set)
     move_svalue (&SVALUE, --Pike_sp);					\
   } while (0)
 
-static void resolve_syms()
+static void resolve_syms(void)
 {
   RESOLVE_AND_SET ("Int.inf", int_pos_inf);
   RESOLVE_AND_SET ("Standards.ASN1.encode_der_oid", encode_der_oid);
@@ -437,7 +435,7 @@ static void resolve_syms()
 
 /*! @module GSSAPI
  *!
- *! This is pike glue for GSS-API ver 2 as specified in RFC 2743.
+ *! This is pike glue for GSS-API ver 2 as specified in @rfc{2743@}.
  *!
  *! GSS-API is used to authenticate users and servers, and optionally
  *! also to encrypt communication between them. The API is generic and
@@ -485,9 +483,9 @@ static void resolve_syms()
  *! @decl constant int NAME_NOT_MN
  *!
  *! Constants for routine errors in major status codes like
- *! @[GSSAPI.Error.major_status]. See RFC 2743 section 1.2.1.1. Note
- *! that major status codes have to be masked with
- *! @[GSSAPI.ERROR_MASK] before comparison with these.
+ *! @[GSSAPI.Error.major_status]. See @rfc{2743:1.2.1.1@}.  Note that
+ *! major status codes have to be masked with @[GSSAPI.ERROR_MASK]
+ *! before comparison with these.
  *!
  *! Brief descriptions of the flags:
  *!
@@ -545,7 +543,7 @@ static void resolve_syms()
  *! @decl constant int GAP_TOKEN
  *!
  *! Bitfield flags for informatory codes in major status codes like
- *! @[GSSAPI.Error.major_status]. See RFC 2743 section 1.2.1.1. Any
+ *! @[GSSAPI.Error.major_status]. See @rfc{2743:1.2.1.1@}. Any
  *! combination of these might optionally be combined with one routine
  *! error constant to form a major status code.
  *!
@@ -572,8 +570,8 @@ static void resolve_syms()
  *! returns an array containing messages for all the status values in
  *! it. The returned string(s) presumably don't end with linefeeds.
  *!
- *! This wraps @tt{GSS_Display_status@} according to RFC 2743 section
- *! 2.4.1.
+ *! This wraps @tt{GSS_Display_status@} according to
+ *! @rfc{2743:2.4.1@}.
  */
 PIKEFUN array(string) major_status_messages (int major_status)
 {
@@ -607,8 +605,8 @@ PIKEFUN array(string) major_status_messages (int major_status)
  *! for all the status values in it. The returned string(s) presumably
  *! don't end with linefeeds.
  *!
- *! This wraps @tt{GSS_Display_status@} according to RFC 2743 section
- *! 2.4.1.
+ *! This wraps @tt{GSS_Display_status@} according to
+ *! @rfc{2743:2.4.1@}.
  *!
  *! @param minor_status
  *!   The mechanism-specific minor status.
@@ -713,8 +711,8 @@ static void gssapi_err_events (int event)
  *! The major status code. This is a bitwise OR of one routine error
  *! code and zero or more supplementary error info bits.
  *!
- *! See RFC 2743 section 1.2.1.1 and RFC 2744 section 3.9.1. Note that
- *! the calling errors mentioned in RFC 2744 are never thrown.
+ *! See @rfc{2743:1.2.1.1@} and @rfc{2744:3.9.1@}.  Note that the
+ *! calling errors mentioned in @rfc{2744@} are never thrown.
  *!
  *! @seealso
  *!   @[major_status_messages]
@@ -785,7 +783,7 @@ static struct pike_string *make_gss_err_message (
   return finish_string_builder (&sb);
 }
 
-/*! @decl static void create (void|int major, @
+/*! @decl protected void create (void|int major, @
  *!                           void|int minor, void|string mech, @
  *!                           void|string message, void|array backtrace)
  *!
@@ -843,7 +841,7 @@ static void gssapi_err_create (INT32 args)
       if(TYPEOF(Pike_sp[3-args]) != T_STRING)
 	SIMPLE_ARG_TYPE_ERROR ("create",4,"void|string");
       ref_push_string (Pike_sp[3-args].u.string);
-      push_constant_text (": ");
+      push_static_text (": ");
       push_string (make_gss_err_message (THIS->major_status, THIS->minor_status,
 					 mech, NULL, NULL));
       f_add (3);
@@ -953,7 +951,7 @@ static DECLSPEC(noreturn) void throw_gssapi_error (
 }
 
 static DECLSPEC(noreturn) void handle_error (
-  int line, const char *gss_func,
+  int DEBUGUSED(line), const char *DEBUGUSED(gss_func),
   OM_uint32 major, OM_uint32 minor, const gss_OID mech
 )
 /* Assumed to be called only if GSS_ERROR (maj) is true. */
@@ -1064,32 +1062,32 @@ static void missing_err_events (int event)
 static void describe_services_and_push (OM_uint32 services)
 {
   int n = 0;
-  if (services & GSS_C_DELEG_FLAG)	{push_constant_text ("DEL"); n++;}
-  if (services & GSS_C_MUTUAL_FLAG)	{push_constant_text ("MUT"); n++;}
-  if (services & GSS_C_REPLAY_FLAG)	{push_constant_text ("REPL"); n++;}
-  if (services & GSS_C_SEQUENCE_FLAG)	{push_constant_text ("SEQ"); n++;}
-  if (services & GSS_C_CONF_FLAG)	{push_constant_text ("CONF"); n++;}
-  if (services & GSS_C_INTEG_FLAG)	{push_constant_text ("INTEG"); n++;}
-  if (services & GSS_C_ANON_FLAG)	{push_constant_text ("ANON"); n++;}
-  if (services & GSS_C_PROT_READY_FLAG)	{push_constant_text ("READY"); n++;}
-  if (services & GSS_C_TRANS_FLAG)	{push_constant_text ("TRANS"); n++;}
+  if (services & GSS_C_DELEG_FLAG)	{push_static_text ("DEL"); n++;}
+  if (services & GSS_C_MUTUAL_FLAG)	{push_static_text ("MUT"); n++;}
+  if (services & GSS_C_REPLAY_FLAG)	{push_static_text ("REPL"); n++;}
+  if (services & GSS_C_SEQUENCE_FLAG)	{push_static_text ("SEQ"); n++;}
+  if (services & GSS_C_CONF_FLAG)	{push_static_text ("CONF"); n++;}
+  if (services & GSS_C_INTEG_FLAG)	{push_static_text ("INTEG"); n++;}
+  if (services & GSS_C_ANON_FLAG)	{push_static_text ("ANON"); n++;}
+  if (services & GSS_C_PROT_READY_FLAG)	{push_static_text ("READY"); n++;}
+  if (services & GSS_C_TRANS_FLAG)	{push_static_text ("TRANS"); n++;}
   f_aggregate (n);
-  push_constant_text ("|");
+  push_static_text ("|");
   o_multiply();
 }
 
 static struct pike_string *make_missing_err_message (OM_uint32 missing)
 {
   int n = 0;
-  push_text ("Required service(s) missing: ");
+  push_static_text ("Required service(s) missing: ");
   describe_services_and_push (missing);
-  push_text ("\n");
+  push_static_text ("\n");
   f_add (3);
   assert (TYPEOF(Pike_sp[-1]) == T_STRING);
   return (--Pike_sp)->u.string;
 }
 
-/*! @decl static void create (void|int missing_services)
+/*! @decl protected void create (void|int missing_services)
  *!
  *! @param missing_services
  *!   Initial value for @[services].
@@ -1139,36 +1137,35 @@ static void throw_missing_services_error (OM_uint32 missing)
  *! @item NT_HOSTBASED_SERVICE
  *!   Name type for a service associated with a host computer. The
  *!   syntax is @tt{service@@hostname@} where the @tt{@@hostname@}
- *!   part may be omitted for the local host. See RFC 2743 section
- *!   4.1.
+ *!   part may be omitted for the local host. See @rfc{2743:4.1@}.
  *! @item NT_USER_NAME
  *!   Name type for a named user on a local system. The syntax is
- *!   @tt{username@}. See RFC 2743 section 4.2.
+ *!   @tt{username@}. See @rfc{2743:4.2@}.
  *! @item NT_MACHINE_UID_NAME
  *!   Name type for a numeric user identifier corresponding to a user
  *!   on a local system. The string representing a name of this type
  *!   should contain a locally-significant user ID, represented in
- *!   host byte order. See RFC 2743 section 4.3.
+ *!   host byte order. See @rfc{2743:4.3@}.
  *! @item NT_STRING_UID_NAME
  *!   Name type for a string of digits representing the numeric user
  *!   identifier of a user on a local system. This name type is
  *!   similar to the Machine UID Form, except that the buffer contains
- *!   a string representing the user ID. See RFC 2743 section 4.4.
+ *!   a string representing the user ID. See @rfc{2743:4.4@}.
  *! @item NT_ANONYMOUS
- *!   Name type to identify anonymous names. See RFC 2743 section 4.5.
+ *!   Name type to identify anonymous names. See @rfc{2743:4.5@}.
  *! @item NT_EXPORT_NAME
  *!   Name type for the Mechanism-Independent Exported Name Object
  *!   type, which is the type of the names returned by
- *!   @[GSSAPI.Name.export]. See RFC 2743 section 4.7.
+ *!   @[GSSAPI.Name.export]. See @rfc{2743:4.7@}.
  *! @item KRB5_NT_PRINCIPAL_NAME
- *!   Name type for a Kerberos principal. See RFC 1964 section 2.1.1.
+ *!   Name type for a Kerberos principal. See @rfc{1964:2.1.1@}.
  *! @enddl
  */
 
 /*! @class Name
  *!
  *! An object of this class contains a name on the internal form which
- *! is required by the GSS-API functions. See RFC 2743, section 1.1.5.
+ *! is required by the GSS-API functions. See @rfc{2743:1.1.5@}.
  */
 PIKECLASS Name
 {
@@ -1240,10 +1237,9 @@ PIKECLASS Name
     CHECK_ERROR (gss_import_name, maj, min);
   }
 
-  /*! @decl static void create (string name, void|string name_type)
+  /*! @decl protected void create (string name, void|string name_type)
    *!
-   *! This wraps @tt{GSS_Import_name@} according to RFC 2743 section
-   *! 2.4.5.
+   *! This wraps @tt{GSS_Import_name@} according to @rfc{2743:2.4.5@}.
    *!
    *! @param name
    *!   A name on string form (a contiguous string name in GSS-API
@@ -1295,8 +1291,8 @@ PIKECLASS Name
    *! If no type was given to @[create] then @[display_name_type]
    *! might return zero.
    *!
-   *! This wraps @tt{GSS_Display_name@} according to RFC 2743 section
-   *! 2.4.4.
+   *! This wraps @tt{GSS_Display_name@} according to
+   *! @rfc{2743:2.4.4@}.
    *!
    *! @seealso
    *!   The @tt{GSSAPI.NT_*@} constants.
@@ -1374,7 +1370,7 @@ PIKECLASS Name
 	    }
 	  }
 
-	  push_text ("%O");
+	  push_static_text ("%O");
 	  push_string (make_shared_binary_string (d_name.value, d_name.length));
 	  f_sprintf (2);
 	  string_builder_shared_strcat (sb, Pike_sp[-1].u.string);
@@ -1415,8 +1411,8 @@ PIKECLASS Name
    *! (MN) of this name. The mechanism is given as a dotted-decimal
    *! OID in @[mech].
    *!
-   *! This wraps @tt{GSS_Canonicalize_name@} according to RFC 2743
-   *! section 2.4.14.
+   *! This wraps @tt{GSS_Canonicalize_name@} according to
+   *! @rfc{2743:2.4.14@}.
    *!
    *! @note
    *!   This function might block on network connections to remote
@@ -1458,8 +1454,8 @@ PIKECLASS Name
    *! given then the name is canonicalized according to that mechanism
    *! before being exported (see @[canonicalize]).
    *!
-   *! This wraps @tt{GSS_Export_name@} according to RFC 2743 section
-   *! 2.4.15.
+   *! This wraps @tt{GSS_Export_name@} according to
+   *! @rfc{2743:2.4.15@}.
    *!
    *! @note
    *!   This function might block on network connections to remote
@@ -1521,13 +1517,13 @@ PIKECLASS Name
 #undef mech
   }
 
-  /*! @decl static int `== (mixed other)
+  /*! @decl protected int `== (mixed other)
    *!
    *! Returns true if @[other] is a @[GSSAPI.Name] which contains a
    *! name that refers to the same identity as this one.
    *!
-   *! This wraps @tt{GSS_Compare_name@} according to RFC 2743 section
-   *! 2.4.3.
+   *! This wraps @tt{GSS_Compare_name@} according to
+   *! @rfc{2743:2.4.3@}.
    *!
    *! If either @[GSSAPI.Name] object is uninitialized or contains an
    *! anonymous identity then they are considered different, unless it
@@ -1559,7 +1555,7 @@ PIKECLASS Name
     RETURN 0;
   }
 
-  /*! @decl static int __hash()
+  /*! @decl protected int __hash()
    *!
    *! Tries to export the name (see @[export]) and if that succeeds
    *! returns a hash made from the exported name string. Otherwise a
@@ -1590,9 +1586,9 @@ PIKECLASS Name
     if (!got_hash) {
       unsigned INT32 h;
 #if SIZEOF_CHAR_P > 4
-      h=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(Pike_fp->current_object) >> 2));
+      h=(unsigned INT32)(PTR_TO_INT(Pike_fp->current_object) >> 2);
 #else
-      h=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(Pike_fp->current_object)));
+      h=(unsigned INT32)(PTR_TO_INT(Pike_fp->current_object));
 #endif
       RETURN h;
     }
@@ -1605,8 +1601,8 @@ PIKECLASS Name
    *! process this name. The returned OID strings are on
    *! dotted-decimal form.
    *!
-   *! This wraps @tt{GSS_Inquire_mechs_for_name@} according to RFC
-   *! 2743 section 2.4.13.
+   *! This wraps @tt{GSS_Inquire_mechs_for_name@} according to
+   *! @rfc{2743:2.4.13@}.
    *!
    *! @note
    *!   Some older GSS-API v2 implementations lack this funcion.
@@ -1666,17 +1662,17 @@ PIKECLASS Name
 /*! @class Cred
  *!
  *! Objects of this class hold one or more credentials that the
- *! current process can use to assert identities; see RFC 2743 section
- *! 1.1.1.
+ *! current process can use to assert identities; see
+ *! @rfc{2743:1.1.1@}.
  *!
  *! @note
  *!   If a @[Cred] object is destructed, @tt{GSS_Release_cred@}
- *!   (RFC 2743, section 2.1.2) is called. The RFC doesn't preclude
- *!   that that function might do blocking network I/O, which due to
- *!   pike's object management might occur essentially anytime in any
- *!   thread if the object isn't explicitly destructed. To avoid that,
- *!   it's recommended to call @[release] in credential objects that
- *!   are no longer used.
+ *!   (@rfc{2743:2.1.2@}) is called. The RFC doesn't preclude that
+ *!   that function might do blocking network I/O, which due to pike's
+ *!   object management might occur essentially anytime in any thread
+ *!   if the object isn't explicitly destructed. To avoid that, it's
+ *!   recommended to call @[release] in credential objects that are no
+ *!   longer used.
  */
 PIKECLASS Cred
 {
@@ -1716,8 +1712,8 @@ PIKECLASS Cred
    *! Acquire initial credentials for this object. It is an error if
    *! it already has some credentials.
    *!
-   *! This wraps @tt{GSS_Acquire_cred@} according to RFC 2743 section
-   *! 2.1.1.
+   *! This wraps @tt{GSS_Acquire_cred@} according to
+   *! @rfc{2743:2.1.1@}.
    *!
    *! @param name
    *!   The name of the identity for which credentials should be
@@ -1852,8 +1848,7 @@ PIKECLASS Cred
    *! has no credentials already then it will get the default
    *! credentials in addition to this specified one.
    *!
-   *! This wraps @tt{GSS_Add_cred@} according to RFC 2743 section
-   *! 2.1.4.
+   *! This wraps @tt{GSS_Add_cred@} according to @rfc{2743:2.1.4@}.
    *!
    *! @param name
    *!   The name of the identity for which a credential should be
@@ -1987,10 +1982,9 @@ PIKECLASS Cred
    *!
    *! Functions to query various properties about the credentials.
    *!
-   *! These wrap @tt{GSS_Inquire_cred@} according to RFC 2743 section
-   *! 2.1.3 if @[mech] is not given, and
-   *! @tt{GSS_Inquire_cred_by_mech@} according to section 2.1.5
-   *! otherwise.
+   *! These wrap @tt{GSS_Inquire_cred@} according to @rfc{2743:2.1.3@}
+   *! if @[mech] is not given, and @tt{GSS_Inquire_cred_by_mech@}
+   *! according to @rfc{2743:2.1.5@} otherwise.
    *!
    *! @param mech
    *!   If this is given then the credential for that specific
@@ -2064,8 +2058,8 @@ PIKECLASS Cred
    *! @enddl
    *!
    *! @note
-   *!   RFC 2743 doesn't preclude that these functions might block on
-   *!   network connections to remote authentication servers.
+   *!   @rfc{2743@} doesn't preclude that these functions might block
+   *!   on network connections to remote authentication servers.
    */
 
   /* Perhaps we should hoard this data locally to reduce the number of
@@ -2356,8 +2350,8 @@ PIKECLASS Cred
    *!
    *! Frees the resources for the credential.
    *!
-   *! This wraps @tt{GSS_Release_cred@} according to RFC 2743 section
-   *! 2.1.2.
+   *! This wraps @tt{GSS_Release_cred@} according to
+   *! @rfc{2743:2.1.2@}.
    *!
    *! @note
    *!   This function might block on network connections to remote
@@ -2390,28 +2384,28 @@ PIKECLASS Cred
  *!
  *! @dl
  *! @item GSSAPI.DELEG_FLAG
- *!   Delegation. See RFC 2743 section 1.2.9.
+ *!   Delegation. See @rfc{2743:1.2.9@}.
  *! @item GSSAPI.MUTUAL_FLAG
  *!   Mutual authentication (actually, acceptor authentication). See
- *!   RFC 2743 sections 1.1.1.3 and 1.2.5.
+ *!   @rfc{2743:1.1.1.3@} and @rfc{2743:1.2.5@}.
  *! @item GSSAPI.REPLAY_FLAG
- *!   Per-message replay detection. See RFC 2743 section 1.2.3.
+ *!   Per-message replay detection. See @rfc{2743:1.2.3@}.
  *! @item GSSAPI.SEQUENCE_FLAG
- *!   Per-message sequencing. See RFC 2743 section 1.2.3.
+ *!   Per-message sequencing. See @rfc{2743:1.2.3@}.
  *! @item GSSAPI.CONF_FLAG
- *!   Per-message confidentiality. See RFC 2743 section 1.2.2.
+ *!   Per-message confidentiality. See @rfc{2743:1.2.2@}.
  *! @item GSSAPI.INTEG_FLAG
- *!   Per-message integrity. See RFC 2743 section 1.2.2.
+ *!   Per-message integrity. See @rfc{2743:1.2.2@}.
  *! @item GSSAPI.ANON_FLAG
- *!   Anonymous authentication. See RFC 2743 section 1.2.5.
+ *!   Anonymous authentication. See @rfc{2743:1.2.5@}.
  *! @item GSSAPI.PROT_READY_FLAG
  *!   Might be set before the context establishment has finished, to
- *!   denote that per-message protection already is available. See RFC
- *!   2743 section 1.2.7. Is always set in @[GSSAPI.Context] and derived
- *!   classes when the context is established.
+ *!   denote that per-message protection already is available. See
+ *!   @rfc{2743:1.2.7@}. Is always set in @[GSSAPI.Context] and
+ *!   derived classes when the context is established.
  *! @item GSSAPI.TRANS_FLAG
  *!   The context can be transferred between processes using
- *!   @[GSSAPI.Context.export]. See RFC 2743 section 1.2.10.
+ *!   @[GSSAPI.Context.export]. See @rfc{2743:1.2.10@}.
  *! @enddl
  */
 
@@ -2432,8 +2426,8 @@ PIKEFUN string describe_services (int services)
 
 /*! @class Context
  *!
- *! Class representing a security context; see RFC 2743 section 1.1.3.
- *! The user usually instantiates one of the two inheriting classes
+ *! Class representing a security context; see @rfc{2743:1.1.3@} The
+ *! user usually instantiates one of the two inheriting classes
  *! @[GSSAPI.InitContext] or @[GSSAPI.AcceptContext], based on whether
  *! the context should act as initiator or acceptor for the
  *! connection. This class is instantiated directly for imported
@@ -2441,8 +2435,8 @@ PIKEFUN string describe_services (int services)
  *!
  *! @note
  *!   If a @[Context] object for a partly or completely established
- *!   context is destructed, @tt{GSS_Delete_sec_context@} (RFC 2743,
- *!   section 2.2.3) is called. That function might do blocking
+ *!   context is destructed, @tt{GSS_Delete_sec_context@}
+ *!   (@rfc{2743:2.2.3@}) is called. That function might do blocking
  *!   network I/O, which due to pike's object management might occur
  *!   essentially anytime in any thread if the object isn't explicitly
  *!   destructed. To avoid that, it's strongly recommended to call
@@ -2554,13 +2548,13 @@ PIKECLASS Context
       cleanup_context (&THIS->ctx);
   }
 
-  /*! @decl static void create (string interprocess_token, @
+  /*! @decl protected void create (string interprocess_token, @
    *!                           void|int required_services)
    *!
    *! Creates a context by importing an inter-process token.
    *!
-   *! This wraps @tt{GSS_Import_sec_context@} according to RFC 2743
-   *! section 2.2.9.
+   *! This wraps @tt{GSS_Import_sec_context@} according to
+   *! @rfc{2743:2.2.9@}.
    *!
    *! @param interprocess_token
    *!   The inter-process token which has been created by @[export] or
@@ -2723,8 +2717,8 @@ PIKECLASS Context
    *!
    *! Functions to query various properties about the context.
    *!
-   *! These wrap @tt{GSS_Inquire_context@} according to RFC 2743
-   *! section 2.2.6.
+   *! These wrap @tt{GSS_Inquire_context@} according to
+   *! @rfc{2743:2.2.6@}.
    *!
    *! @dl
    *! @item is_established()
@@ -3058,8 +3052,8 @@ PIKECLASS Context
    *!
    *! Passes the given @[remote_token] to the mechanism.
    *!
-   *! This wraps @tt{GSS_Process_context_token@} according to RFC 2743
-   *! section 2.2.4.
+   *! This wraps @tt{GSS_Process_context_token@} according to
+   *! @rfc{2743:2.2.4@}.
    *!
    *! This is used for tokens that are received outside the
    *! handshaking between @tt{GSS_Init_sec_context@}
@@ -3123,8 +3117,8 @@ PIKECLASS Context
    *! process, providing the inter-process context transfer service is
    *! available (c.f. @[GSSAPI.TRANS_FLAG]).
    *!
-   *! This wraps @tt{GSS_Export_sec_context@} according to RFC 2743
-   *! section 2.2.8.
+   *! This wraps @tt{GSS_Export_sec_context@} according to
+   *! @rfc{2743:2.2.8@}.
    *!
    *! The returned string is intended to be fed to
    *! @[GSSAPI.Context.create] (or some other
@@ -3159,7 +3153,7 @@ PIKECLASS Context
    *! and integrity through @[verify_mic] or some other
    *! @tt{GSS_VerifyMIC@} wrapper.
    *!
-   *! This wraps @tt{GSS_GetMIC@} according to RFC 2743 section 2.3.1.
+   *! This wraps @tt{GSS_GetMIC@} according to @rfc{2743:2.3.1@}.
    *!
    *! This function requires that the context is established, or that
    *! the early per-message protection service is available (c.f.
@@ -3174,7 +3168,7 @@ PIKECLASS Context
    *! @param qop
    *!   The quality of protection. This is a mechanism-specific value
    *!   that lets the user direct how the underlying mechanism
-   *!   calculates the MIC. See RFC 2743, section 1.2.4.
+   *!   calculates the MIC. See @rfc{2743:1.2.4@}.
    *!
    *!   Zero or left out means use the default method.
    */
@@ -3223,8 +3217,7 @@ PIKECLASS Context
    *! the given @[mic], which has been calculated by the sender using
    *! @[get_mic] or some other @tt{GSS_GetMIC@} wrapper.
    *!
-   *! This wraps @tt{GSS_VerifyMIC@} according to RFC 2743 section
-   *! 2.3.2.
+   *! This wraps @tt{GSS_VerifyMIC@} according to @rfc{2743:2.3.2@}.
    *!
    *! This function requires that the context is established, or that
    *! the early per-message protection service is available (c.f.
@@ -3325,8 +3318,8 @@ PIKECLASS Context
    *! would produce no more than @[output_size] bytes in the resulting
    *! output.
    *!
-   *! This wraps @tt{GSS_Wrap_size_limit@} according to RFC 2743
-   *! section 2.2.7.
+   *! This wraps @tt{GSS_Wrap_size_limit@} according to
+   *! @rfc{2743:2.2.7@}.
    *!
    *! @[with_confidentiality] and @[qop] are the same as in the call
    *! to @[wrap].
@@ -3375,7 +3368,7 @@ PIKECLASS Context
    *! applicable) decrypted by the receiver using @[unwrap] or some
    *! other @tt{GSS_Unwrap@} wrapper.
    *!
-   *! This wraps @tt{GSS_Wrap@} according to RFC 2743 section 2.3.3.
+   *! This wraps @tt{GSS_Wrap@} according to @rfc{2743:2.3.3@}.
    *!
    *! This function requires that the context is established, or that
    *! the early per-message protection service is available (c.f.
@@ -3399,7 +3392,7 @@ PIKECLASS Context
    *! @param qop
    *!   The quality of protection. This is a mechanism-specific value
    *!   that lets the user direct how the underlying mechanism
-   *!   calculates the MIC. See RFC 2743, section 1.2.4.
+   *!   calculates the MIC. See @rfc{2743:1.2.4@}.
    *!
    *!   Zero or left out means use the default method.
    *!
@@ -3469,8 +3462,7 @@ PIKECLASS Context
    *! encrypted. The message has been calculated by the sender using
    *! @[wrap] or some other @tt{GSS_Wrap@} wrapper.
    *!
-   *! This wraps @tt{GSS_Unwrap@} according to RFC 2743 section
-   *! 2.3.4.
+   *! This wraps @tt{GSS_Unwrap@} according to @rfc{2743:2.3.4@}.
    *!
    *! This function requires that the context is established, or that
    *! the early per-message protection service is available (c.f.
@@ -3606,8 +3598,8 @@ PIKECLASS Context
    *! Frees the resources for the context, provided it is in use. Does
    *! nothing otherwise.
    *!
-   *! This wraps @tt{GSS_Delete_sec_context@} according to RFC 2743
-   *! section 2.2.3.
+   *! This wraps @tt{GSS_Delete_sec_context@} according to
+   *! @rfc{2743:2.2.3@}.
    *!
    *! @note
    *!   This function might block on network connections to remote
@@ -3671,7 +3663,7 @@ PIKECLASS InitContext
       free (THIS->mech.elements);
   }
 
-  /*! @decl static void create (void|Cred cred, @
+  /*! @decl protected void create (void|Cred cred, @
    *!				void|Name|string target_name, @
    *!				void|string mech, @
    *!				void|int required_services, @
@@ -3731,10 +3723,9 @@ PIKECLASS InitContext
    *!   means use the default.
    *!
    *! @note
-   *!   Channel bindings (RFC 2743, section 1.1.6) are not yet
-   *!   implemented since that feature appear to not be in much active
-   *!   use, and its format is not completely specified (RFC 2744,
-   *!   section 3.11).
+   *!   Channel bindings (@rfc{2743:1.1.6@}) are not yet implemented
+   *!   since that feature appear to not be in much active use, and
+   *!   its format is not completely specified (@rfc{2744:3.11@}).
    */
   PIKEFUN void create (void|object(Cred) cred,
 		       void|object(Name)|string target_name,
@@ -3850,8 +3841,8 @@ PIKECLASS InitContext
    *!
    *! Initiates a security context to send to a remote peer.
    *!
-   *! This wraps @tt{GSS_Init_sec_context@} according to RFC 2743
-   *! section 2.2.1.
+   *! This wraps @tt{GSS_Init_sec_context@} according to
+   *! @rfc{2743:2.2.1@}.
    *!
    *! The underlying mechanism might require several tokens to be
    *! passed back and forth to establish the context. If
@@ -4064,7 +4055,7 @@ PIKECLASS AcceptContext
       free_object (THIS->cred);
   }
 
-  /*! @decl static void create (void|Cred cred, @
+  /*! @decl protected void create (void|Cred cred, @
    *!				void|int required_services)
    *!
    *! Creates a context for acceptor use. This function only accepts
@@ -4089,10 +4080,9 @@ PIKECLASS AcceptContext
    *!   @[GSSAPI.MissingServicesError] is thrown if it isn't.
    *!
    *! @note
-   *!   Channel bindings (RFC 2743, section 1.1.6) are not yet
-   *!   implemented since that feature appear to not be in much active
-   *!   use, and its format is not completely specified (RFC 2744,
-   *!   section 3.11).
+   *!   Channel bindings (@rfc{2743:1.1.6@}) are not yet implemented
+   *!   since that feature appear to not be in much active use, and
+   *!   its format is not completely specified (@rfc{2744:3.11@}).
    */
   PIKEFUN void create (void|object(Cred) cred,
 		       void|zero|int required_services)
@@ -4135,8 +4125,8 @@ PIKECLASS AcceptContext
    *!
    *! Accepts a remotely initiated security context.
    *!
-   *! This wraps @tt{GSS_Accept_sec_context@} according to RFC 2743
-   *! section 2.2.2.
+   *! This wraps @tt{GSS_Accept_sec_context@} according to
+   *! @rfc{2743:2.2.2@}.
    *!
    *! The underlying mechanism might require several tokens to be
    *! passed back and forth to establish the context. If
@@ -4284,8 +4274,8 @@ PIKECLASS AcceptContext
  *! Returns the OIDs for the available mechanism in the GSS-API
  *! implementation. The OIDs are returned on dotted-decimal form.
  *!
- *! This wraps @tt{GSS_Indicate_mechs@} according to RFC 2743 section
- *! 2.4.2.
+ *! This wraps @tt{GSS_Indicate_mechs@} according to
+ *! @rfc{2743:2.4.2@}.
  */
 PIKEFUN multiset(string) indicate_mechs()
 {
@@ -4315,8 +4305,8 @@ PIKEFUN multiset(string) indicate_mechs()
  *! supports. Both @[mech] and the returned OID strings are on
  *! dotted-decimal form.
  *!
- *! This wraps @tt{GSS_Inquire_names_for_mech@} according to RFC 2743
- *! section 2.4.12.
+ *! This wraps @tt{GSS_Inquire_names_for_mech@} according to
+ *! @rfc{2743:2.4.12@}.
  */
 PIKEFUN multiset(string) names_for_mech (string mech)
 {
@@ -4478,6 +4468,8 @@ PIKE_MODULE_INIT
     low_get_storage (InitContext_program, Context_program);
   AcceptContext_Context_storage_offset =
     low_get_storage (AcceptContext_program, Context_program);
+#else
+  HIDE_MODULE();
 #endif
 }
 

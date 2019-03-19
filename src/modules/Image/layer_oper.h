@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* template for operator layer row function */
@@ -17,21 +16,25 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
    if (alpha==0.0)
    {
 #ifdef LAYER_DUAL
-      MEMCPY(d,s,sizeof(rgb_group)*len);
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(d,s,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #endif
-      return; 
+      return;
    }
    else if (alpha==1.0)
    {
 #ifdef L_COPY_ALPHA
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #define da da da da /* error */
 #endif
       if (!la)  /* no layer alpha => full opaque */
       {
 #ifdef L_MMX_OPER
 #ifdef TRY_USE_MMX
+/* Intentionally left here.
+
+   FIXME: Switch to intrinsics
+*/
 	extern int try_use_mmx;
 	if(try_use_mmx)
 	{
@@ -39,7 +42,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	  unsigned char *source=(unsigned char *)s;
 	  unsigned char *dest=(unsigned char *)d;
 	  unsigned char *sourcel=(unsigned char *)l;
-	  
+
 	  while (num-->0 && (7&(int)dest))
 	  {
 	    *dest=L_TRUNC(L_OPER(*source,*sourcel));
@@ -47,8 +50,8 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    sourcel++;
 	    dest++;
 	  }
-	  
-	  
+
+
 	  while(num > 16)
 	  {
 	    movq_m2r(*source, mm0);
@@ -95,9 +98,9 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	      d->g=L_TRUNC(L_OPER(s->g,l->g));
 	      d->b=L_TRUNC(L_OPER(s->b,l->b));
 #ifndef L_COPY_ALPHA
-	      *da=white; da++; 
+	      *da=white; da++;
 #endif
-	      l++; s++; sa++; d++; 
+	      l++; s++; sa++; d++;
 	   }
       }
       else
@@ -144,7 +147,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	       ALPHA_ADD_nA(s,t,d,sa,la,da,b);
 #endif
 	    }
-	    l++; s++; la++; sa++; d++; 
+	    l++; s++; la++; sa++; d++;
 #ifndef L_COPY_ALPHA
 	    da++;
 #endif
@@ -154,7 +157,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
    {
 #ifdef L_COPY_ALPHA
 #undef da
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #define da da da
 #endif
       if (!la)  /* no layer alpha => full opaque */
@@ -180,7 +183,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    ALPHA_ADD_V_NOLA_nA(s,t,d,sa,da,alpha,b);
 
 #endif
-	    l++; s++; sa++; d++; 
+	    l++; s++; sa++; d++;
 	 }
       else
 	 while (len--)
@@ -195,7 +198,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 #ifdef L_USE_SA
 	    *da=*sa;
 #endif
-	    da++; 
+	    da++;
 #else
 	    t->r=L_TRUNC(L_OPER(s->r,l->r));
 	    ALPHA_ADD_V_nA(s,t,d,sa,la,da,alpha,r);
@@ -213,9 +216,9 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
    {
       smear_color(d,L_TRANS,len);
       smear_color(da,L_TRANS,len);
-      return; 
+      return;
    }
-   else 
+   else
    {
       if (!la)  /* no layer alpha => full opaque */
 	 while (len--)
@@ -223,7 +226,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    *da=*d=L_LOGIC(L_OPER(s->r,l->r),
 			   L_OPER(s->g,l->g),
 			   L_OPER(s->b,l->b));
-	    l++; s++; sa++; d++; da++; 
+	    l++; s++; sa++; d++; da++;
 	 }
       else
 	 while (len--)
@@ -234,7 +237,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	       *da=*d=L_LOGIC(L_OPER(s->r,l->r),
 			      L_OPER(s->g,l->g),
 			      L_OPER(s->b,l->b));
-	    l++; s++; la++; sa++; d++; da++; 
+	    l++; s++; la++; sa++; d++; da++;
 	 }
    }
 #endif /* L_LOGIC */

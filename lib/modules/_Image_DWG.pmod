@@ -1,5 +1,4 @@
 // AutoCAD R13/R14/R2000 DWG file decoder
-// $Id$
 
 #pike __REAL_VERSION__
 

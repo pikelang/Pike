@@ -41,7 +41,7 @@ GTK2.TreePath get_path()
 /*
   struct object *o=fast_clone_object(pgtk2_tree_path_program);
   struct object_wrapper *ow;
-  ow=(struct object_wrapper *)get_storage(o,pgtk2_tree_path_program);
+  ow=get_storage(o,pgtk2_tree_path_program);
   ow->obj=(void *)gtk_tree_row_reference_get_path(
 	(GtkTreeRowReference *)(THIS->obj));
 */

@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 //! Base class for Search database storage abstraction implementations.
@@ -125,7 +124,7 @@ void remove_uri(string|Standards.URI uri);
 //!   The URI prefix of the resource being removed.
 void remove_uri_prefix(string|Standards.URI uri);
 
-//! Remove a document from the database. 
+//! Remove a document from the database.
 //! @param uri
 //!   The URI of the resource being indexed.
 //! @param language

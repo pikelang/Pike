@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -82,10 +81,10 @@ static struct pike_string *low_make_iff(struct svalue *s)
   add_ref(s->u.array);
   push_array_items(s->u.array);
   len = sp[-1].u.string->len;
-  lenb[0] = DO_NOT_WARN((unsigned char)((len & 0xff000000)>>24));
-  lenb[1] = DO_NOT_WARN((unsigned char)((len & 0x00ff0000)>>16));
-  lenb[2] = DO_NOT_WARN((unsigned char)((len & 0x0000ff00)>>8));
-  lenb[3] = DO_NOT_WARN((unsigned char)(len & 0x000000ff));
+  lenb[0] = (unsigned char)((len & 0xff000000)>>24);
+  lenb[1] = (unsigned char)((len & 0x00ff0000)>>16);
+  lenb[2] = (unsigned char)((len & 0x0000ff00)>>8);
+  lenb[3] = (unsigned char)(len & 0x000000ff);
   push_string(make_shared_binary_string((char *)lenb, 4));
   stack_swap();
   if(len&1) {
@@ -101,7 +100,7 @@ struct pike_string *make_iff(char *id, struct array *chunks)
   struct pike_string *res;
   INT32 i;
 
-  push_text("FORM");
+  push_static_text("FORM");
   push_text(id);
   if(chunks->size > 0) {
     for(i=0; i<chunks->size; i++)

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -43,9 +42,9 @@
 #ifdef HAVE_GTKEXTRA_GTKEXTRA_H
 # include <gtkextra/gtkextra.h>
 #endif
-#ifdef HAVE_SIGNAL_H
+
 #include <signal.h>
-#endif
+
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -264,7 +263,7 @@ void pgtk2_free_str(gchar *s);
 #else
 # define PGTK_ISSTR( X ) ((TYPEOF(*(X)) == PIKE_T_STRING)&&((X)->u.string->size_shift==0))
 # define PGTK_GETSTR(X)  ((char*)((X)->u.string->str))
-# define PGTK_FREESTR(X)  
+# define PGTK_FREESTR(X)
 # define PGTK_PUSH_GCHAR(X) push_text( X )
 #endif
 */
@@ -331,4 +330,4 @@ int pgtk2_tree_view_row_separator_func(GtkTreeModel *model,
 				       GtkTreeIter *iter,
 				       struct signal_data *d);
 
-struct svalue *pgtk2_get_doc(GObject *o, int pushv);
+void pgtk2_get_doc(GObject *o, struct svalue *dest);

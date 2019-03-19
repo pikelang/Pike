@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* New memory searcher functions */
@@ -18,19 +17,24 @@
 #include "module_support.h"
 #include "pike_macros.h"
 #include "pike_search.h"
-#include "bignum.h"
 
 ptrdiff_t pike_search_struct_offset;
 #define OB2MSEARCH(O) ((struct pike_mem_searcher *)((O)->storage+pike_search_struct_offset))
 #define THIS_MSEARCH ((struct pike_mem_searcher *)(Pike_fp->current_storage))
 
+/* NB: We use the least significant bit of memsearch_cache_threshold
+ *     to indicate whether we are at MIN_MEMSEARCH_THRESHOLD or not.
+ */
+#define MIN_MEMSEARCH_THRESHOLD	128
+static int memsearch_cache_threshold;
+
 static struct mapping *memsearch_cache;
 static struct program *pike_search_program;
 
 
-static void *nil_search(void *no_data,
+static void *nil_search(void *UNUSED(no_data),
 			void *haystack,
-			ptrdiff_t haystacklen)
+			ptrdiff_t UNUSED(haystacklen))
 {
   return haystack;
 }
@@ -38,9 +42,9 @@ static void *nil_search(void *no_data,
 /* Needed on architectures where struct returns have
  * incompatible calling conventions (sparc v8).
  */
-static PCHARP nil_searchN(void *no_data,
+static PCHARP nil_searchN(void *UNUSED(no_data),
 			  PCHARP haystack,
-			  ptrdiff_t haystacklen)
+			  ptrdiff_t UNUSED(haystacklen))
 {
   return haystack;
 }
@@ -68,11 +72,11 @@ static const struct SearchMojtVtable nil_search_vtable = {
 #define GET_4_ALIGNED_CHARS0(PTR)  (*(INT32 *)(PTR))
 #define GET_4_UNALIGNED_CHARS0(PTR)  EXTRACT_INT(PTR)
 
-#define HUBBE_ALIGN1(q) 
+#define HUBBE_ALIGN1(q)
 #define GET_4_ALIGNED_CHARS1 GENERIC_GET4_CHARS
 #define GET_4_UNALIGNED_CHARS1 GENERIC_GET4_CHARS
 
-#define HUBBE_ALIGN2(q) 
+#define HUBBE_ALIGN2(q)
 #define GET_4_ALIGNED_CHARS2 GENERIC_GET4_CHARS
 #define GET_4_UNALIGNED_CHARS2 GENERIC_GET4_CHARS
 
@@ -137,9 +141,6 @@ PMOD_EXPORT void pike_init_memsearch(struct pike_mem_searcher *s,
       init_memsearch2(s,(p_wchar2*)needle.ptr, needlelen, max_haystacklen);
       return;
   }
-#ifdef PIKE_DEBUG
-  Pike_fatal("Illegal shift\n");
-#endif
 }
 
 PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
@@ -149,18 +150,14 @@ PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
 {
   switch(needle.shift)
   {
-    default:
-#ifdef PIKE_DEBUG
-      Pike_fatal("Illegal shift\n");
     case 0:
-#endif
       return compile_memsearcher0((p_wchar0*)needle.ptr, needlelen, max_haystacklen,hashkey);
     case 1:
       return compile_memsearcher1((p_wchar1*)needle.ptr, needlelen, max_haystacklen,hashkey);
     case 2:
       return compile_memsearcher2((p_wchar2*)needle.ptr, needlelen, max_haystacklen,hashkey);
   }
-  /* NOTREACHED */
+  UNREACHABLE();
 }
 
 PMOD_EXPORT SearchMojt simple_compile_memsearcher(struct pike_string *str)

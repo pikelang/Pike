@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* Hohum. Here we go. This is try number four for a more optimized
@@ -15,7 +14,20 @@
 #define PARSE_FAILED ("HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\n\r\nRequest parsing failed.\r\n")
 
 #include "global.h"
-	  
+/*! @module HTTPLoop
+ *!
+ *! High performance webserver optimized for somewhat static content.
+ *!
+ *! HTTPLoop is a less capable WWW-server than the
+ *! Protocols.HTTP.Server server, but for some applications it can be
+ *! preferable. It is significantly more optimized, for most uses, and
+ *! can handle a very high number of requests per second on even
+ *! low end machines.
+ */
+
+/*! @class Loop
+ */
+
 #include "bignum.h"
 #include "backend.h"
 #include "machine.h"
@@ -32,12 +44,7 @@
 #include "builtin_functions.h"
 
 #ifdef _REENTRANT
-#include <stdlib.h>
 #include <errno.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -83,37 +90,18 @@ static MUTEX_T arg_lock;
 static int next_free_arg, num_args;
 static struct args *free_arg_list[100];
 
-int aap_total_bytes;
-void *debug_aap_malloc(int nbytes)
-{
-  int *data;
-  aap_total_bytes += nbytes;
-  data = malloc( nbytes+16 );
-  data[0] = nbytes;
-  return ((char *)data)+16; /* keep it aligned.. */
-}
-
-void debug_aap_free( void *what )
-{
-  int *data = (void *)(((char *)what-16));
-  aap_total_bytes -= data[0];
-  fprintf( stderr, "%d Kbytes\n", aap_total_bytes/1024 );
-  free( data );
-}
-
-
 void free_args( struct args *arg )
 {
   num_args--;
 
-  if( arg->res.data ) aap_free( arg->res.data );
+  free( arg->res.data );
   if( arg->fd )       fd_close( arg->fd );
 
   mt_lock( &arg_lock );
   if( next_free_arg < 100 )
     free_arg_list[ next_free_arg++ ] = arg;
   else
-    aap_free(arg);
+    free(arg);
   mt_unlock( &arg_lock );
 }
 
@@ -125,16 +113,16 @@ struct args *new_args(void)
   if( next_free_arg )
     res = free_arg_list[--next_free_arg];
   else
-    res = aap_malloc( sizeof( struct args ) );
+    res = malloc( sizeof( struct args ) );
   mt_unlock( &arg_lock );
   return res;
 }
 
 
-/* This should probably be improved to include the reason for the 
- * failure. Currently, all failed requests get the same (hardcoded) 
+/* This should probably be improved to include the reason for the
+ * failure. Currently, all failed requests get the same (hardcoded)
  * error message.
- * 
+ *
  * It is virtually impossible to call a pike function from here, so that
  * is not an option.
  */
@@ -144,7 +132,7 @@ static void failed(struct args *arg)
 #ifdef AAP_DEBUG
   fprintf(stderr, "AAP: Failed\n");
 #endif /* AAP_DEBUG */
-  free_args( arg ); 
+  free_args( arg );
 }
 
 
@@ -158,8 +146,8 @@ static int parse(struct args *arg)
   /* get: URL, Protocol, method, headers*/
   for(i=0;i<arg->res.data_len;i++)
     if(arg->res.data[i] == ' ') {
-      if(!s1) 
-	s1=i; 
+      if(!s1)
+	s1=i;
       else
 	s2=i;
     } else if(arg->res.data[i]=='\r')
@@ -175,7 +163,7 @@ static int parse(struct args *arg)
    * 0  ^s1                           ^s2      ^i
    */
 
-  if(!s2) 
+  if(!s2)
     arg->res.protocol = s_http_09;
   else if(!memcmp("HTTP/1.", arg->res.data+s2+1, 7))
   {
@@ -204,24 +192,24 @@ static int parse(struct args *arg)
     /* read the rest of the request.. OBS: This is done without any
      * timeout right now. It is relatively easy to add one, though.
      * The only problem is that this might be an upload of a _large_ file,
-     * if so the upload could take an hour or more. So there can be no 
+     * if so the upload could take an hour or more. So there can be no
      * sensible default timeout. The only option is to reshedule the timeout
      * for each and every read.
      *
-     * This code should probably not allocate infinite amounts of 
+     * This code should probably not allocate infinite amounts of
      * memory either...
-     * 
+     *
      * TODO: rewrite this to use a mmaped file if the size is bigger than
      * 1Mb or so.
-     * 
-     * This could cause trouble with the leftovers code below, so that 
+     *
+     * This could cause trouble with the leftovers code below, so that
      * would have to be changed as well.
      */
-    arg->res.data=realloc(arg->res.data,
-			  arg->res.body_start+arg->res.content_len);
+    arg->res.data=xrealloc(arg->res.data,
+                           arg->res.body_start+arg->res.content_len);
     while( arg->res.data_len < arg->res.body_start+arg->res.content_len)
     {
-      while(((nr = fd_read(arg->fd, arg->res.data+arg->res.data_len, 
+      while(((nr = fd_read(arg->fd, arg->res.data+arg->res.data_len,
 			   (arg->res.body_start+arg->res.content_len)-
 			   arg->res.data_len)) < 0) && errno == EINTR);
       if(nr <= 0)
@@ -246,7 +234,7 @@ static int parse(struct args *arg)
 
   arg->res.url = arg->res.data+s1+1;
   arg->res.url_len = (s2?s2:i)-s1-1;
-  
+
   {
     struct pstring h;
     h.len=0;
@@ -263,7 +251,7 @@ static int parse(struct args *arg)
     if(arg->cache->max_size && arg->res.data[0]== 'G') /* GET, presumably */
     {
       if(!aap_get_header(arg, "pragma", H_EXISTS, 0))
-	if((ce = aap_cache_lookup(arg->res.url, arg->res.url_len, 
+	if((ce = aap_cache_lookup(arg->res.url, arg->res.url_len,
 			      arg->res.host, arg->res.host_len,
 			      arg->cache,0, NULL, NULL)) && ce->data)
 	{
@@ -274,7 +262,7 @@ static int parse(struct args *arg)
 	  if((arg->res.protocol==s_http_11)
 	     ||aap_get_header(arg, "connection", H_EXISTS, 0))
 	  {
-	    return -1; 
+	    return -1;
 	  }
 #ifdef AAP_DEBUG
 	  fprintf(stderr, "Closing connection...\n");
@@ -304,8 +292,8 @@ void aap_handle_connection(struct args *arg)
     buffer_len = MAXIMUM(arg->res.data_len,8192);
     arg->res.data=0;
   }
-  else 
-    p = buffer = aap_malloc(8192);
+  else
+    p = buffer = malloc(8192);
 
   if(arg->res.leftovers && arg->res.leftovers_len)
   {
@@ -316,14 +304,14 @@ void aap_handle_connection(struct args *arg)
       return;
     }
     buffer_len = arg->res.leftovers_len;
-    MEMCPY(buffer, arg->res.leftovers, arg->res.leftovers_len);
+    memcpy(buffer, arg->res.leftovers, arg->res.leftovers_len);
     pos = arg->res.leftovers_len;
     arg->res.leftovers=0;
     if((tmp = my_memmem("\r\n\r\n", 4, buffer, pos)))
       goto ok;
     p += arg->res.leftovers_len;
   }
-  
+
   if(!buffer)
   {
     perror("AAP: Failed to allocate buffer");
@@ -366,13 +354,8 @@ void aap_handle_connection(struct args *arg)
       if(buffer_len > MAXLEN)
 	break;
 
-      buffer = realloc(buffer, buffer_len);
+      buffer = xrealloc(buffer, buffer_len);
       p = buffer+pos;
-      if(!buffer) 
-      {
-	perror("AAP: Failed to allocate memory (reading)");
-	break;
-      }
     }
   }
 
@@ -453,7 +436,7 @@ static void low_accept_loop(struct args *arg)
   ACCEPT_SIZE_T len = sizeof(arg->from);
   while(1)
   {
-    MEMCPY(arg2, arg, sizeof(struct args));
+    memcpy(arg2, arg, sizeof(struct args));
     arg2->fd = fd_accept(arg->fd, (struct sockaddr *)&arg2->from, &len);
     if(arg2->fd != -1)
     {
@@ -478,14 +461,14 @@ static void low_accept_loop(struct args *arg)
 	    e = e->next;
 	    t->next = 0;
 	    free_string(t->data);
-	    aap_free(t->url);
-	    aap_free(t);
+	    free(t->url);
+	    free(t);
 	  }
 	}
 	while(arg->log->log_head)
 	{
 	  struct log_entry *l = arg->log->log_head->next;
-	  aap_free(arg->log->log_head);
+	  free(arg->log->log_head);
 	  arg->log->log_head = l;
 	}
 
@@ -493,12 +476,12 @@ static void low_accept_loop(struct args *arg)
 	while(c && c != arg->cache) {p=c;c = c->next;}
 	if(c)
 	{
-	  if(p) 
+	  if(p)
 	    p->next = c->next;
 	  else
 	    first_cache = c->next;
 	  c->gone = 1;
-	  aap_free(c);
+	  free(c);
 	}
 
 
@@ -508,11 +491,11 @@ static void low_accept_loop(struct args *arg)
 	{
 	  if(n)    n->next = l->next;
 	  else     aap_first_log = l->next;
-	  aap_free(l);
+	  free(l);
 	}
 	mt_unlock_interpreter();
-	aap_free(arg2);
-	aap_free(arg);
+	free(arg2);
+	free(arg);
 	return; /* No more accept here.. */
       }
     }
@@ -520,10 +503,8 @@ static void low_accept_loop(struct args *arg)
 }
 
 
-static void finished_p(struct callback *foo, void *b, void *c)
+static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUSED(c))
 {
-  extern void f_low_aap_reqo__init( struct c_request_object * );
-
   aap_clean_cache();
 
   while(request)
@@ -539,7 +520,7 @@ static void finished_p(struct callback *foo, void *b, void *c)
 
     o = clone_object( request_program, 0 ); /* see requestobject.c */
     obj = (struct c_request_object *)get_storage(o, c_request_program );
-    MEMSET(obj, 0, sizeof(struct c_request_object));
+    memset(obj, 0, sizeof(struct c_request_object));
     obj->request = arg;
     obj->done_headers   = allocate_mapping( 20 );
     obj->misc_variables = allocate_mapping( 40 );
@@ -549,31 +530,36 @@ static void finished_p(struct callback *foo, void *b, void *c)
     push_object( o );
     assign_svalue_no_free(sp++, &arg->args);
 
-/*     { */
-/*       JMP_BUF recovery; */
-
-/*       free_svalue(& throw_value); */
-/*       mark_free_svalue (&throw_value); */
-
-/*       if(SETJMP(recovery)) */
-/*       { */
-/*       } */
-/*       else */
-/*       { */
-        apply_svalue(&arg->cb, 2);
-/*       } */
-/*     } */
+    apply_svalue(&arg->cb, 2);
     pop_stack();
   }
 }
 
+/*! @decl void create( Stdio.Port port, RequestProgram program, @
+ *!                    function(RequestProgram:void) request_handler, @
+ *!                    int cache_size, @
+ *!                    bool keep_log, int timeout )
+ *!
+ *! Create a new HTTPLoop.
+ *!
+ *! This will start a new thread that will listen for requests on the
+ *! port, parse them and pass on requests, instanced from the
+ *! @[program] class (which has to inherit @[RequestProgram] to the
+ *! @[request_handler] callback function.
+ *!
+ *! @[cache_size] is the maximum size of the cache, in bytes.
+ *! @[keep_log] indicates if a log of all requests should be kept.
+ *! @[timeout] if non-zero indicates a maximum time the server will wait for requests.
+ *!
+*/
 static void f_accept_with_http_parse(INT32 nargs)
 {
-/* From socket.c */
-  struct port 
+  /* From socket.c */
+  struct port
   {
     struct fd_callback_box box;
     int my_errno;
+    unsigned int immediate_cnt;
     struct svalue accept_callback;
     struct svalue id;
   };
@@ -582,21 +568,19 @@ static void f_accept_with_http_parse(INT32 nargs)
   struct object *port;
   struct svalue *fun, *cb, *program;
   struct cache *c;
-  struct args *args = LTHIS; 
+  struct args *args = LTHIS;
   get_all_args("accept_http_loop", nargs, "%o%*%*%*%i%i%i", &port, &program,
 	       &fun, &cb, &ms, &dolog, &to);
-  MEMSET(args, 0, sizeof(struct args));
+  memset(args, 0, sizeof(struct args));
   if(dolog)
   {
-    struct log *log = aap_malloc(sizeof(struct log));
-    MEMSET(log, 0, sizeof(struct log));
+    struct log *log = calloc(1, sizeof(struct log));
     mt_init(&log->log_lock);
     args->log = log;
     log->next = aap_first_log;
     aap_first_log = log;
   }
-  c = aap_malloc(sizeof(struct cache));
-  MEMSET(c, 0, sizeof(struct cache));
+  c = calloc(1, sizeof(struct cache));
   mt_init(&c->mutex);
   c->next = first_cache;
   first_cache = c;
@@ -629,48 +613,178 @@ static void f_accept_with_http_parse(INT32 nargs)
   }
 }
 
+/*! @decl array(LogEntry) log_as_array()
+ *!
+ *! Return the current log as an array of LogEntry objects.
+ */
+
+/*! @decl int log_as_commonlog_to_file(Stdio.Stream fd)
+ *!
+ *! Write the current log to the specified file in a somewhat common
+ *! commonlog format.
+ *!
+ *! Will return the number of bytes written.
+ */
+
+/*! @decl bool logp()
+ *! Returns true if logging is enabled
+ */
+
+/*! @decl int log_size()
+ *!
+ *! Returns the number of entries waiting to be logged.
+ */
+
+/*! @decl mapping(string:int) cache_status()
+ *!
+ *! Returns information about the cache.
+ *! @mapping result
+ *! @member int hits
+ *!   The number of hits since start
+ *! @member int misses
+ *!   The number of misses since start
+ *! @member int stale
+ *!   The number of misses that were stale hits, and not used
+ *! @member int size
+ *!   The total current size
+ *! @member int entries
+ *!   The number of entries in the cache
+ *! @member int max_size
+ *!   The maximum size of the cache
+ *!
+ *! @member int sent_bytes
+ *!  The number of bytes sent since the last call to cache_status
+ *!
+ *! @member int received_bytes
+ *!  The number of bytes received since the last call to cache_status
+ *!
+ *! @member int num_requests
+ *!  The number of requests received since the last call to cache_status
+ *! @endmapping
+ */
 static void f_cache_status(INT32 args)
 {
   struct cache *c = LTHIS->cache;
   pop_n_elems(args);
-  push_constant_text("hits"); 
+  push_static_text("hits");
   push_int64(c->hits);
-  push_constant_text("misses"); 
+  push_static_text("misses");
   push_int64(c->misses);
-  push_constant_text("stale"); 
+  push_static_text("stale");
   push_int64(c->stale);
-  push_constant_text("size"); 
+  push_static_text("size");
   push_int64(c->size);
-  push_constant_text("entries"); 
+  push_static_text("entries");
   push_int64(c->entries);
-  push_constant_text("max_size"); 
+  push_static_text("max_size");
   push_int64(c->max_size);
 
   /* Relative from last call */
-  push_constant_text("sent_bytes"); 
+  push_static_text("sent_bytes");
   push_int(c->sent_data);        c->sent_data=0;
-  push_constant_text("num_request"); 
+  push_static_text("num_request");
   push_int(c->num_requests);    c->num_requests=0;
-  push_constant_text("received_bytes"); 
+  push_static_text("received_bytes");
   push_int(c->received_data);c->received_data=0;
   f_aggregate_mapping( 18 );
 }
+/*! @endclass
+ */
 
+/*! @class LogEntry
+ *!
+ *! @decl int time
+ *!
+ *! @decl int sent_bytes
+ *!
+ *! @decl int received_bytes
+ *!
+ *! @decl int reply
+ *!
+ *! @decl string raw
+ *!
+ *! @decl string url
+ *!
+ *! @decl string method
+ *!
+ *! @decl string protocol
+ *!
+ *! @decl string from
+ *!
+ *! @endclass
+ */
+
+/*! @class RequestProgram
+ *!
+ *! @decl string prot
+ *!   The protocol part of the request. As an example "HTTP/1.1"
+ *!
+ *! @decl int time
+ *!   The time_t when the request arrived to the server
+ *!
+ *! @decl string raw_url
+ *!   The raw URL received, the part after the method and before the protocol.
+ *!
+ *! @decl string not_query
+ *!   The part of the URL before the first '?'.
+ *!
+ *! @decl string query
+ *!   The part of the URL after the first '?'
+ *!
+ *! @decl string rest_query
+ *!   The part of the URL after the first '?' that does not seem to be query variables.
+ *!
+ *! @decl mapping(string:string) variables;
+ *!   Parsed query variables
+ *!
+ *! @decl string client
+ *!   The user agent
+ *!
+ *! @decl string referer
+ *!   The referer header
+ *!
+ *! @decl string since
+ *!   The get-if-not-modified, if set.
+ *!
+ *! @decl string data
+ *!   Any payload that arrived with the request
+ *!
+ *! @decl mapping(string:array(string)) headers;
+ *!   All received headers
+ *!
+ *! @decl multiset(string) pragma;
+ *!   Tokenized pragma headers
+ *!
+ *! @decl Stdio.NonblockingStream my_fd
+ *!   The filedescriptor for this request.
+ *!
+ *! @decl string remoteaddr
+ *!   The remote address
+ *!
+ *! @decl string method
+ *!   The method (GET, PUT etc)
+ *!
+ *! @decl string raw
+ *!   The full request
+ *!
+ *! @decl void output(string data)
+ *!  Send @[data] directly to the remote side.
+ *!
+ *! @decl void reply( string data )
+ *! @decl void reply( string headers, Stdio.File fd, int len )
+ *! @decl void reply( int(0..0) ignore, Stdio.File fd, int len )
+ *!   Send a reply to the remote side.
+ *!   In the first case the @[data] will be sent.
+ *!   In the second case the @[headers] will be sent, then @[len] bytes from @[fd].
+ *!   In the last case @[len] bytes from @[fd] will be sent.
+ *!
+ *! @decl void reply_with_cache( string data, int(1..) stay_time )
+ *!  Send @[data] as the reply, and keep it as a cache entry to
+ *!  requests to this URL for @[stay_time] seconds.
+ *!
+ *! @endclass
+ */
 #endif /* _REENTRANT */
-
-void f_aap_add_filesystem( INT32 args )
-{
-  INT_TYPE nosyms = 0;
-  struct pike_string *basedir, *mountpoint;
-  struct array *noparse;
-
-  if(args == 4)
-    get_all_args( "add_filesystem", args, 
-                  "%s%s%a%i", &basedir, &mountpoint, &noparse, &nosyms );
-  else
-    get_all_args( "add_filesystem", args, 
-                  "%s%s%a", &basedir, &mountpoint, &noparse );
-}
 
 
 PIKE_MODULE_INIT
@@ -691,41 +805,22 @@ PIKE_MODULE_INIT
 #endif
 
   start_new_program();
-#ifdef ADD_STORAGE
   ADD_STORAGE(struct args);
-#else
-  add_storage(sizeof(struct args));
-#endif
-  add_function("create", f_accept_with_http_parse, 
+  add_function("create", f_accept_with_http_parse,
 	       "function(object,program,function,mixed,int,int,int:void)", 0);
   add_function("cache_status", f_cache_status,"function(void:mapping)", 0);
   add_function("log_as_array",f_aap_log_as_array,"function(void:array(object))",0);
-  add_function("log_as_commonlog_to_file", f_aap_log_as_commonlog_to_file, 
+  add_function("log_as_commonlog_to_file", f_aap_log_as_commonlog_to_file,
 	       "function(object:int)", 0);
 
   add_function("log_size", f_aap_log_size, "function(void:int)", 0);
   add_function("logp", f_aap_log_exists, "function(void:int)", 0);
 
-#if 0
-  add_function( "add_filesystem", f_aap_add_filesystem, 
-                "function(string,string,array(string),int|void:void)", 0);
-  add_function( "add_contenttype", f_aap_add_contenttype, 
-                "function(strign,string:void)", 0);
-#ifdef FS_STATS
-  add_function( "filesystem_stats", f_filesystem_stats,
-                "function(void:mapping)", 0);
-#endif
-#endif
-
   add_program_constant("Loop", accept_loop_program = end_program(), 0);
 
   start_new_program();
 #define OFFSET(X) (offset + OFFSETOF(log_object,X))
-#ifdef ADD_STORAGE
   offset=ADD_STORAGE(struct log_object);
-#else
-  offset=add_storage(sizeof(struct log_object));
-#endif
   map_variable("time", "int", 0, OFFSET(time), T_INT);
   map_variable("sent_bytes", "int", 0, OFFSET(sent_bytes), T_INT);
   map_variable("reply", "int", 0, OFFSET(reply), T_INT);
@@ -735,37 +830,32 @@ PIKE_MODULE_INIT
   map_variable("method", "string", 0, OFFSET(method), T_STRING);
   map_variable("protocol", "string", 0, OFFSET(protocol), T_STRING);
   map_variable("from", "string", 0, OFFSET(from), T_STRING);
-  add_program_constant("logentry", (aap_log_object_program=end_program()), 0);
+  add_program_constant("LogEntry", (aap_log_object_program=end_program()), 0);
 
 
   start_new_program();
-#ifdef ADD_STORAGE
   ADD_STORAGE(struct c_request_object);
-#else
-  add_storage(sizeof(struct c_request_object));
-#endif
-
   add_function("`[]", f_aap_index_op, "function(string:mixed)",0);
   add_function("`->", f_aap_index_op, "function(string:mixed)",0);
 
 /* add_function("`->=", f_index_equal_op, "function(string,mixed:mixed)",0); */
 /* add_function("`[]=", f_index_equal_op, "function(string,mixed:mixed)",0); */
 
-  add_function("scan_for_query", f_aap_scan_for_query, 
+  add_function("scan_for_query", f_aap_scan_for_query,
 	       "function(string:string)", OPT_TRY_OPTIMIZE);
 
   add_function("end", f_aap_end, "function(string|void,int|void:void)", 0);
   add_function("send", f_aap_output, "function(string:void)", 0);
   add_function("reply", f_aap_reply,
 	       "function(string|void,object|void,int|void:void)", 0);
-  add_function("reply_with_cache", f_aap_reply_with_cache, 
+  add_function("reply_with_cache", f_aap_reply_with_cache,
 	       "function(string,int:void)", 0);
   set_init_callback( aap_init_request_object );
   set_exit_callback( aap_exit_request_object );
   add_program_constant("prog", (c_request_program = end_program()), 0);
+  add_program_constant("RequestProgram", c_request_program, 0 );
 #else
-  if(!TEST_COMPAT(7,6))
-    HIDE_MODULE();
+  HIDE_MODULE();
 #endif /* _REENTRANT */
 }
 
@@ -773,7 +863,7 @@ PIKE_MODULE_EXIT
 {
 #ifdef _REENTRANT
   struct log *log = aap_first_log;
-  /* This is very dangerous, since the 
+  /* This is very dangerous, since the
    * accept threads are still going strong.
    */
 
@@ -796,7 +886,7 @@ PIKE_MODULE_EXIT
    * be in read() or something similar. Also, the locking of aap_timeout_mutex
    * above disables the timeout, so they might linger in read() indefinately.
    * Thus, we cannot free _all_ structures, only the ones that are always
-   * protected by mutexes. Most notably, we must leave the main 'log' and 
+   * protected by mutexes. Most notably, we must leave the main 'log' and
    * 'cache' structures alive. We can, on the other hand, free all data _in_
    * the cache and log structures.
    */
@@ -810,7 +900,7 @@ PIKE_MODULE_EXIT
       while(log_head)
       {
 	struct log_entry *l = log_head->next;
-	aap_free(log_head);
+	free(log_head);
 	log_head = l;
       }
       log->next = NULL;
@@ -836,8 +926,8 @@ PIKE_MODULE_EXIT
 	e = e->next;
 	t->next = 0;
         free_string(t->data);
-	aap_free(t->url);
-	aap_free(t);
+	free(t->url);
+	free(t);
       }
       first_cache->htable[i]=0;
     }
@@ -845,8 +935,8 @@ PIKE_MODULE_EXIT
     first_cache = next;
   }
 
-  /* This will free all the string constants. It might be dangerous, 
-   * but should not be so. No thread should enter the pike level code 
+  /* This will free all the string constants. It might be dangerous,
+   * but should not be so. No thread should enter the pike level code
    * again, since all mutex locks are now locked.
    */
 #define STRING(X,Y) free_string(X)
@@ -862,3 +952,4 @@ PIKE_MODULE_EXIT
   free_program(accept_loop_program);
 #endif /* _REENTRANT */
 }
+/*! @endmodule */

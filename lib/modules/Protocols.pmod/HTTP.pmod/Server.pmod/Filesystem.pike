@@ -19,7 +19,7 @@ void create(Filesystem.Base _fs,
 void got_request(Protocols.HTTP.Server.Request rid)
 {
    Filesystem.Stat st=fs->stat(rid->not_query);
-   if (st && st->isreg())
+   if (st && st->isreg)
    {
       Stdio.File f=fs->open(rid->not_query,"r");
       if (f)

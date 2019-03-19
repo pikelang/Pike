@@ -8,11 +8,11 @@ struct buffer
 
   int read_only;
   /* If 1, the buffer cannot be written to (data points to str->str) */
-  
+
   unsigned int allocated_size;
   /* The actual allocated size */
 
-  unsigned char *data;
+  char *data;
 
   struct pike_string *str;
   /* Used when read_only==1, to save memory. Data points to str->str,
@@ -57,17 +57,17 @@ void wf_buffer_set_pike_string( struct buffer *b, struct pike_string *data,
 
 void wf_buffer_wbyte( struct buffer *b,  unsigned char s );
 /* Write a byte to the buffer.
- * read_only must be 0 
+ * read_only must be 0
  */
 
 void wf_buffer_wshort( struct buffer *b, unsigned short s );
-/* Write a (16 bit) short to the buffer. 
- * read_only must be 0 
+/* Write a (16 bit) short to the buffer.
+ * read_only must be 0
  */
 
 void wf_buffer_wint( struct buffer *b,   unsigned int s );
 /* Write a (32 bit) int to the buffer.
- * read_only must be 0 
+ * read_only must be 0
  */
 
 int wf_buffer_rbyte( struct buffer *b );
@@ -91,16 +91,16 @@ int wf_buffer_eof( struct buffer *b );
 void wf_buffer_seek( struct buffer *b, unsigned int pos );
 /* Move the read position to pos. if pos is greater than or equal the
  * size of the buffer, read_pos is moved to the end of the buffer
- * instead. 
+ * instead.
  */
 
 void wf_buffer_seek_w( struct buffer *b, unsigned int pos );
 /* Set the write position to pos. If pos is greater than the current
  * size of the buffer, the data segment created is zeroed.
  */
-  
+
 void wf_buffer_append( struct buffer *b, char *data, int size );
-/* Append the specified data to the buffer. 
+/* Append the specified data to the buffer.
  * read_only must be 0.
  */
 
@@ -118,5 +118,3 @@ void wf_buffer_rewind_w( struct buffer *b, int n );
 /* Subtract n from size.
  * If n == -1, the size is set to 0.
  */
-
-

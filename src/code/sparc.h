@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -83,6 +82,9 @@ extern const unsigned INT32 sparc_flush_instruction_cache[];
    (ADDR, (LEN)+sizeof(PIKE_OPCODE_T)))
 
 struct dynamic_buffer_s;
+
+#define MACHINE_CODE_FORCE_FP()	sparc_force_fp()
+int sparc_force_fp(void);
 
 void sparc_encode_program(struct program *p, struct dynamic_buffer_s *buf);
 void sparc_decode_program(struct program *p);

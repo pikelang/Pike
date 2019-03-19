@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -35,10 +34,10 @@
     SET_REG64(11, (func_+32768)&~0xffff);	\
     if ((func_ &= 0xffff) > 32767)		\
       func_ -= 65536;				\
-    /* ld r0,%lo(func)(r11) */			\
-    LD(0, 11, func_);				\
-    /* ld r2,%lo(func+8)(r11) */		\
-    LD(2, 11, func_+8);				\
+    /* ldu r0,%lo(func)(r11) */			\
+    LDU(0, 11, func_);				\
+    /* ld r2,%8(r11) */				\
+    LD(2, 11, 8);				\
     /* mtlr r0 */				\
     MTSPR(0, PPC_SPREG_LR);			\
     /* blrl */					\
@@ -106,7 +105,7 @@ void ppc64_push_svalue(int reg, INT32 offs, int force_reftype)
       STD(0, PPC_REG_PIKE_SP, e);
     }
   }
- 
+
   /* ld r0,offs(r) */
   LD(0, reg, offs);
   /* ld r11,refs+offs(r) */
@@ -115,23 +114,23 @@ void ppc64_push_svalue(int reg, INT32 offs, int force_reftype)
   STD(0, PPC_REG_PIKE_SP, 0);
   if(!force_reftype) {
 #if PIKE_BYTEORDER == 1234
-    /* rldicl r0,r0,0,48 */
-    RLDICL(0, 0, 0, 48);
+    /* rldicl r0,r0,61,51 */
+    RLDICL(0, 0, 61, 51);
 #else
-    /* rldicl r0,r0,16,48 */
-    RLDICL(0, 0, 16, 48);
+    /* rldicl r0,r0,13,51 */
+    RLDICL(0, 0, 13, 51);
 #endif
   }
   /* std r11,refs(pike_sp) */
   STD(11, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.refs));
   if(!force_reftype) {
-    /* cmplwi r0,MAX_REF_TYPE */
-    CMPLI(0, 0, MAX_REF_TYPE);
+    /* cmplwi r0,MIN_REF_TYPE>>3 */
+    CMPLI(0, 0, MIN_REF_TYPE>>3);
   }
   INCR_SP_REG(sizeof(struct svalue));
   if(!force_reftype) {
-    /* bgt bork */
-    BC(12, 1, 4);
+    /* bne bork */
+    BC(4, 2, 4);
   }
   /* lwz r0,0(r11) */
   LWZ(0, 11, 0);
@@ -151,7 +150,7 @@ void ppc64_push_constant(INT32 arg)
    * Note: The constants table may contain UNDEFINED in case of being
    *       called through decode_value() in PORTABLE_BYTECODE mode.
    */
-  if((sval->type > MAX_REF_TYPE) && !sval->subtype) {
+  if(!REFCOUNTED_TYPE(TYPEOF(*sval)) && !SUBTYPEOF(*sval)) {
     int e;
     INT64 last=0;
 
@@ -165,7 +164,7 @@ void ppc64_push_constant(INT32 arg)
       STD(0, PPC_REG_PIKE_SP, e);
     }
 
-    INCR_SP_REG(sizeof(struct svalue));  
+    INCR_SP_REG(sizeof(struct svalue));
 
     return;
   }
@@ -187,7 +186,7 @@ void ppc64_push_constant(INT32 arg)
       offs -= 65536;
   }
 
-  ppc64_push_svalue(PPC_REG_ARG1, offs, (sval->type <= MAX_REF_TYPE));
+  ppc64_push_svalue(PPC_REG_ARG1, offs, !!REFCOUNTED_TYPE(TYPEOF(*sval)));
 }
 
 void ppc64_push_local(INT32 arg)
@@ -227,7 +226,7 @@ void ppc64_local_lvalue(INT32 arg)
   STW(0, PPC_REG_PIKE_SP, sizeof(struct svalue));
   /* stw r3,u.lval(pike_sp) */
   STD(PPC_REG_ARG1, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.lval));
-  INCR_SP_REG(sizeof(struct svalue)*2);  
+  INCR_SP_REG(sizeof(struct svalue)*2);
 }
 
 void ppc64_push_global(INT32 arg)
@@ -236,7 +235,7 @@ void ppc64_push_global(INT32 arg)
   /* ld r5,context(pike_fp) */
   LD(PPC_REG_ARG3, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context));
   /* ld r4,current_object(pike_fp) */
-  LD(PPC_REG_ARG2, PPC_REG_PIKE_FP, 
+  LD(PPC_REG_ARG2, PPC_REG_PIKE_FP,
      OFFSETOF(pike_frame, current_object));
   /* lha r5,identifier_level(r5) */
   LHA(PPC_REG_ARG3, PPC_REG_ARG3, OFFSETOF(inherit, identifier_level));
@@ -250,7 +249,7 @@ void ppc64_push_global(INT32 arg)
     /* mr r3,pike_sp */
     ORI(PPC_REG_ARG1, PPC_REG_PIKE_SP, 0);
   } else {
-    /* ld r3,stack_pointer(pike_interpreter) */ 
+    /* ld r3,stack_pointer(pike_interpreter) */
     LD(PPC_REG_ARG1, PPC_REG_PIKE_INTERP,
        OFFSETOF(Pike_interpreter_struct, stack_pointer));
   }
@@ -286,7 +285,7 @@ void ppc64_push_int(INT32 x, int s)
   if(x != MAKE_TYPE_WORD(PIKE_T_INT, s))
     SET_REG32(0, MAKE_TYPE_WORD(PIKE_T_INT, s));
   STW(0, PPC_REG_PIKE_SP, 0);
-  INCR_SP_REG(sizeof(struct svalue));  
+  INCR_SP_REG(sizeof(struct svalue));
 }
 
 void ppc64_push_string(INT32 arg, int st)
@@ -295,7 +294,7 @@ void ppc64_push_string(INT32 arg, int st)
 
   LOAD_FP_REG();
   LOAD_SP_REG();
-  
+
   /* ld r11,context(pike_fp) */
   LD(11, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context));
   /* ld r11,prog(r11) */
@@ -314,7 +313,7 @@ void ppc64_push_string(INT32 arg, int st)
 
   /* ld r11,offs(r11) */
   LD(11, 11, offs);
-  
+
   SET_REG32(0, 0);
   if(sizeof(struct svalue) > 16)
   {
@@ -341,7 +340,7 @@ void ppc64_push_string(INT32 arg, int st)
   /* stw r0,0(r11) */
   STW(0, 11, 0);
 
-  INCR_SP_REG(sizeof(struct svalue));  
+  INCR_SP_REG(sizeof(struct svalue));
 }
 
 void ppc64_mark(void)
@@ -421,15 +420,15 @@ void ins_f_byte(unsigned int b)
    case F_CONST0 - F_OFFSET:
      ppc64_push_int(0, 0);
      return;
-     
+
    case F_CONST1 - F_OFFSET:
      ppc64_push_int(1, 0);
      return;
-     
+
    case F_CONST_1 - F_OFFSET:
      ppc64_push_int(-1, 0);
      return;
-     
+
   case F_MAKE_ITERATOR - F_OFFSET:
     {
       SET_REG32(PPC_REG_ARG1, 1);
@@ -583,7 +582,7 @@ INT32 ppc64_ins_f_jump(unsigned int a, int backward_jump)
     if(pos_)
       Pike_compiler->new_program->program[pos_-1] += 4*(PIKE_PC-pos_);
   }
-  ret=DO_NOT_WARN( (INT32) PIKE_PC );
+  ret=(INT32) PIKE_PC;
   /* b . */
   B(0);
   return ret;
@@ -713,7 +712,7 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 {
   /*
     Short forms of multicharacter opcode forms:
-    
+
     F = XFX
     G = XFL
     L = XL
@@ -725,7 +724,7 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
     E = DS
   */
   static const char *opname[] = {
-    NULL, NULL, "Dtdi", "Dtwi", NULL, NULL, NULL, "Dmulli", 
+    NULL, NULL, "Dtdi", "Dtwi", NULL, NULL, NULL, "Dmulli",
     "Dsubfic", NULL, "Dcmpli", "Dcmpi", "Daddic", "Daddic.", "Daddi", "Daddis",
     NULL, "Ssc", NULL, NULL, "Mrlwimi", "Mrlwinm", NULL, "Mrlwnm",
     "Dori", "Doris", "Dxori", "Dxoris", "Dandi.", "Dandis.", NULL, NULL,
@@ -859,7 +858,7 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 	int h;
 	xo = (instr>>1)&1023;
 	h = (xo^119)%19;
-	instr_name = (xo == opxo_19[h]? opname_19[h]:NULL);	
+	instr_name = (xo == opxo_19[h]? opname_19[h]:NULL);
       }
       break;
     case 30: /* 64 bit rotate, MD or MDS form */
@@ -901,11 +900,12 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
       case 4:
 	h = (xo^98)%26;
 	instr_name = (xo == opxo_31_100[h]? opname_31_100[h]:NULL);
-	if(instr & (1<<20))
+	if(instr & (1<<20)) {
 	  if(xo == 144)
 	    instr_name = "Fmtocrf";
 	  else if(xo == 19)
 	    instr_name = "Fmfocrf";
+	}
 	break;
       case 5:
 	h = (xo^67)%99;
@@ -1071,7 +1071,7 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 	  if((xo & 479)==274)
 	    fprintf(stderr, "%s r%d,%d\n", instr_name,
 		    (instr>>11)&31, (instr>>21)&1);
-	  else (xo & 32)
+	  else if(xo & 32)
 	    fprintf(stderr, "%s r%d\n", instr_name, (instr>>11)&31);
 	  else if(xo == 595)
 	    fprintf(stderr, "%s r%d,%d\n", instr_name,
@@ -1099,7 +1099,7 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 	/* Maybe pretty-print BO/BI/BH here? */
 	fprintf(stderr, "%s%s %d,%d,%d\n", instr_name, ((instr&1)? "l":""),
 		(instr>>21)&31, (instr>>16)&31, (instr>>11)&3);
-      else if(xo&1) 
+      else if(xo&1)
 	fprintf(stderr, "%s crb%d,crb%d,crb%d\n", instr_name,
 		(instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
       else

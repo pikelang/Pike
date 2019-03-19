@@ -1,217 +1,86 @@
 #pike __REAL_VERSION__
 #pragma strict_types
-// $Id$
+#require constant(Nettle.Fortuna)
 
-//! This module contains stuff to that tries to give you the
-//! best possible random generation.
+//! This module contains a pseudo random number generator (PRNG)
+//! designed to give you the best possible random number generation.
+//! The current design is based on the Fortuna PRNG, but uses the
+//! system random source as input.
 
-#if constant(Nettle) && constant(Nettle.Yarrow)
+protected class RND
+{
+  inherit Nettle.Fortuna;
 
+  protected function(int:string(8bit)) source;
+
+  protected void create()
+  {
 #if constant(Nettle.NT)
-
-class Source {
-  protected Nettle.NT.CryptContext ctx;
-
-  protected void create(int(0..1) no_block) {
-    ctx = Nettle.NT.CryptContext(0, 0, Nettle.NT.PROV_RSA_FULL,
-				 Nettle.NT.CRYPT_VERIFYCONTEXT );
-    no_block;	// Fix warning.
-  }
-
-  string read(int bytes) {
-    return ctx->read(bytes);
-  }
-}
-
+    source = Nettle.NT.CryptContext(0, 0, Nettle.NT.PROV_RSA_FULL,
+                                    Nettle.NT.CRYPT_VERIFYCONTEXT )->read;
 #else
-
-class Source {
-  protected Stdio.File f;
-  protected string data = "";
-  protected int factor = 2; // Assume 50% entropy
-
-  protected void create(int(0..1) no_block) {
-    Stdio.File tmp = Stdio.File();
-    if(no_block) {
-      if (tmp->open ("/dev/urandom", "r") && tmp->stat()->ischr)
-	f = tmp;
-    }
-    else {
-      if (tmp->open ("/dev/random", "r") && tmp->stat()->ischr) {
-	if (Stdio.Stat s = file_stat("/dev/urandom"))
-	  if (s->ischr)
-	    factor = 1;
-	f = tmp;
-      }
-      else if (tmp->open ("/dev/urandom", "r") && tmp->stat()->ischr)
-	f = tmp;
-    }
-  }
-
-  string read(int bytes) {
-    bytes *= factor;
-    if(f) return f->read(bytes);
-    bytes *= 4;
-    while(sizeof(data)<bytes)
-      data += get_data();
-    string ret = data[..bytes-1];
-    data = data[bytes..];
-    return ret;
-  }
-
-  protected string get_data() {
-    Stdio.File f = Stdio.File();
-    Stdio.File child_pipe = f->pipe();
-    if(!child_pipe) error("Could not generate random data.\n");
-
-    // Attempt to generate some entropy by running some
-    // statistical commands.
-    mapping(string:string) env = [mapping(string:string)]getenv() + ([
-      "PATH":"/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin",
-    ]);
-    mapping(string:mixed) modifiers = ([
-      "stdin":Stdio.File("/dev/null", "rw"),
-      "stdout":child_pipe,
-      "stderr":child_pipe,
-      "env":env,
-    ]);
-    foreach(({ ({ "last", "-256" }),
-	       ({ "arp", "-a" }),
-	       ({ "netstat", "-anv" }), ({ "netstat", "-mv" }),
-	       ({ "netstat", "-sv" }),
-	       ({ "uptime" }),
-	       ({ "ps", "-fel" }), ({ "ps", "aux" }),
-	       ({ "vmstat", "-f" }), ({ "vmstat", "-s" }),
-	       ({ "vmstat", "-M" }),
-	       ({ "iostat" }), ({ "iostat", "-t" }),
-	       ({ "iostat", "-cdDItx" }),
-	       ({ "ipcs", "-a" }),
-	       ({ "pipcs", "-a" }),
-    }), array(string) cmd) {
-      catch {
-	Process.create_process(cmd, modifiers);
-      };
-    }
-    child_pipe->close();
-    destruct(child_pipe);
-    data = f->read();
-    f->close();
-  }
-}
-
+    source = Stdio.File("/dev/urandom")->read;
 #endif
 
-protected class RND {
-  inherit Nettle.Yarrow;
-  protected int bytes_left = 32;
-
-  protected Source s;
-
-  protected int last_tick;
-  protected function(void:int) ticker;
-
-  protected void create(int(0..1) no_block) {
-    // Source 0: /dev/random or CryptGenRandom
-    // Source 1: ticker
-    // Source 2: external
-    ::create(3);
-    s = Source(no_block);
-    seed( s->read(min_seed_size()) );
-
-#if constant(System.rdtsc)
-    ticker = System.rdtsc;
-#elif constant(gethrtime)
-    ticker = gethrtime;
-#else
-    ticker = time;
-#endif
+    // random_string() is either seeded with time and PID in the
+    // master, or outputs data from RDRND. Both of these are
+    // (partially) independent from /dev/urandom, which gives some
+    // protection against a /dev/urandom exploit.
+    reseed(source(32)+predef::random_string(32));
   }
 
-  protected Thread.Mutex lock = Thread.Mutex();
-
-  string random_string(int len) {
-    object key = lock->lock();
-    return low_random_string(len);
-    key = 0;	// Fix warning.
+  System.Timer last_seed = System.Timer();
+  void reseed(string(8bit)data)
+  {
+    last_seed->get();
+    ::reseed(data);
   }
 
-  string low_random_string(int len) {
-    String.Buffer buf = String.Buffer(len);
-    int new_tick = ticker();
-    update( (string)(new_tick-last_tick), 1, 1 );
-    last_tick = new_tick;
-
-    while(len) {
-      int pass = min(len, bytes_left);
-      buf->add( ::random_string(pass) );
-      bytes_left -= pass;
-      len -= pass;
-      if(bytes_left - pass <= 0) {
-	update( s->read(32), 0, 256 );
-	bytes_left += 32;
-      }
-    }
-    return (string)buf;
+  string(8bit) random_string(int len)
+  {
+    // The original Fortuna design has an entropy pool reseeding the
+    // generator when enough external events have been collected, but
+    // not more often than every 100 ms. Since we are pulling entropy
+    // rather than having it pushed, we do it if more than 100 ms has
+    // passed since last call.
+    //
+    // An alternative here would be to asynchronously pull data every
+    // 100 ms to hide entropy consumption from an external obserer,
+    // but that requires a backend, and is likely a waste of effort.
+    if( last_seed->peek()>0.1 )
+      reseed(source(32));
+    return ::random_string(len);
   }
 }
 
-protected string rnd_bootstrap(int len) {
-  rnd_obj = RND(1);
-  rnd_func = rnd_obj->random_string;
-  return rnd_func(len);
-}
+protected RND rnd_obj = RND();
+protected function(int:string(8bit)) rnd_func = rnd_obj->random_string;
 
-protected RND rnd_obj;
-protected function(int:string) rnd_func = rnd_bootstrap;
-
-protected string rnd_block_bootstrap(int len) {
-  rnd_block_obj = RND(0);
-  rnd_block_func = rnd_block_obj->random_string;
-  return rnd_block_func(len);
-}
-
-protected RND rnd_block_obj;
-protected function(int:string) rnd_block_func = rnd_block_bootstrap;
-
-//! Returns a string of length @[len] with random content. The
-//! content is generated by a Yarrow random generator that is
-//! constantly updated with output from /dev/random on UNIX and
-//! CryptGenRandom on NT. The Yarrow random generator is fed
-//! at least the amount of random data from its sources as it
-//! outputs, thus doing its best to give at least good pseudo-
-//! random data on operating systems with bad /dev/random.
-string random_string(int len) {
+//! Returns a string of length @[len] with random content. The content
+//! is generated by a Fortuna random generator that is updated with
+//! output from /dev/urandom on UNIX and CryptGenRandom on NT.
+string(8bit) random_string(int len) {
   return rnd_func(len);
 }
 
 //! Returns a @[Gmp.mpz] object with a random value between @expr{0@}
 //! and @[top]. Uses @[random_string].
 Gmp.mpz random(int top) {
-  return [object(Gmp.mpz)]( Gmp.mpz(rnd_func( (int)ceil( log((float)top)/
-							 log(2.0) ) ),
+  return [object(Gmp.mpz)]( Gmp.mpz(rnd_func( (int)ceil(Math.log2(top)) ),
 				    256) % top);
 }
 
-//! Works as @[random_string], but may block in order to gather enough
-//! entropy to make a truely random output. Using this function is
-//! probably overkill for about all applications.
-string blocking_random_string(int len) {
-  return rnd_block_func(len);
-}
-
-//! Inject additional entropy into the random generator.
+//! Inject additional entropy into the random generator. One possible
+//! use is to persist random data between executions of an
+//! application. The internal state is approximately 256 bits, so
+//! storing 32 bytes from @[random_string()] at shutdown and injecting
+//! them through @[add_entropy()] agan at startup should carry over
+//! the entropy. Note that this doesn't affect the independent
+//! initialization that happens in the generator at startup, so the
+//! output sequence will be different than if the application had
+//! continued uninterrupted.
 //! @param data
 //!   The random string.
-//! @param entropy
-//!   The number of bits in the random string that is
-//!   truely random.
-void add_entropy(string data, int entropy) {
-  if(rnd_obj)
-    rnd_obj->update(data, 2, entropy);
-  if(rnd_block_obj)
-    rnd_block_obj->update(data, 2, entropy);
+void add_entropy(string(8bit) data) {
+  rnd_obj->reseed(data);
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

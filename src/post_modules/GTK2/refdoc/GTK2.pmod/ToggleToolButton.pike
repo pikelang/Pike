@@ -7,7 +7,7 @@
 
 inherit GTK2.ToolButton;
 
-static GTK2.ToggleToolButton create( string|mapping stock_id );
+protected GTK2.ToggleToolButton create( string|mapping stock_id );
 //! Creates a new toggle tool button, with or without
 //! a stock id.
 //!

@@ -25,6 +25,7 @@ signal can_undo;
 signal highlight_updated;
 signal marker_updated;
 
+not gtksourceview20;
 void create(GTK2.SourceTagTable|GTK2.SourceLanguage|void table_or_lang)
 //! Creates a new source buffer.  If table_or_lang is a GTK2.SourceLanguage,
 //! it will create a buffer using the highlighting patterns of that language.
@@ -53,7 +54,36 @@ void create(GTK2.SourceTagTable|GTK2.SourceLanguage|void table_or_lang)
   pgtk2_pop_n_elems(args);
   pgtk2__init_this_object();
 }
+endnot;
+require gtksourceview20;
+void create(GTK2.TextTagTable|GTK2.SourceLanguage|void table_or_lang)
+//! Create a new SourceBuffer.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    struct object *o1;
+    GtkSourceBuffer *gs;
+    get_all_args("create",args,"%o",&o1);
+    if (G_TYPE_FROM_INSTANCE(get_gobject(o1))==GTK_TYPE_TEXT_TAG_TABLE) {
+      gs=gtk_source_buffer_new(
+			GTK_TEXT_TAG_TABLE(get_gobject(o1)));
+    } else {
+      gs=gtk_source_buffer_new_with_language(
+			GTK_SOURCE_LANGUAGE(get_gobject(o1)));
+    }
+    THIS->obj=G_OBJECT(gs);
+  } else {
+    GtkSourceBuffer *gs;
+    gs=gtk_source_buffer_new(NULL);
+    THIS->obj=G_OBJECT(gs);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+endrequire;
 
+not gtksourceview20;
 int get_check_brackets();
 //! Determines whether bracket match highlighting is activated.
 
@@ -97,12 +127,12 @@ void set_bracket_match_style(mapping(string:mixed) style)
       sts->mask=PGTK_GETINT(sv);
     sv=low_mapping_string_lookup(m,_STR("foreground"));
     if (sv) {
-      if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+      if (TYPEOF(*sv) == PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
 	sts->foreground=*(GdkColor *)get_gdkobject(sv->u.object,color);
     }
     sv=low_mapping_string_lookup(m,_STR("background"));
     if (sv) {
-      if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+      if (TYPEOF(*sv) == PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
 	sts->background=*(GdkColor *)get_gdkobject(sv->u.object,color);
     }
     sv=low_mapping_string_lookup(m,_STR("italic"));
@@ -139,6 +169,7 @@ void set_highlight(int setting);
 //! If not using a GTK2.SourceLanguage for setting the highlighting patterns in
 //! the buffer, it is recommended for performance reasons that you add all the
 //! GTK2.SourceTag tags with highlighting disabled and enable it when finished.
+endnot;
 
 int get_max_undo_levels();
 //! Determines the number of undo levels the buffer will track for buffer edits.
@@ -173,6 +204,7 @@ void set_language(GTK2.SourceLanguage lang);
 //! set_escape_char().  Note that this will remove any GTK2.SourceTag tags
 //! currently in the buffer's tag table.
 
+not gtksourceview20;
 int get_escape_char();
 //! Determines the escaping character used by the source buffer highlighting
 //! engine.
@@ -186,6 +218,7 @@ void set_escape_char(int escape_char);
 //! embedded.
 //! <p>
 //! This setting affects only syntax patterns.
+endnot;
 
 int can_undo();
 //! Determines whether a source buffer can undo the last action.
@@ -218,6 +251,7 @@ void end_not_undoable_action();
 //! undoable block is closed through a call to this function, the list of undo
 //! actions is cleared and the undo manager is re-enabled.
 
+not gtksourceview20;
 GTK2.SourceMarker create_marker(string name, string type, GTK2.TextIter where)
 //! Creates a marker in the buffer of type type.  A marker is semantically very
 //! similar to a GTK2.TextMark, except it has a type which is used by the
@@ -246,7 +280,7 @@ GTK2.SourceMarker create_marker(string name, string type, GTK2.TextIter where)
     struct object *o1;
     GtkSourceMarker *gm;
     INT_TYPE g;
-    if (Pike_sp[-args].type==PIKE_T_INT)
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
       get_all_args("create_marker",args,"%i%s%o",&g,&type,&o1);
     else
       get_all_args("create_marker",args,"%s%s%o",&name,&type,&o1);
@@ -419,3 +453,4 @@ GTK2.SourceMarker get_prev_marker(GTK2.TextIter iter)
       push_int(0);
   }
 }
+endnot;

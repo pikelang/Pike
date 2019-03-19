@@ -29,7 +29,7 @@ GTK2.SourcePrintJob cancel( );
 //!
 //!
 
-static GTK2.SourcePrintJob create( GTK2.SourceBuffer buffer );
+protected GTK2.SourcePrintJob create( GTK2.SourceBuffer buffer );
 //! Creates a new print job object.
 //!
 //!

@@ -1,0 +1,230 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*! @module HPack
+ *!
+ *! Implementation of the HPACK (@rfc{7541@}) header packing standard.
+ *!
+ *! This is the header packing system that is used in HTTP/2 (@rfc{7540@}).
+ */
+
+#include "global.h"
+
+#include "svalue.h"
+#include "interpret.h"
+#include "module.h"
+
+#include "huffman-tab.h"
+
+DECLARATIONS;
+
+#undef ASSERT
+#ifdef PIKE_DEBUG
+#define ASSERT(X)	do {				\
+    if (!(X)) {						\
+      Pike_fatal("%s:%d: Assertion failed: %s.\n",	\
+		 __FILE__, __LINE__, TOSTR(X));		\
+    }							\
+  } while(0)
+#else
+#define ASSERT(X)	0
+#endif
+
+/*! @decl string(8bit) huffman_encode(string(8bit) str)
+ *!
+ *! Encodes the string @[str] with the static huffman code specified
+ *! in @rfc{7541:B@}.
+ *!
+ *! @param str
+ *!   String to encode.
+ *!
+ *! @returns
+ *!   Returns the encoded string.
+ *!
+ *! @seealso
+ *!   @[huffman_decode()].
+ */
+PIKEFUN string(8bit) huffman_encode(string(8bit) str)
+{
+  unsigned char *inbytes = STR0(str);
+  unsigned char *outbytes;
+  unsigned INT32 huffbuf = 0;
+  unsigned INT32 huffbits = 0;
+  size_t total_bits = 0;
+  struct pike_string *res;
+  ptrdiff_t i;
+
+  for (i = str->len; i--;) {
+    total_bits += pack_tab[inbytes[i]].bits;
+  }
+  res = begin_shared_string((total_bits + 7)>>3);
+  outbytes = STR0(res);
+  for (i = 0; i < str->len; i++, inbytes++) {
+    const struct huffentry *entry = &pack_tab[*inbytes];
+    huffbuf |= entry->code >> huffbits;
+    huffbits += entry->bits;
+    if (huffbits > 7) {
+      if (UNLIKELY(huffbits > 32)) {
+	/* Buffer overflow. Maximum number of needed bits is 37. */
+	*outbytes = huffbuf>>24;
+	huffbuf <<= 8;
+	huffbits -= 8;
+	outbytes++;
+	if (huffbits >= entry->bits) {
+	  huffbuf |= entry->code >> (huffbits - entry->bits);
+	} else {
+	  huffbuf |= entry->code << (entry->bits - huffbits);
+	}
+      }
+      while (huffbits > 7) {
+	*outbytes = huffbuf>>24;
+	huffbuf <<= 8;
+	huffbits -= 8;
+	outbytes++;
+      }
+    }
+  }
+  if (huffbits) {
+    /* Pad with the most significant bits of EOS (ie ~0). */
+    *outbytes = (huffbuf >> 24) | (0xff >> (huffbits & 7));
+    outbytes++;
+  }
+  ASSERT(outbytes == (STR0(res) + res->len));
+  pop_stack();
+  push_string(end_shared_string(res));
+}
+
+static const struct huffentry *find_huffentry(unsigned INT32 huffbuf)
+{
+  const struct huffentry *entry;
+  unsigned int code = (huffbuf >> 24) & 0xff;
+  int low = unpack_index[code];
+  int high = unpack_index[code+1];
+  while (1) {
+    int m = (low + high)>>1;
+    if (m == low) break;
+    entry = &unpack_tab[m];
+    if (entry->code > huffbuf) high = m;
+    else low = m;
+  }
+  if (UNLIKELY(low == 255) && UNLIKELY(huffbuf & 4)) {
+    /* Invalid encoding. EOS in stream. */
+    return NULL;
+  }
+  return &unpack_tab[low];
+}
+
+/*! @decl string(8bit) huffman_decode(string(8bit) str)
+ *!
+ *! Decodes the string @[str] encoded with the static huffman code specified
+ *! in @rfc{7541:B@}.
+ *!
+ *! @param str
+ *!   String to decode.
+ *!
+ *! @returns
+ *!   Returns the decoded string.
+ *!
+ *! @seealso
+ *!   @[huffman_encode()].
+ */
+PIKEFUN string(8bit) huffman_decode(string(8bit) str)
+{
+  unsigned char *inbytes = STR0(str);
+  struct string_builder out;
+  unsigned INT_TYPE huffbuf = 0;
+  unsigned INT32 huffbits = 0;
+  ptrdiff_t i;
+
+  init_string_builder(&out, 0);
+
+  for (i = 0; i < str->len; i++, inbytes++) {
+    unsigned INT_TYPE c = *inbytes;
+    huffbits += 8;
+    huffbuf |= c << ((sizeof(huffbuf)<<3) - huffbits);
+    if (huffbits > ((sizeof(huffbuf)-1)<<3)) {
+      /* Try to extract some characters. */
+      while(1) {
+	unsigned INT32 huffkey = huffbuf >> ((sizeof(huffbuf)-4)<<3);
+	const struct huffentry *entry = find_huffentry(huffkey);
+	if (UNLIKELY(!entry) || (entry->bits > huffbits)) {
+	  /* More bits needed. */
+	  break;
+	}
+	ASSERT(entry->code == (huffkey & ~((1<<(32 - entry->bits))-1)));
+	string_builder_putchar(&out, entry->sym);
+	huffbuf <<= entry->bits;
+	huffbits -= entry->bits;
+	if (huffbits < 5) break;
+      }
+
+#if (SIZEOF_INT_TYPE < 5)
+      if (UNLIKELY(huffbits > 24)) {
+	/* We need to read more bits than will fit in huffbuf. */
+	const struct huffentry *entry;
+	unsigned INT32 lostbits = huffbits - 24;
+	inbytes++;
+	i++;
+
+	if (UNLIKELY(i >= str->len)) break;
+
+	c = *inbytes;
+	huffbuf |= c >> lostbits;
+	huffbits = 32;
+	entry = find_huffentry(huffbuf);
+	if (UNLIKELY(!entry)) break;
+	ASSERT(entry->code == (huffbuf & ~((1<<(32 - entry->bits))-1)));
+	string_builder_putchar(&out, entry->sym);
+	huffbits -= entry->bits - lostbits;
+	huffbuf = c << (32 - huffbits);
+      }
+#endif /* SIZEOF_INT_TYPE < 5 */
+    }
+  }
+
+  while (huffbits) {
+    unsigned INT32 huffkey;
+    const struct huffentry *entry;
+    huffbuf |= ((unsigned INT_TYPE)~0) >> huffbits;
+    if (huffbuf == (unsigned INT_TYPE)~0) {
+      /* EOS */
+      huffbits = 0;
+      break;
+    }
+    if (huffbits < 5) break;
+    huffkey = huffbuf >> ((sizeof(huffbuf)-4)<<3);
+    entry = find_huffentry(huffkey);
+    if (UNLIKELY(!entry) || (entry->bits > huffbits)) {
+      /* BAD */
+      break;
+    }
+    ASSERT(entry->code == (huffkey & ~((1<<(32 - entry->bits))-1)));
+    string_builder_putchar(&out, entry->sym);
+    huffbuf <<= entry->bits;
+    huffbits -= entry->bits;
+  }
+  if (huffbits) {
+    /* Invalid encoding. */
+    free_string_builder(&out);
+    Pike_error("Invalid huffman encoding.\n");
+  }
+
+  pop_stack();
+  push_string(finish_string_builder(&out));
+}
+
+/*! @endmodule
+ */
+
+PIKE_MODULE_INIT
+{
+  INIT;
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+}

@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
+#require constant(Nettle.ARCFOUR)
 
 //! Arcfour is a stream cipher, also known under the trade marked name
 //! RC4, and it is one of the fastest ciphers around. A problem is
@@ -10,14 +11,4 @@
 //! and you want to use Arcfour, always hash the key before feeding it
 //! to Arcfour.
 
-#if constant(Nettle) && constant(Nettle.ARCFOUR_Info)
-
-// NOTE: Depends on the order of INIT invocations.
-inherit Nettle.ARCFOUR_Info;
-inherit .Cipher;
-
-.CipherState `()() { return Nettle.ARCFOUR_State(); }
-
-#else
-constant this_program_does_not_exist=1;
-#endif
+inherit Nettle.ARCFOUR;

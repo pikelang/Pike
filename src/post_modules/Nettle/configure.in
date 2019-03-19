@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -7,11 +6,11 @@ AC_SET_MAKE
 AC_MODULE_INIT()
 
 if test "$with_nettle" = "no"; then
-  PIKE_FEATURE_WITHOUT(nettle)
+  PIKE_FEATURE_WITHOUT(Nettle)
 else
-  AC_CHECK_LIB(gmp, mpz_init)
-  AC_CHECK_LIB(gmp, __mpz_init)
-  AC_CHECK_LIB(gmp, __gmpz_init)
+  dnl GMP is required and tested for in Gmp module. We just want LIBS
+  dnl updated here.
+  AC_CHECK_LIB(gmp, main)
   AC_MSG_CHECKING(CryptAcquireContext in -ladvapi32)
   AC_CACHE_VAL(pike_cv_nettle_advapi32_CryptAcquireContext,
   [
@@ -31,18 +30,59 @@ else
   if test x"$pike_cv_nettle_advapi32_CryptAcquireContext" = xyes; then
     LIBS="-ladvapi32 $LIBS"
   fi
-  AC_CHECK_LIB(nettle, nettle_md5_init)
-  AC_CHECK_LIB(nettle, md5_init)
+  AC_CHECK_LIB(nettle, nettle_ctr_crypt) dnl CTR came in Nettle 1.13
+  AC_CHECK_LIB(hogweed, nettle_rsa_generate_keypair)
+  if test "x$ac_cv_lib_hogweed_nettle_rsa_generate_keypair" = "xyes" ; then
+    AC_MSG_CHECKING([if nettle_*_generate_keypair takes qbits])
+    AC_CACHE_VAL(pike_cv_nettle_hogweed_keypair_args, [
+      pike_cv_nettle_hogweed_keypair_args=no
+      AC_TRY_COMPILE([
+#include <nettle/dsa.h>
+#include <nettle/rsa.h>
+     ], [
+  struct dsa_public_key pub;
+  struct dsa_private_key key;
+  nettle_dsa_generate_keypair(&pub, &key, 0, 0, 0, 0, 2048, 384);
+      ], [
+        pike_cv_nettle_hogweed_keypair_args=yes
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_nettle_hogweed_keypair_args);
+    if test "x$pike_cv_nettle_hogweed_keypair_args" = "xyes"; then
+      AC_DEFINE(HAVE_DSA_QBITS_KEYPAIR_ARG, [], [Define if generate_dsa_keypair takes the qbits argument])
+    fi
+  fi
 
   AC_SUBST(IDEA_OBJ)
 
-  if test "x$ac_cv_lib_nettle_nettle_md5_init" = "xyes" -o \
-          "x$ac_cv_lib_nettle_md5_init" = "xyes"; then
+  if test "x$ac_cv_lib_nettle_nettle_ctr_crypt" = "xyes"; then
     PIKE_FEATURE_OK(Nettle)
 
-    # md4 is available in later versions of nettle
-    AC_CHECK_HEADERS(nettle/md4.h)
-    AC_CHECK_FUNCS(nettle_md4_init)
+    # camellia is available in Nettle 2.1 and later.
+    # gcm is available in Nettle 2.2 and later.
+    # ripemd160 is available in Nettle 2.3 and later.
+    # sha3 and gosthash94 are available in Nettle 2.6 and later.
+    # chacha, poly1305 and eax are available in Nettle 3.0 and later.
+    AC_CHECK_HEADERS(nettle/camellia.h \
+		     nettle/gcm.h \
+		     nettle/ripemd160.h \
+		     nettle/sha3.h nettle/gosthash94.h \
+		     nettle/chacha.h nettle/chacha-poly1305.h \
+		     nettle/poly1305.h nettle/eax.h \
+                     nettle/dsa.h nettle/umac.h nettle/ecdsa.h \
+		    )
+    # Check that the libraries match.
+    #
+    # Note that there can be false positives in the test above
+    # when multiple versions of Nettle are installed concurrently.
+    AC_CHECK_FUNCS(nettle_camellia128_crypt \
+		   nettle_gcm_encrypt \
+		   nettle_ripemd160_init \
+		   nettle_sha3_256_init nettle_gosthash94_init \
+		   nettle_chacha_crypt nettle_chacha_poly1305_encrypt \
+		   nettle_poly1305_digest nettle_eax_encrypt \
+		   nettle_dsa_sign nettle_umac128_digest nettle_ecdsa_sign \
+		   )
 
     AC_MSG_CHECKING([for idea.c])
     # Have the patent-encumbered idea files been purged?
@@ -55,39 +95,27 @@ else
       IDEA_OBJ=""
     fi
 
-    # These might have been purged from the Nettle lib to avoid GPL
+    # These may have been purged from the Nettle lib to avoid GPL
     # contamination.
     AC_CHECK_FUNCS(nettle_blowfish_decrypt nettle_serpent_decrypt)
 
     # This is the recomended interface in Nettle 2.0.
     AC_CHECK_FUNCS(nettle_yarrow256_slow_reseed)
 
-    AC_MSG_CHECKING([for struct yarrow256_ctx.seed_file])
-    AC_CACHE_VAL(pike_cv_nettle_struct_yarrow256_ctx_seed_file, [
-      pike_cv_nettle_struct_yarrow256_ctx_seed_file=no
-      AC_TRY_COMPILE([
-#include <nettle/yarrow.h>
-      ], [
-  struct yarrow256_ctx ctx;
-  return !sizeof(ctx.seed_file);
-      ], [
-        pike_cv_nettle_struct_yarrow256_ctx_seed_file=yes
-      ])
-    ])
-    AC_MSG_RESULT($pike_cv_nettle_struct_yarrow256_ctx_seed_file);
-    if test "x$pike_cv_nettle_struct_yarrow256_ctx_seed_file" = "xyes"; then
-      AC_DEFINE(HAVE_STRUCT_YARROW256_CTX_SEED_FILE)
-    fi
+    # nettle_salsa20_crypt was added in Nettle 2.5.
+    # nettle_sha224_init was added in Nettle 2.1.
+    # nettle_memxor3 replaced memxor3 in Nettle 3.0
+    AC_CHECK_FUNCS(nettle_salsa20_crypt nettle_sha224_init \
+		   memxor3 nettle_memxor3)
 
+    # This was added in Nettle 3.0.
+    AC_CHECK_FUNCS(nettle_ecc_bit_size)
+
+    # nettle_crypt_func was changed in Nettle 2.0.
     AC_MSG_CHECKING([whether nettle_crypt_func is a pointer type])
     AC_CACHE_VAL(pike_cv_nettle_crypt_func_is_pointer, [
       pike_cv_nettle_crypt_func_is_pointer=no
       AC_TRY_COMPILE([
-/* Note: Old Nettles had the nettle_crypt_func typedef directly
- *       in <nettle/nettle-meta.h> while more modern have it in
- *       <nettle/nettle-types.h>. Since <nettle/nettle-meta.h>
- *       pulls in <nettle/nettle-types.h> it should be sufficient.
- */
 #include <nettle/nettle-meta.h>
       ], [
   nettle_crypt_func foo = (nettle_crypt_func)(void *)0;
@@ -101,24 +129,14 @@ else
       AC_DEFINE(HAVE_NETTLE_CRYPT_FUNC_IS_POINTER)
     fi
   else
-    if test "$ac_cv_lib_gmp_mpz_init:$ac_cv_lib_gmp___mpz_init:$ac_cv_lib_gmp___gmpz_init" = "no:no:no"; then
-      # No gmp found; enable it if possible.
-      PIKE_ENABLE_BUNDLE(gmp, [
-	ac_cv_lib_gmp_mpz_init
-	ac_cv_lib_gmp___mpz_init
-	ac_cv_lib_gmp___gmpz_init
-      ])
-    fi
-    PIKE_ENABLE_BUNDLE(nettle, [
-      ac_cv_lib_nettle_nettle_md5_init
-      ac_cv_lib_nettle_md5_init
-    ], [Cannot compile --with-nettle without the Nettle library.
-It is highly recommended that you install a working Nettle library on
-your system as that will add features to Pike required by many
-applications. These features include ciphers, hash algorithms and
-random generators. If you know that you do not need cryptographic
-functions, you can re-run configure with the option --without-nettle
-instead. Nettle is available at http://www.lysator.liu.se/~nisse/nettle/.
+    AC_ERROR([Cannot compile --with-nettle without the Nettle library.
+It is highly recommended that you install a working Nettle, 1.13 or
+later, library on your system as that will add features to Pike
+required by many applications. These features include ciphers, hash
+algorithms and random generators. If you know that you do not need
+cryptographic functions, you can re-run configure with the option
+--without-nettle instead. Nettle is available at
+http://www.lysator.liu.se/~nisse/nettle/.
     ])
     PIKE_FEATURE_NODEP(Nettle)
   fi

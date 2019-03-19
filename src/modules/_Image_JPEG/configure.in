@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(jpeglib,     [  --with(out)-jpeglib       Support JPEG (Image.JPEG)],[],[with_jpeglib=yes])
@@ -14,7 +11,7 @@ if test x$with_jpeglib = xyes ; then
   AC_CHECK_HEADERS(windows.h wtypes.h jpeglib.h jconfig.h)
   if test $ac_cv_header_jpeglib_h = yes ; then
     AC_CHECK_LIB(jpeg, jpeg_CreateCompress, [
-      AC_DEFINE(HAVE_LIBJPEG) 
+      AC_DEFINE(HAVE_LIBJPEG)
       LIBS="${LIBS-} -ljpeg"
       PIKE_FEATURE_OK(Image.JPEG)
 
@@ -103,5 +100,3 @@ oui
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

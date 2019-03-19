@@ -1,0 +1,14 @@
+/*.cmod.compiled
+/Makefile
+/config.log
+/config.status
+/configure
+/dependencies
+/hpack.c
+/hpack_config.h.in
+/huffman-tab.h
+/make_variables
+/pike_hpack.feature
+/propagated_variables
+/stamp-h
+/stamp-h.in

@@ -33,7 +33,7 @@ array c2w( int cx, int cy );
 //!
 //!
 
-static Gnome2.Canvas create( int|void anti_alias );
+protected Gnome2.Canvas create( int|void anti_alias );
 //! Create a new Gnome2.Canvas widget.  Set anti_alias to true to create
 //! a canvas in antialias mode.
 //!

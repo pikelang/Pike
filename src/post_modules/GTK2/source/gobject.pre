@@ -7,6 +7,7 @@ class G.Object;
 signal notify;
 
 void destroy()
+//! Destroy this object. This is the normal way to (eg) close a window.
 {
   if (THIS->obj)
     g_object_unref(THIS->obj);
@@ -43,12 +44,13 @@ mixed get_property(string property)
 
 
 int signal_connect(string signal, function callback, mixed|void callback_arg,
-		   string|void detail)
-//! int signal_connect(string signal, function callback, mixed ... args)
+		   string|void detail,int|void connect_before)
 //! Connect a signal to a pike function.  The function will be called with
-//! the last argument to this function as it's first argument (defaults to 0),
-//! the second argument is always the widget, and any other arguments are the
-//! ones supplied by GTK.
+//! the last argument to this function as its last argument (defaults to 0);
+//! the first argument is always the widget, and any other arguments are the
+//! ones supplied by GTK. If connect_before is nonzero, the callback will be
+//! called prior to the normal handling of the signal (and can return true
+//! to suppress that handling), otherwise it will be called after.
 //! <p>
 //! The return value of this function can be used to remove a signal with
 //! signal_disconnect(), and block and unblock the signal with signal_block()
@@ -61,12 +63,13 @@ int signal_connect(string signal, function callback, mixed|void callback_arg,
   GClosure *gc;
   GQuark det;
   char *detail=NULL;
+  int connect_before=0;
 
   if (args==2) {
     push_int(0);
     args++;
   }
-  get_all_args("signal_connect",args,"%s%*%*.%s",&a,&tmp1,&tmp2,&detail);
+  get_all_args("signal_connect",args,"%s%*%*.%s%d",&a,&tmp1,&tmp2,&detail,&connect_before);
 
   b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
   if (b==NULL)
@@ -89,7 +92,7 @@ int signal_connect(string signal, function callback, mixed|void callback_arg,
   else
     det=0;
   id=g_signal_connect_closure_by_id(G_OBJECT(THIS->obj),b->signal_id,det,
-				gc,1);
+				gc,!connect_before);
   pgtk2_pop_n_elems(args);
   push_int(id);
 }
@@ -153,7 +156,7 @@ void signal_emit(string signal_name, string|void detail)
       GValue *params;
       GValue rvalue={0};
 
-      params = alloca (opts->n_params+1);
+      params = alloca(sizeof(GValue)*(opts->n_params+1));
       memset(params,0,sizeof(GValue)*(opts->n_params+1)); 
       g_value_init(params+0,G_TYPE_FROM_INSTANCE(THIS->obj));
       g_value_set_object(params+0,G_OBJECT(THIS->obj));
@@ -209,13 +212,13 @@ int new_signal(string name, array types, string return_type)
       }
       if (is_same_string(ret_type_name,_STR("void"))) {
 	return_type=G_TYPE_NONE;
-      } else if (is_same_string(ret_type_name,_STR("int"))) {
+      } else if (ret_type_name == literal_int_string) {
 	return_type=G_TYPE_INT;
-      } else if (is_same_string(ret_type_name,_STR("float"))) {
+      } else if (ret_type_name == literal_float_string) {
 	return_type=G_TYPE_DOUBLE;
-      } else if (is_same_string(ret_type_name,_STR("string"))) {
+      } else if (ret_type_name == literal_string_string) {
 	return_type=G_TYPE_STRING;
-      } else if (is_same_string(ret_type_name,_STR("object"))) {
+      } else if (ret_type_name == literal_object_string) {
 	return_type=G_TYPE_OBJECT;
       } else {
 	return_type=G_TYPE_POINTER;
@@ -230,16 +233,16 @@ int new_signal(string name, array types, string return_type)
       for (i=n_params=0; i<a->size; i++) {
 	if (TYPEOF(ITEM(a)[i]) != PIKE_T_STRING)
 	  continue;
-	if (is_same_string(ITEM(a)[i].u.string,_STR("int"))) {
+	if (ITEM(a)[i].u.string == literal_int_string) {
 	  param_types[n_params]=G_TYPE_INT;
 	  n_params++;
-	} else if (is_same_string(ITEM(a)[i].u.string,_STR("float"))) {
+	} else if (ITEM(a)[i].u.string == literal_float_string) {
 	  param_types[n_params]=G_TYPE_DOUBLE;
 	  n_params++;
-	} else if (is_same_string(ITEM(a)[i].u.string,_STR("string"))) {
+	} else if (ITEM(a)[i].u.string == literal_string_string) {
 	  param_types[n_params]=G_TYPE_STRING;
 	  n_params++;
-	} else if (is_same_string(ITEM(a)[i].u.string,_STR("object"))) {
+	} else if (ITEM(a)[i].u.string == literal_object_string) {
 	  param_types[n_params]=G_TYPE_OBJECT;
 	  n_params++;
 	} else {
@@ -257,6 +260,15 @@ int new_signal(string name, array types, string return_type)
       g_free(name);
     }
   }
+}
+
+void signal_stop(string signal_name)
+//! Stop the emission of a signal.
+{
+  char *s;
+  get_all_args("signal_stop",args,"%s",&s);
+  gtk_signal_emit_stop_by_name(GTK_OBJECT(THIS->obj),s);
+  RETURN_THIS();
 }
 
 void notify(string property);
@@ -290,15 +302,11 @@ endrequire;
 string get_docs()
 //! Get documentation on object
 {
-  struct svalue *sv;
-
-  sv=pgtk2_get_doc(G_OBJECT(THIS->obj),0);
-  push_svalue(sv);
-  free_svalue(sv);
+  pgtk2_get_doc(G_OBJECT(THIS->obj), NULL);
 }
 
 %{
-int pgtk2_object_destroy_data(gpointer data) {
+void pgtk2_object_destroy_data(gpointer data) {
   struct svalue *sv=(struct svalue *)data;
   free_svalue(sv);
   g_free(sv);
@@ -306,7 +314,11 @@ int pgtk2_object_destroy_data(gpointer data) {
 %}
 
 object set_data(string name, mixed arg)
-//! Gets a named field from the object.
+//! Each object carries around a table of associations from strings to
+//! pointers. This function lets you set an association.
+//!
+//! If the object already had an association with that name, the old
+//! association will be destroyed.
 {
   pgtk2_verify_inited();
   {
@@ -316,17 +328,14 @@ object set_data(string name, mixed arg)
     get_all_args("set_data",args,"%s%*",&name,&sv);
     sv1=(struct svalue *)g_malloc(sizeof(struct svalue));
     assign_svalue_no_free(sv1,sv);
-    g_object_set_data_full(G_OBJECT(THIS->obj),name,(void *)sv1,(GDestroyNotify)pgtk2_object_destroy_data);
+    g_object_set_data_full(G_OBJECT(THIS->obj), name, (void *)sv1,
+			   pgtk2_object_destroy_data);
   }
   RETURN_THIS();
 }
 
 object get_data(string name)
-//! Each object carries around a table of associations from strings to
-//! pointers. This function lets you set an association. 
-//!
-//! If the object already had an association with that name, the old
-//! association will be destroyed.
+//! Gets a named field from the object.
 {
   pgtk2_verify_inited();
   {
@@ -336,6 +345,6 @@ object get_data(string name)
     get_all_args("get_data",args,"%s",&name);
     sv=(struct svalue *)g_object_get_data(G_OBJECT(THIS->obj),name);
     pop_n_elems(args);
-    push_svalue(sv);
+    if (sv) push_svalue(sv); else push_undefined();
   }
 }

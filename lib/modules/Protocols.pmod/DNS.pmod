@@ -1,18 +1,40 @@
-// $Id$
 // Not yet finished -- Fredrik Hubinette
 
   //inherit Stdio.UDP : udp;
-//! RFC 1034, RFC 1035 and RFC 2308
-  protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp);
+
+//! Support for the Domain Name System protocol.
+//!
+//! Implements @rfc{1034@}, @rfc{1035@} and @rfc{2308@}.
+
+protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp);
 
 #pike __REAL_VERSION__
 
+// documentation taken from RFC 2136
+
+//! No error condition.
 final constant NOERROR=0;
+
+//! The name server was unable to interpret the request due to a
+//! format error.
 final constant FORMERR=1;
+
+//! The name server encountered an internal failure while processing
+//! this request, for example an operating system error or a
+//! forwarding timeout.
 final constant SERVFAIL=2;
+
+//! Some name that ought to exist, does not exist.
 final constant NXDOMAIN=3;
+
+//! The name server does not support the specified Opcode.
 final constant NOTIMPL=4;
+
+//! The name server refuses to perform the specified operation for
+//! policy or security reasons.
 final constant REFUSED=5;
+
+//! Some RRset that ought to exist, does not exist.
 final constant NXRRSET=8;
 
 final constant QUERY=0;
@@ -57,19 +79,20 @@ enum EntryType
   //! Type - start of a zone of authority
   T_SOA=6,
 
-  //! Type - mailbox domain name (EXPERIMENTAL)
+  //! Type - mailbox domain name (Obsolete)
   T_MB=7,
 
-  //! Type - mail group member (EXPERIMENTAL)
+  //! Type - mail group member (Obsolete)
   T_MG=8,
 
-  //! Type - mail rename domain name (EXPERIMENTAL)
+  //! Type - mail rename domain name (Obsolete)
   T_MR=9,
 
-  //! Type - null RR (EXPERIMENTAL)
+  //! Type - null RR (Obsolete @rfc{1035@})
   T_NULL=10,
 
-  //! Type - well known service description
+  //! Type - well known service description (Obsolete @rfc{1123@} and
+  //! @rfc{1127@})
   T_WKS=11,
 
   //! Type - domain name pointer
@@ -78,7 +101,7 @@ enum EntryType
   //! Type - host information
   T_HINFO=13,
 
-  //! Type - mailbox or mail list information
+  //! Type - mailbox or mail list information (Obsolete)
   T_MINFO=14,
 
   //! Type - mail exchange
@@ -87,24 +110,211 @@ enum EntryType
   //! Type - text strings
   T_TXT=16,
 
-  //! Type - IPv6 address record (RFC 1886, deprecated) 
+  //! Type - Responsible Person
+  T_RP=17,
+
+  //! Type - AFC database record (@rfc{1183@})
+  T_AFSDB=18,
+
+  //! Type - X25 PSDN address (@rfc{1183@})
+  T_X25=19,
+
+  //! Type - ISDN address (@rfc{1183@})
+  T_ISDN=20,
+
+  //! Type - Route Through (@rfc{1183@})
+  T_RT=21,
+
+  //! Type - OSI Network Service Access Protocol (@rfc{1348@},
+  //! @rfc{1637@} and @rfc{1706@})
+  T_NSAP=22,
+
+  //! Type - OSI NSAP Pointer (@rfc{1348@} and Obsolete @rfc{1637@})
+  T_NSAP_PTR=23,
+
+  //! Type - Signature (@rfc{2535@})
+  T_SIG=24,
+
+  //! Type - Key record (@rfc{2535@} and @rfc{2930@})
+  T_KEY=25,
+
+  //! Type - Pointer to X.400 mapping information (@rfc{1664@})
+  T_PX=26,
+
+  //! Type - Global Position (@rfc{1712@} Obsolete use LOC).
+  T_GPOS=27,
+
+  //! Type - IPv6 address record (@rfc{1886@})
   T_AAAA=28,
 
-  //! Type - Location Record (RFC 1876)
+  //! Type - Location Record (@rfc{1876@})
   T_LOC=29,
 
-  //! Type - Service location record (RFC 2782)
+  //! Type - Next (@rfc{2065@} and Obsolete @rfc{3755@})
+  T_NXT=30,
+
+  //! Type - Nimrod Endpoint IDentifier (draft)
+  T_EID=31,
+
+  //! Type - Nimrod Locator (draft)
+  T_NIMLOC=32,
+
+  //! Type - Service location record (@rfc{2782@})
   T_SRV=33,
 
-  //! Type - NAPTR (RFC 3403)
+  //! Type - ATM End System Address (af-saa-0069.000)
+  T_ATMA=34,
+
+  //! Type - NAPTR (@rfc{3403@})
   T_NAPTR=35,
 
-  //! Type - IPv6 address record (RFC 2874, incomplete support)
+  //! Type - Key eXchanger record (@rfc{2230@})
+  T_KX=36,
+
+  //! Type - Certificate Record (@rfc{4398@})
+  T_CERT=37,
+
+  //! Type - IPv6 address record (@rfc{2874@} and Obsolete @rfc{6563@})
   T_A6=38,
 
-  //! Type - SPF - Sender Policy Framework (RFC 4408)
+  //! Type - Delegation Name (@rfc{2672@})
+  T_DNAME=39,
+
+  //! Type - Kitchen Sink (draft)
+  T_SINK=40,
+
+  //! Type - Option (@rfc{2671@})
+  T_OPT=41,
+
+  //! Type - Address Prefix List (@rfc{3123@})
+  T_APL=42,
+
+  //! Type - Delegation Signer (@rfc{4034@})
+  T_DS=43,
+
+  //! Type - SSH Public Key Fingerprint (@rfc{4255@})
+  T_SSHFP=44,
+
+  //! Type - IPsec Key (@rfc{4025@})
+  T_IPSECKEY=45,
+
+  //! Type - DNSSEC signature (@rfc{4034@})
+  T_RRSIG=46,
+
+  //! Type - Next-Secure record (@rfc{4034@})
+  T_NSEC=47,
+
+  //! Type - DNS Key record (@rfc{4034@})
+  T_DNSKEY=48,
+
+  //! Type - DHCP identifier (@rfc{4701@})
+  T_DHCID=49,
+
+  //! Type - NSEC record version 3 (@rfc{5155@})
+  T_NSEC3=50,
+
+  //! Type - NSEC3 parameters (@rfc{5155@})
+  T_NSEC3PARAM=51,
+
+  //! Type - TLSA certificate association (@rfc{6698@})
+  T_TLSA=52,
+
+  //! Type - Host Identity Protocol (@rfc{5205@})
+  T_HIP=55,
+
+  //! Type - SPF - Sender Policy Framework (@rfc{4408@})
   T_SPF=99,
+
+  // UserDB via DNS?
+  T_UINFO=100,
+  T_UID=101,
+  T_GID=102,
+  T_UNSPEC=103,
+
+  //! Type - Secret key record (@rfc{2930@})
+  T_TKEY=249,
+
+  //! Type - Transaction Signature (@rfc{2845@})
+  T_TSIG=250,
+
+  //! Type - Incremental Zone Transfer (@rfc{1996@})
+  T_IXFR=251,
+
+  //! Type - Authoritative Zone Transfer (@rfc{1035@})
+  T_AXFR=252,
+
+  //! Type - Mail Box (MB, MG or MR) (Obsolete - use MX)
+  T_MAILB=253,
+
+  //! Type - Mail Agent (both MD and MF) (Obsolete - use MX)
+  T_MAILA=254,
+
+  //! Type - ANY - A request for all records
+  T_ANY=255,
+
+  //! Type - Certificate Authority Authorization (@rfc{6844@})
+  T_CAA=257,
+
+  //! Type - DNSSEC Trust Authorities (draft)
+  T_TA=32768,
+
+  //! Type - DNSSEC Lookaside Validation Record (@rfc{4431@})
+  T_DLV=32769,
 };
+
+//! Flag bits used in @[T_DNSKEY] RRs.
+enum DNSKEY_Flags {
+  F_ZONEKEY		= 0x0100,	//! Zone Key.
+  F_SECUREENTRYPOINT	= 0x0001,	//! Secure Entry Point.
+};
+
+//! DNSSEC Protocol types.
+//!
+//! @note
+//!   @rfc{4034@} obsoleted all but @[DNSSEC_DNSSEC].
+enum DNSSEC_Protocol {
+  DNSSEC_TLS		= 1,	//! Reserved for use by TLS.
+  DNSSEC_EMAIL		= 2,	//! Reserved for use by SMTP et al.
+  DNSSEC_DNSSEC		= 3,	//! Key for use by DNSSEC. @rfc{4034:2.1.2@}.
+  DNSSEC_IPSEC		= 4,	//! Reserved for use by IPSEC.
+  DNSSEC_ALL		= 255,	//! Any use. Discouraged.
+};
+
+//! DNSSEC Algorithm types.
+enum DNSSES_Algorithm {
+  DNSSEC_RSAMD5		= 1,	//! RSA/MD5 @rfc{2537@}.
+  DNSSEC_DH		= 2,	//! Diffie-Hellman @rfc{2539@}.
+  DNSSEC_DSA		= 3,	//! DSA/SHA1 @rfc{2536@}.
+  DNSSEC_ECC		= 4,
+  DNSSEC_RSASHA1	= 5,	//! RSA/SHA1 @rfc{3110@}.
+
+  DNSSEC_INDIRECT	= 252,
+  DNSSEC_PRIVATEDNS	= 253,	//! Private algorithm DNS-based @rfc{4035:A.1.1@}.
+  DNSSEC_PRIVATEOID	= 254,	//! Private algorithm OID-based @rfc{4035:A.1.1@}.
+};
+
+//! DNSSEC Digest types.
+enum DNSSEC_Digests {
+  DNSSEC_SHA1		= 1,	//! SHA1 digest @rfc{4035:A.2@}.
+};
+
+int safe_bind(Stdio.UDP udp, string|int port, string|void device)
+{
+  mixed err = catch {
+      udp->bind(port, device, 1);
+      return 1;
+    };
+#if constant(System.EADDRINUSE)
+  if (errno() == System.EADDRINUSE) return 0;
+#endif
+#if constant(System.WSAEACCES)
+  if (errno() == System.WSAEACCES) return 0;
+#endif
+  werror("Protocols.DNS: Binding of UDP port failed with errno %d: %m.\n",
+         errno());
+  master()->handle_error(err);
+  return 0;
+}
 
 //! Low level DNS protocol
 class protocol
@@ -113,7 +323,7 @@ class protocol
   {
     if(sizeof(s)>63)
       error("Too long component in domain name.\n");
-    return sprintf("%c%s",sizeof(s),s);
+    return sprintf("%1H",s);
   }
 
   protected private string mkname(string|array(string) labels, int pos,
@@ -162,8 +372,7 @@ class protocol
      case T_MX:
        return sprintf("%2c", entry->preference)+mkname(entry->mx, pos+2, c);
      case T_HINFO:
-       return sprintf("%1c%s%1c%s", sizeof(entry->cpu||""), entry->cpu||"",
-		      sizeof(entry->os||""), entry->os||"");
+       return sprintf("%1H%1H", entry->cpu||"", entry->os||"");
      case T_MINFO:
        string rmailbx = mkname(entry->rmailbx, pos, c);
        return rmailbx + mkname(entry->emailbx, pos+sizeof(rmailbx), c);
@@ -174,6 +383,13 @@ class protocol
        return sprintf("%@1c", (array(int))((entry->a||"0.0.0.0")/".")[0..3]);
      case T_AAAA:
        return make_raw_addr6(entry->aaaa);
+     case T_A6:
+       if( stringp( entry->a6 ) || !entry->a6 )
+         return "\0"+make_raw_addr6(entry->a6);
+       return sprintf( "%c%s%s",
+                       entry->a6->prefixlen,
+                       make_raw_addr6(entry->a6->address)[entry->a6->prefixlen/8..],
+                       entry->a6->prefixname||"");
      case T_SOA:
        string mname = mkname(entry->mname, pos, c);
        return mname + mkname(entry->rname, pos+sizeof(mname), c) +
@@ -181,23 +397,23 @@ class protocol
 		 entry->retry, entry->expire, entry->minimum);
      case T_NAPTR:
        string rnaptr = sprintf("%2c%2c", entry->order, entry->preference);
-       rnaptr += sprintf("%1c%s%1c%s%1c%s%s",
-			 sizeof(entry->flags || ""), entry->flags || "",
-			 sizeof(entry->service || ""), entry->service || "",
-			 sizeof(entry->regexp || ""), entry->regexp || "",
+       rnaptr += sprintf("%1H%1H%1H%s",
+			 entry->flags || "",
+			 entry->service || "",
+			 entry->regexp || "",
 			 mkname(entry->replacement, pos, c));
        return rnaptr;
 
      case T_TXT:
-       return Array.map(stringp(entry->txt)? ({entry->txt}):(entry->txt||({})),
-			lambda(string t) {
-			  return sprintf("%1c%s", sizeof(t), t);
-			})*"";
+       return map(stringp(entry->txt)? ({entry->txt}):(entry->txt||({})),
+                  lambda(string t) {
+                    return sprintf("%1H", t);
+                  })*"";
      case T_SPF:
-       return Array.map(stringp(entry->spf)? ({entry->spf}):(entry->spf||({})),
-			lambda(string t) {
-			  return sprintf("%1c%s", sizeof(t), t);
-			})*"";
+       return map(stringp(entry->spf)? ({entry->spf}):(entry->spf||({})),
+                  lambda(string t) {
+                    return sprintf("%1H", t);
+                  })*"";
      case T_LOC:
        // FIXME: Not implemented yet.
      default:
@@ -214,7 +430,7 @@ class protocol
 	sprintf("%2c%2c%4c", entry->type, entry->cl, entry->ttl);
       pos += sizeof(e)+2;
       string rd = entry->rdata || mkrdata(entry, pos, comp);
-      res += e + sprintf("%2c", sizeof(rd)) + rd;
+      res += e + sprintf("%2H", rd);
       pos += sizeof(rd);
     }
     return res;
@@ -256,21 +472,21 @@ class protocol
 			     "qd":(["name":dname, "cl":cl, "type":type])]));
   }
 
-//! create a DNS query PDU
-//! 
-//! @param dnameorquery
-//! @param cl
-//!   record class such as Protocols.DNS.C_IN
-//! @param type
-//!  query type such Protocols.DNS.T_A
-//!
-//! @returns
-//!  data suitable for use with 
-//!  @[Protocols.DNS.client.do_sync_query]
-//!
-//! @example
-//! // generate a query PDU for a address lookup on the hostname pike.lysator.liu.se
-//! string q=Protocols.DNS.protocol()->mkquery("pike.lysator.liu.se", Protocols.DNS.C_IN, Protocols.DNS.T_A);
+  //! create a DNS query PDU
+  //!
+  //! @param dnameorquery
+  //! @param cl
+  //!   record class such as Protocols.DNS.C_IN
+  //! @param type
+  //!   query type such Protocols.DNS.T_A
+  //!
+  //! @returns
+  //!  data suitable for use with
+  //!  @[Protocols.DNS.client.do_sync_query]
+  //!
+  //! @example
+  //! // generate a query PDU for a address lookup on the hostname pike.lysator.liu.se
+  //! string q=Protocols.DNS.protocol()->mkquery("pike.lysator.liu.se", Protocols.DNS.C_IN, Protocols.DNS.T_A);
   string mkquery(string|mapping dnameorquery, int|void cl, int|void type)
   {
     if(mappingp(dnameorquery))
@@ -281,27 +497,29 @@ class protocol
 
   string decode_domain(string msg, array(int) n)
   {
-    array(string) domains=({});
-    
     int pos=n[0];
     int next=-1;
     array(string) ret=({});
+    int labels = 0;
     while(pos < sizeof(msg))
     {
+      labels++;
+      if (labels > 255)
+        error("Bad domain name. Too many labels.\n");
       switch(int len=msg[pos])
       {
 	case 0:
 	  if(next==-1) next=pos+1;
 	  n[0]=next;
 	  return ret*".";
-	  
+
 	case 1..63:
 	  pos+=len+1;
 	  ret+=({msg[pos-len..pos-1]});
 	  continue;
-	  
+
 	default:
-	  if((~len)&0xc0) 
+	  if((~len)&0xc0)
 	    error("Invalid message compression mode.\n");
 	  if(next==-1) next=pos+2;
 	  pos=((len&63)<<8) + msg[pos+1];
@@ -313,9 +531,10 @@ class protocol
 
   string decode_string(string s, array(int) next)
   {
-    int len=s[next[0]];
+    int pos = next[0];
+    int len=s[pos];
     next[0]+=len+1;
-    return s[next[0]-len..next[0]-1];
+    return s[pos+1..pos+len];
   }
 
   int decode_byte(string s, array(int) next)
@@ -325,16 +544,14 @@ class protocol
 
   int decode_short(string s, array(int) next)
   {
-    sscanf(s[next[0]..next[0]+1],"%2c",int ret);
-    next[0]+=2;
-    return ret;
+    return s[next[0]++]<<8 | s[next[0]++];
   }
 
   int decode_int(string s, array(int) next)
   {
-    sscanf(s[next[0]..next[0]+3],"%4c",int ret);
-    next[0]+=4;
-    return ret;
+    int pos = next[0];
+    next[0] += 4;
+    return s[pos++]<<24 | s[pos++]<<16 | s[pos++]<<8 | s[pos++];
   }
 
   //! Decode a set of entries from an answer.
@@ -392,7 +609,7 @@ class protocol
   //!             @member string "os"
   //!           @endmapping
   //!         @value T_SRV
-  //!           RFC 2052 and RFC 2782.
+  //!           @rfc{2052@} and @rfc{2782@}.
   //!           @mapping
   //!             @member int "priority"
   //!             @member int "weight"
@@ -436,7 +653,7 @@ class protocol
   //!             @member int "minimum"
   //!               Note: For historical reasons this entry is named
   //!               @expr{"minimum"@}, but it contains the TTL for
-  //!               negative answers (RFC 2308).
+  //!               negative answers (@rfc{2308@}).
   //!           @endmapping
   //!         @value T_NAPTR
   //!           @mapping
@@ -450,6 +667,15 @@ class protocol
   //!         @value T_TXT
   //!           @mapping
   //!             @member string "txt"
+  //!               Note: For historical reasons, when receiving decoded
+  //!               DNS entries from a client, this will be the first string
+  //!               in the TXT record only.
+  //!             @member string "txta"
+  //!               When receiving decoded DNS data from a client, txta is
+  //!               the array of all strings in the record. When sending
+  //!               multiple strings in a TXT record in a server, please
+  //!               supply an array as "txt" containing the strings, txta
+  //!               will be ignored.
   //!           @endmapping
   //!         @value T_SPF
   //!           @mapping
@@ -467,7 +693,7 @@ class protocol
       sscanf(s[next[0]..next[0]+10],
 	     "%2c%2c%4c%2c",
 	     m->type,m->cl,m->ttl,m->len);
-      
+
     next[0]+=10;
     int tmp=next[0];
     switch(m->type)
@@ -513,11 +739,11 @@ class protocol
 	m->name=x[2..]*".";
         break;
       case T_A:
-	m->a=sprintf("%{.%d%}",values(s[next[0]..next[0]+m->len-1]))[1..];
+	m->a=(array(string))values(s[next[0]..next[0]+m->len-1])*".";
 	break;
       case T_AAAA:
-	m->aaaa=sprintf("%{:%02X%02X%}",
-		     values(s[next[0]..next[0]+m->len-1])/2)[1..];
+	m->aaaa=sprintf("%{%02X%}",
+                        (values(s[next[0]..next[0]+m->len-1])/2)[*])*":";
 	break;
       case T_LOC:
 	m->version = decode_byte(s,next);
@@ -553,13 +779,22 @@ class protocol
         m->replacement = decode_domain (s, next);
         break;
       case T_TXT:
-	m->txt = decode_string(s, next);
+	{
+	    int tlen;
+
+	    m->txta = ({ });
+	    while (tlen < m->len) {
+		m->txta += ({ decode_string(s, next) });
+		tlen += sizeof(m->txta[-1]) + 1;
+	    }
+	    m->txt = m->txta[0];
+	}
 	break;
       case T_SPF:
 	m->spf = decode_string(s, next);
 	break;
     }
-    
+
     next[0]=tmp+m->len;
     ret+=({m});
     }
@@ -569,32 +804,33 @@ class protocol
   mapping decode_res(string s)
   {
     mapping m=([]);
-    sscanf(s,"%2c%c%c%2c%2c%2c%2c",
-	   m->id,
-	   m->c1,
-	   m->c2,
-	   m->qdcount,
-	   m->ancount,
-	   m->nscount,
-	   m->arcount);
+    if (sscanf(s,"%2c%c%c%2c%2c%2c%2c",
+               m->id,
+               m->c1,
+               m->c2,
+               m->qdcount,
+               m->ancount,
+               m->nscount,
+               m->arcount) != 7)
+      error("Bad DNS request, failed to parse header\n");
     m->rd=m->c1&1;
     m->tc=(m->c1>>1)&1;
     m->aa=(m->c1>>2)&1;
     m->opcode=(m->c1>>3)&15;
     m->qr=(m->c1>>7)&1;
-    
+
     m->rcode=m->c2&15;
     m->cd=(m->c2>>4)&1;
     m->ad=(m->c2>>5)&1;
     m->ra=(m->c2>>7)&1;
-    
+
     m->length=sizeof(s);
-    
-    array(string) tmp=({});
-    
+
     array(int) next=({12});
     m->qd = allocate(m->qdcount);
     for(int i=0; i<m->qdcount; i++) {
+      if (next[0] > sizeof(s))
+        error("Bad DNS request, not enough data\n");
       m->qd[i]=(["name":decode_domain(s,next)]);
       sscanf(s[next[0]..next[0]+3],"%2c%2c",m->qd[i]->type, m->qd[i]->cl);
       next[0]+=4;
@@ -606,22 +842,69 @@ class protocol
   }
 };
 
-//! Base class for implementing a Domain Name Service (DNS) server.
-//!
-//! This class is typically used by inheriting it,
-//! and overloading @[reply_query()] and @[handle_response()].
-class server
+protected string ANY;
+
+protected void create()
 {
-  //!
+  // Check if IPv6 support is available, and that mapped IPv4 is enabled.
+  catch {
+    // Note: Attempt to bind on the IPv6 loopback (::1)
+    //       rather than on IPv6 any (::), to make sure some
+    //       IPv6 support is actually configured. This is needed
+    //       since eg Solaris happily binds on :: even
+    //       if no IPv6 interfaces are configured.
+    //       Try IPv6 any (::) too for paranoia reasons.
+    //       For even more paranoia, try sending some data
+    //       from :: to the drain services on 127.0.0.1 and ::1.
+    //
+    // If the tests fail, we regard the IPv6 support as broken,
+    // and use just IPv4.
+    Stdio.UDP udp = Stdio.UDP();
+    if (udp->bind(0, "::1") && udp->bind(0, "::") &&
+	(udp->send("127.0.0.1", 9, "/dev/null") == 9) &&
+	(udp->send("::1", 9, "/dev/null") == 9)) {
+      // Note: The above tests are apparently not sufficient, since
+      //       WIN32 happily pretends to send stuff to ::ffff:0:0/96...
+      Stdio.UDP udp2 = Stdio.UDP();
+      if (udp2->bind(0, "127.0.0.1")) {
+	// IPv4 is present.
+	array(string) a = udp2->query_address()/" ";
+	int port = (int)a[1];
+	string key = Crypto.Random.random_string(16);
+	udp2->set_nonblocking();
+
+	// We shouldn't get any lost packets, since we're on the loop-back,
+	// but for paranoia reasons we perform a couple of retries.
+      retry:
+	for (int i = 0; i < 16; i++) {
+	  if (!udp->send("127.0.0.1", port, key)) continue;
+	  // udp2->wait() throws errors on WIN32.
+	  catch(udp2->wait(1));
+	  mapping res;
+	  while ((res = udp2->read())) {
+	    if (res->data == key) {
+	      // Mapped IPv4 seems to work.
+	      ANY = "::";
+	      break retry;
+	    }
+	  }
+	}
+	destruct(udp2);
+      }
+    }
+    destruct(udp);
+  };
+}
+
+//! Base class for @[server], @[tcp_server].
+class server_base
+{
   inherit protocol;
 
-  //inherit Stdio.UDP : udp;
+  array(Stdio.UDP|object) ports = ({ });
 
-  array(Stdio.UDP) ports = ({});
-
-  protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp)
+  protected string low_send_reply(mapping r, mapping q, mapping m)
   {
-    // FIXME: Needs to handle truncation somehow.
     if(!r)
       r = (["rcode":4]);
     r->id = q->id;
@@ -630,7 +913,7 @@ class server
     r->rd = q->rd;
     r->qd = r->qd || q->qd;
     string s = mkquery(r);
-    udp->send(m->ip, m->port, s);
+    return s;
   }
 
   //! Reply to a query (stub).
@@ -639,12 +922,15 @@ class server
   //!   Parsed query.
   //!
   //! @param udp_data
-  //!   Raw UDP data.
+  //!   Raw UDP data. If the server operates in TCP mode (@[tcp_server]),
+  //!   it will contain an additional tcp_con entry. In that case,
+  //!   @expr{udp_data->tcp_con->con@} will contain the TCP connection the
+  //!   request was received on as @[Stdio.File] object.
   //!
   //! @param cb
   //!   Callback you can call with the result instead of returning it.
   //!   In that case, return @expr{0@} (zero).
-  //!  
+  //!
   //!
   //! Overload this function to implement the proper lookup.
   //!
@@ -657,7 +943,9 @@ class server
   //!   or a result mapping if not:
   //!   @mapping
   //!     @member int "rcode"
+  //!       0 (or omit) for success, otherwise one of the Protocols.DNS.* constants
   //!     @member array(mapping(string:string|int))|void "an"
+  //!       Answer section:
   //!       @array
   //!         @elem mapping(string:string|int) entry
   //!           @mapping
@@ -667,8 +955,23 @@ class server
   //!           @endmapping
   //!       @endarray
   //!     @member array|void "qd"
+  //!       Question section, same format as @[an]; omit to return the original question
   //!     @member array|void "ns"
+  //!       Authority section (usually NS records), same format as @[an]
   //!     @member array|void "ar"
+  //!       Additional section, same format as @[an]
+  //!     @member int "aa"
+  //!       Set to 1 to include the Authoritative Answer bit in the response
+  //!     @member int "tc"
+  //!       Set to 1 to include the TrunCated bit in the response
+  //!     @member int "rd"
+  //!       Set to 1 to include the Recursion Desired bit in the response
+  //!     @member int "ra"
+  //!       Set to 1 to include the Recursion Available bit in the response
+  //!     @member int "cd"
+  //!       Set to 1 to include the Checking Disabled bit in the response
+  //!     @member int "ad"
+  //!       Set to 1 to include the Authenticated Data bit in the response
   //!   @endmapping
   protected mapping reply_query(mapping query, mapping udp_data,
 				 function(mapping:void) cb)
@@ -685,7 +988,7 @@ class server
   //!
   //! This function calls @[reply_query()],
   //! and dispatches the result to @[send_reply()].
-  protected void handle_query(mapping q, mapping m, Stdio.UDP udp)
+  protected void handle_query(mapping q, mapping m, Stdio.UDP|object udp)
   {
     int(0..1) result_available = 0;
     void _cb(mapping r) {
@@ -706,7 +1009,7 @@ class server
   //! Handle a query response (stub).
   //!
   //! Overload this function to handle responses to possible recursive queries.
-  protected void handle_response(mapping r, mapping m, Stdio.UDP udp)
+  protected void handle_response(mapping r, mapping m, Stdio.UDP|object udp)
   {
     // This is a stub intended to simplify servers which allow recursion
   }
@@ -714,16 +1017,17 @@ class server
   //! Low-level DNS-data receiver.
   //!
   //! This function receives the raw DNS-data from the @[Stdio.UDP] socket
-  //! @[udp], decodes it, and dispatches the decoded DNS request to
-  //! @[handle_query()] and @[handle_response()].
-  protected private void rec_data(mapping m, Stdio.UDP udp)
+  //! or TCP connection object @[udp], decodes it, and dispatches the decoded
+  //! DNS request to @[handle_query()] and @[handle_response()].
+  protected void rec_data(mapping m, Stdio.UDP|object udp)
   {
     mixed err;
     mapping q;
     if (err = catch {
       q=decode_res(m->data);
     }) {
-      werror("DNS: Failed to read UDP packet.\n%s\n",
+      werror("DNS: Failed to read %s packet.\n%s\n",
+	     udp->tcp_connection ? "TCP" : "UDP",
 	     describe_backtrace(err));
       if(m && m->data && sizeof(m->data)>=2)
 	send_reply((["rcode":1]),
@@ -735,6 +1039,38 @@ class server
       handle_query(q, m, udp);
   }
 
+  protected void send_reply(mapping r, mapping q, mapping m,
+			    Stdio.UDP|object con);
+
+  protected void destroy()
+  {
+    if(sizeof(ports))
+    {
+      foreach(ports;; object port)
+        destruct(port);
+    }
+  }
+}
+
+//! Base class for implementing a Domain Name Service (DNS) server operating
+//! over UDP.
+//!
+//! This class is typically used by inheriting it,
+//! and overloading @[reply_query()] and @[handle_response()].
+//!
+//! @seealso
+//!   @[dual_server]
+class server
+{
+  //!
+  inherit server_base;
+
+  //inherit Stdio.UDP : udp;
+
+  protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp) {
+    udp->send(m->ip, m->port, low_send_reply(r, q, m));
+  }
+
   //! @decl void create()
   //! @decl void create(int port)
   //! @decl void create(string ip)
@@ -744,7 +1080,8 @@ class server
   //! Open one or more new DNS server ports.
   //!
   //! @param ip
-  //!   The IP to bind to. Defaults to @expr{0@} (ie ANY).
+  //!   The IP to bind to. Defaults to @expr{"::"@} or @expr{0@} (ie ANY)
+  //!   depending on whether IPv6 support is present or not.
   //!
   //! @param port
   //!   The port number to bind to. Defaults to @expr{53@}.
@@ -761,7 +1098,7 @@ class server
       if(stringp(arg1))
        args = ({ arg1, 53 });
       else
-       args = ({ 0, arg1 });
+       args = ({ ANY, arg1 });
     }
     else
       args = ({ arg1 }) + args;
@@ -772,10 +1109,10 @@ class server
     for(int i;i<sizeof(args);i+=2) {
       Stdio.UDP udp = Stdio.UDP();
       if(args[i]) {
-       if (!udp->bind(args[i+1],args[i]))
+	if (!safe_bind(udp, args[i+1], args[i]))
          error("DNS: failed to bind host:port %s:%d.\n", args[i],args[i+1]);
       } else {
-       if(!udp->bind(args[i+1]))
+	if(!safe_bind(udp, args[i+1]))
          error("DNS: failed to bind port %d.\n", args[i+1]);
       }
       udp->set_read_callback(rec_data, udp);
@@ -784,24 +1121,203 @@ class server
     }
 
   }
+}
 
-  protected void destory()
-  {
-    if(sizeof(ports))
-    {
-      foreach(ports;; Stdio.UDP port)
-        destruct(port);
+
+//! Base class for implementing a Domain Name Service (DNS) server operating
+//! over TCP.
+//!
+//! This class is typically used by inheriting it,
+//! and overloading @[reply_query()] and @[handle_response()].
+class tcp_server
+{
+  inherit server_base;
+
+  mapping(Connection:int(1..1)) connections = ([ ]);
+
+  protected class Connection {
+    constant tcp_connection = 1;
+
+    protected int(0..1) write_ready;
+    protected string read_buffer = "", out_buffer = "";
+    protected array c_id;
+    Stdio.File con;
+
+    protected void create(Stdio.File con) {
+      this::con = con;
+      con->set_nonblocking(rcb, wcb, ccb);
+      c_id = call_out(destruct, 120, this);
+    }
+
+    protected void ccb(mixed id) {
+      destruct(con);
+      m_delete(connections, this);
+    }
+
+    protected void wcb(mixed id) {
+      if (sizeof(out_buffer)) {
+	int written = con->write(out_buffer);
+	out_buffer = out_buffer[written..];
+      } else
+	write_ready = 1;
+    }
+
+    protected void rcb(mixed id, string data) {
+      int len;
+
+      read_buffer += data;
+      if (sscanf(read_buffer, "%2c", len)) {
+	if (sizeof(read_buffer) > len - 2) {
+	  string data = read_buffer[2..len+1];
+	  string ip, port;
+	  mapping m;
+
+	  read_buffer = read_buffer[len+2..];
+
+	  remove_call_out(c_id);
+	  c_id = call_out(destruct, 120, this);
+
+	  [ip, port] = con->query_address() / " ";
+	  m = ([ "data" : data,
+	         "ip" : ip,
+		 "port" : (int)port,
+		 "tcp_con" : this ]);
+
+
+	  rec_data(m, this);
+	}
+      }
+    }
+
+    void send(string s) {
+      if (sizeof(s) > 65535)
+	error("DNS: Cannot send packets > 65535 bytes (%d here).\n", sizeof(s));
+      out_buffer += sprintf("%2H", s);
+
+      if (write_ready) {
+	int written = con->write(out_buffer);
+	out_buffer = out_buffer[written..];
+	write_ready = 0;
+      }
+
+      remove_call_out(c_id);
+      c_id = call_out(destruct, 120, this);
+    }
+
+    void destroy() {
+      if (con) con->close();
+      destruct(con);
+      m_delete(connections, this);
     }
   }
 
+  protected int accept(Stdio.Port port) {
+    connections[Connection(port->accept())] = 1;
+  }
+
+  protected void send_reply(mapping r, mapping q, mapping m, Connection con) {
+    con->send(low_send_reply(r, q, m));
+  }
+
+  //! @decl void create()
+  //! @decl void create(int port)
+  //! @decl void create(string ip)
+  //! @decl void create(string ip, int port)
+  //! @decl void create(string ip, int port, string|int ... more)
+  //!
+  //! Open one or more new DNS server ports.
+  //!
+  //! @param ip
+  //!   The IP to bind to. Defaults to @expr{"::"@} or @expr{0@} (ie ANY)
+  //!   depending on whether IPv6 support is present or not.
+  //!
+  //! @param port
+  //!   The port number to bind to. Defaults to @expr{53@}.
+  //!
+  //! @param more
+  //!   Optional further DNS server ports to open.
+  //!   Must be a set of @[ip], @[port] argument pairs.
+  protected void create(int|string|void arg1, string|int ... args)
+  {
+    if(!arg1 && !sizeof(args))
+      arg1 = 53;
+    if(!sizeof(args))
+    {
+      if(stringp(arg1))
+       args = ({ arg1, 53 });
+      else
+       args = ({ ANY, arg1 });
+    }
+    else
+      args = ({ arg1 }) + args;
+    if(sizeof(args)&1)
+      error("DNS: if you specify more than one argument, the number of "
+           "arguments needs to be even (server(ip1, port1, ip2, port2, "
+           "...)).\n");
+    for(int i;i<sizeof(args);i+=2) {
+      Stdio.Port port;
+
+      if(args[i]) {
+	port = Stdio.Port(args[i+1], accept, args[i]);
+      } else {
+	port = Stdio.Port(args[i+1], accept);
+      }
+
+      port->set_id(port);
+      // Port objects are stored for destruction when the server
+      // object is destroyed.
+      ports += ({ port });
+    }
+  }
+
+  protected void destroy()
+  {
+    foreach (connections; Connection con;) {
+      destruct(con);
+    }
+
+    ::destroy();
+  }
+}
+
+//! This is both a @[server] and @[tcp_server].
+class dual_server {
+  inherit server : UDP;
+  inherit tcp_server : TCP;
+
+  protected void send_reply(mapping r, mapping q, mapping m,
+			    Connection|Stdio.UDP con) {
+    string rpl = low_send_reply(r, q, m);
+
+    if (!con->tcp_connection) {
+      if (sizeof(rpl) > 512) {
+	rpl = sprintf("%s%8c", rpl[..3], 0); // Truncate after header and
+					     // send empty response
+					     // ("dnscache strategy")
+	rpl[2] |= 2; // Set TC bit
+      }
+      con->send(m->ip, m->port, rpl);
+    } else
+      con->send(rpl);
+  }
+
+  protected void create(int|string|void arg1, string|int ... args)
+  {
+    ::create(arg1, @args);
+  }
+
+  protected void destroy()
+  {
+    ::destroy();
+  }
 }
 
 
 #define RETRIES 12
 #define RETRY_DELAY 5
 
-//! 	Synchronous DNS client.
-class client 
+//! Synchronous DNS client.
+class client
 {
   inherit protocol;
 
@@ -811,6 +1327,7 @@ class client
     array(string) res = ({});
     foreach(({
       "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+      "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters",
       "SYSTEM\\CurrentControlSet\\Services\\VxD\\MSTCP"
     }),string key)
     {
@@ -829,6 +1346,16 @@ class client
 	catch {
 	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
 				"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\"
+				"Parameters\\Interfaces\\" + key, val) });
+	};
+      }
+      foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
+			     "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
+			     "Parameters\\Interfaces"), string key)
+      {
+	catch {
+	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
+				"SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\"
 				"Parameters\\Interfaces\\" + key, val) });
 	};
       }
@@ -879,15 +1406,15 @@ class client
   {
     if (!etc_hosts) {
       etc_hosts = ([ "localhost":"127.0.0.1" ]);
-	
+
       string raw = read_etc_file("hosts");
-	
+
       if (raw && sizeof(raw)) {
 	foreach(raw/"\n"-({""}), string line) {
 	  // Handle comments, and split the line on white-space
 	  line = lower_case(replace((line/"#")[0], "\t", " "));
 	  array arr = (line/" ") - ({ "" });
-	    
+
 	  if (sizeof(arr) > 1) {
 	    if (is_ip(arr[0])) {
 	      foreach(arr[1..], string name) {
@@ -951,7 +1478,7 @@ class client
 	  } else {
 	    nameservers = ({});
 	  }
-	  
+
 	  if (domains = System->get_netinfo_property(".",
 						    "/locations/resolver",
 						    "domain")) {
@@ -994,7 +1521,7 @@ class client
 	      rest = replace(rest, "\t", " ");
 	      domains += ((rest/" ") - ({""}));
 	      break;
-	      
+
 	    case "nameserver":
 	      if (!is_ip(rest)) {
 		// Not an IP-number!
@@ -1021,21 +1548,21 @@ class client
 	nameservers = ({ "127.0.0.1" });
       }
       domains -= ({ "" });
-      domains = Array.map(domains, lambda(string d) {
-				     if (d[-1] == '.') {
-				       return d[..<1];
-				     }
-				     return d;
-				   });
-    } 
-    else 
+      domains = map(domains, lambda(string d) {
+                               if (d[-1] == '.') {
+                                 return d[..<1];
+                               }
+                               return d;
+                             });
+    }
+    else
     {
-      if(arrayp(server))	
+      if(arrayp(server))
 	nameservers = server;
       else
 	nameservers = ({ server });
 
-      if(arrayp(domain))	
+      if(arrayp(domain))
 	domains = domain;
       else
 	if(stringp(domain))
@@ -1043,28 +1570,28 @@ class client
     }
   }
 
-//! Perform a syncronous DNS query.
-//! 
-//! @param s
-//!   Result of @[Protocols.DNS.protocol.mkquery]
-//! @returns
-//!  mapping containing query result or 0 on failure/timeout
-//!
-//! @example
-//!   @code
-//!     // Perform a hostname lookup, results stored in r->an
-//!     object d=Protocols.DNS.client();
-//!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
-//!   @endcode
+  //! Perform a synchronous DNS query.
+  //!
+  //! @param s
+  //!   Result of @[Protocols.DNS.protocol.mkquery]
+  //! @returns
+  //!   mapping containing query result or 0 on failure/timeout
+  //!
+  //! @example
+  //!   @code
+  //!     // Perform a hostname lookup, results stored in r->an
+  //!     object d=Protocols.DNS.client();
+  //!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
+  //!   @endcode
   mapping do_sync_query(string s)
   {
     int i;
     object udp = Stdio.UDP();
     // Attempt to randomize the source port.
     for (i = 0; i < RETRIES; i++) {
-      if (!catch { udp->bind(1024 + random(65536-1024)); }) continue;
+      if (!safe_bind(udp, 1024 + random(65536-1024), ANY)) continue;
     }
-    if (i >= RETRIES) udp->bind(0);
+    if (i >= RETRIES) safe_bind(udp, 0, ANY) || udp->bind(0);
 #if 0
     werror("Protocols.DNS.client()->do_sync_query(%O)\n"
 	   "UDP Address: %s\n"
@@ -1075,22 +1602,26 @@ class client
       udp->send(nameservers[i % sizeof(nameservers)], 53, s);
 
       // upd->wait() can throw an error sometimes.
-      catch
-      {
-  	while (udp->wait(RETRY_DELAY))
-        {
-  	  // udp->read() can throw an error on connection refused.
-  	  catch {
-  	    m = udp->read();
-  	    if ((m->port == 53) &&
-  		(m->data[0..1] == s[0..1]) &&
-  		has_value(nameservers, m->ip)) {
-  	      // Success.
-  	      return decode_res(m->data);
-  	    }
-  	  };
-        }
+      //
+      // One common case is on WIN32 where select complains
+      // about it not being a socket.
+      catch {
+	udp->wait(RETRY_DELAY);
       };
+      // Make sure that udp->read() doesn't block.
+      udp->set_nonblocking();
+      // udp->read() can throw an error on connection refused.
+      catch {
+	m = udp->read();
+	if (m && (m->port == 53) &&
+	    (m->data[0..1] == s[0..1]) &&
+	    has_value(nameservers, m->ip)) {
+	  // Success.
+	  return decode_res(m->data);
+	}
+      };
+      // Restore blocking state for udp->send() on retry.
+      udp->set_blocking();
     }
     // Failure.
     return 0;
@@ -1113,7 +1644,7 @@ class client
       return do_sync_query(mkquery(s, C_IN, type));
     }
   }
-  
+
   //! @decl array gethostbyname(string hostname)
   //!	Queries the host name from the default or given
   //!	DNS server. The result is an array with three elements,
@@ -1137,14 +1668,12 @@ class client
   array gethostbyname(string s)
   {
     mapping a_records    = low_gethostbyname(s, T_A);
-    mapping a6_records   = low_gethostbyname(s, T_A6);
     mapping aaaa_records = low_gethostbyname(s, T_AAAA);
 
 #if 0
     werror("a_records: %O\n"
-	   "a6_records: %O\n"
 	   "aaaa_records: %O\n",
-	   a_records, a6_records, aaaa_records);
+	   a_records, aaaa_records);
 #endif /* 0 */
 
     array(string) names=({});
@@ -1158,16 +1687,6 @@ class client
 	  ips+=({x->a});
       }
     }
-    // Prefer a6 to aaaa.
-    if (a6_records) {
-      foreach(a6_records->an, mapping x)
-      {
-	if(x->name)
-	  names+=({x->name});
-	if(x->a6)
-	  ips+=({x->a6});
-      }
-    }
     if (aaaa_records) {
       foreach(aaaa_records->an, mapping x)
       {
@@ -1177,7 +1696,7 @@ class client
 	  ips+=({x->aaaa});
       }
     }
-    
+
     return ({
       sizeof(names)?names[0]:0,
       ips,
@@ -1185,12 +1704,12 @@ class client
     });
   }
 
-  //!	Queries the service record (RFC 2782) from the default or given
-  //!	DNS server. The result is an array of arrays with the
-  //!   following six elements for each record. The array is
-  //!   sorted according to the priority of each record.
+  //!	Queries the service record (@rfc{2782@}) from the default or
+  //!	given DNS server. The result is an array of arrays with the
+  //!	following six elements for each record. The array is sorted
+  //!	according to the priority of each record.
   //!
-  //!   Each element of the array returned represents a service 
+  //!   Each element of the array returned represents a service
   //!   record. Each service record contains the following:
   //!
   //! @returns
@@ -1214,9 +1733,9 @@ class client
     if(!service) error("no service name specified.");
     if(!protocol) error("no service name specified.");
 
-    if(sizeof(domains) && !name) { 
+    if(sizeof(domains) && !name) {
       // we haven't provided a target domain to search on.
-      // we probably shouldn't do a searchdomains search, 
+      // we probably shouldn't do a searchdomains search,
       // as it might return ambiguous results.
       m = do_sync_query(
         mkquery("_" + service +"._"+ protocol + "." + name, C_IN, T_SRV));
@@ -1236,9 +1755,8 @@ class client
     if (!m) { // no entries.
       return ({});
     }
-    
-    array res=({});
 
+    array res=({});
     foreach(m->an, mapping x)
     {
        res+=({({x->priority, x->weight, x->port, x->target})});
@@ -1377,39 +1895,47 @@ class client
 
     return b;
   }
+
+  //!
+  class Request(string domain, string req,
+		function(string,mapping,mixed...:void) callback,
+		array(mixed) args)
+  {
+    int retries;
+    int timestamp = time();
+
+    //! Cancel the current request.
+    void cancel()
+    {
+      remove(this);
+    }
+    mixed retry_co;
+  };
+
+  mapping requests=([]);
+
+  protected void remove(object(Request) r)
+  {
+    if(!r) return;
+    sscanf(r->req,"%2c",int id);
+    m_delete(requests,id);
+    if (r->retry_co) remove_call_out(r->retry_co);
+    r->retry_co = UNDEFINED;
+    r->callback && r->callback(r->domain,0,@r->args);
+    destruct(r);
+  }
 }
 
 #define REMOVE_DELAY 120
 #define GIVE_UP_DELAY (RETRIES * RETRY_DELAY + REMOVE_DELAY)*2
 
 // FIXME: Randomized source port!
-//!
+//! Asynchronous DNS client.
 class async_client
 {
   inherit client;
   inherit Stdio.UDP : udp;
   async_client next_client;
-
-  class Request
-  {
-    string req;
-    string domain;
-    function callback;
-    int retries;
-    int timestamp;
-    array args;
-  };
-
-  mapping requests=([]);
-
-  protected private void remove(object(Request) r)
-  {
-    if(!r) return;
-    sscanf(r->req,"%2c",int id);
-    m_delete(requests,id);
-    r->callback(r->domain,0,@r->args);
-    destruct(r);
-  }
 
   void retry(object(Request) r, void|int nsno)
   {
@@ -1417,20 +1943,27 @@ class async_client
     if (nsno >= sizeof(nameservers)) {
       if(r->retries++ > RETRIES)
       {
-	call_out(remove,REMOVE_DELAY,r);
+	r->retry_co = call_out(remove, REMOVE_DELAY, r);
 	return;
       } else {
 	nsno = 0;
       }
     }
-    
-    send(nameservers[nsno],53,r->req);
-    call_out(retry,RETRY_DELAY,r,nsno+1);
+
+    r->retry_co = call_out(retry, RETRY_DELAY, r, nsno+1);
+    udp::send(nameservers[nsno], 53, r->req);
   }
 
-  void do_query(string domain, int cl, int type,
-		function(string,mapping,mixed...:void) callback,
-		mixed ... args)
+  //! Enqueue a new raw DNS request.
+  //!
+  //! @returns
+  //!   Returns a @[Request] object.
+  //!
+  //! @note
+  //!   Pike versions prior to 8.0 did not return the @[Request] object.
+  Request do_query(string domain, int cl, int type,
+		   function(string,mapping,mixed...:void) callback,
+		   mixed ... args)
   {
     for(int e=next_client ? 100 : 256;e>=0;e--)
     {
@@ -1438,28 +1971,23 @@ class async_client
       if(!catch { requests[lid]++; })
       {
 	string req=low_mkquery(lid,domain,cl,type);
-	
-	object r=Request();
-	r->req=req;
-	r->domain=domain;
-	r->callback=callback;
-	r->args=args;
-	r->timestamp=time();
-	requests[lid]=r;
-	udp::send(nameservers[0],53,r->req);
-	call_out(retry,RETRY_DELAY,r,1);
-	return;
+
+	object r = Request(domain, req, callback, args);
+	r->retry_co = call_out(retry, RETRY_DELAY, r, 1);
+	requests[lid] = r;
+	udp::send(nameservers[0], 53, req);
+	return r;
       }
     }
-    
+
     /* We failed miserably to find a request id to use,
-     * so we create a second UDP port to be able to have more 
+     * so we create a second UDP port to be able to have more
      * requests 'in the air'. /Hubbe
      */
     if(!next_client)
-      next_client=async_client(nameservers,domains);
-    
-    next_client->do_query(domain, cl, type, callback, @args);
+      next_client=this_program(nameservers,domains);
+
+    return next_client->do_query(domain, cl, type, callback, @args);
   }
 
   protected private void rec_data(mapping m)
@@ -1483,15 +2011,15 @@ class async_client
     }
   }
 
-  protected private void generic_get(string d,
-				  mapping answer,
-				  int multi, 
-				  int all,
-				  int type, 
-				  string field,
-				  string domain,
-				  function callback,
-				  mixed ... args)
+  protected private Request generic_get(string d,
+					mapping answer,
+					int multi,
+					int all,
+					int type,
+					string field,
+					string domain,
+					function callback,
+					mixed ... args)
   {
     if(!answer || !answer->an || !sizeof(answer->an))
     {
@@ -1501,9 +2029,9 @@ class async_client
 	callback(domain,0,@args);
       } else {
 	// Multiple domain request. Try the next one...
-	do_query(domain+"."+domains[multi], C_IN, type,
-		 generic_get, ++multi, all, type, field, domain,
-		 callback, @args);
+	return do_query(domain+"."+domains[multi], C_IN, type,
+			generic_get, ++multi, all, type, field, domain,
+			callback, @args);
       }
     } else {
       if (all) {
@@ -1513,61 +2041,72 @@ class async_client
 	  if(an[field])
 	  {
 	    callback(domain, an[field], @args);
-	    return;
+	    return UNDEFINED;
 	  }
 	callback(domain,0,@args);
-	return;
       }
     }
+    return UNDEFINED;
   }
 
-  void host_to_ip(string host, function callback, mixed ... args)
+  //!
+  Request host_to_ip(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
-      do_query(host, C_IN, T_A,
-	       generic_get, 0, 0, T_A, "a", host, callback, @args );
+      return do_query(host, C_IN, T_A,
+		      generic_get, 0, 0, T_A, "a", host, callback, @args );
     } else {
-      do_query(host, C_IN, T_A,
-	       generic_get, -1, 0, T_A, "a",
-	       host, callback, @args);
+      return do_query(host, C_IN, T_A,
+		      generic_get, -1, 0, T_A, "a",
+		      host, callback, @args);
     }
   }
 
-  void ip_to_host(string ip, function callback, mixed ... args)
+  //!
+  Request ip_to_host(string ip, function callback, mixed ... args)
   {
-    do_query(arpa_from_ip(ip), C_IN, T_PTR,
-	     generic_get, -1, 0, T_PTR, "ptr",
-	     ip, callback,
-	     @args);
+    return do_query(arpa_from_ip(ip), C_IN, T_PTR,
+		    generic_get, -1, 0, T_PTR, "ptr",
+		    ip, callback,
+		    @args);
   }
 
-  void get_mx_all(string host, function callback, mixed ... args)
+  //!
+  Request get_mx_all(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
-      do_query(host, C_IN, T_MX,
-	       generic_get, 0, 1, T_MX, "mx", host, callback, @args);
+      return do_query(host, C_IN, T_MX,
+		      generic_get, 0, 1, T_MX, "mx", host, callback, @args);
     } else {
-      do_query(host, C_IN, T_MX,
-	       generic_get, -1, 1, T_MX, "mx", host, callback, @args);
+      return do_query(host, C_IN, T_MX,
+		      generic_get, -1, 1, T_MX, "mx", host, callback, @args);
     }
   }
 
-  void get_mx(string host, function callback, mixed ... args)
+  //!
+  Request get_mx(string host, function callback, mixed ... args)
   {
-    get_mx_all(host,
-	       lambda(string domain, array(mapping) mx,
-		      function callback, mixed ... args) {
-		 array a;
-		 if (mx) {
-		   a = column(mx, "mx");
-		   sort(column(mx, "preference"), a);
-		 }
-		 callback(a, @args);
-	       }, callback, @args);
+    return get_mx_all(host,
+		      lambda(string domain, array(mapping) mx,
+			     function callback, mixed ... args) {
+			array a;
+			if (mx) {
+			  a = column(mx, "mx");
+			  sort(column(mx, "preference"), a);
+			}
+			callback(a, @args);
+		      }, callback, @args);
   }
 
+  //! Close the client.
+  //!
+  //! @note
+  //!   All active requests are aborted.
   void close()
   {
+    foreach(requests; ; Request r) {
+      remove(r);
+    }
     udp::close();
     udp::set_read_callback(0);
   }
@@ -1576,7 +2115,14 @@ class async_client
   protected void create(void|string|array(string) server,
 			void|string|array(string) domain)
   {
-    if(!udp::bind(0))
+    int i;
+    // Attempt to randomize the source port.
+    for (i = 0; i < RETRIES; i++) {
+      if (safe_bind(udp::this, 1024 + random(65536-1024), ANY)) break;
+    }
+    if((i >= RETRIES) &&
+       !safe_bind(udp::this, 0, ANY) &&
+       !safe_bind(udp::this, 0))
       error( "DNS: failed to bind a port.\n" );
 #if 0
     werror("Protocols.DNS.async_client(%O, %O)\n"
@@ -1591,14 +2137,169 @@ class async_client
 };
 
 
+// FIXME: Reuse sockets where possible?
+//! Synchronous DNS client using TCP
+//! Can handle larger responses than @[client] can.
+class tcp_client
+{
+  inherit client;
+
+  //! Perform a synchronous DNS query.
+  //!
+  //! @param s
+  //!   Result of @[Protocols.DNS.protocol.mkquery]
+  //! @returns
+  //!  mapping containing query result or 0 on failure/timeout
+  //!
+  //! @example
+  //!   @code
+  //!     // Perform a hostname lookup, results stored in r->an
+  //!     object d=Protocols.DNS.tcp_client();
+  //!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
+  //!   @endcode
+  mapping do_sync_query(string s)
+  {
+    for (int i=0; i < RETRIES; i++) {
+      object tcp = Stdio.File();
+      if (tcp->connect(nameservers[i % sizeof(nameservers)], 53))
+      {
+        tcp->write("%2H",s);
+	sscanf(tcp->read(2),"%2c",int len);
+	return decode_res(tcp->read(len));
+      }
+    }
+    // Failure.
+    return 0;
+  }
+}
+
+// FIXME: Reuse sockets? Acknowledge RETRIES?
+//! Asynchronous DNS client using TCP
+class async_tcp_client
+{
+  inherit async_client;
+
+  //!
+  class Request
+  {
+    inherit ::this_program;
+
+    protected Stdio.File sock;
+    protected string writebuf="",readbuf="";
+
+    protected void create(string domain, string req,
+			  function(string,mapping,mixed...:void) callback,
+			  array(mixed) args)
+    {
+      ::create(domain, req, callback, args);
+      sock=Stdio.File();
+      sock->async_connect(nameservers[0], 53, connectedcb);
+    }
+
+    protected void close()
+    {
+      sock && sock->close();
+      sock = UNDEFINED;
+    }
+
+    protected void connectedcb(int ok)
+    {
+      if (!ok) {callback(domain, 0, @args); return;}
+      sock->set_nonblocking(readcb, writecb, closecb);
+      writebuf=sprintf("%2H",req);
+      writecb();
+    }
+
+    protected void readcb(mixed id,string data)
+    {
+      readbuf+=data;
+      if (sscanf(readbuf,"%2H",string ret))
+      {
+        if (callback) callback(domain, decode_res(ret), @args);
+        callback=0;
+        close();
+      }
+    }
+
+    protected void writecb()
+    {
+      if (writebuf!="") writebuf=writebuf[sock->write(writebuf)..];
+    }
+
+    protected void closecb()
+    {
+      cancel();
+    }
+
+    void cancel()
+    {
+      close();
+      ::cancel();
+    }
+  }
+
+  //!
+  Request do_query(string domain, int cl, int type,
+		   function(string,mapping,mixed...:void) callback,
+		   mixed ... args)
+  {
+    string req=low_mkquery(random(65536),domain,cl,type);
+    return Request(domain, req, callback, args);
+  }
+}
+
+//! Both a @[client] and a @[tcp_client].
+class dual_client
+{
+  inherit client : UDP;
+  inherit tcp_client : TCP;
+
+  //!
+  mapping do_sync_query(string s)
+  {
+    mapping ret = UDP::do_sync_query(s);
+    if (!ret->tc) return ret;
+    return TCP::do_sync_query(s);
+  }
+
+  void create(mixed ... args) {::create(@args);}
+}
+
+//! Both an @[async_client] and an @[async_tcp_client].
+class async_dual_client
+{
+  inherit async_client : UDP;
+  inherit async_tcp_client : TCP;
+
+  void check_truncation(string domain, mapping result, int cl, int type,
+			function(string,mapping,mixed...:void) callback,
+			mixed ... args)
+  {
+    if (!result || !result->tc) callback(domain,result,@args);
+    else TCP::do_query(domain,cl,type,callback,@args);
+  }
+
+  //!
+  Request do_query(string domain, int cl, int type,
+		   function(string,mapping,mixed...:void) callback,
+		   mixed ... args)
+  {
+    return UDP::do_query(domain,cl,type,check_truncation,
+			 cl,type,callback,@args);
+  }
+
+  void create(mixed ... args) {::create(@args);}
+}
+
+
 async_client global_async_client;
 
 #define GAC(X)								\
-void async_##X( string host, function callback, mixed ... args ) 	\
+async_client.Request async_##X( string host, function callback, mixed ... args ) 	\
 {									\
   if( !global_async_client )						\
     global_async_client = async_client();				\
-  global_async_client->X(host,callback,@args);				\
+  return global_async_client->X(host,callback,@args);			\
 }
 
 //! @ignore

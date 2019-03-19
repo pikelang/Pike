@@ -20,7 +20,7 @@
 
 inherit GTK2.Dialog;
 
-static GTK2.AboutDialog create( mapping|void props );
+protected GTK2.AboutDialog create( mapping|void props );
 //! Create a new GTK2.AboutDialog.
 //!
 //!
@@ -68,7 +68,7 @@ string get_logo_icon_name( );
 //!
 //!
 
-string get_name( );
+string get_program_name( );
 //! Returns the program name.
 //!
 //!
@@ -146,8 +146,8 @@ GTK2.AboutDialog set_logo_icon_name( string name );
 //!
 //!
 
-GTK2.AboutDialog set_name( string name );
-//! Sets the name to display.
+GTK2.AboutDialog set_program_name( string name );
+//! Sets the name to display in the dialog.
 //!
 //!
 

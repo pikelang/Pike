@@ -29,7 +29,7 @@ GTK2.Image clear( );
 //!
 //!
 
-static GTK2.Image create( string|GdkPixbuf|GdkPixbufAnimation|GdkImage|GdkPixmap|mapping file_or_props, GTK2.GdkBitmap mask_or_size );
+protected GTK2.Image create( string|GdkPixbuf|GdkPixbufAnimation|GdkImage|GdkPixmap|mapping file_or_props, GTK2.GdkBitmap mask_or_size );
 //! Create a new W(Image) from either a file or a GDK2.Pixbuf.
 //!
 //!

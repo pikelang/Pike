@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -51,18 +50,18 @@ static struct program *image_program=NULL;
 static struct program *image_colortable_program=NULL;
 #else
 /* The image module is probably linked static too... */
-extern struct program *image_program; 
+extern struct program *image_program;
 extern struct program *image_colortable_program;
 #endif
 
-struct buffer 
+struct buffer
 {
   char *str;
   ptrdiff_t len;	/* Buffer length. */
   ptrdiff_t offset;
   ptrdiff_t real_len;	/* File length. */
   int extendable;
-} *buffer_handle; 
+} *buffer_handle;
 
 struct imagealpha
 {
@@ -102,11 +101,8 @@ static void increase_buffer_size( struct buffer * buffer )
    * NOTE: buffer->str seems to point into Pike strings sometimes,
    * in which case realloc() is wrong.
    */
-  new_d = realloc( buffer->str, buffer->len*2 );
-  if(!new_d) Pike_error("Realloc (%ld->%ld) failed!\n",
-		   DO_NOT_WARN((long)buffer->len),
-		   DO_NOT_WARN((long)buffer->len*2));
-  MEMSET(new_d+buffer->len, 0, buffer->len);
+  new_d = xrealloc( buffer->str, buffer->len*2 );
+  memset(new_d+buffer->len, 0, buffer->len);
   buffer->str = new_d;
   buffer->len *= 2;
 }
@@ -125,7 +121,7 @@ static tsize_t read_buffer( thandle_t bh, tdata_t d, tsize_t len )
 	buffer_handle->offset, buffer_handle->real_len, avail);
   if(!avail) return -1;
   len = MINIMUM(avail, len);
-  MEMCPY(data, buffer_handle->str+buffer_handle->offset, len);
+  memcpy(data, buffer_handle->str+buffer_handle->offset, len);
   buffer_handle->offset += len;
   return len;
 }
@@ -145,7 +141,7 @@ static tsize_t write_buffer(thandle_t bh, tdata_t d, tsize_t len)
           len);
     increase_buffer_size( buffer_handle );
   }
-  MEMCPY( buffer_handle->str+buffer_handle->offset, data, len );
+  memcpy( buffer_handle->str+buffer_handle->offset, data, len );
   buffer_handle->offset += len;
   if(buffer_handle->offset > buffer_handle->real_len)
     buffer_handle->real_len = buffer_handle->offset;
@@ -224,7 +220,7 @@ static int map_buffer(thandle_t bh, tdata_t *r, toff_t *len )
 }
 
 /* Complies with the TIFFUnmapFileProc API. */
-static void unmap_buffer(thandle_t bh, tdata_t p, toff_t len)
+static void unmap_buffer(thandle_t bh, tdata_t p, toff_t UNUSED(len))
 {
   struct buffer *buffer_handle = (struct buffer *)bh;
   void *ptr = (void *)p;
@@ -264,7 +260,7 @@ static const int default_tiff_compressions[] = {
   COMPRESSION_NONE,
 };
 
-void low_image_tiff_encode( struct buffer *buf, 
+void low_image_tiff_encode( struct buffer *buf,
                             struct imagealpha *img,
                             struct options *opts)
 {
@@ -278,7 +274,7 @@ void low_image_tiff_encode( struct buffer *buf,
   int x, y;
   char *b;
 
-  i = ((struct image *)get_storage(img->img,image_program));
+  i = get_storage(img->img,image_program);
 
   if(!i)
     Pike_error("Image is not an image object.\n");
@@ -286,7 +282,7 @@ void low_image_tiff_encode( struct buffer *buf,
   if(img->alpha)
   {
     spp++;
-    a = ((struct image *)get_storage(img->alpha,image_program));
+    a = get_storage(img->alpha,image_program);
     if(!a)
       Pike_error("Alpha is not an image object.\n");
     if(i->xsize != a->xsize ||
@@ -313,7 +309,7 @@ void low_image_tiff_encode( struct buffer *buf,
   }
 
   SET_ONERROR(tmp, TIFFClose, tif);
-  
+
   TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32)i->xsize);
   TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32)i->ysize);
   TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, (uint16)8);
@@ -358,7 +354,7 @@ void low_image_tiff_encode( struct buffer *buf,
       TIFFSetField (tif, TIFFTAG_PREDICTOR, (uint16)2);
 #endif
   }
-      
+
   b = buffer;
   is = i->img;
 
@@ -425,7 +421,7 @@ static const char *photoNames[] = {
     "CIE L*a*b*",				/* PHOTOMETRIC_CIELAB */
 };
 
-void low_image_tiff_decode( struct buffer *buf, 
+void low_image_tiff_decode( struct buffer *buf,
                             struct imagealpha *res,
                             int image_only)
 {
@@ -468,16 +464,16 @@ void low_image_tiff_decode( struct buffer *buf,
     da = ((struct image *)get_storage(res->alpha,image_program))->img;
   }
   di = ((struct image *)get_storage(res->img,image_program))->img;
-  
+
   for(i=0; i<h*w; i++)
   {
     uint32 p = *s;
-    di->r = DO_NOT_WARN((unsigned char)(p & 255));
-    di->g = DO_NOT_WARN((unsigned char)((p>>8) & 255));
-    (di++)->b = DO_NOT_WARN((unsigned char)((p>>16) & 255));
-    if(!image_only) 
+    di->r = (unsigned char)(p & 255);
+    di->g = (unsigned char)((p>>8) & 255);
+    (di++)->b = (unsigned char)((p>>16) & 255);
+    if(!image_only)
     {
-      da->r = da->g = da->b = DO_NOT_WARN((unsigned char)((p>>24) & 255));
+      da->r = da->g = da->b = (unsigned char)((p>>24) & 255);
       da++;
     }
     s++;
@@ -501,77 +497,77 @@ void low_image_tiff_decode( struct buffer *buf,
 #ifdef HAVE_TIFFIOP_H
     char *tmp;
     TIFFDirectory *td = &tif->tif_dir;
-    if (TIFFFieldSet(tif,FIELD_RESOLUTION)) 
+    if (TIFFFieldSet(tif,FIELD_RESOLUTION))
     {
-      push_constant_text( "xres" );   push_float( td->td_xresolution );
-      push_constant_text( "yres" );   push_float( td->td_yresolution );
-      push_constant_text( "unit" );  
-      if (TIFFFieldSet(tif,FIELD_RESOLUTIONUNIT)) 
+      push_static_text( "xres" );   push_float( td->td_xresolution );
+      push_static_text( "yres" );   push_float( td->td_yresolution );
+      push_static_text( "unit" );
+      if (TIFFFieldSet(tif,FIELD_RESOLUTIONUNIT))
       {
         switch(td->td_resolutionunit)
         {
          case RESUNIT_NONE:
-           push_constant_text("unitless");
+           push_static_text("unitless");
            break;
          case RESUNIT_INCH:
-           push_constant_text("pixels/inch");
-           push_constant_text( "xdpy" );   push_float( td->td_xresolution );
-           push_constant_text( "ydpy" );   push_float( td->td_yresolution );
+           push_static_text("pixels/inch");
+           push_static_text( "xdpy" );   push_float( td->td_xresolution );
+           push_static_text( "ydpy" );   push_float( td->td_yresolution );
            break;
          case RESUNIT_CENTIMETER:
-           push_constant_text("pixels/cm");
-           push_constant_text( "xdpy" );   push_float( td->td_xresolution/2.5 );
-           push_constant_text( "ydpy" );   push_float( td->td_yresolution/2.5 );
+           push_static_text("pixels/cm");
+           push_static_text( "xdpy" );   push_float( td->td_xresolution/2.5 );
+           push_static_text( "ydpy" );   push_float( td->td_yresolution/2.5 );
            break;
-        } 
+        }
       } else
-        push_constant_text( "unitless" );  
+        push_static_text( "unitless" );
     }
     if (TIFFFieldSet(tif,FIELD_POSITION))
     {
-      push_constant_text("xposition"); push_int(td->td_xposition);
-      push_constant_text("yposition"); push_int(td->td_yposition);
+      push_static_text("xposition"); push_int(td->td_xposition);
+      push_static_text("yposition"); push_int(td->td_yposition);
     }
-    if (TIFFFieldSet(tif,FIELD_PHOTOMETRIC)) 
+    if (TIFFFieldSet(tif,FIELD_PHOTOMETRIC))
     {
-      push_text("photometric");
+      push_static_text("photometric");
       if (td->td_photometric < (sizeof (photoNames) / sizeof (photoNames[0])))
         push_text( photoNames[td->td_photometric] );
-      else 
+      else
       {
         switch (td->td_photometric) {
 #ifdef PHOTOMETRIC_LOGL
          case PHOTOMETRIC_LOGL:
-           push_text("CIE Log2(L)");
+           push_static_text("CIE Log2(L)");
            break;
 #endif /* PHOTOMETRIC_LOGL */
 #ifdef PHOTOMETRIC_LOGLUV
          case PHOTOMETRIC_LOGLUV:
-           push_text("CIE Log2(L) (u',v')");
+           push_static_text("CIE Log2(L) (u',v')");
            break;
 #endif /* PHOTOMETRIC_LOGLUV */
          default:
-           push_text("unkown");
+           push_static_text("unkown");
            break;
         }
       }
     }
 
-    if (TIFFFieldSet(tif,FIELD_EXTRASAMPLES) && td->td_extrasamples) 
+    if (TIFFFieldSet(tif,FIELD_EXTRASAMPLES) && td->td_extrasamples)
     {
-      push_text( "extra_samples" );
-      for (i = 0; i < td->td_extrasamples; i++) 
+      push_static_text( "extra_samples" );
+      for (i = 0; i < td->td_extrasamples; i++)
       {
-        switch (td->td_sampleinfo[i]) 
+        switch (td->td_sampleinfo[i])
         {
          case EXTRASAMPLE_UNSPECIFIED:
-           push_text("unspecified");
+           push_static_text("unspecified");
            break;
          case EXTRASAMPLE_ASSOCALPHA:
-           push_text("assoc-alpha");
+           push_static_text("assoc-alpha");
            break;
          case EXTRASAMPLE_UNASSALPHA:
-           push_text("unassoc-alpha");
+           push_static_text("unassoc-alpha");
            break;
          default:
            push_int( td->td_sampleinfo[i] );
@@ -581,27 +577,27 @@ void low_image_tiff_decode( struct buffer *buf,
       f_aggregate( td->td_extrasamples );
     }
 
-    if (TIFFFieldSet(tif,FIELD_THRESHHOLDING)) 
+    if (TIFFFieldSet(tif,FIELD_THRESHHOLDING))
     {
-      push_text( "threshholding" );
+      push_static_text( "threshholding" );
       switch (td->td_threshholding) {
        case THRESHHOLD_BILEVEL:
-         push_text( "bilevel art scan" );
+         push_static_text( "bilevel art scan" );
          break;
        case THRESHHOLD_HALFTONE:
-         push_text( "halftone or dithered scan" );
+         push_static_text( "halftone or dithered scan" );
          break;
        case THRESHHOLD_ERRORDIFFUSE:
-         push_text( "error diffused" );
+         push_static_text( "error diffused" );
          break;
        default:
-         push_text( "unknown" );
+         push_static_text( "unknown" );
          break;
       }
     }
     if (TIFFFieldSet(tif,FIELD_HALFTONEHINTS))
     {
-      push_text( "halftone_hints" );
+      push_static_text( "halftone_hints" );
       push_int(td->td_halftonehints[0]);
       push_int(td->td_halftonehints[1]);
       f_aggregate(2);
@@ -609,66 +605,66 @@ void low_image_tiff_decode( struct buffer *buf,
 
     if(td->td_artist)
     {
-      push_text("artist");
+      push_static_text("artist");
       push_text(td->td_artist);
     }
     if(td->td_datetime)
     {
-      push_text("datetime");
+      push_static_text("datetime");
       push_text(td->td_datetime);
     }
     if(td->td_hostcomputer)
     {
-      push_text("hostcomputer");
+      push_static_text("hostcomputer");
       push_text(td->td_hostcomputer);
     }
     if(td->td_software)
     {
-      push_text("software");
+      push_static_text("software");
       push_text(td->td_software);
     }
     if(td->td_documentname)
     {
-      push_text("name");
+      push_static_text("name");
       push_text(td->td_documentname);
     }
 
     if(td->td_imagedescription)
     {
-      push_text("comment");
+      push_static_text("comment");
       push_text(td->td_imagedescription);
     }
 
     if(td->td_make)
     {
-      push_text("make");
+      push_static_text("make");
       push_text(td->td_make);
     }
 
     if(td->td_model)
     {
-      push_text("model");
+      push_static_text("model");
       push_text(td->td_model);
     }
 
     if(td->td_pagename)
     {
-      push_text("page_name");
+      push_static_text("page_name");
       push_text(td->td_pagename);
     }
 
     if(TIFFFieldSet(tif,FIELD_PAGENUMBER))
     {
-      push_text("page_number");
+      push_static_text("page_number");
       push_int(td->td_pagenumber[0]);
       push_int(td->td_pagenumber[1]);
       f_aggregate(2);
     }
 
-    if (TIFFFieldSet(tif,FIELD_COLORMAP)) 
+    if (TIFFFieldSet(tif,FIELD_COLORMAP))
     {
       int l,n = 1L<<td->td_bitspersample;
-      push_text("colormap");
+      push_static_text("colormap");
       for (l = 0; l < n; l++)
       {
         push_int( td->td_colormap[0][l] );
@@ -682,21 +678,21 @@ void low_image_tiff_decode( struct buffer *buf,
 #ifdef COLORIMETRY_SUPPORT
     if (TIFFFieldSet(tif,FIELD_WHITEPOINT))
     {
-      push_text("whitepoint");
+      push_static_text("whitepoint");
       push_float(td->td_whitepoint[0]);
       push_float(td->td_whitepoint[1]);
       f_aggregate(2);
     }
     if (TIFFFieldSet(tif,FIELD_PRIMARYCHROMAS))
     {
-      push_text("primary_chromaticities");
+      push_static_text("primary_chromaticities");
       for(i=0;i<6;i++)
         push_float(td->td_primarychromas[i]);
       f_aggregate(6);
     }
-    if (TIFFFieldSet(tif,FIELD_REFBLACKWHITE)) 
+    if (TIFFFieldSet(tif,FIELD_REFBLACKWHITE))
     {
-      push_text("reference_black_white");
+      push_static_text("reference_black_white");
       for (i = 0; i < td->td_samplesperpixel; i++)
       {
         push_float(td->td_refblackwhite[2*i+0]);
@@ -716,7 +712,7 @@ static void image_tiff_decode( INT32 args )
 {
   struct buffer buffer;
   struct imagealpha res;
-  if(!args) 
+  if(!args)
     Pike_error("Too few arguments to Image.TIFF.decode()\n");
 
   if(TYPEOF(sp[-args]) != T_STRING)
@@ -807,21 +803,21 @@ static void image_tiff__decode( INT32 args )
   struct buffer buffer;
   struct imagealpha res;
   struct svalue *osp=sp;
-  if(!args) 
+  if(!args)
     Pike_error("Too few arguments to Image.TIFF.decode()\n");
   if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Invalid argument 1 to Image.TIFF.decode()\n");
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   buffer.str = sp[-args].u.string->str;
   buffer.len = buffer.real_len = sp[-args].u.string->len;
   buffer.extendable = 0;
   buffer.offset = 0;
 
   low_image_tiff_decode( &buffer, &res, 0 );
-  push_constant_text( "image" );
+  push_static_text( "image" );
   push_object( res.img );
-  push_constant_text( "alpha" );
+  push_static_text( "alpha" );
   push_object( res.alpha );
   f_aggregate_mapping( sp-osp );
   {
@@ -907,10 +903,10 @@ static void image_tiff_encode( INT32 args )
   ONERROR onerr;
 
   a.alpha = 0;
-  get_all_args( "Image.TIFF.encode", args, "%o", &a.img );
+  get_all_args( "encode", args, "%o", &a.img );
 
 
-  MEMSET(&c, 0, sizeof(c));
+  memset(&c, 0, sizeof(c));
   c.xdpy = 150.0;
   c.ydpy = 150.0;
   c.compression = 0;	/* Not a defined value. */
@@ -943,21 +939,11 @@ static void image_tiff_encode( INT32 args )
 
 
 /* Complies with the TIFFErrorHandler API */
-void my_tiff_warning_handler(const char *module, const char *fmt, va_list x){}
+void my_tiff_warning_handler(const char *UNUSED(module), const char *UNUSED(fmt), va_list UNUSED(x)){}
 /* Complies with the TIFFErrorHandler API */
-void my_tiff_error_handler(const char *module, const char *fmt, va_list x)
+void my_tiff_error_handler(const char *UNUSED(module), const char *fmt, va_list x)
 {
-#ifdef HAVE_VSNPRINTF
-  vsnprintf(last_tiff_error, TIFF_ERROR_BUF_SIZE-1, fmt, x);
-#else /* !HAVE_VSNPRINTF */
-  /* Sentinel that will be overwritten on buffer overflow. */
-  last_tiff_error[TIFF_ERROR_BUF_SIZE-1] = '\0';
-
-  VSPRINTF(last_tiff_error, fmt, x);
-
-  if(last_tiff_error[TIFF_ERROR_BUF_SIZE-1])
-    Pike_fatal("Buffer overflow in my_tiff_error_handler()\n");
-#endif /* HAVE_VSNPRINTF */
+  VSNPRINTF(last_tiff_error, TIFF_ERROR_BUF_SIZE-1, fmt, x);
 }
 
 #endif /* HAVE_WORKING_LIBTIFF */
@@ -1002,7 +988,7 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_WORKING_LIBTIFF
    opt_compression = 0;
-#ifdef DYNAMIC_MODULE
+#ifndef FAKE_DYNAMIC_LOAD
    image_program = PIKE_MODULE_IMPORT(Image, image_program);
    image_colortable_program = PIKE_MODULE_IMPORT(Image,
 						image_colortable_program);

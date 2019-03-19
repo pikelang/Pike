@@ -2,9 +2,22 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
+/*! @module Image
+ *!
+ *! @module DSI
+ *!
+ *! Decode-only support for the Dream SNES image file format.
+ *!
+ *! This is a little-endian 16 bitplane image format that starts with
+ *! two 32-bit integers, width and height, followed by w*h*2 bytes of
+ *! image data.
+ *!
+ *! Each pixel is r5g6b5, a special case is the color r=31,g=0,b=31
+ *! (full red, full blue, no green), which is transparent
+ *! (chroma-keying)
+ */
 /* Dream SNES Image file */
 
 #include "global.h"
@@ -20,6 +33,7 @@
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "operators.h"
+#include "bignum.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -29,7 +43,13 @@
 
 extern struct program *image_program;
 
-void f__decode( INT32 args )
+/*! @decl mapping(string:Image.Image) _decode(string data)
+ *!  Decode the DSI image.
+ *!
+ *! This function will treat pixels with full red, full blue, no green
+ *! as transparent.
+ */
+static void f__decode( INT32 args )
 {
   int xs, ys, x, y;
   unsigned char *data, *dp;
@@ -47,10 +67,10 @@ void f__decode( INT32 args )
   xs = data[0] | (data[1]<<8) | (data[2]<<16) | (data[3]<<24);
   ys = data[4] | (data[5]<<8) | (data[6]<<16) | (data[7]<<24);
 
-  if( (xs * ys * 2) != (ptrdiff_t)(len-8) )
+  if( (xs * ys * 2) != (ptrdiff_t)(len-8) ||
+      INT32_MUL_OVERFLOW(xs, ys) || ((xs * ys) & -0x8000000) )
     Pike_error("Not a DSI %d * %d + 8 != %ld\n",
-	  xs, ys,
-	  DO_NOT_WARN((long)len));
+          xs, ys, (long)len);
 
   push_int( xs );
   push_int( ys );
@@ -85,27 +105,34 @@ void f__decode( INT32 args )
       }
     }
 
-  push_constant_text( "image" );
+  push_static_text( "image" );
   push_object( i );
-  push_constant_text( "alpha" );
+  push_static_text( "alpha" );
   push_object( a );
   f_aggregate_mapping( 4 );
 }
 
-void f_decode( INT32 args )
+/*! @decl Image.Image decode(string data)
+ *!  Decode the DSI image, without alpha decoding.
+ */
+static void f_decode( INT32 args )
 {
   f__decode( args );
-  push_constant_text( "image" );
+  push_static_text( "image" );
   f_index( 2 );
 }
 
-void init_image_dsi()
+void init_image_dsi(void)
 {
   ADD_FUNCTION("_decode", f__decode, tFunc(tStr,tMapping), 0);
   ADD_FUNCTION("decode", f_decode, tFunc(tStr,tObj), 0);
 }
 
 
-void exit_image_dsi()
+void exit_image_dsi(void)
 {
 }
+/*! @endmodule
+ *!
+ *! @endmodule
+ */

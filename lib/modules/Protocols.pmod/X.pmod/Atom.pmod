@@ -1,9 +1,3 @@
-/* Atom.pmod
- *
- * X Atoms $Id$
- *
- */
-
 /*
  *    Proocols.X, a Pike interface to the X Window System
  *
@@ -21,12 +15,14 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #pike __REAL_VERSION__
+//! Keep track of X11 atoms
 
 class Atom
+//!
 {
   object display;
   string name;
@@ -57,7 +53,7 @@ class pending_request
 class pending_intern
 {
   inherit pending_request;
-  
+
   void handle_reply(int success, mixed reply)
   {
     if (!success)
@@ -74,7 +70,7 @@ class pending_intern
 class pending_name_lookup
 {
   inherit pending_request;
-  
+
   void handle_reply(int success, mixed reply)
   {
     if (!success)
@@ -88,9 +84,9 @@ class pending_name_lookup
   }
 }
 
-/* Keeps track of known atoms. *
- * Is inherited into Xlib.Display */
 class atom_manager
+//! Keeps track of known atoms.
+//! Is inherited into Xlib.Display
 {
   mapping(int:object) atoms = ([ ]);
   mapping(string:object) atom_table = ([ ]);
@@ -98,7 +94,7 @@ class atom_manager
   /* Defined in Xlib.display */
   void send_async_request(object req, function callback);
   array blocking_request(object req);
-  
+
   void remember_atom(object atom)
   {
     atoms[atom->id] = atom;
@@ -112,8 +108,8 @@ class atom_manager
     return req;
   }
 
-  /* Looks up the atom in local cache. If it is not present,
-   * issue an asyncronous InternAtom request, and return 0 */
+    //! Looks up the atom in local cache. If it is not present,
+    //! issue an asyncronous InternAtom request, and return 0
   object InternAtom(string name, function|void callback)
   {
     if (atom_table[name])
@@ -145,7 +141,7 @@ class atom_manager
     req->atom = atom->id;
     return req;
   }
-  
+
   object lookup_atom(int id, function|void callback)
   {
     if (atoms[id])

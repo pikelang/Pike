@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 // Filter for text/plain
@@ -14,8 +13,8 @@ constant fields = ({ "body" });
 
   if(objectp(data))
     data=data->read();
-  
+
   res->fields->body=data;
 
-  return res;  
+  return res;
 }

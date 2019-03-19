@@ -94,12 +94,7 @@ object decode( string data, mapping|void options )
 	      (len>0) && has_prefix(raw, init_tag + term)) {
 	    raw = raw[sizeof(init_tag+term)..len-1];
 	    if (encoding == 2) {
-	      // Decode the hex data.
-#if constant(String.hex2string)
 	      raw = String.hex2string(raw - term);
-#else
-	      raw += Crypto.hex_to_string(raw - term);
-#endif
 	    }
 	    if (sizeof(raw) == width*height*(ncols+nbws)) {
 	      array(string) rows = raw/width;

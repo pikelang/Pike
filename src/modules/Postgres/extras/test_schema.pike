@@ -1,4 +1,3 @@
-// $Id$
 
 //#include "postgres.h"
 #include <sql.h>

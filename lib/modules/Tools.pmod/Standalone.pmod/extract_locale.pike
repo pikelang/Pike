@@ -2,7 +2,6 @@
 //
 // By Martin Nilsson and Andreas Lange
 //
-// $Id$
 
 #pike __REAL_VERSION__
 
@@ -91,7 +90,7 @@ string quotemeta(string in) {
 	if(instr) ret += "\\";
 
       default:
-	if(instr) ret += in[i..i];	
+	if(instr) ret += in[i..i];
       }
   }
   return ret;
@@ -117,7 +116,7 @@ function get_encoder(string encoding) {
 
     default:
       object enc;
-      if(catch( enc = Locale.Charset.encoder( encoding ) )) {
+      if(catch( enc = Charset.encoder( encoding ) )) {
 	werror("\n* Error: Unknown encoding %O!\n", encoding);
 	exit(1);
       }
@@ -151,7 +150,7 @@ function get_decoder(string encoding) {
 
     default:
       object dec;
-      if(catch( dec = Locale.Charset.decoder( encoding ) )) {
+      if(catch( dec = Charset.decoder( encoding ) )) {
 	werror("\n* Error: Unknown encoding %O!\n", encoding);
 	exit(1);
       }
@@ -213,7 +212,7 @@ mapping parse_xml_file(string filename, string language) {
   Stdio.File in=Stdio.FILE();
   if(!in->open(filename, "r"))
     return ([]);
-  write("Reading %s%s", 	
+  write("Reading %s%s",
 	language ? "["+language+"] " : "",
 	(filename/"/")[-1]);
   string line = in->gets();
@@ -437,7 +436,7 @@ void write_xml_file(string filename, string language, string encoding,
 		     old_ids[id]->changetag : "");
       if(old_ids) {
 	if(diff!="")
-	  stats->changed++;	
+	  stats->changed++;
 	else if(!old_ids[id] || !old_ids[id]->text ||
 	   String.trim_whites(old_ids[id]->text)=="" ) {
 	  diff = "<new/>\n";
@@ -773,7 +772,7 @@ void update_xml_sourcefiles(array filelist) {
 		  args->project = m->project;
 		return 0;
 	      });
-    xml_parser->		
+    xml_parser->
       add_container("translate",
 		    // This is the string container
 		    lambda(object foo, mapping m, string c) {

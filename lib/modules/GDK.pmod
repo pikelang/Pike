@@ -1,8 +1,16 @@
 #pike __REAL_VERSION__
-
-#if constant(GTK) && constant(GTK.Widget)
+#require constant(GTK.Widget)
 
 #define INDEX(x) GTK[x]
+
+//! GDK wrapper module.
+//!
+//! This is a convenience module that is identical to either
+//! either the @[GDK2] or the @[GDK1] module depending on
+//! which (if any) of them is available.
+//!
+//! @seealso
+//!   @[GDK1], @[GDK2]
 
 //! @decl import GTK
 
@@ -43,16 +51,12 @@ mixed `[](string what)
 {
   if(what == "_module_value") return UNDEFINED;
   if(what == "Atom") return Atom;
-  if(!zero_type(INDEX("Gdk"+what)))
+  if(has_index(GTK, "Gdk"+what))
     return INDEX("Gdk"+what);
-  if(!zero_type(INDEX("GDK_"+what)))
+  if(has_index(GTK, "GDK_"+what))
     return INDEX("GDK_"+what);
-  if(!zero_type(INDEX("GDK_"+upper_case(GTK->unsillycaps(what)))))
+  if(has_index(GTK, "GDK_"+upper_case(GTK->unsillycaps(what))))
     return INDEX("GDK_"+upper_case(GTK->unsillycaps(what)));
   return UNDEFINED;
 //   return  GDKSupport[what];
 }
-
-#else /* constant(GTK.Widget) */
-constant this_program_does_not_exist=1;
-#endif

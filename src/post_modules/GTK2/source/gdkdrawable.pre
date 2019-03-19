@@ -94,7 +94,7 @@ struct program *cairo_program=NULL;
 
 int verify_cairo() {
   if (!cairo_program) {
-    push_text("Cairo.Context");
+    push_static_text("Cairo.Context");
     APPLY_MASTER("resolv",1);
     cairo_program=program_from_svalue(Pike_sp-1);
     Pike_sp--;

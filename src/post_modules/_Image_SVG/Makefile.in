@@ -1,4 +1,3 @@
-# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=svg.o
@@ -10,4 +9,3 @@ DEST=@prefix@/lib/pike/modules/
 
 @dynamic_module_makefile@
 @dependencies@
-

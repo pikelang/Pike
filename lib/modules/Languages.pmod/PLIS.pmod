@@ -19,7 +19,7 @@ object readline;
 
 /* Lisp types */
 
-class LObject 
+class LObject
 {
 }
 
@@ -40,7 +40,7 @@ class Boolean
   inherit SelfEvaluating;
 }
 
-class Cons 
+class Cons
 {
   inherit LObject;
 
@@ -67,7 +67,7 @@ class Cons
 
       object new_cdr = (cdr != Lempty) ? cdr->mapcar(fun, @extra)
 	: cdr;
-      if (new_cdr) 
+      if (new_cdr)
 	return this_program(new_car, new_cdr);
       else
       {
@@ -124,7 +124,7 @@ class Cons
       {
 	if (fun->is_special)
 	  return fun->apply(cdr, env, globals);
-	
+
 	object args = cdr->mapcar("eval", env, globals);
 	if (args)
 	  return fun->apply(args, env, globals);
@@ -143,7 +143,7 @@ class MutableCons
   constant is_mutable_cons = 1;
 }
 
-class Symbol 
+class Symbol
 {
   inherit LObject;
 
@@ -158,7 +158,7 @@ class Symbol
 	globals->eval_limit--;
 	if(globals->eval_limit==0)
 	{
-	  globals->eval_limit=1;  
+	  globals->eval_limit=1;
 	  error("Maximum eval-depth reached.");
 	}
       }
@@ -172,7 +172,7 @@ class Symbol
       }
       return binding->query();
     }
-  
+
   //  int __hash() { return hash(name); }
 
   string print(int display)
@@ -192,13 +192,13 @@ class Symbol
 
 }
 
-class ConstantSymbol 
+class ConstantSymbol
 {
   inherit Symbol : symbol;
   inherit SelfEvaluating;
 }
 
-class Nil 
+class Nil
 {
   inherit Cons;
   inherit SelfEvaluating;
@@ -239,14 +239,14 @@ class Number (int|float|object value)
 
   string print(int display) { return (string) value; }
 }
-  
+
 class Binding (object value)
 {
   object query() { return value; }
   void set(object v) { value = v; }
 }
-  
-class Environment 
+
+class Environment
 {
   inherit LObject;
   // int eval_limit; // ugly hack..
@@ -274,7 +274,7 @@ class Environment
       env[symbol] = Binding(value);
     }
 
-  string print(int display) 
+  string print(int display)
     {
       string res="";
       // werror("PLIS.Environment->print\n");
@@ -293,7 +293,7 @@ class Environment
       return res;
     }
 }
-  
+
 class Lambda (object formals, // May be a dotted list
 	      object list     // expressions
 	      )
@@ -329,15 +329,15 @@ class Lambda (object formals, // May be a dotted list
     {
       if (globals->limit_apply && (globals->limit_apply()))
 	return 0;
-      env = new_env(env, arglist); 
+      env = new_env(env, arglist);
       if (env)
 	return list->map("eval", env, globals);
       werror("Nothing to apply with.\n");
       return 0;
     }
 }
-  
-class Lexical 
+
+class Lexical
 {
   inherit Lambda : l;
   object env;
@@ -356,7 +356,7 @@ class Lexical
     }
 }
 
-class Macro 
+class Macro
 {
   inherit Lexical;
   constant is_special = 1;
@@ -367,7 +367,7 @@ class Macro
     }
 }
 
-class Dynamic 
+class Dynamic
 {
   inherit Lambda;
   object new_env(Environment env, object arglist)
@@ -384,9 +384,9 @@ class Builtin (function apply)
     {
       return sprintf("Builtin (%O)", apply);
     }
-}  
+}
 
-class Special 
+class Special
 {
   inherit Builtin;
   constant is_special = 1;
@@ -563,7 +563,7 @@ object s_define(object arglist, Environment env, Environment globals)
     return 0;
   env->extend(symbol, value);
   return symbol;
-}    
+}
 
 object s_defmacro(object arglist, Environment env, Environment globals)
 {
@@ -639,7 +639,7 @@ object s_while(object arglist, Environment env, Environment globals)
   object expr = arglist->car, res;
   object to_eval = arglist->cdr;
   werror( to_eval->print(1) );
-  
+
   while ( (res = expr->eval(env,globals)) != Lfalse)
     to_eval->map("eval", env, globals);//f_eval (to_eval,env,globals);
   return res;

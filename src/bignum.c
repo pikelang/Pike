@@ -2,12 +2,9 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
-
-#ifdef AUTO_BIGNUM
 
 #include "interpret.h"
 #include "program.h"
@@ -15,54 +12,16 @@
 #include "svalue.h"
 #include "pike_error.h"
 
-#define sp Pike_sp
-
-PMOD_EXPORT struct svalue auto_bignum_program = SVALUE_INIT_FREE;
-
-PMOD_EXPORT struct program *get_auto_bignum_program(void)
-{
-  return program_from_function(&auto_bignum_program);
-}
-
-PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void)
-{
-  if (TYPEOF(auto_bignum_program) == PIKE_T_FREE)
-    return 0;
-  return program_from_function(&auto_bignum_program);
-}
-
-void exit_auto_bignum(void)
-{
-  free_svalue(&auto_bignum_program);
-  mark_free_svalue (&auto_bignum_program);
-}
+#include "bignum.h"
 
 PMOD_EXPORT void convert_stack_top_to_bignum(void)
 {
-  if (TYPEOF(auto_bignum_program) != T_PROGRAM)
-    Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
-  apply_svalue(&auto_bignum_program, 1);
+  push_object(clone_object(bignum_program, 1));
 }
 
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
 {
-  if (TYPEOF(auto_bignum_program) != T_PROGRAM)
-    Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
-  apply_svalue(&auto_bignum_program, 2);
-}
-
-int is_bignum_object(struct object *o)
-{
-  /* Note:
-   * This function should *NOT* try to resolv Gmp.mpz unless
-   * it is already loaded into memory.
-   * /Hubbe
-   */
-
-  if (TYPEOF(auto_bignum_program) == T_INT)
-    return 0; /* not possible */
- 
-  return o->prog == program_from_svalue(&auto_bignum_program);
+  push_object(clone_object(bignum_program, 2));
 }
 
 PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
@@ -73,29 +32,13 @@ PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
 
 PMOD_EXPORT struct object *make_bignum_object(void)
 {
-  convert_stack_top_to_bignum();
-  dmalloc_touch_svalue(sp-1);
-  return (--sp)->u.object;
+  return clone_object(bignum_program, 1);
 }
 
 PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s)
 {
   push_svalue(s);
-  convert_stack_top_to_bignum();
-  dmalloc_touch_svalue(sp-1);
-  return (--sp)->u.object;
-}
-
-PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base)
-{
-  push_int(base);
-  safe_apply(o, "digits", 1);
-  
-  if(TYPEOF(sp[-1]) != T_STRING)
-    Pike_error("Gmp.mpz string conversion failed.\n");
-  
-  dmalloc_touch_svalue(sp-1);
-  return (--sp)->u.string;
+  return make_bignum_object();
 }
 
 PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s)
@@ -103,49 +46,7 @@ PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s)
   push_svalue(s);
   convert_stack_top_to_bignum();
   free_svalue(s);
-  *s=sp[-1];
-  sp--;
-  dmalloc_touch_svalue(sp);
+  *s=Pike_sp[-1];
+  Pike_sp--;
+  dmalloc_touch_svalue(Pike_sp);
 }
-
-#ifdef INT64
-static void bootstrap_push_int64 (INT64 i)
-{
-  if(i == DO_NOT_WARN((INT_TYPE)i))
-  {
-    push_int(DO_NOT_WARN((INT_TYPE)i));
-  }
-  else
-    Pike_fatal ("Failed to convert large integer (Gmp.bignum not loaded).\n");
-}
-
-PMOD_EXPORT void (*push_int64) (INT64) = bootstrap_push_int64;
-PMOD_EXPORT int (*int64_from_bignum) (INT64 *, struct object *) = NULL;
-PMOD_EXPORT void (*reduce_stack_top_bignum) (void) = NULL;
-#endif
-
-PMOD_EXPORT void (*push_ulongest) (unsigned LONGEST) = NULL;
-PMOD_EXPORT int (*ulongest_from_bignum) (unsigned LONGEST *,
-					 struct object *) = NULL;
-
-PMOD_EXPORT void hook_in_gmp_funcs (
-#ifdef INT64
-  void (*push_int64_val)(INT64),
-  int (*int64_from_bignum_val) (INT64 *, struct object *),
-  void (*reduce_stack_top_bignum_val) (void),
-#endif
-  void (*push_ulongest_val) (unsigned LONGEST),
-  int (*ulongest_from_bignum_val) (unsigned LONGEST *, struct object *))
-{
-  /* Assigning the pointers above directly from the Gmp module doesn't
-   * work in some cases, e.g. NT. */
-#ifdef INT64
-  push_int64 = push_int64_val ? push_int64_val : bootstrap_push_int64;
-  int64_from_bignum = int64_from_bignum_val;
-  reduce_stack_top_bignum = reduce_stack_top_bignum_val;
-#endif
-  push_ulongest = push_ulongest_val;
-  ulongest_from_bignum = ulongest_from_bignum_val;
-}
-
-#endif /* AUTO_BIGNUM */

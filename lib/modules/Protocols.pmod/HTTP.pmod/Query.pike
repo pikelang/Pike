@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 //! Open and execute an HTTP query.
 //!
 //! @example
@@ -27,13 +25,21 @@
 //!    return -1;
 //! }
 
-// FIXME: Uses hardcoded errnos from Linux/i386.
+#ifdef HTTP_QUERY_DEBUG
+#define DBG(X ...) werror(X)
+#else
+#define DBG(X ...)
+#endif
 
 /****** variables **************************************************/
 
 // open
 
-//!	Errno copied from the connection.
+//!	Errno copied from the connection or simulated for async operations.
+//!	@note
+//!		In Pike 7.8 and earlier hardcoded Linux values were used in
+//!		async operations, 110 instead of @expr{System.ETIMEDOUT@} and
+//!		113 instead of @expr{System.EHOSTUNREACH@}.
 int errno;
 
 //!	Tells if the connection is successfull.
@@ -55,7 +61,7 @@ int data_timeout = 120;	// seconds
 int timeout = 120;	// seconds
 
 // internal
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
  import SSL.Constants;
 #endif
 int(0..1) https = 0;
@@ -64,6 +70,7 @@ int(0..1) https = 0;
 //!
 //! Used to detect whether keep-alive can be used.
 string host;
+string real_host; // the hostname passed during the call to *_request()
 int port;
 
 object con;
@@ -71,7 +78,7 @@ string request;
 protected string send_buffer;
 
 string buf="",headerbuf="";
-int datapos, discarded_bytes;
+int datapos, discarded_bytes, cpos;
 
 #if constant(thread_create)
 object conthread;
@@ -92,28 +99,31 @@ protected int ponder_answer( int|void start_position )
       string s;
 
       if (i<0) i=0;
-      j=search(buf, "\r\n\r\n", i); if(j==-1) j=10000000;
-      i=search(buf, "\n\n", i);     if(i==-1) i=10000000;
-      if ((i=min(i,j))!=10000000) break;
+      j=search(buf, "\r\n\r\n", i);
+      i=search(buf, "\n\n", i);
+      if (`!=(-1, i, j)) {
+	  if (i*j >= 0) i = min(i, j);
+	  else if (i == -1) i = j;
+	  break;
+      }
 
       s=con->read(8192,1);
-#ifdef HTTP_QUERY_DEBUG
-      werror("-> %O\n",s);
-#endif
+      DBG("-> %O\n",s);
+
       if (!s) {
 	errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-	werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+	DBG ("<- (read error: %s)\n", strerror (errno));
 	return 0;
       }
       if (s=="") {
 	if (sizeof (buf) <= start_position) {
-	  // FIXME: Try to fake some kind of errno here, or HTTP
-	  // error?
-#ifdef HTTP_QUERY_DEBUG
-	  werror ("<- (premature EOF)\n");
+          // Fake a connection reset by peer errno.
+#if constant(System.ECONNRESET)
+          errno = System.ECONNRESET;
+#else
+          errno = 104;
 #endif
+	  DBG ("<- (premature EOF)\n");
 	  return -1;
 	}
 	i=strlen(buf);
@@ -129,10 +139,8 @@ protected int ponder_answer( int|void start_position )
    if (buf[i..i+1]=="\n\n") datapos=i+2;
    else datapos=i+4;
 
-#ifdef HTTP_QUERY_DEBUG
-   werror("** %d bytes of header; %d bytes left in buffer (pos=%d)\n",
-	  sizeof(headerbuf),sizeof(buf)-datapos,datapos);
-#endif
+   DBG("** %d bytes of header; %d bytes left in buffer (pos=%d)\n",
+       sizeof(headerbuf),sizeof(buf)-datapos,datapos);
 
    // split headers
 
@@ -162,35 +170,42 @@ protected int ponder_answer( int|void start_position )
 
 protected void close_connection()
 {
-  Stdio.File con = this_program::con;
+  Stdio.File con = this::con;
   if (!con) return;
-  this_program::con = 0;
+  this::con = 0;
   con->set_callbacks(0, 0, 0, 0, 0);	// Clear any remaining callbacks.
   con->close();
 }
 
+#if constant(SSL.Cipher)
+SSL.Context context;
+SSL.Session ssl_session;
+#endif
+
 void start_tls(int|void blocking, int|void async)
 {
-#ifdef HTTP_QUERY_DEBUG
-  werror("start_tls(%d)\n", blocking);
-#endif
-#if constant(SSL.Cipher.CipherAlgorithm)
-  // Create a context
-  SSL.context context = SSL.context();
-  // Allow only strong crypto
-  context->preferred_suites -= ({
-    //Weaker ciphersuites.
-    SSL_rsa_export_with_rc4_40_md5,
-    SSL_rsa_export_with_rc2_cbc_40_md5,
-    SSL_rsa_export_with_des40_cbc_sha,
-  });
-  context->random = Crypto.Random.random_string;
+  DBG("start_tls(%d,%d)\n", blocking, async);
+#if constant(SSL.Cipher)
+  if( !context )
+  {
+    context = SSL.Context();
+    context->trusted_issuers_cache = Standards.X509.load_authorities(0,1);
+  }
 
   object read_callback=con->query_read_callback();
   object write_callback=con->query_write_callback();
   object close_callback=con->query_close_callback();
 
-  SSL.sslfile ssl = SSL.sslfile(con, context, 1,blocking);
+  SSL.File ssl = SSL.File(con, context);
+  if (blocking) {
+    ssl->set_blocking();
+  }
+
+  if (!(ssl_session = ssl->connect(real_host, ssl_session))) {
+    error("HTTPS connection failed.\n");
+  }
+
+  con=ssl;
   if(!blocking) {
     if (async) {
       ssl->set_nonblocking(0,async_connected,async_failed);
@@ -200,7 +215,6 @@ void start_tls(int|void blocking, int|void async)
       ssl->set_close_callback(close_callback);
     }
   }
-  con=ssl;
 #else
   error ("HTTPS not supported (Nettle support is required).\n");
 #endif
@@ -208,9 +222,7 @@ void start_tls(int|void blocking, int|void async)
 
 protected void connect(string server,int port,int blocking)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("<- (connect %O:%d)\n",server,port);
-#endif
+   DBG("<- (connect %O:%d)\n",server,port);
 
    int success;
    if(con->_fd)
@@ -221,17 +233,13 @@ protected void connect(string server,int port,int blocking)
 
    if(!success) {
      errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-     werror("<- (connect error: %s)\n", strerror (errno));
-#endif
+     DBG("<- (connect error: %s)\n", strerror (errno));
      close_connection();
      ok = 0;
      return;
    }
 
-#ifdef HTTP_QUERY_DEBUG
-   werror("<- %O\n",request);
-#endif
+   DBG("<- %O\n",request);
 
    if(https) {
      start_tls(blocking);
@@ -239,9 +247,7 @@ protected void connect(string server,int port,int blocking)
 
    if (con->write(request) != sizeof (request)) {
      errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-     werror ("-> (write error: %s)\n", strerror (errno));
-#endif
+     DBG ("-> (write error: %s)\n", strerror (errno));
    }
    else
      ponder_answer();
@@ -250,40 +256,49 @@ protected void connect(string server,int port,int blocking)
 protected void async_close()
 {
   con->set_blocking();
-  if (ponder_answer() <= 0) {
+  int res = ponder_answer();
+  if (res == -1) {
+    async_reconnect();
+  } else if (!res) {
     async_failed();
   }
 }
 
 protected void async_read(mixed dummy,string s)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("-> %d bytes of data\n",sizeof(s));
-#endif
+   DBG("-> %d bytes of data\n",sizeof(s));
 
    buf+=s;
    if (has_value(buf, "\r\n\r\n") || has_value(buf,"\n\n"))
    {
       con->set_blocking();
-      ponder_answer();
+      if (ponder_answer() == -1)
+	async_reconnect();
    }
+}
+
+protected void async_reconnect()
+{
+  close_connection();
+  dns_lookup_async(host, async_got_host, port);
 }
 
 protected void async_write()
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("<- %O\n", send_buffer);
-#endif
+   DBG("<- %O\n", send_buffer);
    int bytes;
    if ((bytes = con->write(send_buffer)) < sizeof(send_buffer)) {
      if (bytes < 0) {
        errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-       werror ("-> (write error: %s)\n", strerror (errno));
-#endif
-     } else if (bytes) {
+       DBG ("-> (write error: %s)\n", strerror (errno));
+     } else {
+       // Note that "bytes" can be 0 here.
        send_buffer = send_buffer[bytes..];
-       return;
+       if (sizeof (send_buffer))
+	 return;
+
+       // send_buffer is empty at this point. We'll clear the write
+       // callback below.
      }
    }
    con->set_nonblocking(async_read,0,async_close);
@@ -292,18 +307,15 @@ protected void async_write()
 protected void async_connected()
 {
    con->set_nonblocking(async_read,async_write,async_close);
-#ifdef HTTP_QUERY_DEBUG
-   werror("<- %O\n","");
-#endif
+   DBG("<- %O\n","");
    con->write("");
 }
 
 protected void low_async_failed(int errno)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("** calling failed cb %O\n", request_fail);
-#endif
-   this_program::errno = errno;
+   DBG("** calling failed cb %O\n", request_fail);
+   if (errno)
+     this::errno = errno;
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
    remove_call_out(async_timeout);
@@ -311,27 +323,43 @@ protected void low_async_failed(int errno)
 
 protected void async_failed()
 {
+  DBG("** Async connection failure.\n");
+  if (!status) {
+    status = 502;	// HTTP_BAD_GW
+    status_desc = "Bad Gateway";
+  }
+#if constant(System.EHOSTUNREACH)
+  low_async_failed(con?con->errno():System.EHOSTUNREACH);
+#else
   low_async_failed(con?con->errno():113);	// EHOSTUNREACH/Linux-i386
+#endif
 }
 
 protected void async_timeout()
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("** TIMEOUT\n");
-#endif
+   DBG("** TIMEOUT\n");
+   if (!status) {
+     status = 504;	// HTTP_GW_TIMEOUT
+     status_desc = "Gateway timeout";
+   }
    close_connection();
+#if constant(System.ETIMEDOUT)
+   low_async_failed(System.ETIMEDOUT);
+#else
    low_async_failed(110);	// ETIMEDOUT/Linux-i386
+#endif
 }
 
 void async_got_host(string server,int port)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("async_got_host %s:%d\n", server, port);
-#endif
+   DBG("async_got_host %s:%d\n", server, port);
    if (!server)
    {
       async_failed();
-      close_connection();	//  we may be destructed here
+      if (this) {
+	//  we may be destructed here
+	close_connection();
+      }
       return;
    }
 
@@ -360,42 +388,72 @@ void async_got_host(string server,int port)
 
 void async_fetch_read(mixed dummy,string data)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("-> %d bytes of data\n",sizeof(data));
-#endif
+   DBG("-> %d bytes of data\n",sizeof(data));
    buf+=data;
 
-   if (!zero_type (headers["content-length"]) &&
+   if (has_index(headers, "content-length") &&
        sizeof(buf)-datapos>=(int)headers["content-length"])
    {
       remove_call_out(async_timeout); // Bug 4773
       con->set_nonblocking(0,0,0);
-      request_ok(this_object(), @extra_args);
+      request_ok(this, @extra_args);
    }
+}
+
+// This function is "liberal in what it receives" because it has no
+// real way to inform the user of errors in the chunked encoding sent
+// by the server. Except for calling the callback and have ->data() be
+// the messenger...
+void async_fetch_read_chunked(mixed dummy, string data) {
+    int np = -1, f;
+    buf+=data;
+OUTER: while (sizeof(buf) > cpos) {
+	do {
+	// in here:
+	// break calls the callback
+	// return waits for more input
+	// continue OUTER tries to parse one more chunk from buffer
+	    if ((f = search(buf, "\r\n", cpos)) != -1) {
+		if (sscanf(buf[cpos..f], "%x", np)) {
+		    if (np) cpos = f+np+4;
+		    else {
+			if (sscanf(buf[cpos..f+3], "%*x%*[ ]%s", data)
+				== 3 && sizeof(data) == 4) break;
+			return;
+		    }
+		    continue OUTER;
+		}
+		break;
+	    }
+	    return;
+	} while(0);
+	remove_call_out(async_timeout);
+	con->set_nonblocking(0,0,0);
+	request_ok(this, @extra_args);
+	break;
+    }
 }
 
 void async_fetch_close()
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("-> close\n");
-#endif
+   DBG("-> close\n");
    close_connection();
    remove_call_out(async_timeout);
    if (errno) {
-     if (request_fail) (request_fail)(this_object(), @extra_args);
+     if (request_fail) (request_fail)(this, @extra_args);
    } else {
-     if (request_ok) (request_ok)(this_object(), @extra_args);
+     if (request_ok) (request_ok)(this, @extra_args);
    }
 }
 
 /****** utilities **************************************************/
 string headers_encode(mapping(string:array(string)|string) h)
 {
-    constant rfc_headers = ({ "accept-charset", "accept-encoding", "accept-language", 
-                              "accept-ranges", "cache-control", "content-length", 
-                              "content-type", "if-match", "if-modified-since", 
-                              "if-none-match", "if-range", "if-unmodified-since", 
-                              "max-forwards", "proxy-authorization", "transfer-encoding", 
+    constant rfc_headers = ({ "accept-charset", "accept-encoding", "accept-language",
+                              "accept-ranges", "cache-control", "content-length",
+                              "content-type", "if-match", "if-modified-since",
+                              "if-none-match", "if-range", "if-unmodified-since",
+                              "max-forwards", "proxy-authorization", "transfer-encoding",
                               "user-agent", "www-autenticate" });
    constant replace_headers = mkmapping(replace(rfc_headers[*],"-","_"),rfc_headers);
 
@@ -443,9 +501,6 @@ protected mixed async_id;
 // Check if it's time to clean up the async dns object.
 protected void clean_async_dns()
 {
-#ifdef HTTP_QUERY_NOISE
-  werror("clean_async_dns\n");
-#endif
   int time_left = last_async_dns + PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT - time(1);
   if (time_left >= 0) {
     // Not yet.
@@ -464,9 +519,7 @@ protected void clean_async_dns()
 void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
 {
-#ifdef HTTP_QUERY_DEBUG
-  werror("dns_lookup_callback %s = %s\n", name, ip);
-#endif
+  DBG("dns_lookup_callback %s = %s\n", name, ip||"NULL");
    hostname_cache[name]=ip;
    if (functionp(callback))
       callback(ip,@extra);
@@ -606,7 +659,7 @@ this_program thread_request(string server, int port, string query,
 
    // prepare the request
 
-   errno = ok = protocol = this_program::headers = status_desc = status =
+   errno = ok = protocol = this::headers = status_desc = status =
      discarded_bytes = datapos = 0;
    buf = "";
    headerbuf = "";
@@ -639,30 +692,26 @@ this_program sync_request(string server, int port, string query,
 {
   int kept_alive;
 
+  this::real_host = server;
   // start open the connection
-
   if(con && con->is_open() &&
-     this_program::host == server &&
-     this_program::port == port &&
+     this::host == server &&
+     this::port == port &&
      headers && headers->connection &&
      lower_case( headers->connection ) != "close")
   {
-#ifdef HTTP_QUERY_DEBUG
-    werror("** Connection kept alive!\n");
-#endif
+    DBG("** Connection kept alive!\n");
     kept_alive = 1;
     // Remove unread data from the connection.
-    this_program::data();
+    this::data();
   }
   else
   {
-#ifdef HTTP_QUERY_DEBUG
-    werror("** Starting new connection to %O:%d.\n"
-	   "   con: %O (%d)\n"
-	   "   Previously connected to %O:%d\n",
-	   server, port, con, con && con->is_open(),
-	   this_program::host, this_program::port);
-#endif
+    DBG("** Starting new connection to %O:%d.\n"
+        "   con: %O (%d)\n"
+        "   Previously connected to %O:%d\n",
+        server, port, con, con && con->is_open(),
+        this::host, this::port);
     close_connection();	// Close any old connection.
 
     string ip = dns_lookup( server );
@@ -677,8 +726,8 @@ this_program sync_request(string server, int port, string query,
     }
     con = new_con;
 
-    this_program::host = server;
-    this_program::port = port;
+    this::host = server;
+    this::port = port;
   }
 
   // prepare the request
@@ -721,14 +770,10 @@ this_program sync_request(string server, int port, string query,
 
   if(kept_alive)
   {
-#ifdef HTTP_QUERY_DEBUG
-    werror("<- %O\n",request);
-#endif
+    DBG("<- %O\n",request);
     if (con->write( request ) != sizeof (request)) {
       errno = con->errno;
-#ifdef HTTP_QUERY_DEBUG
-      werror ("-> (write error: %s)\n", strerror (errno));
-#endif
+      DBG ("-> (write error: %s)\n", strerror (errno));
     }
     else
       if (ponder_answer() == -1) {
@@ -747,27 +792,15 @@ this_program sync_request(string server, int port, string query,
 this_program async_request(string server,int port,string query,
 			   void|mapping|string headers,void|string data)
 {
-#ifdef HTTP_QUERY_DEBUG
-   werror("async_request %s:%d %q\n", server, port, query);
-#endif
+   DBG("async_request %s:%d %q\n", server, port, query);
 
-   int keep_alive = con && con->is_open() && (this_program::host == server) &&
-     (this_program::port == port) && this_program::headers &&
-     (lower_case(this_program::headers->connection||"close") != "close");
+  this::real_host = server;
 
-#if 0
-   if (con && !keep_alive) {
-     werror("NOT KEPT ALIVE!\n"
-	    "con->is_open: %O\n"
-	    "Connected host: %O:%O\n"
-	    "Requested host: %O:%O\n"
-	    "Connection headers: %O\n",
-	    con->is_open(),
-	    this_program::host, this_program::port,
-	    server, port,
-	    this_program::headers);
-   }
-#endif
+   if (con) con->set_nonblocking_keep_callbacks();
+
+   int keep_alive = con && con->is_open() && (this::host == server) &&
+     (this::port == port) && this::headers &&
+     (lower_case(this::headers->connection||"close") != "close");
 
    // start open the connection
 
@@ -778,7 +811,7 @@ this_program async_request(string server,int port,string query,
    if (!headers) headers="";
    else if (mappingp(headers))
    {
-      headers=mkmapping(Array.map(indices(headers),lower_case),
+      headers=mkmapping(map(indices(headers),lower_case),
 			values(headers));
 
       if (data) headers["content-length"]=sizeof(data);
@@ -788,15 +821,15 @@ this_program async_request(string server,int port,string query,
 
    send_buffer = request = query+"\r\n"+headers+"\r\n"+(data||"");
 
-   errno = ok = protocol = this_program::headers = status_desc = status =
+   errno = ok = protocol = this::headers = status_desc = status =
      discarded_bytes = datapos = 0;
    buf = "";
    headerbuf = "";
 
    if (!keep_alive) {
       close_connection();
-      this_program::host = server;
-      this_program::port = port;
+      this::host = server;
+      this::port = port;
       dns_lookup_async(server,async_got_host,port);
    }
    else
@@ -841,9 +874,7 @@ string data(int|void max_length)
 	 int len;
 	 string s;
 
-#ifdef HTTP_QUERY_NOISE
-	 werror("got %d; chunk: %O left: %d\n",strlen(lbuf),rbuf[..40],strlen(rbuf));
-#endif
+	 DBG("got %d; chunk: %O left: %d\n",strlen(lbuf),rbuf[..40],strlen(rbuf));
 
 	 if (sscanf(rbuf,"%x%*[ ]\r\n%s",len,s)==3)
 	 {
@@ -854,15 +885,11 @@ string data(int|void max_length)
 		  int i;
 		  if ((i=search(rbuf,"\r\n\r\n"))==-1)
 		  {
-#ifdef HTTP_QUERY_DEBUG
-		    werror ("<- data() read\n");
-#endif
+		    DBG ("<- data() read\n");
 		     s=con->read(8192,1);
 		     if (!s) {
 		       errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-		       werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+		       DBG ("<- (read error: %s)\n", strerror (errno));
 		       return 0;
 		     }
 		     if (s=="") return lbuf;
@@ -871,10 +898,6 @@ string data(int|void max_length)
 		  }
 		  else
 		  {
-#ifdef HTTP_QUERY_NOISE
-		     werror("fin: buf len=%d; res len=%d\n",
-			    strlen(buf),strlen(rbuf));
-#endif
  	             // entity_headers=rbuf[..i-1];
 		     return lbuf;
 		  }
@@ -884,15 +907,11 @@ string data(int|void max_length)
 	    {
 	       if (strlen(s)<len)
 	       {
-#ifdef HTTP_QUERY_DEBUG
-		 werror ("<- data() read 2\n");
-#endif
+		 DBG ("<- data() read 2\n");
 		  string t=con->read(len-strlen(s)+6); // + crlfx3
 		  if (!t) {
 		    errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-		    werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+		    DBG ("<- (read error: %s)\n", strerror (errno));
 		    return 0;
 		  }
 		  if (t=="") return lbuf+s;
@@ -909,15 +928,11 @@ string data(int|void max_length)
 	 }
 	 else
 	 {
-#ifdef HTTP_QUERY_DEBUG
-	   werror ("<- data() read 3\n");
-#endif
+	   DBG ("<- data() read 3\n");
 	    s=con->read(8192,1);
 	    if (!s) {
 	      errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-	      werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+	      DBG ("<- (read error: %s)\n", strerror (errno));
 	      return 0;
 	    }
 	    if (s=="") return lbuf;
@@ -930,33 +945,27 @@ string data(int|void max_length)
    int len=(int)headers["content-length"];
    int l;
 // test if len is zero to get around zero_type bug (??!?) /Mirar
-   if(!len && zero_type( len ))
+   if(!len && undefinedp( len ))
       l=0x7fffffff;
    else {
       len -= discarded_bytes;
       l=len-sizeof(buf)+datapos;
    }
-   if(!zero_type(max_length) && l>max_length-sizeof(buf)+datapos)
+   if(!undefinedp(max_length) && l>max_length-sizeof(buf)+datapos)
      l = max_length-sizeof(buf)+datapos;
 
-#ifdef HTTP_QUERY_DEBUG
-   werror("fetch data: %d bytes needed, got %d, %d left\n",
-	  len,sizeof(buf)-datapos,l);
-#endif
+   DBG("fetch data: %d bytes needed, got %d, %d left\n",
+       len,sizeof(buf)-datapos,l);
 
    if(l>0 && con)
    {
      if(headers->server == "WebSTAR")
      { // Some servers reporting this name exhibit some really hideous behaviour:
-#ifdef HTTP_QUERY_DEBUG
-       werror ("<- data() read 4\n");
-#endif
+       DBG ("<- data() read 4\n");
        string s = con->read();
        if (!s) {
 	 errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-	 werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+	 DBG ("<- (read error: %s)\n", strerror (errno));
 	 return 0;
        }
        buf += s; // First, they may well lie about the content-length
@@ -965,35 +974,25 @@ string data(int|void max_length)
      }
      else
      {
-#ifdef HTTP_QUERY_DEBUG
-       werror ("<- data() read 5\n");
-#endif
+       DBG ("<- data() read 5\n");
        string s = con->read(l);
        if (!s && strlen(buf) <= datapos) {
 	 errno = con->errno();
-#ifdef HTTP_QUERY_DEBUG
-	 werror ("<- (read error: %s)\n", strerror (errno));
-#endif
+	 DBG ("<- (read error: %s)\n", strerror (errno));
 	 return 0;
        }
        if( s )
 	 buf += s;
      }
    }
-   if(zero_type( len ))
+   if(undefinedp( len ))
      len = sizeof( buf ) - datapos;
-   if(!zero_type(max_length) && len>max_length)
+   if(!undefinedp(max_length) && len>max_length)
      len = max_length;
-#ifdef HTTP_QUERY_NOISE
-   werror("buf[datapos..]      : %O\n", buf[datapos
-				        ..min(sizeof(buf), datapos+19)]);
-   werror("buf[..datapos+len] : %O\n", buf[max(0, datapos+len-19)
-				        ..min(sizeof(buf), datapos+len)]);
-#endif
    return buf[datapos..datapos+len-1];
 }
 
-protected Locale.Charset.Decoder charset_decoder;
+protected Charset.Decoder charset_decoder;
 
 //! Gives back data, but decoded according to the content-type
 //! character set.
@@ -1005,9 +1004,9 @@ string unicode_data() {
     if(headers["content-type"])
       sscanf(headers["content-type"], "%*scharset=%s", charset);
     if(!charset)
-      charset_decoder = Locale.Charset.decoder("ascii");
+      charset_decoder = Charset.decoder("ascii");
     else
-      charset_decoder = Locale.Charset.decoder(charset);
+      charset_decoder = Charset.decoder(charset);
   }
   return charset_decoder->feed(data())->drain();
 }
@@ -1029,7 +1028,7 @@ string incr_data(int max_length)
   return ret;
 }
 
-//!	Gives back the number of downloaded bytes.
+//! Gives back the number of downloaded bytes.
 int downloaded_bytes()
 {
   if(datapos)
@@ -1045,7 +1044,7 @@ int total_bytes()
   if(!headers)
     return -1;
   int len=(int)headers["content-length"];
-  if(zero_type(len))
+  if(undefinedp(len))
     return -1;
   else
     return len;
@@ -1082,7 +1081,7 @@ int total_bytes()
 
 //! @decl string cast("string")
 //!	Gives back the answer as a string.
-array|mapping|string cast(string to)
+protected array|mapping|string cast(string to)
 {
    switch (to)
    {
@@ -1098,48 +1097,48 @@ array|mapping|string cast(string to)
          data();
          return buf;
    }
-   error("HTTP.Query: can't cast to "+to+"\n");
+   return UNDEFINED;
 }
 
+//! Minimal simulation of a @[Stdio.File] object.
+//!
+//! Objects of this class are returned by @[file()] and @[datafile()].
+//!
+//! @note
+//!   Do not attempt further queries using this @[Query] object
+//!   before having read all data.
 class PseudoFile
 {
-   string buf;
-   object con;
+   Stdio.Buffer buf;
    int len;
-   int p=0;
 
-   void create(object _con,string _buf,int _len)
+   protected void create(string _buf, int _len)
    {
-      con=_con;
-      buf=_buf;
+      buf=Stdio.Buffer(_buf);
       len=_len;
-      if (!con) len=sizeof(buf);
    }
 
-   string read(int n)
+   //!
+   string read(int n, int(0..1)|void not_all)
    {
-      string s;
+      if (!len) return "";
+      if (n > len) n = len;
 
-      if (len && p+n>len) n=len-p;
-
-      // FIXME? A real file object returns as much data as it has,
-      // not 0.
       if (sizeof(buf)<n && con)
-      {
-	 string s=con->read(n-sizeof(buf));
-	 if (!s) return 0;
-	 buf+=s;
-      }
+         buf->input_from( con, n-sizeof(buf), not_all);
 
-      s=buf[..n-1];
-      buf=buf[n..];
-      p+=sizeof(s);
+      string s = buf->read(min(n,sizeof(buf)));
+
+      if (len != 0x7fffffff)
+        len -= strlen(s);
+
       return s;
    }
 
+   //!
    void close()
    {
-      con=0; // forget
+      destruct();
    }
 }
 
@@ -1169,20 +1168,19 @@ object file(void|mapping newheader,void|mapping removeheader)
       h=(h|(newheader||([])))-(removeheader||([]));
       string hbuf=headers_encode(h);
       if (hbuf=="") hbuf="\r\n";
-      if (zero_type(headers["content-length"]))
-	 len=0x7fffffff;
+      hbuf = protocol + " " + status + " " + status_desc + "\r\n" +
+	hbuf + "\r\n";
+      if (has_index(headers, "content-length"))
+	 len = sizeof(hbuf)+(int)headers["content-length"];
       else
-	 len=sizeof(protocol+" "+status+" "+status_desc)+2+
-	    sizeof(hbuf)+2+(int)headers["content-length"];
-      return PseudoFile(con,
-			protocol+" "+status+" "+status_desc+"\r\n"+
-			hbuf+"\r\n"+buf[datapos..],len);
+	 len=0x7fffffff;
+      return PseudoFile(hbuf + buf[datapos..],len);
    }
-   if (zero_type(headers["content-length"]))
-      len=0x7fffffff;
-   else
+   if (has_index(headers, "content-length"))
       len=sizeof(headerbuf)+4+(int)h["content-length"];
-   return PseudoFile(con,buf,len);
+   else
+      len=0x7fffffff;
+   return PseudoFile(headerbuf + "\r\n\r\n" + buf[datapos..], len);
 }
 
 //! @decl Protocols.HTTP.Query.PseudoFile datafile();
@@ -1201,7 +1199,7 @@ object datafile()
 #if constant(thread_create)
    `()();
 #endif
-   return PseudoFile(con,buf[datapos..],(int)headers["content-length"]);
+   return PseudoFile(buf[datapos..], (int)(headers["content-length"]||0x7ffffff));
 }
 
 protected void destroy()
@@ -1211,7 +1209,7 @@ protected void destroy()
    }
    async_id = 0;
 
-   close();
+   catch(close());
 }
 
 //! Close all associated file descriptors.
@@ -1231,25 +1229,32 @@ void close()
 //!   @[timed_async_fetch()], @[async_request()], @[set_callbacks()]
 void async_fetch(function callback,mixed ... extra)
 {
-   if (!zero_type (headers["content-length"]) &&
-       sizeof(buf)-datapos>=(int)headers["content-length"])
-   {
-      // FIXME: This is triggered erroneously for chunked transfer!
-      call_out(callback, 0, this_object(), @extra);
-      return;
-   }
+  if (has_index (headers, "content-length") &&
+      sizeof(buf)-datapos>=(int)headers["content-length"])
+  {
+    // FIXME: This is triggered erroneously for chunked transfer!
+    call_out(callback, 0, this, @extra);
+    return;
+  }
 
    if (!con)
    {
-      call_out(callback, 0, this_object(), @extra); // nothing to do, stupid...
+      call_out(callback, 0, this, @extra); // nothing to do, stupid...
       return;
    }
    extra_args=extra;
    request_ok=callback;
-   con->set_nonblocking(async_fetch_read,0,async_fetch_close);
+   cpos = datapos;
+   if (lower_case(headers["transfer-encoding"]) != "chunked")
+       con->set_nonblocking(async_fetch_read,0,async_fetch_close);
+   else {
+       con->set_nonblocking(async_fetch_read_chunked,0,async_fetch_close);
+       async_fetch_read_chunked(0, ""); // might already be complete
+					// in buffer
+   }
 }
 
-//! Like @[async_fetch()], except with a timeout and a corresponding fail 
+//! Like @[async_fetch()], except with a timeout and a corresponding fail
 //! callback function.
 //!
 //! @seealso
@@ -1258,17 +1263,17 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
 		       function(object, mixed ...:void) fail_callback,
 		       mixed ... extra) {
 
-  if (!zero_type (headers["content-length"]) &&
+  if (has_index (headers, "content-length") &&
       sizeof(buf)-datapos>=(int)headers["content-length"])
   {
-    call_out(ok_callback, 0, this_object(), @extra);
+    call_out(ok_callback, 0, this, @extra);
     return;
   }
 
   if (!con)
   {
     // nothing to do, stupid...
-    call_out(fail_callback, 0, this_object(), @extra);
+    call_out(fail_callback, 0, this, @extra);
     return;
   }
 

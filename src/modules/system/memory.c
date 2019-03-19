@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*! @module System
@@ -21,15 +20,10 @@
 #include "global.h"
 #include "system_machine.h"
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef HAVE_FCNTL_H
@@ -43,10 +37,6 @@
 #ifdef HAVE_SYS_SHM_H
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#endif
-
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
 #endif
 
 #ifdef HAVE_CYGWIN_SHM_H
@@ -107,11 +97,16 @@ static void memory_shm(INT32 args);
 #define THISOBJ (Pike_fp->current_object)
 #define THIS ((struct memory_storage *)(Pike_fp->current_storage))
 
-static void init_memory(struct object *o)
+static void init_memory(struct object *UNUSED(o))
 {
    THIS->p=NULL;
    THIS->size=0;
    THIS->flags=0;
+}
+
+static void memory__size_object( INT32 UNUSED(args) )
+{
+    push_int(THIS->size);
 }
 
 static void MEMORY_FREE( struct memory_storage *storage )
@@ -143,7 +138,7 @@ static void MEMORY_FREE( struct memory_storage *storage )
    if (!(STORAGE->p))							\
       Pike_error("%s: no memory in this Memory object\n",FUNC);
 
-static void exit_memory(struct object *o)
+static void exit_memory(struct object *UNUSED(o))
 {
    MEMORY_FREE(THIS);
 }
@@ -171,12 +166,11 @@ static void memory_create(INT32 args)
 	      TYPEOF(sp[-args+1]) == T_INT && args==2 )
 	memory_shm( args );
       else
-	 SIMPLE_BAD_ARG_ERROR("Memory",1,"int or string");
+	 SIMPLE_BAD_ARG_ERROR("create",1,"int|string");
    }
    else
    {
       MEMORY_FREE(THIS);
-      push_int(0);
    }
 }
 
@@ -215,11 +209,11 @@ static void memory_shm( INT32 args )
   MEMORY_FREE(THIS);
 
   if( args < 2 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("Memory.shmat",2);
+    SIMPLE_TOO_FEW_ARGS_ERROR("shmat",2);
   if (TYPEOF(Pike_sp[1-args]) != T_INT )
-    SIMPLE_BAD_ARG_ERROR("Memory.shmat",1,"int(0..)");
+    SIMPLE_BAD_ARG_ERROR("shmat",1,"int(0..)");
   if (TYPEOF(Pike_sp[-args]) != T_INT )
-    SIMPLE_BAD_ARG_ERROR("Memory.shmat",0,"int(0..)");
+    SIMPLE_BAD_ARG_ERROR("shmat",0,"int(0..)");
 
   if( (id = shmget( Pike_sp[0-args].u.integer,
 		    Pike_sp[1-args].u.integer,
@@ -284,18 +278,18 @@ static void memory__mmap(INT32 args,int complain,int private)
    off_t osize=0;
    size_t offset=0,size=0;
    char *mem;
-   int flags=0; 
+   int flags=0;
    int resflags=MEM_FREE_MUNMAP|MEM_WRITE|MEM_READ;
-  
+
    MEMORY_FREE(THIS); /* we expect this even on error */
 
-   if (args<1) 
-      SIMPLE_TOO_FEW_ARGS_ERROR("Memory.mmap",1);
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("mmap",1);
 
    if (args>=2) {
       if (TYPEOF(sp[1-args]) != T_INT ||
 	  sp[1-args].u.integer<0)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",2,"int(0..)");
+	 SIMPLE_BAD_ARG_ERROR("mmap",2,"int(0..)");
       else
 	 offset=sp[1-args].u.integer;
    }
@@ -303,7 +297,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    if (args>=3) {
       if (TYPEOF(sp[2-args]) != T_INT ||
 	  sp[2-args].u.integer<0)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",3,"int(0..)");
+	 SIMPLE_BAD_ARG_ERROR("mmap",3,"int(0..)");
       else
 	 size=sp[2-args].u.integer;
    }
@@ -312,22 +306,22 @@ static void memory__mmap(INT32 args,int complain,int private)
    {
       struct object *o=sp[-args].u.object;
       ref_push_object(o);
-      push_text("query_fd");
+      push_static_text("query_fd");
       f_index(2);
       if (TYPEOF(sp[-1]) == T_INT)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
+	 SIMPLE_BAD_ARG_ERROR("mmap",1,
 			      "(string or) Stdio.File (missing query_fd)");
       f_call_function(1);
       if (TYPEOF(sp[-1]) != T_INT)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
+	 SIMPLE_BAD_ARG_ERROR("mmap",1,
 			      "(string or) Stdio.File (weird query_fd)");
       fd=sp[-1].u.integer;
       sp--;
       if (fd<0) {
 	 if (complain)
-	    SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
+	    SIMPLE_BAD_ARG_ERROR("mmap",1,
 				 "(string or) Stdio.File (file not open)");
-	 else 
+	 else
 	    RETURN(0);
       }
 
@@ -338,10 +332,13 @@ static void memory__mmap(INT32 args,int complain,int private)
    else if (TYPEOF(sp[-args]) == T_STRING)
    {
       char *filename;
-      get_all_args("Memory.mmap",args,"%s",&filename); /* 8 bit! */
-      
+      get_all_args("mmap",args,"%s",&filename); /* 8 bit! */
+
       THREADS_ALLOW();
       fd = fd_open(filename,fd_RDWR,0);
+      if( fd < 0 )
+          fd = fd_open(filename,fd_RDONLY,0);
+
       if (fd>=0) osize=file_size(fd);
       THREADS_DISALLOW();
 
@@ -356,7 +353,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 
    if (osize<0)
    {
-      if (doclose) fd_close(fd); 					
+      if (doclose) fd_close(fd);
       if (!complain)
 	 RETURN(0);
       else
@@ -396,17 +393,17 @@ static void memory__mmap(INT32 args,int complain,int private)
       {
 	 case EBADF:  Pike_error("Memory.mmap(): error: not a valid fd\n");
 	 case EACCES: Pike_error("Memory.mmap(): error: no access\n");
-	 case EINVAL: 
+	 case EINVAL:
 	    Pike_error("Memory.mmap(): error: invalid parameters "
 		       "(probably non-aligned offset or size)\n");
 	 case EAGAIN: Pike_error("Memory.mmap(): error: file is locked\n");
-	 case ENOMEM: 
+	 case ENOMEM:
 	    Pike_error("Memory.mmap(): error: out of address space\n");
-	 default:     
+	 default:
 	    Pike_error("Memory.mmap(): unknown error: errno=%d\n",errno);
       }
    }
-   
+
 /* need to do this again, due to threads */
    MEMORY_FREE(THIS);
 
@@ -445,26 +442,25 @@ static void memory_allocate(INT32 args)
    unsigned char *mem;
 
    if (args>=2)
-      get_all_args("Memory.allocate",args,"%+%+",&size,&c);
+      get_all_args("allocate",args,"%+%+",&size,&c);
    else
-      get_all_args("Memory.allocate",args,"%+",&size);
+      get_all_args("allocate",args,"%+",&size);
 
    /* just to be sure */
    if (size<0)
-      SIMPLE_BAD_ARG_ERROR("Memory.allocate",1,"int(0..)");
-   
-   pop_n_elems(args);
+      SIMPLE_BAD_ARG_ERROR("allocate",1,"int(0..)");
+
    if (size>1024*1024) /* threshold */
    {
       THREADS_ALLOW();
-      mem = (unsigned char *)xalloc(size);
-      MEMSET(mem,c,size);
+      mem = xalloc(size);
+      memset(mem,c,size);
       THREADS_DISALLOW();
    }
    else
    {
-      mem = (unsigned char *)xalloc(size);
-      MEMSET(mem,c,size);
+      mem = xalloc(size);
+      memset(mem,c,size);
    }
 
    MEMORY_FREE(THIS);
@@ -478,10 +474,8 @@ static void memory_allocate(INT32 args)
  *!
  *!	Free the allocated or <tt>mmap</tt>ed memory.
  */
-static void memory_free(INT32 args)
+static void memory_free(INT32 UNUSED(args))
 {
-   pop_n_elems(args);
-   push_int(0);
    MEMORY_FREE(THIS);
 }
 
@@ -528,39 +522,35 @@ static void memory_writeable(INT32 args)
  */
 static void memory_cast(INT32 args)
 {
-   char *s;
-   get_all_args("Memory.cast",args,"%s",&s);
+  struct pike_string *type = Pike_sp[-args].u.string;
+  pop_stack(); /* type have at least one more reference. */
 
-   MEMORY_VALID(THIS,"Memory.cast");
-   
-   if (strncmp(s,"string",5)==0)
-   {
-      pop_n_elems(args);
-      push_string(make_shared_binary_string((char *)THIS->p, THIS->size));
-      return;
-   }
-   if (strncmp(s,"array",5)==0)
-   {
-      struct array *a;
-      size_t i,sz=THIS->size;
-      struct svalue *sv;
+  MEMORY_VALID(THIS,"Memory.cast");
 
-      pop_n_elems(args);
+  if (type == literal_string_string)
+  {
+    push_string(make_shared_binary_string((char *)THIS->p, THIS->size));
+  }
+  else if (type == literal_array_string)
+  {
+    struct array *a;
+    size_t i,sz=THIS->size;
+    struct svalue *sv;
 
-      a=low_allocate_array(sz,0);
+    a=low_allocate_array(sz,0);
 
-      sv=ITEM(a);
-      for (i=0; i<sz; i++)
-      {
-	 sv->u.integer=(((unsigned char*)(THIS->p)))[i];
-	 sv++;
-      }
-      a->type_field = BIT_INT;
+    sv=ITEM(a);
+    for (i=0; i<sz; i++)
+    {
+      sv->u.integer=(((unsigned char*)(THIS->p)))[i];
+      sv++;
+    }
+    a->type_field = BIT_INT;
 
-      push_array(a);
-
-      return;
-   }
+    push_array(a);
+  }
+  else
+    push_undefined();
 }
 
 /*! @decl string pread(int(0..) pos,int(0..) len)
@@ -702,8 +692,8 @@ MEMORY_PREADN(memory_pread32n,"Memory.pread32n",4,make_shared_binary_string2)
  *! @decl int pwrite16i(int(0..) pos,string data)
  *! @decl int pwrite32i(int(0..) pos,string data)
  *!
- *!	Write a string to the memory (and to the file, if it's mmap()ed). 
- *!	The 16 and 32 variants writes widestrings, 
+ *!	Write a string to the memory (and to the file, if it's mmap()ed).
+ *!	The 16 and 32 variants writes widestrings,
  *!	16 or 32 bits (2 or 4 bytes) wide,
  *!	the 'i' variants in intel byteorder, the other in network byteorder.
  *!
@@ -727,7 +717,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
    MEMORY_VALID(THIS,func);
    if (!(THIS->flags&MEM_WRITE))
       Pike_error("%s: can't write in this memory\n",func);
-   
+
    if (rpos+(rlen<<shift)>THIS->size)
       Pike_error("%s: writing outside allocation\n",func);
 
@@ -738,13 +728,13 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	   THIS->p,rpos,THIS->p+rpos,ps->str,ps->len,shift,ps->size_shift);
 #endif
 
-   if (rlen) 
+   if (rlen)
       switch (ps->size_shift*010 + shift)
       {
 	 case 022: /* 2 -> 2 */
 	    if (reverse)
 	      copy_reverse_string2(d, (unsigned char *)ps->str, ps->len);
-	    else MEMCPY(d,ps->str,ps->len*4);
+	    else memcpy(d,ps->str,ps->len*4);
 	    break;
 	 case 012: /* 1 -> 2 */
 	    if (reverse)
@@ -759,7 +749,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	 case 011: /* 1 -> 1 */
 	    if (reverse)
 	      copy_reverse_string1(d, (unsigned char *)ps->str,ps->len);
-	    else MEMCPY(d,ps->str,ps->len*2);
+	    else memcpy(d,ps->str,ps->len*2);
 	    break;
 	 case 001: /* 0 -> 1 */
 	    if (reverse)
@@ -767,7 +757,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	    else convert_0_to_1((p_wchar1*)d, STR0(ps), ps->len);
 	    break;
 	 case 000:
-	    MEMCPY(d,ps->str,ps->len);
+	    memcpy(d,ps->str,ps->len);
 	    break;
 	 default:
 	    Pike_error("Illegal state %d -> %d\n",ps->size_shift,shift);
@@ -809,17 +799,17 @@ static void memory_index(INT32 args)
    {
       INT_TYPE pos;
       size_t rpos = 0;
-      get_all_args("Memory.`[]",args,"%i",&pos);
+      get_all_args("`[]",args,"%i",&pos);
       if (pos<0) {
-	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
+         if ((off_t)-pos>=(off_t)THIS->size)
 	    Pike_error("Memory.`[]: Index is out of range\n");
 	 else
-	    rpos=(size_t)(DO_NOT_WARN((off_t)(THIS->size))+(off_t)pos);
+            rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
       }
-      else 
+      else
       {
 	 rpos=(size_t)pos;
-      
+
 	 if (rpos>THIS->size)
 	    Pike_error("Memory.`[]: Index is out of range\n");
       }
@@ -835,9 +825,9 @@ static void memory_index(INT32 args)
 	 INT_TYPE pos1,pos2;
 	 size_t rpos1,rpos2;
 
-	 get_all_args("Memory.`[]",args,"%i%i",&pos1,&pos2);
+	 get_all_args("`[]",args,"%i%i",&pos1,&pos2);
 	 if (pos1<0) rpos1=0; else rpos1=(size_t)pos1;
-	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1; 
+	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1;
 	 else rpos2=(size_t)pos2;
 
 	 if (rpos2<rpos1)
@@ -864,16 +854,16 @@ static void memory_index_write(INT32 args)
    {
       INT_TYPE pos,ch;
       size_t rpos = 0;
-      get_all_args("Memory.`[]=",args,"%i%i",&pos,&ch);
-      if (pos<0) 
-	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
+      get_all_args("`[]=",args,"%i%i",&pos,&ch);
+      if (pos<0)
+         if ((off_t)-pos>=(off_t)THIS->size)
 	    Pike_error("Memory.`[]=: Index is out of range\n");
 	 else
-	    rpos=(size_t)(DO_NOT_WARN((off_t)(THIS->size))+(off_t)pos);
-      else 
+            rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
+      else
       {
 	 rpos=(size_t)pos;
-      
+
 	 if (rpos>THIS->size)
 	    Pike_error("Memory.`[]=: Index is out of range\n");
       }
@@ -887,7 +877,7 @@ static void memory_index_write(INT32 args)
      INT_TYPE pos1, pos2;
      struct pike_string *ps;
 
-     get_all_args("Memory.`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
+     get_all_args("`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
 
      if (pos1 < 0) pos1 = 0;
      if (pos2 < 0) pos2 = 0;
@@ -895,9 +885,9 @@ static void memory_index_write(INT32 args)
      if ((pos2<pos1) || (ps->len != pos2-pos1+1))
        Pike_error("Memory.`[]=: source and destination "
 		  "not equally long (%ld v/s %ld; can't resize memory)\n",
-		  DO_NOT_WARN((long)ps->len), (long)pos2-(long)pos1);
+                  (long)ps->len, (long)pos2-(long)pos1);
      else
-       MEMCPY(THIS->p+pos1, ps->str, ps->len);
+       memcpy(THIS->p+pos1, ps->str, ps->len);
 
      ref_push_string(ps);
    }
@@ -909,7 +899,7 @@ static void memory_index_write(INT32 args)
 
 /*! @endmodule
  */
-  
+
 /*** module init & exit & stuff *****************************************/
 
 void init_system_memory(void)
@@ -921,10 +911,10 @@ void init_system_memory(void)
    start_new_program();
    ADD_STORAGE(struct memory_storage);
 
-   ADD_FUNCTION("create", 
-		memory_create,    
+   ADD_FUNCTION("create",
+		memory_create,
 		tOr3(tFunc(tVoid,tVoid),
-		     tFunc(tOr(tStr,tObj) 
+		     tFunc(tOr(tStr,tObj)
 			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
 		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)), 0);
 
@@ -934,16 +924,19 @@ void init_system_memory(void)
 
 #ifdef HAVE_MMAP
    ADD_FUNCTION("mmap",memory_mmap,
-		tFunc(tOr(tStr,tObj) 
+		tFunc(tOr(tStr,tObj)
 		      tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tInt),0);
    ADD_FUNCTION("mmap_private",memory_mmap_private,
-		tFunc(tOr(tStr,tObj) 
+		tFunc(tOr(tStr,tObj)
 		      tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tInt),0);
 #endif
 
    ADD_FUNCTION("allocate",memory_allocate,
 		tFunc(tIntPos tOr(tByte,tVoid),tVoid),0);
-   
+
+   ADD_FUNCTION("_size_object",memory__size_object,
+                tFunc(tVoid,tInt),0);
+
    ADD_FUNCTION("free",memory_free,tFunc(tVoid,tVoid),0);
 
    ADD_FUNCTION("valid",memory_valid,tFunc(tVoid,tInt01),0);
@@ -951,7 +944,7 @@ void init_system_memory(void)
 
    ADD_FUNCTION("_sizeof",memory__sizeof,tFunc(tVoid,tIntPos),0);
    ADD_FUNCTION("cast",memory_cast,
-		tFunc(tStr,tOr(tArr(tInt),tStr)),0);
+		tFunc(tStr,tOr(tArr(tInt),tStr)),ID_PRIVATE);
 
    ADD_FUNCTION("`[]",memory_index,
 		tOr(tFunc(tInt,tInt),

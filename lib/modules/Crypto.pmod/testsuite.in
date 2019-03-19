@@ -1,29 +1,25 @@
 START_MARKER
-// $Id$
-
-// Nettle.Yarrow
 
 test_compile_error( H )
 test_compile_error( S )
 test_do( add_constant( "H", String.hex2string ) )
 test_do( add_constant( "S", String.string2hex ) )
 
-cond_resolv( Nettle.CBC, [[
-  test_true( programp(Crypto.CBC) )
-  test_true( programp(Crypto.Buffer) )
+cond_resolv( Nettle.Cipher, [[
+  test_true( programp(Crypto.Cipher) )
   test_true( programp(Crypto.CipherState) )
   test_true( programp(Crypto.HashState) )
 ]])
 
-cond_resolv( Nettle.Proxy, [[
+cond_resolv( Nettle.Cipher, [[
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
-    object b2 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
+    object b2 = Crypto.AES.Buffer();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
     foreach( ({ Crypto.PAD_SSL, Crypto.PAD_ISO_10126,
                 Crypto.PAD_ANSI_X923, Crypto.PAD_PKCS7,
-                Crypto.PAD_ZERO }), int m )
+                Crypto.PAD_ZERO, Crypto.PAD_TLS }), int m )
     {
       for(int i=1; i<Crypto.AES->block_size(); i++) {
         string p = "x"*i;
@@ -41,7 +37,7 @@ cond_resolv( Nettle.Proxy, [[
     return 1;
   ]], 1)
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
     object b2 = Crypto.AES();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
@@ -51,7 +47,7 @@ cond_resolv( Nettle.Proxy, [[
     return b2->crypt(x)[-1];
   ]], 13)
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
     object b2 = Crypto.AES();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
@@ -61,7 +57,7 @@ cond_resolv( Nettle.Proxy, [[
     return b2->crypt(x)[-1];
   ]], 14)
   test_eval_error([[
-    object b = Crypto.Buffer(Crypto.AES);
+    object b = Crypto.AES.Buffer();
     b->set_encrypt_key("A"*32);
     b->crypt("AA\0");
     b->pad(Crypto.PAD_ZERO);
@@ -69,7 +65,7 @@ cond_resolv( Nettle.Proxy, [[
 
   define(test_pad,[[
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
     object b2 = Crypto.AES();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
@@ -80,7 +76,7 @@ cond_resolv( Nettle.Proxy, [[
   ]], $2)
   ]])
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
     object b2 = Crypto.AES();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
@@ -93,7 +89,7 @@ cond_resolv( Nettle.Proxy, [[
       c[-1]==13;
   ]], 1)
   test_any([[
-    object b1 = Crypto.Buffer(Crypto.AES);
+    object b1 = Crypto.AES.Buffer();
     object b2 = Crypto.AES();
     b1->set_encrypt_key("A"*32);
     b2->set_decrypt_key("A"*32);
@@ -110,22 +106,65 @@ cond_resolv( Nettle.Proxy, [[
   test_pad(PAD_ZERO, "AA"+"\0"*14)
 
   test_eval_error([[
-    object b = Crypto.Buffer(Crypto.AES);
+    object b = Crypto.AES.Buffer();
     b->set_encrypt_key("A"*32);
     b->crypt("A\0");
     b->pad(Crypto.PAD_ZERO);
   ]])
   test_eval_error([[
-    object b = Crypto.Buffer(Crypto.AES);
+    object b = Crypto.AES.Buffer();
     b->set_encrypt_key("A"*32);
-    b->pad(5);
+    b->pad(6);
   ]])
   test_eval_error([[
-    object b = Crypto.Buffer(Crypto.AES);
+    object b = Crypto.AES.Buffer();
     b->set_decrypt_key("A"*32);
     b->unpad("X"*(Crypto.AES.block_size()+1));
   ]])
+
+  test_any([[
+    object b = Crypto.AES.CBC.Buffer();
+    b->set_encrypt_key("key "*4);
+    array a = ({});
+    for(int i; i<5; i++)
+      a += ({ b->crypt("12345") });
+    a += ({ b->pad(Crypto.PAD_PKCS7) });
+    return a*",";
+  ]], [[",,,\355Gn@\346\213\373\34TX@2\0o\206\372,,\322\236\277\321\332\vK\213\344""6\341\202\265\275\333e"]])
+
+  test_any([[
+    object b = Crypto.AES.CBC.Buffer();
+    b->set_decrypt_key("key "*4);
+    array a = ({});
+    a += ({ b->crypt("\355Gn@\346\213\373\34TX") });
+    a += ({ b->crypt("@2\0o\206\372\322\236\277\321") });
+    a += ({ b->crypt("\332\vK\213\344""6\341\202\265\275") });
+    a += ({ b->unpad("\333e", Crypto.PAD_PKCS7) });
+    return a*",";
+  ]],[[ ",1234512345123451,,234512345" ]])
 ]])
+
+test_any([[
+  object b = Crypto.AES.Buffer();
+  b->set_decrypt_key("A"*16);
+  return b->unpad("p\354v\251y8\351]B\367\254+\350G\257""5");
+]], "AA")
+test_any([[
+  object b = Crypto.AES.Buffer();
+  b->set_decrypt_key("A"*16);
+  return b->unpad("\225\222\355<k\b$.\327\370\317b\236p-\245", Crypto.PAD_ANSI_X923);
+]], 0)
+test_any([[
+  object b = Crypto.AES.Buffer();
+  b->set_decrypt_key("A"*16);
+  return b->unpad("\362\237""7r\302% \360\276\201\316#<W4\231", Crypto.PAD_PKCS7);
+]], 0)
+test_any([[
+  object b = Crypto.AES.Buffer();
+  b->set_decrypt_key("A"*16);
+  return b->unpad("p\354v\251y8\351]B\367\254+\350G\257""5", Crypto.PAD_TLS);
+]], 0)
+
 
 cond_resolv( Nettle.Yarrow, [[
   test_eq( Nettle.Yarrow()->min_seed_size(), 32)
@@ -141,139 +180,187 @@ cond_resolv( Nettle.Yarrow, [[
   test_do( Nettle.Yarrow()->seed("\0"*32)->force_reseed() )
   test_do( Nettle.Yarrow()->needed_sources(), 2 )
   test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(0), "")
-  test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(1), "\26")
+  test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(1), " ")
   test_eq( S(Nettle.Yarrow()->seed("\0"*32)->random_string(32)),
-    "16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93" )
+    "200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507" )
   test_eq( S(Nettle.Yarrow(7)->seed("\0"*32)->random_string(32)),
-    "16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93" )
+    "200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507" )
   test_eq( S(Nettle.Yarrow()->seed((string)enumerate(33))->random_string(32)),
-    "2c6465cdc71b348074f7f76c484b67802b24b62d3c2191a6f89f1a9f80e8c520" )
+    "c63f6a753bf294272263e56282965dc35ef53f9799907761ecb2cd26633b4d0d" )
   test_any([[
     object r=Nettle.Yarrow(1)->seed("\0"*32);
     r->update("\0"*32,0,0);
     return S(r->random_string(32));
-  ]], "16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93" )
+  ]], "200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507" )
   test_any([[
     object r=Nettle.Yarrow(1)->seed("\0"*32);
     r->update("\0"*32,0,256);
     return S(r->random_string(32));
-  ]], "62bf8e8dcc9ec262ebc57a00005d3b98bf4336004c015c3eb97361e95e5b814d" )
-]])  
+  ]], "c31e0ef2059db21e39ec0d0a0c1f790246eee47afc4054d752b20d64e494225d" )
+]])
 
 // Crypto.Random
-cond_resolv( Nettle.Yarrow, [[
+cond_resolv( Nettle.Fortuna, [[
   test_eq( sizeof( Crypto.Random.random_string(1) ), 1)
   test_eq( sizeof( Crypto.Random.random_string(31) ), 31)
   test_eq( sizeof( Crypto.Random.random_string(128) ), 128)
-dnl  test_eq( sizeof( Crypto.Random.blocking_random_string(3) ), 3)
-  test_do( Crypto.Random.add_entropy("xy", 16) )
+  test_do( Crypto.Random.add_entropy("xy") )
 ]])
 
 test_do([[ Stdio.write_file("hash_me", "foo"*1000) ]])
 
-// Crypto.MD5
-cond_resolv( Nettle.MD5_Info, [[
-  test_eq(S(Crypto.MD5()->update("")->digest()),
-          "d41d8cd98f00b204e9800998ecf8427e")
-  test_eq(S(Crypto.MD5()->update("a")->digest()),
-          "0cc175b9c0f1b6a831c399e269772661")
-  test_eq(S(Crypto.MD5()->update("abc")->digest()),
-          "900150983cd24fb0d6963f7d28e17f72")
-  test_eq(S(Crypto.MD5()->update("message digest")->digest()),
-          "f96b697d7cb7938d525a2f31aaf161d0")
-  test_eq(S(Crypto.MD5()->update("abcdefghijklmnopqrstuvwxyz")->digest()),
-          "c3fcd3d76192e4007dfb496cca67e13b")
-  test_eq(S(Crypto.MD5()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "abcdefghijklmnopqrstuvwxyz0123456789")->digest()),
-          "d174ab98d277d9f5a5611c2c9f419d9f")
-  test_eq(S(Crypto.MD5()->update("1234567890123456789012345678901234567890"
-            "1234567890123456789012345678901234567890")->digest()),
-          "57edf4a22be3c955ac49da2e2107b67a")
-  test_eq(S(Crypto.MD5.hash("foo")),
-	  "acbd18db4cc2f85cedef654fccc4a4d8")
-  test_eq(S(Crypto.MD5.hash(Stdio.File("hash_me"))),
-	  "3aee29ca9ce057ebe49629afcc3fb51f")
-  test_eq(S(Crypto.MD5()->update("f")->update("oo")->digest()),
-	  "acbd18db4cc2f85cedef654fccc4a4d8")
+dnl hash, empty-digest, foo1000-digest, block-size
+define(test_hash, [[
+cond_resolv( Crypto.$1, [[
+  test_eq(decode_value(encode_value(Crypto.$1)),Crypto.$1)
+  test_eq(S(Crypto.$1()->update("")->digest()), "$2")
+  test_eq(S(Crypto.$1.hash("")), "$2")
+  test_eq(S(Crypto.$1.hash(Stdio.Buffer())), "$2")
+  test_eq(S(Crypto.$1.hash(Stdio.Buffer(),5)), "$2")
+  test_eq(S(Crypto.$1.hash(String.Buffer())), "$2")
+  test_eval_error(Crypto.$1.hash("\x2ff"))
+  test_eq(S(Crypto.$1.hash("foo"*1000)), "$3")
+  test_eq(S(Crypto.$1.hash(Stdio.Buffer("foo"*1000))), "$3")
+  test_eq(S(Crypto.$1.hash(Stdio.Buffer("foo"*1001),3000)), "$3")
+  test_any([[
+    String.Buffer b=String.Buffer();
+    b->add("foo"*1000);
+    return S(Crypto.$1.hash(b));
+  ]], "$3")
+  test_any([[
+    String.Buffer b=String.Buffer();
+    b->add("foo"*1001);
+    return S(Crypto.$1.hash(b,3000));
+  ]], "$3")
+  test_eval_error([[
+    String.Buffer b=String.Buffer();
+    b->add("\x2ff");
+    return S(Crypto.$1.hash(b));
+  ]], "$3")
+  test_any([[
+    System.Memory b=System.Memory(3000);
+    b->pwrite(0, "foo"*1000);
+    return S(Crypto.$1.hash(b));
+  ]], "$3")
+  test_any([[
+    System.Memory b=System.Memory(3003);
+    b->pwrite(0, "foo"*1001);
+    return S(Crypto.$1.hash(b,3000));
+  ]], "$3")
+  test_eval_error(Crypto.$1.hash(ADT.Queue()))
+  test_eq(S(Crypto.$1()->update("foo"*501)->update("foo"*499)->digest()), "$3")
+  test_eq(S(Crypto.$1.hash(Stdio.File("hash_me"))), "$3")
+  test_eq(Crypto.$1.name(),lower_case("$1"))
+  test_eq(Crypto.$1.block_size(),$4)
+  dnl crypt_hash
+  dnl openssl_pbkdf
+  test_eq(S(Crypto.$1.pbkdf1("","",1,8)),"$2"[..15])
+  test_eq(Crypto.$1.pbkdf2("password","salt",1,Crypto.$1.digest_size()),
+          Crypto.HMAC(Crypto.$1)("password")("salt\0\0\0\1"))
+  dnl pkcs_hash_id
+  test_eq(sizeof(Crypto.$1.hash("foo")),Crypto.$1.digest_size())
+  test_eq(Crypto.$1.HMAC("x")->block_size(),Crypto.$1.block_size())
+  test_eq(Crypto.$1.HMAC("x")->digest_size(),Crypto.$1.digest_size())
+]])
+cond_resolv( Crypto.$1.pkcs_hash_id, [[
+  test_any([[
+    return Standards.PKCS.Identifiers[lower_case("$1")+"_id"];
+  ]], Crypto.$1.pkcs_hash_id())
+]])
 ]])
 
+test_hash(MD2,
+8350e5a3e24c153df2275c9f80692773,
+f0d5fdb3351311b582e1174b39b94980,
+16)
 
-// Crypto.MD4
-cond_resolv( Nettle.MD4_Info, [[
-  test_eq(S(Crypto.MD4()->update("")->digest()),
-          "31d6cfe0d16ae931b73c59d7e0c089c0")
-  test_eq(S(Crypto.MD4()->update("a")->digest()),
-          "bde52cb31de33e46245e05fbdbd6fb24")
-  test_eq(S(Crypto.MD4()->update("abc")->digest()),
-          "a448017aaf21d8525fc10ae87aa6729d")
-  test_eq(S(Crypto.MD4()->update("message digest")->digest()),
-          "d9130a8164549fe818874806e1c7014b")
-  test_eq(S(Crypto.MD4()->update("abcdefghijklmnopqrstuvwxyz")->digest()),
-          "d79e1c308aa5bbcdeea8ed63df412da9")
-  test_eq(S(Crypto.MD4()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "abcdefghijklmnopqrstuvwxyz0123456789")->digest()),
-          "043f8582f241db351ce627e153e7f0e4")
-  test_eq(S(Crypto.MD4()->update("12345678901234567890123456789"
-            "012345678901234567890123456789012345678901234567890")->digest()),
-          "e33b4ddc9c38f2199c3e7b164fcc0536")
-  test_eq(S(Crypto.MD4.hash("foo")),
-	  "0ac6700c491d70fb8650940b1ca1e4b2")
-  test_eq(S(Crypto.MD4.hash(Stdio.File("hash_me"))),
-	  "5e45f623f3fdbdccc5c18280b8bf7c09")
-  test_eq(S(Crypto.MD4()->update("f")->update("oo")->digest()),
-	  "0ac6700c491d70fb8650940b1ca1e4b2")
-]])
+test_hash(MD4,
+31d6cfe0d16ae931b73c59d7e0c089c0,
+5e45f623f3fdbdccc5c18280b8bf7c09,
+64)
 
+test_hash(MD5,
+d41d8cd98f00b204e9800998ecf8427e,
+3aee29ca9ce057ebe49629afcc3fb51f,
+64)
 
-// Crypto.SHA1
-cond_resolv( Nettle.SHA1_Info, [[
-  test_eq(S(Crypto.SHA1()->update("")->digest()),
-          "da39a3ee5e6b4b0d3255bfef95601890afd80709")
-  test_eq(S(Crypto.SHA1()->update("abc")->digest()),
-          "a9993e364706816aba3e25717850c26c9cd0d89d")
-  test_eq(S(Crypto.SHA1()->update("x"*63)->digest()),
-          "0ddc4e0cccd9a12850deb5abb0853a4425559fec")
-  test_eq(S(Crypto.SHA1()->update("x"*64)->digest()),
-          "bb2fa3ee7afb9f54c6dfb5d021f14b1ffe40c163")
-  test_eq(S(Crypto.SHA1()->update("x"*65)->digest()),
-          "78c741ddc482e4cdf8c474a0876347a0905b6233")
-  test_eq(S(Crypto.SHA1()->update("x"*257)->digest()),
-          "0796067748b6b0c2af864656a399f7722ef9283a")
-  test_eq(S(Crypto.SHA1.hash("foo")),
-	  "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")
-  test_eq(S(Crypto.SHA1.hash(Stdio.File("hash_me"))),
-	  "392f13661282d7d986722e8928391a99a007ab9a")
-  test_eq(S(Crypto.SHA1()->update("f")->update("oo")->digest()),
-	  "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")
-]])
+test_hash(SHA1,
+da39a3ee5e6b4b0d3255bfef95601890afd80709,
+392f13661282d7d986722e8928391a99a007ab9a,
+64)
 
+test_hash(SHA224,
+d14a028c2a3a2bc9476102bb288234c415a2b01f828ea62ac5b3e42f,
+2c36c4cd7dcea7b483ae8789fb5c44ded9e3f9c05161418b251a3f35,
+64)
 
-// Crypto.SHA256
-cond_resolv( Nettle.SHA256_Info, [[
-  test_eq(S(Crypto.SHA256()->update("")->digest()),
-          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
-  test_eq(S(Crypto.SHA256()->update("abc")->digest()),
-          "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
-  test_eq(S(Crypto.SHA256()->update("x"*63)->digest()),
-          "75220b47218278e656f2013bb8f0c455a25eaf01e86c64924e9d48d89776d6f2")
-  test_eq(S(Crypto.SHA256()->update("x"*64)->digest()),
-          "7ce100971f64e7001e8fe5a51973ecdfe1ced42befe7ee8d5fd6219506b5393c")
-  test_eq(S(Crypto.SHA256()->update("x"*65)->digest()),
-          "9537c5fdf120482f7d58d25e9ed583f52c02b4e304ea814db1633ad565aed7e9")
-  test_eq(S(Crypto.SHA256()->update("x"*257)->digest()),
-          "15eb95a462ee20bd91a415ae2d4aed341288186ddaa2b37908f7d592f0c3f85f")
-  test_eq(S(Crypto.SHA256.hash("foo")),
-	  "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
-  test_eq(S(Crypto.SHA256.hash(Stdio.File("hash_me"))),
-	  "8db466bdfc3265dd1347843b31ed34af0a0c2e6ff0fd4d6a5853755f0e68b8a0")
-  test_eq(S(Crypto.SHA256()->update("f")->update("oo")->digest()),
-	  "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
-]])
+test_hash(SHA256,
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855,
+8db466bdfc3265dd1347843b31ed34af0a0c2e6ff0fd4d6a5853755f0e68b8a0,
+64)
+
+test_hash(SHA384,
+38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b,
+c12cf7846a43e75df117644016d37e2b16425843eb0da80809c7a50502c8add4681f7dd08ec45ddf9b74baab80a3318b,
+128)
+
+test_hash(SHA512,
+cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e,
+a1846b033c0375279d20874cc3b311e4756ea01e615e9f9f12a90d3f91cb536a1472146faea917c3bc789c7363debd5beb31e5dee7d7b0b994ebdcc261e2e51d,
+128)
+
+test_hash(SHA3_224,
+f71837502ba8e10837bdd8d365adb85591895602fc552b48b7390abd,
+d07e7fa07dd6214acb5186a2e573a6c680d4c98d054c458b2a49dfcf,
+144)
+
+test_hash(SHA3_256,
+c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470,
+0aa19ffc653a534186800f1bbeced5a9213ae9edc921730ae97e56ca62b37189,
+136)
+
+test_hash(SHA3_384,
+2c23146a63a29acf99e73b88f8c24eaa7dc60aa771780ccc006afbfa8fe2479b2dd2b21362337441ac12b515911957ff,
+664ef79521dd104af1df7f3cc5b6c7e08f7b06a084cd72813956d65549291746de0e07ef85769ad546a90e315ab6e3a8,
+104)
+
+test_hash(SHA3_512,
+0eab42de4c3ceb9235fc91acffe746b29c29a8c366b7c60e4e67c466f36a4304c00fa9caf9d87976ba469bcbe06713b435f091ef2769fb160cdab33d3670680e,
+d102b03dea5c63be8dc7ee844c616a7326c04ec05f67c7ea42cd5f91be0bf75854d486fd58aa7ac50a07e643582f90cd92b530963c26a70a694a2bca5e366b93,
+72)
+
+test_hash(GOST94,
+ce85b99cc46752fffee35cab9a7b0278abb4c2d2055cff685af4912c49490f8d,
+777087cc7fbf49feaac18bc05289e4b75e6803c05c9f71a01708a7c225e8d636,
+32)
+
+test_hash(RIPEMD160,
+9c1185a5c5e9fc54612808977ee8f548b2258d31,
+d5c4507e4743056d4b0341fd27ffac3686b1202d,
+64)
 
 test_do([[ rm("hash_me") ]])
 
+// PBKDF
+test_eq(S(Crypto.SHA1.pbkdf1("password","salt",1000,20)),
+  "4a8fd48e426ed081b535be5769892fa396293efb")
+test_eval_error(Crypto.SHA1.pbkdf1("password","salt",1000,21))
+
+dnl tests from RFC 6070
+test_eq(S(Crypto.SHA1.pbkdf2("password","salt",1,20)),
+"0c 60 c8 0f 96 1f 0e 71 f3 a9 b5 24 af 60 12 06 2f e0 37 a6"-" ")
+test_eq(S(Crypto.SHA1.pbkdf2("password","salt",2,20)),
+"ea 6c 01 4d c7 2d 6f 8c cd 1e d9 2a ce 1d 41 f0 d8 de 89 57"-" ")
+test_eq(S(Crypto.SHA1.pbkdf2("password","salt",4096,20)),
+"4b 00 79 01 b7 65 48 9a be ad 49 d9 26 f7 21 d0 65 a4 29 c1"-" ")
+test_eq(S(Crypto.SHA1.pbkdf2("passwordPASSWORDpassword",
+  "saltSALTsaltSALTsaltSALTsaltSALTsalt",4096,25)),
+"3d 2e ec 4f e4 1c 84 9b 80 c8 d8 36 62 c0 e4 4a 8b 29 1a 96 4c f2 f0 70 38"-" ")
+test_eq(S(Crypto.SHA1.pbkdf2("pass\0word","sa\0lt",4096,16)),
+"56 fa 6a a7 55 48 09 9d cc 37 d7 f0 34 25 e0 c3"-" ")
+
 // Crypto.DES
-cond_resolv( Nettle.DES_Info, [[
+cond_resolv( Nettle.DES, [[
   test_eq( Crypto.DES.fix_parity("\xff"*8), "\xfe"*8 )
   test_eq( Crypto.DES.fix_parity("\xff"*9), "\xfe"*8 )
   test_eq( Crypto.DES.fix_parity("12345678"), "12244778" )
@@ -284,7 +371,7 @@ cond_resolv( Nettle.DES_Info, [[
 
 
 // Crypto.DES3
-cond_resolv( Nettle.DES3_Info, [[
+cond_resolv( Nettle.DES3, [[
   test_eq( Crypto.DES3.fix_parity("\xff"*8*3), "\xfe"*8*3 )
   test_eq( Crypto.DES3.fix_parity("\xff"*(8*3+1)), "\xfe"*8*3 )
   test_eq( Crypto.DES3.fix_parity("12345678"*3), "12244778"*3 )
@@ -307,13 +394,19 @@ cond_resolv( Crypto.$1.name,[[
   test_eq( sizeof(Crypto.$1()->make_key()), Crypto.$1->key_size() )
   test_any([[
     object c=Crypto.$1();
-    return sizeof(c->make_key())==c->key_size();
-  ]], 1)
-  test_any([[
-    object c=Crypto.$1();
     c->make_key();
     return sizeof(c->crypt("A"*c->block_size()));
   ]], Crypto.$1->block_size() )
+  test_any([[
+    object o=Crypto.$1();
+    string k=o->make_key();
+    o=Crypto.$1();
+    o->set_encrypt_key(k);
+    string c = o->crypt("A"*o->block_size());
+    o=Crypto.$1();
+    o->set_decrypt_key(k);
+    return o->crypt(c) == "A"*o->block_size();
+  ]], 1 )
   test_eval_error([[
     object c=Crypto.$1();
     if(c->block_size()==1) throw(1);
@@ -325,8 +418,9 @@ cond_resolv( Crypto.$1.name,[[
     c->make_key();
     c->crypt("\500"*c->block_size());
   ]])
-  test_eval_error("$1"=="ARCFOUR"?throw(1):Crypto.$1()->set_encrypt_key("")))
-  test_eval_error("$1"=="ARCFOUR"?throw(1):Crypto.$1()->set_decrypt_key("")))
+  test_eval_error(Crypto.$1()->set_encrypt_key("")))
+  test_eval_error(Crypto.$1()->set_decrypt_key("")))
+  test_eval_error((<"Arcfour","Blowfish">)["$1"]?throw(1):Crypto.$1()->set_decrypt_key("A"*(Crypto.$1->key_size()+1)))
   test_eval_error(Crypto.$1()->set_decrypt_key("\500"*Crypto.$1->key_size()))
   test_eval_error(Crypto.$1()->crypt();)
 ]])]])
@@ -334,16 +428,92 @@ cond_resolv( Crypto.$1.name,[[
 test_cipher(AES,aes)
 test_cipher(Arcfour,arcfour)
 test_cipher(Blowfish,blowfish)
+test_cipher(Camellia,camellia)
 test_cipher(CAST,cast128)
 test_cipher(DES,des)
 test_cipher(DES3,des3)
 test_cipher(IDEA,idea)
+test_cipher(SALSA20,salsa20)
 test_cipher(Serpent,serpent)
 test_cipher(Twofish,twofish)
 
+dnl class, wrapped, key, iv, associated_data, payload, crypt_text, dsize
+define(test_aead, [[
+cond_resolv( Crypto.$1.name,[[
+  test_any([[
+    object c = Crypto.$1(Crypto.$2);
+    c->set_encrypt_key(String.hex2string($3));
+    c->set_iv(String.hex2string($4));
+    c->update(String.hex2string($5));
+    return c->crypt(String.hex2string($6)) + c->digest($8);
+  ]], String.hex2string($7))
+  test_any([[
+    object c = Crypto.$1(Crypto.$2);
+    c->set_decrypt_key(String.hex2string($3));
+    c->set_iv(String.hex2string($4));
+    c->update(String.hex2string($5));
+    return c->crypt(String.hex2string($7)[..<$8]) + c->digest($8);
+  ]], String.hex2string($6) + String.hex2string($7)[<$8-1..])
+]])]])
+
+// Crypto.CCM
+
+dnl NIST SP800-38C C1
+test_aead(CCM, AES, "404142434445464748494a4b4c4d4e4f", "10111213141516",
+	  "0001020304050607", "20212223", "7162015b4dac255d", 4)
+dnl NIST SP800-38C C2
+test_aead(CCM, AES, "404142434445464748494a4b4c4d4e4f", "1011121314151617",
+	  "000102030405060708090a0b0c0d0e0f",
+	  "202122232425262728292a2b2c2d2e2f",
+	  "d2a1f0e051ea5f62081a7792073d593d1fc64fbfaccd", 6)
+dnl NIST SP800-38C C3
+test_aead(CCM, AES, "404142434445464748494a4b4c4d4e4f",
+	  "101112131415161718191a1b",
+	  "000102030405060708090a0b0c0d0e0f10111213",
+	  "202122232425262728292a2b2c2d2e2f3031323334353637",
+	  "e3b201a9f5b71a7a9b1ceaeccd97e70b6176aad9a4428aa5484392fbc1b09951", 8)
+dnl NIST SP800-38C C4
+test_aead(CCM, AES, "404142434445464748494a4b4c4d4e4f",
+	  "101112131415161718191a1b1c",
+	  "000102030405060708090a0b0c0d0e0f"
+	  "101112131415161718191a1b1c1d1e1f"
+	  "202122232425262728292a2b2c2d2e2f"
+	  "303132333435363738393a3b3c3d3e3f"
+	  "404142434445464748494a4b4c4d4e4f"
+	  "505152535455565758595a5b5c5d5e5f"
+	  "606162636465666768696a6b6c6d6e6f"
+	  "707172737475767778797a7b7c7d7e7f"
+	  "808182838485868788898a8b8c8d8e8f"
+	  "909192939495969798999a9b9c9d9e9f"
+	  "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf"
+	  "b0b1b2b3b4b5b6b7b8b9babbbcbdbebf"
+	  "c0c1c2c3c4c5c6c7c8c9cacbcccdcecf"
+	  "d0d1d2d3d4d5d6d7d8d9dadbdcdddedf"
+	  "e0e1e2e3e4e5e6e7e8e9eaebecedeeef"
+	  "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff" * 256,
+	  "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+	  "69915dad1e84c6376a68c2967e4dab615ae0fd1faec44cc484828529463ccf72"
+	  "b4ac6bec93e8598e7f0dadbcea5b", 14)
 
 // Crypto.RSA
-cond_resolv(Crypto.MD5.name, [[
+
+test_do([[
+#pike 7.8
+add_constant("RSA", Crypto.RSA()) ]])
+test_do( RSA->generate_key(1024) )
+test_equal( RSA->cooked_get_n(), RSA->get_n()->digits(256) )
+test_equal( RSA->cooked_get_e(), RSA->get_e()->digits(256) )
+test_equal( RSA->cooked_get_d(), RSA->get_d()->digits(256) )
+test_equal( RSA->cooked_get_p(), RSA->get_p()->digits(256) )
+test_equal( RSA->cooked_get_q(), RSA->get_q()->digits(256) )
+test_true( RSA->sha_verify("hej", RSA->sha_sign("hej")) )
+test_false( RSA->sha_verify("hoj", RSA->sha_sign("hej")) )
+test_true( RSA->md5_verify("hej", RSA->md5_sign("hej")) )
+test_false( RSA->md5_verify("hoj", RSA->md5_sign("hej")) )
+test_eq( RSA->query_blocksize(), 125 )
+test_eq( RSA->rsa_size(), 1024 )
+test_do( add_constant("RSA") )
+
 test_do( add_constant("RSA", Crypto.RSA()) )
 test_do( RSA->generate_key(1024) )
 test_equal( RSA->raw_sign("hej"), RSA->raw_sign("hej") )
@@ -358,31 +528,24 @@ test_equal( RSA->get_p(), RSA->get_p() )
 test_true( functionp(RSA->get_p()->gcdext2) )
 test_equal( RSA->get_q(), RSA->get_q() )
 test_true( functionp(RSA->get_q()->gcdext2) )
-test_equal( RSA->cooked_get_n(), RSA->get_n()->digits(256) )
-test_equal( RSA->cooked_get_e(), RSA->get_e()->digits(256) )
-test_equal( RSA->cooked_get_d(), RSA->get_d()->digits(256) )
-test_equal( RSA->cooked_get_p(), RSA->get_p()->digits(256) )
-test_equal( RSA->cooked_get_q(), RSA->get_q()->digits(256) )
 test_do( add_constant("RSB", Crypto.RSA()) )
 test_do( RSB->set_private_key(RSA->get_d(),
          ({ RSA->get_p(), RSA->get_q() }) ) )
 test_equal( RSA->get_d(), RSB->get_d() )
 test_equal( RSA->get_p(), RSB->get_p() )
 test_equal( RSA->get_q(), RSB->get_q() )
-cond_resolv( Nettle.MD2_Info, [[
-  test_true([[ RSA->verify("hej", Crypto.MD2, RSB->sign("hej", Crypto.MD2)) ]])
+cond_resolv( Nettle.MD2, [[
+  test_true([[ RSA->pkcs_verify("hej", Crypto.MD2, RSB->pkcs_sign("hej", Crypto.MD2)) ]])
 ]])
-cond_resolv( Nettle.MD4_Info, [[
-  test_true([[ RSA->verify("hej", Crypto.MD4, RSB->sign("hej", Crypto.MD4)) ]])
+cond_resolv( Nettle.MD4, [[
+  test_true([[ RSA->pkcs_verify("hej", Crypto.MD4, RSB->pkcs_sign("hej", Crypto.MD4)) ]])
 ]])
-test_true([[ RSA->verify("hej", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
-test_true([[ RSA->verify("hej", Crypto.SHA1, RSB->sign("hej", Crypto.SHA1)) ]])
-test_true([[ RSA->verify("hej", Crypto.SHA256, RSB->sign("hej", Crypto.SHA256)) ]])
-test_false([[ RSA->verify("hoj", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
-test_true( RSA->sha_verify("hej", RSB->sha_sign("hej")) )
-test_false( RSA->sha_verify("hoj", RSB->sha_sign("hej")) )
-test_true( RSA->md5_verify("hej", RSB->md5_sign("hej")) )
-test_false( RSA->md5_verify("hoj", RSB->md5_sign("hej")) )
+test_true([[ RSA->pkcs_verify("hej", Crypto.MD5, RSB->pkcs_sign("hej", Crypto.MD5)) ]])
+test_true([[ RSA->pkcs_verify("hej", Crypto.SHA1, RSB->pkcs_sign("hej", Crypto.SHA1)) ]])
+cond_resolv( Nettle.SHA256, [[
+  test_true([[ RSA->pkcs_verify("hej", Crypto.SHA256, RSB->pkcs_sign("hej", Crypto.SHA256)) ]])
+]])
+test_false([[ RSA->pkcs_verify("hoj", Crypto.MD5, RSB->pkcs_sign("hej", Crypto.MD5)) ]])
 test_do( add_constant("RSA") )
 test_do( add_constant("RSB") )
 
@@ -394,18 +557,137 @@ test_true( RSA->set_private_key(
   0x3f8a1cafe3cd1841ea9a45ac80faa172937921094a587b68ba0d38e2ded6d79ef1a5b8d9605278ddc61616f12fbb9dc6dbdea50f9dc4a51f6a8ed30ada7c9301,
   ({ 0xae01268cb370af44cb05e9618ea6681dae1186bd746d3aa6122b8bf6c2290619,
      0xc1884f35667fb5ea3e8e7cfa052bb34894c2970b3da6a0650182fe514b23c835 })) )
-test_eq( RSA->query_blocksize(), 61 )
-test_true( RSA->raw_verify("flärpzprutt",RSA->raw_sign("flärpzprutt")) )
-test_false( RSA->raw_verify("flärpzputt",RSA->raw_sign("flärpzprutt")) )
-test_true( RSA->decrypt(RSA->encrypt("flärpzprutt")) )
-test_eq( RSA->rsa_size(), 512 )
+test_eq( RSA->block_size(), 61 )
+test_eq( S(RSA->pkcs_sign("\0", Crypto.SHA1)), "06e10d3bffa8a8f84f0fe1425453a553ac00f429771814c97eb649acd27bd50b89a31a8aa40aceebfb681b9337fc6c863ae544a46d480882c11639b6fd123dd5" )
+test_eq( S(RSA->pkcs_sign(Gmp.mpz(331)->digits(256), Crypto.SHA1)), "00fd12bb2966d3059f74c3ce9da8a4430f7597dc96d137222bce32cf74cd0a05edd5eaccf92c607b75a4920444d8747de22bd04905267664dee7408c421d0056" )
+test_true( RSA->raw_verify("fl\0rpzprutt",RSA->raw_sign("fl\0rpzprutt")) )
+test_false( RSA->raw_verify("fl\0rpzputt",RSA->raw_sign("fl\0rpzprutt")) )
+test_eq( RSA->decrypt(RSA->encrypt("fl\0rpzprutt")), "fl\0rpzprutt" )
+test_eq( RSA->key_size(), 512 )
 test_true( RSA->public_key_equal(RSA) )
 test_false( RSA->public_key_equal(Crypto.RSA()->generate_key(512)) )
+
+test_do( RSA->set_random(random_string); )
+test_eval_error( RSA->generate_key(88); )
+test_do( RSA->generate_key(489); )
+test_eval_error( RSA->generate_key(489, 6); )
+test_eval_error( RSA->generate_key(489, 1); )
+test_eval_error( RSA->generate_key(489, (1<<128)+1); )
+test_do( RSA->generate_key(489, 5); )
+test_do( RSA->rsa_pad("x"*51,1); )
+test_eval_error( RSA->rsa_pad("x"*52,1); )
+dnl This is rsa->pad("x"*51,2)
+test_eq( RSA->rsa_unpad(Gmp.mpz(8653122978089085258180412110456916522630219813380302393826135590094230922558301290311148252831586181145986834552965198025012975236458341391807284),2),
+ " 1234" )
+dnl Same as above, but use the wrong type when unpadding.
+test_eq( RSA->rsa_unpad(Gmp.mpz(8653122978089085258180412110456916522630219813380302393826135590094230922558301290311148252831586181145986834552965198025012975236458341391807284),1), 0 )
+dnl Same as above, but one digit to few.
+test_eq( RSA->rsa_unpad(Gmp.mpz(865312297808908525818041211045691652263021981338030239382613559009423092255830129031114825283158618114598683455296519802501297523645834139180728),2), 0 )
+test_do( add_constant("RSA") )
+
+// RSASSA-PSS
+// Modulo (n), Exponent (e), Private Key (d), Message, Salt, Hash, Signature
+define(test_pss, [[
+test_do( add_constant("RSA", Crypto.RSA()) )
+test_do( RSA->set_public_key(Gmp.mpz(H(#"$1"), 256),
+			     Gmp.mpz(H(#"$2"), 256)) )
+test_do( RSA->set_private_key(Gmp.mpz(H(#"$3"), 256)) )
+test_do( add_constant("M", H(#"$4")) )
+test_eq( RSA.PSS.pkcs_sign(M, $6, H(#"$5")),
+			   H(#"$7") )
+test_true( RSA.PSS.pkcs_verify(M, $6, H(#"$7"),
+			       sizeof(H(#"$5"))) )
+test_do( add_constant("M") )
 test_do( add_constant("RSA") )
 ]])
 
+// Vectors from RSA Labs.
+// RSASSA-PSS Signature Example 1.1
+test_pss(
+a5 6e 4a 0e 70 10 17 58 9a 51 87 dc 7e a8 41 d1
+56 f2 ec 0e 36 ad 52 a4 4d fe b1 e6 1f 7a d9 91
+d8 c5 10 56 ff ed b1 62 b4 c0 f2 83 a1 2a 88 a3
+94 df f5 26 ab 72 91 cb b3 07 ce ab fc e0 b1 df
+d5 cd 95 08 09 6d 5b 2b 8b 6d f5 d6 71 ef 63 77
+c0 92 1c b2 3c 27 0a 70 e2 59 8e 6f f8 9d 19 f1
+05 ac c2 d3 f0 cb 35 f2 92 80 e1 38 6b 6f 64 c4
+ef 22 e1 e1 f2 0d 0c e8 cf fb 22 49 bd 9a 21 37,
+01 00 01,
+33 a5 04 2a 90 b2 7d 4f 54 51 ca 9b bb d0 b4 47
+71 a1 01 af 88 43 40 ae f9 88 5f 2a 4b be 92 e8
+94 a7 24 ac 3c 56 8c 8f 97 85 3a d0 7c 02 66 c8
+c6 a3 ca 09 29 f1 e8 f1 12 31 88 44 29 fc 4d 9a
+e5 5f ee 89 6a 10 ce 70 7c 3e d7 e7 34 e4 47 27
+a3 95 74 50 1a 53 26 83 10 9c 2a ba ca ba 28 3c
+31 b4 bd 2f 53 c3 ee 37 e3 52 ce e3 4f 9e 50 3b
+d8 0c 06 22 ad 79 c6 dc ee 88 35 47 c6 a3 b3 25,
+cd c8 7d a2 23 d7 86 df 3b 45 e0 bb bc 72 13 26
+d1 ee 2a f8 06 cc 31 54 75 cc 6f 0d 9c 66 e1 b6
+23 71 d4 5c e2 39 2e 1a c9 28 44 c3 10 10 2f 15
+6a 0d 8d 52 c1 f4 c4 0b a3 aa 65 09 57 86 cb 76
+97 57 a6 56 3b a9 58 fe d0 bc c9 84 e8 b5 17 a3
+d5 f5 15 b2 3b 8a 41 e7 4a a8 67 69 3f 90 df b0
+61 a6 e8 6d fa ae e6 44 72 c0 0e 5f 20 94 57 29
+cb eb e7 7f 06 ce 78 e0 8f 40 98 fb a4 1f 9d 61
+93 c0 31 7e 8b 60 d4 b6 08 4a cb 42 d2 9e 38 08
+a3 bc 37 2d 85 e3 31 17 0f cb f7 cc 72 d0 b7 1c
+29 66 48 b3 a4 d1 0f 41 62 95 d0 80 7a a6 25 ca
+b2 74 4f d9 ea 8f d2 23 c4 25 37 02 98 28 bd 16
+be 02 54 6f 13 0f d2 e3 3b 93 6d 26 76 e0 8a ed
+1b 73 31 8b 75 0a 01 67 d0,
+de e9 59 c7 e0 64 11 36 14 20 ff 80 18 5e d5 7f
+3e 67 76 af,
+Crypto.SHA1,
+90 74 30 8f b5 98 e9 70 1b 22 94 38 8e 52 f9 71
+fa ac 2b 60 a5 14 5a f1 85 df 52 87 b5 ed 28 87
+e5 7c e7 fd 44 dc 86 34 e4 07 c8 e0 e4 36 0b c2
+26 f3 ec 22 7f 9d 9e 54 63 8e 8d 31 f5 05 12 15
+df 6e bb 9c 2f 95 79 aa 77 59 8a 38 f9 14 b5 b9
+c1 bd 83 c4 e2 f9 f3 82 a0 d0 aa 35 42 ff ee 65
+98 4a 60 1b c6 9e b2 8d eb 27 dc a1 2c 82 c2 d4
+c3 f6 6c d5 00 f1 ff 2b 99 4d 8a 4e 30 cb b3 3c)
+// RSASSA-PSS Signature Example 1.2
+test_pss(
+a5 6e 4a 0e 70 10 17 58 9a 51 87 dc 7e a8 41 d1
+56 f2 ec 0e 36 ad 52 a4 4d fe b1 e6 1f 7a d9 91
+d8 c5 10 56 ff ed b1 62 b4 c0 f2 83 a1 2a 88 a3
+94 df f5 26 ab 72 91 cb b3 07 ce ab fc e0 b1 df
+d5 cd 95 08 09 6d 5b 2b 8b 6d f5 d6 71 ef 63 77
+c0 92 1c b2 3c 27 0a 70 e2 59 8e 6f f8 9d 19 f1
+05 ac c2 d3 f0 cb 35 f2 92 80 e1 38 6b 6f 64 c4
+ef 22 e1 e1 f2 0d 0c e8 cf fb 22 49 bd 9a 21 37,
+01 00 01,
+33 a5 04 2a 90 b2 7d 4f 54 51 ca 9b bb d0 b4 47
+71 a1 01 af 88 43 40 ae f9 88 5f 2a 4b be 92 e8
+94 a7 24 ac 3c 56 8c 8f 97 85 3a d0 7c 02 66 c8
+c6 a3 ca 09 29 f1 e8 f1 12 31 88 44 29 fc 4d 9a
+e5 5f ee 89 6a 10 ce 70 7c 3e d7 e7 34 e4 47 27
+a3 95 74 50 1a 53 26 83 10 9c 2a ba ca ba 28 3c
+31 b4 bd 2f 53 c3 ee 37 e3 52 ce e3 4f 9e 50 3b
+d8 0c 06 22 ad 79 c6 dc ee 88 35 47 c6 a3 b3 25,
+85 13 84 cd fe 81 9c 22 ed 6c 4c cb 30 da eb 5c
+f0 59 bc 8e 11 66 b7 e3 53 0c 4c 23 3e 2b 5f 8f
+71 a1 cc a5 82 d4 3e cc 72 b1 bc a1 6d fc 70 13
+22 6b 9e,
+ef 28 69 fa 40 c3 46 cb 18 3d ab 3d 7b ff c9 8f
+d5 6d f4 2d,
+Crypto.SHA1,
+3e f7 f4 6e 83 1b f9 2b 32 27 41 42 a5 85 ff ce
+fb dc a7 b3 2a e9 0d 10 fb 0f 0c 72 99 84 f0 4e
+f2 9a 9d f0 78 07 75 ce 43 73 9b 97 83 83 90 db
+0a 55 05 e6 3d e9 27 02 8d 9d 29 b2 19 ca 2c 45
+17 83 25 58 a5 5d 69 4a 6d 25 b9 da b6 60 03 c4
+cc cd 90 78 02 19 3b e5 17 0d 26 14 7d 37 b9 35
+90 24 1b e5 1c 25 05 5f 47 ef 62 75 2c fb e2 14
+18 fa fe 98 c2 2c 4d 4d 47 72 4f db 56 69 e8 43)
 
 // Crypto.DSA
+
+test_any([[
+#pike 7.8
+return !!Crypto.DSA;
+]], 1)
+
 cond_resolv(Crypto.SHA1.name, [[
 test_do( add_constant("DSA", Crypto.DSA()) )
 test_eq( DSA->name(), "DSA" )
@@ -425,22 +707,26 @@ test_do( DSA->set_public_key(
            "858fba33f44c06699630a76b030ee333", 16 )) )
 test_do( DSA->set_private_key(
   Gmp.mpz( "2070b3223dba372fde1c0ffc7b2e3b498b260614", 16 )) )
-test_do( DSA->set_random( Crypto.Random.random_string ) )
-test_equal( DSA->raw_sign(DSA->hash("abc"),
+test_do( DSA->set_random( random_string ) )
+test_equal( DSA->raw_sign(DSA->hash("abc", Crypto.SHA1),
          Gmp.mpz("358dad571462710f50e254cf1a376b2bdeaadfbf", 16))->digits(16),
          ({ "8bac1ab66410435cb7181f95b16ab97c92b341c0",
             "41e2345f1f56df2458f426d155b4ba2db6dcd8c8" }) )
-test_true(DSA->raw_verify(DSA->hash("abc"), @DSA->raw_sign(DSA->hash("abc"))))
-test_true( DSA->verify_rsaref("abc", DSA->sign_rsaref("abc")) )
-test_true( DSA->verify_ssl("abc", DSA->sign_ssl("abc")) )
+test_true(DSA->raw_verify(DSA->hash("abc", Crypto.SHA1), @DSA->raw_sign(DSA->hash("abc", Crypto.SHA1))))
+dnl test_true( DSA->verify_rsaref("abc", DSA->sign_rsaref("abc")) )
+test_true( DSA->pkcs_verify("abc", Crypto.SHA1, DSA->pkcs_sign("abc", Crypto.SHA1)) )
 test_do( add_constant("DSB", Crypto.DSA()) )
 test_do( DSB->set_public_key( DSA->get_p(), DSA->get_q(),
                               DSA->get_g(), DSA->get_y() ) )
 test_true( DSB->public_key_equal(DSA) )
 test_true( DSA->public_key_equal(DSB) )
 test_do( add_constant("DSB", Crypto.DSA()) )
-test_true( DSB->generate_parameters(1024) )
+test_true( DSB->generate_key(1024,160) )
 test_true( DSB->generate_key() )
+test_any([[
+  array(Gmp.mpz) sign = DSB->raw_sign(DSB->hash("abc", Crypto.SHA1));
+  return DSB->raw_verify(DSB->hash("abc", Crypto.SHA1), @sign);
+]], 1)
 test_false( DSB->public_key_equal(DSA) )
 test_false( DSA->public_key_equal(DSB) )
 test_true( DSB->get_p()->gcdext2 )
@@ -450,6 +736,36 @@ test_true( DSB->get_x()->gcdext2 )
 test_true( DSB->get_y()->gcdext2 )
 test_do( add_constant("DSB") )
 test_do( add_constant("DSA") )
+]])
+
+// Crypto.ECC
+
+define(test_curve,[[
+cond_resolv(Crypto.ECC.$1, [[
+  test_eq(Crypto.ECC.$1->name(),"$1")
+  test_eq(Crypto.ECC.$1->size(),(int)"$1"[5..])
+  test_eq((string)Crypto.ECC.$1->pkcs_named_curve_id(),$2)
+  test_do(add_constant("ecdsa", Crypto.ECC.$1.ECDSA()))
+  test_true(ecdsa->set_random(random_string))
+  test_true(ecdsa->generate_key())
+  test_do(ecdsa->set_public_key(ecdsa->get_x(),ecdsa->get_y()))
+  test_do(ecdsa->set_public_key(ecdsa->get_point()))
+  test_do(ecdsa->set_public_key(ecdsa->get_public_key()))
+  test_eq(ecdsa->get_curve(),Crypto.ECC.$1)
+  test_eq(ecdsa->size(),(int)"$1"[5..])
+  test_any([[
+    array sign = ecdsa->raw_sign("hej");
+    return ecdsa->raw_verify("hej", @sign);
+  ]], 1)
+  test_do(add_constant("ecdsa"))
+]])]])
+test_curve(SECP_192R1,"1.2.840.10045.3.1.1")
+test_curve(SECP_224R1,"1.3.132.0.33")
+test_curve(SECP_256R1,"1.2.840.10045.3.1.7")
+test_curve(SECP_384R1,"1.3.132.0.34")
+test_curve(SECP_521R1,"1.3.132.0.35")
+cond_resolv(Crypto.ECC.SECP_192R1, [[
+  test_do( Crypto.ECC.SECP_192R1.ECDSA()->generate_key())
 ]])
 
 dnl Crypto.substitution
@@ -693,6 +1009,65 @@ test_eq([[Crypto.verify_crypt_md5("Hellx","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]
 	[[0]])
 ]])
 
+// crypt_hash
+
+dnl from http://www.akkadia.org/drepper/SHA-crypt.txt:sha256crypt.c
+test_eq(Crypto.SHA256.crypt_hash("Hello world!", "saltstring", 5000),
+	"5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5")
+test_eq(Crypto.SHA256.crypt_hash("Hello world!",
+				 "saltstringsaltstring", 10000),
+	"3xv.VbSHBb41AL9AvLeujZkZRBAwqFMz2.opqey6IcA")
+test_eq(Crypto.SHA256.crypt_hash("This is just a test",
+				 "toolongsaltstring", 5000),
+	"Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5")
+test_eq(Crypto.SHA256.crypt_hash("a very much longer text to encrypt.  "
+				 "This one even stretches over more"
+				 "than one line.",
+				 "anotherlongsaltstring", 1400),
+	"Rx.j8H.h8HjEDGomFU8bDkXm3XIUnzyxf12oP84Bnq1")
+test_eq(Crypto.SHA256.crypt_hash("we have a short salt string but "
+				 "not a short password",
+				 "short", 77777),
+	"JiO1O3ZpDAxGJeaDIuqCoEFysAe1mZNJRs3pw0KQRd/")
+test_eq(Crypto.SHA256.crypt_hash("a short string", "asaltof16chars..", 123456),
+	"gP3VQ/6X7UUEW3HkBn2w1/Ptq2jxPyzV/cZKmF/wJvD")
+test_eq(Crypto.SHA256.crypt_hash("the minimum number is still observed",
+				 "roundstoolow", 10),
+	"yfvwcWrQ8l/K0DAWyuPMDNHpIVlTQebY9l/gL972bIC")
+
+cond_resolv(Crypto.SHA512, [[
+dnl from http://www.akkadia.org/drepper/SHA-crypt.txt:sha512crypt.c
+test_eq(Crypto.SHA512.crypt_hash("Hello world!", "saltstring", 5000),
+	"svn8UoSVapNtMuq1ukKS4tPQd8iKwSMHWjl/O817G3u"
+	"BnIFNjnQJuesI68u4OTLiBFdcbYEdFCoEOfaS35inz1")
+test_eq(Crypto.SHA512.crypt_hash("Hello world!",
+				 "saltstringsaltstring", 10000),
+	"OW1/O6BYHV6BcXZu8QVeXbDWra3Oeqh0sbHbbMCVNSn"
+	"CM/UrjmM0Dp8vOuZeHBy/YTBmSK6H9qs/y3RnOaw5v.")
+test_eq(Crypto.SHA512.crypt_hash("This is just a test",
+				 "toolongsaltstring", 5000),
+	"lQ8jolhgVRVhY4b5pZKaysCLi0QBxGoNeKQzQ3glMhw"
+	"llF7oGDZxUhx1yxdYcz/e1JSbq3y6JMxxl8audkUEm0")
+test_eq(Crypto.SHA512.crypt_hash("a very much longer text to encrypt.  "
+				 "This one even stretches over more"
+				 "than one line.",
+				 "anotherlongsaltstring", 1400),
+	"POfYwTEok97VWcjxIiSOjiykti.o/pQs.wPvMxQ6Fm7"
+	"I6IoYN3CmLs66x9t0oSwbtEW7o7UmJEiDwGqd8p4ur1")
+test_eq(Crypto.SHA512.crypt_hash("we have a short salt string but "
+				 "not a short password",
+				 "short", 77777),
+	"WuQyW2YR.hBNpjjRhpYD/ifIw05xdfeEyQoMxIXbkvr"
+	"0gge1a1x3yRULJ5CCaUeOxFmtlcGZelFl5CxtgfiAc0")
+test_eq(Crypto.SHA512.crypt_hash("a short string", "asaltof16chars..", 123456),
+	"BtCwjqMJGx5hrJhZywWvt0RLE8uZ4oPwcelCjmw2kSY"
+	"u.Ec6ycULevoBK25fs2xXgMNrCzIMVcgEJAstJeonj1")
+test_eq(Crypto.SHA512.crypt_hash("the minimum number is still observed",
+				 "roundstoolow", 10),
+	"kUMsbe306n21p9R.FRkW3IGn.S9NPN0x50YhH1xhLsP"
+	"uWGsUSklZt58jaTfF4ZEQpyUNGc0dqbpBYYBaHHrsX.")
+]])
+
 // pipe
 cond([[ master()->resolv("Crypto.IDEA.name") && master()->resolv("Gmp.mpz") ]],
 [[
@@ -728,7 +1103,7 @@ test_eq(
 // Rijndael CBC decrypt
 cond_resolv(Crypto.AES.name, [[
 test_any([[
-  object aes_cbc = Crypto.CBC(Crypto.AES);
+  object aes_cbc = Crypto.AES.CBC();
   aes_cbc->set_decrypt_key(String.hex2string("0"*32));
   aes_cbc->set_iv(String.hex2string("0"*32));
   string ct = String.hex2string("0"*32);
@@ -741,4 +1116,215 @@ test_any([[
 
 test_do( add_constant( "H" ) )
 test_do( add_constant( "S" ) )
+
+test_do([[
+  int pwtest(string p, void|string s) {
+    return Crypto.Password.verify( p, Crypto.Password.hash(p, s) );
+  };
+  add_constant( "P", pwtest );
+]])
+test_true( P("hej") )
+test_true( P("hej",0) )
+test_true( P("hej","crypt") )
+test_true( P("hej","{crypt}") )
+cond_resolv(Crypto.SHA512, [[
+  test_true( P("hej","6") )
+  test_true( has_prefix(Crypto.Password.hash("hej","6"), "$6$") )
+  test_true( P("hej","$6$") )
+  test_true( has_prefix(Crypto.Password.hash("hej","$6$"), "$6$") )
+]])
+test_true( P("hej","5") )
+test_true( has_prefix(Crypto.Password.hash("hej","5"), "$5$") )
+test_true( P("hej","$5$") )
+test_true( has_prefix(Crypto.Password.hash("hej","$5$"), "$5$") )
+test_true( P("hej","1") )
+test_true( has_prefix(Crypto.Password.hash("hej","1"), "$1$") )
+test_true( P("hej","$1$") )
+test_true( has_prefix(Crypto.Password.hash("hej","$1$"), "$1$") )
+test_true( P("hej","sha") )
+test_true( has_prefix(Crypto.Password.hash("hej","sha"), "{SHA}") )
+test_true( P("hej","{sha}") )
+test_true( has_prefix(Crypto.Password.hash("hej","{sha}"), "{SHA}") )
+test_true( P("hej","ssha") )
+test_true( has_prefix(Crypto.Password.hash("hej","ssha"), "{SSHA}") )
+test_true( P("hej","{ssha}") )
+test_true( has_prefix(Crypto.Password.hash("hej","{ssha}"), "{SSHA}") )
+test_true( P("hej","md5") )
+test_true( has_prefix(Crypto.Password.hash("hej","md5"), "{MD5}") )
+test_true( P("hej","{md5}") )
+test_true( has_prefix(Crypto.Password.hash("hej","{md5}"), "{MD5}") )
+test_true( P("hej","smd5") )
+test_true( has_prefix(Crypto.Password.hash("hej","smd5"), "{SMD5}") )
+test_true( P("hej","{smd5}") )
+test_true( has_prefix(Crypto.Password.hash("hej","{smd5}"), "{SMD5}") )
+test_eval_error( Crypto.Password.hash("hej","hej") )
+test_false( Crypto.Password.verify("hej","{}") )
+test_false( Crypto.Password.verify("hej","{x}") )
+test_false( Crypto.Password.verify("hej","{md5}") )
+test_false( Crypto.Password.verify("hej","{sha}") )
+test_true( Crypto.Password.verify("hej","{crypt}") )
+Crypto.Password.verify("hej","$x$");
+Crypto.Password.verify("hej","$1$$");
+Crypto.Password.verify("hej","$5$$");
+Crypto.Password.verify("hej","$6$$");
+test_do( add_constant( "P" ) )
+
+test_true( Crypto.DH.MODPGroup1 )
+test_true( Crypto.DH.MODPGroup2 )
+test_true( Crypto.DH.MODPGroup5 )
+test_true( Crypto.DH.MODPGroup14 )
+test_true( Crypto.DH.MODPGroup15 )
+test_true( Crypto.DH.MODPGroup16 )
+test_true( Crypto.DH.MODPGroup17 )
+test_true( Crypto.DH.MODPGroup18 )
+test_true( Crypto.DH.MODPGroup22 )
+test_true( Crypto.DH.MODPGroup23 )
+test_true( Crypto.DH.MODPGroup24 )
+test_true( Crypto.DH.FFDHE2048 )
+test_true( Crypto.DH.FFDHE2432 )
+test_true( Crypto.DH.FFDHE3072 )
+test_true( Crypto.DH.FFDHE4096 )
+test_true( Crypto.DH.FFDHE8192 )
+
+dnl q values from draft-ietf-tls-negotiated-ff-dhe-06
+test_eq( Crypto.DH.FFDHE2048.q, Gmp.mpz(#"
+    7FFFFFFF FFFFFFFF D6FC2A2C 515DA54D 57EE2B10 139E9E78
+    EC5CE2C1 E7169B4A D4F09B20 8A3219FD E649CEE7 124D9F7C
+    BE97F1B1 B1863AEC 7B40D901 576230BD 69EF8F6A EAFEB2B0
+    9219FA8F AF833768 42B1B2AA 9EF68D79 DAAB89AF 3FABE49A
+    CC278638 707345BB F15344ED 79F7F439 0EF8AC50 9B56F39A
+    98566527 A41D3CBD 5E0558C1 59927DB0 E88454A5 D96471FD
+    DCB56D5B B06BFA34 0EA7A151 EF1CA6FA 572B76F3 B1B95D8C
+    8583D3E4 770536B8 4F017E70 E6FBF176 601A0266 941A17B0
+    C8B97F4E 74C2C1FF C7278919 777940C1 E1FF1D8D A637D6B9
+    9DDAFE5E 17611002 E2C778C1 BE8B41D9 6379A513 60D977FD
+    4435A11C 30942E4B FFFFFFFF FFFFFFFF
+",16) )
+
+test_eq( Crypto.DH.FFDHE3072.q, Gmp.mpz(#"
+    7FFFFFFF FFFFFFFF D6FC2A2C 515DA54D 57EE2B10 139E9E78
+    EC5CE2C1 E7169B4A D4F09B20 8A3219FD E649CEE7 124D9F7C
+    BE97F1B1 B1863AEC 7B40D901 576230BD 69EF8F6A EAFEB2B0
+    9219FA8F AF833768 42B1B2AA 9EF68D79 DAAB89AF 3FABE49A
+    CC278638 707345BB F15344ED 79F7F439 0EF8AC50 9B56F39A
+    98566527 A41D3CBD 5E0558C1 59927DB0 E88454A5 D96471FD
+    DCB56D5B B06BFA34 0EA7A151 EF1CA6FA 572B76F3 B1B95D8C
+    8583D3E4 770536B8 4F017E70 E6FBF176 601A0266 941A17B0
+    C8B97F4E 74C2C1FF C7278919 777940C1 E1FF1D8D A637D6B9
+    9DDAFE5E 17611002 E2C778C1 BE8B41D9 6379A513 60D977FD
+    4435A11C 308FE7EE 6F1AAD9D B28C81AD DE1A7A6F 7CCE011C
+    30DA37E4 EB736483 BD6C8E93 48FBFBF7 2CC6587D 60C36C8E
+    577F0984 C289C938 5A098649 DE21BCA2 7A7EA229 716BA6E9
+    B279710F 38FAA5FF AE574155 CE4EFB4F 743695E2 911B1D06
+    D5E290CB CD86F56D 0EDFCD21 6AE22427 055E6835 FD29EEF7
+    9E0D9077 1FEACEBE 12F20E95 B363171B FFFFFFFF FFFFFFFF
+",16) )
+
+test_eq( Crypto.DH.FFDHE4096.q, Gmp.mpz(#"
+    7FFFFFFF FFFFFFFF D6FC2A2C 515DA54D 57EE2B10 139E9E78
+    EC5CE2C1 E7169B4A D4F09B20 8A3219FD E649CEE7 124D9F7C
+    BE97F1B1 B1863AEC 7B40D901 576230BD 69EF8F6A EAFEB2B0
+    9219FA8F AF833768 42B1B2AA 9EF68D79 DAAB89AF 3FABE49A
+    CC278638 707345BB F15344ED 79F7F439 0EF8AC50 9B56F39A
+    98566527 A41D3CBD 5E0558C1 59927DB0 E88454A5 D96471FD
+    DCB56D5B B06BFA34 0EA7A151 EF1CA6FA 572B76F3 B1B95D8C
+    8583D3E4 770536B8 4F017E70 E6FBF176 601A0266 941A17B0
+    C8B97F4E 74C2C1FF C7278919 777940C1 E1FF1D8D A637D6B9
+    9DDAFE5E 17611002 E2C778C1 BE8B41D9 6379A513 60D977FD
+    4435A11C 308FE7EE 6F1AAD9D B28C81AD DE1A7A6F 7CCE011C
+    30DA37E4 EB736483 BD6C8E93 48FBFBF7 2CC6587D 60C36C8E
+    577F0984 C289C938 5A098649 DE21BCA2 7A7EA229 716BA6E9
+    B279710F 38FAA5FF AE574155 CE4EFB4F 743695E2 911B1D06
+    D5E290CB CD86F56D 0EDFCD21 6AE22427 055E6835 FD29EEF7
+    9E0D9077 1FEACEBE 12F20E95 B34F0F78 B737A961 8B26FA7D
+    BC9874F2 72C42BDB 563EAFA1 6B4FB68C 3BB1E78E AA81A002
+    43FAADD2 BF18E63D 389AE443 77DA18C5 76B50F00 96CF3419
+    5483B005 48C09862 36E3BC7C B8D6801C 0494CCD1 99E5C5BD
+    0D0EDC9E B8A0001E 15276754 FCC68566 054148E6 E764BEE7
+    C764DAAD 3FC45235 A6DAD428 FA20C170 E345003F 2F32AFB5
+    7FFFFFFF FFFFFFFF
+",16) )
+
+test_eq( Crypto.DH.FFDHE6144.q, Gmp.mpz(#"
+    7FFFFFFF FFFFFFFF D6FC2A2C 515DA54D 57EE2B10 139E9E78
+    EC5CE2C1 E7169B4A D4F09B20 8A3219FD E649CEE7 124D9F7C
+    BE97F1B1 B1863AEC 7B40D901 576230BD 69EF8F6A EAFEB2B0
+    9219FA8F AF833768 42B1B2AA 9EF68D79 DAAB89AF 3FABE49A
+    CC278638 707345BB F15344ED 79F7F439 0EF8AC50 9B56F39A
+    98566527 A41D3CBD 5E0558C1 59927DB0 E88454A5 D96471FD
+    DCB56D5B B06BFA34 0EA7A151 EF1CA6FA 572B76F3 B1B95D8C
+    8583D3E4 770536B8 4F017E70 E6FBF176 601A0266 941A17B0
+    C8B97F4E 74C2C1FF C7278919 777940C1 E1FF1D8D A637D6B9
+    9DDAFE5E 17611002 E2C778C1 BE8B41D9 6379A513 60D977FD
+    4435A11C 308FE7EE 6F1AAD9D B28C81AD DE1A7A6F 7CCE011C
+    30DA37E4 EB736483 BD6C8E93 48FBFBF7 2CC6587D 60C36C8E
+    577F0984 C289C938 5A098649 DE21BCA2 7A7EA229 716BA6E9
+    B279710F 38FAA5FF AE574155 CE4EFB4F 743695E2 911B1D06
+    D5E290CB CD86F56D 0EDFCD21 6AE22427 055E6835 FD29EEF7
+    9E0D9077 1FEACEBE 12F20E95 B34F0F78 B737A961 8B26FA7D
+    BC9874F2 72C42BDB 563EAFA1 6B4FB68C 3BB1E78E AA81A002
+    43FAADD2 BF18E63D 389AE443 77DA18C5 76B50F00 96CF3419
+    5483B005 48C09862 36E3BC7C B8D6801C 0494CCD1 99E5C5BD
+    0D0EDC9E B8A0001E 15276754 FCC68566 054148E6 E764BEE7
+    C764DAAD 3FC45235 A6DAD428 FA20C170 E345003F 2F06EC81
+    05FEB25B 2281B63D 2733BE96 1C29951D 11DD2221 657A9F53
+    1DDA2A19 4DBB1264 48BDEEB2 58E07EA6 59C74619 A6380E1D
+    66D6832B FE67F638 CD8FAE1F 2723020F 9C40A3FD A67EDA3B
+    D29238FB D4D4B488 5C2A9917 6DB1A06C 50077849 1A8288F1
+    855F60FF FCF1D137 3FD94FC6 0C1811E1 AC3F1C6D 003BECDA
+    3B1F2725 CA595DE0 CA63328F 3BE57CC9 77556011 95140DFB
+    59D39CE0 91308B41 05746DAC 23D33E5F 7CE4848D A316A9C6
+    6B9581BA 3573BFAF 31149618 8AB15423 282EE416 DC2A19C5
+    724FA91A E4ADC88B C66796EA E5677A01 F64E8C08 63139582
+    2D9DB8FC EE35C06B 1FEEA547 4D6D8F34 B1534A93 6A18B0E0
+    D20EAB86 BC9C6D6A 5207194E 68720732 FFFFFFFF FFFFFFFF
+",16) )
+
+test_eq( Crypto.DH.FFDHE8192.q, Gmp.mpz(#"
+    7FFFFFFF FFFFFFFF D6FC2A2C 515DA54D 57EE2B10 139E9E78
+    EC5CE2C1 E7169B4A D4F09B20 8A3219FD E649CEE7 124D9F7C
+    BE97F1B1 B1863AEC 7B40D901 576230BD 69EF8F6A EAFEB2B0
+    9219FA8F AF833768 42B1B2AA 9EF68D79 DAAB89AF 3FABE49A
+    CC278638 707345BB F15344ED 79F7F439 0EF8AC50 9B56F39A
+    98566527 A41D3CBD 5E0558C1 59927DB0 E88454A5 D96471FD
+    DCB56D5B B06BFA34 0EA7A151 EF1CA6FA 572B76F3 B1B95D8C
+    8583D3E4 770536B8 4F017E70 E6FBF176 601A0266 941A17B0
+    C8B97F4E 74C2C1FF C7278919 777940C1 E1FF1D8D A637D6B9
+    9DDAFE5E 17611002 E2C778C1 BE8B41D9 6379A513 60D977FD
+    4435A11C 308FE7EE 6F1AAD9D B28C81AD DE1A7A6F 7CCE011C
+    30DA37E4 EB736483 BD6C8E93 48FBFBF7 2CC6587D 60C36C8E
+    577F0984 C289C938 5A098649 DE21BCA2 7A7EA229 716BA6E9
+    B279710F 38FAA5FF AE574155 CE4EFB4F 743695E2 911B1D06
+    D5E290CB CD86F56D 0EDFCD21 6AE22427 055E6835 FD29EEF7
+    9E0D9077 1FEACEBE 12F20E95 B34F0F78 B737A961 8B26FA7D
+    BC9874F2 72C42BDB 563EAFA1 6B4FB68C 3BB1E78E AA81A002
+    43FAADD2 BF18E63D 389AE443 77DA18C5 76B50F00 96CF3419
+    5483B005 48C09862 36E3BC7C B8D6801C 0494CCD1 99E5C5BD
+    0D0EDC9E B8A0001E 15276754 FCC68566 054148E6 E764BEE7
+    C764DAAD 3FC45235 A6DAD428 FA20C170 E345003F 2F06EC81
+    05FEB25B 2281B63D 2733BE96 1C29951D 11DD2221 657A9F53
+    1DDA2A19 4DBB1264 48BDEEB2 58E07EA6 59C74619 A6380E1D
+    66D6832B FE67F638 CD8FAE1F 2723020F 9C40A3FD A67EDA3B
+    D29238FB D4D4B488 5C2A9917 6DB1A06C 50077849 1A8288F1
+    855F60FF FCF1D137 3FD94FC6 0C1811E1 AC3F1C6D 003BECDA
+    3B1F2725 CA595DE0 CA63328F 3BE57CC9 77556011 95140DFB
+    59D39CE0 91308B41 05746DAC 23D33E5F 7CE4848D A316A9C6
+    6B9581BA 3573BFAF 31149618 8AB15423 282EE416 DC2A19C5
+    724FA91A E4ADC88B C66796EA E5677A01 F64E8C08 63139582
+    2D9DB8FC EE35C06B 1FEEA547 4D6D8F34 B1534A93 6A18B0E0
+    D20EAB86 BC9C6D6A 5207194E 67FA3555 1B568026 7B00641C
+    0F212D18 ECA8D732 7ED91FE7 64A84EA1 B43FF5B4 F6E8E62F
+    05C661DE FB258877 C35B18A1 51D5C414 AAAD97BA 3E499332
+    E596078E 600DEB81 149C441C E95782F2 2A282563 C5BAC141
+    1423605D 1AE1AFAE 2C8B0660 237EC128 AA0FE346 4E435811
+    5DB84CC3 B523073A 28D45498 84B81FF7 0E10BF36 1C137296
+    28D5348F 07211E7E 4CF4F18B 286090BD B1240B66 D6CD4AFC
+    EADC00CA 446CE050 50FF183A D2BBF118 C1FC0EA5 1F97D22B
+    8F7E4670 5D4527F4 5B42AEFF 39585337 6F697DD5 FDF2C518
+    7D7D5F0E 2EB8D43F 17BA0F7C 60FF437F 535DFEF2 9833BF86
+    CBE88EA4 FBD4221E 84117283 54FA30A7 008F154A 41C7FC46
+    6B4645DB E2E32126 7FFFFFFF FFFFFFFF
+",16) )
+
+
 END_MARKER

@@ -26,12 +26,12 @@ private void request_received(mapping rdata) {
   mapping varlist=([]);
 
   array n=indices(rv);
-  
+
   if(rv[n[0]])
   {
       if(managers_security_mode && !has_value(managers_list,
         get_host_from_ip(rdata->ip)))
-        // we want to check managers list, and this request is coming 
+        // we want to check managers list, and this request is coming
         // from a non manager, so let us ignore it.
       {
         return;
@@ -60,12 +60,15 @@ private void request_received(mapping rdata) {
            else if(oid_get_callbacks["*"])
            {
              mixed r=oid_get_callbacks["*"](oid, rv[n[0]]);
+	     // We got a different OID than the requested
+	     // one. Typically happens with REQUEST_GETNEXT requests.
+             string ret_oid = (sizeof (r) >= 4 && r[3]) || oid;
              if(r[0]==0) // we had an error
              {
-               return_error(rv, @r[1..]);
+               return_error(rv, @r[1..2]);
                return;
              }
-             else varlist[oid]=r[1..];
+             else varlist[ret_oid]=r[1..2];
             }
          }
       }
@@ -122,7 +125,7 @@ private void request_received(mapping rdata) {
 }
 
 //! create a new instance of the agent
-//! 
+//!
 //! @param port
 //!   the port number to listen for requests on
 //! @param addr
@@ -224,22 +227,22 @@ void set_managers(array managers)
 }
 
 //! set the Set request callback function for an Object Identifier
-//! 
+//!
 //! @param oid
 //!   the string object identifier, such as 1.3.6.1.4.1.132.2
 //!   or an asterisk (*) to serve as the handler for all requests
 //!   for which a handler is specified.
 //! @param cb
 //!   the function to call when oid is requested by a manager
-//!   the function should take 3 arguments: a string containing the 
+//!   the function should take 3 arguments: a string containing the
 //!   requested oid, the desired value, and the body of the request as a mapping.
 //!   The function should return an array containing 3 elements:
 //!   The first is a boolean indicating success or failure.
-//!   If success, the next 2 elements should be the SNMP data type of 
+//!   If success, the next 2 elements should be the SNMP data type of
 //!   the result followed by the result itself.
 //!   If failure, the next 2 elements should be the error-status
 //!   such as @[Protocols.SNMP.ERROR_TOOBIG] and the second
-//!   is the error-index, if any.  
+//!   is the error-index, if any.
 //! @note
 //!    there can be only one callback per object identifier.
 //!    calling this function more than once with the same oid will
@@ -247,15 +250,15 @@ void set_managers(array managers)
 void set_set_oid_callback(string oid, function cb)
 {
   if(oid=="*"); // we can let * pass.
-  else if(!oid || !is_valid_oid(oid)) 
+  else if(!oid || !is_valid_oid(oid))
     error("set_set_oid_callback(): invalid or no oid specified.\n");
 
-  oid_set_callbacks[oid]=cb;    
+  oid_set_callbacks[oid]=cb;
 
 }
 
 //! clear the Set callback function for an Object Identifier
-//! 
+//!
 //! @param oid
 //!   the string object identifier, such as 1.3.6.1.4.1.132.2
 //!   or an asterisk (*) to indicate the default handler.
@@ -265,7 +268,7 @@ void set_set_oid_callback(string oid, function cb)
 int clear_set_oid_callback(string oid)
 {
   if(oid=="*"); // we can let * pass.
-  else if(!oid || !is_valid_oid(oid)) 
+  else if(!oid || !is_valid_oid(oid))
     error("clear_set_oid_callback(): invalid or no oid specified.\n");
   if(oid_set_callbacks[oid])
   {
@@ -276,7 +279,7 @@ int clear_set_oid_callback(string oid)
 }
 
 //! get the Set request callback function for an Object Identifier
-//! 
+//!
 //! @param oid
 //!   the string object identifier, such as 1.3.6.1.4.1.132.2
 //!   or an asterisk (*) to indicate the default handler
@@ -286,7 +289,7 @@ int clear_set_oid_callback(string oid)
 void|function get_set_oid_callback(string oid)
 {
   if(oid=="*"); // we can let * pass.
-  else if(!oid || !is_valid_oid(oid)) 
+  else if(!oid || !is_valid_oid(oid))
     error("get_set_oid_callback(): invalid or no oid specified.\n");
   if(oid_set_callbacks[oid])
     return oid_set_callbacks[oid];
@@ -294,22 +297,27 @@ void|function get_set_oid_callback(string oid)
 
 
 //! set the Get request callback function for an Object Identifier
-//! 
+//!
 //! @param oid
 //!   the string object identifier, such as 1.3.6.1.4.1.132.2
 //!   or an asterisk (*) to serve as the handler for all requests
 //!   for which a handler is specified.
 //! @param cb
 //!   the function to call when oid is requested by a manager
-//!   the function should take 2 arguments: a string containing the 
+//!   the function should take 2 arguments: a string containing the
 //!   requested oid and the body of the request as a mapping.
-//!   The function should return an array containing 3 elements:
+//!   The function should return an array containing 3 or 4 elements:
 //!   The first is a boolean indicating success or failure.
-//!   If success, the next 2 elements should be the SNMP data type of 
+//!   If success, the next 2 elements should be the SNMP data type of
 //!   the result followed by the result itself.
 //!   If failure, the next 2 elements should be the error-status
 //!   such as @[Protocols.SNMP.ERROR_TOOBIG] and the second
-//!   is the error-index, if any.  
+//!   is the error-index, if any.
+//!   If a fourth array element is returned, it should contain the OID
+//!   that the callback actually fetched (typically different from the
+//!   requested OID for REQUEST_GETNEXT requests). This is needed for
+//!   e.g. snmpwalk to work properly.
+//!
 //! @note
 //!    there can be only one callback per object identifier.
 //!    calling this function more than once with the same oid will
@@ -317,15 +325,15 @@ void|function get_set_oid_callback(string oid)
 void set_get_oid_callback(string oid, function cb)
 {
   if(oid=="*"); // we can let * pass.
-  else if(!oid || !is_valid_oid(oid)) 
+  else if(!oid || !is_valid_oid(oid))
     error("set_get_oid_callback(): invalid or no oid specified.\n");
 
-  oid_get_callbacks[oid]=cb;    
+  oid_get_callbacks[oid]=cb;
 
 }
 
 //! clear the Get callback function for an Object Identifier
-//! 
+//!
 //! @param oid
 //!   the string object identifier, such as 1.3.6.1.4.1.132.2
 //!   or an asterisk (*) to indicate the default handler.
@@ -335,7 +343,7 @@ void set_get_oid_callback(string oid, function cb)
 int clear_get_oid_callback(string oid)
 {
   if(oid=="*"); // we can let * pass.
-  else if(!oid || !is_valid_oid(oid)) 
+  else if(!oid || !is_valid_oid(oid))
     error("clear_get_oid_callback(): invalid or no oid specified.\n");
   if(oid_get_callbacks[oid])
   {
@@ -346,7 +354,7 @@ int clear_get_oid_callback(string oid)
 }
 
 //! get the Get request callback function for an Object Identifier
-//! 
+//!
 //! @param oid
 //!   the string object identifier, such as 1.3.6.1.4.1.132.2
 //!   or an asterisk (*) to indicate the default handler
@@ -356,7 +364,7 @@ int clear_get_oid_callback(string oid)
 void|function get_get_oid_callback(string oid)
 {
   if(oid=="*"); // we can let * pass.
-  else if(!oid || !is_valid_oid(oid)) 
+  else if(!oid || !is_valid_oid(oid))
     error("get_get_oid_callback(): invalid or no oid specified.\n");
   if(oid_get_callbacks[oid])
     return oid_get_callbacks[oid];

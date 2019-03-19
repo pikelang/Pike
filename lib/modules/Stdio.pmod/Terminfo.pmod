@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 
@@ -39,7 +38,7 @@ protected private class TermMachine {
   {
     return intp(map[id]) && [int]map[id];
   }
-  
+
   string tgetstr(string id)
   {
     return stringp(map[id]) && [string]map[id];
@@ -53,10 +52,10 @@ protected private class TermMachine {
     int z;
     mapping var=([]);
     array args0=args;
-    
+
 #define POP (z=[int]args[0],args=args[1..],z)
 #define PUSH(x) (args=({x})+args)
-    
+
     while ( (fmt=fmt[1..])!=({}) )
       if (fmt[0]=="") res+="%";
       else
@@ -71,15 +70,15 @@ protected private class TermMachine {
 	  break;
 	case 'c': res+=sprintf("%c%s",POP,fmt[0][1..]); break;
 	case 's': res+=sprintf("%s%s",[string](mixed)POP,fmt[0][1..]); break;
-	  
-	case '\'': 
+
+	case '\'':
 	  sscanf(fmt[0],"'%s'%s",tmp,fmt[0]);
 	  if (tmp=="") tmp="\0";
 	  if (tmp[0]=='\\') tmp=sprintf("%c",(int)("0"+tmp[1..]));
 	  PUSH(tmp[0]);
 	  res+=fmt[0];
 	  break;
-	case '{': 
+	case '{':
 	  sscanf(fmt[0],"{%d}%s",z,fmt[0]);
 	  res+=fmt[0];
 	  PUSH(z);
@@ -174,17 +173,17 @@ class Termcap {
       error("Termcap: Unparsable entry\n");
     aliases=en[..i-1]/"|";
     en=en[i..];
-    
+
     while (en!="")
     {
       string name;
       string data;
       if(sscanf(en,"%*[ \t]%[a-zA-Z_0-9&]%s"+br+"%s",name,data,en) < 4)
-      {	
+      {
 	sscanf(en,"%*[ \t]%[a-zA-Z_0-9&]%s",name,data);
 	en="";
       }
-      
+
       if (data=="") // boolean
       {
 	if (name!="") map[name]=1;
@@ -208,12 +207,12 @@ class Termcap {
 	  if (sscanf(en,"%s"+br+"%s",add,en)<2) break;
 	  data+="\\"+add;
 	}
-	
+
 	data=replace(data,"\\^","\\*");
-	
+
 	if (has_value(data, "^"))
 	  data=replace(data,ctrlcharsfrom,ctrlcharsto);
-	
+
 	data = replace(data,
 		  ({"\\E","\\e","\\n","\\r","\\t","\\b","\\f",
 		    "\\*","\\\\","\\,","\\:","#",
@@ -238,7 +237,7 @@ class Termcap {
 	  }
 
 	map[name]=data;
-	
+
       }
       else // weird
       {
@@ -460,7 +459,7 @@ class TermcapDB {
     string q;
     q=::read(8192);
     if (q=="" || !q) return 0;
-    buf+=q; 
+    buf+=q;
     return 1;
   }
 
@@ -478,10 +477,10 @@ class TermcapDB {
     for (;;)
     {
       if (buf=="" && !more_data()) return 0; // eof
-      
+
       sscanf(buf,"%*[ \t\r\n]%s",buf);
       if (buf=="") continue;
-      
+
       if (buf[0]=='#') // comment, scan to newline
       {
 	while ((i=search(buf,"\n"))<0)
@@ -503,7 +502,7 @@ class TermcapDB {
     {
       if (!more_data()) return 0; // eof
     }
-    
+
     while (buf[i-1]=='\\')
     {
       res+=buf[..i-2];
@@ -518,7 +517,7 @@ class TermcapDB {
 	if (!more_data()) return 0; // eof
       }
     }
-    
+
     res+=buf[..i-1];
     buf=buf[i+1..];
 
@@ -597,13 +596,13 @@ class TermcapDB {
       int i, j;
 
       if (buf=="" && !more_data()) return 0; // eof
-      
+
       i=search(buf,find);
       if (i!=-1)
       {
 	int j=i;
 	while (j>=0 && buf[j]!='\n') j--; // find backwards
-	
+
 	if (buf!="" && buf[j+1]!='#')  // skip comments
 	{
 	  buf=buf[j+1..];
@@ -614,7 +613,7 @@ class TermcapDB {
 	  if (!more_data()) return 0; // eof
 
 	buf = buf[i+1..];
-	
+
 	continue;
       }
       for(j=-1; (i=search(buf,"\n",j+1))>=0; j=i);
@@ -628,7 +627,7 @@ class TermcapDB {
     int|string|Termcap cap;
 
     LOCK;
-    if (zero_type(cache[term]))
+    if (!has_index(cache, term))
     {
       if (!complete_index)
       {
@@ -715,7 +714,7 @@ class TerminfoDB {
       foreach (get_dir(dir), string a)
 	if (sizeof(a) == 1)
 	  foreach (get_dir(dir+a), string b)
-	    if(zero_type(cache[b]))
+	    if(!has_index(cache, b))
 	      cache[b] = 0;
       complete_index = 1;
     }
@@ -801,10 +800,10 @@ class MetaTerminfoDB {
 	db = TerminfoDB(db);
       }
       if (!db) continue;
-      this_program::dbs += ({ db });
+      this::dbs += ({ db });
     }
-    // werror("TerminfoDBs: %O\n", this_program::dbs);
-    if (!sizeof(this_program::dbs)) {
+    // werror("TerminfoDBs: %O\n", this::dbs);
+    if (!sizeof(this::dbs)) {
       destruct(this);
     }
   }

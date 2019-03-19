@@ -1,0 +1,11 @@
+START_MARKER
+
+test_true(Web.Api.Facebook)
+test_true(Web.Api.Github)
+test_true(Web.Api.Google.Analytics)
+test_true(Web.Api.Google.Plus)
+test_true(Web.Api.Instagram)
+test_true(Web.Api.Linkedin)
+test_true(Web.Api.Twitter)
+
+END_MARKER

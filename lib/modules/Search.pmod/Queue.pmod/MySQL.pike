@@ -1,38 +1,56 @@
+#pike __REAL_VERSION__
+
 inherit .Base;
 
-Sql.Sql db;
+//! @[Search] crawler state stored in a @[Mysql] database.
+
 string url, table;
+
+protected Thread.Local _db = Thread.Local();
+Sql.Sql `db()
+{
+  // NB: We need to have a thread local connection,
+  //     since the status functions may get called
+  //     from some other thread while we're busy
+  //     performing sql queries elsewhere.
+  Sql.Sql ret = _db->get();
+  if (ret && !ret->ping()) return ret;
+  return _db->set(Sql.Sql( url ));
+}
 
 Web.Crawler.Stats stats;
 Web.Crawler.Policy policy;
 Web.Crawler.RuleSet allow, deny;
 
-inherit Web.Crawler.Queue;
-
-static string to_md5(string url)
+protected string to_md5(string url)
 {
-  Crypto.MD5 md5 = Crypto.MD5();
-  md5->update(string_to_utf8(url));
-  return String.string2hex(md5->digest());
+  return String.string2hex(Crypto.MD5.hash(string_to_utf8(url)));
 }
 
+//! @param _url
+//!   @[Sql.Sql] URL for the database to store the queue.
+//!
+//! @param _table
+//!   @[Sql.Sql] table name to store the queue in.
+//!
+//!   If the table doesn't exist it will be created.
 void create( Web.Crawler.Stats _stats,
 	     Web.Crawler.Policy _policy,
-	     
+
 	     string _url, string _table,
-	     
+
 	     void|Web.Crawler.RuleSet _allow,
 	     void|Web.Crawler.RuleSet _deny)
 {
   stats = _stats;   policy = _policy;
   allow=_allow;     deny=_deny;
   table = _table;
+  url = _url;
 
-  db = Sql.Sql( _url );
   perhaps_create_table(  );
 }
 
-static void perhaps_create_table(  )
+protected void perhaps_create_table(  )
 {
   db->query(
 #"
@@ -48,21 +66,20 @@ static void perhaps_create_table(  )
 	INDEX uri     (uri(255))
 	)
     ");
-  if (!sizeof(db->query("SHOW INDEX FROM " + table +
-			" WHERE key_name = 'uri'"))) {
+  if (!((multiset)db->query("SHOW INDEX FROM " + table)->Key_name)["uri"]) {
     db->query("ALTER TABLE " + table +
 	      "  ADD INDEX uri (uri(255))");
   }
 }
-  
-static mapping hascache = ([]);
+
+protected mapping hascache = ([]);
 
 void clear_cache()
 {
   hascache = ([]);
 }
 
-static int has_uri( string|Standards.URI uri )
+protected int has_uri( string|Standards.URI uri )
 {
   uri = (string)uri;
   if( sizeof(hascache) > 100000 )  hascache = ([]);
@@ -80,7 +97,7 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
   if(r->query && !strlen(r->query))  r->query = 0;
 
     // Remove any trailing index filename
-    
+
   string rpath=reverse(r->path);
   // FIXME: Make these configurable?
   foreach( ({"index.xml", "index.html", "index.htm"}),
@@ -90,7 +107,7 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
   r->path=reverse(rpath);
 
   r->path = combine_path(r->path);
-    
+
   if( force || check_link(uri, allow, deny) )
   {
     if(has_uri(r))
@@ -143,13 +160,13 @@ mapping get_extra( Standards.URI uri )
   return (sizeof(r) && r[0]) || ([ ]);
 }
 
-static int empty_count;
-static int retry_count;
-  
+protected int empty_count;
+protected int retry_count;
+
 // cache, for performance reasons.
-static array possible=({});
-static int p_c;
-  
+protected array possible=({});
+protected int p_c;
+
 int|Standards.URI get()
 {
   if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
@@ -224,6 +241,8 @@ array(Standards.URI) get_uris(void|int stage)
   return uris;
 }
 
+//! @returns
+//!   Returns an array with all URI schemes currently used in the queue.
 array(string) get_schemes()
 {
   // FIXME: Consider using SUBSTRING_INDEX().
@@ -248,7 +267,7 @@ void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
   }
   if(!objectp(uri))
     uri=Standards.URI(uri);
-    
+
   add_uri( uri, 1, 0 );
 }
 
@@ -270,7 +289,7 @@ void remove_uri_prefix(string|Standards.URI uri)
   foreach(indices(hascache), string _uri)
     if(has_prefix(_uri, uri_string))
       hascache[_uri]=0;
-  
+
   db->query("delete from "+table+" where uri like '" + db->quote(uri_string) + "%%'");
 }
 
@@ -305,6 +324,11 @@ void set_stage( Standards.URI uri,
 	     to_md5((string)uri));
 }
 
+//! @returns
+//!   Returns the current stage for the specified URI.
+//!
+//! @seealso
+//!   @[set_stage()]
 int get_stage( Standards.URI uri )
 {
   array a = db->query( "select stage from "+table+" where uri_md5=%s", to_md5((string)uri));
@@ -314,6 +338,9 @@ int get_stage( Standards.URI uri )
     return -1;
 }
 
+//! Reset the stage to @expr{0@} (zero) for all URIs with the specified
+//! @[uri_prefix]. If no @[uri_prefix] is specified reset the stage for
+//! all URIs.
 void reset_stage(string|void uri_prefix)
 {
   if (uri_prefix) {

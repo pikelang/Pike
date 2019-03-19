@@ -2,13 +2,13 @@
 //!
 //!
 
-static mixed _index( string ind );
+protected mixed _index( string ind );
 //! Return an index.
 //!
 //!
 
 
-mixed cast( string to );
+mapping cast( string to );
 //! Cast to different types.
 //!
 //!

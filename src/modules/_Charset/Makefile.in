@@ -1,7 +1,3 @@
-#
-# $Id$
-#
-
 @make_variables@
 VPATH=@srcdir@
 OBJS=charsetmod.o iso2022.o tables.o misc.o

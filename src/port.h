@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef PORT_H
@@ -96,32 +95,13 @@
 /* Now for some functions */
 #define Emulate_GetLongPathName GetLongPathNameA
 
-
-
 #endif /* __MINGW32__ */
+
 
 #ifndef STRUCT_TIMEVAL_DECLARED
 #define STRUCT_TIMEVAL_DECLARED
 struct timeval;
 #endif
-
-#ifdef HAVE_ISSPACE
-#define ISSPACE(X) isspace(X)
-#else
-PMOD_EXPORT extern const char Pike_isspace_vector[];
-#define ISSPACE(X) (Pike_isspace_vector[(X)+1] == 'S')
-#endif
-
-/* Warning, these run 'C' more than once */
-/* FIXME: Is it that great that every wide char is considered an
- * identifier char? Doesn't strike me as very unicode compliant.
- * isalnum, isdigit and islower also look seriously borken. /mast */
-#define WIDE_ISSPACE(C)	(((C) < 256)?ISSPACE(C):0)
-#define WIDE_ISIDCHAR(C) (((C) < 256)?isidchar(C):1)
-#define WIDE_ISALNUM(C)	(((C) < 256)?isalnum(C):0)
-#define WIDE_ISDIGIT(C)	(((C) < 256)?isdigit(C):0)
-#define WIDE_ISLOWER(C)	(((C) < 256)?islower(C):0)
-
 
 #ifndef HAVE_GETTIMEOFDAY
 void GETTIMEOFDAY(struct timeval *t);
@@ -133,17 +113,11 @@ void GETTIMEOFDAY(struct timeval *t);
 #  endif
 #endif
 
-#ifndef HAVE_TIME
-time_t TIME(time_t *);
-#else
-#  define TIME time
-#endif
-
 #ifndef HAVE_SNPRINTF
 #ifdef HAVE__SNPRINTF
 /* In WIN32 snprintf is known as _snprintf... */
 #define snprintf _snprintf
-#define HAVE_SNPRINTF
+#define HAVE_SNPRINTF 1
 #endif
 #endif
 
@@ -153,116 +127,87 @@ time_t TIME(time_t *);
 #define rintl(X) floorl ((X) + 0.5)
 #endif
 
-/* Compat. */
-#define RINTF rintf
-#define RINT rint
-#define RINTL rintl
-
-PMOD_EXPORT long STRTOL(const char *str,char **ptr,int base);
-PMOD_EXPORT double STRTOD(const char * nptr, char **endptr);
-
-#ifndef HAVE_STRCSPN
-int STRCSPN(const char *s,const char * set);
-#else
-#  define STRCSPN strcspn
-#endif
-
 #ifndef HAVE_STRCASECMP
 PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #else
-#  define STRCASECMP strcasecmp
-#endif
-
-#ifndef HAVE_STRNLEN
-PMOD_EXPORT size_t STRNLEN(const char *a,size_t len);
-#else
-#  define STRNLEN strnlen
-#endif
-
-#ifndef HAVE_STRNCMP
-PMOD_EXPORT int STRNCMP(const char *a, const char *b, size_t len);
-#else
-#  define STRNCMP strncmp
-#endif
-
-#ifndef HAVE_MEMSET
-void *MEMSET (void *s,int c,size_t n);
-#else
-#  define MEMSET memset
-#endif
-
-#if 0 && defined(TRY_USE_MMX)
-PMOD_EXPORT void MEMCPY(void *b,const void *a,size_t s);
-# define __builtin_memcpy MEMCPY
-#else
-# ifndef HAVE_MEMCPY
-#  ifdef HAVE_BCOPY
-#    define MEMCPY(X,Y,Z) bcopy(Y,X,Z)
-#    define __builtin_memcpy(X,Y,Z) bcopy(Y,X,Z)
-#  else
-void MEMCPY(void *b,const void *a,size_t s);
-#    define __builtin_memcpy MEMCPY
-#  endif
-# else
-#  define MEMCPY(X,Y,Z) memcpy((char*)(X),(char*)(Y),(Z))
-# endif
-#endif
-
-#ifndef HAVE_MEMMOVE
-PMOD_EXPORT void MEMMOVE(void *b,const void *a,size_t s);
-#else
-#  define MEMMOVE memmove
-#endif
-
-#ifndef HAVE_MEMCMP
-PMOD_EXPORT int MEMCMP(const void *b,const void *a,size_t s);
-#else
-#  define MEMCMP(X,Y,Z) memcmp((char*)(X),(char*)(Y),(Z))
-#endif
-
-#ifndef HAVE_MEMCHR
-PMOD_EXPORT void *MEMCHR(void *p,char c,size_t e);
-#else
-#  define MEMCHR(X,Y,Z) ((void *)memchr(X,Y,Z))
-#endif
-
-#ifndef HAVE_STRCHR
-#  ifdef HAVE_INDEX
-#    define STRCHR(X,Y) ((char *)index(X,Y))
-#  else
-PMOD_EXPORT char *STRCHR(char *s,int c);
-#  endif
-#else
-#  define STRCHR strchr
-#  ifdef STRCHR_DECL_MISSING
-char *STRCHR(char *s,int c);
-#  endif
-#endif
-
-#ifndef HAVE_VFPRINTF
-PMOD_EXPORT int VFPRINTF(FILE *f,const char *s,va_list args);
-#else
-#  define VFPRINTF vfprintf
-#endif
-
-#ifndef HAVE_VSPRINTF
-PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args);
-#else
-#  define VSPRINTF vsprintf
+#  define STRCASECMP(A,B) strcasecmp(A,B)
 #endif
 
 #ifndef HAVE_VSNPRINTF
-PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args);
-#else
-#  define VSNPRINTF vsnprintf
+PMOD_EXPORT int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 #endif
+#define VSNPRINTF(A,B,C,D) vsnprintf(A,B,C,D)
 
 #ifndef HAVE_SNPRINTF
-PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...);
-#else
-#  define SNPRINTF snprintf
+PMOD_EXPORT int snprintf(char *buf, size_t size, const char *fmt, ...);
+#endif
+#define SNPRINTF snprintf
+
+/* Compat. */
+#define RINTF(X) rintf(X)
+#define RINT(X) rint(X)
+#define RINTL(X) rintl(X)
+
+#define HAVE_STRCHR 1
+#define STRCHR strchr
+#ifdef STRCHR_DECL_MISSING
+char *strchr(const char *s,int c);
 #endif
 
+#define HAVE_ISSPACE 1
+#define ISSPACE(X) isspace(X)
+
+#define HAVE_TIME 1
+#define TIME(X) time(X)
+
+#define HAVE_STRTOL 1
+#define STRTOL(X,Y,Z) strtol(X,Y,Z)
+
+#define HAVE_STRTOD 1
+#define STRTOD(X,Y) strtod(X,Y)
+
+#define HAVE_STRCSPN 1
+#define STRCSPN(X,Y) strcspn(X,Y)
+
+#define HAVE_STRNLEN 1
+#define STRNLEN(X,Y) strnlen(X,Y)
+
+#define HAVE_STRNCMP 1
+#define STRNCMP(X,Y,Z) strncmp(X,Y,Z)
+
+#define HAVE_MEMSET 1
+#define MEMSET(X,Y,Z) memset(X,Y,Z)
+
+#define HAVE_MEMCPY 1
+#define MEMCPY(X,Y,Z) memcpy(X,Y,Z)
+
+#define HAVE_MEMMOVE 1
+#define MEMMOVE(X,Y,Z) memmove(X,Y,Z)
+
+#define HAVE_MEMCMP 1
+#define MEMCMP(X,Y,Z) memcmp(X,Y,Z)
+
+#define HAVE_MEMCHR 1
+#define MEMCHR(X,Y,Z) memchr(X,Y,Z)
+
+#define HAVE_VFPRINTF 1
+#define VFPRINTF(X,Y,Z) vfprintf(X,Y,Z)
+
+#define HAVE_VSPRINTF 1
+#define VSPRINTF(X,Y,Z) vsprintf(X,Y,Z)
+
+#define HAVE_FREXP 1
+#define FREXP(X,Y) frexp(X,Y)
+
+#define HAVE_LDEXP 1
+#define LDEXP(X,Y) ldexp(X,Y)
+
+#ifndef HAVE_STRDUP
+#undef strdup
+#ifdef HAVE__STRDUP
+#define strdup(X) _strdup(X)
+#endif
+#endif
 
 #ifdef EXTRACT_UCHAR_BY_CAST
 #  define EXTRACT_UCHAR(p) (*(const unsigned char *)(p))
@@ -282,40 +227,37 @@ static INLINE int EXTRACT_CHAR(const char *p) { return *p > 0x7f ? *p - 0x100 : 
 #  define EXTRACT_INT(p) (*(INT32 *)(p))
 #else
 #ifdef PIKE_DEBUG
-PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(unsigned char *p);
-PMOD_EXPORT INT16 EXTRACT_WORD_(unsigned char *p);
-PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p);
+PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(const unsigned char *p);
+PMOD_EXPORT INT16 EXTRACT_WORD_(const unsigned char *p);
+PMOD_EXPORT INT32 EXTRACT_INT_(const unsigned char *p);
 #else
-/*@unused@*/ static INLINE unsigned EXTRACT_UWORD_(unsigned char *p)
+/*@unused@*/ static INLINE unsigned EXTRACT_UWORD_(const unsigned char *p)
 {
   unsigned INT16 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 
-/*@unused@*/ static INLINE int EXTRACT_WORD_(unsigned char *p)
+/*@unused@*/ static INLINE int EXTRACT_WORD_(const unsigned char *p)
 {
   INT16 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 
-/*@unused@*/ static INLINE INT32 EXTRACT_INT_(unsigned char *p)
+/*@unused@*/ static INLINE INT32 EXTRACT_INT_(const unsigned char *p)
 {
   INT32 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 #endif
 
-#define EXTRACT_UWORD(p) EXTRACT_UWORD_((unsigned char *)(p))
-#define EXTRACT_WORD(p) EXTRACT_WORD_((unsigned char *)(p))
-#define EXTRACT_INT(p) EXTRACT_INT_((unsigned char *)(p))
+#define EXTRACT_UWORD(p) EXTRACT_UWORD_((const unsigned char *)(p))
+#define EXTRACT_WORD(p) EXTRACT_WORD_((const unsigned char *)(p))
+#define EXTRACT_INT(p) EXTRACT_INT_((const unsigned char *)(p))
 
 #endif
-
-PMOD_EXPORT unsigned INT32 my_rand(void);
-PMOD_EXPORT void my_srand(INT32 seed);
 
 PMOD_EXPORT void sysleep(double left);
 
@@ -329,38 +271,52 @@ long long gethrtime(void);
 #define hrtime_t long long
 #endif
 
+#ifdef HAVE_UNION_INIT
+#define INFNAN_INDEX 0
+#define INFNAN_DATATYPE union
+#define INFNAN_INIT
+#else
+#define INFNAN_INDEX -1
+#define INFNAN_DATATYPE struct
+#define INFNAN_INIT , {0.0}
+#endif
+
 #ifdef DOUBLE_IS_IEEE_BIG
-#define DECLARE_INF static const struct { unsigned char c[8]; double d[1]; } \
-	inf_ = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 }, { 0.0 } };
-#define DECLARE_NAN static const struct { unsigned char c[8]; double d[1]; } \
-	nan_ = { { 0x7f, 0xf8, 0, 0, 0, 0, 0, 0 }, { 0.0 } };
-#define MAKE_INF(s) ((s)*inf_.d[-1])
-#define MAKE_NAN() (nan_.d[-1])
+#define DECLARE_INF static const INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	inf_ = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 } INFNAN_INIT };
+#define DECLARE_NAN static const INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	nan_ = { { 0x7f, 0xf8, 0, 0, 0, 0, 0, 0 } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.d[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.d[INFNAN_INDEX])
 #else
 #ifdef DOUBLE_IS_IEEE_LITTLE
-#define DECLARE_INF static const struct { unsigned char c[8]; double d[1]; } \
-	inf_ = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f }, { 0.0 } };
-#define DECLARE_NAN static const struct { unsigned char c[8]; double d[1]; } \
-	nan_ = { { 0, 0, 0, 0, 0, 0, 0xf8, 0x7f }, { 0.0 } };
-#define MAKE_INF(s) ((s)*inf_.d[-1])
-#define MAKE_NAN() (nan_.d[-1])
+#define DECLARE_INF static const INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	inf_ = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f } INFNAN_INIT };
+#define DECLARE_NAN static const INFNAN_DATATYPE { unsigned char c[8]; double d[1]; } \
+	nan_ = { { 0, 0, 0, 0, 0, 0, 0xf8, 0x7f } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.d[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.d[INFNAN_INDEX])
 #else
 #ifdef FLOAT_IS_IEEE_BIG
-#define DECLARE_INF static const struct { unsigned char c[4]; float f[1]; } \
-	inf_ = { { 0x7f, 0x80, 0, 0 }, { 0.0 } };
-#define DECLARE_NAN static const struct { unsigned char c[4]; float f[1]; } \
-	nan_ = { { 0x7f, 0xc0, 0, 0 }, { 0.0 } };
-#define MAKE_INF(s) ((s)*inf_.f[-1])
-#define MAKE_NAN() (nan_.f[-1])
+#define DECLARE_INF static const INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	inf_ = { { 0x7f, 0x80, 0, 0 } INFNAN_INIT };
+#define DECLARE_NAN static const INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	nan_ = { { 0x7f, 0xc0, 0, 0 } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.f[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.f[INFNAN_INDEX])
 #else
 #ifdef FLOAT_IS_IEEE_LITTLE
-#define DECLARE_INF static const struct { unsigned char c[4]; float f[1]; } \
-	inf_ = { { 0, 0, 0x80, 0x7f }, { 0.0 } };
-#define DECLARE_NAN static const struct { unsigned char c[4]; float f[1]; } \
-	nan_ = { { 0, 0, 0xc0, 0x7f }, { 0.0 } };
-#define MAKE_INF(s) ((s)*inf_.f[-1])
-#define MAKE_NAN() (nan_.f[-1])
+#define DECLARE_INF static const INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	inf_ = { { 0, 0, 0x80, 0x7f } INFNAN_INIT };
+#define DECLARE_NAN static const INFNAN_DATATYPE { unsigned char c[4]; float f[1]; } \
+	nan_ = { { 0, 0, 0xc0, 0x7f } INFNAN_INIT };
+#define MAKE_INF(s) ((s)*inf_.f[INFNAN_INDEX])
+#define MAKE_NAN() (nan_.f[INFNAN_INDEX])
 #else
+
+#undef INFNAN_INDEX
+#undef INFNAN_DATATYPE
+#undef INFNAN_INIT
 
 #define DECLARE_INF
 #define DECLARE_NAN
@@ -403,20 +359,18 @@ long long gethrtime(void);
 #endif /* DOUBLE_IS_IEEE_LITTLE */
 #endif /* DOUBLE_IS_IEEE_BIG */
 
-#ifdef HAVE_FREXP
-#define FREXP frexp
-#else
-double FREXP(double x, int *exp);
-#endif
-
-#if HAVE_LDEXP
-#define LDEXP ldexp
-#else
-double LDEXP(double x, int exp);
-#endif
-
 #ifdef __MINGW32__
+#ifndef HAVE__DOSMAPERR
 void _dosmaperr(int x);
+#endif
+#endif
+
+#ifdef __clang__
+#define PIKE_CLANG_FEATURE(x)   __has_feature(x)
+#define PIKE_CLANG_BUILTIN(x)   __has_builtin(x)
+#else
+#define PIKE_CLANG_FEATURE(x)	(0)
+#define PIKE_CLANG_BUILTIN(x)   (0)
 #endif
 
 #endif

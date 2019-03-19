@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -28,7 +27,6 @@
 DECLARATIONS
 
 #if 0
-#include <stdio.h>
 #define SHUFFLE_DEBUG1(fmt, arg1)			fprintf(stderr,"Shuffle[%p]:" fmt, arg1)
 #define SHUFFLE_DEBUG2(fmt, arg1, arg2)			fprintf(stderr,"Shuffle[%p]:" fmt, arg1, arg2)
 #define SHUFFLE_DEBUG3(fmt, arg1, arg2, arg3)		fprintf(stderr,"Shuffle[%p]:" fmt, arg1, arg2, arg3)
@@ -47,9 +45,23 @@ static void free_source( struct source *s )
   free( s );
 }
 
-extern struct program *Shuffler_program;
+DEFAULT_CMOD_STORAGE struct program *Shuffler_program;
 
 /*! @module Shuffler
+ *!
+ *! Module implementing sending to and from nonblocking streams and other sources.
+ *!
+ *! Most useful when implementing sending of data from strings, files and
+ *! other sources to a network connection. The module also supports
+ *! generic bandwidth throttling.
+ *!
+ *! Multiple @[Shuffler] object can be created, each optionally with
+ *! their own backend.
+ *!
+ *! This makes it easier to use more than one CPU for pure data
+ *! transmission, just have multiple backends each in their own
+ *! thread, with their own shuffle object.
+ *!
  */
 
 /*! @class Throttler
@@ -65,7 +77,8 @@ extern struct program *Shuffler_program;
  *! When data can be sent, the @[callback] function should be called
  *! with the amount of data that can be sent as the argument.
  *!
- *! @decl void give_back( Shuffle shuffle, int amount ) 
+ *! @decl void give_back( Shuffle shuffle, int amount )
+ *!
  *! This function will be called by the @[Shuffle] object to report
  *! that some data assigned to it by this throttler was unusued, and
  *! can be given to another @[Shuffle] object instead.
@@ -77,7 +90,7 @@ extern struct program *Shuffler_program;
  *! This class contains the state for one ongoing data
  *! shuffling operation. To create a @[Shuffle] instance, use the
  *! @[Shuffler()->shuffle] method.
- *! 
+ *!
  */
 
 PIKECLASS Shuffle
@@ -87,13 +100,13 @@ PIKECLASS Shuffle
   PIKEVAR object shuffler;
   /*! @decl Shuffler shuffler;
    *! The @[Shuffler] that owns this @[Shuffle] object
-   *! 
+   *!
   */
   PIKEVAR object throttler;
   /*! @decl Throttler throttler;
    *! The @[Throttler] that is associated with this @[Shuffle] object,
    *! if any.
-   *! 
+   *!
   */
 
   PIKEVAR mixed done_callback;
@@ -102,22 +115,22 @@ PIKECLASS Shuffle
 
   CVAR struct source *current_source;
   CVAR struct source *last_source;
-  CVAR struct object *file_obj; 
+  CVAR struct object *file_obj;
   CVAR int callback;
   CVAR int write_callback;
-  
+
   CVAR int sent;
   CVAR ShuffleState state;
 
   CVAR struct data leftovers;
-  
+
 
   static void _send_more( struct Shuffle_struct *t );
   static void __set_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG2("__set_calllbacks(%s)\n", t,(t->box.fd>0?"C":"Pike") );
     if( t->box.fd >= 0 )
-      set_fd_callback_events(&t->box, PIKE_BIT_FD_WRITE);
+      set_fd_callback_events(&t->box, PIKE_BIT_FD_WRITE, 0);
     else if( t->file_obj && t->file_obj->prog )
     {
       ref_push_function( t->box.ref_obj, t->write_callback );
@@ -128,12 +141,12 @@ PIKECLASS Shuffle
       SHUFFLE_DEBUG1("EEP: No destination! Cannot set callbacks\n",t);
     }
   }
-  
+
   static void __remove_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG2("__remove_calllbacks(%s)\n", t, (t->box.fd>=0?"C":"Pike") );
     if( t->box.fd >= 0 )
-      set_fd_callback_events(&t->box, 0);
+      set_fd_callback_events(&t->box, 0, 0);
     else if( t->file_obj && t->file_obj->prog )
     {
       push_int(0);
@@ -145,23 +158,21 @@ PIKECLASS Shuffle
     }
   }
 
-  static int got_shuffler_event(struct fd_callback_box*box, int event) {
+  static int got_shuffler_event(struct fd_callback_box*box, int DEBUGUSED(event)) {
 #ifdef PIKE_DEBUG
     if (event != PIKE_FD_WRITE)
       Pike_fatal ("Got unexpected event %d.\n", event);
 #endif
     _send_more((struct Shuffle_struct*)
      ((char*)box-offsetof(struct Shuffle_struct,box)));
-    /* FIXME: Is this the correct return value?
-     *        /grubba 2004-09-02
-     */
-    return 0;
+
+    return 0; // Everything OK.
   }
-  
+
   PIKEFUN void set_throttler( object t )
   /*! @decl void set_throttler(Throttler t)
    *! Calling this function overrides the @[Shuffler] global throttler.
-   *! 
+   *!
   */
     optflags OPT_SIDE_EFFECT;
   {
@@ -172,15 +183,12 @@ PIKECLASS Shuffle
       debug_malloc_touch(THIS->throttler);
       Pike_sp--;
     }
-    else
-      pop_stack();
-    push_int(0);
   }
 
   PIKEFUN int sent_data()
   /*! @decl int sent_data()
    *! Returns the amount of data that has been sent so far.
-   *! 
+   *!
   */
     optflags OPT_TRY_OPTIMIZE;
   {
@@ -192,14 +200,14 @@ PIKECLASS Shuffle
   /*! @decl int state()
    *! Returns the current state of the shuffler.
    *! This is one of the following:
-   *!   @[INITIAL], 
-   *!   @[RUNNING], 
-   *!   @[PAUSED], 
-   *!   @[DONE], 
-   *!   @[WRITE_ERROR], 
+   *!   @[INITIAL],
+   *!   @[RUNNING],
+   *!   @[PAUSED],
+   *!   @[DONE],
+   *!   @[WRITE_ERROR],
    *!   @[READ_ERROR] and
    *!   @[USER_ABORT]
-   *!   
+   *!
   */
     optflags OPT_TRY_OPTIMIZE;
   {
@@ -219,15 +227,15 @@ PIKECLASS Shuffle
     THIS->current_source = NULL;
     THIS->file_obj = NULL;
     THIS->state = INITIAL;
-    THIS->callback = 
+    THIS->callback =
       find_identifier("send_more_callback",Pike_fp->current_object->prog);
 
-    THIS->write_callback = 
+    THIS->write_callback =
       find_identifier("write_callback",Pike_fp->current_object->prog);
     INIT_FD_CALLBACK_BOX(&THIS->box, NULL, Pike_fp->current_object, -1,
-			 0, got_shuffler_event);
+			 0, got_shuffler_event, 0);
     debug_malloc_touch(THIS->box.ref_obj);
-    
+
     SHUFFLE_DEBUG1("init()\n", THIS );
   }
 
@@ -263,7 +271,7 @@ PIKECLASS Shuffle
       THIS->leftovers.do_free = 0;
     }
   }
-  
+
   static void __send_more_callback( struct Shuffle_struct *t, int amount );
   static void _request( struct Shuffle_struct *t, int amount )
   {
@@ -281,11 +289,11 @@ PIKECLASS Shuffle
       pop_stack();
     }
     else /* bypass the pike function calling for the case
-  	* when no throttling is done 
+  	* when no throttling is done
   	*/
       __send_more_callback( t, amount );
   }
-  
+
   static void _send_more( struct Shuffle_struct *t )
   {
     int l = BLOCK;
@@ -294,7 +302,7 @@ PIKECLASS Shuffle
       l = t->leftovers.len;
     _request( t, l );
   }
-  
+
   static void _set_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG1("_set_callbacks()\n", t );
@@ -302,7 +310,7 @@ PIKECLASS Shuffle
       t->current_source->setup_callbacks( t->current_source );
     __set_callbacks( t );
   }
-  
+
   static void _remove_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG1("_remove_callbacks()\n",t );
@@ -310,7 +318,7 @@ PIKECLASS Shuffle
       t->current_source->remove_callbacks( t->current_source );
     __remove_callbacks( t );
   }
-  
+
   static void _all_done( struct Shuffle_struct *t, int reason )
   {
     SHUFFLE_DEBUG2("_all_done(%d)\n", t,reason );
@@ -335,30 +343,9 @@ PIKECLASS Shuffle
         safe_apply(t->file_obj, "take_fd", 1 );
       pop_stack();
     }
-    
+
     debug_malloc_touch( t->box.ref_obj );
     ref_push_object( t->box.ref_obj );
-
-    /* If a callback exists, we call it before destroying
-     * source and destination
-     */
-    if( TYPEOF(t->done_callback) != PIKE_T_FREE )
-    {
-      SHUFFLE_DEBUG3("_all_done(%d): Calling done callback: %p\n", t,
-		    reason, t->done_callback.u.object);
-      push_svalue( &t->done_callback );
-
-      /* Ensure us only calling the callback once. */
-      free_svalue(&t->done_callback);
-      mark_free_svalue(&t->done_callback);
-      
-      ref_push_object( t->box.ref_obj );
-      push_int( reason );
-
-      apply_svalue( Pike_sp-3, 2 );
-      pop_stack();
-      pop_stack();
-    }
 
     /* It might have been destroyed. */
     if( t->shuffler && t->shuffler->prog )
@@ -395,13 +382,37 @@ PIKECLASS Shuffle
     }
 
     t->leftovers.data = 0;
+
+    /* If a callback exists, we call it at the end, because done_callback might
+     * explicitly destruct this object. This happened in one of the testcases.
+     * Calling done_callback at the end essentially reverts commit
+     * 95865471b36a441ad345cd7f23fe7d3260578c2f.
+     *	/arne
+     */
+    if( TYPEOF(t->done_callback) != PIKE_T_FREE )
+    {
+      SHUFFLE_DEBUG3("_all_done(%d): Calling done callback: %p\n", t,
+		    reason, t->done_callback.u.object);
+      push_svalue( &t->done_callback );
+
+      /* Ensure us only calling the callback once. */
+      free_svalue(&t->done_callback);
+      mark_free_svalue(&t->done_callback);
+
+      ref_push_object( t->box.ref_obj );
+      push_int( reason );
+
+      apply_svalue( Pike_sp-3, 2 );
+      pop_stack();
+      pop_stack();
+    }
   }
 
   PIKEFUN void set_done_callback( mixed cb )
    /*! @decl void set_done_callback( function(Shuffle,int:void) cb )
     *! Sets the done callback. This function will be called when all
     *! sources have been processed, or if an error occurs.
-    *! 
+    *!
     */
     optflags OPT_SIDE_EFFECT;
   {
@@ -416,14 +427,14 @@ PIKECLASS Shuffle
     *!
     *! Sets the extra argument sent to @[Throttler()->request()] and
     *! @[Throttler()->give_back].
-    *! 
+    *!
     */
     optflags OPT_SIDE_EFFECT;
   {
     SHUFFLE_DEBUG2("set_request_arg(%p)\n", THIS, arg->u.object );
     assign_svalue( &THIS->request_arg, arg );
   }
-  
+
   static void _give_back( struct Shuffle_struct *t, int amount )
   {
     SHUFFLE_DEBUG2("_give_back(%d)\n", t, amount );
@@ -545,8 +556,7 @@ PIKECLASS Shuffle
       _give_back( t, amount-sent );
   }
 
-  /*! @decl void send_more_callback( int amount )
-   */
+  /* internal use.. */
   PIKEFUN void send_more_callback( int amount )
     optflags OPT_SIDE_EFFECT;
   {
@@ -560,8 +570,7 @@ PIKECLASS Shuffle
       _give_back( THIS, amount );
   }
 
-  /*! @decl void write_callback( mixed|void x )
-   */
+  /* internal use.. */
   PIKEFUN void write_callback( mixed|void x )
     optflags OPT_SIDE_EFFECT;
   {
@@ -571,6 +580,9 @@ PIKECLASS Shuffle
 
   /*! @decl void create(object fd, object shuffler, mixed throttler,@
    *!                   mixed backend)
+   *!
+   *! This object is normally not created directly, instead use
+   *! @[Shuffler()->shuffle]
    */
   PIKEFUN void create( object fd,
 		       object shuffler,
@@ -600,15 +612,13 @@ PIKECLASS Shuffle
     else {
       safe_apply( fd, "release_fd", 0 );
       if(TYPEOF(*backend) == PIKE_T_OBJECT && backend->u.object) {
-        be = (struct Backend_struct*)
-	  get_storage(backend->u.object, Backend_program);
+        be = get_storage(backend->u.object, Backend_program);
 	if (!be) {
 	  SIMPLE_BAD_ARG_ERROR("Shuffle->create()", 4,
 			       "object(Pike.__Backend)");
 	}
       }
       change_fd_for_box(&THIS->box, Pike_sp[-1].u.integer);
-      pop_stack();
     }
 
     if( THIS->box.fd >= 0 )
@@ -616,10 +626,10 @@ PIKECLASS Shuffle
       set_nonblocking( THIS->box.fd, 1 );
       if(THIS->box.backend) {
 	/* FIXME: Ought to change backend to be here. */
-        set_fd_callback_events(&THIS->box, 0);
+        set_fd_callback_events(&THIS->box, 0, 0);
       } else
         INIT_FD_CALLBACK_BOX(&THIS->box, be, THIS->box.ref_obj,
-         THIS->box.fd, 0, got_shuffler_event);
+         THIS->box.fd, 0, got_shuffler_event, 0);
     }
     else
     {
@@ -627,17 +637,13 @@ PIKECLASS Shuffle
       push_int( 0 ); /* write */
       push_int( 0 ); /* close */
       safe_apply( THIS->file_obj, "set_nonblocking", 3 );
-      pop_stack();
     }
-
-    pop_n_elems( args );
-    push_int(0);
   }
 
   PIKEFUN void start()
    /*! @decl void start();
     *! Start sending data from the sources.
-    *! 
+    *!
     */
     optflags OPT_SIDE_EFFECT;
   {
@@ -651,7 +657,7 @@ PIKECLASS Shuffle
   PIKEFUN void pause()
    /*! @decl void pause();
     *! Temporarily pause all data transmission
-    *! 
+    *!
     */
     optflags OPT_SIDE_EFFECT;
   {
@@ -663,7 +669,7 @@ PIKECLASS Shuffle
   PIKEFUN void stop()
    /*! @decl void stop();
     *! Stop all data transmission, and then call the done callback
-    *! 
+    *!
     */
     optflags OPT_SIDE_EFFECT;
   {
@@ -682,17 +688,17 @@ PIKECLASS Shuffle
     *!
     *! Currently supported sources
     *! @dl
-    *!   @item String
+    *!   @item string
     *!     An ordinary 8-bit wide pike string.
-    *!   @item Memory
+    *!   @item System.Memory
     *!     An initialized instance of the System.Memory class.
-    *!   @item NormalFile
+    *!   @item Stdio.File
     *!     Stdio.File instance pointing to a normal file.
-    *!   @item Stream
+    *!   @item Stdio.Stream
     *!     Stdio.File instance pointing to a stream of some kind
-    *!     (network socket, named pipe, stdin etc).
-    *!   @item Pike-stream
-    *!     Stdio.File lookalike with read callback support
+    *!     (network socket, named pipe, stdin etc). Blocking or nonblocking.
+    *!   @item Stdio.NonblockingStream|Stdio.Stream
+    *!     An object implementing the callback based reading
     *!     (set_read_callback and set_close_callback).
     *! @enddl
     */
@@ -704,31 +710,22 @@ PIKECLASS Shuffle
     if( !THIS->file_obj )
       Pike_error("Cannot add source, no destination.\n");
 
-    if( args > 1 )
+    if( start )
     {
-#ifdef AUTO_BIGNUM
       if( TYPEOF(*start) == PIKE_T_OBJECT )
 	int64_from_bignum( &rstart, start->u.object );
-      else
-#endif
-	if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
-	  rstart = start->u.integer;
+      else if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
+        rstart = start->u.integer;
     }
-    if( args > 2 )
+    if( length )
     {
-#ifdef AUTO_BIGNUM
       if( TYPEOF(*length) == PIKE_T_OBJECT )
 	int64_from_bignum( &rlength, length->u.object );
-      else
-#endif
-	if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
-	  rlength = length->u.integer;
-    }
-    if( rlength == 0 )
-    {
-      pop_n_elems(args);
-      push_int(0);
-      return;
+      else if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
+        rlength = length->u.integer;
+
+      if( rlength == 0 )
+        return;
     }
     debug_malloc_touch( source );
 
@@ -750,8 +747,6 @@ PIKECLASS Shuffle
     else {
       THIS->current_source = THIS->last_source = res;
     }
-    pop_n_elems(args);
-    push_int(0);
   }
 }
 
@@ -763,7 +758,7 @@ PIKECLASS Shuffle
  *! A data shuffler. An instance of this class handles a list of
  *! @[Shuffle] objects. Each @[Shuffle] object can send data from one
  *! or more sources to a destination in the background.
- *! 
+ *!
  */
 
 PIKECLASS Shuffler
@@ -775,7 +770,7 @@ PIKECLASS Shuffler
 
   PIKEVAR array sources;
 
-  static void update_sources()
+  static void update_sources(void)
   {
     push_array( THIS->sources );
     debug_malloc_touch( THIS->sources );
@@ -786,13 +781,13 @@ PIKECLASS Shuffler
     debug_malloc_touch( THIS->sources );
     Pike_sp--;
   }
-  
+
 
   PIKEFUN void set_backend( object b )
     /*! @decl void set_backend( Pike.Backend b );
      *! Set the backend that will be used by all @[Shuffle] objects created
      *! from this shuffler.
-     *! 
+     *!
      */
   {
     if( THIS->backend )
@@ -800,7 +795,6 @@ PIKECLASS Shuffler
     THIS->backend = b;
     debug_malloc_touch( THIS->backend );
     Pike_sp--;
-    push_int(0);
   }
 
   PIKEFUN void set_throttler( object|void t )
@@ -808,20 +802,19 @@ PIKECLASS Shuffler
      *! Set the throttler that will be used in all @[Shuffle] objects
      *! created from this shuffler, unless overridden in the
      *! @[Shuffle] objects.
-     *! 
+     *!
      */
   {
     if( THIS->throttler )
       free_object( THIS->throttler );
     debug_malloc_pass( THIS->throttler = t );
     Pike_sp--;
-    push_int(0);
   }
 
   PIKEFUN void pause()
     /*! @decl void pause();
      *! Pause all @[Shuffle] objects associated with this @[Shuffler]
-     *! 
+     *!
      */
   {
     int i;
@@ -838,7 +831,7 @@ PIKECLASS Shuffler
   PIKEFUN void start()
     /*! @decl void start();
      *! Unpause all @[Shuffle] objects associated with this @[Shuffler]
-     *! 
+     *!
      */
   {
     int i;
@@ -861,13 +854,13 @@ PIKECLASS Shuffler
     THIS->sources = Pike_sp[-1].u.array;
     debug_malloc_touch( THIS->sources );
     Pike_sp--;
-    push_int(0);
   }
 
   PIKEFUN object shuffle( object destination )
-    /*! @decl Shuffle shuffle( Stdio.File destination );
+    /*! @decl Shuffle shuffle( Stdio.NonblockingStream destination );
      *! Create a new @[Shuffle] object.
-     *! 
+     *!
+     *! The destination has to support nonblocking I/O.
      */
   {
     ref_push_object( Pike_fp->current_object ); /* shuffler */
@@ -907,6 +900,7 @@ PIKECLASS Shuffler
  *! @decl constant WRITE_ERROR;
  *! @decl constant READ_ERROR;
  *! @decl constant USER_ABORT;
+ *!  The state of an individual @[Shuffle] object.
  */
 
 /*! @endmodule

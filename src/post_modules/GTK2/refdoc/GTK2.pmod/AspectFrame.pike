@@ -14,7 +14,7 @@
 
 inherit GTK2.Frame;
 
-static GTK2.AspectFrame create( mapping|string label, float|void xalign, float|void yalign, float|void ratio, int|void obey_child );
+protected GTK2.AspectFrame create( mapping|string label, float|void xalign, float|void yalign, float|void ratio, int|void obey_child );
 //! Create a new frame. Arguments are label, xalign, yalign, ratio, obey_child
 //! xalign is floats between 0 and 1, 0.0 is upper (or leftmost), 1.0 is
 //! lower (or rightmost). If 'obey_child' is true, the frame will use the

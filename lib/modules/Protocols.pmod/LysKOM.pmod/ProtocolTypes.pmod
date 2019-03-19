@@ -34,7 +34,7 @@ class LysKOMTime
        res+=sprintf(":%02d",seconds);
      return res;
    }
-  
+
    void create(string|int ... args)
    {
       seconds=(int)args[0];                        // INT32
@@ -175,8 +175,8 @@ class TextMapping
    }
 }
 
-constant sessionflagsnames = 
-   ({ "invisible", "user_active_used", "user_absent",    
+constant sessionflagsnames =
+   ({ "invisible", "user_active_used", "user_absent",
       "reserved3", "reserved4", "reserved5", "reserved6",
       "reserved7"                                         });
 
@@ -291,7 +291,7 @@ class WhoInfo
    }
 }
 
-constant personalflagsnames = 
+constant personalflagsnames =
    ({ "unread_is_secret", "flg2", "flg3", "flg4", "flg5",
       "flg6", "flg7", "flg8"                              });
 
@@ -304,8 +304,8 @@ multiset(string) PersonalFlags(string bits)
    return res;
 }
 
-constant auxitemflagsnames = 
-   ({ "deleted", "inherit", "secret", "hide_creator",    
+constant auxitemflagsnames =
+   ({ "deleted", "inherit", "secret", "hide_creator",
       "dont_garb", "reserved2", "reserved3", "reserved4"  });
 
 multiset(string) AuxItemFlags(string bits)
@@ -395,7 +395,7 @@ class TextStat
             no_of_marks,                           // INT16
             @A((array(string))misc_info),          // ARRAY Misc-Info
             A(`+(@Array.map(aux_items,             // ARRAY Aux-Item
-                            lambda(AuxItem z) 
+                            lambda(AuxItem z)
                                { return z->encode(); }))),
          });
    }
@@ -435,8 +435,8 @@ class InfoOld
    }
 }
 
-constant membershiptypenames = 
-   ({ "invitation", "passive", "secret", "reserved1",    
+constant membershiptypenames =
+   ({ "invitation", "passive", "secret", "reserved1",
       "reserved2", "reserved3", "reserved4", "reserved5"  });
 
 multiset(string) MembershipType(string bits)
@@ -588,7 +588,7 @@ class Info
             kom_news_conf,                         // Conf-No
             motd_of_lyskom,                        // Text-No
             A(`+(@Array.map(aux_item_list,         // ARRAY Aux-Item
-                            lambda(AuxItem z) 
+                            lambda(AuxItem z)
                                { return z->encode(); }))),
          });
    }
@@ -622,9 +622,9 @@ class StaticSessionInfo
    }
 }
 
-constant extendedconftypenames = 
-   ({ "rd_prot", "original", "secret", "letterbox",      
-      "allow_anonymous", "forbid_secret", "reserved2",   
+constant extendedconftypenames =
+   ({ "rd_prot", "original", "secret", "letterbox",
+      "allow_anonymous", "forbid_secret", "reserved2",
       "reserved3"                                         });
 
 multiset(string) ExtendedConfType(string bits)
@@ -724,7 +724,7 @@ class WhoInfoIdent
    }
 }
 
-constant conftypenames = 
+constant conftypenames =
    ({ "rd_prot", "original", "secret", "letterbox"        });
 
 multiset(string) ConfType(string bits)
@@ -878,7 +878,7 @@ class Conference
             no_of_texts,                           // INT32
             expire,                                // Garb-Nice
             A(`+(@Array.map(aux_items,             // ARRAY Aux-Item
-                            lambda(AuxItem z) 
+                            lambda(AuxItem z)
                                { return z->encode(); }))),
          });
    }
@@ -1048,16 +1048,16 @@ class ConfListArchaic
          ({
             @A((array(string))conf_nos),           // ARRAY Conf-No
             A(Array.map(conf_types,                // ARRAY Conf-Type
-			lambda(multiset(string) z) 
+			lambda(multiset(string) z)
 			{ return B(@rows(z,conftypenames)); })),
          });
    }
 }
 
-constant privbitsnames = 
-   ({ "wheel", "admin", "statistic", "create_pers",      
-      "create_conf", "change_name", "flg7", "flg8",      
-      "flg9", "flg10", "flg11", "flg12", "flg13",        
+constant privbitsnames =
+   ({ "wheel", "admin", "statistic", "create_pers",
+      "create_conf", "change_name", "flg7", "flg8",
+      "flg9", "flg10", "flg11", "flg12", "flg13",
       "flg14", "flg15", "flg16"                           });
 
 multiset(string) PrivBits(string bits)

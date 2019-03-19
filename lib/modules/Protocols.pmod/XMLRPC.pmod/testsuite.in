@@ -1,5 +1,4 @@
 START_MARKER
-// $Id$
 
 define(test_xmlrpc, [[DOTEST(EQUAL,dnl
 array params =

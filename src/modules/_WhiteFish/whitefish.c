@@ -19,15 +19,6 @@
 #include "blobs.h"
 #include "linkfarm.h"
 
-/* 7.2 compatibility stuff. */
-
-#ifndef PIKE_MODULE_INIT
-/* must be included last */
-#include "module_magic.h"
-#define PIKE_MODULE_INIT void pike_module_init(void)
-#define PIKE_MODULE_EXIT void pike_module_exit(void)
-#endif
-
 struct  tofree
 {
   Blob **blobs;
@@ -77,15 +68,13 @@ static void handle_hit( Blob **blobs,
 			int cutoff )
 {
   int i, j, k, end = 0;
-  Hit *hits = malloc( nblobs * sizeof(Hit) );
+  Hit *hits = calloc( nblobs, sizeof(Hit) );
   unsigned char *nhits = malloc( nblobs );
   unsigned char *pos = malloc( nblobs );
 
   int matrix[65][8];
 
-  MEMSET(matrix, 0, sizeof(matrix) );
-  MEMSET(hits, 0, nblobs * sizeof(Hit) );
-  MEMSET(pos, 0, nblobs );
+  memset(matrix, 0, sizeof(matrix) );
 
   for( i = 0; i<nblobs; i++ )
     nhits[i] = wf_blob_nhits( blobs[i] );
@@ -93,7 +82,7 @@ static void handle_hit( Blob **blobs,
 
   for( i = 0; i<nblobs; i++ )
   {
-    MEMSET( pos, 0, nblobs );
+    memset( pos, 0, nblobs );
     for( j = 0; j<nhits[i]; j++ )
     {
       hits[i] = wf_blob_hit( blobs[i], j );
@@ -110,7 +99,7 @@ static void handle_hit( Blob **blobs,
 	}
     }
   }
-  
+
   free( pos );
   free( nhits );
   free( hits );
@@ -146,7 +135,7 @@ static struct object *low_do_query_or( Blob **blobs,
   ONERROR e;
   int i, j;
   Blob **tmp;
-  tmp = malloc( nblobs * sizeof( Blob *) );
+  tmp = calloc( nblobs, sizeof( Blob *) );
 
   __f->res = res;
   __f->blobs = blobs;
@@ -158,7 +147,7 @@ static struct object *low_do_query_or( Blob **blobs,
   for( i = 0; i<65; i++ )
     if( field_c[i] > max_c )
       max_c = field_c[i];
-  
+
   for( i = 0; i<8; i++ )
     if( prox_c[i] > max_p )
       max_p = prox_c[i];
@@ -167,13 +156,13 @@ static struct object *low_do_query_or( Blob **blobs,
   {
     /* Time to do the real work. :-) */
     for( i = 0; i<nblobs; i++ ) /* Forward to first element */
-      wf_blob_next( blobs[i] );  
+      wf_blob_next( blobs[i] );
 
     /* Main loop: Find the smallest element in the blob array. */
     while( 1 )
     {
       unsigned int min = 0x7fffffff;
-    
+
       for( i = 0; i<nblobs; i++ )
 	if( !blobs[i]->eof && ((unsigned int)blobs[i]->docid) < min )
 	  min = blobs[i]->docid;
@@ -186,7 +175,7 @@ static struct object *low_do_query_or( Blob **blobs,
 	  tmp[j++] = blobs[i];
 
       handle_hit( tmp, j, res, min, &field_c, &prox_c, max_c, max_p, cutoff );
-    
+
       for( i = 0; i<j; i++ )
 	wf_blob_next( tmp[i] );
     }
@@ -198,7 +187,7 @@ static struct object *low_do_query_or( Blob **blobs,
   free_stuff( __f );
   return res;
 }
-				
+
 static void handle_phrase_hit( Blob **blobs,
 			       int nblobs,
 			       struct object *res,
@@ -211,8 +200,8 @@ static void handle_phrase_hit( Blob **blobs,
   unsigned char *first = nhits+nblobs;
   int matrix[65];
   double accum = 0.0;
-  
-  MEMSET(matrix, 0, sizeof(matrix) );
+
+  memset(matrix, 0, sizeof(matrix) );
 
 
   for( i = 0; i<nblobs; i++ )
@@ -235,7 +224,7 @@ static void handle_phrase_hit( Blob **blobs,
       for( k = first[j]; k<nhits[j]; k++ )
       {
 	int h2 = wf_blob_hit_raw( blobs[j], k );
-	if( h2 > h )
+	if( h2 >= h + j )
 	{
 	  first[j]=k;
 	  if( h2-j == h )
@@ -248,7 +237,7 @@ static void handle_phrase_hit( Blob **blobs,
       accum += add/mc;
   }
 
-  free( nhits );  
+  free( nhits );
 
   if( accum > 0.0 )
     wf_resultset_add( res, docid, (int)(accum*100) );
@@ -283,7 +272,7 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
     while( 1 )
     {
       unsigned int min = 0x7fffffff;
-    
+
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->eof )
 	  goto end;
@@ -298,7 +287,7 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
 	  goto next;
 
       handle_phrase_hit( blobs, nblobs, res, min, &field_c, max_c );
-    
+
     next:
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->docid == min )
@@ -313,7 +302,7 @@ end:
   free_stuff( __f );
   return res;
 }
-				
+
 static struct object *low_do_query_and( Blob **blobs, int nblobs,
 					double field_c[65],
 					double prox_c[8],
@@ -349,7 +338,7 @@ static struct object *low_do_query_and( Blob **blobs, int nblobs,
     while( 1 )
     {
       unsigned int min = 0x7fffffff;
-    
+
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->eof )
 	  goto end;
@@ -365,7 +354,7 @@ static struct object *low_do_query_and( Blob **blobs, int nblobs,
 
       handle_hit( blobs, nblobs, res, min, &field_c,&prox_c, max_c,max_p,
 		  cutoff );
-    
+
     next:
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->docid == min )
@@ -387,9 +376,9 @@ end:
 static void f_do_query_phrase( INT32 args )
 /*! @decl ResultSet do_query_phrase( array(string) words,          @
  *!                          array(int) field_coefficients,       @
- *!                          function(int:string) blobfeeder)   
+ *!                          function(string,int,int:string) blobfeeder)
  *! @param words
- *!       
+ *!
  *! Arrays of word ids. Note that the order is significant for the
  *! ranking.
  *!
@@ -406,9 +395,9 @@ static void f_do_query_phrase( INT32 args )
  *! @endarray
  *!
  *! @param blobfeeder
- *!     
+ *!
  *! This function returns a Pike string containing the word hits for a
- *! certain word_id. Call repeatedly until it returns @expr{0@}.
+ *! certain word. Call repeatedly until it returns @expr{0@}.
  */
 {
   double proximity_coefficients[8];
@@ -436,7 +425,7 @@ static void f_do_query_phrase( INT32 args )
     return;
   }
 
-  blobs = malloc( sizeof(Blob *) * numblobs );
+  blobs = calloc( numblobs, sizeof(Blob *) );
 
   for( i = 0; i<numblobs; i++ )
     blobs[i] = wf_blob_new( cb, _words->item[i].u.string );
@@ -451,11 +440,12 @@ static void f_do_query_phrase( INT32 args )
 
 static void f_do_query_and( INT32 args )
 /*! @decl ResultSet do_query_and( array(string) words,          @
- *!                          array(int) field_coefficients,       @
- *!                          array(int) proximity_coefficients,   @
- *!                          function(int:string) blobfeeder)   
+ *!                               array(int) field_coefficients,       @
+ *!                               array(int) proximity_coefficients,   @
+ *!                               int cutoff,			       @
+ *!                               function(string,int,int:string) blobfeeder)
  *! @param words
- *!       
+ *!
  *! Arrays of word ids. Note that the order is significant for the
  *! ranking.
  *!
@@ -497,9 +487,9 @@ static void f_do_query_and( INT32 args )
  *! @endarray
  *!
  *! @param blobfeeder
- *!     
+ *!
  *! This function returns a Pike string containing the word hits for a
- *! certain word_id. Call repeatedly until it returns @expr{0@}.
+ *! certain word. Call repeatedly until it returns @expr{0@}.
  */
 {
   double proximity_coefficients[8];
@@ -529,7 +519,7 @@ static void f_do_query_and( INT32 args )
     return;
   }
 
-  blobs = malloc( sizeof(Blob *) * numblobs );
+  blobs = calloc( numblobs, sizeof(Blob *) );
 
   for( i = 0; i<numblobs; i++ )
     blobs[i] = wf_blob_new( cb, _words->item[i].u.string );
@@ -553,9 +543,10 @@ static void f_do_query_or( INT32 args )
 /*! @decl ResultSet do_query_or( array(string) words,          @
  *!                              array(int) field_coefficients,       @
  *!                              array(int) proximity_coefficients,   @
- *!                              function(int:string) blobfeeder)   
+ *!                              int cutoff,			      @
+ *!                              function(string,int,int:string) blobfeeder)
  *! @param words
- *!       
+ *!
  *! Arrays of word ids. Note that the order is significant for the
  *! ranking.
  *!
@@ -597,9 +588,9 @@ static void f_do_query_or( INT32 args )
  *! @endarray
  *!
  *! @param blobfeeder
- *!     
+ *!
  *! This function returns a Pike string containing the word hits for a
- *! certain word_id. Call repeatedly until it returns @expr{0@}.
+ *! certain word. Call repeatedly until it returns @expr{0@}.
  */
 {
   double proximity_coefficients[8];
@@ -629,7 +620,7 @@ static void f_do_query_or( INT32 args )
     return;
   }
 
-  blobs = malloc( sizeof(Blob *) * numblobs );
+  blobs = calloc( numblobs, sizeof(Blob *) );
 
   for( i = 0; i<numblobs; i++ )
     blobs[i] = wf_blob_new( cb, _words->item[i].u.string );
@@ -661,17 +652,17 @@ PIKE_MODULE_INIT
 
   add_function( "do_query_or", f_do_query_or,
 		"function(array(string),array(int),array(int),int"
-		",function(string,int:string):object)",
+		",function(string,int,int:string):object)",
 		0 );
 
   add_function( "do_query_and", f_do_query_and,
 		"function(array(string),array(int),array(int),int"
-		",function(string,int:string):object)",
+		",function(string,int,int:string):object)",
 		0 );
 
   add_function( "do_query_phrase", f_do_query_phrase,
 		"function(array(string),array(int)"
-		",function(string,int:string):object)",
+		",function(string,int,int:string):object)",
 		0 );
 }
 

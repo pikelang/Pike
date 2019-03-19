@@ -2,8 +2,6 @@
 # prerm script for pike7.9
 #
 # see: dh_installdeb(1)
-# 
-# $Id$
 #
 
 set -e

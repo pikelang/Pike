@@ -1,0 +1,706 @@
+#require constant(@module@)
+
+inherit @module@;
+
+//! Table of static headers. @rfc{7541:A@}, Table 1.
+//!
+//! @array
+//!   @elem array(string(8bit)) 0..60
+//!     @array
+//!       @elem string(8bit) 0
+//!         Header name.
+//!       @elem string(8bit) 1
+//!         Default value.
+//!     @endarray
+//! @endarray
+//!
+//! @note
+//!   Note that this table is indexed starting on @expr{0@} (zero),
+//!   while the corresponding table in @rfc{7541@} starts on @expr{1@}
+//!   (one).
+constant static_header_tab = ({
+  ({ ":authority", "", }),
+  ({ ":method", "GET", }),
+  ({ ":method", "POST", }),
+  ({ ":path", "/", }),
+  ({ ":path", "/index.html", }),
+  ({ ":scheme", "http", }),
+  ({ ":scheme", "https", }),
+  ({ ":status", "200", }),
+  ({ ":status", "204", }),
+  ({ ":status", "206", }),
+  ({ ":status", "304", }),
+  ({ ":status", "400", }),
+  ({ ":status", "404", }),
+  ({ ":status", "500", }),
+  ({ "accept-charset", "", }),
+  ({ "accept-encoding", "gzip, deflate", }),
+  ({ "accept-language", "", }),
+  ({ "accept-ranges", "", }),
+  ({ "accept", "", }),
+  ({ "access-control-allow-origin", "", }),
+  ({ "age", "", }),
+  ({ "allow", "", }),
+  ({ "authorization", "", }),
+  ({ "cache-control", "", }),
+  ({ "content-disposition", "", }),
+  ({ "content-encoding", "", }),
+  ({ "content-language", "", }),
+  ({ "content-length", "", }),
+  ({ "content-location", "", }),
+  ({ "content-range", "", }),
+  ({ "content-type", "", }),
+  ({ "cookie", "", }),
+  ({ "date", "", }),
+  ({ "etag", "", }),
+  ({ "expect", "", }),
+  ({ "expires", "", }),
+  ({ "from", "", }),
+  ({ "host", "", }),
+  ({ "if-match", "", }),
+  ({ "if-modified-since", "", }),
+  ({ "if-none-match", "", }),
+  ({ "if-range", "", }),
+  ({ "if-unmodified-since", "", }),
+  ({ "last-modified", "", }),
+  ({ "link", "", }),
+  ({ "location", "", }),
+  ({ "max-forwards", "", }),
+  ({ "proxy-authenticate", "", }),
+  ({ "proxy-authorization", "", }),
+  ({ "range", "", }),
+  ({ "referer", "", }),
+  ({ "refresh", "", }),
+  ({ "retry-after", "", }),
+  ({ "server", "", }),
+  ({ "set-cookie", "", }),
+  ({ "strict-transport-security", "", }),
+  ({ "transfer-encoding", "", }),
+  ({ "user-agent", "", }),
+  ({ "vary", "", }),
+  ({ "via", "", }),
+  ({ "www-authenticate", "", }),
+});
+
+//! Update the specified encoder lookup index.
+//!
+//! @param index
+//!   Lookup index to add an entry to.
+//!
+//! @param key
+//!   Lookup key to add.
+//!
+//! @param i
+//!   Value to store in the index for the key.
+protected void update_index(mapping(string(8bit):int|mapping(string(8bit):int)) index,
+			    int i, array(string(8bit)) key)
+{
+  if (!index[key[0]]) {
+    if (key[1] == "") {
+      index[key[0]] = i;
+    } else {
+      index[key[0]] = ([ key[1]:i ]);
+    }
+  } else {
+    if (intp(index[key[0]])) {
+      index[key[0]] = ([ "":index[key[0]] ]);
+    }
+    index[key[0]][key[1]] = i;
+  }
+}
+
+//! Helper function used to create the @[static_header_index].
+protected mapping(string(8bit):int|mapping(string(8bit):int))
+  create_index(array(array(string(8bit))) tab)
+{
+  mapping(string(8bit):int|mapping(string(8bit):int)) res = ([]);
+  foreach(tab; int i; array(string(8bit)) val) {
+    update_index(res, i+1, val);
+  }
+  return res;
+}
+
+//! Index for @[static_header_tab].
+//!
+//! @note
+//!   Note that the indices are offset by @expr{1@} (one).
+//!
+//! @note
+//!   This variable should be regarded as a constant.
+//!
+//! This variable is used to initialize the header index in the @[Context].
+//!
+//! @seealso
+//!   @[static_header_tab], @[Context()->header_index]
+protected mapping(string(8bit):int|mapping(string(8bit):int))
+  static_header_index = create_index(static_header_tab);
+
+//! This is the default static maximum size of the
+//! dynamic header table.
+//!
+//! This constant is taken from @rfc{7540:6.5.2@}.
+constant DEFAULT_HEADER_TABLE_SIZE = 4096;
+
+//! Flags for @[Context()->encode_header()] et al.
+enum HPackFlags {
+  HEADER_INDEXED = 0,		//! Indexed header.
+  HEADER_NOT_INDEXED = 1,	//! Unindexed header.
+  HEADER_NEVER_INDEXED = 2,	//! Never indexed header.
+  HEADER_INDEXED_MASK = 3,	//! Bitmask for indexing mode.
+};
+
+//! Context for an HPack encoder or decoder.
+//!
+//! This class implements the majority of @rfc{7541@}.
+//!
+//! Functions of interest are typically @[encode()] and @[decode()].
+class Context
+{
+  //! Table of currently available dynamically defined headers.
+  //!
+  //! New entries are appended last, and the first @[dynamic_prefix]
+  //! elements are not used.
+  //!
+  //! @seealso
+  //!   @[header_index], @[add_header()]
+  protected array(array(string(8bit))) dynamic_headers = ({});
+
+  //! Index of first avaiable header in @[dynamic_headers].
+  protected int dynamic_prefix;
+
+  //! Current size in bytes of @[dynamic_headers].
+  protected int dynamic_size;
+
+  //! Static upper size limit in bytes for @[dynamic_headers].
+  //!
+  //! @seealso
+  //!   @[create()], @[set_dynamic_size()]
+  protected int static_max_size = DEFAULT_HEADER_TABLE_SIZE;
+
+  //! Current upper size limit in bytes for @[dynamic_headers].
+  //!
+  //! @seealso
+  //!   @[set_dynamic_size()]
+  protected int dynamic_max_size = DEFAULT_HEADER_TABLE_SIZE;
+
+  //! Index into @[dynamic_headers] and @[static_headers].
+  //!
+  //! @mapping
+  //!   @member mapping(string(8bit):int)|int "header_name"
+  //!     Indexed on the header name in lower-case. The value is one of:
+  //!     @mixed
+  //!       @type int
+  //!         Index value for the header value @expr{""@}.
+  //!       @type mapping(string(8bit):int)
+  //!         @mapping
+  //!           @member mapping(string(8bit):int) "header_value"
+  //!             Index value for the corresponding header value.
+  //!         @endmapping
+  //!     @endmixed
+  //! @endmapping
+  //!
+  //! The index values in turn are coded as follows:
+  //! @int
+  //!   @value 1..
+  //!     Index into @[static_header_tab] offset by @expr{1@}.
+  //!   @value 0
+  //!     Not used.
+  //!   @value ..-1
+  //!     Inverted (@[`~()]) index into @[dynamic_headers].
+  //! @endint
+  //!
+  //! @seealso
+  //!   @[dynamic_headers], @[static_header_tab], @[add_header()]
+  protected mapping(string(8bit):int|mapping(string(8bit):int)) header_index =
+    copy_value(static_header_index);
+
+  //! Create a new HPack @[Context].
+  //!
+  //! @param static_max_size
+  //!   This is the static maximum size in bytes (as calculated by
+  //!   @rfc{7541:4.1@}) of the dynamic header table.
+  //!   It defaults to @[DEFAULT_HEADER_TABLE_SIZE], and is the
+  //!   upper limit for @[set_dynamic_size()].
+  //!
+  //! @seealso
+  //!   @[set_dynamic_size()]
+  protected void create(int|void protocol_dynamic_max_size)
+  {
+    if (!zero_type(protocol_dynamic_max_size)) {
+      dynamic_max_size = this::static_max_size = protocol_dynamic_max_size;
+    }
+  }
+
+  //! Evict dynamic headers until @[dynamic_size] goes below
+  //! @[dynamic_max_size].
+  protected void evict_dynamic_headers()
+  {
+    if (!dynamic_max_size) {
+      // Special case for the common way to empty the
+      // table of dynamic headers.
+      dynamic_headers = ({});
+      dynamic_prefix = 0;
+      dynamic_size = 0;
+      header_index = copy_value(static_header_index);
+      return;
+    }
+    while (dynamic_size > dynamic_max_size) {
+      int i = dynamic_prefix++;
+      array(string(8bit)) entry = dynamic_headers[i];
+      int sz = sizeof(entry[0]) + sizeof(entry[1]) + 32;
+      dynamic_size -= sz;
+      dynamic_headers[i] = UNDEFINED;
+      mapping|int m;
+      if (mappingp(m = header_index[entry[0]])) {
+	m_delete(m, entry[1]);
+	if (sizeof(m)) {
+	  continue;
+	}
+      }
+      m_delete(header_index, entry[0]);
+    }
+    if (dynamic_prefix*4 > sizeof(dynamic_headers)*3) {
+      // More than 3/4 of the dynamic headers are stale.
+      // Truncate the table.
+      header_index = copy_value(static_header_index);
+      dynamic_headers = dynamic_headers[dynamic_prefix..];
+      dynamic_prefix = 0;
+      foreach(dynamic_headers; int i; array(string(8bit)) entry) {
+	update_index(header_index, ~i, entry);
+      }
+    }
+  }
+
+  //! Add a header to the table of known headers and to the header index.
+  //!
+  //! @param header
+  //!   Name of header to add.
+  //!
+  //! @param value
+  //!   Value of the header.
+  //!
+  //! @returns
+  //!   Returns @expr{0@} (zero) if the header was too large to store.
+  //!   Returns the encoding key for the header on success (this is always
+  //!   @expr{sizeof(static_header_tab + 1@} (ie @expr{62@}), as new headers
+  //!   are prepended to the dynamic header table.
+  //!
+  //! @note
+  //!   Adding a header may cause old headers to be evicted from the table.
+  //!
+  //! @seealso
+  //!   @[get_indexed_header()]
+  int(0..0)|int(62..62) add_header(string(8bit) header, string(8bit) value)
+  {
+    int sz = sizeof(header) + sizeof(value) + 32;
+    dynamic_size += sz;
+    dynamic_headers += ({ ({ header, value }) });
+    update_index(header_index, -sizeof(dynamic_headers), dynamic_headers[-1]);
+    if (dynamic_size > dynamic_max_size) {
+      evict_dynamic_headers();
+      if (!dynamic_size) return 0;
+    }
+    return 62;
+  }
+
+  //! Lookup a known header.
+  //!
+  //! @param index
+  //!   Encoding key for the header to retrieve.
+  //!
+  //! @returns
+  //!   Returns @[UNDEFINED] on unknown header.
+  //!   Returns an array with a header and value otherwise:
+  //!   @array
+  //!     @elem string(8bit) 0
+  //!       Name of the header. Under normal circumstances this is
+  //!       always lower-case, but no check is currently performed.
+  //!     @elem string(8bit) 1
+  //!       Value of the header.
+  //!   @endarray
+  //!
+  //! @seealso
+  //!   @[add_header()]
+  array(string(8bit)) get_indexed_header(int(1..) index)
+  {
+    if (index <= sizeof(static_header_tab)) {
+      if (index < 0) return UNDEFINED;
+      return static_header_tab[index - 1];
+    }
+    index = sizeof(dynamic_headers) + sizeof(static_header_tab) - index;
+    if (index < dynamic_prefix) return UNDEFINED;
+    return dynamic_headers[index];
+  }
+
+  protected int get_long_int(Stdio.Buffer buf)
+  {
+    int shift;
+    int res;
+    int c;
+    do {
+      c = buf->read_int(1);
+      res |= (c & 0x7f)<<shift;
+      shift += 7;
+    } while(c & 0x80);
+    return res;
+  }
+
+  protected string(8bit) get_string(Stdio.Buffer buf)
+  {
+    // 5.2 String Literal Representation.
+
+    int c = buf->read_int(1);
+    int len = c & 0x7f;
+    if (len == 0x7f) {
+      len += get_long_int(buf);
+    }
+    string s = buf->read(len);
+    if (c & 0x80) {
+      // Huffman encoded.
+      return huffman_decode(s);
+    }
+    return s;
+  }
+
+  //! Decode a single HPack header.
+  //!
+  //! @param buf
+  //!   Input buffer.
+  //!
+  //! @returns
+  //!   Returns @[UNDEFINED] on empty buffer.
+  //!   Returns an array with a header and value otherwise:
+  //!   @array
+  //!     @elem string(8bit) 0
+  //!       Name of the header. Under normal circumstances this is
+  //!       always lower-case, but no check is currently performed.
+  //!     @elem string(8bit) 1
+  //!       Value of the header.
+  //!     @elem HPackFlags|void 2
+  //!       Optional encoding flags. Only set for fields having
+  //!       @[HEADER_NEVER_INDEXED].
+  //!   @endarray
+  //!   The elements in the array are in the same order and compatible
+  //!   with the arguments to @[encode_header()].
+  //!
+  //! @throws
+  //!   Throws on encoding errors.
+  //!
+  //! @note
+  //!   The returned array MUST NOT be modified.
+  //!
+  //! @note
+  //!   In future implementations the result array may get extended
+  //!   with a flag field.
+  //!
+  //! @note
+  //!   The in-band signalling of encoding table sizes is handled
+  //!   internally.
+  //!
+  //! @seealso
+  //!   @[decode()], @[encode_header()]
+  array(string(8bit)|HPackFlags) decode_header(Stdio.Buffer buf)
+  {
+    if (!sizeof(buf)) return UNDEFINED;
+
+    int c = buf->read_int(1);
+    if (c & 0x80) {
+      // 6.1 Indexed Header Field Representation.
+      c &= 0x7f;
+      if (!c) {
+	error("Invalid header: 0x80.\n");
+      }
+      if (c == 0x7f) {
+	c += get_long_int(buf);
+      }
+      array(string(8bit)) tuple = get_indexed_header(c);
+      if (!tuple) {
+	error("Unknown header.\n");
+      }
+      return tuple;
+    } else if (c & 0x40) {
+      // 6.2.1 Literal Header Field with Incremental Indexing.
+      string(8bit) header;
+
+      c &= 0x3f;
+      if (!c) {
+	// New name.
+	header = get_string(buf);
+      } else {
+	// Indexed.
+	if (c == 0x3f) {
+	  c += get_long_int(buf);
+	}
+	array(string(8bit)) tuple = get_indexed_header(c);
+	if (!tuple) {
+	  error("Unknown header.\n");
+	}
+	header = tuple[0];
+      }
+
+      string(8bit) value = get_string(buf);
+      add_header(header, value);
+      return ({ header, value });
+    } else if (!(c & 0xe0)) {
+      // 6.2.2 Literal Header Field without Indexing.
+      // 6.2.3 Literal Header Field Never Indexed.
+      HPackFlags flags = (c & 0x10) && HEADER_NEVER_INDEXED;
+      string(8bit) header;
+      c &= 0x0f;
+      if (!c) {
+	// New name.
+	header = get_string(buf);
+      } else {
+	// Indexed name.
+	if (c == 0x0f) {
+	  c += get_long_int(buf);
+	}
+	array(string(8bit)) tuple = get_indexed_header(c);
+	if (!tuple) {
+	  error("Unknown header.\n");
+	}
+	header = tuple[0];
+      }
+
+      string(8bit) value = get_string(buf);
+      if (flags) {
+	return ({ header, value, flags });
+      }
+      return ({ header, value });
+    } else if (c & 0x20) {
+      // 6.3 Dynamic Table Size Update.
+      c &= 0x1f;
+      if (c == 0x1f) {
+	c += get_long_int(buf);
+      }
+      // FIXME: MUST be less than the protocol specified limit.
+      if (c > static_max_size) {
+	// MUST be less than the protocol specified limit.
+	error("Invalid dynamic max size (%d > %d.\n", c, static_max_size);
+      }
+      dynamic_max_size = c;
+      if (dynamic_max_size < dynamic_size) {
+	evict_dynamic_headers();
+      }
+      return decode_header(buf);
+    } else {
+      // NOT_REACHED
+      error("Invalid encoding.\n");
+    }
+  }
+
+  //! Decode a HPack header block.
+  //!
+  //! @param buf
+  //!   Input buffer.
+  //!
+  //! @returns
+  //!   Returns an array of headers. Cf @[decode_header()].
+  //!
+  //! @seealso
+  //!   @[decode_header()], @[encode()]
+  array(array(string(8bit)|HPackFlags)) decode(Stdio.Buffer buf)
+  {
+    array(array(string(8bit))) res = ({});
+    while (sizeof(buf)) {
+      res += ({ decode_header(buf) });
+    }
+    return res;
+  }
+
+  variant array(array(string(8bit))) decode(string(8bit) str)
+  {
+    return decode(Stdio.Buffer(str));
+  }
+
+  //! Encode an integer with the HPack integer encoding.
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @param bits
+  //!   Bits that should always be set in the first byte of output.
+  //!
+  //! @param mask
+  //!   Bitmask for the value part of the first byte of output.
+  //!
+  //! @param value
+  //!   Integer value to encode.
+  protected void put_int(Stdio.Buffer buf, int(0..255) bits, int(0..255) mask,
+			 int value)
+  {
+    if (value < mask) {
+      buf->add_int(bits | value, 1);
+      return;
+    }
+    buf->add_int(bits | mask, 1);
+    value -= mask;
+    while (value >= 0x80) {
+      buf->add_int(value | 0x80, 1);
+      value >>= 7;
+    }
+    buf->add_int(value, 1);
+  }
+
+  //! Encode a string with the HPack string encoding.
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @param str
+  //!   String to output.
+  //!
+  //! The encoder will @[huffman_encode()] the string if that
+  //! renders a shorter encoding than the verbatim string.
+  protected void put_string(Stdio.Buffer buf, string(8bit) str)
+  {
+    int flag = 0;
+    string(8bit) hstr = huffman_encode(str);
+    if (sizeof(hstr) < sizeof(str)) {
+      str = hstr;
+      flag = 0x80;
+    }
+    put_int(buf, flag, 0x7f, sizeof(hstr));
+    buf->add(str);
+  }
+
+  //! Encode a single HPack header.
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @param header
+  //!   Name of header. This should under normal circumstances be a lower-case
+  //!   string, but this is currently not checked.
+  //!
+  //! @param value
+  //!   Header value.
+  //!
+  //! @param flags
+  //!   Optional encoding flags.
+  //!
+  //! @seealso
+  //!   @[encode()], @[decode_header()]
+  void encode_header(Stdio.Buffer buf, string(8bit) header, string(8bit) value,
+		     HPackFlags|void flags)
+  {
+    int|mapping(string(8bit):int) entry = header_index[header];
+    if (entry) {
+      if (intp(entry)) {
+	if (value == "") {
+	  // 6.1 Indexed header.
+	  if (entry < 0) {
+	    entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
+	  }
+	  put_int(buf, 0x80, 0x7f, entry);
+	  return;
+	}
+      } else if (entry[value] && !(flags & HEADER_INDEXED_MASK)) {
+	entry = entry[value];
+	// 6.1 Indexed header.
+	if (entry < 0) {
+	  entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
+	}
+	put_int(buf, 0x80, 0x7f, entry);
+	return;
+      } else if (entry[""]) {
+	entry = entry[""];
+      } else {
+	entry = entry[sort(indices(entry))[0]];
+      }
+      if (entry < 0) {
+	entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
+      }
+      if (flags & HEADER_INDEXED_MASK) {
+	if (flags & HEADER_NEVER_INDEXED) {
+	  // 6.2.3 Literal Header Field Never Indexed.
+	  put_int(buf, 0x10, 0x0f, entry);
+	} else {
+	  // 6.2.2 Literal Header Field without Incremental Indexing.
+	  put_int(buf, 0x00, 0x0f, entry);
+	}
+      } else {
+	// 6.2.1 Literal Header Field with Incremental Indexing.
+	put_int(buf, 0x40, 0x3f, entry);
+      }
+    } else {
+      if (flags & HEADER_INDEXED_MASK) {
+	if (flags & HEADER_NEVER_INDEXED) {
+	  // 6.2.3 Literal Header Field Never Indexed.
+	  put_int(buf, 0x10, 0x0f, 0);
+	} else {
+	  // 6.2.2 Literal Header Field without Incremental Indexing.
+	  put_int(buf, 0x00, 0x0f, 0);
+	}
+      } else {
+	// 6.2.1 Literal Header Field with Incremental Indexing.
+	put_int(buf, 0x40, 0x3f, 0);
+      }
+      put_string(buf, header);
+    }
+    put_string(buf, value);
+    if (!(flags & HEADER_INDEXED_MASK)) {
+      add_header(header, value);
+    }
+  }
+
+  //! Set the dynamic maximum size of the dynamic header lookup table.
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @param new_max_size
+  //!   New dynamic maximum size in bytes (as calculated by
+  //!   @rfc{7541:4.1@}).
+  //!
+  //! @note
+  //!   This function can be used to clear the dynamic header table
+  //!   by setting the size to zero.
+  //!
+  //! @note
+  //!   Also note that the @[new_max_size] has an upper bound that
+  //!   is limited by @[static_max_size].
+  //!
+  //! @seealso
+  //!   @[encode_header()], @[encode()], @[create()].
+  void set_dynamic_size(Stdio.Buffer buf, int(0..) new_max_size)
+  {
+    if (new_max_size > static_max_size) {
+      new_max_size = static_max_size;
+    }
+    put_int(buf, 0x20, 0x1f, new_max_size);
+    dynamic_max_size = new_max_size;
+    evict_dynamic_headers();
+  }
+
+  //! Encode a full set of headers.
+  //!
+  //! @param headers
+  //!   An array of @tt{({ header, value })@}-tuples.
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @seealso
+  //!   @[encode_header()], @[decode()]
+  void encode(array(array(string(8bit)|HPackFlags)) headers, Stdio.Buffer buf)
+  {
+    foreach(headers, array(string(8bit)) header) {
+      encode_header(buf, @header);
+    }
+  }
+
+  //! Convenience variant of @[encode()].
+  //!
+  //! @param headers
+  //!   An array of @tt{({ header, value })@}-tuples.
+  //!
+  //! @returns
+  //!   Returns the corresponding HPack encoding.
+  variant string(8bit) encode(array(array(string(8bit))) headers)
+  {
+    Stdio.Buffer buf = Stdio.Buffer();
+    encode(headers, buf);
+    return buf->read();
+  }
+}

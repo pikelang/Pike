@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -23,6 +22,12 @@
 #define PROG_COUNTER  (((unsigned char **)ia32_pc)[1])
 
 #else  /* GCC_IA32_ASM_STYLE */
+
+#define OPCODE_INLINE_RETURN
+void ia32_ins_entry(void);
+#define INS_ENTRY()	ia32_ins_entry()
+/* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
+#define ENTRY_PROLOGUE_SIZE	0x09
 
 #ifdef OPCODE_RETURN_JUMPADDR
 /* Don't need an lvalue in this case. */
@@ -134,6 +139,15 @@ void ia32_flush_instruction_cache(void *addr, size_t len);
 void ia32_init_interpreter_state(void);
 #define INIT_INTERPRETER_STATE	ia32_init_interpreter_state
 
+#ifdef INS_ENTRY
+
+#define CALL_MACHINE_CODE(pc)                                           \
+  do {                                                                  \
+    ((int (*)(void))(pc)) ();						\
+  } while(0)
+
+#else /* !INS_ENTRY */
+
 #ifdef CL_IA32_ASM_STYLE
 
 #define CALL_MACHINE_CODE(pc)                                   \
@@ -160,5 +174,7 @@ void ia32_init_interpreter_state(void);
 
 #define EXIT_MACHINE_CODE()						\
   __asm__ __volatile__( "add $16,%%esp\n" : : )
+
+#endif /* INS_ENTRY */
 
 #endif /* GCC_IA32_ASM_STYLE */

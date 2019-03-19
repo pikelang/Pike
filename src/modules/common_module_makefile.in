@@ -1,6 +1,4 @@
 #
-# $Id$
-#
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
 #
@@ -43,14 +41,16 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 .SUFFIXES:
 .SUFFIXES: .c .o .cmod .protos .m .mmod .cc .ccmod
 
-.cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	$(BUILD_BASE)/precompile.sh --cache precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
+$(PMOD_TARGETS): $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike $(PIKE_SRC_DIR)/../lib/modules/Tools.pmod/Standalone.pmod/precompile.pike Makefile.in
 
-.mmod.m: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	$(BUILD_BASE)/precompile.sh --cache precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
+.cmod.c:
+	$(BUILD_BASE)/precompile.sh precompile.pike '--base=$(MODNAME)' $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
-.ccmod.cc: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	$(BUILD_BASE)/precompile.sh --cache precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
+.mmod.m:
+	$(BUILD_BASE)/precompile.sh precompile.pike '--base=$(MODNAME)' $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
+
+.ccmod.cc:
+	$(BUILD_BASE)/precompile.sh precompile.pike '--base=$(MODNAME)' $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
 
 # GCC dumps core on some files @ OSF1
@@ -60,20 +60,9 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
 	  status=$$?; \
-	  if test x"@noopt_retry@" = xyes ; then \
-	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
-	      status=$$?; \
-	      echo "Compilation command was:" >&2;\
-	      echo "$(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@" >&2 ;\
-	      exit $$status; \
-	    fi; \
-	  else \
-	    echo "Compilation command was:" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
-	    exit $$status; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	  exit $$status; \
 	fi
 
 .c.protos: $(BUILD_BASE)/precompile.sh-stamp
@@ -86,20 +75,9 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
 	  status=$$?; \
-	  if test x"@noopt_retry@" = xyes ; then \
-	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
-	      status=$$?; \
-	      echo "Compilation command was:" >&2;\
-	      echo "$(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@" >&2 ;\
-	      exit $$status; \
-	    fi; \
-	  else \
-	    echo "Compilation command was:" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
-	    exit $$status; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	  exit $$status; \
 	fi
 
 .m.protos: $(BUILD_BASE)/precompile.sh-stamp
@@ -113,20 +91,9 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
 	  status=$$?; \
-	  if test x"@noopt_retry@" = xyes ; then \
-	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CXX) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
-	      status=$$?; \
-	      echo "Compilation command was:" >&2;\
-	      echo "$(CXX) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@" >&2 ;\
-	      exit $$status; \
-	    fi; \
-	  else \
-	    echo "Compilation command was:" >&2;\
-	    echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
-	    exit $$status; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	  exit $$status; \
 	fi
 
 .cc.protos: $(BUILD_BASE)/precompile.sh-stamp
@@ -162,17 +129,19 @@ config.status: $(SRCDIR)/configure propagated_variables
 
 module.pmod: Makefile $(MODULE_PMOD_IN)
 	@if [ "x$(MODULE_PMOD_IN)" != "x" ]; then \
+	  LC_CTYPE=C; \
+	  export LC_CTYPE; \
 	  echo "Making module.pmod" ; \
 	  if [ -f "$(MODULE_PMOD_IN)" ]; then \
 	    sed -e "s#@module@#$(MODULE_PROGRAM)#" \
-	      <"$(MODULE_PMOD_IN)" >module.pmod; \
+	      <"$(MODULE_PMOD_IN)" >module.pmod || (rm "module.pmod/$$mi"&&exit 1); \
 	  else \
 	   if [ -d "$(MODULE_PMOD_IN)" ]; then \
 	     find "$(MODULE_PMOD_IN)" -type d -print | sed -e "s#$(MODULE_PMOD_IN)#module.pmod#" | xargs -n 1 mkdir -p ;\
 	     for mi in `find "$(MODULE_PMOD_IN)" -type f -print | sed -e "s#$(MODULE_PMOD_IN)##"` ;\
 	     do \
 	       sed -e "s#@module@#$(MODULE_PROGRAM)#" \
-	         <"$(MODULE_PMOD_IN)/$$mi" > "module.pmod/$$mi" ; \
+	         <"$(MODULE_PMOD_IN)/$$mi" > "module.pmod/$$mi" || (rm "module.pmod/$$mi"&&exit 1); \
 	     done; \
 	  else \
 	    echo 'Missing source for module.pmod "$(MODULE_PMOD_IN)".' >&2; \
@@ -203,19 +172,22 @@ spotless: clean_here
 
 
 depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
-	@gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(PIKE_SRC_DIR)" "$(BUILD_BASE)"
-	@CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
-	@for a in '' $(MODULE_SUBDIRS) ; do \
-	  if test "x$$a" = "x"; then :; else \
-	    echo Making depend in $$a; \
-	    ( cd $$a && { \
-	      rm -f remake; \
-	      $(MAKE) $(MAKE_FLAGS) depend || \
-		if test -f remake; then $(MAKE) $(MAKE_FLAGS) depend; \
-		else exit $$?; fi; \
-	    }); \
-	  fi; \
-	done
+	@if [ "x$(DO_DEPEND)" = "x" ]; then \
+	  gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(PIKE_SRC_DIR)" "$(BUILD_BASE)" ; \
+	  CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status ; \
+	  for a in '' $(MODULE_SUBDIRS) ; do \
+	    if test "x$$a" = "x"; then :; else \
+	      echo Making depend in $$a; \
+	      ( cd $$a && { \
+	        rm -f remake; \
+	        $(MAKE) $(MAKE_FLAGS) depend || \
+		  if test -f remake; then $(MAKE) $(MAKE_FLAGS) depend; \
+		  else exit $$?; fi; \
+	      }); \
+	    fi; \
+	  done; \
+	else echo Not regenerating dependencies here.; \
+	fi
 
 pike_external_module: plib/modules
 	@$(MAKE) $(MAKE_FLAGS) LOCAL_MODULE_PATH="./plib/modules" local_install

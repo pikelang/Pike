@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(zxid.cmod)
 
 AC_MODULE_INIT()
@@ -13,6 +12,8 @@ if test x$zxid_prefix != x ; then
     # FIXME: Add include and lib paths here.
     :
 fi
+
+ORIG_LIBS="$LIBS"
 
 AC_CHECK_LIB(z, deflate,, [
   AC_CHECK_LIB(gz, deflate,, [
@@ -29,6 +30,88 @@ if test x"$ac_cv_lib_zxid_zxid_simple:$ac_cv_header_zxid_zxid_h" = "xyes:yes";
 then
     PIKE_FEATURE_OK(ZXID)
     AC_DEFINE(HAVE_ZXID)
+
+    AC_MSG_CHECKING(number of arguments that zxid_parse_cgi wants)
+    AC_CACHE_VAL(pike_cv_func_zxid_parse_cgi_num_args, [
+	AC_TRY_COMPILE([
+#include <zx/zx.h>
+#include <zxid/zxid.h>
+	], [
+	    struct zxid_conf conf;
+	    struct zxid_cgi cgi;
+	    return zxid_parse_cgi(&conf, &cgi, "");
+	], [
+	    # ZXID 20121020-142800 or later.
+	    pike_cv_func_zxid_parse_cgi_num_args="3"
+	], [
+	    AC_TRY_COMPILE([
+#include <zx/zx.h>
+#include <zxid/zxid.h>
+	    ], [
+		struct zxid_conf conf;
+		struct zxid_cgi cgi;
+		return zxid_parse_cgi(&cgi, "");
+	    ], [
+		# ZXID 20100110-185231 -- 20121019-234507
+	        pike_cv_func_zxid_parse_cgi_num_args="2"
+	    ], [
+		pike_cv_func_zxid_parse_cgi_num_args=""
+	    ])
+	])
+    ])
+    if test "x$pike_cv_func_zxid_parse_cgi_num_args" = "x"; then
+	AC_MSG_RESULT(failed)
+    else
+	AC_MSG_RESULT($pike_cv_func_zxid_parse_cgi_num_args)
+	AC_DEFINE_UNQUOTED(HAVE_ZXID_PARSE_CGI,
+			   $pike_cv_func_zxid_parse_cgi_num_args)
+    fi
+
+    AC_MSG_CHECKING(if struct zxid_conf has a burl member)
+    AC_CACHE_VAL(pike_cv_struct_zxid_conf_burl, [
+	AC_TRY_COMPILE([
+#include <zx/zx.h>
+#include <zxid/zxid.h>
+	], [
+	    struct zxid_conf conf;
+	    conf.burl = "BURL";
+	], [
+	    pike_cv_struct_zxid_conf_burl="yes"
+	], [
+	    pike_cv_struct_zxid_conf_burl="no"
+	])
+    ])
+    if test "x$pike_cv_struct_zxid_conf_burl" = "xyes"; then
+	# ZXID 1.19:2013-12-04 or later.
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_STRUCT_ZXID_CONF_BURL)
+    else
+	AC_MSG_RESULT(no)
+    fi
+
+    AC_MSG_CHECKING(if struct zxid_cgi has an uri_path member)
+    AC_CACHE_VAL(pike_cv_struct_zxid_cgi_uri_path, [
+	AC_TRY_COMPILE([
+#include <zx/zx.h>
+#include <zxid/zxid.h>
+	], [
+	    struct zxid_cgi cgi;
+	    cgi.uri_path = "URI_PATH";
+	], [
+	    pike_cv_struct_zxid_cgi_uri_path="yes"
+	], [
+	    pike_cv_struct_zxid_cgit_uri_path="no"
+	])
+    ])
+    if test "x$pike_cv_struct_zxid_cgi_uri_path" = "xyes"; then
+	# ZXID 1.18:2013-11-17 or later.
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_STRUCT_ZXID_CGI_URI_PATH)
+    else
+	AC_MSG_RESULT(no)
+    fi
+else
+    LIBS="$ORIG_LIBS"
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

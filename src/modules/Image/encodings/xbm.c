@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND
@@ -34,6 +33,12 @@ extern struct program *image_program;
 **! module Image
 **! submodule XBM
 **!
+**! Decode and encode X BitMap images.
+**!
+**! This is a monochrome format historically used in the X Window
+**! System. It is a plain text image format, mainly used for storing
+**! cursor and icon bitmaps used in the X GUI. The XBM format was
+**! officially deprecated in 1989, replaced with the XPM format.
 */
 
 
@@ -108,7 +113,7 @@ static struct object *load_xbm( struct pike_string *data )
   height = atoi(b->str);
   if(height <= 0)
     Pike_error("This is not a XBM image!\n");
-  
+
   if(!buf_search( b, '{' ))
     Pike_error("This is not a XBM image!\n");
 
@@ -116,7 +121,7 @@ static struct object *load_xbm( struct pike_string *data )
   push_int( width );
   push_int( height );
   io = clone_object( image_program, 2 );
-  dest = ((struct image *)get_storage(io, image_program))->img;
+  dest = ((struct image*)get_storage(io, image_program))->img;
   /* .. the code below asumes black if the read fails.. */
   for(y=0; y<height; y++)
   {
@@ -176,7 +181,7 @@ static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
   low_my_binary_strcat( size, strlen(size), &buf );
 
   ccat( "static char " );  cname();  ccat( "_bits[] = {\n" );
-  
+
   for(y=0; y<i->ysize; y++)
   {
     rgb_group *p = i->img+y*i->xsize;
@@ -200,7 +205,7 @@ static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
 
 /*
 **! method object decode(string data)
-**! 	Decodes a XBM image. 
+**! 	Decodes a XBM image.
 **!
 **! note
 **!	Throws upon error in data.
@@ -252,9 +257,9 @@ static void image_xbm__decode( INT32 args )
   {
     if (TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
       Pike_error("Image.XBM._decode: illegal argument 2\n");
-      
+
     push_svalue(Pike_sp+1-args);
-    ref_push_string(param_fg); 
+    ref_push_string(param_fg);
     f_index(2);
     if(!UNSAFE_IS_ZERO(Pike_sp-1))
     {
@@ -288,7 +293,7 @@ static void image_xbm__decode( INT32 args )
       bg = Pike_sp[-1].u.array;
     }
     Pike_sp--;
-    
+
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_invert);
     f_index(2);
@@ -340,11 +345,11 @@ static void image_xbm__decode( INT32 args )
 
     apply( i, "paste_alpha_color", 4 );
   }
-  
+
   pop_n_elems(args);
-  push_constant_text( "alpha" );
+  push_static_text( "alpha" );
   push_object( a );
-    push_constant_text( "image" );
+    push_static_text( "image" );
   if(i)
     push_object( i );
   else
@@ -358,7 +363,7 @@ static void image_xbm__decode( INT32 args )
 /*
 **! method string encode(object image)
 **! method string encode(object image, mapping options)
-**! 	Encodes a XBM image. 
+**! 	Encodes a XBM image.
 **!
 **!     The <tt>options</tt> argument may be a mapping
 **!	containing zero or more encoding options.
@@ -377,12 +382,11 @@ void image_xbm_encode( INT32 args )
   struct pike_string *name = NULL, *buf;
   if (!args)
     Pike_error("Image.XBM.encode: too few arguments\n");
-   
+
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
-      !(img=(struct image*)
-        get_storage(Pike_sp[-args].u.object,image_program)))
+      !(img=get_storage(Pike_sp[-args].u.object,image_program)))
     Pike_error("Image.XBM.encode: illegal argument 1\n");
-   
+
   if (!img->img)
     Pike_error("Image.XBM.encode: no image\n");
 
@@ -390,9 +394,9 @@ void image_xbm_encode( INT32 args )
   {
     if (TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
       Pike_error("Image.XBM.encode: illegal argument 2\n");
-      
+
     push_svalue(Pike_sp+1-args);
-    ref_push_string(param_name); 
+    ref_push_string(param_name);
     f_index(2);
     if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)
     {

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -14,14 +13,11 @@
 #include "object.h"
 #include "builtin_functions.h"
 
-/* This is defined on windows */
-#ifdef REG_NONE
-#undef REG_NONE
-#endif
+enum ia32_reg {P_REG_EAX = 0, P_REG_EBX = 3, P_REG_ECX = 1, P_REG_EDX = 2,
+               P_REG_NONE = 4, P_REG_ESP = 4, P_REG_EBP = 5, P_REG_ESI = 6,
+               P_REG_EDI = 7, };
 
-enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4};
-
-#define REG_BITMASK ((1 << REG_NONE) - 1)
+#define REG_BITMASK ((1 << P_REG_NONE) - 1)
 
 /* #define REGISTER_DEBUG */
 
@@ -71,7 +67,7 @@ static int alloc_regs = 0, valid_regs = 0;
 #define MOV_ABSADDR_TO_REG(ADDR, REG) do {				\
     MAKE_VALID_REG (REG);						\
     /* movl addr,%reg */						\
-    if ((REG) == REG_EAX)						\
+    if ((REG) == P_REG_EAX)						\
       add_to_program (0xa1); /* Move dword at address to EAX. */	\
     else {								\
       add_to_program (0x8b); /* Move r/m32 to r32. */			\
@@ -80,10 +76,17 @@ static int alloc_regs = 0, valid_regs = 0;
     PUSH_ADDR (&(ADDR));						\
   } while (0)
 
+#define MOV_REG_TO_REG(FROM, TO) do {				\
+    CHECK_VALID_REG(FROM);					\
+    MAKE_VALID_REG(TO);						\
+    add_to_program (0x89);	/* Move r32 to r/m32. */	\
+    add_to_program (0xc0 | ((FROM)<<3) | (TO));			\
+  } while(0)
+
 #define MOV_REG_TO_ABSADDR(REG, ADDR) do {				\
     CHECK_VALID_REG (REG);						\
     /* movl %reg,addr */						\
-    if ((REG) == REG_EAX)						\
+    if ((REG) == P_REG_EAX)						\
       add_to_program (0xa3); /* Move EAX to dword at address. */	\
     else {								\
       add_to_program (0x89); /* Move r32 to r/m32. */			\
@@ -206,6 +209,37 @@ static int alloc_regs = 0, valid_regs = 0;
     }									\
   } while (0)
 
+#define MOV_RELSTACK_TO_REG(OFFSET, REG) do {				\
+    INT32 off_ = (OFFSET);						\
+    MAKE_VALID_REG (REG);						\
+    /* movl offset(%esp), %reg */					\
+    add_to_program (0x8b); /* Move r/m32 to r32. */			\
+    if (off_ < -128 || off_ > 127) {					\
+      add_to_program (0x84 | ((REG) << 3));				\
+      add_to_program (0x24);						\
+      PUSH_INT (off_);							\
+    }									\
+    else if (off_) {							\
+      add_to_program (0x44 | ((REG) << 3));				\
+      add_to_program (0x24);						\
+      add_to_program (off_);						\
+    }									\
+    else {								\
+      add_to_program (0x04 | ((REG) << 3));				\
+      add_to_program (0x24);						\
+    }									\
+  } while (0)
+
+#define PUSH_REG(REG) do {			\
+    CHECK_VALID_REG (REG);			\
+    add_to_program (0x50 + (REG));		\
+  } while (0)
+
+#define POP_REG(REG) do {			\
+    MAKE_VALID_REG (REG);			\
+    add_to_program (0x58 + (REG));		\
+  } while (0)
+
 #define ADD_VAL_TO_REG(VAL, REG) do {					\
     INT32 val_ = (VAL);							\
     CHECK_VALID_REG (REG);						\
@@ -217,7 +251,7 @@ static int alloc_regs = 0, valid_regs = 0;
       add_to_program (0x48 | (REG)); /* Decrement r32. */		\
     else if (val_ < -128 || val_ > 127) {				\
       /* addl $val,%reg */						\
-      if ((REG) == REG_EAX)						\
+      if ((REG) == P_REG_EAX)						\
 	add_to_program (0x05); /* Add imm32 to EAX. */			\
       else {								\
 	add_to_program (0x81); /* Add imm32 to r/m32. */		\
@@ -301,6 +335,45 @@ static int alloc_regs = 0, valid_regs = 0;
     }									\
   } while (0)
 
+#define CMP_REG_IMM32(REG, IMM) do {		\
+    if ((REG) == P_REG_EAX) {			\
+      add_to_program(0x3d);			\
+    } else {					\
+      add_to_program(0x81);			\
+      add_to_program(0xf8 | (REG));		\
+    }						\
+    PUSH_INT((IMM));				\
+  } while (0)
+
+#define CMP_REG_REG(REG1, REG2) do {			\
+    add_to_program(0x39);				\
+    add_to_program(0xc0 | ((REG1)<<3) | (REG2));	\
+  } while (0)
+
+#define JNE(SKIP) do {					\
+    int skip__ = (SKIP);				\
+    if ((skip__ >= -0x80) && (skip__ <= 0x7f)) {	\
+      add_to_program(0x75);				\
+      add_to_program(skip__);				\
+    } else {						\
+      Pike_fatal("Not supported yet.\n");		\
+    }							\
+  } while(0)
+
+#define JE(SKIP) do {					\
+    int skip__ = (SKIP);				\
+    if ((skip__ >= -0x80) && (skip__ <= 0x7f)) {	\
+      add_to_program(0x74);				\
+      add_to_program(skip__);				\
+    } else {						\
+      Pike_fatal("Not supported yet.\n");		\
+    }							\
+  } while(0)
+
+#define RET() do {					\
+    add_to_program(0xc3);				\
+  } while (0);
+
 #define CALL_RELATIVE(X) do{						\
   struct program *p_=Pike_compiler->new_program;			\
   add_to_program(0xe8);							\
@@ -312,6 +385,36 @@ static int alloc_regs = 0, valid_regs = 0;
   *(INT32 *)(p_->program + p_->num_program - 4)=                        \
     ((INT32)(X)) - (INT32)(p_->program + p_->num_program);              \
 }while(0)
+
+#ifdef INS_ENTRY
+void ia32_ins_entry(void)
+{
+#ifdef REGISTER_DEBUG
+  /* All registers are valid here... */
+  valid_regs = 0xff;
+#endif
+  /* Push all registers that the ABI requires to be preserved.
+   *
+   * cf Sys V ABI Intel386 Architecture Supplement 4th ed 3-11:
+   *   "Registers %ebp, %ebx, %edi, %esi, and %esp ``belong'' to the cal-
+   *    ling function."
+   *
+   * also cf Fig 3-16.
+   */
+  PUSH_REG(P_REG_EBP);
+  MOV_REG_TO_REG(P_REG_ESP, P_REG_EBP);
+  /* FIXME: Add local storage here if needed. */
+  PUSH_REG(P_REG_EDI);
+  PUSH_REG(P_REG_ESI);
+  PUSH_REG(P_REG_EBX);
+  /* Funcall arguments (4 * 4 bytes). */
+  ADD_VAL_TO_REG(-0x10, P_REG_ESP);
+
+#ifdef REGISTER_DEBUG
+  valid_regs = 0;
+#endif
+}
+#endif
 
 static void update_arg1(INT32 value)
 {
@@ -334,8 +437,8 @@ ptrdiff_t ia32_prev_stored_pc; /* PROG_PC at the last point Pike_fp->pc was upda
 
 void ia32_flush_code_generator(void)
 {
-  next_reg = REG_EAX;
-  pi_reg = sp_reg = fp_reg = mark_sp_reg = REG_NONE;
+  next_reg = P_REG_EAX;
+  pi_reg = sp_reg = fp_reg = mark_sp_reg = P_REG_NONE;
   CLEAR_REGS();
   ia32_prev_stored_pc = -1;
 }
@@ -351,7 +454,7 @@ static enum ia32_reg alloc_reg (int avoid_regs)
     /* There's a free register. */
 
     for (reg = next_reg; (1 << reg) & used_regs;) {
-      reg = (reg + 1) % REG_NONE;
+      reg = (reg + 1) % P_REG_NONE;
 #ifdef PIKE_DEBUG
       if (reg == next_reg) Pike_fatal ("Failed to find a free register.\n");
 #endif
@@ -364,19 +467,19 @@ static enum ia32_reg alloc_reg (int avoid_regs)
      * probably be replaced with an LRU strategy. */
 
     for (reg = next_reg; (1 << reg) & avoid_regs;) {
-      reg = (reg + 1) % REG_NONE;
+      reg = (reg + 1) % P_REG_NONE;
 #ifdef PIKE_DEBUG
       if (reg == next_reg) Pike_fatal ("Failed to find a non-excluded register.\n");
 #endif
     }
 
-    if (sp_reg == reg)			{sp_reg = REG_NONE; DEALLOC_REG (reg);}
-    else if (fp_reg == reg)		{fp_reg = REG_NONE; DEALLOC_REG (reg);}
-    else if (mark_sp_reg == reg)	{mark_sp_reg = REG_NONE; DEALLOC_REG (reg);}
-    else if (pi_reg == reg)		{pi_reg = REG_NONE; DEALLOC_REG (reg);}
+    if (sp_reg == reg)			{sp_reg = P_REG_NONE; DEALLOC_REG (reg);}
+    else if (fp_reg == reg)		{fp_reg = P_REG_NONE; DEALLOC_REG (reg);}
+    else if (mark_sp_reg == reg)	{mark_sp_reg = P_REG_NONE; DEALLOC_REG (reg);}
+    else if (pi_reg == reg)		{pi_reg = P_REG_NONE; DEALLOC_REG (reg);}
   }
 
-  if (reg == pi_reg)		        {pi_reg = REG_NONE; DEALLOC_REG (reg);}
+  if (reg == pi_reg)		        {pi_reg = P_REG_NONE; DEALLOC_REG (reg);}
 
 #ifdef REGISTER_DEBUG
   if ((1 << reg) & alloc_regs) Pike_fatal ("Clobbering allocated register.\n");
@@ -389,11 +492,11 @@ static enum ia32_reg alloc_reg (int avoid_regs)
 #define DEF_LOAD_REG(REG, SET)						\
   static void PIKE_CONCAT(load_,REG) (int avoid_regs)			\
   {									\
-    if (REG == REG_NONE) {						\
+    if (REG == P_REG_NONE) {						\
       REG = alloc_reg (avoid_regs);					\
       /* Update the round robin pointer here so that we disregard */	\
       /* the direct calls to alloc_reg for temporary registers. */	\
-      next_reg = (REG + 1) % REG_NONE;					\
+      next_reg = (REG + 1) % P_REG_NONE;					\
       {SET;}								\
     }									\
     else								\
@@ -422,8 +525,8 @@ DEF_LOAD_REG (mark_sp_reg, {
 static void ia32_call_c_function(void *addr)
 {
   CALL_RELATIVE(addr);
-  next_reg = REG_EAX;
-  pi_reg = sp_reg = fp_reg = mark_sp_reg = REG_NONE;
+  next_reg = P_REG_EAX;
+  pi_reg = sp_reg = fp_reg = mark_sp_reg = P_REG_NONE;
   CLEAR_REGS();
 }
 
@@ -432,7 +535,7 @@ static void ia32_call_c_function(void *addr)
 static void ia32_push_constant(struct svalue *tmp)
 {
   int e;
-  if(tmp->type <= MAX_REF_TYPE)
+  if(REFCOUNTED_TYPE(TYPEOF(*tmp)))
     ADD_VAL_TO_ABSADDR (1, tmp->u.refs);
 
   load_pi_reg (0);
@@ -477,10 +580,10 @@ static void ia32_push_svalue (enum ia32_reg svalue_ptr_reg)
   add_to_program(0x66);		/* Switch to 16 bit operand mode. */
   add_to_program(0x83);		/* cmp $xx,svalue_ptr_reg */
   add_to_program(0xf8 | svalue_ptr_reg);
-  add_to_program(MAX_REF_TYPE);
+  add_to_program(MIN_REF_TYPE);
   DEALLOC_REG (svalue_ptr_reg);
 
-  add_to_program(0x77); /* ja bork */
+  add_to_program(0x7c); /* jl bork */
   add_to_program(0x02);
 
   CHECK_VALID_REG (tmp_reg);
@@ -518,9 +621,9 @@ static void ia32_local_lvalue(INT32 arg)
   struct svalue tmp[2];
   enum ia32_reg addr_reg = ia32_get_local_addr(arg);
 
-  MEMSET(tmp, 0, sizeof(tmp));
-  tmp[0].type=T_SVALUE_PTR;
-  tmp[1].type=T_VOID;
+  memset(tmp, 0, sizeof(tmp));
+  SET_SVAL_TYPE(tmp[0], T_SVALUE_PTR);
+  SET_SVAL_TYPE(tmp[1], T_VOID);
 
   load_pi_reg ((1 << addr_reg)|(1 << sp_reg));
   load_sp_reg ((1 << addr_reg)|(1 << pi_reg));
@@ -589,9 +692,7 @@ static void ia32_mark(void)
 static void ia32_push_int(INT32 x)
 {
   struct svalue tmp;
-  tmp.type=PIKE_T_INT;
-  tmp.subtype=0;
-  tmp.u.integer=x;
+  SET_SVAL(tmp, PIKE_T_INT, 0, integer, x);
   ia32_push_constant(&tmp);
 }
 
@@ -716,6 +817,7 @@ static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2
 void ins_f_byte(unsigned int b)
 {
   void *addr;
+  INT32 rel_addr = 0;
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
@@ -782,16 +884,84 @@ void ins_f_byte(unsigned int b)
 	addr = (void *)f_get_iterator;
       }
       break;
+
+#ifdef OPCODE_INLINE_RETURN
+  case F_CATCH - F_OFFSET:
+    {
+      /* Special argument for the F_CATCH instruction. */
+      addr = inter_return_opcode_F_CATCH;
+      /* FIXME: Is there really no easier way to get at EIP? */
+      add_to_program(0xe8);
+      PUSH_INT(0);
+      POP_REG(P_REG_EAX);	/* EIP ==> EAX */
+      ADD_VAL_TO_REG(0x7fffffff, P_REG_EAX);
+      rel_addr = PIKE_PC;
+      MOV_REG_TO_RELSTACK(P_REG_EAX, 0);
+    }
+    break;
+#endif
   }
 #endif /* !DEBUG_MALLOC */
 
   ia32_call_c_function(addr);
+
+#ifdef INS_ENTRY
+  if (instrs[b].flags & I_RETURN) {
+    INT32 skip;
+#ifdef REGISTER_DEBUG
+    INT32 orig_valid_regs = valid_regs;
+    valid_regs = 0xff;
+#endif
+    if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+      /* Kludge. We must check if the ret addr is
+       * orig_addr + JUMP_EPILOGUE_SIZE. */
+      /* There's no easy way to get at EIP directly,
+       * so we assume that the function we called
+       * above exited with a RET, in which case EIP
+       * is at ESP[-4]...
+       */
+      MOV_RELSTACK_TO_REG(-4, P_REG_ESI);
+      ADD_VAL_TO_REG(JUMP_EPILOGUE_SIZE, P_REG_ESI);
+    }
+    CMP_REG_IMM32(P_REG_EAX, -1);
+    JNE(0);
+    skip = (INT32)PIKE_PC;
+    ADD_VAL_TO_REG(0x10, P_REG_ESP);	/* Funcall arguments (4 * 4 bytes). */
+    POP_REG(P_REG_EBX);
+    POP_REG(P_REG_ESI);
+    POP_REG(P_REG_EDI);
+    POP_REG(P_REG_EBP);
+    RET();
+    Pike_compiler->new_program->program[skip-1] = ((INT32)PIKE_PC) - skip;
+    if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+      /* Kludge. We must check if the ret addr is
+       * orig_addr + JUMP_EPILOGUE_SIZE. */
+      CMP_REG_REG(P_REG_EAX, P_REG_ESI);
+      JE(0x02);
+      add_to_program (0xff);	/* jmp *%eax */
+      add_to_program (0xe0);
+#ifdef REGISTER_DEBUG
+      valid_regs = orig_valid_regs;
+#endif
+      return;
+    }
+#ifdef REGISTER_DEBUG
+    valid_regs = orig_valid_regs;
+#endif
+  }
+#endif
 
 #ifdef OPCODE_RETURN_JUMPADDR
   if (instrs[b].flags & I_JUMP) {
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     add_to_program (0xff);	/* jmp *%eax */
     add_to_program (0xe0);
+
+#ifdef OPCODE_INLINE_RETURN
+    if (b + F_OFFSET == F_CATCH) {
+      upd_pointer(rel_addr - 4, PIKE_PC + 6 - rel_addr);
+    }
+#endif
   }
 #endif
 }
@@ -860,7 +1030,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       return;
 
     case F_CONSTANT:
-      /* 
+      /*
        * This would work nicely for all pike types, but we would
        * have to augment dumping
        *
@@ -869,8 +1039,8 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
        *
        * /grubba 2003-12-11
        */
-      if((Pike_compiler->new_program->constants[b].sval.type > MAX_REF_TYPE) &&
-	 !Pike_compiler->new_program->constants[b].sval.subtype)
+      if(!REFCOUNTED_TYPE(TYPEOF(Pike_compiler->new_program->constants[b].sval)) &&
+	 !SUBTYPEOF(Pike_compiler->new_program->constants[b].sval))
       {
 	ins_debug_instr_prologue (a - F_OFFSET, b, 0);
 	ia32_push_constant(& Pike_compiler->new_program->constants[b].sval);
@@ -943,7 +1113,7 @@ static INT32 do_ins_jump (unsigned int op, int backward_jump)
       ia32_call_c_function(branch_check_threads_etc);
     }
     add_to_program(0xe9);
-    ret=DO_NOT_WARN( (INT32) PIKE_PC );
+    ret=(INT32) PIKE_PC;
     PUSH_INT(0);
   }
 
@@ -957,7 +1127,7 @@ static INT32 do_ins_jump (unsigned int op, int backward_jump)
       add_to_program (5 + 1 + 4);
       ia32_call_c_function (branch_check_threads_etc); /* 5 bytes */
       add_to_program (0xe9);	/* jmp rel32 */
-      ret = DO_NOT_WARN ((INT32) PIKE_PC);
+      ret = (INT32) PIKE_PC;
       PUSH_INT (0);		/* 4 bytes */
     }
     else {
@@ -968,7 +1138,7 @@ static INT32 do_ins_jump (unsigned int op, int backward_jump)
       }
       add_to_program (0x0f);	/* jnz rel32 */
       add_to_program (0x85);
-      ret = DO_NOT_WARN ((INT32) PIKE_PC);
+      ret = (INT32) PIKE_PC;
       PUSH_INT (0);
     }
   }
@@ -1127,4 +1297,8 @@ void ia32_init_interpreter_state(void)
       ia32_clflush_size = cpu_info.clflush_size * 8;
     }
   }
+
+#ifdef OPCODE_INLINE_RETURN
+  instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
+#endif
 }

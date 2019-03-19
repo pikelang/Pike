@@ -1,4 +1,3 @@
-dnl $Id$
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -589,6 +588,60 @@ AC_DEFUN(PIKE_CHECK_CONSTANTS,
 ])
 
 
+dnl PIKE_AC_CHECK_OS()
+dnl
+dnl Check the operating system
+AC_DEFUN(PIKE_AC_CHECK_OS, [
+  AC_PATH_PROG(uname_prog,uname,no)
+  AC_MSG_CHECKING(operating system)
+  AC_CACHE_VAL(pike_cv_sys_os, [
+    if test "$cross_compiling" = "yes"; then
+      case "$host_alias" in
+	*amigaos*)	pike_cv_sys_os="AmigaOS";;
+	*linux*)	pike_cv_sys_os="Linux";;
+	*solaris*)	pike_cv_sys_os="Solaris";;
+	*sunos*)	pike_cv_sys_os="SunOS";;
+	*windows*)	pike_cv_sys_os="Windows_NT";;
+	*mingw*|*MINGW*)
+			pike_cv_sys_os="Windows_NT"
+			pike_cv_is_mingw="yes";;
+	*)		pike_cv_sys_os="Unknown";;
+      esac
+    elif test "$uname_prog" != "no"; then
+      # uname on UNICOS doesn't work like other people's uname...
+      if getconf CRAY_RELEASE >/dev/null 2>&1; then
+	pike_cv_sys_os="UNICOS"
+      else
+	pike_cv_sys_os="`uname`"
+      fi
+
+      case "$pike_cv_sys_os" in
+	SunOS)
+	  case "`uname -r`" in
+	    5.*) pike_cv_sys_os="Solaris" ;;
+	  esac
+	  ;;
+	Monterey64)
+	  # According to the release notes, the string "Monterey64"
+	  # will be changed to "AIX" in the final release.
+	  # (Monterey 64 is also known as AIX 5L).
+	  pike_cv_sys_os="AIX"
+	;;
+	*Windows*|*windows*)
+	  pike_cv_sys_os="Windows_NT"
+	;;
+	*MINGW*|*mingw*)
+	  pike_cv_is_mingw="yes"
+	  pike_cv_sys_os="Windows_NT"
+	;;
+      esac
+    else
+      pike_cv_sys_os="Not Solaris"
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_sys_os)
+])
+
 dnl 
 dnl PIKE_FEATURE_CLEAR()
 dnl PIKE_FEATURE(feature,text)
@@ -654,9 +707,10 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id$
-
+  
   MY_AC_PROG_CC
+
+  PIKE_SELECT_ABI
 
   dnl The following shouldn't be necessary; it comes from the core
   dnl machine.h via global.h anyway. Defining it here makes the
@@ -770,6 +824,12 @@ define([AC_MODULE_INIT],
   else
     dynamic_module_makefile=$BUILD_BASE/dynamic_module_makefile
     static_module_makefile=$BUILD_BASE/dynamic_module_makefile
+  fi
+
+  PIKE_AC_CHECK_OS()
+
+  if test x"$pike_cv_sys_os" = xWindows_NT ; then
+    PIKE_FUNCS_NEED_DECLS(yes)
   fi
 ])
 
@@ -1112,64 +1172,6 @@ EOF
 
 #############################################################################
 
-dnl PIKE_LOW_ENABLE_BUNDLE(bundle_name, invalidate_set, opt_fail)
-dnl Checks if bundle_name is available, and if it is enables it and
-dnl invalidates the cache variables specified in invalidate_set.
-dnl Otherwise if opt_fail has been specified executes it.
-define(PIKE_LOW_ENABLE_BUNDLE, [
-  test -f [$1].bundle && rm -f [$1].bundle
-  if test "$pike_bundle_dir" = ""; then
-    # Bundles not available.
-    echo "Bundles not available." >&2
-    [$3]
-  elif test -f "$pike_bundle_prefix/installed/[$1]"; then
-    # Bundle already installed.
-    echo "Bundle [$1] already installed. Disabled?" >&2
-    [$3]
-  else
-    # Note: OSF/1 /bin/sh does not support glob expansion of
-    #       expressions like "$pike_bundle_dir/[$1]"*.tar.gz.
-    for f in `cd "$pike_bundle_dir" && echo [$1]*.tar.gz` no; do
-      if test -f "$pike_bundle_dir/$f"; then
-        # Notify toplevel that we want the bundle.
-	# Note that invalidation of the cache variables can't be done
-	# until the bundle actually has been built.
-	PIKE_MSG_NOTE([Enabling bundle $1 from $pike_bundle_dir/$f.])
-        echo "[$2]" >"[$1].bundle"
-	break
-      fi
-    done
-    if test "$f" = "no"; then
-      # Try bzip2-ed tars as well.
-      for f in `cd "$pike_bundle_dir" && echo [$1]*.tar.bz2` no; do
-        if test -f "$pike_bundle_dir/$f"; then
-          # Notify toplevel that we want the bundle.
-	  # Note that invalidation of the cache variables can't be done
-	  # until the bundle actually has been built.
-	  PIKE_MSG_NOTE([Enabling bundle $1 from $pike_bundle_dir/$f.])
-          echo "[$2]" >"[$1].bundle"
-	  break
-        fi
-      done
-      if test "$f" = "no"; then
-        # Bundle not available.
-        echo "Bundle [$1] not available in $pike_bundle_dir." >&2
-        [$3]
-      fi
-    fi
-  fi
-])
-
-dnl PIKE_ENABLE_BUNDLE(bundle_name, invalidate_set, opt_error_msg)
-dnl Checks if bundle_name is available, and if it is enables it and
-dnl invalidates the cache variables specified in invalidate_set.
-dnl Otherwise if opt_error_msg has been specified performs an error exit.
-define(PIKE_ENABLE_BUNDLE, [
-  PIKE_LOW_ENABLE_BUNDLE([$1], [$2], ifelse([$3], , , [AC_MSG_ERROR([[$3]])]))
-])
-
-#############################################################################
-
 # option, cache_name, variable, do_if_failed, do_if_ok, paranoia_test
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [
@@ -1244,6 +1246,11 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
 	# -xarch=generic64:
         #
         # cc: Warning: -xarch=generic64 is deprecated, use -m64 to create 64-bit programs
+        pike_cv_option_$2=no
+      elif grep -i 'argument unused' <conftezt.out.2 >/dev/null; then
+        # clang says the following for -ggdb3:
+        #
+	# clang: warning: argument unused during compilation: '-ggdb3'
         pike_cv_option_$2=no
       else :; fi
       if test -f conftezt.out.2; then
@@ -1543,6 +1550,8 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
   AC_REQUIRE([PIKE_SELECT_ABI])dnl
   AC_REQUIRE([PIKE_INIT_REAL_DIRS])dnl
 
+  pike_file_follow_symlink_opt=""
+
   AC_MSG_CHECKING(whether $1 contains $pike_cv_abi-bit ABI files)
   abi_dir_ok="no"
   abi_dir_dynamic="unknown"
@@ -1587,7 +1596,20 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       for f in "$d"/* no; do
         if test -f "$f"; then
 	  empty=no
-          filetype=`file "$f" 2>/dev/null | sed -e 's/.*://'`
+	  # NB: GNU file and BSD file default to not following symlinks.
+	  #	Solaris /bin/file does not understand -L. The following
+	  #	should support most cases.
+          filetype="`POSIXLY_CORRECT=yes file $pike_follow_symlink_opt $f 2>/dev/null`"
+
+	  case "$filetype" in
+	    *"symbolic link"*)
+	      if file -L $f >/dev/null 2>&1; then
+	        pike_file_follow_symbolic_link="-L";
+		filetype="`POSIXLY_CORRECT=yes file -L $f 2>/dev/null`"
+	      fi
+	      ;;
+	  esac
+
 	  case "$filetype" in
             *32-bit*)
   	      abi_32=yes
@@ -1620,10 +1642,15 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	      abi_dir_dynamic=yes
 	      ;;
 	  esac
-	  if echo "$abi_32:$abi_64:$abi_dir_dynamic" | \
-	       grep "unknown" >/dev/null; then :; else
-	    break
-	  fi
+	  if test "$abi_dir_dynamic" = "unknown"; then
+	     continue;
+	  elif test "$abi_64:$pike_cv_abi" = "yes:64" ; then
+             break
+          elif test "$abi_32:$pike_cv_abi" = "yes:32" ; then
+             break
+          fi
+	elif test "x$empty" = "xyes"; then
+	  empty=other
         fi
       done
       if test "$abi_32" = "yes"; then

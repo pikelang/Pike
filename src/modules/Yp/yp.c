@@ -2,16 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
 #include "config.h"
 
 #if defined(HAVE_RPCSVC_YPCLNT_H) && defined(HAVE_RPCSVC_YP_PROT_H)
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_RPC_TYPES_H
 #include <rpc/types.h>
 #endif /* HAVE_RPC_TYPES_H */
@@ -135,8 +131,6 @@ static void f_create(INT32 args)
   err = yp_bind( this->domain );
 
   YPERROR( err );
-
-  pop_n_elems(args);
 }
 
 /*! @decl mapping(string:string) all(string map)
@@ -201,7 +195,7 @@ static void f_map(INT32 args)
   struct svalue *f = &sp[-1];
 
   check_all_args("map", args, BIT_STRING, BIT_FUNCTION|BIT_ARRAY, 0 );
-  
+
   map = sp[-2].u.string->str;
 
   if(!(err = yp_first(this->domain,map, &retkey,&retkeylen, &retval, &retlen)))
@@ -216,8 +210,6 @@ static void f_map(INT32 args)
 
   if(err != YPERR_NOMORE)
     YPERROR( err );
-
-  pop_n_elems(args);
 }
 
 /*! @decl int order(string map)
@@ -236,7 +228,7 @@ static void f_order(INT32 args)
   YP_ORDER_TYPE ret;
 
   check_all_args("order", args, BIT_STRING, 0);
-  
+
   err = yp_order( this->domain, sp[-args].u.string->str, &ret);
 
   YPERROR( err );
@@ -261,7 +253,7 @@ static void f_match(INT32 args)
   int err;
   char *retval;
   int retlen;
-  
+
   check_all_args("match", args, BIT_STRING, BIT_STRING, 0);
 
   err = yp_match( this->domain, sp[-args].u.string->str,
@@ -281,13 +273,13 @@ static void f_match(INT32 args)
   push_string(make_shared_binary_string( retval, retlen ));
 }
 
-static void init_yp_struct( struct object *o )
+static void init_yp_struct( struct object *UNUSED(o) )
 {
   this->domain = 0;
   this->last_size = 0;
 }
 
-static void exit_yp_struct( struct object *o )
+static void exit_yp_struct( struct object *UNUSED(o) )
 {
   if(this->domain)
   {
@@ -314,7 +306,7 @@ PIKE_MODULE_INIT
   start_new_program();
 
   ADD_STORAGE(struct my_yp_domain);
-  
+
   set_init_callback( init_yp_struct );
   set_exit_callback( exit_yp_struct );
 
@@ -339,7 +331,7 @@ PIKE_MODULE_INIT
 
 PIKE_MODULE_EXIT
 {
-  
+
 }
 #else
 

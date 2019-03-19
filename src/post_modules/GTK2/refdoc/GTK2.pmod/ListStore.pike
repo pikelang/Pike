@@ -22,7 +22,7 @@ GTK2.ListStore clear( );
 //!
 //!
 
-static GTK2.ListStore create( array types );
+protected GTK2.ListStore create( array types );
 //! Create a new list store with as many columns as there are items in the
 //! array. A type is either a string representing a type name, such as "int" or
 //! "float", or an actual widget.  If it is a widget, the column in question

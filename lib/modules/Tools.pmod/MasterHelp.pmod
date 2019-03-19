@@ -1,5 +1,9 @@
 #pike __REAL_VERSION__
 
+//! This module contains usage strings for the @[master()->_main()].
+
+//! Summary of the options for the Pike interpreter binary, and the
+//! default master.
 constant opt_summary =
   #"Usage: pike [-driver options] script [script arguments]
 Driver options include:
@@ -18,6 +22,8 @@ Driver options include:
  Use --help=options|environment for further help.
 ";
 
+//! Complete set of options for the Pike interpreter binary, and the
+//! default master.
 constant options_help =
   #"Usage: pike [-driver options] script [script arguments]
 Driver options:
@@ -61,6 +67,7 @@ Driver options:
  -rT                  : Turn on #pragma strict_types for all files.
 ";
 
+//! The set of environment variables that the default master looks at.
 constant environment_help =
 #"The Pike master looks at the following environment variables:
 
@@ -78,15 +85,16 @@ SHORT_PIKE_ERRORS  : If set, only filenames will be used in errors.
 PIKE_BACKTRACE_LEN : Backtraces will be limited to this length (default 200).
 ";
 
+//! Useful recipe for when all else fails.
 constant kladdkaka_help =
 #"Ingredients:
   4 eggs
   5 dl sugar
   2 pinches salt
-  6 msk cocoa
+  6 tbs/90 ml cocoa
   200 g melted butter
   3 dl wheat-flour
-  2 tsk vanilla sugar
+  2 tsp/10 ml vanilla sugar
 
 1. Mix everything together
 2. Pour into a greased circular form.
@@ -94,6 +102,7 @@ constant kladdkaka_help =
 4. Serve while it is still hot with whipped cream.
 ";
 
+//! Select a suitable help message.
 string do_help(string|int what) {
   if( intp(what) ) return opt_summary;
   what -= "-";

@@ -1,6 +1,4 @@
 /* XImage.pmod
- *
- * $Id$
  */
 
 /*
@@ -20,7 +18,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #pike __REAL_VERSION__
@@ -28,26 +26,28 @@
 // Image --> X module.
 // Needs: Pike 0.6
 
+//! Handles Image.Image to XImage conversions.
+//!
+//! The @[XImage] class behaves more or less exactly like an
+//! Image.Image, but it keeps itself synchronized with the server if
+//! so needed.
 
-// Base class.
-// FIXME: Why not inherit Image.Image directly?
-// Guess five times... /Per
 class Image_wrapper
+//! Wrapper for Image.Image that keeps track of the modifications done.
 {
   class funcall
   {
     function f;
-    
     mixed `()( mixed ... args )
     {
       mixed q = f( @args );
       if(objectp(q)) set_image( q );
       return q;
     }
-    
+
     void create(function q) { f = q; }
   }
-  
+
   object image; // The real image.
 
   void clear_caches(int x, int y, int width, int height)
@@ -94,10 +94,10 @@ class Image_wrapper
       return x;
     return funcall(image[ind]);
   }
-  
 }
 
 class XImage
+//!
 {
   inherit Image_wrapper;
   import Protocols.X;
@@ -108,21 +108,26 @@ class XImage
   object /*(Types.Colormap)*/ colormap;
   Image.Colortable ccol;
   object /*(Types.GC)*/ dgc;
+  //!
 
+  //!
   int best;
 
   int depth, bpp;
   function converter;
   int linepad, swapbytes;
   int rmask, gmask, bmask;
+  //!
 
   int offset_x, offset_y;
-  
+  //!
+
   void set_render(string type)
   {
     if(type == "best") best=1;
   }
 
+  //!
   Image.Colortable allocate_colortable()
   {
 //     werror("Allocating colortable\n");
@@ -132,7 +137,7 @@ class XImage
     else
       wanted = image->select_colors( 32 );
 
-    if(sizeof(wanted) < 10) 
+    if(sizeof(wanted) < 10)
     {
       object i = Image.Image(100,100);
       i->tuned_box(0,0, 100, 50,
@@ -171,12 +176,13 @@ class XImage
 //  werror(sprintf("colortable: %O\n", res));
     return ct;
   }
-  
+
   void clear_caches(int x, int y, int width, int height)
   {
     // no inteligence yet...
   }
 
+  //!
   void redraw(int x, int y, int width, int height)
   {
     int max_pixels = ((window->display->maxRequestSize - 64)*32) / bpp;
@@ -211,7 +217,7 @@ class XImage
       object mimg = image->copy(x,y,x+width-1,y+slice-1);
       if(rmask)
       {
-	string data = 
+	string data =
 	  converter(mimg,bpp,linepad,swapbytes,rmask,gmask,bmask,
 		    @(ccol?({ccol}):({})));
 
@@ -229,11 +235,13 @@ class XImage
     }
   }
 
+  //!
   void set_window(object w)
   {
     set_drawable(w);
   }
 
+  //!
   void set_drawable(object w)
   {
     window = w;
@@ -265,7 +273,7 @@ class XImage
       colormap = w->colormap;
     else
       colormap = root->defaultColorMap;
-    
+
     swapbytes = !w->display->imageByteOrder;
     rmask = visual->redMask;
     gmask = visual->greenMask;
@@ -280,7 +288,7 @@ class XImage
 	linepad = format->scanLinePad;
 	break;
       }
-    
+
     switch(_Xlib.visual_classes[visual->c_class])
     {
      case "StaticGray":
@@ -308,23 +316,26 @@ class XImage
        converter = Image.X.encode_truecolor_masks;
        break;
      case "DirectColor":
-       error("Cannot handle Direct Color visual yet."); 
+       error("Cannot handle Direct Color visual yet.");
        break;
     }
     dgc = window->CreateGC();
   }
 
+  //!
   void set_offset(int x, int y)
   {
     offset_x = x;
     offset_y = y;
   }
-}  
-  
-// Steels a few callbacks from the window.
+}
+
+// Steals a few callbacks from the window.
 
 class WindowImage
+//! A version of XImage that redraws itself at need
 {
+
   inherit XImage;
 
   void exposed(mixed event)
@@ -350,6 +361,7 @@ class WindowImage
 }
 
 class PixmapImage
+//! A pixmap (much like XImage, but stored in the server)
 {
   inherit XImage;
   import Protocols.X;
@@ -361,15 +373,16 @@ class PixmapImage
   }
 }
 
+//! Convert an alpha channel to a shaped-window extension mask
 object MakeShapeMask(object in, object alpha)
 {
   object shape = in->CreatePixmap(alpha->xsize(),alpha->ysize(),1);
   mapping f;
   foreach(in->display->formats, f) if(f->depth == 1) break;
-  shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(), 
-		   Image.X.encode_truecolor( alpha->invert(), 
+  shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(),
+		   Image.X.encode_truecolor( alpha->invert(),
 					     1, f->scanLinePad,
-					     !in->display->bitmapBitOrder, 
+					     !in->display->bitmapBitOrder,
 					     1, 0, 0, 0, 0, 0), 0);
   return shape;
 }
@@ -380,7 +393,7 @@ object SimplePixmapImage(object in, object color, int|void ocol)
 {
   int width = color->xsize();
   int height = color->ysize();
-  if(!ocol) 
+  if(!ocol)
     spcm = 0;
   object bgpm = in->CreatePixmap(width, height, in->depth);
   object pi = PixmapImage( bgpm, spcm );
@@ -390,7 +403,10 @@ object SimplePixmapImage(object in, object color, int|void ocol)
   return bgpm;
 }
 
-void ShapedWindowImage(object in, object color, object|void alpha, 
+//! Make the window @[in] display the image, with a mask shaped
+//! according to alpha, and optionally with a colored border aound the
+//! mask.
+void ShapedWindowImage(object in, object color, object|void alpha,
 		       int|void contour)
 {
   int width = color->xsize();
@@ -404,10 +420,10 @@ void ShapedWindowImage(object in, object color, object|void alpha,
     mapping f;
     object shape = in->CreatePixmap(alpha->xsize(),alpha->ysize(),1);
     foreach(in->display->formats, f) if(f->depth == 1) break;
-    shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(), 
-		     Image.X.encode_truecolor( alpha->invert(), 
+    shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(),
+		     Image.X.encode_truecolor( alpha->invert(),
 					       1, f->scanLinePad,
-					       !in->display->bitmapBitOrder, 
+					       !in->display->bitmapBitOrder,
 					       1, 0, 0, 0, 0, 0), 0);
     in->ShapeMask("both", 0, 0, "set", shape);
     if(contour)
@@ -416,7 +432,7 @@ void ShapedWindowImage(object in, object color, object|void alpha,
       in->ShapeMask("bounding", -1, 1, "union", shape);
       in->ShapeMask("bounding", 1, -1, "union", shape);
       in->ShapeMask("bounding", 1, 1, "union", shape);
-    
+
       in->ShapeMask("bounding", 1, 0, "union", shape);
       in->ShapeMask("bounding", 0, 1, "union", shape);
       in->ShapeMask("bounding", -1, 0, "union", shape);

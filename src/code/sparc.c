@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -423,7 +422,7 @@ static void sparc_incr_mark_sp(int delta)
   SPARC_ADD(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_MARK_SP,
 	    sizeof(void *)*delta, 1);
   sparc_codegen_state |= SPARC_CODEGEN_MARK_SP_NEEDS_STORE;
-}    
+}
 
 static void sparc_mark(ptrdiff_t off)
 {
@@ -478,12 +477,14 @@ static void sparc_push_int(INT_TYPE x, int sub_type)
     SPARC_STX(reg, SPARC_REG_PIKE_SP,
 	      sparc_pike_sp_bias + OFFSETOF(svalue, u.integer), 1);
   }
-  if (x != type_word) {
+  if (!type_word) {
+    reg = SPARC_REG_G0;
+  } else if (x != type_word) {
     SET_REG(SPARC_REG_I1, type_word);
+    reg = SPARC_REG_I1;
   }
-  /* This is safe since type_word is never zero. */
-  /* stw %i1, [ %pike_sp ] */
-  SPARC_STW(SPARC_REG_I1, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
+  /* stw %reg, [ %pike_sp ] */
+  SPARC_STW(reg, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
   sparc_pike_sp_bias += sizeof(struct svalue);
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
@@ -493,14 +494,14 @@ static void sparc_clear_string_subtype(void)
   LOAD_PIKE_SP();
   /* lduh [ %pike_sp, %g0 ], %i0 */
   SPARC_LDUH(SPARC_REG_I0, SPARC_REG_PIKE_SP,
-	     sparc_pike_sp_bias + OFFSETOF(svalue, type), 1);
+	     sparc_pike_sp_bias + OFFSETOF(svalue, tu.t.type), 1);
   /* subcc %g0, %i0, 8 */
   SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_I0, PIKE_T_INT, 1);
   /* be,a .+8 */
   SPARC_BE(8, 1);
   /* sth %g0, [ %pike_sp, 2 ] */
   SPARC_STH(SPARC_REG_G0, SPARC_REG_PIKE_SP,
-	    sparc_pike_sp_bias + OFFSETOF(svalue, subtype), 1);
+	    sparc_pike_sp_bias + OFFSETOF(svalue, tu.t.subtype), 1);
 }
 
 static void sparc_push_lfun(unsigned int no)
@@ -644,6 +645,7 @@ static void ins_sparc_debug()
 
 static void low_ins_call(void *addr, int delay_ok, int i_flags)
 {
+  LOAD_PIKE_INTERPRETER();
   SPARC_FLUSH_UNSTORED();
 
   {
@@ -699,7 +701,7 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
   if(b>255)
     Pike_error("Instruction too big %d\n",b);
 #endif
-    
+
   addr = instrs[b].address;
 
 #ifdef PIKE_DEBUG
@@ -822,6 +824,11 @@ void ins_f_byte_with_2_args(unsigned int a,
 
 #define addstr(s, l) low_my_binary_strcat((s), (l), buf)
 #define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
+
+int sparc_force_fp(void)
+{
+  return 0;
+}
 
 void sparc_encode_program(struct program *p, struct dynamic_buffer_s *buf)
 {

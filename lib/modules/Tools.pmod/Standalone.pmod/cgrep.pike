@@ -1,6 +1,5 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id$
 
 #pike __REAL_VERSION__
 
@@ -318,12 +317,12 @@ Text matching:
   -s, --in-string           TEXT is part of a string literal
   -c, --in-comment          TEXT is part of a comment
   -i, --ignore-case         ignore case distinctions
-			    
-Miscellaneous:		    
+
+Miscellaneous:
       --version             print version information and exit
       --help                display this help and exit
-			    
-Output control:		    
+
+Output control:
   -n, --line-number         print line number with output lines
   -H, --with-filename       print the filename for each match
       --verbose             output error messages

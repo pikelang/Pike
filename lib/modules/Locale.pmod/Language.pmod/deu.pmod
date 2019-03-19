@@ -3,7 +3,6 @@
 
 //! German language locale by Tvns Böker.
 
-// $Id$
 
 inherit "abstract";
 
@@ -51,13 +50,13 @@ string date(int timestamp, string|void m)
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
     return "heute, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
     return "gestern, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
     return "morgen, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["year"] != t2["year"])
     return (month(t1["mon"]+1) + " " + (t1["year"]+1900));
 
@@ -96,7 +95,7 @@ string number(int num)
    case 21: case 31: case 41: case 51: case 61: case 71: case 81: case 91:
      return "einund"+number((num/10)*10);
    case 22..29: case 32..39: case 42..49:
-   case 52..59: case 62..69: case 72..79: 
+   case 52..59: case 62..69: case 72..79:
    case 82..89: case 92..99:
      return number(num%10)+"und"+number((num/10)*10);
    case 100..199: return "einhundert"+number(num%100);
@@ -105,7 +104,7 @@ string number(int num)
    case 2000..999999: return number(num/1000)+"tausend"+number(num%1000);
    case 1000000..1999999:
      return "eine Million "+number(num%1000000);
-   case 2000000..999999999: 
+   case 2000000..999999999:
      return number(num/1000000)+" Millionen "+number(num%1000000);
    default:
     return "verdammt viele";

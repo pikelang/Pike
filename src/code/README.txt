@@ -92,6 +92,22 @@ void CALL_MACHINE_CODE(PIKE_OPCODE_T *pc)
 void EXIT_MACHINE_CODE()
 	Clean up from CALL_MACHINE_CODE.
 
+int MACHINE_CODE_FORCE_FP()
+	Kludge to force the C compiler to generate a frame
+	for some opcode functions. This is needed for a few
+	machine code backends.
+
+void START_NEW_FUNCTION(int store_lines)
+	Called at the start of a function. store_lines is true for any
+	non-constant evaluation function. This hook can be used to
+	add common helper subroutines and/or reset code-generator state.
+
+void END_FUNCTION(int store_lines)
+	Called after all f-codes for a function have been emitted.
+	Typically used to clean up after START_NEW_FUNCTION().
+	store_lines will contain the same value as when
+	START_NEW_FUNCTION() was called.
+
 void SET_PROG_COUNTER(PIKE_OPCODE_T *newpc)
 	Set PROG_COUNTER to a new value.
 
@@ -108,11 +124,13 @@ int PIKE_OPCODE_ALIGN;
 
 void INS_ENTRY(void)
 	Mark the entry point from eval_instruction().
-	Useful to add startup code.
+	Useful to add startup code. Note that this in turn
+	will typically require use of OPCODE_INLINE_RETURN.
 
 int ENTRY_PROLOGUE_SIZE
 	Size (in opcodes) of the prologue inserted by INS_ENTRY, which
-	should be skipped e.g. when tail recursing.
+	should be skipped e.g. when tail recursing. Required when
+	INS_ENTRY is used.
 
 void RELOCATE_program(struct program *p, PIKE_OPCODE_T *new);
 	Relocate the copy of 'p'->program at 'new' to be able
@@ -218,5 +236,15 @@ void CHECK_RELOC(size_t reloc, size_t program_size)
 	Check if a relocation is valid for the program.
 	Should throw an error on bad relocations.
 
-void DISASSEMBLE_CODE(void *adrr, size_t bytes)
+void DISASSEMBLE_CODE(void *addr, size_t bytes)
 	Debug function that dumps the generated code on stderr.
+
+Help structures and functions implemented in other places:
+
+struct instr instrs[];
+	Array of bytecode instruction definitions. Indexed by
+	F-opcode minus F_OFFSET. See opcodes.h for details.
+
+PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
+	Function to simplify implementation of F_CATCH in
+	OPCODE_INLINE_RETURN mode. See interpret.c for details.

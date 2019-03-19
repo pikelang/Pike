@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #undef LOW_GET_ARG
@@ -31,7 +30,7 @@
     Pike_fp->pc = PROG_COUNTER++;		\
     goto *instr;		\
   } while(0)
-    
+
 #endif /* PIKE_DEBUG */
 
 #define LOW_GET_ARG()	((INT32)(ptrdiff_t)(*(PROG_COUNTER++)))
@@ -102,6 +101,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
   struct program *p;
   struct object *o;
   struct svalue *s;
+  PIKE_OPCODE_T *addr;
   DO_IF_DEBUG(dynamic_buffer save_buf);
 
 #undef LOCAL_VAR
@@ -138,9 +138,9 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       CASE(F_PREFIX_768); prefix+=768; DONE;
       CASE(F_PREFIX_1024); prefix+=1024; DONE;
       CASE(F_PREFIX_24BITX256);
-        prefix += (pc++)[0]<<24;
+        prefix += (unsigned INT32)(pc++)[0]<<24;
       CASE(F_PREFIX_WORDX256);
-        prefix += (pc++)[0]<<16;
+        prefix += (unsigned INT32)(pc++)[0]<<16;
       CASE(F_PREFIX_CHARX256);
         prefix += (pc++)[0]<<8;
       DONE;
@@ -151,9 +151,9 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       CASE(F_PREFIX2_768); prefix2+=768; DONE;
       CASE(F_PREFIX2_1024); prefix2+=1024; DONE;
       CASE(F_PREFIX2_24BITX256);
-        prefix2 += (pc++)[0]<<24;
+        prefix2 += (unsigned INT32)(pc++)[0]<<24;
       CASE(F_PREFIX2_WORDX256);
-        prefix2 += (pc++)[0]<<16;
+        prefix2 += (unsigned INT32)(pc++)[0]<<16;
       CASE(F_PREFIX2_CHARX256);
         prefix2 += (pc++)[0]<<8;
       DONE;
@@ -230,14 +230,14 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #include "interpret_functions.h"
 
-#ifndef HAVE_COMPUTED_GOTO      
+#ifndef HAVE_COMPUTED_GOTO
     default:
       Pike_fatal("Strange instruction %ld\n",(long)instr);
     }
 #endif /* !HAVE_COMPUTED_GOTO */
   }
 
-  /* NOT_REACHED */
+  UNREACHABLE();
 
 #ifdef HAVE_COMPUTED_GOTO
 
@@ -353,8 +353,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #ifdef PIKE_DEBUG
     if (sizeof(table) != (F_MAX_OPCODE-F_OFFSET)*sizeof(void *))
       Pike_fatal("opcode_to_label out of sync: 0x%08lx != 0x%08lx\n",
-	    DO_NOT_WARN((long)sizeof(table)),
-	    DO_NOT_WARN((long)((F_MAX_OPCODE-F_OFFSET)*sizeof(void *))));
+            (long)sizeof(table),
+            (long)((F_MAX_OPCODE-F_OFFSET)*sizeof(void *)));
 #endif /* PIKE_DEBUG */
     fcode_to_opcode = table;
     opcode_to_fcode = lookup;

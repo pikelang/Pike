@@ -1,7 +1,5 @@
 // -*- Pike -*-
 
-// $Id$
-
 #pike __REAL_VERSION__
 
 constant version =
@@ -44,30 +42,30 @@ void set_auth(string _username, string _password)
 void set_repository(string _repository)
 {
   repository = _repository;
-} 
+}
 
 //! sets the default repository location (modules.gotpike.org)
 void set_default_repository()
 {
   repository = default_repository;
-} 
+}
 
-//! sets the monger directory to use for working and storing 
+//! sets the monger directory to use for working and storing
 //! configurations.
 void set_directory(string _directory)
 {
   builddir = _directory;
-} 
+}
 
-//! sets the default directory for working and storing configurations 
+//! sets the default directory for working and storing configurations
 //! ($HOME/.monger)
 void set_default_directory()
 {
   builddir = default_builddir;
-} 
+}
 
 //!
-int add_new_version(string module_name, string version, 
+int add_new_version(string module_name, string version,
                     string changes, string license)
 {
   int module_id;
@@ -81,11 +79,11 @@ int add_new_version(string module_name, string version,
   data->license = license;
 
   return x->new_module_version(module_id, version, data, ({username, password}));
-  
+
 }
 
 //!
-int update_version(string module_name, string version, 
+int update_version(string module_name, string version,
                     string|void changes, string|void license)
 {
   int module_id;
@@ -101,7 +99,7 @@ int update_version(string module_name, string version,
     data->license = license;
 
   return x->update_module_version(module_id, version, data, ({username, password}));
-  
+
 }
 
 //!
@@ -117,11 +115,11 @@ int user_change_email(string|void _username, string _newemail)
 {
   object x = xmlrpc_handler(repository);
   if(!_username) _username = username;
-  return x->user_change_email(_username, _newemail, ({username, password}));  
+  return x->user_change_email(_username, _newemail, ({username, password}));
 }
 
 //!
-int set_version_active(string module_name, string version, 
+int set_version_active(string module_name, string version,
                     int active)
 {
   int module_id;
@@ -131,13 +129,13 @@ int set_version_active(string module_name, string version,
 
   module_id=(int)(x->get_module_id(module_name));
 
-  return x->set_module_version_active(module_id, version, active, 
+  return x->set_module_version_active(module_id, version, active,
     ({username, password}));
-  
+
 }
 
 //!
-int set_module_source(string module_name, string version, 
+int set_module_source(string module_name, string version,
                     string filename)
 {
   int module_id;
@@ -153,14 +151,14 @@ int set_module_source(string module_name, string version,
 
   filename = explode_path(filename)[-1];
 
-  return x->set_module_source(module_id, version, filename, 
-    MIME.encode_base64(contents), 
+  return x->set_module_source(module_id, version, filename,
+    MIME.encode_base64(contents),
     ({username, password}));
-  
+
 }
 
 //!
-int set_dependency(string module_name, string version, 
+int set_dependency(string module_name, string version,
                     string dependency, string min_version, string max_version,
                     int(0..1) required)
 {
@@ -172,13 +170,13 @@ int set_dependency(string module_name, string version,
   module_id=(int)(x->get_module_id(module_name));
 
   return x->set_dependency(module_id, version, dependency, min_version,
-    max_version, required, 
+    max_version, required,
     ({username, password}));
-  
+
 }
 
 //!
-int delete_dependency(string module_name, string version, 
+int delete_dependency(string module_name, string version,
                     string dependency, string min_version, string max_version)
 {
   int module_id;
@@ -189,9 +187,9 @@ int delete_dependency(string module_name, string version,
   module_id=(int)(x->get_module_id(module_name));
 
   return x->delete_dependency(module_id, version, dependency, min_version,
-    max_version, 
+    max_version,
     ({username, password}));
-  
+
 }
 
 //!
@@ -207,7 +205,7 @@ array get_dependencies(string module_name, string version)
   array a = x->get_module_dependencies(module_id, version);
   foreach(a, mapping r)
     if(r->dependency == "0") r->dependency = "Pike";
-    else 
+    else
       r->dependency = x->get_module_info((int)(r->dependency))->name;
   return a;
 }
@@ -218,8 +216,8 @@ private mapping get_module_action_data(string name, string|void version)
   int module_id;
   string dv;
 
-  string pike_version = 
-    sprintf("%d.%d.%d", (int)__REAL_MAJOR__, 
+  string pike_version =
+    sprintf("%d.%d.%d", (int)__REAL_MAJOR__,
       (int)__REAL_MINOR__, (int)__REAL_BUILD__);
 
   object x = xmlrpc_handler(repository);
@@ -247,13 +245,13 @@ private mapping get_module_action_data(string name, string|void version)
   else if(version && version!=v)
   {
     write("Requested version %s is not the recommended version.\n"
-          "use --force to force %s of this version.\n", 
+          "use --force to force %s of this version.\n",
           version, my_command);
     exit(1);
   }
   else if(version)
   {
-    write("Selecting requested and recommended version %s for %s.\n", 
+    write("Selecting requested and recommended version %s for %s.\n",
           v, my_command);
     dv=version;
   }
@@ -280,7 +278,7 @@ private void do_download(string name, string|void version)
   {
     write("beginning download of version %s...\n", vi->version);
     array rq = Protocols.HTTP.get_url_nice(vi->download);
-    if(!rq) 
+    if(!rq)
       exit(1, "download error: unable to access download url\n");
     else
     {
@@ -288,7 +286,7 @@ private void do_download(string name, string|void version)
       write("wrote module to file %s (%d bytes)\n", vi->filename, sizeof(rq[1]));
     }
   }
-  else 
+  else
     exit(1, "download error: no download available for this module version.\n");
 }
 
@@ -305,7 +303,7 @@ private void do_install(string name, string|void version)
 
     write("beginning download of version %s...\n", vi->version);
     array rq = Protocols.HTTP.get_url_nice(vi->download);
-    if(!rq) 
+    if(!rq)
       exit(1, "download error: unable to access download url\n");
     else
     {
@@ -313,7 +311,7 @@ private void do_install(string name, string|void version)
       write("wrote module to file %s (%d bytes)\n", vi->filename, sizeof(rq[1]));
     }
   }
-  else 
+  else
     exit(1, "install error: no download available for this module version.\n");
 
   // now we should uncompress the file.
@@ -346,7 +344,7 @@ private void do_install(string name, string|void version)
   if(res)
     exit(1, "install error: untar failed.\n");
   else
-    created->dirs += ({fn[0..sizeof(fn)-5]});  
+    created->dirs += ({fn[0..sizeof(fn)-5]});
 
 
   // change directory to the module
@@ -365,15 +363,15 @@ private void do_install(string name, string|void version)
     builder = Process.create_process(
       ({run_pike}) + pike_args + ({"-x", "module"}) + ({ j }));
     res = builder->wait();
-  
+
     if(res)
     {
       werror("install error: make %s failed.\n\n", j);
 
-      werror("the following files have been preserved in %s:\n\n%s\n\n", 
+      werror("the following files have been preserved in %s:\n\n%s\n\n",
              builddir, created->file * "\n");
 
-      werror("the following directories have been preserved in %s:\n\n%s\n\n", 
+      werror("the following directories have been preserved in %s:\n\n%s\n\n",
              builddir, created->dirs * "\n");
 
       exit(1);
@@ -452,7 +450,7 @@ class xmlrpc_handler
   {
     x = Protocols.XMLRPC.Client(loc);
   }
- 
+
 
   protected class _caller (string n){
 

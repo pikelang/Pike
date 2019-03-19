@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef MACHINE_H
@@ -68,32 +67,14 @@
 /* With this, dmalloc will report leaks made by malloc(3) calls */
 #undef REPORT_ENCAPSULATED_MALLOC
 
-/* Define this to enable atomic svalues */
-#undef ATOMIC_SVALUE
-
-/* Define this to enable the internal Pike security system */
-#undef PIKE_SECURITY
-
-/* Define this to enable experimental facets support */
-#undef WITH_FACETS
-
-/* Define this to enable the internal bignum conversion */
-#undef AUTO_BIGNUM
-
-/* Define this to enable experimental code for multicpu machines */
-#undef PIKE_RUN_UNLOCKED
+/* Define this to simulate dynamic module loading with static modules. */
+#undef USE_SEMIDYNAMIC_MODULES
 
 /* Define this if you want to enable the shared nodes mode of the optimizer. */
 #undef SHARED_NODES
 
-/* Define this if you want to enable the new type checker code. */
-#undef NEW_ARG_CHECK
-
 /* Define this to use the new keypair loop. */
 #undef PIKE_MAPPING_KEYPAIR_LOOP
-
-/* Define this to get portable dumped bytecode. */
-#undef PIKE_PORTABLE_BYTECODE
 
 /* Enable profiling */
 #undef PROFILING
@@ -257,11 +238,11 @@
 /* Define if you have _isnan */
 #undef HAVE__ISNAN
 
+/* Define if you have isfinite */
+#undef HAVE_ISFINITE
+
 /* Define if you have fork */
 #undef HAVE_FORK
-
-/* Define if you have isspace */
-#undef HAVE_ISSPACE
 
 /* Define if you have fpsetmask */
 #undef HAVE_FPSETMASK
@@ -308,43 +289,17 @@
 /* ... by using the RDTSC instruction? */
 #undef OWN_GETHRTIME_RDTSC
 
-/* Define if you have a working, 8-bit-clean memcmp */
-#undef HAVE_MEMCMP
-
 /* Define if it is possible to allocate PROT_EXEC memory with mmap */
 #undef MEXEC_USES_MMAP
 
 /* Define if you have gethostname */
 #undef HAVE_GETHOSTNAME
 
-/* Define if you have memmove.  */
-#ifndef __CHECKER__
-#undef HAVE_MEMMOVE
-#endif
-
-/* Define if you have memmem.  */
-#undef HAVE_MEMMEM
-
-/* Define if you have memset.  */
-#undef HAVE_MEMSET
-
-/* Define if you have memcpy.  */
-#undef HAVE_MEMCPY
-
-/* Define if you have strcoll */
-#undef HAVE_STRCOLL
-
 /* Define this if you have dlopen */
 #undef HAVE_DLOPEN
 
-/* Define if you have ldexp.  */
-#undef HAVE_LDEXP
-
 /* Define if you have rint.  */
 #undef HAVE_RINT
-
-/* Define if you have frexp.  */
-#undef HAVE_FREXP
 
 /* Define if your signals are one-shot */
 #undef SIGNAL_ONESHOT
@@ -395,9 +350,6 @@
 #undef DOUBLE_IS_IEEE_BIG
 #undef DOUBLE_IS_IEEE_LITTLE
 
-/* Define this if strtol exists, and doesn't cut at 0x7fffffff */
-#undef HAVE_WORKING_STRTOL
-
 /* The rest of this file is just to eliminate warnings */
 
 /* define if declaration of strchr is missing */
@@ -432,9 +384,6 @@
 
 /* Assembler prefix for general purpose registers */
 #undef PIKE_CPU_REG_PREFIX
-
-/* Number of possible filedesriptors */
-#define MAX_OPEN_FILEDESCRIPTORS 1024
 
 /* define this if #include <time.h> provides an external int timezone */
 #undef HAVE_EXTERNAL_TIMEZONE
@@ -523,9 +472,6 @@
 /* Define if your OS has the union wait. */
 #undef HAVE_UNION_WAIT
 
-/* Define if you have isgraph */
-#undef HAVE_ISGRAPH
-
 /* Define if your cpp supports the ANSI concatenation operator ## */
 #undef HAVE_ANSI_CONCAT
 
@@ -571,9 +517,6 @@
 /* The last argument to accept() is an ACCEPT_SIZE_T * */
 #define ACCEPT_SIZE_T	int
 
-/* Can we compile in MMX support? */
-#undef TRY_USE_MMX
-
 /* Define if you have the <sys/resource.h> header file.  */
 #undef HAVE_SYS_RESOURCE_H
 
@@ -589,8 +532,11 @@
 /* set this to the modifier type string to print INT64 if that type exists */
 #undef PRINTINT64
 
-/* Define if the compiler understand union initializations. */
+/* Define if the compiler understands union initializations. */
 #undef HAVE_UNION_INIT
+
+/* Define if the compiler has problems with union aliasing. */
+#undef NO_COMBINED_TYPE_SUBTYPE
 
 /* Define when binary --disable-binary is used. */
 #undef DISABLE_BINARY
@@ -644,5 +590,38 @@
  *  3 = works excellently
  */
 #define PIKE_OOB_WORKS -1
+
+/* dlmalloc has mallinfo. */
+#if defined(USE_DL_MALLOC) && !defined(HAVE_MALLINFO)
+#define HAVE_MALLINFO
+
+#if defined (HAVE_MALLOC_H) && defined (HAVE_STRUCT_MALLINFO)
+#include <malloc.h>
+#else /* HAVE_MALLOC_H && HAVE_STRUCT_MALLINFO */
+
+#ifndef MALLINFO_FIELD_TYPE
+#define MALLINFO_FIELD_TYPE size_t
+#endif  /* MALLINFO_FIELD_TYPE */
+
+/* Needed for size_t. */
+#include <stddef.h>
+
+/* dlmalloc definition of struct mallinfo. */
+struct mallinfo {
+  MALLINFO_FIELD_TYPE arena;    /* non-mmapped space allocated from system */
+  MALLINFO_FIELD_TYPE ordblks;  /* number of free chunks */
+  MALLINFO_FIELD_TYPE smblks;   /* always 0 */
+  MALLINFO_FIELD_TYPE hblks;    /* always 0 */
+  MALLINFO_FIELD_TYPE hblkhd;   /* space in mmapped regions */
+  MALLINFO_FIELD_TYPE usmblks;  /* maximum total allocated space */
+  MALLINFO_FIELD_TYPE fsmblks;  /* always 0 */
+  MALLINFO_FIELD_TYPE uordblks; /* total allocated space */
+  MALLINFO_FIELD_TYPE fordblks; /* total free space */
+  MALLINFO_FIELD_TYPE keepcost; /* releasable (via malloc_trim) space */
+};
+
+#endif /* HAVE_USR_INCLUDE_MALLOC_H */
+
+#endif
 
 #endif /* MACHINE_H */

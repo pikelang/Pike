@@ -5,14 +5,14 @@ import .ProtocolTypes;
 /* 0 async-new-text-old */
 array decode_0(array what)
 {
-   return ({ (int) what[0], 
+   return ({ (int) what[0],
 	     TextStatOld(@what[1..]) });
 }
 
 /* 5 async-new-name */
 array decode_5(array what)
 {
-   return ({ (int) what[0], 
+   return ({ (int) what[0],
 	     what[1],
 	     what[2] });
 }

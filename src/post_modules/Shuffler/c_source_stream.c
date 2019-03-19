@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -14,7 +13,6 @@
 #include "fd_control.h"
 #include "backend.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #include "shuffler.h"
@@ -27,8 +25,6 @@
  *           of some kind (network socket, named pipes, stdin etc)
  */
 
-
-static struct program *Fd_ref_program = NULL;
 
 struct fd_source
 {
@@ -60,7 +56,7 @@ static void remove_callbacks( struct source *src )
 }
 
 
-static struct data get_data( struct source *src, off_t len )
+static struct data get_data( struct source *src, off_t UNUSED(len) )
 {
   struct fd_source *s = (struct fd_source *)src;
   struct data res;
@@ -71,7 +67,7 @@ static struct data get_data( struct source *src, off_t len )
   if( s->available ) /* There is data in the buffer. Return it. */
   {
     res.data = s->_buffer;
-    MEMCPY( res.data, s->_read_buffer, res.len );
+    memcpy( res.data, s->_read_buffer, res.len );
     s->available = 0;
     setup_callbacks( src );
   }
@@ -94,7 +90,7 @@ static void free_source( struct source *src )
   free_object(((struct fd_source *)src)->obj);
 }
 
-static void read_callback( int fd, struct fd_source *s )
+static void read_callback( int UNUSED(fd), struct fd_source *s )
 {
   int l;
   remove_callbacks( (struct source *)s );
@@ -120,7 +116,7 @@ static void read_callback( int fd, struct fd_source *s )
       s->skip -= l;
       return;
     }
-    MEMCPY( s->_read_buffer, s->_read_buffer+s->skip, l-s->skip );
+    memcpy( s->_read_buffer, s->_read_buffer+s->skip, l-s->skip );
     l-=s->skip;
     s->skip = 0;
   }
@@ -144,6 +140,19 @@ static void set_callback( struct source *src, void (*cb)( void *a ), void *a )
   s->when_data_cb_arg = a;;
 }
 
+static int is_stdio_file(struct object *o)
+{
+  struct program *p = o->prog;
+  INT32 i = p->num_inherits;
+  while( i-- )
+  {
+    if( p->inherits[i].prog->id == PROG_STDIO_FD_ID ||
+        p->inherits[i].prog->id == PROG_STDIO_FD_REF_ID )
+      return 1;
+  }
+  return 0;
+}
+
 struct source *source_stream_make( struct svalue *s,
 				   INT64 start, INT64 len )
 {
@@ -151,32 +160,19 @@ struct source *source_stream_make( struct svalue *s,
   if(TYPEOF(*s) != PIKE_T_OBJECT)
     return 0;
 
-  if (!Fd_ref_program) {
-    push_text("files.Fd_ref");
-    SAFE_APPLY_MASTER("resolv",1);
-    Fd_ref_program = program_from_svalue(Pike_sp-1);
-    if (!Fd_ref_program) {
-      pop_stack();
-      return 0;
-    }
-    add_ref(Fd_ref_program);
-    pop_stack( );
-  }
-
-  if (!get_storage( s->u.object, Fd_ref_program ) )
+  if(!is_stdio_file(s->u.object))
     return 0;
 
   if (find_identifier("query_fd", s->u.object->prog) < 0)
     return 0;
 
-  res = malloc( sizeof( struct fd_source ) );
+  res = calloc( 1, sizeof( struct fd_source ) );
   if (!res) return NULL;
-  MEMSET( res, 0, sizeof( struct fd_source ) );
 
   apply( s->u.object, "query_fd", 0 );
   res->fd = Pike_sp[-1].u.integer;
   pop_stack();
-  
+
   res->len = len;
   res->skip = start;
 
@@ -192,9 +188,6 @@ struct source *source_stream_make( struct svalue *s,
 
 void source_stream_exit( )
 {
-  if (Fd_ref_program) {
-    free_program( Fd_ref_program );
-  }
 }
 
 void source_stream_init( )

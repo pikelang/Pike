@@ -13,10 +13,10 @@ JAVA_AVAILABLE=0
 LINKER_OPTIONS=""
 
 AC_ARG_WITH(java,  [  --without-java       no support for Java],[],[with_java=yes])
-AC_ARG_WITH(java-include-dir, 
+AC_ARG_WITH(java-include-dir,
 	[  --with-java-include-dir=dir    look for header-files in dir],
 	[pike_java_user_include_directory=$withval])
-AC_ARG_WITH(java-lib-dir, 
+AC_ARG_WITH(java-lib-dir,
 	[  --with-java-lib-dir=dir    look for JRE libs in dir],
 	[pike_java_user_lib_directory=$withval])
 
@@ -291,7 +291,7 @@ if test "x$with_java" = xyes; then
   AC_MSG_CHECKING([for JavaVM (MacOS X)])
   AC_CACHE_VAL(pike_cv_java_javavm, [
     pike_cv_java_javavm=no;
-    for tmp_java_javavm in ../.. .. .; do
+    for tmp_java_javavm in ../.. .. . ../../../../Frameworks/JavaVM.framework/; do
       if test -f "$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM; then
         pike_cv_java_javavm="$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM
       else
@@ -319,7 +319,7 @@ if test "x$with_java" = xyes; then
     AC_SYS_COMPILER_FLAG(-DMACOSX, define_macosx, CPPFLAGS)
   ])
 
-  AC_CHECK_HEADERS(jni.h winbase.h setjmp.h ffi.h ffi/ffi.h libffi/ffi.h)
+  AC_CHECK_HEADERS(jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h)
   AC_CHECK_TYPES([ffi_arg, ffi_sarg],,,[#ifdef HAVE_FFI_H
 #include <ffi.h>
 #else
@@ -361,7 +361,7 @@ if test "x$with_java" = xyes; then
         AC_MSG_RESULT(yes)
       else
         AC_MSG_RESULT(no)
-      fi      
+      fi
     fi
 
     if test x"$pike_cv_java" = xyes; then
@@ -460,9 +460,7 @@ if test "x$with_java" = xyes; then
       AC_TRY_RUN([#ifdef HAVE_JNI_H
 #include <jni.h>
 #endif
-#ifdef HAVE_SETJMP_H
 #include <setjmp.h>
-#endif
 #include <stdio.h>
 #ifdef __NT__
 #include <windows.h>
@@ -567,19 +565,6 @@ if test "x$with_java" = xyes; then
       PIKE_FEATURE(Java,[no (JVM does not work)])
     else
       PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
-
-      if test "$pike_java_ffi" = no; then
-	dnl Try to enable the bundled FFI
-	pike_java_ffi=yes
-	PIKE_LOW_ENABLE_BUNDLE(libffi, [
-	  ac_cv_header_ffi_h
-	  ac_cv_lib_ffi_ffi_prep_closure
-	  ac_cv_type_ffi_arg
-	  ac_cv_type_ffi_sarg
-        ], [
-	  pike_java_ffi=no
-        ])
-      fi
 
       if test "$pike_java_ffi" = no; then
         if test "$pike_cv_java_cpu" = no -o "$pike_cv_java_cpu" = x86_64; then

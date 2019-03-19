@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef THREADS_H
@@ -24,6 +23,7 @@ struct pike_frame;
 #define THREAD_NOT_STARTED -1
 #define THREAD_RUNNING 0
 #define THREAD_EXITED 1
+#define THREAD_ABORTED 2
 
 /* Thread flags */
 #define THREAD_FLAG_TERM	1	/* Pending termination. */
@@ -31,17 +31,20 @@ struct pike_frame;
 
 #define THREAD_FLAG_SIGNAL_MASK	3	/* All of the above. */
 
+#define THREAD_FLAG_INHIBIT	4	/* Inhibit signals. */
+
 /* Debug flags */
 #define THREAD_DEBUG_LOOSE  1	/* Thread is not bound to the interpreter. */
 
 struct thread_state {
   struct Pike_interpreter_struct state;
   struct object *thread_obj;	/* NOTE: Not ref-counted! */
-  struct mapping *thread_local;
+  struct mapping *thread_locals;
   struct thread_state *hashlink, **backlink;
   struct svalue result;
   COND_T status_change;
   THREAD_T id;
+  cpu_time_t interval_start;	/* real_time at THREADS_DISALLOW(). */
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
   cpu_time_t auto_gc_time;
 #endif
@@ -61,7 +64,7 @@ PMOD_EXPORT int low_nt_create_thread(unsigned stack_size,
 				     void *arg,
 				     unsigned *id);
 struct thread_starter;
-struct thread_local;
+struct thread_local_var;
 void low_init_threads_disable(void);
 void init_threads_disable(struct object *o);
 void exit_threads_disable(struct object *o);
@@ -110,6 +113,7 @@ PMOD_EXPORT void th_farm(void (*fun)(void *), void *here);
 PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx);
 PMOD_EXPORT void enable_external_threads(void);
 PMOD_EXPORT void disable_external_threads(void);
+
 /* Prototypes end here */
 #else
 #define pike_thread_yield()

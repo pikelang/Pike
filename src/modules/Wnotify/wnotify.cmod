@@ -1,0 +1,259 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/*! @module System
+ */
+
+/*! @module Wnotify
+ *!
+ *! An interface to Windows filesystem change information.
+ *!
+ */
+
+#include "global.h"
+#include "interpret.h"
+#include "module.h"
+#include "program.h"
+#include "stralloc.h"
+#include "svalue.h"
+#include "threads.h"
+#include "object.h"
+#include "pike_types.h"
+#include "builtin_functions.h"
+
+#include "wnotify_config.h"
+
+#define ADD_ICONST(name) do {                   \
+        add_integer_constant(#name, name, 0);   \
+} while(0);
+
+#ifdef HAVE_FILEAPI_H
+#include <FileAPI.h>
+#endif /* HAVE_FILEAPI_H */
+
+#ifdef HAVE_WINBASE_H
+#include <WinBase.h>
+#endif /* HAVE_WINBASE_H */
+
+#ifndef MAX_LEN
+#define MAX_LEN 255
+#endif /* !MAX_LEN */
+
+DECLARATIONS
+#ifdef HAVE_FINDFIRSTCHANGENOTIFICATION
+
+/*! @class NotificationHandle
+ */
+
+PIKECLASS NotificationHandle
+{
+  CVAR HANDLE handle;
+  PIKEVAR string path;
+  PIKEVAR int watch_subtree;
+  PIKEVAR int filter;
+  PIKEVAR int triggered;
+
+/*! @decl void create(string path, int watch_subtree, int filter)
+ */
+  PIKEFUN void create(string path, int watch_subtree, int filter)
+  {
+    HANDLE h;
+
+    THIS->path = path;
+    add_ref(path);
+    THIS->watch_subtree = watch_subtree;
+    THIS->filter = filter;
+
+    if(string_has_null(path))
+      Pike_error("NotificationHandle: path cannot contain null.\n");
+    if(path->size_shift)
+      Pike_error("NotificationHandle: path cannot be a wide string.\n");
+    if(THIS->path->len > MAX_LEN)
+      Pike_error("NotificationHandle: length of path is too long.\n");
+
+    h = FindFirstChangeNotification(path->str, (BOOL)THIS->watch_subtree, (DWORD)THIS->filter);
+    if(h == INVALID_HANDLE_VALUE)
+      Pike_error("NotificationHandle: failed to create handle.\n");
+    else
+      THIS->handle = h;
+  }
+
+  /*! @decl int get_error()
+   */
+  PIKEFUN int get_error()
+  {
+    RETURN GetLastError();
+  }
+
+  PIKEFUN void read_change()
+  {
+/*
+    BOOL res;
+*/
+    if(!THIS->triggered)
+    {
+      Pike_error("NotificationHandle.read_change(): no change event triggered.\n");
+    }
+
+/*    res = ReadDirectoryChangesW(THIS->handle, );     */
+  }
+
+  INIT
+  {
+  }
+
+  EXIT
+  {
+    if(THIS->path) free_string(THIS->path);
+    if(THIS->handle) FindCloseChangeNotification(THIS->handle);
+  }
+}
+
+/*! @endclass */
+
+/*! @class EventPoller
+ */
+PIKECLASS EventPoller
+{
+  /* Do not meddle with this array; it must be kept in sync with the handles array. */
+  PIKEVAR array phandles
+  flags ID_PRIVATE;
+
+  CVAR HANDLE * handles;
+  CVAR int handles_size;
+  CVAR int handles_used;
+
+  /*! @decl void add_handle(NotificationHandle handle)
+   */
+  PIKEFUN void add_handle(object handle)
+  {
+    void * h;
+    HANDLE nh;
+
+    h = get_storage(handle, Wnotify_NotificationHandle_program);
+    if(!h)
+      Pike_error("add_handle: invalid object type.\n");
+
+    THIS->phandles = append_array(THIS->phandles, &Pike_sp[-args]);
+    nh = OBJ2_WNOTIFY_NOTIFICATIONHANDLE(handle)->handle;
+
+    if(THIS->handles_size <= THIS->handles_used)
+    {
+       int s = THIS->handles_size || 1;
+       THIS->handles = xrealloc(THIS->handles, sizeof(HANDLE) * s * 2);
+    }
+
+    THIS->handles[THIS->handles_used++] = nh;
+  }
+
+  /*! @decl NotificationHandle|int poll(void|float timeout)
+   */
+  PIKEFUN int poll(void|float timeout)
+  {
+    DWORD res;
+    DWORD to;
+
+    if(THIS->handles_used < 1)
+      Pike_error("poll: no paths to monitor.\n");
+
+    if(!timeout || SAFE_IS_ZERO(timeout))
+    {
+       to = INFINITE;
+    }
+    else if(TYPEOF(*timeout) == PIKE_T_FLOAT)
+    {
+      to = (DWORD)timeout->u.float_number * 1000;
+    }
+    else
+    {
+      Pike_error("poll: invalid timeout.\n");
+    }
+
+    pop_n_elems(args);
+
+    res = WaitForMultipleObjects(THIS->handles_used, THIS->handles, FALSE, to);
+
+    if(res >= WAIT_OBJECT_0 && res <= (WAIT_OBJECT_0 + THIS->handles_used - 1))
+    {
+      /* we have a hit. */
+      struct svalue * sv;
+      sv = THIS->phandles->item+res;
+      /* TODO: proper value checking of the items in the array! */
+      OBJ2_WNOTIFY_NOTIFICATIONHANDLE(sv->u.object)->triggered = 1;
+      push_svalue(&ITEM(THIS->phandles)[res]);
+      FindNextChangeNotification(THIS->handles+res);
+    }
+    else if(res >= WAIT_ABANDONED_0 && res <= (WAIT_ABANDONED_0 + THIS->handles_used - 1))
+    {
+      /* don't think this applies to us, so let's flag an exception. */
+      Pike_error("poll: unexpected result (WAIT_ABANDONED)\n");
+    }
+    else if(res == WAIT_TIMEOUT)
+    {
+      push_int(0);
+    }
+  }
+
+  INIT
+  {
+    THIS->phandles = allocate_array(0);
+  }
+
+  EXIT
+  {
+    if(THIS->handles)
+      free(THIS->handles);
+    if(THIS->phandles)
+      free_array(THIS->phandles);
+  }
+}
+
+/*! @endclass */
+
+#endif /* HAVE_FINDFIRSTCHANGENOTIFICATION */
+
+PIKE_MODULE_INIT
+{
+  INIT;
+/*! @decl constant FILE_NOTIFY_CHANGE_FILE_NAME
+ */
+
+/*! @decl constant FILE_NOTIFY_CHANGE_DIR_NAME
+ */
+
+/*! @decl constant FILE_NOTIFY_CHANGE_ATTRIBUTES
+ */
+
+/*! @decl constant FILE_NOTIFY_CHANGE_SIZE
+ */
+
+/*! @decl constant FILE_NOTIFY_CHANGE_LAST_WRITE
+ */
+
+/*! @decl constant FILE_NOTIFY_CHANGE_SECURITY
+ */
+
+#ifdef HAVE_FINDFIRSTCHANGENOTIFICATION
+ ADD_ICONST(FILE_NOTIFY_CHANGE_FILE_NAME);
+ ADD_ICONST(FILE_NOTIFY_CHANGE_DIR_NAME);
+ ADD_ICONST(FILE_NOTIFY_CHANGE_ATTRIBUTES);
+ ADD_ICONST(FILE_NOTIFY_CHANGE_SIZE);
+ ADD_ICONST(FILE_NOTIFY_CHANGE_LAST_WRITE);
+ ADD_ICONST(FILE_NOTIFY_CHANGE_SECURITY);
+#endif /* HAVE_FINDFIRSTCHANGENOTIFICATION */
+
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+}
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */

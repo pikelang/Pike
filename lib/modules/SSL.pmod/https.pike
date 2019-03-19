@@ -1,49 +1,74 @@
 #pike __REAL_VERSION__
+#require constant(SSL.Cipher)
 
-/* $Id$
- *
- * dummy https server
- */
+//! Dummy HTTPS server/client
 
-//! Dummy HTTPS server
+#include "tls.h"
 
+#ifndef PORT
 #define PORT 25678
+#endif
 
-#if constant(SSL.Cipher.CipherAlgorithm)
+#ifndef CIPHER_BITS
+#define CIPHER_BITS	112
+#endif
 
-import Stdio;
+#ifndef RSA_BITS
+#define RSA_BITS	4096
+#endif
 
-inherit SSL.sslport;
+#ifndef DSA_BITS
+#define DSA_BITS	2048
+#endif
 
-string my_certificate = MIME.decode_base64(
-  "MIIBxDCCAW4CAQAwDQYJKoZIhvcNAQEEBQAwbTELMAkGA1UEBhMCREUxEzARBgNV\n"
-  "BAgTClRodWVyaW5nZW4xEDAOBgNVBAcTB0lsbWVuYXUxEzARBgNVBAoTClRVIEls\n"
-  "bWVuYXUxDDAKBgNVBAsTA1BNSTEUMBIGA1UEAxMLZGVtbyBzZXJ2ZXIwHhcNOTYw\n"
-  "NDMwMDUzNjU4WhcNOTYwNTMwMDUzNjU5WjBtMQswCQYDVQQGEwJERTETMBEGA1UE\n"
-  "CBMKVGh1ZXJpbmdlbjEQMA4GA1UEBxMHSWxtZW5hdTETMBEGA1UEChMKVFUgSWxt\n"
-  "ZW5hdTEMMAoGA1UECxMDUE1JMRQwEgYDVQQDEwtkZW1vIHNlcnZlcjBcMA0GCSqG\n"
-  "SIb3DQEBAQUAA0sAMEgCQQDBB6T7bGJhRhRSpDESxk6FKh3iKKrpn4KcDtFM0W6s\n"
-  "16QSPz6J0Z2a00lDxudwhJfQFkarJ2w44Gdl/8b+de37AgMBAAEwDQYJKoZIhvcN\n"
-  "AQEEBQADQQB5O9VOLqt28vjLBuSP1De92uAiLURwg41idH8qXxmylD39UE/YtHnf\n"
-  "bC6QS0pqetnZpQj1yEsjRTeVfuRfANGw\n");
+#ifndef KE_MODE
+#define KE_MODE		1
+#endif
 
-string my_key = MIME.decode_base64(
-  "MIIBOwIBAAJBAMEHpPtsYmFGFFKkMRLGToUqHeIoqumfgpwO0UzRbqzXpBI/PonR\n"
-  "nZrTSUPG53CEl9AWRqsnbDjgZ2X/xv517fsCAwEAAQJBALzUbJmkQm1kL9dUVclH\n"
-  "A2MTe15VaDTY3N0rRaZ/LmSXb3laiOgBnrFBCz+VRIi88go3wQ3PKLD8eQ5to+SB\n"
-  "oWECIQDrmq//unoW1+/+D3JQMGC1KT4HJprhfxBsEoNrmyIhSwIhANG9c0bdpJse\n"
-  "VJA0y6nxLeB9pyoGWNZrAB4636jTOigRAiBhLQlAqhJnT6N+H7LfnkSVFDCwVFz3\n"
-  "eygz2yL3hCH8pwIhAKE6vEHuodmoYCMWorT5tGWM0hLpHCN/z3Btm38BGQSxAiAz\n"
-  "jwsOclu4b+H8zopfzpAaoB8xMcbs0heN+GNNI0h/dQ==\n");
+#ifndef HOST
+#define HOST	"127.0.0.1"
+#endif
 
-class conn {
-  import Stdio;
+class MyContext
+{
+  inherit SSL.Context;
 
-  object sslfile;
+  SSL.Alert alert_factory(.Connection con,
+			  int level, int description,
+			  SSL.Constants.ProtocolVersion version,
+			  string|void message)
+  {
+    if (message && description) {
+      werror("ALERT [%s: %d:%d]: %s",
+	     SSL.Constants.fmt_version(version),
+	     level, description, message);
+    }
+    return ::alert_factory(con, level, description, version, message);
+  }
+}
 
-  string message = "<html><head><title>SSL-3 server</title></head>\n"
-  "<body><h1>This is a minimal SSL-3 http server</h1>\n"
-  "<hr><it>/nisse</it></body></html>\n";
+#ifndef HTTPS_CLIENT
+SSL.Port port;
+
+void my_accept_callback(SSL.File f)
+{
+  Conn(port->accept());
+}
+#endif
+
+class Conn (SSL.File sslfile)
+{
+  string message =
+    "HTTP/1.0 200 Ok\r\n"
+    "Connection: close\r\n"
+    "Content-Length: 132\r\n"
+    "Content-Type: text/html; charset=ISO-8859-1\r\n"
+    "Date: Thu, 01 Jan 1970 00:00:01 GMT\r\n"
+    "Server: Bare-Bones\r\n"
+    "\r\n"
+    "<html><head><title>SSL-3 server</title></head>\n"
+    "<body><h1>This is a minimal SSL-3 http server</h1>\n"
+    "<hr><it>/nisse</it></body></html>\n";
   int index = 0;
 
   void write_callback()
@@ -59,109 +84,142 @@ class conn {
     if (index == sizeof(message))
       sslfile->close();
   }
-  
+
   void read_callback(mixed id, string data)
   {
-#ifdef SSL3_DEBUG
-    werror("Received: '" + data + "'\n");
-#endif
+    SSL3_DEBUG_MSG("Received: '" + data + "'\n");
     sslfile->set_write_callback(write_callback);
   }
 
-  protected void create(object f)
+  protected void create()
   {
-    sslfile = f;
     sslfile->set_nonblocking(read_callback, 0, 0);
   }
 }
 
-class no_random {
-  object arcfour = Crypto.Arcfour();
-  
-  protected void create(string|void secret)
+class Client
+{
+  constant request =
+    "HEAD / HTTP/1.0\r\n"
+    "Host: " HOST ":" + PORT + "\r\n"
+    "\r\n";
+
+  SSL.File ssl;
+  int sent;
+
+  void write_cb()
   {
-    if (!secret)
-      secret = sprintf("Foo!%4c", time());
-    arcfour->set_encrypt_key(Crypto.SHA1->hash(secret));
+    int bytes = ssl->write(request[sent..]);
+    if (bytes > 0) {
+      sent += bytes;
+    } else if (sent < 0) {
+      exit(1, "Failed to write data: %s.\n", strerror(ssl->errno()));
+    }
+    if (sent == sizeof(request)) {
+      ssl->set_write_callback(UNDEFINED);
+    }
   }
 
-  string read(int size)
+  void got_data(mixed ignored, string data)
   {
-    return arcfour->crypt(replace(allocate(size), 0, "\021") * "");
+    werror("Data: %O\n", data);
+  }
+
+  void con_closed()
+  {
+    exit(0, "Connection closed.\n");
+  }
+
+  protected void create(Stdio.File con)
+  {
+    SSL.Context ctx = MyContext();
+    // Make sure all cipher suites are available.
+    ctx->preferred_suites = ctx->get_suites(-1, 2);
+    werror("Starting\n");
+    ssl = SSL.File(con, ctx);
+    ssl->connect();
+    ssl->set_nonblocking(got_data, write_cb, con_closed);
   }
 }
 
-/* PKCS#1 Private key structure:
-
-RSAPrivateKey ::= SEQUENCE {
-  version Version,
-  modulus INTEGER, -- n
-  publicExponent INTEGER, -- e
-  privateExponent INTEGER, -- d
-  prime1 INTEGER, -- p
-  prime2 INTEGER, -- q
-  exponent1 INTEGER, -- d mod (p-1)
-  exponent2 INTEGER, -- d mod (q-1)
-  coefficient INTEGER -- (inverse of q) mod p }
-
-Version ::= INTEGER
-
-*/
-
-void my_accept_callback(object f)
+string common_name;
+void make_certificate(SSL.Context ctx, Crypto.Sign key, void|Crypto.Hash hash)
 {
-  werror("Accept!\n");
-  conn(accept());
+  mapping attrs = ([
+    "organizationName" : "Test",
+    "commonName" : common_name,
+  ]);
+  string cert = Standards.X509.make_selfsigned_certificate(key, 3600*24, attrs, 0, hash);
+  ctx->add_cert(key, ({ cert }), ({ "*" }));
 }
 
 int main()
 {
-#ifdef SSL3_DEBUG
-  werror("Cert: '%s'\n", Crypto.string_to_hex(my_certificate));
-  werror("Key:  '%s'\n", Crypto.string_to_hex(my_key));
-//  werror("Decoded cert: %O\n", SSL.asn1.ber_decode(my_certificate)->get_asn1());
-#endif
-#if 0
-  array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
-#ifdef SSL3_DEBUG
-  werror("Decoded key: %O\n", key);
-#endif
-  object n = key[1][1];
-  object e = key[2][1];
-  object d = key[3][1];
-  object p = key[4][1];
-  object q = key[5][1];
+#ifdef HTTPS_CLIENT
+  Stdio.File con = Stdio.File();
+  if (!con->connect(HOST, PORT))
+    exit(1, "Failed to connect to server: %s.\n", strerror(con->errno()));
 
-  werror("n =  %s\np =  %s\nq =  %s\npq = %s\n",
-	 n->digits(), p->digits(), q->digits(), (p*q)->digits());
+  Client(con);
+  return -1;
+#else
+  SSL.Context ctx = MyContext();
 
-  rsa = Crypto.RSA();
-  rsa->set_public_key(n, e);
-  rsa->set_private_key(d);
-#else /* !0 */
-  // FIXME: Is this correct?
-  rsa = Standards.PKCS.RSA.parse_private_key(my_key);
-#endif /* 0 */
-  certificates = ({ my_certificate });
-  random = no_random()->read;
+  Crypto.Sign key;
+
+  common_name = gethostname();
+  common_name = (gethostbyname(common_name) || ({ common_name }))[0];
+  werror("Common name: %O\n", common_name);
+
+  werror("Generating RSA certificate (%d bits)...\n", RSA_BITS);
+  key = Crypto.RSA()->generate_key(RSA_BITS);
+  make_certificate(ctx, key);
+
+  // Compat with OLD clients.
+  make_certificate(ctx, key, Crypto.SHA1);
+
+
+  werror("Generating DSA certificate (%d bits)...\n", DSA_BITS);
+
+  catch {
+    // NB: Not all versions of Nettle support q sizes other than 160.
+    key = Crypto.DSA()->generate_key(DSA_BITS, 256);
+    make_certificate(ctx, key);
+  };
+
+  // Compat with OLD clients.
+  //
+  // The old FIPS standard maxed out at 1024 & 160 bits with SHA-1.
+  key = Crypto.DSA()->generate_key(1024, 160);
+  make_certificate(ctx, key, Crypto.SHA1);
+
+#if constant(Crypto.ECC.Curve)
+  werror("Generating ECDSA certificate (%d bits)...\n", 521);
+
+  key = Crypto.ECC.SECP_521R1.ECDSA()->generate_key();
+  make_certificate(ctx, key, Crypto.SHA512);
+  make_certificate(ctx, key, Crypto.SHA256);
+
+  // Compat with OLD clients.
+  //
+  // Unlikely to be needed, but the cost is minimal.
+  make_certificate(ctx, key, Crypto.SHA1);
+#endif
+
+  // Make sure all cipher suites are available.
+  ctx->preferred_suites = ctx->get_suites(CIPHER_BITS, KE_MODE);
+  SSL3_DEBUG_MSG("Cipher suites:\n%s",
+                 .Constants.fmt_cipher_suites(ctx->preferred_suites));
+
+  SSL3_DEBUG_MSG("Certs:\n%O\n", ctx->get_certificates());
+
+  port = SSL.Port(ctx);
+
   werror("Starting\n");
-  if (!bind(PORT, my_accept_callback))
-  {
-    perror("");
-    return 17;
-  }
-  else
-    return -17;
-}
+  if (!port->bind(PORT, my_accept_callback, NetUtils.ANY))
+    exit(1, "Failed to bind port %d.\n", PORT);
 
-protected void create()
-{
-#ifdef SSL3_DEBUG
-  werror("https->create\n");
+  werror("Listening on port %d.\n", PORT);
+  return -1;
 #endif
-  sslport::create();
 }
-
-#else // constant(SSL.Cipher.CipherAlgorithm)
-constant this_program_does_not_exist = 1;
-#endif

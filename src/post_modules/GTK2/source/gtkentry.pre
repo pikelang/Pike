@@ -104,7 +104,10 @@ int get_has_frame();
 
 require gtk216;
 void set_icon_from_pixbuf(int icon_pos,GDK2.Pixbuf b);
+//! Set the icon from the given in-memory image.
+
 void set_icon_from_stock(int icon_pos,string id);
+//! Set the icon using a stock icon.
 endrequire;
 
 require gtk210;

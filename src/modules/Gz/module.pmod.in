@@ -1,10 +1,10 @@
 // -*- pike -*-
-// $Id$
 #pike __REAL_VERSION__
-
-#if constant(@module@)
+#require constant(@module@)
 
 inherit @module@;
+
+#define DATA_CHUNK_SIZE 64*1024
 
 //! Low-level implementation of read/write support for GZip files
 class _file {
@@ -69,8 +69,8 @@ class _file {
 
     if(sizeof(buf))
       fill_read_buffer(buf);
-    
-    return 1;    
+
+    return 1;
   }
 
   protected int make_header()
@@ -121,7 +121,7 @@ class _file {
 	return 0;
     }
     return write_mode? make_header() : check_header();
-  }  
+  }
 
   //! Opens a gzip file for reading.
   protected void create(void|string|Stdio.Stream gzFile, void|string mode)
@@ -131,7 +131,7 @@ class _file {
   }
 
   //! closes the file
-  //! @returns 
+  //! @returns
   //!  1 if successful
   int close()
   {
@@ -187,7 +187,7 @@ class _file {
 
   //! Reads len (uncompressed) bytes from the file.
   //! If read is unsuccessful, 0 is returned.
-  int|string read(int len)  
+  int|string read(int len)
   {
     while(sizeof(read_buf) < len)
       if(!fill_read_buffer())
@@ -199,7 +199,7 @@ class _file {
   }
 
   //! Writes the data to the file.
-  //! @returns 
+  //! @returns
   //!  the number of bytes written to the file.
   int write(string data)
   {
@@ -221,7 +221,7 @@ class _file {
   //!   SEEK_SET = set current position in file to pos
   //!   SEEK_CUR = new position is current+pos
   //!   SEEK_END is not supported.
-  //! @returns 
+  //! @returns
   //!   New position or negative number if seek failed.
   int seek(int pos, void|int type)
   {
@@ -266,14 +266,14 @@ class _file {
     }
   }
 
-  //! @returns 
+  //! @returns
   //!  the current position within the file.
   int tell()
   {
     return file_pos;
   }
 
-  //! @returns 
+  //! @returns
   //!  1 if EOF has been reached.
   int(0..1) eof()
   {
@@ -377,7 +377,7 @@ class File {
   //! @enddl
   //! For the wb and ab mode, additional parameters may
   //! be specified. Please se zlib manual for more info.
-  //! @returns 
+  //! @returns
   //!  non-zero if successful.
   int open(string|int|Stdio.Stream file, void|string mode) {
     string open_mode="rb";
@@ -406,13 +406,31 @@ class File {
     String.Buffer buf = String.Buffer();
     string data;
     do {
-      if (!(data = ::read(1024*64))) break;
+      if (!(data = ::read(DATA_CHUNK_SIZE))) break;
       buf->add(data);
     } while (sizeof(data));
     return (string)buf;
   }
-}
 
-#else
-constant this_program_does_not_exist = 1;
-#endif // constant(@module@)
+
+  function(:string) read_function(int nbytes)
+  //! Returns a function that when called will call @[read] with
+  //! nbytes as argument. Can be used to get various callback
+  //! functions, eg for the fourth argument to
+  //! @[String.SplitIterator].
+  {
+    return lambda(){ return ::read(nbytes); };
+  }
+
+  String.SplitIterator|Stdio.LineIterator line_iterator( int|void trim )
+  //! Returns an iterator that will loop over the lines in this file.
+  //! If trim is true, all @tt{'\r'@} characters will be removed from
+  //! the input.
+  {
+    if( trim )
+      return String.SplitIterator( "",(<'\n','\r'>),1,
+				   read_function(DATA_CHUNK_SIZE));
+    // This one is about twice as fast, but it's way less flexible.
+    return Stdio.LineIterator( read_function(DATA_CHUNK_SIZE) );
+  }
+}

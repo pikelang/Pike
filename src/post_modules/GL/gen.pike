@@ -333,7 +333,7 @@ array(string) gen_func(string name, string ty)
     if(polya<0)
       res += (vret?"  res=":"  ")+fu+"("+(args*",")+");\n";
     else
-      res += "  switch("+args[polya]+".type) {\n"+
+      res += "  switch(TYPEOF("+args[polya]+")) {\n"+
 	Array.map(argt[polya]/"|", lambda(string t) 
 				   {
 				     array(string) a = copy_value(args);
@@ -503,7 +503,7 @@ string gen()
 
 void main(int argc, array(string) argv)
 {
-  array(string) f = Stdio.File("stdin")->read()/"@@";
+  array(string) f = Stdio.File((argc>1?argv[1]:"stdin"))->read()/"@@";
   write(({
     "#line 1 \"auto.c.in\"\n",
     f[0],

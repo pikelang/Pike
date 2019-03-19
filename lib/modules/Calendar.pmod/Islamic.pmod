@@ -1,10 +1,10 @@
 #pike __REAL_VERSION__
 
 //! This is the islamic calendar. Due to some sources,
-//! they decide the first day of the new months on a 
+//! they decide the first day of the new months on a
 //! month-to-month basis (sightings of the new moon),
 //! so it's probably not @i{that@} accurate. If
-//! someone can confirm (or deny) accuracy better than that, 
+//! someone can confirm (or deny) accuracy better than that,
 //! please contact me so I can change this statement.
 //!
 //! It's vaugely based on rules presented in algorithms by
@@ -55,7 +55,7 @@ array(int) year_from_julian_day(int jd)
 {
 // [y,yjd]
    jd-=1948440;
-   int tr=jd/10631; 
+   int tr=jd/10631;
    int td=jd-tr*10631;
    int y=(14+td*30)/10631+tr*30+1;
 
@@ -84,7 +84,7 @@ protected array(int) year_month_from_month(int y,int m)
       case 10: return ({y,m,29,267});
       case 11: return ({y,m,30,296});
       case 12: return ({y,m,29+year_leap_year(y),326});
-   }			       
+   }
 
    error("Month out of range.\n");
 }
@@ -108,7 +108,7 @@ protected array(int) month_from_yday(int y,int yd)
       case 267..295: return ({10,yd-266,29,267});
       case 296..325: return ({11,yd-295,30,296});
       case 326..:    return ({12,yd-326,29+year_leap_year(y),326});
-   }			       
+   }
 
    error("yday out of range.\n");
 }
@@ -161,7 +161,7 @@ class cYear
       {
 	 case 0: return 0;
 	 case 1: return 354+leap_year();
-	 default: 
+	 default:
 	    return julian_day_from_year(y+n)-yjd;
       }
    }
@@ -175,7 +175,7 @@ class cYear
    {
       if (!n) return 1;
 //        if (n==1) return 51;
-      return 
+      return
 	 Week("julian",jd)
 	 ->range(Week("julian",julian_day_from_year(y+n)-1))
 	 ->number_of_weeks();

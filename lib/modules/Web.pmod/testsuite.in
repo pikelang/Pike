@@ -1,6 +1,4 @@
 START_MARKER
-test_true([["$Id$"]]);
-
 
 // - Web.RDF
 test_any_equal([[
@@ -555,7 +553,7 @@ dnl   <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
 dnl 		   dc:title="RDF/XML Syntax Specification (Revised)">
 dnl     <ex:editor rdf:nodeID="abc"/>
 dnl   </rdf:Description>
-dnl 
+dnl
 dnl   <rdf:Description rdf:nodeID="abc"
 dnl                    ex:fullName="Dave Beckett">
 dnl     <ex:homePage rdf:resource="http://purl.org/net/dajobe/"/>

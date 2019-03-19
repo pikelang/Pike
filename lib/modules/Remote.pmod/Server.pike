@@ -2,6 +2,8 @@
 #include "remote.h"
 import ".";
 
+//! Remote RPC server.
+
 int portno;
 
 //! @decl Stdio.Port port
@@ -56,7 +58,7 @@ void got_connection(object f)
   object con = Connection(0, max_call_threads);
   object ctx = Context(gethostname()+"-"+portno);
   if (!c)
-    error("Failed to accept connection: %s\n", strerror (f->errno()));
+    error("Failed to accept connection: %s.\n", strerror (f->errno()));
   con->start_server(c, ctx);
   ctx->set_server_context(sctx, con);
   connections += ({ con });
@@ -80,10 +82,10 @@ void create(string host, int p, void|int _max_call_threads)
   if(host)
   {
     if(!port->bind(p, got_connection, host))
-      error("Failed to bind port: %s\n", strerror (port->errno()));
+      error("Failed to bind port: %s.\n", strerror (port->errno()));
   }
   else if(!port->bind(p, got_connection))
-    error("Failed to bind port: %s\n", strerror (port->errno()));
+    error("Failed to bind port: %s.\n", strerror (port->errno()));
 
   DEBUGMSG("listening to " + host + ":" + p + "\n");
 

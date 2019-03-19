@@ -2,8 +2,6 @@
  * Storage Manager prototype.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id$
- *
  * All storage managers must provide these methods.
  */
 
@@ -34,7 +32,7 @@ int(0..0)|string next() {
 //! This allows the storage managers to have their own
 //! data class implementation.
 void set(string key, mixed value,
-         void|int max_life, void|float preciousness, 
+         void|int max_life, void|float preciousness,
          void|multiset(string) dependants) {
   T();
 }

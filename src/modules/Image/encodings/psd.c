@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -91,18 +90,16 @@ static unsigned char psd_read_uchar( struct buffer *from )
   return res;
 }
 
-static int psd_read_char( struct buffer *from )
+static int psd_read_schar(struct buffer *from)
 {
-  return (char)psd_read_uchar( from );
+  return (signed char)psd_read_uchar(from);
 }
-
 
 static char *psd_read_data( struct buffer * from, size_t len )
 {
   char *res;
   if( from->len < len )
-    Pike_error("Not enough space for %lu bytes\n",
-	  DO_NOT_WARN((unsigned long)len));
+    Pike_error("Not enough space for %lu bytes\n", (unsigned long)len);
   res = (char *)from->str;
   from->str += len;
   from->len -= len;
@@ -192,29 +189,29 @@ struct layer
   struct buffer name;
 };
 
-static void decode_layers_and_masks( struct psd_image *dst, 
+static void decode_layers_and_masks( struct psd_image *dst,
                                      struct buffer *src )
 {
   short count, first_alpha_is_magic;
   struct layer *layer = NULL;
   ptrdiff_t exp_offset;
-  if(!src->len) 
+  if(!src->len)
     return;
 
   exp_offset = src->len-psd_read_int( src ); /* size of layer region */
   count = psd_read_short( src );
-  
+
   if( count < 0 )
   {
-    count = -count;
+    if (DO_INT16_NEG_OVERFLOW(count, &count))
+        Pike_error("overflow\n");
     first_alpha_is_magic = 1;
   } else if(count == 0)
     return;
   while( count-- )
   {
     unsigned int cnt;
-    struct layer *l=
-      layer = (struct layer *)xcalloc( sizeof( struct layer ), 1);
+    struct layer *l = layer = xcalloc( sizeof( struct layer ), 1);
     layer->next = dst->first_layer;
     if(dst->first_layer) dst->first_layer->prev = layer;
     dst->first_layer = layer;
@@ -222,7 +219,9 @@ static void decode_layers_and_masks( struct psd_image *dst,
     layer->left = psd_read_int( src );
     layer->bottom = psd_read_int( src );
     layer->right = psd_read_int( src );
-    layer->num_channels = psd_read_short( src );
+    layer->num_channels = psd_read_ushort( src );
+    if (layer->num_channels * 6 > src->len)
+      Pike_error("Too many channels.\n");
     for(cnt=0; cnt<layer->num_channels; cnt++)
     {
       layer->channel_info[cnt].id = psd_read_ushort(src);
@@ -276,17 +275,15 @@ static void decode_layers_and_masks( struct psd_image *dst,
 
 
 static struct buffer
-packbitsdecode(struct buffer src, 
-               struct buffer dst, 
-               int nbytes)
+packbitsdecode(struct buffer src,
+               struct buffer dst,
+               size_t nbytes)
 {
   int n;
 
   while( nbytes--  )
   {
-    n = psd_read_uchar( &src );
-    if(n >= 128)
-      n -= 256;
+    n = psd_read_schar( &src );
     if (n > 0)
     {
       ++n;
@@ -318,7 +315,7 @@ packbitsdecode(struct buffer src,
   }
   if(dst.len)
     fprintf(stderr, "%ld bytes left to write! (should be 0)\n",
-	    DO_NOT_WARN((long)dst.len));
+            (long)dst.len);
   return src;
 }
 
@@ -343,12 +340,13 @@ static void f_decode_packbits_encoded(INT32 args)
   b.str = (unsigned char *)src->str;
   b.len = src->len;
   if (compression < 0) {
-    compression = (src->str[0] << 8) | src->str[1];
-    b.str += 2;
-    b.len -= 2;
+    compression = psd_read_ushort(&b);
   }
 
   pop_n_elems(args-1);
+
+  if (nelems < 0 || b.len < (size_t)nelems*2)
+    Pike_error("Not enough space for %d short integers.\n", nelems);
 
   ob = b;
   ob.str += nelems*2;
@@ -357,11 +355,10 @@ static void f_decode_packbits_encoded(INT32 args)
   switch(compression)
   {
    case 1:
-     dest = begin_shared_string( width * nelems );
-     d.str = (unsigned char *)dest->str; d.len = width*nelems;
-/*      while(nelems--) */
-     /*ob =*/ 
-     packbitsdecode( ob, d, width*nelems );
+     d.len = width * nelems;
+     dest = begin_shared_string( d.len );
+     d.str = (unsigned char *)dest->str;
+     packbitsdecode( ob, d, d.len );
      push_string( end_shared_string( dest ) );
      break;
    case 0:
@@ -397,7 +394,7 @@ static void f_decode_image_channel( INT32 args )
   source = (unsigned char *)s->str;
   push_int( w ); push_int( h );
   io = clone_object( image_program, 2 );
-  dst = ((struct image *)get_storage(io,image_program))->img;
+  dst = ((struct image*)get_storage(io,image_program))->img;
   for(y=0; y<w*h; y++)
   {
     dst->r = dst->g = dst->b = *(source++);
@@ -417,7 +414,7 @@ static void f_decode_image_data( INT32 args )
   struct object *io;
   unsigned char *source, *source2, *source3, *source4;
   rgb_group *dst;
-  get_all_args( "_decode_image_data",args, "%i%i%i%i%i%S%S", 
+  get_all_args( "_decode_image_data",args, "%i%i%i%i%i%S%S",
                 &w,&h,&d,&m,&c,&s,&ct);
 
   if(!ct->len) ct = NULL;
@@ -439,7 +436,7 @@ static void f_decode_image_data( INT32 args )
   source4 = source+w*h*3;
   push_int( w ); push_int( h );
   io = clone_object( image_program, 2 );
-  dst = ((struct image *)get_storage(io,image_program))->img;
+  dst = ((struct image*)get_storage(io,image_program))->img;
   for(y=0; y<w*h; y++)
   {
     switch( d )
@@ -503,11 +500,11 @@ static struct psd_image low_psd_decode( struct buffer *b )
   int *s = (int *)b->str;
   struct psd_image i;
   ONERROR err;
-  MEMSET(&i, 0, sizeof(i));
+  memset(&i, 0, sizeof(i));
   SET_ONERROR( err, free_image, &i );
   i.num_channels = psd_read_ushort( b );
   i.rows = psd_read_uint( b );
-  i.columns = psd_read_uint( b ); 
+  i.columns = psd_read_uint( b );
   i.depth = psd_read_ushort( b );
   i.mode = psd_read_ushort( b );
   i.color_data = psd_read_string( b );
@@ -556,7 +553,7 @@ void push_layer( struct layer  *l)
     f_aggregate_mapping( 4 );
   }
   f_aggregate( l->num_channels );
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
+  f_aggregate_mapping((INT32)(sp - osp));
 }
 
 
@@ -582,8 +579,8 @@ void push_psd_image( struct psd_image *i )
     push_layer( l );
     l = l->next;
   }
-  f_aggregate(DO_NOT_WARN((INT32)(sp - tsp)));
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
+  f_aggregate((INT32)(sp - tsp));
+  f_aggregate_mapping((INT32)(sp - osp));
 }
 
 static void decode_resources( struct buffer *b )
@@ -618,17 +615,17 @@ static void decode_resources( struct buffer *b )
       case 0x03f0: /* caption */
 	{
 	  struct buffer b = psd_read_pstring( &data );
-	  push_constant_text( "caption" );
+	  push_static_text( "caption" );
 	  push_buffer( &b );
 	}
 	break;
 
       case 0x0400: /* layer state info */
-	push_constant_text( "active_layer" );
+	push_static_text( "active_layer" );
 	push_int( psd_read_short( &data ) );
 	break;
       case 0x0408: /* guides */
-	push_constant_text( "guides" );
+	push_static_text( "guides" );
 	{
 	  int i,num_guides;
 	  short magic1, magic2, magic3, magic4, magic5, magic6; /*from gimp.*/
@@ -650,8 +647,8 @@ static void decode_resources( struct buffer *b )
 	      p = (ptrdiff_t)((((double)p) * (magic4>>8)) / ((double)(magic4&255)));
 	    else
 	      p = (ptrdiff_t)((((double)p) * (magic6>>8)) / ((double)(magic6&255)));
-	    push_constant_text( "pos" );      push_int64( p );
-	    push_constant_text( "vertical" ); push_int( !h );
+	    push_static_text( "pos" );      push_int64( p );
+	    push_static_text( "vertical" ); push_int( !h );
 	    f_aggregate_mapping( 4 );
 	  }
 	  f_aggregate( num_guides );
@@ -660,20 +657,20 @@ static void decode_resources( struct buffer *b )
       case 0x040b: /* URL */
 	{
 	  struct buffer b = psd_read_pstring( &data );
-	  push_constant_text( "url" );
+	  push_static_text( "url" );
 	  push_buffer( &b );
 	}
 	break;
       case 0x03ed: /* res. info. */
-	push_constant_text( "resinfo" );
+	push_static_text( "resinfo" );
 
-	push_constant_text( "hres" );       push_int(psd_read_int( &data ) );
-	push_constant_text( "hres_unit" );  push_int(psd_read_short( &data ) );
-	push_constant_text( "width_unit" ); push_int(psd_read_short( &data ) );
+	push_static_text( "hres" );       push_int(psd_read_int( &data ) );
+	push_static_text( "hres_unit" );  push_int(psd_read_short( &data ) );
+	push_static_text( "width_unit" ); push_int(psd_read_short( &data ) );
 
-	push_constant_text( "vres" );       push_int(psd_read_int( &data ) );
-	push_constant_text( "vres_unit" );  push_int(psd_read_short( &data ) );
-	push_constant_text( "height_unit" );push_int(psd_read_short( &data ) );
+	push_static_text( "vres" );       push_int(psd_read_int( &data ) );
+	push_static_text( "vres_unit" );  push_int(psd_read_short( &data ) );
+	push_static_text( "height_unit" );push_int(psd_read_short( &data ) );
 
 	f_aggregate_mapping( 12 );
 	break;
@@ -740,24 +737,24 @@ static void decode_resources( struct buffer *b )
 	break;
     }
   }
-  f_aggregate_mapping( DO_NOT_WARN((int)(sp-osp)) );
+  f_aggregate_mapping( (int)(sp-osp) );
 }
 
 static void image_f_psd___decode( INT32 args )
 {
   struct pike_string *s;
   struct buffer b;
-  get_all_args( "Image.PSD.___decode", args, "%S", &s );
+  get_all_args( "___decode", args, "%S", &s );
   if(args > 1)
     pop_n_elems( args-1 );
   if(s->len < 26+4+4+4 ) /* header+color mode+image res+layers */
     Pike_error("This is not a Photoshop PSD file (too short)\n");
-  if(s->str[0] != '8' || s->str[1] != 'B'  
+  if(s->str[0] != '8' || s->str[1] != 'B'
      || s->str[2] != 'P'  || s->str[3] != 'S' )
     Pike_error("This is not a Photoshop PSD file (invalid signature)\n");
   if(s->str[4] || s->str[5] != 1)
     Pike_error("This is not a Photoshop PSD file (invalid version)\n");
-    
+
   b.len = s->len-12;
   b.str = (unsigned char *)s->str+12;
   {
@@ -782,7 +779,7 @@ static void f_apply_cmap( INT32 args )
   get_all_args( "apply_cmap", args, "%o%S", &io, &cmap );
   if(cmap->len < 256*3)
     Pike_error("Invalid colormap resource\n");
-  if(!(i = (struct image *)get_storage( io, image_program )))
+  if(!(i = get_storage( io, image_program )))
     Pike_error("Invalid image object\n");
   n = i->xsize * i->ysize;
   d = i->img;
@@ -795,12 +792,10 @@ static void f_apply_cmap( INT32 args )
     d->b = cmap->str[i+512];
   }
   THREADS_DISALLOW();
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static struct program *image_encoding_psd_program=NULL;
-void init_image_psd()
+void init_image_psd(void)
 {
   ADD_FUNCTION( "___decode", image_f_psd___decode, tFunc(tStr,tMapping), 0);
   ADD_FUNCTION( "___decode_image_channel", f_decode_image_channel,tFunction,0);
@@ -828,7 +823,7 @@ void init_image_psd()
 }
 
 
-void exit_image_psd()
+void exit_image_psd(void)
 {
 #define STRING(X) free_string(PIKE_CONCAT(s_, X))
 #include "psd_constant_strings.h"

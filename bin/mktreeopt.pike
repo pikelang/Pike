@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Generates tree-transformation code from a specification.
  *
  * Henrik Grubbström 1999-11-06
@@ -233,14 +231,20 @@
  */
 
 constant header =
-"/* Tree transformation code.\n"
-" *\n"
-" * This file was generated from %O by\n"
-" * $Id$\n"
-" *\n"
-" * Do NOT edit!\n"
-" */\n"
-"\n";
+#"/* Tree transformation code.
+ *
+ * This file was generated from %O.
+ *
+ * Do NOT edit!
+ */
+
+#ifdef PIKE_DEBUG
+#define DBG(X) if (l_flag>4) { fprintf(stderr, (X)); }
+#else
+#define DBG(X)
+#endif
+
+";
 
 mapping(string: array(object(node))) rules = ([]);
 
@@ -466,6 +470,93 @@ string fix_extras(string s)
   return a * "";
 }
 
+void read_car_cdr(object(node) res, array(string) linepos)
+{
+  int c = data[pos];
+
+  if (c == '(') {
+    string otpos = tpos;
+    pos++;
+
+    tpos = "A"+otpos;
+
+    if (data[pos] == '$') {
+      // FIXME: Support for recurring nodes.
+      // Useful for common subexpression elimination.
+      pos++;
+      int tag = read_int();
+      string ntpos;
+      if (!(ntpos = marks[tag])) {
+	fail("%s:%d: Tag $%d used before being defined.\n",
+	     fname, line, tag);
+      } else if (ntpos == "") {
+	fail("%s:%d: Tag $%d is the root, and can't be used for "
+	     "exact matching.\n",
+	     fname, line, tag);
+      } else {
+	// FIXME: Ought to check that the tag isn't for one of our parents.
+	res->car = res->real_car = sprintf("C%sR(n)", ntpos);
+      }
+      eat_whitespace();
+    } else {
+      res->car = res->real_car = read_node(linepos);
+    }
+
+    expect(',');
+    eat_whitespace();
+
+    tpos = "D"+otpos;
+
+    if (data[pos] == '$') {
+      // FIXME: Support for recurring nodes.
+      // Useful for common subexpression elimination.
+      pos++;
+      int tag = read_int();
+      string ntpos;
+      if (!(ntpos = marks[tag])) {
+	fail("%s:%d: Tag $%d used before being defined.\n",
+	     fname, line, tag);
+      } else if (ntpos == "") {
+	fail("%s:%d: Tag $%d is the root, and can't be used for "
+	     "exact matching.\n",
+	     fname, line, tag);
+      } else {
+	// FIXME: Ought to check that the tag isn't for one of our parents.
+	res->cdr = res->real_cdr = sprintf("C%sR(n)", ntpos);
+      }
+      eat_whitespace();
+    } else {
+      res->cdr = res->real_cdr = read_node(linepos);
+    }
+
+    tpos = otpos;
+    expect(')');
+
+    eat_whitespace();
+  }
+}
+
+constant f_op_name_lookup = ([
+  "F_LT":	"f_lt",
+  "F_GT":	"f_gt",
+  "F_LE":	"f_le",
+  "F_GE":	"f_ge",
+  "F_EQ":	"f_eq",
+  "F_NE":	"f_ne",
+  "F_ADD":	"f_add",
+  "F_SUBTRACT":	"f_subtract",
+  "F_DIVIDE":	"f_divide",
+  "F_MULTIPLY":	"f_multiply",
+  "F_MOD":	"f_mod",
+  "F_LSH":	"f_lsh",
+  "F_RSH":	"f_rsh",
+  "F_OR":	"f_or",
+  "F_AND":	"f_and",
+  "F_XOR":	"f_xor",
+  "F_NOT":	"f_not",
+  "F_COMPL":	"f_compl",
+]);
+
 object(node) read_node(array(string) linepos)
 {
   object(node) res = node();
@@ -548,65 +639,43 @@ object(node) read_node(array(string) linepos)
       eat_whitespace();
       c = data[pos];
     }
-    if (c == '(') {
+
+    string f_op_name = f_op_name_lookup[token];
+    if (f_op_name) {
+      // We need to convert the short-hand notation to
+      // an actual operator call node.
+
+      res->token = "F_APPLY";
+
+      // Match the corresponding constant efun value.
+      node match = node();
+      match->token = "F_CONSTANT";
+      res->car = res->real_car = match;
       string otpos = tpos;
-      pos++;
+      tpos = "A" + tpos;
+      match->extras =
+	map(({
+	      "TYPEOF($$->u.sval) == T_FUNCTION",
+	      "SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN",
+	      "$$->u.sval.u.efun->function == " + f_op_name,
+	    }), fix_extras);
+      tpos = "D" + otpos;
 
-      tpos = "A"+otpos;
+      // Read the arguments (if any) into an F_ARG_LIST node.
+      node args = node();
+      args->token = "F_ARG_LIST";
+      res->cdr = res->real_cdr = args;
 
-      if (data[pos] == '$') {
-	// FIXME: Support for recurring nodes.
-	// Useful for common subexpression elimination.
-	pos++;
-	int tag = read_int();
-	string ntpos;
-	if (!(ntpos = marks[tag])) {
-	  fail("%s:%d: Tag $%d used before being defined.\n",
-	       fname, line, tag);
-	} else if (ntpos == "") {
-	  fail("%s:%d: Tag $%d is the root, and can't be used for "
-	       "exact matching.\n",
-	       fname, line, tag);
-	} else {	
-	  // FIXME: Ought to check that the tag isn't for one of our parents.
-	  res->car = res->real_car = sprintf("C%sR(n)", ntpos);
-	}
-	eat_whitespace();
-      } else {
-	res->car = res->real_car = read_node(linepos);
-      }
-
-      expect(',');
-      eat_whitespace();
-
-      tpos = "D"+otpos;
-
-      if (data[pos] == '$') {
-	// FIXME: Support for recurring nodes.
-	// Useful for common subexpression elimination.
-	pos++;
-	int tag = read_int();
-	string ntpos;
-	if (!(ntpos = marks[tag])) {
-	  fail("%s:%d: Tag $%d used before being defined.\n",
-	       fname, line, tag);
-	} else if (ntpos == "") {
-	  fail("%s:%d: Tag $%d is the root, and can't be used for "
-	       "exact matching.\n",
-	       fname, line, tag);
-	} else {	
-	  // FIXME: Ought to check that the tag isn't for one of our parents.
-	  res->cdr = res->real_cdr = sprintf("C%sR(n)", ntpos);
-	}
-	eat_whitespace();
-      } else {
-	res->cdr = res->real_cdr = read_node(linepos);
-      }
+      read_car_cdr(args, linepos);
 
       tpos = otpos;
-      expect(')');
 
-      eat_whitespace();
+      if (!args->car && !args->cdr) {
+	// No argument matching needed.
+	res->cdr = 0;
+      }
+    } else {
+      read_car_cdr(res, linepos);
     }
 
     if ((res->token == "*") && !sizeof(res->extras) &&
@@ -659,7 +728,7 @@ string fix_action(string s)
     if (sizeof(used_nodes)) {
       pre_cleanup = "\n";
       post_cleanup = "\n  ";
-      foreach(indices(used_nodes), string used_node) {
+      foreach(sort(indices(used_nodes)), string used_node) {
 	pre_cleanup += ("  ADD_NODE_REF2(" + used_node + ",\n")*
 	  used_nodes[used_node];
 	post_cleanup += ")" * used_nodes[used_node];
@@ -822,7 +891,7 @@ void parse_data()
     } else if (data[pos] != ';') {
       object(node) n2 = read_node2();
       // werror(sprintf("\t%s;\n\n", n2));
-      array(string) t = [array(string)]Array.uniq(n2->used_nodes());
+      array(string) t = [array(string)]n2->used_nodes();
 
       string expr = n2->generate_code();
 
@@ -857,11 +926,7 @@ void parse_data()
 			 post_fix_refs);
 	break;
       }
-      action = sprintf("#ifdef PIKE_DEBUG\n"
-		       "  if (l_flag > 4) {\n"
-		       "    fprintf(stderr, \"=> \"%O\"\\n\");\n"
-		       "  }\n"
-		       "#endif /* PIKE_DEBUG */\n", sprintf("%s", n2)) +
+      action = sprintf("DBG(\"=> \"%O\"\\n\");\n", sprintf("%s", n2)) +
 	action;
     } else {
       // Null action.
@@ -875,9 +940,9 @@ void parse_data()
       action = sprintf("#ifdef PIKE_DEBUG\n"
 		       "  if (l_flag > 4) {\n"
 		       "    fprintf(stderr,\n"
-		       "            \"Setting line position to %%s:%%d\\n\",\n"
+		       "            \"Setting line position to %%s:%%ld\\n\",\n"
 		       "            C%sR(n)->current_file->str,\n"
-		       "            C%sR(n)->line_number);\n"
+		       "            (long)C%sR(n)->line_number);\n"
 		       "  }\n"
 		       "#endif /* PIKE_DEBUG */\n"
 		       "c->lex.current_line = C%sR(n)->line_number;\n"
@@ -886,11 +951,7 @@ void parse_data()
 	action;
     }
 
-    action = sprintf("#ifdef PIKE_DEBUG\n"
-		     "  if (l_flag > 4) {\n"
-		     "    fprintf(stderr, \"Match: \"%O\"\\n\");\n"
-		     "  }\n"
-		     "#endif /* PIKE_DEBUG */\n", sprintf("%s", n)) +
+    action = sprintf("DBG(\"Match: \"%O\"\\n\");\n", sprintf("%s", n)) +
       action;
 
     n->action = action;
@@ -938,7 +999,7 @@ constant ANY = 8;
 constant ANY_CAR = 9;
 constant ANY_CDR = 10;
 
-static int label_cnt;
+protected int label_cnt;
 
 int debug;
 
@@ -1065,18 +1126,7 @@ string generate_match(array(object(node)) rule_set, string indent)
       } else {
 	res += indent;
       }
-      res +=
-	sprintf("if ((CA%sR(n) == %s)\n"
-		"#ifdef SHARED_NODES_MK2\n" + indent +
-		"  || (CA%sR(n) && %s &&\n" + indent +
-		"      ((CA%sR(n)->master?CA%sR(n)->master:CA%sR(n))==\n" +
-		indent + "       (%s->master?%s->master:%s)))\n"
-		"#endif /* SHARED_NODES_MK2 */\n" +
-		indent + "  ) {\n",
-		tpos, expr,
-		tpos, expr,
-		tpos, tpos, tpos,
-		expr, expr, expr);
+      res += sprintf("if (CA%sR(n) == %s) {\n", tpos, expr);
       res += generate_match(exacts[expr], indent + "  ");
       res += indent + "}";
     }
@@ -1130,24 +1180,13 @@ string generate_match(array(object(node)) rule_set, string indent)
       exacts[n->cdr] += ({ n });
     }
     zap_cdr(node_classes[EXACT_CDR]);
-    foreach(indices(exacts), string expr) {
+    foreach(sort(indices(exacts)), string expr) {
       if (last_was_if) {
 	res += " else ";
       } else {
 	res += indent;
       }
-      res+=
-	sprintf("if ((CD%sR(n) == %s)\n"
-		"#ifdef SHARED_NODES_MK2\n" + indent +
-		"  || (CD%sR(n) && %s &&\n" + indent +
-		"      ((CD%sR(n)->master?CD%sR(n)->master:CD%sR(n))==\n" +
-		indent + "       (%s->master?%s->master:%s)))\n"
-		"#endif /* SHARED_NODES_MK2 */\n" +
-		indent + "  ) {\n",
-		tpos, expr,
-		tpos, expr,
-		tpos, tpos, tpos,
-		expr, expr, expr);
+      res += sprintf("if (CD%sR(n) == %s) {\n", tpos, expr);
       res += generate_match(exacts[expr], indent + "  ");
       res += indent + "}";
     }
@@ -1336,7 +1375,8 @@ int main(int argc, array(string) argv)
 
   parse_data();
 
-  foreach(values(rules), array(object(node)) nodes) {
+  foreach(indices(rules), string rule) {
+    array(object(node)) nodes = rules[rule];
     foreach(nodes, object(node) n) {
       generate_parent(n , 0, "");
     }

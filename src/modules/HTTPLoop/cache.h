@@ -2,13 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
 				     char *h, ptrdiff_t hlen,
-				     struct cache *c, int nl, 
-				     struct cache_entry **p, 
+				     struct cache *c, int nl,
+				     struct cache_entry **p,
 				     size_t *hv);
 
 

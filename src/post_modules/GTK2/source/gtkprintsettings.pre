@@ -252,7 +252,7 @@ void set_page_ranges(array(array) page_ranges)
     gpr=xalloc(sizeof(GtkPageRange)*a->size+1);
     SET_ONERROR(err,xfree,gpr);
     for (i=num_ranges=0; i<a->size; i++) {
-      if (ITEM(a)[i].type!=PIKE_T_ARRAY)
+      if (TYPEOF(ITEM(a)[i]) != PIKE_T_ARRAY)
 	continue;
       if (ITEM(a)[i].u.array.size!=2)
 	continue;

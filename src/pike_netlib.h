@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef PIKE_NETLIB_H
@@ -19,6 +18,7 @@
 #endif /* HAVE_SYS_SOCKET_H */
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #endif /* HAVE_NETINET_IN_H */
 
 #ifdef HAVE_WINSOCK2_H

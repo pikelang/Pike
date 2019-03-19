@@ -1,6 +1,4 @@
 '
-' $Id$
-'
 ' Companion file to bin/install.pike for custom actions.
 '
 ' 2004-12-01 Henrik Grubbström

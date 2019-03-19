@@ -1,6 +1,4 @@
 /* KeySyms.pmod
- *
- * $Id$
  */
 
 /*
@@ -29,9 +27,12 @@
 
   int alt_gr, num_lock, shift, control, caps_lock;
   int meta, alt, super, hyper;
+//!
 
   mapping attributes = ([]);
+//!
 
+//!
   mapping stringtokeysyms = ([
 "XK_script_switch":        0xFF7E  /* Alias for mode_switch */,
 "XK_dead_acute":					0xFE51,
@@ -1348,6 +1349,7 @@
 ]);
 
 
+//!
   void ReleaseKey( int sym )
   {
     switch(sym)
@@ -1368,6 +1370,7 @@
     }
   }
 
+//!
   string _LookupKeysym( int keysym )
   {
     switch(keysym)
@@ -1402,8 +1405,8 @@
      case XK_KP_9:      return "9";
 
      case XK_space..XK_at:     return sprintf("%c", keysym);
-     case XK_A..XK_Z: 
-     case XK_a..XK_z:  
+     case XK_A..XK_Z:
+     case XK_a..XK_z:
        keysym = keysym&0xdf;
        if(control) return sprintf("%c", (keysym-'A')+1);
        if(shift || caps_lock) return sprintf("%c",keysym);
@@ -1417,8 +1420,9 @@
 	 greek .. technical .. special .. publishing .. APL .. hebrew ..
 	 thai .. korean .. hangul .. */
     }
-  } 
+  }
 
+//!
   int _LookupCharacter( string str )
   {
      if(stringtokeysyms && stringtokeysyms[str])
@@ -1427,9 +1431,10 @@
      // not found?
      else return -1;
 
-  } 
+  }
 
 
+//!
   int LookupCharacter( string str )
   {
      mapping xkm=([
@@ -1476,6 +1481,7 @@
 
   mapping keysymtokeycode=([]);
 
+//!
   void makeKeysymtoKeycode(object display)
   {
       keysymtokeycode=([]);
@@ -1486,7 +1492,7 @@
         int mod=0;
 	        foreach(display->key_mapping[i], int code)
         {
-         
+
           if(keysymtokeycode[code]) continue;
           else keysymtokeycode[code]=({i, mod});
           mod++;
@@ -1494,6 +1500,7 @@
       }
   }
 
+//!
   int LookupKeycode( int keysym, object display )
   {
      int keycode;
@@ -1507,12 +1514,13 @@
      return keycode;
   }
 
+//!
   string LookupKeysym( int keysym, object display )
   {
     if(!compose_patterns) compose_patterns =  display->compose_patterns;
     switch(keysym)
     {
-     case XK_A..XK_Z: 
+     case XK_A..XK_Z:
      case XK_a..XK_z:
        keysym = keysym&0xdf;      // Upper..
        if(!shift && !caps_lock)  //

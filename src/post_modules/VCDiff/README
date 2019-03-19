@@ -1,0 +1,4 @@
+To make use of the VCDiff glue, you need to download and install the
+open-vcdiff library:
+
+http://open-vcdiff.googlecode.com/files/open-vcdiff-0.7.tar.gz

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef GLOBAL_H
@@ -45,21 +44,24 @@
 #define WIN32	100	/* WinNT 1.0 */
 #endif
 
-/* We want WinNT 5.0 API's if available. */
-#if !defined(_WIN32_WINDOWS) || (_WIN32_WINDOWS < 0x500)
+/* We want WinNT 5.0+ API's if available.
+ *
+ * We avoid the WinNT 6.0+ API's for now.
+ */
+#if !defined(_WIN32_WINDOWS) || (_WIN32_WINDOWS < 0x5ff)
 #undef _WIN32_WINDOWS
-#define _WIN32_WINDOWS 0x0500
+#define _WIN32_WINDOWS 0x05ff
 #endif
 
-#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x500)
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x5ff)
 #undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500
+#define _WIN32_WINNT 0x05ff
 #endif
 
 /* In later versions of the WIN32 SDKs, we also need to define this one. */
-#if !defined(NTDDI_VERSION) || (NTDDI_VERSION < 0x05000000)
+#if !defined(NTDDI_VERSION) || (NTDDI_VERSION < 0x05ffffff)
 #undef NTDDI_VERSION
-#define NTDDI_VERSION 0x05000000
+#define NTDDI_VERSION 0x05ffffff
 #endif
 
 #endif /* __NT__ */
@@ -132,7 +134,7 @@ struct timeval;
 #define ORIG_PACKAGE_URL PACKAGE_URL
 #undef PACKAGE_URL
 #endif
-#endif
+#endif /* PIKE_CORE */
 
 #include "machine.h"
 
@@ -167,9 +169,9 @@ struct timeval;
 #define PACKAGE_URL ORIG_PACKAGE_URL
 #undef ORIG_PACKAGE_URL
 #endif
-#endif
+#endif /* PIKE_CORE */
 
-#endif
+#endif /* CONFIGURE_TEST */
 
 /* Some identifiers used as flags in the machine.h defines. */
 #define PIKE_YES	1
@@ -204,6 +206,20 @@ struct timeval;
 #else /* !HAVE_DECLSPEC */
 #define DECLSPEC(X)
 #endif /* HAVE_DECLSPEC */
+
+#ifdef HAS___BUILTIN_EXPECT
+# define UNLIKELY(X) __builtin_expect( (long)(X), 0 )
+# define LIKELY(X) __builtin_expect( (long)(X), 1 )
+#else
+# define UNLIKELY(X) X
+# define LIKELY(X) X
+#endif
+
+#ifdef HAS___BUILTIN_UNREACHABLE
+# define UNREACHABLE(X) __builtin_unreachable()
+#else
+# define UNREACHABLE(X) X
+#endif
 
 #ifndef HAVE_WORKING_REALLOC_NULL
 #define realloc(PTR, SZ)	pike_realloc(PTR,SZ)
@@ -255,7 +271,7 @@ struct timeval;
 #   undef alloca
 #  endif
 #  define alloca __builtin_alloca
-# endif 
+# endif
 #else
 # ifdef __GNUC__
 #  ifdef alloca
@@ -264,19 +280,13 @@ struct timeval;
 #  define alloca __builtin_alloca
 # else
 #  ifdef _AIX
- #pragma alloca
+#pragma alloca
 #  else
 #   ifndef alloca /* predefined by HP cc +Olibcalls */
 void *alloca();
 #   endif
 #  endif
 # endif
-#endif
-
-#ifdef __NT__
-/* We are running NT */
-#undef FD_SETSIZE
-#define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
 #endif
 
 #ifdef HAVE_DEVICES_TIMER_H
@@ -288,14 +298,11 @@ void *alloca();
 
 #include <stdio.h>
 #include <stdarg.h>
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STDDEF_H
 #include <stddef.h>
-#endif
+#include <string.h>
+#include <limits.h>
+#include <float.h>
 
 #ifdef HAVE_MALLOC_H
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__)
@@ -306,14 +313,6 @@ void *alloca();
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
 #endif
 
 #ifdef HAVE_SYS_TYPES_H
@@ -327,8 +326,6 @@ void *alloca();
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
 #endif
-
-#include <float.h>
 
 /* Get INT64, INT32, INT16, INT8, et al. */
 #include "pike_int_types.h"
@@ -484,7 +481,7 @@ typedef signed INT32 p_wchar2;
 
 typedef struct p_wchar_p
 {
-  p_wchar0 *ptr;
+  void *ptr;
   int shift;
 } PCHARP;
 
@@ -508,6 +505,7 @@ typedef struct p_wchar_p
 #define DLOC_PF(PRE, SUF)	PRE "%s:%d" SUF
 #define DLOC_ARGS_OPT		dloc_file, dloc_line
 #define COMMA_DLOC_ARGS_OPT	, dloc_file, dloc_line
+#define USE_DLOC_ARGS()		((void)(DLOC_ARGS_OPT))
 #define DLOC_ENABLED
 
 #else  /* !PIKE_DEBUG */
@@ -524,6 +522,7 @@ typedef struct p_wchar_p
 #define DLOC_PF(PRE, SUF)
 #define DLOC_ARGS_OPT
 #define COMMA_DLOC_ARGS_OPT
+#define USE_DLOC_ARGS()
 
 #endif	/* !PIKE_DEBUG */
 
@@ -549,6 +548,40 @@ typedef struct p_wchar_p
 #endif
 #endif
 
+/* Suppress compiler warnings for unused parameters if possible. The mangling of
+   argument name is required to catch when an unused argument later is used without
+   removing the annotation. */
+#ifndef PIKE_UNUSED_ATTRIBUTE
+# ifdef __GNUC__
+#  define PIKE_UNUSED_ATTRIBUTE  __attribute__((unused))
+#  if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)
+#   define PIKE_WARN_UNUSED_RESULT_ATTRIBUTE  __attribute__((warn_unused_result))
+#  else /* GCC < 3.4 */
+#   define PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
+#  endif
+# else
+#  define PIKE_UNUSED_ATTRIBUTE
+#  define PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
+# endif
+#endif
+#ifndef PIKE_UNUSED
+# define PIKE_UNUSED(x)  PIKE_CONCAT(x,_UNUSED) PIKE_UNUSED_ATTRIBUTE
+#endif
+#ifndef UNUSED
+# define UNUSED(x)  PIKE_UNUSED(x)
+#endif
+#ifdef PIKE_DEBUG
+# define DEBUGUSED(x) x
+#else
+# define DEBUGUSED(x) PIKE_UNUSED(x)
+#endif
+#ifdef DEBUG_MALLOC
+# define DMALLOCUSED(x) x
+#else
+# define DMALLOCUSED(x) PIKE_UNUSED(x)
+#endif
+
+
 /* PMOD_EXPORT exports a function / variable vfsh. */
 #ifndef PMOD_EXPORT
 # if defined (__NT__) && defined (USE_DLL)
@@ -560,13 +593,17 @@ typedef struct p_wchar_p
  * themselves, unless they are compiled statically. */
 #   define PMOD_EXPORT __declspec(dllexport)
 #  endif
+# elif defined(__clang__) && defined(MAC_OS_X_VERSION_MIN_REQUIRED)
+/* According to Clang source the protected behavior is ELF-specific and not
+   applicable to OS X. */
+#  define PMOD_EXPORT    __attribute__ ((visibility("default")))
 # elif __GNUC__ >= 4
 #  ifdef DYNAMIC_MODULE
 #    define PMOD_EXPORT  __attribute__ ((visibility("default")))
 #  else
 #    define PMOD_EXPORT  __attribute__ ((visibility("protected")))
 #  endif
-# else 
+# else
 #  define PMOD_EXPORT
 # endif
 #endif
@@ -581,20 +618,11 @@ typedef struct p_wchar_p
 #endif
 #endif
 
-#ifdef PIKE_SECURITY
-#define DO_IF_SECURITY(X) X
-#else
-#define DO_IF_SECURITY(X)
-#endif
-
-/* Used by the AutoBuild system to mark known warnings. */
-#define DO_NOT_WARN(X)	(X)
-
 /* Some functions/macros used to avoid loss of precision warnings. */
 #ifdef __ECL
 static INLINE long PTRDIFF_T_TO_LONG(ptrdiff_t x)
 {
-  return DO_NOT_WARN((long)x);
+  return (long)x;
 }
 #else /* !__ECL */
 #define PTRDIFF_T_TO_LONG(x)       ((long)(x))
@@ -628,10 +656,10 @@ struct iovec {
 #endif
 
 #ifdef MALLOC_DECL_MISSING
-char *malloc PROT((int));
-char *realloc PROT((char *,int));
-void free PROT((char *));
-char *calloc PROT((int,int));
+void *malloc PROT((int));
+void *realloc PROT((void *,int));
+void free PROT((void *));
+void *calloc PROT((int,int));
 #endif
 
 #ifdef GETPEERNAME_DECL_MISSING
@@ -663,14 +691,7 @@ char *crypt(const char *, const char *);
 /* Compatibility... */
 #define USE_PIKE_TYPE	2
 
-#ifdef PIKE_RUN_UNLOCKED
-#define DO_IF_RUN_UNLOCKED(X) X
-#else
-#define DO_IF_RUN_UNLOCKED(X)
-#endif
-
 /* Used in more than one place, better put it here */
-
 #if defined(PROFILING)
 #define DO_IF_PROFILING(X) X
 #else

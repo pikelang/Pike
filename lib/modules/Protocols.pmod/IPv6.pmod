@@ -79,7 +79,7 @@ protected array(int) parse_ipv6_seq_with_ipv4_suffix (string seq)
 array(int(0..65535)) parse_addr (string addr)
 //! Parses an IPv6 address on the formatted hexadecimal
 //! @expr{"x:x:x:x:x:x:x:x"@} form, or any of the shorthand varieties
-//! (see RFC 2373, section 2.2).
+//! (see @rfc{2373:2.2@}).
 //!
 //! The address is returned as an 8-element array where each element
 //! is the value of the corresponding field. Zero is returned if @[addr]
@@ -115,8 +115,8 @@ array(int(0..65535)) parse_addr (string addr)
 
 string format_addr_short (array(int(0..65535)) bin_addr)
 //! Formats an IPv6 address to the colon-separated hexadecimal form as
-//! defined in RFC 2373, section 2.2. @[bin_addr] must be an 8-element
-//! array containing the 16-bit fields.
+//! defined in @rfc{2373:2.2@}. @[bin_addr] must be an 8-element array
+//! containing the 16-bit fields.
 //!
 //! The returned address is on a canonical shortest form as follows:
 //! The longest sequence of zeroes is shortened using @tt{"::"@}. If
@@ -177,7 +177,7 @@ string normalize_addr_basic (string addr)
 //! Normalizes a formatted IPv6 address to a string with eight
 //! hexadecimal numbers separated by @tt{":"@}. @[addr] is given on
 //! the same form, or any of the shorthand varieties as specified in
-//! RFC 2373, section 2.2.
+//! @rfc{2373:2.2@}.
 //!
 //! All hexadecimal letters in the returned address are lower-case,
 //! and there are no superfluous leading zeroes in the fields.
@@ -201,7 +201,7 @@ string normalize_addr_short (string addr)
 //! Normalizes a formatted IPv6 address to a canonical shortest form.
 //! @[addr] is parsed according to the hexadecimal
 //! @expr{"x:x:x:x:x:x:x:x"@} syntax or any of its shorthand varieties
-//! (see RFC 2373, section 2.2).
+//! (see @rfc{2373:2.2@}).
 //!
 //! The returned address is normalized as follows: The longest
 //! sequence of zeroes is shortened using @tt{"::"@}. If there are

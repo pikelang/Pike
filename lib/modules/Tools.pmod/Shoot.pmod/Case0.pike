@@ -14,11 +14,12 @@ void create()
   t = (string)b;
 }
 
-void perform()
+int perform()
 {
   string t2 = upper_case(t);
   if( t )
     t2 = lower_case(t);
   if( !t )
     t = t2;
+  return strlen(t)*2;
 }

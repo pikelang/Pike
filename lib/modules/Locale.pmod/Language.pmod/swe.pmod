@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Swedish language locale
-
-// $Id$
 
 inherit "abstract";
 

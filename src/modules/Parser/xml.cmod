@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -23,7 +22,7 @@
 #include "operators.h"
 #include "pike_error.h"
 #include "bignum.h"
-#include "block_alloc.h"
+#include "block_allocator.h"
 
 
 #define sp Pike_sp
@@ -513,9 +512,11 @@ static INLINE int isDigit(INT32 c)
     case 0x0e:
       if(c>=0x0E50 && c<=0x0E59) return 1;
       if(c>=0x0ED0 && c<=0x0ED9) return 1;
+      break;
 
     case 0x0f:
       if(c>=0x0F20 && c<=0x0F29) return 1;
+      break;
   }
   return 0;
 }
@@ -565,7 +566,7 @@ static INLINE int isSpace(INT32 c)
 
 static INLINE int isNameChar(INT32 c)
 {
-  return isLetter(c) || isDigit(c) || 
+  return isLetter(c) || isDigit(c) ||
     c=='.' || c=='-' || c=='_' ||  c==':' ||
     isCombiningChar(c) || isExtender(c);
 }
@@ -661,15 +662,20 @@ PIKECLASS Simple
     struct pike_string *entity;
   };
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(X) do {			\
-    (X)->next = NULL;				\
-    (X)->callbackinfo = NULL;			\
-    (X)->to_free = NULL;			\
-    (X)->entity = NULL;				\
-  } while(0)
+  static struct block_allocator xmlinput_allocator = BA_INIT(sizeof(struct xmlinput), 64);
 
-  BLOCK_ALLOC(xmlinput, 64)
+  static struct xmlinput * alloc_xmlinput() {
+    struct xmlinput * i = ba_alloc(&xmlinput_allocator);
+    i->next = NULL;
+    i->callbackinfo = NULL;
+    i->to_free = NULL;
+    i->entity = NULL;
+    return i;
+  }
+
+  static void really_free_xmlinput(struct xmlinput * i) {
+    ba_free(&xmlinput_allocator, i);
+  }
 
   struct xmlinput *new_string_xmlinput(struct pike_string *s)
   {
@@ -707,11 +713,8 @@ PIKECLASS Simple
   /*! @decl array parse(string xml, string context, @
    *!                   function cb, mixed ... extra_args)
    *! @decl array parse(string xml, function cb, mixed ... extra_args)
-   *!
-   *! @note
-   *!   The @[context] argument was introduced in Pike 7.8.
    */
-  PIKEFUN array parse(string s, string|function cb, mixed ... extra_args)
+  PIKEFUN array parse(string s, string|function cb, mixed ... UNUSED)
     rawtype PARSETYPE;
   {
     int d;
@@ -745,11 +748,8 @@ PIKECLASS Simple
   /*! @decl mixed parse_dtd(string dtd, string context, @
    *!                       function cb, mixed ... extras)
    *! @decl mixed parse_dtd(string dtd, function cb, mixed ... extras)
-   *!
-   *! @note
-   *!   The @[context] argument was introduced in Pike 7.8.
    */
-  PIKEFUN mixed parse_dtd(string s, string|function cb, mixed ... extras)
+  PIKEFUN mixed parse_dtd(string s, string|function cb, mixed ... UNUSED)
     rawtype PARSETYPE;
   {
     int d;
@@ -786,8 +786,6 @@ PIKECLASS Simple
     push_int(1); args++;
     assign_svalue(mapping_mapping_lookup(THIS->is_cdata,
 					 sp-args, sp+1-args, 1), sp+2-args);
-    pop_n_elems(args);
-    push_undefined();
   }
 
   PIKEFUN mapping(string:int(0..1)) get_tag_attribute_cdata(string tag)
@@ -807,8 +805,6 @@ PIKECLASS Simple
   {
     assign_svalue(mapping_mapping_lookup(THIS->attributes,
 					 sp-args, sp+1-args, 1), sp+2-args);
-    pop_n_elems(args);
-    push_undefined();
   }
 
   PIKEFUN mapping(string:string) get_default_attributes(string tag)
@@ -820,7 +816,7 @@ PIKECLASS Simple
       push_mapping(m);
     } else {
       pop_n_elems(args);
-      push_mapping(allocate_mapping(10));
+      push_mapping(allocate_mapping(0));
     }
   }
 
@@ -828,9 +824,6 @@ PIKECLASS Simple
    *!
    *! @returns
    *!   Returns the verbatim expansion of the entity.
-   *!
-   *! @note
-   *!   Added in Pike 7.7.
    */
   PIKEFUN string lookup_entity(string entity)
   {
@@ -868,9 +861,7 @@ PIKECLASS Simple
       sp--;
     }else{
       mapping_insert(THIS->entities, sp-2, sp-1);
-      pop_n_elems(args);
     }
-    push_undefined();
   }
 
   /*! @decl void define_entity(string entity, string s, @
@@ -923,8 +914,6 @@ PIKECLASS Simple
       THIS->flags &= ~ALLOW_RXML_ENTITIES;
     else
       THIS->flags |= ALLOW_RXML_ENTITIES;
-    pop_n_elems(args);
-    push_int(0);
   }
 
   /*! @decl void compat_allow_errors(string version)
@@ -948,7 +937,7 @@ PIKECLASS Simple
   PIKEFUN void compat_allow_errors(string|void version)
   {
     if (args < 1)
-      SIMPLE_TOO_FEW_ARGS_ERROR ("XML->compat_allow_errors", 1);
+      SIMPLE_TOO_FEW_ARGS_ERROR ("compat_allow_errors", 1);
 
     if (!version) {
       THIS->flags &= ~(COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS);
@@ -960,20 +949,17 @@ PIKECLASS Simple
     } else {
       Pike_error ("Got unknown version string.\n");
     }
-
-    pop_n_elems(args);
-    push_int(0);
   }
 
 
   INIT
   {
-    push_constant_text("lt");    push_constant_text("&#60;");
-    push_constant_text("gt");    push_constant_text(">");
-    push_constant_text("amp");   push_constant_text("&#38;");
-    push_constant_text("apos");  push_constant_text("'");
-    push_constant_text("quot");  push_constant_text("\"");
-  
+    push_static_text("lt");    push_static_text("&#60;");
+    push_static_text("gt");    push_static_text(">");
+    push_static_text("amp");   push_static_text("&#38;");
+    push_static_text("apos");  push_static_text("'");
+    push_static_text("quot");  push_static_text("\"");
+
     f_aggregate_mapping(10);
     THIS->entities=sp[-1].u.mapping;
     sp--;
@@ -1088,7 +1074,7 @@ PIKECLASS Simple
 #endif /* PIKE_DEBUG */
 
 
-static inline int xmlread(int z, int line)
+static inline int xmlread(int z, int UNUSED(line))
 {
   int popped=0;
   THIS->input->pos += z;
@@ -1105,7 +1091,7 @@ static inline int xmlread(int z, int line)
   INC_PCHARP(THIS->input->datap, z);
   while(THIS->input->next && XMLEOF()) { POP(); popped++; }
   return popped;
-}  
+}
 
 #define READ(X) xmlread((X),__LINE__)
 
@@ -1118,7 +1104,6 @@ static inline int xmlread(int z, int line)
 
 static void sys(void);
 static int low_parse_dtd(void);
-static void free_xmldata(void);
 static void simple_readname(void);
 static int simple_readname_period(void);
 static void simple_read_system_literal(void);
@@ -1128,11 +1113,6 @@ static void xmlerror(char *desc, struct pike_string *tag_name);
 
 #define XMLERROR(desc) do {xmlerror(desc,NULL); READ (1);} while (0)
 #define XMLERROR_STAY(desc) xmlerror(desc,NULL)
-
-#define VOIDIFY(X) do { struct svalue *save_sp=sp; 	\
-       X;						\
-       pop_n_elems(sp-save_sp);				\
-    }while(0);
 
 #define SKIPSPACE() \
   do { while((!XMLEOF()) && (SMEG(), isSpace(PEEK(0)))) READ(1); }while(0)
@@ -1228,22 +1208,7 @@ static int gobble(char *s)
 
 #define STRIP_SPACES() do {			\
     IF_XMLDEBUG(fprintf(stderr,"STRIPPING SPACES (%s)\n",sp[-1].u.string->str));       \
-    push_constant_text("\n");			\
-    push_constant_text("\r");			\
-    push_constant_text("\t");			\
-    f_aggregate(3);				\
-    push_constant_text(" ");			\
-    push_constant_text(" ");			\
-    push_constant_text(" ");			\
-    f_aggregate(3);				\
-    f_replace(3);				\
-    push_constant_text(" ");			\
-    o_divide();					\
-    push_empty_string();			\
-    f_aggregate(1);                             \
-    o_subtract();				\
-    push_constant_text(" ");			\
-    o_multiply();				\
+    f_string_normalize_space(1);                                              \
     IF_XMLDEBUG(fprintf(stderr,"SPACES STRIPPED (%s)\n",sp[-1].u.string->str));       \
   } while(0)
 
@@ -1287,7 +1252,7 @@ static int gobble(char *s)
 	break;								 \
       }									 \
     }									 \
-    if (i) continue;							 \
+    if (i) break;							 \
 									 \
     /* lookup entry in mapping and parse it recursively */		 \
     /* Generate error if entity is not defined */			 \
@@ -1415,10 +1380,10 @@ static int gobble(char *s)
 #define SMEG() \
   ((THIS->flags & ALLOW_PESMEG_EVERYWHERE) && \
    (PEEK(0)=='%') && read_smeg_pereference())
-  
-    
-    
-    
+
+
+
+
 #define READ_ATTVALUE(X,is_cdata) do {			\
         SKIPSPACE();					\
         switch(PEEK(0))					\
@@ -1668,7 +1633,7 @@ static void read_attvalue(struct string_builder *X,
       case '&':
 	READ_REFERENCE(1,(*X), read_attvalue(X, 0,1));
 	break;
-	
+
       case 0x0d:
 	if (!keepspace && PEEK(1)==0x0a) READ(1);	/* cr/lf */
       case 0x20:
@@ -1677,7 +1642,7 @@ static void read_attvalue(struct string_builder *X,
 	READ(1);
 	POKE(*X, 0x20);
 	break;
-	
+
       default:
 	POKE(*X, PEEK(0));
 	READ(1);
@@ -1711,7 +1676,7 @@ static void read_pubid(struct string_builder *X,
 	READ(1);
 	POKE(*X, 0x20);
 	break;
-	
+
       default:
 	POKE(*X, PEEK(0));
 	READ(1);
@@ -1748,9 +1713,9 @@ static void read_entityvalue(struct string_builder *X,
       case 0x09:
 	POKE(*X, 0x20);
 	READ(1);
-	break;
 #endif
-	
+	break;
+
 #if 0
       case '&':
 	READ_REFERENCE(1,(*X), read_entityvalue(X, 0));
@@ -1854,7 +1819,7 @@ static void simple_readnmtoken(void)
 static void simple_read_attributes(struct mapping *is_cdata)
 {
   SKIPSPACE();
-  
+
   /* Read unordered attributes */
   while(THIS->input->len>0 && isFirstNameChar(PEEK(0)))
   {
@@ -1971,14 +1936,16 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	read_choice_seq_or_name(0);
 	num++;
 	SKIPSPACE();
-	
+
 	switch(PEEK(0))
 	{
 	  case 0:
 	    XMLERROR_STAY("End of xml while reading ELEMENT declaration.");
-	    
+	    /* FALL_THROUGH */
+
 	  default:
 	    XMLERROR("Expected | or ,");
+	    break;
 
 	  case ')':
 	    READ(1);
@@ -2003,7 +1970,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	      f_aggregate(num);
 	    }
 	    break;
-	    
+
 	  case '|':
 	    if(!seq)
 	    {
@@ -2014,7 +1981,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	    }
 	    READ(1);
 	    continue;
-	    
+
 	  case ',':
 	    if(!seq)
 	    {
@@ -2025,7 +1992,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	    }
 	    READ(1);
 	    continue;
-	    
+
 	}
 	break;
       }
@@ -2176,7 +2143,7 @@ static int really_low_parse_dtd(void)
 			goto check_ndata;
 		      }
 		      goto not_system;
-			 
+
 		    case 'P': /* PUBLIC */
 		      if(PEEK(1)=='U' &&
 			 PEEK(2)=='B' &&
@@ -2194,7 +2161,7 @@ static int really_low_parse_dtd(void)
 			attributes++;
 			push_constant_text("SYSTEM");
 			SIMPLE_READ_SYSTEMLITERAL();
-			
+
 
 		      check_ndata:
 			SKIPSPACE();
@@ -2204,7 +2171,7 @@ static int really_low_parse_dtd(void)
 			  {
 			    XMLERROR("This entity is not allowed to have an NDATA keyword.");
 			  }
-			  
+
 			  attributes++;
 			  push_constant_text("NDATA");
 			  SKIPSPACE();
@@ -2223,7 +2190,7 @@ static int really_low_parse_dtd(void)
 		      XMLERROR("Unexpected data in <!ENTITY");
 		      SKIPTO('>');
 		  }
-		  
+
 		  SKIPSPACE();
 		  if(PEEK(0)!='>')
 		    XMLERROR("Missing '>' in <!ENTITY.");
@@ -2268,7 +2235,7 @@ static int really_low_parse_dtd(void)
 		      XMLERROR("Unknown stuff in <!ELEMENT>");
 		      push_int(0);
 		  }
-		  
+
 		  SKIPSPACE();
 		  if(PEEK(0)!='>')
 		    XMLERROR("Missing '>' in <!ELEMENT.");
@@ -2277,7 +2244,7 @@ static int really_low_parse_dtd(void)
 		  SYS();
 		  break;
 		}
-		  
+
 
 		goto unknown_entry_in_dtd;
 
@@ -2353,7 +2320,7 @@ static int really_low_parse_dtd(void)
 			push_empty_string();
 			READ(1);
 			SKIPSPACE();
-			
+
 			SIMPLE_READNMTOKEN();
 			SKIPSPACE();
 			while(PEEK(0)=='|')
@@ -2373,7 +2340,7 @@ static int really_low_parse_dtd(void)
 		    if(sp<save)
 		      Pike_fatal("Stack underflow.\n");
 #endif
-		    f_aggregate(DO_NOT_WARN(sp - save));
+                    f_aggregate(sp - save);
 		    SKIPSPACE();
 		    save=sp;
 		    switch(PEEK(0))
@@ -2382,12 +2349,12 @@ static int really_low_parse_dtd(void)
 			switch(PEEK(1))
 			{
 			  case 'R':
-			    if(PEEK(2)=='E' && 
-			       PEEK(3)=='Q' && 
-			       PEEK(4)=='U' && 
-			       PEEK(5)=='I' && 
-			       PEEK(6)=='R' && 
-			       PEEK(7)=='E' && 
+			    if(PEEK(2)=='E' &&
+			       PEEK(3)=='Q' &&
+			       PEEK(4)=='U' &&
+			       PEEK(5)=='I' &&
+			       PEEK(6)=='R' &&
+			       PEEK(7)=='E' &&
 			       PEEK(8)=='D')
 			    {
 			      READ(9);
@@ -2395,13 +2362,13 @@ static int really_low_parse_dtd(void)
 			      break;
 			    }
 			    goto bad_defaultdecl;
-			       
+
 			  case 'I':
-			    if(PEEK(2)=='M' && 
-			       PEEK(3)=='P' && 
-			       PEEK(4)=='L' && 
-			       PEEK(5)=='I' && 
-			       PEEK(6)=='E' && 
+			    if(PEEK(2)=='M' &&
+			       PEEK(3)=='P' &&
+			       PEEK(4)=='L' &&
+			       PEEK(5)=='I' &&
+			       PEEK(6)=='E' &&
 			       PEEK(7)=='D')
 			    {
 			      READ(8);
@@ -2411,9 +2378,9 @@ static int really_low_parse_dtd(void)
 			    goto bad_defaultdecl;
 
 			  case 'F':
-			    if(PEEK(2)=='I' && 
-			       PEEK(3)=='X' && 
-			       PEEK(4)=='E' && 
+			    if(PEEK(2)=='I' &&
+			       PEEK(3)=='X' &&
+			       PEEK(4)=='E' &&
 			       PEEK(5)=='D')
 			    {
 			      READ(6);
@@ -2421,6 +2388,8 @@ static int really_low_parse_dtd(void)
 			      SKIPSPACE();
 			      goto comefrom_fixed;
 			    }
+
+			    /* FALL_THROUGH */
 
 			  default:
 			bad_defaultdecl:
@@ -2440,14 +2409,14 @@ static int really_low_parse_dtd(void)
 			SIMPLE_READ_ATTVALUE(is_cdata);
 
 			/* Stack is:
-			 * -6 tagname 
+			 * -6 tagname
 			 * -5 attmapping
 			 * -4 attname
 			 * -3 type
 			 * -2 "#FIXED" or ""
 			 * -1 attvalue
 			 */
-#ifdef VERBOSE_XMLDEBUG			    
+#ifdef VERBOSE_XMLDEBUG
 
 			fprintf(stderr,
 				"Inserting default for %s %s = '%s'\n",
@@ -2468,11 +2437,11 @@ static int really_low_parse_dtd(void)
 		    /* Update is_cdata */
 		    if (is_cdata) {
 		      /* Stack is a bit unknown...
-		       * x-6 tagname 
+		       * x-6 tagname
 		       * x-5 attmapping
 		       * x-4 attname
 		       */
-#ifdef VERBOSE_XMLDEBUG			    
+#ifdef VERBOSE_XMLDEBUG
 		      fprintf(stderr,
 			      "Inserting CDATA for %s %s = %ld\n",
 			      save[-4].u.string->str,
@@ -2489,7 +2458,7 @@ static int really_low_parse_dtd(void)
 		    if(sp<save)
 		      Pike_fatal("Stack underflow.\n");
 #endif
-		    f_aggregate(DO_NOT_WARN(sp - save));
+                    f_aggregate(sp - save);
 		    f_aggregate(2);
 		    assign_lvalue(sp-3, sp-1);
 		    pop_n_elems(2);
@@ -2520,22 +2489,24 @@ static int really_low_parse_dtd(void)
 			if(PEEK(0) != '>')
 			{
 			read_system:
-			  
+
 			  push_constant_text("SYSTEM");
 			  SIMPLE_READ_SYSTEMLITERAL();
 			  n++;
 			}
 			f_aggregate_mapping(n*2);
 			break;
-			
+
 		      }
-		      
+
 		    case 'S':
 		      if(GOBBLE("SYSTEM")) goto read_system;
+		      /* FALL_THROUGH */
+
 		    default:
 		      XMLERROR("Expected PUBLIC or SYSTEM, found something else.");
 		      push_int(0);
-		      
+
 		  }
 		  SKIPSPACE();
 		  if(PEEK(0)!='>')
@@ -2593,7 +2564,7 @@ static int really_low_parse_dtd(void)
 		    XMLERROR_STAY("Missing '[' in <![INCLUDE.");
 		  else
 		    READ(1);
-		  
+
 		  low_parse_dtd();
 
 		  if(XMLEOF() ||
@@ -2686,13 +2657,13 @@ static int low_parse_dtd(void)
 #ifdef VERBOSE_XMLDEBUG
   fprintf(stderr,"Exiting low_parse_dtd %p %p\n",sp,save_sp);
 #endif
-  f_aggregate(DO_NOT_WARN(sp - save_sp));
+  f_aggregate(sp - save_sp);
 #ifdef VERBOSE_XMLDEBUG
   fprintf(stderr,"Exiting low_parse_dtd done\n");
 #endif
   /* There is now one value on the stack */
   return done;
-}  
+}
 
 #define DOC_BEGINNING 0
 #define DOC_GOT_DOCTYPE 1
@@ -2754,7 +2725,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 
       case '<':
 	INTERMISSION(*text);
-	
+
 	switch(PEEK(1))
 	{
 	  case '?': /* Ends with ?> */
@@ -3014,7 +2985,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 	      "There can not be more than one element on the top level.");
 
 	    STACK_LEVEL_START(0);
-	    push_constant_text(">"); 
+	    push_constant_text(">");
 
 	    READ(1);
 	    SIMPLE_READNAME();
@@ -3067,7 +3038,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 		  sp+=2;
 		  push_int(0);
 		  SYS();
-		  
+
 		  pop_n_elems(sp-save_sp);
 		}
 
@@ -3093,7 +3064,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 		SYS();
 		if (toplevel) THIS->doc_seq_pos = DOC_AFTER_ROOT_ELEM;
 		break;
-		
+
 	    }
 	}
     }
@@ -3113,7 +3084,7 @@ static int low_parse_xml(struct pike_string *end)
   if(sp<save_sp)
     Pike_fatal("Stack underflow.\n");
 #endif
-  f_aggregate(DO_NOT_WARN(sp - save_sp));
+  f_aggregate(sp - save_sp);
   /* There is now one value on the stack */
   return !!end;
 }
@@ -3176,9 +3147,6 @@ static int low_parse_xml(struct pike_string *end)
      *!   the field @expr{"context"@} where it can be useful
      *!   for eg resolving relative URLs when parsing DTDs,
      *!   or for determining where errors occur.
-     *!
-     *! @note
-     *!   The @[context] argument was introduced in Pike 7.8.
      */
     PIKEFUN void push_string(string s, string|void context)
     {
@@ -3190,7 +3158,7 @@ static int low_parse_xml(struct pike_string *end)
       if (i->next) {
 	UPDATE_LOCATION(i->next->pos, i->next->callbackinfo);
 	i->callbackinfo = copy_mapping(i->next->callbackinfo);
-	push_constant_text("previous");
+	push_static_text("previous");
 	ref_push_mapping(i->next->callbackinfo);
 	mapping_insert(i->callbackinfo, sp-2, sp-1);
 	pop_n_elems(2);
@@ -3202,9 +3170,6 @@ static int low_parse_xml(struct pike_string *end)
 				     MK_STRING("context"), context);
       }
       CHECK_INPUT(THIS->input);
-
-      pop_n_elems(args);
-      push_undefined();
     }
 
     /*! @decl void create(string s, string context, int flags, @
@@ -3222,9 +3187,6 @@ static int low_parse_xml(struct pike_string *end)
      *! @param cb
      *!   Callback function. This function gets called at various
      *!   stages during the parsing.
-     *!
-     *! @note
-     *!   The @[context] argument was introduced in Pike 7.8.
      */
     PIKEFUN void create(string s, string|int flags, int|function cb,
 			mixed ... extra_args)
@@ -3296,7 +3258,7 @@ PIKEFUN string autoconvert(string s)
 	  push_string(end_shared_string(t));
 	}
 	/* FALL_THROUGH */
-	
+
       case 0xfeff: /* UTF-16, big-endian */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, big endian detected.\n"));
 	push_int(2);
@@ -3389,7 +3351,7 @@ PIKEFUN string autoconvert(string s)
 	  while(isSpace(STR0(s)[pos])) pos++;
 
 	  /* "autoconvert: <?xml .version */
-	  if(MEMCMP(STR0(s)+pos,"version",7)) break;
+	  if(memcmp(STR0(s)+pos,"version",7)) break;
 	  pos+=7;
 
 	  /* <?xml version.  = "1.0" */
@@ -3401,7 +3363,7 @@ PIKEFUN string autoconvert(string s)
 
 	  /* <?xml version =. "1.0" */
 	  while(isSpace(STR0(s)[pos])) pos++;
-	  
+
 	  /* <?xml version = ."1.0" */
 	  if(STR0(s)[pos]=='\'')
 	  {
@@ -3417,24 +3379,24 @@ PIKEFUN string autoconvert(string s)
 	  }else{
 	    break; /* No encoding detected */
 	  }
-	  
+
 	  /* <?xml version = "1.0". encoding="encname" */
 	  while(isSpace(STR0(s)[pos])) pos++;
-	  
+
 	  /* <?xml version = "1.0" .encoding="encname" */
-	  if(MEMCMP("encoding",STR0(s)+pos,8)) break;
+	  if(memcmp("encoding",STR0(s)+pos,8)) break;
 	  pos+=8;
-	  
+
 	  /* <?xml version = "1.0" encoding. ="encname" */
 	  while(isSpace(STR0(s)[pos])) pos++;
-	  
+
 	  /* <?xml version = "1.0" encoding .="encname" */
 	  if(STR0(s)[pos]!='=') break;
 	  pos++;
-	  
+
 	  /* <?xml version = "1.0" encoding =. "encname" */
 	  while(isSpace(STR0(s)[pos])) pos++;
-	  
+
 	  /* <?xml version = "1.0" encoding = ."encname" */
 	  encstart=pos+1;
 	  if(STR0(s)[pos]=='\'')
@@ -3451,21 +3413,21 @@ PIKEFUN string autoconvert(string s)
 	  }
 	  /* <?xml version = "1.0" encoding = "encname." */
 
-	  push_constant_text("Locale.Charset.decoder");
+	  push_static_text("Charset.decoder");
 	  APPLY_MASTER("resolv",1);
 	  push_string(make_shared_binary_string0(STR0(s)+encstart,
 						 pos-encstart));
 	  f_call_function(2);
-	  push_constant_text("feed");
+	  push_static_text("feed");
 	  f_index(2);
 	  stack_swap();
 	  f_call_function(2);
-	  push_constant_text("drain");
+	  push_static_text("drain");
 	  f_index(2);
 	  f_call_function(1);
 	  return;
 	}
-	
+
       case 0x4c6fa794: /* EBCDIC */
 	IF_XMLDEBUG(fprintf(stderr,"EBCDIC detected.\n"));
 	Pike_error("XML: EBCDIC not supported yet.\n");
@@ -3483,8 +3445,7 @@ PIKEFUN string autoconvert(string s)
 
 void init_parser_xml(void)
 {
-  init_xmlinput_blocks();
-  push_text("location");
+  push_static_text("location");
   location_string_svalue=sp[-1];
   sp--;
 
@@ -3507,6 +3468,6 @@ void exit_parser_xml(void)
 {
   EXIT;
 
-  free_all_xmlinput_blocks();
+  ba_destroy(&xmlinput_allocator);
   free_svalue(&location_string_svalue);
 }

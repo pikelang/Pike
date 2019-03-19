@@ -1,8 +1,6 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id$
-#
 # Henrik Grubbström 2001-02-02
 #
 
@@ -92,9 +90,9 @@ low_traditional:
 
 always:
 
-images: $(BUILDDIR)/doc_build/src/post_modules/GTK/refdoc/images
-	@cp ../src/post_modules/GTK/refdoc/images/*.png \
-	  $(BUILDDIR)/doc_build/src/post_modules/GTK/refdoc/images
+images: $(BUILDDIR)/doc_build/src/post_modules/GTK2/refdoc/images
+	@cp ../src/post_modules/GTK2/refdoc/images/*.png \
+	  $(BUILDDIR)/doc_build/src/post_modules/GTK2/refdoc/images
 
 # Directories
 
@@ -118,7 +116,4 @@ touch-mirardoc:
 # Cleanup
 
 clean:
-	true
-
-spotless:
-	-test -f .cvsignore && rm -rf `cat .cvsignore`
+	-rm -fr modref onepage traditional_manual pelix_modref

@@ -112,6 +112,32 @@ Examples:
 
 _______________________________________________________________________________
 
+Keyword:      @directive
+
+Description:  Document a Pike cpp directive.
+
+	      The rest of the line should be the cpp directive to document.
+
+Arguments:    [name]
+              Where:
+                [name] is a cpp directive.
+Children:     Documentation for the directive.
+Groups with:  @directive
+Note:         Typically only used in the cpp:: namespace.
+Examples:
+              //! @directive #include
+              //!
+              //! The @tt{#include@} directive is used
+              //! to include source code from a different file.
+
+              //! @directive #if
+              //! @directive #endif
+	      //!
+              //!  This is how to document multiple related directives
+	      //!  with one documentation string.
+
+_______________________________________________________________________________
+
 Keyword:      @endclass
 Description:  Leave the class scope entered by @class.
 Arguments:    [name]
@@ -221,6 +247,17 @@ Examples:
 XML:          <bugs/>
 _______________________________________________________________________________
 
+Keyword:      @copyright
+Description:  Inform about implementor(s) and/or license.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:     //! @copyright
+              //!  Licenced under single-clause BSD.
+
+XML:          <copyright/>
+_______________________________________________________________________________
+
 Keyword:      @deprecated
 Description:  Documents the fact that the entity is deprecated by one
               or several other classes/modules/methods/variables.
@@ -324,6 +361,19 @@ Examples:     //! @seealso
               //!  @[calc_checksum_w()] is used for wide strings.
 
 XML:          <seealso/>
+_______________________________________________________________________________
+
+Keyword:      @thanks
+Description:  Inform about people and/or organisations that have helped
+	      with the implementation.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:     //! @thanks
+              //!  Thanks to Lysator Academic Computer Society for
+	      //!  providing computer resources for testing this.
+
+XML:          <thanks/>
 _______________________________________________________________________________
 
 Keyword:      @throws
@@ -602,6 +652,22 @@ Examples:     My favourite class is @ref{Vanilla.Ice.Cream@}, it
               tastes much better than @[Nougat.Glass] or @[`+].
 
 XML:          <ref>...</ref>
+_______________________________________________________________________________
+
+Keyword:      @rfc{ ... @}
+Description:  Reference to an RFC and optionally a section or appendix.
+Children:     RFC number and optionally a colon followed by section number
+              or appendix letter.
+Groups with:  -
+
+Examples:
+              The @[MIME] module implements @rfc{1521@}.
+
+              See @rfc{7540:5.3@} for details about @[ADT.TreeScheduler].
+
+              The list of static headers for HPack is defined in @rfc{7541:A@}.
+
+XML:          <rfc>...</rfc>
 _______________________________________________________________________________
 
 Keyword:      @section - @endsection

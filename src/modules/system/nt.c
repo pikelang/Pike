@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -15,7 +14,6 @@
 
 #include "system_machine.h"
 #include "system.h"
-#include "port.h"
 
 #include <errno.h>
 
@@ -25,7 +23,6 @@
 #else
 #include <winsock.h>
 #endif
-#include <windows.h>
 #include <accctrl.h>
 #include <lm.h>
 #define SECURITY_WIN32
@@ -46,7 +43,7 @@
 
 /*
  * Get some wrappers for functions not implemented in old versions
- * of WIN32. Needs a Platform SDK installed. The SDK included in 
+ * of WIN32. Needs a Platform SDK installed. The SDK included in
  * MSVS 6.0 is not enough.
  */
 #ifdef HAVE_NEWAPIS_H
@@ -67,7 +64,6 @@
 #include "interpret.h"
 #include "operators.h"
 #include "stuff.h"
-#include "pike_security.h"
 #include "fdlib.h"
 
 #define sp Pike_sp
@@ -75,7 +71,7 @@
 static void throw_nt_error(char *funcname, int err)
 /*
  *  Give string equivalents to some of the more common NT error codes.
- */ 
+ */
 {
   char *msg;
 
@@ -189,7 +185,6 @@ static void f_cp(INT32 args)
 {
   char *from, *to;
   int ret;
-  VALID_FILE_IO("cp","write");
   get_all_args("cp",args,"%s%s",&from,&to);
   ret=CopyFile(from, to, 0);
   if(!ret) set_errno_from_win32_error (GetLastError());
@@ -213,7 +208,7 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
     case REG_BINARY:
       push_string(make_shared_binary_string(buffer,len));
       break;
-      
+
     case REG_SZ:
       if (!len) {
 	push_empty_string();
@@ -221,17 +216,17 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
 	push_string(make_shared_binary_string(buffer,len-1));
       }
       break;
-      
+
     case REG_EXPAND_SZ:
       type =
 	ExpandEnvironmentStrings((LPCTSTR)buffer,
 				 buffer+len,
-				 DO_NOT_WARN((DWORD)(sizeof(buffer)-len-1)));
+                                 (DWORD)(sizeof(buffer)-len-1));
       if(type>sizeof(buffer)-len-1 || !type)
 	Pike_error("RegGetValue: Failed to expand data.\n");
       push_text(buffer+len);
       break;
-      
+
     case REG_MULTI_SZ:
       if (!len) {
         push_empty_array();
@@ -241,21 +236,21 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
 	f_divide(2);
       }
       break;
-      
+
     case REG_DWORD_LITTLE_ENDIAN:
       push_int(EXTRACT_UCHAR(buffer)+
 	       (EXTRACT_UCHAR(buffer+1)<<1)+
 	       (EXTRACT_UCHAR(buffer+2)<<2)+
 	       (EXTRACT_UCHAR(buffer+3)<<3));
       break;
-      
+
     case REG_DWORD_BIG_ENDIAN:
       push_int(EXTRACT_UCHAR(buffer+3)+
 	       (EXTRACT_UCHAR(buffer+2)<<1)+
 	       (EXTRACT_UCHAR(buffer+1)<<2)+
 	       (EXTRACT_UCHAR(buffer)<<3));
       break;
-      
+
     default:
       Pike_error("RegGetValue: cannot handle this data type.\n");
   }
@@ -553,10 +548,10 @@ void f_RegGetValues(INT32 args)
 	push_tchar(buf,len);
 	push_regvalue(type,buffer,buflen);
 	continue;
-      
+
       case ERROR_NO_MORE_ITEMS:
 	break;
-      
+
       default:
 	RegCloseKey(new_key);
 	throw_nt_error("RegGetValues[RegEnumKeyEx]", ret);
@@ -655,6 +650,81 @@ void f_RegGetValues_76(INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
+
+/*! @decl int FreeConsole()
+ *!
+ *! Detaches the calling process from its console.
+ *!
+ *! @note
+ *!  Before calling this function, @[Stdio.stderr], @[Stdio.stdout] and
+ *!  @[Stdio.stdin] must be closed.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_FREECONSOLE
+void f_freeconsole(INT32 args)
+{
+  int rv;
+
+  rv = (int)FreeConsole();
+
+  push_int(rv);
+}
+#endif /* HAVE_FREECONSOLE */
+
+/*! @decl int AllocConsole()
+ *!
+ *! Allocates a new console for the calling process.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_ALLOCCONSOLE
+void f_allocconsole(INT32 args)
+{
+  int rv;
+
+  rv = (int)AllocConsole();
+
+  push_int(rv);
+}
+#endif /* HAVE_ALOCCONSOLE */
+
+/*! @decl int AttachConsole(int pid)
+ *!
+ *! Attaches calling process to a specific console.
+ *!
+ *! @param pid
+ *   The identifier of the process whose console is to be used.
+ *!
+ *! @note
+ *!  Only available on certain Windows systems.
+ *!
+ *! @returns
+ *!   0 on success, non-zero otherwise.
+ */
+#ifdef HAVE_ATTACHCONSOLE
+void f_attachconsole(INT32 args)
+{
+  int rv;
+  int pid;
+  get_all_args("AttachConsole", args, "%d",
+               &pid);
+
+  rv = (int)AttachConsole(pid);
+
+  push_int(rv);
+}
+#endif /* HAVE_ATTACHCONSOLE */
+
+
 static struct program *token_program;
 
 #define THIS_TOKEN (*(HANDLE *)(Pike_fp->current_storage))
@@ -697,7 +767,7 @@ static void exit_sid(struct object *o)
 {
   if(THIS_PSID)
   {
-    free((char *)THIS_PSID);
+    free(THIS_PSID);
     THIS_PSID=0;
   }
 }
@@ -733,7 +803,7 @@ static void f_sid_account(INT32 args)
 
   check_all_args("SID->account",args,BIT_STRING|BIT_VOID, 0);
   if(args) sys=sp[-1].u.string->str;
-  
+
   if(!THIS_PSID) Pike_error("SID->account on uninitialized SID.\n");
   lookupaccountsid(sys,
 		   THIS_PSID,
@@ -743,12 +813,12 @@ static void f_sid_account(INT32 args)
 		   &domainlen,
 		   &type);
 
-  
+
   if(namelen && domainlen)
   {
     struct pike_string *dom=begin_shared_string(domainlen-1);
     struct pike_string *name=begin_shared_string(namelen-1);
-    
+
     if(lookupaccountsid(sys,
 			 THIS_PSID,
 			 STR0(name),
@@ -763,13 +833,13 @@ static void f_sid_account(INT32 args)
       f_aggregate(3);
       return;
     }
-    free((char *)dom);
-    free((char *)name);
+    free(dom);
+    free(name);
   }
   errno=GetLastError();
   pop_n_elems(args);
   push_array(allocate_array(3));
-  
+
 }
 
 /*! @decl object LogonUser(string username, string|int(0..0) domain, @
@@ -818,8 +888,6 @@ void f_LogonUser(INT32 args)
   HANDLE x;
   BOOL ret;
 
-  ASSERT_SECURITY_ROOT("System.LogonUser");
-
   check_all_args("System.LogonUser",args,
 		 BIT_STRING, BIT_INT | BIT_STRING, BIT_STRING,
 		 BIT_INT | BIT_VOID, BIT_INT | BIT_VOID,0);
@@ -865,13 +933,13 @@ void f_LogonUser(INT32 args)
 
 static void init_token(struct object *o)
 {
-  THIS_TOKEN = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+  THIS_TOKEN = INVALID_HANDLE_VALUE;
 }
 
 static void exit_token(struct object *o)
 {
   CloseHandle(THIS_TOKEN);
-  THIS_TOKEN = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+  THIS_TOKEN = INVALID_HANDLE_VALUE;
 }
 
 static void low_encode_user_info_0(USER_INFO_0 *tmp)
@@ -916,7 +984,7 @@ static void low_encode_user_info_2(USER_INFO_2 *tmp)
    push_string(make_shared_binary_string(tmp->usri2_logon_hours,21));
   else
    push_int(0);
-  
+
   push_int(tmp->usri2_bad_pw_count);
   push_int(tmp->usri2_num_logons);
   SAFE_PUSH_WSTR(tmp->usri2_logon_server);
@@ -1095,7 +1163,7 @@ static void encode_group_users_info(BYTE *u, int level)
       Pike_error("Unsupported GROUPUSERSINFO level.\n");
   }
 }
-  
+
 static void low_encode_localgroup_users_info_0(LOCALGROUP_USERS_INFO_0 *tmp)
 {
   SAFE_PUSH_WSTR(tmp->lgrui0_name);
@@ -1122,9 +1190,9 @@ static void low_encode_localgroup_members_info_0(LOCALGROUP_MEMBERS_INFO_0 *tmp)
 #define SAFE_PUSH_SID(X) do {			\
   if(getlengthsid && (X) && sid_program) {	\
     int lentmp=getlengthsid( (X) );		\
-    PSID psidtmp=(PSID)xalloc(lentmp);		\
+    PSID psidtmp=xalloc(lentmp);		\
     struct object *o=low_clone(sid_program);	\
-    MEMCPY( psidtmp, (X), lentmp);		\
+    memcpy( psidtmp, (X), lentmp);		\
     (*(PSID *)(o->storage))=psidtmp;		\
     push_object(o);				\
   } else {					\
@@ -1138,7 +1206,7 @@ static void low_encode_localgroup_members_info_1(LOCALGROUP_MEMBERS_INFO_1 *tmp)
 {
   low_encode_localgroup_members_info_0((LOCALGROUP_MEMBERS_INFO_0 *)tmp);
   push_int(tmp->lgrmi1_sidusage);
-  SAFE_PUSH_WSTR(tmp->lgrmi1_name);  
+  SAFE_PUSH_WSTR(tmp->lgrmi1_name);
   /* 3 entries */
 }
 
@@ -1332,7 +1400,7 @@ void f_NetUserGetInfo(INT32 args)
   }else{
     server=NULL;
   }
-  
+
   user=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
   if(!user)
   {
@@ -1749,7 +1817,7 @@ void f_NetUserGetGroups(INT32 args)
 
   pop_n_elems(args);
 
-  
+
   THREADS_ALLOW();
   ret=netusergetgroups(server,
 			user,
@@ -1761,7 +1829,7 @@ void f_NetUserGetGroups(INT32 args)
   THREADS_DISALLOW();
   if(!a)
     push_array(a=allocate_array(total));
-  
+
   if (ret == NERR_Success)
   {
     ptr=buf;
@@ -1864,7 +1932,7 @@ void f_NetUserGetLocalGroups(INT32 args)
 
   pop_n_elems(args);
 
-  
+
   THREADS_ALLOW();
   ret=netusergetlocalgroups(server,
 			    user,
@@ -1877,7 +1945,7 @@ void f_NetUserGetLocalGroups(INT32 args)
   THREADS_DISALLOW();
   if(!a)
     push_array(a=allocate_array(total));
-  
+
   switch(ret)
   {
     case NERR_Success:
@@ -2184,7 +2252,7 @@ void f_NetGetDCName(INT32 args)
   }else{
     server=NULL;
   }
-  
+
   domain=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
   if(!domain)
   {
@@ -2253,7 +2321,7 @@ void f_NetGetAnyDCName(INT32 args)
   }else{
     server=NULL;
   }
-  
+
   domain=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
   if(!domain)
   {
@@ -2304,7 +2372,7 @@ static LPWSTR get_wstring(struct svalue *s)
       /* we never get here, but the "return (LPWSTR)0" makes the compiler
        * stop complaining about our not returning a value here.
        */
-      return (LPWSTR)0;
+      UNRECHABLE(return (LPWSTR)0);
   }
 }
 
@@ -2496,7 +2564,7 @@ static void f_NetSessionEnum(INT32 args)
       Pike_error("NetSessionEnum: Unsupported level: %d.\n", level);
   }
 
-  
+
   while(1)
   {
     DWORD read=0, total=0, e, pos = 0;
@@ -2517,7 +2585,7 @@ static void f_NetSessionEnum(INT32 args)
 
     if(!a)
       push_array(a=allocate_array(total));
-    
+
     switch(ret)
     {
       case NERR_Success:
@@ -2576,7 +2644,7 @@ static void f_NetWkstaUserEnum(INT32 args)
 
   if (level != 0 && level != 1)
       Pike_error("NetWkstaUserEnum: Unsupported level: %d.\n", level);
-  
+
   while(1)
   {
     DWORD read=0, total=0, e, pos = 0;
@@ -2595,7 +2663,7 @@ static void f_NetWkstaUserEnum(INT32 args)
 
     if(!a)
       push_array(a=allocate_array(total));
-    
+
     switch(ret)
     {
       case NERR_Success:
@@ -2694,7 +2762,7 @@ static void f_normalize_path(INT32 args)
      * e.g. "c:\\". */
     file = xalloc(str->len + 2);
     SET_ONERROR (file_uwp, free, file);
-    MEMCPY(file, str->str, str->len);
+    memcpy(file, str->str, str->len);
     file[str->len] = '.';
     file[str->len + 1] = 0;
   }
@@ -2833,7 +2901,6 @@ static void f_GetFileAttributes(INT32 args)
 {
   char *file;
   DWORD ret;
-  VALID_FILE_IO("GetFileAttributes","read");
   get_all_args("GetFileAttributes",args,"%s",&file);
   ret=GetFileAttributes( (LPCTSTR) file);
   pop_stack();
@@ -2856,7 +2923,6 @@ static void f_SetFileAttributes(INT32 args)
   char *file;
   INT_TYPE attr, ret;
   DWORD tmp;
-  VALID_FILE_IO("SetFileAttributes","write");
   get_all_args("SetFileAttributes", args, "%s%i", &file, &attr);
   tmp=attr;
   ret=SetFileAttributes( (LPCTSTR) file, tmp);
@@ -2890,7 +2956,7 @@ static void f_LookupAccountName(INT32 args)
     Pike_error("LookupAccountName: Account name is wide string.\n");
 
   acc=STR0(sp[1-args].u.string);
-  
+
   sidlen=0;
   domainlen=0;
 
@@ -2905,7 +2971,7 @@ static void f_LookupAccountName(INT32 args)
 
   if(sidlen && domainlen)
   {
-    PSID sid=(PSID)xalloc(sidlen);
+    PSID sid=xalloc(sidlen);
     struct pike_string *dom=begin_shared_string(domainlen-1);
 
     if(lookupaccountname(sys,
@@ -2926,8 +2992,8 @@ static void f_LookupAccountName(INT32 args)
       f_aggregate(3);
       return;
     }
-    free((char *)dom);
-    free((char *)sid);
+    free(dom);
+    free(sid);
   }
   errno=GetLastError();
   pop_n_elems(args);
@@ -2949,7 +3015,7 @@ static struct array *encode_acl(PACL acl)
       switch(((ACE_HEADER *)ace)->AceType)
       {
 	case ACCESS_ALLOWED_ACE_TYPE:
-	  push_constant_text("allow");
+	  push_static_text("allow");
 	  push_int(((ACE_HEADER *)ace)->AceFlags);
 	  push_int( ((ACCESS_ALLOWED_ACE *)ace)->Mask );
 	  SAFE_PUSH_SID( & ((ACCESS_ALLOWED_ACE *)ace)->SidStart );
@@ -2957,7 +3023,7 @@ static struct array *encode_acl(PACL acl)
 	  break;
 
 	case ACCESS_DENIED_ACE_TYPE:
-	  push_constant_text("deny");
+	  push_static_text("deny");
 	  push_int(((ACE_HEADER *)ace)->AceFlags);
 	  push_int( ((ACCESS_DENIED_ACE *)ace)->Mask );
 	  SAFE_PUSH_SID( & ((ACCESS_DENIED_ACE *)ace)->SidStart );
@@ -2965,7 +3031,7 @@ static struct array *encode_acl(PACL acl)
 	  break;
 
 	case SYSTEM_AUDIT_ACE_TYPE:
-	  push_constant_text("audit");
+	  push_static_text("audit");
 	  push_int(((ACE_HEADER *)ace)->AceFlags);
 	  push_int( ((SYSTEM_AUDIT_ACE *)ace)->Mask );
 	  SAFE_PUSH_SID( & ((SYSTEM_AUDIT_ACE *)ace)->SidStart );
@@ -2973,7 +3039,7 @@ static struct array *encode_acl(PACL acl)
 	  break;
 
 	default:
-	  push_constant_text("unknown");
+	  push_static_text("unknown");
 	  f_aggregate(1);
 	  break;
 
@@ -3028,7 +3094,7 @@ static PACL decode_acl(struct array *arr)
     size += getlengthsid( *sid ) - sizeof(DWORD);
   }
 
-  ret=(PACL)xalloc( size );
+  ret=xalloc( size );
 
   if(!initializeacl(ret, size, ACL_REVISION))
     Pike_error("InitializeAcl failed!\n");
@@ -3041,14 +3107,14 @@ static PACL decode_acl(struct array *arr)
     switch( ( str[0] << 8 ) + str[1] )
     {
       case ( 'a' << 8 ) + 'c':
-	if(!addaccessallowedace(ret, ACL_REVISION, 
+	if(!addaccessallowedace(ret, ACL_REVISION,
 				arr->item[a].u.array->item[2].u.integer,
 				sid))
 	  Pike_error("AddAccessAllowedAce failed!\n");
 	break;
 
       case ( 'd' << 8 ) + 'e':
-	if(!addaccessdeniedace(ret, ACL_REVISION, 
+	if(!addaccessdeniedace(ret, ACL_REVISION,
 			       arr->item[a].u.array->item[2].u.integer,
 			       sid))
 	  Pike_error("AddAccessDeniedAce failed!\n");
@@ -3056,7 +3122,7 @@ static PACL decode_acl(struct array *arr)
 
       case ( 'a' << 8 ) + 'u':
 	/* FIXME, what to do with the last two arguments ?? */
-	if(!addauditaccessace(ret, ACL_REVISION, 
+	if(!addauditaccessace(ret, ACL_REVISION,
 			      arr->item[a].u.array->item[2].u.integer,
 			      sid,1,1))
 	  Pike_error("AddAuditAccessAce failed!\n");
@@ -3092,10 +3158,9 @@ static void f_SetNamedSecurityInfo(INT32 args)
   DWORD ret;
   SE_OBJECT_TYPE type=SE_FILE_OBJECT;
 
-  ASSERT_SECURITY_ROOT("SetNamedSecurity");
   get_all_args("SetNamedSecurityInfo",args,"%s%m",&name,&m);
 
-  if((sval=simple_mapping_string_lookup(m, "type")))
+  if((sval=low_mapping_string_lookup(m, literal_type_string)))
   {
     if(TYPEOF(*sval) != T_INT)
       Pike_error("Bad 'type' in SetNamedSecurityInfo.\n");
@@ -3135,7 +3200,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
     sacl=decode_acl(sval->u.array);
     flags |= SACL_SECURITY_INFORMATION;
   }
-      
+
   /* FIXME, add dacl and sacl!!!! */
 
   ret=setnamedsecurityinfo(name,
@@ -3194,25 +3259,25 @@ static void f_GetNamedSecurityInfo(INT32 args)
 
     if(owner)
     {
-      push_constant_text("owner");
+      push_static_text("owner");
       SAFE_PUSH_SID(owner);
       tmp++;
     }
     if(group)
     {
-      push_constant_text("group");
+      push_static_text("group");
       SAFE_PUSH_SID(group);
       tmp++;
     }
     if(sacl)
     {
-      push_constant_text("sacl");
+      push_static_text("sacl");
       push_array( encode_acl( sacl ));
       tmp++;
     }
     if(dacl)
     {
-      push_constant_text("dacl");
+      push_static_text("dacl");
       push_array( encode_acl( dacl ));
       tmp++;
     }
@@ -3246,7 +3311,7 @@ static void f_nt_uname(INT32 args)
   GetSystemInfo(&sysinfo);
 
   n+=2;
-  push_text("architecture");
+  push_static_text("architecture");
   switch(sysinfo.wProcessorArchitecture)
   {
     case PROCESSOR_ARCHITECTURE_INTEL:
@@ -3256,17 +3321,17 @@ static void f_nt_uname(INT32 args)
       break;
 
     case PROCESSOR_ARCHITECTURE_MIPS:
-      push_text("mips");
+      push_static_text("mips");
       machine = "mips";
       break;
 
     case PROCESSOR_ARCHITECTURE_ALPHA:
-      push_text("alpha");
+      push_static_text("alpha");
       machine = "alpha";
       break;
 
     case PROCESSOR_ARCHITECTURE_PPC:
-      push_text("ppc");
+      push_static_text("ppc");
       machine = "ppc";
       break;
 
@@ -3276,17 +3341,17 @@ static void f_nt_uname(INT32 args)
       switch (sysinfo.dwProcessorType) {
       case PROCESSOR_HITACHI_SH3:
       case PROCESSOR_SHx_SH3:
-        push_text("sh3");
+        push_static_text("sh3");
 	break;
       case PROCESSOR_HITACHI_SH3E:
-        push_text("sh3e");
+        push_static_text("sh3e");
 	break;
       case PROCESSOR_HITACHI_SH4:
       case PROCESSOR_SHx_SH4:
-        push_text("sh4");
+        push_static_text("sh4");
 	break;
       default:
-	push_text("shx");
+	push_static_text("shx");
 	break;
       }
       break;
@@ -3297,22 +3362,22 @@ static void f_nt_uname(INT32 args)
       machine = "arm";
       switch (sysinfo.dwProcessorType) {
       case PROCESSOR_STRONGARM:
-	push_text("strongarm");
+	push_static_text("strongarm");
 	break;
       case PROCESSOR_ARM720:
-	push_text("arm720");
+	push_static_text("arm720");
 	break;
       case PROCESSOR_ARM820:
-	push_text("arm820");
+	push_static_text("arm820");
 	break;
       case PROCESSOR_ARM920:
-	push_text("arm920");
+	push_static_text("arm920");
 	break;
       case PROCESSOR_ARM_7TDMI:
-	push_text("arm7tdmi");
+	push_static_text("arm7tdmi");
 	break;
       default:
-	push_text("arm");
+	push_static_text("arm");
 	break;
       }
       break;
@@ -3321,53 +3386,53 @@ static void f_nt_uname(INT32 args)
 #ifdef PROCESSOR_ARCHITECTURE_IA64
     case PROCESSOR_ARCHITECTURE_IA64:
       machine = "ia64";
-      push_text("ia64");
+      push_static_text("ia64");
       break;
 #endif /* PROCESSOR_ARCHITECTURE_IA64 */
 
 #ifdef PROCESSOR_ARCHITECTURE_ALPHA64
     case PROCESSOR_ARCHITECTURE_ALPHA64:
       machine = "alpha64";
-      push_text("alpha64");
+      push_static_text("alpha64");
       break;
 #endif /* PROCESSOR_ARCHITECTURE_ALPHA64 */
 
 #ifdef PROCESSOR_ARCHITECTURE_AMD64
     case PROCESSOR_ARCHITECTURE_AMD64:
       machine = "amd64";
-      push_text("amd64");
+      push_static_text("amd64");
       break;
 #endif
 
 #ifdef PROCESSOR_ARCHITECTURE_MSIL
     case PROCESSOR_ARCHITECTURE_MSIL:
       machine = "msil";
-      push_text("msil");
+      push_static_text("msil");
       break;
 #endif /* PROCESSOR_ARCHITECTURE_MSIL */
 
     default:
     case PROCESSOR_ARCHITECTURE_UNKNOWN:
       machine = "unknown";
-      push_text("unknown");
+      push_static_text("unknown");
       break;
   }
 
   n+=2;
-  push_text("machine");
+  push_static_text("machine");
   push_text(machine);
 
   n+=2;
-  push_text("sysname");
+  push_static_text("sysname");
   switch(osversion.dwPlatformId)
   {
     case VER_PLATFORM_WIN32s:
       version = "3.1";
-      push_text("Win32s");
+      push_static_text("Win32s");
       break;
 
     case VER_PLATFORM_WIN32_WINDOWS:
-      push_text("Win32");
+      push_static_text("Win32");
       switch(osversion.dwMinorVersion)
       {
       case 0:
@@ -3383,7 +3448,7 @@ static void f_nt_uname(INT32 args)
       break;
 
     case VER_PLATFORM_WIN32_NT:
-      push_text("Win32");
+      push_static_text("Win32");
       switch(osversion.dwMajorVersion)
       {
       case 3:
@@ -3409,7 +3474,7 @@ static void f_nt_uname(INT32 args)
       break;
 
     default:
-      push_text("Win32");
+      push_static_text("Win32");
       break;
   }
 
@@ -3420,15 +3485,15 @@ static void f_nt_uname(INT32 args)
 	  osversion.dwBuildNumber & 0xffff);
 
   n+=2;
-  push_text("release");
+  push_static_text("release");
   push_text(buf);
 
   n+=2;
-  push_text("version");
+  push_static_text("version");
   push_text(osversion.szCSDVersion);
 
   n+=2;
-  push_text("nodename");
+  push_static_text("nodename");
   gethostname(buf, sizeof(buf));
   push_text(buf);
 
@@ -3509,34 +3574,34 @@ static void f_sctx_create(INT32 args)
   TimeStamp       Lifetime;
   char *          pkgName;
 
-  get_all_args("system.SecurityContext->create",args,"%s",&pkgName);
+  get_all_args("create",args,"%s",&pkgName);
 
   lstrcpy(sctx->lpPackageName, pkgName);
   ss = querysecuritypackageinfo ( sctx->lpPackageName, &pkgInfo);
-  
-  if (!SEC_SUCCESS(ss)) 
+
+  if (!SEC_SUCCESS(ss))
   {
     Pike_error("Could not query package info for %s, error 0x%08x\n",
                sctx->lpPackageName, ss);
   }
-  
+
   sctx->cbMaxMessage = pkgInfo->cbMaxToken;
   if (sctx->buf)
     free(sctx->buf);
-  sctx->buf = (PBYTE)malloc(sctx->cbMaxMessage);
+  sctx->buf = malloc(sctx->cbMaxMessage);
 
   freecontextbuffer(pkgInfo);
 
   if (sctx->hcred_alloced)
     freecredentialshandle (&sctx->hcred);
   ss = acquirecredentialshandle (
-                                 NULL, 
+                                 NULL,
                                  sctx->lpPackageName,
                                  SECPKG_CRED_INBOUND,
-                                 NULL, 
-                                 NULL, 
-                                 NULL, 
-                                 NULL, 
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
                                  &sctx->hcred,
                                  &Lifetime);
 
@@ -3545,9 +3610,6 @@ static void f_sctx_create(INT32 args)
     Pike_error("AcquireCreds failed: 0x%08x\n", ss);
   }
   sctx->hcred_alloced = 1;
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 
@@ -3562,7 +3624,7 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
   SecBufferDesc     InBuffDesc;
   SecBuffer         InSecBuff;
   ULONG             Attribs = 0;
- 
+
   /*----------------------------------------------------------------
    * Prepare output buffers
    */
@@ -3593,14 +3655,14 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
   ss = acceptsecuritycontext (&sctx->hcred,
                               fNewConversation ? NULL : &sctx->hctxt,
                               &InBuffDesc,
-                              Attribs, 
+                              Attribs,
                               SECURITY_NATIVE_DREP,
                               &sctx->hctxt,
                               &OutBuffDesc,
                               &Attribs,
                               &Lifetime);
 
-  if (!SEC_SUCCESS (ss))  
+  if (!SEC_SUCCESS (ss))
   {
     sctx->lastError = ss;
     return FALSE;
@@ -3610,12 +3672,12 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
   /*----------------------------------------------------------------
    * Complete token -- if applicable
    */
-   
-  if ((SEC_I_COMPLETE_NEEDED == ss) 
-      || (SEC_I_COMPLETE_AND_CONTINUE == ss))  
+
+  if ((SEC_I_COMPLETE_NEEDED == ss)
+      || (SEC_I_COMPLETE_AND_CONTINUE == ss))
   {
     ss = completeauthtoken (&sctx->hctxt, &OutBuffDesc);
-    if (!SEC_SUCCESS(ss))  
+    if (!SEC_SUCCESS(ss))
     {
       sctx->lastError = ss;
       return FALSE;
@@ -3624,7 +3686,7 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
 
   *pcbOut = OutSecBuff.cbBuffer;
 
-  *pfDone = !((SEC_I_CONTINUE_NEEDED == ss) 
+  *pfDone = !((SEC_I_CONTINUE_NEEDED == ss)
               || (SEC_I_COMPLETE_AND_CONTINUE == ss));
 
 /*   fprintf(stderr, "AcceptSecurityContext result = 0x%08x\n", ss); */
@@ -3642,19 +3704,19 @@ static void f_sctx_gencontext(INT32 args)
 
   check_all_args("system.SecurityContext->gen_context()", args,
                  BIT_STRING,0);
-  
+
   in = Pike_sp[-1].u.string;
   if (in->size_shift != 0)
     Pike_error("system.SecurityContext->gen_context(): wide strings is not allowed.\n");
   sctx->cBuf = sctx->cbMaxMessage;
-  if (!GenServerContext (in->str, in->len, sctx->buf, &sctx->cBuf, 
+  if (!GenServerContext (in->str, in->len, sctx->buf, &sctx->cBuf,
                          &sctx->done, !sctx->hctxt_alloced))
   {
     pop_n_elems(args);
     push_int(0);
     return;
   }
-  
+
   pop_n_elems(args);
 
   push_int(sctx->done?1:0);
@@ -3667,7 +3729,7 @@ static void f_sctx_getlastcontext(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
   check_all_args("system.SecurityContext->get_last_context", args, 0);
-  
+
   pop_n_elems(args);
 
   if (sctx->lastError)
@@ -3685,7 +3747,7 @@ static void f_sctx_isdone(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
   check_all_args("system.SecurityContext->is_done", args, 0);
-  
+
   pop_n_elems(args);
 
   push_int(sctx->done?1:0);
@@ -3696,7 +3758,7 @@ static void f_sctx_type(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
   check_all_args("system.SecurityContext->type", args, 0);
-  
+
   pop_n_elems(args);
 
   push_string(make_shared_string(sctx->lpPackageName));
@@ -3738,11 +3800,11 @@ static void f_sctx_getlasterror(INT32 args)
   LPVOID lpMsgBuf;
   char buf[100];
   check_all_args("system.SecurityContext->last_error", args, 0);
-  
+
   pop_n_elems(args);
 
-  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-                FORMAT_MESSAGE_FROM_SYSTEM | 
+  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                FORMAT_MESSAGE_FROM_SYSTEM |
                 FORMAT_MESSAGE_IGNORE_INSERTS,
                 NULL,
                 sctx->lastError,
@@ -3750,7 +3812,7 @@ static void f_sctx_getlasterror(INT32 args)
                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                 (LPTSTR) &lpMsgBuf,
                 0,
-                NULL 
+                NULL
                 );
   sprintf(buf, "0x%04x: ", sctx->lastError);
   push_text(buf);
@@ -3759,7 +3821,13 @@ static void f_sctx_getlasterror(INT32 args)
   LocalFree(lpMsgBuf);
 }
 
-
+/*! @decl string GetComputerName()
+ *!
+ *! Retrieves the NetBIOS name of the local computer.
+ *!
+ *! @note
+ *!   This function is Windows specific, and is not available on all systems.
+ */
 static void f_GetComputerName(INT32 args)
 {
   char  name[MAX_COMPUTERNAME_LENGTH + 1];
@@ -3775,6 +3843,29 @@ static void f_GetComputerName(INT32 args)
   push_string(make_shared_binary_string(name, len));
 }
 
+/*! @decl string GetUserName()
+ *!
+ *! Retrieves the name of the user associated with the current thread.
+ *!
+ *! @note
+ *!   This function is Windows specific, and is not available on all systems.
+ */
+#ifdef HAVE_GETUSERNAME
+static void f_GetUserName(INT32 args)
+{
+  char  name[UNLEN + 1];
+  DWORD len = sizeof(name);
+
+  check_all_args("system.GetUserName", args, 0);
+
+  pop_n_elems(args);
+
+  if (!GetUserName(name, &len))
+    push_int(0);
+
+  push_string(make_shared_binary_string(name, len-1));
+}
+#endif /* HAVE_GETUSERNAME */
 
 #define ADD_GLOBAL_INTEGER_CONSTANT(X,Y) \
    push_int((long)(Y)); low_add_constant(X,sp-1); pop_stack();
@@ -3787,7 +3878,7 @@ void init_nt_system_calls(void)
 
   ADD_FUNCTION("GetFileAttributes",f_GetFileAttributes,tFunc(tStr,tInt),0);
   ADD_FUNCTION("SetFileAttributes",f_SetFileAttributes,tFunc(tStr tInt,tInt),0);
-  
+
   SIMPCONST(FILE_ATTRIBUTE_ARCHIVE);
   SIMPCONST(FILE_ATTRIBUTE_HIDDEN);
   SIMPCONST(FILE_ATTRIBUTE_NORMAL);
@@ -3807,7 +3898,7 @@ void init_nt_system_calls(void)
 #ifdef FILE_ATTRIBUTE_SPARSE_FILE
   SIMPCONST(FILE_ATTRIBUTE_SPARSE_FILE);
 #endif
-  
+
   ADD_FUNCTION("cp",f_cp,tFunc(tStr tStr,tInt), 0);
 
   /* See array hkeys[] above. */
@@ -3816,7 +3907,7 @@ void init_nt_system_calls(void)
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_LOCAL_MACHINE", 1);
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CURRENT_USER", 2);
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_USERS", 3);
-  
+
 /* function(int,string,string:string|int|string*) */
   ADD_EFUN("RegGetValue", f_RegGetValue,
 	   tFunc(tInt tStr tStr, tOr3(tStr, tInt, tArr(tStr))),
@@ -3841,6 +3932,21 @@ void init_nt_system_calls(void)
 		tFunc(tInt tStr, tArr(tStr)),
 		0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
+/* function(void:int) */
+#ifdef HAVE_FREECONSOLE
+  ADD_FUNCTION("FreeConsole", f_freeconsole, tFunc(tNone,tInt), 0);
+#endif /* HAVE_FREECONSOLE */
+
+/* function(void:int) */
+#ifdef HAVE_ALLOCCONSOLE
+  ADD_FUNCTION("AllocConsole", f_allocconsole, tFunc(tNone,tInt), 0);
+#endif /* HAVE_ALLOCCONSOLE */
+
+/* function(int:int) */
+#ifdef HAVE_ATTACHCONSOLE
+  ADD_FUNCTION("AttachConsole", f_attachconsole, tFunc(tInt,tInt), 0);
+#endif /* HAVE_ATTACHCONSOLE */
+
   ADD_EFUN("uname", f_nt_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("uname", f_nt_uname,tFunc(tNone,tMapping), 0, OPT_TRY_OPTIMIZE);
 
@@ -3856,13 +3962,13 @@ void init_nt_system_calls(void)
 
       /* function(string,string,string,int|void,void|int:object) */
   ADD_FUNCTION("LogonUser",f_LogonUser,tFunc(tStr tStr tStr tOr(tInt,tVoid) tOr(tVoid,tInt),tObj),0);
-      
+
       SIMPCONST(LOGON32_LOGON_BATCH);
       SIMPCONST(LOGON32_LOGON_INTERACTIVE);
       SIMPCONST(LOGON32_LOGON_SERVICE);
       SIMPCONST(LOGON32_LOGON_NETWORK);
       SIMPCONST(LOGON32_PROVIDER_DEFAULT);
-      
+
       start_new_program();
       ADD_STORAGE(HANDLE);
       set_init_callback(init_token);
@@ -3939,16 +4045,16 @@ void init_nt_system_calls(void)
       if( (proc=GetProcAddress(netapilib, "NetUserGetInfo")) )
       {
 	netusergetinfo=(netusergetinfotype)proc;
-	
+
 	/* function(string,string,int|void:string|array(string|int)) */
 	ADD_FUNCTION("NetUserGetInfo",f_NetUserGetInfo,
 		     tFunc(tStr tStr tOr(tInt,tVoid),
 			   tOr(tStr,tArr(tOr(tStr,tInt)))),0);
-	
+
 	SIMPCONST(USER_PRIV_GUEST);
 	SIMPCONST(USER_PRIV_USER);
 	SIMPCONST(USER_PRIV_ADMIN);
-	
+
 	SIMPCONST(UF_SCRIPT);
 	SIMPCONST(UF_ACCOUNTDISABLE);
 	SIMPCONST(UF_HOMEDIR_REQUIRED);
@@ -3956,27 +4062,27 @@ void init_nt_system_calls(void)
 	SIMPCONST(UF_PASSWD_CANT_CHANGE);
 	SIMPCONST(UF_LOCKOUT);
 	SIMPCONST(UF_DONT_EXPIRE_PASSWD);
-	
+
 	SIMPCONST(UF_NORMAL_ACCOUNT);
 	SIMPCONST(UF_TEMP_DUPLICATE_ACCOUNT);
 	SIMPCONST(UF_WORKSTATION_TRUST_ACCOUNT);
 	SIMPCONST(UF_SERVER_TRUST_ACCOUNT);
 	SIMPCONST(UF_INTERDOMAIN_TRUST_ACCOUNT);
-	
+
 	SIMPCONST(AF_OP_PRINT);
 	SIMPCONST(AF_OP_COMM);
 	SIMPCONST(AF_OP_SERVER);
 	SIMPCONST(AF_OP_ACCOUNTS);
       }
-      
+
       if( (proc=GetProcAddress(netapilib, "NetUserEnum")) )
       {
 	netuserenum=(netuserenumtype)proc;
-	
+
 	/* function(string|int|void,int|void,int|void:array(string|array(string|int))) */
 	ADD_FUNCTION("NetUserEnum",f_NetUserEnum,
 		     tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),tArr(tOr(tStr,tArr(tOr(tStr,tInt))))),0);
-	
+
 	SIMPCONST(FILTER_TEMP_DUPLICATE_ACCOUNT);
 	SIMPCONST(FILTER_NORMAL_ACCOUNT);
 	SIMPCONST(FILTER_INTERDOMAIN_TRUST_ACCOUNT);
@@ -4147,6 +4253,10 @@ void init_nt_system_calls(void)
   }
 
   ADD_FUNCTION("GetComputerName",f_GetComputerName,tFunc(tVoid, tStr), 0);
+#ifdef HAVE_GETUSERNAME
+  ADD_FUNCTION("GetUserName",f_GetUserName,tFunc(tVoid, tStr), 0);
+#endif /* HAVE_GETUSERNAME */
+
 }
 
 void exit_nt_system_calls(void)

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <chapter title="Data types">
 
 <p>In this chapter we will discuss all the different ways to store data
@@ -137,7 +138,7 @@ Also, these functions operates on floats:</p>
 
 <subsection title="string">
 
-<p>A <tt>string</tt> can be seen as an array of values from 0 to 2³²-1.
+<p>A <tt>string</tt> can be seen as an array of values from 0 to 2Â³Â²-1.
 Usually a string contains text such as a word, a sentence, a page or
 even a whole book. But it can also contain parts of a binary file,
 compressed data or other binary data. Strings in Pike are <b>shared</b>,
@@ -199,11 +200,11 @@ Also, <tt>\<i>XXX</i></tt> where <i>XXX</i> is an
 octal number from 0 to 37777777777 or <tt>\x<i>XX</i></tt> where <i>XX</i>
 is 0 to ffffffff lets you write any character you want in the
 string, even null characters. From version 0.6.105, you may also use
-<tt>\d<i>XXX</i></tt> where <i>XXX</i> is 0 to 2³²-1. If you write two constant
+<tt>\d<i>XXX</i></tt> where <i>XXX</i> is 0 to 2Â³Â²-1. If you write two constant
 strings after each other, they will be concatenated into one string.</p>
 
 <p>You might be surprised to see that individual characters can have values
-up to 2³²-1 and wonder how much memory that use. Do not worry, Pike
+up to 2Â³Â²-1 and wonder how much memory that use. Do not worry, Pike
 automatically decides the proper amount of memory for a string, so all
 strings with character values in the range 0-255 will be stored with
 one byte per character. You should also beware that not all functions

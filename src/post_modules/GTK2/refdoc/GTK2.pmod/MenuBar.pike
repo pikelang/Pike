@@ -18,7 +18,7 @@
 
 inherit GTK2.MenuShell;
 
-static GTK2.MenuBar create( mapping|void props );
+protected GTK2.MenuBar create( mapping|void props );
 //! Create a new menu bar.
 //!
 //!
@@ -40,6 +40,6 @@ GTK2.MenuBar set_child_pack_direction( int setting );
 
 GTK2.MenuBar set_pack_direction( int setting );
 //! Sets how items should be packed inside a menubar.  One of
-//! .
+//! @[PACK_DIRECTION_BTT], @[PACK_DIRECTION_LTR], @[PACK_DIRECTION_RTL] and @[PACK_DIRECTION_TTB].
 //!
 //!

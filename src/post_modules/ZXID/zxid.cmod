@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -20,6 +19,7 @@
 #include "mapping.h"
 #include "pike_types.h"
 #include "threads.h"
+#include "pike_threadlib.h"
 
 #include "zxid_config.h"
 
@@ -36,6 +36,15 @@ DECLARATIONS
  *! to the C one, but using generally accepted Pike syntax.
  */
 
+/* This symbol conflicts with a definition of the same in <zxid/errmac.h>.
+ */
+#undef GETTIMEOFDAY
+
+/* These defines are needed to get the right size for the zxid_conf struct! */
+#define USE_CURL
+#define USE_PTHREAD
+#define USE_OPENSSL
+
 #include <zxid/zxid.h>
 
 /* Needed for some obscure macros (like ERR, DD, MB, ME, etc). */
@@ -44,25 +53,43 @@ DECLARATIONS
 /* Needed for zxid_new_at(). */
 #include <zxid/zxidpriv.h>
 
+/* Needed for zx_md_EntityDescriptor_s. */
+/* #include <zxid/zx-md-data.h> */
+
 #include "constants.h"
 
-#define THIS_OBJ Pike_interpreter.frame_pointer->current_object
-#define RET_THIS() do { pop_n_elems(args); ref_push_object(THIS_OBJ); return; } while(0)
+#ifdef malloc
+/* DMALLOC or similar. */
+void *malloc_wrapper(size_t bytes)
+{
+  return malloc(bytes);
+}
+void *realloc_wrapper(void *ptr, size_t bytes)
+{
+  return realloc(ptr, bytes);
+}
+void free_wrapper(void *ptr)
+{
+  free(ptr);
+}
+#endif
 
-/* Fall back to a normal index on this object, in case
- * someone inherited us. */
- #define OBJ_INDEX() do { \
-      struct svalue res; \
-      object_index_no_free2 (&res, Pike_fp->current_object, 0, Pike_sp-1); \
-      pop_stack(); \
-      *Pike_sp++ = res; \
-    } while(0) \
+#ifdef HAVE_STRUCT_ZXID_CONF_BURL
+/* These fields were renamed 2013-12-05. */
+#define BURL(CONF)	((CONF).burl)
+#define CPATH(CONF)	((CONF).cpath)
+#define CPATH_LEN(CONF)	((CONF).cpath_len)
+#else
+#define BURL(CONF)	((CONF).url)
+#define CPATH(CONF)	((CONF).path)
+#define CPATH_LEN(CONF)	((CONF).path_len)
+#endif
 
-
-#define CHECK_CLASS(o, name, arg)\
-  if(o->prog != PIKE_CONCAT(name, _program)) { \
-    Pike_error("Invalid class for argument %d\n", arg); \
-  }
+#ifndef ERRMAC_INOUT
+/* These were renamed 2013-11-13. */
+#define errmac_debug	zx_debug
+#define ERRMAC_INOUT	ZXID_INOUT
+#endif
 
 /*! @class Configuration
  *!
@@ -77,358 +104,34 @@ PIKECLASS Configuration {
   PIKEVAR mapping(string:mixed) conf_m
     flags ID_PRIVATE|ID_PROTECTED;
 
-  /* Lots of free-related functions are missing in the 1.02 API.
-   *
-   * Here are some that we need.
-   */
-
-  /* Reverse of zxid_new_at(). */
-  static void zxid_free_at(struct zx_ctx *ctx, struct zxid_attr *attr)
-  {
-    while (attr) {
-      struct zxid_attr *next = attr->n;
-      ZX_FREE(ctx, attr->name);
-      if (attr->val) ZX_FREE(ctx, attr->val);
-      ZX_FREE(ctx, attr);
-      attr = next;
-    }
-  }
-
-  /* Reverse of zxid_load_need().
-   */
-  static void zxid_free_need(struct zx_ctx *ctx, struct zxid_need *need)
-  {
-    while (need) {
-      struct zxid_need *next = need->n;
-      ZX_FREE(ctx, need->usage);
-      ZX_FREE(ctx, need->retent);
-      ZX_FREE(ctx, need->oblig);
-      ZX_FREE(ctx, need->ext);
-      zxid_free_at(ctx, need->at);
-      need = next;
-    }
-  }
-
-  /* Reverse of zxid_load_atsrc(). */
-  static void zxid_free_atsrc(struct zx_ctx *ctx, struct zxid_atsrc *src)
-  {
-    while (src) {
-      struct zxid_atsrc *next = src->n;
-      zxid_free_at(ctx, src->at);
-      ZX_FREE(ctx, src->ns);
-      ZX_FREE(ctx, src->weight);
-      ZX_FREE(ctx, src->url);
-      ZX_FREE(ctx, src->aapml);
-      ZX_FREE(ctx, src->otherlim);
-      ZX_FREE(ctx, src->ext);
-      ZX_FREE(ctx, src);
-      src = next;
-    }
-  }
-
-  /* Reverse of zxid_load_map().
-   */
-  static void zxid_free_map(struct zx_ctx *ctx, struct zxid_map *map)
-  {
-    while (map) {
-      struct zxid_map *next = map->n;
-      ZX_FREE(ctx, map->ns);
-      ZX_FREE(ctx, map->src);
-      ZX_FREE(ctx, map->dst);
-      ZX_FREE(ctx, map->ext);
-      ZX_FREE(ctx, map);
-      map = next;
-    }
-  }
-
-  /* Reverse of zxid_load_cstr_list(). */
-  static void zxid_free_cstr_list(struct zx_ctx *ctx,
-				  struct zxid_cstr_list *l)
-  {
-    while (l) {
-      struct zxid_cstr_list *next = l->n;
-      ZX_FREE(ctx, l->s);
-      ZX_FREE(ctx, l);
-      l = next;
-    }
-  }
-
-  /* These low-level functions are declared static in zxidconf.c,
-   * but we need them...
-   */
-
-  /* BEGIN Copied from zxidconf.c 1.51 (zxid 1.02). */
-
-#define IS_RULE(rule, val) (!memcmp((rule), (val), sizeof(val)-1) && (rule)[sizeof(val)-1] == '$')
-
-static struct zxid_need* zxid_load_need(zxid_conf* cf, struct zxid_need* need, char* v)
-{
-  char* attrs;
-  char* usage;
-  char* retent;
-  char* oblig;
-  char* ext;
-  char* p = v;
-  char* a;
-  int len;
-  struct zxid_need* nn;
-
-  while (p && *p) {
-    attrs = p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed NEED or WANT directive: attribute list at pos %d", ((int)(p-v)));
-      return need;
-    }
-
-    usage = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed NEED or WANT directive: usage missing at pos %d", ((int)(p-v)));
-      return need;
-    }
-
-    retent = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed NEED or WANT directive: retention missing at pos %d", ((int)(p-v)));
-      return need;
-    }
-
-    oblig = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed NEED or WANT directive: obligations missing at pos %d", ((int)(p-v)));
-      return need;
-    }
-    
-    ext = ++p;
-    p = strchr(p, ';');  /* Stanza ends in separator ; or end of string nul */
-    if (!p)
-      p = ext + strlen(ext);
-    
-    if (IS_RULE(usage, "reset")) {
-      INFO("Reset need %p", need);
-  /* END Copied from zxidconf.c 1.51 (zxid 1.02). */
-
-      /* The original code here leaks.
-       * /grubba
-       */
-      zxid_free_need(cf->ctx, need);
-      need = NULL;
-
-  /* BEGIN Copied from zxidconf.c 1.51 (zxid 1.02). */
-      if (!*p) break;
-      ++p;
-      continue;
-    }
-    
-    nn = ZX_ZALLOC(cf->ctx, struct zxid_need);
-    nn->n = need;
-    need = nn;
-
-    COPYVAL(nn->usage,  usage,  retent-1);
-    COPYVAL(nn->retent, retent, oblig-1);
-    COPYVAL(nn->oblig,  oblig,  ext-1);
-    COPYVAL(nn->ext,    ext,    p);
-
-    DD("need attrs(%.*s) usage(%s) retent(%s) oblig(%s) ext(%s)", usage-attrs-1, attrs, nn->usage, nn->retent, nn->oblig, nn->ext);
-
-    for (a = attrs; ; a += len+1) {
-      len = strcspn(a, ",$");
-      nn->at = zxid_new_at(cf, nn->at, len, a, 0,0, "need/want");
-      if (a[len] == '$')
-	break;
-    }
-    if (!*p) break;
-    ++p;
-  }
-
-  return need;
-}
-
-static struct zxid_cstr_list* zxid_load_cstr_list(zxid_conf* cf, struct zxid_cstr_list* l, char* p)
-{
-  char* q;
-  struct zxid_cstr_list* cs;
-
-  for (; p && *p;) {
-    q = p;
-    p = strchr(p, ',');
-    if (!p)
-      p = q + strlen(q);
-    cs = ZX_ZALLOC(cf->ctx, struct zxid_cstr_list);
-    cs->n = l;
-    l = cs;
-    COPYVAL(cs->s, q, p);    
-  }
-  return l;
-}
-
-static struct zxid_atsrc* zxid_load_atsrc(zxid_conf* cf, struct zxid_atsrc* atsrc, char* v)
-{
-  char* ns;
-  char* attrs;
-  char* weight;
-  char* url;
-  char* aapml;
-  char* otherlim;
-  char* ext;
-  char* p = v;
-  char* a;
-  int len;
-  struct zxid_atsrc* as;
-
-  while (p && *p) {
-    ns = p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: namespace missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-
-    attrs = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: attribute list missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-
-    weight = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: weight missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-
-    url = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: url missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-
-    aapml = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: aapml ref missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-    
-    otherlim = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: otherlim missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-    
-    ext = ++p;
-    p = strchr(p, ';');  /* Stanza ends in separator ; or end of string nul */
-    if (!p)
-      p = ext + strlen(ext);
-    
-    if (IS_RULE(url, "reset")) {
-      INFO("Reset atsrc %p", atsrc);
-  /* END Copied from zxidconf.c 1.51 (zxid 1.02). */
-
-      /* The original code here leaks.
-       * /grubba
-       */
-      zxid_free_atsrc(cf->ctx, atsrc);
-      atsrc = NULL;
-
-  /* BEGIN Copied from zxidconf.c 1.51 (zxid 1.02). */
-      if (!*p) break;
-      ++p;
-      continue;
-    }
-    
-    as = ZX_ZALLOC(cf->ctx, struct zxid_atsrc);
-    as->n = atsrc;
-    atsrc = as;
-
-    COPYVAL(as->ns,       ns,        attrs-1);
-    COPYVAL(as->weight,   weight,    url-1);
-    COPYVAL(as->url,      url,       aapml-1);
-    COPYVAL(as->aapml,    aapml,     otherlim-1);
-    COPYVAL(as->otherlim, otherlim,  ext-1);
-    COPYVAL(as->ext,      ext,       p);
-
-    D("atsrc ns(%s) attrs(%.*s) weight(%s) url(%s) aapml(%s) otherlim(%s) ext(%s)", as->ns, ((int)(weight-attrs-1)), attrs, as->weight, as->url, as->aapml, as->otherlim, as->ext);
-
-    for (a = attrs; ; a += len+1) {
-      len = strcspn(a, ",$");
-      as->at = zxid_new_at(cf, as->at, len, a, 0,0, "atsrc");
-      if (a[len] == '$')
-	break;
-    }
-    if (!*p) break;
-    ++p;
-  }
-
-  return atsrc;
-}
-
-static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
-{
-  char* dom;
-  char* p;
-  int len;
-  if (!url || !*url)
-    return 0;
-  dom = strchr(url, ':');
-  if (!dom || dom[1] != '/' || dom[2] != '/')
-    return 0;
-  dom += 3;
-  /* After shipping https:// scan for domain name allowable characters. */
-  len = strspn(dom, ".abcdefghijklmnopqrstuvwxyz0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-  p = ZX_ALLOC(cf->ctx, len+1);
-  memcpy(p, dom, len);
-  p[len] = 0;
-  return p;
-}
-
-  /* END Copied from zxidconf.c 1.51 (zxid 1.02). */
-
-  /* Attempt to do the reverse of zxid_init_conf(). */
-  static void zxid_free_conf(struct zx_ctx *ctx, zxid_conf *conf)
-  {
-    zxid_free_need(ctx, conf->need);
-    zxid_free_need(ctx, conf->want);
-    zxid_free_atsrc(ctx, conf->attrsrc);
-    zxid_free_map(ctx, conf->inmap);
-    zxid_free_map(ctx, conf->outmap);
-    zxid_free_map(ctx, conf->pepmap);
-    zxid_free_map(ctx, conf->pepmap_rqout);
-    zxid_free_map(ctx, conf->pepmap_rqin);
-    zxid_free_map(ctx, conf->pepmap_rsout);
-    zxid_free_map(ctx, conf->pepmap_rsin);
-    zxid_free_cstr_list(ctx, conf->localpdp_role_permit);
-    zxid_free_cstr_list(ctx, conf->localpdp_role_deny);
-    zxid_free_cstr_list(ctx, conf->localpdp_idpnid_permit);
-    zxid_free_cstr_list(ctx, conf->localpdp_idpnid_deny);
-    if (conf->path) {
-      ZX_FREE(ctx, conf->path);
-    }
-  }
-
   INIT {
     THIS->conf.ctx = zx_init_ctx();
+
+#ifdef malloc
+    /* Support for dmalloc. */
+    THIS->conf.ctx->malloc_func = malloc_wrapper;
+    THIS->conf.ctx->realloc_func = realloc_wrapper;
+    THIS->conf.ctx->free_func = free_wrapper;
+#endif
+
     zxid_init_conf(&THIS->conf, NULL);
     THIS->conf_m = allocate_mapping(8);
+#ifdef USE_CURL
+    LOCK(THIS->conf.curl_mx, "curl init");
+    THIS->conf.curl = curl_easy_init();
+    UNLOCK(THIS->conf.curl_mx, "curl init");
+    if (!THIS->conf.curl) {
+      Pike_error("Failed to init curl bindings.\n");
+    }
+#endif
   }
 
   EXIT {
     struct zx_ctx *ctx = THIS->conf.ctx;
 
-    zxid_free_conf(ctx, &THIS->conf);
+    zxid_free_conf(&THIS->conf);
 
-    /* NB: zx_init_ctx() allocates the struct zx_ctx with malloc(3C).
-     *     It might be safer on eg __NT__ to use ZX_FREE() here as well,
-     *     since it currently expands to free(3C), and will use the
-     *     same crt.
-     */
-    free(ctx);
+    zx_free_ctx(ctx);
   }
 
   /*! @decl void create(string|mapping(string(0..255):string(0..255)) conf)
@@ -513,9 +216,6 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
 #define CHECK_ARG_CSTR_LIST(ARG, FIELD)				\
     CHECK_ARG_PARSER_FUNC(ARG, FIELD, zxid_load_cstr_list)
 
-
-    CHECK_ARG_INT(MK_STRING("AUTO_CERT"), THIS->conf.auto_cert);
-
     CHECK_ARG_INT(MK_STRING("AUTO_CERT"), THIS->conf.auto_cert);
     CHECK_ARG_INT(MK_STRING("AUTHN_REQ_SIGN"), THIS->conf.authn_req_sign);
     CHECK_ARG_INT(MK_STRING("ACT"), THIS->conf.log_act);
@@ -539,6 +239,7 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     CHECK_ARG_INT(MK_STRING("BOOTSTRAP_LEVEL"), THIS->conf.bootstrap_level);
     CHECK_ARG_INT(MK_STRING("BARE_URL_ENTITYID"),
 		  THIS->conf.bare_url_entityid);
+    /* FIXME: BUTTON_URL */
     CHECK_ARG_STRING(MK_STRING("CDC_URL"), THIS->conf.cdc_url);
     CHECK_ARG_INT(MK_STRING("CDC_CHOICE"), THIS->conf.cdc_choice);
     CHECK_ARG_STRING(MK_STRING("CONTACT_ORG"), THIS->conf.contact_org);
@@ -555,6 +256,10 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     CHECK_ARG_CHAR(MK_STRING("DI_ALLOW_CREATE"), THIS->conf.di_allow_create);
     CHECK_ARG_INT(MK_STRING("DI_NID_FMT"), THIS->conf.di_nid_fmt);
     CHECK_ARG_INT(MK_STRING("DI_A7N_ENC"), THIS->conf.di_a7n_enc);
+    CHECK_ARG_INT(MK_STRING("DEBUG"), errmac_debug);
+    LOW_CHECK_ARG(MK_STRING("DEBUG_LOG"),
+		  ((TYPEOF(*s) == PIKE_T_STRING) && !s->u.string->size_shift),
+		  zxid_set_opt_cstr(&THIS->conf, 6, s->u.string->str));
     CHECK_ARG_INT(MK_STRING("ERR"), THIS->conf.log_err);
     CHECK_ARG_INT(MK_STRING("ERR_IN_ACT"), THIS->conf.log_err_in_act);
     CHECK_ARG_INT(MK_STRING("ENC_TAIL_OPT"), THIS->conf.enc_tail_opt);
@@ -589,6 +294,7 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     CHECK_ARG_INT(MK_STRING("IDPATOPT"), THIS->conf.idpatopt);
     CHECK_ARG_INT(MK_STRING("IDP_LIST_METH"), THIS->conf.idp_list_meth);
     CHECK_ARG_MAP(MK_STRING("INMAP"), THIS->conf.inmap);
+    CHECK_ARG_STRING(MK_STRING("IPPORT"), THIS->conf.ipport);
     CHECK_ARG_INT(MK_STRING("LEVEL"), THIS->conf.log_level);
     CHECK_ARG_INT(MK_STRING("LOGUSER"), THIS->conf.loguser);
     CHECK_ARG_CSTR_LIST(MK_STRING("LOCALPDP_ROLE_PERMIT"),
@@ -627,9 +333,18 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     CHECK_ARG_STRING(MK_STRING("NEW_USER_PAGE"), THIS->conf.new_user_page);
     CHECK_ARG_MAP(MK_STRING("OUTMAP"), THIS->conf.outmap);
     CHECK_ARG_STRING(MK_STRING("ORG_NAME"), THIS->conf.org_name);
-    CHECK_ARG_STRING(MK_STRING("ORG_URL"), THIS->conf.org_url);
 
-    CHECK_ARG_STRING(MK_STRING("PATH"), THIS->conf.path);
+    LOW_CHECK_ARG(MK_STRING("PATH"),
+		  ((TYPEOF(*s) == PIKE_T_STRING) &&
+		   !s->u.string->size_shift),
+		  do {
+		    if (CPATH(THIS->conf)) {
+		      ZX_FREE(THIS->conf.ctx, CPATH(THIS->conf));
+		    }
+		    CPATH(THIS->conf) = strdup(s->u.string->str);
+		    CPATH_LEN(THIS->conf) = s->u.string->len;
+		  } while(0));
+
     CHECK_ARG_INT(MK_STRING("PDP_ENA"), THIS->conf.pdp_ena);
     CHECK_ARG_STRING(MK_STRING("PDP_URL"), THIS->conf.pdp_url);
     CHECK_ARG_STRING(MK_STRING("PDP_CALL_URL"), THIS->conf.pdp_call_url);
@@ -688,7 +403,7 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     CHECK_ARG_STRING(MK_STRING("TRUSTPDP_URL"), THIS->conf.trustpdp_url);
     CHECK_ARG_KEEP(MK_STRING("URL"), ((TYPEOF(*s) == PIKE_T_STRING) &&
 				      !s->u.string->size_shift), do {
-		     THIS->conf.url = s->u.string->str;
+		     BURL(THIS->conf) = s->u.string->str;
 		     if (THIS->conf.fedusername_suffix) {
 		       ZX_FREE(THIS->conf.ctx, THIS->conf.fedusername_suffix);
 		       THIS->conf.fedusername_suffix = NULL;
@@ -709,12 +424,16 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     CHECK_ARG_INT(MK_STRING("WSP_NOSIG_FATAL"), THIS->conf.wsp_nosig_fatal);
     CHECK_ARG_STRING(MK_STRING("WSC_LOCALPDP_OBL_PLEDGE"),
 		     THIS->conf.wsc_localpdp_obl_pledge);
+#if 0
     CHECK_ARG_STRING(MK_STRING("WSP_LOCALPDP_OBL_REQ"),
-		     THIS->conf.wsp_localpdp_obl_req   );
+		     THIS->conf.wsp_localpdp_obl_req);
+#endif
     CHECK_ARG_STRING(MK_STRING("WSP_LOCALPDP_OBL_EMIT"),
-		     THIS->conf.wsp_localpdp_obl_emit  );
+		     THIS->conf.wsp_localpdp_obl_emit);
+#if 0
     CHECK_ARG_STRING(MK_STRING("WSC_LOCALPDP_OBL_ACCEPT"),
 		     THIS->conf.wsc_localpdp_obl_accept);
+#endif
     CHECK_ARG_STRING(MK_STRING("XASP_VERS"), THIS->conf.xasp_vers);
 
     /* The above does approximately the same as
@@ -725,18 +444,264 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
      */
   }
 
-  PIKEFUN string(0..255) authenticate(string(0..255) query)
+  /*! @class Session
+   *!
+   *!   Represents the current session state for a user.
+   */
+  PIKECLASS Session
+    program_flags PROGRAM_USES_PARENT;	/* Shouldn't this be automatic? */
   {
-    char *res = zxid_simple_cf(&THIS->conf, query->len, query->str, 0, 0);
+    CVAR zxid_ses ses;
+    CVAR struct ZXID_Configuration_struct *config;
+    CVAR PIKE_MUTEX_T session_lock;	/* ZXID isn't fully thread-safe yet. */
 
-    push_text(res);
+    /*! @decl string(0..255) session_id
+     *!
+     *! Session id (if any).
+     */
+    PIKEVAR string session_id;
 
-    ZX_FREE(THIS->conf.ctx, res);
+    INIT
+    {
+      THIS->config = parent_storage(1, ZXID_Configuration_program);
+      mt_init(&THIS->session_lock);
+    }
 
-    stack_pop_n_elems_keep_top(args);
+    EXIT
+    {
+      if (THIS->ses.at) {
+	zxid_free_at(&THIS->config->conf, THIS->ses.at);
+	THIS->ses.at = NULL;
+      }
+      if (THIS->ses.cookie) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.cookie);
+	THIS->ses.cookie = NULL;
+      }
+      if (THIS->ses.sesix) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sesix);
+	THIS->ses.sesix = NULL;
+      }
+      if (THIS->ses.setcookie) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.setcookie);
+	THIS->ses.setcookie = NULL;
+      }
+      if (THIS->ses.sso_a7n_path) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sso_a7n_path);
+	if (THIS->ses.tgt_a7n_path == THIS->ses.sso_a7n_path) {
+	  /* Often the same pointer. */
+	  THIS->ses.tgt_a7n_path = NULL;
+	}
+	THIS->ses.sso_a7n_path = NULL;
+      }
+      if (THIS->ses.tgt_a7n_path) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.tgt_a7n_path);
+	THIS->ses.tgt_a7n_path = NULL;
+      }
+      mt_destroy(&THIS->session_lock);
+      if (THIS->ses.sesbuf) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sesbuf);
+	THIS->ses.sesbuf = NULL;
+      }
+      if (THIS->ses.sid) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sid);
+	THIS->ses.sid = NULL;
+      }
+    }
+
+    /*! @decl void create(string|void session_id)
+     *!
+     *!   Create a new or look up an existing session.
+     */
+    PIKEFUN void create(string(0..255)|void session_id)
+      flags ID_PROTECTED;
+    {
+      if (session_id && !session_id->size_shift) {
+	struct ZXID_Configuration_Session_struct *this = THIS;
+	if (this->session_id) {
+	  free_string(this->session_id);
+	}
+	copy_shared_string(this->session_id, session_id);
+	THREADS_ALLOW();
+	mt_lock(&this->session_lock);
+	if (!zxid_get_ses(&this->config->conf, &this->ses, session_id->str)) {
+	  /* New session. */
+	  if (this->ses.sid) {
+	    ZX_FREE(this->config->conf.ctx, this->ses.sid);
+	    this->ses.sid = NULL;
+	  }
+	  this->ses.sid = zx_dup_cstr(this->config->conf.ctx, session_id->str);
+	}
+	mt_unlock(&this->session_lock);
+	THREADS_DISALLOW();
+      }
+    }
+
+    /* Same as zxid_simple_cf_ses(), but without environment variables,
+     * and uri_path passed as an argument instead.
+     */
+    static char* pike_cf_ses(zxid_conf* cf, char *uri_path,
+			     int qs_len, char* qs,
+			     zxid_ses* ses, int* res_len, int auto_flags)
+    {
+      int got, ret;
+      char* res = 0;
+      char *sid;
+      zxid_cgi cgi;
+      memset(&cgi, 0, sizeof(cgi));
+
+      if (auto_flags & ZXID_AUTO_DEBUG) zxid_set_opt(cf, 1, 3);
+
+#ifndef HAVE_ZXID_PARSE_CGI
+#error "zxid_parse_cgi() is required."
+#elif HAVE_ZXID_PARSE_CGI == 3
+      zxid_parse_cgi(cf, &cgi, qs);
+#elif HAVE_ZXID_PARSE_CGI == 2
+      /* Old zxid library. */
+      zxid_parse_cgi(&cgi, qs);
+#else
+#error "Unsupported number of arguments to zxid_parse_cgi()."
+#endif
+
+      if (!cgi.op && !cf->bare_url_entityid) {
+	cgi.op = 'M';  /* By default, if no ses, check CDC and offer SSO */
+      }
+
+#ifdef HAVE_STRUCT_ZXID_CGI_URI_PATH
+      cgi.uri_path = uri_path;
+      cgi.qs = qs;
+#endif
+
+      if (cgi.sid) {
+	if (!zxid_get_ses(cf, ses, cgi.sid)) {
+	  D("No session(%s) active op(%c)", cgi.sid, cgi.op);
+	} else if ((res = zxid_simple_ses_active_cf(cf, &cgi, ses, res_len,
+						    auto_flags)))
+	  return res;
+      }
+
+      if (ses->sesbuf) {
+	ZX_FREE(cf->ctx, ses->sesbuf);
+      }
+      sid = ses->sid;	/* Keep the sid (if any), since it might be
+			 * used as an object identifier by the caller. */
+      memset(ses, 0, sizeof(zxid_ses));   /* No session yet! Process login form */
+      ses->sid = sid;
+      res = zxid_simple_no_ses_cf(cf, &cgi, ses, res_len, auto_flags);
+
+      return res;
+    }
+
+    /*! @decl string(0..255) authenticate(string(0..255) uri_path, @
+     *!					  string(0..255) query)
+     *!
+     *!   Authenticate via SAML given the query-string @[query].
+     *!
+     *! @param uri_path
+     *!   Current URI path (before '?').
+     *!
+     *! @param query
+     *!   Query variables (after '?').
+     *!
+     *! @returns
+     *!   Returns JSON-encoded data on success, and various other
+     *!   strings otherwise.
+     */
+    PIKEFUN string(0..255) authenticate(string(0..255) uri_path,
+					string(0..255) query)
+    {
+      struct string_builder mutable_query;
+      char *res;
+      int res_len = 0;
+      struct ZXID_Configuration_struct *config =
+	parent_storage(1, ZXID_Configuration_program);
+      zxid_ses *ses = &THIS->ses;
+      int extra = 0;
+      PIKE_MUTEX_T *session_lock = &THIS->session_lock;
+
+      if (THIS->session_id) {
+	extra = 3 + THIS->session_id->len;
+      }
+      init_string_builder_alloc(&mutable_query, query->len + extra,
+				query->size_shift);
+      string_builder_shared_strcat(&mutable_query, query);
+      if (extra) {
+	string_builder_strcat(&mutable_query, "&s=");
+	string_builder_shared_strcat(&mutable_query, THIS->session_id);
+      }
+
+      THREADS_ALLOW();
+      mt_lock(session_lock);
+
+      /* Let the library handle metadata. */
+      res = pike_cf_ses(&config->conf, uri_path->str, mutable_query.s->len,
+			mutable_query.s->str, ses, &res_len,
+			ZXID_AUTO_METAC|ZXID_AUTO_FMTJ);
+
+      mt_unlock(session_lock);
+      THREADS_DISALLOW();
+
+      free_string_builder(&mutable_query);
+
+      push_string(make_shared_binary_string(res, res_len));
+
+      ZX_FREE(config->conf.ctx, res);
+
+      stack_pop_n_elems_keep_top(args);
+    }
+  }
+  /*! @endclass
+   */
+#undef THIS
+#define THIS THIS_ZXID_CONFIGURATION
+
+  /*! @decl mapping(string(0..255):mapping(string(0..255):string(0..255))) idp_list()
+   *!
+   *!   Return a list of known identity providers.
+   *!
+   *! @returns
+   *!   Returns a mapping from IdP EID to display name (if any).
+   */
+  PIKEFUN mapping(string(0..255):mapping(string(0..255):string(0..255))) idp_list()
+  {
+    zxid_entity *idp = zxid_load_cot_cache(&THIS->conf);
+    int cnt = 0;
+    pop_n_elems(args);
+    check_stack(120);
+    while(idp) {
+      int attrs = 0;
+      /* if (!idp->ed->IDPSSODescriptor) continue; */
+      push_text(idp->eid);
+      push_static_text("eid");
+      push_text(idp->eid);
+      attrs++;
+      if (idp->dpy_name) {
+	push_static_text("name");
+	push_text(idp->dpy_name);
+	attrs++;
+      }
+      if (idp->sha1_name) {
+	push_static_text("sha1_name");
+	push_text(idp->sha1_name);
+	attrs++;
+      }
+      f_aggregate_mapping(attrs*2);
+      cnt++;
+
+      idp = idp->n;
+    }
+    f_aggregate_mapping(cnt*2);
   }
 }
-/*! @endclass Context */
+/*! @endclass Configuration */
+
+/*! @decl int version()
+ *!
+ *! Return the numeric version of the zxid library.
+ */
+PIKEFUN int version()
+{
+  RETURN zxid_version();
+}
 
 PIKE_MODULE_INIT
 {

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -10,7 +9,7 @@
 #define SPACE_CHAR 'i'
 
 extern const unsigned char image_default_font[];
-#define IMAGE_DEFAULT_FONT_SIZE 30596
+#define IMAGE_DEFAULT_FONT_SIZE 30560
 
 
 /*! @module Image
@@ -46,7 +45,7 @@ extern const unsigned char image_default_font[];
  *!
  *!
  *!            	  On-disk syntax (everything in N.B.O), int is 4 bytes, a byte is 8 bits:
- *!            
+ *!
  *!            pos
  *!            	0   int cookie = 'FONT';     or 0x464f4e54
  *!            	4   int version = 2;         1 was the old version without the last four chars
@@ -57,30 +56,30 @@ extern const unsigned char image_default_font[];
  *!            21   char format;             Font format
  *!            22   char colortablep;        Colortable format
  *!            23   char kerningtablep;      Kerning table format
- *!            
+ *!
  *!            24   int offsets[numchars];   pointers into the data, realative to &cookie.
  *!            	    [colortable]
  *!            	    [kerningtable]
- *!            
+ *!
  *!            	  At each offset:
- *!            
- *!            
+ *!
+ *!
  *!            0   int width;               in pixels
  *!            4   int spacing;             in 1/1000:th of a pixels
  *!            8   char data[];             Enough data to plot width * font->height pixels
  *!            				    Please note that if width is 0, there is no data.
- *!            
+ *!
  *!            Font formats:
  *!            	id type
  *!            	 0 Raw 8bit data
  *!            	 1 RLE encoded data,  char length, char data,   70% more compact than raw data
  *!            	 2 ZLib compressed data                         60% more compact than RLE
- *!            
+ *!
  *!            Colortable types:
  *!            	 0 No colortable		 (the data is an alpha channel)
  *!            	 1 24bit RGB with alpha         (index->color, 256*4 bytes, rgba)
  *!            	 2 8bit Greyscale with alpha    (index->color, 256*2 bytes)
- *!            
+ *!
  *!            Kerningtable types:
  *!            	 0 No kerning table
  *!            	 1 numchars*numchars entries, each a signed char with the kerning value
@@ -95,7 +94,6 @@ extern const unsigned char image_default_font[];
 
 #include "image_machine.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef HAVE_FCNTL_H
@@ -127,14 +125,10 @@ extern const unsigned char image_default_font[];
 #include "module_support.h"
 
 #include "image.h"
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
+
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
 #endif
-
-#include "dmalloc.h"
 
 #include "fdlib.h"
 
@@ -150,7 +144,7 @@ extern struct program *image_program;
 #define THIS (*(struct font **)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-struct font 
+struct font
 {
    unsigned long height;      /* height of character rectangles */
    unsigned long baseline;    /* baseline of characters */
@@ -166,7 +160,7 @@ struct font
     J_RIGHT,
     J_CENTER
   } justification;
-   struct _char      
+   struct _char
    {
       unsigned long width;   /* character rectangle has this width in pixels */
       unsigned long spacing; /* pixels to next character */
@@ -195,12 +189,12 @@ static INLINE void free_font_struct(struct font *font)
    }
 }
 
-static void init_font_struct(struct object *o)
+static void init_font_struct(struct object *UNUSED(o))
 {
   THIS=NULL;
 }
 
-static void exit_font_struct(struct object *obj)
+static void exit_font_struct(struct object *UNUSED(obj))
 {
    free_font_struct(THIS);
    THIS=NULL;
@@ -221,7 +215,7 @@ static INLINE int char_width(struct font *this, INT32 c)
 {
   if(c==0x20 || c==0x20+128)  return 0;
   return this->charinfo[c].width;
-}  
+}
 
 static INLINE ptrdiff_t my_read(int fd, void *t, size_t towrite)
 {
@@ -297,7 +291,7 @@ static INLINE void write_char(struct _char *ci,
 
 void font_load(INT32 args)
 {
-  struct file_head 
+  struct file_head
   {
     unsigned INT32 cookie;
     unsigned INT32 version;
@@ -309,10 +303,10 @@ void font_load(INT32 args)
 #ifdef HAVE_MMAP
   size_t mmaped_size = 0;
 #endif
-  size_t size = 0;
+  int size = 0;
   char *filename = NULL;
 
-  get_all_args("Image.Font->load()", args, ".%s", &filename);
+  get_all_args("load", args, ".%s", &filename);
 
   if (!filename)
   {
@@ -332,7 +326,7 @@ void font_load(INT32 args)
 
     if (fd >= 0)
     {
-      size = (size_t) file_size(fd);
+      size = file_size(fd);
       if (size > 0)
       {
 	THREADS_ALLOW();
@@ -344,11 +338,11 @@ void font_load(INT32 args)
 	else
 	{
 #endif
-	  fh = (struct file_head *)xalloc(size);
+	  fh = xalloc(size);
 #ifdef FONT_DEBUG
 	  fprintf(stderr,"FONT Malloced %p (%d)\n", fh, size);
 #endif
-	  if (fh && (!my_read(fd, fh, size))) 
+	  if (fh && (!my_read(fd, fh, size)))
 	  {
 	    free(fh);
 	    fh = NULL;
@@ -432,8 +426,8 @@ void font_load(INT32 args)
 
 	for (i=0; i<num_chars; i++)
 	{
-	  if (i*sizeof(INT32)<size
-	      && ntohl(fh->o[i])<size
+	  if ((i*sizeof(INT32) + OFFSETOF(file_head, o))<(size_t)size
+	      && ntohl(fh->o[i])<(size_t)size
 	      && ! ( ntohl(fh->o[i]) % 4) ) /* must be aligned */
 	  {
 	    ch = (struct char_head*)
@@ -496,7 +490,6 @@ void font_load(INT32 args)
 void font_create(INT32 args)
 {
    font_load(args);
-   pop_stack();
 }
 
 /*! @decl Image.Image write(string text, string ... more_text_lines)
@@ -533,16 +526,15 @@ void font_write(INT32 args)
 
    maxwidth2=1;
 
-   width_of=(int *)xalloc((args+1)*sizeof(int));
+   width_of=xalloc((args+1)*sizeof(int));
    SET_ONERROR(err, free, width_of);
 
    for (j=0; j<args; j++)
    {
       int max;
       if (TYPEOF(sp[j-args]) != T_STRING)
-	 bad_arg_error("font->write",sp-args,args,0,"",sp-args,
-		"Bad arguments to font->write()\n");
-     
+        SIMPLE_BAD_ARG_ERROR("write",1,"string");
+
       xsize = max = 1;
       to_write_len = sp[j-args].u.string->len;
       switch(sp[j-args].u.string->size_shift)
@@ -577,7 +569,7 @@ void font_write(INT32 args)
 	 to_write2 = STR2(sp[j-args].u.string);
 	 for (i = 0; i < to_write_len; i++)
 	 {
-	   if (to_write2[i] < (unsigned INT32)this->chars)
+	   if ((unsigned INT32)to_write2[i] < this->chars)
 	   {
 	     if (xsize+char_width(this,to_write2[i]) > max)
 	       max=xsize+char_width(this,to_write2[i]);
@@ -586,15 +578,11 @@ void font_write(INT32 args)
 	   }
 	 }
 	 break;
-#ifdef PIKE_DEBUG
-       default:
-	 Pike_fatal("Illegal shift size!\n");
-#endif
       }
       width_of[j]=max;
       if (max>maxwidth2) maxwidth2=max;
    }
-   
+
    o = clone_object(image_program,0);
    img = ((struct image*)o->storage);
    img->xsize = maxwidth2;
@@ -613,7 +601,7 @@ void font_write(INT32 args)
 				img->xsize*img->ysize*sizeof(rgb_group)+1);
    }
 
-   MEMSET(img->img,0,img->xsize*img->ysize*sizeof(rgb_group));
+   memset(img->img,0,img->xsize*img->ysize*sizeof(rgb_group));
 
    for (j=0; j<args; j++)
    {
@@ -694,10 +682,6 @@ void font_write(INT32 args)
 	}
 	/* THREADS_DISALLOW(); */
 	break;
-#ifdef PIKE_DEBUG
-      default:
-	Pike_fatal("Illegal shift size!\n");
-#endif
      }
    }
    CALL_AND_UNSET_ONERROR(err);
@@ -762,9 +746,8 @@ void font_text_extents(INT32 args)
      p_wchar2 *to_write2;
      ptrdiff_t to_write_len;
      if (TYPEOF(sp[j-args]) != T_STRING)
-	bad_arg_error("font->text_extents",sp-args,args,0,"",sp-args,
-		"Bad arguments to font->text_extents()\n");
-     
+       SIMPLE_BAD_ARG_ERROR("text_extents",1,"string");
+
      xsize = max = 1;
      to_write_len = sp[j-args].u.string->len;
      switch(sp[j-args].u.string->size_shift)
@@ -799,17 +782,13 @@ void font_text_extents(INT32 args)
 	  if (xsize > max) max=xsize;
 	}
 	break;
-#ifdef PIKE_DEBUG
-      default:
-	Pike_fatal("Illegal shift size!\n");
-#endif
      }
      if (max>maxwidth2) maxwidth2=max;
   }
 
   pop_n_elems(args);
   push_int(maxwidth2);
-  push_int64(DO_NOT_WARN((INT64)(args * THIS->height * THIS->yspacing_scale)));
+  push_int64((INT64)(args * THIS->height * THIS->yspacing_scale));
   f_aggregate(2);
 }
 
@@ -831,7 +810,6 @@ void font_set_xspacing_scale(INT32 args)
 
   if(f < 0.0) f=0.1;
   THIS->xspacing_scale = (double)f;
-  pop_n_elems(args);
 }
 
 
@@ -844,7 +822,6 @@ void font_set_yspacing_scale(INT32 args)
 
   if(f <= 0.0) f=0.1;
   THIS->yspacing_scale = (double)f;
-  pop_n_elems(args);
 }
 
 
@@ -871,9 +848,8 @@ void font_baseline(INT32 args)
  *!   Document this function.
  */
 
-void font_set_center(INT32 args)
+void font_set_center(INT32 UNUSED(args))
 {
-  pop_n_elems(args);
   if(THIS) THIS->justification=J_CENTER;
 }
 
@@ -883,9 +859,8 @@ void font_set_center(INT32 args)
  *!   Document this function.
  */
 
-void font_set_right(INT32 args)
+void font_set_right(INT32 UNUSED(args))
 {
-  pop_n_elems(args);
   if(THIS) THIS->justification=J_RIGHT;
 }
 
@@ -895,9 +870,8 @@ void font_set_right(INT32 args)
  *!   Document this function.
  */
 
-void font_set_left(INT32 args)
+void font_set_left(INT32 UNUSED(args))
 {
-  pop_n_elems(args);
   if(THIS) THIS->justification=J_LEFT;
 }
 
@@ -937,13 +911,13 @@ void init_image_font(void)
 
    /* function(void:int) */
    ADD_FUNCTION("baseline",font_baseline,tFunc(tNone,tInt),0);
-		
+
    /* function(string ...:array(int)) */
    ADD_FUNCTION("extents",font_text_extents,tFuncV(tNone,tStr,tArr(tInt)),0);
-		
+
    /* function(string ...:array(int)) */
    ADD_FUNCTION("text_extents",font_text_extents,tFuncV(tNone,tStr,tArr(tInt)),0);
-		
+
    /* function(float:void) */
    ADD_FUNCTION("set_x_spacing",font_set_xspacing_scale,tFunc(tFlt,tVoid),0);
 
@@ -963,6 +937,6 @@ void init_image_font(void)
    set_exit_callback(exit_font_struct);
 }
 
-void exit_image_font(void) 
+void exit_image_font(void)
 {
 }

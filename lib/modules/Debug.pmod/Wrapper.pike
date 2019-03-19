@@ -37,7 +37,7 @@ int(0..1) `!()
 
 //!
 mixed `[](mixed x, void|mixed y) {
-  if(zero_type(y)) {
+  if(undefinedp(y)) {
     werror("%O[%O]\n", wrappee, x);
     return wrappee[x];
   }

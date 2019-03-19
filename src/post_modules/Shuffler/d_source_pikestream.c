@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -13,7 +12,6 @@
 #include "fdlib.h"
 #include "fd_control.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #include "shuffler.h"
@@ -88,7 +86,7 @@ static struct data get_data( struct source *src, off_t len )
       }
       len -= s->skip;
       buffer = malloc( len );
-      MEMCPY( buffer, s->str->str+s->skip, len);
+      memcpy( buffer, s->str->str+s->skip, len);
     }
     else
     {
@@ -101,7 +99,7 @@ static struct data get_data( struct source *src, off_t len )
 	  s->s.eof = 1;
       }
       buffer = malloc( len );
-      MEMCPY( buffer, s->str->str, len );
+      memcpy( buffer, s->str->str, len );
     }
     res.data = buffer;
     res.len = len;
@@ -170,9 +168,9 @@ struct source *source_pikestream_make( struct svalue *s,
   if( (TYPEOF(*s) != PIKE_T_OBJECT) ||
       (find_identifier("set_read_callback",s->u.object->prog)==-1) )
     return 0;
-  
-  res = malloc( sizeof( struct pf_source ) );
-  MEMSET( res, 0, sizeof( struct pf_source ) );
+
+  res = calloc( 1, sizeof( struct pf_source ) );
+  if( !res ) return NULL;
 
   res->len = len;
   res->skip = start;

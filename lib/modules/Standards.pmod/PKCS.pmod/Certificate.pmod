@@ -1,4 +1,3 @@
-// $Id$
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 
@@ -124,10 +123,10 @@ Version ::= INTEGER
 
 */
 
-#if constant(Standards.ASN1.Types)
-
 import Standards.ASN1.Types;
 import .Identifiers;
+
+protected object X509 = master()->resolv("Standards.X509");
 
 class AttributeValueAssertion
 {
@@ -158,43 +157,82 @@ class attribute_set
 }
 
 //!
-Sequence build_distinguished_name(mapping(string:object) ... args)
+variant Sequence build_distinguished_name(mapping args)
 {
+  // Turn mapping into array of pairs
+  array a = ({});
+  foreach(sort(indices(args)), string name)
+    a += ({ ([name : args[name]]) });
+
+  return build_distinguished_name(a);
+}
+
+//! Creates an ASN.1 @[Sequence] with the distinguished name of the
+//! list of pairs given in @[args]. Supported identifiers are
+//!
+//! @dl
+//!   @item commonName
+//!   @item surname
+//!   @item countryName
+//!   @item localityName
+//!   @item stateOrProvinceName
+//!   @item organizationName
+//!   @item organizationUnitName
+//!   @item title
+//!   @item name
+//!   @item givenName
+//!   @item initials
+//!   @item generationQualifier
+//!   @item dnQualifier
+//!   @item emailAddress
+//! @enddl
+//!
+//! @param args
+//!   Either a mapping that lists from id string to string or ASN.1
+//!   object, or an array with mappings, each containing one pair. No
+//!   type validation is performed.
+variant Sequence build_distinguished_name(array args)
+{
+  args += ({});
+  // DWIM support. Turn string values into PrintableString.
+  foreach(args; int i; mapping m) {
+    foreach(m; string name; mixed value)
+      if( stringp(value) )
+      {
+        args[i] = ([ name : PrintableString(value) ]);
+        break;
+      }
+  }
+
   return Sequence(map(args, lambda(mapping rdn) {
 			      return attribute_set(
 				.Identifiers.at_ids, rdn);
 			    } ));
 }
 
-Sequence decode_pem_certificate(string cert)
+//! Perform the reverse operation of @[build_distinguished_name()].
+//!
+//! @seealso
+//!   @[build_distinguished_name()]
+array(mapping(string(7bit):string)) decode_distinguished_name(Sequence dn)
 {
-
-}
-
-//! Return the certificate issuer RDN from a certificate string.
-//!
-//! @param cert
-//! A string containing an X509 certificate.
-//!
-//! Note that the certificate normally must be decoded using
-//! @[MIME.decode_base64].
-//!
-//! @returns
-//!  An Standards.ASN1.Sequence object containing the certificate issuer
-//!  Distinguished Name (DN).
-Sequence get_certificate_issuer(string cert)
-{
-  return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[3];
+  array(mapping(string(7bit):string)) ret =
+    allocate(sizeof(dn->elements), aggregate_mapping)();
+  foreach(dn->elements; int i; Set attr) {
+    foreach(attr->elements, Sequence val) {
+      string(7bit) name = reverse_at_ids[val[0]];
+      if (!name) {
+	// Unknown identifier.
+	name = ((array(string))val[0]->id) * ".";
+      }
+      ret[i][name] = val[1]->value;
+    }
+  }
+  return ret;
 }
 
 //! Converts an RDN (relative distinguished name) Seqeunce object to a
 //! human readable string in X500 format.
-//!
-//! @param cert
-//! A string containing an X509 certificate.
-//!
-//! Note that the certificate normally must be decoded using
-//! @[MIME.decode_base64].
 //!
 //! @returns
 //!  A string containing the certificate issuer
@@ -213,12 +251,12 @@ string get_dn_string(Sequence dnsequence)
     foreach(att->elements, Sequence val)
     {
       array value = ({});
-      string t = short_name_ids[val->elements[0]];
-      string v = val->elements[1]->value;
+      string t = short_name_ids[val[0]];
+      string v = val[1]->value;
 
       // we must escape characters now.
-      v = replace(v, 
-          ({",", "+", "\"", "\\", "<", ">", ";"}), 
+      v = replace(v,
+          ({",", "+", "\"", "\\", "<", ">", ";"}),
           ({"\\,", "\\+", "\\\"", "\\\\", "\\<", "\\>", "\\;"}) );
 
       if(v[0..0] == " ")
@@ -230,39 +268,29 @@ string get_dn_string(Sequence dnsequence)
          v=v[0..(sizeof(v)-2)] + "\\ ";
 
       rdns += ({ (t + "=" + v) });
-    }        
+    }
   }
-  
-  dn = rdns * ",";
-  return dn;  
-}
 
-//! Return the certificate subject RDN from a certificate string.
-//!
-//! @param cert
-//! A string containing an X509 certificate.
-//!
-//! Note that the certificate normally must be decoded using
-//! @[MIME.decode_base64].
-//!
-//! @returns
-//!  An Standards.ASN1.Sequence object containing the certificate subject
-//!  Distinguished Name (DN).
-Sequence get_certificate_subject(string cert)
-{
-  return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[5];
+  dn = rdns * ",";
+  return dn;
 }
 
 class Attribute
 {
   inherit Sequence;
 
-  void create(mapping(string:object) types, string type,
-	      array(object) v)
+  protected void create(mapping(string:object) types, string type,
+			array(object) v)
   {
     if (!types[type])
       error( "Unknown attribute type '%s'\n", type);
     ::create( ({ types[type], Set(v) }) );
+  }
+  protected variant void create(array(Object) elements)
+  {
+    if (sizeof(elements) != 2)
+      error("Invalid attribute encoding.\n");
+    ::create(elements);
   }
 }
 
@@ -270,15 +298,19 @@ class Attributes
 {
   inherit Set;
 
-  void create(mapping(string:object) types, mapping(string:array(object)) m)
+  protected void create(mapping(string:object) types,
+			mapping(string:array(object)) m)
   {
     ::create(map(indices(m),
 		 lambda(string field, mapping m, mapping t) {
 		   return Attribute(t, field, m[field]);
 		 }, m, types));
   }
+  protected variant void create(array(Object) elements)
+  {
+    ::create(map(elements,
+		 lambda(object e) {
+		   return Attribute(e->elements);
+		 }));
+  }
 }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -12,15 +11,20 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
+#include "array.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 #include "image.h"
 #include "colortable.h"
+
+#include "bignum.h"
+#include "bitvector.h"
 
 #ifdef __MINGW32__
 /* encodings.a will never contain a crc32 symbol. */
@@ -50,7 +54,6 @@ static struct pike_string *param_palette;
 static struct pike_string *param_spalette;
 static struct pike_string *param_image;
 static struct pike_string *param_alpha;
-static struct pike_string *param_type;
 static struct pike_string *param_bpp;
 static struct pike_string *param_background;
 static struct pike_string *param_zlevel;
@@ -70,16 +73,17 @@ static struct pike_string *param_zstrategy;
 static INLINE void push_nbo_32bit(size_t x)
 {
    char buf[4];
-   buf[0] = DO_NOT_WARN((char)(x>>24));
-   buf[1] = DO_NOT_WARN((char)(x>>16));
-   buf[2] = DO_NOT_WARN((char)(x>>8));
-   buf[3] = DO_NOT_WARN((char)(x));
+   buf[0] = (char)(x>>24);
+   buf[1] = (char)(x>>16);
+   buf[2] = (char)(x>>8);
+   buf[3] = (char)(x);
    push_string(make_shared_binary_string(buf,4));
 }
 
 static INLINE unsigned long int_from_32bit(const unsigned char *data)
 {
-   return (data[0]<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]);
+   /* NB: Avoid sign-extension in implicit cast from int to unsigned long. */
+   return (((unsigned long)data[0])<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]);
 }
 
 #define int_from_16bit(X) _int_from_16bit((unsigned char*)(X))
@@ -92,11 +96,11 @@ static INLINE COLORTYPE _png_c16(unsigned long z,int bpp)
 {
    switch (bpp)
    {
-      case 16: return DO_NOT_WARN((COLORTYPE)(z>>8));
-      case 4:  return DO_NOT_WARN((COLORTYPE)(z*17));
-      case 2:  return DO_NOT_WARN((COLORTYPE)(z*0x55));
-      case 1:  return DO_NOT_WARN((COLORTYPE)(z*255));
-      default: return DO_NOT_WARN((COLORTYPE)z);
+      case 16: return (COLORTYPE)(z>>8);
+      case 4:  return (COLORTYPE)(z*17);
+      case 2:  return (COLORTYPE)(z*0x55);
+      case 1:  return (COLORTYPE)(z*255);
+      default: return (COLORTYPE)z;
    }
 }
 
@@ -210,15 +214,15 @@ static void image_png___decode(INT32 args)
 {
    int nocrc=0;
    unsigned char *data;
+   struct array *res;
    size_t len;
    struct pike_string *str;
-   int n=0;
    ONERROR uwp;
 
    if (args<1)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.__decode", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("__decode", 1);
    if (TYPEOF(sp[-args]) != T_STRING)
-     SIMPLE_BAD_ARG_ERROR("Image.PNG.__decode", 1, "string");
+     SIMPLE_BAD_ARG_ERROR("__decode", 1, "string");
 
    if (args>1 &&
        (TYPEOF(sp[1-args]) != T_INT ||
@@ -249,6 +253,9 @@ static void image_png___decode(INT32 args)
    SET_ONERROR(uwp,do_free_string,str);
    len-=8; data+=8;
 
+   check_stack(20);
+   BEGIN_AGGREGATE_ARRAY(10);
+
    while (len>8)
    {
       unsigned long x;
@@ -256,30 +263,36 @@ static void image_png___decode(INT32 args)
       push_string(make_shared_binary_string((char*)data+4,4));
       len-=8;
       data+=8;
+
       if (x>len)
       {
-	 push_string(make_shared_binary_string((char*)data,len));
-	 push_int(0);
-	 f_aggregate(3);
-	 n++;
-	 break;
+	push_string(make_shared_binary_string((char*)data,len));
+	push_int(0);
+	f_aggregate(3);
+	DO_AGGREGATE_ARRAY(20);
+        break;
       }
+
       push_string(make_shared_binary_string((char*)data,x));
       if (!nocrc && x+4<=len)
-	 push_int( crc32(crc32(0,NULL,0),data-4,x+4) ==
-		   int_from_32bit(data+x) );
+	push_int( crc32(crc32(0,NULL,0),data-4,x+4) ==
+                  int_from_32bit(data+x) );
       else
-	 push_int(0);
-      if (x+4>len) break;
+	push_int(0);
       f_aggregate(3);
-      n++;
+      DO_AGGREGATE_ARRAY(20);
+
+      if (x+4>len) break;
+
+      if( int_from_32bit((unsigned char *)data) == 0x49454e44 ) /* IEND */
+        break;
+
       len-=x+4;
       data+=x+4;
    }
+   CALL_AND_UNSET_ONERROR(uwp);
 
-   UNSET_ONERROR(uwp);
-   free_string(str);
-   f_aggregate(n);
+   END_AGGREGATE_ARRAY;
 }
 
 /*! @decl mapping _decode(string|array data)
@@ -425,6 +438,15 @@ static struct pike_string *_png_unfilter(unsigned char *data,
       if (!len || !ysize--)
       {
 	 if (pos) *pos=s;
+         if (d - STR0(ps) < ps->len) {
+            /* Should we throw an error here, instead?
+             * This case means that there is extra
+             * IDAT data, when we have already processed all
+             * scanlines specified in the IHDR
+             *  /arne
+             */
+            memset(d, 0, ps->len - (d - STR0(ps)));
+         }
 	 return end_shared_string(ps);
       }
       x=xsize;
@@ -518,23 +540,22 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 
 	    break;
 	 default:
+            free_string(ps);
 	    Pike_error("Unsupported subfilter %d (filter %d)\n", s[-1],type);
       }
    }
 }
 
-static int _png_write_rgb(rgb_group *w1,
-			  rgb_group *wa1,
-			  int type,int bpp,
-			  const unsigned char *s,
-			  size_t len,
-			  unsigned long width,
-			  size_t n,
-			  const struct neo_colortable *ct,
-			  const struct pike_string *trns)
+static void _png_write_rgb(rgb_group *w1,
+                           rgb_group *wa1,
+                           int type,int bpp,
+                           const unsigned char *s,
+                           size_t len,
+                           unsigned long width,
+                           size_t n,
+                           const struct neo_colortable *ct,
+                           const struct pike_string *trns)
 {
-   /* returns 1 if alpha channel, 0 if not */
-
    static const rgb_group white={255,255,255};
    static const rgb_group grey4[4]={{0,0,0},{85,85,85},
 			      {170,170,170},{255,255,255}};
@@ -622,19 +643,16 @@ static int _png_write_rgb(rgb_group *w1,
 		  n--;
 	       }
 	       break;
-	    default:
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (grey)/%d bit.\n",
-		     type,bpp);
 	 }
 	 if (trns && trns->len==2)
 	 {
 	    rgb_group tr;
 	    tr.r=tr.g=tr.b=_png_c16(int_from_16bit(trns->str),bpp);
 	    n=n0;
-	    while (n--) *(da1++)=tr;
-	    return 1; /* alpha channel */
+	    d1=w1;
+	    while (n--) *(da1++)=(tr.r==(d1++)->r)?black:white;
 	 }
-	 return 0; /* no alpha channel */
+	 return;
 
       case 2: /* 8 or 16 bit r,g,b */
 	 switch (bpp)
@@ -664,9 +682,6 @@ static int _png_write_rgb(rgb_group *w1,
 		  n--;
 	       }
 	       break;
-	    default:
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n",
-		     type,bpp);
 	 }
 	 if (trns && trns->len==6)
 	 {
@@ -676,26 +691,13 @@ static int _png_write_rgb(rgb_group *w1,
 	    tr.b=_png_c16(int_from_16bit(trns->str+4),bpp);
 
 	    n=n0;
-	    while (n--) *(da1++)=tr;
-	    return 1; /* alpha channel */
+	    d1=w1;
+	    while (n--) *(da1++)=(tr.r==d1->r && tr.g==d1->g && tr.b==d1->b)?black:white,d1++;
 	 }
-	 return 0; /* no alpha channel */
+	 return;
 
       case 3: /* 1,2,4,8 bit palette index. Alpha might be in palette */
-	 if (!ct)
-	 {
-	    Pike_error("Image.PNG.decode: No palette, but color type 3 needs one.\n");
-	 }
-	 if (ct->type!=NCT_FLAT)
-	 {
-	    Pike_error("Image.PNG.decode: Internal error (created palette isn't flat).\n");
-	 }
 	 mz=ct->u.flat.numentries;
-	 if (mz==0)
-	 {
-	    Pike_error("Image.PNG.decode: Palette is zero entries long;"
-		       " need at least one color.\n");
-	 }
 
 #define CUTPLTE(X,Z) (((X)>=(Z))?0:(X))
 	 switch (bpp)
@@ -805,7 +807,7 @@ static int _png_write_rgb(rgb_group *w1,
 			i-=4;
 			if (x)
 			{
-			   int m=((*s)>>i)&3;
+			   int m=((*s)>>i)&15;
 			   x--;
 			   *(d1++)=ct->u.flat.entries[CUTPLTE(m,mz)].color;
 			   if (m>=trns->len)
@@ -855,12 +857,8 @@ static int _png_write_rgb(rgb_group *w1,
 		     n--;
 		  }
 	       break;
-
-	    default:
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
-		     type,bpp);
 	 }
-	 return !!trns; /* alpha channel if trns chunk */
+	 return;
 
       case 4: /* 8 or 16 bit grey,a */
 	 switch (bpp)
@@ -889,11 +887,8 @@ static int _png_write_rgb(rgb_group *w1,
 		  n--;
 	       }
 	       break;
-	    default:
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (grey+a)/%d bit.\n",
-		     type,bpp);
 	 }
-	 return 1; /* alpha channel */
+	 return;
 
       case 6: /* 8 or 16 bit r,g,b,a */
 	 switch (bpp)
@@ -928,19 +923,9 @@ static int _png_write_rgb(rgb_group *w1,
 		  n--;
 	       }
 	       break;
-	    default:
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (rgba)/%d bit.\n",
-		     type,bpp);
 	 }
-	 return 1; /* alpha channel */
-      default:
-	 Pike_error("Image.PNG._decode: Unknown color type %d (bit depth %d).\n",
-	       type,bpp);
+	 return;
    }
-#ifdef PIKE_DEBUG
-   Pike_fatal("Image.PNG._decode: illegal state\n");
-#endif
-   return 0; /* stupid */
 }
 
 struct png_interlace
@@ -983,19 +968,107 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 {
   struct pike_string *fs;
   struct image *img;
-  rgb_group *w1,*wa1;
+  rgb_group *w1,*wa1=NULL;
   unsigned char *s0;
-  unsigned int i,x,y;
+  unsigned int i,x,y,got_alpha=0;
   ONERROR err, a_err;
+
+  switch(ihdr->type)
+  {
+  case 0: /* 1,2,4,8 or 16 bit greyscale */
+    switch(ihdr->bpp)
+    {
+    case 1:
+    case 2:
+    case 4:
+    case 8:
+    case 16:
+      break;
+    default:
+      Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (grey)/%d bit.\n", 0, ihdr->bpp);
+    }
+    if( trns && trns->len==2 )
+      got_alpha=1;
+    break;
+
+  case 2: /* 8 or 16 bit r,g,b */
+    switch(ihdr->bpp)
+    {
+    case 8:
+    case 16:
+      break;
+    default:
+      Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n", 1, ihdr->bpp);
+    }
+    if( trns && trns->len==6)
+      got_alpha=1;
+    break;
+
+  case 3: /* 1,2,4,8 bit palette index */
+    if (!ct)
+      Pike_error("Image.PNG.decode: No palette, but color type 3 needs one.\n");
+    if (ct->type!=NCT_FLAT)
+      Pike_error("Image.PNG.decode: Internal error (created palette isn't flat).\n");
+    if (ct->u.flat.numentries==0)
+      Pike_error("Image.PNG.decode: Palette is zero entries long;"
+                 " need at least one color.\n");
+    switch(ihdr->bpp)
+    {
+    case 1:
+    case 2:
+    case 4:
+    case 8:
+      break;
+    default:
+      Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n", 3, ihdr->bpp);
+    }
+    got_alpha = !!trns;
+    break;
+
+  case 4: /* 8 or 16 bit grey */
+    switch(ihdr->bpp)
+    {
+    case 8:
+    case 16:
+      break;
+    default:
+      Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n", 4, ihdr->bpp);
+    }
+    got_alpha=1;
+    break;
+
+  case 6: /* 8 ot 16 bit rgba */
+    switch(ihdr->bpp)
+    {
+    case 8:
+    case 16:
+      break;
+    default:
+      Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n", 4, ihdr->bpp);
+    }
+    got_alpha=1;
+    break;
+
+  default:
+    Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n", ihdr->type, ihdr->bpp);
+  }
 
   png_decompress(ihdr->compression);
   if( TYPEOF(sp[-1]) != T_STRING )
     Pike_error("Got illegal data from decompression.\n");
 
+  if (INT32_MUL_OVERFLOW(ihdr->width, ihdr->height) ||
+      ihdr->width*ihdr->height > (0x7fffffff - RGB_VEC_PAD)/sizeof(rgb_group)) {
+    /* Overflow in size calculation below. */
+    Pike_error("Image too large (%d * %d)\n",
+	       ihdr->width, ihdr->height);
+  }
+
+  if( got_alpha )
+    wa1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
+  SET_ONERROR(a_err, free_and_clear, &wa1);
   w1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
   SET_ONERROR(err, free_and_clear, &w1);
-  wa1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
-  SET_ONERROR(a_err, free_and_clear, &wa1);
 
   fs = sp[-1].u.string;
 
@@ -1009,29 +1082,27 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
                      ihdr->filter,ihdr->type,ihdr->bpp,
                      NULL);
 
-    if (!_png_write_rgb(w1,wa1,
-                        ihdr->type,ihdr->bpp,
-                        (unsigned char*)fs->str,fs->len,
-                        ihdr->width,
-                        ihdr->width*ihdr->height,
-                        ct,trns))
-    {
-      free(wa1);
-      wa1=NULL;
-    }
-    free_string(fs);
+    push_string(fs);
+
+    _png_write_rgb(w1,wa1,
+                   ihdr->type,ihdr->bpp,
+                   (unsigned char*)fs->str,fs->len,
+                   ihdr->width,
+                   ihdr->width*ihdr->height,
+                   ct,trns);
+    pop_stack();
     break;
 
   case 1: /* adam7 */
     {
-      rgb_group *t1,*ta1;
-      ONERROR t_err, ta_err, ds_err;
-      int got_alpha = 0;
+      rgb_group *t1, *ta1 = NULL;
+      ONERROR t_err, ta_err;
 
       /* need arena */
       t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
       SET_ONERROR(t_err, free_and_clear, &t1);
-      ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
+      if( got_alpha )
+        ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
       SET_ONERROR(ta_err, free_and_clear, &ta1);
 
       /* loop over adam7 interlace's
@@ -1056,37 +1127,39 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 			 ihdr->filter,ihdr->type,ihdr->bpp,
 			 &s0);
 
-	if (_png_write_rgb(w1,wa1,ihdr->type,ihdr->bpp,
-			   (unsigned char*)ds->str,ds->len,
-			   iwidth,
-			   iwidth*iheight,
-			   ct,trns))
+        push_string(ds);
+
+	_png_write_rgb(w1,wa1,ihdr->type,ihdr->bpp,
+                       (unsigned char*)ds->str,ds->len,
+                       iwidth,
+                       iwidth*iheight,
+                       ct,trns);
+
+        if( got_alpha )
 	{
 	  da1 = wa1;
 	  for (y=y0; y<ihdr->height; y+=yd)
 	    for (x=x0; x<ihdr->width; x+=xd)
 	      ta1[x+y*ihdr->width]=*(da1++);
-	  got_alpha = 1;
 	}
 	d1=w1;
 	for (y=y0; y<ihdr->height; y+=yd)
 	  for (x=x0; x<ihdr->width; x+=xd)
 	    t1[x+y*ihdr->width]=*(d1++);
 
-	free_string(ds);
+        pop_stack();
       }
 
-      free(wa1);
-      if (got_alpha) {
-	wa1 = ta1;
-      } else {
-	free(ta1);
-	wa1 = NULL;
-      }
       UNSET_ONERROR(ta_err);
-      free(w1);
-      w1=t1;
       UNSET_ONERROR(t_err);
+
+      if (got_alpha) {
+        free(wa1);
+	wa1 = ta1;
+      }
+
+      free(w1);
+      w1 = t1;
     }
     break;
   default:
@@ -1096,28 +1169,29 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
   /* Image data now in w1, alpha in wa1 */
   pop_stack();
 
-  UNSET_ONERROR(a_err);
-  UNSET_ONERROR(err);
-
   /* Create image object and leave it on the stack */
   push_object(clone_object(image_program,0));
-  img=(struct image*)get_storage(sp[-1].u.object,image_program);
+  img=get_storage(sp[-1].u.object,image_program);
   if (img->img) free(img->img); /* protect from memleak */
   img->xsize=ihdr->width;
   img->ysize=ihdr->height;
   img->img=w1;
 
+  UNSET_ONERROR(err);
+
   /* Create alpha object and leave it on the stack */
   if( wa1 )
   {
     push_object(clone_object(image_program,0));
-    img=(struct image*)get_storage(sp[-1].u.object,image_program);
+    img=get_storage(sp[-1].u.object,image_program);
     if (img->img) free(img->img); /* protect from memleak */
     img->xsize=ihdr->width;
     img->ysize=ihdr->height;
     img->img=wa1;
+    UNSET_ONERROR(a_err);
     return 1;
   }
+  UNSET_ONERROR(a_err);
 
   return 0;
 }
@@ -1142,7 +1216,7 @@ static void img_png_decode(INT32 args, int mode)
    ONERROR err;
 
    if (args<1)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG._decode", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("_decode", 1);
 
    m=allocate_mapping(10);
    push_mapping(m);
@@ -1150,31 +1224,24 @@ static void img_png_decode(INT32 args, int mode)
    if (args>=2)
    {
       if (TYPEOF(sp[1-args-1]) != T_MAPPING)
-	SIMPLE_BAD_ARG_ERROR("Image.PNG._decode", 2, "mapping");
+	SIMPLE_BAD_ARG_ERROR("_decode", 2, "mapping");
 
       push_svalue(sp+1-args-1);
       ref_push_string(param_palette);
       f_index(2);
       switch (TYPEOF(sp[-1]))
       {
-	 case T_OBJECT:
-	    push_text("cast");
-	    if (TYPEOF(sp[-1]) == T_INT)
-	       PIKE_ERROR("Image.PNG._decode",
-			  "Illegal value of option \"palette\".\n",
-			  sp, args);
-	    f_index(2);
-	    push_text("array");
-	    f_call_function(2);
 	 case T_ARRAY:
 	 case T_STRING:
 	    push_object(clone_object(image_colortable_program,1));
 
-	    ct=(struct neo_colortable*)get_storage(sp[-1].u.object,
-						   image_colortable_program);
+            /* Fallthrough */
+	 case T_OBJECT:
+	    ct=get_storage(sp[-1].u.object,
+                           image_colortable_program);
 	    if (!ct)
-	       PIKE_ERROR("Image.PNG._decode",
-			  "Internal error: cloned colortable isn't colortable.\n", sp, args);
+	       PIKE_ERROR("_decode",
+			  "Object isn't colortable.\n", sp, args);
 	    mapping_string_insert(m, param_palette, sp-1);
 	    pop_stack();
 	    break;
@@ -1182,7 +1249,7 @@ static void img_png_decode(INT32 args, int mode)
 	    pop_stack();
 	    break;
 	 default:
-	    PIKE_ERROR("Image.PNG._decode",
+	    PIKE_ERROR("_decode",
 		       "Illegal value of option \"palette\".\n",
 		       sp, args);
       }
@@ -1198,10 +1265,10 @@ static void img_png_decode(INT32 args, int mode)
       push_int(1); /* no care crc */
       image_png___decode(2);
       if (TYPEOF(sp[-1]) != T_ARRAY)
-	 PIKE_ERROR("Image.PNG._decode", "Not PNG data.\n", sp ,args);
+	 PIKE_ERROR("_decode", "Not PNG data.\n", sp ,args);
    }
    else if (TYPEOF(sp[-1]) != T_ARRAY)
-     SIMPLE_BAD_ARG_ERROR("Image.PNG._decode", 1, "string");
+     SIMPLE_BAD_ARG_ERROR("_decode", 1, "string");
 
    a=sp[-1].u.array;
 
@@ -1228,27 +1295,31 @@ static void img_png_decode(INT32 args, int mode)
       if (!i &&
 	  int_from_32bit((unsigned char*)b->item[0].u.string->str)
 	  != 0x49484452 )
-	 PIKE_ERROR("Imge.PNG.decode", "First chunk isn't IHDR.\n",
+	 PIKE_ERROR("_decode", "First chunk isn't IHDR.\n",
 		    sp, args);
 
       switch (int_from_32bit((unsigned char*)b->item[0].u.string->str))
       {
 	 /* ------ major chunks ------------ */
-         case 0x49484452: /* IHDR */
+         case 0x49484452: { /* IHDR */
+            size_t bytes;
 	    /* header info */
-	    if (b->item[1].u.string->len!=13)
-	       PIKE_ERROR("Image.PNG._decode",
+	    if (len!=13)
+	       PIKE_ERROR("_decode",
 			  "Illegal header (IHDR chunk).\n", sp, args);
 
 	    ihdr.width=int_from_32bit(data+0);
 	    ihdr.height=int_from_32bit(data+4);
 
-            if( sizeof(rgb_group)*(double)ihdr.width*(double)ihdr.height >
-                (double)INT_MAX )
+            if (!ihdr.width || !ihdr.height)
+              Pike_error("Image.PNG._decode: Invalid dimensions in IHDR chunk.\n");
+
+            if (DO_SIZE_T_MUL_OVERFLOW(ihdr.width, ihdr.height, &bytes) ||
+                DO_SIZE_T_MUL_OVERFLOW(bytes, sizeof(rgb_group), &bytes) ||
+                bytes > INT_MAX) {
               Pike_error("Image.PNG._decode: Too large image "
-                         "(total size exceeds %d bytes (%.0f))\n", INT_MAX,
-                         sizeof(rgb_group)*
-                         (double)ihdr.width*(double)ihdr.height);
+                         "(total size exceeds %d bytes)\n", INT_MAX);
+            }
 
 	    ihdr.bpp=data[8];
 	    ihdr.type=data[9];
@@ -1256,7 +1327,7 @@ static void img_png_decode(INT32 args, int mode)
 	    ihdr.filter=data[11];
 	    ihdr.interlace=data[12];
 	    break;
-
+         }
          case 0x504c5445: /* PLTE */
 	    /* palette info, 3×n bytes */
 
@@ -1267,8 +1338,7 @@ static void img_png_decode(INT32 args, int mode)
 
 	    if (ihdr.type==3)
 	    {
-	       ct=(struct neo_colortable*)
-		  get_storage(sp[-1].u.object,image_colortable_program);
+	       ct=get_storage(sp[-1].u.object,image_colortable_program);
 	       mapping_string_insert(m, param_palette, sp-1);
 	    }
 	    else
@@ -1297,12 +1367,11 @@ static void img_png_decode(INT32 args, int mode)
 	  {
 	    int i;
             if(mode==MODE_IMAGE_ONLY) break;
-	    if(b->item[1].u.string->len!=32) break;
+	    if(len!=32) break;
 	    for(i=0; i<32; i+=4)
-	      push_float((float)int_from_32bit((unsigned char*)b->
-                                        item[1].u.string->str+i)/100000.0);
+	      push_float((float)int_from_32bit(data+i)/100000.0);
 	    f_aggregate(8);
-	    push_text("chroma");
+	    push_static_text("chroma");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	  }
@@ -1310,12 +1379,14 @@ static void img_png_decode(INT32 args, int mode)
 
           case 0x73424954: /* sBIT */
 	  {
-	    int i;
+	    size_t i;
             if(mode==MODE_IMAGE_ONLY) break;
-	    for(i=0; i<b->item[1].u.string->len; i++)
-	      push_int(b->item[1].u.string->str[i]);
-	    f_aggregate(b->item[1].u.string->len);
-	    push_constant_text("sbit");
+            /* sBIT chunks are not longer than 4 bytes */
+            if (len > 4) break;
+	    for(i=0; i<len; i++)
+	      push_int(data[i]);
+	    f_aggregate(len);
+	    push_static_text("sbit");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	  }
@@ -1323,53 +1394,63 @@ static void img_png_decode(INT32 args, int mode)
 
           case 0x67414d41: /* gAMA */
             if(mode==MODE_IMAGE_ONLY) break;
-	    if(b->item[1].u.string->len!=4) break;
-	    push_constant_text("gamma");
-	    push_float((float)int_from_32bit((unsigned char*)b->
-                                      item[1].u.string->str)/100000.0);
+	    if(len!=4) break;
+	    push_static_text("gamma");
+	    push_float((float)int_from_32bit(data)/100000.0);
 	    mapping_insert(m,sp-2,sp-1);
 	    pop_n_elems(2);
 	    break;
 
-          case 0x70485973: /* pHYs */
+          case 0x70485973: { /* pHYs */
+            int tmp1, tmp2;
             if(mode==MODE_IMAGE_ONLY) break;
-	    if(b->item[1].u.string->len!=9) break;
-	    push_int(b->item[1].u.string->str[8]);
-	    push_int(int_from_32bit((unsigned char*)b->
-                                    item[1].u.string->str));
-	    push_int(int_from_32bit((unsigned char*)b->
-                                    item[1].u.string->str+4));
+	    if(len!=9) break;
+            tmp1 = get_unaligned_be32(data);
+            tmp2 = get_unaligned_be32(data+4);
+            /* the image dimensions are valid in the range
+             * 0 .. MAX_INT32
+             */
+            if (data[8] != 0 && data[8] != 1) break;
+            if (tmp1 < 0 || tmp2 < 0) break;
+	    push_int(data[8]);
+	    push_int(tmp1);
+	    push_int(tmp2);
 	    f_aggregate(3);
-	    push_constant_text("physical");
+	    push_static_text("physical");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
-
-          case 0x6f464673: /* oFFs */
+          }
+          case 0x6f464673: { /* oFFs */
+            int tmp1, tmp2;
             if(mode==MODE_IMAGE_ONLY) break;
-	    if(b->item[1].u.string->len!=9) break;
-	    push_int(b->item[1].u.string->str[8]);
-	    push_int(int_from_32bit((unsigned char*)b->
-                                    item[1].u.string->str));
-	    push_int(int_from_32bit((unsigned char*)b->
-                                    item[1].u.string->str+4));
+	    if(len!=9) break;
+            tmp1 = get_unaligned_be32(data);
+            tmp2 = get_unaligned_be32(data+4);
+            /* the oFFs image offsets are valid in the range
+             * of -MAX_INT32 .. MAX_INT32 */
+            if (data[8] != 0 && data[8] != 1) break;
+            if (tmp1 == MIN_INT32 || tmp2 == MIN_INT32) break;
+	    push_int(data[8]);
+	    push_int(tmp1);
+	    push_int(tmp2);
 	    f_aggregate(3);
-	    push_constant_text("offset");
+	    push_static_text("offset");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
-
+          }
           case 0x74494d45: /* tIME */
             if(mode==MODE_IMAGE_ONLY) break;
-	    if(b->item[1].u.string->len!=7) break;
-	    push_int(int_from_16bit(b->item[1].u.string->str));
-	    push_int(b->item[1].u.string->str[2]);
-	    push_int(b->item[1].u.string->str[3]);
-	    push_int(b->item[1].u.string->str[4]);
-	    push_int(b->item[1].u.string->str[5]);
-	    push_int(b->item[1].u.string->str[6]);
+	    if(len!=7) break;
+	    push_int(int_from_16bit(data));
+	    push_int(data[2]);
+	    push_int(data[3]);
+	    push_int(data[4]);
+	    push_int(data[5]);
+	    push_int(data[6]);
 	    f_aggregate(6);
-	    push_constant_text("time");
+	    push_static_text("time");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
@@ -1380,9 +1461,9 @@ static void img_png_decode(INT32 args, int mode)
 	    {
 	       case 0:
 	       case 4:
-		  if (b->item[1].u.string->len==2)
+		  if (len==2)
 		  {
-		     int z=_png_c16(b->item[1].u.string->str[0],ihdr.bpp);
+		     int z=_png_c16(data[0],ihdr.bpp);
 		     push_int(z);
 		     push_int(z);
 		     push_int(z);
@@ -1391,25 +1472,24 @@ static void img_png_decode(INT32 args, int mode)
 		     continue;
 		  break;
 	       case 3:
-		  if (b->item[1].u.string->len!=1 ||
+		  if (len!=1 ||
 		      !ct || ct->type!=NCT_FLAT ||
-		      b->item[1].u.string->str[0] >=
-		      ct->u.flat.numentries)
+		      data[0] >= ct->u.flat.numentries)
 		     continue;
 		  else
 		  {
-		     push_int(ct->u.flat.entries[(int)b->item[1].u.string->str[0]].color.r);
-		     push_int(ct->u.flat.entries[(int)b->item[1].u.string->str[0]].color.g);
-		     push_int(ct->u.flat.entries[(int)b->item[1].u.string->str[0]].color.b);
+		     push_int(ct->u.flat.entries[data[0]].color.r);
+		     push_int(ct->u.flat.entries[data[0]].color.g);
+		     push_int(ct->u.flat.entries[data[0]].color.b);
 		  }
                   break;
 	       default:
-		  if (b->item[1].u.string->len==6)
+		  if (len==6)
 		  {
 		     int j;
 		     for (j=0; j<3; j++)
 		     {
-			int z=_png_c16(b->item[1].u.string->str[j*2],ihdr.bpp);
+			int z=_png_c16(data[j*2],ihdr.bpp);
 			push_int(z);
 		     }
 		  } else
@@ -1422,8 +1502,10 @@ static void img_png_decode(INT32 args, int mode)
 	    break;
 
          case 0x74524e53: /* tRNS */
+            if (trns) break;
 	    trns=b->item[1].u.string;
             add_ref(trns);
+            SET_ONERROR(err, png_free_string, trns);
 	    break;
 
          default:
@@ -1434,19 +1516,16 @@ static void img_png_decode(INT32 args, int mode)
 
 	    ref_push_string(b->item[1].u.string);
 	    ref_push_string(b->item[0].u.string);
-	    mapping_insert(m,sp-1,sp-2);
+            /* do not replace existing entries */
+	    low_mapping_insert(m,sp-1,sp-2,0);
 	    pop_n_elems(2);
       }
    }
-
 
    /* on stack: mapping   n×string */
 
    if ( mode != MODE_HEADER_ONLY )
    {
-     if(trns)
-       SET_ONERROR(err, png_free_string, &trns);
-
      if (ihdr.type==-1)
        PIKE_ERROR("Image.PNG._decode", "Missing header (IHDR chunk).\n",
                   sp, args);
@@ -1469,29 +1548,29 @@ static void img_png_decode(INT32 args, int mode)
      mapping_string_insert(m, param_image, sp-1);
      pop_stack();
 
-     if(trns)
-       UNSET_ONERROR(err);
    }
 
-   if (trns)
+   if (trns) {
+     UNSET_ONERROR(err);
      png_free_string (trns);
+   }
 
    if ( mode != MODE_IMAGE_ONLY )
    {
      push_int(ihdr.type);
-     mapping_string_insert(m, param_type, sp-1);
+     mapping_string_insert(m, literal_type_string, sp-1);
      pop_stack();
 
      push_int(ihdr.bpp);
      mapping_string_insert(m, param_bpp, sp-1);
      pop_stack();
 
-     push_constant_text("xsize");
+     push_static_text("xsize");
      push_int(ihdr.width);
      mapping_insert(m,sp-2,sp-1);
      pop_n_elems(2);
 
-     push_constant_text("ysize");
+     push_static_text("ysize");
      push_int(ihdr.height);
      mapping_insert(m,sp-2,sp-1);
      pop_n_elems(2);
@@ -1541,22 +1620,21 @@ static void image_png_encode(INT32 args)
    char buf[20];
 
    if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.encode", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("encode", 1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)
-	 get_storage(sp[-args].u.object,image_program)))
-     SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 1, "Image.Image");
+       !(img=get_storage(sp[-args].u.object,image_program)))
+     SIMPLE_BAD_ARG_ERROR("encode", 1, "Image.Image");
 
    if (!img->img)
-      PIKE_ERROR("Image.PNG.encode", "No image.\n", sp, args);
+      PIKE_ERROR("encode", "No image.\n", sp, args);
 
-   if (args>1)
+   if ((args>1) && !IS_UNDEFINED(sp + 1-args))
    {
      struct svalue *s;
 
      if (TYPEOF(sp[1-args]) != T_MAPPING)
-	SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 2, "mapping");
+	SIMPLE_BAD_ARG_ERROR("encode", 2, "mapping");
 
       /* Attribute alpha */
       s = low_mapping_string_lookup(sp[1-args].u.mapping, param_alpha);
@@ -1564,22 +1642,21 @@ static void image_png_encode(INT32 args)
       if( s )
       {
         if( TYPEOF(*s) == T_OBJECT &&
-            (alpha=(struct image*)
-             get_storage(s->u.object,image_program)) )
+            (alpha=get_storage(s->u.object,image_program)) )
         {
           if (alpha->xsize!=img->xsize ||
               alpha->ysize!=img->ysize)
-            PIKE_ERROR("Image.PNG.encode",
+            PIKE_ERROR("encode",
                        "Option (arg 2) \"alpha\"; images differ in size.\n",
                        sp, args);
 
           if (!alpha->img)
-            PIKE_ERROR("Image.PNG.encode",
+            PIKE_ERROR("encode",
                        "Option (arg 2) \"alpha\"; no image\n",
                        sp, args);
         }
         else if( !(TYPEOF(*s) == T_INT && s->u.integer==0) )
-          PIKE_ERROR("Image.PNG.encode",
+          PIKE_ERROR("encode",
                      "Option (arg 2) \"alpha\" has illegal type.\n",
                      sp, args);
       }
@@ -1589,9 +1666,8 @@ static void image_png_encode(INT32 args)
 
       if (s && !(TYPEOF(*s) == T_INT && s->u.integer==0))
 	 if (TYPEOF(*s) != T_OBJECT ||
-	     !(ct=(struct neo_colortable*)
-	       get_storage(s->u.object,image_colortable_program)))
-	   PIKE_ERROR("Image.PNG.encode",
+	     !(ct=get_storage(s->u.object,image_colortable_program)))
+	   PIKE_ERROR("encode",
 		      "Option (arg 2) \"palette\" has illegal type.\n",
 		      sp, args);
 
@@ -1601,7 +1677,7 @@ static void image_png_encode(INT32 args)
       if ( s )
       {
         if( TYPEOF(*s) != T_INT )
-          PIKE_ERROR("Image.PNG.encode",
+          PIKE_ERROR("encode",
                      "Option (arg 2) \"zlevel\" has illegal value.\n",
                      sp, args);
         else
@@ -1613,7 +1689,7 @@ static void image_png_encode(INT32 args)
       if( s )
       {
         if ( TYPEOF(*s) != T_INT )
-          PIKE_ERROR("Image.PNG.encode",
+          PIKE_ERROR("encode",
                      "Option (arg 2) \"zstrategy\" has illegal value.\n",
                      sp, args);
         else
@@ -1631,7 +1707,7 @@ static void image_png_encode(INT32 args)
       ptrdiff_t sz;
       sz = image_colortable_size(ct);
       if (sz>256)
-	 PIKE_ERROR("Image.PNG.encode", "Palette size to large; "
+	 PIKE_ERROR("encode", "Palette size to large; "
 		    "PNG doesn't support bigger palettes then 256 colors.\n",
 		    sp, args);
       if (sz>16) bpp=8;
@@ -1661,7 +1737,7 @@ static void image_png_encode(INT32 args)
    {
       struct pike_string *ps;
       ps=begin_shared_string(3<<bpp);
-      MEMSET(ps->str,0,3<<bpp);
+      memset(ps->str,0,3<<bpp);
       image_colortable_write_rgb(ct,(unsigned char*)ps->str);
       push_string(end_shared_string(ps));
       push_png_chunk("PLTE",NULL);
@@ -1673,7 +1749,7 @@ static void image_png_encode(INT32 args)
    if (alpha) sa=alpha->img;
    if (ct) {
       if (alpha) {
-	 PIKE_ERROR("Image.PNG.encode",
+	 PIKE_ERROR("encode",
 		    "Colortable and alpha channel not supported "
 		    "at the same time.\n", sp, args);
       }
@@ -1697,7 +1773,7 @@ static void image_png_encode(INT32 args)
 	    *(d++)=0; /* filter */
 	    if (bpp==8)
 	    {
-	       MEMCPY(d,ts,x);
+	       memcpy(d,ts,x);
 	       ts += x;
                d += x;
 	    }
@@ -1808,10 +1884,10 @@ static void image_png_decode_header(INT32 args)
 static void image_png_decode(INT32 args)
 {
    if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.decode", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("decode", 1);
 
    img_png_decode(args, MODE_IMAGE_ONLY);
-   push_constant_text("image");
+   push_static_text("image");
    f_index(2);
 }
 
@@ -1828,20 +1904,20 @@ static void image_png_decode_alpha(INT32 args)
 {
    struct svalue s;
    if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.decode_alpha", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("decode_alpha", 1);
 
    image_png__decode(args);
    assign_svalue_no_free(&s,sp-1);
-   push_constant_text("alpha");
+   push_static_text("alpha");
    f_index(2);
 
    if (TYPEOF(sp[-1]) == T_INT)
    {
       push_svalue(&s);
-      push_constant_text("xsize");
+      push_static_text("xsize");
       f_index(2);
       push_svalue(&s);
-      push_constant_text("ysize");
+      push_static_text("ysize");
       f_index(2);
       push_int(255);
       push_int(255);
@@ -1867,7 +1943,6 @@ void exit_image_png(void)
    free_string(param_alpha);
    free_string(param_bpp);
    free_string(param_background);
-   free_string(param_type);
    free_string(param_zlevel);
    free_string(param_zstrategy);
 }
@@ -1882,7 +1957,7 @@ void init_image_png(void)
    if(crc32 && zlibmod_pack && zlibmod_unpack)
      gz = 1;
 #else
-   push_text("Gz.inflate");
+   push_static_text("Gz.inflate");
    SAFE_APPLY_MASTER("resolv",1);
    if( TYPEOF(Pike_sp[-1]) == T_PROGRAM )
      gz = 1;
@@ -1918,7 +1993,6 @@ void init_image_png(void)
    param_image=make_shared_string("image");
    param_alpha=make_shared_string("alpha");
    param_bpp=make_shared_string("bpp");
-   param_type=make_shared_string("type");
    param_background=make_shared_string("background");
    param_zlevel=make_shared_string("zlevel");
    param_zstrategy=make_shared_string("zstrategy");

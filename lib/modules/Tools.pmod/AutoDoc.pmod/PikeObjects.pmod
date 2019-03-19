@@ -10,6 +10,80 @@
 protected inherit "module.pmod";
 protected inherit Parser.XML.Tree;
 
+constant lfuns = ([
+  "`+": "OBJ + x",
+  "`-": "OBJ - x",
+  "`&": "OBJ & x",
+  "`|": "OBJ | x",
+  "`^": "OBJ ^ x",
+  "`<<":"OBJ << x",
+  "`>>":"OBJ >> x",
+  "`*": "OBJ * x",
+  "`/": "OBJ / x",
+  "`%": "OBJ % x",
+  "`~": "~OBJ",
+  "`==": "OBJ == x",
+  "`<": "OBJ < x",
+  "`>": "OBJ > x",
+  "__hash":"hash_value(OBJ)",
+  "cast":"(cast)OBJ",
+  "`!": "!OBJ",
+  "`[]":"OBJ[ x ]",
+  "`->":"OBJ->X",
+  "_sizeof":"sizeof(OBJ)",
+  "_indices":"indices(OBJ)",
+  "_values":"values(OBJ)",
+  "_size_object":"Debug.size_object(OBJ)",
+  "`()":"OBJ()",
+  "``+":"x + OBJ",
+  "``-":"x - OBJ",
+  "``&":"x & OBJ",
+  "``|":"x | OBJ",
+  "``^":"x ^ OBJ",
+  "``<<":"x << OBJ",
+  "``>>":"x >> OBJ",
+  "``*":"x * OBJ",
+  "``/":"x / OBJ",
+  "``%":"x % OBJ",
+
+  "`->=":"OBJ->X = y",
+  "`[]=":"OBJ[ x ] = y",
+  "`+=":"OBJ += x", /* not really all that nice looking... */
+
+  "`-=":"NOTIMPL",
+  "`&=":"NOTIMPL",
+  "`|=":"NOTIMPL",
+  "`^=":"NOTIMPL",
+  "`<<=":"NOTIMPL",
+  "`>>=":"NOTIMPL",
+  "`*=":"NOTIMPL",
+  "`/=":"NOTIMPL",
+  "`%=":"NOTIMPL",
+  "`~=":"NOTIMPL",
+  "`<=":"NOTIMPL",
+  "`>=":"NOTIMPL",
+  "`!=":"NOTIMPL",
+
+  "_is_type":"is_type(OBJ)",/*  requires more work..*/
+  "_sprintf":"sprintf(...,OBJ)",
+  "_equal":"equal(OBJ,x)",
+  "_m_delete":"m_delete(OBJ,x)",
+  "_get_iterator":"foreach(OBJ;...)",
+  "`[..]":"OBJ[start..end]",
+  /* NOTE: After this point there are only fake lfuns. */
+  "_search":"search(OBJ,x)",
+  "_random":"random(OBJ)",
+  /*
+    "_types",
+  "_serialize",
+  "_deserialize",
+  "_size_object",
+*/
+  // "sqrt":"sqrt(OBJ)",
+  // "pow":"pow(OBJ)",
+  "_decode":"OBJ = decode_value(...)",
+  "_encode":"str = encode_value(OBJ)",
+]);
 
 //========================================================================
 // REPRESENTATION OF TYPES
@@ -23,7 +97,7 @@ class Type(string name) {
 
   //! @returns
   //!   Returns a string with an XML representation of the type.
-  string xml() { return xmltag(name);}
+  string xml(.Flags|void flags) { return xmltag(name);}
 }
 
 //! The class for representing array types.
@@ -47,11 +121,11 @@ class ArrayType {
       return "array";
   }
 
-  string xml() {
+  string xml(.Flags|void flags) {
     if (!valuetype)
-      return ::xml();
+      return ::xml(flags);
     return xmltag("array",
-                  xmltag("valuetype", valuetype->xml()));
+                  xmltag("valuetype", valuetype->xml(flags)));
   }
 }
 
@@ -111,7 +185,7 @@ class IntType {
     else
       return "int";
   }
-  string xml() {
+  string xml(.Flags|void flags) {
     if (min || max)
       return xmltag("int",
                     xmltag("min", min) + xmltag("max", max));
@@ -143,10 +217,10 @@ class StringType {
     else
       return "string";
   }
-  string xml() {
+  string xml(.Flags|void flags) {
     if (min||max)
-      return xmltag("string", 
-                    xmltag("min", min) + 
+      return xmltag("string",
+                    xmltag("min", min) +
                     xmltag("max", max));
     return xmltag("string");
   }
@@ -193,13 +267,13 @@ class FunctionType {
     } else
       return "function";
   }
-  string xml() {
+  string xml(.Flags|void flags) {
     string s = "";
     if (argtypes)
       foreach(argtypes, Type t)
-        s += xmltag("argtype", t->xml());
+        s += xmltag("argtype", t->xml(flags));
     if (returntype)
-      s += xmltag("returntype", returntype->xml());
+      s += xmltag("returntype", returntype->xml(flags));
     return xmltag("function", s);
   }
 }
@@ -229,11 +303,11 @@ class MappingType {
     else
       return "mapping";
   }
-  string xml() {
+  string xml(.Flags|void flags) {
     if (indextype && valuetype)
       return xmltag("mapping",
-                    xmltag("indextype", indextype->xml())
-                    + xmltag("valuetype", valuetype->xml()));
+                    xmltag("indextype", indextype->xml(flags))
+                    + xmltag("valuetype", valuetype->xml(flags)));
     else
       return xmltag("mapping");
   }
@@ -262,10 +336,10 @@ class MultisetType {
     else
       return "multiset";
   }
-  string xml() {
+  string xml(.Flags|void flags) {
     if (indextype)
       return xmltag("multiset",
-                    xmltag("indextype", indextype->xml()));
+                    xmltag("indextype", indextype->xml(flags)));
     return xmltag("multiset");
   }
 }
@@ -290,7 +364,7 @@ class ObjectType {
     else
       return "object";
   }
-  string xml() {
+  string xml(.Flags|void flags) {
     return xmltag("object", classname);
   }
 }
@@ -315,8 +389,8 @@ class TypeType {
     }
     return "type";
   }
-  string xml() {
-    return xmltag("type", subtype->xml());
+  string xml(.Flags|void flags) {
+    return xmltag("type", subtype->xml(flags));
   }
 }
 
@@ -361,10 +435,10 @@ class OrType {
   string print() {
     return map(types, lambda(Type t) { return t->print(); }) * " | ";
   }
-  string xml() {
+  string xml(.Flags|void flags) {
     string s = "";
     foreach(types, Type t)
-      s += t->xml();
+      s += t->xml(flags);
     return xmltag("or", s);
   }
 }
@@ -384,7 +458,7 @@ class VarargsType {
   void create(Type t) { ::create("varargs"); type = t; }
 
   string print() { return type->print() + " ..."; }
-  string xml() { return xmltag("varargs", type->xml()); }
+  string xml(.Flags|void flags) { return xmltag("varargs", type->xml(flags)); }
 }
 
 //! The class for representing attributed types.
@@ -423,11 +497,11 @@ class AttributeType {
 	"__attribute__(" + attribute + ", " + subtype->print() + ")";
     }
   }
-  string xml() {
+  string xml(.Flags|void flags) {
     return xmltag("attribute",
 		  (prefix?xmltag("prefix"):"") +
 		  xmltag("attribute", attribute) +
-		  xmltag("subtype", subtype->xml()));
+		  xmltag("subtype", subtype->xml(flags)));
   }
 }
 
@@ -468,7 +542,7 @@ class DocGroup {
 
   //! @returns
   //!   Returns a string with an XML representation of the documentation.
-  string xml() {
+  string xml(.Flags|void flags) {
     mapping(string:string) m = ([]);
     if (appears) m->appears = appears;
     if (belongs) m->belongs = belongs;
@@ -491,7 +565,7 @@ class DocGroup {
     if (documentation)
       res += xmltag("doc", documentation->xml) + "\n";
     foreach(objects, PikeObject obj)
-      res += obj->xml() + "\n";
+      res += obj->xml(flags) + "\n";
     return res + closetag("docgroup") + "\n";
   }
 }
@@ -529,10 +603,10 @@ class PikeObject {
   //!
   Documentation squeezedInDoc;
 
-  protected string standardTags() {
+  protected string standardTags(.Flags|void flags) {
     string s = "";
     if (position)
-      s += position->xml();
+      s += position->xml(flags);
     if (sizeof(modifiers))
       s += xmltag("modifiers", map(modifiers, xmltag) * "");
     return s;
@@ -540,11 +614,11 @@ class PikeObject {
 
   //! @returns
   //!   Returns a string with an XML representation of the entity.
-  string xml() {
-    return standardStart() + standardEnd();
+  string xml(.Flags|void flags) {
+    return standardStart(flags) + standardEnd(flags);
   }
 
-  protected mapping(string:string) standardAttributes() {
+  protected mapping(string:string) standardAttributes(.Flags|void flags) {
     mapping(string:string) m = ([]);
     if (name)    m->name = name;
     if (appears) m->appears = appears;
@@ -552,8 +626,10 @@ class PikeObject {
     return m;
   }
 
-  protected string standardStart() { return opentag(objtype, standardAttributes()); }
-  protected string standardEnd() { return closetag(objtype); }
+  protected string standardStart(.Flags|void flags) {
+    return opentag(objtype, standardAttributes(flags));
+  }
+  protected string standardEnd(.Flags|void flags) { return closetag(objtype); }
 
   protected string printModifiers() {
     return modifiers * " " + (sizeof(modifiers) ? " " : "");
@@ -575,11 +651,11 @@ class Inherit {
   //! Name of the class that is inherited.
   string classname;
 
-  string xml() {
-    return standardStart() +
-      standardTags() +
+  string xml(.Flags|void flags) {
+    return standardStart(flags) +
+      standardTags(flags) +
       xmltag("classname", classname) +
-      standardEnd();
+      standardEnd(flags);
   }
   string print() {
     return ::print() + " " + classname + (name ? "" : " : " + name);
@@ -596,6 +672,20 @@ class Import {
 
   string print() {
     return ::print() + " " + classname;
+  }
+}
+
+//! Representation of an inherit.
+class CppDirective {
+  //!
+  inherit PikeObject;
+
+  //!
+  constant objtype = "directive";
+
+  protected void create(string directive)
+  {
+    name = directive;
   }
 }
 
@@ -623,6 +713,101 @@ class _Class_or_Module {
 
   //! Documented entities that are children to this entity.
   array(DocGroup) docGroups = ({ });
+
+  void fixGettersSetters()
+  {
+    mapping(string:array(PikeObject)) found = ([]);
+    mapping(string:mapping(string:Documentation)) docs = ([]);
+
+    foreach( docGroups;int index; DocGroup doge )
+    {
+      foreach( doge->objects; int subindex; PikeObject o )
+      {
+	if( lfuns[o->name] == "NOTIMPL" && objtype != "namespace")
+	{
+	  werror("WARNING: Dropping documentation for %s. "
+		 "There is no such operator\n"
+		 "Found in documentation for %s\n",
+		 o->name,o->position?->filename||name);
+	  doge->objects[subindex] = 0;
+	}
+	else if( o->name[0..0] == "`" && !lfuns[o->name] )
+	{
+	  string key = o->name[1..]-"=";
+	  found[key] += ({ o });
+	  doge->objects[subindex] = 0;
+	  if(!docs[key] )
+	    docs[key] = ([]);
+	  if( doge->documentation )
+	    if( o->name[-1] == '=' )
+	      docs[key]->set = doge->documentation;
+	    else
+	      docs[key]->get = doge->documentation;
+	}
+      }
+      doge->objects -= ({0});
+      if( sizeof( doge->objects ) == 0 )
+      {
+	docGroups[index]=0;
+      }
+    }
+    docGroups -= ({0});
+
+    foreach( found; string key; array(PikeObject) o )
+    {
+      Variable nvar = Variable();
+      Documentation outdoc=Documentation();
+      DocGroup ngroup = DocGroup(({nvar}),outdoc);
+      string extra;
+
+      docGroups += ({ ngroup });
+
+      if( sizeof( o ) == 1 )
+      {
+	if( o[0]->name[-1] == '=' )
+	  extra = "Write only";
+	else
+	  extra = "Read only";
+      }
+      nvar->name = key;
+      nvar->type = o[0]->returntype;
+      nvar->position = o[0]->position;
+      outdoc->position = o[0]->position;
+
+      mapping(string:Documentation) doc = docs[key];
+      if( doc?->set?->text && doc?->get?->text &&
+	  strlen(doc->set->text) && strlen(doc->get->text) &&
+	  doc->set->text != doc->get->text )
+      {
+        outdoc->text = "Getting\n\n"
+          "\n"+doc->get->text+"\n\n"+
+          "Setting\n\n"+
+          doc->get->text+"\n\n";
+      }
+      else
+      {
+	if( doc?->set?->text && strlen(doc->set->text) )
+	{
+	  outdoc->text = doc->set->text;
+	}
+	else if( doc?->get?->text && strlen(doc->get->text) )
+	{
+	  outdoc->text = doc->get->text;
+	}
+	else
+	  outdoc->text="";
+      }
+      if( extra )
+	outdoc->text += "\n@note\n"+extra;
+
+      object p = master()->resolv("Tools.AutoDoc.DocParser.Parse")
+	(outdoc->text,
+	 SourcePosition(__FILE__, __LINE__, __LINE__));
+
+      p->metadata();
+      outdoc->xml = p->doc("_method");
+    }
+  }
 
   //! @returns
   //!   Returns @expr{1@} if there is any documentation
@@ -665,24 +850,26 @@ class _Class_or_Module {
     docGroups += ({ d });
   }
 
-  string xml() {
-    string contents = standardTags();
+
+  string xml(.Flags|void flags) {
+    fixGettersSetters();
+    string contents = standardTags(flags);
     if (documentation && documentation->xml != "")
       contents += xmltag("doc", documentation->xml);
     children -= ({ 0 }); // FIXME
     foreach (children, _Class_or_Module c)
-      contents += c->xml();
+      contents += c->xml(flags);
     foreach (inherits, Inherit in) {
       // Wrap the undocumented inherits in docgroups.
       DocGroup dg = DocGroup(({in}), EmptyDoc);
-      contents += dg->xml();
+      contents += dg->xml(flags);
     }
     foreach (docGroups, DocGroup dg)
-      contents += dg->xml();
-    mapping(string:string) m = standardAttributes();
+      contents += dg->xml(flags);
+    mapping(string:string) m = standardAttributes(flags);
     if (file) m["file"] = file;
     if (directory) m["directory"] = directory;
-    return "\n\n" + opentag(objtype, m) + contents + standardEnd();
+    return "\n" + opentag(objtype, m) + contents + standardEnd(flags) + "\n";
   }
 
   string print() {
@@ -720,6 +907,7 @@ class _Class_or_Module {
 
 //! Represents a class.
 class Class {
+
   //!
   inherit _Class_or_Module;
 
@@ -754,11 +942,17 @@ class AutoDoc {
 
   //!
   constant objtype = "autodoc";
+
+  string xml(.Flags|void flags) {
+    // Add an XML header and encode the result as UTF-8.
+    return string_to_utf8("<?xml version='1.0' encoding='utf-8'?>\n" +
+			  ::xml(flags) + "\n");
+  }
 }
 
 //! A modifier range, e.g.:
 //! @code
-//! static private {
+//! final protected {
 //!   ...
 //!   <<declarations>>
 //!   ...
@@ -789,21 +983,21 @@ class Method {
   //!
   constant objtype = "method";
 
-  string xml() {
-    string s = standardTags() + "\n";
+  string xml(.Flags|void flags) {
+    string s = standardTags(flags) + "\n";
     string args = "";
     for(int i = 0; i < sizeof(argnames); ++i) {
       if (argtypes[i])
         args += xmltag("argument",
                        argnames[i]&&([ "name" : argnames[i] ]),
-                       xmltag("type", argtypes[i]->xml()));
+                       xmltag("type", argtypes[i]->xml(flags)));
       else
         args += xmltag("argument",
                        xmltag("value", argnames[i]));
     }
     s += xmltag("arguments", args) + "\n" +
-      xmltag("returntype", returntype->xml()) + "\n";
-    return standardStart() + s + standardEnd();
+      xmltag("returntype", returntype->xml(flags)) + "\n";
+    return standardStart(flags) + s + standardEnd(flags);
   }
   string print() {
     array(string) args = ({ });
@@ -827,11 +1021,11 @@ class Constant {
   //! Typedef @[Type] if it is a typedef.
   Type typedefType = 0;
 
-  string xml() {
-    return standardStart() + standardTags()
-      + (type ? xmltag ("type", type->xml()) : "")
-      + (typedefType ? xmltag("typevalue", typedefType->xml()) : "")
-      + standardEnd();
+  string xml(.Flags|void flags) {
+    return standardStart(flags) + standardTags(flags)
+      + (type ? xmltag ("type", type->xml(flags)) : "")
+      + (typedefType ? xmltag("typevalue", typedefType->xml(flags)) : "")
+      + standardEnd(flags);
   }
   string print() {
     return ::print() + " " + name;
@@ -849,10 +1043,10 @@ class Typedef {
   //! Typedef @[Type].
   Type type = 0;
 
-  string xml() {
-    return standardStart() + standardTags()
-      + xmltag("type", type->xml())
-      + standardEnd();
+  string xml(.Flags|void flags) {
+    return standardStart(flags) + standardTags(flags)
+      + xmltag("type", type->xml(flags))
+      + standardEnd(flags);
   }
   string print() {
     return ::print() + (type ? " " + type->print() + " " : "") + name;
@@ -867,10 +1061,10 @@ class EnumConstant {
   //!
   constant objtype = "constant";
 
-  string xml() {
-    mapping m = ([]) + standardAttributes();
-    return opentag(objtype, m) + standardTags()
-      + standardEnd();
+  string xml(.Flags|void flags) {
+    mapping m = ([]) + standardAttributes(flags);
+    return opentag(objtype, m) + standardTags(flags)
+      + standardEnd(flags);
   }
   string print() {
     return "constant";  // for now...
@@ -894,11 +1088,11 @@ class Enum {
   //! Adds @[c] to the set of @[children].
   void addChild(DocGroup c) { children += ({ c }); }
 
-  string xml() {
+  string xml(.Flags|void flags) {
 
     // need some special handling to make this look as if it
     // were produced by some other stuff
-    string s =  standardStart() + standardTags();
+    string s =  standardStart(flags) + standardTags(flags);
     array(SimpleNode) inDocGroups = ({});
 
     if (documentation && documentation->xml != "") {
@@ -974,11 +1168,11 @@ class Enum {
     }
 
     foreach (children, DocGroup docGroup)
-      s += docGroup->xml();
+      s += docGroup->xml(flags);
     foreach (inDocGroups, SimpleNode n)
       s += n->html_of_node();
 
-    s += standardEnd();
+    s += standardEnd(flags);
     return s;
   }
 
@@ -998,11 +1192,11 @@ class Variable {
   //! @[Type] of the variable.
   Type type;
 
-  string xml() {
-    return standardStart() +
-      standardTags() +
-      xmltag("type", type->xml()) +
-      standardEnd();
+  string xml(.Flags|void flags) {
+    return standardStart(flags) +
+      standardTags(flags) +
+      xmltag("type", type->xml(flags)) +
+      standardEnd(flags);
   }
   string print() {
     return printModifiers() + type->print() + " " +  name;

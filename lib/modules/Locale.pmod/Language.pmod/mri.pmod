@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Maaori (New Zealand) language locale by Jason Rumney
-
-// $Id$
 
 inherit "abstract";
 
@@ -15,7 +12,7 @@ constant iso_639_2B = "mao";
 
 constant aliases = ({ "mi", "mri", "mao", "maori", "maaori" });
 
-constant months = ({ 
+constant months = ({
   "Haanuere", "Pepuere", "Maehe", "Aaperira", "Mei",
   "Hune", "Huurae", "Aakuhata", "Hepetema", "Oketopa",
   "Nowema", "Tiihema" });
@@ -71,14 +68,14 @@ string number(int num)
    case 8:  return "waru";
    case 9:  return "iwa";
    case 10: return "tekau";
-   case 11..19: return "tekau ma "+number(num-10) ; 
+   case 11..19: return "tekau ma "+number(num-10) ;
    case 20..99: return number(num/10)+" "+number(10+num%10) ;
    case 100: return "rau" ;
    case 101..199: return "rau ma "+number(num-100);
    case 200..999: return number(num/100)+" "+number(100+num%100) ;
    case 1000: return "mano" ;
    case 1001..1999: return "mano ma "+ number(num-1000);
-   case 2000..999999: return number(num/1000)+" "+number(1000+num%1000); 
+   case 2000..999999: return number(num/1000)+" "+number(1000+num%1000);
    default:
     return "tini ("+num+")";
   }

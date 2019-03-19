@@ -1,11 +1,10 @@
 #pike __REAL_VERSION__
 
-//  $Id$
 //!	This module contains nice abstraction for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
-//!	"@tt{async_@i{call@}@}" or 
-//!	"@tt{async_cb_@i{call@}@}", depending on 
-//!	how you want the call to be done. 
+//!	"@tt{async_@i{call@}@}" or
+//!	"@tt{async_cb_@i{call@}@}", depending on
+//!	how you want the call to be done.
 
 import .Helper;
 import .ProtocolTypes;
@@ -33,7 +32,7 @@ class _Request
    //! @decl mixed sync(mixed ...args)
    //!	Initialise an asynchronous or a synchronous call,
    //!	the latter is also evaluating the result. This calls
-   //!	@tt{indata()@} in itself, to get the correct arguments to 
+   //!	@tt{indata()@} in itself, to get the correct arguments to
    //!	the lyskom protocol call.
 
    //! @decl void _async(int call, mixed_data)
@@ -46,7 +45,7 @@ class _Request
    {
       ref=raw->send(encode(call,@data),_reply);
    }
-   
+
    mixed _sync(int call,mixed ... data)
    {
 #if constant(thread_create) && !LYSKOM_UNTHREADED
@@ -60,7 +59,7 @@ class _Request
 
    //! @decl mixed _reply(object|array what)
    //! @decl mixed reply(object|array what)
-   //!	@[_reply()] is called as callback to evaluate the result, 
+   //!	@[_reply()] is called as callback to evaluate the result,
    //!	and calls @[reply()] in itself to do the real work.
 
    mixed _reply(object|array what)

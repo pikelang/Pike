@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 // Cannot dump this because of the #if constant(Roxen.xxx) check below.
@@ -18,13 +17,13 @@ constant fields = ({ "body", "title", "keywords", "description", "robots",
 #endif
 		  });
 
-static int(0..0) return_zero(mixed ... args) { return 0; }
+protected int(0..0) return_zero(mixed ... args) { return 0; }
 
-static Parser.HTML parser;
-static Parser.HTML cleaner;
-static mapping entities;
+protected Parser.HTML parser;
+protected Parser.HTML cleaner;
+protected mapping entities;
 
-static void create() {
+protected void create() {
   parser = Parser.HTML();
   parser->case_insensitive_tag(1);
   parser->lazy_entity_end(1);
@@ -42,19 +41,7 @@ static void create() {
   constant ignore_tags = ({ "script", "style", });
   parser->add_containers(mkmapping(ignore_tags, ({""})*sizeof(ignore_tags)));
 
-#if __VERSION__ > 7.4
   cleaner = Parser.html_entity_parser(1);
-#else
-  cleaner = Parser.html_entity_parser();
-  cleaner->_set_entity_callback(
-	   lambda(Parser.HTML p,string ent)
-	   {
-	     string chr = Parser.decode_numeric_xml_entity(p->tag_name());
-	     if (!chr)
-	       return 0;
-	     return ({chr});
-	   });
-#endif
   cleaner->case_insensitive_tag(1);
   cleaner->lazy_entity_end(1);
   cleaner->ignore_unknown(1);
@@ -71,7 +58,7 @@ static void create() {
     entities["&"+i+";"] = v;
 }
 
-static string clean(string data) {
+protected string clean(string data) {
   return cleaner->finish(data)->read();
 }
 
@@ -143,7 +130,7 @@ void parse_http_header(string header, string value, .Output res)
   {
     if(!m->name)
       return ({});
-    
+
     if(res->fields[m->name])
       res->fields[m->name] += " " + clean(c);
     else
@@ -151,7 +138,7 @@ void parse_http_header(string header, string value, .Output res)
     return ({});
   };
 #endif
-  
+
   array parse_meta(Parser.HTML p, mapping m, mapping e)
   {
     if (e->noindex)
@@ -348,11 +335,11 @@ void parse_http_header(string header, string value, .Output res)
   parser->add_containers( ([ "title":parse_title,
 			     "h1": parse_headline,
 			     "h2": parse_headline,
-			     "h3": parse_headline, 
+			     "h3": parse_headline,
 			     "noindex":  parse_noindex,
 			     "no-index": parse_noindex,
 			     "no_index": parse_noindex,  ]) );
-			     
+
   parser->add_tags( ([ "meta":parse_meta,
 		       "a":parse_a,
 		       "base": parse_base,
@@ -399,7 +386,7 @@ void parse_http_header(string header, string value, .Output res)
 				   }
 				 }
 			       });
-  
+
   res->fields->title="";
   res->fields->description="";
   res->fields->keywords="";

@@ -1,5 +1,4 @@
 START_MARKER
-dnl $Id$
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -25,6 +24,10 @@ test_any([[
   s->add("hij");
   return s->get();
 ]], "abcdefghij")
+test_any([[
+  String.Buffer s=String.Buffer();
+  return s->get() + s->get();
+]], "")
 test_any([[
   String.Buffer s=String.Buffer();
   s->add("xxx");
@@ -65,7 +68,7 @@ test_any([[
   return (string)b;
 ]], "abc\400\500\400x")
 
-test_eval_error([[ String.Buffer()->add("x",0); ]])
+test_eval_error([[ String.Buffer()->add("x",([])); ]])
 
 test_do([[
   String.Buffer b = String.Buffer();
@@ -117,7 +120,7 @@ test_eq(String.trim_all_whites ("\400"), "\400")
 test_eq(String.trim_all_whites ("\200000"), "\200000")
 test_eq(String.trim_all_whites (" \t\n\r "), "")
 test_eq(String.trim_all_whites (""), "")
-test_eq(String.trim_all_whites ("\t\r\n\240\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000abc\t\r\n\240\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000"), "abc")
+test_eq(String.trim_all_whites ("\t\r\n\240\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000abc\t\r\n\240\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000"), "abc")
 
 test_eq(String.normalize_space ("\v\f \t\n\r\0\v\f \t\n\r"), "\0")
 test_eq(String.normalize_space ("\v\f \t\n\r\400\v\f \t\u2000\n\r"), "\400")
@@ -234,8 +237,14 @@ test_eval_error(return String.string2hex("x\xfff"))
 
 test_eq(String.hex2string(""), "")
 test_eq(String.hex2string("ab00"), "\xab\0")
+test_eq(String.hex2string("ab 00"), "\xab\0")
+test_eq(String.hex2string("ab  00"), "\xab\0")
+test_eq(String.hex2string("ab   00"), "\xab\0")
+test_eq(String.hex2string("ab 00 "), "\xab\0")
+test_eq(String.hex2string("ab 00  "), "\xab\0")
+test_eq(String.hex2string("ab 00   "), "\xab\0")
 test_eval_error(return String.hex2string("ab0"))
-dnl test_eval_error(return String.hex2string("ax"))
+test_eval_error(return String.hex2string("ax"))
 
 test_eq([[ String.implode_nicely( ({ "1","2","3" }) ) ]],[[ "1, 2 and 3" ]])
 test_eq([[ String.implode_nicely( ({ "1","2","3" }), "och" ) ]],[[ "1, 2 och 3" ]])

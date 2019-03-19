@@ -2,18 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
 #include "pike_macros.h"
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
-#endif
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -27,9 +20,6 @@
 #endif
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
 #endif
 #ifdef HAVE_MACH_MACH_H
 #include <mach/mach.h>
@@ -118,7 +108,7 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
     unsigned __int64 ft_scalar;
     FILETIME ft_struct;
   } creationTime, exitTime, kernelTime, userTime;
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
+  memset(rusage_values, 0, sizeof(pike_rusage_t));
   if (GetProcessTimes(GetCurrentProcess(),
                       &creationTime.ft_struct,
                       &exitTime.ft_struct,
@@ -174,7 +164,7 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 #ifdef GETRUSAGE_THROUGH_PROCFS_PRS
   prstatus_t prs;
 #endif
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
+  memset(rusage_values, 0, sizeof(pike_rusage_t));
 
   if (proc_fd < 0 && !open_proc_fd()) return 0;
   while(ioctl(proc_fd, PIOCUSAGE, &pru) < 0)
@@ -242,7 +232,7 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
   struct rusage rus;
   long utime, stime;
   int maxrss;
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
+  memset(rusage_values, 0, sizeof(pike_rusage_t));
 
   if (getrusage(RUSAGE_SELF, &rus) < 0) return 0;
 
@@ -289,7 +279,7 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
   if (!pike_clk_tck) error ("Called before init_pike.\n");
 #endif
 
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
+  memset(rusage_values, 0, sizeof(pike_rusage_t));
   if (ret == (clock_t) -1) return 0;
 
   rusage_values[0] = CONVERT_TIME (tms.tms_utime, pike_clk_tck, 1000);
@@ -306,7 +296,6 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 }
 
 #else /*HAVE_TIMES */
-#if defined(HAVE_CLOCK)
 
 #ifndef CLOCKS_PER_SEC
 #define CLOCKS_PER_SEC	1000000
@@ -314,24 +303,11 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 
 PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 {
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
+  memset(rusage_values, 0, sizeof(pike_rusage_t));
   rusage_values[0]= CONVERT_TIME (clock(), CLOCKS_PER_SEC, 1000);
   return 1;
 }
 
-#else /* HAVE_CLOCK */
-
-PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
-{
-  /* This is totally wrong, but hey, if you can't do it _right_... */
-  struct timeval tm;
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
-  GETTIMEOFDAY(&tm);
-  rusage_values[0]=tm.tv_sec*1000L + tm.tv_usec/1000;
-  return 1;
-}
-
-#endif /* HAVE_CLOCK */
 #endif /* HAVE_TIMES */
 #endif /* HAVE_GETRUSAGE */
 #endif /* GETRUSAGE_THROUGH_PROCFS */
@@ -634,8 +610,9 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
   thread_basic_info_data_t tbid;
   mach_msg_type_number_t tbid_len = THREAD_BASIC_INFO_COUNT;
 
-  //  Try to get kernel thread via special OS X extension since it's faster
-  //  (~40x on PPC G5) than the context switch caused by mach_thread_self().
+  /*  Try to get kernel thread via special OS X extension since it's faster
+   *  (~40x on PPC G5) than the context switch caused by mach_thread_self().
+   */
 #ifdef HAVE_PTHREAD_MACH_THREAD_NP
   mach_port_t self = pthread_mach_thread_np(pthread_self());
 #else
@@ -644,9 +621,10 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
   int err = thread_info (self, THREAD_BASIC_INFO,
 						 (thread_info_t) &tbid, &tbid_len);
 #ifndef HAVE_PTHREAD_MACH_THREAD_NP
-  //  Adjust refcount on new port returned from mach_thread_self(). Not
-  //  needed for pthread_mach_thread_np() since we're reusing an existing
-  //  port.
+  /*  Adjust refcount on new port returned from mach_thread_self(). Not
+   *  needed for pthread_mach_thread_np() since we're reusing an existing
+   *  port.
+   */
   mach_port_deallocate(mach_task_self(), self);
 #endif
   if (err)
@@ -815,7 +793,13 @@ PMOD_EXPORT int fallback_grt_is_monotonic = 0;
 PMOD_EXPORT cpu_time_t fallback_grt(void)
 {
   struct timeval tv;
+  int gtod_rval;
+#ifndef CONFIGURE_TEST
+  ACCURATE_GETTIMEOFDAY_RVAL(&tv, gtod_rval);
+  if (gtod_rval < 0) return -1;
+#else
   if (GETTIMEOFDAY(&tv) < 0) return -1;
+#endif
   return tv.tv_sec * CPU_TIME_TICKS + USEC_TO_CPU_TIME_T (tv.tv_usec);
 }
 

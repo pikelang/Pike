@@ -2,12 +2,14 @@
 //! module Calendar
 //! submodule Time
 //!
-//! 	Base for time of day in calendars, ie 
+//! 	Base for time of day in calendars, ie
 //! 	calendars with hours, minutes, seconds
-//! 	
+//!
 //! 	This module can't be used by itself, but
-//! 	is inherited by other modules (<ref>ISO</ref> by <ref>YMD</ref>, 
+//! 	is inherited by other modules (<ref>ISO</ref> by <ref>YMD</ref>,
 //! 	for instance).
+//!
+//! inherits TimeRanges
 
 #pike __REAL_VERSION__
 
@@ -23,12 +25,6 @@ inherit Calendar.TimeRanges:TimeRanges;
 // from inherited module
 
 function(mixed...:TimeRange) Day;
-
-// sanity check
-
-#ifndef __AUTO_BIGNUM__
-#error Calendar.Time needs bignums (Gmp.mpz)
-#endif
 
 Calendar.Rule.Timezone Timezone_UTC=
   Calendar.Rule.Timezone(0,"UTC"); // needed for dumping
@@ -50,12 +46,12 @@ class TimeofDay
    TimeRange base; // base day
    int ux;         // unix time (in UTC, no timezone or DST thing)
    int len;        // size in seconds (n*60)
-   
+
 // may be unknown (CALUNKNOWN)
    int ls;         // local second (on this day, adjusted for dst and tz)
    int utco=CALUNKNOWN; // offset to utc, counting dst
    string tzn;     // name of timezone
-   
+
 //! method void create()
 //! method void create(int unixtime)
 //!	In addition to the wide range of construction arguments
@@ -70,7 +66,7 @@ class TimeofDay
 //- for internal use:
 //- method void create("timeofday",rules,unixtime,len)
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -94,7 +90,7 @@ class TimeofDay
 	    ls=[int]args[4];
 	    utco=[int]args[5];
 	    return;
-      
+
 	 default:
 	    if (intp(args[0]) && sizeof(args)==1)
 	    {
@@ -108,9 +104,9 @@ class TimeofDay
       ::create(@args);
    }
 
-   protected int(0..1) create_backtry(mixed ...args) 
+   protected int(0..1) create_backtry(mixed ...args)
    {
-      if (sizeof(args)>1 && objectp(args[0])) 
+      if (sizeof(args)>1 && objectp(args[0]))
       {
 	 base=args[0];
 	 rules=base->ruleset();
@@ -159,7 +155,7 @@ class TimeofDay
 
 // make base
 // needed in ymd
-/*static*/ TimeRange make_base()
+/*protected*/ TimeRange make_base()
    {
       base=Day("unix_r",ux,rules);
       if (len) base=base->range(Day("unix_r",ux+len,rules));
@@ -167,7 +163,7 @@ class TimeofDay
       return base;
    }
 
-// make local second 
+// make local second
    protected void make_local()
    {
       if (!base) make_base();
@@ -175,7 +171,7 @@ class TimeofDay
       ls=ux-base->unix_time();
       if (rules->timezone->is_dst_timezone)
       {
-	 if (utco==CALUNKNOWN) 
+	 if (utco==CALUNKNOWN)
 	    [utco,tzn]=rules->timezone->tz_ux(ux);
 	 if (utco!=base->utc_offset())
 	    ls+=base->utc_offset()-utco;
@@ -183,7 +179,7 @@ class TimeofDay
    }
 
    TimeRange `*(int|float n)
-   {  
+   {
       if(intp(n))
         return set_size(n,this);
       else
@@ -191,7 +187,7 @@ class TimeofDay
    }
 
    array(TimeRange) split(int|float n, void|function|TimeRange with)
-   {  
+   {
       if(!with)
         with=Second;
       if (functionp(with)) with=promote_program(with);
@@ -200,7 +196,7 @@ class TimeofDay
       TimeRange end=end();
       array result=({});
       while(start+with*length < end)
-      { 
+      {
         result += ({ start->distance(start+with*length) });
         start=start+with*length;
       }
@@ -245,7 +241,7 @@ class TimeofDay
 	 return ({ CMP(ux,b2),CMP(ux,e2),CMP(ux+len,b2),CMP(ux+len,e2) });
       }
    }
-   
+
    TimeRange beginning()
    {
       return Second("timeofday_sd",rules,ux,0,ls,utco)->autopromote();
@@ -261,31 +257,31 @@ class TimeofDay
       if (to->is_ymd)
 	 return distance(to->hour());
 
-      if (!to->is_timeofday) 
+      if (!to->is_timeofday)
 	 error("distance: incompatible class %O\n",
 	       object_program(to));
 
-      if (to->is_timeofday_f) 
-	 return 
+      if (to->is_timeofday_f)
+	 return
 	    Fraction("timeofday_f",rules,ux,0,len,0)
 	    ->distance(to);
 
       int m;
-      if ( (m=to->unix_time()-unix_time())<0) 
+      if ( (m=to->unix_time()-unix_time())<0)
 	 error("Negative distance %O .. %O\n", this,to);
 
-      return 
+      return
 	 Second("timeofday_sd",rules,ux,m,ls,utco)
 	 ->autopromote();
    }
 
    TimeRange range(TimeRange to)
    {
-      if (to->is_timeofday_f) 
+      if (to->is_timeofday_f)
       {
 	 return distance(to->end());
       }
-      if (to->is_timeofday) 
+      if (to->is_timeofday)
       {
 	 int m;
 	 if ( (m=to->unix_time()+to->len-unix_time())<0 )
@@ -343,7 +339,7 @@ class TimeofDay
 //!	the range.
 //!
 //!	An Hour is in the Calendar perspective as any other
-//!	time range not only 60 minutes, but also one 
+//!	time range not only 60 minutes, but also one
 //!	of the (normally) 24 hours of the day, precisely.
 //!
 //!	<ref>hours</ref>() give back an array of all the hours
@@ -356,13 +352,13 @@ class TimeofDay
 //!
 //! Note:
 //!	The called object doesn't have to
-//!	*fill* all the hours it will send back, it's 
+//!	*fill* all the hours it will send back, it's
 //!	enough if it exist in those hours:
 //!
 //! 	<pre>
 //!	> object h=Calendar.Time.Hour();
 //!	Result: Hour(265567)
-//!	> h->hours();                    
+//!	> h->hours();
 //!	Result: ({ /* 1 element */
 //!		    Hour(265567)
 //!		})
@@ -383,10 +379,10 @@ class TimeofDay
       if (ls==CALUNKNOWN) make_local();
       int zx=ux-ls%3600;
 
-      if (!n || (n==-1 && !len)) 
+      if (!n || (n==-1 && !len))
 	 return Hour("timeofday",rules,zx,3600);
       if (n<0) n=number_of_hours()+n;
-      if (n<0 || n*3600>=len+ux-zx) 
+      if (n<0 || n*3600>=len+ux-zx)
 	 error("hour not in timerange (hour 0..%d exist)\n",(len-1)/3600);
       return Hour("timeofday",rules,zx+3600*n,3600)->autopromote();
    }
@@ -413,7 +409,7 @@ class TimeofDay
 //!	the range.
 //!
 //!	An Minute is in the Calendar perspective as any other
-//!	time range not only 60 seconds, but also one 
+//!	time range not only 60 seconds, but also one
 //!	of the (normally) 60 minutes of the <ref>Hour</ref>, precisely.
 //!
 //!	<ref>minutes</ref>() give back an array of all the minutes
@@ -431,10 +427,10 @@ class TimeofDay
       if (ls==CALUNKNOWN) make_local();
       int zx=ux-ls%60;
 
-      if (!n || (n==-1 && !len)) 
+      if (!n || (n==-1 && !len))
 	 return Minute("timeofday",rules,zx,60);
       if (n<0) n=number_of_minutes()+n;
-      if (n<0 || n*60>=len+ux-zx) 
+      if (n<0 || n*60>=len+ux-zx)
 	 error("minute not in timerange (minute 0..%d exist)\n",(len-1)/60);
       return Minute("timeofday",rules,zx+60*n,60)->autopromote();
    }
@@ -471,7 +467,7 @@ class TimeofDay
    cSecond second(void|int n)
    {
       int len=number_of_seconds();
-      if (!n || (n==-1 && !len)) 
+      if (!n || (n==-1 && !len))
 	 return Second("timeofday",rules,ux,1);
       if (n<0) n=len+n;
       if (n<0 || n>=len)
@@ -485,7 +481,7 @@ class TimeofDay
    {
       int from=0,n=::`[]("number_of_"+unit)(),to=n-1;
 
-      if (sizeof(range)) 
+      if (sizeof(range))
 	 if (sizeof(range)<2)
 	    error("Illegal numbers of arguments to "+unit+"()\n");
 	 else
@@ -494,7 +490,7 @@ class TimeofDay
 	    if (from>=n) return ({}); else if (from<0) from=0;
 	    if (to>=n) to=n-1; else if (to<from) return ({});
 	 }
-      
+
       from*=step;
       to*=step;
 
@@ -520,14 +516,14 @@ class TimeofDay
 // --------------------
 
    float number_of_fractions() { return (float)number_of_seconds(); }
-   cSecond fraction(float|int ... n) 
+   cSecond fraction(float|int ... n)
    {
       if (sizeof(n))
       {
 	 float m=n[0];
 	 if (m<=-1.0) m=1+number_of_fractions()+m;
 	 array q=fractions(m,m);
-	 if (!sizeof(q)) 
+	 if (!sizeof(q))
 	    error("fraction not in range (0..%.1f)\n",number_of_fractions());
 	 return q[0];
       }
@@ -535,13 +531,13 @@ class TimeofDay
 	 return fractions()[0];
    }
    array(cSecond) fractions(int|float ...range)
-   { 
+   {
       float from,to,n=number_of_fractions();
       if (sizeof(range)==2)
-	 from=(float)range[0],to=(float)range[1]; 
+	 from=(float)range[0],to=(float)range[1];
       else if (sizeof(range)==0)
 	 from=0.0,to=n;
-      else 
+      else
 	 error("Illegal arguments\n");
       if (from<0.0) from=0.0;
       if (to>n) to=n;
@@ -562,7 +558,7 @@ class TimeofDay
    {
       if (!base) make_base();
 
-      if (!len) 
+      if (!len)
 	 return sprintf("%s %s sharp",
 			base->nice_print(),nice_print());
 
@@ -570,7 +566,7 @@ class TimeofDay
       object e=end();
       string b=e->day()->nice_print();
       string c=e->nice_print();
-      if (a==b) 
+      if (a==b)
 	 return a+" "+nice_print()+" - "+end()->nice_print();
       if (c==b)
 	 return a+" "+nice_print()+" - "+b+" 0:00";
@@ -599,7 +595,7 @@ class TimeofDay
 
 //! method TimeRange move_seconds(int seconds)
 //! method TimeRange move_ns(int nanoseconds)
-//!	These two methods gives back the 
+//!	These two methods gives back the
 //!	time range called moved the specified
 //!	amount of time, with the length intact.
 //!
@@ -638,8 +634,8 @@ class TimeofDay
 //!	has a limit of about 7 digits, and since we are about
 //!	julian day 2500000, the precision on time of day is very limited.
 
-   float julian_day() 
-   { 
+   float julian_day()
+   {
       return 2440588+ux/86400.0-0.5;
    }
 
@@ -673,7 +669,7 @@ class TimeofDay
       return 0.0;
    }
 
-//! function mapping datetime()
+//! method mapping datetime()
 //!     This gives back a mapping with the relevant
 //!	time information (representing the start of the period);
 //!	<pre>
@@ -686,7 +682,7 @@ class TimeofDay
 //!
 //!	    "hour":     int(0..)   // hour of day, including dst
 //!	    "minute":   int(0..59) // minute of hour
-//!	    "second":   int(0..59) // second of minute 
+//!	    "second":   int(0..59) // second of minute
 //!	    "fraction": float      // fraction of second
 //!	    "timezone": int        // offset to utc, including dst
 //!
@@ -738,7 +734,7 @@ class TimeofDay
 //!	<pre>
 //!	iso_ymd        "2000-06-02 (Jun) -W22-5 (Fri)" [2]
 //!	ext_ymd        "Friday, 2 June 2000" [2]
-//!     ymd            "2000-06-02" 
+//!     ymd            "2000-06-02"
 //!     ymd_short      "20000602"
 //!     ymd_xshort     "000602" [1]
 //!	iso_week       "2000-W22"
@@ -751,12 +747,12 @@ class TimeofDay
 //!	ext_time       "Friday, 2 June 2000, 20:53:14" [2]
 //!	ctime          "Fri Jun  4 20:53:14 2000\n" [2] [3]
 //!	http           "Fri, 02 Jun 2000 19:53:14 GMT" [4]
-//!     time           "2000-06-02 20:53:14" 
+//!     time           "2000-06-02 20:53:14"
 //!	time_short     "20000602 20:53:14"
 //!	time_xshort    "000602 20:53:14"
 //!	iso_short      "20000602T20:53:14"
-//!     mtime          "2000-06-02 20:53" 
-//!     xtime          "2000-06-02 20:53:14.000000" 
+//!     mtime          "2000-06-02 20:53"
+//!     xtime          "2000-06-02 20:53:14.000000"
 //!     todz           "20:53:14 CET"
 //!     todz_iso       "20:53:14 UTC+1"
 //!     tod            "20:53:14"
@@ -951,7 +947,7 @@ class TimeofDay
 
    this_program set_ruleset(Calendar.Ruleset r)
    {
-      return 
+      return
 	 Second("timeofday",r,ux,len)
 	 ->autopromote();
    }
@@ -960,7 +956,7 @@ class TimeofDay
    {
       if (utco==CALUNKNOWN)
 	 return [utco,tzn]=rules->timezone->tz_ux(ux),utco;
-      else 
+      else
 	 return utco;
    }
 
@@ -969,7 +965,7 @@ class TimeofDay
       if (tzn) return tzn;
       if (rules->timezone->is_dst_timezone)
 	 return [utco,tzn]=rules->timezone->tz_ux(ux),tzn;
-      return tzn=rules->timezone->name;      
+      return tzn=rules->timezone->name;
    }
 
    string tzname_iso()
@@ -978,11 +974,11 @@ class TimeofDay
       if (!(u%3600))
 	 return sprintf("UTC%+d",-u/3600);
       if (!(u%60))
-	 return 
+	 return
 	    (u<0)
 	    ?sprintf("UTC+%d:%02d",-u/3600,(-u/60)%60)
 	    :sprintf("UTC-%d:%02d",u/3600,(u/60)%60);
-      return 
+      return
 	 (u<0)
 	 ?sprintf("UTC+%d:%02d:%02d",-u/3600,(-u/60)%60,(-u)%60)
 	 :sprintf("UTC-%d:%02d:%02d",u/3600,(u/60)%60,u%60);
@@ -1084,22 +1080,22 @@ class cSuperTimeRange
 //!	Similar to <ref>TimeofDay</ref>, the Time::SuperTimeRange
 //!	has a number of methods for digging out time parts of the
 //!	range. Since a <ref>SuperTimeRange</ref> is a bit more
-//!	complex - the major reason for its existance it that it 
+//!	complex - the major reason for its existance it that it
 //!	contains holes, this calculation is a bit more advanced too.
 //!
-//!	If a range contains the seconds, say, 1..2 and 4..5, 
-//!	the third second (number 2, since we start from 0) 
+//!	If a range contains the seconds, say, 1..2 and 4..5,
+//!	the third second (number 2, since we start from 0)
 //!	in the range would be number 4, like this:
 //!
 //!	<pre>
 //!	no   means this second
-//!	0    1        
-//!	1    2        
+//!	0    1
+//!	1    2
 //!	2    4      &lt;- second three is missing,
 //!	3    5         as we don't have it in the example range
 //!	</pre>
 //!
-//!	<ref>number_of_seconds</ref>() will in this example 
+//!	<ref>number_of_seconds</ref>() will in this example
 //!	therefore also report 4, not 5, even if the time from
 //!	start of the range to the end of the range is 5 seconds.
 //!
@@ -1217,16 +1213,16 @@ class cSuperTimeRange
 #undef RBASE
 
 // count parts elapsed
-   string format_elapsed() 
+   string format_elapsed()
    {
       TimeRange z=parts[0];
       foreach (parts,TimeRange y) z+=y;
       return parts[0]->distance(z)->format_elapsed();
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
-      if (t=='t') 
+      if (t=='t')
 	 return "Calendar."+calendar_name()+".TimeofDay";
       return ::_sprintf(t,m);
    }
@@ -1264,7 +1260,7 @@ class cHour
 
    inherit TimeofDay;
 
-   int __hash() { return ux/(60*60); }
+   protected int __hash() { return ux/(60*60); }
 
    void create_unixtime_default(int unixtime)
    {
@@ -1298,13 +1294,13 @@ class cHour
    TimeofDay _move(int n,int m)
    {
       if (m==0 || n==0) return this;
-      if (m%3600) 
+      if (m%3600)
 	 return Second("timeofday",rules,ux,len)->_move(n,m);
-      return Hour("timeofday",rules,ux+n*m,len)->autopromote(); 
+      return Hour("timeofday",rules,ux+n*m,len)->autopromote();
    }
 
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       if (catch {
       switch (t)
@@ -1352,7 +1348,7 @@ class cHour
 	 TimeRange t=what->hour()->distance(what);
 	 int s=t->len_s;
 	 int ns=t->len_ns;
-	 return 
+	 return
 	    Fraction("timeofday_f",rules,ux,0,what->len_s,what->len_s)
 	    ->_move(1,s,ns);
       }
@@ -1376,7 +1372,7 @@ class cMinute
 
    inherit TimeofDay;
 
-   int __hash() { return ux/60; }
+   protected int __hash() { return ux/60; }
 
    protected void create_unixtime(int _ux,int _len)
    {
@@ -1398,7 +1394,7 @@ class cMinute
    TimeofDay autopromote()
    {
       if (ls==CALUNKNOWN) make_local();
-      if (!(ls%3600) && !(len%3600)) 
+      if (!(ls%3600) && !(len%3600))
 	 return Hour("timeofday_sd",rules,ux,len,ls,utco)->autopromote();
       return ::autopromote();
    }
@@ -1413,10 +1409,10 @@ class cMinute
    {
       if (m==0 || n==0) return this;
       if (m%60) return Second("timeofday",rules,ux,len)->_move(n,m);
-      return Minute("timeofday",rules,ux+n*m,len)->autopromote(); 
+      return Minute("timeofday",rules,ux+n*m,len)->autopromote();
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1459,7 +1455,7 @@ class cMinute
 	 TimeRange t=what->minute()->distance(what);
 	 int s=t->len_s;
 	 int ns=t->len_ns;
-	 return 
+	 return
 	    Fraction("timeofday_f",rules,ux,0,what->len_s,what->len_s)
 	    ->_move(1,s,ns);
       }
@@ -1483,7 +1479,7 @@ class cSecond
 
    inherit TimeofDay;
 
-  int __hash() { return ux; }
+   protected int __hash() { return ux; }
 
    void create_unixtime_default(int unixtime)
    {
@@ -1504,7 +1500,7 @@ class cSecond
    TimeofDay autopromote()
    {
       if (ls==CALUNKNOWN) make_local();
-      if (!(ls%60) && !(len%60)) 
+      if (!(ls%60) && !(len%60))
 	 return Minute("timeofday",rules,ux,len)->autopromote();
       return ::autopromote();
    }
@@ -1512,10 +1508,10 @@ class cSecond
    TimeofDay _move(int n,int m)
    {
       if (m==0 || n==0) return this;
-      return Second("timeofday",rules,ux+n*m,len)->autopromote(); 
+      return Second("timeofday",rules,ux+n*m,len)->autopromote();
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1551,7 +1547,7 @@ class cSecond
 // backwards compatible with calendar I
    string iso_name()
    { return this->format_ymd()+"T"+format_tod(); }
-   string iso_short_name() 
+   string iso_short_name()
    { return this->format_ymd_short()+"T"+(format_tod()-":"); }
 
 
@@ -1566,7 +1562,7 @@ class cSecond
 	 TimeRange t=what->second()->distance(what);
 	 int s=t->len_s;
 	 int ns=t->len_ns;
-	 return 
+	 return
 	    Fraction("timeofday_f",rules,ux,0,what->len_s,what->len_s)
 	    ->_move(1,s,ns);
       }
@@ -1580,18 +1576,18 @@ class cSecond
 //------------------------------------------------------------------------
 //! class Fraction
 //!	A Fraction is a part of a second, and/or a time period
-//!	with higher resolution then a second. 
+//!	with higher resolution then a second.
 //!
-//!	It contains everything that is possible to do with a 
+//!	It contains everything that is possible to do with a
 //!	<ref>Second</ref>, and also some methods of grabbing
 //!	the time period with higher resolution.
 //!
 //! note:
 //!	Internally, the fraction time period is measured in
-//!	nanoseconds. A shorter or more precise time period then 
+//!	nanoseconds. A shorter or more precise time period then
 //!	in nanoseconds is not possible within the current Fraction class.
 //!
-//! inherits TimeofDay
+//! inherits Second
 //------------------------------------------------------------------------
 
 function(mixed...:cFraction) Fraction=cFraction;
@@ -1626,7 +1622,7 @@ class cFraction
 //!	If created without explicit length, the fraction will always be
 //!	of zero length.
 
-   void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {
@@ -1697,7 +1693,7 @@ class cFraction
 
    int create_backtry(mixed ...args)
    {
-      if (sizeof(args)>1 && objectp(args[0]) && args[0]->is_day) 
+      if (sizeof(args)>1 && objectp(args[0]) && args[0]->is_day)
       {
 	 base=args[0];
 	 rules=base->ruleset();
@@ -1769,11 +1765,11 @@ class cFraction
       float fjd=((jd-(int)jd)+0.5)*86400;
       ux=((int)jd)*86400+(int)(fjd);
       ns=(int)(inano*(fjd-(int)fjd));
-      
+
       ls=CALUNKNOWN;
    }
 
-   string _sprintf(int t,mapping m)
+   protected string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1792,7 +1788,7 @@ class cFraction
       }
    }
 
-   int __hash() { return ux; }
+   protected int __hash() { return ux; }
 
    string nice_print()
    {
@@ -1820,7 +1816,7 @@ class cFraction
 
    this_program set_ruleset(Calendar.Ruleset r)
    {
-      return 
+      return
 	 Fraction("timeofday",r,ux,len,ns)
 	 ->autopromote();
    }
@@ -1876,7 +1872,7 @@ class cFraction
 
       if (to->is_timeofday)
 	 s2=to->ux;
-      else 
+      else
 	 s2=to->unix_time();
 
 // ns is 0 in an object that doesn't have ns
@@ -1885,7 +1881,7 @@ class cFraction
 	  (s2==s1 && to->ns<ns))
 	 error("Negative distance %O .. %O\n", this,to);
 
-      return 
+      return
 	 Fraction("timeofday_f",rules,ux,ns,s2-s1-1,to->ns-ns+inano)
 	 ->autopromote();
    }
@@ -1902,7 +1898,7 @@ class cFraction
        ((AS)>(BS))?1:							\
        ((ANS)<(BNS))?-1:						\
        ((ANS)>(BNS))?1:0)
-       
+
       if (with->is_timeofday_f)
 	 return ({ CMP2(ux,ns,with->ux,with->ns),
 		   CMP2(ux,ns,with->ux+with->len_s,with->ns+with->len_ns),
@@ -1931,7 +1927,7 @@ class cFraction
 	 ->autopromote();
       return q;
    }
-   
+
    TimeRange set_size_seconds(int seconds)
    {
       if (seconds<0) error("Negative size\n");
@@ -1963,19 +1959,19 @@ class cFraction
       else return len_s||1;
    }
 
-   float number_of_fractions() 
-   { 
+   float number_of_fractions()
+   {
       return len_s+1e-9*len_ns;
    }
 
    array(cFraction) fractions(int|float ...range)
-   { 
+   {
       float from,to,n=number_of_fractions();
       if (sizeof(range)==2)
-	 from=(float)range[0],to=(float)range[1]; 
+	 from=(float)range[0],to=(float)range[1];
       else if (sizeof(range)==0)
 	 from=0.0,to=n;
-      else 
+      else
 	 error("Illegal arguments\n");
       if (from<0.0) from=0.0;
       if (to>n) to=n;
@@ -2041,7 +2037,7 @@ class cFraction
 	 predef::call_out(call_out,ux-time(1)-100,fun,@args);
       else if (ux-time(1)<0)
 	 predef::call_out(fun,0,@args); // already
-      else 
+      else
 	 predef::call_out(fun,-time(ux)+ns*1e-9,@args);
    }
 }
@@ -2068,7 +2064,7 @@ TimeofDay now()
 //!
 //!	Example:
 //!	<pre>
-//!	&gt; Calendar.now();                                      
+//!	&gt; Calendar.now();
 //!	Result: Fraction(Fri 2 Jun 2000 18:03:22.010300 CET)
 //!	&gt; Calendar.set_timezone(Calendar.Timezone.UTC)->now();
 //!	Result: Fraction(Fri 2 Jun 2000 16:03:02.323912 UTC)

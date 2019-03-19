@@ -3,6 +3,8 @@ require gtk210;
 class GTK2.RecentFilter;
 inherit GTK2.Object;
 
+//! A filter for selecting a subset of recently used files.
+
 void create(?mapping(string:mixed) props)
 //! Create a new GTK2.RecentFilter.
 {

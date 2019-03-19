@@ -79,7 +79,7 @@ static void low_add( struct linkfarm *t,
   {
     case 0:
       {
-	char *d = (unsigned char*)s->str;
+	p_wchar0 *d = STR0(s);
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
@@ -92,7 +92,7 @@ static void low_add( struct linkfarm *t,
       break;
     case 1:
       {
-	short *d = (unsigned short*)s->str;
+	p_wchar1 *d = STR1(s);
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
@@ -105,7 +105,7 @@ static void low_add( struct linkfarm *t,
       break;
     case 2:
       {
-	int *d = (int*)s->str;
+	p_wchar2 *d = STR2(s);
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
@@ -133,8 +133,8 @@ static void f_linkfarm_add( INT32 args )
 {
   struct pike_string *s;
   struct linkfarm *f = THIS;
-  
-  get_all_args("LinkFarm()->add", args, "%W", &s);
+
+  get_all_args("add", args, "%W", &s);
   low_add(f, s);
   pop_n_elems(args);
 }
@@ -150,7 +150,7 @@ static void f_linkfarm_memsize( INT32 args )
   int i;
   struct hash *h;
   struct linkfarm *t = THIS;
-  
+
   for( i = 0; i<HSIZE; i++ )
   {
     h = t->hash[i];
@@ -198,12 +198,12 @@ static void f_linkfarm_read( INT32 args )
  */
 
 
-static void init_linkfarm_struct( )
+static void init_linkfarm_struct(struct object * UNUSED(o))
 {
-  MEMSET( THIS, 0, sizeof( struct linkfarm ) );
+  memset( THIS, 0, sizeof( struct linkfarm ) );
 }
 
-static void exit_linkfarm_struct( )
+static void exit_linkfarm_struct(struct object *o)
 {
   int i;
 
@@ -214,11 +214,11 @@ static void exit_linkfarm_struct( )
 /*   if( THIS->buffer ) */
 /*     wf_buffer_free( THIS->buffer ); */
 
-  init_linkfarm_struct();
+  init_linkfarm_struct(o);
 }
 
 
-void init_linkfarm_program()
+void init_linkfarm_program(void)
 {
   start_new_program();
   ADD_STORAGE(struct linkfarm);
@@ -232,8 +232,8 @@ void init_linkfarm_program()
   add_program_constant( "LinkFarm", linkfarm_program, 0 );
 }
 
-void exit_linkfarm_program()
+void exit_linkfarm_program(void)
 {
   free_program( linkfarm_program );
 }
-  
+

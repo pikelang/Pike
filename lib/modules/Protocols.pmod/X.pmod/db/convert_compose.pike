@@ -12,7 +12,7 @@ void main()
 
   mapping patterns = ([]);
 
-  foreach(Stdio.read_bytes("compose")/"\n", 
+  foreach(Stdio.read_bytes("compose")/"\n",
 	  string line)
   {
     if(sscanf(line, "%s:%s", from, to)==2)

@@ -100,7 +100,7 @@ Filesystem.Base cd(string directory)
   directory = replace( directory, "\\", "/" );
 #endif
   if(!st) return 0;
-  if(st->isdir()) // stay
+  if(st->isdir) // stay
     return this_program(combine_path(wd, directory),
 			root, 1, parent);
   return st->cd(); // try something else
@@ -141,7 +141,7 @@ Filesystem.Stat stat(string file, int|void lstat)
    if((a = file_stat(combine_path("/",root,full), lstat)))
    {
      Filesystem.Stat s = Filesystem.Stat();
-     s->fullpath = full;
+     s->fullpath = sprintf("/%s", full);
      s->name = file;
      s->filesystem = this;
      s->attach_statobject(a);
@@ -210,7 +210,7 @@ Stdio.File open(string filename, string mode)
 #endif
   filename = combine_path(wd, filename);
   if ( filename!="" && filename[0]=='/') filename=filename[1..];
-  
+
   Stdio.File f = Stdio.File();
 
   if( !f->open( combine_path("/",root,filename), mode) )

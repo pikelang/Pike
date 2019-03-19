@@ -12,7 +12,7 @@
 
 inherit GTK2.Paned;
 
-static GTK2.Vpaned create( mapping|void props );
+protected GTK2.Vpaned create( mapping|void props );
 //! Create a new W(Vpaned) widget.
 //!
 //!

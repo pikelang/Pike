@@ -16,7 +16,7 @@ array children( );
 //!
 //!
 
-static GDK2.Window create( GTK2.GdkWindow parent, mapping|void attributes );
+protected GDK2.Window create( GTK2.GdkWindow parent, mapping|void attributes );
 //! Not for non-experts. I promise.
 //!
 //!
@@ -50,6 +50,14 @@ mapping get_property( GDK2.Atom atom, int|void offset, int|void delete_when_done
 //!   if(sizeof(maybe))
 //!     root=GDK2.Window( maybe[0]->data[0] );
 //! @}
+//!
+//!
+
+GDK2.Window grab_input_focus( );
+//! Forcibly grab the input focus.
+//!
+//! Useful for override-redirect windows in games. Note that the only
+//! way to get rid of the focus is to close the window, be careful.
 //!
 //!
 

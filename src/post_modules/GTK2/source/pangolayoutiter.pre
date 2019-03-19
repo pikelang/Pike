@@ -60,10 +60,10 @@ Pango.LayoutLine get_line()
 
 %{
 void push_pango_rectangle(PangoRectangle *pos) {
-  push_text("x"); push_int(pos->x);
-  push_text("y"); push_int(pos->y);
-  push_text("width"); push_int(pos->width);
-  push_text("height"); push_int(pos->height);
+  push_static_text("x"); push_int(pos->x);
+  push_static_text("y"); push_int(pos->y);
+  push_static_text("width"); push_int(pos->width);
+  push_static_text("height"); push_int(pos->height);
   f_aggregate_mapping(8);
 }
 %}

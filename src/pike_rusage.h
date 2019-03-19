@@ -2,20 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef PIKE_RUSAGE_H
 #define PIKE_RUSAGE_H
 
 #include "global.h"
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_TIME_H
 #include <time.h>
-#endif
 
 #if defined (_POSIX_TIMERS)
 #if _POSIX_TIMERS > 0

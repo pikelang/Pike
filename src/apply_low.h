@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
     {
@@ -11,21 +10,10 @@
       struct pike_frame *new_frame;
       struct identifier *function;
 
-#if 0
-      /* This kind of fault tolerance is braindamaged. /mast */
-      if(fun<0)
-      {
-	pop_n_elems(Pike_sp-save_sp);
-	push_undefined();
-	return 0;
-      }
-#else
 #ifdef PIKE_DEBUG
       if (fun < 0)
 	Pike_fatal ("Invalid function offset: %d.\n", fun);
 #endif
-#endif
-
       check_stack(256);
       check_mark_stack(256);
 
@@ -57,23 +45,12 @@
       if(!(p->flags & PROGRAM_PASS_1_DONE) || (p->flags & PROGRAM_AVOID_CHECK))
 	PIKE_ERROR("__empty_program() -> function",
 	      "Cannot call functions in unfinished objects.\n", Pike_sp, args);
-	
-
-#ifdef PIKE_SECURITY
-      CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL,
-				   ("Function call permission denied.\n"));
-
-      if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_NOT_SETUID))
-	SET_CURRENT_CREDS(o->prot);
-#endif
-
 
 #ifdef PIKE_DEBUG
       if(fun>=(int)p->num_identifier_references)
       {
 	fprintf(stderr, "Function index out of range. %ld >= %d\n",
-		DO_NOT_WARN((long)fun),
-		(int)p->num_identifier_references);
+                (long)fun, (int)p->num_identifier_references);
 	fprintf(stderr,"########Program is:\n");
 	describe(p);
 	fprintf(stderr,"########Object is:\n");
@@ -117,9 +94,9 @@
       new_frame->context = p->inherits + ref->inherit_offset;
 
       function = new_frame->context->prog->identifiers + ref->identifier_offset;
-      new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
+      new_frame->fun = (unsigned INT16)fun;
 
-      
+
 #ifdef PIKE_DEBUG
 	if(Pike_interpreter.trace_level > 9)
 	{
@@ -134,7 +111,7 @@
 		  new_frame->context->identifier_level,
 		  new_frame->context->parent_identifier,
 		  new_frame->context->parent_offset,
-		  DO_NOT_WARN((long)new_frame->context->storage_offset),
+                  (long)new_frame->context->storage_offset,
 		  new_frame->context->name ? new_frame->context->name->str  : "NULL");
 	  if(Pike_interpreter.trace_level>19)
 	  {
@@ -147,25 +124,19 @@
       new_frame->expendible = new_frame->locals = Pike_sp - args;
       new_frame->args = args;
       new_frame->pc = 0;
-#ifdef SCOPE
       new_frame->scope=scope;
 #ifdef PIKE_DEBUG
-      if(new_frame->fun == scope->fun)
+      if(scope && new_frame->fun == scope->fun)
       {
 	Pike_fatal("Que? A function cannot be parented by itself!\n");
       }
 #endif
-#else
-      new_frame->scope=0;
-#endif
       new_frame->save_sp=save_sp;
-      
+
       add_ref(new_frame->current_object);
       add_ref(new_frame->current_program);
-#ifdef SCOPE
       if(new_frame->scope) add_ref(new_frame->scope);
-#endif
-#ifdef PIKE_DEBUG      
+#ifdef PIKE_DEBUG
       if (Pike_fp) {
 
 	if (new_frame->locals < Pike_fp->locals) {
@@ -185,14 +156,14 @@
 #endif /* PIKE_DEBUG */
 
       Pike_fp = new_frame;
-      
+
       if(Pike_interpreter.trace_level)
       {
 	dynamic_buffer save_buf;
 	char buf[50];
 
 	init_buf(&save_buf);
-	sprintf(buf, "%lx->", DO_NOT_WARN((long) PTR_TO_INT (o)));
+        sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
 	my_strcat(buf);
 	if (function->name->size_shift)
 	  my_strcat ("[widestring function name]");
@@ -219,20 +190,17 @@
 
 #ifdef PROFILING
       function->num_calls++;
+      function->recur_depth++;
 #endif
-  
+
       if(function->func.offset == -1) {
 	new_frame->num_args = args;
 	generic_error(NULL, Pike_sp, args,
 		      "Calling undefined function.\n");
       }
-      
-#ifdef PROFILING
-      new_frame->self_time_base=function->total_time;
-#endif
 
       switch(function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS))
-      {       
+      {
       case IDENTIFIER_C_FUNCTION:
 	debug_malloc_touch(Pike_fp);
 	Pike_fp->num_args=args;
@@ -241,7 +209,7 @@
 	FAST_CHECK_THREADS_ON_CALL();
 	(*function->func.c_fun)(args);
 	break;
-	
+
       case IDENTIFIER_CONSTANT:
       {
 	struct svalue *s=&(Pike_fp->context->prog->
@@ -273,7 +241,7 @@
 	{
 	  /* Create an extra svalue for tail recursion style call */
 	  Pike_sp++;
-	  MEMMOVE(Pike_sp-args,Pike_sp-args-1,sizeof(struct svalue)*args);
+	  memmove(Pike_sp-args,Pike_sp-args-1,sizeof(struct svalue)*args);
 #ifdef DEBUG_MALLOC
 	  if (args) {
 	    int i;
@@ -318,56 +286,13 @@
 #ifdef PIKE_DEBUG
 	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
 	  Pike_fatal("Pike code called within gc.\n");
+    new_frame->num_args = 0;
+    new_frame->num_locals = 0;
 #endif
 
 	debug_malloc_touch(Pike_fp);
 	pc=new_frame->context->prog->program + function->func.offset;
 
-	/*
-	 * FIXME: The following stack stuff could probably
-	 *        be moved to an opcode.
-	 */
-
-	num_locals = READ_INCR_BYTE(pc);
-
-	if(function->identifier_flags & IDENTIFIER_SCOPE_USED)
-	  new_frame->expendible+=num_locals;
-
-	num_args = READ_INCR_BYTE(pc);
-
-#ifdef PIKE_DEBUG
-	if(num_locals < num_args)
-	  Pike_fatal("Wrong number of arguments or locals in function def.\n"
-		"num_locals: %d < num_args: %d\n",
-		num_locals, num_args);
-#endif
-
-	
-	if(function->identifier_flags & IDENTIFIER_VARARGS)
-	{
-	  /* adjust arguments on stack */
-	  if(args < num_args) /* push zeros */
-	  {
-	    push_undefines(num_args-args);
-	    f_aggregate(0);
-	  }else{
-	    f_aggregate(args - num_args); /* make array */
-	  }
-	  args = num_args+1;
-	}else{
-	  /* adjust arguments on stack */
-	  if(args < num_args) /* push zeros */
-	    push_undefines(num_args-args);
-	  else
-	    pop_n_elems(args - num_args);
-	  args=num_args;
-	}
-
-	if(num_locals > args)
-	  push_zeroes(num_locals-args);
-
-	new_frame->num_locals=num_locals;
-	new_frame->num_args=num_args;
 	new_frame->save_mark_sp=new_frame->mark_sp_base=Pike_mark_sp;
 	new_frame->pc = pc
 #ifdef ENTRY_PROLOGUE_SIZE
@@ -375,7 +300,7 @@
 #endif /* ENTRY_PROLOGUE_SIZE */
 	  ;
 
-	return 1;
+	return new_frame->pc;
       }
 
       default:
@@ -401,13 +326,5 @@
 	Pike_fatal("Unknown identifier type.\n");
 #endif
       }
-
-#if 0
-#ifdef PIKE_DEBUG
-      if(Pike_fp!=new_frame)
-	Pike_fatal("Frame stack out of whack!\n");
-#endif
-#endif
-      
       POP_PIKE_FRAME();
     }

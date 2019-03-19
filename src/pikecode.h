@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -33,8 +32,8 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 #ifdef __NT__
 #warning using amd64
 #endif
-#endif			    
-			    
+#endif
+
 #if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
 #include "code/ia32.h"
 #define PIKE_BYTECODE_METHOD_NAME	"ia32"

@@ -1,5 +1,6 @@
 /* -*- C -*- */
 require gtksourceview;
+not gtksourceview20;
 
 class GTK2.SourcePrintJob;
 inherit G.Object;

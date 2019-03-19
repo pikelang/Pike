@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Implements the generic result module of the SQL-interface
  *
  * Henrik Grubbström 1996-01-09
@@ -72,6 +70,24 @@ void seek(int skip) {
 //!   documentation for more details on how different data types are
 //!   represented.
 int|array(string|int|float) fetch_row();
+
+//! Switch to the next set of results.
+//!
+//! Some databases support returning more than one set of results.
+//! This function terminates the current result and switches to
+//! the next (if any).
+//!
+//! @returns
+//!   Returns the @[sql_result] object if there were more results,
+//!   and @expr{0@} (zero) otherwise.
+//!
+//! @throws
+//!   May throw the same errors as @[Sql.Sql()->big_query()] et al.
+this_program next_result()
+{
+  if (master_res->next_result) return master_res->next_result();
+  return 0;
+}
 
 // --- Iterator API
 

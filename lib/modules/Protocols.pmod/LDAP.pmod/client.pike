@@ -2,8 +2,6 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id$
-//
 // Honza Petrous, hop@unibase.cz
 //
 // ----------------------------------------------------------------------
@@ -68,16 +66,15 @@
 //	Interesting, applicable
 //	RFC 2307   (LDAP as network information services; draft?)
 
-
-#if constant(.ldap_privates)
-
 #include "ldap_globals.h"
 
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
 import SSL.Constants;
 #endif
 
 import ".";
+
+import Standards.ASN1.Types;
 
 // ------------------------
 
@@ -93,11 +90,10 @@ import ".";
 #define ASN1_RESULTCODE(X)		(int)((X)->elements[1]->elements[0]->value->cast_to_int())
 #define ASN1_RESULTSTRING(X)		((X)->elements[1]->elements[2]->value)
 #define ASN1_RESULTREFS(X)		((X)->elements[1]->elements[3]->elements)
-#define ASN1_RAWDEBUG(X)		((X)->debug_string())
 
  //! Contains the client implementation of the LDAP protocol.
  //! All of the version 2 protocol features are implemented
- //! but only the base parts of the version 3. 
+ //! but only the base parts of the version 3.
 
   inherit .protocol;
 
@@ -124,13 +120,13 @@ protected function(string:string) get_attr_decoder (string attr,
     if (function(string:string) decoder =
 	syntax_decode_fns[attr_descr->syntax_oid])
       return decoder;
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
     else if (!get_constant_name (attr_descr->syntax_oid))
       werror ("Warning: Unknown syntax %O for attribute %O - "
 	      "binary content assumed.\n", attr_descr->syntax_oid, attr);
 #endif
   }
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
   else if (!nowarn && !has_suffix (attr, ";binary") && !has_value (attr, ";binary;"))
     werror ("Warning: Couldn't fetch attribute description for %O - "
 	    "binary content assumed.\n", attr);
@@ -145,13 +141,13 @@ protected function(string:string) get_attr_encoder (string attr)
     if (function(string:string) encoder =
 	syntax_encode_fns[attr_descr->syntax_oid])
       return encoder;
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
     else if (!get_constant_name (attr_descr->syntax_oid))
       werror ("Warning: Unknown syntax %O for attribute %O - "
 	      "binary content assumed.\n", attr_descr->syntax_oid, attr);
 #endif
   }
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
   else if (!has_suffix (attr, ";binary") && !has_value (attr, ";binary;"))
     werror ("Warning: Couldn't fetch attribute description for %O - "
 	    "binary content assumed.\n", attr);
@@ -159,8 +155,8 @@ protected function(string:string) get_attr_encoder (string attr)
   return 0;
 }
 
-typedef string|Locale.Charset.DecodeError|
-  array(string|Locale.Charset.DecodeError) ResultAttributeValue;
+typedef string|Charset.DecodeError|
+  array(string|Charset.DecodeError) ResultAttributeValue;
 
 typedef mapping(string:ResultAttributeValue) ResultEntry;
 
@@ -270,9 +266,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 	  string errmsg = describe_error (err) +			\
 	    "The string is the DN of an entry.\n";			\
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    DN = Locale.Charset.DecodeError (DN, -1, 0, errmsg);	\
+	    DN = Charset.DecodeError (DN, -1, 0, errmsg);               \
 	  else								\
-	    throw (Locale.Charset.DecodeError (DN, -1, 0, errmsg));	\
+	    throw (Charset.DecodeError (DN, -1, 0, errmsg));            \
 	}								\
       } while (0)
 
@@ -298,9 +294,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 		     describe_error (err), ATTR, stringp (dn) ? dn : dn[0], \
 		     decoder, descr1, descr2);				\
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    VALUE = Locale.Charset.DecodeError (VALUE, -1, 0, errmsg);	\
+	    VALUE = Charset.DecodeError (VALUE, -1, 0, errmsg);         \
 	  else								\
-	    throw (Locale.Charset.DecodeError (VALUE, -1, 0, errmsg));	\
+	    throw (Charset.DecodeError (VALUE, -1, 0, errmsg));         \
 	}								\
       } while (0)
 
@@ -314,9 +310,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 		     "in entry with DN %O.\n",				\
 		     describe_error (err), ATTR, stringp (dn) ? dn : dn[0]); \
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    VALUE = Locale.Charset.DecodeError (VALUE, -1, 0, errmsg);	\
+	    VALUE = Charset.DecodeError (VALUE, -1, 0, errmsg);         \
 	  else								\
-	    throw (Locale.Charset.DecodeError (VALUE, -1, 0, errmsg));	\
+	    throw (Charset.DecodeError (VALUE, -1, 0, errmsg));         \
 	}								\
       } while (0)
 
@@ -331,7 +327,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 	    ent[attr] = vals;
 	  }
 	  else
-	    foreach (vals; int i; string|Locale.Charset.DecodeError val) {
+	    foreach (vals; int i; string|Charset.DecodeError val) {
 	      DECODE_VALUE (attr, val, decoder);
 	      vals[i] = val;
 	    }
@@ -350,7 +346,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     // entries: array of der decoded entries, but WITHOUT LDAP PDU !!!
     // stuff: 1=bind result; ...
 
-      this_program::flags = flags;
+      this::flags = flags;
 
       // Note: Might do additional schema queries to the server while
       // decoding the result. That means possible interleaving problem
@@ -362,47 +358,45 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
         THROW(({"LDAP: Internal error.\n",backtrace()}));
 	return -ldap_errno;
       }
-      DWRITE(sprintf("result.create: %O\n",entries[-1]));
+      DWRITE("result.create: %O\n", entries[-1]);
 
       // The last element of 'entries' is result itself
       resultcode = ASN1_RESULTCODE (entries[-1]);
-      DWRITE(sprintf("result.create: code=%d\n",resultcode));
+      DWRITE("result.create: code=%d\n", resultcode);
       resultstring = ASN1_RESULTSTRING (entries[-1]);
       if (resultstring == "")
 	resultstring = 0;
       else if (ldap_version >= 3)
 	if (mixed err = catch (resultstring = utf8_to_string (resultstring)))
-	  DWRITE (sprintf ("Failed to decode result string %O: %s",
-			   resultstring, describe_error (err)));
-      DWRITE(sprintf("result.create: str=%O\n",resultstring));
+	  DWRITE ("Failed to decode result string %O: %s",
+                  resultstring, describe_error (err));
+      DWRITE("result.create: str=%O\n", resultstring);
 #ifdef V3_REFERRALS
       // referral (v3 mode)
       if(resultcode == 10) {
         referrals = ({});
 	foreach(ASN1_RESULTREFS (entries[-1]), object ref1)
 	  referrals += ({ ref1->value });
-        DWRITE(sprintf("result.create: refs=%O\n",referrals));
+        DWRITE("result.create: refs=%O\n", referrals);
       }
 #endif
-      DWRITE(sprintf("result.create: elements=%d\n",sizeof (entries)));
-#if 0
-      DWRITE(sprintf("result.create: entries=%O\n", entries[..<1]));
-#endif
+      DWRITE("result.create: elements=%d\n", sizeof(entries));
 
       entry = decode_entries (entries[..<1]);
 
 #if 0
       // Context specific proccessing of 'entries'
       switch(stuff) {
-        case 1:	DWRITE("result.create: stuff=1\n");
-		break;
-        default:	DWRITE(sprintf("result.create: stuff=%d\n", stuff));
-
+        case 1:
+          DWRITE("result.create: stuff=1\n");
+          break;
+        default:
+          DWRITE("result.create: stuff=%d\n", stuff);
+          break;
       }
 #endif
 
       return this;
-
     }
 
     //!
@@ -464,7 +458,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!    valued.
     //!
     //!    If @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was given
-    //!    to @[search] then @[Locale.Charset.DecodeError] objects are
+    //!    to @[search] then @[Charset.DecodeError] objects are
     //!    returned in place of a string whenever an attribute value
     //!    fails to be decoded.
     //!
@@ -472,7 +466,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!    This special entry contains the object name of the entry as
     //!    a distinguished name.
     //!
-    //!    This might also be a @[Locale.Charset.DecodeError] if
+    //!    This might also be a @[Charset.DecodeError] if
     //!    @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was given to
     //!    @[search].
     //!  @endmapping
@@ -482,8 +476,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! @throws
     //!  Unless @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was
-    //!  given to @[search], a @[Locale.Charset.DecodeError] is thrown
-    //!  if there is an error decoding the DN or any attribute value.
+    //!  given to @[search], a @[Charset.DecodeError] is thrown if
+    //!  there is an error decoding the DN or any attribute value.
     //!
     //! @note
     //!  It's undefined whether or not destructive operations on the
@@ -499,8 +493,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!   @[fetch_all]
     ResultEntry fetch(int|void idx)
     {
-
-      if (!zero_type (idx)) actnum = idx;
+      if (!undefinedp (idx)) actnum = idx;
       if (actnum >= num_entries() || actnum < 0) return 0;
 
       if (ldap_version < 3)
@@ -528,7 +521,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //! @note
     //!  In Pike 7.6 and earlier, this field was incorrectly returned
     //!  in UTF-8 encoded form for LDAPv3 connections.
-    string|Locale.Charset.DecodeError get_dn()
+    string|Charset.DecodeError get_dn()
     {
       string|array(string) dn = fetch()->dn;
       return stringp (dn) ? dn : dn[0];	// To cope with SEARCH_MULTIVAL_ARRAYS_ONLY.
@@ -565,8 +558,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! @throws
     //!  Unless @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was
-    //!  given to @[search], a @[Locale.Charset.DecodeError] is thrown
-    //!  if there is an error decoding the DN or any attribute value.
+    //!  given to @[search], a @[Charset.DecodeError] is thrown if
+    //!  there is an error decoding the DN or any attribute value.
     //!
     //! @seealso
     //!   @[fetch]
@@ -641,8 +634,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 
 #ifndef PARSE_RFCS
   //! @decl void create()
-  //! @decl void create(string url)
-  //! @decl void create(string url, object context)
+  //! @decl void create(string|mapping(string:mixed) url)
+  //! @decl void create(string|mapping(string:mixed) url, object context)
   //!
   //! Create object. The first optional argument can be used later
   //! for subsequence operations. The second one can specify
@@ -652,9 +645,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
   //!
   //! @param url
   //!  LDAP server URL on the form
-  //!  @expr{"ldap://hostname/basedn?attrlist?scope?ext"@}. See RFC
-  //!  2255. It can also be a mapping as returned by
-  //!  @[Protocol.LDAP.parse_ldap_url].
+  //!  @expr{"ldap://hostname/basedn?attrlist?scope?ext"@}. See @rfc{2255@}.
+  //!  It can also be a mapping as returned by @[Protocol.LDAP.parse_ldap_url].
   //!
   //! @param context
   //!  TLS context of connection
@@ -678,7 +670,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 
     if(!stringp(lauth->scheme) ||
        ((lauth->scheme != "ldap")
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
 	&& (lauth->scheme != "ldaps")
 #endif
 	)) {
@@ -690,16 +682,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     if(!lauth->port)
       lauth += ([ "port" : lauth->scheme == "ldap" ? LDAP_DEFAULT_PORT : LDAPS_DEFAULT_PORT ]);
 
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
     if(lauth->scheme == "ldaps" && !context) {
-      context = SSL.context();
-      // Allow only strong crypto
-      context->preferred_suites = ({
-	SSL_rsa_with_idea_cbc_sha,
-	SSL_rsa_with_rc4_128_sha,
-	SSL_rsa_with_rc4_128_md5,
-	SSL_rsa_with_3des_ede_cbc_sha,
-      });
+      context = SSL.Context();
     }
 #endif
 
@@ -716,10 +701,13 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
       ERROR ("Failed to connect to LDAP server: %s\n", ldap_rem_errstr);
     }
 
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
     if(lauth->scheme == "ldaps") {
-      context->random = Crypto.Random.random_string;
-      ::create(SSL.sslfile(low_fd, context, 1,1));
+      SSL.File ssl_fd = SSL.File(low_fd, context);
+      if (!ssl_fd->connect()) {
+	ERROR("Failed to connect to LDAPS server.\n");
+      }
+      ::create(ssl_fd);
       info->tls_version = ldapfd->version;
     } else
       ::create(low_fd);
@@ -733,7 +721,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 
     DWRITE("client.create: connected!\n");
 
-    DWRITE(sprintf("client.create: remote = %s\n", low_fd->query_address()));
+    DWRITE("client.create: remote = %s\n", low_fd->query_address());
     DWRITE_HI("client.OPEN: " + lauth->host + ":" + (string)(lauth->port) + " - OK\n");
 
     reset_options();
@@ -760,8 +748,8 @@ void reset_options()
     string pass = password;
     password = "censored";
 
-    vers = Standards.ASN1.Types.asn1_integer(ldap_version);
-    namedn = Standards.ASN1.Types.asn1_octet_string(name);
+    vers = Integer(ldap_version);
+    namedn = OctetString(name);
     auth = ASN1_CONTEXT_OCTET_STRING(0, pass);
     // SASL credentials ommited
 
@@ -773,19 +761,19 @@ void reset_options()
   private mixed send_starttls_op(object|void context) {
 
     object msgval;
-#if constant(SSL.Cipher.CipherAlgorithm)
+#if constant(SSL.Cipher)
 
     // can we do this now?
-    if(ldapfd->context) 
+    if(ldapfd->context)
     {
       THROW(({"LDAP: TLS/SSL already established.\n",backtrace()}));
     }
 
     // NOTE: should we be on the lookout for requests in flight?
 
-    
 
-    msgval = ASN1_APPLICATION_SEQUENCE(23, ({Standards.ASN1.Types.OctetString("1.3.6.1.4.1.1466.20037")}));
+
+    msgval = ASN1_APPLICATION_SEQUENCE(23, ({OctetString("1.3.6.1.4.1.1466.20037")}));
 
     do_op(msgval);
     int result = ASN1_RESULTCODE(.ldap_privates.ldap_der_decode (readbuf));
@@ -793,33 +781,26 @@ void reset_options()
     // otherwise, we can try to negotiate.
       if(!context)
       {
-        context = SSL.context();
-        // Allow only strong crypto
-        context->preferred_suites = ({
-  	  SSL_rsa_with_idea_cbc_sha,
- 	  SSL_rsa_with_rc4_128_sha,
-	  SSL_rsa_with_rc4_128_md5,
-	  SSL_rsa_with_3des_ede_cbc_sha,
-        });
+        context = SSL.Context();
       }
     object _f = ldapfd;
-    ldapfd=SSL.sslfile(_f, context, 1, 1);
-    return 1;
+    ldapfd = SSL.File(_f, context);
+    return ldapfd->connect();
 #endif
-  return 0;    
+  return 0;
   }
 
   //!  Requests that a SSL/TLS session be negotiated on the connection.
   //!  If the connection is already secure, this call will fail.
   //!
   //!  @param context
-  //!    an optional SSL.context object to provide to the 
+  //!    an optional SSL.context object to provide to the
   //!    SSL/TLS connection client.
-  //!  
+  //!
   //!  Returns @expr{1@} on success, @expr{0@} otherwise.
   //!
-  int start_tls (void|SSL.context context) {
-
+  int start_tls (void|SSL.Context context) {
+#if constant(SSL.Cipher)
     if(ldap_version < 3)
     {
       seterr (LDAP_PROTOCOL_ERROR);
@@ -830,6 +811,9 @@ void reset_options()
     return send_starttls_op(context||UNDEFINED);
 
     return 1;
+#else
+    return 0;
+#endif
   } // start_tls
 
    //! @decl int bind()
@@ -901,7 +885,7 @@ void reset_options()
      bound_dn = dn;
      md5_password = Crypto.MD5.hash (pass);
    }
-   DWRITE_HI(sprintf("client.BIND: %s\n", last_rv->error_string()));
+   DWRITE_HI("client.BIND: %s\n", last_rv->error_string());
    seterr (last_rv->error_number(), last_rv->error_string());
    return !!bound_dn;
 
@@ -979,7 +963,7 @@ void reset_options()
     }
 
    last_rv = SIMPLE_RESULT (raw, 0, 0);
-   DWRITE_HI(sprintf("client.DELETE: %s\n", last_rv->error_string()));
+   DWRITE_HI("client.DELETE: %s\n", last_rv->error_string());
    seterr (last_rv->error_number(), last_rv->error_string());
    return !last_rv->error_number();
 
@@ -990,12 +974,9 @@ void reset_options()
 
     object msgval;
 
-    msgval = ASN1_APPLICATION_SEQUENCE(14, 
-		({ Standards.ASN1.Types.asn1_octet_string(dn),
-		Standards.ASN1.Types.asn1_sequence(
-		  ({ Standards.ASN1.Types.asn1_octet_string(attr),
-		  Standards.ASN1.Types.asn1_octet_string(value)
-		  }))
+    msgval = ASN1_APPLICATION_SEQUENCE(14,
+		({ OctetString(dn),
+                   Sequence( ({ OctetString(attr), OctetString(value) }) )
 		})
 	     );
 
@@ -1054,7 +1035,7 @@ void reset_options()
     }
 
    last_rv = SIMPLE_RESULT (raw, 0, 0);
-   DWRITE_HI(sprintf("client.COMPARE: %s\n", last_rv->error_string()));
+   DWRITE_HI("client.COMPARE: %s\n", last_rv->error_string());
    seterr (last_rv->error_number(), last_rv->error_string());
    return last_rv->error_number() == LDAP_COMPARE_TRUE;
 
@@ -1072,18 +1053,16 @@ void reset_options()
       array(object) ohlp = ({});
 
       foreach(values(attrs[atype]), aval)
-	ohlp += ({Standards.ASN1.Types.asn1_octet_string(aval)});
-      oatt += ({Standards.ASN1.Types.asn1_sequence(
-		({Standards.ASN1.Types.asn1_octet_string(atype),
-		  Standards.ASN1.Types.asn1_set(ohlp)
+	ohlp += ({OctetString(aval)});
+      oatt += ({Sequence(
+		({OctetString(atype),
+		  Set(ohlp)
 		}))
 	      });
     }
 
-    msgval = ASN1_APPLICATION_SEQUENCE(8, 
-		({Standards.ASN1.Types.asn1_octet_string(dn),
-		  Standards.ASN1.Types.asn1_sequence(oatt)
-		}));
+    msgval = ASN1_APPLICATION_SEQUENCE(8,
+		({ OctetString(dn), Sequence(oatt) }));
 
     return do_op(msgval);
   }
@@ -1103,7 +1082,7 @@ void reset_options()
   //!
   //! @returns
   //!  Returns @expr{1@} on success, @expr{0@} otherwise.
-  //!    
+  //!
   //! @note
   //!   The API change: the returning code was changed in Pike 7.3+
   //!	to follow his logic better.
@@ -1132,7 +1111,7 @@ void reset_options()
     }
 
     last_rv = SIMPLE_RESULT (raw, 0, 0);
-    DWRITE_HI(sprintf("client.ADD: %s\n", last_rv->error_string()));
+    DWRITE_HI("client.ADD: %s\n", last_rv->error_string());
     seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
 
@@ -1198,7 +1177,7 @@ array(string) get_root_dse_attr (string attr)
 {
   attr = lower_case (attr);
 
-  if (!root_dse || zero_type (root_dse[attr])) {
+  if (!root_dse || !has_index (root_dse, attr)) {
     PROFILE("get_root_dse_attr", {
 
 	multiset(string) attrs = root_dse ? (<>) :
@@ -1254,10 +1233,10 @@ array(string) get_root_dse_attr (string attr)
 protected object make_control (string control_type, void|string value,
 			    void|int critical)
 {
-  array(object) seq = ({Standards.ASN1.Types.asn1_octet_string (control_type),
-			ASN1_BOOLEAN (critical)});
-  if (value) seq += ({Standards.ASN1.Types.asn1_octet_string (value)});
-  return Standards.ASN1.Types.asn1_sequence (seq);
+  array(object) seq = ({OctetString (control_type),
+			Boolean (critical)});
+  if (value) seq += ({OctetString (value)});
+  return Sequence (seq);
 }
 
 protected multiset(string) supported_controls;
@@ -1334,18 +1313,18 @@ object get_default_filter()
     if (arrayp(attrs)) { //explicitly defined attributes
       array(object) o2 = ({});
       foreach(attrs, string s2)
-	o2 += ({Standards.ASN1.Types.asn1_octet_string(s2)});
-      ohlp += ({Standards.ASN1.Types.asn1_sequence(o2)});
+	o2 += ({OctetString(s2)});
+      ohlp += ({Sequence(o2)});
     } else
-      ohlp += ({Standards.ASN1.Types.asn1_sequence(({}))});
+      ohlp += ({Sequence(({}))});
 
     return ASN1_APPLICATION_SEQUENCE(3,
-		({ Standards.ASN1.Types.asn1_octet_string(basedn),
-		   ASN1_ENUMERATED(scope),
-		   ASN1_ENUMERATED(deref),
-		   Standards.ASN1.Types.asn1_integer(sizelimit),
-		   Standards.ASN1.Types.asn1_integer(timelimit),
-		   ASN1_BOOLEAN(attrsonly ? -1 : 0),
+		({ OctetString(basedn),
+		   Enumerated(scope),
+		   Enumerated(deref),
+		   Integer(sizelimit),
+		   Integer(timelimit),
+		   Boolean(attrsonly ? -1 : 0),
 		   @ohlp
 		})) ;
   }
@@ -1354,7 +1333,7 @@ object get_default_filter()
   //!
   //! @param filter
   //!   Search filter to override the one from the LDAP URL. It's
-  //!   either a string with the format specified in RFC 2254, or an
+  //!   either a string with the format specified in @rfc{2254@}, or an
   //!   object returned by @[Protocols.LDAP.make_filter].
   //!
   //! @param attrs
@@ -1377,16 +1356,16 @@ object get_default_filter()
   //!     The index is the object identifier in string form for the
   //!     control type. There are constants in @[Protocols.LDAP] for
   //!     the object identifiers for some known controls.
-  //! 
+  //!
   //!     The mapping value is an array of two elements:
-  //! 
+  //!
   //!     @array
   //!     @elem int 0
   //!       The first element is an integer flag that specifies
   //!       whether the control is critical or not. If it is nonzero,
   //!       the server returns an error if it doesn't understand the
   //!       control. If it is zero, the server ignores it instead.
-  //! 
+  //!
   //!     @elem string|int(0..0) 1
   //!       The second element is the string value to pass with the
   //!       control. It may also be zero to not pass any value at all.
@@ -1418,7 +1397,7 @@ object get_default_filter()
     object entry;
     array(object) entries = ({});
 
-    DWRITE_HI(sprintf ("client.SEARCH: %O\n", filter));
+    DWRITE_HI("client.SEARCH: %O\n", filter);
     if (chk_ver())
       return 0;
     if (chk_binded())
@@ -1474,7 +1453,7 @@ object get_default_filter()
     get_supported_controls();
 #endif
 
-    object cookie = Standards.ASN1.Types.asn1_octet_string("");
+    object cookie = OctetString("");
     do {
       PROFILE("send_search_op", {
 	  array ctrls = common_controls;
@@ -1484,17 +1463,17 @@ object get_default_filter()
 	      // RFC 2696.
 	      ctrls += ({make_control (
 			   LDAP_PAGED_RESULT_OID_STRING,
-			   Standards.ASN1.Types.asn1_sequence(
+			   Sequence(
 			     ({
 			       // size
-			       Standards.ASN1.Types.asn1_integer(0x7fffffff),
+			       Integer(0x7fffffff),
 			       cookie,			// cookie
 			     }))->get_der(),
 			   sizeof(cookie->value))});
 	    },);
 	  object controls;
 	  if (sizeof(ctrls)) {
-	    controls = .ldap_privates.asn1_sequence(0, ctrls);
+	    controls = ASN1_CONTEXT_SEQUENCE(0, ctrls);
 	  }
 
 	  string|int raw;
@@ -1566,7 +1545,7 @@ object get_default_filter()
 	      entries = entries[..<1];
 	    }
 	  }
-	    
+
 	},);
     } while (cookie);
 
@@ -1576,8 +1555,8 @@ object get_default_filter()
     //if (rv->error_number() || !rv->num_entries())	// if error or entries=0
     //  rv = rv->error_number();
 
-    DWRITE_HI(sprintf("client.SEARCH: %s (entries: %d)\n",
-    			last_rv->error_string(), last_rv->num_entries()));
+    DWRITE_HI("client.SEARCH: %s (entries: %d)\n",
+              last_rv->error_string(), last_rv->num_entries());
     return last_rv;
 
   } // search
@@ -1632,7 +1611,7 @@ mapping(string:string|array(string)) read (
       control_list[i++] =
 	make_control (type, [string] data[1], [int] data[0]);
     if (sizeof (control_list))
-      ctrls = .ldap_privates.asn1_sequence(0, control_list);
+      ctrls = ASN1_CONTEXT_SEQUENCE(0, control_list);
   }
 
   object entry;
@@ -1763,9 +1742,9 @@ string get_bind_password_hash() {return md5_password;}
     else
       if (!(<SCOPE_BASE, SCOPE_ONE, SCOPE_SUB>)[scope])
 	ERROR ("Invalid scope %O.\n", scope);
- 
+
     ldap_scope = scope;
-    DWRITE_HI("client.SET_SCOPE = " + (string)scope + "\n");
+    DWRITE_HI("client.SET_SCOPE = %O\n", scope);
     return old_scope;
   }
 
@@ -1780,7 +1759,7 @@ string get_scope()
   //!   new value for option
   int set_option (int opttype, int value) {
 
-    DWRITE_HI("client.SET_OPTION: " + (string)opttype + " = " + (string)value + "\n");
+    DWRITE_HI("client.SET_OPTION: %O = %O\n", opttype, value);
     switch (opttype) {
 	case 1: // LDAP_OPT_DEREF
 		  //if (intp(value))
@@ -1803,7 +1782,7 @@ string get_scope()
 	case 4: // LDAP_OPT_REFERRALS
 	default: return -1;
     }
-	
+
 
     return 0;
   }
@@ -1813,7 +1792,7 @@ string get_scope()
   int get_option (int opttype) {
 
 
-    DWRITE_HI("client.GET_OPTION: " + (string)opttype + "\n");
+    DWRITE_HI("client.GET_OPTION: %O\n", opttype);
     switch (opttype) {
 	case 1: // LDAP_OPT_DEREF
 		  return ldap_deref;
@@ -1847,26 +1826,17 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
 	return seterr(LDAP_PROTOCOL_ERROR);
       attrarr = ({});
       for(int ix=1; ix<sizeof(attropval[atype]); ix++)
-	attrarr += ({Standards.ASN1.Types.asn1_octet_string(
-			(attropval[atype])[ix])});
+	attrarr += ({ OctetString(attropval[atype][ix]) });
 //      if(sizeof(attrarr)) // attributevalue ?
-	o = Standards.ASN1.Types.asn1_sequence(
-		({Standards.ASN1.Types.asn1_octet_string(atype),
-		  Standards.ASN1.Types.asn1_set(attrarr)
-		}));
+	o = Sequence( ({OctetString(atype), Set(attrarr) }));
 //      else
 //	o = Standards.ASN1.Encode.asn1_sequence(
 //		Standards.ASN1.Encode.asn1_octet_string(atype));
-      oatt += ({Standards.ASN1.Types.asn1_sequence(
-		  ({ASN1_ENUMERATED((attropval[atype])[0]),
-		    o
-		  }))});
+      oatt += ({ Sequence( ({Enumerated((attropval[atype])[0]), o})) });
     } //foreach
 
-    msgval = ASN1_APPLICATION_SEQUENCE(6, 
-		({ Standards.ASN1.Types.asn1_octet_string(dn),
-		   Standards.ASN1.Types.asn1_sequence(oatt)
-		}));
+    msgval = ASN1_APPLICATION_SEQUENCE(6,
+		({ OctetString(dn), Sequence(oatt) }));
 
     return do_op(msgval);
   }
@@ -1875,12 +1845,13 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
     int deleteoldrdn, string newsuperior) {
 
     object msgval;
-    array seq=({ Standards.ASN1.Types.asn1_octet_string(dn),
-               Standards.ASN1.Types.asn1_octet_string(newrdn),
-               Standards.ASN1.Types.asn1_boolean(deleteoldrdn)
-         });
+    array seq=({
+      OctetString(dn),
+      OctetString(newrdn),
+      Boolean(deleteoldrdn)
+    });
     if(newsuperior)
-          seq+=({Standards.ASN1.Types.asn1_octet_string(newsuperior)});
+      seq+=({ OctetString(newsuperior)});
 
     msgval = ASN1_APPLICATION_SEQUENCE(12, seq);
 
@@ -1934,7 +1905,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
     }
 
     last_rv = SIMPLE_RESULT (raw, 0, 0);
-    DWRITE_HI(sprintf("client.MODIFYDN: %s\n", last_rv->error_string()));
+    DWRITE_HI("client.MODIFYDN: %s\n", last_rv->error_string());
     seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
 
@@ -2010,7 +1981,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
     }
 
     last_rv = SIMPLE_RESULT (raw, 0, 0);
-    DWRITE_HI(sprintf("client.MODIFY: %s\n", last_rv->error_string()));
+    DWRITE_HI("client.MODIFY: %s\n", last_rv->error_string());
     seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
 
@@ -2340,7 +2311,7 @@ protected mapping(string:mapping(string:mixed)) attr_type_descrs;
 mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 //! Returns the attribute type description for the given attribute,
 //! which includes the name, object identifier, syntax, etc (see
-//! section 4.2 in RFC 2252 for details).
+//! @rfc{2252:4.2@} for details).
 //!
 //! This might do a query to the server, but results are cached.
 //!
@@ -2400,7 +2371,7 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 //!   @member string "SUBSTR"
 //!     The value is the name or oid of a matching rule.
 //!   @member string "syntax_oid"
-//!     The value is the oid of the syntax (RFC 2252, section 4.3.2).
+//!     The value is the oid of the syntax (@rfc{2252:4.3.2@}).
 //!     (This is extracted from the @expr{"SYNTAX"@} term.)
 //!   @member string "syntax_len"
 //!     Optional suggested minimum upper bound of the number of
@@ -2478,7 +2449,7 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 	  if (sup_descr->SUP)
 	    complete (sup_descr);
 	  foreach (indices (sup_descr), string term)
-	    if (zero_type (descr[term]))
+	    if (!has_index (descr, term))
 	      descr[term] = sup_descr[term];
 	};
 	foreach (incomplete, mapping(string:mixed) descr)
@@ -2551,8 +2522,4 @@ int main (int argc, array(string) argv)
     }
 }
 
-#endif
-
-#else
-constant this_program_does_not_exist=1;
 #endif

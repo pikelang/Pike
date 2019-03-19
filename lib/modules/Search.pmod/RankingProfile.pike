@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 #include "search.h"
@@ -26,7 +25,7 @@ void create(void|int _cutoff, void|array(int) _proximity_ranking,
 
   // Set cutoff to a value > 0.
   cutoff = _cutoff || 8;
-  
+
   if(_proximity_ranking)
     proximity_ranking = copy_value(_proximity_ranking);
   else

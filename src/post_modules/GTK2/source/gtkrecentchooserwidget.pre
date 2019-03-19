@@ -1,6 +1,7 @@
 /* -*- C -*- */
 require gtk210;
 class GTK2.RecentChooserWidget;
+//!
 inherit GTK2.Vbox;
 inherit GTK2.RecentChooser;
 

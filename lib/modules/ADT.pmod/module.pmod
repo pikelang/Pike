@@ -13,42 +13,47 @@ constant List = __builtin.List;
 protected int item_counter;
 int get_item_id() { return item_counter++; }
 
+protected class structError
+{
+  inherit Error.Generic;
+  constant ADT_struct = 1;
+}
+
 //! String buffer with the possibility to read and write data
 //! as they would be formatted in structs.
+//!
+//! @deprecated Stdio.Buffer
 class struct {
-
-  string buffer;
-  int index;
+  inherit Stdio.Buffer;
 
   //! Create a new buffer, optionally initialized with the
   //! value @[s].
-  void create(void|string s)
+  __deprecated__ void create(void|string(0..255) s)
   {
-    buffer = s || "";
-    index = 0;
+     if( s && strlen(s) )
+         ::create(s);
+     else
+         ::create();
+     set_error_mode(structError);
   }
 
   //! Trims the buffer to only contain the data after the
   //! read pointer and returns the contents of the buffer.
-  string contents()
+  string(0..255) contents()
   {
-    buffer = buffer[index..];
-    index = 0;
-    return buffer;
+      return (string(8bit))this;
   }
 
   //! Adds the data @[s] verbatim to the end of the buffer.
-  void add_data(string s)
+  this_program add_data(string(0..255) s)
   {
-    buffer += s;
+      return [object(this_program)]add(s);
   }
 
   //! Return all the data in the buffer and empties it.
-  string pop_data()
+  string(0..255) pop_data()
   {
-    string res = buffer;
-    create();
-    return res;
+    return read();
   }
 
   //! Appends an unsigned integer in network order to the buffer.
@@ -57,124 +62,112 @@ class struct {
   //!    Unsigned integer to append.
   //!  @param len
   //!    Length of integer in bytes.
-  void put_uint(int i, int(0..) len)
+  this_program put_uint(int i, int(0..) len)
   {
-    if (i<0)
-      error("Negative argument.\n");
-    add_data(sprintf("%*c", len, i));
+    return [object(this_program)]add_int(i,len);
   }
 
   //! Appends a variable string @[s] preceded with an unsigned integer
   //! of the size @[len_width] declaring the length of the string. The
   //! string @[s] should be 8 bits wide.
-  void put_var_string(string s, int(0..) len_width)
+  this_program put_var_string(string(0..255) s, int(0..) len_width)
   {
-    if ( (len_width <= 3) &&
-	 (sizeof(s) >= ({ -1, 0x100, 0x10000, 0x1000000 })[len_width] ))
-      error("Field overflow.\n");
-    put_uint(sizeof(s), len_width);
-    add_data(s);
+    return [object(this_program)]add_hstring(s,len_width);
   }
 
-#if constant(Gmp.mpz)
   //! Appends a bignum @[i] as a variable string preceded with an
   //! unsigned integer of the size @[len_width] declaring the length
   //! of the string. @[len_width] defaults to 2.
-  void put_bignum(Gmp.mpz i, int(0..)|void len_width)
+  this_program put_bignum(Gmp.mpz i, int(0..)|void len_width)
   {
-    if (i<0)
-      error("Negative argument.\n");
-    put_var_string(i->digits(256), len_width || 2);
+    return [object(this_program)]add_hstring(i->digits(256),len_width||2);
   }
-#endif
 
   //! Appends the fix sized string @[s] to the buffer.
-  void put_fix_string(string s)
+  this_program put_fix_string(string(0..255) s)
   {
-    add_data(s);
+    return [object(this_program)]add(s);
   }
 
   //! Appends an array of unsigned integers of width @[item_size]
   //! to the buffer.
-  void put_fix_uint_array(array(int) data, int(0..) item_size)
+  this_program put_fix_uint_array(array(int) data, int(0..) item_size)
   {
-    foreach(data, int i)
-      put_uint(i, item_size);
+    return [object(this_program)]add_ints(data,item_size);
   }
 
   //! Appends an array of unsigned integers of width @[item_size]
   //! to the buffer, preceded with an unsigned integer @[len] declaring
-  //! the size of the array.
-  void put_var_uint_array(array(int) data, int(0..) item_size, int(0..) len)
+  //! the size of the array in bytes.
+  this_program put_var_uint_array(array(int) data, int(0..) item_size, int(0..) len)
   {
-    put_uint(sizeof(data), len);
-    put_fix_uint_array(data, item_size);
+    add_int(sizeof(data)*item_size, len );
+    return [object(this_program)]add_ints(data,item_size);
+  }
+
+  //! Appends an array of variable length strings with @[item_size]
+  //! bytes hollerith coding, prefixed by a @[len] bytes large integer
+  //! declaring the total size of the array in bytes.
+  this_program put_var_string_array(array(string(8bit)) data, int(0..) item_size, int(0..) len)
+  {
+    Stdio.Buffer sub = Stdio.Buffer();
+    foreach(data, string(8bit) s)
+      sub->add_hstring(s, item_size);
+    add_int(sizeof(sub),len);
+    return [object(this_program)]add(sub);
   }
 
   //! Reads an unsigned integer from the buffer.
   int(0..) get_uint(int len)
   {
-    int(0..) i;
-    if ( (sizeof(buffer) - index) < len)
-      error("No data.\n");
-    sscanf(buffer, "%*" + (string) index +"s%" + (string) len + "c", i);
-    index += len;
-    return i;
+    return read_int(len);
   }
 
   //! Reads a fixed sized string of length @[len] from the buffer.
-  string get_fix_string(int len)
+  string(0..255) get_fix_string(int len)
   {
-    if ((sizeof(buffer) - index) < len)
-      error("No data\n");
-
-    string res = buffer[index .. index + len - 1];
-    index += len;
-    return res;
+     return read(len);
   }
 
   //! Reads a string written by @[put_var_string] from the buffer.
-  string get_var_string(int len)
+  string(0..255) get_var_string(int len)
   {
-    return get_fix_string(get_uint(len));
+     return read_hstring(len);
   }
 
-#if constant(Gmp.mpz)
   //! Reads a bignum written by @[put_bignum] from the buffer.
   Gmp.mpz get_bignum(int|void len)
   {
-    return Gmp.mpz(get_var_string(len || 2), 256);
+      return Gmp.mpz(read_hstring(len||2),256);
   }
-#endif
 
   //! Get the remaining data from the buffer and clears the buffer.
-  string get_rest()
+  string(0..255) get_rest()
   {
-    string s = buffer[index..];
-    create();
-    return s;
+    return read();
   }
 
   //! Reads an array of integers as written by @[put_fix_uint_array]
   //! from the buffer.
   array(int) get_fix_uint_array(int item_size, int size)
   {
-    array(int) res = allocate(size);
-    for(int i = 0; i<size; i++)
-      res[i] = get_uint(item_size);
-    return res;
+    return read_ints(size, item_size);
   }
 
   //! Reads an array of integers as written by @[put_var_uint_array]
   //! from the buffer.
   array(int) get_var_uint_array(int item_size, int len)
   {
-    return get_fix_uint_array(item_size, get_uint(len));
+    int size = read_int(len);
+    int elems = size/item_size;
+    if( elems*item_size != size )
+      throw(structError("Impossible uint array length value.\n"));
+    return read_ints(elems, item_size);
   }
 
-  //! Returns one of there is any more data to read.
+  //! Returns one if there is any more data to read.
   int(0..1) is_empty()
   {
-    return (index == sizeof(buffer));
+    return !sizeof(this);
   }
 }

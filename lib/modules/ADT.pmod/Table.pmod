@@ -1,5 +1,4 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id$
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) error("(Table) "+msg+"\n")
@@ -11,7 +10,7 @@
 //! Optionally, one can provide a column type. The Table module can do a number
 //! of operations on a given table, like computing the sum of a column,
 //! grouping, sorting etc.
-//! 
+//!
 //! All column references are case insensitive. A column can be referred to by
 //! its position (starting from zero). All operations are non-destructive. That
 //! means that a new table object will be returned after, for example, a sort.
@@ -20,14 +19,14 @@
 class table {
   protected private mapping fieldmap;
   protected private array table, fields, types;
-  
+
   protected private array|int remap(array|string|int cs, int|void forgive)
   {
     array v = ({});
     int ap = arrayp(cs);
     if(!ap) cs = ({ cs });
     foreach(cs, string|int f)
-      if(zero_type(intp(f)?f:fieldmap[lower_case(f)])) {
+      if(undefinedp(intp(f)?f:fieldmap[lower_case(f)])) {
 	if(!forgive)
 	  TABLE_ERR("Unknown field '"+f+"'");
       } else
@@ -54,8 +53,8 @@ class table {
     mapping m = decode_value(s);
     return copy(m->table, m->fields, m->types);
   }
-  
-  mixed cast(string type)
+
+  protected mixed cast(string type)
   {
     switch(type) {
     case "array":
@@ -63,6 +62,7 @@ class table {
     case "string":
       return ASCII->encode(this);
     }
+    return UNDEFINED;
   }
 
   //! This method returns the column names for the table. The case used when
@@ -70,14 +70,14 @@ class table {
   array(string) _indices()
   {
     return copy_value(fields);
-  }  
+  }
 
   //! This method returns the contents of a table as a two dimensional array.
   //! The format is an array of rows. Each row is an array of columns.
   array(array) _values()
   {
     return copy_value(table);
-  }  
+  }
 
   //! This method returns the number of rows in the table.
   int _sizeof()
@@ -91,7 +91,7 @@ class table {
   {
     return copy(predef::reverse(table), fields, types);
   }
-  
+
   //! This method returns the contents of a given column as an array.
   array col(int|string column)
   {
@@ -117,7 +117,7 @@ class table {
   {
     return (equal(Array.map(fields, lower_case),
 		  Array.map(indices(table), lower_case)) &&
-	    equal(this_program::table, values(table)));
+	    equal(this::table, values(table)));
   }
 
   //! This method appends two tables. The table given as an argument will be
@@ -128,7 +128,7 @@ class table {
     if(!equal(Array.map(indices(table), lower_case),
 	      Array.map(fields, lower_case)))
       TABLE_ERR("Table fields are not equal.");
-    return copy(this_program::table+values(table), fields, types);
+    return copy(this::table+values(table), fields, types);
   }
 
   //! This method appends two tables. The table given as an argument will be
@@ -136,11 +136,11 @@ class table {
   //! rows in both tables must be equal.
   object append_right(object table)
   {
-    if(sizeof(table) != sizeof(this_program::table))
+    if(sizeof(table) != sizeof(this::table))
       TABLE_ERR("Table sizes are not equal.");
     array v = values(table);
-    for(int r = 0; r < sizeof(this_program::table); r++)
-      v[r] = this_program::table[r] + v[r];
+    for(int r = 0; r < sizeof(this::table); r++)
+      v[r] = this::table[r] + v[r];
     return copy(v, fields+indices(table), types+table->all_types());
   }
 
@@ -220,7 +220,7 @@ class table {
       f = mkmapping(args[0], allocate(sizeof(args[0]), f));
       args = args[1..];
     }
-    
+
     mapping m = ([]);
     array cs = remap(indices(f));
     f = mkmapping(cs, values(f));
@@ -319,7 +319,7 @@ class table {
   {
     return _sort(0, @columns);
   }
-  
+
   //! Like @[sort()], but in descending order.
   object rsort(int|string ... columns)
   {
@@ -401,7 +401,7 @@ class table {
       if(!stringp(s))
 	TABLE_ERR("Field name not string");
 
-    this_program::table = copy_value(table);
+    this::table = copy_value(table);
     fields = copy_value(column_names);
     types = allocate(sizeof(column_names));
 
@@ -419,7 +419,7 @@ class table {
 
 object Separated = class {
   protected private string _string(mixed x) { return (string)x; }
-  
+
   object decode(string s, void|mapping options)
   {
     string rowsep = options->rowsep||"\n";
@@ -427,7 +427,7 @@ object Separated = class {
     array t = Array.map(s/rowsep, `/, colsep);
     return table(t[1..], t[0], options->types);
   }
-  
+
   mixed encode(object t, void|mapping options)
   {
     options = options || ([]);
@@ -463,7 +463,7 @@ object ASCII = class {
     mapping sizes = ([]);
     array fields = indices(t);
     string indent = " " * options->indent;
-    
+
     t = t->copy(({ fields }) + values(t));
     for(int field = 0; field < sizeof(fields); field++)
       t = (t->map(lambda(mixed m, int field, mapping sizes)

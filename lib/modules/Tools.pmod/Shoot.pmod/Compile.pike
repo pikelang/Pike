@@ -14,14 +14,18 @@ constant name="Compile";
 
 int n;
 
-void perform()
+final constant runs = 30;
+final constant ops = 2000;
+
+
+string prog="";
+void create()
 {
-   int ops=2000,v=10,runs=10;
-   string prog="";
+    int v=10;
 
    for (int i=0; i<v; i++)
       prog+=sprintf("int %c=random(1000);\n",i+'a');
-   
+
    for (int i=0; i<ops; i++)
    {
       int c=random(4),d;
@@ -48,15 +52,19 @@ void perform()
 	 for (int i=0; i<v; i++)
 	    prog+=sprintf("if (%c==0 || %c>1000000000 || %c<-1000000000) %c=random(1000);\n",i+'a',i+'a',i+'a',i+'a');
       }
-   }	       
+   }
    prog="int test() {\n"+prog+"   return a;\n};\n";
+}
+
+int perform()
+{
    for (int i=0; i<runs; i++)
       compile_string(prog);
 
-   n=sizeof(prog/"\n")*runs;
+   return (ops+ops/5+12)*runs;
 }
 
 string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
 {
-   return sprintf("%.0f lines/s",ntot/useconds);
+   return sprintf("%.0fk lines/s",ntot/useconds/1000);
 }

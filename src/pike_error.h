@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef PIKE_ERROR_H
@@ -25,11 +24,7 @@ static inline void Pike_fatal (const char *fmt, ...)
 #else  /* !CONFIGURE_TEST */
 
 #include "global.h"
-
-#ifdef HAVE_SETJMP_H
 #include <setjmp.h>
-#undef HAVE_SETJMP_H
-#endif
 
 #if defined(HAVE_SIGSETJMP) && defined(HAVE_SIGLONGJMP)
 #define HAVE_AND_USE_SIGSETJMP
@@ -52,7 +47,7 @@ static inline void Pike_fatal (const char *fmt, ...)
 #if 1
 PMOD_EXPORT extern const char msg_fatal_error[];
 #define Pike_fatal \
- (fprintf(stderr,msg_fatal_error,__FILE__,__LINE__),debug_fatal)
+ (fprintf(stderr,msg_fatal_error,__FILE__,(long)__LINE__),debug_fatal)
 #else
 /* This is useful when debugging assembler code sometimes... -Hubbe */
 #define Pike_fatal \
@@ -124,7 +119,7 @@ typedef struct JMP_BUF
 } JMP_BUF;
 
 PMOD_EXPORT extern struct svalue throw_value;
-extern int throw_severity;
+PMOD_EXPORT extern int throw_severity;
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern const char msg_unsetjmp_nosync_1[];
@@ -387,7 +382,7 @@ PMOD_EXPORT extern const char msg_div_by_zero[];
             if(__is_exception) /* rethrow needs this */ \
                 UNSETJMP(exception); \
             if(!__is_exception)
-    
+
 #define exception_catch_if \
             else if
 

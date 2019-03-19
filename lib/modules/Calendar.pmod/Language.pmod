@@ -108,12 +108,12 @@ protected class _ymd_base
    {
       int y;
       string x;
-      if (sscanf(name,"%d%s",y,x)==1 || 
-	  x=="") 
+      if (sscanf(name,"%d%s",y,x)==1 ||
+	  x=="")
 	 return y>=0?y:y+1; // "-1" == integer year 0
       switch (x)
       {
-	 case "AD": case " AD": return y; 
+	 case "AD": case " AD": return y;
 	 case "BC": case " BC": return -y+1;
 	 default:
 	    error("Can't understand year.\n");
@@ -277,7 +277,7 @@ protected class _ymd_base
 	   "djumada1":4,
 	   "djumada2":5]);
       }
-      
+
       return islamic_backmonth[`-(flat(name),"-","'"," ")];
    }
 
@@ -301,7 +301,7 @@ protected class _ymd_base
 	    mkmapping(map(map(islamic_weekdays[1..],flat),`-,"'","-"),
 		      enumerate(7,1,1));
       }
-      
+
       sscanf(name,"jaum el %s",name);
       return islamic_backweekday[`-(flat(name),"-","'")];
    }
@@ -323,7 +323,7 @@ protected class _ymd_base
    string badi_month_name_from_number(int n)
    {
      // Ayyám-i-Há is not a month but the period of 4-5 days before the last
-     // month. it is here at 0 to distinguish it from regular months. 
+     // month. it is here at 0 to distinguish it from regular months.
      return ({ "Ayyám-i-Há", "Bahá", "Jalál", "Jamál", "'Azamat", "Núr",
                "Rahmat", "Kalimát", "Kamál", "Asmá", "'Izzat", "Mashíyyat",
                "'Ilm", "Qudrat", "Qawl", "Masá'il", "Sharaf", "Sultán", "Mulk",
@@ -339,25 +339,25 @@ protected class _ymd_base
 
    int badi_month_number_from_name(string n)
    {
-     return ([ "Bahá":1,       "Baha":1,       "Bh":1,      "Bh":1,      
-               "Jalál":2,      "Jalal":2,      "Jll":2,     "Jl":2, 
-               "Jamál":3,      "Jamal":3,      "Jml":3,     "Jm":3, 
-               "'Azamat":4,    "Azamat":4,     "Azmt":4,    "Az":4, 
+     return ([ "Bahá":1,       "Baha":1,       "Bh":1,      "Bh":1,
+               "Jalál":2,      "Jalal":2,      "Jll":2,     "Jl":2,
+               "Jamál":3,      "Jamal":3,      "Jml":3,     "Jm":3,
+               "'Azamat":4,    "Azamat":4,     "Azmt":4,    "Az":4,
                "Núr":5,        "Nur":5,        "Nr":5,      "Nr":5,
-               "Rahmat":6,     "Rahmat":6,     "Rhmt":6,    "Rh":6, 
-               "Kalimát":7,    "Kalimat":7,    "Klmt":7,    "Kl":7, 
-               "Kamál":8,      "Kamal":8,      "Kml":8,     "Km":8, 
-               "Asmá":9,       "Asma":9,       "Am":9,      "Am":9, 
-               "'Izzat":10,    "Izzat":10,     "Izzt":10,   "Iz":10, 
+               "Rahmat":6,     "Rahmat":6,     "Rhmt":6,    "Rh":6,
+               "Kalimát":7,    "Kalimat":7,    "Klmt":7,    "Kl":7,
+               "Kamál":8,      "Kamal":8,      "Kml":8,     "Km":8,
+               "Asmá":9,       "Asma":9,       "Am":9,      "Am":9,
+               "'Izzat":10,    "Izzat":10,     "Izzt":10,   "Iz":10,
                "Mashíyyat":11, "Mashiyyat":11, "Mshyyt":11, "Msh":11,
-               "'Ilm":12,      "Ilm":12,       "Ilm":12,    "Ilm":12, 
-               "Qudrat":13,    "Qudrat":13,    "Qdrt":13,   "Qd":13, 
-               "Qawl":14,      "Qawl":14,      "Qwl":14,    "Qw":14, 
-               "Masá'il":15,   "Masail":15,    "Msl":15,    "Ms":15, 
-               "Sharaf":16,    "Sharaf":16,    "Shrf":16,   "Shr":16, 
-               "Sultán":17,    "Sultan":17,    "Sltn":17,   "Sl":17, 
+               "'Ilm":12,      "Ilm":12,       "Ilm":12,    "Ilm":12,
+               "Qudrat":13,    "Qudrat":13,    "Qdrt":13,   "Qd":13,
+               "Qawl":14,      "Qawl":14,      "Qwl":14,    "Qw":14,
+               "Masá'il":15,   "Masail":15,    "Msl":15,    "Ms":15,
+               "Sharaf":16,    "Sharaf":16,    "Shrf":16,   "Shr":16,
+               "Sultán":17,    "Sultan":17,    "Sltn":17,   "Sl":17,
                "Mulk":18,      "Mulk":18,      "Mlk":18,    "Ml":18,
-               "'Alá":19,      "Ala":19,       "Al":19,     "Al":19,    
+               "'Alá":19,      "Ala":19,       "Al":19,     "Al":19,
              ])[n];
    }
 
@@ -381,17 +381,17 @@ protected class _ymd_base
    {
      // i have no idea how to abbreviate these, am just guessing here
      // see badi_week_day_number_from_name for more guesses
-     return ({ 0,  "Jl", "Jm", "Km", "Fd", "Id", 
+     return ({ 0,  "Jl", "Jm", "Km", "Fd", "Id",
                    "Ij", "Iq" })[n];
    }
 
    int badi_week_day_number_from_name(string n)
    {
-     return([ "Jalál":1,    "Jalal":1,    "Jal":1, "Jl":1, "Jll":1,   
-              "Jamál":2,    "Jamal":2,    "Jam":2, "Jm":2, "Jml":2,   
-              "Kamál":3,    "Kamal":3,    "Kam":3, "Km":3, "Kml":3,   
-              "Fidál":4,    "Fidal":4,    "Fid":4, "Fd":4, "Fdl":4,   
-              "'Idál":5,    "Idal":5,     "'Id":5, "Id":5, "'Idl":5,    
+     return([ "Jalál":1,    "Jalal":1,    "Jal":1, "Jl":1, "Jll":1,
+              "Jamál":2,    "Jamal":2,    "Jam":2, "Jm":2, "Jml":2,
+              "Kamál":3,    "Kamal":3,    "Kam":3, "Km":3, "Kml":3,
+              "Fidál":4,    "Fidal":4,    "Fid":4, "Fd":4, "Fdl":4,
+              "'Idál":5,    "Idal":5,     "'Id":5, "Id":5, "'Idl":5,
               "Istijlál":6, "Istijlal":6, "Itj":6, "Ij":6, "Istjll":6,
               "Istiqlál":7, "Istiqlal":7, "Itq":7, "Iq":7, "Istqll":7,
             ])[n];
@@ -399,7 +399,7 @@ protected class _ymd_base
 
    string badi_week_day_name_from_number(int n)
    {
-     return({ 0,  "Jalál", "Jamál", "Kamál", "Fidál", "'Idál", 
+     return({ 0,  "Jalál", "Jamál", "Kamál", "Fidál", "'Idál",
                   "Istijlál", "Istiqlál" })[n];
    }
 
@@ -408,7 +408,7 @@ protected class _ymd_base
      array vahid=({ "Alif", "Bá", "Ab", "Dál", "Báb", "Váv", "Abad", "Jád",
                     "Bahá", "Hubb", "Bahháj", "Javáb", "Ahad", "Vahháb",
                     "Vidád", "Badí", "Bahí", "Abhá", "Váhid" });
-     if (y<1) 
+     if (y<1)
        return sprintf("%d BB",1-y);                // ? before Baha'i?
      return sprintf("%d BE (%s)", y, vahid[y%19-1]); // Baha'i Era
      // Váhid is a cycle of 19years with each year having a name.
@@ -417,25 +417,25 @@ protected class _ymd_base
 
    int badi_year_number_from_name(string name)
    {
-      mapping vahid=([ "Alif":1,    "Alif":1,   
-                       "Bá":2,      "Ba":2, 
-                       "Ab":3,      "Ab":3, 
-                       "Dál":4,     "Dal":4, 
-                       "Báb":5,     "Bab":5, 
+      mapping vahid=([ "Alif":1,    "Alif":1,
+                       "Bá":2,      "Ba":2,
+                       "Ab":3,      "Ab":3,
+                       "Dál":4,     "Dal":4,
+                       "Báb":5,     "Bab":5,
                        "Váv":6,     "Vav":6,
-                       "Abad":7,    "Abad":7, 
-                       "Jád":8,     "Jad":8, 
-                       "Bahá":9,    "Baha":9, 
-                       "Hubb":10,   "Hubb":10, 
+                       "Abad":7,    "Abad":7,
+                       "Jád":8,     "Jad":8,
+                       "Bahá":9,    "Baha":9,
+                       "Hubb":10,   "Hubb":10,
                        "Bahháj":11, "Bahhaj":11,
-                       "Javáb":12,  "Javab":12, 
-                       "Ahad":13,   "Ahad":13, 
+                       "Javáb":12,  "Javab":12,
+                       "Ahad":13,   "Ahad":13,
                        "Vahháb":14, "Vahhab":14,
-                       "Vidád":15,  "Vidad":15, 
-                       "Badí":16,   "Badi":16, 
-                       "Bahí":17,   "Bahi":17, 
-                       "Abhá":18,   "Abha":18, 
-                       "Váhid":19,  "Vahid":19,    
+                       "Vidád":15,  "Vidad":15,
+                       "Badí":16,   "Badi":16,
+                       "Bahí":17,   "Bahi":17,
+                       "Abhá":18,   "Abha":18,
+                       "Váhid":19,  "Vahid":19,
                     ]);
 
       if(vahid[name])
@@ -443,13 +443,13 @@ protected class _ymd_base
 
       int y;
       string x;
-      if (sscanf(name,"%*s%d%*[ ]B%[BE]%*s",y,x)==1 || x=="") 
+      if (sscanf(name,"%*s%d%*[ ]B%[BE]%*s",y,x)==1 || x=="")
 	 return y>=0?y:y+1; // "-1" == integer year 0
       if(stringp(x))
         x-=" ";
       switch (x)
       {
-	 case "E": return y; 
+	 case "E": return y;
 	 case "B": return -y+1;
 	 default:
 	    error("Can't understand year.\n");
@@ -507,7 +507,7 @@ protected class _ymd_base
 class cISO
 {
    inherit _ymd_base;
-   
+
    constant month_names=
    ({"January","February","March","April","May","June","July","August",
      "September","October","November","December"});
@@ -515,7 +515,7 @@ class cISO
    constant week_day_names=
    ({"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"});
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -616,7 +616,7 @@ class cSWEDISH
 //	"Valborgsmässoafton"
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -657,7 +657,7 @@ class cAUSTRIAN
       ({"montag","dienstag","mittwoch","donnerstag",
         "freitag","samstag","sonntag"});
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -689,7 +689,7 @@ class cWELSH
       return week_day_number_from_name(name);
    }
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -736,7 +736,7 @@ class cSPANISH
       "Corpus Christi":"Corpus Christi"
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -795,7 +795,7 @@ class cPORTUGESE
       "Christmas":"Natal"
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -834,7 +834,7 @@ class cHUNGARIAN
       "Christmas":"Christmas",
    ]);
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -850,7 +850,7 @@ class cLATIN
    inherit _ymd_base;
 
    protected array(string) month_names=
-   ({"Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius", 
+   ({"Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius",
      "Iulius", "Augustus", "September", "October", "November", "December" });
 
    protected private constant week_day_names=
@@ -878,7 +878,7 @@ class cLATIN
       return sprintf("anno ab Incarnatione Domini %s",roman_number(y));
    }
 
-   void create()
+   protected void create()
    {
       SETUPSTUFF;
    }
@@ -909,20 +909,20 @@ class cROMAN
       sscanf(name,"%d",y);
       return y-752;
    }
-   
+
    string month_day_name_from_number(int d,int mnd)
    {
 // this is not really correct, I've seen but
 // i can't find it - they did something like 4 from the start of the
 // months, 19 from the end of the month.
-      return roman_number(d); 
+      return roman_number(d);
    }
 }
 
 
 // source: anonymous unix locale file
 
-constant cKL=cGREENLANDIC; // Greenlandic 
+constant cKL=cGREENLANDIC; // Greenlandic
 constant cKAL=cGREENLANDIC;
 class cGREENLANDIC
 {
@@ -955,13 +955,13 @@ class cGREENLANDIC
       "sabaat",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
 // source: anonymous unix locale file
 
-constant cIS=cICELANDIC; // Icelandic 
+constant cIS=cICELANDIC; // Icelandic
 constant cISL=cICELANDIC;
 class cICELANDIC
 {
@@ -994,7 +994,7 @@ class cICELANDIC
       "Sunnudagur",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1033,7 +1033,7 @@ class cPERSIAN
       "ykzsnbh",           // <yf><kf><zwnj><sn><n+><b+><h+>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1072,13 +1072,13 @@ class cAFRIKAANS
       "Sondag",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
 // source: anonymous unix locale file
 
-constant cGA=cIRISH; // Irish Gaelic 
+constant cGA=cIRISH; // Irish Gaelic
 constant cGLE=cIRISH;
 class cIRISH
 {
@@ -1121,7 +1121,7 @@ class cIRISH
       "Lua","Mai","Céa","Déa","Aoi","Sat", "Dom",
    });
 
-   void create() { SETUPSTUFF2; }
+   protected void create() { SETUPSTUFF2; }
 }
 
 
@@ -1160,13 +1160,13 @@ class cBASQUE
       "igandea",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
 // source: anonymous unix locale file
 
-constant cNO=cNORWEGIAN; // Norwegian 
+constant cNO=cNORWEGIAN; // Norwegian
 constant cNOR=cNORWEGIAN;
 class cNORWEGIAN
 {
@@ -1199,7 +1199,7 @@ class cNORWEGIAN
       "søndag",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1240,13 +1240,13 @@ class cDUTCH
       "zondag",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
 // source: anonymous unix locale file
 
-constant cPL=cPOLISH; // Polish 
+constant cPL=cPOLISH; // Polish
 constant cPOL=cPOLISH;
 class cPOLISH
 {
@@ -1279,7 +1279,7 @@ class cPOLISH
       "niedziela",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 class cPOLISH_UNICODE
@@ -1313,7 +1313,7 @@ class cPOLISH_UNICODE
       "niedziela",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1352,7 +1352,7 @@ class cTURKISH
       "Pazar",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cTR_UNICODE=cTURKISH_UNICODE; // Turkish
@@ -1388,14 +1388,14 @@ class cTURKISH_UNICODE
       "Pazar",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 // source: anonymous unix locale file
 
 
 
-constant cDE=cGERMAN; // German 
+constant cDE=cGERMAN; // German
 constant cDEU=cGERMAN;
 class cGERMAN
 {
@@ -1428,13 +1428,13 @@ class cGERMAN
       "Sonntag",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
 // source: anonymous unix locale file
 
-constant cLV=cLATVIAN; // Latvian 
+constant cLV=cLATVIAN; // Latvian
 constant cLAV=cLATVIAN;
 class cLATVIAN
 {
@@ -1467,7 +1467,7 @@ class cLATVIAN
       "svetdiena",         // <s><v><e-><t><d><i><e><n><a>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cLV_UNICODE=cLATVIAN_UNICODE;
@@ -1503,13 +1503,13 @@ class cLATVIAN_UNICODE
       "sv\x0113""tdiena",         // <s><v><e-><t><d><i><e><n><a>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
 // source: anonymous unix locale file
 
-constant cFI=cFINNISH; // Finnish 
+constant cFI=cFINNISH; // Finnish
 constant cFIN=cFINNISH;
 class cFINNISH
 {
@@ -1542,7 +1542,7 @@ class cFINNISH
       "sunnuntai",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -1581,7 +1581,7 @@ class cLITHUANIAN
       "Sekmadienis",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 class cLITHUANIAN_UNICODE
@@ -1615,13 +1615,13 @@ class cLITHUANIAN_UNICODE
       "Sekmadienis",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
 // source: anonymous unix locale file
 
-constant cET=cESTONIAN; // Estonian 
+constant cET=cESTONIAN; // Estonian
 constant cEST=cESTONIAN;
 class cESTONIAN
 {
@@ -1654,7 +1654,7 @@ class cESTONIAN
       "pühapäev",          // <p><u:><h><a><p><a:><e><v>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cGL=cGALICIAN; // Galician (Spain)
@@ -1690,10 +1690,10 @@ class cGALICIAN
       "Domingo",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
-constant cID=cINDONESIAN; 
+constant cID=cINDONESIAN;
 class cINDONESIAN
 {
    inherit _ymd_base;
@@ -1722,10 +1722,10 @@ class cINDONESIAN
       "Kamis",
       "Jumat",
       "Sabtu",
-      "Minggu",   
+      "Minggu",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cFR=cFRENCH; // French
@@ -1761,7 +1761,7 @@ class cFRENCH
       "dimanche",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cIT=cITALIAN; // Italian
@@ -1797,7 +1797,7 @@ class cITALIAN
       "domenica",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cCA=cCATALAN; // Catalan (Catalonia)
@@ -1833,7 +1833,7 @@ class cCATALAN
       "diumenge",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cSL=cSLOVENIAN; // Slovenian
@@ -1869,7 +1869,7 @@ class cSLOVENIAN
       "nedelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 class cSLOVENIAN_UNICODE
@@ -1887,10 +1887,10 @@ class cSLOVENIAN_UNICODE
       "nedelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
-constant cFO=cFAROESE; // Faroese 
+constant cFO=cFAROESE; // Faroese
 constant cFAO=cFAROESE;
 class cFAROESE
 {
@@ -1923,7 +1923,7 @@ class cFAROESE
       "sunnudagur",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cRO=cROMANIAN; // Romanian
@@ -1959,7 +1959,7 @@ class cROMANIAN
       "Duminica",          // <D><U><M><I><N><I><C><A(>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 class cROMANIAN_UNICODE
@@ -1977,7 +1977,7 @@ class cROMANIAN_UNICODE
       "Duminic\x0103",          // <D><U><M><I><N><I><C><A(>
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cHR=cCROATIAN; // Croatian
@@ -2013,7 +2013,7 @@ class cCROATIAN
       "Nedjelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 class cCROATIAN_UNICODE
@@ -2047,10 +2047,10 @@ class cCROATIAN_UNICODE
       "Nedjelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
-constant cDA=cDANISH; // Danish 
+constant cDA=cDANISH; // Danish
 constant cDAN=cDANISH;
 class cDANISH
 {
@@ -2085,30 +2085,30 @@ class cDANISH
 
    protected mapping events_translate=
    ([
-      "2nd day of Christmas"		    :"2. juledag",			      
-      "Ascension"			    :"Kristi himmelfart",		      
-      "Birthday of Queen Margrethe II"	    :"Dronning Margrethes fødselsdag",   
-      "Carnival"			    :"Fastelavn",			      
-      "Christmas Day"			    :"1. juledag",			      
-      "Christmas Eve"			    :"Juleaften",			      
-      "Constitution Day"		    :"Grundlovsdag",		      
-      "Easter Monday"			    :"2. påskedag",			      
-      "Easter"                              :"Påske",			      
+      "2nd day of Christmas"		    :"2. juledag",
+      "Ascension"			    :"Kristi himmelfart",
+      "Birthday of Queen Margrethe II"	    :"Dronning Margrethes fødselsdag",
+      "Carnival"			    :"Fastelavn",
+      "Christmas Day"			    :"1. juledag",
+      "Christmas Eve"			    :"Juleaften",
+      "Constitution Day"		    :"Grundlovsdag",
+      "Easter Monday"			    :"2. påskedag",
+      "Easter"                              :"Påske",
       "Good Friday"			    :"Langfredag",
-      "Great Prayer Day"		    :"Store bededag",		      
-      "Holy Thursday"			    :"Skærtorsdag",		      
-      "Labor Day"			    :"1. Maj",			      
-      "New Year's Day"			    :"Nytårsdag",			      
-      "New Year's Eve"			    :"Nytårsaften",			      
-      "Palm Sunday"			    :"Palme søndag",		      
-      "Pentecost Monday"		    :"2. Pinsedag",			      
-      "Pentecost"			    :"Pinsedag",			      
-      "Prince Fredrik's Birthday"	    :"Kronprins Fredriks fødselsdag",    
+      "Great Prayer Day"		    :"Store bededag",
+      "Holy Thursday"			    :"Skærtorsdag",
+      "Labor Day"			    :"1. Maj",
+      "New Year's Day"			    :"Nytårsdag",
+      "New Year's Eve"			    :"Nytårsaften",
+      "Palm Sunday"			    :"Palme søndag",
+      "Pentecost Monday"		    :"2. Pinsedag",
+      "Pentecost"			    :"Pinsedag",
+      "Prince Fredrik's Birthday"	    :"Kronprins Fredriks fødselsdag",
       "Epiphany"			    :"Hellig trekongers dag",
       "Epiphany Eve" 			    :"Hellig trekongers aften",
    ]);
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 constant cSR=cSERBIAN; // Serbian (Yugoslavia)
@@ -2144,7 +2144,7 @@ class cSERBIAN
       "nedelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -2163,7 +2163,7 @@ class cSERBIAN_UNICODE
       "nedelja",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -2173,7 +2173,7 @@ class cGREEK_UNICODE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   private constant month_names=
    ({
      "\u0399\u03b1\u03bd\u03bf\u03c5\u03ac\u03c1\u03b9\u03bf\u03c2",
      "\u03a6\u03b5\u03b2\u03c1\u03bf\u03c5\u03ac\u03c1\u03b9\u03bf\u03c2",
@@ -2189,7 +2189,7 @@ class cGREEK_UNICODE
      "\u0394\u03b5\u03ba\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2",
    });
 
-   static private constant week_day_names=
+   private constant week_day_names=
    ({
      "\u0394\u03b5\u03c5\u03c4\u03ad\u03c1\u03b1",
      "\u03a4\u03c1\u03af\u03c4\u03b7",
@@ -2200,7 +2200,7 @@ class cGREEK_UNICODE
      "\u039a\u03c5\u03c1\u03b9\u03b1\u03ba\u03ae",
    });
 
-   void create() { SETUPSTUFF; }
+   protected void create() { SETUPSTUFF; }
 }
 
 
@@ -2216,7 +2216,7 @@ Calendar.Rule.Language `[](string lang)
    Calendar.Rule.Language l=_cache[lang];
    if (l) return l;
    program cl=::`[]("c"+lang);
-   
+
 // if unicode doesn't exist, try without
    if (!cl && sscanf(lang,"%s_UNICODE",lang))
        cl=::`[]("c"+lang);
@@ -2224,6 +2224,6 @@ Calendar.Rule.Language `[](string lang)
    if (!cl) { return UNDEFINED; }
 
    l=_cache[lang]=cl();
-   
+
    return l;
 }

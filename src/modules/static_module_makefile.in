@@ -1,7 +1,3 @@
-#
-# $Id$
-#
-
 
 UNIQUE_MODNAME=$(MODNAME)
 
@@ -26,7 +22,7 @@ all:
 
 @common_module_makefile@
 
-build_type:
+build_type: Makefile
 	@echo static > build_type
 
 static: Makefile $(DUMMY) module-preamble module-main
@@ -53,7 +49,7 @@ linker_options: Makefile $(MODULE_ARCHIVES)
 	echo $$linkopts > linker_options
 
 modlist_segment: Makefile
-	@echo >modlist_segment " ,{ \"$(MODULE_PROGRAM)\", pike_module_$(UNIQUE_MODNAME)_init, pike_module_$(UNIQUE_MODNAME)_exit } "
+	@echo >modlist_segment " ,{ \"$(MODULE_PROGRAM)\", pike_module_$(UNIQUE_MODNAME)_init, pike_module_$(UNIQUE_MODNAME)_exit, 0 } "
 
 
 # Can't depend on $(SRC_DIR)/$(CONFIG_HEADERS).in since
@@ -73,4 +69,3 @@ module.a: $(OBJS)
 $(OBJS): propagated_variables
 
 install: $(MODULE_INSTALL)
-

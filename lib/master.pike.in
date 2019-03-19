@@ -6,7 +6,6 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id$
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -56,7 +55,7 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 //        or at least some functions that use them should be.
 //        cf Tools.Shoot.runpike.
 //	/grubba 2004-04-11
-#if defined(__NT__) || defined(__amigaos__)
+#if defined(__NT__) || defined(__amigaos__) || defined(__OS2__)
 #define PATH_SEPARATOR ";"
 #else
 #define PATH_SEPARATOR ":"
@@ -92,11 +91,13 @@ int is_pike_master = 0;
 // makes the Encoder class encode references to the master and all
 // ex-masters as references to the current master object.
 
+mapping(string:object) fs_map = ([]);
+object root_fs;
 // ---  Functions begin here.
 
 // Have to access some stuff without going through the resolver.
 private object(_static_modules.Builtin) Builtin = _static_modules.Builtin();
-private constant Files = _static_modules.files;
+private constant Files = _static_modules._Stdio;
 
 #define Stat Files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
@@ -132,8 +133,8 @@ protected int _msg_depth;
 #ifdef RESOLV_DEBUG
 
 #define GET_RESOLV_MSG_DEPTH GET_MSG_DEPTH
-#define INC_RESOLV_MSG_DEPTH INC_MSG_DEPTH
-#define DEC_RESOLV_MSG_DEPTH DEC_MSG_DEPTH
+#define INC_RESOLV_MSG_DEPTH() INC_MSG_DEPTH()
+#define DEC_RESOLV_MSG_DEPTH() DEC_MSG_DEPTH()
 
 void resolv_debug (sprintf_format fmt, sprintf_args... args)
 {
@@ -158,30 +159,21 @@ constant NoValue = typeof (no_value);
 
 // Some API compatibility stuff.
 
-//! Pike 0.5 master compatibility interface.
+//! Pike 7.8 master compatibility interface.
 //!
 //! Most of the interface is implemented via mixin,
 //! or overloading by more recent masters.
 //!
 //! This interface is used for compatibility with
-//! all pikes until Pike 0.5.
+//! Pike 7.8.
 //!
 //! @deprecated predef::MasterObject
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_0_5_master
+protected class Pike_7_8_master
 {
-  string describe_backtrace(array(mixed) trace);
-  object low_cast_to_object(string oname, string current_file);
   extern array(string) pike_include_path;
-  string pike_library_path =
-#if "#lib_prefix#"[0]!='#'
-    "#lib_prefix#"
-#else
-    dirname(__FILE__)
-#endif
-    ;
   extern array(string) pike_module_path;
   extern array(string) pike_program_path;
 #ifdef GETCWD_CACHE
@@ -194,85 +186,9 @@ protected class Pike_0_5_master
   extern int invalidate_time;
   extern mapping(string:multiset(string)) dir_cache;
 #endif
-  local array(mixed) master_file_stat(string x)
-  {
-    Stat st = global::master_file_stat(x);
-    return st && (array)st;
-  }
-
-  //! @decl mapping(string:array(string)) environment
-  //!
-  //! Mapping containing the environment variables.
-  //!
-  //! The mapping currently has the following structure:
-  //! @mapping
-  //!   @member array(string) index
-  //!      Note that the index is @[lower_case()]'d on NT.
-  //!      @array
-  //!         @elem string varname
-  //!            Variable name with case intact.
-  //!         @elem string value
-  //!            Variable value.
-  //!      @endarray
-  //! @endmapping
-  //!
-  //! @note
-  //!   This mapping should not be accessed directly; use @[getenv()]
-  //!   and @[putenv()] instead. This mapping is not publicly
-  //!   accessible in pikes newer than 7.6.
-  //!
-  //! @note
-  //!   This mapping is not compatible with @[Process.create_process()];
-  //!   use the mapping returned from calling @[getenv()] without arguments
-  //!   instead.
-  //!
-  //! @bugs
-  //!   This mapping is not the real environment; it is just a copy of
-  //!   the environment made at startup. Pike does attempt to keep
-  //!   track of changes in the mapping and to reflect them in the
-  //!   real environment, but avoid accessing this mapping if at all
-  //!   possible.
 
   string|mapping(string:string) getenv(string|void s);
   void putenv(string|void varname, string|void value);
-
-  // compat_environment is the mapping returned by `environment
-  // (if any).
-  // compat_environment_copy is used to keep track of any changes
-  // performed destructively on the compat_environment mapping.
-  // Both should be zero if not in use.
-  protected mapping(string:array(string)) compat_environment;
-  protected mapping(string:array(string)) compat_environment_copy;
-
-#pragma no_deprecation_warnings
-  local __deprecated__(mapping(string:array(string))) `environment()
-  {
-    if (compat_environment) return compat_environment;
-    compat_environment_copy = ([]);
-#ifdef __NT__
-    // Can't use the cached environment returned by getenv(), since
-    // variable names have been lowercased there.
-    foreach((array(array(string)))Builtin._getenv(), array(string) pair) {
-      compat_environment_copy[lower_case(pair[0])] = pair;
-    }
-#else
-    foreach((array(array(string)))getenv(), array(string) pair) {
-      compat_environment_copy[pair[0]] = pair;
-    }
-#endif
-    return compat_environment = copy_value(compat_environment_copy);
-  }
-
-  local void `environment=(__deprecated__(mapping(string:array(string)))
-			   new_env)
-  {
-    compat_environment = new_env;
-    if (!new_env)
-      compat_environment_copy = 0;
-    else if (!compat_environment_copy)
-      compat_environment_copy = ([]);
-  }
-#pragma deprecation_warnings
 
   void add_include_path(string tmp);
   void remove_include_path(string tmp);
@@ -281,36 +197,10 @@ protected class Pike_0_5_master
   void add_program_path(string tmp);
   void remove_program_path(string tmp);
   mapping(string:program|NoValue) programs;
-  program cast_to_program(string pname, string current_file);
-  void handle_error(array(mixed) trace);
 
-  //! Make a new instance of a class.
-  //!
-  //! @note
-  //!   This function should not be used. It is here for
-  //!   compatibility reasons only.
-  local __deprecated__ object new(mixed prog, mixed ... args)
-  {
-    if(stringp(prog))
-      prog=cast_to_program(prog,backtrace()[-2][0]);
-    return prog(@args);
-  }
-
-  void create();
-  program handle_inherit(string pname, string current_file);
   extern mapping(program:object) objects;
-  object low_cast_to_object(string oname, string current_file);
   object cast_to_object(string oname, string current_file);
   class dirnode {};
-  object findmodule(string fullname);
-  local protected object Pike_0_5_compat_handler;
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_0_5_compat_handler) {
-      Pike_0_5_compat_handler = global::get_compilation_handler(0, 5);
-    }
-    return Pike_0_5_compat_handler->resolv(identifier, current_file);
-  }
   extern string _master_file_name;
   void _main(array(string) orig_argv, array(string) env);
   extern mixed inhibit_compile_errors;
@@ -318,136 +208,25 @@ protected class Pike_0_5_master
   string trim_file_name(string s);
   void compile_error(string file,int line,string err);
   string handle_include(string f, string current_file, int local_include);
-  local __deprecated__ string stupid_describe(mixed m)
-  {
-    switch(string typ=sprintf("%t",m))
-    {
-    case "int":
-    case "float":
-      return (string)m;
 
-    case "string":
-      if(sizeof(m) < BT_MAX_STRING_LEN)
-      {
-	string t = sprintf("%O", m);
-	if (sizeof(t) < (BT_MAX_STRING_LEN + 2)) {
-	  return t;
-	}
-	t = 0;
-      }
-
-    case "array":
-    case "mapping":
-    case "multiset":
-      return typ+"["+sizeof(m)+"]";
-
-    default:
-      return typ;
-    }
-  }
-
-  string describe_backtrace(array(mixed) trace);
-
-  object get_compat_master(int major, int minor)
-  {
-    // 0.0 - 0.5
-    if (!major && (minor < 6))
-      return this_program::this;
-    return get_compat_master(major, minor);
-  }
-
-  /* Missing symbols:
-   *
-   * __INIT
-   * __lambda_30	(Alias for mkmapping().)
-   */
-}
-
-//! Pike 0.6 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 0.6.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_0_6_master
-{
-  inherit Pike_0_5_master;
   int is_absolute_path(string p);
   array(string) explode_path(string p);
   string dirname(string x);
   string basename(string x);
   object low_cast_to_object(string oname, string current_file);
-#pragma no_deprecation_warnings
-  private __deprecated__(string) pike_library_path =
-    (__deprecated__(string))Pike_0_5_master::pike_library_path;
-#pragma deprecation_warnings
   extern int want_warnings;
   program compile_string(string data, void|string name);
   program compile_file(string file);
 
-#if constant(_static_modules.Builtin.mutex)
-  extern object compilation_mutex;
-#endif
-
-  local constant mkmultiset = predef::mkmultiset;
-  local __deprecated__(function) clone = new;
   constant master_efuns = ({});
   class joinnode {};
   extern mapping(string:mixed) fc;
-  mixed handle_import(string what, string|void current_file);
-  local protected object Pike_0_6_compat_handler;
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_0_6_compat_handler) {
-      Pike_0_6_compat_handler = global::get_compilation_handler(0, 6);
-    }
-    return Pike_0_6_compat_handler->resolv(identifier, current_file);
-  }
   extern string _pike_file_name;
   void compile_warning(string file,int line,string err);
   string read_include(string f);
 
-  string describe_program(program p);
-  string describe_backtrace(array(mixed) trace);
   class Codec {};
 
-  object get_compat_master(int major, int minor)
-  {
-    if (!major && (minor < 6))
-      return Pike_0_5_master::get_compat_master(major, minor);
-    // 0.6
-    if (!major && (minor < 7))
-      return this_program::this;
-    return get_compat_master(major, minor);
-  }
-
-  /* Missing symbols:
-   *
-   * __INIT
-   */
-}
-
-//! Pike 7.0 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 0.7 through 7.0.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-class Pike_7_0_master
-{
-  inherit Pike_0_6_master;
   constant bt_max_string_len = 1;
   constant out_of_date_warning = 1;
 #ifdef PIKE_FAKEROOT
@@ -465,224 +244,19 @@ class Pike_7_0_master
   program cast_to_program(string pname, string current_file,
 			  object|void handler);
   void handle_error(array(mixed)|object trace);
-  protected private constant mkmultiset = mkmultiset;
   program handle_inherit(string pname, string current_file, object|void handler);
   mixed handle_import(string what, string|void current_file, object|void handler);
   mixed resolv_base(string identifier, string|void current_file);
 
-  // FIXME: Not in 7.7!
-  extern mapping resolv_cache;
-  local protected object Pike_7_0_compat_handler;
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_7_0_compat_handler) {
-      Pike_7_0_compat_handler = global::get_compilation_handler(7, 0);
-    }
-    return Pike_7_0_compat_handler->resolv(identifier, current_file);
-  }
   mixed get_inhibit_compile_errors();
   string decode_charset(string data, string charset);
-  local __deprecated__(int) clipped=0;
-  local __deprecated__(int) canclip=0;
-#pragma no_deprecation_warnings
-  local __deprecated__ string stupid_describe(mixed m, int maxlen)
-  {
-    string typ;
-    if (catch (typ=sprintf("%t",m)))
-      typ = "object";		// Object with a broken _sprintf(), probably.
-    switch(typ)
-    {
-    case "int":
-    case "float":
-      return (string)m;
-      
-    case "string":
-      canclip++;
-      if(sizeof(m) < maxlen)
-      {
-	string t = sprintf("%O", m);
-	if (sizeof(t) < (maxlen + 2)) {
-	  return t;
-	}
-	t = 0;
-      }
-      clipped++;
-      if(maxlen>10)
-      {
-	return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
-      }else{
-	return "string["+sizeof(m)+"]";
-      }
-      
-    case "array":
-      if(!sizeof(m)) return "({})";
-      if(maxlen<5)
-      {
-	clipped++;
-	return "array["+sizeof(m)+"]";
-      }
-      canclip++;
-      return "({" + stupid_describe_comma_list(m,maxlen-2) +"})";
-      
-    case "mapping":
-      if(!sizeof(m)) return "([])";
-      return "mapping["+sizeof(m)+"]";
-      
-    case "multiset":
-      if(!sizeof(m)) return "(<>)";
-      return "multiset["+sizeof(m)+"]";
-      
-    case "function":
-      if(string tmp=describe_program(m)) return tmp;
-      if(object o=function_object(m))
-	return (describe_object(o)||"")+"->"+function_name(m);
-      else {
-	string tmp;
-	if (catch (tmp = function_name(m)))
-	  // The function object has probably been destructed.
-	  return "function";
-	return tmp || "function";
-      }
-
-    case "program":
-      if(string tmp=describe_program(m)) return tmp;
-      return typ;
-
-    default:
-      if (objectp(m))
-	if(string tmp=describe_object(m)) return tmp;
-      return typ;
-    }
-  }
-  local __deprecated__ string stupid_describe_comma_list(array x, int maxlen)
-  {
-    string ret="";
-
-    if(!sizeof(x)) return "";
-    if(maxlen<0) return ",,,"+sizeof(x);
-
-    int clip=min(maxlen/2,sizeof(x));
-    int len=maxlen;
-    int done=0;
-
-//  int loopcount=0;
-
-    while(1)
-    {
-//    if(loopcount>10000) werror("len=%d\n",len);
-      array(string) z=allocate(clip);
-      array(int) isclipped=allocate(clip);
-      array(int) clippable=allocate(clip);
-      for(int e=0;e<clip;e++)
-      {
-	clipped=0;
-	canclip=0;
-	z[e]=stupid_describe(x[e],len);
-	isclipped[e]=clipped;
-	clippable[e]=canclip;
-      }
-
-      while(1)
-      {
-//      if(loopcount>10000)  werror("clip=%d maxlen=%d\n",clip,maxlen);
-	string ret = z[..clip-1]*",";
-//      if(loopcount>10000)  werror("sizeof(ret)=%d z=%O isclipped=%O done=%d\n",sizeof(ret),z[..clip-1],isclipped[..clip-1],done);
-	if(done || sizeof(ret)<=maxlen+1)
-	{
-	  int tmp=sizeof(x)-clip-1;
-//        if(loopcount>10000) werror("CLIPPED::::: %O\n",isclipped);
-	  clipped=`+(0,@isclipped);
-	  if(tmp>=0)
-	  {
-	    clipped++;
-	    ret+=",,,"+tmp;
-	  }
-	  canclip++;
-	  return ret;
-	}
-
-	int last_newlen=len;
-	int newlen;
-	int clipsuggest;
-	while(1)
-	{
-//        if(loopcount++ > 20000) return "";
-//        if(!(loopcount & 0xfff)) werror("GNORK\n");
-	  int smallsize=0;
-	  int num_large=0;
-	  clipsuggest=0;
-
-	  for(int e=0;e<clip;e++)
-	  {
-//          if(loopcount>10000) werror("sizeof(z[%d])=%d  len=%d\n",e,sizeof(z[e]),len);
-
-	    if((sizeof(z[e])>=last_newlen || isclipped[e]) && clippable[e])
-	      num_large++;
-	    else
-	      smallsize+=sizeof(z[e]);
-
-	    if(num_large * 15 + smallsize < maxlen) clipsuggest=e+1;
-	  }
-        
-//        if(loopcount>10000) werror("num_large=%d  maxlen=%d  smallsize=%d clippsuggest=%d\n",num_large,maxlen,smallsize,clipsuggest);
-	  newlen=num_large ? (maxlen-smallsize)/num_large : 0;
-       
-//        if(loopcount>10000) werror("newlen=%d\n",newlen);
-
-	  if(newlen<8 || newlen >= last_newlen) break;
-	  last_newlen=newlen;
-//        if(loopcount>10000) werror("len decreased, retrying.\n");
-	}
-
-	if(newlen < 8 && clip)
-	{
-	  clip-= (clip/4) || 1;
-	  if(clip > clipsuggest) clip=clipsuggest;
-//        if(loopcount>10000) werror("clip decreased, retrying.\n");
-	}else{
-	  len=newlen;
-	  done++;
-	  break;
-	}
-      }
-    }
-
-    return ret;
-  }
-#pragma deprecation_warnings
 
   string describe_object(object o);
   string describe_backtrace(array(mixed) trace, void|int linewidth);
   string describe_error(mixed trace);
 
-  object get_compat_master(int major, int minor)
-  {
-    if (!major && (minor < 7))
-      return Pike_0_6_master::get_compat_master(major, minor);
-    // 0.7 - 7.0
-    if ((major < 7) || ((major == 7) && !minor))
-      return this_program::this;
-    return get_compat_master(major, minor);
-  }
+  // ---
 
-  /* No missing symbols. */
-}
-
-//! Pike 7.2 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 7.1 and 7.2.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_2_master
-{
-  inherit Pike_7_0_master;
 #ifdef PIKE_MODULE_RELOC
   string relocate_module(string s);
   string unrelocate_module(string s);
@@ -696,14 +270,6 @@ protected class Pike_7_2_master
   extern multiset no_resolv;
   extern string ver;
   mapping get_default_module();
-  local protected object Pike_7_2_compat_handler;
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_7_2_compat_handler) {
-      Pike_7_2_compat_handler = global::get_compilation_handler(7, 2);
-    }
-    return Pike_7_2_compat_handler->resolv(identifier, current_file);
-  }
   void runtime_warning(string where, string what, mixed ... args);
   protected int clipped;
   protected int canclip;
@@ -717,50 +283,18 @@ protected class Pike_7_2_master
   extern object currentversion;
   extern mapping(object:object) compat_handler_cache;
   object get_compilation_handler(int major, int minor);
-  string _sprintf(int|void t);
-  object get_compat_master(int major, int minor)
-  {
-    if ((major < 7) || ((major == 7) && (minor < 1)))
-      return Pike_7_0_master::get_compat_master(major, minor);
-    // 7.1 & 7.2
-    if ((major == 7) && (minor < 3))
-      return this_program::this;
-    return get_compat_master(major, minor);
-  }
 
-  /* No missing symbols. */
-}
+  // ---
 
-//! Pike 7.4 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 7.3 and 7.4.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_4_master
-{
-  inherit Pike_7_2_master;
 #ifdef RESOLV_DEBUG
   void resolv_debug (sprintf_format fmt, sprintf_args... args);
 #endif
   void error(sprintf_format f, sprintf_args ... args);
-#ifdef GETCWD_CACHE
-  protected extern string current_path;
-#endif
   constant no_value = (<>);
   constant NoValue = typeof (no_value);
   string programs_reverse_lookup (program prog);
   program objects_reverse_lookup (object obj);
   string fc_reverse_lookup (object obj);
-  // Hide clone() and new().
-  private local __deprecated__ object new(mixed prog, mixed ... args){}
-  private local __deprecated__(function) clone = new;
   void unregister(program p);
   program low_cast_to_program(string pname,
 			      string current_file,
@@ -768,8 +302,7 @@ protected class Pike_7_4_master
 			      void|int mkobj);
   extern string include_prefix;
   extern mapping(string:string) predefines;
-  // FIXME: Not in 7.7!
-  extern CompatResolver parent_resolver;
+
   void add_predefine (string name, string value);
   void remove_predefine (string name);
   mapping get_predefines();
@@ -804,101 +337,16 @@ protected class Pike_7_4_master
   void decode_object(object o, mixed data);
 
   string _sprintf(int t);
-  local protected object Pike_7_4_compat_handler;
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_7_4_compat_handler) {
-      Pike_7_4_compat_handler = global::get_compilation_handler(7, 4);
-    }
-    return Pike_7_4_compat_handler->resolv(identifier, current_file);
-  }
-  object get_compat_master(int major, int minor)
-  {
-    if ((major < 7) || ((major == 7) && (minor < 3)))
-      return Pike_7_2_master::get_compat_master(major, minor);
-    // 7.3 & 7.4
-    if ((major == 7) && (minor < 5))
-      return this_program::this;
-    return get_compat_master(major, minor);
-  }
 
-  /* No missing symbols. */
-}
-
-//! Pike 7.6 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 7.5 and 7.6.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_6_master
-{
-  inherit Pike_7_4_master;
+  // ---
 
   extern int show_if_constant_errors;
-  protected void create();
   extern mapping(string:string) initial_predefines;
   extern joinnode root_module;
   extern mapping(object:joinnode) handler_root_modules;
   extern array(string) system_module_path;
-  protected extern CompatResolver parent_resolver;
-  protected extern mapping resolv_cache;
   extern CompatResolver fallback_resolver;
   joinnode get_root_module(object|void current_handler);
-  class Pike06Resolver {}
-  local protected object Pike_7_6_compat_handler;
-  local mixed resolv_or_error(string identifier, string|void current_file,
-			      void|object current_handler)
-  {
-    if (!Pike_7_6_compat_handler) {
-      Pike_7_6_compat_handler = global::get_compilation_handler(7, 6);
-    }
-    return Pike_7_6_compat_handler->resolv_or_error(identifier, current_file,
-						    current_handler);
-  }
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_7_6_compat_handler) {
-      Pike_7_6_compat_handler = global::get_compilation_handler(7, 6);
-    }
-    return Pike_7_6_compat_handler->resolv(identifier, current_file);
-  }
-  array get_backtrace (object|array err);
-  object get_compat_master(int major, int minor)
-  {
-    if ((major < 7) || ((major == 7) && (minor < 5)))
-      return Pike_7_4_master::get_compat_master(major, minor);
-    // 7.5 & 7.6
-    if ((major == 7) && (minor < 7))
-      return this_program::this;
-    return get_compat_master(major, minor);
-  }
-
-  /* No missing symbols. */
-}
-
-//! Pike 7.8 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 7.7 and 7.8.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_8_master
-{
-  inherit Pike_7_6_master;
-
   local protected object Pike_7_8_compat_handler;
   local mixed resolv_or_error(string identifier, string|void current_file,
 			      void|object current_handler)
@@ -916,13 +364,58 @@ protected class Pike_7_8_master
     }
     return Pike_7_8_compat_handler->resolv(identifier, current_file);
   }
+  array get_backtrace (object|array err);
   object get_compat_master(int major, int minor)
   {
-    if ((major < 7) || ((major == 7) && (minor < 7)))
-      return Pike_7_6_master::get_compat_master(major, minor);
-    // 7.5 & 7.6
-    if ((major == 7) && (minor < 9))
-      return this_program::this;
+    // 0.0 .. 7.8
+    if (major < 8)
+      return this::this;
+    return get_compat_master(major, minor);
+  }
+
+  /* No missing symbols. */
+}
+
+//! Pike 8.0 master compatibility interface.
+//!
+//! Most of the interface is implemented via mixin,
+//! or overloading by more recent masters.
+//!
+//! This interface is used for compatibility with
+//! Pike 8.0.
+//!
+//! @deprecated predef::MasterObject
+//!
+//! @seealso
+//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
+protected class Pike_8_0_master
+{
+  inherit Pike_7_8_master;
+
+  local protected object Pike_8_0_compat_handler;
+  local mixed resolv_or_error(string identifier, string|void current_file,
+			      void|object current_handler)
+  {
+    if (!Pike_8_0_compat_handler) {
+      Pike_8_0_compat_handler = global::get_compilation_handler(8, 0);
+    }
+    return Pike_8_0_compat_handler->resolv_or_error(identifier, current_file,
+						    current_handler);
+  }
+  local mixed resolv(string identifier, string|void current_file)
+  {
+    if (!Pike_8_0_compat_handler) {
+      Pike_8_0_compat_handler = global::get_compilation_handler(8, 0);
+    }
+    return Pike_8_0_compat_handler->resolv(identifier, current_file);
+  }
+  object get_compat_master(int major, int minor)
+  {
+    if (major < 8)
+      return Pike_7_8_master::get_compat_master(major, minor);
+    // 8.0
+    if ((major == 8) && (minor < 1))
+      return this::this;
     return get_compat_master(major, minor);
   }
 }
@@ -934,7 +427,7 @@ protected class Pike_7_8_master
 //!
 //! @seealso
 //!   @[get_compat_master()]
-protected inherit Pike_7_8_master;
+protected inherit Pike_8_0_master;
 
 //! @appears error
 //! Throws an error. A more readable version of the code
@@ -1017,7 +510,7 @@ int is_absolute_path(string p)
 #define IS_ABSOLUTE_PATH(X) (search((X),":")>0)
   return IS_ABSOLUTE_PATH(p);
 #else
-#ifdef __NT__
+#if defined(__NT__) || defined(__OS2__)
   p=replace(p,"\\","/");
   if(sscanf(p,"%[a-zA-Z]:%*c",string s)==2 && sizeof(s)==1)
     return 1;
@@ -1029,7 +522,7 @@ int is_absolute_path(string p)
 #endif
 }
 
-#ifdef __NT__
+#if defined(__NT__) || defined(__OS2__)
 #define EXPLODE_PATH(X) (replace((X),"\\","/")/"/")
 #else
 #define EXPLODE_PATH(X) ((X)/"/")
@@ -1133,7 +626,7 @@ int newest;
 #define AUTORELOAD_FINISH(VAR, CACHE, FILE)				\
   if(autoreload_on) {							\
     mixed val = CACHE[FILE];						\
-    if(!zero_type (val) && val != no_value &&				\
+    if(!undefinedp (val) && val != no_value &&				\
        newest <= load_time[FILE]) {					\
       VAR = val;							\
     }									\
@@ -1170,16 +663,19 @@ program compile_string(string source, void|string filename,
   werror ("%*s>>> compile_string %O\n", GET_MSG_DEPTH, "", filename);
   INC_MSG_DEPTH();
 #endif
-  program ret = compile(cpp(source, filename||"-", 1, handler,
-		     compat_major, compat_minor,
-		     (zero_type(_show_if_constant_errors)?
-		      show_if_constant_errors:
-		      _show_if_constant_errors)),
-		 handler,
-		 compat_major,
-		 compat_minor,
-		 p,
-		 o);
+  string code = cpp(source, filename||"-", 1, handler,
+                    compat_major, compat_minor,
+                    (undefinedp(_show_if_constant_errors)?
+                     show_if_constant_errors:
+                     _show_if_constant_errors));
+  program ret;
+  if(code)
+    ret = compile(code,
+                  handler,
+                  compat_major,
+                  compat_minor,
+                  p,
+                  o);
   if (source_cache)
     source_cache[ret] = source;
 #ifdef RECUR_COMPILE_DEBUG
@@ -1192,6 +688,20 @@ program compile_string(string source, void|string filename,
 //!
 string master_read_file(string file)
 {
+  string x = find_handler_for_path(file);
+  if(x)
+  {
+    object h = fs_map[x];
+    file = file[sizeof(x)+1..];
+
+    if(h = h->open(fakeroot(file),"r") )
+    {
+      string q = ([function(void : string)]h->read)();
+      return q;
+    }
+    // TODO: should we be falling back here, or is this a hidden problem?
+  }
+
   object o=Files()->Fd();
   if( ([function(string, string : int)]o->open)(fakeroot(file),"r") )
     return ([function(void : string)]o->read)();
@@ -1212,6 +722,8 @@ string getcwd()
 }
 #endif // GETCWD_CACHE
 
+constant high_master_get_dir = predef::get_dir;
+
 string combine_path_with_cwd(string ... paths)
 {
   return combine_path(IS_ABSOLUTE_PATH(paths[0])?"":getcwd(),@paths);
@@ -1227,11 +739,20 @@ mapping(string:multiset(string)) dir_cache = ([]);
 
 array(string) master_get_dir(string|void x)
 {
-  return get_dir(x);
+  string y = find_handler_for_path(file);
+  if(y)
+  {
+    object h = fs_map[y];
+    x = x[sizeof(y)+1..];
+    return h->get_dir(x);
+  }
+  else return predef::get_dir(x);
 }
 
 Stat master_file_stat(string x)
 {
+  object y = find_handler_for_path(file);
+
   string dir = combine_path_with_cwd(x);
   string file = BASENAME(dir);
   dir = dirname(dir);
@@ -1243,7 +764,7 @@ Stat master_file_stat(string x)
   }
 
   multiset(string) d = dir_cache[dir];
-  if( zero_type(d) )
+  if( undefinedp(d) )
   {
     array(string) tmp = master_get_dir(dir);
     if(tmp)
@@ -1262,13 +783,83 @@ Stat master_file_stat(string x)
 #endif
   if(d && !d[file]) return 0;
 
-  return predef::file_stat(x);
+
+  if(y)
+  {
+    object h = fs_map[y];
+    x = x[sizeof(y)+1..];
+    return h->stat(x);
+  }
+  else return predef::file_stat(x);
 }
 #else
-constant master_file_stat = predef::file_stat;
-constant master_get_dir = predef::get_dir;
+//constant master_file_stat = predef::file_stat;
+//constant master_get_dir = predef::get_dir;
+
+Stat master_file_stat(string file)
+{
+  string x = find_handler_for_path(file);
+  if(x)
+  {
+    object h = fs_map[x];
+    file = file[sizeof(x)+1..];
+
+    return h->stat(file);
+  }
+  else return predef::file_stat(file);
+}
+
+array master_get_dir(string file)
+{
+  string x = find_handler_for_path(file);
+  if(x)
+  {
+    object h = fs_map[x];
+    file = file[sizeof(x)+1..];
+
+    return h->get_dir(file);
+  }
+  else return predef::get_dir(file);
+}
+
 #endif // FILE_STAT_CACHE
 
+//! mount a filesystem handler to be used by the resolver. on its own does noting,
+//! but may be used with @[add_module_path] and friends to enable modules to be loaded
+//! from Filesystem objects.
+//!
+//! @param mountpoint
+//!  the location in the filesystem to mount the handler
+//!
+//! @param filesystem
+//!  a filesystem object that will handle requests for the given mountpoint.
+//!
+//! @example
+//!  master()->add_filesystem_handler("/foo/bar.zip", Filesystem.Zip("/foo/bar.zip"));
+//!  master()->add_module_path("/foo/bar.zip/lib");
+//!
+mixed add_filesystem_handler(string mountpoint, object /*Filesystem.Base*/ filesystem)
+{
+  mixed rv = fs_map[mountpoint];
+  fs_map[mountpoint] = filesystem;
+  return rv;
+}
+
+string find_handler_for_path(string file)
+{
+// TODO: maybe some caching would be worthwhile here. maybe.
+
+  foreach(reverse(sort(indices(fs_map))); int x; string path)
+  {
+    string p = path;
+    if(p[-1] != '/') p+="/";
+    if(file[-1] != '/') file+="/";
+    if(has_prefix(file, p))
+      return path;
+  }
+
+  return 0;
+}
 
 protected mapping(string:string) environment;
 
@@ -1281,20 +872,21 @@ protected void set_lc_env (mapping(string:string) env)
 }
 #endif
 
-//! @decl string getenv (string varname, void|int force_update)
 //! @decl mapping(string:string) getenv (void|int force_update)
 //!
-//! Queries the environment variables. The first variant returns the
-//! value of a specific variable or zero if it doesn't exist in the
-//! environment. The second variant returns the whole environment as a
-//! mapping. Destructive operations on the mapping will not affect the
-//! internal environment representation.
+//! Queries the environment variables.
 //!
-//! A cached copy of the real environment is kept to make this
-//! function quicker. If the optional flag @[force_update] is nonzero
-//! then the real environment is queried and the cache is updated from
-//! it. That can be necessary if the environment changes through other
-//! means than @[putenv], typically from a C-level library.
+//! @param force_update
+//!   A cached copy of the real environment is kept to make this
+//!   function quicker. If the optional flag @[force_update] is nonzero
+//!   then the real environment is queried and the cache is updated from
+//!   it. That can be necessary if the environment changes through other
+//!   means than @[putenv], typically from a C-level library.
+//!
+//! @returns
+//!   Returns the whole environment as a mapping. Destructive
+//!   operations on the mapping will not affect the internal
+//!   environment representation.
 //!
 //! Variable names and values cannot be wide strings nor contain
 //! @expr{'\0'@} characters. Variable names also cannot contain
@@ -1305,80 +897,75 @@ protected void set_lc_env (mapping(string:string) env)
 //!
 //! @seealso
 //!   @[putenv()]
-string|mapping(string:string) getenv (void|int|string varname,
-				      void|int force_update)
+mapping(string:string) getenv (void|int force_update)
 {
-  // Variants doesn't seem to work well yet.
-  if (stringp (varname)) {
-    if (!environment || force_update) {
+  mapping(string:string) res;
+
+  if (force_update) {
+    res = Builtin._getenv();
 #ifdef __NT__
-      set_lc_env (Builtin._getenv());
+    set_lc_env (res);
 #else
-      environment = Builtin._getenv();
+    environment = res + ([]);
 #endif
-      // Kill the compat environment if forced.
-      compat_environment = compat_environment_copy = 0;
-    }
-
-#ifdef __NT__
-    varname = lower_case(varname);
-#endif
-
-    if (compat_environment) {
-      array(string) res;
-      if (!equal(res = compat_environment[varname],
-		 compat_environment_copy[varname])) {
-	// Something has messed with the compat environment mapping.
-	putenv(varname, res && res[1]);
-      }
-    }
-
-    return environment[varname];
   }
-
   else {
-    force_update = varname;
-
-    mapping(string:string) res;
-
-    if (force_update) {
-      res = Builtin._getenv();
 #ifdef __NT__
-      set_lc_env (res);
+    // Can't use the cached environment since variable names have been
+    // lowercased there.
+    res = Builtin._getenv();
+    if (!environment) set_lc_env (res);
 #else
-      environment = res + ([]);
+    if (!environment) environment = Builtin._getenv();
+    res = environment + ([]);
 #endif
-      // Kill the compat environment if forced.
-      compat_environment = compat_environment_copy = 0;
-    }
-
-    else {
-      if (compat_environment &&
-	  !equal(compat_environment, compat_environment_copy)) {
-	foreach(compat_environment; varname; array(string) pair) {
-	  if (!equal(pair, compat_environment_copy[varname])) {
-	    putenv(pair[0], pair[1]);
-	  }
-	}
-	foreach(compat_environment_copy; varname; array(string) pair) {
-	  if (!compat_environment[varname]) {
-	    putenv(pair[0]);
-	  }
-	}
-      }
-#ifdef __NT__
-      // Can't use the cached environment since variable names have been
-      // lowercased there.
-      res = Builtin._getenv();
-      if (!environment) set_lc_env (res);
-#else
-      if (!environment) environment = Builtin._getenv();
-      res = environment + ([]);
-#endif
-    }
-
-    return res;
   }
+
+  return res;
+}
+
+//! @decl string getenv (string varname, void|int force_update)
+//!
+//! Query the value of a specific environment variable.
+//!
+//! @param varname
+//!   Environment variable to query.
+//!
+//! @param force_update
+//!   A cached copy of the real environment is kept to make this
+//!   function quicker. If the optional flag @[force_update] is nonzero
+//!   then the real environment is queried and the cache is updated from
+//!   it. That can be necessary if the environment changes through other
+//!   means than @[putenv], typically from a C-level library.
+//!
+//! @returns
+//!   Returns the value of the environment variable @[varname]
+//!   if it exists, and @expr{0@} (zero) otherwise.
+//!
+//! Variable names and values cannot be wide strings nor contain
+//! @expr{'\0'@} characters. Variable names also cannot contain
+//! @expr{'='@} characters.
+//!
+//! @note
+//!   On NT the environment variable name is case insensitive.
+//!
+//! @seealso
+//!   @[putenv()]
+variant string getenv (string varname, void|int force_update)
+{
+  if (!environment || force_update) {
+#ifdef __NT__
+    set_lc_env (Builtin._getenv());
+#else
+    environment = Builtin._getenv();
+#endif
+  }
+
+#ifdef __NT__
+  varname = lower_case(varname);
+#endif
+
+  return environment[varname];
 }
 
 void putenv (string varname, void|string value)
@@ -1399,19 +986,6 @@ void putenv (string varname, void|string value)
 //!
 {
   Builtin._putenv (varname, value);
-  if (compat_environment) {
-    string lvarname = varname;
-#ifdef __NT__
-    lvarname = lower_case(varname);
-#endif
-    if (value) {
-      compat_environment[lvarname] =
-	(compat_environment_copy[lvarname] = ({ varname, value })) + ({});
-    } else {
-      m_delete(compat_environment, lvarname);
-      m_delete(compat_environment_copy, lvarname);
-    }
-  }
   if (environment) {
 #ifdef __NT__
     varname = lower_case (varname);
@@ -1438,12 +1012,16 @@ program compile_file(string filename,
 		     void|object o)
 {
   AUTORELOAD_CHECK_FILE(filename);
-  return compile(cpp(master_read_file(filename),
-		     filename,
-		     1,
-		     handler,
-		     compat_major,
-		     compat_minor),
+  string code = cpp(master_read_file(filename),
+		    filename,
+		    1,
+		    handler,
+		    compat_major,
+		    compat_minor);
+  if (!code) {
+    error("Required feature missing.\n");
+  }
+  return compile(code,
 		 handler,
 		 compat_major,
 		 compat_minor,
@@ -1606,7 +1184,7 @@ protected void call_compile_warning (object handler, string file,
 {
   if (sizeof (args)) msg = sprintf (msg, @args);
   msg = trim_all_whites (msg);
-  if (handler && handler->compile_warning)
+  if (handler?->compile_warning)
     handler->compile_warning (file, 0, msg);
   else if (master()->compile_warning)
     master()->compile_warning (file, 0, msg);
@@ -1616,7 +1194,6 @@ protected void call_compile_warning (object handler, string file,
 
 #if constant(_static_modules.Builtin.mutex)
 #define THREADED
-_static_modules.Builtin.mutex compilation_mutex = Builtin.mutex();
 #endif
 
 #ifdef __NT__
@@ -1650,7 +1227,7 @@ protected int prio_from_filename(string fname)
   return 0;
 }
 
-//! Find the files in which @[mod] is defined, as they may be hidden away in 
+//! Find the files in which @[mod] is defined, as they may be hidden away in
 //! joinnodes and dirnodes
 //!
 //! @param mod
@@ -1667,7 +1244,7 @@ array(string) module_defined(object|program mod)
 
   array mods;
   if (mod->is_resolv_joinnode)
-    mods = mod->joined_modules; 
+    mods = mod->joined_modules;
   else
     mods = ({ mod });
 
@@ -1696,8 +1273,8 @@ void enable_source_cache()
 //! @returns
 //!   an AutoDoc object
 object show_doc(program|object|function obj)
-{ 
-  object doc_extractor = main_resolv("Tools.AutoDoc.PikeExtractor.extractClass"); 
+{
+  object doc_extractor = main_resolv("Tools.AutoDoc.PikeExtractor.extractClass");
   string child;
   program prog;
 
@@ -1726,7 +1303,7 @@ object show_doc(program|object|function obj)
       source = source_cache[prog];
     else
     {
-      array sourceref = array_sscanf(Builtin.program_defined(prog), 
+      array sourceref = array_sscanf(Builtin.program_defined(prog),
                                      "%s%[:]%[0-9]");
       source = master_read_file(sourceref[0]);
       if (sizeof(sourceref[1]) && sizeof(sourceref[2]))
@@ -1747,7 +1324,7 @@ object show_doc(program|object|function obj)
   }
 
   if (documentation[prog])
-  { 
+  {
     if (child)
       return documentation[prog]->findObject(child)||documentation[prog]->findChild(child);
     else
@@ -1780,17 +1357,6 @@ protected program low_findprog(string pname,
   resolv_debug("low_findprog(%O, %O, %O, %O)\n",
 	       pname, ext, handler, mkobj);
 
-#ifdef THREADED
-  object key;
-  // The catch is needed, since we might be called in a context when
-  // threads are disabled. (compile() disables threads).
-  mixed err = catch {
-    key=compilation_mutex->lock(2);
-  };
-  if (err && !has_suffix (err[0], "when threads are disabled!"))
-    throw (err);
-#endif
-
 #ifdef PIKE_MODULE_RELOC
   fname = unrelocate_module(fname);
 #endif
@@ -1816,7 +1382,7 @@ protected program low_findprog(string pname,
     if(!autoreload_on || load_time[fname] >= s->mtime)
 #endif
     {
-      if(!zero_type (ret=programs[fname]) && ret != no_value) {
+      if(!undefinedp (ret=programs[fname]) && ret != no_value) {
 	resolv_debug ("low_findprog %s: returning cached (no autoreload)\n", fname);
 	return ret;
       }
@@ -1826,7 +1392,7 @@ protected program low_findprog(string pname,
 
 #ifdef PIKE_AUTORELOAD
     if (load_time[fname] >= s->mtime)
-      if (!zero_type (ret=programs[fname]) && ret != no_value) {
+      if (!undefinedp (ret=programs[fname]) && ret != no_value) {
 	resolv_debug ("low_findprog %s: returning cached (autoreload)\n", fname);
 	return ret;
       }
@@ -1846,11 +1412,11 @@ protected program low_findprog(string pname,
 	      resolv_debug ("low_findprog %s: decoding dumped\n", fname);
 	      INC_RESOLV_MSG_DEPTH();
 	      decoded = decode_value(read_precompiled (oname),
-				     (handler && handler->get_codec ||
+				     (handler?->get_codec ||
 				      get_codec)(fname, mkobj, handler));
 	      DEC_RESOLV_MSG_DEPTH();
 	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
-	      if (decoded && decoded->this_program_does_not_exist) {
+	      if (decoded?->this_program_does_not_exist) {
 		resolv_debug ("low_findprog %s: program claims not to exist\n",
 			      fname);
 		return programs[fname] = 0;
@@ -1943,12 +1509,15 @@ protected program low_findprog(string pname,
 
     AUTORELOAD_FINISH(ret,programs,fname);
 
-    if (ret && ret->this_program_does_not_exist) {
+    if (ret?->this_program_does_not_exist) {
       resolv_debug ("low_findprog %s: program says it doesn't exist\n", fname);
       return programs[fname] = 0;
     }
     else {
-      resolv_debug("low_findprog %s: returning %O\n", fname, ret);
+      if(!ret)
+        resolv_debug("low_findprog %s: dependencies failed.\n", fname);
+      else
+        resolv_debug("low_findprog %s: returning %O\n", fname, ret);
       return programs[fname]=ret;
     }
   }
@@ -2043,8 +1612,8 @@ program low_cast_to_program(string pname,
   if(IS_ABSOLUTE_PATH(pname))
   {
     program|NoValue prog = programs[pname];
-    if ((!zero_type(prog)) && (prog != no_value))
-    { 
+    if ((!undefinedp(prog)) && (prog != no_value))
+    {
       return prog;
     }
     pname=combine_path("",pname);
@@ -2077,7 +1646,7 @@ program low_cast_to_program(string pname,
 //! or a implict cast. In the future it might receive more arguments,
 //! to aid the master finding the right program.
 program cast_to_program(string pname,
-			string current_file, 
+			string current_file,
 			object|void handler)
 {
   resolv_debug ("cast_to_program(%O, %O)\n", pname, current_file);
@@ -2091,6 +1660,19 @@ program cast_to_program(string pname,
 	(current_file && current_file!="-") ? sprintf(" in %O",current_file) : "");
 }
 
+
+protected string narrowify_string(string s)
+{
+  if (Builtin.string_width(s) <= 8) return s;
+  // Perform Unicode escaping.
+  return map(s/"",
+	     lambda(string s) {
+	       if (Builtin.string_width(s) <= 8) return s;
+	       int c = s[0] & 0xffffffff;
+	       if (c <= 0xffff) return sprintf("\\u%04x", c);
+	       return sprintf("\\U%08x", c);
+	     }) * "";
+}
 
 //! This function is called when an error occurs that is not caught
 //! with catch().
@@ -2112,14 +1694,14 @@ void handle_error(array|object trace)
 	if (catch {
 	  string msg = [string]x[0];
 	  array bt = [array]x[1];
-	  werror("%s", msg);
-	  werror("%O\n", bt);
+	  werror("%s", narrowify_string(msg));
+	  werror(narrowify_string(sprintf("%O\n", bt)));
 	}) {
-	  werror("%O\n", x);
+	  werror(narrowify_string(sprintf("%O\n", x)));
 	}
       };
-      werror("Original error:\n"
-	     "%O\n", trace);
+      werror(narrowify_string(sprintf("Original error:\n"
+				      "%O\n", trace)));
     }) {
       werror("sprintf() failed to write error.\n");
     }
@@ -2195,7 +1777,7 @@ string ldflags; // Not yet used
 protected void create()
 {
   foreach(master_efuns, string e)
-    if (!zero_type(this[e]))
+    if (has_index(this, e))
       add_constant(e, this[e]);
     else
       error("Function %O is missing from master.pike.\n", e);
@@ -2203,13 +1785,12 @@ protected void create()
   add_constant("__dirnode", dirnode);
   add_constant("__joinnode", joinnode);
 
-  add_constant("strlen", sizeof);
   add_constant("write", write);
   add_constant("werror", werror);
   // To make it possible to overload get_dir and file_stat later on.
   // It's not possible to replace efuns with normal functions in .o-files
 
-  add_constant("get_dir", master_get_dir );
+  add_constant("get_dir", high_master_get_dir );
   add_constant("file_stat", lambda( string f, int|void d ) { return file_stat(f,d);} );
 
 #define CO(X)  add_constant(#X,Builtin.__backend->X)
@@ -2375,6 +1956,11 @@ class dirnode (string dirname, object|void compilation_handler,
 
   protected void create()
   {
+    if (!dirname) {
+      error("Attempt to create a dirnode without a directory.\n"
+	    "Have you inherited a dirnode?\n");
+    }
+
     resolv_debug ("dirnode(%O,%O) created with name %O\n", dirname,
                   compilation_handler, name);
     fc[dirname]=this;
@@ -2414,11 +2000,11 @@ class dirnode (string dirname, object|void compilation_handler,
 
   class module_checker
   {
-    int `!()
+    protected int `!()
     {
       resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
 
-      if (mixed err = catch { 
+      if (mixed err = catch {
 	// Look up module.
 	if (module = cache["module"] || low_ind("module", 1)) {
 	  /* This allows for `[] to have side effects first time
@@ -2446,14 +2032,14 @@ class dirnode (string dirname, object|void compilation_handler,
       }
     }
 
-    mixed `[](string index)
+    protected mixed `[](string index)
       {
 	resolv_debug ("dirnode(%O)->module_checker()[%O] => %O\n",
-		      dirname, index, module && module[index]);
-	return module && module[index];
+		      dirname, index, module[?index]);
+	return module[?index];
       }
-    array(string) _indices() { if(module) return indices(module); }
-    array _values() { if(module) return values(module); }
+    protected array(string) _indices() { if(module) return indices(module); }
+    protected array _values() { if(module) return values(module); }
   }
 
   protected mixed low_ind(string index, int(0..1)|void set_module)
@@ -2564,7 +2150,7 @@ class dirnode (string dirname, object|void compilation_handler,
     {
       mixed o;
 //      _describe(module);
-      if(!zero_type(o=module[index]))
+      if(!undefinedp(o=module[index]))
       {
 	DEC_RESOLV_MSG_DEPTH();
 	resolv_debug ("dirnode(%O)->ind(%O) => found %O\n",
@@ -2581,14 +2167,14 @@ class dirnode (string dirname, object|void compilation_handler,
     return low_ind(index);
   }
 
-  mixed `[](string index)
+  protected mixed `[](string index)
   {
     mixed ret;
 #ifdef MODULE_TRACE
     werror("%*nDirnode(%O) cache[%O] ?????\n",
 	   sizeof(backtrace()),dirname,index);
 #endif
-    if(!zero_type(ret=cache[index]))
+    if(!undefinedp(ret=cache[index]))
     {
 #ifdef MODULE_TRACE
       werror("%*nDirnode(%O) cache[%O] => %O%s\n",
@@ -2614,7 +2200,7 @@ class dirnode (string dirname, object|void compilation_handler,
       return ret;
     }
 
-    cache[index] = zero_type(ret) ? ZERO_TYPE : ret;
+    cache[index] = undefinedp(ret) ? ZERO_TYPE : ret;
     return ret;
   }
 
@@ -2731,6 +2317,11 @@ class joinnode (array(object|mapping) joined_modules,
       fallback_module = ([]);
     }
 
+    if (!joined_modules) {
+      error("Attempt to create a joinnode without joined modules.\n"
+	    "Have you inherited a joinnode?\n");
+    }
+
     if (!name)
     {
       mapping(string:int(1..1)) names = ([]);
@@ -2775,10 +2366,10 @@ class joinnode (array(object|mapping) joined_modules,
     INC_RESOLV_MSG_DEPTH();
 
     array(mixed) res = ({});
-    foreach(joined_modules, object|mapping o) 
+    foreach(joined_modules, object|mapping o)
     {
       mixed ret;
-      if (!zero_type(ret = o[index])) 
+      if (!undefinedp(ret = o[index]))
       {
 	if (objectp(ret) &&
 	    (ret->is_resolv_dirnode || ret->is_resolv_joinnode))
@@ -2809,10 +2400,10 @@ class joinnode (array(object|mapping) joined_modules,
     return fallback_module[index];
   }
 
-  mixed `[](string index)
+  protected mixed `[](string index)
   {
     mixed ret;
-    if (!zero_type(ret = cache[index])) {
+    if (!undefinedp(ret = cache[index])) {
       if (ret != ZERO_TYPE) {
 	return ret;
       }
@@ -2824,7 +2415,7 @@ class joinnode (array(object|mapping) joined_modules,
     // which must not be cached to the second.
     if(ret == predef::__placeholder_object) return ret;
 
-    if (zero_type(ret)) {
+    if (undefinedp(ret)) {
       cache[index] = ZERO_TYPE;
     } else {
       cache[index] = ret;
@@ -2845,7 +2436,7 @@ class joinnode (array(object|mapping) joined_modules,
     }
     foreach(joined_modules, object|mapping|program o) {
       foreach(indices(o), string index) {
-	if (zero_type(cache[index])) {
+	if (!has_index(cache, index)) {
 	  `[](index);
 	}
       }
@@ -2856,7 +2447,7 @@ class joinnode (array(object|mapping) joined_modules,
     _cache_full = 1;
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     fill_cache();
     // Note: Cannot index cache at all here to filter out the
@@ -2866,7 +2457,7 @@ class joinnode (array(object|mapping) joined_modules,
     return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
 
-  array(mixed) _values()
+  protected array(mixed) _values()
   {
     fill_cache();
     return values(cache) - ({ZERO_TYPE});
@@ -2889,7 +2480,7 @@ class joinnode (array(object|mapping) joined_modules,
     }
   }
 
-  int `== (mixed other)
+  protected int `== (mixed other)
   {
     return objectp (other) && (other->is_resolv_joinnode == 1) &&
       equal (mkmultiset (joined_modules), mkmultiset (other->joined_modules));
@@ -2902,7 +2493,7 @@ class joinnode (array(object|mapping) joined_modules,
 
   void _decode (array(object) joined_modules)
   {
-    this_program::joined_modules = joined_modules;
+    this::joined_modules = joined_modules;
   }
 }
 
@@ -2938,7 +2529,7 @@ joinnode handle_import(string path, string|void current_file,
 #endif /* 0 */
   joinnode node = joinnode(({}), current_handler);
 #ifdef PIKE_MODULE_RELOC
-  // If we have PIKE_MODULE_RELOC enabled, 
+  // If we have PIKE_MODULE_RELOC enabled,
   // we might need to map to multiple directories.
   if(path == "/${PIKE_MODULE_PATH}" ||
      has_prefix(path, "/${PIKE_MODULE_PATH}/")) {
@@ -2958,7 +2549,7 @@ program|object findmodule(string fullname, object|void handler,
   program|object o;
 
   resolv_debug ("findmodule(%O)\n", fullname);
-  if(!zero_type(o=fc[fullname]) && o != no_value)
+  if(!undefinedp(o=fc[fullname]) && o != no_value)
   {
     if (objectp(o) || programp(o) || o != 0) {
       resolv_debug ("findmodule(%O) => found %O (cached)\n", fullname, o);
@@ -3028,12 +2619,20 @@ mixed handle_import(string what, string|void current_file, object|void handler)
 
   if(objectp (fc[path])) {
     resolv_debug ("handle_import(%O, %O) => found %O (cached)\n",
+      object s = file_stat(tmp);
+      if(s && s->isreg)
+      {
+        object fs;
+        catch(fs = resolv("Filesystem.Zip")(tmp));
+        if(fs) add_filesystem_handler(tmp, fs);
+	tmp = combine_path(tmp, "include");
+      }
 		  what, current_file, fc[path]);
     return fc[path];
   }
   resolv_debug ("handle_import(%O, %O) => new dirnode\n", what, current_file);
 #ifdef PIKE_MODULE_RELOC
-  // If we have PIKE_MODULE_RELOC enabled, 
+  // If we have PIKE_MODULE_RELOC enabled,
   // we might need to map to a join node.
   // FIXME: Ought to use the non-relocate_module() fakeroot().
   if(path == "/${PIKE_MODULE_PATH}" ||
@@ -3042,6 +2641,11 @@ mixed handle_import(string what, string|void current_file, object|void handler)
     array(dirnode) dirnodes = ({});
     foreach(pike_module_path, string prefix) {
       string s2 = fakeroot(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
+
+      // do we have a mounted zip?
+      if(fs_map[tmp])
+	tmp = combine_path(tmp, "modules");
+
       if(master_file_stat(s2))
 	dirnodes += ({ dirnode(s2, handler) });
     }
@@ -3055,7 +2659,6 @@ mixed handle_import(string what, string|void current_file, object|void handler)
   return fc[path] = dirnode(fakeroot(path), handler);
 }
 #endif /* 0 */
-
 
 multiset no_resolv = (<>);
 
@@ -3148,11 +2751,32 @@ class CompatResolver
   //! @seealso
   //! @[remove_module_path()]
   //!
-  void add_module_path(string tmp)
+  //! @param path
+  //!   a string containing a path to search for Pike modules. May be a
+  //!   directory, or a path to a ZIP archive. If a ZIP archive path is
+  //!   provided, modules will be loaded from a directory, "modules" within
+  //!   the ZIP archive (see the subpath argument).
+  //!
+  //! @param subpath
+  //!   if path is a ZIP archive, this argument will determine the path within
+  //!   the archive to be searched.
+  //!
+  void add_module_path(string path, string|void subpath)
     {
-      tmp=normalize_path(combine_path_with_cwd(tmp));
-      root_module->add_path(tmp);
-      pike_module_path = ({ tmp }) + (pike_module_path - ({ tmp }));
+      path=normalize_path(combine_path_with_cwd(path));
+
+      object s = file_stat(path);
+      if(s && s->isreg)
+      {
+        object fs;
+        catch(fs = resolv("Filesystem.Zip")(path));
+        if(fs) add_filesystem_handler(path, fs);
+        if(!subpath) subpath = "modules";
+	path = combine_path(path, subpath);
+      }
+
+      root_module->add_path(path);
+      pike_module_path = ({ path }) + (pike_module_path - ({ path }));
     }
 
   //! Remove a directory to search for modules.
@@ -3198,7 +2822,7 @@ class CompatResolver
 
   //! Add a define (without arguments) which will be implicitly
   //! defined in @[cpp] calls.
-  void add_predefine (string name, string value)
+  void add_predefine (string name, mixed value)
   {
     predefines[name] = value;
   }
@@ -3214,6 +2838,25 @@ class CompatResolver
   mapping get_predefines()
   {
     return predefines;
+  }
+
+  string evaluate_define(string def, string arguments)
+  {
+      mixed val = arguments ? predefines[def+"()"] : predefines[def];
+      if( callablep(val) )
+      {
+          object C = resolv("Parser.C");
+          array args;
+          if( arguments )
+              args = map(
+                  map(C.group(C.split(arguments))/({","}),C.simple_reconstitute),
+                  Builtin.string_trim_all_whites);
+          else
+              args = ({});
+
+          val = val( @args );
+      }
+      return (string)val;
   }
 
   //! Instantiate static modules in the same way that dynamic modules
@@ -3336,7 +2979,7 @@ class CompatResolver
 			void|object current_handler)
   {
     mixed res = resolv(identifier, current_file, current_handler);
-    if(zero_type(res)) error("Could not resolve %s.\n", identifier);
+    if(undefinedp(res)) error("Could not resolve %s.\n", identifier);
     return res;
   }
 
@@ -3374,7 +3017,7 @@ class CompatResolver
 	  ret = get_compilation_handler(major, minor);
 	  if (ret) {
 	    mixed mod = ret->get_default_module();
-	    if (!zero_type(mod = mod[tmp[0]])) {
+	    if (mod && !undefinedp(mod = mod[tmp[0]])) {
 	      ret = mod;
 	    } else {
 	      ret = ret->resolv(tmp[0]);
@@ -3395,12 +3038,12 @@ class CompatResolver
       resolv_debug("indexing %O with %O...\n",
 		   ret, index);
       resolv_debug("indices(%O): %O\n", ret, indices(ret));
-      if (zero_type(ret)) break;
+      if (undefinedp(ret)) break;
       ret = ret[index];
     }
     DEC_RESOLV_MSG_DEPTH();
 #ifdef RESOLV_DEBUG
-    if (zero_type (ret))
+    if (undefinedp (ret))
       resolv_debug("resolv(%O, %O) => not found\n",identifier, current_file);
     else
       resolv_debug("resolv(%O, %O) => found %O\n",identifier, current_file, ret);
@@ -3448,31 +3091,13 @@ class CompatResolver
       compile_cb_rethrow (err);
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("CompatResolver(%O)",ver);
   }
 }
 
 inherit CompatResolver;
-
-//!
-class Pike06Resolver
-{
-  inherit CompatResolver;
-
-  //! In Pike 0.6 the current directory was implicitly searched.
-  mixed resolv_base(string identifier, string|void current_file,
-		    object|void current_handler)
-  {
-    if (current_file) {
-      joinnode node = handle_import(".", current_file, current_handler);
-      return node[identifier] ||
-	::resolv_base(identifier, current_file, current_handler);
-    }
-    return ::resolv_base(identifier, current_file, current_handler);
-  }
-}
 
 //! These are useful if you want to start other Pike processes
 //! with the same options as this one was started with.
@@ -3515,7 +3140,7 @@ protected mixed main_resolv(string sym, CompatResolver|void resolver) {
 //! This function is called when all the driver is done with all setup
 //! of modules, efuns, tables etc. etc. and is ready to start executing
 //! _real_ programs. It receives the arguments not meant for the driver.
-void _main(array(string) orig_argv)
+void _main(array(string(0..255)) orig_argv)
 {
   array(string) argv=copy_value(orig_argv);
   int debug,trace,run_tool;
@@ -3701,20 +3326,16 @@ void _main(array(string) orig_argv)
     }
 
     cur_compat_ver = Version (compat_major, compat_minor);
+    if (cur_compat_ver < lowestcompat)
+    {
+      werror("This Pike only supports compatibility down to %s.\n",
+             (string)lowestcompat);
+      cur_compat_ver = lowestcompat;
+      compat_major = lowestcompat->major;
+      compat_minor = lowestcompat->minor;
+    }
     if (compat_major != -1) {
       object compat_master = get_compat_master (compat_major, compat_minor);
-
-      if (cur_compat_ver <= Version (7, 6)) {
-	mapping(string:array(string)) compat_env = ([]);
-	foreach (Builtin._getenv(); string var; string val) {
-#ifdef __NT__
-	  compat_env[lower_case (var)] = ({var, val});
-#else
-	  compat_env[var] = ({var, val});
-#endif
-	}
-	compat_master->environment = compat_env;
-      }
     }
 
     foreach(q, array opts)
@@ -3726,7 +3347,7 @@ void _main(array(string) orig_argv)
         exit(0);
 
       case "version":
-        exit(0, string_to_utf8(version() + " Copyright © 1994-2009 Linköping University\n"
+        exit(0, string_to_utf8(version() + " Copyright © 1994-2015 Linköping University\n"
             "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
             "welcome to redistribute it under certain conditions; read the files\n"
             "COPYING and COPYRIGHT in the Pike distribution for more details.\n"));
@@ -3772,33 +3393,19 @@ void _main(array(string) orig_argv)
 	exit(0, format_paths());
 
       case "execute":
-#ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp.bignum" );
-#endif /* __AUTO_BIGNUM__ */
-
 	random_seed((time() ^ (getpid()<<8)));
 	argv = tmp->get_args(argv,1);
 
 	program prog;
 	mixed compile_err = catch {;
-	  if(cur_compat_ver <= Version(7,4))
-	    prog = compile_string(
-	      "mixed create(int argc, array(string) argv,array(string) env){"+
-	      opts[1]+";}");
-	  else if (intp (opts[1]))
+	  if (intp (opts[1]))
 	    prog = compile_string ("mixed run() {}");
 	  else {
 	    string code = opts[1];
 	    while(sscanf(code, "%sCHAR(%1s)%s", code, string c, string rest)==3)
 	      code += c[0] + rest;
-	    if (cur_compat_ver <= Version (7, 6))
-	      prog = compile_string(
-		"#define NOT(X) !(X)\n"
-		"mixed run(int argc, array(string) argv,"
-		"mapping(string:string) env){"+
-		code+";}");
-	    else
-	      prog = compile_string(
+            prog = compile_string(
 		"#define NOT(X) !(X)\n"
 		"mixed run(int argc, array(string) argv){" + code + ";}");
 	  }
@@ -3823,12 +3430,7 @@ void _main(array(string) orig_argv)
 	    // eval_instruction in interpret.c so that the debug and
 	    // trace levels set above take effect in the bytecode
 	    // evaluator.
-	    if(cur_compat_ver <= Version(7,4))
-	      prog (sizeof(argv),argv,getenv());
-	    else if (cur_compat_ver <= Version (7, 6))
-	      ret = prog()->run(sizeof(argv),argv,getenv());
-	    else
-	      ret = prog()->run(sizeof(argv),argv);
+            ret = prog()->run(sizeof(argv),argv);
 	  };
 	predef::trace(trace);
 	if (err) {
@@ -3843,9 +3445,7 @@ void _main(array(string) orig_argv)
 	exit(ret);
 
       case "preprocess":
-#ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp.bignum" );
-#endif /* __AUTO_BIGNUM__ */
 	write(cpp(master_read_file(opts[1]),opts[1]));
 	exit(0);
       }
@@ -3875,10 +3475,7 @@ void _main(array(string) orig_argv)
 	exit(0);
   }
 
-#ifdef __AUTO_BIGNUM__
   main_resolv( "Gmp.bignum" );
-#endif /* __AUTO_BIGNUM__ */
-
   random_seed(time() ^ (getpid()<<8));
 
   if(sizeof(argv)==1)
@@ -3945,8 +3542,7 @@ void _main(array(string) orig_argv)
       if( !file_stat(fn)->isreg )
 	exit(1, "File %O is not a regular file.\n", fn);
       if( !master_read_file(fn) )
-	exit(1, "File %O is not readable. %s.\n",
-	     fn, strerror(errno()));
+        exit(1, "File %O is not readable. %m.\n", fn);
       if (objectp (err) && err->is_cpp_or_compilation_error)
 	exit(1, "Pike: Failed to compile script.\n");
       else
@@ -3978,18 +3574,22 @@ void _main(array(string) orig_argv)
       // Note that it won't work if there's another catch surrounding
       // this one.
       object script;
-      if(cur_compat_ver <= Version(7,4)) {
-	script=prog();
-      }
-      else {
-	script=prog(argv);
-      }
+      script=prog(argv);
+
       if(!script->main)
 	error("Error: %s has no main().\n", argv[0]);
-      if (cur_compat_ver <= Version (7, 6))
-	ret=script->main(sizeof(argv),argv,getenv());
+      if (cur_compat_ver <= Version (8, 0))
+	ret = script->main(sizeof(argv),argv);
       else
-	ret=script->main(sizeof(argv),argv);
+      {
+	mixed first_arg = __get_first_arg_type(_typeof(script->main));
+	// NB: first_arg may be zero eg in case main() ignores all args.
+        if( first_arg && (typeof(argv) <= first_arg) ) {
+	  // argv accepted as first argument.
+          ret=script->main(argv);
+        } else
+          ret=script->main(sizeof(argv),argv);
+      }
     };
   // Disable tracing.
   trace = predef::trace(trace);
@@ -4007,7 +3607,7 @@ void _main(array(string) orig_argv)
   trace = predef::trace(trace);
   while(1)
   {
-    mixed err=catch 
+    mixed err=catch
     {
       while(1)
 	Builtin.__backend(3600.0);
@@ -4019,11 +3619,43 @@ void _main(array(string) orig_argv)
 #if constant(thread_local)
 object inhibit_compile_errors = thread_local();
 
-void set_inhibit_compile_errors(mixed f)
+//! Set the compile error, warning and exception behaviour.
+//!
+//! @param behaviour
+//!   The desired behaviour. One of:
+//!   @mixed
+//!     @type int(0..0)
+//!       Output compilation errors and warnings to @tt{stderr@}.
+//!       This is the default behaviour.
+//!     @type int(1..1)
+//!       Inhibit output of compilator diagnostics.
+//!     @type function(string, int, string:void)
+//!       Function to call for compilation errors. Compilation
+//!       warnings and exceptions are inhibited.
+//!
+//!       The function will be called with the same arguments
+//!       as those passed to @[compile_error()].
+//!     @type CompilationHandler
+//!       Compilation handler to use for diagnostics.
+//!   @endmixed
+//!
+//! @note
+//!   Note that the behaviour is thread local, and is not copied
+//!   to new threads when they are created.
+//!
+//! @seealso
+//!   @[get_inhibit_compile_errors()]
+void set_inhibit_compile_errors(mixed behaviour)
 {
-  inhibit_compile_errors->set(f);
+  inhibit_compile_errors->set(behaviour);
 }
 
+//! Get the current compile error, warning and exception behaviour.
+//!
+//! See @[set_inhibit_compile_errors()] for details.
+//!
+//! @seealso
+//!   @[set_inhibit_compile_errors()]
 mixed get_inhibit_compile_errors()
 {
   return inhibit_compile_errors->get();
@@ -4077,13 +3709,17 @@ function(string:string) set_trim_file_name_callback(function(string:string) s)
 //! This function is called whenever a compile error occurs. @[line]
 //! is zero for errors that aren't associated with any specific line.
 //! @[err] is not newline terminated.
+//!
+//! @seealso
+//!   @[compile_warning()], @[compile_exception()],
+//!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 void compile_error(string file,int line,string err)
 {
   mixed val;
   if(! (val = get_inhibit_compile_errors() ))
   {
     werror( "%s:%s:%s\n",trim_file_name(file),
-	    line?(string)line:"-",err );
+	    line?(string)line:"-",narrowify_string(err) );
   }
   else if(objectp(val) ||
 	  programp(val) ||
@@ -4101,6 +3737,10 @@ void compile_error(string file,int line,string err)
 //! This function is called whenever a compile warning occurs. @[line]
 //! is zero for warnings that aren't associated with any specific
 //! line. @[err] is not newline terminated.
+//!
+//! @seealso
+//!   @[compile_error()], @[compile_exception()],
+//!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 void compile_warning(string file,int line,string err)
 {
   mixed val;
@@ -4109,7 +3749,7 @@ void compile_warning(string file,int line,string err)
   {
     if(want_warnings)
       werror( "%s:%s: Warning: %s\n",trim_file_name(file),
-	      line?(string)line:"-",err );
+	      line?(string)line:"-",narrowify_string(err) );
   }
   else if (objectp(val) && val->compile_warning) {
     ([function(string,int,string:void)]([object]val)
@@ -4121,6 +3761,10 @@ void compile_warning(string file,int line,string err)
 //! This function is called when an exception is caught during
 //! compilation. Its message is also reported to @[compile_error] if
 //! this function returns zero.
+//!
+//! @seealso
+//!   @[compile_error()], @[compile_warning()],
+//!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 int compile_exception (array|object trace)
 {
   if (objectp (trace) && ([object]trace)->is_cpp_or_compilation_error)
@@ -4174,11 +3818,9 @@ protected object Charset;
 string decode_charset(string data, string charset)
 {
   if (!Charset) {
-    object mod = [object]resolv("Locale");
-
-    Charset = [object](mod && mod["Charset"]);
+    Charset = [object]resolv("Charset");
     if (!Charset)
-      compile_cb_error("Cannot handle charset - no Locale.Charset module found.");
+      compile_cb_error("Cannot handle charset - no Charset module found.");
   }
 
   if (mixed err = catch {
@@ -4283,7 +3925,7 @@ class Describer
     switch(res)
     {
     case "int":
-      if (!m && zero_type (m) == 1)
+      if (!m && undefinedp (m) == 1)
 	return "UNDEFINED";
     case "float":
       return (string)m;
@@ -4314,6 +3956,9 @@ class Describer
       }
       break;
     }
+    // Objects may have _sprintfs that output wide characters,
+    // and function names may be wide, etc...
+    res = narrowify_string(res);
     if (stringp(ident[m]))
       return ident[m] + "=" + res;
     return res;
@@ -4575,7 +4220,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 string describe_object(object o)
 {
   string s;
-  if(zero_type (o)) return 0;	// Destructed.
+  if(undefinedp (o)) return 0;	// Destructed.
 
   // Handled by the search of all_constants() below.
   // if (o == _static_modules) return "_static_modules";
@@ -4657,7 +4302,7 @@ string describe_function (function f)
     else
       name = trim_file_name(s);
   }
-  else 
+  else
     if (catch (name = function_name (f))) name = "function";
 
   object o = function_object([function(mixed...:void|mixed)]f);
@@ -4700,7 +4345,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
   if(!linewidth)
   {
     linewidth=99999;
-    catch 
+    catch
     {
       linewidth=[int]Files()->_stdin->tcgetattr()->columns;
     };
@@ -4715,7 +4360,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 
 	if (functionp (err_obj->message))
 	  ret = err_obj->message();
-	else if (zero_type (ret = err_obj->error_message))
+	else if (undefinedp (ret = err_obj->error_message))
 	  // For compatibility with error objects trying to behave
 	  // like arrays.
 	  ret = err_obj[0];
@@ -4727,7 +4372,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 
 	if (functionp (err_obj->backtrace))
 	  trace = err_obj->backtrace();
-	else if (zero_type (trace = err_obj->error_backtrace))
+	else if (undefinedp (trace = err_obj->error_backtrace))
 	  // For compatibility with error objects trying to behave
 	  // like arrays.
 	  trace = err_obj[1];
@@ -4816,7 +4461,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	    string desc="Unknown program";
 	    if(sizeof(tmp)>=3 && functionp(tmp[2]))
 	    {
-	      catch 
+	      catch
               {
 		if(mixed tmp=function_object([function(mixed...:
 						       void|mixed)]tmp[2]))
@@ -4832,7 +4477,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 
 	  if(sizeof(tmp)>=3)
 	  {
-	    if(functionp(tmp[2])) {
+	    if(functionp(tmp[2])|programp(tmp[2])) {
 	      data = describe_function ([function]tmp[2]);
 	    }
 	    else if (stringp(tmp[2])) {
@@ -4868,7 +4513,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
       }
 
       int dup_frame;
-      if (!zero_type(dup_frame = prev_pos[row])) {
+      if (!undefinedp(dup_frame = prev_pos[row])) {
 	dup_frame -= sizeof(frames);
 	if (!loop_start) {
 	  loop_start = dup_frame;
@@ -4944,7 +4589,7 @@ string describe_error (mixed /* object|array */ err)
 
 	if (functionp (err_obj->message))
 	  msg = err_obj->message();
-	else if (zero_type (msg = err_obj->error_message))
+	else if (undefinedp (msg = err_obj->error_message))
 	  // For compatibility with error objects trying to behave
 	  // like arrays.
 	  msg = err_obj[0];
@@ -4990,7 +4635,7 @@ array get_backtrace (object|array err)
 
     if (functionp (err_obj->backtrace))
       bt = err_obj->backtrace();
-    else if (zero_type (bt = err_obj->error_backtrace))
+    else if (undefinedp (bt = err_obj->error_backtrace))
       // For compatibility with error objects trying to behave like
       // arrays.
       bt = err_obj[1];
@@ -5009,14 +4654,22 @@ array get_backtrace (object|array err)
   return bt;
 }
 
+void thread_quanta_exceeded(object thread, int ns)
+{
+  werror("Thread quanta exceeded for %O (%d ns):\n"
+	 "%s\n",
+	 thread, ns,
+	 describe_backtrace(thread->backtrace()));
+}
+
 
 #ifdef ENCODE_DEBUG
 #  define ENC_MSG(X...) do werror (X); while (0)
 #  define ENC_RETURN(val) do {						\
   mixed _v__ = (val);							\
   werror ("  returned %s\n",						\
-	  zero_type (_v__) ? "UNDEFINED" :				\
-	  sprintf ("%O", _v__));					\
+	  undefinedp (_v__) ? "UNDEFINED" :				\
+	  narrowify_string(sprintf ("%O", _v__)));			\
   return _v__;								\
 } while (0)
 #else
@@ -5029,8 +4682,8 @@ array get_backtrace (object|array err)
 #  define DEC_RETURN(val) do {						\
   mixed _v__ = (val);							\
   werror ("  returned %s\n",						\
-	  zero_type (_v__) ? "UNDEFINED" :				\
-	  sprintf ("%O", _v__));					\
+	  undefinedp (_v__) ? "UNDEFINED" :				\
+	  narrowify_string(sprintf ("%O", _v__)));			\
   return _v__;								\
 } while (0)
 #else
@@ -5146,7 +4799,13 @@ class Encoder
 	  break compare;
 	}
 
-	if (resolved->is_resolv_dirnode)
+	if ((resolved->is_resolv_joinnode) &&
+	    (sizeof(resolved->joined_modules) == 1)) {
+	  ENC_MSG("  compare_resolved: %O is a single element joinnode.\n",
+		  resolved);
+	  resolved = resolved->joined_modules[0];
+	}
+	if (resolved->is_resolv_dirnode) {
 	  if (resolved->module == what) {
 	    ENC_MSG ("  compare_resolved: %O is dirnode module of %O\n", what, resolved);
 	    append = ({'m'});
@@ -5162,7 +4821,7 @@ class Encoder
 	  else
 	    ENC_MSG ("  compare_resolved: %O is different from dirnode module %O\n",
 		     what, resolved->module);
-
+	}
 #if 0
 	// This is only safe if the joinnode modules don't conflict,
 	// and we don't know that.
@@ -5177,6 +4836,8 @@ class Encoder
 	    }
 	}
 #endif
+      } else {
+	ENC_MSG("  compare_resolved: %O is not an object.\n", resolved);
       }
 
       ENC_MSG ("  compare_resolved: %O is different from %O\n", what, resolved);
@@ -5373,7 +5034,7 @@ class Encoder
 
 	array parent_object = ({0});
 	string|array parent_name = nameof (parent, parent_object);
-	if (!parent_name) {
+	if (!parent_name || (parent_name == "o")) {
 	  ENC_MSG ("  inside the thing to encode - encoding recursively\n");
 	  return UNDEFINED;
 	}
@@ -5441,7 +5102,7 @@ class Encoder
   //! encoded instead of being reverse resolved to a name. That's
   //! necessary to encode programs.
   {
-    this_program::encoded = encoded;
+    this::encoded = encoded;
 
     foreach (all_constants(); string var; mixed val)
       rev_constants[val] = "c" + var;
@@ -5512,15 +5173,15 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 
     switch (what[0]) {
       case 'c':
-	if (zero_type (res = all_constants()[what[1..]]))
+	if (undefinedp (res = all_constants()[what[1..]]))
 	  error ("Cannot find global constant %O.\n", what[1..]);
 	break;
       case 's':
-	if (zero_type (res = _static_modules[what[1..]]))
+	if (undefinedp (res = _static_modules[what[1..]]))
 	  error ("Cannot find %O in _static_modules.\n", what[1..]);
 	break;
       case 'r':
-	if (zero_type (res = resolv ([string]what[1..], fname, handler)))
+	if (undefinedp (res = resolv ([string]what[1..], fname, handler)))
 	  error ("Cannot resolve %O.\n", what[1..]);
 	break;
       case 'p':
@@ -5547,7 +5208,7 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 	  if (!programp (subres) && !objectp (subres) && !mappingp (subres))
 	    error ("Cannot subindex %O%{[%O]%} since it's a %t.\n",
 		   res, sublist[1..i-1], subres);
-	  if (zero_type (subres = ([mapping]subres)[op]))
+	  if (undefinedp (subres = ([mapping]subres)[op]))
 	    error ("Cannot find %O in %O%{[%O]%}.\n",
 		   op, res, sublist[1..i-1]);
 	  DEC_MSG ("  indexed with %O: %O\n", op, subres);
@@ -5599,20 +5260,8 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
   object objectof (string|array what)
   {
     DEC_MSG ("objectof (%O)\n", what);
-    if (!what) {
-      // This is necessary for compatibility with 7.2 encoded values:
-      // If an object was fed to encode_value there and there was no
-      // codec then a zero would be encoded silently since the failed
-      // call to nameof was ignored. decode_value would likewise
-      // silently ignore the failed call objectof(0) and a zero would
-      // be decoded. Now we supply a fairly capable codec which is
-      // used by default and we therefore get these objectof(0) calls
-      // here. So if we throw an error we can't decode values which
-      // 7.2 would encode and decode without a codec (albeit partly
-      // incorrectly). So just print a sulky warning and continue.. :P
-      DEC_MSG ("Warning: Decoded broken object identifier to zero.\n");
-      DEC_RETURN (0);
-    }
+    if (!what)
+      error ("Decoded broken object identifier to zero.\n");
     DEC_RETURN ([object] thingof (what));
   }
 
@@ -5733,31 +5382,32 @@ class Version
 
   //! Methods define so that version objects
   //! can be compared and ordered.
-  int `<(mixed v) { return objectp(v) && CMP(v) < 0; }
-  int `>(mixed v) { return objectp(v) && CMP(v) > 0; }
-  int `==(mixed v) { return objectp(v) && CMP(v)== 0; }
-  int __hash() { return major * 4711 + minor ; }
+  protected int `<(mixed v) { return objectp(v) && CMP(v) < 0; }
+  protected int `>(mixed v) { return objectp(v) && CMP(v) > 0; }
+  protected int `==(mixed v) { return objectp(v) && CMP(v)== 0; }
+  protected int __hash() { return major * 4711 + minor ; }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     switch(t) {
     case 's': return sprintf("%d.%d",major,minor);
-    case 'O': return sprintf("%O(%s)", this_program, this);
+    case 'O': return sprintf("%O(%s)", this_program, _sprintf('s'));
     }
   }
 
   //! The version object can be casted into a string.
-  mixed cast(string type)
-    {
-      switch(type)
-      {
-	case "string":
-	  return sprintf("%d.%d",major,minor);
-      }
-    }
+  protected mixed cast(string type)
+  {
+    if( type=="string" )
+      return sprintf("%d.%d",major,minor);
+    return UNDEFINED;
+  }
 }
 
 //! Version information about the current Pike version.
 Version currentversion = Version(__REAL_MAJOR__, __REAL_MINOR__);
+
+Version lowestcompat = Version(Builtin.LOWEST_COMPAT_MAJOR,
+                               Builtin.LOWEST_COMPAT_MINOR);
 
 mapping(Version:CompatResolver) compat_handler_cache = ([
   currentversion:this_object(),
@@ -5779,15 +5429,15 @@ CompatResolver get_compilation_handler(int major, int minor)
 
   CompatResolver ret;
 
-  if(!zero_type(ret=compat_handler_cache[v])) return ret;
+  if(!undefinedp(ret=compat_handler_cache[v])) return ret;
 
   array(string) files;
   array(Version) available=({});
 
 #if "#share_prefix#"[0]!='#'
   if (!(files = master_get_dir("#share_prefix#"))) {
-    werror ("Error listing directory %O: %s\n",
-	    "#share_prefix#", strerror (errno()));
+    werror ("Error listing directory %O: %m.\n",
+            "#share_prefix#");
     files = ({});
   }
   foreach(files, string ver)
@@ -5803,8 +5453,8 @@ CompatResolver get_compilation_handler(int major, int minor)
 
 #if "#lib_prefix#"[0]!='#'
   if (!(files = master_get_dir("#lib_prefix#"))) {
-    werror ("Error listing directory %O: %s\n",
-	    "#lib_prefix#", strerror (errno()));
+    werror ("Error listing directory %O: %m.\n",
+            "#lib_prefix#");
     files = ({});
   }
   foreach(files, string ver)
@@ -5848,11 +5498,7 @@ CompatResolver get_compilation_handler(int major, int minor)
       if (!compat_handler) {
 	// Create a new compat handler, that
 	// falls back to the successor version.
-	if (tmp <= Version(0, 6)) {
-	  compat_handler = Pike06Resolver(tmp, ret);
-	} else {
-	  compat_handler = CompatResolver(tmp, ret);
-	}
+        compat_handler = CompatResolver(tmp, ret);
 
 	string base;
 #if "#lib_prefix#"[0]!='#'
@@ -5880,6 +5526,8 @@ CompatResolver get_compilation_handler(int major, int minor)
 #ifndef RESOLVER_HACK
 	ret = compat_handler_cache[tmp] = compat_handler;
 #endif
+      } else {
+	ret = compat_handler;
       }
     }
 
@@ -5891,8 +5539,7 @@ CompatResolver get_compilation_handler(int major, int minor)
 
 string _sprintf(int t)
 {
-  // NOTE: The ||'O' is for Pike 7.2 compat only.
-  switch(t||'O') {
+  switch(t) {
     // FIXME: What good is this lying for 't'? The master is still an
     // object.. /mast
   case 't': return "master";
@@ -5909,8 +5556,8 @@ string _sprintf(int t)
 //!   @[get_compilation_handler()], @[master()]
 object get_compat_master(int major, int minor)
 {
-  if ((major < 7) || ((major == 7) && (minor < 9)))
-    return Pike_7_8_master::get_compat_master(major, minor);
-  // 7.9 and later.
+  if ((major < 8) || ((major == 8) && (minor < 1)))
+    return Pike_8_0_master::get_compat_master(major, minor);
+  // 8.1 and later.
   return this;
 }

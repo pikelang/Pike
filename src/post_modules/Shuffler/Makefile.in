@@ -1,17 +1,21 @@
-# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=Shuffler.o $(SOURCE_OBJS)
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
+# Reset the symbol prefix base to the empty string.
+PRECOMPILER_ARGS="--base="
+
 override:
-	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR) sources.h sources_to_compile
+	@$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR) sources.h sources_to_compile
 	@$(MAKE) SOURCE_OBJS="`cat sources_to_compile`" all
 
 @dynamic_module_makefile@
 
 # UnixWare make needs help to find the source file...
 Shuffler.o: $(SRCDIR)/Shuffler.c $(SRCDIR)/shuffler.h
+
+sources.h:
 
 @dependencies@

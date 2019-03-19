@@ -23,7 +23,7 @@
 
 inherit GTK2.Bin;
 
-static GTK2.HandleBox create( mapping|void props );
+protected GTK2.HandleBox create( mapping|void props );
 //! Create a new handle box widget.
 //!
 //!

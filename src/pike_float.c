@@ -1,6 +1,4 @@
 /* Misc stuff for dealing with floats.
- *
- * $Id$
  */
 
 #include "pike_float.h"

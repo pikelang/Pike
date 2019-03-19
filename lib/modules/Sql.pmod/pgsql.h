@@ -5,12 +5,10 @@
  * any precompiled pgsql.o or pgsql_utils.o
  */
 
-//#define DEBUG  1
-//#define DEBUGMORE  1
+//#define PG_DEBUG  1
+//#define PG_DEBUGMORE  1
 
-//#define NO_LOCKING 1		    // This breaks the driver, do not enable,
-				    // only for benchmarking mutex performance
-#define USEPGsql     1		    // Doesn't use Stdio.FILE, but _PGsql
+//#define PG_STATS	1	    // Collect extra usage statistics
 
 #define FETCHLIMIT	     1024   // Initial upper limit on the
 				    // number of rows to fetch across the
@@ -18,8 +16,6 @@
 				    // 0 for no chunking
 				    // Needs to be >0 for interleaved
 				    // portals
-#define FETCHLIMITLONGRUN    1	    // for long running background queries
-#define STREAMEXECUTES	     1	    // streams executes if defined
 #define MINPREPARELENGTH     16	    // statements shorter than this will not
 				    // be cached
 #define STATEMENTCACHEDEPTH  1024   // Initial maximum cachecountsum for
@@ -31,6 +27,7 @@
 #define PGSQL_DEFAULT_PORT   5432
 #define PGSQL_DEFAULT_HOST   "localhost"
 #define PREPSTMTPREFIX	     "pike_prep_"
+#define PTSTMTPREFIX	     "pike_tprep_"
 #define PORTALPREFIX	     "pike_portal_"
 #define RECONNECTDELAY	     1	    // Initial delay for reconnects
 #define RECONNECTBACKOFF     4	    // Secondary delay for reconnect
@@ -41,22 +38,59 @@
 #define MARKSTART	     "{""{\n"	      // split string to avoid
 #define MARKERROR	     ">"">"">"">"     // foldeditors from recognising
 #define MARKEND		     "\n}""}"	      // it as a fold
+#define MAGICTERMINATE       42
+#define PG_PROTOCOL(m,n)     (((m)<<16)|(n))
+#define PGFLUSH		     "H\0\0\0\4"
+#define PGSYNC		     "S\0\0\0\4"
 
-#ifdef DEBUG
-#define PD(X ...)     werror(X)
-#define UNBUFFEREDIO  1		    // Make all IO unbuffered
+#define BOOLOID		16
+#define BYTEAOID	17
+#define CHAROID		18
+#define INT8OID		20
+#define INT2OID		21
+#define INT4OID		23
+#define TEXTOID		25
+#define OIDOID		26
+#define XMLOID		142
+#define FLOAT4OID	700
+#define FLOAT8OID	701
+#define MACADDROID	829
+#define INETOID		869	    /* Force textmode */
+#define BPCHAROID	1042
+#define VARCHAROID	1043
+#define CTIDOID		1247
+#define UUIDOID		2950
+
+#define UTF8CHARSET	"UTF8"
+#define CLIENT_ENCODING	"client_encoding"
+
+#define DERROR(msg ...)		({sprintf(msg),backtrace()})
+#define SERROR(msg ...)		(sprintf(msg))
+#define USERERROR(msg)		throw(msg)
+#define SUSERERROR(msg ...)	USERERROR(SERROR(msg))
+
+#ifdef PG_DEBUG
+#define PD(X ...)            werror(X)
+			     // PT() puts this in the backtrace
+#define PT(X ...)	     (lambda(object _this){return (X);}(this))
 #else
-#undef DEBUGMORE
-#define PD(X ...)
+#undef PG_DEBUGMORE
+#define PD(X ...)	     0
+#define PT(X ...)	     (X)
 #endif
 
-#ifdef USEPGsql
-#define UNBUFFEREDIO 1
-#endif
+#define PORTALINIT	0		// Portal states
+#define BOUND		1
+#define COPYINPROGRESS	2
+#define CLOSING		3
+#define CLOSED		4
 
-protected enum state
-{ unauthenticated,authenticated,readyforquery,
-  parsecomplete,bindcomplete,commandcomplete,gotrowdescription,
-  gotparameterdescription,dataready,dataprocessed,portalsuspended,
-  copyinresponse
-};
+#define KEEP		0		// Sendcmd subcommands
+#define SENDOUT		1
+#define FLUSHSEND	2
+#define FLUSHLOGSEND	3
+#define SYNCSEND	4
+
+#define NOERROR			0	// Error states networkparser
+#define PROTOCOLERROR		1
+#define PROTOCOLUNSUPPORTED	2

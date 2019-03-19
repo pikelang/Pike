@@ -1,10 +1,12 @@
-# $Id$
 @make_variables@
 VPATH=@srcdir@
 MODNAME=SDL
 OBJS=SDL.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
+
+# Reset the symbol prefix base to the empty string.
+PRECOMPILER_ARGS="--base="
 
 @dynamic_module_makefile@
 

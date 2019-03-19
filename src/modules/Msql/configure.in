@@ -1,6 +1,5 @@
-dnl $Id$
 
-AC_INIT(msqlmod.c)
+AC_INIT(msqlmod.cmod)
 AC_CONFIG_HEADER(msql_config.h)
 
 AC_MODULE_INIT()
@@ -53,10 +52,10 @@ dnl	AC_MSG_RESULT($pike_cv_msql_include_dir)
 	fi
 
 	AC_CHECK_HEADERS(msql.h)
-	
+
 	if test "$ac_cv_header_msql_h" != "no"; then
 		AC_MSG_CHECKING(for location of mSQL library)
-		AC_CACHE_VAL(pike_cv_msql_lib_dir, [ 
+		AC_CACHE_VAL(pike_cv_msql_lib_dir, [
 			for pike_cv_msql_lib_dir in $pike_msql_reasonable_lib_searchpath no
 			do
 				if test -f $pike_cv_msql_lib_dir/libmsql.a; then

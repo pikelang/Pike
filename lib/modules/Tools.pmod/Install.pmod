@@ -27,7 +27,7 @@ array(string) features()
   a += ({ "dynamic_modules" });
 #endif
 
-#if efun(thread_create)
+#if constant(thread_create)
   a += ({ "threads" });
 #endif
 
@@ -59,7 +59,8 @@ array(string) features()
   m += ({ "PostgresNative" });
 #endif
 
-  foreach(({ "Nettle", "Dbm", "DVB", "_Ffmpeg", "GL", "GLUT", "GTK", "Gdbm",
+  foreach(({ "Nettle", "Crypto.AES.GCM", "Crypto.ECC.Curve", "Dbm", "DVB",
+             "_Ffmpeg", "GL", "GLUT", "Gdbm",
 	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",
 	     "Java.machine", "Mird", "Msql", "Mysql", "Odbc", "Oracle",
@@ -67,25 +68,43 @@ array(string) features()
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
 	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
 	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE", "GSSAPI",
-	     "Protocols.DNS_SD"}),
+	     "Protocols.DNS_SD", "Gnome2", "MIME", "Standards.JSON",
+	     "VCDiff", "ZXID" }),
 	  string modname)
   {
     catch
     {
-      if(sizeof(indices(master()->resolv(modname) || ({})) -
-		({ "dont_dump_module" })))
+      object tmp;
+      if(sizeof(indices((tmp = master()->resolv(modname)) || ({})) -
+		({ "dont_dump_module" })) ||
+	 (tmp && !objectp(tmp)))
       {
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
 	m += ({ (["Java.machine":"Java"])[modname] || modname });
+
+	if (modname == "Mysql") {
+	  // Check taste of Mysql client library.
+	  //
+	  // Classic:	"MySQL (Copyright Abandoned)/3.23.49"
+	  // Mysql GPL:	"MySQL Community Server (GPL)/5.5.30"
+	  // MariaDB:	"MySQL (Copyright Abandoned)/5.5.0"
+	  string client_ver = tmp["client_info"] && tmp["client_info"]();
+	  string license = "Unknown";
+	  string version = "Unknown";
+	  sscanf(client_ver, "%*s(%s)/%s", license, version);
+	  if ((license == "Copyright Abandoned") && (version > "5")) {
+	    m += ({ "MariaDB" });
+	  }
+	}
       }
     };
   }
 
   foreach (({"Regexp.PCRE.Widestring", "Java.NATIVE_METHODS"}), string symbol)
     catch {
-      if (!zero_type(all_constants()[symbol]) ||
-	  !zero_type(master()->resolv(symbol)))
+      if (has_index(all_constants(), symbol) ||
+	  !undefinedp(master()->resolv(symbol)))
 	m += ({symbol});
     };
 
@@ -100,18 +119,18 @@ string make_absolute_path(string path, string|void cwd)
   {
     string user, newpath;
     sscanf(path, "~%s/%s", user, newpath);
-    
+
     if(user && sizeof(user))
     {
       array a = getpwnam(user);
       if(a && sizeof(a) >= 7)
 	return combine_path(a[5], newpath);
     }
-    
+
     return combine_path(getenv("HOME"), path[2..]);
   }
 #endif
-  
+
   if(!sizeof(path) || path[0] != '/')
     return combine_path(cwd || getcwd(), "./", path);
 
@@ -190,7 +209,7 @@ class ProgressBar
     name = _name;
     max = _max;
     cur = _cur;
-    
+
     phase_base = _phase_base || 0.0;
     phase_size = _phase_size || 1.0 - phase_base;
   }
@@ -208,7 +227,7 @@ class Readline
   void trap_signal(int n)
   {
     werror("\r\nInterrupted, exit.\r\n");
-    destruct(this_object());
+    destruct(this);
     exit(1);
   }
 
@@ -226,7 +245,7 @@ class Readline
     {
       // ^D?
       werror("\nTerminal closed, exit.\n");
-      destruct(this_object());
+      destruct(this);
       exit(0);
     }
     return r;
@@ -246,7 +265,7 @@ class Readline
     get_input_controller()->bind("^I", file_completion);
     string s = low_edit(@args);
     get_input_controller()->unbind("^I");
-    
+
     return s;
   }
 
@@ -254,11 +273,11 @@ class Readline
   string edit_directory(mixed ... args)
   {
     match_directories_only = 1;
-    
+
     get_input_controller()->bind("^I", file_completion);
     string s = low_edit(@args);
     get_input_controller()->unbind("^I");
-    
+
     return s;
   }
 
@@ -266,7 +285,7 @@ class Readline
   {
     string text = gettext();
     int pos = getcursorpos();
-    
+
     array(string) path = make_absolute_path(text[..pos-1], cwd)/"/";
     array(string) files =
       glob(path[-1]+"*",

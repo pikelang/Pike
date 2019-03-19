@@ -1,4 +1,3 @@
-# $Id$
 @make_variables@
 VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@

@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
 
 #include "ldap_globals.h"
 
@@ -105,20 +104,20 @@ constant ldap_error_strings = ([
   LDAP_UNAVAILABLE_CRITICAL_EXTENSION: "Unavailable critical extension",
   LDAP_CONFIDENTIALITY_REQUIRED: "Confidentiality required",
   LDAP_SASL_BIND_IN_PROGRESS:	"SASL bind in progress",
-  
+
   LDAP_NO_SUCH_ATTRIBUTE:	"No such attribute",
   LDAP_UNDEFINED_TYPE:		"Undefined type",
   LDAP_INAPPROPRIATE_MATCHING:	"Inappropriate matching",
   LDAP_CONSTRAINT_VIOLATION:	"Constraint violation",
   LDAP_TYPE_OR_VALUE_EXISTS:	"Type or value exists",
   LDAP_INVALID_SYNTAX:		"Invalid syntax",
-  
+
   LDAP_NO_SUCH_OBJECT:		"No such object",
   LDAP_ALIAS_PROBLEM:		"Alias problem",
   LDAP_INVALID_DN_SYNTAX:	"Invalid DN syntax",
   LDAP_IS_LEAF:			"Is leaf",
   LDAP_ALIAS_DEREF_PROBLEM:	"Alias deref problem",
-  
+
   LDAP_INAPPROPRIATE_AUTH:	"Inappropriate auth",
   LDAP_INVALID_CREDENTIALS:	"Invalid credentials",
   LDAP_INSUFFICIENT_ACCESS:	"Insufficient access",
@@ -126,9 +125,9 @@ constant ldap_error_strings = ([
   LDAP_UNAVAILABLE:		"Unavailable",
   LDAP_UNWILLING_TO_PERFORM:	"Unwilling to perform",
   LDAP_LOOP_DETECT:		"Loop detect",
-  
+
   LDAP_SORT_CONTROL_MISSING:	"Sort control missing",
-  
+
   LDAP_NAMING_VIOLATION:	"Naming violation",
   LDAP_OBJECT_CLASS_VIOLATION:	"Object class violation",
   LDAP_NOT_ALLOWED_ON_NONLEAF:	"Not allowed on nonleaf",
@@ -137,7 +136,7 @@ constant ldap_error_strings = ([
   LDAP_NO_OBJECT_CLASS_MODS:	"No object class mods",
   LDAP_RESULTS_TOO_LARGE:	"Results too large",
   LDAP_AFFECTS_MULTIPLE_DSAS:	"Affects multiple DSAS",
-  
+
   LDAP_OTHER:			"Other str",
   LDAP_SERVER_DOWN:		"Server is down",
   LDAP_LOCAL_ERROR:		"Internal/local error",
@@ -191,8 +190,7 @@ constant SEARCH_RETURN_DECODE_ERRORS = 4;
 //!   Don't throw attribute value decode errors, instead return them
 //!   in the result from @[Protocols.LDAP.client.result.fetch] in
 //!   place of the value. I.e. anywhere an attribute value string
-//!   occurs, you might instead have a @[Locale.Charset.DecodeError]
-//!   object.
+//!   occurs, you might instead have a @[Charset.DecodeError] object.
 //! @enddl
 
 constant SCOPE_BASE = 0;
@@ -221,9 +219,9 @@ string ldap_encode_string (string str)
 //! Quote characters in the given string as necessary for use as a
 //! string literal in filters and various composite LDAP attributes.
 //!
-//! The quoting is compliant with RFCs 2252 (section 4.3) and 2254
-//! (section 4). All characters that can be special in those RFCs are
-//! quoted using the @expr{\xx@} syntax, but the set might be
+//! The quoting is compliant with @rfc{2252:4.3@} and
+//! @rfc{2254:4@}. All characters that can be special in those RFCs
+//! are quoted using the @expr{\xx@} syntax, but the set might be
 //! extended.
 //!
 //! @seealso
@@ -265,11 +263,11 @@ string encode_dn_value (string str)
 //! Encode the given string for use as an attribute value in a
 //! distinguished name (on string form).
 //!
-//! The encoding is according to RFC 2253 section 2.4 with the
-//! exception that characters above @expr{0x7F@} aren't UTF-8 encoded.
-//! UTF-8 encoding can always be done afterwards on the complete DN,
-//! which also is done internally by the @[Protocols.LDAP] functions
-//! when LDAPv3 is used.
+//! The encoding is according to @rfc{2253:2.4@} with the exception
+//! that characters above @expr{0x7F@} aren't UTF-8 encoded.  UTF-8
+//! encoding can always be done afterwards on the complete DN, which
+//! also is done internally by the @[Protocols.LDAP] functions when
+//! LDAPv3 is used.
 {
   str = replace (str,
 		 ({",",   "+",   "\"",   "\\",   "<",   ">",   ";"}),
@@ -289,9 +287,8 @@ string canonicalize_dn (string dn, void|int strict)
 //! binary attribute values, and sorting the RDN parts separated by
 //! "+".
 //!
-//! The returned string follows RFC 2253. The input string may
-//! use legacy LDAPv2 syntax and is treated according to section 4 in
-//! RFC 2253.
+//! The returned string follows @rfc{2253@}. The input string may use
+//! legacy LDAPv2 syntax and is treated according to @rfc{2253:4@}.
 //!
 //! If @[strict] is set then errors will be thrown if the given DN is
 //! syntactically invalid. Otherwise the invalid parts remain
@@ -433,9 +430,9 @@ parse_loop:
 // LDAP controls
 
 constant LDAP_CONTROL_MANAGE_DSA_IT = "2.16.840.1.113730.3.4.2";
-//! LDAP control: Manage DSA IT LDAPv3 control (RFC 3296): Control to
-//! indicate that the operation is intended to manage objects within
-//! the DSA (server) Information Tree.
+//! LDAP control: Manage DSA IT LDAPv3 control (@rfc{3296@}): Control
+//! to indicate that the operation is intended to manage objects
+//! within the DSA (server) Information Tree.
 
 constant LDAP_CONTROL_VLVREQUEST = "2.16.840.1.113730.3.4.9";
 //! LDAP control: LDAP Extensions for Scrolling View Browsing of
@@ -564,10 +561,10 @@ constant SYNTAX_PHONE_NUM = "1.3.6.1.4.1.1466.115.121.1.50"; // RFC 2252, 6.30
 constant SYNTAX_UTC_TIME = "1.3.6.1.4.1.1466.115.121.1.53"; // RFC 2252, 6.31
 constant SYNTAX_LDAP_SYNTAX_DESCR = "1.3.6.1.4.1.1466.115.121.1.54"; // RFC 2252, 6.32
 constant SYNTAX_DIT_STRUCTURE_RULE_DESCR = "1.3.6.1.4.1.1466.115.121.1.17"; // RFC 2252, 6.33
-//! LDAP syntax: Standard syntaxes from RFC 2252.
+//! LDAP syntax: Standard syntaxes from @rfc{2252@}.
 
 constant SYNTAX_CASE_EXACT_STR = SYNTAX_DIRECTORY_STR;
-//! @expr{"caseExactString"@} is an alias used in e.g. RFC 2079.
+//! @expr{"caseExactString"@} is an alias used in e.g. @rfc{2079@}.
 
 constant SYNTAX_DELIVERY_METHOD = "1.3.6.1.4.1.1466.115.121.1.14"; // RFC 2256, 6.1
 constant SYNTAX_ENHANCED_GUIDE = "1.3.6.1.4.1.1466.115.121.1.21"; // RFC 2256, 6.2
@@ -576,7 +573,7 @@ constant SYNTAX_OCTET_STR = "1.3.6.1.4.1.1466.115.121.1.40"; // RFC 2256, 6.4
 constant SYNTAX_TELETEX_TERMINAL_ID = "1.3.6.1.4.1.1466.115.121.1.51"; // RFC 2256, 6.5
 constant SYNTAX_TELETEX_NUM = "1.3.6.1.4.1.1466.115.121.1.52"; // RFC 2256, 6.6
 constant SYNTAX_SUPPORTED_ALGORITHM = "1.3.6.1.4.1.1466.115.121.1.49"; // RFC 2256, 6.7
-//! LDAP syntax: Standard syntaxes from RFC 2256.
+//! LDAP syntax: Standard syntaxes from @rfc{2256@}.
 
 //constant SYNTAX_ACI_ITEM = "1.3.6.1.4.1.1466.115.121.1.1";
 //constant SYNTAX_ACCESS_POINT = "1.3.6.1.4.1.1466.115.121.1.2";
@@ -1231,12 +1228,12 @@ protected void create()
   // Note partial code dup with client.get_attr_type_descr.
   array(mapping(string:mixed)) incomplete = ({});
 
-  foreach (indices (this_program), string const) {
-    if (has_prefix (const, "ATD_")) {
+  foreach (indices (this_program), string name) {
+    if (has_prefix (name, "ATD_")) {
       mapping(string:mixed) descr =
 	// Pike doesn't allow a type as first arg in the native []
 	// operator syntax.
-	predef::`[] (this_program, const);
+	predef::`[] (this_program, name);
       if (_standard_attr_type_descrs[descr->oid])
 	error ("OID conflict between %O and %O.\n",
 	       _standard_attr_type_descrs[descr->oid], descr);
@@ -1256,13 +1253,13 @@ protected void create()
     if (sup_descr->SUP)
       complete (sup_descr);
     foreach (indices (sup_descr), string term)
-      if (zero_type (descr[term]))
+      if (!has_index (descr, term))
 	descr[term] = sup_descr[term];
   };
   foreach (incomplete, mapping(string:mixed) descr)
     complete (descr);
 
-#ifdef DEBUG
+#ifdef LDAP_DEBUG
   // To discover duplicate constant names.
   get_constant_name (0);
 #endif
@@ -1365,7 +1362,7 @@ class FilterError
     error_message = msg;
     error_backtrace = backtrace();
     error_backtrace = error_backtrace[..<1];
-    throw (this_object());
+    throw (this);
   }
 }
 
@@ -1379,8 +1376,8 @@ object make_filter (string filter, void|int ldap_version)
 //! can be used repeatedly to avoid reparsing the filter string.
 //!
 //! @param filter
-//!   The filter to parse, according to the syntax specified in RFC
-//!   2254. The syntax is extended a bit to allow and ignore
+//!   The filter to parse, according to the syntax specified in
+//!   @rfc{2254@}. The syntax is extended a bit to allow and ignore
 //!   whitespace everywhere except inside and next to the filter
 //!   values.
 //!
@@ -1567,8 +1564,8 @@ object make_filter (string filter, void|int ldap_version)
 	      res = ASN1_CONTEXT_OCTET_STRING (7, attr); // 'present'
 	    else
 	      res = ASN1_CONTEXT_SEQUENCE ( // 'substrings'
-		4, ({Standards.ASN1.Types.asn1_octet_string (attr),
-		     Standards.ASN1.Types.asn1_sequence (subs)}));
+		4, ({Standards.ASN1.Types.OctetString (attr),
+		     Standards.ASN1.Types.Sequence (subs)}));
 	  }
 
 	  else {
@@ -1583,8 +1580,8 @@ object make_filter (string filter, void|int ldap_version)
 			     "starting at %O.\n", EXCERPT (subfilter));
 	    }
 	    res = ASN1_CONTEXT_SEQUENCE (
-	      op_number, ({Standards.ASN1.Types.asn1_octet_string (attr),
-			   Standards.ASN1.Types.asn1_octet_string (val)}));
+	      op_number, ({Standards.ASN1.Types.OctetString (attr),
+			   Standards.ASN1.Types.OctetString (val)}));
 	  }
 	}
 
@@ -1679,6 +1676,13 @@ protected void periodic_idle_conns_garb()
     periodic_idle_conns_garb_call_out = 0;
   }
 }
+
+// This mapping is used to attempt to pin connections to a single
+// LDAP server in the case of clustering with DNS round-robin.
+//
+// Mapping from hostname to an array with the index of the most
+// recently working connection in index 0, followed by ip-numbers.
+protected mapping(string:array(int|string)) host_lookup = ([]);
 
 object/*(client)*/ get_connection (string ldap_url, void|string binddn,
 				   void|string password, void|int version)
@@ -1778,6 +1782,48 @@ object/*(client)*/ get_connection (string ldap_url, void|string binddn,
 
   if (!conn) {
     DWRITE("Connecting to %O.\n", ldap_url);
+    string host = parsed_url->host;
+    if (host) {
+      if (!host_lookup[host]) {
+	array(string|array(string)) entry =
+	  Protocols.DNS.gethostbyname(host);
+	if ((sizeof(entry) >= 2) && sizeof(entry[1])) {
+	  DWRITE("DNS lookup: %O.\n", entry[1]);
+	  host_lookup[host] = ({ random(sizeof(entry[1])) + 1 }) + entry[1];
+	} else {
+	  entry = gethostbyname(host);
+	  if ((sizeof(entry) >= 2) && sizeof(entry[1])) {
+	    DWRITE("Hosts lookup: %O.\n", entry[1]);
+	    host_lookup[host] = ({ random(sizeof(entry[1])) + 1 }) + entry[1];
+	  }
+	}
+      }
+      array(int|string) ips = host_lookup[host];
+      if (ips) {
+	int i = ips[0];
+	for (int j = 1; j < sizeof(ips); j++) {
+	  mixed err = catch {
+	      DWRITE("Attempt #%d: %O.\n", j, ips[i]);
+	      parsed_url->host = ips[i];
+	      conn = Protocols.LDAP["client"](parsed_url);
+	      ips[0] = i;
+	      break;
+	    };
+	  if (!err) {
+	    break;
+	  }
+	  DWRITE("Failure: %s\n", describe_error(err));
+	  if (++i >= sizeof(ips)) i = 1;
+	}
+	parsed_url->host = host;
+	if (!conn) {
+	  m_delete(host_lookup, host);
+	}
+      }
+    }
+  }
+
+  if (!conn) {
     conn = Protocols.LDAP["client"] (parsed_url);
   }
 

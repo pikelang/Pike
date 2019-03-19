@@ -16,6 +16,37 @@ void read_all_data()
       combine_path(__FILE__,"../events/regional"));
 }
 
+
+//! The Event system
+//!
+//! Q:  How do I find out which days are red in a specific region?
+//!
+//! A:  Events.<region>
+//!
+//!     - contains the events for the region, as a SuperEvent.
+//!     You can ask this object to filter out the holidays,
+//!
+//! @code
+//!        Events.se.holidays();
+//! @endcode
+//!
+//!     Which will be a superevent containing only holidays.
+//!
+//!     To use this information, you can for instance use ->scan,
+//!     here in an example to see what red days there were in Sweden
+//!     in 2001
+//!
+//! @code
+//!       > Calendar.Events.se->filter_flag("h")->scan(Calendar.Month());
+//!       Result: ({ /* 6 elements */
+//!      		   Day(Sun 7 Jan 2001),
+//!      		   Day(Sun 14 Jan 2001),
+//!      		   Day(Sun 21 Jan 2001),
+//!      		   Day(Sun 28 Jan 2001),
+//!      		   Day(Sat 6 Jan 2001),
+//!      		   Day(Mon 1 Jan 2001)
+//! @endcode
+
 Event.Event make_event(string source)
 {
    string id;
@@ -118,7 +149,7 @@ Event.Event make_event(string source)
 	 if (sscanf(rule,
 		    "WDRel%*[ \t]%[A-z]%*[ \t]%d%*[ \t]%[^ \t]%*[ \t]"
 		    "%d%*[ \t]%d days",
-		    mn,md,wd,n,days)>=8 && 
+		    mn,md,wd,n,days)>=8 &&
 	     (m=month2n[mn]) && wd2n[wd])
 	 {
 	    m=(m%12)+1;
@@ -135,13 +166,35 @@ Event.Event make_event(string source)
 		    n,days)>=2)
 	    return Event.Easter_Relative(id,s,n);
 	 error("Events: rule error; unknown rule format:\n%O\n",source);
-	 
+
       case "Julian_Easter":
 	 if (sscanf(rule,"Julian_Easter%*[ \t]%d%*[ \t]%d days",
 		    n,days)>=2)
 	    return Event.Easter_Relative(id,s,n);
 	 error("Events: rule error; unknown rule format:\n%O\n",source);
-	 
+
+      case "Equinox":
+	 if (sscanf(rule, "Equinox%*[ \t]%s", string type)) {
+	    switch(String.trim_all_whites(type)) {
+	    case "Vernal": case "Northward":
+	       return Event.Solar(0);
+	    case "Autumnal": case "Southward":
+	       return Event.Solar(2);
+	    }
+	 }
+	 error("Events: rule error; unknown rule format:\n%O\n",source);
+
+      case "Solstice":
+	 if (sscanf(rule, "Solstice%*[ \t]%s", string type)) {
+	    switch(String.trim_all_whites(type)) {
+	    case "Summer": case "Northern":
+	       return Event.Solar(1);
+	    case "Winter": case "Southern":
+	       return Event.Solar(3);
+	    }
+	 }
+	 error("Events: rule error; unknown rule format:\n%O\n",source);
+
       case "Weekday":
 	 if (sscanf(rule,"Weekday%*[ \t]%s%*[ \t]%d days",
 		    wd,days)>=2 && (n=wd2n[wd]))
@@ -150,7 +203,7 @@ Event.Event make_event(string source)
 
       case "Null":
 	 return Event.NullEvent(id,s);
-	 
+
       default:
 	 error("Events: rule error; unknown rule id:\n%O\n",source);
    }
@@ -179,11 +232,12 @@ string read_all_namedays()
       combine_path(__FILE__,"../events/namedays"));
 }
 
+
 Event.Namedays find_namedays(string region)
 {
    string id="namedays/"+region;
    object res;
-   if ( (res=made_namedays[region]) ) 
+   if ( (res=made_namedays[region]) )
       return res;
    string all=read_all_namedays();
 
@@ -214,15 +268,15 @@ Event.Namedays find_namedays(string region)
 	    break;
 	 case "charset":
 	    sscanf(s,"%s",charset);
-	    object dec=Locale.Charset.decoder(charset);
+	    object dec=Charset.decoder(charset);
 	    decoder=lambda(string s)
 		    {
 		       return dec->feed(s)->drain();
 		    };
 	    break;
 	 case "period":
-	    if (names) 
-	       if (res) 
+	    if (names)
+	       if (res)
 		  res|=new_namedays_object(region,id,
 					   start,stop,leapdayshift,names);
 	       else
@@ -262,13 +316,13 @@ Event.Namedays find_namedays(string region)
       }
 #endif
    }
-   if (names) 
-      if (res) 
+   if (names)
+      if (res)
 	 res|=new_namedays_object(region,id||"?",
 				  start,stop,leapdayshift,names);
       else
 	 res=new_namedays_object(region,id||"?",start,stop,leapdayshift,names);
-   
+
    return res;
 }
 
@@ -284,7 +338,7 @@ Event.Event find_event(string s)
 
    int i=search(all_data,sprintf("Event %O",s));
    if (i==-1) return UNDEFINED;
-   
+
    int j=search(all_data,"\n",i);
    if (j==-1) j=0x7fffffff;
    return make_event(all_data[i..j]);
@@ -299,7 +353,7 @@ Event.Event find_region(string c)
 
    int i=search(all_data,sprintf("\nRegion %O",c));
    if (i==-1) return UNDEFINED;
-   
+
    int j=search(all_data,"\nRegion \"",i+1);
    if (j==-1) j=0x7fffffff;
 
@@ -316,7 +370,7 @@ Event.Event find_region(string c)
 	  whut!="" && whut[0]!='#')
 	 switch (whut)
 	 {
-	    case "Add": 
+	    case "Add":
 	       e=find_event(id);
 	       if (!e)
 		  error("Events: Adding undefined event\n%O\n",line);
@@ -325,7 +379,7 @@ Event.Event find_region(string c)
 			     (flagy[flags]=mkmultiset( (flags-"-")/"" )));
 	       events+=({e});
 	       break;
-	    case "Event": 
+	    case "Event":
 	       e=make_event(line);
 	       if (flags!="-")
 		  eflags[e]=(flagy[flags]||
@@ -371,6 +425,12 @@ array all_regions()
 
 // -----------------------------------------------------------------------
 
+//! @decl Event.Event `[](string region)
+//! @decl Event.Event `->(string region)
+//!
+//! return the Event object for the specified region or the specified
+//! named event.
+
 program|Event.Event `[](string s)
 {
    return ::`[](s) || magic_event(s);
@@ -390,12 +450,12 @@ Event.Event|Event.Namedays magic_event(string s)
    if (e=find_event(s)) return e;
    if (e=find_region(s)) return e;
 
-   if (!country_lookup) 
+   if (!country_lookup)
       country_lookup=master()->resolv("Geography.Countries");
    object c=country_lookup->from_name(s);
    if (c && (e=find_region(lower_case(c->iso2)))) return e;
-   
-   if (s=="tzshift") 
+
+   if (s=="tzshift")
       return loaded_events->tzshift=Event.TZShift_Event();
 
    return UNDEFINED;

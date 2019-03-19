@@ -1,7 +1,7 @@
-// Bittorrent client - originally by Mirar 
+// Bittorrent client - originally by Mirar
 #pike __REAL_VERSION__
+#require constant(Protocols.Bittorrent.Torrent)
 
-#if constant(.Torrent)
 constant dont_dump_program = 1;
 
 Stdio.Port port;
@@ -38,11 +38,10 @@ void destroy() { destruct(port); }
 protected void new_connection()
 {
    Stdio.File fd=port->accept();
-   
+
    if (!fd)
    {
-      parent->warning("failed to accept() (out of fds?): %s\n",
-		      strerror(errno()));
+      parent->warning("failed to accept() (out of fds?): %m.\n");
       return;
    }
 
@@ -54,8 +53,3 @@ protected void new_connection()
 	"port":(int)v[1],
 	"fd":fd ]) );
 }
-#else /* !constant(.Torrent) */
-
-constant this_program_does_not_exist=1;
-
-#endif /* constant(.Torrent) */

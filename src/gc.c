@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -28,6 +27,8 @@ struct callback *gc_evaluator_callback=0;
 #include "pike_threadlib.h"
 #include "gc.h"
 #include "main.h"
+#include "builtin_functions.h"
+#include "block_allocator.h"
 
 #include <math.h>
 
@@ -44,6 +45,23 @@ double gc_min_time_ratio = 1.0/10000.0; /* Martys constant. */
 /* This slowness factor approximately corresponds to the average over
  * the last ten gc rounds. (0.9 == 1 - 1/10) */
 double gc_average_slowness = 0.9;
+
+/* High-level callbacks.
+ * NB: These are initialized from builtin.cmod.
+ */
+/* Callback called when gc() starts. */
+struct svalue gc_pre_cb;
+
+/* Callback called when the mark and sweep phase of the gc() is done. */
+struct svalue gc_post_cb;
+
+/* Callback called for each object that is to be destructed explicitly
+ * by the gc().
+ */
+struct svalue gc_destruct_cb;
+
+/* Callback called when the gc() is about to exit. */
+struct svalue gc_done_cb;
 
 /* The gc will free all things with no external nonweak references
  * that isn't referenced by live objects. An object is considered
@@ -95,6 +113,7 @@ double gc_average_slowness = 0.9;
 /* #define GC_VERBOSE */
 /* #define GC_CYCLE_DEBUG */
 /* #define GC_STACK_DEBUG */
+/* #define GC_INTERVAL_DEBUG */
 
 #if defined(GC_VERBOSE) && !defined(PIKE_DEBUG)
 #undef GC_VERBOSE
@@ -117,6 +136,13 @@ int gc_trace = 0, gc_debug = 0;
 int gc_destruct_everything = 0;
 #endif
 size_t gc_ext_weak_refs;
+
+ALLOC_COUNT_TYPE saved_alloc_threshold;
+/* Used to backup alloc_threshold if the gc is disabled, so that it
+ * can be restored when it's enabled again. This is to not affect the
+ * gc interval if it's disabled only for a short duration.
+ * alloc_threshold is set to GC_MAX_ALLOC_THRESHOLD while it's
+ * disabled, to avoid complicating the test in GC_ALLOC(). */
 
 static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
@@ -413,25 +439,25 @@ static unsigned rec_frames, link_frames, free_extra_frames;
 static unsigned max_rec_frames, max_link_frames;
 static unsigned tot_max_rec_frames = 0, tot_max_link_frames = 0, tot_max_free_extra_frames = 0;
 
-#undef INIT_BLOCK
-#define INIT_BLOCK(f) do {						\
-    if (++rec_frames > max_rec_frames)					\
-      max_rec_frames = rec_frames;					\
-  } while (0)
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(f) do {						\
-    DO_IF_DEBUG ({							\
-	if (f->rf_flags & GC_FRAME_FREED)				\
-	  gc_fatal (f->data, 0, "Freeing gc_rec_frame twice.\n");	\
-	f->rf_flags |= GC_FRAME_FREED;					\
-	f->u.link_top = (struct link_frame *) (ptrdiff_t) -1;		\
-	f->prev = f->next = f->cycle_id = f->cycle_piece =		\
-	  (struct gc_rec_frame *) (ptrdiff_t) -1;			\
-      });								\
-    rec_frames--;							\
-  } while (0)
+struct block_allocator gc_rec_frame_allocator =
+    BA_INIT_PAGES(sizeof(struct gc_rec_frame), 2);
 
-BLOCK_ALLOC_FILL_PAGES (gc_rec_frame, 2)
+static void really_free_gc_rec_frame(struct gc_rec_frame * f) {
+#ifdef PIKE_DEBUG
+  if (f->rf_flags & GC_FRAME_FREED)
+    gc_fatal (f->data, 0, "Freeing gc_rec_frame twice.\n");
+  f->rf_flags |= GC_FRAME_FREED;
+  f->u.link_top = (struct link_frame *) (ptrdiff_t) -1;
+  f->prev = f->next = f->cycle_id = f->cycle_piece =
+    (struct gc_rec_frame *) (ptrdiff_t) -1;
+#endif
+  rec_frames--;
+  ba_free(&gc_rec_frame_allocator, f);
+}
+
+void count_memory_in_gc_rec_frames(size_t *num, size_t * size) {
+  ba_count_all(&gc_rec_frame_allocator, num, size);
+}
 
 /* Link and free_extra frames are approximately the same size, so let
  * them share block_alloc area. */
@@ -444,18 +470,16 @@ struct ba_mixed_frame
   } u;
 };
 
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT u.next
-#undef INIT_BLOCK
-#define INIT_BLOCK(f)
-#undef EXIT_BLOCK
-#define EXIT_BLOCK(f)
+static struct block_allocator ba_mixed_frame_allocator
+    = BA_INIT_PAGES(sizeof(struct ba_mixed_frame), 2);
 
-BLOCK_ALLOC_FILL_PAGES (ba_mixed_frame, 2)
+void count_memory_in_ba_mixed_frames(size_t *num, size_t * size) {
+  ba_count_all(&ba_mixed_frame_allocator, num, size);
+}
 
 static INLINE struct link_frame *alloc_link_frame()
 {
-  struct ba_mixed_frame *f = alloc_ba_mixed_frame();
+  struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   if (++link_frames > max_link_frames)
     max_link_frames = link_frames;
   return (struct link_frame *) f;
@@ -463,7 +487,7 @@ static INLINE struct link_frame *alloc_link_frame()
 
 static INLINE struct free_extra_frame *alloc_free_extra_frame()
 {
-  struct ba_mixed_frame *f = alloc_ba_mixed_frame();
+  struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   free_extra_frames++;
   return (struct free_extra_frame *) f;
 }
@@ -471,13 +495,13 @@ static INLINE struct free_extra_frame *alloc_free_extra_frame()
 static INLINE void really_free_link_frame (struct link_frame *f)
 {
   link_frames--;
-  really_free_ba_mixed_frame ((struct ba_mixed_frame *) f);
+  ba_free(&ba_mixed_frame_allocator, f);
 }
 
 static INLINE void really_free_free_extra_frame (struct free_extra_frame *f)
 {
   free_extra_frames--;
-  really_free_ba_mixed_frame ((struct ba_mixed_frame *) f);
+  ba_free(&ba_mixed_frame_allocator, f);
 }
 
 /* These are only collected for the sake of gc_status. */
@@ -515,6 +539,8 @@ static void gc_cycle_pop();
   (X)->flags=(X)->refs=(X)->weak_refs=0;		\
   (X)->frame = 0;
 #endif
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(f)
 
 #undef get_marker
 #define get_marker debug_get_marker
@@ -539,9 +565,9 @@ PMOD_EXPORT struct marker *pmod_find_marker (void *p)
 }
 
 #if defined (PIKE_DEBUG) || defined (GC_MARK_DEBUG)
-void *gc_found_in = NULL;
-int gc_found_in_type = PIKE_T_UNKNOWN;
-const char *gc_found_place = NULL;
+PMOD_EXPORT void *gc_found_in = NULL;
+PMOD_EXPORT int gc_found_in_type = PIKE_T_UNKNOWN;
+PMOD_EXPORT const char *gc_found_place = NULL;
 #endif
 
 #ifdef DO_PIKE_CLEANUP
@@ -567,7 +593,7 @@ static void describe_rec_stack (struct gc_rec_frame *p1, const char *p1_name,
 				struct gc_rec_frame *p3, const char *p3_name)
 {
   struct gc_rec_frame *l, *cp;
-  size_t longest;
+  size_t longest = 0;
 
   if (p1) longest = strlen (p1_name);
   if (p2) {size_t l = strlen (p2_name); if (l > longest) longest = l;}
@@ -695,7 +721,7 @@ void describe_location(void *real_memblock,
 		       int flags)
 {
   struct program *p;
-  void *memblock=0, *descblock, *inblock;
+  void *memblock=0, *descblock, *inblock = NULL;
   if(!location) return;
 /*  fprintf(stderr,"**Location of (short) svalue: %p\n",location); */
 
@@ -742,7 +768,7 @@ void describe_location(void *real_memblock,
 	}
       }
       break;
-      
+
     case T_PROGRAM:
     {
       ptrdiff_t e;
@@ -760,7 +786,7 @@ void describe_location(void *real_memblock,
 
       if(p->inherits &&
 	 ptr >= (char *)p->inherits  &&
-	 ptr < (char*)(p->inherits+p->num_inherits)) 
+	 ptr < (char*)(p->inherits+p->num_inherits))
       {
 	e=((char *)ptr - (char *)(p->inherits)) / sizeof(struct inherit);
 	fprintf(stderr,"%*s  **In p->inherits[%"PRINTPTRDIFFT"d] (%s)\n",indent,"",
@@ -786,7 +812,7 @@ void describe_location(void *real_memblock,
       }
 
 
-      if(p->identifiers && 
+      if(p->identifiers &&
 	 ptr >= (char *)p->identifiers  &&
 	 ptr < (char*)(p->identifiers+p->num_identifiers))
       {
@@ -806,7 +832,7 @@ void describe_location(void *real_memblock,
       fprintf(stderr,"%*s  **In p->" #NAME "[%"PRINTPTRDIFFT"d]\n",indent,"", \
 	      ((char *)ptr - (char *)(p->NAME)) / sizeof(TYPE));
 #include "program_areas.h"
-      
+
       break;
     }
 
@@ -840,12 +866,12 @@ void describe_location(void *real_memblock,
 	{
 	  struct inherit tmp=p->inherits[e];
 	  char *base=o->storage + tmp.storage_offset;
-	  
+
 	  for(d=0;d<(INT32)tmp.prog->num_identifiers;d++)
 	  {
 	    struct identifier *id=tmp.prog->identifiers+d;
 	    if(!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) continue;
-	    
+
 	    if(location == (void *)(base + id->func.offset))
 	    {
 	      fprintf(stderr,"%*s  **In variable %s\n",indent,"",id->name->str);
@@ -860,7 +886,7 @@ void describe_location(void *real_memblock,
 	      fprintf(stderr," (%s)",tmp.name->str);
 	    fprintf(stderr,"\n");
 	  }
-	     
+
 	}
       }
       break;
@@ -878,18 +904,11 @@ void describe_location(void *real_memblock,
       struct multiset_data *msd = (struct multiset_data *) descblock;
       union msnode *node = low_multiset_first (msd);
       struct svalue ind;
-      int indval = msd->flags & MULTISET_INDVAL;
       for (; node; node = low_multiset_next (node)) {
 	if (&node->i.ind == (struct svalue *) location) {
 	  fprintf (stderr, "%*s  **In index ", indent, "");
 	  safe_print_svalue (stderr, low_use_multiset_index (node, ind));
 	  fputc ('\n', stderr);
-	  break;
-	}
-	else if (indval && &node->iv.val == (struct svalue *) location) {
-	  fprintf(stderr, "%*s  **In value with index ", indent, "");
-	  safe_print_svalue (stderr, low_use_multiset_index (node, ind));
-	  fputc('\n', stderr);
 	  break;
 	}
       }
@@ -968,11 +987,13 @@ void describe_location(void *real_memblock,
 #endif
 }
 
+#ifdef GC_STACK_DEBUG
 static void describe_link_frame (struct link_frame *f)
 {
   fprintf (stderr, "data=%p prev=%p checkfn=%p weak=%d",
 	   f->data, f->prev, f->checkfn, f->weak);
 }
+#endif
 
 static void describe_marker(struct marker *m)
 {
@@ -994,16 +1015,16 @@ static void describe_marker(struct marker *m)
 
 #endif /* PIKE_DEBUG */
 
-static void debug_gc_fatal_va (void *a, int type, int flags,
+static void debug_gc_fatal_va (void *DEBUGUSED(a), int DEBUGUSED(type), int DEBUGUSED(flags),
 			       const char *fmt, va_list args)
 {
   int orig_gc_pass = Pike_in_gc;
 
-  (void) VFPRINTF(stderr, fmt, args);
+  (void) vfprintf(stderr, fmt, args);
 
 #ifdef PIKE_DEBUG
   if (a) {
-    void *inblock;
+    void *inblock = NULL;
     /* Temporarily jumping out of gc to avoid being caught in debug
      * checks in describe(). */
     Pike_in_gc = 0;
@@ -1040,26 +1061,31 @@ void debug_gc_fatal_2 (void *a, int type, int flags, const char *fmt, ...)
   va_end (args);
 }
 
-static void dloc_gc_fatal (const char *file, int line,
+#ifdef PIKE_DEBUG
+
+static void dloc_gc_fatal (const char *file, INT_TYPE line,
 			   void *a, int flags, const char *fmt, ...)
 {
   va_list args;
-  fprintf (stderr, "%s:%d: GC fatal:\n", file, line);
+  fprintf (stderr, "%s:%ld: GC fatal:\n", file, (long)line);
   va_start (args, fmt);
   debug_gc_fatal_va (a, PIKE_T_UNKNOWN, flags, fmt, args);
   va_end (args);
 }
 
-static void rec_stack_fatal (struct gc_rec_frame *err, const char *err_name,
-			     struct gc_rec_frame *p1, const char *p1n,
-			     struct gc_rec_frame *p2, const char *p2n,
-			     const char *file, int line,
+static void rec_stack_fatal (struct gc_rec_frame *DEBUGUSED(err),
+                             const char *DEBUGUSED(err_name),
+                             struct gc_rec_frame *DEBUGUSED(p1),
+                             const char *DEBUGUSED(p1n),
+                             struct gc_rec_frame *DEBUGUSED(p2),
+                             const char *DEBUGUSED(p2n),
+			     const char *file, INT_TYPE line,
 			     const char *fmt, ...)
 {
   va_list args;
   va_start (args, fmt);
   fprintf (stderr, msg_fatal_error, file, line);
-  (void) VFPRINTF (stderr, fmt, args);
+  (void) vfprintf (stderr, fmt, args);
 #if defined (PIKE_DEBUG) || defined (GC_CYCLE_DEBUG)
   fputs ("Recursion stack:\n", stderr);
   describe_rec_stack (err, err_name, p1, p1n, p2, p2n);
@@ -1074,9 +1100,7 @@ static void rec_stack_fatal (struct gc_rec_frame *err, const char *err_name,
   va_end (args);
 }
 
-#ifdef PIKE_DEBUG
-
-static void gdb_gc_stop_here(void *a, int weak)
+static void gdb_gc_stop_here(void *UNUSED(a), int weak)
 {
   found_ref_count++;
   fprintf(stderr,"***One %sref found%s. ",
@@ -1180,7 +1204,7 @@ again:
 	struct object *o = t->frame->current_object;
 	struct program *p = o->prog;
 	struct identifier *id;
-	INT32 line;
+	INT_TYPE line;
 	struct pike_string *file;
 
 	fprintf (stderr, "%*s**The object is a trampoline.\n", indent, "");
@@ -1307,7 +1331,7 @@ again:
     case T_PROGRAM:
     {
       char *tmp;
-      INT32 line;
+      INT_TYPE line;
       ptrdiff_t id_idx, id_count = 0;
       struct inherit *inh = p->inherits, *next_inh = p->inherits + 1;
       ptrdiff_t inh_id_end = p->num_identifier_references;
@@ -1516,7 +1540,7 @@ again:
 	fprintf (stderr, "%*s**Didn't find mapping for this data block!\n", indent, "");
       break;
     }
-    
+
     case T_MAPPING:
       if (((struct mapping *) a)->refs > 0)
 	debug_dump_mapping((struct mapping *)a);
@@ -1556,7 +1580,7 @@ again:
 	  struct program *p = f->current_object->prog;
 	  if (p) {
 	    struct identifier *id = ID_FROM_INT(p, f->fun);
-	    INT32 line;
+	    INT_TYPE line;
 	    struct pike_string *file;
 	    if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
 		id->func.offset >= 0 &&
@@ -1641,7 +1665,7 @@ PMOD_EXPORT void describe(void *x)
   describe_something(x, type, 0, 0, 0, inblock);
 }
 
-void debug_describe_svalue(struct svalue *s)
+PMOD_EXPORT void debug_describe_svalue(struct svalue *s)
 {
   fprintf(stderr,"Svalue at %p is:\n",s);
   switch(TYPEOF(*s))
@@ -1679,7 +1703,7 @@ void debug_describe_svalue(struct svalue *s)
   describe_something(s->u.refs, TYPEOF(*s), 0, 1, 0, 0);
 }
 
-void gc_watch(void *a)
+PMOD_EXPORT void gc_watch(void *a)
 {
   struct marker *m;
   init_gc();
@@ -1731,7 +1755,7 @@ struct gc_queue_block *gc_mark_first = NULL, *gc_mark_last = NULL;
 
 #define CHECK_MARK_QUEUE_EMPTY() assert (!gc_mark_first)
 
-void gc_mark_run_queue()
+void gc_mark_run_queue(void)
 {
   struct gc_queue_block *b;
 
@@ -1750,7 +1774,7 @@ void gc_mark_run_queue()
   gc_mark_last=0;
 }
 
-void gc_mark_discard_queue()
+void gc_mark_discard_queue(void)
 {
   struct gc_queue_block *b = gc_mark_first;
   while (b)
@@ -2032,8 +2056,8 @@ void exit_gc(void)
   if (!gc_keep_markers)
     cleanup_markers();
 
-  free_all_gc_rec_frame_blocks();
-  free_all_ba_mixed_frame_blocks();
+  ba_free_all(&gc_rec_frame_allocator);
+  ba_free_all(&ba_mixed_frame_allocator);
 
 #ifdef PIKE_DEBUG
   if (gc_is_watching) {
@@ -2046,12 +2070,12 @@ void exit_gc(void)
 
 #ifdef PIKE_DEBUG
 
-PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line)
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line)
 {
   struct marker *m = find_marker (a);
   if (m && (m->flags & GC_CLEANUP_LEAKED))
-    fprintf (stderr, "Free of leaked %s %p from %s:%d, %d refs remaining\n",
-	     get_name_of_type (type), a, file, line, *(INT32 *)a - 1);
+    fprintf (stderr, "Free of leaked %s %p from %s:%ld, %d refs remaining\n",
+	     get_name_of_type (type), a, file, (long)line, *(INT32 *)a - 1);
 }
 
 /* This function marks some known externals. The rest are handled by
@@ -2065,12 +2089,12 @@ static void mark_externals (void)
     gc_mark_external (constants, " as global constants mapping");
 }
 
-void locate_references(void *a)
+PMOD_EXPORT void locate_references(void *a)
 {
   int tmp, orig_in_gc = Pike_in_gc;
   const char *orig_gc_found_place = gc_found_place;
   int i=0;
-  if(!marker_blocks)
+  if(!marker_hash_table)
   {
     i=1;
     init_gc();
@@ -2083,7 +2107,7 @@ void locate_references(void *a)
   d_flag=0;
 
   fprintf(stderr,"**Looking for references to %p:\n", a);
-  
+
   check_for=a;
   found_ref_count = 0;
 
@@ -2256,7 +2280,7 @@ int gc_mark_external (void *a, const char *place)
 static void check_rec_stack_frame (struct gc_rec_frame *f,
 				   struct gc_rec_frame *p1, const char *p1n,
 				   struct gc_rec_frame *p2, const char *p2n,
-				   const char *file, int line)
+				   const char *file, INT_TYPE line)
 {
   /* To allow this function to be used after a stack rotation but
    * before cycle_id markup, there are no checks here for cycle_id
@@ -2303,7 +2327,7 @@ static void check_rec_stack_frame (struct gc_rec_frame *f,
   while (0)
 
 static void check_cycle_piece_frame (struct gc_rec_frame *f,
-				     const char *file, int line)
+				     const char *file, INT_TYPE line)
 {
   LOW_CHECK_REC_FRAME (f, file, line);
   if ((f->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) !=
@@ -2319,7 +2343,7 @@ static void check_cycle_piece_frame (struct gc_rec_frame *f,
   do check_cycle_piece_frame ((f), __FILE__, __LINE__); while (0)
 
 static void check_kill_list_frame (struct gc_rec_frame *f,
-				   const char *file, int line)
+				   const char *file, INT_TYPE line)
 {
   LOW_CHECK_REC_FRAME (f, file, line);
   if ((f->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) !=
@@ -2340,7 +2364,7 @@ static void check_rec_stack (struct gc_rec_frame *p1, const char *p1n,
   /* This debug check is disabled during the final cleanup since this
    * is O(n^2) on the stack size, and the stack gets a lot larger then. */
   if (gc_debug && !gc_destruct_everything) {
-    struct gc_rec_frame *l, *last_cycle_id;
+    struct gc_rec_frame *l, *last_cycle_id = NULL;
     for (l = &sentinel_frame; l != stack_top;) {
       l = l->next;
       check_rec_stack_frame (l, p1, p1n, p2, p2n, file, line);
@@ -2629,7 +2653,9 @@ PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int we
 
 static struct gc_rec_frame *gc_cycle_enqueue_rec (void *data)
 {
-  struct gc_rec_frame *r = alloc_gc_rec_frame();
+  struct gc_rec_frame *r =
+    (struct gc_rec_frame*)ba_alloc(&gc_rec_frame_allocator);
+  if (++rec_frames > max_rec_frames) max_rec_frames = rec_frames;
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
     gc_fatal(data, 0, "Use of the gc frame stack outside the cycle check pass.\n");
@@ -3330,6 +3356,7 @@ int gc_do_free(void *a)
   return !(m->flags & GC_LIVE);
 }
 
+#if 0
 static void free_obj_arr(void *oa)
 {
   struct array *obj_arr = *((struct array **)oa);
@@ -3337,6 +3364,7 @@ static void free_obj_arr(void *oa)
   if (obj_arr) free_array(obj_arr);
   free(oa);
 }
+#endif
 
 /*! @class MasterObject
  */
@@ -3379,6 +3407,7 @@ static void warn_bad_cycles(void)
    * (On some architectures longjump() might restore obj_arr's original
    * value (eg if obj_arr is in a register)).
    */
+#if 0
   struct array **obj_arr_ = (struct array **)xalloc(sizeof(struct array *));
   ONERROR tmp;
 
@@ -3386,7 +3415,6 @@ static void warn_bad_cycles(void)
 
   SET_ONERROR(tmp, free_obj_arr, obj_arr_);
 
-#if 0
   {
     struct gc_pop_frame *p;
     unsigned cycle = 0;
@@ -3401,8 +3429,8 @@ static void warn_bad_cycles(void)
       p = p->next;
       if (p ? ((unsigned)(p->cycle != cycle)) : cycle) {
 	if ((*obj_arr_)->size >= 2) {
-	  push_constant_text("gc");
-	  push_constant_text("bad_cycle");
+	  push_static_text("gc");
+	  push_static_text("bad_cycle");
 	  push_array(*obj_arr_);
 	  *obj_arr_ = 0;
 	  SAFE_APPLY_MASTER("runtime_warning", 3);
@@ -3414,12 +3442,12 @@ static void warn_bad_cycles(void)
       if (!p) break;
     }
   }
-#endif
 
   CALL_AND_UNSET_ONERROR(tmp);
+#endif
 }
 
-size_t do_gc(void *ignored, int explicit_call)
+size_t do_gc(void *UNUSED(ignored), int explicit_call)
 {
   ALLOC_COUNT_TYPE start_allocs;
   size_t start_num_objs, unreferenced;
@@ -3436,8 +3464,18 @@ size_t do_gc(void *ignored, int explicit_call)
   if(Pike_in_gc) return 0;
 
   if (gc_enabled <= 0 && (gc_enabled < 0 || !explicit_call)) {
+    /* If this happens then the gc has been disabled for a very long
+     * time and num_allocs > GC_MAX_ALLOC_THRESHOLD. Have to reset
+     * num_allocs, but then we also reset saved_alloc_threshold to
+     * GC_MIN_ALLOC_THRESHOLD so that a gc is run quickly if it ever
+     * is enabled again. */
+#ifdef GC_INTERVAL_DEBUG
+    fprintf (stderr, "GC disabled: num_allocs %"PRINT_ALLOC_COUNT_TYPE", "
+	     ", alloc_threshold %"PRINT_ALLOC_COUNT_TYPE"\n",
+	     num_allocs, alloc_threshold);
+#endif
     num_allocs = 0;
-    alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
+    saved_alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
     if (gc_evaluator_callback) {
       remove_callback (gc_evaluator_callback);
       gc_evaluator_callback = NULL;
@@ -3452,6 +3490,12 @@ size_t do_gc(void *ignored, int explicit_call)
   init_gc();
   gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;
+
+  if (!SAFE_IS_ZERO(&gc_pre_cb)) {
+    safe_apply_svalue(&gc_pre_cb, 0, 1);
+    pop_stack();
+  }
+
   gc_start_time = get_cpu_time();
   gc_start_real_time = get_real_time();
 #ifdef GC_DEBUG
@@ -3487,7 +3531,7 @@ size_t do_gc(void *ignored, int explicit_call)
     Pike_fatal("Panic, less than zero objects!\n");
 #endif
 
-  last_gc=TIME(0);
+  last_gc=time(0);
   start_num_objs = num_objects;
   start_allocs = num_allocs;
   num_allocs = 0;
@@ -3767,6 +3811,11 @@ size_t do_gc(void *ignored, int explicit_call)
   destroy_count = 0;
 #endif
 
+  if (!SAFE_IS_ZERO(&gc_post_cb)) {
+    safe_apply_svalue(&gc_post_cb, 0, 1);
+    pop_stack();
+  }
+
   {
     enum object_destruct_reason reason =
 #ifdef DO_PIKE_CLEANUP
@@ -3816,13 +3865,20 @@ size_t do_gc(void *ignored, int explicit_call)
       GC_VERBOSE_DO(
 	fprintf(stderr, "|   Killing %p with %d refs", o, o->refs);
 	if (o->prog) {
-	  INT32 line;
+	  INT_TYPE line;
 	  struct pike_string *file = get_program_line (o->prog, &line);
 	  fprintf(stderr, ", prog %s:%d\n", file->str, line);
 	  free_string(file);
 	}
 	else fputs(", is destructed\n", stderr);
       );
+      if (!SAFE_IS_ZERO(&gc_destruct_cb)) {
+	ref_push_object(o);
+	push_int(reason);
+	push_int(o->refs - 1);
+	safe_apply_svalue(&gc_destruct_cb, 3, 1);
+	pop_stack();
+      }
 
       destruct_object (o, reason);
       free_object(o);
@@ -3884,6 +3940,9 @@ size_t do_gc(void *ignored, int explicit_call)
   {
     double multiplier, new_threshold;
     cpu_time_t last_non_gc_time, last_gc_time;
+#ifdef GC_INTERVAL_DEBUG
+    double tmp_dbl1, tmp_dbl2;
+#endif
 
     /* If we're at an automatic and timely gc then start_allocs ==
      * alloc_threshold and we're using gc_average_slowness in the
@@ -3894,6 +3953,17 @@ size_t do_gc(void *ignored, int explicit_call)
      * to give the appropriate weight to this last instance. */
     multiplier=pow(gc_average_slowness,
 		   (double) start_allocs / (double) alloc_threshold);
+
+#ifdef GC_INTERVAL_DEBUG
+    if (GC_VERBOSE_DO(1 ||) gc_trace) fputc ('\n', stderr);
+    fprintf (stderr, "IN:  GC start @ %"PRINT_CPU_TIME" "CPU_TIME_UNIT"\n"
+	     "     avg slow %g, start_allocs %"PRINT_ALLOC_COUNT_TYPE", "
+	     "alloc_threshold %"PRINT_ALLOC_COUNT_TYPE" -> mult %g\n",
+	     gc_start_real_time,
+	     gc_average_slowness, start_allocs, alloc_threshold, multiplier);
+    tmp_dbl1 = non_gc_time;
+    tmp_dbl2 = gc_time;
+#endif
 
     /* Comparisons to avoid that overflows mess up the statistics. */
     if (last_gc_end_real_time != -1 &&
@@ -3908,6 +3978,21 @@ size_t do_gc(void *ignored, int explicit_call)
       gc_time = gc_time * multiplier +
 	(last_gc_end_real_time - gc_start_real_time) * (1.0 - multiplier);
     }
+
+#ifdef GC_INTERVAL_DEBUG
+    fprintf (stderr,
+	     "     non_gc_time: %13"PRINT_CPU_TIME" "CPU_TIME_UNIT", "
+	     "%.12g -> %.12g\n"
+	     "     gc_time:     %13"PRINT_CPU_TIME" "CPU_TIME_UNIT", "
+	     "%.12g -> %.12g\n",
+	     last_non_gc_time, tmp_dbl1, non_gc_time,
+	     last_gc_end_real_time > gc_start_real_time ?
+	     last_gc_end_real_time - gc_start_real_time : (cpu_time_t) -1,
+	     tmp_dbl2, gc_time);
+    tmp_dbl1 = objects_alloced;
+    tmp_dbl2 = objects_freed;
+#endif
+
     {
       cpu_time_t gc_end_time = get_cpu_time();
       if (gc_end_time > gc_start_time)
@@ -3930,6 +4015,16 @@ size_t do_gc(void *ignored, int explicit_call)
     objects_freed = objects_freed * multiplier +
       unreferenced * (1.0 - multiplier);
 
+#ifdef GC_INTERVAL_DEBUG
+    fprintf (stderr,
+	     "     objects_alloced: %9"PRINT_ALLOC_COUNT_TYPE" allocs, "
+	     "%.12g -> %.12g\n"
+	     "     objects_freed:   %9"PRINT_ALLOC_COUNT_TYPE" unrefd, "
+	     "%.12g -> %.12g\n",
+	     start_allocs, tmp_dbl1, objects_alloced,
+	     unreferenced, tmp_dbl2, objects_freed);
+#endif
+
     if (last_non_gc_time == (cpu_time_t) -1 ||
 	gc_time / non_gc_time <= gc_time_ratio) {
       /* Calculate the new threshold by adjusting the average
@@ -3941,17 +4036,33 @@ size_t do_gc(void *ignored, int explicit_call)
       new_threshold = (objects_alloced+1.0) *
 	(gc_garbage_ratio_low * start_num_objs) / (objects_freed+1.0);
       last_garbage_strategy = GARBAGE_RATIO_LOW;
+#ifdef GC_INTERVAL_DEBUG
+      fprintf (stderr, "     strategy: low ratio %g, objs %"PRINTSIZET"u, "
+	       "new threshold -> %.12g\n",
+	       gc_garbage_ratio_low, start_num_objs, new_threshold);
+#endif
     }
     else {
       new_threshold = (objects_alloced+1.0) *
 	(gc_garbage_ratio_high * start_num_objs) / (objects_freed+1.0);
       last_garbage_strategy = GARBAGE_RATIO_HIGH;
+#ifdef GC_INTERVAL_DEBUG
+      fprintf (stderr, "     strategy: high ratio %g, objs %"PRINTSIZET"u, "
+	       "new threshold -> %.12g\n",
+	       gc_garbage_ratio_high, start_num_objs, new_threshold);
+#endif
     }
 
     if (non_gc_time > 0.0 && gc_min_time_ratio > 0.0) {
       /* Upper limit on the new threshold based on gc_min_time_ratio. */
       double max_threshold = (objects_alloced+1.0) *
 	gc_time / (gc_min_time_ratio * non_gc_time);
+#ifdef GC_INTERVAL_DEBUG
+      fprintf (stderr, "     max interval? min time ratio %g, "
+	       "max threshold %.12g -> %s\n",
+	       gc_min_time_ratio, max_threshold,
+	       max_threshold < new_threshold ? "yes" : "no");
+#endif
       if (max_threshold < new_threshold) {
 	new_threshold = max_threshold;
 	last_garbage_strategy = GARBAGE_MAX_INTERVAL;
@@ -3974,6 +4085,12 @@ size_t do_gc(void *ignored, int explicit_call)
       alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
     else
       alloc_threshold = (ALLOC_COUNT_TYPE) new_threshold;
+
+#ifdef GC_INTERVAL_DEBUG
+    fprintf (stderr, "OUT: GC end   @ %"PRINT_CPU_TIME" "CPU_TIME_UNIT", "
+	     "new capped threshold %"PRINT_ALLOC_COUNT_TYPE"\n",
+	     last_gc_end_real_time, alloc_threshold);
+#endif
 
     if (!explicit_call) {
       auto_gc_real_time += get_real_time() - gc_start_real_time;
@@ -4039,6 +4156,13 @@ size_t do_gc(void *ignored, int explicit_call)
   if (gc_destruct_everything)
     return destroy_count;
 #endif
+
+  if (!SAFE_IS_ZERO(&gc_done_cb)) {
+    push_int(unreferenced);
+    safe_apply_svalue(&gc_done_cb, 1, 1);
+    pop_stack();
+  }
+
   return unreferenced;
 }
 
@@ -4101,51 +4225,51 @@ void f__gc_status(INT32 args)
 
   pop_n_elems(args);
 
-  push_constant_text("num_objects");
+  push_static_text("num_objects");
   push_int(num_objects);
   size++;
 
-  push_constant_text("num_allocs");
+  push_static_text("num_allocs");
   push_int64(num_allocs);
   size++;
 
-  push_constant_text("alloc_threshold");
+  push_static_text("alloc_threshold");
   push_int64(alloc_threshold);
   size++;
 
-  push_constant_text("projected_garbage");
-  push_float(DO_NOT_WARN((FLOAT_TYPE)(objects_freed * (double) num_allocs /
-				      (double) alloc_threshold)));
+  push_static_text("projected_garbage");
+  push_float((FLOAT_TYPE)(objects_freed * (double) num_allocs /
+                          (double) alloc_threshold));
   size++;
 
-  push_constant_text("objects_alloced");
-  push_int64(DO_NOT_WARN((INT64)objects_alloced));
+  push_static_text("objects_alloced");
+  push_int64((INT64)objects_alloced);
   size++;
 
-  push_constant_text("objects_freed");
-  push_int64(DO_NOT_WARN((INT64)objects_freed));
+  push_static_text("objects_freed");
+  push_int64((INT64)objects_freed);
   size++;
 
-  push_constant_text("last_garbage_ratio");
-  push_float(DO_NOT_WARN((FLOAT_TYPE) last_garbage_ratio));
+  push_static_text("last_garbage_ratio");
+  push_float((FLOAT_TYPE) last_garbage_ratio);
   size++;
 
-  push_constant_text("non_gc_time");
-  push_int64(DO_NOT_WARN((INT64) non_gc_time));
+  push_static_text("non_gc_time");
+  push_int64((INT64) non_gc_time);
   size++;
 
-  push_constant_text("gc_time");
-  push_int64(DO_NOT_WARN((INT64) gc_time));
+  push_static_text("gc_time");
+  push_int64((INT64) gc_time);
   size++;
 
-  push_constant_text ("last_garbage_strategy");
+  push_static_text ("last_garbage_strategy");
   switch (last_garbage_strategy) {
     case GARBAGE_RATIO_LOW:
-      push_constant_text ("garbage_ratio_low"); break;
+      push_static_text ("garbage_ratio_low"); break;
     case GARBAGE_RATIO_HIGH:
-      push_constant_text ("garbage_ratio_high"); break;
+      push_static_text ("garbage_ratio_high"); break;
     case GARBAGE_MAX_INTERVAL:
-      push_constant_text ("garbage_max_interval"); break;
+      push_static_text ("garbage_max_interval"); break;
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown last_garbage_strategy %d\n", last_garbage_strategy);
@@ -4153,11 +4277,11 @@ void f__gc_status(INT32 args)
   }
   size++;
 
-  push_constant_text("last_gc");
+  push_static_text("last_gc");
   push_int64(last_gc);
   size++;
 
-  push_constant_text ("total_gc_cpu_time");
+  push_static_text ("total_gc_cpu_time");
   push_int64 (auto_gc_time);
 #ifndef LONG_CPU_TIME
   push_int (1000000000 / CPU_TIME_TICKS);
@@ -4165,7 +4289,7 @@ void f__gc_status(INT32 args)
 #endif
   size++;
 
-  push_constant_text ("total_gc_real_time");
+  push_static_text ("total_gc_real_time");
   push_int64 (auto_gc_real_time);
 #ifndef LONG_CPU_TIME
   push_int (1000000000 / CPU_TIME_TICKS);
@@ -4174,16 +4298,16 @@ void f__gc_status(INT32 args)
   size++;
 
 #ifdef PIKE_DEBUG
-  push_constant_text ("max_rec_frames");
-  push_int64 (DO_NOT_WARN ((INT64) tot_max_rec_frames));
+  push_static_text ("max_rec_frames");
+  push_int64 ((INT64) tot_max_rec_frames);
   size++;
 
-  push_constant_text ("max_link_frames");
-  push_int64 (DO_NOT_WARN ((INT64) tot_max_link_frames));
+  push_static_text ("max_link_frames");
+  push_int64 ((INT64) tot_max_link_frames);
   size++;
 
-  push_constant_text ("max_free_extra_frames");
-  push_int64 (DO_NOT_WARN ((INT64) tot_max_free_extra_frames));
+  push_static_text ("max_free_extra_frames");
+  push_int64 ((INT64) tot_max_free_extra_frames);
   size++;
 #endif
 
@@ -4226,9 +4350,9 @@ void f_implicit_gc_real_time (INT32 args)
 void dump_gc_info(void)
 {
   fprintf(stderr,"Current number of things   : %d\n",num_objects);
-  fprintf(stderr,"Allocations since last gc  : "PRINT_ALLOC_COUNT_TYPE"\n",
+  fprintf(stderr,"Allocations since last gc  : %"PRINT_ALLOC_COUNT_TYPE"\n",
 	  num_allocs);
-  fprintf(stderr,"Threshold for next gc      : "PRINT_ALLOC_COUNT_TYPE"\n",
+  fprintf(stderr,"Threshold for next gc      : %"PRINT_ALLOC_COUNT_TYPE"\n",
 	  alloc_threshold);
   fprintf(stderr,"Projected current garbage  : %f\n",
 	  objects_freed * (double) num_allocs / (double) alloc_threshold);
@@ -4236,7 +4360,7 @@ void dump_gc_info(void)
   fprintf(stderr,"Avg allocs between gc      : %f\n",objects_alloced);
   fprintf(stderr,"Avg frees per gc           : %f\n",objects_freed);
   fprintf(stderr,"Garbage ratio in last gc   : %f\n", last_garbage_ratio);
-					     
+
   fprintf(stderr,"Avg "CPU_TIME_UNIT" between gc          : %f\n", non_gc_time);
   fprintf(stderr,"Avg "CPU_TIME_UNIT" in gc               : %f\n", gc_time);
   fprintf(stderr,"Avg time ratio in gc       : %f\n", gc_time / non_gc_time);
@@ -4273,21 +4397,31 @@ void cleanup_gc(void)
 /* Visit things API */
 
 PMOD_EXPORT visit_ref_cb *visit_ref = NULL;
+PMOD_EXPORT visit_enter_cb *visit_enter = NULL;
+PMOD_EXPORT visit_leave_cb *visit_leave = NULL;
 
 /* Be careful if extending this with internal types like
  * T_MAPPING_DATA and T_MULTISET_DATA; there's code that assumes
  * type_from_visit_fn only returns types that fit in a TYPE_FIELD. */
-PMOD_EXPORT visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1] = {
-  (visit_thing_fn *) &visit_array,
-  (visit_thing_fn *) &visit_mapping,
-  (visit_thing_fn *) &visit_multiset,
-  (visit_thing_fn *) &visit_object,
+PMOD_EXPORT visit_thing_fn *const visit_fn_from_type[MAX_TYPE + 1] = {
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *)&visit_array,
+  (visit_thing_fn *)&visit_mapping,
+  (visit_thing_fn *)&visit_multiset,
+  (visit_thing_fn *)&visit_object,
   /* visit_function must be called with a whole svalue, so it's not
    * included here. */
   (visit_thing_fn *) (ptrdiff_t) -1,
-  (visit_thing_fn *) &visit_program,
-  (visit_thing_fn *) &visit_string,
-  (visit_thing_fn *) &visit_type,
+  (visit_thing_fn *)&visit_program,
+  (visit_thing_fn *)&visit_string,
+  (visit_thing_fn *)&visit_type,
 };
 
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn)
@@ -4302,10 +4436,10 @@ PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn)
 }
 
 PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
-					   int ref_type)
+					   int ref_type, void *extra)
 {
   for (; num; num--, s++)
-    visit_svalue (s, ref_type);
+    visit_svalue (s, ref_type, extra);
   return 0;
 }
 
@@ -4439,6 +4573,8 @@ PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
 
 #define MC_WQ_START_SIZE 1024
 
+static IMUTEX_T mc_mutex;
+
 PMOD_EXPORT int mc_pass;
 PMOD_EXPORT size_t mc_counted_bytes;
 
@@ -4448,6 +4584,14 @@ static TYPE_FIELD mc_block_lookahead_default = BIT_PROGRAM|BIT_STRING|BIT_TYPE;
 /* Strings are blocked because they don't contain refs. Types are
  * blocked because they are acyclic and don't contain refs to anything
  * but strings and other types. */
+
+static INLINE int mc_lookahead_blocked(unsigned INT16 type) {
+    if (type < sizeof(TYPE_FIELD)*8) {
+        return !!(mc_block_lookahead & ((TYPE_FIELD)1 << type));
+    }
+
+    return 0;
+}
 
 static int mc_block_strings;
 
@@ -4542,6 +4686,18 @@ struct mc_marker
 
 PTR_HASH_ALLOC_FILL_PAGES (mc_marker, 2)
 
+static void start_mc(void)
+{
+  LOCK_IMUTEX(&mc_mutex);
+  init_mc_marker_hash();
+}
+
+static void stop_mc(void)
+{
+  exit_mc_marker_hash();
+  UNLOCK_IMUTEX(&mc_mutex);
+}
+
 static struct mc_marker *my_make_mc_marker (void *thing,
 					    visit_thing_fn *visit_fn,
 					    void *extra)
@@ -4562,7 +4718,7 @@ static struct mc_marker *my_make_mc_marker (void *thing,
   return m;
 }
 
-#if defined (PIKE_DEBUG) || defined (MEMORY_COUNT_DEBUG)
+#ifdef MEMORY_COUNT_DEBUG
 static void describe_mc_marker (struct mc_marker *m)
 {
   fprintf (stderr, "%s %p: refs %d, int %d, la %d, cnt %d",
@@ -4806,10 +4962,10 @@ static int mc_cycle_depth_from_obj (struct object *o)
 
   if (TYPEOF(val) != T_INT) {
     int i = find_shared_string_identifier (pike_cycle_depth_str.u.string, p);
-    INT32 line;
+    INT_TYPE line;
     struct pike_string *file = get_identifier_line (p, i, &line);
-    make_error ("Object got non-integer pike_cycle_depth %O at %S:%d.\n",
-		&val, file, line);
+    make_error ("Object got non-integer pike_cycle_depth %O at %S:%ld.\n",
+		&val, file, (long)line);
     free_svalue (&val);
     free_svalue (&throw_value);
     move_svalue (&throw_value, --Pike_sp);
@@ -4824,10 +4980,10 @@ static int mc_cycle_depth_from_obj (struct object *o)
 
   if (val.u.integer < 0) {
     int i = find_shared_string_identifier (pike_cycle_depth_str.u.string, p);
-    INT32 line;
+    INT_TYPE line;
     struct pike_string *file = get_identifier_line (p, i, &line);
-    make_error ("Object got negative pike_cycle_depth at %S:%d.\n",
-		&val, file, line);
+    make_error ("Object got negative pike_cycle_depth at %S:%ld.\n",
+		&val, file, (long)line);
     free_svalue (&throw_value);
     move_svalue (&throw_value, --Pike_sp);
     return -1;
@@ -4839,7 +4995,7 @@ static int mc_cycle_depth_from_obj (struct object *o)
 static void pass_lookahead_visit_ref (void *thing, int ref_type,
 				      visit_thing_fn *visit_fn, void *extra)
 {
-  struct mc_marker *ref_to = find_mc_marker (thing);
+  struct mc_marker *ref_to;
   int ref_from_flags, ref_to_flags, old_la_count, ref_to_la_count;
   int ref_added = 0, check_new_candidate = 0, la_count_handled = 0;
 
@@ -4852,10 +5008,14 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
 
   if (mc_block_strings > 0 &&
       visit_fn == (visit_thing_fn *) &visit_string) {
+#ifdef MEMORY_COUNT_DEBUG
+    ref_to = find_mc_marker (thing);
+#endif
     MC_DEBUG_MSG (ref_to, "ignored string");
     return;
   }
 
+  ref_to = find_mc_marker (thing);
   ref_from_flags = mc_ref_from->flags;
 
   /* Create mc_marker if necessary. */
@@ -4996,7 +5156,7 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
     ref_to->flags = ref_to_flags;
     ref_to->la_count = ref_to_la_count;
 
-    if (mc_block_lookahead & (1 << type_from_visit_fn (visit_fn))) {
+    if (mc_lookahead_blocked(type_from_visit_fn (visit_fn))) {
       MC_DEBUG_MSG (ref_to, "type is blocked - not enqueued");
       return;
     }
@@ -5020,7 +5180,7 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
 
   /* Normal handling. */
 
-  if (mc_block_lookahead & (1 << type_from_visit_fn (visit_fn))) {
+  if (mc_lookahead_blocked(type_from_visit_fn (visit_fn))) {
     ref_to->flags = ref_to_flags;
     ref_to->la_count = ref_to_la_count;
     MC_DEBUG_MSG (ref_to, "type is blocked - not enqueued");
@@ -5064,8 +5224,8 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
     MC_DEBUG_MSG (ref_to, "not enqueued");
 }
 
-static void pass_mark_external_visit_ref (void *thing, int ref_type,
-					  visit_thing_fn *visit_fn, void *extra)
+static void pass_mark_external_visit_ref (void *thing, int UNUSED(ref_type),
+					  visit_thing_fn *UNUSED(visit_fn), void *UNUSED(extra))
 {
   struct mc_marker *ref_to = find_mc_marker (thing);
 
@@ -5099,8 +5259,8 @@ static void current_only_visit_ref (void *thing, int ref_type,
  * recurses through REF_TYPE_INTERNAL references. Note that most
  * fields in mc_marker aren't used. */
 {
-  struct mc_marker *ref_to = find_mc_marker (thing);
   int ref_from_flags;
+  struct mc_marker *ref_to;
 
   assert (mc_pass);
   assert (mc_lookahead < 0);
@@ -5111,6 +5271,18 @@ static void current_only_visit_ref (void *thing, int ref_type,
   ref_from_flags = mc_ref_from->flags;
   assert (ref_from_flags & MC_FLAG_INTERNAL);
   assert (!(ref_from_flags & MC_FLAG_INT_VISITED));
+
+#ifndef MEMORY_COUNT_DEBUG
+  if (!(ref_type & REF_TYPE_INTERNAL)) {
+    /* Return before lookup (or much worse, allocation) in the
+       mc_marker hash table. The only reason to allocate a marker in
+       this case is, AFAICS, to get the tracing right with
+       MEMORY_COUNT_DEBUG enabled. That case is handled below. */
+    return;
+  }
+#endif
+
+  ref_to = find_mc_marker (thing);
 
   if (!ref_to) {
     ref_to = my_make_mc_marker (thing, visit_fn, extra);
@@ -5125,10 +5297,12 @@ static void current_only_visit_ref (void *thing, int ref_type,
   else
     MC_DEBUG_MSG (ref_to, "got old thing");
 
+#ifdef MEMORY_COUNT_DEBUG
   if (!(ref_type & REF_TYPE_INTERNAL)) {
     MC_DEBUG_MSG (ref_to, "ignored non-internal ref");
     return;
   }
+#endif
 
   ref_to->int_refs++;
   MC_DEBUG_MSG (ref_to, "added really internal ref");
@@ -5139,6 +5313,14 @@ static void current_only_visit_ref (void *thing, int ref_type,
     mc_wq_enqueue (ref_to);
     MC_DEBUG_MSG (ref_to, "enqueued internal");
   }
+}
+
+static void ignore_visit_enter(void *UNUSED(thing), int UNUSED(type), void *UNUSED(extra))
+{
+}
+
+static void ignore_visit_leave(void *UNUSED(thing), int UNUSED(type), void *UNUSED(extra))
+{
 }
 
 PMOD_EXPORT int mc_count_bytes (void *thing)
@@ -5447,7 +5629,7 @@ void f_count_memory (INT32 args)
       Pike_sp[-args].u.integer;
   }
 
-  init_mc_marker_hash();
+  start_mc();
 
   if (TYPEOF(pike_cycle_depth_str) == PIKE_T_FREE) {
     SET_SVAL_TYPE(pike_cycle_depth_str, T_STRING);
@@ -5457,7 +5639,7 @@ void f_count_memory (INT32 args)
   assert (mc_work_queue == NULL);
   mc_work_queue = malloc (MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
   if (!mc_work_queue) {
-    exit_mc_marker_hash();
+    stop_mc();
     SIMPLE_OUT_OF_MEMORY_ERROR ("Pike.count_memory",
 				MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
   }
@@ -5466,7 +5648,9 @@ void f_count_memory (INT32 args)
   mc_wq_used = 1;
 
   assert (!mc_pass);
+  assert (visit_enter == NULL);
   assert (visit_ref == NULL);
+  assert (visit_leave == NULL);
 
   free_svalue (&throw_value);
   mark_free_svalue (&throw_value);
@@ -5479,10 +5663,10 @@ void f_count_memory (INT32 args)
       if (TYPEOF(*s) == T_INT)
 	continue;
 
-      else if (TYPEOF(*s) > MAX_REF_TYPE) {
-	exit_mc_marker_hash();
+      else if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
 	free (mc_work_queue + 1);
 	mc_work_queue = NULL;
+	stop_mc();
 	SIMPLE_ARG_TYPE_ERROR (
 	  "count_memory", i + args + 1,
 	  "array|multiset|mapping|object|program|string|type|int");
@@ -5492,9 +5676,9 @@ void f_count_memory (INT32 args)
 	if (TYPEOF(*s) == T_FUNCTION) {
 	  struct svalue s2;
 	  if (!(s2.u.program = program_from_function (s))) {
-	    exit_mc_marker_hash();
 	    free (mc_work_queue + 1);
 	    mc_work_queue = NULL;
+	    stop_mc();
 	    SIMPLE_ARG_TYPE_ERROR (
 	      "count_memory", i + args + 1,
 	      "array|multiset|mapping|object|program|string|type|int");
@@ -5516,9 +5700,9 @@ void f_count_memory (INT32 args)
 	  if (!mc_block_pike_cycle_depth && TYPEOF(*s) == T_OBJECT) {
 	    int cycle_depth = mc_cycle_depth_from_obj (s->u.object);
 	    if (TYPEOF(throw_value) != PIKE_T_FREE) {
-	      exit_mc_marker_hash();
 	      free (mc_work_queue + 1);
 	      mc_work_queue = NULL;
+	      stop_mc();
 	      throw_severity = THROW_ERROR;
 	      pike_throw();
 	    }
@@ -5551,8 +5735,10 @@ void f_count_memory (INT32 args)
   count_internal = count_cyclic = count_visited = 0;
   count_visits = count_revisits = count_rounds = 0;
 
+  visit_enter = ignore_visit_enter;
   visit_ref = mc_lookahead < 0 ?
     current_only_visit_ref : pass_lookahead_visit_ref;
+  visit_leave = ignore_visit_leave;
 
   do {
     count_rounds++;
@@ -5571,6 +5757,10 @@ void f_count_memory (INT32 args)
       if (mc_ref_from->flags & MC_FLAG_INTERNAL) {
 	action = VISIT_COUNT_BYTES; /* Memory count this. */
 	MC_DEBUG_MSG (NULL, "enter with byte counting");
+	if (mc_lookahead < 0) {
+	  MC_DEBUG_MSG (NULL, "VISIT_NO_REFS mode");
+	  action |= VISIT_NO_REFS;
+	}
 
 	mc_ref_from->visit_fn (mc_ref_from->thing, action, mc_ref_from->extra);
 	count_visits++;
@@ -5639,9 +5829,9 @@ void f_count_memory (INT32 args)
       }
 
       if (TYPEOF(throw_value) != PIKE_T_FREE) {
-	exit_mc_marker_hash();
 	free (mc_work_queue + 1);
 	mc_work_queue = NULL;
+	stop_mc();
 	throw_severity = THROW_ERROR;
 	pike_throw();
       }
@@ -5691,7 +5881,7 @@ void f_count_memory (INT32 args)
 	  assert (!(m->flags & MC_FLAG_INTERNAL));
 	  assert (m->flags & MC_FLAG_LA_VISITED);
 	  assert (list != &mc_incomplete || !(m->flags & MC_FLAG_CANDIDATE));
-	  if (mc_block_lookahead & (1 << type))
+	  if (mc_lookahead_blocked(type))
 	    MC_DEBUG_MSG (m, "type is blocked - not visiting");
 	  else {
 #ifdef MEMORY_COUNT_DEBUG
@@ -5734,8 +5924,7 @@ void f_count_memory (INT32 args)
 	assert (!(m->flags & (MC_FLAG_INTERNAL | MC_FLAG_INT_VISITED)));
 	m->flags |= MC_FLAG_INTERNAL;
 	assert (m->flags & (MC_FLAG_CANDIDATE | MC_FLAG_LA_VISITED));
-	assert (!(mc_block_lookahead &
-		  (1 << type_from_visit_fn (m->visit_fn))));
+	assert (!(mc_lookahead_blocked(type_from_visit_fn (m->visit_fn))));
 	/* The following assertion implies that the lookahead count
 	 * already has been raised as it should. */
 	assert (m->flags & MC_FLAG_CANDIDATE_REF);
@@ -5873,7 +6062,9 @@ void f_count_memory (INT32 args)
   }
 
   mc_pass = 0;
+  visit_enter = NULL;
   visit_ref = NULL;
+  visit_leave = NULL;
 
   DL_MAKE_EMPTY (mc_incomplete);
   DL_MAKE_EMPTY (mc_indirect);
@@ -5885,12 +6076,215 @@ void f_count_memory (INT32 args)
 	remove_mc_marker (mc_marker_hash_table[e]->thing);
   }
 #endif
-  exit_mc_marker_hash();
 
   assert (mc_wq_used == 1);
   free (mc_work_queue + 1);
   mc_work_queue = NULL;
+  stop_mc();
 
   pop_n_elems (args);
   push_ulongest (return_count ? count_internal : mc_counted_bytes);
+}
+
+static struct mapping *identify_loop_reverse = NULL;
+
+void identify_loop_visit_enter(void *thing, int type, void *UNUSED(extra))
+{
+  if (type < T_VOID) {
+    /* Valid svalue type. */
+    SET_SVAL(*Pike_sp, type, 0, refs, thing);
+    add_ref(((struct array *)thing));
+    Pike_sp++;
+  }
+}
+
+void identify_loop_visit_ref(void *dst, int UNUSED(ref_type),
+			     visit_thing_fn *visit_dst,
+			     void *extra)
+{
+  int type = type_from_visit_fn(visit_dst);
+  struct mc_marker *ref_to = find_mc_marker(dst);
+  if (ref_to) {
+    /* Already visited or queued for visiting. */
+    return;
+  }
+
+  ref_to = my_make_mc_marker(dst, visit_dst, extra);
+
+  if (type != PIKE_T_UNKNOWN) {
+    struct svalue s;
+    SET_SVAL(s, type, 0, refs, dst);
+    low_mapping_insert(identify_loop_reverse, &s, Pike_sp-1, 0);
+
+    mc_wq_enqueue(ref_to);
+  } else {
+    /* Not a valid svalue type.
+     *
+     * Probably T_MAPPING_DATA or T_MULTISET_DATA or similar.
+     *
+     * Recurse directly while we have the containing thing on the stack.
+     */
+    ref_to->flags |= MC_FLAG_INT_VISITED;
+    visit_dst(dst, VISIT_COMPLEX_ONLY, extra);
+  }
+}
+
+void identify_loop_visit_leave(void *UNUSED(thing), int type, void *UNUSED(extra))
+{
+  if (type < T_VOID) {
+    /* Valid svalue type. */
+    pop_stack();
+  }
+}
+
+/*! @decl array(mixed) identify_cycle(mixed x)
+ *! @belongs Pike
+ *!
+ *! Identify reference cycles in Pike datastructures.
+ *!
+ *! This function is typically used to identify why certain
+ *! datastructures need the @[gc] to run to be freed.
+ *!
+ *! @param x
+ *!   Value that is believed to be involved in a reference cycle.
+ *!
+ *! @returns
+ *!   @mixed
+ *!     @type zero
+ *!       Returns @expr{UNDEFINED@} if @[x] is not member of a reference cycle.
+ *!     @type array(mixed)
+ *!       Otherwise returns an array identifying a cycle with @[x] as the first
+ *!       element, and where the elements refer to each other in order, and the
+ *!       last element refers to the first.
+ *!   @endmixed
+ */
+void f_identify_cycle(INT32 args)
+{
+  struct svalue *s;
+  struct mc_marker *m;
+  struct svalue *k;
+
+  if (args < 1) {
+    SIMPLE_TOO_FEW_ARGS_ERROR("identify_loops", 1);
+  }
+
+  if (args > 1) pop_n_elems(args-1);
+  args = 1;
+
+  s = Pike_sp - 1;
+
+  if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
+    SIMPLE_ARG_TYPE_ERROR("identify_loops", 1,
+			  "array|multiset|mapping|object|program|string|type");
+  }
+  if (TYPEOF(*s) == T_FUNCTION) {
+    if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) {
+      SIMPLE_ARG_TYPE_ERROR("identify_loops", 1,
+			    "array|multiset|mapping|object|program|string|type");
+    }
+    SET_SVAL_TYPE(*s, T_OBJECT);
+  }
+
+  start_mc();
+
+  if (TYPEOF(pike_cycle_depth_str) == PIKE_T_FREE) {
+    SET_SVAL_TYPE(pike_cycle_depth_str, T_STRING);
+    MAKE_CONST_STRING (pike_cycle_depth_str.u.string, "pike_cycle_depth");
+  }
+
+  assert (mc_work_queue == NULL);
+  mc_work_queue = malloc (MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+  if (!mc_work_queue) {
+    stop_mc();
+    SIMPLE_OUT_OF_MEMORY_ERROR ("Pike.count_memory",
+				MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+  }
+  /* NB: 1-based indexing in mc_work_queue. */
+  mc_work_queue--;
+  mc_wq_size = MC_WQ_START_SIZE;
+  mc_wq_used = 1;
+  mc_lookahead = -1;
+
+  assert (!mc_pass);
+  assert (visit_enter == NULL);
+  assert (visit_ref == NULL);
+  assert (visit_leave == NULL);
+
+  /* There's a fair chance of there being lots of stuff being referenced,
+   * so preallocate a reasonable initial size.
+   */
+  identify_loop_reverse = allocate_mapping(1024);
+
+  visit_enter = identify_loop_visit_enter;
+  visit_ref = identify_loop_visit_ref;
+  visit_leave = identify_loop_visit_leave;
+
+  /* NB: This initial call will botstrap the wq_queue. */
+  visit_fn_from_type[TYPEOF(*s)](s->u.ptr, VISIT_COMPLEX_ONLY, NULL);
+
+#ifdef PIKE_DEBUG
+  assert (mc_ref_from == (void *) (ptrdiff_t) -1);
+#endif
+
+  while ((mc_ref_from = mc_wq_dequeue())) {
+    if (mc_ref_from->flags & MC_FLAG_INT_VISITED) continue;
+
+    mc_ref_from->flags |= MC_FLAG_INT_VISITED;
+    mc_ref_from->visit_fn(mc_ref_from->thing, VISIT_COMPLEX_ONLY, NULL);
+  }
+
+#if defined (PIKE_DEBUG) || defined (MEMORY_COUNT_DEBUG)
+  mc_ref_from = (void *) (ptrdiff_t) -1;
+#endif
+
+  /* NB: 1-based indexing in mc_work_queue. */
+  mc_work_queue++;
+  free(mc_work_queue);
+  mc_work_queue = NULL;
+
+  visit_enter = NULL;
+  visit_ref = NULL;
+  visit_leave = NULL;
+
+#ifdef PIKE_DEBUG
+  if (s != Pike_sp-1) {
+    Pike_fatal("Stack error in identify_loops.\n");
+  }
+#endif
+
+  while ((k = low_mapping_lookup(identify_loop_reverse, Pike_sp-1))) {
+    /* NB: Since we entered this loop, we know that there's a
+     *     reference loop involving s, as s otherwise wouldn't
+     *     have been in the mapping.
+     */
+    push_svalue(k);
+    if (k->u.refs == s->u.refs) {
+      /* Found! */
+      break;
+    }
+  }
+
+  free_mapping(identify_loop_reverse);
+
+  stop_mc();
+
+  if (!k) {
+    push_undefined();
+  } else {
+    /* NB: We push s an extra time last above, to simplify the
+     *     reversing below.
+     */
+    f_aggregate(Pike_sp - (s + 1));
+    f_reverse(1);
+  }
+}
+
+void init_mc(void)
+{
+  init_interleave_mutex(&mc_mutex);
+}
+
+void exit_mc(void)
+{
+  exit_interleave_mutex(&mc_mutex);
 }

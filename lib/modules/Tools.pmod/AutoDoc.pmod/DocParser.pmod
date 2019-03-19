@@ -37,7 +37,7 @@ enum DocTokenType {
   BRACEKEYWORD = 2,	//! eg @expr{@@i{@@}@}
   DELIMITERKEYWORD = 3,	//! eg @expr{@@param@}
   CONTAINERKEYWORD = 4,	//! eg @expr{@@mapping@}
-  SINGLEKEYWORD = 5,	//! eg @expr{@@deprecated@}
+  SINGLEKEYWORD = 5,	//! None existant.
   ENDKEYWORD = 6,	//! eg @expr{@@endmapping@}
   ERRORKEYWORD = 7,	//! eg @expr{@@invalid@}
 
@@ -54,12 +54,14 @@ mapping(string : DocTokenType) keywordtype =
   "appears" : METAKEYWORD,
   "belongs" : METAKEYWORD,
   "class" : METAKEYWORD,
+  "global" : METAKEYWORD,
   "endclass" : METAKEYWORD,
   "module" : METAKEYWORD,
   "endmodule" : METAKEYWORD,
   "namespace" : METAKEYWORD,
   "endnamespace" : METAKEYWORD,
   "decl" : METAKEYWORD,
+  "directive" : METAKEYWORD,
   "inherit" : METAKEYWORD,
   "enum" : METAKEYWORD,
   "endenum" : METAKEYWORD,
@@ -73,19 +75,23 @@ mapping(string : DocTokenType) keywordtype =
   "sub" : BRACEKEYWORD,
   "sup" : BRACEKEYWORD,
   "ref" : BRACEKEYWORD,
+  "rfc" : BRACEKEYWORD,
   "xml" : BRACEKEYWORD,  // well, not really, but....
   "expr" : BRACEKEYWORD,
   "image" : BRACEKEYWORD,
 
-  "deprecated" : SINGLEKEYWORD,
+  "deprecated" : DELIMITERKEYWORD,
+  "obsolete" : DELIMITERKEYWORD,
 
   "bugs" : DELIMITERKEYWORD,
+  "copyright" : DELIMITERKEYWORD,
   "example" : DELIMITERKEYWORD,
   "fixme" : DELIMITERKEYWORD,
   "note" : DELIMITERKEYWORD,
   "param" : DELIMITERKEYWORD,
   "returns" : DELIMITERKEYWORD,
   "seealso" : DELIMITERKEYWORD,
+  "thanks" : DELIMITERKEYWORD,
   "throws" : DELIMITERKEYWORD,
 
   "code" : CONTAINERKEYWORD,
@@ -123,10 +129,11 @@ mapping(string : array(string)) attributenames =
 mapping(string:array(string)) required_attributes =
 ([
   "param" : ({ "name" }),
-]);  
+]);
 
 protected constant standard = (<
-  "note", "bugs", "example", "seealso", "deprecated", "fixme", "code"
+  "note", "bugs", "example", "seealso", "deprecated", "fixme", "code",
+  "copyright", "thanks", "obsolete",
 >);
 
 mapping(string : multiset(string)) allowedChildren =
@@ -140,6 +147,7 @@ mapping(string : multiset(string)) allowedChildren =
   "_constant" : standard,
   "_enum" : (< "constant" >) + standard,
   "_typedef" : standard,
+  "_directive" : standard,
   "mapping" : (< "member" >),
   "multiset": (< "index" >),
   "array"   : (< "elem" >),
@@ -284,15 +292,25 @@ protected array(Token) split(string s, SourcePosition pos) {
   return res;
 }
 
-//! Internal class for parsing documentation markup. 
+//! Internal class for parsing documentation markup.
 protected class DocParserClass {
 
   //!
   SourcePosition currentPosition = 0;
 
+  .Flags flags = .FLAG_NORMAL;
+
   protected void parseError(string s, mixed ... args) {
     s = sprintf(s, @args);
-    werror("DocParser error: %O\n", s);
+    if (currentPosition->lastline) {
+      werror("%s:%d..%d: DocParser error: %s\n",
+	     currentPosition->filename, currentPosition->firstline,
+	     currentPosition->lastline, s);
+    } else {
+      werror("%s:%d: DocParser error: %s\n",
+	     currentPosition->filename, currentPosition->firstline, s);
+    }
+    if (flags & .FLAG_KEEP_GOING) return;
     throw (AutoDocError(currentPosition, "DocParser", s));
   }
 
@@ -326,6 +344,7 @@ protected class DocParserClass {
     "elem" : elemArgHandler,
     "index" : indexArgHandler,
     "deprecated" : deprArgHandler,
+    "obsolete" : deprArgHandler,
     "section" : sectionArgHandler,
     "type" : typeArgHandler,
     "value" : valueArgHandler,
@@ -337,12 +356,16 @@ protected class DocParserClass {
     .PikeParser parser = .PikeParser(arg, currentPosition);
     //  werror("&&& %O\n", arg);
     Type t = parser->parseOrType();
-    if (!t)
+    if (!t) {
       parseError("@member: expected type, got %O", arg);
+      t = MixedType();
+    }
     //  werror("%%%%%% got type == %O\n", t->xml());
     string s = parser->parseLiteral() || parser->parseIdents();
-    if (!s)
-      parseError("@member: expected indentifier or literal constant, got %O", arg);
+    if (!s) {
+      parseError("@member: expected type followed by identifier or literal constant, got %O", arg);
+      s = "";
+    }
     parser->eat(EOF);
     return xmltag("type", t->xml())
       + xmltag("index", xmlquote(s));
@@ -352,8 +375,10 @@ protected class DocParserClass {
     //  werror("This is the @elem arg handler\n");
     .PikeParser parser = .PikeParser(arg, currentPosition);
     Type t = parser->parseOrType();
-    if (!t)
+    if (!t) {
       parseError("@elem: expected type, got %O", arg);
+      t = MixedType();
+    }
     if (parser->peekToken() == "...") {
       t = VarargsType(t);
       parser->eat("...");
@@ -379,28 +404,37 @@ protected class DocParserClass {
         return type + xmltag("maxindex", xmlquote(s2));
       else
         parseError("@elem: expected identifier or literal");
+    return type;
   }
 
   protected string indexArgHandler(string keyword, string arg) {
     //  werror("indexArgHandler\n");
     .PikeParser parser = .PikeParser(arg, currentPosition);
     string s = parser->parseLiteral();
-    if (!s)
+    if (!s) {
       parseError("@index: expected identifier, got %O", arg);
+      s = "";
+    }
     parser->eat(EOF);
     return xmltag("value", xmlquote(s));
   }
 
-  protected string deprArgHandler(string keyword, string arg) {
+  protected string deprArgHandler(string keyword, string arg)
+  {
+    if (keyword != "deprecated") {
+      parseError("Illegal keyword: @%s, did you mean @deprecated?");
+    }
     .PikeParser parser = .PikeParser(arg, currentPosition);
     if (parser->peekToken() == EOF)
       return "";
     string res = "";
     for (;;) {
       string s = parser->parseIdents();
-      if (!s)
+      if (!s) {
         parseError("@deprecated: expected list identifier, got %O", arg);
-      res += xmltag("name", xmltag("ref", s));
+	if (parser->peekToken() != ",") return res;
+      } else
+	res += xmltag("name", xmltag("ref", s));
       if (parser->peekToken() == EOF)
         return res;
       parser->eat(",");
@@ -416,8 +450,10 @@ protected class DocParserClass {
     .PikeParser parser = .PikeParser(arg, currentPosition);
     //  werror("&&& %O\n", arg);
     Type t = parser->parseOrType();
-    if (!t)
+    if (!t) {
       parseError("@member: expected type, got %O", arg);
+      t = MixedType();
+    }
     //  werror("%%%%%% got type == %O\n", t->xml());
     parser->eat(EOF);
     return t->xml();
@@ -446,12 +482,16 @@ protected class DocParserClass {
       if (s2)
         return xmltag("maxvalue", xmlquote(s2));
       else
-        parseError("@value: expected indentifier or literal constant, got %O", arg);
+        parseError("@value: expected identifier or literal constant, got %O", arg);
+    return "";
   }
 
-  protected mapping(string:string) itemArgHandler (string keyword, string arg)
+  protected string|mapping(string:string) itemArgHandler(string keyword, string arg)
   {
-    return (["name": String.trim_all_whites (arg)]);
+    arg = String.trim_all_whites(arg);
+    if (arg == "") return "";
+    if (!has_value(arg, "@")) return ([ "name":arg ]);
+    return xmlNode(arg);
   }
 
   protected mapping(string : string) standardArgHandler(string keyword, string arg)
@@ -529,8 +569,10 @@ protected class DocParserClass {
 
     array(string) attrnames = attributenames[keyword];
     int attrcount = sizeof(attrnames || ({}) );
-    if (attrcount < sizeof(args))
+    if (attrcount < sizeof(args)) {
       parseError(sprintf("@%s with too many parameters", keyword));
+      args = args[..attrcount-1];
+    }
     for (int i = 0; i < sizeof(args); ++i)
       res[attrnames[i]] =  attributequote(args[i]);
     foreach(required_attributes[keyword]||({}), string attrname) {
@@ -577,8 +619,10 @@ protected class DocParserClass {
           if (level) {
             if (forbidden[s[j]]) {
               parseError("forbidden character inside @[...]: %O", s[i-2..j]);
-            }
-            parseError("@[ without matching ]");
+            } else {
+	      parseError("@[ without matching ]");
+	      j++;
+	    }
           }
           res += xmltag("ref", xmlquote(s[i .. j - 2]));
           i = j;
@@ -587,12 +631,13 @@ protected class DocParserClass {
           if (!sizeof(tagstack)) {
             werror("///\n%O\n///\n", s);
             parseError("closing @} without corresponding @keyword{");
-          }
-          if (tagstack[0] == "xml")
-            --inXML;
-          else
-            res += closetag(tagstack[0]);
-          tagstack = tagstack[1..];
+          } else {
+	    if (tagstack[0] == "xml")
+	      --inXML;
+	    else
+	      res += closetag(tagstack[0]);
+	    tagstack = tagstack[1..];
+	  }
           ++i;
         }
         else if (isKeywordChar(s[i])) {
@@ -600,11 +645,19 @@ protected class DocParserClass {
           while (isKeywordChar(s[++i]))
             ;
           string keyword = s[start .. i - 1];
-          if (s[i] != '{' || keyword == "")
+          if (s[i] != '{') {
             parseError("expected @keyword{, got %O", s[start .. i]);
-          if (getKeywordType(keyword) != BRACEKEYWORD)
+	    i--;
+	  }
+          if (getKeywordType(keyword) != BRACEKEYWORD) {
             parseError("@%s cannot be used like this: @%s{ ... @}",
                       keyword, keyword);
+	    if (keyword == "code") {
+	      // Common mistake.
+	      parseError("Converted @code{ to @expr{.");
+	      keyword = "expr";
+	    }
+	  }
           ++i;
           tagstack = ({ keyword }) + tagstack;
           if (keyword == "xml")
@@ -634,8 +687,14 @@ protected class DocParserClass {
         ++i;
       }
     }
-    if (sizeof(tagstack))
+    while (sizeof(tagstack)) {
       parseError("@" + tagstack[0] + "{ without matching @}");
+      if (tagstack[0] == "xml")
+	--inXML;
+      else
+	res += closetag(tagstack[0]);
+      tagstack = tagstack[1..];
+    }
     res = String.trim_all_whites(res-"<p></p>");
     if(!sizeof(res)) return "\n";
     return "<p>" + res + "</p>\n";
@@ -704,6 +763,8 @@ protected class DocParserClass {
       case ERRORKEYWORD:
         //werror("bosse larsson: %O\n", tokens);
         parseError("unknown keyword: @" + token->keyword);
+	readToken();
+	return xmlContainerContents(container);
     }
     for (;;) {
       token = peekToken();
@@ -713,6 +774,7 @@ protected class DocParserClass {
       string single = 0;
       array(string) keywords = ({});
       res += opentag("group");
+    group:
       while ( (<SINGLEKEYWORD, DELIMITERKEYWORD>) [token->type] ) {
         string keyword = token->keyword;
         single = single || (token->type == SINGLEKEYWORD && keyword);
@@ -720,17 +782,27 @@ protected class DocParserClass {
         if (!allow || !allow[keyword]) {
           string e = sprintf("@%s is not allowed inside @%s",
                              keyword, container);
-          if (allow)
+          if (allow) {
             e += sprintf(" (allowed children are:%{ @%s%})", indices(allow));
-          else
+          } else
             e += " (no children are allowed)";
           parseError(e);
+	  if (allow && sizeof(allow) == 1) {
+	    parseError("Rewriting @%s to @%s.", keyword, indices(allow)[0]);
+	    token->keyword = indices(allow)[0];
+	    continue;
+	  }
+	  readToken();
+	  token = peekToken();
+	  break;
         }
 
         multiset(string) allowGroup = allowGrouping[keyword] || ([]);
         foreach (keywords, string k)
-          if (!allowGroup[k])
+          if (!allowGroup[k]) {
             parseError("@" + keyword + " may not be grouped together with @" + k);
+	    break group;
+	  }
         keywords += ({ keyword });
 
         string arg = token->arg;
@@ -765,20 +837,26 @@ protected class DocParserClass {
         case CONTAINERKEYWORD:
           if (single)
             parseError("cannot have text after @" + single);
-          res += opentag("text") + xmlText() + closetag("text");
+	  else
+	    res += opentag("text") + xmlText() + closetag("text");
       }
       res += closetag("group");
     }
   }
 
   protected void create(string | array(Token) s,
-                     SourcePosition|void position)
+			SourcePosition|void position,
+			.Flags|void flags)
   {
+    if (undefinedp(flags)) flags = .FLAG_NORMAL;
+
+    this::flags = flags;
+
     if (arrayp(s)) {
       tokenArr = s;
     }
     else {
-      if (!position) throw(({ __FILE__,__LINE__,"position == 0"}));
+      if (!position) error("position == 0");
       tokenArr = split(s, position);
     }
     tokenArr += ({ Token(ENDTOKEN, 0, 0, 0, 0) });
@@ -896,6 +974,25 @@ protected class DocParserClass {
 	}
 	break;
 
+      case "directive":
+	{
+          if (endkeyword)
+            parseError("@%s must stand alone", endkeyword);
+          int first = !meta->type;
+          if (!meta->type)
+            meta->type = "decl";
+          else if (meta->type != "decl")
+            parseError("@directive can not be combined with @%s", meta->type);
+          if (meta->appears)
+            parseError("@appears before @directive");
+          if (meta->belongs)
+            parseError("@belongs before @directive");
+          meta->type = "decl";
+	  string s = String.trim_all_whites(arg);
+          meta->decls += ({ .PikeObjects.CppDirective(s) });
+	}
+	break;
+
       case "appears":
 	{
           if (endkeyword)
@@ -913,10 +1010,29 @@ protected class DocParserClass {
             string s = idparser->parseIdents();
             if (!s)
               parseError("@appears: expected identifier, got %O", arg);
-            meta->appears = s;
+	    else
+	      meta->appears = s;
           }
           else
             parseError("@appears not allowed here");
+	}
+	break;
+
+      case "global":
+	{
+	  parseError("The @global keyword is obsolete. "
+		     "Use @belongs predef:: instead.");
+	  if (meta->type == "class" || meta->type == "decl"
+	      || meta->type == "module" || !meta->type)
+	  {
+	    if (meta->belongs)
+	      parseError("duplicate @belongs/@global");
+	    if (meta->appears)
+	      parseError("both @appears and @belongs/@global");
+	    if (scopeModule)
+	      parseError("both 'scope::' and @belongs/@global");
+	    meta->belongs = "predef::";
+	  }
 	}
 	break;
 
@@ -1010,8 +1126,9 @@ class Parse {
   protected string mContext = 0;
 
   //! Parse a documentation string @[s].
-  void create(string | array(Token) s, SourcePosition|void sp) {
-    ::create(s, sp);
+  void create(string | array(Token) s, SourcePosition|void sp,
+	      .Flags|void flags) {
+    ::create(s, sp, flags);
     state = 0;
   }
 

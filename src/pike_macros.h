@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef MACROS_H
@@ -38,12 +37,8 @@
 
 PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
 #define is8bitalnum(X)	(Pike_is8bitalnum_vector[((unsigned)(X))&0xff] == '1')
-  
-#define isidchar(X) is8bitalnum(X)
 
-#ifndef HAVE_ISGRAPH
-#define isgraph(X)	(ispunct(X) || isupper(X) || islower(X) || isdigit(X))
-#endif /* !HAVE_ISGRAPH */
+#define isidchar(X) is8bitalnum(X)
 
 
 

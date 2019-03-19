@@ -15,10 +15,15 @@ protected private void processError(string message, mixed ... args) {
 	     backtrace() }) );
 }
 
+protected private void processWarning(string message, mixed ... args) {
+  werror("ProcessXML: "+message+"\n", @args);
+}
+
 // XML format:
 //
 // <autodoc>
 //   <namespace/>
+//   <appendix/> <!-- Note: Only in compat mode! -->
 //   <doc/>?
 // </autodoc>
 //
@@ -64,6 +69,7 @@ protected private void processError(string message, mixed ... args) {
 //   <constant/>
 //   <typedef/>
 //   <inherit/>
+//   <directive/>
 //   <doc/>
 // </docgroup>
 //
@@ -157,6 +163,9 @@ protected object makeWrapper(array(string) modules, object|void child)
 //!   The name of the class/module/namespace.
 //! @param parentModules
 //!   The ancestors of the class/module/namespace.
+//! @param flags
+//!   Flags adjusting the extractor behaviour.
+//!   Defaults to @[FLAG_NORMAL].
 //!
 //! @example
 //!   // To extract doc for Foo.Bar.Ippa:
@@ -164,8 +173,11 @@ protected object makeWrapper(array(string) modules, object|void child)
 //!     "class", "Ippa", ({ "Foo", "Bar" }));
 //!
 string extractXML(string filename, int|void pikeMode, string|void type,
-                  string|void name, array(string)|void parentModules)
+                  string|void name, array(string)|void parentModules,
+		  void|.Flags flags)
 {
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
+
   // extract the file...
   // check if there are C style doc comments in it,
   // because if there are, the CExtractor should be
@@ -192,10 +204,14 @@ string extractXML(string filename, int|void pikeMode, string|void type,
     if (has_suffix(namespace, "::")) {
       namespace = namespace[..<2];
     }
-    object m = .CExtractor.extract(contents, filename, namespace);
-    return m->xml();
+    // FIXME: Ought to handle emacs-style encoding directives.
+    catch { contents = utf8_to_string(contents); };
+    object m = .CExtractor.extract(contents, filename, namespace, flags);
+    return m->xml(flags);
   }
   else if(stylePike && has_value(contents, "//!")) {
+    // FIXME: Ought to handle #charset.
+    catch { contents = utf8_to_string(contents); };
     if(has_suffix(filename, ".pmod.in")) {
       contents = replace(contents, "@module@",
 			 "\"___" + (parentModules[1..] + ({ name }))*"." +"\"");
@@ -203,18 +219,18 @@ string extractXML(string filename, int|void pikeMode, string|void type,
     object m;
     switch(type) {
     case "module":
-      m = .PikeExtractor.extractModule(contents, filename, name);
+      m = .PikeExtractor.extractModule(contents, filename, name, flags);
       break;
     default:
     case "class":
-      m = .PikeExtractor.extractClass(contents, filename, name);
+      m = .PikeExtractor.extractClass(contents, filename, name, flags);
       break;
     case "namespace":
-      m = .PikeExtractor.extractNamespace(contents, filename, name);
+      m = .PikeExtractor.extractNamespace(contents, filename, name, flags);
       break;
     }
     if (m)
-      return makeWrapper(parentModules, m)->xml();
+      return makeWrapper(parentModules, m)->xml(flags);
   }
   return "";
 }
@@ -253,8 +269,8 @@ string moveImages(string docXMLFile,
   string cwd = getcwd();
   SimpleNode n;
   mixed err = catch {
-    n = simple_parse_input(docXMLFile)[0];
-  };
+      n = simple_parse_input(docXMLFile)->get_first_element();
+    };
   if (err) {
     int offset;
     if (sscanf(err[0], "%*s[Offset: %d]", offset) == 2) {
@@ -286,6 +302,11 @@ string moveImages(string docXMLFile,
             counter = 0;
             break;
 
+  	  case "appendix":
+	    if(attr->name != "")
+	      parents += ({ "APPENDIX" + hash(attr->name) });
+	    break;
+
 	  case "chapter":
 	    if(attr->name != "")
 	      parents += ({ "CHAPTER" + hash(attr->name) });
@@ -302,11 +323,15 @@ string moveImages(string docXMLFile,
             break;
 
           case "image":
+            string imageFilename;
             array(SimpleNode) children = n->get_children();
             if (sizeof(children || ({})) != 1
-                || children[0]->get_node_type() != XML_TEXT)
-              processError("bad image tag: %s\n", n->html_of_node());
-            string imageFilename = children[0]->get_text();
+                || children[0]->get_node_type() != XML_TEXT) {
+	      if (!(imageFilename = n->get_attributes()["src"]))
+		processError("bad image tag: %s\n", n->html_of_node());
+	      processWarning("Invalid image tag: %s\n", n->html_of_node());
+	    } else
+	      imageFilename = children[0]->get_text();
             imageFilename = combine_path(imageSourceDir, imageFilename);
             imageFilename = combine_path(cwd, imageFilename);
             string formatExt = (basename(imageFilename) / ".")[-1];
@@ -351,7 +376,15 @@ string moveImages(string docXMLFile,
       }
     }
   );
-  return n->html_of_node();
+  SimpleRootNode root = SimpleRootNode();
+  root->replace_children(({ SimpleHeaderNode(([ "version":"1.0",
+						"encoding":"utf-8",
+					     ])),
+			    SimpleTextNode("\n"),
+			    n,
+			    SimpleTextNode("\n"),
+			 }));
+  return root->html_of_node();
 }
 
 //========================================================================
@@ -362,84 +395,318 @@ protected int isAutoDoc(SimpleNode node) { return node->get_any_name() == "autod
 protected int isNameSpace(SimpleNode node) { return node->get_any_name() == "namespace"; }
 protected int isClass(SimpleNode node) { return node->get_any_name() == "class"; }
 protected int isModule(SimpleNode node) { return node->get_any_name() == "module"; }
+protected int isInherit(SimpleNode node) { return node->get_any_name() == "inherit"; }
+protected int isImport(SimpleNode node) { return node->get_any_name() == "import"; }
 protected int isDoc(SimpleNode node) { return node->get_any_name() == "doc"; }
+protected int isDocGroup(SimpleNode node) { return node->get_any_name() == "docgroup"; }
+protected int isModifiers(SimpleNode node) { return node->get_any_name() == "modifiers"; }
 
-protected string getName(SimpleNode node) { return node->get_attributes()["name"]; }
+protected string getName(SimpleNode node) {
+  string name = node->get_attributes() && node->get_attributes()["name"];
+  if (name) {
+    if (isInherit(node) || isImport(node)) {
+      // Separate name-space for inherits and imports.
+      return node->get_any_name() + ":" + name;
+    }
+  }
+  return name;
+}
 
-//!   Puts all children of @[source] into the tree @[dest], in their right
-//!   place module-hierarchically.
+protected int isText(SimpleNode node) { return node->get_node_type() == XML_TEXT; }
+
+// This function is just used to get something suitable to use
+// for sorting multiple docgroups for the same symbol.
+protected string renderType(SimpleNode node)
+{
+  SimpleNode type_node;
+  if ((< "method", "variable", "constant", "directive",
+	 "typedef", "inherit", "import" >)[node->get_any_name()]) {
+    type_node = node;
+  } else {
+    type_node =
+      node->get_first_element("method") ||
+      node->get_first_element("variable") ||
+      node->get_first_element("constant") ||
+      node->get_first_element("directive") ||
+      node->get_first_element("typedef") ||
+      node->get_first_element("inherit") ||
+      node->get_first_element("import");
+    if (!type_node) {
+      werror("Unknown type_node: %O\n", node->render_xml());
+      type_node = node;
+    }
+  }
+  return type_node->render_xml();
+}
+
+protected SimpleNode mergeDoc(SimpleNode orig, SimpleNode new)
+{
+  // NB: There can only be one <text> node in a <doc> node,
+  //     and it comes first among the element nodes.
+  SimpleNode orig_text = orig->get_first_element("text");
+  SimpleNode new_text = new->get_first_element("text");
+  if (new_text && sizeof(String.trim_all_whites(new_text->value_of_node()))) {
+    if (!orig_text) {
+      orig->add_child(new_text);
+    } else if (!sizeof(String.trim_all_whites(orig_text->value_of_node()))) {
+      orig->replace_child(orig_text, new_text);
+    } else {
+      orig_text->replace_children(orig_text->get_children() +
+				  new_text->get_children());
+    }
+  }
+
+  // Append the remaining (typically <group>) nodes in new after
+  // the previously existing in orig.
+  array(SimpleNode) new_children = new->get_children() - ({ new_text });
+  orig->replace_children(orig->get_children() + new_children);
+}
+
+//!   Puts all children of @[source] into the tree @[dest], in their
+//!   correct place module-hierarchically.
+//!
 //!   Used to merge the results of extractions of different Pike and C files.
+//!
+//!   Some minor effort is expended to normalize the result to some
+//!   sort of canonical order.
+//!
 //! @param source
 //! @param dest
 //!   The nodes @[source] and @[dest] are @tt{<class>@}, @tt{<module>@},
 //!   @tt{<namespace>@} or @tt{<autodoc>@} nodes that are identical in
 //!   the sense that they represent the same module, class or namespace.
 //!   Typically they both represent @tt{<autodoc>@} nodes.
+//!
+//! @note
+//!   Both @[source] and @[dest] are modified destructively.
+//!
 //! @note
 //!   After calling this method, any @tt{<class>@} or @tt{<module>@} nodes
 //!   that have been marked with @@appears or @@belongs, are still in the
 //!   wrong place in the tree, so @[handleAppears()] (or @[postProcess()])
 //!   must be called on the whole documentation tree to relocate them once
 //!   the tree has been fully merged.
-void mergeTrees(SimpleNode dest, SimpleNode source) {
+void mergeTrees(SimpleNode dest, SimpleNode source)
+{
   mapping(string : SimpleNode) dest_children = ([]);
+  mapping(string : array(SimpleNode)) dest_groups = ([]);
   SimpleNode dest_has_doc;
+  multiset(string) dest_modifiers = (<>);
+  array(SimpleNode) other_children = ({});
 
-  foreach(dest->get_children(), SimpleNode node)
-    if (isNameSpace(node) || isClass(node) || isModule(node))
-      dest_children[getName(node)] = node;
-    else if (isDoc(node))
-      dest_has_doc = node;
+  if ((dest->get_node_type() == Parser.XML.Tree.XML_ROOT) ||
+      (source->get_node_type() == Parser.XML.Tree.XML_ROOT)) {
+    error("mergeTrees() MUST be called with element nodes.\n");
+  }
 
-  array(SimpleNode) children = source->get_children();
-  foreach(children; int i; SimpleNode node)
+  // Transfer any attributes (like eg appears).
+  mapping(string:string) dest_attrs = dest->get_attributes();
+  foreach(source->get_attributes(); string attr; string val) {
+    if ((dest_attrs[attr] || val) != val) {
+      processWarning("Attribute '" + attr +
+		     "' ('" + dest_attrs[attr] + "') for node " +
+		     getName(dest) +
+		     "differs from the same for node " +
+		     getName(source) +
+		     " ('" + val + "').");
+    } else {
+      dest_attrs[attr] = val;
+    }
+  }
+
+  foreach(dest->get_children(), SimpleNode node) {
+    string name = getName(node);
+    if (name) {
+      dest_children[name] = node;
+    } else if (isDoc(node)) {
+      // Strip empty doc nodes.
+      if (sizeof(String.trim_all_whites(node->value_of_node())))
+	dest_has_doc = node;
+    } else if (isDocGroup(node)) {
+      // Docgroups are special:
+      //  * More than one symbol my be documented in the group.
+      //  * The same symbol may be documented multiple times
+      //    with different signatures.
+      foreach(node->get_elements(), SimpleNode sub) {
+	if (name = getName(sub)) {
+	  dest_groups[name] += ({ node });
+	}
+      }
+    } else if (isModifiers(node)) {
+      dest_modifiers = (multiset(string))node->get_elements()->get_any_name();
+    } else if (!isText(node) ||
+	       sizeof(String.trim_all_whites(node->value_of_node()))) {
+      other_children += ({ node });
+    }
+  }
+
+  array(SimpleNode) children = source->get_elements();
+  foreach(children; int i; SimpleNode node) {
     switch(node->get_any_name()) {
+      case "appendix":
+	// FIXME: Warn when not in compat mode.
+	// FALL_THROUGH
       case "namespace":
       case "class":
       case "module":
       case "enum":
-      case "typedef":
         {
-        string name = getName(node);
-        SimpleNode n = dest_children[name];
-        if (n) {
-          if (node->get_any_name() != n->get_any_name())
-            processError("entity '" + name +
-                         "' used both as a " + node->get_any_name() +
-			 " and a " + n->get_any_name());
-          mergeTrees(n, node);
-        }
-        else
-          dest->add_child(node);
+	  string name = getName(node);
+
+	  if (!name) {
+	    processError("No name for %s:\n"
+			 "%O\n",
+			 node->get_any_name(), node->render_xml()[..256]);
+	  }
+
+	  SimpleNode n = dest_children[name];
+	  if (n) {
+	    if (node->get_any_name() != n->get_any_name()) {
+	      if (!(<"module", "class">)[n->get_any_name()] ||
+		  !(<"module", "class">)[node->get_any_name()]) {
+		processError("entity '" + name +
+			     "' used both as a " + node->get_any_name() +
+			     " and a " + n->get_any_name() + ".");
+	      }
+	      processWarning("entity '" + name +
+			     "' used both as a " + node->get_any_name() +
+			     " and a " + n->get_any_name() + ".");
+	      processWarning("Converting to 'class'.");
+	      n->set_tag_name("class");
+	      node->set_tag_name("class");
+	    }
+	  } else {
+	    // Create a dummy node to merge with, so that we can normalize.
+	    n = SimpleElementNode(node->get_any_name(),
+				  node->get_attributes());
+	    dest_children[name] = n;
+	  }
+	  mergeTrees(n, node);
         }
 	children[i] = 0;
         break;
-      case "inherit":
-      case "import":
-      case "modifiers":
-        // these shouldn't be duplicated..
-        break;
-      case "doc":
-        if (dest_has_doc) {
-	  werror("Original doc: %O\n", dest_has_doc->value_of_node());
-	  werror("New doc: %O\n", node->value_of_node());
-	  if (isNameSpace(dest))
-            processError("Duplicate documentation for namespace " +
-			 getName(dest));
-          else if (isClass(dest))
-            processError("Duplicate documentation for class " + getName(dest));
-          else if (isModule(dest))
-            processError("Duplicate documentation for module " +
-                         getName(dest));
-          processError("Duplicate documentation");
+
+      case "docgroup":
+	{
+	  foreach(node->get_elements(), SimpleNode sub) {
+	    string name = getName(sub);
+	    if (!name) continue;
+	    dest_groups[name] += ({ node });
+	  }
+	  SimpleNode doc = node->get_first_element("doc");
+	  if (doc && !sizeof(String.trim_all_whites(doc->value_of_node()))) {
+	    // The doc is NULL.
+	    node->remove_child(doc);
+	  }
         }
-        // fall through
+	children[i] = 0;
+        break;
+
+      case "modifiers":
+        dest_modifiers |= (multiset)node->get_elements()->get_any_name();
+        break;
+
+      case "doc":
+	if (!sizeof(String.trim_all_whites(node->value_of_node()))) {
+	  // NULL doc.
+	} else if (dest_has_doc) {
+	  if ((node->get_attributes()["placeholder"] == "true") ||
+	      (String.trim_all_whites(node->value_of_node()) ==
+	       String.trim_all_whites(dest_has_doc->value_of_node()))) {
+	    // New doc is placeholder or same as old.
+	  } else if (dest_has_doc->get_attributes()["placeholder"] != "true") {
+	    // werror("Original doc: %O\n", dest_has_doc->value_of_node());
+	    // werror("New doc: %O\n", node->value_of_node());
+	    if (isNameSpace(dest))
+	      processWarning("Duplicate documentation for namespace " +
+			     getName(dest));
+	    else if (isClass(dest))
+	      processWarning("Duplicate documentation for class " +
+			     getName(dest));
+	    else if (isModule(dest))
+	      processWarning("Duplicate documentation for module " +
+			     getName(dest));
+	    else
+	      processWarning("Duplicate documentation");
+	    // Attempt to merge the two.
+	    mergeDoc(dest_has_doc, node);
+	  } else {
+	    // Old doc was placeholder or empty.
+	    dest_has_doc = node;
+	  }
+        } else {
+	  dest_has_doc = node;
+	}
+	children[i] = 0;
+	break;
+
       default:
-        dest->add_child(node);
+	if (!isText(node) ||
+	    sizeof(String.trim_all_whites(node->value_of_node()))) {
+	  if (node->get_any_name() != "source-position") {
+	    werror("Got other node: %O\n", node->render_xml());
+	  }
+	  other_children += ({ node });
+	}
 	children[i] = 0;
 	break;
     }
+  }
+
   source->replace_children(children - ({ 0 }));
+
+  // Create a canonical order (and whitespace) for the children
+  // of the dest node.
+  children = ({});
+
+  if (sizeof(dest_modifiers)) {
+    SimpleElementNode modifiers = SimpleElementNode("modifiers", ([]));
+    modifiers->replace_children(map(indices(dest_modifiers),
+				    SimpleElementNode, ([])));
+    children = ({ SimpleTextNode("\n"), modifiers });
+  }
+
+  if (dest_has_doc) {
+    children += ({ SimpleTextNode("\n"), dest_has_doc });
+  }
+
+  multiset(SimpleNode) added_nodes = (<>);
+
+  foreach(sort(indices(dest_groups)), string name) {
+    array(SimpleNode) nodes = dest_groups[name];
+
+    if (!nodes) continue;
+
+    if (sizeof(nodes) > 1)
+      sort(map(nodes, renderType), nodes);
+
+    foreach(nodes, SimpleNode n) {
+      if (added_nodes[n]) continue;
+
+      children += ({ SimpleTextNode("\n"), n, });
+      added_nodes[n] = 1;
+    }
+  }
+
+  foreach(sort(indices(dest_children)), string name) {
+    SimpleNode node = dest_children[name];
+
+    if (!node) continue;
+
+    children += ({ SimpleTextNode("\n"), node, });
+  }
+
+  // Handle any remaining nodes.
+  if (sizeof(other_children)) {
+    if (!isText(other_children[0]))
+      children += ({ SimpleTextNode("\n") });
+    children += other_children;
+    if (!isText(other_children[-1]))
+      children += ({ SimpleTextNode("\n") });
+  } else
+    children += ({ SimpleTextNode("\n") });
+
+  dest->replace_children(children);
 }
 
 protected void reportError(string filename, mixed ... args) {
@@ -470,8 +737,15 @@ protected SimpleNode findNode(SimpleNode root, array(string) ref) {
         }
       }
     }
-    if (!found)
-      return 0;
+    if (!found) {
+      if ((n == root) && (root->get_any_name() == "autodoc")) {
+	// Create namespaces on demand.
+	found = SimpleElementNode("namespace", ([ "name": ref[0] ]));
+	root->add_child(found);
+      } else {
+	return 0;
+      }
+    }
     n = found;
     ref = ref[1..];
   }
@@ -527,7 +801,9 @@ protected void recurseAppears(string namespace,
 //!
 //! @param root
 //!   The root (@tt{<autodoc>@}) node of the documentation tree.
-void handleAppears(SimpleNode root) {
+void handleAppears(SimpleNode root, .Flags|void flags)
+{
+  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   tasks = ({ });
   foreach(root->get_elements("namespace"), SimpleNode namespaceNode) {
     string namespace = namespaceNode->get_attributes()->name + "::";
@@ -549,7 +825,9 @@ void handleAppears(SimpleNode root) {
     string newName = task->newName;
     SimpleNode belongsNode = findNode(root, belongsRef);
     if (!belongsNode) {
-      werror("Couldn't find the node: %O\n", belongsRef*".");
+      if (flags & .FLAG_VERB_MASK)
+	werror("Couldn't find the new parent node: %O for fragment:\n%s\n",
+	       belongsRef*".", (string)n);
       continue;
     }
     if (type == "docgroup") {
@@ -577,9 +855,11 @@ void handleAppears(SimpleNode root) {
     task->parent->remove_child(n);
 
     // Perform a merge in case the destination already has some doc.
-    werror("Merging <%s> node %s with <%s> %s...\n",
-	   belongsNode->get_any_name(), belongsRef*".",
-	   n->get_any_name(), newName || "");
+    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE) {
+      werror("Merging <%s> node %s:: with <%s> %s...\n",
+	     belongsNode->get_any_name(), belongsRef*".",
+	     n->get_any_name(), newName || "");
+    }
     SimpleNode fakeBelongsNode =
       SimpleElementNode(belongsNode->get_any_name(), ([]))->add_child(n);
     mergeTrees(belongsNode, fakeBelongsNode);
@@ -693,6 +973,14 @@ protected class ScopeStack {
     if (type == "namespace") {
       namespaceStack += ({ ({ namespace, scopes[name] }) });
       scopes[namespace = name] = ({ Scope(type, name+"::") });
+      if (name = ([ "7.8":"7.7",
+		    "7.6":"7.5",
+		    "7.4":"7.3",
+		    "7.2":"7.1",
+		    "7.0":"0.7" ])[name]) {
+	// Add an alias for development version.
+	scopes[name] = scopes[namespace];
+      }
     } else {
       if (!sizeof(scopes[namespace]||({}))) {
 	werror("WARNING: Implicit enter of namespace %s:: for %s %s\n",
@@ -702,6 +990,7 @@ protected class ScopeStack {
       scopes[namespace] += ({ Scope(type, name) });
     }
   }
+
   void leave() {
     if (sizeof(scopes[namespace]||({}))) {
       if (sizeof(scopes[namespace][-1]->failures)) {
@@ -746,7 +1035,7 @@ protected class ScopeStack {
 	     "idents:%O\n"
 	     "stack:%O\n",
 	     ref, idents,
-	     scopeArr);
+	     namespaceStack);
     }
 #endif /* 0 */
 
@@ -773,7 +1062,7 @@ protected class ScopeStack {
       string firstIdent = idents[0];
       for(int i = sizeof(scopes[namespace]); i--;) {
 	Scope s = scopes[namespace][i];
-	if (s->idents[firstIdent])
+	if (s->idents[firstIdent] || s->idents["/precompiled/" + firstIdent])
 	  if (s->type == "params" && !not_param) {
 	    return ([ "param" : ref ]);
 	  }
@@ -787,6 +1076,7 @@ protected class ScopeStack {
 		res += name + ".";
 	      //werror("[[[[ name == %O\n", name);
 	    }
+	    if (!s->idents[firstIdent]) res += "/precompiled/";
 	    matches += ({ res + ref });
 	  }
       }
@@ -987,6 +1277,9 @@ class NScope
   // or docgroup.
   protected void create(SimpleNode tree, string|void path)
   {
+    if (tree->get_node_type() == XML_ROOT) {
+      tree = tree->get_first_element();
+    }
     type = tree->get_any_name();
     name = tree->get_attributes()->name;
     if (path) {
@@ -1003,7 +1296,7 @@ class NScope
       error("Unsupported node type: %O, name: %O, path: %O\n",
 	    type, name, path);
     }
-    this_program::path = path;
+    this::path = path;
     enterNode(tree);
   }
 
@@ -1111,7 +1404,7 @@ class NScope
       case "class":
       case "enum":
 	// FIXME: What about unnamed enums?
-	n = child->get_attributes()->name;	  
+	n = child->get_attributes()->name;
 	if (n) {
 	  if (child->get_any_name() == "namespace") {
 	    n += "::";
@@ -1148,14 +1441,20 @@ class NScope
       }
     }
   }
+
   protected string _sprintf(int c)
   {
     return sprintf("NScope(type:%O, name:%O, symbols:%d, inherits:%d)",
 		   type, name, sizeof(symbols), sizeof(inherits||([])));
   }
+
   string lookup(array(string) path, int(0..1)|void no_imports )
   {
-    int(1..1)|NScope scope = symbols[path[0]];
+    if( !sizeof(path) )
+        return 0;
+
+    int(1..1)|NScope scope =
+      symbols[path[0]] || symbols["/precompiled/"+path[0]];
     if (!scope) {
       // Not immediately available in this scope.
       if (inherits) {
@@ -1193,23 +1492,38 @@ class NScopeStack
   NScope top;
   array(NScope) stack = ({});
   mapping(string:mapping(string:int(1..))) failures = ([]);
+  string logfile;
+  .Flags flags;
 
-  protected void create(NScope scopes)
+  protected void warn(sprintf_format fmt, sprintf_args ... args)
   {
-    this_program::scopes = scopes;
+    if (flags & .FLAG_VERB_MASK) {
+      werror(fmt, @args);
+    }
   }
+
+  protected void create(NScope scopes, string|void logfile, .Flags|void flags)
+  {
+    this::scopes = scopes;
+    this::logfile = logfile;
+    if (undefinedp(flags)) flags = .FLAG_NORMAL;
+    this::flags = flags;
+  }
+
   protected void destroy()
   {
     if (sizeof(failures)) {
-      werror("Resolution failed for %d symbols. Logging to resolution.log\n",
-	     sizeof(failures));
-      Stdio.File f = Stdio.File("resolution.log", "cwt");
+      logfile = logfile || "resolution.log";
+      warn("Resolution failed for %d symbols. Logging to %s\n",
+	   sizeof(failures), logfile);
+      Stdio.File f = Stdio.File(logfile, "cwt");
       f->write("Reference target: Reference source:references\n\n");
       mapping(string:array(string)) rev = ([]);
       foreach(sort(indices(failures)), string ref) {
 	mapping(string:int) where = failures[ref];
-	f->write("  %O: %{%O:%d, %}\n",
-	       ref, (array)where);
+	array(array(string|int)) srcs = (array)where;
+	sort(map(srcs, predef::`[], 0), srcs);
+	f->write("  %O: %{%O:%d, %}\n", ref, srcs);
 	foreach(indices(where), string source)
 	  if(rev[source])
 	    rev[source] += ({ ref });
@@ -1219,30 +1533,36 @@ class NScopeStack
       f->write("\n\nReference source: Reference targets.\n\n");
       foreach(sort(indices(rev)), string source) {
 	array(string) targets = rev[source];
-	f->write("%O:%{ %O%}\n", source, targets);
+	f->write("%O:%{ %O%}\n", source, sort(targets));
       }
       f->close();
     }
   }
+
   protected string _sprintf(int c)
   {
     return sprintf("NScopeStack(num_scopes: %d, top: %O)",
 		   sizeof(stack), top);
   }
+
   void addImplicitInherits()
   {
     scopes->addImplicitInherits();
   }
+
   void reset()
   {
     top = scopes;
     stack = ({});
   }
+
   void enter(string symbol)
   {
     int(1..1)|NScope scope = top->symbols[symbol];
     if (!scope) {
-      error("No such symbol: %O in scope %O %O\n", symbol, top, stack);
+      if (!(scope = top->symbols["/precompiled/" + symbol])) {
+	error("No such symbol: %O in scope %O %O\n", symbol, top, stack);
+      }
     }
     if (!objectp(scope)) {
       error("Symbol %s is not a scope.\n"
@@ -1251,6 +1571,7 @@ class NScopeStack
     stack += ({ top });
     top = scope;
   }
+
   void leave()
   {
     if (!top) {
@@ -1263,19 +1584,21 @@ class NScopeStack
       top = 0;
     }
   }
+
   NScope|int(1..1) lookup(string ref)
   {
     array(string) path = splitRef(ref);
     int(1..1)|NScope val = scopes;
     foreach(path, string sym) {
       if (objectp(val)) {
-	val = val->symbols[sym];
+	val = val->symbols[sym] || val->symbols["/precompiled/" + sym];
       } else {
 	return 0;
       }
     }
     return val;
   }
+
   string resolve(array(string) ref)
   {
     if (!sizeof(ref)) {
@@ -1287,6 +1610,7 @@ class NScopeStack
       // Inherit or namespace.
       switch(ref[0]) {
       case "this_program::":
+      case "this::":
 	while (pos) {
 	  if ((<"class", "module", "namespace">)[current->type]) {
 	    return current->lookup(ref[1..]);
@@ -1298,7 +1622,8 @@ class NScopeStack
       case "::":
 	while(pos) {
 	  if (current->inherits) {
-	    foreach(current->inherits; ; NScope scope) {
+	    foreach(current->inherits; ; string|NScope scope) {
+	      if (stringp(scope)) scope = lookup(scope);
 	      if (objectp(scope)) {
 		string res = scope->lookup(ref[1..]);
 		if (res) return res;
@@ -1312,14 +1637,29 @@ class NScopeStack
       default:
 	// Strip the trailing "::".
 	string inh = ref[0][..sizeof(ref[0])-3];
+	// Map intermediate version namespaces to existing.
+	// FIXME: This ought be done based on the set of namespaces.
+	inh = ([
+	  "0.7":"7.0",
+	  "7.1":"7.2",
+	  "7.3":"7.4",
+	  "7.5":"7.6",
+	  "7.7":"7.8",
+	  "7.9":"predef",
+	])[inh] || inh;
 	while(pos) {
-	  if (current->inherits && current->inherits[inh]) {
-	    string res = current->inherits[inh]->lookup(ref[1..]);
-	    if (res) return res;
+	  string|NScope scope;
+	  if (current->inherits && (scope = current->inherits[inh])) {
+	    if (stringp(scope)) scope = lookup(scope);
+	    if (objectp(scope)) {
+	      string res = scope->lookup(ref[1..]);
+	      if (res) return res;
+	    }
 	  }
 	  pos--;
 	  current = stack[pos];
 	}
+	ref = ({ inh + "::" }) + ref[1..];
 	break;
       }
       return scopes->lookup(ref, 1);
@@ -1359,6 +1699,7 @@ class NScopeStack
     }
     return 0;
   }
+
   void resolveInherits()
   {
     int removed_self;
@@ -1381,12 +1722,12 @@ class NScopeStack
 	    top->inherits[inh] = path;
 	    continue;
 	  } else {
-	    werror("Failed to resolve inherit %O.\n"
-		   "  Top: %O\n"
-		   "  Scope: %O\n"
-		   "  Stack: %O\n"
-		   "  Ref: %O\n",
-		   inh, top, scope, stack, splitRef(scope));
+	    warn("Failed to resolve inherit %O.\n"
+		 "  Top: %O\n"
+		 "  Scope: %O\n"
+		 "  Stack: %O\n"
+		 "  Ref: %O\n",
+		 inh, top, scope, stack, splitRef(scope));
 	  }
 	}
 	m_delete(top->inherits, inh);
@@ -1403,10 +1744,10 @@ class NScopeStack
 	    top->imports[path] = 1;
 	    continue;
 	  } else {
-	    werror("Failed to resolve import %O.\n"
-		   "  Top: %O\n"
-		   "  Stack: %O\n",
-		   scope, top, stack);
+	    warn("Failed to resolve import %O.\n"
+		 "  Top: %O\n"
+		 "  Stack: %O\n",
+		 scope, top, stack);
 	  }
 	}
       }
@@ -1426,23 +1767,23 @@ class NScopeStack
 	    top->inherits[inh] = nscope;
 	    continue;
 	  }
-	  werror("Failed to lookup inherit %O (loop).\n"
-		 "  Top: %O\n"
-		 "  Scope: %O\n"
-		 "  Path: %O\n"
-		 "  NewScope: %O\n"
-		 "  Stack: %O\n",
-		 inh, top, scope, path, nscope, stack);
+	  warn("Failed to lookup inherit %O (loop).\n"
+	       "  Top: %O\n"
+	       "  Scope: %O\n"
+	       "  Path: %O\n"
+	       "  NewScope: %O\n"
+	       "  Stack: %O\n",
+	       inh, top, scope, path, nscope, stack);
 	} else {
-	  werror("Failed to lookup inherit %O.\n"
-		 "  Top: %O\n"
-		 "  Scope: %O\n"
-		 "  Path: %O\n"
-		 "  NewScope: %O\n"
-		 "  Stack: %O\n"
-		 "  Top->Symbols: %O\n",
-		 inh, top, scope, path, nscope, stack,
-		 indices(top->symbols));
+	  warn("Failed to lookup inherit %O.\n"
+	       "  Top: %O\n"
+	       "  Scope: %O\n"
+	       "  Path: %O\n"
+	       "  NewScope: %O\n"
+	       "  Stack: %O\n"
+	       "  Top->Symbols: %O\n",
+	       inh, top, scope, path, nscope, stack,
+	       indices(top->symbols));
 	}
 	m_delete(top->inherits, inh);
       }
@@ -1458,21 +1799,21 @@ class NScopeStack
 	    top->imports[nscope] = 1;
 	    continue;
 	  }
-	  werror("Failed to lookup import %O (loop).\n"
-		 "  Top: %O\n"
-		 "  Scope: %O\n"
-		 "  NewScope: %O\n"
-		 "  Stack: %O\n",
-		 path, top, scope, nscope, stack);
+	  warn("Failed to lookup import %O (loop).\n"
+	       "  Top: %O\n"
+	       "  Scope: %O\n"
+	       "  NewScope: %O\n"
+	       "  Stack: %O\n",
+	       path, top, scope, nscope, stack);
 	} else {
-	  werror("Failed to lookup import %O.\n"
-		 "  Top: %O\n"
-		 "  Scope: %O\n"
-		 "  NewScope: %O\n"
-		 "  Stack: %O\n"
-		 "  Top->Symbols: %O\n",
-		 path, top, scope, nscope, stack,
-		 indices(top->symbols));
+	  warn("Failed to lookup import %O.\n"
+	       "  Top: %O\n"
+	       "  Scope: %O\n"
+	       "  NewScope: %O\n"
+	       "  Stack: %O\n"
+	       "  Top->Symbols: %O\n",
+	       path, top, scope, nscope, stack,
+	       indices(top->symbols));
 	}
       }
     }
@@ -1599,23 +1940,28 @@ void doResolveNode(NScopeStack scopestack, SimpleNode tree)
   }
 }
 
-void resolveRefs(SimpleNode tree)
+void resolveRefs(SimpleNode tree, string|void logfile, .Flags|void flags)
 {
-  werror("Building the scope structure...\n");
-  NScopeStack scopestack = NScopeStack(NScope(tree));
-  werror("Adding implicit inherits for compatibility modules...\n");
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Building the scope structure...\n");
+  NScopeStack scopestack = NScopeStack(NScope(tree), logfile, flags);
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Adding implicit inherits for compatibility modules...\n");
   scopestack->addImplicitInherits();
-  werror("Resolving inherits...\n");
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Resolving inherits...\n");
   scopestack->reset();
   scopestack->resolveInherits();
-  werror("Resolving references...\n");
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Resolving references...\n");
   doResolveNode(scopestack, tree);
   destruct(scopestack);
-  werror("Done.\n");
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Done.\n");
 }
 
-void cleanUndocumented(SimpleNode tree) {
-
+void cleanUndocumented(SimpleNode tree, .Flags|void flags)
+{
   int(0..1) check_node(SimpleNode n) {
     array(SimpleNode) children = n->get_children();
     int num = sizeof(children);
@@ -1632,7 +1978,8 @@ void cleanUndocumented(SimpleNode tree) {
     ch -= ({ "modifiers" });
     ch -= ({ "source-position" });
     if(sizeof(ch)) return 1;
-    werror("Removed empty %s %O\n", name, n->get_attributes()->name);
+    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+      werror("Removed empty %s %O\n", name, n->get_attributes()->name);
     return 0;
   };
 
@@ -1649,12 +1996,12 @@ void cleanUndocumented(SimpleNode tree) {
 //!
 //! @seealso
 //!   @[handleAppears()], @[cleanUndocumented()], @[resolveRefs()]
-void postProcess(SimpleNode root) {
+void postProcess(SimpleNode root, string|void logfile, .Flags|void flags) {
   //  werror("handleAppears\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  handleAppears(root);
+  handleAppears(root, flags);
   //  werror("cleanUndocumented\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  cleanUndocumented(root);
+  cleanUndocumented(root, flags);
   //  werror("resolveRefs\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  resolveRefs(root);
+  resolveRefs(root, logfile, flags);
   //  werror("done postProcess\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
 }

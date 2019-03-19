@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #undef FUNCPROTO
@@ -17,6 +16,10 @@
 #undef HAVE_GTK212
 #undef HAVE_GTK214
 #undef HAVE_GTK216
+#undef HAVE_GTK218
+#undef HAVE_GTK220
+#undef HAVE_GTK222
+#undef HAVE_GTK224
 #undef HAVE_ATK
 #undef HAVE_ATK18
 #undef HAVE_PANGO

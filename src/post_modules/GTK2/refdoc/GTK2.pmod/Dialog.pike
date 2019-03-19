@@ -32,7 +32,7 @@ GTK2.Widget add_button( string button_text, int response_id );
 //!
 //!
 
-static GTK2.Dialog create( mapping|void props );
+protected GTK2.Dialog create( mapping|void props );
 //! Create a new dialog widget.
 //!
 //!

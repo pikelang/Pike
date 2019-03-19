@@ -69,7 +69,7 @@ void set_displayed_row(?GTK2.TreePath path)
     struct object *o1;
     get_all_args("set_displayed_row",args,"%o",&o1);
     gtk_cell_view_set_displayed_row(GTK_CELL_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   } else {
     gtk_cell_view_set_displayed_row(GTK_CELL_VIEW(THIS->obj),NULL);
   }
@@ -98,7 +98,7 @@ mapping(string:int) get_size_of_row(GTK2.TreePath path)
     GtkRequisition req;
     get_all_args("get_size_of_row",args,"%o",&o1);
     gtk_cell_view_get_size_of_row(GTK_CELL_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),&req);
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),&req);
     pgtk2_pop_n_elems(args);
     ref_push_string(_STR("width")); push_int(req.width);
     ref_push_string(_STR("height")); push_int(req.height);

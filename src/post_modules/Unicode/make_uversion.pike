@@ -1,9 +1,10 @@
 
 void main(int n, array args)
 {
-  if(n!=2) exit(1);
+  if(n!=3) exit(1);
   string file = Stdio.read_file(args[1]);
   if(!file) exit(1);
+  function write = Stdio.File(args[2], "cwt")->write;
   string ver;
   sscanf(file, "%*sVersion %s\n", ver);
   if(!ver) exit(1);

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Pike interface to Common Object Model (COM)
  *
  * Tomas Nilsson
@@ -27,6 +25,7 @@
 #include "pike_error.h"
 #include "module_support.h"
 #include "pike_memory.h"
+#include "pike_types.h"
 #include "gc.h"
 #include "threads.h"
 #include "operators.h"
@@ -133,16 +132,15 @@ static void com_throw_error(HRESULT hr)
 {
   LPVOID lpMsgBuf;
   ONERROR tmp;
-  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-                FORMAT_MESSAGE_FROM_SYSTEM | 
+  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                FORMAT_MESSAGE_FROM_SYSTEM |
                 FORMAT_MESSAGE_IGNORE_INSERTS, NULL, hr,
-                MAKELANGID(LANG_NEUTRAL, 
+                MAKELANGID(LANG_NEUTRAL,
                            SUBLANG_DEFAULT),(LPTSTR) &lpMsgBuf,
                 0, NULL);
   SET_ONERROR(tmp, LocalFree, lpMsgBuf);
   Pike_error("Com Error: %s\n", lpMsgBuf);
-  /* NOT_REACHED */
-  CALL_AND_UNSET_ONERROR(tmp);
+  UNREACHABLE(CALL_AND_UNSET_ONERROR(tmp));
 }
 
 static void com_throw_error2(HRESULT hr, EXCEPINFO excep)
@@ -164,8 +162,8 @@ static void set_variant_arg(VARIANT *v, struct svalue *sv)
   PCHARP pchar;
 
   VariantInit(v);
-      
-  switch(sv->type)
+
+  switch(TYPEOF(*sv))
   {
     case PIKE_T_INT:
       v->vt = VT_I4;
@@ -218,22 +216,22 @@ static void set_variant_arg(VARIANT *v, struct svalue *sv)
       /* TODO: Convert array to SAFEARRAY ? */
     case PIKE_T_ARRAY:
       Pike_error("Com: create_variant: Pike array can't be converted!\n",
-                 sv->type);
+                 TYPEOF(*sv));
       break;
 
     case PIKE_T_MAPPING:
       Pike_error("Com: create_variant: Pike mapping can't be converted!\n",
-                 sv->type);
+                 TYPEOF(*sv));
       break;
 
     case PIKE_T_MULTISET:
       Pike_error("Com: create_variant: Pike multiset can't be converted!\n",
-                 sv->type);
+                 TYPEOF(*sv));
       break;
 
     default:
       Pike_error("Com: create_variant: Pike type %d can't be converted!\n",
-                 sv->type);
+                 TYPEOF(*sv));
       break;
   }
 }
@@ -249,7 +247,7 @@ static void create_variant_arg(int args, DISPPARAMS **dpar)
     for (i=0; i<args; i++)
       set_variant_arg(&varg[args-i-1], &Pike_sp[i-args]);
   }
-  
+
   *dpar = malloc(sizeof(DISPPARAMS));
   (*dpar)->cNamedArgs = 0;
   (*dpar)->rgdispidNamedArgs = NULL;
@@ -316,15 +314,12 @@ static void low_push_safearray(SAFEARRAY *psa, UINT dims,
 
   SafeArrayLock(psa);
   SafeArrayGetVartype(psa, &vtype);
-  
+
   if (vtype != VT_VARIANT)
   {
     /* TODO: Handle more array types */
     Pike_error("Unknown vartype: %d\n", vtype);
-    /* Not reached! */
-    push_int(0);
-    Pike_sp[-1].subtype = NUMBER_UNDEFINED;
-    return;
+    UNREACHABLE(return);
   }
 
   SafeArrayGetLBound(psa, curdim, &lbound);
@@ -384,7 +379,7 @@ static void push_varg(VARIANT *varg)
     push_safearray(varg->parray);
     return;
   }
-  
+
   VariantInit(&cv);
   switch (varg->vt & VT_TYPEMASK)
   {
@@ -458,8 +453,7 @@ static void push_varg(VARIANT *varg)
           }
           else
           {
-            push_int(0);
-            Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+            push_undefined();
           }
         }
         else
@@ -590,11 +584,7 @@ static void cval_push_result(INT32 args, int flags)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-  
-    /* NOT reached! */
-    pop_n_elems(args);
-    push_int(0);
-    return;
+    UNREACHBLE(return);
   }
 
   pop_n_elems(args);
@@ -714,20 +704,19 @@ static void f_cval_cast(INT32 args)
 
   if (args < 1)
     Pike_error("cast() called without arguments.\n");
-  if (Pike_sp[-args].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     Pike_error("Bad argument 1 to cast().\n");
 
-  if (!strcmp(Pike_sp[-args].u.string->str, "object")) {
+  if( Pike_sp[-args].u.string == literal_string_string )
+  {
     pop_n_elems(args);
-    push_object(this_object());
+    cval_push_result(0, DISPATCH_PROPERTYGET);
   }
-
-  
-/*   if (strcmp(Pike_sp[-args].u.string->str, "string")) */
-/*     Pike_error("cast() to other type than string.\n"); */
-
-  pop_n_elems(args);
-  cval_push_result(0, DISPATCH_PROPERTYGET);
+  else
+  {
+    pop_n_elems(args);
+    push_undefined();
+  }
 }
 
 /*   pike_add_function("`[]", f_cval_ind, "function(mixed:mixed)", 0); */
@@ -750,7 +739,7 @@ static void f_cval_arrow(INT32 args)
   if (args != 1)
     Pike_error("Bad argument to cval::`->\n");
 
-  if (Pike_sp[-1].type == PIKE_T_STRING &&
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING &&
       !strncmp(Pike_sp[-1].u.string->str, "_value", Pike_sp[-1].u.string->len))
   {
     pop_n_elems(args);
@@ -759,12 +748,11 @@ static void f_cval_arrow(INT32 args)
   }
 
   cval_push_result(0, DISPATCH_PROPERTYGET);
-  if (Pike_sp[-1].type != PIKE_T_OBJECT ||
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
       Pike_sp[-1].u.object->prog != cobj_program)
   {
     pop_n_elems(args+1);
-    push_int(0);
-    Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+    push_undefined();
     return;
   }
   stack_swap();
@@ -780,7 +768,7 @@ static void f_cval_arrow_assign(INT32 args)
     Pike_error("Bad argument to cval::`->=\n");
 
   cval_push_result(0, DISPATCH_PROPERTYGET);
-  if (Pike_sp[-1].type != PIKE_T_OBJECT ||
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
       Pike_sp[-1].u.object->prog != cobj_program)
   {
     pop_n_elems(args+1);
@@ -832,33 +820,33 @@ static void f_cval__sprintf(INT32 args)
 /*   struct pike_string *s = 0; */
   INT_TYPE flag_left, method;
   struct string_builder s;
-  
+
 /*   get_all_args("_sprintf",args,"%i",&x); */
-  if (args < 1 || Pike_sp[-args].type != PIKE_T_INT)
+  if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com.cval->_sprintf().\n");
-  if (args < 2 || Pike_sp[1-args].type != PIKE_T_MAPPING)
+  if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
     Pike_error("Bad argument 2 for Com.cval->_sprintf().\n");
-  
+
   push_svalue(&Pike_sp[1-args]);
-  push_constant_text("precision");
+  push_static_text("precision");
   f_index(2);
-  if (Pike_sp[-1].type != PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"precision\" argument to Com->_sprintf() is not an integer.\n");
-  precision_undecided = ((Pike_sp-1)->subtype != NUMBER_NUMBER);
+  precision_undecided = (SUBTYPEOF(Pike_sp[-1]) != NUMBER_NUMBER);
   precision = (--Pike_sp)->u.integer;
-  
+
   push_svalue(&Pike_sp[1-args]);
-  push_constant_text("width");
+  push_static_text("width");
   f_index(2);
-  if (Pike_sp[-1].type != PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"width\" argument to Com->_sprintf() is not an integer.\n");
-  width_undecided = ((Pike_sp-1)->subtype != NUMBER_NUMBER);
+  width_undecided = (SUBTYPEOF(Pike_sp[-1]) != NUMBER_NUMBER);
   width = (--Pike_sp)->u.integer;
 
   push_svalue(&Pike_sp[1-args]);
-  push_constant_text("flag_left");
+  push_static_text("flag_left");
   f_index(2);
-  if (Pike_sp[-1].type != PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"flag_left\" argument to Com->_sprintf() is not an integer.\n");
   flag_left=Pike_sp[-1].u.integer;
   pop_stack();
@@ -894,7 +882,7 @@ static void f_cval__sprintf(INT32 args)
         p += sprintf(p, ".%d", precision);
       p += sprintf(p, "%c", method);
       push_text(buf);
-        
+
       cval_push_result(0, DISPATCH_PROPERTYGET);
       f_sprintf(2);
       return;
@@ -904,7 +892,7 @@ static void f_cval__sprintf(INT32 args)
       push_int(0);
       return;
   }
-  
+
 }
 
 /*   pike_add_function("_equal", f_cval__equal, "function(mixed:mixed)", 0); */
@@ -933,11 +921,11 @@ static void f_cobj_create(INT32 args)
 
   if (args > 0)
   {
-    get_all_args("Com.obj->create()", args, "%W", &progID);
+    get_all_args("create", args, "%W", &progID);
     progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
     pike_string_cpy(progID2, progID);
     SET_INDEX_PCHARP(progID2, progID->len, 0);
-    
+
     hr = CLSIDFromProgID((OLECHAR *)progID2.ptr, &clsid);
     if (!SUCCEEDED(hr))
     {
@@ -945,7 +933,7 @@ static void f_cobj_create(INT32 args)
       destruct(Pike_fp->current_object);
       return;
     }
-    
+
     hr = CoCreateInstance(&clsid, NULL, CLSCTX_SERVER,
                           &IID_IDispatch, (void**)&cobj->pIDispatch);
     if (!SUCCEEDED(hr))
@@ -958,7 +946,7 @@ static void f_cobj_create(INT32 args)
 
   cobj->method_map = allocate_mapping(10);
   mapping_set_flags(cobj->method_map, MAPPING_WEAK);
-  
+
   pop_n_elems(args);
   push_int(0);
 
@@ -999,7 +987,7 @@ static void f_cobj_getprop(INT32 args)
   struct pike_string *prop;
   PCHARP propU;
 
-  get_all_args("Com.obj->get_prop()", args, "%W", &prop);
+  get_all_args("get_prop", args, "%W", &prop);
   propU = MKPCHARP(malloc(prop->len * 2 + 2), 1);
   pike_string_cpy(propU, prop);
   SET_INDEX_PCHARP(propU, prop->len, 0);
@@ -1014,7 +1002,7 @@ static void f_cobj_getprop(INT32 args)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-  
+
     pop_n_elems(args);
     push_int(0);
     return;
@@ -1043,7 +1031,7 @@ static void f_cobj_setprop(INT32 args)
   if (args!=2)
     Pike_error("Incorrect number of arguments to set_prop.\n");
 
-  if (Pike_sp[-args].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     Pike_error("Bad argument 1 to set_prop.\n");
 
   prop = Pike_sp[-args].u.string;
@@ -1061,11 +1049,7 @@ static void f_cobj_setprop(INT32 args)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-  
-    /* Not reached */
-    pop_n_elems(args);
-    push_int(0);
-    return;
+    UNREACHABLE(return);
   }
 
   pop_n_elems(args);
@@ -1091,7 +1075,7 @@ static void f_cobj_call_method(INT32 args)
   if (args<1)
     Pike_error("Incorrect number of arguments to call_method.\n");
 
-  if (Pike_sp[-args].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     Pike_error("Bad argument 1 to call_method.\n");
 
   prop = Pike_sp[-args].u.string;
@@ -1109,11 +1093,7 @@ static void f_cobj_call_method(INT32 args)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-
-    /* Not reached */
-    pop_n_elems(args);
-    push_int(0);
-    return;
+    UNREACHABLE(return);
   }
 
   pop_n_elems(args);
@@ -1130,7 +1110,7 @@ static void f_cobj_arrow(INT32 args)
   struct cobj_storage *cobj = THIS_COBJ;
   struct svalue *cval_prog;
 
-  if (args<1 || Pike_sp[-args].type != PIKE_T_STRING ||
+  if (args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
      args>1)
     Pike_error("Bad args to `->.");
 
@@ -1148,7 +1128,7 @@ static void f_cobj_arrow(INT32 args)
     struct pike_string *method;
     OLECHAR method2[MAX_PATH+1];
     PCHARP  tmp;
-    
+
     method = Pike_sp[-args].u.string;
 
     if (method->len > MAX_PATH)
@@ -1198,11 +1178,11 @@ static void f_cobj__sprintf(INT32 args)
 {
   struct cobj_storage *cobj = THIS_COBJ;
 
-  if (args < 1 || Pike_sp[-args].type != PIKE_T_INT)
+  if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com.cobj->_sprintf().\n");
-  if (args < 2 || Pike_sp[1-args].type != PIKE_T_MAPPING)
+  if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
     Pike_error("Bad argument 2 for Com.cobj->_sprintf().\n");
-  
+
   switch (Pike_sp[-args].u.integer)
   {
     case 'O':
@@ -1216,7 +1196,7 @@ static void f_cobj__sprintf(INT32 args)
 	return;
       }
   }
-  
+
   pop_n_elems(args);
   push_int(0);
 }
@@ -1229,13 +1209,13 @@ static void f_cobj__indices(INT32 args)
   TYPEATTR * pTypeAttr;
   int count = 0;
   HRESULT hr;
-  
+
   if (args != 0 )
     Pike_error("Bad arguments for Com.cobj->_indices().\n");
-  
+
   hr = cobj->pIDispatch->lpVtbl->GetTypeInfo(cobj->pIDispatch, 0,
                                              GetUserDefaultLCID(), &ptinfo);
-  
+
   if (FAILED(hr))
   {
     f_aggregate(0);
@@ -1279,7 +1259,7 @@ static void f_cobj__indices(INT32 args)
       }
       ptinforef->lpVtbl->Release(ptinforef);
     }
-    
+
     ptinfo->lpVtbl->ReleaseTypeAttr(ptinfo, pTypeAttr);
   }
 
@@ -1370,13 +1350,13 @@ static void exit_com_struct(struct object *o)
 /*     0  /\* Zero named arguments *\/ */
 /*   }; */
 /*   VARIANT varResult; */
-  
+
 /*   hr = CLSIDFromProgID(progid, &clsid); */
 /*   hr = CoCreateInstance(&clsid, NULL, CLSCTX_INPROC_SERVER, */
 /*                         &IID_IDispatch, (void**)&pIDispatch); */
 /*   pIDispatch->lpVtbl->GetIDsOfNames(pIDispatch, &IID_NULL, &name, 1, */
 /*                                     GetUserDefaultLCID(), &dispid); */
-  
+
 /*   hr = pIDispatch->lpVtbl->Invoke(pIDispatch, */
 /*                                   dispid, */
 /*                                   &IID_NULL, */
@@ -1417,23 +1397,22 @@ static void f_create_object(INT32 args)
   PCHARP progID2;
   IDispatch *pDispatch;
 
-  get_all_args("Com->create_object()", args, "%W", &progID);
-  //check_all_args("create_object", args, BIT_STRING, 0);
+  get_all_args("create_object", args, "%W", &progID);
 
   progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
   pike_string_cpy(progID2, progID);
   SET_INDEX_PCHARP(progID2, progID->len, 0);
-  
+
   hr = CLSIDFromProgID((OLECHAR *)progID2.ptr, &clsid);
   free(progID2.ptr);
-  
+
   if (FAILED(hr))
   {
     pop_n_elems(args);
     push_int(0);
     return;
   }
-  
+
   hr = CoCreateInstance(&clsid, NULL, CLSCTX_SERVER,
                         &IID_IDispatch, (void**)&pDispatch);
   if (FAILED(hr))
@@ -1447,7 +1426,7 @@ static void f_create_object(INT32 args)
   if (oo->prog!=NULL)
   {
     struct cobj_storage *co;
-    
+
     co = (struct cobj_storage *)(oo->storage);
     co->pIDispatch = pDispatch;
     push_object(oo);
@@ -1479,7 +1458,7 @@ static void f_get_object(INT32 args)
     PCHARP     tmp;
     type += 0x1;
 
-    if (Pike_sp[-args].type != PIKE_T_STRING)
+    if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
       Pike_error("Bad argument 1 to GetObject\n");
     filename = Pike_sp[-args].u.string;
 
@@ -1494,17 +1473,17 @@ static void f_get_object(INT32 args)
   {
     type += 0x2;
 
-    if (Pike_sp[1-args].type != PIKE_T_STRING)
+    if (TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING)
       Pike_error("Bad argument 2 to GetObject\n");
     progID = Pike_sp[1-args].u.string;
 
     progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
     pike_string_cpy(progID2, progID);
     SET_INDEX_PCHARP(progID2, progID->len, 0);
-    
+
     hr = CLSIDFromProgID((OLECHAR *)progID2.ptr, &clsid);
     free(progID2.ptr);
-    
+
     if (FAILED(hr))
     {
       pop_n_elems(args);
@@ -1580,7 +1559,7 @@ static void f_get_object(INT32 args)
           push_int(0);
           return;
         }
-        
+
         if (FAILED(hr = pPF->lpVtbl->Load(pPF, filename2, 0)) ||
             FAILED(hr = pPF->lpVtbl->QueryInterface(pPF, &IID_IDispatch,
                                                     (void **)&pDispatch)) )
@@ -1590,7 +1569,7 @@ static void f_get_object(INT32 args)
           push_int(0);
           return;
         }
-        
+
         pPF->lpVtbl->Release(pPF);
       }
       break;
@@ -1605,7 +1584,7 @@ static void f_get_object(INT32 args)
   if (oo->prog!=NULL)
   {
     struct cobj_storage *co;
-    
+
     co = (struct cobj_storage *)(oo->storage);
     co->pIDispatch = pDispatch;
     push_object(oo);
@@ -1629,7 +1608,7 @@ static void f_get_object(INT32 args)
 char * GetTypeKindName( TYPEKIND typekind )
 {
   char *s = "<unknown>";
-  
+
   switch( typekind )
   {
     CASE_STRING( TKIND_ENUM );
@@ -1641,14 +1620,14 @@ char * GetTypeKindName( TYPEKIND typekind )
     CASE_STRING( TKIND_ALIAS );
     CASE_STRING( TKIND_UNION );
   }
-  
+
   return s;
 }
 
 char * GetInvokeKindName( INVOKEKIND invkind )
 {
   char *s = "<unknown>";
-  
+
   switch( invkind )
   {
     CASE_STRING( INVOKE_FUNC );
@@ -1656,7 +1635,7 @@ char * GetInvokeKindName( INVOKEKIND invkind )
     CASE_STRING( INVOKE_PROPERTYPUT );
     CASE_STRING( INVOKE_PROPERTYPUTREF );
   }
-  
+
   return s;
 }
 
@@ -1666,45 +1645,45 @@ void EnumTypeInfoMembers( LPTYPEINFO pITypeInfo, LPTYPEATTR pTypeAttr  )
   if ( pTypeAttr->cFuncs )
   {
     printf( "  Functions:\n" );
-    
+
     for ( i = 0; i < pTypeAttr->cFuncs; i++ )
     {
       FUNCDESC * pFuncDesc;
       BSTR pszFuncName;
-      
+
       pITypeInfo->lpVtbl->GetFuncDesc( pITypeInfo, i, &pFuncDesc );
-      
+
       pITypeInfo->lpVtbl->GetDocumentation(pITypeInfo, pFuncDesc->memid, &pszFuncName,0,0,0);
-      
+
       printf( "    %-32ls", pszFuncName );
-      
+
       printf( " (%s)\n", GetInvokeKindName(pFuncDesc->invkind) );
-      
+
       pITypeInfo->lpVtbl->ReleaseFuncDesc( pITypeInfo, pFuncDesc );
       SysFreeString( pszFuncName );
     }
   }
-  
+
   if ( pTypeAttr->cVars )
   {
     printf( "  Variables:\n" );
-    
+
     for ( i = 0; i < pTypeAttr->cVars; i++ )
     {
       VARDESC * pVarDesc;
       BSTR pszVarName;
-      
+
       pITypeInfo->lpVtbl->GetVarDesc( pITypeInfo, i, &pVarDesc );
-      
+
       pITypeInfo->lpVtbl->GetDocumentation(pITypeInfo, pVarDesc->memid, &pszVarName,0,0,0);
-      
+
       printf( "    %ls\n", pszVarName );
-      
+
       pITypeInfo->lpVtbl->ReleaseVarDesc( pITypeInfo, pVarDesc );
       SysFreeString( pszVarName );
     }
   }
-  
+
 }
 
 void DisplayTypeInfo( LPTYPEINFO pITypeInfo )
@@ -1716,23 +1695,23 @@ void DisplayTypeInfo( LPTYPEINFO pITypeInfo )
   hr = pITypeInfo->lpVtbl->GetDocumentation(pITypeInfo, MEMBERID_NIL, &pszTypeInfoName, 0, 0, 0);
   if ( S_OK != hr )
     return;
-  
+
   hr = pITypeInfo->lpVtbl->GetTypeAttr( pITypeInfo, &pTypeAttr );
   if ( S_OK != hr )
   {
     SysFreeString( pszTypeInfoName );
     return;
   }
-  
+
   printf( "%ls - %s\n", pszTypeInfoName,
             GetTypeKindName(pTypeAttr->typekind) );
-  
+
   EnumTypeInfoMembers( pITypeInfo, pTypeAttr );
-  
+
   printf( "\n" );
-  
+
   SysFreeString( pszTypeInfoName );
-  
+
   pITypeInfo->lpVtbl->ReleaseTypeAttr( pITypeInfo, pTypeAttr );
 }
 
@@ -1747,16 +1726,16 @@ static void f_get_typeinfo(INT32 args)
 #ifdef USE_COM_PROG
   struct com_storage *com = THIS_COM;
 #endif /* USE_COM_PROG */
-  struct cobj_storage *co;  
+  struct cobj_storage *co;
   ITypeInfo *ptinfo;
   TYPEATTR *ptattr;
 
   if (args != 1)
     Pike_error("Bad number of arguments for Com->GetTypeInfo().\n");
-  if (Pike_sp[-args].type != PIKE_T_OBJECT ||
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
       Pike_sp[-args].u.object->prog != cobj_program)
     Pike_error("Bad argument 1 for Com->GetTypeInfo().\n");
- 
+
   co = (struct cobj_storage *)Pike_sp[-args].u.object->storage;
   co->pIDispatch->lpVtbl->GetTypeInfo(co->pIDispatch, 0,
                                       GetUserDefaultLCID(), &ptinfo);
@@ -1786,7 +1765,7 @@ static void f_get_constants(INT32 args)
 #ifdef USE_COM_PROG
   struct com_storage *com = THIS_COM;
 #endif /* USE_COM_PROG */
-  struct cobj_storage *co;  
+  struct cobj_storage *co;
   ITypeInfo *ptinfo;
   ITypeLib *ptlib;
   UINT tiCount;
@@ -1797,10 +1776,10 @@ static void f_get_constants(INT32 args)
 
   if (args != 1)
     Pike_error("Bad number of arguments for Com->GetConstants().\n");
-/*   if (Pike_sp[-args].type != PIKE_T_OBJECT || */
+/*   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT || */
 /*       Pike_sp[-args].u.object->prog != cobj_program) */
 /*     Pike_error("Bad argument 1 for Com->GetConstants().\n"); */
-  if (Pike_sp[-args].type == PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING)
   {
     /* String */
     char *to_free = NULL;
@@ -1817,11 +1796,10 @@ static void f_get_constants(INT32 args)
     if (FAILED(hr))
     {
       com_throw_error(hr);
-      /* Not reached */
-      return;
+      UNREACHABLE(return);
     }
   }
-  else if (Pike_sp[-args].type == PIKE_T_OBJECT &&
+  else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT &&
       Pike_sp[-args].u.object->prog == cobj_program)
   {
     /* cobj */
@@ -1845,16 +1823,16 @@ static void f_get_constants(INT32 args)
   }
   else
     Pike_error("Bad argument 1 for Com->GetConstants().\n");
- 
+
 
   tiCount = ptlib->lpVtbl->GetTypeInfoCount(ptlib);
 
   for (i=0; i<tiCount; i++)
   {
     ITypeInfo *pITypeInfo;
-    
+
     hr = ptlib->lpVtbl->GetTypeInfo(ptlib, i, &pITypeInfo);
-    
+
     if ( S_OK == hr )
     {
       //DisplayTypeInfo( pITypeInfo );
@@ -1867,14 +1845,14 @@ static void f_get_constants(INT32 args)
           count += push_typeinfo_members(pITypeInfo, pTypeAttr,
                                          TYPEINFO_VAR_CONST);
         }
-        
+
         pITypeInfo->lpVtbl->ReleaseTypeAttr(pITypeInfo, pTypeAttr);
       }
 
       pITypeInfo->lpVtbl->Release(pITypeInfo);
     }
   }
-  
+
   f_aggregate_mapping(count*2);
 
   stack_pop_n_elems_keep_top(args);
@@ -1887,20 +1865,20 @@ static void f_com__sprintf(INT32 args)
 #ifdef USE_COM_PROG
   struct com_storage *com = THIS_COM;
 #endif /* USE_COM_PROG */
-  
-  if (args < 1 || Pike_sp[-args].type != PIKE_T_INT)
+
+  if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com->_sprintf().\n");
-  if (args < 2 || Pike_sp[1-args].type != PIKE_T_MAPPING)
+  if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
     Pike_error("Bad argument 2 for Com->_sprintf().\n");
-  
+
   switch (Pike_sp[-args].u.integer)
   {
     case 'O':
-      push_constant_text("Com()");
+      push_static_text("Com()");
       stack_pop_n_elems_keep_top(args);
       return;
   }
-  
+
   pop_n_elems(args);
   push_int(0);
 }
@@ -1911,8 +1889,7 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_COM
   struct svalue prog;
-  prog.type = PIKE_T_PROGRAM;
-  prog.subtype = 0;
+  SET_SVAL(prog, PIKE_T_PROGRAM, 0, program, NULL);
 
   /* load and initialize COM */
   CoInitialize(0);
@@ -1986,7 +1963,7 @@ PIKE_MODULE_INIT
                     "function(string,mixed:mixed)", 0);
   pike_add_function("_sprintf", f_cobj__sprintf, "function(mixed:mixed)", 0);
   pike_add_function("_indices", f_cobj__indices, "function(:mixed)", 0);
-  
+
   set_init_callback(init_cobj_struct);
   set_exit_callback(exit_cobj_struct);
   cobj_program = end_program();
@@ -2048,5 +2025,3 @@ PIKE_MODULE_EXIT
   CoUninitialize();
 #endif /* HAVE_COM */
 }
-
-

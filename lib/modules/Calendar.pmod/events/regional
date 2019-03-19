@@ -1,7 +1,5 @@
 ### Calendar module
 ### Event definition file
-### $Id$
-
 ### =====================================================================
 ###
 ### Format of this file:
@@ -88,6 +86,13 @@
 ### =====================================================================
 
 # Global Events
+
+# Astronomical events
+
+  Event "northward equinox"       - "Northward Equinox"       Equinox Vernal
+  Event "southward equinox"       - "Southward Equinox"       Equinox Autumnal
+  Event "northern solstice"       - "Northern Solstice"       Solstice Northern
+  Event "southern solstice"       - "Southern Solstice"       Solstice Southern
 
 # western gregorian calendar events
 

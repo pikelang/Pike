@@ -1,4 +1,5 @@
 //! Properties
+//! int current-value
 //! GTK2.RadioAction group
 //! int value
 //!
@@ -9,7 +10,7 @@
 
 inherit GTK2.ToggleAction;
 
-static GTK2.RadioAction create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id, int|void value );
+protected GTK2.RadioAction create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id, int|void value );
 //! Creates a new GTK2.ToggleAction object.
 //!
 //!
@@ -21,6 +22,12 @@ int get_current_value( );
 
 array get_group( );
 //! Returns the list representing the radio group.
+//!
+//!
+
+GTK2.RadioAction set_current_value( int value );
+//! Sets the currently active group member to the member with value property
+//! value.
 //!
 //!
 

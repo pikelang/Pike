@@ -1,0 +1,177 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/* vim:syntax=c
+ */
+#include "common.h"
+
+#include "critbit/int2svalue.h"
+#define CB_PRINT_KEY(buf, key)		do \
+    { string_builder_sprintf((buf), "%"PRINTPIKEINT"d", CB_UINT2INT((key).str)); } while(0)
+#define CB_LOW_ASSIGN_SVALUE_KEY(key, s)	do {			\
+    struct svalue * __ = (s);						\
+    SET_SVAL(*__, PIKE_T_INT, 0, integer, CB_UINT2INT((key).str));	\
+} while(0)
+#define CB_PUSH_KEY(key)	push_int(CB_UINT2INT((key).str));
+#define CB_STRING_FROM_SVALUE(v)	CB_INT2UINT((v)->u.integer)
+#define CB_LOW_KEY_FROM_SVALUE(x) CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(x))
+#include "tree_high.c"
+
+#define DEFAULT_CMOD_STORAGE static
+
+DECLARATIONS
+
+/*! @module ADT */
+/*! @module CritBit */
+
+PIKECLASS IntTree {
+#cmod_define iterator_class Iterator
+#cmod_define tree_class IntTree
+#cmod_define cmod_OBJ2_TREE OBJ2_INTTREE
+#cmod_define T_KEY BIT_INT
+#cmod_define key_ptype int
+#cmod_define sval_type integer
+#cmod_define sample_key 12
+#cmod_define sample_keys ({ 1025, 15000, 3 })
+#cmod_define ordered_keys 3, 1025 and 15000
+#cmod_define reverse_ordered_keys 15000, 1025 and 3
+#cmod_define sample_value ({ 1, 2 ,3 })
+#cmod_define extra_doc
+#cmod_include "redefine.H"
+
+#cmod_include "tree_header.H"
+#cmod_include "iterator_source.H"
+#undef THIS
+#define THIS THIS_INTTREE
+#cmod_include "tree_source.H"
+}
+
+#define WASTED_BITS (8*(sizeof(INT_TYPE)-4))
+
+cb_key cb_key_from_ptype_ipv4(struct pike_string * s) {
+    cb_key key;
+    unsigned int a, b, c, d, e;
+
+    key.len.chars = 1;
+    key.len.bits = 0;
+
+    if (s->size_shift || s->len > 18) Pike_error("Malformed ip.\n");
+
+    switch (sscanf((char *)STR0(s), "%3u.%3u.%3u.%3u/%2u", &a, &b, &c, &d, &e))
+    {
+    case 5:
+	if (e > 32) Pike_error("Mask is too big!");
+	key.len.chars = 0;
+	key.len.bits = WASTED_BITS + e;
+    case 4:
+	if (a > 255 || b > 255 || c > 255 || d > 255)
+	    Pike_error("Bad ip.\n");
+	key.str = (INT_TYPE)(a << 24 | b << 16 | c << 8 | d);
+	break;
+    default:
+	Pike_error("Malformed ip.\n");
+    }
+
+    return key;
+}
+
+struct pike_string * cb_ptype_from_key_ipv4(cb_key key) {
+    char buf[19];
+    size_t len;
+
+    unsigned INT32 ip = (unsigned INT32)key.str;
+
+    if (!key.len.chars) {
+	if (key.len.bits > WASTED_BITS)
+	    ip &= (~0U) << (32 - (int)(key.len.bits - WASTED_BITS));
+	len = snprintf(buf, 19, "%u.%u.%u.%u/%u",
+		       (unsigned int)(ip>>24), (unsigned int)((ip>>16)&0xff),
+		       (unsigned int)((ip>>8)&0xff), (unsigned int)(ip&0xff),
+		       (unsigned int)(key.len.bits - WASTED_BITS));
+    } else {
+	len = snprintf(buf, 19, "%u.%u.%u.%u",
+		       (unsigned int)(ip>>24), (unsigned int)((ip>>16)&0xff),
+		       (unsigned int)((ip>>8)&0xff), (unsigned int)(ip&0xff));
+    }
+
+    return make_shared_binary_string(buf, MINIMUM(19, len));
+}
+
+PIKECLASS IPv4Tree {
+#cmod_define iterator_class Iterator
+#cmod_define tree_class IPv4Tree
+#cmod_define cmod_OBJ2_TREE OBJ2_IPV4TREE
+#cmod_define T_KEY BIT_STRING
+#cmod_define key_ptype string
+#cmod_define sval_type string
+#cmod_define sample_key "127.0.0.0/8"
+#cmod_define sample_keys ({ "10.243.7.1", "127.0.0.1/8", "172.16.5.2" })
+#cmod_define ordered_keys "10.243.7.1", "127.0.0.1/8" and "172.16.5.2"
+#cmod_define reverse_ordered_keys "172.16.5.2", "127.0.0.1/8" and "10.243.7.1"
+#cmod_define sample_value "reject"
+#cmod_define extra_doc
+
+#undef CB_INT2UINT
+#undef CB_UINT2INT
+#define CB_INT2UNIT(x) (x)
+#define CB_UINT2INT(x) (x)
+#undef CB_PUSH_KEY
+#define CB_PUSH_KEY(key)    push_string(cb_ptype_from_key_ipv4(key))
+#undef CB_KEY_FROM_PTYPE
+#define CB_KEY_FROM_PTYPE(x)	cb_key_from_ptype_ipv4(x)
+#undef CB_STRING_FROM_SVALUE
+#undef CB_LOW_KEY_FROM_SVALUE
+#undef CB_KEY_FROM_SVALUE
+#define CB_LOW_KEY_FROM_SVALUE(x)   CB_KEY_FROM_PTYPE((x)->u.string)
+#undef CB_LOW_ASSIGN_SVALUE_KEY
+#define CB_LOW_ASSIGN_SVALUE_KEY(key, s) do {				  \
+    struct svalue * __ = s;						  \
+    SET_SVAL(*__, PIKE_T_STRING, 0, string, cb_ptype_from_key_ipv4(key)); \
+} while (0)
+
+#cmod_include "redefine.H"
+
+#cmod_include "tree_header.H"
+#cmod_include "iterator_source.H"
+#undef THIS
+#define THIS THIS_IPV4TREE
+#cmod_include "prefix.H"
+#cmod_include "tree_source.H"
+
+    PIKEFUN int mask(int n) {
+	RETURN MASK(INT_TYPE, n);
+    }
+
+    PIKEFUN int umask(int n) {
+	RETURN MASK(unsigned INT64, n);
+    }
+
+    PIKEFUN int cmp_key(mixed a, mixed b) {
+	cb_key k1 = CB_KEY_FROM_SVALUE(a);
+	cb_key k2 = CB_KEY_FROM_SVALUE(b);
+	INT_TYPE ret;
+	if (CB_KEY_LT(k1, k2)) {
+	    ret = -1;
+	} else if (CB_KEY_MATCH(k1, k2)) {
+	    ret = 0;
+	} else {
+	    ret = 1;
+	}
+	pop_n_elems(args);
+	push_int(ret);
+    }
+}
+
+/*! @endmodule */
+/*! @endmodule */
+
+void pike_init_inttree_module(void) {
+    INIT
+}
+
+void pike_exit_inttree_module(void) {
+    EXIT
+}

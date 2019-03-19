@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id$
+// -*- pike -*-
 #pike __REAL_VERSION__
 
 inherit Tools.Standalone.process_files;

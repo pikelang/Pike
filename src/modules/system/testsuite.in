@@ -1,5 +1,4 @@
 START_MARKER
-// $Id$
 
 
 // system.c:
@@ -191,13 +190,13 @@ test_true( System.Memory(8192) )
 test_any( [[
   object mem=System.Memory();
   mem->allocate(42);
-  return (string)mem; 
+  return (string)mem;
 ]], "\0"*42 )
 test_any( [[
   object mem=System.Memory();
   mem->allocate(42);
   mem->pwrite(38,"hopp");
-  return (string)mem; 
+  return (string)mem;
 ]], "\0"*38+"hopp" )
 test_any( [[
   object mem=System.Memory();

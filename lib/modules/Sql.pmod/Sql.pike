@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Implements the generic parts of the SQL-interface
  *
  * Henrik Grubbström 1996-01-09
@@ -68,17 +66,17 @@ int(0..1) case_convert;
 //!
 //! All input that is used in SQL-querys should be quoted to prevent
 //! SQL injections.
-//! 
+//!
 //! Consider this harmfull code:
 //! @code
 //!   string my_input = "rob' OR name!='rob";
 //!   string my_query = "DELETE FROM tblUsers WHERE name='"+my_input+"'";
 //!   my_db->query(my_query);
 //! @endcode
-//! 
+//!
 //! This type of problems can be avoided by quoting @tt{my_input@}.
-//! @tt{my_input@} would then probably read something like 
-//! @i{rob\' OR name!=\'rob@} 
+//! @tt{my_input@} would then probably read something like
+//! @i{rob\' OR name!=\'rob@}
 //!
 //! Usually this is done - not by calling quote explicitly - but through
 //! using a @[sprintf] like syntax
@@ -203,6 +201,42 @@ protected program find_dbm(string program_name) {
 //! @note
 //!   In versions of Pike prior to 7.2 it was possible to leave out the
 //!   dbtype, but that has been deprecated, since it never worked well.
+//!
+//! @note
+//!  Exactly which databases are supported by pike depends on the
+//!  installed set of client libraries when pike was compiled.
+//!
+//! The possible ones are
+//! @dl
+//! @item mysql
+//!   libmysql based mysql connection
+//! @item mysqls
+//!   libmysql based mysql connection, using SSL
+//! @item dsn
+//!   @[ODBC] based connection
+//! @item msql
+//!   @[Msql]
+//! @item odbc
+//!   @[ODBC] based connection
+//! @item oracle
+//!  @[Oracle] using oracle libraries
+//! @item pgsql
+//!  PostgreSQL direct network access.
+//!  This module is independent of any external libraries.
+//! @item postgres
+//!  PostgreSQL libray access. Uses the @[Postgres] module.
+//! @item rsql
+//!  Remote SQL api, requires a rsql server running on another host.
+//!  This is an API that uses sockets to communicate with a remote pike
+//!  running pike -x rsqld on another host.
+//! @item sqlite
+//!   In-process SQLite database, uses the @[SQLite] module
+//! @item sybase
+//!   Uses the @[sybase] module to access sybase
+//! @item tds
+//!  Sybase and Microsoft SQL direct network access using the TDS protocol.
+//!  This module is independent of any external libraries.
+//! @enddl
 //!
 //! @note
 //!   Support for @[options] was added in Pike 7.3.
@@ -430,10 +464,13 @@ protected string _sprintf(int type, mapping|void flags)
 
 protected array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 {
-  if (res_obj) 
+  if (!res_obj)
+    return 0;
+
+  array(mapping(string:mixed)) res = ({});
+  while (res_obj)
   {
     // Not very efficient, but sufficient
-    array(mapping(string:mixed)) res = ({});
     array(string) fieldnames;
     array(mixed) row;
 
@@ -461,9 +498,10 @@ protected array(mapping(string:mixed)) res_obj_to_array(object res_obj)
       while (row = res_obj->fetch_row())
 	res += ({ mkmapping(fieldnames, row) });
 
-    return res;
+    // Try the next result.
+    res_obj = res_obj->next_result && res_obj->next_result();
   }
-  return 0;
+  return res;
 }
 
 //! Return last error message.
@@ -472,6 +510,16 @@ int|string error()
   if (master_sql && functionp (master_sql->error))
     return master_sql->error();
   return "Unknown error";
+}
+
+//! Return last SQLSTATE.
+//!
+//! The SQLSTATE error codes are specified in ANSI SQL.
+string sqlstate() {
+    if (master_sql && functionp(master_sql->sqlstate)) {
+        return master_sql->sqlstate();
+    }
+    return "IM001"; // "driver does not support this function"
 }
 
 //! Select database to access.
@@ -498,81 +546,11 @@ string|object compile_query(string q)
   return q;
 }
 
-//! Wrapper to handle zero.
-//!
-//! @seealso
-//!   @[zero]
-protected class ZeroWrapper
-{
-  //! @returns
-  //!   Returns the following:
-  //!   @string
-  //!     @value "NULL"
-  //!       If @[fmt] is @expr{'s'@}.
-  //!     @value "ZeroWrapper()"
-  //!       If @[fmt] is @expr{'O'@}.
-  //!   @endstring
-  //!   Otherwise it formats a @expr{0@} (zero).
-  protected string _sprintf(int fmt, mapping(string:mixed) params)
-  {
-    if (fmt == 's') return "NULL";
-    if (fmt == 'O') return "ZeroWrapper()";
-    return sprintf(sprintf("%%*%c", fmt), params, 0);
-  }
-}
-
-//! Instance of @[ZeroWrapper] used by @[handle_extraargs()].
-protected ZeroWrapper zero = ZeroWrapper();
-
-protected class NullArg
-{
-  protected string _sprintf (int fmt)
-    {return fmt == 'O' ? "Sql.Sql.NullArg()" : "NULL";}
-}
-protected NullArg null_arg = NullArg();
-
-//! Handle @[sprintf]-based quoted arguments
-//!
-//! @param query
-//!   The query as sent to one of the query functions.
-//!
-//! @param extraargs
-//!   The arguments following the query.
-//!
-//! @returns
-//!   Returns an array with two elements:
-//!   @array
-//!     @elem string 0
-//!       The query altered to use bindings-syntax.
-//!     @elem mapping(string|int:mixed) 1
-//!       A bindings mapping.
-//!   @endarray
 array(string|mapping(string|int:mixed))
-  handle_extraargs(string query, array(mixed) extraargs) {
-
-  array(mixed) args=allocate(sizeof(extraargs));
-  mapping(string|int:mixed) b = ([]);
-
-  int a;
-  foreach(extraargs; int j; mixed s) {
-    if (stringp(s) || multisetp(s)) {
-      args[j]=":arg"+(a++);
-      b[args[j]] = s;
-      continue;
-    }
-    if (intp(s) || floatp(s)) {
-      args[j] = s || zero;
-      continue;
-    }
-    if (objectp (s) && s->is_val_null) {
-      args[j] = null_arg;
-      continue;
-    }
-    ERROR("Wrong type to query argument %d: %O\n", j + 1, s);
-  }
-  if(!sizeof(b)) b=0;
-
-  return ({sprintf(query,@args), b});
+  handle_extraargs(string query, array(mixed) extraargs)
+// Compat wrapper.
+{
+  return .sql_util.handle_extraargs (query, extraargs);
 }
 
 //! Sends an SQL query synchronously to the underlying SQL-server and
@@ -634,7 +612,7 @@ array(mapping(string:string)) query(object|string q,
     if (mappingp(extraargs[0]))
       bindings=extraargs[0];
     else
-      [q,bindings]=handle_extraargs(q,extraargs);
+      [q,bindings]=.sql_util.handle_extraargs(q,extraargs);
 
     if(bindings) {
       if(master_sql->query)
@@ -683,7 +661,7 @@ array(mapping(string:mixed)) typed_query(object|string q, mixed ... extraargs)
     if (mappingp(extraargs[0]))
       bindings=extraargs[0];
     else
-      [q,bindings]=handle_extraargs(q,extraargs);
+      [q,bindings]=.sql_util.handle_extraargs(q,extraargs);
 
     if(bindings) {
       if(master_sql->typed_query)
@@ -724,7 +702,7 @@ int|object big_query(object|string q, mixed ... extraargs)
     if (mappingp(extraargs[0]))
       bindings = extraargs[0];
     else
-      [q, bindings] = handle_extraargs(q, extraargs);
+      [q, bindings] = .sql_util.handle_extraargs(q, extraargs);
   }
 
   object|array(mapping) pre_res;
@@ -784,9 +762,9 @@ int|object big_typed_query(object|string q, mixed ... extraargs)
     if (mappingp(extraargs[0]))
       bindings = extraargs[0];
     else
-      [q, bindings] = handle_extraargs(q, extraargs);
+      [q, bindings] = .sql_util.handle_extraargs(q, extraargs);
   }
-  
+
   object|array(mapping) pre_res;
 
   if (bindings) {
@@ -828,7 +806,7 @@ int|object streaming_query(object|string q, mixed ... extraargs)
     if(mappingp(extraargs[0]))
       bindings = extraargs[0];
     else
-      [q, bindings] = handle_extraargs(q, extraargs);
+      [q, bindings] = .sql_util.handle_extraargs(q, extraargs);
   }
 
   object pre_res;
@@ -871,7 +849,7 @@ int|object streaming_typed_query(object|string q, mixed ... extraargs)
     if(mappingp(extraargs[0]))
       bindings = extraargs[0];
     else
-      [q, bindings] = handle_extraargs(q, extraargs);
+      [q, bindings] = .sql_util.handle_extraargs(q, extraargs);
   }
 
   object pre_res;
@@ -938,7 +916,7 @@ string host_info()
 {
   if (functionp(master_sql->host_info)) {
     return master_sql->host_info();
-  } 
+  }
   return "Unknown connection to host";
 }
 
@@ -949,7 +927,7 @@ string host_info()
 array(string) list_dbs(string|void wild)
 {
   array(string)|array(mapping(string:mixed))|object res;
-  
+
   if (functionp(master_sql->list_dbs)) {
     if (objectp(res = master_sql->list_dbs())) {
       res = res_obj_to_array(res);
@@ -978,7 +956,7 @@ array(string) list_dbs(string|void wild)
 array(string) list_tables(string|void wild)
 {
   array(string)|array(mapping(string:mixed))|object res;
-  
+
   if (functionp(master_sql->list_tables)) {
     if (objectp(res = master_sql->list_tables())) {
       res = res_obj_to_array(res);
@@ -989,9 +967,16 @@ array(string) list_tables(string|void wild)
     };
   }
   if (res && sizeof(res) && mappingp(res[0])) {
-    res = map(res, lambda (mapping m) {
-		     return values(m)[0]; // Hope that there's only one field
-		   } );
+    string col_name = indices(res[0])[0];
+    if (sizeof(res[0]) > 1) {
+      if (!zero_type(res[0]["TABLE_NAME"])) {
+	// MSSQL.
+	col_name = "TABLE_NAME";
+      }
+    }
+    res = map(res, lambda (mapping m, string col_name) {
+		     return m[col_name];
+		   }, col_name);
   }
   if (res && wild) {
     res = filter(res,

@@ -7,6 +7,7 @@
 #include "array.h"
 #include "module_support.h"
 #include "fsort.h"
+#include "bignum.h"
 
 #include "config.h"
 
@@ -42,7 +43,8 @@ int wf_blob_next( Blob *b )
     }
     ref_push_string( b->word );
     push_int( b->docid );
-    apply_svalue( b->feed, 2 );
+    push_int64( (INT64) b );
+    apply_svalue( b->feed, 3 );
     if( TYPEOF(sp[-1]) != T_STRING )
     {
       b->eof = 1;
@@ -64,7 +66,8 @@ int wf_blob_next( Blob *b )
       }
       ref_push_string( b->word );
       push_int( b->docid );
-      apply_svalue( b->feed, 2 );
+      push_int64( (INT64) b );
+      apply_svalue( b->feed, 3 );
       if( TYPEOF(sp[-1]) != T_STRING )
       {
 	b->eof = 1;
@@ -152,8 +155,7 @@ int wf_blob_docid( Blob *b )
 
 Blob *wf_blob_new( struct svalue *feed, struct pike_string *word )
 {
-  Blob *b = malloc( sizeof( Blob ) );
-  MEMSET(b, 0, sizeof(Blob) );
+  Blob *b = calloc( 1, sizeof( Blob ) );
   b->word = word;
   if( word )
     add_ref(word);
@@ -221,7 +223,7 @@ static struct hash *find_hash( struct blob_data *d, int doc_id )
 {
   unsigned int r = ((unsigned int)doc_id) % HSIZE;
   struct hash *h = d->hash[ r ];
-  
+
   while( h )
   {
     if( h->doc_id == doc_id )
@@ -277,7 +279,7 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
      */
     wf_buffer_rewind_r( b, 5 );
     wf_buffer_rewind_w( h->data, -1 );
-    wf_buffer_memcpy( h->data, b, nhits*2+5 );    
+    wf_buffer_memcpy( h->data, b, nhits*2+5 );
   }
   wf_buffer_free( b );
 }
@@ -527,10 +529,10 @@ static void f_blob__cast( INT32 args )
 #ifdef HANDLES_UNALIGNED_READ
       fsort( zipp[i].b->data+5, nh, 2, (void *)cmp_hit );
 #else
-      short *data = (short *)malloc( nh * 2 );
-      MEMCPY( data,  zipp[i].b->data+5, nh * 2 );
+      short *data = malloc( nh * 2 );
+      memcpy( data,  zipp[i].b->data+5, nh * 2 );
       fsort( data, nh, 2, (void *)cmp_hit );
-      MEMCPY( zipp[i].b->data+5, data, nh * 2 );
+      memcpy( zipp[i].b->data+5, data, nh * 2 );
       free( data );
 #endif
     }
@@ -556,21 +558,22 @@ static void f_blob__cast( INT32 args )
 /*! @endmodule
  */
 
-static void init_blob_struct( )
+static void init_blob_struct(struct object * UNUSED(o))
 {
-  MEMSET( THIS, 0, sizeof( struct blob_data ) );
+  memset( THIS, 0, sizeof( struct blob_data ) );
 }
 
-static void exit_blob_struct( )
+static void exit_blob_struct(struct object * o)
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
     if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-  init_blob_struct();
+  /* why? */
+  init_blob_struct(o);
 }
 
-void init_blob_program()
+void init_blob_program(void)
 {
   start_new_program();
   ADD_STORAGE( struct blob_data );
@@ -588,7 +591,7 @@ void init_blob_program()
   add_program_constant( "Blob", blob_program, 0 );
 }
 
-void exit_blob_program()
+void exit_blob_program(void)
 {
   free_program( blob_program );
 }

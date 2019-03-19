@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -16,6 +15,7 @@
 #include "svalue.h"
 #include "mapping.h"
 #include "pike_error.h"
+#include "pike_types.h"
 
 #include "image.h"
 
@@ -34,6 +34,7 @@
  */
 
 #define sp Pike_sp
+#define CHAR2(a,b) ((((unsigned char)(a))<<8)|((unsigned char)(b)))
 
 /* PNG module uses "type" for something else than what we want to use
    it for.  Rename "type" to "_type", and insert our own "type"...  */
@@ -42,17 +43,30 @@ static void fix_png_mapping(void)
 {
   struct svalue *s;
   if(TYPEOF(sp[-1]) != T_MAPPING) return;
-  if((s = simple_mapping_string_lookup(sp[-1].u.mapping, "type"))) {
-    push_text("_type");
-    mapping_insert(sp[-2].u.mapping, &sp[-1], s);
-    pop_stack();
+  if((s = low_mapping_string_lookup(sp[-1].u.mapping, literal_type_string))) {
+    /* s is a pointer into the mapping data, so we have to push it onto
+     * the stack, as mapping_insert might rehash, which would lead to a
+     * use after free.
+     */
+    push_static_text("_type");
+    push_svalue(s);
+    mapping_insert(sp[-3].u.mapping, &sp[-2], &sp[-1]);
+    pop_n_elems(2);
   }
-  push_text("type");
-  push_text("image/png");
+  ref_push_string(literal_type_string);
+  push_static_text("image/png");
   mapping_insert(sp[-3].u.mapping, &sp[-2], &sp[-1]);
   pop_n_elems(2);
 }
 
+
+static void call_resolved( const char *function )
+{
+  push_text(function);
+  APPLY_MASTER("resolv_or_error",1);
+  stack_swap();
+  f_call_function(2);
+}
 
 /*! @decl mapping _decode(string data)
  *! @decl object decode(string data)
@@ -83,7 +97,6 @@ void image_any__decode(INT32 args)
    if (sp[-args].u.string->len<4)
       Pike_error("Image.ANY.decode: too short string\n");
 
-#define CHAR2(a,b) ((((unsigned char)(a))<<8)|((unsigned char)(b)))
    /* ok, try the heuristics */
    switch (CHAR2(sp[-args].u.string->str[0],sp[-args].u.string->str[1]))
    {
@@ -96,64 +109,51 @@ void image_any__decode(INT32 args)
       case CHAR2('P','7'):
 	 /* ok, a PNM */
 	 img_pnm_decode(1);
-	 push_text("image/x-pnm");
+	 push_static_text("image/x-pnm");
 	 goto simple_image;
 
       case CHAR2(255,216):
 	 /* JFIF */
-	 push_text("Image.JPEG._decode");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
+         call_resolved("Image.JPEG._decode");
 	 return;
 
       case CHAR2('g','i'):
 	 /* XCF */
-	 push_text("Image.XCF._decode");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
+         call_resolved("Image.XCF._decode");
 	 return;
 
       case CHAR2(137,'P'):
 	 /* PNG */
-	 push_text("Image.PNG._decode");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
+	 call_resolved("Image.PNG._decode");
 	 fix_png_mapping();
 	 return;
 
       case CHAR2('G','I'):
 	 /* GIF */
-	 push_text("Image.GIF.decode_map");
-	 SAFE_APPLY_MASTER("resolv_or_error", 1);
-	 stack_swap();
-	 f_call_function(2);
+	 call_resolved("Image.GIF.decode_map");
 	 return;
 
       case CHAR2('8','B'):
 	/* Photoshop (8BPS) */
-	push_text("Image.PSD._decode");
-	SAFE_APPLY_MASTER("resolv_or_error",1);
-	stack_swap();
-	f_call_function(2);
+	call_resolved("Image.PSD._decode");
 	return;
 
       case CHAR2('F','O'):
 	 /* ILBM (probably) */
 	 img_ilbm_decode(1);
-	 push_text("image/x-ilbm");
+	 push_static_text("image/x-ilbm");
 	 goto simple_image;
 
       case CHAR2('I','I'):	/* Little endian. */
       case CHAR2('M','M'):	/* Big endian. */
 	/* TIFF */
-	push_text("Image.TIFF._decode");
-	SAFE_APPLY_MASTER("resolv_or_error",1);
-	stack_swap();
-	f_call_function(2);
+        call_resolved("Image.TIFF._decode");
 	return;
+
+       case CHAR2('R','I'):
+        /* RIFF, used for WebP */
+        call_resolved("Image.WebP._decode");
+        return;
 
       case CHAR2('B','M'):
 	 /* BMP */
@@ -163,7 +163,7 @@ void image_any__decode(INT32 args)
       case CHAR2(0x59,0xa6):
 	 /* RAS */
 	 img_ras_decode(1);
-	 push_text("image/x-sun-raster");
+	 push_static_text("image/x-sun-raster");
 	 goto simple_image;
 
       case CHAR2('P','V'):
@@ -197,7 +197,7 @@ void image_any__decode(INT32 args)
 	if( sp[-args].u.string->str[0] == 10 ) {
 	  /* PCX */
 	  image_pcx_decode(1);
-	  push_text("image/x-pcx");
+	  push_static_text("image/x-pcx");
 	  goto simple_image;
 	}
 unknown_format:
@@ -207,14 +207,13 @@ unknown_format:
 simple_image:
    /* on stack: object image,string type */
    f_aggregate(2);
-   push_text("image");
-   push_text("type");
+   push_static_text("image");
+   ref_push_string(literal_type_string);
    f_aggregate(2);
    stack_swap();
    f_mkmapping(2);
    return;
 }
-
 
 
 /*! @decl mapping decode_header(string data)
@@ -246,7 +245,6 @@ void image_any_decode_header(INT32 args)
    if (sp[-args].u.string->len<4)
       Pike_error("Image.ANY.decode_header: too short string\n");
 
-#define CHAR2(a,b) ((((unsigned char)(a))<<8)|((unsigned char)(b)))
    /* ok, try the heuristics */
    switch (CHAR2(sp[-args].u.string->str[0],sp[-args].u.string->str[1]))
    {
@@ -261,35 +259,23 @@ void image_any_decode_header(INT32 args)
 
       case CHAR2(255,216):
 	 /* JFIF */
-	 push_text("Image.JPEG.decode_header");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
-	 return;
+        call_resolved("Image.JPEG.decode_header");
+        return;
 
       case CHAR2(137,'P'):
 	 /* PNG */
-	 push_text("Image.PNG.decode_header");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
+         call_resolved("Image.PNG.decode_header");
 	 fix_png_mapping();
 	 return;
 
       case CHAR2('g','i'):
 	 /* XCF */
-	 push_text("Image.XCF._decode");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
+         call_resolved("Image.XCF._decode");
 	 return;
 
       case CHAR2('G','I'):
 	 /* GIF */
-	 push_text("Image.GIF.decode_map");
-	 SAFE_APPLY_MASTER("resolv_or_error", 1);
-	 stack_swap();
-	 f_call_function(2);
+         call_resolved("Image.GIF.decode_map");
 	 return;
 
       case CHAR2('F','O'):
@@ -298,11 +284,13 @@ void image_any_decode_header(INT32 args)
       case CHAR2('I','I'):	/* Little endian. */
       case CHAR2('M','M'):	/* Big endian. */
 	/* TIFF */
-	push_text("Image.TIFF.decode_header");
-	SAFE_APPLY_MASTER("resolv_or_error",1);
-	stack_swap();
-	f_call_function(2);
+        call_resolved("Image.TIFF.decode_header");
 	return;
+
+       case CHAR2('R','I'):
+           /* RIFF, used for WebP */
+        call_resolved("Image.WebP._decode");
+        return;
 
       case CHAR2('B','M'):
 	 /* BMP */
@@ -327,11 +315,8 @@ void image_any_decode_header(INT32 args)
       case CHAR2(0xc5, 0xd0):
       case CHAR2('%','!'):
 	/* PS */
-	push_text("Image.PS.decode_header");
-	SAFE_APPLY_MASTER("resolv_or_error",1);
-	stack_swap();
-	f_call_function(2);
-	break;
+        call_resolved("Image.PS.decode_header");
+        return;
 
       case CHAR2(0,0):
 	 switch (CHAR2(sp[-args].u.string->str[2],sp[-args].u.string->str[3]))
@@ -352,15 +337,70 @@ unknown_format:
 
 void image_any_decode(INT32 args)
 {
+  char *resolve = NULL;
+
+  if (args!=1 || TYPEOF(sp[-args]) != T_STRING)
+      Pike_error("Image.ANY.decode: illegal arguments\n");
+
+   if (sp[-args].u.string->len<4)
+      Pike_error("Image.ANY.decode: too short string\n");
+
+   /* Heuristics for code with image only decoder, for increased
+      efficiency and safety. */
+   switch (CHAR2(sp[-args].u.string->str[0],sp[-args].u.string->str[1]))
+   {
+   case CHAR2(255,216):
+     /* JFIF */
+     resolve = "Image.JPEG.decode";
+     break;
+
+   case CHAR2('g','i'):
+     /* XCF */
+     resolve = "Image.XCF.decode";
+     break;
+
+   case CHAR2('R','I'):
+     /* RIFF */
+     resolve = "Image.WebP.decode";
+     break;
+
+   case CHAR2('G','I'):
+     /* GIF */
+     resolve = "Image.GIF.decode";
+     break;
+
+   case CHAR2(137,'P'):
+     /* PNG */
+     resolve = "Image.PNG.decode";
+     break;
+
+   case CHAR2('8','B'):
+     /* Photoshop (8BPS) */
+     resolve = "Image.PSD.decode";
+     break;
+
+   case CHAR2('I','I'):	/* Little endian. */
+   case CHAR2('M','M'):	/* Big endian. */
+     /* TIFF */
+     resolve = "Image.TIFF.decode";
+     break;
+   }
+
+   if(resolve)
+   {
+     call_resolved( resolve );
+     return;
+   }
+
    image_any__decode(args);
-   push_text("image");
+   push_static_text("image");
    f_index(2);
 }
 
 void image_any_decode_alpha(INT32 args)
 {
    image_any__decode(args);
-   push_text("alpha");
+   push_static_text("alpha");
    f_index(2);
 }
 

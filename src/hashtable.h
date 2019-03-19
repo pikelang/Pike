@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef HASHTABLE_H
@@ -32,8 +31,18 @@ struct hash_table
   struct hash_entry *htable[1];
 };
 
+/* Remap some of the symbols that might clash with other libraries.
+ *
+ * NB: hash_insert is known to clash with mariadb-connector-c 2.2.
+ */
+#define hash_lookup	pike_hash_lookup
+#define hash_rehash	pike_hash_rehash
+#define hash_insert	pike_hash_insert
+#define hash_unlink	pike_hash_unlink
+
 /* Prototypes begin here */
-struct hash_entry *hash_lookup(struct hash_table *h, struct pike_string *s);
+struct hash_entry *hash_lookup(const struct hash_table *h,
+                               const struct pike_string *s);
 struct hash_table *create_hash_table(void);
 struct hash_table *hash_rehash(struct hash_table *h,int size);
 struct hash_table *hash_insert(struct hash_table *h, struct hash_entry *s);

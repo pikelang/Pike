@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -49,7 +48,7 @@ void run_queue(struct pike_queue *q)
     }
 
     q->first=b->next;
-    free((char *)b);
+    free(b);
   }
   q->last=0;
 }
@@ -60,7 +59,7 @@ void discard_queue(struct pike_queue *q)
   while (b)
   {
     struct queue_block *next = b->next;
-    free((char *) b);
+    free(b);
     b = next;
   }
   q->first = q->last = 0;
@@ -114,7 +113,7 @@ void run_lifo_queue(struct pike_queue *q)
     }
     else {
       q->first=b->next;
-      free((char *)b);
+      free(b);
     }
   }
 }
@@ -161,7 +160,7 @@ void *dequeue_lifo(struct pike_queue *q, queue_call call)
     }
     else {
       q->first=b->next;
-      free((char *)b);
+      free(b);
     }
   }
 

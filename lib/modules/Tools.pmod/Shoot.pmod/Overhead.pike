@@ -1,8 +1,9 @@
 #pike __REAL_VERSION__
 inherit Tools.Shoot.Test;
 
-constant name="Pike start overhead";
+constant name="Overhead";
 
-void perform()
+int perform()
 {
+    return 1;
 }

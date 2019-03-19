@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #ifndef ADD_EFUN_H
@@ -11,7 +10,6 @@
 #include "svalue.h"
 #include "hashtable.h"
 #include "las.h" /* For OPT_SIDE_EFFECT etc. */
-#include "block_alloc_h.h"
 
 typedef int (*docode_fun)(node *n);
 typedef node *(*optimize_fun)(node *n);
@@ -20,7 +18,7 @@ typedef node *(*optimize_fun)(node *n);
 
 struct callable
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  INT32 refs;
   c_fun function;
   struct pike_type *type;
   struct pike_string *name;
@@ -49,7 +47,9 @@ void low_add_efun(struct pike_string *name, struct svalue *fun);
 void low_add_constant(const char *name, struct svalue *fun);
 void add_pike_string_constant(const char *name, const char *str, int len);
 PMOD_EXPORT void add_global_program(const char *name, struct program *p);
-BLOCK_ALLOC_FILL_PAGES(callable,2);
+void really_free_callable(struct callable * c);
+void count_memory_in_callables(size_t * num, size_t * size);
+void free_all_callable_blocks(void);
 PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 				   struct pike_string *name,
 				   struct pike_type *type,
@@ -62,27 +62,27 @@ PMOD_EXPORT struct callable *make_callable(c_fun fun,
 			       int flags,
 			       optimize_fun optimize,
 			       docode_fun docode);
-PMOD_EXPORT struct callable *add_efun2(const char *name,
-			    c_fun fun,
-			    const char *type,
-			    int flags,
-			    optimize_fun optimize,
-			    docode_fun docode);
-PMOD_EXPORT struct callable *add_efun(const char *name, c_fun fun, const char *type, int flags);
-PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_length,
-					    c_fun fun,
-					    const char *type, ptrdiff_t type_length,
-					    int flags,
-					    optimize_fun optimize,
-					    docode_fun docode);
-PMOD_EXPORT void visit_callable (struct callable *c, int action);
+PMOD_EXPORT void add_efun2(const char *name,
+                           c_fun fun,
+                           const char *type,
+                           int flags,
+                           optimize_fun optimize,
+                           docode_fun docode);
+PMOD_EXPORT void add_efun(const char *name, c_fun fun, const char *type, int flags);
+PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
+                                c_fun fun,
+                                const char *type, ptrdiff_t type_length,
+                                int flags,
+                                optimize_fun optimize,
+                                docode_fun docode);
+PMOD_EXPORT void visit_callable (struct callable *c, int action, void *extra);
 void init_builtin_constants(void);
 void exit_builtin_constants(void);
 /* Prototypes end here */
 
-#define visit_callable_ref(C, REF_TYPE)				\
+#define visit_callable_ref(C, REF_TYPE, EXTRA)			\
   visit_ref (pass_callable (C), (REF_TYPE),			\
-	     (visit_thing_fn *) &visit_callable, NULL)
+	     (visit_thing_fn *) &visit_callable, (EXTRA))
 
 #include "pike_macros.h"
 

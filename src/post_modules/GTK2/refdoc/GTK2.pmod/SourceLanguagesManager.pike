@@ -2,7 +2,7 @@
 
 inherit G.Object;
 
-static GTK2.SourceLanguagesManager create( );
+protected GTK2.SourceLanguagesManager create( );
 //! Create a new language manager.
 //!
 //!

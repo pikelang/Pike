@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! French language locale by Patrick Kremer.
-
-// $Id$
 
 inherit "abstract";
 
@@ -29,7 +26,7 @@ string ordered(int i)
   switch(i)
   {
    case 1:
-    return "1:ier"; 
+    return "1:ier";
    default:
     return (string)i;
   }
@@ -42,11 +39,11 @@ string date(int timestamp, string|void m)
 
   if(m=="full")
     return ctime(timestamp)[11..15]+", le "+
-      ordered(t1["mday"]) + " "  + month(t1["mon"]+1) 
+      ordered(t1["mday"]) + " "  + month(t1["mon"]+1)
       + " de l'année " +(t1["year"]+1900);
 
   if(m=="date")
-    return ordered(t1["mday"]) + " "  + month(t1["mon"]+1) 
+    return ordered(t1["mday"]) + " "  + month(t1["mon"]+1)
       + " " +(t1["year"]+1900);
 
   if(m=="time")
@@ -56,13 +53,13 @@ string date(int timestamp, string|void m)
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
     return "aujourd'hui, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
     return "hier, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
     return "demain, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["year"] != t2["year"])
     return (month(t1["mon"]+1) + " " + (t1["year"]+1900));
 
@@ -110,7 +107,7 @@ string number(int num)
    case 71: case 91:
      return number((num/10)*10-10)+"-et-onze";
    case 22..29: case 32..39: case 42..49:
-   case 52..59: case 62..69: case 81..89: 
+   case 52..59: case 62..69: case 81..89:
      return number((num/10)*10)+"-"+number(num%10);
    case 70: case 72..79: case 90: case 92..99:
       return number((num/10)*10-10)+"-"+number((num%10)+10);
@@ -121,7 +118,7 @@ string number(int num)
     return "cent "+number(num%100);
    case 201..299: case 301..399:
    case 401..499: case 501..599: case 601..699:
-   case 701..799: case 801..899: case 901..999: 
+   case 701..799: case 801..899: case 901..999:
      return number(num/100)+" cent "+number(num%100);
    case 1000..1999: return "mille "+number(num%1000);
    case 2000..999999: return number(num/1000)+" mille "+number(num%1000);

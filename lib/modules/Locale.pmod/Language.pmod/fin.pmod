@@ -1,9 +1,7 @@
 #pike __REAL_VERSION__
 
-
-//! Finnish language locale created by Janne Edelman, Turku Unix Users Group ry, Turku, Finland
-
-// $Id$
+//! Finnish language locale created by Janne Edelman, Turku Unix Users
+//! Group ry, Turku, Finland
 
 inherit "abstract";
 
@@ -41,7 +39,7 @@ string date(int timestamp, string|void m)
            (t1["year"]+1900);
 
   if(m=="date")
-    return ordered(t1["mday"]) + " " + month(t1["mon"]+1) + "ta"  + 
+    return ordered(t1["mday"]) + " " + month(t1["mon"]+1) + "ta"  +
       " " + (t1["year"]+1900);
 
   if(m=="time")
@@ -51,13 +49,13 @@ string date(int timestamp, string|void m)
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
     return "tänään, " + ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
     return "eilen, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
     return "huomenna, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["year"] != t2["year"])
     return (month(t1["mon"]+1) + " " + (t1["year"]+1900));
 
@@ -91,21 +89,21 @@ string number(int num)
    case 17: return "seitsemäntoista";
    case 18: return "kahdeksantoista";
    case 19: return "yhdeksäntoista";
-   case 20: case 30: case 40: 
-   case 50: case 60: case 70: 
+   case 20: case 30: case 40:
+   case 50: case 60: case 70:
    case 80: case 90:
      return number(num/10)+"kymmentä";
-   case 21..29: case 31..39: 
-   case 51..59: case 61..69: case 71..79: 
-   case 81..89: case 91..99: case 41..49: 
+   case 21..29: case 31..39:
+   case 51..59: case 61..69: case 71..79:
+   case 81..89: case 91..99: case 41..49:
      return number((num/10)*10)+number(num%10);
    case 100..199: return "sata"+number(num%100);
    case 200..999: return number(num/100)+"sataa"+number(num%100);
    case 1000..1999: return number(num/1000)+" tuhat"+number(num%1000);
    case 2000..999999: return number(num/1000)+" tuhatta"+number(num%1000);
-   case 1000000..1999999: 
+   case 1000000..1999999:
      return number(num/1000000)+"miljoona"+number(num%1000000);
-   case 2000000..999999999: 
+   case 2000000..999999999:
      return number(num/1000000)+"miljoonaa"+number(num%1000000);
    default:
     return "paljon";

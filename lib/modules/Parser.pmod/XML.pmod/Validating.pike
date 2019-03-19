@@ -3,9 +3,7 @@
 //!
 //! Validates an XML file according to a DTD.
 //!
-//! cf http://wwww.w3.org/TR/REC-xml/
-//!
-//! $Id$
+//! cf @url{http://www.w3.org/TR/REC-xml/@}
 //!
 
 #pike __REAL_VERSION__
@@ -84,7 +82,7 @@ protected class Element {
   string name;
   array(function) content_matcher;
   mapping(string:array) attributes;
-  
+
   string _sprintf(int mode, mapping options)
   {
     return mode=='O' && sprintf("%O(%O)", this_program, name);
@@ -107,17 +105,17 @@ protected class Element {
       array spec = attributes[name];
       if(spec) {
 	if(!islegalattribute(c_attrs[name], spec)) {
-	  xmlerror(this_program::name,
+	  xmlerror(this::name,
 		   "Invalid value for attribute %s: %O.", name, c_attrs[name]);
 	}
 	if(spec[1][0]=="#FIXED" && c_attrs[name]!=spec[1][1]) {
-	  xmlerror(this_program::name,
+	  xmlerror(this::name,
 		   "Attribute %s must have the value %s.", name, spec[1][1]);
 	}
 	switch(spec[0][0]) {
 	 case "ID":
 	   if(__ids_used[c_attrs[name]]) {
-	     xmlerror(this_program::name,
+	     xmlerror(this::name,
 		      "Id %O (sttribute %s) has already been used.",
 		      c_attrs[name], name);
 	   }
@@ -134,7 +132,7 @@ protected class Element {
 	   break;
 	 case "ENTITY":
 	   if(!__entity_ndata[c_attrs[name]]) {
-	     xmlerror(this_program::name,
+	     xmlerror(this::name,
 		      "Invalid value for attribute %s: %O.",
 		      name, c_attrs[name]);
 	   }
@@ -144,7 +142,7 @@ protected class Element {
 						  ({"\t", "\r", "\n"}),
 						  ({" ", " ", " "}) )/" "-
 			  ({""})), 0)>=0) {
-	     xmlerror(this_program::name,
+	     xmlerror(this::name,
 		      "Invalid value for attribute %s: %O.",
 		      name, c_attrs[name]);
 	   }
@@ -154,7 +152,7 @@ protected class Element {
 	   break;
 	}
       } else if(name[..3]!="xml:") {
-	xmlerror(this_program::name, "Undeclared attribute: %s.", name);
+	xmlerror(this::name, "Undeclared attribute: %s.", name);
       }
     }
     foreach (filter(indices(attributes)-indices(c_attrs),
@@ -162,7 +160,7 @@ protected class Element {
 		      return attributes[a][1][0] ==
 			"#REQUIRED";
 		    }), string attr) {
-      xmlerror(this_program::name,
+      xmlerror(this::name,
 	       "Node %s is missing required attribute: %s.", name, attr);
     };
   }
@@ -211,7 +209,7 @@ protected private string __root_element_name;
 //! @seealso
 //!   @[parse()], @[parse_dtd()]
 string get_external_entity(string sysid, string|void pubid,
-			   mapping|__deprecated__(int)|void info,
+			   mapping|void info,
 			   mixed ... extra)
 {
   // Override this function
@@ -255,7 +253,7 @@ protected private array(function) compile_language(string|array l,
 }
 
 protected private string normalize_uri(string uri, mapping info)
-{  
+{
   catch {
     // NB: We don't care about this error.
     //     If it's relevant, it will be thrown again below.

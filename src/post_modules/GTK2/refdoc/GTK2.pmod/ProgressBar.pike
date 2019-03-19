@@ -14,7 +14,7 @@
 //!
 //! Properties:
 //! int discrete-blocks
-//! int ellipsize 
+//! int ellipsize @[PANGO_ELLIPSIZE_END], @[PANGO_ELLIPSIZE_MIDDLE], @[PANGO_ELLIPSIZE_NONE] and @[PANGO_ELLIPSIZE_START]
 //! float fraction
 //! int orientation @[PROGRESS_BOTTOM_TO_TOP], @[PROGRESS_CONTINUOUS], @[PROGRESS_DISCRETE], @[PROGRESS_LEFT_TO_RIGHT], @[PROGRESS_RIGHT_TO_LEFT] and @[PROGRESS_TOP_TO_BOTTOM]
 //! float pulse-step
@@ -24,7 +24,7 @@
 
 inherit GTK2.Progress;
 
-static GTK2.ProgressBar create( mapping|void props );
+protected GTK2.ProgressBar create( mapping|void props );
 //! Create a new progress bar.
 //! The default values are:
 //! Min 0.0, max 1.0, current 0.0
@@ -67,7 +67,7 @@ GTK2.ProgressBar pulse( );
 GTK2.ProgressBar set_ellipsize( int mode );
 //! Sets the mode used to ellipsize (add an ellipsis: "...") the text if there
 //! is not enough space to render the entire string.  One of 
-//! .
+//! @[PANGO_ELLIPSIZE_END], @[PANGO_ELLIPSIZE_MIDDLE], @[PANGO_ELLIPSIZE_NONE] and @[PANGO_ELLIPSIZE_START].
 //!
 //!
 
@@ -90,7 +90,7 @@ GTK2.ProgressBar set_pulse_step( float fraction );
 //!
 //!
 
-GTK2.ProgressBar set_text( string text );
+GTK2.ProgressBar set_text( sprintf_format text, sprintf_args... fmt );
 //! Causes the given text to appear superimposed on the progress bar.
 //!
 //!

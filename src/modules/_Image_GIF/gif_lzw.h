@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -32,12 +31,12 @@ struct gif_lzw
 #ifdef GIF_LZW_LZ
    int skipone; /* lz marker for skip next code */
 #endif
-   
+
    unsigned long codes;
    unsigned long bits; /* initial encoding bits */
    unsigned long codebits; /* current encoding bits */
    unsigned long outpos,outbit;
-   struct gif_lzwc 
+   struct gif_lzwc
    {
       unsigned char c;
       lzwcode_t firstchild;

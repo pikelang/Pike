@@ -1,11 +1,12 @@
 //! Properties:
+//! int alignment
 //! Pango.AttrList attributes
 //! string background
 //! GDK2.Color background-gdk
 //! int background-set
 //! int editable
 //! int editable-set
-//! int ellipsize 
+//! int ellipsize @[PANGO_ELLIPSIZE_END], @[PANGO_ELLIPSIZE_MIDDLE], @[PANGO_ELLIPSIZE_NONE] and @[PANGO_ELLIPSIZE_START]
 //! int ellipsize-set
 //! string family
 //! int family-set
@@ -47,7 +48,7 @@
 
 inherit GTK2.CellRenderer;
 
-static GTK2.CellRendererText create( mapping|void props );
+protected GTK2.CellRendererText create( mapping|void props );
 //! Creates a new W(CellRendererText).  Adjust how text is drawn using object
 //! properties.  Object properties can be set globally (with G.Object->set()).
 //! Also, with W(TreeViewColumn), you can bind a property to a value in a

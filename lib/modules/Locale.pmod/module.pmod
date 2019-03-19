@@ -33,6 +33,25 @@
 //!    write(LOCALE(0, "This is another one.\n");
 //!    return 0;
 //!  }
+//!
+//! @note
+//!   In order to update your code to actually use the locale strings
+//!   you need to run the locale extractor.
+//!
+//!   This is available as pike -x extract_locale
+//!
+//! @code
+//!   Syntax: pike -x extract_locale [arguments] infile(s)
+//!    Arguments: --project=name  default: first found in infile
+//!               --config=file   default: [project].xml
+//!               --out=file      default: [project]_eng.xml
+//!               --nocopy        update infile instead of infile.new
+//!               --notime        don't include dump time in xml files
+//!               --wipe          remove unused ids from xml
+//!               --sync          synchronize all locale projects
+//!               --encoding=enc  default: ISO-8859-1
+//!               --verbose       more informative text in xml
+//! @endcode
 
 #define CLEAN_CYCLE 60*60
 //#define LOCALE_DEBUG
@@ -105,7 +124,7 @@ array(string) list_languages(string project)
 	  ((3*60 + locales[0][project]->timestamp) > time(1) )) {
     return locales[0][project]->languages;
   }
-  
+
   string pattern = replace(projects[project], "%%", "%");
   string dirbase = (pattern/"%L")[0];
   if(dirbase[-1]!='/') {
@@ -132,7 +151,7 @@ array(string) list_languages(string project)
       continue;
     list += ({ lang });
   }
-  locales[0][project] = LanguageListObject( list );  
+  locales[0][project] = LanguageListObject( list );
 
 #ifdef LOCALE_DEBUG
   werror("Languages for project %O are%{ %O%}\n", project, list);
@@ -167,7 +186,7 @@ class LocaleObject
   {
 #ifdef LOCALE_DEBUG_ALL
     werror("L: %O -> %O\n",key,bindings[key]);
-#endif    
+#endif
     return bindings[key];
   }
 
@@ -206,10 +225,6 @@ class LocaleObject
   }
 }
 
-// Used to delay lookup of the Charset module until run-time when dumped,
-// and thus resolve the circularity.
-protected object(Locale) locale = Locale; 
-
 object get_object(string project, string lang) {
 
   // Is there such a project?
@@ -239,7 +254,7 @@ object get_object(string project, string lang) {
   mapping(string|int:string) bindings = ([]);
   mapping(string:function) functions = ([]);
 #ifdef LOCALE_DEBUG
-  float sec = gauge{  
+  float sec = gauge{
 #endif
   string filename=replace(projects[project],
 			  ({ "%L", "%%" }),
@@ -259,31 +274,30 @@ object get_object(string project, string lang) {
   sscanf(line, "%*sencoding=\"%s\"", string encoding);
   if(encoding && encoding!="") {
     function(string:string) decode = 0;
-    switch(lower_case(encoding)) 
+    switch(lower_case(encoding))
       {
       case "iso-8859-1":
 	// No decode needed
 	break;
 
       case "utf-8": case "utf8":
-	decode = 
+	decode =
 	  lambda(string s) {
 	    return utf8_to_string(s);
 	  };
 	break;
-	
+
       case "utf-16": case "utf16":
       case "unicode":
-	decode = 
+	decode =
 	  lambda(string s) {
 	    return unicode_to_string(s);
 	  };
 	break;
-	
+
       default:
 	object dec;
-	// FIXME: Is this the best way of using Locale.Charset.decoder ?
-	if(catch(dec = locale.Charset.decoder(encoding))) {
+	if(catch(dec = Charset.decoder(encoding))) {
 	  werror("\n* Warning: unknown encoding %O in %O\n",
 		 encoding, filename);
 	  break;
@@ -317,7 +331,7 @@ object get_object(string project, string lang) {
       if(!m->id)
 	return 0;
       else {
-	if((int)m->id) 
+	if((int)m->id)
 	  id = (int)m->id;
 	else
 	  id = m->id;
@@ -362,8 +376,8 @@ object get_object(string project, string lang) {
   xml_parser = 0;		// To avoid trampoline garbage.
 
 #ifdef LOCALE_DEBUG
-  };   
-  werror("\nLocale: Read %O in %O (bindings: %d, functions: %d) in %.3fs\n", 
+  };
+  werror("\nLocale: Read %O in %O (bindings: %d, functions: %d) in %.3fs\n",
 	 project, lang, sizeof(bindings), sizeof(functions), sec);
 #endif
   locale_object = LocaleObject(bindings, functions);
@@ -372,7 +386,7 @@ object get_object(string project, string lang) {
 }
 
 mapping(string:object) get_objects(string lang)
-  //! Reads in and returns a mapping with all the registred projects'  
+  //! Reads in and returns a mapping with all the registred projects'
   //! LocaleObjects in the language 'lang'
 {
   if(!lang)
@@ -402,7 +416,7 @@ string translate(string project, string lang, string|int id, string fallback)
   return fallback;
 }
 
-function call(string project, string lang, string name, 
+function call(string project, string lang, string name,
 	   void|function|string fb)
   //! Returns a localized function
   //! If function not found, tries fallback function fb,
@@ -410,7 +424,7 @@ function call(string project, string lang, string name,
 {
   LocaleObject locale_object = get_object(project, lang);
   function f;
-  if(!locale_object || !(f=locale_object->is_function(name))) 
+  if(!locale_object || !(f=locale_object->is_function(name)))
     if(stringp(fb)) {
       locale_object = get_object(project, fb);
       if(!locale_object || !(f=locale_object->is_function(name)))
@@ -427,7 +441,7 @@ void clean_cache() {
     foreach(lang; string proj_str; object proj) {
       proj_str;	// Fix warning.
       if(objectp(proj) && proj->timestamp < t) {
-#ifdef LOCALE_DEBUG	
+#ifdef LOCALE_DEBUG
 	werror("\nLocale.clean_cache: Removing project %O in %O\n",
                proj_str, lang_str);
 #endif
@@ -468,7 +482,7 @@ mapping(string:int) cache_status() {
 class DeferredLocale( protected string project,
 		      protected function(:string) get_lang,
 		      protected string|int key,
-		      protected string fallback ) 
+		      protected string fallback )
 {
   array get_identifier( )
   //! Return the data nessesary to recreate this "string".
@@ -568,8 +582,7 @@ class DeferredLocale( protected string project,
   protected mixed cast(string to)
   {
     if(to=="string") return lookup();
-    if(to=="mixed" || to=="object") return this;
-    error( "Cannot cast DeferredLocale to "+to+".\n" );
+    return UNDEFINED;
   }
 
   protected int _is_type(string type) {

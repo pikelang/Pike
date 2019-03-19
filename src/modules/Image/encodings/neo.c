@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -18,6 +17,13 @@
 
 
 extern struct program *image_program;
+
+/* Some format references:
+ *
+ *   http://oreilly.com/www/centers/gff/formats/atari/index.htm
+ *   http://wiki.multimedia.cx/index.php?title=Neochrome
+ *   http://www.mediatel.lu/workshop/graphic/2D_fileformat/h_atari.html
+ */
 
 /*! @module Image
  */
@@ -77,9 +83,11 @@ void image_neo_f__decode(INT32 args)
     pal = decode_atari_palette(q+4, 16);
   else if(res==1)
     pal = decode_atari_palette(q+4, 4);
+  else if(res==2)
+    pal = decode_atari_palette(q+4, 2);
   SET_ONERROR(err, free_atari_palette, pal);
 
-  push_constant_text("palette");
+  push_static_text("palette");
   for( i=0; i<pal->size; i++ ) {
     push_int(pal->colors[i].r);
     push_int(pal->colors[i].g);
@@ -91,7 +99,7 @@ void image_neo_f__decode(INT32 args)
 
   img = decode_atari_screendump(q+128, res, pal);
 
-  push_constant_text("image");
+  push_static_text("image");
   push_object(img);
   size += 2;
 
@@ -100,19 +108,19 @@ void image_neo_f__decode(INT32 args)
     rl = q[49]&0xf;
     ll = (q[49]&0xf0)>>4;
 
-    push_constant_text("right_limit");
+    push_static_text("right_limit");
     push_int( rl );
-    push_constant_text("left_limit");
+    push_static_text("left_limit");
     push_int( ll );
-    push_constant_text("speed");
+    push_static_text("speed");
     push_int( q[51] );
-    push_constant_text("direction");
+    push_static_text("direction");
     if( q[50]&128 )
-      push_constant_text("right");
+      push_static_text("right");
     else
-      push_constant_text("left");
+      push_static_text("left");
 
-    push_constant_text("images");
+    push_static_text("images");
     for(i=0; i<rl-ll+1; i++) {
       if( q[50]&128 )
 	rotate_atari_palette(pal, ll, rl);
@@ -131,7 +139,7 @@ void image_neo_f__decode(INT32 args)
 
   fn = make_shared_binary_string((const char *)q+36, 12);
 
-  push_constant_text("filename");
+  push_static_text("filename");
   push_string(fn);
   size += 2;
 
@@ -145,7 +153,7 @@ void image_neo_f__decode(INT32 args)
 void image_neo_f_decode(INT32 args)
 {
   image_neo_f__decode(args);
-  push_constant_text("image");
+  push_static_text("image");
   f_index(2);
 }
 
@@ -155,13 +163,13 @@ void image_neo_f_decode(INT32 args)
 /*! @endmodule
  */
 
-void init_image_neo()
+void init_image_neo(void)
 {
   ADD_FUNCTION("decode",  image_neo_f_decode,  tFunc(tStr,tObj),  0);
   ADD_FUNCTION("_decode", image_neo_f__decode,
 	       tFunc(tStr,tMap(tStr,tMix)), 0);
 }
 
-void exit_image_neo()
+void exit_image_neo(void)
 {
 }

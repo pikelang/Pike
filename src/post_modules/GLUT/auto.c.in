@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -29,7 +28,7 @@
 #endif
 
 
-static void pre_init()
+static void pre_init(void)
 {
 }
 
@@ -41,7 +40,7 @@ static void f_glutInit(INT32 args)
   pop_n_elems(args);
 }
 
-static void post_init()
+static void post_init(void)
 {
   add_function_constant("glutInit", f_glutInit,
 			"function(void:void)", OPT_SIDE_EFFECT);

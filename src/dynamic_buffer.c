@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -28,7 +27,7 @@ PMOD_EXPORT char *low_make_buf_space(ptrdiff_t space, dynamic_buffer *buf)
       buf->bufsize*=2;
     }while(buf->s.len+space >= buf->bufsize);
 
-    buf->s.str=(char *)realloc(buf->s.str, buf->bufsize);
+    buf->s.str=realloc(buf->s.str, buf->bufsize);
     if(!buf->s.str)
       Pike_fatal("Out of memory.\n");
   }
@@ -54,12 +53,12 @@ PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l,
     Pike_fatal("Error in internal buffering.\n");
 #endif
 
-  MEMCPY(low_make_buf_space(l, buf),b, l);
+  memcpy(low_make_buf_space(l, buf),b, l);
 }
 
 PMOD_EXPORT void debug_initialize_buf(dynamic_buffer *buf)
 {
-  buf->s.str=(char *)xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
+  buf->s.str=xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
   *(buf->s.str)=0;
   buf->s.len=0;
 }
@@ -77,17 +76,15 @@ PMOD_EXPORT void low_reinit_buf(dynamic_buffer *buf)
 
 PMOD_EXPORT void low_init_buf_with_string(dynbuf_string s, dynamic_buffer *buf)
 {
-  if(buf->s.str) { free(buf->s.str); buf->s.str=NULL; } 
+  if(buf->s.str) { free(buf->s.str); buf->s.str=NULL; }
   buf->s=s;
   if(!buf->s.str) initialize_buf(buf);
   /* if the string is an old buffer, this realloc will set the old
      the bufsize back */
   for(buf->bufsize=BUFFER_BEGIN_SIZE;buf->bufsize<buf->s.len;buf->bufsize*=2);
   buf->s.str=realloc(buf->s.str,buf->bufsize);
-#ifdef PIKE_DEBUG
   if(!buf->s.str)
     Pike_fatal("Realloc failed.\n");
-#endif
 }
 
 PMOD_EXPORT dynbuf_string complex_free_buf(dynamic_buffer *old_buf)

@@ -1,6 +1,4 @@
 /* Xlib.pmod
- *
- * $Id$
  */
 
 /*
@@ -20,14 +18,17 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #pike __REAL_VERSION__
 
-// #define DEBUG
+// #define XDEBUG
+
+//! Implementations of various X11 calls.
 
 constant XPORT = 6000;
+
 
 class rec_buffer
 {
@@ -50,7 +51,7 @@ class rec_buffer
   {
     return pad + expected - sizeof(buffer);
   }
-  
+
   void add_data(string data)
   {
     buffer += data;
@@ -94,7 +95,7 @@ class id_manager
   int next_id;
   int increment;
   mapping resources;
-  
+
   void create(int base, int mask)
   {
     next_id = base;
@@ -127,25 +128,27 @@ class id_manager
     /* Could make id available for reallocation */
   }
 }
-  
+
 class Display
+//! The representation of a X display.
+//!
+//! Keeps the connection to the X server and various other information
+//! needed to use X11.
 {
   import ._Xlib;
-  
+
   inherit Stdio.File;
   inherit id_manager;
   inherit .Atom.atom_manager;
-  
 
-  
   void close_callback(mixed id);
   void read_callback(mixed id, string data);
 
   // FIXME! Should use some sort of (global) db.
   mapping compose_patterns;
-  
-  program Struct = ADT.struct;
-  
+
+  program(Stdio.Buffer) Struct = Stdio.Buffer;
+
   constant STATE_WAIT_CONNECT = 0;
   constant STATE_WAIT_CONNECT_DATA = 1;
   constant STATE_WAIT_CONNECT_FAILURE = 2;
@@ -158,14 +161,15 @@ class Display
   constant ACTION_EVENT = 2;
   constant ACTION_REPLY = 3;
   constant ACTION_ERROR = 4;
-  
+
+//!
   int screen_number;
 
   string buffer;
   object received;
   int state;
   int sequence_number;
-  
+
   function io_error_handler;
   function error_handler;
   function close_handler;
@@ -173,32 +177,55 @@ class Display
   function event_handler;
   function misc_event_handler;
   function reply_handler;
-  
+
   /* Information about the X server */
   int majorVersion, minorVersion;  /* Servers protocol version */
+  //!  The protocol major and minor version reported by the server
+
   int release;
+  //! Server release number
+
   int ridBase, ridMask;
+
   int motionBufferSize;
+  //!
+
   string vendor;
+  //!
+
   int maxRequestSize;
+  //!
+
   array roots;
+  //!
+
   array formats;
+  //!
+
   int imageByteOrder, bitmapBitOrder;
+  //!
+
   int bitmapScanlineUnit, bitmapScanlinePad;
+  //!
+
   int minKeyCode, maxKeyCode;
+  //!
 
   array key_mapping ;
+  //!
 
-  mapping extensions = ([]); // all available extensions.
+  mapping(string:.Extensions.Extension) extensions = ([]);
+  //! All extensions supported by the server and this module
 
   mapping pending_requests; /* Pending requests */
+
   object pending_actions;   /* Actions awaiting handling */
 
-#ifdef DEBUG
+#ifdef XDEBUG
   mapping debug_requests = ([ ]);
 # define DEBUGREQ(X) ((X)&0xfff)
 #endif
-  
+
   void create()
   { /* Delay initialization of id_manager */
     compose_patterns = ([]);
@@ -207,7 +234,7 @@ class Display
     };
     atom_manager::create();
   }
-  
+
   void write_callback()
   {
     if (sizeof(buffer))
@@ -241,11 +268,12 @@ class Display
 	 * and write_callback() expects to be be able to write
 	 * at least one character. So don't call it yet. */
 #endif
-	write_callback( ); 
+	write_callback( );
       }
   }
 
   /* This function leaves the socket in blocking mode */
+
   int flush()
   { /* FIXME: Not thread-safe */
     set_blocking();
@@ -258,7 +286,7 @@ class Display
     //     trace(0);
     return 1;
   }
-  
+
   void default_error_handler(object me, mapping e)
   {
     if(e->failed_request)
@@ -270,7 +298,7 @@ class Display
   {
     object w;
     array a;
-    
+
 //     werror(sprintf("Event: %s\n", event->type));
     if (event->wid && (w = lookup_id(event->wid))
 	&& (a = (w->event_callbacks[event->type])))
@@ -289,7 +317,7 @@ class Display
 //       else
 // 	werror(sprintf("Ignored event %s\n", event->type));
   }
-  
+
   mapping reply;  /* Partially read reply or event */
 
   void get_keyboard_mapping();
@@ -305,7 +333,7 @@ class Display
 	    int success;
 	    int len_reason;
 	    int length;
-	  
+
 	    sscanf(msg, "%c%c%2c%2c%2c",
 		   success, len_reason,
 		   majorVersion, minorVersion, length);
@@ -327,87 +355,87 @@ class Display
 	case STATE_WAIT_CONNECT_DATA:
 	  {
 	    int nbytesVendor, numRoots, numFormats;
-	    object struct  = Struct(msg);
+	    Stdio.Buffer struct  = Struct(msg);
 
-	    release = struct->get_uint(4);
-	    ridBase = struct->get_uint(4);
-	    ridMask = struct->get_uint(4);
+	    release = struct->read_int(4);
+	    ridBase = struct->read_int(4);
+	    ridMask = struct->read_int(4);
 	    id_manager::create(ridBase, ridMask);
-	    
-	    motionBufferSize = struct->get_uint(4);
-	    nbytesVendor = struct->get_uint(2);
-	    maxRequestSize = struct->get_uint(2);
-	    numRoots = struct->get_uint(1);
-	    numFormats = struct->get_uint(1);
-	    imageByteOrder = struct->get_uint(1);
-	    bitmapBitOrder = struct->get_uint(1);
-	    bitmapScanlineUnit = struct->get_uint(1);
-	    bitmapScanlinePad = struct->get_uint(1);
-	    minKeyCode = struct->get_uint(1);
-	    maxKeyCode = struct->get_uint(1);
-	    /* pad2 */ struct->get_fix_string(4);
-	  
-	    vendor = struct->get_fix_string(nbytesVendor);
-	    /* pad */ struct->get_fix_string( (- nbytesVendor) % 4);
+
+	    motionBufferSize = struct->read_int(4);
+	    nbytesVendor = struct->read_int(2);
+	    maxRequestSize = struct->read_int(2);
+	    numRoots = struct->read_int(1);
+	    numFormats = struct->read_int(1);
+	    imageByteOrder = struct->read_int(1);
+	    bitmapBitOrder = struct->read_int(1);
+	    bitmapScanlineUnit = struct->read_int(1);
+	    bitmapScanlinePad = struct->read_int(1);
+	    minKeyCode = struct->read_int(1);
+	    maxKeyCode = struct->read_int(1);
+	    /* pad2 */ struct->read(4);
+
+	    vendor = struct->read(nbytesVendor);
+	    /* pad */ struct->read( (- nbytesVendor) % 4);
 
 	    int i;
 	    formats = allocate(numFormats);
 	    for(i=0; i<numFormats; i++)
 	      {
 		mapping m = ([]);
-		m->depth = struct->get_uint(1);
-		m->bitsPerPixel = struct->get_uint(1);
-		m->scanLinePad = struct->get_uint(1);
-		/* pad */ struct->get_fix_string(5);
+		m->depth = struct->read_int(1);
+		m->bitsPerPixel = struct->read_int(1);
+		m->scanLinePad = struct->read_int(1);
+		/* pad */ struct->read(5);
 		formats[i] = m;
 	      }
 
 	    roots = allocate(numRoots);
 	    for(i=0; i<numRoots; i++)
 	      {
-		int wid = struct->get_uint(4);
+		int wid = struct->read_int(4);
 		object r = .Types.RootWindow(this, wid);
-		int cm = struct->get_uint(4);
+		int cm = struct->read_int(4);
 		r->colormap = r->defaultColorMap = .Types.Colormap(this, cm, 0);
 		r->colormap->autofree=0;
-		r->whitePixel = struct->get_uint(4);
-		r->blackPixel = struct->get_uint(4);
-		r->currentInputMask = struct->get_uint(4);
-		r->pixWidth = struct->get_uint(2);
-		r->pixHeight = struct->get_uint(2);
-		r->mmWidth = struct->get_uint(2);
-		r->mmHeight = struct->get_uint(2);
-		r->minInstalledMaps = struct->get_uint(2);
-		r->maxInstalledMaps = struct->get_uint(2);
-		int rootVisualID = struct->get_uint(4);
-		r->backingStore = struct->get_uint(1);
-		r->saveUnders = struct->get_uint(1);
-		r->rootDepth = struct->get_uint(1);
-		int nDepths = struct->get_uint(1);
-	      
+		r->whitePixel = struct->read_int(4);
+		r->blackPixel = struct->read_int(4);
+		r->currentInputMask = struct->read_int(4);
+		r->pixWidth = struct->read_int(2);
+		r->pixHeight = struct->read_int(2);
+		r->mmWidth = struct->read_int(2);
+		r->mmHeight = struct->read_int(2);
+		r->minInstalledMaps = struct->read_int(2);
+		r->maxInstalledMaps = struct->read_int(2);
+		int rootVisualID = struct->read_int(4);
+		r->backingStore = struct->read_int(1);
+		r->saveUnders = struct->read_int(1);
+		r->rootDepth = struct->read_int(1);
+		int nDepths = struct->read_int(1);
+
 		r->depths = ([ ]);
 		for (int j=0; j<nDepths; j++)
 		  {
 		    mapping d = ([]);
-		    int depth = struct->get_uint(1);
-		    /* pad */ struct->get_fix_string(1);
-		    int nVisuals = struct->get_uint(2);
-		    /* pad */ struct->get_fix_string(4);
-		  
+		    int depth = struct->read_int(1);
+		    /* pad */ struct->read(1);
+		    int nVisuals = struct->read_int(2);
+		    /* pad */ struct->read(4);
+
 		    array visuals = allocate(nVisuals);
 		    for(int k=0; k<nVisuals; k++)
 		      {
-			int visualID = struct->get_uint(4);
+			int visualID = struct->read_int(4);
 			object v = .Types.Visual(this, visualID);
 
 			v->depth = depth;
-			v->c_class = struct->get_uint(1);
-			v->bitsPerRGB = struct->get_uint(1);
-			v->colorMapEntries = struct->get_uint(2);
-			v->redMask = struct->get_uint(4);
-			v->greenMask = struct->get_uint(4);
-			v->blueMask = struct->get_uint(4);
-			/* pad */ struct->get_fix_string(4);
+			v->c_class = struct->read_int(1);
+			v->bitsPerRGB = struct->read_int(1);
+			v->colorMapEntries = struct->read_int(2);
+			v->redMask = struct->read_int(4);
+			v->greenMask = struct->read_int(4);
+			v->blueMask = struct->read_int(4);
+			/* pad */ struct->read(4);
 			visuals[k] = v;
 		      }
 		    r->depths[depth] = visuals;
@@ -443,7 +471,7 @@ class Display
 		       errorCode, m->sequenceNumber, m->resourceID,
 		       m->minorCode, m->majorCode);
 		m->errorCode = ._Xlib.error_codes[errorCode];
-#ifdef DEBUG
+#ifdef XDEBUG
 		m->failed_request = debug_requests[DEBUGREQ(m->sequenceNumber)];
 #endif
 #if 0
@@ -462,7 +490,7 @@ class Display
 		// 	       msg));
 		reply = ([]);
 		int length;
-	      
+
 		sscanf(msg, "%*c%c%2c%4c%s",
 		       reply->data1, reply->sequenceNumber, length,
 		       reply->rest);
@@ -488,7 +516,7 @@ class Display
 			     "%2c%2c%2c%2c" "%2c%c",
 			     event->detail, event->sequenceNumber, event->time,
 			     root, event->wid, child,
-			     event->rootX, event->rootY, event->eventX, 
+			     event->rootX, event->rootY, event->eventX,
 			     event->eventY, event->state, event->sameScreen);
 		      event->root = lookup_id(root);
 		      event->event = lookup_id(event->wid);
@@ -530,7 +558,7 @@ class Display
 		      event->window = lookup_id(event->wid);
 		      break;
 		    }
-#if 0		
+#if 0
 		  case "GraphicsExpose":
 		    ...;
 		  case "NoExpose":
@@ -613,7 +641,7 @@ class Display
 		    ...;
 		  case "ClientMessage":
 		    ...;
-#endif		
+#endif
 		  case "MappingNotify":
 		    get_keyboard_mapping();
 		    event = ([ "type" : "MappingNotify",
@@ -629,7 +657,7 @@ class Display
 		  }
 		return ({ ACTION_EVENT, event });
 	      }
-	    break; 
+	    break;
 	  }
 	case STATE_WAIT_REPLY:
 	  reply->rest += msg;
@@ -685,6 +713,7 @@ class Display
 	break;
       }
   }
+
   void read_callback(mixed id, string data)
   {
     // werror(sprintf("Xlib: received '%s'\n", data));
@@ -705,7 +734,7 @@ class Display
 	exit(0);
     close();
   }
-  
+
   void process_pending_actions()
   {
     array a;
@@ -713,13 +742,15 @@ class Display
       handle_action(a);
     set_nonblocking(read_callback, write_callback, close_callback);
   }
-	  
+
+  //! Connect to the specified display. The default is to use the
+  //! value of the environment variable DISPLAY
   int open(string|void display)
   {
     int async = !!connect_handler;
     int is_local;
     int display_number;
-    
+
     display = display || getenv("DISPLAY");
     if (!display)
       error("Xlib.pmod: $DISPLAY not set!\n");
@@ -760,7 +791,7 @@ class Display
 
     if (!auth_data)
       auth_data = ([ "name" : "", "data" : ""]);
-    
+
     /* Asynchronous connection */
     if (async)
     {
@@ -792,7 +823,7 @@ class Display
     pending_requests = ([]);
     pending_actions = ADT.Queue();
     sequence_number = 1;
-    
+
     /* Always uses network byteorder (big endian) */
     string msg = sprintf("B\0%2c%2c%2c%2c\0\0%s%s",
 			 11, 0,
@@ -809,7 +840,7 @@ class Display
       }
     if (!flush())
       return 0;
-    
+
     int result = 0;
     int done = 0;
 
@@ -841,13 +872,14 @@ class Display
   {
     string data = req->to_string();
     send(data);
-#ifdef DEBUG
+#ifdef XDEBUG
     debug_requests[DEBUGREQ(sequence_number)] = data;
 #endif
     return (sequence_number++)&0xffff; // sequence number is just 2 bytes
   }
 
-  array blocking_request(object req)
+  //!
+  array blocking_request(.Requests.request req)
   {
     int success;
     mixed result = 0;
@@ -895,8 +927,9 @@ class Display
 
     return ({ success, result });
   }
-  
-  void send_async_request(object req, function callback)
+
+  //!
+  void send_async_request(.Requests.request req, function callback)
   {
     int n = send_request(req);
     pending_requests[n] = async_request(req, callback);
@@ -915,11 +948,13 @@ class Display
     send_async_request(r, got_mapping);
   }
 
+  //!
   object DefaultRootWindow()
   {
     return roots[screen_number];
   }
 
+  //!
   object OpenFont_req(string name)
   {
     object req = .Requests.OpenFont();
@@ -930,6 +965,7 @@ class Display
 
   mapping (string:object) fonts = ([]);
 
+  //!
   object OpenFont(string name)
   {
     if(fonts[name]) return fonts[name];
@@ -939,6 +975,7 @@ class Display
     return fonts[name];
   }
 
+  //!
   object CreateGlyphCursor_req(object sourcefont, object maskfont,
 			       int sourcechar, int maskchar,
 			       array(int) foreground, array(int) background)
@@ -958,6 +995,7 @@ class Display
     return req;
   }
 
+  //!
   object CreateGlyphCursor(object sourcefont, int sourcechar,
 			   object|void maskfont, int|void maskchar,
 			   array(int)|void foreground,
@@ -975,14 +1013,16 @@ class Display
     send_request(req);
     return .Types.Cursor(this, req->cid);
   }
-  
+
+  //!
   object Bell_req(int volume)
   {
     object req=.Requests.Bell();
     req->percent=volume;
     return req;
   }
-  
+
+  //!
   void Bell(int volume)
   {
     send_request(Bell_req(volume));

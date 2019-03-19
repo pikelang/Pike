@@ -2,15 +2,22 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
 **! module Image
 **! submodule RAS
 **!
-**!	This submodule keep the RAS encode/decode capabilities
-**!	of the <ref>Image</ref> module.
+**!	This submodule keep the RAS (Sun Raster, files commonly use the
+**!	'sun' file extension) encode/decode capabilities of the
+**!	<ref>Image</ref> module.
+**!
+**! The format was commonly used in the 1990:s for images in reasearch
+**! papers and such, since SUN workstations was the standard computer
+**! in university settings.
+**!
+**! The format uses RLE compression, supports rgb24, 8-bit
+**! palette, grayscale and monochrome without alpha channels.
 **!
 **! see also: Image, Image.Image, Image.Colortable
 */
@@ -69,7 +76,7 @@ struct rasterfile {
 /*
 **! method object decode(string data)
 **!	Decodes RAS data and creates an image object.
-**! 	
+**!
 **! see also: encode
 **!
 **! note
@@ -115,14 +122,14 @@ void img_ras__decode(INT32 args)
   /* Double check args to give the correct function name in the error
      messages. */
   if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Image.RAS._decode", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("_decode", 1);
   if(TYPEOF(Pike_sp[-1]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("Image.RAS._decode", 1, "string");
+    SIMPLE_BAD_ARG_ERROR("_decode", 1, "string");
   img_ras_decode(args);
-  push_constant_text("image");
+  push_static_text("image");
   stack_swap();
-  push_constant_text("format");
-  push_constant_text("image/x-sun-raster");
+  push_static_text("format");
+  push_static_text("image/x-sun-raster");
   f_aggregate_mapping(4);
 }
 
@@ -139,7 +146,7 @@ void img_ras_decode(INT32 args)
    size_t numcolors = 0;
    struct nct_flat_entry *entries = NULL;
 
-   get_all_args("Image.RAS.decode", args, "%S", &str);
+   get_all_args("decode", args, "%S", &str);
 
    if(str->len < 32)
      Pike_error("Image.RAS.decode: header too small\n");
@@ -179,7 +186,7 @@ void img_ras_decode(INT32 args)
 
      if(len < rs.ras_maplength)
        Pike_error("Image.RAS.decode: colormap truncated\n");
-     
+
      src += rs.ras_maplength;
      len -= rs.ras_maplength;
      if(len && (rs.ras_maplength&1)) {
@@ -237,7 +244,7 @@ void img_ras_decode(INT32 args)
 	img_sz = ((rs.ras_width+1)&~1)*3*rs.ras_height;
 	break;
      }
-     tmpdata = (unsigned char *)xalloc(img_sz);
+     tmpdata = xalloc(img_sz);
      len = unpack_rle(src, len, tmpdata, img_sz);
      src = tmpdata;
    }
@@ -245,11 +252,11 @@ void img_ras_decode(INT32 args)
    push_int(rs.ras_width);
    push_int(rs.ras_height);
    o=clone_object(image_program,2);
-   img=(struct image*)get_storage(o,image_program);
+   img=get_storage(o,image_program);
    rgb=img->img;
    if(ctab != NULL) {
      struct neo_colortable *ctable =
-       (struct neo_colortable*)get_storage(ctab, image_colortable_program);
+       get_storage(ctab, image_colortable_program);
      if(ctable!=NULL && ctable->type==NCT_FLAT) {
        numcolors = ctable->u.flat.numentries;
        entries = ctable->u.flat.entries;
@@ -263,7 +270,7 @@ void img_ras_decode(INT32 args)
 	  if(len<3) {
 	    /* Better to proceed and make a partly black image? */
 	    if(tmpdata != NULL)
-	      free((char *)tmpdata);
+	      free(tmpdata);
 	    if(ctab != NULL)
 	      free_object(ctab);
 	    free_object(o);
@@ -285,7 +292,7 @@ void img_ras_decode(INT32 args)
 	  if(len<1) {
 	    /* Better to proceed and make a partly black image? */
 	    if(tmpdata != NULL)
-	      free((char *)tmpdata);
+	      free(tmpdata);
 	    if(ctab != NULL)
 	      free_object(ctab);
 	    free_object(o);
@@ -312,7 +319,7 @@ void img_ras_decode(INT32 args)
 	      if(len<2) {
 		/* Better to proceed and make a partly black image? */
 		if(tmpdata != NULL)
-		  free((char *)tmpdata);
+		  free(tmpdata);
 		if(ctab != NULL)
 		  free_object(ctab);
 		free_object(o);
@@ -346,7 +353,7 @@ void img_ras_decode(INT32 args)
      }
 
    if(tmpdata != NULL)
-     free((char *)tmpdata);
+     free(tmpdata);
    if(ctab != NULL)
      free_object(ctab);
    pop_n_elems(args);
@@ -359,7 +366,7 @@ void img_ras_decode(INT32 args)
 /*
 **! method string encode(object image)
 **! method string encode(object image, mapping options)
-**! 	Encodes a RAS image. 
+**! 	Encodes a RAS image.
 **!
 **!     The <tt>options</tt> argument may be a mapping
 **!	containing zero or more encoding options:
@@ -434,11 +441,11 @@ static void img_ras_encode(INT32 args)
   void (*ctfunc)(rgb_group *, unsigned char *, int,
 		 struct neo_colortable *, struct nct_dither *, int) = NULL;
 
-  get_all_args("Image.RAS.decode", args,
+  get_all_args("decode", args,
 	       (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])? "%o%m":"%o"),
 	       &imgo, &optm);
 
-  if((img=(struct image*)get_storage(imgo, image_program))==NULL)
+  if((img=get_storage(imgo, image_program))==NULL)
      Pike_error("Image.RAS.encode: illegal argument 1\n");
 
   if(optm != NULL) {
@@ -446,8 +453,7 @@ static void img_ras_encode(INT32 args)
 
     if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(TYPEOF(*s) != T_OBJECT ||
-	 (ct=(struct neo_colortable*)
-	  get_storage(s->u.object, image_colortable_program))==NULL)
+	 (ct=get_storage(s->u.object, image_colortable_program))==NULL)
 	Pike_error("Image.RAS.encode: option (arg 2) \"palette\" has illegal type\n");
   }
 
@@ -474,20 +480,20 @@ static void img_ras_encode(INT32 args)
     unsigned char *tmp;
     rs.ras_depth = 8;
     rs.ras_maptype = RMT_EQUAL_RGB;
-    rs.ras_maplength = DO_NOT_WARN((INT32)n*3);
+    rs.ras_maplength = (INT32)n*3;
     cts = begin_shared_string(rs.ras_maplength+(rs.ras_maplength&1));
     if(rs.ras_maplength & 1) {
       STR0(cts)[rs.ras_maplength] = '\0';
       rs.ras_maplength++;
     }
-    tmp = (unsigned char *)xalloc(rs.ras_maplength);
+    tmp = xalloc(rs.ras_maplength);
     image_colortable_write_rgb(ct, tmp);
     for(i=0; i<n; i++) {
       STR0(cts)[i] = tmp[i*3];
       STR0(cts)[i+n] = tmp[i*3+1];
       STR0(cts)[i+2*n] = tmp[i*3+2];
     }
-    free((char *)tmp);
+    free(tmp);
     push_string(end_shared_string(cts));
     image_colortable_initiate_dither(ct, &dith, img->xsize);
     ctfunc = image_colortable_index_8bit_function(ct);
@@ -517,7 +523,7 @@ static void img_ras_encode(INT32 args)
      llen = ((img->xsize+1)&~1)*3;
      break;
   }
-  
+
   rs.ras_length = llen*img->ysize;
 
   res2 = begin_shared_string(rs.ras_length);
@@ -557,7 +563,7 @@ static void img_ras_encode(INT32 args)
     image_colortable_free_dither(&dith);
 
   {
-    unsigned char *pkdata = (unsigned char *)xalloc(rs.ras_length+16);
+    unsigned char *pkdata = xalloc(rs.ras_length+16);
     unsigned char *pk = pkdata, *src = STR0(res2);
     ptrdiff_t pklen = 0, pkleft = rs.ras_length+16;
     for(y=0; y<img->ysize; y++) {
@@ -568,11 +574,11 @@ static void img_ras_encode(INT32 args)
       if((pklen += n)>rs.ras_length)
 	break;
     }
-      
+
     if(pklen<rs.ras_length) {
-      free((char *)res2);
+      do_free_unlinked_pike_string(res2);
       res2 = make_shared_binary_string((char *)pkdata, pklen);
-      rs.ras_length = DO_NOT_WARN((INT32)pklen);
+      rs.ras_length = (INT32)pklen;
       rs.ras_type = RT_BYTE_ENCODED;
     } else
       res2 = end_shared_string(res2);

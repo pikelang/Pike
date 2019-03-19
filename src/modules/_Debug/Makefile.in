@@ -1,0 +1,15 @@
+@make_variables@
+VPATH=@srcdir@
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+OBJS=debug.o
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+# Reset the symbol prefix base to the empty string.
+PRECOMPILER_ARGS="--base="
+
+@static_module_makefile@
+
+debug.o: $(SRCDIR)/debug.c
+
+@dependencies@

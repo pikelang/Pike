@@ -7,7 +7,7 @@ import .Helper;
 // {
 //    call_out(f,0.5);
 
-//    if (!con) 
+//    if (!con)
 //       return;
 
 //    if (con->query_read_callback()!=recv)
@@ -29,7 +29,7 @@ object con;
 string buf="";
 
 /* outstanding calls */
-// static private
+// private
 mapping(int:function(string:void)) async=([]);
 int ref=1;
 
@@ -53,6 +53,7 @@ protected inline int conwrite(string what)
 #ifdef LYSKOM_DEBUG
    werror("-> %O\n",what);
 #endif
+   if (!con) return 0;
    int i=con->write(what)==sizeof(what);
    if (!i) { werror("write failed!!!\n"); _exit(1); }
    return i;
@@ -63,14 +64,19 @@ class Send
    int ref;
    string request;
    function(string:void) callback;
-   
+
    void create(int rf,string r,function(string:void) c)
    {
       ref=rf;
       request=r;
       callback=c;
    }
-   int cast(string i) { return ref; }
+   protected int cast(string type)
+   {
+     if( type=="int" )
+       return ref;
+     return UNDEFINED;
+   }
    void write()
    {
       out_req++;
@@ -133,7 +139,7 @@ mixed sync_do(int ref,string|void request)
    {
       array(int) o=(array(int))sendqueue;
       int j=search(o,ref);
-      if (j==-1) 
+      if (j==-1)
       {
 	 if (!async[ref])
 	    error("request ref %d not in queue, but no callback\n",ref);
@@ -153,7 +159,7 @@ mixed sync_do(int ref,string|void request)
    for (;;)
    {
       s=con->read(0x7fffffff,1);
-      if (s=="") 
+      if (s=="")
       {
 	 con->set_nonblocking(recv,0,0);
 	 connection_lost();
@@ -277,6 +283,7 @@ void read_thread()
       }
       recv(0,s);
    }
+   connection_lost();
 }
 
 #if constant(thread_create) && !LYSKOM_UNTHREADED
@@ -347,12 +354,12 @@ void create(string server,void|int port,void|string whoami)
    thread_create(call_thread);
 #ifdef LYSKOM_DEBUG
    werror("LysKOM running threaded\n");
-#endif   
+#endif
 #else
    con->set_nonblocking(recv,0,0);
 #ifdef LYSKOM_DEBUG
    werror("LysKOM running unthreaded\n");
-#endif   
+#endif
 #endif
    return;
 }
@@ -361,7 +368,7 @@ array(array(mixed)|int) try_parse(string what)
 {
    array res=({});
    int len=0;
-   
+
    array stack=({});
 
    while (sizeof(what)>1)
@@ -374,7 +381,7 @@ array(array(mixed)|int) try_parse(string what)
 	    // int, bitfield or hollerith
 
 	    if (sscanf(what,"%[0-9]%s",a,b)<2 ||
-		b=="") 
+		b=="")
 	       return ({0,0}); // incomplete
 
 	    if (b[0]=='H') // hollerith
@@ -452,7 +459,7 @@ array(array(mixed)|int) try_parse(string what)
 
 	    res=stack[0]+({res});
 	    stack=stack[1..];
-	    
+
 	    len+=2;
 
 	    switch (what[1])
@@ -474,7 +481,7 @@ array(array(mixed)|int) try_parse(string what)
 	    exit(-1);
       }
    }
-   
+
    return ({0,0}); // incomplete
 }
 
@@ -482,15 +489,16 @@ array(array(mixed)|int) try_parse(string what)
 void got_reply(int ref,object|array what)
 {
 //   werror("got_reply(): async: %O\n",async);
-   function call=async[ref];
+   function call = m_delete(async,ref);
+
 #ifdef LYSKOM_DEBUG
 //    werror("LYSKOM removing callback %O for call %d\n",call,ref);
 #endif
-   m_delete(async,ref);
+
    if (!call)
    {
       werror("LysKOM.Raw: lost callback for call %d %s\n",ref,
-	     zero_type(call)?"(lost from mapping??!)":"(zero value in mapping)");
+	     undefinedp(call)?"(lost from mapping??!)":"(zero value in mapping)");
       werror(master()->describe_backtrace(backtrace()));
       return;
    }
@@ -509,8 +517,8 @@ void delete_async(int ref)
 void add_async_callback(string which, function what, int dont_update)
 {
    int no=.ASync.name2no[which];
-   
-   if (!no && zero_type(.ASync.name2no[which]))
+
+   if (!no && !has_index(.ASync.name2no, which))
       throw(LysKOMError( -1,"LysKOM: unsupported async",
 			 sprintf("There is no supported async call named %O",
 				 which) ));
@@ -522,8 +530,8 @@ void add_async_callback(string which, function what, int dont_update)
 void remove_async_callback(string which, function what, void|int dont_update)
 {
    int no=.ASync.name2no[which];
-   
-   if (!no && zero_type(.ASync.name2no[which]))
+
+   if (!no && !has_index(.ASync.name2no, which))
       throw(LysKOMError( -1,"LysKOM: unsupported async",
 			 sprintf("There is no supported async call named %O",
 				 which) ));

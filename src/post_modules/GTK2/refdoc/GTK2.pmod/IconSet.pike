@@ -32,7 +32,7 @@ GTK2.IconSet copy( );
 //!
 //!
 
-static GTK2.IconSet create( GTK2.GdkPixbuf pixbuf );
+protected GTK2.IconSet create( GTK2.GdkPixbuf pixbuf );
 //! Create a new GTK2.IconSet.  A GTK2.IconSet represents a single icon in
 //! various sizes and widget states.  It can provide a GDK2.Pixbuf for a given
 //! size and state on request, and automatically caches some of the rendered

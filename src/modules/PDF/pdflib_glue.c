@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -41,13 +40,15 @@
  */
 
 /*! @class PDFgen
+ *! Interface to the pdflib pdf generator.
+ *! For more information see http://www.pdflib.com
  */
 
 /*** PDF callabcks ******************************************************/
 
 static void pdf_error_handler(PDF *p, int type, const char* shortmsg)
-{   
-   Pike_error("PDF.PDFgen: %s\n",shortmsg);   
+{
+   Pike_error("PDF.PDFgen: %s\n",shortmsg);
 }
 
 /*** PDF object *********************************************************/
@@ -67,7 +68,7 @@ static void init_pdf(struct object *o)
 
 static void exit_pdf(struct object *o)
 {
-   if (THIS->pdf) 
+   if (THIS->pdf)
    {
       PDF *pdf=THIS->pdf;
       THIS->pdf=NULL;
@@ -77,11 +78,13 @@ static void exit_pdf(struct object *o)
    }
 }
 
+/*! @decl void create();
+ *
+ * Create a new PDF generation context.
+ */
 static void pdf_create(INT32 args)
 {
    PDF *pdf;
-
-   pop_n_elems(args);
 
    THREADS_ALLOW();
 
@@ -96,8 +99,6 @@ static void pdf_create(INT32 args)
 
    if (THIS->pdf) PDF_delete(THIS->pdf);
    THIS->pdf=pdf;
-
-   push_int(0);
 }
 
 /*! @decl int open_file(string filename);
@@ -109,7 +110,7 @@ static void pdf_open_file(INT32 args)
    char *s;
    int n;
    if (args<1) SIMPLE_TOO_FEW_ARGS_ERROR("open_file",1);
-   if (sp[-args].type!=T_STRING || sp[-args].u.string->size_shift)
+   if (TYPEOF(sp[-args]) != T_STRING || sp[-args].u.string->size_shift)
       SIMPLE_BAD_ARG_ERROR("open_file",1,"8 bit string");
    s=sp[-args].u.string->str;
    if (!this->pdf) Pike_error("PDF not initiated\n");
@@ -298,7 +299,7 @@ static void pdf_setfont(INT32 args)
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    PDF_setfont(this->pdf,(int)n,(float)size);
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -310,7 +311,7 @@ static void pdf_show(INT32 args)
 {
    struct pdf_storage *this=THIS;
    struct pike_string *ps;
-   
+
    get_all_args("show",args,"%W",&ps);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -320,7 +321,7 @@ static void pdf_show(INT32 args)
    THREADS_ALLOW();
    PDF_show2(this->pdf,(char*)ps->str,(int)ps->len);
    THREADS_DISALLOW();
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -333,7 +334,7 @@ static void pdf_showxy(INT32 args)
    struct pdf_storage *this=THIS;
    struct pike_string *ps;
    FLOAT_TYPE x,y;
-   
+
    get_all_args("showxy",args,"%W%F%F",&ps,&x,&y);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -343,7 +344,7 @@ static void pdf_showxy(INT32 args)
    THREADS_ALLOW();
    PDF_show_xy2(this->pdf,(char*)ps->str,(int)ps->len,(float)x,(float)y);
    THREADS_DISALLOW();
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -355,7 +356,7 @@ static void pdf_continue_text(INT32 args)
 {
    struct pdf_storage *this=THIS;
    struct pike_string *ps;
-   
+
    get_all_args("continue_text",args,"%W",&ps);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -365,7 +366,7 @@ static void pdf_continue_text(INT32 args)
    THREADS_ALLOW();
    PDF_continue_text2(this->pdf,(char*)ps->str,(int)ps->len);
    THREADS_DISALLOW();
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }

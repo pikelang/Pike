@@ -2,12 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
 #include "interpret.h"
 #include "array.h"
+#include "mapping.h"
+#include "multiset.h"
 #include "stralloc.h"
 #include "pike_error.h"
 #include "fd_control.h"
@@ -18,102 +19,15 @@
 #include "pike_float.h"
 #include "pike_types.h"
 #include "sscanf.h"
+#include "bitvector.h"
+
+#include <ctype.h>
 
 #define sp Pike_sp
 
 /*
  * helper functions for sscanf %O
  */
-
-/* Calling convention:
- *   val: Integer to fill in.
- *   str: string to parse.
- *   len: length of the string.
- *
- * Returns:
- *   NULL on failure.
- *   continuation point in str on success.
- */
-static void *pcharp_extract_char_const(INT_TYPE *val,
-				       PCHARP str, ptrdiff_t len)
-{
-  int c;
-
-  /* use of macros to keep similar to lexer.h: char_const */
-#define LOOK() (len>0?EXTRACT_PCHARP(str):0)
-#define GETC() ((len > 0)?(INC_PCHARP(str, 1), len--, INDEX_PCHARP(str, -1)):0)
-      
-  switch (c=GETC())
-  {
-  case 0:
-    return NULL;
-
-  case '\n': return NULL;	/* Newline in character constant. */
-      
-  case 'a': c = 7; break;       /* BEL */
-  case 'b': c = 8; break;       /* BS */
-  case 't': c = 9; break;       /* HT */
-  case 'n': c = 10; break;      /* LF */
-  case 'v': c = 11; break;      /* VT */
-  case 'f': c = 12; break;      /* FF */
-  case 'r': c = 13; break;      /* CR */
-  case 'e': c = 27; break;      /* ESC */
-      
-  case '0': case '1': case '2': case '3':
-  case '4': case '5': case '6': case '7':
-    /* Octal escape. */
-    c-='0';
-    while(LOOK()>='0' && LOOK()<='8')
-      c=c*8+(GETC()-'0');
-    break;
-      
-  case 'x':
-    /* Hexadecimal escape. */
-    c=0;
-    while(1)
-    {
-      switch(LOOK())
-      {
-      case '0': case '1': case '2': case '3':
-      case '4': case '5': case '6': case '7':
-      case '8': case '9':
-	c=c*16+GETC()-'0';
-	continue;
-	    
-      case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	c=c*16+GETC()-'a'+10;
-	continue;
-	    
-      case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	c=c*16+GETC()-'A'+10;
-	continue;
-      }
-      break;
-    }
-    break;
-
-  case 'd':
-    /* Decimal escape. */
-    c=0;
-    while(1)
-    {
-      switch(LOOK())
-      {
-      case '0': case '1': case '2': case '3':
-      case '4': case '5': case '6': case '7':
-      case '8': case '9':
-	c=c*10+GETC()-'0';
-	continue;
-      }
-      break;
-    }
-    break;
-#undef LOOK
-#undef GETC
-  }
-  *val = c;
-  return str.ptr;
-}
 
 /* Calling convention:
  *   res: svalue to fill in.
@@ -124,120 +38,361 @@ static void *pcharp_extract_char_const(INT_TYPE *val,
  *   NULL on failure.
  *   continuation point in str on success.
  */
+
+#define CONSUME(X) do{if(*len>=X){INC_PCHARP(*str,X);*len-=X;}}while(0)
+static p_wchar2 next_char( PCHARP *str, ptrdiff_t *len )
+{
+  p_wchar2 res = *len ? EXTRACT_PCHARP(*str) : 0;
+  CONSUME(1);
+  return res;
+}
+#define READ() next_char(str,len)
+
+
+static int pcharp_isspace( PCHARP *str )
+{
+  return WIDE_ISSPACE(EXTRACT_PCHARP(*str));
+}
+
+static void skip_space( PCHARP *str, ptrdiff_t *len )
+{
+  while(*len && WIDE_ISSPACE(READ()))
+    ;
+  CONSUME(-1);
+}
+
+static void skip_comment( PCHARP *str, ptrdiff_t *len )
+{
+  CONSUME(1); // Start '/' 
+  switch(READ())
+  {
+    case '*':
+      while(*len)
+      {
+	while( READ() != '*' )
+	  ;
+	if( READ() == '/' )
+	  return;
+      }
+      break;
+
+    case '/':
+      while( *len && READ()!= '\n' )
+	;
+  }
+}
+
+static void skip_to_token( PCHARP *str, ptrdiff_t *len )
+{
+  int worked;
+  do
+  {
+    worked=0;
+    if(pcharp_isspace(str))
+    {
+      skip_space(str,len);
+      worked=1;
+    }
+    if( EXTRACT_PCHARP(*str) == '/' )
+    {
+      skip_comment(str,len);
+      worked=1;
+    }
+  }while(worked);
+}
+
+/* Note: Serious code-duplication from the lexer. */
+static int pcharp_to_svalue_rec(PCHARP *str,
+				ptrdiff_t *len)
+{
+  extern int parse_esc_seq_pcharp (PCHARP buf, p_wchar2 *chr, ptrdiff_t *len);
+  struct svalue *begin = Pike_sp;
+  PCHARP start = *str;
+  check_stack(100);
+  check_c_stack(1000);
+
+  while(1)
+  {
+    skip_to_token(str,len);
+
+    switch( READ() )
+    {
+      default: goto fail;
+
+      case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+      {
+	int base = 10;
+	CONSUME(-1);
+	goto read_number;
+
+      case '0': 
+	switch( EXTRACT_PCHARP(*str) )
+	{
+	  case 'x':case 'X': base = 16; CONSUME(1); break;
+	  case 'b':case 'B': base = 2;  CONSUME(1); break;
+	  case '.':
+	    CONSUME(-1);
+	    goto read_float;
+	  case 'e':case 'E':
+	    CONSUME(-1);
+	    push_float(0.0);
+	    return 1;
+	  default:
+	    base = 8;
+	    CONSUME(-1);
+	    break;
+	}
+      read_number:
+
+	/* Integer or float. */
+	push_int(0);
+	if( pcharp_to_svalue_inumber(Pike_sp-1,*str,str,base,*len) )
+	{
+	  if( (EXTRACT_PCHARP(*str) == '.' || EXTRACT_PCHARP(*str)=='e'|| EXTRACT_PCHARP(*str)=='E') )
+	  {
+	  read_float:
+	    {
+	      void *integer_parse = str->ptr;
+	      double res;
+	      res = STRTOD_PCHARP(start,str);
+	      if( integer_parse < str->ptr )
+	      {
+		pop_stack();
+		push_float(res);
+	      }
+	    }
+	  *len -= SUBTRACT_PCHARP(*str,start);
+	  if( *len < 0 )
+	    /* this is possible for floats combined with %<len>O format. */
+	    goto fail;
+	  }
+	  return 1;
+	}
+      }
+      goto fail;
+
+    case '\'':
+      // single character. 
+    {
+      unsigned int l = 0;
+      struct svalue res = svalue_int_zero;
+      ptrdiff_t used;
+      MP_INT bigint;
+      while(1)
+      {
+	p_wchar2 tmp;
+	switch( (tmp=READ()) )
+	{
+	  case 0:
+	    goto fail;
+
+	  case '\\':
+	    if( parse_esc_seq_pcharp(*str,&tmp,&used) )
+	      return 0;
+	    CONSUME(used);
+	    /* fallthrough. */
+	  default:
+	    l++;
+	    if( l == sizeof(INT_TYPE)-1 )
+	    {
+	      /* overflow possible. Switch to bignums. */
+	      mpz_init(&bigint);
+	      mpz_set_ui(&bigint,res.u.integer);
+	      TYPEOF(res) = PIKE_T_OBJECT;
+	    }
+
+	    if( l >= sizeof(INT_TYPE)-1 )
+	    {
+	      mpz_mul_2exp(&bigint,&bigint,8);
+	      mpz_add_ui(&bigint,&bigint,tmp);
+	    }
+	    else
+	    {
+	      res.u.integer <<= 8;
+	      res.u.integer |= tmp;
+	    }
+	    break;
+
+	  case '\'':
+	    if( TYPEOF(res) == PIKE_T_OBJECT )
+	    {
+	      push_bignum( &bigint );
+	      mpz_clear(&bigint);
+	      reduce_stack_top_bignum();
+	      return 1;
+	    }
+	    *Pike_sp++ = res;
+	    return 1;
+	}
+      }
+    }
+
+    case '"':
+    {
+      struct string_builder tmp;
+      PCHARP start;
+      int cnt;
+      init_string_builder(&tmp,0);
+
+      start = *str;
+      cnt = 0;
+      for (;*len;)
+      {
+	switch(READ())
+	{
+	  case '\"':
+	    /* End of string -- done. */
+	    if (cnt) string_builder_append(&tmp, start, cnt);
+	    push_string(finish_string_builder(&tmp));
+	    return 1;
+
+	  case '\\':
+	  {
+	    /* Escaped character */
+	    p_wchar2 val=0;
+	    ptrdiff_t consumed;
+	    if( !parse_esc_seq_pcharp(*str,&val,&consumed) )
+	      CONSUME(consumed);
+	    if (cnt) string_builder_append(&tmp, start, cnt);
+	    string_builder_putchar(&tmp, val);
+	    *str=start;
+	  }
+	  continue;
+
+	  case '\n':
+	    free_string_builder(&tmp);
+	    goto fail;
+
+	  default:
+	    cnt++;
+	    continue;
+	}
+      }
+      /* Unterminated string -- fail. */
+      free_string_builder(&tmp);
+      goto fail;
+    }
+
+    case '(':
+      // container.
+    {
+      int num=0;
+      p_wchar2 tmp;
+
+#define CHECK_STACK_ADD(ADD) do{		\
+	if(Pike_sp-begin > 100 ) {		\
+	  ADD(Pike_sp-begin);			\
+	  begin= Pike_sp;			\
+	  num++;				\
+	}					\
+      }while(0)
+
+#define FINISH(ADD) do {					\
+	num++;							\
+	ADD(Pike_sp-begin);					\
+	goto container_finished;				\
+      } while(0)
+
+      switch( READ() )
+      {
+	case '[':
+	  while(1)
+	  {
+	    skip_to_token(str,len);
+	    if(EXTRACT_PCHARP(*str) == ']' )
+	    {
+	      CONSUME(1);
+	      FINISH(f_aggregate_mapping);
+	    }
+	    if( !pcharp_to_svalue_rec(str,len) )
+	      goto fail;
+	    skip_to_token(str,len);
+	    if( READ() != ':' )
+	      goto fail;
+	    if(!pcharp_to_svalue_rec(str,len))
+	      goto fail;
+	    skip_to_token(str,len);
+	    tmp = READ();
+	    if( tmp == ']' )
+	      FINISH(f_aggregate_mapping);
+	    if( tmp != ',' )
+	      goto fail;
+	    CHECK_STACK_ADD(f_aggregate_mapping);
+	  }
+	  break;
+
+	case '{':
+	  while(1)
+	  {
+	    skip_to_token(str,len);
+	    if(EXTRACT_PCHARP(*str)=='}' )
+	    {
+	      CONSUME(1);
+	      FINISH(f_aggregate);
+	    }
+	    if( !pcharp_to_svalue_rec(str,len) )
+	      goto fail;
+	    skip_to_token(str,len);
+	    tmp=READ();
+	    if(tmp == '}' )
+	      FINISH(f_aggregate);
+	    if( tmp != ',' )
+	      goto fail;
+	    CHECK_STACK_ADD(f_aggregate);
+	  }
+	  break;
+	case '<':
+	  while(1)
+	  {
+	    skip_to_token(str,len);
+	    if(EXTRACT_PCHARP(*str)=='>' )
+	    {
+	      CONSUME(1);
+	      FINISH(f_aggregate_multiset);
+	    }
+	    pcharp_to_svalue_rec(str,len);
+	    skip_to_token(str,len);
+	    tmp=READ();
+	    if(tmp == '>' )
+	      FINISH(f_aggregate_multiset);
+	    if( tmp != ',' )
+	      goto fail;
+	    CHECK_STACK_ADD(f_aggregate_multiset);
+	  }
+	  break;
+	default:
+	  /* Not a valid container. */
+	  goto fail;
+      }
+#undef FINISH
+#undef CHECK_STACK_ADD
+    /* end of container. */
+    container_finished:
+      if( READ() != ')' )
+	goto fail;
+      if(num > 1 )
+	f_add(num);
+      return 1;
+    }
+    }
+  }
+
+ fail:
+  pop_n_elems(Pike_sp-begin);
+  return 0;
+}
+
+
 static void *pcharp_to_svalue_percent_o(struct svalue *res,
 					PCHARP str,
 					ptrdiff_t len)
 {
   SET_SVAL(*res, T_INT, NUMBER_UNDEFINED, integer, 0);
-
-  for (;len>0; INC_PCHARP(str, 1), len--)
+  if( pcharp_to_svalue_rec( &str, &len ) )
   {
-    switch (EXTRACT_PCHARP(str))
-    {
-    case ' ':  /* whitespace */
-    case '\t':
-    case '\n':
-    case '\r':  
-      break;
-
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-      {
-	/* fixme: grok floats */
-	if (!pcharp_to_svalue_inumber(res, str, &str, 0, len)) {
-	  return NULL;
-	}
-	return str.ptr;
-      }
-
-    case '\"':
-      {
-	struct string_builder tmp;
-	PCHARP start;
-	int cnt;
-	init_string_builder(&tmp,0);
-
-	INC_PCHARP(str, 1);	/* Skip the quote. */
-	len--;
-
-	start = str;
-	cnt = 0;
-	for (;len;)
-	{
-	  switch(EXTRACT_PCHARP(str))
-	  {
-	  case '\"':
-	    /* End of string -- done. */
-	    INC_PCHARP(str, 1);	/* Skip the quote. */
-
-	    if (cnt) string_builder_append(&tmp, start, cnt);
-	    SET_SVAL(*res, T_STRING, 0, string, finish_string_builder(&tmp));
-	    return str.ptr;
-
-	  case '\\':
-	    {
-	      /* Escaped character */
-	      INT_TYPE val;
-
-	      if (cnt) string_builder_append(&tmp, start, cnt);
-	      INC_PCHARP(str, 1);
-	      len--;
-	      start.ptr = pcharp_extract_char_const(&val, str, len);
-	      if (!start.ptr) break;
-	      string_builder_putchar(&tmp, val);
-				     
-	      /* Continue parsing after the escaped character. */
-	      len -= LOW_SUBTRACT_PCHARP(start, str);
-	      cnt = 0;
-	      str = start;
-	    }
-	    continue;
-
-	  case '\n':
-	    /* Newline in string -- fail. */
-	    break;
-
-	  default:
-	    len--;
-	    cnt++;
-	    INC_PCHARP(str, 1);
-	    continue;
-	  }
-	  break;
-	}
-	/* Unterminated string -- fail. */
-	free_string_builder(&tmp);
-	return NULL; /* end of data */
-      }
-
-    case '\'':
-      if (len>2)
-      {
-	INC_PCHARP(str, 1);	/* Skip the quote. */
-
-	SET_SVAL(*res, T_INT, NUMBER_NUMBER, integer, EXTRACT_PCHARP(str));
-	INC_PCHARP(str, 1);
-
-	len -= 2;
-
-	if (res->u.integer == '\\')
-	{
-	  PCHARP tmp;
-	  tmp.ptr = pcharp_extract_char_const(&res->u.integer, str, len);
-	  if (!tmp.ptr) return NULL;
-	  tmp.shift = str.shift;
-	  len -= LOW_SUBTRACT_PCHARP(tmp, str);
-	  str.ptr = tmp.ptr;
-	}
-	if (!len || (EXTRACT_PCHARP(str) != '\''))
-	  return NULL;
-	INC_PCHARP(str, 1);	/* Skip the ending quote. */
-	return str.ptr;
-      }
-      return NULL;
-	    
-      /* fixme: arrays, multisets, mappings */
-    }
+    *res = *--Pike_sp;
+    return str.ptr;
   }
   return NULL;
 }
@@ -278,25 +433,25 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   PIKE_CONCAT(p_wchar,SIZE) *match,				\
   ptrdiff_t cnt,						\
   struct sscanf_set *set,					\
-  ptrdiff_t match_len, INT32 flags)				\
+  ptrdiff_t match_len)                                          \
 {								\
   p_wchar2 e, last = 0;						\
   MATCH_IS_WIDE( int set_size=0; )				\
 								\
   if(cnt>=match_len)						\
-    Pike_error("Error in sscanf format string.\n");		\
+    Pike_error("Unterminated sscanf set.\n");			\
 								\
-  MEMSET(set->c, 0, sizeof(set->c));				\
+  memset(set->c, 0, sizeof(set->c));				\
   set->a=0;							\
 								\
   if(match[cnt]=='^' &&						\
      (cnt+2>=match_len || match[cnt+1]!='-' ||			\
-      match[cnt+2]==']' || (flags & SSCANF_FLAG_76_COMPAT)))	\
+      match[cnt+2]==']'))                                       \
   {								\
     set->neg=1;							\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
+      Pike_error("Unterminated negated sscanf set.\n");	\
   }else{							\
     set->neg=0;							\
   }								\
@@ -306,7 +461,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     set->c[last=match[cnt]]=1;					\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
+      Pike_error("Empty sscanf range.\n");			\
   }								\
 								\
   for(;match[cnt]!=']';)					\
@@ -315,7 +470,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     {								\
       cnt++;							\
       if(cnt>=match_len)					\
-	Pike_error("Error in sscanf format string.\n");		\
+	Pike_error("Unterminated sscanf range.\n");		\
 								\
       if(match[cnt]==']')					\
       {								\
@@ -324,7 +479,8 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
       }								\
 								\
       if(last > match[cnt])					\
-	Pike_error("Error in sscanf format string.\n");		\
+	Pike_error("Inverted sscanf range [%c-%c].\n",		\
+		   last, match[cnt]);				\
 								\
 MATCH_IS_WIDE(							\
       if(last < (p_wchar2)sizeof(set->c) && last >= 0)		\
@@ -372,7 +528,7 @@ MATCH_IS_WIDE(							\
     }								\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
+      Pike_error("Unterminated sscanf set.\n");			\
   }								\
 								\
 MATCH_IS_WIDE(							\
@@ -387,13 +543,13 @@ MATCH_IS_WIDE(							\
          order[e+1]+1 != order[e]) {				\
         free_array(set->a);					\
         set->a=0;						\
-        free((char *)order);					\
+        free(order);                                            \
 	Pike_error("Overlapping ranges in sscanf not supported.\n"); \
       }								\
     }								\
 								\
     order_array(set->a,order);					\
-    free((char *)order);					\
+    free(order);                                                \
   }								\
 )								\
   return cnt;							\
@@ -459,118 +615,121 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
   r = (double)f;
   if(extra_f)
     r += ((double)extra_f)/4294967296.0;
-  return (FLOAT_TYPE)(s? -LDEXP(r, e):LDEXP(r, e));
+  return (FLOAT_TYPE)(s? -ldexp(r, e):ldexp(r, e));
 }
 
 #endif
 
-#ifdef PIKE_DEBUG
-#define DO_IF_DEBUG(X)		X
-#else /* !PIKE_DEBUG */
-#define DO_IF_DEBUG(X)
-#endif /* PIKE_DEBUG */
-
-#ifdef AUTO_BIGNUM
-#define DO_IF_BIGNUM(X)		X
-#else /* !AUTO_BIGNUM */
-#define DO_IF_BIGNUM(X)
-#endif /* AUTO_BIGNUM */
-
-#ifdef __CHECKER__
-#define DO_IF_CHECKER(X)	X
-#else /* !__CHECKER__ */
-#define DO_IF_CHECKER(X)
-#endif /* __CHECKER__ */
+static float extract_float_be(const char * x) {
+    float f;
 
 #ifdef FLOAT_IS_IEEE_BIG
-#define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)		\
-	    do {					\
-	      float f;					\
-	      ((char *)&f)[0] = *((INPUT));		\
-	      ((char *)&f)[1] = *((INPUT)+1);		\
-	      ((char *)&f)[2] = *((INPUT)+2);		\
-	      ((char *)&f)[3] = *((INPUT)+3);		\
-	      (SVAL).u.float_number = f;		\
-	    } while(0)
+    memcpy(&f, x, sizeof(f));
+#elif FLOAT_IS_IEEE_LITTLE
+    unsigned INT32 tmp = get_unaligned32(x);
+    tmp = bswap32(tmp);
+    memcpy(&f, &tmp, sizeof(f));
 #else
-#ifdef FLOAT_IS_IEEE_LITTLE
-#define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)		\
-	    do {					\
-	      float f;					\
-	      ((char *)&f)[3] = *((INPUT));		\
-	      ((char *)&f)[2] = *((INPUT)+1);		\
-	      ((char *)&f)[1] = *((INPUT)+2);		\
-	      ((char *)&f)[0] = *((INPUT)+3);		\
-	      (SVAL).u.float_number = f;		\
-	    } while(0)
-#else
-#define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)				\
-	    do {							\
-	      char x[4];						\
-	      x[0] = (INPUT)[0];					\
-	      x[1] = (INPUT)[1];					\
-	      x[2] = (INPUT)[2];					\
-	      x[3] = (INPUT)[3];					\
-	      (SVAL).u.float_number = low_parse_IEEE_float(x, 4);	\
-            } while(0)
+    f = low_parse_IEEE_float(x, 4);
 #endif
-#endif
+    return f;
+}
 
-#ifdef DOUBLE_IS_IEEE_BIG
-#define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)		\
-	    do {					\
-	      double d;					\
-	      ((char *)&d)[0] = *((INPUT));		\
-	      ((char *)&d)[1] = *((INPUT)+1);		\
-	      ((char *)&d)[2] = *((INPUT)+2);		\
-	      ((char *)&d)[3] = *((INPUT)+3);		\
-	      ((char *)&d)[4] = *((INPUT)+4);		\
-	      ((char *)&d)[5] = *((INPUT)+5);		\
-	      ((char *)&d)[6] = *((INPUT)+6);		\
-	      ((char *)&d)[7] = *((INPUT)+7);		\
-	      (SVAL).u.float_number = (FLOAT_TYPE)d;	\
-	    } while(0)
+static double extract_double_be(const char * x) {
+    double f;
+
+#ifdef FLOAT_IS_IEEE_BIG
+    memcpy(&f, x, sizeof(f));
+#elif FLOAT_IS_IEEE_LITTLE
+    unsigned INT64 tmp = get_unaligned64(x);
+    tmp = bswap64(tmp);
+    memcpy(&f, &tmp, sizeof(f));
 #else
-#ifdef DOUBLE_IS_IEEE_LITTLE
-#define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)		\
-	    do {					\
-	      double d;					\
-	      ((char *)&d)[7] = *((INPUT));		\
-	      ((char *)&d)[6] = *((INPUT)+1);		\
-	      ((char *)&d)[5] = *((INPUT)+2);		\
-	      ((char *)&d)[4] = *((INPUT)+3);		\
-	      ((char *)&d)[3] = *((INPUT)+4);		\
-	      ((char *)&d)[2] = *((INPUT)+5);		\
-	      ((char *)&d)[1] = *((INPUT)+6);		\
-	      ((char *)&d)[0] = *((INPUT)+7);		\
-	      (SVAL).u.float_number = (FLOAT_TYPE)d;	\
-	    } while(0)
+    f = low_parse_IEEE_float(x, 8);
+#endif
+    return f;
+}
+
+static float extract_float_le(const char * x) {
+    float f;
+
+#ifdef FLOAT_IS_IEEE_LITTLE
+    memcpy(&f, x, sizeof(f));
+#elif FLOAT_IS_IEEE_BIG
+    unsigned INT32 tmp = get_unaligned32(x);
+    tmp = bswap32(tmp);
+    memcpy(&f, &tmp, sizeof(f));
 #else
-#define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)				\
-	    do {							\
-	      char x[8];						\
-	      x[0] = (INPUT)[0];					\
-	      x[1] = (INPUT)[1];					\
-	      x[2] = (INPUT)[2];					\
-	      x[3] = (INPUT)[3];					\
-	      x[4] = (INPUT)[4];					\
-	      x[5] = (INPUT)[5];					\
-	      x[6] = (INPUT)[6];					\
-	      x[7] = (INPUT)[7];					\
-	      (SVAL).u.float_number = low_parse_IEEE_float(x, 8);	\
-	    } while(0)
+    unsigned INT32 tmp = get_unaligned32(x);
+    tmp = bswap32(tmp);
+    f = low_parse_IEEE_float((char*)&tmp, sizeof(tmp));
 #endif
+    return f;
+}
+
+static double extract_double_le(const char * x) {
+    double f;
+
+#ifdef FLOAT_IS_IEEE_LITTLE
+    memcpy(&f, x, sizeof(f));
+#elif FLOAT_IS_IEEE_BIG
+    unsigned INT64 tmp = get_unaligned64(x);
+    tmp = bswap64(tmp);
+    memcpy(&f, &tmp, sizeof(f));
+#else
+    unsigned INT64 tmp = get_unaligned64(x);
+    tmp = bswap64(tmp);
+    f = low_parse_IEEE_float((char*)&tmp, sizeof(tmp));
 #endif
+    return f;
+}
+
+#define EXTRACT_FLOAT(SVAL, input, shift, fun)    do {      \
+    char x[4];                                              \
+    if (shift == 0) {                                       \
+        memcpy(x, input, sizeof(x));                        \
+    } else {                                                \
+        PCHARP tmp = MKPCHARP(input, shift);                \
+        size_t i;                                           \
+        for (i = 0; i < sizeof(x); INC_PCHARP(tmp, 1), i++) \
+            x[i] = EXTRACT_PCHARP(tmp);                     \
+    }                                                       \
+    (SVAL).u.float_number = fun(x);                         \
+} while (0)
+
+#define EXTRACT_DOUBLE(SVAL, input, shift, fun)   do {      \
+    char x[8];                                              \
+    if (shift == 0) {                                       \
+        memcpy(x, input, sizeof(x));                        \
+    } else {                                                \
+        PCHARP tmp = MKPCHARP(input, shift);                \
+        size_t i;                                           \
+        for (i = 0; i < sizeof(x); INC_PCHARP(tmp, 1), i++) \
+            x[i] = EXTRACT_PCHARP(tmp);                     \
+    }                                                       \
+    (SVAL).u.float_number = fun(x);                         \
+} while (0)
+
 
 /* Avoid some warnings about loss of precision */
 #ifdef __ECL
 static INLINE INT32 TO_INT32(ptrdiff_t x)
 {
-  return DO_NOT_WARN((INT32)x);
+  return (INT32)x;
 }
 #else /* !__ECL */
 #define TO_INT32(x)	((INT32)(x))
 #endif /* __ECL */
+
+static struct pike_string *get_string_slice( void *input, int shift,
+                                             ptrdiff_t offset, ptrdiff_t len,
+                                             struct pike_string *str )
+{
+    if( !shift && str )
+        return string_slice( str, offset, len );
+    return make_shared_binary_pcharp(MKPCHARP(((char *)input)+(offset<<shift),shift),
+                                     len);
+}
 
 /* INT32 very_low_sscanf_{0,1,2}_{0,1,2}(p_wchar *input, ptrdiff_t input_len,
  *					 p_wchar *match, ptrdiff_t match_len,
@@ -591,8 +750,8 @@ static INLINE INT32 TO_INT32(ptrdiff_t x)
  *   Pushes non-ignored matches on the Pike stack in the order they
  *   were matched.
  *
- * FIXME: chars_matched and success are only used internally, and
- *        should probably be gotten rid of.
+ * FIXME: success is only used internally, and should probably be
+ * gotten rid of.
  */
 #define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			 \
 static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
@@ -601,7 +760,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 			 PIKE_CONCAT(p_wchar, MATCH_SHIFT) *match,	 \
 			 ptrdiff_t match_len,				 \
 			 ptrdiff_t *chars_matched,			 \
-			 int *success, INT32 flags)			 \
+			 int *success,                                   \
+                         struct pike_string *pstr)                       \
 {									 \
   struct svalue sval;							 \
   INT32 matches, arg;							 \
@@ -644,7 +804,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
     DO_IF_DEBUG(							 \
     if(match[cnt]!='%' || match[cnt+1]=='%')				 \
     {									 \
-      Pike_fatal("Error in sscanf.\n");					 \
+      Pike_fatal("Failed to escape in sscanf.\n");			 \
     }									 \
     );									 \
 									 \
@@ -657,7 +817,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 									 \
     cnt++;								 \
     if(cnt>=match_len)							 \
-      Pike_error("Error in sscanf format string.\n");			 \
+      Pike_error("Missing format specifier in sscanf format string.\n"); \
 									 \
     while(1)								 \
     {									 \
@@ -667,7 +827,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  no_assign=1;							 \
 	  cnt++;							 \
 	  if(cnt>=match_len)						 \
-	    Pike_error("Error in sscanf format string.\n");		 \
+	    Pike_error("Missing format specifier in ignored sscanf "	 \
+		       "format string.\n");				 \
 	  continue;							 \
 									 \
 	case '0': case '1': case '2': case '3': case '4':		 \
@@ -704,7 +865,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	    if(e>=match_len)						 \
 	    {								 \
 	      Pike_error("Missing %%} in format string.\n");		 \
-	      break;		/* UNREACHED */				 \
+              UNREACHABLE(break);                                        \
 	    }								 \
 	    if(match[e]=='%')						 \
 	    {								 \
@@ -729,7 +890,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 			 match+cnt+1,					 \
 			 e-cnt-2,					 \
 			 &tmp,						 \
-			 &yes, flags);					 \
+                         &yes,0);                                        \
 	    if(yes && tmp)						 \
 	    {								 \
 	      f_aggregate(TO_INT32(sp-save_sp));			 \
@@ -790,7 +951,6 @@ INPUT_IS_WIDE(								 \
 	     }								 \
 	     while(--field_length >= 0)					 \
 	     {								 \
-               DO_IF_BIGNUM(						 \
 	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))		 \
 	       {							 \
 		 push_int(sval.u.integer);				 \
@@ -807,7 +967,6 @@ INPUT_IS_WIDE(								 \
 		 sval=*--sp;						 \
 		 break;							 \
 	       }							 \
-	       );							 \
 	       sval.u.integer<<=8;					 \
 	       sval.u.integer |= input[--pos];				 \
 	     }								 \
@@ -817,7 +976,6 @@ INPUT_IS_WIDE(								 \
 	     }								 \
 	     while(--field_length >= 0)					 \
 	     {								 \
-               DO_IF_BIGNUM(						 \
 	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))		 \
 	       {							 \
 		 push_int(sval.u.integer);				 \
@@ -835,7 +993,6 @@ INPUT_IS_WIDE(								 \
 		 sval=*--sp;						 \
 		 break;							 \
 	       }							 \
-	       );							 \
 	       sval.u.integer<<=8;					 \
 	       sval.u.integer |= input[eye];				 \
 	       eye++;							 \
@@ -846,7 +1003,7 @@ INPUT_IS_WIDE(								 \
  								         \
       case 'H':								\
 	{								\
-          int len=0;							\
+          unsigned long len=0;                                           \
           if(field_length == -1)					\
 	    field_length=1;						\
           if(field_length == 0)                                         \
@@ -883,7 +1040,7 @@ INPUT_IS_WIDE(								 \
 	      eye++;							\
 	    }								\
 	  }								\
-	  if(eye+len > input_len)					\
+	  if(len > (unsigned long)(input_len-eye))                      \
 	  {								\
 	    chars_matched[0]=eye-field_length;				\
 	    return matches;						\
@@ -973,11 +1130,13 @@ INPUT_IS_WIDE(								 \
 	  SET_SVAL(sval, T_FLOAT, 0, float_number, 0.0);		 \
 	  switch(field_length) {					 \
 	    case 4:							 \
-	      EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT);		 \
+              if (minus_flag) EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_le);    \
+              else EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT, extract_float_be);               \
 	      eye += 4;							 \
 	      break;							 \
 	    case 8:							 \
-	      EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT);		 \
+              if (minus_flag) EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_le);    \
+              else EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT, extract_double_be);               \
 	      eye += 8;							 \
 	      break;							 \
 	  }								 \
@@ -995,10 +1154,9 @@ INPUT_IS_WIDE(								 \
 	    if (no_assign) {						 \
 	      no_assign = 2;						 \
 	    } else {							 \
-	      SET_SVAL(sval, T_STRING, 0, string,			 \
-		       PIKE_CONCAT(make_shared_binary_string,		 \
-				   INPUT_SHIFT)(input+eye,		 \
-						field_length));		 \
+              SET_SVAL(sval, T_STRING, 0, string,                        \
+                       get_string_slice(input,INPUT_SHIFT,eye,           \
+                                        field_length,pstr));             \
 	    }								 \
 	    eye+=field_length;						 \
 	    break;							 \
@@ -1009,10 +1167,9 @@ INPUT_IS_WIDE(								 \
 	    if (no_assign) {						 \
 	      no_assign = 2;						 \
 	    } else {							 \
-	      SET_SVAL(sval, T_STRING, 0, string,			 \
-		       PIKE_CONCAT(make_shared_binary_string,		 \
-				   INPUT_SHIFT)(input+eye,		 \
-						input_len-eye));	 \
+               SET_SVAL(sval, T_STRING, 0, string,                       \
+                        get_string_slice(input,INPUT_SHIFT,eye,          \
+                                         input_len-eye,pstr));           \
 	    }								 \
 	    eye=input_len;						 \
 	    break;							 \
@@ -1051,34 +1208,34 @@ INPUT_IS_WIDE(								 \
 									 \
 		case 's':						 \
 		  Pike_error("Illegal to have two adjecent %%s.\n");	 \
-		  return 0;		/* make gcc happy */		 \
+                  UNREACHABLE(return 0);                                 \
 									 \
 	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	 \
 		case 'd':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['-']=0;						 \
 		  goto match_set;					 \
 									 \
 		case 'o':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='7';e++) set.c[e]=0;			 \
 		  goto match_set;					 \
 									 \
 		case 'x':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  for(e='a';e<='f';e++) set.c[e]=0;			 \
 		  goto match_set;					 \
 									 \
 		case 'D':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['-']=0;						 \
 		  goto match_set;					 \
 									 \
 		case 'f':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['.']=set.c['-']=0;				 \
 		  goto match_set;					 \
@@ -1087,7 +1244,7 @@ INPUT_IS_WIDE(								 \
 		  PIKE_CONCAT(read_set,MATCH_SHIFT)(match,		 \
 						    s-match+1,		 \
 						    &set,		 \
-						    match_len, flags);	 \
+						    match_len);         \
 		  set.neg=!set.neg;					 \
 		  goto match_set;					 \
 	      }								 \
@@ -1115,10 +1272,9 @@ INPUT_IS_WIDE(								 \
 	      if (no_assign) {						 \
 		no_assign = 2;						 \
 	      } else {							 \
-		SET_SVAL(sval, T_STRING, 0, string,			 \
-			 PIKE_CONCAT(make_shared_binary_string,		 \
-				     INPUT_SHIFT)(input+eye,		 \
-						  input_len-eye));	 \
+                SET_SVAL(sval, T_STRING, 0, string,                      \
+                         get_string_slice(input,INPUT_SHIFT,eye,         \
+                                          input_len-eye,pstr));          \
 	      }								 \
 	      eye=input_len;						 \
 	      break;							 \
@@ -1163,10 +1319,9 @@ INPUT_IS_WIDE(								 \
 	    if (no_assign) {						 \
 	      no_assign = 2;						 \
 	    } else {							 \
-	      SET_SVAL(sval, T_STRING, 0, string,			 \
-		       PIKE_CONCAT(make_shared_binary_string,		 \
-				   INPUT_SHIFT)(input+start,		 \
-						eye-start));		 \
+              SET_SVAL(sval, T_STRING, 0, string,                        \
+                       get_string_slice(input,INPUT_SHIFT,start,         \
+                                        eye-start,pstr));                \
 	    }								 \
 									 \
 	    cnt=end_str_end-match-1;					 \
@@ -1176,7 +1331,7 @@ INPUT_IS_WIDE(								 \
 									 \
 	case '[':							 \
 	  cnt=PIKE_CONCAT(read_set,MATCH_SHIFT)(match,cnt+1,		 \
-						&set,match_len, flags);	 \
+						&set,match_len);         \
 									 \
 	match_set:							 \
 	  {								 \
@@ -1192,7 +1347,7 @@ INPUT_IS_WIDE(								 \
 	    for(e=eye;eye<len;eye++)					 \
 	    {								 \
 INPUT_IS_WIDE(								 \
-	      if((unsigned INT32) input[eye] < sizeof(set.c))		\
+	      if((unsigned INT32) input[eye] < sizeof(set.c))		 \
 	      {								 \
 )									 \
 	        if(set.c[input[eye]] == set.neg)			 \
@@ -1223,9 +1378,9 @@ INPUT_IS_WIDE(								 \
 	  if (no_assign) {						 \
 	    no_assign = 2;						 \
 	  } else {							 \
-	    SET_SVAL(sval, T_STRING, 0, string,				 \
-		     PIKE_CONCAT(make_shared_binary_string,		 \
-				 INPUT_SHIFT)(input+e,eye-e));		 \
+            SET_SVAL(sval, T_STRING, 0, string,                          \
+                     get_string_slice(input,INPUT_SHIFT,e,               \
+                                       eye-e,pstr));                     \
 	  }								 \
 	  break;							 \
 									 \
@@ -1279,7 +1434,7 @@ INPUT_IS_WIDE(								 \
       check_stack(1);							 \
       *sp++=sval;							 \
       dmalloc_touch_svalue(Pike_sp-1);					 \
-      DO_IF_DEBUG(SET_SVAL_TYPE(sval, 99));				 \
+      DO_IF_DEBUG(INVALIDATE_SVAL(sval));				 \
     }									 \
   }									 \
   chars_matched[0]=eye;							 \
@@ -1326,79 +1481,114 @@ MK_VERY_LOW_SSCANF(2,1)
 MK_VERY_LOW_SSCANF(1,2)
 MK_VERY_LOW_SSCANF(2,2)
 
+
+/* */
+INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
+                        PCHARP format, ptrdiff_t format_len,
+                        ptrdiff_t *chars_matched)
+{
+  int ok;
+  check_c_stack(sizeof(struct sscanf_set)*2 + 512);
+  switch( input.shift*3 + format.shift )
+  {
+    case 0:
+      return very_low_sscanf_0_0(input.ptr, len,format.ptr, format_len,
+                                 chars_matched, &ok,0);
+    case 1:
+      return very_low_sscanf_0_1(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok,0);
+    case 2:
+      return very_low_sscanf_0_2(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok,0);
+    case 3:
+      return very_low_sscanf_1_0(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok,0);
+    case 4:
+      return very_low_sscanf_1_1(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok,0);
+    case 5:
+      return very_low_sscanf_1_2(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok,0);
+    case 6:
+      return very_low_sscanf_2_0(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok,0);
+    case 7:
+      return very_low_sscanf_2_1(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok,0);
+    case 8:
+      return very_low_sscanf_2_2(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok,0);
+  }
+  UNREACHABLE();
+}
+
 /* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
-INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 flags)
+INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
 {
   ptrdiff_t matched_chars;
   int x;
-  INT32 i;
 
   check_c_stack(sizeof(struct sscanf_set)*2 + 512);
 
   switch(data->size_shift*3 + format->size_shift) {
-  default:
-#ifdef PIKE_DEBUG
-    Pike_fatal("Unsupported shift-combination to low_sscanf(): %d:%d\n",
-	       data->size_shift, format->size_shift);
-    break;
-#endif
     /* input_shift : match_shift */
   case 0:
     /*      0      :      0 */
-    i = very_low_sscanf_0_0(STR0(data), data->len,
-			    STR0(format), format->len,
-			    &matched_chars, &x, flags);
+    return very_low_sscanf_0_0(STR0(data), data->len,
+                               STR0(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 1:
     /*      0      :      1 */
-    i = very_low_sscanf_0_1(STR0(data), data->len,
-			    STR1(format), format->len,
-			    &matched_chars, &x, flags);
+    return very_low_sscanf_0_1(STR0(data), data->len,
+                               STR1(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 2:
     /*      0      :      2 */
-    i = very_low_sscanf_0_2(STR0(data), data->len,
-			    STR2(format), format->len,
-			    &matched_chars, &x, flags);
+    return very_low_sscanf_0_2(STR0(data), data->len,
+                               STR2(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 3:
     /*      1      :      0 */
-    i = very_low_sscanf_1_0(STR1(data), data->len,
-			    STR0(format), format->len,
-			    &matched_chars, &x, flags);
+    return very_low_sscanf_1_0(STR1(data), data->len,
+                               STR0(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 4:
     /*      1      :      1 */
-    i = very_low_sscanf_1_1(STR1(data), data->len,
-			    STR1(format), format->len,
-			    &matched_chars, &x, flags);
+    return very_low_sscanf_1_1(STR1(data), data->len,
+                               STR1(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 5:
     /*      1      :      2 */
-    i = very_low_sscanf_1_2(STR1(data), data->len,
-			    STR2(format), format->len,
-			    &matched_chars, &x, flags);
+    return very_low_sscanf_1_2(STR1(data), data->len,
+                               STR2(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 6:
     /*      2      :      0 */
-    i = very_low_sscanf_2_0(STR2(data), data->len,
-			    STR0(format), format->len,
-			    &matched_chars, &x, flags);
+    return very_low_sscanf_2_0(STR2(data), data->len,
+                               STR0(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 7:
     /*      2      :      1 */
-    i = very_low_sscanf_2_1(STR2(data), data->len,
-			    STR1(format), format->len,
-			    &matched_chars, &x, flags);
+    return very_low_sscanf_2_1(STR2(data), data->len,
+                               STR1(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 8:
     /*      2      :      2 */
-    i = very_low_sscanf_2_2(STR2(data), data->len,
-			    STR2(format), format->len,
-			    &matched_chars, &x, flags);
+    return very_low_sscanf_2_2(STR2(data), data->len,
+                               STR2(format), format->len,
+                               &matched_chars, &x,data);
     break;
   }
-  return i;
+
+  UNREACHABLE();
 }
 
 /*! @decl int sscanf(string data, string format, mixed ... lvalues)
@@ -1564,7 +1754,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 fla
  *!   @[sprintf], @[array_sscanf]
  *    @[parse_format]
  */
-void o_sscanf(INT32 args, INT32 flags)
+void o_sscanf(INT32 args)
 {
   INT32 i=0;
   int x;
@@ -1576,7 +1766,7 @@ void o_sscanf(INT32 args, INT32 flags)
   if(TYPEOF(sp[1-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("sscanf", 2, "string");
 
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string, flags);
+  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
 
   if(sp-save_sp > args/2-1)
     Pike_error("Too few arguments for sscanf format.\n");
@@ -1617,30 +1807,15 @@ PMOD_EXPORT void f_sscanf(INT32 args)
 
   check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
 
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string, 0);
+  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
 
-  a = aggregate_array(DO_NOT_WARN(sp - save_sp));
-  pop_n_elems(args);
-  push_array(a);
-}
-
-void f_sscanf_76(INT32 args)
-{
-  INT32 i;
-  struct svalue *save_sp=sp;
-  struct array *a;
-
-  check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
-
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string, SSCANF_FLAG_76_COMPAT);
-
-  a = aggregate_array(DO_NOT_WARN(sp - save_sp));
+  a = aggregate_array(sp - save_sp);
   pop_n_elems(args);
   push_array(a);
 }
 
 static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
-				       int cnt, int flags)
+				       int cnt)
 {
   for(; cnt < format_len; cnt++)
   {
@@ -1699,7 +1874,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  }
 	  if (!no_assign) {
 	    type_stack_mark();
-	    push_sscanf_argument_types(format, e, cnt+1, flags);
+	    push_sscanf_argument_types(format, e, cnt+1);
 	    if (!(depth = pop_stack_mark())) {
 	      push_type(PIKE_T_ZERO);
 	    } else {
@@ -1740,8 +1915,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	    if((INDEX_PCHARP(format, cnt)=='^') &&
 	       (cnt+2>=format_len ||
 		(INDEX_PCHARP(format, cnt+1)!='-') ||
-		(INDEX_PCHARP(format, cnt+2)==']') ||
-		(flags & SSCANF_FLAG_76_COMPAT)))
+		(INDEX_PCHARP(format, cnt+2)==']') ))
 	    {
 	      cnt++;
 	      if(cnt >= format_len) {
@@ -1827,7 +2001,6 @@ void f___handle_sscanf_format(INT32 args)
   struct pike_string *fmt;
   struct pike_string *sscanf_format_string;
   struct pike_string *sscanf_76_format_string;
-  int flags = 0;
   int found = 0;
   int fmt_count;
 
@@ -1850,8 +2023,8 @@ void f___handle_sscanf_format(INT32 args)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 4, "type(function)");
   }
 
-  MAKE_CONST_STRING(sscanf_format_string, "sscanf_format");  
-  MAKE_CONST_STRING(sscanf_76_format_string, "sscanf_76_format");  
+  MAKE_CONST_STRING(sscanf_format_string, "sscanf_format");
+  MAKE_CONST_STRING(sscanf_76_format_string, "sscanf_76_format");
 
   if (Pike_sp[-4].u.string != sscanf_format_string) {
     if (Pike_sp[-4].u.string != sscanf_76_format_string) {
@@ -1859,11 +2032,10 @@ void f___handle_sscanf_format(INT32 args)
       push_undefined();
       return;
     }
-    flags = SSCANF_FLAG_76_COMPAT;
   }
 
   fmt = Pike_sp[-3].u.string;
-  MAKE_CONST_STRING(attr, "sscanf_args");  
+  MAKE_CONST_STRING(attr, "sscanf_args");
 
 #if 0
   fprintf(stderr, "Checking sscanf format: \"%s\": ", fmt->str);
@@ -1898,7 +2070,7 @@ void f___handle_sscanf_format(INT32 args)
     if (arg) {
       type_stack_mark();
       push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-				 fmt->len, 0, flags);
+				 fmt->len, 0);
       if (!array_cnt) {
 	pop_stack_mark();
 	push_type(T_VOID);	/* No more args */
@@ -1991,7 +2163,7 @@ void f___handle_sscanf_format(INT32 args)
     if (arg) {
       type_stack_mark();
       push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-				 fmt->len, 0, flags);
+				 fmt->len, 0);
       /* Join the argument types. */
       if (!(fmt_count = pop_stack_mark())) {
 	push_type(PIKE_T_ZERO);
@@ -2031,5 +2203,3 @@ void f___handle_sscanf_format(INT32 args)
   pop_n_elems(args);
   push_undefined();
 }
-
-

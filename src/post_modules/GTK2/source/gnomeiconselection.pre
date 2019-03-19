@@ -4,6 +4,8 @@ require gnomeui;
 class Gnome2.IconSelection;
 inherit GTK2.Vbox;
 
+//! An icon listing/chooser display.
+
 void create();
 //! Creates a new icon selection widget, it uses a W(GnomeIconList) for
 //! the listing of icons

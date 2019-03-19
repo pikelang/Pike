@@ -2,11 +2,13 @@
 require gtksourceview;
 
 class GTK2.SourceStyleScheme;
+//!
 
 %{
 #include "gtksourceview/gtksourceview.h"
 %}
 
+not gtksourceview20;
 mapping(string:mixed) get_tag_style(string name)
 //! Gets the tag associated with the given name in this style.
 {
@@ -41,6 +43,7 @@ mapping(string:mixed) get_tag_style(string name)
       push_int(0);
   }
 }
+endnot;
 
 string get_name()
 //! Gets the name of this scheme.

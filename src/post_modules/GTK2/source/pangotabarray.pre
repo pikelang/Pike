@@ -4,6 +4,8 @@ require pango;
 class Pango.TabArray;
 inherit G.Object;
 
+//! A set of tab stops for laying out text that includes tab characters.
+
 void create(int initial_size, int position_in_pixels);
 //! Creates an array of initial_size tab stops.  Tab stops are specified in
 //! pixel units if positions_in_pixels is true, otherwise in Pango units. All

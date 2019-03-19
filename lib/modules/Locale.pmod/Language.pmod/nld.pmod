@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Dutch language locale by Stephen R. van den Berg
-
-// $Id$
 
 inherit "abstract";
 
@@ -50,19 +47,19 @@ string date(int timestamp, string|void m)
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
     return "vandaag, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
     return "gisteren, "+ ctime(timestamp)[11..15];
 
   if(t1["yday"]+2 == t2["yday"] && t1["year"] == t2["year"])
     return "eergisteren, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
     return "morgen, "+ ctime(timestamp)[11..15];
 
   if(t1["yday"]-2 == t2["yday"] && t1["year"] == t2["year"])
     return "overmorgen, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["year"] != t2["year"])
     return (month(t1["mon"]+1) + " " + (t1["year"]+1900));
 
@@ -72,7 +69,7 @@ string date(int timestamp, string|void m)
 #define        NUM_REDUCE(unit,name)   \
   if((unit)>0&&num>=(unit))            \
     return snumber(num/(unit))+(name)+snumber(num%(unit))
- 
+
 
 protected string snumber(int num)
 {
@@ -118,7 +115,7 @@ protected string snumber(int num)
   case 30: return "dertig";
   case 40: return "veertig";
   case 80: return "tachtig";
-  case 50: case 60: case 70: case 90: 
+  case 50: case 60: case 70: case 90:
     return snumber(num/10)+"tig";
   default:
     return snumber(num%10)+"en"+snumber((num/10)*10);

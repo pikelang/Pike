@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /*
@@ -23,8 +22,8 @@
 **!	P1(PBM) - ascii bitmap (only two colors)
 **!	P2(PGM) - ascii greymap (only grey levels)
 **!	P3(PPM) - ascii truecolor
-**!	P4(PBM) - binary bitmap 
-**!	P5(PGM) - binary greymap 
+**!	P4(PBM) - binary bitmap
+**!	P5(PGM) - binary greymap
 **!	P6(PPM) - binary truecolor
 **! 	P7 - binary truecolor (used by xv for thumbnails)
 **!	</pre>
@@ -76,7 +75,7 @@ static INLINE unsigned char getnext(struct pike_string *s,INT32 *pos)
 {
    if (*pos>=s->len) return 0;
    if (s->str[(*pos)]=='#')
-      for (;*pos<s->len && ISSPACE(((unsigned char *)(s->str))[*pos]);(*pos)++);
+      for (;*pos<s->len && isspace(((unsigned char *)(s->str))[*pos]);(*pos)++);
    return s->str[(*pos)++];
 }
 
@@ -95,8 +94,8 @@ static INLINE unsigned char getnext_skip_comment(struct pike_string *s,INT32 *po
 
 static INLINE void skipwhite(struct pike_string *s,INT32 *pos)
 {
-   while (*pos<s->len && 
-	  ( ISSPACE(((unsigned char *)(s->str))[*pos]) ||
+   while (*pos<s->len &&
+	  ( isspace(((unsigned char *)(s->str))[*pos]) ||
 	    s->str[*pos]=='#'))
       getnext_skip_comment(s,pos);
 }
@@ -118,7 +117,7 @@ static INLINE INT32 getnextnum(struct pike_string *s,INT32 *pos)
 /*
 **! method object decode(string data)
 **!	Decodes PNM (PBM/PGM/PPM) data and creates an image object.
-**! 	
+**!
 **! see also: encode
 **!
 **! note
@@ -143,24 +142,28 @@ void img_pnm_decode(INT32 args)
    s=sp[-args].u.string;
 
    skipwhite(s,&pos);
-   if (getnext(s,&pos)!='P') 
-      Pike_error("Image.PNM.decode(): given string is not a pnm file\n"); 
+   if (getnext(s,&pos)!='P')
+      Pike_error("Image.PNM.decode(): given string is not a pnm file\n");
    type=getnext(s,&pos);
    if (type<'1'||type>'6')
-      Pike_error("Image.PNM.decode(): given pnm data has illegal or unknown type\n"); 
+      Pike_error("Image.PNM.decode(): given pnm data has illegal or unknown type\n");
    x=getnextnum(s,&pos);
    y=getnextnum(s,&pos);
-   if (x<=0||y<=0) 
-      Pike_error("Image.PNM.decode(): given pnm data has illegal size\n"); 
+   if (x<=0||y<=0)
+      Pike_error("Image.PNM.decode(): given pnm data has illegal size\n");
    if (type=='3'||type=='2'||type=='6'||type=='5')
+   {
       maxval=getnextnum(s,&pos);
+      if (maxval==0)
+        Pike_error("Image.PNM.decode(): Color maxvalue was 0.\n");
+   }
 
    push_int(x);
    push_int(y);
 
    o=clone_object(image_program,2);
-   new=(struct image*)get_storage(o,image_program);
-   if (!new) 
+   new=get_storage(o,image_program);
+   if (!new)
       Pike_error("Image.PNM.decode(): cloned image object isn't an image (internal)\n");
 
    if (type=='1'||type=='2'||type=='3')
@@ -169,7 +172,7 @@ void img_pnm_decode(INT32 args)
    }
    else
    {
-/*     skip_to_eol(s,&pos); */ 
+/*     skip_to_eol(s,&pos); */
 /* just skip one char:
 
       - Whitespace is not allowed in the pixels area, and only a
@@ -189,7 +192,7 @@ void img_pnm_decode(INT32 args)
    if (type=='6' && maxval==255 && sizeof(rgb_group)==3)  /* optimize */
    {
       if (pos<s->len)
-	 MEMCPY(d,s->str+pos,MINIMUM(n*3,s->len-pos));
+	 memcpy(d,s->str+pos,MINIMUM(n*3,s->len-pos));
    }
    else while (n--)
    {
@@ -252,10 +255,10 @@ void img_pnm_decode(INT32 args)
 **!	uses the most optimized encoding for this image (bitmap, grey
 **!	or truecolor) - P4, P5 or P6 respective P1, P2 or P3.
 **!
-**!	<ref>encode_P1</ref>/<ref>encode_P4</ref> 
-**!	assumes the image is black and white. Use 
+**!	<ref>encode_P1</ref>/<ref>encode_P4</ref>
+**!	assumes the image is black and white. Use
 **!	<ref>Image.Image->threshold</ref>() or something like
-**!	<tt><ref>Image.Colortable</ref>( ({({0,0,0}),({255,255,255})}) )<wbr>->floyd_steinberg()<wbr>->map(my_image)</tt> 
+**!	<tt><ref>Image.Colortable</ref>( ({({0,0,0}),({255,255,255})}) )<wbr>->floyd_steinberg()<wbr>->map(my_image)</tt>
 **!	to get a black and white image.
 **!
 **!	<ref>encode_P2</ref>/<ref>encode_P5</ref> assumes the image is greyscale. Use
@@ -280,7 +283,7 @@ void img_pnm_encode_P1(INT32 args) /* ascii PBM */
    rgb_group *s;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P1(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P1(): Given image is empty\n");
@@ -322,7 +325,7 @@ void img_pnm_encode_P2(INT32 args) /* ascii PGM */
    struct object *o = NULL;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage((o=sp[-args].u.object),image_program)))
+       !(img=get_storage((o=sp[-args].u.object),image_program)))
       Pike_error("Image.PNM.encode_P2(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P2(): Given image is empty\n");
@@ -362,7 +365,7 @@ void img_pnm_encode_P3(INT32 args) /* ascii PPM */
    struct object *o = NULL;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage((o=sp[-args].u.object),image_program)))
+       !(img=get_storage((o=sp[-args].u.object),image_program)))
       Pike_error("Image.PNM.encode_P3(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P3(): Given image is empty\n");
@@ -402,7 +405,7 @@ void img_pnm_encode_P4(INT32 args) /* binary PBM */
    rgb_group *s;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P4(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P4(): Given image is empty\n");
@@ -447,7 +450,7 @@ void img_pnm_encode_P5(INT32 args) /* binary PGM */
    rgb_group *s;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P5(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P5(): Given image is empty\n");
@@ -478,7 +481,7 @@ void img_pnm_encode_P6(INT32 args)
    struct image *img=NULL;
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P6(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_P6(): Given image is empty\n");
@@ -518,7 +521,7 @@ void img_pnm_encode_ascii(INT32 args)
    void (*func)(INT32);
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_ascii(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_ascii(): Given image is empty\n");
@@ -530,13 +533,13 @@ void img_pnm_encode_ascii(INT32 args)
    {
       if (s->r!=s->g || s->g!=s->b)
       {
-	 func=img_pnm_encode_P3; 
+	 func=img_pnm_encode_P3;
 	 break;
       }
       else if ((s->r!=0 && s->r!=255) ||
 	       (s->g!=0 && s->g!=255) ||
 	       (s->b!=0 && s->b!=255))
-	 func=img_pnm_encode_P2; 
+	 func=img_pnm_encode_P2;
       s++;
    }
 
@@ -551,7 +554,7 @@ void img_pnm_encode_binary(INT32 args)
    void (*func)(INT32);
 
    if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
-       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+       !(img=get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_binary(): Illegal arguments\n");
    if (!img->img)
       Pike_error("Image.PNM.encode_binary(): Given image is empty\n");
@@ -563,13 +566,13 @@ void img_pnm_encode_binary(INT32 args)
    {
       if (s->r!=s->g || s->g!=s->b)
       {
-	 func=img_pnm_encode_P6; 
+	 func=img_pnm_encode_P6;
 	 break;
       }
       else if ((s->r!=0 && s->r!=255) ||
 	       (s->g!=0 && s->g!=255) ||
 	       (s->b!=0 && s->b!=255))
-	 func=img_pnm_encode_P5; 
+	 func=img_pnm_encode_P5;
       s++;
    }
 

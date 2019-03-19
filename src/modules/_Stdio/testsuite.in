@@ -1,0 +1,926 @@
+START_MARKER
+dnl tests for file module
+
+test_true(programp(Stdio.File))
+test_true(programp(Stdio.File))
+test_true(objectp(Stdio.File()))
+test_true(programp(Stdio.Port))
+test_true(objectp(Stdio.Port()))
+test_any(object o; o=Stdio.File(); destruct(o); return 1,1)
+
+dnl - mkdir
+test_any([[
+  Stdio.Stat st = file_stat("/tmp");
+  string prefix = (st && st->isdir)?"/tmp/":"";
+  int pid = getpid();
+  int i;
+  prefix += "conftest_pike_dir_";
+  for(i = 0; i < 32; i++) {
+    string testdir = prefix + i;
+    rm(testdir);
+    if (mkdir(testdir) || rm(testdir + "/conftest")) {
+      add_constant("testdir", testdir + "/");
+      add_constant("testfile", testdir + "/conftest");
+      return 1;
+    }
+  }
+  add_constant("testfile", "conftest");
+  return 0;
+]], 1)
+
+dnl - file->open
+dnl - file->close
+test_any(object o=Stdio.File(); return o->open(testfile,"wct") && o->close(),1)
+test_any([[
+  Stdio.File o = Stdio.File();
+  o->open ("file_that_doesnt_exist", "r");
+  return o->errno();
+]], System.ENOENT)
+test_any([[
+  Stdio.File o = Stdio.File();
+  o->open ("file_in_dir/that_doesnt_exist", "r");
+  return o->errno();
+]], System.ENOENT)
+test_any([[
+  Stdio.File o = Stdio.File();
+  o->open ("file_with_\fu\n\ny_cha\rs", "r");
+  return o->errno();
+]], System.ENOENT)
+
+dnl - file_stat
+test_eq(file_stat(testfile)[1],0)
+
+dnl - filesystem_stat
+dnl - rm
+test_true(rm(testfile))
+test_eq(file_stat(testfile),0)
+
+dnl - file->write
+test_any(int e; object o=Stdio.File(); if(!o->open(testfile,"wct")) return "open"+o->errno(); e=o->write("sune"); if(!o->close()) return "close"+o->errno(); return e,4)
+
+dnl - file->read
+test_any(string s; object o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); s=o->read(4); if(!o->close()) return "close"+o->errno(); return s,"sune")
+
+test_any(string s; object o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); s=o->read(999999); if(!o->close()) return "close"+o->errno(); return s,"sune")
+
+test_any(int e; object o=Stdio.File(); if(!o->open(testfile,"wct")) return "open"+o->errno(); e=o->write(sprintf("%'+-*'100000s","")); if(!o->close()) return "close"+o->errno(); return e,100000)
+
+test_any(string s; object o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); s=o->read(9999999); if(!o->close()) return "close"+o->errno(); return s,sprintf("%'+-*'100000s",""))
+
+cond_begin([[ Stdio.File()->proxy ]])
+
+  test_any([[string s; object o2,o3,o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); o2=Stdio.File(); o3=o2->pipe(); o2->proxy(o); destruct(o2); s=o3->read(100000); return s]],sprintf("%'+-*'100000s",""))
+  test_any([[string s; object o2,o3,o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); o2=Stdio.File(); o3=o2->pipe(); o2->proxy(o); destruct(o2); s=o3->read(9999999); return s]],sprintf("%'+-*'100000s",""))
+  test_any([[string s; object o2,o3,o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); o2=Stdio.File(); o3=o2->pipe(); o2->proxy(o); o2=0; s=o3->read(9999999); return s]],sprintf("%'+-*'100000s",""))
+
+test_any([[
+  object o2,o=Stdio.File(); o2=o->pipe();
+  object x2,x=Stdio.File(); x2=x->pipe();
+
+ x2->proxy(o);
+ x2=0;
+ switch(o2->write("test"))
+ {
+   case 4: break;
+   default: return "Write failed";
+   case 0: return "Write failed with errno "+o2->errno()+".\n";
+ }
+
+ o2=0;
+ return x->read() || ("errno:"+x->errno());
+]],"test")
+
+test_any([[
+  object o2,o=Stdio.File(); o2=o->pipe(Stdio.PROP_IPC);
+  object x2,x=Stdio.File(); x2=x->pipe();
+
+ x2->proxy(o);
+ x2=0;
+ switch(o2->write("test"))
+ {
+   case 4: break;
+   default: return "Write failed";
+   case 0: return "Write failed with errno "+o2->errno()+".\n";
+ }
+ o2=0;
+ return x->read() || ("errno:"+x->errno());
+]],"test")
+
+test_any([[
+  object o2,o=Stdio.File(); o2=o->pipe();
+  object x2,x=Stdio.File(); x2=x->pipe(Stdio.PROP_IPC);
+
+ x2->proxy(o);
+ x2=0;
+ switch(o2->write("test"))
+ {
+   case 4: break;
+   default: return "Write failed";
+   case 0: return "Write failed with errno "+o2->errno()+".\n";
+ }
+ o2=0;
+ return x->read() || ("errno:"+x->errno());
+]],"test")
+
+test_any([[
+  object o2,o=Stdio.File(); o2=o->pipe(Stdio.PROP_IPC);
+  object x2,x=Stdio.File(); x2=x->pipe(Stdio.PROP_IPC);
+
+ x2->proxy(o);
+ x2=0;
+ switch(o2->write("test"))
+ {
+   case 4: break;
+   default: return "Write failed";
+   case 0: return "Write failed with errno "+o2->errno()+".\n";
+ }
+ o2=0;
+ return x->read() || ("errno:"+x->errno());
+]],"test")
+
+cond_end // Stdio.File()->proxy
+
+
+test_any([[object o,o2=Stdio.File(); o=o2->pipe(); destruct(o2); return o->read()]],"")
+test_any([[object o,o2=Stdio.File(); o=o2->pipe(); o2=0; return o->read()]],"")
+
+test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); destruct(o); return o2->read() || ("error:"+o2->errno())]],"")
+test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); o=0; return o2->read() || ("error:"+o2->errno())]],"")
+
+
+dnl - file->seek
+dnl - file->tell
+test_any(object o=Stdio.File(); return o->open(testfile,"r") && o->read(4711) && o->tell() == 4711 && o->close(),1)
+
+dnl - file->stat
+test_equal([[Stdio.File(testfile,"r")->stat()[..1]]],[[file_stat(testfile)[..1]]])
+
+dnl - file->errno
+test_do(Stdio.File("stdin")->errno())
+
+dnl - file->set_nonblocking
+dnl - file->set_blocking
+dnl - file->set_id
+dnl - file->query_id
+test_false(Stdio.File("stdin")->query_id())
+
+dnl - File->query_read_callback
+test_do(Stdio.File("stdin")->query_read_callback())
+
+dnl - file->query_write_callback
+test_do(Stdio.File("stdin")->query_write_callback())
+
+dnl - file->query_close_callback
+test_do(Stdio.File("stdin")->query_close_callback())
+
+dnl - file->open_socket
+dnl - file->connect
+dnl - file->query_address
+dnl - file->pipe
+test_any([[object o=Stdio.File(),o2=o->pipe();o->write("1"); return o2->read(1)]],"1")
+test_any([[object o=Stdio.File(),o2=o->pipe();o2->write("1"); return o->read(1)]],"1")
+
+dnl - file->dup
+test_any([[object o=Stdio.File(); o->open(testfile,"r"); o=o->dup(); return o->read(100)]] ,sprintf("%'+-*'100s",""))
+
+dnl - file->assign
+test_any([[object o=Stdio.File(),o2=Stdio.File(); o->open(testfile,"r"); o2->assign(o); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
+
+dnl - file->dup2
+test_any([[object o=Stdio.File(),o2=Stdio.File(); o2->pipe(); o->open(testfile,"r"); o->dup2(o2); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
+
+dnl test_eq(Process.popen("echo foo"),"foo\n")
+
+dnl - socket->bind
+dnl - socket->set_id
+dnl - socket->query_id
+dnl - socket->errno
+dnl - socket->accept
+
+test_true(rm(testfile))
+test_eq(file_stat(testfile),0)
+
+test_any(object o=Stdio.File(); return o->open(testfile,"wac") && o->write("x") && o->close(),1)
+test_eq(file_stat(testfile)[1],1)
+test_any(object o=Stdio.File(); return o->open(testfile,"wa") && o->write("x") && o->close(),1)
+test_eq(file_stat(testfile)[1],2)
+test_any(object o=Stdio.File(); return o->open(testfile,"wac") && o->write("x") && o->close(),1)
+test_eq(file_stat(testfile)[1],3)
+test_any(object o=Stdio.File(); return o->open(testfile,"wa") && o->write("x") && o->close(),1)
+test_eq(file_stat(testfile)[1],4)
+test_any(object o=Stdio.File(); return o->open(testfile,"wa") && o->write("x") && o->close(),1)
+test_eq(file_stat(testfile)[1],5)
+test_any(object o=Stdio.File(); return o->open(testfile,"war") && o->write("x") && o->close(),1)
+test_eq(file_stat(testfile)[1],6)
+test_any(object o=Stdio.File(); return o->open(testfile,"wrac") && o->write("x") && o->close(),1)
+test_eq(file_stat(testfile)[1],7)
+test_any(object o=Stdio.File(); return o->open(testfile,"wac") && o->write("x") && o->close(),1)
+test_eq(file_stat(testfile)[1],8)
+test_any(object o=Stdio.File(); return o->open(testfile,"wrac") && o->write("x") && o->close(),1)
+test_eq(file_stat(testfile)[1],9)
+test_any(object o=Stdio.File(); return o->open(testfile,"wrac") && o->write("x") && o->close(),1)
+test_eq(file_stat(testfile)[1],10)
+test_true(rm(testfile))
+test_eq(file_stat(testfile),0)
+
+dnl - file_stat
+dnl - perror
+dnl - rm
+dnl - mkdir
+dnl - get_dir
+test_true(arrayp(get_dir()))
+test_true(arrayp(get_dir(".")))
+
+dnl - cd
+dnl - getcwd
+test_true(stringp(getcwd()))
+
+dnl strerror
+test_do(return strerror(1))
+test_true(stringp(strerror(2)||""))
+
+
+test_do(object o=Stdio.File(); if(!o->open(testfile,"wct")) return -1; o->write("foo\n" * 100); o->close();)
+
+dnl Stdio.FILE
+test_any([[object o=Stdio.FILE(); o->open(testfile,"r"); return o->gets()]],"foo")
+test_any(object o=Stdio.FILE(); o->open(testfile,"r"); return o->gets()+o->gets()+o->gets(),"foofoofoo")
+test_any(int e; object o=Stdio.FILE(); o->open(testfile,"r"); for(e=0;e<100;e++) if(o->gets() != "foo") return e; return -1,-1)
+
+test_true(Stdio.stdin)
+test_true(Stdio.stdout)
+test_true(Stdio.stderr)
+
+test_eq(Stdio.read_file(testfile,0,5), "foo\n"*5)
+test_eq(Stdio.read_file(testfile,1,5), "foo\n"*5))
+test_eq(Stdio.read_file(testfile,100,5),"")
+
+dnl locking
+cond_begin([[Stdio.File()->lock]])
+
+  dnl FIXME: It seems MacOS X has a flock(2) that always fails with ENOTSUP.
+  test_true(Stdio.File(testfile,"wr")->lock()&&1)
+  test_true(Stdio.File(testfile,"wr")->trylock()&&1)
+  test_true(Stdio.File(testfile,"wr")->trylock()&&1)
+  test_eval_error([[
+    mixed o=Stdio.File(testfile,"wr");
+    object k=o->lock();
+    o->lock();
+  ]])
+  test_any([[
+    mixed o=Stdio.File(testfile,"wr");
+    object k = o->lock();
+    return o->trylock();
+  ]], 0)
+  test_true(Stdio.File(testfile,"wr")->lock()&&1)
+
+cond_end // Stdio.File()->lock
+
+dnl pty handling
+
+cond([[ Stdio.File()->openpt ]],
+[[
+    test_true(Stdio.File()->openpt("rw"));
+]])
+
+cond([[ Stdio.File()->openpt && Stdio.File()->grantpt ]],
+[[
+    test_any([[
+      Stdio.File p = Stdio.File();
+      return p->openpt("rw") && stringp(p->grantpt());
+    ]], 1)
+]])
+
+test_true(rm(testfile))
+
+test_do(add_constant("testfile"));
+
+ifefun(testdir,
+[[
+  test_true(rm(testdir));
+  test_do(add_constant("testdir"));
+]])
+
+define(run_sub_test, [[
+  test_tests([[
+    array a() {return Tools.Testsuite.run_script ($1);}
+  ]])
+]])
+
+define(run_socktest, [[
+    run_sub_test($1 + ({"SRCDIR/socktest.pike"}))
+    run_sub_test($1 + ({"-DIPV6", "SRCDIR/socktest.pike"}))
+    run_sub_test($1 + ({"SRCDIR/socktest.pike", "1"}))
+    run_sub_test($1 + ({"-DIPV6", "SRCDIR/socktest.pike", "1"}))
+    run_sub_test($1 + ({"SRCDIR/socktest.pike", "2"}))
+    run_sub_test($1 + ({"-DIPV6", "SRCDIR/socktest.pike", "2"}))
+]])
+
+run_socktest(({}))
+
+cond_begin([[ Pike["SelectBackend"] ]])
+run_socktest(({"-DBACKEND=SelectBackend"}))
+
+cond_end
+
+cond_begin([[ Pike["PollBackend"] ]])
+  run_socktest(({"-DBACKEND=PollBackend"}))
+
+cond_end
+
+cond_begin([[ Pike["PollDeviceBackend"] ]])
+  run_socktest(({"-DBACKEND=PollDeviceBackend"}))
+
+cond_end
+
+run_sub_test(({"SRCDIR/sendfiletest.pike"}))
+
+run_sub_test(({"-DTEST_NORMAL", "SRCDIR/connecttest.pike"}))
+run_sub_test(({"SRCDIR/connecttest.pike"}))
+
+dnl Stdio.Stat
+
+test_any([[
+  // This actually tests the bignum/64 bit stuff.
+  Stdio.Stat s = Stdio.Stat();
+  s->size = 0x100000000;
+  if (s->size != 0x100000000) {
+    werror ("Note: 64 bit file stats apparently not supported on this system.\n");
+    return 1;
+  }
+  s->size = -0x100000000;
+  return s->size == -0x100000000;
+]], 1)
+
+test_any([[
+  Stdio.File f = Stdio.File();
+  return f->query_backend() == Pike.DefaultBackend;
+]], 1)
+
+test_any([[
+  Pike.Backend b = Pike.Backend();
+  Stdio.File f = Stdio.File();
+  f->set_backend (b);
+  return f->query_backend() == b;
+]], 1)
+
+test_any([[
+  Stdio.Port f = Stdio.Port();
+  return f->query_backend() == Pike.DefaultBackend;
+]], 1)
+
+test_any([[
+  Pike.Backend b = Pike.Backend();
+  Stdio.Port f = Stdio.Port();
+  f->set_backend (b);
+  return f->query_backend() == b;
+]], 1)
+
+cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_KQUEUE"] ]])
+  run_sub_test(({"SRCDIR/kqueuetest.pike"}))
+cond_end
+
+dnl Buffer
+
+test_equal([[Stdio.Buffer("hej")->read(1)]], "h")
+
+dnl sscanf
+
+test_equal([[Stdio.Buffer("hej")->sscanf("%3c")]], ({6841706}))
+test_equal([[Stdio.Buffer("hej")->match("%3c")]], 6841706)
+
+test_any([[
+  int i;
+  Stdio.Buffer b=Stdio.Buffer("hej hej hej");
+
+  while( array a = b->sscanf( "%*[ ]%[^ ]") )
+     i+= sizeof(a);
+  return i;
+]], 3)
+
+dnl range_error
+
+
+dnl output_to()
+dnl input_from
+dnl __fd_set_output?
+
+dnl _size_object()
+dnl also tests that size is doubled when adding..
+test_equal( Stdio.Buffer("hej hej")->_size_object(), 0 );
+test_equal( Stdio.Buffer("hej hej")->add("hej")->_size_object(),
+            Stdio.Buffer("hej hej")->add("foo")->add("bar")->_size_object() )
+
+
+dnl sizeof()
+test_equal( sizeof(Stdio.Buffer("hej")), sizeof("hej"))
+test_equal( sizeof(Stdio.Buffer("ej")->add("alpha")), 7)
+test_equal( sizeof(Stdio.Buffer()->sprintf("%4H","hej")), 7)
+
+dnl create(int)
+test_any([[
+    Stdio.Buffer b = Stdio.Buffer(1024*1024);
+    if( b->_size_object() != 1024*1024 )
+      return -1;
+   for( int i = 0; i<1024/4*1024; i++ )
+     b->add("test");
+   if( b->_size_object() != 1024*1024 )
+      return -2;
+   if( b->num_malloc ) return -3;
+   if( b->num_move )   return -4;
+
+   return 1;
+]], 1 )
+
+dnl create/add( system.memory )
+test_any([[
+  System.Memory a = System.Memory(__FILE__);
+  System.Memory b = System.Memory(100);
+
+  Stdio.Buffer buf = Stdio.Buffer(a);
+
+  if( buf->_size_object() != 0 )
+    return -1;
+
+  buf->add( b );
+
+  if( buf->_size_object() < sizeof(a)+sizeof(b) )
+    return -2;
+ if( !has_suffix((string)buf,"\0"*100) )
+    return -3;
+ return 1;
+]], 1)
+
+dnl create/add( buffer )
+test_any([[
+  Stdio.Buffer a = Stdio.Buffer("buffer 1");
+  Stdio.Buffer b = Stdio.Buffer("buffer 2");
+
+  Stdio.Buffer buf = Stdio.Buffer(a);
+
+  if( buf->_size_object() < sizeof(a) )
+    return -1;
+
+  buf->add( b );
+
+  if( buf->_size_object() < sizeof(a)+sizeof(b) )
+    return -2;
+ if( (string)buf != "buffer 1buffer 2")
+    return -3;
+ return 1;
+]], 1)
+
+dnl add( string.buffer )
+test_any([[
+  String.Buffer a = String.Buffer();
+  String.Buffer b = String.Buffer();
+  a->add("buffer 1");
+  b->add("buffer 2");
+
+  Stdio.Buffer buf = Stdio.Buffer(a);
+
+  if( buf->_size_object() < sizeof(a) )
+    return -1;
+
+  buf->add( b );
+
+  if( buf->_size_object() < sizeof(a)+sizeof(b) )
+    return -2;
+ if( (string)buf != "buffer 1buffer 2")
+    return -3;
+ return 1;
+]], 1)
+
+dnl add( string )
+test_any([[
+  string a = ("buffer 1");
+  string b = ("buffer 2");
+
+  Stdio.Buffer buf = Stdio.Buffer(a);
+
+  if( buf->_size_object() > 0 )
+    return -1;
+
+  buf->add( b );
+
+  if( buf->_size_object() < sizeof(a)+sizeof(b) )
+    return -2;
+ if( (string)buf != "buffer 1buffer 2")
+    return -3;
+ return 1;
+]], 1)
+
+dnl add( char )
+test_any([[
+  string a = ("buffer 1");
+
+  Stdio.Buffer buf = Stdio.Buffer(a);
+
+  if( buf->_size_object() > 0 )
+    return -1;
+
+  buf->add( 'b','u','f','f','e','r',' ','2' );
+
+  if( buf->_size_object() < sizeof(a)+8 )
+    return -2;
+ if( (string)buf != "buffer 1buffer 2")
+    return -3;
+ return 1;
+]], 1)
+
+dnl add(array( mix ))
+test_any([[
+  System.Memory tst  = System.Memory(2);
+  tst[0] = ' ';
+  tst[1] = '2';
+  String.Buffer er = String.Buffer();
+  mixed z = ({
+             'b','u','f',Stdio.Buffer("f"),
+             er,
+             tst
+   });
+  er->add("er");
+
+  Stdio.Buffer buf = Stdio.Buffer("buffer 1");
+  if( buf->_size_object() > 0 )
+    return -1;
+
+  buf->add( z, 'b','u','f','f',({'e','r',({' '}),'3'}) );
+
+  if( buf->_size_object() < 24 )
+    return -2;
+  if( (string)buf != "buffer 1buffer 2buffer 3")
+     return -3;
+
+ return 1;
+]], 1)
+
+dnl multi add( combo, also sort of a speed test )
+dnl will use on average 3Mb RAM
+test_any([[
+   String.Buffer two = String.Buffer();
+   array tst = ({
+    System.Memory(1),
+    two,
+    '3',
+    "4",
+    Stdio.Buffer("5"),
+    ({ "6", ({'7',"","",""}) }),
+  });
+
+  two->add("2");
+
+  int l = 0;
+  Stdio.Buffer res = Stdio.Buffer();
+  for( int i = 0; i<102*1024; i++ )
+  {
+     array args = allocate( random(50) );
+     for( int j=0; j<sizeof( args ); j++ )
+     {
+       mixed e = random( tst );
+       if( intp( e ) )
+         l +=1;
+       else
+         l += sizeof( e );
+       args[j] = e;
+     }
+     res->add(@args);
+     if( sizeof( res ) != l )
+       return ([i:args, "l":l,"sizeof":sizeof(res)]);
+  }
+
+ return 1;
+]], 1)
+
+
+dnl basic zero-copy check
+
+test_any( [[
+  Stdio.Buffer i = Stdio.Buffer("zero copy");
+  if( i->num_malloc ) return -1;
+  if( i->_size_object() != 0 )  return -2;
+
+  i->add(" data goes here");
+  if( i->num_malloc!= 1 ) return -3;
+  if( i->_size_object() == 0 )  return -4;
+
+  i->read();
+  if( i->_size_object() == 0 )  return -5;
+
+  i->add("zero copy");
+
+  // NB: This was "string" in previous versions of Stdio.Buffer.
+  if( !has_value(sprintf("%O",i), "allocated") )  return -6;
+
+  i->add(" indeed"); /* note: shorter than first string. */
+  if( i->_size_object() == 0 )  return -7;
+
+  if( i->num_malloc != 1 ) return -8;
+  /*
+  create - no move
+  add - realloc + move
+  read - no move (buffer now empty)
+  add - point to str
+  add -  move to malloc arena
+  add - no move
+  */
+  return i->num_move <= 2;
+]], 1)
+
+
+dnl add_int8()
+
+test_any( [[
+ Stdio.Buffer b = Stdio.Buffer();
+
+ for( int i=0; i<255; i++ )
+   b->add_int8( i )->add_int8(~i);
+
+  for( int i=0; i<255; i++ )
+     if( b[i*2] != i || b[i*2+1] != (~i&255))
+       return -i;
+  return 1;
+]], 1 )
+
+dnl add_int16()
+
+ test_any( [[
+ string ref = "";
+ Stdio.Buffer b = Stdio.Buffer();
+
+ for( int i=0; i<255; i++ )
+ {
+   ref += sprintf("%2c%2c", i, (~i)&0xffff );
+   b->add_int16( i )->add_int16(~i);
+   if( (string)b != ref ) return ([
+     "i":i,
+     "ref":ref,
+     "b":(string)b
+  ]);
+  }
+  return 1;
+ ]], 1 )
+
+dnl add_int32()
+ test_any( [[
+ string ref = "";
+ Stdio.Buffer b = Stdio.Buffer();
+
+ for( int i=0; i<255; i++ )
+ {
+   ref += sprintf("%4c%4c", i, (~i)&0xffffffff );
+   b->add_int32( i )->add_int32(~i);
+   if( (string)b != ref ) return ([
+     "i":i,
+     "ref":ref,
+     "b":(string)b
+    ]);
+  }
+  return 1;
+ ]], 1 )
+
+
+dnl add_int( x, bits);
+
+ test_any( [[
+ string ref = "";
+ Stdio.Buffer b = Stdio.Buffer();
+
+ for( int j=1; j<255; j++ )
+ {
+   string fmt = "%"+j+"c";
+   for( int i=0; i<255; i+=random(10) )
+   {
+     ref += sprintf(fmt, i );
+     b->add_int( i, j );
+    }
+    if( (string)b != ref ) return ([
+      "width":j,
+      "ref":ref,
+      "b":(string)b
+     ]);
+    b->clear();
+    ref = "";
+  }
+  return 1;
+ ]], 1 )
+
+
+dnl add_int( bignum, bits);
+
+test_any( [[
+ string ref = "";
+ Stdio.Buffer b = Stdio.Buffer();
+
+ for( int j=1; j<255; j++ )
+ {
+   int i = random((1<<(j*8))-1);
+   ref += sprintf("%"+j+"c", i );
+   b->add_int( i, j );
+   if( (string)b != ref ) return ([
+     "i":i,  "j":j,
+     "ref":ref,
+     "b":(string)b
+    ]);
+  }
+  return 1;
+ ]], 1 )
+
+
+dnl add_hstring( str, bytes )
+
+test_error( [[
+ Stdio.Buffer b = Stdio.Buffer();
+  b->add_hstring("testing", 0 );
+ ]], 1 )
+
+test_error( [[
+ Stdio.Buffer b = Stdio.Buffer();
+ b->add_hstring(" "*256, 1 );
+]], 1 )
+
+test_any( [[
+ array(Stdio.Buffer) b = allocate(10,Stdio.Buffer)();
+ for( int i = 0; i<1000; i++ )
+ {
+   string chunk = " "*random(255);
+
+   for( int w = 0; w<9; w++ )
+     b[w]->add_hstring( chunk, w+1 );
+  }
+
+ for( int i = 0; i<1000; i++ )
+ {
+   string chunk = b[0]->read_hstring(1);
+   for( int w = 1; w<9; w++ )
+   {
+     if( b[w]->read_hstring( w+1 ) != chunk )
+        return ({w+1,strlen(chunk)});
+   }
+ }
+ return 1;
+]], 1);
+
+test_any( [[
+   Stdio.Buffer b = Stdio.Buffer();
+   b->add( "\0\1" );
+   if( b->read_hstring( 2 ) )
+     return -1;
+   if( sizeof(b) != 2 )
+     return -2;
+   b->add("x");
+   if( b->read_hstring( 2 ) != "x" )
+     return -3;
+   return 1;
+]], 1);
+
+dnl add_hstring( obj*, bits )
+
+test_any( [[
+ array(Stdio.Buffer) b = allocate(10,Stdio.Buffer)();
+ System.Memory chunk = System.Memory(255);
+ for( int i = 0; i<1000; i++ )
+ {
+   for( int w = 0; w<9; w++ )
+     b[w]->add_hstring( chunk, w+1 );
+  }
+
+ for( int i = 0; i<1000; i++ )
+ {
+   string chunk = b[0]->read_hstring(1);
+   for( int w = 1; w<9; w++ )
+   {
+     if( b[w]->read_hstring( w+1 ) != chunk )
+        return ({w+1,strlen(chunk)});
+   }
+ }
+ return 1;
+]], 1);
+
+dnl add_ints
+
+test_any( [[
+ array q = allocate(100000,random)(8438439834983948938439849834983498349834983498);
+ Stdio.Buffer i = Stdio.Buffer();
+ i->add_ints( q, 20 );
+ return 1;
+]], 1);
+
+test_error( [[
+ array q = ({8438439834983948938439849834983498349834983498});
+ Stdio.Buffer i = Stdio.Buffer();
+ i->add_ints( q, 7 );
+ return 1;
+]], 1);
+
+
+test_any( [[
+ array q = ({10,20,30});
+ Stdio.Buffer i = Stdio.Buffer();
+ i->add_ints( q, 7 );
+ return 1;
+]], 1);
+
+test_error( [[
+ array q = ({10,"20",30});
+ Stdio.Buffer i = Stdio.Buffer();
+ i->add_ints( q, 7 );
+ return 1;
+]], 1);
+
+test_any( [[
+ array q = ({10,"20",30});
+ Stdio.Buffer i = Stdio.Buffer();
+ catch{i->add_ints( q, 7 );};
+ if( sizeof(i) )
+   return -1;
+ return 1;
+]], 1);
+
+dnl lock
+
+dnl cast
+
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("a\0b");
+  return (string)b+(string)b;
+]], "a\0ba\0b")
+test_any([[
+  class A {
+    inherit Stdio.Buffer;
+    mixed cast(string to) {
+      if(to=="int") return 7;
+      return ::cast(to);
+    }
+  };
+  Stdio.Buffer b = A("x");
+  return (string)b+(int)b;
+]], "x7")
+
+dnl indexing
+
+dnl set_error_mode
+
+dnl _sprintf
+
+test_any( [[
+  // Test that _sprintf() doesn't modify the buffer,
+  // and that the characters are qouted as expected.
+  //
+  // NB: The formatting generated by %O is not normative,
+  //     and may change.
+  Stdio.Buffer buf = Stdio.Buffer("ABC\"\n\0");
+  return sprintf("%O|%s|%q|%s|%q|%O|", buf, buf, buf, buf, buf, buf) +
+    (string)buf;
+]], "_static_modules._Stdio()->Buffer(6 bytes, read=[..-1] data=[0..5] free=[6..0] string)|"
+    "ABC\"\n\0|"
+    "\"ABC\\\"\\n\\0\"|"
+    "ABC\"\n\0|"
+    "\"ABC\\\"\\n\\0\"|"
+    "_static_modules._Stdio()->Buffer(6 bytes, read=[..-1] data=[0..5] free=[6..0] string)|"
+    "ABC\"\n\0")
+
+dnl rewind_key.rewind
+
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("123456789");
+  if( b->read(2) != "12" ) return 1;
+  Stdio.Buffer.RewindKey k = b->rewind_key();
+  if( b->read(2) != "34" ) return 2;
+  k->rewind();
+  if( b->read(4) != "3456") return 3;
+  return -1;
+]], -1)
+
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("123456789");
+  Stdio.Buffer.RewindKey k1 = b->rewind_key();
+  if( b->read(6) != "123456" ) return 1;
+  Stdio.Buffer.RewindKey k2 = b->rewind_key();
+  k1->rewind();
+  if( b->read(1) != "1" ) return 2;
+  k2->rewind();
+  if( b->read(1) != "7" ) return 3;
+  return -1;
+]], -1)
+
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("123");
+  Stdio.Buffer.RewindKey k = b->rewind_key();
+  b->read(1);
+  k->rewind(); // Destructs the key.
+  return !!k;
+]], 0)
+
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("\0\0a\0bb\nccc");
+  if( b->read_cstring()!="" ) return 1;
+  if( b->read_cstring()!="" ) return 2;
+  if( b->read_cstring()!="a" ) return 3;
+  if( b->read_cstring('\n')!="bb" ) return 4;
+  if( !undefinedp(b->read_cstring()) ) return 5;
+  if( b->read()!="ccc" ) return 6;
+  return -1;
+]], -1)
+
+END_MARKER

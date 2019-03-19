@@ -1,9 +1,9 @@
-// Bittorrent client - originally by Mirar 
+// Bittorrent client - originally by Mirar
 
 //! Bittorrent peer - download and share.
-//! Read more about bittorrent at 
+//! Read more about bittorrent at
 //! @url{http://bitconjurer.org/BitTorrent/introduction.html@}
-//! 
+//!
 //! @example
 //! The smallest usable torrent downloader. As first argument,
 //! it expects a filename to a .torrent file.
@@ -11,18 +11,18 @@
 //!   int main(int ac,array am)
 //!   {
 //!      // initialize Torrent from file:
-//!      Protocols.Bittorrent.Torrent t=Protocols.Bittorrent.Torrent(); 
-//!      t->load_metainfo(am[1]); 
-//!   
+//!      Protocols.Bittorrent.Torrent t=Protocols.Bittorrent.Torrent();
+//!      t->load_metainfo(am[1]);
+//!
 //!      // Callback when download status changes:
 //!      // t->downloads_update_status=...;
-//!   
+//!
 //!      // Callback when pieces status change (when we get new stuff):
-//!      // t->pieces_update_status=...; 
-//!   
+//!      // t->pieces_update_status=...;
+//!
 //!      // Callback when peer status changes (connect, disconnect, choked...):
 //!      // t->peer_update_status=...;
-//!   
+//!
 //!      // Callback when download is completed:
 //!      t->download_completed_callback=
 //!         lambda()
@@ -31,38 +31,35 @@
 //!         };
 //!
 //!      // Callback to print warnings (same args as sprintf):
-//!      //   t->warning=werror; 
-//!   
+//!      //   t->warning=werror;
+//!
 //!      // type of progress function used below:
 //!      void progress(int n,int of) { /* ... */ };
-//!   
+//!
 //!      // Initiate targets from Torrent,
 //!      // if target was created, no need to verify:
 //!      if (t->fix_targets(1,0,progress)==1)
-//!         t->verify_targets(progress); 
-//!   
+//!         t->verify_targets(progress);
+//!
 //!      // Open port to listen on,
 //!      // we want to do this to be able to talk to firewalled peers:
 //!      t->open_port(6881);
-//!   
+//!
 //!      // Ok, start calling tracker to get peers,
 //!      // and tell about us:
 //!      t->start_update_tracker();
-//!   
+//!
 //!      // Finally, start the download:
 //!      t->start_download();
-//!   
+//!
 //!      return -1;
 //!   }
 //! @endcode
 
 #pike __REAL_VERSION__
-
-#if constant(Crypto.SHA1)
+#require constant(Crypto.SHA1)
 
 import .Bencoding;
-
-constant cvsid="$Id$";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -99,8 +96,8 @@ int we_are_completed=0; // set when no more to download
 function(.Peer,int,int:int(0..1)) do_we_strangle=
    lambda(.Peer peer,int bytes_in,int bytes_out)
    {
-      constant allow_free=100000; 
-      constant ratio=2; 
+      constant allow_free=100000;
+      constant ratio=2;
       return bytes_out - bytes_in*ratio > allow_free;
    };
 
@@ -112,7 +109,7 @@ mapping(string:object(.Peer)) peers_ip=([]);
 array(.Peer) peers_ordered=({});
 array(.Peer) peers_unused=({});
 // stop adding peers at this number, increased if we need more
-int max_peers=100; 
+int max_peers=100;
 
 //! If set, called when we got another piece downloaded (no args).
 function pieces_update_status=0;
@@ -136,15 +133,10 @@ Protocols.DNS.async_client dns_async=Protocols.DNS.async_client();
 //! Loads the metainfo from a file.
 void load_metainfo(string filename)
 {
-   string s=Stdio.read_file(filename);
-   if (!s)
-      error("Failed to read metainfo file %O: %s\n",
-	    filename,strerror(errno()));
-   catch {
-     s = utf8_to_string(s);
-   };
+   Stdio.Buffer buf=Stdio.Buffer();
+   buf->input_from(Stdio.File(filename));
    mixed err=catch {
-     decode_metainfo(s);
+     decode_metainfo(buf);
    };
    if (!err) return;
 
@@ -152,10 +144,10 @@ void load_metainfo(string filename)
    throw(err);
 }
 
-void decode_metainfo(string s)
+void decode_metainfo(Stdio.Buffer buf)
 {
    mixed err=catch {
-      metainfo=decode(s);
+      metainfo=decode(buf);
       if (!mappingp(metainfo))
 	 error("Metainfo file does not contain a dictionary (%t)\n",metainfo);
       info=metainfo->info;
@@ -209,14 +201,14 @@ class Target(string base,int length,int offset,void|array path)
       {
 	 Stdio.mkdirhier(combine_path(filename,".."));
 	 if (!fd->open(filename,datamode+"c",0666))
-	    error("failed to create target file %O: %s\n",
+            error("failed to create target file %O: %s.\n",
 		  filename,strerror(fd->errno()));
 	 created=1;
       }
       else
       {
 	 if (!fd->open(filename,datamode))
-	    error("failed to open target file %O: %s\n",
+            error("failed to open target file %O: %s.\n",
 		  filename,strerror(fd->errno()));
 	 created=0;
       }
@@ -246,9 +238,6 @@ class Target(string base,int length,int offset,void|array path)
 
    void pwrite(int off,string data)
    {
-//       werror("%O: pwrite(%O,%d bytes) =%O..%O of %O\n",
-// 	     this,off,strlen(data),
-// 	     off-offset,off-offset+strlen(data),length);
       if (off>offset+length) return; // noop
       int end=off+strlen(data);
       if (end<=offset) return; // noop
@@ -260,7 +249,7 @@ class Target(string base,int length,int offset,void|array path)
 
       fd->seek(off-offset);
       if (fd->write(data)<strlen(data))
-	 error("failed to write %d bytes to %O: %s\n",
+         error("failed to write %d bytes to %O: %s.\n",
 	       strlen(data),filename,strerror(fd->errno()));
    }
 
@@ -268,10 +257,6 @@ class Target(string base,int length,int offset,void|array path)
    {
       if (off>offset+length) return ""; // noop
       int end=off+bytes;
-
-//       werror("%O: pread(%O,%d bytes) =%O..%O of %O\n",
-// 	     this,off,bytes,
-// 	     off-offset,off-offset+bytes,length);
 
       if (off<offset)
 	 bytes-=(offset-off),off=offset;
@@ -284,7 +269,7 @@ class Target(string base,int length,int offset,void|array path)
       string s=fd->read(bytes);
       if (!s) s="";
       if (strlen(s)<bytes)
-	 s+="\0"*bytes; 
+	 s+="\0"*bytes;
 
       return s;
    }
@@ -299,7 +284,7 @@ class Target(string base,int length,int offset,void|array path)
       if (fd->stat()->size>=length) return; // done
       fd->seek(length-1);
       if (fd->write("\0")<1)
-	 error("failed to write last byte to %O: %s\n",
+         error("failed to write last byte to %O: %s.\n",
 	       filename,strerror(fd->errno()));
    }
 
@@ -356,8 +341,7 @@ int fix_targets(void|int(-1..2) allocate, void|string base_filename,
       int offset=0;
       foreach (info->files;;mapping m)
       {
-// 	 werror("%O\n",m);
-	 targets+=({Target(base_filename,m->length,
+         targets+=({Target(base_filename,m->length,
 			   offset,m->path)});
 	 offset+=m->length;
       }
@@ -409,7 +393,7 @@ int fix_targets(void|int(-1..2) allocate, void|string base_filename,
 			      lambda(int i) { return !file_got[i]; });
 
    all_pieces_bits=bits2string(replace(copy_value(file_got),0,1));
-   no_pieces_bits="\0"*strlen(file_got);
+   no_pieces_bits="\0"*sizeof(file_got);
 
    return search(targets->created,0)==-1 ? 2 : 1;
 }
@@ -450,13 +434,8 @@ void open_port(void|int port)
 
 private protected inline string generate_peer_id()
 {
-   array v=array_sscanf(cvsid,"%*s %*s %d.%d %d/%d/%d");
-   int day=Calendar.Day(@v[2..4])->julian_day()-2452991;
-   string s=sprintf("Pi%c%c%2c%s",
-		    v[0],v[1],day,
-		    random_string(14));
-   return s;
-};
+   return "Pi" + random_string(18);
+}
 
 //! Calculate the bytes successfully downloaded (full pieces).
 int bytes_done()
@@ -517,7 +496,9 @@ void update_tracker(void|string event,void|int contact)
 
    object r;
 
+#if constant(Gz.File)
    http->default_headers["Accept-Encoding"]="gzip";
+#endif
 
    r=http->async_get_url(
       metainfo->announce,
@@ -543,22 +524,18 @@ void update_tracker(void|string event,void|int contact)
 
 	 if ( (< "gzip", "x-gzip" >)[ r->headers()["content-encoding"] ])
 	 {
-// 	    werror("gruk %O\n",data);
 #if constant(Gz.File)
-	    data=Gz.File(Stdio.FakeFile(data))->read();
+           data=Gz.uncompress(data);
 #else /* !constant(Gz.File) */
 	    warning("tracker request failed: encoding %O not supported.\n",
 		    r->headers()["content-encoding"]);
 	    return;
 #endif /* constant(Gz.File) */
-// 	    werror("%O\n",data);
 	 }
 
 	 mapping m;
 	 mixed err=catch {
 	    m=decode(data);
-// 	    werror("tracker says: %O\n",m);
-// 	    werror("%O\n",r->headers());
 	 };
 	 if (err)
 	 {
@@ -590,19 +567,19 @@ void update_tracker(void|string event,void|int contact)
 		     peers_ip[ip+":"+port]=
 			(p=peer_program(this,
 					(["ip":ip,"port":port])));
-		     if (sizeof(peers_ordered)<max_peers && contact) 
+		     if (sizeof(peers_ordered)<max_peers && contact)
 		     {
 			peers_ordered+=({p});
 			p->connect();
 		     }
-		     else 
+		     else
 			peers_unused+=({p});
 		  }
 	       }
 	    }
 	    else
 	       foreach (m->peers;;mapping m)
-		  if (!peers[m["peer id"]] && 
+		  if (!peers[m["peer id"]] &&
 		      !peers_ip[m->ip+":"+m->port] &&
 		      m["peer id"]!=my_peer_id)
 		  {
@@ -611,16 +588,16 @@ void update_tracker(void|string event,void|int contact)
 
 		     peers[m["peer id"]]=(p=peer_program(this,m));
 		     peers_ip[p->ip+":"+p->port]=p;
-		     if (sizeof(peers_ordered)<max_peers && contact) 
+		     if (sizeof(peers_ordered)<max_peers && contact)
 		     {
 			peers_ordered+=({p});
 			p->connect();
 		     }
-		     else 
+		     else
 			peers_unused+=({p});
 		  }
 	 }
-	 
+
 	 if ((int)m["min interval"] &&
 	     (int)m["min interval"]>tracker_update_interval)
 	 {
@@ -638,10 +615,10 @@ void update_tracker(void|string event,void|int contact)
       },
       lambda() // failed
       {
-	 if (errno()==0) 
-	    warning("tracker request timeout\n",strerror(errno()));
+	 if (errno()==0)
+	    warning("tracker request timeout\n");
 	 else
-	    warning("tracker request failed, %s\n",strerror(errno()));
+            warning("tracker request failed, %m\n");
       });
 }
 
@@ -657,7 +634,7 @@ void increase_number_of_peers(void|int n)
       return;
    }
    last_increase=time(1);
-   
+
    if (n<=0) n=25;
 
    max_peers=max(max_peers, sizeof(peers_ordered)+n);
@@ -671,7 +648,7 @@ void increase_number_of_peers(void|int n)
    if (sizeof(peers_unused)<n &&
        find_call_out(update_tracker_loop)!=-1 &&
        time(1)>=last_tracker_update+tracker_call_if_starved)
-   { 
+   {
       remove_call_out(update_tracker_loop);
       call_out(update_tracker_loop,
 	       last_tracker_update+tracker_call_if_starved-time(1));
@@ -683,7 +660,7 @@ void increase_number_of_peers(void|int n)
    peers_unused=peers_unused[n..];
 
    foreach (v;;.Peer p)
-      if (p->online) 
+      if (p->online)
       {
 	 werror("%O online but unused?\n",p->ip);
 	 v-=({p});
@@ -783,14 +760,14 @@ void download_more()
 {
    int did=0;
 
-   if (!sizeof(file_want)) 
+   if (!sizeof(file_want))
    {
       if (!we_are_completed) // all done, tidy up
       {
 	 we_are_completed=1;
 	 downloading=0;
 	 Function.call_callback(download_completed_callback);
-	 
+
 	 max_peers=sizeof(peers_ordered);
 	 update_tracker("completed");
 
@@ -823,7 +800,7 @@ int download_one_more()
 #ifdef BT_DOWNLOAD_DEBUG
    werror("downloads: %d/%d  available: %d  complete: %d  activated: %d  "
 	  "c-a: %d\n",
-	  sizeof(downloads), sizeof(handovers), 
+	  sizeof(downloads), sizeof(handovers),
 	  sizeof(available_peers),
 	  sizeof(completed_peers),
 	  sizeof(activated_peers),
@@ -845,7 +822,7 @@ int download_one_more()
       werror("doesn't download: no available peers\n");
 #endif
       increase_number_of_peers();
-      return 0; 
+      return 0;
    }
 
 // ----------------
@@ -864,16 +841,11 @@ int download_one_more()
 	sizeof(file_want) == sizeof(file_got))) // first seed
       from_peers&=completed_peers_avail;
 
-//    werror("%O\n",from_peers);
-
-   if (!sizeof(from_peers)) 
+   if (!sizeof(from_peers))
    {
       werror("NO SOURCE!!\n");
       return 0; // no source
    }
-
-//    if (sizeof(lost_in_space))
-//       werror("lost_in_space=%O\n",lost_in_space);
 
    for (int i=!sizeof(lost_in_space); i<2 && !sizeof(choices); i++)
    {
@@ -899,8 +871,6 @@ int download_one_more()
       int n=choices[i][0];
 
       .Peer peer=v[random(sizeof(v))];
-
-//       werror("download piece %O from %O\n",n,peer);
 
       if (lost_in_space[n])
       {
@@ -935,7 +905,7 @@ int download_one_more()
 #endif
       if (!sizeof(q)) continue;
       int piece=q[0];
-      
+
       if (downloads[piece]||handovers[piece])
       {
 	 (downloads[piece]||handovers[piece])
@@ -962,7 +932,7 @@ int download_one_more()
 //       if (sizeof(m))
 //       {
 // 	 .Peer peer=((array)m)[random(sizeof(m))];
-	 
+
 // 	 (downloads[piece]||handovers[piece])
 // 	    ->use_more_peers(peer);
 
@@ -985,7 +955,7 @@ class PieceDownload
    .Peer peer;
    int piece;
    array(.Peer) more_peers=({});
-   int using_more_peers=0; // to know if we should warn 
+   int using_more_peers=0; // to know if we should warn
 
    mapping chunks=([]);
    mapping expect_chunks=([]);
@@ -1008,8 +978,6 @@ class PieceDownload
       {
 	 int z=min(size-i,download_chunk_size);
 	 expect_chunks[i]=z;
-
-// 	 werror("expect p=%d o=%d %d bytes\n",piece,i,z);
       }
 
       queue_chunks();
@@ -1033,7 +1001,7 @@ class PieceDownload
    {
       more_peers+=({p2});
 
-// queue a random part that we haven't got yet      
+      // queue a random part that we haven't got yet
       array v=indices(expect_chunks)-indices(chunks);
       int i=v[random(sizeof(v))];
 
@@ -1062,8 +1030,8 @@ class PieceDownload
       }
    }
 
-// seconds before aborting if choked and not unchoked
-   constant choke_abort_delay=45; 
+  // seconds before aborting if choked and not unchoked
+   constant choke_abort_delay=45;
 
    void got_data(int n,int i,string data,object from)
    {
@@ -1093,8 +1061,8 @@ class PieceDownload
 #endif
 	       return;
 	    case "disconnected":
-	       abort(); 
-	       return; 
+	       abort();
+	       return;
 	    default:
 	       error("unknown message from Peer: %O\n",data);
 	 }
@@ -1107,9 +1075,7 @@ class PieceDownload
 
       if (piece==n && expect_chunks[i]==strlen(data))
       {
-// 	 werror("got piece %d off %d bytes %d\n",n,i,strlen(data));
-		
-	 chunks[i]=data;
+         chunks[i]=data;
 	 m_delete(queued_chunks,i);
 
 	 if (sizeof(expect_chunks-chunks))
@@ -1165,16 +1131,16 @@ class PieceDownload
       {
 	 if (!peer) return; // we're already lost in space, wtf?
 
-   // ok, put us in the queue-to-fill
+         // ok, put us in the queue-to-fill
 	 lost_in_space[piece]=this;
 
-   // cancel outstanding
+         // cancel outstanding
 #ifdef TORRENT_PIECEDOWNLOAD_DEBUG
 	 werror("%O %O->cancel\n",this,peer);
 #endif
 	 if (peer->online) peer->cancel_requests(0);
 
-   // reset some stuff
+         // reset some stuff
 	 disjoin();
 	 handed_over=0; // if we ever were
 
@@ -1186,7 +1152,7 @@ class PieceDownload
       else // we didn't get any, just drop it
       {
 	 if (peer->online) peer->cancel_requests(0);
-	 finish(); 
+	 finish();
       }
    }
 
@@ -1217,8 +1183,6 @@ class PieceDownload
 	 error("destruction of download still in structs:\n"
 		"download: %O\ndownloads: %O\nhandovers: %O\n",
 		this,downloads,handovers);
-
-// 	 werror("%s\n",master()->describe_backtrace(backtrace()));
       }
 
       more_peers->cancel_requests(0);
@@ -1228,7 +1192,7 @@ class PieceDownload
 
    string _sprintf(int t)
    {
-      if (t=='O') 
+      if (t=='O')
 	 return sprintf(
 	    piece+"  "+
 	    "Torrent/PieceDownload(%d/%d done from %d from %O)",
@@ -1241,13 +1205,13 @@ class PieceDownload
 // ----------------------------------------------------------------
 
 // these are already filtered with what we want
-mapping(int:multiset(.Peer)) file_peers=([]); 
+mapping(int:multiset(.Peer)) file_peers=([]);
 multiset(int) file_available=(<>);
 
 void peer_lost(.Peer peer)
 {
    if (!file_peers) return;
-   foreach ( file_want & ((multiset)string2arr(peer->bitfield)); 
+   foreach ( file_want & ((multiset)string2arr(peer->bitfield));
 	     int i; )
    {
       multiset m;
@@ -1268,7 +1232,7 @@ void peer_gained(.Peer peer)
 
    multiset mz=(multiset)string2arr(peer->bitfield);
 
-   foreach ( file_want & mz; 
+   foreach ( file_want & mz;
 	     int i; )
       if ((m=file_peers[i])) m[peer]=1;
       else file_peers[i]=(<peer>);
@@ -1300,7 +1264,7 @@ void peer_unchoked(.Peer peer)
 void peer_have(.Peer peer,int n)
 {
    if (!file_want[n]) return; // ignore
-   
+
    file_available[n]=1;
    if (file_peers[n])
       file_peers[n][peer]=1;
@@ -1336,7 +1300,7 @@ void got_piece(int piece,string data)
        find_call_out(update_tracker_loop)!=-1)
       update_tracker("completed");
 
-// open up interested peers for requests
+   // open up interested peers for requests
    if (sizeof(file_want)==sizeof(file_got)-1)
       foreach (peers_ordered;;.Peer p)
 	 if (p->peer_interested)
@@ -1348,8 +1312,7 @@ void got_piece(int piece,string data)
 
 void got_piece_drop_interest()
 {
-// drop interest for now uninteresting peers
- 
+  // drop interest for now uninteresting peers
    foreach (peers_ordered;;.Peer p)
       if (p->were_interested)
       {
@@ -1357,29 +1320,23 @@ void got_piece_drop_interest()
 	 if (!sizeof(mz&file_want))
 	    p->show_uninterest();
       }
-}  
+}
 
 // ----------------------------------------------------------------
 
 void destroy()
 {
-// some clean-up
+  // some clean-up
    if (targets) map(targets,destruct);
    map(peers_ordered,destruct);
    map(peers_unused,destruct);
 
    remove_call_out(update_tracker_loop);
    remove_call_out(increase_number_of_peers);
-   if( listen_port ) 
+   if( listen_port )
      destruct( listen_port);
    if( http )
      destruct( http );
 }
 
 // ----------------------------------------------------------------
-
-#else /* !constant(Crypto.SHA1) */
-
-constant this_program_does_not_exist=1;
-
-#endif /* constant(Crypto.SHA1) */

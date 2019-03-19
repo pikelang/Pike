@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 /* fsort- a smarter quicksort /Hubbe */
@@ -66,9 +65,9 @@
 #define XARGS , cmpfun, tmp_area, size
 
 #define SWAP(X,Y) do { \
-    MEMCPY(tmp_area,X,size); \
-    MEMCPY(X,Y,size); \
-    MEMCPY(Y,tmp_area,size); \
+    memcpy(tmp_area,X,size); \
+    memcpy(X,Y,size); \
+    memcpy(Y,tmp_area,size); \
  } while(0)
 
 #define STEP(X,Y) ((X)+(Y)*size)

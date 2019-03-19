@@ -1,5 +1,5 @@
 #! /usr/bin/pike
-// -*- pike -*- $Id$
+// -*- pike -*-
 #pike __REAL_VERSION__
 
 #ifdef SUGGESTED_MODE_OF_USAGE

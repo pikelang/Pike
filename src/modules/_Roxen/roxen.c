@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,16 +9,12 @@
 #include "global.h"
 #include "config.h"
 
-
 #include "machine.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ctype.h>
-#include <string.h>
 #include <time.h>
-#include <limits.h>
 
 #include "fdlib.h"
 #include "stralloc.h"
@@ -56,7 +51,7 @@ struct  header_buf
   int mode;
 };
 
-static void f_hp_init( struct object *o )
+static void f_hp_init( struct object *UNUSED(o) )
 {
   THP->headers = NULL;
   THP->pnt = NULL;
@@ -66,7 +61,7 @@ static void f_hp_init( struct object *o )
   THP->mode = 0;
 }
 
-static void f_hp_exit( struct object *o )
+static void f_hp_exit( struct object *UNUSED(o) )
 {
   if( THP->headers )
     free( THP->headers );
@@ -127,13 +122,13 @@ static void f_hp_feed( INT32 args )
     hp->pnt = (hp->headers + hp->hsize - hp->left);
   }
 
-  MEMCPY( hp->pnt, str->str, str_len );
+  memcpy( hp->pnt, str->str, str_len );
   pop_n_elems( args );
 
   /* FIXME: The below does not support lines terminated with just \r. */
   for( ep=(hp->pnt+str_len),pp=MAXIMUM(hp->headers,hp->pnt-3);
        pp<ep && slash_n<2; pp++ )
-    if( *pp == ' ' )  
+    if( *pp == ' ' )
     {
       spc++;
       slash_n = 0;
@@ -143,7 +138,7 @@ static void f_hp_feed( INT32 args )
       slash_n++;
       tot_slash_n++;
     }
-    else if( *pp != '\r' ) 
+    else if( *pp != '\r' )
     {
       slash_n=0;
     }
@@ -158,13 +153,13 @@ static void f_hp_feed( INT32 args )
   if( slash_n != 2 )
   {
     /* one newline, but less than 2 space,
-     *    --> HTTP/0.9 or broken request 
+     *    --> HTTP/0.9 or broken request
      */
     if( (spc < 2) && tot_slash_n )
     {
       push_empty_string();
       /* This includes (all eventual) \r\n etc. */
-      push_text((char *)hp->headers); 
+      push_text((char *)hp->headers);
       f_aggregate_mapping( 0 );
       f_aggregate( 3 );
       return;
@@ -172,7 +167,7 @@ static void f_hp_feed( INT32 args )
     push_int( 0 );
     return;
   }
-  
+
   /*leftovers*/
   push_string(make_shared_binary_string((char *)pp, hp->pnt - pp));
   headers = allocate_mapping( 5 );
@@ -214,7 +209,7 @@ static void f_hp_feed( INT32 args )
       do {
 	for(j=os;j<l;j++)	/* Find end of line */
 	  if( in[j] == '\n' || in[j]=='\r')
-	    break; 
+	    break;
 
 	push_string(make_shared_binary_string((char*)in+os,j-os));
 	val_cnt++;
@@ -241,7 +236,7 @@ static void f_hp_feed( INT32 args )
 	  f_add(2);
 	} else {
 	  ref_push_string(tmp->u.string);
-	  stack_swap(); 
+	  stack_swap();
 	  map_delete(headers, Pike_sp-3);
 	  f_aggregate(2);
 	}
@@ -282,8 +277,6 @@ static void f_hp_create( INT32 args )
   THP->hsize = 8192;
   THP->left = 8192;
   THP->spc = THP->slash_n = 0;
-  pop_n_elems(args);
-  push_int(0);
 }
 
 /*! @endclass
@@ -375,100 +368,110 @@ static void f_make_http_headers( INT32 args )
   push_string( end_shared_string( res ) );
 }
 
+static p_wchar2 parse_hexchar(p_wchar2 hex)
+{
+  if(hex>='0' && hex<='9')
+    return hex-'0';
+  hex |= 32;
+  return hex-'W';
+}
+
 static void f_http_decode_string(INT32 args)
 /*! @decl string http_decode_string(string encoded)
  *!
- *! Decodes an http transport-encoded string.
+ *! Decodes an http transport-encoded string. Knows about %XX and
+ *! %uXXXX syntax. Treats %UXXXX as %uXXXX. It will treat '+' as '+'
+ *! and not ' ', so form decoding needs to replace that in a second
+ *! step.
  */
 {
-   int proc;
-   int size_shift = 0;
-   int adjust_len = 0;
-   p_wchar0 *foo, *bar, *end;
-   struct pike_string *newstr;
+   int proc = 0;
+   int size_shift;
+   PCHARP foo, end;
+   struct string_builder newstr;
 
-   if (!args || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
-       Pike_sp[-args].u.string->size_shift)
-     Pike_error("Invalid argument to http_decode_string(string(8bit));\n");
+   if (!args || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
+     Pike_error("Invalid argument to http_decode_string(string).\n");
 
-   foo = bar = STR0(Pike_sp[-args].u.string);
-   end = foo + Pike_sp[-args].u.string->len;
+   foo = MKPCHARP_STR(Pike_sp[-args].u.string);
+   end = ADD_PCHARP(foo, Pike_sp[-args].u.string->len);
 
-   /* count '%' and wide characters */
-   for (proc=0; foo<end; foo++) {
-     if (*foo=='%') {
-       proc++;
-       if (foo[1] == 'u' || foo[1] == 'U') {
-	 /* %uXXXX */
-	 if (foo[2] != '0' || foo[3] != '0') {
-	   size_shift = 1;
-	 }
-	 foo += 5;
-	 if (foo < end) {
-	   adjust_len += 5;
-	 } else {
-	   adjust_len += end - (foo - 4);
-	 }
-       } else {
-	 foo += 2;
-	 if (foo < end) {
-	   adjust_len += 2;
-	 } else {
-	   adjust_len += end - (foo - 1);
-	 }
+   size_shift = Pike_sp[-args].u.string->size_shift;
+
+   /* Count '%' and wide characters.
+    *
+    * proc counts the number of characters that are to be removed.
+    */
+   for (; COMPARE_PCHARP(foo, <, end);) {
+     p_wchar2 c = EXTRACT_PCHARP(foo);
+     INC_PCHARP(foo, 1);
+     if (c != '%') continue;
+     /* there are at least 2 more characters */
+     if (SUBTRACT_PCHARP(end, foo) <= 1)
+       Pike_error("Truncated http transport encoded string.\n");
+     c = EXTRACT_PCHARP(foo);
+     if (c == 'u' || c == 'U') {
+       if (SUBTRACT_PCHARP(end, foo) <= 4)
+         Pike_error("Truncated unicode sequence.\n");
+       INC_PCHARP(foo, 1);
+       if (!isxdigit(INDEX_PCHARP(foo, 0)) ||
+           !isxdigit(INDEX_PCHARP(foo, 1)) ||
+           !isxdigit(INDEX_PCHARP(foo, 2)) ||
+           !isxdigit(INDEX_PCHARP(foo, 3)))
+           Pike_error("Illegal transport encoding.\n");
+       /* %uXXXX */
+       if (EXTRACT_PCHARP(foo) != '0' || INDEX_PCHARP(foo, 1) != '0') {
+         if (!size_shift) size_shift = 1;
        }
+       proc += 5;
+       INC_PCHARP(foo, 4);
+     } else {
+       if (!isxdigit(INDEX_PCHARP(foo, 0)) ||
+           !isxdigit(INDEX_PCHARP(foo, 1)))
+           Pike_error("Illegal transport encoding.\n");
+       proc += 2;
+       INC_PCHARP(foo, 2);
      }
    }
 
    if (!proc) { pop_n_elems(args-1); return; }
 
-   newstr = begin_wide_shared_string(Pike_sp[-args].u.string->len - adjust_len,
-				     size_shift);
-   if (size_shift) {
-     p_wchar1 *dest = STR1(newstr);
+   init_string_builder_alloc(&newstr, Pike_sp[-args].u.string->len - proc,
+			     size_shift);
 
-     for (proc=0; bar<end; dest++)
-       if (*bar=='%') {
-	 if (bar[1] == 'u' || bar[1] == 'U') {
-	   if (bar<end-5)
-	     *dest = (((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15))<<12)|
-	       (((bar[3]<'A')?(bar[3]&15):((bar[3]+9)&15))<<8)|
-	       (((bar[4]<'A')?(bar[4]&15):((bar[4]+9)&15))<<4)|
-	       ((bar[5]<'A')?(bar[5]&15):((bar[5]+9)&15));
-	   else
-	     *dest=0;
-	   bar+=6;
-	 } else {
-	   if (bar<end-2)
-	     *dest=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
-	       ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
-	   else
-	     *dest=0;
-	   bar+=3;
-	 }
+   foo = MKPCHARP_STR(Pike_sp[-args].u.string);
+
+   for (; COMPARE_PCHARP(foo, <, end); INC_PCHARP(foo, 1)) {
+     p_wchar2 c = INDEX_PCHARP(foo, 0);
+     if (c == '%') {
+       c = INDEX_PCHARP(foo, 1);
+       /* The above loop checks that the following sequences
+        * are correct, i.e. that they are not truncated and consist
+        * of hexadecimal chars.
+        */
+       if (c == 'u' || c == 'U') {
+         p_wchar2 hex = INDEX_PCHARP(foo, 2);
+         c = parse_hexchar(hex)<<12;
+         hex = INDEX_PCHARP(foo, 3);
+         c |= parse_hexchar(hex)<<8;
+         hex = INDEX_PCHARP(foo, 4);
+         c |= parse_hexchar(hex)<<4;
+         hex = INDEX_PCHARP(foo, 5);
+         c |= parse_hexchar(hex);
+	 INC_PCHARP(foo, 5);
        } else {
-	 *dest=*(bar++);
+         p_wchar2 hex = INDEX_PCHARP(foo, 1);
+         c = parse_hexchar(hex)<<4;
+         hex = INDEX_PCHARP(foo, 2);
+         c |= parse_hexchar(hex);
+	 INC_PCHARP(foo, 2);
        }
-   } else {
-     foo = STR0(newstr);
-     for (proc=0; bar<end; foo++)
-       if (*bar=='%') {
-	 if (bar[1] == 'u' || bar[1] == 'U') {
-	   /* We know that the following two characters are zeros. */
-	   bar+=3;
-	 }
-	 if (bar<end-2)
-	   *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
-	     ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
-	 else
-	   *foo=0;
-	 bar+=3;
-       } else {
-	 *foo=*(bar++);
-       }
+     }
+     string_builder_putchar(&newstr, c);
    }
+
    pop_n_elems(args);
-   push_string(end_shared_string(newstr));
+   push_string(finish_string_builder(&newstr));
 }
 
 static void f_html_encode_string( INT32 args )
@@ -479,45 +482,19 @@ static void f_html_encode_string( INT32 args )
 {
   struct pike_string *str;
   int newlen;
+  INT32 min;
 
   if( args != 1 )
     Pike_error("Wrong number of arguments to html_encode_string\n" );
-  
+
   switch( TYPEOF(Pike_sp[-1]) )
   {
     void o_cast_to_string();
 
     case PIKE_T_INT:
-      /* Optimization, this is basically a inlined cast_int_to_string */
-      {
-	char buf[21], *b = buf+19;
-	int neg, i, j=0;
-	i = Pike_sp[-1].u.integer;
-	pop_stack();
-	if( i < 0 )
-	{
-	  neg = 1;
-	  i = -i;
-	}
-	else
-	  neg = 0;
-
-	buf[20] = 0;
-
-	while( i >= 10 )
-	{
-	  b[ -j++ ] = '0'+(i%10);
-	  i /= 10;
-	}
-	b[ -j++ ] = '0'+(i%10);
-	if( neg )  b[ -j++ ] = '-';
-	push_text( b-j+1 );
-      }
-      return;
-
     case PIKE_T_FLOAT:
       /* Optimization, no need to check the resultstring for
-       * unsafe characters. 
+       * unsafe characters.
        */
       o_cast_to_string();
       return;
@@ -530,6 +507,10 @@ static void f_html_encode_string( INT32 args )
 
   str = Pike_sp[-1].u.string;
   newlen = str->len;
+
+  check_string_range(str, 1, &min, NULL);
+
+  if (min > '>') return;
 
 #define COUNT(T) {							\
     T *s = (T *)str->str;						\

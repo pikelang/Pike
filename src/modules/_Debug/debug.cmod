@@ -1,0 +1,521 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+#include "module.h"
+#include "pike_error.h"
+#include "interpret.h"
+#include "pike_embed.h"
+#include "module_support.h"
+#include "builtin_functions.h"
+#include "mapping.h"
+#include "multiset.h"
+#include "gc.h"
+
+DECLARATIONS
+
+/*! @module Debug
+ */
+
+/*! @decl int(0..) map_all_objects(function(object:void) cb)
+ *!
+ *! Call cb for all objects that currently exist. The callback will
+ *! not be called with destructed objects as it's argument.
+ *!
+ *! Objects might be missed if @[cb] creates new objects or destroys
+ *! old ones.
+ *!
+ *! This function is only intended to be used for debug purposes.
+ *!
+ *! @returns
+ *!   The total number of objects
+ *!
+ *! @seealso
+ *!   @[next_object()]
+ */
+PIKEFUN int(0..) map_all_objects(function(object:void) cb)
+{
+    struct object *o = first_object;
+    INT32 total = 0;
+
+    while( o )
+    {
+        struct object *next = o->next;
+        if( o->prog )
+        {
+            ref_push_object( o );
+            safe_apply_svalue( Pike_sp-2, 1, 1 );
+            pop_stack();
+        }
+        total++;
+        o = next;
+    }
+    RETURN total;
+}
+
+/*! @decl int refs(string|array|mapping|multiset|function|object|program o)
+ *!
+ *!   Return the number of references @[o] has.
+ *!
+ *!   It is mainly meant for debugging the Pike runtime, but can also be
+ *!   used to control memory usage.
+ *!
+ *! @note
+ *!   Note that the number of references will always be at least one since
+ *!   the value is located on the stack when this function is executed.
+ *!
+ *! @seealso
+ *!   @[next()], @[prev()]
+ */
+PIKEFUN int refs(string|array|mapping|multiset|function|object|program o)
+{
+  RETURN o->u.refs[0];
+}
+
+/*! @decl object next_object(object o)
+ *! @decl object next_object()
+ *!
+ *!   Returns the next object from the list of all objects.
+ *!
+ *!   All objects are stored in a linked list.
+ *!
+ *! @returns
+ *!   If no arguments have been given @[next_object()] will return the first
+ *!   object from the list.
+ *!
+ *!   If @[o] has been specified the object after @[o] on the list will be
+ *!   returned.
+ *!
+ *! @note
+ *!   This function is not recomended to use.
+ *!
+ *! @seealso
+ *!   @[destruct()]
+ */
+PIKEFUN object next_object(void|object o)
+{
+  if (!o)
+    o = first_object;
+  else
+    o = Pike_sp[-args].u.object->next;
+
+  while(o && !o->prog) o=o->next;
+
+  pop_n_elems(args);
+  if(o)
+    ref_push_object(o);
+  else
+    push_int(0);
+}
+
+/*! @decl mixed next(mixed x)
+ *!
+ *!   Find the next object/array/mapping/multiset/program or string.
+ *!
+ *!   All objects, arrays, mappings, multisets, programs and strings are
+ *!   stored in linked lists inside Pike. This function returns the next
+ *!   item on the corresponding list. It is mainly meant for debugging
+ *!   the Pike runtime, but can also be used to control memory usage.
+ *!
+ *! @seealso
+ *!   @[next_object()], @[prev()]
+ */
+PIKEFUN mixed next(mixed x)
+rawtype tOr6(tFunc(tStr,tStr),
+             tFunc(tObj,tObj),
+             tFunc(tMapping,tMapping),
+             tFunc(tMultiset,tMultiset),
+             tFunc(tPrg(tObj),tPrg(tObj)),
+             tFunc(tArray,tArray));
+{
+  struct svalue tmp = *x;
+  switch(TYPEOF(tmp))
+  {
+  case T_OBJECT:
+    tmp.u.object=tmp.u.object->next;
+    while(tmp.u.object && !tmp.u.object->prog)
+      tmp.u.object=tmp.u.object->next;
+    break;
+  case T_ARRAY:   tmp.u.array=tmp.u.array->next; break;
+  case T_MAPPING: tmp.u.mapping=tmp.u.mapping->next; break;
+  case T_MULTISET:tmp.u.multiset=tmp.u.multiset->next; break;
+  case T_PROGRAM: tmp.u.program=tmp.u.program->next; break;
+  case T_STRING:  tmp.u.string=next_pike_string(tmp.u.string); break;
+  default:
+    SIMPLE_BAD_ARG_ERROR("next", 1,
+			 "object|array|mapping|multiset|program|string");
+  }
+
+  if(tmp.u.refs)
+    assign_svalue(Pike_sp-1, &tmp);
+  else
+  {
+    pop_stack();
+    push_int(0);
+  }
+}
+
+/*! @decl mixed prev(mixed x)
+ *!
+ *!   Find the previous object/array/mapping/multiset or program.
+ *!
+ *!   All objects, arrays, mappings, multisets and programs are
+ *!   stored in linked lists inside Pike. This function returns the previous
+ *!   item on the corresponding list. It is mainly meant for debugging
+ *!   the Pike runtime, but can also be used to control memory usage.
+ *!
+ *! @note
+ *!   Unlike @[next()] this function does not work on strings.
+ *!
+ *! @seealso
+ *!   @[next_object()], @[next()]
+ */
+PIKEFUN mixed prev(mixed x)
+rawtype tOr5(tFunc(tObj,tObj),
+             tFunc(tMapping,tMapping),
+             tFunc(tMultiset,tMultiset),
+             tFunc(tPrg(tObj),tPrg(tObj)),
+             tFunc(tArray,tArray));
+{
+  struct svalue tmp = *x;
+  switch(TYPEOF(tmp))
+  {
+  case T_OBJECT:
+    tmp.u.object=tmp.u.object->prev;
+    while(tmp.u.object && !tmp.u.object->prog)
+      tmp.u.object=tmp.u.object->prev;
+    break;
+  case T_ARRAY:   tmp.u.array=tmp.u.array->prev; break;
+  case T_MAPPING: tmp.u.mapping=tmp.u.mapping->prev; break;
+  case T_MULTISET:tmp.u.multiset=tmp.u.multiset->prev; break;
+  case T_PROGRAM: tmp.u.program=tmp.u.program->prev; break;
+  default:
+    SIMPLE_BAD_ARG_ERROR("prev", 1, "object|array|mapping|multiset|program");
+  }
+  if(tmp.u.refs)
+    assign_svalue(Pike_sp-1, &tmp);
+  else
+  {
+    pop_stack();
+    push_int(0);
+  }
+}
+
+#ifdef PIKE_DEBUG
+/* This function is for debugging *ONLY*
+ * do not document please. /Hubbe
+ */
+PIKEFUN int leak(array|mapping|multiset|object|function|program|string|type val)
+  export;
+{
+  INT32 i;
+
+  if(!REFCOUNTED_TYPE(TYPEOF(*val)))
+    SIMPLE_BAD_ARG_ERROR("leak", 1,
+			 "array|mapping|multiset|object|"
+			 "function|program|string|type");
+
+  add_ref(val->u.dummy);
+  i = val->u.refs[0];
+  RETURN i;
+}
+
+/*! @decl int(0..) debug(int(0..) level)
+ *!
+ *!   Set the run-time debug level.
+ *!
+ *! @returns
+ *!   The old debug level will be returned.
+ *!
+ *! @note
+ *!   This function is only available if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN int(0..) debug(int(0..) d)
+  export;
+{
+  pop_n_elems(args);
+  push_int(d_flag);
+  d_flag = d;
+}
+
+/*! @decl int(0..) optimizer_debug(int(0..) level)
+ *!
+ *!   Set the optimizer debug level.
+ *!
+ *! @returns
+ *!   The old optimizer debug level will be returned.
+ *!
+ *! @note
+ *!   This function is only available if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN int(0..) optimizer_debug(int(0..) l)
+  export;
+{
+  pop_n_elems(args);
+  push_int(l_flag);
+  l_flag = l;
+}
+
+/*! @decl int(0..) assembler_debug(int(0..) level)
+ *!
+ *!   Set the assembler debug level.
+ *!
+ *! @returns
+ *!   The old assembler debug level will be returned.
+ *!
+ *! @note
+ *!   This function is only available if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN int(0..) assembler_debug(int(0..) l)
+  export;
+{
+  pop_n_elems(args);
+  push_int(a_flag);
+  a_flag = l;
+}
+
+/*! @decl void dump_program_tables(program p, int(0..)|void indent)
+ *!
+ *! Dumps the internal tables for the program @[p] on stderr.
+ *!
+ *! @param p
+ *!   Program to dump.
+ *!
+ *! @param indent
+ *!   Number of spaces to indent the output.
+ */
+PIKEFUN void dump_program_tables(program p, int(0..)|void indent)
+{
+  dump_program_tables(p, indent?indent->u.integer:0);
+}
+
+/*! @decl mixed locate_references(string|array|mapping| @
+ *!                              multiset|function|object| @
+ *!                              program|type o)
+ *! @belongs Debug
+ *!
+ *!   This function is mostly intended for debugging. It will search through
+ *!   all data structures in Pike looking for @[o] and print the
+ *!   locations on stderr. @[o] can be anything but @expr{int@} or
+ *!   @expr{float@}.
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN mixed locate_references(mixed o)
+  rawtype tFunc(tSetvar(1,tMix),tVar(1));
+{
+  locate_references(o);
+}
+
+/*! @decl mixed describe(mixed x)
+ *! @belongs Debug
+ *!
+ *!   Prints out a description of the thing @[x] to standard error.
+ *!   The description contains various internal info associated with
+ *!   @[x].
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN mixed describe(mixed x)
+  rawtype tFunc(tSetvar(1,tMix),tVar(1));
+{
+  debug_describe_svalue(debug_malloc_pass(&Pike_sp[-1]));
+}
+
+/*! @decl void gc_set_watch(array|multiset|mapping|object|function|program|string x)
+ *! @belongs Debug
+ *!
+ *!   Sets a watch on the given thing, so that the gc will print a
+ *!   message whenever it's encountered. Intended to be used together
+ *!   with breakpoints to debug the garbage collector.
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN void gc_set_watch(array|multiset|mapping|object|function|program|string x)
+{
+  gc_watch(&Pike_sp[-1]);
+}
+
+/*! @decl void dump_backlog()
+ *! @belongs Debug
+ *!
+ *!   Dumps the 1024 latest executed opcodes, along with the source
+ *!   code lines, to standard error. The backlog is only collected on
+ *!   debug level 1 or higher, set with @[_debug] or with the @tt{-d@}
+ *!   argument on the command line.
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN void dump_backlog()
+{
+  dump_backlog();
+}
+
+#ifdef YYDEBUG
+
+/*! @decl int(0..) compiler_trace(int(0..) level)
+ *!
+ *!   Set the compiler trace level.
+ *!
+ *! @returns
+ *!   The old compiler trace level will be returned.
+ *!
+ *! @note
+ *!   This function is only available if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN int(0..) compiler_trace(int(0..) yyd)
+  export;
+{
+  extern int yydebug;
+  pop_n_elems(args);
+  push_int(yydebug);
+  yydebug = yyd;
+}
+
+#endif /* YYDEBUG */
+
+/*! @decl void disassemble(function fun)
+ *!
+ *!   Disassemble a Pike function to @[Stdio.stderr].
+ *!
+ *! @note
+ *!   This function is only available if the Pike runtime
+ *!   has been compiled with debug enabled.
+ */
+PIKEFUN void disassemble(function fun)
+{
+  if ((TYPEOF(*fun) != T_FUNCTION) ||
+      (SUBTYPEOF(*fun) == FUNCTION_BUILTIN)) {
+    fprintf(stderr,
+	    "Disassembly only supported for functions implemented in Pike.\n");
+  } else if (!fun->u.object->prog) {
+    fprintf(stderr, "Function in destructed object.\n");
+  } else {
+    int f = SUBTYPEOF(*fun);
+    struct reference *ptr = PTR_FROM_INT(fun->u.object->prog, f);
+    struct program *p = PROG_FROM_PTR(fun->u.object->prog, ptr);
+    struct identifier *id = p->identifiers + ptr->identifier_offset;
+    if (id->func.offset >= 0) {
+      struct pike_string *tripples =
+	p->strings[read_program_data(p->program + id->func.offset, -1)];
+      switch(tripples->size_shift) {
+#define CASE(SHIFT)					\
+	case SHIFT:					\
+	  {						\
+	    PIKE_CONCAT(p_wchar, SHIFT) *str =		\
+	      PIKE_CONCAT(STR, SHIFT)(tripples);	\
+	    int i=0;					\
+	    while(i < tripples->len) {			\
+	      fprintf(stderr, "@@@ %d: %s, %d, %d\n",	\
+		      i/3,				\
+		      instrs[*str - F_OFFSET].		\
+		      name,				\
+		      str[1], str[2]);			\
+	      str += 3;					\
+	      i += 3;					\
+	    }						\
+	  }						\
+	  break
+	CASE(0);
+	CASE(1);
+	CASE(2);
+#undef CASE
+      }
+    } else {
+      fprintf(stderr, "Prototype.\n");
+    }
+  }
+}
+
+#endif /* PIKE_DEBUG */
+
+#ifdef DEBUG_MALLOC
+
+/*! @decl void reset_dmalloc()
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PIKEFUN void reset_dmalloc()
+{
+  reset_debug_malloc();
+}
+
+extern char * dynamic_location(const char *file, INT_TYPE line);
+extern char * dmalloc_default_location;
+
+/*! @decl void dmalloc_set_name()
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PIKEFUN void dmalloc_set_name()
+{
+  dmalloc_default_location=0;
+}
+
+/*! @decl void dmalloc_set_name(string filename, int(1..) linenumber)
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PIKEFUN void dmalloc_set_name(string filename, int(1..) linenumber)
+{
+  dmalloc_default_location = dynamic_location(filename->str, linenumber);
+}
+
+extern void list_open_fds(void);
+
+/*! @decl void list_open_fds()
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PIKEFUN void list_open_fds()
+{
+  list_open_fds();
+}
+
+/*! @decl void dump_dmalloc_locations(string|array|mapping| @
+ *!                                   multiset|function|object| @
+ *!                                   program|type o)
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PIKEFUN void dump_dmalloc_locations(string|array|mapping|multiset|function|object|program|type o)
+{
+  debug_malloc_dump_references (o->u.refs, 2, 1, 0);
+}
+#endif /* DEBUG_MALLOC */
+
+/*! @endmodule
+ */
+
+PIKE_MODULE_INIT
+{
+  INIT;
+#ifdef PIKE_DEBUG
+  ADD_INT_CONSTANT("HAVE_DEBUG", 1, 0);
+#endif
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+}

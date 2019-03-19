@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -18,6 +17,7 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 
 #include "image.h"
@@ -33,7 +33,7 @@ extern struct program *image_program;
 **! submodule TIM
 **!
 **! 	Handle decoding of TIM images.
-**! 
+**!
 **! 	TIM is the framebuffer format of the PSX game system.
 **! 	It is a simple, uncompressed, truecolor or CLUT format
 **!     with a one bit alpha channel.
@@ -52,7 +52,7 @@ extern struct program *image_program;
 **!	<pre>
 **!        "image":object            - image object    \- not decode_header
 **!	   "alpha":object            - decoded alpha   /
-**!	   
+**!
 **!	   "type":"image/x-tim"      - image type
 **!	   "xsize":int               - horisontal size in pixels
 **!	   "ysize":int               - vertical size in pixels
@@ -128,7 +128,7 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
 
 
 static void tim_decode_alpha_rect(INT32 attr, unsigned char *src,
-				  rgb_group *dst, unsigned char *clut, 
+				  rgb_group *dst, unsigned char *clut,
 				  unsigned int h, unsigned int w)
 {
   /* Pixels rendereding on the PSX is made in one of two modes. One of
@@ -173,36 +173,36 @@ void img_tim_decode(INT32 args, int header_only)
   ptrdiff_t len;
   INT32 attr;
   unsigned int h=0, w=0;
-  
-  get_all_args("Image.TIM._decode", args, "%S", &str);
+
+  get_all_args("_decode", args, "%S", &str);
   clut=s=(unsigned char *)str->str;
   clut+=20;
   len = str->len;
   pop_n_elems(args-1);
-  
+
   if(len < 12 || (s[0] != 0x10 || s[2] != 0 || s[3] != 0))
     Pike_error("not a TIM texture\n");
   else if(s[2] != 0)
-    Pike_error("unknown version of TIM texture\n");     
+    Pike_error("unknown version of TIM texture\n");
 
   s += 4; len -= 4;
-  
-  push_text("type");
-  push_text("image/x-tim");
+
+  ref_push_string(literal_type_string);
+  push_static_text("image/x-tim");
   n++;
-  
+
   attr = s[0]|(s[1]<<8)|(s[2]<<16)|(s[3]<<24);
   if(attr&0xfffffff0)
     Pike_error("unknown flags in TIM texture\n");
-  
+
   s += 4; len -= 4;
 
-  push_text("attr");
+  push_static_text("attr");
   push_int(attr);
   n++;
-  
+
   if(attr&FLAG_CLUT) {
-    bsize = s[0]|(s[1]<<8)|(s[2]<<16)|(s[3]<<24);   
+    bsize = s[0]|(s[1]<<8)|(s[2]<<16)|(s[3]<<24);
 #ifdef TIM_DEBUG
     printf("bsize: %d\n", bsize);
 #endif
@@ -242,7 +242,7 @@ void img_tim_decode(INT32 args, int header_only)
      s += 4; len -= 4;
      bitpp = 4;
      hasalpha = 1;
-     break;    
+     break;
    case MODE_CLUT8:
      /* dx and dy word ignored */
 #ifdef TIM_DEBUG
@@ -264,50 +264,50 @@ void img_tim_decode(INT32 args, int header_only)
    default:
      Pike_error("unknown TIM format\n");
   }
-  
-  push_text("xsize");
+
+  push_static_text("xsize");
   push_int(w);
-  n++;   
-  push_text("ysize");
+  n++;
+  push_static_text("ysize");
   push_int(h);
-  n++;   
+  n++;
 
 #ifdef TIM_DEBUG
   printf("w: %d, h: %d\n", w, h);
-#endif  
+#endif
 
   if(!header_only) {
     struct object *o;
     struct image *img;
-    
+
     if(len < (INT32)(bitpp*(h*w)/8))
       Pike_error("short pixel data\n");
-    
-    push_text("image");
+
+    push_static_text("image");
     push_int(w);
     push_int(h);
     o=clone_object(image_program,2);
-    img=(struct image*)get_storage(o,image_program);
+    img=get_storage(o,image_program);
     push_object(o);
     n++;
-    
+
     tim_decode_rect(attr, s, img->img, clut, h, w);
-    
+
     if(hasalpha) {
-      push_text("alpha");
+      push_static_text("alpha");
       push_int(w);
       push_int(h);
       o=clone_object(image_program,2);
-      img=(struct image*)get_storage(o,image_program);
+      img=get_storage(o,image_program);
       push_object(o);
       n++;
-      
+
       tim_decode_alpha_rect(attr, s, img->img, clut, h, w);
     }
   }
-  
+
   f_aggregate_mapping(2*n);
-  
+
   stack_swap();
   pop_stack();
 }
@@ -336,7 +336,7 @@ void image_tim_f__decode(INT32 args)
    img_tim_decode(args,0);
 }
 
-void init_image_tim()
+void init_image_tim(void)
 {
   ADD_FUNCTION( "decode",  image_tim_f_decode,  tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "decode_alpha",  image_tim_f_decode_alpha,  tFunc(tStr,tObj), 0);
@@ -344,6 +344,6 @@ void init_image_tim()
   ADD_FUNCTION( "decode_header", image_tim_f_decode_header, tFunc(tStr,tMapping), 0);
 }
 
-void exit_image_tim()
+void exit_image_tim(void)
 {
 }

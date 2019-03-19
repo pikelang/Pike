@@ -1,13 +1,12 @@
 #pike __REAL_VERSION__
 inherit Tools.Shoot.Test;
 
-constant name="Append mapping";
+constant name="Append mapping (|)";
 
-int k = 10; /* variable to tune the time of the test */
-int m = 1000; /* the target size of the mapping */
-int n = m*k; // for reporting
+int k = 600; /* variable to tune the time of the test */
+int m = 2000; /* the target size of the mapping */
 
-void perform()
+int perform()
 {
    for (int i=0; i<k; i++)
    {
@@ -15,9 +14,5 @@ void perform()
       for (int j=0; j<m; j++)
 	 v|=([j:42]);
    }
-}
-
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
-{
-   return sprintf("%.0f/s",ntot/useconds);
+   return m*k;
 }

@@ -1,7 +1,6 @@
-// Bittorrent client - originally by Mirar 
+// Bittorrent client - originally by Mirar
 #pike __REAL_VERSION__
-
-#if constant(.Torrent)
+#require constant(Protocols.Bittorrent.Torrent)
 
 constant dont_dump_program = 1;
 
@@ -83,7 +82,7 @@ void create(.Torrent _parent,mapping m)
    ip=m->ip;
    port=m->port;
    id=m["peer id"]||"?";
-   if (id!="?") 
+   if (id!="?")
    {
       client_version=.PeerID.identify_peer(id);
 //       werror("%O is %O is %O (out)\n",ip,id,client_version);
@@ -96,7 +95,7 @@ void create(.Torrent _parent,mapping m)
    warning=parent->warning;
    bitfield="\0"*strlen(parent->all_pieces_bits);
 
-   if (m->fd) 
+   if (m->fd)
    {
       fd=m->fd;
 
@@ -145,14 +144,14 @@ void traffic_debug(string fmt,mixed...args)
 
 //! Returns true if we can connect to this peer,
 //! when new or disconnected but not fatally.
-int is_connectable() 
-{ 
-   return !online && mode!="dead" && mode!="failed"; 
+int is_connectable()
+{
+   return !online && mode!="dead" && mode!="failed";
 }
 
 //! Returns true if this peer is online and connected.
-int is_online() 
-{ 
+int is_online()
+{
    return !!online;
 }
 
@@ -168,7 +167,7 @@ int is_completed()
 //! we can use it to download stuff.
 int is_available()
 {
-   return !peer_choking && online==2 && 
+   return !peer_choking && online==2 &&
       (handover || !sizeof(piece_callback));
 }
 
@@ -226,7 +225,7 @@ void connect()
    else
    {
       parent->dns_async->
-	 host_to_ip(ip, 
+	 host_to_ip(ip,
 		    lambda(string name,string ip)
 		    {
 // 		       werror("%O = %O\n",name,ip);
@@ -290,10 +289,10 @@ void drop(string how,void|string misc)
 void garb()
 {
    if (online || find_call_out(connect)!=-1) return;
-   parent->peers_ordered-=({this_object()});
-   parent->peers_unused-=({this_object()});
+   parent->peers_ordered-=({this});
+   parent->peers_unused-=({this});
    m_delete(parent->peers,id);
-   destruct(this_object());
+   destruct(this);
 }
 
 void connection_timeout()
@@ -362,14 +361,14 @@ void send_message(message_id n,string fmt,mixed ...args)
    traffic_debug("-> message %d (%s)\n",
 	  n,msg_to_string[n]);
 #endif
-	  
+
 
    lastmsg=({n,fmt});
 
    transmit("%4c%s",strlen(fmt),fmt);
 
 // no need for a keepalive message for a while
-   remove_call_out(keepalive); 
+   remove_call_out(keepalive);
    call_out(keepalive,KEEPALIVE_DELAY);
 }
 
@@ -392,7 +391,7 @@ protected private void peer_write()
 	 }
 
    // tit-for-tat
-	 if (parent->do_we_strangle(this,bytes_in,bytes_out) && 
+	 if (parent->do_we_strangle(this,bytes_in,bytes_out) &&
 	     !parent->we_are_completed)
 	 {
 #ifdef BT_PEER_DEBUG
@@ -400,8 +399,8 @@ protected private void peer_write()
 		   ip,bytes_in,bytes_out,bytes_in-bytes_out);
 #endif
 	    strangle();
-	    fd->set_write_callback(0); 
-	    return; 
+	    fd->set_write_callback(0);
+	    return;
 	 }
 
 	 remove_call_out(fill_queue);
@@ -432,9 +431,9 @@ protected private void peer_write()
       werror("%O: wrote %d bytes: %O\n",ip,i,sendbuf[..min(40,i)]);
 #endif
       sendbuf=sendbuf[i..];
-   
+
       if (sendbuf!="")
-      {	  
+      {
 // 	 werror("%O: %d bytes left to send\n",ip,sizeof(sendbuf));
 	 return;
       }
@@ -444,7 +443,7 @@ protected private void peer_write()
 	 uploading=0,uploading_pieces=(<>);
 	 return;
       }
-      if (were_choking) 
+      if (were_choking)
 	 werror("%O: choking but uploading?\n",ip);
    }
 }
@@ -530,10 +529,10 @@ protected private void peer_read(mixed dummy,string s)
       call_out(keepalive,KEEPALIVE_DELAY);
       bandwidth_o_meter();
 
-      send_message(MSG_BITFIELD, 
+      send_message(MSG_BITFIELD,
 		   "%s",parent->file_got_bitfield());
 // 	 if (!parent->default_is_choked)
-// 	    send_message(MSG_UNCHOKE,""); 
+// 	    send_message(MSG_UNCHOKE,"");
 
       if (were_interested)
 	 send_message(MSG_INTERESTED,"");
@@ -645,7 +644,7 @@ void got_message_from_peer(string msg)
 	 _status("online","interested");
 
 	 if (were_choking)
-	    if (sizeof(parent->file_got)>sizeof(parent->file_want)) 
+	    if (sizeof(parent->file_got)>sizeof(parent->file_want))
 	       ;
 	    else
 	    {
@@ -708,7 +707,7 @@ void got_message_from_peer(string msg)
       case MSG_CANCEL:
 	 queued_pieces=({});
 	 break;
-      default: 
+      default:
 	 Function.call_callback(
 	    warning,"%O (%s): got unknown message type %d, %d bytes\n",
 	    ip,client_version,msg[0],strlen(msg));
@@ -719,8 +718,8 @@ void peer_close()
 {
    parent->peer_lost(this);
 
-   remove_call_out(keepalive); 
-   remove_call_out(bandwidth_o_meter); 
+   remove_call_out(keepalive);
+   remove_call_out(bandwidth_o_meter);
 
    drop(0);
    if (online)
@@ -815,7 +814,7 @@ void got_piece_from_peer(int piece,int offset,string data)
 #endif
       f(piece,offset,data,this);
    }
-   else if (cancelled) 
+   else if (cancelled)
       cancelled--;
    else
    {
@@ -865,7 +864,7 @@ protected void queue_piece(int piece,int offset,int length)
       return;
    }
 
-   if (length>524288 || 
+   if (length>524288 ||
        length>parent->info["piece length"])
    {
       Function.call_callback(
@@ -902,11 +901,11 @@ protected void queue_piece(int piece,int offset,int length)
 protected void fill_queue()
 {
    if (!sizeof(queued_pieces) ||
-	  queued_pieces[0][3]!=0) 
-      { 
-	 uploading=0; 
+	  queued_pieces[0][3]!=0)
+      {
+	 uploading=0;
 	 uploading_pieces=(<>);
-	 return; 
+	 return;
       }
    queued_pieces[0][3]=parent->get_piece_chunk(@queued_pieces[0][..2]);
 
@@ -980,7 +979,7 @@ void show_interest()
 #ifdef BT_PEER_DEBUG
    werror("%O: interested\n",ip);
 #endif
-   send_message(MSG_INTERESTED,""); 
+   send_message(MSG_INTERESTED,"");
    were_interested=1;
 }
 
@@ -989,13 +988,13 @@ void show_uninterest()
 #ifdef BT_PEER_DEBUG
    werror("%O: uninterested\n",ip);
 #endif
-   send_message(MSG_NOT_INTERESTED,""); 
+   send_message(MSG_NOT_INTERESTED,"");
    were_interested=0;
 }
 
 // ----------------------------------------------------------------
 // stubs
-   
+
 //! Called whenever there is a status change for this peer.
 //! Always called with @expr{"created"@} when the object is created.
 //!
@@ -1008,7 +1007,7 @@ void status(string type,void|int|string data)
 
 string _sprintf(int t)
 {
-   if (t=='O') 
+   if (t=='O')
       return sprintf("Bittorrent.Peer(%s:%d %O%s%s%s%s%s%s%s v%d ^%d b/s q:%d p:%d sb:%d)",
 		     ip,port,mode,
 		     is_activated()?" dl":"",
@@ -1059,9 +1058,3 @@ void bandwidth_o_meter()
    bandwidth_out_count=0;
    bandwidth_t=t1;
 }
-
-#else /* !constant(.Torrent) */
-
-constant this_program_does_not_exist=1;
-
-#endif /* constant(.Torrent) */

@@ -1,13 +1,12 @@
-# $Id$
 @make_variables@
 VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
-OBJS=mpz_glue.o next_prime.o my_mpz_xor.o mpq.o mpf.o
-SRC_TARGETS=$(SRCDIR)/prime_table.out
-
-PRIME_LIMIT=1024
+OBJS=mpz_glue.o mpq.o mpf.o smpz.o
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
+
+# Reset the symbol prefix base to the empty string.
+PRECOMPILER_ARGS="--base="
 
 @static_module_makefile@
 
@@ -16,10 +15,5 @@ mpq.o: $(SRCDIR)/mpq.c
 
 # UnixWare make needs help to find the source file...
 mpf.o: $(SRCDIR)/mpf.c
-
-next_prime.o: $(SRCDIR)/prime_table.out
-
-$(SRCDIR)/prime_table.out: $(SRCDIR)/prime_table.pike
-	$(BUILD_BASE)/precompile.sh $(SRCDIR)/prime_table.pike $(PRIME_LIMIT) >$(SRCDIR)/prime_table.out || { rm $(SRCDIR)/prime_table.out; exit 1; }
 
 @dependencies@

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id$
 */
 
 #include "global.h"
@@ -23,7 +22,6 @@
 #include "cpp.h"
 #include "builtin_functions.h"
 #include "cyclic.h"
-#include "pike_security.h"
 #include "module_support.h"
 #include "fdlib.h"
 #include "mapping.h"
@@ -34,18 +32,13 @@
 #include "operators.h"
 
 #include "block_alloc.h"
-
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
+#include "block_allocator.h"
 
 #ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
 #endif /* HAVE_SYS_FILE_H */
 
 #include <sys/stat.h>
-
-#include "dmalloc.h"
 
 #define sp Pike_sp
 
@@ -84,22 +77,35 @@ PMOD_EXPORT struct object *first_object;
 struct object *gc_internal_object = 0;
 static struct object *gc_mark_object_pos = 0;
 
-#undef COUNT_OTHER
+static struct block_allocator object_allocator = BA_INIT_PAGES(sizeof(struct object), 2);
 
-#define COUNT_OTHER() do{			\
-  struct object *o;                             \
-  for(o=first_object;o;o=o->next)		\
-    if(o->prog)					\
-      size+=o->prog->storage_needed;		\
-						\
-  for(o=objects_to_destruct;o;o=o->next)	\
-    if(o->prog)					\
-      size+=o->prog->storage_needed;		\
-}while(0)
-BLOCK_ALLOC_FILL_PAGES(object, 2)
+void count_memory_in_objects(size_t *_num, size_t *_size) {
+    size_t size;
+    struct object *o;
 
-#undef COUNT_OTHER
-#define COUNT_OTHER()
+    ba_count_all(&object_allocator, _num, &size);
+
+    for(o=first_object;o;o=o->next)
+	if(o->prog)
+	    size+=o->prog->storage_needed;
+    for(o=objects_to_destruct;o;o=o->next)
+	if(o->prog)
+	    size+=o->prog->storage_needed;
+    *_size = size;
+}
+
+void really_free_object(struct object * o) {
+    ba_free(&object_allocator, o);
+}
+
+ATTRIBUTE((malloc))
+struct object * alloc_object(void) {
+    return ba_alloc(&object_allocator);
+}
+
+void free_all_object_blocks(void) {
+    ba_destroy(&object_allocator);
+}
 
 PMOD_EXPORT struct object *low_clone(struct program *p)
 {
@@ -114,25 +120,31 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 
   o=alloc_object();
 
+  o->flags = 0;
+
   o->storage=p->storage_needed ? (char *)xcalloc(p->storage_needed, 1) : (char *)NULL;
+
+  if (p->flags & PROGRAM_CLEAR_STORAGE) {
+    o->flags |= OBJECT_CLEAR_ON_EXIT;
+  }
 
   GC_ALLOC(o);
 
 #ifdef DO_PIKE_CLEANUP
   if (exit_cleanup_in_progress) {
-    INT32 line;
+    INT_TYPE line;
     struct pike_string *file = get_program_line (p, &line);
     fprintf (stderr,
-	     "Warning: Object %p created during exit cleanup from %s:%d\n",
-	     o, file->str, line);
+	     "Warning: Object %p created during exit cleanup from %s:%ld\n",
+	     o, file->str, (long)line);
   }
 #endif
 
 #ifdef DEBUG_MALLOC
-  if(!debug_malloc_copy_names(o, p)) 
+  if(!debug_malloc_copy_names(o, p))
   {
     struct pike_string *tmp;
-    INT32 line;
+    INT_TYPE line;
 
     tmp=get_program_line(p, &line);
     debug_malloc_name(o, tmp->str, line);
@@ -167,7 +179,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   pike_frame->current_program=P;		\
   pike_frame->locals=0;				\
   pike_frame->num_locals=0;			\
-  pike_frame->fun=-1;				\
+  pike_frame->fun = FUNCTION_BUILTIN;		\
   pike_frame->pc=0;				\
   pike_frame->context=NULL;                     \
   Pike_fp = pike_frame
@@ -188,19 +200,18 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
     add_ref(pike_frame->current_program);	\
   }while(0)
 
-/* Note: there could be a problem with programs without functions */
 #define LOW_SET_FRAME_CONTEXT(X)					     \
   pike_frame->context=(X);						     \
-  pike_frame->fun=pike_frame->context->identifier_level;		\
+  pike_frame->fun = FUNCTION_BUILTIN;					\
   pike_frame->current_storage=o->storage+pike_frame->context->storage_offset
 
 #define SET_FRAME_CONTEXT(X)						\
   LOW_SET_FRAME_CONTEXT(X)
-  
+
 #define LOW_UNSET_FRAME_CONTEXT()		\
   pike_frame->context = NULL;			\
   pike_frame->current_storage = NULL
-  
+
 
 #ifdef DEBUG
 #define CHECK_FRAME() do { \
@@ -240,47 +251,20 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
   /* NOTE: This function is only called for objects straight after
    *       low_clone(), or after an explicit xcalloc(), which implies
    *       that the storage (if any) has been zeroed.
+   *
+   * NOTE: Zeroed memory means that the globals have been cleared.
    */
 
-  /* clear globals and call C initializers */
-  for(e=p->num_inherits-1; e>=0; e--)
+  /* Call C initializers */
+  for(e = p->num_inherits; e--;)
   {
     struct program *prog = p->inherits[e].prog;
-    int n=(int)prog->num_variable_index;
-    if( n )
-    {
-      char *storage = o->storage+p->inherits[e].storage_offset;
-      int q;
-      for(q=0;q<n;q++)
-      {
-	int d=prog->variable_index[q];
-
-	if (IDENTIFIER_IS_ALIAS(prog->identifiers[d].identifier_flags))
-	  continue;
-
-	if(prog->identifiers[d].run_time_type == T_MIXED)
-	{
-	  struct svalue *s;
-	  s=(struct svalue *)(storage + prog->identifiers[d].func.offset);
-	  SET_SVAL_TYPE(*s, T_INT);
-#ifdef NEED_CUSTOM_IEEE
-	} else if (prog->identifiers[d].run_time_type == T_FLOAT) {
-	  /* Note: In IEEE representations the value 0.0 is represented as all
-	   *       zeros, and the default initialization is thus sufficient.
-	   */
-	  union anything *u;
-	  u=(union anything *)(storage + prog->identifiers[d].func.offset);
-	  u->float_number=0.0;
-#endif /* NEED_CUSTOM_IEEE */
-	}
-	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" clear_global"));
-      }
-    }
     if(prog->event_handler)
     {
       if( !frame_pushed )
       {
 	PUSH_FRAME2(o, p);
+	Pike_fp->num_args = 0;
 	frame_pushed = 1;
       }
       SET_FRAME_CONTEXT(p->inherits + e);
@@ -329,7 +313,7 @@ void call_pike_initializers(struct object *o, int args)
   if(fun!=-1)
   {
     apply_low(o,fun,0);
-    pop_stack();
+    Pike_sp--;
   }
   STACK_LEVEL_CHECK(args);
   fun=FIND_LFUN(p, LFUN_CREATE);
@@ -415,7 +399,7 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   if(p->flags & PROGRAM_USES_PARENT)
   {
     add_ref( PARENT_INFO(o)->parent=parent );
-    PARENT_INFO(o)->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
+    PARENT_INFO(o)->parent_identifier = (INT32)parent_identifier;
   }
   call_c_initializers(o);
   call_pike_initializers(o,args);
@@ -450,7 +434,7 @@ struct object *decode_value_clone_object(struct svalue *prog)
   o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
-  
+
   if(TYPEOF(*prog) == T_FUNCTION)
   {
     parent=prog->u.object;
@@ -462,40 +446,42 @@ struct object *decode_value_clone_object(struct svalue *prog)
 
   if(p->flags & PROGRAM_USES_PARENT)
   {
-    
+
     PARENT_INFO(o)->parent=parent;
     if(parent) add_ref(parent);
-    PARENT_INFO(o)->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
+    PARENT_INFO(o)->parent_identifier = (INT32)parent_identifier;
   }
   call_c_initializers(o);
   UNSET_ONERROR(tmp);
   return o;
 }
 
-static struct pike_string *low_read_file(const char *file)
+struct pike_string *low_read_file(const char *file)
 {
   struct pike_string *s;
   PIKE_OFF_T len;
   FD f;
 
-  while((f = fd_open(file,fd_RDONLY,0666)) <0 && errno==EINTR)
+  while(((f = fd_open(file, fd_RDONLY, 0666)) < 0) && (errno == EINTR))
     check_threads_etc();
   if(f >= 0)
   {
-    ptrdiff_t tmp, pos = 0;
+    PIKE_OFF_T tmp, pos = 0;
 
-    len = fd_lseek(f, 0, SEEK_END);
-    fd_lseek(f, 0, SEEK_SET);
+    while (((len = fd_lseek(f, 0, SEEK_END)) < 0) && (errno == EINTR))
+      check_threads_etc();
+    while ((fd_lseek(f, 0, SEEK_SET) < 0) && (errno == EINTR))
+      check_threads_etc();
 
     if (len > MAX_INT32)
       Pike_fatal ("low_read_file(%s): File too large: %"PRINTPIKEOFFT"d b.\n",
 		  file, len);
 
-    s = begin_shared_string (DO_NOT_WARN ((ptrdiff_t) len));
+    s = begin_shared_string ((ptrdiff_t) len);
 
     while(pos<len)
     {
-      tmp = fd_read(f,s->str+pos, DO_NOT_WARN ((ptrdiff_t) len) - pos);
+      tmp = fd_read(f,s->str+pos, (ptrdiff_t) len - pos);
       if(tmp<=0)
       {
 	if (tmp < 0) {
@@ -517,7 +503,7 @@ static struct pike_string *low_read_file(const char *file)
   return 0;
 }
 
-static void get_master_cleanup (void *dummy)
+static void get_master_cleanup (void *UNUSED(dummy))
 {
   if (master_object) {
     free_object (master_object);
@@ -564,7 +550,7 @@ PMOD_EXPORT struct object *get_master(void)
 
     tmp=xalloc(strlen(master_file)+3);
 
-    MEMCPY(tmp, master_file, strlen(master_file)+1);
+    memcpy(tmp, master_file, strlen(master_file)+1);
     strcat(tmp,".o");
 
     s = NULL;
@@ -677,7 +663,7 @@ PMOD_EXPORT struct object *get_master(void)
 
     f = find_identifier ("is_pike_master", master_program);
     if (f >= 0)
-      object_low_set_index (master_object, f, &svalue_int_one);
+      object_low_set_index (master_object, f, (struct svalue *)&svalue_int_one);
 
     /* fprintf(stderr, "Master loaded.\n"); */
 
@@ -760,7 +746,7 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 	  if (!SETJMP (jmp)) {
 	    push_svalue (&err);
 	    push_int (0);
-	    push_text ("Got error during final cleanup:\n");
+	    push_static_text ("Got error during final cleanup:\n");
 	    push_svalue (&err);
 	    push_int (0);
 	    o_index();
@@ -796,17 +782,30 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 #endif
 }
 
+static int object_has_destroy( struct object *o )
+{
+    return QUICK_FIND_LFUN( o->prog, LFUN_DESTROY ) != -1;
+}
 
 PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason reason)
 {
   int e;
   struct program *p;
   struct pike_frame *pike_frame=0;
-  int frame_pushed = 0;
-
+  int frame_pushed = 0, destroy_called = 0;
+  int inhibit_mask = ~THREAD_FLAG_INHIBIT |
+    (Pike_interpreter.thread_state?
+     (Pike_interpreter.thread_state->flags & THREAD_FLAG_INHIBIT):0);
 #ifdef PIKE_DEBUG
   ONERROR uwp;
+#endif
 
+  if (Pike_interpreter.thread_state) {
+    /* Make sure we don't exit due to signals before we're done. */
+    Pike_interpreter.thread_state->flags |= THREAD_FLAG_INHIBIT;
+  }
+
+#ifdef PIKE_DEBUG
   fatal_check_c_stack(8192);
 
   SET_ONERROR(uwp, fatal_on_error,
@@ -829,26 +828,46 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
     else fputs(", is destructed\n", stderr);
   }
 #endif
-  add_ref( o );
-  call_destroy(o, reason);
-
-  /* destructed in destroy() */
-  if(!(p=o->prog))
-  {
-    free_object(o);
+  if( !(p = o->prog) ) {
 #ifdef PIKE_DEBUG
-    UNSET_ONERROR(uwp);
+      UNSET_ONERROR(uwp);
 #endif
-    return;
+      if (Pike_interpreter.thread_state) {
+	Pike_interpreter.thread_state->flags &= inhibit_mask;
+      }
+      return;
   }
-  get_destroy_called_mark(o)->p=p;
-
+  add_ref( o );
+  if( object_has_destroy( o ) )
+  {
+      call_destroy(o, reason);
+      /* destructed in destroy() */
+      if(!(p=o->prog))
+      {
+          free_object(o);
+#ifdef PIKE_DEBUG
+          UNSET_ONERROR(uwp);
+#endif
+	  if (Pike_interpreter.thread_state) {
+	    Pike_interpreter.thread_state->flags &= inhibit_mask;
+	  }
+          return;
+      }
+      destroy_called = 1;
+      get_destroy_called_mark(o)->p=p;
+  } else if ((p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_NEEDS_PARENT)) ==
+	     (PROGRAM_HAS_C_METHODS|PROGRAM_NEEDS_PARENT)) {
+    /* We might have event handlers that need
+     * the program to reach the parent.
+     */
+    get_destroy_called_mark(o)->p=p;
+    destroy_called = 1;
+  }
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
   debug_malloc_touch(p);
   o->prog=0;
 
-  
 #ifdef GC_VERBOSE
   if (Pike_in_gc > GC_PASS_PREPARE)
     fprintf(stderr, "|   Zapping references in %p with %d refs.\n", o, o->refs);
@@ -860,7 +879,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
     int q;
     struct program *prog = p->inherits[e].prog;
     char *storage = o->storage+p->inherits[e].storage_offset;
-    
+
     if(prog->event_handler)
     {
       if( !frame_pushed )
@@ -902,7 +921,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 	union anything *u;
 	u=(union anything *)(storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	if (rtt <= MAX_REF_TYPE) {debug_malloc_touch(u->refs);}
+	if (REFCOUNTED_TYPE(rtt)) {debug_malloc_touch(u->refs);}
 #endif
 	if (rtt != T_OBJECT || u->object != o ||
 	    !(identifier_flags & IDENTIFIER_NO_THIS_REF)) {
@@ -935,11 +954,18 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   if( frame_pushed )
     POP_FRAME2();
 
+  if (o->storage && (o->flags & OBJECT_CLEAR_ON_EXIT)) {
+    guaranteed_memset(o->storage, 0, p->storage_needed);
+  }
+
   free_object( o );
   free_program(p);
+  if( destroy_called )
+      remove_destroy_called_mark(o);
 
-  remove_destroy_called_mark(o);
-
+  if (Pike_interpreter.thread_state) {
+    Pike_interpreter.thread_state->flags &= inhibit_mask;
+  }
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(uwp);
 #endif
@@ -1129,9 +1155,10 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
       assign_svalue_no_free(to, s);
       break;
     }
+
   case T_OBJ_INDEX:
     {
-      SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(func.offset), object, o);
+      SET_SVAL(*to, T_FUNCTION, func.offset, object, o);
       add_ref(o);
       break;
     }
@@ -1155,7 +1182,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
       }
       break;
     }
-    
+
   case T_MIXED:
   case PIKE_T_NO_REF_MIXED:
     {
@@ -1185,7 +1212,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
 		 dummy, dummy);
 	add_ref(dummy);
       }else{
-	SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, 0);
+	SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
       }
       break;
     }
@@ -1203,9 +1230,9 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
  *       compiling program (notably lfun::`->()) and thus
  *       execute in place-holder objacts.
  */
-PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
-					  struct object *o,
-					  ptrdiff_t f)
+PMOD_EXPORT int low_object_index_no_free(struct svalue *to,
+					 struct object *o,
+					 ptrdiff_t f)
 {
   struct identifier *i;
   struct program *p = NULL;
@@ -1226,7 +1253,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
        * The most common cases of object indexing should match these.
        */
       assign_svalue_from_ptr_no_free(to, o, ref->run_time_type, ref->func);
-      return;
+      return ref->run_time_type;
     }
 
     i=ID_FROM_PTR(p, ref);
@@ -1244,6 +1271,13 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
   switch(i->identifier_flags & IDENTIFIER_TYPE_MASK)
   {
   case IDENTIFIER_PIKE_FUNCTION:
+#if 0
+    /* This special case should hopefully not be needed anymore
+     * now that prototype functions are considered false by
+     * complex_svalue_is_true().
+     *
+     * /grubba 2015-03-26
+     */
     if (i->func.offset == -1 && p->flags & PROGRAM_FINISHED) {
       /* Prototype. In the first pass we must be able to get a
        * function anyway.
@@ -1259,12 +1293,13 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
       break;
     }
+#endif /* 0 */
     /* Fall through. */
 
   case IDENTIFIER_C_FUNCTION:
     ref->func.offset = f;
     ref->run_time_type = T_OBJ_INDEX;
-    SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(f), object, o);
+    SET_SVAL(*to, T_FUNCTION, f, object, o);
     add_ref(o);
     break;
 
@@ -1276,7 +1311,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 	if(TYPEOF(*s) == T_PROGRAM &&
 	   (s->u.program->flags & PROGRAM_USES_PARENT))
 	{
-	  SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(f), object, o);
+          SET_SVAL(*to, T_FUNCTION, f, object, o);
 	  add_ref(o);
 	}else{
 	  if (p->flags & PROGRAM_OPTIMIZED) {
@@ -1290,7 +1325,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 	/* Prototype constant. */
 	SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, 0);
       }
-      break;
+      return T_SVALUE_PTR;
     }
 
   case IDENTIFIER_VARIABLE:
@@ -1335,16 +1370,17 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
     Pike_fatal ("Unknown identifier type.\n");
 #endif
   }
+  return ref->run_time_type;
 }
 
 /* Get a variable without going through `->= or `[]= lfuns. If index
  * is a string then the externally visible identifiers are indexed. If
  * index is T_OBJ_INDEX then any identifier is accessed through
  * identifier index. */
-PMOD_EXPORT void object_index_no_free2(struct svalue *to,
-				       struct object *o,
-				       int inherit_number,
-				       struct svalue *index)
+PMOD_EXPORT int object_index_no_free2(struct svalue *to,
+				      struct object *o,
+				      int inherit_number,
+				      struct svalue *index)
 {
   struct program *p;
   struct inherit *inh;
@@ -1353,7 +1389,7 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return; /* make gcc happy */
+    UNREACHABLE(return T_VOID);
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1380,8 +1416,9 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
   if(f < 0)
   {
     SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
+    return T_VOID;
   }else{
-    low_object_index_no_free(to, o, f);
+    return low_object_index_no_free(to, o, f);
   }
 }
 
@@ -1389,10 +1426,10 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 
 /* Get a variable through external indexing, i.e. by going through
  * `-> or `[] lfuns, not seeing private and protected etc. */
-PMOD_EXPORT void object_index_no_free(struct svalue *to,
-				      struct object *o,
-				      int inherit_number,
-				      struct svalue *index)
+PMOD_EXPORT int object_index_no_free(struct svalue *to,
+				     struct object *o,
+				     int inherit_number,
+				     struct svalue *index)
 {
   struct program *p = NULL;
   struct inherit *inh;
@@ -1401,7 +1438,7 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return; /* make gcc happy */
+    UNREACHABLE(return T_VOID);
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1432,7 +1469,7 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
 #endif
 	SET_SVAL(*to, T_OBJECT, 0, object, placeholder_object);
 	add_ref(placeholder_object);
-	return;
+	return T_MIXED;
       }
     }
     l=low_find_lfun(p, lfun);
@@ -1445,15 +1482,15 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
     *to=sp[-1];
     sp--;
     dmalloc_touch_svalue(sp);
+    return PIKE_T_GET_SET;
   } else {
-    object_index_no_free2(to, o, inherit_number, index);
+    return object_index_no_free2(to, o, inherit_number, index);
   }
 }
 
 static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 				   struct svalue *from)
 {
-  int is_zero = UNSAFE_IS_ZERO(from);
   do {
     void *ptr = PIKE_OBJ_STORAGE(o) + func.offset;
     union anything *u = (union anything *)ptr;
@@ -1461,10 +1498,10 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
     switch(rtt) {
     case T_SVALUE_PTR: case T_OBJ_INDEX:
       Pike_error("Cannot assign functions or constants.\n");
-      continue;
+      break;
     case PIKE_T_FREE:
       Pike_error("Attempt to store data in extern variable.\n");
-      continue;
+      break;
 
     case PIKE_T_GET_SET:
       {
@@ -1484,14 +1521,14 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 	} else {
 	  Pike_error("No setter for variable.\n");
 	}
-	continue;
+	return;
       }
 
     /* Partial code duplication from assign_to_short_svalue. */
     case T_MIXED:
       /* Count references to ourselves. */
       assign_svalue(to, from);
-      continue;
+      return;
     case PIKE_T_NO_REF_MIXED:
       /* Don't count references to ourselves to help the gc. DDTAH. */
       dmalloc_touch_svalue(to);
@@ -1509,7 +1546,7 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
       dmalloc_touch_svalue (to);
       if ((TYPEOF(*to) != T_OBJECT && TYPEOF(*to) != T_FUNCTION) ||
 	  (to->u.object != o)) {
-	if(TYPEOF(*to) <= MAX_REF_TYPE) {
+	if(REFCOUNTED_TYPE(TYPEOF(*to))) {
 	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
 	  add_ref(to->u.dummy);
 #ifdef DEBUG_MALLOC
@@ -1523,35 +1560,38 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 	dmalloc_touch_svalue (to);
 #endif /* DEBUG_MALLOC */
       }
-      continue;
+      return;
 
     case T_INT:
     case PIKE_T_NO_REF_INT:
       if (TYPEOF(*from) != T_INT) break;
       u->integer=from->u.integer;
-      continue;
+      return;
     case T_FLOAT:
     case PIKE_T_NO_REF_FLOAT:
       if (TYPEOF(*from) != T_FLOAT) break;
       u->float_number=from->u.float_number;
-      continue;
+      return;
 
     case PIKE_T_NO_REF_OBJECT:
-      /* Don't count references to ourselves to help the gc. */
-      if ((TYPEOF(*from) != T_OBJECT) && !is_zero) break;
-      debug_malloc_touch(u->object);
-      if ((u->object != o) && u->refs && !sub_ref(u->dummy)) {
-	debug_malloc_touch(o);
-	really_free_short_svalue(u,rtt);
+      {
+        int is_zero = UNSAFE_IS_ZERO(from);
+        /* Don't count references to ourselves to help the gc. */
+        if ((TYPEOF(*from) != T_OBJECT) && !is_zero) break;
+        debug_malloc_touch(u->object);
+        if ((u->object != o) && u->refs && !sub_ref(u->dummy)) {
+          debug_malloc_touch(o);
+          really_free_short_svalue(u,rtt);
 #ifdef DEBUG_MALLOC
-      } else {
-	debug_malloc_touch(o);
+        } else {
+          debug_malloc_touch(o);
 #endif /* DEBUG_MALLOC */
-      }
-      if (is_zero) {
-	debug_malloc_touch(u->ptr);
-	u->refs = NULL;
-	continue;
+        }
+        if (is_zero) {
+          debug_malloc_touch(u->ptr);
+          u->refs = NULL;
+          return;
+        }
       }
       u->refs = from->u.refs;
       debug_malloc_touch(u->refs);
@@ -1563,24 +1603,26 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 	debug_malloc_touch(o);
 #endif /* DEBUG_MALLOC */
       }
-      continue;
+      return;
 
     default:
-      rtt &= ~PIKE_T_NO_REF_FLAG;
-      if ((rtt != TYPEOF(*from)) && !is_zero) break;	/* Error. */
-      debug_malloc_touch(u->refs);
-      if(u->refs && !sub_ref(u->dummy))
-	really_free_short_svalue(u, rtt);
-      if (is_zero) {
-	debug_malloc_touch(u->ptr);
-	u->refs = NULL;
-	continue;
+      {
+        int is_zero = UNSAFE_IS_ZERO(from);
+        rtt &= ~PIKE_T_NO_REF_FLAG;
+        if ((rtt != TYPEOF(*from)) && !is_zero) break;	/* Error. */
+        debug_malloc_touch(u->refs);
+        if(u->refs && !sub_ref(u->dummy))
+          really_free_short_svalue(u, rtt);
+        if (is_zero) {
+          debug_malloc_touch(u->ptr);
+          u->refs = NULL;
+          return;
+        }
+        u->refs = from->u.refs;
+        add_ref(u->dummy);
+        return;
       }
-      u->refs = from->u.refs;
-      add_ref(u->dummy);
-      continue;
     }
-
     Pike_error("Wrong type in assignment, expected %s, got %s.\n",
 	       get_name_of_type(rtt & ~PIKE_T_NO_REF_FLAG),
 	       get_name_of_type(TYPEOF(*from)));
@@ -1604,7 +1646,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
     if(!o || !(p=o->prog))
     {
       Pike_error("Lookup in destructed object.\n");
-      return; /* make gcc happy */
+      UNREACHABLE(return);
     }
 
     debug_malloc_touch(o);
@@ -1696,7 +1738,7 @@ PMOD_EXPORT void object_set_index2(struct object *o,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return; /* make gcc happy */
+    UNREACHABLE(return);
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1746,7 +1788,7 @@ PMOD_EXPORT void object_set_index(struct object *o,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return; /* make gcc happy */
+    UNREACHABLE(return);
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1781,7 +1823,7 @@ static union anything *object_low_get_item_ptr(struct object *o,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return 0; /* make gcc happy */
+    UNREACHABLE(return 0);
   }
 
   debug_malloc_touch(p);
@@ -1838,7 +1880,7 @@ union anything *object_get_item_ptr(struct object *o,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return 0; /* make gcc happy */
+    UNREACHABLE(return 0);
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1851,11 +1893,11 @@ union anything *object_get_item_ptr(struct object *o,
     if(FIND_LFUN(p,f) != -1)
     {
       return 0;
-      
+
       /* Pike_error("Cannot do incremental operations on overloaded index (yet).\n");
        */
     }
-    
+
     f=find_shared_string_identifier(index->u.string, p);
     if (f >= 0) f += inh->identifier_level;
     break;
@@ -1916,6 +1958,11 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
       if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags) ||
 	 IDENTIFIER_IS_ALIAS(i->identifier_flags))
 	continue;
+
+      /* Do we want to call getters and compare their return values?
+       *        - arne
+       */
+      if (i->run_time_type == PIKE_T_GET_SET) continue;
 
       if(i->run_time_type == T_MIXED)
       {
@@ -1978,7 +2025,7 @@ PMOD_EXPORT struct array *object_values(struct object *o, int inherit_number)
   struct array *a;
   int fun;
   int e;
-  
+
   p=o->prog;
   if(!p)
     Pike_error("values() on destructed object.\n");
@@ -2054,13 +2101,14 @@ PMOD_EXPORT struct array *object_types(struct object *o, int inherit_number)
 }
 
 
-PMOD_EXPORT void visit_object (struct object *o, int action)
+PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
 {
   struct program *p = o->prog;
 
   if (o->next == o) return; /* Fake object used by compiler */
 
-  switch (action) {
+  visit_enter(o, T_OBJECT, extra);
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
@@ -2084,75 +2132,76 @@ PMOD_EXPORT void visit_object (struct object *o, int action)
     debug_malloc_touch (o);
     debug_malloc_touch (storage);
 
-    visit_program_ref (p, REF_TYPE_NORMAL);
+    visit_program_ref (p, REF_TYPE_NORMAL, extra);
 
     for (e = p->num_inherits - 1; e >= 0; e--) {
       struct program *inh_prog = inh[e].prog;
-      unsigned INT16 *inh_prog_var_idxs = inh_prog->variable_index;
-      struct identifier *inh_prog_ids = inh_prog->identifiers;
-      char *inh_storage = storage + inh[e].storage_offset;
+      if (!(action & VISIT_NO_REFS)) {
+	unsigned INT16 *inh_prog_var_idxs = inh_prog->variable_index;
+	struct identifier *inh_prog_ids = inh_prog->identifiers;
+	char *inh_storage = storage + inh[e].storage_offset;
 
-      int q, num_vars = (int) inh_prog->num_variable_index;
+	int q, num_vars = (int) inh_prog->num_variable_index;
 
-      for (q = 0; q < num_vars; q++) {
-	int d = inh_prog_var_idxs[q];
-	struct identifier *id = inh_prog_ids + d;
-	int id_flags = id->identifier_flags;
-	int rtt = id->run_time_type;
-	void *var;
-	union anything *u;
+	for (q = 0; q < num_vars; q++) {
+	  int d = inh_prog_var_idxs[q];
+	  struct identifier *id = inh_prog_ids + d;
+	  int id_flags = id->identifier_flags;
+	  int rtt = id->run_time_type;
+	  void *var;
+	  union anything *u;
 
-	if (IDENTIFIER_IS_ALIAS (id_flags))
-	  continue;
+	  if (IDENTIFIER_IS_ALIAS (id_flags))
+	    continue;
 
-	var = inh_storage + id->func.offset;
-	u = (union anything *) var;
+	  var = inh_storage + id->func.offset;
+	  u = (union anything *) var;
 #ifdef DEBUG_MALLOC
-	if (rtt <= MAX_REF_TYPE)
-	  debug_malloc_touch (u->ptr);
+	  if (REFCOUNTED_TYPE(rtt))
+	    debug_malloc_touch (u->ptr);
 #endif
 
-	switch (rtt) {
+	  switch (rtt) {
 	  case T_MIXED: {
 	    struct svalue *s = (struct svalue *) var;
 	    dmalloc_touch_svalue (s);
 	    if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
 		s->u.object != o ||
 		!(id_flags & IDENTIFIER_NO_THIS_REF))
-	      visit_svalue (s, REF_TYPE_NORMAL);
+	      visit_svalue (s, REF_TYPE_NORMAL, extra);
 	    break;
 	  }
 
 	  case T_ARRAY:
 	    if (u->array)
-	      visit_array_ref (u->array, REF_TYPE_NORMAL);
+	      visit_array_ref (u->array, REF_TYPE_NORMAL, extra);
 	    break;
 	  case T_MAPPING:
 	    if (u->mapping)
-	      visit_mapping_ref (u->mapping, REF_TYPE_NORMAL);
+	      visit_mapping_ref (u->mapping, REF_TYPE_NORMAL, extra);
 	    break;
 	  case T_MULTISET:
 	    if (u->multiset)
-	      visit_multiset_ref (u->multiset, REF_TYPE_NORMAL);
+	      visit_multiset_ref (u->multiset, REF_TYPE_NORMAL, extra);
 	    break;
 	  case T_PROGRAM:
 	    if (u->program)
-	      visit_program_ref (u->program, REF_TYPE_NORMAL);
+	      visit_program_ref (u->program, REF_TYPE_NORMAL, extra);
 	    break;
 
 	  case T_OBJECT:
 	    if (u->object && (u->object != o ||
 			      !(id_flags & IDENTIFIER_NO_THIS_REF)))
-	      visit_object_ref (u->object, REF_TYPE_NORMAL);
+	      visit_object_ref (u->object, REF_TYPE_NORMAL, extra);
 	    break;
 
 	  case T_STRING:
 	    if (u->string && !(action & VISIT_COMPLEX_ONLY))
-	      visit_string_ref (u->string, REF_TYPE_NORMAL);
+	      visit_string_ref (u->string, REF_TYPE_NORMAL, extra);
 	    break;
 	  case T_TYPE:
 	    if (u->type && !(action & VISIT_COMPLEX_ONLY))
-	      visit_type_ref (u->type, REF_TYPE_NORMAL);
+	      visit_type_ref (u->type, REF_TYPE_NORMAL, extra);
 	    break;
 
 #ifdef PIKE_DEBUG
@@ -2164,6 +2213,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action)
 	  default:
 	    Pike_fatal ("Invalid runtime type %d.\n", rtt);
 #endif
+	  }
 	}
       }
 
@@ -2179,11 +2229,13 @@ PMOD_EXPORT void visit_object (struct object *o, int action)
     /* Strong ref follows. It must be last. */
     if (p->flags & PROGRAM_USES_PARENT)
       if (PARENT_INFO (o)->parent)
-	visit_object_ref (PARENT_INFO (o)->parent, REF_TYPE_STRONG);
+	visit_object_ref (PARENT_INFO (o)->parent, REF_TYPE_STRONG, extra);
   }
+  visit_leave(o, T_OBJECT, extra);
 }
 
-PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type)
+PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type,
+				 void *extra)
 {
 #ifdef PIKE_DEBUG
   if (TYPEOF(*s) != T_FUNCTION)
@@ -2194,9 +2246,9 @@ PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type)
     /* Could avoid this if we had access to the action from the caller
      * and check if it's VISIT_COMPLEX_ONLY. However, visit_callable
      * will only return first thing. */
-    visit_callable_ref (s->u.efun, ref_type);
+    visit_callable_ref (s->u.efun, ref_type, extra);
   else
-    visit_object_ref (s->u.object, ref_type);
+    visit_object_ref (s->u.object, ref_type, extra);
 }
 
 static void gc_check_object(struct object *o);
@@ -2236,7 +2288,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	for(e=p->num_inherits-1; e>=0; e--)
 	{
 	  int q;
-      
+
 	  LOW_SET_FRAME_CONTEXT(p->inherits + e);
 
 	  for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
@@ -2249,7 +2301,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	    if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET) ||
 		(rtt == PIKE_T_FREE))
 	      continue;
-	
+
 	    if(rtt == T_MIXED)
 	    {
 	      struct svalue *s;
@@ -2262,7 +2314,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	      union anything *u;
 	      u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	      if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	      if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	      if (rtt != T_OBJECT || u->object != o ||
 		  !(id_flags & IDENTIFIER_NO_THIS_REF))
@@ -2302,7 +2354,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
-      
+
 	LOW_SET_FRAME_CONTEXT(p->inherits + e);
 
 	for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
@@ -2311,11 +2363,11 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	  struct identifier *id = pike_frame->context->prog->identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
-	
+
 	  if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET) ||
 	      (rtt == PIKE_T_FREE))
 	    continue;
-	
+
 	  if(rtt == T_MIXED)
 	  {
 	    struct svalue *s;
@@ -2328,7 +2380,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	    union anything *u;
 	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	    if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	    if (rtt != T_OBJECT || u->object != o ||
 		!(id_flags & IDENTIFIER_NO_THIS_REF))
@@ -2341,7 +2393,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 
 	LOW_UNSET_FRAME_CONTEXT();
       }
-    
+
       LOW_POP_FRAME();
 
       /* Even though it's essential that the program isn't freed
@@ -2373,7 +2425,7 @@ static void gc_check_object(struct object *o)
 	debug_gc_check (PARENT_INFO(o)->parent, " as parent of an object");
 
       LOW_PUSH_FRAME(o, p);
-    
+
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
@@ -2385,11 +2437,11 @@ static void gc_check_object(struct object *o)
 	  struct identifier *id = pike_frame->context->prog->identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
-	
+
 	  if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET) ||
 	      (rtt == PIKE_T_FREE))
 	    continue;
-	
+
 	  if(rtt == T_MIXED)
 	  {
 	    struct svalue *s;
@@ -2402,14 +2454,14 @@ static void gc_check_object(struct object *o)
 	    union anything *u;
 	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
-	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+	    if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
 	    if (rtt != T_OBJECT || u->object != o ||
 		!(id_flags & IDENTIFIER_NO_THIS_REF))
 	      gc_check_short_svalue(u, rtt);
 	  }
 	}
-      
+
 	if(pike_frame->context->prog->event_handler)
 	  pike_frame->context->prog->event_handler(PROG_EVENT_GC_CHECK);
 
@@ -2571,7 +2623,12 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
  *!   @[lfun::]
  */
 
-/* The type argument to the magic index functions is intentionally
+/* Historical API notes:
+ *
+ * In Pike 7.3.14 to 7.9.5 the context and access arguments were instead
+ * represented by a single type argument.
+ *
+ * The type argument to the magic index functions is intentionally
  * undocumented since I'm not sure this API is satisfactory. The
  * argument would be explained as follows. /mast
  *
@@ -2586,9 +2643,28 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
  */
 
 
-/*! @decl mixed ::`->(string index)
+/*! @decl mixed ::`->(string index, object|void context, int|void access)
  *!
  *! Builtin arrow operator.
+ *!
+ *! @param index
+ *!   Symbol in @[context] to access.
+ *!
+ *! @param context
+ *!   Context in the current object to start the search from.
+ *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
+ *!   will be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
  *!
  *! This function indexes the current object with the string @[index].
  *! This is useful when the arrow operator has been overloaded.
@@ -2598,17 +2674,39 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
  */
 static void f_magic_index(INT32 args)
 {
-  struct inherit *inherit;
+  struct inherit *inherit = NULL;
   int type = 0, f;
   struct pike_string *s;
-  struct object *o;
+  struct object *o = NULL;
 
-  switch (args) {
+  switch(args) {
     default:
-    case 2:
-      if (TYPEOF(sp[-args+1]) != T_INT)
+    case 3:
+      if (TYPEOF(sp[2-args]) != T_INT)
 	SIMPLE_BAD_ARG_ERROR ("::`->", 2, "void|int");
-      type = sp[-args+1].u.integer;
+      type = sp[2-args].u.integer & 1;
+      /* FALL THROUGH */
+    case 2:
+      if (TYPEOF(sp[1-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (sp[1-args].u.integer & 1);
+	if (sp[1-args].u.integer & 2) {
+	  if(!(o=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!o->prog)
+	    Pike_error("::`-> on destructed object.\n");
+	  inherit = o->prog->inherits + 0;
+	}
+      } else if (TYPEOF(sp[1-args]) == T_OBJECT) {
+	o = sp[1-args].u.object;
+	if (o != MAGIC_THIS->o)
+	  Pike_error("::`-> context is not the current object.\n");
+	if(!o->prog)
+	  Pike_error("::`-> on destructed object.\n");
+	inherit = o->prog->inherits + SUBTYPEOF(sp[1-args]);
+      } else {
+	SIMPLE_BAD_ARG_ERROR ("::`->", 2, "void|object|int");
+      }
       /* FALL THROUGH */
     case 1:
       if (TYPEOF(sp[-args]) != T_STRING)
@@ -2619,31 +2717,25 @@ static void f_magic_index(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR ("::`->", 1);
   }
 
-  if(!(o=MAGIC_THIS->o))
+  if(!o && !(o = MAGIC_THIS->o))
     Pike_error("Magic index error\n");
 
   if(!o->prog)
     Pike_error("::`-> on destructed object.\n");
 
-  switch (type) {
-    case 0:
-      inherit=MAGIC_THIS->inherit;
-      f=find_shared_string_identifier(s,inherit->prog);
-      break;
-    case 1:
-      inherit = MAGIC_THIS->inherit;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    case 2:
-      inherit = o->prog->inherits + 0;
-      f = find_shared_string_identifier (s, inherit->prog);
-      break;
-    case 3:
-      inherit = o->prog->inherits + 0;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    default:
-      Pike_error("Unknown indexing type: %d.\n", type);
+  if (!inherit) {
+    inherit = MAGIC_THIS->inherit;
+  }
+
+  /* NB: We could use really_low_find_shared_string_identifier()
+   *     in both cases, but we get the added benefit of the
+   *     identifier cache if we use find_shared_string_identifier().
+   */
+  if (type) {
+    f = really_low_find_shared_string_identifier(s, inherit->prog,
+						 SEE_PROTECTED);
+  } else {
+    f = find_shared_string_identifier(s, inherit->prog);
   }
 
   pop_n_elems(args);
@@ -2652,17 +2744,39 @@ static void f_magic_index(INT32 args)
     push_undefined();
   }else{
     struct svalue sval;
-    low_object_index_no_free(&sval,o,f+
-			     inherit->identifier_level);
+    low_object_index_no_free(&sval,o,f+inherit->identifier_level);
     *sp=sval;
     sp++;
     dmalloc_touch_svalue(Pike_sp-1);
   }
 }
 
-/*! @decl void ::`->=(string index, mixed value)
+/*! @decl void ::`->=(string index, mixed value, @
+ *!                   object|void context, int|void access)
  *!
  *! Builtin arrow set operator.
+ *!
+ *! @param index
+ *!   Symbol in @[context] to change the value of.
+ *!
+ *! @param value
+ *!   The new value.
+ *!
+ *! @param context
+ *!   Context in the current object to start the search from.
+ *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
+ *!   will be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
  *!
  *! This function indexes the current object with the string @[index],
  *! and sets it to @[value].
@@ -2675,16 +2789,38 @@ static void f_magic_set_index(INT32 args)
 {
   int type = 0, f;
   struct pike_string *s;
-  struct object *o;
+  struct object *o = NULL;
   struct svalue *val;
-  struct inherit *inherit;
+  struct inherit *inherit = NULL;
 
   switch (args) {
     default:
+    case 4:
+      if (TYPEOF(sp[3-args]) != T_INT)
+	SIMPLE_BAD_ARG_ERROR ("::`->=", 4, "void|int");
+      type = sp[3-args].u.integer & 1;
+      /* FALL THROUGH */
     case 3:
-      if (TYPEOF(sp[-args+2]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR ("::`->=", 3, "void|int");
-      type = sp[-args+2].u.integer;
+      if (TYPEOF(sp[2-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (sp[2-args].u.integer & 1);
+	if (sp[2-args].u.integer & 2) {
+	  if(!(o=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!o->prog)
+	    Pike_error("::`-> on destructed object.\n");
+	  inherit = o->prog->inherits + 0;
+	}
+      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
+	o = sp[2-args].u.object;
+	if (o != MAGIC_THIS->o)
+	  Pike_error("::`->= context is not the current object.\n");
+	if(!o->prog)
+	  Pike_error("::`->= on destructed object.\n");
+	inherit = o->prog->inherits + SUBTYPEOF(sp[2-args]);
+      } else {
+	SIMPLE_BAD_ARG_ERROR ("::`->=", 3, "void|object|int");
+      }
       /* FALL THROUGH */
     case 2:
       val = sp-args+1;
@@ -2697,31 +2833,25 @@ static void f_magic_set_index(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR ("::`->=", 2);
   }
 
-  if(!(o=MAGIC_THIS->o))
+  if(!o && !(o = MAGIC_THIS->o))
     Pike_error("Magic index error\n");
 
   if(!o->prog)
     Pike_error("::`->= on destructed object.\n");
 
-  switch (type) {
-    case 0:
-      inherit=MAGIC_THIS->inherit;
-      f=find_shared_string_identifier(s,inherit->prog);
-      break;
-    case 1:
-      inherit = MAGIC_THIS->inherit;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    case 2:
-      inherit = o->prog->inherits + 0;
-      f = find_shared_string_identifier (s, inherit->prog);
-      break;
-    case 3:
-      inherit = o->prog->inherits + 0;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  if (!inherit) {
+    inherit = MAGIC_THIS->inherit;
+  }
+
+  /* NB: We could use really_low_find_shared_string_identifier()
+   *     in both cases, but we get the added benefit of the
+   *     identifier cache if we use find_shared_string_identifier().
+   */
+  if (type) {
+    f = really_low_find_shared_string_identifier(s, inherit->prog,
+						 SEE_PROTECTED);
+  } else {
+    f = find_shared_string_identifier(s, inherit->prog);
   }
 
   if(f<0)
@@ -2738,7 +2868,23 @@ static void f_magic_set_index(INT32 args)
   }
 }
 
-/*! @decl mixed ::_indices()
+/*! @decl mixed ::_indices(object|void context, int|void access)
+ *!
+ *! @param context
+ *!   Context in the current object to start the list from.
+ *!   If @expr{UNDEFINED@} or left out, this_program::this
+ *!   will be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
  *!
  *! Builtin function to list the identifiers of an object.
  *! This is useful when @[lfun::_indices] has been overloaded.
@@ -2748,57 +2894,77 @@ static void f_magic_set_index(INT32 args)
  */
 static void f_magic_indices (INT32 args)
 {
-  struct object *obj;
-  struct program *prog;
+  struct object *obj = NULL;
+  struct program *prog = NULL;
+  struct inherit *inherit = NULL;
   struct array *res;
   int type = 0, e, i;
 
-  if (args >= 1) {
-    if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
-    type = sp[-args].u.integer;
+  switch(args) {
+    default:
+    case 2:
+      if (TYPEOF(sp[1-args]) != T_INT)
+	SIMPLE_BAD_ARG_ERROR ("::_indices", 2, "void|int");
+      type = sp[-args].u.integer;
+      /* FALL THROUGH */
+    case 1:
+      if (TYPEOF(sp[-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (sp[-args].u.integer & 1);
+	if (sp[-args].u.integer & 2) {
+	  if(!(obj=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!obj->prog)
+	    Pike_error("Object is destructed.\n");
+	  inherit = obj->prog->inherits + 0;
+	}
+      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
+	obj = sp[2-args].u.object;
+	if (obj != MAGIC_THIS->o)
+	  Pike_error("::_indices context is not the current object.\n");
+	if(!obj->prog)
+	  Pike_error("::_indices on destructed object.\n");
+	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
+      } else {
+	SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|object|int");
+      }
+      /* FALL THROUGH */
+    case 0:
+      break;
   }
 
-  if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if (!obj && !(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
   if (!obj->prog) Pike_error ("Object is destructed.\n");
 
-  /* FIXME: Both type 0 and 1 have somewhat odd behaviors if there are
-   * local identifiers before inherits that are overridden by them
-   * (e.g. listing duplicate identifiers). But then again, this is not
-   * the only place where that gives strange effects, imho. /mast */
+  if (!inherit) {
+    /* FIXME: This has somewhat odd behavior if there are local identifiers
+     *        before inherits that are overridden by them
+     *        (e.g. listing duplicate identifiers). But then again, this is
+     *        not the only place where that gives strange effects, imho.
+     *   /mast
+     */
+    inherit = MAGIC_THIS->inherit;
+  }
 
-  switch (type) {
-    case 0:
-      prog = MAGIC_THIS->inherit->prog;
-      break;
-    case 1:
-    case 3:
-      if (type == 1) {
-	prog = MAGIC_THIS->inherit->prog;
-      } else {
-	prog = obj->prog;
-      }
-      pop_n_elems (args);
-      push_array (res = allocate_array(prog->num_identifier_references));
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
-	struct reference *ref = prog->identifier_references + e;
-	struct identifier *id = ID_FROM_PTR (prog, ref);
-	if (ref->id_flags & ID_HIDDEN) continue;
-	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
-	    (ID_INHERITED|ID_PRIVATE)) continue;
-	SET_SVAL(ITEM(res)[i], T_STRING, 0, string, id->name);
-	add_ref(id->name);
-	i++;
-      }
-      res->type_field |= BIT_STRING;
-      sp[-1].u.array = resize_array (res, i);
-      res->type_field = BIT_STRING;
-      return;
-    case 2:
-      prog = obj->prog;
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  prog = inherit->prog;
+
+  if (type & 1) {
+    pop_n_elems (args);
+    push_array (res = allocate_array(prog->num_identifier_references));
+    for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      struct reference *ref = prog->identifier_references + e;
+      struct identifier *id = ID_FROM_PTR (prog, ref);
+      if (ref->id_flags & ID_HIDDEN) continue;
+      if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	  (ID_INHERITED|ID_PRIVATE)) continue;
+      SET_SVAL(ITEM(res)[i], T_STRING, 0, string, id->name);
+      add_ref(id->name);
+      i++;
+    }
+    res->type_field |= BIT_STRING;
+    sp[-1].u.array = resize_array (res, i);
+    res->type_field = BIT_STRING;
+    return;
   }
 
   pop_n_elems (args);
@@ -2811,7 +2977,23 @@ static void f_magic_indices (INT32 args)
   res->type_field = BIT_STRING;
 }
 
-/*! @decl mixed ::_values()
+/*! @decl mixed ::_values(object|void context, int|void access)
+ *!
+ *! @param context
+ *!   Context in the current object to start the list from.
+ *!   If @expr{UNDEFINED@} or left out, this_program::this
+ *!   will be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
  *!
  *! Builtin function to list the values of the identifiers of an
  *! object. This is useful when @[lfun::_values] has been overloaded.
@@ -2821,79 +3003,110 @@ static void f_magic_indices (INT32 args)
  */
 static void f_magic_values (INT32 args)
 {
-  struct object *obj;
-  struct program *prog;
-  struct inherit *inherit;
+  struct object *obj = NULL;
+  struct program *prog = NULL;
+  struct inherit *inherit = NULL;
   struct array *res;
   TYPE_FIELD types;
   int type = 0, e, i;
 
-  if (args >= 1) {
-    if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
-    type = sp[-args].u.integer;
+  switch(args) {
+    default:
+    case 2:
+      if (TYPEOF(sp[1-args]) != T_INT)
+	SIMPLE_BAD_ARG_ERROR ("::_indices", 2, "void|int");
+      type = sp[-args].u.integer;
+      /* FALL THROUGH */
+    case 1:
+      if (TYPEOF(sp[-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (sp[-args].u.integer & 1);
+	if (sp[-args].u.integer & 2) {
+	  if(!(obj=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!obj->prog)
+	    Pike_error("Object is destructed.\n");
+	  inherit = obj->prog->inherits + 0;
+	}
+      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
+	obj = sp[2-args].u.object;
+	if (obj != MAGIC_THIS->o)
+	  Pike_error("::_values context is not the current object.\n");
+	if(!obj->prog)
+	  Pike_error("::_values on destructed object.\n");
+	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
+      } else {
+	SIMPLE_BAD_ARG_ERROR ("::_values", 1, "void|object|int");
+      }
+      /* FALL THROUGH */
+    case 0:
+      break;
   }
 
-  if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if (!obj && !(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
   if (!obj->prog) Pike_error ("Object is destructed.\n");
 
-  /* FIXME: Both type 0 and 1 have somewhat odd behaviors if there are
-   * local identifiers before inherits that are overridden by them
-   * (e.g. listing duplicate identifiers). But then again, this is not
-   * the only place where that gives strange effects, imho. /mast */
+  if (!inherit) {
+    /* FIXME: This has somewhat odd behavior if there are local identifiers
+     *        before inherits that are overridden by them
+     *        (e.g. listing duplicate identifiers). But then again, this is
+     *        not the only place where that gives strange effects, imho.
+     *   /mast
+     */
+    inherit = MAGIC_THIS->inherit;
+  }
 
-  switch (type) {
-    case 0:
-      inherit = MAGIC_THIS->inherit;
-      prog = inherit->prog;
-      break;
-    case 1:
-    case 3:
-      if (type == 1) {
-	inherit = MAGIC_THIS->inherit;
-	prog = inherit->prog;
-      } else {
-	prog = obj->prog;
-	inherit = prog->inherits + 0;
-      }
-      pop_n_elems (args);
-      push_array (res = allocate_array(prog->num_identifier_references));
-      types = 0;
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
-	struct reference *ref = prog->identifier_references + e;
-	struct identifier *id = ID_FROM_PTR (prog, ref);
-	if (ref->id_flags & ID_HIDDEN) continue;
-	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
-	    (ID_INHERITED|ID_PRIVATE)) continue;
-	low_object_index_no_free (ITEM(res) + i, obj,
-				  e + inherit->identifier_level);
-	types |= 1 << TYPEOF(ITEM(res)[i]);
-	i++;
-      }
-      res->type_field |= types;
-      sp[-1].u.array = resize_array (res, i);
-      res->type_field = types;
-      return;
-    case 2:
-      prog = obj->prog;
-      inherit = prog->inherits + 0;
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  prog = inherit->prog;
+
+  if (type & 1) {
+    pop_n_elems (args);
+    push_array (res = allocate_array(prog->num_identifier_references));
+    types = 0;
+    for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      struct reference *ref = prog->identifier_references + e;
+      struct identifier *id = ID_FROM_PTR (prog, ref);
+      if (ref->id_flags & ID_HIDDEN) continue;
+      if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	  (ID_INHERITED|ID_PRIVATE)) continue;
+      low_object_index_no_free(ITEM(res) + i, obj,
+			       e + inherit->identifier_level);
+      types |= 1 << TYPEOF(ITEM(res)[i]);
+      i++;
+    }
+    res->type_field |= types;
+    sp[-1].u.array = resize_array (res, i);
+    res->type_field = types;
+    return;
   }
 
   pop_n_elems (args);
   push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
   types = 0;
   for (e = 0; e < (int) prog->num_identifier_index; e++) {
-    low_object_index_no_free (ITEM(res) + e, obj,
-			      prog->identifier_index[e] + inherit->identifier_level);
+    low_object_index_no_free(ITEM(res) + e, obj,
+			     prog->identifier_index[e] + inherit->identifier_level);
     types |= 1 << TYPEOF(ITEM(res)[e]);
   }
   res->type_field = types;
 }
 
-/*! @decl mixed ::_types()
+/*! @decl mixed ::_types(object|void context, int|void access)
+ *!
+ *! @param context
+ *!   Context in the current object to start the list from.
+ *!   If @expr{UNDEFINED@} or left out, this_program::this
+ *!   will be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
  *!
  *! Builtin function to list the types of the identifiers of an
  *! object. This is useful when @[lfun::_types] has been overloaded.
@@ -2903,65 +3116,80 @@ static void f_magic_values (INT32 args)
  */
 static void f_magic_types (INT32 args)
 {
-  struct object *obj;
-  struct program *prog;
-  struct inherit *inherit;
+  struct object *obj = NULL;
+  struct program *prog = NULL;
+  struct inherit *inherit = NULL;
   struct array *res;
   TYPE_FIELD types;
   int type = 0, e, i;
 
-  if (args >= 1) {
-    if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR ("::_types", 1, "void|int");
-    type = sp[-args].u.integer;
+  switch(args) {
+    default:
+    case 2:
+      if (TYPEOF(sp[1-args]) != T_INT)
+	SIMPLE_BAD_ARG_ERROR ("::_types", 2, "void|int");
+      type = sp[-args].u.integer;
+      /* FALL THROUGH */
+    case 1:
+      if (TYPEOF(sp[-args]) == T_INT) {
+	/* Compat with old-style args. */
+	type |= (sp[-args].u.integer & 1);
+	if (sp[-args].u.integer & 2) {
+	  if(!(obj=MAGIC_THIS->o))
+	    Pike_error("Magic index error\n");
+	  if(!obj->prog)
+	    Pike_error("Object is destructed.\n");
+	  inherit = obj->prog->inherits + 0;
+	}
+      } else if (TYPEOF(sp[2-args]) == T_OBJECT) {
+	obj = sp[2-args].u.object;
+	if (obj != MAGIC_THIS->o)
+	  Pike_error("::_types context is not the current object.\n");
+	if(!obj->prog)
+	  Pike_error("::_types on destructed object.\n");
+	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
+      } else {
+	SIMPLE_BAD_ARG_ERROR ("::_types", 1, "void|object|int");
+      }
+      /* FALL THROUGH */
+    case 0:
+      break;
   }
 
-  if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if (!obj && !(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
   if (!obj->prog) Pike_error ("Object is destructed.\n");
 
-  /* FIXME: Both type 0 and 1 have somewhat odd behaviors if there are
-   * local identifiers before inherits that are overridden by them
-   * (e.g. listing duplicate identifiers). But then again, this is not
-   * the only place where that gives strange effects, imho. /mast */
+  if (!inherit) {
+    /* FIXME: This has somewhat odd behavior if there are local identifiers
+     *        before inherits that are overridden by them
+     *        (e.g. listing duplicate identifiers). But then again, this is
+     *        not the only place where that gives strange effects, imho.
+     *   /mast
+     */
+    inherit = MAGIC_THIS->inherit;
+  }
 
-  switch (type) {
-    case 0:
-      inherit = MAGIC_THIS->inherit;
-      prog = inherit->prog;
-      break;
-    case 1:
-    case 3:
-      if (type == 1) {
-	inherit = MAGIC_THIS->inherit;
-	prog = inherit->prog;
-      } else {
-	prog = obj->prog;
-	inherit = prog->inherits + 0;
-      }
-      pop_n_elems (args);
-      push_array (res = allocate_array(prog->num_identifier_references));
-      types = 0;
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
-	struct reference *ref = prog->identifier_references + e;
-	struct identifier *id = ID_FROM_PTR (prog, ref);
-	if (ref->id_flags & ID_HIDDEN) continue;
-	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
-	    (ID_INHERITED|ID_PRIVATE)) continue;
-	SET_SVAL(ITEM(res)[i], PIKE_T_TYPE, 0, type, id->type);
-	add_ref(id->type);
-	i++;
-	types = BIT_TYPE;
-      }
-      res->type_field |= types;
-      sp[-1].u.array = resize_array (res, i);
-      res->type_field = types;
-      return;
-    case 2:
-      prog = obj->prog;
-      inherit = prog->inherits + 0;
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  prog = inherit->prog;
+
+  if (type & 1) {
+    pop_n_elems (args);
+    push_array (res = allocate_array(prog->num_identifier_references));
+    types = 0;
+    for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      struct reference *ref = prog->identifier_references + e;
+      struct identifier *id = ID_FROM_PTR (prog, ref);
+      if (ref->id_flags & ID_HIDDEN) continue;
+      if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	  (ID_INHERITED|ID_PRIVATE)) continue;
+      SET_SVAL(ITEM(res)[i], PIKE_T_TYPE, 0, type, id->type);
+      add_ref(id->type);
+      i++;
+      types = BIT_TYPE;
+    }
+    res->type_field |= types;
+    sp[-1].u.array = resize_array (res, i);
+    res->type_field = types;
+    return;
   }
 
   pop_n_elems (args);
@@ -2990,43 +3218,151 @@ void init_object(void)
 
   enter_compiler(NULL, 0);
 
+  /* ::`->() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  ADD_FUNCTION("`()",f_magic_index,tFunc(tStr tOr(tVoid,tInt),tMix),0);
+  ADD_FUNCTION("`()", f_magic_index,
+	       tFunc(tStr tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
+		     tMix), ID_PROTECTED);
   magic_index_program=end_program();
 
+  /* ::`->=() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  ADD_FUNCTION("`()",f_magic_set_index,
-	       tFunc(tStr tMix tOr(tVoid,tInt),tVoid),0);
+  ADD_FUNCTION("`()", f_magic_set_index,
+	       tFunc(tStr tMix tOr3(tVoid,tObj,tDeprecated(tInt))
+		     tOr(tVoid,tInt), tVoid), ID_PROTECTED);
   magic_set_index_program=end_program();
 
+  /* ::_indices() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  ADD_FUNCTION("`()",f_magic_indices,tFunc(tOr(tVoid,tInt),tArr(tStr)),0);
+  ADD_FUNCTION("`()", f_magic_indices,
+	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
+		     tArr(tStr)), ID_PROTECTED);
   magic_indices_program=end_program();
 
+  /* ::_values() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  ADD_FUNCTION("`()",f_magic_values,tFunc(tOr(tVoid,tInt),tArray),0);
+  ADD_FUNCTION("`()", f_magic_values,
+	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
+		     tArray), ID_PROTECTED);
   magic_values_program=end_program();
 
+  /* ::_types() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  ADD_FUNCTION("`()",f_magic_types,tFunc(tOr(tVoid,tInt),tArray),0);
+  ADD_FUNCTION("`()", f_magic_types,
+	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
+		     tArray), ID_PROTECTED);
   magic_types_program=end_program();
 
   exit_compiler();
+}
+
+static struct program *shm_program, *sbuf_program, *iobuf_program;
+
+struct sysmem {
+  unsigned char *p;
+  size_t size;
+};
+
+static struct sysmem *system_memory(struct object *o)
+{
+  if( !shm_program )
+  {
+    push_static_text("System.Memory");
+    SAFE_APPLY_MASTER("resolv", 1);
+    shm_program = program_from_svalue(Pike_sp - 1);
+    if (!shm_program)
+      return 0;
+    Pike_sp--;
+  }
+  return get_storage( o, shm_program );
+}
+
+static struct string_builder *string_buffer(struct object *o)
+{
+  if( !sbuf_program )
+  {
+    push_static_text("String.Buffer");
+    SAFE_APPLY_MASTER("resolv", 1);
+    sbuf_program = program_from_svalue(Pike_sp - 1);
+    if (!sbuf_program)
+      return 0;
+    Pike_sp--;
+  }
+  return get_storage( o, sbuf_program );
+}
+
+#include "modules/_Stdio/buffer.h"
+
+static Buffer *io_buffer(struct object *o)
+{
+  if( !iobuf_program )
+  {
+    push_static_text("Stdio.Buffer");
+    SAFE_APPLY_MASTER("resolv", 1);
+    iobuf_program = program_from_svalue(Pike_sp - 1);
+    if (!iobuf_program)
+      return 0;
+    Pike_sp--;
+  }
+  return get_storage( o, iobuf_program );
+}
+
+PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **ptr, size_t *len, int *shift )
+{
+  union {
+    struct string_builder *b;
+    struct sysmem *s;
+    Buffer *io;
+  } src;
+
+  if( (src.b = string_buffer(o)) )
+  {
+    struct pike_string *s = src.b->s;
+    if( !s )
+      s = empty_pike_string;
+    if( s->size_shift )
+    {
+      if( shift )
+        *shift = s->size_shift;
+      else
+        return MEMOBJ_NONE;
+    }
+    if( len ) *len = s->len;
+    if( ptr ) *ptr = s->str;
+    return MEMOBJ_STRING_BUFFER;
+  }
+
+  if( (src.io = io_buffer( o )) )
+  {
+    if( shift ) *shift=0;
+    if( len ) *len = src.io->len-src.io->offset;
+    if( ptr ) *ptr=src.io->buffer+src.io->offset;
+    return MEMOBJ_STDIO_IOBUFFER;
+  }
+
+  if( (src.s = system_memory(o)) )
+  {
+    if( shift ) *shift=0;
+    if( len ) *len = src.s->size;
+    if( ptr ) *ptr= src.s->p;
+    return MEMOBJ_SYSTEM_MEMORY;
+  }
+  return MEMOBJ_NONE;
 }
 
 void exit_object(void)
@@ -3050,6 +3386,23 @@ void exit_object(void)
   }
 
   destruct_objects_to_destruct();
+
+  if( shm_program )
+  {
+      free_program( shm_program );
+      shm_program = 0;
+  }
+  if( sbuf_program )
+  {
+      free_program( sbuf_program );
+      sbuf_program = 0;
+  }
+
+  if( iobuf_program )
+  {
+      free_program( iobuf_program );
+      iobuf_program = 0;
+  }
 
   if(magic_index_program)
   {
@@ -3080,6 +3433,11 @@ void exit_object(void)
     free_program(magic_types_program);
     magic_types_program=0;
   }
+}
+
+void late_exit_object(void)
+{
+  exit_destroy_called_mark_hash();
 }
 
 #ifdef PIKE_DEBUG
@@ -3148,14 +3506,14 @@ void check_object(struct object *o)
       describe(o);
       Pike_fatal("Object check: o->prev->next != o\n");
     }
-    
+
     if(o == first_object)
       Pike_fatal("Object check: o->prev !=0 && first_object == o\n");
   } else {
     if(first_object != o)
       Pike_fatal("Object check: o->prev ==0 && first_object != o\n");
   }
-  
+
   if(o->refs <= 0)
     Pike_fatal("Object refs <= zero.\n");
 

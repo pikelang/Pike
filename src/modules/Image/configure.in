@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
@@ -6,11 +5,9 @@ AC_SET_MAKE
 
 AC_MODULE_INIT()
 
-PIKE_FEATURE_OK(Image)
-
 AC_FUNC_MMAP
 
-AC_CHECK_HEADERS(math.h sys/fcntl.h fcntl.h stdlib.h netinet/in.h winsock.h winsock2.h)
+AC_CHECK_HEADERS(sys/fcntl.h fcntl.h netinet/in.h winsock.h winsock2.h)
 
 AC_CHECK_LIB(m, abs, [], [])
 
@@ -53,11 +50,7 @@ AC_CACHE_VAL(pike_cv_lib_m_fabs,
   LIBS="-lm $LIBS"
   AC_TRY_LINK(
   [
-#ifdef HAVE_MATH_H
 #include <math.h>
-#else /* !HAVE_MATH_H */
-    double fabs(double);
-#endif /* HAVE_MATH_H */
   ],[
     double foo = fabs(1.0);
   ],[pike_cv_lib_m_fabs=yes],[pike_cv_lib_m_fabs=no])

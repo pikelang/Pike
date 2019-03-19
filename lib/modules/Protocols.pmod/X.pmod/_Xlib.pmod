@@ -1,7 +1,5 @@
 /* _Xlib.pmod
  *
- * $Id$
- *
  * Kluge, should be in Xlib.pmod
  */
 
@@ -22,7 +20,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #pike __REAL_VERSION__
@@ -171,9 +169,9 @@ array(string) error_codes =
   "Drawable",		/* parameter not a Pixmap or Window */
   "Access",		/* depending on context:
 			   - key/button already grabbed
-			   - attempt to free an illegal 
-			     cmap entry 
-			   - attempt to store into a read-only 
+			   - attempt to free an illegal
+			     cmap entry
+			   - attempt to store into a read-only
 			     color map entry.
 			   - attempt to modify the access control
 			     list from other than the local host.

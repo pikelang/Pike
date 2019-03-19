@@ -23,7 +23,7 @@ GTK2.AccelGroup connect_by_path( string accel_path, function cb, mixed user_data
 //!
 //!
 
-static GTK2.AccelGroup create( );
+protected GTK2.AccelGroup create( );
 //! Create a new accelerator group
 //!
 //!

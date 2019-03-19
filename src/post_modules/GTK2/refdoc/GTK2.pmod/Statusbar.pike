@@ -31,7 +31,7 @@
 
 inherit GTK2.Hbox;
 
-static GTK2.Statusbar create( mapping|void props );
+protected GTK2.Statusbar create( mapping|void props );
 //! Create a new statusbar widget
 //!
 //!

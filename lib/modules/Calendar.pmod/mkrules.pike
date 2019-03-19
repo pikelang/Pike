@@ -1,6 +1,6 @@
 // this is a script to generate rules
 // from timezone data files;
-// ftp://elsie.nci.nih.gov/pub/ 
+// ftp://elsie.nci.nih.gov/pub/
 // (timezone mailing list: tz@elsie.nci.nih.gov)
 //
 // source datafile are usually found somewhere around zic(8),
@@ -10,7 +10,6 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id$
 
 #pike __REAL_VERSION__
 
@@ -26,12 +25,24 @@ mapping links=([]);
 array arules=({});
 array azones=({});
 
+mapping(string:mapping(int:array(string))) abbr2zones = ([
+  "DFT":([ 0x7fffffff:({ "Europe/Oslo", "Europe/Paris" }), ]),
+  "NFT":([ 0x7fffffff:({ "Europe/Oslo", "Europe/Paris" }), ]),
+]);
+
 #define FIXED(D)   (yjd+((D)-1))
 #define FIX_L(D)   (yjd+leap+((D)-1))
 #define LDAY(D,W)  (yjd+((D)-1)-( (yjd+((D)+(8-W)-1)) % 7))
 #define LDAYL(D,W) (yjd+((D)-1)+leap-( (yjd+leap+((D)+(8-W)-1)) % 7))
 
 #define FIXID(id) replace(id,"/-+"/1,"__p"/1)
+
+void add_abbr(string abbr, string zone, int until)
+{
+   mapping(int:array(string)) zones = abbr2zones[abbr];
+   if (!zones) abbr2zones[abbr] = zones = ([]);
+   zones[until] += ({ zone });
+}
 
 int parse_offset(string t)
 {
@@ -110,12 +121,11 @@ class Shift
       }
    }
 
-   string _sprintf(int t) 
-   { 
-      return (t=='O')?
+   protected string _sprintf(int t)
+   {
+      return t=='O' &&
 	 sprintf("Shift(%s,%d%s,%+d,%O)",
-		 dayrule,time,timetype,offset,s):
-	 0;
+		 dayrule,time,timetype,offset,s);
    }
 
    int `==(Shift other)
@@ -149,7 +159,7 @@ class Shift
 	 int wd=wday[ds];
 	 if (!wd) complain("unknown weekday %O (last%s)\n",ds,ds);
 
-	 if (mon=="Jan") 
+	 if (mon=="Jan")
 	    return "LDAY ("+31+","+wd+")";
 
 	 return "LDAYL("+nleapy->month(mon)->day(-1)->year_day()+
@@ -163,7 +173,7 @@ class Shift
 	 if (d>24 && mon=="Feb")
 	     complain("can't handle Feb %d in a >= rule\n",d);
 
-	 if (mon=="Jan") 
+	 if (mon=="Jan")
 	    return "LDAY ("+(nleapy->month(mon)->day(d)->year_day()+6)+
 	       ","+wd+")";
 
@@ -226,13 +236,13 @@ class Shift
       int a,b,c;
       if (sscanf(dayrule,"LDAYL(%d,%d)",a,b)==2 &&
 	  sscanf(t->dayrule,"FIX_L(%d)",c)==1)
-	 if (ldayl_is_fix_l(a,b,c,y0,y1)) 
+	 if (ldayl_is_fix_l(a,b,c,y0,y1))
 	    return this; // ldayl
 	 else
 	    return 0; // no
       if (sscanf(t->dayrule,"LDAYL(%d,%d)",a,b)==2 &&
 	  sscanf(dayrule,"FIX_L(%d)",c)==1)
-	 if (ldayl_is_fix_l(a,b,c,y1,y0)) 
+	 if (ldayl_is_fix_l(a,b,c,y1,y0))
 	    return t; // ldayl
 	 else
 	    return 0; // no
@@ -251,14 +261,14 @@ class Shift
 	 case "s": t=sprintf("UO%+d",time); break;
 	 case "u": t=""+time; break;
 	 case "w": t=sprintf("UO%+d",(time-lastoffset)); break;
-	 default: error("illegal state\n");      
+	 default: error("illegal state\n");
       }
       string r=dayrule;
       if (l!=2)
       {
 	 int d,w;
 	 if (sscanf(r,"FIX_L(%d)",d)) r=sprintf("FIXED(%d)",d+l);
-	 else if (sscanf(r,"LDAYL(%d,%d)",d,w)==2) 
+	 else if (sscanf(r,"LDAYL(%d,%d)",d,w)==2)
 	    r=sprintf("LDAY (%d,%d)",d+l,w);
       }
       return sprintf("({%-12s,%-10s,%-5d,%-6O}),  %s",
@@ -266,22 +276,24 @@ class Shift
    }
 }
 
-class MyRule
+class MyRule (string id)
 {
-   string id;
-
    mapping rules=([]);
+
+   multiset(string) symbols = (<>);
 
    int amt=0;
 
-   void create(string _id) { id=_id; }
-   
    void add(string line)
    {
       array a= array_sscanf(line, replace("%s %s %s %s %s %s %s %[^\t ]",
 					  " ","%*[ \t]"));
 
       if (sizeof(a)<8) complain("illegal rule line format\n");
+
+      a[7] = (a[7]/" #")[0];
+      if (a[7] == "-") a[7] = "";
+      symbols[a[7]] = 1;
 
       if (!(int)a[0] && a[0]!="min")
 	 complain("unknown year %O\n",a[0]);
@@ -293,8 +305,8 @@ class MyRule
 
       int y1=(int)a[0] || NUL_YEAR;
       int y2;
-      if (a[1]=="max") y2=INF_YEAR; 
-      else if (a[1]=="only") y2=y1; 
+      if (a[1]=="max") y2=INF_YEAR;
+      else if (a[1]=="only") y2=y1;
       else if (!(y2=(int)a[1]))
 	 complain("unknown year %O\n",a[1]);
       else if (y2>=INF_YEAR)
@@ -305,13 +317,13 @@ class MyRule
       switch (a[2])
       {
 	 case "-": for (;y1<=y2;y1++) rules[y1]+=sh; break;
-	 case "odd": 
+	 case "odd":
 	    if (!(y1&1)) y1++;
-	    for (;y1<=y2;y1+=2) rules[y1]+=sh; 
+	    for (;y1<=y2;y1+=2) rules[y1]+=sh;
 	    break;
-	 case "even": 
+	 case "even":
 	    if ((y1&1)) y1++;
-	    for (;y1<=y2;y1+=2) rules[y1]+=sh; 
+	    for (;y1<=y2;y1+=2) rules[y1]+=sh;
 	    break;
 	 default:
 	    complain("unknown year type %O\n",a[2]);
@@ -367,7 +379,7 @@ class MyRule
 		  while (my[++y1]);
 
 		  y1--;
-		  
+
 		  if (y0==NUL_YEAR)
 		  {
 		     if (my[INF_YEAR])
@@ -379,11 +391,11 @@ class MyRule
 		  else if (y0==y1)
 		     t+="         case "+y0+":\n";
 		  else if (y1==2050)
-		     { 
-			if (!my[NUL_YEAR]) t+="         case "+y0+"..:\n"; 
-			else t=replace(t,"½½½",(string)y0); 
+		     {
+			if (!my[NUL_YEAR]) t+="         case "+y0+"..:\n";
+			else t=replace(t,"½½½",(string)y0);
 		     }
-		  else 		  
+		  else
 		     t+="         case "+y0+".."+y1+":\n";
 
 		  y0=y1;
@@ -398,7 +410,7 @@ class MyRule
 	    }
 	    array resa=res/"\n";
 	    resa[-2]=replace(resa[-2],",  ","});");
-	 
+
 	    t+=resa[..<1]*"\n"+"\n";
 	    s=t+s;
 	 }
@@ -412,7 +424,7 @@ class MyRule
 
    int join_periods(array s,array t,int y0,int y1)
    {
-      if (equal(s,t)) 
+      if (equal(s,t))
 	 return 1;
       if (sizeof(s)!=sizeof(t)) return 0;
       if (s[0]!=t[0]) return 0;
@@ -434,7 +446,7 @@ class MyRule
    {
       if (!s) s=({});
       if (!arrayp(s)) s=({s});
-      
+
       sort(map(s,lambda(Shift s)
 		 {
 		    return array_sscanf(s->dayrule,"%*[^(](%d")[0];
@@ -452,13 +464,9 @@ class MyRule
    }
 }
 
-class Zone
+class Zone (string id)
 {
-   string id;
-
    array rules=({});
-
-   void create(string _id) { id=_id; }
 
    void add(string line)
    {
@@ -466,7 +474,7 @@ class Zone
 					  " ","%*[ \t]"));
       if (sizeof(a)<4)
 	 complain("parse error\n");
-      
+
       a=({parse_offset(a[0]), // offset
 	  a[1], // rule or added offset
 	  a[2], // string
@@ -474,6 +482,27 @@ class Zone
 	  0, 0, "tz", 0}); // until
       a[5]=rule_shift(a);
       a[4]=clone_rule(a);
+
+      if (sizeof(a[2])) {
+	 int until = (a[5] == "forever")?0x7fffffff:(int)a[5];
+	 foreach(a[2]/"/", string fmt) {
+	    MyRule rule = global::rules[a[1]];
+	    if (rule) {
+	       foreach(indices(rule->symbols), string sym) {
+		  if ((sizeof(sym) > 2) && (fmt != "%s")) continue;
+		  add_abbr(sprintf(fmt, sym), id, until);
+	       }
+	    } else if (a[1] == "Romania") {
+	       // Kludge for forward reference in tzdata2012c/europe
+	       // for Europe/Chisinau to the Romania rule.
+	       foreach(({ "", "S" }), string sym) {
+		  add_abbr(sprintf(fmt, sym), id, until);
+	       }
+	    } else {
+	       add_abbr(fmt, id, until);
+	    }
+	 }
+      }
 
       rules+=({a});
    }
@@ -487,7 +516,7 @@ class Zone
       else if (sscanf(a[1],"-%d:%d",h,m)==2) roff=h*3600+m*60;
       else if (sscanf(a[1],"%d:%d",h,m)==2) roff=h*3600+m*60;
 
-      if (roff==-17) // based on DST rule 
+      if (roff==-17) // based on DST rule
 	 return sprintf(
 	    "TZrules.%s(%d,%O)",
 	    FIXID(a[1]),-a[0],a[2]);
@@ -527,10 +556,10 @@ class Zone
       {
 	 case "u":     // utc time
 //  	    a[3]=sprintf("[%d+%d=%d] %s\n",utc0,t,utc0+t,a[3]);
-	    return (string)(utc0+t); break;  
+	    return (string)(utc0+t); break;
 	 case "s":     // local standard time
 //  	    a[3]=sprintf("[%d+%d-%d=%d] %s\n",utc0,t,a[0],utc0+t-a[0],a[3]);
-	    return (string)(utc0+t-a[0]); break; 
+	    return (string)(utc0+t-a[0]); break;
 	 case "w": case "":       // with rule; check rule
 	    int h,m,s,roff=-17;
 	    if (a[1]=="-") roff=0;
@@ -554,9 +583,9 @@ class Zone
 
 //  	       werror("Using %O:%O\n",rules,roff);
 
-	       return (string)(utc0+t-roff); 
+	       return (string)(utc0+t-roff);
 	    }
-	    return (string)(utc0+t-a[0]-roff); 
+	    return (string)(utc0+t-a[0]-roff);
 
 	 default:
 	    complain("unknown time of day modifier %O\n",ty);
@@ -573,7 +602,7 @@ class Zone
 	 res+=("// skipped %O due to errors\n",id);
 	 return res;
       }
-	       
+
       if (sizeof(rules)==1) // simple zone
       {
 	 res+=("Rule.Timezone "+cid+"="+
@@ -583,11 +612,11 @@ class Zone
 
       mapping rname=([]);
       int n=1;
-      
+
       foreach (rules,array a)
 	 if (rname[a[4]]) a[6]=rname[a[4]];
 	 else a[6]=rname[a[4]]="tz"+n++;
-      
+
       res+=("class "+cid+"\n"
 	    "{\n"
 	    "   inherit TZHistory;\n"
@@ -624,7 +653,7 @@ class Zone
 
       res+=("   }\n"
 	    "}\n");
-      
+
       return res;
    }
 }
@@ -639,9 +668,11 @@ void collect_rules(string file)
    int n=0;
    werror("reading %O...\n",file);
    string s=Stdio.read_bytes(file),t;
-   if (!s) 
+   if (!s)
    {
-      werror("%s:-: Failed to open file: %s\n",file,strerror(errno()));
+      // NB: This file is often used with the system Pike, so
+      //     it can't use %m yet.
+      werror("%s:-: Failed to open file: %s.\n", file, strerror(errno()));
       return;
    }
 
@@ -651,9 +682,9 @@ void collect_rules(string file)
    foreach (s/"\n",string line)
    {
       n++;
-      mixed err=catch 
+      mixed err=catch
       {
-	 if (line[..0]!="#") 
+	 if (line[..0]!="#")
 	    if (sscanf(line,"Zone%*[ \t]%[^ \t]%*[ \t]%s",s,t)==4)
 	    {
 	       if (zones[s]) lastz=zones[s]->add(t);
@@ -701,8 +732,13 @@ int main(int ac,array(string) am)
       files = get_dir(combine_path(__FILE__, "../tzdata"));
       files = map(sort(files),
 		  lambda(string fname) {
-		    if ((< "CVS", "factory", "leapseconds", >)[fname] ||
+		    if ((< ".gitignore", "Makefile", "Theory",
+			   "factory", "leapseconds", >)[fname] ||
+			(upper_case(fname) == fname) ||
 			has_prefix(fname, "solar") ||
+			has_suffix(fname, ".awk") ||
+			has_suffix(fname, ".list") ||
+			has_suffix(fname, ".pl") ||
 			has_suffix(fname, ".sh") ||
 			has_suffix(fname, ".tab")) return 0;
 		    return combine_path(__FILE__, "../tzdata", fname);
@@ -712,7 +748,7 @@ int main(int ac,array(string) am)
 
    write("thinking...\n");
 
-   string t=TZrules_base;
+   string t="#pike "+__MAJOR__+"."+__MINOR__+"\n\n" + TZrules_base;
 
    foreach (arules,MyRule r)
       t+=r->dump();
@@ -739,7 +775,7 @@ int main(int ac,array(string) am)
 
    mixed err=catch {
       foreach (azones,Zone z)
-         if (sizeof(z->rules)==1) 
+         if (sizeof(z->rules)==1)
 	 {
 	    t+=z->dump();
 	    if (links[z->id])
@@ -758,7 +794,7 @@ int main(int ac,array(string) am)
 
    err=catch {
       foreach (azones,Zone z)
-	 if (sizeof(z->rules)!=1) 
+	 if (sizeof(z->rules)!=1)
 	 {
 	    t+=z->dump();
 	    if (links[z->id])
@@ -773,7 +809,7 @@ int main(int ac,array(string) am)
    t+=("\n"
        "// "+"-"*70+"\n");
 
-   mv("TZs.pike","TZs.pike~");
+   mv("TZs.h","TZs.h~");
    werror("writing TZs.h (%d bytes)...",sizeof(t));
    Stdio.File("TZs.h","wtc")->write(t);
    werror("\n");
@@ -802,23 +838,77 @@ int main(int ac,array(string) am)
    // Historical ordering...
    foreach (({"America", "Pacific", "Antarctica", "Atlantic", "Indian",
 	      "Europe", "Africa", "Asia", "Australia" }), string co) {
-      t+=(replace(
-	 sprintf("   %-13s({%-=63s\n",
+      t +=
+	 sprintf("   %-13s({%-=60s\n",
 		 sprintf("%O:",co),
-		 map(zs[co],lambda(string s) { return sprintf("%O",s); })
-		 *", "+"}),"),({",                 ",", "}),",,"/1));
+		 map(sort(zs[co]),lambda(string s) { return sprintf("%O",s); })
+		 *", "+"}),");
       zone_names[co] = 0;
    }
    // Take care of any remaining zones (probably none).
-   foreach (sort(indices(zone_names)),string co)
-      t+=(replace(
-	 sprintf("   %-13s({%-=63s\n",
+   foreach (sort(indices(zone_names)),string co) {
+      t +=
+	 sprintf("   %-13s({%-=60s\n",
 		 sprintf("%O:",co),
-		 map(zs[co],lambda(string s) { return sprintf("%O",s); })
-		 *", "+"}),"),({",                 ",", "}),",,"/1));
+		 map(sort(zs[co]),lambda(string s) { return sprintf("%O",s); })
+		 *", "+"}),");
+   }
    t += "]);\n\n" +
-     fragments[1];
-   
+      fragments[1];
+
+   // Update the abbreviation table as well.
+   fragments = t/" abbr2zones=";
+   if (sizeof(fragments) == 1) fragments = t/" abbr2zones =";
+   if (sizeof(fragments) > 2)
+      fragments = ({ fragments[0], fragments[1..] * " abbr2zones =" });
+   fragments[1] = (fragments[1]/"]);\n\n")[1..]*"]);\n\n";
+
+   t = fragments[0] + " abbr2zones =\n"
+      "([\n";
+
+   foreach(sort(indices(abbr2zones)), string abbr) {
+      string line = sprintf("   %q: ({", abbr);
+
+      mapping(int:array(string)) info = abbr2zones[abbr];
+      array(string) zones = ({});
+      array(int) until = ({});
+      foreach(info; int us; array(string) zs) {
+	 zones += zs;
+	 until += allocate(sizeof(zs), -us);
+      }
+      // Sort so that the most recent use comes first,
+      // and secondarily on the zone name.
+      sort(zones, until);
+      sort(until, zones);
+      foreach(Array.uniq(zones); int i; string zone) {
+	 string seg = sprintf("%s%q", i?", ":"", zone);
+	 if (sizeof(line) + sizeof(seg) < 77) {
+	    line += seg;
+	    continue;
+	 }
+	 t += line + ",\n";
+	 line = sprintf("       %q", zone);
+      }
+      t += line + "}),\n";
+   }
+
+   t += "]);\n\n" +
+      fragments[1];
+
+   // Cleanup white-space at end of line.
+   string t2 = t;
+   while ((t = replace(t2,
+		       ({ "                        \n",
+			  "                    \n",
+			  "                \n",
+			  "            \n",
+			  "        \n",
+			  "    \n",
+			  "  \n",
+			  " \n", }), ({ "\n" })*8)) != t2) {
+     t2 = t;
+   }
+
    mv("TZnames.pmod","TZnames.pmod~");
    werror("writing TZnames.pmod (%d bytes)...",sizeof(t));
    Stdio.File("TZnames.pmod","wtc")->write(t);
@@ -837,7 +927,7 @@ string TZrules_base=
 // ----------------------------------------------------------------
 
 // ----------------------------------------------------------------
-// all rules are based on the gregorian calendar, so 
+// all rules are based on the gregorian calendar, so
 // this is the gregorian rule:
 // ----------------------------------------------------------------
 
@@ -852,7 +942,7 @@ protected array gregorian_yjd(int jd)
 
    int y=century*100+century_year+1;
 
-   return 
+   return
    ({
       y,
       1721426+century_year*365+century_year/4+century_jd,
@@ -868,15 +958,15 @@ class TZRules
 {
    constant is_timezone=1;
    constant is_dst_timezone=1;
-   protected int offset_to_utc;  
+   protected int offset_to_utc;
    string name;
 
    protected function(string:string) tzformat;
    protected array names;
 
-   protected void create(int offset,string _name) 
-   { 
-      offset_to_utc=offset; 
+   protected void create(int offset,string _name)
+   {
+      offset_to_utc=offset;
       name=_name;
       if (has_value(name, \"/\"))
       {
@@ -930,7 +1020,10 @@ class TZRules
       return ({offset_to_utc-a[i][2],tzformat(a[i][3])});
    }
 
-   string _sprintf(int t) { return (t=='O')?\"Timezone(\"+name+\")\":0; }
+   protected string _sprintf(int t)
+  {
+    return t=='O' && \"Timezone(\"+name+\")\";
+  }
 
    int raw_utc_offset() { return offset_to_utc; }
 }

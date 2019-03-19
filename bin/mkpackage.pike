@@ -35,25 +35,25 @@ string sh_quote(string s)
 
 class Package
 {
-  static string my_name;
-  static string pike_filename; 
-  static string install_filename; 
-  static string extra_help; 
-  static string extra_advanced_help; 
-  static string extra_flags;
-  static string extra_license;
-  static string extra_version;
+  protected string my_name;
+  protected string pike_filename;
+  protected string install_filename;
+  protected string extra_help;
+  protected string extra_advanced_help;
+  protected string extra_flags;
+  protected string extra_license;
+  protected string extra_version;
 
-  static private mapping(array(string):string) options;
+  protected private mapping(array(string):string) options;
   
-  static void create(string _my_name,
-		     string _pike_filename,
-		     string _install_filename,
-		     string _extra_help,
-		     string _extra_advanced_help,
-		     string _extra_flags,
-		     string _extra_license,
-		     string _extra_version)
+  protected void create(string _my_name,
+			string _pike_filename,
+			string _install_filename,
+			string _extra_help,
+			string _extra_advanced_help,
+			string _extra_flags,
+			string _extra_license,
+			string _extra_version)
   {
     my_name             = _my_name;
     pike_filename       = _pike_filename;
@@ -132,9 +132,9 @@ class Package
      "EXIT=yes" ]);
   }
   
-  static private array(string) packages = ({});
+  protected private array(string) packages = ({});
   
-  static private string unique_name(int c)
+  protected private string unique_name(int c)
   {
     return sprintf("%ctmP%07x", c, random(0xfffffff));
   }

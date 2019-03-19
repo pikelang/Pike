@@ -2,8 +2,6 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id$
-//
 // Honza Petrous, hop@unibase.cz
 //
 // ----------------------------------------------------------------------
@@ -21,13 +19,11 @@
 //			 - added core for async operation
 //
 
-#if constant(Standards.ASN1.Types)
-
 import Protocols.LDAP;
 
 #include "ldap_globals.h"
 
-  // private variables 
+  // private variables
   int next_id = 1;				// message id counter
   int ldap_version = LDAP_DEFAULT_VERSION;	// actually used protocol vers.
   string ldap_rem_errstr = ldap_error_strings[LDAP_SUCCESS]; // last remote error description
@@ -42,7 +38,12 @@ import Protocols.LDAP;
   array extra_args;				// not used, yet
 //  /*private*/ int errno;
   int connected = 0;
-  Stdio.File ldapfd;			// helper fd
+
+#if constant(SSL.Cipher)
+  Stdio.Stream|SSL.File ldapfd;		        // helper fd
+#else
+  Stdio.Stream ldapfd;			        // helper fd
+#endif
 
 protected int last_io_time; // Timestamp when I/O on the fd was made last.
 
@@ -111,12 +112,12 @@ int get_last_io_time() {return last_io_time;}
     }
     if (readbuf[0] != '0') {
       seterr (LDAP_PROTOCOL_ERROR);
-      DWRITE_HI("protocol.read_answer: ERROR: retv=<"+sprintf("%O",readbuf)+">\n");
+      DWRITE_HI("protocol.read_answer: ERROR: retv=<%O>\n", readbuf);
       THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
       //return -ldap_errno;
       return;
     }
-    DWRITE(sprintf("protocol.read_answer: sizeof = %d\n", sizeof(readbuf)));
+    DWRITE("protocol.read_answer: sizeof = %d\n", sizeof(readbuf));
 
     msglen = readbuf[1];
     ofs = 2;
@@ -156,7 +157,7 @@ int get_last_io_time() {return last_io_time;}
       return;
     }
     readbuf += s;
-    //DWRITE(sprintf("protocol.read_answer: %s\n", .ldap_privates.ldap_der_decode(readbuf)->debug_string()));
+    //DWRITE("protocol.read_answer: %O\n", .ldap_privates.ldap_der_decode(readbuf));
     DWRITE("protocol.read_answer: ok=1.\n");
     ok = 1;
 
@@ -178,7 +179,7 @@ int get_last_io_time() {return last_io_time;}
 
     if (readbuf[0] != '0')
       return 1;  // PDU has bad header -> forced execution
-    
+
     msglen = readbuf[1];
     if (msglen & 0x80) { // > 0x7f
       if (msglen == 0x80)
@@ -218,15 +219,15 @@ int get_last_io_time() {return last_io_time;}
     //THREAD_LOCK
     msgnum = next_id++;
     //THREAD_UNLOCK
-    msgid = Standards.ASN1.Types.asn1_integer(msgnum);
+    msgid = Standards.ASN1.Types.Integer(msgnum);
     if (controls) {
-      msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop, controls}));
+      msgval = Standards.ASN1.Types.Sequence(({msgid, msgop, controls}));
     } else {
-      msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop}));
+      msgval = Standards.ASN1.Types.Sequence(({msgid, msgop}));
     }
 
     if (objectp(msgval)) {
-      DWRITE(sprintf("protocol.do_op: msg = [%d]\n",sizeof(msgval->get_der())));
+      DWRITE("protocol.do_op: msg = [%d]\n",sizeof(msgval->get_der()));
     } else
       DWRITE("protocol.do_op: msg is null!\n");
 
@@ -239,7 +240,7 @@ int get_last_io_time() {return last_io_time;}
       ERROR ("LDAP write error: %s\n", ldap_rem_errstr);
       return -ldap_errno;
     }
-    DWRITE(sprintf("protocol.do_op: write OK [%d bytes].\n",rv));
+    DWRITE("protocol.do_op: write OK [%d bytes].\n",rv);
     msgval = 0; msgid = 0;
     writebuf= "";
     readbuf= ""; // !!! NEni to pozde ?
@@ -249,7 +250,7 @@ int get_last_io_time() {return last_io_time;}
     //`()();
 
     read_answer();
-    // now is all in 'readbuf'   
+    // now is all in 'readbuf'
 
     return readbuf;
 
@@ -271,7 +272,7 @@ int get_last_io_time() {return last_io_time;}
       ERROR ("LDAP read error: %s\n", ldap_rem_errstr);
       return -ldap_errno;
     }
-    DWRITE(sprintf("protocol.readmsg: sizeof = %d\n", sizeof(retv)));
+    DWRITE("protocol.readmsg: sizeof = %d\n", sizeof(retv));
 
     msglen = retv[1];
     if (msglen & 0x80) { // > 0x7f
@@ -293,7 +294,7 @@ int get_last_io_time() {return last_io_time;}
         msglen += shlp[ix]*(1<<(ix*8));
       }
     }
-    DWRITE(sprintf("protocol.readmsg: reading %d bytes.\n", msglen));
+    DWRITE("protocol.readmsg: reading %d bytes.\n", msglen);
     s = ldapfd->read(msglen);
     if (!s | (sizeof(s) < msglen)) {
       seterr (LDAP_SERVER_DOWN,
@@ -303,7 +304,7 @@ int get_last_io_time() {return last_io_time;}
     }
     retv += s;
     last_io_time = time();
-    DWRITE(sprintf("protocol.readmsg: %s\n", .ldap_privates.ldap_der_decode(retv)->debug_string()));
+    DWRITE("protocol.readmsg: %O\n", .ldap_privates.ldap_der_decode(retv));
     return retv;
   }
 
@@ -317,11 +318,11 @@ int get_last_io_time() {return last_io_time;}
     //THREAD_LOCK
     msgnum = next_id++;
     //THREAD_UNLOCK
-    msgid = Standards.ASN1.Types.asn1_integer(msgnum);
-    msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop}));
+    msgid = Standards.ASN1.Types.Integer(msgnum);
+    msgval = Standards.ASN1.Types.Sequence(({msgid, msgop}));
 
     if (objectp(msgval)) {
-      DWRITE(sprintf("protocol.writemsg: msg = [%d]\n",sizeof(msgval->get_der())));
+      DWRITE("protocol.writemsg: msg = [%d]\n",sizeof(msgval->get_der()));
     } else
       DWRITE("protocol.writemsg: msg is null!\n");
 
@@ -333,12 +334,8 @@ int get_last_io_time() {return last_io_time;}
       ERROR ("LDAP write error: %s\n", ldap_rem_errstr);
       return -ldap_errno;
     }
-    DWRITE(sprintf("protocol.writemsg: write OK [%d bytes].\n",rv));
+    DWRITE("protocol.writemsg: write OK [%d bytes].\n",rv);
     msgval = 0; msgid = 0;
     last_io_time = time();
     return msgnum;
   }
-
-#else
-constant this_program_does_not_exist=1;
-#endif

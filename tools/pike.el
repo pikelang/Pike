@@ -1,5 +1,4 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id$
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -93,7 +92,7 @@ It's overlaid over the `font-lock-builtin-face'."
 
 (defconst pike-font-lock-modifier-regexp
   (concat "\\<\\(public\\|inline\\|final\\|static\\|protected\\|"
-	  "local\\|optional\\|private\\|nomask\\|variant\\)\\>")
+	  "local\\|optional\\|private\\|variant\\)\\>")
   "Regexp for modifiers. Must have exactly one submatch.")
 
 ; Problems: We really should allow all unicode characters...

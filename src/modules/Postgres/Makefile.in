@@ -1,4 +1,3 @@
-# $Id$
 
 @make_variables@
 VPATH=@srcdir@
@@ -10,5 +9,9 @@ MODULE_SPOTLESS_EXTRA=pgres_config.h
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
+
+$(srcdir)/postgres.c: postgres.cmod
+
+$(srcdir)/pgresult.c: pgresult.cmod
 
 @dependencies@

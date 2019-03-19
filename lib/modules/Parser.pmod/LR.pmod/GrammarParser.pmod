@@ -1,8 +1,6 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id$
- *
  * Generates a parser from a textual specification.
  *
  * Henrik Grubbström 1996-12-06
@@ -34,7 +32,7 @@
  * Defines
  */
 
-/* #define DEBUG */
+/* #define LR_DEBUG */
 
 /* Errors during parsing */
 /* Action for rule is missing from master object */
@@ -117,7 +115,7 @@ protected private class Scan {
 	  return ":";
 	case ';':
 	  return ";";
-	case '\n': 
+	case '\n':
 	case '\r':
 	case ' ':
 	case '\t':
@@ -326,16 +324,16 @@ Parser make_parser(string str, object|void m)
   nonterminal_lookup = ([]);
 
   ErrorHandler eh = ErrorHandler(
-#ifdef DEBUG
+#ifdef LR_DEBUG
 				 1
-#else /* !DEBUG */
+#else /* !LR_DEBUG */
 				 0
-#endif /* DEBUG */
+#endif /* LR_DEBUG */
 				 );
 
-#ifdef DEBUG
+#ifdef LR_DEBUG
   _parser->set_error_handler(eh->report);
-#endif /* DEBUG */
+#endif /* LR_DEBUG */
 
   g->set_error_handler(eh->report);
 

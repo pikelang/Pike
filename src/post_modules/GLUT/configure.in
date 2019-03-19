@@ -1,8 +1,9 @@
-# $Id$
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(GLUT)
 
 AC_SUBST(AUTO)
 AC_ARG_WITH(GLUT,  [  --without-GLUT    no support for GLUT],[without_GLUT=yes],[without_GLUT=no])
