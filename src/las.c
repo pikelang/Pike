@@ -3934,6 +3934,7 @@ void fix_type_field(node *n)
 
       if( t->type == PIKE_T_AUTO )
       {
+	type_stack_mark();
 	if( t->car != zero_type_string )
 	{
 	  /* Not the first one.. */
@@ -3948,7 +3949,7 @@ void fix_type_field(node *n)
 	}
 	push_type(PIKE_T_AUTO);
 	free_type( t );
-	t = pop_type();
+	t = pop_unfinished_type();
 	Pike_compiler->compiler_frame->current_return_type = t;
       } else {
 	node *retval = CAR(n);
