@@ -5253,7 +5253,7 @@ PMOD_EXPORT int callablep(struct svalue *s)
 	int i;
 	ret = 1;
 	for(i=0; i<a->size; i++)
-          if( TYPEOF(ITEM(a)[i])!=T_INT && !callablep(&ITEM(a)[i]) )
+	  if(!IS_UNDEFINED(ITEM(a) + i) && !callablep(&ITEM(a)[i]))
           {
             ret = 0;
             break;
