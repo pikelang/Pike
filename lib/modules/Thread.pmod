@@ -437,6 +437,9 @@ optional class Farm
   protected Queue job_queue = Queue();
 
   //! An asynchronous result.
+  //!
+  //! @fixme
+  //!   This class ought to be made @[Concurrent.Future]-compatible.
   class Result
   {
     int ready;
@@ -526,6 +529,105 @@ optional class Farm
 	  return "Thread.Farm().Result";
 	case 'O':
 	  return sprintf( "%t(%d %O)", this, ready, value );
+      }
+    }
+  }
+
+  protected void report_errors(mixed err, int is_err)
+  {
+    if (!is_err) return;
+    master()->handle_error(err);
+  }
+
+  //! A wrapper for an asynchronous result.
+  //!
+  //! @note
+  //!   This wrapper is used to detect when the
+  //!   user discards the values returned from
+  //!   @[run()] or @[run_multiple()], so that
+  //!   any errors thrown aren't lost.
+  protected class ResultWrapper(Result ro)
+  {
+    protected int(0..1) value_fetched;
+    int `ready() { return ro->ready; }
+    mixed `value() {
+      value_fetched = 1;
+      return ro->value;
+    }
+    function `done_cb() { return ro->done_cb; }
+    void `done_cb=(function cb) {
+      if (cb) value_fetched = 1;
+      ro->done_cb = cb;
+    }
+
+    //! @returns
+    //!   @int
+    //!     @value 1
+    //!       Returns @expr{1@} when the result is available.
+    //!     @value 0
+    //!       Returns @expr{0@} (zero) when the result hasn't
+    //!       arrived yet.
+    //!     @value -1
+    //!       Returns negative on failure.
+    //!   @endint
+    function(:int) `status() { return ro->status; }
+
+    //! @returns
+    //!   Returns the result if available, a backtrace on failure,
+    //!   and @expr{0@} (zero) otherwise.
+    function(:mixed) `result() { return ro->result; }
+
+    //! Wait for completion.
+    mixed `()()
+    {
+      return ro();
+    }
+
+    //! Register a callback to be called when
+    //! the result is available.
+    //!
+    //! @param to
+    //!   Callback to be called. The first
+    //!   argument to the callback will be
+    //!   the result or the failure backtrace,
+    //!   and the second @expr{0@} (zero) on
+    //!   success, and @expr{1@} on failure.
+    void set_done_cb(function cb) {
+      if (cb) value_fetched = 1;
+      ro->set_done_cb(cb);
+    }
+
+    //! Register a failure.
+    //!
+    //! @param what
+    //!   The corresponding backtrace.
+    function(mixed:void) `provide_error() { return ro->provide_error; }
+
+    //! Register a completed result.
+    //!
+    //! @param what
+    //!   The result to register.
+    function(mixed:void) `provide() { return ro->provide; }
+
+    protected void _destruct()
+    {
+      if (ro && !value_fetched && !ro->done_cb) {
+	// Make sure that any errors aren't lost.
+	ro->done_cb = report_errors;
+	if (ro->ready < 0) {
+	  report_errors(ro->value, 1);
+	}
+      }
+    }
+
+    protected string _sprintf( int f )
+    {
+      switch( f )
+      {
+	case 't':
+	  return "Thread.Farm().ResultWrapper";
+	case 'O':
+	  return sprintf("%t(%O)", this, ro);
       }
     }
   }
@@ -697,6 +799,7 @@ optional class Farm
   Result run_multiple( array(array(function|array)) fun_args )
   {
     Result r = Result(); // private result..
+    ResultWrapper rw = ResultWrapper(r);
     r->value = allocate( sizeof( fun_args ) );
     mapping nl = ([ "num_left":sizeof( fun_args ) ]);
     for( int i=0; i<sizeof( fun_args ); i++ )
@@ -705,7 +808,7 @@ optional class Farm
       r2->set_done_cb( ValueAdjuster( r, r2, i, nl )->go );
       job_queue->write( ({ r2, fun_args[i] }) );
     }
-    return r;
+    return rw;
   }
 
 
@@ -752,8 +855,9 @@ optional class Farm
   Result run( function f, mixed ... args )
   {
     Result ro = Result();
+    ResultWrapper rw = ResultWrapper(ro);
     job_queue->write( ({ ro, ({f, args }) }) );
-    return ro;
+    return rw;
   }
 
   //! Register a job for the thread farm
