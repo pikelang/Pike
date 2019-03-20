@@ -617,7 +617,7 @@ mapping(string:int) load_time=([]);
 
 #endif // PIKE_AUTORELOAD
 
-//!
+//! @[predef::CompilerEnvironment] that supports handlers.
 protected class CompilerEnvironment
 {
   //!
@@ -1069,6 +1069,7 @@ protected CompilerEnvironment DefaultCompilerEnvironment =
   CompilerEnvironment();
 
 #if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
+//!
 protected program compile(string source, object|void handler,
 			  int|void major, int|void minor,
 			  program|void target, object|void placeholder)
@@ -1113,6 +1114,7 @@ protected object get_active_error_handler()
   return c && c->handler;
 }
 
+//!
 protected string cpp(string data, mapping|string|void current_file,
 		     int|string|void charset, object|void handler,
 		     void|int compat_major, void|int compat_minor,
