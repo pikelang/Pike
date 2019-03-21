@@ -4091,12 +4091,37 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
     char *cnt = p->linenumbers;
 
     while (cnt < p->linenumbers + p->num_linenumbers) {
-      if (*cnt == 127) {
+      while (*cnt == 127) {
 	int strno;
 	cnt++;
 	strno = get_small_number(&cnt);
-	fprintf(stderr, "%*s  Filename: String #%d\n", indent, "", strno);
+	if (strno >= 0) {
+	  fprintf(stderr, "%*s  Filename: String #%d\n", indent, "", strno);
+	} else {
+	  int offset = ~strno;
+	  int kind = *(cnt++);
+	  strno = (kind >= 0)?get_small_number(&cnt):0;
+	  switch(kind) {
+	  case -1:	/* end */
+	    fprintf(stderr, "%*s  Variable #%d end\n", indent, "", offset);
+	    break;
+	  case 0:	/* name */
+	    fprintf(stderr, "%*s  Variable #%d name: string #%d\n",
+		    indent, "", offset, strno);
+	    break;
+	  case 1:	/* type */
+	    fprintf(stderr, "%*s  Variable #%d type: constant #%d\n",
+		    indent, "", offset, strno);
+	    break;
+	  default:
+	    fprintf(stderr, "%*s  Variable #%d unknown (%d): value: %d\n",
+		    indent, "", offset, kind, strno);
+	    break;
+	  }
+	}
+	if (cnt >= p->linenumbers + p->num_linenumbers) break;
       }
+      if (cnt >= p->linenumbers + p->num_linenumbers) break;
       off += get_small_number(&cnt);
       line += get_small_number(&cnt);
       fprintf(stderr, "%*s    %8d:%8ld\n", indent, "", off, (long)line);
@@ -8421,19 +8446,56 @@ void store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
 	  Pike_compiler->new_program->num_linenumbers)
     {
       char *start = cnt;
-      if(*cnt == 127)
+      while(*cnt == 127)
       {
 	int strno;
 	cnt++;
 	strno = get_small_number(&cnt);
-	CHECK_FILE_ENTRY (Pike_compiler->new_program, strno);
-	if (a_flag > 100) {
-	  file = Pike_compiler->new_program->strings[strno];
-	  fprintf(stderr, "Filename entry:\n"
-		  "  len: %"PRINTSIZET"d, shift: %d\n",
-		  file->len, file->size_shift);
+	if (strno >= 0) {
+	  CHECK_FILE_ENTRY (Pike_compiler->new_program, strno);
+	  if (a_flag > 100) {
+	    file = Pike_compiler->new_program->strings[strno];
+	    fprintf(stderr, "Filename entry:\n"
+		    "  len: %"PRINTSIZET"d, shift: %d\n",
+		    file->len, file->size_shift);
+	  }
+	} else {
+	  int offset = ~strno;
+	  int kind = *(cnt++);
+	  strno = (kind < 0)?-1:get_small_number(&cnt);
+	  if (a_flag > 100) {
+	    switch(kind) {
+	    case -1:	/* end */
+	      fprintf(stderr, "Variable end entry:\n"
+		      "  offset: 0x%04x\n", offset);
+	      break;
+	    case 0:	/* name */
+	      {
+		struct pike_string *var_name =
+		  Pike_compiler->new_program->strings[strno];
+		fprintf(stderr, "Variable name entry:\n"
+			"  offset: 0x%04x name: \"%.*s\"\n",
+			offset, (int)var_name->len, var_name->str);
+		break;
+	      }
+	    case 1:	/* type */
+	      fprintf(stderr, "Variable type entry:\n"
+		      "  offset: 0x%04x Type constant #%d\n",
+		      offset, strno);
+	      break;
+	    default:
+	      fprintf(stderr, "Unknown entry #%d\n"
+		      "  offset: 0x%04x Number: 0x%08x\n",
+		      kind, offset, (kind > 0)?strno:0);
+	      break;
+	    }
+	  }
 	}
+	if (cnt >= Pike_compiler->new_program->linenumbers +
+	    Pike_compiler->new_program->num_linenumbers) break;
       }
+      if (cnt >= Pike_compiler->new_program->linenumbers +
+	  Pike_compiler->new_program->num_linenumbers) break;
       off+=get_small_number(&cnt);
       line+=get_small_number(&cnt);
       if (a_flag > 100) {
