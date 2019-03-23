@@ -76,7 +76,7 @@ void render_expert_tree(String.Buffer code,
 		  set_timezone(Calendar.Timezone.UTC)->format_time());
     foreach(sort(indices(tree) - ({ "test" })), int offset) {
       code->sprintf("%*s   %d:", indent*3, "", offset);
-      render_expert_tree(code, tree[offset], indent+1);
+      render_expert_tree(code, tree[offset], indent+2);
       code->sprintf(",\n");
     }
     code->sprintf("%*s])", indent*3, "");
