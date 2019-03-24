@@ -136,8 +136,8 @@ mapping|array|string generate_expert_tree(array(object) zones)
     mapping(int:array(object)) histogram = mkhistogram(zones, times[l]);
     int score = max(0, @map(values(histogram), sizeof));
     int split = sizeof(histogram);
-    if ((score < best_score) ||
-	((score == best_score) && (split > best_split))) {
+    if ((split > best_split) ||
+	((split == best_split) && (score < best_score))) {
       best_score = score;
       best_split = split;
       best_t = times[l];
@@ -159,8 +159,8 @@ mapping|array|string generate_expert_tree(array(object) zones)
       mapping(int:array(object)) histogram = mkhistogram(zones, times[l]);
       int score = max(0, @map(values(histogram), sizeof));
       int split = sizeof(histogram);
-      if ((score < best_score) ||
-	  ((score == best_score) && (split > best_split))) {
+      if ((split > best_split) ||
+	  ((split == best_split) && (score < best_score))) {
 	best_score = score;
 	best_split = split;
 	best_t = times[l];
