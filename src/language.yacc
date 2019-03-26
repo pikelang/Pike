@@ -185,8 +185,8 @@ static node *lexical_islocal(struct pike_string *);
 static node *safe_inc_enum(node *n);
 static node *find_versioned_identifier(struct pike_string *identifier,
 				       int major, int minor);
-static int call_handle_import(struct pike_string *s);
-static void update_current_type();
+static int call_handle_import(void);
+static void update_current_type(void);
 
 static int inherit_depth;
 static struct program_state *inherit_state = NULL;
@@ -522,28 +522,16 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
   | modifiers TOK_INHERIT error '}' { yyerror("Missing ';'."); }
   ;
 
-import: TOK_IMPORT idents ';'
+import: TOK_IMPORT constant_expr ';'
   {
     resolv_constant($2);
     free_node($2);
+    if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
+      call_handle_import();
+    }
     use_module(Pike_sp-1);
     pop_stack();
   }
-  | TOK_IMPORT string ';'
-  {
-    if (call_handle_import($2->u.sval.u.string)) {
-      use_module(Pike_sp-1);
-      pop_stack();
-    }
-    free_node($2);
-  }
-  | TOK_IMPORT error ';' { yyerrok; }
-  | TOK_IMPORT error TOK_LEX_EOF
-  {
-    yyerror("Missing ';'.");
-    yyerror("Unexpected end of file.");
-  }
-  | TOK_IMPORT error '}' { yyerror("Missing ';'."); }
   ;
 
 constant_name: TOK_IDENTIFIER '=' safe_expr0
@@ -4128,8 +4116,8 @@ low_idents: TOK_IDENTIFIER
   | '.' TOK_IDENTIFIER
   {
     struct pike_string *dot;
-    MAKE_CONST_STRING(dot, ".");
-    if (call_handle_import(dot)) {
+    push_constant_text(".");
+    if (call_handle_import()) {
       node *tmp=mkconstantsvaluenode(Pike_sp-1);
       pop_stack();
       $$=index_node(tmp, ".", $2->u.sval.u.string);
@@ -4555,6 +4543,8 @@ bad_inherit: bad_expr_ident
   { yyerror_reserved("gauge"); }
   | TOK_IF
   { yyerror_reserved("if"); }
+  | TOK_IMPORT
+  { yyerror_reserved("import"); }
   | TOK_INT_ID
   { yyerror_reserved("int"); }
   | TOK_LAMBDA
@@ -4617,8 +4607,6 @@ bad_expr_ident:
   { yyerror_reserved("final");}
   | TOK_ELSE
   { yyerror("else without if."); }
-  | TOK_IMPORT
-  { yyerror_reserved("import"); }
   | TOK_INHERIT
   { yyerror_reserved("inherit"); }
   ;
@@ -4986,9 +4974,8 @@ static node *find_versioned_identifier(struct pike_string *identifier,
   return res;
 }
 
-static int call_handle_import(struct pike_string *s)
+static int call_handle_import(void)
 {
-  ref_push_string(s);
   if (safe_apply_low2(Pike_fp->current_object,
                       PC_HANDLE_IMPORT_FUN_NUM
                       + Pike_fp->context->identifier_level, 1, NULL)) {
@@ -5001,7 +4988,7 @@ static int call_handle_import(struct pike_string *s)
       if (TYPEOF(Pike_sp[-1]) != T_INT) return 1;
 
       pop_stack();
-      my_yyerror("Couldn't find module to import: %S", s);
+      my_yyerror("Couldn't find module to import.");
       return 0;
     }
     my_yyerror("Invalid return value from handle_import: %O", Pike_sp-1);
@@ -5015,7 +5002,7 @@ static int call_handle_import(struct pike_string *s)
 }
 
 /* Set compiler_frame->current_type from the type stack. */
-static void update_current_type()
+static void update_current_type(void)
 {
   if(Pike_compiler->compiler_frame->current_type)
     free_type(Pike_compiler->compiler_frame->current_type);
