@@ -176,6 +176,47 @@ protected function(:Calendar.Rule.Timezone) _locale()
 
 Calendar.Rule.Timezone tz_from_tzfile(string tzfile)
 {
+  /* TZfile format (network byte-order):
+   *
+   * time_t is int32
+   *
+   * off   type            a[x] name            Typical value
+   * ---------------------------------------------------------------------------
+   * 0x00  char[4]	     0	magic		"TZif"
+   * 0x04  char[1]	     1	version		"\0" or "2"
+   * 0x05  char[15]	     1	reserved	"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+   * 0x14  int32	     2	isgmtcnt
+   * 0x18  int32	     3	isstdcnt
+   * 0x1c  int32	     4	leapcnt
+   * 0x20  int32	     5	timecnt
+   * 0x24  int32	     6	typecnt
+   * 0x28  int32	     7	charcnt
+   * 0x2c  time_t[timecnt]	transition_times
+   * -     char[timecnt]	transition_time_types
+   * -     ttinfo[typecnt]	transition_info
+   * -     char[charcnt]	abbreviations
+   * -     leapinfo[leapcnt]	leapseconds
+   * -     char[isstdcnt]	utc_or_local_time
+   * -     char[isgmtcnt]	utc_or_local_time
+   *
+   * struct ttinfo {
+   *   time_t gmtoff
+   *   char isdst
+   *   char abbrind
+   * }
+   * struct leapinfo {
+   *   time_t	leap_time
+   *   int32	num_leapseconds
+   * }
+   *
+   * In version 2 the above is followed by a second header
+   * where time_t is int64.
+   *
+   * The second header is followed by a "\n"-enclosed string
+   * describing the active rule after the last transition.
+   * (Eg "CET-1CEST,M3.5.0,M10.5.0/3")
+   *
+   */
    array header = array_sscanf(tzfile, "%4s%16s%4c%4c%4c%4c%4c%4c");
    if( sizeof(header)<8 ) return 0;
    array zoneabbr = tzfile[44+header[5]*4+header[5]+header[6]*6..44+header[5]*4+header[5]+header[6]*6+header[7]-1]/"\0";
