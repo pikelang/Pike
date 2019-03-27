@@ -107,7 +107,7 @@ protected function(:Calendar.Rule.Timezone) _locale()
 	 } else {
 	   foreach(s/"\n", string line) {
 	     line = (line/"#")[0];	// Strip comments.
-	     if (sscanf(s, "%*s" + var_name + "=%s", s) == 2) {
+	     if (sscanf(line, "%*s" + var_name + "=%s", s) == 2) {
 	       sscanf(s, "\"%s\"", s);	// Strip quotes (if any).
 	       if (tz = `[](s))
 	       {
