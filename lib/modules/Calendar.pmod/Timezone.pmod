@@ -86,12 +86,18 @@ static function(:.Rule.Timezone) _locale()
       if (tz) return tz;
    }
 
-   // Mapping from file name to variable name.
-   foreach(([ "/etc/localtime":0,		// Linux & BSDs
-	      "/etc/sysconfig/clock":"ZONE",	// Linux RedHat
-	      "/etc/TIMEZONE":"TZ",		// Solaris
-	      "/etc/conf.d/clock":"TIMEZONE",	// Linux Gentoo
-	   ]); string fname; string var_name) {
+   foreach(({ "/etc/TIMEZONE",		// Solaris
+	      "/etc/sysconfig/clock",	// Linux Gentoo
+	      "/etc/conf.d/clock",	// Linux RedHat
+	      "/etc/localtime",		// Linux & BSDs (binary)
+	   }), string fname) {
+     // Mapping from file name to variable name.
+     string var_name =
+       ([ "/etc/TIMEZONE":"TZ",
+	  "/etc/sysconfig/clock":"ZONE",
+	  "/etc/conf.d/clock":"TIMEZONE",
+	  "/etc/localtime":0,
+       ])[fname];
      catch {
        if (Stdio.is_file(fname) && (s = Stdio.read_bytes(fname))) {
 	 if (!var_name) {
