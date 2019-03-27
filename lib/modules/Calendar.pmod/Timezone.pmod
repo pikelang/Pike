@@ -86,14 +86,16 @@ protected function(:Calendar.Rule.Timezone) _locale()
       if (tz) return tz;
    }
 
-   foreach(({ "/etc/TIMEZONE",		// Solaris
+   foreach(({ "/etc/timezone",		// Linux
+	      "/etc/TIMEZONE",		// Solaris
 	      "/etc/sysconfig/clock",	// Linux Gentoo
 	      "/etc/conf.d/clock",	// Linux RedHat
 	      "/etc/localtime",		// Linux & BSDs (binary)
 	   }), string fname) {
      // Mapping from file name to variable name.
      string var_name =
-       ([ "/etc/TIMEZONE":"TZ",
+       ([ "/etc/timezone":"",
+	  "/etc/TIMEZONE":"TZ",
 	  "/etc/sysconfig/clock":"ZONE",
 	  "/etc/conf.d/clock":"TIMEZONE",
 	  "/etc/localtime":0,
@@ -108,6 +110,12 @@ protected function(:Calendar.Rule.Timezone) _locale()
 	     if (sscanf(s, "%*s" + var_name + "=%s", s) == 2) {
 	       sscanf(s, "\"%s\"", s);	// Strip quotes (if any).
 	       if (tz = `[](s))
+	       {
+		 // werror("=>%O\n",tz);
+		 return tz;
+	       }
+	     } else if ((var_name == "") && sizeof(line)) {
+	       if (tz = `[](line))
 	       {
 		 // werror("=>%O\n",tz);
 		 return tz;
