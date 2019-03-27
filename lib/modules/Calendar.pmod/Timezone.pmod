@@ -101,6 +101,23 @@ static function(:.Rule.Timezone) _locale()
 	  "/etc/localtime":0,
        ])[fname];
      catch {
+#if constant(readlink)
+       if (!var_name && Stdio.is_link(fname)) {
+	 s = readlink(fname);
+	 if (s) {
+	   array(string) a = s/"/";
+	   // Modern zones usually have two levels.
+	   // (Eg Europe/Paris)
+	   tz = Calendar.Timezone[a[<1..]*"/"] ||
+	     // NB: There are some zones that have three levels.
+	     //     (Eg America/Indiana/Indianapolis)
+	     Calendar.Timezone[a[<2..]*"/"] ||
+	     // Old-style zones have a single level.
+	     Calendar.Timezone[a[-1]];
+	   if (tz) return tz;
+	 }
+       }
+#endif
        if (Stdio.is_file(fname) && (s = Stdio.read_bytes(fname))) {
 	 if (!var_name) {
 	   if (tz = tz_from_tzfile(s)) return tz;
