@@ -607,6 +607,15 @@ test_any_equal([[
   return values(B());
 ]], ({ 2 }))
 
+test_any_equal([[
+  // Test constant expression in inherit.
+  class A { constant sym = 1; }
+  class B { constant sym = 2; }
+  class C { inherit ([ "A":A, "B":B ])["A"]; }
+  class D { inherit ([ "A":A, "B":B ])["B"]; }
+  return ({ A, B, C, D })->sym;
+]], ({ 1, 2, 1, 2 }))
+
 dnl bug in for loop optimization in combination with +=
 
 test_any([[

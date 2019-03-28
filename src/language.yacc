@@ -159,6 +159,7 @@
 #include "pike_embed.h"
 #include "opcodes.h"
 #include "operators.h"
+#include "builtin_functions.h"
 #include "bignum.h"
 
 #define YYMAXDEPTH	1000
@@ -426,42 +427,93 @@ optional_rename_inherit: ':' real_string_or_identifier { $$=$2; }
 /* NOTE: This rule pushes a string "name" on the stack in addition
  * to resolving the program reference.
  */
-low_program_ref: string_constant
+low_program_ref: safe_expr0
   {
+    node *n = $1;
+
     STACK_LEVEL_START(0);
 
-    ref_push_string($1->u.sval.u.string);
-    if (call_handle_inherit($1->u.sval.u.string)) {
-      STACK_LEVEL_CHECK(2);
-      $$=mksvaluenode(Pike_sp-1);
-      pop_stack();
+    while (n) {
+      switch (n->token) {
+      case F_EXTERNAL:
+      case F_GET_SET:
+	$$ = n;
+	add_ref(n);
+	free_node($1);
+	goto got_program_ref;
+      case F_APPLY:
+	{
+	  if ((CAR(n)->token == F_CONSTANT) &&
+	      (TYPEOF(CAR(n)->u.sval) == T_FUNCTION) &&
+	      (SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) &&
+	      (CAR(n)->u.sval.u.efun->function == debug_f_aggregate)) {
+	    /* Disambiguate multiple inherit ::-reference. */
+	    node *arg;
+	    while(1) {
+	      while ((arg = CDR(n))) {
+		n = arg;
+		if (n->token != F_ARG_LIST) goto found_program_ref;
+	      }
+	      /* Paranoia. */
+	      if ((arg = CAR(n))) {
+		n = arg;
+		continue;
+	      }
+	      /* FIXME: Ought to go up a level and try the car there...
+	       *        But as this code probably won't be reached, we
+	       *        just fail.
+	       */
+	      yyerror("Failed to get last argument from empty array.");
+	      n = NULL;
+	      break;
+	    }
+	  found_program_ref:
+	    /* NB: The traditional C grammar requires a statement
+	     *     after a label.
+	     */
+	    continue;
+	  }
+	}
+	/* FALLTHRU */
+      default:
+	/* Evaluate the expression. */
+	break;
+      }
+      break;
     }
-    else
-      $$=mknewintnode(0);
-    STACK_LEVEL_CHECK(1);
-    if($$->name) free_string($$->name);
-#ifdef PIKE_DEBUG
-    if (TYPEOF(Pike_sp[-1]) != T_STRING) {
-      Pike_fatal("Compiler lost track of program name.\n");
-    }
-#endif /* PIKE_DEBUG */
-    /* FIXME: Why not use $1->u.sval.u.string here? */
-    add_ref( $$->name=Pike_sp[-1].u.string );
+
+    resolv_constant(n);
     free_node($1);
 
-    STACK_LEVEL_DONE(1);
-  }
-  | idents
-  {
-    STACK_LEVEL_START(0);
+    if (TYPEOF(Pike_sp[-1]) == T_STRING) {
+      if (call_handle_inherit(Pike_sp[-1].u.string)) {
+	STACK_LEVEL_CHECK(2);
+	$$ = mksvaluenode(Pike_sp-1);
+	pop_stack();
+      }
+      else
+	$$ = mknewintnode(0);
+      STACK_LEVEL_CHECK(1);
+      if($$->name) free_string($$->name);
+#ifdef PIKE_DEBUG
+      if (TYPEOF(Pike_sp[-1]) != T_STRING) {
+	Pike_fatal("Compiler lost track of program name.\n");
+      }
+#endif /* PIKE_DEBUG */
 
-    if(Pike_compiler->last_identifier)
-    {
-      ref_push_string(Pike_compiler->last_identifier);
-    }else{
-      push_empty_string();
+      add_ref( $$->name=Pike_sp[-1].u.string );
+    } else {
+      $$ = mksvaluenode(Pike_sp-1);
+      pop_stack();
+
+    got_program_ref:
+      STACK_LEVEL_CHECK(0);
+      if (Pike_compiler->last_identifier) {
+	ref_push_string(Pike_compiler->last_identifier);
+      } else {
+	push_empty_string();
+      }
     }
-    $$=$1;
 
     STACK_LEVEL_DONE(1);
   }
@@ -513,13 +565,6 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
     pop_stack();
     yyerror("Missing ';'.");
   }
-  | modifiers TOK_INHERIT error ';' { yyerrok; }
-  | modifiers TOK_INHERIT error TOK_LEX_EOF
-  {
-    yyerror("Missing ';'.");
-    yyerror("Unexpected end of file.");
-  }
-  | modifiers TOK_INHERIT error '}' { yyerror("Missing ';'."); }
   ;
 
 import: TOK_IMPORT constant_expr ';'
