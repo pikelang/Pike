@@ -5136,7 +5136,8 @@ PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *))
  *   Reference number in q->new_program->inherit[i].prog.
  *
  * @return
- *   Returns an equivalent reference that is INLINE|HIDDEN.
+ *   Returns an equivalent reference that is INLINE (and HIDDEN if
+ *   a new reference was created).
  *
  *   Returns -1 if the referenced identifier is -1 or a prototype.
  */
@@ -5175,7 +5176,8 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
 
     if ((refp->inherit_offset == funp.inherit_offset) &&
 	(refp->identifier_offset == funp.identifier_offset) &&
-	((refp->id_flags | ID_USED) == (funp.id_flags | ID_USED))) {
+	((refp->id_flags & (ID_INLINE|ID_EXTERN|ID_VARIANT)) ==
+	 (funp.id_flags & (ID_INLINE|ID_EXTERN|ID_VARIANT)))) {
       return d;
     }
   }
