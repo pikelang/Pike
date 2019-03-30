@@ -47,13 +47,22 @@ constant FakeObject = __builtin.FakeObject;
 
 constant __Backend = __builtin.Backend;
 
+//! @class Backend
+//!
 //! The class of the @[DefaultBackend].
 //!
 //! Typically something that has inherited @[__Backend].
 //!
 //! @seealso
 //!   @[__Backend], @[DefaultBackend]
+
+//! @decl inherit Pike.__Backend
+
+//! @decl @@Pike.Annotations.Implements(Pike.__Backend)
+
 constant Backend = __builtin.DefaultBackendClass;
+
+//! @endclass
 
 #if constant(__builtin.PollDeviceBackend)
 constant PollDeviceBackend = __builtin.PollDeviceBackend;
@@ -63,6 +72,15 @@ constant PollDeviceBackend = __builtin.PollDeviceBackend;
 constant PollBackend = __builtin.PollBackend;
 #endif
 
+//! @class SmallBackend
+//!
+//! This is the most suitable backend implementation if you only want
+//! to monitor a small number of @[Stdio.File] objects.
+
+//! @decl inherit Pike.__Backend
+
+//! @decl @@Pike.Annotations.Implements(Pike.__Backend)
+
 #if constant(__builtin.PollBackend)
 constant SmallBackend = __builtin.PollBackend;
 #elif constant(__builtin.PollDeviceBackend)
@@ -71,10 +89,7 @@ constant SmallBackend = __builtin.PollDeviceBackend;
 constant SmallBackend = __builtin.SelectBackend;
 #endif
 
-//! @decl program(Pike.Backend) SmallBackend
-//!
-//! This is the most suitable backend implementation if you only want
-//! to monitor a small number of @[Stdio.File] objects.
+//! @endclass
 
 #if constant(__builtin.SelectBackend)
 constant SelectBackend = __builtin.SelectBackend;
