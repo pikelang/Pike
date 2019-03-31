@@ -77,6 +77,18 @@ o Compiler
   - Fixed some corner cases where file names where missing from
     backtraces.
 
+o Filesystem.Tar
+
+  Fix extraction of S_ISUID and S_ISGID bits.
+
+  POSIX mandates that after a chown() (by unprivileged users), the
+  S_ISUID and S_ISGID bits are cleared, Linux 2.2.13 removed the
+  special case for root. The order of chmod() and chown() have been
+  reordered trying to fix an issue with applying utime() under
+  Windows. With this change, utime() is applied first, then chown()
+  and then chmod(), restoring the historical order for chown() and
+  chmod().
+
 o Image.Dims
 
   - Fixed the inconsistency that Image.Dims.get_JPEG (and thus
