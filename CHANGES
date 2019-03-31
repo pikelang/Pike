@@ -101,6 +101,12 @@ o Process.run
   - Don't error if stdin modifier is supplied as the empty string.
     [LysLysKOM 23099651]
 
+o Protoocls.HTTP
+
+  - Protocols.HTTP.do_async_proxied_method() did not pass on request
+    headers unless credentials were given to the proxy or the protocol
+    to be used was HTTPS.
+
 o Protocols.HTTP.Session
 
   - Fix race-condition when multiple threads call give_me_connection()
