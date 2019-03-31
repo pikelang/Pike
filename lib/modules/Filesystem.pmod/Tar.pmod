@@ -363,13 +363,6 @@ class _Tar
     }
 #endif
 
-    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk) {
-      if (which_bits & EXTRACT_SKIP_EXT_MODE)
-	chmod (dest, r->mode & 0777);
-      else
-	chmod (dest, r->mode & 07777);
-    }
-
 #if constant (chown)
     if (which_bits & EXTRACT_CHOWN) {
       int uid;
@@ -387,6 +380,13 @@ class _Tar
       chown (dest, uid, gid, 1);
     }
 #endif
+
+    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk) {
+      if (which_bits & EXTRACT_SKIP_EXT_MODE)
+	chmod (dest, r->mode & 0777);
+      else
+	chmod (dest, r->mode & 07777);
+    }
   }
 
 #if !constant(access)
