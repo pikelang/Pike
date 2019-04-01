@@ -1118,7 +1118,7 @@ void low_destruct_objects_to_destruct(void)
 void destruct_objects_to_destruct_cb(void)
 {
   low_destruct_objects_to_destruct();
-  if(destruct_object_evaluator_callback)
+  if(destruct_object_evaluator_callback && !objects_to_destruct)
   {
     remove_callback(destruct_object_evaluator_callback);
     destruct_object_evaluator_callback=0;
