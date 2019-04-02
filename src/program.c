@@ -9653,8 +9653,9 @@ PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
 						    struct object **parent_obj,
 						    int *parent_id)
 {
-  switch(TYPEOF(*s))
-  {
+  while(s) {
+    switch(TYPEOF(*s))
+    {
     case T_OBJECT:
     {
       struct program *p = s->u.object->prog;
@@ -9680,20 +9681,34 @@ PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
       return p; /* We trust that there is a reference somewhere... */
     }
 
-  case T_FUNCTION:
-    if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) return 0;
-    return low_program_from_function(*parent_obj = s->u.object,
-				     *parent_id = SUBTYPEOF(*s));
+    case T_FUNCTION:
+      if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) return 0;
+      return low_program_from_function(*parent_obj = s->u.object,
+				       *parent_id = SUBTYPEOF(*s));
 
-  case T_PROGRAM:
-    return s->u.program;
+    case T_PROGRAM:
+      return s->u.program;
 
-  case PIKE_T_TYPE:
-    return program_from_type(s->u.type);
+    case PIKE_T_TYPE:
+      return program_from_type(s->u.type);
 
-  default:
-    return 0;
+    case PIKE_T_ARRAY:
+      if (!s->u.array->size) break;
+      /* Return result for the last element of the array.
+       *
+       * This is compatible with the corresponding behavior for inherit.
+       */
+      s =  ITEM(s->u.array) + s->u.array->size - 1;
+      continue;
+
+    default:
+      break;
+    }
+
+    break;
   }
+
+  return NULL;
 }
 
 /* NOTE: Does not add references to the return value! */
