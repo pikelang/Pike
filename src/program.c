@@ -9076,7 +9076,7 @@ void init_program(void)
     SET_SVAL(val, T_TYPE, 0, type, make_pike_type(raw_lfun_types[i]));
     mapping_insert(lfun_types, &key, &val);
 
-    if (id == LFUN__DESTRUCT) {
+    if (i == LFUN__DESTRUCT) {
       /* Special case for lfun::destroy(). */
       SET_SVAL(key, T_STRING, 0, string, compat_lfun_destroy_string);
       /* FIXME: Adjust the type to be __deprecated__? */
