@@ -8845,13 +8845,19 @@ PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
 
       while(cnt < prog->linenumbers + prog->num_linenumbers)
       {
-	if(*cnt == 127)
+	while(*cnt == 127)
 	{
 	  int strno;
 	  cnt++;
 	  strno = get_small_number(&cnt);
-	  CHECK_FILE_ENTRY (prog, strno);
-	  file = prog->strings[strno];
+	  if (strno >= 0) {
+	    CHECK_FILE_ENTRY (prog, strno);
+	    file = prog->strings[strno];
+	  } else {
+	    int frame_offset = ~strno;
+	    int kind = *(cnt++);
+	    strno = (kind < 0)?-1:get_small_number(&cnt);
+	  }
 	}
 	off+=get_small_number(&cnt);
 	if(off > offset) break;
