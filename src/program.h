@@ -947,6 +947,7 @@ PMOD_EXPORT int add_object_constant(const char *name,
 			INT32 flags);
 PMOD_EXPORT int add_function_constant(const char *name, void (*cfun)(INT32), const char * type, int flags);
 PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags);
+int is_lfun_name(struct pike_string *name);
 INT32 define_function(struct pike_string *name,
 		      struct pike_type *type,
 		      unsigned flags,

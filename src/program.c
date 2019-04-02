@@ -6789,6 +6789,14 @@ PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags
   return ret;
 }
 
+int is_lfun_name(struct pike_string *name)
+{
+  if (low_mapping_string_lookup(lfun_types, name)) {
+    return 1;
+  }
+  return 0;
+}
+
 /**
  * Define a new function.
  *
