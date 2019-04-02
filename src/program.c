@@ -9063,8 +9063,9 @@ void init_program(void)
 
   MAKE_CONST_STRING(compat_lfun_destroy_string, "destroy");
 
-  lfun_ids = allocate_mapping(NUM_LFUNS);
-  lfun_types = allocate_mapping(NUM_LFUNS);
+  /* NB: One extra entry needed for lfun::destroy(). */
+  lfun_ids = allocate_mapping(NUM_LFUNS + 1);
+  lfun_types = allocate_mapping(NUM_LFUNS + 1);
   for (i=0; i < NELEM(lfun_names); i++) {
     lfun_strings[i] = make_shared_static_string(lfun_names[i], strlen(lfun_names[i]), eightbit);
 
@@ -9074,7 +9075,19 @@ void init_program(void)
 
     SET_SVAL(val, T_TYPE, 0, type, make_pike_type(raw_lfun_types[i]));
     mapping_insert(lfun_types, &key, &val);
-    free_type(val.u.type);
+
+    if (id == LFUN__DESTRUCT) {
+      /* Special case for lfun::destroy(). */
+      SET_SVAL(key, T_STRING, 0, string, compat_lfun_destroy_string);
+      /* FIXME: Adjust the type to be __deprecated__? */
+      mapping_insert(lfun_types, &key, &val);
+      free_type(val.u.type);
+
+      SET_SVAL(id, T_INT, NUMBER_NUMBER, integer, i);
+      mapping_insert(lfun_ids, &key, &id);
+    } else {
+      free_type(val.u.type);
+    }
   }
 
   lfun_getter_type_string = make_pike_type(tFuncV(tNone, tVoid, tMix));
