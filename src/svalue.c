@@ -911,6 +911,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
    * program_from_svalue() supports are fine.
    */
   if ((TYPEOF(*a) != T_OBJECT) && (TYPEOF(*b) != T_OBJECT) &&
+      (TYPEOF(*a) != T_ARRAY) && (TYPEOF(*b) != T_ARRAY) &&
       (p = program_from_svalue(a)) && (p == program_from_svalue(b))) {
     return 1;
   }
