@@ -3672,6 +3672,13 @@ PMOD_EXPORT void f_destruct(INT32 args)
   if (o->prog && o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT)
     PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n",
 	       Pike_sp, args);
+  if (o->inhibit_destruct) {
+    /* Destruct the object as soon as the inhibit_destruct
+     * counter is back down to zero.
+     */
+    o->flags |= OBJECT_PENDING_DESTRUCT;
+    return;
+  }
   debug_malloc_touch(o);
   destruct_object (o, DESTRUCT_EXPLICIT);
   pop_n_elems(args);

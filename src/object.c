@@ -135,6 +135,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   o=alloc_object();
 
   o->flags = 0;
+  o->inhibit_destruct = 0;
 
   if(p->flags & PROGRAM_USES_PARENT) {
     assert(p->storage_needed);

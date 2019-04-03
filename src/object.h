@@ -10,6 +10,7 @@
 #include "global.h"
 #include "svalue.h"
 #include "gc_header.h"
+#include "pike_error.h"
 
 /* a destructed object has no program */
 
@@ -20,6 +21,7 @@ struct object
   struct program *prog;
   struct object *next;
   struct object *prev;
+  unsigned INT32 inhibit_destruct;
 #ifdef PIKE_DEBUG
   INT32 program_id;
 #endif
@@ -28,6 +30,12 @@ struct object
 
 /* Flags used in object->flags. */
 #define OBJECT_CLEAR_ON_EXIT	1	/* Overwrite before free. */
+
+#define OBJECT_PENDING_DESTRUCT	2	/* destruct() has been called on the
+					 * object, and it will proceed as
+					 * soon as the inhibit_destruct
+					 * counter is back down to zero.
+					 */
 
 PMOD_EXPORT extern struct object *first_object;
 extern struct object *gc_internal_object;
@@ -183,6 +191,27 @@ void check_object_context(struct object *o,
 void check_object(struct object *o);
 void check_all_objects(void);
 /* Prototypes end here */
+
+static inline void object_inhibit_destruct(struct object *o)
+{
+  o->inhibit_destruct++;
+}
+
+static inline void object_permit_destruct(struct object *o)
+{
+#ifdef PIKE_DEBUG
+  if (!o->inhibit_destruct) {
+    Pike_fatal("Destruction is already permitted for this object.\n"
+	       "Is this a duplicate call?\n");
+  }
+#endif /* PIKE_DEBUG */
+  if (--o->inhibit_destruct) return;
+  if (o->flags & OBJECT_PENDING_DESTRUCT) {
+    /* Perform the delayed explicit destruct(). */
+    o->flags &= ~OBJECT_PENDING_DESTRUCT;
+    destruct_object(o, DESTRUCT_EXPLICIT);
+  }
+}
 
 #ifdef DEBUG_MALLOC
 #define clone_object(X,Y) ((struct object *)debug_malloc_pass(debug_clone_object((X),(Y))))
