@@ -590,9 +590,11 @@ static int do_encode_automap_arg_list(node *n,
 	depth++;
       }
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       code_expression(n, 0, "[*]");
       emit1(F_NUMBER, depth);
       emit_apply_builtin("__builtin.automap_marker");
+      POP_AND_DONT_CLEANUP;
       return 1;
     }
   }
@@ -758,9 +760,11 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 	} else if (!level) {
 	  f += inh->identifier_level;
 	  emit0(F_MARK);
+	  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
 	  code_expression(val, 0, "RHS");
 	  emit_multi_assign(vals, vars, no+1);
 	  emit1(F_CALL_LFUN, f);
+	  POP_AND_DONT_CLEANUP;
 	  emit0(F_POP_VALUE);
 	}
       }
@@ -1379,6 +1383,7 @@ static int do_docode2(node *n, int flags)
 		yywarning("Variable %S lacks a setter.", id->name);
 	      } else if (!level) {
 		f += inh->identifier_level;
+		PUSH_CLEANUP_FRAME(do_pop_mark, 0);
 		if (flags & DO_POP) {
 		  emit0(F_MARK);
 		  code_expression(CAR(n), 0, "RHS");
@@ -1388,6 +1393,7 @@ static int do_docode2(node *n, int flags)
 		  emit0(F_DUP);
 		}
 		emit1(F_CALL_LFUN, f);
+		POP_AND_DONT_CLEANUP;
 		emit0(F_POP_VALUE);
 		return !(flags & DO_POP);
 	      }
@@ -1504,15 +1510,19 @@ static int do_docode2(node *n, int flags)
 	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
       emit0(F_LTOSVAL);
       emit1(F_NUMBER, depth);
       emit_apply_builtin("__builtin.automap_marker");
+      POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`+");
       emit2(F_REARRANGE,1,1);
       emit1(F_NUMBER, 1);
       emit_apply_builtin("__automap__");
+      POP_AND_DONT_CLEANUP;
 
       if(flags & DO_POP)
       {
@@ -1566,15 +1576,19 @@ static int do_docode2(node *n, int flags)
 	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
       emit0(F_LTOSVAL);
       emit1(F_NUMBER, depth);
       emit_apply_builtin("__builtin.automap_marker");
+      POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`-");
       emit2(F_REARRANGE,1,1);
       emit1(F_NUMBER, 1);
       emit_apply_builtin("__automap__");
+      POP_AND_DONT_CLEANUP;
 
       if(flags & DO_POP)
       {
@@ -2741,9 +2755,11 @@ static int do_docode2(node *n, int flags)
 
   case F_AUTO_MAP:
     emit0(F_MARK);
+    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
     code_expression(CAR(n), 0, "automap function");
     do_encode_automap_arg_list(CDR(n),0);
     emit_apply_builtin("__automap__");
+    POP_AND_DONT_CLEANUP;
     return 1;
 
   case F_AUTO_MAP_MARKER:
