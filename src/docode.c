@@ -730,9 +730,11 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 	} else if (!level) {
 	  f += inh->identifier_level;
 	  emit0(F_MARK);
+	  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
 	  code_expression(val, 0, "RHS");
 	  emit_multi_assign(vals, vars, no+1);
 	  emit1(F_CALL_LFUN, f);
+	  POP_AND_DONT_CLEANUP;
 	  emit0(F_POP_VALUE);
 	}
       }
@@ -1283,6 +1285,7 @@ static int do_docode2(node *n, int flags)
 		yywarning("Variable %S lacks a setter.", id->name);
 	      } else if (!level) {
 		f += inh->identifier_level;
+		PUSH_CLEANUP_FRAME(do_pop_mark, 0);
 		if (flags & DO_POP) {
 		  emit0(F_MARK);
 		  code_expression(CAR(n), 0, "RHS");
@@ -1292,6 +1295,7 @@ static int do_docode2(node *n, int flags)
 		  emit0(F_DUP);
 		}
 		emit1(F_CALL_LFUN, f);
+		POP_AND_DONT_CLEANUP;
 		emit0(F_POP_VALUE);
 		return !(flags & DO_POP);
 	      }
