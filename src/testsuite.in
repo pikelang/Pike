@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.890 2010/02/09 12:30:24 grubba Exp $"]]);
+test_true([["$Id$"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2855,6 +2855,16 @@ test_any([[
   add_constant("A");
   return 0;
 ]], 0)
+
+test_any_equal([[
+  // Test automap combined with splice. [LysLysKOM 23258037]
+  array ret = ({});
+  for (int x = 0; x < 10; x++) {
+    array a = ({ x, });
+    ret += `+(a[*], @a);
+  }
+  return ret;
+]], ({ 0, 2, 4, 6, 8, 10, 12, 14, 16, 18 }))
 
 test_any([[
   // Test eval_low() on seemingly constant expressions, that
