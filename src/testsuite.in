@@ -3085,6 +3085,16 @@ test_any([[
   return 0;
 ]], 0)
 
+test_any_equal([[
+  // Test automap combined with splice. [LysLysKOM 23258037]
+  array ret = ({});
+  for (int x = 0; x < 10; x++) {
+    array a = ({ x, });
+    ret += `+(a[*], @a);
+  }
+  return ret;
+]], ({ 0, 2, 4, 6, 8, 10, 12, 14, 16, 18 }))
+
 test_any([[
   // Test eval_low() on seemingly constant expressions, that
   // attempt to access variables in the fake object. [Bug 5273]
