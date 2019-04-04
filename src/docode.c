@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.192 2008/01/28 18:43:14 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -561,9 +561,11 @@ static int do_encode_automap_arg_list(node *n,
 	depth++;
       }
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       code_expression(n, 0, "[*]");
       emit1(F_NUMBER, depth);
       emit_apply_builtin("__builtin.automap_marker");
+      POP_AND_DONT_CLEANUP;
       return 1;
     }
   }
@@ -1406,15 +1408,19 @@ static int do_docode2(node *n, int flags)
 	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
       emit0(F_LTOSVAL);
       emit1(F_NUMBER, depth);
       emit_apply_builtin("__builtin.automap_marker");
+      POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`+");
       emit2(F_REARRANGE,1,1);
       emit1(F_NUMBER, 1);
       emit_apply_builtin("__automap__");
+      POP_AND_DONT_CLEANUP;
 
       if(flags & DO_POP)
       {
@@ -1468,15 +1474,19 @@ static int do_docode2(node *n, int flags)
 	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
       emit0(F_LTOSVAL);
       emit1(F_NUMBER, depth);
       emit_apply_builtin("__builtin.automap_marker");
+      POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`-");
       emit2(F_REARRANGE,1,1);
       emit1(F_NUMBER, 1);
       emit_apply_builtin("__automap__");
+      POP_AND_DONT_CLEANUP;
 
       if(flags & DO_POP)
       {
@@ -2608,9 +2618,11 @@ static int do_docode2(node *n, int flags)
 
   case F_AUTO_MAP:
     emit0(F_MARK);
+    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
     code_expression(CAR(n), 0, "automap function");
     do_encode_automap_arg_list(CDR(n),0);
     emit_apply_builtin("__automap__");
+    POP_AND_DONT_CLEANUP;
     return 1;
 
   case F_AUTO_MAP_MARKER:
