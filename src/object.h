@@ -108,7 +108,8 @@ PMOD_EXPORT struct object *debug_master(void);
 struct destruct_called_mark;
 PTR_HASH_ALLOC(destruct_called_mark,128);
 PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct object * o);
-PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason reason);
+PMOD_EXPORT int destruct_object(struct object *o,
+				enum object_destruct_reason reason);
 #define destruct(o) destruct_object (o, DESTRUCT_EXPLICIT)
 PMOD_EXPORT void low_destruct_objects_to_destruct(void);
 void destruct_objects_to_destruct_cb(void);

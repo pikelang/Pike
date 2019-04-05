@@ -3636,7 +3636,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
   }
 }
 
-/*! @decl void destruct(void|object o)
+/*! @decl int(1bit) destruct(void|object o)
  *!
  *!   Mark an object as destructed.
  *!
@@ -3645,16 +3645,21 @@ PMOD_EXPORT void f_crypt(INT32 args)
  *!
  *!   All pointers and function pointers to this object will become zero.
  *!   The destructed object will be freed from memory as soon as possible.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} if @[o] has an @[lfun::_destruct()] that
+ *!   returned @expr{1@} and inhibited destruction.
  */
 PMOD_EXPORT void f_destruct(INT32 args)
 {
   struct object *o;
+  int ret;
   if(args)
   {
     if(TYPEOF(Pike_sp[-args]) != T_OBJECT) {
       if ((TYPEOF(Pike_sp[-args]) == T_INT) &&
 	  (!Pike_sp[-args].u.integer)) {
-	pop_n_elems(args);
+	pop_n_elems(args-1);
 	return;
       }
       SIMPLE_ARG_TYPE_ERROR("destruct", 1, "object");
@@ -3677,11 +3682,14 @@ PMOD_EXPORT void f_destruct(INT32 args)
      * counter is back down to zero.
      */
     o->flags |= OBJECT_PENDING_DESTRUCT;
+    pop_n_elems(args);
+    push_int(1);
     return;
   }
   debug_malloc_touch(o);
-  destruct_object (o, DESTRUCT_EXPLICIT);
+  ret = destruct_object (o, DESTRUCT_EXPLICIT);
   pop_n_elems(args);
+  push_int(ret);
   destruct_objects_to_destruct();
 }
 
@@ -9995,8 +10003,8 @@ void init_builtin_efuns(void)
   ADD_EFUN("crypt",f_crypt,
            tOr(tFunc(tOr(tStr,tVoid),tStr7),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
 
-  /* function(object|void:void) */
-  ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);
+  /* function(object|void:int(0..1)) */
+  ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tInt01),OPT_SIDE_EFFECT);
 
   ADD_EFUN("dirname", f_dirname, tFunc(tSetvar(0, tStr), tVar(0)), 0);
 
