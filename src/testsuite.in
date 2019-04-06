@@ -1027,6 +1027,38 @@ test_compile_any([[
 ]])
 
 test_any([[
+  // Test Pike.InhibitDestruct.
+  class Foo {
+    inherit Pike.InhibitDestruct;
+    /* Make the symbols visible outside. */
+    void inhibit_destruct() { ::inhibit_destruct(); }
+    void permit_destruct() { ::permit_destruct(); }
+  }
+  object o = Foo();
+  destruct(o);
+  if (o) return 1;
+
+  o = Foo();
+  o->inhibit_destruct();
+  o->permit_destruct();
+  if (!o) return 2;
+  destruct(o);
+  if (o) return 3;
+
+  o = Foo();
+  o->inhibit_destruct();
+  destruct(o);
+  if (!o) return 4;
+  o->inhibit_destruct();
+  if (!o) return 5;
+  o->permit_destruct();
+  if (!o) return 6;
+  o->permit_destruct();
+  if (o) return 7;
+  return 0;
+]], 0)
+
+test_any([[
   class Foo {
     constant zero = 0;
     mapping(string:array(int)) m;

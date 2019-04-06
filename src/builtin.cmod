@@ -2502,6 +2502,89 @@ PIKEFUN void _putenv (string var, void|string val)
 /*! @module Pike
  */
 
+/*! @class InhibitDestruct
+ *!
+ *! This is a class that implements a way to temporarily
+ *! inhibit destruction by explicit calls of @[destruct()].
+ *!
+ *! This is mostly useful as a mix-in for modules
+ *! implemented in C or similar.
+ *!
+ *! All symbols in the class are either @expr{protected@}
+ *! or @expr{private@} in order to affect users minimally.
+ */
+PIKECLASS InhibitDestruct
+{
+  CVAR ptrdiff_t lock_count;
+
+  /*! @decl void inhibit_destruct()
+   *!
+   *! Inhibit explicit destruction of this object.
+   *!
+   *! @seealso
+   *!   @[permit_destruct()], @[_destruct()],
+   *!   @[destruct()], @[lfun::_destruct()]
+   */
+  PIKEFUN void inhibit_destruct()
+    flags ID_PROTECTED;
+  {
+    if (UNLIKELY(THIS->lock_count < 0)) {
+      THIS->lock_count--;
+    } else {
+      THIS->lock_count++;
+    }
+  }
+
+  /*! @decl void permit_destruct()
+   *!
+   *! Allow explicit destruction of this object again.
+   *!
+   *! @seealso
+   *!   @[inhibit_destruct()], @[_destruct()],
+   *!   @[destruct()], @[lfun::_destruct()]
+   */
+  PIKEFUN void permit_destruct()
+    flags ID_PROTECTED;
+  {
+    if (!THIS->lock_count) {
+      Pike_error("permit_destruct() without inhibit.\n");
+    }
+    if (UNLIKELY(THIS->lock_count < 0)) {
+      /* destruct() has been called on the object. */
+      if (UNLIKELY(!++THIS->lock_count)) {
+	/* No inhibits remaining.
+	 *
+	 * Time to die.
+	 */
+	destruct(Pike_fp->current_object);
+      }
+    } else {
+      THIS->lock_count--;
+    }
+  }
+
+  /*! @decl int(0..1) _destruct(int|void reason)
+   *!
+   *! Returns @expr{1@} when @[inhibit_destruct()] has been
+   *! called more times than @[permit_destruct()].
+   *!
+   *! @seealso
+   *!   @[inhibit_destruct()], @[permit_destruct()],
+   *!   @[destruct()], @[lfun::_destruct()]
+   */
+  PIKEFUN int(0..1) _destruct(int|void reason)
+    flags ID_PROTECTED;
+  {
+    if (THIS->lock_count > 0) {
+      THIS->lock_count = -THIS->lock_count;
+    }
+    push_int(!!THIS->lock_count);
+  }
+};
+
+/*! @endclass
+ */
+
 /*! @class FakeObject
  *!
  *! Used as a place holder in eg backtraces for objects that
