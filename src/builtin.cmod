@@ -2526,7 +2526,7 @@ PIKECLASS InhibitDestruct
    *!   @[destruct()], @[lfun::_destruct()]
    */
   PIKEFUN void inhibit_destruct()
-    flags ID_PROTECTED;
+    flags ID_PROTECTED|ID_LOCAL;
   {
     if (UNLIKELY(THIS->lock_count < 0)) {
       THIS->lock_count--;
@@ -2544,7 +2544,7 @@ PIKECLASS InhibitDestruct
    *!   @[destruct()], @[lfun::_destruct()]
    */
   PIKEFUN void permit_destruct()
-    flags ID_PROTECTED;
+    flags ID_PROTECTED|ID_LOCAL;
   {
     if (!THIS->lock_count) {
       Pike_error("permit_destruct() without inhibit.\n");
@@ -2573,7 +2573,7 @@ PIKECLASS InhibitDestruct
    *!   @[destruct()], @[lfun::_destruct()]
    */
   PIKEFUN int(0..1) _destruct(int|void reason)
-    flags ID_PROTECTED;
+    flags ID_PROTECTED|ID_LOCAL;
   {
     if (THIS->lock_count > 0) {
       THIS->lock_count = -THIS->lock_count;
