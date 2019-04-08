@@ -2535,6 +2535,19 @@ PIKECLASS InhibitDestruct
     }
   }
 
+  /**
+   * Inhibit explicit destruction of this object.
+   *
+   * @param inh Inherit level for the inherit of InhibitDestruct
+   *            in the current program.
+   */
+  PMOD_EXPORT void inhibit_destruct(int inh)
+  {
+    apply_current(Pike_fp->current_program->inherits[inh].identifier_level +
+		  f_InhibitDestruct_inhibit_destruct_fun_num, 0);
+    pop_stack();
+  }
+
   /*! @decl void permit_destruct()
    *!
    *! Allow explicit destruction of this object again.
@@ -2561,6 +2574,19 @@ PIKECLASS InhibitDestruct
     } else {
       THIS->lock_count--;
     }
+  }
+
+  /**
+   * Allow explicit destruction of this object again.
+   *
+   * @param inh Inherit level for the inherit of InhibitDestruct
+   *            in the current program.
+   */
+  PMOD_EXPORT void permit_destruct(int inh)
+  {
+    apply_current(Pike_fp->current_program->inherits[inh].identifier_level +
+		  f_InhibitDestruct_permit_destruct_fun_num, 0);
+    pop_stack();
   }
 
   /*! @decl int(0..1) _destruct(int|void reason)
