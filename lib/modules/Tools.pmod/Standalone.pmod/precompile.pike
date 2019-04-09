@@ -1057,7 +1057,7 @@ class PikeType
       return PikeType(t, a && a->copy_and_strip_type_assignments (0));
     }
 
-  string _sprintf(int how)
+  protected string _sprintf(int how)
     {
       switch(how)
       {
@@ -1083,8 +1083,8 @@ class PikeType
    * And this way is for internal use only:
    * PikeType( PC.Token("array"), ({ PikeType("int") }) )
    */
-  void create(string|array(PC.Token)|PC.Token|array(array) tok,
-	      void|array(PikeType)|mapping(string:string) a)
+  protected void create(string|array(PC.Token)|PC.Token|array(array) tok,
+			void|array(PikeType)|mapping(string:string) a)
     {
       switch(sprintf("%t",tok))
       {
@@ -1284,7 +1284,7 @@ class CType {
   string ctype;
 
   string output_c_type() { return ctype; }
-  void create(string _ctype) {
+  protected void create(string _ctype) {
     ctype = _ctype;
   }
 }
@@ -1400,7 +1400,7 @@ class Argument
 	type()->copy_and_strip_type_assignments (1)->output_pike_type(0);
     }
 
-  void create(array x, void|mapping(string:string) names)
+  protected void create(array x, void|mapping(string:string) names)
     {
       PC.Token t;
       if( arrayp(x[-1]) )
@@ -1418,7 +1418,7 @@ class Argument
       _type=PikeType(x[..sizeof(x)-2], names);
     }
 
-  string _sprintf(int how)
+  protected string _sprintf(int how)
     {
       return type()->output_pike_type(0)+" "+name();
     }
@@ -1653,12 +1653,12 @@ class FuncData
   int min_args;
   array(Argument) args;
 
-  string _sprintf(int c)
+  protected string _sprintf(int c)
     {
       return sprintf("FuncData(%s)",define);
     }
 
-  int `==(mixed q)
+  protected int `==(mixed q)
     {
       return objectp(q) && q->name == name;
 //      return 0;
@@ -1910,8 +1910,8 @@ class ParseBlock
   array declarations=({});
   int local_id = ++gid;
 
-  void create(array(array|PC.Token) x, string base, string class_name,
-	      mapping(string:string) names)
+  protected void create(array(array|PC.Token) x, string base, string class_name,
+			mapping(string:string) names)
     {
       array(array|PC.Token) ret=({});
       array thestruct=({});
@@ -3247,7 +3247,7 @@ class Handler {
 					current_handler);
     }
 
-    void create(mapping|void predefines) {
+    protected void create(mapping|void predefines) {
 	::create();
 	if (predefines) this_program::predefines = predefines;
     }
