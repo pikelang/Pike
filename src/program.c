@@ -6866,6 +6866,17 @@ INT32 define_function(struct pike_string *name,
 	}
       }
       c->lex.pragmas = orig_pragmas;
+
+      /* NB: define_function() is called multiple times... */
+      if (((flags & (ID_PROTECTED|ID_PRIVATE)) != ID_PROTECTED) && func &&
+	  !(orig_pragmas & ID_NO_DEPRECATION_WARNINGS) &&
+	  !deprecated_typep(type)) {
+	if (!(flags & (ID_PROTECTED|ID_PRIVATE))) {
+	  yywarning("Lfun %S is public.", name);
+	} else {
+	  yywarning("Lfun %S is private.", name);
+	}
+      }
     }
   } else if (((name->len > 3) &&
 	      (index_shared_string(name, 0) == '`') &&
