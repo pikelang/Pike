@@ -314,6 +314,7 @@ PIKECLASS MAC
      *!   Also updates the iv/nonce (if any).
      */
     PIKEFUN string(8bit) `()(string(8bit) data)
+      flags ID_PROTECTED;
     {
       const struct pike_mac *meta;
       struct pike_string *digest;

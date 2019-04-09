@@ -102,6 +102,7 @@ PIKECLASS PIKE_NAME
       }
 
       PIKEFUN string(8bit) `()(string(8bit) text)
+	flags ID_PROTECTED;
       {
         struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx) state;
         int bytes = THIS->meta->digest_size;

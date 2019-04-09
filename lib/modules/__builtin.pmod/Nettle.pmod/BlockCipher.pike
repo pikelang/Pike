@@ -116,7 +116,7 @@ protected class _CTR
     }
   }
 
-  State `()()
+  protected State `()()
   {
     return State();
   }

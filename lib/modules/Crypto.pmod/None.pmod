@@ -85,7 +85,7 @@ class State
   }
 }
 
-State `()(string|void key)
+protected State `()(string|void key)
 {
   return State();
 }

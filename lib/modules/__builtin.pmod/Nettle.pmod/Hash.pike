@@ -13,7 +13,7 @@
 inherit .__Hash;
 
 //! Calling `() will return a @[State] object.
-State `()() { return State(); }
+protected State `()() { return State(); }
 
 //!  Works as a (possibly faster) shortcut for e.g.
 //!  @expr{State(data)->digest()@}, where @[State] is the hash state
@@ -24,7 +24,7 @@ State `()() { return State(); }
 //!
 //! @seealso
 //!   @[Stdio.File], @[State()->update()] and @[State()->digest()].
-string(8bit) hash(string data)
+string(8bit) hash(string(8bit) data)
 {
   return State(data)->digest();
 }
@@ -45,17 +45,17 @@ string(8bit) hash(string data)
 variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source,
                     int|void bytes)
 {
-  function(int|void:string) f;
+  function(int|void:string(8bit)) f;
 
   if (source->read)
   {
     // Stdio.File, Stdio.Buffer
-    f = [function(int|void:string)]source->read;
+    f = [function(int|void:string(8bit))]source->read;
   }
   else if (source->get)
   {
     // String.Buffer
-    f = [function(int|void:string)]source->get;
+    f = [function(int|void:string(8bit))]source->get;
   }
   else if (source->pread)
   {
@@ -181,7 +181,7 @@ protected class _HMAC
     //! the hash value.
     //!
     //! This works as a combined @[update()] and @[digest()].
-    string(8bit) `()(string(8bit) text)
+    protected string(8bit) `()(string(8bit) text)
     {
       return hash(okey + hash(ikey + text));
     }
@@ -256,7 +256,7 @@ protected class _HMAC
   //! Returns a new @[State] object initialized with a @[password],
   //! and optionally block size @[b]. Block size defaults to the hash
   //! function block size.
-  State `()(string(8bit) password, void|int b)
+  protected State `()(string(8bit) password, void|int b)
   {
     if (!b || (b == block_size())) {
       return State(password);
@@ -300,7 +300,7 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
 //!
 //! @seealso
 //!   @[crypt_md5()]
-string crypt_hash(string password, string salt, int rounds)
+string(8bit) crypt_hash(string(8bit) password, string(8bit) salt, int rounds)
 {
   int dsz = digest_size();
   int plen = sizeof(password);
@@ -312,17 +312,17 @@ string crypt_hash(string password, string salt, int rounds)
   // FIXME: Send the first param directly to create()?
   State hash_obj = State();
 
-  function(string:State) update = hash_obj->update;
-  function(:string) digest = hash_obj->digest;
+  function(string(8bit):State) update = hash_obj->update;
+  function(:string(8bit)) digest = hash_obj->digest;
 
   salt = salt[..15];
 
   /* NB: Comments refer to http://www.akkadia.org/drepper/SHA-crypt.txt */
-  string b = update(password + salt + password)->digest();	/* 5-8 */
+  string(8bit) b = update(password + salt + password)->digest();/* 5-8 */
   update(password);						/* 2 */
   update(salt);							/* 3 */
 
-  void crypt_add(string in, int len)
+  void crypt_add(string(8bit) in, int len)
   {
     int i;
     for (; i+dsz<len; i += dsz)
@@ -339,12 +339,12 @@ string crypt_hash(string password, string salt, int rounds)
       update(password);
   }
 
-  string a = digest();						/* 12 */
+  string(8bit) a = digest();					/* 12 */
 
   for (int i = 0; i < plen; i++)				/* 14 */
     update(password);
 
-  string dp = digest();						/* 15 */
+  string(8bit) dp = digest();					/* 15 */
 
   if (dsz != plen) {
     dp *= 1 + (plen-1)/dsz;					/* 16 */
@@ -354,7 +354,7 @@ string crypt_hash(string password, string salt, int rounds)
   for(int i = 0; i < 16 + (a[0] & 0xff); i++)			/* 18 */
     update(salt);
 
-  string ds = digest();						/* 19 */
+  string(8bit) ds = digest();					/* 19 */
 
   if (dsz != sizeof(salt)) {
     ds *= 1 + (sizeof(salt)-1)/dsz;				/* 20 */
@@ -426,7 +426,7 @@ string crypt_hash(string password, string salt, int rounds)
   t = dsz/3*3;
   b64enc(ret, a[t], a[t+1], a[t+2], dsz%3+1);
 
-  return (string)ret;
+  return (string(8bit))ret;
 }
 
 //! Password Based Key Derivation Function #1 from @rfc{2898@}. This
@@ -453,7 +453,7 @@ string crypt_hash(string password, string salt, int rounds)
 //!
 //! @seealso
 //!   @[hkdf()], @[pbkdf2()], @[openssl_pbkdf()], @[crypt_password()]
-string pbkdf1(string password, string salt, int rounds, int bytes)
+string(8bit) pbkdf1(string(8bit) password, string(8bit) salt, int rounds, int bytes)
 {
   if( bytes>digest_size() )
     error("Requested bytes %d exceeds hash digest size %d.\n",
@@ -461,7 +461,7 @@ string pbkdf1(string password, string salt, int rounds, int bytes)
   if( rounds <=0 )
     error("Rounds needs to be 1 or higher.\n");
 
-  string res = password + salt;
+  string(8bit) res = password + salt;
 
   password = "CENSORED";
 
