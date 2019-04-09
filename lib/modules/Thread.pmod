@@ -440,7 +440,7 @@ class Farm
     }
 
     //! Wait for completion.
-    mixed `()()
+    protected mixed `()()
     {
       object key = mutex->lock();
       while(!ready)     ft_cond->wait(key);
@@ -970,11 +970,13 @@ class ResourceCountKey {
 
   /*semi*/private ResourceCount parent;
 
-  /*semi*/private void create(ResourceCount _parent) {
+  protected void create(ResourceCount _parent)
+  {
     parent = _parent;
   }
 
-  /*semi*/private void _destruct() {
+  protected void _destruct()
+  {
     MutexKey key = parent->_mutex->lock();
     --parent->_count;
     parent->_cond->signal();
@@ -1020,7 +1022,8 @@ class ResourceCount {
     return ResourceCountKey(this);
   }
 
-  /*semi*/private string _sprintf(int type) {
+  protected string _sprintf(int type)
+  {
     string res = UNDEFINED;
     switch(type) {
       case 'O':
