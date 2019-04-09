@@ -419,8 +419,8 @@ class OutputController
   }
 
   //!
-  void create(.File|void _outfd,
-	      .Terminfo.Termcap|string|void _term)
+  protected void create(.File|void _outfd,
+			.Terminfo.Termcap|string|void _term)
   {
     outfd = _outfd || Stdio.FILE( "stdout", "w" );
     if( outfd->set_charset )
@@ -780,7 +780,7 @@ class InputController
   }
 
   //!
-  void create(object|void _infd, object|string|void _term)
+  protected void create(object|void _infd, object|string|void _term)
   {
     infd = _infd;
     if( !_infd )
@@ -1155,7 +1155,7 @@ class DefaultEditKeys
   }
 
   //!
-  void create(object readline)
+  protected void create(object readline)
   {
     _readline = readline;
     set_default_bindings();
@@ -1242,7 +1242,7 @@ class History
   }
 
   //!
-  void create(int maxhist, void|array(string) hist)
+  protected void create(int maxhist, void|array(string) hist)
   {
     historylist = hist || ({ "" });
     minhistory = historynum = 0;
@@ -1726,8 +1726,8 @@ protected void _destruct()
 //!
 //! @param outterm
 //!   Defaults to @[interm].
-void create(object|void infd, object|string|void interm,
-	    object|void outfd, object|string|void outterm)
+protected void create(object|void infd, object|string|void interm,
+		      object|void outfd, object|string|void outterm)
 {
   atexit(_destruct);
   output_controller = OutputController(outfd || infd, outterm || interm);
