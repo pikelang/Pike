@@ -512,7 +512,7 @@ protected private Calendar.Rule.Timezone _magic_timezone(string tz)
    return ::`[](replace(tz,"-/+"/1,"__p"/1));
 }
 
-Calendar.Rule.Timezone `[](string tz)
+protected Calendar.Rule.Timezone `[](string tz)
 {
   mixed p=::`[](tz);
   if (!p && tz=="locale") return locale=_locale();
@@ -634,7 +634,7 @@ class Runtime_timezone_compiler
 		    timetype || "<unset>", offset, s);
       }
 
-      int `==(Shift other)
+      protected int `==(Shift other)
       {
 	 return ( dayrule==other->dayrule &&
 		  time==other->time &&
@@ -705,7 +705,7 @@ class Runtime_timezone_compiler
 	    complain("unknown rule method %O\n",rule);
       }
 
-      Shift|array ``+(array|Shift s)
+      protected Shift|array ``+(array|Shift s)
       {
 	 if (!s) return this;
 	 if (!arrayp(s)) s=({s});
@@ -1341,7 +1341,7 @@ class Runtime_timezone_compiler
 
    class Dummymodule (function(string:mixed) f)
    {
-      mixed `[](string s) { return f(s); }
+      protected mixed `[](string s) { return f(s); }
    }
 
 //  #define RTTZC_DEBUG
