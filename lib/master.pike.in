@@ -347,7 +347,7 @@ protected class Pike_7_8_master
   program programof (string|array what);
   void decode_object(object o, mixed data);
 
-  string _sprintf(int t);
+  __deprecated__ string _sprintf(int t);
 
   // ---
 
@@ -6329,7 +6329,7 @@ CompatResolver get_compilation_handler(int major, int minor)
   return ret;
 }
 
-string _sprintf(int t)
+protected string _sprintf(int t)
 {
   switch(t) {
     // FIXME: What good is this lying for 't'? The master is still an
