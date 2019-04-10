@@ -198,7 +198,7 @@ void throw_error(string str, mixed ... args)
 class XMLNSParser {
   ADT.Stack namespace_stack = ADT.Stack();
 
-  void create()
+  protected void create()
   {
     // Sentinel and default namespaces.
     namespace_stack->push(([
@@ -1512,7 +1512,7 @@ protected class VirtualNode {
     mText += str;
   }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(#%d:%s,%O)", this_program, mDocOrder,
 			     get_type_name(get_node_type()), get_full_name());
   }
