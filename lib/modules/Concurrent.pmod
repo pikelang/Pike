@@ -666,8 +666,11 @@ class Future
   this_program timeout(int|float seconds)
   {
     Promise p = promise_factory();
-    on_failure(p->failure);
-    on_success(p->success);
+    /* NB: try_* variants as the original promise may get fulfilled
+     *     after the timeout has occurred.
+     */
+    on_failure(p->try_failure);
+    on_success(p->try_success);
     if (timeout_call_out_handle) {
       // Remove the previous timeout call_out.
       (backend?backend->remove_call_out:remove_call_out)
