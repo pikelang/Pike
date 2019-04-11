@@ -612,12 +612,12 @@ class MultiTree {
 	    j = sizeof(t);
 
 	    if (j == 1) {
-		t[0] = t[0]->_get_iterator(step, start, stop);
+		t[0] = get_iterator(t[0], step, start, stop);
 	    } else {
-		t[0] = t[0]->_get_iterator(step, start);
+		t[0] = get_iterator(t[0], step, start);
 		for (i = 1; i < j-1; i++)
-		    t[i] = t[i]->_get_iterator(step);
-		t[-1] = t[-1]->_get_iterator(step, start);
+		    t[i] = get_iterator(t[i], step);
+		t[-1] = get_iterator(t[-1], step, start);
 	    }
 
 	    this::oit = t;
