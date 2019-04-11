@@ -1393,10 +1393,10 @@ class Message {
   //!
   //! @seealso
   //! @[cast()]
-  void create(void | string|StringRange message,
-	      void | mapping(string:string|array(string)) hdrs,
-	      void | array(object) parts,
-	      void | int guess)
+  protected void create(void | string|StringRange message,
+			void | mapping(string:string|array(string)) hdrs,
+			void | array(object) parts,
+			void | int guess)
   {
     encoded_data = 0;
     decoded_data = 0;
