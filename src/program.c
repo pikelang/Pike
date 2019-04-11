@@ -1225,9 +1225,13 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::m_delete()]
  */
 
-/*! @decl predef::Iterator lfun::_get_iterator()
+/*! @decl predef::Iterator lfun::_get_iterator(mixed ... args)
  *!
  *!   Iterator creation callback.
+ *!
+ *! @param args
+ *!   Optional extra arguments as passed to @[get_iterator()].
+ *!   The implicit call from @[foreach()] does not provide any arguments.
  *!
  *!   The returned @[predef::Iterator] instance works as a cursor that
  *!   references a specific item contained (in some arbitrary sense)
