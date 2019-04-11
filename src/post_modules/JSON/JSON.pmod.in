@@ -121,7 +121,7 @@ class Validator
     //!   object.
     //! @throws
     //!   Throws an error if the schema is invalid.
-    void create(mixed _schema)
+    protected void create(mixed _schema)
     {
 	schema = _schema;
 	if (!schema || !mappingp(schema))
