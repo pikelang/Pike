@@ -1086,12 +1086,12 @@ class Spawn
    }
 
   //!
-   void create(string cmd,
-	       void|array(string) args,
-	       void|mapping(string:string) env,
-	       string|void cwd,
-	       void|array(object(Stdio.File)|void) ownpipes,
-	       void|array(object(Stdio.File)|void) fds_to_close)
+   protected void create(string cmd,
+			 void|array(string) args,
+			 void|mapping(string:string) env,
+			 string|void cwd,
+			 void|array(object(Stdio.File)|void) ownpipes,
+			 void|array(object(Stdio.File)|void) fds_to_close)
    {
       if (!ownpipes)
       {
