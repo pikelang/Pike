@@ -13,7 +13,7 @@ class elem {
 
   int|float pri;
 
-  void create(int|float a, mixed b) { pri=a; ::create(b); }
+  protected void create(int|float a, mixed b) { pri=a; ::create(b); }
 
   void set_pri(int|float p)
     {
@@ -23,8 +23,8 @@ class elem {
 
   int|float get_pri() { return pri; }
 
-  int `<(object o) { return pri<o->pri; }
-  int `>(object o) { return pri>o->pri; }
+  protected int `<(object o) { return pri<o->pri; }
+  protected int `>(object o) { return pri>o->pri; }
 };
 
 //! Push an element @[val] into the priority queue and assign a priority value
