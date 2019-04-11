@@ -94,7 +94,7 @@ class _Request
    //!	Wait for the call to finish.
 
 #if constant(thread_create) && !LYSKOM_UNTHREADED
-   mixed `()() // wait
+   protected mixed `()() // wait
    {
       object key = wait_mutex->lock();
       do {
@@ -104,7 +104,7 @@ class _Request
       } while (1);
    }
 #else
-   mixed `()() // wait
+   protected mixed `()() // wait
    {
       if (ok || error) return res;
       mixed tmp=_reply(raw->sync_do(ref));
@@ -122,7 +122,7 @@ class _Request
    //!
    object error;
 
-   void create(Stdio.File _raw)
+   protected void create(Stdio.File _raw)
    {
       raw=_raw;
    }

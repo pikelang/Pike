@@ -22,7 +22,7 @@ class LysKOMTime
    int              day_of_year;                   // INT32
    int(0..1)        is_dst;                        // BOOL
 
-  string _sprintf(int t){
+  protected string _sprintf(int t){
     return t=='O' && sprintf("%O(%s)", this_program, print(1));
   }
 
@@ -35,7 +35,7 @@ class LysKOMTime
      return res;
    }
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       seconds=(int)args[0];                        // INT32
       minutes=(int)args[1];                        // INT32
@@ -75,7 +75,7 @@ class TextStatOld
    int(0..65535)    no_of_marks;                   // INT16
    array(int)       misc_info;                     // ARRAY Misc-Info
 
-   void create(string|int|array ... args)
+   protected void create(string|int|array ... args)
    {
       creation_time=LysKOMTime(@args[0..8]);       // Time
       author=(int)args[9];                         // Pers-No
@@ -106,7 +106,7 @@ class TextNumberPair
    int              local_number;                  // Local-Text-No
    int              global_number;                 // Text-No
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       local_number=(int)args[0];                   // Local-Text-No
       global_number=(int)args[1];                  // Text-No
@@ -121,7 +121,7 @@ class TextNumberPair
          });
    }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%d:%d)", this_program,
 			     local_number, global_number);
@@ -135,7 +135,7 @@ class LocalToGlobalBlock
   array(TextNumberPair) sparse;
   object /*TextList*/ dense;
 
-  void create(string|array ...args)
+  protected void create(string|array ...args)
   {
     densep=(int)args[0];
     if(densep)
@@ -154,7 +154,7 @@ class TextMapping
    int(0..1)        later_texts_exists;            // BOOL
    mixed            block;                         // Local-To-Global-Block
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       range_begin=(int)args[0];                    // Local-Text-No
       range_end=(int)args[1];                      // Local-Text-No
@@ -199,7 +199,7 @@ class DynamicSessionInfo
    multiset(string) flags;                         // Session-Flags
    string           what_am_i_doing;               // HOLLERITH
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       session=(int)args[0];                        // Session-No
       person=(int)args[1];                         // Pers-No
@@ -234,7 +234,7 @@ class SessionInfo
    int              idle_time;                     // INT32
    LysKOMTime       connection_time;               // Time
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       person=(int)args[0];                         // Pers-No
       working_conference=(int)args[1];             // Conf-No
@@ -269,7 +269,7 @@ class WhoInfo
    string           what_am_i_doing;               // HOLLERITH
    string           username;                      // HOLLERITH
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       person=(int)args[0];                         // Pers-No
       working_conference=(int)args[1];             // Conf-No
@@ -328,7 +328,7 @@ class AuxItem
    int              inherit_limit;                 // INT32
    string           data;                          // HOLLERITH
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       aux_no=(int)args[0];                         // Aux-No
       tag=(int)args[1];                            // INT32
@@ -353,7 +353,7 @@ class AuxItem
          });
    }
 
-  string _sprintf(int t){
+  protected string _sprintf(int t){
     return t=='O' && sprintf("%O(%d)", this_program, tag);
   }
 }
@@ -369,7 +369,7 @@ class TextStat
    array(int)       misc_info;                     // ARRAY Misc-Info
    array(AuxItem)   aux_items;                     // ARRAY Aux-Item
 
-   void create(string|int|array ... args)
+   protected void create(string|int|array ... args)
    {
       creation_time=LysKOMTime(@args[0..8]);       // Time
       author=(int)args[9];                         // Pers-No
@@ -411,7 +411,7 @@ class InfoOld
    int(0..65535)    kom_news_conf;                 // Conf-No
    int              motd_of_lyskom;                // Text-No
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       version=(int)args[0];                        // INT32
       conf_pres_conf=(int)args[1];                 // Conf-No
@@ -461,7 +461,7 @@ class Membership
    LysKOMTime       added_at;                      // Time
    multiset(string) type;                          // Membership-Type
 
-   void create(string|int|array ... args)
+   protected void create(string|int|array ... args)
    {
       position=(int)args[0];                       // INT32
       last_time_read=LysKOMTime(@args[1..9]);      // Time
@@ -500,7 +500,7 @@ class Member
    LysKOMTime       added_at;                      // Time
    multiset(string) type;                          // Membership-Type
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       member=(int)args[0];                         // Pers-No
       added_by=(int)args[1];                       // Pers-No
@@ -529,7 +529,7 @@ class MembershipOld
    int              last_text_read;                // Local-Text-No
    array(int)       read_texts;                    // ARRAY Local-Text-No
 
-   void create(string|int|array ... args)
+   protected void create(string|int|array ... args)
    {
       last_time_read=LysKOMTime(@args[0..8]);      // Time
       conf_no=(int)args[9];                     // Conf-No
@@ -563,7 +563,7 @@ class Info
    int              motd_of_lyskom;                // Text-No
    array(AuxItem)   aux_item_list;                 // ARRAY Aux-Item
 
-   void create(string|int|array ... args)
+   protected void create(string|int|array ... args)
    {
       version=(int)args[0];                        // INT32
       conf_pres_conf=(int)args[1];                 // Conf-No
@@ -602,7 +602,7 @@ class StaticSessionInfo
    string           ident_user;                    // HOLLERITH
    LysKOMTime       connection_time;               // Time
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       username=args[0];                            // HOLLERITH
       hostname=args[1];                            // HOLLERITH
@@ -642,7 +642,7 @@ class TextList
    int              first_local_no;                // Local-Text-No
    array(int)       texts;                         // ARRAY Text-No
 
-   void create(string|int|array ... args)
+   protected void create(string|int|array ... args)
    {
       first_local_no=(int)args[0];                 // Local-Text-No
       // --- skip array size: args[1]
@@ -667,7 +667,7 @@ class AuxItemInput
    int              inherit_limit;                 // INT32
    string           data;                          // HOLLERITH
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       tag=(int)args[0];                            // INT32
       flags=AuxItemFlags(args[1]);                 // Aux-Item-Flags
@@ -698,7 +698,7 @@ class WhoInfoIdent
    string           hostname;                      // HOLLERITH
    string           ident_user;                    // HOLLERITH
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       person=(int)args[0];                         // Pers-No
       working_conference=(int)args[1];             // Conf-No
@@ -743,7 +743,7 @@ class ConfZInfo
    multiset(string) type;                          // Conf-Type
    int(0..65535)    conf_no;                       // Conf-No
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       name=args[0];                                // HOLLERITH
       type=ConfType(args[1]);                      // Conf-Type
@@ -768,7 +768,7 @@ class WhoInfoOld
    int(0..65535)    working_conference;            // Conf-No
    string           what_am_i_doing;               // HOLLERITH
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       person=(int)args[0];                         // Pers-No
       working_conference=(int)args[1];             // Conf-No
@@ -792,7 +792,7 @@ class Mark
    int              text_no;                       // Text-No
    int(0..255)      type;                          // INT8
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       text_no=(int)args[0];                        // Text-No
       type=(int)args[1];                           // INT8
@@ -807,7 +807,7 @@ class Mark
          });
    }
 
-  string _sprintf(int t){
+  protected string _sprintf(int t){
     return t=='O' && sprintf("%O(%d, text %d)", this_program, text_no, type);
   }
 }
@@ -833,7 +833,7 @@ class Conference
    int              expire;                        // Garb-Nice
    array(AuxItem)   aux_items;                     // ARRAY Aux-Item
 
-   void create(string|int|array ... args)
+   protected void create(string|int|array ... args)
    {
       name=args[0];                                // HOLLERITH
       type=ExtendedConfType(args[1]);              // Extended-Conf-Type
@@ -883,7 +883,7 @@ class Conference
          });
    }
 
-  string _sprintf(int t){
+  protected string _sprintf(int t){
     return t=='O' && sprintf("%O(%s)", this_program, name);
   }
 }
@@ -906,7 +906,7 @@ class ConferenceOld
    int              first_local_no;                // Local-Text-No
    int              no_of_texts;                   // INT32
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       name=args[0];                                // HOLLERITH
       type=ConfType(args[1]);                      // Conf-Type
@@ -945,7 +945,7 @@ class ConferenceOld
          });
    }
 
-  string _sprintf(int t){
+  protected string _sprintf(int t){
     return t=='O' && sprintf("%O(%s)", this_program, name);
   }
 }
@@ -963,7 +963,7 @@ class SessionInfoIdent
    int              idle_time;                     // INT32
    LysKOMTime       connection_time;               // Time
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       person=(int)args[0];                         // Pers-No
       working_conference=(int)args[1];             // Conf-No
@@ -1000,7 +1000,7 @@ class VersionInfo
    string           server_software;               // HOLLERITH
    string           software_version;              // HOLLERITH
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       protocol_version=(int)args[0];               // INT32
       server_software=args[1];                     // HOLLERITH
@@ -1018,7 +1018,7 @@ class VersionInfo
    }
 
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%s version %s; protocol %d)",
 			     this_program, server_software,
@@ -1032,7 +1032,7 @@ class ConfListArchaic
    array(int(0..65535)) conf_nos;                  // ARRAY Conf-No
    array(multiset(string)) conf_types;             // ARRAY Conf-Type
 
-   void create(string|array ...args)
+   protected void create(string|array ...args)
    {
       // --- skip array size: args[0]
       conf_nos=(array(int))args[1];                // ARRAY Conf-No
@@ -1077,7 +1077,7 @@ class UConference
    int              highest_local_no;              // Local-Text-No
    int              nice;                          // Garb-Nice
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       name=args[0];                                // HOLLERITH
       type=ExtendedConfType(args[1]);              // Extended-Conf-Type
@@ -1118,7 +1118,7 @@ class Person
    int(0..65535)    no_of_marks;                   // INT16
    int(0..65535)    no_of_confs;                   // INT16
 
-   void create(string|int ... args)
+   protected void create(string|int ... args)
    {
       username=args[0];                            // HOLLERITH
       privileges=PrivBits(args[1]);                // Priv-Bits
@@ -1163,7 +1163,7 @@ class Person
          });
    }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%s)", this_program, username);
   }
 }

@@ -65,7 +65,7 @@ class Send
    string request;
    function(string:void) callback;
 
-   void create(int rf,string r,function(string:void) c)
+   protected void create(int rf,string r,function(string:void) c)
    {
       ref=rf;
       request=r;
@@ -313,7 +313,7 @@ void connection_lost()
 }
 
 
-void create(string server,void|int port,void|string whoami)
+protected void create(string server,void|int port,void|string whoami)
 {
    if (!port) port=4894;
    con=Stdio.File();
