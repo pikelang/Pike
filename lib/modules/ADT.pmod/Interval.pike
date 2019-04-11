@@ -1,21 +1,21 @@
 #pike __REAL_VERSION__
 
 class Boundary(mixed x) {
-    int (0..1) `<(object b) {
+    protected int (0..1) `<(object b) {
 	if (!objectp(b) || !Program.inherits(object_program(b), Boundary)) {
 	    return x < b;
 	}
 	return x < b->x;
     }
 
-    int (0..1) `>(object b) {
+    protected int (0..1) `>(object b) {
 	if (!objectp(b) || !Program.inherits(object_program(b), Boundary)) {
 	    return x > b;
 	}
 	return x > b->x;
     }
 
-    string _sprintf(int type) {
+    protected string _sprintf(int type) {
 	return sprintf("%O", x);
     }
 
@@ -27,7 +27,7 @@ class Boundary(mixed x) {
 	return unix_time();
     }
 
-    mixed `-(object b) {
+    protected mixed `-(object b) {
 	if (intp(x) || floatp(x)) {
 	    return x - b->x;
 	} else if (stringp(x)) {
@@ -39,19 +39,19 @@ class Boundary(mixed x) {
 class Open {
     inherit Boundary;
 
-    int (0..1) `==(object b) {
+    protected int (0..1) `==(object b) {
 	return objectp(b) && Program.inherits(object_program(b), Open)
 		&& b->x == x;
     }
 
-    int (0..1) `<(mixed b) {
+    protected int (0..1) `<(mixed b) {
 	if (!objectp(b) || !Program.inherits(object_program(b), Boundary)) {
 	    return x <= b;
 	}
 	return ::`<(b);
     }
 
-    int (0..1) `>(mixed b) {
+    protected int (0..1) `>(mixed b) {
 	if (!objectp(b) || !Program.inherits(object_program(b), Boundary)) {
 	    return x >= b;
 	}
@@ -68,14 +68,14 @@ class Open {
 	return overlaps(b) || (this->x == b->x && Program.inherits(object_program(b), Closed));
     }
 
-    string _sprintf(int type, mapping info) {
+    protected string _sprintf(int type, mapping info) {
 	if (info->flag_left) {
 	    return sprintf("(%O", x);
 	}
 	return sprintf("%O)", x);
     }
 
-    Boundary `~() {
+    protected Boundary `~() {
 	return Closed(x);
     }
 }
@@ -83,7 +83,7 @@ class Open {
 class Closed {
     inherit Boundary;
 
-    int (0..1) `==(object b) {
+    protected int (0..1) `==(object b) {
 	return objectp(b) && Program.inherits(object_program(b), Closed)
 		&& b->x == x;
     }
@@ -98,14 +98,14 @@ class Closed {
 	if (this < b) return 0;
 	return 1;
     }
-    string _sprintf(int type, mapping info) {
+    protected string _sprintf(int type, mapping info) {
 	if (info->flag_left) {
 	    return sprintf("[%O", x);
 	}
 	return sprintf("%O]", x);
     }
 
-    Boundary `~() {
+    protected Boundary `~() {
 	return Open(x);
     }
 }
@@ -138,11 +138,11 @@ mixed `->stop=(mixed v) {
     return v;
 }
 
-string _sprintf(int type) {
+protected string _sprintf(int type) {
     return sprintf("%-O..%O", a, b);
 }
 
-void create(mixed a, mixed b) {
+protected void create(mixed a, mixed b) {
     if (!objectp(a) || !Program.inherits(object_program(a), Boundary)) {
 	a = Closed(a);
     }
@@ -154,7 +154,7 @@ void create(mixed a, mixed b) {
     this::b = b;
 }
 
-int(0..1) `==(mixed i) {
+protected int(0..1) `==(mixed i) {
     return objectp(i) && Program.inherits(object_program(i), this_program) && a == i->a && b == i->b;
 }
 
@@ -164,7 +164,7 @@ int(0..1) `==(mixed i) {
 //  3	[..(..]..)
 //  4	[..]..(..)
 
-this_program `&(this_program i) {
+protected this_program `&(this_program i) {
     Boundary l, r;
 
     l = max(a, i->a);
@@ -198,7 +198,7 @@ this_program clone(mixed ... args) {
 }
 
 
-this_program `|(this_program i) {
+protected this_program `|(this_program i) {
     if ((this & i)
     || (b->x <= i->a->x && b->touches(i->a))
     || (i->b->x <= a->x && i->b->touches(a))) {
@@ -208,11 +208,11 @@ this_program `|(this_program i) {
     error("%O and %O need to touch.\n", this, i);
 }
 
-this_program `+(this_program i) {
+protected this_program `+(this_program i) {
     return this | i;
 }
 
-this_program `-(this_program interval) {
+protected this_program `-(this_program interval) {
     this_program i = interval & this;
     if (i) {
 	if (i == this) return 0;
@@ -228,7 +228,7 @@ this_program `-(this_program interval) {
     return this;
 }
 
-int|float _sizeof() {
+protected int|float _sizeof() {
     return b-a;
 }
 

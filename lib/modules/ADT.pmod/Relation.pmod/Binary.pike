@@ -17,7 +17,7 @@ mixed contains(mixed left, mixed right)
 
 //! Does the same as the @[contains] function: returns true if the
 //! relation "@[left] R @[right]" exists, and otherwise false.
-mixed `()(mixed left, mixed right)
+protected mixed `()(mixed left, mixed right)
 {
   return contains(left, right);
 }
@@ -96,7 +96,7 @@ this_program filter_destructively(function f)
 
 //! Returns the number of relation entries in the relation. (Or with
 //! other words: the number of relations in the relation set.)
-mixed _sizeof()
+protected mixed _sizeof()
 {
   if (need_recount)
   {
@@ -109,7 +109,7 @@ mixed _sizeof()
   return items;
 }
 
-int(0..1) `==(mixed rel)
+protected int(0..1) `==(mixed rel)
 {
   if (!objectp(rel) || !rel->is_binary_relation)
     return 0; // different because of having different types
@@ -117,12 +117,12 @@ int(0..1) `==(mixed rel)
   return this <= rel && rel <= this;
 }
 
-int(0..1) `>=(object rel)
+protected int(0..1) `>=(object rel)
 {
   return rel <= this;
 }
 
-int(0..1) `!=(mixed rel)
+protected int(0..1) `!=(mixed rel)
 {
   return !(this == rel);
 }
@@ -130,7 +130,7 @@ int(0..1) `!=(mixed rel)
 //! The expression `rel1 & rel2' returns a new relation which has
 //! those and only those relation entries that are present in both
 //! rel1 and rel2.
-mixed `&(mixed rel)
+protected mixed `&(mixed rel)
 {
   return filter(lambda (mixed left, mixed right)
                        { return rel->contains(left, right);});
@@ -142,7 +142,7 @@ mixed `&(mixed rel)
 //! relation which has all the relation entries present in rel1,
 //! or rel2, or both.
 
-mixed `|(mixed rel)
+protected mixed `|(mixed rel)
 {
   ADT.Relation.Binary res = ADT.Relation.Binary(id, rel);
   foreach(indices(val), mixed left)
@@ -151,12 +151,12 @@ mixed `|(mixed rel)
   return res;
 }
 
-mixed `+ = `|;
+protected mixed `+ = `|;
 
 //! The expression `rel1 - rel2' returns a new relation which has
 //! those and only those relation entries that are present in rel1
 //! and not present in rel2.
-mixed `-(mixed rel)
+protected mixed `-(mixed rel)
 {
   return filter(lambda (mixed left, mixed right)
                        { return !rel->contains(left, right);});
@@ -222,7 +222,7 @@ array find_shortest_path(mixed from, mixed to, void|multiset avoiding)
   return found;
 }
 
-string _sprintf(int mode)
+protected string _sprintf(int mode)
 {
   return mode=='O' && sprintf("%O(%O %O)", this_program, id, _sizeof());
 }
@@ -233,7 +233,7 @@ mixed get_id()
   return id;
 }
 
-void create(void|mixed _id, void|mapping|object _initial)
+protected void create(void|mixed _id, void|mapping|object _initial)
 {
   id = _id;
   if (objectp(_initial) && _initial->is_binary_relation)
@@ -256,7 +256,7 @@ protected class _get_iterator {
   protected array lefts;
   protected array rights;
 
-  void create() {
+  protected void create() {
     first();
   }
 
@@ -268,7 +268,7 @@ protected class _get_iterator {
     return finished ? UNDEFINED : rights[vpos];
   }
 
-  int(0..1) `!() {
+  protected int(0..1) `!() {
     return finished;
   }
 
@@ -290,7 +290,7 @@ protected class _get_iterator {
     return 1;
   }
 
-  this_program `+=(int steps) {
+  protected this_program `+=(int steps) {
     if (steps < 0) error ("Cannot step backwards.\n");
     while(steps--)
       next();
@@ -309,7 +309,7 @@ protected class _get_iterator {
   }
 }
 
-mixed cast(string to)
+protected mixed cast(string to)
 {
   if( to=="mapping" )
     return copy_value(val);
