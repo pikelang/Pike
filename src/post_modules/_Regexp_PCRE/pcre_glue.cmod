@@ -80,6 +80,7 @@ PIKECLASS _pcre
    PIKEFUN void create(string pattern,
 		       void|int options,
 		       void|object table)
+     flags ID_PROTECTED;
    {
      struct object *table=NULL;
      const char *errptr;
