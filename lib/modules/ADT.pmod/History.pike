@@ -27,7 +27,7 @@ protected int(0..1) no_adjacent_duplicates;
 
 //! @[max_size] is the maximum number of entries that can reside in the
 //! history at the same time.
-void create(int max_size) {
+protected void create(int max_size) {
   stack = allocate(max_size);
   maxsize = max_size;
   /*
@@ -96,7 +96,7 @@ void push(mixed value) {
 //! A @[sizeof] operation on this object returns the number
 //! of elements currently in the history, e.g. <= the current
 //! max size.
-int _sizeof() { return size; }
+protected int _sizeof() { return size; }
 
 //! Returns the maximum number of values in the history
 //! @seealso
@@ -136,13 +136,13 @@ protected int(0..) find_pos(int i) {
 //! both positive and negative numbers may be used. The positive
 //! numbers are however offset with 1, so [1] is the first entry
 //! in the history and [-1] is the last.
-mixed `[](int i) {
+protected mixed `[](int i) {
   return stack[find_pos(i)];
 }
 
 //! Overwrite one value in the history. The history position may be
 //! identified either by positive or negative offset, like @[`[]].
-void `[]=(int i, mixed value) {
+protected void `[]=(int i, mixed value) {
   stack[find_pos(i)]=value;
 }
 
