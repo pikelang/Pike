@@ -84,8 +84,8 @@ test_any([[
 test_do( add_constant("random", real_random) )
 
 dnl mixed random(object)
-test_eq([[ random( class() { function _random(function a, function b) { return a; }}() ) ]], random_string)
-test_eq([[ random( class() { function _random(function a, function b) { return b; }}() ) ]], random)
+test_eq([[ random( class() { protected function _random(function a, function b) { return a; }}() ) ]], random_string)
+test_eq([[ random( class() { protected function _random(function a, function b) { return b; }}() ) ]], random)
 
 dnl string random_string(int)
 test_eval_error( return random_string(-1); )

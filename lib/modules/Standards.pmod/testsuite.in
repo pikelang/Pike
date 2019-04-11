@@ -10,7 +10,7 @@ test_true(sizeof(Standards.ISO639_2.list_639_1())>150)
 test_do(
 class A {
   inherit Standards.ISO639_2;
-  void create() {
+  protected void create() {
     foreach(indices(b_to_t), string symbol)
       if(languages[symbol]) error("Overlap in symbol %s\n", symbol);
   }

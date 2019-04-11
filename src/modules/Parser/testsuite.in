@@ -1280,7 +1280,7 @@ test_program([[{
   class X
   {
     inherit Parser.HTML;
-    void create() {i++;}
+    protected void create() {i++;}
   }
   int a()
   {

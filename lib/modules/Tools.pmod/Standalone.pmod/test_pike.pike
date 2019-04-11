@@ -370,7 +370,7 @@ class Watchdog
     if (err) master()->report_error(err);
   }
 
-  void create (int pid, int verbose)
+  protected void create (int pid, int verbose)
   {
     parent_pid = watched_pid = pid;
     this::verbose = verbose;

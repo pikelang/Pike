@@ -18,7 +18,7 @@ class TestHilfe {
     return 0;
   }
 
-  void create() {
+  protected void create() {
     write = mywrite;
     ::create();
   }
@@ -185,7 +185,7 @@ test_hilfe("function f = lambda(int(0..1) a){};", "")
 
 test_hilfe("if(a) a=0; else a=1;", "Ok.\n");
 
-test_hilfe("class B { int i; void create(int x) { i=x; } }", "")
+test_hilfe("class B { int i; protected void create(int x) { i=x; } }", "")
 test_hilfe("object b=B(3);", "")
 test_hilfe("b->i;", "3");
 

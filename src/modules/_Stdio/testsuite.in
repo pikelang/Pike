@@ -850,7 +850,7 @@ test_any([[
 test_any([[
   class A {
     inherit Stdio.Buffer;
-    mixed cast(string to) {
+    protected mixed cast(string to) {
       if(to=="int") return 7;
       return ::cast(to);
     }

@@ -188,7 +188,7 @@ class Socket {
     fd_fail("Got unexpected out of band data on %O: %O", o->query_fd(), foo);
   }
 
-  void create(object|void o)
+  protected void create(object|void o)
   {
     got_callback();
     start();
@@ -291,7 +291,7 @@ class BufferSocket {
     fd_fail("Got unexpected out of band data on %O: %O", o->query_fd(), foo);
   }
 
-  void create(object|void o)
+  protected void create(object|void o)
   {
     ::create(o);
     if (Socket::o->set_buffer_mode) {
@@ -413,7 +413,7 @@ void got_oob0(object socket, string got)
 
 inherit Stdio.Port : port1;
 inherit Stdio.Port : port2;
-void create() {
+protected void create() {
 #ifdef BACKEND
   port1::set_backend(backend);
   port2::set_backend(backend);
