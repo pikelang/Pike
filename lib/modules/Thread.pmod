@@ -548,7 +548,7 @@ class Farm
     function(:mixed) `result() { return ro->result; }
 
     //! Wait for completion.
-    mixed `()()
+    protected mixed `()()
     {
       return ro();
     }
