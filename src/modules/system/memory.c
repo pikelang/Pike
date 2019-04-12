@@ -555,12 +555,12 @@ static void memory_cast(INT32 args)
     push_undefined();
 }
 
-/*! @decl string pread(int(0..) pos,int(0..) len)
- *! @decl string pread16(int(0..) pos,int(0..) len)
+/*! @decl string(8bit) pread(int(0..) pos,int(0..) len)
+ *! @decl string(16bit) pread16(int(0..) pos,int(0..) len)
  *! @decl string pread32(int(0..) pos,int(0..) len)
- *! @decl string pread16i(int(0..) pos,int(0..) len)
+ *! @decl string(16bit) pread16i(int(0..) pos,int(0..) len)
  *! @decl string pread32i(int(0..) pos,int(0..) len)
- *! @decl string pread16n(int(0..) pos,int(0..) len)
+ *! @decl string(16bit) pread16n(int(0..) pos,int(0..) len)
  *! @decl string pread32n(int(0..) pos,int(0..) len)
  *!
  *!	Read a string from the memory. The 16 and 32 variants reads
@@ -956,20 +956,20 @@ void init_system_memory(void)
 		tOr(tFunc(tInt tInt,tInt),
 		    tFunc(tInt tInt tStr,tStr)),0);
 
-   ADD_FUNCTION("pread",memory_pread,tFunc(tInt tInt,tStr),0);
-   ADD_FUNCTION("pread16",memory_pread16,tFunc(tInt tInt,tStr),0);
+   ADD_FUNCTION("pread",memory_pread,tFunc(tInt tInt,tStr8),0);
+   ADD_FUNCTION("pread16",memory_pread16,tFunc(tInt tInt,tStr16),0);
    ADD_FUNCTION("pread32",memory_pread32,tFunc(tInt tInt,tStr),0);
-   ADD_FUNCTION("pread16i",memory_pread16i,tFunc(tInt tInt,tStr),0);
+   ADD_FUNCTION("pread16i",memory_pread16i,tFunc(tInt tInt,tStr16),0);
    ADD_FUNCTION("pread32i",memory_pread32i,tFunc(tInt tInt,tStr),0);
-   ADD_FUNCTION("pread16n",memory_pread16n,tFunc(tInt tStr,tInt),0);
-   ADD_FUNCTION("pread32n",memory_pread32n,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pread16n",memory_pread16n,tFunc(tInt tStr,tStr16),0);
+   ADD_FUNCTION("pread32n",memory_pread32n,tFunc(tInt tStr,tStr),0);
 
-   ADD_FUNCTION("pwrite",memory_pwrite,tFunc(tInt tStr,tInt),0);
-   ADD_FUNCTION("pwrite16",memory_pwrite16,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pwrite",memory_pwrite,tFunc(tInt tStr8,tInt),0);
+   ADD_FUNCTION("pwrite16",memory_pwrite16,tFunc(tInt tStr16,tInt),0);
    ADD_FUNCTION("pwrite32",memory_pwrite32,tFunc(tInt tStr,tInt),0);
-   ADD_FUNCTION("pwrite16i",memory_pwrite16i,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pwrite16i",memory_pwrite16i,tFunc(tInt tStr16,tInt),0);
    ADD_FUNCTION("pwrite32i",memory_pwrite32i,tFunc(tInt tStr,tInt),0);
-   ADD_FUNCTION("pwrite16n",memory_pwrite16n,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pwrite16n",memory_pwrite16n,tFunc(tInt tStr16,tInt),0);
    ADD_FUNCTION("pwrite32n",memory_pwrite32n,tFunc(tInt tStr,tInt),0);
 
 #ifdef PIKE_NULL_IS_SPECIAL
