@@ -6,6 +6,8 @@
 
 #pike 8.1
 
+#pragma no_deprecation_warnings
+
 //! This class encapsulates a connection to an SQL server. It is a
 //! generic interface on top of the DB server specific
 //! implementations. That doesn't mean that there aren't plenty of
