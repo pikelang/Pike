@@ -92,7 +92,7 @@ class Shift
    string s;
    string comment;
 
-   void create(array a)
+   protected void create(array a)
    {
       switch (sizeof(a))
       {
@@ -126,7 +126,7 @@ class Shift
 		 dayrule,time,timetype,offset,s);
    }
 
-   int `==(Shift other)
+   protected int `==(Shift other)
    {
       return ( dayrule==other->dayrule &&
 	       time==other->time &&
@@ -197,7 +197,7 @@ class Shift
 	 complain("unknown rule method %O\n",rule);
    }
 
-   Shift|array ``+(array|Shift s)
+   protected Shift|array ``+(array|Shift s)
    {
       if (!s) return this;
       if (!arrayp(s)) s=({s});

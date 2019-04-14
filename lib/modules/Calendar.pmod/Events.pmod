@@ -431,11 +431,11 @@ array all_regions()
 //! return the Event object for the specified region or the specified
 //! named event.
 
-program|Event.Event `[](string s)
+protected program|Event.Event `[](string s)
 {
    return ::`[](s) || magic_event(s);
 }
-program|Event.Event `-> (string s) {return `[] (s);}
+protected program|Event.Event `-> (string s) {return `[] (s);}
 
 // Don't load Geogrphy.Countries unless we have to
 object country_lookup=0;
