@@ -23,7 +23,7 @@ void on_failure(function(mixed : void) f)
 {
   global_on_failure = f;
 }
-protected function(mixed : void) global_on_failure;
+protected function(mixed : void) global_on_failure = master()->handle_error;
 
 //! @param enable
 //!   @int
