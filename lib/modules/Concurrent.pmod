@@ -1143,7 +1143,7 @@ class Promise
   {
     // NB: Don't complain about dropping STATE_NO_FUTURE on the floor.
     if (state == STATE_PENDING)
-      try_failure(({ "Promise broken.\n", backtrace() }));
+      try_failure(({ sprintf("%O: Promise broken.\n", this), backtrace() }));
     if ((state == STATE_REJECTED) && global_on_failure)
       call_callback(global_on_failure, result);
     result = UNDEFINED;
