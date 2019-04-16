@@ -35,8 +35,8 @@ array(array(string)) announce_list=({});
 //! @param piece_size
 //!   The size of the pieces that the SHA hashes are calculated on.
 //!   Default 262144 and this value should probably be 2^n.
-void create(void|string _base,
-	    void|int _piece_size)
+protected void create(void|string _base,
+		      void|int _piece_size)
 {
    targets=({});
    datamode="r";

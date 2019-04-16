@@ -288,7 +288,7 @@ class Target(string base,int length,int offset,void|array path)
 	       filename,strerror(fd->errno()));
    }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       if (t=='O') return sprintf("Torrent.Target(%O, %d bytes at +%d)",
 				 filename,length,offset);
@@ -963,7 +963,7 @@ class PieceDownload
 
    int handed_over=0;
 
-   void create(.Peer _peer,int n)
+   protected void create(.Peer _peer,int n)
    {
       peer=_peer;
       piece=n;
@@ -1190,7 +1190,7 @@ class PieceDownload
       destruct(this);
    }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       if (t=='O')
 	 return sprintf(
