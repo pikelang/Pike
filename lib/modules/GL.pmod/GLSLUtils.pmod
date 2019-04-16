@@ -304,7 +304,7 @@ class VertexBuffer
     //!
     //! The mode is only a hint, it does not really affect the
     //! functionality of the buffer.
-    void create(int draw_mode)
+    protected void create(int draw_mode)
     {
         this->draw_mode = draw_mode;
         [id] = glGenBuffers( 1 );
@@ -498,7 +498,7 @@ class GLSLProgram
 
     //! Create a new GLSL shader. If @[name] is specified, it
     //! indicates a filename passed to @[compile_file].
-    void create(string|void name)
+    protected void create(string|void name)
     {
         if( name )
         {
@@ -825,8 +825,9 @@ class RenderBuffer
     //!
     //! The @[mipmap] parameter depends on the existance of the
     //! glGenerateMipmapEXT extension.
-    void create(int w, int h, int type, bool depth, bool mipmap, bool alpha,
-                int|void internal_format, int|void format)
+    protected void create(int w, int h, int type, bool depth,
+			  bool mipmap, bool alpha,
+			  int|void internal_format, int|void format)
     {
         if( mipmap && type == GL_TEXTURE_RECTANGLE_ARB )
             mipmap = false;
@@ -914,16 +915,16 @@ class vec
 	}
 	return x;
     }
-    this_program `*( this_program x ) {
+    protected this_program `*( this_program x ) {
 	return this_program(v*ARG(x));
     }
-    this_program `+( this_program x ) {
+    protected this_program `+( this_program x ) {
 	return this_program(v+ARG(x));
     }
-    this_program `-( this_program x ) {
+    protected this_program `-( this_program x ) {
 	return this_program(v-ARG(x));
     }
-    this_program `/( this_program x ) {
+    protected this_program `/( this_program x ) {
 	return this_program(v/ARG(x));
     }
 
@@ -937,7 +938,7 @@ class vec
 	return this_program(v->cross( x->v ));
     }
 
-    this_program ``*( object x )
+    protected this_program ``*( object x )
     {
 	if( x->v ) x = x->v;
 	return this_program( Math.Matrix(@column( (array)(x*v), 0 )) );
@@ -953,12 +954,12 @@ class vec
 	return this_program( v->normv() );
     }
 
-    void create( Math.Matrix _v )
+    protected void create( Math.Matrix _v )
     {
 	v = _v;
     }
 
-    mixed `->( string x )
+    protected mixed `->( string x )
     {
 	if( this[x] ) return this[x];
 	switch( x )
@@ -980,7 +981,7 @@ class vec3
 
     inherit vec;
 
-    void create( Math.Matrix|float x, float y, float z )
+    protected void create( Math.Matrix|float x, float y, float z )
     {
 	if( objectp( x ) )
 	    ::create( x );
@@ -995,7 +996,7 @@ class vec4
 
     inherit vec;
 
-    void create( Math.Matrix|float x, float y, float z, float w )
+    protected void create( Math.Matrix|float x, float y, float z, float w )
     {
 	if( objectp( x ) )
 	    ::create( x );
@@ -1010,7 +1011,7 @@ class vec2
 
     inherit vec;
 
-    void create( Math.Matrix|float x, float y )
+    protected void create( Math.Matrix|float x, float y )
     {
 	if( objectp( x ) )
 	    ::create( x );

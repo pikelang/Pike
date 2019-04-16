@@ -660,7 +660,7 @@ class Type
     }
   }
 
-  void create( string n )
+  protected void create( string n )
   {
     array q = n/"|";
     if( sizeof(q) != 1 )
@@ -707,7 +707,7 @@ class Type
     }
   }
 
-  string _sprintf(int fmt)
+  protected string _sprintf(int fmt)
   {
     if(fmt != 'O') return UNDEFINED;
     if( subtypes )
