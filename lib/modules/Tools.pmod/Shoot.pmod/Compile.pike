@@ -19,7 +19,7 @@ final constant ops = 2000;
 
 
 string prog="";
-void create()
+protected void create()
 {
     int v=10;
 
