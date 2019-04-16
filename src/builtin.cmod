@@ -3498,6 +3498,9 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
     if (!f->context) {
       if (f->pc == (void *)do_gc) {
 	SET_SVAL(bf->_fun, PIKE_T_STRING, 0, string, make_shared_string("gc"));
+      } else if (f->pc == (void *)pike_do_exit) {
+	SET_SVAL(bf->_fun, PIKE_T_STRING, 0, string,
+		 make_shared_string("exit"));
       }
       continue;
     }

@@ -422,8 +422,18 @@ PMOD_EXPORT struct callback *add_exit_callback(callback_func call,
 
 void pike_do_exit(int num)
 {
+  /* Add a frame so that backtraces generated in this stage
+   * (from eg an atexit() function) can be easily identified.
+   */
+  struct pike_frame *new_frame = alloc_pike_frame();
+  new_frame->next = Pike_fp;
+  new_frame->pc = (PIKE_OPCODE_T *)pike_do_exit;
+  Pike_fp = new_frame;
+
   call_callback(&exit_callbacks, NULL);
   free_callback_list(&exit_callbacks);
+
+  POP_PIKE_FRAME();
 
   exit_modules();
 
