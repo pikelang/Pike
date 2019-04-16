@@ -36,7 +36,7 @@ class rec_buffer
   int expected;
   int pad;
 
-  void create()
+  protected void create()
   {
     buffer = "";
     expected = pad = 0;
@@ -73,7 +73,7 @@ class async_request
   object req;
   function callback;
 
-  void create(object r, function f)
+  protected void create(object r, function f)
   {
     req = r;
     callback = f;
@@ -96,7 +96,7 @@ class id_manager
   int increment;
   mapping resources;
 
-  void create(int base, int mask)
+  protected void create(int base, int mask)
   {
     next_id = base;
     increment = 1;
@@ -226,7 +226,7 @@ class Display
 # define DEBUGREQ(X) ((X)&0xfff)
 #endif
 
-  void create()
+  protected void create()
   { /* Delay initialization of id_manager */
     compose_patterns = ([]);
     catch {

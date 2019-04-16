@@ -32,7 +32,7 @@ class auth_file
     return sprintf("%d:%s", display, address);
   }
 
-  void create(string s)
+  protected void create(string s)
   {
     Stdio.Buffer struct = Stdio.Buffer(s);
 
@@ -79,7 +79,7 @@ class lock_key
   string c_name;
   string l_name;
 
-  void create(string f)
+  protected void create(string f)
   {
     name = f;
     c_name = name + "-c";

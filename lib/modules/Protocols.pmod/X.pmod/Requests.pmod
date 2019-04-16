@@ -1000,7 +1000,7 @@ class QueryExtension
   string name;
   //!
 
-  void create(string n)
+  protected void create(string n)
   {
     name = n;
   }
@@ -1061,7 +1061,8 @@ class ExtensionRequest
 
   // End preamble..
 
-  void create( int|void m, function|void reply_handler, function|void error_handler )
+  protected void create( int|void m, function|void reply_handler,
+			 function|void error_handler )
   {
     type = m;
     handle_reply = reply_handler;

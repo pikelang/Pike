@@ -171,7 +171,7 @@ class XTEST
 	"ButtonRelease": 5, "MotionNotify": 6]);
 
   //! Create object.
-  void create() {}
+  protected void create() {}
 
   //! Initialize the XTEST extension. Returns 1 if successful.
   //!
