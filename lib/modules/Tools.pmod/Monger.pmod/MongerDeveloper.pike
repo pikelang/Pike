@@ -23,7 +23,7 @@ private string original_dir;
 private string username, password;
 private mapping created = ([]);
 
-void create()
+protected void create()
 {
   repository = default_repository;
   builddir = default_builddir;
@@ -444,7 +444,7 @@ class xmlrpc_handler
 {
   Protocols.XMLRPC.Client x;
 
-  void create(string loc)
+  protected void create(string loc)
   {
     x = Protocols.XMLRPC.Client(loc);
   }
@@ -452,7 +452,7 @@ class xmlrpc_handler
 
   protected class _caller (string n){
 
-    mixed `()(mixed ... args)
+    protected mixed `()(mixed ... args)
     {
       array|Protocols.XMLRPC.Fault r;
       if(args)
@@ -466,7 +466,7 @@ class xmlrpc_handler
 
   }
 
-  function `->(string n, mixed ... args)
+  protected function `->(string n, mixed ... args)
   {
     return _caller(n);
   }
