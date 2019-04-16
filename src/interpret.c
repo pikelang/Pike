@@ -2011,7 +2011,7 @@ static int num_pike_frames;
 
 PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
 {
-    free_object(X->current_object);
+    do_free_object(X->current_object);
     if(X->current_program)
         free_program(X->current_program);
     if(X->scope)
@@ -2046,6 +2046,7 @@ struct pike_frame *alloc_pike_frame(void)
       PIKE_MEM_RW_RANGE(&res->next, sizeof(void*));
       free_pike_frame = res->next;
       PIKE_MEM_WO_RANGE(&res->next, sizeof(void*));
+      memset(res, 0, sizeof(struct pike_frame));
       gc_init_marker(res);
       res->refs=0;
       add_ref(res);	/* For DMALLOC... */
