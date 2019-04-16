@@ -17,7 +17,8 @@ void touch() { //used by the Storage Manager mainly.
 }
 
 //! expire_time is relative and in seconds.
-void create(void|mixed value, void|int expire_time, void|float preciousness) {
+protected void create(void|mixed value, void|int expire_time,
+		      void|float preciousness) {
   atime=ctime=time(1);
 }
 

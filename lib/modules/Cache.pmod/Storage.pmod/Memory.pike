@@ -20,9 +20,9 @@ class Data {
   mixed _data=0;
   multiset(string) _deps;
 
-  void create(void|mixed value, void|int abs_expire_time,
-              void|float preciousness,
-              void|multiset(string) dependants) {
+  protected void create(void|mixed value, void|int abs_expire_time,
+			void|float preciousness,
+			void|multiset(string) dependants) {
     _data=value;
     atime=ctime=time(1);
     if (abs_expire_time) etime=abs_expire_time;

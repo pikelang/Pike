@@ -45,6 +45,6 @@ void expire(Cache.Storage.Base storage) {
   }
 }
 
-void create(void|int instance_ktime) {
+protected void create(void|int instance_ktime) {
   ktime=(instance_ktime?instance_ktime:DEFAULT_KTIME);
 }

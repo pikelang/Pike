@@ -53,7 +53,7 @@ class Data {
   private string db_data;
   private mixed _data;
 
-  void create (mapping q) {
+  protected void create (mapping q) {
     debug("instantiating data object from %O",q);
     db_data=q->data;
     _size=sizeof(db_data);
@@ -180,7 +180,7 @@ void aget(string key,
 
 
 //!
-void create(string sql_url) {
+protected void create(string sql_url) {
   array result=0;
   mixed err=0;
   db=Sql.Sql(sql_url);

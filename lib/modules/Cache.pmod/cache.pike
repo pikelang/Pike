@@ -198,9 +198,9 @@ void threaded_cleanup_cycle() {
 
 //! Creates a new cache object. Required are a storage manager, and an
 //! expiration policy object.
-void create(Cache.Storage.Base storage_mgr,
-            Cache.Policy.Base policy_mgr,
-            void|int cleanup_cycle_delay) {
+protected void create(Cache.Storage.Base storage_mgr,
+		      Cache.Policy.Base policy_mgr,
+		      void|int cleanup_cycle_delay) {
   if (!storage_mgr || !policy_mgr)
     error ( "I need a storage manager and a policy manager\n" );
   storage=storage_mgr;
