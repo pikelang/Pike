@@ -68,7 +68,8 @@ class IPv4 {
     //! Alternatively, an instance of @[ADT.CritBit.IPv4Tree] can be passed.
     //! @expr{tree@} is expected to map the first address of each range to
     //! its geographical location.
-    void create(string|object file_name, void|function(string,object:void) parse_line) {
+    protected void create(string|object file_name,
+			  void|function(string,object:void) parse_line) {
 	if (objectp(file_name)) {
 	    tree = file_name;
 	    return;
