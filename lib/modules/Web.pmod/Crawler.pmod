@@ -58,8 +58,8 @@ class Stats(int window_width,
 
     protected private array(int) amount_floating;
 
-    void create(int _window_width,
-		int _granularity)
+    protected void create(int _window_width,
+			  int _granularity)
     {
       window_width=_window_width;
       granularity=_granularity;
@@ -248,7 +248,7 @@ class RegexpRule
 //!
 //! @param re
 //!   a string describing the @[Regexp] expression
-  void create(string re)
+  protected void create(string re)
   {
     regexp=Regexp(re);
   }
@@ -300,8 +300,9 @@ class MySQLQueue
   inherit Queue;
 
 //!
-  void create( Stats _stats, Policy _policy, string _host, string _table,
-	       void|RuleSet _allow, void|RuleSet _deny)
+  protected void create( Stats _stats, Policy _policy,
+			 string _host, string _table,
+			 void|RuleSet _allow, void|RuleSet _deny)
   {
     stats = _stats;
     policy = _policy;
@@ -413,7 +414,8 @@ class MemoryQueue
   RuleSet deny;
 
 //!
-  void create(Stats _stats, Policy _policy, RuleSet _allow, RuleSet _deny)
+  protected void create(Stats _stats, Policy _policy,
+			RuleSet _allow, RuleSet _deny)
   {
     stats=_stats;
     policy=_policy;
@@ -548,7 +550,7 @@ class ComplexQueue(Stats stats, Policy policy)
       return uri;
     }
 
-    int `<(mixed other)
+    protected int `<(mixed other)
     {
       if(policy->max_concurrent_fetchers_per_host &&
          num_active >= policy->max_concurrent_fetchers_per_host)
@@ -635,8 +637,8 @@ class RobotExcluder
   array(mixed) args;
   string user_agent;
 
-  void create(Standards.URI _base_uri, function _done_cb,
-	      void|mixed _user_agent, void|mixed ... _args)
+  protected void create(Standards.URI _base_uri, function _done_cb,
+			void|mixed _user_agent, void|mixed ... _args)
   {
     base_uri=_base_uri; done_cb=_done_cb;
     user_agent = _user_agent || "Mozilla 4.0 (PikeCrawler)";
@@ -783,7 +785,8 @@ class Crawler
 	queue->set_stage(real_uri, 6);
     }
 
-    void create(Standards.URI _uri, void|Standards.URI _real_uri, mapping extra_headers)
+    protected void create(Standards.URI _uri, void|Standards.URI _real_uri,
+			  mapping extra_headers)
     {
       uri=_uri;
       real_uri=_real_uri;
@@ -955,12 +958,12 @@ class Crawler
 //!  @param _args
 //!    optional arguments sent as the last argument to the callback
 //!    functions.
-  void create(Queue _queue,
-	      function _page_cb, function _error_cb,
-	      function _done_cb, function _prepare_cb,
-	      string|array(string)|Standards.URI|
-	      array(Standards.URI) start_uri,
-	      mixed ... _args)
+  protected void create(Queue _queue,
+			function _page_cb, function _error_cb,
+			function _done_cb, function _prepare_cb,
+			string|array(string)|Standards.URI|
+			array(Standards.URI) start_uri,
+			mixed ... _args)
   {
     queue=_queue;
     args=_args;

@@ -900,7 +900,7 @@ class Socket {
     }
   }
 
-  private string _sprintf(int type, void|mapping flags) {
+  protected string _sprintf(int type, void|mapping flags) {
     string res=UNDEFINED;
     switch (type) {
       case 'O':

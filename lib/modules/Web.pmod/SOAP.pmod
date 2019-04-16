@@ -68,15 +68,15 @@ class Arguments {
     values = v;
   }
 
-  inline private mixed `[](string key) {
+  inline protected  mixed `[](string key) {
     return values[key];
   }
 
-  inline private mixed `->(string key) {
+  inline protected mixed `->(string key) {
     return values[key];
   }
 
-  private mixed `[]=(string key, mixed v) {
+  protected mixed `[]=(string key, mixed v) {
     mixed vp = values[key];
     if (!vp || !arrayp(vp))
       DERROR("Invalid key %O\n", key);
@@ -84,15 +84,15 @@ class Arguments {
     return v;
   }
 
-  inline private mixed `->=(string key, mixed v) {
+  inline protected mixed `->=(string key, mixed v) {
     return (this[key] = v);
   }
 
-  inline private Iterator _get_iterator() {
+  inline protected Iterator _get_iterator() {
     return get_iterator(values);
   }
 
-  inline private array(string) _indices() {
+  inline protected array(string) _indices() {
     return filter(indices(values),
      lambda(mixed value) { return !has_prefix(value, "/"); });
   }
@@ -101,7 +101,7 @@ class Arguments {
   // mostly relevant for get_arguments().
   // A regular clone() method does not work here due to the override
   // on the -> and [] operators.
-  private Arguments `~() {
+  protected Arguments `~() {
     mapping newvalues = values + ([]);
     foreach (newvalues; string key; mixed value)
       if (!has_prefix(key, "/"))
@@ -112,7 +112,7 @@ class Arguments {
     return Arguments(newvalues);
   }
 
-  private string _sprintf(int type, void|mapping flags) {
+  protected string _sprintf(int type, void|mapping flags) {
     string res = UNDEFINED;
     switch (type) {
       case 'O':
@@ -134,7 +134,7 @@ class Client {
   private mapping nss = ([]);
   private string nextmethod;
 
-  private void _destruct() {
+  protected void _destruct() {
   }
 
   //! @returns
