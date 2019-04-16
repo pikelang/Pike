@@ -114,7 +114,7 @@ class ArrayType {
   Type valuetype;
 
   //!
-  void create() { ::create("array"); }
+  protected void create() { ::create("array"); }
 
   string print() {
     if (valuetype)
@@ -151,7 +151,7 @@ class ProgramType {
   // FIXME xml() needs to be overridden.
 
   //!
-  void create() { ::create("program"); }
+  protected void create() { ::create("program"); }
 }
 
 //! The class for representing the float type.
@@ -163,7 +163,7 @@ class FloatType {
   inherit Type;
 
   //!
-  void create() { ::create("float"); }
+  protected void create() { ::create("float"); }
 }
 
 //! The class for representing integer types.
@@ -178,7 +178,7 @@ class IntType {
   string min, max;
 
   //!
-  void create() { ::create("int"); }
+  protected void create() { ::create("int"); }
 
   string print() {
     if (min || max)
@@ -210,7 +210,7 @@ class StringType {
   string max;
 
   //!
-  void create() { ::create("string"); }
+  protected void create() { ::create("string"); }
 
   string print() {
     if (min||max)
@@ -237,7 +237,7 @@ class MixedType {
   inherit Type;
 
   //!
-  void create() { ::create("mixed"); }
+  protected void create() { ::create("mixed"); }
 }
 
 //! The class for representing function types.
@@ -255,7 +255,7 @@ class FunctionType {
   Type returntype;
 
   //!
-  void create() { ::create("function"); }
+  protected void create() { ::create("function"); }
 
   string print() {
     if (argtypes && returntype) {
@@ -292,7 +292,7 @@ class MappingType {
   Type indextype, valuetype;
 
   //!
-  void create() { ::create("mapping"); }
+  protected void create() { ::create("mapping"); }
 
   string print() {
     if (indextype && valuetype) {
@@ -327,7 +327,7 @@ class MultisetType {
   Type indextype;
 
   //!
-  void create() { ::create("multiset"); }
+  protected void create() { ::create("multiset"); }
 
   string print() {
     if (indextype) {
@@ -358,7 +358,7 @@ class ObjectType {
   string classname;
 
   //!
-  void create() { ::create("object"); }
+  protected void create() { ::create("object"); }
 
   string print() {
     if (classname)
@@ -383,7 +383,7 @@ class TypeType {
   Type subtype = MixedType();
 
   //!
-  void create() { ::create("type"); }
+  protected void create() { ::create("type"); }
 
   string print() {
     if (subtype->name != "mixed") {
@@ -405,7 +405,7 @@ class VoidType {
   inherit Type;
 
   //!
-  void create() { ::create("void"); }
+  protected void create() { ::create("void"); }
 }
 
 //! The class for representing the zero type.
@@ -417,7 +417,7 @@ class ZeroType {
   inherit Type;
 
   //!
-  void create() { ::create("zero"); }
+  protected void create() { ::create("zero"); }
 }
 
 //! The class for representing union types.
@@ -432,7 +432,7 @@ class OrType {
   array(Type) types;
 
   //!
-  void create() { ::create("or"); }
+  protected void create() { ::create("or"); }
 
   string print() {
     return map(types, lambda(Type t) { return t->print(); }) * " | ";
@@ -457,7 +457,7 @@ class VarargsType {
   Type type;
 
   //!
-  void create(Type t) { ::create("varargs"); type = t; }
+  protected void create(Type t) { ::create("varargs"); type = t; }
 
   string print() { return type->print() + " ..."; }
   string xml(.Flags|void flags) { return xmltag("varargs", type->xml(flags)); }
@@ -488,7 +488,7 @@ class AttributeType {
   int prefix;
 
   //!
-  void create() { ::create("__attribute__"); }
+  protected void create() { ::create("__attribute__"); }
 
   string print() {
     if (attribute == "\"deprecated\"") {

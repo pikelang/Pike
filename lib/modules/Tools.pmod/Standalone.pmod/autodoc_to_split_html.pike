@@ -126,11 +126,12 @@ class Node
 
   Node parent;
 
-  string _sprintf() {
+  protected string _sprintf() {
     return sprintf("Node(%O,%O,%d)", type, name, data?sizeof(data):0);
   }
 
-  void create(string _type, string _name, string _data, void|Node _parent)
+  protected void create(string _type, string _name, string _data,
+			void|Node _parent)
   {
     //if (_type == "class" && search(_data, "<modifiers>") > -1) {
     //  werror("\n\n\n----\n%s\n-------\n\n\n", _data);
@@ -1354,7 +1355,7 @@ class TopNode {
     return res;
   }
 
-  void create(string _data) {
+  protected void create(string _data) {
     PROFILE();
     mapping m = localtime(time());
     timestamp = sprintf("%4d-%02d-%02d", m->year+1900, m->mon+1, m->mday);
