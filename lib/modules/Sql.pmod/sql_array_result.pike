@@ -5,7 +5,7 @@ inherit __builtin.Sql.Result;
 
 array _values;
 
-void create(array res) {
+protected void create(array res) {
   if(!res || !arrayp(res))
     error("Bad argument.\n");
   _values = res;

@@ -10,8 +10,8 @@ optional constant dont_dump_program = 1;
 //!
 inherit SQLite.SQLite;
 
-void create(string a, void|string b, void|mixed c, void|mixed d,
-	    void|mapping options) {
+protected void create(string a, void|string b, void|mixed c, void|mixed d,
+		      void|mapping options) {
   if(b) a += "/"+b;
   ::create(a);
 }

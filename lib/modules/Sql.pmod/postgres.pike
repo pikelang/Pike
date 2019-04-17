@@ -174,8 +174,8 @@ protected private int mkbool(string s) {
 //!
 //! @seealso
 //!   @[Sql.pgsql], @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
-void create(void|string host, void|string database, void|string user,
-	    void|string _pass, void|mapping options) {
+protected void create(void|string host, void|string database, void|string user,
+		      void|string _pass, void|mapping options) {
 	string pass = _pass;
 	_pass = "CENSORED";
 	string real_host=host, real_db=database;

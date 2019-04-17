@@ -147,14 +147,14 @@ private void default_backend_runs() {		// Runs as soon as the
   cb_backend = Pike.DefaultBackend;		// DefaultBackend has started
 }
 
-private void create() {
+protected void create() {
   atexit(_destruct);
   // Run callbacks from our local_backend until DefaultBackend has started
   cb_backend = local_backend = Pike.SmallBackend();
   call_out(default_backend_runs, 0);
 }
 
-private void _destruct() {
+protected void _destruct() {
   foreach (clients; proxy client; )
     destruct(client);
 }
@@ -342,7 +342,7 @@ class bufcon {
 
   private conxion realbuffer;
 
-  private void create(conxion _realbuffer) {
+  protected void create(conxion _realbuffer) {
     realbuffer = _realbuffer;
   }
 
@@ -448,7 +448,7 @@ class conxiin {
     return 0;
   }
 
-  private void create() {
+  protected void create() {
     i::create();
     fillreadmux = MUTEX();
     fillread = Thread.Condition();
@@ -686,7 +686,7 @@ outer:
     }
   }
 
-  private void _destruct() {
+  protected void _destruct() {
     PD("%d>Close conxion %d\n", socket ? socket->query_fd() : -1, !!nostash);
     catch(purge());
   }
@@ -746,7 +746,7 @@ outer:
     destruct(this);
   }
 
-  private string _sprintf(int type) {
+  protected string _sprintf(int type) {
     string res;
     switch (type) {
       case 'O':
@@ -764,7 +764,7 @@ outer:
     return res;
   }
 
-  private void create(proxy pgsqlsess, Thread.Queue _qportals, int nossl) {
+  protected void create(proxy pgsqlsess, Thread.Queue _qportals, int nossl) {
     o::create();
     qportals = _qportals;
     synctransact = 1;
@@ -785,7 +785,7 @@ outer:
 class conxsess {
   final conxion chain;
 
-  private void create(conxion parent) {
+  protected void create(conxion parent) {
     if (parent->started)
       werror("Overwriting conxsess %s %s\n",
         describe_backtrace(({"new ", backtrace()[..<1]})),
@@ -799,7 +799,7 @@ class conxsess {
     chain = 0;
   }
 
-  private void _destruct() {
+  protected void _destruct() {
     if (chain)
       werror("Untransmitted conxsess %s\n",
        describe_backtrace(({"", backtrace()[..<1]})));
@@ -1939,7 +1939,7 @@ class proxy {
   final MUTEX shortmux;
   final int readyforquerycount;
 
-  private string _sprintf(int type) {
+  protected string _sprintf(int type) {
     string res;
     switch (type) {
       case 'O':
@@ -1951,7 +1951,7 @@ class proxy {
     return res;
   }
 
-  private void create(void|string host, void|string database,
+  protected void create(void|string host, void|string database,
                         void|string user, void|string pass,
                         void|mapping(string:mixed) options) {
     if (this::pass = pass) {
@@ -2795,7 +2795,7 @@ class proxy {
     destruct(waitforauthready);
   }
 
-  private void _destruct() {
+  protected void _destruct() {
     string errstring;
     mixed err = catch(close());
     clients[this] = 0;
