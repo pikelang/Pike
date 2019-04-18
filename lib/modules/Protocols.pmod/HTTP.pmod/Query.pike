@@ -981,7 +981,7 @@ this_program async_request(string server,int port,string query,
 //! @returns
 //!	Returns @expr{1@} on successfull connection, @expr{0@} on failure.
 //!
-int `()()
+protected int `()()
 {
    // wait for completion
    if (conthread) conthread->wait();

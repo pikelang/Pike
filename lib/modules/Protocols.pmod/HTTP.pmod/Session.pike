@@ -372,6 +372,7 @@ class Request
 
 // ----------------
 
+#pragma no_deprecation_warnings
 //!	But since this clears the HTTP connection from the Request object,
 //!	it can also be used to reuse a @[Request] object.
    void destroy()
@@ -379,6 +380,7 @@ class Request
       if (con) return_connection(url_requested,con);
       con=0;
    }
+#pragma deprecation_warnings
 
 //! 	@[_destruct] is called when an object is destructed.
    protected void _destruct()
@@ -388,7 +390,7 @@ class Request
 
 // ----------------
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       if (t=='O')
 	 return sprintf("Request(%O",(string)url_requested)+
@@ -419,7 +421,7 @@ class Cookie
    string domain="";
    int secure=0;
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       if (t=='O')
 	 return sprintf(
@@ -625,7 +627,7 @@ protected class KeptConnection
    string lookup;
    Query q;
 
-   void create(string _lookup,Query _q)
+   protected void create(string _lookup,Query _q)
    {
       Thread.MutexKey key = connection_cache_mux->lock(2);
       lookup=_lookup;
@@ -1026,9 +1028,9 @@ class SessionURL
 //! instantiate a SessionURL object;
 //! when fed to Protocols.HTTP.Session calls, will add
 //! referer to the HTTP handshaking variables
-   void create(URL uri,
-	       URL base_uri,
-	       URL _referer)
+   protected void create(URL uri,
+			 URL base_uri,
+			 URL _referer)
    {
       ::create(uri,base_uri);
       referer=_referer;

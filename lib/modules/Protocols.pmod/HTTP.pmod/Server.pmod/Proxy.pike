@@ -11,8 +11,8 @@ string serverid=version()+": HTTP Proxy";
 string ourvia="Via: "+serverid+" ["+random(1<<128)->digits(16)+"]";
 
 
-void create(void|int portno,
-	    void|string interface)
+protected void create(void|int portno,
+		      void|string interface)
 {
    ::create(Proxify,portno,interface);
 }
@@ -82,7 +82,7 @@ class Proxify
    Query q=Query();
    Protocols.HTTP.Server.Request rid;
 
-   void create(Protocols.HTTP.Server.Request _rid)
+   protected void create(Protocols.HTTP.Server.Request _rid)
    {
       rid=_rid;
 //       werror("%O\n",mkmapping(indices(rid),values(rid)));

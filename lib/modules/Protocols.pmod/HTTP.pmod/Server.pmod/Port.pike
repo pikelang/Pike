@@ -12,10 +12,10 @@ object|function|program request_program=.Request;
 //! a callback with @[request_program] objects.
 
 //!
-void create(function(.Request:void) callback,
-            void|int portno,
-            void|string interface,
-            void|int reuse_port)
+protected void create(function(.Request:void) callback,
+		      void|int portno,
+		      void|string interface,
+		      void|int reuse_port)
 {
   this::portno=portno || 80;
 

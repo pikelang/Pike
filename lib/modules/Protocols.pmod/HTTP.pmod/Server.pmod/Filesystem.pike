@@ -8,9 +8,9 @@ Filesystem.Base fs;
 
 string serverid=version()+": Filesystem HTTP Server";
 
-void create(Filesystem.Base _fs,
-	    void|int portno,
-	    void|string interface)
+protected void create(Filesystem.Base _fs,
+		      void|int portno,
+		      void|string interface)
 {
    fs=_fs;
    ::create(got_request,portno,interface);
