@@ -16,7 +16,7 @@ class request
 
   function send;
 
-  void create(string t, object line, int s)
+  protected void create(string t, object line, int s)
   {
     tag = t;
     parser = .parser(line);
@@ -786,7 +786,7 @@ class search
     array input;
     int i;
 
-    void create(array a)
+    protected void create(array a)
       {
 	input = a;
 	i = 0;

@@ -6,12 +6,12 @@ class partial_literal
 {
   int length;
 
-  void create(int l) { length = l; }
+  protected void create(int l) { length = l; }
 }
 
 string buffer;
 
-void create(string line)
+protected void create(string line)
 {
   buffer = line;
 }

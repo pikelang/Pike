@@ -7,7 +7,7 @@ object line; /* Current line */
 // FIXME: Propagete 0:s (errors) through the continuation functions
 // Fixed now, I think.
 
-void create(object l)
+protected void create(object l)
 {
   line = l;
 }
@@ -25,13 +25,13 @@ class line_handler
   function process;
   array args;
 
-  void create(function p, mixed ... a)
+  protected void create(function p, mixed ... a)
     {
       process = p;
       args = a;
     }
 
-  mapping `()(object l)
+  protected mapping `()(object l)
     {
       line = l;
       return process(@args);
@@ -81,12 +81,12 @@ class get_string_handler
 {
   function c;
 
-  void create(function _c)
+  protected void create(function _c)
     {
       c = _c;
     }
 
-  mapping `()(string s)
+  protected mapping `()(string s)
     {
       return c(s);
     }
@@ -144,11 +144,11 @@ class handle_literal
 {
   function handler;
 
-  void create(function h)
+  protected void create(function h)
     {
       handler = h;
     }
-  mixed `()(string s)
+  protected mixed `()(string s)
     {
       return s && handler( ([ "type" : "string", "string" : s ]) );
     }
@@ -161,12 +161,12 @@ class handle_list
 {
   function c;
 
-  void create(function _c)
+  protected void create(function _c)
     {
       c = _c;
     }
 
-  mixed `()(array l)
+  protected mixed `()(array l)
     {
       return c(l && ([ "type" : "list", "list" : l ]) );
     }
@@ -182,7 +182,7 @@ class collect_list
 
   function c;
 
-  void create(int _max_depth, int _eol, int _options, function _c)
+  protected void create(int _max_depth, int _eol, int _options, function _c)
     {
       max_depth = _max_depth;
       eol = _eol;
@@ -214,13 +214,13 @@ class handle_options
   function c;
   mapping value;
 
-  void create(mapping v, function _c)
+  protected void create(mapping v, function _c)
     {
       value = v;
       c = _c;
     }
 
-  mixed `()(array l)
+  protected mixed `()(array l)
     {
       if (!l)
 	return c(0);
@@ -277,7 +277,7 @@ class collect_varargs
 
   function c;
 
-  void create(int _max_depth, int _options, function _c)
+  protected void create(int _max_depth, int _options, function _c)
     {
       max_depth = _max_depth;
       accept_options = _options;
