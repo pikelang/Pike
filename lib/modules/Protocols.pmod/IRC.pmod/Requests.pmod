@@ -61,7 +61,7 @@ mixed decode_answer(string s)
    string cmd;
    program p;
 
-   void create(string _cmd,string ...args)
+   protected void create(string _cmd,string ...args)
    {
       source=replace(source,"%cmd%",cmd=_cmd);
       array format=({});
@@ -80,7 +80,7 @@ mixed decode_answer(string s)
 		     +format*" "+"\",@args);");
    }
 
-   object `()(mixed ... args)
+   protected object `()(mixed ... args)
    {
       if (!p)
       {

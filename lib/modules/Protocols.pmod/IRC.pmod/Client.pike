@@ -68,7 +68,8 @@ mapping channels=([]);
 //!     @member function(Person,string) "nick_notify"
 //!       The arguments are originator and to.
 //!   @endmapping
-void create(string|object _server,void|mapping(string:mixed) _options)
+protected void create(string|object _server,
+		      void|mapping(string:mixed) _options)
 {
    options=
       ([
@@ -412,20 +413,20 @@ void got_notify(string from,string type,
 object cmd=class
 {
    object raw;
-   public void create(object _raw) { raw=_raw; }
+   protected  void create(object _raw) { raw=_raw; }
 
    class SyncRequest
    {
       program prog;
       object ret;
 
-      void create(program p,object _ret)
+      protected void create(program p,object _ret)
       {
    	 prog=p;
    	 ret=_ret;
       }
 
-      mixed `()(mixed ...args)
+      protected mixed `()(mixed ...args)
       {
    	 mixed m;
    	 object req=prog();
@@ -439,12 +440,12 @@ object cmd=class
    {
       program prog;
 
-      void create(program p)
+      protected void create(program p)
       {
    	 prog=p;
       }
 
-      mixed `()(mixed ...args)
+      protected mixed `()(mixed ...args)
       {
    	 object req=prog();
    	 req->async(this,@args);
@@ -456,12 +457,12 @@ object cmd=class
    {
       program prog;
 
-      void create(program p)
+      protected void create(program p)
       {
    	 prog=p;
       }
 
-      mixed `()(function callback,mixed ...args)
+      protected mixed `()(function callback,mixed ...args)
       {
    	 object req=prog();
    	 req->callback=callback;
@@ -470,7 +471,7 @@ object cmd=class
       }
    }
 
-   mixed `->(string request)
+   protected mixed `->(string request)
    {
       mixed|program p;
 
@@ -542,7 +543,7 @@ class Person
       say("\1ACTION "+what+"\1");
    }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
      return t=='O' && sprintf("%O(%s!%s@%s%s)", this_program,
 			      nick,user||"?",ip||"?",
