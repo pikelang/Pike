@@ -119,7 +119,7 @@ class ContentInfo_meta
 
     }
 
-  void create(mapping|void types)
+  protected void create(mapping|void types)
     {
       content_types = types;
     }

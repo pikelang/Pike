@@ -131,9 +131,9 @@ protected object X509 = master()->resolv("Standards.X509");
 class AttributeValueAssertion
 {
   inherit Sequence;
-  void create(mapping(string:object) types,
-	      string type,
-	      object value)
+  protected void create(mapping(string:object) types,
+			string type,
+			object value)
     {
       if (!objectp(types[type]))
 	error("Unknown attribute type '%s':%O\n", type, types[type]);
@@ -146,7 +146,8 @@ class attribute_set
 {
   inherit Set;
 
-  void create(mapping(string:object) types, mapping(string:object) pairs)
+  protected void create(mapping(string:object) types,
+			mapping(string:object) pairs)
   {
     ::create(map(indices(pairs),
 		 lambda(string s, mapping m, mapping t) {
