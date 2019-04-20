@@ -132,7 +132,7 @@ int(0..1) superset(ADT.Set other)
 
 //! Equality. A == B returns true if all items in A are present in B,
 //! and all items in B are present in A. Otherwise, it returns false.
-int(0..1) `==(ADT.Set other)
+protected int(0..1) `==(ADT.Set other)
 {
   foreach(indices(set), mixed item)
     if (!other->contains(item))
@@ -200,7 +200,7 @@ protected this_program `-(ADT.Set other)
 
 //! Indexing a set with a value V gives 1 if V is a member of the
 //! set, otherwise 0.
-int(0..1) `[](mixed item)
+protected int(0..1) `[](mixed item)
 {
   return set[item];
 }
