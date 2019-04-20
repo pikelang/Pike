@@ -60,9 +60,9 @@ class ProfileEntry {
   //!                   ProfileCache cache)
   //! @param cache
   //!  The parent cache object.
-  void create(int _database_profile_id,
-	      int _query_profile_id,
-	      ProfileCache _my_cache) {
+  protected void create(int _database_profile_id,
+			int _query_profile_id,
+			ProfileCache _my_cache) {
     database_profile_id = _database_profile_id;
     query_profile_id = _query_profile_id;
     my_cache = _my_cache;
@@ -131,7 +131,7 @@ class ProfileEntry {
       return this;
     }
 
-    ADTSet `+(mixed in) {
+    protected ADTSet `+(mixed in) {
       if(stringp(in)||intp(in)||floatp(in))
 	add(in);
       else
@@ -139,7 +139,7 @@ class ProfileEntry {
       return this;
     }
 
-    ADTSet `-(mixed out) {
+    protected ADTSet `-(mixed out) {
       if(stringp(out)||intp(out)||floatp(out))
 	sub(out);
       else
@@ -459,7 +459,7 @@ class Scheduler {
   private mixed schedule_run;
 #endif
 
-  void create(mapping _db_profiles) {
+  protected void create(mapping _db_profiles) {
     db_profiles = _db_profiles;
     schedule();
   }
@@ -689,7 +689,8 @@ class Logger {
 
   //! @decl void create(Sql.Sql db_object, int profile, int stderr_logging)
   //! @decl void create(string db_url, int profile, int stderr_logging)
-  void create(string|Sql.Sql _logdb, int _profile, int _stderr_logging) {
+  protected void create(string|Sql.Sql _logdb, int _profile,
+			int _stderr_logging) {
     logdb = _logdb;
     profile = _profile;
     stderr_logging = _stderr_logging;

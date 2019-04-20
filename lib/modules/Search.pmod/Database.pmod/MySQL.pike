@@ -24,7 +24,7 @@ protected
   int init_done = 0;
 };
 
-void create(string db_url, void|mapping _options)
+protected void create(string db_url, void|mapping _options)
 {
   host = db_url;
   get_db();
@@ -40,7 +40,7 @@ void create(string db_url, void|mapping _options)
 }
 
 #ifdef SEARCH_DEBUG
-void _destruct()
+protected void _destruct()
 {
   if (blobs_dirty)
     werror("Search.Database.MySQL: WARNING: Forgot to sync before "
@@ -48,7 +48,7 @@ void _destruct()
 }
 #endif
 
-string _sprintf()
+protected string _sprintf()
 {
   return sprintf("Search.Database.MySQL(%O,%O)",
 		 Sql.censor_sql_url(host), mergefile_path);
