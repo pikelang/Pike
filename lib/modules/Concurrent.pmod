@@ -705,7 +705,7 @@ protected class AggregateState
   final function(mixed, mixed, mixed ... : mixed) fold_fun;
   final array(mixed) extra;
 
-  private void create(Promise p)
+  protected void create(Promise p)
   {
     if (p->_materialised || p->_materialised++)
       error("Cannot materialise a Promise more than once.\n");
