@@ -1355,7 +1355,9 @@ class FilterError
   constant is_generic_error = 1;
   string error_message;
   array error_backtrace;
-  string|array `[] (int i) {return i ? error_backtrace : error_message;}
+  protected string|array `[] (int i) {
+    return i ? error_backtrace : error_message;
+  }
   protected void create (string msg, mixed... args)
   {
     if (sizeof (args)) msg = sprintf (msg, @args);

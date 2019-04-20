@@ -201,7 +201,7 @@ int get_last_io_time() {return last_io_time;}
     return 1;
   }
 
-  void create(object fd) {
+  protected void create(object fd) {
   // -------------------
     ldapfd = fd;
     last_io_time = time();

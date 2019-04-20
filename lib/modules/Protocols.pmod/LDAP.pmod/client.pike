@@ -342,7 +342,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! You can't create instances of this object yourself.
     //! The only way to create it is via a search of a LDAP server.
-    object|int create(array(object) entries, int stuff, int flags) {
+    protected object|int create(array(object) entries, int stuff, int flags) {
     // entries: array of der decoded entries, but WITHOUT LDAP PDU !!!
     // stuff: 1=bind result; ...
 
@@ -653,7 +653,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
   //!
   //! @seealso
   //!  @[LDAP.client.bind], @[LDAP.client.search]
-  void create(string|mapping(string:mixed)|void url, object|void context)
+  protected void create(string|mapping(string:mixed)|void url,
+			object|void context)
   {
 
     info = ([ "code_revision" :
