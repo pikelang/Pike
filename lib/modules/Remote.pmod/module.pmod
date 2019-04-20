@@ -26,7 +26,7 @@ class Call {
   //!
   //! @seealso
   //!   @[async()], @[sync()], @[is_async()], @[set_async()]
-  mixed `() (mixed ... args)
+  protected mixed `() (mixed ... args)
   {
     mixed data = ctx->encode_call(objectid, name, args,
 				  _async ? CTX_CALL_ASYNC : CTX_CALL_SYNC);
@@ -96,7 +96,7 @@ class Call {
 
   //! @decl void create(string objectid, string name, object connection,@
   //!                   object context, int async)
-  void create(string oid, string n, object cn, object ct, int a)
+  protected void create(string oid, string n, object cn, object ct, int a)
   {
     objectid = oid;
     name = n;
@@ -134,7 +134,7 @@ class Connection {
   //! @decl void create(void|int nice, void|int max_call_threads)
   //! @param nice
   //!   If set, no errors will be thrown.
-  void create(void|int _nice, void|int _max_call_threads)
+  protected void create(void|int _nice, void|int _max_call_threads)
   {
     nice=_nice;
     max_call_threads = _max_call_threads;
@@ -1006,7 +1006,7 @@ class Context {
   }
 
   //!
-  void create(string b, object|void cn)
+  protected void create(string b, object|void cn)
   {
     con = cn;
     base = b;
@@ -1034,13 +1034,13 @@ class Obj {
   }
 
   //!
-  mixed `[] (string f)
+  protected mixed `[] (string f)
   {
     return get_function(f);
   }
 
   //!
-  mixed `-> (string f)
+  protected mixed `-> (string f)
   {
     return get_function(f);
   }
@@ -1053,7 +1053,7 @@ class Obj {
   }
 
   //! @decl void create(string id, object connection, object context)
-  void create(string i, object cn, object ct)
+  protected void create(string i, object cn, object ct)
   {
     id  = i;
     con = cn;
