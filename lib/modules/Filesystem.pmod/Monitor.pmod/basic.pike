@@ -314,10 +314,10 @@ protected class Monitor(string path,
     }
   }
 
-  int `<(mixed m) { return next_poll < m; }
-  int `>(mixed m) { return next_poll > m; }
+  protected int `<(mixed m) { return next_poll < m; }
+  protected int `>(mixed m) { return next_poll > m; }
 
-  void create()
+  protected void create()
   {
     MON_WERR("Creating monitor for %O.\n", path);
     Element::create(this);
