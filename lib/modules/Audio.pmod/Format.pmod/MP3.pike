@@ -20,7 +20,7 @@
   inherit .module.ANY;
   private int start = 1;
 
-  void create() { }
+  protected void create() { }
 
   private void real_read(Stdio.File|Stdio.FakeFile file, int|void nocheck) {
     nochk = nocheck;
