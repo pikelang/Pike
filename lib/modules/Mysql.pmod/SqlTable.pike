@@ -1345,7 +1345,7 @@ class Result
   protected int got_iterator;
 #endif
 
-  Iterator _get_iterator()
+  protected Iterator _get_iterator()
   //! Returns an iterator for the result. Only one iterator may be
   //! created per @[Result] object.
   {
