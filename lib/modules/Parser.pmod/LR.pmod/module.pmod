@@ -63,7 +63,7 @@ class Priority
   //!  Priority.
   //! @param  a
   //!  Associativity.
-  void create(int p, int a)
+  protected void create(int p, int a)
   {
     value = p;
     assoc = a;
