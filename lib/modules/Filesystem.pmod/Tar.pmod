@@ -181,7 +181,7 @@ class _Tar
     //   "ustar\0""00"	POSIX ustar (Version 0?).
     //   "ustar  \0"	GNU tar (POSIX draft)
 
-    void create(void|string s, void|int _pos)
+    protected void create(void|string s, void|int _pos)
     {
       if(!s)
       {
@@ -278,7 +278,7 @@ class _Tar
     filename_to_entry[what] = r;
   }
 
-  void create(object fd, string filename, object parent)
+  protected void create(object fd, string filename, object parent)
   {
     this::filename = filename;
     // read all entries
@@ -780,7 +780,7 @@ class `()
     _TarFS::create(tar, "/", "", parent);
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' &&
       sprintf("Filesystem.Tar(/* tar->filename=%O, root=%O, wd=%O */)",
