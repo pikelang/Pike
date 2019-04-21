@@ -59,7 +59,7 @@
 //! @seealso
 //!  @[triggersignal], @[pollinterval], @[_loopthread], @[_callback],
 //!  @[Debug.globals]
-void create(string|function(void:void)|void cb) {
+protected void create(string|function(void:void)|void cb) {
   _callback = cb;
   Thread.Thread(loop);
 }

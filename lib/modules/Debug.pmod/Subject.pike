@@ -37,72 +37,72 @@
 
 protected string id = "";
 
-void create(mixed ... args)
+protected void create(mixed ... args)
 {
   ENTER(create);
   if(sizeof(args)==1 && stringp(args[0]))
     id = "(" + args[0] + ") ";
 }
 
-void PROXY(_destruct, 0);
+protected void PROXY(_destruct, 0);
 
-mixed PROXY(`->, 0);
-mixed PROXY(`->=, 0);
-mixed PROXY(`[], 0);
-mixed PROXY(`[]=, 0);
+protected mixed PROXY(`->, 0);
+protected mixed PROXY(`->=, 0);
+protected mixed PROXY(`[], 0);
+protected mixed PROXY(`[]=, 0);
 
-mixed PROXY(`+, 0);
-mixed PROXY(`-, 0);
-mixed PROXY(`&, 0);
-mixed PROXY(`|, 0);
-mixed PROXY(`^, 0);
-mixed PROXY(`<<, 0);
-mixed PROXY(`>>, 0);
-mixed PROXY(`*, 0);
-mixed PROXY(`/, 0);
-mixed PROXY(`%, 0);
-mixed PROXY(`~, 0);
+protected mixed PROXY(`+, 0);
+protected mixed PROXY(`-, 0);
+protected mixed PROXY(`&, 0);
+protected mixed PROXY(`|, 0);
+protected mixed PROXY(`^, 0);
+protected mixed PROXY(`<<, 0);
+protected mixed PROXY(`>>, 0);
+protected mixed PROXY(`*, 0);
+protected mixed PROXY(`/, 0);
+protected mixed PROXY(`%, 0);
+protected mixed PROXY(`~, 0);
 
-int(0..1) PROXY(`==, 0);
-int(0..1) PROXY(`<, 0);
-int(0..1) PROXY(`>, 0);
-int PROXY(`!, 0);
+protected int(0..1) PROXY(`==, 0);
+protected int(0..1) PROXY(`<, 0);
+protected int(0..1) PROXY(`>, 0);
+protected int PROXY(`!, 0);
 
-int PROXY(__hash, 0);
-int PROXY(_sizeof, 0);
-mixed PROXY(cast, 0);
-mixed PROXY(`(), 0);
+protected int PROXY(__hash, 0);
+protected int PROXY(_sizeof, 0);
+protected mixed PROXY(cast, 0);
+protected mixed PROXY(`(), 0);
 
-mixed PROXY(``+, 0);
-mixed PROXY(``-, 0);
-mixed PROXY(``&, 0);
-mixed PROXY(``|, 0);
-mixed PROXY(``^, 0);
-mixed PROXY(``<<, 0);
-mixed PROXY(``>>, 0);
-mixed PROXY(``*, 0);
-mixed PROXY(``/, 0);
-mixed PROXY(``%, 0);
+protected mixed PROXY(``+, 0);
+protected mixed PROXY(``-, 0);
+protected mixed PROXY(``&, 0);
+protected mixed PROXY(``|, 0);
+protected mixed PROXY(``^, 0);
+protected mixed PROXY(``<<, 0);
+protected mixed PROXY(``>>, 0);
+protected mixed PROXY(``*, 0);
+protected mixed PROXY(``/, 0);
+protected mixed PROXY(``%, 0);
 
-mixed PROXY(`+=, 0);
+protected mixed PROXY(`+=, 0);
 
-int(0..1) PROXY(_is_type, 0);
-int PROXY(_equal, 0);
-mixed PROXY(_m_delete, 0);
+protected int(0..1) PROXY(_is_type, 0);
+protected int PROXY(_equal, 0);
+protected mixed PROXY(_m_delete, 0);
 
 //! @ignore
-array PROXY(_indices, ::_indices());
-array PROXY(_values, ::_values());
+protected array PROXY(_indices, ::_indices());
+protected array PROXY(_values, ::_values());
 //! @endignore
 
-object _get_iterator(mixed ... args)
+protected object _get_iterator(mixed ... args)
 {
   ENTER(_get_iterator);
   string iid = id==""?"":id[1..<2];
   return this_program("("+iid+" iterator) ");
 }
 
-string _sprintf(int|void t, mapping|void opt, mixed ... x)
+protected string _sprintf(int|void t, mapping|void opt, mixed ... x)
 {
   string args = "";
   if(t)
@@ -125,4 +125,4 @@ string _sprintf(int|void t, mapping|void opt, mixed ... x)
   return "Debug.Subject" + id[..<1];
 }
 
-mixed PROXY(_random, 0);
+protected mixed PROXY(_random, 0);
