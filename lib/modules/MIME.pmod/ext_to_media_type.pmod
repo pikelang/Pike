@@ -1656,7 +1656,7 @@ protected mapping ext2type = ([
 //! Currently 469 file extensions are known to this method. Zero will
 //! be returned on unknown file extensions.
 
-string `()(string ext) {
+protected string `()(string ext) {
   return small_ext2type[ext] || ext2type[ext];
 }
 
