@@ -241,7 +241,7 @@ class Node
   protected string sprintf_attr (int flag) {return "";}
   protected string sprintf_content (int flag) {return "";}
 
-  string _sprintf (int flag)
+  protected string _sprintf (int flag)
   {
     switch (flag) {
       case 'O':
