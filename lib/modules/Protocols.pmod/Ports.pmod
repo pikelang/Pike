@@ -1434,7 +1434,7 @@ class Service(string name, int port, string protocol, string comment)
 //! If @[name] is not an indentifier in this module, return the first
 //! matching protocol.  This would be the first element in the array
 //! returned by @[lookup]
-Service|mixed `[](string name )
+protected Service|mixed `[](string name )
 {
     if( mixed res = predef::`->(this,name))
         return res;
