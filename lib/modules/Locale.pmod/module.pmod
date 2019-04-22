@@ -195,7 +195,7 @@ class LocaleObject
     return functionp(functions[f]) ? functions[f] : 0;
   }
 
-  mixed `() (string f, mixed ... args)
+  protected mixed `() (string f, mixed ... args)
   {
     if(functionp(functions[f]))
       return functions[f](@args);
