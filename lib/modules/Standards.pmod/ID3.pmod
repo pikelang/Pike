@@ -111,7 +111,7 @@ class TagHeader {
   int tag_size;
 
   //!
-  void create(void|Buffer buffer) {
+  protected void create(void|Buffer buffer) {
     if(buffer) decode(buffer);
   }
 
@@ -186,7 +186,7 @@ class ExtendedHeader {
   string data;
 
   //!
-  void create(void|Buffer buffer) {
+  protected void create(void|Buffer buffer) {
     if(buffer) decode(buffer);
   }
 
@@ -309,7 +309,7 @@ class FrameData {
   private string original_data;
 
   //!
-  void create(void|string data) {
+  protected void create(void|string data) {
     original_data = data;
     if(data) decode(data);
   }
@@ -348,7 +348,7 @@ class Frame {
   FrameData data;
 
   //!
-  void create(string|Buffer in, TagHeader thd) {
+  protected void create(string|Buffer in, TagHeader thd) {
     header = thd;
     if(in) {
       decode(in);
@@ -519,7 +519,8 @@ class Tagv2 {
   mapping(string:array(Frame)) frame_map = ([]);
 
   //!
-  void create(void|Buffer|Stdio.File buffer, void|int(0..1) _best_effort) {
+  protected void create(void|Buffer|Stdio.File buffer,
+			void|int(0..1) _best_effort) {
     best_effort = _best_effort;
     if(buffer) {
       if(!buffer->set_limit)
@@ -631,7 +632,7 @@ class Tagv2 {
     build_frame_map();
   }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     if(t!='O') return 0;
     if(!header) return sprintf("ID3v2()");
     return sprintf("ID3v%d.%d.%d(%d)", header->major_version,
@@ -1175,7 +1176,7 @@ class Tagv1 {
     Item genre = Byte();
   };
 
-  void create(Stdio.File file) {
+  protected void create(Stdio.File file) {
 
     object st = file->stat();
     string buf;
@@ -1212,13 +1213,13 @@ class Framev1 {
   int size;
   FrameDatav1 data;
 
-  void create(string buffer, string name) {
+  protected void create(string buffer, string name) {
     id = name;
     data = FrameDatav1(buffer, name);
     size = sizeof(buffer);
   }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%s)", this_program, id);
   }
 }
@@ -1227,7 +1228,7 @@ class FrameDatav1 {
   protected string frame_data;
   protected string id;
 
-  void create(string buffer, string name) {
+  protected void create(string buffer, string name) {
     frame_data = buffer;
     id = name;
     sscanf(frame_data, "%s\0", frame_data);
@@ -1237,7 +1238,7 @@ class FrameDatav1 {
     return frame_data;
   }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%s %O)", this_program, id, frame_data);
   }
 }
