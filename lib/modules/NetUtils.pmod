@@ -388,7 +388,7 @@ class IpRangeLookup
     //!     Each range can be a single addresses ("192.168.1.1"), a
     //!     range of addresses ("192.168.1.1-192.168.1.5") or be
     //!     written in CIDR notation ("192.168.1.0/24").
-    void create(mapping(mixed:array(string)) ranges)
+    protected void create(mapping(mixed:array(string)) ranges)
     {
         void add_range( Range range )
         {
