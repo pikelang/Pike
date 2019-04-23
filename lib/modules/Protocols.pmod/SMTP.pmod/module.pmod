@@ -122,7 +122,7 @@ class Client
   //! @throws
   //!   Throws an exception if the client fails to connect to
   //!   the mail server.
-  void create(void|string|Stdio.File server, int|void port)
+  protected void create(void|string|Stdio.File server, int|void port)
   {
     if(!server)
     {
@@ -486,8 +486,8 @@ class AsyncClient
   //! @endul
   //! Where @expr{direct@} is @expr{1@} if establishment of the connection
   //! failed.
-  void create(void|string|object server, int|void port,
-	      function|void cb, mixed ... args)
+  protected void create(void|string|object server, int|void port,
+			function|void cb, mixed ... args)
   {
     object dns=master()->resolv("Protocols")["DNS"];
 
@@ -822,8 +822,8 @@ class Configuration {
   function cb_data;
   function cb_mailfrom;
 
-  void create(array(string) _domains, void|function _cb_mailfrom,
-	      void|function _cb_rcptto, void|function _cb_data) {
+  protected void create(array(string) _domains, void|function _cb_mailfrom,
+			void|function _cb_rcptto, void|function _cb_data) {
     foreach(_domains, string domain)
       domains += ({ lower_case(domain) });
 
@@ -1409,7 +1409,7 @@ class Connection {
      shutdown_fd();
    }
 
-   void create(object _fd, Configuration _cfg)
+   protected void create(object _fd, Configuration _cfg)
    {
      cfg = _cfg;
      features += cfg->get_features();
@@ -1528,8 +1528,9 @@ class Server {
    //!      cb_mailfrom, cb_rcptto, cb_data);
    //!   return -1;
    //! }
-   void create(array(string) domains, void|int port, void|string ip,
-               function cb_mailfrom, function cb_rcptto, function cb_data)
+   protected void create(array(string) domains, void|int port, void|string ip,
+			 function cb_mailfrom, function cb_rcptto,
+			 function cb_data)
    {
      config = Configuration(domains, cb_mailfrom, cb_rcptto, cb_data);
      if(!port)

@@ -359,7 +359,7 @@ class client
   //!   NNTP server to connect to.
   //!   Defaults to the server specified by
   //!   the environment variable @expr{NNTPSERVER@}.
-  void create(string|void server)
+  protected void create(string|void server)
   {
     if(!server)
     {

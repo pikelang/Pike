@@ -287,7 +287,7 @@ class simple
   //! @seealso
   //! @[touch_time()], @[do_timeout()]
   //!
-  void create(Stdio.File con, int|void timeout)
+  protected void create(Stdio.File con, int|void timeout)
   {
     this::con = con;
     this::timeout = timeout;

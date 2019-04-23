@@ -111,8 +111,8 @@ class AsyncLookup
   }
 
   //!
-  void create(object fd, function(array(string), mixed ...:void) cb,
-	      mixed ... args)
+  protected void create(object fd, function(array(string), mixed ...:void) cb,
+			mixed ... args)
   {
     array(string) raddr = fd->query_address()/" ";
     array(string) laddr = fd->query_address(1)/" ";
