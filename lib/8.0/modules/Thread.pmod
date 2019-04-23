@@ -1,5 +1,7 @@
 #pike 8.1
 
+#pragma no_deprecation_warnings
+
 inherit Thread : pre;
 
 //! Create a new thread.

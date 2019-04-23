@@ -1,5 +1,7 @@
 #pike 7.8
 
+#pragma no_deprecation_warnings
+
 constant EXTRACT_SKIP_MODE = 1;
 constant EXTRACT_SKIP_EXT_MODE = 2;
 constant EXTRACT_SKIP_MTIME = 4;
