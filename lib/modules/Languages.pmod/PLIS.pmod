@@ -47,7 +47,7 @@ class Cons
   object car;
   object cdr;
 
-  void create(object a, object d)
+  protected void create(object a, object d)
     {
       if (!a)
 	error("Cons: car is null!\n");
@@ -180,7 +180,7 @@ class Symbol
       return name;
     }
 
-  void create(string n, mapping|void table)
+  protected void create(string n, mapping|void table)
     {
       //     werror(sprintf("Creating symbol '%s'\n", n));
       name = n;
@@ -205,7 +205,7 @@ class Nil
 
   // constant is_nil = 1;
 
-  void create()
+  protected void create()
     {
       Cons :: create(this, this);
       SelfEvaluating :: create("()");
@@ -261,7 +261,7 @@ class Environment
       return env[symbol];
     }
 
-  void create(mapping|void bindings)
+  protected void create(mapping|void bindings)
     {
       env = bindings || ([ ]);
     }
@@ -342,7 +342,7 @@ class Lexical
   inherit Lambda : l;
   object env;
 
-  void create(object e, object formals_list, object expressions)
+  protected void create(object e, object formals_list, object expressions)
     {
       env = e;
       //    werror(sprintf("Building lexical closure, env = %s\n",
