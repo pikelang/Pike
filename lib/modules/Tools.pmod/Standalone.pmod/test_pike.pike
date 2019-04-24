@@ -539,8 +539,9 @@ class TestMaster
     ::handle_error(trace);
   }
 
-  protected void create(this_program orig_master)
+  protected void create()
   {
+    object orig_master = master();
     /* Copy variables from the original master. */
     foreach(indices(orig_master), string varname) {
       catch {
@@ -549,6 +550,7 @@ class TestMaster
       /* Ignore errors when copying functions, etc. */
     }
 
+    programs["/master"] = this_program;
     objects[this_program] = this;
 
     ::create();
@@ -570,7 +572,7 @@ int main(int argc, array(string) argv)
   int end=0x7fffffff;
   string extra_info="";
 
-  replace_master(TestMaster(master()));
+  replace_master(TestMaster());
 
 #if constant(System.getrlimit)
   // Attempt to enable coredumps.
