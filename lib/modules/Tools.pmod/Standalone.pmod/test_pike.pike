@@ -523,6 +523,39 @@ class LinePlugin
 }
 
 //
+// Custom master
+//
+// This is mostly used to catch code that triggers
+// calls of master()->handle_error().
+//
+
+class TestMaster
+{
+  inherit "/master";
+
+  void handle_error(array|object trace)
+  {
+    compile_error("-", 0, describe_error(trace)[..<1]);
+    ::handle_error(trace);
+  }
+
+  protected void create(this_program orig_master)
+  {
+    /* Copy variables from the original master. */
+    foreach(indices(orig_master), string varname) {
+      catch {
+	this[varname] = orig_master[varname];
+      };
+      /* Ignore errors when copying functions, etc. */
+    }
+
+    objects[this_program] = this;
+
+    ::create();
+  }
+}
+
+//
 // Main program
 //
 
@@ -536,6 +569,8 @@ int main(int argc, array(string) argv)
   int loop=1;
   int end=0x7fffffff;
   string extra_info="";
+
+  replace_master(TestMaster(master()));
 
 #if constant(System.getrlimit)
   // Attempt to enable coredumps.
@@ -1084,6 +1119,7 @@ int main(int argc, array(string) argv)
 	case "COMPILE_WARNING":
 	  wf = WarningFlag();
           test->inhibit_errors = wf;
+	  master()->set_inhibit_compile_errors(wf);
           test->compile();
           if(test->compilation_error)
 	  {
@@ -1104,6 +1140,7 @@ int main(int argc, array(string) argv)
 	      errors++;
 	    }
 	  }
+	  master()->set_inhibit_compile_errors(UNDEFINED);
           break;
 
 	case "EVAL_ERROR":
@@ -1135,6 +1172,7 @@ int main(int argc, array(string) argv)
 	default:
 	  if (err = catch{
 	    wf = WarningFlag();
+	    master()->set_inhibit_compile_errors(wf);
             test->inhibit_errors = wf;
             o=test->compile()();
             if(test->compilation_error)
@@ -1165,8 +1203,10 @@ int main(int argc, array(string) argv)
               errors++;
 	      break;
 	    }
+	    master()->set_inhibit_compile_errors(UNDEFINED);
           }) {
 	    if(t) trace(0);
+	    master()->set_inhibit_compile_errors(UNDEFINED);
             watchdog_show_last_test();
             if (test->compilation_error?->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
