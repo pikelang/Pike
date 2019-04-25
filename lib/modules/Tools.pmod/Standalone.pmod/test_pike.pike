@@ -539,21 +539,22 @@ class TestMaster
     ::handle_error(trace);
   }
 
-  protected void create()
+  protected void create(object|void orig_master)
   {
-    object orig_master = master();
-    /* Copy variables from the original master. */
-    foreach(indices(orig_master), string varname) {
-      catch {
-	this[varname] = orig_master[varname];
-      };
-      /* Ignore errors when copying functions, etc. */
+    ::create();
+
+    if (orig_master) {
+      /* Copy variables from the original master. */
+      foreach(indices(orig_master), string varname) {
+	catch {
+	  this[varname] = orig_master[varname];
+	};
+	/* Ignore errors when copying functions, etc. */
+      }
     }
 
     programs["/master"] = this_program;
     objects[this_program] = this;
-
-    ::create();
   }
 }
 
@@ -572,7 +573,7 @@ int main(int argc, array(string) argv)
   int end=0x7fffffff;
   string extra_info="";
 
-  replace_master(TestMaster());
+  replace_master(TestMaster(master()));
 
 #if constant(System.getrlimit)
   // Attempt to enable coredumps.
