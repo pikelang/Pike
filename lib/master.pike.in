@@ -1408,7 +1408,7 @@ mapping(string:string) getenv (void|int force_update)
 {
   mapping(string:string) res;
 
-  if (force_update) {
+  if (force_update > 0) {
     res = Builtin._getenv();
 #ifdef __NT__
     set_lc_env (res);
@@ -1426,6 +1426,7 @@ mapping(string:string) getenv (void|int force_update)
     if (!environment) environment = Builtin._getenv();
     res = environment + ([]);
 #endif
+    if (force_update < 0) return environment;
   }
 
   return res;
