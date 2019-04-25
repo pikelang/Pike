@@ -2154,6 +2154,7 @@ PMOD_EXPORT struct array *object_values(struct object *o, int inherit_number)
   {
     TYPE_FIELD types = 0;
     a=allocate_array_no_init(p->num_identifier_index,0);
+    push_array(a);
     for(e=0;e<(int)p->num_identifier_index;e++)
     {
       low_object_index_no_free(ITEM(a)+e, o,
@@ -2166,9 +2167,9 @@ PMOD_EXPORT struct array *object_values(struct object *o, int inherit_number)
     if(TYPEOF(Pike_sp[-1]) != T_ARRAY)
       Pike_error("Bad return type from o->_values()\n");
     a=Pike_sp[-1].u.array;
-    Pike_sp--;
-    dmalloc_touch_svalue(Pike_sp);
   }
+  Pike_sp--;
+  dmalloc_touch_svalue(Pike_sp);
   return a;
 }
 
