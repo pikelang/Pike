@@ -544,6 +544,7 @@ class TestMaster
     ::create();
 
     if (orig_master) {
+      environment = orig_master->getenv(-1);
       /* Copy variables from the original master. */
       foreach(indices(orig_master), string varname) {
 	catch {
