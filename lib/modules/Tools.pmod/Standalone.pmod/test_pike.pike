@@ -574,7 +574,10 @@ int main(int argc, array(string) argv)
   int end=0x7fffffff;
   string extra_info="";
 
-  replace_master(TestMaster(master()));
+  object real_master = master();
+
+  replace_master(TestMaster(real_master));
+  add_constant("__real_master", real_master);
 
 #if constant(System.getrlimit)
   // Attempt to enable coredumps.
