@@ -94,7 +94,7 @@ protected void inherit_properties(this_program uri)
 //! Compare this URI to something, in a canonical way.
 //! @param something
 //!   Compare the URI to this
-int `==(mixed something)
+protected int `==(mixed something)
 {
     if( !objectp( something ) || object_program(something) < this_program )
         return false;
@@ -406,8 +406,8 @@ void reparse_uri(this_program|string|void base_uri)
 //! @throws
 //!   An exception is thrown if the @[uri] is a relative URI or only a
 //!   fragment, and missing a @[base_uri].
-void create(this_program|string uri,
-	    this_program|string|void base_uri)
+protected void create(this_program|string uri,
+		      this_program|string|void base_uri)
 {
   DEBUG("create(%O, %O) called!", uri, base_uri);
   sprintf_cache = ([]);
@@ -425,8 +425,10 @@ void create(this_program|string uri,
 //!   depend on them are recalculated: user, password, host, port, authority, base_uri.
 //! @param value
 //!   The value to assign to @[property]
-mixed `->=(string property, mixed value) { return `[]=(property, value); }
-mixed `[]=(string property, mixed value)
+protected mixed `->=(string property, mixed value) {
+  return `[]=(property, value);
+}
+protected mixed `[]=(string property, mixed value)
 {
   DEBUG("`[]=(%O, %O)", property, value);
   sprintf_cache = ([]);
@@ -617,10 +619,10 @@ string get_http_path_query() {
   return http_encode(((path||"")/"/")[*])*"/" + (q?"?"+q:"");
 }
 
-int __hash() { return hash_value(_sprintf('s')); }
+protected int __hash() { return hash_value(_sprintf('s')); }
 
 private mapping(int:string) sprintf_cache = ([]);
-string _sprintf(int how, mapping|void args)
+protected string _sprintf(int how, mapping|void args)
 {
   if( how == 't' ) return "Standards.URI";
   if( string res = sprintf_cache[how] )
