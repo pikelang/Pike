@@ -155,9 +155,9 @@ class OBox {
   //! @decl void create(void|string frame_color, void|string cell_color,@
   //!   void|string width, void|string padding,@
   //!   void|function(int, int, string, string : string) cell_callback)
-  void create( void|string _frame_color, void|string _cell_color,
-	       void|string _width, void|string _padding,
-	       void|function(int, int, string, string : string) _cb) {
+  protected void create( void|string _frame_color, void|string _cell_color,
+			 void|string _width, void|string _padding,
+			 void|function(int, int, string, string : string) _cb) {
     if(_frame_color) frame_color = _frame_color;
     if(_cell_color) cell_color = _cell_color;
     if(_width) width = _width;
@@ -256,7 +256,7 @@ class OBox {
   //! It is possible to case this object to a string, which does the same
   //! as calling @[render], and to an array, which returns the cells in an
   //! array of rows.
-  mixed cast(string to) {
+  protected mixed cast(string to) {
     if(to=="array")
       return rows;
     if(to=="string")
