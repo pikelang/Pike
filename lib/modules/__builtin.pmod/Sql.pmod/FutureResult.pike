@@ -62,9 +62,12 @@ protected string _sprintf(int type) {
   string res;
   switch(type) {
     case 'O':
-      res = sprintf("FutureResult from query: %O, bindings: %O\n"
-                    "recordcount: %d",
-       query, bindings, sizeof(data));
+      res = status_command_complete && arrayp(status_command_complete)
+        ? status_command_complete[0]
+        : sprintf("FutureResult from query: %O, bindings: %O\n"
+                  "recordcount: %d\nSQL status: %s",
+                      query, bindings, sizeof(data),
+                      status_command_complete || "still running...");
       break;
   }
   return res;
