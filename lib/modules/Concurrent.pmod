@@ -74,6 +74,11 @@ private void auto_use_backend()
 protected function(function(mixed ...:void), int|float, mixed ...:mixed)
   callout = ((callout = callnow), call_out(auto_use_backend, 0), callout);
 
+private int allzero(mixed x)
+{
+  return 0;
+}
+
 //! Value that will be provided asynchronously
 //! sometime in the future.
 //!
@@ -927,6 +932,15 @@ class Promise
   this_program success(mixed value, void|int try)
   {
     return finalise(STATE_FULFILLED, value, try, success_cbs);
+  }
+
+  //! Return a @[Future] that will be fulfilled with the fulfilled
+  //! result of this @[Future], but not until at least @[seconds] have passed.
+  this_program delay(int|float seconds)
+  {
+    Promise p = promise_factory();
+    on_failure(p->try_failure);
+    return depend( ({ p->timeout(seconds)->recover(allzero) }) );
   }
 
   //! Fulfill the @[Future] if it hasn't been fulfilled or failed already.
