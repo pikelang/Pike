@@ -18,6 +18,13 @@ o Image.Dims.exif_get and Image.exif_decode
   according to the EXIF orientation information) without needing to check
   if the image is JPEG first.
 
+o Concurrent
+
+  - Add delay() to postpone a future.
+
+  - Rewrite timeout() to reduce the memory footprint of a future in the
+    common case.
+
 Bug fixes
 ---------
 

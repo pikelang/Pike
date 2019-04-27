@@ -91,8 +91,6 @@ class Future
 
   protected Pike.Backend backend;
 
-  protected array timeout_call_out_handle;
-
   //! Set the backend to use for calling any callbacks.
   //!
   //! @note
@@ -155,18 +153,7 @@ class Future
   //!   @[set_backend()], @[use_backend()]
   protected void call_callback(function cb, mixed ... args)
   {
-    if (timeout_call_out_handle) {
-      // Remove the timeout call_out, as it will not be relevant,
-      // but holds a reference to us.
-      (backend?backend->remove_call_out:remove_call_out)
-	(timeout_call_out_handle);
-      timeout_call_out_handle = UNDEFINED;
-    }
-    if (backend) {
-      backend->call_out(cb, 0, @args);
-    } else {
-      callout(cb, 0, @args);
-    }
+    (backend ? backend->call_out : callout)(cb, 0, @args);
   }
 
   //! Wait for fulfillment.
@@ -661,24 +648,43 @@ class Future
     return then(0, onrejected, @extra);
   }
 
+  private this_program setup_call_out(int|float seconds, void|int tout)
+  {
+    array call_out_handle;
+    Promise p = promise_factory();
+    void cancelcout(mixed value)
+    {
+      (backend ? backend->remove_call_out : remove_call_out)(call_out_handle);
+      p->try_success(0);
+    }
+    /* NB: try_* variants as the original promise may get fulfilled
+     *     after the timeout has occurred.
+     */
+    on_failure(cancelcout);
+    call_out_handle = (backend ? backend->call_out : call_out)
+      (p[tout ? "try_failure" : "try_success"], seconds,
+       tout && ({ "Timeout.\n", backtrace() }));
+    if (tout)
+      on_success(cancelcout);
+    return p->future();
+  }
+
   //! Return a @[Future] that will either be fulfilled with the fulfilled
   //! result of this @[Future], or be failed after @[seconds] have expired.
   this_program timeout(int|float seconds)
   {
-    Promise p = promise_factory();
-    /* NB: try_* variants as the original promise may get fulfilled
-     *     after the timeout has occurred.
-     */
-    on_failure(p->try_failure);
-    on_success(p->try_success);
-    if (timeout_call_out_handle) {
-      // Remove the previous timeout call_out.
-      (backend?backend->remove_call_out:remove_call_out)
-	(timeout_call_out_handle);
-    }
-    timeout_call_out_handle = (backend?backend->call_out:call_out)
-      (p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
-    return p->future();
+    return first_completed(
+     ({ this_program::this, setup_call_out(seconds, 1) })
+    );
+  }
+
+  //! Return a @[Future] that will be fulfilled with the fulfilled
+  //! result of this @[Future], but not until at least @[seconds] have passed.
+  this_program delay(int|float seconds)
+  {
+    return results(
+     ({ this_program::this, setup_call_out(seconds) })
+    )->map(`[], 0);
   }
 
   protected string _sprintf(int t)
