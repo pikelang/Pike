@@ -4159,7 +4159,6 @@ low_idents: TOK_IDENTIFIER
   }
   | '.' TOK_IDENTIFIER
   {
-    struct pike_string *dot;
     push_constant_text(".");
     if (call_handle_import()) {
       node *tmp=mkconstantsvaluenode(Pike_sp-1);
