@@ -571,11 +571,10 @@ import: TOK_IMPORT constant_expr ';'
   {
     resolv_constant($2);
     free_node($2);
-    if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
-      call_handle_import();
+    if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING || call_handle_import()) {
+      use_module(Pike_sp-1);
+      pop_stack();
     }
-    use_module(Pike_sp-1);
-    pop_stack();
   }
   ;
 
