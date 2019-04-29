@@ -7688,7 +7688,7 @@ test_any([[
 		"collect_stats": 1]);
   Pike.count_memory (m, master());
   return m->rounds;
-]], 2)
+]], 1)
 test_true([[Pike.count_memory (-1, Int.NATIVE_MAX + 1) >
 	    Pike.count_memory (-1, 17)]])
 test_true([[Pike.count_memory (-1, Int.NATIVE_MAX << 100) >
