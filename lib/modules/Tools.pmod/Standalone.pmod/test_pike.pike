@@ -533,10 +533,19 @@ class TestMaster
 {
   inherit "/master";
 
+  protected int error_counter;
+  int get_and_clear_error_counter()
+  {
+    int ret = error_counter;
+    error_counter = 0;
+    return ret;
+  }
+
   void handle_error(array|object trace)
   {
-    compile_error("-", 0, describe_error(trace)[..<1]);
-    ::handle_error(trace);
+    error_counter++;
+    log_msg(sprintf("Runtime error: %s\n",
+		    describe_backtrace(trace)));
   }
 
   protected void create(object|void orig_master)
@@ -1126,7 +1135,6 @@ int main(int argc, array(string) argv)
 	case "COMPILE_WARNING":
 	  wf = WarningFlag();
           test->inhibit_errors = wf;
-	  master()->set_inhibit_compile_errors(wf);
           test->compile();
           if(test->compilation_error)
 	  {
@@ -1147,7 +1155,6 @@ int main(int argc, array(string) argv)
 	      errors++;
 	    }
 	  }
-	  master()->set_inhibit_compile_errors(UNDEFINED);
           break;
 
 	case "EVAL_ERROR":
@@ -1179,7 +1186,6 @@ int main(int argc, array(string) argv)
 	default:
 	  if (err = catch{
 	    wf = WarningFlag();
-	    master()->set_inhibit_compile_errors(wf);
             test->inhibit_errors = wf;
             o=test->compile()();
             if(test->compilation_error)
@@ -1210,10 +1216,8 @@ int main(int argc, array(string) argv)
               errors++;
 	      break;
 	    }
-	    master()->set_inhibit_compile_errors(UNDEFINED);
           }) {
 	    if(t) trace(0);
-	    master()->set_inhibit_compile_errors(UNDEFINED);
             watchdog_show_last_test();
             if (test->compilation_error?->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
@@ -1377,6 +1381,15 @@ int main(int argc, array(string) argv)
 	  default:
 	    log_msg("%s: Unknown test type (%O).\n", fname, test->type);
 	    errors++;
+	  }
+
+	  // Count asynchronously generated runtime errors too.
+	  int runtime_errors = master()->get_and_clear_error_counter();
+	  if (runtime_errors) {
+	    // The errors have already been reported.
+	    log_msg(fname + " caused runtime errors.\n");
+	    print_code(source);
+	    errors += runtime_errors;
 	  }
 	}
 
