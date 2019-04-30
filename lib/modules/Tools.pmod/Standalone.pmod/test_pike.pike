@@ -543,6 +543,10 @@ class TestMaster
 
   void handle_error(array|object trace)
   {
+    if (arrayp(trace) && stringp(trace[0]) &&
+	has_prefix(trace[0], "Ignore")) {
+      return;
+    }
     error_counter++;
     log_msg(sprintf("Runtime error: %s\n",
 		    describe_backtrace(trace)));
