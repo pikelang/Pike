@@ -484,6 +484,10 @@ exit_promise(1, ({11, 14, 12, 13}))
 
 dnl - Concurrent.results() - empty
 init_promise()
+test_do([[
+  // Do not drop the promise from init_promise() on the floor.
+  promise->success(UNDEFINED);
+]])
 test_do([[ add_constant("future", Concurrent.results(({}))); ]])
 init_future()
 exit_promise(1, ({}))
