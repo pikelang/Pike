@@ -8,8 +8,6 @@
 
 /* #define PICKY_MUTEX */
 
-#ifdef _REENTRANT
-
 #include "pike_error.h"
 
 /* Define to get a debug trace of thread operations. Debug levels can be 0-2. */
@@ -74,6 +72,8 @@ PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer(void)
 #else  /* CONFIGURE_TEST */
 #include "pike_threadlib.h"
 #endif
+
+#ifdef _REENTRANT
 
 #ifndef VERBOSE_THREADS_DEBUG
 #define THREADS_FPRINTF(LEVEL,FPRINTF_ARGS)
