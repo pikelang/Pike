@@ -525,7 +525,7 @@ PIKEFUN string escape_string (string str, void|int flags)
 
 #include "json_parser.c"
 
-void low_validate(struct pike_string *data, int flags) {
+static void low_validate(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
 
@@ -543,7 +543,7 @@ void low_validate(struct pike_string *data, int flags) {
     return;
 }
 
-ptrdiff_t parse_json_pcharp( PCHARP data, size_t len, int flags, char **err_out )
+static ptrdiff_t parse_json_pcharp( PCHARP data, size_t len, int flags, char **err_out )
 {
     ptrdiff_t stop;
     struct parser_state state;
@@ -561,7 +561,7 @@ ptrdiff_t parse_json_pcharp( PCHARP data, size_t len, int flags, char **err_out 
     return stop;
 }
 
-void low_decode(struct pike_string *data, int flags) {
+static void low_decode(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
 
