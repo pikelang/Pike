@@ -5134,10 +5134,42 @@ int main()
 }],
 pike_cv_hardware_byteorder=`cat conftest.out.2`
 ,
-pike_cv_hardware_byteorder=0
-,
-pike_cv_hardware_byteorder=0
-)
+AC_MSG_ERROR([Unable to determine hardware byteorder])
+, [
+echo $ac_n "crosscompiling... $ac_c" 1>&6
+    # Use some magical constants...
+    cat > conftest.$ac_ext <<EOF
+dnl This sometimes fails to find confdefs.h, for some reason.
+dnl [#]line __oline__ "[$]0"
+[#]line __oline__ "configure"
+#include "confdefs.h"
+#include <stdio.h>
+#if SIZEOF_INT == 4
+#define T int
+#else
+#define T long
+#endif
+T int_info[[]] = {
+  0, 0x5f426947L, 0x2d654e64L, 0x49614e5fL, 0
+};
+EOF
+    if AC_TRY_EVAL(ac_compile); then
+      if test -f "conftest.$ac_objext"; then
+        if strings "conftest.$ac_objext" | grep "_BiG-eNdIaN_" >/dev/null; then
+	  pike_cv_hardware_byteorder=1234
+        elif strings "conftest.$ac_objext" | grep "GiB_dNe-_NaI" >/dev/null; then
+	  pike_cv_hardware_byteorder=1234
+	else
+	  AC_MSG_ERROR([Unable to determine hardware byteorder])
+	fi
+      else
+        AC_MSG_ERROR([Unable to determine hardware byteorder])
+      fi
+    else
+      AC_MSG_ERROR([Unable to determine hardware byteorder])
+    fi
+    rm -rf conftest*
+])
 fi
 ])
 
