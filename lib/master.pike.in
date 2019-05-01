@@ -95,12 +95,27 @@ int compat_minor=-1;
 //! This is typically set via the option @expr{"--picky-cpp"@}.
 int show_if_constant_errors = 0;
 
-int is_pike_master = 0;
-// This integer variable should exist in any object that aspires to be
-// the master. It gets set to 1 when the master is installed, and is
-// therefore set in any object that is or has been the master. That
-// makes the Encoder class encode references to the master and all
-// ex-masters as references to the current master object.
+protected int _is_pike_master = 0;
+
+//! @decl int is_pike_master
+//! This integer variable should exist in any object that aspires to be
+//! the master. It gets set to 1 when the master is installed, and is
+//! therefore set in any object that is or has been the master. That
+//! makes the Encoder class encode references to the master and all
+//! ex-masters as references to the current master object.
+
+int `is_pike_master()
+{
+  return _is_pike_master;
+}
+void `is_pike_master=(int one)
+{
+  _is_pike_master = one;
+  if (one) {
+    add_constants();
+  }
+}
+
 
 mapping(string:object) fs_map = ([]);
 object root_fs;
@@ -2366,9 +2381,10 @@ enum bool { false=0, true=1 };
 //!   Copies the file @[from] to the new position @[to]. This is an
 //!   alias for @[Stdio.cp].
 
-/* Note that create is called before add_precompiled_program
+/* Note that add_constants() and create() are called
+ * before add_precompiled_program().
  */
-protected void create()
+protected void add_constants()
 {
 #if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
   add_constant("compile", compile);
@@ -2416,6 +2432,11 @@ protected void create()
   CO(find_call_out);
   CO(remove_call_out);
   CO(call_out_info);
+}
+
+protected void create()
+{
+  add_constants();
 
 #if "#share_prefix#"[0]!='#'
   // add path for architecture-independant files
