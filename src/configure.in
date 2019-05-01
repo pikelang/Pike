@@ -7800,7 +7800,7 @@ else
   AC_DEFINE(USE_SEMIDYNAMIC_MODULES)
   dmmsrc="modules/semidynamic_module_makefile.in"
   PIKE_LIB="libpike.a"
-  MODULE_O=module.o
+  MODULE_O=pike_modules.o
   BUILD_PIKE=tpike
   POST_MODULE_BUILD_TYPE=static
   STATIC_POST_MODULES_LINKOPTS=post_modules/linker_options
