@@ -5839,7 +5839,7 @@ void compiler_do_inherit(node *n,
 
   if(!n)
   {
-    yyerror("Unable to inherit");
+    yyerror("Unable to inherit.");
     return;
   }
 
@@ -5883,7 +5883,7 @@ void compiler_do_inherit(node *n,
     yytype_report(REPORT_WARNING,
 		  n->current_file, n->line_number, inheritable_type_string,
 		  n->current_file, n->line_number, n->type,
-		  0, "Program required for inherit.\n");
+		  0, "Program required for inherit.");
   }
 
   switch(n->token)
@@ -5898,7 +5898,7 @@ void compiler_do_inherit(node *n,
 	  offset++;
 	}
 	if (!state) {
-	  yyerror("Failed to resolv external constant.\n");
+	  yyerror("Failed to resolv external constant.");
 	  return;
 	}
 	p = state->new_program;
@@ -5939,7 +5939,7 @@ void compiler_do_inherit(node *n,
 		      name);
 	}
       }else{
-	yyerror("Inherit identifier is not a constant program");
+	yyerror("Inherit identifier is not a constant program.");
 	return;
       }
       break;
