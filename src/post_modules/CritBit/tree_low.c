@@ -326,6 +326,8 @@ PARENT:
 	    }
 	}
 
+    } else if (val) {
+      SET_SVAL(*val, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);
     }
 
     cb_check_node(tree->root);

@@ -79,7 +79,12 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 
 	oldsize = (THIS->tree.root) ? THIS->tree.root->size : 0;
 	if (oldsize) {
-	    cb_delete(& THIS->tree, k, Pike_sp++);
+	    /* NB: cb_delete() may run pike code (like eg when
+	     *     comparing bignums). The stack must thus be
+	     *     consistent in case eg a gc() is triggered.
+	     */
+	    push_undefined();
+	    cb_delete(& THIS->tree, k, Pike_sp-1);
 	    size = (THIS->tree.root) ? THIS->tree.root->size : 0;
 	    if (size < oldsize) {
 		THIS->rev++;
