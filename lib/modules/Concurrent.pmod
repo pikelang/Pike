@@ -656,7 +656,7 @@ class Future
     {
       (backend ? backend->remove_call_out : remove_call_out)(call_out_handle);
       p->try_success(0);
-    }
+    };
     /* NB: try_* variants as the original promise may get fulfilled
      *     after the timeout has occurred.
      */
