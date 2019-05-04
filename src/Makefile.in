@@ -1211,11 +1211,16 @@ lex_t.o: $(SRCDIR)/lex_t.c $(SRCDIR)/interpret_protos.h
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
 
-$(SRCDIR)/language.c_src $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
+$(SRCDIR)/language.c_src: $(SRCDIR)/language.stamp
+	cp $(SRCDIR)/y.tab.c $(SRCDIR)/language.c_src
+
+$(SRCDIR)/language.h_src: $(SRCDIR)/language.stamp
+	cp $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
+
+$(SRCDIR)/language.stamp: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
 	cd $(SRCDIR) && $(YACC) $(YFLAGS) language.yacc
-	mv $(SRCDIR)/y.tab.c $(SRCDIR)/language.c_src
-	mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
+	@touch $@
 
 $(SRCDIR)/language.c: $(SRCDIR)/language.c_src
 	@sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' \
