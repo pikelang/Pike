@@ -1755,7 +1755,6 @@ static void internal_parse_typeA(const char **_s)
 	  push_type(T_MIXED);
 	}
 	push_type_attribute(deprecated_string);
-	free_string(deprecated_string);
 	break;
       }
       goto bad_type;
