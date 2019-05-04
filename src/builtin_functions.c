@@ -2933,6 +2933,28 @@ PMOD_EXPORT void f_validate_utf8(INT32 args)
   push_int(ret);
 }
 
+/*! @decl int(..1) deprecated_typep(type t)
+ *!
+ *!   Checks if the supplied type has the "deprecated" attribute. This would
+ *!   generally only be true in static types of identifiers that have been
+ *!   marked as __deprecated__.
+ *!
+ *! @returns
+ *!   @expr{1@} if the type has the "deprecated" attribute,
+ *!   @expr{0@} otherwise.
+ */
+PMOD_EXPORT void f_deprecated_typep(INT32 args)
+{
+  int ret;
+
+  if (!args || TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE)
+    SIMPLE_ARG_TYPE_ERROR("deprecated_typep", 1, "type");
+
+  ret = deprecated_typep(Pike_sp[-1].u.type);
+  pop_n_elems(args);
+  push_int(ret);
+}
+
 /*! @decl string(0..255) __parse_pike_type(string(0..255) t)
  */
 static void f_parse_pike_type( INT32 args )
@@ -10273,6 +10295,9 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
 	   tFunc(tStr8,tStr8),OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("deprecated_typep", f_deprecated_typep,
+           tFunc(tType(tMix),tInt), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__soft_cast", f___soft_cast,
 	   tFunc(tSetvar(0, tType(tMix)) tSetvar(1, tType(tMix)),
