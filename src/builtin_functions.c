@@ -2955,6 +2955,41 @@ PMOD_EXPORT void f_deprecated_typep(INT32 args)
   push_int(ret);
 }
 
+/*! @decl type typeof_identifier(program p, string identifier)
+ *!
+ *!   Allows access to the static type of an identifier ("member") in a
+ *!   program.
+ *!
+ *! @returns
+ *!   The static type of @expr{p->identifier@}, or @expr{UNDEFINED@}
+ *!   if it can not be determined, be it because @expr{identifier@} does not
+ *!   exist in @expr{p@} or for other reasons.
+ */
+PMOD_EXPORT void f_typeof_identifier(INT32 args)
+{
+    struct program *prog;
+    struct pike_string *identifier;
+    int identifier_int;
+
+    get_all_args("typeof_identifier", args, "%p%t", &prog, &identifier);
+
+    identifier_int = find_shared_string_identifier(identifier, prog);
+
+    if (identifier_int != -1)
+    {
+      struct pike_type *ret;
+
+      copy_pike_type(ret, ID_FROM_INT(prog, identifier_int)->type);
+      pop_n_elems(args);
+      push_type_value(ret);
+    }
+    else
+    {
+      pop_n_elems(args);
+      push_undefined();
+    }
+}
+
 /*! @decl string(0..255) __parse_pike_type(string(0..255) t)
  */
 static void f_parse_pike_type( INT32 args )
@@ -10298,6 +10333,9 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("deprecated_typep", f_deprecated_typep,
            tFunc(tType(tMix),tInt), OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("typeof_identifier", f_typeof_identifier,
+           tFunc(tPrg(tObj) tStr, tType(tMix)), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__soft_cast", f___soft_cast,
 	   tFunc(tSetvar(0, tType(tMix)) tSetvar(1, tType(tMix)),
