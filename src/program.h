@@ -56,6 +56,8 @@ extern struct pike_string *args_string;
 extern struct pike_string *parser_system_string;
 extern struct pike_string *type_check_system_string;
 
+extern struct pike_string *compat_lfun_destroy_string;
+
 enum LFUN {
     LFUN___INIT,
     LFUN_CREATE,

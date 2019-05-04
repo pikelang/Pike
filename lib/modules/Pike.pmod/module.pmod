@@ -132,6 +132,10 @@ program Codec = [program] master()->Codec;
 program Annotation = __builtin.Annotation;
 #endif
 
+#if constant(__builtin.ProxyFactory)
+constant ProxyFactory = __builtin.ProxyFactory;
+#endif
+
 #if 0
 protected constant TYPE = typeof(typeof([mixed]0));
 

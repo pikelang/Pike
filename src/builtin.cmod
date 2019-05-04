@@ -1607,6 +1607,436 @@ PIKEFUN string program_defined(program p)
     push_int(0);
 }
 
+static void f_proxy_create(INT32 args)
+{
+  struct object *o;
+  struct program *p;
+  struct program *expected;
+  if (args != 1) {
+    wrong_number_of_args_error("create", args, 1);
+  }
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT) {
+    SIMPLE_ARG_TYPE_ERROR("create", 1, "object");
+  }
+  expected = Pike_fp->context->prog->constants[1].sval.u.program;
+  o = Pike_sp[-1].u.object;
+  p = o->prog;
+  if (!p) {
+    Pike_error("Destructed object.\n");
+  }
+  p = p->inherits[SUBTYPEOF(Pike_sp[-1])].prog;
+  if (p != expected) {
+    int e;
+    int found = 0;
+    for (e = 1; e < p->num_inherits; e++) {
+      if (p->inherits[e].prog == expected) {
+	/* Found */
+	if ((found) &&
+	    (p->inherits[found].inherit_level <= p->inherits[e].inherit_level))
+	  continue;
+	found = e;
+      }
+    }
+    if (found) {
+      SET_SVAL_SUBTYPE(Pike_sp[-1], SUBTYPEOF(Pike_sp[-1]) + found);
+    }
+  }
+  object_low_set_index(Pike_fp->current_object,
+		       Pike_fp->context->identifier_level + 0,
+		       Pike_sp-1);
+}
+
+/**
+ * Look up the reference in the wrapped object
+ * corresponding to the current function.
+ */
+static int low_proxy_ref(void)
+{
+  /* Note that we index on the identifier offset,
+   * NOT the reference number, as more references
+   * may get added on demand via eg local::, etc.
+   */
+  struct reference *ref =
+    PTR_FROM_INT(Pike_fp->context->prog,
+		 Pike_fp->fun - Pike_fp->context->identifier_level);
+  struct array *a = Pike_fp->context->prog->constants[0].sval.u.array;
+  return ITEM(a)[ref->identifier_offset].u.integer;
+}
+
+static void f_proxy_getter(INT32 args)
+{
+  struct program *expected =
+    Pike_fp->context->prog->constants[1].sval.u.program;
+  int proxy_ref = low_proxy_ref();
+  /* NB: We only have a single variable i storage. */
+  struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
+  struct object *obj;
+  struct inherit *inh;
+  struct identifier *id;
+
+  if (args) {
+    wrong_number_of_args_error(NULL, args, 0);
+  }
+
+  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+    Pike_error("Proxy for %O not initialized.\n",
+	       Pike_fp->context->prog->constants + 1);
+  }
+
+  obj = storage->u.object;
+  if (!obj->prog) {
+    Pike_error("Proxied object has been destructed.\n");
+  }
+  inh = obj->prog->inherits + SUBTYPEOF(*storage);
+
+  if (inh->prog == expected) {
+    low_object_index_no_free(Pike_sp, obj, inh->identifier_level + proxy_ref);
+    Pike_sp++;
+    return;
+  }
+
+  /* Attempt to index the object anyway. */
+  id = ID_FROM_INT(expected, proxy_ref);
+  ref_push_string(id->name);
+  object_index_no_free(Pike_sp, obj, SUBTYPEOF(*storage), Pike_sp-1);
+  Pike_sp++;
+}
+
+static void f_proxy_setter(INT32 args)
+{
+  struct program *expected =
+    Pike_fp->context->prog->constants[1].sval.u.program;
+  int proxy_ref = low_proxy_ref();
+  /* NB: We only have a single variable i storage. */
+  struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
+  struct object *obj;
+  struct inherit *inh;
+  struct identifier *id;
+
+  if (args != 1) {
+    wrong_number_of_args_error(NULL, args, 1);
+  }
+
+  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+    Pike_error("Proxy for %O not initialized.\n",
+	       &Pike_fp->context->prog->constants[1].sval);
+  }
+
+  obj = storage->u.object;
+  if (!obj->prog) {
+    Pike_error("Proxied object has been destructed.\n");
+  }
+  inh = obj->prog->inherits + SUBTYPEOF(*storage);
+
+  if (inh->prog == expected) {
+    object_low_set_index(obj, inh->identifier_level + proxy_ref, Pike_sp-args);
+    return;
+  }
+
+  /* Attempt to set the index in the object anyway. */
+  id = ID_FROM_INT(expected, proxy_ref);
+  ref_push_string(id->name);
+  object_set_index(obj, SUBTYPEOF(*storage), Pike_sp-1, Pike_sp-(args+1));
+}
+
+static void f_proxy_fun(INT32 args)
+{
+  struct program *expected =
+    Pike_fp->context->prog->constants[1].sval.u.program;
+  int proxy_ref = low_proxy_ref();
+  /* NB: We only have a single variable i storage. */
+  struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
+  struct object *obj;
+  struct inherit *inh;
+  struct identifier *id;
+
+  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+    Pike_error("Proxy for %O not initialized.\n",
+	       Pike_fp->context->prog->constants + 1);
+  }
+
+  obj = storage->u.object;
+  if (!obj->prog) {
+    Pike_error("Proxied object has been destructed.\n");
+  }
+  inh = obj->prog->inherits + SUBTYPEOF(*storage);
+
+  if (inh->prog == expected) {
+    apply_low(obj, inh->identifier_level + proxy_ref, args);
+    return;
+  }
+
+  /* Attempt to apply the symbol in the object anyway. */
+  /* FIXME: Doesn't care about the object subtype! */
+  id = ID_FROM_INT(expected, proxy_ref);
+  apply_shared(obj, id->name, args);
+}
+
+static void f_proxy__sprintf(INT32 args)
+{
+  struct program *expected =
+    Pike_fp->context->prog->constants[1].sval.u.program;
+  int proxy_ref = low_proxy_ref();
+  /* NB: We only have a single variable in storage. */
+  struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
+  struct object *obj;
+  struct inherit *inh;
+  struct identifier *id;
+
+  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+    Pike_error("Proxy for %O not initialized.\n",
+	       Pike_fp->context->prog->constants + 1);
+  }
+
+  obj = storage->u.object;
+  if (!obj->prog) {
+    Pike_error("Proxied object has been destructed.\n");
+  }
+
+  if (args && (TYPEOF(Pike_sp[-args]) == T_INT) &&
+      (Pike_sp[-args].u.integer == 'O')) {
+    /* Special case for debug mode. */
+    push_constant_text("%O(%O)");
+    ref_push_program(Pike_fp->current_object->prog);
+    push_svalue(storage);
+    f_sprintf(3);
+    return;
+  }
+
+  if (proxy_ref < 0) {
+    push_undefined();
+    return;
+  }
+
+  apply_lfun(obj, LFUN__SPRINTF, args);
+}
+
+static struct mapping *proxy_lookup = NULL;
+/*! @decl program ProxyFactory(program p)
+ *!
+ *! Create a class that acts as a proxy for the specified program.
+ *!
+ *! @param p
+ *!   Program to generate a proxy for.
+ *!
+ *! The generated class will have the same symbols (public and
+ *! private) with the same types as in @[p], where accesses to
+ *! these will proxy the access to the same symbol in the proxied
+ *! (aka wrapped) object. With the following exceptions:
+ *!
+ *! @dl
+ *!   @item @expr{protected void create(object(p) obj)@}
+ *!     Initialize the object to act as a proxy for @expr{obj@}.
+ *!
+ *!   @item @expr{_sprintf(int c, mapping|void params)@}
+ *!     Special case for @expr{c@} == @expr{'O'@}, where
+ *!     it will return @expr{sprintf("%O(%O)", this_program, obj)@},
+ *!     and otherwise proxy the call.
+ *!
+ *!   @item @expr{void _destruct()@}/@expr{void destroy()@}
+ *!     These lfuns will not be present as the act of them
+ *!     being proxied would likely confuse the proxied object.
+ *! @enddl
+ *!
+ *! @note
+ *!   The same proxy class will be returned if this function
+ *!   is called with the same program multiple times.
+ */
+PIKEFUN program ProxyFactory(program p)
+  optflags OPT_TRY_OPTIMIZE;
+  rawtype tFunc(tSetvar(0, tPrg(tObj)), tVar(0));
+{
+  struct array *a;
+  int i = 0;
+  struct pike_type *fun_type;
+  union idptr ptr;
+  int j;
+  struct svalue *cached;
+
+  ref_push_program(p);
+  if (proxy_lookup &&
+      (cached = low_mapping_lookup(proxy_lookup, Pike_sp-1))) {
+    push_svalue(cached);
+    return;
+  }
+  /* NB: Keep the program on the stack, we will use it
+   *     later when we update the proxy_lookup cache.
+   */
+
+  enter_compiler(NULL, 0);
+  start_new_program();
+
+  /* Constant #0: The mapping from local reference # to external d:o. */
+  /* NB: Over allocation. */
+  /* NB: For the lookup to work as intended all functions that use
+   *     this array *need* to be declared ID_LOCAL to avoid being
+   *     renumbered when overloaded.
+   */
+  push_int((p->num_identifier_references+1) * 3);
+  push_int(-1);
+  f_allocate(2);
+  a = Pike_sp[-1].u.array;
+  store_constant(Pike_sp-1, 0, NULL);
+
+  /* Constant #1: The program that we intend to wrap. */
+  ref_push_program(p);
+  store_constant(Pike_sp-1, 0, NULL);
+
+  /* Reference #0: The variable that we store the proxied object in. */
+  /* NB: Use a name that will not clash. */
+  push_string(make_shared_static_string("proxied_obj\0", 12, eightbit));
+  type_stack_mark();
+  push_object_type(0, p->id);
+  fun_type = pop_unfinished_type();
+  define_variable(Pike_sp[-1].u.string, fun_type,
+		  ID_LOCAL|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN);
+  free_type(fun_type);
+  pop_stack();
+
+  /* Add proxy functions for the references. */
+  for (i = 0; i < p->num_identifier_references; i++) {
+    struct reference *ref = PTR_FROM_INT(p, i);
+    struct identifier *id;
+    if (ref->id_flags & ID_HIDDEN) continue;
+    id = ID_FROM_PTR(p, ref);
+    if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+      /* Handle in second pass. */
+      yyerror("Aliases not supported (yet).");
+    } else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
+	       IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+      struct pike_string *fun_name;
+
+      /* Getter. */
+      type_stack_mark();
+      push_finished_type(id->type);
+      push_type(T_VOID);
+      push_type(T_MANY);
+      fun_type = pop_unfinished_type();
+      push_static_text("`");
+      ref_push_string(id->name);
+      f_add(2);
+      ptr.c_fun = f_proxy_getter;
+      j = define_function(Pike_sp[-1].u.string, fun_type,
+			  ref->id_flags | ID_LOCAL,
+			  IDENTIFIER_C_FUNCTION, &ptr, 0);
+      SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
+		       identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
+      free_type(fun_type);
+
+      if (IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
+	/* Setter. */
+	type_stack_mark();
+	push_type(T_VOID);
+	push_type(T_VOID);
+	push_type(T_MANY);
+	push_finished_type(id->type);
+	push_type(T_FUNCTION);
+	fun_type = pop_unfinished_type();
+	push_static_text("=");
+	f_add(2);
+	ptr.c_fun = f_proxy_setter;
+	j = define_function(Pike_sp[-1].u.string, fun_type,
+			    ref->id_flags | ID_LOCAL,
+			    IDENTIFIER_C_FUNCTION, &ptr, 0);
+	SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
+			 identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
+	free_type(fun_type);
+      }
+
+      pop_stack();
+    } else {
+      /* Check if getter or setter and skip, as they are handled above. */
+      if (id->name->len && (index_shared_string(id->name, 0) == '`') &&
+	  !is_lfun_name(id->name)) {
+	/* Name starting with `, but not an lfun.
+	 * This is thus probably a getter or setter.
+	 */
+	continue;
+      }
+      if ((id->name == lfun_strings[LFUN_CREATE]) ||
+	  (id->name == lfun_strings[LFUN__DESTRUCT]) ||
+	  (id->name == compat_lfun_destroy_string) ||
+	  (id->name == lfun_strings[LFUN__SPRINTF])) {
+	/* Skip. We add a custom create() and _sprintf() below. */
+	continue;
+      }
+      ptr.c_fun = f_proxy_fun;
+      j = define_function(id->name, id->type, ref->id_flags,
+			  IDENTIFIER_C_FUNCTION | ID_LOCAL, &ptr, 0);
+      SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
+		       identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
+    }
+  }
+
+  /* Add a suitable _sprintf(). */
+  /* FIXME! */
+  {
+    int id_flags = ID_PROTECTED;
+    i = FIND_LFUN(p, LFUN__SPRINTF);
+    if (i >= 0) {
+      struct reference *ref = PTR_FROM_INT(p, i);
+      struct identifier *id = ID_FROM_PTR(p, ref);
+      id_flags = ref->id_flags;
+      fun_type = id->type;
+    } else {
+      type_stack_mark();
+      push_int_type(MIN_INT32, MAX_INT32);
+      push_type(T_STRING);
+      push_type(T_VOID);
+      push_type(T_MANY);
+      push_int_type(MIN_INT32, MAX_INT32);
+      push_type(T_STRING);
+      push_int_type(MIN_INT32, MAX_INT32);
+      push_type(T_MAPPING);
+      push_type(T_VOID);
+      push_type(T_OR);
+      push_type(T_FUNCTION);
+      push_int_type(MIN_INT32, MAX_INT32);
+      push_type(T_FUNCTION);
+      fun_type = pop_unfinished_type();
+      simple_describe_type(fun_type);
+    }
+    ptr.c_fun = f_proxy__sprintf;
+    j = define_function(lfun_strings[LFUN__SPRINTF], fun_type,
+			id_flags | ID_LOCAL,
+			IDENTIFIER_C_FUNCTION, &ptr, 0);
+    SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
+		     identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
+    if (i < 0) {
+      free_type(fun_type);
+    }
+  }
+
+  /* Add a suitable create(). */
+  type_stack_mark();
+  push_type(T_VOID);
+  push_type(T_VOID);
+  push_type(T_MANY);
+  push_object_type(0, p->id);
+  push_type(T_FUNCTION);
+  fun_type = pop_unfinished_type();
+  ptr.c_fun = f_proxy_create;
+  j = define_function(lfun_strings[LFUN_CREATE], fun_type, ID_PROTECTED,
+		      IDENTIFIER_C_FUNCTION, &ptr, 0);
+  free_type(fun_type);
+
+  p = end_program();
+  exit_compiler();
+
+  if (p) {
+    push_program(p);
+
+    if (!proxy_lookup) {
+      proxy_lookup = allocate_mapping(10);
+      mapping_set_flags(proxy_lookup, MAPPING_WEAK_INDICES);
+    }
+
+    mapping_insert(proxy_lookup, Pike_sp-2, Pike_sp-1);
+  } else {
+    push_undefined();
+  }
+}
+
 /*! @decl int(8..8)|int(16..16)|int(32..32) width(string s)
  *! @belongs String
  *!
@@ -6600,6 +7030,7 @@ void init_builtin(void)
 void exit_builtin(void)
 {
   struct svalue zero;
+  if (proxy_lookup) free_mapping(proxy_lookup);
   if (val_module) free_object (val_module);
   EXIT;
   SET_SVAL(zero, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
