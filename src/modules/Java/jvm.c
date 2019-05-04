@@ -2323,7 +2323,6 @@ static void do_native_dispatch(void *arg)
   struct dispatch *d = (struct dispatch *)arg;
   struct native_method_context *ctx = d->ctx;
   JNIEnv *env = d->env;
-  ARGS_TYPE args = d->args;
   jvalue *rc = d->rc;
 
   if (SETJMP(recovery)) {
@@ -2336,6 +2335,7 @@ static void do_native_dispatch(void *arg)
   }
 
   {
+    ARGS_TYPE args = d->args;
     int nargs = 0;
 
     if(!d->cls) {
