@@ -806,6 +806,17 @@ static void f_compilation_env_filter_exception(INT32 args)
  *!   of Pike code.
  */
 
+/*! @decl int current_line
+ *!
+ *!   The current line number (during an active compilation).
+ */
+
+/*! @decl string current_file
+ *!
+ *!   The name of the file currently being compiled (during an active
+ *!   compilation).
+ */
+
 static void free_compilation(struct compilation *c)
 {
   debug_malloc_touch(c);
@@ -2804,7 +2815,9 @@ static void compile_compiler(void)
   PIKE_MAP_VARIABLE("p", OFFSETOF(compilation, p),
 		    tPrg(tObj), PIKE_T_PROGRAM, ID_HIDDEN);
   PIKE_MAP_VARIABLE("current_file", OFFSETOF(compilation, lex.current_file),
-		    tStr, PIKE_T_STRING, ID_PROTECTED);
+		    tStr, PIKE_T_STRING, 0);
+  PIKE_MAP_VARIABLE("current_line", OFFSETOF(compilation, lex.current_line),
+		    tInt, PIKE_T_INT, 0);
   PIKE_MAP_VARIABLE("default_module", OFFSETOF(compilation, default_module),
 		    tOr(tMap(tStr,tMix),tObj), PIKE_T_MIXED, 0);
 
