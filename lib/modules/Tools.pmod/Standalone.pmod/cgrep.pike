@@ -36,7 +36,7 @@ int(0..3) fn_only; // 1=with, 2=without, 3=count
 
 class File {
 
-  void create(string _fn) {
+  protected void create(string _fn) {
     fn = _fn;
   }
 

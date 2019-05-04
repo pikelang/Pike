@@ -352,7 +352,7 @@ class Connection
     }
   }
 
-  void create(object s, mapping(string:string)|void u)
+  protected void create(object s, mapping(string:string)|void u)
   {
     users = u;
     clntsock = s;
@@ -375,7 +375,8 @@ class Server
       Connection(s, users);
   }
 
-  void create(int|void port, string|void ip, mapping(string:string)|void usrs)
+  protected void create(int|void port, string|void ip,
+			mapping(string:string)|void usrs)
   {
     users = usrs;
     if(!port)
