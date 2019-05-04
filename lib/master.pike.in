@@ -1706,17 +1706,23 @@ protected void compile_cb_rethrow (object|array err)
   throw (CompileCallbackError (call_describe_error (err), bt));
 }
 
-protected void call_compile_warning (object handler, string file,
-				     string msg, mixed ... args)
-{
+protected void call_compile_warning_lineno (object handler, string file,
+                                            int lineno, string msg,
+                                            mixed ... args) {
   if (sizeof (args)) msg = sprintf (msg, @args);
   msg = trim (msg);
   if (handler?->compile_warning)
-    handler->compile_warning (file, 0, msg);
+    handler->compile_warning (file, lineno, msg);
   else if (master()->compile_warning)
-    master()->compile_warning (file, 0, msg);
+    master()->compile_warning (file, lineno, msg);
   else
-    compile_warning (file, 0, msg);
+    compile_warning (file, lineno, msg);
+}
+
+protected void call_compile_warning (object handler, string file,
+				     string msg, mixed ... args)
+{
+    call_compile_warning_lineno(handler, file, 0, msg, @args);
 }
 
 #if constant(_static_modules.Builtin.mutex)
