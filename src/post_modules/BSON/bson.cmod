@@ -211,15 +211,19 @@ char * decode_next_value(char * n, size_t n_len, struct mapping * list)
     case TYPE_BSON_STRING:
     {
       INT32 bump;
-      INT32 left;
+      INT32 left = n_len - (n - slist);
+
+      if (left < 4)
+        Pike_error("Invalid BSON. Not enough data.\n");
+
       bump = get_unaligned_le32(n);
-      left = n_len - (n - slist);
+      n+=4;
+      left -= 4;
 
       if(bump <= 0 || bump > left)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
-      n+=4;
       push_string( make_shared_binary_string(n, bump-1) ); /* length includes null. */
       n += (bump);
       f_utf8_to_string(1);
@@ -228,13 +232,19 @@ char * decode_next_value(char * n, size_t n_len, struct mapping * list)
 
     case TYPE_BSON_BINARY:
     {
-      INT32 bump = get_unaligned_le32(n);
-      INT32 left;
+      INT32 bump;
+      INT32 left = n_len - (n - slist);
       unsigned INT8 subtype;
+
+      if (left < 5)
+        Pike_error("Invalid BSON. Not enough data.\n");
+
+      bump = get_unaligned_le32(n);
       n+=4;
       subtype = *(unsigned INT8*)n;
       n++;
-      left = n_len - (n - slist);
+
+      left -= 5;
 
       if(bump < 0 || bump > left)
       {
