@@ -237,7 +237,7 @@ protected class jmethod {
 	  "Applicable signatures:\n%{  %s\n%}", applicable/1);
   }
 
-  mixed `()(mixed ... args)
+  protected mixed `()(mixed ... args)
   {
     object mm;
     if(sizeof(protos)==1)
@@ -250,7 +250,8 @@ protected class jmethod {
       return wrap_result(mm(@unwrap_args(args)), info);
   }
 
-  void create(mapping(string:mixed) i, object o, mapping(string:object) p)
+  protected void create(mapping(string:mixed) i, object o,
+			mapping(string:object) p)
   {
     info = i;
     obj = o;
@@ -291,12 +292,12 @@ protected class jobject {
     return cls->_wrap_result(x);
   }
 
-  mixed cast(mixed ... args)
+  protected mixed cast(mixed ... args)
   {
     return obj->cast(@unwrap_args(args));
   }
 
-  mixed `[](string n)
+  protected mixed `[](string n)
   {
     object f = cls->_fields[n];
     if(f)
@@ -307,12 +308,12 @@ protected class jobject {
     return ([])[0];
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return indices(cls->_fields)|indices(cls->_methods);
   }
 
-  array(mixed) _values()
+  protected array(mixed) _values()
   {
     return rows(this, _indices());
   }
@@ -328,7 +329,7 @@ protected class jobject {
     return ([])[0];
   }
 
-  mixed `->(string n)
+  protected mixed `->(string n)
   {
     if(sizeof(n) && n[0]=='_')
       switch(n) {
@@ -344,7 +345,7 @@ protected class jobject {
 	return `[](n);
   }
 
-  void create(object c, object o, mapping(string:mixed) i)
+  protected void create(object c, object o, mapping(string:mixed) i)
   {
     obj = o;
     cls = c;
@@ -358,32 +359,32 @@ protected class jarray {
   protected object obj;
   mapping(string:mixed) info;
 
-  mixed cast(mixed ... args)
+  protected mixed cast(mixed ... args)
   {
     return obj->cast(@unwrap_args(args));
   }
 
-  mixed `[](int ... n)
+  protected mixed `[](int ... n)
   {
     return wrap_result(obj->`[](@n), info);
   }
 
-  array(mixed) _indices()
+  protected array(mixed) _indices()
   {
     return indices(obj);
   }
 
-  array(mixed) _values()
+  protected array(mixed) _values()
   {
     return Array.map(values(obj), wrap_result, info);
   }
 
-  int _sizeof()
+  protected int _sizeof()
   {
     return sizeof(obj);
   }
 
-  mixed `->(string n)
+  protected mixed `->(string n)
   {
     if(n == "length")
       return sizeof(obj);
@@ -395,12 +396,12 @@ protected class jarray {
       return ([])[0];
   }
 
-  mixed `[]=(int n, mixed value)
+  protected mixed `[]=(int n, mixed value)
   {
     return wrap_result(obj->`[]=(n, value), info);
   }
 
-  void create(object o, mapping(string:mixed) i)
+  protected void create(object o, mapping(string:mixed) i)
   {
     obj = o;
     info = i;
@@ -413,7 +414,7 @@ protected class jconstructor {
   protected object cls, con;
   protected mapping(string:mixed) info;
 
-  object `()(mixed ... args)
+  protected object `()(mixed ... args)
   {
     object o = cls->_alloc();
     if(!o)
@@ -422,7 +423,7 @@ protected class jconstructor {
     return jobject(cls, o, info);
   }
 
-  void create(object c, object o, mapping(string:mixed) i)
+  protected void create(object c, object o, mapping(string:mixed) i)
   {
     cls = c;
     con = o;
@@ -450,7 +451,7 @@ protected class jclass {
     return wrap_result(x, info);
   }
 
-  void create(object o, mapping(string:mixed) i)
+  protected void create(object o, mapping(string:mixed) i)
   {
     obj = o;
     info = i;
@@ -496,7 +497,7 @@ protected class jclass {
     }
   }
 
-  mixed `[](string n)
+  protected mixed `[](string n)
   {
     object f = static_fields[n];
     if(f)
@@ -504,12 +505,12 @@ protected class jclass {
     return static_methods[n];
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return indices(static_fields)|indices(static_methods);
   }
 
-  array(mixed) _values()
+  protected array(mixed) _values()
   {
     return rows(this, _indices());
   }
@@ -537,7 +538,7 @@ protected class jclass {
     return 0;
   }
 
-  mixed `->(string n)
+  protected mixed `->(string n)
   {
     if(sizeof(n) && n[0]=='_')
       switch(n) {
@@ -565,7 +566,7 @@ protected class jclass {
 	return `[](n);
   }
 
-  object `()(mixed ... args)
+  protected object `()(mixed ... args)
   {
     object o = obj->alloc();
     if(!o)
@@ -584,7 +585,7 @@ protected class package {
   protected string name;
   protected object pkg;
 
-  object `[](string n)
+  protected object `[](string n)
   {
     object p = subpackages[n];
     if(p)
@@ -671,7 +672,7 @@ protected class package {
     return f;
   }
 
-  void create(string n, mapping(string:mixed) i)
+  protected void create(string n, mapping(string:mixed) i)
   {
     name = n;
     info = i;

@@ -195,6 +195,9 @@ PMOD_EXPORT void ba_free_all(struct block_allocator * a) {
     a->size = 0;
     a->alloc = 0;
     a->last_free = 0;
+
+    PIKE_MEMPOOL_DESTROY(a);
+    PIKE_MEMPOOL_CREATE(a);
 }
 
 PMOD_EXPORT size_t ba_count(const struct block_allocator * a) {

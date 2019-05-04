@@ -3,17 +3,17 @@
 #if constant(__builtin.thread_id)
 constant Thread=__builtin.thread_id;
 
-optional constant MutexKey=__builtin.mutex_key;
-optional constant Mutex=__builtin.mutex;
-optional constant Condition=__builtin.condition;
-optional constant _Disabled=__builtin.threads_disabled;
-optional constant Local=__builtin.thread_local;
+constant MutexKey=__builtin.mutex_key;
+constant Mutex=__builtin.mutex;
+constant Condition=__builtin.condition;
+constant _Disabled=__builtin.threads_disabled;
+constant Local=__builtin.thread_local;
 
-optional constant thread_create = predef::thread_create;
-optional constant this_thread = predef::this_thread;
-optional constant all_threads = predef::all_threads;
-optional constant get_thread_quanta = predef::get_thread_quanta;
-optional constant set_thread_quatna = predef::set_thread_quanta;
+constant thread_create = predef::thread_create;
+constant this_thread = predef::this_thread;
+constant all_threads = predef::all_threads;
+constant get_thread_quanta = predef::get_thread_quanta;
+constant set_thread_quatna = predef::set_thread_quanta;
 
 constant THREAD_NOT_STARTED = __builtin.THREAD_NOT_STARTED;
 constant THREAD_RUNNING = __builtin.THREAD_RUNNING;
@@ -27,7 +27,7 @@ constant THREAD_EXITED = __builtin.THREAD_EXITED;
 //! @seealso
 //!   @[Queue]
 //!
-optional class Fifo {
+class Fifo {
   inherit Condition : r_cond;
   inherit Condition : w_cond;
   inherit Mutex : lock;
@@ -238,7 +238,7 @@ optional class Fifo {
 //! @seealso
 //!   @[Fifo], @[ADT.Queue]
 //!
-optional class Queue {
+class Queue {
   inherit Condition : r_cond;
   inherit Mutex : lock;
 
@@ -397,7 +397,7 @@ optional class Queue {
 
 
 //! A thread farm.
-optional class Farm
+class Farm
 {
   protected Mutex mutex = Mutex();
   protected Condition ft_cond = Condition();
@@ -407,6 +407,9 @@ optional class Farm
   protected string thread_name_prefix;
 
   //! An asynchronous result.
+  //!
+  //! @fixme
+  //!   This class ought to be made @[Concurrent.Future]-compatible.
   class Result
   {
     int ready;
@@ -437,7 +440,7 @@ optional class Farm
     }
 
     //! Wait for completion.
-    mixed `()()
+    protected mixed `()()
     {
       object key = mutex->lock();
       while(!ready)     ft_cond->wait(key);
@@ -496,6 +499,105 @@ optional class Farm
 	  return "Thread.Farm().Result";
 	case 'O':
 	  return sprintf( "%t(%d %O)", this, ready, value );
+      }
+    }
+  }
+
+  protected void report_errors(mixed err, int is_err)
+  {
+    if (!is_err) return;
+    master()->handle_error(err);
+  }
+
+  //! A wrapper for an asynchronous result.
+  //!
+  //! @note
+  //!   This wrapper is used to detect when the
+  //!   user discards the values returned from
+  //!   @[run()] or @[run_multiple()], so that
+  //!   any errors thrown aren't lost.
+  protected class ResultWrapper(Result ro)
+  {
+    protected int(0..1) value_fetched;
+    int `ready() { return ro->ready; }
+    mixed `value() {
+      value_fetched = 1;
+      return ro->value;
+    }
+    function `done_cb() { return ro->done_cb; }
+    void `done_cb=(function cb) {
+      if (cb) value_fetched = 1;
+      ro->done_cb = cb;
+    }
+
+    //! @returns
+    //!   @int
+    //!     @value 1
+    //!       Returns @expr{1@} when the result is available.
+    //!     @value 0
+    //!       Returns @expr{0@} (zero) when the result hasn't
+    //!       arrived yet.
+    //!     @value -1
+    //!       Returns negative on failure.
+    //!   @endint
+    function(:int) `status() { return ro->status; }
+
+    //! @returns
+    //!   Returns the result if available, a backtrace on failure,
+    //!   and @expr{0@} (zero) otherwise.
+    function(:mixed) `result() { return ro->result; }
+
+    //! Wait for completion.
+    protected mixed `()()
+    {
+      return ro();
+    }
+
+    //! Register a callback to be called when
+    //! the result is available.
+    //!
+    //! @param to
+    //!   Callback to be called. The first
+    //!   argument to the callback will be
+    //!   the result or the failure backtrace,
+    //!   and the second @expr{0@} (zero) on
+    //!   success, and @expr{1@} on failure.
+    void set_done_cb(function cb) {
+      if (cb) value_fetched = 1;
+      ro->set_done_cb(cb);
+    }
+
+    //! Register a failure.
+    //!
+    //! @param what
+    //!   The corresponding backtrace.
+    function(mixed:void) `provide_error() { return ro->provide_error; }
+
+    //! Register a completed result.
+    //!
+    //! @param what
+    //!   The result to register.
+    function(mixed:void) `provide() { return ro->provide; }
+
+    protected void _destruct()
+    {
+      if (ro && !value_fetched && !ro->done_cb) {
+	// Make sure that any errors aren't lost.
+	ro->done_cb = report_errors;
+	if (ro->ready < 0) {
+	  report_errors(ro->value, 1);
+	}
+      }
+    }
+
+    protected string _sprintf( int f )
+    {
+      switch( f )
+      {
+	case 't':
+	  return "Thread.Farm().ResultWrapper";
+	case 'O':
+	  return sprintf("%t(%O)", this, ro);
       }
     }
   }
@@ -690,6 +792,7 @@ optional class Farm
   Result run_multiple( array(array(function|array)) fun_args )
   {
     Result r = Result(); // private result..
+    ResultWrapper rw = ResultWrapper(r);
     r->value = allocate( sizeof( fun_args ) );
     mapping nl = ([ "num_left":sizeof( fun_args ) ]);
     for( int i=0; i<sizeof( fun_args ); i++ )
@@ -698,7 +801,7 @@ optional class Farm
       r2->set_done_cb( ValueAdjuster( r, r2, i, nl )->go );
       job_queue->write( ({ r2, fun_args[i] }) );
     }
-    return r;
+    return rw;
   }
 
 
@@ -745,8 +848,9 @@ optional class Farm
   Result run( function f, mixed ... args )
   {
     Result ro = Result();
+    ResultWrapper rw = ResultWrapper(ro);
     job_queue->write( ({ ro, ({f, args }) }) );
-    return ro;
+    return rw;
   }
 
   //! Register a job for the thread farm
@@ -860,17 +964,19 @@ optional class Farm
 //! @seealso
 //!   @[ResourceCount], @[MutexKey]
 //!
-optional class ResourceCountKey {
+class ResourceCountKey {
 
   private inherit __builtin.DestructImmediate;
 
   /*semi*/private ResourceCount parent;
 
-  /*semi*/private void create(ResourceCount _parent) {
+  protected void create(ResourceCount _parent)
+  {
     parent = _parent;
   }
 
-  /*semi*/private void _destruct() {
+  protected void _destruct()
+  {
     MutexKey key = parent->_mutex->lock();
     --parent->_count;
     parent->_cond->signal();
@@ -883,7 +989,7 @@ optional class ResourceCountKey {
 //!
 //! @seealso
 //!   @[ResourceCountKey], @[Condition], @[Mutex]
-optional class ResourceCount {
+class ResourceCount {
   /*semi*/final int _count;
   /*semi*/final Condition _cond = Condition();
   /*semi*/final Mutex _mutex = Mutex();
@@ -916,7 +1022,8 @@ optional class ResourceCount {
     return ResourceCountKey(this);
   }
 
-  /*semi*/private string _sprintf(int type) {
+  protected string _sprintf(int type)
+  {
     string res = UNDEFINED;
     switch(type) {
       case 'O':
@@ -935,7 +1042,7 @@ optional class ResourceCount {
 // Simulations of some of the classes for nonthreaded use.
 
 /* Fallback implementation of Thread.Local */
-optional class Local
+class Local
 {
   protected mixed data;
   mixed get() {return data;}
@@ -943,8 +1050,10 @@ optional class Local
 }
 
 /* Fallback implementation of Thread.MutexKey */
-optional class MutexKey (protected function(:void) dec_locks)
+class MutexKey (protected function(:void) dec_locks)
 {
+  inherit Builtin.DestructImmediate;
+
   int `!()
   {
     // Should be destructed when the mutex is, but we can't pull that
@@ -961,7 +1070,7 @@ optional class MutexKey (protected function(:void) dec_locks)
 }
 
 /* Fallback implementation of Thread.Mutex */
-optional class Mutex
+class Mutex
 {
   protected int locks = 0;
   protected void dec_locks() {locks--;}
@@ -1005,7 +1114,7 @@ optional class Mutex
 }
 
 // Fallback implementation of Thread.Fifo.
-optional class Fifo
+class Fifo
 {
   array buffer;
   int ptr, num;
@@ -1090,7 +1199,7 @@ optional class Fifo
 }
 
 // Fallback implementation of Thread.Queue.
-optional class Queue
+class Queue
 {
   array buffer=allocate(16);
   int r_ptr, w_ptr;

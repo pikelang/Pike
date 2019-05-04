@@ -263,7 +263,7 @@ int up_to_date( )
 }
 
 
-void create( string _s, string _d, object p )
+protected void create( string _s, string _d, object p )
 {
   sdir = _s;
   dir = _d;

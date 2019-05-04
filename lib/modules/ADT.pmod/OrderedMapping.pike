@@ -273,7 +273,7 @@ protected class InternalIterator
 {
   private int idx = 0;
 
-  int _sizeof()
+  protected int _sizeof()
   {
     return sizeof(__indices);
   }
@@ -309,7 +309,7 @@ protected class InternalIterator
   }
 
 
-  this_program `+(int steps)
+  protected this_program `+(int steps)
   {
     this_program x = this_program();
     x += idx + steps;
@@ -317,7 +317,7 @@ protected class InternalIterator
   }
 
 
-  this_program `-(int steps)
+  protected this_program `-(int steps)
   {
     this_program x = this_program();
     x += idx - steps;
@@ -325,14 +325,14 @@ protected class InternalIterator
   }
 
 
-  this_program `+=(int steps)
+  protected this_program `+=(int steps)
   {
     idx += steps;
     return this;
   }
 
 
-  bool `!()
+  protected bool `!()
   {
     return !has_index(__values, idx);
   }

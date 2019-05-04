@@ -227,7 +227,7 @@ class cTick
       return ({ CMP(b1,b2),CMP(b1,e2),CMP(e1,b2),CMP(e1,e2) });
    }
 
-   int __hash() { return (int)t; }
+   protected int __hash() { return (int)t; }
 
    Calendar.TimeRange set_ruleset(Calendar.Ruleset r)
    {

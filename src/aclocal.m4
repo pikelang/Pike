@@ -1979,6 +1979,7 @@ int main(int argc, char **argv)
 ])
 
 AC_SUBST(PKG_CONFIG_PATH)
+AC_SUBST(PKG_CONFIG_LIBDIR)
 
 AC_DEFUN(PIKE_FIND_LIB_INCLUDE,
 [
@@ -1999,6 +2000,25 @@ AC_DEFUN(PIKE_PROG_PKG_CONFIG,
 [
   # NB: pkg-config does not have native support for multiple ABIs.
   MY_AC_PATH_PROGS(PKG_CONFIG, ${pike_cv_tool_prefix}pkg-config ${ac_tool_prefix}pkg-config, no)
+  if test "$pike_cv_sys_os:$pike_cv_abi:$PKG_CONFIG:$PKG_CONFIG_LIBDIR" = \
+          "Solaris:64:/usr/bin/pkg-config:"; then
+    # Workaround for 32-bit only pkg-config on Solaris 11.
+    AC_MSG_CHECKING([Value for PKG_CONFIG_LIBDIR])
+    for d in $pike_cv_abi_suffixes; do
+      if test "x$d" = "x/."; then continue; fi
+      if test -d "/usr/lib$d/pkgconfig/."; then
+	PKG_CONFIG_LIBDIR="$PKG_CONFIG_LIBDIR/usr/lib$d/pkgconfig:"
+      fi
+      # Note: Some pkg-config files (eg nspr) for 64-bit OSes are erroneously
+      #       installed in /usr/lib/pkgconfig/amd64/.
+      if test -d "/usr/lib/pkgconfig$d/."; then
+	PKG_CONFIG_LIBDIR="$PKG_CONFIG_LIBDIR/usr/lib/pkgconfig$d:"
+      fi
+    done
+    PKG_CONFIG_LIBDIR="$PKG_CONFIG_LIBDIR/usr/share/pkgconfig"
+    export PKG_CONFIG_LIBDIR
+    AC_MSG_RESULT([$PKG_CONFIG_LIBDIR])
+  fi
 ])
 
 dnl package, variable, options

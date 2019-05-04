@@ -3401,7 +3401,7 @@ static void warn_bad_cycles(void)
 #endif
 }
 
-size_t do_gc(void *UNUSED(ignored), int explicit_call)
+size_t do_gc(int explicit_call)
 {
   ALLOC_COUNT_TYPE start_allocs;
   size_t start_num_objs, unreferenced;
@@ -4102,6 +4102,12 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   }
 
   return unreferenced;
+}
+
+void do_gc_callback(struct callback *UNUSED(cb), void *UNUSED(arg1),
+                    void *UNUSED(arg2))
+{
+    do_gc(0);
 }
 
 /*! @decl mapping(string:int|float) gc_status()
@@ -5224,6 +5230,8 @@ static void current_only_visit_ref (void *thing, int ref_type,
 
   if (!ref_to) {
     ref_to = my_make_mc_marker (thing, visit_fn, extra);
+    ref_to->la_count = 0; /* initialize so the queue doesn't order on
+                             uninitialized memory (... valgrind) */
     MC_DEBUG_MSG (ref_to, "got new thing");
   }
   else if (ref_to->flags & MC_FLAG_INTERNAL) {
@@ -6047,6 +6055,8 @@ void identify_loop_visit_ref(void *dst, int UNUSED(ref_type),
   }
 
   ref_to = my_make_mc_marker(dst, visit_dst, extra);
+  ref_to->la_count = 0; /* initialize just so the queue doesn't order on
+                           uninitialized memory (... valgrind) */
 
   if (type != PIKE_T_UNKNOWN) {
     /* NB: low_mapping_insert() for object indices may throw errors

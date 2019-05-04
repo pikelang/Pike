@@ -173,7 +173,7 @@ void delete(string key, void|int(0..1) hard) {
 }
 
 //! A GDBM storage-manager must be hooked to a GDBM Database.
-void create(string path) {
+protected void create(string path) {
   db=Gdbm.gdbm(path+".db","rwcf");
   metadb=Gdbm.gdbm(path+"_meta.db","rwcf");
 }

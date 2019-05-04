@@ -552,6 +552,24 @@ INT32 assemble(int store_linenumbers)
       ins_data(c->arg);
       break;
 
+    case F_SET_LOCAL_NAME:
+      if (store_linenumbers) {
+	store_linenumber_local_name(c->arg, c->arg2);
+      }
+      break;
+
+    case F_SET_LOCAL_TYPE:
+      if (store_linenumbers) {
+	store_linenumber_local_type(c->arg, c->arg2);
+      }
+      break;
+
+    case F_SET_LOCAL_END:
+      if (store_linenumbers) {
+	store_linenumber_local_end(c->arg);
+      }
+      break;
+
     case F_ENTRY:
 #ifdef INS_ENTRY
       INS_ENTRY();

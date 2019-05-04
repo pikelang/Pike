@@ -85,7 +85,7 @@ final Pike.Backend local_backend;
 private Pike.Backend cb_backend;
 private Result qalreadyprinted;
 private Thread.Mutex backendmux = Thread.Mutex();
-private Thread.ResourceCount clientsregistered = Thread.ResourceCount();
+final multiset(proxy) clients = set_weak_flag((<>), Pike.WEAK);
 
 constant emptyarray = ({});
 constant describenodata
@@ -147,10 +147,16 @@ private void default_backend_runs() {		// Runs as soon as the
   cb_backend = Pike.DefaultBackend;		// DefaultBackend has started
 }
 
-private void create() {
+protected void create() {
+  atexit(_destruct);
   // Run callbacks from our local_backend until DefaultBackend has started
   cb_backend = local_backend = Pike.SmallBackend();
   call_out(default_backend_runs, 0);
+}
+
+protected void _destruct() {
+  foreach (clients; proxy client; )
+    destruct(client);
 }
 
 private Regexp iregexp(string expr) {
@@ -179,7 +185,7 @@ private void run_local_backend() {
     looponce = 0;
     if (lock = backendmux->trylock()) {
       PD("Starting local backend\n");
-      while (!clientsregistered->drained()	// Autoterminate when not needed
+      while (sizeof(clients)    		// Autoterminate when not needed
        || sizeof(local_backend->call_out_info())) {
         mixed err;
         if (err = catch(local_backend(4096.0)))
@@ -187,19 +193,18 @@ private void run_local_backend() {
       }
       PD("Terminating local backend\n");
       lock = 0;
-      looponce = !clientsregistered->drained();
+      looponce = sizeof(clients);
     }
   } while (looponce);
 }
 
 //! Registers yourself as a user of this backend.  If the backend
 //! has not been started yet, it will be spawned automatically.
-final Thread.ResourceCountKey register_backend() {
-  int startbackend = clientsregistered->drained();
-  Thread.ResourceCountKey key = clientsregistered->acquire();
+final void register_backend(proxy client) {
+  int startbackend = !sizeof(clients);
+  clients[client] = 1;
   if (startbackend)
     Thread.Thread(run_local_backend);
-  return key;
 }
 
 final void throwdelayederror(Result|proxy parent) {
@@ -337,7 +342,7 @@ class bufcon {
 
   private conxion realbuffer;
 
-  private void create(conxion _realbuffer) {
+  protected void create(conxion _realbuffer) {
     realbuffer = _realbuffer;
   }
 
@@ -443,7 +448,7 @@ class conxiin {
     return 0;
   }
 
-  private void create() {
+  protected void create() {
     i::create();
     fillreadmux = MUTEX();
     fillread = Thread.Condition();
@@ -681,7 +686,7 @@ outer:
     }
   }
 
-  private void _destruct() {
+  protected void _destruct() {
     PD("%d>Close conxion %d\n", socket ? socket->query_fd() : -1, !!nostash);
     catch(purge());
   }
@@ -741,7 +746,7 @@ outer:
     destruct(this);
   }
 
-  private string _sprintf(int type) {
+  protected string _sprintf(int type) {
     string res;
     switch (type) {
       case 'O':
@@ -759,7 +764,7 @@ outer:
     return res;
   }
 
-  private void create(proxy pgsqlsess, Thread.Queue _qportals, int nossl) {
+  protected void create(proxy pgsqlsess, Thread.Queue _qportals, int nossl) {
     o::create();
     qportals = _qportals;
     synctransact = 1;
@@ -780,7 +785,7 @@ outer:
 class conxsess {
   final conxion chain;
 
-  private void create(conxion parent) {
+  protected void create(conxion parent) {
     if (parent->started)
       werror("Overwriting conxsess %s %s\n",
         describe_backtrace(({"new ", backtrace()[..<1]})),
@@ -794,7 +799,7 @@ class conxsess {
     chain = 0;
   }
 
-  private void _destruct() {
+  protected void _destruct() {
     if (chain)
       werror("Untransmitted conxsess %s\n",
        describe_backtrace(({"", backtrace()[..<1]})));
@@ -1900,7 +1905,6 @@ class proxy {
   final MUTEX unnamedportalmux;
   final MUTEX unnamedstatement;
   private Thread.MutexKey termlock;
-  private Thread.ResourceCountKey backendreg;
   final Thread.ResourceCount portalsinflight, statementsinflight;
   final int(0..1) wasparallelisable;
   final int(0..1) intransaction;
@@ -1935,7 +1939,7 @@ class proxy {
   final MUTEX shortmux;
   final int readyforquerycount;
 
-  private string _sprintf(int type) {
+  protected string _sprintf(int type) {
     string res;
     switch (type) {
       case 'O':
@@ -1947,7 +1951,7 @@ class proxy {
     return res;
   }
 
-  private void create(void|string host, void|string database,
+  protected void create(void|string host, void|string database,
                         void|string user, void|string pass,
                         void|mapping(string:mixed) options) {
     if (this::pass = pass) {
@@ -1965,7 +1969,7 @@ class proxy {
 
     if (!port)
       port = PGSQL_DEFAULT_PORT;
-    backendreg = register_backend();
+    register_backend(this);
     shortmux = MUTEX();
     PD("Connect\n");
     waitforauthready = Thread.Condition();
@@ -2726,7 +2730,7 @@ class proxy {
       if (err == MAGICTERMINATE) { // Announce connection termination to server
         catch {
           void|bufcon|conxsess cs = ci->start();
-          CHAIN(cs)->add("X\0\0\0\4");
+          CHAIN(cs)->add(PGSYNC)->add("X\0\0\0\4");
           cs->sendcmd(SENDOUT);
         };
         terminating = 1;
@@ -2791,10 +2795,10 @@ class proxy {
     destruct(waitforauthready);
   }
 
-  private void _destruct() {
+  protected void _destruct() {
     string errstring;
     mixed err = catch(close());
-    backendreg = 0;
+    clients[this] = 0;
     if (untolderror) {
       /*
        * Flush out any asynchronously reported errors to stderr; because we are

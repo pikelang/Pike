@@ -68,6 +68,9 @@ else
 
   AC_CHECK_HEADERS(GL/glut.h)
 
+  old_CPPFLAGS="$CPPFLAGS"
+  old_LIBS="$LIBS"
+  old_LDFLAGS="$LDFLAGS"
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   LIBS="$X_EXTRA_LIBS $LIBS"
   LDFLAGS="$LDFLAGS $X_LIBS $X_PRE_LIBS"
@@ -107,6 +110,9 @@ else
   else
     AUTO=""
     PIKE_FEATURE_NODEP(GLUT)
+    CPPFLAGS="$old_CPPFLAGS"
+    LIBS="$old_LIBS"
+    LDFLAGS="$old_LDFLAGS"
   fi
 
 fi

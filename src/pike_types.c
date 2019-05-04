@@ -2587,6 +2587,35 @@ TYPE_T compile_type_to_runtime_type(struct pike_type *t)
   }
 }
 
+/**
+ * Check whether a type is for a __deprecated__ value.
+ *
+ * @param t
+ *   Type to check.
+ */
+int deprecated_typep(struct pike_type *t)
+{
+  struct pike_string *deprecated_string;
+  MAKE_CONST_STRING(deprecated_string, "deprecated");
+
+  while (t) {
+    switch(t->type) {
+    case PIKE_T_ATTRIBUTE:
+      if (((struct pike_string*)t->car) == deprecated_string) {
+	return 1;
+      }
+      /* FALLTHRU */
+    case PIKE_T_SCOPE:
+    case T_ASSIGN:
+    case PIKE_T_NAME:
+      t = t->cdr;
+      continue;
+    }
+    break;
+  }
+  return 0;
+}
+
 int get_int_type_range(struct pike_type *t, INT_TYPE *range)
 {
   int ret = 0;

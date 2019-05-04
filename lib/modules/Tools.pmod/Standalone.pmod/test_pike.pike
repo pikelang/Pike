@@ -370,7 +370,7 @@ class Watchdog
     if (err) master()->report_error(err);
   }
 
-  void create (int pid, int verbose)
+  protected void create (int pid, int verbose)
   {
     parent_pid = watched_pid = pid;
     this::verbose = verbose;
@@ -523,6 +523,56 @@ class LinePlugin
 }
 
 //
+// Custom master
+//
+// This is mostly used to catch code that triggers
+// calls of master()->handle_error().
+//
+
+class TestMaster
+{
+  inherit "/master";
+
+  protected int error_counter;
+  int get_and_clear_error_counter()
+  {
+    int ret = error_counter;
+    error_counter = 0;
+    return ret;
+  }
+
+  void handle_error(array|object trace)
+  {
+    if (arrayp(trace) && stringp(trace[0]) &&
+	has_prefix(trace[0], "Ignore")) {
+      return;
+    }
+    error_counter++;
+    log_msg(sprintf("Runtime error: %s\n",
+		    describe_backtrace(trace)));
+  }
+
+  protected void create(object|void orig_master)
+  {
+    ::create();
+
+    if (orig_master) {
+      environment = orig_master->getenv(-1);
+      /* Copy variables from the original master. */
+      foreach(indices(orig_master), string varname) {
+	catch {
+	  this[varname] = orig_master[varname];
+	};
+	/* Ignore errors when copying functions, etc. */
+      }
+    }
+
+    programs["/master"] = this_program;
+    objects[this_program] = this;
+  }
+}
+
+//
 // Main program
 //
 
@@ -536,6 +586,11 @@ int main(int argc, array(string) argv)
   int loop=1;
   int end=0x7fffffff;
   string extra_info="";
+
+  object real_master = master();
+
+  replace_master(TestMaster(real_master));
+  add_constant("__real_master", real_master);
 
 #if constant(System.getrlimit)
   // Attempt to enable coredumps.
@@ -1330,6 +1385,15 @@ int main(int argc, array(string) argv)
 	  default:
 	    log_msg("%s: Unknown test type (%O).\n", fname, test->type);
 	    errors++;
+	  }
+
+	  // Count asynchronously generated runtime errors too.
+	  int runtime_errors = master()->get_and_clear_error_counter();
+	  if (runtime_errors) {
+	    // The errors have already been reported.
+	    log_msg(fname + " caused runtime errors.\n");
+	    print_code(source);
+	    errors += runtime_errors;
 	  }
 	}
 

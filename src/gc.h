@@ -98,7 +98,7 @@ extern int gc_keep_markers;
 #define gc_keep_markers 0
 #endif
 
-#define ADD_GC_CALLBACK() do { if(!gc_evaluator_callback)  gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0); }while(0)
+#define ADD_GC_CALLBACK() do { if(!gc_evaluator_callback)  gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc_callback,0,0); }while(0)
 
 #define LOW_GC_ALLOC(OBJ) do {						\
  num_objects++;								\
@@ -321,7 +321,8 @@ int gc_cycle_push(void *x, struct marker *m, int weak);
 void do_gc_recurse_svalues(struct svalue *s, int num);
 void do_gc_recurse_short_svalue(union anything *u, int type);
 int gc_do_free(void *a);
-size_t do_gc(void *ignored, int explicit_call);
+size_t do_gc(int explicit_call);
+void do_gc_callback(struct callback *cb, void *arg1, void *arg2);
 void f__gc_status(INT32 args);
 void f_implicit_gc_real_time (INT32 args);
 void f_count_memory (INT32 args);

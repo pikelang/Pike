@@ -28,7 +28,7 @@ class State
   //! The default implementation calls @[update()] with @[data] if any,
   //! so there's usually no reason to override this function, since
   //! overriding @[update()] should be sufficient.
-  protected void create(string|void data)
+  protected void create(string(8bit)|void data)
   {
     if (data) {
       update(data);
@@ -37,10 +37,10 @@ class State
 
   //! Reset the context, and optionally
   //! add some initial data to the hash.
-  this_program init(string|void data);
+  this_program init(string(8bit)|void data);
 
   //! Add some more data to hash.
-  this_program update(string data);
+  this_program update(string(8bit) data);
 
   //! Generates a digest, and resets the hashing contents.
   //!
@@ -53,7 +53,7 @@ class State
   string(8bit) digest(int|void length);
 
   //! Returns a human readable name for the algorithm.
-  string name()
+  string(8bit) name()
   {
     return global::name();
   }

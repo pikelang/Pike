@@ -985,9 +985,6 @@ PIKECLASS Backend
        struct object *co;
        struct Backend_CallOut_struct *c;
 
-       if(args<2)
-         SIMPLE_WRONG_NUM_ARGS_ERROR("call_out", 2);
-
        if(TYPEOF(*t) != T_INT && TYPEOF(*t) != T_FLOAT)
 	 SIMPLE_ARG_TYPE_ERROR("call_out", 2, "int|float");
 
@@ -1552,6 +1549,9 @@ PIKECLASS Backend
      struct Backend_struct *me = box->backend;
      int fd = box->fd;
 
+     PDWERR("[%d]BACKEND[%d]: add_box(%p[fd:%d)\n",
+	    THR_NO, me->id, box, fd);
+
 #ifdef PIKE_DEBUG
      if (fd >= 0) {
        struct fd_callback_box *old_box = SAFE_GET_ACTIVE_BOX (me, fd);
@@ -1687,6 +1687,8 @@ PIKECLASS Backend
      int fd = box->fd;
      check_box (box, INT_MAX);
 
+     PDWERR("[%d]BACKEND[%d]: remove_fd_box(%p[fd:%d])\n",
+	    THR_NO, me->id, box, fd);
      /* FIXME: Shrink arrays? */
 
      if (fd >= 0) {
@@ -5132,7 +5134,10 @@ PIKECLASS SelectBackend
 
     PDWERR("[%d]BACKEND[%d]: sb_update_fd_set(.., %d, %d, %d):\n",
            THR_NO, me->id, fd, old_events, new_events);
-
+#ifdef __NT__
+    PDWERR("[%d]BACKEND[%d]: handle: 0x%08lx\n",
+	   THR_NO, me->id, (unsigned long)da_handle[fd]);
+#endif
 
     if (changed_events) {
       if (changed_events & PIKE_BIT_FD_READ) {
@@ -5143,11 +5148,16 @@ PIKECLASS SelectBackend
 	  sb_MY_FD_SET(&sb->set, fd, MY_EXCEPTSET);
 	}
 	else {
+	  PDWERR("[%d]BACKEND[%d]: Clearing READ for fd %d\n",
+		 THR_NO, me->id, fd);
 	  sb_MY_FD_CLR(&sb->set, fd, MY_READSET);
 	  if (!(new_events & PIKE_BIT_FD_READ_OOB) &&
-	      !(new_events & PIKE_BIT_FD_WRITE))
+	      !(new_events & PIKE_BIT_FD_WRITE)) {
 	    /* Exceptions might cause calls to read, read_oob and write. */
+	    PDWERR("[%d]BACKEND[%d]: Clearing OOB for fd %d\n",
+		   THR_NO, me->id, fd);
 	    sb_MY_FD_CLR(&sb->set, fd, MY_EXCEPTSET);
+	  }
 	}
       }
 
@@ -5156,9 +5166,12 @@ PIKECLASS SelectBackend
 	  sb_MY_FD_SET(&sb->set, fd, MY_EXCEPTSET);
 	else {
 	  if (!(new_events & PIKE_BIT_FD_READ)) {
-	    if (!(new_events & PIKE_BIT_FD_WRITE))
+	    if (!(new_events & PIKE_BIT_FD_WRITE)) {
 	      /* Exceptions might cause calls to read, read_oob and write. */
+	      PDWERR("[%d]BACKEND[%d]: Clearing OOB for fd %d\n",
+		     THR_NO, me->id, fd);
 	      sb_MY_FD_CLR(&sb->set, fd, MY_EXCEPTSET);
+	    }
 	  }
 	}
       }
@@ -5174,9 +5187,12 @@ PIKECLASS SelectBackend
 	  if (!(new_events & PIKE_BIT_FD_WRITE_OOB)) {
 	    sb_MY_FD_CLR(&sb->set, fd, MY_WRITESET);
 	    if (!(new_events & PIKE_BIT_FD_READ) &&
-		!(new_events & PIKE_BIT_FD_READ_OOB))
+		!(new_events & PIKE_BIT_FD_READ_OOB)) {
 	      /* Exceptions might cause calls to read, read_oob and write. */
+	      PDWERR("[%d]BACKEND[%d]: Clearing OOB for fd %d\n",
+		     THR_NO, me->id, fd);
 	      sb_MY_FD_CLR(&sb->set, fd, MY_EXCEPTSET);
+	    }
 	  }
 	}
       }
@@ -5186,6 +5202,8 @@ PIKECLASS SelectBackend
 	  sb_MY_FD_SET(&sb->set, fd, MY_WRITESET);
 	else {
 	  if (!(new_events & PIKE_BIT_FD_WRITE)) {
+	    PDWERR("[%d]BACKEND[%d]: Clearing WRITE for fd %d\n",
+		   THR_NO, me->id, fd);
 	    sb_MY_FD_CLR(&sb->set, fd, MY_WRITESET);
 	  }
 	}
@@ -5205,38 +5223,58 @@ PIKECLASS SelectBackend
       int e;
       PIKE_STAT_T tmp;
 
+#ifdef __NT__
+      int i;
+      for (i = 0; i < 3; i++) {
+	int j;
+	for (j = 0; j < sb->set.sets[i].fd_count; j++) {
+	  SOCKET s = sb->set.sets[i].fd_array[j];
+	  for (e = 0; e < FD_SETSIZE; e++) {
+	    if (s == (SOCKET)da_handle[e]) break;
+	  }
+	  if (e == FD_SETSIZE) {
+	    Pike_fatal("No fd found for socket 0x%08lx.\n", (long)s);
+	  }
+#else
       /* FIXME: OOB? */
       for(e=0;e<=sb->set.max_fd;e++)
       {
 	if(fd_FD_ISSET(e, sb->set.sets + MY_READSET)
 	   || fd_FD_ISSET(e, sb->set.sets + MY_WRITESET)
 	   || fd_FD_ISSET(e, sb->set.sets + MY_EXCEPTSET)
-	  )
-	{
-	  int ret;
-
-	  if (e >= fd_map_size || fd_map[e] != me)
-	    Pike_fatal("Unmapped fd %d in select set.\n", e);
-
-	  do {
-	    ret = fd_fstat(e, &tmp);
-	    /* FIXME: Perhaps do check_threads_etc() here? */
-	  }while(ret < 0 && errno == EINTR);
-
-	  if(ret<0)
+	   ) {
+#endif
 	  {
-	    switch(errno)
+	    int ret;
+
+	    if (e >= fd_map_size || fd_map[e] != me)
+	      Pike_fatal("Unmapped fd %d in select set.\n", e);
+
+	    do {
+	      ret = fd_fstat(e, &tmp);
+	      /* FIXME: Perhaps do check_threads_etc() here? */
+	    }while(ret < 0 && errno == EINTR);
+
+	    if(ret<0)
 	    {
+	      switch(errno)
+	      {
 	      case EBADF:
 		Pike_fatal("Backend filedescriptor %d is bad.\n",e);
 		break;
 	      case ENOENT:
 		Pike_fatal("Backend filedescriptor %d is not.\n",e);
 		break;
+	      }
 	    }
 	  }
+        }
+      }
+#if 0
+      /* Make the precompiler happy... */
 	}
       }
+#endif /* 0 */
     }
 
 #endif	/* PIKE_DEBUG */
@@ -5954,7 +5992,7 @@ void do_debug(void)
   if(default_backend)
     backend_do_debug(default_backend);
 
-  if(d_flag>3) do_gc(NULL, 1);
+  if(d_flag>3) do_gc(1);
 
   current_do_debug_cycle=0;
 }

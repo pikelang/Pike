@@ -76,6 +76,16 @@ variant protected array(string) glob(array(string)|string a, array(string) b)
   return _glob(a,b);
 }
 
+protected function werror = _static_modules._Stdio._stderr->write;
+
+protected void exit(int rc, void | string fmt, void | mixed ... args)
+{
+  if (fmt)
+    /* Compat werror */
+    werror(fmt, @args);
+  8.1::exit(rc);
+}
+
 protected Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
@@ -109,6 +119,8 @@ protected Mapping.ShadowedMapping compat_all_constants =
                             "syslog" : System.syslog,
                             "closelog" : System.closelog,
 #endif
+			    "werror" : werror,
+			    "exit" : exit,
 			  ]), 1);
 
 mapping(string:mixed) all_constants()

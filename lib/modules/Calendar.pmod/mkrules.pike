@@ -92,7 +92,7 @@ class Shift
    string s;
    string comment;
 
-   void create(array a)
+   protected void create(array a)
    {
       switch (sizeof(a))
       {
@@ -126,7 +126,7 @@ class Shift
 		 dayrule,time,timetype,offset,s);
    }
 
-   int `==(Shift other)
+   protected int `==(Shift other)
    {
       return ( dayrule==other->dayrule &&
 	       time==other->time &&
@@ -197,7 +197,7 @@ class Shift
 	 complain("unknown rule method %O\n",rule);
    }
 
-   Shift|array ``+(array|Shift s)
+   protected Shift|array ``+(array|Shift s)
    {
       if (!s) return this;
       if (!arrayp(s)) s=({s});
@@ -298,7 +298,7 @@ class MyRule (string id)
 
 // ---
 
-#define INF_YEAR 2050
+#define INF_YEAR 2150
 #define NUL_YEAR 1850
 
       int y1=(int)a[0] || NUL_YEAR;
@@ -388,7 +388,7 @@ class MyRule (string id)
 		  }
 		  else if (y0==y1)
 		     t+="         case "+y0+":\n";
-		  else if (y1==2050)
+		  else if (y1 == INF_YEAR)
 		     {
 			if (!my[NUL_YEAR]) t+="         case "+y0+"..:\n";
 			else t=replace(t,"½½½",(string)y0);

@@ -92,7 +92,7 @@ class Thread
       return children;
     }
 
-    void create(Session.Text _text, int _conf_no, int follow)
+    protected void create(Session.Text _text, int _conf_no, int follow)
     {
       text=_text;
       conf_no=_conf_no;
@@ -116,9 +116,9 @@ class Thread
     }
   }
 
-  void create(mapping(int:Session.Text) _unread_texts,
-	      int conf_no, Session.Text start_from,
-	      int _max_follow, mapping _textno_to_node)
+  protected void create(mapping(int:Session.Text) _unread_texts,
+			int conf_no, Session.Text start_from,
+			int _max_follow, mapping _textno_to_node)
   {
     unread_texts=_unread_texts;
     textno_to_node=_textno_to_node;
@@ -141,9 +141,9 @@ array(Thread) children;
 
 object parent=0;
 
-void create(array(Session.Text) unread_texts,
-	    int conf_no, int max_follow,
-	    mapping(int:object) textno_to_node)
+protected void create(array(Session.Text) unread_texts,
+		      int conf_no, int max_follow,
+		      mapping(int:object) textno_to_node)
 {
   children=({ });
   mapping m_unread_texts=mkmapping(unread_texts->no,

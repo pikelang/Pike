@@ -178,7 +178,7 @@ class TimeofDay
       }
    }
 
-   TimeRange `*(int|float n)
+   protected TimeRange `*(int|float n)
    {
       if(intp(n))
         return set_size(n,this);

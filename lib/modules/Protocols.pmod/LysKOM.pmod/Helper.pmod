@@ -35,7 +35,7 @@ class LysKOMError
    int status;
    array(mixed) __backtrace;
 
-   void create(int _no,string _name,string _desc,void|int _status)
+   protected void create(int _no,string _name,string _desc,void|int _status)
    {
       no=_no;
       name=_name;
@@ -50,7 +50,7 @@ class LysKOMError
       return LysKOMError(no,name,desc,status);
    }
 
-   mixed `[](mixed z)
+   protected mixed `[](mixed z)
    {
       switch (z)
       {

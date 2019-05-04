@@ -54,12 +54,12 @@ class FDWrapper
   class FD
   {
     Stdio.Buffer outbuf = Stdio.Buffer();
-    void create(string method, string path, mapping args, string data)
+    protected void create(string method, string path, mapping args, string data)
     {
       request(method, path, args, data);
     }
 
-    variant void create(string data)
+    protected variant void create(string data)
     {
       outbuf->add(data);
     }

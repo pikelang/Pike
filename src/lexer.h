@@ -566,7 +566,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('i','m'):
 	  if(ISWORD("import")) return TOK_IMPORT;
-	  if(ISWORD("implement")) return TOK_IMPLEMENT;
 	  break;
 	case TWO_CHAR('i','n'):
 	  if(ISWORD("int")) return TOK_INT_ID;
@@ -948,7 +947,7 @@ unknown_directive:
         free_svalue( &res );
         return TOK_NUMBER;
       }
-      UNREACHABLE();
+      UNREACHABLE(break);
     case '"':
     {
       struct pike_string *s=readstring(lex);

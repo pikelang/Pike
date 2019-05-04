@@ -48,7 +48,7 @@ string software_version;
 //!   @member string "whoami"
 //!	present as this user (default is from uid/getpwent and hostname).
 //! @endmapping
-void create(string server,void|mapping options)
+protected void create(string server,void|mapping options)
 {
    if (!options) options=([]);
    con=Raw(server,options->port,options->whoami);
@@ -97,13 +97,13 @@ class SyncRequest
    program prog;
    object ret;
 
-   void create(program p,object _ret)
+   protected void create(program p,object _ret)
    {
       prog=p;
       ret=_ret;
    }
 
-   mixed `()(mixed ...args)
+   protected mixed `()(mixed ...args)
    {
       mixed m;
       object req=prog(con);
@@ -126,12 +126,12 @@ class AsyncRequest
 {
    program prog;
 
-   void create(program p)
+   protected void create(program p)
    {
       prog=p;
    }
 
-   mixed `()(mixed ...args)
+   protected mixed `()(mixed ...args)
    {
       object req=prog(con);
       req->async(@args);
@@ -143,12 +143,12 @@ class AsyncCBRequest
 {
    program prog;
 
-   void create(program p)
+   protected void create(program p)
    {
       prog=p;
    }
 
-   mixed `()(function callback,mixed ...args)
+   protected mixed `()(function callback,mixed ...args)
    {
       object req=prog(con);
       req->callback=callback;
@@ -157,7 +157,7 @@ class AsyncCBRequest
    }
 }
 
-mixed `->(string request)
+protected mixed `->(string request)
 {
    program p;
    if ( (p=Request[String.capitalize(request)]) )
@@ -172,4 +172,4 @@ mixed `->(string request)
       return ::`[](request);
 }
 
-mixed `[](string request) { return `->(request); }
+protected mixed `[](string request) { return `->(request); }

@@ -299,6 +299,109 @@ test_do([[ add_constant("p13"); ]])
 exit_promise(-1, 13)
 test_do([[ Concurrent.use_backend(1); ]]);
 
+dnl - Promise.timeout() - true
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("p212", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+              ->depend(({}))->depend(p13->future())
+              ->depend(({p13->future(), p11->future(),
+             p212->timeout(0.01)
+              ->recover(lambda(mixed p) { return 212;})}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ sleep(0.1); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+test_do([[ add_constant("p212"); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 212, 14, 15}))
+
+dnl - Promise.timeout() - false
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("p212", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+              ->depend(({}))->depend(p13->future())
+              ->depend(({p13->future(), p11->future(),
+             p212->timeout(9)
+              ->recover(lambda(mixed p) { return 212;})}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ sleep(0.1); ]])
+test_do([[ p212->success(312); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+test_do([[ add_constant("p212"); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 312, 14, 15}))
+
+dnl - Promise.delay() - false
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("p212", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+              ->depend(({}))->depend(p13->future())
+              ->depend(({p13->future(), p11->future(),
+             p212->delay(9)
+              ->recover(lambda(mixed p) { return 212;})}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ sleep(0.01); ]])
+test_do([[ p212->failure(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+test_do([[ add_constant("p212"); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 212, 14, 15}))
+
+dnl - Promise.delay() - true
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("p212", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+              ->depend(({}))->depend(p13->future())
+              ->depend(({p13->future(), p11->future(),
+             p212->delay(0.1)}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ sleep(0.01); ]])
+test_do([[ p212->success(212); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+test_do([[ add_constant("p212"); ]])
+test_do([[ sleep(0.1); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 212, 14, 15}))
+
 dnl - Promise.fold() - true
 init_promise()
 test_do([[ add_constant("p11", Concurrent.Promise()); ]])
@@ -381,6 +484,10 @@ exit_promise(1, ({11, 14, 12, 13}))
 
 dnl - Concurrent.results() - empty
 init_promise()
+test_do([[
+  // Do not drop the promise from init_promise() on the floor.
+  promise->success(UNDEFINED);
+]])
 test_do([[ add_constant("future", Concurrent.results(({}))); ]])
 init_future()
 exit_promise(1, ({}))

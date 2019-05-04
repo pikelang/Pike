@@ -74,12 +74,12 @@ class connection
   {
     function handler;
 
-    void create(function h)
+    protected void create(function h)
       {
 	handler = h;
       }
 
-    void `()(object line)
+    protected void `()(object line)
       {
 	next_action(handler(line));
       }
@@ -89,12 +89,12 @@ class connection
   {
     function handler;
 
-    void create(function h)
+    protected void create(function h)
       {
 	handler = h;
       }
 
-    void `()(string s)
+    protected void `()(string s)
       {
 	next_action(handler(s));
       }
@@ -156,8 +156,8 @@ class connection
 
   function(mapping, string, string, int, int|void:void) log;
 
-  void create(object f, int timeout, object backend,
-	      mapping preauth, int|void debug)
+  protected void create(object f, int timeout, object backend,
+			mapping preauth, int|void debug)
     {
       io = .server(f, timeout, handle_request, debug);
       db = backend;
@@ -197,7 +197,8 @@ void accept_callback(mixed id)
     connection(f, timeout, db, 0, debug_level);
 }
 
-void create(object p, int portnr, int t, object server, int|void debug)
+protected void create(object p, int portnr, int t,
+		      object server, int|void debug)
 {
   port = p;
   timeout = t;

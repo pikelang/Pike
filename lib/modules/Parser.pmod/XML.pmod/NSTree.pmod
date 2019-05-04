@@ -99,8 +99,8 @@ class NSNode {
 
   // Override old stuff
 
-  void create(int type, string name, mapping attr, string text,
-	      void|NSNode parent) {
+  protected void create(int type, string name, mapping attr, string text,
+			void|NSNode parent) {
 
     // Get the parent namespace context.
     if(parent) {
@@ -279,7 +279,7 @@ class NSNode {
     return (string)data;
   }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     if(t=='O') {
       mapping nt = ([ XML_ROOT:"ROOT",
 		      XML_ELEMENT:"ELEMENT",

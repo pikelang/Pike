@@ -3,7 +3,7 @@
 private Stdio.File fd;
 
 //!
-void create(Stdio.File _fd)
+protected void create(Stdio.File _fd)
 {
   fd = _fd;
 }

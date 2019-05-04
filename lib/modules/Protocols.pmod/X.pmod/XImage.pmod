@@ -38,14 +38,14 @@ class Image_wrapper
   class funcall
   {
     function f;
-    mixed `()( mixed ... args )
+    protected mixed `()( mixed ... args )
     {
       mixed q = f( @args );
       if(objectp(q)) set_image( q );
       return q;
     }
 
-    void create(function q) { f = q; }
+    protected void create(function q) { f = q; }
   }
 
   object image; // The real image.
@@ -87,7 +87,7 @@ class Image_wrapper
       redraw(0,0,image->xsize(),image->ysize());
   }
 
-  mixed `->( string ind )
+  protected mixed `->( string ind )
   {
     mixed x;
     if((x = `[](this,ind)))
@@ -352,7 +352,7 @@ class WindowImage
 #endif
   }
 
-  void create(object/*(Types.Window)*/ w)
+  protected void create(object/*(Types.Window)*/ w)
   {
     set_drawable(w);
     w->set_event_callback("Expose", exposed); // internal callback...
@@ -366,7 +366,7 @@ class PixmapImage
   inherit XImage;
   import Protocols.X;
 
-  void create(Types.Pixmap p, object|void ct)
+  protected void create(Types.Pixmap p, object|void ct)
   {
     if(ct) ccol = ct;
     set_drawable( p );

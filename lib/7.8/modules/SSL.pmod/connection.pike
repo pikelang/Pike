@@ -1,6 +1,8 @@
 #pike 7.8
 //#pragma strict_types
 
+#pragma no_deprecation_warnings
+
 //! SSL packet layer.
 //!
 //! @[SSL.connection] inherits @[SSL.handshake], and in addition to the state in

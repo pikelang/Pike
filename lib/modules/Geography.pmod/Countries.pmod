@@ -431,8 +431,8 @@ class Country
       return _continent;
    }
 
-   void create(string _iso2,string _name,string _fips10,
-	       mapping|void opts)
+   protected void create(string _iso2,string _name,string _fips10,
+			 mapping|void opts)
    {
       iso2=_iso2;
       name=_name;
@@ -454,7 +454,7 @@ class Country
       return UNDEFINED;
    }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
      return t=='O' && sprintf("%O(%s)", this_program, name);
    }
@@ -607,7 +607,7 @@ mapping(string:array(Country)) continents()
 //! Result: "WF"
 //! @endcode
 
-Country|function(string:Country)|array(Country)|program
+protected Country|function(string:Country)|array(Country)|program
    `->(string what)
 {
    return

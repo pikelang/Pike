@@ -181,7 +181,7 @@ class _Tar
     //   "ustar\0""00"	POSIX ustar (Version 0?).
     //   "ustar  \0"	GNU tar (POSIX draft)
 
-    void create(void|string s, void|int _pos)
+    protected void create(void|string s, void|int _pos)
     {
       if(!s)
       {
@@ -278,7 +278,7 @@ class _Tar
     filename_to_entry[what] = r;
   }
 
-  void create(object fd, string filename, object parent)
+  protected void create(object fd, string filename, object parent)
   {
     this::filename = filename;
     // read all entries
@@ -363,13 +363,6 @@ class _Tar
     }
 #endif
 
-    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk) {
-      if (which_bits & EXTRACT_SKIP_EXT_MODE)
-	chmod (dest, r->mode & 0777);
-      else
-	chmod (dest, r->mode & 07777);
-    }
-
 #if constant (chown)
     if (which_bits & EXTRACT_CHOWN) {
       int uid;
@@ -387,6 +380,13 @@ class _Tar
       chown (dest, uid, gid, 1);
     }
 #endif
+
+    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk) {
+      if (which_bits & EXTRACT_SKIP_EXT_MODE)
+	chmod (dest, r->mode & 0777);
+      else
+	chmod (dest, r->mode & 07777);
+    }
   }
 
 #if !constant(access)
@@ -780,7 +780,7 @@ class `()
     _TarFS::create(tar, "/", "", parent);
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' &&
       sprintf("Filesystem.Tar(/* tar->filename=%O, root=%O, wd=%O */)",

@@ -1549,7 +1549,7 @@ INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
       return very_low_sscanf_2_2(input.ptr, len, format.ptr, format_len,
                                  chars_matched, &ok,0);
   }
-  UNREACHABLE();
+  UNREACHABLE(return 0);
 }
 
 /* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
@@ -1618,7 +1618,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
     break;
   }
 
-  UNREACHABLE();
+  UNREACHABLE(return 0);
 }
 
 /*! @decl int sscanf(string data, string format, mixed ... lvalues)

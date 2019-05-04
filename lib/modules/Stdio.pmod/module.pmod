@@ -191,6 +191,24 @@ class File
 
   protected Stdio.Buffer inbuffer, outbuffer;
 
+  protected void buffer_write()
+  {
+      if ((::mode() & PROP_IS_NONBLOCKING)) {
+        ::set_write_callback (___write_callback && __stdio_write_callback);
+      } else {
+        // We may get called internally with empty buffers. Shouldn't happen
+        // in calls actually coming from Stdio.Buffer().
+        if (sizeof(outbuffer)) {
+          int written = ::write(outbuffer);
+
+          if (written >= 0)
+            outbuffer->consume(written);
+        }
+
+        outbuffer->__set_on_write(buffer_write);
+      }
+  }
+
   //! Toggle the file to Buffer mode.
   //!
   //! In this mode reading and writing will be done via Buffer
@@ -223,7 +241,7 @@ class File
     }
     inbuffer = in;
     if (outbuffer) {
-      outbuffer->__fd_set_output( 0 );
+      outbuffer->__set_on_write( 0 );
       if (out && sizeof(outbuffer)) {
 	// Behave as if any data in the new output buffer was
 	// appended to the old output buffer.
@@ -231,7 +249,7 @@ class File
       }
     }
     if( outbuffer = out )
-      outbuffer->__fd_set_output( ::write );
+      buffer_write();
   }
 
   //! Get the active input and output buffers that have been
@@ -992,30 +1010,30 @@ class File
   {
     if (!(::mode() & PROP_IS_NONBLOCKING)) {
       if (outbuffer && sizeof(outbuffer)) {
-	outbuffer->__fd_set_output(0);
+	outbuffer->__set_on_write(0);
 
-	int actual_bytes = outbuffer->output_to(::write);
+	int actual_bytes = ::write(outbuffer);
 
-	outbuffer->__fd_set_output(::write);
-	if (actual_bytes <= 0) {
-	  if (actual_bytes) _errno = predef::errno();
+        outbuffer->__set_on_write(buffer_write);
+
+	if (actual_bytes <= 0)
 	  return actual_bytes;
-	}
+	else
+	  outbuffer->consume(actual_bytes);
 	if (sizeof(outbuffer)) return 0;
       }
       return ::write (s, @args);
     }
 
     if (outbuffer && sizeof(outbuffer)) {
-      outbuffer->__fd_set_output(0);
+      outbuffer->__set_on_write(0);
 
-      string byte = outbuffer->read(1);
+      int actual_bytes = ::write(outbuffer->read_buffer(1));
 
-      int actual_bytes = ::write(byte);
-      outbuffer->__fd_set_output(::write);
+      outbuffer->__set_on_write(buffer_write);
 
       if (actual_bytes <= 0) {
-	outbuffer->unread(sizeof(byte));
+	outbuffer->unread(1);
 	return actual_bytes;
       }
       if (sizeof(outbuffer)) return 0;
@@ -1041,24 +1059,21 @@ class File
 	    sprintf_args ... args)
   {
     if (outbuffer) {
-      outbuffer->__fd_set_output(0);
+      outbuffer->__set_on_write(0);
 
       if (sizeof(outbuffer)) {
 	// The write buffer isn't empty, so try to empty it. */
-	int bytes = outbuffer->output_to( ::write );
+	int bytes = ::write(outbuffer);
+        if (bytes > 0)
+          outbuffer->consume(bytes);
 	if (sizeof(outbuffer) && (bytes > 0)) {
 	  // Not all was written. Probably EWOULDBLOCK.
-	  // We propagate errno below.
 	  bytes = 0;
 	}
 	if (bytes <= 0) {
-	  if (bytes) {
-	    // EWOULDBLOCK or other error.
-	    _errno = predef::errno();
-	  }
-	  outbuffer->__fd_set_output(::write);
-	  return 0;
-	}
+          outbuffer->__set_on_write(buffer_write);
+	  return bytes;
+        }
       }
 
       // NB: Invariant: outbuffer is empty here.
@@ -1073,15 +1088,18 @@ class File
       }
       int bytes = sizeof(outbuffer);
 
-      int actual_bytes = outbuffer->output_to( ::write );
-      if (actual_bytes <= 0) {
-	// Write failure. Unwrite the outbuffer.
-	_errno = predef::errno();
-	outbuffer->clear();
+      int actual_bytes = ::write(outbuffer);
+      if (actual_bytes <= 0)
 	return actual_bytes;
-      }
+      else
+        outbuffer->consume(actual_bytes);
 
-      outbuffer->__fd_set_output(::write);
+      // In the case above (non-empty buffer on function entry), we don't stop
+      // sending from buffer on error. Why do we here?
+      if (actual_bytes <= 0)
+            return actual_bytes;
+
+      outbuffer->__set_on_write(buffer_write);
 
       return bytes;
     }
@@ -1213,23 +1231,32 @@ class File
     if (!errno()) {
       if (!___write_callback) return 0;
 
-      BE_WERR ("  calling write callback");
       if( outbuffer )
       {
         int res;
-        if( sizeof( outbuffer ) )
-          res = outbuffer->output_to( ::write );
-        else
+
+        if( !sizeof( outbuffer ) )
         {
-          outbuffer->__fd_set_output( 0 );
+          BE_WERR ("  calling write callback");
           res = ___write_callback(___id||this,outbuffer);
           if( !this ) return res;
-          if( sizeof( outbuffer ) )
-            outbuffer->output_to( ::write );
-          outbuffer->__fd_set_output( ::write );
+          if (!sizeof( outbuffer ) )
+            outbuffer->__set_on_write(buffer_write);
+          // A thread may have written to the buffer between the above
+          // check and our registering of buffer_write()...
+          if( !sizeof( outbuffer ) )
+            return res;
+          outbuffer->__set_on_write(0);
         }
+
+        int bytes = ::write(outbuffer);
+
+        if (bytes > 0)
+          outbuffer->consume(bytes);
+
         return res;
       }
+      BE_WERR ("  calling write callback");
       return ___write_callback(___id||this);
     }
 
@@ -1702,6 +1729,8 @@ class File
       throw(x);
     }
 #else
+    if (outbuffer)
+      outbuffer->__set_on_write(0);
     ::set_nonblocking();
 #endif
 
@@ -1742,6 +1771,8 @@ class File
     //       we don't care about in this case, since we've
     //       just cleared all the callbacks anyway.
     catch { ::_enable_callbacks(); };
+    if (outbuffer)
+      buffer_write();
   }
 
   //! @decl void set_nonblocking_keep_callbacks()
@@ -1756,17 +1787,23 @@ class File
   {
      CHECK_OPEN();
      ::set_blocking();
+     if (outbuffer)
+        buffer_write();
   }
 
   void set_nonblocking_keep_callbacks()
   {
      CHECK_OPEN();
      ::set_nonblocking();
+     if (outbuffer)
+       buffer_write();
   }
 
   protected void _destruct()
   {
     BE_WERR("_destruct()");
+    if (outbuffer)
+      outbuffer->__set_on_write(0);
     register_close_file (open_file_id);
   }
 }
@@ -1977,10 +2014,11 @@ class FILE
   {
     if( !charset ) // autodetect.
     {
+      string locale;
       if( getenv("CHARSET") )
         charset = getenv("CHARSET");
-      else if( getenv("LANG") )
-        sscanf(getenv("LANG"), "%*s.%s", charset );
+      else if( (locale = getenv("LC_ALL") || getenv("LC_CTYPE") || getenv("LANG") ) )
+        sscanf( locale, "%*s.%s", charset );
       if( !charset )
         return;
     }

@@ -44,6 +44,7 @@ struct statement_label_name
 {
   struct statement_label_name *next;
   struct pike_string *str;
+  struct pike_string *file;
   INT_TYPE line_number;
   int used;
 };
@@ -272,6 +273,11 @@ void do_pop(int x)
   modify_stack_depth(-x);
 }
 
+static void do_pop_cleanup(void *x)
+{
+  do_pop((int)(ptrdiff_t)x);
+}
+
 static void do_pop_mark(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
@@ -307,14 +313,17 @@ int do_docode(node *n, int flags)
   int stack_depth_save = current_stack_depth;
   struct compilation *c = THIS_COMPILATION;
   INT_TYPE save_current_line = c->lex.current_line;
+  struct pike_string *save_current_file = c->lex.current_file;
   if(!n) return 0;
   c->lex.current_line=n->line_number;
+  c->lex.current_file = n->current_file;
 #ifdef PIKE_DEBUG
   if (current_stack_depth == -4711) Pike_fatal("do_docode() used outside docode().\n");
 #endif
   i=do_docode2(n, flags);
   current_stack_depth = stack_depth_save + i;
 
+  c->lex.current_file = save_current_file;
   c->lex.current_line=save_current_line;
   return i;
 }
@@ -622,9 +631,11 @@ static int do_encode_automap_arg_list(node *n,
 	depth++;
       }
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       code_expression(n, 0, "[*]");
       emit1(F_NUMBER, depth);
       emit_apply_builtin("__builtin.automap_marker");
+      POP_AND_DONT_CLEANUP;
       return 1;
     }
   }
@@ -901,9 +912,11 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 	} else if (!level) {
 	  f += inh->identifier_level;
 	  emit0(F_MARK);
+	  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
 	  code_expression(val, 0, "RHS");
 	  emit_multi_assign(vals, vars, no+1);
 	  emit1(F_CALL_LFUN, f);
+	  POP_AND_DONT_CLEANUP;
 	  emit0(F_POP_VALUE);
 	}
       }
@@ -1002,6 +1015,7 @@ static int do_docode2(node *n, int flags)
   case F_MAGIC_INDICES:
   case F_MAGIC_VALUES:
   case F_MAGIC_TYPES:
+  case F_MAGIC_ANNOTATIONS:
     emit2(n->token,
 	  n->u.node.b->u.sval.u.integer,
 	  n->u.node.a->u.sval.u.integer);
@@ -1431,6 +1445,7 @@ static int do_docode2(node *n, int flags)
             yywarning("Variable %S lacks a setter.", id->name);
           } else if (!level) {
             f += inh->identifier_level;
+	    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
             if (flags & DO_POP) {
 #ifndef USE_APPLY_N
               emit0(F_MARK);
@@ -1448,6 +1463,7 @@ static int do_docode2(node *n, int flags)
 #else
             emit1(F_CALL_LFUN, f);
 #endif
+	    POP_AND_DONT_CLEANUP;
             emit0(F_POP_VALUE);
             return !(flags & DO_POP);
           }
@@ -1542,15 +1558,19 @@ static int do_docode2(node *n, int flags)
 	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
       emit0(F_LTOSVAL);
       emit1(F_NUMBER, depth);
       emit_apply_builtin("__builtin.automap_marker");
+      POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`+");
       emit2(F_REARRANGE,1,1);
       emit1(F_NUMBER, 1);
       emit_apply_builtin("__automap__");
+      POP_AND_DONT_CLEANUP;
 
       if(flags & DO_POP)
       {
@@ -1604,15 +1624,19 @@ static int do_docode2(node *n, int flags)
 	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
       emit0(F_LTOSVAL);
       emit1(F_NUMBER, depth);
       emit_apply_builtin("__builtin.automap_marker");
+      POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`-");
       emit2(F_REARRANGE,1,1);
       emit1(F_NUMBER, 1);
       emit_apply_builtin("__automap__");
+      POP_AND_DONT_CLEANUP;
 
       if(flags & DO_POP)
       {
@@ -1703,7 +1727,7 @@ static int do_docode2(node *n, int flags)
 	modify_stack_depth(2);
       }
 
-      PUSH_CLEANUP_FRAME(do_pop, 5);
+      PUSH_CLEANUP_FRAME(do_pop_cleanup, 5);
 
       PUSH_STATEMENT_LABEL;
       current_switch.jumptable=0;
@@ -1767,7 +1791,7 @@ static int do_docode2(node *n, int flags)
     emit0(F_CONST0);
     modify_stack_depth(1);
   foreach_arg_pushed:
-    PUSH_CLEANUP_FRAME(do_pop, 4);
+    PUSH_CLEANUP_FRAME(do_pop_cleanup, 4);
 
     PUSH_STATEMENT_LABEL;
     current_switch.jumptable=0;
@@ -1798,7 +1822,7 @@ static int do_docode2(node *n, int flags)
     BLOCK_BEGIN;
 
     do_docode(CAR(n),0);
-    PUSH_CLEANUP_FRAME(do_pop, 3);
+    PUSH_CLEANUP_FRAME(do_pop_cleanup, 3);
 
     PUSH_STATEMENT_LABEL;
     current_switch.jumptable=0;
@@ -2390,6 +2414,7 @@ static int do_docode2(node *n, int flags)
     PUSH_STATEMENT_LABEL;
     name.str = CAR(n)->u.sval.u.string;
     name.line_number = n->line_number;
+    name.file = n->current_file;
     name.used = 0;
 
     for (label = current_label; label; label = label->prev) {
@@ -2397,10 +2422,13 @@ static int do_docode2(node *n, int flags)
       for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
 	if (lbl_name->str == name.str) {
 	  INT_TYPE save_line = c->lex.current_line;
+	  struct pike_string *save_file = c->lex.current_file;
 	  c->lex.current_line = name.line_number;
+	  c->lex.current_file = name.file;
 	  my_yyerror("Duplicate nested labels, previous one on line %d.",
 		     lbl_name->line_number);
 	  c->lex.current_line = save_line;
+	  c->lex.current_file = save_file;
 	  goto label_check_done;
 	}
     }
@@ -2768,9 +2796,11 @@ static int do_docode2(node *n, int flags)
 
   case F_AUTO_MAP:
     emit0(F_MARK);
+    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
     code_expression(CAR(n), 0, "automap function");
     do_encode_automap_arg_list(CDR(n),0);
     emit_apply_builtin("__automap__");
+    POP_AND_DONT_CLEANUP;
     return 1;
 
   case F_AUTO_MAP_MARKER:
@@ -2797,6 +2827,20 @@ static int do_docode2(node *n, int flags)
       emit1(F_CONSTANT, (INT32)tmp1);
     }
     return 1;
+
+  case F_SET_LOCAL_NAME:
+    tmp1 = store_prog_string(CDR(n)->u.sval.u.string);
+    emit2(F_SET_LOCAL_NAME, CAR(n)->u.sval.u.integer, tmp1);
+    return 0;
+
+  case F_SET_LOCAL_TYPE:
+    tmp1 = store_constant(&CDR(n)->u.sval, 0, NULL);
+    emit2(F_SET_LOCAL_TYPE, CAR(n)->u.sval.u.integer, tmp1);
+    return 0;
+
+  case F_SET_LOCAL_END:
+    emit1(F_SET_LOCAL_END, CAR(n)->u.sval.u.integer);
+    return 0;
 
   default:
     Pike_fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);

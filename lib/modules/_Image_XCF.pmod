@@ -87,7 +87,7 @@ class Guide
   int vertical;
 //!
 
-  void create(string data)
+  protected void create(string data)
   {
     sscanf(data, "%4c%c", pos,vertical);vertical--;
     SIGNED(pos);
@@ -207,7 +207,7 @@ class Channel
   }
 
 
-  void create( mapping d, object p )
+  protected void create( mapping d, object p )
   {
 
     parent = p;
@@ -297,7 +297,7 @@ class Layer
     }
   }
 
-  void create( mapping data, object pa )
+  protected void create( mapping data, object pa )
   {
     parent = pa;
     name = (string)data->name;
@@ -474,7 +474,7 @@ class GimpImage
     }
   }
 
-  void create( mapping data )
+  protected void create( mapping data )
   {
     type = data->type;
     decode_properties( data->properties );

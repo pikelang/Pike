@@ -75,7 +75,7 @@ class SimpleRegexp
 }
 
 //! Convenience/compatibility method to get a @[SimpleRegexp] object.
-SimpleRegexp `()(void|string regexp) { return SimpleRegexp(regexp); }
+protected SimpleRegexp `()(void|string regexp) { return SimpleRegexp(regexp); }
 
 
 #if constant(_Regexp_PCRE._pcre)

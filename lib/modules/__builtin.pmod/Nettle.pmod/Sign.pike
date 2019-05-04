@@ -97,8 +97,8 @@ string(8bit) jwk_thumbprint(.Hash h)
   if (!public_jwk) return 0;
   // NB: For the fields used in JWK, the Standards.JSON.PIKE_CANONICAL
   //     behavior is the same as the one specified in RFC 7638 3.3.
-  return h->hash(Standards.JSON.encode(public_jwk,
-				       Standards.JSON.PIKE_CANONICAL));
+  return h->hash([string(7bit)]Standards.JSON.encode(public_jwk,
+						     Standards.JSON.PIKE_CANONICAL));
 }
 
 //! Signs the @[message] with a JOSE JWS signature using hash

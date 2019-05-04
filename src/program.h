@@ -116,6 +116,9 @@ enum LFUN {
     LFUN_POW,
     LFUN_RPOW,
     LFUN__SQRT,
+    LFUN__ANNOTATIONS,
+    LFUN__M_CLEAR,
+    LFUN__M_ADD,
 };
 
 extern const char *const lfun_names[];
@@ -498,6 +501,22 @@ struct inherit
   /* The name of the inherit, if there is any. For nested inherits,
    * this can be a string on the form "A::B::C". */
   struct pike_string *name;
+
+  /* The set of annotations for this inherit (if any).
+   *
+   * For inherit #0 these are set either directly via
+   * annotations on the class, or via inherit of classes
+   * that have annotations that are annotated as @Inherited.
+   *
+   * For inherits at level 1 these are set from the annotations
+   * on the corresponding inherit declaration, together with
+   * the original annotations that haven't been annotated as
+   * @Inherited.
+   *
+   * For inherits at higher levels they are copied verbatim from their
+   * previous program.
+   */
+  struct multiset *annotations;
 };
 
 /**
@@ -511,7 +530,7 @@ struct inherit
 #define INHERIT_ALL	-3	/* All inherits but not self. */
 
 
-
+/* PROGRAM_* flags. Currently INT16. */
 
 /* program parts have been realloced into one block */
 #define PROGRAM_OPTIMIZED 1
@@ -663,6 +682,13 @@ struct program
   INT16 lfuns[NUM_LFUNS];
 };
 
+struct local_variable_info
+{
+  int names[MAX_LOCAL];	/* Offset in strings. */
+  int types[MAX_LOCAL];	/* Offset in constants. */
+  int num_local;	/* Number of entries in either of the above. */
+};
+
 PMOD_EXPORT void dump_program_tables (const struct program *p, int indent);
 
 #ifdef PIKE_DEBUG
@@ -776,7 +802,7 @@ extern struct program *gc_internal_program;
 
 /* Prototypes begin here */
 PMOD_EXPORT void do_free_program (struct program *p);
-void ins_int(INT32 i, void (*func)(char tmp));
+void ins_int(INT32 i, void (*func)(unsigned char tmp));
 void add_relocated_int_to_program(INT32 i);
 void use_module(struct svalue *s);
 void unuse_modules(INT32 howmany);
@@ -815,6 +841,10 @@ int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
 int low_is_variant_dispatcher(struct identifier *id);
 int is_variant_dispatcher(struct program *prog, int fun);
+PMOD_EXPORT void add_annotation(int id, struct svalue *sval);
+void compiler_add_annotations(int id, node *annotations);
+PMOD_EXPORT void add_program_annotation(int id, struct svalue *sval);
+void compiler_add_program_annotations(int id, node *annotations);
 struct program *end_first_pass(int finish);
 PMOD_EXPORT struct program *debug_end_program(void);
 PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
@@ -857,7 +887,6 @@ PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name);
 void compiler_do_inherit(node *n, INT32 flags, struct pike_string *name);
-void compiler_do_implement(node *n);
 int call_handle_inherit(struct pike_string *s);
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
@@ -918,6 +947,7 @@ PMOD_EXPORT int add_object_constant(const char *name,
 			INT32 flags);
 PMOD_EXPORT int add_function_constant(const char *name, void (*cfun)(INT32), const char * type, int flags);
 PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags);
+int is_lfun_name(struct pike_string *name);
 INT32 define_function(struct pike_string *name,
 		      struct pike_type *type,
 		      unsigned flags,
@@ -948,6 +978,8 @@ int store_constant(const struct svalue *foo,
 struct array *program_indices(struct program *p);
 struct array *program_values(struct program *p);
 struct array *program_types(struct program *p);
+struct array *program_inherit_annotations(struct program *p);
+struct array *program_annotations(struct program *p, int flags);
 int low_program_index_no_free(struct svalue *to, struct program *p, int e,
 			      struct object *parent, int parent_identifier);
 int program_index_no_free(struct svalue *to, struct svalue *what,
@@ -957,6 +989,9 @@ void ext_store_program_line (struct program *prog, INT_TYPE line,
 			     struct pike_string *file);
 void start_line_numbering(void);
 void store_linenumber(INT_TYPE current_line, struct pike_string *current_file);
+void store_linenumber_local_name(int local_num, int string_num);
+void store_linenumber_local_type(int local_num, int constant_num);
+void store_linenumber_local_end(int local_num);
 PMOD_EXPORT struct pike_string *low_get_program_line(struct program *prog,
 						     INT_TYPE *linep);
 PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
@@ -966,7 +1001,8 @@ PMOD_EXPORT char *low_get_program_line_plain (struct program *prog,
 					      int malloced);
 PMOD_EXPORT struct pike_string *low_get_line(PIKE_OPCODE_T *pc,
 					     struct program *prog,
-					     INT_TYPE *linep);
+					     INT_TYPE *linep,
+					     struct local_variable_info *vars);
 PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
 				      INT_TYPE *linep, int malloced);
 PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,

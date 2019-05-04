@@ -183,6 +183,19 @@
 	if (val_ & 0xfff) {						\
 	  SPARC_OR(reg_, reg_, val_ & 0xfff, 1);			\
 	}								\
+      } else if (val_ <= 0xfffffffffffLL) {				\
+	/* The top 20 bits are zero. */					\
+	/* sethi %hi(val_>>12), reg */					\
+	SPARC_SETHI(reg_, val_>>12);					\
+	if (val_ & 0x3ff000) {						\
+	  /* or reg, %lo(val_>>12), reg */				\
+	  SPARC_OR(reg_, reg_, (val_ & 0x3ff000)>>12, 1);		\
+	}								\
+	SPARC_SLL(reg_, reg_, 12, 1);					\
+	if (val_ & 0xfff) {						\
+	  /* or reg, %lo(val_), reg */					\
+	  SPARC_OR(reg_, reg_, val_ & 0xfff, 1);			\
+	}								\
       } else {								\
 	/* FIXME: SPARC64 */						\
 	Pike_fatal("Value out of range: %p\n", (void *)val_);		\
@@ -205,21 +218,44 @@
     } else {								\
       add_to_program(0); /* Placeholder... */				\
     }									\
+    p_->num_program--;							\
     /*fprintf(stderr, "call %p (pc:%p)\n", ptr_, p_->program);*/	\
     /* call X	*/							\
     delta_ = ptr_ - (p_->program + off_);				\
     if ((-0x20000000L <= delta_) && (delta_ <= 0x1fffffff)) {		\
-      p_->program[off_] = 0x40000000 | (delta_ & 0x3fffffff);		\
+      SPARC_CALL((delta_<<2));						\
       add_to_relocations(off_);						\
     } else {								\
-      /* NOTE: Assumes top 30 bits are zero! */				\
-      /* sethi %hi(ptr_>>2), %o7 */					\
-      p_->program[off_] =						\
-	0x01000000|(SPARC_REG_O7<<25)|((((size_t)ptr_)>>12)&0x3fffff);	\
-      /* sll %o7, 2, %o7 */						\
-      SPARC_SLL(SPARC_REG_O7, SPARC_REG_O7, 2, 1);			\
-      /* call %o7 + %lo(ptr_) */					\
-      SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ((size_t)ptr_)&0xfff, 1);	\
+      size_t ptr_val_ = (size_t)ptr_;					\
+      if (ptr_val_ <= 0xffffffffLL) {					\
+	/* NOTE: Top 32 bits are zero! */				\
+	/* sethi %hi(ptr_val_), %o7 */					\
+	SPARC_SETHI(SPARC_REG_O7, ptr_val_);				\
+	/* call %o7 + %lo(ptr_val_) */					\
+	SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ptr_val_ & 0x3ff, 1);	\
+      } else if (ptr_val_ <= 0x3ffffffffLL) {				\
+	/* NOTE: Top 30 bits are zero! */				\
+	/* sethi %hi(ptr_val_>>2), %o7 */				\
+	SPARC_SETHI(SPARC_REG_O7, ptr_val_>>2);				\
+	/* sll %o7, 2, %o7 */						\
+	SPARC_SLL(SPARC_REG_O7, SPARC_REG_O7, 2, 1);			\
+	/* call %o7 + %lo(ptr_val_) */					\
+	SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ptr_val_ & 0xfff, 1);	\
+      } else if (ptr_val_ <= 0xfffffffffffLL) {				\
+	/* The top 20 bits are zero. */					\
+	/* sethi %hi(ptr_val_>>12), %o7 */				\
+	SPARC_SETHI(SPARC_REG_O7, ptr_val_>>12);			\
+	if (ptr_val_ & 0x3ff000) {					\
+	  /* or %o7, %lo(ptr_val_>>12), %o7 */				\
+	  SPARC_OR(SPARC_REG_O7, SPARC_REG_O7,				\
+		   (ptr_val_ & 0x3ff000)>>12, 1);			\
+	}								\
+	SPARC_SLL(SPARC_REG_O7, SPARC_REG_O7, 12, 1);			\
+	/* call %o7 + %lo(ptr_val_) */					\
+	SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ptr_val_ & 0xfff, 1);	\
+      } else {								\
+	Pike_fatal("Address out of range: %p\n", (void *)ptr_);		\
+      }									\
     }									\
     add_to_program(delay_);						\
     sparc_last_pc = off_;	/* Value in %o7. */			\

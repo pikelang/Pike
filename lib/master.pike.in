@@ -8,6 +8,7 @@
 //
 
 #pike __REAL_VERSION__
+//#charset iso-8859-1  // hardcoded, can not be changed
 //#pragma strict_types
 #pragma dynamic_dot
 
@@ -94,12 +95,27 @@ int compat_minor=-1;
 //! This is typically set via the option @expr{"--picky-cpp"@}.
 int show_if_constant_errors = 0;
 
-int is_pike_master = 0;
-// This integer variable should exist in any object that aspires to be
-// the master. It gets set to 1 when the master is installed, and is
-// therefore set in any object that is or has been the master. That
-// makes the Encoder class encode references to the master and all
-// ex-masters as references to the current master object.
+protected int _is_pike_master = 0;
+
+//! @decl int is_pike_master
+//! This integer variable should exist in any object that aspires to be
+//! the master. It gets set to 1 when the master is installed, and is
+//! therefore set in any object that is or has been the master. That
+//! makes the Encoder class encode references to the master and all
+//! ex-masters as references to the current master object.
+
+int `is_pike_master()
+{
+  return _is_pike_master;
+}
+void `is_pike_master=(int one)
+{
+  _is_pike_master = one;
+  if (one) {
+    add_constants();
+  }
+}
+
 
 mapping(string:object) fs_map = ([]);
 object root_fs;
@@ -346,7 +362,7 @@ protected class Pike_7_8_master
   program programof (string|array what);
   void decode_object(object o, mixed data);
 
-  string _sprintf(int t);
+  __deprecated__ string _sprintf(int t);
 
   // ---
 
@@ -548,40 +564,29 @@ array(string) explode_path(string p)
   return r;
 }
 
-//! Returns all but the last segment of a path. Some example inputs and
-//! outputs:
-//!
-//! @xml{<matrix>
-//! <r><c><b>Expression</b></c><c><b>Value</b></c></r>
-//! <r><c>dirname("/a/b")</c><c>"/a"</c></r>
-//! <r><c>dirname("/a/")</c><c>"/a"</c></r>
-//! <r><c>dirname("/a")</c><c>"/"</c></r>
-//! <r><c>dirname("/")</c><c>"/"</c></r>
-//! <r><c>dirname("")</c><c>""</c></r>
-//! </matrix>@}
-//!
-//! @seealso
-//! @[basename()], @[explode_path()]
+#if !constant(dirname)
 string dirname(string x)
 {
   if(x=="") return "";
-  array(string) tmp=x/":";
-  array(string) tmp2=tmp[-1]/"/";
-  tmp[-1]=tmp2[..<1]*"/";
-  if(sizeof(tmp2) >= 2 && tmp2[-2]=="") tmp[-1]+="/";
-  return tmp*":";
+  array(string) tmp = EXPLODE_PATH(x);
+  if (x[0] == '/' && sizeof(tmp) < 3) return "/";
+  return tmp[..<1]*"/";
 }
+#else /* dirname */
+constant dirname = predef::dirname;
+#endif /* !dirname */
 
-//! Returns the last segment of a path.
-//!
-//! @seealso
-//! @[dirname()], @[explode_path()]
+#if !constant(basename)
 string basename(string x)
 {
   array(string) tmp=EXPLODE_PATH(x);
   return tmp[-1];
 #define BASENAME(X) (EXPLODE_PATH(X)[-1])
 }
+#else /* basename */
+constant basename = predef::basename;
+#define BASENAME(X)	basename(X)
+#endif /* !basename */
 
 #ifdef PIKE_AUTORELOAD
 
@@ -627,10 +632,13 @@ mapping(string:int) load_time=([]);
 
 #endif // PIKE_AUTORELOAD
 
+//! @[predef::CompilerEnvironment] that supports handlers.
 protected class CompilerEnvironment
 {
+  //!
   inherit predef::CompilerEnvironment : OrigCompilerEnvironment;
 
+  //!
   mixed resolv(string identifier, string filename,
 	       object|void handler, object|void compat_handler)
   {
@@ -638,6 +646,7 @@ protected class CompilerEnvironment
 			    handler, compat_handler);
   }
 
+  //!
   program handle_inherit(string inh, string current_file,
 			 object|void handler, object|void compat_handler)
   {
@@ -645,6 +654,7 @@ protected class CompilerEnvironment
 				    handler, compat_handler);
   }
 
+  //!
   program handle_import(string module, string current_file,
 			object|void handler, object|void compat_handler)
   {
@@ -657,26 +667,160 @@ protected class CompilerEnvironment
     return master()->get_compilation_handler(major, minor);
   }
 
+#if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
+  //!
+  class PikeCompiler
+  {
+    //!
+    inherit ::this_program;
+
+    //!
+    object handler;
+    object compat_handler;
+
+    //!
+    protected mixed apply_handler(string fun, mixed ... args)
+    {
+      function f;
+      foreach(({ handler, compat_handler }), object o) {
+	if (objectp(o) && functionp(f = predef::`->(o, fun))) {
+	  return f(@args);
+	}
+      }
+      return CompilerEnvironment::`->(fun)(@args);
+    }
+
+    //!
+    void report(SeverityLevel severity, string filename, int linenumber,
+		string subsystem, string message,
+		mixed ... extra_args)
+    {
+      foreach(({ handler, compat_handler }), object o) {
+	if (!objectp(o)) continue;
+	if (functionp(o->report)) {
+	  o->report(severity, filename, linenumber,
+		    subsystem, message, @extra_args);
+	  return;
+	}
+	if (severity < WARNING) continue;
+	if (severity >= ERROR) {
+	  if (functionp(o->compile_error)) {
+	    o->compile_error(filename, linenumber,
+			     sizeof(extra_args)?
+			     sprintf(message, @extra_args):
+			     message);
+	    return;
+	  }
+	} else {
+	  if (functionp(o->compile_warning)) {
+	    o->compile_warning(filename, linenumber,
+			       sizeof(extra_args)?
+			       sprintf(message, @extra_args):
+			       message);
+	    return;
+	  }
+	}
+      }
+      CompilerEnvironment::report(severity, filename, linenumber,
+				  subsystem, message, @extra_args);
+    }
+
+    //!
+    mixed resolv(string identifier)
+    {
+      return apply_handler(__func__, identifier, current_file,
+			   handler, compat_handler);
+    }
+
+    //!
+    mapping(string:mixed)|object get_default_module()
+    {
+      /* FIXME: This function probably ought to merge the results from
+       *        both handlers.
+       */
+      return apply_handler(__func__);
+    }
+
+    //!
+    object get_compilation_handler(int major, int minor)
+    {
+      return apply_handler(__func__, major, minor);
+    }
+
+    //!
+    program handle_inherit(string inh)
+    {
+      return apply_handler(__func__, inh, current_file,
+			   handler, compat_handler);
+    }
+
+    //!
+    program handle_import(string module)
+    {
+      return apply_handler(__func__, module, current_file,
+			   handler, compat_handler);
+    }
+
+    //!
+    void change_compiler_compatibility(int major, int minor)
+    {
+      if ((major == compat_major) && (minor == compat_minor)) {
+	// Optimization: Already at this compat level.
+	return;
+      }
+      if (((major == -1) && (minor == -1)) ||
+	  ((major == __REAL_MAJOR__) && (minor == __REAL_MINOR__))) {
+	if ((compat_major == __REAL_MAJOR__) &&
+	    (compat_minor == __REAL_MINOR__)) {
+	  // Optimization again: Already at this compat level.
+	  return;
+	}
+	compat_handler = 0;
+      } else {
+	compat_handler = get_compilation_handler(major, minor);
+      }
+
+      ::change_compiler_compatibility(major, minor);
+    }
+
+    //!
+    protected void create(string|void source,
+			  object|void handler,
+			  int|void major, int|void minor,
+			  program|void target, object|void placeholder)
+    {
+      this::handler = handler;
+      ::create(source, UNDEFINED, major, minor, target, placeholder);
+    }
+  }
+#endif /* _static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__ */
+
+  //!
   int compile_exception(mixed err)
   {
     function(mixed:int) fun = master()->compile_exception;
     return fun && fun(err);
   }
 
+  //!
   string format_exception(mixed err)
   {
     return 0;
   }
 
+  //!
   class CPP
   {
+    //!
     inherit ::this_program;
 
 #if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+    //!
     object handler;
     object compat_handler;
 #endif
 
+    //!
     protected mixed apply_handler(string fun, mixed ... args)
     {
       function f;
@@ -768,23 +912,27 @@ protected class CompilerEnvironment
       ::report(severity, filename, linenumber, subsystem, message, @extra_args);
     }
 
+    //!
     object get_compilation_handler(int major, int minor)
     {
       return apply_handler(__func__, major, minor);
     }
 
 #if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+    //!
     mapping(string:string|function|object) get_predefines()
     {
       return apply_handler(__func__);
     }
 
+    //!
     mixed resolv(string sym)
     {
       return apply_handler(__func__, sym, current_file,
 			   handler, compat_handler);
     }
 
+    //!
     string handle_include(string header_file, string current_file,
 			  int(0..1) is_local_ref)
     {
@@ -792,6 +940,7 @@ protected class CompilerEnvironment
 			   is_local_ref);
     }
 
+    //!
     string read_include(string filename)
     {
       return apply_handler(__func__, filename);
@@ -808,6 +957,7 @@ protected class CompilerEnvironment
       return apply_handler(__func__, def, arguments);
     }
 
+    //!
     void change_cpp_compatibility(int major, int minor)
     {
       if ((compat_major == major) && (compat_minor == minor)) {
@@ -823,11 +973,13 @@ protected class CompilerEnvironment
       ::change_cpp_compatibility(major, minor);
     }
 
+    //!
     int compile_exception(mixed err)
     {
       return apply_handler(__func__, err);
     }
 
+    //!
     string format_exception(mixed err)
     {
       string ret = apply_handler(__func__, err);
@@ -839,6 +991,55 @@ protected class CompilerEnvironment
     }
 
 #if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
+    //! @decl void create(string|void current_file, @
+    //!                   int|string|void charset, object|void handler, @
+    //!                   void|int compat_major, void|int compat_minor, @
+    //!                   void|int picky_cpp)
+    //! @decl void create(mapping(string:mixed) options)
+    //!
+    //!   Initialize the preprocessor.
+    //!
+    //! @param options
+    //!   If the first argument is a mapping, no other arguments may follow.
+    //!   Instead, they have to be given as members of the mapping (if wanted).
+    //!   The following members are then recognized:
+    //!
+    //!   @mapping
+    //!     @member string "current_file"
+    //!       Name of the current file. It is used for generating
+    //!       #line directives and for locating include files.
+    //!     @member int|string "charset"
+    //!       Charset to use when processing @expr{data@}.
+    //!     @member object "handler"
+    //!       Compilation handler.
+    //!     @member int "compat_major"
+    //!       Sets the major pike version used for compat handling.
+    //!     @member int "compat_minor"
+    //!       Sets the minor pike version used for compat handling.
+    //!     @member int "picky_cpp"
+    //!       Generate more warnings.
+    //!     @member int "keep_comments"
+    //!       This option keeps @[cpp()] from removing comments.
+    //!       Useful in combination with the prefix feature below.
+    //!     @member string "prefix"
+    //!       If a prefix is given, only prefixed directives will be
+    //!       processed. For example, if the prefix is @expr{"foo"@}, then
+    //!       @expr{#foo_ifdef COND@} and @expr{foo___LINE__@} would be
+    //!       processed, @expr{#ifdef COND@} and @expr{__LINE__@}
+    //!       would not.
+    //!   @endmapping
+    //!
+    //! @param current_file
+    //!   If the @[current_file] argument has not been specified,
+    //!   it will default to @expr{"-"@}.
+    //!
+    //! @param charset
+    //!   Turn on automatic character set detection if @expr{1@}, otherwise
+    //!   specifies the character set used by the input.
+    //!   Defaults to @expr{"ISO-10646"@}.
+    //!
+    //! @seealso
+    //!   @[compile()]
 
     protected void create(mapping(string:mixed) options)
     {
@@ -866,11 +1067,69 @@ protected class CompilerEnvironment
     }
 #endif
   }
+
+#if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
+  //!
+  program compile(string source, object|void handler,
+		  int|void major, int|void minor,
+		  program|void target, object|void placeholder)
+  {
+    return PikeCompiler(source, handler, major, minor, target, placeholder)->
+      compile();
+  }
+#endif /* _static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__ */
 }
 
 protected CompilerEnvironment DefaultCompilerEnvironment =
   CompilerEnvironment();
 
+#if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
+//!
+protected program compile(string source, object|void handler,
+			  int|void major, int|void minor,
+			  program|void target, object|void placeholder)
+{
+  return DefaultCompilerEnvironment->compile(source, handler,
+					     major, minor,
+					     target, placeholder);
+}
+#endif /* _static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__ */
+
+//! @decl CompilationHandler get_active_compilation_handler()
+//!
+//!   Returns the currently active compilation compatibility handler, or
+//!   @tt{0@} (zero) if none is active.
+//!
+//! @note
+//!   This function should only be used during a call of @[compile()].
+//!
+//! @seealso
+//!   @[get_active_error_handler()], @[compile()],
+//!   @[master()->get_compilation_handler()], @[CompilationHandler]
+protected object get_active_compilation_handler()
+{
+  CompilerEnvironment.PikeCompiler c = get_active_compiler();
+  return c && c->compat_handler;
+}
+
+//! @decl CompilationHandler get_active_error_handler()
+//!
+//!   Returns the currently active compilation error handler
+//!   (second argument to @[compile()]), or @tt{0@} (zero) if none
+//!   is active.
+//!
+//! @note
+//!   This function should only be used during a call of @[compile()].
+//!
+//! @seealso
+//!   @[get_active_compilation_handler()], @[compile()], @[CompilationHandler]
+protected object get_active_error_handler()
+{
+  CompilerEnvironment.PikeCompiler c = get_active_compiler();
+  return c && c->handler;
+}
+
+//!
 protected string cpp(string data, mapping|string|void current_file,
 		     int|string|void charset, object|void handler,
 		     void|int compat_major, void|int compat_minor,
@@ -1164,7 +1423,7 @@ mapping(string:string) getenv (void|int force_update)
 {
   mapping(string:string) res;
 
-  if (force_update) {
+  if (force_update > 0) {
     res = Builtin._getenv();
 #ifdef __NT__
     set_lc_env (res);
@@ -1182,6 +1441,7 @@ mapping(string:string) getenv (void|int force_update)
     if (!environment) environment = Builtin._getenv();
     res = environment + ([]);
 #endif
+    if (force_update < 0) return environment;
   }
 
   return res;
@@ -2038,8 +2298,12 @@ optional int(0..1) handle_attribute(mixed value, string attribute)
  */
 constant master_efuns = ({
   "error",
+#if !constant(basename)
   "basename",
+#endif
+#if !constant(dirname)
   "dirname",
+#endif
   "is_absolute_path",
   "explode_path",
 
@@ -2117,10 +2381,16 @@ enum bool { false=0, true=1 };
 //!   Copies the file @[from] to the new position @[to]. This is an
 //!   alias for @[Stdio.cp].
 
-/* Note that create is called before add_precompiled_program
+/* Note that add_constants() and create() are called
+ * before add_precompiled_program().
  */
-protected void create()
+protected void add_constants()
 {
+#if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
+  add_constant("compile", compile);
+#endif /* _static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__ */
+  add_constant("get_active_compilation_handler", get_active_compilation_handler);
+  add_constant("get_active_error_handler", get_active_error_handler);
   add_constant("CompilerEnvironment", CompilerEnvironment);
   add_constant("DefaultCompilerEnvironment", DefaultCompilerEnvironment);
   add_constant("cpp", cpp);
@@ -2143,6 +2413,7 @@ protected void create()
   add_constant("__dirnode", dirnode);
   add_constant("__joinnode", joinnode);
 
+  werror = locale_werror;
   add_constant("write", write);
   add_constant("werror", werror);
   // To make it possible to overload get_dir and file_stat later on.
@@ -2161,6 +2432,11 @@ protected void create()
   CO(find_call_out);
   CO(remove_call_out);
   CO(call_out_info);
+}
+
+protected void create()
+{
+  add_constants();
 
 #if "#share_prefix#"[0]!='#'
   // add path for architecture-independant files
@@ -2934,19 +3210,28 @@ joinnode handle_import(string path, string|void current_file,
   module_node node = module_node_cache[current_handler][path] =
     module_node("import::"+path, 0, current_handler);
 #endif /* 0 */
-  joinnode node = joinnode(({}), current_handler);
+  auto path_stat = file_stat(path);
+  if (!path_stat)
+    compile_cb_error("Failed to stat file: %O\n", path);
+  joinnode node;
+  if (path_stat->isreg) {
+    node = low_cast_to_object(path, current_file, current_handler);
+  }
+  else if (path_stat->isdir) {
+    node = joinnode(({}), current_handler);
 #ifdef PIKE_MODULE_RELOC
-  // If we have PIKE_MODULE_RELOC enabled,
-  // we might need to map to multiple directories.
-  if(path == "/${PIKE_MODULE_PATH}" ||
-     has_prefix(path, "/${PIKE_MODULE_PATH}/")) {
-    string tmp = path[21..];
-    foreach(pike_module_path, string prefix) {
-      node->add_path(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
-    }
-  } else
+    // If we have PIKE_MODULE_RELOC enabled,
+    // we might need to map to multiple directories.
+    if(path == "/${PIKE_MODULE_PATH}" ||
+       has_prefix(path, "/${PIKE_MODULE_PATH}/")) {
+      string tmp = path[21..];
+      foreach(pike_module_path, string prefix) {
+        node->add_path(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
+      }
+    } else
 #endif /* PIKE_MODULE_RELOC */
-    node->add_path(path);
+      node->add_path(path);
+  }
   return node;
 }
 
@@ -3596,7 +3881,7 @@ string _master_file_name;
 // Gets set to 1 if we're in async-mode (script->main() returned <0)
 private int(0..1) _async=0;
 
-//! Returns 1 if we´re in async-mode, e.g. if the main method has
+//! Returns 1 if we're in async-mode, e.g. if the main method has
 //! returned a negative number.
 int(0..1) asyncp() {
   return _async;
@@ -3818,10 +4103,10 @@ void _main(array(string(0..255)) orig_argv)
         exit(0);
 
       case "version":
-        exit(0, string_to_utf8(version() + " Copyright © 1994-2018 Linköping University\n"
+        exit(0, version() + " Copyright © 1994-2018 Linköping University\n"
             "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
             "welcome to redistribute it under certain conditions; read the files\n"
-            "COPYING and COPYRIGHT in the Pike distribution for more details.\n"));
+            "COPYING and COPYRIGHT in the Pike distribution for more details.\n");
 
       case "help":
 	exit( 0, main_resolv("Tools.MasterHelp")->do_help(opts[1]) );
@@ -4328,6 +4613,12 @@ string decode_charset(string data, string charset)
 //! Class used by @[describe_backtrace()] to describe values in backtraces.
 class Describer
 {
+  /* Attempt to avoid keeping this object around, as it may contain
+   * indirect references to stuff (like mutex keys) in backtraces,
+   * via the ident mapping below.
+   */
+  inherit _static_modules.Builtin.DestructImmediate;
+
   int clipped=0;
   int canclip=0;
   mapping(mixed:int|string) ident = ([]);
@@ -4449,9 +4740,12 @@ class Describer
       /* object or type. */
       if (catch {
 	if(string tmp=sprintf("%O", m)) res = tmp;
+	if (sizeof(res) > maxlen) error("Too long.\n");
       }) {
 	// Extra paranoia case.
-	res = sprintf("Instance of %O", _typeof(m));
+	if (objectp(m)) {
+	  res = sprintf("%O(...)", object_program(m));
+	}
       }
       break;
     }
@@ -4474,8 +4768,13 @@ class Describer
     int len=maxlen;
     int done=0;
 
+    mapping(mixed:int|string) saved_ident = ident + ([]);
+
     while(1)
     {
+      int saved_clipped = clipped;
+      int saved_canclip = canclip;
+
       array(string) z=allocate(clip);
       array(int) isclipped=allocate(clip);
       array(int) clippable=allocate(clip);
@@ -4488,6 +4787,9 @@ class Describer
 	clippable[e]=canclip;
       }
 
+      clipped = saved_clipped;
+      canclip = saved_canclip;
+
       while(1)
       {
 	string ret = z[..clip-1]*",";
@@ -4499,6 +4801,15 @@ class Describer
 	  {
 	    clipped++;
 	    ret+=",,,"+tmp;
+
+	    // Ensure that we don't lose any relevant ident assignments
+	    // due to the clipping.
+	    //
+	    // Note that this means that we may get duplicate assignments
+	    // for the same value and/or unused ident numbers, but this
+	    // is better than getting getting references to ident numbers
+	    // without any assignent. Cf [PIKE-141].
+	    ident = saved_ident;
 	  }
 	  canclip++;
 	  return ret;
@@ -6040,7 +6351,7 @@ CompatResolver get_compilation_handler(int major, int minor)
   return ret;
 }
 
-string _sprintf(int t)
+protected string _sprintf(int t)
 {
   switch(t) {
     // FIXME: What good is this lying for 't'? The master is still an
@@ -6063,4 +6374,22 @@ object get_compat_master(int major, int minor)
     return Pike_8_0_master::get_compat_master(major, minor);
   // 8.1 and later.
   return this;
+}
+
+private function locale_werror_cache;
+protected void locale_werror(mixed ... args)
+{
+  function werror = locale_werror_cache;
+  if (!werror) {
+    catch {
+      object stderr = main_resolv( "Stdio.FILE" )( "stderr", "w" );
+      stderr->set_charset( 0 );
+      werror = stderr->write;
+      if (werror && !locale_werror_cache)
+	locale_werror_cache = werror;
+    };
+    if (!werror)
+      werror = Files()->_stderr->write;
+  }
+  werror(@args);
 }

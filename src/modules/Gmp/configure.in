@@ -30,7 +30,28 @@ if test "$ac_cv_header_gmp_h" = "yes" ; then
   echo >>confdefs.h '
 #include <gmp.h>'
 
-  PIKE_FEATURE_OK([Gmp (bignums)])
+  AC_MSG_CHECKING([version of gmp])
+  cat >conftest.$ac_ext <<EOF
+[#]line __oline__ "configure"
+#include "confdefs.h"
+
+#include <stdio.h>
+
+#define TOSTR(X)	#X
+#define DEFINE_TOSTR(X)	TOSTR(X)
+
+char version_info[[]] = "\0GmP_VeRsIoN_" DEFINE_TOSTR(__GNU_MP_VERSION)
+  "." DEFINE_TOSTR(__GNU_MP_VERSION_MINOR)
+  "." DEFINE_TOSTR(__GNU_MP_VERSION_PATCHLEVEL);
+EOF
+  GMP_VERSION="";
+  if AC_TRY_EVAL(ac_compile); then
+      GMP_VERSION=`strings "conftest.$ac_objext" | sed -e '/^GmP_VeRsIoN_[[0-9\.]]*$/s/GmP_VeRsIoN_//p' -ed | head -n 1`
+  fi
+  AC_MSG_RESULT($GMP_VERSION)
+  rm -rf conftest*
+
+  PIKE_FEATURE([Gmp (bignums)], [yes (gmp $GMP_VERSION)])
   AC_CHECK_SIZEOF(mp_limb_t, 0)
 
   # Side channel secure powm added in 5.0

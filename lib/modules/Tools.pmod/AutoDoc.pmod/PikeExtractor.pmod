@@ -243,7 +243,12 @@ private class Extractor {
       parser->skipNewlines();
       SourcePosition pos = parser->currentPosition->copy();
 
-      object(PikeObject)|array(PikeObject) p = parser->parseDecl();
+      object(PikeObject)|array(PikeObject)|Annotation p = parser->parseDecl();
+
+      if (objectp(p) && p->is_annotation) {
+	c->annotations += ({ p });
+	continue;
+      }
 
       multiset(string) allowSqueeze = (<
         "method",

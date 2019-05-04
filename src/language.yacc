@@ -74,7 +74,6 @@
 %token TOK_RESERVED "reserved identifier"
 %token TOK_IF "if"
 %token TOK_IMPORT "import"
-%token TOK_IMPLEMENT "implement"
 %token TOK_INHERIT "inherit"
 %token TOK_INLINE "inline"
 %token TOK_LOCAL_ID "local"
@@ -160,6 +159,7 @@
 #include "pike_embed.h"
 #include "opcodes.h"
 #include "operators.h"
+#include "builtin_functions.h"
 #include "bignum.h"
 
 #define YYMAXDEPTH	1000
@@ -186,8 +186,8 @@ static node *lexical_islocal(struct pike_string *);
 static node *safe_inc_enum(node *n);
 static node *find_versioned_identifier(struct pike_string *identifier,
 				       int major, int minor);
-static int call_handle_import(struct pike_string *s);
-static void update_current_type();
+static int call_handle_import(void);
+static void update_current_type(void);
 
 static int inherit_depth;
 static struct program_state *inherit_state = NULL;
@@ -317,6 +317,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> TOK_IDENTIFIER
 %type <n> TOK_RESERVED
 %type <n> TOK_VERSION
+%type <n> annotation
+%type <n> annotation_list
 %type <n> attribute
 %type <n> assoc_pair
 %type <n> line_number_info
@@ -343,6 +345,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> continue
 %type <n> default
 %type <n> do
+%type <n> constant_expr
 %type <n> safe_expr0
 %type <n> splice_expr
 %type <n> expr01
@@ -424,42 +427,93 @@ optional_rename_inherit: ':' real_string_or_identifier { $$=$2; }
 /* NOTE: This rule pushes a string "name" on the stack in addition
  * to resolving the program reference.
  */
-low_program_ref: string_constant
+low_program_ref: safe_expr0
   {
+    node *n = $1;
+
     STACK_LEVEL_START(0);
 
-    ref_push_string($1->u.sval.u.string);
-    if (call_handle_inherit($1->u.sval.u.string)) {
-      STACK_LEVEL_CHECK(2);
-      $$=mksvaluenode(Pike_sp-1);
-      pop_stack();
+    while (n) {
+      switch (n->token) {
+      case F_EXTERNAL:
+      case F_GET_SET:
+	$$ = n;
+	add_ref(n);
+	free_node($1);
+	goto got_program_ref;
+      case F_APPLY:
+	{
+	  if ((CAR(n)->token == F_CONSTANT) &&
+	      (TYPEOF(CAR(n)->u.sval) == T_FUNCTION) &&
+	      (SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) &&
+	      (CAR(n)->u.sval.u.efun->function == debug_f_aggregate)) {
+	    /* Disambiguate multiple inherit ::-reference. */
+	    node *arg;
+	    while(1) {
+	      while ((arg = CDR(n))) {
+		n = arg;
+		if (n->token != F_ARG_LIST) goto found_program_ref;
+	      }
+	      /* Paranoia. */
+	      if ((arg = CAR(n))) {
+		n = arg;
+		continue;
+	      }
+	      /* FIXME: Ought to go up a level and try the car there...
+	       *        But as this code probably won't be reached, we
+	       *        just fail.
+	       */
+	      yyerror("Failed to get last argument from empty array.");
+	      n = NULL;
+	      break;
+	    }
+	  found_program_ref:
+	    /* NB: The traditional C grammar requires a statement
+	     *     after a label.
+	     */
+	    continue;
+	  }
+	}
+	/* FALLTHRU */
+      default:
+	/* Evaluate the expression. */
+	break;
+      }
+      break;
     }
-    else
-      $$=mknewintnode(0);
-    STACK_LEVEL_CHECK(1);
-    if($$->name) free_string($$->name);
-#ifdef PIKE_DEBUG
-    if (TYPEOF(Pike_sp[-1]) != T_STRING) {
-      Pike_fatal("Compiler lost track of program name.\n");
-    }
-#endif /* PIKE_DEBUG */
-    /* FIXME: Why not use $1->u.sval.u.string here? */
-    add_ref( $$->name=Pike_sp[-1].u.string );
+
+    resolv_constant(n);
     free_node($1);
 
-    STACK_LEVEL_DONE(1);
-  }
-  | idents
-  {
-    STACK_LEVEL_START(0);
+    if (TYPEOF(Pike_sp[-1]) == T_STRING) {
+      if (call_handle_inherit(Pike_sp[-1].u.string)) {
+	STACK_LEVEL_CHECK(2);
+	$$ = mksvaluenode(Pike_sp-1);
+	pop_stack();
+      }
+      else
+	$$ = mknewintnode(0);
+      STACK_LEVEL_CHECK(1);
+      if($$->name) free_string($$->name);
+#ifdef PIKE_DEBUG
+      if (TYPEOF(Pike_sp[-1]) != T_STRING) {
+	Pike_fatal("Compiler lost track of program name.\n");
+      }
+#endif /* PIKE_DEBUG */
 
-    if(Pike_compiler->last_identifier)
-    {
-      ref_push_string(Pike_compiler->last_identifier);
-    }else{
-      push_empty_string();
+      add_ref( $$->name=Pike_sp[-1].u.string );
+    } else {
+      $$ = mksvaluenode(Pike_sp-1);
+      pop_stack();
+
+    got_program_ref:
+      STACK_LEVEL_CHECK(0);
+      if (Pike_compiler->last_identifier) {
+	ref_push_string(Pike_compiler->last_identifier);
+      } else {
+	push_empty_string();
+      }
     }
-    $$=$1;
 
     STACK_LEVEL_DONE(1);
   }
@@ -511,79 +565,17 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
     pop_stack();
     yyerror("Missing ';'.");
   }
-  | modifiers TOK_INHERIT error ';' { yyerrok; }
-  | modifiers TOK_INHERIT error TOK_LEX_EOF
-  {
-    yyerror("Missing ';'.");
-    yyerror("Unexpected end of file.");
-  }
-  | modifiers TOK_INHERIT error '}' { yyerror("Missing ';'."); }
   ;
 
-implement: modifiers TOK_IMPLEMENT inherit_ref ';'
-  {
-    if ($1 && (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
-      yywarning("Modifiers ignored for implement.");
-    }
-    if($3) {
-      compiler_do_implement($3);
-    }
-    pop_stack();
-    if ($3) free_node($3);
-  }
-  | modifiers TOK_IMPLEMENT inherit_ref error ';'
-  {
-    if ($3) free_node($3);
-    pop_stack();
-    yyerrok;
-  }
-  | modifiers TOK_IMPLEMENT inherit_ref error TOK_LEX_EOF
-  {
-    if ($3) free_node($3);
-    pop_stack();
-    yyerror("Missing ';'.");
-    yyerror("Unexpected end of file.");
-  }
-  | modifiers TOK_IMPLEMENT inherit_ref error '}'
-  {
-    if ($3) free_node($3);
-    pop_stack();
-    yyerror("Missing ';'.");
-  }
-  | modifiers TOK_IMPLEMENT error ';' { yyerrok; }
-  | modifiers TOK_IMPLEMENT error TOK_LEX_EOF
-  {
-    yyerror("Missing ';'.");
-    yyerror("Unexpected end of file.");
-  }
-  | modifiers TOK_IMPLEMENT error '}'
-  {
-    yyerror("Missing ';'.");
-  }
-  ;
-
-import: TOK_IMPORT idents ';'
+import: TOK_IMPORT constant_expr ';'
   {
     resolv_constant($2);
     free_node($2);
-    use_module(Pike_sp-1);
-    pop_stack();
-  }
-  | TOK_IMPORT string ';'
-  {
-    if (call_handle_import($2->u.sval.u.string)) {
+    if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING || call_handle_import()) {
       use_module(Pike_sp-1);
       pop_stack();
     }
-    free_node($2);
   }
-  | TOK_IMPORT error ';' { yyerrok; }
-  | TOK_IMPORT error TOK_LEX_EOF
-  {
-    yyerror("Missing ';'.");
-    yyerror("Unexpected end of file.");
-  }
-  | TOK_IMPORT error '}' { yyerror("Missing ';'."); }
   ;
 
 constant_name: TOK_IDENTIFIER '=' safe_expr0
@@ -1059,11 +1051,22 @@ def: modifiers optional_attributes simple_type optional_constant
   }
   | modifiers optional_attributes simple_type optional_constant name_list ';'
   | inheritance {}
-  | implement {}
   | import {}
   | constant {}
   | modifiers named_class { free_node($2); }
   | modifiers enum { free_node($2); }
+  | annotation ';'
+  {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
+      $1 = mknode(F_COMMA_EXPR, $1, NULL);
+      compiler_add_program_annotations(0, $1);
+    }
+    free_node($1);
+  }
+  | '@' TOK_CONSTANT ';'
+  {
+    Pike_compiler->new_program->flags |= PROGRAM_CONSTANT;
+  }
   | typedef {}
   | static_assertion expected_semicolon {}
   | error TOK_LEX_EOF
@@ -1089,6 +1092,9 @@ def: modifiers optional_attributes simple_type optional_constant
     {
       $<number>$=THIS_COMPILATION->lex.pragmas;
       THIS_COMPILATION->lex.pragmas|=$1;
+      if (Pike_compiler->current_annotations) {
+	yywarning("Annotation blocks are not supported.");
+      }
     }
       program
    close_brace_or_eof
@@ -1242,7 +1248,6 @@ magic_identifiers3:
   | TOK_DEFAULT    { $$ = "default"; }
   | TOK_IMPORT     { $$ = "import"; }
   | TOK_INHERIT    { $$ = "inherit"; }
-  | TOK_IMPLEMENT  { $$ = "implement"; }
   | TOK_LAMBDA     { $$ = "lambda"; }
   | TOK_PREDEF     { $$ = "predef"; }
   | TOK_RETURN     { $$ = "return"; }
@@ -1263,12 +1268,27 @@ magic_identifier: TOK_IDENTIFIER | TOK_RESERVED
   }
   ;
 
-modifiers: modifier_list
- {
-   $$=Pike_compiler->current_modifiers=$1 |
-     (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
- }
- ;
+annotation: '@' constant_expr
+  {
+    $$ = $2;
+  }
+  ;
+
+annotation_list: /* empty */ { $$ = NULL; }
+  | annotation ':' annotation_list
+  {
+    $$ = mknode(F_COMMA_EXPR, $1, $3);
+  }
+  ;
+
+modifiers: annotation_list modifier_list
+  {
+    free_node(Pike_compiler->current_annotations);
+    Pike_compiler->current_annotations = $1;
+    $$ = Pike_compiler->current_modifiers = $2 |
+      (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
+  }
+  ;
 
 modifier_list: /* empty */ { $$ = 0; }
   | modifier_list modifier { $$ = $1 | $2; }
@@ -1921,6 +1941,37 @@ local_name_list: new_local_name
     { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $3); }
   ;
 
+
+constant_expr: safe_expr0
+  {
+    /* Ugly hack to make sure that $1 is optimized */
+    {
+      int tmp = Pike_compiler->compiler_pass;
+      $$ = mknode(F_COMMA_EXPR, $1, 0);
+      optimize_node($$);
+      Pike_compiler->compiler_pass = tmp;
+    }
+
+    if(!is_const($$)) {
+      if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
+	yyerror("Expected constant expression.");
+      push_int(0);
+    } else {
+      ptrdiff_t tmp = eval_low($$, 1);
+      if(tmp < 1)
+      {
+	if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
+	  yyerror("Error evaluating constant expression.");
+	push_int(0);
+      } else {
+        pop_n_elems((INT32)(tmp - 1));
+      }
+    }
+    free_node($$);
+    $$ = mkconstantsvaluenode(Pike_sp - 1);
+    pop_stack();
+  }
+  ;
 
 local_constant_name: TOK_IDENTIFIER '=' safe_expr0
   {
@@ -2954,6 +3005,10 @@ named_class: TOK_CLASS line_number_info simple_identifier
       i = ID_FROM_INT(Pike_compiler->new_program, $<number>4);
       free_type(i->type);
       i->type = get_type_of_svalue(&sv);
+      if (p->flags & PROGRAM_CONSTANT) {
+	/* Update, in case of @constant. */
+	i->opt_flags = 0;
+      }
       free_program(p);
     } else if (!Pike_compiler->num_parse_error) {
       /* Make sure code in this class is aware that something went wrong. */
@@ -3665,6 +3720,8 @@ apply:
 
 implicit_modifiers:
   {
+    free_node(Pike_compiler->current_annotations);
+    Pike_compiler->current_annotations = NULL;
     $$ = Pike_compiler->current_modifiers = ID_PROTECTED|ID_INLINE|ID_PRIVATE |
       (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
   }
@@ -4102,9 +4159,8 @@ low_idents: TOK_IDENTIFIER
   }
   | '.' TOK_IDENTIFIER
   {
-    struct pike_string *dot;
-    MAKE_CONST_STRING(dot, ".");
-    if (call_handle_import(dot)) {
+    push_constant_text(".");
+    if (call_handle_import()) {
       node *tmp=mkconstantsvaluenode(Pike_sp-1);
       pop_stack();
       $$=index_node(tmp, ".", $2->u.sval.u.string);
@@ -4530,6 +4586,8 @@ bad_inherit: bad_expr_ident
   { yyerror_reserved("gauge"); }
   | TOK_IF
   { yyerror_reserved("if"); }
+  | TOK_IMPORT
+  { yyerror_reserved("import"); }
   | TOK_INT_ID
   { yyerror_reserved("int"); }
   | TOK_LAMBDA
@@ -4592,12 +4650,8 @@ bad_expr_ident:
   { yyerror_reserved("final");}
   | TOK_ELSE
   { yyerror("else without if."); }
-  | TOK_IMPORT
-  { yyerror_reserved("import"); }
   | TOK_INHERIT
   { yyerror_reserved("inherit"); }
-  | TOK_IMPLEMENT
-  { yyerror_reserved("implement"); }
   ;
 
 /*
@@ -4963,9 +5017,8 @@ static node *find_versioned_identifier(struct pike_string *identifier,
   return res;
 }
 
-static int call_handle_import(struct pike_string *s)
+static int call_handle_import(void)
 {
-  ref_push_string(s);
   if (safe_apply_low2(Pike_fp->current_object,
                       PC_HANDLE_IMPORT_FUN_NUM
                       + Pike_fp->context->identifier_level, 1, NULL)) {
@@ -4978,7 +5031,7 @@ static int call_handle_import(struct pike_string *s)
       if (TYPEOF(Pike_sp[-1]) != T_INT) return 1;
 
       pop_stack();
-      my_yyerror("Couldn't find module to import: %S", s);
+      my_yyerror("Couldn't find module to import.");
       return 0;
     }
     my_yyerror("Invalid return value from handle_import: %O", Pike_sp-1);
@@ -4992,7 +5045,7 @@ static int call_handle_import(struct pike_string *s)
 }
 
 /* Set compiler_frame->current_type from the type stack. */
-static void update_current_type()
+static void update_current_type(void)
 {
   if(Pike_compiler->compiler_frame->current_type)
     free_type(Pike_compiler->compiler_frame->current_type);

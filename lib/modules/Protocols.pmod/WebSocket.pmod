@@ -1155,7 +1155,7 @@ class _permessagedeflate {
 
     mapping options;
 
-    void create(mapping options) {
+    protected void create(mapping options) {
         this_program::options = options;
     }
 

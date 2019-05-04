@@ -73,14 +73,14 @@ class Event
   }
 
   //! Joins several events into one @[SuperEvent].
-   SuperEvent `|(Event ... with)
+   protected SuperEvent `|(Event ... with)
    {
       with-=({0});
       with|=({this});
       if (sizeof(with)==1) return with[0];
       return SuperEvent(with);
    }
-   SuperEvent ``|(Event with) { return `|(with); }
+   protected SuperEvent ``|(Event with) { return `|(with); }
 
    protected string _sprintf(int t)
    {
@@ -109,7 +109,7 @@ class NullEvent
   //! This constant may be used to identify a NullEvent.
    constant is_nullevent=1;
 
-   void create(string _id,string s,mixed ...args)
+   protected void create(string _id,string s,mixed ...args)
    {
       id=_id;
       name=s;
@@ -207,7 +207,7 @@ class Nameday
 
    int jd;
 
-   void create(string _name,int _jd)
+   protected void create(string _name,int _jd)
    {
       name=_name;
       jd=_jd;
@@ -240,10 +240,10 @@ class Namedays
    array namelist;
    mapping lookup;
 
-   void create(string _id,string _name,
-	       array(array(string)) _names,
-	       mapping(string:int|array(int)) _lookup,
-	       void|int start,void|int stop,void|int _leapdayshift)
+   protected void create(string _id,string _name,
+			 array(array(string)) _names,
+			 mapping(string:int|array(int)) _lookup,
+			 void|int start,void|int stop,void|int _leapdayshift)
    {
       id=_id;
       name=_name;
@@ -391,7 +391,7 @@ class Namedays
       return "Namedays";
    }
 
-   SuperEvent|SuperNamedays|Namedays
+   protected SuperEvent|SuperNamedays|Namedays
       `|(SuperEvent|Namedays|SuperNamedays e,
 	 mixed ...extra)
    {
@@ -475,7 +475,7 @@ class SuperNamedays (array(Nameday) namedayss, string id)
       return predef::`|(@map(namedayss,"names",t));
    }
 
-   SuperEvent|SuperNamedays|Namedays
+   protected SuperEvent|SuperNamedays|Namedays
       `|(SuperEvent|Namedays|SuperNamedays e,
 	 mixed ...extra)
    {
@@ -1389,14 +1389,14 @@ class SuperEvent
       return best;
    }
 
-   Event `|(Event|SuperEvent ... with)
+   protected Event `|(Event|SuperEvent ... with)
    {
       with-=({0});
       return SuperEvent(events|with,flags,"?");
    }
-   Event ``|(Event|SuperEvent with) { return `|(with); }
+   protected Event ``|(Event|SuperEvent with) { return `|(with); }
 
-   Event `-(Event|SuperEvent ...subtract)
+   protected Event `-(Event|SuperEvent ...subtract)
    {
       array(Event) res=events-subtract;
       if (res==events) return this;
@@ -1422,8 +1422,8 @@ class SuperEvent
 		    ","));
    }
 
-   Event `-> (string s) {return `[] (s);}
-   Event `[](string s)
+   protected Event `-> (string s) {return `[] (s);}
+   protected Event `[](string s)
    {
       if (!id2event) id2event=mkmapping(events->id,events);
       return
@@ -1432,13 +1432,13 @@ class SuperEvent
 	 master()->resolv("Calendar")["Events"][id+"/"+s];
    }
 
-   array(string) _indices()
+   protected array(string) _indices()
    {
       if (!id2event) id2event=mkmapping(events->id,events);
       return indices(id2event);
    }
 
-   array(Event) _values()
+   protected array(Event) _values()
    {
       if (!id2event) id2event=mkmapping(events->id,events);
       return values(id2event);

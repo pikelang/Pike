@@ -123,7 +123,7 @@ void reset(int|void initial_size)
 //! An initial stack size can be given when
 //! a stack is cloned. The default value is
 //! 32.
-void create(int|void initial_size)
+protected void create(int|void initial_size)
 {
   arr = allocate(initial_size || 32);
 }
@@ -136,13 +136,13 @@ void set_stack(array stack) {
 
 //! @[sizeof] on a stack returns the number of entries
 //! in the stack.
-int _sizeof() {
+protected int _sizeof() {
   return ptr;
 }
 
 //! @[values] on a stack returns all the entries in
 //! the stack, in order.
-array _values() {
+protected array _values() {
   return arr[..ptr-1];
 }
 
@@ -163,7 +163,7 @@ protected int _search(mixed item)
 //! stack with all the elements from both stacks,
 //! and the elements from the second stack at the
 //! top of the new stack.
-this_program `+(this_program s) {
+protected this_program `+(this_program s) {
   array elem = arr[..ptr-1]+values(s);
   this_program ns = this_program(1);
   ns->set_stack(elem);
@@ -177,6 +177,6 @@ protected mixed cast(string to)
   return UNDEFINED;
 }
 
-string _sprintf(int t) {
+protected string _sprintf(int t) {
   return t=='O' && sprintf("%O%O", this_program, _values());
 }

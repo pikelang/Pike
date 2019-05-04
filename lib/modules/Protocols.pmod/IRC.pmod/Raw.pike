@@ -13,10 +13,10 @@ function(:void) close_callback;
 // command_callback(string cmd,string ... parameters)
 // notify_callback(string from,string type,string from,string message)
 
-void create(string|object server,int port,
-	    function(string,string ...:void) _command_callback,
-	    void|function(string,string...:void) _notify_callback,
-	    void|function(:void) _close_callback)
+protected void create(string|object server,int port,
+		      function(string,string ...:void) _command_callback,
+		      void|function(string,string...:void) _notify_callback,
+		      void|function(:void) _close_callback)
 {
    if (objectp(server))
       con = server;

@@ -129,7 +129,7 @@ test_any([[
   return -1;
 ]],-1)
 test_any([[
-  class A { int _sqrt() { return 17; } };
+  class A { protected int _sqrt() { return 17; } };
   return sqrt(A());
 ]], 17)
 exarg(sqrt)
@@ -235,11 +235,14 @@ test_eq(abs(-5),5)
 test_eq(abs(1.0),1.0)
 test_eq(abs(-1.0),1.0)
 test_any([[
-  object a=class { int `<() { return 0; } }();
+  object a=class { protected int `<() { return 0; } }();
   return a==abs(a);
 ]],1)
 test_any([[
-  object a=class { int `<() { return 1; } int `-() { return 7; } }();
+  object a = class {
+      protected int `<() { return 1; }
+      protected int `-() { return 7; }
+    }();
   return abs(a);
 ]],7)
 dnl exarg(abs)

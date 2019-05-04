@@ -36,8 +36,8 @@
 
 static int find_absolute(PCHARP s, ptrdiff_t len)
 {
-  int c0=INDEX_PCHARP(s,0);
-  int c1=c0?INDEX_PCHARP(s,1):0;
+  int c0=len ? INDEX_PCHARP(s,0) : 0;
+  int c1=c0 && len>1 ? INDEX_PCHARP(s,1) : 0;
   /* The following used to use isalpha(c0), but it apparently can
    * index out-of-bound memory in the msvc 9.0 crt when given 16-bit
    * char values (known to occur with 0x20ac, at least). Besides, a
@@ -45,14 +45,14 @@ static int find_absolute(PCHARP s, ptrdiff_t len)
    * correct. */
   if(((c0 >= 'A' && c0 <= 'Z') ||
       (c0 >= 'a' && c0 <= 'z')) &&
-     c1==':' && IS_SEP(INDEX_PCHARP(s,2)) && (len >= 3))
+     c1==':' && (len >= 3) && IS_SEP(INDEX_PCHARP(s,2)))
     return 3;
 
-  if(IS_SEP(c0) && IS_SEP(c1) && (len >= 2))
+  if((len >= 2) && IS_SEP(c0) && IS_SEP(c1))
   {
     int l;
-    for(l=2;INDEX_PCHARP(s,l) && !IS_SEP(INDEX_PCHARP(s,l));l++);
-    return INDEX_PCHARP(s,l)? l+1:l;
+    for(l=2; l < len && INDEX_PCHARP(s,l) && !IS_SEP(INDEX_PCHARP(s,l));l++);
+    return l < len && INDEX_PCHARP(s,l) ? l+1:l;
   }
 
   return 0;
@@ -82,7 +82,7 @@ static int find_absolute2(PCHARP s, ptrdiff_t len)
 {
   int r=0, p=0;
   int c;
-  while((c=INDEX_PCHARP(s,p)) && (len > 0)) {
+  while((len > 0) && (c=INDEX_PCHARP(s,p))) {
     ++p;
     --len;
     if(c == CHAR_ROOT)
@@ -232,9 +232,8 @@ static void APPEND_PATH(struct string_builder *s,
 	      if (tmp < abs)
 		tmp = abs;
 	      else {
-		if (index_shared_string(s->s,tmp)=='.') {
-		  if ((tmp+1 < s->s->len) &&
-		      (index_shared_string(s->s,tmp+1)=='.') &&
+		if (tmp+1 < s->s->len && index_shared_string(s->s,tmp)=='.') {
+		  if ((index_shared_string(s->s,tmp+1)=='.') &&
 		      ( (tmp+2 == s->s->len) ||
 			IS_SEP(index_shared_string(s->s,tmp+2)))) {
 		    break;

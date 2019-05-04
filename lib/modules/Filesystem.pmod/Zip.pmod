@@ -32,7 +32,7 @@ class Decrypt
   private array key = ({305419896, 591751049, 878082192});
   private array tab = allocate(256);
 
-  private void create(string pw)
+  protected void create(string pw)
   {
     gentab();
     foreach(pw;; int ch)

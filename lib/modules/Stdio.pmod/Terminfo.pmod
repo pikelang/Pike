@@ -343,6 +343,16 @@ class Terminfo {
   {
     int magic, sname, nbool, nnum, nstr, sstr;
 
+    // terminfo(F):
+    //
+    // The header section begins the file. This section contains six
+    // short integers in the format described below. These integers
+    // are (1) the magic number (octal 0432); (2) the size, in bytes,
+    // of the names section; (3) the number of bytes in the boolean
+    // section; (4) the number of short integers in the numbers
+    // section; (5) the number of offsets (short integers) in the
+    // strings section; (6) the size, in bytes, of the string table.
+
     if (6!=sscanf(swab(f->read(12)), "%2c%2c%2c%2c%2c%2c",
 		  magic, sname, nbool, nnum, nstr, sstr) ||
 	(magic != MAGIC && magic != MAGIC2))

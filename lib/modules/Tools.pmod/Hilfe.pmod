@@ -116,8 +116,9 @@ protected class CommandSet {
   }
 
   protected class Reswriter (string format) {
-    void `()(function(string, mixed ... : int) w, string sres, int num,
-	     mixed res, int last_compile_time, int last_eval_time) {
+    protected void `()(function(string, mixed ... : int) w,
+		       string sres, int num, mixed res,
+		       int last_compile_time, int last_eval_time) {
       mixed err = catch {
 	if(!sres)
 	  w("Ok.\n");
@@ -987,12 +988,12 @@ class Expression {
   }
 
   //! The number of non-whitespace tokens in the expression.
-  int _sizeof() {
+  protected int _sizeof() {
     return sizeof(positions);
   }
 
   //! Returns a token or a token range without whitespaces.
-  string `[](int f, void|int t) {
+  protected string `[](int f, void|int t) {
     if(f>sizeof(positions) || -f>sizeof(positions))
       return 0;
     if(!t)
@@ -1005,7 +1006,7 @@ class Expression {
   }
 
   //! Replaces a token with a new token.
-  string `[]= (int f, string v) {
+  protected string `[]= (int f, string v) {
     return tokens[positions[f]] = v;
   }
 

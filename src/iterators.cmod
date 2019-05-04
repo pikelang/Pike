@@ -1834,7 +1834,8 @@ PIKECLASS string_split_iterator
 /*! @endmodule
  */
 
-/*! @decl Iterator get_iterator (object|array|mapping|multiset|string data)
+/*! @decl Iterator get_iterator (object|array|mapping|multiset|string data, @
+ *!                              mixed ... args)
  *!
  *! Creates and returns a canonical iterator for @[data].
  *!
@@ -1842,7 +1843,7 @@ PIKECLASS string_split_iterator
  *!   @mixed data
  *!     @type object
  *!       If @[data] is an object with @[lfun::_get_iterator] defined then
- *!       it's called in it to create the iterator.
+ *!       it's called in it with the arguments @[args] to create the iterator.
  *!
  *!       If @[data] is an object that lacks @[lfun::_get_iterator] then
  *!       it's assumed to already be an iterator object, and is simply
@@ -1868,9 +1869,13 @@ PIKECLASS string_split_iterator
  *! @seealso
  *!   @[Iterator], @[lfun::_get_iterator]
  */
-PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
+PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data,
+				      mixed ... extra)
   efun;
 {
+  if (extra && (TYPEOF(*data) != PIKE_T_OBJECT)) {
+    SIMPLE_WRONG_NUM_ARGS_ERROR("get_iterator", 1);
+  }
   switch(TYPEOF(*data))
   {
     case PIKE_T_STRING:
@@ -1900,8 +1905,8 @@ PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
       fun = FIND_LFUN(p->inherits[SUBTYPEOF(*data)].prog, LFUN__GET_ITERATOR);
       if (fun != -1)
       {
-	apply_low (data->u.object,
-		   fun + p->inherits[SUBTYPEOF(*data)].identifier_level, 0);
+	apply_low(data->u.object,
+		  fun + p->inherits[SUBTYPEOF(*data)].identifier_level, args-1);
 	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
 	  /* FIXME: Ought to include what we got in the error message. */
 	  pop_stack();

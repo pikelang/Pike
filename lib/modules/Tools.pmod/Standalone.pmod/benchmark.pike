@@ -52,14 +52,15 @@ string color( float pct )
   return "";
 }
 
-int(0..) main(int num, array(string) args)
-{
-  mapping(string:Tools.Shoot.Test) tests= Tools.Shoot.tests();
-  int seconds_per_test = 3;
-  array(string) test_globs = ({"*"});
-  bool json;
-  mapping comparison;
+mapping(string:Tools.Shoot.Test) tests;
+bool json;
+mapping comparison;
+int seconds_per_test = 3;
+array(string) test_globs = ({"*"});
 
+int main(int num, array(string) args)
+{
+  tests = Tools.Shoot.tests();
   foreach(Getopt.find_all_options(args, ({
      ({ "help",    Getopt.NO_ARG,  "-h,--help"/"," }),
      ({ "maxsec",  Getopt.HAS_ARG, "-s,--max-seconds"/"," }),
@@ -87,7 +88,8 @@ int(0..) main(int num, array(string) args)
         comparison = Standards.JSON.decode( data );
         break;
       case "help":
-	write(help, sizeof(tests));
+        write(help, sizeof(tests));
+        write("\nAvailable tests:\n%{    %s\n%}", sort(indices(tests)));
 	return 0;
       case "maxsec":
 	seconds_per_test = (int)opt[1];
@@ -102,6 +104,7 @@ int(0..) main(int num, array(string) args)
         break;
     }
   }
+
   if( json )
     write("{\n");
   else if( !comparison )
@@ -111,6 +114,13 @@ int(0..) main(int num, array(string) args)
     write("-"*65+"\n%-40s%18s%7s\n"+"-"*65+"\n",
           "Test","Result","Change");
 
+  call_out(Thread.Thread, 0, run_tests);
+  return -1;
+}
+
+void run_tests()
+{
+  mixed err = catch {
    /* Run overhead check first. */
    float overhead_time;
    array(string) to_run = glob(test_globs,sort(indices (tests)-({"Overhead"})));
@@ -175,4 +185,11 @@ int(0..) main(int num, array(string) args)
    }
    else
      write("-"*59+"\n");
+    };
+  if( err )
+  {
+    write("\n"+describe_backtrace(err));
+    exit(1);
+  }
+  exit(0);
 }

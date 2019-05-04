@@ -132,7 +132,7 @@ int(0..1) superset(ADT.Set other)
 
 //! Equality. A == B returns true if all items in A are present in B,
 //! and all items in B are present in A. Otherwise, it returns false.
-int(0..1) `==(ADT.Set other)
+protected int(0..1) `==(ADT.Set other)
 {
   foreach(indices(set), mixed item)
     if (!other->contains(item))
@@ -148,7 +148,7 @@ int(0..1) `==(ADT.Set other)
 
 //! True subset. A < B returns true if each item in A is also present
 //! in B, and B contains at least one item not present in A.
-int(0..1) `<(ADT.Set other)
+protected int(0..1) `<(ADT.Set other)
 {
   if (sizeof(this) >= sizeof(other))
     return 0;
@@ -158,8 +158,8 @@ int(0..1) `<(ADT.Set other)
 
 
 //! True superset. A > B returns true if each item in B is also present
-//! in A, and A contains at least one item not present in B.
-int(0..1) `>(ADT.Set other)
+//! in A, and A contains at least one item not present in B.i
+protected int(0..1) `>(ADT.Set other)
 {
   if (sizeof(this) <= sizeof(other))
     return 0;
@@ -169,7 +169,7 @@ int(0..1) `>(ADT.Set other)
 
 //! Union. Returns a set containing all elements present in either
 //! or both of the operand sets.
-this_program `|(ADT.Set other)
+protected this_program `|(ADT.Set other)
 {
   ADT.Set result = ADT.Set(this);
 
@@ -179,12 +179,12 @@ this_program `|(ADT.Set other)
   return result;
 }
 
-mixed `+ = `|; // Addition on sets works the same as union on sets.
+protected mixed `+ = `|; // Addition on sets works the same as union on sets.
 
 
 //! Intersection. Returns a set containing those values that were
 //! present in both the operand sets.
-this_program `&(ADT.Set other)
+protected this_program `&(ADT.Set other)
 {
   return filter(lambda (mixed x) { return other->contains(x);});
 }
@@ -192,7 +192,7 @@ this_program `&(ADT.Set other)
 
 //! Difference. The expression 'A - B', where A and B are sets, returns
 //! all elements in A that are not also present in B.
-this_program `-(ADT.Set other)
+protected this_program `-(ADT.Set other)
 {
   return filter(lambda (mixed x) { return !other->contains(x);});
 }
@@ -200,7 +200,7 @@ this_program `-(ADT.Set other)
 
 //! Indexing a set with a value V gives 1 if V is a member of the
 //! set, otherwise 0.
-int(0..1) `[](mixed item)
+protected int(0..1) `[](mixed item)
 {
   return set[item];
 }
@@ -208,7 +208,7 @@ int(0..1) `[](mixed item)
 
 //! Setting an index V to 0 removes V from the set. Setting it to
 //! a non-0 value adds V as a member of the set.
-int `[]=(mixed item, int value)
+protected int `[]=(mixed item, int value)
 {
   if (value)
     add(item);
@@ -225,7 +225,7 @@ int `[]=(mixed item, int value)
 
 //! In analogy with multisets, indices() of an ADT.Set givess an array
 //! containing all members of the set.
-array(mixed) _indices()
+protected array(mixed) _indices()
 {
   return indices(set);
 }
@@ -237,7 +237,7 @@ array(mixed) _indices()
 //! is probably rather useless for sets, since the result is an array
 //! which just contain 1's, one for each member of the set. Still,
 //! this function is provided for consistency.
-array(mixed) _values()
+protected array(mixed) _values()
 {
   return values(set);
 }
@@ -261,14 +261,14 @@ protected mixed cast(string to)
 
 
 //! Number of items in the set.
-int _sizeof()
+protected int _sizeof()
 {
   return sizeof(set);
 }
 
 
 //! Printable representation of the set.
-string _sprintf(int t) {
+protected string _sprintf(int t) {
   return t=='O' && sprintf("%O%O", this_program, cast("array"));
 }
 
@@ -276,7 +276,7 @@ string _sprintf(int t) {
 //! Create an ADT.Set, optionally initialized from another ADT.Set or
 //! a compatible type. If no initial data is given, the set will start
 //! out empty.
-void create(void|ADT.Set|array|multiset|mapping initial_data)
+protected void create(void|ADT.Set|array|multiset|mapping initial_data)
 {
   reset();
   if (arrayp(initial_data))

@@ -607,6 +607,15 @@ test_any_equal([[
   return values(B());
 ]], ({ 2 }))
 
+test_any_equal([[
+  // Test constant expression in inherit.
+  class A { constant sym = 1; }
+  class B { constant sym = 2; }
+  class C { inherit ([ "A":A, "B":B ])["A"]; }
+  class D { inherit ([ "A":A, "B":B ])["B"]; }
+  return ({ A, B, C, D })->sym;
+]], ({ 1, 2, 1, 2 }))
+
 dnl bug in for loop optimization in combination with +=
 
 test_any([[
@@ -715,17 +724,17 @@ test_any([[mapping(object:string)|mapping(string:int) f;
 	  return sort((sprintf("%O", typeof(f[0])) - " ")/"|")*"|"; ]],
 	 "int|string")
 
-test_any([[class Foo { string `[](mixed y) {return "";} };
+test_any([[class Foo { protected string `[](mixed y) {return "";} };
 	  object(Foo) foo;
 	  return sprintf("%O", typeof(foo[0])); ]],
 	 "string")
 
-test_any([[class Foo { array(int) _indices() {return ({0});} };
+test_any([[class Foo { protected array(int) _indices() {return ({0});} };
 	  object(Foo) foo;
 	  return sprintf("%O", typeof(indices(foo))); ]],
 	 "array(int)")
 
-test_any([[class Foo { array(string) _values() {return ({""});} };
+test_any([[class Foo { protected array(string) _values() {return ({""});} };
 	  object(Foo) foo;
 	  return sprintf("%O", typeof(values(foo))); ]],
 	 "array(string)")
@@ -1018,6 +1027,38 @@ test_compile_any([[
 ]])
 
 test_any([[
+  // Test Pike.InhibitDestruct.
+  class Foo {
+    inherit Pike.InhibitDestruct;
+    /* Make the symbols visible outside. */
+    void inhibit_destruct() { ::inhibit_destruct(); }
+    void permit_destruct() { ::permit_destruct(); }
+  }
+  object o = Foo();
+  destruct(o);
+  if (o) return 1;
+
+  o = Foo();
+  o->inhibit_destruct();
+  o->permit_destruct();
+  if (!o) return 2;
+  destruct(o);
+  if (o) return 3;
+
+  o = Foo();
+  o->inhibit_destruct();
+  destruct(o);
+  if (!o) return 4;
+  o->inhibit_destruct();
+  if (!o) return 5;
+  o->permit_destruct();
+  if (!o) return 6;
+  o->permit_destruct();
+  if (o) return 7;
+  return 0;
+]], 0)
+
+test_any([[
   class Foo {
     constant zero = 0;
     mapping(string:array(int)) m;
@@ -1217,6 +1258,25 @@ test_any([[
   return catch { Builtin.__Backtrace_Tester__(); }[1][-1][2];
 ]], Builtin.__Backtrace_Tester__)
 
+test_any_equal([[
+  // Test that filename and line numbers in backtraces are correct.
+  // This specific test used to trigger two different bugs.
+  // cf [LysLysKOM 22997909].
+  int whee(string w)
+  {
+#line 8 "whee-before"
+    int x = 0;
+    error("whee!\n");
+#line 11 "whee-after"
+    string q = "wq";
+    q += "21";
+    return sizeof(q + w);
+  };
+#line 16 "test"
+  mixed err = catch { whee("foo"); };
+  return ({ err[1][-1][0], err[1][-1][1] });
+]], ({ "whee-before", 9 }))
+
 test_compile_warning([[
   class A { static int foo = 1; int bar() { return foo; } }
 ]])
@@ -1276,7 +1336,7 @@ test_compile_any([[
 
   class B
   {
-     void create(int y)
+     protected void create(int y)
      {
      }
   }
@@ -1344,7 +1404,7 @@ class Foo
 {
   inherit Stdio.File;
 
-  void create() {  }
+  protected void create() {  }
 };
 
 class Bar
@@ -1357,13 +1417,13 @@ class Bar
     inherit Foo;
 
 
-    void create(Stdio.File f)
+    protected void create(Stdio.File f)
       {
 	assign(f);
       }
   }
 
-  void create()
+  protected void create()
     {
       Gazonk(Stdio.stdin);
     }
@@ -1535,7 +1595,7 @@ test_do([[
 	c = count++;
       }
 
-      void _destruct()
+      protected void _destruct()
       {
 	count--;
 	if (count != c)
@@ -1650,7 +1710,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int dummy;
   int f (int x)
   {
@@ -1685,7 +1745,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int res = 0;
   void f (int x)
   {
@@ -1717,7 +1777,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int f (int x)
   {
     if(monitor::trylock(1))
@@ -1883,7 +1943,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int dummy;
   int f (int x)
   {
@@ -1921,7 +1981,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int res = 0;
   void f (int x)
   {
@@ -1954,7 +2014,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int f (int x)
   {
     if(monitor::trylock(1))
@@ -2111,7 +2171,7 @@ test_program([[
   }
 ]]);
 test_program([[
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int dummy;
   int f (int x)
   {
@@ -2139,7 +2199,7 @@ test_program([[
   }
 ]]);
 test_program([[
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int res = 0;
   void f (int x)
   {
@@ -2164,7 +2224,7 @@ test_program([[
   }
 ]]);
 test_program([[
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int f (int x)
   {
     return x;
@@ -2351,13 +2411,13 @@ test_program([[
 test_program([[
   int i = 17, v;
   this_program clone() {return this_program (i);}
-  void create (int v_) {v = v_;}
+  protected void create (int v_) {v = v_;}
   int a() {return clone()->v == 17;}
 ]])
 test_program([[
   this_program clone() {return this_program (i);}
   int i = 17, v;
-  void create (int v_) {v = v_;}
+  protected void create (int v_) {v = v_;}
   int a() {return clone()->v == 17;}
 ]])
 test_program([[
@@ -2477,9 +2537,9 @@ test_compile_error(1())
 test_compile_error(""())
 test_compile_error(([])())
 test_compile_error(([])())
-test_any([[ class X { int y; class Z { void _destruct() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+test_any([[ class X { int y; class Z { protected void _destruct() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 
-test_eval_error([[ class Z { int _destruct() { return 1/y; } }(); ]])
+test_eval_error([[ class Z { protected int _destruct() { return 1/y; } }(); ]])
 
 test_any([[ class X { int y; class Z { protected void _destruct() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 test_any([[ class X { int y; class Z { protected void create() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
@@ -2574,7 +2634,7 @@ test_program([[// [bug 3060]
 
   class X
   {
-    void create() {error ("foo\n");} // Line 8
+    protected void create() {error ("foo\n");} // Line 8
   }
 
   object rx = class {}();
@@ -3119,7 +3179,7 @@ test_compile_any([[void foo(array(Stdio.FILE) f) {}]])
 test_compile_any([[Stdio.File foo(array(Stdio.FILE) f) { return f[0]; }]])
 test_compile_any([[
 class a {
-  int `== (mixed x) {
+  protected int `== (mixed x) {
     return 0;
   }
 }
@@ -3302,6 +3362,16 @@ test_any([[
   return 0;
 ]], 0)
 
+test_any_equal([[
+  // Test automap combined with splice. [LysLysKOM 23258037]
+  array ret = ({});
+  for (int x = 0; x < 10; x++) {
+    array a = ({ x, });
+    ret += `+(a[*], @a);
+  }
+  return ret;
+]], ({ 0, 2, 4, 6, 8, 10, 12, 14, 16, 18 }))
+
 test_any([[
   // Test eval_low() on seemingly constant expressions, that
   // attempt to access variables in the fake object. [Bug 5273]
@@ -3313,7 +3383,7 @@ test_any([[
   {
     protected object foo;
 
-    mixed `-> (mixed what)
+    protected mixed `-> (mixed what)
     {
       return foo;
     }
@@ -3411,12 +3481,12 @@ test_compile([[float x=(gauge { return; },1.0);]])
 test_compile_error([[object x = Gmp.mpz(17); constant y = x;]])
 test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
 test_compile([[float t=gauge { string foo; foo; };]])
-test_compile_any([[class Foo { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
+test_compile_any([[class Foo { object(Stdio.FILE) f; protected void create() { f=Stdio.FILE(); }}]])
 test_eq([[compile_string("#define A(X) (X)\nint x() { return A \n\t(1); }")()->x()]],1)
 
 test_any([[class G { mapping t=([]);
  class tO { void init(string name) { t[name]=this; }}
- class W { inherit tO; void create() { init("foo"); }}
+ class W { inherit tO; protected void create() { init("foo"); }}
 }; object x=G(); x->W(); return objectp(x->t->foo)]],1)
 
 test_program([[class foo { program x() { return class {}; }}; class bar { inherit foo; program x() { return class {}; }} int a() { return foo()->x != bar()->x(); }]])
@@ -3431,7 +3501,7 @@ test_any([[
     constant gurka = 1;
     int bar;
 
-    void create() { bar = foo; }
+    protected void create() { bar = foo; }
   };
   return B()->bar;
 ]], 1)
@@ -3447,7 +3517,7 @@ test_any([[
     int bar;
     int baz = 3;
 
-    void create() { bar = baz + foo; }
+    protected void create() { bar = baz + foo; }
   };
   return B()->bar;
 ]], 4)
@@ -3469,7 +3539,7 @@ test_any([[
     int bar;
     int baz = 5;
 
-    void create() { bar = baz + A::foo + B::foo; }
+    protected void create() { bar = baz + A::foo + B::foo; }
   };
   return C()->bar;
 ]], 12)
@@ -3865,26 +3935,26 @@ return class { int i=17; }()["i"]
 ]],17)
 
 test_any([[
-return class { int i=17; mixed `[](string foo) { return i; }}()[""]
+return class { int i=17; protected mixed `[](string foo) { return i; }}()[""]
 ]],17)
 
 test_any([[
-return class { int i=17; mixed `[](string foo) { return ::`[]("i"); }}()[""]
+return class { int i=17; protected mixed `[](string foo) { return ::`[]("i"); }}()[""]
 ]],17)
 
 test_any([[
-return class { int i=17; mixed `[](string foo) { return ::`[]; }}()[""]("i")
+return class { int i=17; protected mixed `[](string foo) { return ::`[]; }}()[""]("i")
 ]],17)
 
 test_any([[
-return class { int i=17; mixed `[](string foo) { return ::`[]; }}()[""]("y")
+return class { int i=17; protected mixed `[](string foo) { return ::`[]; }}()[""]("y")
 ]],0)
 
 test_any([[
 object o=class {
   int i=17;
-  mixed `[](string foo) { return ::`[]=; }
-  mixed `[]=(string ind, mixed foo) {}
+  protected mixed `[](string foo) { return ::`[]=; }
+  protected mixed `[]=(string ind, mixed foo) {}
 }();
 
 o[""]("i",99);
@@ -3897,8 +3967,8 @@ object o=class {
   int bar=11;
   int i=17;
   int gazonk=12;
-  mixed `[](string foo) { return ::`[]=; }
-  mixed `[]=(string ind, mixed foo) {}
+  protected mixed `[](string foo) { return ::`[]=; }
+  protected mixed `[]=(string ind, mixed foo) {}
 }();
 
 o[""]("i",99);
@@ -3916,8 +3986,8 @@ class Fonk {
 object o=class
 {
   inherit Fonk;
-  mixed `[](string foo) { return ::`[]=; }
-  mixed `[]=(string ind, mixed foo) {}
+  protected mixed `[](string foo) { return ::`[]=; }
+  protected mixed `[]=(string ind, mixed foo) {}
 }();
 
 o[""]("i",99);
@@ -3935,8 +4005,8 @@ class Fonk {
 object o=class
 {
   inherit Fonk : zonk;
-  mixed `[](string foo) { return zonk::`[]=; }
-  mixed `[]=(string ind, mixed foo) {}
+  protected mixed `[](string foo) { return zonk::`[]=; }
+  protected mixed `[]=(string ind, mixed foo) {}
 }();
 
 o[""]("i",99);
@@ -4397,7 +4467,7 @@ test_any([[
   class A(mapping foo) {
     mapping _modified = ([]);
 
-    mixed `->=(string sym, mixed v) {
+    protected mixed `->=(string sym, mixed v) {
       return _modified[sym] = v;
     }
 
@@ -4444,7 +4514,7 @@ test_any([[
   class A(array foo) {
     int counter;
 
-    void `->=(string sym, mixed v) {
+    protected void `->=(string sym, mixed v) {
       counter += !!v;
       ::`->=(sym, v);
     }
@@ -4582,9 +4652,9 @@ cond(0,[[
 test_any([[
 class X {
  protected string f() { return "p"; }
- protected class gazonk { void create() { f(); }};
-  protected class g { object e() { return gazonk(); }};
- void create() { g()->e(); }}; return objectp(X()); ]],1)
+ protected class gazonk { protected void create() { f(); }};
+ protected class g { object e() { return gazonk(); }};
+ protected void create() { g()->e(); }}; return objectp(X()); ]],1)
 test_any([[class A { int x=1; }; class B { protected inherit A; int foo() { return A::x; }}; return A()->x && !B()->x && B()->foo()==A()->x;]],1)
 test_any([[class C { int q() { return p(); } int p() { return 17; }}; return C()->q();]],17)
 test_any([[class C1 {
@@ -4592,12 +4662,12 @@ test_any([[class C1 {
  class Y { program YinD() { return D; }} };
  class C2 { inherit C1; class D { string id() { return "bar"; } } };
  return C2()->Y()->YinD()()->id()]],"bar")
-test_any([[object o=class {int c;class bar{void create(){c++;};}}(); o->bar(); return o->c;]],1)
-test_do([[add_constant("GURKA2",class { int c; class bar{void create() {c+=17;}}}()); ]])
+test_any([[object o=class {int c;class bar{protected void create(){c++;};}}(); o->bar(); return o->c;]],1)
+test_do([[add_constant("GURKA2",class { int c; class bar{protected void create() {c+=17;}}}()); ]])
 test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
 test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
 
-test_do([[add_constant("GURKA2",class { int c; class bar{void create() { class { void create() {c+=17;}}(); }}}()); ]])
+test_do([[add_constant("GURKA2",class { int c; class bar{protected void create() { class { protected void create() {c+=17;}}(); }}}()); ]])
 test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
 test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
 test_do([[add_constant("GURKA2");]]);
@@ -4800,7 +4870,7 @@ test_any([[
   return my_lambda(); really_magic_var;
 ]],"foo")
 
-test_eq([[class { int `()(){ return 4711; } }()(); ]],4711)
+test_eq([[class { protected int `()(){ return 4711; } }()(); ]],4711)
 teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
 test_compile_error([[class T{void p(object e,object f){lambda::create(f);}}]])
@@ -4979,12 +5049,12 @@ test_any_equal([[
 
 test_compile_error(int foo() { LJjjjjJJJ ; })
 test_true(class { constant i=1; }()->i)
-test_true(class { constant i=0; mixed `->(string s) { if(s=="i") return 1; }}()->i)
-test_true(class { constant i=1; mixed `->(string s) { return 0; }}()["i"])
-test_true(class { constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
-test_true(class { optional constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
-test_true(class { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }}()[1]=1)
-test_true(class { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }}()->i="i")
+test_true(class { constant i=0; protected mixed `->(string s) { if(s=="i") return 1; }}()->i)
+test_true(class { constant i=1; protected mixed `->(string s) { return 0; }}()["i"])
+test_true(class { constant i=0; protected mixed `[](string s) { if(s=="i") return 1; }}()["i"])
+test_true(class { optional constant i=0; protected mixed `[](string s) { if(s=="i") return 1; }}()["i"])
+test_true(class { protected mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }}()[1]=1)
+test_true(class { protected mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }}()->i="i")
 
 test_do([[
 #pragma strict_types
@@ -5177,11 +5247,11 @@ test_any_equal([[
      a coredump in a later test. */
   class A {
     array a = ({1});
-    void `->= (string var, mixed val) {::`->= (var, val);}
+    protected void `->= (string var, mixed val) {::`->= (var, val);}
   };
   class B {
     inherit A;
-    void `->= (string var, mixed val) {if (var) ::`->= (var, val);}
+    protected void `->= (string var, mixed val) {if (var) ::`->= (var, val);}
   };
   object o = B();
   o->a += ({2});
@@ -5191,7 +5261,7 @@ test_any_equal([[
 test_any_equal([[
   class A {
     array a = ({1});
-    void `->= (string var, mixed val) {::`->= (var, val);}
+    protected void `->= (string var, mixed val) {::`->= (var, val);}
   };
   class B {
     inherit A;
@@ -5204,12 +5274,12 @@ test_any_equal([[
 test_any_equal([[
   class A {
     array a = ({1});
-//    void `->= (string var, mixed val) {::`->= (var, val);}
+//    protected void `->= (string var, mixed val) {::`->= (var, val);}
   };
   class B {
     int z;
     inherit A;
-    void `->= (string var, mixed val) { A::`->= (var, val);}
+    protected void `->= (string var, mixed val) { A::`->= (var, val);}
   };
   object o = B();
   o->a += ({2});
@@ -5228,7 +5298,7 @@ test_any_equal([[
     inherit FOO;
     int b,c,d,e,f,g;
     inherit A;
-    void `->= (string var, mixed val) { A::`->= (var, val);}
+    protected void `->= (string var, mixed val) { A::`->= (var, val);}
   };
   object o = B();
   o->a += ({2});
@@ -5246,11 +5316,11 @@ test_any_equal([[
 
     class Q
     {
-	mixed `-> (string var)
+	protected mixed `-> (string var)
 	{
 	  return FNORD::`-> (var);
 	}
-      void `->= (string var, mixed val)
+        protected void `->= (string var, mixed val)
 	{
 	  FNORD::`->= (var, val);
 	}
@@ -5878,6 +5948,35 @@ test_any([[multiset m=(<>);int e;
 ]],-1)
 
 
+test_any([[multiset m = (<>); int e; int f;
+  for (e = 0; e < 100;e++) {
+    for (f = e; f < 100; f++) {
+      m_add(m, f);
+    }
+  }
+  for (e = 0; e < 100; e++) {
+    f = -1;
+    while (m_delete(m, e)) f++;
+    if (f != e) return e;
+  }
+  return -1;
+]], -1)
+
+test_any([[multiset m = (<>); int e; int f;
+  for (e = 0; e < 100;e++) {
+    for (f = e; f < 100; f++) {
+      m_add(m, e);
+    }
+  }
+  for (e = 0; e < 100; e++) {
+    f = e;
+    while (m_delete(m, e)) f++;
+    if (f != 100) return e;
+  }
+  return -1;
+]], -1)
+
+
 test_any([[multiset m=(<>);int e;
   mixed a;
   a=allocate(1000);
@@ -6032,8 +6131,8 @@ test_any_equal([[
 
 test_any([[
   class X (int i) {
-    int `< (mixed o) {return 0;}
-    int `== (mixed o) {return 0;}
+    protected int `< (mixed o) {return 0;}
+    protected int `== (mixed o) {return 0;}
   };
   multiset m = (<X(2)>);
   m[X(4)] = 1;
@@ -6191,14 +6290,14 @@ mapping gurka;
 
 class Tomat
 {
-  int `==(mixed x)
+  protected int `==(mixed x)
     {
       /* make hash bigger */
       for(int e=sizeof(gurka);e<1000;e++) gurka[e]=e;
       return 0;
     }
 
-  int __hash()
+  protected int __hash()
     {
       return 99999;
     }
@@ -6206,13 +6305,13 @@ class Tomat
 
 class Sallad
 {
-  int __hash()
+  protected int __hash()
     {
       return 99999;
     }
 };
 
-void create()
+protected void create()
 {
   for(int x=1;x<255;x++)
   {
@@ -6230,8 +6329,8 @@ void create()
 test_any([[
     mapping m = ([ "foo" : 1 ]);
     class A {
-	int __hash() { return hash_value("foo"); }
-	int `==(mixed o) { return o == "foo"; }
+	protected int __hash() { return hash_value("foo"); }
+	protected int `==(mixed o) { return o == "foo"; }
     };
     if( !m[A()] )
       return (string)hash_value("foo");
@@ -6241,8 +6340,8 @@ test_any([[
 test_any([[
     mapping m = ([ "foo" : 1 ]);
     class A {
-	int __hash() { return hash_value("foo"); }
-	int `==(mixed o) { return o == "foo"; }
+	protected int __hash() { return hash_value("foo"); }
+	protected int `==(mixed o) { return o == "foo"; }
     };
     if( sizeof(m - ([ A() : 1 ])) )
       return (string)hash_value("foo");
@@ -6453,8 +6552,8 @@ test_any([[
     mapping m = ([]);
     class Refcounter()
     { mapping state;
-      void create(mapping m) { state = m; state->refs++;}
-      void _destruct() {state->refs--;}
+      protected void create(mapping m) { state = m; state->refs++;}
+      protected void _destruct() {state->refs--;}
     };
     int final_res;
     function foo()
@@ -6482,7 +6581,7 @@ test_any([[
     {
       object c;
       class A {object b;}
-      class B {object a; void _destruct() {c = class{}();}}
+      class B {object a; protected void _destruct() {c = class{}();}}
       mixed test()
       {
 	object a = A(), b = B();
@@ -6512,43 +6611,43 @@ test_any([[
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     object o = Live(); o->o = Live(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     object o = Dead(); o->o = Live(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     object o = Live(); o->o = Dead(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
 
   test_any_equal([[{
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     array a = set_weak_flag(({Live()}), 1);
     gc();
     return set_weak_flag(a, 0);
   }]], ({0}))
   test_any_equal([[{
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     multiset l = set_weak_flag((<Live()>), 1);
     gc();
     return set_weak_flag(l, 0);
   }]], (<>))
   test_any_equal([[{
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     mapping m = set_weak_flag(([0: Live()]), 1);
     gc();
     return set_weak_flag(m, 0);
   }]], ([]))
   test_any_equal([[{
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     mapping m = set_weak_flag(([Live(): 0]), 1);
     gc();
     return set_weak_flag(m, 0);
@@ -6563,8 +6662,8 @@ test_any([[
     object o = class {
       array g;
       array a = ({17});
-      void create() {g = ({this});}
-      void _destruct() {all_constants()->kablutt = a;}
+      protected void create() {g = ({this});}
+      protected void _destruct() {all_constants()->kablutt = a;}
     }();
     o = 0;
     gc();
@@ -6574,8 +6673,8 @@ test_any([[
     object o = class {
       array g;
       array a = set_weak_flag (({({17})}), 1);
-      void create() {g = ({this});}
-      void _destruct() {
+      protected void create() {g = ({this});}
+      protected void _destruct() {
 	if (!equal (a, ({({17})})))
 	  error ("Contents in weak array zapped: %O.\n", a);
       }
@@ -6587,8 +6686,8 @@ test_any([[
     object o = class {
       array g;
       array a = set_weak_flag (({({17})}), 1);
-      void create() {g = ({this});}
-      void _destruct() {all_constants()->blatinka = a;}
+      protected void create() {g = ({this});}
+      protected void _destruct() {all_constants()->blatinka = a;}
     }();
     o = 0;
     gc();
@@ -6629,14 +6728,14 @@ test_do(add_constant("blatinka");)
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     object o = Live(); o->o = Dead();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     object o = Dead(); o->o = Live();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
@@ -6687,7 +6786,7 @@ test_do(add_constant("blatinka");)
     class Foo {
       array(Foo) f = ({this});
       multiset(Foo) g = set_weak_flag((<this>), 1);
-      void _destruct() {add_constant("beltbent_oblivion", 1);}
+      protected void _destruct() {add_constant("beltbent_oblivion", 1);}
     };
     multiset(Foo) x = set_weak_flag ((<Foo()>), 1);
     gc();
@@ -6727,13 +6826,13 @@ test_do(add_constant("blatinka");)
     class Live {
       array a;
       array g = ({this});
-      void create()
+      protected void create()
       {
 	a = set_weak_flag (({0}), 1);
 	array b = set_weak_flag (({a}), 1);
 	a[0] = b;
       }
-      void _destruct()
+      protected void _destruct()
       {
 	if (!arrayp(a) || !arrayp(a[0]) || a[0][0] != a)
 	  add_constant ("my_little_error", "GC garbed weak things too early.\n");
@@ -6752,7 +6851,7 @@ test_do(add_constant("blatinka");)
     class Live
     {
       Foo f;
-      void _destruct()
+      protected void _destruct()
       {
 	if (!f->l || !f->a || !f->a[0] || !f->a[1])
 	  add_constant ("my_little_error", "GC garbed live things.\n");
@@ -6767,7 +6866,7 @@ test_do(add_constant("blatinka");)
 	array a = ({j});
       }
       Live l;
-      void create (Live _l)
+      protected void create (Live _l)
       {
 	l = _l;
 	l->f = this;
@@ -6957,7 +7056,7 @@ test_do(add_constant("blatinka");)
       object o = class {}();
       array a = set_weak_flag (({o}), 1);
       object this = this;
-      void create() {destruct (o);}
+      protected void create() {destruct (o);}
     }();
     f = 0;
     gc();
@@ -6968,7 +7067,7 @@ test_do(add_constant("blatinka");)
       object o = class {}();
       mapping m = set_weak_flag (([1:o]), 1);
       object this = this;
-      void create() {destruct (o);}
+      protected void create() {destruct (o);}
     }();
     f = 0;
     gc();
@@ -6979,7 +7078,7 @@ test_do(add_constant("blatinka");)
       object o = class {}();
       mapping m = set_weak_flag (([o:1]), 1);
       object this = this;
-      void create() {destruct (o);}
+      protected void create() {destruct (o);}
     }();
     f = 0;
     gc();
@@ -6990,7 +7089,7 @@ test_do(add_constant("blatinka");)
       object o = class {}();
       multiset m = set_weak_flag ((<o>), 1);
       object this = this;
-      void create() {destruct (o);}
+      protected void create() {destruct (o);}
     }();
     f = 0;
     gc();
@@ -7000,7 +7099,7 @@ test_do(add_constant("blatinka");)
 
   test_any([[mapping q=([ "t":class {} ()]); gc(); if(!objectp(q->t)) return -1; set_weak_flag(q,1); gc(); if(objectp(q->t)) return -2; return 0;]],0);
 
-  test_do([[class bar { object foo; void create(void|object tmp) { foo=tmp; } };
+  test_do([[class bar { object foo; protected void create(void|object tmp) { foo=tmp; } };
              object o=bar(),o2=o;
              for(int e=0;e<10000;e++) o=bar(o);
              o2->foo=o;
@@ -7141,7 +7240,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    mapping a = ([1: this]);
-	    void _destruct() {x = a;}
+	    protected void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7156,7 +7255,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    multiset a = (<this>);
-	    void _destruct() {x = a;}
+	    protected void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7171,7 +7270,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    array a = ({this});
-	    void _destruct() {x = a;}
+	    protected void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7181,13 +7280,13 @@ test_do(add_constant("blatinka");)
   ]], 1)
   test_any([[
     return class {
-      class Obj (object o) {void _destruct() {}}
+      class Obj (object o) {protected void _destruct() {}}
       Obj x;
       int test()
       {
 	object o = class {
 	    Obj a = Obj (this);
-	    void _destruct() {x = a;}
+	    protected void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7203,7 +7302,7 @@ test_do(add_constant("blatinka");)
       {
 	object o = class {
 	    Obj a = Obj (this);
-	    void _destruct() {x = a;}
+	    protected void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7589,7 +7688,7 @@ test_any([[
 		"collect_stats": 1]);
   Pike.count_memory (m, master());
   return m->rounds;
-]], 2)
+]], 1)
 test_true([[Pike.count_memory (-1, Int.NATIVE_MAX + 1) >
 	    Pike.count_memory (-1, 17)]])
 test_true([[Pike.count_memory (-1, Int.NATIVE_MAX << 100) >
@@ -7629,8 +7728,8 @@ test_any([[
   // PIKE-106: Mutex not unlocked properly on error in identify_cycle().
   class Foo {
     int cnt;
-    int __hash() { return 0; }
-    int `==(mixed x) { if (!cnt++) error("Comparison failure.\n"); }
+    protected int __hash() { return 0; }
+    protected int `==(mixed x) { if (!cnt++) error("Comparison failure.\n"); }
   };
   catch {
     // This triggered an error.
@@ -8821,7 +8920,7 @@ test_equal( ({1,2,3,4,4}) | ({3,5,6}), ({1,2,3,4,4,5,6}))
 test_equal( (<4,5,6>) | (<5,5,5>), (<4,5,5,5,6>) )
 test_equal( ([-4:8,8:7]) | ([3:3,8:3]), ([-4:8,8:3,3:3]) )
 test_any([[
-  class Foo {int `< (object o) {return 0;}};
+  class Foo {protected int `< (object o) {return 0;}};
   return sizeof (({Foo()}) | ({Foo()}));
 ]], 2)
 
@@ -8928,7 +9027,7 @@ test_eq((<'f','o','o'>)['f'],1)
 test_eq((<'f','o','o'>)[random(0)+'b'],0)
 test_eq((<'f','o','o'>)[ [int](mixed)-1],0)
 
-test_eq([[class { mixed `->(mixed x) { return this[x]; } int foo() { return 1; }}()->foo()]],1)
+test_eq([[class { protected mixed `->(mixed x) { return this[x]; } int foo() { return 1; }}()->foo()]],1)
 
 // Test some indexing opcodes.
 test_eval_error([[return ({1})[1];]])
@@ -9045,7 +9144,7 @@ test_equal(`[..] ("abcdef"/"", 1, Pike.OPEN_BOUND, 3, Pike.OPEN_BOUND),         
 define(test_new_style, [[
   test_any_equal([[
     object new_style = class {
-        array(int) `[..] (int... args) {return args;}
+        protected array(int) `[..] (int... args) {return args;}
       }();
     return new_style $1;
   ]], $2)
@@ -9064,8 +9163,8 @@ undefine([[test_new_style]])
 define(test_old_style, [[
   test_any_equal([[
     object old_style = class {
-        int _sizeof() {return 6;}
-        array(int) `[] (int... args) {return args;}
+        protected int _sizeof() {return 6;}
+        protected array(int) `[] (int... args) {return args;}
       }();
     return old_style $1;
   ]], $2)
@@ -9091,12 +9190,12 @@ test_eq([[(int)"-1"]],[[-1]])
 test_eq([[(int)"0x1"]],[[0]])
 test_eq([[(int)"010"]],[[10]])
 test_eq((int)Gmp.mpz(5), 5)
-test_eq((int)class { mixed cast(string x) { return x=="int" && 7; } }(), 7)
-test_eval_error([[ return (int)class { mixed cast(string x) {
+test_eq((int)class { protected mixed cast(string x) { return x=="int" && 7; } }(), 7)
+test_eval_error([[ return (int)class { protected mixed cast(string x) {
   return 1.0; } }(); ]]);
-test_eval_error([[ return (int)class { mixed cast(string x) {
+test_eval_error([[ return (int)class { protected mixed cast(string x) {
   return ADT.Heap(); } }(); ]]);
-test_any([[ return (int)class { mixed cast(string x) {
+test_any([[ return (int)class { protected mixed cast(string x) {
   return Gmp.mpz(7); } }(); ]], Gmp.mpz(7));
 test_eq([[(float)"1"]],[[1.0]])
 test_eq([[(float)"-1"]],[[-1.0]])
@@ -9111,14 +9210,14 @@ test_eq([[(string)-1]],[["-1"]])
 test_eq([[(string)1.0]],[["1.0"]])
 test_eq([[(string)-1.0]],[["-1.0"]])
 test_eq((string)Gmp.mpz(5), "5")
-test_eq((string)class { mixed cast(string x) {
+test_eq((string)class { protected mixed cast(string x) {
   return x=="string" && "7"; } }(), "7")
-test_eval_error((string)class { mixed cast(string x) { return 1.0; }}();)
-test_eval_error((string)class { mixed cast(string x) {
+test_eval_error((string)class { protected mixed cast(string x) { return 1.0; }}();)
+test_eval_error((string)class { protected mixed cast(string x) {
   return ADT.Heap(); }}();)
 test_any([[
-  class A { int q=9; int _is_type(string x) { return x=="string"; } };
-  mixed o = (string)class { mixed cast(string x) { return A(); } }();
+  class A { int q=9; protected int _is_type(string x) { return x=="string"; } };
+  mixed o = (string)class { protected mixed cast(string x) { return A(); } }();
   return o->q;]], 9)
 // Note: 32-bit floats overflow at ~3.4e38.
 test_true([[has_value ((string)1e38, ".") ||
@@ -9197,7 +9296,7 @@ test_equal([[ (mapping(string:string))class{int i=3;}() ]],[[ (["i":"3"]) ]])
 
 test_any([[
   object x = class {
-      mixed cast (string t) {return t == "string" && "foo";}
+      protected mixed cast (string t) {return t == "string" && "foo";}
     }();
   destruct (x);
   return (string) x;
@@ -9213,9 +9312,9 @@ test_eq([[(string) ({'z', 0x7fffffff, '.'})]], "z\x7fffffff.")
 test_eval_error([[(string) ({0x80000000})]])
 test_eq([[(string) ({'z', -0x80000000, '.'})]], "z\x80000000.")
 test_eval_error([[(string) ({-0x80000001})]])
-test_eval_error([[(int)class { mixed cast() { return UNDEFINED; } }();]])
-test_eval_error([[(string)class { mixed cast() { return UNDEFINED; } }();]])
-test_eval_error([[(mapping)class { mixed cast() { return UNDEFINED; } }();]])
+test_eval_error([[(int)class { protected mixed cast() { return UNDEFINED; } }();]])
+test_eval_error([[(string)class { protected mixed cast() { return UNDEFINED; } }();]])
+test_eval_error([[(mapping)class { protected mixed cast() { return UNDEFINED; } }();]])
 
 test_any([[
   // Cast to subtyped object.
@@ -10807,6 +10906,220 @@ constant cif_defines = #"
 </define>";
 ]])
 
+// ####  Test annotations.
+
+test_compile_any([[
+  @constant;
+]])
+test_compile_any([[
+  @Pike.Annotations.Implements(Builtin.null);
+]])
+test_compile_any([[
+  import Pike.Annotations;
+  @Implements(Builtin.null);
+]])
+test_compile_any([[
+  import Pike.Annotations;
+  class A {
+    @Implements(A);
+    int foo() {}
+  }
+]])
+dnl test_compile_warning([[
+dnl   import Pike.Annotations;
+dnl   class A {
+dnl     @Implements(A);
+dnl     int foo();	// Just a prototype.
+dnl   }
+dnl ]])
+test_compile_warning([[
+  import Pike.Annotations;
+  class A {
+    int foo() {}
+  }
+  class B {
+    @Implements(A);
+  }
+]])
+dnl test_compile_warning([[
+dnl   import Pike.Annotations;
+dnl   class A {
+dnl     int foo() {}
+dnl   }
+dnl   class B {
+dnl     @Implements(A);
+dnl     int foo();	// Just a prototype.
+dnl   }
+dnl ]])
+test_compile_any([[
+  import Pike.Annotations;
+  class A {
+    @Implements(A);
+    int foo() {}
+  }
+  class B {
+    // NB: The @Implements(A) annotation is NOT inherited from A.
+    inherit A;
+    float foo() { return 1.0; }
+  }
+]])
+test_compile_any([[
+  local class InheritedImplements {
+    inherit Pike.Annotations.Implements;
+    @constant;
+    @Pike.Annotations.Inherited;
+  }
+  class A {
+    // Everything that inherits A must implement A.
+    @InheritedImplements(A);
+    int foo() {}
+  }
+  class B {
+    inherit A;
+    int foo() { return 1; }
+  }
+]])
+test_compile_error([[
+  local class InheritedImplements {
+    inherit Pike.Annotations.Implements;
+    @constant;
+    @Pike.Annotations.Inherited;
+  }
+  class A {
+    // Everything that inherits A must implement A.
+    @InheritedImplements(A);
+    int foo() {}
+  }
+  class B {
+    inherit A;
+    // This fails due to bad return type compared with A::foo().
+    float foo() { return 1.0; }
+  }
+]])
+
+test_compile_any([[
+  class A {
+    int a;
+  }
+  class B {
+    inherit A;
+    @Pike.Annotations.Override: int a;
+  }
+]])
+test_compile_error([[
+  class A {
+    int a;
+  }
+  class B {
+    inherit A;
+
+    // This fails due to b not being present in A.
+    @Pike.Annotations.Override: int b;
+  }
+]])
+test_compile_any([[
+  class A {
+    int a;
+  }
+  class B {
+    private inherit A;
+
+    @Pike.Annotations.Override: int a;
+  }
+]])
+test_compile_any([[
+  class A {
+    int a;
+  }
+  class B {
+    int b;
+  }
+  class C {
+    inherit A;
+    inherit B;
+
+    @Pike.Annotations.Override: int a;
+    @Pike.Annotations.Override: int b;
+  }
+]])
+test_compile_error([[
+  class A {
+    int a;
+  }
+  class B {
+    private inherit A;
+  }
+  class C {
+    inherit B;
+
+    // This fails due to a being hidden by B.
+    @Pike.Annotations.Override: int a;
+  }
+]])
+
+test_any_equal([[
+  class A {
+    @"class_A";
+    @"constant_foo":constant foo = 0;
+    @"function_bar":void bar() {}
+    @"variable_baz":mixed baz;
+    mixed a_none;
+    @"variable_b_none":mixed b_none;
+  }
+  class B {
+    @"class_B";
+    @"inherit_A":inherit A;
+    @"variable_buz":mixed buz;
+    @"variable_a_none":mixed a_none;
+    mixed b_none;
+  }
+  A a = A();
+  B b = B();
+  return ({
+    mkmapping(indices(A), annotations(A)),
+    mkmapping(indices(A), annotations(A, 1)),
+    mkmapping(indices(a), annotations(a)),
+    mkmapping(indices(a), annotations(a, 1)),
+    mkmapping(indices(B), annotations(B)),
+    mkmapping(indices(B), annotations(B, 1)),
+    mkmapping(indices(b), annotations(b)),
+    mkmapping(indices(b), annotations(b, 1)),
+  });
+]], [[
+  ({
+    ([ "foo": (< "constant_foo" >), ]),
+    ([ "foo": (< "class_A", "constant_foo" >), ]),
+    ([ "foo": (< "constant_foo" >),
+       "bar": (< "function_bar" >),
+       "baz": (< "variable_baz" >),
+       "a_none": 0,
+       "b_none": (< "variable_b_none" >),
+    ]),
+    ([ "foo": (< "class_A", "constant_foo" >),
+       "bar": (< "class_A", "function_bar" >),
+       "baz": (< "class_A", "variable_baz" >),
+       "a_none": (< "class_A" >),
+       "b_none": (< "class_A", "variable_b_none" >),
+    ]),
+    ([ "foo": (< "constant_foo" >), ]),
+    ([ "foo": (< "class_B", "class_A", "inherit_A", "constant_foo" >), ]),
+    ([ "foo": (< "constant_foo" >),
+       "bar": (< "function_bar" >),
+       "baz": (< "variable_baz" >),
+       "buz": (< "variable_buz" >),
+       "a_none": (< "variable_a_none" >),
+       "b_none": 0,
+    ]),
+    ([ "foo": (< "class_B", "class_A", "inherit_A", "constant_foo" >),
+       "bar": (< "class_B", "class_A", "inherit_A", "function_bar" >),
+       "baz": (< "class_B", "class_A", "inherit_A", "variable_baz" >),
+       "buz": (< "class_B", "variable_buz" >),
+       "a_none": (< "class_B", "variable_a_none" >),
+       "b_none": (< "class_B" >),
+    ]),
+  })
+]])
+
 // foop
 define(do_test_foop,[[
 test_eq($1 (17), !($2))
@@ -10877,7 +11190,7 @@ ifefun(_verify_internals,
 // - `%
 
 test_do([[
-   class A (int x) { mixed `%(mixed y) { return this_program(x % (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `%(mixed y) { return this_program(x % (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`%(A(13),A(5))->x, 3)
@@ -10888,7 +11201,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``%(mixed y) { return this_program((objectp(y)?y->x:y) % x); } };
+   class A (int x) { protected mixed ``%(mixed y) { return this_program((objectp(y)?y->x:y) % x); } };
    add_constant("A",A);
 ]])
 test_eq(`%(A(13),A(5))->x, 3)
@@ -10902,7 +11215,7 @@ test_eq(`%(4.5, Gmp.mpz(2)), Gmp.mpz(0))
 // - `&
 
 test_do([[
-   class A (int x) { mixed `&(mixed y) { return this_program(x & (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `&(mixed y) { return this_program(x & (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`&(A(7),A(5))->x, 5)
@@ -10916,7 +11229,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``&(mixed y) { return this_program(x & (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed ``&(mixed y) { return this_program(x & (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`&(A(7),A(5))->x, 5)
@@ -10934,7 +11247,7 @@ test_eq(1,`()(intp,1))
 // - `*
 
 test_do([[
-   class A (int x) { mixed `*(mixed y) { return this_program(x * (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `*(mixed y) { return this_program(x * (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`*(A(3),A(2))->x, 6)
@@ -10948,7 +11261,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``*(mixed y) { return this_program(x * (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed ``*(mixed y) { return this_program(x * (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`*(A(3),A(2))->x, 6)
@@ -10993,13 +11306,13 @@ test_equal(`+(([0:1,3:6]),([5:2,3:6])),([0:1,3:6,3:6,5:2]))
 test_equal(`+(UNDEFINED,([1:2]),([3:4])), ([1:2,3:4]))
 test_equal(`+(([1:2]),UNDEFINED,([3:4])), ([1:2,3:4]))
 
-test_equal(17+class{mixed ``+(mixed n){return (<n>);}}(),(<17>))
-test_equal(1700000000000000000000+class{mixed ``+(mixed n){return (<n>);}}(),(<1700000000000000000000>))
+test_equal(17+class{protected mixed ``+(mixed n){return (<n>);}}(),(<17>))
+test_equal(1700000000000000000000+class{protected mixed ``+(mixed n){return (<n>);}}(),(<1700000000000000000000>))
 
-test_eval_error(Gmp.mpz(1700000000000000000000)+class{mixed ``+(mixed n){return (<n>);}}())
+test_eval_error(Gmp.mpz(1700000000000000000000)+class{protected mixed ``+(mixed n){return (<n>);}}())
 
 test_do([[
-   class A (int x) { mixed `+(mixed y) { return this_program(x + (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `+(mixed y) { return this_program(x + (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`+(A(3),A(2))->x, 5)
@@ -11012,7 +11325,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``+(mixed y) { return this_program(x + (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed ``+(mixed y) { return this_program(x + (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`+(A(3),A(2))->x, 5)
@@ -11026,9 +11339,9 @@ test_eq(`+(1,2.0,3), 6.0)
 
 test_do([[
   class A {
-    mixed `+(string s) { return "`+"+s; }
-    mixed ``+(string s) { return s+"``+"; }
-    mixed `+=(string s) { return "`+="+s; }
+    protected mixed `+(string s) { return "`+"+s; }
+    protected mixed ``+(string s) { return s+"``+"; }
+    protected mixed `+=(string s) { return "`+="+s; }
   };
   add_constant("A",A);
 ]])
@@ -11054,7 +11367,7 @@ test_eq(`+("a","b",A()), "ab``+")
 test_do(add_constant("A"))
 
 test_do([[
-  class A { mixed ``+(mixed x) { return sprintf("%O",x)-" "-"\n"; } };
+  class A { protected mixed ``+(mixed x) { return sprintf("%O",x)-" "-"\n"; } };
   add_constant("A",A);
 ]])
 test_eq(`+(({1}),({2}),A()), "({/*2elements*/1,2})")
@@ -11064,8 +11377,8 @@ test_do(add_constant("A"))
 
 test_do([[
   class A {
-    mixed `+(mixed x) { return UNDEFINED; }
-    mixed ``+(mixed x) { return UNDEFINED; }
+    protected mixed `+(mixed x) { return UNDEFINED; }
+    protected mixed ``+(mixed x) { return UNDEFINED; }
   };
   add_constant("A",A);
 ]])
@@ -11077,9 +11390,9 @@ test_do(add_constant("A"))
 
 test_do([[
    class A (int x) {
-     mixed `-(mixed y) { return this_program(x - (objectp(y)?y->x:y)); }
+     protected mixed `-(mixed y) { return this_program(x - (objectp(y)?y->x:y)); }
      // Optimizer will modify the code which requires `+.
-     mixed `+(int y) { return this_program(x+y); }
+     protected mixed `+(int y) { return this_program(x+y); }
    };
    add_constant("A",A);
 ]])
@@ -11095,7 +11408,7 @@ test_do(add_constant("A"));
 
 test_do([[
    class A (int x) {
-     mixed ``-(mixed y) { return this_program((objectp(y)?y->x:y) - x); }
+     protected mixed ``-(mixed y) { return this_program((objectp(y)?y->x:y) - x); }
      // Optimizer will modify the code which requires `+.
      //mixed `+(int y) { return this_program(x+y); }
    };
@@ -11108,7 +11421,7 @@ test_eq(`-(5,A(2),A(1))->x, 2)
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed `-(mixed y) { return this_program(-x); } };
+   class A (int x) { protected mixed `-(mixed y) { return this_program(-x); } };
    add_constant("A",A);
 ]])
 test_eq(`-(A(5))->x, -5)
@@ -11126,7 +11439,7 @@ test_eq(`-(Gmp.mpz(1), 4.5), Gmp.mpz(-3))
 // - `/
 
 test_do([[
-   class A (int x) { mixed `/(mixed y) { return this_program(x / (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `/(mixed y) { return this_program(x / (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`/(A(8),A(2))->x, 4)
@@ -11140,7 +11453,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``/(mixed y) { return this_program((objectp(y)?y->x:y) / x); } };
+   class A (int x) { protected mixed ``/(mixed y) { return this_program((objectp(y)?y->x:y) / x); } };
    add_constant("A",A);
 ]])
 test_eq(`/(A(8),A(2))->x, 4)
@@ -11164,7 +11477,7 @@ test_eq(`/(Gmp.mpz(2), 4.0), 0.5))
 // - `^
 
 test_do([[
-   class A (int x) { mixed `^(mixed y) { return this_program(x ^ (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `^(mixed y) { return this_program(x ^ (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`^(A(7),A(1))->x, 6)
@@ -11178,7 +11491,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``^(mixed y) { return this_program(x ^ (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed ``^(mixed y) { return this_program(x ^ (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`^(A(7),A(1))->x, 6)
@@ -11190,7 +11503,7 @@ test_do(add_constant("A"));
 // - `|
 
 test_do([[
-   class A (int x) { mixed `|(mixed y) { return this_program(x | (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `|(mixed y) { return this_program(x | (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`|(A(3),A(6))->x, 7)
@@ -11204,7 +11517,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``|(mixed y) { return this_program(x | (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed ``|(mixed y) { return this_program(x | (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`|(A(3),A(6))->x, 7)
@@ -11216,7 +11529,7 @@ test_do(add_constant("A"));
 // - `~
 
 test_do([[
-   class A (int x) { mixed `~() { return this_program(~x); } };
+   class A (int x) { protected mixed `~() { return this_program(~x); } };
    add_constant("A",A);
 ]])
 test_eq(`~(A(5))->x, -6)
@@ -11336,29 +11649,33 @@ define(test_callablep,[[
 
 test_callablep(time, 1)
 test_callablep(String.Buffer, 1)
-test_callablep( class { void `()() { } }(), 1)
+test_callablep( class { protected void `()() { } }(), 1)
 test_callablep(String.Buffer(), 0)
 test_callablep( ({}), 1 )
-test_callablep( ({ 0,0 }), 1 )
-test_callablep( ({ 0,1 }), 1 )
+test_callablep( ({ 0,0 }), 0 )
+test_callablep( ({ 0,1 }), 0 )
+test_callablep( ({ UNDEFINED, UNDEFINED }), 1 )
+test_callablep( ({ UNDEFINED,1 }), 0 )
 test_callablep( ({ time }), 1 )
-test_callablep( ({ time, 0 }), 1 )
+test_callablep( ({ time, UNDEFINED }), 1 )
 test_callablep( ({ "a", time }), 0 )
 test_callablep( ({ "" }), 0 )
 test_callablep( "", 0 )
 test_callablep( 3.14, 0 )
 test_callablep( (< time >), 0 )
 test_callablep( 0, 0 )
+test_callablep( UNDEFINED, 0 )
 test_callablep( 7, 0 )
-test_callablep( ({ ({ 0, 1, time }) }), 1 )
+test_callablep( ({ ({ 0, 1, time }) }), 0 )
+test_callablep( ({ ({ UNDEFINED, time }) }), 1 )
 test_callablep( ({ ({ 0, "" }) }), 0 )
 test_any([[
-  array a = ({ 0, 0 });
+  array a = ({ UNDEFINED, UNDEFINED });
   a[1] = a;
   return callablep(a);
 ]], 1)
 test_any([[
-  array a = ({ 0, 0 });
+  array a = ({ UNDEFINED, UNDEFINED });
   a[1] = a;
   return equal(a(), a);
 ]], 1)
@@ -11560,7 +11877,7 @@ test_any([[
 ]], 1)
 
 test_any([[
-  class X {int __hash() {return 17;}};
+  class X {protected int __hash() {return 17;}};
   mixed c = copy_value (X());
   return objectp (c) && object_program (c) == X;
 ]], 1)
@@ -11744,9 +12061,11 @@ test_any([[
   string b = getcwd();
   cd("..");
 #ifdef __NT__
-  return a==getcwd() && b==a+"\\getcwd_test";
+  return (a==getcwd() && b==a+"\\getcwd_test") || \
+    ({ a, b, getcwd() });
 #else
-  return a==getcwd() && b==a+"/getcwd_test";
+  return (a==getcwd() && b==a+"/getcwd_test") || \
+    ({ a, b, getcwd() });
 #endif
 ]], 1)
 test_do(Stdio.recursive_rm("getcwd_test"))
@@ -11880,7 +12199,7 @@ test_has_index([[ (< "a" >) ]],"A",0)
 test_has_index([[ (< "a", "b", "c" >) ]],"b",1)
 test_has_index([[ (< "a", "b", "c" >) ]],"B",0)
 test_has_index([[ class {}() ]],"foo",0)
-test_has_index([[ (class{array _indices(){return({"a","b"});}})() ]],"b",1)
+test_has_index([[ (class{protected array _indices(){return({"a","b"});}})() ]],"b",1)
 
 // - has_prefix
 test_true(has_prefix("abc","a"))
@@ -11912,7 +12231,7 @@ test_has_value([[ ([ "a":"A" ]) ]],"A",1)
 test_has_value([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"B",1)
 test_has_value([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"b",0)
 test_has_value([[ class {}() ]],"foo",0)
-test_has_value([[ (class{array _values(){return({"a","b"});}})() ]],"b",1)
+test_has_value([[ (class{protected array _values(){return({"a","b"});}})() ]],"b",1)
 
 // - hash
 test_eq(hash("foo"),246314004)
@@ -12580,14 +12899,14 @@ test_do([[
   {
     mapping m;
 
-    int `==()
+    protected int `==()
     {
       foreach(indices(m), mixed x)
   	m_delete(m, x);
       return 0;
     }
 
-    void create(mapping _m)
+    protected void create(mapping _m)
     {
       m = _m;
     }
@@ -12686,7 +13005,7 @@ test_eq(sizeof("felbar"),6)
 test_eq(sizeof(({"fulbar","gazonk",7})),3)
 test_eq(sizeof(([8:3,6:6,7:0])),3)
 test_eq(sizeof((<8,7,6,5,4,7>)),6)
-test_eq([[ sizeof( class { int _sizeof() { return 17; } }() ) ]], 17)
+test_eq([[ sizeof( class { protected int _sizeof() { return 17; } }() ) ]], 17)
 
 // - sleep
 test_do(sleep(1))
@@ -12712,7 +13031,7 @@ test_equal(sort(({})),({}))
 test_equal(sort(({1.0,2.0,4.0,3.0})),({1.0,2.0,3.0,4.0}))
 test_any_equal([[
   // sort() on one arg should be stable.
-  class C (int id) {int `< (mixed x) {return 0;}};
+  class C (int id) {protected int `< (mixed x) {return 0;}};
   return sort (({C(2), C(6), C(1), C(4), C(3), C(5)}))->id;
 ]], ({2, 6, 1, 4, 3, 5}))
 test_any_equal([[
@@ -12730,7 +13049,7 @@ test_any_equal([[
 test_any([[
   class foo {
     int x=random(100);
-    int `<(object o) {return x < o->x;}
+    protected int `<(object o) {return x < o->x;}
   };
   array(object) o=allocate(100,foo)();
   sort(o);
@@ -13008,11 +13327,11 @@ test_true([[typeof(this_program) == typeof(object_program(this_object()))]])
 test_true([[typeof(this_program) == typeof(object_program(global::this))]])
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     class B {
-      string _sprintf() {return "B";}
+      protected string _sprintf() {return "B";}
       mixed f() {
 	return sprintf ("%O%O%O%O%O%O",
 			global::this, A::this, B::this, this_program::this, this::this, this);
@@ -13023,11 +13342,11 @@ test_program_eq([[
 ]], "gABBBB")
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     class B {
-      string _sprintf() {return "B";}
+      protected string _sprintf() {return "B";}
       mixed f() {
 	return sprintf ("%O%O%O%O%O",
 			this_object (2), this_object (1), this_object (0), this_object(), this);
@@ -13038,11 +13357,11 @@ test_program_eq([[
 ]], "gABBB")
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     class B {
-      string _sprintf() {return "B";}
+      protected string _sprintf() {return "B";}
       mixed f() {
 	return map (({2, 1, 0}), lambda (int l) {
 				   return sprintf ("%O", this_object (l));
@@ -13054,11 +13373,11 @@ test_program_eq([[
 ]], "gAB")
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     class B {
-      string _sprintf() {return "B";}
+      protected string _sprintf() {return "B";}
       mixed f() {
 	return sprintf ("%O%O%O%O%O%O",
 			global::this, A::this, B::this, this_program::this, this::this, this);
@@ -13108,18 +13427,18 @@ test_eval_error([[
 ]], 2)
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     mixed f() {
       return sprintf ("%O%O", global::this, A::this);
     }
   }
   class B {
-    string _sprintf() {return "B";}
+    protected string _sprintf() {return "B";}
     class C {
       inherit A;
-      string _sprintf() {return "C";}
+      protected string _sprintf() {return "C";}
       mixed f() {
 	return A::f() + sprintf ("%O%O%O%O",
 				 global::this, B::this, this_program::this, this);
@@ -13130,19 +13449,19 @@ test_program_eq([[
 ]], "gCgBCC")
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     mixed f() {
       return sprintf ("%O%O%O%O",
 		      global::this, A::this, this_program::this, this);
     }
   }
   class B {
-    string _sprintf() {return "B";}
+    protected string _sprintf() {return "B";}
     class C {
       inherit A;
-      string _sprintf() {return "C";}
+      protected string _sprintf() {return "C";}
       mixed f() {
 	return A::f() + "|" +
 	  sprintf ("%O%O%O%O%O",
@@ -13701,6 +14020,16 @@ array a()
 
 test_compile_error_any([[enum X {A, B}; enum(X) x;]])
 test_compile_error_any([[enum {intern : extern};]])
+
+test_compile_any([[
+  // GitHub pikelang/Pike #25.
+  typedef typeof(Val.true)|typeof(Val.false) bool;
+
+  int main (int argc, array(string) argv) {
+    bool a = Val.true;
+    return 0;
+  }
+]])
 
 // - modifiers, compile time type checks
 
@@ -14588,7 +14917,7 @@ cond([[pow(2.0,1024.0)!=0.0]],
 
 dnl Make sure that _sprintf is called and that the argument list isn't screwed.
 test_eq(sprintf("%d%c%s%t%o%d%u%x%X%e%f%g%E%G%O%d", 4711,
-        @allocate(14, (class { string _sprintf(int t)
+        @allocate(14, (class { protected string _sprintf(int t)
                                 { mixed x = "not a number";
                                   string s;
                                   catch {
@@ -14642,7 +14971,7 @@ define(test_object_sprintf, [[
        test_eq(sprintf("%"+$1+"%<"+$1, OBJ), $1 + $1);
        test_eq(sprintf("%[1]"+$1+"%[0]"+$1, OBJ, OBJ), $1 + $1);
    ]]);
-test_do(add_constant("OBJ",class { string _sprintf(int t) { return sprintf("%c",t); } }() ))
+test_do(add_constant("OBJ",class { protected string _sprintf(int t) { return sprintf("%c",t); } }() ))
 test_object_sprintf("t")
 test_object_sprintf("c")
 test_object_sprintf("H")
@@ -14666,7 +14995,7 @@ test_do(add_constant("OBJ"))
 test_any_equal([[
   class A {
     mapping m;
-    string _sprintf(int t, mapping args)
+    protected string _sprintf(int t, mapping args)
     {
       m = args;
       return "";

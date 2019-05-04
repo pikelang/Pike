@@ -12,7 +12,7 @@ inherit Filesystem.Base;
 //    It's possible to change the root from /foo/bar to d:/foo/bar/something,
 //    but it's not possible to change from c:/foo/bar to d:/foo/bar
 //
-//  Generally speaing, paths will almost always follow the second
+//  Generally speaking, paths will almost always follow the second
 //  pattern, since getcwd() is used to get the initial value of the
 //  'wd' variable unless a different path is specified.
 //

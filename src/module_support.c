@@ -534,13 +534,13 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 	Pike_sp+ret-args,
 	"Bad argument %d to %s(). NUL in string.\n",
         ret+1, fname);
-      UNREACHABLE();
+      UNREACHABLE(return);
 
     case ARGS_SUBTYPED_OBJECT:
       bad_arg_error(get_fname(fname), args, ret+1, "object",
 		    Pike_sp+ret-args,
 		    "Subtyped objects are not supported.\n");
-      UNREACHABLE();
+      UNREACHABLE(return);
 
     case ARGS_SHORT:
     default: {
@@ -598,7 +598,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 	  "The type of the next argument is expected to be %s.\n",
 	  fname, (req_args_end - format) / 2, args, expected_type);
       }
-      UNREACHABLE();
+      UNREACHABLE(return);
     }
   }
 }

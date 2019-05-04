@@ -97,7 +97,7 @@ constant BANDWIDTH_O_METER_C=(int)(20/BANDWIDTH_O_METER_DELAY);
 // ----------------------------------------------------------------
 
 // created with a peer-info dictionary
-void create(.Torrent _parent,mapping m)
+protected void create(.Torrent _parent,mapping m)
 {
    parent=_parent;
    ip=m->ip;
@@ -1026,7 +1026,7 @@ void status(string type,void|int|string data)
 
 // ----------------------------------------------------------------
 
-string _sprintf(int t)
+protected string _sprintf(int t)
 {
    if (t=='O')
       return sprintf("Bittorrent.Peer(%s:%d %O%s%s%s%s%s%s%s v%d ^%d b/s q:%d p:%d sb:%d)",

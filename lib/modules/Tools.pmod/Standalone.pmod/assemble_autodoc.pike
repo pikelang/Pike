@@ -85,7 +85,7 @@ class TocNode {
     return ::count_children();
   }
 
-  void create(string _path, int(1..3) _depth) {
+  protected void create(string _path, int(1..3) _depth) {
     path = _path;
     depth = _depth;
     ::create(XML_ELEMENT, "dl", ([]), "");
@@ -95,7 +95,7 @@ class TocNode {
 class Entry (Node target) {
   constant type = "";
   mapping args;
-  string _sprintf() {
+  protected string _sprintf() {
     return sprintf("%sEntry( %O )", type, target);
   }
 }
@@ -151,7 +151,7 @@ class mvEntry {
     mvEntry::parent = parent;
   }
 
-  void `()(Node data) {
+  protected void `()(Node data) {
     if(args) {
       mapping m = data->get_attributes();
       foreach(indices(args), string index)
@@ -173,7 +173,7 @@ class mvPeelEntry {
     mvPeelEntry::parent = parent;
   }
 
-  void `()(Node data) {
+  protected void `()(Node data) {
     // WARNING! Disrespecting information hiding!
     int pos = search(parent->mChildren, data);
     array pre = parent->mChildren[..pos-1];
@@ -186,7 +186,7 @@ class cpEntry {
   inherit Entry;
   constant type = "cp";
 
-  void `()(Node data) {
+  protected void `()(Node data) {
     // clone data subtree
     // target->replace_node(clone);
   }

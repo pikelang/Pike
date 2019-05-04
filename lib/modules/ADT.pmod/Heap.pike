@@ -203,7 +203,7 @@ mixed pop()
 }
 
 //! Returns the number of elements in the heap.
-int _sizeof() { return num_values; }
+protected int _sizeof() { return num_values; }
 
 //! Returns the @[Element] on top of the heap (which is also the one with
 //! the smallest value in the heap) without removing it.

@@ -100,24 +100,24 @@ class recv_line
 {
   function handler;
 
-  void create(function h)
+  protected void create(function h)
     {
       handler = h;
     }
 
-  void `()(string s) { handler(.parse_line(s)); }
+  protected void `()(string s) { handler(.parse_line(s)); }
 }
 
 class recv_literal
 {
   function handler;
 
-  void create(function h)
+  protected void create(function h)
     {
       handler = h;
     }
 
-  void `()(string s)
+  protected void `()(string s)
     {
       handler(s);
     }
@@ -171,8 +171,8 @@ void get_literal(int length, function handler)
   handle_literal = recv_literal(handler);
 }
 
-void create(object f, int timeout,
-	    function(object:void) callback, int|void debug)
+protected void create(object f, int timeout,
+		      function(object:void) callback, int|void debug)
 {
   ::create(f, timeout);
   debug_level = debug;

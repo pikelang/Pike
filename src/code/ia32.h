@@ -55,7 +55,7 @@ void ia32_ins_entry(void);
   (SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + sizeof(INT32)))
 
 
-#define ins_pointer(PTR)	ins_int((PTR), (void (*)(char))add_to_program)
+#define ins_pointer(PTR)	ins_int((PTR), add_to_program)
 #define read_pointer(OFF)	read_int(OFF)
 #define upd_pointer(OFF, PTR)	upd_int(OFF, PTR)
 #define ins_align(ALIGN)	do {				\
@@ -64,7 +64,7 @@ void ia32_ins_entry(void);
     }								\
   } while(0)
 #define ins_byte(VAL)		add_to_program(VAL)
-#define ins_data(VAL)		ins_int((VAL), (void (*)(char))add_to_program)
+#define ins_data(VAL)		ins_int((VAL), add_to_program)
 #define read_program_data(PTR, OFF)	(INT32)get_unaligned32((PTR) + (sizeof(INT32)*(OFF)))
 
 void ia32_update_pc(void);

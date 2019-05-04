@@ -989,7 +989,7 @@ test_any(
   class AutoList {
     inherit _ADT.CircularList;
 
-    void create()
+    protected void create()
     {
       ::create(BLOCKSIZE);
     }
@@ -1012,7 +1012,7 @@ test_any(
   class AutoList {
     inherit _ADT.CircularList;
 
-    void create()
+    protected void create()
     {
       ::create(BLOCKSIZE);
     }

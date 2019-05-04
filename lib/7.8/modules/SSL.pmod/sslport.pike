@@ -1,5 +1,7 @@
 #pike 7.8
 
+#pragma no_deprecation_warnings
+
 #if constant(SSL.Cipher.CipherAlgorithm)
 
 //! Interface similar to @[Stdio.Port].

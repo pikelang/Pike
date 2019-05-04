@@ -109,7 +109,7 @@ class _get_iterator
     return !!(row = fetch_row());
   }
 
-  this_program `+=(int steps)
+  protected this_program `+=(int steps)
   {
     if(!steps) return this;
     if(steps<0) error("Iterator must advance a positive numbe of steps.\n");
@@ -122,12 +122,12 @@ class _get_iterator
     return this;
   }
 
-  int(0..1) `!()
+  protected int(0..1) `!()
   {
     return eof();
   }
 
-  int _sizeof()
+  protected int _sizeof()
   {
     return num_fields();
   }

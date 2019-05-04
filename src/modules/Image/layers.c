@@ -165,11 +165,10 @@ LMFUNC(lm_logic_strict_more);
 LMFUNC(lm_logic_strict_less_or_equal);
 LMFUNC(lm_logic_strict_more_or_equal);
 
-static void lm_spec_burn_alpha(struct layer *ly,
-			       rgb_group *l, rgb_group *la,
-			       rgb_group *s, rgb_group *sa,
-			       rgb_group *d, rgb_group *da,
-			       int len);
+static void lm_spec_burn_alpha_row_func(rgb_group *s, rgb_group *l,
+                                        rgb_group *d, rgb_group *sa,
+                                        rgb_group *la, rgb_group *da,
+                                        int len, double alpha);
 
 struct layer_mode_desc
 {
@@ -291,7 +290,7 @@ struct layer_mode_desc
     "1-(1-S)*(1-L) applied with alpha, aD=aS"},
    {"overlay",       lm_overlay,       1, NULL,
     "(1-(1-a)*(1-b)-a*b)*a+a*b applied with alpha, aD=aS"},
-   {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha, 1, NULL,
+   {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha_row_func, 1, NULL,
     "aD=aL+aS applied with alpha, D=L+S;"
     " experimental, may change or be removed"},
 
@@ -2344,6 +2343,20 @@ static void lm_erase(rgb_group *UNUSED(s),rgb_group *UNUSED(l),rgb_group *UNUSED
 	 }
 }
 
+/* This function is just a place holder and should not be called.
+ * Instead, lm_spec_burn_alpha() is called in case row_func points to
+ * this. */
+static void lm_spec_burn_alpha_row_func(rgb_group *UNUSED(s),
+                                        rgb_group *UNUSED(l),
+                                        rgb_group *UNUSED(d),
+                                        rgb_group *UNUSED(sa),
+                                        rgb_group *UNUSED(la),
+                                        rgb_group *UNUSED(da),
+                                        int UNUSED(len), double UNUSED(alpha))
+{
+    Pike_fatal("lm_spec_burn_alpha_row_func() called.\n");
+}
+
 static void lm_spec_burn_alpha(struct layer *ly,
 			       rgb_group *l, rgb_group *la,
 			       rgb_group *s, rgb_group *sa,
@@ -2554,7 +2567,7 @@ static inline void img_lay_stroke(struct layer *ly,
    if (len<0) Pike_error("internal error: stroke len < 0\n");
    if (!ly->row_func) Pike_error("internal error: row_func=NULL\n");
 
-   if (ly->row_func==(lm_row_func*)lm_spec_burn_alpha)
+   if (ly->row_func==(lm_row_func*)lm_spec_burn_alpha_row_func)
    {
       lm_spec_burn_alpha(ly,l,la,s,sa,d,da,len);
       return;

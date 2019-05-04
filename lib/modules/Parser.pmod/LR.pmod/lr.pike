@@ -133,7 +133,7 @@ string symbol_to_string(int|string symbol)
     return "\""+symbol+"\"";
 }
 
-void create()
+protected void create()
 {
   g = Parser();
 

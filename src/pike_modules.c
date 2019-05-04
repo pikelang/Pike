@@ -62,6 +62,9 @@ static void init_builtin_modules(void)
   dmalloc_accept_leak (&weak_empty_array);
 #endif
 
+  TRACE("Init pike compiler...\n");
+  init_pike_compiler();
+
   TRACE("Init String.Buffer...\n");
   init_string_buffer();
 
@@ -120,6 +123,7 @@ static void exit_builtin_modules(void)
   exit_builtin();
   exit_cpp();
   exit_string_buffer();
+  cleanup_pike_compiler();
   cleanup_interpret();
   exit_builtin_constants();
   cleanup_module_support();
@@ -142,7 +146,7 @@ static void exit_builtin_modules(void)
   free_svalue(& throw_value);
   mark_free_svalue (&throw_value);
 
-  do_gc(NULL, 1);
+  do_gc(1);
 
   if (exit_with_cleanup)
   {
@@ -168,7 +172,7 @@ static void exit_builtin_modules(void)
      * in exit_modules, nothing should be left after the run above, so
      * only one more run is necessary. */
     gc_keep_markers = 1;
-    do_gc (NULL, 1);
+    do_gc (1);
 
 #define STATIC_ARRAYS &empty_array, &weak_empty_array,
 
@@ -291,12 +295,13 @@ static void exit_builtin_modules(void)
 	  int is_static = 0;						\
 	  static const struct TYPE *statics[] = {STATICS NULL};		\
 	  ptrdiff_t i; /* Use signed type to avoid warnings from gcc. */ \
-	  INT32 refs;							\
+	  INT32 refs, gc_refs;                                          \
 	  for (i = 0; i < (ptrdiff_t) (NELEM (statics) - 1); i++)	\
 	    if (x == statics[i])					\
 	      is_static = 1;						\
 	  refs = x->refs;						\
-	  while (refs > m->gc_refs + is_static) {		        \
+	  gc_refs = m->gc_refs;                                         \
+	  while (refs > gc_refs + is_static) {	        	        \
 	    PIKE_CONCAT(free_, TYPE) (x);				\
 	    refs--;							\
 	  }								\
@@ -319,7 +324,7 @@ static void exit_builtin_modules(void)
 
 #undef ZAP_LINKED_LIST_LEAKS
 
-    do_gc (NULL, 1);
+    do_gc (1);
 
     gc_keep_markers = 0;
     exit_gc();
@@ -486,9 +491,9 @@ void exit_modules(void)
     cleanup_all_other_threads();
 #endif
     gc_destruct_everything = 1;
-    count = do_gc (NULL, 1);
+    count = do_gc (1);
     while (count) {
-      size_t new_count = do_gc (NULL, 1);
+      size_t new_count = do_gc (1);
       if (new_count >= count) {
 	fprintf (stderr, "Some _destruct function is creating new objects "
 		 "during final cleanup - can't exit cleanly.\n");

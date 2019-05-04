@@ -47,7 +47,7 @@ class Angle {
   //!
   //! If an angle object is created without arguments it
   //! will have the value 0 radians.
-  void create(void|int|float angle, void|string type) {
+  protected void create(void|int|float angle, void|string type) {
     if(type)
       set(type, angle);
     else
@@ -244,7 +244,7 @@ class Angle {
 
   //! Returns the sum of this angle and what it is added with. If
   //! added with an angle, a new angle object is returnes.
-  float|int|Angle `+ (float|int|Angle _angle) {
+  protected float|int|Angle `+ (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle + _angle->get(type), type );
     return angle + _angle;
   }
@@ -266,7 +266,7 @@ class Angle {
 
   //! Returns the difference between this angle and the provided value.
   //! If differenced with an angle, a new angle object is returned.
-  float|int|Angle `- (float|int|Angle _angle) {
+  protected float|int|Angle `- (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle - _angle->get(type), type );
     return angle - _angle;
   }
@@ -288,46 +288,46 @@ class Angle {
 
   //! Returns the product between this angle and the provided value.
   //! If differenced with an angle, a new angle object is returned.
-  float|int|Angle `* (float|int|Angle _angle) {
+  protected float|int|Angle `* (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle * _angle->get(type), type );
     return angle * _angle;
   }
 
   //! Returns the fraction between this angle and the provided value.
   //! If differenced with an angle, a new angle object is returned.
-  float|int|Angle `/ (float|int|Angle _angle) {
+  protected float|int|Angle `/ (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle / _angle->get(type), type );
     return angle / _angle;
   }
 
   //! Returns this result of this angle modulo the provided value.
   //! If differenced with an angle, a new angle object is returned.
-  float|int|Angle `% (float|int|Angle _angle) {
+  protected float|int|Angle `% (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle % _angle->get(type), type );
     return angle % _angle;
   }
 
   //!
-  int __hash() {
+  protected int __hash() {
     return array_sscanf(sprintf("%8F", rad()),"%8c")[0];
   }
 
   //! Compares the unnormalized angle of two Angle objects.
-  int `== (Angle _angle) {
+  protected int `== (Angle _angle) {
     return _angle->rad() == rad();
   }
 
   //! Compares the unnormalized angle of two Angle objects.
-  int `< (Angle _angle) {
+  protected int `< (Angle _angle) {
     return rad() < _angle->rad();
   }
 
   //! Compares the unnormalized angle of two Angle objects.
-  int `> (Angle _angle) {
+  protected int `> (Angle _angle) {
     return rad() > _angle->rad();
   }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     switch(t) {
     case 'O':
       switch(type) {

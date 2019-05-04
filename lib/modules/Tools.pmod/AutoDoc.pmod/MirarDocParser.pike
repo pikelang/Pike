@@ -1328,7 +1328,7 @@ array(string) make_illustration(array(string) templates,
   throw(err);
 }
 
-void create(string image_dir, void|.Flags flags)
+protected void create(string image_dir, void|.Flags flags)
 {
   verbosity = (flags & .FLAG_VERB_MASK);
   this::flags = flags;

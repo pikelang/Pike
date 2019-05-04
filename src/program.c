@@ -185,6 +185,9 @@ const char *const lfun_names[]  = {
   "`**",
   "``**",
   "_sqrt",
+  "_annotations",
+  "_m_clear",
+  "_m_add",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -249,7 +252,11 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tFunction tFunction, tVoid, tMix),	/* "_random", */
   tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "pow", */
   tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "rpow", */
-  tFunc(tVoid,tMix),/* "_sqrt* */
+  tFunc(tVoid,tMix),            /* "_sqrt", */
+  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt)
+	 tOr(tInt01,tVoid),tVoid,tArray),   /* "_annotations", */
+  tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
+  tFuncV(tZero, tVoid, tVoid),	/* "_m_add", */
 };
 
 /* These two are not true LFUNs! */
@@ -1218,9 +1225,13 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::m_delete()]
  */
 
-/*! @decl predef::Iterator lfun::_get_iterator()
+/*! @decl predef::Iterator lfun::_get_iterator(mixed ... args)
  *!
  *!   Iterator creation callback.
+ *!
+ *! @param args
+ *!   Optional extra arguments as passed to @[get_iterator()].
+ *!   The implicit call from @[foreach()] does not provide any arguments.
  *!
  *!   The returned @[predef::Iterator] instance works as a cursor that
  *!   references a specific item contained (in some arbitrary sense)
@@ -1381,6 +1392,70 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::random()], @[RandomInterface]
  */
 
+/*! @decl object|int|float lfun::`**(int|float|object exp)
+ *!   Called by @[predef::`**()].
+ *!
+ *! @seealso
+ *!   @[predef::`**()], @[lfun::``**()]
+ */
+
+/*! @decl object|int|float lfun::``**(int|float|object base)
+ *!   Called by @[predef::`**()].
+ *!
+ *! @seealso
+ *!   @[predef::`**()], @[lfun::`**()]
+ */
+
+/*! @decl mixed lfun::_sqrt()
+ *!   Called by @[sqrt()].
+ *!
+ *! @seealso
+ *!   @[sqrt()]
+ */
+
+/*! @decl array lfun::_annotations(object|void context, int|void access, @
+ *!                                int(0..1)|void recursive)
+ *!   Called by @[annotations()]
+ *!
+ *! @param context
+ *!   Inherit in the current object to return the annotations for.
+ *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
+ *!   should be used (ie start at the current context and ignore
+ *!   any overloaded symbols).
+ *!
+ *! @param access
+ *!   Access permission override. One of the following:
+ *!   @int
+ *!     @value 0
+ *!     @value UNDEFINED
+ *!       See only public symbols.
+ *!     @value 1
+ *!       See protected symbols as well.
+ *!   @endint
+ *!
+ *! @param recursive
+ *!   Include nested annotations from the inherits.
+ *!
+ *! @seealso
+ *!   @[annotations()]
+ */
+
+/*! @decl void lfun::_m_clear()
+ *!
+ *!   Called by @[m_clear()].
+ *!
+ *! @seealso
+ *!   @[lfun::_m_delete()], @[lfun::_m_add()]
+ */
+
+/*! @decl void lfun::_m_add()
+ *!
+ *!   Called by @[m_add()].
+ *!
+ *! @seealso
+ *!   @[lfun::_m_delete()], @[lfun::_m_clear()]
+ */
+
 /**** END FAKE LFUNS ****/
 /**** BEGIN MAGIC LFUNS ****/
 
@@ -1528,6 +1603,7 @@ PMOD_EXPORT void do_free_program (struct program *p)
 #define RELOCATE_strings(ORIG,NEW)
 #define RELOCATE_inherits(ORIG,NEW)
 #define RELOCATE_identifiers(ORIG,NEW)
+#define RELOCATE_annotations(ORIG,NEW)
 #define RELOCATE_constants(ORIG,NEW)
 #define RELOCATE_relocations(ORIG,NEW)
 
@@ -1696,7 +1772,7 @@ void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
     add_to_program(ARG);					\
   } while(0)
 
-void ins_int(INT32 i, void (*func)(char tmp))
+void ins_int(INT32 i, void (*func)(unsigned char tmp))
 {
   int e;
   unsigned char *p = (unsigned char *)&i;
@@ -1756,6 +1832,14 @@ static int low_add_identifier(struct compilation *c,
 #endif
   debug_add_to_identifiers(dummy);
 
+  if (Pike_compiler->current_annotations) {
+    /* FIXME: What about annotations for eg variant functions? */
+    compiler_add_annotations(n, Pike_compiler->current_annotations);
+    /* Only annotate a single identifier. */
+    free_node(Pike_compiler->current_annotations);
+    Pike_compiler->current_annotations = NULL;
+  }
+
   return n;
 }
 
@@ -1802,7 +1886,7 @@ static int add_identifier(struct compilation *c,
 void add_relocated_int_to_program(INT32 i)
 {
   add_to_relocations(Pike_compiler->new_program->num_program);
-  ins_int(i, (void (*)(char))add_to_program);
+  ins_int(i, add_to_program);
 }
 
 void use_module(struct svalue *s)
@@ -2410,6 +2494,9 @@ struct node_s *program_magic_identifier (struct program_state *state,
 		    mknewintnode(state_depth));
     } else if(ident == lfun_strings[LFUN__TYPES]) {
       return mknode(F_MAGIC_TYPES, mknewintnode(i),
+		    mknewintnode(state_depth));
+    } else if(ident == lfun_strings[LFUN__ANNOTATIONS]) {
+      return mknode(F_MAGIC_ANNOTATIONS, mknewintnode(i),
 		    mknewintnode(state_depth));
     }
 
@@ -3039,6 +3126,63 @@ void fixate_program(void)
     }
   }
 
+  if (p->num_annotations) {
+    struct pike_string *save_file = c->lex.current_file;
+    INT_TYPE save_line = c->lex.current_line;
+
+    for (i = 0; i < p->num_annotations; i++) {
+      struct multiset *l = p->annotations[i];
+      int d;
+
+      if (!l) continue;
+
+      /* Make using yyerror() et al more convenient. */
+      c->lex.current_line = p->identifiers[i].linenumber;
+      c->lex.current_file = p->strings[p->identifiers[i].filename_strno];
+
+      /* Convert the identifier number (i) to a reference number (d). */
+      for (d = 0; d < p->num_identifier_references; d++) {
+	struct reference *ref = p->identifier_references + d;
+	ptrdiff_t pos;
+
+	if (ref->inherit_offset || (ref->identifier_offset != i)) continue;
+
+	for (pos = multiset_first(l); pos >= 0; pos = multiset_next(l, pos)) {
+	  push_multiset_index(l, pos);
+
+	  if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
+	    struct object *o = Pike_sp[-1].u.object;
+	    struct program *op = o->prog;
+	    if (op) {
+	      struct inherit *inh = op->inherits + SUBTYPEOF(Pike_sp[-1]);
+	      int fun;
+	      op = inh->prog;
+	      fun = find_identifier("end_pass_identifier", op);
+	      if (fun >= 0) {
+		fun += inh->identifier_level;
+		push_int(COMPILER_PASS_LAST);
+		ref_push_program(p);
+		push_int(d);
+		ref_push_object_inherit(Pike_fp->current_object,
+					Pike_fp->context -
+					Pike_fp->current_program->inherits);
+		safe_apply_low2(o, fun, 4, NULL);
+		pop_stack();
+	      }
+	    }
+	  }
+
+	  pop_stack();
+	}
+	/* Remove the msnode_ref added by multiset_first(). */
+	sub_msnode_ref(l);
+      }
+    }
+
+    c->lex.current_file = save_file;
+    c->lex.current_line = save_line;
+  }
+
 #ifdef DEBUG_MALLOC
   {
 #define DBSTR(X) ((X)?(X)->str:"")
@@ -3165,6 +3309,7 @@ void low_start_new_program(struct program *p,
 #endif
     }
   }else{
+    int e;
     tmp.u.program=p;
     add_ref(p);
     if((pass != COMPILER_PASS_FIRST) && name)
@@ -3188,10 +3333,10 @@ void low_start_new_program(struct program *p,
   if(idp) *idp=id;
 
   CDFPRINTF("th(%ld) %p low_start_new_program() %s "
-            "pass=%d: lock_depth:%d, compilation_depth:%d\n",
+            "pass=%d: compilation_depth:%d\n",
             (long)th_self(), p, name ? name->str : "-",
             Pike_compiler->compiler_pass,
-            lock_depth, c->compilation_depth);
+            c->compilation_depth);
 
   init_type_stack();
 
@@ -3380,6 +3525,7 @@ void low_start_new_program(struct program *p,
     i.parent_identifier=-1;
     i.parent_offset=OBJECT_PARENT;
     i.name=0;
+    i.annotations = NULL;
     add_to_inherits(i);
   }
 
@@ -3416,9 +3562,9 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
   }
 
   CDFPRINTF("th(%ld) start_new_program(%ld, %s): "
-            "lock_depth:%d, compilation_depth:%d\n",
+            "compilation_depth:%d\n",
             (long)th_self(), (long)line, file,
-            lock_depth, c->compilation_depth);
+            c->compilation_depth);
 
   low_start_new_program(0, COMPILER_PASS_FIRST, 0, 0, 0);
   store_linenumber(line,c->lex.current_file);
@@ -3470,6 +3616,12 @@ static void exit_program_struct(struct program *p)
       if(p->strings[e])
 	free_string(p->strings[e]);
 
+  if (p->annotations) {
+    for (e = 0; e < p->num_annotations; e++) {
+      do_free_multiset(p->annotations[e]);
+    }
+  }
+
   if(p->identifiers)
   {
     for(e=0; e<p->num_identifiers; e++)
@@ -3495,6 +3647,8 @@ static void exit_program_struct(struct program *p)
   if(p->inherits)
     for(e=0; e<p->num_inherits; e++)
     {
+      if (p->inherits[e].annotations)
+	free_multiset(p->inherits[e].annotations);
       if(p->inherits[e].name)
 	free_string(p->inherits[e].name);
       if(e)
@@ -3574,6 +3728,19 @@ void dump_program_desc(struct program *p)
       fprintf(stderr,"name  : %s\n",p->inherits[e].name->str);
     }
 
+    if (p->inherits[e].annotations) {
+      union msnode *node = low_multiset_first(p->inherits[e].annotations->msd);
+      fprintf(stderr, "annotations:\n");
+      while (node) {
+	if (TYPEOF(node->i.ind) != T_DELETED) {
+	  low_push_multiset_index(node);
+	  safe_pike_fprintf(stderr, "  %O\n", Pike_sp-1);
+	  pop_stack();
+	}
+	node = low_multiset_next(node);
+      }
+    }
+
     for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
     fprintf(stderr,"inherit_level: %d\n",p->inherits[e].inherit_level);
 
@@ -3632,6 +3799,24 @@ void dump_program_desc(struct program *p)
     fprintf(stderr,"%s;\n", ID_FROM_INT(p,e)->name->str);
   }
 
+  if (p->annotations) {
+    fprintf(stderr, "All identifier annotations:\n");
+    for (q = 0; q < p->num_annotations; q++) {
+      struct multiset *l = p->annotations[q];
+      union msnode *node;
+      if (!l) continue;
+      fprintf(stderr, "  Identifier #%d: %s\n",
+	      q, p->identifiers[q].name->str);
+      for (node = low_multiset_first(l->msd);
+	   node;
+	   node = low_multiset_next(node)) {
+	low_push_multiset_index(node);
+	safe_pike_fprintf(stderr, "    %O\n", Pike_sp-1);
+	pop_stack();
+      }
+    }
+  }
+
   fprintf(stderr,"$$$$$ dump_program_desc for %p done\n", p);
 }
 #endif
@@ -3681,6 +3866,11 @@ static void toss_compilation_resources(void)
   {
     free_string(Pike_compiler->last_file);
     Pike_compiler->last_file=0;
+  }
+
+  if (Pike_compiler->current_annotations) {
+    free_node(Pike_compiler->current_annotations);
+    Pike_compiler->current_annotations = NULL;
   }
 
   if (Pike_compiler->current_attributes) {
@@ -3808,6 +3998,17 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
 	    inh->parent_identifier, inh->parent_offset,
 	    inh->parent ? inh->parent->program_id : -1,
 	    inh->identifier_ref_offset);
+
+    if (inh->annotations) {
+      union msnode *node = low_multiset_first(inh->annotations->msd);
+      int i;
+      for (i = 0; node; (node = low_multiset_next(node)), i++) {
+	fprintf(stderr, "%*s        annotation #%d: ", indent, "", i);
+	low_push_multiset_index(node);
+	safe_pike_fprintf(stderr, "%O\n", Pike_sp-1);
+	pop_stack();
+      }
+    }
   }
   fprintf(stderr, "\n"
 	  "%*sIdentifier table:\n"
@@ -3825,6 +4026,16 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
 	    indent, "",
 	    p->num_strings?p->strings[id->filename_strno]->str:"-",
 	    (long)id->linenumber);
+    if ((d < p->num_annotations) && p->annotations[d]) {
+      union msnode *node = low_multiset_first(p->annotations[d]->msd);
+      int i;
+      for (i = 0; node; (node = low_multiset_next(node)), i++) {
+	fprintf(stderr, "%*s        annotation #%d: ", indent, "", i);
+	low_push_multiset_index(node);
+	safe_pike_fprintf(stderr, "%O\n", Pike_sp-1);
+	pop_stack();
+      }
+    }
   }
 
   fprintf(stderr, "\n"
@@ -3884,12 +4095,37 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
     char *cnt = p->linenumbers;
 
     while (cnt < p->linenumbers + p->num_linenumbers) {
-      if (*cnt == 127) {
+      while (*cnt == 127) {
 	int strno;
 	cnt++;
 	strno = get_small_number(&cnt);
-	fprintf(stderr, "%*s  Filename: String #%d\n", indent, "", strno);
+	if (strno >= 0) {
+	  fprintf(stderr, "%*s  Filename: String #%d\n", indent, "", strno);
+	} else {
+	  int offset = ~strno;
+	  int kind = *(cnt++);
+	  strno = (kind >= 0)?get_small_number(&cnt):0;
+	  switch(kind) {
+	  case -1:	/* end */
+	    fprintf(stderr, "%*s  Variable #%d end\n", indent, "", offset);
+	    break;
+	  case 0:	/* name */
+	    fprintf(stderr, "%*s  Variable #%d name: string #%d\n",
+		    indent, "", offset, strno);
+	    break;
+	  case 1:	/* type */
+	    fprintf(stderr, "%*s  Variable #%d type: constant #%d\n",
+		    indent, "", offset, strno);
+	    break;
+	  default:
+	    fprintf(stderr, "%*s  Variable #%d unknown (%d): value: %d\n",
+		    indent, "", offset, kind, strno);
+	    break;
+	  }
+	}
+	if (cnt >= p->linenumbers + p->num_linenumbers) break;
       }
+      if (cnt >= p->linenumbers + p->num_linenumbers) break;
       off += get_small_number(&cnt);
       line += get_small_number(&cnt);
       fprintf(stderr, "%*s    %8d:%8ld\n", indent, "", off, (long)line);
@@ -4201,6 +4437,89 @@ static int add_variant_dispatcher(struct pike_string *name,
 }
 
 /**
+ * Add a single annotation for a symbol in the current program
+ * being compiled.
+ *
+ * @param id
+ *   Identifier to annotate.
+ *
+ * @param val
+ *   Annotation value. Should be an object implementing
+ *   the Pike.Annotation interface.
+ */
+PMOD_EXPORT void add_annotation(int id, struct svalue *val)
+{
+  while (Pike_compiler->new_program->num_annotations <= id) {
+    add_to_annotations(NULL);
+  }
+
+  if (val) {
+    if (Pike_compiler->new_program->annotations[id]) {
+      multiset_add(Pike_compiler->new_program->annotations[id], val);
+    } else {
+      push_svalue(val);
+      f_aggregate_multiset(1);
+      Pike_compiler->new_program->annotations[id] = Pike_sp[-1].u.multiset;
+      Pike_sp--;
+    }
+  }
+}
+
+void compiler_add_annotations(int id, node *annotations)
+{
+  while(annotations) {
+    node *val_node = CAR(annotations);
+    annotations = CDR(annotations);
+    if (val_node->token != F_CONSTANT) continue;
+    add_annotation(id, &val_node->u.sval);
+  }
+}
+
+/**
+ * Add a single annotation for an inherit in the current program
+ * being compiled.
+ *
+ * @param inh
+ *   Inherit to annotate.
+ *
+ * @param val
+ *   Annotation value. Should be an object implementing
+ *   the Pike.Annotation interface.
+ *
+ * NOTE: This operation is ONLY valid for inherits at
+ *       levels 0 and 1!
+ *
+ */
+PMOD_EXPORT void add_program_annotation(int inh, struct svalue *val)
+{
+  struct inherit *inherit = Pike_compiler->new_program->inherits + inh;
+  if (inherit->inherit_level > 1) {
+    Pike_fatal("Attempt to annotate inherit #%d at level %d!\n",
+	       inh, inherit->inherit_level);
+  }
+  if (val) {
+    if (inherit->annotations) {
+      multiset_add(inherit->annotations, val);
+    } else {
+      push_svalue(val);
+      f_aggregate_multiset(1);
+      inherit->annotations = Pike_sp[-1].u.multiset;
+      Pike_sp--;
+    }
+  }
+}
+
+void compiler_add_program_annotations(int inh, node *annotations)
+{
+  while(annotations) {
+    node *val_node = CAR(annotations);
+    annotations = CDR(annotations);
+    if (val_node->token != F_CONSTANT) continue;
+    add_program_annotation(inh, &val_node->u.sval);
+  }
+}
+
+/**
  * End the current compilation pass.
  *
  * @param finish
@@ -4342,7 +4661,48 @@ struct program *end_first_pass(int finish)
 			OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
       }
     }
+    /* FIXME: Call end_pass() in annotations here?
+     */
     Pike_compiler->compiler_pass = COMPILER_PASS_LAST;
+  }
+
+  if (!Pike_compiler->num_parse_error) {
+    prog = Pike_compiler->new_program;
+    /* NB: Need referenced msnodes! */
+    if (prog->inherits->annotations) {
+      struct multiset *l = prog->inherits->annotations;
+      ptrdiff_t pos;
+      /* NB: multiset_first() adds an msnode_ref. */
+      for (pos = multiset_first(l); pos >= 0; pos = multiset_next(l, pos)) {
+	struct object *o;
+	struct program *p;
+	struct inherit *inh;
+	int fun;
+	push_multiset_index(l, pos);
+	if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
+	  o = Pike_sp[-1].u.object;
+	  p = o->prog;
+	  if (p) {
+	    inh = p->inherits + SUBTYPEOF(Pike_sp[-1]);
+	    p = inh->prog;
+	    fun = find_identifier("end_pass", p);
+	    if (fun >= 0) {
+	      fun += inh->identifier_level;
+	      push_int(Pike_compiler->compiler_pass);
+	      ref_push_program(prog);
+	      ref_push_object_inherit(Pike_fp->current_object,
+				      Pike_fp->context -
+				      Pike_fp->current_program->inherits);
+	      safe_apply_low2(o, fun, 3, NULL);
+	      pop_stack();
+	    }
+	  }
+	}
+	pop_stack();
+      }
+      /* Remove the msnode_ref added by multiset_first(). */
+      sub_msnode_ref(l);
+    }
   }
 
   /*
@@ -4468,9 +4828,9 @@ struct program *end_first_pass(int finish)
 
 
   CDFPRINTF("th(%ld) %p end_first_pass(%d): "
-            "lock_depth:%d, compilation_depth:%d\n",
+            "compilation_depth:%d\n",
             (long)th_self(), prog, finish,
-            lock_depth, c->compilation_depth);
+            c->compilation_depth);
 
   c->compilation_depth--;
 
@@ -4780,7 +5140,8 @@ PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *))
  *   Reference number in q->new_program->inherit[i].prog.
  *
  * @return
- *   Returns an equivalent reference that is INLINE|HIDDEN.
+ *   Returns an equivalent reference that is INLINE (and HIDDEN if
+ *   a new reference was created).
  *
  *   Returns -1 if the referenced identifier is -1 or a prototype.
  */
@@ -4819,7 +5180,8 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
 
     if ((refp->inherit_offset == funp.inherit_offset) &&
 	(refp->identifier_offset == funp.identifier_offset) &&
-	((refp->id_flags | ID_USED) == (funp.id_flags | ID_USED))) {
+	((refp->id_flags & (ID_INLINE|ID_EXTERN|ID_VARIANT)) ==
+	 (funp.id_flags & (ID_INLINE|ID_EXTERN|ID_VARIANT)))) {
       return d;
     }
   }
@@ -5047,28 +5409,26 @@ void lower_inherit(struct program *p,
     return;
   }
 
-  if (Pike_compiler->compiler_pass == COMPILER_PASS_EXTRA) {
+  if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
+    /* NB: Pike_compiler->num_inherits is off by 1!
+     *     This is probably due to not counting the initial inherit.
+     */
     struct program *old_p =
       Pike_compiler->new_program->
       inherits[Pike_compiler->num_inherits+1].prog;
+    inherit_offset = Pike_compiler->num_inherits + 1;
     Pike_compiler->num_inherits += old_p->num_inherits;
 
     if (old_p != p) {
       yyerror("Got different program for inherit in second pass "
 	      "(resolver problem).");
     }
-    return;
-  }
-  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-    struct program *old_p =
-      Pike_compiler->new_program->
-      inherits[Pike_compiler->num_inherits+1].prog;
-    Pike_compiler->num_inherits += old_p->num_inherits;
 
-    if (old_p != p) {
-      yyerror("Got different program for inherit in second pass "
-	      "(resolver problem).");
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_EXTRA) {
+      return;
     }
+
+    assert(Pike_compiler->compiler_pass == COMPILER_PASS_LAST);
 
     if (!(p->flags & PROGRAM_FINISHED)) {
       /* Require that the inherited program really is finished in pass
@@ -5188,6 +5548,48 @@ void lower_inherit(struct program *p,
 	inherit.parent_offset=parent_offset;
 	inherit.parent_identifier=parent_identifier;
       }
+
+      if (inherit.annotations) {
+	struct multiset *annotations;
+	union msnode *node = low_multiset_first(inherit.annotations->msd);
+	int keep_annotations = 0;
+
+	inherit.annotations = annotations = copy_multiset(inherit.annotations);
+
+	ref_push_object(Inherited_annotation);
+
+	while(node) {
+	  if (TYPEOF(node->i.ind) != T_DELETED) {
+	    low_push_multiset_index(node);
+	    if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
+	      /* FIXME: Subtyped objects? */
+	      struct object *ann = Pike_sp[-1].u.object;
+	      if (ann->prog && ann->prog->inherits[0].annotations) {
+		/* Check if it has the @Inherited annotation. */
+		struct multiset *l = ann->prog->inherits[0].annotations;
+		if (multiset_lookup(l, Pike_sp-2)) {
+		  add_program_annotation(0, Pike_sp-1);
+
+		  multiset_delete(annotations, Pike_sp-1);
+		} else {
+		  keep_annotations = 1;
+		}
+	      } else {
+		keep_annotations = 1;
+	      }
+	    } else {
+	      keep_annotations = 1;
+	    }
+	    pop_stack();
+	  }
+	  node = low_multiset_next(node);
+	}
+	if (!keep_annotations) {
+	  free_multiset(annotations);
+	  inherit.annotations = NULL;
+	}
+	pop_stack();
+      }
     }else{
       if(!inherit.parent)
       {
@@ -5245,6 +5647,9 @@ void lower_inherit(struct program *p,
 	  inherit.parent=par;
 	  inherit.parent_offset=INHERIT_PARENT;
 	}
+      }
+      if (inherit.annotations) {
+	add_ref(inherit.annotations);
       }
     }
     if(inherit.parent) add_ref(inherit.parent);
@@ -5430,11 +5835,17 @@ void compiler_do_inherit(node *n,
   struct program *p;
   struct identifier *i;
   INT32 numid=-1, offset=0;
+  int inherit_offset = Pike_compiler->new_program->num_inherits;
 
   if(!n)
   {
-    yyerror("Unable to inherit");
+    yyerror("Unable to inherit.");
     return;
+  }
+
+  if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
+    /* Note off by one! */
+    inherit_offset = Pike_compiler->num_inherits + 1;
   }
 
   if ((n->token == F_APPLY) && (CAR(n)->token == F_CONSTANT) &&
@@ -5472,7 +5883,7 @@ void compiler_do_inherit(node *n,
     yytype_report(REPORT_WARNING,
 		  n->current_file, n->line_number, inheritable_type_string,
 		  n->current_file, n->line_number, n->type,
-		  0, "Program required for inherit.\n");
+		  0, "Program required for inherit.");
   }
 
   switch(n->token)
@@ -5487,7 +5898,7 @@ void compiler_do_inherit(node *n,
 	  offset++;
 	}
 	if (!state) {
-	  yyerror("Failed to resolv external constant.\n");
+	  yyerror("Failed to resolv external constant.");
 	  return;
 	}
 	p = state->new_program;
@@ -5528,7 +5939,7 @@ void compiler_do_inherit(node *n,
 		      name);
 	}
       }else{
-	yyerror("Inherit identifier is not a constant program");
+	yyerror("Inherit identifier is not a constant program.");
 	return;
       }
       break;
@@ -5538,15 +5949,14 @@ void compiler_do_inherit(node *n,
       do_inherit(Pike_sp-1, flags, name);
       pop_stack();
   }
-}
 
-void compiler_do_implement(node *n)
-{
-  if (!n) {
-    yyerror("Invalid implement directive.");
-    return;
+  if (Pike_compiler->current_annotations &&
+      (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
+    compiler_add_program_annotations(inherit_offset,
+				     Pike_compiler->current_annotations);
+    free_node(Pike_compiler->current_annotations);
+    Pike_compiler->current_annotations = NULL;
   }
-  /* FIXME: Implement. */
 }
 
 int call_handle_inherit(struct pike_string *s)
@@ -5874,7 +6284,9 @@ int define_variable(struct pike_string *name,
     if(n==-1)
       yyerror("Pass2: Variable disappeared!");
     else {
-      struct identifier *id=ID_FROM_INT(Pike_compiler->new_program,n);
+      struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
+      struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
       free_type(id->type);
       copy_pike_type(id->type, type);
       return n;
@@ -6128,8 +6540,9 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     {
       yyerror("Pass2: Constant disappeared!");
     }else{
-      struct identifier *id;
-      id=ID_FROM_INT(Pike_compiler->new_program,n);
+      struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
+      struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
       if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
 	/* FIXME: We probably ought to do something here... */
       } else if(id->func.const_info.offset>=0) {
@@ -6380,6 +6793,14 @@ PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags
   return ret;
 }
 
+int is_lfun_name(struct pike_string *name)
+{
+  if (low_mapping_string_lookup(lfun_types, name)) {
+    return 1;
+  }
+  return 0;
+}
+
 /**
  * Define a new function.
  *
@@ -6449,6 +6870,17 @@ INT32 define_function(struct pike_string *name,
 	}
       }
       c->lex.pragmas = orig_pragmas;
+
+      /* NB: define_function() is called multiple times... */
+      if (((flags & (ID_PROTECTED|ID_PRIVATE)) != ID_PROTECTED) && func &&
+	  !(orig_pragmas & ID_NO_DEPRECATION_WARNINGS) &&
+	  !deprecated_typep(type)) {
+	if (!(flags & (ID_PROTECTED|ID_PRIVATE))) {
+	  yywarning("Lfun %S is public.", name);
+	} else {
+	  yywarning("Lfun %S is private.", name);
+	}
+      }
     }
   } else if (((name->len > 3) &&
 	      (index_shared_string(name, 0) == '`') &&
@@ -6645,7 +7077,6 @@ INT32 define_function(struct pike_string *name,
 
     if(!(ref.id_flags & ID_INHERITED)) /* not inherited */
     {
-
       if( !( IDENTIFIER_IS_FUNCTION(funp->identifier_flags) &&
 	     ( (!func || func->offset == -1) || (funp->func.offset == -1))))
       {
@@ -7618,6 +8049,105 @@ struct array *program_types(struct program *p)
   return(res);
 }
 
+/**
+ * Returns an array containing the recursive annotations
+ * for all inherits in the program.
+ *
+ * Retuns NULL if there are no such annotations.
+ */
+struct array *program_inherit_annotations(struct program *p)
+{
+  int prev_offset = -1;
+  int i;
+  int found = 0;
+  struct svalue *res = Pike_sp;
+
+  for (i = 0; i < p->num_inherits; i++) {
+    push_undefined();
+  }
+  for (i = 0; i < p->num_inherits; i++) {
+    struct inherit *inh = p->inherits + i;
+    if (inh->inherit_level > 0) {
+      push_svalue(res + inh->inherit_level - 1);
+    } else {
+      push_undefined();
+    }
+    if (inh->annotations) {
+      ref_push_multiset(inh->annotations);
+      f_add(2);
+      found = 1;
+    }
+    assign_svalue(res + inh->inherit_level, Pike_sp - 1);
+    pop_stack();
+  }
+  if (found) {
+    return aggregate_array(Pike_sp - res);
+  }
+  pop_n_elems(Pike_sp - res);
+  return NULL;
+}
+
+struct array *program_annotations(struct program *p, int flags)
+{
+  int i;
+  int n = 0;
+  struct array *res;
+  struct array *inherit_annotations = NULL;
+  if (flags & 1) {
+    inherit_annotations = program_inherit_annotations(p);
+  }
+  for (i = p->num_identifier_index; i--; ) {
+    struct identifier *id;
+    int e = p->identifier_index[i];
+    if (p->identifier_references[e].id_flags &
+	(ID_HIDDEN|ID_VARIANT|ID_PROTECTED|ID_PRIVATE)) {
+      continue;
+    }
+    id = ID_FROM_INT(p, e);
+    if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+      /* FIXME!
+       */
+      continue;
+    } else if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+      if (id->func.const_info.offset >= 0) {
+	struct reference *ref = PTR_FROM_INT(p, e);
+	struct program *p2 = PROG_FROM_PTR(p, ref);
+	struct svalue *val = &p2->constants[id->func.const_info.offset].sval;
+	struct multiset *inh_ann = NULL;
+	if ((TYPEOF(*val) != T_PROGRAM) ||
+	    !(val->u.program->flags & PROGRAM_USES_PARENT)) {
+	  if (inherit_annotations &&
+	      (TYPEOF(ITEM(inherit_annotations)[ref->inherit_offset]) ==
+	       PIKE_T_MULTISET)) {
+	    inh_ann = ITEM(inherit_annotations)[ref->inherit_offset].u.multiset;
+	    ref_push_multiset(inh_ann);
+	  }
+	  if ((p2->num_annotations > ref->identifier_offset) &&
+	      p2->annotations[ref->identifier_offset]) {
+	    ref_push_multiset(p2->annotations[ref->identifier_offset]);
+	    if (inh_ann) {
+	      f_add(2);
+	    }
+	  } else if (!inh_ann) {
+	    push_int(0);
+	  }
+	  n++;
+	}
+      } else {
+	/* FIXME: Prototype constant. */
+	push_int(0);
+	n++;
+      }
+    }
+  }
+  do_free_array(inherit_annotations);
+  f_aggregate(n);
+  res = Pike_sp[-1].u.array;
+  add_ref(res);
+  pop_stack();
+  return(res);
+}
+
 int low_program_index_no_free(struct svalue *to, struct program *p, int e,
 			      struct object *parent, int parent_identifier)
 {
@@ -7727,6 +8257,12 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
  * Filename entry:
  *   1. char		127 (marker).
  *   2. small number	Filename entry number in string table.
+ *
+ * Frame variable:
+ *   1. char		127 (marker).
+ *   2. small number	~(frame stack offset).
+ *   3. char		-1: end, 0: name, 1: type (kind)
+ *   4. small number	end: -, name: strings_offset, type: constants_offset
  *
  * Line number entry:
  *   1. small number	Index in program.program (pc).
@@ -7935,19 +8471,56 @@ void store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
 	  Pike_compiler->new_program->num_linenumbers)
     {
       char *start = cnt;
-      if(*cnt == 127)
+      while(*cnt == 127)
       {
 	int strno;
 	cnt++;
 	strno = get_small_number(&cnt);
-	CHECK_FILE_ENTRY (Pike_compiler->new_program, strno);
-	if (a_flag > 100) {
-	  file = Pike_compiler->new_program->strings[strno];
-	  fprintf(stderr, "Filename entry:\n"
-		  "  len: %"PRINTSIZET"d, shift: %d\n",
-		  file->len, file->size_shift);
+	if (strno >= 0) {
+	  CHECK_FILE_ENTRY (Pike_compiler->new_program, strno);
+	  if (a_flag > 100) {
+	    file = Pike_compiler->new_program->strings[strno];
+	    fprintf(stderr, "Filename entry:\n"
+		    "  len: %"PRINTSIZET"d, shift: %d\n",
+		    file->len, file->size_shift);
+	  }
+	} else {
+	  int offset = ~strno;
+	  int kind = *(cnt++);
+	  strno = (kind < 0)?-1:get_small_number(&cnt);
+	  if (a_flag > 100) {
+	    switch(kind) {
+	    case -1:	/* end */
+	      fprintf(stderr, "Variable end entry:\n"
+		      "  offset: 0x%04x\n", offset);
+	      break;
+	    case 0:	/* name */
+	      {
+		struct pike_string *var_name =
+		  Pike_compiler->new_program->strings[strno];
+		fprintf(stderr, "Variable name entry:\n"
+			"  offset: 0x%04x name: \"%.*s\"\n",
+			offset, (int)var_name->len, var_name->str);
+		break;
+	      }
+	    case 1:	/* type */
+	      fprintf(stderr, "Variable type entry:\n"
+		      "  offset: 0x%04x Type constant #%d\n",
+		      offset, strno);
+	      break;
+	    default:
+	      fprintf(stderr, "Unknown entry #%d\n"
+		      "  offset: 0x%04x Number: 0x%08x\n",
+		      kind, offset, (kind > 0)?strno:0);
+	      break;
+	    }
+	  }
 	}
+	if (cnt >= Pike_compiler->new_program->linenumbers +
+	    Pike_compiler->new_program->num_linenumbers) break;
       }
+      if (cnt >= Pike_compiler->new_program->linenumbers +
+	  Pike_compiler->new_program->num_linenumbers) break;
       off+=get_small_number(&cnt);
       line+=get_small_number(&cnt);
       if (a_flag > 100) {
@@ -7997,6 +8570,29 @@ void store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
     Pike_compiler->last_line = current_line;
     Pike_compiler->last_pc = (INT32)PIKE_PC;
   }
+}
+
+void store_linenumber_local_name(int local_num, int string_num)
+{
+  add_to_linenumbers(127);
+  insert_small_number(~local_num);
+  add_to_linenumbers(0);
+  insert_small_number(string_num);
+}
+
+void store_linenumber_local_type(int local_num, int constant_num)
+{
+  add_to_linenumbers(127);
+  insert_small_number(~local_num);
+  add_to_linenumbers(1);
+  insert_small_number(constant_num);
+}
+
+void store_linenumber_local_end(int local_num)
+{
+  add_to_linenumbers(127);
+  insert_small_number(~local_num);
+  add_to_linenumbers(-1);
 }
 
 #define FIND_PROGRAM_LINE(prog, file, line) do {			\
@@ -8154,7 +8750,8 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 
 PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 					      struct program *prog,
-					      INT_TYPE *linep)
+					      INT_TYPE *linep,
+					      struct local_variable_info *vars)
 {
   linep[0] = 0;
 
@@ -8162,10 +8759,12 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
     ptrdiff_t offset = pc - prog->program;
     if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
       static struct pike_string *file = NULL;
+      static struct pike_string *next_file = NULL;
       static char *base, *cnt;
       static ptrdiff_t off;
       static INT32 pid;
       static INT_TYPE line;
+      static struct local_variable_info frame;
 
       if(prog->linenumbers == base && prog->id == pid && offset > off &&
 	 cnt < prog->linenumbers + prog->num_linenumbers)
@@ -8175,6 +8774,7 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
       off=line=0;
       pid=prog->id;
       file = 0;
+      frame.num_local = 0;
 
       while(cnt < prog->linenumbers + prog->num_linenumbers)
       {
@@ -8183,14 +8783,46 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	  int strno;
 	  cnt++;
 	  strno = get_small_number(&cnt);
-	  CHECK_FILE_ENTRY (prog, strno);
-	  file = prog->strings[strno];
+	  if (strno >= 0) {
+	    CHECK_FILE_ENTRY (prog, strno);
+	    next_file = prog->strings[strno];
+	  } else {
+	    int local_num = ~strno;
+	    int kind = *((signed char *)cnt++);
+	    if (kind >= 0) {
+	      strno = get_small_number(&cnt);
+	    }
+	    if (local_num < MAX_LOCAL) {
+	      frame.num_local = local_num + 1;
+	      switch(kind) {
+	      case -1:	/* end */
+		frame.num_local = local_num;
+		break;
+	      case 0:	/* name */
+		frame.names[local_num] = strno;
+		break;
+	      case 1:	/* type */
+		frame.types[local_num] = strno;
+		break;
+#ifdef PIKE_DEBUG
+	      default:
+		Pike_fatal("Unknown linenumber entry: %d\n", kind);
+		break;
+#endif
+	      }
+#ifdef PIKE_DEBUG
+	    } else {
+	      Pike_fatal("Local variable out of range: %d\n", local_num);
+#endif
+	    }
+	  }
 	  continue;
 	}
 	off+=get_small_number(&cnt);
       fromold:
 	if(off > offset) break;
 	line+=get_small_number(&cnt);
+	file = next_file;
       }
       if (cnt >= prog->linenumbers + prog->num_linenumbers) {
 	/* We reached the end of the table. Make sure
@@ -8199,6 +8831,7 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	base = NULL;
       }
       linep[0]=line;
+      if (vars) *vars = frame;
       if (file) {
 	add_ref(file);
 	return file;
@@ -8235,13 +8868,19 @@ PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
 
       while(cnt < prog->linenumbers + prog->num_linenumbers)
       {
-	if(*cnt == 127)
+	while(*cnt == 127)
 	{
 	  int strno;
 	  cnt++;
 	  strno = get_small_number(&cnt);
-	  CHECK_FILE_ENTRY (prog, strno);
-	  file = prog->strings[strno];
+	  if (strno >= 0) {
+	    CHECK_FILE_ENTRY (prog, strno);
+	    file = prog->strings[strno];
+	  } else {
+	    int frame_offset = ~strno;
+	    int kind = *(cnt++);
+	    strno = (kind < 0)?-1:get_small_number(&cnt);
+	  }
 	}
 	off+=get_small_number(&cnt);
 	if(off > offset) break;
@@ -8295,7 +8934,7 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
     return unknown_program;
   }
 
-  res = low_get_line(pc, prog, linep);
+  res = low_get_line(pc, prog, linep, NULL);
   if (!res) {
     struct pike_string *not_found;
     REF_MAKE_CONST_STRING(not_found, "Line not found");
@@ -8327,7 +8966,7 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
     }
     if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
 	(id->func.offset != -1))
-      return low_get_line (p->program + id->func.offset, p, linep);
+      return low_get_line (p->program + id->func.offset, p, linep, NULL);
     if ((ret = get_identifier_line(o->prog, fun, linep))) {
       add_ref(ret);
       return ret;
@@ -8439,8 +9078,9 @@ void init_program(void)
 
   MAKE_CONST_STRING(compat_lfun_destroy_string, "destroy");
 
-  lfun_ids = allocate_mapping(NUM_LFUNS);
-  lfun_types = allocate_mapping(NUM_LFUNS);
+  /* NB: One extra entry needed for lfun::destroy(). */
+  lfun_ids = allocate_mapping(NUM_LFUNS + 1);
+  lfun_types = allocate_mapping(NUM_LFUNS + 1);
   for (i=0; i < NELEM(lfun_names); i++) {
     lfun_strings[i] = make_shared_static_string(lfun_names[i], strlen(lfun_names[i]), eightbit);
 
@@ -8450,13 +9090,25 @@ void init_program(void)
 
     SET_SVAL(val, T_TYPE, 0, type, make_pike_type(raw_lfun_types[i]));
     mapping_insert(lfun_types, &key, &val);
-    free_type(val.u.type);
+
+    if (i == LFUN__DESTRUCT) {
+      /* Special case for lfun::destroy(). */
+      SET_SVAL(key, T_STRING, 0, string, compat_lfun_destroy_string);
+      /* FIXME: Adjust the type to be __deprecated__? */
+      mapping_insert(lfun_types, &key, &val);
+      free_type(val.u.type);
+
+      SET_SVAL(id, T_INT, NUMBER_NUMBER, integer, i);
+      mapping_insert(lfun_ids, &key, &id);
+    } else {
+      free_type(val.u.type);
+    }
   }
 
   lfun_getter_type_string = make_pike_type(tFuncV(tNone, tVoid, tMix));
   lfun_setter_type_string = make_pike_type(tFuncV(tZero, tVoid, tVoid));
 
-  init_pike_compiler();
+  low_init_pike_compiler();
 
   enter_compiler(NULL, 0);
 
@@ -8510,7 +9162,7 @@ void cleanup_program(void)
   }
 #endif
 
-  cleanup_pike_compiler();
+  low_cleanup_pike_compiler();
 }
 
 
@@ -8624,6 +9276,9 @@ void gc_mark_program_as_referenced(struct program *p)
 
 	if(e && p->inherits[e].prog)
 	  gc_mark_program_as_referenced(p->inherits[e].prog);
+
+	if (p->inherits[e].annotations)
+	  gc_mark_multiset_as_referenced(p->inherits[e].annotations);
       }
 
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
@@ -8631,6 +9286,10 @@ void gc_mark_program_as_referenced(struct program *p)
 	gc_mark_type_as_referenced (p->identifiers[e].type);
 #endif
 
+      for (e = p->num_annotations-1; e >= 0; e--) {
+	if (p->annotations[e])
+	  gc_mark_multiset_as_referenced(p->annotations[e]);
+      }
     } GC_LEAVE;
 }
 
@@ -8651,6 +9310,14 @@ void real_gc_cycle_check_program(struct program *p, int weak)
 
 	if(e && p->inherits[e].prog)
 	  gc_cycle_check_program(p->inherits[e].prog, 0);
+
+	if (p->inherits[e].annotations)
+	  gc_cycle_check_multiset(p->inherits[e].annotations, 0);
+      }
+
+      for (e = p->num_annotations - 1; e >= 0; e--) {
+	if (p->annotations[e])
+	  gc_cycle_check_multiset(p->annotations[e], 0);
       }
 
       /* Strong ref follows. It must be last. */
@@ -8697,6 +9364,10 @@ static void gc_check_program(struct program *p)
 
       if(e && p->inherits[e].prog)
 	debug_gc_check (p->inherits[e].prog, " as inherited program of a program");
+
+      if (p->inherits[e].annotations)
+	debug_gc_check(p->inherits[e].annotations,
+		       " as annotations for an inherit");
     }
 
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
@@ -8714,6 +9385,10 @@ static void gc_check_program(struct program *p)
 		      " as identifier type in a program");
 #endif
 
+    for (e = p->num_annotations - 1; e >= 0; e--) {
+      if (p->annotations[e])
+	debug_gc_check(p->annotations[e], " as annotations in a program");
+    }
   } GC_LEAVE;
 }
 
@@ -8809,6 +9484,16 @@ size_t gc_free_all_unreferenced_programs(void)
 	  free_program(p->inherits[e].prog);
 	  p->inherits[e].prog=0;
 	}
+
+	if (p->inherits[e].annotations) {
+	  free_multiset(p->inherits[e].annotations);
+	  p->inherits[e].annotations = NULL;
+	}
+      }
+
+      for (e = 0; e < p->num_annotations; e++) {
+	do_free_multiset(p->annotations[e]);
+	p->annotations[e] = NULL;
       }
 
       gc_free_extra_ref(p);
@@ -8983,8 +9668,9 @@ PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
 						    struct object **parent_obj,
 						    int *parent_id)
 {
-  switch(TYPEOF(*s))
-  {
+  while(s) {
+    switch(TYPEOF(*s))
+    {
     case T_OBJECT:
     {
       struct program *p = s->u.object->prog;
@@ -9010,20 +9696,34 @@ PMOD_EXPORT struct program *low_program_from_svalue(const struct svalue *s,
       return p; /* We trust that there is a reference somewhere... */
     }
 
-  case T_FUNCTION:
-    if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) return 0;
-    return low_program_from_function(*parent_obj = s->u.object,
-				     *parent_id = SUBTYPEOF(*s));
+    case T_FUNCTION:
+      if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) return 0;
+      return low_program_from_function(*parent_obj = s->u.object,
+				       *parent_id = SUBTYPEOF(*s));
 
-  case T_PROGRAM:
-    return s->u.program;
+    case T_PROGRAM:
+      return s->u.program;
 
-  case PIKE_T_TYPE:
-    return program_from_type(s->u.type);
+    case PIKE_T_TYPE:
+      return program_from_type(s->u.type);
 
-  default:
-    return 0;
+    case PIKE_T_ARRAY:
+      if (!s->u.array->size) break;
+      /* Return result for the last element of the array.
+       *
+       * This is compatible with the corresponding behavior for inherit.
+       */
+      s =  ITEM(s->u.array) + s->u.array->size - 1;
+      continue;
+
+    default:
+      break;
+    }
+
+    break;
   }
+
+  return NULL;
 }
 
 /* NOTE: Does not add references to the return value! */

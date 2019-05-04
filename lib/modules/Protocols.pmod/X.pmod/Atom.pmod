@@ -28,7 +28,7 @@ class Atom
   string name;
   int id;
 
-  void create(object d /*, int i, string|void n */)
+  protected void create(object d /*, int i, string|void n */)
   {
     display = d;
     // id = i;
@@ -42,7 +42,7 @@ class pending_request
   object atom;
   function callback;
 
-  void create(object d, object a, function|void c)
+  protected void create(object d, object a, function|void c)
   {
     display = d;
     atom = a;
@@ -164,7 +164,7 @@ class atom_manager
       }
   }
 
-  void create()
+  protected void create()
   {
     for(int i = 1; i<sizeof(._Xlib.predefined_atoms); i++)
       {

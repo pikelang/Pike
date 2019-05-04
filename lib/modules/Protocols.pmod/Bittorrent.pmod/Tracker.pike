@@ -416,6 +416,6 @@ void tracker_gc() {
   call_out(tracker_gc, interval);
 }
 
-void create() {
+protected void create() {
   call_out(tracker_gc, interval);
 }

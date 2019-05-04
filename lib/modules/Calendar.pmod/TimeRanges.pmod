@@ -259,8 +259,8 @@ class TimeRange
 //!	of steps the motion will be. It does <i>never</i> represent
 //!	any <i>fixed</i> amount of time, like seconds or days.
 
-   TimeRange `+(program|this_program|int n,
-		program|this_program|int ... more)
+   protected TimeRange `+(program|this_program|int n,
+			  program|this_program|int ... more)
    {
       TimeRange res;
       if (objectp(n)) res = add(1,n);
@@ -270,13 +270,13 @@ class TimeRange
       return res;
    }
 
-  TimeRange ``+(int n, int ... more)
+  protected TimeRange ``+(int n, int ... more)
    {
       if (sizeof(more)) n = predef::`+(n, @more);
       return add(n);
    }
 
-   TimeRange `-(program|this_program|int n,
+   protected TimeRange `-(program|this_program|int n,
 		TimeRange|this_program|int ... more)
    {
       if (sizeof(more)) n = predef::`+(n, @more);
@@ -305,8 +305,8 @@ class TimeRange
 //!	the time period. <tt>t*17</tt> is
 //!	the same as doing <tt>t-><ref>set_size</ref>(t,17)</tt>.
 
-   TimeRange ``* (int n) {return `* (n);}
-   TimeRange `*(int|float n)
+   protected TimeRange ``* (int n) {return `* (n);}
+   protected TimeRange `*(int|float n)
    {
       return set_size((int)n,this);
    }
@@ -398,7 +398,7 @@ class TimeRange
       }
    }
 
-   array(TimeRange)|int `/(TimeRange|program|int|float x)
+   protected array(TimeRange)|int `/(TimeRange|program|int|float x)
    {
       if (intp(x) || floatp(x)) return split(x);
       else return how_many(x);
@@ -644,7 +644,7 @@ class TimeRange
 //!	might be to get multiset to work,
 //!	besides sorting events clearly defined in time.
 
-   int(0..1) `<(TimeRange compared_to)
+   protected int(0..1) `<(TimeRange compared_to)
    {
       array(int(-1..1)) a=_compare(compared_to);
       if (a[0]<0) return 1;
@@ -653,7 +653,7 @@ class TimeRange
       return 0;
    }
 
-   int(0..1) `>(TimeRange compared_to)
+   protected int(0..1) `>(TimeRange compared_to)
    {
       array(int(-1..1)) a=_compare(compared_to);
       if (a[0]>0) return 1;
@@ -682,7 +682,7 @@ class TimeRange
 //!	_equal is not currently possible to overload,
 //!	due to weird bugs, so equal uses `== for now.
 
-   int(0..1) `==(mixed what)
+   protected int(0..1) `==(mixed what)
    {
      return objectp(what) && functionp(what->ruleset) &&
        what->ruleset()==ruleset() && equals(what);
@@ -706,9 +706,9 @@ class TimeRange
 //!          &gt;----- cut -----&lt;
 //!	</pre>
 
-   TimeRange|zero ``& (TimeRange with, mixed... extra)
+   protected TimeRange|zero ``& (TimeRange with, mixed... extra)
     {return `& (with, @extra);}
-   TimeRange|zero `&(TimeRange with, mixed ...extra)
+   protected TimeRange|zero `&(TimeRange with, mixed ...extra)
    {
       if (with->is_nulltimerange)
 	 return with;
@@ -743,8 +743,8 @@ class TimeRange
 //!     &lt;----------union----------&gt;
 //!	</pre>
 
-   TimeRange ``| (TimeRange with, mixed... extra) {return `| (with, @extra);}
-   TimeRange `|(TimeRange with,mixed ...extra)
+   protected TimeRange ``| (TimeRange with, mixed... extra) {return `| (with, @extra);}
+   protected TimeRange `|(TimeRange with,mixed ...extra)
    {
       if (with->is_nulltimerange)
 	 return sizeof(extra)?`|(@extra):this;
@@ -782,8 +782,8 @@ class TimeRange
 //!     &lt;----|               |---->   - exclusive or
 //!	</pre>
 
-   TimeRange ``^ (TimeRange with, mixed... extra) {return `^ (with, @extra);}
-   TimeRange `^(TimeRange with,mixed ... extra)
+   protected TimeRange ``^ (TimeRange with, mixed... extra) {return `^ (with, @extra);}
+   protected TimeRange `^(TimeRange with,mixed ... extra)
    {
       if (with->is_supertimerange)
 	 return `^(with,this,@extra); // let it handle that...
@@ -1028,7 +1028,7 @@ class cSuperTimeRange
       return SuperTimeRange(res+({last}));
    }
 
-   TimeRange `&(TimeRange with,mixed... extra)
+   protected TimeRange `&(TimeRange with,mixed... extra)
    {
       array r=({});
       foreach (parts,TimeRange part)
@@ -1046,7 +1046,7 @@ class cSuperTimeRange
       }
    }
 
-   TimeRange `|(TimeRange with,mixed ...extra)
+   protected TimeRange `|(TimeRange with,mixed ...extra)
    {
       TimeRange res;
       if (with->is_supertimerange)
@@ -1068,7 +1068,7 @@ class cSuperTimeRange
       return predef::`|(@r);
    }
 
-   TimeRange `^(TimeRange with,mixed ...extra)
+   protected TimeRange `^(TimeRange with,mixed ...extra)
    {
 //        werror("1 %O\n",with);
 //        werror("2 %O\n",`|(with));
@@ -1080,7 +1080,7 @@ class cSuperTimeRange
 
 // == checks if equal
 
-   int `==(TimeRange with,mixed ...extra)
+   protected int `==(TimeRange with,mixed ...extra)
    {
       if (!with->is_supertimerange)
 	 return 0; // it has to be
@@ -1103,7 +1103,7 @@ class cSuperTimeRange
 // `< and `> sort for multiset
 // a little bit heavier for super-time-ranges
 
-   int(0..1) `<(TimeRange with)
+   protected int(0..1) `<(TimeRange with)
    {
       array(int(-1..1)) a=_compare(with);
       if (a[0]<0) return 1;
@@ -1118,7 +1118,7 @@ class cSuperTimeRange
       return 0;
    }
 
-   int(0..1) `>(TimeRange with)
+   protected int(0..1) `>(TimeRange with)
    {
       array(int(-1..1)) a=_compare(with);
       if (a[0]>0) return 1;
@@ -1214,17 +1214,17 @@ protected class cNullTimeRange
       return ({-1,-1,-1,-1});
    }
 
-   int(0..1) `<(TimeRange with)
+   protected int(0..1) `<(TimeRange with)
    {
       return !(with==this);
    }
 
-   int(0..1) `>(TimeRange with)
+   protected int(0..1) `>(TimeRange with)
    {
       return 0;
    }
 
-   int(0..1) `==(TimeRange with)
+   protected int(0..1) `==(TimeRange with)
    {
       return objectp(with) && with->is_nulltimerange;
    }
@@ -1234,17 +1234,17 @@ protected class cNullTimeRange
       return objectp(with) && with->is_nulltimerange;
    }
 
-   TimeRange `&(TimeRange with, mixed ...extra)
+   protected TimeRange `&(TimeRange with, mixed ...extra)
    {
       return predef::`&(with,this,@extra);
    }
 
-   TimeRange `|(TimeRange with, mixed ...extra)
+   protected TimeRange `|(TimeRange with, mixed ...extra)
    {
       return predef::`|(with,this,@extra);
    }
 
-   TimeRange `^(TimeRange with, mixed ...extra)
+   protected TimeRange `^(TimeRange with, mixed ...extra)
    {
       return predef::`^(with,this,@extra);
    }
@@ -1254,7 +1254,7 @@ protected class cNullTimeRange
       return this;
    }
 
-   int(1..1) `!()
+   protected int(1..1) `!()
    {
       return 1;
    }

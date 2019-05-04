@@ -327,7 +327,7 @@ object Placeholder = class
     }
 
     private mapping _cache = ([]);
-    mixed `[](string name)
+    protected mixed `[](string name)
     {
         if( _cache[name] )
             return _cache[name];

@@ -8,8 +8,6 @@
 
 /* #define PICKY_MUTEX */
 
-#ifdef _REENTRANT
-
 #include "pike_error.h"
 
 /* Define to get a debug trace of thread operations. Debug levels can be 0-2. */
@@ -73,6 +71,8 @@ PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer(void)
 #else  /* CONFIGURE_TEST */
 #include "pike_threadlib.h"
 #endif
+
+#ifdef _REENTRANT
 
 #ifndef VERBOSE_THREADS_DEBUG
 #define THREADS_FPRINTF(LEVEL,...)
@@ -2589,6 +2589,45 @@ void exit_mutex_key_obj(struct object *DEBUGUSED(o))
  *! Condition variables are used by threaded programs
  *! to wait for events happening in other threads.
  *!
+ *! In order to prevent races (which is the whole point of condition
+ *! variables), the modification of a shared resource and the signal notifying
+ *! modification of the resource must be performed inside the same mutex
+ *! lock, and the examining of the resource and waiting for a signal that
+ *! the resource has changed based on that examination must also happen
+ *! inside the same mutex lock.
+ *!
+ *! Typical wait operation:
+ *! @ol
+ *!  @item Take mutex lock
+ *!  @item Read/write shared resource
+ *!  @item Wait for the signal with the mutex lock in released state
+ *!  @item Reacquire mutex lock
+ *!  @item If needed, jump back to step 2 again
+ *!  @item Release mutex lock
+ *! @endol
+ *!
+ *! Typical signal operation:
+ *! @ol
+ *!  @item Take mutex lock
+ *!  @item Read/write shared resource
+ *!  @item Send signal
+ *!  @item Release mutex lock
+ *! @endol
+ *!
+ *! @example
+ *!   You have some resource that multiple treads want to use.  To
+ *!   protect this resource for simultaneous access, you create a shared mutex.
+ *!   Before you read or write the resource, you take the mutex so that you
+ *!   get a consistent and private view of / control over it.  When you decide
+ *!   that the resource is not in the state you want it, and that you need
+ *!   to wait for some other thread to modify the state for you before you
+ *!   can continue, you wait on the conditional variable, which will
+ *!   temporarily relinquish the mutex during the wait.  This way a
+ *!   different thread can take the mutex, update the state of the resource,
+ *!   and then signal the condition (which does not in itself release the
+ *!   mutex, but the signalled thread will be next in line once the mutex is
+ *!   released).
+ *!
  *! @note
  *!   Condition variables are only available on systems with thread
  *!   support. The Condition class is not simulated otherwise, since that
@@ -2822,9 +2861,26 @@ void exit_cond_obj(struct object *UNUSED(o))
 /*! @class Thread
  */
 
-/*! @decl array(mixed) backtrace()
+/*! @decl array(mixed) backtrace(int|void flags)
  *!
  *! Returns the current call stack for the thread.
+ *!
+ *! @param flags
+ *!
+ *!   A bit mask of flags affecting generation of the backtrace.
+ *!
+ *!   Currently a single flag is defined:
+ *!   @int
+ *!     @value 1
+ *!       Return @[LiveBacktraceFrame]s. This flag causes the frame
+ *!       objects to track changes (as long as they are in use), and
+ *!       makes eg local variables for functions available for
+ *!       inspection or change.
+ *!
+ *!       Note that since these values are "live", they may change or
+ *!       dissapear at any time unless the corresponding thread has
+ *!       been halted or similar.
+ *!   @endint
  *!
  *! @returns
  *!   The result has the same format as for @[predef::backtrace()].
@@ -2834,23 +2890,27 @@ void exit_cond_obj(struct object *UNUSED(o))
  */
 void f_thread_backtrace(INT32 args)
 {
-  void low_backtrace(struct Pike_interpreter_struct *);
   struct thread_state *foo = THIS_THREAD;
-
-  pop_n_elems(args);
+  int flags = 0;
 
   if(foo == Pike_interpreter.thread_state)
   {
-    f_backtrace(0);
+    f_backtrace(args);
+
+    return;
   }
-  else if(foo->state.stack_pointer)
+
+  get_all_args("backtrace", args, ".d", &flags);
+
+  pop_n_elems(args);
+
+  if(foo->state.stack_pointer)
   {
-    low_backtrace(& foo->state);
+    low_backtrace(& foo->state, flags);
   }
   else
   {
-    push_int(0);
-    f_allocate(1);
+    ref_push_array(&empty_array);
   }
 }
 

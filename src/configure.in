@@ -2442,6 +2442,13 @@ if test "x${AR-}" = x ; then
 fi
 AC_SUBST(AR)
 
+# PaX flags control (NetBSD).
+if test "x${PAXCTL-}" = x ; then
+  AC_PATH_PROG(PAXCTL, paxctl, , $PATH:$EXTRA_PATH)
+  export PAXCTL
+fi
+AC_SUBST(PAXCTL)
+
 if test "x${RNTANY-}" = x ; then
   AC_PATH_PROG(RNTANY, rntany, , $PATH:$EXTRA_PATH)
   export RNTANY
@@ -3224,6 +3231,8 @@ AC_CHECK_LIB(poll, poll)
 AC_CHECK_LIB(m, floor)
 
 AC_CHECK_LIB(socket, socket)
+
+AC_CHECK_LIB(crypt, crypt)
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
   AC_MSG_CHECKING(if we should use the 64 bit API)
@@ -4058,6 +4067,7 @@ AC_CHECK_FUNCS( \
  accept4 \
  closefrom \
  crypt \
+ crypt_r \
  fdwalk \
  ftruncate64 \
  gethrtime \
@@ -5127,10 +5137,42 @@ int main()
 }],
 pike_cv_hardware_byteorder=`cat conftest.out.2`
 ,
-pike_cv_hardware_byteorder=0
-,
-pike_cv_hardware_byteorder=0
-)
+AC_MSG_ERROR([Unable to determine hardware byteorder])
+, [
+echo $ac_n "crosscompiling... $ac_c" 1>&6
+    # Use some magical constants...
+    cat > conftest.$ac_ext <<EOF
+dnl This sometimes fails to find confdefs.h, for some reason.
+dnl [#]line __oline__ "[$]0"
+[#]line __oline__ "configure"
+#include "confdefs.h"
+#include <stdio.h>
+#if SIZEOF_INT == 4
+#define T int
+#else
+#define T long
+#endif
+T int_info[[]] = {
+  0, 0x5f426947L, 0x2d654e64L, 0x49614e5fL, 0
+};
+EOF
+    if AC_TRY_EVAL(ac_compile); then
+      if test -f "conftest.$ac_objext"; then
+        if strings "conftest.$ac_objext" | grep "_BiG-eNdIaN_" >/dev/null; then
+	  pike_cv_hardware_byteorder=1234
+        elif strings "conftest.$ac_objext" | grep "GiB_dNe-_NaI" >/dev/null; then
+	  pike_cv_hardware_byteorder=1234
+	else
+	  AC_MSG_ERROR([Unable to determine hardware byteorder])
+	fi
+      else
+        AC_MSG_ERROR([Unable to determine hardware byteorder])
+      fi
+    else
+      AC_MSG_ERROR([Unable to determine hardware byteorder])
+    fi
+    rm -rf conftest*
+])
 fi
 ])
 
@@ -5332,6 +5374,7 @@ fi
 
 ########################################################################
 
+PAXCTL_ALLOW_MPROTECT=:
 if test yes = "$with_machine_code"; then
   AC_MSG_CHECKING(register name convention)
   AC_CACHE_VAL(pike_cv_cpu_reg_prefix,
@@ -5353,7 +5396,55 @@ if test yes = "$with_machine_code"; then
     *) AC_MSG_RESULT(${pike_cv_cpu_reg_prefix}0)
        AC_DEFINE_UNQUOTED(PIKE_CPU_REG_PREFIX,"$pike_cv_cpu_reg_prefix");;
   esac
-else :; fi
+
+  if test "x$PAXCTL" = "x:"; then :; else
+    AC_MSG_CHECKING(${PAXCTL} syntax to allow mprotect)
+    AC_CACHE_VAL(pike_cv_paxctl_allow_mprotect,
+    [
+      echo "int main(int argc, char **argv) { return 0; }" >conftest.c
+      pike_cv_paxctl_allow_mprotect=no
+      if ${CC} ${CFLAGS} conftest.c -o conftest >&AC_FD_CC 2>&1; then
+	if test -f conftest; then
+	  # Notes about paxctl flags:
+	  #
+	  # Flag	Linux			NetBSD
+	  #     	Usage.			View PaX flags.
+	  #   -v	View PaX flags.		-
+	  #   -m	Allow mprotect.		Remove +m flag.
+	  #   +m	File +m (fail).		Allow mprotect.
+	  #   -M	Disallow mprotect.	Remove +M flag.
+	  #   +M	File +M (fail).		Disallow mprotect.
+	  #   -c	Convert GNU to PaX.	-
+	  #   -C	Create PaX header.	-
+	  #
+	  # Note that Linux paxctl fails if there's no PaX ELF header,
+	  # unless -C or -c have been specified.
+	  # Note that Linux -C fails if there's a PT_GNU_STACK header.
+	  # Note that Linux -c fails if there's no PT_GNU_STACK header.
+	  for pike_cv_paxctl_allow_mprotect in +m -cCm no; do
+	    if test "x$pike_cv_paxctl_allow_mprotect" = "xno"; then
+	      break
+	    fi
+	    echo "${PAXCTL} ${pike_cv_paxctl_allow_mprotect} conftest" \
+		>&AC_FD_CC
+	    if ${PAXCTL} ${pike_cv_paxctl_allow_mprotect} conftest \
+		>&AC_FD_CC 2>&1; then
+	      break
+	    fi
+	  done
+        else
+	  echo "No result from compilation." >&AC_FD_CC
+	fi
+      fi
+    ])
+    AC_MSG_RESULT($pike_cv_paxctl_allow_mprotect)
+    if test "x$pike_cv_paxctl_allow_mprotect" = "xno"; then :; else
+      PAXCTL_ALLOW_MPROTECT="\$(PAXCTL) ${pike_cv_paxctl_allow_mprotect}"
+    fi
+  fi
+fi
+
+AC_SUBST(PAXCTL_ALLOW_MPROTECT)
 
 ########################################################################
 
@@ -6061,80 +6152,6 @@ if test "$pike_cv_func_getrusage_full" = yes; then
 else
   AC_MSG_RESULT(getrusage is restricted)
   AC_DEFINE(GETRUSAGE_RESTRICTED)
-fi
-
-########################################################################
-
-if test "$ac_cv_header_sys_procfs_h" = "yes"; then
-  AC_MSG_CHECKING(getrusage() through procfs)
-  AC_CACHE_VAL(pike_cv_getrusage_procfs, [
-    AC_TRY_COMPILE([
-#ifndef _LARGEFILE_SOURCE
-#  define _FILE_OFFSET_BITS 64
-#  define _LARGEFILE_SOURCE
-#  define _LARGEFILE64_SOURCE 1
-#endif
-#include <sys/procfs.h>
-#include <sys/fcntl.h>
-int proc_fd;
-long tmp;
-char proc_name[20];
-prusage_t  pru;
-    ],[
-      sprintf(proc_name, "/proc/%05d", getpid());
-      proc_fd = open(proc_name, O_RDONLY);
-      ioctl(proc_fd, PIOCUSAGE, &pru);
-      tmp=pru.pr_utime.tv_sec;
-    ],
-      pike_cv_getrusage_procfs=yes
-    ,
-      pike_cv_getrusage_procfs=no
-    )
-  ])
-
-  if test "$pike_cv_getrusage_procfs" = yes; then
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(GETRUSAGE_THROUGH_PROCFS)
-  else
-    AC_MSG_RESULT(no)
-  fi
-fi
-
-#############################################################################
-
-if test "$ac_cv_getrusage_procfs" = "yes"; then
-  AC_MSG_CHECKING(prstatus_t contains pr_brksize and pr_stksize)
-  AC_CACHE_VAL(pike_cv_getrusage_procfs_prs, [
-    AC_TRY_COMPILE([
-#ifndef _LARGEFILE_SOURCE
-#  define _FILE_OFFSET_BITS 64
-#  define _LARGEFILE_SOURCE
-#  define _LARGEFILE64_SOURCE 1
-#endif
-#include <sys/procfs.h>
-#include <sys/fcntl.h>
-int proc_fd;
-long tmp;
-char proc_name[20];
-prstatus_t prs;
-    ],[
-      sprintf(proc_name, "/proc/%05d", getpid());
-      proc_fd = open(proc_name, O_RDONLY);
-      ioctl(proc_fd, PIOCSTATUS, &prs);
-      tmp=prs.pr_brksize + prs.pr_stksize;
-    ],
-      pike_cv_getrusage_procfs_prs=yes
-    ,
-      pike_cv_getrusage_procfs_prs=no
-    )
-  ])
-
-  if test "$pike_cv_getrusage_procfs_prs" = yes; then
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(GETRUSAGE_THROUGH_PROCFS_PRS)
-  else
-    AC_MSG_RESULT(no)
-  fi
 fi
 
 #############################################################################
@@ -7818,7 +7835,7 @@ else
   AC_DEFINE(USE_SEMIDYNAMIC_MODULES)
   dmmsrc="modules/semidynamic_module_makefile.in"
   PIKE_LIB="libpike.a"
-  MODULE_O=module.o
+  MODULE_O=pike_modules.o
   BUILD_PIKE=tpike
   POST_MODULE_BUILD_TYPE=static
   STATIC_POST_MODULES_LINKOPTS=post_modules/linker_options

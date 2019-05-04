@@ -62,8 +62,8 @@ private void result_cb(.Result result, array(array(mixed)) rows) {
         failed(err);
     }
     if (maxresults >= 0 && result->num_rows() > maxresults)
-      failed(sprintf("Too many records returned: %d > %d",
-                          result->num_rows(), maxresults));
+      failed(sprintf("Too many records returned: %d > %d\n%O",
+                          result->num_rows(), maxresults, result));
     if (discardover >= 0) {
       int room = discardover - sizeof(res->data);
       if (room >= 0)
@@ -73,7 +73,8 @@ private void result_cb(.Result result, array(array(mixed)) rows) {
   } else if (sizeof(res->data) >= minresults)
     succeeded(result);
   else					// Collect any SQL errors first
-    failed(catch(result->eof()) || "Insufficient number of records returned");
+    failed(catch(result->eof()) ||
+      sprintf("Insufficient number of records returned\n%O", result));
 }
 
 //! @param min

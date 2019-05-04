@@ -920,7 +920,7 @@ protected class XML {
   int ind;
   int(0..1) optimize;
 
-  void create(int(0..1) opt) {
+  protected void create(int(0..1) opt) {
     optimize = opt;
   }
 

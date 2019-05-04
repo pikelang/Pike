@@ -42,7 +42,7 @@ int close(void|string direction) {
 //! @decl void create(string data, void|string type, void|int pointer)
 //! @seealso
 //!   @[Stdio.File()->create()]
-void create(string _data, void|string type, int|void _ptr) {
+protected void create(string _data, void|string type, int|void _ptr) {
   if(!_data) error("No data string given to FakeFile.\n");
   data = _data;
   ptr = _ptr;
@@ -334,7 +334,7 @@ function query_write_callback() { return write_cb; }
 //!   @[Stdio.File()->query_write_oob_callback]
 function query_write_oob_callback() { return write_oob_cb; }
 
-string _sprintf(int t) {
+protected string _sprintf(int t) {
   return t=='O' && sprintf("%O(%d,%O)", this_program, sizeof(data),
 			   make_type_str());
 }
@@ -350,7 +350,7 @@ protected mixed cast(string to) {
 }
 
 //! Sizeof on a FakeFile returns the size of its contents.
-int(0..) _sizeof() {
+protected int(0..) _sizeof() {
   return sizeof(data);
 }
 

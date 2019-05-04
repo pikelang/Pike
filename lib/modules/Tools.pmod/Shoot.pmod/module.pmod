@@ -63,7 +63,7 @@ mapping(string:Test) tests()
     {
       program p;
       Test t;
-      if ((programp(p=Tools.Shoot[test])) &&  (t=p())->perform)
+      if ((programp(p=Tools.Shoot[test])) && (t=p())->perform && !t->disabled)
       {
         if( !t->name )
           exit(1,"The test %O does not have a name\n", t );
@@ -74,6 +74,7 @@ mapping(string:Test) tests()
       }
     }
   }
+
   return _tests;
 }
 

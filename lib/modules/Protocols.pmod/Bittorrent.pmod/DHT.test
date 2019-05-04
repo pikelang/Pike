@@ -245,7 +245,10 @@ class FakeUDPNet
     if (ports[addr]) {
       if (!ports[addr]->lossyness ||
 	  (Crypto.Random.random(256) >= ports[addr]->lossyness)) {
-	call_out(ports[addr]->internal_recv, ports[addr]->lag/65536.0, msg);
+	if (!ports[addr]->lag)
+	  ports[addr]->internal_recv(msg);
+	else
+	  call_out(ports[addr]->internal_recv, ports[addr]->lag/65536.0, msg);
       }
       return 1;
     }
@@ -356,8 +359,6 @@ mapping(string:object) dhts_by_id = ([]);
 System.Timer timer = System.Timer();
 int good, bad;
 
-object mt;
-
 mixed state;
 
 int test_state = 0;
@@ -387,7 +388,7 @@ void run_tests() {
 				  }
 				  state->op = 0;
                                   good++;
-				  run_tests();
+				  call_out(run_tests, 0.0);
 				})->execute();
       break;
     } else {
@@ -533,6 +534,6 @@ int main(int argc, array(string) argv) {
 
   // At this point, we have a private DHT cloud we can work with.
 
-  mt = Thread.thread_create(run_tests);
+  call_out(run_tests, 0.0);
   return -1;
 }

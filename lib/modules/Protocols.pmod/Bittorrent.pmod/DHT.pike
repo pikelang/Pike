@@ -115,7 +115,7 @@ class Routingtable {
       bucket_by_uuid[uuid] = this;
     }
 
-    string _sprintf(int t) {
+    protected string _sprintf(int t) {
       return sprintf("Bucket(%d/%d %s)", sizeof(nodes), sizeof(candidates), uuid);
     }
 
@@ -466,7 +466,7 @@ class Node {
     return ({ node_id, address, port });
   }
 
-  mixed cast(string type) {
+  protected mixed cast(string type) {
     switch(type) {
     case "array":
       return node_info_array();

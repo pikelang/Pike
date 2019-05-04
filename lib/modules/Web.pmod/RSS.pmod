@@ -12,12 +12,12 @@ protected class Thing {
   .RDF.Resource me;
   constant thing = "";
 
-  mixed `[](string i) {
+  protected mixed `[](string i) {
     if(has_index(attributes, i)) return attributes[i];
     return ::`[](i);
   }
 
-  void `[]=(string i, mixed v) {
+  protected void `[]=(string i, mixed v) {
     if(has_index(attributes, i)) {
       if(!stringp(v) && !objectp(v))
 	error("Variable %O is string|Standards.URI.\n", i);
@@ -31,13 +31,13 @@ protected class Thing {
       error("No %O variable.\n", i);
   }
 
-  function `-> = `[];
-  function `->= = `[]=;
+  protected function `-> = `[];
+  protected function `->= = `[]=;
 
   //! @decl void create(string about, mapping attributes)
   //! @decl void create(.RDF.Resource me)
   //! Creates an RSS resource.
-  void create(.RDF _rdf, string|.RDF.Resource a, void|mapping b) {
+  protected void create(.RDF _rdf, string|.RDF.Resource a, void|mapping b) {
     rdf = _rdf;
     if(b)
       create1(a,b);
@@ -160,7 +160,7 @@ class Channel {
   //! @decl string|Standards.URI textinput
   //! @decl array(Item) items
 
-  void `[]=(string i, mixed v) {
+  protected void `[]=(string i, mixed v) {
     if( i=="image" || i=="textinput" ) {
       if(objectp(v)) {
 	if(v->me)
@@ -215,7 +215,7 @@ class Index {
   array(Textinput) textinputs = ({}); //! The RSS textinputs.
 
   //!
-  void create(.RDF|void _rdf) {
+  protected void create(.RDF|void _rdf) {
     if(_rdf) {
       rdf = _rdf;
       foreach(rdf->find_statements(0, rdf->rdf_type,

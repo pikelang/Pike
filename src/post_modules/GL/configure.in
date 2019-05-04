@@ -159,5 +159,9 @@ else
 
 fi
 
+if test -z "$AUTO_OBJS"; then
+  X_CFLAGS=""
+fi
+
 AC_SUBST(AUTO_OBJS)
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

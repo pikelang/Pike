@@ -1,6 +1,8 @@
 
 #pike 8.1
 
+#pragma no_deprecation_warnings
+
 inherit .sql_result;
 
 object master_res;

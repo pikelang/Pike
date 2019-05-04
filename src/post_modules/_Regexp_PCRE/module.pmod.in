@@ -336,13 +336,13 @@ class Studied
 {
    inherit Plain;
 
-   void create(string pattern,void|int options,void|object table)
+   protected void create(string pattern,void|int options,void|object table)
    {
       ::create(pattern,options,table);
       study();
    }
 
-   string _sprintf(int t,mapping fum)
+   protected string _sprintf(int t,mapping fum)
    {
       if (t=='t') return "Regexp.PCRE.Studied";
       return ::_sprintf(t,fum);
@@ -360,12 +360,12 @@ class Widestring
 {
    inherit Plain;
 
-   void create(string pattern,void|int options,void|object table)
+   protected void create(string pattern,void|int options,void|object table)
    {
       ::create(string_to_utf8(pattern),options|OPTION.UTF8,table);
    }
 
-   string _sprintf(int t,mapping fum)
+   protected string _sprintf(int t,mapping fum)
    {
       if (t=='t') return "Regexp.PCRE.Widestring";
       return ::_sprintf(t,fum);
@@ -432,13 +432,13 @@ class StudiedWidestring
 {
    inherit Widestring;
 
-   void create(string pattern,void|int options,void|object table)
+   protected void create(string pattern,void|int options,void|object table)
    {
       ::create(pattern,options,table);
       study();
    }
 
-   string _sprintf(int t,mapping fum)
+   protected string _sprintf(int t,mapping fum)
    {
       if (t=='t') return "Regexp.PCRE.StudiedWidestring";
       return ::_sprintf(t,fum);

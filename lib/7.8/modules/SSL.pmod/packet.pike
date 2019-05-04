@@ -1,5 +1,7 @@
 #pike 7.8
 
+#pragma no_deprecation_warnings
+
 /*
  * SSL Record Layer
  */

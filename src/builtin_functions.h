@@ -46,6 +46,8 @@ struct replace_many_context
   int flags;
 };
 
+struct Pike_interpreter_struct;
+
 PMOD_EXPORT struct object *get_val_true(void);
 PMOD_EXPORT struct object *get_val_false(void);
 PMOD_EXPORT struct object *get_val_null(void);
@@ -193,6 +195,9 @@ PMOD_EXPORT void f_get_weak_flag(INT32 args);
 PMOD_EXPORT void f_function_name(INT32 args);
 PMOD_EXPORT void f_function_object(INT32 args);
 PMOD_EXPORT void f_function_program(INT32 args);
+PMOD_EXPORT void inhibit_destruct(int inh);
+PMOD_EXPORT void permit_destruct(int inh);
+void low_backtrace(struct Pike_interpreter_struct *, int flags);
 PMOD_EXPORT void f_backtrace(INT32 args);
 
 struct pike_list_node

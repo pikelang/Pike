@@ -215,7 +215,7 @@ class YMD
       [wy,w,wd,wnd,wjd]=week_from_julian_day(jd);
    }
 
-   int __hash() { return jd; }
+   protected int __hash() { return jd; }
 
 // --- query
 
@@ -1176,7 +1176,7 @@ class YMD
 	       ->autopromote()});
    }
 
-   TimeRange `*(int|float n)
+   protected TimeRange `*(int|float n)
    {
       if(intp(n))
         return set_size(n,this);

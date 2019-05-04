@@ -100,8 +100,9 @@ string rcs_file_name;
 //! @param max_revisions
 //!   Maximum number of revisions to process. If unset, all revisions
 //!   will be processed.
-void create(string|void file_name, string|int(0..0)|void file_contents,
-            void|int max_revisions)
+protected void create(string|void file_name,
+		      string|int(0..0)|void file_contents,
+		      void|int max_revisions)
 {
   if(!file_name)
   {
@@ -420,7 +421,7 @@ class DeltatextIterator
 
   //! @returns
   //! 1 if the iterator has processed all deltatext entries, 0 otherwise.
-  int(0..1) `!()
+  protected int(0..1) `!()
   {
     return finished;
   }
@@ -429,7 +430,7 @@ class DeltatextIterator
   //!
   //! @returns
   //!   Returns the iterator object.
-  this_program `+=(int nsteps)
+  protected this_program `+=(int nsteps)
   {
     while(nsteps--)
       next();

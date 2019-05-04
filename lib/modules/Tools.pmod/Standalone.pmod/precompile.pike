@@ -57,6 +57,10 @@ string usage = #"[options] <from> > <to>
    INHERIT \"__builtin.foo\"
      attributes;
 
+   IMPLEMENTS bar;
+
+   IMPLEMENTS \"__builtin.foo\";
+
    CVAR int foo;
    PIKEVAR mapping m
      attributes;
@@ -1053,7 +1057,7 @@ class PikeType
       return PikeType(t, a && a->copy_and_strip_type_assignments (0));
     }
 
-  string _sprintf(int how)
+  protected string _sprintf(int how)
     {
       switch(how)
       {
@@ -1079,8 +1083,8 @@ class PikeType
    * And this way is for internal use only:
    * PikeType( PC.Token("array"), ({ PikeType("int") }) )
    */
-  void create(string|array(PC.Token)|PC.Token|array(array) tok,
-	      void|array(PikeType)|mapping(string:string) a)
+  protected void create(string|array(PC.Token)|PC.Token|array(array) tok,
+			void|array(PikeType)|mapping(string:string) a)
     {
       switch(sprintf("%t",tok))
       {
@@ -1280,7 +1284,7 @@ class CType {
   string ctype;
 
   string output_c_type() { return ctype; }
-  void create(string _ctype) {
+  protected void create(string _ctype) {
     ctype = _ctype;
   }
 }
@@ -1396,7 +1400,7 @@ class Argument
 	type()->copy_and_strip_type_assignments (1)->output_pike_type(0);
     }
 
-  void create(array x, void|mapping(string:string) names)
+  protected void create(array x, void|mapping(string:string) names)
     {
       PC.Token t;
       if( arrayp(x[-1]) )
@@ -1414,7 +1418,7 @@ class Argument
       _type=PikeType(x[..sizeof(x)-2], names);
     }
 
-  string _sprintf(int how)
+  protected string _sprintf(int how)
     {
       return type()->output_pike_type(0)+" "+name();
     }
@@ -1649,12 +1653,12 @@ class FuncData
   int min_args;
   array(Argument) args;
 
-  string _sprintf(int c)
+  protected string _sprintf(int c)
     {
       return sprintf("FuncData(%s)",define);
     }
 
-  int `==(mixed q)
+  protected int `==(mixed q)
     {
       return objectp(q) && q->name == name;
 //      return 0;
@@ -1906,8 +1910,8 @@ class ParseBlock
   array declarations=({});
   int local_id = ++gid;
 
-  void create(array(array|PC.Token) x, string base, string class_name,
-	      mapping(string:string) names)
+  protected void create(array(array|PC.Token) x, string base, string class_name,
+			mapping(string:string) names)
     {
       array(array|PC.Token) ret=({});
       array thestruct=({});
@@ -1956,6 +1960,7 @@ class ParseBlock
 	    string define=make_unique_name("inherit",name,base,"defined");
 	    string inh_num = make_unique_name(base, name, "inh_num");
 	    string inh_offset = make_unique_name(base, name, "inh_offset");
+	    string inh_storage = make_unique_name(base, name, "inh_storage_offset");
 	    if ((string)name == "::") {
 	      e++;
 	      name = x[e+1];
@@ -1964,6 +1969,7 @@ class ParseBlock
 		define=make_unique_name("inherit",name,base,"defined");
 		inh_num = make_unique_name(base, name, "inh_num");
 		inh_offset = make_unique_name(base, name, "inh_offset");
+		inh_storage = make_unique_name(base, name, "inh_storage_offset");
 		name = UNDEFINED;
 		pre = ({
 		  PC.Token(
@@ -2034,6 +2040,8 @@ sprintf("        } else {\n"
 	    } else if (name) {
 	      p = mkname(names[(string)name]||(string)name, "program");
 	    }
+	    check_used[inh_offset] = 1;
+	    check_used[inh_storage] = 1;
 	    addfuncs +=
 	      IFDEF(define,
 		    ({
@@ -2048,17 +2056,148 @@ sprintf("        } else {\n"
 				       indent, p, numid, offset,
 				       attributes->flags || "0"),
 			       x[e]->line),
-		      PC.Token(sprintf("%s%s = Pike_compiler->new_program->"
-				       "inherits[%s].identifier_level;\n",
-				       indent, inh_offset, inh_num),
-			       x[e]->line),
+		      IFDEF(inh_offset + "_used",
+			    ({
+			      PC.Token(sprintf("%s%s = Pike_compiler->new_program->"
+					       "inherits[%s].identifier_level;\n",
+					       indent, inh_offset, inh_num),
+				       x[e]->line),
+			    })),
+		      IFDEF(inh_storage + "_used",
+			    ({
+			      PC.Token(sprintf("%s%s = Pike_compiler->new_program->"
+					       "inherits[%s].storage_offset;\n",
+					       indent, inh_storage, inh_num),
+				       x[e]->line),
+			    })),
 		    }) + post);
 	    ret += DEFINE(define) + ({
 	      PC.Token(sprintf("static int %s = -1;\n", inh_num),
 		       x[e]->line),
-	      PC.Token(sprintf("static int %s = -1;\n", inh_offset),
-		       x[e]->line),
+	      IFDEF(inh_offset + "_used",
+		    ({
+		      PC.Token(sprintf("static int %s = -1;\n", inh_offset),
+			       x[e]->line),
+		    })),
+	      IFDEF(inh_storage + "_used",
+		    ({
+		      PC.Token(sprintf("static int %s = -1;\n", inh_storage),
+			       x[e]->line),
+		    })),
 	    });
+	    e = pos;
+	    break;
+	  }
+	case "IMPLEMENTS":
+	  {
+	    int pos=search(x,PC.Token(";",0),e);
+
+	    string p;
+	    string numid = "-1";
+	    string offset = "0";
+	    string indent = "  ";
+	    array pre = ({});
+	    array post = ({});
+
+	    mixed name=x[e+1];
+	    string define = make_unique_name("implements",name,base,"defined");
+	    if ((string)name == "::") {
+#if 0
+	      e++;
+	      name = x[e+1];
+	      if ((name == "this_program") &&
+		  has_suffix(base, "_" + class_name)) {
+		define = make_unique_name("implements",name,base,"defined");
+		name = UNDEFINED;
+		// FIXME: The following is broken!
+		pre = ({
+		  PC.Token(
+sprintf("  do {\n"
+	"    int i__ =\n"
+	"      reference_inherited_identifier(Pike_compiler->previous, NULL,\n"
+	"                                     %s);\n"
+	"    if (i__ != -1) {\n"
+	"      struct program *p = Pike_compiler->previous->new_program;\n"
+	"      struct identifier *id__ = ID_FROM_INT(p, i__);\n"
+	"      if (IDENTIFIER_IS_CONSTANT(id__->identifier_flags) &&\n"
+	"          (id__->func.const_info.offset != -1)) {\n"
+	"        struct svalue *s = &PROG_FROM_INT(p, i__)->\n"
+	"          constants[id__->func.const_info.offset].sval;\n"
+	"        if (TYPEOF(*s) == T_PROGRAM) {\n"
+	"          p = s->u.program;\n",
+	allocate_string(sprintf("%q", class_name))),
+			   x[e]->line),
+		});
+		indent = "          ";
+		p = "p";
+		numid = "i__";
+		offset = "1 + 42";
+		post = ({
+		  PC.Token(
+sprintf("        } else {\n"
+	"          yyerror(\"Previous definition of %s is not a program.\");\n"
+	"        }\n"
+	"      } else {\n"
+	"        yyerror(\"Previous definition of %s is not constant.\");\n"
+	"      }\n"
+	"    } else {\n"
+	"      yyerror(\"Failed to find previous definition of %s.\");\n"
+	"    }\n"
+	"  } while(0);\n",
+	class_name, class_name, class_name),
+			   x[e]->line),
+		});
+	      } else {
+		error("Unsupported IMPLEMENTS syntax.\n");
+	      }
+#else
+	      error("Unsupported IMPLEMENTS syntax.\n");
+#endif
+	    }
+
+	    mapping attributes = parse_attributes(x[e+2..pos]);
+	    if (((string)name)[0] == '\"') {
+	      pre = ({
+		PC.Token("  do {\n"),
+		PC.Token("    struct program *p = resolve_program(" +
+			 allocate_string((string)name) +
+			 ");\n",
+			 name->line),
+		PC.Token("    if (p) {\n"),
+	      });
+	      indent = "      ";
+	      p = "p";
+	      post = ({
+		PC.Token("      free_program(p);\n"
+			 "    } else {\n", name->line),
+		PC.Token("      yyerror(\"Implements failed.\");\n"
+			 "    }\n"
+			 "  } while(0);", x[e]->line),
+	      });
+	      if (api < 5) {
+		warn("%s:%d: API level 5 (or higher) is required "
+		     "for implements of strings.\n",
+		     name->file, name->line);
+	      }
+	    } else if (name) {
+	      p = mkname(names[(string)name]||(string)name, "program");
+	    }
+	    addfuncs +=
+	      IFDEF(define,
+		    pre + ({
+		      PC.Token(sprintf("%sref_push_program(%s);\n",
+				       indent, p),
+			       x[e]->line),
+		      PC.Token(sprintf("%spush_object(clone_object("
+				       "Implements_program, 1));\n",
+				       indent),
+			       x[e]->line),
+		      PC.Token(sprintf("%sadd_program_annotation(0, Pike_sp-1);\n",
+				       indent),
+			       x[e]->line),
+		      PC.Token(sprintf("%spop_stack();\n", indent), x[e]->line),
+		    }) + post);
+	    ret += DEFINE(define);
 	    e = pos;
 	    break;
 	  }
@@ -3108,7 +3247,7 @@ class Handler {
 					current_handler);
     }
 
-    void create(mapping|void predefines) {
+    protected void create(mapping|void predefines) {
 	::create();
 	if (predefines) this_program::predefines = predefines;
     }

@@ -244,7 +244,7 @@ protected private void add_rule(int nt, string colon, array(mixed) symbols, stri
   g->add_rule(Rule(nt, symbols, action));
 }
 
-void create()
+protected void create()
 {
   _parser->set_symbol_to_string(internal_symbol_to_string);
 

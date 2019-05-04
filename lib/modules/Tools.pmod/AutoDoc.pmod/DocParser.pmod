@@ -231,7 +231,7 @@ protected private class Token (
   string text,
   SourcePosition position,
 ) {
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d, %O, %O, %O, %O)", this_program, type,
 			     keyword, arg, text, position);
   }
@@ -1128,8 +1128,8 @@ class Parse {
   protected string mContext = 0;
 
   //! Parse a documentation string @[s].
-  void create(string | array(Token) s, SourcePosition|void sp,
-	      .Flags|void flags) {
+  protected void create(string | array(Token) s, SourcePosition|void sp,
+			.Flags|void flags) {
     ::create(s, sp, flags);
     state = 0;
   }

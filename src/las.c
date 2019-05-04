@@ -290,7 +290,7 @@ static int low_count_args(node *n)
     if(n->type == void_type_string) return 0;
     return 1;
   }
-  UNREACHABLE();
+  UNREACHABLE(return 0);
 }
 
 INT32 count_args(node *n)
@@ -729,6 +729,66 @@ static int is_automap_arg_list(node *n)
   }
 }
 
+static int apply_opt_flags_for_ref(struct program *prog, int fun);
+
+static int apply_opt_flags_for_sval(struct svalue *s)
+{
+  switch(TYPEOF(*s))
+  {
+  case T_FUNCTION:
+    if (SUBTYPEOF(*s) == FUNCTION_BUILTIN)
+    {
+      return s->u.efun->flags;
+    }
+    if (s->u.object->prog) {
+      return apply_opt_flags_for_ref(s->u.object->prog, SUBTYPEOF(*s));
+    }
+    yyerror("Calling function in destructed module.");
+    break;
+
+  case T_PROGRAM:
+    if (s->u.program->flags & PROGRAM_CONSTANT) {
+      return 0;
+    }
+    break;
+
+  case T_OBJECT:
+    if (!s->u.object->prog) {
+      break;
+    }
+    return apply_opt_flags_for_ref(s->u.object->prog,
+				   FIND_LFUN(s->u.object->prog, LFUN_CALL));
+  }
+  return OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
+}
+
+static int apply_opt_flags_for_ref(struct program *prog, int fun)
+{
+  if (!prog) {
+    yyerror("Calling function in destructed object.");
+  } else if (fun < 0) {
+    yyerror("Attempt to call a missing function.");
+  } else  {
+    struct identifier *id = ID_FROM_INT(prog, fun);
+    struct program *p = PROG_FROM_INT(prog, fun);
+    if (IDENTIFIER_IS_FUNCTION(id->identifier_flags)) {
+      return id->opt_flags;
+    }
+    if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+      DECLARE_CYCLIC();
+      struct svalue *s = &p->constants[id->func.const_info.offset].sval;
+      int ret;
+      if ((ret = (size_t)BEGIN_CYCLIC(p, s))) {
+	return ret;
+      }
+      SET_CYCLIC_RET(OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+      ret = apply_opt_flags_for_sval(s);
+      END_CYCLIC();
+      return ret;
+    }
+  }
+  return OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
+}
 
 node *debug_mknode(int token, node *a, node *b)
 {
@@ -838,7 +898,6 @@ node *debug_mknode(int token, node *a, node *b)
   case F_APPLY:
     {
       unsigned INT16 opt_flags = OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
-      struct identifier *i = NULL;
 
       if (a) {
 	switch(a->token) {
@@ -846,14 +905,7 @@ node *debug_mknode(int token, node *a, node *b)
 	  switch(TYPEOF(a->u.sval))
 	  {
 	    case T_FUNCTION:
-	      if (SUBTYPEOF(a->u.sval) == FUNCTION_BUILTIN)
-	      {
-		opt_flags = a->u.sval.u.efun->flags;
-	      } else if (a->u.sval.u.object->prog) {
-		i = ID_FROM_INT(a->u.sval.u.object->prog, SUBTYPEOF(a->u.sval));
-	      } else {
-		yyerror("Calling function in destructed module.");
-	      }
+	      opt_flags = apply_opt_flags_for_sval(&a->u.sval);
 	      break;
 
 	    case T_PROGRAM:
@@ -875,7 +927,8 @@ node *debug_mknode(int token, node *a, node *b)
 	      state = state->previous;
 	    }
 	    if (state) {
-	      i = ID_FROM_INT(state->new_program, a->u.integer.b);
+	      opt_flags = apply_opt_flags_for_ref(state->new_program,
+						  a->u.integer.b);
 	    } else {
 	      yyerror("Parent has left.");
 	    }
@@ -886,15 +939,8 @@ node *debug_mknode(int token, node *a, node *b)
 	default:
 	  res->tree_info |= a->tree_info;
 	}
-	if (i && IDENTIFIER_IS_FUNCTION(i->identifier_flags)) {
-	  res->node_info |= i->opt_flags;
-	} else {
-	  res->node_info |= opt_flags;
-	}
-      } else {
-	res->node_info |= opt_flags;
       }
-      res->node_info |= OPT_APPLY;
+      res->node_info |= opt_flags | OPT_APPLY;
       if(b) res->tree_info |= b->tree_info;
       if (res->node_info & OPT_EXTERNAL_DEPEND) {
 	/* Applying something that has external dependencies
@@ -919,6 +965,7 @@ node *debug_mknode(int token, node *a, node *b)
   case F_MAGIC_INDICES:
   case F_MAGIC_VALUES:
   case F_MAGIC_TYPES:
+  case F_MAGIC_ANNOTATIONS:
   {
     int e;
     struct program_state *state = Pike_compiler;
@@ -1004,6 +1051,13 @@ node *debug_mknode(int token, node *a, node *b)
     res->node_info |= OPT_FLAG_NODE;
     break;
 
+  case F_SET_LOCAL_NAME:
+  case F_SET_LOCAL_TYPE:
+  case F_SET_LOCAL_END:
+    /* Protect against the node being removed by the optimizer. */
+    res->node_info |= OPT_NOT_CONST|OPT_SIDE_EFFECT;
+    break;
+
   default:
     if(a) res->tree_info |= a->tree_info;
     if(b) res->tree_info |= b->tree_info;
@@ -1027,6 +1081,23 @@ node *debug_mknode(int token, node *a, node *b)
     verify_shared_strings_tables();
 #endif
 
+  return res;
+}
+
+static node *vmknestednodes(int token, va_list args)
+{
+  node *n = va_arg(args, node *);
+  if (!n) return n;
+  return mknode(token, n, vmknestednodes(token, args));
+}
+
+node *mknestednodes(int token, ...)
+{
+  va_list args;
+  node *res;
+  va_start(args, token);
+  res = vmknestednodes(token, args);
+  va_end(args);
   return res;
 }
 
@@ -3770,10 +3841,11 @@ void fix_type_field(node *n)
 	free_type(f);
 	if(n->token == F_AUTO_MAP)
 	{
+	  type_stack_mark();
 	  push_finished_type(n->type);
 	  push_type(T_ARRAY);
 	  free_type(n->type);
-	  n->type = pop_type();
+	  n->type = pop_unfinished_type();
 	}
 	break;
       }
@@ -3862,6 +3934,7 @@ void fix_type_field(node *n)
 
       if( t->type == PIKE_T_AUTO )
       {
+	type_stack_mark();
 	if( t->car != zero_type_string )
 	{
 	  /* Not the first one.. */
@@ -3876,7 +3949,7 @@ void fix_type_field(node *n)
 	}
 	push_type(PIKE_T_AUTO);
 	free_type( t );
-	t = pop_type();
+	t = pop_unfinished_type();
 	Pike_compiler->compiler_frame->current_return_type = t;
       } else {
 	node *retval = CAR(n);
@@ -4048,6 +4121,7 @@ void fix_type_field(node *n)
     break;
 
   case F_TYPEOF:
+    type_stack_mark();
     if (CAR(n)) {
       push_finished_type(CAR(n)->type);
     } else {
@@ -4055,7 +4129,7 @@ void fix_type_field(node *n)
     }
     push_type(T_TYPE);
     if (n->type) free_type(n->type);
-    n->type = pop_type();
+    n->type = pop_unfinished_type();
     break;
 
   case F_UNDEFINED:
@@ -4126,6 +4200,16 @@ void fix_type_field(node *n)
   case F_MAGIC_TYPES:
     /* FIXME: Could have a stricter type for ::_types. */
     MAKE_CONSTANT_TYPE(n->type, tF_MAGIC_TYPES);
+    break;
+  case F_MAGIC_ANNOTATIONS:
+    /* FIXME: Could have a stricter type for ::_annotations. */
+    MAKE_CONSTANT_TYPE(n->type, tF_MAGIC_ANNOTATIONS);
+    break;
+
+  case F_SET_LOCAL_NAME:
+  case F_SET_LOCAL_TYPE:
+  case F_SET_LOCAL_END:
+    copy_pike_type(n->type, void_type_string);
     break;
 
   case F_CATCH:

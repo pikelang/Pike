@@ -50,25 +50,28 @@ void skip(multiset(string)|string tokens) {
 }
 
 //! Skip passed a matched pair of parenthesis, brackets or braces.
-void skipBlock() {
+array(string) skipBlock()
+{
   string left = peekToken();
   string right = matchTokens[left];
   if (!right)        // there was no block to skip !!
-    return;
+    return ({});
   int level = 1;
-  readToken();
+  array(string) res = ({});
+  res += ({ readToken() });
   string s = peekToken();
   while (s != EOF) {
     if (s == left)
       ++level;
     else if (s == right && !--level) {
-      readToken();
-      return;
+      res += ({ readToken() });
+      return res;
     }
-    readToken();
+    res += ({ readToken() });
     s = peekToken();
   }
   parseError("expected " + quoteString(right));
+  return ({});
 }
 
 //! Skip tokens until one of @[tokens] is the next to read.
@@ -79,16 +82,17 @@ void skipBlock() {
 //!
 //! @seealso
 //!   @[skip()]
-void skipUntil(multiset(string)|string tokens) {
+array(string) skipUntil(multiset(string)|string tokens) {
   string s = peekToken(WITH_NL);
+  array(string) res = ({});
   if (stringp(tokens)) {
     while (s != tokens) {
       if (s == EOF)
         parseError("expected " + quoteString(tokens));
       if (matchTokens[s])
-        skipBlock();
+        res += skipBlock();
       else
-        readToken(WITH_NL);
+        res += ({ readToken(WITH_NL) });
       s = peekToken(WITH_NL);
     }
   }
@@ -98,12 +102,13 @@ void skipUntil(multiset(string)|string tokens) {
         parseError("expected one of " +
                    Array.map(Array.uniq(indices(tokens)), quoteString) * ", ");
       if (matchTokens[s])
-        skipBlock();
+        res += skipBlock();
       else
-        readToken(WITH_NL);
+        res += ({ readToken(WITH_NL) });
       s = peekToken(WITH_NL);
     }
   }
+  return res;
 }
 
 //! Skip past any newlines.
@@ -677,6 +682,25 @@ array parseArgList(int|void allowLiterals) {
   }
 }
 
+//! Parse a single annotation from the token stream.
+Annotation parseAnnotation()
+{
+  if (peekToken() != "@") return 0;
+  eat("@");
+  return Annotation(skipUntil((< ":", ";", EOF >)));
+}
+
+//! Parse a set of annotations from the token stream.
+array(Annotation) parseAnnotations()
+{
+  array(Annotation) annotations = ({});
+  Annotation a;
+  while (a = parseAnnotation()) {
+    eat(":");
+  }
+  return annotations;
+}
+
 //! Parse a set of modifiers from the token stream.
 array(string) parseModifiers() {
   string s = peekToken();
@@ -760,11 +784,26 @@ string eatLiteral() {
 //! @note
 //!   @[parseDecl()] reads ONLY THE HEAD, NOT the @expr{";"@}
 //!   or @expr{"{" .. "}"@} !!!
-PikeObject|array(PikeObject) parseDecl(mapping|void args) {
+PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
   args = args || ([]);
   skip("\n");
   peekToken();
   SourcePosition position = currentPosition;
+  Annotation a = parseAnnotation();
+  array(Annotation) annotations;
+  if (a) {
+    switch(peekToken()) {
+    case ";":
+      eat(";");
+      // FALL_THROUGH
+    case EOF:
+      return a;
+    default:
+      eat(":");
+      annotations = ({ a }) + parseAnnotations();
+      break;
+    }
+  }
   array(string) modifiers = parseModifiers();
   string s = peekToken(WITH_NL);
   while (s == "\n") {
@@ -775,6 +814,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   if (s == "class") {
     Class c = Class();
     c->position = position;
+    c->annotations = annotations;
     c->modifiers = modifiers;
     readToken();
     c->name = eatIdentifier();
@@ -783,12 +823,14 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   else if (s == "{") {
     Modifier m = Modifier();
     m->position = position;
+    m->annotations = annotations;
     m->modifiers = modifiers;
     return m;
   }
   else if (s == "constant") {
     Constant c = Constant();
     c->position = position;
+    c->annotations = annotations;
     c->modifiers = modifiers;
     readToken();
     int save_pos = tokenPtr;
@@ -823,6 +865,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     object(Inherit)|Import i;
     i = (s == "inherit")?Inherit():Import();
     i->position = position;
+    i->annotations = annotations;
     i->modifiers = modifiers;
     readToken();
     i->name = i->classname = parseProgramName();
@@ -842,6 +885,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   else if (s == "typedef") {
     Typedef t = Typedef();
     t->position = position;
+    t->annotations = annotations;
     t->modifiers = modifiers;
     readToken();
     t->type = parseOrType();
@@ -851,19 +895,36 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   else if (s == "enum") {
     Enum e = Enum();
     e->position = position;
+    e->annotations = annotations;
     e->modifiers = modifiers;
     readToken();
     if (peekToken() != "{")
       e->name = eatIdentifier();
     return e;
   }
+  else if ((s == "static_assert") || (s == "_Static_assert")) {
+    // Static assertion. Skip.
+    skipBlock();
+    eat(";");
+    return parseDecl(args);
+  }
   else {
     Type t = parseOrType();
+
+    if (peekToken() == "(") {
+      // Probably a static assertion, or similar macro expansion.
+      // Skip.
+      skipBlock();
+      skip(";");
+      return parseDecl(args);
+    }
+
     // only allow lfun::, predef::, :: in front of methods/variables
     string name = eatIdentifier(args["allowScopePrefix"]);
 
     if (peekToken() == "(") { // It's a method def
       Method m = Method();
+      m->annotations = annotations;
       m->modifiers = modifiers;
       m->name = name;
       m->position = position;
@@ -876,6 +937,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
       array vars = ({ });
       for (;;) {
         Variable v = Variable();
+	v->annotations = annotations;
         v->modifiers = modifiers;
         v->name = name;
 	v->position = position;

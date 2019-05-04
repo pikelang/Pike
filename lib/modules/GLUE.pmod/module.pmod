@@ -678,7 +678,7 @@ class DynList {
   //! @param f
   //! Function which contains the GL commands that generates
   //! the displaylist.
-  void create( function|void f ) {
+  protected void create( function|void f ) {
     ::create();
     if( f )
       set_generator( f );
@@ -1051,7 +1051,7 @@ class BaseTexture {
   }
 
   //! Returns the size of memory allocated by the texture.
-  int _sizeof() {
+  protected int _sizeof() {
     int multiplier = 1, size = t_width * t_height;
 
     if( depth == 16 ) {
@@ -1323,7 +1323,7 @@ class BaseDWIM {
   //! argument list, the remaining integers will be interpreted as
   //! width, height, alpha, mipmap and mode, unless there is only one
   //! argument. In that case it will be interpreted as the alpha mode.
-  void create(mixed ... args) {
+  protected void create(mixed ... args) {
     mapping imgs;
     int height, width, alpha=-1, mipmap, clamp, mode, cnt;
     string debug;
@@ -1499,7 +1499,7 @@ class Region( float x, float y, float w, float h ) {
   }
 
   //! Creates a new region with the intersection of this region and @[R].
-  Region `&( mixed R ) {
+  protected Region `&( mixed R ) {
     if(!objectp(R) || !R->is_region)
       error("Regions can only be ANDed with other regions.\n");
 
@@ -1553,8 +1553,8 @@ class Font
   protected float scale_spacing;
 
   //!
-  void create( Image.Fonts.Font f, float|void _scale_width,
-	       float|void _scale_spacing ) {
+  protected void create( Image.Fonts.Font f, float|void _scale_width,
+			 float|void _scale_spacing ) {
     font = f;
     scale_width = _scale_width || 0.69;
     scale_spacing = _scale_spacing || 0.40;
@@ -2083,7 +2083,7 @@ class SquareMesh
   //! The @[calculator] will be called for each corner and should
   //! return a 1x3 matrix describing the coordinates for the given
   //! spot om the surface.
-  void create( function(float,float:Math.Matrix) calculator )
+  protected void create( function(float,float:Math.Matrix) calculator )
   {
     set_size( 10, 10 );
     need_recalc = 1;

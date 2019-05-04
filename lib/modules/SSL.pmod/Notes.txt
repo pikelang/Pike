@@ -100,15 +100,30 @@ The TLS 1.2 Protocol is specified in the following RFCs:
  [ ] Chacha20Poly1305 Suites for TLS	RFC 7905
  [ ] TLS False Start			RFC 7918
  [X] Negotiated FF-DHE Parameters	RFC 7919
+ [ ] ECC Cipher Suites for TLS 1.2	RFC 8422
+ [ ] ECDHE_PSK with AES-GCM & AES-CCM	RFC 8442
 
 The DTLS 1.2 Protocol is specified in the following RFCs:
 
  [ ] DTLS 1.2				RFC 6347
 
+The TLS 1.3 Protocol is specified in the following RFCs:
+
+ [ ] SSL 3.4/TLS 1.3			RFC 8446
+ [ ] Handshake Traces for TLS 1.3	RFC 8448
+ [ ] Using Early Data in HTTP		RFC 8470
+
+General:
+
+ [ ] Registry Updates for TLS & DTLS	RFC 8447
+ [ ] Record Size Limit Extension	RFC 8449
+ [ ] Token Binding Protocol Version 1.0	RFC 8471
+ [ ] Token Binding Protocol Extension	RFC 8472
+ [ ] Token Binding over HTTP		RFC 8473
+
 Drafts (in order of age, oldest first):
  [/] 56-bit Export Cipher		draft-ietf-tls-56-bit-ciphersuites-01.txt
  [-] Next Protocol Negotiation  	draft-agl-tls-nextprotoneg
- [/] SSL 3.4/TLS 1.3			draft-ietf-tls-tls13-06.txt
 
 The TLS parameters registry:
   http://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml

@@ -204,8 +204,8 @@ class ProgressBar
   //! How much progress has been made so far
   //! @param max
   //! The amount of progress signifying 100% done. Must be greater than zero.
-  void create(string _name, int _cur, int _max,
-	      float|void _phase_base, float|void _phase_size)
+  protected void create(string _name, int _cur, int _max,
+			float|void _phase_base, float|void _phase_size)
   {
     name = _name;
     max = _max;
@@ -334,7 +334,7 @@ class Readline
     cwd = _cwd;
   }
 
-  void create(mixed ... args)
+  protected void create(mixed ... args)
   {
     signal(signum("SIGINT"), trap_signal);
     ::create(@args);

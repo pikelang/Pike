@@ -98,7 +98,7 @@ class Button
   }
 
   //!
-  void create(object w, int|void b)
+  protected void create(object w, int|void b)
   {
     window = w;
     button = b || 1;

@@ -372,6 +372,7 @@ class Request
 
 // ----------------
 
+#pragma no_deprecation_warnings
 //!	But since this clears the HTTP connection from the Request object,
 //!	it can also be used to reuse a @[Request] object.
    void destroy()
@@ -379,6 +380,7 @@ class Request
       if (con) return_connection(url_requested,con);
       con=0;
    }
+#pragma deprecation_warnings
 
 //! 	@[_destruct] is called when an object is destructed.
    protected void _destruct()
@@ -388,7 +390,7 @@ class Request
 
 // ----------------
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       if (t=='O')
 	 return sprintf("Request(%O",(string)url_requested)+
@@ -419,7 +421,7 @@ class Cookie
    string domain="";
    int secure=0;
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       if (t=='O')
 	 return sprintf(
@@ -615,6 +617,7 @@ int maximum_connection_reuse=1000000;
 
 // internal (but readable for debug purposes)
 mapping(string:array(KeptConnection)) connection_cache=([]);
+Thread.Mutex connection_cache_mux = Thread.Mutex();
 int connections_kept_n=0;
 int connections_inuse_n=0;
 mapping(string:int) connections_host_n=([]);
@@ -624,8 +627,9 @@ protected class KeptConnection
    string lookup;
    Query q;
 
-   void create(string _lookup,Query _q)
+   protected void create(string _lookup,Query _q)
    {
+      Thread.MutexKey key = connection_cache_mux->lock(2);
       lookup=_lookup;
       q=_q;
 
@@ -637,6 +641,7 @@ protected class KeptConnection
 
    void disconnect()
    {
+      Thread.MutexKey key = connection_cache_mux->lock(2);
       connection_cache[lookup]-=({this});
       if (!sizeof(connection_cache[lookup]))
 	 m_delete(connection_cache,lookup);
@@ -652,6 +657,7 @@ protected class KeptConnection
 
    Query use()
    {
+      Thread.MutexKey key = connection_cache_mux->lock(2);
       connection_cache[lookup]-=({this});
       if (!sizeof(connection_cache[lookup]))
 	 m_delete(connection_cache,lookup);
@@ -673,15 +679,30 @@ protected inline string connection_lookup(Standards.URI url)
 Query give_me_connection(Standards.URI url)
 {
    Query q;
+   Query old_q;
+
+   Thread.MutexKey key = connection_cache_mux->lock();
 
    if (array(KeptConnection) v =
        connection_cache[connection_lookup(url)])
    {
-      q=v[0]->use(); // removes itself
-      // clean up
-      q->buf="";
-      q->headerbuf="";
-      q->n_used++;
+      old_q = v[0]->use(); // removes itself
+   }
+
+   q = SessionQuery();
+   q->hostname_cache=hostname_cache;
+   if (old_q) {
+      // Transfer connection from the old Query object to the new.
+      foreach(({ "con", "host", "port",
+#if constant(SSL.Cipher)
+		 "https", "context", "ssl_session",
+#endif
+	      }), string field) {
+         q[field] = old_q[field];
+      }
+      q->n_used = old_q->n_used+1;
+      old_q->con = 0;
+      destruct(old_q);
    }
    else
    {
@@ -695,8 +716,6 @@ Query give_me_connection(Standards.URI url)
 	 one->disconnect(); // removes itself
       }
 
-      q=SessionQuery();
-      q->hostname_cache=hostname_cache;
       connections_host_n[connection_lookup(url)]++; // new
    }
    connections_inuse_n++;
@@ -1009,9 +1028,9 @@ class SessionURL
 //! instantiate a SessionURL object;
 //! when fed to Protocols.HTTP.Session calls, will add
 //! referer to the HTTP handshaking variables
-   void create(URL uri,
-	       URL base_uri,
-	       URL _referer)
+   protected void create(URL uri,
+			 URL base_uri,
+			 URL _referer)
    {
       ::create(uri,base_uri);
       referer=_referer;

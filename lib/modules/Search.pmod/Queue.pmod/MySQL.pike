@@ -34,13 +34,13 @@ protected string to_md5(string url)
 //!   @[Sql.Sql] table name to store the queue in.
 //!
 //!   If the table doesn't exist it will be created.
-void create( Web.Crawler.Stats _stats,
-	     Web.Crawler.Policy _policy,
+protected void create( Web.Crawler.Stats _stats,
+		       Web.Crawler.Policy _policy,
 
-	     string _url, string _table,
+		       string _url, string _table,
 
-	     void|Web.Crawler.RuleSet _allow,
-	     void|Web.Crawler.RuleSet _deny)
+		       void|Web.Crawler.RuleSet _allow,
+		       void|Web.Crawler.RuleSet _deny)
 {
   stats = _stats;   policy = _policy;
   allow=_allow;     deny=_deny;

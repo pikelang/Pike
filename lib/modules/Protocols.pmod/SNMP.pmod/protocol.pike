@@ -85,8 +85,8 @@ private array extra_args;
 //! @param loc_addr
 //!   local address and UDP port (optional)
 //!
-void create(int|void rem_port, string|void rem_addr, int|void loc_port,
-	    string|void loc_addr) {
+protected void create(int|void rem_port, string|void rem_addr,
+		      int|void loc_port, string|void loc_addr) {
 
   int lport = loc_port;
 

@@ -39,7 +39,7 @@ class Map {
   //! in about ten minutes or so, an error will be returned. The timeout
   //! is not configurable.
   //!
-  void create(string map, string|void domain)
+  protected void create(string map, string|void domain)
   {
     if (domain) {
       this::domain = Domain(domain);
@@ -69,7 +69,7 @@ class Map {
   {
     return(domain->match(ypmap, key));
   }
-  string `[](string key)
+  protected string `[](string key)
   {
     return(domain->match(ypmap, key));
   }
@@ -110,19 +110,19 @@ class Map {
   }
 
   //! Return the number of entries in this map.
-  int _sizeof()
+  protected int _sizeof()
   {
     return(sizeof(indices(domain->all(ypmap))));
   }
 
   //! Return the keys of the map.
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return(indices(domain->all(ypmap)));
   }
 
   //! Return the values of the map.
-  array(string) _values()
+  protected array(string) _values()
   {
     return(values(domain->all(ypmap)));
   }

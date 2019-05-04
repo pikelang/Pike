@@ -230,7 +230,7 @@ static void mov_reg32_reg(enum amd64_reg from_reg, enum amd64_reg to_reg )
   modrm( 3, from_reg, to_reg );
 }
 
-#define PUSH_INT(X) ins_int((INT32)(X), (void (*)(char))add_to_program)
+#define PUSH_INT(X) ins_int((INT32)(X), add_to_program)
 static void low_mov_mem_reg(enum amd64_reg from_reg, ptrdiff_t offset,
                             enum amd64_reg to_reg)
 {

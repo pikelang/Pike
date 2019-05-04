@@ -2321,7 +2321,7 @@ class dual_client
     return TCP::do_sync_query(s);
   }
 
-  void create(mixed ... args) {::create(@args);}
+  protected void create(mixed ... args) {::create(@args);}
 }
 
 //! Both an @[async_client] and an @[async_tcp_client].
@@ -2347,7 +2347,7 @@ class async_dual_client
 			 cl,type,callback,@args);
   }
 
-  void create(mixed ... args) {::create(@args);}
+  protected void create(mixed ... args) {::create(@args);}
 }
 
 

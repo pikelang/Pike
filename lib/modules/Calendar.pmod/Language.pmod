@@ -1819,7 +1819,7 @@ class cCATALAN
       "setembre",
       "octubre",
       "novembre",
-      "decembre",
+      "desembre",
    });
 
    protected private constant week_day_names=
@@ -2210,7 +2210,7 @@ class cGREEK_UNICODE
 
 protected mapping _cache=([]);
 
-Calendar.Rule.Language `[](string lang)
+protected Calendar.Rule.Language `[](string lang)
 {
    lang=upper_case(lang);
    Calendar.Rule.Language l=_cache[lang];

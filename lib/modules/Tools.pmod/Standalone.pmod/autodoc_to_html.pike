@@ -815,31 +815,42 @@ string parse_text(Node n, void|String.Buffer ret) {
       break;
 
     case "ul":
-      ret->add( "<ul>\n" );
-      foreach(c->get_elements("group"), Node c) {
-	ret->add("<li>");
-	array(Node) d = c->get_elements("item");
-	if(sizeof(d->get_attributes()->name-({0}))) {
-	  ret->add("<b>");
-	  ret->add( String.implode_nicely(d->get_attributes()->name-({0})) );
-	  ret->add("</b>");
-	}
-	Node e = c->get_first_element("text");
-	if(e)
-	  parse_text(e, ret);
-	ret->add("</li>");
-      }
-      ret->add("</ul>");
-      break;
-
     case "ol":
-      ret->add("<ol>\n");
+      ret->add( "<", name, ">\n" );
       foreach(c->get_elements("group"), Node c) {
-	ret->add("<li>");
-	parse_text(c->get_first_element("text"), ret);
-	ret->add("</li>");
+	int got_item;
+	foreach(c->get_elements(), Node e) {
+	  switch(e->get_any_name()) {
+	  case "item":
+	    if (got_item) {
+	      ret->add("</li>");
+	    }
+	    ret->add("<li>");
+	    string title = e->get_attributes()->name;
+	    if (title) {
+	      ret->add("<b>", title, "</b>");
+	    }
+	    got_item = 1;
+	    break;
+	  case "text":
+	    if (!got_item) {
+	      ret->add("<li>");
+	    }
+	    parse_text(e, ret);
+	    ret->add("</li>");
+	    got_item = 0;
+	    break;
+	  default:
+	    // Ignored.
+	    break;
+	  }
+	}
+	if (got_item) {
+	  ret->add("</li>");
+	  got_item = 0;
+	}
       }
-      ret->add("</ol>");
+      ret->add("</", name, ">");
       break;
 
     case "source-position":
@@ -1134,6 +1145,7 @@ void resolve_class_paths(Node n, string|void path, Node|void parent)
   case "doc":
   case "source-position":
   case "modifiers":
+  case "annotations":
   case "classname":
     // We're not interrested in the stuff under the above nodes.
     return;

@@ -1,3 +1,3 @@
-AC_INIT()
+AC_INIT(json5.cmod)
 AC_MODULE_INIT()
 AC_OUTPUT(Makefile)

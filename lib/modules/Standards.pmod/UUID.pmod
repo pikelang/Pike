@@ -204,7 +204,7 @@ class UUID {
   }
 
   //! Optionally created with a string or binary representation of a UUID.
-  void create(void|string in) {
+  protected void create(void|string in) {
     if(!in) return;
     sscanf(in, "urn:%s", in);
     sscanf(in, "uuid:%s", in);

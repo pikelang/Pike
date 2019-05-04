@@ -1,6 +1,6 @@
 START_MARKER
 
-cond_begin([[ master()->resolv("Java")->jvm ]])
+cond_begin([[ master()->resolv("Java")?->jvm ]])
 
   test_true([[objectp(Java)]])
   test_true([[objectp(Java.pkg)]])

@@ -152,7 +152,7 @@ class Item {
   void set(mixed in) { value=in; }
   mixed get() { return value; }
 
-  int _sizeof() { return size; }
+  protected int _sizeof() { return size; }
 
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, value);

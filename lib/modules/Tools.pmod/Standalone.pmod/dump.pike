@@ -48,7 +48,7 @@ class GTKProgress {
   GTK.Window win;
   GTK.Frame frame;
 
-  void create() {
+  protected void create() {
     GTK.setup_gtk();
     win = GTK.Window(GTK.WINDOW_TOPLEVEL);
     win->set_title(version() + " Module Dumping")

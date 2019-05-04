@@ -34,6 +34,7 @@
 #include "whitespace.h"
 #include "sprintf.h"
 #include "pike_search.h"
+#include "pike_compiler.h"
 
 #include <errno.h>
 #include <math.h>
@@ -66,6 +67,32 @@
 #define SET_GMTOFF(TM, VAL)	(VAL)
 #define SET_ZONE(this, VAL)	((this)->extra.tm_zone = (VAL))
 #endif
+
+static void gc_check_frame(struct pike_frame *f)
+{
+  if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+  {
+    if(f->current_object)
+      debug_gc_check (f->current_object, " as current_object in a frame");
+    if(f->current_program)
+      debug_gc_check (f->current_program, " as current_program in a frame");
+    debug_gc_check_svalues (f->locals, f->num_locals, " in locals of a frame");
+    if(f->scope && !debug_gc_check (f->scope, " as scope frame of a frame"))
+      gc_check_frame(f->scope);
+  }
+}
+
+static void gc_recurse_frame(struct pike_frame *f)
+{
+  if(f->current_object)
+    gc_recurse_object(f->current_object);
+  if(f->current_program)
+    gc_recurse_program(f->current_program);
+  if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+    gc_recurse_svalues(f->locals,f->num_locals);
+  if(f->scope)
+    gc_recurse_frame(f->scope);
+}
 
 DECLARATIONS
 
@@ -1609,18 +1636,20 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
   RETURN 8 * (1 << s->size_shift);
 }
 
-/*! @decl mixed m_delete(object|mapping map, mixed index)
+/*! @decl mixed m_delete(object|mapping|multiset map, mixed index)
  *!
  *! If @[map] is an object that implements @[lfun::_m_delete()],
  *! that function will be called with @[index] as its single argument.
  *!
- *! Otherwise if @[map] is a mapping the entry with index @[index]
- *! will be removed from @[map] destructively.
+ *! Otherwise if @[map] is a mapping or multiset the entry with
+ *! index @[index] will be removed from @[map] destructively.
  *!
- *! If the mapping does not have an entry with index @[index], nothing is done.
+ *! If the mapping or multiset does not have an entry with
+ *! index @[index], nothing is done.
  *!
  *! @returns
- *!   The value that was removed will be returned.
+ *!   The value that was removed will be returned,
+ *!   and @expr{UNDEFINED@} otherwise.
  *!
  *! @note
  *!   Note that @[m_delete()] changes @[map] destructively.
@@ -1629,10 +1658,12 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *!   @[mappingp()]
  */
 PMOD_EXPORT
-PIKEFUN mixed m_delete(object|mapping map, mixed index)
+PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index)
   efun;
   optflags OPT_SIDE_EFFECT;
-  rawtype tOr(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),tVar(1)),tFunc(tObj tMix,tMix))
+  rawtype tOr3(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),tVar(1)),
+	       tFunc(tSet(tSetvar(0,tMix)) tVar(0),tInt01),
+	       tFunc(tObj tMix,tMix));
 {
   struct program *p;
   if( TYPEOF(*map) == T_MAPPING )
@@ -1655,28 +1686,83 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
 	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 1);
     stack_swap();
     pop_stack();
+  } else if (TYPEOF(*map) == T_MULTISET) {
+    struct svalue s;
+    multiset_delete_2(map->u.multiset, index, &s);
+    pop_n_elems(args);
+    *Pike_sp = s;
+    Pike_sp++;
+    dmalloc_touch_svalue(Pike_sp-1);
   } else {
-    SIMPLE_ARG_TYPE_ERROR("m_delete", 1, "object|mapping");
+    SIMPLE_ARG_TYPE_ERROR("m_delete", 1, "object|mapping|multiset");
   }
 }
 
-/*! @decl void m_clear(mapping map)
+/*! @decl void m_clear(mapping|multiset|object map)
  *!
- *!   Clear the contents of a mapping.
+ *!   Clear the contents of a mapping or multiset.
  *!
- *!   This function clears the content of the mapping @[map] so
- *!   that it becomes empty. This is an atomic operation.
+ *!   This function clears the content of the mapping
+ *!   or multiset @[map] so that it becomes empty.
+ *!   This is an atomic operation.
+ *!
+ *!   If @[map] is an object @[lfun::_m_clear()] will be called
+ *!   in it.
  *!
  *! @seealso
  *!   @[m_delete()]
  */
 PMOD_EXPORT
-PIKEFUN void m_clear(mapping map)
-  efun
+PIKEFUN void m_clear(mapping|multiset|object map)
+  efun;
   optflags OPT_SIDE_EFFECT;
 {
-  /* FIXME: Add an LFUN__M_CLEAR analogous with LFUN__M_DELETE? */
-  clear_mapping(map);
+  struct program *p;
+  if (TYPEOF(*map) == PIKE_T_MAPPING) {
+    clear_mapping(map->u.mapping);
+  } else if (TYPEOF(*map) == PIKE_T_MULTISET) {
+    clear_multiset(map->u.multiset);
+  } else if ((TYPEOF(*map) == PIKE_T_OBJECT) && (p = map->u.object->prog)) {
+    int id = FIND_LFUN(p->inherits[SUBTYPEOF(*map)].prog, LFUN__M_CLEAR);
+    if( id == -1 ) {
+      SIMPLE_ARG_TYPE_ERROR("m_clear", 1, "object with lfun::_m_clear()");
+    }
+    apply_low(map->u.object,
+	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 0);
+    pop_stack();
+  } else {
+    SIMPLE_ARG_TYPE_ERROR("m_clear", 1, "mapping|multiset");
+  }
+  pop_n_elems(args);
+}
+
+/*! @decl void m_add(multiset|object l, mixed val)
+ *!
+ *!   Add a member to a multiset.
+ *!
+ *! @seealso
+ *!   @[m_delete()]
+ */
+PMOD_EXPORT
+PIKEFUN void m_add(multiset|object l, mixed val)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFunc(tSet(tSetvar(0, tMix)) tVar(0), tVoid);
+{
+  struct program *p;
+  if (TYPEOF(*l) == PIKE_T_MULTISET) {
+    multiset_add(l->u.multiset, val);
+  } else if ((TYPEOF(*l) == PIKE_T_OBJECT) && (p = l->u.object->prog)) {
+    int id = FIND_LFUN(p->inherits[SUBTYPEOF(*l)].prog, LFUN__M_ADD);
+    if( id == -1 ) {
+      SIMPLE_ARG_TYPE_ERROR("m_add", 1, "object with lfun::_m_add()");
+    }
+    apply_low(l->u.object,
+	      id + p->inherits[SUBTYPEOF(*l)].identifier_level, 1);
+  } else {
+    SIMPLE_ARG_TYPE_ERROR("m_add", 1, "multiset|object");
+  }
+  pop_n_elems(args);
 }
 
 /*! @decl int get_weak_flag(array|mapping|multiset m)
@@ -2416,6 +2502,163 @@ PIKEFUN void _putenv (string var, void|string val)
 /*! @module Pike
  */
 
+/*! @class InhibitDestruct
+ *!
+ *! This is a class that implements a way to temporarily
+ *! inhibit destruction by explicit calls of @[destruct()].
+ *!
+ *! This is mostly useful as a mix-in for modules
+ *! implemented in C or similar.
+ *!
+ *! All symbols in the class are either @expr{protected@}
+ *! or @expr{private@} in order to affect users minimally.
+ */
+PIKECLASS InhibitDestruct
+{
+  CVAR ptrdiff_t lock_count;
+
+  /*! @decl void inhibit_destruct()
+   *!
+   *! Inhibit explicit destruction of this object.
+   *!
+   *! @seealso
+   *!   @[permit_destruct()], @[_destruct()],
+   *!   @[destruct()], @[lfun::_destruct()]
+   */
+  PIKEFUN void inhibit_destruct()
+    flags ID_PROTECTED|ID_LOCAL;
+  {
+    if (UNLIKELY(THIS->lock_count < 0)) {
+      THIS->lock_count--;
+    } else {
+      THIS->lock_count++;
+    }
+  }
+
+  /**
+   * Inhibit explicit destruction of this object.
+   *
+   * @param inh Inherit level for the inherit of InhibitDestruct
+   *            in the current program.
+   */
+  PMOD_EXPORT void inhibit_destruct(int inh)
+  {
+    apply_current(Pike_fp->current_program->inherits[inh].identifier_level +
+		  f_InhibitDestruct_inhibit_destruct_fun_num, 0);
+    pop_stack();
+  }
+
+  /*! @decl void permit_destruct()
+   *!
+   *! Allow explicit destruction of this object again.
+   *!
+   *! @seealso
+   *!   @[inhibit_destruct()], @[_destruct()],
+   *!   @[destruct()], @[lfun::_destruct()]
+   */
+  PIKEFUN void permit_destruct()
+    flags ID_PROTECTED|ID_LOCAL;
+  {
+    if (!THIS->lock_count) {
+      Pike_error("permit_destruct() without inhibit.\n");
+    }
+    if (UNLIKELY(THIS->lock_count < 0)) {
+      /* destruct() has been called on the object. */
+      if (UNLIKELY(!++THIS->lock_count)) {
+	/* No inhibits remaining.
+	 *
+	 * Time to die.
+	 */
+	destruct(Pike_fp->current_object);
+      }
+    } else {
+      THIS->lock_count--;
+    }
+  }
+
+  /**
+   * Allow explicit destruction of this object again.
+   *
+   * @param inh Inherit level for the inherit of InhibitDestruct
+   *            in the current program.
+   */
+  PMOD_EXPORT void permit_destruct(int inh)
+  {
+    apply_current(Pike_fp->current_program->inherits[inh].identifier_level +
+		  f_InhibitDestruct_permit_destruct_fun_num, 0);
+    pop_stack();
+  }
+
+  /*! @decl int(0..1) _destruct(int|void reason)
+   *!
+   *! Returns @expr{1@} when @[inhibit_destruct()] has been
+   *! called more times than @[permit_destruct()].
+   *!
+   *! @seealso
+   *!   @[inhibit_destruct()], @[permit_destruct()],
+   *!   @[destruct()], @[lfun::_destruct()]
+   */
+  PIKEFUN int(0..1) _destruct(int|void reason)
+    flags ID_PROTECTED|ID_LOCAL;
+  {
+    if (THIS->lock_count > 0) {
+      THIS->lock_count = -THIS->lock_count;
+    }
+    push_int(!!THIS->lock_count);
+  }
+};
+
+/*! @endclass
+ */
+
+/*! @class FakeObject
+ *!
+ *! Used as a place holder in eg backtraces for objects that
+ *! are unsuitable to have references to in backtraces.
+ *!
+ *! Examples of such objects are instances of @[Thread.MutexKey],
+ *! and @[Nettle.Cipher.State].
+ *!
+ *! @seealso
+ *!   @[backtrace()]
+ */
+PIKECLASS FakeObject
+  program_flags PROGRAM_CONSTANT;
+{
+  PIKEVAR program prog flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+
+  PIKEFUN void create(program|function|void prog)
+    flags ID_PROTECTED;
+  {
+    struct program *p = prog ? program_from_svalue(prog):NULL;
+    do_free_program(THIS->prog);
+    THIS->prog = p;
+    if (p) add_ref(p);
+  }
+
+  PIKEFUN string _sprintf(int c, mapping|void ignored)
+    flags ID_PROTECTED;
+  {
+    push_text("%O()");
+    if (THIS->prog) {
+      ref_push_program(THIS->prog);
+    } else {
+      ref_push_program(Pike_fp->current_program);
+    }
+    f_sprintf(2);
+  }
+}
+
+/*! @endclass
+ */
+
+static struct object *clone_fake_object(struct program *p)
+{
+  if (p) ref_push_program(p);
+  else push_undefined();
+  return clone_object(FakeObject_program, 1);
+}
+
 /*! @class BacktraceFrame
  */
 
@@ -2488,41 +2731,68 @@ PIKECLASS backtrace_frame
     RETURN (t == literal_array_string);
   }
 
-  static void fill_in_file_and_line()
+  static void fill_in_file_and_line(struct backtrace_frame_struct *this,
+				    struct local_variable_info *vars)
   {
     struct pike_string *file = NULL;
-    assert (THIS->lineno == 0);
+    assert (this->lineno == 0);
 
-    if (THIS->pc && THIS->prog) {
-      file = low_get_line(THIS->pc, THIS->prog, &THIS->lineno);
-      THIS->pc = NULL;
+    if (vars) vars->num_local = 0;
+    if (this->pc && this->prog) {
+      file = low_get_line(this->pc, this->prog, &this->lineno, vars);
+      this->pc = NULL;
     }
-    else if (TYPEOF(THIS->_fun) == PIKE_T_FUNCTION) {
+    else if (TYPEOF(this->_fun) == PIKE_T_FUNCTION) {
 #ifdef PIKE_DEBUG
-      if (THIS->_fun.u.object->prog &&
-	  THIS->_fun.u.object->prog != THIS->oprog) {
-	struct identifier *id = ID_FROM_INT(THIS->oprog, SUBTYPEOF(THIS->_fun));
+      if (this->_fun.u.object->prog &&
+	  this->_fun.u.object->prog != this->oprog) {
+	struct identifier *id = ID_FROM_INT(this->oprog, SUBTYPEOF(this->_fun));
 	/* FIXME: Dump dmalloc info for the object? */
 	Pike_fatal("Lost track of function pointer! Function name was %s.\n",
 		   id->name?id->name->str:"<no name>");
       }
 #endif
-      file = low_get_function_line (THIS->_fun.u.object, SUBTYPEOF(THIS->_fun),
-                                    &THIS->lineno);
+      file = low_get_function_line (this->_fun.u.object, SUBTYPEOF(this->_fun),
+                                    &this->lineno);
     }
-    else if (THIS->prog) {
-      file = low_get_program_line (THIS->prog, &THIS->lineno);
+    else if (this->prog) {
+      file = low_get_program_line (this->prog, &this->lineno);
     }
 
     if (file) {
-      if (!THIS->filename) THIS->filename = file;
+      if (!this->filename) this->filename = file;
       else free_string (file);
     }
 
-    if (THIS->prog) {
-      free_program(THIS->prog);
-      THIS->prog = NULL;
+    if (this->prog) {
+      free_program(this->prog);
+      this->prog = NULL;
     }
+  }
+
+  PIKEFUN void fill_in_file_and_line()
+    flags ID_PROTECTED;
+  {
+    if (THIS->lineno) return;
+    fill_in_file_and_line(THIS, NULL);
+  }
+
+  PIKEFUN string `filename()
+  {
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if (THIS->filename) {
+      ref_push_string(THIS->filename);
+      return;
+    }
+    push_undefined();
+  }
+
+  PIKEFUN string `line()
+  {
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    push_int(THIS->lineno);
   }
 
   /*! @decl string _sprintf(int c, mapping|void opts)
@@ -2539,7 +2809,8 @@ PIKECLASS backtrace_frame
 
     push_static_text("backtrace_frame(");
 
-    if (THIS->lineno == 0) fill_in_file_and_line();
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
 
     if (THIS->filename) {
       ref_push_string(THIS->filename);
@@ -2639,17 +2910,18 @@ PIKECLASS backtrace_frame
 	end = numargs-1;
     }
 
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+
     for (i = index; i <= end; i++) {
       switch(i) {
       case 0:	/* Filename */
-        if (THIS->lineno == 0) fill_in_file_and_line();
 	if (THIS->filename)
 	  ref_push_string(THIS->filename);
 	else
 	  push_int(0);
 	break;
       case 1:	/* Linenumber */
-        if (THIS->lineno == 0) fill_in_file_and_line();
 	push_int(THIS->lineno);
 	break;
       case 2:	/* Function */
@@ -2696,9 +2968,11 @@ PIKECLASS backtrace_frame
       args = 2;
     }
 
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+
     switch(index) {
     case 0:	/* Filename */
-      if (THIS->lineno == 0) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_STRING) {
 	if ((TYPEOF(*value) != PIKE_T_INT) ||
 	    (value->u.integer)) {
@@ -2718,14 +2992,12 @@ PIKECLASS backtrace_frame
       break;
 
     case 1:	/* Linenumber */
-      if (THIS->lineno == 0) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_INT)
 	SIMPLE_ARG_TYPE_ERROR("`[]=", 2, "int(1..)");
       THIS->lineno = value->u.integer;
       break;
 
     case 2:	/* Function */
-      if (THIS->lineno == 0) fill_in_file_and_line();
       assign_svalue(&THIS->_fun, value);
       break;
     default:	/* Arguments */
@@ -2736,6 +3008,389 @@ PIKECLASS backtrace_frame
     pop_stack();
   }
 
+};
+
+/*! @endclass
+ */
+
+/*! @class LiveBacktraceFrame
+ *!
+ *! A @[BacktraceFrame] which retains access to the running code.
+ *!
+ *! This means that unless the corresponding thread running the code
+ *! is halted (or similar), the values in the fields contained in
+ *! this object may change at any time.
+ *!
+ *! On the other hand it allows for inspection and altering of
+ *! the local variables (if any) belonging to the frame. Typical
+ *! use of this would be for debugging.
+ *!
+ *! @seealso
+ *!   @[BacktraceFrame]
+ */
+PIKECLASS LiveBacktraceFrame
+{
+  /*! @decl @Annotations.Implements(BacktraceFrame)
+   */
+  IMPLEMENTS backtrace_frame;
+
+  /* The live frame to inspect. */
+  CVAR struct pike_frame *fp;
+
+  /* FIXME: Keep track of the corresponding thread? */
+
+  /* fp->pc when low_get_line() was last called. */
+  CVAR PIKE_OPCODE_T *pc;
+
+  /* Cached result of low_get_line(). lineno == 0 indicates
+   * that the values are stale.
+   */
+  CVAR struct pike_string *filename;
+  CVAR INT_TYPE lineno;
+  CVAR struct local_variable_info locals;
+
+  EXIT
+    gc_trivial;
+  {
+    if (THIS->filename) {
+      free_string(THIS->filename);
+      THIS->filename = NULL;
+    }
+    if (THIS->fp) {
+      free_pike_frame(THIS->fp);
+      THIS->fp = NULL;
+    }
+  }
+
+  GC_CHECK
+  {
+    if (THIS->fp && !debug_gc_check(THIS->fp, " as live backtrace frame"))
+      gc_check_frame(THIS->fp);
+  }
+
+  GC_RECURSE
+  {
+    if (THIS->fp) gc_recurse_frame(THIS->fp);
+  }
+
+  PIKEFUN void fill_in_file_and_line()
+    flags ID_PROTECTED;
+  {
+    if (THIS->lineno) {
+      if (THIS->fp && (THIS->pc == THIS->fp->pc)) return;
+      THIS->lineno = 0;
+    }
+    if (THIS->filename) {
+      free_string(THIS->filename);
+      THIS->filename = NULL;
+    }
+    THIS->locals.num_local = 0;
+    if (!THIS->fp) return;
+
+    THIS->filename =
+      low_get_line((THIS->pc = THIS->fp->pc), THIS->fp->current_program,
+		   &THIS->lineno, &THIS->locals);
+  }
+
+  static void f_LiveBacktraceFrame_get_fun(struct pike_frame *fp)
+  {
+    if (!fp) {
+      push_undefined();
+      return;
+    }
+
+    if (!fp->context) {
+      if (fp->pc == (void *)do_gc) {
+	push_text("gc");
+      } else {
+	push_undefined();
+      }
+      return;
+    }
+
+    if (fp->current_object && fp->current_object->prog) {
+      if (fp->fun == FUNCTION_BUILTIN) {
+	/* Unusual case. The frame is from call_c_initializers(), gc()
+	 * or similar. cf [bug 6156].	/grubba
+	 *
+	 * Masquerade as the program.
+	 *
+	 * FIXME: Ought to keep parent-pointers.
+	 */
+	ref_push_program(fp->current_object->prog);
+      } else {
+	ref_push_function(fp->current_object, fp->fun);
+      }
+      return;
+    }
+
+    push_undefined();
+  }
+
+  PIKEFUN mixed `fun()
+  {
+    f_LiveBacktraceFrame_get_fun(THIS->fp);
+  }
+
+  /*! @decl int(0..1) _is_type(string t)
+   *! This object claims to be an array for backward compatibility.
+   */
+  PIKEFUN int(0..1) _is_type(string t)
+  {
+    RETURN (t == literal_array_string);
+  }
+
+  PIKEFUN array `args()
+  {
+    struct pike_frame *fp = THIS->fp;
+    struct array *res;
+
+    if (!fp) {
+      push_undefined();
+      return;
+    }
+
+    push_array(res = allocate_array_no_init(fp->num_args, 0));
+    res->type_field =
+      assign_svalues_no_free(res->item, fp->locals, fp->num_args, BIT_MIXED);
+
+    if (fp->context && fp->current_object && fp->current_object->prog &&
+	(fp->fun != FUNCTION_BUILTIN)) {
+      struct identifier *func =
+	ID_FROM_INT(fp->current_object->prog, fp->fun);
+      if ((func->identifier_flags & IDENTIFIER_VARARGS) &&
+	  (fp->num_args < fp->num_locals) &&
+	  TYPEOF(fp->locals[fp->num_args]) == T_ARRAY) {
+	ref_push_array(fp->locals[fp->num_args].u.array);
+	f_add(2);
+	res = Pike_sp[-1].u.array;
+      }
+    }
+
+    if (res->type_field & BIT_OBJECT) {
+      ptrdiff_t i;
+      for (i = 0; i < res->size; i++) {
+	struct svalue *s = ITEM(res) + i;
+	if ((TYPEOF(*s) == T_OBJECT) &&
+	    s->u.object->prog &&
+	    (s->u.object->prog->flags &
+	     (PROGRAM_DESTRUCT_IMMEDIATE|PROGRAM_CLEAR_STORAGE))) {
+	  /* It is typically a bad idea to have extra references
+	   * to objects with these flags. The flags are usually
+	   * used by stuff like mutex keys and encryption keys
+	   * respectively.
+	   */
+	  struct object *o = clone_fake_object(s->u.object->prog);
+	  free_object(s->u.object);
+	  SET_SVAL(*s, T_OBJECT, 0, object, o);
+	}
+      }
+    }
+  }
+
+  PIKEFUN string `filename()
+  {
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if (THIS->filename) {
+      ref_push_string(THIS->filename);
+      return;
+    }
+    push_undefined();
+  }
+
+  PIKEFUN string `line()
+  {
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    push_int(THIS->lineno);
+  }
+
+  /*! @decl int(3..) _sizeof()
+   */
+  PIKEFUN int(3..) _sizeof()
+    flags ID_PROTECTED;
+  {
+    struct pike_frame *fp = THIS->fp;
+    int sz = 3;
+
+    if (fp) {
+      sz += fp->num_args;
+
+      if (fp->context && fp->current_object && fp->current_object->prog &&
+	  (fp->fun != FUNCTION_BUILTIN)) {
+	struct identifier *func =
+	  ID_FROM_INT(fp->current_object->prog, fp->fun);
+	if ((func->identifier_flags & IDENTIFIER_VARARGS) &&
+	    (fp->num_args < fp->num_locals) &&
+	    TYPEOF(fp->locals[fp->num_args]) == T_ARRAY) {
+	  sz += fp->locals[fp->num_args].u.array->size;
+	}
+      }
+    }
+
+    push_int(sz);
+  }
+
+  /*! @decl mixed `[](int index, int|void end_or_none)
+   *! The BacktraceFrame object can be indexed as an array.
+   */
+  PIKEFUN mixed `[](int index, int|void end_or_none)
+    flags ID_PROTECTED;
+  {
+    INT_TYPE end = index;
+    INT32 numargs = 3;
+    INT32 i;
+    struct pike_frame *fp = THIS->fp;
+    struct array *extra = NULL;
+
+    if (THIS->fp) {
+      numargs += THIS->fp->num_args;
+
+      if (fp->context && fp->current_object && fp->current_object->prog &&
+	  (fp->fun != FUNCTION_BUILTIN)) {
+	struct identifier *func =
+	  ID_FROM_INT(fp->current_object->prog, fp->fun);
+	if ((func->identifier_flags & IDENTIFIER_VARARGS) &&
+	    (fp->num_args < fp->num_locals) &&
+	    TYPEOF(fp->locals[fp->num_args]) == T_ARRAY) {
+	  extra = fp->locals[fp->num_args].u.array;
+	  numargs += extra->size;
+	}
+      }
+    }
+
+    if (!end_or_none) {
+      if (index < 0)
+        index_error("pike_frame->`[]", args, NULL, Pike_sp-args,
+		    "Indexing with negative index (%"PRINTPIKEINT"d)\n", index);
+      else if (index >= numargs)
+        index_error("pike_frame->`[]", args, NULL, Pike_sp-args,
+		    "Indexing with too large index (%"PRINTPIKEINT"d)\n", index);
+    } else
+      end = end_or_none->u.integer;
+
+    pop_n_elems(args);
+
+    if (end_or_none) {
+      if ((end < 0) || (end < index) || (index >= numargs)) {
+	f_aggregate(0);
+	return;
+      }
+
+      if (end >= numargs)
+	end = numargs-1;
+    }
+
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+
+    for (i = index; i <= end; i++) {
+      switch(i) {
+      case 0:	/* Filename */
+	if (THIS->filename)
+	  ref_push_string(THIS->filename);
+	else
+	  push_int(0);
+	break;
+      case 1:	/* Linenumber */
+	push_int(THIS->lineno);
+	break;
+      case 2:	/* Function */
+	f_LiveBacktraceFrame_get_fun(THIS->fp);
+        break;
+      default:	/* Arguments */
+        {
+	  if (i > 2) {
+	    int j = i - 3;
+	    if (j < fp->num_args) {
+	      push_svalue(fp->locals + j);
+	      break;
+	    }
+	    j -= fp->num_args;
+	    if (extra && (j < extra->size)) {
+	      push_svalue(ITEM(extra) + j);
+	      break;
+	    }
+	  }
+          bad_arg_error("`[]", args, 1,
+			"int(0..)", Pike_sp-args,
+			"Bad argument 1 to backtrace_frame->`[](): "
+			"Expected int(0..%d)\n",
+			numargs + 2);
+        }
+        UNREACHABLE(break);
+      }
+    }
+    if (end_or_none)
+      f_aggregate(1 + end - index);
+  }
+
+  PIKEFUN int(0..) `num_locals()
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp) {
+      push_undefined();
+    } else {
+      push_int(fp->num_locals);
+    }
+  }
+
+  PIKEFUN mixed get_local(int(0..) l)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%d\n", l);
+    }
+    push_svalue(fp->locals + l);
+  }
+
+  PIKEFUN mixed set_local(int(0..) l, mixed val)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%d\n", l);
+    }
+    assign_svalue(fp->locals + l, val);
+  }
+
+  PIKEFUN string get_local_name(int(0..) l)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%d\n", l);
+    }
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if ((l < THIS->locals.num_local) && fp->current_object &&
+	fp->current_object->prog) {
+      int strno = THIS->locals.names[l];
+      if (strno < THIS->fp->current_object->prog->num_strings) {
+	ref_push_string(THIS->fp->current_object->prog->strings[strno]);
+	return;
+      }
+    }
+    push_undefined();
+  }
+
+  PIKEFUN type get_local_type(int(0..) l)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%d\n", l);
+    }
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if ((l < THIS->locals.num_local) && fp->current_object &&
+	fp->current_object->prog) {
+      int constno = THIS->locals.types[l];
+      if (constno < THIS->fp->current_object->prog->num_constants) {
+	push_svalue(&THIS->fp->current_object->prog->constants[constno].sval);
+	return;
+      }
+    }
+    push_undefined();
+  }
 };
 
 /*! @endclass
@@ -2795,7 +3450,7 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
 /*! @endmodule
  */
 
-void low_backtrace(struct Pike_interpreter_struct *i)
+void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 {
   struct svalue *stack_top = i->stack_pointer;
   struct pike_frame *f, *of = 0;
@@ -2810,11 +3465,29 @@ void low_backtrace(struct Pike_interpreter_struct *i)
   push_array(res);
 
   for (f = i->frame_pointer; f && size; f = (of = f)->next) {
-    struct object *o = fast_clone_object(backtrace_frame_program);
+    struct object *o;
     struct backtrace_frame_struct *bf;
     struct identifier *function = NULL;
 
     size--;
+
+    if (flags & 1) {
+      struct LiveBacktraceFrame_struct *bf;
+
+      o = fast_clone_object(LiveBacktraceFrame_program);
+
+      bf = OBJ2_LIVEBACKTRACEFRAME(o);
+
+      SET_SVAL(res->item[size], PIKE_T_OBJECT, 0, object, o);
+
+      add_ref(bf->fp = f);
+
+      /* FIXME: Keep track of the corresponding thread? */
+
+      continue;
+    }
+
+    o = fast_clone_object(backtrace_frame_program);
 
     SET_SVAL(res->item[size], PIKE_T_OBJECT, 0, object, o);
 
@@ -2825,6 +3498,9 @@ void low_backtrace(struct Pike_interpreter_struct *i)
     if (!f->context) {
       if (f->pc == (void *)do_gc) {
 	SET_SVAL(bf->_fun, PIKE_T_STRING, 0, string, make_shared_string("gc"));
+      } else if (f->pc == (void *)pike_do_exit) {
+	SET_SVAL(bf->_fun, PIKE_T_STRING, 0, string,
+		 make_shared_string("exit"));
       }
       continue;
     }
@@ -2893,6 +3569,25 @@ void low_backtrace(struct Pike_interpreter_struct *i)
 				   f->locals[numargs].u.array->item,
 				   varargs, BIT_MIXED);
 	}
+	if (bf->args->type_field & BIT_OBJECT) {
+	  ptrdiff_t i;
+	  for (i = 0; i < bf->args->size; i++) {
+	    struct svalue *s = ITEM(bf->args) + i;
+	    if ((TYPEOF(*s) == T_OBJECT) &&
+		s->u.object->prog &&
+		(s->u.object->prog->flags &
+		 (PROGRAM_DESTRUCT_IMMEDIATE|PROGRAM_CLEAR_STORAGE))) {
+	      /* It is typically a bad idea to have extra references
+	       * to objects with these flags. The flags are usually
+	       * used by stuff like mutex keys and encryption keys
+	       * respectively.
+	       */
+	      struct object *o = clone_fake_object(s->u.object->prog);
+	      free_object(s->u.object);
+	      SET_SVAL(*s, T_OBJECT, 0, object, o);
+	    }
+	  }
+	}
       }
     }
   }
@@ -2900,16 +3595,48 @@ void low_backtrace(struct Pike_interpreter_struct *i)
   /* NOTE: res has already been pushed on the stack. */
 }
 
-/*! @decl array(Pike.BacktraceFrame) backtrace()
- *!
- *!   FIXME: This documentation is not up to date!
+/*! @decl array(Pike.BacktraceFrame) backtrace(int|void flags)
  *!
  *!   Get a description of the current call stack.
  *!
+ *! @param flags
+ *!
+ *!   A bit mask of flags affecting generation of the backtrace.
+ *!
+ *!   Currently a single flag is defined:
+ *!   @int
+ *!     @value 1
+ *!       Return @[LiveBacktraceFrame]s. This flag causes the frame
+ *!       objects to track changes (as long as they are in use), and
+ *!       makes eg local variables for functions available for
+ *!       inspection or change.
+ *!
+ *!       Note that since these values are "live", they may change or
+ *!       dissapear at any time unless the corresponding thread has
+ *!       been halted or similar.
+ *!   @endint
+ *!
+ *! @returns
  *!   The description is returned as an array with one entry for each call
  *!   frame on the stack.
  *!
- *!   Each entry has this format:
+ *!   The entries are represented by @[Pike.BacktraceFrame] objects.
+ *!
+ *!   The current call frame will be last in the array.
+ *!
+ *! @note
+ *!   Please note that the frame order may be reversed in a later version
+ *!   of Pike to accommodate for deferred backtraces.
+ *!
+ *! @note
+ *!   Note that the arguments reported in the backtrace are the current
+ *!   values of the variables, and not the ones that were at call-time.
+ *!   This can be used to hide sensitive information from backtraces
+ *!   (eg passwords).
+ *!
+ *! @note
+ *!   In old versions of Pike the entries used to be represented
+ *!   by arrays of the following format:
  *!   @array
  *!     @elem string file
  *!       A string with the filename if known, else zero.
@@ -2920,27 +3647,18 @@ void low_backtrace(struct Pike_interpreter_struct *i)
  *!     @elem mixed|void ... args
  *!       The arguments that the function was called with.
  *!   @endarray
- *!
- *!   The current call frame will be last in the array.
- *!
- *! @note
- *!   Please note that the frame order may be reversed in a later version
- *!   of Pike to accommodate for deferred backtraces.
- *!
- *!   Note that the arguments reported in the backtrace are the current
- *!   values of the variables, and not the ones that were at call-time.
- *!   This can be used to hide sensitive information from backtraces
- *!   (eg passwords).
+ *!   The above format is still supported by eg @[describe_backtrace()].
  *!
  *! @seealso
  *!   @[catch()], @[throw()]
  */
 PMOD_EXPORT
-PIKEFUN array(mixed) backtrace()
+PIKEFUN array(mixed) backtrace(int|void local_vars)
      efun;
      optflags OPT_EXTERNAL_DEPEND;
 {
-  low_backtrace(& Pike_interpreter);
+  low_backtrace(& Pike_interpreter, local_vars?local_vars->u.integer:0);
+  stack_pop_n_elems_keep_top(args);
 }
 
 /*! @class Replace
@@ -5822,34 +6540,11 @@ PIKECLASS pike_trampoline
     }
   }
 
-  static void gc_check_frame(struct pike_frame *f)
-  {
-    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-    {
-      if(f->current_object)
-	debug_gc_check (f->current_object, " as current_object in trampoline frame");
-      if(f->current_program)
-	debug_gc_check (f->current_program, " as current_program in trampoline frame");
-      debug_gc_check_svalues (f->locals, f->num_locals, " in locals of trampoline frame");
-      if(f->scope && !debug_gc_check (f->scope, " as scope frame of trampoline frame"))
-	gc_check_frame(f->scope);
-    }
-  }
-
   GC_CHECK
   {
     if (THIS->trampoline.frame &&
 	!debug_gc_check(THIS->trampoline.frame, " as trampoline frame"))
       gc_check_frame(THIS->trampoline.frame);
-  }
-
-  static void gc_recurse_frame(struct pike_frame *f)
-  {
-    if(f->current_object) gc_recurse_object(f->current_object);
-    if(f->current_program) gc_recurse_program(f->current_program);
-    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-      gc_recurse_svalues(f->locals,f->num_locals);
-    if(f->scope)          gc_recurse_frame(f->scope);
   }
 
   GC_RECURSE

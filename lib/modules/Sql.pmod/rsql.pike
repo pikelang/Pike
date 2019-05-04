@@ -287,8 +287,8 @@ protected function|mixed `->(string cmd)
     };
 }
 
-void create(string|void host, string|void db, string|void user,
-	    string|void _pw, mapping|void options)
+protected void create(string|void host, string|void db, string|void user,
+		      string|void _pw, mapping|void options)
 {
   string pw = _pw;
   _pw = "CENSORED";

@@ -555,6 +555,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
+    if (!proxy_headers) proxy_headers = request_headers;
   } else if(url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
     werror("Proxied SSL request.\n");

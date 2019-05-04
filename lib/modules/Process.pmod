@@ -623,15 +623,20 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 
 #if constant(Shuffler)
   if (mystdin) {
-    Shuffler.Shuffler sfr = Shuffler.Shuffler();
-    sfr->set_backend (backend);
-    Shuffler.Shuffle sf = sfr->shuffle( mystdin );
-    sf->add_source(stdin_str);
-    sf->set_done_callback (lambda () {
-			     catch { mystdin->close(); };
-			     mystdin = 0;
-			   });
-    sf->start();
+    if (stdin_str != "") {
+      Shuffler.Shuffler sfr = Shuffler.Shuffler();
+      sfr->set_backend (backend);
+      Shuffler.Shuffle sf = sfr->shuffle( mystdin );
+      sf->add_source(stdin_str);
+      sf->set_done_callback (lambda () {
+                               catch { mystdin->close(); };
+                               mystdin = 0;
+                             });
+      sf->start();
+    } else {
+      catch { mystdin->close(); };
+      mystdin = 0;
+    }
   }
 #endif
 
@@ -1081,12 +1086,12 @@ class Spawn
    }
 
   //!
-   void create(string cmd,
-	       void|array(string) args,
-	       void|mapping(string:string) env,
-	       string|void cwd,
-	       void|array(object(Stdio.File)|void) ownpipes,
-	       void|array(object(Stdio.File)|void) fds_to_close)
+   protected void create(string cmd,
+			 void|array(string) args,
+			 void|mapping(string:string) env,
+			 string|void cwd,
+			 void|array(object(Stdio.File)|void) ownpipes,
+			 void|array(object(Stdio.File)|void) fds_to_close)
    {
       if (!ownpipes)
       {

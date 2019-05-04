@@ -267,7 +267,7 @@ int unlink_current_supporter(struct Supporter *c)
     ret++;
     c->next_dependant = c->depends_on->dependants;
     c->depends_on->dependants=c;
-    add_ref(c->self);
+    add_ref(c->self.u.object);
     CDFPRINTF("th(%ld) unlink_current_supporter() "
               "supporter=%p (prog %p) depends on %p (prog %p).\n",
               (long) th_self(), c, c->prog,
@@ -308,7 +308,7 @@ int call_dependants(struct Supporter *s, int finish)
     verify_supporters();
     if (!tmp->fun(tmp->data, finish)) ok = 0;
     verify_supporters();
-    free_object(tmp->self);
+    free_object(tmp->self.u.object);
   }
   return ok;
 }
@@ -813,6 +813,7 @@ static void free_compilation(struct compilation *c)
     free_string(c->prog);
     c->prog = NULL;
   }
+#ifdef SUPPORT_COMPILER_HANDLERS
   if(c->handler) {
     free_object(c->handler);
     c->handler = NULL;
@@ -821,6 +822,7 @@ static void free_compilation(struct compilation *c)
     free_object(c->compat_handler);
     c->compat_handler = NULL;
   }
+#endif /* SUPPORT_COMPILER_HANDLERS */
   if(c->target) {
     free_program(c->target);
     c->target = NULL;
@@ -855,8 +857,10 @@ static void run_init(struct compilation *c)
 {
   debug_malloc_touch(c);
 
+#ifdef SUPPORT_COMPILER_HANDLERS
   if (c->compat_handler) free_object(c->compat_handler);
   c->compat_handler=0;
+#endif /* SUPPORT_COMPILER_HANDLERS */
 
   if (c->resolve_cache) {
     free_mapping(c->resolve_cache);
@@ -1278,8 +1282,9 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
             (long) th_self(), cc->p, finish ? "continuing" : "cleaning up");
 
   /* Reenter the delayed compilation. */
-  add_ref(cc->supporter.self);
-  low_enter_compiler(cc->supporter.self, cc->compilation_inherit);
+  add_ref(cc->supporter.self.u.object);
+  low_enter_compiler(cc->supporter.self.u.object,
+		     SUBTYPEOF(cc->supporter.self));
 
   if (finish && cc->p) {
     if (cc->flags & COMPILER_NEED_EXTRA_PASS) {
@@ -1320,9 +1325,9 @@ static void compilation_event_handler(int e)
   case PROG_EVENT_INIT:
     CDFPRINTF("th(%ld) compilation: INIT(%p).\n", (long) th_self(), c);
     memset(c, 0, sizeof(*c));
-    c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
-    c->compilation_inherit =
-      Pike_fp->context - Pike_fp->current_object->prog->inherits;
+    SET_SVAL(c->supporter.self, T_OBJECT,
+	     Pike_fp->context - Pike_fp->current_object->prog->inherits,
+	     object, Pike_fp->current_object); /* NOTE: Not ref-counted! */
     buffer_init(&c->used_modules);
     SET_SVAL(c->default_module, T_MAPPING, 0, mapping, get_builtin_constants());
     add_ref(c->default_module.u.mapping);
@@ -1406,6 +1411,7 @@ static void f_compilation_report(INT32 args)
    */
   get_all_args(NULL, args, "%d", &level);
 
+#ifdef SUPPORT_COMPILER_HANDLERS
   if ((c->handler || c->compat_handler)) {
     const char *fun_name = "compile_warning";
 
@@ -1430,6 +1436,7 @@ static void f_compilation_report(INT32 args)
       }
     }
   }
+#endif /* SUPPORT_COMPILER_HANDLERS */
   /* Nothing apropriate in any handlers.
    * Call the report() in our parent.
    */
@@ -1548,8 +1555,10 @@ static void f_compilation_create(INT32 args)
   if (c->prog) free_string(c->prog);
   if ((c->prog=aprog)) add_ref(aprog);
 
+#ifdef SUPPORT_COMPILER_HANDLERS
   if (c->handler) free_object(c->handler);
   if ((c->handler=ahandler)) add_ref(ahandler);
+#endif /* SUPPORT_COMPILER_HANDLERS */
 
   if (c->target) free_program(c->target);
   if ((c->target=atarget)) add_ref(atarget);
@@ -1557,8 +1566,8 @@ static void f_compilation_create(INT32 args)
   if (c->placeholder) free_object(c->placeholder);
   if ((c->placeholder=aplaceholder)) add_ref(aplaceholder);
 
-  c->major = amajor?amajor:-1;
-  c->minor = aminor?aminor:-1;
+  c->major = amajor;
+  c->minor = aminor;
 
   STACK_LEVEL_DONE(args);
   pop_n_elems(args);
@@ -1716,6 +1725,7 @@ static void f_compilation_resolv(INT32 args)
 
   ref_push_string(sym);
   ref_push_string(c->lex.current_file);
+#ifdef SUPPORT_COMPILER_HANDLERS
   if (c->handler) {
     ref_push_object(c->handler);
   } else {
@@ -1726,6 +1736,10 @@ static void f_compilation_resolv(INT32 args)
   } else {
     push_undefined();
   }
+#else /* !SUPPORT_COMPILER_HANDLERS */
+  push_undefined();
+  push_undefined();
+#endif /* SUPPORT_COMPILER_HANDLERS */
   apply_external(1, CE_RESOLV_FUN_NUM, 4);
 }
 
@@ -1742,6 +1756,7 @@ static void f_compilation_get_compilation_handler(INT32 args)
   struct object *handler;
   int fun = -1;
 
+#ifdef SUPPORT_COMPILER_HANDLERS
   if (((handler = c->handler) && handler->prog &&
        ((fun = find_identifier("get_compilation_handler", handler->prog)) != -1)) ||
       ((handler = c->compat_handler) && handler->prog &&
@@ -1750,6 +1765,7 @@ static void f_compilation_get_compilation_handler(INT32 args)
   } else {
     apply_external(1, CE_GET_COMPILATION_HANDLER_FUN_NUM, args);
   }
+#endif /* SUPPORT_COMPILER_HANDLERS */
 }
 
 /*! @decl mapping(string:mixed)|object get_default_module()
@@ -1779,14 +1795,18 @@ static void f_compilation_get_default_module(INT32 args)
   struct object *handler;
   int fun = -1;
 
+#ifdef SUPPORT_COMPILER_HANDLERS
   if (((handler = c->handler) && handler->prog &&
        ((fun = find_identifier("get_default_module", handler->prog)) != -1)) ||
       ((handler = c->compat_handler) && handler->prog &&
        ((fun = find_identifier("get_default_module", handler->prog)) != -1))) {
     apply_low(handler, fun, args);
   } else {
+#endif /* SUPPORT_COMPILER_HANDLERS */
     apply_external(1, CE_GET_DEFAULT_MODULE_FUN_NUM, args);
+#ifdef SUPPORT_COMPILER_HANDLERS
   }
+#endif /* SUPPORT_COMPILER_HANDLERS */
 }
 
 /*! @decl void change_compiler_compatibility(int major, int minor)
@@ -1819,6 +1839,7 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
   Pike_compiler->compat_major=major;
   Pike_compiler->compat_minor=minor;
 
+#ifdef SUPPORT_COMPILER_HANDLERS
   /* Optimization: The up to date compiler shouldn't need a compat handler. */
   if((major != PIKE_MAJOR_VERSION) || (minor != PIKE_MINOR_VERSION))
   {
@@ -1863,6 +1884,9 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
       return;
     }
   }
+#else /* !SUPPORT_COMPILER_HANDLERS */
+  pop_n_elems(args);
+#endif /* SUPPORT_COMPILER_HANDLERS */
 
   STACK_LEVEL_CHECK(0);
 
@@ -1917,20 +1941,27 @@ static void f_compilation_handle_inherit(INT32 args)
   if (args > 1) pop_n_elems(args-1);
 
   ref_push_string(c->lex.current_file);
+#ifdef SUPPORT_COMPILER_HANDLERS
   if (c->handler && c->handler->prog) {
     ref_push_object(c->handler);
     args = 3;
   }
-  else args = 2;
+  else
+#endif /* !SUPPORT_COMPILER_HANDLERS */
+    args = 2;
 
+#ifdef SUPPORT_COMPILER_HANDLERS
   if (((handler = c->handler) && handler->prog &&
        ((fun = find_identifier("handle_inherit", handler->prog)) != -1)) ||
       ((handler = c->compat_handler) && handler->prog &&
        ((fun = find_identifier("handle_inherit", handler->prog)) != -1))) {
     apply_low(handler, fun, args);
   } else {
+#endif /* SUPPORT_COMPILER_HANDLERS */
     apply_external(1, CE_HANDLE_INHERIT_FUN_NUM, args);
+#ifdef SUPPORT_COMPILER_HANDLERS
   }
+#endif /* SUPPORT_COMPILER_HANDLERS */
 }
 
 /*! @decl program handle_import(string module)
@@ -1946,20 +1977,27 @@ static void f_compilation_handle_import(INT32 args)
   if (args > 1) pop_n_elems(args-1);
 
   ref_push_string(c->lex.current_file);
+#ifdef SUPPORT_COMPILER_HANDLERS
   if (c->handler && c->handler->prog) {
     ref_push_object(c->handler);
     args = 3;
   }
-  else args = 2;
+  else
+#endif /* SUPPORT_COMPILER_HANDLERS */
+    args = 2;
 
+#ifdef SUPPORT_COMPILER_HANDLERS
   if (((handler = c->handler) && handler->prog &&
        ((fun = find_identifier("handle_import", handler->prog)) != -1)) ||
       ((handler = c->compat_handler) && handler->prog &&
        ((fun = find_identifier("handle_import", handler->prog)) != -1))) {
     apply_low(handler, fun, args);
   } else {
+#endif /* SUPPORT_COMPILER_HANDLERS */
     apply_external(1, CE_HANDLE_IMPORT_FUN_NUM, args);
+#ifdef SUPPORT_COMPILER_HANDLERS
   }
+#endif /* SUPPORT_COMPILER_HANDLERS */
 }
 
 /*! @decl int(0..1) pop_type_attribute(string attribute, type a, type b)
@@ -2193,6 +2231,7 @@ static void f_compilation__sprintf(INT32 args)
   } else {
     string_builder_strcat(&buf, "UNDEFINED, ");
   }
+#ifdef SUPPORT_COMPILER_HANDLERS
   if (c->handler) {
     ref_push_object(c->handler);
     string_builder_sprintf(&buf, "%O, ", Pike_sp-1);
@@ -2200,6 +2239,7 @@ static void f_compilation__sprintf(INT32 args)
   } else {
     string_builder_strcat(&buf, "UNDEFINED, ");
   }
+#endif /* SUPPORT_COMPILER_HANDLERS */
   string_builder_sprintf(&buf, "%d, %d, %s, %s)",
 			 c->major, c->minor,
 			 c->target?"target":"UNDEFINED",
@@ -2517,7 +2557,11 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
 
   push_svalue(&thrown);
   /* safe_apply_current(PC_FILTER_EXCEPTION_FUN_NUM, 1); */
+#ifdef SUPPORT_COMPILER_HANDLERS
   low_safe_apply_handler("compile_exception", c->handler, c->compat_handler, 1);
+#else /* !SUPPORT_COMPILER_HANDLERS */
+  SAFE_APPLY_MASTER("compile_exception", 1);
+#endif /* SUPPORT_COMPILER_HANDLERS */
 
   if (SAFE_IS_ZERO(Pike_sp-1)) {
     struct pike_string *s = format_exception_for_error_msg (&thrown);
@@ -2577,6 +2621,7 @@ static void compile_compiler(void)
   struct object *co;
   struct inherit *inh;
 
+  p->id = PROG_COMPILERENVIRONMENT_ID;
   p->parent_info_storage = -1;
   /* p->event_handler = compilation_env_event_handler; */
   p->flags |= PROGRAM_HAS_C_METHODS;
@@ -2600,6 +2645,7 @@ static void compile_compiler(void)
   inh->storage_offset = p->xstorage;
   inh->parent = NULL;
   inh->name = NULL;
+  inh->annotations = NULL;
   p->num_inherits = 1;
 
   /* Force clone_object() to accept the program...
@@ -2611,6 +2657,7 @@ static void compile_compiler(void)
   /* Once more, this time for p2...
    */
 
+  p2->id = PROG_COMPILERENVIRONMENT_PIKECOMPILER_ID;
   p2->parent_info_storage = 0;
   p2->xstorage = sizeof(struct parent_info);
   p2->event_handler = compilation_event_handler;
@@ -2630,6 +2677,7 @@ static void compile_compiler(void)
   inh->storage_offset = p2->xstorage;
   inh->parent = NULL;
   inh->name = NULL;
+  inh->annotations = NULL;
   p2->num_inherits = 1;
 
   p2->flags |= PROGRAM_PASS_1_DONE;
@@ -2727,6 +2775,8 @@ static void compile_compiler(void)
 	       tFunc(tInt tOr(tMap(tStr, tMix), tVoid), tStr), ID_PROTECTED);
 
   start_new_program();
+  Pike_compiler->new_program->id =
+    PROG_COMPILERENVIRONMENT_PIKECOMPILER_COMPILERSTATE_ID;
 
   ADD_STORAGE(struct program_state);
   Pike_compiler->new_program->event_handler = program_state_event_handler;
@@ -2741,10 +2791,12 @@ static void compile_compiler(void)
   /* Map some of our variables so that the gc can find them. */
   PIKE_MAP_VARIABLE("prog", OFFSETOF(compilation, prog),
 		    tStr, PIKE_T_STRING, ID_HIDDEN);
+#ifdef SUPPORT_COMPILER_HANDLERS
   PIKE_MAP_VARIABLE("handler", OFFSETOF(compilation, handler),
 		    tObj, PIKE_T_OBJECT, 0);
   PIKE_MAP_VARIABLE("compat_handler", OFFSETOF(compilation, compat_handler),
 		    tObj, PIKE_T_OBJECT, 0);
+#endif /* SUPPORT_COMPILER_HANDLERS */
   PIKE_MAP_VARIABLE("target", OFFSETOF(compilation, target),
 		    tPrg(tObj), PIKE_T_PROGRAM, ID_HIDDEN);
   PIKE_MAP_VARIABLE("placeholder", OFFSETOF(compilation, placeholder),
@@ -2786,6 +2838,8 @@ static void compile_compiler(void)
   {
     struct svalue type_value;
 
+    Pike_compiler->new_program->id = PROG_COMPILERENVIRONMENT_REPORTER_ID;
+
     ADD_FUNCTION("report", f_reporter_report,
 		 tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
 			tStr tStr, tMix, tVoid),0);
@@ -2808,6 +2862,7 @@ static void compile_compiler(void)
   low_inherit(reporter_program, NULL, -1, 0, 0, 0);
 
   start_new_program();
+  Pike_compiler->new_program->id = PROG_COMPILERENVIRONMENT_LOCK_ID;
   Pike_compiler->new_program->event_handler =
     compiler_environment_lock_event_handler;
   Pike_compiler->new_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
@@ -2856,12 +2911,40 @@ node *low_pop_local_variables(int level, node *block)
     int e;
     e=--(Pike_compiler->compiler_frame->current_number_of_locals);
     if (block) {
-      block = mknode(F_COMMA_EXPR, block,
-		     mknode(F_POP_VALUE,
-			    mknode(F_ASSIGN,
-				   mklocalnode(e, 0),
-				   mkintnode(0)),
-			    NULL));
+      struct local_variable *var = Pike_compiler->compiler_frame->variable + e;
+      if (var->name->len) {
+	block = mknestednodes(F_COMMA_EXPR,
+			      mknode(F_SET_LOCAL_NAME, mkintnode(e),
+				     mkstrnode(var->name)),
+			      mknode(F_SET_LOCAL_TYPE, mkintnode(e),
+				     mktypenode(var->type)),
+			      block,
+			      mknode(F_POP_VALUE,
+				     mknode(F_ASSIGN,
+					    mklocalnode(e, 0),
+					    mkintnode(0)),
+				     NULL),
+			      mknode(F_SET_LOCAL_END, mkintnode(e), NULL),
+			      NULL);
+      } else {
+	/* No name; this is typically used for internal temporary variables,
+	 * eg for the safe-indexing operators.
+	 *
+	 * As we're in the middle of an expression, it gets
+	 * confused by the void expressions.
+	 *
+	 * Skip generating variable information, as it will
+	 * only be "" and mixed anyway.
+	 */
+	block = mknestednodes(F_COMMA_EXPR,
+			      block,
+			      mknode(F_POP_VALUE,
+				     mknode(F_ASSIGN,
+					    mklocalnode(e, 0),
+					    mkintnode(0)),
+				     NULL),
+			      NULL);
+      }
     }
     if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	!(Pike_compiler->compiler_frame->variable[e].flags &
@@ -2997,20 +3080,394 @@ PIKECLASS placeholder
   }
 }
 
-void init_pike_compiler(void)
+/*! @module Pike
+ */
+
+/*! @class Annotation
+ *!
+ *! This class describes the API that the compiler
+ *! expects for the annotation syntax.
+ *!
+ *! @note
+ *!   Classes implementing this API typically need
+ *!   to be marked @tt{constant@}.
+ *!
+ *! @seealso
+ *!   @[Annotations]
+ */
+PMOD_EXPORT struct program *Annotation_program = NULL;
+PIKECLASS Annotation
+  program_flags PROGRAM_CONSTANT;
+{
+  /*! @decl optional void end_pass(int pass, program prog, @
+   *!                              CompilerEnvironment.PikeCompiler compiler)
+   *!
+   *! Callback called by the compiler when it is finishing a compilation pass.
+   *!
+   *! @param pass
+   *!   Compilation pass.
+   *!
+   *! @param prog
+   *!   Program being compiled.
+   *!
+   *! @param compiler
+   *!   @[CompilerEnvironment.PikeCompiler] state for the compiler.
+   */
+  PIKEFUN void end_pass(int pass, program prog,
+			CompilerEnvironment_PikeCompiler compiler)
+    prototype;
+    flags ID_OPTIONAL;
+  {}
+}
+/*! @endclass
+ */
+
+/*! @module Annotations
+ */
+
+/*! @class Implements
+ *!
+ *! This annotation causes the compiler to validate that
+ *! the annotated class implements the specified API.
+ */
+PMOD_EXPORT struct program *Implements_program = NULL;
+PIKECLASS Implements
+  program_flags PROGRAM_CONSTANT;
+{
+  /*! @decl inherit Pike.Annotation
+   */
+  INHERIT Annotation;
+
+  PIKEVAR program api flags ID_STATIC;
+
+  PIKEFUN void create(program api)
+    flags ID_PROTECTED;
+  {
+    if (THIS->api) Pike_error("Already initialized.\n");
+    add_ref(THIS->api = api);
+  }
+
+  PIKEFUN void end_pass(int pass, program prog,
+			CompilerEnvironment_PikeCompiler compiler)
+  {
+    struct program *api = THIS->api;
+    if (!api) Pike_error("Uninitialized.\n");
+
+    /* Only perform the checks in the last pass. */
+    if (pass != COMPILER_PASS_LAST) return;
+
+    if (!is_compatible(prog, api)) {
+      /* NB: We need to enter the compiler to call yyexplain_*().
+       *     Note also that low_enter_compiler() eats a ref to the object.
+       */
+      add_ref(compiler);
+      low_enter_compiler(compiler, compiler_inh_num);
+      /* NB: low_enter_compiler invalidates THIS! */
+      yyexplain_not_compatible(REPORT_ERROR, prog, api);
+      exit_compiler();
+    } else if (!implements(prog, api)) {
+      /* NB: We need to enter the compiler to call yyexplain_*().
+       *     Note also that low_enter_compiler() eats a ref to the object.
+       */
+      add_ref(compiler);
+      low_enter_compiler(compiler, compiler_inh_num);
+      /* NB: low_enter_compiler invalidates THIS! */
+      yyexplain_not_implements(REPORT_WARNING, prog, api);
+      exit_compiler();
+    }
+  }
+
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+    flags ID_PROTECTED;
+  {
+    if (c != 'O') {
+      push_undefined();
+      return;
+    }
+
+    push_text("Pike.Annotations.Implements(%O)");
+    if (THIS->api) {
+      ref_push_program(THIS->api);
+    } else {
+      push_undefined();
+    }
+    f_sprintf(2);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class InheritedClass
+ *!
+ *! This is the class for the @[Inherited] annotation.
+ */
+struct program *InheritedClass_program = NULL;
+PMOD_EXPORT struct object *Inherited_annotation = NULL;
+PIKECLASS InheritedClass
+  program_flags PROGRAM_CONSTANT|PROGRAM_NO_EXPLICIT_DESTRUCT;
+{
+  /*! @decl inherit Pike.Annotation
+   */
+  INHERIT Annotation;
+
+  /*! @decl @@Inherited
+   */
+
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+    flags ID_PROTECTED;
+  {
+    if (c != 'O') {
+      push_undefined();
+      return;
+    }
+
+    push_text("Pike.Annotations.Inherited");
+  }
+}
+/*! @endclass
+ */
+
+/*! @decl constant Inherited = InheritedClass()
+ *!
+ *! This @[Annotation] informs the compiler that any @[Annotation]
+ *! marked with it is to be inherited. The default is that annotations
+ *! on classes are not inherited.
+ */
+EXTRA
+{
+  Inherited_annotation = clone_object(InheritedClass_program, 0);
+  add_object_constant("Inherited", Inherited_annotation, 0);
+  assert(!InheritedClass_program->inherits[0].annotations);
+  ref_push_object(Inherited_annotation);
+  f_aggregate_multiset(1);
+  InheritedClass_program->inherits[0].annotations = Pike_sp[-1].u.multiset;
+  Pike_sp--;
+}
+
+/*! @class OverrideClass
+ *!
+ *! This is the class for the @[Override] annotation.
+ */
+struct program *OverrideClass_program = NULL;
+PMOD_EXPORT struct object *Override_annotation = NULL;
+PIKECLASS OverrideClass
+  program_flags PROGRAM_CONSTANT|PROGRAM_NO_EXPLICIT_DESTRUCT;
+{
+  /*! @decl inherit Pike.Annotation
+   */
+  INHERIT Annotation;
+
+  PIKEFUN void end_pass_identifier(int pass, program prog, int(0..) ref,
+				   CompilerEnvironment_PikeCompiler compiler)
+  {
+    struct reference *ptr;
+    struct identifier *id;
+    struct pike_string *sym;
+    int i;
+    int found = -1;
+
+    if (pass != COMPILER_PASS_LAST) return;
+
+    if (!prog || (ref >= prog->num_identifier_references)) return;
+
+    /* Make sure that we can reach ourselves later,
+     * in case we need to generate an error.
+     */
+    ref_push_object(Pike_fp->current_object);
+
+    add_ref(compiler);
+    low_enter_compiler(compiler, compiler_inh_num);
+    /* NB: low_enter_compiler() invalidates THIS! */
+
+    ptr = prog->identifier_references + ref;
+
+    id = ID_FROM_PTR(prog, ptr);
+
+    sym = id->name;
+
+    /* FIXME: Check that:
+     *  * This is not a named lambda().
+     *  * Get the symbol name and check that it exists
+     *    in one of the parents (lookup ::symbol).
+     *  * If the symbol is a variant check also
+     *    that the type for previous definition also
+     *    covers the new type.
+     */
+    for(i = 1; i < prog->num_inherits; i++) {
+      struct inherit *inh = prog->inherits + i;
+      struct reference *r;
+
+      if (inh->inherit_level != 1) continue;
+
+      found = find_shared_string_identifier(sym, inh->prog);
+      if (found == -1) continue;
+      r = inh->prog->identifier_references + found;
+      /* NB: We're looking directly in the references in the
+       *     inherited program, NOT in the references of the
+       *     program being compiled. Thus the ID_PRIVATE.
+       */
+      if (r->id_flags & (ID_HIDDEN|ID_PRIVATE)) {
+	found = -1;
+	continue;
+      }
+      /* FIXME: Warn if symbol is ID_LOCAL/ID_INLINE? */
+      break;
+    }
+
+    if (found == -1) {
+      my_yyerror("@%O: Symbol ::%S not found.", Pike_sp-1, sym);
+    }
+
+    exit_compiler();
+
+    push_undefined();
+  }
+
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+    flags ID_PROTECTED;
+  {
+    if (c != 'O') {
+      push_undefined();
+      return;
+    }
+
+    push_text("Pike.Annotations.Override");
+  }
+}
+/*! @endclass
+ */
+
+/*! @decl constant Override = OverrideClass()
+ *!
+ *! This @[Annotation] informs the compiler that any symbol
+ *! marked with it is expected to also have been inherited.
+ */
+EXTRA
+{
+  Override_annotation = clone_object(OverrideClass_program, 0);
+  add_object_constant("Override", Override_annotation, 0);
+}
+
+/*! @class AutoCodecClass
+ *!
+ *! This is the class that implements the @[AutoCodec] annotstion.
+ */
+struct program *AutoCodecClass_program = NULL;
+struct object *AutoCodec_annotation = NULL;
+PIKECLASS AutoCodecClass
+  program_flags PROGRAM_CONSTANT|PROGRAM_NO_EXPLICIT_DESTRUCT;
+{
+  /*! @decl inherit Annotation
+   */
+  INHERIT Annotation;
+
+  PIKEFUN void end_pass(int pass, program prog,
+			CompilerEnvironment_PikeCompiler compiler)
+  {
+    int e = Pike_compiler->num_create_args;
+    struct pike_type *type = NULL;
+    struct pike_type *save_return_type;
+    node *n = NULL;
+    struct pike_string *encode_string;
+    MAKE_CONST_STRING(encode_string, "_encode");
+    /* NB: We need to enter the compiler to call define_function() et al.
+     *     Note also that low_enter_compiler() eats a ref to the object.
+     */
+    add_ref(compiler);
+    low_enter_compiler(compiler, compiler_inh_num);
+
+    if (!e) {
+      push_finished_type(zero_type_string);
+    } else {
+      if (e < 0) {
+	/* Varargs marker. */
+	e = -e;
+	push_finished_type(prog->identifiers[--e].type);
+	pop_type_stack(PIKE_T_ARRAY);
+	n = mknode(F_PUSH_ARRAY, mkidentifiernode(e), NULL);
+      } else {
+	push_finished_type(prog->identifiers[--e].type);
+	n = mkidentifiernode(e);
+      }
+      while (e--) {
+	push_finished_type(prog->identifiers[e].type);
+	push_type(T_OR);
+	n = mknode(F_ARG_LIST, mkidentifiernode(e), n);
+      }
+    }
+    push_type(PIKE_T_ARRAY);
+    push_type(T_VOID);
+    push_type(T_MANY);
+
+    type = compiler_pop_type();
+
+    save_return_type = Pike_compiler->compiler_frame->current_return_type;
+    Pike_compiler->compiler_frame->current_return_type = type->cdr;
+
+    n = mknode(F_RETURN, mkefuncallnode("aggregate", n), 0);
+
+    define_function(encode_string, type, 0, IDENTIFIER_PIKE_FUNCTION, 0, 0);
+
+    if (pass == COMPILER_PASS_LAST) {
+      dooptcode(encode_string, n, type, 0);
+    }
+
+    Pike_compiler->compiler_frame->current_return_type = save_return_type;
+
+    free_node(n);
+    free_type(type);
+
+    exit_compiler();
+  }
+}
+/*! @endclass
+ */
+
+/*! @decl constant AutoCodec = AutoCodecClass()
+ *!
+ *! This @[Annotation] causes the compiler to automatically
+ *! add an implementation of @[_encode()] that returns
+ *! an array with suitable arguments to @[lfun::create].
+ *!
+ *! @note
+ *!   This annotation is only useful for classes that
+ *!   use the implicit create()-syntax, or have a create()
+ *!   that doesn't need any arguments.
+ */
+EXTRA
+{
+  AutoCodec_annotation = clone_object(AutoCodecClass_program, 0);
+  add_object_constant("AutoCodec", AutoCodec_annotation, 0);
+}
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+void low_init_pike_compiler(void)
 {
 #ifdef PIKE_THREADS
   co_init(&Pike_compiler_cond);
 #endif
 
   compile_compiler();
+}
 
-  enter_compiler(NULL, 0);
 
-  /*
-   * Now that the compiler has been compiled,
-   * we can use the usual cmod stuff.
-   */
+/*
+ * Now that the compiler has been compiled,
+ * we can use the usual cmod stuff.
+ */
+
+void init_pike_compiler(void)
+{
+  add_program_constant("CompilerEnvironment", compilation_env_program, 0);
+
+#ifndef SUPPORT_COMPILER_HANDLERS
+  ADD_INT_CONSTANT("__HAVE_COMPILER_NO_HANDLERS__", 1, 0);
+#endif /* !SUPPORT_COMPILER_HANDLERS */
 
   INIT;
 
@@ -3042,14 +3499,30 @@ void init_pike_compiler(void)
     SET_SVAL(s, T_TYPE, 0, type, utf8_type_string);
     low_add_efun(attr, &s);
   }
-
-  exit_compiler();
 }
 
 void cleanup_pike_compiler(void)
 {
+  if (Override_annotation) {
+    free_object(Override_annotation);
+    Override_annotation = NULL;
+  }
+  if (AutoCodec_annotation) {
+    free_object(AutoCodec_annotation);
+    AutoCodec_annotation = NULL;
+  }
+  if (Inherited_annotation) {
+    /* Break the circularity. */
+    do_free_multiset(InheritedClass_program->inherits[0].annotations);
+    InheritedClass_program->inherits[0].annotations = NULL;
+    free_object(Inherited_annotation);
+    Inherited_annotation = NULL;
+  }
   EXIT;
+}
 
+void low_cleanup_pike_compiler(void)
+{
   if (compilation_program) {
     free_program(compilation_program);
     compilation_program = 0;

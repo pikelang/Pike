@@ -280,6 +280,7 @@ void simple_describe_type(struct pike_type *s);
 void low_describe_type(struct string_builder *s, struct pike_type *type);
 struct pike_string *describe_type(struct pike_type *type);
 TYPE_T compile_type_to_runtime_type(struct pike_type *s);
+int deprecated_typep(struct pike_type *t);
 int get_int_type_range(struct pike_type *t, INT_TYPE *range);
 struct pike_type *or_pike_types(struct pike_type *a,
 				struct pike_type *b,

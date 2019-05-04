@@ -54,7 +54,7 @@ class imap_atom
 {
   string name;
 
-  void create(string s) { name = s; }
+  protected void create(string s) { name = s; }
 
   string format() { return name; }
 }
@@ -65,7 +65,7 @@ class imap_atom_options
   array options;
   array range;
 
-  void create(string s, string sec, array o, array r)
+  protected void create(string s, string sec, array o, array r)
     {
       name = s;
       options = ({ sec,
@@ -88,7 +88,7 @@ class imap_string
 {
   string data;
 
-  void create(string s) { data = s; }
+  protected void create(string s) { data = s; }
 
   string format()
     {
@@ -104,7 +104,7 @@ class imap_list
 {
   array data;
 
-  void create(array a) { data = imap_check_array(a); }
+  protected void create(array a) { data = imap_check_array(a); }
 
   string format() { return "(" + imap_format_array(data) + ")"; }
 }
@@ -113,7 +113,7 @@ class imap_prefix
 {
   array data;
 
-  void create(array a) { data = imap_check_array(a); }
+  protected void create(array a) { data = imap_check_array(a); }
 
   string format() { return "[" + imap_format_array(data) + "]"; }
 }
@@ -122,7 +122,7 @@ class imap_number
 {
   int value;
 
-  void create(int n) { value = n; }
+  protected void create(int n) { value = n; }
 
   string format() { return sprintf("%d", value); }
 }
@@ -147,7 +147,7 @@ class imap_set
    * array ({ start, end }) */
   array items;
 
-  void create(array|void a)
+  protected void create(array|void a)
     {
       items = a;
     }

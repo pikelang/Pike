@@ -1171,10 +1171,11 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
   $$ = mknode(F_FOREACH,
 	      mknode(F_FOREACH_VAL_LVAL,
 		     mkapplynode(mkprgnode(string_split_iterator_program),
-				 mknode(F_ARG_LIST, $0,
-					mknode(F_ARG_LIST,
+				 mknestednodes(F_ARG_LIST,
+					       $0,
 					       mkintnode(split),
-					       mkintnode(1)))),
+					       mkintnode(1),
+					       NULL)),
 		     vars),
 	      $3);
 }
@@ -1221,10 +1222,10 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
   $$ = mknode(F_FOREACH,
 	      mknode(F_FOREACH_VAL_LVAL,
 		     mkapplynode(mkprgnode(string_split_iterator_program),
-				 mknode(F_ARG_LIST, $0,
-					mknode(F_ARG_LIST,
+				 mknestednodes(F_ARG_LIST, $0,
 					       mkintnode(split),
-					       mkintnode(1)))),
+					       mkintnode(1),
+					       NULL)),
 		     vars),
 	      $3);
 }

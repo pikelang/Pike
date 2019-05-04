@@ -10,10 +10,14 @@
 #include "lex.h"
 #include "program.h"
 
+/* #define SUPPORT_COMPILER_HANDLERS */
+
 extern struct program *reporter_program;
 extern struct program *compilation_env_program;
 extern struct program *compilation_program;
 extern struct object *compilation_environment;
+extern struct program *Annotation_program;
+extern struct object *Inherited_annotation;
 
 typedef int supporter_callback (void *, int);
 
@@ -42,7 +46,12 @@ struct Supporter
    * supporters. A supporter is linked onto this list when it is
    * unlinked from the current_supporter list. */
 
-  struct object *self;
+  struct svalue self;
+  /* CompilerEnvironment object for this supporter.
+   * NB: NOT reference counted!
+   * NB: Subtyped to the CompilerEnvironment inherit.
+   */
+
   supporter_callback *fun;
   void *data;
 
@@ -50,12 +59,19 @@ struct Supporter
   /* The top level program in the compilation unit. */
 };
 
+/**
+ * This is the storage for CompilationEnvironment.PikeCompiler.
+ *
+ * There is one of these for each translation unit being compiled.
+ */
 struct compilation
 {
   struct Supporter supporter;
   struct pike_string *prog;		/* String to compile. */
+#ifdef SUPPORT_COMPILER_HANDLERS
   struct object *handler;		/* error_handler */
   struct object *compat_handler;	/* compat_handler */
+#endif /* SUPPORT_COMPILER_HANDLERS */
   int major, minor;			/* Base compat version */
   struct program *target;		/* Program being compiled. */
   struct object *placeholder;
@@ -63,8 +79,6 @@ struct compilation
 
   struct program *p;			/* Compiled program or NULL. */
   struct lex lex;
-  int compilation_inherit;		/* Inherit in supporter->self containing
-					 * compilation_program. */
 
   struct svalue default_module;		/* predef:: */
   struct byte_buffer used_modules;		/* Stack of svalues with imported
@@ -78,6 +92,24 @@ struct compilation
 #endif
   struct mapping *resolve_cache;
 };
+
+/*
+ * The next level is struct program_state, which are held in
+ * a linked list stack rooted in the Pike_compiler variable.
+ * There is one such struct for each class being compiled,
+ * with the current class being in Pike_compiler.
+ *
+ * Cf compilation.h for its definition.
+ */
+
+/*
+ * The next level is struct compiler_frame, which are held in
+ * a linked list stack rooted in the field of the same name in
+ * struct program_state. They keep track of state for the
+ * current function.
+ *
+ * Cf las.h for its definition.
+ */
 
 #ifdef PIKE_DEBUG
 #define CHECK_COMPILER()	do {				\
@@ -175,8 +207,13 @@ node *low_pop_local_variables(int level, node *block);
 node *pop_local_variables(int level, node *block);
 void pop_compiler_frame(void);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
+PMOD_EXPORT struct program *Annotation_program;
+PMOD_EXPORT struct program *Implements_program;
+PMOD_EXPORT struct object *Inherited_annotation;
+void low_init_pike_compiler(void);
 void init_pike_compiler(void);
 void cleanup_pike_compiler(void);
+void low_cleanup_pike_compiler(void);
 /* Prototypes end here */
 
 #endif	/* !PIKE_COMPILER_H */

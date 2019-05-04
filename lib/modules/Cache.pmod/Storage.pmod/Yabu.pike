@@ -52,8 +52,8 @@ class Data {
     sync();
   }
   //m contains the metadata
-  void create(string key, Yabu.Table data_db, Yabu.Table metadata_db,
-              mapping m) {
+  protected void create(string key, Yabu.Table data_db, Yabu.Table metadata_db,
+			mapping m) {
     _key=key;
     db=data_db;
     metadb=metadata_db;
@@ -174,7 +174,7 @@ void delete(string key, void|int(0..1) hard) {
 }
 
 //!
-void create(string path) {
+protected void create(string path) {
   yabudb=Yabu.DB(path+".yabu","wcSQ"); //let's hope I got the mode right.
   db=yabudb["data"];
   metadb=yabudb["metadata"];

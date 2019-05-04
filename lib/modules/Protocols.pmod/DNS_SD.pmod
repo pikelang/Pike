@@ -100,8 +100,8 @@ class Service {
   //!                 80,                        //  port
   //!                 ({ "path=/forum/" })       //  TXT record
   //!               );
-  void create(string name, string service, string domain, int port,
-	      void|string|array(string) txt)
+  protected void create(string name, string service, string domain, int port,
+			void|string|array(string) txt)
   {
     if (name)
       name = clip_utf8_str(name, 63);

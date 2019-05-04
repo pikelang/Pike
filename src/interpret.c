@@ -30,6 +30,7 @@
 #include "bignum.h"
 #include "pike_types.h"
 #include "pikecode.h"
+#include "pike_compiler.h"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -556,7 +557,7 @@ void my_describe_inherit_structure(struct program *p)
 
 static struct inherit dummy_inherit
 #ifdef PIKE_DEBUG
-  = {-4711, -4711, -4711, -4711, (size_t) -4711, -4711, NULL, NULL, NULL}
+= {-4711, -4711, -4711, -4711, (size_t) -4711, -4711, NULL, NULL, NULL, NULL}
 #endif
 ;
 
@@ -2010,7 +2011,7 @@ static int num_pike_frames;
 
 PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
 {
-    free_object(X->current_object);
+    do_free_object(X->current_object);
     if(X->current_program)
         free_program(X->current_program);
     if(X->scope)
@@ -2045,6 +2046,7 @@ struct pike_frame *alloc_pike_frame(void)
       PIKE_MEM_RW_RANGE(&res->next, sizeof(void*));
       free_pike_frame = res->next;
       PIKE_MEM_WO_RANGE(&res->next, sizeof(void*));
+      memset(res, 0, sizeof(struct pike_frame));
       gc_init_marker(res);
       res->refs=0;
       add_ref(res);	/* For DMALLOC... */
@@ -2187,7 +2189,12 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
     struct pike_frame *new_frame = NULL;
 
     int type = (function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS));
-    if( o->prog != pike_trampoline_program && function->func.offset != -1 )
+    if( o->prog != pike_trampoline_program &&
+        !(
+#ifdef USE_VALGRIND
+          type & IDENTIFIER_PIKE_FUNCTION &&
+#endif
+          function->func.offset == -1 ))
     {
       switch( type )
       {
@@ -2951,6 +2958,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   int p_flags = prog->flags;
   LOW_JMP_BUF *saved_jmpbuf;
   int fun = -1;
+  int save_compiler_pass = Pike_compiler->compiler_pass;
 
   /* Search for a function that belongs to the current program,
    * since this is needed for opcodes that use INHERIT_FROM_*
@@ -2963,6 +2971,14 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     }
   }
 
+#ifdef PIKE_DEBUG
+  if (Pike_compiler->new_program != prog) {
+    Pike_fatal("Invalid use of apply_low_save_and_stupid().\n");
+  }
+#endif /* PIKE_DEBUG */
+
+  /* NB: add_to_*() are only valid in the first pass! */
+  Pike_compiler->compiler_pass = COMPILER_PASS_FIRST;
   if (use_dummy_reference) {
     /* No suitable function was found, so add one. */
     struct identifier dummy;
@@ -2970,7 +2986,6 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
       0, 0, ID_HIDDEN,
       PIKE_T_UNKNOWN, { 0, },
     };
-    /* FIXME: Assert that o->prog == Pike_compiler->new_program */
     copy_shared_string(dummy.name, empty_pike_string);
     copy_pike_type(dummy.type, function_type_string);
     dummy.filename_strno = -1;
@@ -3030,6 +3045,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   UNSETJMP(tmp);
 
   Pike_interpreter.catching_eval_jmpbuf = saved_jmpbuf;
+  Pike_compiler->compiler_pass = save_compiler_pass;
 
   if (use_dummy_reference) {
     /* Pop the dummy identifier. */
@@ -3246,10 +3262,11 @@ PMOD_EXPORT void apply(struct object *o, const char *fun, int args)
 
 PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
 {
-  if(TYPEOF(*s) == T_INT)
+  if(IS_UNDEFINED(s))
   {
+    /* FIXME: Why? cf LysLysKOM 22891031. */
     pop_n_elems(args);
-    push_int(0);
+    push_undefined();
   }else{
     ptrdiff_t expected_stack=Pike_sp-args+1 - Pike_interpreter.evaluator_stack;
 

@@ -1655,7 +1655,7 @@ test_do([[
       return 0;
     }
 
-    void create(void|array(int) suites)
+    protected void create(void|array(int) suites)
     {
       preferred_suites = filter(suites || ({
         TLS_psk_with_null_sha,

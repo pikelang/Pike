@@ -1932,7 +1932,8 @@ PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
 
 /** Remove all instances of an svalue from an array
 */
-static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
+PMOD_EXPORT struct array *subtract_array_svalue(struct array *a,
+						struct svalue *b)
 {
   size_t size = a->size;
   size_t from=0, to=0;
@@ -2106,7 +2107,7 @@ node *make_node_from_array(struct array *a)
   {
     debug_malloc_touch(a);
     for(e=0; e<a->size; e++)
-      if(ITEM(a)[e].u.integer != 0)
+      if(ITEM(a)[e].u.integer || SUBTYPEOF(ITEM(a)[e]))
 	break;
     if(e == a->size)
     {
@@ -2122,9 +2123,11 @@ node *make_node_from_array(struct array *a)
     {
       case BIT_INT:
 	for(e=1; e<a->size; e++)
-	  if(ITEM(a)[e].u.integer != ITEM(a)[0].u.integer)
+	  if((ITEM(a)[e].u.integer != ITEM(a)[0].u.integer) ||
+	     (SUBTYPEOF(ITEM(a)[e]) != SUBTYPEOF(ITEM(a)[0]))) {
 	    break;
-	if(e==a->size && ITEM(a)[0].u.integer==0)
+	  }
+	if(e==a->size && ITEM(a)[0].u.integer==0 && !SUBTYPEOF(ITEM(a)[0]))
 	  return mkefuncallnode("allocate",mkintnode(a->size));
 	break;
 
@@ -2273,7 +2276,8 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
   return a;
 }
 
-/** Add an element to the end of an array by resizing the array.
+/**
+ * Add an element to the end of an array by resizing the array.
  *
  * @param a the array to be appended
  * @param s the value to be added to the new element in the array
@@ -2286,7 +2290,8 @@ PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
   return a;
 }
 
-/** Automap assignments
+/**
+ * Automap assignments
  * This implements X[*] = ...[*]..
  * Assign elements in a at @level to elements from b at the same @level.
  * This will not actually modify any of the arrays, only change the
