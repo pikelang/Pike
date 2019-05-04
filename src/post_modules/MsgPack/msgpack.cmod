@@ -143,7 +143,7 @@ static int mpack_decode_string(struct svalue *dst, size_t len,
       /* 7bit */
       s = make_shared_binary_string((const char*)*_src, len);
     } else {
-      s = pike_string_utf8_decode(*_src, shift, dlen);
+      s = pike_string_utf8_decode(*_src, len, shift, dlen, 0);
     }
 
     SET_SVAL(*dst, PIKE_T_STRING, 0, string, s);

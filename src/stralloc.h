@@ -408,8 +408,9 @@ PMOD_EXPORT unsigned char *pike_string_utf8_encode(unsigned char *dst, const str
                                                    int extended);
 PMOD_EXPORT size_t pike_string_utf8_decode_length(const unsigned char *in, size_t inlen,
                                                   INT32 args, int extended, int *_shift);
-PMOD_EXPORT struct pike_string *pike_string_utf8_decode(const p_wchar0 *in_str,
-                                                        enum size_shift shift, ptrdiff_t len);
+PMOD_EXPORT struct pike_string *pike_string_utf8_decode(const p_wchar0 *in_str, ptrdiff_t in_len,
+                                                        enum size_shift shift, ptrdiff_t out_len,
+                                                        INT_TYPE extended);
 /* Prototypes end here */
 
 /* Note: Does not work 100% correctly with shift==2 strings. */

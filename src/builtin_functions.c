@@ -2373,7 +2373,8 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
     return;
   }
 
-  out = pike_string_utf8_decode(STR0(in), (enum size_shift)shift, len);
+
+  out = pike_string_utf8_decode(STR0(in), in->len, (enum size_shift)shift, len, extended);
 
   pop_n_elems(args);
 

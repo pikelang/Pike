@@ -3145,16 +3145,8 @@ PMOD_EXPORT size_t pike_string_utf8_decode_length(const unsigned char *in, size_
 
     in = (const unsigned char*)in8;
 
-    switch (7-elen) {
-    case 0: a |= in[0] & 0x80; /* FALLTHRU */
-    case 1: a |= in[1] & 0x80; /* FALLTHRU */
-    case 2: a |= in[2] & 0x80; /* FALLTHRU */
-    case 3: a |= in[3] & 0x80; /* FALLTHRU */
-    case 4: a |= in[4] & 0x80; /* FALLTHRU */
-    case 5: a |= in[5] & 0x80; /* FALLTHRU */
-    case 6: a |= in[6] & 0x80; break;
-    default: UNREACHABLE(break);
-    }
+    for (size_t i = 0; i < elen; i++)
+      a |= in[i] & 0x80;
 
     if (UNLIKELY(a)) {
       goto not_7bit;
@@ -3165,7 +3157,6 @@ PMOD_EXPORT size_t pike_string_utf8_decode_length(const unsigned char *in, size_
   *_shift = 0;
   return len;
 not_7bit:
-
   return pike_string_utf8_decode_length_slowpath(len, in, end, args,
                                                  extended, _shift);
 }
@@ -3260,7 +3251,7 @@ PMOD_EXPORT size_t pike_string_utf8_length(const struct pike_string *s, INT32 ar
         c = in[i];
         if (c <= 0x7f) continue;
         elen += div5_8bit(fls32(c) - 2);
-        if (extended & 2 && c < 0x10ffff)
+        if (extended & 2 && c <= 0x10ffff)
         {
           /* Encode with a surrogate pair. */
           elen += 2;
@@ -3287,21 +3278,23 @@ extended_error:
   UNREACHABLE(return 0);
 }
 
-PMOD_EXPORT struct pike_string *pike_string_utf8_decode(const p_wchar0 *in_str,
-                                                        enum size_shift shift, ptrdiff_t len) {
+PMOD_EXPORT struct pike_string *pike_string_utf8_decode(const p_wchar0 *src, ptrdiff_t in_len,
+                                                        enum size_shift shift, ptrdiff_t out_len,
+                                                        INT_TYPE extended) {
 
-  struct pike_string *out = begin_wide_shared_string(len, shift);
+  struct pike_string *out = begin_wide_shared_string(out_len, shift);
+  const p_wchar0 *src_end = src + in_len;
 
   switch (shift) {
     case eightbit: {
       p_wchar0 *out_str = STR0 (out);
 
-      for(ptrdiff_t j=0; j < len; j++) {
-	unsigned int c = *(in_str++);
+      for(ptrdiff_t j=0; j < out_len; j++) {
+	unsigned int c = *(src++);
 	/* NOTE: No tests here since we've already tested the string above. */
 	if (c & 0x80) {
 	  /* 11bit */
-	  unsigned int c2 = *(in_str++) & 0x3f;
+	  unsigned int c2 = *(src++) & 0x3f;
 	  c &= 0x1f;
 	  c = (c << 6) | c2;
 	}
@@ -3313,19 +3306,19 @@ PMOD_EXPORT struct pike_string *pike_string_utf8_decode(const p_wchar0 *in_str,
     case sixteenbit: {
       p_wchar1 *out_str = STR1 (out);
 
-      for(ptrdiff_t j=0; j < len; j++) {
-	unsigned int c = *(in_str++);
+      for(ptrdiff_t j=0; j < out_len; j++) {
+	unsigned int c = *(src++);
 	/* NOTE: No tests here since we've already tested the string above. */
 	if (c & 0x80) {
 	  if ((c & 0xe0) == 0xc0) {
 	    /* 11bit */
-	    unsigned int c2 = *(in_str++) & 0x3f;
+	    unsigned int c2 = *(src++) & 0x3f;
 	    c &= 0x1f;
 	    c = (c << 6) | c2;
 	  } else {
 	    /* 16bit */
-	    unsigned int c2 = *(in_str++) & 0x3f;
-	    unsigned int c3 = *(in_str++) & 0x3f;
+	    unsigned int c2 = *(src++) & 0x3f;
+	    unsigned int c3 = *(src++) & 0x3f;
 	    c &= 0x0f;
 	    c = (c << 12) | (c2 << 6) | c3;
 	  }
@@ -3338,8 +3331,8 @@ PMOD_EXPORT struct pike_string *pike_string_utf8_decode(const p_wchar0 *in_str,
     case thirtytwobit: {
       p_wchar2 *out_str = STR2 (out);
 
-      for(ptrdiff_t j=0; j < len; j++) {
-	unsigned int c = *(in_str++);
+      for(ptrdiff_t j=0; src < src_end; j++) {
+	unsigned int c = *(src++);
 	/* NOTE: No tests here since we've already tested the string above. */
 	if (c & 0x80) {
 	  int cont = 0;
@@ -3369,10 +3362,10 @@ PMOD_EXPORT struct pike_string *pike_string_utf8_decode(const p_wchar0 *in_str,
 	    c = 0;
 	  }
 	  while(cont--) {
-	    unsigned int c2 = *(in_str++) & 0x3f;
+	    unsigned int c2 = *(src++) & 0x3f;
 	    c = (c << 6) | c2;
 	  }
-	  if (/*(extended & 2) && */(c & 0xfc00) == 0xdc00) {
+	  if ((extended & 2) && (c & 0xfc00) == 0xdc00) {
 	    /* Low surrogate */
 	    c &= 0x3ff;
 	    c |= ((out_str[--j] & 0x3ff)<<10) + 0x10000;
@@ -3384,6 +3377,11 @@ PMOD_EXPORT struct pike_string *pike_string_utf8_decode(const p_wchar0 *in_str,
     }
     default: UNREACHABLE(break);
   }
+
+#ifdef PIKE_DEBUG
+  if (src_end != src)
+    Pike_fatal("utf8_to_string(): Length mismatch after decode. Did not use all input.\n");
+#endif
 
   out = low_end_shared_string(out);
 
@@ -3450,7 +3448,7 @@ PMOD_EXPORT unsigned char *pike_string_utf8_encode(unsigned char *dst, const str
           if (c <= 0x7f) {
             *dst++ = c;
             continue;
-          } else if (UNLIKELY(extended & 2 && c >= 0xffff && c < 0x10ffff)) {
+          } else if (UNLIKELY(extended & 2 && c > 0xffff && c <= 0x10ffff)) {
             /* Encode with surrogates. */
             c -= 0x10000;
             /* 0xd800 | (c>>10)
@@ -3467,6 +3465,7 @@ PMOD_EXPORT unsigned char *pike_string_utf8_encode(unsigned char *dst, const str
             *dst++ = 0xed;
             *dst++ = 0xb0 | ((c >> 6) & 0x3f);
             *dst++ = 0x80 | (c & 0x3f);
+            continue;
           }
 
           bytes = 1 + div5_8bit(fls32(c) - 2);
