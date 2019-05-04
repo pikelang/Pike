@@ -2053,6 +2053,24 @@ static void f_compilation_pop_type_attribute(INT32 args)
   push_int(1);
 }
 
+/*! @decl int(0..1) suppress_deprecation_warnings()
+ *!
+ *!   Allows to query whether (during an active compilation) deprecation
+ *!   warnings are supposed to be suppressed.
+ *!
+ *! @returns
+ *!   @expr{1@} if deprecation warnings should be suppressed,
+ *!   @expr{0@} otherwise.
+ */
+static void f_compilation_suppress_deprecation_warnings(INT32 args)
+{
+    struct compilation *c = THIS_COMPILATION;
+
+    pop_n_elems(args);
+    push_int(Pike_compiler->compiler_pass != COMPILER_PASS_LAST ||
+             c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS);
+}
+
 /*! @decl int(0..1) push_type_attribute(string attribute, type a, type b)
  *!
  *!   Type attribute handler.
@@ -2784,6 +2802,10 @@ static void compile_compiler(void)
 
   ADD_FUNCTION("_sprintf", f_compilation__sprintf,
 	       tFunc(tInt tOr(tMap(tStr, tMix), tVoid), tStr), ID_PROTECTED);
+
+  ADD_FUNCTION("suppress_deprecation_warnings",
+               f_compilation_suppress_deprecation_warnings,
+               tFunc(tVoid, tInt), 0);
 
   start_new_program();
   Pike_compiler->new_program->id =
