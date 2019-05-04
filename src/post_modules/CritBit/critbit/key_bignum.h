@@ -3,6 +3,7 @@
 #include "bitvector.h"
 #include "pike_int_types.h"
 #include "bignum.h"
+#include "critbit_machine.h"
 
 typedef struct object * CB_NAME(string);
 typedef mp_limb_t CB_NAME(char);
@@ -16,6 +17,16 @@ typedef mp_limb_t CB_NAME(char);
 # undef cb_char
 #endif
 #define cb_char CB_NAME(char)
+
+#ifdef PIKE_GMP_LIMB_BITS_INVALID
+/* Attempt to repair the header file... */
+#undef GMP_LIMB_BITS
+#define GMP_LIMB_BITS (SIZEOF_MP_LIMB_T * CHAR_BIT)
+#ifdef PIKE_GMP_NUMB_BITS
+#undef GMP_NUMB_BITS
+#define GMP_NUMB_BITS PIKE_GMP_NUMB_BITS
+#endif /* PIKE_GMP_NUMB_BITS */
+#endif /* PIKE_GMP_LIMB_BITS_INVALID */
 
 static inline unsigned INT32 gclz(mp_limb_t a) {
 #if GMP_NUMB_BITS == 64
