@@ -265,10 +265,10 @@ idea_crypt(const unsigned INT16 *key,
 
 /*-------------------------------------------------------------*/
 
-void idea_crypt_blocks(struct idea_ctx *ctx, int len,
+void idea_crypt_blocks(struct idea_ctx *ctx, size_t len,
 		       unsigned char *to, unsigned char *from)
 {
-  ptrdiff_t i;
+  size_t i;
   for( i=0 ; i<len ; i+=IDEA_BLOCK_SIZE )
     idea_crypt((const unsigned INT16 *)ctx->ctx,
 	       (unsigned INT8 *)to+i, (unsigned INT8 *)from+i);

@@ -5857,7 +5857,7 @@ static void camellia_set_decrypt_key(void *ctx, unsigned len,
   camellia_ctx->keylen = len;
 }
 
-static void camellia_crypt(struct camellia_ctx *ctx, unsigned length,
+static void camellia_crypt(struct camellia_ctx *ctx, size_t length,
 			   uint8_t *dst, const uint8_t *src)
 {
   switch(ctx->keylen) {
