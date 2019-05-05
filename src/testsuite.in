@@ -12976,6 +12976,8 @@ test_search4("\345677777-------------------")
 test_search4("kapit\3333l>")
 test_search4("kapit\3333333l>")
 
+test_eq(search((string)({123456})*390, " "*199), -1);
+
 // - set_priority
 // - set_weak_flag
 // - setegid
