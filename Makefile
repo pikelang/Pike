@@ -160,10 +160,10 @@ _make_in_builddir: configure
 	  for target in $$metatarget; do \
 	    echo Making $$target in "$$builddir"; \
 	    rm -f remake; \
-	    $${MAKE} "MAKE=$${MAKE}" "MAKE_PARALLEL=$(MAKE_PARALLEL)" "EXPORT_NAME=$(EXPORT_NAME)" $$target || { \
+	    $${MAKE} $(MAKE_PARALLEL) "MAKE=$${MAKE}" "EXPORT_NAME=$(EXPORT_NAME)" $$target || { \
 	      res=$$?; \
 	      if test -f remake; then \
-		$${MAKE} "MAKE=$${MAKE}" "MAKE_PARALLEL=$(MAKE_PARALLEL)" "EXPORT_NAME=$(EXPORT_NAME)" $$target || \
+		$${MAKE} $(MAKE_PARALLEL) "MAKE=$${MAKE}" "EXPORT_NAME=$(EXPORT_NAME)" $$target || \
 		  exit $$?; \
 	      else \
 		exit $$res; \
@@ -419,10 +419,10 @@ depend:
 
 _depend: configure
 	-@cd "$(BUILDDIR)" && \
-	$${MAKE} "MAKE=$${MAKE}" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend || { \
+	$${MAKE} $(MAKE_PARALLEL) "MAKE=$${MAKE}" depend || { \
 	  res=$$?; \
 	  if test -f remake; then \
-	    $${MAKE} "MAKE=$${MAKE}" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend; \
+	    $${MAKE} $(MAKE_PARALLEL) "MAKE=$${MAKE}" depend; \
 	  else \
 	    exit $$res; \
 	  fi; \
