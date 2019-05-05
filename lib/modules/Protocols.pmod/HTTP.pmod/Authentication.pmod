@@ -88,14 +88,12 @@ class DigestMD5
   //! Function intended to be overloaded that returns a future that
   //! will resolved to the given users hashed password. Overloading
   //! this function will prevent @[get_password] from being called.
-  Concurrent.Future get_hashed_password(string user, string nonce, string cnonce) {
+  Concurrent.Future get_hashed_password(string user) {
     Concurrent.Promise ret = Concurrent.Promise();
     get_password(user)->then(lambda(string password) {
         if( !password )
           ret->failure( sprintf("No user %O", user) );
         else {
-          // algorithm MD5-sess
-          // return MD5(MD5(username, realm, password), nonce, cnonce);
           ret->success( hash(user, realm, password) );
         }
       },
@@ -187,9 +185,13 @@ class DigestMD5
       return Concurrent.reject("Wrong nonce used.");
 
     Concurrent.Promise p = Concurrent.Promise();
-    get_hashed_password(username, nonce, resp->cnonce)->then(lambda(string ha1) {
+    get_hashed_password(username)->then(lambda(string ha1) {
         if( !ha1 )
           return p->failure("Failed to resolve hashed password.");
+
+        if( algorithm == "MD5-sess" ) {
+          ha1 = hash(ha1, nonce, resp->cnonce);
+        }
 
         // on qop = auth-int
         // MD5(method, digestURI, MD5(entityBody));
@@ -221,4 +223,12 @@ class DigestMD5
 
     return p->future();
   }
+}
+
+//! Implements the session version "MD5-sess" of the MD5 HTTP Digest
+//! authentication. Used identically to @[DigestMD5].
+class DigestMD5sess
+{
+  inherit DigestMD5;
+  constant algorithm = "MD5-sess";
 }
