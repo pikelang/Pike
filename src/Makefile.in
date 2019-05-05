@@ -1210,8 +1210,9 @@ language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCD
 $(SRCDIR)/language.c_src: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
 	cd $(SRCDIR) && $(YACC) $(YFLAGS) language.yacc
-	mv $(SRCDIR)/y.tab.c $(SRCDIR)/language.c_src
-	mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
+	@mv $(SRCDIR)/y.tab.c $(SRCDIR)/language.c_src
+	@mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
+	@touch $(SRCDIR)/language.h_src
 
 $(SRCDIR)/language.h_src: $(SRCDIR)/language.c_src
 	@
