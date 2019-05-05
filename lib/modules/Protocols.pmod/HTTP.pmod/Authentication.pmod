@@ -33,27 +33,48 @@
 //!       });
 //!   return authenticated;
 //! }
-//! @endexample
-class DigestMD5 (string realm)
+class DigestMD5
 {
 
-  // FIXME: We have no bookkeeping of server generated nonces. Idea:
-  // sign them so we don't have to keep track of them. Send signature
-  // in opaque value.
+  string realm;
+  protected Crypto.MAC.State hmac;
+
+  //! @param realm
+  //!   The realm to be authenticated.
+  //!
+  //! @param key
+  //!   If this key is set all challanges are verified against
+  //!   signature using this key. The key can be any 8-bit string, but
+  //!   should be the same across multiple instances on the same
+  //!   domain, and over time.
+  protected void create(string(8bit) realm, void|string(8bit) key) {
+    this::realm = realm;
+    if( key )
+      hmac = Crypto.SHA1.HMAC(key);
+  }
 
   constant algorithm = "MD5";
-  string hash(string ... args) {
+  string(7bit) hash(string(8bit) ... args) {
     return sprintf("%032x", Crypto.MD5.hash( args * ":" ));
+  }
+
+  protected string(7bit) make_mac(string nonce) {
+    return MIME.encode_base64(hmac(nonce))[..<1];
   }
 
   //! Creates a challenge header value for the WWW-Authenticate header
   //! in 401 responses.
-  string challenge() {
+  string(7bit) challenge() {
     // MD5 has a digest size of 16 bytes. Go for the nearest multiple
     // of 3 above to utilize base64 lenght fully.
-    return sprintf("Digest realm=\"%s\", qop=\"auth\", "
-                   "nonce=\"%s\", algorithm=" + algorithm,
-                   realm, MIME.encode_base64(random_string(18)));
+    string nonce = MIME.encode_base64(random_string(18));
+    string ret = sprintf("Digest realm=\"%s\", qop=\"auth\", "
+                         "nonce=\"%s\", algorithm=" + algorithm,
+                         realm, nonce);
+    if( hmac )
+      ret += sprintf(", opaque=\"%s\"", make_mac(nonce));
+
+    return ret;
   }
 
   //! Function intended to be overloaded that returns a future that
@@ -123,14 +144,14 @@ class DigestMD5 (string realm)
 
   //! Authenticate a request.
   //!
-  //! @param string hdr
+  //! @param hdr
   //!   The value of the Authorization header. Zero is acceptable, but
   //!   will produce an unconditional rejection.
   //!
-  //! @param string method
+  //! @param method
   //!   This is the HTTP method used, typically "GET" or "POST".
   //!
-  //! @param string path
+  //! @param path
   //!   This is the path of the request.
   Concurrent.Future authenticate(string hdr, string method, string path) {
 
@@ -159,6 +180,11 @@ class DigestMD5 (string realm)
     string username = resp->username;
     if( !username )
       return Concurrent.reject("No username key.");
+
+    // A more sophisticated implementation would do this check after
+    // user lookup and have the server respond with stale="true".
+    if( hmac && resp->opaque && make_mac(nonce) != resp->opaque )
+      return Concurrent.reject("Wrong nonce used.");
 
     Concurrent.Promise p = Concurrent.Promise();
     get_hashed_password(username, nonce, resp->cnonce)->then(lambda(string ha1) {
