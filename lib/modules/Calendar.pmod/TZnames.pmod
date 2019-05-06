@@ -923,7 +923,6 @@ mapping abbr2zones =
    "SST": ({"Pacific/Pago_Pago"}),
    "TBMT": ({"Asia/Tbilisi"}),
    "TMT": ({"Asia/Tehran", "Europe/Tallinn"}),
-   "UCT": ({"Etc/UCT"}),
    "UTC": ({"Etc/UTC"}),
    "WAST": ({"Africa/Ndjamena"}),
    "WAT": ({"Africa/Bangui", "Africa/Brazzaville", "Africa/Douala",
