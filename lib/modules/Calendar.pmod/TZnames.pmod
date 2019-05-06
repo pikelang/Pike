@@ -2518,9 +2518,6 @@ mapping abbr2zones =
      "Asia/Tehran",
      "Europe/Tallinn",
    }),
-   "UCT": ({
-     "Etc/UCT",
-   }),
    "UTC": ({
      "Etc/UTC",
    }),
