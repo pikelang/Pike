@@ -5848,34 +5848,6 @@ void compiler_do_inherit(node *n,
     inherit_offset = Pike_compiler->num_inherits + 1;
   }
 
-  if ((n->token == F_APPLY) && (CAR(n)->token == F_CONSTANT) &&
-      (TYPEOF(CAR(n)->u.sval) == T_FUNCTION) &&
-      (SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) &&
-      (CAR(n)->u.sval.u.efun->function == debug_f_aggregate)) {
-    /* Disambiguate multiple inherit ::-reference. */
-    node *arg;
-    while(1) {
-      while ((arg = CDR(n))) {
-	n = arg;
-	if (n->token != F_ARG_LIST) goto found;
-      }
-      /* Paranoia. */
-      if ((arg = CAR(n))) {
-	n = arg;
-	continue;
-      }
-      /* FIXME: Ought to go up a level and try the car there...
-       *        But as this code probably won't be reached, we
-       *        just fail.
-       */
-      yyerror("Unable to inherit");
-      return;
-    }
-  found:
-    /* NB: The traditional C grammar requires a statement after a label. */
-    ;
-  }
-
   fix_type_field(n);
 
   if (!pike_types_le(n->type, inheritable_type_string) &&
