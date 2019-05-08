@@ -68,7 +68,7 @@ protected typedef mapping(string:R|mapping(string:R)) RuleMap;
 protected object noop = class {
   string source;
   array split2() { return 0; }
-  string _sprintf(int t) { return "noop()"; }
+  protected string _sprintf(int t) { return "noop()"; }
 }();
 
 protected function make_regexp(R|string regex, void|int opts)
@@ -224,7 +224,7 @@ protected class R
     return ret;
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     switch (t)
     {
@@ -240,7 +240,7 @@ protected class R
     }
   }
 
-  string cast(string how)
+  protected string cast(string how)
   {
     return src;
   }
