@@ -1,3 +1,5 @@
 /configure
 /dependencies
 /msgpack.c
+/stamp-h
+/stamp-h.in
