@@ -938,6 +938,8 @@ pushdef([AC_OUTPUT],
 [
   AC_SET_MAKE
 
+  AC_CONFIG_FILES([stamp-h], [echo foo >stamp-h])
+
   PMOD_TARGETS=`echo $srcdir/*.cmod | sed -e "s/\.cmod/\.c/g" | sed -e "s|$srcdir/|\\$(SRCDIR)/|g"`
   test "$PMOD_TARGETS" = '$(SRCDIR)/*.c' && PMOD_TARGETS=
   AC_SUBST(PMOD_TARGETS)
@@ -1023,6 +1025,20 @@ pushdef([AC_OUTPUT],
 
   AC_SUBST_FILE(make_variables)
   make_variables=make_variables
+
+  ACCONFIG_H=""
+  if test -f "$srcdir/acconfig.h"; then
+    ACCONFIG_H='$(SRCDIR)/acconfig.h'
+  fi
+  AC_SUBST(ACCONFIG_H)
+
+  CONFIG_HEADERS_IN=""
+  if test "x$CONFIG_HEADERS" = "x"; then :; else
+    for h in $CONFIG_HEADERS; do
+      CONFIG_HEADERS_IN="$CONFIG_HEADERS_IN \$(SRCDIR)/$h.in"
+    done
+  fi
+  AC_SUBST(CONFIG_HEADERS_IN)
 
   dnl Assert that there are configure-scripts in the subdirectories.
   if test "x$subdirs" != x; then

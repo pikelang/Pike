@@ -140,6 +140,12 @@ propagated_variables:
 make_variables: $(make_variables_in) config.status propagated_variables
 	CONFIG_FILES="make_variables:$(make_variables_in)" CONFIG_HEADERS="" ./config.status
 
+$(CONFIG_HEADERS_IN) dummy_config_header_in: $(SRCDIR)/stamp-h.in
+	@if [ -f $@ ]; then :; else \
+	  rm $(SRCDIR)/stamp-h.in; \
+	  $(MAKE) $(SRCDIR)/stamp-h.in; \
+	fi
+
 # $(CONFIG_HEADERS) should exist but they need not be more fresh than
 # config.status since it only rewrites them if they actually change,
 # but they do need to be regenerated if the configure script has changed.
@@ -147,15 +153,16 @@ make_variables: $(make_variables_in) config.status propagated_variables
 # regenerated the headers last.
 $(CONFIG_HEADERS) dummy_config_header: stamp-h
 
-stamp-h: config.status
+stamp-h: config.status $(SRCDIR)stamp-h.in $(CONFIG_HEADERS_IN)
 	@if [ x"$(CONFIG_HEADERS)" != x ]; then \
 	  echo CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status; \
 	  CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status; \
 	fi; \
 	touch stamp-h
 
-$(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
+$(SRCDIR)/configure $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4 $(ACCONFIG_H)
 	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig .
+	echo foo > $(SRCDIR)/stamp-h.in
 
 config.status: $(SRCDIR)/configure propagated_variables
 	./config.status --recheck
