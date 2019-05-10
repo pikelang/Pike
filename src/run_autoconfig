@@ -136,7 +136,7 @@ IFS=''
 	cd "$dir"
 	if grep AC_CONFIG_HEADER configure.in >/dev/null; then
 	  echo "Running $autoheader in $dir"
-	  "$autoheader" $ah_args && echo foo >stamp-h.in
+	  "$autoheader" $ah_args
 	fi
 	if grep AC_INIT configure.in >/dev/null; then
 	  echo "Running $autoconf in $dir"
@@ -150,6 +150,7 @@ IFS=''
 	    test -d "$d" && rm -rf "$d"
 	  done
 	fi
+	echo foo >stamp-h.in
       ) &
       num=`expr $num + 1`
       if [ $num -ge 12 ] ; then
