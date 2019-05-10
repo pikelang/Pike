@@ -153,7 +153,7 @@ $(CONFIG_HEADERS_IN) dummy_config_header_in: $(SRCDIR)/stamp-h.in
 # regenerated the headers last.
 $(CONFIG_HEADERS) dummy_config_header: stamp-h
 
-stamp-h: config.status $(SRCDIR)stamp-h.in $(CONFIG_HEADERS_IN)
+stamp-h: config.status $(SRCDIR)/stamp-h.in $(CONFIG_HEADERS_IN)
 	@if [ x"$(CONFIG_HEADERS)" != x ]; then \
 	  echo CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status; \
 	  CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status; \
