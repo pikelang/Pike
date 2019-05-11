@@ -160,6 +160,8 @@ stamp-h: config.status $(SRCDIR)/stamp-h.in $(CONFIG_HEADERS_IN)
 	fi; \
 	touch stamp-h
 
+$(OBJS) dummy_obj: $(CONFIG_HEADERS)
+
 $(SRCDIR)/configure $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4 $(ACCONFIG_H)
 	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig .
 	echo foo > $(SRCDIR)/stamp-h.in
