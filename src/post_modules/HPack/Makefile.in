@@ -4,7 +4,6 @@ VPATH=@srcdir@
 OBJS = hpack.o
 
 MODULE_LDFLAGS = @LDFLAGS@ @LIBS@
-CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 

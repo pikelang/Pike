@@ -4,8 +4,6 @@ OBJS=system.o syslog.o passwords.o nt.o memory.o
 MODULE_LDFLAGS=@LIBS@
 SRC_TARGETS=$(SRCDIR)/add-errnos.h
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @static_module_makefile@
 
 $(SRCDIR)/add-errnos.h : $(SRCDIR)/errnos.list $(SRCDIR)/mkerrnos.sed

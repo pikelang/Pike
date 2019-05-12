@@ -4,7 +4,6 @@ VPATH=@srcdir@
 OBJS = nettle.o hash.o mac.o aead.o cipher.o crypt_md5.o nt.o hogweed.o @IDEA_OBJ@
 
 MODULE_LDFLAGS = @LDFLAGS@ @LIBS@
-CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 

@@ -5,8 +5,6 @@ OBJS=accept_and_parse.o util.o cache.o requestobject.o log.o timeout.o
 MODNAME=HTTPAccept
 MODULE_LDFLAGS=@LDFLAGS@
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @SET_MAKE@
 
 @dynamic_module_makefile@

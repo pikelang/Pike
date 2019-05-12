@@ -4,8 +4,6 @@ OBJS=charsetmod.o iso2022.o tables.o misc.o
 SRC_TARGETS=$(SRCDIR)/gb18030.h $(SRCDIR)/gbk_tables.h $(SRCDIR)/jisx0213_tables.h
 MODULE_LDFLAGS=@LDFLAGS@
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 
 charsetmod.o: $(SRCDIR)/gb18030.h $(SRCDIR)/charsetmod.c

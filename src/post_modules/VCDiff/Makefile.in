@@ -4,8 +4,6 @@ MODNAME=VCDiff
 OBJS=vcdiff.o @CXX_OBJS@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 
 vcdiff_wrapper.o: $(SRCDIR)/vcdiff_wrapper.cc $(SRCDIR)/vcdiff_wrapper.h

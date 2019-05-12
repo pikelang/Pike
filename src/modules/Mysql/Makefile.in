@@ -3,8 +3,6 @@ VPATH=@srcdir@
 OBJS=mysql.o result.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 
 mysql.o: $(SRCDIR)/mysql.c

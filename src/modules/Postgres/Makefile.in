@@ -6,8 +6,6 @@ OBJS=postgres.o pgresult.o
 POSTGRES_SUPPORTED=@POSTGRES_SUPPORTED@
 MODULE_SPOTLESS_EXTRA=pgres_config.h
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 
 postgres.o: $(SRCDIR)/postgres.c

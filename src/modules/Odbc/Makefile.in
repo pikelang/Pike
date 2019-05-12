@@ -4,8 +4,6 @@ VPATH=@srcdir@
 OBJS=odbc.o odbc_result.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 
 odbc.o: $(SRCDIR)/odbc.c

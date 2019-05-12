@@ -2,7 +2,6 @@
 VPATH=@srcdir@
 OBJS=unicode_module.o normalize.o split.o buffer.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
-CONFIG_HEADERS=@CONFIG_HEADERS@
 SRC_TARGETS=$(SRCDIR)/wordbits.h \
 	$(SRCDIR)/decompositions.h $(SRCDIR)/canonicals.h \
 	$(SRCDIR)/uversion.h $(SRCDIR)/rtl.h

@@ -8,8 +8,6 @@ MODULE_PMOD_IN=
 MODULE_WRAPPER_PREFIX=_
 OBJS=inotify.o
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 
 inotify.o : $(SRCDIR)/inotify.c

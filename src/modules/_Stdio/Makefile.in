@@ -5,8 +5,6 @@ MODULE_LDFLAGS=@LIBS@
 MODULE_TESTS=local_tests
 PRECOMPILER_ARGS=--api=3 --base=''
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @static_module_makefile@
 
 buffer.o: $(SRCDIR)/buffer.c

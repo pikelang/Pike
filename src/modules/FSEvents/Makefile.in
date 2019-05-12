@@ -7,8 +7,6 @@ AUTODOC_SRC_IN=
 MODULE_PMOD_IN=
 MODULE_WRAPPER_PREFIX=_
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 OBJS=fsevents.o
 
 @dynamic_module_makefile@
