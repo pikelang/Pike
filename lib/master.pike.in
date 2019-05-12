@@ -2544,6 +2544,18 @@ protected class ZERO_TYPE {};
 
 protected object Unicode;
 
+void try_issue_deprecation_warning(object compilation_handler)
+{
+  if (object active_compiler = get_active_compiler()) {
+    if (!active_compiler->suppress_deprecation_warnings()) {
+      call_compile_warning_lineno(compilation_handler,
+                                  active_compiler->current_file,
+                                  active_compiler->current_line,
+                                  "Using a deprecated value.");
+    }
+  }
+}
+
 //! Module node representing a single directory.
 //!
 //! @seealso
@@ -2556,6 +2568,7 @@ class dirnode (string dirname, object|void compilation_handler,
   // allow a module to deny its own existence with `!.
   mixed module;
   mapping(string:mixed) cache=([]);
+  mapping(string:int(0..1)) deprecated_cache=([]);
 
   // Maps a base name like "Bar" to an ordered array of file paths,
   // e.g. ({ "/lib/Foo.pmod/Bar.pmod", "/lib/Foo.pmod/Bar.so" }).
@@ -2661,6 +2674,7 @@ class dirnode (string dirname, object|void compilation_handler,
 	   * this).
 	   */
 	  cache=([]);
+          deprecated_cache=([]);
 	  _cache_full=0;
 	}
 	resolv_debug("dirnode(%O)->module_checker()->`!() => %s\n",
@@ -2804,9 +2818,25 @@ class dirnode (string dirname, object|void compilation_handler,
       mixed o;
       if(!undefinedp(o=module[index]))
       {
+        mixed t;
+
 	DEC_RESOLV_MSG_DEPTH();
 	resolv_debug ("dirnode(%O)->ind(%O) => found %O\n",
 		      dirname, index, o);
+
+        // TODO:: The exception seems to be Tools.Standalone.module, which
+        // neither fulfills functionp(), objectp(), nor programp(), though
+        // typeof_identifier() works on it directly.
+        // We should thus find a way for detecting things to directly use
+        // typeof_identifier on without calling it inside of catch.
+        if (objectp(module))
+          t = typeof_identifier(object_program(module), index);
+
+        if (t && deprecated_typep(t))
+        {
+          deprecated_cache[index] = 1;
+          try_issue_deprecation_warning(compilation_handler);
+        }
 	return o;
       }
       resolv_debug ("dirnode(%O)->ind(%O) => not found in module\n",
@@ -2834,6 +2864,7 @@ class dirnode (string dirname, object|void compilation_handler,
   protected mixed `[](string index)
   {
     mixed ret;
+
 #ifdef MODULE_TRACE
     werror("%*nDirnode(%O) cache[%O] ?????\n",
 	   sizeof(backtrace()),dirname,index);
@@ -2845,7 +2876,12 @@ class dirnode (string dirname, object|void compilation_handler,
 	     sizeof(backtrace()),dirname,index, ret,
 	     (ret != ZERO_TYPE)?"":" (zero_type)");
 #endif
-      if (ret != ZERO_TYPE) return ret;
+      if (ret != ZERO_TYPE)
+      {
+        if (deprecated_cache[index])
+          try_issue_deprecation_warning(compilation_handler);
+        return ret;
+      }
 #ifdef MODULE_TRACE
       werror("%*nDirnode(%O) ZERO_TYPE!\n",
 	     sizeof(backtrace()),dirname);
@@ -2871,7 +2907,7 @@ class dirnode (string dirname, object|void compilation_handler,
   protected mixed `->(string index)
   {
     if( (< "dirname", "name", "is_resolv_dirnode",
-           "module", "delete_value" >)[index] )
+           "module", "delete_value", "identifier_deprecatedp" >)[index] )
       return ::`->(index);
     return `[](index);
   }
@@ -2887,6 +2923,14 @@ class dirnode (string dirname, object|void compilation_handler,
 			    call_describe_error(err));
     }
     return UNDEFINED;
+  }
+
+  int(0..1) identifier_deprecatedp(string index)
+  {
+    if (has_index(cache, index) || deprecated_cache[index])
+      return deprecated_cache[index];
+    safe_index(index);
+    return deprecated_cache[index];
   }
 
   protected int(0..1) _cache_full;
@@ -2934,6 +2978,7 @@ class dirnode (string dirname, object|void compilation_handler,
   {
     if (string name = search (cache, val)) {
       m_delete (cache, name);
+      m_delete (deprecated_cache, name);
       _cache_full = 0;
     }
   }
@@ -2962,6 +3007,7 @@ class joinnode (array(object|mapping) joined_modules,
   constant is_resolv_joinnode = 1;
 
   mapping(string:mixed) cache=([]);
+  mapping(string:int(0..1)) deprecated_cache=([]);
 
   protected string _sprintf(int as)
   {
@@ -3013,6 +3059,7 @@ class joinnode (array(object|mapping) joined_modules,
 	joined_modules[0] == node) return;
     joined_modules = ({ node }) + (joined_modules - ({ node }));
     cache = ([]);
+    deprecated_cache = ([]);
   }
 
   void rem_path(string path)
@@ -3024,6 +3071,7 @@ class joinnode (array(object|mapping) joined_modules,
 				(node->dirname != path);
 			    });
     cache = ([]);
+    deprecated_cache = ([]);
   }
 
   protected mixed ind(string index)
@@ -3031,6 +3079,7 @@ class joinnode (array(object|mapping) joined_modules,
     resolv_debug ("joinnode(%O)->ind(%O)\n", joined_modules, index);
     INC_RESOLV_MSG_DEPTH();
 
+    int(0..1) do_depwarn = 0;
     array(mixed) res = ({});
     foreach(joined_modules, object|mapping o)
     {
@@ -3041,12 +3090,26 @@ class joinnode (array(object|mapping) joined_modules,
         {
 	  // Only join directorynodes (or joinnodes).
 	  res += ({ ret });
+          if (o->identifier_deprecatedp(index))
+            do_depwarn = 1;
 	} else {
 	  DEC_RESOLV_MSG_DEPTH();
 	  resolv_debug ("joinnode(%O)->ind(%O) => found %O\n",
 			joined_modules, index, ret);
+
+          if (objectp(o) && o->identifier_deprecatedp(index))
+          {
+            deprecated_cache[index] = 1;
+            try_issue_deprecation_warning(compilation_handler);
+          }
 	  return (ret);
 	}
+
+        if (do_depwarn)
+        {
+            deprecated_cache[index] = 1;
+            try_issue_deprecation_warning(compilation_handler);
+        }
       }
     }
 
@@ -3083,8 +3146,11 @@ class joinnode (array(object|mapping) joined_modules,
   protected mixed `[](string index)
   {
     mixed ret;
+
     if (!undefinedp(ret = cache[index])) {
       if (ret != ZERO_TYPE) {
+        if (deprecated_cache[index])
+          try_issue_deprecation_warning(compilation_handler);
 	return ret;
       }
       return UNDEFINED;
@@ -3107,9 +3173,17 @@ class joinnode (array(object|mapping) joined_modules,
   {
     if( (< "joined_modules", "fallback_module", "name", "is_resolv_joinnode",
            "add_path", "rem_path", "delete_value", "_encode",
-           "_decode" >)[index] )
+           "_decode", "identifier_deprecatedp" >)[index] )
       return ::`->(index);
     return `[](index);
+  }
+
+  int(0..1) identifier_deprecatedp(string index)
+  {
+    if (has_index(cache, index) || deprecated_cache[index])
+      return deprecated_cache[index];
+    `[](index);
+    return deprecated_cache[index];
   }
 
   protected int _cache_full;
@@ -3156,7 +3230,10 @@ class joinnode (array(object|mapping) joined_modules,
   void delete_value (mixed val)
   {
     if (string name = search (cache, val))
+    {
       m_delete (cache, name);
+      m_delete (deprecated_cache, name);
+    }
     for (int i = 0; i < sizeof (joined_modules); i++) {
       object|mapping|program o = joined_modules[i];
       if (o == val) {
