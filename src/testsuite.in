@@ -15052,19 +15052,6 @@ test_tests([[
     report_test(res, !makefile_in,
 		"Makefile.in missing in directory %O.\n", dir);
 
-    if (sscanf(configure_script, "%*sAC_CONFIG_HEADER(%s)", string config_h)) {
-      // acconfig.h should exist.
-      report_test(res, !Stdio.is_file(combine_path(srcdir, dir, "acconfig.h")),
-		  "acconfig.h missing in directory %s.\n", dir);
-      // config_h + ".in" should exist.
-      report_test(res, !Stdio.is_file(combine_path(srcdir, dir, config_h + ".in")),
-		  "%s missing in directory %s.\n", config_h + ".in", dir);
-      // The Makefile should regenerate config_h et al.
-      report_test(res,
-		  !has_value(makefile_in||"", "CONFIG_HEADERS=@CONFIG_HEADERS@"),
-		  "Makefile.in in directory %s is missing CONFIG_HEADERS.\n", dir);
-    }
-
     foreach(get_dir(combine_path(srcdir, dir)), string f) {
       if (has_prefix(f, ".#")) continue;	// Auto-save file.
       if (has_suffix(f, ".cmod")) {
