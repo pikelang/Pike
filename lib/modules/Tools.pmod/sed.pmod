@@ -125,9 +125,9 @@ protected array scan_for_linenumber(string cmd,
 }
 
 //!
-string|array `()(string|array(string) commands,
-		 string|array(string) data,
-		 void|int suppress)
+protected string|array `()(string|array(string) commands,
+			   string|array(string) data,
+			   void|int suppress)
 {
    int start,stop;
    string div,what,with,inflags;
