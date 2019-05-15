@@ -270,6 +270,9 @@ int safe_bind(Stdio.UDP udp, string|int port, string|void device)
 #if constant(System.EADDRINUSE)
   if (errno() == System.EADDRINUSE) return 0;
 #endif
+#if constant(System.EACCES)
+  if (errno() == System.EACCES) return 0;	// Privileged port.
+#endif
 #if constant(System.WSAEACCES)
   if (errno() == System.WSAEACCES) return 0;
 #endif
