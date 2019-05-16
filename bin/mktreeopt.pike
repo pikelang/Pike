@@ -1321,14 +1321,14 @@ string generate_extras_match(array(object(node)) rule_set, string indent)
     werror(do_indent(sprintf("extra_set: %O\n", extra_set), indent));
   }
 
-  if (sizeof(no_extras)) {
-    res += generate_match(no_extras, indent);
-  }
-
   foreach(sort(indices(extra_set)), string code) {
     res += indent + sprintf("if ((%s)) {\n", code);
     res += generate_match(extra_set[code], indent + "  ");
     res += indent + "}\n";
+  }
+
+  if (sizeof(no_extras)) {
+    res += generate_match(no_extras, indent);
   }
 
   return res;
