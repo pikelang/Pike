@@ -312,6 +312,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       string(8bit) session_id;
       int cipher_len;
+      array(int) client_cipher_suites;
       array(int) cipher_suites;
       array(int) compression_methods;
       array(int(16bit)) versions;
@@ -342,7 +343,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       COND_FATAL(cipher_len & 1, ALERT_unexpected_message,
                  "Invalid client_hello.\n");
 
-      cipher_suites = input->read_ints(cipher_len/2, 2);
+      client_cipher_suites = cipher_suites = input->read_ints(cipher_len/2, 2);
 
       compression_methods = input->read_int_array(1, 1);
       SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
@@ -788,12 +789,18 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
         }
       }
 
-      // No overlapping cipher suites, or obsolete cipher suite
-      // selected, or incompatible certificates.
-      // FIXME: Consider ALERT_insufficient_security
-      //        (cf RFC 7465 section 2).
-      COND_FATAL(!sizeof(cipher_suites),
-                 ALERT_handshake_failure, "No common suites!\n");
+      if (!sizeof(cipher_suites)) {
+	// No overlapping cipher suites, or obsolete cipher suite
+	// selected, or incompatible certificates.
+	// FIXME: Consider ALERT_insufficient_security
+	//        (cf RFC 7465 section 2).
+	COND_FATAL(1, ALERT_handshake_failure,
+		   sprintf("No common suites! %s\n"
+			   "Client suites:\n"
+			   "%s\n",
+			   fmt_version(version),
+			   fmt_cipher_suites(client_cipher_suites)));
+      }
 
       // TLS 1.2 or earlier.
 
