@@ -114,6 +114,9 @@ mapping|array|string generate_expert_tree(array(object) zones)
     // A single zone.
     return zones[0]->zoneid;
   }
+  // FIXME: Do we need to also incorporate summer-time transitions?
+  // FIXME: Move the probes to the middle between transitions for
+  //        improved robustness against differing versions of tzdata.
   array(int) times = Array.uniq(sort(zones->shifts * ({})));
   times = ({ times[0]-1 }) + times;
   int l, h = sizeof(times);
