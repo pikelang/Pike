@@ -166,7 +166,7 @@ class Curve {
     //! Compares the keys of this ECDSA object with something other.
     protected int(0..1) _equal(mixed other)
     {
-      if (!objectp(other) || (object_program(other) != object_program(this)) ||
+      if (!objectp(other) || !equal(object_program(other), object_program(this)) ||
 	  !public_key_equal([object(this_program)]other)) {
 	return 0;
       }
