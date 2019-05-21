@@ -4,7 +4,6 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.73 2002/05/08 00:56:38 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -258,7 +257,7 @@ private class CommandHelp {
 
     case "about hilfe":
       e->print_version();
-      write(cvs_version+#"
+      write(#"
 Initial version written by Fredrik Hübinette 1996-2000
 Rewritten by Martin Nilsson 2002
 ");
@@ -1986,7 +1985,10 @@ class GenericAsyncHilfe
 
   void send_output(string s, mixed ... args)
   {
-    outbuffer+=sprintf(s,@args);
+    if (sizeof(args))
+      outbuffer+=sprintf(s,@args);
+    else
+      outbuffer+=s;
     write_callback();
   }
 

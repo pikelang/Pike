@@ -171,7 +171,6 @@ testfont binary
 /lib/modules/String.pmod/Elite.pmod foreign_ident
 /lib/modules/String.pmod/HTML.pmod foreign_ident
 /lib/modules/System.pmod foreign_ident
-/lib/modules/Tools.pmod/Hilfe.pmod foreign_ident
 /lib/modules/Tools.pmod/X509.pmod foreign_ident
 /lib/modules/Tools.pmod/testhilfe.pike foreign_ident
 /lib/modules/Web.pmod/Crawler.pmod foreign_ident
