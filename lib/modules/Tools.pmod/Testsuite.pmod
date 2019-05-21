@@ -122,6 +122,9 @@ void log_msg (string msg, mixed... args)
   if (last_line_length) {
     if (last_line_length < 0) werror ("\n"); else write ("\n");
     last_line_length = 0;
+  } else if (last_line_inplace) {
+    write("\n");
+    last_line_inplace = 0;
   }
 
   if (last_log) {
