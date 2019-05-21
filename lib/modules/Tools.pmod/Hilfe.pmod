@@ -3017,7 +3017,10 @@ class GenericAsyncHilfe (Stdio.File infile, Stdio.File outfile)
 
   void send_output(string s, mixed ... args)
   {
-    outbuffer+=sprintf(s,@args);
+    if (sizeof(args))
+      outbuffer+=sprintf(s,@args);
+    else
+      outbuffer+=s;
     write_callback();
   }
 
