@@ -1240,6 +1240,8 @@ libpike.o: $(SRCDIR)/libpike.c
 
 pike_compiler.o: $(SRCDIR)/pike_compiler.c
 
+pike_types.o: $(SRCDIR)/pike_types.c
+
 string_builder.o: $(SRCDIR)/string_builder.c
 
 # Internal testing target

@@ -8780,10 +8780,14 @@ void init_types(void)
 #ifdef PIKE_DEBUG
   pike_type_gc_callback = add_gc_callback(gc_mark_external_types, NULL, NULL);
 #endif
+
+  INIT;
 }
 
 void cleanup_pike_types(void)
 {
+  EXIT;
+
 #ifdef DO_PIKE_CLEANUP
   while (all_pike_type_locations) {
     free_type(all_pike_type_locations->t);
