@@ -870,7 +870,7 @@ void image_create_method(INT32 args)
    if (sp[-args].u.string==s_grey)
    {
       img_read_grey(args-1);
-      pop_n_elems(2);
+      pop_n_elems(args);
       ref_push_object(THISOBJ);
       return;
    }
