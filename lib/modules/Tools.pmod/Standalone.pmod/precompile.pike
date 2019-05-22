@@ -184,6 +184,19 @@ string usage = #"[options] <from> > <to>
    syntax MK_STRING_SVALUE(\"my string\") for the same, but a
    full svalue. Note that this syntax can not be used in macros.
 
+ AUTOMATIC SYMBOLS
+   args                      The number of arguments a PIKEFUN has received.
+   f_symbol                  The C-level implementation of a PIKEFUN.
+   f_symbol_fun_num          The reference number in a PIKECLASS for a PIKEFUN.
+                             Not applicable to efuns.
+   symbol_fun_num            The reference number to a nested PIKECLASS in
+                             the surrounding PIKECLASS.
+   symbol_inh_num            The inherit number for an INHERIT.
+   symbol_inh_offset         The offset to the start of references for
+                             an INHERIT in the current PIKECLASS.
+   symbol_inh_storage_offset The storage offset for an INHERIT in
+                             the storage for the current PIKECLASS.
+
  BUGS/LIMITATIONS
   o Parenthesis must match, even within #if 0
   o Not all Pike types are supported yet.
