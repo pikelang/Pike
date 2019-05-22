@@ -54,7 +54,7 @@ typedef mapping|Web.Auth.Params ParamsArg;
 protected Web.Auth.OAuth2.Client _auth;
 
 //! Authentication class to use
-protected constant AuthClass = Web.Auth.OAuth2.Client;
+constant AuthClass = Web.Auth.OAuth2.Client;
 
 //! The HTTP query objects when running async.
 protected mapping(int:array(Protocols.HTTP.Query|Callback))
@@ -82,7 +82,7 @@ protected int _call_id = 0;
 //!
 //! @param scope
 //!  Extended permissions to use for this authentication.
-protected void create(string client_id, string client_secret,
+protected void create(void|string client_id, void|string client_secret,
                       void|string redirect_uri,
                       void|string|array(string)|multiset(string) scope)
 {
@@ -261,20 +261,9 @@ mixed call(string api_method, void|ParamsArg params,
   mapping request_headers = copy_value(default_headers);
   params = (mapping) p;
 
-  if ((< "POST" >)[http_method]) {
-    if (!data) {
-      data = (string) p;
-      params = 0;
-    }
-    else {
-      array(string) parts = make_multipart_message(params, data);
-      request_headers["content-type"] = parts[0];
-      data = parts[1];
-      params = 0;
-    }
-  }
-  else {
-    params = (mapping) p;
+  if (!data && (< "POST" >)[http_method]) {
+    data = (string) p;
+    params = 0;
   }
 
   // If running in a handler thread (like in Roxen) we do an async call
@@ -508,7 +497,7 @@ protected mixed handle_response(Protocols.HTTP.Query|Protocols.HTTP.Promise.Resu
     TRACE("Bad resp[%d]: %s\n\n%O\n",
           req->status, d, req->headers);
 
-    if (has_value(d, "error")) {
+    if (has_value(d, "\"error\"")) {
       mapping e;
       mixed err = catch {
         e = Standards.JSON.decode(d);
@@ -588,7 +577,7 @@ protected mapping default_params()
   return ([]);
 }
 
-//! Internal class ment to be inherited by implementing Api's classes that
+//! Internal class meant to be inherited by implementing Api's classes that
 //! corresponds to a given API endpoint.
 class Method
 {

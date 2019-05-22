@@ -191,10 +191,14 @@ class Base
   //!
   //! @seealso
   //!  @[Web.encode_jwt()]
-  string get_token_from_jwt(string jwt, string token_endpoint, string|void sub,
+  string get_token_from_jwt(string jwt, void|string token_endpoint,
+                            string|void sub,
                             void|function(bool,string:void) async_cb)
   {
     mapping j = Standards.JSON.decode(jwt);
+
+    if (!token_endpoint)
+      token_endpoint = j->token_uri;
 
     mapping claims = ([
       "iss"   : j->client_email,
