@@ -2684,6 +2684,25 @@ void exit_mutex_key_obj(struct object *DEBUGUSED(o))
   }
 }
 
+static void f_mutex_key__sprintf(INT32 args)
+{
+  int c = 0;
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
+    c = Pike_sp[-args].u.integer;
+  pop_n_elems (args);
+  if(c != 'O') {
+    push_undefined();
+    return;
+  }
+  if (THIS_KEY->mutex_obj) {
+    push_text("MutexKey(/* %O */)");
+    ref_push_object(THIS_KEY->mutex_obj);
+    f_sprintf(2);
+  } else {
+    push_text("MutexKey()");
+  }
+}
+
 /*! @endclass
  */
 
@@ -3563,6 +3582,7 @@ void th_init(void)
 		    tObjIs_THREAD_ID, T_OBJECT, 0);
   PIKE_MAP_VARIABLE("_mutex", mutex_key_offset + OFFSETOF(key_storage, mutex_obj),
 		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
+  ADD_FUNCTION("_sprintf",f_mutex_key__sprintf,tFunc(tInt,tStr),ID_PROTECTED);
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=Pike_compiler->new_program;
