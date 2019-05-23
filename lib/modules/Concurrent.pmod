@@ -203,7 +203,7 @@ class Future
   //!   @[cb] will always be called from the main backend.
   //!
   //! @seealso
-  //!   @[on_failure()]
+  //!   @[on_failure()], @[query_success_callbacks()]
   this_program on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
     switch (state) {
@@ -217,6 +217,18 @@ class Future
         success_cbs += ({ ({ cb, @extra }) });
     }
     return this_program::this;
+  }
+
+  //! Query the set of active success callbacks.
+  //!
+  //! @returns
+  //!   Returns an array with callback functions.
+  //!
+  //! @seealso
+  //!   @[on_success()], @[query_failure_callbacks()]
+  array(function) query_success_callbacks()
+  {
+    return column(success_cbs, 0);
   }
 
   //! Register a callback that is to be called on failure.
@@ -233,7 +245,7 @@ class Future
   //!   @[cb] will always be called from the main backend.
   //!
   //! @seealso
-  //!   @[on_success()]
+  //!   @[on_success()], @[query_failure_callbacks()]
   this_program on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
     switch (state) {
@@ -250,6 +262,18 @@ class Future
         failure_cbs += ({ ({ cb, @extra }) });
     }
     return this_program::this;
+  }
+
+  //! Query the set of active failure callbacks.
+  //!
+  //! @returns
+  //!   Returns an array with callback functions.
+  //!
+  //! @seealso
+  //!   @[on_failure()], @[query_success_callbacks()]
+  array(function) query_failure_callbacks()
+  {
+    return column(failure_cbs, 0);
   }
 
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
