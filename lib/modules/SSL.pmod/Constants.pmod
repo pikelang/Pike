@@ -1,6 +1,10 @@
 
 #pike __REAL_VERSION__
 
+// Enable SSL3_EXPERIMENTAL to get cipher suites that have not been
+// validated against other implementations.
+//#define SSL3_EXPERIMENTAL
+
 //! Protocol constants
 
 //! Constants for specifying the versions of SSL/TLS to use.
@@ -1482,7 +1486,7 @@ constant ECC_CURVES = ([
 #if constant(Crypto.ECC.SECP_521R1)
   GROUP_secp521r1: Crypto.ECC.SECP_521R1,
 #endif
-#if constant(Crypto.ECC.Curve25519)
+#if constant(Crypto.ECC.Curve25519) && defined(SSL3_EXPERIMENTAL)
   GROUP_ecdh_x25519: Crypto.ECC.Curve25519,
 #endif
 ]);
