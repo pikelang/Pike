@@ -148,13 +148,13 @@ class Base
 
   class resource
   {
-    mixed `[](string resrc)
+    protected mixed `[](string resrc)
     {
       mapping tm = dc->resources[resrc];
       return tm->_chain || (tm->_chain = chain(tm->methods));
     }
 
-    function `-> = `[];
+    protected function `-> = `[];
 
     protected array(string) _indices()
     {
