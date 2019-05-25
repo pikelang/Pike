@@ -8,7 +8,7 @@
 //!
 //! @seealso
 //!   @rfc{2459@}, @rfc{3279@}, @rfc{3280@}, @rfc{3447@}, @rfc{4055@},
-//!   @rfc{4985@}, @rfc{5480@}, @rfc{5639@}
+//!   @rfc{4985@}, @rfc{5480@}, @rfc{5639@}, @rfc{8410@}
 
 /* Attributes (from http://leangen.uninett.no:29659/~hta/ietf/oid/2.5.4.html):
    (by 1999-01-25, a better URL is http://www.alvestrand.no/objectid/top.html)
@@ -174,14 +174,16 @@ Identifier brainpool_p384t1 = ec_curve_ver1_id->append(12);
 Identifier brainpool_p521r1 = ec_curve_ver1_id->append(13);
 Identifier brainpool_p521t1 = ec_curve_ver1_id->append(14);
 
-/* Edwards curves from draft-ietf-curdle-pkix-03. */
+/* Edwards curves from RFC8410. */
 protected Identifier ed_curve_algs_id = Identifier(1, 3, 101);
 Identifier x25519_id = ed_curve_algs_id->append(110);
 Identifier x448_id = ed_curve_algs_id->append(111);
 Identifier eddsa25519_id = ed_curve_algs_id->append(112);
 Identifier eddsa448_id = ed_curve_algs_id->append(113);
+#if 0 // These seem to be obsolete.
 Identifier eddsa25519ph_id = ed_curve_algs_id->append(114);	/* pre-hash */
 Identifier eddsa448ph_id = ed_curve_algs_id->append(115);	/* pre-hash */
+#endif /* 0 */
 
 /* For public key
         id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
