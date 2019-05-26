@@ -136,6 +136,7 @@ enum HashAlgorithm {
   HASH_sha256	= 4,
   HASH_sha384	= 5,
   HASH_sha512	= 6,
+  HASH_intrinsic= 8,
 }
 
 // Compatibility with Pike 8.0
@@ -172,6 +173,8 @@ enum SignatureAlgorithm {
   SIGNATURE_rsa		= 1,	//! RSASSA PKCS1 v1.5 signature.
   SIGNATURE_dsa		= 2,	//! DSS signature.
   SIGNATURE_ecdsa	= 3,	//! ECDSA signature.
+  SIGNATURE_ed25519	= 7;	//! EdDSA 25519 signature.
+  SIGNATURE_ed448	= 8;	//! EdDSA 448 signature.
 }
 
 //! Signature algorithms from TLS 1.3
@@ -1363,8 +1366,8 @@ enum NamedGroup {
   GROUP_brainpoolP384r1			= 27,	// RFC 7027
   GROUP_brainpoolP512r1			= 28,	// RFC 7027
 
-  GROUP_ecdh_x25519			= 29,	// Early assignment.
-  GROUP_ecdh_x448			= 30,	// Early assignment.
+  GROUP_ecdh_x25519			= 29,	// RFC 8422
+  GROUP_ecdh_x448			= 30,	// RFC 8422
 
   GROUP_ffdhe2048			= 256,	// RFC 7919
   GROUP_ffdhe3072			= 257,	// RFC 7919
