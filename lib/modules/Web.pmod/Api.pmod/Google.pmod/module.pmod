@@ -121,12 +121,12 @@ class Base
       m -= ({"description", "id", "response", "scopes"});
       string path = substitutes->replace(m->path, "%s");
       return m->_func
-        = lambda(void|mapping params, void|string|Callback cb) {
+        = lambda(void|mapping params, void|string|Callback cb, mixed...rest) {
           string|mapping data = params - m->parameters;
           data = sizeof(data) ? Standards.JSON.encode(data) : "";
           if (cb != "promise")
             return mkargs(parent::call, dc->baseUrl + path, m->parameterOrder,
-              m->parameters & params, m->httpMethod, data, cb);
+              m->parameters & params, m->httpMethod, data, cb, @rest);
           Concurrent.Promise p = Concurrent.Promise();
           mixed err = catch(
            mkargs(parent::call, dc->baseUrl + path, m->parameterOrder,

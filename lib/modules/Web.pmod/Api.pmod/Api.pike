@@ -38,10 +38,11 @@ public int(0..) http_request_timeout = 0;
 
 #if constant (Protocols.HTTP.Promise)
 //! Typedef for the async callback method signature.
-typedef function(mixed,Protocols.HTTP.Query|Protocols.HTTP.Promise.Result:void) Callback;
+typedef function(mixed,Protocols.HTTP.Query|Protocols.HTTP.Promise.Result,
+  mixed...:void) Callback;
 #else
 //! Typedef for the async callback method signature.
-typedef function(mixed,Protocols.HTTP.Query:void) Callback;
+typedef function(mixed,Protocols.HTTP.Query, mixed...:void) Callback;
 #endif
 
 //! Typedef for a parameter argument
@@ -159,9 +160,10 @@ mapping(string:string|mapping) parse_canonical_url(string url)
 //! @param params
 //! @param cb
 //!  Callback function to get into in async mode
-mixed get(string api_method, void|ParamsArg params, void|Callback cb)
+mixed get(string api_method, void|ParamsArg params,
+          void|Callback cb, mixed...rest)
 {
-  return call(api_method, params, "GET", 0, cb);
+  return call(api_method, params, "GET", 0, cb, @rest);
 }
 
 //! Invokes a call with a POST method
@@ -174,9 +176,9 @@ mixed get(string api_method, void|ParamsArg params, void|Callback cb)
 //! @param cb
 //!  Callback function to get into in async mode
 mixed post(string api_method, void|ParamsArg params, void|string data,
-           void|Callback cb)
+           void|Callback cb, mixed...rest)
 {
-  return call(api_method, params, "POST", data, cb);
+  return call(api_method, params, "POST", data, cb, @rest);
 }
 
 //! Invokes a call with a DELETE method
@@ -186,9 +188,10 @@ mixed post(string api_method, void|ParamsArg params, void|string data,
 //! @param params
 //! @param cb
 //!  Callback function to get into in async mode
-mixed delete(string api_method, void|ParamsArg params, void|Callback cb)
+mixed delete(string api_method, void|ParamsArg params,
+             void|Callback cb, mixed...rest)
 {
-  return call(api_method, params, "DELETE", 0, cb);
+  return call(api_method, params, "DELETE", 0, cb, @rest);
 }
 
 //! Invokes a call with a PUT method
@@ -198,9 +201,10 @@ mixed delete(string api_method, void|ParamsArg params, void|Callback cb)
 //! @param params
 //! @param cb
 //!  Callback function to get into in async mode
-mixed put(string api_method, void|ParamsArg params, void|Callback cb)
+mixed put(string api_method, void|ParamsArg params,
+          void|Callback cb, mixed...rest)
 {
-  return call(api_method, params, "PUT", 0, cb);
+  return call(api_method, params, "PUT", 0, cb, @rest);
 }
 
 //! Invokes a call with a PATCH method
@@ -210,9 +214,10 @@ mixed put(string api_method, void|ParamsArg params, void|Callback cb)
 //! @param params
 //! @param cb
 //!  Callback function to get into in async mode
-mixed patch(string api_method, void|ParamsArg params, void|Callback cb)
+mixed patch(string api_method, void|ParamsArg params,
+            void|Callback cb, mixed...rest)
 {
-  return call(api_method, params, "PATCH", 0, cb);
+  return call(api_method, params, "PATCH", 0, cb, @rest);
 }
 
 //! Calls a remote API method.
@@ -244,7 +249,8 @@ mixed patch(string api_method, void|ParamsArg params, void|Callback cb)
 //!  @expr{30x@} (a redirect), then the response headers mapping will be
 //!  returned.
 mixed call(string api_method, void|ParamsArg params,
-           void|string http_method, void|string data, void|Callback cb)
+           void|string http_method, void|string data,
+           void|Callback cb, mixed...rest)
 {
   http_method = upper_case(http_method || "get");
   Web.Auth.Params p = Web.Auth.Params();
@@ -289,11 +295,11 @@ mixed call(string api_method, void|ParamsArg params,
       mixed r = handle_response(res);
 
       if (res->status >= 200 && res->status < 400) {
-        if (cb) cb(r, res);
+        if (cb) cb(r, res, @rest);
         else retval = r;
       }
       else {
-        cb && cb(0, res);
+        cb && cb(0, res, @rest);
       }
 
       if (queue) {
@@ -301,7 +307,7 @@ mixed call(string api_method, void|ParamsArg params,
       }
     });
     fut->on_failure(lambda (Protocols.HTTP.Promise.Result res) {
-      cb && cb(0, res);
+      cb && cb(0, res, @rest);
       if (queue) {
         queue->write("@");
       }
@@ -343,32 +349,32 @@ mixed call(string api_method, void|ParamsArg params,
 
   if (cb) {
     int myid = ++_call_id;
-    _query_objects[myid] = ({ req, cb });
+    _query_objects[myid] = ({ req, cb }) + rest;
 
     req->set_callbacks(
       lambda (Protocols.HTTP.Query qq, int cid) {
         if (qq->status == 200) {
           qq->timed_async_fetch(
             lambda (Protocols.HTTP.Query qa) {
-              cb(handle_response(qa), qa);
+              cb(handle_response(qa), qa, @rest);
               m_delete(_query_objects, cid);
             },
             lambda (Protocols.HTTP.Query qa) {
-              cb(0, qa);
+              cb(0, qa, @rest);
               m_delete(_query_objects, cid);
             });
         }
         else if ((< 301, 302 >)[qq->status]) {
-          cb(qq->headers, qq);
+          cb(qq->headers, qq, @rest);
           m_delete(_query_objects, cid);
         }
         else {
-          cb(0, qq);
+          cb(0, qq, @rest);
           m_delete(_query_objects, cid);
         }
       },
       lambda (Protocols.HTTP.Query qq, int cid) {
-        cb(0, qq);
+        cb(0, qq, @rest);
         m_delete(_query_objects, cid);
       },
       myid);
@@ -466,7 +472,7 @@ void close_connections()
         q->close();
 
         if (m[1]) {
-          m[1](0, 0);
+          m[1](0, 0, @m[2..]);
         }
       }
       destruct(q);
