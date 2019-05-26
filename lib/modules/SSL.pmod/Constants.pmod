@@ -173,8 +173,8 @@ enum SignatureAlgorithm {
   SIGNATURE_rsa		= 1,	//! RSASSA PKCS1 v1.5 signature.
   SIGNATURE_dsa		= 2,	//! DSS signature.
   SIGNATURE_ecdsa	= 3,	//! ECDSA signature.
-  SIGNATURE_ed25519	= 7;	//! EdDSA 25519 signature.
-  SIGNATURE_ed448	= 8;	//! EdDSA 448 signature.
+  SIGNATURE_ed25519	= 7,	//! EdDSA 25519 signature.
+  SIGNATURE_ed448	= 8,	//! EdDSA 448 signature.
 }
 
 //! Signature algorithms from TLS 1.3
