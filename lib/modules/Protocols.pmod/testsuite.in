@@ -1,6 +1,8 @@
 
 START_MARKER
 
+dnl Protocols.DNS
+
 test_do( add_constant("P",Protocols.DNS.protocol()); )
 
 test_equal( P.mklabel("hej"), "\3hej" )
@@ -52,5 +54,9 @@ test_any_equal([[
 test_equal(P.low_low_mkquery(P.decode_res("\0\0\0\0\0\0\0\1\0\0\0\0\aexample\3com\0\0\35\0\1\0\1Q\177\0\20\0S\27\25\211+>`m\340\254`\0\230\226\200")),
 	   "\0\0\0\0\0\0\0\1\0\0\0\0\aexample\3com\0\0\35\0\1\0\1Q\177\0\20\0S\27\25\211+>`m\340\254`\0\230\226\200")
 test_do( add_constant("P"); )
+
+dnl Protocols.WebSocket
+
+dnl cf WebSocket.test
 
 END_MARKER
