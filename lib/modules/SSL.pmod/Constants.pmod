@@ -129,14 +129,16 @@ constant CIPHER_effective_keylengths = ([
 
 //! Hash algorithms as per @rfc{5246:7.4.1.4.1@}.
 enum HashAlgorithm {
-  HASH_none	= 0,
-  HASH_md5	= 1,
-  HASH_sha1	= 2,
-  HASH_sha224	= 3,
-  HASH_sha256	= 4,
-  HASH_sha384	= 5,
-  HASH_sha512	= 6,
-  HASH_intrinsic= 8,
+  HASH_none	= 0x0000,
+  HASH_md5	= 0x0100,
+  HASH_sha1	= 0x0200,
+  HASH_sha224	= 0x0300,
+  HASH_sha256	= 0x0400,
+  HASH_sha384	= 0x0500,
+  HASH_sha512	= 0x0600,
+  HASH_intrinsic= 0x0800,
+
+  HASH_MASK	= 0xff00,
 }
 
 // Compatibility with Pike 8.0
@@ -173,8 +175,10 @@ enum SignatureAlgorithm {
   SIGNATURE_rsa		= 1,	//! RSASSA PKCS1 v1.5 signature.
   SIGNATURE_dsa		= 2,	//! DSS signature.
   SIGNATURE_ecdsa	= 3,	//! ECDSA signature.
-  SIGNATURE_ed25519	= 7,	//! EdDSA 25519 signature.
-  SIGNATURE_ed448	= 8,	//! EdDSA 448 signature.
+  SIGNATURE_ed25519_	= 7,	//! EdDSA 25519 signature.
+  SIGNATURE_ed448_	= 8,	//! EdDSA 448 signature.
+
+  SIGNATURE_MASK	= 0x00ff,
 }
 
 //! Signature algorithms from TLS 1.3

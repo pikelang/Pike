@@ -209,8 +209,7 @@ class CipherSpec {
     {
       string sign =
         session->private_key->pkcs_sign(data, HASH_lookup[signature_hash]);
-      struct->add_int(signature_hash, 1);
-      struct->add_int(signature_alg, 1);
+      struct->add_int(signature_hash|signature_alg, 2);
       struct->add_hstring(sign, 2);
       return struct;
     }
@@ -249,8 +248,9 @@ class CipherSpec {
     // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
-      int hash_id = input->read_int(1);
-      int sign_id = input->read_int(1);
+      int signature_scheme = input->read_int(2);
+      int hash_id = signature_scheme & HASH_MASK;
+      int sign_id = signature_scheme & SIGNATURE_MASK;
       string sign = input->read_hstring(2);
 
       if( sign_id != signature_alg )

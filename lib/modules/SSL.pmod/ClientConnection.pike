@@ -484,7 +484,13 @@ protected int(-1..0) got_certificate_request(Buffer input)
                "Odd number of bytes in supported_signature_algorithms.\n");
 
     // Pairs of <hash_alg, signature_alg>.
-    session->signature_algorithms = ((array(int))bytes)/2;
+    session->signature_algorithms =
+      map(((array(int))bytes)/2,
+	  lambda(array(int) pair) {
+	    // Adjust hash.
+	    pair[0] <<= 8;
+	    return pair;
+	  });
     SSL3_DEBUG_MSG("New signature_algorithms:\n"+
 		   fmt_signature_pairs(session->signature_algorithms));
   }

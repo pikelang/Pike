@@ -106,8 +106,7 @@ Buffer get_signature_algorithms()
   Buffer sign_algs = Buffer();
   foreach(context->get_signature_algorithms(), [int hash, int sign])
   {
-    sign_algs->add_int(hash, 1);
-    sign_algs->add_int(sign, 1);
+    sign_algs->add_int(hash|sign, 2);
   }
   return sign_algs;
 }

@@ -425,7 +425,13 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             COND_FATAL( sizeof(bytes)&1, ALERT_handshake_failure,
                         "Corrupt signature algorithms.\n" );
             // Pairs of <hash_alg, signature_alg>.
-            session->signature_algorithms = ((array(int))bytes)/2;
+	    session->signature_algorithms =
+	      map(((array(int))bytes)/2,
+		  lambda(array(int) pair) {
+		    // Adjust hash.
+		    pair[0] <<= 8;
+		    return pair;
+		  });
             SSL3_DEBUG_MSG("New signature_algorithms:\n"+
                            fmt_signature_pairs(session->signature_algorithms));
             break;
