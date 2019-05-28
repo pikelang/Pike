@@ -319,7 +319,7 @@ private array(CertificatePair)
       filter(certs, lambda(CertificatePair cp)
         {
           Crypto.Hash hash = [object(Crypto.Hash)]
-            HASH_lookup[cp->sign_algs[0][0]];
+            HASH_lookup[cp->sign_algs[0] & HASH_MASK];
           return hash->digest_size() <= h_max;
         });
     // Don't clear out the entire list though, as that makes all peers
