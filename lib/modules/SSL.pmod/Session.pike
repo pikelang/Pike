@@ -96,14 +96,14 @@ string(8bit) server_name;
 //! Only used with TLS 1.2 and later.
 //!
 //! Defaults to the settings from @rfc{5246:7.4.1.4.1@}.
-array(array(int)) signature_algorithms = ({
+array(int) signature_algorithms = ({
   // RFC 5246 7.4.1.4.1:
   // Note: this is a change from TLS 1.1 where there are no explicit
   // rules, but as a practical matter one can assume that the peer
   // supports MD5 and SHA-1.
-  ({ HASH_sha1, SIGNATURE_rsa }),
-  ({ HASH_sha1, SIGNATURE_dsa }),
-  ({ HASH_sha1, SIGNATURE_ecdsa }),
+  HASH_sha1 | SIGNATURE_rsa,
+  HASH_sha1 | SIGNATURE_dsa,
+  HASH_sha1 | SIGNATURE_ecdsa,
 });
 
 //! Supported finite field diffie-hellman groups in order of preference.
@@ -193,10 +193,10 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
     if (!(ke_mask & cp->ke_mask_invariant)) return 0;
 
     // Check that all sign_algs in the cert chain are supported by the peer.
-    foreach(cp->sign_algs, array(int) sign_alg) {
+    foreach(cp->sign_algs, int sign_alg) {
       int found;
-      foreach(signature_algorithms, array(int) sup_alg) {
-	if (found = equal(sign_alg, sup_alg)) break;
+      foreach(signature_algorithms, int sup_alg) {
+	if (found = (sign_alg == sup_alg)) break;
       }
       if (!found) return 0;
     }
@@ -492,7 +492,7 @@ int select_cipher_suite(array(CertificatePair) certs,
 //! @param max_hash_size
 //!
 int set_cipher_suite(int suite, ProtocolVersion version,
-		     array(array(int)) signature_algorithms,
+		     array(int) signature_algorithms,
 		     int max_hash_size)
 {
   this::version = version;

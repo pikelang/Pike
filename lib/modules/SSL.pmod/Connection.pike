@@ -104,9 +104,9 @@ Alert alert(int(1..2) level, int(8bit) description,
 Buffer get_signature_algorithms()
 {
   Buffer sign_algs = Buffer();
-  foreach(context->get_signature_algorithms(), [int hash, int sign])
+  foreach(context->get_signature_algorithms(), int signature_scheme)
   {
-    sign_algs->add_int(hash|sign, 2);
+    sign_algs->add_int(signature_scheme, 2);
   }
   return sign_algs;
 }

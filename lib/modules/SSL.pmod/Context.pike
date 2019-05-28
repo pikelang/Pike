@@ -276,42 +276,42 @@ mapping(int(508..511):Crypto.DH.Parameters) private_ffdhe_groups = ([]);
 //!
 //! @seealso
 //!   @[get_signature_algorithms()]
-array(array(int)) signature_algorithms = ({
+array(int) signature_algorithms = ({
 #if constant(Crypto.SHA512)
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha512, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp521r1_sha512,
 #endif
-  ({ HASH_sha512, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha512,
 #endif
 #if constant(Crypto.SHA384)
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha384, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp384r1_sha384,
 #endif
-  ({ HASH_sha384, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha384,
 #endif
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha256, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp256r1_sha256,
 #endif
-  ({ HASH_sha256, SIGNATURE_dsa }),
-  ({ HASH_sha256, SIGNATURE_rsa }),
+  HASH_sha256 | SIGNATURE_dsa,
+  SIGNATURE_rsa_pkcs1_sha256,
 #if constant(Crypto.SHA224)
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha224, SIGNATURE_ecdsa }),
+  HASH_sha224 | SIGNATURE_ecdsa,
 #endif
-  ({ HASH_sha224, SIGNATURE_dsa }),
+  HASH_sha224 | SIGNATURE_dsa,
 #endif
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha1, SIGNATURE_ecdsa }),
+  HASH_sha1 | SIGNATURE_ecdsa,
 #endif
-  ({ HASH_sha1, SIGNATURE_dsa }),
-  ({ HASH_sha1, SIGNATURE_rsa }),
+  HASH_sha1 | SIGNATURE_dsa,
+  SIGNATURE_rsa_pkcs1_sha1,
 });
 
 //! Get the (filtered) set of locally supported signature algorithms.
 //!
 //! @seealso
 //!   @[signature_algorithms]
-array(array(int)) get_signature_algorithms(array(array(int))|void signature_algorithms)
+array(int) get_signature_algorithms(array(int)|void signature_algorithms)
 {
   if (!signature_algorithms) {
     signature_algorithms = this_program::signature_algorithms;

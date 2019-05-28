@@ -794,17 +794,17 @@ string fmt_cipher_suites(array(int) s)
   return (string)b;
 }
 
-//! Pretty-print an array of signature pairs.
+//! Pretty-print an array of @[SignatureScheme]s.
 //!
 //! @param pairs
 //!   Array of signature pairs to format.
-string fmt_signature_pairs(array(array(int)) pairs)
+string fmt_signature_pairs(array(int) pairs)
 {
   String.Buffer b = String.Buffer();
-  foreach(pairs, [int hash, int signature])
+  foreach(pairs, int signature_scheme)
     b->sprintf("  <%s, %s>\n",
-	       fmt_constant(hash, "HASH"),
-	       fmt_constant(signature, "SIGNATURE"));
+	       fmt_constant(signature_scheme & HASH_MASK, "HASH"),
+	       fmt_constant(signature_scheme & SIGNATURE_MASK, "SIGNATURE"));
   return (string)b;
 }
 
@@ -1551,39 +1551,39 @@ enum AuthzDataFormat {
   ADF_saml_assertion_url = 3,
 };
 
-mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
+mapping(string(8bit):SignatureScheme)
   pkcs_der_to_sign_alg = ([
   // RSA
   Standards.PKCS.Identifiers.rsa_md5_id->get_der():
-  ({ HASH_md5, SIGNATURE_rsa }),
+  HASH_md5 | SIGNATURE_rsa,
   Standards.PKCS.Identifiers.rsa_sha1_id->get_der():
-  ({ HASH_sha1, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha1,
   Standards.PKCS.Identifiers.rsa_sha256_id->get_der():
-  ({ HASH_sha256, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha256,
   Standards.PKCS.Identifiers.rsa_sha384_id->get_der():
-  ({ HASH_sha384, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha384,
   Standards.PKCS.Identifiers.rsa_sha512_id->get_der():
-  ({ HASH_sha512, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha256,
 
   // DSA
   Standards.PKCS.Identifiers.dsa_sha_id->get_der():
-  ({ HASH_sha1, SIGNATURE_dsa }),
+  HASH_sha1 | SIGNATURE_dsa,
   Standards.PKCS.Identifiers.dsa_sha224_id->get_der():
-  ({ HASH_sha224, SIGNATURE_dsa }),
+  HASH_sha224 | SIGNATURE_dsa,
   Standards.PKCS.Identifiers.dsa_sha256_id->get_der():
-  ({ HASH_sha256, SIGNATURE_dsa }),
+  HASH_sha256 | SIGNATURE_dsa,
 
   // ECDSA
   Standards.PKCS.Identifiers.ecdsa_sha1_id->get_der():
-  ({ HASH_sha1, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_sha1,
   Standards.PKCS.Identifiers.ecdsa_sha224_id->get_der():
-  ({ HASH_sha224, SIGNATURE_ecdsa }),
+  HASH_sha224 | SIGNATURE_ecdsa,
   Standards.PKCS.Identifiers.ecdsa_sha256_id->get_der():
-  ({ HASH_sha256, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp256r1_sha256,
   Standards.PKCS.Identifiers.ecdsa_sha384_id->get_der():
-  ({ HASH_sha384, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp384r1_sha384,
   Standards.PKCS.Identifiers.ecdsa_sha512_id->get_der():
-  ({ HASH_sha512, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp521r1_sha512,
 ]);
 
 //! A chain of X509 certificates with corresponding private key.
@@ -1609,7 +1609,7 @@ class CertificatePair
   array(string(8bit)) globs;
 
   //! TLS 1.2-style hash and signature pairs matching the @[certs].
-  array(array(HashAlgorithm|SignatureAlgorithm)) sign_algs;
+  array(SignatureScheme) sign_algs;
 
   //! Bitmask of the key exchange algorithms supported by the main certificate.
   //! This is used for TLS 1.1 and earlier.
@@ -1656,7 +1656,8 @@ class CertificatePair
     if(!objectp(o)) return this < o;
     if( !o->key || !o->sign_algs ) return this < o;
 
-    int s = sign_algs[0][1], os = o->sign_algs[0][1];
+    int s = sign_algs[0] & SIGNATURE_MASK;
+    int os = o->sign_algs[0] & SIGNATURE_MASK;
 
     // FIXME: Let hash bits influence strength. The signature bits
     // doesn't overshadow hash completely.
@@ -1671,7 +1672,8 @@ class CertificatePair
     if( bs < obs ) return 0;
     if( bs > obs ) return 1;
 
-    int h = sign_algs[0][0], oh = o->sign_algs[0][0];
+    int h = sign_algs[0] & HASH_MASK;
+    int oh = o->sign_algs[0] & HASH_MASK;
     if( h < oh ) return 0;
     if( h > oh ) return 1;
 
@@ -1749,7 +1751,7 @@ class CertificatePair
       SIGNATURE_rsa: AUTH_rsa_sign,
       SIGNATURE_dsa: AUTH_dss_sign,
       SIGNATURE_ecdsa: AUTH_ecdsa_sign,
-    ])[sign_algs[0][1]];
+    ])[sign_algs[0] & SIGNATURE_MASK];
 
     set_globs(tbss[0], extra_name_globs);
 
@@ -1757,7 +1759,7 @@ class CertificatePair
     //        cf RFC 5246 7.4.2.
     ke_mask = 0;
     ke_mask_invariant = 0;
-    switch(sign_algs[0][1]) {
+    switch(sign_algs[0] & SIGNATURE_MASK) {
     case SIGNATURE_rsa:
       foreach(({ KE_rsa, KE_rsa_fips, KE_dhe_rsa, KE_ecdhe_rsa, KE_rsa_psk,
 		 KE_rsa_export,
@@ -1769,12 +1771,13 @@ class CertificatePair
       break;
     case SIGNATURE_dsa:
       ke_mask |= 1<<KE_dhe_dss;
-      if ((sizeof(sign_algs) == 1) || (sign_algs[1][1] == SIGNATURE_dsa)) {
+      if ((sizeof(sign_algs) == 1) ||
+	  ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_dsa)) {
 	// RFC 4346 7.4.2: DH_DSS
 	// Diffie-Hellman key. The algorithm used
 	// to sign the certificate MUST be DSS.
 	ke_mask |= 1<<KE_dh_dss;
-      } else if (sign_algs[1][1] == SIGNATURE_rsa) {
+      } else if ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_rsa) {
 	// RFC 4346 7.4.2: DH_RSA
 	// Diffie-Hellman key. The algorithm used
 	// to sign the certificate MUST be RSA.
@@ -1784,12 +1787,13 @@ class CertificatePair
       break;
     case SIGNATURE_ecdsa:
       ke_mask |= 1<<KE_ecdhe_ecdsa;
-      if ((sizeof(sign_algs) == 1) || (sign_algs[1][1] == SIGNATURE_ecdsa)) {
+      if ((sizeof(sign_algs) == 1) ||
+	  ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_ecdsa)) {
 	// RFC 4492 2.1: ECDH_ECDSA
 	// In ECDH_ECDSA, the server's certificate MUST contain
 	// an ECDH-capable public key and be signed with ECDSA.
 	ke_mask |= 1<<KE_ecdh_ecdsa;
-      } else if (sign_algs[1][1] == SIGNATURE_rsa) {
+      } else if ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_rsa) {
 	// RFC 4492 2.3: ECDH_RSA
 	// This key exchange algorithm is the same as ECDH_ECDSA
 	// except that the server's certificate MUST be signed
@@ -1806,7 +1810,7 @@ class CertificatePair
   {
     string k = sprintf("%O", key);
     sscanf(k, "Crypto.%s", k);
-    string h = fmt_constant(sign_algs[0][0], "HASH");
+    string h = fmt_constant(sign_algs[0] & HASH_MASK, "HASH");
     sscanf(h, "HASH_%s", h);
     return sprintf("CertificatePair(%s, %s, ({%{%O, %}}))", k, h, globs);
   }

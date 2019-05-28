@@ -384,12 +384,12 @@ protected int send_certs()
 
                // Are the individual hash and sign algorithms in the
                // certificate chain supported?
-               foreach(cp->sign_algs, [int cert_hash, int cert_sign])
+               foreach(cp->sign_algs, int cert_scheme)
                {
                  int match;
-                 foreach(session->signature_algorithms, [int hash, int sign])
+                 foreach(session->signature_algorithms, int signature_scheme)
                  {
-                   if( hash==cert_hash && sign==cert_sign )
+                   if( cert_scheme == signature_scheme )
                    {
                      match = 1;
                      break;
@@ -485,12 +485,7 @@ protected int(-1..0) got_certificate_request(Buffer input)
 
     // Pairs of <hash_alg, signature_alg>.
     session->signature_algorithms =
-      map(((array(int))bytes)/2,
-	  lambda(array(int) pair) {
-	    // Adjust hash.
-	    pair[0] <<= 8;
-	    return pair;
-	  });
+      [array(int)]column(map(bytes/2, array_sscanf, "%2c"), 0);
     SSL3_DEBUG_MSG("New signature_algorithms:\n"+
 		   fmt_signature_pairs(session->signature_algorithms));
   }

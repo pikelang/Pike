@@ -426,12 +426,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                         "Corrupt signature algorithms.\n" );
             // Pairs of <hash_alg, signature_alg>.
 	    session->signature_algorithms =
-	      map(((array(int))bytes)/2,
-		  lambda(array(int) pair) {
-		    // Adjust hash.
-		    pair[0] <<= 8;
-		    return pair;
-		  });
+	      [array(int)]column(map(bytes/2, array_sscanf, "%2c"), 0);
             SSL3_DEBUG_MSG("New signature_algorithms:\n"+
                            fmt_signature_pairs(session->signature_algorithms));
             break;

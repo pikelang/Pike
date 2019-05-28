@@ -291,7 +291,7 @@ class CipherSpec {
   }
 
   void set_hash(int max_hash_size,
-                array(array(int)) signature_algorithms)
+                array(int) signature_algorithms)
   {
     // Stay with SHA1 for requests without signature algorithms
     // extensions (RFC 5246 7.4.1.4.1) and anonymous requests.
@@ -301,14 +301,15 @@ class CipherSpec {
     int hash_id = -1;
     SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
                    max_hash_size, fmt_signature_pairs(signature_algorithms));
-    foreach(signature_algorithms, array(int) pair) {
-      if ((pair[1] == signature_alg) && HASH_lookup[pair[0]]) {
-        if (max_hash_size < HASH_lookup[pair[0]]->digest_size()) {
+    foreach(signature_algorithms, int pair) {
+      if (((pair & SIGNATURE_MASK) == signature_alg) &&
+	  HASH_lookup[pair & HASH_MASK]) {
+        if (max_hash_size < HASH_lookup[pair & HASH_MASK]->digest_size()) {
           // Eg RSA has a maximum block size and the digest is too large.
           continue;
         }
-        if (pair[0] > hash_id) {
-          hash_id = pair[0];
+        if ((pair & HASH_MASK) > hash_id) {
+          hash_id = pair & HASH_MASK;
         }
       }
     }
@@ -1883,7 +1884,7 @@ class RC2
 //!   Version of the SSL/TLS protocol to support.
 //!
 //! @param signature_algorithms
-//!   The set of <hash, signature> combinations that
+//!   The set of @[SignatureScheme] values that
 //!   are supported by the other end.
 //!
 //! @param max_hash_size
@@ -1893,7 +1894,7 @@ class RC2
 //!   Returns @expr{0@} (zero) for unsupported combinations, otherwise
 //!   returns an initialized @[CipherSpec] for the @[suite].
 CipherSpec lookup(int suite, ProtocolVersion|int version,
-                  array(array(int)) signature_algorithms,
+                  array(int) signature_algorithms,
                   int max_hash_size)
 {
   CipherSpec res = CipherSpec();
