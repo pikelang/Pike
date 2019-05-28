@@ -324,7 +324,7 @@ void display(int|void num,
                              });
     werror("Most CPU-consuming functions "
            "sorted by total (self + child) times.\n");
-    output_result( reverse(rows)[..num||99], 7 );
+    output_result( reverse(rows)[..num||99], 6 );
 
     werror("\n"
            "Most CPU-consuming functions sorted by self-time.\n");
