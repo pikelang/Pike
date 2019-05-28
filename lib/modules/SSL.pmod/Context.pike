@@ -1041,15 +1041,15 @@ private void update_authorities()
     Standards.ASN1.Types.Identifier id = [object(Standards.ASN1.Types.Identifier)]tbs->algorithm[0];
 
     // --- START Duplicated code from CertificatePair
-    array(HashAlgorithm|SignatureAlgorithm) sign_alg;
-    sign_alg = [array(HashAlgorithm|SignatureAlgorithm)]pkcs_der_to_sign_alg[id->get_der()];
+    SignatureScheme sign_alg =
+      [object(SignatureScheme)]pkcs_der_to_sign_alg[id->get_der()];
     if (!sign_alg) error("Unknown signature algorithm.\n");
 
     int cert_type = ([
       SIGNATURE_rsa: AUTH_rsa_sign,
       SIGNATURE_dsa: AUTH_dss_sign,
       SIGNATURE_ecdsa: AUTH_ecdsa_sign,
-    ])[sign_alg[1]];
+    ])[sign_alg & SIGNATURE_MASK];
     // --- END Duplicated code from CertificatePair
 
     cert_types[cert_type]++;
