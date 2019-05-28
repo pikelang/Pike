@@ -177,20 +177,24 @@ private mixed __when_pike_backend_started = call_out( hide_compile_time, 0.0 );
 //! The returned array contains the following entries per entry:
 //! @array
 //! @elem string name
-//!   The name of the function
-//! @elem float number_of_calls
-//!   The number of calls
-//! @elem float self_time
-//!   The self CPU time
-//! @elem float cpu_time
-//!   The self CPU time, including children.
+//!   The name of the function.
+//! @elem int number_of_calls
+//!   The number of calls.
+//! @elem float total_self_time
+//!   Total self CPU time in milliseconds.
+//! @elem float total_cpu_time
+//!   Total self CPU time in milliseconds, including children.
+//! @elem float avg_self_time
+//!   Average self CPU time in microseconds.
+//! @elem float avg_cpu_time
+//!   Average self CPU time in microseconds, including children.
 //! @elem float self_time_pct
 //!   The self CPU time as percentage of total time.
 //! @elem float cpu_time_pct
 //!   The self CPU time, including children, as percentage of total
 //!   time.
 //! @elem string function_line
-//!   This is the location in the source of the start of the function
+//!   The location in the source of the start of the function.
 //! @endarray
 array(array(string|float|int)) get_prof_info(string|array(string)|void include,
                                              string|array(string)|void exclude)
