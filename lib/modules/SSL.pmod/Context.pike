@@ -354,7 +354,8 @@ protected int cipher_suite_sort_key(int suite)
   int keylength = CIPHER_effective_keylengths[info[1]];
 
   // NB: Currently the hash algorithms are allocated in a suitable order.
-  int hash = info[2];
+  // NB: The hash values are shifted 8 bits.
+  int hash = info[2] >> 8;
 
   // Adjust for the cipher mode.
   if (sizeof(info) > 3) {
