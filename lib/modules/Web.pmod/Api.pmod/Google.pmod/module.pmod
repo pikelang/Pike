@@ -131,7 +131,12 @@ class Base
           mixed err = catch(
            mkargs(parent::call, dc->baseUrl + path, m->parameterOrder,
             m->parameters & params, m->httpMethod, data,
-            lambda(mixed ret) { p->success(ret); }));
+            lambda(mixed ret, Protocols.HTTP.Query qq) {
+              if (ret)
+                p->success(ret);
+              else
+                p->failure(qq);
+            }));
           if (err)
             p->failure(err);
           return p->future();
