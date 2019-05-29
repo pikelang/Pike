@@ -2919,7 +2919,7 @@ void f_thread_backtrace(INT32 args)
     return;
   }
 
-  get_all_args("backtrace", args, ".d", &flags);
+  get_all_args("backtrace", args, ".%d", &flags);
 
   pop_n_elems(args);
 
