@@ -630,7 +630,8 @@ outer:
                 destruct(result);
           };
         destruct(nostash);
-        socket->set_non_blocking();			// Drop all callbacks
+        if (socket->set_non_blocking)
+          socket->set_non_blocking();			// Drop all callbacks
         PD("%d>Close socket\n", socket->query_fd());
         socket->close();		// This will be an asynchronous close
       }
@@ -1358,7 +1359,6 @@ class sql_result {
         _fetchlimit = pgsqlsess->_fetchlimit;
         _bindportal();
         conxsess bindbuffer = c->start();
-        _unnamedstatementkey = 0;
         stmtifkey = 0;
         CHAIN(bindbuffer)->add_int8('B')->add_hstring(plugbuffer, 4, 4);
         if (!_tprepared && sizeof(_preparedname))
@@ -1368,6 +1368,7 @@ class sql_result {
                                   || sizeof(_query) >= MINPREPARELENGTH &&
                                   execfetchlimit->match(_query))
                              && _fetchlimit, bindbuffer);
+        _unnamedstatementkey = 0;
       }
     }
   }
@@ -1504,7 +1505,7 @@ class sql_result {
       datarowtypes = emptyarray;
       _ddescribe->broadcast();
     }
-    if (delayederror && !pgsqlsess.delayederror)
+    if (delayederror && pgsqlsess && !pgsqlsess.delayederror)
       pgsqlsess.delayederror = delayederror;	// Preserve error upstream
     pgsqlsess = 0;
   }
@@ -1532,7 +1533,7 @@ class sql_result {
 
   protected void destroy() {
     catch {			   // inside destructors, exceptions don't work
-      _releasesession();
+      _releasesession("ABORT");
     };
   }
 
@@ -2563,7 +2564,7 @@ class proxy {
         showportalstack("THROWN");
 #endif
         if (objectp(portal))
-          portal->_releasesession();
+          portal->_releasesession("ERROR");
         portal = 0;
         if (!waitforauthready)
           continue;		// Only continue if authentication did not fail
