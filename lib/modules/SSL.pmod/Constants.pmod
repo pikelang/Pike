@@ -1321,14 +1321,14 @@ constant AUTH_dss_ephemeral_dh	= 6;	// SSL 3.0
 constant AUTH_fortezza_kea	= 20;	// SSL 3.0
 constant AUTH_fortezza_dms	= 20;
 constant AUTH_ecdsa_sign        = 64;	// RFC 4492
-constant AUTH_rsa_fixed_ecdh    = 65;	// RFC 4492
-constant AUTH_ecdsa_fixed_ecdh  = 66;	// RFC 4492
+constant AUTH_rsa_fixed_ecdh    = 65;	// RFC 4492. Deprecated RFC8422:5.5
+constant AUTH_ecdsa_fixed_ecdh  = 66;	// RFC 4492. Deprecated RFC8422:5.5
 
-/* ECC curve types from RFC 4492 5.4 (ECCurveType). */
+//! ECC curve types from @rfc{4492:5.4@} (ECCurveType).
 enum CurveType {
-  CURVETYPE_explicit_prime	= 1,
-  CURVETYPE_explicit_char2	= 2,
-  CURVETYPE_named_curve		= 3,
+  CURVETYPE_explicit_prime	= 1,	//! Deprecated @rfc{8422:5.4@}
+  CURVETYPE_explicit_char2	= 2,	//! Deprecated @rfc{8422:5.4@}
+  CURVETYPE_named_curve		= 3,	//! Curve or group from @[NamedGroup].
 }
 
 /* ECBasis types from RFC 4492 5.4 errata. */
@@ -1337,55 +1337,57 @@ enum ECBasisType {
   ECBASIS_pentanomial = 2,
 }
 
-/* Groups used for elliptic curves DHE (ECDHE) and finite field DH
-   (FFDHE). RFC 4492 5.1.1 (NamedCurve) / TLS 1.3 7.4.2.5.2. */
+//! Groups used for elliptic curves DHE (ECDHE) and finite field DH (FFDHE).
+//!
+//! @seealso
+//!   @rfc{4492:5.1.1@} (NamedCurve) / TLS 1.3 7.4.2.5.2. */
 enum NamedGroup {
-  GROUP_sect163k1			= 1,	// RFC 4492
-  GROUP_sect163r1			= 2,	// RFC 4492
-  GROUP_sect163r2			= 3,	// RFC 4492
-  GROUP_sect193r1			= 4,	// RFC 4492
-  GROUP_sect193r2			= 5,	// RFC 4492
-  GROUP_sect233k1			= 6,	// RFC 4492
-  GROUP_sect233r1			= 7,	// RFC 4492
-  GROUP_sect239k1			= 8,	// RFC 4492
-  GROUP_sect283k1			= 9,	// RFC 4492
-  GROUP_sect283r1			= 10,	// RFC 4492
-  GROUP_sect409k1			= 11,	// RFC 4492
-  GROUP_sect409r1			= 12,	// RFC 4492
-  GROUP_sect571k1			= 13,	// RFC 4492
-  GROUP_sect571r1			= 14,	// RFC 4492
-  GROUP_secp160k1			= 15,	// RFC 4492
-  GROUP_secp160r1			= 16,	// RFC 4492
-  GROUP_secp160r2			= 17,	// RFC 4492
-  GROUP_secp192k1			= 18,	// RFC 4492
-  GROUP_secp192r1			= 19,	// RFC 4492
-  GROUP_secp224k1			= 20,	// RFC 4492
-  GROUP_secp224r1			= 21,	// RFC 4492
-  GROUP_secp256k1			= 22,	// RFC 4492
-  GROUP_secp256r1			= 23,	// RFC 4492
-  GROUP_secp384r1			= 24,	// RFC 4492
-  GROUP_secp521r1			= 25,	// RFC 4492
+  GROUP_sect163k1			= 1,	//! @rfc{4492@}
+  GROUP_sect163r1			= 2,	//! @rfc{4492@}
+  GROUP_sect163r2			= 3,	//! @rfc{4492@}
+  GROUP_sect193r1			= 4,	//! @rfc{4492@}
+  GROUP_sect193r2			= 5,	//! @rfc{4492@}
+  GROUP_sect233k1			= 6,	//! @rfc{4492@}
+  GROUP_sect233r1			= 7,	//! @rfc{4492@}
+  GROUP_sect239k1			= 8,	//! @rfc{4492@}
+  GROUP_sect283k1			= 9,	//! @rfc{4492@}
+  GROUP_sect283r1			= 10,	//! @rfc{4492@}
+  GROUP_sect409k1			= 11,	//! @rfc{4492@}
+  GROUP_sect409r1			= 12,	//! @rfc{4492@}
+  GROUP_sect571k1			= 13,	//! @rfc{4492@}
+  GROUP_sect571r1			= 14,	//! @rfc{4492@}
+  GROUP_secp160k1			= 15,	//! @rfc{4492@}
+  GROUP_secp160r1			= 16,	//! @rfc{4492@}
+  GROUP_secp160r2			= 17,	//! @rfc{4492@}
+  GROUP_secp192k1			= 18,	//! @rfc{4492@}
+  GROUP_secp192r1			= 19,	//! @rfc{4492@}
+  GROUP_secp224k1			= 20,	//! @rfc{4492@}
+  GROUP_secp224r1			= 21,	//! @rfc{4492@}
+  GROUP_secp256k1			= 22,	//! @rfc{4492@}
+  GROUP_secp256r1			= 23,	//! @rfc{4492@}
+  GROUP_secp384r1			= 24,	//! @rfc{4492@}
+  GROUP_secp521r1			= 25,	//! @rfc{4492@}
 
-  GROUP_brainpoolP256r1			= 26,	// RFC 7027
-  GROUP_brainpoolP384r1			= 27,	// RFC 7027
-  GROUP_brainpoolP512r1			= 28,	// RFC 7027
+  GROUP_brainpoolP256r1			= 26,	//! @rfc{7027@}
+  GROUP_brainpoolP384r1			= 27,	//! @rfc{7027@}
+  GROUP_brainpoolP512r1			= 28,	//! @rfc{7027@}
 
-  GROUP_ecdh_x25519			= 29,	// RFC 8422
-  GROUP_ecdh_x448			= 30,	// RFC 8422
+  GROUP_ecdh_x25519			= 29,	//! @rfc{8422@}
+  GROUP_ecdh_x448			= 30,	//! @rfc{8422@}
 
-  GROUP_ffdhe2048			= 256,	// RFC 7919
-  GROUP_ffdhe3072			= 257,	// RFC 7919
-  GROUP_ffdhe4096			= 258,	// RFC 7919
-  GROUP_ffdhe6144			= 259,	// RFC 7919
-  GROUP_ffdhe8192			= 260,	// RFC 7919
+  GROUP_ffdhe2048			= 256,	//! @rfc{7919@}
+  GROUP_ffdhe3072			= 257,	//! @rfc{7919@}
+  GROUP_ffdhe4096			= 258,	//! @rfc{7919@}
+  GROUP_ffdhe6144			= 259,	//! @rfc{7919@}
+  GROUP_ffdhe8192			= 260,	//! @rfc{7919@}
 
-  GROUP_ffdhe_private0			= 508,	// RFC 7919
-  GROUP_ffdhe_private1			= 509,	// RFC 7919
-  GROUP_ffdhe_private2			= 510,	// RFC 7919
-  GROUP_ffdhe_private3			= 511,	// RFC 7919
+  GROUP_ffdhe_private0			= 508,	//! @rfc{7919@}
+  GROUP_ffdhe_private1			= 509,	//! @rfc{7919@}
+  GROUP_ffdhe_private2			= 510,	//! @rfc{7919@}
+  GROUP_ffdhe_private3			= 511,	//! @rfc{7919@}
 
-  GROUP_arbitrary_explicit_prime_curves	= 0xFF01,
-  GROUP_arbitrary_explicit_char2_curves	= 0xFF02,
+  GROUP_arbitrary_explicit_prime_curves	= 0xFF01,	//! Deprecated @rfc{8422:5.1.1@}
+  GROUP_arbitrary_explicit_char2_curves	= 0xFF02,	//! Deprecated @rfc{8422:5.1.1@}
 }
 
 //! Lookup for Pike ECC name to @[NamedGroup].
