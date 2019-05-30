@@ -38,6 +38,7 @@
 #include "pike_rusage.h"
 #include "pike_cpulib.h"
 #include "pike_compiler.h"
+#include "sprintf.h"
 
 #include <errno.h>
 #include <math.h>
