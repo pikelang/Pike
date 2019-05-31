@@ -1586,6 +1586,12 @@ mapping(string(8bit):SignatureScheme)
   SIGNATURE_ecdsa_secp384r1_sha384,
   Standards.PKCS.Identifiers.ecdsa_sha512_id->get_der():
   SIGNATURE_ecdsa_secp521r1_sha512,
+
+  // EdDSA
+  Standards.PKCS.Identifiers.eddsa25519_id->get_der():
+  SIGNATURE_ed25519,
+  Standards.PKCS.Identifiers.eddsa448_id->get_der():
+  SIGNATURE_ed448,
 ]);
 
 //! A chain of X509 certificates with corresponding private key.
