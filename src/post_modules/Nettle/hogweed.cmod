@@ -1395,6 +1395,11 @@ PIKECLASS Curve25519
 
       apply_external(1, Nettle_Curve25519_Point_program_fun_num, 1);
     }
+
+    PIKEFUN string(8bit) encode()
+    {
+      f_Nettle_Curve25519_Point_get_x(args);
+    }
   }
   /*! @endclass Point
    */
