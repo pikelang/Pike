@@ -2854,7 +2854,8 @@ static void file_open(INT32 args)
 }
 
 #ifdef HAVE_OPENAT
-/*! @decl Stdio.File openat(string filename, string mode)
+/*! @decl Stdio.File openat(string filename)
+ *! @decl Stdio.File openat(string filename, string mode)
  *! @decl Stdio.File openat(string filename, string mode, int access)
  *!
  *! Open a file relative to an opened directory.
@@ -2871,16 +2872,16 @@ static void file_open(INT32 args)
 static void file_openat(INT32 args)
 {
   int flags, fd, dir_fd;
-  int access = 00666;
+  int access = 0777;
   int err;
-  struct pike_string *str, *flag_str;
+  struct pike_string *str, *flag_str = 0;
 
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("openat", args, "%S%S.%d", &str, &flag_str, &access);
+  get_all_args("openat", args, "%S.%S%d", &str, &flag_str, &access);
 
-  flags = parse(flag_str->str);
+  flags = flag_str ? parse(flag_str->str) : FILE_READ;
 
   if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */

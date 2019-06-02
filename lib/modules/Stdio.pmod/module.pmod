@@ -791,6 +791,7 @@ class File
   }
 
 #if constant(_Stdio.__HAVE_OPENAT__)
+  //! @decl File openat(string filename)
   //! @decl File openat(string filename, string mode)
   //! @decl File openat(string filename, string mode, int mask)
   //!
@@ -798,10 +799,8 @@ class File
   //!
   //! @seealso
   //!   @[File.statat()], @[File.unlinkat()]
-  File openat(string filename, string mode, int|void mask)
+  File openat(string filename, string|void mode, int|void mask)
   {
-    if(query_num_arg()<3)
-      mask = 0777;
     if(Fd fd = ::openat(filename, mode, mask))
     {
       File o = function_object(fd->read);
@@ -2143,6 +2142,7 @@ class FILE
   }
 
 #if constant(_Stdio.__HAVE_OPENAT__)
+  //! @decl FILE openat(string filename)
   //! @decl FILE openat(string filename, string mode)
   //! @decl FILE openat(string filename, string mode, int mask)
   //!
@@ -2151,10 +2151,8 @@ class FILE
   //!
   //! @seealso
   //!   @[Stdio.File()->openat()]
-  FILE openat(string filename, string mode, int|void mask)
+  FILE openat(string filename, string|void mode, int|void mask)
   {
-    if(query_num_arg()<3)
-      mask = 0777;
     if(Fd fd=[object(Fd)]_fd->openat(filename, mode, mask))
     {
       FILE o = function_object(fd->read);
