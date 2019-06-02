@@ -1495,7 +1495,7 @@ constant ECC_CURVES = ([
 #if constant(Crypto.ECC.SECP_521R1)
   GROUP_secp521r1: Crypto.ECC.SECP_521R1,
 #endif
-#if constant(Crypto.ECC.Curve25519) && defined(SSL3_EXPERIMENTAL)
+#if constant(Crypto.ECC.Curve25519)
   GROUP_ecdh_x25519: Crypto.ECC.Curve25519,
 #endif
 ]);
