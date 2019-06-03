@@ -3660,7 +3660,7 @@ PIKECLASS BlockCipher16
     INHERIT "__builtin.Nettle.AE";
 
     /*! @decl string(8bit) name()
-     *! Returns the name of the base cipher with @expr{".CCM"@} appended.
+     *! Returns the name of the base cipher with @expr{".KW"@} appended.
      */
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
