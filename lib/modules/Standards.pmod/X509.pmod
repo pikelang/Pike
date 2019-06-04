@@ -222,6 +222,28 @@ protected class ECDSAVerifier
 }
 #endif
 
+#if constant(Crypto.ECC.Curve25519)
+protected class EdDSAVerifier
+{
+  inherit Verifier;
+  constant type = "eddsa";
+
+  protected void create(string(8bit) key, Identifier curve_id)
+  {
+    Crypto.ECC.Curve curve;
+    foreach(values(Crypto.ECC), mixed c) {
+      if (objectp(c) && c->pkcs_eddsa_id && (c->pkcs_eddsa_id() == curve_id)) {
+	curve = [object(Crypto.ECC.Curve)]c;
+	break;
+      }
+    }
+    if(!curve) return;
+    DBG("ECC Edwards Curve: %O (%O)\n", curve, curve_id);
+    pkc = curve->EdDSA()->set_public_key(key);
+  }
+}
+#endif
+
 protected Verifier make_verifier(Object _keyinfo)
 {
   if( _keyinfo->type_name != "SEQUENCE" )
@@ -275,6 +297,19 @@ protected Verifier make_verifier(Object _keyinfo)
     Verifier ver = ECDSAVerifier(str->value, params);
     if(ver->pkc) return ver;
     return NULL("make_verifier: Unsupported ECDSA curve.\n");
+  }
+#endif
+
+#if constant(Crypto.ECC.Curve25519)
+  if((< .PKCS.Identifiers.eddsa25519_id->get_der(),
+	.PKCS.Identifiers.eddsa448_id->get_der() >)[seq[0]->get_der()])
+  {
+    if( sizeof(seq)!=1 )
+      return NULL("Illegal EdDSA ASN.1\n");
+
+    Verifier ver = EdDSAVerifier(str->value, seq[0]);
+    if(ver->pkc) return ver;
+    return NULL("make_verifier: Unsupported EdDSA curve.\n");
   }
 #endif
 
