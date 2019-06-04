@@ -509,18 +509,26 @@ class _Curve25519 {
   }
 
   //! Returns the PKCS-1 elliptic curve identifier for the curve.
-  //! cf @rfc{5480:2.1.1@}.
+  //! cf @rfc{8410:3@}.
   Identifier pkcs_named_curve_id()
   {
     return Standards.PKCS.Identifiers.x25519_id;
   }
 
-  //! Returns the AlgorithmIdentifier as defined in @rfc{5480:2@}.
+  //! Returns the AlgorithmIdentifier for the curve as
+  //! defined in @rfc{8410:3@}.
   Sequence pkcs_algorithm_identifier()
   {
     return
       Sequence( ({ Standards.PKCS.Identifiers.x25519_id,
 		}) );
+  }
+
+  //! Returns the EdDSA AlgorithmIdentifier as defined in
+  //! @rfc{8410:3@}.
+  Identifier pkcs_eddsa_id()
+  {
+    return Standards.PKCS.Identifiers.eddsa25519_id;
   }
 
   //! Edwards Curve Digital Signing Algorithm
