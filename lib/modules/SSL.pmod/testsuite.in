@@ -1449,11 +1449,22 @@ cond_resolv(Crypto.ECC, [[
 dnl --- ECC CURVES TEST ---
 dnl Attempt to connect, supporting only one curve at a time.
 test_tests([[
-object make_context(Crypto.ECC.Curve curve) {
+object make_context(Crypto.ECC.Curve curve, int|void group) {
   SSL.Context ctx = TestContext();
+
+  if (group) {
+    ctx->ecc_curves = ({ group });
+  }
+
   ctx->random = random_string;
-  Crypto.Sign ecdsa =
-    curve->ECDSA()->set_random(random_string)->generate_key();
+  Crypto.Sign ecdsa;
+  if (curve->ECDSA) {
+    ecdsa =
+      curve->ECDSA()->set_random(random_string)->generate_key();
+  } else {
+    ecdsa =
+      curve->EdDSA()->set_random(random_string)->generate_key();
+  }
   mapping attrs = ([
     "organizationName" : "Test",
     "commonName" : "*",
@@ -1470,18 +1481,11 @@ array(int) a() {
   int successes;
   int tests;
 
-  foreach( ({
-    // Crypto.ECC.SECP_192R1, // Tested above.
-#if constant(Crypto.ECC.SECP_224R1)
-    Crypto.ECC.SECP_224R1,
-#endif
-    Crypto.ECC.SECP_256R1,
-    Crypto.ECC.SECP_384R1,
-    Crypto.ECC.SECP_521R1,
-  }), Crypto.ECC.Curve curve)
-  {
-    log_status("Testing ECDSA curve %O...", curve->name());
-    object server_ctx = make_context(curve);
+  foreach(sort(indices(SSL.Constants.ECC_CURVES)), int group) {
+    Crypto.ECC.Curve curve = SSL.Constants.ECC_CURVES[group];
+    log_status("Testing ECDSA curve %O (%s)...",
+               curve->name(), SSL.Constants.fmt_constant(group, "GROUP"));
+    object server_ctx = make_context(curve, group);
     array suites = server_ctx->get_suites(128, 2);
     int count = test_ssl_connection(0x300, 0x303, 0x303, 0x303,
 				    client_msg,server_ctx,suites);
