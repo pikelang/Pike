@@ -343,12 +343,19 @@ protected local inherit InternalSocket : Other;
 local inherit InternalSocket : Base;
 
 //!
-protected void create()
+protected void create(void|string direction)
 {
-  Stdio.Buffer abuf = Stdio.Buffer();
-  Stdio.Buffer bbuf = Stdio.Buffer();
+  Stdio.Buffer abuf, bbuf;
   Thread.Mutex mux = Thread.Mutex();
   Thread.Condition cond = Thread.Condition();
+
+  if (!direction)
+    direction = "rw";
+
+  if (has_value(direction, "w"))
+    abuf = Stdio.Buffer();
+  if (has_value(direction, "r"))
+    bbuf = Stdio.Buffer();
 
   Other::create(Base::this, abuf, bbuf, mux, cond);
   Base::create(Other::this, bbuf, abuf, mux, cond);
