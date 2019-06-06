@@ -1754,64 +1754,91 @@ class CertificatePair
 
     if (has_value(sign_algs, 0)) error("Unknown signature algorithm.\n");
 
-    // FIXME: This probably needs to look at the leaf cert extensions!
-    this::cert_type = ([
-      SIGNATURE_rsa: AUTH_rsa_sign,
-      SIGNATURE_dsa: AUTH_dss_sign,
-      SIGNATURE_ecdsa: AUTH_ecdsa_sign,
-    ])[sign_algs[0] & SIGNATURE_MASK];
-
     set_globs(tbss[0], extra_name_globs);
 
     // FIXME: Ought to check certificate extensions.
     //        cf RFC 5246 7.4.2.
     ke_mask = 0;
     ke_mask_invariant = 0;
-    switch(sign_algs[0] & SIGNATURE_MASK) {
-    case SIGNATURE_rsa:
-      foreach(({ KE_rsa, KE_rsa_fips, KE_dhe_rsa, KE_ecdhe_rsa, KE_rsa_psk,
-		 KE_rsa_export,
-	      }),
-	      KeyExchangeType ke) {
-	ke_mask |= 1<<ke;
+    if ((sign_algs[0] & HASH_MASK) == HASH_intrinsic) {
+      this::cert_type = ([
+	SIGNATURE_ed25519: AUTH_ecdsa_sign,
+	SIGNATURE_ed448: AUTH_ecdsa_sign,
+      ])[sign_algs[0]];
+      if (this::cert_type) {
+	ke_mask |= 1<<KE_ecdhe_ecdsa;
+	if ((sizeof(sign_algs) == 1) ||
+	    ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_ecdsa) ||
+	    (< SIGNATURE_ed25519, SIGNATURE_ed448 >)[sign_algs[1]]) {
+	  // RFC 4492 2.1: ECDH_ECDSA
+	  // In ECDH_ECDSA, the server's certificate MUST contain
+	  // an ECDH-capable public key and be signed with ECDSA.
+	  ke_mask |= 1<<KE_ecdh_ecdsa;
+	} else if ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_rsa) {
+	  // RFC 4492 2.3: ECDH_RSA
+	  // This key exchange algorithm is the same as ECDH_ECDSA
+	  // except that the server's certificate MUST be signed
+	  // with RSA rather than ECDSA.
+	  ke_mask |= 1<<KE_ecdh_rsa;
+	}
+	ke_mask_invariant = ke_mask | ((1<<KE_ecdh_ecdsa) | (1<<KE_ecdh_rsa));
       }
-      ke_mask_invariant = ke_mask;
-      break;
-    case SIGNATURE_dsa:
-      ke_mask |= 1<<KE_dhe_dss;
-      if ((sizeof(sign_algs) == 1) ||
-	  ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_dsa)) {
-	// RFC 4346 7.4.2: DH_DSS
-	// Diffie-Hellman key. The algorithm used
-	// to sign the certificate MUST be DSS.
-	ke_mask |= 1<<KE_dh_dss;
-      } else if ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_rsa) {
-	// RFC 4346 7.4.2: DH_RSA
-	// Diffie-Hellman key. The algorithm used
-	// to sign the certificate MUST be RSA.
-	ke_mask |= 1<<KE_dh_rsa;
+    } else {
+      // FIXME: This probably needs to look at the leaf cert extensions!
+      this::cert_type = ([
+	SIGNATURE_rsa: AUTH_rsa_sign,
+	SIGNATURE_dsa: AUTH_dss_sign,
+	SIGNATURE_ecdsa: AUTH_ecdsa_sign,
+      ])[sign_algs[0] & SIGNATURE_MASK];
+
+      switch(sign_algs[0] & SIGNATURE_MASK) {
+      case SIGNATURE_rsa:
+	foreach(({ KE_rsa, KE_rsa_fips, KE_dhe_rsa, KE_ecdhe_rsa, KE_rsa_psk,
+		   KE_rsa_export,
+		}),
+		KeyExchangeType ke) {
+	  ke_mask |= 1<<ke;
+	}
+	ke_mask_invariant = ke_mask;
+	break;
+      case SIGNATURE_dsa:
+	ke_mask |= 1<<KE_dhe_dss;
+	if ((sizeof(sign_algs) == 1) ||
+	    ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_dsa)) {
+	  // RFC 4346 7.4.2: DH_DSS
+	  // Diffie-Hellman key. The algorithm used
+	  // to sign the certificate MUST be DSS.
+	  ke_mask |= 1<<KE_dh_dss;
+	} else if ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_rsa) {
+	  // RFC 4346 7.4.2: DH_RSA
+	  // Diffie-Hellman key. The algorithm used
+	  // to sign the certificate MUST be RSA.
+	  ke_mask |= 1<<KE_dh_rsa;
+	}
+	ke_mask_invariant = ke_mask | ((1<<KE_dh_dss) | (1<<KE_dh_rsa));
+	break;
+      case SIGNATURE_ecdsa:
+	ke_mask |= 1<<KE_ecdhe_ecdsa;
+	if ((sizeof(sign_algs) == 1) ||
+	    ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_ecdsa)) {
+	  // RFC 4492 2.1: ECDH_ECDSA
+	  // In ECDH_ECDSA, the server's certificate MUST contain
+	  // an ECDH-capable public key and be signed with ECDSA.
+	  ke_mask |= 1<<KE_ecdh_ecdsa;
+	} else if ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_rsa) {
+	  // RFC 4492 2.3: ECDH_RSA
+	  // This key exchange algorithm is the same as ECDH_ECDSA
+	  // except that the server's certificate MUST be signed
+	  // with RSA rather than ECDSA.
+	  ke_mask |= 1<<KE_ecdh_rsa;
+	}
+	ke_mask_invariant = ke_mask | ((1<<KE_ecdh_ecdsa) | (1<<KE_ecdh_rsa));
+	break;
       }
-      ke_mask_invariant = ke_mask | ((1<<KE_dh_dss) | (1<<KE_dh_rsa));
-      break;
-    case SIGNATURE_ecdsa:
-      ke_mask |= 1<<KE_ecdhe_ecdsa;
-      if ((sizeof(sign_algs) == 1) ||
-	  ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_ecdsa)) {
-	// RFC 4492 2.1: ECDH_ECDSA
-	// In ECDH_ECDSA, the server's certificate MUST contain
-	// an ECDH-capable public key and be signed with ECDSA.
-	ke_mask |= 1<<KE_ecdh_ecdsa;
-      } else if ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_rsa) {
-	// RFC 4492 2.3: ECDH_RSA
-	// This key exchange algorithm is the same as ECDH_ECDSA
-	// except that the server's certificate MUST be signed
-	// with RSA rather than ECDSA.
-	ke_mask |= 1<<KE_ecdh_rsa;
-      }
-      ke_mask_invariant = ke_mask | ((1<<KE_ecdh_ecdsa) | (1<<KE_ecdh_rsa));
-      break;
     }
-    if (!ke_mask) error("Certificate not useful for TLS!\n");
+
+    if (!ke_mask) error("Certificate not useful for TLS!\n"
+			"sign_algs: %O\n", sign_algs);
   }
 
   protected string _sprintf(int c)
