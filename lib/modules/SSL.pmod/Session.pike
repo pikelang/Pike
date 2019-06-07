@@ -318,6 +318,8 @@ private array(CertificatePair)
     array(CertificatePair) c = [array(CertificatePair)]
       filter(certs, lambda(CertificatePair cp)
         {
+	  int scheme = cp->sign_algs[0];
+	  if ((scheme & HASH_MASK) == HASH_intrinsic) return 1;
           Crypto.Hash hash = [object(Crypto.Hash)]
             HASH_lookup[cp->sign_algs[0] & HASH_MASK];
           return hash->digest_size() <= h_max;
