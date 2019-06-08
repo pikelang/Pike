@@ -289,6 +289,9 @@ array(int) signature_algorithms = ({
 #endif
   SIGNATURE_rsa_pkcs1_sha384,
 #endif
+#if constant(Crypto.ECC.Curve25519)
+  SIGNATURE_ed25519,
+#endif
 #if constant(Crypto.ECC.Curve)
   SIGNATURE_ecdsa_secp256r1_sha256,
 #endif
@@ -318,15 +321,18 @@ array(int) get_signature_algorithms(array(int)|void signature_algorithms)
   }
 
 #if constant(Crypto.ECC.Curve) && constant(Crypto.SHA512) && \
-  constant(Crypto.SHA384) && constant(Crypto.SHA224)
+  constant(Crypto.SHA384) && constant(Crypto.SHA224) && \
+  constant(Crypto.ECC.Curve25519)
   return signature_algorithms;
 #else
-  return [array(array(int))]
+  return [array(int)]
     filter(signature_algorithms,
-		lambda(array(int) pair) {
-		  [int hash, int sign] = pair;
+		lambda(SignatureScheme scheme) {
 #if !constant(Crypto.ECC.Curve)
-		  if (sign == SIGNATURE_ecdsa) return 0;
+		  if ((scheme & SIGNATURE_MASK) == SIGNATURE_ecdsa) return 0;
+#endif
+#if constant(Crypto.ECC.Curve25519)
+		  if (scheme == SIGNATURE_ed25519) return 1;
 #endif
 		  if ((<
 #if !constant(Crypto.SHA512)
@@ -338,7 +344,8 @@ array(int) get_signature_algorithms(array(int)|void signature_algorithms)
 #if !constant(Crypto.SHA224)
 			HASH_sha224,
 #endif
-		      >)[hash]) return 0;
+			HASH_intrinsic,
+		      >)[scheme & HASH_MASH]) return 0;
 		  return 1;
 		});
 #endif
