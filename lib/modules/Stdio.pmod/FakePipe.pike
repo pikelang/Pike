@@ -9,12 +9,13 @@
 #define DEFAULT_WRITE_LIMIT	0x10000
 #endif
 
+protected Thread.Mutex mux = Thread.Mutex();
+protected Thread.Condition cond = Thread.Condition();
+
 //! Class that implements one end of an emulated  bi-directional pipe/socket.
-protected class InternalSocket( protected this_program other,
-				protected Stdio.Buffer read_buffer,
-				protected Stdio.Buffer write_buffer,
-				protected Thread.Mutex mux,
-				protected Thread.Condition cond )
+protected class InternalSocket( protected this_program _other,
+				Stdio.Buffer _read_buffer,
+				Stdio.Buffer _write_buffer)
 {
   protected int internal_errno = 0;
 
@@ -29,11 +30,11 @@ protected class InternalSocket( protected this_program other,
   {
     switch(direction || "rw") {
     case "r":
-      return !!read_buffer;
+      return !!_read_buffer;
     case "w":
-      return !!write_buffer;
+      return !!_write_buffer;
     default:
-      return !!(read_buffer || write_buffer);
+      return !!(_read_buffer || _write_buffer);
     }
   }
 
@@ -83,28 +84,21 @@ protected class InternalSocket( protected this_program other,
   protected void internal_poll()
   {
     poll_co = UNDEFINED;
-    if (__read_cb) {
-      if (read_buffer && sizeof(read_buffer)) {
-	__read_cb(__id, read_buffer->read());
-	other->schedule_poll();
-	schedule_poll();
-	return;
-      } else if (__close_cb) {
-	if (!other->is_open("w")) {
-	  __close_cb(__id);
-	  schedule_poll();
-	  return;
-	}
-      }
+    if (__read_cb && _read_buffer && sizeof(_read_buffer)) {
+      __read_cb(__id, _read_buffer->read());
+      if (_other->_write_buffer)
+        _other->schedule_poll();
     }
-    if (__write_cb) {
-      if (write_buffer &&
-	  ((sizeof(write_buffer) < write_limit) || !other->is_open("r"))) {
-	__write_cb(__id);
-	schedule_poll();
-	return;
-      }
+    if (__close_cb && !(_read_buffer && sizeof(_read_buffer))
+     && !_other->_write_buffer) {
+      function ccb = __close_cb;
+      __close_cb = 0;                // Make sure it is called just once
+      if (ccb)                      // Avoid a race
+        ccb(__id);
     }
+    if (__write_cb && _write_buffer
+     && (sizeof(_write_buffer) < write_limit || !_other->_read_buffer))
+      __write_cb(__id);
   }
 
   // Internal
@@ -217,31 +211,33 @@ protected class InternalSocket( protected this_program other,
   //!
   int close(string|void direction)
   {
-    switch(direction || "rw") {
-    case "r":
-      if (!read_buffer) {
-	internal_errno = System.EBADF;
-	return -1;
+ebadf:
+    do {
+      switch (direction) {
+        case "r":
+          if (!_read_buffer)
+            break ebadf;
+          _read_buffer = UNDEFINED;
+          __close_cb = __read_cb = UNDEFINED;
+          break;
+        case "w":
+          if (!_write_buffer)
+            break ebadf;
+          _write_buffer = UNDEFINED;
+          __write_cb = UNDEFINED;
+          break;
+        default:
+          if (!_read_buffer && !_write_buffer)
+            break ebadf;
+          _read_buffer = _write_buffer = UNDEFINED;
+          __close_cb = __read_cb = __write_cb = UNDEFINED;
+          break;
       }
-      read_buffer = UNDEFINED;
-      break;
-    case "w":
-      if (!write_buffer) {
-	internal_errno = System.EBADF;
-	return -1;
-      }
-      write_buffer = UNDEFINED;
-      break;
-    default:
-      if (!read_buffer && !write_buffer) {
-	internal_errno = System.EBADF;
-	return -1;
-      }
-      read_buffer = write_buffer = UNDEFINED;
-      break;
-    }
-    other->schedule_poll();
-    return 0;
+      _other->schedule_poll();
+      return 0;
+    } while(0);
+    internal_errno = System.EBADF;
+    return -1;
   }
 
   //!
@@ -251,26 +247,26 @@ protected class InternalSocket( protected this_program other,
     Stdio.Buffer ret;
     Thread.MutexKey key = mux->lock();
     while(1) {
-      if (!read_buffer) {
+      if (!_read_buffer) {
 	// Read direction closed.
 	internal_errno = System.EBADF;
 	return 0;
       }
-      if (nbytes <= sizeof(read_buffer)) {
-	ret = read_buffer->read_buffer(nbytes);
+      if (nbytes <= sizeof(_read_buffer)) {
+	ret = _read_buffer->_read_buffer(nbytes);
 	break;
       }
-      if (not_all || (state & STATE_NONBLOCKING) || (!other->is_open("w"))) {
-	ret = read_buffer;
+      if (not_all || (state & STATE_NONBLOCKING) || !_other->_write_buffer) {
+	ret = _read_buffer;
 	break;
       }
       if (nbytes > DEFAULT_WRITE_LIMIT) {
-	other->set_write_limit(nbytes);
-	other->schedule_poll();
+	_other->set_write_limit(nbytes);
+	_other->schedule_poll();
       }
       cond->wait(key);
     }
-    other->set_write_limit(DEFAULT_WRITE_LIMIT);
+    _other->set_write_limit(DEFAULT_WRITE_LIMIT);
     return ret->read();
   }
 
@@ -278,13 +274,13 @@ protected class InternalSocket( protected this_program other,
   int write(sprintf_format|array(string(8bit)) data,
 	    sprintf_args ...args)
   {
-    if (!write_buffer) {
+    if (!_write_buffer) {
       // Write direction closed.
       internal_errno = System.EBADF;
       return -1;
     }
-    if (!other->is_open("r")) {
-      // Other end has closed.
+    if (!_other->_read_buffer) {
+      // _other end has closed.
       internal_errno = System.EPIPE;
       return -1;
     }
@@ -292,12 +288,12 @@ protected class InternalSocket( protected this_program other,
     if (sizeof(args)) data = sprintf(data, @args);
     if (!sizeof(data)) return 0;
     if (state & STATE_NONBLOCKING) {
-      if (sizeof(write_buffer) >= write_limit) return 0;
+      if (sizeof(_write_buffer) >= write_limit) return 0;
       if (sizeof(data) > write_limit) data = data[..write_limit-1];
     }
-    write_buffer->add(data);
+    _write_buffer->add(data);
 
-    other->schedule_poll();
+    _other->schedule_poll();
     schedule_poll();
     return sizeof(data);
   }
@@ -307,8 +303,8 @@ protected class InternalSocket( protected this_program other,
   {
     Thread.MutexKey key = mux->lock();
     while (1) {
-      if (sizeof(read_buffer)) return 1;
-      if (!other->is_open("w")) {
+      if (sizeof(_read_buffer)) return 1;
+      if (!_other->_write_buffer) {
 	if (!not_eof) return 1;
 	internal_errno = System.EPIPE;
 	return -1;
@@ -320,15 +316,15 @@ protected class InternalSocket( protected this_program other,
   }
 
   //! Get the other end of the emulated pipe/socket.
-  this_program get_other()
+  this_program `other()
   {
-    return other;
+    return _other;
   }
 
   protected void _destruct()
   {
     close();
-    other->close();
+    _other->close();
     if (poll_co) {
       (backend || Pike.DefaultBackend)->remove_call_out(poll_co);
       poll_co = UNDEFINED;
@@ -337,17 +333,13 @@ protected class InternalSocket( protected this_program other,
   }
 }
 
-protected local inherit InternalSocket : Other;
-
 //!
-local inherit InternalSocket : Base;
+inherit InternalSocket;
 
 //!
 protected void create(void|string direction)
 {
   Stdio.Buffer abuf, bbuf;
-  Thread.Mutex mux = Thread.Mutex();
-  Thread.Condition cond = Thread.Condition();
 
   if (!direction)
     direction = "rw";
@@ -357,7 +349,6 @@ protected void create(void|string direction)
   if (has_value(direction, "r"))
     bbuf = Stdio.Buffer();
 
-  Other::create(Base::this, abuf, bbuf, mux, cond);
-  Base::create(Other::this, bbuf, abuf, mux, cond);
+  ::create(InternalSocket(this, abuf, bbuf), bbuf, abuf);
 }
 
