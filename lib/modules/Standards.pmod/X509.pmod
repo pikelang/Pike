@@ -17,7 +17,7 @@ import Standards.ASN1.Types;
 #endif
 
 #ifdef X509_VALIDATION_DEBUG
-#define NULL(X ...) werror(X) && 0
+#define NULL(X ...) (werror(X), 0)
 #else
 #define NULL(X ...) 0
 #endif
