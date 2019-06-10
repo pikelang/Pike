@@ -24,6 +24,10 @@
 #include "shuffler.h"
 #include "sources.h"
 
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+
 DECLARATIONS
 
 #if 0
@@ -78,7 +82,7 @@ static void free_source( struct source *s )
  *! @decl void give_back( Shuffle shuffle, int amount )
  *!
  *! This function will be called by the @[Shuffle] object to report
- *! that some data assigned to it by this throttler was unusued, and
+ *! that some data assigned to it by this throttler was unused, and
  *! can be given to another @[Shuffle] object instead.
  */
 /*! @endclass
@@ -107,7 +111,11 @@ PIKECLASS Shuffle
    *!
   */
 
-  PIKEVAR mixed done_callback;
+  PIKEVAR function(object, int:array(string(8bit))) done_callback;
+
+  PIKEVAR function(object, int:array(string(8bit))) wrap_callback;
+  CVAR struct svalue prefix, suffix;
+  CVAR int leftprefix, leftsuffix;
 
   PIKEVAR mixed request_arg;
 
@@ -215,13 +223,15 @@ PIKECLASS Shuffle
 
   INIT
   {
-    THIS->leftovers.do_free = 0;
     THIS->shuffler = 0;
     THIS->throttler = 0;
     THIS->sent = 0;
     mark_free_svalue (&THIS->done_callback);
+    mark_free_svalue (&THIS->wrap_callback);
     SET_SVAL(THIS->request_arg, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+    THIS->leftprefix = 0;
     THIS->leftovers.len = 0;
+    THIS->leftsuffix = 0;
     THIS->current_source = NULL;
     THIS->file_obj = NULL;
     THIS->state = INITIAL;
@@ -260,18 +270,10 @@ PIKECLASS Shuffle
       free_source( THIS->current_source );
       THIS->current_source = n;
     }
-
-    if( THIS->leftovers.data && THIS->leftovers.do_free )
-    {
-      debug_malloc_touch(THIS->leftovers.data);
-      free( THIS->leftovers.data );
-      THIS->leftovers.data = NULL;
-      THIS->leftovers.do_free = 0;
-    }
   }
 
   static void __send_more_callback( struct Shuffle_struct *t, int amount );
-  static void _request( struct Shuffle_struct *t, int amount )
+  static void _request( struct Shuffle_struct *t, int amount)
   {
     SHUFFLE_DEBUG3("_request(%d) from %p\n", t, amount, t->throttler );
     if( t->throttler && t->throttler->prog )
@@ -370,17 +372,6 @@ PIKECLASS Shuffle
       t->current_source = n;
     }
 
-    /* Free any data left in pipe. */
-    if( t->leftovers.data && t->leftovers.do_free )
-    {
-      debug_malloc_touch( t->leftovers.data );
-      free( t->leftovers.data );
-      t->leftovers.data = NULL;
-      t->leftovers.do_free = 0;
-    }
-
-    t->leftovers.data = 0;
-
     /* If a callback exists, we call it at the end, because done_callback might
      * explicitly destruct this object. This happened in one of the testcases.
      * Calling done_callback at the end essentially reverts commit
@@ -406,7 +397,7 @@ PIKECLASS Shuffle
     }
   }
 
-  PIKEFUN void set_done_callback( mixed cb )
+  PIKEFUN void set_done_callback( function(object, int:void) cb )
    /*! @decl void set_done_callback( function(Shuffle,int:void) cb )
     *! Sets the done callback. This function will be called when all
     *! sources have been processed, or if an error occurs.
@@ -418,6 +409,22 @@ PIKECLASS Shuffle
     assign_svalue( &THIS->done_callback,cb);
     if (TYPEOF(THIS->done_callback) == PIKE_T_INT)
       mark_free_svalue (&THIS->done_callback);
+  }
+
+  PIKEFUN void set_wrap_callback(function(object, int:array(string(8bit))) cb)
+   /*! @decl void set_wrap_callback(function(Shuffle,int:array(string(8bit))) cb)
+    *! Sets the write callback. This function will be called on every
+    *! system write.  It returns an array of two strings, a prefix
+    *! and a suffix string which will be prepended/appended to the
+    *! data block being sent.
+    *!
+    */
+    optflags OPT_SIDE_EFFECT;
+  {
+    SHUFFLE_DEBUG2("set_wrap_callback(%p)\n", THIS, cb->u.object );
+    assign_svalue( &THIS->wrap_callback,cb);
+    if (TYPEOF(THIS->wrap_callback) == PIKE_T_INT)
+      mark_free_svalue (&THIS->wrap_callback);
   }
 
   PIKEFUN void set_request_arg( mixed arg )
@@ -450,9 +457,10 @@ PIKECLASS Shuffle
 
   static void __send_more_callback( struct Shuffle_struct *t, int amount )
   {
-    int sent = 0;
+    int sent = 0, fulllen, len, iof;
+    struct iovec iov[3];
     SHUFFLE_DEBUG2("__send_more_callback(%d)\n", t, amount );
-    while( t->leftovers.len < 1 )
+    while( t->leftprefix + t->leftovers.len + t->leftsuffix < 1 )
     {
       while( t->current_source && t->current_source->eof )
       {
@@ -474,9 +482,8 @@ PIKECLASS Shuffle
 	return;
       }
 
-      t->leftovers = t->current_source->get_data( t->current_source,
-						  MAXIMUM(amount,8192) );
-
+      t->leftovers = t->current_source->get_data(t->current_source,
+						 MAXIMUM(amount, BLOCK));
       if( t->leftovers.len == -2 )
       {
 	/* come back later (nonblocking source without more data to read) */
@@ -495,28 +502,84 @@ PIKECLASS Shuffle
 	_all_done( t, 3 );
 	return;
       }
+
+      if (TYPEOF(t->wrap_callback) != PIKE_T_FREE) {
+        SHUFFLE_DEBUG2("_wrap: Calling wrap callback: %p\n", t,
+                       t->wrap_callback.u.object);
+        push_svalue(&t->wrap_callback);
+
+        ref_push_object(t->box.ref_obj);
+        push_int(t->leftovers.len);
+
+        apply_svalue(Pike_sp - 3, 2);
+
+        if (TYPEOF(Pike_sp[-1]) == PIKE_T_ARRAY) {
+          struct array *v = Pike_sp[-1].u.array;
+          struct svalue *sv;
+
+          sv = ITEM(v);
+          switch (v->size) {
+            case 2:             // FIXME Error message for wide strings?
+              if (TYPEOF (*++sv) == T_STRING && !sv->u.string->size_shift) {
+                assign_svalue(&t->suffix, sv);
+                t->leftsuffix = t->suffix.u.string->len;
+              }
+              --sv;
+            case 1:
+              if (TYPEOF (*sv) == T_STRING && !sv->u.string->size_shift) {
+                assign_svalue(&t->prefix, sv);
+                t->leftprefix = t->prefix.u.string->len;
+              }
+          }
+        }
+        pop_stack();
+        pop_stack();
+      }
     }
+
     /* Now it's time to actually send the data. */
-    SHUFFLE_DEBUG2("__send_more_callback(): sending(%d)\n", t,
-		  MINIMUM(amount,t->leftovers.len));
-    sent = -1;
-    if( t->box.fd >= 0 )
-    {
-      THREADS_ALLOW();
-      sent = fd_write( t->box.fd, t->leftovers.data+t->leftovers.off,
-		       MINIMUM(amount,t->leftovers.len) );
-      THREADS_DISALLOW();
+    fulllen = len
+     = MINIMUM(amount, t->leftprefix + t->leftovers.len + t->leftsuffix);
+    SHUFFLE_DEBUG2("__send_more_callback(): sending(%d)\n", t, len);
+    sent = -1; iof = 0;
+    if (t->leftprefix) {
+      (*iov).iov_base
+       = t->prefix.u.string->str + t->prefix.u.string->len - t->leftprefix;
+      (*iov).iov_len = MINIMUM(t->leftprefix, len);
+      iof++;
     }
-    else if( t->file_obj )
-    {
-      push_string( make_shared_binary_string(
-		     t->leftovers.data+t->leftovers.off,
-		    MINIMUM(amount,t->leftovers.len) ) );
+    if ((len -= t->leftprefix) > 0) {
+      iov[iof].iov_base = t->leftovers.data;
+      iov[iof].iov_len = MINIMUM(t->leftovers.len, len);
+      iof++;
+      if ((len -= t->leftovers.len) > 0) {
+        iov[iof].iov_base
+         = t->suffix.u.string->str + t->suffix.u.string->len - t->leftsuffix;
+        iov[iof].iov_len = len;
+        iof++;
+      }
+    }
+    if (t->box.fd >= 0) {
+      THREADS_ALLOW();
+      sent = writev(t->box.fd, iov, iof);
+      THREADS_DISALLOW();
+    } else if(t->file_obj) {
+      struct pike_string *s = begin_shared_string(fulllen);
+      memcpy(s->str, (*iov).iov_base, len = (*iov).iov_len);
+      switch (iof) {
+        case 3:
+          memcpy(s->str + len + iov[1].iov_len, iov[2].iov_base,
+                 iov[2].iov_len);
+          /* FALL THROUGH */
+        case 2:
+          memcpy(s->str + len, iov[1].iov_base, iov[1].iov_len);
+          /* FALL THROUGH */
+      }
+      push_string(end_shared_string(s));
       apply( t->file_obj, "write", 1 );
       if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
 	sent = Pike_sp[-1].u.integer;
-      else
-      {
+      else {
 	SHUFFLE_DEBUG2("Oops: write returned object of type %d, not integer\n",
 		       t, TYPEOF(Pike_sp[-1]) );
       }
@@ -531,23 +594,22 @@ PIKECLASS Shuffle
       _all_done( t, 1 );
       return;
     }
-    if( sent )
-    {
-      t->sent += sent;
-      if( t->leftovers.len == sent )
-      {
-	t->leftovers.len = 0;
-	if( t->leftovers.do_free )
-        {
-	  free( t->leftovers.data );
-          t->leftovers.data = NULL;
-          t->leftovers.do_free = 0;
+    if (sent) {
+      int n;
+      t->sent += n = sent;
+      if (t->leftprefix >= n)
+        t->leftprefix -= n;
+      else {
+        n -= t->leftprefix;
+        t->leftprefix = 0;
+
+        if (t->leftovers.len > n) {
+          t->leftovers.len -= n;
+          t->leftovers.data += n;
+        } else {
+          t->leftsuffix -= n - t->leftovers.len;
+          t->leftovers.len = 0;
         }
-      }
-      else
-      {
-	t->leftovers.len -= sent;
-	t->leftovers.off += sent;
       }
     }
     if( sent < amount )

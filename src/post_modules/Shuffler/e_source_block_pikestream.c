@@ -24,16 +24,23 @@
 struct pf_source
 {
   struct source s;
+  struct pike_string *str;
 
   struct object *obj;
   INT64 len, skip;
 };
 
+static void frees(struct pf_source*s) {
+  if (s->str) {
+    free_string(s->str);
+    s->str = 0;
+  }
+}
 
 static struct data get_data( struct source *src, off_t len )
 {
   struct pf_source *s = (struct pf_source *)src;
-  struct data res = { 0, 0, 0, NULL };
+  struct data res;
 
   if( s->len>0 && len > s->len ) {
     len = s->len;
@@ -47,21 +54,23 @@ static struct data get_data( struct source *src, off_t len )
     apply( s->obj, "read", 1 );
 
     if(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING
+     || Pike_sp[-1].u.string->size_shift
      || !(st = Pike_sp[-1].u.string)->len) {
       pop_stack();
       break;
     }
 
-    if( st->len < s->skip )
+    if( st->len < s->skip ) {
       s->skip -= st->len;
-    else {
+      pop_stack();
+    } else {
+      frees(s);
       res.len = st->len - s->skip;
-      res.data = xalloc(res.len);
-      memcpy(res.data, st->str+s->skip, res.len);
-      res.do_free = 1;
+      s->str = st;
+      Pike_sp--;
+      res.data = st->str + s->skip;
       s->skip = 0;
     }
-    pop_stack();
   }
   while(s->skip || !res.len);
   if(res.len < len)
@@ -73,7 +82,9 @@ static struct data get_data( struct source *src, off_t len )
 
 static void free_source( struct source *src )
 {
-  free_object(((struct pf_source *)src)->obj);
+  struct pf_source *s = (struct pf_source *)src;
+  frees(s);
+  free_object(s->obj);
 }
 
 struct source *source_block_pikestream_make( struct svalue *s,
@@ -88,6 +99,7 @@ struct source *source_block_pikestream_make( struct svalue *s,
   res = calloc( 1, sizeof( struct pf_source ) );
   if( !res ) return NULL;
 
+  res->str = 0;
   res->len = len;
   res->skip = start;
 

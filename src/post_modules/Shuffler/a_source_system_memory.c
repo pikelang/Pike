@@ -35,8 +35,6 @@ static struct data get_data( struct source *src, off_t len )
   struct sm_source *s = (struct sm_source *)src;
   struct data res;
 
-  res.do_free = 0;
-  res.off = 0;
   res.data = s->mem->data + s->offset;
 
   if( len > s->len )

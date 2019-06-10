@@ -29,8 +29,6 @@ static struct data get_data( struct source *src, off_t len )
   struct ps_source *s = (struct ps_source *)src;
   struct data res;
 
-  res.do_free = 0;
-  res.off = 0;
   res.data = s->str->str + s->offset;
 
   if( len > s->len )

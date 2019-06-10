@@ -40,8 +40,6 @@ static struct data get_data( struct source *src, off_t len )
   int rr;
   len = CHUNK; /* It's safe to ignore the 'len' argument */
 
-  res.do_free = 0;
-  res.off = 0;
   res.data = s->buffer;
 
   if( len > s->len )

@@ -29,6 +29,7 @@ struct pf_source
   struct object *obj;
   struct object *cb_obj;
   struct pike_string *str;
+  int available;
 
   void (*when_data_cb)( void *a );
   void *when_data_cb_arg;
@@ -44,7 +45,7 @@ struct callback_prog
 static void setup_callbacks( struct source *src )
 {
   struct pf_source *s = (struct pf_source *)src;
-  if( !s->str )
+  if( !s->available )
   {
     ref_push_object( s->cb_obj );
     apply( s->obj, "set_read_callback", 1 );
@@ -66,65 +67,64 @@ static void remove_callbacks( struct source *src )
   pop_stack();
 }
 
+static void frees(struct pf_source*s) {
+  if (s->str) {
+    free_string(s->str);
+    s->str = 0;
+  }
+}
 
 static struct data get_data( struct source *src, off_t len )
 {
   struct pf_source *s = (struct pf_source *)src;
-  struct data res = { 0, 0, 0, NULL };
-  char *buffer = NULL;
+  struct data res;
 
-  if( s->str )
-  {
+  if (s->available) {
+    if (!s->str) {
+      s->s.eof = 1;
+      res.len = 0;
+      return res;
+    }
     len = s->str->len;
-    if( s->skip )
-    {
-      if( s->skip >= (size_t)s->str->len )
-      {
-	s->skip -= (size_t)s->str->len;
-	res.len = -2;
-	return res;
+    if (s->skip) {
+      if (s->skip >= len) {
+        frees(s);
+	s->skip -= len;
+	goto getmore;
       }
       len -= s->skip;
-      buffer = malloc( len );
-      memcpy( buffer, s->str->str+s->skip, len);
     }
-    else
-    {
-      if( s->len > 0 )
-      {
-	if( s->len < (size_t)len )
-	  len = s->len;
-	s->len -= len;
-	if( !s->len )
-	  s->s.eof = 1;
-      }
-      buffer = malloc( len );
-      memcpy( buffer, s->str->str, len );
+    if (s->len) {
+      if (s->len < (size_t)len)
+        len = s->len;
+      s->len -= len;
+      if (!s->len)
+        s->s.eof = 1;
     }
-    res.data = buffer;
+    res.data = s->str->str + s->skip;
     res.len = len;
-    res.do_free = 1;
-    free_string( s->str );
-    s->str = 0;
-    setup_callbacks( src );
-  }
-  else if( !s->len )
-    s->s.eof = 1;
-  else
+    if (s->available < 0)
+      s->s.eof = 1;
+    s->available = 0;
+  } else {
+getmore:
   /* No data available, but there should be in the future (no EOF, nor
    * out of the range of data to send as specified by the arguments to
    * source_stream_make)
    */
     res.len = -2;
-
+  }
+  setup_callbacks(src);
   return res;
 }
 
 static void free_source( struct source *src )
 {
+  struct pf_source *s = (struct pf_source *)src;
   remove_callbacks( src );
-  free_object(((struct pf_source *)src)->cb_obj);
-  free_object(((struct pf_source *)src)->obj);
+  frees(s);
+  free_object(s->cb_obj);
+  free_object(s->obj);
 }
 
 static void f_got_data( INT32 args )
@@ -134,16 +134,18 @@ static void f_got_data( INT32 args )
 
   remove_callbacks( (struct source *)s );
 
-  if( s->str ||
+  if (args < 2 ||
       TYPEOF(Pike_sp[-1]) != PIKE_T_STRING ||
       Pike_sp[-1].u.string->size_shift ||
       Pike_sp[-1].u.string->len == 0)
   {
-    s->s.eof = 1;
+    s->available = -1;
     pop_n_elems(args);
     push_int(0);
     return;
   }
+  frees(s);
+  s->available = 1;
   s->str = Pike_sp[-1].u.string;
   Pike_sp--;
   pop_n_elems(args-1);
@@ -174,6 +176,7 @@ struct source *source_pikestream_make( struct svalue *s,
 
   res->len = len;
   res->skip = start;
+  res->available = 0;
 
   res->s.get_data = get_data;
   res->s.free_source = free_source;

@@ -6,7 +6,7 @@
 
 struct data
 {
-  int len, do_free, off;
+  int len;
   char *data;
 };
 

@@ -31,6 +31,7 @@ struct fd_source
   struct source s;
 
   struct object *obj;
+  /* FIXME rewrite the code to use a single buffer */
   char _read_buffer[CHUNK], _buffer[CHUNK];
   int available;
   int fd;
@@ -60,20 +61,14 @@ static struct data get_data( struct source *src, off_t UNUSED(len) )
 {
   struct fd_source *s = (struct fd_source *)src;
   struct data res;
-  res.off = res.do_free = 0;
   res.len = s->available;
-  res.data = NULL;
 
-  if( s->available ) /* There is data in the buffer. Return it. */
-  {
+  if (res.len) { /* There is data in the buffer. Return it. */
     res.data = s->_buffer;
     memcpy( res.data, s->_read_buffer, res.len );
     s->available = 0;
     setup_callbacks( src );
-  }
-  else if( !s->len )
-    s->s.eof = 1;
-  else
+  } else if (!s->s.eof)
   /* No data available, but there should be in the future (no EOF, nor
    * out of the range of data to send as specified by the arguments to
    * source_stream_make)
@@ -116,8 +111,8 @@ static void read_callback( int UNUSED(fd), struct fd_source *s )
       s->skip -= l;
       return;
     }
-    memcpy( s->_read_buffer, s->_read_buffer+s->skip, l-s->skip );
-    l-=s->skip;
+    memmove(s->_read_buffer, s->_read_buffer+s->skip, l-s->skip);
+    l -= s->skip;
     s->skip = 0;
   }
   if( s->len > 0 )
