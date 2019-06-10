@@ -175,6 +175,11 @@ enum SignatureAlgorithm {
   SIGNATURE_rsa		= 1,	//! RSASSA PKCS1 v1.5 signature.
   SIGNATURE_dsa		= 2,	//! DSS signature.
   SIGNATURE_ecdsa	= 3,	//! ECDSA signature.
+
+  SIGNATURE_rsa_pss_256	= 4,	//! RSA PSS signature with 256 bit hash.
+  SIGNATURE_rsa_pss_384	= 5,	//! RSA PSS signature with 384 bit hash.
+  SIGNATURE_rsa_pss_512	= 6,	//! RSA PSS signature with 512 bit hash.
+
   SIGNATURE_ed25519_	= 7,	//! EdDSA 25519 signature.
   SIGNATURE_ed448_	= 8,	//! EdDSA 448 signature.
 
