@@ -541,7 +541,7 @@ array(object) spair(int type)
   case 2:
     sock1 = Stdio.FakePipe();
     DO_IF_BACKEND(sock1->set_backend(backend));
-    sock2 = sock1->get_other();
+    sock2 = sock1->other;
     break;
   }
   DO_IF_BACKEND(sock2->set_backend(backend));
