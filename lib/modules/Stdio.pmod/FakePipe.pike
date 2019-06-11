@@ -9,13 +9,13 @@
 #define DEFAULT_WRITE_LIMIT	0x10000
 #endif
 
-protected Thread.Mutex mux = Thread.Mutex();
-protected Thread.Condition cond = Thread.Condition();
-
 //! Class that implements one end of an emulated  bi-directional pipe/socket.
 protected class InternalSocket( protected this_program _other,
 				Stdio.Buffer _read_buffer,
-				Stdio.Buffer _write_buffer)
+				Stdio.Buffer _write_buffer,
+                                protected Thread.Mutex mux,
+                                protected Thread.Condition cond)
+
 {
   protected int internal_errno = 0;
 
@@ -54,7 +54,7 @@ protected class InternalSocket( protected this_program _other,
 
   // Callback handling.
 
-  protected Pike.Backend backend;
+  protected Pike.Backend backend = Pike.DefaultBackend;
   protected mixed poll_co;
 
   //!
@@ -66,13 +66,14 @@ protected class InternalSocket( protected this_program _other,
   //!
   void set_backend(Pike.Backend be)
   {
-    Thread.MutexKey key = mux->lock();
-    if (poll_co) {
-      (backend || Pike.DefaultBackend)->remove_call_out(poll_co);
-      poll_co = UNDEFINED;
+    {
+      Thread.MutexKey key = mux->lock();
+      if (poll_co) {
+        backend->remove_call_out(poll_co);
+        poll_co = UNDEFINED;
+      }
+      backend = be;
     }
-    backend = be;
-    destruct(key);
     schedule_poll();
   }
 
@@ -81,24 +82,31 @@ protected class InternalSocket( protected this_program _other,
   protected function __close_cb;
   protected mixed __id;
 
+  void _run_close_cb() {
+    if (__close_cb && _read_buffer && !sizeof(_read_buffer))
+      __close_cb(__id);
+  }
+
+  void _fill_write_buffer() {
+    if (_write_buffer) {
+      if (__write_cb && sizeof(_write_buffer) < write_limit)
+        __write_cb(__id);
+    } else
+      _run_close_cb();
+  }
+
   protected void internal_poll()
   {
     poll_co = UNDEFINED;
-    if (__read_cb && _read_buffer && sizeof(_read_buffer)) {
+    if (_write_buffer)
+      _fill_write_buffer();
+    if (this && __read_cb && _read_buffer && sizeof(_read_buffer)) {
       __read_cb(__id, _read_buffer->read());
-      if (_other->_write_buffer)
-        _other->schedule_poll();
+      if (_other)
+        _other->_fill_write_buffer();
+      if (this)
+        return schedule_poll();
     }
-    if (__close_cb && !(_read_buffer && sizeof(_read_buffer))
-     && !_other->_write_buffer) {
-      function ccb = __close_cb;
-      __close_cb = 0;                // Make sure it is called just once
-      if (ccb)                      // Avoid a race
-        ccb(__id);
-    }
-    if (__write_cb && _write_buffer
-     && (sizeof(_write_buffer) < write_limit || !_other->_read_buffer))
-      __write_cb(__id);
   }
 
   // Internal
@@ -109,9 +117,8 @@ protected class InternalSocket( protected this_program _other,
   {
     Thread.MutexKey key = mux->lock(2);
     cond->broadcast();
-    if (!poll_co) {
-      poll_co = (backend || Pike.DefaultBackend)->call_out(internal_poll, 0);
-    }
+    if (!poll_co)
+      poll_co = backend->call_out(internal_poll, 0);
   }
 
   protected enum State {
@@ -131,10 +138,10 @@ protected class InternalSocket( protected this_program _other,
   //!
   void set_callbacks(function rcb, function wcb, function ccb)
   {
-    Thread.MutexKey key = mux->lock();
-    [__read_cb, __write_cb, __close_cb] = ({ rcb, wcb, ccb });
-    destruct(key);
-
+    {
+      Thread.MutexKey key = mux->lock();
+      [__read_cb, __write_cb, __close_cb] = ({ rcb, wcb, ccb });
+    }
     schedule_poll();
   }
 
@@ -217,7 +224,6 @@ ebadf:
         case "r":
           if (!_read_buffer)
             break ebadf;
-          _read_buffer = UNDEFINED;
           __close_cb = __read_cb = UNDEFINED;
           break;
         case "w":
@@ -225,15 +231,23 @@ ebadf:
             break ebadf;
           _write_buffer = UNDEFINED;
           __write_cb = UNDEFINED;
+          if (_other)
+            _other->_run_close_cb();
           break;
         default:
           if (!_read_buffer && !_write_buffer)
             break ebadf;
           _read_buffer = _write_buffer = UNDEFINED;
           __close_cb = __read_cb = __write_cb = UNDEFINED;
+          if (_other)
+            _other->_run_close_cb();
           break;
       }
-      _other->schedule_poll();
+      if (poll_co && !_read_buffer && !_write_buffer) {
+        backend->remove_call_out(poll_co);
+        poll_co = UNDEFINED;
+        cond->broadcast();
+      }
       return 0;
     } while(0);
     internal_errno = System.EBADF;
@@ -244,30 +258,32 @@ ebadf:
   string(8bit) read(int|void nbytes, bool|void not_all)
   {
     if (!nbytes) nbytes = 0x7fffffff;
-    Stdio.Buffer ret;
+    string(8bit) ret;
     Thread.MutexKey key = mux->lock();
     while(1) {
       if (!_read_buffer) {
 	// Read direction closed.
 	internal_errno = System.EBADF;
-	return 0;
-      }
-      if (nbytes <= sizeof(_read_buffer)) {
-	ret = _read_buffer->_read_buffer(nbytes);
 	break;
       }
-      if (not_all || (state & STATE_NONBLOCKING) || !_other->_write_buffer) {
-	ret = _read_buffer;
+      if (nbytes <= sizeof(_read_buffer)
+       || not_all || (state & STATE_NONBLOCKING)
+       || !(_other && _other->_write_buffer)) {
+	ret = _read_buffer->try_read(nbytes);
 	break;
       }
-      if (nbytes > DEFAULT_WRITE_LIMIT) {
+      if (nbytes > DEFAULT_WRITE_LIMIT && _other) {
 	_other->set_write_limit(nbytes);
 	_other->schedule_poll();
       }
       cond->wait(key);
     }
-    _other->set_write_limit(DEFAULT_WRITE_LIMIT);
-    return ret->read();
+    if (_other) {
+      _other->set_write_limit(DEFAULT_WRITE_LIMIT);
+      _other->schedule_poll();
+    }
+    schedule_poll();
+    return ret;
   }
 
   //!
@@ -279,7 +295,7 @@ ebadf:
       internal_errno = System.EBADF;
       return -1;
     }
-    if (!_other->_read_buffer) {
+    if (!(_other && _other->_read_buffer)) {
       // _other end has closed.
       internal_errno = System.EPIPE;
       return -1;
@@ -293,7 +309,8 @@ ebadf:
     }
     _write_buffer->add(data);
 
-    _other->schedule_poll();
+    if (_other)
+      _other->schedule_poll();
     schedule_poll();
     return sizeof(data);
   }
@@ -304,7 +321,7 @@ ebadf:
     Thread.MutexKey key = mux->lock();
     while (1) {
       if (sizeof(_read_buffer)) return 1;
-      if (!_other->_write_buffer) {
+      if (!(_other && _other->_write_buffer)) {
 	if (!not_eof) return 1;
 	internal_errno = System.EPIPE;
 	return -1;
@@ -315,7 +332,7 @@ ebadf:
     }
   }
 
-  //! Get the other end of the emulated pipe/socket.
+  //! The other end of the emulated pipe/socket.
   this_program `other()
   {
     return _other;
@@ -324,12 +341,6 @@ ebadf:
   protected void _destruct()
   {
     close();
-    _other->close();
-    if (poll_co) {
-      (backend || Pike.DefaultBackend)->remove_call_out(poll_co);
-      poll_co = UNDEFINED;
-    }
-    cond->broadcast();
   }
 }
 
@@ -340,6 +351,8 @@ inherit InternalSocket;
 protected void create(void|string direction)
 {
   Stdio.Buffer abuf, bbuf;
+  Thread.Mutex mux = Thread.Mutex();
+  Thread.Condition cond = Thread.Condition();
 
   if (!direction)
     direction = "rw";
@@ -349,6 +362,6 @@ protected void create(void|string direction)
   if (has_value(direction, "r"))
     bbuf = Stdio.Buffer();
 
-  ::create(InternalSocket(this, abuf, bbuf), bbuf, abuf);
+  ::create(InternalSocket(this, abuf, bbuf, mux, cond),
+                                bbuf, abuf, mux, cond);
 }
-
