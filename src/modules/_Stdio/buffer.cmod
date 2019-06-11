@@ -75,6 +75,11 @@ static struct program *buffer_error_program;
  *!
  */
 PIKECLASS Buffer
+  /* This is needed to get consisten behavior in case this
+   * buffer is a sub-buffer, in which case the source
+   * buffer needs to be unlocked as soon as possible.
+   */
+  program_flags PROGRAM_DESTRUCT_IMMEDIATE;
 {
 #if PRECOMPILE_API_VERSION > 5
   PIKEVAR int b.num_malloc;
