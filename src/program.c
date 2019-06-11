@@ -2211,6 +2211,9 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
   fprintf(stderr, "find_inherited_identifier(%p, %d, %d, \"%s\")\n",
 	  inherit_state, inherit_depth, inh, ident->str);
 #endif /* 0 */
+  if (!p) {
+    return NULL;
+  }
   if (inh == INHERIT_ALL) {
     /* Unspecified inherit, but not inherit #0. */
     struct node_s *res = NULL;

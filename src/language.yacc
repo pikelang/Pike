@@ -4232,7 +4232,8 @@ qualified_ident:
     if (!$$) {
       if ((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
 	  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
-	if (($1 >= 0) && inherit_state->new_program->inherits[$1].name) {
+	if (($1 >= 0) && inherit_state->new_program &&
+	    inherit_state->new_program->inherits[$1].name) {
 	  my_yyerror("Undefined identifier %S::%S.",
 		     inherit_state->new_program->inherits[$1].name,
 		     Pike_compiler->last_identifier);
