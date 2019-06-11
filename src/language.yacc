@@ -4022,7 +4022,7 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
      *
      *     5: 4 recursively for surrounding parent classes.
      *
-     *     6: this_program.
+     *     6: this & this_program.
      *
      * Note that a deep inherit in the current class trumphs
      * a not so deep inherit in a parent class (but not a
@@ -4060,17 +4060,15 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
       }
     }
     if (e < 0) {
-      inherit_state = state;
-      inherit_depth = depth;
-      if ($1->u.sval.u.string == this_program_string ||
-	  $1->u.sval.u.string == this_string) {
-        inherit_state = Pike_compiler;
-        inherit_depth = 0;
-        e = INHERIT_SELF;
-      }
-      else
+      inherit_state = Pike_compiler;
+      inherit_depth = 0;
+      e = INHERIT_SELF;
+
+      if (($1->u.sval.u.string != this_program_string) &&
+	  ($1->u.sval.u.string != this_string)) {
         my_yyerror("No inherit or surrounding class %S.",
                    $1->u.sval.u.string);
+      }
     }
     free_node($1);
     $$ = e;
