@@ -2932,6 +2932,20 @@ PIKEFUN void _putenv (string var, void|string val)
 /*! @module Pike
  */
 
+/*! @class DestructImmediate
+ *!
+ *! An empty class that can be inherited to get the
+ *! @tt{PROGRAM_DESTRUCT_IMMEDIATE@} flag set.
+ */
+
+PIKECLASS DestructImmediate
+  program_flags PROGRAM_DESTRUCT_IMMEDIATE;
+{
+}
+
+/*! @endclass
+ */
+
 /*! @class InhibitDestruct
  *!
  *! This is a class that implements a way to temporarily
@@ -5220,19 +5234,6 @@ PIKECLASS Null
     pop_n_elems(args);
     push_constant_text ("null");
   }
-}
-
-/*! @endclass
- */
-
-/*! @class DestructImmediate
- *! An empty class that can be intherited to get the PROGRAM_DESTRUCT_IMMEDIATE
- *! flag set.
- */
-
-PIKECLASS DestructImmediate
-  program_flags PROGRAM_DESTRUCT_IMMEDIATE;
-{
 }
 
 /*! @endclass

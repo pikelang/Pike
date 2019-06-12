@@ -35,6 +35,10 @@ constant OPEN_BOUND = __builtin.OPEN_BOUND;
 //!     irrelevant in this case.
 //! @enddl
 
+#if constant(__builtin.DestructImmediate)
+constant DestructImmediate = __builtin.DestructImmediate;
+#endif
+
 #if constant(__builtin.InhibitDestruct)
 constant InhibitDestruct = __builtin.InhibitDestruct;
 #endif
