@@ -586,7 +586,7 @@ static void gz_compress(INT32 args)
  *!   @value Gz.SYNC_FLUSH
  *!     All input is packed and returned.
  *!   @value Gz.FINISH
- *!     All input is packed and an 'end of data' marker is appended.
+ *!     All input is packed and an 'end of data' marker is appended (default).
  *! @endint
  *!
  *! @seealso

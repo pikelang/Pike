@@ -1,10 +1,68 @@
-// -*- pike -*-
 #pike __REAL_VERSION__
-#require constant(@module@)
+#require constant(_Gz)
 
-inherit @module@;
+inherit _Gz;
 
 #define DATA_CHUNK_SIZE 64*1024
+
+string check_header(Stdio.Stream f, string|void buf) {
+  int magic1, magic2, method, flags, len;
+
+  if(!buf) buf="";
+  string buf_read(int n)
+  {
+    if(sizeof(buf)<n)
+      buf += f->read(min(n-sizeof(buf), 10));
+    string r = buf[..n-1];
+    buf = buf[n..];
+    return r;
+  };
+
+  if(sscanf(buf_read(4), "%1c%1c%1c%1c", magic1, magic2, method, flags)!=4 ||
+     magic1 != 0x1f || magic2 != 0x8b)
+    return 0;
+
+  if(method != 8 || (flags & 0xe0))
+    return 0;
+
+  if(sizeof(buf_read(6)) != 6)
+    return 0;
+
+  if(flags & 4)
+    if(sscanf(buf_read(2), "%-2c", len) != 1 ||
+       sizeof(buf_read(len)) != len)
+      return 0;
+
+  if(flags & 8)
+    loop: for(;;)
+      switch(buf_read(1)) {
+      case "": return 0;
+      case "\0": break loop;
+      }
+
+  if(flags & 16)
+    loop: for(;;)
+      switch(buf_read(1)) {
+      case "": return 0;
+      case "\0": break loop;
+      }
+
+  if(flags & 2)
+    if(sizeof(buf_read(2)) != 2)
+      return 0;
+
+  return buf;
+}
+
+int make_header(Stdio.Stream|Stdio.Buffer f) {
+  constant fmt     = "%1c%1c%1c%1c%4c%1c%1c";
+  constant fmtargs = ({0x1f, 0x8b, 8, 0, 0, 0, 3});
+  if (f->sprintf) {
+    f->sprintf(fmt, @fmtargs);
+    return 1;
+  }
+  return f->write(sprintf(fmt, @fmtargs)) == 10;
+}
 
 //! Low-level implementation of read/write support for GZip files
 class _file {
@@ -19,65 +77,6 @@ class _file {
   final constant SEEK_SET = 0;
   final constant SEEK_CUR = 1;
   final constant SEEK_END = 2;
-
-  protected int check_header(string|void buf)
-  {
-    int magic1, magic2, method, flags, len;
-
-    if(!buf) buf="";
-    string buf_read(int n)
-    {
-      if(sizeof(buf)<n)
-	buf += f->read(min(n-sizeof(buf), 10));
-      string r = buf[..n-1];
-      buf = buf[n..];
-      return r;
-    };
-
-    if(sscanf(buf_read(4), "%1c%1c%1c%1c", magic1, magic2, method, flags)!=4 ||
-       magic1 != 0x1f || magic2 != 0x8b)
-      return 0;
-
-    if(method != 8 || (flags & 0xe0))
-      return 0;
-
-    if(sizeof(buf_read(6)) != 6)
-      return 0;
-
-    if(flags & 4)
-      if(sscanf(buf_read(2), "%-2c", len) != 1 ||
-	 sizeof(buf_read(len)) != len)
-	return 0;
-
-    if(flags & 8)
-      loop: for(;;)
-	switch(buf_read(1)) {
-	case "": return 0;
-	case "\0": break loop;
-	}
-
-    if(flags & 16)
-      loop: for(;;)
-	switch(buf_read(1)) {
-	case "": return 0;
-	case "\0": break loop;
-	}
-
-    if(flags & 2)
-      if(sizeof(buf_read(2)) != 2)
-	return 0;
-
-    if(sizeof(buf))
-      fill_read_buffer(buf);
-
-    return 1;
-  }
-
-  protected int make_header()
-  {
-    return f->write(sprintf("%1c%1c%1c%1c%4c%1c%1c",
-			    0x1f, 0x8b, 8, 0, 0, 0, 3)) == 10;
-  }
 
   //! Opens a file for I/O.
   //!
@@ -142,7 +141,11 @@ class _file {
       if(!f->open(file, mode||"rb"))
 	return 0;
     }
-    return write_mode? make_header() : check_header();
+    if (write_mode)
+      return make_header(f);
+    if (mode = check_header(f))
+      fill_read_buffer(mode);
+    return !!mode;
   }
 
   //! Opens a gzip file for reading.
@@ -200,7 +203,9 @@ class _file {
 	return 0;
       } else {
 	crc = crc32("");
-	if(!check_header(b[8..]))
+	if(b = check_header(f, b[8..]))
+          fill_read_buffer(b);
+        else
 	  at_eof = 1;
       }
     }
@@ -274,7 +279,10 @@ class _file {
 	inf = 0;
 	read_buf = "";
 	crc = crc32("");
-	if(!check_header())
+        string r = check_header(f);
+	if(r)
+          fill_read_buffer(r);
+        else
 	  return -1;
       } else
 	pos -= file_pos;
