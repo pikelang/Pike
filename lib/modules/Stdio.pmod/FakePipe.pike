@@ -74,7 +74,7 @@ protected class InternalSocket( protected this_program _other,
       }
       backend = be;
     }
-    schedule_poll();
+    return schedule_poll();
   }
 
   protected function __read_cb;
@@ -83,29 +83,35 @@ protected class InternalSocket( protected this_program _other,
   protected mixed __id;
 
   void _run_close_cb() {
-    if (__close_cb && _read_buffer && !sizeof(_read_buffer))
-      __close_cb(__id);
+    if (_read_buffer && !sizeof(_read_buffer)) {
+      if (__close_cb)
+        return __close_cb(__id);
+      else if (__read_cb)
+        return __read_cb(__id, "");		// Signal EOF if no __close_cb
+    }
   }
 
-  void _fill_write_buffer() {
-    if (_write_buffer) {
-      if (__write_cb && sizeof(_write_buffer) < write_limit)
-        __write_cb(__id);
-    } else
-      _run_close_cb();
+  private void fill_write_buffer() {
+    if (__write_cb && sizeof(_write_buffer) < write_limit)
+      return __write_cb(__id);
   }
 
-  protected void internal_poll()
-  {
+  void _fill_write_orclose() {
+    return _write_buffer ? fill_write_buffer() : _run_close_cb();
+  }
+
+  protected void internal_poll() {
     poll_co = UNDEFINED;
     if (_write_buffer)
-      _fill_write_buffer();
+      fill_write_buffer();
     if (this && __read_cb && _read_buffer && sizeof(_read_buffer)) {
       __read_cb(__id, _read_buffer->read());
-      if (_other)
-        _other->_fill_write_buffer();
-      if (this)
-        return schedule_poll();
+      if (_other) {
+        _other->_fill_write_orclose();
+        if (this)
+          return schedule_poll();
+      } else
+        return _run_close_cb();
     }
   }
 
@@ -131,7 +137,6 @@ protected class InternalSocket( protected this_program _other,
   void set_nonblocking_keep_callbacks()
   {
     state |= STATE_NONBLOCKING;
-
     schedule_poll();
   }
 
@@ -149,7 +154,6 @@ protected class InternalSocket( protected this_program _other,
   void set_nonblocking(function rcb, function wcb, function ccb)
   {
     set_nonblocking_keep_callbacks();
-
     set_callbacks(rcb, wcb, ccb);
   }
 
@@ -243,10 +247,13 @@ ebadf:
             _other->_run_close_cb();
           break;
       }
-      if (poll_co && !_read_buffer && !_write_buffer) {
-        backend->remove_call_out(poll_co);
-        poll_co = UNDEFINED;
-        cond->broadcast();
+      if (!_read_buffer && !_write_buffer) {
+        _other = 0;			// Eliminate circular reference
+        if (poll_co) {
+          backend->remove_call_out(poll_co);
+          poll_co = UNDEFINED;
+          cond->broadcast();
+        }
       }
       return 0;
     } while(0);
