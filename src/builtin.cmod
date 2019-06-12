@@ -2436,6 +2436,20 @@ PIKEFUN void _disassemble(function fun)
 /*! @module Pike
  */
 
+/*! @class DestructImmediate
+ *!
+ *! An empty class that can be inherited to get the
+ *! @tt{PROGRAM_DESTRUCT_IMMEDIATE@} flag set.
+ */
+
+PIKECLASS DestructImmediate
+  program_flags PROGRAM_DESTRUCT_IMMEDIATE;
+{
+}
+
+/*! @endclass
+ */
+
 /*! @class FakeObject
  *!
  *! Used as a place holder in eg backtraces for objects that
@@ -4579,19 +4593,6 @@ PIKECLASS Null
     pop_n_elems(args);
     push_constant_text ("null");
   }
-}
-
-/*! @endclass
- */
-
-/*! @class DestructImmediate
- *! An empty class that can be intherited to get the PROGRAM_DESTRUCT_IMMEDIATE
- *! flag set.
- */
-
-PIKECLASS DestructImmediate
-  program_flags PROGRAM_DESTRUCT_IMMEDIATE;
-{
 }
 
 /*! @endclass
