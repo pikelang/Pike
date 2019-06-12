@@ -83,31 +83,26 @@ protected class InternalSocket( protected this_program _other,
   protected mixed __id;
 
   void _run_close_cb() {
-    if (_read_buffer && !sizeof(_read_buffer)) {
-      if (__close_cb)
-        return __close_cb(__id);
-      else if (__read_cb)
-        return __read_cb(__id, "");		// Signal EOF if no __close_cb
-    }
+    if (__close_cb && _read_buffer && !sizeof(_read_buffer))
+      __close_cb(0, __id);
   }
 
-  private void fill_write_buffer() {
+  void _fill_write_buffer() {
     if (__write_cb && sizeof(_write_buffer) < write_limit)
-      return __write_cb(__id);
-  }
-
-  void _fill_write_orclose() {
-    return _write_buffer ? fill_write_buffer() : _run_close_cb();
+      __write_cb(0, __id);
   }
 
   protected void internal_poll() {
     poll_co = UNDEFINED;
     if (_write_buffer)
-      fill_write_buffer();
+      _fill_write_buffer();
     if (this && __read_cb && _read_buffer && sizeof(_read_buffer)) {
       __read_cb(__id, _read_buffer->read());
       if (_other) {
-        _other->_fill_write_orclose();
+        if (_other->_write_buffer)
+          _other->_fill_write_buffer();
+        else
+          _other->_run_close_cb();
         if (this)
           return schedule_poll();
       } else
