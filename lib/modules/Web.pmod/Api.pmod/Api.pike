@@ -292,15 +292,13 @@ mixed call(string api_method, void|ParamsArg params,
     fut = Protocols.HTTP.Promise.do_method(http_method, api_method, args);
 
     fut->on_success(lambda (Protocols.HTTP.Promise.Result res) {
-      mixed r = handle_response(res);
+      mixed r, err = catch(r = handle_response(res));
 
-      if (res->status >= 200 && res->status < 400) {
+      if (!err && res->status >= 200 && res->status < 400) {
         if (cb) cb(r, res, @rest);
         else retval = r;
-      }
-      else {
+      } else
         cb && cb(0, res, @rest);
-      }
 
       if (queue) {
         queue->write("@");
