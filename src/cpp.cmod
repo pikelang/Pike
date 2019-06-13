@@ -4783,6 +4783,16 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     ref_push_string(this->current_file);
     /* FIXME: This isn't safe if the master hasn't been compiled yet. */
     APPLY_MASTER("dirname", 1);
+    if ((TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) &&
+	!Pike_sp[-1].u.string->len) {
+      /* Convert empty directory to ".".
+       *
+       * This is so that the user won't run into surprises
+       * when eg concating __DIR__ with "/foo.txt".
+       */
+      pop_stack();
+      push_text(".");
+    }
     f_sprintf(2);
   }
 
