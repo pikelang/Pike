@@ -1030,13 +1030,14 @@ class Request(function(array(string), Request:void) cb) {
         WS_WERR(2, "Using extensions: %O\n", _extensions);
         my_fd = 0;
 
-        ws->send_raw("HTTP/1.1 101 SwitchingProtocols\r\n");
+        Stdio.Buffer buf = Stdio.Buffer(1024);
+        buf->add("HTTP/1.1 101 SwitchingProtocols\r\n");
 
-        foreach (heads; string k; string v) {
-          ws->send_raw(sprintf("%s: %s\r\n", k, v));
-        }
+        foreach (heads; string k; string v)
+          buf->sprintf("%s: %s\r\n", k, v);
 
-        ws->send_raw("\r\n");
+        buf->add("\r\n");
+        ws->send_raw(buf->read());
 
         finish(0);
 
