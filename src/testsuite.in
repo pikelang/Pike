@@ -10244,7 +10244,7 @@ test_true( rm("conftest.h") )
 
 test_true(intp(__LINE__))
 test_true(stringp(__FILE__))
-test_eq(dirname(__FILE__),__DIR__)
+test_eq(sizeof(dirname(__FILE__))?dirname(__FILE__):".",__DIR__)
 test_true(stringp(__DATE__))
 test_true([[ sscanf(__DATE__, "%3s %d %d", string m, int d, int y) == 3 &&
 	     search(({"Jan", "Feb", "Mar", "Apr", "May", "Jun",
