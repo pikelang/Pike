@@ -995,7 +995,7 @@ PIKECLASS Buffer
     }
   }
 
-  /*! @decl int(-1..) output_to( Stdio.Stream|function(string:int) fun, @
+  /*! @decl int(-1..) output_to( Stdio.Stream|function(string(8bit):int) fun, @
    *!                            int(0..)|void nbytes )
    *!
    *! Write data from the buffer to the indicated file.
@@ -1006,7 +1006,7 @@ PIKECLASS Buffer
    *!     @type Stdio.Stream
    *!       A file object in which the function @expr{write()@} will
    *!       be called.
-   *!     @type function(string:int)
+   *!     @type function(string(8bit):int)
    *!       A function which will be called with a @expr{string(8bit)@}
    *!       to write and is expected to return an @expr{int@} indicating
    *!       the number of bytes successfully written or @expr{-1@} on
@@ -1030,7 +1030,8 @@ PIKECLASS Buffer
    *!   write function, please consider supporting the @expr{f->write(buf)@}
    *!   API in it.
    */
-  PIKEFUN int(-1..) output_to( object|function(string:int) f, int|void nbytes )
+  PIKEFUN int(-1..) output_to( object|function(string(8bit):int) f,
+			       int|void nbytes )
   {
     Buffer *io = THIS;
     ptrdiff_t written = 0;
@@ -1217,7 +1218,7 @@ PIKECLASS Buffer
    *! and
    *! @[add_hstring]
    */
-  PIKEFUN Buffer add( object|string|int|array(object|string|int) ... argp)
+  PIKEFUN Buffer add( object|string(8bit)|int|array(object|string(8bit)|int) ... argp)
   {
     int i;
     Buffer *io = THIS;
@@ -1374,7 +1375,7 @@ PIKECLASS Buffer
      resolving things.)
   */
   PIKEFUN Buffer add_hstring(
-   int|string|object|array(int|string|Buffer|array) str,
+   int|string(8bit)|object|array(int|string(8bit)|Buffer|array) str,
    int size_size, void|int offset )
   {
     Buffer *io = THIS;
@@ -1592,7 +1593,7 @@ PIKECLASS Buffer
     push_ulongest(io_len(THIS));
   }
 
-  /*! @decl string cast(string type)
+  /*! @decl string(8bit) cast("string")
    *!
    *! Convert the buffer to a string.
    *!
@@ -1634,7 +1635,7 @@ PIKECLASS Buffer
    *!
    *! @example
    *! @code
-   *! void read_callback(int i, string new_data)
+   *! void read_callback(int i, string(8bit) new_data)
    *! {
    *!   inbuffer->add( new_data );
    *!
@@ -2127,7 +2128,7 @@ PIKECLASS Buffer
    *!
    *! See @[array_sscanf] for more information.
    */
-  PIKEFUN array sscanf( string format )
+  PIKEFUN array sscanf( string(8bit) format )
   {
     INT32 i;
     ptrdiff_t num_used;
@@ -2248,7 +2249,7 @@ PIKECLASS Buffer
    *!  buffer->match("%*[ \t\r\n]%[^ \t\r\n]");
    *! @endcode
    */
-  PIKEFUN string(8bit)|int|float|array match( string format )
+  PIKEFUN string(8bit)|int|float|array match( string(8bit) format )
   {
     INT32 i;
     ptrdiff_t num_used;
@@ -2654,8 +2655,8 @@ PIKECLASS Buffer
     f_aggregate(num);
   }
 
-/*! @decl string _encode()
- *! @decl void _decode(string x)
+/*! @decl string(8bit) _encode()
+ *! @decl void _decode(string(8bit) x)
  *!
  *! Encode and decode Stdio.Buffer objects.
  *! Only the buffer data is kept, no other state is saved.
@@ -2789,7 +2790,7 @@ PIKECLASS Buffer
    *!
    *! You can use @[read_only()] to avoid accidents.
    */
-  PIKEFUN void create( int|void|string|object|array x )
+  PIKEFUN void create( int|void|string(8bit)|object|array x )
     flags ID_PROTECTED;
   {
     Buffer *this = THIS;
