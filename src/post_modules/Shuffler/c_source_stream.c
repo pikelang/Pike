@@ -31,8 +31,7 @@ struct fd_source
   struct source s;
 
   struct object *obj;
-  /* FIXME rewrite the code to use a single buffer */
-  char _read_buffer[CHUNK], _buffer[CHUNK];
+  char buffer[CHUNK];
   int available;
   int fd;
 
@@ -57,23 +56,43 @@ static void remove_callbacks( struct source *src )
 }
 
 
-static struct data get_data( struct source *src, off_t UNUSED(len) )
+static struct data get_data(struct source *src, off_t len)
 {
   struct fd_source *s = (struct fd_source *)src;
   struct data res;
   res.len = s->available;
 
-  if (res.len) { /* There is data in the buffer. Return it. */
-    res.data = s->_buffer;
-    memcpy( res.data, s->_read_buffer, res.len );
+  if (len = s->available) { /* There is data in the buffer. Return it. */
+    if (len < 0)
+      len = 0;
+    if (s->skip) {
+      if (s->skip >= len) {
+        s->skip -= len;
+        goto getmore;
+      }
+      len -= s->skip;
+    }
+    if (s->len) {
+      if (s->len < (size_t)len)
+        len = s->len;
+      s->len -= len;
+      if (!s->len)
+        s->s.eof = 1;
+    }
+    res.data = s->buffer + s->skip;
+    res.len = len;
+    if (s->available < 0)
+      s->s.eof = 1;
     s->available = 0;
-    setup_callbacks( src );
-  } else if (!s->s.eof)
-  /* No data available, but there should be in the future (no EOF, nor
-   * out of the range of data to send as specified by the arguments to
-   * source_stream_make)
-   */
+  } else {
+getmore:
+   /* No data available, but there should be in the future (no EOF, nor
+    * out of the range of data to send as specified by the arguments to
+    * source_stream_make)
+    */
     res.len = -2;
+    setup_callbacks(src);
+  }
 
   return res;
 }
@@ -90,42 +109,12 @@ static void read_callback( int UNUSED(fd), struct fd_source *s )
   int l;
   remove_callbacks( (struct source *)s );
 
-  if( s->s.eof )
-  {
-    if( s->when_data_cb )
-      s->when_data_cb( s->when_data_cb_arg );
-    return;
-  }
-
-  l = fd_read( s->fd, s->_read_buffer, CHUNK );
-
-  if( l <= 0 )
-  {
-    s->s.eof = 1;
-    s->available = 0;
-  }
-  else if( s->skip )
-  {
-    if( ((ptrdiff_t)s->skip) >= l )
-    {
-      s->skip -= l;
-      return;
-    }
-    memmove(s->_read_buffer, s->_read_buffer+s->skip, l-s->skip);
-    l -= s->skip;
-    s->skip = 0;
-  }
-  if( s->len > 0 )
-  {
-    if( ((ptrdiff_t)s->len) < l )
-      l = s->len;
-    s->len -= l;
-    if( !s->len )
-      s->s.eof = 1;
-  }
+  l = fd_read(s->fd, s->buffer, CHUNK);
+  if (!l)
+    l = -1;
   s->available = l;
-  if( s->when_data_cb )
-    s->when_data_cb( s->when_data_cb_arg );
+  if (s->when_data_cb)
+    s->when_data_cb (s->when_data_cb_arg);
 }
 
 static void set_callback( struct source *src, void (*cb)( void *a ), void *a )

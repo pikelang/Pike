@@ -113,8 +113,8 @@ getmore:
    * source_stream_make)
    */
     res.len = -2;
+    setup_callbacks(src);
   }
-  setup_callbacks(src);
   return res;
 }
 
