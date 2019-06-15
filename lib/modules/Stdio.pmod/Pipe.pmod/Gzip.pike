@@ -10,7 +10,7 @@
 
 #define DEFAULT_COMPRESSION_LEVEL 3
 
-inherit .Transmogrify;
+inherit .Base;
 
 protected int crc;
 

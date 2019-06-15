@@ -4,7 +4,7 @@
 //! This module provides a gzip-uncompressing non-blocking pipe interface.
 //!
 
-inherit .Transmogrify;
+inherit .Base;
 
 protected void process_init() { _engine = Gz.inflate(-15); }
 
