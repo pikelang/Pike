@@ -30,6 +30,7 @@ _$*
 *.Z
 *.elc
 *.ln
+testsuite
 core
 core.*
 /Pike*
