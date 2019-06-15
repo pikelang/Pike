@@ -493,22 +493,24 @@ private class Extractor {
                            String.implode_nicely(indices(nonGroupable)));
         }
 
-      if (doc && !sizeof(decls))
-        if (!filename || filedoc)
-          extractorError("documentation comment without destination");
-        else {
-          // the first stand-alone comment is allowed and is interpreted
-          // as documentation for the class or module (foo.pike or bar.pmod)
-	  // _itself_.
-          doc->xml = parse->doc((["class" : "_class",
-                                  "module" : "_module",
-				  "namespace" : "_namespace"])[c->objtype]);
-          filedoc = doc;
-          // The @appears and @belongs directives regarded _this_file_
-          c->appears = appears;
-          c->belongs = belongs;
-          doc = 0;
-        }
+      if (doc && !sizeof(decls)) {
+	// the first stand-alone comment is allowed and is interpreted
+	// as documentation for the class or module (foo.pike or bar.pmod)
+	// _itself_.
+	doc->xml = parse->doc((["class" : "_class",
+				"module" : "_module",
+				"namespace" : "_namespace"])[c->objtype]);
+
+        if (filedoc) {
+	  extractorError("documentation comment without destination");
+	}
+
+	filedoc = doc;
+	// The @appears and @belongs directives regarded _this_file_
+	c->appears = appears;
+	c->belongs = belongs;
+	doc = 0;
+      }
 
       if (defModifiers && sizeof(defModifiers))
         foreach(decls, PikeObject obj)
