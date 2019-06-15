@@ -3,61 +3,64 @@
 
 inherit _Gz;
 
-string check_header(Stdio.Stream f, string|void buf) {
-  int magic1, magic2, method, flags, len;
+string(8bit)
+ check_header(Stdio.Stream f, Stdio.Buffer|string(8bit)|void buf) {
+  int flags, len;
 
-  if(!buf) buf="";
-  string buf_read(int n)
-  {
-    if(sizeof(buf)<n)
-      buf += f->read(min(n-sizeof(buf), 10));
-    string r = buf[..n-1];
-    buf = buf[n..];
-    return r;
+  buf = Stdio.Buffer(buf);
+
+  int buf_read(int n) {
+    n -= sizeof(buf);
+    return n <= 0 || f && n == buf->input_from(f, n);
   };
 
-  if(sscanf(buf_read(4), "%1c%1c%1c%1c", magic1, magic2, method, flags)!=4 ||
-     magic1 != 0x1f || magic2 != 0x8b)
+  if (!buf_read(4))
     return 0;
 
-  if(method != 8 || (flags & 0xe0))
+  array res = buf->sscanf("\x1f\x8b\x08%1c");
+  if (!sizeof(res))
     return 0;
 
-  if(sizeof(buf_read(6)) != 6)
+  flags = res[0];
+  if (flags & 0xe0 || !buf_read(6))
     return 0;
+  buf->consume(6);
 
-  if(flags & 4)
-    if(sscanf(buf_read(2), "%-2c", len) != 1 ||
-       sizeof(buf_read(len)) != len)
+  if (flags & 4) {
+    if (!buf_read(2))
       return 0;
-
-  if(flags & 8)
-    loop: for(;;)
-      switch(buf_read(1)) {
-      case "": return 0;
-      case "\0": break loop;
-      }
-
-  if(flags & 16)
-    loop: for(;;)
-      switch(buf_read(1)) {
-      case "": return 0;
-      case "\0": break loop;
-      }
-
-  if(flags & 2)
-    if(sizeof(buf_read(2)) != 2)
+    [len] = buf->sscanf("%-2c");
+    if (!buf_read(len))
       return 0;
+    buf->consume(len);
+  }
 
-  return buf;
+  if (flags & 8)
+    do
+      if (!buf_read(1))
+        return 0;
+    while (buf->read_int8());
+
+  if (flags & 16)
+    do
+      if (!buf_read(1))
+        return 0;
+    while (buf->read_int8());
+
+  if (flags & 2) {
+    if (!buf_read(2))
+      return 0;
+    buf->consume(2);
+  }
+
+  return buf->read();
 }
 
 int make_header(Stdio.Stream|Stdio.Buffer f) {
-  constant fmt     = "%1c%1c%1c%1c%4c%1c%1c";
-  constant fmtargs = ({0x1f, 0x8b, 8, 0, 0, 0, 3});
-  if (f->sprintf) {
-    f->sprintf(fmt, @fmtargs);
+  constant fmt = "\x1f\x8b\x08\0\0\0\0\0\0\3";
+  if (f->add) {
+    f->add(fmt);
     return 1;
   }
-  return f->write(sprintf(fmt, @fmtargs)) == 10;
+  return f->write(fmt) == sizeof(fmt);
 }
