@@ -948,7 +948,7 @@ PIKECLASS Buffer
     }
     else
     {
-      /* some other object. Just call read */
+      /* Some other object. Just call read(). */
       while( nbytes )
       {
         push_int( MINIMUM(READ_CHUNKSIZE, nbytes) );
@@ -959,6 +959,7 @@ PIKECLASS Buffer
             Pike_error("Can not handle non-8bit data.\n");
         io_append( io, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len );
         nbytes -= Pike_sp[-1].u.string->len;
+	bread += Pike_sp[-1].u.string->len;
         pop_stack();
       }
     }
