@@ -167,7 +167,6 @@ void do_tests()
       test_eq(r->variables, ([]));
       test_eq(r->cookies, ([]));
       test_eq(r->misc, ([]));
-      test_eq(r->send_timeout_delay, 180);
       test_eq(r->connection_timeout_delay, 180);
       test_eq(r->get_ip(), "1.2.3.4");
 
