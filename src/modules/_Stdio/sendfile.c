@@ -325,49 +325,9 @@ static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
 
 void low_do_sendfile(struct pike_sendfile *this)
 {
-#if defined(SOL_TCP) && (defined(TCP_CORK) || defined(TCP_NODELAY))
-  int old_val = -1;
-  socklen_t old_len = (socklen_t) sizeof(old_val);
-#ifdef TCP_CORK
-  int new_val = 1;
-#else /* !TCP_CORK */
-  int new_val = 0;
-#endif /* TCP_CORK */
-#endif /* SOL_TCP && (TCP_CORK || TCP_NODELAY) */
-
+  int oldbulkmode = bulkmode_start(this->to_fd);
   /* Make sure we're using blocking I/O */
   set_nonblocking(this->to_fd, 0);
-
-#ifdef SOL_TCP
-#ifdef TCP_CORK
-  /* Attempt to set the out socket into cork mode.
-   * FIXME: Do we need to adjust TCP_NODELAY here?
-   */
-  while ((getsockopt(this->to_fd, SOL_TCP, TCP_CORK,
-		     &old_val, &old_len)<0) &&
-	 (errno == EINTR))
-    ;
-  if (!old_val) {
-    while ((setsockopt(this->to_fd, SOL_TCP, TCP_CORK,
-		       &new_val, sizeof(new_val))<0) &&
-	   (errno == EINTR))
-      ;
-  }
-#elif defined(TCP_NODELAY)
-  /* Attempt to set the out socket into nagle mode.
-   */
-  while ((getsockopt(this->to_fd, SOL_TCP, TCP_NODELAY,
-		     &old_val, &old_len)<0) &&
-	 (errno == EINTR))
-    ;
-  if (old_val == 1) {
-    while ((setsockopt(this->to_fd, SOL_TCP, TCP_NODELAY,
-		       &new_val, sizeof(new_val))<0) &&
-	   (errno == EINTR))
-      ;
-  }
-#endif /* TCP_CORK || TCP_NODELAY */
-#endif /* SOL_TCP */
 
   SF_DFPRINTF((stderr, "sendfile: Worker started\n"));
 
@@ -712,23 +672,7 @@ void low_do_sendfile(struct pike_sendfile *this)
  done:
 #endif /* HAVE_FREEBSD_SENDFILE || HAVE_HPUX_SENDFILE || HAVE_MACOSX_SENDFILE */
 
-#ifdef SOL_TCP
-#ifdef TCP_CORK
-  /* Restore the cork mode for the socket. */
-  if (!old_val) {
-    while((setsockopt(this->to_fd, SOL_TCP, TCP_CORK,
-		      &old_val, old_len)<0) && (errno == EINTR))
-      ;
-  }
-#elif defined(TCP_NODELAY)
-  /* Restore the nagle mode for the socket. */
-  if (old_val == 1) {
-    while((setsockopt(this->to_fd, SOL_TCP, TCP_NODELAY,
-		      &old_val, old_len)<0) && (errno == EINTR))
-      ;
-  }
-#endif /* TCP_CORK || TCP_NODELAY */
-#endif /* SOL_TCP */
+  bulkmode_restore(this->to_fd, oldbulkmode);
 
   SF_DFPRINTF((stderr,
 	      "sendfile: Done. Setting up callback\n"

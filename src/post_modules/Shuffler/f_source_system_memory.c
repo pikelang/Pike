@@ -22,12 +22,9 @@ struct sm_source
   struct source s;
 
   struct object *obj;
-  struct {
-    char *data;
-    size_t len;
-  } *mem;
 
-  int offset, len;
+  char *data;
+  size_t len;
 };
 
 static struct data get_data( struct source *src, off_t len )
@@ -35,18 +32,14 @@ static struct data get_data( struct source *src, off_t len )
   struct sm_source *s = (struct sm_source *)src;
   struct data res;
 
-  res.data = s->mem->data + s->offset;
-
-  if( len > s->len )
-  {
+  if (len > s->len) {
     len = s->len;
     s->s.eof = 1; /* next read will be done from the next source */
   }
 
-  res.len = len;
-
-  s->len -= len;
-  s->offset += len;
+  s->len -= res.len = len;
+  res.data = s->data;
+  s->data += len;
 
   return res;
 }
@@ -60,8 +53,13 @@ struct source *source_system_memory_make( struct svalue *s,
 					  INT64 start, INT64 len )
 {
   struct sm_source *res;
+  struct {
+    char *data;
+    size_t len;
+  } *mem;
+  INT64 slen;
 
-  if( TYPEOF(*s) != PIKE_T_OBJECT )
+  if (TYPEOF(*s) != PIKE_T_OBJECT)
     return 0;
 
   if (!shm_program) {
@@ -76,45 +74,27 @@ struct source *source_system_memory_make( struct svalue *s,
     pop_stack();
   }
 
-  res = calloc( 1, sizeof( struct sm_source ) );
-  if( !res ) return NULL;
-
-  if( !(res->mem = get_storage( s->u.object, shm_program ) ) )
-  {
-    free(res);
+  if (!(mem = get_storage(s->u.object, shm_program)))
     return 0;
-  }
 
-  if( !res->mem->data || !res->mem->len )
-  {
-    free(res);
+  if (!(res = calloc(1, sizeof(struct sm_source))))
     return 0;
-  }
 
   res->s.free_source = free_source;
   res->s.get_data = get_data;
   res->obj = s->u.object;
   add_ref(res->obj);
-  res->offset = start;
 
-  if( len != -1 )
-    if( len > (ptrdiff_t) res->mem->len - start )
-    {
-      sub_ref(res->obj);
-      free(res);
-      return 0;
-    }
-    else
-      res->len = len;
-  else
-    res->len = len;
+  res->data = mem->data + start;
+  slen = mem->len;
 
-  if( res->len <= 0 )
-  {
-    sub_ref(res->obj);
-    free(res);
-    return 0;
-  }
+  slen -= start;
+  if (len >= 0 && slen > len)
+    slen = len;
+  if (slen < 0)
+    slen = 0;
+
+  res->len = slen;
   return (struct source *)res;
 }
 

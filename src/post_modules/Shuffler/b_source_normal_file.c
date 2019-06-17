@@ -40,23 +40,17 @@ static struct data get_data( struct source *src, off_t len )
   int rr;
   len = CHUNK; /* It's safe to ignore the 'len' argument */
 
-  res.data = s->buffer;
-
-  if( len > s->len )
-  {
+  if (s->len > 0 && len > s->len)
     len = s->len;
-    s->s.eof = 1;
-  }
+
   THREADS_ALLOW();
-  rr = fd_read( s->fd, res.data, len );
+  while(0 > (rr = fd_read(s->fd, s->buffer, len)) && errno == EINTR);
   THREADS_DISALLOW();
-/*    printf("B[normal file]: get_data( %d / %d ) --> %d\n", len, */
-/*  	 s->len, rr); */
 
   res.len = rr;
-
-  if( rr<0 || rr < len )
+  if (rr <= 0 || (s->len > 0 && !(s->len -= rr)))
     s->s.eof = 1;
+  res.data = s->buffer;
   return res;
 }
 
@@ -84,56 +78,33 @@ struct source *source_normal_file_make( struct svalue *s,
 {
   struct fd_source *res;
   PIKE_STAT_T st;
-  if(TYPEOF(*s) != PIKE_T_OBJECT)
+  int fd;
+
+  if (TYPEOF(*s) != PIKE_T_OBJECT
+   || !is_stdio_file(s->u.object)
+   || find_identifier("query_fd", s->u.object->prog) < 0)
     return 0;
 
-  if(!is_stdio_file(s->u.object))
-    return 0;
-
-  if (find_identifier("query_fd", s->u.object->prog) < 0)
-    return 0;
-
-  res = calloc( 1, sizeof( struct fd_source ) );
-  if( !res ) return NULL;
-
-  apply( s->u.object, "query_fd", 0 );
-  res->fd = Pike_sp[-1].u.integer;
+  apply(s->u.object, "query_fd", 0);
+  fd = Pike_sp[-1].u.integer;
   pop_stack();
+
+  if (fd_fstat(fd, &st) < 0 || !S_ISREG(st.st_mode))
+    return 0;
+
+  if (start)
+    fd_lseek(fd, (off_t)start, SEEK_CUR);
+
+  if (!(res = calloc( 1, sizeof( struct fd_source))))
+    return 0;
+
+  res->fd = fd;
   res->s.get_data = get_data;
   res->s.free_source = free_source;
   res->obj = s->u.object;
   add_ref(res->obj);
-
-  if( fd_fstat( res->fd, &st ) < 0 )
-  {
-    goto fail;
-  }
-  if( !S_ISREG(st.st_mode) )
-  {
-    goto fail;
-  }
-  if( len > 0 )
-  {
-    if( len > st.st_size-start )
-    {
-      goto fail;
-    }
-    else
-      res->len = len;
-  }
-  else
-    res->len = st.st_size-start;
-
-  if( fd_lseek( res->fd, (off_t)start, SEEK_SET ) < 0 )
-  {
-    goto fail;
-  }
+  res->len = len;
   return (struct source *)res;
-
-fail:
-  free_source((void *)res);
-  free(res);
-  return 0;
 }
 
 void source_normal_file_exit( )

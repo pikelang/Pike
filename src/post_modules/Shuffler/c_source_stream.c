@@ -141,19 +141,15 @@ struct source *source_stream_make( struct svalue *s,
 				   INT64 start, INT64 len )
 {
   struct fd_source *res;
-  if(TYPEOF(*s) != PIKE_T_OBJECT)
+  if (TYPEOF(*s) != PIKE_T_OBJECT
+   || !is_stdio_file(s->u.object)
+   || find_identifier("query_fd", s->u.object->prog) < 0)
     return 0;
 
-  if(!is_stdio_file(s->u.object))
+  if (!(res = calloc(1, sizeof(struct fd_source))))
     return 0;
 
-  if (find_identifier("query_fd", s->u.object->prog) < 0)
-    return 0;
-
-  res = calloc( 1, sizeof( struct fd_source ) );
-  if (!res) return NULL;
-
-  apply( s->u.object, "query_fd", 0 );
+  apply(s->u.object, "query_fd", 0);
   res->fd = Pike_sp[-1].u.integer;
   pop_stack();
 

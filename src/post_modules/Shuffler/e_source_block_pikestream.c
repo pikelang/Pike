@@ -92,12 +92,12 @@ struct source *source_block_pikestream_make( struct svalue *s,
 {
   struct pf_source *res;
 
-  if( (TYPEOF(*s) != PIKE_T_OBJECT) ||
-      (find_identifier("read",s->u.object->prog)==-1) )
+  if (TYPEOF(*s) != PIKE_T_OBJECT
+   || find_identifier("read",s->u.object->prog) < 0)
     return 0;
 
-  res = calloc( 1, sizeof( struct pf_source ) );
-  if( !res ) return NULL;
+  if (!(res = calloc(1, sizeof(struct pf_source))))
+    return 0;
 
   res->str = 0;
   res->len = len;

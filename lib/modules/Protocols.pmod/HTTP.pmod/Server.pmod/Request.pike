@@ -41,6 +41,8 @@
 
 int max_request_size = 0;
 
+protected int _mode = 0;
+
 void set_max_request_size(int size)
 {
   max_request_size = size;
@@ -105,6 +107,10 @@ mapping(string:string) cookies=([]);
 //! external use only
 mapping misc=([]);
 
+//! send timeout (no activity for this period with data in send buffer)
+//! in seconds, default is 180
+int send_timeout_delay=180;
+
 //! connection timeout, delay until connection is closed while
 //! waiting for the correct headers:
 int connection_timeout_delay=180;
@@ -130,6 +136,7 @@ void attach_fd(Stdio.NonblockingStream _fd, Port server,
       read_cb(0,already_data);
 }
 
+constant SHUFFLER = 1;
 
 // Some (wap-gateways, specifically) servers send multiple
 // content-length, as an example..
@@ -152,6 +159,7 @@ constant singular_use_headers = ({
 });
 
 private int sent;
+private OutputBuffer send_buf = OutputBuffer(2048);
 private Stdio.File send_fd=0;
 private int send_stop;
 private int keep_alive=0;
@@ -532,6 +540,15 @@ private array(string(8bit)) chunker(Shuffler.Shuffle sf, int amount) {
   return ({sprintf("%X\r\n", amount), "\r\n"});
 }
 
+//! @param mode
+//!  A number of integer flags bitwise ored together to determine
+//!  the mode of operation.
+//!   @{SHUFFLER@}: Use the Shuffler to send out the data.
+//!
+void set_mode(int mode) {
+  _mode = mode;
+}
+
 //! return a properly formatted response to the HTTP client
 //! @param m
 //! Contains elements for generating a response to the client.
@@ -566,182 +583,180 @@ void response_and_finish(mapping m, function|void _log_cb)
    if( !my_fd )
        return;
 
-   Stdio.Buffer buf = Stdio.Buffer(1024);
-
    if ((tmp = request_headers->range) && !m->start && undefinedp(m->error))
    {
-      /*
-       * The instance-size is the full size of the resource, while the content-length
-       * of a range response is the length of the actual data returned.
-       */
-      if (undefinedp(m->instance_size))
-         m->instance_size = gotstat(m) && !undefinedp(m->stat->size)
-                            ? m->stat->size : stringp(m->data)
-                            ? sizeof(m->data) : m->size;
+       // The instance-size is the full size of the resource, while the
+      //  content-length of a range response is the length of the actual
+     //   data returned.
 
-      int a,b;
-      if (sscanf(tmp,"bytes%*[ =]%d-%d", a, b) == 3) {
-         m->start = a;
-         stop = b;
-      }
-      else if (sscanf(tmp,"bytes%*[ =]-%d", b) == 2) {
-         if(undefinedp(m->instance_size)) {
-	    m_delete(m, "file");
-            m_delete(m, "data");
-	    m->error = 416;
-         } else {
-            m->start=max(0, m->instance_size - b);
-            stop = -1;
-         }
-      } else if (sscanf(tmp,"bytes%*[ =]%d-",a) == 2) {
-         m->start = a;
-         stop = -1;
-      } else if (has_value(tmp, ",")) {
-         // Multiple ranges
+     if (undefinedp(m->instance_size))
+        m->instance_size = gotstat(m) && !undefinedp(m->stat->size)
+                           ? m->stat->size : stringp(m->data)
+                           ? sizeof(m->data) : m->size;
+
+     int a,b;
+     if (sscanf(tmp,"bytes%*[ =]%d-%d", a, b) == 3) {
+       m->start = a;
+       stop = b;
+     }
+     else if (sscanf(tmp,"bytes%*[ =]-%d", b) == 2) {
+       if (undefinedp(m->instance_size)) {
          m_delete(m, "file");
          m_delete(m, "data");
          m->error = 416;
-      }
+       } else {
+         m->start=max(0, m->instance_size - b);
+         stop = -1;
+       }
+     } else if (sscanf(tmp,"bytes%*[ =]%d-",a) == 2) {
+       m->start = a;
+       stop = -1;
+     } else if (has_value(tmp, ",")) {
+       // Multiple ranges
+       m_delete(m, "file");
+       m_delete(m, "data");
+       m->error = 416;
+     }
 
-      if (!undefinedp(m->instance_size)) {
-         /* start > instance_size is an invalid request */
-         if (m->start && m->start >= m->instance_size) {
-            m_delete(m, "file");
-            m_delete(m, "data");
-            m_delete(m, "start");
-            m_delete(m, "stop");
-            m->error = 416;
-         } else if (stop && stop >= m->instance_size)
-            stop = m->instance_size - 1;
-      }
+     if (!undefinedp(m->instance_size)) {
+       /* start > instance_size is an invalid request */
+       if (m->start && m->start >= m->instance_size) {
+         m_delete(m, "file");
+         m_delete(m, "data");
+         m_delete(m, "start");
+         m_delete(m, "stop");
+         m->error = 416;
+       } else if (stop && stop >= m->instance_size)
+         stop = m->instance_size - 1;
+     }
    }
 
    if (request_headers["if-modified-since"]) {
-      int t = .http_decode_date(request_headers["if-modified-since"]);
-      if (t && gotstat(m) && m->stat->mtime <= t) {
-         m_delete(m, "file");
-         m_delete(m, "data");
-         m->error = 304;
-      }
+     int t = .http_decode_date(request_headers["if-modified-since"]);
+     if (t && gotstat(m) && m->stat->mtime <= t) {
+       m_delete(m, "file");
+       m_delete(m, "data");
+       m->error = 304;
+     }
    }
 
    if (request_headers["if-none-match"] && m->extra_heads ) {
-      string et;
-      if((et = m->extra_heads->ETag) || (et =m->extra_heads->etag)) {
-         if( string key = request_headers["if-none-match"] ) {
-            if (key == et) {
-               m_delete(m, "file");
-               m_delete(m, "data");
-               m->error = 304;
-            }
-         }
-      }
+     string et;
+     if (et = m->extra_heads->ETag || m->extra_heads->etag) {
+       if (et == request_headers["if-none-match"]) {
+         m_delete(m, "file");
+         m_delete(m, "data");
+         m->error = 304;
+       }
+     }
    }
 
    if (stop) {
-      if (stop > 0)
-         m->size = 1 + stop - m->start;
-      else if (m->instance_size) {
-         stop = m->instance_size - 1;
-         m->size = m->instance_size - m->start;
-      }
+     if (stop > 0)
+       m->size = 1 + stop - m->start;
+     else if (m->instance_size) {
+       stop = m->instance_size - 1;
+       m->size = m->instance_size - m->start;
+     }
    }
 
    void radd(sprintf_format fmt, mixed ... rest) {
-      buf->sprintf(fmt + "\r\n", @rest);
+     send_buf->sprintf(fmt + "\r\n", @rest);
    };
 
    if (protocol!="HTTP/1.0") {
-      if (protocol=="HTTP/1.1") {
-   // FIXME check for fire and forget here and go back to 1.0 then
-      } else
-	 protocol="HTTP/1.0";
+     if (protocol=="HTTP/1.1") {
+       // FIXME check for fire and forget here and go back to 1.0 then
+     } else
+       protocol="HTTP/1.0";
    }
 
    if (undefinedp(m->size)) {
-      if (stringp(m->data))
-	 m->size = sizeof(m->data);
-      else if (!arrayp(m->data)
-            && gotstat(m) && m->stat->isreg && !undefinedp(m->stat->size)) {
-	 m->size = m->stat->size;
-         if (m->file && m->file->tell)
-            m->size -= m->file->tell();
-      }
+     if (stringp(m->data))
+       m->size = sizeof(m->data);
+     else if (!arrayp(m->data)
+           && gotstat(m) && m->stat->isreg && !undefinedp(m->stat->size)) {
+       m->size = m->stat->size;
+       if (m->file && m->file->tell)
+         m->size -= m->file->tell();
+     }
    }
 
    if (!undefinedp(m->size) && undefinedp(m->start) && m->error==206) {
      if (stop < 0)
-        stop = m->size - 1;
+       stop = m->size - 1;
      if (m->start >= m->size ||
              stop >= m->size ||
              stop < m->start)
-        m->error = 416;
+       m->error = 416;
    }
 
    switch (m->error) {
-      case 0:
-      case 200:
-         if (undefinedp(m->start))
-	    radd("%s 200 OK", protocol); // HTTP/1.1 when supported
-	 else {
-	    radd("%s 206 Partial content", protocol);
-	    m->error=206;
-	 }
-	 break;
-      default:
-         if(Protocols.HTTP.response_codes[(int)m->error])
-            radd("%s %s", protocol,
-                 Protocols.HTTP.response_codes[(int)m->error]);
-         else
-            radd("%s %s ERROR", protocol, m->error);
-         break;
+     case 0:
+     case 200:
+       if (undefinedp(m->start))
+         radd("%s 200 OK", protocol); // HTTP/1.1 when supported
+       else {
+         radd("%s 206 Partial content", protocol);
+         m->error=206;
+       }
+       break;
+     default:
+       if (Protocols.HTTP.response_codes[(int)m->error])
+         radd("%s %s", protocol,
+              Protocols.HTTP.response_codes[(int)m->error]);
+       else
+         radd("%s %s ERROR", protocol, m->error);
+       break;
    }
 
    multiset extra = (<>);
    if (m->extra_heads)
-      foreach (m->extra_heads; string name; array|string arr) {
-        extra[lower_case(name)] = 1;
-        if (name == "connection" && has_value(arr, "keep-alive"))
-          keep_alive = 1;
-        foreach (Array.arrayify(arr);; string value)
-          radd("%s: %s", name, value);
-      }
+     foreach (m->extra_heads; string name; array|string arr) {
+       extra[lower_case(name)] = 1;
+       if (name == "connection" && has_value(arr, "keep-alive"))
+         keep_alive = 1;
+       foreach (Array.arrayify(arr);; string value)
+         radd("%s: %s", name, value);
+     }
 
    if (!extra["content-type"]) {
-      if (!m->type)
-         m->type = .filename_to_type(not_query);
-      radd("Content-Type: %s", m->type);
+     if (!m->type)
+       m->type = .filename_to_type(not_query);
+     radd("Content-Type: %s", m->type);
    }
 
-   if (m->error == 206 && !extra["content-range"])
-      radd("Content-Range: bytes %d-%d/%s", m->start,stop,
-           undefinedp(m->instance_size) ? "*" : (string)m->instance_size);
+   if (m->start < stop)
+     radd("Content-Range: bytes %d-%d/%s", m->start,stop,
+          undefinedp(m->instance_size) ? "*" : (string)m->instance_size);
 
    if (!undefinedp(m->size)) {
-      if (!extra["content-length"])
-         radd("Content-Length: %d", m->size);
+     if (!extra["content-length"])
+       radd("Content-Length: %d", m->size);
    } else if (arrayp(m->data) || m->file) {
-      if (m->file) {
-         m->data = ({m->file});
-         m_delete(m, "file");
-      }
-      radd("Transfer-Encoding: chunked");
+     if (m->file) {
+       m->data = ({m->file});
+       m_delete(m, "file");
+     }
+     radd("Transfer-Encoding: chunked");
    }
 
    if (!extra->server)
-      radd("Server: %s", m->server || .http_serverid);
+     radd("Server: %s", m->server || .http_serverid);
 
-   string http_now = .http_date(time(1));
-   if (!extra->date)
-      radd("Date: %s", http_now);
+   {
+     string http_now = .http_date(time(1));
+     if (!extra->date)
+       radd("Date: %s", http_now);
 
-   if (!extra["last-modified"]) {
-     if (m->modified)
-       radd("Last-Modified: %s", .http_date(m->modified));
-     else if (gotstat(m))
-       radd("Last-Modified: %s", .http_date(m->stat->mtime));
-     else
-       radd("Last-Modified: %s", http_now);
+     if (!extra["last-modified"]) {
+       if (m->modified)
+         radd("Last-Modified: %s", .http_date(m->modified));
+       else if (gotstat(m))
+         radd("Last-Modified: %s", .http_date(m->stat->mtime));
+       else
+         radd("Last-Modified: %s", http_now);
+     }
    }
 
    if (!extra->connection) {
@@ -757,28 +772,56 @@ void response_and_finish(mapping m, function|void _log_cb)
 
    radd("");
 
-   my_fd->write(buf->read());
-
-    // The caller is presumed to take care *not* to include bodies with
-   // HEAD, 1xx, 204 or 304 responses.
-
-   if (m->file || m->data) {
+   if (_mode & SHUFFLER) {
      Shuffler.Shuffler sfr = Shuffler.Shuffler();
      //sfr->set_backend (backend);   // FIXME to spread CPU over more cores
-     Shuffler.Shuffle sf = sfr->shuffle(my_fd);
-
+     Shuffler.Shuffle sf = sfr->shuffle(my_fd, m->start, m->size);
+     sf->add_source(send_buf, extend_timeout);
      sf->set_done_callback(send_close);
-     if (arrayp(m->data)) {
-       sf->set_done_callback(final_chunk);
-       sf->set_wrap_callback(chunker);
-       foreach (m->data; ; mixed data)
-         sf->add_source(data);
-     } else
-       sf->add_source(m->file || m->data, m->start, m->size);
 
+      // The caller is presumed to take care *not* to include bodies with
+     // HEAD, 1xx, 204 or 304 responses.
+
+     if (m->file || m->data) {
+       if (arrayp(m->data)) {
+         foreach (m->data; ; mixed data)
+           sf->add_source(data, chunker);
+         sf->add_source("0\r\n\r\n");   // Trailing headers can be added here
+       } else
+         sf->add_source(m->file || m->data, m->start, m->size);
+     }
      sf->start();
-   } else
-     send_close();
+   } else {
+     if (m->start) {
+       if (m->file)
+         m->file->seek(m->start, Stdio.SEEK_CUR);
+       else if (m->data)
+         m->data = ((string)m->data)[m->start..];
+     }
+
+     send_stop = sizeof(send_buf);
+
+     if (request_type=="HEAD") {
+       m->file=0;
+       m->data=0;
+       m->size=0;
+     }
+     else if (m->data) {
+       if (!stringp(m->data))
+         error("Composite data types not supported, use Shuffler mode instead.\n");
+       send_buf->add(m->data);
+     }
+
+     if (m->size > 0)
+       send_stop += m->size;
+
+     if (m->file) {
+       send_fd = m->file;
+       send_buf->range_error(0);
+     }
+
+     my_fd->set_nonblocking(send_read, send_write, send_close);
+   }
 }
 
 //! Finishes this request, as in removing timeouts, calling the
@@ -792,7 +835,10 @@ void finish(int clean)
    if( log_cb )
      log_cb(this);
 
+   remove_call_out(send_timeout);
    remove_call_out(connection_timeout);
+
+   send_buf = 0;
 
    if (!clean
        || !my_fd
@@ -827,22 +873,48 @@ class OutputBuffer
    }
 }
 
+private void extend_timeout() {
+  remove_call_out(send_timeout);
+  call_out(send_timeout, send_timeout_delay);
+}
+
 //! Returns the amount of data sent.
 int sent_data()
 {
    return sent;
 }
 
+void send_write()
+{
+   extend_timeout();
+   int n = send_buf->output_to(my_fd);
+
+   // SSL.File->write() does not guarantee that all data has been
+   // written upon return; this can cause premature disconnects.
+   // By waiting for any buffers to empty before calling finish, we
+   // help ensure the full result has been transmitted.
+   if(my_fd->query_version) {
+     if( n == 0 && send_stop == sent)
+        finish(1);
+     else if(n <= 0)
+        finish(sent == send_stop);
+     else
+        sent += n;
+   } else {
+     if ( n <= 0 || (send_stop==(sent+=n)) )
+        finish(sent==send_stop);
+   }
+}
+
+void send_timeout()
+{
+   finish(0);
+}
+
 void send_close()
 {
 /* socket closed by peer */
    finish(0);
-}
-
-private void final_chunk() {
-   my_fd->set_blocking();
-   my_fd->write("0\r\n\r\n");   // Trailing headers can be added here
-   send_close();
 }
 
 void send_read(mixed dummy,string s)

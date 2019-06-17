@@ -15,6 +15,8 @@ struct source
   struct source *next;
   int eof;
 
+  struct svalue wrap_callback;
+
   /* Must be implemented by all sources */
   struct data (*get_data)(struct source *s,off_t len);
   void (*free_source)(struct source *s);

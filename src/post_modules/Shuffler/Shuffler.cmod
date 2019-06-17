@@ -42,11 +42,13 @@ DECLARATIONS
 #define SHUFFLE_DEBUG4(fmt, arg1, arg2, arg3, arg4)
 #endif
 #define BLOCK 8192
-static void free_source( struct source *s )
-{
+
+static void free_source(struct source *s) {
   debug_malloc_touch(s);
-  if( s->free_source ) s->free_source( s );
-  free( s );
+  free_svalue(&s->wrap_callback);
+  if (s->free_source)
+    s->free_source(s);
+  free(s);
 }
 
 /*! @module Shuffler
@@ -98,6 +100,7 @@ static void free_source( struct source *s )
 PIKECLASS Shuffle
 {
   CVAR struct fd_callback_box box;
+  CVAR int oldbulkmode;
 
   PIKEVAR object shuffler;
   /*! @decl Shuffler shuffler;
@@ -112,9 +115,10 @@ PIKECLASS Shuffle
   */
 
   PIKEVAR function(object, int:array(string(8bit))) done_callback;
+  PIKEVAR string(8bit) prefix;
+  PIKEVAR string(8bit) suffix;
 
-  PIKEVAR function(object, int:array(string(8bit))) wrap_callback;
-  CVAR struct svalue prefix, suffix;
+  CVAR INT64 skip, left;
   CVAR int leftprefix, leftsuffix;
 
   PIKEVAR mixed request_arg;
@@ -130,6 +134,17 @@ PIKECLASS Shuffle
 
   CVAR struct data leftovers;
 
+  static void take_fd(struct Shuffle_struct*s) {
+    if (s->box.fd >= 0) {
+      bulkmode_restore(s->box.fd, s->oldbulkmode);
+      push_int(s->box.fd);
+      unhook_fd_callback_box(&s->box);
+      s->box.fd = -1;
+      if (s->file_obj)
+        safe_apply(s->file_obj, "take_fd", 1);
+      pop_stack();
+    }
+  }
 
   static void _send_more( struct Shuffle_struct *t );
   static void __set_callbacks( struct Shuffle_struct *t )
@@ -227,8 +242,9 @@ PIKECLASS Shuffle
     THIS->throttler = 0;
     THIS->sent = 0;
     mark_free_svalue (&THIS->done_callback);
-    mark_free_svalue (&THIS->wrap_callback);
     SET_SVAL(THIS->request_arg, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+    THIS->prefix = 0;
+    THIS->suffix = 0;
     THIS->leftprefix = 0;
     THIS->leftovers.len = 0;
     THIS->leftsuffix = 0;
@@ -251,13 +267,7 @@ PIKECLASS Shuffle
   {
     SHUFFLE_DEBUG1("exit()\n", THIS );
 
-    if(THIS->box.fd >= 0) {
-      push_int( THIS->box.fd );
-      unhook_fd_callback_box(&THIS->box);
-      if(THIS->file_obj)
-        safe_apply( THIS->file_obj, "take_fd", 1 );
-      pop_stack();
-    }
+    take_fd(THIS);
 
     if( THIS->file_obj )
     {
@@ -335,14 +345,7 @@ PIKECLASS Shuffle
     /* Remove our callbacks. */
     _remove_callbacks( t );
 
-    if(t->box.fd >= 0) {
-      push_int( t->box.fd );
-      unhook_fd_callback_box(&t->box);
-      t->box.fd = -1;
-      if(t->file_obj)
-        safe_apply(t->file_obj, "take_fd", 1 );
-      pop_stack();
-    }
+    take_fd(t);
 
     debug_malloc_touch( t->box.ref_obj );
     ref_push_object( t->box.ref_obj );
@@ -411,22 +414,6 @@ PIKECLASS Shuffle
       mark_free_svalue (&THIS->done_callback);
   }
 
-  PIKEFUN void set_wrap_callback(function(object, int:array(string(8bit))) cb)
-   /*! @decl void set_wrap_callback(function(Shuffle,int:array(string(8bit))) cb)
-    *! Sets the write callback. This function will be called on every
-    *! system write.  It returns an array of two strings, a prefix
-    *! and a suffix string which will be prepended/appended to the
-    *! data block being sent.
-    *!
-    */
-    optflags OPT_SIDE_EFFECT;
-  {
-    SHUFFLE_DEBUG2("set_wrap_callback(%p)\n", THIS, cb->u.object );
-    assign_svalue( &THIS->wrap_callback,cb);
-    if (TYPEOF(THIS->wrap_callback) == PIKE_T_INT)
-      mark_free_svalue (&THIS->wrap_callback);
-  }
-
   PIKEFUN void set_request_arg( mixed arg )
    /*! @decl void set_request_arg( mixed arg )
     *!
@@ -460,7 +447,7 @@ PIKECLASS Shuffle
     int sent = 0, fulllen, len, iof;
     struct iovec iov[3];
     SHUFFLE_DEBUG2("__send_more_callback(%d)\n", t, amount );
-    while( t->leftprefix + t->leftovers.len + t->leftsuffix < 1 )
+    while (t->leftovers.len + t->leftsuffix <= 0)
     {
       while( t->current_source && t->current_source->eof )
       {
@@ -503,10 +490,30 @@ PIKECLASS Shuffle
 	return;
       }
 
-      if (TYPEOF(t->wrap_callback) != PIKE_T_FREE) {
+      if (t->skip >= t->leftovers.len) {
+        t->skip -= t->leftovers.len;
+        t->leftovers.len = 0;
+        continue;
+      }
+      t->leftovers.data += t->skip;
+      t->leftovers.len -= t->skip;
+      t->skip = 0;
+      if (t->left >= 0) {
+        if (t->left < t->leftovers.len)
+          t->leftovers.len = t->left;
+        t->left -= t->leftovers.len;
+        if (!t->left) {
+          _give_back( t, amount );
+          _all_done( t, 1 );
+          return;
+        }
+      }
+
+      t->leftsuffix = t->leftprefix = 0;
+      if (TYPEOF(t->current_source->wrap_callback) != PIKE_T_FREE) {
         SHUFFLE_DEBUG2("_wrap: Calling wrap callback: %p\n", t,
-                       t->wrap_callback.u.object);
-        push_svalue(&t->wrap_callback);
+                       t->current_source->wrap_callback.u.object);
+        push_svalue(&t->current_source->wrap_callback);
 
         ref_push_object(t->box.ref_obj);
         push_int(t->leftovers.len);
@@ -521,14 +528,18 @@ PIKECLASS Shuffle
           switch (v->size) {
             case 2:             // FIXME Error message for wide strings?
               if (TYPEOF (*++sv) == T_STRING && !sv->u.string->size_shift) {
-                assign_svalue(&t->suffix, sv);
-                t->leftsuffix = t->suffix.u.string->len;
+                if (t->suffix)
+                  free_string(t->suffix);
+                copy_shared_string(t->suffix, sv->u.string);
+                t->leftsuffix = t->suffix->len;
               }
               --sv;
             case 1:
               if (TYPEOF (*sv) == T_STRING && !sv->u.string->size_shift) {
-                assign_svalue(&t->prefix, sv);
-                t->leftprefix = t->prefix.u.string->len;
+                if (t->prefix)
+                  free_string(t->prefix);
+                copy_shared_string(t->prefix, sv->u.string);
+                t->leftprefix = t->prefix->len;
               }
           }
         }
@@ -544,7 +555,7 @@ PIKECLASS Shuffle
     sent = -1; iof = 0;
     if (t->leftprefix) {
       (*iov).iov_base
-       = t->prefix.u.string->str + t->prefix.u.string->len - t->leftprefix;
+       = t->prefix->str + t->prefix->len - t->leftprefix;
       (*iov).iov_len = MINIMUM(t->leftprefix, len);
       iof++;
     }
@@ -554,7 +565,7 @@ PIKECLASS Shuffle
       iof++;
       if ((len -= t->leftovers.len) > 0) {
         iov[iof].iov_base
-         = t->suffix.u.string->str + t->suffix.u.string->len - t->leftsuffix;
+         = t->suffix->str + t->suffix->len - t->leftsuffix;
         iov[iof].iov_len = len;
         iof++;
       }
@@ -639,7 +650,7 @@ PIKECLASS Shuffle
   }
 
   /*! @decl void create(object fd, object shuffler, mixed throttler,@
-   *!                   mixed backend)
+   *!                   mixed backend, void|int start, void|int length)
    *!
    *! This object is normally not created directly, instead use
    *! @[Shuffler()->shuffle]
@@ -647,12 +658,15 @@ PIKECLASS Shuffle
   PIKEFUN void create( object fd,
 		       object shuffler,
 		       mixed throttler,
-		       mixed backend )
+		       mixed backend,
+                       void|int|object start,
+                       void|int|object length )
     flags ID_PROTECTED;
   {
     struct Backend_struct *be = default_backend;
 
-    if( (args != 4) || !shuffler || !get_storage( shuffler, Shuffler_program ) )
+    if( args < 4 || args > 6
+     || !shuffler || !get_storage( shuffler, Shuffler_program ) )
       Pike_error("This class cannot be instantiated directly\n");
 
     THIS->file_obj = fd;
@@ -666,6 +680,21 @@ PIKECLASS Shuffle
       THIS->throttler = throttler->u.object;
       add_ref(THIS->throttler);
     }
+
+    if (start) {
+      if (TYPEOF(*start) == PIKE_T_OBJECT)
+	int64_from_bignum( &THIS->skip, start->u.object );
+      else if (TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start))
+        THIS->skip = start->u.integer;
+    } else
+      THIS->skip = 0;
+    if (length) {
+      if (TYPEOF(*length) == PIKE_T_OBJECT )
+	int64_from_bignum( &THIS->left, length->u.object );
+      else if (TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length))
+        THIS->left = length->u.integer;
+    } else
+      THIS->left = -1;
 
     if (find_identifier("release_fd", fd->prog) < 0)
       change_fd_for_box(&THIS->box, -1);
@@ -685,6 +714,7 @@ PIKECLASS Shuffle
     if( THIS->box.fd >= 0 )
     {
       set_nonblocking( THIS->box.fd, 1 );
+      THIS->oldbulkmode = bulkmode_start(THIS->box.fd);
       if(THIS->box.backend) {
 	/* FIXME: Ought to change backend to be here. */
         set_fd_callback_events(&THIS->box, 0, 0);
@@ -740,8 +770,11 @@ PIKECLASS Shuffle
     _all_done( THIS, 2 );
   }
 
-  PIKEFUN void add_source( mixed source, mixed|void start, mixed|void length )
+  PIKEFUN void
+    add_source(mixed source, int|object|void start, int|object|void length)
    /*! @decl void add_source( mixed source, int|void start, int|void length );
+    *! @decl void add_source( mixed source, @
+    *!                        function(Shuffle, int:array(string)) wrap_cb );
     *! Add a new source to the list of data sources.
     *! The data from the sources will be sent in order.
     *!
@@ -755,6 +788,9 @@ PIKECLASS Shuffle
     *!     An ordinary 8-bit wide pike string.
     *!   @item System.Memory
     *!     An initialized instance of the System.Memory class.
+    *!   @item Stdio.Buffer
+    *!     A Stdio.Buffer object which will be called once
+    *!     with consume() and read_buffer() to acquire the data.
     *!   @item Stdio.File
     *!     Stdio.File instance pointing to a normal file.
     *!   @item Stdio.Stream
@@ -767,32 +803,44 @@ PIKECLASS Shuffle
     */
     optflags OPT_SIDE_EFFECT;
   {
-    INT64 rstart=0, rlength=-1;
+    INT64 rstart = 0, rlength = -1;
     struct source *res;
+    struct svalue *wrap_cb = 0;
 
     if( !THIS->file_obj )
       Pike_error("Cannot add source, no destination.\n");
 
-    if( start )
-    {
-      if( TYPEOF(*start) == PIKE_T_OBJECT )
-	int64_from_bignum( &rstart, start->u.object );
-      else if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
-        rstart = start->u.integer;
-    }
-    if( length )
-    {
-      if( TYPEOF(*length) == PIKE_T_OBJECT )
-	int64_from_bignum( &rlength, length->u.object );
-      else if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
-        rlength = length->u.integer;
+    if (start)
+      switch (TYPEOF(*start)) {
+        case PIKE_T_FUNCTION:
+          wrap_cb = start;
+          break;
+        case PIKE_T_OBJECT:
+	  int64_from_bignum(&rstart, start->u.object);
+          break;
+        case PIKE_T_INT:
+          if (!SUBTYPEOF(*start))
+            rstart = start->u.integer;
+          break;
+      }
+    if (length) {
+      switch (TYPEOF(*length)) {
+        case PIKE_T_OBJECT:
+	  int64_from_bignum( &rlength, length->u.object );
+          break;
+        case PIKE_T_INT:
+          if (!SUBTYPEOF(*length))
+            rlength = length->u.integer;
+          break;
+      }
 
-      if( rlength == 0 )
+      if (!rlength)
         return;
     }
     debug_malloc_touch( source );
 
     res = source_make( source, rstart, rlength );
+    mark_free_svalue(&res->wrap_callback);
 
     debug_malloc_touch( res );
 
@@ -800,6 +848,9 @@ PIKECLASS Shuffle
 		  (int)rstart, (int)rlength, res );
     if( !res )
       Pike_error("Failed to convert argument to a source\n");
+
+    if (wrap_cb)
+      assign_svalue(&res->wrap_callback, wrap_cb);
 
     res->next = NULL;
     if( THIS->current_source )
@@ -919,13 +970,24 @@ PIKECLASS Shuffler
     Pike_sp--;
   }
 
-  PIKEFUN object shuffle( object destination )
-    /*! @decl Shuffle shuffle( Stdio.NonblockingStream destination );
+  PIKEFUN object
+    shuffle(object destination, int|object|void start, int|object|void length)
+    /*! @decl Shuffle shuffle(Stdio.NonblockingStream destination, @
+     *!                       int|void start, int|void length);
      *! Create a new @[Shuffle] object.
      *!
      *! The destination has to support nonblocking I/O.
      */
   {
+    struct svalue cstart, clength;
+    switch (args) {
+      case 3:
+        clength = *--Pike_sp;
+        /* FALL THROUGH */
+      case 2:
+        cstart = *--Pike_sp;
+        /* FALL THROUGH */
+    }
     ref_push_object( Pike_fp->current_object ); /* shuffler */
     if( THIS->throttler )
       ref_push_object( THIS->throttler );
@@ -935,8 +997,16 @@ PIKECLASS Shuffler
       ref_push_object( THIS->backend );
     else
       push_int( 0 );
-
-    push_object( clone_object( Shuffle_program, 4 ) );
+    switch (args) {
+      case 3:
+        *Pike_sp++ = cstart;
+        *Pike_sp++ = clength;
+        break;
+      case 2:
+        *Pike_sp++ = cstart;
+        /* FALL THROUGH */
+    }
+    push_object( clone_object( Shuffle_program, 3 + args) );
     stack_dup();
     f_aggregate( 1 );
     push_array( THIS->sources );

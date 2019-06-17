@@ -69,7 +69,6 @@
 #include <sys/file.h>
 #endif
 
-
 PMOD_EXPORT int set_nonblocking(int fd,int which)
 {
   int ret;
@@ -126,6 +125,62 @@ PMOD_EXPORT int query_nonblocking(int fd)
 #else
   return ret;
 #endif
+}
+
+PMOD_EXPORT int bulkmode_start(int fd) {
+  int ret = 0;
+#ifdef SOL_TCP
+  int val;
+  socklen_t old_len = (socklen_t) sizeof(int);
+#ifdef TCP_NODELAY
+  /* Attempt to set the out socket into nagle mode.
+   */
+  while (getsockopt(fd, SOL_TCP, TCP_NODELAY,
+                    &val, &old_len) < 0 && errno == EINTR);
+  if (val == 1) {
+    val = 0;
+    while (setsockopt(fd, SOL_TCP, TCP_NODELAY,
+                      &val, sizeof(val))<0 && errno == EINTR);
+    ret = 1;
+  }
+#endif /* TCP_NODELAY */
+#ifdef TCP_CORK
+  /* Attempt to set the out socket into cork mode.
+   * FIXME: Do we need to adjust TCP_NODELAY here?
+   */
+  while (getsockopt(fd, SOL_TCP, TCP_CORK,
+                    &val, &old_len) < 0 && errno == EINTR);
+  if (!val) {
+    val = 1;
+    while (setsockopt(fd, SOL_TCP, TCP_CORK,
+                      &val, sizeof(val)) < 0 && errno == EINTR);
+    ret |= 2;
+  }
+#endif
+#endif /* SOL_TCP */
+  return ret;
+}
+
+PMOD_EXPORT void bulkmode_restore(int fd, int which) {
+#ifdef SOL_TCP
+#ifdef TCP_CORK
+  /* Restore the cork mode for the socket. */
+  if (which & 2) {
+    int val = 0;
+    while(setsockopt(fd, SOL_TCP, TCP_CORK, &val,
+	             sizeof(val)) < 0 && errno == EINTR)
+      ;
+  }
+#endif
+#ifdef TCP_NODELAY
+  /* Restore the nagle mode for the socket. */
+  if (which & 1) {
+    int val = 1;
+    while(setsockopt(fd, SOL_TCP, TCP_NODELAY,
+	             &val, sizeof(val)) < 0 && errno == EINTR);
+  }
+#endif /* TCP_CORK || TCP_NODELAY */
+#endif /* SOL_TCP */
 }
 
 /* The following code doesn't link without help, and
