@@ -42,41 +42,40 @@ static struct data get_data( struct source *src, off_t len )
   struct pf_source *s = (struct pf_source *)src;
   struct data res;
 
-  if( s->len>0 && len > s->len ) {
+  if (s->len >= 0 && len > s->len)
     len = s->len;
-    s->s.eof = 1;
-  }
 
-  do {
+  for (;;) {
     struct pike_string *st;
 
-    push_int( len );
-    apply( s->obj, "read", 1 );
+    push_int(len);
+    apply(s->obj, "read", 1);
 
-    if(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING
-     || Pike_sp[-1].u.string->size_shift
-     || !(st = Pike_sp[-1].u.string)->len) {
+    if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING
+     || (st = Pike_sp[-1].u.string)->size_shift
+     || !st->len) {
+      s->s.eof = 1;
       pop_stack();
+      res.len = 0;
       break;
-    }
-
-    if( st->len < s->skip ) {
+    } else if (st->len <= s->skip) {
       s->skip -= st->len;
       pop_stack();
     } else {
       frees(s);
       res.len = st->len - s->skip;
       s->str = st;
-      Pike_sp--;
       res.data = st->str + s->skip;
       s->skip = 0;
+      Pike_sp--;
+      break;
     }
   }
-  while(s->skip || !res.len);
-  if(res.len < len)
-    s->s.eof = 1;
-  if(s->len > 0)
+  if (s->len >= 0) {
     s->len -= res.len;
+    if(!s->len)
+      s->s.eof = 1;
+  }
   return res;
 }
 
