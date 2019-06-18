@@ -19,6 +19,7 @@
 #include "svalue.h"
 #include "threads.h"
 #include "fdlib.h"
+#include "fd_control.h"
 #include "builtin_functions.h"
 
 #include <errno.h>
@@ -537,6 +538,7 @@ static void free_send_args(struct send_args *s)
 static void actually_send(struct send_args *a)
 {
   int first=0;
+  int oldbulkmode;
   char foo[10];
   unsigned char *data = NULL;
   ptrdiff_t fail, data_len = 0;
@@ -647,17 +649,8 @@ static void actually_send(struct send_args *a)
   {
     memcpy(foo, data+MINIMUM((data_len-4),9), 4);
     first=1;
-#if !defined(SOL_TCP) && defined(IPPROTO_TCP)
-    /* SOL_TCP isn't defined in Solaris. */
-#define SOL_TCP	IPPROTO_TCP
-#endif
-#if defined(TCP_CORK) && defined(SOL_TCP)
     DWERROR("cork... \n");
-    {
-      int true=1;
-      fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, sizeof(true) );
-    }
-#endif
+    oldbulkmode = bulkmode_start(a->to->fd);
     fail = WRITE(a->to->fd, (char *)data, data_len);
     a->sent += fail;
     if(fail != data_len)
@@ -743,12 +736,7 @@ static void actually_send(struct send_args *a)
 
  end:
   DWERROR("all written.. \n");
-#if defined(TCP_CORK) && defined(SOL_TCP)
-  {
-    int false = 0;
-    fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &false, sizeof(false) );
-  }
-#endif
+  bulkmode_restore(a->to->fd, oldbulkmode);
   {
     struct args *arg = a->to;
     LOG(a->sent, a->to, atoi(foo));

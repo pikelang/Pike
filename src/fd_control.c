@@ -127,33 +127,39 @@ PMOD_EXPORT int query_nonblocking(int fd)
 #endif
 }
 
-PMOD_EXPORT int bulkmode_start(int fd) {
-  int ret = 0;
+#if !defined(SOL_TCP) && defined(IPPROTO_TCP)
+    /* SOL_TCP isn't defined in Solaris. */
+#define SOL_TCP IPPROTO_TCP
+#endif
+
 #ifdef SOL_TCP
+static int gsockopt(int fd, int opt) {
   int val;
   socklen_t old_len = (socklen_t) sizeof(int);
-#ifdef TCP_NODELAY
-  /* Attempt to set the out socket into nagle mode.
-   */
-  while (getsockopt(fd, SOL_TCP, TCP_NODELAY,
+  while (getsockopt(fd, SOL_TCP, opt,
                     &val, &old_len) < 0 && errno == EINTR);
-  if (val == 1) {
-    val = 0;
-    while (setsockopt(fd, SOL_TCP, TCP_NODELAY,
-                      &val, sizeof(val))<0 && errno == EINTR);
+  return val;
+}
+
+static void ssockopt(int fd, int opt, int val) {
+  while (setsockopt(fd, SOL_TCP, opt,
+                    &val, sizeof(val)) < 0 && errno == EINTR);
+}
+#endif
+
+PMOD_EXPORT int bulkmode_start(int fd) {
+  int ret = 0;
+  // FIXME Cache NODELAY/CORK state to avoid getsockopt() system calls
+#ifdef SOL_TCP
+#ifdef TCP_NODELAY
+  if (!gsockopt(fd, TCP_NODELAY)) {
+    ssockopt(fd, TCP_NODELAY, 1);	// Disable Nagle mode.
     ret = 1;
   }
 #endif /* TCP_NODELAY */
 #ifdef TCP_CORK
-  /* Attempt to set the out socket into cork mode.
-   * FIXME: Do we need to adjust TCP_NODELAY here?
-   */
-  while (getsockopt(fd, SOL_TCP, TCP_CORK,
-                    &val, &old_len) < 0 && errno == EINTR);
-  if (!val) {
-    val = 1;
-    while (setsockopt(fd, SOL_TCP, TCP_CORK,
-                      &val, sizeof(val)) < 0 && errno == EINTR);
+  if (!gsockopt(fd, TCP_CORK)) {
+    ssockopt(fd, TCP_CORK, 1);		// Turn on cork mode.
     ret |= 2;
   }
 #endif
@@ -164,21 +170,13 @@ PMOD_EXPORT int bulkmode_start(int fd) {
 PMOD_EXPORT void bulkmode_restore(int fd, int which) {
 #ifdef SOL_TCP
 #ifdef TCP_CORK
-  /* Restore the cork mode for the socket. */
-  if (which & 2) {
-    int val = 0;
-    while(setsockopt(fd, SOL_TCP, TCP_CORK, &val,
-	             sizeof(val)) < 0 && errno == EINTR)
-      ;
-  }
+  ssockopt(fd, TCP_CORK, 0);	 // Briefly unplug always, to flush data
+  if (!(which & 2))		// Only replug cork if it was on before
+    ssockopt(fd, TCP_CORK, 1);
 #endif
 #ifdef TCP_NODELAY
-  /* Restore the nagle mode for the socket. */
-  if (which & 1) {
-    int val = 1;
-    while(setsockopt(fd, SOL_TCP, TCP_NODELAY,
-	             &val, sizeof(val)) < 0 && errno == EINTR);
-  }
+  if (which & 1)	// Only enable Nagle if it was enabled before
+    ssockopt(fd, TCP_NODELAY, 0);
 #endif /* TCP_CORK || TCP_NODELAY */
 #endif /* SOL_TCP */
 }
