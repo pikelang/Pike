@@ -4,7 +4,7 @@
 
 //! The functions and classes in the top level of the Locale
 //! module implements a dynamic localization system, suitable
-//! for programs that needs to change locale often. It is
+//! for programs that need to change locale often. It is
 //! even possible for different threads to use different locales
 //! at the same time.
 //!
@@ -18,6 +18,7 @@
 //! the currently selected locale.
 //!
 //! @example
+//! @code
 //!  // The following line tells the locale extractor what to
 //!  // look for.
 //!  // <locale-token project="my_project">LOCALE</locale-token>
@@ -33,6 +34,7 @@
 //!    write(LOCALE(0, "This is another one.\n");
 //!    return 0;
 //!  }
+//! @endcode
 //!
 //! @note
 //!   In order to update your code to actually use the locale strings
