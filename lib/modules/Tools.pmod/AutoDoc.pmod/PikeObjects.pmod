@@ -580,9 +580,16 @@ class Annotation(array(string) tokens)
 {
   constant is_annotation = 1;
 
+  constant objtype = "annotation";
+
   string xml(.Flags|void flags)
   {
     return xmltag("annotation", tokens * "");
+  }
+
+  string `name()
+  {
+    return tokens * "";
   }
 }
 
