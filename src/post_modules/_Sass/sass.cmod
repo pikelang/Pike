@@ -350,12 +350,23 @@ PIKECLASS Api
    *!
    *! Compiles the string @[source] and returns the generated CSS.
    *!
+   *! @param source
+   *!  The string to compile
+   *!
+   *! @returns
+   *!  A mapping with the generated CSS and source mapping file if such is
+   *!  set to be generated
+   *!
+   *!  @mapping
+   *!   @member string(8bit) "css"
+   *!    The generated CSS
+   *!   @member string(8bit) "map"
+   *!    The generated source mapping data
+   *!  @endmapping
+   *!
    *! @note
    *!  If the @[source] contain @tt{@@import@} directives you have to
    *!  explicitly set the include path via @[include_path].
-   *!
-   *! @param source
-   *!  The string to compile
    */
   PIKEFUN mapping(string(8bit):string(8bit))
   compile_string (string(8bit) source)
