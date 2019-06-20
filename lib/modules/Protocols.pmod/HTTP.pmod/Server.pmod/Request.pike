@@ -543,7 +543,7 @@ private array(string(8bit)) chunker(Shuffler.Shuffle sf, int amount) {
 //! @param mode
 //!  A number of integer flags bitwise ored together to determine
 //!  the mode of operation.
-//!   @{SHUFFLER@}: Use the Shuffler to send out the data.
+//!   @[SHUFFLER]: Use the Shuffler to send out the data.
 //!
 void set_mode(int mode) {
   _mode = mode;
