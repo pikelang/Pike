@@ -27,6 +27,50 @@ cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
     Pike.PollDeviceBackend pb = Pike.PollDeviceBackend();
     Stdio.File f = Stdio.File(), f2 = f->pipe();
     Shuffler.Shuffler sfr = Shuffler.Shuffler();
+    Stdio.FakePipe fp = Stdio.FakePipe("r");
+    sfr->set_backend (pb);
+    fp->set_backend(pb);
+    fp->other->set_backend(pb);
+    Shuffler.Shuffle sf = sfr->shuffle(f);
+    sf->add_source("xyz\n" * 1);
+    sf->add_source(Stdio.Buffer("xyz\n" * 1000));
+    sf->add_source(fp);
+    sf->add_source("xyz\n" * 9 + "abcdef" * 10000, 0, 4 * 9);
+    sf->add_source(Stdio.Buffer("xyz\n" * 8000));
+    sf->add_source("xyz\n" * 1, 4);
+    sf->add_source("xyz\n" * 1, 4, 16);
+    sf->add_source("xyz\n" * 1, 40, 16);
+    sf->add_source(Stdio.Buffer("xyz\n" * 1), 4);
+    sf->add_source(Stdio.Buffer("xyz\n" * 1), 4, 16);
+    sf->add_source(Stdio.Buffer("xyz\n" * 1), 40, 16);
+    sf->add_source("xyz\n" * (71 + 8), 8*4);
+    sf->add_source("xyz\n" * 1);
+    sf->add_source("xyz\n" * 9);
+    sf->add_source(Stdio.Buffer("xyz\n" * 70900));
+    sf->add_source("xyz\n" * 9);
+    sf->set_done_callback( lambda() { sf->stop(); destruct(sf); });
+    sf->start();
+    Thread.Thread(lambda() {
+      fp->other->write("xyz\n" * 1000);
+      fp->other->write("xyz\n" * 9000);
+      fp->other->close();
+    });
+    string res = "";
+    f2->set_backend(pb);
+    f2->set_read_callback( lambda(mixed id, string s) { res += s; });
+    while (sf) {
+      pb(1.0);
+    }
+    f->close();
+    return res + f2->read();
+  ]], "xyz\n" * 100000)
+]])
+
+cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
+  test_any([[
+    Pike.PollDeviceBackend pb = Pike.PollDeviceBackend();
+    Stdio.File f = Stdio.File(), f2 = f->pipe();
+    Shuffler.Shuffler sfr = Shuffler.Shuffler();
     sfr->set_backend (pb);
     Shuffler.Shuffle sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);

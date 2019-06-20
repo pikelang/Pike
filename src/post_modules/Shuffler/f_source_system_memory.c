@@ -89,12 +89,14 @@ struct source *source_system_memory_make( struct svalue *s,
   slen = mem->len;
 
   slen -= start;
-  if (len >= 0 && slen > len)
-    slen = len;
   if (slen < 0)
     slen = 0;
+  if (len < 0)
+    len = slen;
+  if (len > slen)
+    len = slen;
 
-  res->len = slen;
+  res->len = len;
   return (struct source *)res;
 }
 

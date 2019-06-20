@@ -137,22 +137,24 @@ static void f_got_data( INT32 args )
   if (args < 2 ||
       TYPEOF(Pike_sp[-1]) != PIKE_T_STRING ||
       Pike_sp[-1].u.string->size_shift ||
-      Pike_sp[-1].u.string->len == 0)
-  {
+      Pike_sp[-1].u.string->len == 0) {
+
     s->available = -1;
-    pop_n_elems(args);
-    push_int(0);
-    return;
+
+  } else {
+    frees(s);
+    s->available = 1;
+    s->str = Pike_sp[-1].u.string;
+    Pike_sp--;
+    args--;
   }
-  frees(s);
-  s->available = 1;
-  s->str = Pike_sp[-1].u.string;
-  Pike_sp--;
-  pop_n_elems(args-1);
-  push_int(0);
+
+  pop_n_elems(args);
 
   if( s->when_data_cb )
     s->when_data_cb( s->when_data_cb_arg );
+
+  push_int(0);
 }
 
 static void set_callback( struct source *src, void (*cb)( void *a ), void *a )

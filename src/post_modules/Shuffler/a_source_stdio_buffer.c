@@ -68,17 +68,21 @@ struct source *source_stdio_buffer_make( struct svalue *s,
 
   {
     Buffer *io = io_buffer_from_object(o);
-    INT64 slen;
+    INT64 slen = io_len(io);
 
-    if (start)
+    if (start) {
+      if (start > slen)
+	start = slen;
       io_consume(io, start);
+      slen -= start;
+    }
 
-    slen = io_len(io);
-    if (len >= 0 && slen < len)
-      slen = len;
-    if (slen < 0)
-      slen = 0;
-    push_int64(slen);
+    if (len < 0)
+      len = slen;
+    if (len > slen)
+      len = slen;
+
+    push_int64(len);
     apply(o, "read_buffer", 1);
   }
 

@@ -30,7 +30,7 @@ static struct data get_data( struct source *src, off_t len )
   struct ps_source *s = (struct ps_source *)src;
   struct data res;
 
-  if( len > s->len ) {
+  if (len > s->len) {
     len = s->len;
     s->s.eof = 1; /* next read will be done from the next source */
   }
@@ -66,15 +66,18 @@ struct source *source_pikestring_make( struct svalue *s,
   res->s.get_data = get_data;
 
   copy_shared_string(res->str, s->u.string);
+  slen = res->str->len;
+  if (start > slen)
+    start = slen;
   res->data = res->str->str + start;
+  slen -= start;
 
-  slen = res->str->len - start;
-  if (len >= 0 && slen < len)
-    slen = len;
-  if (slen < 0)
-    slen = 0;
+  if (len < 0)
+    len = slen;
+  if (len > slen)
+    len = slen;
 
-  res->len = slen;
+  res->len = len;
   return (struct source *)res;
 }
 
