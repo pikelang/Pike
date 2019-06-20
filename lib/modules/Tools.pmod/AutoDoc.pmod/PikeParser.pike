@@ -643,9 +643,9 @@ Type parseType() {
 array parseArgList(int|void allowLiterals) {
   array(string) argnames = ({ });
   array(Type) argtypes = ({ });
-  if (peekToken() == ")")
-    return ({ argnames, argtypes });
   for (;;) {
+    if (peekToken() == ")")
+      return ({ argnames, argtypes });
     Type typ = parseOrType();
     if (typ && typ->name == "void" && peekToken() == ")")
       return ({ argnames, argtypes });
