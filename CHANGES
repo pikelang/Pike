@@ -28,6 +28,13 @@ o Concurrent
 Bug fixes
 ---------
 
+o ADT.CritBit.IntTree
+
+  Fixed the signature of ADT.CritBit.IntTree()->_values().
+
+  values(ADT.CritBit.IntTree()) claimed to return an array(int),
+  whereas IntTrees can hold any type as value.
+
 o backtrace()
 
   Hide mutex keys and crypto contexts from backtraces.
