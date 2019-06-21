@@ -484,7 +484,7 @@ class MultiTree {
 	return predef::`+(@map(trees, indices));
     }
 
-    array(int) _values() {
+    array _values() {
 	return predef::`+(@map(trees, values));
     }
 
