@@ -2936,6 +2936,9 @@ PIKEFUN void _putenv (string var, void|string val)
  *!
  *! An empty class that can be inherited to get the
  *! @tt{PROGRAM_DESTRUCT_IMMEDIATE@} flag set.
+ *!
+ *! @seealso
+ *!   @[InhibitDestruct]
  */
 
 PIKECLASS DestructImmediate
@@ -2956,6 +2959,9 @@ PIKECLASS DestructImmediate
  *!
  *! All symbols in the class are either @expr{protected@}
  *! or @expr{private@} in order to affect users minimally.
+ *!
+ *! @seealso
+ *!   @[DestructImmediate]
  */
 PIKECLASS InhibitDestruct
 {
