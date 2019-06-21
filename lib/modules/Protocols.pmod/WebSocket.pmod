@@ -571,14 +571,13 @@ class Connection {
 
         stream->set_nonblocking(curry_back(http_read, _Roxen.HeaderParser(), extensions, rext),
                                 websocket_write, websocket_closed);
-
-
         // We use our output buffer to generate the request.
         send_raw("GET ", endpoint->get_http_path_query(), " HTTP/1.1\r\n");
         foreach(headers; string h; string v) {
             send_raw(h, ": ", v, "\r\n");
         }
         send_raw("\r\n");
+        send_flush();
         return res;
     }
 
@@ -606,6 +605,12 @@ class Connection {
     void send_raw(string(8bit) ... s) {
         WS_WERR(3, "out:\n----\n%s\n----\n", s*"\n----\n");
         out->add(@s);
+    }
+
+    void send_flush() {
+        function fn;
+        if (fn = stream->set_nodelay)
+            fn();
         stream->write("");
     }
 
@@ -1030,14 +1035,13 @@ class Request(function(array(string), Request:void) cb) {
         WS_WERR(2, "Using extensions: %O\n", _extensions);
         my_fd = 0;
 
-        Stdio.Buffer buf = Stdio.Buffer(1024);
-        buf->add("HTTP/1.1 101 SwitchingProtocols\r\n");
+        ws->send_raw("HTTP/1.1 101 SwitchingProtocols\r\n");
 
         foreach (heads; string k; string v)
-          buf->sprintf("%s: %s\r\n", k, v);
+          ws->send_raw(k, ": ", v, "\r\n");
 
-        buf->add("\r\n");
-        ws->send_raw(buf->read());
+        ws->send_raw("\r\n");
+        ws->send_flush();
 
         finish(0);
 
