@@ -32,14 +32,9 @@ static struct data get_data( struct source *src, off_t len )
   struct sm_source *s = (struct sm_source *)src;
   struct data res;
 
-  if (len > s->len) {
-    len = s->len;
-    s->s.eof = 1; /* next read will be done from the next source */
-  }
-
-  s->len -= res.len = len;
+  res.len = s->len;
   res.data = s->data;
-  s->data += len;
+  s->s.eof = 1; /* next read will be done from the next source */
 
   return res;
 }

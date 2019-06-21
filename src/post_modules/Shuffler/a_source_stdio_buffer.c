@@ -26,7 +26,6 @@ struct sb_source
 {
   struct source s;
 
-  off_t lastlen;
   struct object *obj;
 };
 
@@ -34,14 +33,11 @@ static struct data get_data( struct source *src, off_t len )
 {
   struct sb_source *s = (struct sb_source *)src;
   struct data res;
-
   Buffer *io = io_buffer_from_object(s->obj);
 
-  io_consume(io, s->lastlen);
   res.data = io_read_pointer(io);
-  s->lastlen = res.len = len = len > io_len(io) ? io_len(io) : len;
-
-  s->s.eof = !len;
+  res.len = io_len(io);
+  s->s.eof = 1;
   return res;
 }
 
@@ -92,7 +88,6 @@ struct source *source_stdio_buffer_make( struct svalue *s,
   o = Pike_sp[-1].u.object;
   Pike_sp--;
 
-  res->lastlen = 0;
   res->s.get_data = get_data;
   res->s.free_source = free_source;
   add_ref(res->obj = o);

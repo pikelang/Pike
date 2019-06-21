@@ -32,7 +32,9 @@ struct fd_source
 
   struct object *obj;
   char buffer[CHUNK];
-  int available;
+  char *data;
+  size_t available;
+  int readwanted;
   int fd;
 
   void (*when_data_cb)( void *a );
@@ -45,53 +47,58 @@ static void read_callback( int fd, struct fd_source *s );
 static void setup_callbacks( struct source *src )
 {
   struct fd_source *s = (struct fd_source *)src;
-  if( !s->available )
-    set_read_callback( s->fd, (void*)read_callback, s );
+  set_read_callback( s->fd, (void*)read_callback, s );
 }
 
 static void remove_callbacks( struct source *src )
 {
   struct fd_source *s = (struct fd_source *)src;
-  set_read_callback( s->fd, 0, 0 );
+  if (s->obj->prog)
+    set_read_callback( s->fd, 0, 0 );
 }
 
+static int doread(struct fd_source *s) {
+  int l = fd_read(s->fd, s->buffer, CHUNK);
+  if (l > 0) {
+    if (s->skip >= l) {
+      s->skip -= l;
+      return 0;
+    }
+    s->data = s->buffer + s->skip;
+    s->available = l - s->skip;
+    s->skip = 0;
+    s->readwanted = 0;
+  } else
+    s->readwanted = -1;
+  return 1;
+}
 
 static struct data get_data(struct source *src, off_t len)
 {
   struct fd_source *s = (struct fd_source *)src;
   struct data res;
-  res.len = s->available;
 
-  if (len = s->available) { /* There is data in the buffer. Return it. */
-    if (len < 0)
-      len = 0;
-    if (s->skip) {
-      if (s->skip >= len) {
-        s->skip -= len;
-        goto getmore;
-      }
-      len -= s->skip;
-    }
-    if (s->len) {
-      if (s->len < (size_t)len)
-        len = s->len;
-      s->len -= len;
-      if (!s->len)
-        s->s.eof = 1;
-    }
-    res.data = s->buffer + s->skip;
-    res.len = len;
-    if (s->available < 0)
+  for (;;) {
+    if (s->readwanted < 0)
       s->s.eof = 1;
-    s->available = 0;
-  } else {
-getmore:
-   /* No data available, but there should be in the future (no EOF, nor
-    * out of the range of data to send as specified by the arguments to
-    * source_stream_make)
-    */
-    res.len = -2;
-    setup_callbacks(src);
+    if (len = s->available) { /* There is data in the buffer. Return it. */
+      res.data = s->data;
+      res.len = len;
+      s->available = 0;
+    } else if (s->readwanted > 0) {
+      doread(s);
+      continue;
+    } else if (s->readwanted < 0) {
+      res.len = 0;
+    } else {
+     /* No data available, but there should be in the future (no EOF, nor
+      * out of the range of data to send as specified by the arguments to
+      * source_stream_make)
+      */
+      res.len = -2;
+      setup_callbacks(src);
+    }
+    break;
   }
 
   return res;
@@ -106,14 +113,11 @@ static void free_source( struct source *src )
 
 static void read_callback( int UNUSED(fd), struct fd_source *s )
 {
-  int l;
   remove_callbacks( (struct source *)s );
 
-  l = fd_read(s->fd, s->buffer, CHUNK);
-  if (!l)
-    l = -1;
-  s->available = l;
-  if (s->when_data_cb)
+  if (s->available > 0)
+    s->readwanted = 1;	 /* Remember to do a read when the buffer is empty */
+  else if (doread(s) && s->when_data_cb)
     s->when_data_cb (s->when_data_cb_arg);
 }
 

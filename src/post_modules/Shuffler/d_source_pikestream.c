@@ -29,7 +29,9 @@ struct pf_source
   struct object *obj;
   struct object *cb_obj;
   struct pike_string *str;
-  int available;
+  char *data;
+  size_t available;
+  int eof;
 
   void (*when_data_cb)( void *a );
   void *when_data_cb_arg;
@@ -45,26 +47,25 @@ struct callback_prog
 static void setup_callbacks( struct source *src )
 {
   struct pf_source *s = (struct pf_source *)src;
-  if( !s->available )
-  {
-    ref_push_object( s->cb_obj );
-    apply( s->obj, "set_read_callback", 1 );
-    pop_stack();
-    ref_push_object( s->cb_obj );
-    apply( s->obj, "set_close_callback", 1 );
-    pop_stack();
-  }
+  ref_push_object( s->cb_obj );
+  apply( s->obj, "set_read_callback", 1 );
+  pop_stack();
+  ref_push_object( s->cb_obj );
+  apply( s->obj, "set_close_callback", 1 );
+  pop_stack();
 }
 
 static void remove_callbacks( struct source *src )
 {
   struct pf_source *s = (struct pf_source *)src;
-  push_int(0);
-  apply( s->obj, "set_read_callback", 1 );
-  pop_stack();
-  push_int(0);
-  apply( s->obj, "set_close_callback", 1 );
-  pop_stack();
+  if (s->obj->prog) {
+    push_int(0);
+    apply( s->obj, "set_read_callback", 1 );
+    pop_stack();
+    push_int(0);
+    apply( s->obj, "set_close_callback", 1 );
+    pop_stack();
+  }
 }
 
 static void frees(struct pf_source*s) {
@@ -79,35 +80,13 @@ static struct data get_data( struct source *src, off_t len )
   struct pf_source *s = (struct pf_source *)src;
   struct data res;
 
+  res.len = s->available;
+  if (s->eof)
+    s->s.eof = 1;
   if (s->available) {
-    if (!s->str) {
-      s->s.eof = 1;
-      res.len = 0;
-      return res;
-    }
-    len = s->str->len;
-    if (s->skip) {
-      if (s->skip >= len) {
-        frees(s);
-	s->skip -= len;
-	goto getmore;
-      }
-      len -= s->skip;
-    }
-    if (s->len) {
-      if (s->len < (size_t)len)
-        len = s->len;
-      s->len -= len;
-      if (!s->len)
-        s->s.eof = 1;
-    }
-    res.data = s->str->str + s->skip;
-    res.len = len;
-    if (s->available < 0)
-      s->s.eof = 1;
+    res.data = s->data;
     s->available = 0;
   } else {
-getmore:
   /* No data available, but there should be in the future (no EOF, nor
    * out of the range of data to send as specified by the arguments to
    * source_stream_make)
@@ -134,25 +113,35 @@ static void f_got_data( INT32 args )
 
   remove_callbacks( (struct source *)s );
 
-  if (args < 2 ||
-      TYPEOF(Pike_sp[-1]) != PIKE_T_STRING ||
-      Pike_sp[-1].u.string->size_shift ||
-      Pike_sp[-1].u.string->len == 0) {
-
-    s->available = -1;
-
+  if (args < 2
+   || TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
+    s->eof = 1;		    /* signal EOF */
+    pop_n_elems(args);
+    if (!s->available)
+      goto cb;
   } else {
+    size_t slen;
     frees(s);
-    s->available = 1;
     s->str = Pike_sp[-1].u.string;
-    Pike_sp--;
-    args--;
+    slen = s->str->len;
+    if (!slen)
+      Pike_error("Shuffler: Read callback passing a zero size string\n");
+    if (s->str->size_shift)
+      Pike_error("Shuffler: Wide strings are not supported\n");
+    if (slen > s->skip) {
+      s->available = slen -= s->skip;
+      s->data = s->str->str + s->skip;
+      s->skip = 0;
+      Pike_sp--;
+      args--;
+    } else {
+      s->skip -= slen;
+      s->str = 0;
+    }
+    pop_n_elems(args);
+cb: if( s->when_data_cb )
+      s->when_data_cb( s->when_data_cb_arg );
   }
-
-  pop_n_elems(args);
-
-  if( s->when_data_cb )
-    s->when_data_cb( s->when_data_cb_arg );
 
   push_int(0);
 }
@@ -178,7 +167,6 @@ struct source *source_pikestream_make( struct svalue *s,
 
   res->len = len;
   res->skip = start;
-  res->available = 0;
 
   res->s.get_data = get_data;
   res->s.free_source = free_source;

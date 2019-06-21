@@ -30,14 +30,9 @@ static struct data get_data( struct source *src, off_t len )
   struct ps_source *s = (struct ps_source *)src;
   struct data res;
 
-  if (len > s->len) {
-    len = s->len;
-    s->s.eof = 1; /* next read will be done from the next source */
-  }
-
+  s->s.eof = 1; /* next read will be done from the next source */
   res.data = s->data;
-  s->data += len;
-  s->len -= res.len = len;
+  res.len = s->len; /* ignore len parameter and deliver what we have */
 
   return res;
 }

@@ -469,6 +469,9 @@ PIKECLASS Shuffle
 	return;
       }
 
+      /* The length argument to get_data is a guideline, the callee can
+       * ignore it if so desired and return more data.
+       */
       t->leftovers = t->current_source->get_data(t->current_source,
 						 MAXIMUM(amount, BLOCK));
       if( t->leftovers.len == -2 )

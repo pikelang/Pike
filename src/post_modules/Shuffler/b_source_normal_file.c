@@ -95,7 +95,7 @@ struct source *source_normal_file_make( struct svalue *s,
   if (start)
     fd_lseek(fd, (off_t)start, SEEK_CUR);
 
-  if (!(res = calloc( 1, sizeof( struct fd_source))))
+  if (!(res = calloc(1, sizeof(struct fd_source))))
     return 0;
 
   res->fd = fd;
