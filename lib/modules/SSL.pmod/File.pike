@@ -588,6 +588,13 @@ int(0..1) linger(int(-1..65535)|void seconds)
   return 1;
 }
 
+//! Controle Nagle's Algorithm (RFC 896).
+bool set_nodelay(bool|void state)
+{
+  function f = stream && stream->set_nodelay;
+  return f && f(state);
+}
+
 int close (void|string how, void|int clean_close, void|int dont_throw)
 //! Close the connection. Both the read and write ends are always
 //! closed
