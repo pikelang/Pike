@@ -26,7 +26,7 @@ final object `engine() { return _engine; }
 final void read_cb_worker() {
   string(8bit) s;
   function rcb = read_cb;
-  if (rcb && (s = buffer->read()))
+  if (rcb && sizeof(s = buffer->read()))
     rcb(0, s);
 }
 

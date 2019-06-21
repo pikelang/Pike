@@ -96,9 +96,10 @@ protected class InternalSocket( protected this_program _other,
     poll_co = UNDEFINED;
     if (_write_buffer)
       _fill_write_buffer();
-    if (this && __read_cb && _read_buffer)
-      if (sizeof(_read_buffer)) {
-        __read_cb(__id, _read_buffer->read());
+    if (this && __read_cb && _read_buffer) {
+      string s = _read_buffer->read();
+      if (sizeof(s)) {
+        __read_cb(__id, s);
         if (_other) {
           if (_other->_write_buffer)
             _other->_fill_write_buffer();
@@ -110,6 +111,7 @@ protected class InternalSocket( protected this_program _other,
           return _run_close_cb();
       } else
         return _run_close_cb();
+    }
   }
 
   // Internal
