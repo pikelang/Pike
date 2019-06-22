@@ -2493,7 +2493,7 @@ sprintf("        } else {\n"
 		 sprintf("((struct %s *)(o->storage+%s_storage_offset))",
 			 structname, base))+
 	  DEFINE("GET_"+upper_case(base)+"_STORAGE(o)",
-		 sprintf("((struct %s *)(o->storage+%s_storage_offset)",
+		 sprintf("((struct %s *)(o->storage+%s_storage_offset))",
 			 structname, base))+
 	    ({
 	      sprintf("static ptrdiff_t %s_storage_offset;\n",base),
