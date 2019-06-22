@@ -47,8 +47,9 @@ static void free_source(struct source *s) {
   debug_malloc_touch(s);
   free_svalue(&s->wrap_callback);
   if (s->free_source)
-    s->free_source(s);
-  free(s);
+    s->free_source(s);	  // The callee needs to free the struct itself
+  else			  // This might need to be delayed in case of callbacks
+    free(s);		  // We do it ourselves
 }
 
 /*! @module Shuffler

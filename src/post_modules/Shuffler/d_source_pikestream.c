@@ -20,14 +20,20 @@
  * Argument: Stdio.File lookalike with read
  *           callback support (set_read_callback)
  */
-static struct program *callback_program;
+static struct program *source_program;
+
+#ifdef THIS
+#undef THIS
+#endif
+
+#define THIS ((struct pf_source *)(Pike_fp->current_storage))
 
 struct pf_source
 {
   struct source s;
 
+  struct object *self;
   struct object *obj;
-  struct object *cb_obj;
   struct pike_string *str;
   char *data;
   size_t available;
@@ -38,32 +44,26 @@ struct pf_source
   size_t len, skip;
 };
 
-
-struct callback_prog
-{
-  struct pf_source *s;
-};
-
 static void setup_callbacks( struct source *src )
 {
   struct pf_source *s = (struct pf_source *)src;
-  ref_push_object( s->cb_obj );
-  apply( s->obj, "set_read_callback", 1 );
+  ref_push_object(s->self);
+  apply(s->obj, "set_read_callback", 1);
   pop_stack();
-  ref_push_object( s->cb_obj );
-  apply( s->obj, "set_close_callback", 1 );
+  ref_push_object(s->self);
+  apply(s->obj, "set_close_callback", 1);
   pop_stack();
 }
 
 static void remove_callbacks( struct source *src )
 {
   struct pf_source *s = (struct pf_source *)src;
-  if (s->obj->prog) {
+  if (s->obj && s->obj->prog) {
     push_int(0);
-    apply( s->obj, "set_read_callback", 1 );
+    apply(s->obj, "set_read_callback", 1);
     pop_stack();
     push_int(0);
-    apply( s->obj, "set_close_callback", 1 );
+    apply(s->obj, "set_close_callback", 1);
     pop_stack();
   }
 }
@@ -86,6 +86,8 @@ static struct data get_data( struct source *src, off_t len )
   if (s->available) {
     res.data = s->data;
     s->available = 0;
+  } else if (!s->obj->prog) {	/* Object imploded before we were done */
+    s->s.eof = 1;	       /* FIXME should we throw an error here? */
   } else {
   /* No data available, but there should be in the future (no EOF, nor
    * out of the range of data to send as specified by the arguments to
@@ -97,19 +99,12 @@ static struct data get_data( struct source *src, off_t len )
   return res;
 }
 
-static void free_source( struct source *src )
-{
-  struct pf_source *s = (struct pf_source *)src;
-  remove_callbacks( src );
-  frees(s);
-  free_object(s->cb_obj);
-  free_object(s->obj);
-}
-
 static void f_got_data( INT32 args )
 {
-  struct pf_source *s =
-    ((struct callback_prog *)Pike_fp->current_object->storage)->s;
+  struct pf_source *s = (struct pf_source*)Pike_fp->current_object->storage;
+
+  if (!s->obj)	   // Already finished
+    return;	  // FIXME Should we throw an error here?
 
   remove_callbacks( (struct source *)s );
 
@@ -153,44 +148,54 @@ static void set_callback( struct source *src, void (*cb)( void *a ), void *a )
   s->when_data_cb_arg = a;
 }
 
-struct source *source_pikestream_make( struct svalue *s,
-				       INT64 start, INT64 len )
-{
-  struct pf_source *res;
-
-  if( (TYPEOF(*s) != PIKE_T_OBJECT) ||
-      (find_identifier("set_read_callback",s->u.object->prog)==-1) )
-    return 0;
-
-  if (!(res = calloc( 1, sizeof( struct pf_source))))
-    return 0;
-
-  res->len = len;
-  res->skip = start;
-
-  res->s.get_data = get_data;
-  res->s.free_source = free_source;
-  res->s.set_callback = set_callback;
-  res->s.setup_callbacks = setup_callbacks;
-  res->s.remove_callbacks = remove_callbacks;
-  res->obj = s->u.object;
-  add_ref(res->obj);
-
-  res->cb_obj = clone_object( callback_program, 0 );
-  ((struct callback_prog *)res->cb_obj->storage)->s = res;
-
-  return (struct source *)res;
+static void free_source( struct source *src ) {
+  free_object(((struct pf_source *)src)->self);
 }
 
-void source_pikestream_exit( )
-{
-  free_program( callback_program );
+struct source *source_pikestream_make(struct svalue *sv,
+				      INT64 start, INT64 len) {
+  struct pf_source *s;
+
+  if (TYPEOF(*sv) != PIKE_T_OBJECT
+   || find_identifier("set_read_callback", sv->u.object->prog) < 0)
+    return 0;
+
+  {
+    struct object *p;
+    if (!(p = clone_object(source_program, 0)))
+      return 0;
+
+    s = (struct pf_source*)p->storage;
+    s->self = p;
+  }
+
+  add_ref(s->obj = sv->u.object);
+
+  s->len = len;
+  s->skip = start;
+  s->s.get_data = get_data;
+  s->s.free_source = free_source;
+  s->s.set_callback = set_callback;
+  s->s.setup_callbacks = setup_callbacks;
+  s->s.remove_callbacks = remove_callbacks;
+
+  return (struct source *)s;
 }
 
-void source_pikestream_init( )
-{
+static void source_destruct(struct object *UNUSED(o)) {
+  remove_callbacks((struct source*)THIS);
+  free_object(THIS->obj);
+  THIS->obj = 0;
+}
+
+void source_pikestream_exit() {
+  free_program(source_program);
+}
+
+void source_pikestream_init() {
   start_new_program();
-  ADD_STORAGE( struct callback_prog );
+  ADD_STORAGE(struct pf_source);
   ADD_FUNCTION("`()", f_got_data, tFunc(tInt tStr,tVoid),0);
-  callback_program = end_program();
+  set_exit_callback(source_destruct);
+  source_program = end_program();
 }

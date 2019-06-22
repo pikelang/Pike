@@ -25,11 +25,19 @@
  *           of some kind (network socket, named pipes, stdin etc)
  */
 
+struct program *source_program;
+
+#ifdef THIS
+#undef THIS
+#endif
+
+#define THIS ((struct fd_source *)(Pike_fp->current_storage))
 
 struct fd_source
 {
   struct source s;
 
+  struct object *self;
   struct object *obj;
   char buffer[CHUNK];
   char *data;
@@ -41,21 +49,6 @@ struct fd_source
   void *when_data_cb_arg;
   INT64 len, skip;
 };
-
-
-static void read_callback( int fd, struct fd_source *s );
-static void setup_callbacks( struct source *src )
-{
-  struct fd_source *s = (struct fd_source *)src;
-  set_read_callback( s->fd, (void*)read_callback, s );
-}
-
-static void remove_callbacks( struct source *src )
-{
-  struct fd_source *s = (struct fd_source *)src;
-  if (s->obj->prog)
-    set_read_callback( s->fd, 0, 0 );
-}
 
 static int doread(struct fd_source *s) {
   int l = fd_read(s->fd, s->buffer, CHUNK);
@@ -73,52 +66,56 @@ static int doread(struct fd_source *s) {
   return 1;
 }
 
-static struct data get_data(struct source *src, off_t len)
-{
+static void remove_callbacks(struct source *src) {
   struct fd_source *s = (struct fd_source *)src;
-  struct data res;
-
-  for (;;) {
-    if (s->readwanted < 0)
-      s->s.eof = 1;
-    if (len = s->available) { /* There is data in the buffer. Return it. */
-      res.data = s->data;
-      res.len = len;
-      s->available = 0;
-    } else if (s->readwanted > 0) {
-      doread(s);
-      continue;
-    } else if (s->readwanted < 0) {
-      res.len = 0;
-    } else {
-     /* No data available, but there should be in the future (no EOF, nor
-      * out of the range of data to send as specified by the arguments to
-      * source_stream_make)
-      */
-      res.len = -2;
-      setup_callbacks(src);
-    }
-    break;
-  }
-
-  return res;
-}
-
-
-static void free_source( struct source *src )
-{
-  remove_callbacks( src );
-  free_object(((struct fd_source *)src)->obj);
+  if (s->obj->prog)
+    set_read_callback(s->fd, 0, 0);
 }
 
 static void read_callback( int UNUSED(fd), struct fd_source *s )
 {
+  if (!s->obj)     // Already finished
+    return;       // FIXME Should we throw an error here?
+
   remove_callbacks( (struct source *)s );
 
   if (s->available > 0)
     s->readwanted = 1;	 /* Remember to do a read when the buffer is empty */
   else if (doread(s) && s->when_data_cb)
     s->when_data_cb (s->when_data_cb_arg);
+}
+
+static void setup_callbacks( struct source *src ) {
+  struct fd_source *s = (struct fd_source *)src;
+  set_read_callback( s->fd, (void*)read_callback, s );
+}
+
+static struct data get_data(struct source *src, off_t len)
+{
+  struct fd_source *s = (struct fd_source *)src;
+  struct data res;
+
+reload:
+  if (s->readwanted < 0)
+    s->s.eof = 1;
+  if (res.len = len = s->available) {
+    res.data = s->data;
+    s->available = 0;
+  } else if (s->readwanted > 0) {
+    doread(s);
+    goto reload;
+  } else if (!s->obj->prog) {      /* Object imploded before we were done */
+    s->s.eof = 1;	          /* FIXME should we throw an error here? */
+  } else if (!s->readwanted) {
+   /* No data available, but there should be in the future (no EOF, nor
+    * out of the range of data to send as specified by the arguments to
+    * source_stream_make)
+    */
+    res.len = -2;
+    setup_callbacks(src);
+  }
+
+  return res;
 }
 
 static void set_callback( struct source *src, void (*cb)( void *a ), void *a )
@@ -141,39 +138,58 @@ static int is_stdio_file(struct object *o)
   return 0;
 }
 
-struct source *source_stream_make( struct svalue *s,
-				   INT64 start, INT64 len )
-{
-  struct fd_source *res;
-  if (TYPEOF(*s) != PIKE_T_OBJECT
-   || !is_stdio_file(s->u.object)
-   || find_identifier("query_fd", s->u.object->prog) < 0)
+static void free_source(struct source *src) {
+  free_object(((struct fd_source*)src)->self);
+}
+
+struct source *source_stream_make(struct svalue *sv,
+				  INT64 start, INT64 len) {
+  struct fd_source *s;
+
+  if (TYPEOF(*sv) != PIKE_T_OBJECT
+   || !is_stdio_file(sv->u.object)
+   || find_identifier("query_fd", sv->u.object->prog) < 0)
     return 0;
 
-  if (!(res = calloc(1, sizeof(struct fd_source))))
-    return 0;
+  {
+    struct object *p;
 
-  apply(s->u.object, "query_fd", 0);
-  res->fd = Pike_sp[-1].u.integer;
+    if (!(p = clone_object(source_program, 0)))
+      return 0;
+
+    s = (struct fd_source*)p->storage;
+    s->self = p;
+  }
+
+  add_ref(s->obj = sv->u.object);
+
+  apply(s->obj, "query_fd", 0);
+  s->fd = Pike_sp[-1].u.integer;
   pop_stack();
 
-  res->len = len;
-  res->skip = start;
-
-  res->s.get_data = get_data;
-  res->s.free_source = free_source;
-  res->s.set_callback = set_callback;
-  res->s.setup_callbacks = setup_callbacks;
-  res->s.remove_callbacks = remove_callbacks;
-  res->obj = s->u.object;
-  add_ref(res->obj);
-  return (struct source *)res;
+  s->len = len;
+  s->skip = start;
+  s->s.get_data = get_data;
+  s->s.free_source = free_source;
+  s->s.set_callback = set_callback;
+  s->s.setup_callbacks = setup_callbacks;
+  s->s.remove_callbacks = remove_callbacks;
+  return (struct source *)s;
 }
 
-void source_stream_exit( )
-{
+static void source_destruct(struct object *UNUSED(o)) {
+  remove_callbacks((struct source*)THIS);
+  free_object(THIS->obj);
+  THIS->obj = 0;
 }
 
-void source_stream_init( )
-{
+void source_stream_exit() {
+  free_program(source_program);
+}
+
+void source_stream_init() {
+  start_new_program();
+  ADD_STORAGE(struct fd_source);
+  set_exit_callback(source_destruct);
+  source_program = end_program();
 }
