@@ -5872,38 +5872,16 @@ PIKECLASS List
     }
   }
 
-  /* These two functions perform the same thing,
-   * but are optimized to minimize recursion.
-   */
-  static void gc_check_list_node_backward(struct pike_list_node *node,
-					  const char *msg);
-  static void gc_check_list_node_forward(struct pike_list_node *node,
-					 const char *msg)
-  {
-    while (node && !debug_gc_check(&node->refs, msg)) {
-      if (node->next)
-	debug_gc_check_svalues(&node->val, 1,  " as a list node value");
-      gc_check_list_node_backward(node->prev, msg);
-      node = node->next;
-    }
-  }
-
-  static void gc_check_list_node_backward(struct pike_list_node *node,
-					  const char *msg)
-  {
-    while (node && !debug_gc_check(&node->refs, msg)) {
-      if (node->prev)
-	debug_gc_check_svalues(&node->val, 1, " as a list node value");
-      gc_check_list_node_forward(node->next, msg);
-      node = node->prev;
-    }
-  }
-
   /* Called at gc_check time. */
   GC_CHECK
   {
-    gc_check_list_node_backward(HEAD_SENTINEL(THIS), " as a list node");
-    gc_check_list_node_forward(TAIL_SENTINEL(THIS), " as a list node");
+    struct pike_list_node *node = THIS->head;
+    struct pike_list_node *next;
+
+    while ((next = node->next)) {
+      debug_gc_check_svalues(&node->val, 1, "as a list node value");
+      node = next;
+    }
   }
 
   /* Called at gc_mark time */
@@ -6248,12 +6226,6 @@ PIKECLASS List
 	free_list_node(THIS->cur);
 	THIS->cur = NULL;
       }
-    }
-
-    /* Called at gc_check time. */
-    GC_CHECK
-    {
-      gc_check_list_node_forward(THIS->cur, " held by an iterator");
     }
 
     /* These two functions perform the same thing,
