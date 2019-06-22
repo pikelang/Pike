@@ -1,3 +1,4 @@
+#charset utf-8
 /*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
@@ -8,6 +9,8 @@
   Author: Pontus Östlund <https://github.com/poppa/>
 */
 
+//! @appears Web.Sass
+//!
 //! Sass is a scripting language that is interpreted into Cascading Style
 //! Sheets (CSS). This module is a glue for @tt{libsass@}.
 //!
