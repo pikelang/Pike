@@ -1617,6 +1617,9 @@ string parse_not_doc(Node n) {
 	     "</code>";
       break;
 
+    case "annotation":
+      break;
+
     default:
       error( "Illegal element " + c->get_any_name() + " in !doc.\n" );
       break;
