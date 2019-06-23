@@ -1901,6 +1901,7 @@ class ParseBlock
 	 */
 	string structname = base+"_struct";
 	string this=sprintf("((struct %s *)(Pike_interpreter.frame_pointer->current_storage))",structname);
+        string program_var = mkname(base, "program");
 
 	/* FIXME:
 	 * Add runtime debug to these defines...
@@ -1910,11 +1911,13 @@ class ParseBlock
 	  	  DEFINE("THIS",this)+   // FIXME: we should 'pop' this define later
 	  DEFINE("THIS_"+upper_case(base),this)+
 	  DEFINE("OBJ2_"+upper_case(base)+"(o)",
-		 sprintf("((struct %s *)(o->storage+%s_storage_offset))",
-			 structname, base))+
+		 sprintf("((struct %s *)(o->storage+%s_storage_offset"
+                         "+%s->inherits[0].storage_offset))",
+			 structname, base, program_var))+
 	  DEFINE("GET_"+upper_case(base)+"_STORAGE(o)",
-		 sprintf("((struct %s *)(o->storage+%s_storage_offset))",
-			 structname, base))+
+		 sprintf("((struct %s *)(o->storage+%s_storage_offset"
+                         "+%s->inherits[0].storage_offset))",
+			 structname, base, program_var))+
 	    ({
 	      sprintf("static ptrdiff_t %s_storage_offset;\n",base),
 		sprintf("struct %s {\n",structname),
