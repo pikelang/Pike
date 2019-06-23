@@ -6228,6 +6228,33 @@ PIKECLASS List
       }
     }
 
+    /*! @decl @[_get_iterator] copy_iterator()
+     *!
+     *! @returns
+     *!   Returns a copy of the iterator at its current position.
+     */
+    PIKEFUN object copy_iterator()
+    {
+      struct object *ret;
+
+      if (Pike_fp->current_object->prog != List_cq__get_iterator_program)
+        Pike_error("Cannot copy overloaded iterators.\n");
+
+      ret = low_clone(List_cq__get_iterator_program);
+
+      pop_n_elems(args);
+
+      add_ref(PARENT_INFO(ret)->parent =
+              PARENT_INFO(Pike_fp->current_object)->parent);
+      PARENT_INFO(ret)->parent_identifier =
+          PARENT_INFO(Pike_fp->current_object)->parent_identifier;
+
+      add_ref(OBJ2_LIST_CQ__GET_ITERATOR(ret)->cur = THIS->cur);
+      OBJ2_LIST_CQ__GET_ITERATOR(ret)->ind = THIS->ind;
+
+      push_object(ret);
+    }
+
     /* These two functions perform the same thing,
      * but are optimized to minimize recursion.
      */
