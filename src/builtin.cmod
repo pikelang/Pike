@@ -6650,6 +6650,9 @@ PIKECLASS Stack
    *! from the top. If no value is given the top element is
    *! popped and returned. All popped entries are freed from
    *! the stack.
+   *!
+   *! @seealso
+   *!   @[quick_pop()], @[pop_to()]
    */
   PIKEFUN mixed pop(void|int val)
   {
@@ -6670,6 +6673,7 @@ PIKECLASS Stack
       THIS->arr->size = new_size;
       Pike_sp++;
 
+      /* NB: +1 to skip freeing the returned element. */
       free_svalues(ITEM(THIS->arr) + new_size + 1, old_size - (new_size + 1),
 		   THIS->arr->type_field);
     } else {
@@ -6684,11 +6688,55 @@ PIKECLASS Stack
    *! Pops @[val] entries from the stack, or one entry
    *! if no value is given. The popped entries are not
    *! returned.
+   *!
+   *! @seealso
+   *!   @[pop()], @[pop_to()]
    */
   PIKEFUN void quick_pop(void|int val)
   {
     apply_current(f_Stack_pop_fun_num, args);
     push_int(0);
+  }
+
+  /*! @decl void pop_to(int depth)
+   *!
+   *! Pops entries from the stack until it reaches the specified depth.
+   *!
+   *! The popped entries are not returned.
+   *!
+   *! @throws
+   *!   Throws an error if there are fewer than @[depth] elements
+   *!   on the stack.
+   *!
+   *! @seealso
+   *!   @[pop()], @[quick_pop()]
+   */
+  PIKEFUN void pop_to(int depth)
+  {
+    ptrdiff_t old_size;
+
+    if (!THIS->arr) {
+      if (!depth) return;
+      Pike_error("Stack underflow.\n");
+    }
+
+    if ((depth < 0) || (THIS->arr->size < depth)) {
+      Pike_error("Stack underflow.\n");
+    }
+
+    old_size = THIS->arr->size;
+    if (old_size == depth) return;	/* NOOP */
+
+    if (!depth) {			/* Pop all. */
+      free_array(THIS->arr);
+      THIS->arr = NULL;
+      return;
+    }
+
+    THIS->arr->size = depth;
+
+    free_svalues(ITEM(THIS->arr) + depth, old_size - depth,
+		 THIS->arr->type_field);
   }
 
   /*! @decl void reset(int|void initial_size)

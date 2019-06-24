@@ -77,6 +77,17 @@ void quick_pop(void|int val)
   }
 }
 
+//! Pops entries from the stack until the specified @[depth] is
+//! reached. The popped entries are not actually freed, only the
+//! stack pointer is moved.
+void pop_to(int depth)
+{
+  if ((ptr < depth) || (depth < 0)) {
+    error("Stack underflow.\n");
+  }
+  ptr = depth;
+}
+
 //! Pops and returns entry @[val] from the stack, counting
 //! from the top. If no value is given the top element is
 //! popped and returned. All popped entries are freed from
