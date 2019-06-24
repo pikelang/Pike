@@ -103,8 +103,8 @@ static void f_got_data( INT32 args )
 {
   struct pf_source *s = (struct pf_source*)Pike_fp->current_object->storage;
 
-  if (!s->obj)	   // Already finished
-    return;	  // FIXME Should we throw an error here?
+  if (!s->obj)	   /* Already finished */
+    return;	  /* FIXME Should we throw an error here? */
 
   remove_callbacks( (struct source *)s );
 

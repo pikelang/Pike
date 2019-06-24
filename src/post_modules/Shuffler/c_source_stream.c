@@ -74,8 +74,8 @@ static void remove_callbacks(struct source *src) {
 
 static void read_callback( int UNUSED(fd), struct fd_source *s )
 {
-  if (!s->obj)     // Already finished
-    return;       // FIXME Should we throw an error here?
+  if (!s->obj)     /* Already finished */
+    return;       /* FIXME Should we throw an error here? */
 
   remove_callbacks( (struct source *)s );
 
