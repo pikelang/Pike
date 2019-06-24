@@ -67,7 +67,8 @@ private void close_worker() {
 
 //!
 final int close() {
-  backend->call_out(close_worker, 0);
+  if (backend)
+    backend->call_out(close_worker, 0);
   return 0;
 }
 
@@ -90,10 +91,10 @@ final int write(string(8bit) data) {
 //! using negative compression levels.
 //!
 protected void create(Gz.deflate|void engine) {
+  backend = Pike.DefaultBackend;
   buffer = Stdio.Buffer();
   _engine = engine;
   payloadlen = 0;
-  backend = Pike.DefaultBackend;
   process_init();
 }
 
