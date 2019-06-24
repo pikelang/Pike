@@ -475,6 +475,9 @@ PIKECLASS Shuffle
        */
       t->leftovers = t->current_source->get_data(t->current_source,
 						 MAXIMUM(amount, BLOCK));
+
+      if (t->current_source->eof && t->leftovers.len == -2)
+        t->leftovers.len = 0;	/* force eof recognition */
       if( t->leftovers.len == -2 )
       {
 	/* come back later (nonblocking source without more data to read) */

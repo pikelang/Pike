@@ -181,10 +181,11 @@ int getchar() {
 //!   @[Stdio.FILE()->unread()]
 void unread(string s) {
   if(!r) return;
-  if(data[ptr-sizeof(s)..ptr-1]==s)
-    ptr-=sizeof(s);
-  else
-  {
+  if(data[ptr-sizeof(s)..ptr-1]==s) {
+    ptr -= sizeof(s);
+    if (read_cb)
+      call_out(read_cb, 0, id, s);
+  } else {
     data=s+data[ptr..];
     ptr=0;
   }
@@ -241,6 +242,19 @@ int(0..1) truncate(int length) {
   return sizeof(data)==length;
 }
 
+private void do_readcb() {
+  if (read_cb && ptr < sizeof(data)) {
+    string s = data[ptr..];
+    ptr = sizeof(data);
+    call_out(read_cb, 0, id, s);
+  }
+  if (close_cb && ptr == sizeof(data)) {
+    function cb = close_cb;
+    close_cb = 0;	      // Close callback only once please
+    call_out(cb, 0, id);
+  }
+}
+
 //! @seealso
 //!   @[Stdio.File()->write()]
 int(-1..) write(string|array(string) str, mixed ... extra) {
@@ -251,6 +265,8 @@ int(-1..) write(string|array(string) str, mixed ... extra) {
   if(ptr==sizeof(data)) {
     data += str;
     ptr = sizeof(data);
+    if (read_cb)
+      call_out(read_cb, 0, id, str);
   }
   else if(sizeof(str)==1)
     data[ptr++] = str[0];
@@ -286,6 +302,7 @@ void set_nonblocking(function rcb, function wcb, function ccb,
   close_cb = ccb;
   read_oob_cb = rocb;
   write_oob_cb = wocb;
+  do_readcb();
 }
 
 //! @seealso
@@ -299,7 +316,10 @@ void set_close_callback(function cb) { close_cb = cb; }
 
 //! @seealso
 //!   @[Stdio.File()->set_read_callback]
-void set_read_callback(function cb) { read_cb = cb; }
+void set_read_callback(function cb) {
+  read_cb = cb;
+  do_readcb();
+}
 
 //! @seealso
 //!   @[Stdio.File()->set_read_oob_callback]
