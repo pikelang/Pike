@@ -180,8 +180,8 @@ enum SignatureAlgorithm {
   SIGNATURE_rsa_pss_384	= 5,	//! RSA PSS signature with 384 bit hash.
   SIGNATURE_rsa_pss_512	= 6,	//! RSA PSS signature with 512 bit hash.
 
-  SIGNATURE_ed25519_	= 7,	//! EdDSA 25519 signature.
-  SIGNATURE_ed448_	= 8,	//! EdDSA 448 signature.
+  SIGNATURE_ed25519	= 7,	//! EdDSA 25519 signature.
+  SIGNATURE_ed448	= 8,	//! EdDSA 448 signature.
 
   SIGNATURE_MASK	= 0x00ff,
 }
@@ -204,8 +204,8 @@ enum SignatureScheme {
   SIGNATURE_rsa_pss_sha512 = 0x0806,
 
   // EdDSA algorithms
-  SIGNATURE_ed25519 = 0x0807,
-  SIGNATURE_ed448 = 0x0808,
+  SIGNATURE_ed25519_intrinsic = 0x0807,
+  SIGNATURE_ed448_intrinsic = 0x0808,
 
   // Legacy algorithms
   SIGNATURE_rsa_pkcs1_sha1 = 0x0201,
@@ -1377,8 +1377,8 @@ enum NamedGroup {
   GROUP_brainpoolP384r1			= 27,	//! @rfc{7027@}
   GROUP_brainpoolP512r1			= 28,	//! @rfc{7027@}
 
-  GROUP_ecdh_x25519			= 29,	//! @rfc{8422@}
-  GROUP_ecdh_x448			= 30,	//! @rfc{8422@}
+  GROUP_x25519				= 29,	//! @rfc{8422@}
+  GROUP_x448				= 30,	//! @rfc{8422@}
 
   GROUP_ffdhe2048			= 256,	//! @rfc{7919@}
   GROUP_ffdhe3072			= 257,	//! @rfc{7919@}
@@ -1402,7 +1402,7 @@ constant ECC_NAME_TO_CURVE = ([
   "SECP_256R1": GROUP_secp256r1,
   "SECP_384R1": GROUP_secp384r1,
   "SECP_521R1": GROUP_secp521r1,
-  "Curve25519": GROUP_ecdh_x25519,
+  "Curve25519": GROUP_x25519,
 ]);
 
 /* ECC point formats from RFC 4492 5.1.2 (ECPointFormat). */
@@ -1501,7 +1501,7 @@ constant ECC_CURVES = ([
   GROUP_secp521r1: Crypto.ECC.SECP_521R1,
 #endif
 #if constant(Crypto.ECC.Curve25519)
-  GROUP_ecdh_x25519: Crypto.ECC.Curve25519,
+  GROUP_x25519: Crypto.ECC.Curve25519,
 #endif
 ]);
 
@@ -1594,9 +1594,9 @@ mapping(string(8bit):SignatureScheme)
 
   // EdDSA
   Standards.PKCS.Identifiers.eddsa25519_id->get_der():
-  SIGNATURE_ed25519,
+  SIGNATURE_ed25519_intrinsic,
   Standards.PKCS.Identifiers.eddsa448_id->get_der():
-  SIGNATURE_ed448,
+  SIGNATURE_ed448_intrinsic,
 ]);
 
 //! A chain of X509 certificates with corresponding private key.

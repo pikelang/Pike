@@ -290,7 +290,7 @@ array(int) signature_algorithms = ({
   SIGNATURE_rsa_pkcs1_sha384,
 #endif
 #if constant(Crypto.ECC.Curve25519)
-  SIGNATURE_ed25519,
+  SIGNATURE_ed25519_intrinsic,
 #endif
 #if constant(Crypto.ECC.Curve)
   SIGNATURE_ecdsa_secp256r1_sha256,
@@ -331,9 +331,11 @@ array(int) get_signature_algorithms(array(int)|void signature_algorithms)
 #if !constant(Crypto.ECC.Curve)
 		  if ((scheme & SIGNATURE_MASK) == SIGNATURE_ecdsa) return 0;
 #endif
+		  if ((<
 #if constant(Crypto.ECC.Curve25519)
-		  if (scheme == SIGNATURE_ed25519) return 1;
+			SIGNATURE_ed25519_intrinsic,
 #endif
+		      >)[scheme]) return 1;
 		  if ((<
 #if !constant(Crypto.SHA512)
 			HASH_sha512,
