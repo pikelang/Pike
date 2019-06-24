@@ -1,10 +1,8 @@
 #! /usr/bin/env pike
 // -*- pike -*-
 #pike __REAL_VERSION__
+#require constant(Web.Sass)
 
-#if !constant(Web.Sass)
-constant this_program_does_not_exist = 1;
-#else
 inherit Tools.Standalone.process_files;
 string version =
  sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
@@ -59,4 +57,3 @@ int(0..1) process_file(string path, string ... args) {
   Stdio.File(base + ".map", "wc")->write(output->map);
   return 0;
 }
-#endif
