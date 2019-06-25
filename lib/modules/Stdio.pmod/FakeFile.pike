@@ -8,8 +8,10 @@
 //! from a real @[Stdio.File] object.
 constant is_fake_file = 1;
 
+// FIXME: These two variables ought to be changed to using Stdio.Buffer.
 protected string data;
 protected int ptr;
+
 protected int(0..1) r;
 protected int(0..1) w;
 protected int mtime;
