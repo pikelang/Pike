@@ -247,11 +247,23 @@ private void do_readcb() {
     string s = data[ptr..];
     ptr = sizeof(data);
     call_out(read_cb, 0, id, s);
-  }
-  if (close_cb && ptr == sizeof(data)) {
-    function cb = close_cb;
-    close_cb = 0;	      // Close callback only once please
-    call_out(cb, 0, id);
+  } else if (ptr == sizeof(data)) {
+    function cb;
+    if (write_cb) {
+      cb = write_cb;
+#if 0 // NB: write_oob() is not supported.
+    } else if (write_oob_cb) {
+      cb = write_oob_cb;
+#endif /* 0 */
+    } else if (close_cb) {
+      // FIXME: This seems a bit strange; shouldn't the sender
+      //        indicate that it is done before we call the close_cb?
+      cb = close_cb;
+      close_cb = 0;	      // Close callback only once please
+    }
+    if (cb) {
+      call_out(cb, 0, id);
+    }
   }
 }
 
