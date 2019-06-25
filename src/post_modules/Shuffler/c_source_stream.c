@@ -46,7 +46,7 @@ struct fd_source
   int fd;
 
   void (*when_data_cb)( void *a );
-  void *when_data_cb_arg;
+  struct object *when_data_cb_arg;
   INT64 len, skip;
 };
 
@@ -82,7 +82,7 @@ static void read_callback( int UNUSED(fd), struct fd_source *s )
   if (s->available > 0)
     s->readwanted = 1;	 /* Remember to do a read when the buffer is empty */
   else if (doread(s) && s->when_data_cb)
-    s->when_data_cb (s->when_data_cb_arg);
+    s->when_data_cb(s->when_data_cb_arg);
 }
 
 static void setup_callbacks( struct source *src ) {
@@ -118,11 +118,12 @@ reload:
   return res;
 }
 
-static void set_callback( struct source *src, void (*cb)( void *a ), void *a )
-{
+static void
+ set_callback(struct source *src, void (*cb)( void *a ), struct object *a) {
   struct fd_source *s = (struct fd_source *)src;
   s->when_data_cb = cb;
-  s->when_data_cb_arg = a;;
+  if (!s->when_data_cb_arg)
+    add_ref(s->when_data_cb_arg = a);
 }
 
 static int is_stdio_file(struct object *o)
@@ -181,6 +182,8 @@ static void source_destruct(struct object *UNUSED(o)) {
   remove_callbacks((struct source*)THIS);
   free_object(THIS->obj);
   THIS->obj = 0;
+  if (THIS->when_data_cb_arg)
+    free_object(THIS->when_data_cb_arg);
 }
 
 void source_stream_exit() {

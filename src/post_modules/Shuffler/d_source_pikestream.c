@@ -40,7 +40,7 @@ struct pf_source
   int eof;
 
   void (*when_data_cb)( void *a );
-  void *when_data_cb_arg;
+  struct object *when_data_cb_arg;
   size_t len, skip;
 };
 
@@ -134,18 +134,19 @@ static void f_got_data( INT32 args )
       s->str = 0;
     }
     pop_n_elems(args);
-cb: if( s->when_data_cb )
-      s->when_data_cb( s->when_data_cb_arg );
+cb: if (s->when_data_cb)
+      s->when_data_cb(s->when_data_cb_arg);
   }
 
   push_int(0);
 }
 
-static void set_callback( struct source *src, void (*cb)( void *a ), void *a )
-{
+static void
+ set_callback(struct source *src, void (*cb)( void *a ), struct object *a) {
   struct pf_source *s = (struct pf_source *)src;
   s->when_data_cb = cb;
-  s->when_data_cb_arg = a;
+  if (!s->when_data_cb_arg)
+    add_ref(s->when_data_cb_arg = a);
 }
 
 static void free_source( struct source *src ) {
@@ -186,6 +187,8 @@ static void source_destruct(struct object *UNUSED(o)) {
   remove_callbacks((struct source*)THIS);
   free_object(THIS->obj);
   THIS->obj = 0;
+  if (THIS->when_data_cb_arg)
+    free_object(THIS->when_data_cb_arg);
 }
 
 void source_pikestream_exit() {

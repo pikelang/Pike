@@ -124,6 +124,7 @@ PIKECLASS Shuffle
 
   PIKEVAR mixed request_arg;
 
+  CVAR struct object *self;   /* points to this shuffler object */
   CVAR struct source *current_source;
   CVAR struct source *last_source;
   CVAR struct object *file_obj;
@@ -252,6 +253,7 @@ PIKECLASS Shuffle
     THIS->current_source = NULL;
     THIS->file_obj = NULL;
     THIS->state = INITIAL;
+    THIS->self = Pike_fp->current_object;
     THIS->callback =
       find_identifier("send_more_callback",Pike_fp->current_object->prog);
 
@@ -314,8 +316,9 @@ PIKECLASS Shuffle
     _request( t, l );
   }
 
-  static void _set_callbacks( struct Shuffle_struct *t )
+  static void _set_callbacks(struct object *shuffle)
   {
+    struct Shuffle_struct *t = (struct Shuffle_struct *)shuffle->storage;
     SHUFFLE_DEBUG1("_set_callbacks()\n", t );
     if( t->current_source && t->current_source->setup_callbacks )
       t->current_source->setup_callbacks( t->current_source );
@@ -483,8 +486,9 @@ PIKECLASS Shuffle
 	/* come back later (nonblocking source without more data to read) */
 	SHUFFLE_DEBUG1("__send_more_callback(): read pending\n", t );
 	__remove_callbacks( t );
-	t->current_source->set_callback( t->current_source,
-					 (void *)_set_callbacks, t );
+	t->current_source->set_callback(t->current_source,
+					(void *)_set_callbacks,
+                      /* Shuffler */    t->self);
 	_give_back( t, amount );
 	return;
       }
@@ -567,9 +571,11 @@ PIKECLASS Shuffle
       iof++;
     }
     if ((len -= t->leftprefix) > 0) {
-      iov[iof].iov_base = t->leftovers.data;
-      iov[iof].iov_len = MINIMUM(t->leftovers.len, len);
-      iof++;
+      if (t->leftovers.len) {
+        iov[iof].iov_base = t->leftovers.data;
+        iov[iof].iov_len = MINIMUM(t->leftovers.len, len);
+        iof++;
+      }
       if ((len -= t->leftovers.len) > 0) {
         iov[iof].iov_base
          = t->suffix->str + t->suffix->len - t->leftsuffix;
@@ -751,7 +757,7 @@ PIKECLASS Shuffle
       Pike_error("Cannot start, no destination.\n");
     THIS->state = RUNNING;
     SHUFFLE_DEBUG1("start()\n", THIS );
-    _set_callbacks( THIS );
+    _set_callbacks(THIS->self);  /* Shuffle */
   }
 
   PIKEFUN void pause()
@@ -962,7 +968,7 @@ PIKECLASS Shuffler
       struct Shuffle_struct *s =
 	(struct Shuffle_struct *)THIS->sources->item[i].u.object->storage;
       if( s->state == RUNNING )
-	_set_callbacks( s );
+	_set_callbacks(s->self);   /* Shuffle */
     }
   }
 

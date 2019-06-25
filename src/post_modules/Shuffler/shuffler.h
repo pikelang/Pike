@@ -31,7 +31,8 @@ struct source
    * source is defined as a source that returns a data struct from
    * get_data with a 'len' value of -2.
    */
-  void (*set_callback)( struct source *s, void (*cb)( void *a ), void *a );
+  void (*set_callback)( struct source *s, void (*cb)( void *a ),
+    struct object *a );
 };
 
 
