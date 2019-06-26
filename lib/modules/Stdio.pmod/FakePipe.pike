@@ -83,8 +83,11 @@ protected class InternalSocket( protected this_program _other,
   protected mixed __id;
 
   void _run_close_cb() {
-    if (__close_cb && _read_buffer && !sizeof(_read_buffer))
-      __close_cb(0, __id);
+    if (__close_cb && (!_read_buffer || !sizeof(_read_buffer))) {
+      function cb = __close_cb;
+      __close_cb = 0;		    // Only once please
+      cb(0, __id);
+    }
   }
 
   void _fill_write_buffer() {
@@ -109,7 +112,7 @@ protected class InternalSocket( protected this_program _other,
             return schedule_poll();
         } else
           return _run_close_cb();
-      } else
+      } else if (!_other || !_other->_write_buffer)
         return _run_close_cb();
     }
   }
