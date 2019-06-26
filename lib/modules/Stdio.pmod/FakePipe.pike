@@ -100,20 +100,24 @@ protected class InternalSocket( protected this_program _other,
     if (_write_buffer)
       _fill_write_buffer();
     if (this && __read_cb && _read_buffer) {
-      string s = _read_buffer->read();
-      if (sizeof(s)) {
-        __read_cb(__id, s);
-        if (_other) {
-          if (_other->_write_buffer)
-            _other->_fill_write_buffer();
-          else
-            _other->_run_close_cb();
-          if (this)
-            return schedule_poll();
-        } else
-          return _run_close_cb();
-      } else if (!_other || !_other->_write_buffer)
-        return _run_close_cb();
+      do {
+        string s = _read_buffer->read();
+        if (sizeof(s)) {
+          __read_cb(__id, s);
+          if (_other) {
+            if (_other->_write_buffer) {
+              _other->_fill_write_buffer();
+              if (this)
+                return schedule_poll();
+            } else
+              return _other->_run_close_cb();
+          } else
+            break;
+        } else if (!_other || !_other->_write_buffer)
+          break;
+        return;
+      } while (0);
+      return _run_close_cb();
     }
   }
 
