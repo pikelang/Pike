@@ -137,7 +137,7 @@ EXIT
   }
 }
 
-  /* @decl inherit __builtin.Sql.Result
+  /*! @decl inherit __builtin.Sql.Result
    */
   INHERIT "__builtin.Sql.Result";
 

@@ -176,7 +176,7 @@ PIKECLASS mysql
 
   DECLARE_STORAGE;
 
-  /* @decl inherit __builtin.Sql.Connection
+  /*! @decl inherit __builtin.Sql.Connection
    */
   INHERIT "__builtin.Sql.Connection";
 
