@@ -156,6 +156,11 @@ static void show_severity(CS_INT severity) {
 #define show_severity(X)
 #endif
 
+/*! @module Sybase
+ */
+
+/*! @class sybase
+ */
 PIKECLASS sybase
 {
   CVAR CS_CONTEXT *context;
@@ -1196,6 +1201,11 @@ PIKEFUN array(mapping(string:mixed)) fetch_fields()
   /* void seek(int skip) */ /*implemented in pike. Inefficient but simple */
   /* mapping* fetch_fields() */
 }
+/*! @endclass sybase
+ */
+
+/*! @endmodule Sybase
+ */
 
 /********/
 /* Glue */
