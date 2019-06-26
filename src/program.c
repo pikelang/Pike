@@ -9828,10 +9828,21 @@ PMOD_EXPORT int implements(struct program *a, struct program *b)
     return implements_cache[hval].ret;
   }
   /* Do it the tedious way */
+
+  /* Invalidate the old entry at hval (if any). */
+  implements_cache[hval].aid = 0;
+  implements_cache[hval].bid = 0;
+
+  /* Note that it may be possible for low_implements()
+   * to release the interpreter lock, so let it complete
+   * before filling in the rest of the fields for the entry.
+   *
+   * Note also that cyclic calls are handled via low_implements().
+   */
+  implements_cache[hval].ret = low_implements(a,b);
   implements_cache[hval].aid=a->id;
   implements_cache[hval].bid=b->id;
-  implements_cache[hval].ret = 1;	/* Tentatively compatible. */
-  implements_cache[hval].ret = low_implements(a,b);
+
   /* NOTE: If low_implements() returns 0, the cache may have received
    *       some false positives. Those should be cleared.
    */
@@ -9938,10 +9949,21 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
     return 1;
   }
   /* Do it the tedious way */
+
+  /* Invalidate the old entry at hval (if any). */
+  is_compatible_cache[hval].aid = 0;
+  is_compatible_cache[hval].bid = 0;
+
+  /* Note that it may be possible for low_is_compatible()
+   * to release the interpreter lock, so let it complete
+   * before filling in the rest of the fields for the entry.
+   *
+   * Note also that cyclic calls are handled via low_is_compatible().
+   */
+  is_compatible_cache[hval].ret = low_is_compatible(a,b);
   is_compatible_cache[hval].aid=aid;
   is_compatible_cache[hval].bid=bid;
-  is_compatible_cache[hval].ret = 1;	/* Tentatively compatible. */
-  is_compatible_cache[hval].ret = low_is_compatible(a,b);
+
   /* NOTE: If low_is compatible() returns 0, the cache may have received
    *       some false positives. Those should be cleared.
    */
