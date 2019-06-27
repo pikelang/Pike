@@ -5263,6 +5263,60 @@ int find_inherit(const struct program *p, const struct pike_string *name)
 }
 
 /**
+ * Returns the inherit number in p for the wanted program.
+ *
+ * Returns -1 if wanted is not present among the inherits.
+ */
+PMOD_EXPORT int find_inherited_prog(const struct program *p,
+				    const struct program *wanted)
+{
+  int e;
+  int level = p->num_inherits;	/* Larger than any inherit_level. */
+  int res = -1;
+
+  if (UNLIKELY(!p || !wanted)) return -1;
+
+  /* Common case. */
+  if (p == wanted) return 0;
+
+  /* NB: Looping backwards to get the latest inherit of wanted. */
+  for(e = p->num_inherits-1; e>0; e--) {
+    if (p->inherits[e].inherit_level >= level) continue;
+    if (p->inherits[e].prog == wanted) {
+      res = e;
+      level = p->inherits[e].inherit_level;
+      if (level == 1) break;
+    }
+  }
+  return res;
+}
+
+/**
+ * Returns the reference number for wanted::fun in p starting at
+ * the specified inherit_number.
+ *
+ * If wanted has not been inherited by p it instead looks up
+ * fun by name.
+ *
+ * Returns -1 if not present.
+ */
+PMOD_EXPORT int find_inherited_fun(const struct program *p, int inherit_number,
+				   const struct program *wanted, int fun)
+{
+  int e;
+  if (UNLIKELY(!p || !wanted || (fun < 0))) return -1;
+  e = find_inherited_prog(p->inherits[inherit_number].prog, wanted);
+  if (UNLIKELY(e < 0)) {
+    /* Fall back to looking up the symbol bu name. */
+    struct identifier *id = ID_FROM_INT(wanted, fun);
+    fun = find_shared_string_identifier(id->name,
+					p->inherits[inherit_number].prog);
+    if (fun < 0) return -1;
+  }
+  return fun + p->inherits[inherit_number + e].identifier_level;
+}
+
+/**
  * Reference the symbol inherit::name in the lexical context
  * specified by state.
  *

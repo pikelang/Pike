@@ -865,6 +865,10 @@ PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
                                                    struct pike_string *name,
 						   int flags);
 int find_inherit(const struct program *p, const struct pike_string *name);
+PMOD_EXPORT int find_inherited_prog(const struct program *p,
+				    const struct program *wanted);
+PMOD_EXPORT int find_inherited_fun(const struct program *p, int inherit_number,
+				   const struct program *wanted, int fun);
 PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
 					       struct pike_string *inherit,
 					       struct pike_string *name);
