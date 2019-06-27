@@ -1767,14 +1767,15 @@ class CertificatePair
     ke_mask_invariant = 0;
     if ((sign_algs[0] & HASH_MASK) == HASH_intrinsic) {
       this::cert_type = ([
-	SIGNATURE_ed25519: AUTH_ecdsa_sign,
-	SIGNATURE_ed448: AUTH_ecdsa_sign,
+	SIGNATURE_ed25519_intrinsic: AUTH_ecdsa_sign,
+	SIGNATURE_ed448_intrinsic: AUTH_ecdsa_sign,
       ])[sign_algs[0]];
       if (this::cert_type) {
 	ke_mask |= 1<<KE_ecdhe_ecdsa;
 	if ((sizeof(sign_algs) == 1) ||
 	    ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_ecdsa) ||
-	    (< SIGNATURE_ed25519, SIGNATURE_ed448 >)[sign_algs[1]]) {
+	    (< SIGNATURE_ed25519_intrinsic,
+	       SIGNATURE_ed448_intrinsic >)[sign_algs[1]]) {
 	  // RFC 4492 2.1: ECDH_ECDSA
 	  // In ECDH_ECDSA, the server's certificate MUST contain
 	  // an ECDH-capable public key and be signed with ECDSA.
