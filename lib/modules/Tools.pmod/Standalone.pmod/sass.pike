@@ -26,13 +26,13 @@ Available options:
 int want_args = 0;
 
 int(0..) verbosity = 0;
-int(0..1) genmap = 0;
+string genmap = 0;
 
 string process(string input, string ... args) {
   Web.Sass.Api sc = Web.Sass.Api();
   sc->output_style = Web.Sass.STYLE_COMPRESSED;
   sc->sass_syntax = false;
-  sc->source_map_embed = genmap;
+  sc->source_map_embed = !!genmap;
   mapping output = sc->compile_string(input);
   if (!output) {
     werror("Problem converting from stdin\n");
@@ -62,7 +62,8 @@ int(0..1) process_file(string path, string ... args) {
     "output_style":Web.Sass.STYLE_COMPRESSED,
   ]);
   if (genmap)
-    opt->source_map_file = basename(base) + ".map";
+    opt->source_map_file
+     = (genmap ? genmap + "/" : "") + basename(base) + ".map";
   else
     opt->omit_source_map_url = 1;
   sc->set_options(opt);
@@ -89,7 +90,7 @@ int(0..) main( int argc, array(string) argv ) {
   if (has_suffix( lower_case(dirname( argv[0])), "standalone.pmod"))
     usage = "pike -x " + basename( argv[0] )-".pike" + " " + usage;
   foreach(Getopt.find_all_options( argv, ({
-    ({ "genmap",     Getopt.NO_ARG,       "-g,--genmap"/"," }),
+    ({ "genmap",     Getopt.MAY_HAVE_ARG, "-g,--genmap"/"," }),
     ({ "recurse",    Getopt.NO_ARG,       "-r,--recursive"/"," }),
     ({ "verbose",    Getopt.NO_ARG,       "-v,--verbose"/"," }),
     ({ "version",    Getopt.NO_ARG,       "-V,--version"/"," }),
@@ -107,7 +108,7 @@ int(0..) main( int argc, array(string) argv ) {
 	return 0;
 
       case "genmap":
-	genmap = 1;
+	genmap = sizeof(opt) > 1 ? opt[1] : "";
 	break;
       case "recurse":
 	recursive = 1;
