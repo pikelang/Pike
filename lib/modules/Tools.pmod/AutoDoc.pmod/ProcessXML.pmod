@@ -1338,7 +1338,7 @@ class NScope
       if (inherits && sizeof(inherits) == 1) {
 	foreach(symbols;;int(1..)|NScope scope) {
 	  if (objectp(scope)) {
-	    scope->addImplicitInherits(values(inherits)[0]);
+	    scope->addImplicitInherits(indices(inherits)[0]);
 	  }
 	}
       }
