@@ -16,7 +16,7 @@ constant makepic = ({
 
   int verbosity;
 
-  void create(string _fn, int|void _verbosity, void|string type) {
+  protected void create(string _fn, int|void _verbosity, void|string type) {
     fn = _fn;
     verbosity = _verbosity;
     string ext;
@@ -80,7 +80,7 @@ constant makepic = ({
 
   int verbosity;
 
-  void create(string _fn, int|void _verbosity, void|string type) {
+  protected void create(string _fn, int|void _verbosity, void|string type) {
     fn = _fn;
     verbosity = _verbosity;
     string ext;
@@ -142,7 +142,7 @@ constant makepic = ({
 
   int verbosity;
 
-  void create(string _fn, int|void _verbosity, void|string type) {
+  protected void create(string _fn, int|void _verbosity, void|string type) {
     fn = _fn;
     verbosity = _verbosity;
     string ext;
@@ -1534,7 +1534,7 @@ protected void create(string image_dir, void|.Flags flags)
   class Interceptor {
     string buffer = \"\";
 
-    void `()(string in) {
+    protected void `()(string in) {
       buffer += in;
     }
 
@@ -1547,7 +1547,7 @@ protected void create(string image_dir, void|.Flags flags)
 
   int img_counter;
   string prefix;
-  void create(int _img_counter, string _prefix) {
+  protected void create(int _img_counter, string _prefix) {
     img_counter = _img_counter;
     prefix = _prefix;
   }
