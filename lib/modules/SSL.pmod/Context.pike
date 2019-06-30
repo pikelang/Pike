@@ -347,7 +347,7 @@ array(int) get_signature_algorithms(array(int)|void signature_algorithms)
 			HASH_sha224,
 #endif
 			HASH_intrinsic,
-		      >)[scheme & HASH_MASH]) return 0;
+		      >)[scheme & HASH_MASK]) return 0;
 		  return 1;
 		});
 #endif
