@@ -340,19 +340,29 @@ program_flags PROGRAM_CLEAR_STORAGE;
 #define SECP521R1 4
 
 #ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_192R1
-static const struct ecc_curve *nettle_get_secp_192r1(void) { return nettle_secp_192r1; }
+static const struct ecc_curve *nettle_get_secp_192r1(void) {
+  return &nettle_secp_192r1;
+}
 #endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_192R1 */
 #ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_224R1
-static const struct ecc_curve *nettle_get_secp_224r1(void) { return nettle_secp_224r1; }
+static const struct ecc_curve *nettle_get_secp_224r1(void) {
+  return &nettle_secp_224r1;
+}
 #endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_224R1 */
 #ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_256R1
-static const struct ecc_curve *nettle_get_secp_256r1(void) { return nettle_secp_256r1; }
+static const struct ecc_curve *nettle_get_secp_256r1(void) {
+  return &nettle_secp_256r1;
+}
 #endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_256R1 */
 #ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_384R1
-static const struct ecc_curve *nettle_get_secp_384r1(void) { return nettle_secp_384r1; }
+static const struct ecc_curve *nettle_get_secp_384r1(void) {
+  return &nettle_secp_384r1;
+}
 #endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_384R1 */
 #ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_521R1
-static const struct ecc_curve *nettle_get_secp_521r1(void) { return nettle_secp_521r1; }
+static const struct ecc_curve *nettle_get_secp_521r1(void) {
+  return &nettle_secp_521r1;
+}
 #endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_521R1 */
 
 #ifndef ecc_point_equal_p
