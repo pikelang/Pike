@@ -339,6 +339,22 @@ program_flags PROGRAM_CLEAR_STORAGE;
 #define SECP384R1 3
 #define SECP521R1 4
 
+#ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_192R1
+static const struct ecc_curve *nettle_get_secp_192r1(void) { return nettle_secp_192r1; }
+#endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_192R1 */
+#ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_224R1
+static const struct ecc_curve *nettle_get_secp_224r1(void) { return nettle_secp_224r1; }
+#endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_224R1 */
+#ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_256R1
+static const struct ecc_curve *nettle_get_secp_256r1(void) { return nettle_secp_256r1; }
+#endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_256R1 */
+#ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_384R1
+static const struct ecc_curve *nettle_get_secp_384r1(void) { return nettle_secp_384r1; }
+#endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_384R1 */
+#ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_521R1
+static const struct ecc_curve *nettle_get_secp_521r1(void) { return nettle_secp_521r1; }
+#endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_521R1 */
+
 #ifndef ecc_point_equal_p
 static int ecc_point_equal_p(const struct ecc_point *a, const struct ecc_point *b)
 {
@@ -396,19 +412,19 @@ PIKECLASS ECC_Curve
 
     switch(curve) {
 #ifdef HAVE_CURVE_NETTLE_SECP_192R1
-    case SECP192R1: THIS->curve = &nettle_secp_192r1; break;
+    case SECP192R1: THIS->curve = nettle_get_secp_192r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_192R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_224R1
-    case SECP224R1: THIS->curve = &nettle_secp_224r1; break;
+    case SECP224R1: THIS->curve = nettle_get_secp_224r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_224R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_256R1
-    case SECP256R1: THIS->curve = &nettle_secp_256r1; break;
+    case SECP256R1: THIS->curve = nettle_get_secp_256r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_384R1
-    case SECP384R1: THIS->curve = &nettle_secp_384r1; break;
+    case SECP384R1: THIS->curve = nettle_get_secp_384r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
-    case SECP521R1: THIS->curve = &nettle_secp_521r1; break;
+    case SECP521R1: THIS->curve = nettle_get_secp_521r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
     default:
       Pike_error("Invalid curve\n");
@@ -479,31 +495,31 @@ PIKECLASS ECC_Curve
   PIKEFUN string(7bit) name()
   {
 #ifdef HAVE_CURVE_NETTLE_SECP_192R1
-    if (THIS->curve == &nettle_secp_192r1) {
+    if (THIS->curve == nettle_get_secp_192r1()) {
       ref_push_string(MK_STRING("SECP_192R1"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_192R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_224R1
-    if (THIS->curve == &nettle_secp_224r1) {
+    if (THIS->curve == nettle_get_secp_224r1()) {
       ref_push_string(MK_STRING("SECP_224R1"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_224R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_256R1
-    if (THIS->curve == &nettle_secp_256r1) {
+    if (THIS->curve == nettle_get_secp_256r1()) {
       ref_push_string(MK_STRING("SECP_256R1"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_384R1
-    if (THIS->curve == &nettle_secp_384r1) {
+    if (THIS->curve == nettle_get_secp_384r1()) {
       ref_push_string(MK_STRING("SECP_384R1"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
-    if (THIS->curve == &nettle_secp_521r1) {
+    if (THIS->curve == nettle_get_secp_521r1()) {
       ref_push_string(MK_STRING("SECP_521R1"));
       return;
     }
@@ -526,19 +542,19 @@ PIKECLASS ECC_Curve
   PIKEFUN string(7bit) jose_name()
   {
 #ifdef HAVE_CURVE_NETTLE_SECP_256R1
-    if (THIS->curve == &nettle_secp_256r1) {
+    if (THIS->curve == nettle_get_secp_256r1()) {
       ref_push_string(MK_STRING("P-256"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_384R1
-    if (THIS->curve == &nettle_secp_384r1) {
+    if (THIS->curve == nettle_get_secp_384r1()) {
       ref_push_string(MK_STRING("P-384"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
-    if (THIS->curve == &nettle_secp_521r1) {
+    if (THIS->curve == nettle_get_secp_521r1()) {
       ref_push_string(MK_STRING("P-521"));
       return;
     }
@@ -558,31 +574,31 @@ PIKECLASS ECC_Curve
 #else
     do {
 #ifdef HAVE_CURVE_NETTLE_SECP_192R1
-      if (THIS->curve == &nettle_secp_192r1) {
+      if (THIS->curve == nettle_get_secp_192r1()) {
 	push_int(192);
 	break;
       }
 #endif /* HAVE_CURVE_NETTLE_SECP_192R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_224R1
-      if (THIS->curve == &nettle_secp_224r1) {
+      if (THIS->curve == nettle_get_secp_224r1()) {
 	push_int(224);
 	break;
       }
 #endif /* HAVE_CURVE_NETTLE_SECP_224R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_256R1
-      if (THIS->curve == &nettle_secp_256r1) {
+      if (THIS->curve == nettle_get_secp_256r1()) {
 	push_int(256);
 	break;
       }
 #endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_384R1
-      if (THIS->curve == &nettle_secp_384r1) {
+      if (THIS->curve == nettle_get_secp_384r1()) {
 	push_int(384);
 	break;
       }
 #endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
-      if (THIS->curve == &nettle_secp_521r1) {
+      if (THIS->curve == nettle_get_secp_521r1()) {
 	push_int(521);
 	break;
       }
