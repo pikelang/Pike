@@ -743,6 +743,8 @@ much. In fact, it simply evaluates the two arguments and then returns
 the right hand one. This operator is mostly useful to produce smaller code,
 or to make defines that can be used in expressions.</p>
 
+<insert-move entity="predef::.`()"/>
+
 </section>
 
 <section title="Operator precedence">
@@ -808,8 +810,6 @@ look at some examples:</p>
 <dd> This is a rather absurd but working function which will return the
      absolute value of a.</dd>
 </dl>
-
-<insert-move entity="predef::.`()"/>
 
 </section>
 </chapter>
