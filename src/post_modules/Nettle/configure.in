@@ -57,29 +57,37 @@ else
   # NB: Some versions of RedHat have censored the weaker curves
   #     (secp_192r1 and secp_224r1 (cf [LysLysKOM 21863021])), and
   #     there are no identifying macros, so we need to probe for them.
-  define(PIKE_CHECK_ECC_CURVE, [
-    AC_MSG_CHECKING(if curve $1 is available)
-    AC_CACHE_VAL(pike_cv_have_curve_$1, [
-      AC_TRY_LINK([#include <nettle/ecc-curve.h>],
-		  [ struct ecc_curve *c = &$1; ],
-		  [ pike_cv_have_curve_$1=yes ],
-		  [ pike_cv_have_curve_$1=no ])
+  define(PIKE_CHECK_NETTLE_ECC_CURVE, [
+    AC_CHECK_FUNC(nettle_get_$1, [
+      AC_DEFINE(translit(HAVE_CURVE_NETTLE_$1,[a-z],[A-Z]), 1,
+		[Define if your libnettle has the nettle curve $1.])
+    ], [
+      AC_MSG_CHECKING(if legacy declaration of nettle curve $1 is available)
+
+      AC_CACHE_VAL(pike_cv_have_curve_nettle_$1, [
+        AC_TRY_LINK([#include <nettle/ecc-curve.h>],
+		    [ struct ecc_curve *c = &nettle_$1; ],
+		    [ pike_cv_have_curve_nettle_$1=yes ],
+		    [ pike_cv_have_curve_nettle_$1=no ])
+      ])
+      AC_MSG_RESULT($pike_cv_have_curve_nettle_$1);
+      if test "x$pike_cv_have_curve_nettle_$1" = "xyes"; then
+        AC_DEFINE(translit(HAVE_CURVE_NETTLE_$1,[a-z],[A-Z]), 1,
+		  [Define if your libnettle has the nettle curve $1.])
+        AC_DEFINE(translit(NEED_WRAPPER_FOR_CURVE_NETTLE_$1,[a-z],[A-Z]), 1,
+		  [Define if your libnettle is missing the getter for the nettle curve $1.])
+      fi
     ])
-    AC_MSG_RESULT($pike_cv_have_curve_$1);
-    if test "x$pike_cv_have_curve_$1" = "xyes"; then
-      AC_DEFINE(translit(HAVE_CURVE_$1,[a-z],[A-Z]), 1,
-		[Define if your libnettle has the curve $1.])
-    fi
   ])
 
   AC_ARG_WITH(weak-curves, [ --with-weak-curves  Include SECP192R1 and SECP224R1, frequently removed from Nettle binary dists ], [weak_curves=yes], [])
   if test "x$weak_curves" = "xyes" ; then
-    PIKE_CHECK_ECC_CURVE(nettle_secp_192r1)
-    PIKE_CHECK_ECC_CURVE(nettle_secp_224r1)
+    PIKE_CHECK_NETTLE_ECC_CURVE(secp_192r1)
+    PIKE_CHECK_NETTLE_ECC_CURVE(secp_224r1)
   fi
-  PIKE_CHECK_ECC_CURVE(nettle_secp_256r1)
-  PIKE_CHECK_ECC_CURVE(nettle_secp_384r1)
-  PIKE_CHECK_ECC_CURVE(nettle_secp_521r1)
+  PIKE_CHECK_NETTLE_ECC_CURVE(secp_256r1)
+  PIKE_CHECK_NETTLE_ECC_CURVE(secp_384r1)
+  PIKE_CHECK_NETTLE_ECC_CURVE(secp_521r1)
 
   AC_SUBST(IDEA_OBJ)
 
