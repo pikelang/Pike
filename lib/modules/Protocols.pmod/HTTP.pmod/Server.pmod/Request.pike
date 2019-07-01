@@ -775,21 +775,37 @@ void response_and_finish(mapping m, function|void _log_cb)
    if (_mode & SHUFFLER) {
      Shuffler.Shuffler sfr = Shuffler.Shuffler();
      //sfr->set_backend (backend);   // FIXME to spread CPU over more cores
-     Shuffler.Shuffle sf = sfr->shuffle(my_fd, m->start, m->size);
+     // Send a limited amount only if there is no offset
+     Shuffler.Shuffle sf = sfr->shuffle(my_fd, 0,
+      !m->start && m->size > 0 ? m->size + sizeof(send_buf) : -1);
      sf->add_source(send_buf, extend_timeout);
-     sf->set_done_callback(send_close);
 
       // The caller is presumed to take care *not* to include bodies with
      // HEAD, 1xx, 204 or 304 responses.
 
      if (m->file || m->data) {
        if (arrayp(m->data)) {
-         foreach (m->data; ; mixed data)
-           sf->add_source(data, chunker);
-         sf->add_source("0\r\n\r\n");   // Trailing headers can be added here
+         void addrest() {
+           foreach (m->data; ; mixed data)
+             sf->add_source(data, chunker);
+           sf->add_source("0\r\n\r\n");   // Trailing headers can be added here
+         }
+         if (m->start)
+           sf->set_done_callback(lambda() {
+              // Special offset handling, the header has been sent already
+             // using the previous shuffle
+             sf = sfr->shuffle(my_fd, m->start, m->size);
+             addrest();
+             sf->set_done_callback(send_close);
+             sf->start();
+           });
+         else
+           addrest();
        } else
          sf->add_source(m->file || m->data, m->start, m->size);
      }
+
+     sf->set_done_callback(send_close);
      sf->start();
    } else {
      if (m->start) {

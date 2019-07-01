@@ -510,14 +510,14 @@ PIKECLASS Shuffle
       t->leftovers.len -= t->skip;
       t->skip = 0;
       if (t->left >= 0) {
-        if (t->left < t->leftovers.len)
-          t->leftovers.len = t->left;
-        t->left -= t->leftovers.len;
         if (!t->left) {
           _give_back( t, amount );
           _all_done( t, 1 );
           return;
         }
+        if (t->left < t->leftovers.len)
+          t->leftovers.len = t->left;
+        t->left -= t->leftovers.len;
       }
 
       t->leftsuffix = t->leftprefix = 0;
