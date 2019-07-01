@@ -42,6 +42,10 @@ you remember from math in school. The arithmetic operators are:</p>
    <c><expr>a % b</expr></c>
    <c><expr>`%</expr></c>
    <c>the remainder of a division between a and b</c></r>
+<r><c>Exponentiation</c>
+   <c><expr>a ** b</expr></c>
+   <c><expr>`**</expr></c>
+   <c>the result of raising a to the b:th power</c></r>
 </matrix>
 
 <p>The third column, "Identifier" is the name of the function that actually
@@ -258,6 +262,13 @@ float % int</code></c>
 
 </matrix>
 
+<insert-move entity="predef::.`+"/>
+<insert-move entity="predef::.`-"/>
+<insert-move entity="predef::.`*"/>
+<insert-move entity="predef::.`/"/>
+<insert-move entity="predef::.`%"/>
+<insert-move entity="predef::.`**"/>
+
 </section>
 
 <section title="Comparison operators">
@@ -316,6 +327,13 @@ to a float before the comparison. When comparing strings, lexical order is
 used and the values of the environment variables <tt>LC_CTYPE</tt> and
 <tt>LC_LANG</tt> are respected.</p>
 
+<insert-move entity="predef::.`=="/>
+<insert-move entity="predef::.`!="/>
+<insert-move entity="predef::.`&gt;"/>
+<insert-move entity="predef::.`&gt;="/>
+<insert-move entity="predef::.`&lt;"/>
+<insert-move entity="predef::.`&lt;="/>
+
 </section>
 
 <section title="Logical operators">
@@ -323,8 +341,9 @@ used and the values of the environment variables <tt>LC_CTYPE</tt> and
 <p>Logical operators are operators that operate with truth values. In Pike any value
 except zero is considered <b>true</b>. Logical operators are a very basic part
 of Pike. They can also decide which arguments to evaluate and which not to
-evaluate. Because of this the logical operators do not have any identifiers and
-can not be called as normal functions. There are four logical operators:</p>
+evaluate. Because of this most of the logical operators do not have any
+identifiers and can not be called as normal functions. There are four
+logical operators:</p>
 
 <matrix>
 
@@ -352,6 +371,8 @@ can not be called as normal functions. There are four logical operators:</p>
    returned and b is not evaluated.</c></r>
 
 </matrix>
+
+<insert-move entity="predef::.`!"/>
 
 </section>
 
@@ -419,6 +440,13 @@ however, only the indices are considered. The values are just copied with
 the indices. If a particular index is present in both the right and left
 argument to a set operator, the one from the right side will be used.
 Example: <expr>([1:2]) | ([1:3])</expr> will return <expr>([1:3])</expr>.</p>
+
+<insert-move entity="predef::.`&lt;&lt;"/>
+<insert-move entity="predef::.`&gt;&gt;"/>
+<insert-move entity="predef::.`~"/>
+<insert-move entity="predef::.`&amp;"/>
+<insert-move entity="predef::.`|"/>
+<insert-move entity="predef::.`^"/>
 
 </section>
 
@@ -553,6 +581,12 @@ arguments to a suitable range. This means that
      continue to the end of the array/string.</li>
 <li> No errors are generated in any of the above cases.</li>
 </ul>
+
+<insert-move entity="predef::.`[]"/>
+<insert-move entity="predef::.`->"/>
+<insert-move entity="predef::.`[]="/>
+<insert-move entity="predef::.`->="/>
+<insert-move entity="predef::.`[--]"/>
 
 </section>
 
@@ -774,6 +808,8 @@ look at some examples:</p>
 <dd> This is a rather absurd but working function which will return the
      absolute value of a.</dd>
 </dl>
+
+<insert-move entity="predef::.`()"/>
 
 </section>
 </chapter>
