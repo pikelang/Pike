@@ -100,6 +100,7 @@
       <insert-move entity="Mysql"/>
       <insert-move entity="Msql"/>
       <insert-move entity="Postgres"/>
+      <insert-move entity="SQLite"/>
       <insert-move entity="Gdbm"/>
       <insert-move entity="Yabu"/>
     </chapter>
