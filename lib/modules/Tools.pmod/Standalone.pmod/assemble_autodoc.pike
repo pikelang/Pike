@@ -246,6 +246,29 @@ Node parse_file(string fn)
   return n;
 }
 
+void subsection_ref_expansion(Node n)
+{
+  foreach(n->get_elements(), Node c)
+    switch(c->get_tag_name()) {
+
+    case "p":
+    case "example":
+    case "dl":
+    case "ul":
+    case "ol":
+    case "matrix":
+      break;
+
+    case "insert-move":
+      enqueue_move(c, n);
+      break;
+
+    default:
+      error("Unknown element %O in subsection element.\n", c->get_tag_name());
+      break;
+    }
+}
+
 void section_ref_expansion(Node n) {
   int subsection;
   foreach(n->get_elements(), Node c)
@@ -255,11 +278,13 @@ void section_ref_expansion(Node n) {
     case "example":
     case "dl":
     case "ul":
+    case "ol":
     case "matrix":
       break;
 
     case "subsection":
       c->get_attributes()->number = (string)++subsection;
+      subsection_ref_expansion(c);
       break;
 
     case "insert-move":
@@ -279,6 +304,7 @@ void chapter_ref_expansion(Node n, string dir) {
 
 
     case "ul":
+    case "ol":
     case "li":
     case "dl":
     case "dt":
