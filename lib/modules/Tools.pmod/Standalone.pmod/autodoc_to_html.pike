@@ -111,9 +111,7 @@ Node get_first_element(Node n)
   return UNDEFINED;
 }
 
-int section, subsection;
-
-string low_parse_chapter(Node n, int chapter) {
+string low_parse_chapter(Node n, array(string) section_path) {
   string ret = "";
   Node dummy = Node(XML_ELEMENT, "dummy", ([]), "");
   foreach(n->get_elements(), Node c)
@@ -121,7 +119,7 @@ string low_parse_chapter(Node n, int chapter) {
 
     case "p":
       dummy->replace_children( ({ c }) );
-      ret += parse_text(dummy);
+      ret += parse_text(dummy, UNDEFINED, section_path);
       break;
 
     case "example":
@@ -150,33 +148,21 @@ string low_parse_chapter(Node n, int chapter) {
       break;
 
     case "section":
-      if(section)
-	error("Section inside section.\n");
-      if(subsection)
-	error("Section inside subsection.\n");
-      section = (int)c->get_attributes()->number;
-      ret += "</dd>\n<dt><a name='" + section + "'></a>\n"
-	"<h2 class='header'>" + chapter + "." + section +
-	". " + quote(c->get_attributes()->title ||
-		     // The following for bug compat.
-		     c->get_attributes()->name) +
-	"</h2></dt>\n<dd>";
-      ret += low_parse_chapter(c, chapter);
-      section = 0;
-      break;
-
     case "subsection":
-      if(!section)
-	error("Subsection outside section.\n");
-      if(subsection)
-	error("Subsection inside subsection.\n");
-      subsection = (int)c->get_attributes()->number;
-      ret += "</dd><dt>"
-	"<h3 class='header'>" + chapter + "." + section + "." + subsection +
-	". " + quote(c->get_attributes()->title) +
-	"</h3></dt><dd>";
-      ret += low_parse_chapter(c, chapter);
-      subsection = 0;
+      string section = c->get_attributes()->number;
+      array(string) new_section_path = section_path + ({ section });
+      string section_name = new_section_path * ".";
+      ret += sprintf("</dd>\n<dt><a name='%s'></a>\n"
+		     "<h%d class='header'>%s. %s</h%d></dt>\n<dd>",
+		     section_name,
+		     sizeof(new_section_path),
+		     section_name,
+		     quote(c->get_attributes()->title ||
+			   // The following for bug compat.
+			   c->get_attributes()->name ||
+			   ""),
+		     sizeof(new_section_path));
+      ret += low_parse_chapter(c, new_section_path);
       break;
 
     case "docgroup":
@@ -224,7 +210,7 @@ string parse_chapter(Node n, void|int noheader) {
       "</dt><dd>";
   }
 
-  ret += low_parse_chapter(n, (int)n->get_attributes()->number);
+  ret += low_parse_chapter(n, ({ n->get_attributes()->number }));
 
   if(!noheader)
     ret = ret + "</dd></dl>";
@@ -243,7 +229,8 @@ string parse_appendix(Node n, void|int noheader) {
 
   Node c = n->get_first_element("doc");
   if(c)
-    ret += parse_text(c);
+    ret += parse_text(c, UNDEFINED,
+		      ({ (string)({ 64+(int)n->get_attributes()->number }) }));
   else
     error( "No doc element in appendix.\n" );
 
@@ -584,7 +571,8 @@ string parse_code(Node n, void|String.Buffer ret)
 }
 
 //! Typically called with a <group/> node or a sub-node that is a container.
-string parse_text(Node n, void|String.Buffer ret) {
+string parse_text(Node n, void|String.Buffer ret,
+		  array(string)|void section_path) {
   if(n->get_node_type()==XML_TEXT && n->get_text()) {
     if(ret)
       ret->add("parse_text:#1:", quote(n->get_text()));
@@ -620,7 +608,7 @@ string parse_text(Node n, void|String.Buffer ret) {
     switch(name) {
     case "text":
       ret->add("<dd>");
-      parse_text(c, ret);
+      parse_text(c, ret, section_path);
       ret->add("</dd>\n");
       break;
 
@@ -631,13 +619,13 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "sub":
     case "sup":
       ret->add("<", name, ">");
-      parse_text(c, ret);
+      parse_text(c, ret, section_path);
       ret->add("</", name, ">");
       break;
 
     case "pre":
       ret->add(lay->pre);
-      parse_text(c, ret);
+      parse_text(c, ret, section_path);
       ret->add(lay->_pre);
       break;
 
@@ -700,7 +688,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 	}
       } else if (c->count_children()) {
 	ret->add("<dt>");
-	parse_text(c, ret);
+	parse_text(c, ret, section_path);
 	ret->add("</dt>");
       }
       break;
@@ -800,18 +788,19 @@ string parse_text(Node n, void|String.Buffer ret) {
       break;
 
     case "section":
-      if(section && !(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
-	error("Section inside section.\n");
-      ret->add ("<h2>", quote (c->get_attributes()->title ||
+    case "subsection":
+      array(string) new_section_path = section_path +
+	({ c->get_attributes()->number });
+      ret->sprintf("<h%d>%s</h%d>\n",
+		   sizeof(new_section_path),
+		   quote (c->get_attributes()->title ||
 			       // The following for bug compat.
 			       c->get_attributes()->name),
-		"</h2>\n");
+		   sizeof(new_section_path));
       if (!equal (c->get_children()->get_any_name(), ({"text"})) &&
 	  !(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
 	error ("Expected a single <text> element inside <section>.\n");
-      section = -1;
-      parse_text (c->get_children()[0], ret);
-      section = 0;
+      parse_text (c->get_children()[0], ret, new_section_path);
       break;
 
     case "ul":
@@ -836,7 +825,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 	    if (!got_item) {
 	      ret->add("<li>");
 	    }
-	    parse_text(e, ret);
+	    parse_text(e, ret, section_path);
 	    ret->add("</li>");
 	    got_item = 0;
 	    break;
@@ -864,7 +853,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 
     case "fixme":
       ret->add("<span class='fixme'>FIXME: ");
-      parse_text(c, ret);
+      parse_text(c, ret, section_path);
       ret->add("</span>");
       break;
 

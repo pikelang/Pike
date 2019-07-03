@@ -246,58 +246,7 @@ Node parse_file(string fn)
   return n;
 }
 
-void subsection_ref_expansion(Node n)
-{
-  foreach(n->get_elements(), Node c)
-    switch(c->get_tag_name()) {
-
-    case "p":
-    case "example":
-    case "dl":
-    case "ul":
-    case "ol":
-    case "matrix":
-      break;
-
-    case "insert-move":
-      enqueue_move(c, n);
-      break;
-
-    default:
-      error("Unknown element %O in subsection element.\n", c->get_tag_name());
-      break;
-    }
-}
-
-void section_ref_expansion(Node n) {
-  int subsection;
-  foreach(n->get_elements(), Node c)
-    switch(c->get_tag_name()) {
-
-    case "p":
-    case "example":
-    case "dl":
-    case "ul":
-    case "ol":
-    case "matrix":
-      break;
-
-    case "subsection":
-      c->get_attributes()->number = (string)++subsection;
-      subsection_ref_expansion(c);
-      break;
-
-    case "insert-move":
-      enqueue_move(c, n);
-      break;
-
-    default:
-      error("Unknown element %O in section element.\n", c->get_tag_name());
-      break;
-    }
-}
-
-void chapter_ref_expansion(Node n, string dir) {
+void chapter_ref_expansion(Node n, string dir, array(int) section_path) {
   int section;
   foreach(n->get_elements(), Node c)
     switch(c->get_tag_name()) {
@@ -310,6 +259,8 @@ void chapter_ref_expansion(Node n, string dir) {
     case "dt":
     case "dd":
     case "p":
+    case "example":
+    case "matrix":
       break;
 
     case "contents":
@@ -317,8 +268,15 @@ void chapter_ref_expansion(Node n, string dir) {
       break;
 
     case "section":
+    case "subsection":
+      if (sizeof(section_path) == 1) {
+	c->set_tag_name("section");
+      } else {
+	c->set_tag_name("subsection");
+      }
       c->get_attributes()->number = (string)++section;
-      section_ref_expansion(c);
+      chapter_ref_expansion(c, dir,
+			    section_path + ({ c->get_attributes()->number }));
       break;
 
     case "insert-move":
@@ -326,7 +284,8 @@ void chapter_ref_expansion(Node n, string dir) {
       break;
 
     default:
-      error("Unknown element %O in chapter element.\n", c->get_tag_name());
+      error("Unknown element %O in %s element.\n",
+	    c->get_tag_name(), n->get_tag_name());
       break;
     }
 }
@@ -400,7 +359,7 @@ void ref_expansion(Node n, string dir, void|string file)
 	m->number = (string)++chapter;
       toc += ({ ({ m->title, file, m->number }) });
       chapters += ({ c });
-      chapter_ref_expansion(c, dir);
+      chapter_ref_expansion(c, dir, ({ m->number }));
       break;
 
     case "appendix-ref":
@@ -458,7 +417,7 @@ void ref_expansion(Node n, string dir, void|string file)
     case "void":
       n->remove_child(c);
       void_node->add_child(c);
-      chapter_ref_expansion(c, dir);
+      chapter_ref_expansion(c, dir, ({}));
       break;
 
     default:
