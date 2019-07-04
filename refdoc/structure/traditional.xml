@@ -42,16 +42,51 @@
   </file>
   <file>
     <chapter title="I/O">
-      <insert-move entity="Stdio.File"/>
-      <insert-move entity="Stdio.FILE"/>
+      <section title="File system manipulation">
+	<insert-move entity="access"/>
+	<insert-move entity="cd"/>
+	<insert-move entity="getcwd"/>
+	<insert-move entity="get_dir"/>
+	<insert-move entity="mkdir"/>
+	<insert-move entity="cp"/>
+	<insert-move entity="mv"/>
+	<insert-move entity="rm"/>
+	<insert-move entity="file_truncate"/>
+      </section>
+      <section title="Path manipulation">
+	<insert-move entity="basename"/>
+	<insert-move entity="dirname"/>
+	<insert-move entity="combine_path"/>
+	<!-- insert-move entity="append_path"/ -->
+	<insert-move entity="explode_path"/>
+      </section>
+      <section title="Status">
+	<insert-move entity="file_stat"/>
+	<insert-move entity="filesystem_stat"/>
+	<insert-move entity="Stdio.Stat"/>
+      </section>
+      <section title="Error handling">
+	<insert-move entity="errno"/>
+	<insert-move entity="strerror"/>
+      </section>
+      <section title="Files and sockets">
+	<insert-move entity="Stdio.File"/>
+	<insert-move entity="Stdio.FILE"/>
 <!--      <insert-move entity="Stdio.stdin"/> -->
 <!--      <insert-move entity="Stdio.stdout"/> -->
 <!--      <insert-move entity="Stdio.stderr"/> -->
-      <insert-move entity="Stdio.Port"/>
-      <insert-move entity="Stdio.UDP"/>
-      <insert-move entity="Stdio.Terminfo"/>
-      <insert-move entity="Stdio.Readline"/>
-      <insert-move entity="Stdio"/>
+      </section>
+      <section title="Ports and UDP">
+	<insert-move entity="Stdio.Port"/>
+	<insert-move entity="Stdio.UDP"/>
+      </section>
+      <section title="Terminal I/O">
+	<insert-move entity="Stdio.Terminfo"/>
+	<insert-move entity="Stdio.Readline"/>
+      </section>
+      <section title="Other">
+	<insert-move entity="Stdio"/>
+      </section>
     </chapter>
   </file>
   <file>
