@@ -860,7 +860,9 @@ string uri_decode (string s)
   // conversion according to RFC 3987 section 3.2. Most importantly
   // any invalid utf8-sequences should be left percent-encoded in the
   // result.
-  return utf8_to_string (_Roxen.http_decode_string (s));
+  s = _Roxen.http_decode_string (s);
+  catch { s = utf8_to_string (s); };
+  return s;
 }
 
 string iri_encode (string s)
