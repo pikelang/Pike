@@ -131,13 +131,50 @@
   </file>
   <file>
     <chapter title="Database Access">
-      <insert-move entity="Sql"/>
-      <insert-move entity="Mysql"/>
-      <insert-move entity="Msql"/>
-      <insert-move entity="Postgres"/>
-      <insert-move entity="SQLite"/>
-      <insert-move entity="Gdbm"/>
-      <insert-move entity="Yabu"/>
+      <section title="Generic Sql module">
+	<insert-move entity="Sql.Sql"/>
+      </section>
+      <section title="Sql protocol drivers">
+	<subsection title="Mysql">
+	  <insert-move entity="Sql.mysql"/>
+	  <insert-move entity="Sql.mysqls"/>
+	  <insert-move entity="Mysql"/>
+	</subsection>
+	<subsection title="Msql">
+	  <insert-move entity="Sql.msql"/>
+	  <insert-move entity="Msql"/>
+	</subsection>
+	<subsection title="Postgresql">
+	  <insert-move entity="Sql.pgsql"/>
+	  <insert-move entity="Sql.pgsqls"/>
+	  <insert-move entity="Sql.postgres"/>
+	  <insert-move entity="Postgres"/>
+	</subsection>
+	<subsection title="SQLite">
+	  <!-- insert-move entity="SQL.sqlite"/ -->
+	  <insert-move entity="SQLite"/>
+	</subsection>
+	<subsection title="Oracle">
+	  <!-- insert-move entity="SQL.oracle"/ -->
+	  <insert-move entity="Oracle"/>
+	</subsection>
+	<subsection title="Odbc">
+	  <insert-move entity="Sql.odbc"/>
+	  <!-- insert-move entity="Sql.dsn"/ -->
+	  <insert-move entity="Odbc"/>
+	</subsection>
+	<subsection title="Other">
+	  <insert-move entity="Sql"/>
+	</subsection>
+      </section>
+      <section title="Key-value stores">
+	<subsection title="Gdbm">
+	  <insert-move entity="Gdbm"/>
+	</subsection>
+	<subsection title="Yabu">
+	  <insert-move entity="Yabu"/>
+	</subsection>
+      </section>
     </chapter>
   </file>
   <file>
