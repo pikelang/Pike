@@ -59,7 +59,7 @@ class TocNode {
 	  Node dd = Node( XML_ELEMENT, "dd", ([]), 0 );
 	  sub++;
 	  Node link = Node( XML_ELEMENT, "url",
-			    ([ "href" : file+"#"+sub ]), 0 );
+			    ([ "href" : file + "#" + ent[2] + "." + sub ]), 0 );
 	  link->add_child( Node( XML_TEXT, 0, 0, ent[2]+"."+sub+". "+subtit ) );
 	  dd->add_child( link );
 	  add_child( dd );
