@@ -209,6 +209,12 @@
     </chapter>
   </file>
   <file>
+    <chapter title="Threads">
+      <insert-move entity="_disable_threads"/>
+      <insert-move entity="Thread"/>
+    </chapter>
+  </file>
+  <file>
     <chapter title="The rest">
       <insert-move entity=""/>
     </chapter>
