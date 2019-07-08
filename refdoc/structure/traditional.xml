@@ -199,13 +199,17 @@
     <chapter title="Graphic User Interface">
       <insert-move entity="GTK"/>
       <insert-move entity="GTK2"/>
+      <insert-move entity="GDK"/>
+      <insert-move entity="GDK2"/>
     </chapter>
   </file>
   <file>
     <chapter title="3D Vector Graphics">
       <insert-move entity="GL"/>
       <insert-move entity="GLU"/>
+      <insert-move entity="GLUE"/>
       <insert-move entity="GLUT"/>
+      <insert-move entity="GLSL"/>
     </chapter>
   </file>
   <file>
