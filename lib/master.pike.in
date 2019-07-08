@@ -3079,7 +3079,6 @@ class joinnode (array(object|mapping) joined_modules,
     resolv_debug ("joinnode(%O)->ind(%O)\n", joined_modules, index);
     INC_RESOLV_MSG_DEPTH();
 
-    int(0..1) do_depwarn = 0;
     array(mixed) res = ({});
     foreach(joined_modules, object|mapping o)
     {
@@ -3091,7 +3090,7 @@ class joinnode (array(object|mapping) joined_modules,
 	  // Only join directorynodes (or joinnodes).
 	  res += ({ ret });
           if (o->identifier_deprecatedp(index))
-            do_depwarn = 1;
+            deprecated_cache[index] = 1;
 	} else {
 	  DEC_RESOLV_MSG_DEPTH();
 	  resolv_debug ("joinnode(%O)->ind(%O) => found %O\n",
@@ -3104,12 +3103,6 @@ class joinnode (array(object|mapping) joined_modules,
           }
 	  return (ret);
 	}
-
-        if (do_depwarn)
-        {
-            deprecated_cache[index] = 1;
-            try_issue_deprecation_warning(compilation_handler);
-        }
       }
     }
 
