@@ -128,7 +128,7 @@ protected string replace1(string subject, string from, string to)
 //! HTML encode @tt{<>"'@}. If @[enc] is @tt{true@} @tt{&@} will also be encoded
 protected string encode_html(string html, void|bool enc)
 {
-  return replace(REGX((!enc ? "&(?!#?\\w+;)" : "&"))->replace(html, "&amp;"),
+  return replace(REGX((!enc ? "&(?!\\#?\\w+;)" : "&"))->replace(html, "&amp;"),
                  ([ "<"  : "&lt;",
                     ">"  : "&gt;",
                     "\"" : "&quot;",
@@ -137,7 +137,7 @@ protected string encode_html(string html, void|bool enc)
 
 protected string decode_html(string html)
 {
-  return REGX("&([#\\w]+);")->replace(html, lambda (string a, string b) {
+  return REGX("&([\\#\\w]+);")->replace(html, lambda (string a, string b) {
     b = lower_case(b);
 
     if (b == "colon") return ":";
@@ -256,7 +256,7 @@ RuleMap get_block_rules()
     "newline"    : R("^\\n+"),
     "code"       : R("^( {4}[^\\n]+\\n*)+"),
     "hr"         : R("^( *[-*_]){3,} *(?:\\n+|$)"),
-    "heading"    : R("^ *(#{1,6}) *([^\\n]+?) *#* *(?:\\n+|$)"),
+    "heading"    : R("^ *(\\#{1,6}) *([^\\n]+?) *\\#* *(?:\\n+|$)"),
     "lheading"   : R("^([^\\n]+)\\n *(=|-){2,} *(?:\\n+|$)"),
     "blockquote" : R("^( *>[^\\n]+(\\n(?!def)[^\\n]+)*\\n*)+"),
     "list"       : R("^( *)(bull) [\\s\\S]+?(?:hr|def|\\n{2,}(?! )(?!\\1bull )\\n*|\\s*$)"),
@@ -314,7 +314,7 @@ RuleMap get_block_rules()
   block->gfm = block->normal + ([
     "fences"    : R("^ *(`{3,}|~{3,})[ \\.]*(\\S+)? *\\n([\\s\\S]*?)\\s*\\1 *(?:\\n+|$)"),
     "paragraph" : R("^"),
-    "heading"   : R("^ *(#{1,6}) +([^\\n]+?) *#* *(?:\\n+|$)")
+    "heading"   : R("^ *(\\#{1,6}) +([^\\n]+?) *\\#* *(?:\\n+|$)")
   ]);
 
   block->gfm->paragraph =
@@ -340,7 +340,7 @@ RuleMap get_inline_rules()
     return inline_rules;
 
   RuleMap inl = ([
-    "escape"   : R("^\\\\([\\\\`*{}\\[\\]()#+\\-.!_>])"),
+    "escape"   : R("^\\\\([\\\\`*{}\\[\\]()\\#+\\-.!_>])"),
     "autolink" : R("^<([^ >]+(@|:/)[^ >]+)>"),
     "tag"      : R("^<!--[\\s\\S]*?-->|^</?\\w+(?:\"[^\"]*\"|'[^']*'|[^'\">])*?>"),
     "link"     : R("^!?\\[(inside)\\]\\(href\\)"),
