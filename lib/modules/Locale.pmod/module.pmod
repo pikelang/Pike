@@ -299,7 +299,7 @@ object get_object(string project, string lang) {
 
       default:
 	object dec;
-	if(catch(dec = Charset.decoder(encoding))) {
+	if(catch(dec = global.Charset.decoder(encoding))) {
 	  werror("\n* Warning: unknown encoding %O in %O\n",
 		 encoding, filename);
 	  break;
