@@ -17,6 +17,15 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	    pos++;
 	  break;
 	}
+        else if ( data[pos+1] >= '0' && data[pos+1] <= '9' )
+        {
+          pos++;
+          while(pos < len && data[pos] >= '0' && data[pos] <= '9')
+            pos++;
+          if (pos != len)
+            pos--;
+        }
+
 	break;
 
       case '0':
