@@ -1744,6 +1744,7 @@ new_name: TOK_IDENTIFIER
       }
     }
     if ($4) {
+      node *n;
       // this is done in both passes to get somewhat better handling
       // of auto types.
       //
@@ -1755,10 +1756,16 @@ new_name: TOK_IDENTIFIER
         fix_type_field( $4 );
         fix_auto_variable_type( $<number>3, $4->type );
       }
+      n = mkcastnode(void_type_string,
+		     mknode(F_ASSIGN,
+			    mkidentifiernode($<number>3), $4));
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+	// This makes sure that #pragma {no_,}deprecation_warnings
+	// works as expected.
+	optimize_node(n);
+      }
       Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
-		       mkcastnode(void_type_string,
-				  mknode(F_ASSIGN,
-					 mkidentifiernode($<number>3), $4)));
+				      n);
     }
     free_node($1);
   }
