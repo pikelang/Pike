@@ -589,6 +589,17 @@ protected class Lexer
     array(string) cap;
     bool next;
 
+    // NB: Some versions of PCRE do not support having the end marker ($)
+    //     in character classes. Add a terminating "\n" end sentinel if
+    //     there isn't already one there.
+    //     Note that this will not affect the output with newer versions
+    //     of PCRE as a single ending "\n" is ignored.
+    //
+    //     Once affected version is PCRE 5.0 as distributed by Redhat FC4.
+    if (sizeof(src) && !has_suffix(src, "\n")) {
+      src += "\n";
+    }
+
     while (src && sizeof(src)) {
       // Newline, (assignment)
       if (cap = rules->newline->split2(src)) {
