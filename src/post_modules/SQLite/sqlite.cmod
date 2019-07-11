@@ -31,6 +31,9 @@
 
 DECLARATIONS
 
+/*! @module SQLite
+ */
+
 /* NB: On Solaris 11 with __EXTENSIONS__ defined <stdlib.h> et el indirectly
  *     include <sys/regset.h> which has a conflicting definition of ERR...
  */
@@ -900,12 +903,19 @@ PIKECLASS Result
 
 }
 
+/*! @endclass
+ */
+
+/*! @decl string library_version()
+ *!
+ *! Returns the version of the sqlite library used.
+ */
 PIKEFUN string library_version()
 {
     push_text(sqlite3_libversion());
 }
 
-/*! @endclass
+/*! @endmodule
  */
 
 #endif /* HAVE_SQLITE3_H && HAVE_LIBSQLITE3 */
