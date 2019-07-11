@@ -659,9 +659,9 @@ class KeyExchangeRSA
     // We want both branches to execute in equal time (ignoring
     // SSL3_DEBUG in the hope it is never on in production).
     // Workaround documented in RFC 2246.
-    if ( (sizeof(premaster_secret) != 48),
-         || (premaster_secret[0] != 3),
-         || (premaster_secret[1] != (client_version & 0xff)) )
+    if ( `+( (sizeof(premaster_secret) != 48),
+             (premaster_secret[0] != 3),
+             (premaster_secret[1] != (client_version & 0xff)) ))
     {
       /* To avoid the chosen ciphertext attack discovered by Daniel
        * Bleichenbacher, it is essential not to send any error
