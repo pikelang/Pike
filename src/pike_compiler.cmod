@@ -2028,7 +2028,7 @@ static void f_compilation_handle_import(INT32 args)
  *!   @expr{0@} (zero) otherwise.
  *!
  *! @seealso
- *!   @[push_type_attribute()]
+ *!   @[push_type_attribute()], @[index_type_attribute()]
  */
 static void f_compilation_pop_type_attribute(INT32 args)
 {
@@ -2047,6 +2047,48 @@ static void f_compilation_pop_type_attribute(INT32 args)
       yytype_report(REPORT_WARNING, NULL, 0, NULL,
 		    NULL, 0, NULL,
 		    1, "Using deprecated %O value.");
+    }
+  }
+  pop_n_elems(args);
+  push_int(1);
+}
+
+/*! @decl int(0..1) index_type_attribute(string attribute, type a, type i)
+ *!
+ *!   Type attribute handler.
+ *!
+ *!   Called during type checking when a value of the type @[a] is
+ *!   indexed with a value of type @[i] and @[a] had the type
+ *!   attribute @[attribute] before the comparison.
+ *!
+ *!   The default implementation implements the "deprecated"
+ *!   attribute.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} if the type check should be allowed
+ *!   (ie @expr{__attribute__(attribute, a)[i]@}), and
+ *!   @expr{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *!   @[pop_type_attribute()], @[push_type_attribute()]
+ */
+static void f_compilation_index_type_attribute(INT32 args)
+{
+  struct pike_string *attr;
+  struct svalue *a, *b;
+  struct compilation *c = THIS_COMPILATION;
+  struct pike_string *deprecated_string;
+
+  get_all_args(NULL, args, "%W%*%*", &attr, &a, &b);
+
+  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+    MAKE_CONST_STRING(deprecated_string, "deprecated");
+    if ((attr == deprecated_string) &&
+	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
+      push_svalue(a);
+      yytype_report(REPORT_WARNING, NULL, 0, NULL,
+		    NULL, 0, NULL,
+		    1, "Indexing a deprecated %O value.");
     }
   }
   pop_n_elems(args);
@@ -2088,7 +2130,7 @@ static void f_compilation_suppress_deprecation_warnings(INT32 args)
  *!   @expr{0@} (zero) otherwise.
  *!
  *! @seealso
- *!   @[pop_type_attribute()]
+ *!   @[pop_type_attribute()], @[index_type_attribute()]
  */
 static void f_compilation_push_type_attribute(INT32 args)
 {
@@ -2790,6 +2832,9 @@ static void compile_compiler(void)
 	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
 
   ADD_FUNCTION("push_type_attribute", f_compilation_push_type_attribute,
+	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
+
+  ADD_FUNCTION("index_type_attribute", f_compilation_index_type_attribute,
 	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
 
   ADD_FUNCTION("apply_type_attribute", f_compilation_apply_type_attribute,

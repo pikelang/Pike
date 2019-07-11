@@ -14172,6 +14172,14 @@ test_compile_any(
   class A { int foo(__deprecated__(int)|void x) { return (int)x; } };
   mixed bar = A()->foo();
 )
+test_compile_warning(
+  class A {
+    __deprecated__ mapping m;
+    void foo() {
+      m["foo"] = "bar";
+    }
+  };
+)
 
 // - modifiers, compile time access properties
 

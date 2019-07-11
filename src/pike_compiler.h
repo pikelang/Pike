@@ -157,8 +157,9 @@ struct compilation
 #define PC_HANDLE_IMPORT_FUN_NUM			8
 #define PC_POP_TYPE_ATTRIBUTE_FUN_NUM			9
 #define PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM			10
-#define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			11
-#define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		12
+#define PC_INDEX_TYPE_ATTRIBUTE_FUN_NUM			11
+#define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			12
+#define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		13
 
 extern struct program *null_program;
 extern struct program *placeholder_program;

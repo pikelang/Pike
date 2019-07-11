@@ -5361,8 +5361,28 @@ static int low_check_indexing(struct pike_type *type,
   case T_NOT:
     return low_check_indexing(type->car, index_type, n) != 1;
 
-  case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
+    if (low_check_indexing(type->cdr, index_type, n)) {
+      /* Valid index, so let's check if the attribute
+       * handler has any other opinion.
+       */
+      ref_push_string((struct pike_string *)type->car);
+      ref_push_type_value(type->cdr);
+      ref_push_type_value(index_type);
+      safe_apply_current2(PC_INDEX_TYPE_ATTRIBUTE_FUN_NUM, 3,
+			  "index_type_attribute");
+      if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
+	  (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
+	  (!Pike_sp[-1].u.integer)) {
+	pop_stack();
+	return 0;
+      }
+      pop_stack();
+      return 1;
+    }
+    return 0;
+
+  case PIKE_T_NAME:
   case T_ASSIGN:
   case T_SCOPE:
     return low_check_indexing(type->cdr, index_type, n);
