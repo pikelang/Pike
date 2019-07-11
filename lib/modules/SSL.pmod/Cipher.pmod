@@ -644,16 +644,29 @@ class KeyExchangeRSA
       data = input->read();
 
     // Decrypt, even when we know data is incorrect, for time invariance.
-    premaster_secret = rsa->decrypt(data) || "xx";
+    premaster_secret = rsa->decrypt(data);
 
     SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
 
     // We want both branches to execute in equal time (ignoring
     // SSL3_DEBUG in the hope it is never on in production).
     // Workaround documented in RFC 2246.
-    if ( `+( (sizeof(premaster_secret) != 48),
-             (premaster_secret[0] != 3),
-             (premaster_secret[1] != (client_version & 0xff)) ))
+    string invalid_premaster_secret = "xx";
+    string tmp;
+    if (premaster_secret) {
+      tmp = premaster_secret;
+    } else {
+      tmp = invalid_premaster_secret;
+    }
+    string tmp2;
+    if (sizeof(tmp) < 2) {
+      tmp2 = invalid_premaster_secret;
+    } else {
+      tmp2 = tmp;
+    }
+    if ( `+( (sizeof(tmp2) != 48),
+             (tmp2[0] != 3),
+             (tmp2[1] != (client_version & 0xff)) ))
     {
       /* To avoid the chosen ciphertext attack discovered by Daniel
        * Bleichenbacher, it is essential not to send any error
