@@ -393,8 +393,8 @@ protected void low_async_failed(int errno)
    if (errno)
      this::errno = errno;
    ok=0;
-   if (request_fail) request_fail(this,@extra_args);
    remove_async_timeout();
+   if (request_fail) request_fail(this, @extra_args);
 }
 
 protected void async_failed()
