@@ -477,16 +477,18 @@ const char * decode_next_value(const char * src, const char * src_end, struct ma
     {
       struct pike_string * val;
       INT32 len, jslen;
+      const char * internal_src_end;
 
       CHECK_LENGTH(4);
 
       len = get_unaligned_le32(src);
       CHECK_LENGTH(len);
+      internal_src_end = src + len;
       src += 4;
       CHECK_LENGTH(4);
       jslen = get_unaligned_le32(src);
       src += 4;
-      if( jslen<0 || jslen > len-4 )
+      if( len<0 || jslen<1 || jslen > len-8 )
         Pike_error("Invalid BSON. Not enough data 2.\n");
 
       val = make_shared_binary_string(src, jslen-1); /* length includes null. */
@@ -499,7 +501,8 @@ const char * decode_next_value(const char * src, const char * src_end, struct ma
       push_string(val);
       f_utf8_to_string(1);
 
-      src = decode_document(src, src_end);
+      decode_document(src, internal_src_end);
+      src = internal_src_end;
 
       apply_svalue( Pike_sp-3, 2);
       stack_swap();
