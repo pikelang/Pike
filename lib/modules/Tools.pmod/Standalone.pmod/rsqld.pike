@@ -245,7 +245,7 @@ class Connection
 
   protected int cmd_insert_id()
   {
-    return sqlobj->master_sql->insert_id();
+    return sqlobj->insert_id();
   }
 
   protected int|array(string|int) cmd_fetchrow(string qid)

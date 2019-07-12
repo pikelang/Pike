@@ -10,12 +10,6 @@ cond_resolv( SQLite.SQLite, [[
   test_eq( db->total_changes(), 0 )
   test_do( db->interrupt() )
   test_eq( db->insert_id(), 0 )
-  ignore_warning("Indexing a deprecated { this_program = object(implements __builtin.Sql.Connection) } value.", [[
-    test_eq( db->master_sql->changes(), 0 )
-    test_eq( db->master_sql->total_changes(), 0 )
-    test_do( db->master_sql->interrupt() )
-    test_eq( db->master_sql->insert_id(), 0 )
-  ]])
   test_eq( db->error(), "not an error" )
   test_eval_error( db->select_db() )
   test_eval_error( db->create_db() )

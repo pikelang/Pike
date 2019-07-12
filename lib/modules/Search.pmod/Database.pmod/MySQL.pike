@@ -216,7 +216,7 @@ int get_uri_id(string uri, void|int do_not_create)
   db->query("insert into uri (uri,uri_md5) "
 	    "values (%s,%s)",
 	    string_to_utf8( uri ), to_md5(uri));
-  return db->master_sql->insert_id();
+  return db->insert_id();
 }
 
 int get_document_id(string uri, void|string language, void|int do_not_create)
@@ -240,7 +240,7 @@ int get_document_id(string uri, void|string language, void|int do_not_create)
   db->query("insert into document (uri_id, language) "
 	    "values (%d,"+(language?"%s":"NULL")+")",
 	    uri_id, language);
-  return db->master_sql->insert_id();
+  return db->insert_id();
 }
 
 mapping get_uri_and_language(int|array(int) doc_id)
