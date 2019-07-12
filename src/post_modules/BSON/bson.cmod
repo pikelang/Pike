@@ -481,8 +481,8 @@ const char * decode_next_value(const char * src, const char * src_end, struct ma
       CHECK_LENGTH(4);
 
       len = get_unaligned_le32(src);
-      src += 4;
       CHECK_LENGTH(len);
+      src += 4;
       CHECK_LENGTH(4);
       jslen = get_unaligned_le32(src);
       src += 4;
