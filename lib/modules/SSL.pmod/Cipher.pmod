@@ -659,7 +659,7 @@ class KeyExchangeRSA
     // We want both branches to execute in equal time (ignoring
     // SSL3_DEBUG in the hope it is never on in production).
     // Workaround documented in RFC 2246.
-    string invalid_premaster_secret = "xx";
+    string invalid_premaster_secret = "xx" + context->random(46);
     string tmp;
     if (premaster_secret) {
       tmp = premaster_secret;
@@ -695,15 +695,13 @@ class KeyExchangeRSA
       }
 #endif
 
-      premaster_secret = context->random(48);
+      premaster_secret = invalid_premaster_secret;
       message_was_bad = 1;
-      connection->ke = UNDEFINED;
-
     } else {
-      string timing_attack_mitigation = context->random(48);
+      tmp = invalid_premaster_secret;
       message_was_bad = 0;
-      connection->ke = this;
     }
+    connection->ke = this;
 
     return premaster_secret;
   }
