@@ -281,7 +281,11 @@ class Watchdog
       WATCHDOG_MSG ("Error reading stdin pipe: %s.\n",
 		    strerror (stdin->errno()));
     }
-    _exit(EXIT_OK);
+    if (!timeout_phase) {
+      _exit(EXIT_OK);
+    } else {
+      _exit(EXIT_WATCHDOG_FAILED);
+    }
   }
 
   void check_parent_pid()
@@ -322,7 +326,6 @@ class Watchdog
 	  }
 	  WATCHDOG_MSG ("%s: Sending SIGABRT to %d.\n", ts, watched_pid);
 	  kill(watched_pid, signum("SIGABRT"));
-	  stdin->close();
 	  timeout_phase = 1;
 	  call_out (timeout, 60);
 	  break;
