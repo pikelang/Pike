@@ -24,6 +24,12 @@ test_do([[
   };
 ]])
 
+test_any([[
+#pragma no_deprecation_warnings
+  Sql.Sql sql = Sql.Sql("null://");
+  return sql == sql->master_sql;
+]], 1)
+
 ifefun(db,[[
   test_equal( db->query("select 1"), ({ ([ "1":"1" ]) }) )
   test_eq( db->big_query("select 1")->num_rows(), 1 )
