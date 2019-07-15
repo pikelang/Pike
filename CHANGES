@@ -91,6 +91,10 @@ o Compiler
   - Fixed some corner cases where file names where missing from
     backtraces.
 
+Crypto.ECC
+
+  Now works against Nettle 3.5.
+
 o Filesystem.Tar
 
   Fix extraction of S_ISUID and S_ISGID bits.
