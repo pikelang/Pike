@@ -141,6 +141,16 @@ EXIT
    */
   INHERIT "__builtin.Sql.Result";
 
+  static int f_Mysql_Result_inherited_increment_index_fun_num = -1;
+  EXTRA
+  {
+    pike_gdb_breakpoint(0);
+    f_Mysql_Result_inherited_increment_index_fun_num =
+      low_reference_inherited_identifier(NULL, 1,
+					 MK_STRING("increment_index"),
+					 SEE_PROTECTED);
+  }
+
 /*
  * Help functions
  */
@@ -562,9 +572,6 @@ PIKEFUN array(int|mapping(string:mixed)) fetch_fields()
  *!   and was shadowed by a function that did use relative row addressing,
  *!   it has been renamed in Pike 8.1.
  *!
- *! @bugs
- *!   This function currently does NOT update @[index].
- *!
  *! @seealso
  *!   @[fetch_row()], @[seek()]
  */
@@ -573,8 +580,25 @@ PIKEFUN void low_seek(int row)
   if (!PIKE_MYSQL_RES->result)
     Pike_error("Can't seek in uninitialized result object.\n");
 
+  if ((row < 0) || (((size_t)row) > mysql_num_rows(PIKE_MYSQL_RES->result))) {
+    /* NB: The MySQL documentation says the valid range is [0..num_rows-1],
+     *     but it must be possible to set the cursor after last row.
+     *
+     * The mysql_data_seek() function does not have any way of
+     * indicating an error. Specifying a row number larger than
+     * num_rows - 1 causes it to set the cursor to NULL, which
+     * is what we want.
+     */
+    Pike_error("Specified row (%d) out of range [0..%d].\n",
+	       row, mysql_num_rows(PIKE_MYSQL_RES->result));
+  }
+
   mysql_data_seek(PIKE_MYSQL_RES->result, row);
-  pop_n_elems(args);
+
+  push_int(0);
+  apply_current(f_Mysql_Result_inherited_increment_index_fun_num, 1);
+  o_subtract();
+  apply_current(f_Mysql_Result_inherited_increment_index_fun_num, 1);
 }
 
 /*! @decl int|array(string) fetch_row()
@@ -742,6 +766,10 @@ PIKEFUN int|array(string) fetch_row()
       }
     }
     f_aggregate(num_fields);
+
+    /* Update the row index counter. */
+    apply_current(f_Mysql_Result_inherited_increment_index_fun_num, 0);
+    pop_stack();
   } else {
     /* No rows left in result */
     PIKE_MYSQL_RES->eof = 1;
@@ -905,6 +933,11 @@ next_row:
     }
     string_builder_putchar(&res, ']');
     r++;
+
+    /* Update the row index counter. */
+    apply_current(f_Mysql_Result_inherited_increment_index_fun_num, 0);
+    pop_stack();
+
     goto next_row;
   } else {
     /* No rows left in result */
