@@ -12604,8 +12604,14 @@ cond([[all_constants()->mktime && (Pike.get_runtime_info()->time_size > 32)]],
   test_any([[foreach(({-1<<33,-1<<32,
                        1<<31,(1<<31)+1,1<<32,1<<33,(-1<<31)-1,
 		      }),int t) {
-	       int res = mktime (gmtime (t));
-	       if(res!=t) return ({t, res});
+	       if (mixed err = catch {
+		   int res = mktime (gmtime (t));
+		   if(res!=t) return ({t, res});
+		 }) {
+		 log_msg("Failure for %d (0x%016x).\n",
+			 t, t & 0xffffffffffffffff);
+		 throw(err);
+	       }
 	     }
 	     return 0;]], 0)
 ]])
