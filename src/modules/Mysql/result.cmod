@@ -144,7 +144,6 @@ EXIT
   static int f_Mysql_Result_inherited_increment_index_fun_num = -1;
   EXTRA
   {
-    pike_gdb_breakpoint(0);
     f_Mysql_Result_inherited_increment_index_fun_num =
       low_reference_inherited_identifier(NULL, 1,
 					 MK_STRING("increment_index"),
