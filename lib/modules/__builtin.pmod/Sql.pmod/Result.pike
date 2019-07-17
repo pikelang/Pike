@@ -101,7 +101,14 @@ int num_fields();
 
 //! @returns
 //!  Non-zero if there are no more rows.
-int eof();
+//!
+//! @note
+//!  Not reliable! Some drivers have no support for checking
+//!  whether there are more rows without also fetching them.
+int eof()
+{
+  return 0;
+}
 
 //! @returns
 //!  Information about the available fields.
