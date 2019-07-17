@@ -1111,6 +1111,7 @@ PIKEFUN object next_result()
   ref_push_object(Pike_fp->current_object);
 }
 
+#if 0	/* Use the default implementation of these. */
 /*! @decl int eof()
  */
 PIKEFUN int eof()
@@ -1124,6 +1125,7 @@ PIKEFUN void seek()
 {
   Pike_error("odbc->seek(): Not implemented yet!\n");
 }
+#endif /* 0 */
 
 }
 /*! @endclass Result
