@@ -407,7 +407,7 @@ PIKECLASS ECC_Curve
 #endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_384R1
       case 384:
-	THIS->curve = nettle_get_secp_384r1;
+	THIS->curve = nettle_get_secp_384r1();
 	break;
 #endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
