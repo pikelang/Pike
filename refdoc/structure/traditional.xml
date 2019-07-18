@@ -149,8 +149,18 @@
   </file>
   <file>
     <chapter title="Database Access">
-      <section title="Generic Sql module">
-	<insert-move entity="Sql.Sql"/>
+      <section title="Generic Sql API">
+	<subsection title="Sql.Sql">
+	  <insert-move entity="Sql.Sql"/>
+	</subsection>
+	<subsection title="Sql.Connection objects">
+	  <insert-move entity="Sql.Connection"/>
+	  <insert-move entity="__builtin.Sql.Connection"/>
+	</subsection>
+	<subsection title="Sql.Result objects">
+	  <insert-move entity="Sql.Result"/>
+	  <insert-move entity="__builtin.Sql.Result"/>
+	</subsection>
       </section>
       <section title="Sql protocol drivers">
 	<subsection title="Mysql">
