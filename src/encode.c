@@ -1560,7 +1560,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    }
 		    if (other >= id) {
 		      /* variant before termination function. */
-		      break;
+		      EDB(3, fprintf(stderr, "%*sVariant before termination function.\n",
+				     data->depth, ""));
+		      goto next_identifier_ref;
 		    }
 		    if ((other->identifier_flags & IDENTIFIER_TYPE_MASK) ==
 			IDENTIFIER_PIKE_FUNCTION) {
@@ -1582,6 +1584,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			gs_flags = r->id_flags & ref->id_flags;
 			id = other;
 			ref = r;
+			EDB(3, fprintf(stderr, "%*sEncoding termination function.\n",
+				       data->depth, ""));
 			goto encode_pike_function;
 		      }
 		    }
