@@ -180,9 +180,57 @@ static struct object *encoder_codec (struct encode_data *data)
 
 static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode);
 
+#ifdef PIKE_DEBUG
+static void debug_dump_mem(size_t offset, const unsigned char *bytes,
+			   size_t len)
+{
+  size_t i;
+  for (i = 0; i < len; i += 8) {
+    size_t j;
+    fprintf(stderr, "  %08x: ", offset + i);
+    for (j = 0; (i+j < len) && (j < 8); j++) {
+      fprintf(stderr, "%02x", bytes[i+j]);
+    }
+    fprintf(stderr, "   ");
+    for (j = 0; (i+j < len) && (j < 8); j++) {
+      int c = bytes[i+j];
+      if (((c & 0177) < ' ') || (c == 0177)) {
+	/* Control or DEL */
+	c = '.';
+      }
+      if (c < 0177) {
+	/* ASCII */
+	fprintf(stderr, "%c", c);
+      } else {
+	/* Latin-1 ==> Encode to UTF-8. */
+	fprintf(stderr, "%c%c", 0xc0 | (c>>6), 0x80 | (c & 0x3f));
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+}
+static void low_addstr(struct byte_buffer *buf, const char *bytes,
+		       size_t len, int edb)
+{
+  if (edb >= 6) {
+    debug_dump_mem(buf->length - (((char *)buf->end) - ((char *)buf->dst)),
+		   bytes, len);
+  }
+  buffer_memcpy(buf, bytes, len);
+}
+static void low_addchar(struct byte_buffer *buf, int c, int edb)
+{
+  char byte = c;
+  low_addstr(buf, &byte, 1, edb);
+}
+#define addstr(s, l) low_addstr(&(data->buf), (s), (l), data->debug)
+#define addchar(t)   low_addchar(&(data->buf), (t), data->debug)
+#define addchar_unsafe(t) addchar(t)
+#else
 #define addstr(s, l) buffer_memcpy(&(data->buf), (s), (l))
 #define addchar(t)   buffer_add_char(&(data->buf), (char)(t))
 #define addchar_unsafe(t)       buffer_add_char_unsafe(&(data->buf), t)
+#endif
 
 /* Code a pike string */
 
@@ -1935,6 +1983,12 @@ static int my_extract_char(struct decode_data *data)
 {
   if(data->ptr >= data->len)
     Pike_error("Not enough data in string.\n");
+
+#ifdef PIKE_DEBUG
+  if (data->debug >= 6) {
+    debug_dump_mem(data->ptr, data->data + data->ptr, 1);
+  }
+#endif /* PIKE_DEBUG */
   return data->data [ data->ptr++ ];
 }
 
@@ -1984,7 +2038,7 @@ static DECLSPEC(noreturn) void decode_error (
 
 #define DECODE(Z) do {					\
   EDB(5,						\
-    fprintf(stderr,"%*sdecode(%s) at %d: ",		\
+    fprintf(stderr,"%*sdecode(%s) at %d:\n",		\
 	    data->depth,"",(Z),__LINE__));		\
   what=GETC();						\
   e=what>>SIZE_SHIFT;					\
@@ -2000,8 +2054,8 @@ static DECLSPEC(noreturn) void decode_error (
     num = ~num;						\
   }							\
   EDB(5,						\
-      fprintf(stderr,"type=%d (%s), num=%ld\n",		\
-	      (what & TAG_MASK),			\
+      fprintf(stderr,"%*s==> type=%d (%s), num=%ld\n",	\
+	      data->depth,"",(what & TAG_MASK),			\
 	      get_name_of_type(tag_to_type(what & TAG_MASK)),	\
 	    (long)num) ); 				\
 } while (0)
@@ -2045,6 +2099,7 @@ static DECLSPEC(noreturn) void decode_error (
 		    sz, data->len - data->ptr);				\
     STR=begin_wide_shared_string(num, what);				\
     memcpy(STR->str, data->data + data->ptr, sz);			\
+    EDB(6, debug_dump_mem(data->ptr, data->data + data->ptr, sz));	\
     data->ptr += sz;							\
     BITFLIP(STR);							    \
     STR=end_shared_string(STR);                                             \
@@ -2056,6 +2111,7 @@ static DECLSPEC(noreturn) void decode_error (
       decode_error (data, NULL, "Too large size %td (max is %td).\n",	\
 		    sz, data->len - data->ptr);				\
     STR=make_shared_binary_string((char *)(data->data + data->ptr), sz); \
+    EDB(6, debug_dump_mem(data->ptr, data->data + data->ptr, sz));	\
     data->ptr += sz;							\
   }									    \
 }while(0)
@@ -2166,6 +2222,7 @@ static void low_decode_type(struct decode_data *data)
 	INT32 min=0, max=0;
 	if(data->ptr + 8 > data->len)
           decode_error(data, NULL, "Not enough data.\n");
+	EDB(6, debug_dump_mem(data->ptr, data->data + data->ptr, 8));
 	min = get_unaligned_be32(data->data + data->ptr);
 	data->ptr += 4;
 	max = get_unaligned_be32(data->data + data->ptr);
