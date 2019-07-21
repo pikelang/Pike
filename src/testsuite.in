@@ -15110,4 +15110,72 @@ test_tests([[
   }
 ]])
 
+
+dnl Dumping test
+
+test_do(Stdio.recursive_rm("recursive_module_dump_test"))
+test_do(mkdir("recursive_module_dump_test"))
+test_do(mkdir("recursive_module_dump_test/TestModule.pmod"))
+test_do([[Stdio.write_file("recursive_module_dump_test/TestModule.pmod/module.pmod", #"
+class B
+{
+  void foo()
+  {
+    .A.bar(C());
+  }
+}
+
+class C
+{
+}
+")]])
+test_do([[Stdio.write_file("recursive_module_dump_test/TestModule.pmod/A.pmod", #"
+import \".\";
+
+void bar(C c)
+{
+}
+")]])
+test_do([[Stdio.write_file("recursive_module_dump_test/test.pike", #"
+void main(int argc, array(string) argv) {
+  mixed err = (argc>1? !Tools.Standalone.dump()->dumpit(argv[1], argv[1]) :
+               catch(compile_string(\"import TestModule.A;\")));
+  Tools.Testsuite.report_result(!err, !!err);
+}
+")]])
+define(dump_test_module, [[test_tests([[ array a() {
+  return Tools.Testsuite.run_script(({"-M", "recursive_module_dump_test", "recursive_module_dump_test/test.pike", "]]$1[["}));
+}]])]])
+define(try_load_test_module, [[test_tests([[ array a() {
+  return Tools.Testsuite.run_script(({"-M", "recursive_module_dump_test", "recursive_module_dump_test/test.pike"}));
+}]])]])
+
+dnl - First, try without dumping
+try_load_test_module
+
+dnl - Next, dump only A.pmod
+dump_test_module(recursive_module_dump_test/TestModule.pmod/A.pmod)
+try_load_test_module
+
+dnl - Now, only module.pmod
+test_do(rm("recursive_module_dump_test/TestModule.pmod/A.pmod.o"))
+dump_test_module(recursive_module_dump_test/TestModule.pmod/module.pmod)
+try_load_test_module
+
+dnl - A.pmod before module.pmod
+test_do(rm("recursive_module_dump_test/TestModule.pmod/module.pmod.o"))
+dump_test_module(recursive_module_dump_test/TestModule.pmod/A.pmod)
+dump_test_module(recursive_module_dump_test/TestModule.pmod/module.pmod)
+try_load_test_module
+
+dnl - module.pmod before A.pmod
+test_do(rm("recursive_module_dump_test/TestModule.pmod/A.pmod.o"))
+test_do(rm("recursive_module_dump_test/TestModule.pmod/module.pmod.o"))
+dump_test_module(recursive_module_dump_test/TestModule.pmod/module.pmod)
+dump_test_module(recursive_module_dump_test/TestModule.pmod/A.pmod)
+try_load_test_module
+
+test_do(Stdio.recursive_rm("recursive_module_dump_test"))
+
+
 END_MARKER
