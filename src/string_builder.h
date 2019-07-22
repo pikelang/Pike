@@ -95,6 +95,13 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 va_list args);
 PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
 					const char *fmt, ...);
+PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
+						   size_t address,
+						   const void *start,
+						   const void *end,
+						   const char *opcode,
+						   const char **params,
+						   const char *comment);
 PMOD_EXPORT void reset_string_builder(struct string_builder *s);
 PMOD_EXPORT void free_string_builder(struct string_builder *s);
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);

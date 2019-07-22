@@ -10398,103 +10398,6 @@ void make_program_executable(struct program *p)
 }
 #endif
 
-PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
-						   const PIKE_OPCODE_T *start,
-						   const PIKE_OPCODE_T *end,
-						   const char *opcode,
-						   const char **params,
-						   const char *comment)
-{
-  while ((start < end) || opcode || (params && params[0]) ||
-	 (comment && comment[0])) {
-    ptrdiff_t field_width = sizeof(PIKE_OPCODE_T) * 2;
-    ptrdiff_t i;
-    int skip_params = 0;
-    int skip_comment = 0;
-
-    if (end) {
-      /* Address */
-      string_builder_sprintf(s, "0x%016lx  ", start);
-
-      if (start < end) {
-	/* Memory dump */
-	for (i = 0; i < 8; i += field_width) {
-	  if (start < end) {
-	    string_builder_sprintf(s, "%0*x ", field_width, start[0]);
-	    start++;
-	    if (start == end) {
-	      end = NULL;
-	    }
-	  } else {
-	    string_builder_sprintf(s, "%*s ", field_width, "");
-	  }
-	}
-      } else {
-	end = NULL;
-	string_builder_sprintf(s, "%*s  ", 8 + 8/field_width, "");
-      }
-    } else {
-      string_builder_sprintf(s, "%*s  ", 18 + 8 + 8/field_width, "");
-    }
-
-    /* Opcode */
-    if (opcode) {
-      if (strlen(opcode) < 8) {
-	string_builder_sprintf(s, " %-8s ", opcode);
-      } else if (strlen(opcode) < 32) {
-	string_builder_sprintf(s, " %-28s ", opcode);
-	skip_params = 1;
-      } else {
-	string_builder_sprintf(s, " %s", opcode);
-	skip_params = skip_comment = 1;
-      }
-      opcode = NULL;
-    } else if ((params && params[0]) || (comment && comment[0])) {
-      /* No need to pad if there's no argument and no comment. */
-      string_builder_sprintf(s, " %8s ", "");
-    }
-
-    /* Params */
-    if (skip_params) {
-    } else if (params && params[0]) {
-      ptrdiff_t bytes_left = 20;
-      do {
-	string_builder_sprintf(s, "%s", params[0]);
-	bytes_left -= strlen(params[0]);
-	params++;
-	if (params[0]) {
-	  string_builder_sprintf(s, ", ");
-	  bytes_left -= 2;
-	}
-      } while (params[0] && (((ptrdiff_t)strlen(params[0])) <= bytes_left));
-      if (bytes_left < 0) {
-	skip_comment = 1;
-      } else if (comment && comment[0]) {
-	/* No need to pad if there's no comment. */
-	string_builder_sprintf(s, "%*s ", bytes_left-1, "");
-      }
-    } else if (comment && comment[0]) {
-      /* No need to pad if there's no comment. */
-      string_builder_sprintf(s, "%*s ", 19, "");
-    }
-
-    /* Comment */
-    if (!skip_comment && (comment && comment[0])) {
-      const char *ptr = strchr(comment, '\n');
-      if (ptr) {
-	string_builder_sprintf(s, " # %.*s\n", ptr - comment, comment);
-	comment = ptr + 1;
-	if (!comment[0]) comment = NULL;
-      } else {
-	string_builder_sprintf(s, " # %s\n", comment);
-	comment = NULL;
-      }
-    } else {
-      string_builder_sprintf(s, "\n");
-    }
-  }
-}
-
 PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
 						   const PIKE_OPCODE_T *addr,
 						   enum Pike_opcodes op,
@@ -10513,7 +10416,8 @@ PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
     params[1] = buf[1];
   }
   sprintf(buf[2], "# %s", instr->name);
-  string_builder_append_disassembly(s, addr, addr, buf[2], params, NULL);
+  string_builder_append_disassembly(s, (size_t)addr, addr, addr,
+				    buf[2], params, NULL);
 }
 
 PMOD_EXPORT void add_reverse_symbol(struct pike_string *sym, void *addr)

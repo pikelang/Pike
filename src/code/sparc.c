@@ -1122,7 +1122,7 @@ void sparc_disassemble_code(void *addr, size_t bytes)
       params[0] = params[1];
       params[1] = NULL;
     }
-    string_builder_append_disassembly(&buf, code, code+1,
+    string_builder_append_disassembly(&buf, (size_t)code, code, code+1,
 				      mnemonic, params, NULL);
     code++;
   }
