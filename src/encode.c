@@ -180,7 +180,7 @@ static struct object *encoder_codec (struct encode_data *data)
 
 static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode);
 
-#ifdef PIKE_DEBUG
+#ifdef ENCODE_DEBUG
 static void debug_dump_mem(size_t offset, const unsigned char *bytes,
 			   size_t len)
 {
@@ -1984,7 +1984,7 @@ static int my_extract_char(struct decode_data *data)
   if(data->ptr >= data->len)
     Pike_error("Not enough data in string.\n");
 
-#ifdef PIKE_DEBUG
+#ifdef ENCODE_DEBUG
   if (data->debug >= 6) {
     debug_dump_mem(data->ptr, data->data + data->ptr, 1);
   }
