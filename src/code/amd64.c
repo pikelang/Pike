@@ -5404,7 +5404,8 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
       }
     }
 
-    string_builder_append_disassembly(&buf, pc + op_start, pc + pos,
+    string_builder_append_disassembly(buf, (size_t)(pc + op_start),
+				      pc + op_start, pc + pos,
 				      opcode, params, NULL);
   }
 
