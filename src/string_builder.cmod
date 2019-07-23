@@ -1073,16 +1073,27 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
 
     /* Opcode */
     if (opcode) {
-      if (strlen(opcode) < 8) {
-	string_builder_sprintf(s, " %-8s ", opcode);
-      } else if (strlen(opcode) < 32) {
-	string_builder_sprintf(s, " %-28s ", opcode);
+      char *opcode_end = strchr(opcode, '\n');
+      size_t opcode_len;
+      if (opcode_end) {
+	opcode_len = opcode_end - opcode;
+	opcode_end++;
 	skip_params = 1;
       } else {
-	string_builder_sprintf(s, " %s", opcode);
+	opcode_len = strlen(opcode);
+      }
+      if (opcode_len < 8) {
+	string_builder_sprintf(s, " %.*s%*s ",
+			       opcode_len, opcode, 8 - opcode_len, "");
+      } else if (opcode_len < 32) {
+	string_builder_sprintf(s, " %.*s%*s ",
+			       opcode_len, opcode, 28 - opcode_len, "");
+	skip_params = 1;
+      } else {
+	string_builder_sprintf(s, " %.*s", opcode_len, opcode);
 	skip_params = skip_comment = 1;
       }
-      opcode = NULL;
+      opcode = opcode_end;
     } else if ((params && params[0]) || (comment && comment[0])) {
       /* No need to pad if there's no argument and no comment. */
       string_builder_sprintf(s, " %8s ", "");
