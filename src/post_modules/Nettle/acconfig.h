@@ -11,6 +11,9 @@
 /* Define this if generage_dsa_keypair takes the qbits argument */
 #undef HAVE_DSA_QBITS_KEYPAIR_ARG
 
+/* Define this if struct aes_ctx has the field key_size. */
+#undef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
+
 @BOTTOM@
 
 #include "nettle_config_fixup.h"

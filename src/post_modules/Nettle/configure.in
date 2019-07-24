@@ -175,6 +175,25 @@ else
     if test "x$pike_cv_nettle_crypt_func_is_pointer" = "xyes"; then
       AC_DEFINE(HAVE_NETTLE_CRYPT_FUNC_IS_POINTER)
     fi
+
+    # struct aes_ctx was changed in Nettle 3.5...
+    AC_MSG_CHECKING([whether struct aes_ctx has the field key_size])
+    AC_CACHE_VAL(pike_cv_nettle_struct_aes_ctx_field_key_size, [
+      pike_cv_nettle_struct_aes_ctx_field_key_size=no
+      AC_TRY_COMPILE([
+#include <nettle/aes.h>
+      ], [
+  struct aes_ctx ctx;
+  ctx.key_size = 0;
+  return (int)ctx.key_size;
+      ], [
+        pike_cv_nettle_struct_aes_ctx_field_key_size=yes
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_nettle_struct_aes_ctx_field_key_size);
+    if test "x$pike_cv_nettle_struct_aes_ctx_field_key_size" = "xyes"; then
+      AC_DEFINE(HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE)
+    fi
   else
     AC_ERROR([Cannot compile --with-nettle without the Nettle library.
 It is highly recommended that you install a working Nettle, 1.13 or

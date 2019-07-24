@@ -5581,21 +5581,21 @@ pike_aes_set_encrypt_key(void *ctx,
 			 int UNUSED(force))
 {
   if (length == AES128_KEY_SIZE) {
-#ifdef HAVE_NETTLE_AES128_ENCRYPT
+#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
     aes128_set_encrypt_key(&((struct aes_ctx*)ctx)->u.ctx128,
 			   (const uint8_t *)key);
 #else
     aes_set_encrypt_key(ctx, length, (const uint8_t *)key);
 #endif
   } else if (length == AES192_KEY_SIZE) {
-#ifdef HAVE_NETTLE_AES128_ENCRYPT
+#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
     aes192_set_encrypt_key(&((struct aes_ctx*)ctx)->u.ctx192,
 			   (const uint8_t *)key);
 #else
     aes_set_encrypt_key(ctx, length, (const uint8_t *)key);
 #endif
   } else if (length == AES256_KEY_SIZE) {
-#ifdef HAVE_NETTLE_AES128_ENCRYPT
+#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
     aes256_set_encrypt_key(&((struct aes_ctx*)ctx)->u.ctx256,
 			   (const uint8_t *)key);
 #else
@@ -5603,7 +5603,7 @@ pike_aes_set_encrypt_key(void *ctx,
 #endif
   } else
     Pike_error("AES: Bad keysize for AES.\n");
-#ifdef HAVE_NETTLE_AES128_ENCRYPT
+#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
   ((struct aes_ctx*)ctx)->key_size = length;
 #endif
 }
@@ -5614,21 +5614,21 @@ pike_aes_set_decrypt_key(void *ctx,
 			 int UNUSED(force))
 {
   if (length == AES128_KEY_SIZE) {
-#ifdef HAVE_NETTLE_AES128_ENCRYPT
+#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
     aes128_set_decrypt_key(&((struct aes_ctx*)ctx)->u.ctx128,
 			   (const uint8_t *)key);
 #else
     aes_set_decrypt_key(ctx, length, (const uint8_t *)key);
 #endif
   } else if (length == AES192_KEY_SIZE) {
-#ifdef HAVE_NETTLE_AES128_ENCRYPT
+#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
     aes192_set_decrypt_key(&((struct aes_ctx*)ctx)->u.ctx192,
 			   (const uint8_t *)key);
 #else
     aes_set_decrypt_key(ctx, length, (const uint8_t *)key);
 #endif
   } else if (length == AES256_KEY_SIZE) {
-#ifdef HAVE_NETTLE_AES128_ENCRYPT
+#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
     aes256_set_decrypt_key(&((struct aes_ctx*)ctx)->u.ctx256,
 			   (const uint8_t *)key);
 #else
@@ -5636,12 +5636,12 @@ pike_aes_set_decrypt_key(void *ctx,
 #endif
   } else
     Pike_error("AES: Bad keysize for AES.\n");
-#ifdef HAVE_NETTLE_AES128_ENCRYPT
+#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
   ((struct aes_ctx*)ctx)->key_size = length;
 #endif
 }
 
-#ifdef HAVE_NETTLE_AES128_ENCRYPT
+#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
 /* Reimplementation of the deprecated API to avoid warnings. */
 static void pike_aes_encrypt(const struct aes_ctx *ctx, size_t length,
 			     uint8_t *dst, const uint8_t *src)
