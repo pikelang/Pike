@@ -538,7 +538,7 @@ static void free_send_args(struct send_args *s)
 static void actually_send(struct send_args *a)
 {
   int first=0;
-  int oldbulkmode;
+  int oldbulkmode = 0;
   char foo[10];
   unsigned char *data = NULL;
   ptrdiff_t fail, data_len = 0;
