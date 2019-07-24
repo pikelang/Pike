@@ -978,7 +978,7 @@ protected class VirtualNode {
   //! Returns text content in node.
   string get_text()          { return (mText); }
 
-  //! Change the text content descructively.
+  //! Change the text content destructively.
   string set_text(string txt) {
     if( mNodeType & XML_TEXT )
       mText = txt;
