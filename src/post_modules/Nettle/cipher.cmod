@@ -5677,9 +5677,129 @@ static void pike_aes_decrypt(const struct aes_ctx *ctx, size_t length,
 #define nettle_aes_decrypt	pike_aes_decrypt
 #endif
 
+static void
+pike_aes128_set_encrypt_key(void *ctx,
+			    ptrdiff_t length, const char *key,
+			    int UNUSED(force))
+{
+  if (length == AES128_KEY_SIZE) {
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes128_set_encrypt_key(ctx, (const uint8_t *)key);
+#else
+    aes_set_encrypt_key(ctx, length, (const uint8_t *)key);
+#endif
+  } else
+    Pike_error("AES128: Bad keysize for AES128.\n");
+}
+
+static void
+pike_aes128_set_decrypt_key(void *ctx,
+			    ptrdiff_t length, const char *key,
+			    int UNUSED(force))
+{
+  if (length == AES128_KEY_SIZE) {
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes128_set_decrypt_key(ctx, (const uint8_t *)key);
+#else
+    aes_set_decrypt_key(ctx, length, (const uint8_t *)key);
+#endif
+  } else
+    Pike_error("AES128: Bad keysize for AES128.\n");
+}
+
+static void
+pike_aes192_set_encrypt_key(void *ctx,
+			    ptrdiff_t length, const char *key,
+			    int UNUSED(force))
+{
+  if (length == AES192_KEY_SIZE) {
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes192_set_encrypt_key(ctx, (const uint8_t *)key);
+#else
+    aes_set_encrypt_key(ctx, length, (const uint8_t *)key);
+#endif
+  } else
+    Pike_error("AES192: Bad keysize for AES192.\n");
+}
+
+static void
+pike_aes192_set_decrypt_key(void *ctx,
+			    ptrdiff_t length, const char *key,
+			    int UNUSED(force))
+{
+  if (length == AES192_KEY_SIZE) {
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes192_set_decrypt_key(ctx, (const uint8_t *)key);
+#else
+    aes_set_decrypt_key(ctx, length, (const uint8_t *)key);
+#endif
+  } else
+    Pike_error("AES192: Bad keysize for AES192.\n");
+}
+
+static void
+pike_aes256_set_encrypt_key(void *ctx,
+			    ptrdiff_t length, const char *key,
+			    int UNUSED(force))
+{
+  if (length == AES256_KEY_SIZE) {
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes256_set_encrypt_key(ctx, (const uint8_t *)key);
+#else
+    aes_set_encrypt_key(ctx, length, (const uint8_t *)key);
+#endif
+  } else
+    Pike_error("AES256: Bad keysize for AES256.\n");
+}
+
+static void
+pike_aes256_set_decrypt_key(void *ctx,
+			    ptrdiff_t length, const char *key,
+			    int UNUSED(force))
+{
+  if (length == AES256_KEY_SIZE) {
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes256_set_decrypt_key(ctx, (const uint8_t *)key);
+#else
+    aes_set_decrypt_key(ctx, length, (const uint8_t *)key);
+#endif
+  } else
+    Pike_error("AES256: Bad keysize for AES256.\n");
+}
+
+#ifndef HAVE_NETTLE_AES128_ENCRYPT
+#define aes128_ctx	aes_ctx
+#define aes192_ctx	aes_ctx
+#define aes256_ctx	aes_ctx
+#endif
+
 #cmod_define CIPHER_MODE	BLOCK16_MODE
 #cmod_define PIKE_NAME AES
 #cmod_define NETTLE_NAME aes
+#cmod_include "cipher.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#define AES128_BLOCK_SIZE	AES_BLOCK_SIZE
+#cmod_define CIPHER_MODE	BLOCK16_MODE
+#cmod_define PIKE_NAME AES128
+#cmod_define NETTLE_NAME aes128
+#cmod_include "cipher.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#define AES192_BLOCK_SIZE	AES_BLOCK_SIZE
+#cmod_define CIPHER_MODE	BLOCK16_MODE
+#cmod_define PIKE_NAME AES192
+#cmod_define NETTLE_NAME aes192
+#cmod_include "cipher.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#define AES256_BLOCK_SIZE	AES_BLOCK_SIZE
+#cmod_define CIPHER_MODE	BLOCK16_MODE
+#cmod_define PIKE_NAME AES256
+#cmod_define NETTLE_NAME aes256
 #cmod_include "cipher.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
