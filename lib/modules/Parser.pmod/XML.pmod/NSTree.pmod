@@ -50,8 +50,8 @@ class NSNode {
     return ns_attrs;
   }
 
-  //! Returns the attributes for the element with the names given
-  //! their short name prefixes.
+  //! Return the attributes for the element with the names given their
+  //! short name prefixes.
   mapping(string:string) get_short_attributes() {
     mapping ret = ([]);
     foreach(ns_attrs; string ns; mapping attrs) {
@@ -313,9 +313,12 @@ class NSNode {
             foreach(ns_nodes[n]; string sym; string ns)
               attr[ "xmlns:"+sym ] = ns;
           }
-          foreach(indices(attr), string a)
-            data->add(" ", a, "='",
-                      attribute_quote(attr[a]), "'");
+          foreach(sort(indices(attr)), string a) {
+            if( has_value(attr[a], "'") )
+              data->add(" ", a, "=\"", attribute_quote(attr[a], "'"), "\"");
+            else
+              data->add(" ", a, "='", attribute_quote(attr[a], "\""), "'");
+          }
 
           if (n->count_children())
             data->add(">");
