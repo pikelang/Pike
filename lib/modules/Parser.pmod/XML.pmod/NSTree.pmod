@@ -50,6 +50,20 @@ class NSNode {
     return ns_attrs;
   }
 
+  //! Returns the attributes for the element with the names given
+  //! their short name prefixes.
+  mapping(string:string) get_short_attributes() {
+    mapping ret = ([]);
+    foreach(ns_attrs; string ns; mapping attrs) {
+      string prefix = get_ns_short(ns) || make_prefix(ns);
+      foreach(attrs; string name; string value) {
+        if( prefix!="" ) name = prefix + ":" + name;
+        ret[name] = value;
+      }
+    }
+    return ret;
+  }
+
   //! Adds a new namespace to this node. The preferred symbol to
   //! use to identify the namespace can be provided in the @[symbol]
   //! argument. If @[chain] is set, no attempts to overwrite an
@@ -82,6 +96,14 @@ class NSNode {
 #else /* !constant(Crypto.MD5) */
     return sprintf("%08x", hash(ns));
 #endif /* constant(Crypto.MD5) */
+  }
+
+  //! Returns the short name for the given namespace in this
+  //! context. Returns the empty string if the namespace is the
+  //! default namespace. Returns 0 if the namespace is unknown.
+  string get_ns_short(string ns) {
+    if(ns==element_ns) return "";
+    return search(nss, ns);
   }
 
   //! Returns the element name as it occurs in xml files. E.g.
@@ -231,50 +253,88 @@ class NSNode {
     return n;
   }
 
+  //! Return the defined namespaces from the tree.
+  //!
+  //! @param intermediate
+  //!   If namespaces are clobbered, the node that needs additional
+  //!   xmlns aattributes are added to this mapping.
+  mapping child_namespaces(mapping(Node:mapping(string:string)) intermediate) {
+    if( !sizeof(mChildren) )
+      return nss;
+
+    mapping ret = ([]);
+    foreach(mChildren, Node c) {
+      mapping child_ns = c->child_namespaces();
+      foreach(child_ns; string sym; string ns) {
+        if( (nss && nss[sym] && nss[sym] != ns) ||
+            (ret[sym] && ret[sym] != ns) ) {
+          if( !intermediate[c] ) intermediate[c] = ([]);
+          intermediate[c][sym] = ns;
+        }
+        else {
+          ret[sym] = ns;
+        }
+      }
+    }
+    return ret;
+  }
+
   string render_xml()
   {
     String.Buffer data = String.Buffer();
 
-    walk_preorder_2(
-		    lambda(Node n) {
-		      switch(n->get_node_type()) {
+    // Create a mapping from element nodes to what xmlns attributes
+    // should be inserted in them on creation.
+    mapping ns_nodes = ([]);
+    Node root = this;
+    if( mNodeType == XML_ROOT ) {
+      root = get_first_element();
+    }
+    ns_nodes[root] = child_namespaces(ns_nodes);
 
-		      case XML_TEXT:
-                        data->add( text_quote(n->get_text()) );
-			break;
+    walk_preorder_2(lambda(Node n) {
+        switch(n->get_node_type()) {
 
-		      case XML_ELEMENT:
-			if (!sizeof(n->get_tag_name()))
-			  break;
+        case XML_ROOT:
+          break;
 
-			data->add("<", n->get_xml_name());
+        case XML_TEXT:
+          data->add( text_quote(n->get_text()) );
+          break;
 
-			if (mapping attr = n->get_attributes()) { // FIXME
-                          foreach(indices(attr), string a)
-                            data->add(" ", a, "='",
-				      attribute_quote(attr[a]), "'");
-			}
-			/*
-			mapping attr = n->get_ns_attrubutes();
-			if(sizeof(attr)) {
-			  foreach(attr; string ns; mapping attr) {
-			  }
-			}
-			*/
-			if (n->count_children())
-			  data->add(">");
-			else
-			  data->add("/>");
-			break;
-		      }
-		    },
+        case XML_ELEMENT:
+          if (!sizeof(n->get_tag_name()))
+            break;
 
-		    lambda(Node n) {
-		      if (n->get_node_type() == XML_ELEMENT)
-			if (n->count_children())
-			  if (sizeof(n->get_tag_name()))
-			    data->add("</", n->get_xml_name(), ">");
-		    });
+          data->add("<", n->get_xml_name());
+
+          mapping attr = n->get_short_attributes();
+          if( ns_nodes[n] ) {
+            foreach(ns_nodes[n]; string sym; string ns)
+              attr[ "xmlns:"+sym ] = ns;
+          }
+          foreach(indices(attr), string a)
+            data->add(" ", a, "='",
+                      attribute_quote(attr[a]), "'");
+
+          if (n->count_children())
+            data->add(">");
+          else
+            data->add("/>");
+          break;
+
+        default:
+          low_render_xml(data, n, text_quote, attribute_quote);
+          break;
+        }
+      },
+
+      lambda(Node n) {
+        if (n->get_node_type() == XML_ELEMENT)
+          if (n->count_children())
+            if (sizeof(n->get_tag_name()))
+              data->add("</", n->get_xml_name(), ">");
+      });
 
     return (string)data;
   }

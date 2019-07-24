@@ -179,25 +179,27 @@ test_any([[
 // XML NS section 2
 
 test_any_equal([[
-object x=Parser.XML.NSTree.parse_input(#"
-<x>
+string s = #"<x>
   <!-- No namespace here. -->
-</x>");
+</x>";
+object x=Parser.XML.NSTree.parse_input(s);
 x=x[0];
 array r = ({});
 r += ({ x->get_any_name() });
 r += ({ x->get_default_ns() });
 r += ({ x->get_ns() });
 r += ({ x->get_defined_nss()->edi });
+r += ({ (string)x==s });
 return r;
-]], ({ "x", 0, 0, 0 }) )
+]], ({ "x", 0, 0, 0, 1 }) )
 
 test_any_equal([[
-object x=Parser.XML.NSTree.parse_input(#"
-<x xmlns:edi='http://ecommerce.org/schema'>
+string s = #"<x xmlns:edi='http://ecommerce.org/schema'>
   <!-- the 'edi' prefix is bound to http://ecommerce.org/schema
        for the 'x' element and contents -->
-</x>");
+</x>";
+object x=Parser.XML.NSTree.parse_input(s);
+
 x=x[0];
 array r = ({});
 r += ({ x->get_any_name() });
@@ -208,52 +210,60 @@ r += ({ x->get_defined_nss()->edi });
 r += ({ x[0]->get_default_ns() });
 r += ({ x[0]->get_ns() });
 r += ({ x[0]->get_defined_nss()->edi });
+
+r += ({ (string)x==s });
 return r;
 ]], ({ "x", 0, 0, "http://ecommerce.org/schema",
-    0, 0, "http://ecommerce.org/schema" }) )
+    0, 0, "http://ecommerce.org/schema", 1 }) )
 
 // XML NS section 4
 
 test_any_equal([[
-object x=Parser.XML.NSTree.parse_input(#"
-<x xmlns:edi='http://ecommerce.org/schema'>
+string s = #"<x xmlns:edi='http://ecommerce.org/schema'>
   <!-- the 'price' element's namespace is http://ecommerce.org/schema -->
   <edi:price units='Euro'>32.18</edi:price>
-</x>");
+</x>";
+object x=Parser.XML.NSTree.parse_input(s);
 x=x[0];
 array r = ({});
 r += ({ x[3]->get_any_name() });
 r += ({ x[3]->get_ns() });
-r += ({ x[3]->get_attributes()->units });
+r += ({ x[3]->get_attributes() });
 r += ({ x[3][0]->get_ns() });
+
+r += ({ (string)x==s });
 return r;
-]], ({ "price", "http://ecommerce.org/schema", "Euro", 0 }) );
+]], ({ "price", "http://ecommerce.org/schema", (["units":"Euro"]), 0, 1 }) );
 
 test_any_equal([[
-object x=Parser.XML.NSTree.parse_input(#"
-<x xmlns:edi='http://ecommerce.org/schema'>
+string s = #"<x xmlns:edi='http://ecommerce.org/schema'>
   <!-- the 'taxClass' attribute's namespace is http://ecommerce.org/schema -->
-  <lineItem edi:taxClass=\"exempt\">Baby food</lineItem>
-</x>");
+  <lineItem edi:taxClass='exempt'>Baby food</lineItem>
+</x>";
+object x=Parser.XML.NSTree.parse_input(s);
 x=x[0];
 array r = ({});
 r += ({ x[3]->get_ns() });
 r += ({ x[3]->get_attributes() });
 r += ({ x[3]->get_ns_attributes() });
+r += ({ x[3]->get_short_attributes() });
+
+r += ({ (string)x==s });
 return r;
 ]], ({ 0, ([]), ([ "http://ecommerce.org/schema":
-	 ([ "taxClass":"exempt" ]) ]) }) )
+         ([ "taxClass":"exempt" ]) ]), ([ "edi:taxClass":"exempt" ]), 1 }) )
 
 // XML NS section 5.1
 
 test_any_equal([[
-object x=Parser.XML.NSTree.parse_input(#"<?xml version=\"1.0\"?>
+string s = #"<?xml version=\"1.0\"?>
 <!-- all elements here are explicitly in the HTML namespace -->
 <html:html xmlns:html='http://www.w3.org/TR/REC-html40'>
   <html:head><html:title>Frobnostication</html:title></html:head>
   <html:body><html:p>Moved to
     <html:a href='http://frob.com'>here.</html:a></html:p></html:body>
-</html:html>");
+</html:html>";
+object x=Parser.XML.NSTree.parse_input(s);
 x=x[2];
 array r = ({});
 r += ({ x->get_ns() });
