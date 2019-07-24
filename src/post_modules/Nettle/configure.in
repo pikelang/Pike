@@ -154,6 +154,10 @@ else
     # This was added in Nettle 3.0.
     AC_CHECK_FUNCS(nettle_ecc_bit_size)
 
+    # The generic AES functions were marked deprecated in Nettle 3.5.
+    # Check for the more recent size-specific API.
+    AC_CHECK_FUNCS(nettle_aes128_encrypt)
+
     # nettle_crypt_func was changed in Nettle 2.0.
     AC_MSG_CHECKING([whether nettle_crypt_func is a pointer type])
     AC_CACHE_VAL(pike_cv_nettle_crypt_func_is_pointer, [

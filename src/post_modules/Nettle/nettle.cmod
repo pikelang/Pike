@@ -282,7 +282,11 @@ program_flags PROGRAM_CLEAR_STORAGE;
 PIKECLASS Fortuna
 program_flags PROGRAM_CLEAR_STORAGE;
 {
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+  CVAR struct aes256_ctx aes256_ctx;
+#else
   CVAR struct aes_ctx aes_ctx;
+#endif
   CVAR struct sha256_ctx sha_ctx;
   CVAR uint8_t *key;
   CVAR uint8_t *ctr;
@@ -295,7 +299,11 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
   static void fortuna_generate(uint8_t *data)
   {
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes256_encrypt(&THIS->aes256_ctx, 16, data, THIS->ctr);
+#else
     aes_encrypt(&THIS->aes_ctx, 16, data, THIS->ctr);
+#endif
     INCREMENT(16, THIS->ctr);
   }
 
@@ -303,7 +311,11 @@ program_flags PROGRAM_CLEAR_STORAGE;
   {
     fortuna_generate(THIS->key);
     fortuna_generate(THIS->key+16);
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes256_set_encrypt_key(&THIS->aes256_ctx, THIS->key);
+#else
     aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+#endif
   }
 
   /*! @decl void reseed(string(8bit) data)
@@ -314,7 +326,11 @@ program_flags PROGRAM_CLEAR_STORAGE;
     sha256_update(&THIS->sha_ctx, 32, THIS->key);
     sha256_update(&THIS->sha_ctx, data->len, (const uint8_t *)data->str);
     sha256_digest(&THIS->sha_ctx, 32, THIS->key);
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes256_set_encrypt_key(&THIS->aes256_ctx, THIS->key);
+#else
     aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+#endif
     INCREMENT(16, THIS->ctr);
   }
 
@@ -362,7 +378,11 @@ program_flags PROGRAM_CLEAR_STORAGE;
   {
     THIS->ctr = xcalloc(1,16);
     THIS->key = xcalloc(1,32);
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes256_set_encrypt_key(&THIS->aes256_ctx, THIS->key);
+#else
     aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
+#endif
     sha256_init(&THIS->sha_ctx);
   }
 
@@ -388,7 +408,11 @@ program_flags PROGRAM_CLEAR_STORAGE;
 PIKECLASS AES128_CTR_DRBG
 program_flags PROGRAM_CLEAR_STORAGE;
 {
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+  CVAR struct aes128_ctx aes128_ctx;
+#else
   CVAR struct aes_ctx aes_ctx;
+#endif
   CVAR uint8_t *key;
   CVAR uint8_t *ctr;
   CVAR INT64 reseed_counter;
@@ -412,16 +436,28 @@ program_flags PROGRAM_CLEAR_STORAGE;
   {
     uint8_t tmp_key[16];
     INCREMENT(16, THIS->ctr);
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes128_encrypt(&THIS->aes128_ctx, 16, tmp_key, THIS->ctr);
+#else
     aes_encrypt(&THIS->aes_ctx, 16, tmp_key, THIS->ctr);
+#endif
     INCREMENT(16, THIS->ctr);
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes128_encrypt(&THIS->aes128_ctx, 16, THIS->ctr, THIS->ctr);
+#else
     aes_encrypt(&THIS->aes_ctx, 16, THIS->ctr, THIS->ctr);
+#endif
     memcpy(THIS->key, tmp_key, 16);
     if( data )
     {
       memxor(THIS->key, (uint8_t*)data, 16);
       memxor(THIS->ctr, (uint8_t*)data+16, 16);
     }
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes128_set_encrypt_key(&THIS->aes128_ctx, THIS->key);
+#else
     aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
+#endif
   }
 
   /*! @decl void reseed(string(8bit) data)
@@ -506,7 +542,11 @@ program_flags PROGRAM_CLEAR_STORAGE;
     while( (len-stored) >= 16 )
     {
       INCREMENT(16, THIS->ctr);
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+      aes128_encrypt(&THIS->aes128_ctx, 16, str, THIS->ctr);
+#else
       aes_encrypt(&THIS->aes_ctx, 16, str, THIS->ctr);
+#endif
       stored += 16;
       str += 16;
 
@@ -523,7 +563,11 @@ program_flags PROGRAM_CLEAR_STORAGE;
     {
       uint8_t buf[16];
       INCREMENT(16, THIS->ctr);
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+      aes128_encrypt(&THIS->aes128_ctx, 16, buf, THIS->ctr);
+#else
       aes_encrypt(&THIS->aes_ctx, 16, buf, THIS->ctr);
+#endif
       memcpy(str, buf, len-stored);
     }
 
@@ -539,7 +583,11 @@ program_flags PROGRAM_CLEAR_STORAGE;
     THIS->key = xcalloc(1,16);
     THIS->reseed_counter = 1;
     THIS->reseed_interval = ((INT64)1)<<48;
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+    aes128_set_encrypt_key(&THIS->aes128_ctx, THIS->key);
+#else
     aes_set_encrypt_key(&THIS->aes_ctx, AES128_KEY_SIZE, THIS->key);
+#endif
   }
 
   EXIT
