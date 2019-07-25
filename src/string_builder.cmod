@@ -1062,7 +1062,7 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
 	/* Memory dump */
 	for (i = 0; i < 4; i++) {
 	  if (pos < pos_end) {
-	    string_builder_sprintf(s, "%02x ", pos[i]);
+	    string_builder_sprintf(s, "%02x ", *pos);
 	    pos++;
 	    address++;
 	    if (pos >= pos_end) {
