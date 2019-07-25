@@ -705,6 +705,7 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *
  *   'b'	Insert binary integer.
  *   'O'	Insert description of svalue.
+ *   'q'	Insert quoted pike_string.
  *   'S'	Insert pike_string.
  *   'T'	Insert pike_type.
  */
@@ -798,6 +799,14 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	    describe_svalue(&buf, va_arg(args, struct svalue *), 0, NULL);
 	    string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
 	    buffer_free(&buf);
+	  }
+	  break;
+	case 'q':
+	  {
+	    /* FIXME: Support min_width and precision. */
+	    struct pike_string *str = va_arg(args, struct pike_string *);
+	    string_builder_quote_string(s, str, 0, 0x7fffffff,
+					QUOTE_NO_STRING_CONCAT);
 	  }
 	  break;
 	case 'S':
