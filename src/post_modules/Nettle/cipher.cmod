@@ -5573,6 +5573,12 @@ PIKECLASS BlockCipher16
 #define aes128_ctx	aes_ctx
 #define aes192_ctx	aes_ctx
 #define aes256_ctx	aes_ctx
+#define aes128_encrypt	aes_encrypt
+#define aes128_decrypt	aes_decrypt
+#define aes192_encrypt	aes_encrypt
+#define aes192_decrypt	aes_decrypt
+#define aes256_encrypt	aes_encrypt
+#define aes256_decrypt	aes_decrypt
 #endif
 
 /* Some old versions of Nettle do not have these. */
