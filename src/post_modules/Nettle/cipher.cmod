@@ -5575,6 +5575,17 @@ PIKECLASS BlockCipher16
 #define aes256_ctx	aes_ctx
 #endif
 
+/* Some old versions of Nettle do not have these. */
+#ifndef AES128_KEY_SIZE
+#define AES128_KEY_SIZE	16
+#endif
+#ifndef AES192_KEY_SIZE
+#define AES192_KEY_SIZE	24
+#endif
+#ifndef AES256_KEY_SIZE
+#define AES256_KEY_SIZE	32
+#endif
+
 static void
 pike_aes_set_encrypt_key(void *ctx,
 			 ptrdiff_t length, const char *key,
