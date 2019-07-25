@@ -119,6 +119,20 @@ class NSNode {
     return prefix + ":" + mTagName;
   }
 
+  //! Change all elements and attributes in the subtree in namespace
+  //! @[from] to namespace @[to]. In case an attribute is defined in
+  //! both namespaces it will be overwritten.
+  void change_namespace(string from, string to) {
+    if(element_ns == from)
+      element_ns = to;
+    if(ns_attrs[from]) {
+      // += on undefined will create the mapping.
+      ns_attrs[to] += m_delete(ns_attrs, from);
+    }
+    foreach(mChildren, Node c)
+      c->change_namespace(from, to);
+  }
+
   // Override old stuff
 
   protected void create(int type, string name, mapping attr, string text,
