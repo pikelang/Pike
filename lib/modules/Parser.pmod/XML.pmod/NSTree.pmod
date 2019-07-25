@@ -262,12 +262,11 @@ class NSNode {
     if( !sizeof(mChildren) )
       return nss;
 
-    mapping ret = ([]);
+    mapping ret = nss  ? nss + ([]) : ([]);
     foreach(mChildren, Node c) {
       mapping child_ns = c->child_namespaces();
       foreach(child_ns; string sym; string ns) {
-        if( (nss && nss[sym] && nss[sym] != ns) ||
-            (ret[sym] && ret[sym] != ns) ) {
+        if( ret[sym] && ret[sym] != ns ) {
           if( !intermediate[c] ) intermediate[c] = ([]);
           intermediate[c][sym] = ns;
         }
@@ -276,6 +275,9 @@ class NSNode {
         }
       }
     }
+    if( element_ns && !search(ret, element_ns) )
+      ret[make_prefix(element_ns)] = element_ns;
+
     return ret;
   }
 
