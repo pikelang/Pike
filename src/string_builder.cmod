@@ -1149,6 +1149,43 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
   }
 }
 
+PMOD_EXPORT void string_builder_vsprintf_disassembly(struct string_builder *s,
+						     size_t address,
+						     const void *start,
+						     const void *end,
+						     const char *comment,
+						     const char *fmt,
+						     va_list args)
+{
+  struct string_builder tmp_buf;
+  init_string_builder(&tmp_buf, 0);
+  string_builder_vsprintf(&tmp_buf, fmt, args);
+  string_builder_putchar(&tmp_buf, 0);
+
+  if (tmp_buf.s->size_shift) {
+    Pike_fatal("Wide characters are not yet supported here.\n");
+  }
+
+  string_builder_append_disassembly(s, address, start, end,
+				    tmp_buf.s->str, NULL, comment);
+
+  free_string_builder(&tmp_buf);
+}
+
+PMOD_EXPORT void string_builder_sprintf_disassembly(struct string_builder *s,
+						    size_t address,
+						    const void *start,
+						    const void *end,
+						    const char *comment,
+						    const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  string_builder_vsprintf_disassembly(s, address, start, end,
+				      comment, fmt, args);
+  va_end(args);
+}
+
 
 PMOD_EXPORT void reset_string_builder(struct string_builder *s)
 {
