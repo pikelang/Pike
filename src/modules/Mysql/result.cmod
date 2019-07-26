@@ -59,6 +59,7 @@
 #include "multiset.h"
 #include "bignum.h"
 #include "module_support.h"
+#include "operators.h"
 
 /* Local includes */
 #include "precompiled_mysql.h"
