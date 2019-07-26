@@ -21,6 +21,7 @@
 #include "whitespace.h"
 #include "sprintf.h"
 #include "pike_search.h"
+#include "fdlib.h"
 
 #include <errno.h>
 
@@ -1209,6 +1210,40 @@ PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
   if(s->known_shift == s->s->size_shift)
     return low_end_shared_string(s->s);
   return end_shared_string(s->s);
+}
+
+/**
+ * Write the contents of a string_builder buffer to an fd.
+ *
+ * @param fd
+ *   File descriptor to write to.
+ *
+ * @param s
+ *   String builder buffer to write.
+ *
+ * @returns
+ *   Returns the number of bytes written.
+ *
+ * Removes the data that was written from the buffer.
+ */
+PMOD_EXPORT ptrdiff_t write_and_reset_string_builder(int fd,
+						     struct string_builder *s)
+{
+  ptrdiff_t bytes = 0;
+  if (s && s->s && s->s->len) {
+    if (s->s->size_shift) {
+      Pike_fatal("Buffer contains wide characters.\n");
+    }
+    bytes = fd_write(fd, s->s->str, s->s->len);
+    if (bytes <= 0) {
+    } else if (bytes < s->s->len) {
+      s->s->len -= bytes;
+      memmove(s->s->str, s->s->str + bytes, s->s->len);
+    } else {
+      reset_string_builder(s);
+    }
+  }
+  return bytes;
 }
 
 /*! @module String
