@@ -371,19 +371,60 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s,
   s->s->len+=str->len;
 }
 
+/**
+ * Append a string quoted to Latin-1 (ISO8859-1).
+ *
+ * @param buf
+ *   Buffer to append to.
+ *
+ * @param str
+ *   String to quote.
+ *
+ * @param i
+ *   Starting position of the string.
+ *
+ * @param max_len
+ *   Maximum length of the string. This can be used together with i
+ *   to just output a sub-range of the string.
+ *
+ * @param flags
+ *   Set of option flags:
+ *
+ *   QUOTE_BREAK_AT_DQOUTE
+ *     Terminate after the next unescaped double quote ('\"') character.
+ *   QUOTE_BREAK_AT_SQUOTE
+ *     Terminate after the next unescaped single quote ('\'') character.
+ *   QUOTE_BREAK_AT_LF
+ *     Terminate after the next unescaped line feed ('\n') character.
+ *   QUOTE_NORMALIZE_WS
+ *     Combine unescaped sequences of white space characters into
+ *     a single space (' ') character.
+ *   QUOTE_TOKENIZE
+ *     Parse embedded strings.
+ *   QUOTE_NO_STRING_CONCAT
+ *     Do not insert sequences of two double quotes, and expect them
+ *     to be a no-op.
+ *
+ * CAVEAT EMPTOR:
+ *   In old implementations of this function, max_len was the
+ *   maximum size of the resulting buffer (including any initial
+ *   content).
+ */
 PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 						  const struct pike_string *str,
 						  ptrdiff_t i,
 						  ptrdiff_t max_len,
 						  int flags)
 {
-  ptrdiff_t old_len = buf->s->len;
-
   // NB: Requires QUOTE_NORMALIZE_WS to be != 1.
   int inhibit_whitespace = (flags & QUOTE_NORMALIZE_WS);
   int escaped = 0;
 
-  for (; i < str->len; i++) {
+  if (str->len < max_len) {
+    max_len = str->len;
+  }
+
+  for (; i < max_len; i++) {
     p_wchar2 ch = index_shared_string(str, i);
     if (ch < 0 || ch > 0xffff) {
       /* Huge character. */
@@ -458,11 +499,6 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
       if ((ch > 6) && (ch < 14)) {
 	string_builder_putchar(buf, "0123456abtnvfr"[ch]);
 	if ((ch == 10) && (flags & QUOTE_BREAK_AT_LF)) {
-	  if (buf->s->len > max_len) {
-	    /* Too bad; no place for the lf. */
-	    buf->s->len = old_len;
-	    return i;
-	  }
 	  return i+1;
 	}
 	goto next;
@@ -492,12 +528,8 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
     escaped = 0;
 
   next_ws:
-    if (buf->s->len > max_len) {
-      buf->s->len = old_len;
-      inhibit_whitespace = 0;
-      break;
-    }
-    old_len = buf->s->len;
+    /* A statement is required after a label... */
+    ;
   }
   if (inhibit_whitespace && (inhibit_whitespace != QUOTE_NORMALIZE_WS)) {
     /* Get rid of the SP at the end of the buffer. */
@@ -804,10 +836,13 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  break;
 	case 'q':
 	  {
-	    /* FIXME: Support min_width and precision. */
+	    /* FIXME: Support min_width. */
 	    struct pike_string *str = va_arg(args, struct pike_string *);
-	    string_builder_quote_string(s, str, 0, 0x7fffffff,
-					QUOTE_NO_STRING_CONCAT);
+	    size_t len = str->len;
+	    if (precision && (precision < len)) len = precision;
+	    string_builder_putchar(s, '"');
+	    string_builder_quote_string(s, str, 0, len, QUOTE_NO_STRING_CONCAT);
+	    string_builder_putchar(s, '"');
 	  }
 	  break;
 	case 'S':

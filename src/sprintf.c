@@ -1810,7 +1810,7 @@ cont_2:
 	string_builder_putchar(&buf, '"');
 	string_builder_quote_string(&buf, s, 0,
 				    (fsp->precision == SPRINTF_UNDECIDED)?
-				    0x7fffffff:fsp->precision-1,
+				    0x7fffffff:fsp->precision,
 				    QUOTE_NO_STRING_CONCAT);
 	string_builder_putchar(&buf, '"');
 
