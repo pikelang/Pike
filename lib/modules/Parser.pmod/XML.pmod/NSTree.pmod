@@ -289,8 +289,6 @@ class NSNode {
         }
       }
     }
-    if( element_ns && !search(ret, element_ns) )
-      ret[make_prefix(element_ns)] = element_ns;
 
     return ret;
   }
@@ -322,13 +320,23 @@ class NSNode {
           if (!sizeof(n->get_tag_name()))
             break;
 
-          data->add("<", n->get_xml_name());
+          string tagname = n->get_xml_name();
+          data->add("<", tagname);
 
           mapping attr = n->get_short_attributes();
           if( ns_nodes[n] ) {
             foreach(ns_nodes[n]; string sym; string ns)
               attr[ "xmlns:"+sym ] = ns;
           }
+
+          // If this node has a namespace different than it's parent,
+          // and isn't prefixed, declare it with xmlns.
+          if( n->get_ns() && !has_value(tagname, ":") &&
+              n->get_ns() != n->get_parent()->get_ns() ) {
+            // We are overwriting potentially invalid xmlns attribute.
+            attr->xmlns = n->get_ns();
+          }
+
           foreach(sort(indices(attr)), string a) {
             if( has_value(attr[a], "'") )
               data->add(" ", a, "=\"", attribute_quote(attr[a], "'"), "\"");
