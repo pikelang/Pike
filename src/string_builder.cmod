@@ -836,13 +836,34 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  break;
 	case 'q':
 	  {
-	    /* FIXME: Support min_width. */
 	    struct pike_string *str = va_arg(args, struct pike_string *);
 	    size_t len = str->len;
+	    size_t buf_len = s->s->len;
+
 	    if (precision && (precision < len)) len = precision;
 	    string_builder_putchar(s, '"');
 	    string_builder_quote_string(s, str, 0, len, QUOTE_NO_STRING_CONCAT);
 	    string_builder_putchar(s, '"');
+
+	    len = s->s->len - buf_len;
+	    if (min_width > len) {
+	      if (!(flags & APPEND_LEFT)) {
+		/* Rewind the buffer so that we can prepend the padding.
+		 *
+		 * NB: We assume that the quoted string will be
+		 *     the same langth the second time too.
+		 */
+		s->s->len = buf_len;
+	      }
+	      string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+				  4, 0);
+	      if (!(flags & APPEND_LEFT)) {
+		string_builder_putchar(s, '"');
+		string_builder_quote_string(s, str, 0, len,
+					    QUOTE_NO_STRING_CONCAT);
+		string_builder_putchar(s, '"');
+	      }
+	    }
 	  }
 	  break;
 	case 'S':
