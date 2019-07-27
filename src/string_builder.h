@@ -115,6 +115,11 @@ PMOD_EXPORT void string_builder_sprintf_disassembly(struct string_builder *s,
 						    const void *end,
 						    const char *comment,
 						    const char *fmt, ...);
+PMOD_EXPORT void string_builder_append_disassembly_data(struct string_builder *s,
+							size_t address,
+							const void *start,
+							const void *end,
+							const char *comment);
 PMOD_EXPORT void reset_string_builder(struct string_builder *s);
 PMOD_EXPORT void free_string_builder(struct string_builder *s);
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);

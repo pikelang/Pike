@@ -1206,6 +1206,93 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
   }
 }
 
+PMOD_EXPORT void string_builder_append_disassembly_data(struct string_builder *s,
+							size_t address,
+							const void *start,
+							const void *end,
+							const char *comment)
+{
+  const unsigned char *pos = start;
+  const unsigned char *pos_end = end;
+
+  while ((pos < pos_end) || (comment && comment[0])) {
+    size_t i;
+    int skip_comment = 0;
+
+    if (pos_end) {
+      /* Address */
+      string_builder_sprintf(s, "0x%016lx  ", address);
+
+      if (pos < pos_end) {
+	struct pike_string tmp;
+	ptrdiff_t buf_len;
+
+	/* Fake a pike_string for use with %q further below. */
+	tmp.refs = 1;
+	tmp.flags = 0;
+	tmp.size_shift = 0;
+	tmp.alloc_type = STRING_ALLOC_STATIC;
+	tmp.struct_type = STRING_STRUCT_SUBSTRING;
+	tmp.min = 0;
+	tmp.max = 255;
+	tmp.len = 0;		/* Will be increased in the loop below. */
+	tmp.hval = 0;
+	tmp.next = NULL;
+	tmp.str = (char *)pos;
+
+	/* Memory dump */
+	for (i = 0; i < 4; i++) {
+	  if (pos < pos_end) {
+	    string_builder_sprintf(s, "%02x ", *pos);
+	    pos++;
+	    tmp.len++;
+	    address++;
+	    if (pos >= pos_end) {
+	      pos_end = NULL;
+	    }
+	  } else {
+	    string_builder_sprintf(s, "   ");
+	  }
+	}
+
+	buf_len = s->s->len;
+	string_builder_sprintf(s, " .data    %-20q", &tmp);
+	if (UNLIKELY(s->s->len > buf_len + 10 + 20)) {
+	  /* Paranoia: This probably can't happen.
+	   *           Max should be with octal or hex quoting:
+	   *             " .data    "	10 +
+	   *             "\""            1 +
+	   *             "\xxx" * 4    4*4 +
+	   *             "\""            1
+	   *           ==> 28.
+	   */
+	  skip_comment = 1;
+	}
+      } else {
+	pos_end = NULL;
+	string_builder_sprintf(s, "%*s", 4*3 + 10 + 20, "");
+      }
+    } else {
+      string_builder_sprintf(s, "%*s", 18 + 2 + 4*3 + 10 + 20, "");
+    }
+
+    /* Comment */
+    if (!skip_comment && (comment && comment[0])) {
+      const char *ptr = strchr(comment, '\n');
+      if (ptr) {
+	string_builder_sprintf(s, " # %.*s\n", ptr - comment, comment);
+	comment = ptr + 1;
+	if (!comment[0]) comment = NULL;
+      } else {
+	string_builder_sprintf(s, " # %s\n", comment);
+	comment = NULL;
+      }
+    } else {
+      string_builder_sprintf(s, "\n");
+    }
+  }
+}
+
 PMOD_EXPORT void string_builder_vsprintf_disassembly(struct string_builder *s,
 						     size_t address,
 						     const void *start,
