@@ -44,6 +44,32 @@
  * both enables debug messages and also lessens the pickyness to
  * sort-of be able to decode programs with the wrong codec. */
 #define EDB(N,X) do { debug_malloc_touch(data); if (data->debug>=N) {X;} } while (0)
+#define ENCODE_WERR_COMMENT(COMMENT, X...) do {				\
+    string_builder_sprintf_disassembly(data->debug_buf,			\
+				       data->debug_pos,			\
+				       (((char *)data->buf.end) -	\
+					data->buf.length) +		\
+				       data->debug_pos,			\
+				       data->buf.dst,			\
+				       COMMENT, X);			\
+    data->debug_pos = data->buf.length -				\
+      (((char *)data->buf.end) - ((char *)data->buf.dst));		\
+  } while(0)
+#define ENCODE_WERR(X...) ENCODE_WERR_COMMENT(NULL, X)
+#define ENCODE_FLUSH() do {						\
+    size_t end_pos = data->buf.length -					\
+      (((char *)data->buf.end) - ((char *)data->buf.dst));		\
+    if (data->debug_pos < end_pos) {					\
+      string_builder_append_disassembly_data(data->debug_buf,		\
+					     data->debug_pos,		\
+					     (((char *)data->buf.end) - \
+					      data->buf.length) +	\
+					     data->debug_pos,		\
+					     data->buf.dst,		\
+					     NULL);			\
+      data->debug_pos = end_pos;					\
+    }									\
+  } while(0)
 #ifndef PIKE_DEBUG
 #error ENCODE_DEBUG requires PIKE_DEBUG
 #endif
@@ -163,6 +189,8 @@ struct encode_data
   struct array *delayed;
   struct byte_buffer buf;
 #ifdef ENCODE_DEBUG
+  struct string_builder *debug_buf;
+  size_t debug_pos;
   int debug, depth;
 #endif
 };
@@ -523,6 +551,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
   data->depth += 2;
 #endif
 
+  EDB(1, {
+      ENCODE_FLUSH();
+      ENCODE_WERR("# Encoding a %s.",
+		  get_name_of_type(TYPEOF(*val)));
+    });
+
   if((TYPEOF(*val) == T_OBJECT ||
       (TYPEOF(*val) == T_FUNCTION && SUBTYPEOF(*val) != FUNCTION_BUILTIN)) &&
      !val->u.object->prog)
@@ -546,11 +580,17 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  fputc('\n', stderr););
       code_entry (TAG_DELAYED, entry_id.u.integer, data);
       tmp->u.integer = entry_id.u.integer;
+      EDB(1, {
+	  ENCODE_WERR(".tag     delayed, %ld", entry_id.u.integer);
+	});
     }
     else {
       EDB(1,fprintf(stderr, "%*sEncoding TAG_AGAIN from <%d>\n",
 		    data->depth, "", entry_id.u.integer));
       code_entry(TAG_AGAIN, entry_id.u.integer, data);
+      EDB(1, {
+	  ENCODE_WERR(".tag     again, %ld", entry_id.u.integer);
+	});
       goto encode_done;
     }
   }else {
@@ -569,6 +609,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    print_svalue(stderr, val);
 	  }
 	  fputc('\n', stderr););
+      EDB(1, {
+	  ENCODE_WERR("# Encoding to tag #%ld", entry_id.u.integer);
+	});
       if( TYPEOF(*val) < MIN_REF_TYPE || val->u.dummy->refs > 1 )
           mapping_insert(data->encoded, val, &entry_id);
       data->counter.u.integer++;
@@ -1744,6 +1787,9 @@ encode_done:;
 #ifdef ENCODE_DEBUG
   data->depth -= 2;
 #endif
+  EDB(1, {
+      ENCODE_FLUSH();
+    });
 }
 
 static void free_encode_data(struct encode_data *data)
@@ -1795,6 +1841,7 @@ void f_encode_value(INT32 args)
 {
   ONERROR tmp;
   struct encode_data d, *data;
+  struct string_builder debug_buf;
   int i;
   data=&d;
 
@@ -1818,8 +1865,14 @@ void f_encode_value(INT32 args)
   SET_SVAL(data->counter, T_INT, NUMBER_NUMBER, integer, COUNTER_START);
 
 #ifdef ENCODE_DEBUG
+  data->debug_buf = NULL;
+  data->debug_pos = 0;
   data->debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
   data->depth = -2;
+  if (data->debug) {
+    init_string_builder(&debug_buf, 0);
+    data->debug_buf = &debug_buf;
+  }
 #endif
 
   if(args > 1 && TYPEOF(Pike_sp[1-args]) == T_OBJECT)
@@ -1836,16 +1889,44 @@ void f_encode_value(INT32 args)
   SET_ONERROR(tmp, free_encode_data, data);
   addstr("\266ke0", 4);
 
+  EDB(1, {
+      string_builder_append_disassembly(data->debug_buf,
+					data->debug_pos,
+					((char *)data->buf.end) -
+					(data->buf.length - data->debug_pos),
+					data->buf.dst,
+					".format  0",
+					NULL,
+					"Encoding #0.");
+      data->debug_pos = data->buf.length -
+	(((char *)data->buf.end) - ((char *)data->buf.dst));
+    });
+
   encode_value2(Pike_sp-args, data, 1);
 
-  for (i = 0; i < data->delayed->size; i++)
+  for (i = 0; i < data->delayed->size; i++) {
+    EDB(1, {
+	string_builder_sprintf(data->debug_buf,
+			       "0x%016x  # Delayed item #%d\n",
+			       data->debug_pos, i);
+      });
     encode_value2 (ITEM(data->delayed) + i, data, 2);
+  }
 
   UNSET_ONERROR(tmp);
+
+  EDB(1, {
+      ENCODE_FLUSH();
+    });
 
   if (data->codec) free_object (data->codec);
   free_mapping(data->encoded);
   free_array (data->delayed);
+
+  EDB(1, {
+      write_and_reset_string_builder(2, data->debug_buf);
+      free_string_builder(data->debug_buf);
+    });
 
   pop_n_elems(args);
   push_string(buffer_finish_pike_string(&data->buf));
