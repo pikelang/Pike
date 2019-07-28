@@ -291,11 +291,21 @@ static void low_addchar(struct byte_buffer *buf, int c, int edb)
     int q;                                              \
     code_entry(TAG_STRING,-1, data);                    \
     code_entry(__str->size_shift, __str->len, data);    \
+    EDB(1, {						\
+	ENCODE_WERR(".string  %ld<<%d",			\
+		    __str->len, __str->size_shift);	\
+      });						\
     ENCODE_DATA(__str);                                 \
   }else{                                                \
     code_entry(TAG_STRING, __str->len, data);           \
+    EDB(1, {						\
+	ENCODE_WERR(".string  %ld", __str->len);	\
+      });						\
     addstr((char *)(__str->str),__str->len);            \
   }                                                     \
+  EDB(1, {						\
+      ENCODE_FLUSH();					\
+    });							\
 }while(0)
 
 #ifdef ENCODE_DEBUG
@@ -645,10 +655,20 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
           code_entry(TAG_OBJECT, 2, data);
           code_entry(TAG_STRING, l, data);
           addstr(buffer,l);
+
+	  EDB(1, {
+	      ENCODE_WERR(".bignum  %ld", i);
+	    });
         }
         else
 #endif
+	{
           code_entry(TAG_INT, i, data);
+
+	  EDB(1, {
+	      ENCODE_WERR(".integer %ld", i);
+	    });
+	}
       }
       break;
 
@@ -662,7 +682,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
        */
       if (data->canonic)
 	Pike_error("Canonical encoding of the type type not supported.\n");
+
       code_entry(TAG_TYPE, 0, data);	/* Type encoding #0 */
+      EDB(1, {
+	  ENCODE_WERR(".entry   type");
+	});
+
       encode_type(val->u.type, data);
       EDB(2,fprintf(stderr, "%*sEncoded type to <%d>: ",
 		  data->depth, "", data->counter.u.integer);
@@ -691,31 +716,49 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	case FP_SNAN:
 	  code_entry(TAG_FLOAT,0,data);
 	  code_entry(TAG_FLOAT,Pike_FP_SNAN,data);
+	  EDB(1, {
+	      ENCODE_WERR(".float   snan");
+	    });
 	  break;
 
 	case FP_QNAN:
 	  code_entry(TAG_FLOAT,0,data);
 	  code_entry(TAG_FLOAT,Pike_FP_QNAN,data);
+	  EDB(1, {
+	      ENCODE_WERR(".float   qnan");
+	    });
 	  break;
 
 	case FP_NINF:
 	  code_entry(TAG_FLOAT,0,data);
 	  code_entry(TAG_FLOAT,Pike_FP_NINF,data);
+	  EDB(1, {
+	      ENCODE_WERR(".float   -inf");
+	    });
 	  break;
 
 	case FP_PINF:
 	  code_entry(TAG_FLOAT,0,data);
 	  code_entry(TAG_FLOAT,Pike_FP_PINF,data);
+	  EDB(1, {
+	      ENCODE_WERR(".float   inf");
+	    });
 	  break;
 
 	case FP_NZERO:
 	  code_entry(TAG_FLOAT,0,data);
 	  code_entry(TAG_FLOAT,Pike_FP_NZERO,data);
+	  EDB(1, {
+	      ENCODE_WERR(".float   -0.0");
+	    });
 	  break;
 
 	case FP_PZERO:
 	  code_entry(TAG_FLOAT,0,data);
 	  code_entry(TAG_FLOAT,Pike_FP_ZERO,data); /* normal zero */
+	  EDB(1, {
+	      ENCODE_WERR(".float   0.0");
+	    });
 	  break;
 
 	  /* Ugly, but switch gobbles breaks -Hubbe */
@@ -762,6 +805,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	{
 	  code_entry(TAG_FLOAT,0,data);
 	  code_entry(TAG_FLOAT,pike_ftype,data);
+	  EDB(1, {
+	      ENCODE_WERR(".float   %d", pike_ftype);
+	    });
 	  break;
 	}
       }
@@ -771,6 +817,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       {
 	code_entry(TAG_FLOAT,0,data);
 	code_entry(TAG_FLOAT,0,data);
+	EDB(1, {
+	    ENCODE_WERR(".float   0.0");
+	  });
       }else{
 	INT64 x;
 	int y;
@@ -792,12 +841,18 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		      x, y));
 	code_entry(TAG_FLOAT,x,data);
 	code_entry(TAG_FLOAT,y,data);
+	EDB(1, {
+	    ENCODE_WERR(".float   %ld, %ld", x, y);
+	  });
       }
       break;
     }
 
     case T_ARRAY:
       code_entry(TAG_ARRAY, val->u.array->size, data);
+      EDB(1, {
+	  ENCODE_WERR(".entry   array, %ld", val->u.array->size);
+	});
       for(i=0; i<val->u.array->size; i++)
 	encode_value2(ITEM(val->u.array)+i, data, 0);
       break;
@@ -828,6 +883,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       }
 
       code_entry(TAG_MAPPING, Pike_sp[-2].u.array->size,data);
+      EDB(1, {
+	  ENCODE_WERR(".entry   mapping, %ld", Pike_sp[-2].u.array->size);
+	});
       for(i=0; i<Pike_sp[-2].u.array->size; i++)
       {
 	encode_value2(ITEM(Pike_sp[-2].u.array)+i, data, 0); /* indices */
@@ -847,6 +905,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	/* Encode valueless multisets without compare functions in a
 	 * compatible way. */
 	code_entry(TAG_MULTISET, multiset_sizeof (l), data);
+	EDB(1, {
+	    ENCODE_WERR(".entry   multiset, %ld", multiset_sizeof(l));
+	  });
 	if (data->canonic) {
 	  INT32 *order;
 	  if (multiset_ind_types(l) & ~(BIT_BASIC & ~BIT_TYPE)) {
@@ -894,6 +955,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	code_entry(TAG_OBJECT, 2, data);
         code_entry(TAG_STRING, l, data);
         addstr(buffer,l);
+	EDB(1, {
+	    ENCODE_WERR(".bignum");
+	});
         free(buffer);
 	break;
       }
@@ -921,6 +985,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	       * Encode the subtype, and then try encoding the plain object.
 	       */
 	      code_entry(TAG_OBJECT, 4, data);
+	      EDB(1, {
+		  ENCODE_WERR(".entry   object, 4");
+		});
 	      code_number(SUBTYPEOF(*val), data);
 	      pop_stack();
 	      ref_push_object(val->u.object);
@@ -936,6 +1003,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	    /* Code the program */
 	    code_entry(TAG_OBJECT, 3,data);
+	    EDB(1, {
+		ENCODE_WERR(".entry   object, 3");
+	      });
 	    encode_value2(Pike_sp-1, data, 1);
 	    pop_stack();
 
@@ -973,6 +1043,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	default:
 	  code_entry(TAG_OBJECT, 0,data);
+	  EDB(1, {
+	      ENCODE_WERR(".entry   object");
+	    });
 	  break;
       }
       encode_value2(Pike_sp-1, data, 0);
@@ -1001,6 +1074,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    map_delete(data->encoded, val);
 
 	    code_entry(TAG_FUNCTION, 1, data);
+	    EDB(1, {
+		ENCODE_WERR(".entry   function, 1");
+	      });
 	    ref_push_object(val->u.object);
 	    encode_value2(Pike_sp-1, data, 0);
 	    ref_push_string(ID_FROM_INT(val->u.object->prog,
@@ -1021,6 +1097,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       }
 
       code_entry(TAG_FUNCTION, 0, data);
+      EDB(1, {
+	  ENCODE_WERR(".entry   function");
+	});
       encode_value2(Pike_sp-1, data, 0);
       pop_stack();
       break;
@@ -1032,6 +1111,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       if ((val->u.program->id < PROG_DYNAMIC_ID_START) &&
 	  (val->u.program->id >= 0)) {
 	code_entry(TAG_PROGRAM, 3, data);
+	EDB(1, {
+	    ENCODE_WERR(".entry   program, 3");
+	  });
 	push_int(val->u.program->id);
 	encode_value2(Pike_sp-1, data, 0);
 	pop_stack();
@@ -1074,6 +1156,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      map_delete(data->encoded, val);
 
 	      code_entry(TAG_PROGRAM, 2, data);
+	      EDB(1, {
+		  ENCODE_WERR(".entry   program, 2");
+		});
 	      ref_push_program(p->parent);
 	      encode_value2(Pike_sp-1, data, 0);
 
@@ -1103,6 +1188,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  EDB(1, fprintf(stderr, "%*sencode: delayed encoding of program\n",
 			 data->depth, ""));
 	  code_entry (TAG_PROGRAM, 5, data);
+	  EDB(1, {
+	      ENCODE_WERR(".entry   program, 5");
+	    });
 	  data->delayed = append_array (data->delayed, val);
 	  tmp = low_mapping_lookup (data->encoded, val);
 	  if (!tmp)
@@ -1114,6 +1202,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	EDB(1, fprintf(stderr, "%*sencode: encoding program in new style\n",
 		       data->depth, ""));
 	code_entry(TAG_PROGRAM, 4, data);
+	EDB(1, {
+	    ENCODE_WERR(".entry   program, 4");
+	  });
 
 	/* Byte-order. */
 	code_number(PIKE_BYTEORDER, data);
@@ -1775,6 +1866,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	}
       }else{
 	code_entry(TAG_PROGRAM, 0, data);
+	EDB(1, {
+	    ENCODE_WERR(".entry   program");
+	  });
 	encode_value2(Pike_sp-1, data, 0);
 	pop_stack();
       }
