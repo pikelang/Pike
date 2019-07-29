@@ -382,20 +382,40 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
  one_more_type:
   if (t->type == T_MANY) {
     addchar(T_FUNCTION ^ MIN_REF_TYPE);
+    EDB(1, {
+	ENCODE_WERR(".type    function");
+      });
     addchar(T_MANY);
+    EDB(1, {
+	ENCODE_WERR(".type    many");
+      });
   } else if (t->type == T_STRING) {
     if (t->car == int_type_string) {
       addchar(T_STRING ^ MIN_REF_TYPE);
+      EDB(1, {
+	  ENCODE_WERR(".type    string");
+	});
     } else {
       /* Narrow string */
       addchar(PIKE_T_NSTRING);
+      EDB(1, {
+	  ENCODE_WERR(".type    nstring");
+	});
       encode_type(t->car, data);
     }
     return;
   } else if (t->type <= MAX_TYPE) {
     addchar(t->type ^ MIN_REF_TYPE);
+    EDB(1, {
+	ENCODE_WERR(".type    %s",
+		    get_name_of_type(t->type));
+      });
   } else {
     addchar(t->type);
+    EDB(1, {
+	ENCODE_WERR(".type    %s",
+		    get_name_of_type(t->type));
+      });
   }
   switch(t->type) {
     default:
@@ -420,6 +440,9 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 		     (long)marker);
 	}
 	addchar('0' + marker);
+	EDB(1, {
+	    ENCODE_WERR(".type    marker, %d", marker);
+	  });
 	t = t->cdr;
       }
       goto one_more_type;
@@ -440,6 +463,9 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       {
 	ptrdiff_t val = CAR_TO_INT(t);
 	addchar(val & 0xff);
+	EDB(1, {
+	    ENCODE_WERR(".type    scope, %d", val);
+	  });
       }
       t = t->cdr;
       goto one_more_type;
@@ -464,7 +490,13 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	ptrdiff_t val;
 
         buffer_add_be32(&data->buf, CAR_TO_INT(t));
+	EDB(1, {
+	    ENCODE_WERR(".data    %d", CAR_TO_INT(t));
+	  });
         buffer_add_be32(&data->buf, CDR_TO_INT(t));
+	EDB(1, {
+	    ENCODE_WERR(".data    %d", CDR_TO_INT(t));
+	  });
       }
       break;
 
@@ -488,6 +520,9 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
     case T_OBJECT:
     {
       addchar(CAR_TO_INT(t));
+      EDB(1, {
+	  ENCODE_WERR(".type    %d", CAR_TO_INT(t));
+	});
 
       if(t->cdr)
       {
