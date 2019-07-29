@@ -215,7 +215,7 @@ static void debug_dump_mem(size_t offset, const unsigned char *bytes,
   size_t i;
   for (i = 0; i < len; i += 8) {
     size_t j;
-    fprintf(stderr, "  %08x: ", offset + i);
+    fprintf(stderr, "  %08lx: ", offset + i);
     for (j = 0; (i+j < len) && (j < 8); j++) {
       fprintf(stderr, "%02x", bytes[i+j]);
     }
@@ -242,7 +242,7 @@ static void low_addstr(struct byte_buffer *buf, const char *bytes,
 {
   if (edb >= 6) {
     debug_dump_mem(buf->length - (((char *)buf->end) - ((char *)buf->dst)),
-		   bytes, len);
+		   (const unsigned char *)bytes, len);
   }
   buffer_memcpy(buf, bytes, len);
 }
@@ -368,7 +368,7 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
 
 static void code_number(ptrdiff_t num, struct encode_data *data)
 {
-  EDB(5, fprintf(stderr, "%*scode_number(%d)\n",
+  EDB(5, fprintf(stderr, "%*scode_number(%ld)\n",
 		 data->depth, "", num));
   code_entry(num & 15, num >> 4, data);
 }
@@ -614,7 +614,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       entry_id.u.integer = CONVERT_ENTRY_ID (entry_id.u.integer);
     if (force_encode && tmp->u.integer < COUNTER_START) {
       EDB(1,
-	  fprintf(stderr, "%*sEncoding delayed thing to <%d>: ",
+	  fprintf(stderr, "%*sEncoding delayed thing to <%ld>: ",
 		  data->depth, "", entry_id.u.integer);
 	  if(data->debug == 1)
 	  {
@@ -630,7 +630,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	});
     }
     else {
-      EDB(1,fprintf(stderr, "%*sEncoding TAG_AGAIN from <%d>\n",
+      EDB(1,fprintf(stderr, "%*sEncoding TAG_AGAIN from <%ld>\n",
 		    data->depth, "", entry_id.u.integer));
       code_entry(TAG_AGAIN, entry_id.u.integer, data);
       EDB(1, {
@@ -645,7 +645,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 #endif
     if (TYPEOF(*val) != T_TYPE) {
       entry_id = data->counter;	/* It's always a small integer. */
-      EDB(1,fprintf(stderr, "%*sEncoding to <%d>: ",
+      EDB(1,fprintf(stderr, "%*sEncoding to <%ld>: ",
 		    data->depth, "", entry_id.u.integer);
 	  if(data->debug == 1)
 	  {
@@ -724,7 +724,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	});
 
       encode_type(val->u.type, data);
-      EDB(2,fprintf(stderr, "%*sEncoded type to <%d>: ",
+      EDB(2,fprintf(stderr, "%*sEncoded type to <%ld>: ",
 		  data->depth, "", data->counter.u.integer);
 	  print_svalue(stderr, val);
 	  fputc('\n', stderr););
@@ -866,14 +866,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	EDB(2,fprintf(stderr,
 		    "Encoding float... tmp: %10g, x: 0x%016llx, y: %d\n",
-		    tmp, x, y));
+		      tmp, (long long)x, y));
 
         x >>= 32;
         y += 32;
 
         EDB(2,fprintf(stderr,
 		      "Reducing float... x: 0x%08llx, y: %d\n",
-		      x, y));
+		      (long long)x, y));
 	code_entry(TAG_FLOAT,x,data);
 	code_entry(TAG_FLOAT,y,data);
 	EDB(1, {
@@ -2929,24 +2929,24 @@ static void decode_value2(struct decode_data *data)
   switch(what & TAG_MASK)
   {
     case TAG_DELAYED:
-      EDB (2, fprintf(stderr, "%*sDecoding delay encoded from <%d>\n",
+      EDB (2, fprintf(stderr, "%*sDecoding delay encoded from <%ld>\n",
 		      data->depth, "", num););
       SET_SVAL(entry_id, T_INT, NUMBER_NUMBER, integer, num);
       if (!(delayed_enc_val = low_mapping_lookup (data->decoded, &entry_id)))
 	decode_error (data, NULL, "Failed to find previous record of "
-		      "delay encoded entry <%d>.\n", num);
+		      "delay encoded entry <%ld>.\n", num);
       DECODE ("decode_value2");
       break;
 
     case TAG_AGAIN:
-      EDB (1, fprintf(stderr, "%*sDecoding TAG_AGAIN from <%d>\n",
+      EDB (1, fprintf(stderr, "%*sDecoding TAG_AGAIN from <%ld>\n",
 		      data->depth, "", num););
       SET_SVAL(entry_id, T_INT, NUMBER_NUMBER, integer, num);
       if((tmp2=low_mapping_lookup(data->decoded, &entry_id)))
       {
 	push_svalue(tmp2);
       }else{
-	decode_error(data, NULL, "Failed to decode TAG_AGAIN entry <%d>.\n",
+	decode_error(data, NULL, "Failed to decode TAG_AGAIN entry <%ld>.\n",
 		     num);
       }
       goto decode_done;
@@ -2957,8 +2957,8 @@ static void decode_value2(struct decode_data *data)
       /* Fall through. */
 
     case TAG_TYPE:
-      EDB (2, fprintf(stderr, "%*sDecoding to <%d>: TAG%d (%d)\n",
-		      data->depth, "", entry_id.u.integer ,
+      EDB (2, fprintf(stderr, "%*sDecoding to <%ld>: TAG%d (%ld)\n",
+		      data->depth, "", entry_id.u.integer,
 		      what & TAG_MASK, num););
       /* Types are added to the encoded mapping AFTER they have been
        * encoded. */
@@ -2995,7 +2995,7 @@ static void decode_value2(struct decode_data *data)
 
       DECODE("float");
 
-      EDB(2,fprintf(stderr, "Exponent: %d\n", num));
+      EDB(2,fprintf(stderr, "Exponent: %ld\n", num));
 
       if(!res)
       {
@@ -3053,7 +3053,7 @@ static void decode_value2(struct decode_data *data)
       if(num > data->len - data->ptr)
 	decode_error(data, NULL, "Failed to decode array (not enough data).\n");
 
-      EDB(2,fprintf(stderr, "%*sDecoding array of size %d to <%d>\n",
+      EDB(2,fprintf(stderr, "%*sDecoding array of size %ld to <%ld>\n",
 		  data->depth, "", num, entry_id.u.integer));
 
       SETUP_DECODE_MEMOBJ(T_ARRAY, array, a, allocate_array(num),
@@ -3083,7 +3083,7 @@ static void decode_value2(struct decode_data *data)
 	decode_error(data, NULL, "Failed to decode mapping "
 		     "(not enough data).\n");
 
-      EDB(2,fprintf(stderr, "%*sDecoding mapping of size %d to <%d>\n",
+      EDB(2,fprintf(stderr, "%*sDecoding mapping of size %ld to <%ld>\n",
 		  data->depth, "", num, entry_id.u.integer));
 
       SETUP_DECODE_MEMOBJ(T_MAPPING, mapping, m, allocate_mapping(num), ; );
@@ -3115,7 +3115,7 @@ static void decode_value2(struct decode_data *data)
 
       /* NOTE: This code knows stuff about the implementation of multisets...*/
 
-      EDB(2,fprintf(stderr, "%*sDecoding multiset of size %d to <%d>\n",
+      EDB(2,fprintf(stderr, "%*sDecoding multiset of size %ld to <%ld>\n",
 		  data->depth, "", num, entry_id.u.integer));
       SETUP_DECODE_MEMOBJ (T_MULTISET, multiset, m,
 			   allocate_multiset (0, 0, NULL), ;);
@@ -3168,7 +3168,7 @@ static void decode_value2(struct decode_data *data)
 		decode_error (data, NULL,
 			      "Failed to decode program for object. Got: %O\n",
 			      Pike_sp - 1);
-	      EDB(1,fprintf(stderr, "%*sDecoded a failed object to <%d>: ",
+	      EDB(1,fprintf(stderr, "%*sDecoded a failed object to <%ld>: ",
 			    data->depth, "", entry_id.u.integer);
 		  print_svalue(stderr, Pike_sp-1);
 		  fputc('\n', stderr););
@@ -3196,7 +3196,7 @@ static void decode_value2(struct decode_data *data)
 	      }else{
 		struct unfinished_obj_link *ol=ALLOC_STRUCT(unfinished_obj_link);
 		EDB(2,fprintf(stderr,
-			      "%*sDecoded an unfinished object to <%d>: ",
+			      "%*sDecoded an unfinished object to <%ld>: ",
 			      data->depth, "", entry_id.u.integer);
 		print_svalue(stderr, Pike_sp-1);
 		fputc('\n', stderr););
@@ -3212,7 +3212,7 @@ static void decode_value2(struct decode_data *data)
 	      }
 	    }
 
-	    EDB(2,fprintf(stderr, "%*sDecoded an object to <%d>: ",
+	    EDB(2,fprintf(stderr, "%*sDecoded an object to <%ld>: ",
 			data->depth, "", entry_id.u.integer);
 		print_svalue(stderr, Pike_sp-1);
 		fputc('\n', stderr););
@@ -3371,7 +3371,7 @@ static void decode_value2(struct decode_data *data)
 
     case TAG_PROGRAM:
       EDB(3,
-	  fprintf(stderr, "%*s  TAG_PROGRAM(%d)\n",
+	  fprintf(stderr, "%*s  TAG_PROGRAM(%ld)\n",
 		  data->depth, "", num));
       switch(num)
       {
@@ -3449,7 +3449,7 @@ static void decode_value2(struct decode_data *data)
 	  push_program (p);
 	  EDB(2,
 	      fprintf (stderr, "%*sInited an embryo for a delay encoded program "
-		       "to <%d>: ",
+		       "to <%ld>: ",
 		       data->depth, "", entry_id.u.integer);
 	      print_svalue (stderr, Pike_sp - 1);
 	      fputc ('\n', stderr););
@@ -3583,7 +3583,7 @@ static void decode_value2(struct decode_data *data)
 	  if (!delayed_enc_val) {
 	    struct svalue prog;
 	    SET_SVAL(prog, T_PROGRAM, 0, program, p);
-	    EDB(2,fprintf(stderr, "%*sDecoding a program to <%d>: ",
+	    EDB(2,fprintf(stderr, "%*sDecoding a program to <%ld>: ",
 			  data->depth, "", entry_id.u.integer);
 		print_svalue(stderr, &prog);
 		fputc('\n', stderr););
@@ -3897,7 +3897,7 @@ static void decode_value2(struct decode_data *data)
 		    get_line(func.offset + p->program, p, &line);
 		  fprintf(stderr,
 			  "%*sdefine_function(\"%s\", X, 0x%04x, 0x%04x,\n"
-			  "%*s                0x%04x, 0x%04x)\n"
+			  "%*s                0x%04lx, 0x%04x)\n"
 			  "%*s    @ %s:%ld\n",
 			  data->depth, "",
 			  Pike_sp[-2].u.string->str, id_flags, func_flags,
@@ -4324,7 +4324,7 @@ static void decode_value2(struct decode_data *data)
   mapping_insert(data->decoded, &entry_id, Pike_sp-1);
 
 decode_done:;
-  EDB(2,fprintf(stderr, "%*sDecoded to <%d>: ", data->depth, "", entry_id.u.integer);
+  EDB(2,fprintf(stderr, "%*sDecoded to <%ld>: ", data->depth, "", entry_id.u.integer);
       print_svalue(stderr, Pike_sp-1);
       fputc('\n', stderr););
 #ifdef ENCODE_DEBUG
