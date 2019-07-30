@@ -1560,6 +1560,21 @@ PIKECLASS Buffer
     REF_RETURN Pike_fp->current_object;
   }
 
+  /**
+   * Return the string_builder that is embedded in
+   * a String.Buffer.
+   */
+  PMOD_EXPORT struct string_builder *
+    string_builder_from_string_buffer(struct object *o)
+  {
+    if (!o) return NULL;
+
+    if (LIKELY(o->prog == Buffer_program))
+      return OBJ2_BUFFER(o);
+
+    return get_storage(o, Buffer_program);
+  }
+
   /*! @decl int add(string|String.Buffer ... data)
    *!
    *!   Adds @[data] to the buffer.

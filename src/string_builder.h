@@ -125,6 +125,8 @@ PMOD_EXPORT void free_string_builder(struct string_builder *s);
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);
 PMOD_EXPORT ptrdiff_t write_and_reset_string_builder(int fd,
 						     struct string_builder *s);
+PMOD_EXPORT struct string_builder *
+  string_builder_from_string_buffer(struct object *o);
 void init_string_buffer(void);
 void exit_string_buffer(void);
 /* Prototypes end here */
