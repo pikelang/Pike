@@ -361,6 +361,22 @@ for(int i; i<120; i++)
   Parser.XML.NSTree.parse_input("<soap:Envelope "+Array.permute(args,i)*" "+"/>");
 ]])
 
+define(nstree_eq,[[
+test_any([[
+object x=Parser.XML.NSTree.parse_input($1);
+return (string)x;
+]],$2)
+]])
+
+nstree_eq("<a:foo xmlns:a='ns-one'><b:foo xmlns:b='ns-two'/></a:foo>",
+"<a:foo xmlns:a='ns-one' xmlns:b='ns-two'><b:foo/></a:foo>")
+
+nstree_eq("<a:foo xmlns:a='ns-one'><foo xmlns='ns-two'/></a:foo>",
+"<a:foo xmlns:a='ns-one'><foo xmlns='ns-two'/></a:foo>")
+
+dnl nstree_eq("<a:foo xmlns:a='ns-one' xmlns:b='ns-one'><b:foo/></a:foo>",
+dnl "<a:foo xmlns:a='ns-one' xmlns:b='ns-one'><b:foo/></a:foo>")
+
 
 // Simple
 
