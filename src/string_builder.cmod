@@ -74,6 +74,10 @@ PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
 				      ptrdiff_t chars, int mag)
 /* Doesn't touch or sanity check s->known_shift. */
 {
+  if (!s->s) {
+    init_string_builder_alloc(s, chars, mag);
+    return;
+  }
   if(mag > s->s->size_shift)
   {
     struct pike_string *n;
@@ -127,7 +131,7 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
 					 ptrdiff_t count)
 {
-  ptrdiff_t len = s->s->len;
+  ptrdiff_t len = s->s?s->s->len:0;
   enum size_shift mag = min_magnitude(ch);
 
   /* This is not really expected to happen. But since we are doing
@@ -179,7 +183,7 @@ PMOD_EXPORT void string_builder_binary_strcat0(struct string_builder *s,
 PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
 					       const p_wchar1 *str, ptrdiff_t len)
 {
-  if (s->s->size_shift == 0) {
+  if (!s->s || !s->s->size_shift) {
     if (find_magnitude1 (str, len) == 0) {
       string_build_mkspace (s, len, 0);
       convert_1_to_0 (STR0(s->s) + s->s->len, str, len);
@@ -206,7 +210,7 @@ PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
 PMOD_EXPORT void string_builder_binary_strcat2(struct string_builder *s,
 					       const p_wchar2 *str, ptrdiff_t len)
 {
-  if (s->s->size_shift < 2) {
+  if (s->s && (s->s->size_shift < 2)) {
     enum size_shift shift = find_magnitude2 (str, len);
 
     if (shift > s->s->size_shift) {
@@ -249,7 +253,7 @@ PMOD_EXPORT void string_builder_append(struct string_builder *s,
 				       ptrdiff_t len)
 {
   enum size_shift shift = from.shift;
-  if (shift > s->s->size_shift) {
+  if (s->s && (shift > s->s->size_shift)) {
     if (shift == 1) {
       shift = find_magnitude1((p_wchar1 *)from.ptr, len);
     } else {
@@ -278,7 +282,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 #endif
   if(howmany<=0) return;
 
-  if(!s->s->size_shift &&
+  if((!s->s || !s->s->size_shift) &&
      len == 1 &&
      (!from.shift || !min_magnitude(EXTRACT_PCHARP(from))))
   {
@@ -288,7 +292,8 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
     return;
   }
 
-  if ((shift = from.shift) > s->s->size_shift) {
+  shift = from.shift;
+  if (shift > (s->s ? s->s->size_shift : 0)) {
     /* Check if we really need the extra magnitude. */
     /* FIXME: What about offset? */
     if (shift == 1) {
@@ -1341,6 +1346,7 @@ PMOD_EXPORT void free_string_builder(struct string_builder *s)
 {
   s->s->len = s->malloced;
   free_string(s->s);
+  s->s = NULL;
 }
 
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
