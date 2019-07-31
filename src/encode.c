@@ -2181,7 +2181,9 @@ void f_encode_value(INT32 args)
 {
   ONERROR tmp;
   struct encode_data d, *data;
+#ifdef ENCODE_DEBUG
   struct string_builder debug_buf;
+#endif
   int i;
   data=&d;
 
@@ -2193,7 +2195,7 @@ void f_encode_value(INT32 args)
 		  * It's intentionally not part of the function
 		  * prototype, to keep the argument position free for
 		  * other uses in the future. */
-		 BIT_VOID | BIT_INT,
+		 BIT_VOID | BIT_INT | BIT_OBJECT,
 #endif
 		 0);
 
@@ -2207,12 +2209,21 @@ void f_encode_value(INT32 args)
 #ifdef ENCODE_DEBUG
   data->debug_buf = NULL;
   data->debug_pos = 0;
-  data->debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
-  data->depth = -2;
-  if (data->debug) {
-    init_string_builder(&debug_buf, 0);
-    data->debug_buf = &debug_buf;
+  data->debug = 0;
+  if (args > 2) {
+    if (TYPEOF(Pike_sp[2-args]) == PIKE_T_OBJECT) {
+      struct object *sb = Pike_sp[2-args].u.object;
+      if ((data->debug_buf = string_builder_from_string_buffer(sb))) {
+	data->debug = 1;
+      }
+    } else {
+      if ((data->debug = Pike_sp[2-args].u.integer)) {
+	init_string_builder(&debug_buf, 0);
+	data->debug_buf = &debug_buf;
+      }
+    }
   }
+  data->depth = -2;
 #endif
 
   if(args > 1 && TYPEOF(Pike_sp[1-args]) == T_OBJECT)
@@ -2263,10 +2274,12 @@ void f_encode_value(INT32 args)
   free_mapping(data->encoded);
   free_array (data->delayed);
 
-  EDB(1, {
-      write_and_reset_string_builder(2, data->debug_buf);
-      free_string_builder(data->debug_buf);
-    });
+#ifdef ENCODE_DEBUG
+  if (data->debug_buf == &debug_buf) {
+    write_and_reset_string_builder(2, data->debug_buf);
+    free_string_builder(data->debug_buf);
+  }
+#endif
 
   pop_n_elems(args);
   push_string(buffer_finish_pike_string(&data->buf));
@@ -2294,6 +2307,9 @@ void f_encode_value_canonic(INT32 args)
 {
   ONERROR tmp;
   struct encode_data d, *data;
+#ifdef ENCODE_DEBUG
+  struct string_builder debug_buf;
+#endif
   int i;
   data=&d;
 
@@ -2305,7 +2321,7 @@ void f_encode_value_canonic(INT32 args)
 		  * It's intentionally not part of the function
 		  * prototype, to keep the argument position free for
 		  * other uses in the future. */
-		 BIT_VOID | BIT_INT,
+		 BIT_VOID | BIT_INT | BIT_OBJECT,
 #endif
 		 0);
 
@@ -2316,7 +2332,22 @@ void f_encode_value_canonic(INT32 args)
   SET_SVAL(data->counter, T_INT, NUMBER_NUMBER, integer, COUNTER_START);
 
 #ifdef ENCODE_DEBUG
-  data->debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
+  data->debug_buf = NULL;
+  data->debug_pos = 0;
+  data->debug = 0;
+  if (args > 2) {
+    if (TYPEOF(Pike_sp[2-args]) == PIKE_T_OBJECT) {
+      struct object *sb = Pike_sp[2-args].u.object;
+      if ((data->debug_buf = string_builder_from_string_buffer(sb))) {
+	data->debug = 1;
+      }
+    } else {
+      if ((data->debug = Pike_sp[2-args].u.integer)) {
+	init_string_builder(&debug_buf, 0);
+	data->debug_buf = &debug_buf;
+      }
+    }
+  }
   data->depth = -2;
 #endif
 
@@ -2334,16 +2365,46 @@ void f_encode_value_canonic(INT32 args)
   SET_ONERROR(tmp, free_encode_data, data);
   addstr("\266ke0", 4);
 
+  EDB(1, {
+      string_builder_append_disassembly(data->debug_buf,
+					data->debug_pos,
+					((char *)data->buf.end) -
+					(data->buf.length - data->debug_pos),
+					data->buf.dst,
+					".format  0",
+					NULL,
+					"Encoding #0.");
+      data->debug_pos = data->buf.length -
+	(((char *)data->buf.end) - ((char *)data->buf.dst));
+    });
+
   encode_value2(Pike_sp-args, data, 1);
 
-  for (i = 0; i < data->delayed->size; i++)
+  for (i = 0; i < data->delayed->size; i++) {
+    EDB(1, {
+	string_builder_sprintf(data->debug_buf,
+			       "0x%016x  # Delayed item #%d\n",
+			       data->debug_pos, i);
+      });
     encode_value2 (ITEM(data->delayed) + i, data, 2);
+  }
 
   UNSET_ONERROR(tmp);
+
+  EDB(1, {
+      ENCODE_FLUSH();
+    });
 
   if (data->codec) free_object (data->codec);
   free_mapping(data->encoded);
   free_array (data->delayed);
+
+#ifdef ENCODE_DEBUG
+  if (data->debug_buf == &debug_buf) {
+    write_and_reset_string_builder(2, data->debug_buf);
+    free_string_builder(data->debug_buf);
+  }
+#endif
 
   pop_n_elems(args);
   push_string(buffer_finish_pike_string(&data->buf));
