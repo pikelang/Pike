@@ -1162,8 +1162,8 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
       } else if (opcode_len < 8) {
 	string_builder_sprintf(s, " %.*s%*s",
 			       opcode_len, opcode, 8 - opcode_len, "");
-      } else if (opcode_len < 32) {
-	string_builder_sprintf(s, " %.*s%*s ",
+      } else if (opcode_len < 29) {
+	string_builder_sprintf(s, " %.*s%*s",
 			       opcode_len, opcode, 28 - opcode_len, "");
 	skip_params = 1;
       } else {
