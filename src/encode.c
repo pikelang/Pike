@@ -1327,7 +1327,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    } else if (TYPEOF(p->constants[d].sval) == T_TYPE) {
 	      code_number(ID_ENTRY_TYPE_CONSTANT, data);
 	      EDB(1, {
-		  ENCODE_WERR(".ident   constant");
+		  ENCODE_WERR(".ident   type_constant");
 		});
 	    } else {
 	      continue;
