@@ -5156,7 +5156,7 @@ EOF
     if AC_TRY_EVAL(ac_compile); then
       if test -f "conftest.$ac_objext"; then
         if strings "conftest.$ac_objext" | grep "_BiG-eNdIaN_" >/dev/null; then
-	  pike_cv_hardware_byteorder=1234
+	  pike_cv_hardware_byteorder=4321
         elif strings "conftest.$ac_objext" | grep "GiB_dNe-_NaI" >/dev/null; then
 	  pike_cv_hardware_byteorder=1234
 	else
