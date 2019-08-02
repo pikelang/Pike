@@ -70,6 +70,27 @@
       data->debug_pos = end_pos;					\
     }									\
   } while(0)
+
+#define DECODE_WERR_COMMENT(COMMENT, X...) do {				\
+    string_builder_sprintf_disassembly(data->debug_buf,			\
+				       data->debug_ptr,			\
+				       data->data + data->debug_ptr,	\
+				       data->data + data->ptr,		\
+				       COMMENT, X);			\
+    data->debug_ptr = data->ptr;					\
+  } while(0)
+#define DECODE_WERR(X...) DECODE_WERR_COMMENT(NULL, X)
+#define DECODE_FLUSH() do {						\
+    if (data->debug_ptr < data->ptr) {					\
+      string_builder_append_disassembly_data(data->debug_buf,		\
+					     data->debug_ptr,		\
+					     data->data +		\
+					     data->debug_ptr,		\
+					     data->data + data->ptr,	\
+					     NULL);			\
+      data->debug_ptr = data->ptr;					\
+    }									\
+  } while(0)
 #ifndef PIKE_DEBUG
 #error ENCODE_DEBUG requires PIKE_DEBUG
 #endif
@@ -2448,6 +2469,8 @@ struct decode_data
 #endif
 #ifdef ENCODE_DEBUG
   int debug, depth;
+  ptrdiff_t debug_ptr;
+  struct string_builder *debug_buf;
 #endif
 };
 
@@ -4516,13 +4539,17 @@ static void error_free_decode_data (struct decode_data *data)
 static INT32 my_decode(struct pike_string *tmp,
 		       struct object *codec
 #ifdef ENCODE_DEBUG
-		       , int debug
+		       , int debug, struct string_builder *debug_buf
 #endif
 		      )
 {
   struct decode_data *data;
   ONERROR err;
+#ifdef ENCODE_DEBUG
+  struct string_builder buf;
+#endif
 
+  /* FIXME: Why not use CYCLIC? */
   /* Attempt to avoid infinite recursion on circular structures. */
   for (data = current_decode; data; data=data->next) {
     if (data->raw == tmp &&
@@ -4564,6 +4591,12 @@ static INT32 my_decode(struct pike_string *tmp,
 #endif
 #ifdef ENCODE_DEBUG
   data->debug = debug;
+  data->debug_buf = debug_buf;
+  data->debug_ptr = 0;
+  if (data->debug && !debug_buf) {
+    debug_buf = &buf;
+    init_string_builder(debug_buf, 0);
+  }
   data->depth = -2;
 #endif
 
@@ -4590,6 +4623,17 @@ static INT32 my_decode(struct pike_string *tmp,
   low_do_decode (data);
 
   UNSET_ONERROR(err);
+
+  EDB(1, {
+      DECODE_FLUSH();
+    });
+
+#ifdef ENCODE_DEBUG
+  if (debug_buf == &buf) {
+    write_and_reset_string_builder(2, debug_buf);
+    free_string_builder(debug_buf);
+  }
+#endif
 
   {
     int delay;
@@ -4908,6 +4952,7 @@ void f_decode_value(INT32 args)
 
 #ifdef ENCODE_DEBUG
   int debug = 0;
+  struct string_builder *debug_buf = NULL;
 #endif /* ENCODE_DEBUG */
 
   check_all_args(NULL, args,
@@ -4918,7 +4963,7 @@ void f_decode_value(INT32 args)
 		  * It's intentionally not part of the function
 		  * prototype, to keep the argument position free for
 		  * other uses in the future. */
-		 BIT_VOID | BIT_INT,
+		 BIT_VOID | BIT_INT | BIT_OBJECT,
 #endif
 		 0);
 
@@ -4927,7 +4972,14 @@ void f_decode_value(INT32 args)
   switch (args) {
     default:
 #ifdef ENCODE_DEBUG
-      debug = Pike_sp[2-args].u.integer;
+      if (TYPEOF(Pike_sp[2-args]) == PIKE_T_OBJECT) {
+	struct object *sb = Pike_sp[2-args].u.object;
+	if ((debug_buf = string_builder_from_string_buffer(sb))) {
+	  debug = 1;
+	}
+      } else {
+	debug = Pike_sp[2-args].u.integer;
+      }
       /* Fall through. */
     case 2:
 #endif
@@ -4956,7 +5008,7 @@ void f_decode_value(INT32 args)
 
   if(!my_decode(s, codec
 #ifdef ENCODE_DEBUG
-		, debug
+		, debug, debug_buf
 #endif
 	       ))
   {
