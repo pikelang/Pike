@@ -583,6 +583,7 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   ts->interval_start = get_real_time();
 #ifdef PIKE_DEBUG
   ts->debug_flags = 0;
+  ts->stepping_mode = 0;
   thread_swaps++;
 #endif
 #ifdef USE_CLOCK_FOR_SLICES

@@ -80,6 +80,7 @@ int try_use_mmx;
 #endif /* TRACE_MAIN */
 
 PMOD_EXPORT int debug_options=0;
+PMOD_EXPORT int enable_debugger=0;
 PMOD_EXPORT int runtime_options=0;
 PMOD_EXPORT int d_flag=0;
 PMOD_EXPORT int c_flag=0;

@@ -641,6 +641,15 @@ struct identifier_lookup_cache
   INT32 identifier_id;
 };
 
+#ifdef PIKE_DEBUG
+struct debug_breakpoint {
+  struct program * prog;
+  ptrdiff_t offset;
+  struct debug_breakpoint * prev;
+  struct debug_breakpoint * next;
+};
+#endif /* PIKE_DEBUG */
+
 struct program
 {
   GC_MARKER_MEMBERS;
@@ -667,6 +676,7 @@ struct program
 
   void (*event_handler)(int);
 #ifdef PIKE_DEBUG
+  struct debug_breakpoint *breakpoints;
   unsigned INT32 checksum;
 #endif
 #ifdef PROFILING
@@ -1002,6 +1012,11 @@ PMOD_EXPORT struct pike_string *low_get_program_line(struct program *prog,
 						     INT_TYPE *linep);
 PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 						 INT_TYPE *linep);
+
+PMOD_EXPORT ptrdiff_t low_get_offset_for_line (struct program *prog,
+                         struct pike_string * fname,
+                         INT_TYPE linep);
+
 PMOD_EXPORT char *low_get_program_line_plain (struct program *prog,
 					      INT_TYPE *linep,
 					      int malloced);

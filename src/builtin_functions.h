@@ -200,6 +200,9 @@ PMOD_EXPORT void permit_destruct(int inh);
 void low_backtrace(struct Pike_interpreter_struct *, int flags);
 PMOD_EXPORT void f_backtrace(INT32 args);
 
+/* used for debugger, not for general consumption. */
+PMOD_EXPORT void f_cq___debug_backtrace(INT32 args);
+
 struct pike_list_node
 {
   /* NOTE: Unusual order of elements due to use of sentinels. */

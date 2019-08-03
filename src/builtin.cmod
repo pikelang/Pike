@@ -529,6 +529,248 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
   push_array(res);
 }
 
+PMOD_EXPORT
+PIKEFUN int set_debugger(int i)
+optflags OPT_SIDE_EFFECT;
+efun;
+ {
+  int tmp = enable_debugger;
+  enable_debugger = i;
+  pop_stack();
+  push_int(tmp);
+}
+
+PIKECLASS debug_breakpoint {
+
+  PIKEVAR program prog flags ID_PROTECTED|ID_PRIVATE;
+  PIKEVAR string fname flags ID_PROTECTED|ID_PRIVATE;
+  PIKEVAR string within_fname flags ID_PROTECTED|ID_PRIVATE;
+  PIKEVAR int line_number flags ID_PROTECTED|ID_PRIVATE;
+  PIKEVAR int enabled flags ID_PROTECTED|ID_PRIVATE;
+  PIKEVAR int want_enabled flags ID_PROTECTED|ID_PRIVATE;
+
+  CVAR struct debug_breakpoint * bp;
+
+  PIKEFUN void create(string fname, int line_number)
+  flags ID_PROTECTED;
+  optflags OPT_SIDE_EFFECT;
+  {
+    THIS->fname = fname;
+    THIS->within_fname = fname;
+    THIS->line_number = line_number;
+    add_ref(fname);
+    add_ref(fname);
+  }
+
+  PIKEFUN void create(string fname, string within_fname, int line_number)
+  flags ID_PROTECTED;
+  optflags OPT_SIDE_EFFECT;
+  {
+    THIS->fname = fname;
+    THIS->within_fname = within_fname;
+    THIS->line_number = line_number;
+    add_ref(fname);
+    add_ref(within_fname);
+  }
+
+  PIKEFUN void create(
+program p, string fname, int line_number)
+  flags ID_PROTECTED;
+  optflags OPT_SIDE_EFFECT;
+{
+   THIS->prog = p;
+   THIS->fname = fname;
+   THIS->within_fname = fname;
+   THIS->line_number = line_number;
+   add_ref(p);
+   add_ref(fname);
+   add_ref(fname);
+}
+
+  PIKEFUN void create(
+program p, string fname, string within_file, int line_number)
+  flags ID_PROTECTED;
+  optflags OPT_SIDE_EFFECT;
+{
+   THIS->prog = p;
+   THIS->fname = fname;
+   THIS->within_fname = within_file;
+   THIS->line_number = line_number;
+   add_ref(p);
+   add_ref(fname);
+    add_ref(within_file);
+}
+
+  PIKEFUN program get_program() {
+    if(THIS->prog)
+      RETURN THIS->prog;
+    else push_int(0);
+  }
+
+  PIKEFUN string get_filename() {
+    add_ref(THIS->fname); /* it seems strange to need this, but whatever. */
+    RETURN THIS->fname;
+  }
+
+  PIKEFUN string get_within_file() {
+    add_ref(THIS->within_fname); /* it seems strange to need this, but whatever. */
+    RETURN THIS->within_fname;
+  }
+
+  PIKEFUN int get_line_number() {
+    RETURN THIS->line_number;
+  }
+
+  PIKEFUN int is_deferred() {
+    RETURN ((THIS->prog) == NULL);
+  }
+
+  PIKEFUN int is_enabled() {
+    RETURN THIS->enabled;
+  }
+
+  int low_enable_breakpoint() {
+    ptrdiff_t offset;
+    offset = low_get_offset_for_line(THIS->prog, THIS->within_fname, THIS->line_number);
+    if(offset <= 0) return 0;
+
+#ifdef PIKE_DEBUG
+    struct debug_breakpoint * bp = malloc(sizeof(struct debug_breakpoint));
+    if(!bp) Pike_fatal("Unable to allocate memory for breakpoint\n");
+    if(THIS->prog->breakpoints)
+      bp->next = THIS->prog->breakpoints;
+    else
+      bp->next = NULL;
+    bp->prev = NULL;
+    bp->offset = offset;
+    /* this may be unnecessary */
+    bp->prog = THIS->prog;
+    THIS->prog->breakpoints = bp;
+    THIS->bp = bp;
+    THIS->enabled = 1;
+    return 1;
+#else
+    return 0;
+#endif /* PIKE_DEBUG */
+  }
+
+  void low_disable_breakpoint() {
+     struct debug_breakpoint * bp, *pbp;
+
+#ifdef PIKE_DEBUG
+     if((THIS->prog) && (bp = (THIS->prog->breakpoints)) != NULL) {
+        while(bp != NULL) {
+          if(bp == (THIS->bp)) {
+            printf("found a breakpoint to free.\n");
+            if(bp->next && bp->prev) { // somewhere in the middle, connect the previous and next.
+               bp->prev->next = bp->next;
+               bp->next->prev = bp->prev;
+            } else if(bp->next) { // only next pointer: at the beginning, so make next the new first.
+              bp->next->prev = NULL;
+              THIS->prog->breakpoints = bp->next;
+            } else if(bp->prev) { // only prev pointer: at the end, just unlink us.
+              bp->prev->next = NULL;
+            }  else {
+                 THIS->prog->breakpoints = NULL;
+            }
+            pbp = bp;
+            bp = bp->next;
+            free(pbp);
+            THIS->bp = NULL;
+          } else {
+            bp = bp->next;
+          }
+        };
+     }
+#endif /* PIKE_DEBUG */
+  }
+
+  ptrdiff_t low_add_breakpoint() {
+  ptrdiff_t pc_offset;
+
+  // TODO: we need to develop the line search further: a file can be included multiple times within a program, and so
+  // in theory, a breakpoint for a line within a file could actually be multiple breakpoints. we stop at the first one.
+  pc_offset = low_get_offset_for_line(THIS->prog, THIS->fname, THIS->line_number);
+  if(!pc_offset) return -1;
+  return pc_offset;
+}
+
+  PIKEFUN int enable() {
+#ifdef PIKE_DEBUG
+    if(THIS->enabled)
+      Pike_error("Breakpoint already enabled.\n");
+    /* This should eventually be a deferred breakpoint initialization. */
+    if(!(THIS->prog)) {
+      printf("Program for breakpoint has not been resolved. Deferring enablement.\n");
+      THIS->want_enabled = 1;
+      RETURN -1;
+    }
+    if (!low_enable_breakpoint()) RETURN 0;
+    RETURN 1;
+#else
+  Pike_error("Cannot enable breakpoints if debug is not enabled.\n");
+#endif /*PIKE_DEBUG*/
+  }
+
+  PIKEFUN int disable() {
+    if(!(THIS->enabled))
+      Pike_error("Breakpoint not enabled.\n");
+    low_disable_breakpoint();
+    THIS->enabled = 0;
+  }
+
+  PIKEFUN int set_program(program prog) {
+  // TODO it seems that entries for a given file in master()->programs can be set
+  // multiple times, and that they are not always proper programs. we need to
+  // attempt to understand that situation a little better. for now, this will weed
+  // out attempts to set a program that we won't be able to look up an offset in.
+    if(!(prog->program)) {
+      printf("no program!\n");
+      RETURN 0;
+    }
+
+    if(THIS->enabled) {
+      low_disable_breakpoint();
+      THIS->enabled = 0;
+    }
+
+    THIS->prog = prog;
+
+    if(!low_enable_breakpoint())
+      RETURN 0;
+
+    add_ref(prog);
+
+    if(THIS->want_enabled)
+      THIS->want_enabled = 0;
+
+    RETURN 1;
+  }
+
+  INIT {
+    THIS->prog = NULL;
+    THIS->fname = NULL;
+    THIS->within_fname = NULL;
+    THIS->line_number = 0;
+    THIS->enabled = 0;
+  }
+
+  EXIT {
+     low_disable_breakpoint();
+     if(THIS->prog)
+       free_program(THIS->prog);
+     if(THIS->fname)
+       free_string(THIS->fname);
+     if(THIS->within_fname)
+       free_string(THIS->within_fname);
+     THIS->bp = NULL; /* should already have been freed by low_disable_breakpoint(). */
+     THIS->prog = NULL;
+     THIS->fname = NULL;
+     THIS->within_fname = NULL;
+     THIS->line_number = 0;
+  }
+}
+
 /*! @decl string basetype(mixed x)
  *!
  *! Same as sprintf("%t",x);
@@ -3900,7 +4142,19 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
 /*! @endmodule
  */
 
+void low_low_backtrace(struct Pike_interpreter_struct *i,
+                       int flags,
+                       int keep_pc);
+
 void low_backtrace(struct Pike_interpreter_struct *i, int flags)
+{
+  low_low_backtrace(i, flags, 0);
+}
+
+
+void low_low_backtrace(struct Pike_interpreter_struct *i,
+                       int flags,
+                       int keep_pc)
 {
   struct svalue *stack_top = i->stack_pointer;
   struct pike_frame *f, *of = 0;
@@ -3927,6 +4181,11 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
       o = fast_clone_object(LiveBacktraceFrame_program);
 
       bf = OBJ2_LIVEBACKTRACEFRAME(o);
+
+      if(keep_pc) {
+        add_ref(f);
+        bf->fp = f;
+      }
 
       SET_SVAL(res->item[size], PIKE_T_OBJECT, 0, object, o);
 
@@ -4109,6 +4368,14 @@ PIKEFUN array(mixed) backtrace(int|void local_vars)
 {
   low_backtrace(& Pike_interpreter, local_vars?local_vars->u.integer:0);
   stack_pop_n_elems_keep_top(args);
+}
+
+PMOD_EXPORT
+PIKEFUN array(mixed) __debug_backtrace()
+     flags ID_PROTECTED;
+     optflags OPT_EXTERNAL_DEPEND;
+{
+  low_low_backtrace(& Pike_interpreter, 1, 1);
 }
 
 /*! @class Replace

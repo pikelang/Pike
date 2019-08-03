@@ -116,6 +116,8 @@ void `is_pike_master=(int one)
   }
 }
 
+protected int want_load_announcements;
+protected object debugger;
 
 mapping(string:object) fs_map = ([]);
 object root_fs;
@@ -128,6 +130,8 @@ private constant Files = _static_modules._Stdio;
 #define Stat Files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 #define trim(X) (Builtin.string_trim (X))
+
+#define PROGRAM_LOADED(A,B,C) (want_load_announcements?(program_loaded(B, (C))):(A[B]=(C)))
 
 private function write = Files()->_stdout->write;
 private function werror = Files()->_stderr->write;
@@ -1970,7 +1974,7 @@ protected program low_findprog(string pname,
 	      if (decoded?->this_program_does_not_exist) {
 		resolv_debug ("low_findprog %s: program claims not to exist\n",
 			      fname);
-		return programs[fname] = 0;
+            return PROGRAM_LOADED(programs, fname, 0);
 	      }
 	      else {
 		if (objectp(decoded)) {
@@ -1981,12 +1985,12 @@ protected program low_findprog(string pname,
 		  ret = decoded;
 		}
 		resolv_debug("low_findprog %s: returning %O\n", fname, ret);
-		return programs[fname]=ret;
+		return PROGRAM_LOADED(programs, fname, ret);
 	      }
 	    };
 	    DEC_RESOLV_MSG_DEPTH();
 	    resolv_debug ("low_findprog %s: dump decode failed\n", fname);
-	    programs[fname] = no_value;
+	    PROGRAM_LOADED(programs, fname, no_value);
 	    call_compile_warning (handler, oname,
 				  "Decode failed: " +
 				  call_describe_error(err));
@@ -2000,14 +2004,14 @@ protected program low_findprog(string pname,
 
       resolv_debug ("low_findprog %s: compiling, mkobj: %O\n", fname, mkobj);
       INC_RESOLV_MSG_DEPTH();
-      programs[fname]=ret=__empty_program(0, fname);
+      PROGRAM_LOADED(programs, fname, ret=__empty_program(0, fname));
       AUTORELOAD_CHECK_FILE (fname);
       string src;
       if (array|object err = catch (src = master_read_file (fname))) {
 	DEC_RESOLV_MSG_DEPTH();
 	resolv_debug ("low_findprog %s: failed to read file\n", fname);
 	objects[ret] = no_value;
-	ret=programs[fname]=0;	// Negative cache.
+    PROGRAM_LOADED(programs, fname, ret=0); // Negative cache.
 	compile_cb_rethrow (err);
       }
       if ( mixed e=catch {
@@ -2019,7 +2023,7 @@ protected program low_findprog(string pname,
 	DEC_RESOLV_MSG_DEPTH();
 	resolv_debug ("low_findprog %s: compilation failed\n", fname);
 	objects[ret] = no_value;
-	ret=programs[fname]=0;	// Negative cache.
+	PROGRAM_LOADED(programs, fname, ret=0); // Negative cache.
 	destruct(compiler_lock);
         throw(e);
       }
@@ -2039,7 +2043,7 @@ protected program low_findprog(string pname,
 	DEC_RESOLV_MSG_DEPTH();
 	resolv_debug ("low_findprog %s: failed to load binary\n", fname);
 	objects[ret] = no_value;
-	ret=programs[fname]=0;	// Negative cache.
+	PROGRAM_LOADED(programs, fname, ret=0); // Negative cache.
 	if (objectp (err) && err->is_module_load_error)
 	  // Do not treat errors from dlopen(3) as exceptions since in
 	  // a dist we can have .so files that are dynamically linked
@@ -2064,14 +2068,16 @@ protected program low_findprog(string pname,
 
     if (ret?->this_program_does_not_exist) {
       resolv_debug ("low_findprog %s: program says it doesn't exist\n", fname);
-      return programs[fname] = 0;
+      PROGRAM_LOADED(programs, fname, ret=0);
+      return ret;
     }
     else {
       if(!ret)
         resolv_debug("low_findprog %s: dependencies failed.\n", fname);
       else
         resolv_debug("low_findprog %s: returning %O\n", fname, ret);
-      return programs[fname]=ret;
+      PROGRAM_LOADED(programs, fname, ret);
+      return ret;
     }
   }
 
@@ -2094,7 +2100,7 @@ void unregister(program p)
     if (m_delete (rev_programs, p))
       m_delete (programs, fname);
     else
-      programs[fname] = no_value;
+      PROGRAM_LOADED(programs, fname, no_value);
 
     string name = program_path_to_name (fname);
     mixed n = has_value (name, '.') ?
@@ -3987,6 +3993,75 @@ protected mixed main_resolv(string sym, CompatResolver|void resolver) {
   return v;
 };
 
+// TODO: this seems like a backward approach. The debugger should register its
+// completer on startup. Callback for completing breakpoint registration for
+// programs which weren't loaded at the time of the breakpoint's creation.
+function deferred_breakpoint_completer;
+
+// The main program is not indexed in the 'programs' mapping with its real
+// path so that reverse lookups (typically by the coded) always find the
+// canonical "/main" - the index used for main program. The original path is
+// needed by the debugger and stored in this variable.
+string main_path;
+
+mixed program_loaded(string fn, mixed c) {
+  if ( programp(c) && !programs[fn] )
+    programs[fn] = c;
+
+  if( deferred_breakpoint_completer )
+    deferred_breakpoint_completer(fn, c);
+  return c;
+}
+
+void load_debugger(int wait_seconds, int debugger_signal) {
+  want_load_announcements = 1;
+  set_debugger(1);
+
+  function d, f;
+
+  mixed err = catch {
+    f = main_resolv("Debug.debug",
+                         get_compilation_handler(compat_major, compat_minor));
+  };
+
+  if( err || !f ) {
+    werror("Debugging is only available when Pike is compiled with RTL debug.\n");
+    werror(describe_backtrace(err));
+    exit(1);
+  }
+
+  err = catch {
+    deferred_breakpoint_completer = main_resolv(
+                         "Debug.Debugger.deferred_breakpoint_completer",
+                         get_compilation_handler(compat_major, compat_minor));
+  };
+
+  if(err || !deferred_breakpoint_completer ) {
+    werror("Unable to load the deferred breakpoint completer.\n");
+    werror(describe_backtrace(err));
+    exit(1);
+  }
+
+  err = catch {
+    d = main_resolv("Debug.Debugger.DebugServer",
+                    get_compilation_handler(compat_major, compat_minor));
+   };
+
+  if( err || !d ){
+    werror("Unable to load the debug server.\n");
+    werror(describe_backtrace(err));
+    exit(1);
+  }
+
+  debugger = d();
+  debugger->wait_seconds = wait_seconds;
+
+  if (debugger_signal)
+    signal(signum("SIGUSR1"), debugger->load_breakpoint);
+  else
+    debugger->load_breakpoint();
+}
+
 //! This function is called when all the driver is done with all setup
 //! of modules, efuns, tables etc. etc. and is ready to start executing
 //! _real_ programs. It receives the arguments not meant for the driver.
@@ -4034,6 +4109,10 @@ void _main(array(string(0..255)) orig_argv)
 
   Version cur_compat_ver;
 
+  int have_debugger = 0;
+  int debugger_wait = 0;
+  int debugger_signal = 0;
+
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
     array q;
@@ -4065,6 +4144,9 @@ void _main(array(string(0..255)) orig_argv)
       ({"assembler_debug",MAY_HAVE_ARG, ({"--assembler-debug"}), 0, 0}),
       ({"optimizer_debug",MAY_HAVE_ARG, ({"--optimizer-debug"}), 0, 0}),
       ({"debug",          MAY_HAVE_ARG, ({"--debug"}), 0, 1}),
+      ({"debugger",       NO_ARG, ({"--debugger"}), 0, 0}),
+      ({"debugger_wait",  HAS_ARG, ({"--debugger-wait"}), 0, 0}),
+      ({"debugger_signal",NO_ARG, ({"--debugger-signal"}), 0, 0}),
       ({"trace",          MAY_HAVE_ARG, ({"--trace"}), 0, 1}),
       ({"ignore",         MAY_HAVE_ARG, ({"-Dqdatplr"}), 0, 1}),
       ({"ignore",         HAS_ARG, ({"-s"}), 0, 0}),
@@ -4118,6 +4200,18 @@ void _main(array(string(0..255)) orig_argv)
       case "debug":
 	debug+=(int)q[i][1];
 	break;
+
+      case "debugger":
+    have_debugger = 1;
+    break;
+
+      case "debugger_wait":
+    debugger_wait = (int)q[i][1];
+    break;
+
+      case "debugger_signal":
+    debugger_signal = 1;
+    break;
 
       case "trace":
 	trace+=(int)q[i][1];
@@ -4254,6 +4348,7 @@ void _main(array(string(0..255)) orig_argv)
 #if constant(_debug)
 	if(debug) _debug(debug);
 #endif
+    if(have_debugger) load_debugger(debugger_wait, debugger_signal);
 	if(trace) trace = predef::trace(trace);
 	mixed ret;
 	mixed err = catch {
@@ -4407,10 +4502,12 @@ void _main(array(string(0..255)) orig_argv)
     // Don't list the program with its real path in the programs
     // mapping, so that reverse lookups (typically by the codec)
     // always find the canonical "/main" instead.
-    programs[argv[0]] = no_value;
-  }
+    PROGRAM_LOADED(programs, argv[0], no_value);
 
-  programs["/main"] = prog;
+    // Real program path is used by the debugger.
+    main_path = argv[0];
+  }
+  PROGRAM_LOADED(programs, "/main", prog);
 
   // FIXME: Can this occur at all?
   if(!prog)
@@ -4419,6 +4516,7 @@ void _main(array(string(0..255)) orig_argv)
 #if constant(_debug)
   if(debug) _debug(debug);
 #endif
+  if(have_debugger) load_debugger(debugger_wait, debugger_signal);
   if(trace) trace = predef::trace(trace);
   mixed ret;
   mixed err = catch {
@@ -6048,7 +6146,7 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
     {
       unregistered = 0;
       resolv_debug("register %s\n", fname);
-      programs[fname]=p;
+      PROGRAM_LOADED(programs, fname, p);
       if (mkobj)
 	DEC_RETURN (objectp (objects[p]) ? objects[p] : (objects[p]=__null_program()));
     }

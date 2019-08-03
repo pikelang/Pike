@@ -836,14 +836,87 @@ struct backlog
 struct backlog backlog[BACKLOG];
 int backlogp=BACKLOG-1;
 
+struct svalue debugger_server = SVALUE_INIT_FREE;
+
 static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 {
+  char *file = NULL, *f;
+  struct pike_string *filep;
+  INT_TYPE linep;
+#ifdef PIKE_DEBUG
+  int debug_retval = 0;
+  int pause_here = 0;
+  struct debug_breakpoint *bp;
+  struct thread_state *th_state;
+  th_state = thread_state_for_id(th_self());
+
+  if( th_state->stepping_mode
+      || (bp = Pike_fp->context->prog->breakpoints) != NULL ) {
+
+    if( th_state->stepping_mode ) {
+        pause_here = 1;
+    }
+    else {
+      while(bp != NULL) {
+        if( bp->offset == (Pike_fp->pc - Pike_fp->context->prog->program) ) {
+          pause_here = 1;
+          break;
+        }
+
+        bp = bp->next;
+      }
+    }
+    if( pause_here ) {
+      if(TYPEOF(debugger_server) == PIKE_T_FREE) {
+        push_text("Debug.Debugger.get_debugger_handler");
+        SAFE_APPLY_MASTER("resolv", 1 );
+        safe_apply_svalue(Pike_sp-1, 0, 1);
+
+        if( TYPEOF(Pike_sp[-1]) != T_FUNCTION ) {
+          Pike_error("Could not get debugger for breakpoint.\n");
+        }
+
+        // TODO check memory
+        debugger_server = *(struct svalue *)malloc(sizeof(struct svalue));
+        assign_svalue_no_free((&debugger_server), Pike_sp-1);
+        add_ref_svalue(&debugger_server);
+
+        pop_stack();
+        pop_stack();
+      }
+    }
+
+    filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
+
+    ref_push_string(filep);
+    push_int(linep);
+    push_text(get_opcode_name(instr));
+    ref_push_object(Pike_fp->current_object);
+    f_cq___debug_backtrace(0);
+
+    th_state->stepping_mode = 0;
+
+    safe_apply_svalue(&debugger_server, 5, 1);
+
+    if( TYPEOF(*(Pike_sp - 1)) != T_INT ) {
+      pop_stack();
+      Pike_error("Wrong return type from debug callback.\n");
+    } else {
+      debug_retval = (*(Pike_sp - 1)).u.integer;
+    }
+
+    pop_stack();
+
+    if(debug_retval == 1) {
+      th_state->stepping_mode = 1;
+    } else {
+      th_state->stepping_mode = 0;
+    }
+  }
+#endif /* PIKE_DEBUG */
+
   if(Pike_interpreter.trace_level > 2)
   {
-    char *file = NULL, *f;
-    struct pike_string *filep;
-    INT_TYPE linep;
-
     filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
     if (filep && !filep->size_shift) {
       file = filep->str;
@@ -1188,7 +1261,7 @@ static int catching_eval_instruction (PIKE_OPCODE_T *pc);
 PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 {
 #ifdef PIKE_DEBUG
-  if (d_flag || Pike_interpreter.trace_level > 2) {
+  if (enable_debugger || d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (F_CATCH - F_OFFSET);
     if (Pike_interpreter.trace_level>3) {
       sprintf(trace_buffer, "-    Addr = %p\n", addr);
@@ -1316,7 +1389,7 @@ void *dummy_label = NULL;
 PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr)
 {
 #ifdef PIKE_DEBUG
-  if (d_flag || Pike_interpreter.trace_level > 2) {
+  if (enable_debugger || d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (F_CATCH - F_OFFSET);
     if (Pike_interpreter.trace_level>3) {
       sprintf(trace_buffer, "-    Addr = %p\n", addr);
@@ -1431,7 +1504,7 @@ static void debug_instr_prologue (PIKE_INSTR_T instr)
 }
 
 #define DEBUG_PROLOGUE(OPCODE, EXTRA) do {				\
-    if (d_flag || Pike_interpreter.trace_level > 2) {			\
+    if (enable_debugger || d_flag || Pike_interpreter.trace_level > 2) {			\
       debug_instr_prologue ((OPCODE) - F_OFFSET);			\
       EXTRA;								\
     }									\
@@ -1441,19 +1514,19 @@ static void debug_instr_prologue (PIKE_INSTR_T instr)
  * machine code. */
 void simple_debug_instr_prologue_0 (PIKE_INSTR_T instr)
 {
-  if (d_flag || Pike_interpreter.trace_level > 2)
+  if (enable_debugger || d_flag || Pike_interpreter.trace_level > 2)
     low_debug_instr_prologue (instr);
 }
 void simple_debug_instr_prologue_1 (PIKE_INSTR_T instr, INT32 arg)
 {
-  if (d_flag || Pike_interpreter.trace_level > 2) {
+  if (enable_debugger || d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (instr);
     DEBUG_LOG_ARG (arg);
   }
 }
 void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
 {
-  if (d_flag || Pike_interpreter.trace_level > 2) {
+  if (enable_debugger || d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (instr);
     DEBUG_LOG_ARG (arg1);
     DEBUG_LOG_ARG2 (arg2);
@@ -2266,7 +2339,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
               safe_describe_svalue(&obj_name, &obj_sval, 0, NULL);
               PIKE_FN_START(function->name->size_shift == 0 ?
                             function->name->str : "[widestring fn name]",
-                            buffer_get_string(s));
+                            buffer_get_string(&obj_name /* s? */));
               buffer_free(&obj_name);
             }
             if(UNLIKELY(Pike_interpreter.trace_level))
@@ -3726,5 +3799,6 @@ void really_clean_up_interpret(void)
   free_callback_list (&evaluator_callbacks);
   free_all_pike_frame_blocks();
   free_all_catch_context_blocks();
+  free_svalue(&debugger_server);
 #endif
 }
