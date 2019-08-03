@@ -1009,11 +1009,17 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
         mpz_get_str( buffer, 36, i );
         l = strlen(buffer);
 	code_entry(TAG_OBJECT, 2, data);
-        code_entry(TAG_STRING, l, data);
-        addstr(buffer,l);
 	EDB(1, {
 	    ENCODE_WERR(".bignum");
 	});
+        code_entry(TAG_STRING, l, data);
+	EDB(1, {
+	    ENCODE_WERR(".string  %ld", l);
+	});
+        addstr(buffer,l);
+	EDB(1, {
+	    ENCODE_FLUSH();
+	  });
         free(buffer);
 	break;
       }
