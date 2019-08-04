@@ -2602,6 +2602,9 @@ static DECLSPEC(noreturn) void decode_error (
     what &= TAG_MASK;							    \
     if(what<0 || what>2)						    \
       decode_error (data, NULL, "Illegal size shift %d.\n", what);	\
+    EDB(1, {								\
+	DECODE_WERR(".string  %ld<<%d", num, what);			\
+      });								\
     sz = (ptrdiff_t) num << what;					\
     if (sz < 0)								\
       decode_error (data, NULL, "Illegal negative size %td.\n", sz);	\
@@ -2611,6 +2614,9 @@ static DECLSPEC(noreturn) void decode_error (
     STR=begin_wide_shared_string(num, what);				\
     memcpy(STR->str, data->data + data->ptr, sz);			\
     EDB(6, debug_dump_mem(data->ptr, data->data + data->ptr, sz));	\
+    EDB(1, {								\
+	DECODE_FLUSH();							\
+      });								\
     data->ptr += sz;							\
     BITFLIP(STR);							    \
     STR=end_shared_string(STR);                                             \
@@ -2621,10 +2627,16 @@ static DECLSPEC(noreturn) void decode_error (
     if (sz > data->len - data->ptr)					\
       decode_error (data, NULL, "Too large size %td (max is %td).\n",	\
 		    sz, data->len - data->ptr);				\
+    EDB(1, {								\
+	DECODE_WERR(".string  %ld", sz);				\
+      });								\
     STR=make_shared_binary_string((char *)(data->data + data->ptr), sz); \
     EDB(6, debug_dump_mem(data->ptr, data->data + data->ptr, sz));	\
     data->ptr += sz;							\
   }									    \
+  EDB(1, {								\
+      DECODE_FLUSH();							\
+    });									\
 }while(0)
 
 #define decode_number(X,data) do {		\
@@ -3070,6 +3082,10 @@ static void decode_value2(struct decode_data *data)
   {
     case TAG_INT:
       push_int(num);
+
+      EDB(1, {
+	  DECODE_WERR(".integer %ld", num);
+	});
       break;
 
     case TAG_STRING:
@@ -3100,36 +3116,64 @@ static void decode_value2(struct decode_data *data)
         switch(num)
 	{
 	  case Pike_FP_SNAN: /* Signal Not A Number */
+            push_float((FLOAT_TYPE)MAKE_NAN());
+	    EDB(1, {
+		DECODE_WERR(".float   snan");
+	      });
+	    break;
+
 	  case Pike_FP_QNAN: /* Quiet Not A Number */
             push_float((FLOAT_TYPE)MAKE_NAN());
+	    EDB(1, {
+		DECODE_WERR(".float   qnan");
+	      });
 	    break;
 
 	  case Pike_FP_NINF: /* Negative infinity */
             push_float(-(FLOAT_TYPE)MAKE_INF());
+	    EDB(1, {
+		DECODE_WERR(".float   -inf");
+	      });
 	    break;
 
 	  case Pike_FP_PINF: /* Positive infinity */
             push_float((FLOAT_TYPE)MAKE_INF());
+	    EDB(1, {
+		DECODE_WERR(".float   inf");
+	      });
 	    break;
 
 	  case Pike_FP_NZERO: /* Negative Zero */
 	    push_float(-0.0); /* Does this do what we want? */
+	    EDB(1, {
+		DECODE_WERR(".float   -0.0");
+	      });
 	    break;
 
 	  default:
             push_float((FLOAT_TYPE)ldexp(res, num));
+	    EDB(1, {
+		DECODE_WERR(".float   %d", num);
+	      });
 	    break;
 	}
 	break;
       }
 
       push_float((FLOAT_TYPE)ldexp(res, num));
+      EDB(1, {
+	  DECODE_WERR(".float   %ld, %d", res, num);
+	});
       break;
     }
 
     case TAG_TYPE:
     {
       struct pike_type *t;
+
+      EDB(1, {
+	  DECODE_WERR(".entry   type, %ld", num);
+	});
 
       decode_type(t, data);
       push_type_value(t);
@@ -3153,6 +3197,9 @@ static void decode_value2(struct decode_data *data)
 
       EDB(2,fprintf(stderr, "%*sDecoding array of size %ld to <%ld>\n",
 		  data->depth, "", num, entry_id.u.integer));
+      EDB(1, {
+	  DECODE_WERR(".entry   array, %ld", num);
+	});
 
       SETUP_DECODE_MEMOBJ(T_ARRAY, array, a, allocate_array(num),
 			  free_svalues(ITEM(a), a->size, a->type_field));
@@ -3183,6 +3230,10 @@ static void decode_value2(struct decode_data *data)
 
       EDB(2,fprintf(stderr, "%*sDecoding mapping of size %ld to <%ld>\n",
 		  data->depth, "", num, entry_id.u.integer));
+
+      EDB(1, {
+	  DECODE_WERR(".entry   mapping, %ld", num);
+	});
 
       SETUP_DECODE_MEMOBJ(T_MAPPING, mapping, m, allocate_mapping(num), ; );
 
@@ -3215,6 +3266,9 @@ static void decode_value2(struct decode_data *data)
 
       EDB(2,fprintf(stderr, "%*sDecoding multiset of size %ld to <%ld>\n",
 		  data->depth, "", num, entry_id.u.integer));
+      EDB(1, {
+	  DECODE_WERR(".entry   multiset, %ld", num);
+	});
       SETUP_DECODE_MEMOBJ (T_MULTISET, multiset, m,
 			   allocate_multiset (0, 0, NULL), ;);
       /* FIXME: This array could be avoided by building the multiset directly. */
@@ -3242,6 +3296,15 @@ static void decode_value2(struct decode_data *data)
     case TAG_OBJECT:
     {
       int subtype = 0;
+      EDB(1, {
+	  if (!num) {
+	    DECODE_WERR(".entry   object");
+	  } else if (num == 2) {
+	    DECODE_WERR(".bignum");
+	  } else {
+	    DECODE_WERR(".entry   object, %ld", num);
+	  }
+	});
       if (num == 4) {
 	decode_number(subtype, data);
       }
@@ -3397,6 +3460,14 @@ static void decode_value2(struct decode_data *data)
     }
 
     case TAG_FUNCTION:
+      EDB(1, {
+	  if (num) {
+	    DECODE_WERR(".entry   function, %ld", num);
+	  } else {
+	    DECODE_WERR(".entry   function");
+	  }
+	});
+
       decode_value2(data);
       stack_dup();	/* For diagnostic purposes... */
 
@@ -3477,6 +3548,10 @@ static void decode_value2(struct decode_data *data)
 	{
 	  struct program *p;
 
+	  EDB(1, {
+	      DECODE_WERR(".entry   program");
+	    });
+
 	  decode_value2(data);
 	  apply(decoder_codec (data),"programof", 1);
 
@@ -3510,6 +3585,10 @@ static void decode_value2(struct decode_data *data)
 	}
 
 	case 2:
+	  EDB(1, {
+	      DECODE_WERR(".entry   program, 2");
+	    });
+
 	  decode_value2(data);
 	  decode_value2(data);
 	  if(TYPEOF(Pike_sp[-2]) == T_INT)
@@ -3524,6 +3603,10 @@ static void decode_value2(struct decode_data *data)
 	  break;
 
         case 3:
+	  EDB(1, {
+	      DECODE_WERR(".entry   program, 3");
+	    });
+
 	  decode_value2(data);
 	  if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
 	      (Pike_sp[-1].u.integer < PROG_DYNAMIC_ID_START) &&
@@ -3543,6 +3626,9 @@ static void decode_value2(struct decode_data *data)
 
 	case 5: {		/* Forward reference for new-style encoding. */
 	  struct program *p = low_allocate_program();
+	  EDB(1, {
+	      DECODE_WERR(".entry   program, 5");
+	    });
 
 	  push_program (p);
 	  EDB(2,
@@ -3579,6 +3665,9 @@ static void decode_value2(struct decode_data *data)
 #ifdef ENCODE_DEBUG
 	  data->depth += 2;
 #endif
+	  EDB(1, {
+	      DECODE_WERR(".entry   program, 4");
+	    });
 
 	  /* Decode byte-order. */
 	  decode_number(byteorder, data);
