@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.155 2007/04/05 15:28:56 grubba Exp $
+dnl $Id$
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -523,7 +523,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.155 2007/04/05 15:28:56 grubba Exp $
+  # $Id$
 
   MY_AC_PROG_CC
 
@@ -1387,7 +1387,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	 grep "unknown" >/dev/null; then
       cached=""
       empty=yes
-      for f in "$d"/* no; do
+      for f in "$1"/* no; do
         if test -f "$f"; then
 	  empty=no
           filetype=`file "$f" 2>/dev/null | sed -e 's/.*://'`
