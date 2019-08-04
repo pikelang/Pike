@@ -3021,6 +3021,7 @@ static void decode_value2(struct decode_data *data)
     case TAG_DELAYED:
       EDB (2, fprintf(stderr, "%*sDecoding delay encoded from <%ld>\n",
 		      data->depth, "", num););
+      EDB(1, DECODE_WERR(".tag     delayed, %ld", num));
       SET_SVAL(entry_id, T_INT, NUMBER_NUMBER, integer, num);
       if (!(delayed_enc_val = low_mapping_lookup (data->decoded, &entry_id)))
 	decode_error (data, NULL, "Failed to find previous record of "
@@ -3031,6 +3032,7 @@ static void decode_value2(struct decode_data *data)
     case TAG_AGAIN:
       EDB (1, fprintf(stderr, "%*sDecoding TAG_AGAIN from <%ld>\n",
 		      data->depth, "", num););
+      EDB(1, DECODE_WERR(".tag     again, %ld", num));
       SET_SVAL(entry_id, T_INT, NUMBER_NUMBER, integer, num);
       if((tmp2=low_mapping_lookup(data->decoded, &entry_id)))
       {
@@ -3050,6 +3052,12 @@ static void decode_value2(struct decode_data *data)
       EDB (2, fprintf(stderr, "%*sDecoding to <%ld>: TAG%d (%ld)\n",
 		      data->depth, "", entry_id.u.integer,
 		      what & TAG_MASK, num););
+      EDB(1, {
+	  ptrdiff_t save_ptr = data->ptr;
+	  data->ptr = data->debug_ptr;
+	  DECODE_WERR("# Decoding to tag #%ld", entry_id.u.integer);
+	  data->ptr = save_ptr;
+	});
       /* Types are added to the encoded mapping AFTER they have been
        * encoded. */
       delayed_enc_val = NULL;
@@ -4616,6 +4624,17 @@ static INT32 my_decode(struct pike_string *tmp,
     free( (char *) data);
     return 0;
   }
+
+  EDB(1, {
+      string_builder_append_disassembly(data->debug_buf,
+					data->debug_ptr,
+					data->data + data->debug_ptr,
+					data->data + data->ptr,
+					".format  0",
+					NULL,
+					"Encoding #0.");
+      data->debug_ptr = data->ptr;
+    });
 
   data->decoded=allocate_mapping(128);
 
