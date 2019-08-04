@@ -2266,7 +2266,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
               safe_describe_svalue(&obj_name, &obj_sval, 0, NULL);
               PIKE_FN_START(function->name->size_shift == 0 ?
                             function->name->str : "[widestring fn name]",
-                            buffer_get_string(s));
+                            buffer_get_string(obj_name));
               buffer_free(&obj_name);
             }
             if(UNLIKELY(Pike_interpreter.trace_level))
