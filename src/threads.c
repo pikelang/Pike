@@ -3603,7 +3603,8 @@ void th_init(void)
   ADD_FUNCTION("create",f_thread_create,
 	       tFuncV(tMixed,tMixed,tVoid),
 	       ID_PROTECTED);
-  ADD_FUNCTION("backtrace",f_thread_backtrace,tFunc(tNone,tArray),0);
+  ADD_FUNCTION("backtrace", f_thread_backtrace,
+	       tFunc(tOr(tVoid,tInt01),tArray), 0);
   ADD_FUNCTION("wait",f_thread_id_result,tFunc(tNone,tMix),0);
   ADD_FUNCTION("status",f_thread_id_status,tFunc(tNone,tInt),0);
   ADD_FUNCTION("_sprintf",f_thread_id__sprintf,tFunc(tInt,tStr),0);
