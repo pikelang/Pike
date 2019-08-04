@@ -4600,7 +4600,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->debug_buf = debug_buf;
   data->debug_ptr = 0;
   if (data->debug && !debug_buf) {
-    debug_buf = &buf;
+    data->debug_buf = debug_buf = &buf;
     init_string_builder(debug_buf, 0);
   }
   data->depth = -2;
