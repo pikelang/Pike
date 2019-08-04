@@ -1634,7 +1634,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	 grep "unknown" >/dev/null; then
       cached=""
       empty=yes
-      for f in "$d"/* no; do
+      for f in "$1"/* no; do
         if test -f "$f"; then
 	  empty=no
 	  # NB: GNU file and BSD file default to not following symlinks.
