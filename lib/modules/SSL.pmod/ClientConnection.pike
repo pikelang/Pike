@@ -808,13 +808,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	}
       }
 
-      if (session->ticket && !tickets_enabled) {
-	// The server has stopped supporting session tickets?
-	// Make sure not to compare the server-generated
-	// session id with the one that we may have generated.
-	session_id = "";
-      }
-
       // RFC 5746 3.5:
       // When a ServerHello is received, the client MUST verify that the
       // "renegotiation_info" extension is present; if it is not, the
