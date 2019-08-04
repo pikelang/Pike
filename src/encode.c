@@ -3307,6 +3307,9 @@ static void decode_value2(struct decode_data *data)
 	});
       if (num == 4) {
 	decode_number(subtype, data);
+	EDB(1, {
+	    DECODE_WERR_COMMENT("inherit", ".number  %ld", subtype);
+	  });
       }
       decode_value2(data);
 
@@ -3675,6 +3678,9 @@ static void decode_value2(struct decode_data *data)
 	  EDB(4,
 	      fprintf(stderr, "%*sbyte order:%d\n",
 		      data->depth, "", byteorder));
+	  EDB(1, {
+	      DECODE_WERR_COMMENT("byte-order", ".number  %ld", byteorder);
+	    });
 
 	  if ((byteorder != PIKE_BYTEORDER)
 #if (PIKE_BYTEORDER == 1234)
@@ -3691,6 +3697,9 @@ static void decode_value2(struct decode_data *data)
 
 	  /* Decode flags. */
 	  decode_number(p_flags,data);
+	  EDB(1, {
+	      DECODE_WERR_COMMENT("flags", ".number  %ld", p_flags);
+	    });
 	  p_flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED |
 		       PROGRAM_FIXED | PROGRAM_PASS_1_DONE);
 	  p_flags |= PROGRAM_AVOID_CHECK;
@@ -3783,6 +3792,9 @@ static void decode_value2(struct decode_data *data)
 	  debug_malloc_touch(p);
 
 	  /* Check the version. */
+	  EDB(1, {
+	      DECODE_WERR("# version");
+	    });
 	  decode_value2(data);
 	  push_compact_version();
 	  if(!is_eq(Pike_sp-1,Pike_sp-2)
@@ -3802,6 +3814,9 @@ static void decode_value2(struct decode_data *data)
 	    data->pickyness++;
 
 	  /* parent */
+	  EDB(1, {
+	      DECODE_WERR("# parent");
+	    });
 	  decode_value2(data);
 	  if (TYPEOF(Pike_sp[-1]) == T_PROGRAM) {
 	    p->parent = Pike_sp[-1].u.program;
@@ -3817,8 +3832,13 @@ static void decode_value2(struct decode_data *data)
 	  Pike_sp--;
 
 	  /* Decode lengths. */
-#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
-	  decode_number(PIKE_CONCAT(local_num_, NAME), data);
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) do {				\
+	    decode_number(PIKE_CONCAT(local_num_, NAME), data);		\
+	    EDB(1, {							\
+		DECODE_WERR_COMMENT(TOSTR(NAME), ".number  %ld",	\
+				    PIKE_CONCAT(local_num_,NAME));	\
+	      });							\
+	  } while(0);
 #include "program_areas.h"
 
 	  /* Byte-code method */
@@ -3827,6 +3847,9 @@ static void decode_value2(struct decode_data *data)
 	    decode_error(data, NULL, "Unsupported byte-code method: %d\n",
 			 bytecode_method);
 	  }
+	  EDB(1, {
+	      DECODE_WERR("byte-code", ".number  %ld", bytecode_method);
+	    });
 
 	  /* Decode strings */
 	  for (e=0; e<local_num_strings; e++) {
@@ -3855,6 +3878,9 @@ static void decode_value2(struct decode_data *data)
 	    }
 	  }
 
+	  EDB(1, {
+	      DECODE_WERR("# Constant table.");
+	    });
 	  /* Decode identifier_references, inherits and identifiers. */
 	  decode_number(entry_type, data);
 	  EDB(4,
@@ -3867,7 +3893,17 @@ static void decode_value2(struct decode_data *data)
 		 (entry_type == ID_ENTRY_TYPE_CONSTANT)) {
 	    INT32 efun_no;
 	    struct program_constant *constant;
+	    EDB(1, {
+		if (entry_type == ID_ENTRY_EFUN_CONSTANT) {
+		  DECODE_WERR(".ident   efun_constant");
+		} else {
+		  DECODE_WERR(".ident   type_constant");
+		}
+	      });
 	    decode_number(efun_no, data);
+	    EDB(1, {
+		DECODE_WERR_COMMENT("constant #", ".number  %ld", efun_no);
+	      });
 	    EDB(2,
 		fprintf(stderr, "%*sDecoding efun/type constant #%d.\n",
 			data->depth, "", efun_no));
@@ -3915,7 +3951,46 @@ static void decode_value2(struct decode_data *data)
 	  }
 
 	  while (entry_type != ID_ENTRY_EOT) {
+	    EDB(1, {
+		switch(entry_type) {
+		case ID_ENTRY_TYPE_CONSTANT:
+		  DECODE_WERR(".ident   type_constant");
+		  break;
+		case ID_ENTRY_EFUN_CONSTANT:
+		  DECODE_WERR(".ident   efun_constant");
+		  break;
+		case ID_ENTRY_RAW:
+		  DECODE_WERR(".ident   raw");
+		  break;
+		case ID_ENTRY_EOT:
+		  /* NOT reached. Here for completion. */
+		  DECODE_WERR(".ident   eot");
+		  break;
+		case ID_ENTRY_VARIABLE:
+		  DECODE_WERR(".ident   variable");
+		  break;
+		case ID_ENTRY_FUNCTION:
+		  DECODE_WERR(".ident   function");
+		  break;
+		case ID_ENTRY_CONSTANT:
+		  DECODE_WERR(".ident   constant");
+		  break;
+		case ID_ENTRY_INHERIT:
+		  DECODE_WERR(".ident   inherit");
+		  break;
+		case ID_ENTRY_ALIAS:
+		  DECODE_WERR(".ident   alias");
+		  break;
+		default:
+		  DECODE_WERR_COMMENT("Unknown", ".ident   %ld", entry_type);
+		  break;
+		}
+	      });
 	    decode_number(id_flags, data);
+	    EDB(1, {
+		DECODE_WERR_COMMENT("modifiers",
+				    ".number  %ld", id_flags);
+	      });
 	    if ((entry_type != ID_ENTRY_RAW) &&
 		(entry_type != ID_ENTRY_INHERIT)) {
 	      /* Common identifier fields. */
@@ -3942,6 +4017,10 @@ static void decode_value2(struct decode_data *data)
 
 	      /* filename */
 	      decode_number(filename_strno, data);
+	      EDB(1, {
+		  DECODE_WERR_COMMENT("filename_strno",
+				      ".number  %ld", filename_strno);
+		});
 	      if (filename_strno >= p->num_strings) {
 		ref_push_program(p);
 		decode_error(data, NULL,
@@ -3954,6 +4033,10 @@ static void decode_value2(struct decode_data *data)
 
 	      /* linenumber */
 	      decode_number(c->lex.current_line, data);
+	      EDB(1, {
+		  DECODE_WERR_COMMENT("linenumber",
+				      ".number  %ld", c->lex.current_line);
+		});
 
 	      /* Identifier name and type on the pike stack.
 	       * Definition location in c->lex.
@@ -3971,10 +4054,17 @@ static void decode_value2(struct decode_data *data)
 
 		/* inherit_offset */
 		decode_number(ref.inherit_offset, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("inherit_offset",
+					".number  %ld", ref.inherit_offset);
+		  });
 
 		/* identifier_offset */
 		/* Actually the id ref number from the inherited program */
 		decode_number(ref_no, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("ref_no", ".number  %ld", ref_no);
+		  });
 
                 if (ref.inherit_offset >= p->num_inherits)
                     decode_error(data, NULL, "Inherit offset out of range %u vs %u.\n",
@@ -3991,6 +4081,10 @@ static void decode_value2(struct decode_data *data)
 
 		/* Expected identifier reference number */
 		decode_number(no, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("ref_no",
+					".number  %ld", no);
+		  });
 
 		if (no < 0 || no > p->num_identifier_references) {
 		  EDB (3, dump_program_tables (p, data->depth));
@@ -4015,6 +4109,10 @@ static void decode_value2(struct decode_data *data)
 
 		/* Expected identifier offset */
 		decode_number(no, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("ref_no",
+					".number  %ld", no);
+		  });
 
 		EDB(5,
 		    fprintf(stderr,
@@ -4050,9 +4148,19 @@ static void decode_value2(struct decode_data *data)
 
 		/* func_flags (aka identifier_flags) */
 		decode_number(func_flags, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("identifier_flags",
+					".number  %ld",
+					func_flags);
+		  });
 
 		/* func */
 		decode_number(func.offset, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("offset",
+					".number  %ld",
+					func.offset);
+		  });
 		if (func.offset != -1) {
 #ifdef ENCODE_DEBUG
 		  int old_a_flag;
@@ -4070,6 +4178,10 @@ static void decode_value2(struct decode_data *data)
 
 		/* opt_flags */
 		decode_number(opt_flags, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("opt_flags",
+					".number  %ld", opt_flags);
+		  });
 
 		/* FIXME:
 		 *   Verify validity of func_flags, func.offset & opt_flags
@@ -4077,6 +4189,10 @@ static void decode_value2(struct decode_data *data)
 
 		/* Expected identifier offset */
 		decode_number(no, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("ref_no",
+					".number  %ld", no);
+		  });
 
 		EDB(5, {
 		  INT_TYPE line;
@@ -4145,15 +4261,27 @@ static void decode_value2(struct decode_data *data)
 
 		/* run_time_type */
 		decode_number(id.run_time_type, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("run_time_type",
+					".number  %ld", id.run_time_type);
+		  });
 
 		/* opt_flags */
 		decode_number(id.opt_flags, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("opt_flags",
+					".number  %ld", id.opt_flags);
+		  });
 
 		ref.run_time_type = PIKE_T_UNKNOWN;
 		ref.func.offset = 0;
 
 		/* Expected identifier number. */
 		decode_number(no, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("ref_no",
+					".number  %ld", no);
+		  });
 
 		n = isidentifier(id.name);
 
@@ -4215,9 +4343,19 @@ static void decode_value2(struct decode_data *data)
 
 		/* depth */
 		decode_number(depth, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("depth",
+					".number  %ld",
+					depth);
+		  });
 
 		/* refno */
 		decode_number(refno, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("refno",
+					".number  %ld",
+					refno);
+		  });
 
 		/* FIXME:
 		 *   Verify validity of depth and refno.
@@ -4225,6 +4363,10 @@ static void decode_value2(struct decode_data *data)
 
 		/* Expected identifier number. */
 		decode_number(no, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("ref_no",
+					".number  %ld", no);
+		  });
 
 		EDB(5,
 		    fprintf(stderr,
@@ -4262,6 +4404,10 @@ static void decode_value2(struct decode_data *data)
 		int no;
 
 		decode_number(no, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("ref_no",
+					".number  %ld", no);
+		  });
 		if (no !=
 		    Pike_compiler->new_program->num_identifier_references) {
 		  ref_push_program (p);
@@ -4317,12 +4463,24 @@ static void decode_value2(struct decode_data *data)
 
 		/* parent_identifier */
 		decode_number(parent_identifier, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("parent_id",
+					".number  %ld", parent_identifier);
+		  });
 
 		/* parent_offset */
 		decode_number(parent_offset, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("parent_offset",
+					".number  %ld", parent_offset);
+		  });
 
 		/* Expected number of identifier references. */
 		decode_number(no, data);
+		EDB(1, {
+		    DECODE_WERR_COMMENT("ref_no",
+					".number  %ld", no);
+		  });
 
 		if (prog->num_identifier_references != no) {
 		  ref_push_program (p);
@@ -4351,8 +4509,15 @@ static void decode_value2(struct decode_data *data)
 	      decode_error(data, NULL, "Unsupported id entry type: %d\n",
 			   entry_type);
 	    }
+	    EDB(1, {
+		DECODE_FLUSH();
+	      });
+
 	    decode_number(entry_type, data);
 	  }
+	  EDB(1, {
+	      DECODE_WERR(".ident   eot");
+	    });
 
 	  /* Restore c->lex. */
 	  CALL_AND_UNSET_ONERROR(err2);
