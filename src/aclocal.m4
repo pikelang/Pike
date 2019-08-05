@@ -1392,6 +1392,8 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	  empty=no
           filetype=`file "$f" 2>/dev/null | sed -e 's/.*://'`
 	  case "$filetype" in
+            *executable*)
+              continue;;
             *32-bit*)
   	      abi_32=yes
 	      ;;
