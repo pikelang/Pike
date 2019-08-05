@@ -114,6 +114,11 @@ o Image.Dims
     orientation information, even though Image.JPEG.decode does not
     actually perform the rotations.
 
+o Odbc
+
+  The module's configure script now respects ABI suffixes when searching
+  for the ODBC library dir.
+
 o Process.run
 
   - Don't error if stdin modifier is supplied as the empty string.
