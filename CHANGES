@@ -164,6 +164,11 @@ o SSL.File
   This in turn caused errors like "Not open" from
   functions like read() and set_nonblocking().
 
+o sybase
+
+  The module's configure script now respects ABI suffixes when searching
+  for the sybase library dir.
+
 o Thread.Queue
 
   Attempt to work around glibc bugs.
