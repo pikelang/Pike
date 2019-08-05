@@ -229,6 +229,21 @@
     </chapter>
   </file>
   <file>
+    <chapter title="Cryptography">
+      <section title="Password hashing">
+	<insert-move entity="crypt"/>
+	<insert-move entity="Crypto.Password"/>
+      </section>
+      <section title="Kerberos and GSSAPI">
+	<insert-move entity="GSSAPI"/>
+      </section>
+      <section title="Cryptographic primitives">
+	<insert-move entity="Crypto"/>
+	<insert-move entity="Nettle"/>
+      </section>
+    </chapter>
+  </file>
+  <file>
     <chapter title="The rest">
       <insert-move entity=""/>
     </chapter>
