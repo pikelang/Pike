@@ -91,8 +91,6 @@ EOF
       done
     fi
 
-    AC_MSG_CHECKING(for ODBC library-directory)
-
     AC_CACHE_VAL(pike_cv_odbc_lib_dir, [
 
       pike_cv_odbc_lib_dir=''
@@ -113,17 +111,22 @@ EOF
 	  $with_root/usr/odbc/lib $with_root/usr/lib/odbc $with_root/usr/lib \
 	  $with_root/lib/odbc $with_root/lib; do
   	if test -d $bardir/.; then
-  	  if ls $bardir/*odbc* >/dev/null 2>&1 ; then
-  	    pike_cv_odbc_lib_dir="$bardir $pike_cv_odbc_lib_dir"
-  	  else
-  	    :
-  	  fi
+          for suff in $pike_cv_abi_suffixes; do
+            PIKE_CHECK_ABI_DIR($bardir$suff, [
+                if ls $bardir$suff/*odbc* >/dev/null 2>&1 ; then
+                  pike_cv_odbc_lib_dir="$bardir$suff $pike_cv_odbc_lib_dir"
+                else
+                  :
+                fi
+              ])
+          done
   	else
   	  :
   	fi
       done
     ])
 
+    AC_MSG_CHECKING(for ODBC library-directory)
     AC_MSG_RESULT($pike_cv_odbc_lib_dir)
 
     if test "x$pike_cv_odbc_lib_dir" = x; then :; else
