@@ -1658,6 +1658,8 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	  filetype="`echo $filetype | sed -e 's/...bit symbol table//'`"
 
 	  case "$filetype" in
+            *executable*)
+              continue;;
             *32-bit*)
   	      abi_32=yes
 	      ;;
