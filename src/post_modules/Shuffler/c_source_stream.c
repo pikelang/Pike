@@ -98,7 +98,8 @@ static struct data get_data(struct source *src, off_t len)
 reload:
   if (s->readwanted < 0)
     s->s.eof = 1;
-  if (res.len = len = s->available) {
+  res.data = NULL;
+  if ((res.len = s->available)) {
     res.data = s->data;
     s->available = 0;
   } else if (s->readwanted > 0) {
