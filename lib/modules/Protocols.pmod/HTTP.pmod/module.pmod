@@ -85,6 +85,11 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 
     proxy_headers["Proxy-Authorization"] = "Basic "
       + MIME.encode_base64((user || "") + ":" + (password || ""));
+    if (has_value(proxy->host, ":")) {
+      proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
+    } else {
+      proxy_headers["host"] = proxy->host + ":" + proxy->port;
+    }
   }
 
   if (url->scheme == "http") {
@@ -463,6 +468,11 @@ void do_async_proxied_method(string|Standards.URI proxy,
 
     proxy_headers["Proxy-Authorization"] = "Basic "
       + MIME.encode_base64((user || "") + ":" + (password || ""));
+    if (has_value(proxy->host, ":")) {
+      proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
+    } else {
+      proxy_headers["host"] = proxy->host + ":" + proxy->port;
+    }
   }
 
   if (url->scheme == "http") {
