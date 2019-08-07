@@ -244,6 +244,48 @@
     </chapter>
   </file>
   <file>
+    <chapter title="Introspection">
+      <section title="Value inspection">
+	<insert-move entity="arrayp"/>
+	<insert-move entity="callablep"/>
+	<insert-move entity="destructedp"/>
+	<insert-move entity="floatp"/>
+	<insert-move entity="functionp"/>
+	<insert-move entity="intp"/>
+	<insert-move entity="mappingp"/>
+	<insert-move entity="multisetp"/>
+	<insert-move entity="programp"/>
+	<insert-move entity="undefinedp"/>
+	<insert-move entity="_typeof"/>
+      </section>
+      <section title="Content inspection">
+	<insert-move entity="indices"/>
+	<insert-move entity="values"/>
+	<insert-move entity="types"/>
+	<insert-move entity="annotations"/>
+	<insert-move entity="get_weak_flag"/>
+      </section>
+      <section title="Integer inspection">
+	<insert-move entity="zero_type"/>
+      </section>
+      <section title="Function inspection">
+	<insert-move entity="function_name"/>
+	<insert-move entity="function_object"/>
+	<insert-move entity="function_program"/>
+      </section>
+      <section title="Object inspection">
+	<insert-move entity="object_program"/>
+      </section>
+      <section title="Program inspection">
+	<insert-move entity="get_profiling_info"/>
+	<insert-move entity="typeof_identifier"/>
+      </section>
+      <section title="Type inspection">
+	<insert-move entity="deprecated_typep"/>
+      </section>
+    </chapter>
+  </file>
+  <file>
     <chapter title="The rest">
       <insert-move entity=""/>
     </chapter>
