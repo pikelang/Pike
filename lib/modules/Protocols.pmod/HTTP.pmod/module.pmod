@@ -184,6 +184,11 @@ constant response_codes =
 
     proxy_headers["Proxy-Authorization"] = "Basic "
       + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
+    if (has_value(proxy->host, ":")) {
+      proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
+    } else {
+      proxy_headers["host"] = proxy->host + ":" + proxy->port;
+    }
   }
 
   if (url->scheme == "http") {
@@ -211,7 +216,8 @@ constant response_codes =
       m_delete(proxy_headers, "authorization");	// Keep the proxy in the dark.
       con = do_method("CONNECT", proxy, 0, proxy_headers);
       con->data(0);
-      if (con->status/100 > 2) {
+      if (con->status >= 300) {
+	// Proxy did not like us or failed to connect to the remote.
 	return con;
       }
       con->headers["connection"] = "keep-alive";
@@ -454,6 +460,13 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 				      mapping(string:string) request_headers,
 				      string data)
 {
+  if (con->status >= 300) {
+    // Proxy did not like us or failed to connect to the remote.
+    https_proxy_connect_fail(con, orig_cb_info, url, method,
+			     query_variables, request_headers,
+			     data);
+    return;
+  }
   con->set_callbacks(@orig_cb_info);
 
   // Install the timeout handler for the interval until
@@ -541,6 +554,11 @@ void do_async_proxied_method(string|Standards.URI proxy,
 
     proxy_headers["Proxy-Authorization"] = "Basic "
       + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
+    if (has_value(proxy->host, ":")) {
+      proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
+    } else {
+      proxy_headers["host"] = proxy->host + ":" + proxy->port;
+    }
   }
 
   if (url->scheme == "http") {
