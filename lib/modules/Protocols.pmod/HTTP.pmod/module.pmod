@@ -112,7 +112,8 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
       m_delete(proxy_headers, "authorization");	// Keep the proxy in the dark.
       con = do_method("CONNECT", proxy, 0, proxy_headers);
       con->data(0);
-      if (con->status/100 > 2) {
+      if (con->status >= 300) {
+	// Proxy did not like us or failed to connect to the remote.
 	return con;
       }
       con->headers["connect"] = "keep-alive";
@@ -382,6 +383,13 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 				      mapping(string:string) request_headers,
 				      string data)
 {
+  if (con->status >= 300) {
+    // Proxy did not like us or failed to connect to the remote.
+    https_proxy_connect_fail(con, orig_cb_info, url, method,
+			     query_variables, request_headers,
+			     data);
+    return;
+  }
   con->set_callbacks(@orig_cb_info);
 
   con->headers["connect"] = "keep-alive";
