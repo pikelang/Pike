@@ -80,6 +80,7 @@ static struct data get_data( struct source *src, off_t len )
   struct pf_source *s = (struct pf_source *)src;
   struct data res;
 
+  res.data = NULL;
   res.len = s->available;
   if (s->eof)
     s->s.eof = 1;

@@ -45,6 +45,7 @@ static struct data get_data( struct source *src, off_t len )
   if (s->len >= 0 && len > s->len)
     len = s->len;
 
+  res.data = NULL;
   for (;;) {
     struct pike_string *st;
 
