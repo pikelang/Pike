@@ -1586,9 +1586,9 @@ PIKECLASS Buffer
     if (!o) return NULL;
 
     if (LIKELY(o->prog == Buffer_program))
-      return OBJ2_BUFFER(o);
+      return &OBJ2_BUFFER(o)->str;
 
-    return get_storage(o, Buffer_program);
+    return &((struct Buffer_struct *)get_storage(o, Buffer_program))->str;
   }
 
   /*! @decl int add(string|String.Buffer ... data)
