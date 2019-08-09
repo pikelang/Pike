@@ -1,0 +1,113 @@
+subject: Pike 8.0: Protocols.HTTP, Sql.pgsql, Calendar, tzdata2019a, Concurrent.Promise, filesystem.Tar.
+from: 5317c76b00fb356ea588edd1582bd2691e865ac2
+to: 9f8e0579bbb170291627bab7894018892a3b036b
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2019-03-05T103813
+restart: true
+
+Fixes multiple issues:
+
+• Protocols.HTTP: Set the Host header for proxied requests.
+
+• Protocols.HTTP [do_async_proxied_method]: Check whether CONNECT failed.
+
+Do not attempt to start a TLS connection over a socket where
+the proxy has returned a failure code.
+
+Fixes [PIKE-198].
+
+• Tools.Standalone.test_pike: Do not close stdin.
+
+Potential fix for testsuite hanging on exit.
+
+Fixes [PIKE-196].
+
+• Protocols.HTTP.Query: Survive destruction by request_fail callback.
+
+Fixes [WS-524].
+
+• pgsql: Eliminate race for db connections still open at program exit.
+
+• Protocols.DNS: Survive Stdio.UDP()->bind() failing with EACCES.
+
+This can apparently happen for usually unprivileged ports on
+both NT and Solaris 11.
+
+Fixes [PIKE-185].
+
+• Updated to tzdata2019a.
+
+• Concurrent.Promise: Introduce delay() and optimise timeout().
+
+• Concurrent: Default global_on_failure() to master()->handle_error().
+
+This reduces risk of lost error messages from Concurrent.Promise el al.
+
+• Concurrent.Pomise: Improved diagnostics for broken promises.
+
+The Promise has typically already been destructed when the backtrace
+is described, so ensure that it at least is present in the message.
+
+Fixes [PIKE-181].
+
+• Concurrent.Future: Events may still occur after the timeout.
+
+Fixes spurious complaint "Promise has already been finalised."
+when a promise with a timeout is fullfilled after the timeout
+has triggered.
+
+Fixes [PIKE-177].
+
+• Calendar.Timezone: Use the symlink target as timezone candidate.
+
+• Calendar.Timezone: Fixed bug in handling of multi-line tz-files.
+
+• Calendar.Timezone: Add support for /etc/timezone (Linux).
+
+• Calendar.Timezone: Scan time zone files in a deterministic order.
+
+• Calendar.TZnames: Updated time zone expert system.
+
+The expert system should now be up to date with tzdata2018i.
+
+Fixes [PIKE-174].
+
+• Protocols.HTTP: Use supplied headers for proxied HTTP
+
+Previously we only did if authentication credentials for the proxy were
+supplied or we requested a HTTPS URL.
+
+Thanks to Stefan Gluszek for the report.
+
+• Filesystem.Tar: Reorder operations in extract_bits()
+
+As is mentioned in [LysLysKOM 23152065], Linux of recent versions clears
+the S_ISUID and S_ISGID bits when chowning to another user. While POSIX
+mandates this only for unprivileged users performing the chown, Linux
+starting with 2.2.13 does not treat root as a special case anymore.
+
+The operations were previously reordered to make utime() on __NT__ more
+robust, which caused chown() to be executed after chmod(). In the
+current order, we do utime() first, then chown(), then chmod().
+
+While it seems a bit weird to chown() files that do not belong to us,
+especially in the non-root-case, this has been the historical order of
+operations in Filesystem.Tar.
+
+Thanks to Per Cederqvist <ceder@lysator.liu.se> for the report.
+
+• Calendar: Added script to (re-)generate the time zone expert system.
+
+The expert system has been updated a single time (2008-01-13)
+since it was implemented on 2000-10-01, and it seems to miss
+some recent time zones, as well as guess wrong.
+
+It is unknown how the decision points in original expert system
+were selected (by hand?), so the new ones differ quite a bit.
+
+Fixes some of [Pike-174].
+
+• Protocols.HTTP.Server.Request: Fixed typo.
+
+Fixes [Pike-173].
+
