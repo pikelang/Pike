@@ -1479,8 +1479,10 @@ static int pair_add()
         if (DO_INT_TYPE_ADD_OVERFLOW(Pike_sp[-2].u.integer, Pike_sp[-1].u.integer, &res))
         {
           convert_svalue_to_bignum(Pike_sp-2);
-          call_lfun(LFUN_ADD,LFUN_RADD);
-          return 1;
+          if (LIKELY(call_lfun(LFUN_ADD,LFUN_RADD))) {
+	    return 1;
+	  }
+	  Pike_fatal("Failed to call `+() in bignum.\n");
         }
         Pike_sp[-2].u.integer = res;
         Pike_sp--;
@@ -2271,8 +2273,10 @@ PMOD_EXPORT void o_subtract(void)
     if(INT_TYPE_SUB_OVERFLOW(Pike_sp[-2].u.integer, Pike_sp[-1].u.integer))
     {
       convert_stack_top_to_bignum();
-      call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT);
-      return;
+      if (LIKELY(call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT))) {
+	return;
+      }
+      Pike_fatal("Failed to call `-() in bignum.\n");
     }
     Pike_sp--;
     SET_SVAL(Pike_sp[-1], PIKE_T_INT, NUMBER_NUMBER, integer,
@@ -4039,8 +4043,10 @@ PMOD_EXPORT void o_divide(void)
       stack_swap();
       convert_stack_top_to_bignum();
       stack_swap();
-      call_lfun(LFUN_DIVIDE,LFUN_RDIVIDE);
-      return;
+      if (LIKELY(call_lfun(LFUN_DIVIDE,LFUN_RDIVIDE))) {
+	return;
+      }
+      Pike_fatal("Failed to call `/() in bignum.\n");
     }
     else
       tmp = Pike_sp[-2].u.integer/Pike_sp[-1].u.integer;
