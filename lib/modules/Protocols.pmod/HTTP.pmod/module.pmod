@@ -460,14 +460,15 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 				      mapping(string:string) request_headers,
 				      string data)
 {
+  con->set_callbacks(@orig_cb_info);
   if (con->status >= 300) {
     // Proxy did not like us or failed to connect to the remote.
-    https_proxy_connect_fail(con, orig_cb_info, url, method,
-			     query_variables, request_headers,
-			     data);
+    // Return the failure message.
+    if (con->request_ok) {
+      con->request_ok(con, @con->extra_args);
+    }
     return;
   }
-  con->set_callbacks(@orig_cb_info);
 
   // Install the timeout handler for the interval until
   // the TLS connection is up.
