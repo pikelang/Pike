@@ -103,7 +103,7 @@ protected void create(string|object _server,
    raw=Raw(options->server,options->port,got_command,got_notify,
 	   connection_lost);
 
-   cmd->create(raw);
+   cmd->raw = raw;
 
    cmd->pass(options->pass||pass);
    cmd->nick(options->nick);
