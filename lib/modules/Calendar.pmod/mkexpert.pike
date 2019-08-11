@@ -115,10 +115,19 @@ mapping|array|string generate_expert_tree(array(object) zones)
     return zones[0]->zoneid;
   }
   // FIXME: Do we need to also incorporate summer-time transitions?
-  // FIXME: Move the probes to the middle between transitions for
-  //        improved robustness against differing versions of tzdata.
   array(int) times = Array.uniq(sort(zones->shifts * ({})));
-  times = ({ times[0]-1 }) + times;
+
+  // Add sentinels one year before and one year after the endpoints.
+  times = ({ times[0]-31557600 }) + times + ({ times[-1] + 31557600 });
+
+  // Move the probes to between the transitions for improved robustness.
+  // Updates to the tables have been known to move around transitions.
+  foreach(times; int i; int t) {
+    if (!i) continue;
+    times[i-1] = (times[i-1] + t)/2;
+  }
+  times = times[..sizeof(times)-2];
+
   int l, h = sizeof(times);
   int start;
   while (l+1 < h) {
