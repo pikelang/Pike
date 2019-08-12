@@ -102,6 +102,7 @@ else
     # pbkdf2 is available in Nettle 3.1 and later.
     # version.h was added in Nettle 3.1.1, but nettle_version_{major,minor}()
     # are first available in Nettle 3.2 and later.
+    # cmac is available in Nettle 3.5 and later.
     AC_CHECK_HEADERS(nettle/camellia.h \
 		     nettle/gcm.h \
 		     nettle/ripemd160.h \
@@ -111,6 +112,7 @@ else
 		     nettle/dsa.h nettle/umac.h nettle/ecdsa.h \
 		     nettle/curve25519.h nettle/eddsa.h \
                      nettle/version.h nettle/pbkdf2.h nettle/hmac.h \
+		     nettle/cmac.h \
 		    )
     # Check that the libraries match.
     #
@@ -125,6 +127,7 @@ else
 		   nettle_dsa_sign nettle_umac128_digest nettle_ecdsa_sign \
 		   nettle_curve25519_mul nettle_ed25519_sha512_sign \
                    nettle_version_major \
+		   nettle_cmac128_set_key \
 		   )
 
     AC_MSG_CHECKING([for idea.c])

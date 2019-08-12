@@ -5526,6 +5526,213 @@ PIKECLASS BlockCipher16
 
 #endif /* HAVE_NETTLE_GCM_H */
 
+#ifdef HAVE_NETTLE_CMAC_H
+
+#include <nettle/cmac.h>
+
+  /*!@module CMAC
+   *!
+   *! CMAC - Cipher-based Message Authentication Code
+   *!
+   *! This module implements the CMAC algorithm from @rfc{4493@}.
+   */
+  PIKEVAR object(Nettle_MAC) CMAC;
+
+  PIKECLASS _CMAC
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+  {
+    /*! @decl inherit __builtin.Nettle.MAC
+     */
+    INHERIT "__builtin.Nettle.MAC";
+
+    /*! @decl string(8bit) name()
+     *! Returns the name of the base cipher with @expr{".CMAC"@} appended.
+     */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_static_text(".CMAC");
+      f_add(2);
+    }
+
+    PIKEFUN int(16..16) digest_size()
+    {
+      push_int(16);
+    }
+
+    PIKEFUN int(16..16) block_size()
+    {
+      push_int(16);
+    }
+
+    PIKEFUN int(1..) key_size()
+    {
+      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
+    }
+
+    /* NB: No IV for CMAC. Use the default implementation of iv_size(). */
+
+    /*! @class State
+     */
+    PIKECLASS State
+      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+    {
+      DOCSTART() @decl inherit Cipher::State
+	DOCEND()
+
+      EXTRA
+      {
+	/* Perform an inherit of the State class (if any) that our parent
+	 * may contain via its inherit of __builtin.Nettle.MAC.
+	 */
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
+      }
+
+      CVAR struct cmac128_ctx cmac_ctx;
+      CVAR struct cmac128_key cmac_key;
+      PIKEVAR object object
+	flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+      CVAR struct Nettle_Cipher_State_struct *crypt_state;
+
+      PIKEFUN object(Nettle_MAC_State) init(string(8bit)|void data)
+      {
+	pike_nettle_crypt_func crypt_func = pike_crypt_func;
+	void *crypt_ctx = THIS->object;
+
+	cmac128_init(&THIS->cmac_ctx);
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  crypt_func = THIS->crypt_state->crypt;
+	  crypt_ctx = THIS->crypt_state->ctx;
+	}
+
+	cmac128_set_key(&THIS->cmac_key, crypt_ctx, crypt_func);
+
+	if (data) {
+	  cmac128_update(&THIS->cmac_ctx, crypt_ctx, crypt_func,
+			 data->len, STR0(data));
+	}
+
+	push_object(this_object());
+      }
+
+      PIKEFUN object(Nettle_MAC_State) update(string(8bit) data)
+      {
+	pike_nettle_crypt_func crypt_func = pike_crypt_func;
+	void *crypt_ctx = THIS->object;
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  crypt_func = THIS->crypt_state->crypt;
+	  crypt_ctx = THIS->crypt_state->ctx;
+	}
+
+	cmac128_update(&THIS->cmac_ctx, crypt_ctx, crypt_func,
+		       data->len, STR0(data));
+      }
+
+      PIKEFUN string(8bit) digest(int(1..16)|void length)
+      {
+	pike_nettle_crypt_func crypt_func = pike_crypt_func;
+	void *crypt_ctx = THIS->object;
+	struct pike_string *digest;
+	unsigned len = CMAC128_DIGEST_SIZE;
+
+	if (length) {
+	  len = length->u.integer;
+	  if ((len <= 0) || (len > CMAC128_DIGEST_SIZE)) {
+	    Pike_error("Invalid digest length for CMAC.\n");
+	  }
+	}
+
+	digest = begin_shared_string(len);
+
+	if (THIS->crypt_state && THIS->crypt_state->crypt) {
+	  crypt_func = THIS->crypt_state->crypt;
+	  crypt_ctx = THIS->crypt_state->ctx;
+	}
+
+	cmac128_digest(&THIS->cmac_ctx, &THIS->cmac_key, crypt_ctx, crypt_func,
+		       len, STR0(digest));
+
+	push_string(end_shared_string(digest));
+      }
+
+      /*! @decl Cipher::State substate_factory()
+       *!
+       *! Returns the @[Cipher::State] object that this object
+       *! is to operate on.
+       *!
+       *! Defaults to creating the State for the cipher implemented
+       *! in the parent module.
+       */
+      PIKEFUN object(Nettle_Cipher_State) substate_factory()
+	flags ID_PROTECTED;
+      {
+	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+      }
+
+      /*! @decl void create()
+       */
+      PIKEFUN void create(string key)
+	flags ID_PROTECTED;
+      {
+	struct object *o;
+	struct inherit *inh;
+	int block_size;
+	int f;
+
+	apply_current(f_Nettle_BlockCipher16_cq__CMAC_State_substate_factory_fun_num,
+		      args);
+	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
+	  Pike_error("Unsupported return value from Cipher::State().\n");
+	}
+	o = Pike_sp[-1].u.object;
+	if (!o->prog) {
+	  Pike_error("Cipher::State() returned destructed object.\n");
+	}
+
+	f = find_identifier("crypt", o->prog);
+	if (f < 0) {
+	  Pike_error("State object has no crypt() function.\n");
+	}
+
+	apply(o, "block_size", 0);
+
+	if(TYPEOF(Pike_sp[-1]) != T_INT)
+	  Pike_error("block_size() didn't return an int.\n");
+
+	block_size = Pike_sp[-1].u.integer;
+
+	if (block_size != CMAC128_DIGEST_SIZE)
+	  Pike_error("Bad block size for CMAC: %d.\n", block_size);
+
+	if (THIS->object) free_object(THIS->object);
+	add_ref(THIS->object = o);
+
+	apply(o, "set_encrypt_key", args);
+	pop_stack();
+
+	inh = INHERIT_FROM_INT(o->prog, f);
+	if (inh->prog == Nettle_Cipher_State_program) {
+	  /* crypt() is from Nettle.Cipher.State.
+	   */
+	  THIS->crypt_state = (struct Nettle_Cipher_State_struct *)
+	    get_inherit_storage(o, inh - o->prog->inherits);
+	} else {
+	  THIS->crypt_state = NULL;
+	}
+
+	apply_current(f_Nettle_BlockCipher16_cq__CMAC_State_init_fun_num, 0);
+      }
+    }
+    /*! @endclass State
+     */
+  }
+  /*! @endmodule CMAC
+   */
+#endif
+
   /* NB: Declare the storage explicitly to avoid having it declared
    *     inside the #ifdef above.
    */
@@ -5559,6 +5766,13 @@ PIKECLASS BlockCipher16
     apply_current(Nettle_BlockCipher16_cq__GCM_program_fun_num, 0);
     if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
       add_ref(THIS_NETTLE_BLOCKCIPHER16->GCM = Pike_sp[-1].u.object);
+    }
+    pop_stack();
+#endif
+#ifdef HAVE_NETTLE_CMAC_H
+    apply_current(Nettle_BlockCipher16_cq__CMAC_program_fun_num, 0);
+    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
+      add_ref(THIS_NETTLE_BLOCKCIPHER16->CMAC = Pike_sp[-1].u.object);
     }
     pop_stack();
 #endif
