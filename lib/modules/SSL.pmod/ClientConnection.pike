@@ -163,8 +163,8 @@ protected Packet client_hello(string(8bit)|void server_name,
        ( has_value(context->supported_versions, PROTOCOL_TLS_1_0) ||
          has_value(context->supported_versions, PROTOCOL_TLS_1_1) ||
          has_value(context->supported_versions, PROTOCOL_TLS_1_2) )) {
-    // draft-ietf-tls-session-hash
-    // NB: This extension is implicit in TLS 1.3 and N/A in SSL.
+    // RFC 7627
+    // NB: This extension is implicit in TLS 1.3, and invalid in SSL 3.0.
     return Buffer();
   };
 
