@@ -2517,8 +2517,8 @@ PIKE_MODULE_INIT
   pike_init_mpf_module();
   pike_init_smpz_module();
 
-  /* @decl constant version
-   * The version of the current GMP library, e.g. "6.1.0".
+  /*! @decl constant version
+   *! The version of the current GMP library, e.g. @expr{"6.1.0"@}.
    */
 #ifdef __NT__
   /* NB: <gmp.h> lacks sufficient export declarations to export
