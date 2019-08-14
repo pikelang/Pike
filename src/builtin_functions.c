@@ -4141,7 +4141,7 @@ PMOD_EXPORT void f_values(INT32 args)
   push_array(a);
 }
 
-/*! @decl array(type(mixed)) types(string|array|mapping|multiset|object x)
+/*! @decl array(type(mixed)) types(string|array|mapping|multiset|object|program x)
  *!
  *!   Return an array with the types of all valid indices for the value @[x].
  *!
@@ -10277,7 +10277,7 @@ void init_builtin_efuns(void)
 			  tObj,tPrg(tObj)),
 		     tArr(tVar(0)))),0,fix_values_type,0);
 
-  /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
+  /* function(string|multiset(array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN2("types", f_types,
 	    tOr3(tFunc(tOr3(tNStr(tSetvar(0,tInt)),
 			    tArr(tSetvar(0,tMix)),
