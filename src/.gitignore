@@ -35,6 +35,7 @@ autom4te.cache
 /language.h.nolines
 /language.h_src
 /language.h_src.nolines
+/las.c
 /lib
 /machine.h
 /machine.h.in
