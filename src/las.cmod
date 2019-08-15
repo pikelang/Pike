@@ -4,6 +4,8 @@
 || for more information.
 */
 
+/* NB: Last sync with las.c commit 433f48f9e78dca065f359f71a5c8a42a51b74e1e */
+
 #include "global.h"
 #include "interpret.h"
 #include "las.h"
@@ -4896,4 +4898,14 @@ int dooptcode(struct pike_string *name,
 
   free_node(n);
   return ret;
+}
+
+void init_las(void)
+{
+  INIT;
+}
+
+void exit_las(void)
+{
+  EXIT;
 }

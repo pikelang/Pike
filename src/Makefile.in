@@ -1236,6 +1236,8 @@ iterators.o: $(SRCDIR)/iterators.c
 
 backend.o: $(SRCDIR)/backend.c
 
+las.o: $(SRCDIR)/las.c
+
 libpike.o: $(SRCDIR)/libpike.c
 
 pike_compiler.o: $(SRCDIR)/pike_compiler.c
