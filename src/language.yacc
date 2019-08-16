@@ -2012,9 +2012,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
     }
     if(!type) type = mixed_type_string;
     add_ref(type);
-    low_add_local_name(Pike_compiler->compiler_frame, /*->previous,*/
-		       $1->u.sval.u.string,
-		       type, $3);
+    add_local_name($1->u.sval.u.string, type, $3);
     /* Note: Intentionally not marked as used. */
     free_node($1);
   }
