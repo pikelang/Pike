@@ -206,6 +206,13 @@
     </chapter>
   </file>
   <file>
+    <chapter title="Compression">
+      <insert-move entity="Gz"/>
+      <insert-move entity="Bz2"/>
+      <insert-move entity="HPack"/>
+    </chapter>
+  </file>
+  <file>
     <chapter title="Graphic User Interface">
       <insert-move entity="GTK"/>
       <insert-move entity="GTK2"/>
