@@ -71,6 +71,15 @@ struct pike_frame
   struct pike_frame *scope;     /** scope */
   struct svalue **save_mark_sp; /** saved mark sp level */
 
+  /**
+   * This is an address on the stack denoting the place where the return value
+   * should go.
+   *
+   * Most often it it equal to locals, but it may be further up on the stack,
+   * in case of call_svalue() or recursion.
+   */
+  struct svalue *save_sp;
+
   PIKE_OPCODE_T *pc;		/** Address of current opcode. */
   struct svalue *locals;	/** Start of local variables. */
   char *current_storage;        /** == current_object->storage + context->storage_offset */
@@ -102,16 +111,6 @@ struct pike_frame
 
   unsigned INT16 flags;		/** PIKE_FRAME_* */
 
-  /**
-   * This is an offset from locals and denotes the place where the return value
-   * should go.
-   *
-   * It can be -1 if the function to be called is on the stack.
-   * It can be even more negative in case of recursion when the return value location
-   * get replaced by that of the previous frame.
-   */
-  INT16 save_sp_offset;
-
 #ifdef PROFILING
   cpu_time_t children_base;	/** Accounted time when the frame started. */
   cpu_time_t start_time;	/** Adjusted time when thr frame started. */
@@ -119,16 +118,11 @@ struct pike_frame
 };
 
 static inline struct svalue *frame_get_save_sp(const struct pike_frame *frame) {
-    return frame->locals + frame->save_sp_offset;
+    return frame->save_sp;
 }
 
 static inline void frame_set_save_sp(struct pike_frame *frame, struct svalue *sv) {
-    ptrdiff_t n = sv - frame->locals;
-#ifdef PIKE_DEBUG
-    if (n < MIN_INT16 || n > MAX_INT16)
-        Pike_error("Save SP offset too large.\n");
-#endif
-    frame->save_sp_offset = n;
+    frame->save_sp = sv;
 }
 
 #define PIKE_FRAME_RETURN_INTERNAL 1

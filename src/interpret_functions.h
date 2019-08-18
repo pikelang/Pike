@@ -2445,7 +2445,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
 	  if((addr = lower_mega_apply(args-1, o, fun)))
 	  {
-	    Pike_fp->save_sp_offset--;
+	    Pike_fp->save_sp--;
 	    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
 	    DO_JUMP_TO(addr);
 	  }
@@ -2503,7 +2503,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
 	  if((addr = lower_mega_apply(args-1, o, fun)))
 	  {
-	    Pike_fp->save_sp_offset--;
+	    Pike_fp->save_sp--;
 	    Pike_fp->flags |=
 	      PIKE_FRAME_RETURN_INTERNAL |
 	      PIKE_FRAME_RETURN_POP;
@@ -2564,7 +2564,7 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
 	  if((addr = lower_mega_apply(args-1, o, fun)))
 	  {
-	    Pike_fp->save_sp_offset--;
+	    Pike_fp->save_sp--;
 	    DO_IF_DEBUG(Pike_fp->next->pc=0);
 	    unlink_previous_frame();
 	    DO_JUMP_TO(addr);
@@ -2820,8 +2820,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   addr += ENTRY_PROLOGUE_SIZE;						   \
                                                                            \
   new_frame->args = args;                                                  \
-  new_frame->locals=Pike_sp-args;                                          \
-  new_frame->save_sp_offset = 0;                                           \
+  new_frame->save_sp = new_frame->locals = Pike_sp - args;		   \
   new_frame->save_mark_sp = Pike_mark_sp;	                           \
   DO_IF_DEBUG(new_frame->num_args=0;new_frame->num_locals=0;);             \
   SET_PROG_COUNTER(addr);						   \

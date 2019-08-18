@@ -2235,7 +2235,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
           new_frame->fun = (unsigned INT16)fun;
           new_frame->locals = save_sp;
           new_frame->args = args;
-          new_frame->save_sp_offset = 0;
+          new_frame->save_sp = save_sp;
 
 #ifdef PIKE_DEBUG
           if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
