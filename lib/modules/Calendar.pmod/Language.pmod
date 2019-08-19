@@ -539,7 +539,7 @@ class cSPANISH
 
    static private constant month_names=
    ({"enero","febrero","marzo","abril","mayo","junio",
-     "julio","agosto","setiembre","octubre","noviembre","diciembre"});
+     "julio","agosto","septiembre","octubre","noviembre","diciembre"});
 
    static private constant week_day_names=
    ({"lunes","martes","miércoles","jueves",
