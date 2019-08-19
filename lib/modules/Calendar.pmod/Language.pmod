@@ -706,7 +706,7 @@ class cSPANISH
 
    protected private constant month_names=
    ({"enero","febrero","marzo","abril","mayo","junio",
-     "julio","agosto","setiembre","octubre","noviembre","diciembre"});
+     "julio","agosto","septiembre","octubre","noviembre","diciembre"});
 
    protected private constant week_day_names=
    ({"lunes","martes","miércoles","jueves",
