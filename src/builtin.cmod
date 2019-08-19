@@ -76,7 +76,7 @@ static void gc_check_frame(struct pike_frame *f)
       debug_gc_check (f->current_object, " as current_object in a frame");
     if(f->current_program)
       debug_gc_check (f->current_program, " as current_program in a frame");
-    debug_gc_check_svalues (f->locals, f->num_locals, " in locals of a frame");
+    debug_gc_check_svalues (f->locals - 1, 1, " in malloced locals of a frame");
     if(f->scope && !debug_gc_check (f->scope, " as scope frame of a frame"))
       gc_check_frame(f->scope);
   }
@@ -89,7 +89,7 @@ static void gc_recurse_frame(struct pike_frame *f)
   if(f->current_program)
     gc_recurse_program(f->current_program);
   if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-    gc_recurse_svalues(f->locals,f->num_locals);
+    gc_recurse_svalues(f->locals - 1, 1);
   if(f->scope)
     gc_recurse_frame(f->scope);
 }

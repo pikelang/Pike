@@ -141,7 +141,7 @@ void gc_mark_stack_external (struct pike_frame *f,
 	gc_mark_external (f->current_program, " in current_program in frame on stack");
 	if (f->locals) {		/* Check really needed? */
 	  if (f->flags & PIKE_FRAME_MALLOCED_LOCALS) {
-	    gc_mark_external_svalues(f->locals, f->num_locals,
+	    gc_mark_external_svalues(f->locals - 1, 1,
 				     " in malloced locals of trampoline frame on stack");
 	  } else {
 	    if (f->locals > stack_p || (stack_p - f->locals) >= 0x10000) {
@@ -2101,9 +2101,18 @@ void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame)
 
     if (num_new_locals)
     {
-      struct svalue *s = xcalloc(sizeof(struct svalue), num_new_locals);
+      struct array *a = allocate_array(num_new_locals + 1);
       struct svalue *locals = frame->locals;
       unsigned INT16 bitmask = 0;
+      struct svalue *s = ITEM(a) + 1;
+
+      /* Self-reference for reference-counting purposes. */
+      SET_SVAL(ITEM(a)[0], PIKE_T_ARRAY, 0, array, a);
+      /* NB: Make sure that the self-reference is not counted as
+       *     part of the actual array contents for gc purposes.
+       */
+      s = ++ITEM(a);
+      a->size--;
 
       for (i = 0; i < num_new_locals; i++) {
         unsigned INT16 bitmask = frame->save_locals_bitmask[i / 16];
@@ -2111,10 +2120,6 @@ void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame)
         if (bitmask & (1 << (i % 16))) {
           assign_svalue_no_free(s + i, locals + i);
         }
-#ifdef PIKE_DEBUG
-        else
-          mark_free_svalue(s + i);
-#endif
       }
 
       frame->locals = s;
@@ -2164,8 +2169,11 @@ void really_free_pike_scope(struct pike_frame *scope)
 {
   if(scope->flags & PIKE_FRAME_MALLOCED_LOCALS)
   {
-    free_mixed_svalues(scope->locals,scope->num_locals);
-    free(scope->locals);
+    struct array *a = scope->locals[-1].u.array;
+
+    free_array(a);
+    scope->locals = NULL;
+
 #ifdef PIKE_DEBUG
     scope->flags&=~PIKE_FRAME_MALLOCED_LOCALS;
 #endif
