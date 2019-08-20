@@ -123,12 +123,28 @@
       new_frame->args = args;
       new_frame->pc = 0;
       new_frame->scope=scope;
-#ifdef PIKE_DEBUG
+
       if(scope && new_frame->fun == scope->fun)
       {
-	Pike_fatal("Que? A function cannot be parented by itself!\n");
+	/* Continuing a previous function call. */
+
+	if (UNLIKELY(args)) {
+	  /* Continuing with arguments is not a supported operation. */
+	  pop_n_elems(args);
+	}
+
+	/* Switch to the shared locals. */
+	new_frame->locals = scope->locals;
+	add_ref(scope->locals[-1].u.array);
+	new_frame->flags |= PIKE_FRAME_MALLOCED_LOCALS;
+	new_frame->args = scope->args;
+	new_frame->num_locals = scope->num_locals;
+	args = scope->num_args;
+
+	/* Switch to the parent scope. */
+	new_frame->scope = scope->scope;
       }
-#endif
+
       frame_set_save_sp(new_frame, save_sp);
 
       add_ref(new_frame->current_object);
