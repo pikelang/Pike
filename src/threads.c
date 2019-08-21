@@ -398,6 +398,9 @@ PIKE_MUTEX_T thread_table_lock;
 static PIKE_MUTEX_T interleave_lock;
 static struct program *mutex_program = NULL;
 static struct program *mutex_key = 0;
+static struct program *rwmutex_program = NULL;
+static struct program *rwmutex_rkey_program = NULL;
+static struct program *rwmutex_wkey_program = NULL;
 static struct program *condition_program = NULL;
 PMOD_EXPORT struct program *thread_id_prog = 0;
 static struct program *thread_local_prog = 0;
@@ -2602,6 +2605,391 @@ static void f_mutex_key__sprintf(INT32 args)
 /*! @endclass
  */
 
+struct rwmutex_key_storage
+{
+  struct rwmutex_storage *rwmutex;
+  struct object *rwmutex_obj;
+  struct thread_state *owner;
+  struct object *owner_obj;
+  struct rwmutex_key_storage *prev;
+  struct rwmutex_key_storage *next;
+};
+
+/*! @class RWMutex
+ *!
+ *!   Read-Write Mutex.
+ *!
+ *!   A mutex that allows for a single writer (exclusive locking)
+ *!   or multiple readers (shared locking).
+ *!
+ *! @seealso
+ *!   @[Mutex]
+ */
+struct rwmutex_storage
+{
+  COND_T condition;
+  int readers;
+  int writers;
+  struct rwmutex_key_storage *first_key;
+  struct rwmutex_key_storage *last_key;
+};
+
+#define THIS_RWMUTEX	((struct rwmutex_storage *)Pike_fp->current_storage)
+
+static void init_rwmutex_obj(struct object *o)
+{
+  co_init(&THIS_RWMUTEX->condition);
+}
+
+static void exit_rwmutex_obj(struct object *o)
+{
+  co_destroy(&THIS_RWMUTEX->condition);
+}
+
+/*! @decl ReadKey read_lock()
+ *!
+ *!   Obtain a lock for reading (shared lock).
+ *!
+ *! @seealso
+ *!   @[write_lock()]
+ */
+static void f_rwmutex_read_lock(INT32 args)
+{
+  ref_push_object_inherit(Pike_fp->current_object,
+			  Pike_fp->context -
+			  Pike_fp->current_object->prog->inherits);
+  push_object(clone_object(rwmutex_rkey_program, 1));
+}
+
+/*! @decl WriteKey write_lock()
+ *!
+ *!   Obtain a lock for writing (exclusive lock).
+ *!
+ *! @seealso
+ *!   @[read_lock()]
+ */
+static void f_rwmutex_write_lock(INT32 args)
+{
+  ref_push_object_inherit(Pike_fp->current_object,
+			  Pike_fp->context -
+			  Pike_fp->current_object->prog->inherits);
+  push_object(clone_object(rwmutex_wkey_program, 1));
+}
+
+/*! @decl string _sprintf(int c)
+ *!
+ *! Describes the mutex including the thread(s) that currently hold
+ *! locks (if any).
+ */
+static void f_rwmutex__sprintf(INT32 args)
+{
+  struct rwmutex_storage *m = THIS_RWMUTEX;
+  int c = 0;
+  struct rwmutex_key_storage *key;
+  struct svalue *save_sp;
+
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
+    c = Pike_sp[-args].u.integer;
+  pop_n_elems (args);
+  if(c != 'O') {
+    push_undefined();
+    return;
+  }
+
+  save_sp = Pike_sp;
+
+  push_static_text("Thread.RWMutex(/* r");
+  push_int(m->readers);
+  push_static_text("/w");
+  push_int(m->writers);
+
+  if (m->first_key) {
+    push_static_text(" Locked by");
+
+    for (key = m->first_key; key; key = key->next) {
+      if (key->owner) {
+	if (!c) {
+	  push_static_text(",");
+	}
+	push_static_text(" 0x");
+	push_int64(PTR_TO_INT(THREAD_T_TO_PTR(key->owner->id)));
+	f_int2hex(1);
+	c = 0;
+      }
+    }
+  }
+  push_static_text(" */)");
+
+  f_add(Pike_sp - save_sp);
+}
+
+/*! @endclass
+*/
+
+/* Stuff common for both ReadKey and WriteKey. */
+
+#define THIS_RWKEY ((struct rwmutex_key_storage *)(CURRENT_STORAGE))
+static void init_rwmutex_key_obj(struct object *UNUSED(o))
+{
+  if (THIS_RWKEY->owner_obj) {
+    free_object(THIS_RWKEY->owner_obj);
+  }
+  THIS_RWKEY->owner = Pike_interpreter.thread_state;
+  THIS_RWKEY->owner_obj = Pike_interpreter.thread_state->thread_obj;
+  if (THIS_RWKEY->owner_obj)
+    add_ref(THIS_RWKEY->owner_obj);
+}
+
+/*! @class ReadKey
+ */
+
+static void exit_rwmutex_rkey_obj(struct object *UNUSED(o))
+{
+  if (THIS_RWKEY->rwmutex) {
+    struct rwmutex_storage *rwmutex = THIS_RWKEY->rwmutex;
+    struct object *rwmutex_obj = THIS_RWKEY->rwmutex_obj;
+
+    THIS_RWKEY->rwmutex = NULL;
+    THIS_RWKEY->rwmutex_obj = NULL;
+
+    if (THIS_RWKEY->owner_obj) {
+      free_object(THIS_RWKEY->owner_obj);
+    }
+    THIS_RWKEY->owner = NULL;
+    THIS_RWKEY->owner_obj = NULL;
+
+    /* Unlink */
+    if (THIS_RWKEY->prev) {
+      THIS_RWKEY->prev->next = THIS_RWKEY->next;
+    } else {
+      rwmutex->first_key = THIS_RWKEY->next;
+    }
+    if (THIS_RWKEY->next) {
+      THIS_RWKEY->next->prev = THIS_RWKEY->prev;
+    } else {
+      rwmutex->last_key = THIS_RWKEY->prev;
+    }
+    THIS_RWKEY->next = NULL;
+    THIS_RWKEY->prev = NULL;
+
+    if (!(--rwmutex->readers)) {
+      co_broadcast(&rwmutex->condition);
+      if (rwmutex->writers) {
+	/* There's a writer waiting for us to complete.
+	 * Attempt to force a thread switch.
+	 */
+	THREADS_ALLOW();
+#ifdef HAVE_NO_YIELD
+	sleep(0);
+#else
+	th_yield();
+#endif
+	THREADS_DISALLOW();
+      }
+    }
+
+    if (rwmutex_obj) {
+      free_object(rwmutex_obj);
+    }
+  }
+}
+
+static void f_rwmutex_rkey_create(INT32 args)
+{
+  struct object *rwmutex_obj = NULL;
+  struct rwmutex_storage *rwmutex = NULL;
+
+  get_all_args("create", args, "%o", &rwmutex_obj);
+  if (!(rwmutex = get_storage(rwmutex_obj, rwmutex_program))) {
+    SIMPLE_ARG_TYPE_ERROR("create", 1, "RWMutex");
+  }
+
+  if (rwmutex->writers == 1) {
+    struct rwmutex_key_storage *m;
+    for (m = rwmutex->first_key; m; m = m->next) {
+      if (m->owner && (m->owner = Pike_interpreter.thread_state)) {
+	/* NB: The only way we can come here is if
+	 *     it is we that have the write lock.
+	 */
+	Pike_error("Recursive mutex locks!\n");
+      }
+    }
+  }
+
+  while (THIS_RWKEY->rwmutex) {
+    /* Not really a supported operation, but... */
+    exit_rwmutex_rkey_obj(NULL);
+  }
+
+  init_rwmutex_key_obj(NULL);
+
+  THIS_RWKEY->rwmutex = rwmutex;
+  THIS_RWKEY->rwmutex_obj = rwmutex_obj;
+  add_ref(rwmutex_obj);
+
+  /* Link */
+  THIS_RWKEY->prev = NULL;
+  if ((THIS_RWKEY->next = rwmutex->first_key)) {
+    rwmutex->first_key->prev = THIS_RWKEY;
+  }
+  rwmutex->first_key = THIS_RWKEY;
+
+  SWAP_OUT_CURRENT_THREAD();
+  while(rwmutex->writers) {
+    co_wait_interpreter(&rwmutex->condition);
+  }
+  SWAP_IN_CURRENT_THREAD();
+
+  rwmutex->readers++;
+}
+
+static void f_rwmutex_rkey__sprintf(INT32 args)
+{
+  int c = 0;
+  get_all_args("_sprintf", args, "%d", &c);
+  if (c != 'O') {
+    push_undefined();
+    return;
+  }
+  if (THIS_RWKEY->rwmutex_obj) {
+    push_text("ReadKey(/* %O */)");
+    ref_push_object(THIS_RWKEY->rwmutex_obj);
+    f_sprintf(2);
+  } else {
+    push_text("ReadKey()");
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @class WriteKey
+ */
+
+static void exit_rwmutex_wkey_obj(struct object *UNUSED(o))
+{
+  if (THIS_RWKEY->rwmutex) {
+    struct rwmutex_storage *rwmutex = THIS_RWKEY->rwmutex;
+    struct object *rwmutex_obj = THIS_RWKEY->rwmutex_obj;
+
+    THIS_RWKEY->rwmutex = NULL;
+    THIS_RWKEY->rwmutex_obj = NULL;
+
+    if (THIS_RWKEY->owner_obj) {
+      free_object(THIS_RWKEY->owner_obj);
+    }
+    THIS_RWKEY->owner = NULL;
+    THIS_RWKEY->owner_obj = NULL;
+
+    /* Unlink */
+    if (THIS_RWKEY->prev) {
+      THIS_RWKEY->prev->next = THIS_RWKEY->next;
+    } else {
+      rwmutex->first_key = THIS_RWKEY->next;
+    }
+    if (THIS_RWKEY->next) {
+      THIS_RWKEY->next->prev = THIS_RWKEY->prev;
+    } else {
+      rwmutex->last_key = THIS_RWKEY->prev;
+    }
+    THIS_RWKEY->next = NULL;
+    THIS_RWKEY->prev = NULL;
+
+    rwmutex->writers = 0;
+    co_broadcast(&rwmutex->condition);
+
+    /* Attempt to force a thread switch in case there is
+     * ayone waiting on us.
+     */
+    THREADS_ALLOW();
+#ifdef HAVE_NO_YIELD
+    sleep(0);
+#else
+    th_yield();
+#endif
+    THREADS_DISALLOW();
+
+    if (rwmutex_obj) {
+      free_object(rwmutex_obj);
+    }
+  }
+}
+
+static void f_rwmutex_wkey_create(INT32 args)
+{
+  struct object *rwmutex_obj = NULL;
+  struct rwmutex_storage *rwmutex = NULL;
+
+  get_all_args("create", args, "%o", &rwmutex_obj);
+  if (!(rwmutex = get_storage(rwmutex_obj, rwmutex_program))) {
+    SIMPLE_ARG_TYPE_ERROR("create", 1, "RWMutex");
+  }
+
+  if (rwmutex->first_key) {
+    struct rwmutex_key_storage *m;
+    for (m = rwmutex->first_key; m; m = m->next) {
+      if (m->owner && (m->owner = Pike_interpreter.thread_state)) {
+	/* We already have a lock (read or write), and would
+	 * hang waiting on ourselves.
+	 */
+	Pike_error("Recursive mutex locks!\n");
+      }
+    }
+  }
+
+  while (THIS_RWKEY->rwmutex) {
+    /* Not really a supported operation, but... */
+    exit_rwmutex_wkey_obj(NULL);
+  }
+
+  init_rwmutex_key_obj(NULL);
+
+  THIS_RWKEY->rwmutex = rwmutex;
+  THIS_RWKEY->rwmutex_obj = rwmutex_obj;
+  add_ref(rwmutex_obj);
+
+  /* Link */
+  THIS_RWKEY->prev = NULL;
+  if ((THIS_RWKEY->next = rwmutex->first_key)) {
+    rwmutex->first_key->prev = THIS_RWKEY;
+  }
+  rwmutex->first_key = THIS_RWKEY;
+
+  SWAP_OUT_CURRENT_THREAD();
+  while(rwmutex->writers) {
+    co_wait_interpreter(&rwmutex->condition);
+  }
+
+  rwmutex->writers = -1;
+
+  while(rwmutex->readers) {
+    co_wait_interpreter(&rwmutex->condition);
+  }
+
+  rwmutex->writers = 1;
+  SWAP_IN_CURRENT_THREAD();
+}
+
+static void f_rwmutex_wkey__sprintf(INT32 args)
+{
+  int c = 0;
+  get_all_args("_sprintf", args, "%d", &c);
+  if (c != 'O') {
+    push_undefined();
+    return;
+  }
+  if (THIS_RWKEY->rwmutex_obj) {
+    push_text("ReadKey(/* %O */)");
+    ref_push_object(THIS_RWKEY->rwmutex_obj);
+    f_sprintf(2);
+  } else {
+    push_text("ReadKey()");
+  }
+}
+
+/*! @endclass
+ */
+
 /*! @class Condition
  *!
  *! Implementation of condition variables.
@@ -3494,6 +3882,7 @@ static struct Pike_interpreter_struct *original_interpreter = NULL;
 void th_init(void)
 {
   ptrdiff_t mutex_key_offset;
+  ptrdiff_t rwmutex_key_offset;
 
 #ifdef UNIX_THREADS
 
@@ -3547,6 +3936,68 @@ void th_init(void)
   mutex_program = Pike_compiler->new_program;
   add_ref(mutex_program);
   end_class("mutex", 0);
+
+  START_NEW_PROGRAM_ID(THREAD_RWMUTEX_RKEY);
+  rwmutex_key_offset = ADD_STORAGE(struct rwmutex_key_storage);
+  /* This is needed to allow the gc to find the possible circular reference.
+   * It also allows a thread to take over ownership of a key.
+   */
+  PIKE_MAP_VARIABLE("_owner",
+		    rwmutex_key_offset +
+		    OFFSETOF(rwmutex_key_storage, owner_obj),
+		    tObjIs_THREAD_ID, T_OBJECT, 0);
+  PIKE_MAP_VARIABLE("_mutex", rwmutex_key_offset +
+		    OFFSETOF(rwmutex_key_storage, rwmutex_obj),
+		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
+  set_init_callback(init_rwmutex_key_obj);
+  set_exit_callback(exit_rwmutex_rkey_obj);
+  ADD_FUNCTION("create", f_rwmutex_rkey_create,
+	       tFunc(tOr(tObjIs_THREAD_RWMUTEX, tVoid), tVoid),
+	       ID_PROTECTED);
+  ADD_FUNCTION("_sprintf", f_rwmutex_rkey__sprintf,
+	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
+  rwmutex_rkey_program = Pike_compiler->new_program;
+  add_ref(rwmutex_rkey_program);
+  end_class("ReadKey", 0);
+  rwmutex_rkey_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
+  START_NEW_PROGRAM_ID(THREAD_RWMUTEX_WKEY);
+  rwmutex_key_offset = ADD_STORAGE(struct rwmutex_key_storage);
+  /* This is needed to allow the gc to find the possible circular reference.
+   * It also allows a thread to take over ownership of a key.
+   */
+  PIKE_MAP_VARIABLE("_owner",
+		    rwmutex_key_offset +
+		    OFFSETOF(rwmutex_key_storage, owner_obj),
+		    tObjIs_THREAD_ID, T_OBJECT, 0);
+  PIKE_MAP_VARIABLE("_mutex", rwmutex_key_offset +
+		    OFFSETOF(rwmutex_key_storage, rwmutex_obj),
+		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
+  set_init_callback(init_rwmutex_key_obj);
+  set_exit_callback(exit_rwmutex_wkey_obj);
+  ADD_FUNCTION("create", f_rwmutex_wkey_create,
+	       tFunc(tOr(tObjIs_THREAD_RWMUTEX, tVoid), tVoid),
+	       ID_PROTECTED);
+  ADD_FUNCTION("_sprintf", f_rwmutex_wkey__sprintf,
+	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
+  rwmutex_wkey_program = Pike_compiler->new_program;
+  add_ref(rwmutex_wkey_program);
+  end_class("WriteKey", 0);
+  rwmutex_wkey_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+
+  START_NEW_PROGRAM_ID(THREAD_RWMUTEX);
+  ADD_STORAGE(struct rwmutex_storage);
+  ADD_FUNCTION("read_lock", f_rwmutex_read_lock,
+	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_RKEY), 0);
+  ADD_FUNCTION("write_lock", f_rwmutex_write_lock,
+	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_WKEY), 0);
+  ADD_FUNCTION("_sprintf", f_rwmutex__sprintf,
+	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
+  set_init_callback(init_rwmutex_obj);
+  set_exit_callback(exit_rwmutex_obj);
+  rwmutex_program = Pike_compiler->new_program;
+  add_ref(rwmutex_program);
+  end_class("RWMutex", 0);
 
   START_NEW_PROGRAM_ID(THREAD_CONDITION);
   ADD_STORAGE(struct pike_cond);
@@ -3715,6 +4166,24 @@ void th_cleanup(void)
   {
     free_program(condition_program);
     condition_program = NULL;
+  }
+
+  if(rwmutex_program)
+  {
+    free_program(rwmutex_program);
+    rwmutex_program = NULL;
+  }
+
+  if(rwmutex_wkey_program)
+  {
+    free_program(rwmutex_wkey_program);
+    rwmutex_wkey_program = NULL;
+  }
+
+  if(rwmutex_rkey_program)
+  {
+    free_program(rwmutex_rkey_program);
+    rwmutex_rkey_program = NULL;
   }
 
   if(mutex_program)

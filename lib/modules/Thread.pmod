@@ -958,6 +958,88 @@ class Farm
   }
 }
 
+#if constant(__builtin.RWMutex)
+constant RWMutex = __builtin.RWMutex;
+constant ReadKey = __builtin.ReadKey;
+constant WriteKey = __builtin.WriteKey;
+#else
+class RWMutex
+{
+  protected int readers;
+  protected int writers;
+
+  protected Mutex mux = Mutex();
+  protected Condition cond = Condition();
+
+  protected class ReadKey
+  {
+    inherit __builtin.DestructImmediate;
+
+    protected void create()
+    {
+      MutexKey key = mux->lock();
+      while (writers) {
+	cond->wait(key);
+      }
+      readers++;
+    }
+
+    protected void _destruct()
+    {
+      MutexKey key = mux->lock();
+      readers--;
+      cond->broadcast();
+    }
+  }
+
+  protected class WriteKey
+  {
+    inherit __builtin.DestructImmediate;
+
+    protected void create()
+    {
+      MutexKey key = mux->lock();
+
+      // Wait for any writer to complete.
+      while (writers) {
+	cond->wait(key);
+      }
+
+      // Take the write lock tentatively.
+      // This both causes any others attempting to take the write lock
+      // to halt in the loop above, and any upcoming readers to wait
+      // on us before taking the read lock.
+      writers = -1;
+
+      // Wait for any active readers to complete.
+      while (readers) {
+	cond->wait(key);
+      }
+
+      // Take the write lock.
+      writers = 1;
+    }
+
+    protected void _destruct()
+    {
+      MutexKey key = mux->lock();
+      writers = 0;
+      cond->broadcast();
+    }
+  }
+
+  ReadKey read_lock()
+  {
+    return ReadKey();
+  }
+
+  WriteKey write_lock()
+  {
+    return WriteKey();
+  }
+}
+#endif /* !__builtin.RWMutex */
+
 //! When this key is destroyed, the corresponding resource counter
 //! will be decremented.
 //!
