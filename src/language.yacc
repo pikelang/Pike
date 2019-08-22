@@ -287,6 +287,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> optional_dot_dot_dot
 %type <number> optional_comma
 %type <number> optional_constant
+%type <number> optional_continue
 %type <number> optional_create_arguments
 %type <number> save_block_level
 %type <number> save_locals
@@ -3385,7 +3386,12 @@ expected_colon: ':'
   }
   ;
 
-return: TOK_RETURN expected_semicolon
+optional_continue: { $$ = 0; }
+  | TOK_CONTINUE { $$ = 1; }
+  | TOK_BREAK { $$ = 0; }
+  ;
+
+return: optional_continue TOK_RETURN expected_semicolon
   {
     if(!match_types(Pike_compiler->compiler_frame->current_return_type,
 		    void_type_string))
@@ -3394,11 +3400,11 @@ return: TOK_RETURN expected_semicolon
 		   Pike_compiler->compiler_frame->current_return_type,
 		   void_type_string, 0);
     }
-    $$=mknode(F_RETURN,mkintnode(0),0);
+    $$ = mknode(F_RETURN, mkintnode(0), $1);
   }
-  | TOK_RETURN safe_comma_expr expected_semicolon
+  | optional_continue TOK_RETURN safe_comma_expr expected_semicolon
   {
-    $$=mknode(F_RETURN,$2,0);
+    $$ = mknode(F_RETURN, $3, $1);
   }
   ;
 
