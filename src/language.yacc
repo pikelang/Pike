@@ -3400,11 +3400,11 @@ return: optional_continue TOK_RETURN expected_semicolon
 		   Pike_compiler->compiler_frame->current_return_type,
 		   void_type_string, 0);
     }
-    $$ = mknode(F_RETURN, mkintnode(0), $1);
+    $$ = mknode(F_RETURN, mkintnode(0), mkintnode($1));
   }
   | optional_continue TOK_RETURN safe_comma_expr expected_semicolon
   {
-    $$ = mknode(F_RETURN, $3, $1);
+    $$ = mknode(F_RETURN, $3, mkintnode($1));
   }
   ;
 
