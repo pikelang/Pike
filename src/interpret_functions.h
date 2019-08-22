@@ -2932,6 +2932,7 @@ OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
   addr += ENTRY_PROLOGUE_SIZE;
   SET_PROG_COUNTER(addr);
 
+  /* FIXME: What about MALLOCED_LOCALS? */
   if(Pike_sp-args != Pike_fp->locals)
   {
     DO_IF_DEBUG({
@@ -3070,17 +3071,20 @@ OPCODE1(F_SAVE_LOCALS, "save_locals", 0, {
   });
 
 OPCODE2(F_FILL_STACK, "fill_stack", I_UPDATE_SP, {
-    INT32 tmp = (Pike_fp->locals + arg1) - Pike_sp;
-    if (tmp > 0) {
-      if (arg2) {
-	push_undefines(tmp);
-      } else {
-	push_zeroes(tmp);
+    if (!(Pike_fp->flags & PIKE_FRAME_MALLOCED_LOCALS)) {
+      INT32 tmp = (Pike_fp->locals + arg1) - Pike_sp;
+      if (tmp > 0) {
+	if (arg2) {
+	  push_undefines(tmp);
+	} else {
+	  push_zeroes(tmp);
+	}
       }
     }
   });
 
 OPCODE1(F_MARK_AT, "mark_at", I_UPDATE_SP, {
+    /* FIXME: What about MALLOCED_LOCALS? */
     *(Pike_mark_sp++) = Pike_fp->locals + arg1;
   });
 
