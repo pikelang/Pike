@@ -814,6 +814,15 @@ def: modifiers optional_attributes simple_type optional_constant
     /* construct the function type */
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
 
+    if ($1 & ID_GENERATOR) {
+      push_type(T_VOID);
+      push_type(T_MANY);
+
+      /* Entry point variable. */
+      add_ref(int_type_string);
+      add_local_name(empty_pike_string, int_type_string, 0);
+    }
+
     e = $<number>8 + $9 - 1;
     if(Pike_compiler->varargs &&
        (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
@@ -935,6 +944,10 @@ def: modifiers optional_attributes simple_type optional_constant
 	}
       }
 
+      if ($1 & ID_GENERATOR) {
+	$12 = mknode(F_GENERATOR, $12, NULL);
+      }
+
       {
 	int l = $12->line_number;
 	struct pike_string *f = $12->current_file;
@@ -956,6 +969,11 @@ def: modifiers optional_attributes simple_type optional_constant
       {
         /* Change "auto" return type to actual return type. */
         push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
+
+	if ($1 & ID_GENERATOR) {
+	  push_type(T_VOID);
+	  push_type(T_MANY);
+	}
 
         e = $<number>8 + $9 - 1;
         if(Pike_compiler->varargs &&
@@ -1194,6 +1212,7 @@ modifier:
   | TOK_INLINE     { $$ = ID_INLINE; }
   | TOK_VARIANT    { $$ = ID_VARIANT; }
   | TOK_WEAK       { $$ = ID_WEAK; }
+  | TOK_CONTINUE   { $$ = ID_GENERATOR; }
   ;
 
 magic_identifiers1:
