@@ -3092,6 +3092,10 @@ OPCODE2(F_MAGIC_ANNOTATIONS, "::_annotations", I_UPDATE_SP, {
   push_magic_index(magic_annotations_program, arg2, arg1);
 });
 
+OPCODE1(F_GENERATOR, "generator", 0, {
+    Pike_fp->fun = arg1;
+  });
+
 /*
 #undef PROG_COUNTER
 */

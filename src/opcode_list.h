@@ -103,9 +103,4 @@ OPCODE_NOCODE("set_local_type", F_SET_LOCAL_TYPE, I_HASARG2)
 /* local_num */
 OPCODE_NOCODE("set_local_end", F_SET_LOCAL_END, I_HASARG)
 
-/* This node causes docode to generate a suitable
- * switch table for a generator function.
- */
-OPCODE_NOCODE("generator", F_GENERATOR, 0)
-
 OPCODE_NOCODE("instr_max", F_MAX_INSTR, 0)
