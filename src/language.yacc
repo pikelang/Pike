@@ -821,7 +821,15 @@ def: modifiers optional_attributes simple_type optional_constant
 
       /* Entry point variable. */
       add_ref(int_type_string);
-      add_local_name(empty_pike_string, int_type_string, 0);
+      Pike_compiler->compiler_frame->generator_local =
+	add_local_name(empty_pike_string, int_type_string, 0);
+
+      for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
+	Pike_compiler->compiler_frame->variable[e].flags |=
+	  LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
+      }
+
+      Pike_compiler->compiler_frame->lexical_scope |= SCOPE_SCOPE_USED;
     }
 
     e = $<number>8 + $9 - 1;
@@ -4791,7 +4799,9 @@ int low_add_local_name(struct compiler_frame *frame,
     copy_shared_string(frame->variable[var].file,
 		       THIS_COMPILATION->lex.current_file);
 
-    if (pike_types_le(void_type_string, type)) {
+    if (frame->generator_local != -1) {
+      frame->variable[var].flags = LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
+    } else if (pike_types_le(void_type_string, type)) {
       /* Don't warn about unused voidable variables. */
       frame->variable[var].flags = LOCAL_VAR_IS_USED;
     } else {

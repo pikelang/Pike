@@ -444,6 +444,41 @@ static INT32 count_cases(node *n)
   }
 }
 
+static INT32 count_continue_returns(node *n)
+{
+  INT32 ret;
+  if(!n) return 0;
+  switch(n->token)
+  {
+  case F_DO:
+  case F_FOR:
+  case F_FOREACH:
+  case F_LOOP:
+  case F_INC_LOOP:
+  case F_DEC_LOOP:
+  case F_INC_NEQ_LOOP:
+  case F_DEC_NEQ_LOOP:
+  case F_SWITCH:
+  case '?':
+    return 0;
+
+  case F_CASE:
+    return 0;
+  case F_CASE_RANGE:
+    return 0;
+
+  case F_RETURN:
+    if (CDR(n) && CDR(n)->u.sval.u.integer) return 1;
+    return 0;
+
+  default:
+    ret=0;
+    if(car_is_node(n)) ret += count_continue_returns(CAR(n));
+    if(cdr_is_node(n)) ret += count_continue_returns(CDR(n));
+    return ret;
+  }
+}
+
 static int has_automap(node *n)
 {
   if(!n) return 0;
@@ -2135,7 +2170,7 @@ static int do_docode2(node *n, int flags)
      * So far all switches are implemented with a binsearch lookup.
      * It stores the case values in the programs area for constants.
      * It also has a jump-table in the program itself, for every index in
-     * the array of cases, there is 2 indexes in the jumptable, and one extra.
+     * the array of cases, there are 2 indexes in the jumptable, and one extra.
      * The first entry in the jumptable is used if you call switch with
      * a value that is ranked lower than all the indexes in the array of
      * cases. (Ranked by the binsearch that is) The second is used if it
@@ -2259,6 +2294,104 @@ static int do_docode2(node *n, int flags)
     if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
       Pike_fatal("Stack error after F_SWITCH (underflow)\n");
 #endif
+    return 0;
+  }
+
+  case F_GENERATOR:
+  {
+    int e, states;
+    INT32 *jumptable;
+    int label;
+
+    emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local);
+    tmp1 = emit1(F_SWITCH, 0);
+    /* modify_stack_depth(-1); */
+    emit1(F_ALIGN, sizeof(INT32));
+
+    /* NB: Three implicit states:
+     *     -1: return UNDEFINED;	// Termination state.
+     *      0: return generator;	// Initial state.
+     *      1: code			// Code start.
+     *
+     * jumptable:
+     *
+     * jmp_index  case_index   case_value   label
+     *         0           -            -   Terminate
+     *         1           0            0   Initial
+     *         2           -            1   Start
+     *         3           1            2   Cont #0
+     *       ...
+     *       n+3    (n+3)>>1          n+2   Cont #n
+     *       n+4           -            -   Terminate
+     *      [n+5    (n+5)>>1          n+4   Terminate]
+     *
+     * Note that an extra case entry is required when there
+     * is an even number of states. Thus the 5 in the
+     * allocations below.
+     */
+    states = count_continue_returns(CAR(n));
+
+    Pike_compiler->compiler_frame->generator_index = 0;
+    Pike_compiler->compiler_frame->generator_jumptable =
+      xalloc(sizeof(INT32)*(states+5));
+    jumptable = xalloc(sizeof(INT32)*(states+5));
+
+    for (e = 0; e < states+6; e++) {
+      jumptable[e] = (INT32)emit1(F_POINTER, 0);
+      Pike_compiler->compiler_frame->generator_jumptable[e] = -1;
+    }
+    emit0(F_NOTREACHED);
+
+    /* Termination state. (-1, default) */
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] = ins_label(-1);
+    emit0(F_UNDEFINED);
+    emit0(F_RETURN);
+
+    /* Return generator state. (0) */
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] = ins_label(-1);
+    emit2(F_TRAMPOLINE,
+	  Pike_compiler->compiler_frame->current_function_number, 0);
+    emit1(F_NUMBER, Pike_compiler->compiler_frame->generator_index);
+    emit1(F_ASSIGN_LOCAL_AND_POP,
+	  Pike_compiler->compiler_frame->generator_local);
+    emit0(F_RETURN);
+
+    /* Entry state. (1) */
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] = ins_label(-1);
+    DO_CODE_BLOCK(CAR(n));
+
+    /* Update the jump table. */
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] =
+      Pike_compiler->compiler_frame->generator_jumptable[0];
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] =
+      Pike_compiler->compiler_frame->generator_jumptable[0];
+
+    for (e = 0; e < Pike_compiler->compiler_frame->generator_index; e++) {
+      fprintf(stderr, "e: %d: ptr: 0x%08lx, label: %d\n",
+	      e, jumptable[e],
+	      Pike_compiler->compiler_frame->generator_jumptable[e]);
+      update_arg(jumptable[e],
+		 Pike_compiler->compiler_frame->generator_jumptable[e]);
+    }
+    fprintf(stderr, "Generating table for %d states: \n", states);
+    for (e = 0; e < states+5; e += 2) {
+      fprintf(stderr, "  %d\n", e);
+      push_int(e);
+    }
+    f_aggregate((states + 6)>>1);
+
+    fprintf(stderr, "Table: ");
+    print_svalue(stderr, Pike_sp-1);
+    fprintf(stderr, "\n");
+
+    update_arg((INT32)tmp1, store_constant(Pike_sp-1, 1, 0));
+    pop_stack();
+
     return 0;
   }
 
@@ -2462,6 +2595,7 @@ static int do_docode2(node *n, int flags)
   case F_RETURN: {
     struct statement_label *p;
     int in_catch = 0;
+    int continue_label = -1;
     do_docode(CAR(n),0);
 
     /* Insert the appropriate number of F_ESCAPE_CATCH. The rest of
@@ -2490,7 +2624,26 @@ static int do_docode2(node *n, int flags)
       }
     }
 
+    if (Pike_compiler->compiler_frame->generator_local != -1) {
+      if (CDR(n) && CDR(n)->u.sval.u.integer) {
+	/* Continue return. */
+	continue_label = alloc_label();
+	emit1(F_NUMBER,
+	      Pike_compiler->compiler_frame->generator_index);
+      } else {
+	emit1(F_NUMBER, -1);
+      }
+      emit1(F_ASSIGN_LOCAL_AND_POP,
+	    Pike_compiler->compiler_frame->generator_local);
+    }
+
     emit0(in_catch ? F_VOLATILE_RETURN : F_RETURN);
+
+    if (continue_label != -1) {
+      Pike_compiler->compiler_frame->generator_jumptable[
+        Pike_compiler->compiler_frame->generator_index++] =
+	ins_label(continue_label);
+    }
     return 0;
   }
 

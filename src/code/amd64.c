@@ -4003,16 +4003,26 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     return;
 
   case F_MARK_AT:
-    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
-    amd64_load_fp_reg();
-    amd64_load_mark_sp_reg();
-    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
-    if (b) {
-      add_reg_imm_reg(ARG1_REG, sizeof(struct svalue) * b, ARG1_REG);
+    {
+      LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      amd64_load_fp_reg();
+      amd64_load_mark_sp_reg();
+      if (Pike_compiler->compiler_frame->generator_local != -1) {
+	mov_mem32_reg( fp_reg, OFFSETOF(pike_frame, flags), P_REG_RAX );
+	mov_mem_reg(fp_reg, OFFSETOF(pike_frame, save_sp), ARG1_REG);
+	and_reg32_imm( P_REG_RAX, PIKE_FRAME_MALLOCED_LOCALS);
+	jz( &label_A );
+      }
+      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+      if (b) {
+	add_reg_imm_reg(ARG1_REG, sizeof(struct svalue) * b, ARG1_REG);
+      }
+      LABEL_A;
+      mov_reg_mem(ARG1_REG, mark_sp_reg, 0x00);
+      amd64_add_mark_sp( 1 );
+      return;
     }
-    mov_reg_mem(ARG1_REG, mark_sp_reg, 0x00);
-    amd64_add_mark_sp( 1 );
-    return;
   }
   update_arg1(b);
   ins_f_byte(a);
@@ -4566,6 +4576,13 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       amd64_load_sp_reg();
+
+      if (Pike_compiler->compiler_frame->generator_local != -1) {
+	mov_mem32_reg( fp_reg, OFFSETOF(pike_frame, flags), P_REG_RAX );
+	and_reg32_imm( P_REG_RAX, PIKE_FRAME_MALLOCED_LOCALS);
+	jz( &label_C );
+      }
+
       mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
       add_reg_imm(ARG1_REG, b*sizeof(struct svalue));
       jmp(&label_A);
@@ -4574,6 +4591,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       LABEL_A;
       cmp_reg_reg(sp_reg, ARG1_REG);
       jl(&label_B);
+      LABEL_C;
     }
     return;
 
