@@ -161,6 +161,7 @@ node *debug_mkversionnode(int major, int minor);
 node *debug_mklocalnode(int var, int depth);
 node *debug_mkidentifiernode(int i);
 node *debug_mktrampolinenode(int i, struct compiler_frame *depth);
+node *debug_mkgeneratornode(int i);
 node *debug_mkexternalnode(struct program *prog, int i);
 node *debug_mkthisnode(struct program *parent_prog, int inherit_num);
 node *debug_mkcastnode(struct pike_type *type, node *n);
@@ -214,6 +215,7 @@ void fix_foreach_type(node *lval_lval);
 #define mklocalnode(var, depth) dmalloc_touch(node *, debug_mklocalnode(var, depth))
 #define mkidentifiernode(i) dmalloc_touch(node *, debug_mkidentifiernode(i))
 #define mktrampolinenode(i,f) dmalloc_touch(node *, debug_mktrampolinenode(i, f))
+#define mkgeneratornode(i) dmalloc_touch(node *, debug_mkgeneratornode(i))
 #define mkexternalnode(parent_prog, i) dmalloc_touch(node *, debug_mkexternalnode(parent_prog, i))
 #define mkthisnode(parent_prog, i) dmalloc_touch(node *, debug_mkthisnode(parent_prog, i))
 #define mkcastnode(type, n) dmalloc_touch(node *, debug_mkcastnode(type, dmalloc_touch(node *, n)))

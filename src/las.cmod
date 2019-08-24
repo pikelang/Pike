@@ -1279,6 +1279,16 @@ node *debug_mktrampolinenode(int i, struct compiler_frame *frame)
   return res;
 }
 
+node *debug_mkgeneratornode(int i)
+{
+  node *res = mkemptynode();
+
+  res->token = F_GENERATOR;
+  _CAR(res) = mktrampolinenode(i, Pike_compiler->compiler_frame);
+  copy_pike_type(res->type, CAR(res)->type);
+  res->node_info = OPT_NOT_CONST;
+}
+
 node *debug_mkexternalnode(struct program *parent_prog, int i)
 {
 #if 0
