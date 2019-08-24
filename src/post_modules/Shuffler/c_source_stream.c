@@ -94,11 +94,11 @@ static struct data get_data(struct source *src, off_t len)
 {
   struct fd_source *s = (struct fd_source *)src;
   struct data res;
+  res.data = NULL;		  /* Shut up lint */
 
 reload:
   if (s->readwanted < 0)
     s->s.eof = 1;
-  res.data = NULL;
   if ((res.len = s->available)) {
     res.data = s->data;
     s->available = 0;
