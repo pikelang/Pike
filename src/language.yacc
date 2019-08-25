@@ -821,7 +821,15 @@ def: modifiers optional_attributes simple_type optional_constant
 
       /* Entry point variable. */
       add_ref(int_type_string);
-      add_local_name(empty_pike_string, int_type_string, 0);
+      Pike_compiler->compiler_frame->generator_local =
+	add_local_name(empty_pike_string, int_type_string, 0);
+
+      for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
+	Pike_compiler->compiler_frame->variable[e].flags |=
+	  LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
+      }
+
+      Pike_compiler->compiler_frame->lexical_scope |= SCOPE_SCOPE_USED;
     }
 
     e = $<number>8 + $9 - 1;
@@ -902,6 +910,32 @@ def: modifiers optional_attributes simple_type optional_constant
 	yywarning("Extern declared function definition.");
       }
 
+      if ($1 & ID_GENERATOR) {
+	struct pike_type *generator_type;
+
+	ref_push_string($5->u.sval.u.string);
+	push_constant_text("\0generator");
+	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+	    Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO) {
+	  /* Change "auto" return type to actual return type. */
+	  push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
+	} else {
+	  push_finished_type(Pike_compiler->compiler_frame->current_return_type);
+	}
+	push_type(T_VOID);
+	push_type(T_MANY);
+
+	generator_type = compiler_pop_type();
+	f = dooptcode(Pike_sp[-1].u.string, $12, generator_type,
+		      ID_PROTECTED|ID_PRIVATE);
+	pop_stack();
+
+	Pike_compiler->compiler_frame->generator_local = -1;
+	free_type(Pike_compiler->compiler_frame->current_return_type);
+	Pike_compiler->compiler_frame->current_return_type = generator_type;
+	$12 = mknode(F_RETURN, mkgeneratornode(f), NULL);
+      }
+
       for(e=0; e<$<number>8+$9; e++)
       {
 	if((e >= $<number>8) &&
@@ -945,10 +979,6 @@ def: modifiers optional_attributes simple_type optional_constant
 	}
       }
 
-      if ($1 & ID_GENERATOR) {
-	$12 = mknode(F_GENERATOR, $12, NULL);
-      }
-
       {
 	int l = $12->line_number;
 	struct pike_string *f = $12->current_file;
@@ -970,11 +1000,6 @@ def: modifiers optional_attributes simple_type optional_constant
       {
         /* Change "auto" return type to actual return type. */
         push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
-
-	if ($1 & ID_GENERATOR) {
-	  push_type(T_VOID);
-	  push_type(T_MANY);
-	}
 
         e = $<number>8 + $9 - 1;
         if(Pike_compiler->varargs &&
@@ -4791,7 +4816,9 @@ int low_add_local_name(struct compiler_frame *frame,
     copy_shared_string(frame->variable[var].file,
 		       THIS_COMPILATION->lex.current_file);
 
-    if (pike_types_le(void_type_string, type)) {
+    if (frame->generator_local != -1) {
+      frame->variable[var].flags = LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
+    } else if (pike_types_le(void_type_string, type)) {
       /* Don't warn about unused voidable variables. */
       frame->variable[var].flags = LOCAL_VAR_IS_USED;
     } else {
