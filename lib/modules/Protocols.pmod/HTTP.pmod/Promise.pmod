@@ -154,6 +154,8 @@ public Concurrent.Future do_method(string http_method,
 
   Concurrent.Promise p = Concurrent.Promise();
   Session s = Session();
+  // Prevent keep-alive since we won't reuse the Session
+  s->maximum_connection_reuse = 0;
 
   if (args->maxtime || _maxtime) {
     s->maxtime = args->maxtime || _maxtime;
@@ -351,6 +353,7 @@ protected class Session
         Result ret = Result(url_requested, q, eca && eca[1..]);
         fc(ret);
       }
+      destroy(); // return connection to pool
     }
 
     protected void async_ok(object q)
@@ -399,6 +402,7 @@ protected class Session
         Result ret = Result(url_requested, con, eca && eca[1..], s);
         dc(ret);
       }
+      destroy(); // return connection to pool
     }
 
     //! @ignore

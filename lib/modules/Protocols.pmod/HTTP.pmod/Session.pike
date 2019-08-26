@@ -647,7 +647,7 @@ protected class KeptConnection
 	 m_delete(connection_cache,lookup);
       remove_call_out(disconnect); // if called externally
 
-      if (q->con) destruct(q->con);
+      if (q->con) {q->con->close(); destruct(q->con);}
       connections_kept_n--;
       if (!--connections_host_n[lookup])
 	 m_delete(connections_host_n,lookup);
@@ -770,6 +770,7 @@ void return_connection(Standards.URI url,Query query)
 	 freed_connection(lookup);
 	 return;
       }
+      query->con->close(); // SSL.File needs to be explicitly closed before destruction
       destruct(query->con);
    }
    destruct(query);
