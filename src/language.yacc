@@ -915,6 +915,7 @@ def: modifiers optional_attributes simple_type optional_constant
 
 	ref_push_string($5->u.sval.u.string);
 	push_constant_text("\0generator");
+	f_add(2);
 	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
 	    Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO) {
 	  /* Change "auto" return type to actual return type. */
@@ -927,7 +928,7 @@ def: modifiers optional_attributes simple_type optional_constant
 
 	generator_type = compiler_pop_type();
 	f = dooptcode(Pike_sp[-1].u.string, $12, generator_type,
-		      ID_PROTECTED|ID_PRIVATE);
+		      ID_INLINE|ID_PROTECTED|ID_PRIVATE);
 	pop_stack();
 
 	Pike_compiler->compiler_frame->generator_local = -1;
