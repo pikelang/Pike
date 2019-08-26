@@ -1287,6 +1287,8 @@ node *debug_mkgeneratornode(int i)
   _CAR(res) = mktrampolinenode(i, Pike_compiler->compiler_frame);
   copy_pike_type(res->type, CAR(res)->type);
   res->node_info = OPT_NOT_CONST;
+
+  return res;
 }
 
 node *debug_mkexternalnode(struct program *parent_prog, int i)
