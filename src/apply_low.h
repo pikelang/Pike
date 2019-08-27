@@ -153,7 +153,8 @@
 #ifdef PIKE_DEBUG
       if (Pike_fp) {
 
-	if (new_frame->locals < Pike_fp->locals) {
+	if (!(new_frame->flags & PIKE_FRAME_MALLOCED_LOCALS) &&
+	    new_frame->locals < Pike_fp->locals) {
           Pike_fatal("New locals below old locals: %p < %p\n",
                      new_frame->locals, Pike_fp->locals);
 	}

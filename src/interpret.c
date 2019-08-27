@@ -2016,6 +2016,10 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
         free_program(X->current_program);
     if(X->scope)
         free_pike_scope(X->scope);
+    if (X->flags & PIKE_FRAME_MALLOCED_LOCALS) {
+      free_array(X->locals[-1].u.array);
+      X->flags &= ~PIKE_FRAME_MALLOCED_LOCALS;
+    }
     DO_IF_DEBUG(
         if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)
             Pike_fatal("Pike frame is not supposed to have malloced locals here!\n"));
@@ -2739,7 +2743,8 @@ void unlink_previous_frame(void)
    */
   frame_set_save_sp(current, frame_get_save_sp(prev));
   current->save_mark_sp=prev->save_mark_sp;
-  current->flags = prev->flags & PIKE_FRAME_RETURN_MASK;
+  current->flags = (current->flags & ~PIKE_FRAME_RETURN_MASK) |
+    (prev->flags & PIKE_FRAME_RETURN_MASK);
 
   /* Unlink the top frame temporarily. */
   Pike_interpreter.frame_pointer=prev;
