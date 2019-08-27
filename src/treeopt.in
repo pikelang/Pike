@@ -38,8 +38,8 @@ F_APPLY(-, 0 = *):
 
 // Attempt to return a void expression.
 // The compiler has already complained about it, so just make a valid node.
-F_RETURN(-, *):
-  F_RETURN(0, -);
+F_RETURN(-, 0 = *):
+  F_RETURN(0, $0);
 
 // @({ a, b, c })  =>  a, b, c
 // Nonconstant array
@@ -1601,7 +1601,7 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 //
 // FIXME: Currently broken for many cases, since the SHARED_NODES
 //        mode is gone.
-'?'(0 = +[ node_is_tossable($$) ], ':'( F_RETURN($0, *), 1)) :
+'?'(0 = +[ node_is_tossable($$) ], ':'( F_RETURN($0, 2), 1)) :
 {
   struct pike_type *type = $0->type;
   struct pike_string *tmpname;
@@ -1618,7 +1618,7 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
     $$ = mknode('?', mknode(F_ASSIGN, mklocalnode(tmpvar, 0), $0),
 		mknode(':',mknode(F_RETURN,
 				  mksoftcastnode(type, mklocalnode(tmpvar,0)),
-				  0),
+				  $2),
 		       $1));
   }
 }
