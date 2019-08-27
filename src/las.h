@@ -76,6 +76,8 @@ struct compiler_frame
   int is_inline;
   unsigned int opt_flags;
   int generator_local;
+  int generator_index;
+  INT32 *generator_jumptable;
   struct local_variable variable[MAX_LOCAL];
 };
 

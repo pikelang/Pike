@@ -444,6 +444,24 @@ static INT32 count_cases(node *n)
   }
 }
 
+static INT32 count_continue_returns(node *n)
+{
+  INT32 ret = 0;
+  if(!n) return 0;
+  switch(n->token)
+  {
+  case F_RETURN:
+    /* FIXME: continue returns in expressions are likely to be broken. */
+    if (CDR(n) && CDR(n)->u.sval.u.integer) ret = 1;
+
+    /* FALLTHRU */
+  default:
+    if(car_is_node(n)) ret += count_continue_returns(CAR(n));
+    if(cdr_is_node(n)) ret += count_continue_returns(CDR(n));
+    return ret;
+  }
+}
+
 static int has_automap(node *n)
 {
   if(!n) return 0;
@@ -2135,7 +2153,7 @@ static int do_docode2(node *n, int flags)
      * So far all switches are implemented with a binsearch lookup.
      * It stores the case values in the programs area for constants.
      * It also has a jump-table in the program itself, for every index in
-     * the array of cases, there is 2 indexes in the jumptable, and one extra.
+     * the array of cases, there are 2 indices in the jumptable, and one extra.
      * The first entry in the jumptable is used if you call switch with
      * a value that is ranked lower than all the indexes in the array of
      * cases. (Ranked by the binsearch that is) The second is used if it
@@ -2462,6 +2480,7 @@ static int do_docode2(node *n, int flags)
   case F_RETURN: {
     struct statement_label *p;
     int in_catch = 0;
+    int continue_label = -1;
     do_docode(CAR(n),0);
 
     /* Insert the appropriate number of F_ESCAPE_CATCH. The rest of
@@ -2490,7 +2509,27 @@ static int do_docode2(node *n, int flags)
       }
     }
 
+    if (Pike_compiler->compiler_frame->generator_local != -1) {
+      if (CDR(n) && CDR(n)->u.sval.u.integer) {
+	/* Continue return. */
+	continue_label = alloc_label();
+	/* NB: Subtract 1 to compensate for starting cases at -1. */
+	emit1(F_NUMBER,
+	      Pike_compiler->compiler_frame->generator_index-1);
+      } else {
+	emit1(F_NUMBER, -1);
+      }
+      emit1(F_ASSIGN_LOCAL_AND_POP,
+	    Pike_compiler->compiler_frame->generator_local);
+    }
+
     emit0(in_catch ? F_VOLATILE_RETURN : F_RETURN);
+
+    if (continue_label != -1) {
+      Pike_compiler->compiler_frame->generator_jumptable[
+        Pike_compiler->compiler_frame->generator_index++] =
+	ins_label(continue_label);
+    }
     return 0;
   }
 
@@ -2789,6 +2828,17 @@ static int do_docode2(node *n, int flags)
       return 1;
     }
 
+  case F_GENERATOR:
+    {
+      tmp1 = do_docode(CAR(n), 0);
+      if ((tmp1 != 1) || !CAR(n) || (CAR(n)->token != F_TRAMPOLINE)) {
+	emit0(F_UNDEFINED);
+	return 1;
+      }
+      emit1(F_GENERATOR, CAR(n)->u.trampoline.ident);
+      return 1;
+    }
+
   case F_VAL_LVAL:
   case F_FOREACH_VAL_LVAL:
     ret = do_docode(CAR(n),flags);
@@ -2878,6 +2928,7 @@ INT32 do_code_block(node *n, int identifier_flags)
   struct compilation *c = THIS_COMPILATION;
   struct reference *id = NULL;
   INT32 entry_point;
+  INT32 generator_switch = -1, *generator_jumptable = NULL;
   int aggregate_cnum = -1;
   int save_stack_depth = current_stack_depth;
   int save_label_no = label_no;
@@ -2896,37 +2947,88 @@ INT32 do_code_block(node *n, int identifier_flags)
   emit0(F_ENTRY);
   emit0(F_START_FUNCTION);
 
-  if (Pike_compiler->compiler_frame->num_args) {
-    emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
-  }
-  emit1(F_MARK_AT, Pike_compiler->compiler_frame->num_args);
-  if (identifier_flags & IDENTIFIER_VARARGS) {
-    struct svalue *sval =
-      simple_mapping_string_lookup(get_builtin_constants(), "aggregate");
-    if (!sval) {
-      yyerror("predef::aggregate() is missing.\n");
-      Pike_fatal("No aggregate!\n");
-      UNREACHABLE(return 0);
+  if (Pike_compiler->compiler_frame->generator_local != -1) {
+    INT32 e, states;
+    /* Emit the state-machine switch for the generator. */
+    emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local);
+    generator_switch = emit1(F_SWITCH, 0);
+    emit1(F_ALIGN, sizeof(INT32));
+
+    /* NB: Three implicit states:
+     *     -1: return UNDEFINED;	// Termination state.
+     *      0: code			// Code start.
+     *    ...
+     *      *: return UNDEFINED;	// Termination state (again).
+     *
+     * Jumptable:
+     *
+     * jmp_index  case_index  case_value  label
+     *         0           -           -  Terminate
+     *         1           0           0  Start
+     *         2           -           1  Cont #0
+     *       ...
+     *       n+2    (n+2)>>1         n+1  Cont #n
+     *       n+3           -           -  Terminate
+     *
+     * Note that the above requires an even number of continuation states.
+     * We therefore add an extra termination state if we have an odd
+     * number of continuation states.
+     */
+    states = count_continue_returns(n);
+
+    Pike_compiler->compiler_frame->generator_index = 0;
+    Pike_compiler->compiler_frame->generator_jumptable =
+      xalloc(sizeof(INT32) * (states + (states & 1) + 3));
+    generator_jumptable = xalloc(sizeof(INT32) * (states + (states & 1) + 3));
+
+    for (e = 0; e < states + (states & 1) + 3; e++) {
+      generator_jumptable[e] = (INT32)emit1(F_POINTER, 0);
+      Pike_compiler->compiler_frame->generator_jumptable[e] = -1;
     }
-    aggregate_cnum = store_constant(sval, 0, NULL);
-    emit1(F_CALL_BUILTIN, aggregate_cnum);
-    if (Pike_compiler->compiler_frame->max_number_of_locals !=
-	Pike_compiler->compiler_frame->num_args+1) {
-      emit2(F_FILL_STACK,
-	    Pike_compiler->compiler_frame->max_number_of_locals, 0);
-    }
+    emit0(F_NOTREACHED);
+
+    /* Termination state. (-1, default) */
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] = ins_label(-1);
+    emit0(F_UNDEFINED);
+    emit0(F_RETURN);
+
+    /* Start. (0) */
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] = ins_label(-1);
   } else {
-    emit0(F_POP_TO_MARK);
-    if (Pike_compiler->compiler_frame->max_number_of_locals !=
-	Pike_compiler->compiler_frame->num_args) {
-      emit2(F_FILL_STACK,
-	    Pike_compiler->compiler_frame->max_number_of_locals, 0);
+    if (Pike_compiler->compiler_frame->num_args) {
+      emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
     }
-  }
-  emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args,
-        Pike_compiler->compiler_frame->max_number_of_locals);
-  if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
-    emit_save_locals(Pike_compiler->compiler_frame);
+    emit1(F_MARK_AT, Pike_compiler->compiler_frame->num_args);
+    if (identifier_flags & IDENTIFIER_VARARGS) {
+      struct svalue *sval =
+	simple_mapping_string_lookup(get_builtin_constants(), "aggregate");
+      if (!sval) {
+	yyerror("predef::aggregate() is missing.\n");
+	Pike_fatal("No aggregate!\n");
+	UNREACHABLE(return 0);
+      }
+      aggregate_cnum = store_constant(sval, 0, NULL);
+      emit1(F_CALL_BUILTIN, aggregate_cnum);
+      if (Pike_compiler->compiler_frame->max_number_of_locals !=
+	  Pike_compiler->compiler_frame->num_args+1) {
+	emit2(F_FILL_STACK,
+	      Pike_compiler->compiler_frame->max_number_of_locals, 0);
+      }
+    } else {
+      emit0(F_POP_TO_MARK);
+      if (Pike_compiler->compiler_frame->max_number_of_locals !=
+	  Pike_compiler->compiler_frame->num_args) {
+	emit2(F_FILL_STACK,
+	      Pike_compiler->compiler_frame->max_number_of_locals, 0);
+      }
+    }
+    emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args,
+	  Pike_compiler->compiler_frame->max_number_of_locals);
+    if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
+      emit_save_locals(Pike_compiler->compiler_frame);
+    }
   }
 
   if(id && (id->id_flags & ID_INLINE))
@@ -2937,7 +3039,44 @@ INT32 do_code_block(node *n, int identifier_flags)
 
   DO_CODE_BLOCK(n);
 
-  if(Pike_compiler->compiler_frame->recur_label > 0)
+  if (generator_switch != -1) {
+    INT32 e;
+    struct svalue *save_sp = Pike_sp;
+
+    /* Termination state. (-1, default) */
+    if (Pike_compiler->compiler_frame->generator_index & 1) {
+      Pike_compiler->compiler_frame->generator_jumptable[
+        Pike_compiler->compiler_frame->generator_index++] =
+	Pike_compiler->compiler_frame->generator_jumptable[0];
+    }
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] =
+      Pike_compiler->compiler_frame->generator_jumptable[0];
+
+    for (e = 0; e < Pike_compiler->compiler_frame->generator_index; e++) {
+      INT32 jmp = Pike_compiler->compiler_frame->generator_jumptable[e];
+      if (jmp < 0) {
+	yywarning("Lost track of continue return #%d.\n", e - 2);
+	jmp = Pike_compiler->compiler_frame->generator_jumptable[0];
+      }
+      if (!generator_jumptable[e]) {
+	my_yyerror("Lost address for switch pointer #%d.\n", e);
+      } else {
+	update_arg(generator_jumptable[e], jmp);
+      }
+    }
+
+    /* NB: For eg 5 entries (-1, 0, 1, 2, (3)), we need 2 entries in the array
+     *     ({ 0, 2 }).
+     */
+    for (e = 0; e < Pike_compiler->compiler_frame->generator_index-1; e += 2) {
+      push_int(e);
+    }
+    f_aggregate(Pike_sp - save_sp);
+
+    update_arg(generator_switch, store_constant(Pike_sp - 1, 1, 0));
+    pop_stack();
+  } else if(Pike_compiler->compiler_frame->recur_label > 0)
   {
 #ifdef PIKE_DEBUG
     if(l_flag)
@@ -2994,6 +3133,7 @@ INT32 docode(node *n)
 {
   INT32 entry_point;
   int label_no_save = label_no;
+  int generator_local_save = Pike_compiler->compiler_frame->generator_local;
   struct byte_buffer instrbuf_save = instrbuf;
   int stack_depth_save = current_stack_depth;
   struct statement_label *label_save = current_label;
@@ -3003,6 +3143,7 @@ INT32 docode(node *n)
   current_stack_depth = 0;
   current_label = &top_statement_label_dummy;	/* Fix these two to */
   top_statement_label_dummy.cleanups = 0;	/* please F_PUSH_ARRAY. */
+  Pike_compiler->compiler_frame->generator_local = -1;
   init_bytecode();
 
   insert_opcode0(F_ENTRY, n->line_number, n->current_file);
@@ -3012,6 +3153,7 @@ INT32 docode(node *n)
   entry_point = assemble(0);		/* Don't store linenumbers. */
 
   instrbuf=instrbuf_save;
+  Pike_compiler->compiler_frame->generator_local = generator_local_save;
   label_no = label_no_save;
   current_stack_depth = stack_depth_save;
   current_label = label_save;
