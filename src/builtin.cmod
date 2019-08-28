@@ -4111,6 +4111,9 @@ PIKEFUN array(mixed) backtrace(int|void local_vars)
   stack_pop_n_elems_keep_top(args);
 }
 
+/*! @module String
+ */
+
 /*! @class Replace
  *!
  *! This is a "compiled" version of the @[replace] function applied on
@@ -6228,7 +6231,7 @@ PIKECLASS List
       }
     }
 
-    /*! @decl @[_get_iterator] copy_iterator()
+    /*! @decl object(_get_iterator) copy_iterator()
      *!
      *! @returns
      *!   Returns a copy of the iterator at its current position.
