@@ -188,8 +188,25 @@ protected private class Extractor {
     case 0:
       extractorErrorAt(token->currentPosition,
 		       "doc comment without destination");
+      return ({});
+
     default:
-      return 0;
+      if (has_prefix(meta->type, "end")) {
+	if (meta->type == "end" + parent->objtype) {
+	  // Got end marker.
+	  return 0;
+	}
+	extractorErrorAt(token->currentPosition,
+			 "Got @%s%s where @end%s %s expected.\n",
+			 meta->type, meta->name?(" " + meta->name):"",
+			 parent->objtype, parent->name);
+      } else {
+	extractorErrorAt(token->currentPosition,
+			 "Unhandled meta: @%s%s in @%s %s.\n",
+			 meta->type, meta->name?(" " + meta->name):"",
+			 parent->objtype, parent->name);
+      }
+      return ({});
     }
 
   }
@@ -199,6 +216,7 @@ protected private class Extractor {
       array(string|Enum|Class|Module|DocGroup) a = parseObject(c, root);
       if (!a)
         return;
+      if (!sizeof(a)) continue;
       switch ([string]a[0]) {
         case "namespace":
           //werror("in parent %O: found child %O\n", c->name, a[1]->name);
