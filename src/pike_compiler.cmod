@@ -2981,6 +2981,7 @@ void push_compiler_frame(int lexical_scope)
   f->num_args=-1;
   f->opt_flags = OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND; /* FIXME: Should be 0. */
   f->generator_local = -1;
+  f->generator_jumptable = NULL;
   Pike_compiler->compiler_frame=f;
 }
 
@@ -3098,6 +3099,9 @@ void pop_compiler_frame(void)
 
   if(f->current_return_type)
     free_type(f->current_return_type);
+
+  if (f->generator_jumptable)
+    free(f->generator_jumptable);
 
   Pike_compiler->compiler_frame=f->previous;
   dmfree((char *)f);

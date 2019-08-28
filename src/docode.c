@@ -2978,8 +2978,9 @@ INT32 do_code_block(node *n, int identifier_flags)
 
     Pike_compiler->compiler_frame->generator_index = 0;
     Pike_compiler->compiler_frame->generator_jumptable =
-      xalloc(sizeof(INT32) * (states + (states & 1) + 3));
-    generator_jumptable = xalloc(sizeof(INT32) * (states + (states & 1) + 3));
+      xalloc(2 * sizeof(INT32) * (states + (states & 1) + 3));
+    generator_jumptable = Pike_compiler->compiler_frame->generator_jumptable +
+      (states + (states & 1) + 3);
 
     for (e = 0; e < states + (states & 1) + 3; e++) {
       generator_jumptable[e] = (INT32)emit1(F_POINTER, 0);
@@ -3076,6 +3077,9 @@ INT32 do_code_block(node *n, int identifier_flags)
 
     update_arg(generator_switch, store_constant(Pike_sp - 1, 1, 0));
     pop_stack();
+
+    free(Pike_compiler->compiler_frame->generator_jumptable);
+    Pike_compiler->compiler_frame->generator_jumptable = NULL;
   } else if(Pike_compiler->compiler_frame->recur_label > 0)
   {
 #ifdef PIKE_DEBUG
