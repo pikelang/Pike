@@ -2510,6 +2510,7 @@ static int do_docode2(node *n, int flags)
     }
 
     if (Pike_compiler->compiler_frame->generator_local != -1) {
+      emit1(F_SAVE_STACK, Pike_compiler->compiler_frame->generator_local + 1);
       if (CDR(n) && CDR(n)->u.sval.u.integer) {
 	/* Continue return. */
 	continue_label = alloc_label();
@@ -2526,6 +2527,7 @@ static int do_docode2(node *n, int flags)
     emit0(in_catch ? F_VOLATILE_RETURN : F_RETURN);
 
     if (continue_label != -1) {
+      modify_stack_depth(-1);
       Pike_compiler->compiler_frame->generator_jumptable[
         Pike_compiler->compiler_frame->generator_index++] =
 	ins_label(continue_label);
@@ -2949,6 +2951,15 @@ INT32 do_code_block(node *n, int identifier_flags)
 
   if (Pike_compiler->compiler_frame->generator_local != -1) {
     INT32 e, states;
+
+    /* Zap any initial junk on the stack. */
+    emit1(F_MARK_AT, 0);
+    emit0(F_POP_TO_MARK);
+
+    /* Restore the stack content and zap extra references. */
+    emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local + 1);
+    emit0(F_PUSH_ARRAY_AND_CLEAR);
+
     /* Emit the state-machine switch for the generator. */
     emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local);
     generator_switch = emit1(F_SWITCH, 0);

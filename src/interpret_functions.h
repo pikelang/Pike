@@ -3100,6 +3100,46 @@ OPCODE1(F_GENERATOR, "generator", 0, {
     Pike_fp->fun = arg1;
   });
 
+OPCODE0(F_PUSH_ARRAY_AND_CLEAR, "@zap", I_UPDATE_SP, {
+    struct array *a;
+    struct svalue *s;
+    size_t i;
+
+    switch(TYPEOF(Pike_sp[-1]))
+    {
+    default:
+      PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
+      break;
+
+    case PIKE_T_ARRAY: break;
+    }
+    dmalloc_touch_svalue(Pike_sp-1);
+    Pike_sp--;
+    a = Pike_sp->u.array;
+    s = ITEM(a);
+    memcpy(Pike_sp, s, sizeof(struct svalue) * a->size);
+    memset(s, 0, sizeof(struct svalue) * a->size);
+    Pike_sp += a->size;
+    free_array(a);
+  });
+
+OPCODE1(F_SAVE_STACK, "save_stack", 0, {
+    struct svalue *save_sp = frame_get_save_sp(Pike_fp);
+    ptrdiff_t len = Pike_sp - save_sp - 1;
+    struct array *a;
+    struct svalue *s;
+    ptrdiff_t i;
+
+    if (len < 0) len = 0;
+    a = allocate_array(len);
+    s = ITEM(a);
+    for(i = 0; i < len; i++) {
+      assign_svalue_no_free(s + i, save_sp + i);
+    }
+    free_svalue(Pike_fp->locals + arg1);
+    SET_SVAL(Pike_fp->locals[arg1], PIKE_T_ARRAY, 0, array, a);
+  });
+
 /*
 #undef PROG_COUNTER
 */

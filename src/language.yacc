@@ -823,6 +823,9 @@ def: modifiers optional_attributes simple_type optional_constant
       add_ref(int_type_string);
       Pike_compiler->compiler_frame->generator_local =
 	add_local_name(empty_pike_string, int_type_string, 0);
+      /* Stack contents to restore. */
+      add_ref(array_type_string);
+      add_local_name(empty_pike_string, array_type_string, 0);
 
       for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
 	Pike_compiler->compiler_frame->variable[e].flags |=
@@ -912,6 +915,7 @@ def: modifiers optional_attributes simple_type optional_constant
 
       if ($1 & ID_GENERATOR) {
 	struct pike_type *generator_type;
+	int generator_stack_local;
 
 	ref_push_string($5->u.sval.u.string);
 	push_constant_text("\0generator");
@@ -931,10 +935,15 @@ def: modifiers optional_attributes simple_type optional_constant
 		      ID_INLINE|ID_PROTECTED|ID_PRIVATE);
 	pop_stack();
 
+	generator_stack_local =
+	  Pike_compiler->compiler_frame->generator_local + 1;
 	Pike_compiler->compiler_frame->generator_local = -1;
 	free_type(Pike_compiler->compiler_frame->current_return_type);
 	Pike_compiler->compiler_frame->current_return_type = generator_type;
-	$12 = mknode(F_RETURN, mkgeneratornode(f), NULL);
+	$12 = mknode(F_COMMA_EXPR,
+		     mknode(F_ASSIGN, mklocalnode(generator_stack_local, 0),
+			    mkefuncallnode("aggregate", NULL)),
+		     mknode(F_RETURN, mkgeneratornode(f), NULL));
       }
 
       for(e=0; e<$<number>8+$9; e++)
