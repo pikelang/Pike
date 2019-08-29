@@ -4006,7 +4006,11 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
     amd64_load_mark_sp_reg();
-    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+    if (Pike_compiler->compiler_frame->generator_local != -1) {
+      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, save_sp), ARG1_REG);
+    } else {
+      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+    }
     if (b) {
       add_reg_imm_reg(ARG1_REG, sizeof(struct svalue) * b, ARG1_REG);
     }

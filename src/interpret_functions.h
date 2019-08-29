@@ -3085,7 +3085,11 @@ OPCODE2(F_FILL_STACK, "fill_stack", I_UPDATE_SP, {
 
 OPCODE1(F_MARK_AT, "mark_at", I_UPDATE_SP, {
     /* FIXME: What about MALLOCED_LOCALS? */
-    *(Pike_mark_sp++) = Pike_fp->locals + arg1;
+    if (Pike_fp->flags & PIKE_FRAME_MALLOCED_LOCALS) {
+      *(Pike_mark_sp++) = frame_get_save_sp(Pike_fp) + arg1;
+    } else {
+      *(Pike_mark_sp++) = Pike_fp->locals + arg1;
+    }
   });
 
 OPCODE2(F_MAGIC_ANNOTATIONS, "::_annotations", I_UPDATE_SP, {
