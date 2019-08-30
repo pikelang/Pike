@@ -3100,10 +3100,8 @@ OPCODE1(F_GENERATOR, "generator", 0, {
     Pike_fp->fun = arg1;
   });
 
-OPCODE0(F_PUSH_ARRAY_AND_CLEAR, "@zap", I_UPDATE_SP, {
+OPCODE0(F_PUSH_ARRAY_AND_EMPTY, "@zap", I_UPDATE_SP, {
     struct array *a;
-    struct svalue *s;
-    size_t i;
 
     switch(TYPEOF(Pike_sp[-1]))
     {
@@ -3116,14 +3114,17 @@ OPCODE0(F_PUSH_ARRAY_AND_CLEAR, "@zap", I_UPDATE_SP, {
     dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;
     a = Pike_sp->u.array;
-    s = ITEM(a);
-    memcpy(Pike_sp, s, sizeof(struct svalue) * a->size);
-    memset(s, 0, sizeof(struct svalue) * a->size);
-    Pike_sp += a->size;
+    if (a->size) {
+      struct svalue *s = ITEM(a);
+      memcpy(Pike_sp, s, sizeof(struct svalue) * a->size);
+      DO_IF_DEBUG(memset(s, 0, sizeof(struct svalue) * a->size));
+      Pike_sp += a->size;
+      a->size = 0;
+    }
     free_array(a);
   });
 
-OPCODE1(F_SAVE_STACK, "save_stack", 0, {
+OPCODE1(F_SAVE_STACK_TO_LOCAL, "save_stack", 0, {
     struct svalue *save_sp = frame_get_save_sp(Pike_fp);
     ptrdiff_t len = Pike_sp - save_sp - 1;
     struct array *a;

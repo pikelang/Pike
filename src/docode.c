@@ -2509,17 +2509,15 @@ static int do_docode2(node *n, int flags)
       }
     }
 
-    if (Pike_compiler->compiler_frame->generator_local != -1) {
-      emit1(F_SAVE_STACK, Pike_compiler->compiler_frame->generator_local + 1);
-      if (CDR(n) && CDR(n)->u.sval.u.integer) {
-	/* Continue return. */
-	continue_label = alloc_label();
-	/* NB: Subtract 1 to compensate for starting cases at -1. */
-	emit1(F_NUMBER,
-	      Pike_compiler->compiler_frame->generator_index-1);
-      } else {
-	emit1(F_NUMBER, -1);
-      }
+    if ((Pike_compiler->compiler_frame->generator_local != -1) &&
+	CDR(n) && CDR(n)->u.sval.u.integer) {
+      /* Continue return. */
+      emit1(F_SAVE_STACK_TO_LOCAL,
+	    Pike_compiler->compiler_frame->generator_local + 1);
+      continue_label = alloc_label();
+      /* NB: Subtract 1 to compensate for starting cases at -1. */
+      emit1(F_NUMBER,
+	    Pike_compiler->compiler_frame->generator_index-1);
       emit1(F_ASSIGN_LOCAL_AND_POP,
 	    Pike_compiler->compiler_frame->generator_local);
     }
@@ -2958,10 +2956,13 @@ INT32 do_code_block(node *n, int identifier_flags)
 
     /* Restore the stack content and zap extra references. */
     emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local + 1);
-    emit0(F_PUSH_ARRAY_AND_CLEAR);
+    emit0(F_PUSH_ARRAY_AND_EMPTY);
 
     /* Emit the state-machine switch for the generator. */
     emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local);
+    emit1(F_NUMBER, -1);
+    emit1(F_ASSIGN_LOCAL_AND_POP,
+	  Pike_compiler->compiler_frame->generator_local);
     generator_switch = emit1(F_SWITCH, 0);
     emit1(F_ALIGN, sizeof(INT32));
 
