@@ -2483,6 +2483,23 @@ static int do_docode2(node *n, int flags)
     int continue_label = -1;
     do_docode(CAR(n),0);
 
+    if ((Pike_compiler->compiler_frame->generator_local != -1) &&
+	CDR(n) && CDR(n)->u.sval.u.integer) {
+      /* Continue return.
+       *
+       * Note that we must save the stack before we start
+       * popping marks etc in the label loop below.
+       */
+      emit2(F_SAVE_STACK_TO_LOCAL,
+	    Pike_compiler->compiler_frame->generator_local + 1, 1);
+      continue_label = alloc_label();
+      /* NB: Subtract 1 to compensate for starting cases at -1. */
+      emit1(F_NUMBER,
+	    Pike_compiler->compiler_frame->generator_index-1);
+      emit1(F_ASSIGN_LOCAL_AND_POP,
+	    Pike_compiler->compiler_frame->generator_local);
+    }
+
     /* Insert the appropriate number of F_ESCAPE_CATCH. The rest of
      * the cleanup is handled wholesale in low_return et al.
      * Alternatively we could handle this too in low_return and
@@ -2507,19 +2524,6 @@ static int do_docode2(node *n, int flags)
 	}
 #endif
       }
-    }
-
-    if ((Pike_compiler->compiler_frame->generator_local != -1) &&
-	CDR(n) && CDR(n)->u.sval.u.integer) {
-      /* Continue return. */
-      emit1(F_SAVE_STACK_TO_LOCAL,
-	    Pike_compiler->compiler_frame->generator_local + 1);
-      continue_label = alloc_label();
-      /* NB: Subtract 1 to compensate for starting cases at -1. */
-      emit1(F_NUMBER,
-	    Pike_compiler->compiler_frame->generator_index-1);
-      emit1(F_ASSIGN_LOCAL_AND_POP,
-	    Pike_compiler->compiler_frame->generator_local);
     }
 
     emit0(in_catch ? F_VOLATILE_RETURN : F_RETURN);
@@ -2955,8 +2959,8 @@ INT32 do_code_block(node *n, int identifier_flags)
     emit0(F_POP_TO_MARK);
 
     /* Restore the stack content and zap extra references. */
-    emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local + 1);
-    emit0(F_PUSH_ARRAY_AND_EMPTY);
+    emit1(F_RESTORE_STACK_FROM_LOCAL,
+	  Pike_compiler->compiler_frame->generator_local + 1);
 
     /* Emit the state-machine switch for the generator. */
     emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local);

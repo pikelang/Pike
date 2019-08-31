@@ -3100,45 +3100,84 @@ OPCODE1(F_GENERATOR, "generator", 0, {
     Pike_fp->fun = arg1;
   });
 
-OPCODE0(F_PUSH_ARRAY_AND_EMPTY, "@zap", I_UPDATE_SP, {
+OPCODE1(F_RESTORE_STACK_FROM_LOCAL, "restore_stack", I_UPDATE_SP, {
     struct array *a;
 
-    switch(TYPEOF(Pike_sp[-1]))
+    if(UNLIKELY(TYPEOF(Pike_fp->locals[arg1]) != PIKE_T_ARRAY))
     {
-    default:
-      PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
-      break;
+      free_svalue(&Pike_fp->locals[arg1]);
+      SET_SVAL(Pike_fp->locals[arg1], PIKE_T_ARRAY, 0, array, &empty_array);
+      add_ref(&empty_array);
+    } else {
+      a = Pike_fp->locals[arg1].u.array;
+      if (a->size) {
+	struct svalue *save_sp = Pike_sp;
+	struct svalue *s = ITEM(a);
+	memcpy(Pike_sp, s, sizeof(struct svalue) * a->size);
+	DO_IF_DEBUG(memset(s, 0, sizeof(struct svalue) * a->size));
+	Pike_sp += a->size;
+	a->size = 0;
 
-    case PIKE_T_ARRAY: break;
+	/* The last element from the array is the marks (if any). */
+	if (TYPEOF(Pike_sp[-1]) == PIKE_T_ARRAY) {
+	  ptrdiff_t i;
+	  struct array *mark_a = Pike_sp[-1].u.array;
+	  struct svalue *s = ITEM(mark_a);
+	  for (i = 0; i < mark_a->size; i++) {
+	    *(Pike_mark_sp++) = save_sp + s[i].u.integer;
+	  }
+	}
+	pop_stack();
+      }
     }
-    dmalloc_touch_svalue(Pike_sp-1);
-    Pike_sp--;
-    a = Pike_sp->u.array;
-    if (a->size) {
-      struct svalue *s = ITEM(a);
-      memcpy(Pike_sp, s, sizeof(struct svalue) * a->size);
-      DO_IF_DEBUG(memset(s, 0, sizeof(struct svalue) * a->size));
-      Pike_sp += a->size;
-      a->size = 0;
-    }
-    free_array(a);
   });
 
-OPCODE1(F_SAVE_STACK_TO_LOCAL, "save_stack", 0, {
+OPCODE2(F_SAVE_STACK_TO_LOCAL, "save_stack", 0, {
     struct svalue *save_sp = frame_get_save_sp(Pike_fp);
-    ptrdiff_t len = Pike_sp - save_sp - 1;
-    struct array *a;
-    struct svalue *s;
-    ptrdiff_t i;
+    ptrdiff_t len = Pike_sp - save_sp - arg2;
+    struct svalue **save_mark_sp = Pike_fp->save_mark_sp;
+    ptrdiff_t mark_len = Pike_mark_sp - save_mark_sp;
 
-    if (len < 0) len = 0;
-    a = allocate_array(len);
-    s = ITEM(a);
-    for(i = 0; i < len; i++) {
-      assign_svalue_no_free(s + i, save_sp + i);
+    if (mark_len || (len > 0)) {
+      struct array *a;
+      struct svalue *s;
+      ptrdiff_t i;
+
+      if (mark_len) {
+	a = allocate_array(mark_len);
+	s = ITEM(a);
+	for (i = 0; i < mark_len; i++) {
+	  SET_SVAL(s[i], PIKE_T_INT, NUMBER_NUMBER, integer,
+		   (save_mark_sp[i] - save_sp));
+	}
+	push_array(a);
+      } else {
+	push_undefined();
+      }
+      len++;
+
+      if ((TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_ARRAY) &&
+	  !(a = Pike_fp->locals[arg1].u.array)->size &&
+	  (a->malloced_size >= len)) {
+	/* Reuse the already allocated (and emptied) array. */
+	a->size = len;
+	a->type_field = BIT_MIXED | BIT_UNFINISHED;
+	a->item = a->real_item;
+      } else {
+	/* Allocate a new array. */
+	a = allocate_array(len);
+	free_svalue(Pike_fp->locals + arg1);
+	SET_SVAL(Pike_fp->locals[arg1], PIKE_T_ARRAY, 0, array, a);
+      }
+
+      s = ITEM(a);
+      for(i = 0; i < len-1; i++) {
+	assign_svalue_no_free(s + i, save_sp + i);
+      }
+      assign_svalue_no_free(s + i, Pike_sp-1);
+
+      pop_stack();
     }
-    free_svalue(Pike_fp->locals + arg1);
-    SET_SVAL(Pike_fp->locals[arg1], PIKE_T_ARRAY, 0, array, a);
   });
 
 /*
