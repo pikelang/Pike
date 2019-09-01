@@ -291,7 +291,7 @@ static void do_pop_to_mark(void *UNUSED(ignored))
 }
 
 #ifdef PIKE_DEBUG
-static void do_cleanup_synch_mark(void)
+static void do_cleanup_synch_mark(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
   if (d_flag > 2)
@@ -299,7 +299,7 @@ static void do_cleanup_synch_mark(void)
 }
 #endif
 
-static void do_escape_catch(void)
+static void do_escape_catch(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
   emit0(F_ESCAPE_CATCH);
@@ -2507,9 +2507,9 @@ static int do_docode2(node *n, int flags)
     for (p = current_label; p; p = p->prev) {
       struct cleanup_frame *q;
       for (q = p->cleanups; q; q = q->prev) {
-	if (q->cleanup == (cleanup_func) do_escape_catch) {
+	if (q->cleanup == do_escape_catch) {
 	  in_catch = 1;
-	  do_escape_catch();
+	  do_escape_catch(q->cleanup_arg);
 	}
 #ifdef PIKE_DEBUG
 	/* Have to pop marks from F_SYNCH_MARK too if the debug level
@@ -2547,7 +2547,7 @@ static int do_docode2(node *n, int flags)
     INT32 *prev_switch_jumptable = current_switch.jumptable;
 
     tmp1=do_jump(F_CATCH,-1);
-    PUSH_CLEANUP_FRAME(do_escape_catch, 0);
+    PUSH_CLEANUP_FRAME(do_escape_catch, (void *)(ptrdiff_t)tmp1);
 
     /* Entry point called via catching_eval_instruction(). */
     emit0(F_ENTRY);
