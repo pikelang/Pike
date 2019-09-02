@@ -18,6 +18,8 @@ OPCODE_NOCODE("arg+=256*X", F_PREFIX2_CHARX256,0)
 OPCODE_NOCODE("arg+=256*XX", F_PREFIX2_WORDX256,0)
 OPCODE_NOCODE("arg+=256*XXX", F_PREFIX2_24BITX256,0)
 
+OPCODE_NOCODE("instr=256+XXX", F_INSTR_PREFIX_256,0)
+
 #include "interpret_protos.h"
 
 /* Used to mark an entry point from eval_instruction(). */

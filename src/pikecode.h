@@ -32,6 +32,8 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 #endif
 #endif
 
+#define MAX_SUPPORTED_INSTR	511
+
 #if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
 #include "code/ia32.h"
 #define PIKE_BYTECODE_METHOD_NAME	"ia32"

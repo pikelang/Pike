@@ -70,6 +70,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
   {
     INT32 arg1, arg2;
     PIKE_INSTR_T instr = pc[0];
+
+  restart_instr:
     Pike_fp->pc = pc++;
 
     STEP_BREAK_LINE
@@ -111,6 +113,11 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       case F_PREFIX2_CHARX256:
         prefix2 += (pc++)[0]<<8;
       break;
+
+      /* Support large opcodes. */
+      case F_INSTR_PREFIX_256:
+	instr = 256 + pc[0];
+	goto restart_instr;
 
 
 #define INTERPRETER
