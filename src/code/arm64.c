@@ -1872,6 +1872,8 @@ MACRO void arm64_call_c_opcode(unsigned int opcode) {
 
   if (opcode == F_CATCH)
     addr = inter_return_opcode_F_CATCH;
+  else if (opcode == F_CATCH_AT)
+    addr = inter_return_opcode_F_CATCH_AT;
 
   arm64_call(addr);
 
@@ -2058,6 +2060,7 @@ static void low_ins_f_byte(unsigned int opcode)
       arm64_push_int(0, NUMBER_NUMBER);
       return;
   case F_CATCH:
+  case F_CATCH_AT:
       {
           rel_addr = PIKE_PC;
           adr_imm(ra_alloc(ARM_REG_R0), 0);
@@ -2503,7 +2506,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
   arm64_call_c_opcode(opcode);
 
-  if (opcode == F_CATCH) ra_free(ARM_REG_R0);
+  if ((opcode == F_CATCH) || (opcode == F_CATCH_AT)) ra_free(ARM_REG_R0);
 
   if (flags & I_RETURN)
     arm64_ins_maybe_exit();
@@ -2512,7 +2515,7 @@ static void low_ins_f_byte(unsigned int opcode)
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     br_reg(ARM_REG_RVAL);
 
-    if (opcode == F_CATCH) {
+    if ((opcode == F_CATCH) || (opcode == F_CATCH_AT)) {
         arm64_adr_imm_at(rel_addr, ARM_REG_R0, 4*(PIKE_PC - rel_addr));
     }
   }

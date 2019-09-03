@@ -679,9 +679,11 @@ void branch_check_threads_etc(void);
 #endif
 #ifdef OPCODE_INLINE_RETURN
 PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr);
+PIKE_OPCODE_T *inter_return_opcode_F_CATCH_AT(PIKE_OPCODE_T *addr);
 #endif
 #ifdef OPCODE_INLINE_CATCH
 PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr);
+PIKE_OPCODE_T *setup_catch_at_context(PIKE_OPCODE_T *addr);
 PIKE_OPCODE_T *handle_caught_exception(void);
 #endif
 #ifdef PIKE_DEBUG

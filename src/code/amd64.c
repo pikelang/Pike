@@ -2470,6 +2470,7 @@ void ins_f_byte(unsigned int b)
     return;
 
   case F_CATCH:
+  case F_CATCH_AT:
     {
       INT32 base_addr = 0;
 
@@ -2477,7 +2478,11 @@ void ins_f_byte(unsigned int b)
       mov_rip_imm_reg(0, ARG1_REG);	/* Address for the POINTER. */
       base_addr = PIKE_PC;
 
-      amd64_call_c_function (setup_catch_context);
+      if ((b + F_OFFSET) == F_CATCH) {
+	amd64_call_c_function (setup_catch_context);
+      } else {
+	amd64_call_c_function (setup_catch_at_context);
+      }
       mov_reg_reg(P_REG_RAX, P_REG_RBX);
 
       /* Pass a pointer to Pike_interpreter.catch_ctx.recovery.recovery to

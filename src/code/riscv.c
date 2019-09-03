@@ -287,6 +287,7 @@ static struct compiler_state {
 enum rv_jumpentry {
   RV_JUMPENTRY_BRANCH_CHECK_THREADS_ETC,
   RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH,
+  RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH_AT,
   RV_JUMPENTRY_COMPLEX_SVALUE_IS_TRUE,
   RV_JUMPENTRY_LOW_RETURN,
   RV_JUMPENTRY_LOW_RETURN_POP,
@@ -309,6 +310,7 @@ void riscv_jumptable(void) { }
 
 JUMP_ENTRY_NOPROTO(branch_check_threads_etc, branch_check_threads_etc, void, (void), , ())
 JUMP_ENTRY_NOPROTO(inter_return_opcode_F_CATCH, inter_return_opcode_F_CATCH, PIKE_OPCODE_T *, (PIKE_OPCODE_T *addr), return, (addr))
+JUMP_ENTRY_NOPROTO(inter_return_opcode_F_CATCH_AT, inter_return_opcode_F_CATCH_AT, PIKE_OPCODE_T *, (PIKE_OPCODE_T *addr), return, (addr))
 JUMP_ENTRY_NOPROTO(complex_svalue_is_true, complex_svalue_is_true, int, (const struct svalue *s), return, (s))
 JUMP_ENTRY_NOPROTO(low_return, low_return, void, (void), , ())
 JUMP_ENTRY_NOPROTO(low_return_pop, low_return_pop, void, (void), , ())
@@ -357,6 +359,7 @@ static void * const rv_jumptable_index[] =
 {
   [RV_JUMPENTRY_BRANCH_CHECK_THREADS_ETC] = rv_jumptable_branch_check_threads_etc,
   [RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH] = rv_jumptable_inter_return_opcode_F_CATCH,
+  [RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH_AT] = rv_jumptable_inter_return_opcode_F_CATCH_AT,
   [RV_JUMPENTRY_COMPLEX_SVALUE_IS_TRUE] = rv_jumptable_complex_svalue_is_true,
   [RV_JUMPENTRY_LOW_RETURN] = rv_jumptable_low_return,
   [RV_JUMPENTRY_LOW_RETURN_POP] = rv_jumptable_low_return_pop,
@@ -651,6 +654,8 @@ static void rv_call_c_opcode(unsigned int opcode)
 
   if (opcode == F_CATCH)
     index = RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH;
+  else if (opcode == F_CATCH_AT)
+    index = RV_JUMPENTRY_INTER_RETURN_OPCODE_F_CATCH_AT;
 
   rv_call_via_jumptable(index);
 
@@ -756,6 +761,7 @@ void riscv_ins_f_byte(unsigned int opcode)
   switch (opcode) {
 
   case F_CATCH:
+  case F_CATCH_AT:
     {
       rel_addr = PIKE_PC;
       rv_emit(RV_AUIPC(RV_REG_A0, 0));
@@ -820,7 +826,7 @@ void riscv_ins_f_byte(unsigned int opcode)
     rv_emit(RV_JALR(RV_REG_ZERO, RV_REG_A0, 0));
     rv_maybe_regenerate_millicode();
 
-    if (opcode == F_CATCH) {
+    if ((opcode == F_CATCH) || (opcode == F_CATCH_AT)) {
       rv_update_pcrel(rel_addr, RV_REG_A0, 2*(PIKE_PC - rel_addr));
     }
   }

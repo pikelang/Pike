@@ -483,6 +483,17 @@ void ins_f_byte(unsigned int b)
     /* addi r3, r3, offs */
     ADDI(PPC_REG_ARG1, PPC_REG_ARG1, 4);
     break;
+  case F_CATCH_AT - F_OFFSET:
+    /* Special argument for the F_CATCH_AT instruction. */
+    addr = inter_return_opcode_F_CATCH_AT;
+    /* bl .+4 */
+    BL(4);
+    /* mflr r3 */
+    MFSPR(PPC_REG_ARG1, PPC_SPREG_LR);
+    rel_addr = PIKE_PC;
+    /* addi r3, r3, offs */
+    ADDI(PPC_REG_ARG1, PPC_REG_ARG1, 4);
+    break;
 #endif
   }
 
@@ -529,7 +540,7 @@ void ins_f_byte(unsigned int b)
     BCLR(20, 0);
 
 #ifdef OPCODE_INLINE_RETURN
-    if (b == F_CATCH - F_OFFSET) {
+    if ((b == F_CATCH - F_OFFSET) || (b == F_CATCH_AT - F_OFFSET)) {
       Pike_compiler->new_program->program[rel_addr] += (PIKE_PC - rel_addr)*4;
     }
 #endif
@@ -637,7 +648,7 @@ INT32 ppc64_ins_f_jump(unsigned int a, int backward_jump)
   int (*test_func)(void);
   if(a == F_BRANCH)
     test_func = NULL;
-  else if(a == F_CATCH || a == F_RECUR ||
+  else if(a == F_CATCH || a == F_CATCH_AT || a == F_RECUR ||
 	  a == F_RECUR_AND_POP || a == F_TAIL_RECUR)
     return -1;
   else

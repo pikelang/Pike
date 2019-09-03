@@ -1301,6 +1301,159 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
   }
 }
 
+/* Modified calling-conventions to simplify code-generation when
+ * INTER_RETURN is inlined.
+ *
+ * cf interpret_functions.h:F_CATCH_AT
+ *
+ * Arguments:
+ *   addr:
+ *     Address where the continue POINTER (INT32) is stored.
+ *     Directly after the POINTER is the ENTRY for the catch block.
+ *   Pike_sp[-2]:
+ *     PIKE_T_INT containing offset from frame_get_save_sp(Pike_fp)
+ *     for restoration point for Pike_sp.
+ *   Pike_sp[-1]:
+ *     PIKE_T_INT containing offset from Pike_fp->save_mark_sp
+ *     for restoration point for Pike_mark_sp.
+ *
+ * Returns:
+ *   Decreases Pike_sp with 2.
+ *   (PIKE_OPCODE_T *)-1 on INTER_RETURN.
+ *   jump_destination otherwise.
+ */
+PIKE_OPCODE_T *inter_return_opcode_F_CATCH_AT(PIKE_OPCODE_T *addr)
+{
+#ifdef PIKE_DEBUG
+  if (d_flag || Pike_interpreter.trace_level > 2) {
+    low_debug_instr_prologue (F_CATCH - F_OFFSET);
+    if (Pike_interpreter.trace_level>3) {
+      sprintf(trace_buffer, "-    Addr = %p\n", addr);
+      write_to_stderr(trace_buffer,strlen(trace_buffer));
+    }
+  }
+#endif
+  {
+    struct catch_context *new_catch_ctx;
+
+    if ((TYPEOF(Pike_sp[-1]) != PIKE_T_INT) ||
+	(TYPEOF(Pike_sp[-2]) != PIKE_T_INT)) {
+      Pike_error("CATCH_AT: Invalid arguments.\n");
+    }
+
+    new_catch_ctx = alloc_catch_context();
+#ifdef PIKE_DEBUG
+      new_catch_ctx->frame = Pike_fp;
+      init_recovery (&new_catch_ctx->recovery, 0, 0, PERR_LOCATION());
+#else
+      init_recovery (&new_catch_ctx->recovery, 0);
+#endif
+
+    new_catch_ctx->recovery.stack_pointer =
+      frame_get_save_sp(Pike_fp) + Pike_sp[-2].u.integer -
+      Pike_interpreter.evaluator_stack;
+    new_catch_ctx->recovery.mark_sp =
+      Pike_fp->save_mark_sp + Pike_sp[-1].u.integer -
+      Pike_interpreter.mark_stack;
+    Pike_sp -= 2;
+
+    new_catch_ctx->continue_reladdr = (INT32)get_unaligned32(addr)
+      /* We need to run the entry prologue... */
+      - ENTRY_PROLOGUE_SIZE;
+
+    new_catch_ctx->next_addr = addr;
+    new_catch_ctx->prev = Pike_interpreter.catch_ctx;
+    Pike_interpreter.catch_ctx = new_catch_ctx;
+    DO_IF_DEBUG({
+	TRACE((3,"-   Pushed catch context %p\n", new_catch_ctx));
+      });
+  }
+
+  /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
+   * address to the continue position after the catch block. */
+  addr = (PIKE_OPCODE_T *) ((INT32 *) addr + 1);
+
+  if (Pike_interpreter.catching_eval_jmpbuf) {
+    /* There's already a catching_eval_instruction around our
+     * eval_instruction, so we can just continue. */
+    debug_malloc_touch_named (Pike_interpreter.catch_ctx, "(1)");
+    /* Skip past the entry prologue... */
+    addr += ENTRY_PROLOGUE_SIZE;
+    DO_IF_DEBUG({
+	TRACE((3,"-   In active catch; continuing at %p\n", addr));
+      });
+    return addr;
+  }
+  else {
+    debug_malloc_touch_named (Pike_interpreter.catch_ctx, "(2)");
+
+    while (1) {
+      /* Loop here every time an exception is caught. Once we've
+       * gotten here and set things up to run eval_instruction from
+       * inside catching_eval_instruction, we keep doing it until it's
+       * time to return. */
+
+      int res;
+
+      DO_IF_DEBUG({
+	  TRACE((3,"-   Activating catch; calling %p in context %p\n",
+		 addr, Pike_interpreter.catch_ctx));
+	});
+
+      res = catching_eval_instruction (addr);
+
+      DO_IF_DEBUG({
+	  TRACE((3,"-   catching_eval_instruction(%p) returned %d\n",
+		 addr, res));
+	});
+
+      if (res != -3) {
+	/* There was an inter return inside the evaluated code. Just
+	 * propagate it. */
+	DO_IF_DEBUG ({
+	    TRACE((3,"-   Returning from catch.\n"));
+	    if (res != -1) Pike_fatal ("Unexpected return value from "
+				       "catching_eval_instruction: %d\n", res);
+	  });
+	break;
+      }
+
+      else {
+	/* Caught an exception. */
+	struct catch_context *cc = Pike_interpreter.catch_ctx;
+
+	DO_IF_DEBUG ({
+	    TRACE((3,"-   Caught exception. catch context: %p\n", cc));
+	    if (!cc) Pike_fatal ("Catch context dropoff.\n");
+	    if (cc->frame != Pike_fp)
+	      Pike_fatal ("Catch context doesn't belong to this frame.\n");
+	  });
+
+	debug_malloc_touch_named (cc, "(3)");
+	UNSETJMP (cc->recovery);
+	move_svalue (Pike_sp++, &throw_value);
+	mark_free_svalue (&throw_value);
+	low_destruct_objects_to_destruct();
+
+	if (cc->continue_reladdr < 0)
+	  FAST_CHECK_THREADS_ON_BRANCH();
+	addr = cc->next_addr + cc->continue_reladdr;
+
+	DO_IF_DEBUG({
+	    TRACE((3,"-   Popping catch context %p ==> %p\n",
+		   cc, cc->prev));
+	    if (!addr) Pike_fatal ("Unexpected null continue addr.\n");
+	  });
+
+	Pike_interpreter.catch_ctx = cc->prev;
+	really_free_catch_context (cc);
+      }
+    }
+
+    return (PIKE_OPCODE_T *)(ptrdiff_t)-1;	/* INTER_RETURN; */
+  }
+}
+
 void *do_inter_return_label = (void*)(ptrdiff_t)-1;
 #else /* OPCODE_INLINE_RETURN */
 /* Labels to jump to to cause eval_instruction to return */
@@ -1332,6 +1485,60 @@ PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr)
 #else
       init_recovery (&new_catch_ctx->recovery, 0);
 #endif
+
+    /* Note: no prologue. */
+    new_catch_ctx->continue_reladdr = (INT32)get_unaligned32(addr);
+
+    new_catch_ctx->next_addr = addr;
+    new_catch_ctx->prev = Pike_interpreter.catch_ctx;
+    Pike_interpreter.catch_ctx = new_catch_ctx;
+    DO_IF_DEBUG({
+	TRACE((3,"-   Pushed catch context %p\n", new_catch_ctx));
+      });
+  }
+
+  /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
+   * address to the continue position after the catch block. */
+  return (PIKE_OPCODE_T *) ((INT32 *) addr + 1) + ENTRY_PROLOGUE_SIZE;
+}
+
+/* Helper function for F_CATCH_AT machine code.
+   For a description of the addr argument, see inter_return_opcode_F_CATCH_AT.
+   Returns the jump destination (for the catch body). */
+PIKE_OPCODE_T *setup_catch_at_context(PIKE_OPCODE_T *addr)
+{
+#ifdef PIKE_DEBUG
+  if (d_flag || Pike_interpreter.trace_level > 2) {
+    low_debug_instr_prologue (F_CATCH - F_OFFSET);
+    if (Pike_interpreter.trace_level>3) {
+      sprintf(trace_buffer, "-    Addr = %p\n", addr);
+      write_to_stderr(trace_buffer,strlen(trace_buffer));
+    }
+  }
+#endif
+  {
+    struct catch_context *new_catch_ctx;
+
+    if ((TYPEOF(Pike_sp[-1]) != PIKE_T_INT) ||
+	(TYPEOF(Pike_sp[-2]) != PIKE_T_INT)) {
+      Pike_error("CATCH_AT: Invalid arguments.\n");
+    }
+
+    new_catch_ctx = alloc_catch_context();
+#ifdef PIKE_DEBUG
+      new_catch_ctx->frame = Pike_fp;
+      init_recovery (&new_catch_ctx->recovery, 0, 0, PERR_LOCATION());
+#else
+      init_recovery (&new_catch_ctx->recovery, 0);
+#endif
+
+    new_catch_ctx->recovery.stack_pointer =
+      frame_get_save_sp(Pike_fp) + Pike_sp[-2].u.integer -
+      Pike_interpreter.evaluator_stack;
+    new_catch_ctx->recovery.mark_sp =
+      Pike_fp->save_mark_sp + Pike_sp[-1].u.integer -
+      Pike_interpreter.mark_stack;
+    Pike_sp -= 2;
 
     /* Note: no prologue. */
     new_catch_ctx->continue_reladdr = (INT32)get_unaligned32(addr);

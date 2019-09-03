@@ -905,6 +905,19 @@ void ins_f_byte(unsigned int b)
       MOV_REG_TO_RELSTACK(P_REG_EAX, 0);
     }
     break;
+  case F_CATCH_AT - F_OFFSET:
+    {
+      /* Special argument for the F_CATCH_AT instruction. */
+      addr = inter_return_opcode_F_CATCH_AT;
+      /* FIXME: Is there really no easier way to get at EIP? */
+      add_to_program(0xe8);
+      PUSH_INT(0);
+      POP_REG(P_REG_EAX);	/* EIP ==> EAX */
+      ADD_VAL_TO_REG(0x7fffffff, P_REG_EAX);
+      rel_addr = PIKE_PC;
+      MOV_REG_TO_RELSTACK(P_REG_EAX, 0);
+    }
+    break;
 #endif
   }
 #endif /* !DEBUG_MALLOC */
@@ -964,7 +977,7 @@ void ins_f_byte(unsigned int b)
     add_to_program (0xe0);
 
 #ifdef OPCODE_INLINE_RETURN
-    if (b + F_OFFSET == F_CATCH) {
+    if ((b + F_OFFSET == F_CATCH) || (b + F_OFFSET == F_CATCH_AT)) {
       upd_pointer(rel_addr - 4, PIKE_PC + 6 - rel_addr);
     }
 #endif
