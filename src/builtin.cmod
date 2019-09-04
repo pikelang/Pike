@@ -2451,19 +2451,29 @@ PIKECLASS FakeObject
   program_flags PROGRAM_CONSTANT;
 {
   PIKEVAR program prog flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+  PIKEVAR string description flags ID_PROTECTED;
 
-  PIKEFUN void create(program|function|void prog)
+  PIKEFUN void create(program|function|void prog,
+		      string|void description)
     flags ID_PROTECTED;
   {
     struct program *p = prog ? program_from_svalue(prog):NULL;
     do_free_program(THIS->prog);
     THIS->prog = p;
     if (p) add_ref(p);
+    if (THIS->description) free_string(THIS->description);
+    if ((THIS->description = description)) {
+      add_ref(THIS->description);
+    }
   }
 
   PIKEFUN string _sprintf(int c, mapping|void ignored)
     flags ID_PROTECTED;
   {
+    if ((c == 'O') && THIS->description) {
+      ref_push_string(THIS->description);
+      return;
+    }
     push_text("%O()");
     if (THIS->prog) {
       ref_push_program(THIS->prog);
@@ -2477,10 +2487,19 @@ PIKECLASS FakeObject
 /*! @endclass
  */
 
-static struct object *clone_fake_object(struct program *p)
+static struct object *clone_fake_object(struct object *o)
 {
-  if (p) ref_push_program(p);
-  else push_undefined();
+  struct program *p = o?o->prog:NULL;
+  if (p) {
+    ref_push_program(p);
+    if (FIND_LFUN(p, LFUN__SPRINTF) != -1) {
+      push_int('O');
+      apply_lfun(o, LFUN__SPRINTF, 1);
+      return clone_object(FakeObject_program, 2);
+    }
+  } else {
+    push_undefined();
+  }
   return clone_object(FakeObject_program, 1);
 }
 
@@ -2961,7 +2980,7 @@ void low_backtrace(struct Pike_interpreter_struct *i)
 	       * used by stuff like mutex keys and encryption keys
 	       * respectively.
 	       */
-	      struct object *o = clone_fake_object(s->u.object->prog);
+	      struct object *o = clone_fake_object(s->u.object);
 	      free_object(s->u.object);
 	      SET_SVAL(*s, T_OBJECT, 0, object, o);
 	    }
