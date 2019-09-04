@@ -112,6 +112,7 @@
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
+#include "gc.h"
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
@@ -206,6 +207,13 @@ static void exit_image_struct(struct object *UNUSED(obj))
 	  THIS->xsize,THIS->ysize,
 	  (THIS->xsize*THIS->ysize*sizeof(rgb_group)+sizeof(struct image))/1024.0);
 	  */
+}
+
+static void gc_recurse_image_struct(struct object *UNUSED(obj))
+{
+  if (mc_count_bytes(Pike_fp->current_object) && THIS->img) {
+    mc_counted_bytes += sizeof(rgb_group)*THIS->xsize*(long)THIS->ysize;
+  }
 }
 
 /***************** internals ***********************************/
@@ -5180,6 +5188,8 @@ void init_image_image(void)
 
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
+
+   set_gc_recurse_callback(gc_recurse_image_struct);
 
 
 #ifndef FAKE_DYNAMIC_LOAD
