@@ -2490,8 +2490,33 @@ static int do_docode2(node *n, int flags)
        * Note that we must save the stack before we start
        * popping marks etc in the label loop below.
        */
-      emit2(F_SAVE_STACK_TO_LOCAL,
-	    Pike_compiler->compiler_frame->generator_local + 1, 1);
+      /* Count the number of active catches. */
+      for (p = current_label; p; p = p->prev) {
+	struct cleanup_frame *q;
+	for (q = p->cleanups; q; q = q->prev) {
+	  if (q->cleanup == do_escape_catch) {
+	    in_catch++;
+	  }
+	}
+      }
+      if (in_catch) {
+	emit1(F_PUSH_CATCHES, in_catch);
+	/* NB: For simplicity we save the return value, as it is
+	 *     followed by 2*in_catch items that we must save.
+	 *
+	 * FIXME: This could be fixed by adding an instruction
+	 *        here that rotates the stack so that the return
+	 *        value ends up on top.
+	 */
+	emit2(F_SAVE_STACK_TO_LOCAL,
+	      Pike_compiler->compiler_frame->generator_local + 1, 0);
+	/* Pop so that the return value ends up on top. */
+	do_pop(in_catch*2);
+      } else {
+	/* NB: Common case, here we can skip saving the return value. */
+	emit2(F_SAVE_STACK_TO_LOCAL,
+	      Pike_compiler->compiler_frame->generator_local + 1, 1);
+      }
       continue_label = alloc_label();
       /* NB: Subtract 1 to compensate for starting cases at -1. */
       emit1(F_NUMBER,
@@ -2533,6 +2558,32 @@ static int do_docode2(node *n, int flags)
       Pike_compiler->compiler_frame->generator_jumptable[
         Pike_compiler->compiler_frame->generator_index++] =
 	ins_label(continue_label);
+      if (in_catch) {
+	/* Restore the catch context.
+	 * Insert the appropriate number of F_CATCH.
+	 * NB: We use the Pike stack to reverse the nesting order
+	 *     of the cleanup frames.
+	 */
+	struct svalue *save_sp = Pike_sp;
+
+	for (p = current_label; p; p = p->prev) {
+	  struct cleanup_frame *q;
+	  for (q = p->cleanups; q; q = q->prev) {
+	    if (q->cleanup == (cleanup_func) do_escape_catch) {
+	      in_catch = 1;
+	      push_int((ptrdiff_t)q->cleanup_arg);
+	    }
+	  }
+	}
+
+	while (Pike_sp > save_sp) {
+	  do_jump(F_CATCH_AT, Pike_sp[-1].u.integer);
+	  emit0(F_ENTRY);
+	  pop_stack();
+	}
+
+	do_pop(1);	/* Pop the return value. */
+      }
     }
     return 0;
   }
