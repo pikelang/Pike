@@ -4004,26 +4004,30 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
     }
 
     if (f->locals) {
-      INT32 numargs = (INT32) MINIMUM(f->num_args,
-                                      stack_top - f->locals);
+      INT32 numargs = f->num_args;
       INT32 varargs = 0;
 
-      if(of && of->locals) {
-	/* f->num_args can be too large, so this is necessary for some
-	 * reason. I don't know why. /mast
-	 *
-	 * possibly because f->num_args was uninitialized for c_initializers
-	 *  /arne
-	 * */
+      if (!(f->flags & PIKE_FRAME_MALLOCED_LOCALS)) {
+	numargs = MINIMUM(numargs, stack_top - f->locals);
 
-        numargs = (INT32)MINIMUM(f->num_args,of->locals - f->locals);
+	if(of && of->locals && !(of->flags & PIKE_FRAME_MALLOCED_LOCALS)) {
+	  /* f->num_args can be too large, so this is necessary for some
+	   * reason. I don't know why. /mast
+	   *
+	   * possibly because f->num_args was uninitialized for c_initializers
+	   *  /arne
+	   * */
+
+	  numargs = (INT32)MINIMUM(numargs, of->locals - f->locals);
+	}
+
+	numargs = MAXIMUM(numargs, 0);
+      } else {
+	numargs = MINIMUM(numargs, f->locals[-1].u.array->size);
       }
-
-      numargs = MAXIMUM(numargs, 0);
 
       /* Handle varargs... */
       if (function && (function->identifier_flags & IDENTIFIER_VARARGS) &&
-	  (f->locals + numargs < stack_top) &&
 	  (TYPEOF(f->locals[numargs]) == T_ARRAY)) {
 	varargs = f->locals[numargs].u.array->size;
       }
