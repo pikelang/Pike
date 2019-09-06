@@ -3233,6 +3233,26 @@ void f_cond_broadcast(INT32 UNUSED(args))
   co_broadcast(&(THIS_COND->cond));
 }
 
+
+static void f_cond__sprintf(INT32 args)
+{
+  int c = 0;
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
+    c = Pike_sp[-args].u.integer;
+  pop_n_elems (args);
+  if(c != 'O') {
+    push_undefined();
+    return;
+  }
+  if (THIS_COND->mutex_obj) {
+    push_static_text("Thread.Condition(/* %O */)");
+    ref_push_object(THIS_COND->mutex_obj);
+    f_sprintf(2);
+  } else {
+    push_text("Thread.Condition(/* Unassociated */)");
+  }
+}
+
 void init_cond_obj(struct object *UNUSED(o))
 {
   co_init(&(THIS_COND->cond));
@@ -4018,6 +4038,8 @@ void th_init(void)
 		   tFunc(tObjIs_THREAD_MUTEX_KEY tIntPos tIntPos, tVoid)),0);
   ADD_FUNCTION("signal",f_cond_signal,tFunc(tNone,tVoid),0);
   ADD_FUNCTION("broadcast",f_cond_broadcast,tFunc(tNone,tVoid),0);
+  ADD_FUNCTION("_sprintf", f_cond__sprintf,
+	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
   set_init_callback(init_cond_obj);
   set_exit_callback(exit_cond_obj);
   condition_program = Pike_compiler->new_program;
