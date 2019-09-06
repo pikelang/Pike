@@ -2979,11 +2979,11 @@ static void f_rwmutex_wkey__sprintf(INT32 args)
     return;
   }
   if (THIS_RWKEY->rwmutex_obj) {
-    push_text("ReadKey(/* %O */)");
+    push_text("WriteKey(/* %O */)");
     ref_push_object(THIS_RWKEY->rwmutex_obj);
     f_sprintf(2);
   } else {
-    push_text("ReadKey()");
+    push_text("WriteKey()");
   }
 }
 
