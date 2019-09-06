@@ -2414,7 +2414,7 @@ void f_mutex__sprintf (INT32 args)
     push_static_text("*/)");
     f_add(3);
   } else {
-    push_static_text("Thread.Mutex()");
+    push_static_text("Thread.Mutex(/* Unlocked */)");
   }
 }
 
@@ -2594,11 +2594,11 @@ static void f_mutex_key__sprintf(INT32 args)
     return;
   }
   if (THIS_KEY->mutex_obj) {
-    push_text("MutexKey(/* %O */)");
+    push_text("Thread.MutexKey(/* %O */)");
     ref_push_object(THIS_KEY->mutex_obj);
     f_sprintf(2);
   } else {
-    push_text("MutexKey()");
+    push_text("Thread.MutexKey(/* Unlocked */)");
   }
 }
 
@@ -2852,11 +2852,11 @@ static void f_rwmutex_rkey__sprintf(INT32 args)
     return;
   }
   if (THIS_RWKEY->rwmutex_obj) {
-    push_text("ReadKey(/* %O */)");
+    push_text("Thread.ReadKey(/* %O */)");
     ref_push_object(THIS_RWKEY->rwmutex_obj);
     f_sprintf(2);
   } else {
-    push_text("ReadKey()");
+    push_text("Thread.ReadKey(/* Unlocked */)");
   }
 }
 
@@ -2979,11 +2979,11 @@ static void f_rwmutex_wkey__sprintf(INT32 args)
     return;
   }
   if (THIS_RWKEY->rwmutex_obj) {
-    push_text("WriteKey(/* %O */)");
+    push_text("Thread.WriteKey(/* %O */)");
     ref_push_object(THIS_RWKEY->rwmutex_obj);
     f_sprintf(2);
   } else {
-    push_text("WriteKey()");
+    push_text("Thread.WriteKey(/* Unlocked */)");
   }
 }
 
