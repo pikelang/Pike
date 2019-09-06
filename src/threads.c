@@ -3167,6 +3167,12 @@ void f_cond_wait(INT32 args)
   OB2KEY(key)->mutex_obj = NULL;
   co_signal(& mut->condition);
 
+  if (!c->mutex_obj) {
+    /* Lock the condition to the first mutex it is used together with. */
+    c->mutex_obj = mutex_obj;
+    add_ref(mutex_obj);
+  }
+
   /* Wait and allow mutex operations */
   SWAP_OUT_CURRENT_THREAD();
   c->wait_count++;
