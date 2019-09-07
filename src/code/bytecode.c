@@ -15,7 +15,7 @@ void ins_f_byte(unsigned int b)
   if(b > MAX_SUPPORTED_INSTR) {
     Pike_error("Instruction too big: %d\n", b);
   } else if (b>255) {
-    add_to_program((unsigned char)F_INSTR_PREFIX_256);
+    add_to_program((unsigned char)F_INSTR_PREFIX_256 - F_OFFSET);
     b -= 256;
   }
 #endif
