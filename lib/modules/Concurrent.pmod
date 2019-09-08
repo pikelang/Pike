@@ -163,7 +163,7 @@ class Future
   //! Wait for fulfillment.
   //!
   //! @seealso
-  //!   @[get()]
+  //!   @[get()], @[try_get()]
   this_program wait()
   {
     if (state <= STATE_PENDING) {
@@ -182,7 +182,7 @@ class Future
   //!   Throws on rejection.
   //!
   //! @seealso
-  //!   @[wait()]
+  //!   @[wait()], @[try_get()]
   mixed get()
   {
     wait();
@@ -191,6 +191,28 @@ class Future
       throw(result);
     }
     return result;
+  }
+
+  //! Return the value if available.
+  //!
+  //! @returns
+  //!   Returns @[UNDEFINED] if the @[Future] is not yet fulfilled.
+  //!
+  //! @throws
+  //!   Throws on rejection.
+  //!
+  //! @seealso
+  //!   @[wait()]
+  mixed try_get()
+  {
+    switch(state) {
+    case ..STATE_PENDING:
+      return UNDEFINED;
+    case STATE_REJECTED..:
+      throw(result);
+    default:
+      return result;
+    }
   }
 
   //! Register a callback that is to be called on fulfillment.
