@@ -1784,7 +1784,7 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local", I_UPDATE_SP|I_UPDATE_FP, {
     if(d_flag>3) do_gc(0);
     if(d_flag>4) do_debug();
     );
-  if (!(Pike_fp->flags & PIKE_FRAME_SAVE_LOCALS)) {
+  if (!(Pike_fp->flags & (PIKE_FRAME_MALLOCED_LOCALS|PIKE_FRAME_SAVE_LOCALS))) {
     pop_n_elems(Pike_sp-1 - (Pike_fp->locals + arg1));
   } else {
     push_svalue(Pike_fp->locals + arg1);
