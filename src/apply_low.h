@@ -128,9 +128,17 @@
       {
 	/* Continuing a previous function call. */
 
-	if (UNLIKELY(args)) {
-	  /* Continuing with arguments is not a supported operation. */
-	  pop_n_elems(args);
+	/* Generators have two (optional) arguments:
+	 *
+	 *   * A resumption value.
+	 *
+	 *   * A resumption callback function.
+	 */
+	if (args < 2) {
+	  if (!args) push_undefined();
+	  push_undefined();
+	} if (UNLIKELY(args > 2)) {
+	  pop_n_elems(args-2);
 	}
 
 	/* Switch to the shared locals. */
