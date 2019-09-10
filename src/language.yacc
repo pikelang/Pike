@@ -817,16 +817,18 @@ def: modifiers optional_attributes simple_type optional_constant
 
     if ($1 & ID_GENERATOR) {
       /* Adjust the type to be a function that returns
-       * a function(mixed|void, function(mixed|void...:void):X).
+       * a function(mixed|void, function(mixed|void...:void)|void:X).
        */
       push_type(T_VOID);
       push_type(T_MANY);
 
       push_type(T_VOID);
       push_type(T_VOID);
+      push_type(T_VOID);
       push_type(T_MIXED);
       push_type(T_OR);
       push_type(T_MANY);
+      push_type(T_OR);
       push_type(T_FUNCTION);
 
       push_type(T_VOID);
@@ -953,16 +955,18 @@ def: modifiers optional_attributes simple_type optional_constant
 	}
 
 	/* Adjust the type to be a function that returns
-	 * a function(mixed|void, function(mixed|void...:void):X).
+	 * a function(mixed|void, function(mixed|void...:void)|void:X).
 	 */
 	push_type(T_VOID);
 	push_type(T_MANY);
 
 	push_type(T_VOID);
 	push_type(T_VOID);
+	push_type(T_VOID);
 	push_type(T_MIXED);
 	push_type(T_OR);
 	push_type(T_MANY);
+	push_type(T_OR);
 	push_type(T_FUNCTION);
 
 	push_type(T_VOID);
