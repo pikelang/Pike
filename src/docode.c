@@ -2584,6 +2584,18 @@ static int do_docode2(node *n, int flags)
 
 	do_pop(1);	/* Pop the return value. */
       }
+
+      /* Call the resumption callback. */
+      emit1(F_MARK_AND_LOCAL,
+	    Pike_compiler->compiler_frame->generator_local + 3);
+      tmp1 = do_jump(F_BRANCH_AND_POP_WHEN_ZERO, -1);
+      emit1(F_LOCAL,
+	    Pike_compiler->compiler_frame->generator_local + 2);
+      emit0(F_CALL_FUNCTION_AND_POP);
+      tmp2 = do_jump(F_BRANCH, -1);
+      ins_label(tmp1);
+      emit0(F_POP_MARK);
+      ins_label(tmp2);
     }
     return 0;
   }
@@ -2987,6 +2999,7 @@ INT32 do_code_block(node *n, int identifier_flags)
   int aggregate_cnum = -1;
   int save_stack_depth = current_stack_depth;
   int save_label_no = label_no;
+  int tmp1, tmp2;
   current_stack_depth = 0;
 
   if (Pike_compiler->compiler_frame->current_function_number >= 0) {
@@ -3005,7 +3018,16 @@ INT32 do_code_block(node *n, int identifier_flags)
   if (Pike_compiler->compiler_frame->generator_local != -1) {
     INT32 e, states;
 
-    /* Zap any initial junk on the stack. */
+    /* Save the arguments for later.
+     *
+     * NB: apply_low() ensures that we always have exactly 2 arguments.
+     */
+    emit1(F_ASSIGN_LOCAL_AND_POP,
+	  Pike_compiler->compiler_frame->generator_local + 3);
+    emit1(F_ASSIGN_LOCAL_AND_POP,
+	  Pike_compiler->compiler_frame->generator_local + 2);
+
+    /* Zap the arguments to be able to restore the stack. */
     emit1(F_MARK_AT, 0);
     emit0(F_POP_TO_MARK);
 
@@ -3064,6 +3086,18 @@ INT32 do_code_block(node *n, int identifier_flags)
     /* Start. (0) */
     Pike_compiler->compiler_frame->generator_jumptable[
       Pike_compiler->compiler_frame->generator_index++] = ins_label(-1);
+
+    /* Call the resumption callback. */
+    emit1(F_MARK_AND_LOCAL,
+	  Pike_compiler->compiler_frame->generator_local + 3);
+    tmp1 = do_jump(F_BRANCH_AND_POP_WHEN_ZERO, -1);
+    emit1(F_LOCAL,
+	  Pike_compiler->compiler_frame->generator_local + 2);
+    emit0(F_CALL_FUNCTION_AND_POP);
+    tmp2 = do_jump(F_BRANCH, -1);
+    ins_label(tmp1);
+    emit0(F_POP_MARK);
+    ins_label(tmp2);
   } else {
     if (Pike_compiler->compiler_frame->num_args) {
       emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
