@@ -932,7 +932,7 @@ def: modifiers optional_attributes simple_type optional_constant
 
 	generator_type = compiler_pop_type();
 	f = dooptcode(Pike_sp[-1].u.string, $12, generator_type,
-		      ID_INLINE|ID_PROTECTED|ID_PRIVATE);
+		      ID_INLINE|ID_PROTECTED|ID_PRIVATE|ID_USED);
 	pop_stack();
 
 	generator_stack_local =
