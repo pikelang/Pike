@@ -816,16 +816,40 @@ def: modifiers optional_attributes simple_type optional_constant
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
 
     if ($1 & ID_GENERATOR) {
+      /* Adjust the type to be a function that returns
+       * a function(mixed|void, function(mixed|void...:void):X).
+       */
       push_type(T_VOID);
       push_type(T_MANY);
+
+      push_type(T_VOID);
+      push_type(T_VOID);
+      push_type(T_MIXED);
+      push_type(T_OR);
+      push_type(T_MANY);
+      push_type(T_FUNCTION);
+
+      push_type(T_VOID);
+      push_type(T_MIXED);
+      push_type(T_OR);
+      push_type(T_FUNCTION);
 
       /* Entry point variable. */
       add_ref(int_type_string);
       Pike_compiler->compiler_frame->generator_local =
 	add_local_name(empty_pike_string, int_type_string, 0);
+
       /* Stack contents to restore. */
       add_ref(array_type_string);
       add_local_name(empty_pike_string, array_type_string, 0);
+
+      /* Resumption argument. */
+      add_ref(mixed_type_string);
+      add_local_name(empty_pike_string, mixed_type_string, 0);
+
+      /* Resumption callback. */
+      add_ref(function_type_string);
+      add_local_name(empty_pike_string, function_type_string, 0);
 
       for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
 	Pike_compiler->compiler_frame->variable[e].flags |=
@@ -927,8 +951,24 @@ def: modifiers optional_attributes simple_type optional_constant
 	} else {
 	  push_finished_type(Pike_compiler->compiler_frame->current_return_type);
 	}
+
+	/* Adjust the type to be a function that returns
+	 * a function(mixed|void, function(mixed|void...:void):X).
+	 */
 	push_type(T_VOID);
 	push_type(T_MANY);
+
+	push_type(T_VOID);
+	push_type(T_VOID);
+	push_type(T_MIXED);
+	push_type(T_OR);
+	push_type(T_MANY);
+	push_type(T_FUNCTION);
+
+	push_type(T_VOID);
+	push_type(T_MIXED);
+	push_type(T_OR);
+	push_type(T_FUNCTION);
 
 	generator_type = compiler_pop_type();
 	f = dooptcode(Pike_sp[-1].u.string, $12, generator_type,
