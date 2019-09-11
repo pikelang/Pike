@@ -3096,6 +3096,13 @@ OPCODE2(F_MAGIC_ANNOTATIONS, "::_annotations", I_UPDATE_SP, {
   push_magic_index(magic_annotations_program, arg2, arg1);
 });
 
+/* Swap the top stack element and a local variable. */
+OPCODE1(F_SWAP_STACK_LOCAL, "swap_stack_local", 0, {
+    struct svalue tmp = Pike_fp->locals[arg1];
+    Pike_fp->locals[arg1] = Pike_sp[-1];
+    Pike_sp[-1] = tmp;
+  });
+
 OPCODE1(F_GENERATOR, "generator", 0, {
     Pike_fp->fun = arg1;
   });
