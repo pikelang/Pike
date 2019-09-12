@@ -105,6 +105,10 @@ constant SelectBackend = __builtin.SelectBackend;
 
 constant DefaultBackend = __builtin.__backend;
 
+#if constant(predef::yield)
+constant yield = predef::yield;
+#endif
+
 constant gc_parameters = __builtin.gc_parameters;
 constant implicit_gc_real_time = __builtin.implicit_gc_real_time;
 constant count_memory = __builtin.count_memory;

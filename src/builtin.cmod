@@ -3916,6 +3916,47 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   f_aggregate_mapping(7*2);
 }
 
+/*! @decl mixed yield(mixed val)
+ *!
+ *! Stop execution of the current generator function for now,
+ *! and return the value @[val].
+ *!
+ *! @returns
+ *!   Evaluates to the first argument passed to the
+ *!   generator function on restart.
+ *!
+ *! Calling this special form is similar to the statement:
+ *!
+ *!   @code
+ *!     continue return val;
+ *!   @endcode
+ *!
+ *! This syntax is however an expression and can thus be used
+ *! to pass a value back.
+ *!
+ *! @note
+ *!   Use of this function is only valid in generator functions.
+ *!
+ *! @seealso
+ *!   Generator functions
+ */
+PIKEFUN mixed yield(mixed val)
+  optfunc optimize_yield;
+  prototype;
+  efun;
+{
+}
+
+static node *optimize_yield(node *n)
+{
+  if (n) {
+    node *ret = mknode(F_RETURN, CDR(n), mkintnode(2));
+    ADD_NODE_REF(CDR(n));
+    return ret;
+  }
+  return NULL;
+}
+
 /*! @endmodule
  */
 

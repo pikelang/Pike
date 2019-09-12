@@ -2596,6 +2596,14 @@ static int do_docode2(node *n, int flags)
       ins_label(tmp1);
       emit0(F_POP_MARK);
       ins_label(tmp2);
+
+      if (CDR(n) ->u.sval.u.integer == 2) {
+	emit0(F_UNDEFINED);
+	emit1(F_SWAP_STACK_LOCAL,
+	      Pike_compiler->compiler_frame->generator_local + 2);
+	modify_stack_depth(1);
+	return 1;
+      }
     }
     return 0;
   }

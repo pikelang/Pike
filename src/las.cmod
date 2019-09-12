@@ -3978,7 +3978,12 @@ void fix_type_field(node *n)
 	}
       }
     }
-    copy_pike_type(n->type, void_type_string);
+    if (CDR(n) && (CDR(n)->u.sval.u.integer == 2)) {
+      /* __yield__ */
+      copy_pike_type(n->type, mixed_type_string);
+    } else {
+      copy_pike_type(n->type, void_type_string);
+    }
     break;
 
   case F_CASE_RANGE:
