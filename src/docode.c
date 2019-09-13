@@ -2586,7 +2586,9 @@ static int do_docode2(node *n, int flags)
       }
 
       /* Call the resumption callback. */
-      emit1(F_MARK_AND_LOCAL,
+      emit0(F_MARK);
+      emit0(F_UNDEFINED);
+      emit1(F_SWAP_STACK_LOCAL,
 	    Pike_compiler->compiler_frame->generator_local + 3);
       tmp1 = do_jump(F_BRANCH_AND_POP_WHEN_ZERO, -1);
       emit1(F_LOCAL,
@@ -3044,10 +3046,8 @@ INT32 do_code_block(node *n, int identifier_flags)
 	  Pike_compiler->compiler_frame->generator_local + 1);
 
     /* Emit the state-machine switch for the generator. */
-    emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local);
     emit1(F_NUMBER, -1);
-    emit1(F_ASSIGN_LOCAL_AND_POP,
-	  Pike_compiler->compiler_frame->generator_local);
+    emit1(F_SWAP_STACK_LOCAL, Pike_compiler->compiler_frame->generator_local);
     generator_switch = emit1(F_SWITCH, 0);
     emit1(F_ALIGN, sizeof(INT32));
 
