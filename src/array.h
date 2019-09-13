@@ -39,7 +39,17 @@ struct array
   struct array *prev;	/**< Another pointer, so we don't have to search
 			 * when freeing arrays */
   struct svalue *item;  /**< the array of svalues */
-  struct svalue real_item[1];
+  union {
+    struct svalue real_item[1];
+#if (SIZEOF_CHAR_P == 8) && (SIZEOF_LONG_DOUBLE == 16)
+    /* Force the real_item array to be 16-byte aligned, so that we can
+     * use single 16-byte operations to access the elements.
+     */
+    long double force_align16;
+#else
+    double force_align8;
+#endif
+  } u;
 };
 
 #define ARRAY_WEAK_FLAG 1

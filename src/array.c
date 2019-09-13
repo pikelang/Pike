@@ -35,8 +35,8 @@ PMOD_EXPORT struct array empty_array=
   0,			 /* no flags */
   &weak_empty_array,     /* Next */
   0,			 /* previous */
-  empty_array.real_item, /* Initialize the item pointer. */
-  {SVALUE_INIT_FREE},
+  empty_array.u.real_item, /* Initialize the item pointer. */
+  {{SVALUE_INIT_FREE}},
 };
 
 /** The empty weak array. */
@@ -49,8 +49,8 @@ PMOD_EXPORT struct array weak_empty_array=
   ARRAY_WEAK_FLAG,	 /* weak */
   0,                     /* next */
   &empty_array,		 /* previous */
-  weak_empty_array.real_item, /* Initialize the item pointer. */
-  {SVALUE_INIT_FREE},
+  weak_empty_array.u.real_item, /* Initialize the item pointer. */
+  {{SVALUE_INIT_FREE}},
 };
 
 struct array *first_array = &empty_array;
@@ -114,7 +114,7 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   v->type_field = BIT_MIXED | BIT_UNFINISHED;
 
   v->malloced_size = (INT32)(size + extra_space);
-  v->item=v->real_item;
+  v->item=v->u.real_item;
   v->size = (INT32)size;
   INIT_PIKE_MEMOBJ(v, T_ARRAY);
   DOUBLELINK (first_array, v);
@@ -396,9 +396,9 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
   /* Can we fit it into the existing block? */
   if(v->refs<=1 && (v->malloced_size > v->size))
   {
-    if ((v->item != v->real_item) &&
+    if ((v->item != v->u.real_item) &&
 	(((index<<1) < v->size) ||
-	 ((v->item + v->size) == (v->real_item + v->malloced_size)))) {
+	 ((v->item + v->size) == (v->u.real_item + v->malloced_size)))) {
       memmove(ITEM(v)-1, ITEM(v), index * sizeof(struct svalue));
       v->item--;
     } else {
@@ -473,7 +473,7 @@ void o_append_array(INT32 args)
 	/* There's a function controlling assignments in this object,
 	 * so we can't alter the array in place.
 	 */
-      } else if( v->real_item+v->malloced_size >= v->item+v->size+args ) {
+      } else if( v->u.real_item+v->malloced_size >= v->item+v->size+args ) {
         struct svalue *from = val+1;
         int i;
         for( i = 0; i<args; i++,from++ )
@@ -607,7 +607,7 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
     /* We should grow the array */
 
     if((a->malloced_size >= size) &&
-       ((a->item + size) <= (a->real_item + a->malloced_size)))
+       ((a->item + size) <= (a->u.real_item + a->malloced_size)))
     {
       for(;a->size < size; a->size++)
       {
@@ -1672,8 +1672,8 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
       v=argp[e].u.array;
       if(v->refs == 1 && v->malloced_size >= size)
       {
-	if (((v->item - v->real_item) >= tmp) &&
-	    ((v->item + size - tmp) <= (v->real_item + v->malloced_size))) {
+	if (((v->item - v->u.real_item) >= tmp) &&
+	    ((v->item + size - tmp) <= (v->u.real_item + v->malloced_size))) {
 	  /* There's enough space before and after. */
 	  debug_malloc_touch(v);
 	  mark_free_svalue(argp + e);
@@ -1719,9 +1719,9 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
     if (v2) {
       debug_malloc_touch(v2);
       mark_free_svalue(argp + e2);
-      memmove(v2->real_item + tmp2, ITEM(v2),
+      memmove(v2->u.real_item + tmp2, ITEM(v2),
               v2->size * sizeof(struct svalue));
-      v2->item = v2->real_item + tmp2;
+      v2->item = v2->u.real_item + tmp2;
       for(tmp=e2-1;tmp>=0;tmp--)
       {
 	v = argp[tmp].u.array;
@@ -2726,10 +2726,10 @@ PMOD_EXPORT void check_array(struct array *a)
   if(a->malloced_size < 0)
     Pike_fatal("Array malloced size is negative!\n");
 
-  if((a->item + a->size) > (a->real_item + a->malloced_size))
+  if((a->item + a->size) > (a->u.real_item + a->malloced_size))
     Pike_fatal("Array uses memory outside of the malloced block!\n");
 
-  if(a->item < a->real_item)
+  if(a->item < a->u.real_item)
   {
 #ifdef DEBUG_MALLOC
     describe(a);

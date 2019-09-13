@@ -3169,7 +3169,7 @@ OPCODE2(F_SAVE_STACK_TO_LOCAL, "save_stack", 0, {
 	/* Reuse the already allocated (and emptied) array. */
 	a->size = len;
 	a->type_field = BIT_MIXED | BIT_UNFINISHED;
-	a->item = a->real_item;
+	a->item = a->u.real_item;
       } else {
 	/* Allocate a new array. */
 	a = allocate_array(len);
