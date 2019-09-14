@@ -3786,6 +3786,38 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_f_byte_with_2_args( F_CLEAR_N_LOCAL, b, 1 );
     return;
 
+  case F_SWAP_STACK_LOCAL:
+    /*
+     * tmp = Pike_sp[-1]
+     * Pike_sp[-1] = Pike_fp->locals[arg1]
+     * Pike_fp->locals[arg1] = tmp
+     */
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_fp_reg();
+    amd64_load_sp_reg();
+    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RAX);
+    add_reg_imm_reg( sp_reg, -sizeof(struct svalue), P_REG_RCX );
+
+#if SIZEOF_LONG_DOUBLE != 16
+    if (OFFSETOF(array, u.real_item) & 0x0f) {
+      mov_mem_reg( P_REG_RAX, b * sizeof(struct svalue), P_REG_RBX );
+      mov_mem_reg( P_REG_RCX, 0, P_REG_R10 );
+      mov_reg_mem( P_REG_RBX, P_REG_RCX, 0 );
+      mov_reg_mem( P_REG_R10, P_REG_RAX, b * sizeof(struct svalue) );
+      mov_mem_reg( P_REG_RAX, b * sizeof(struct svalue) + 8, P_REG_RBX );
+      mov_mem_reg( P_REG_RCX, 8, P_REG_R10 );
+      mov_reg_mem( P_REG_RBX, P_REG_RCX, 8 );
+      mov_reg_mem( P_REG_R10, P_REG_RAX, b * sizeof(struct svalue) + 8 );
+      return
+    }
+#endif
+
+    mov_mem128_reg( P_REG_RAX, b * sizeof(struct svalue), P_REG_XMM1 );
+    mov_mem128_reg( P_REG_RCX, 0, P_REG_XMM0 );
+    mov_reg_mem128( P_REG_XMM0, P_REG_RAX, b * sizeof(struct svalue) );
+    mov_reg_mem128( P_REG_XMM1, P_REG_RCX, 0 );
+    return;
+
   case F_INC_LOCAL_AND_POP:
     {
       LABELS();
