@@ -170,7 +170,7 @@
 	if (d_flag > 1) {
 	  /* Liberal use of variables for debugger convenience. */
 	  size_t i;
-	  struct svalue *l = Pike_fp->locals;
+	  struct svalue *l = frame_get_save_sp(Pike_fp);
 	  for (i = 0; l + i < Pike_sp; i++)
 	    if (TYPEOF(l[i]) != PIKE_T_FREE)
 	      debug_check_svalue (l + i);
