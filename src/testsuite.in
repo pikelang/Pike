@@ -616,6 +616,194 @@ test_any_equal([[
   return ({ A, B, C, D })->sym;
 ]], ({ 1, 2, 1, 2 }))
 
+dnl Generator function tests.
+
+dnl Trivial generator function.
+test_any_equal([[
+  class Foo {
+    continue int foo(int start, int end)
+    {
+      while (start < end)
+	continue return start++;
+      return start;
+    }
+  }
+
+  function(:int) f = Foo()->foo(4,8);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 4, 5, 6, 7, 8 }))
+
+dnl Generator function with stack.
+test_any_equal([[
+  class Foo {
+    continue int foo(int end)
+    {
+      return 1000.0 + gauge {
+	  int i = 0;
+	  for (i = 0; i < end; i++) {
+	    continue return i;
+	  }
+	};
+    }
+  }
+
+  function(:int|float) f = Foo()->foo(4);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ (int)i });
+  }
+  return ret;
+  // NB: We assume that the loop executes in under a second.
+]], ({ 0, 1, 2, 3, 1000 }))
+
+dnl Generator function with catch.
+test_any_equal([[
+  class Foo {
+    continue int|string foo(int end)
+    {
+      return describe_error(catch {
+	  int i = 0;
+	  for (i = 0; i < end; i++) {
+	    continue return i;
+	  }
+	  error("End of stream.\n");
+	});
+    }
+  }
+
+  function(:int|string) f = Foo()->foo(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 0, 1, 2, 3, "End of stream.\n" }))
+
+dnl Generator function with catch and global variable.
+test_any_equal([[
+  class Foo {
+    int start = 1;
+    continue int|string foo(int end)
+    {
+      return describe_error(catch {
+	  int i;
+	  for (i = start; i < end; i++) {
+	    continue return i;
+	  }
+	  error("End of stream.\n");
+	});
+    }
+  }
+
+  function(:int|string) f = Foo()->foo(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 1, 2, 3, "End of stream.\n" }))
+
+dnl Trivial local generator function.
+test_any_equal([[
+  continue int foo(int start, int end)
+  {
+    while (start < end)
+      continue return start++;
+    return start;
+  }
+
+  function(:int) f = foo(4,8);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 4, 5, 6, 7, 8 }))
+
+dnl Local generator function with stack.
+test_any_equal([[
+  continue int foo(int end)
+  {
+    return 1000.0 + gauge {
+	int i = 0;
+	for (i = 0; i < end; i++) {
+	  continue return i;
+	}
+      };
+  }
+
+  function(:int|float) f = foo(4);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ (int)i });
+  }
+  return ret;
+  // NB: We assume that the loop executes in under a second.
+]], ({ 0, 1, 2, 3, 1000 }))
+
+dnl Local generator function with catch.
+test_any_equal([[
+  continue int|string foo(int end)
+  {
+    return describe_error(catch {
+	int i = 0;
+	for (i = 0; i < end; i++) {
+	  continue return i;
+	}
+	error("End of stream.\n");
+      });
+  }
+
+  function(:int|string) f = foo(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 0, 1, 2, 3, "End of stream.\n" }))
+
+dnl Local generator function with catch and external variable.
+test_any_equal([[
+  int start = 1;
+  continue int|string foo(int end)
+  {
+    return describe_error(catch {
+	int i;
+	for (i = start; i < end; i++) {
+	  continue return i;
+	}
+	error("End of stream.\n");
+      });
+  }
+
+  function(:int|string) f = foo(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 1, 2, 3, "End of stream.\n" }))
+
 dnl bug in for loop optimization in combination with +=
 
 test_any([[
