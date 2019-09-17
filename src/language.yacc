@@ -396,6 +396,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> low_program_ref
 %type <n> inherit_ref
 %type <n> local_function
+%type <n> local_generator
 %type <n> magic_identifier
 %type <n> simple_identifier
 %type <n> foreach_lvalues
@@ -2183,6 +2184,14 @@ statement: normal_label_statement
   | default
   | labeled_statement
   | simple_type2 local_function { $$=mkcastnode(void_type_string, $2); }
+  | TOK_CONTINUE simple_type2 local_generator
+  {
+    /* NB: The alternative of prefixing the local_function rule above with
+     *     an optional_continue causes lots of shift/reduce conflicts.
+     *     Thus the separate rule for local_generators.
+     */
+    $$=mkcastnode(void_type_string, $3);
+  }
   | implicit_modifiers named_class { $$=mkcastnode(void_type_string, $2); }
   ;
 
@@ -2516,6 +2525,238 @@ local_function: TOK_IDENTIFIER start_function func_args
 	$$ = mktrampolinenode($<number>4,Pike_compiler->compiler_frame);
       }else{
 	$$ = mkidentifiernode($<number>4);
+      }
+    }
+  }
+  | TOK_IDENTIFIER start_function error
+  {
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $2) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $2,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
+    pop_compiler_frame();
+    $$=mkintnode(0);
+  }
+  ;
+
+local_generator: TOK_IDENTIFIER start_function func_args
+  {
+    struct pike_string *name;
+    struct pike_type *type;
+    int id,e;
+    node *n;
+    struct identifier *i=0;
+
+    /***/
+    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
+
+    /* Adjust the type to be a function that returns
+     * a function(mixed|void, function(mixed|void...:void)|void:X).
+     */
+    push_type(T_VOID);
+    push_type(T_MANY);
+
+    push_type(T_VOID);
+    push_type(T_VOID);
+    push_type(T_VOID);
+    push_type(T_MIXED);
+    push_type(T_OR);
+    push_type(T_MANY);
+    push_type(T_OR);
+    push_type(T_FUNCTION);
+
+    push_type(T_VOID);
+    push_type(T_MIXED);
+    push_type(T_OR);
+    push_type(T_FUNCTION);
+
+    /* Entry point variable. */
+    add_ref(int_type_string);
+    Pike_compiler->compiler_frame->generator_local =
+      add_local_name(empty_pike_string, int_type_string, 0);
+
+    /* Stack contents to restore. */
+    add_ref(array_type_string);
+    add_local_name(empty_pike_string, array_type_string, 0);
+
+    /* Resumption argument. */
+    add_ref(mixed_type_string);
+    add_local_name(empty_pike_string, mixed_type_string, 0);
+
+    /* Resumption callback. */
+    add_ref(function_type_string);
+    add_local_name(empty_pike_string, function_type_string, 0);
+
+    for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
+      Pike_compiler->compiler_frame->variable[e].flags |=
+	LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
+    }
+
+    Pike_compiler->compiler_frame->lexical_scope |= SCOPE_SCOPE_USED;
+
+    e=$3-1;
+    if(Pike_compiler->varargs)
+    {
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      e--;
+      pop_type_stack(T_ARRAY);
+    }else{
+      push_type(T_VOID);
+    }
+    push_type(T_MANY);
+    for(; e>=0; e--) {
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      push_type(T_FUNCTION);
+    }
+
+    type=compiler_pop_type();
+    /***/
+
+    name = get_new_name($1->u.sval.u.string);
+
+#ifdef LAMBDA_DEBUG
+    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
+	    Pike_compiler->compiler_pass, name->str,
+	    (long)Pike_compiler->new_program->id,
+	    Pike_compiler->local_class_counter-1);
+#endif /* LAMBDA_DEBUG */
+
+    if(Pike_compiler->compiler_pass > COMPILER_PASS_FIRST)
+    {
+      id=isidentifier(name);
+    }else{
+      id=define_function(name,
+			 type,
+			 ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED,
+			 IDENTIFIER_PIKE_FUNCTION |
+			 (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
+			 0,
+			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+    }
+    Pike_compiler->varargs=0;
+    Pike_compiler->compiler_frame->current_function_number=id;
+
+    n=0;
+    if(Pike_compiler->compiler_pass > COMPILER_PASS_FIRST &&
+       (i=ID_FROM_INT(Pike_compiler->new_program, id)))
+    {
+      if(i->identifier_flags & IDENTIFIER_SCOPED)
+	n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
+      else
+	n = mkidentifiernode(id);
+    }
+
+    low_add_local_name(Pike_compiler->compiler_frame->previous,
+		       $1->u.sval.u.string, type, n);
+
+    $<number>$=id;
+    free_string(name);
+  }
+  failsafe_block
+  {
+    int localid;
+    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>4);
+    struct compilation *c = THIS_COMPILATION;
+    struct pike_string *save_file = c->lex.current_file;
+    int save_line = c->lex.current_line;
+    struct pike_type *generator_type;
+    struct pike_string *name;
+    int generator_stack_local;
+    int f;
+
+    c->lex.current_file = $1->current_file;
+    c->lex.current_line = $1->line_number;
+
+    ref_push_string($1->u.sval.u.string);
+    push_constant_text("\0generator");
+    f_add(2);
+    name = get_new_name(Pike_sp[-1].u.string);
+    pop_stack();
+
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+	Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO) {
+      /* Change "auto" return type to actual return type. */
+      push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
+    } else {
+      push_finished_type(Pike_compiler->compiler_frame->current_return_type);
+    }
+
+    /* Adjust the type to be a function that returns
+     * a function(mixed|void, function(mixed|void...:void)|void:X).
+     */
+    push_type(T_VOID);
+    push_type(T_MANY);
+
+    push_type(T_VOID);
+    push_type(T_VOID);
+    push_type(T_VOID);
+    push_type(T_MIXED);
+    push_type(T_OR);
+    push_type(T_MANY);
+    push_type(T_OR);
+    push_type(T_FUNCTION);
+
+    push_type(T_VOID);
+    push_type(T_MIXED);
+    push_type(T_OR);
+    push_type(T_FUNCTION);
+
+    generator_type = compiler_pop_type();
+    f = dooptcode(name, $5, generator_type,
+		  ID_INLINE | ID_PROTECTED | ID_PRIVATE | ID_USED);
+    free_string(name);
+
+    generator_stack_local =
+      Pike_compiler->compiler_frame->generator_local + 1;
+    Pike_compiler->compiler_frame->generator_local = -1;
+    free_type(Pike_compiler->compiler_frame->current_return_type);
+    Pike_compiler->compiler_frame->current_return_type = generator_type;
+    $5 = mknode(F_COMMA_EXPR,
+		mknode(F_ASSIGN, mklocalnode(generator_stack_local, 0),
+		       mkefuncallnode("aggregate", NULL)),
+		mknode(F_RETURN, mkgeneratornode(f), NULL));
+
+    debug_malloc_touch($5);
+    f = dooptcode(i->name,
+		  $5,
+		  i->type,
+		  ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED);
+
+    i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
+
+    c->lex.current_line = save_line;
+    c->lex.current_file = save_file;
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $2) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $2,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
+    pop_compiler_frame();
+    free_node($1);
+
+    /* WARNING: If the local function adds more variables we are screwed */
+    /* WARNING2: if add_local_name stops adding local variables at the end,
+     *           this has to be fixed.
+     */
+
+    localid=Pike_compiler->compiler_frame->current_number_of_locals-1;
+    if(Pike_compiler->compiler_frame->variable[localid].def)
+    {
+      $$=copy_node(Pike_compiler->compiler_frame->variable[localid].def);
+    }else{
+      if(Pike_compiler->compiler_frame->lexical_scope &
+	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
+      {
+	$$ = mktrampolinenode(f, Pike_compiler->compiler_frame);
+      }else{
+	$$ = mkidentifiernode(f);
       }
     }
   }
