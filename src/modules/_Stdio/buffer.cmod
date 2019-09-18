@@ -548,7 +548,7 @@ PIKECLASS IOBuffer
     push_object( io_read_buffer( THIS, 0, 0 ) );
   }
 
-  PIKEFUN string _sprintf(int o, mapping ignore)
+  PIKEFUN string _sprintf(int o, mapping|void ignore)
     flags ID_PROTECTED;
   {
     pop_n_elems(args);
