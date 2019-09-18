@@ -1678,7 +1678,7 @@ PIKECLASS Buffer
     push_object( io_read_buffer( THIS, 0, 0 ) );
   }
 
-  PIKEFUN string(0..255) _sprintf(int o, mapping UNUSED)
+  PIKEFUN string(0..255) _sprintf(int o, mapping|void UNUSED)
     flags ID_PROTECTED;
   {
     size_t bytes;
