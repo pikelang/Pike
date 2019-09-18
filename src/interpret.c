@@ -2344,8 +2344,9 @@ void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame)
     free(frame->save_locals_bitmask);
 
     frame->num_locals = num_new_locals;
-  } else {
+  } else if (!(frame->flags & PIKE_FRAME_MALLOCED_LOCALS)) {
     frame->locals = NULL;
+    frame->num_locals = 0;
   }
 
   frame->next=0;
@@ -2385,9 +2386,7 @@ void really_free_pike_scope(struct pike_frame *scope)
     free_array(a);
     scope->locals = NULL;
 
-#ifdef PIKE_DEBUG
-    scope->flags&=~PIKE_FRAME_MALLOCED_LOCALS;
-#endif
+    scope->flags &= ~PIKE_FRAME_MALLOCED_LOCALS;
   }
   really_free_pike_frame(scope);
 }
