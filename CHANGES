@@ -80,6 +80,26 @@ o Function local class definitions are now statements
 
 o Complain about shadowed variant functions.
 
+o Syntax for generator functions added.
+
+  continue is now treated as a modifier, and causes such functions
+  to become generator functions, where calling the function sets
+  up a restartable function context.
+
+  continue may also preceed return statements, which causes
+  the generator function state to be saved before returning.
+
+  Alternatively the "function" Pike.yield() may be used to return
+  a value, and restart with a value from the restarter.
+
+  Restartable functions get the type signature
+
+    X fun(mixed|void value, function(mixed|void: void)|void resume_cb)
+
+  where X is the declared return type of the generator function,
+  value is the value to be returned by Pike.yield(), and resume_cb
+  is a function that will be called at the yield point.
+
 o Machine code support for more architectures.
 
   There's now machine code support for arm32 and arm64.
