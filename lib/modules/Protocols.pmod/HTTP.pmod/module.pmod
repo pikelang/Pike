@@ -473,6 +473,14 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
   // Install the timeout handler for the interval until
   // the TLS connection is up.
   con->init_async_timeout();
+
+  con->headers["connection"] = "keep-alive";
+  con->headers["content-length"] = "0";
+  con->host = url->host;
+  con->port = url->port;
+  con->https = 1;
+  con->start_tls(0);
+
   con->con->set_nonblocking(0,
 			    lambda() {
 			      // Remove the timeout handler; it will be
@@ -481,13 +489,6 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 			      do_async_method(method, url, query_variables,
 					      request_headers, con, data);
 			    }, con->async_failed);
-
-  con->headers["connection"] = "keep-alive";
-  con->headers["content-length"] = "0";
-  con->host = url->host;
-  con->port = url->port;
-  con->https = 1;
-  con->start_tls(0);
 }
 
 //! Low level asynchronous proxied HTTP call method.
