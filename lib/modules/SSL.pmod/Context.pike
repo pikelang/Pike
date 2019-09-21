@@ -269,7 +269,7 @@ mapping(int(508..511):Crypto.DH.Parameters) private_ffdhe_groups = ([]);
 //! to get rid of combinations not supported by the runtime.
 //!
 //! @note
-//!   According to @rfc{5246:7.4.2@} all certificates needs to be
+//!   According to @rfc{5246:7.4.2@} all certificates need to be
 //!   signed by any of the supported signature algorithms. To be
 //!   forward compatible this list needs to be limited to the
 //!   combinations that have existing PKCS identifiers.
