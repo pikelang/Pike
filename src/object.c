@@ -3660,8 +3660,10 @@ static struct sysmem *system_memory(struct object *o)
     push_static_text("System.Memory");
     SAFE_APPLY_MASTER("resolv", 1);
     shm_program = program_from_svalue(Pike_sp - 1);
-    if (!shm_program)
+    if (!shm_program) {
+      pop_stack();
       return 0;
+    }
     Pike_sp--;
   }
   return get_storage( o, shm_program );
