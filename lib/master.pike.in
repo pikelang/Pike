@@ -5382,11 +5382,13 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	      desc->describe_comma_list(tmp[3..], backtrace_len)+
 	    ")";
 
-	    if((linewidth == -1) || (sizeof(pos)+sizeof(data) < linewidth-4))
-	    {
-	      row=sprintf("%s: %s",pos,data);
-	    }else{
-	      row=sprintf("%s:\n%s",pos,sprintf("    %*-/s",linewidth-6,data));
+	    array(string) a = data/"\n";
+
+	    if((linewidth == -1) ||
+	       (sizeof(pos) + sizeof(a[0]) < linewidth-4)) {
+	      row = sprintf("%s: %s%{\n    %s%}", pos, a[0], a[1..]);
+	    } else {
+	      row = sprintf("%s:%{\n    %s%}", pos, a);
 	    }
 	  } else {
 	    row = pos;
