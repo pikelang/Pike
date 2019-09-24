@@ -2125,7 +2125,8 @@ PIKECLASS Backend
    *           but it has not completed in time).
    */
   static int low_backend_once_setup(struct Backend_struct *me,
-				    struct timeval *start_time)
+				    struct timeval *start_time,
+				    ONERROR *uwp)
   {
 #ifdef PIKE_DEBUG
     struct timeval max_timeout;
@@ -2220,6 +2221,8 @@ PIKECLASS Backend
 #else
     me->exec_thread = 1;
 #endif
+
+    LOW_SET_ONERROR(uwp, low_backend_cleanup, me);
 
     /* Call outs */
     if(me->num_pending_calls)
@@ -3843,10 +3846,10 @@ PIKECLASS PollDeviceBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    if ((done_something = low_backend_once_setup(pdb->backend, &start_time))) {
+    if ((done_something =
+	 low_backend_once_setup(pdb->backend, &start_time, &uwp))) {
       goto low_backend_round_done;
     }
-    SET_ONERROR(uwp, low_backend_cleanup, me);
 
     if (TYPEOF(me->before_callback) != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
@@ -4718,10 +4721,10 @@ PIKECLASS PollBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    if ((done_something = low_backend_once_setup(pb->backend, &start_time))) {
+    if ((done_something =
+	 low_backend_once_setup(pb->backend, &start_time, &uwp))) {
       goto low_backend_round_done;
     }
-    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
 
     if (TYPEOF(me->before_callback) != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
@@ -5301,10 +5304,10 @@ PIKECLASS SelectBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    if ((done_something = low_backend_once_setup(sb->backend, &start_time))) {
+    if ((done_something =
+	 low_backend_once_setup(sb->backend, &start_time, &uwp))) {
       goto low_backend_round_done;
     }
-    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
 
     if (TYPEOF(me->before_callback) != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
