@@ -163,24 +163,26 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 
 
 #ifdef PIKE_DEBUG
-#define SET_ONERROR(X,Y,Z)					\
-  do{								\
-    check_recovery_context();					\
-    OED_FPRINTF((stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n",	\
-		 &(X), (Y), (void *)(Z), __FILE__, __LINE__));	\
-    X.frame_pointer = Pike_interpreter.frame_pointer;		\
-    X.func=(error_call)(Y);					\
-    DO_IF_DMALLOC( if( X.func == free ) X.func=dmalloc_free);	\
-    X.arg=(void *)(Z);						\
-    if(!Pike_interpreter.recoveries) {				\
-      X.previous = NULL;					\
-      break;							\
-    }								\
-    X.previous=Pike_interpreter.recoveries->onerror;		\
-    X.file = __FILE__;						\
-    X.line = __LINE__;						\
-    Pike_interpreter.recoveries->onerror=&X;			\
+#define LOW_SET_ONERROR(X,Y,Z)						\
+  do{									\
+    check_recovery_context();						\
+    OED_FPRINTF((stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n",		\
+		 (X), (Y), (void *)(Z), __FILE__, __LINE__));		\
+    (X)->frame_pointer = Pike_interpreter.frame_pointer;		\
+    (X)->func = (error_call)(Y);					\
+    DO_IF_DMALLOC( if( (X)->func == free ) (X)->func = dmalloc_free);	\
+    (X)->arg = (void *)(Z);						\
+    if (!Pike_interpreter.recoveries) {					\
+      (X)->previous = NULL;						\
+      break;								\
+    }									\
+    (X)->previous = Pike_interpreter.recoveries->onerror;		\
+    (X)->file = __FILE__;						\
+    (X)->line = __LINE__;						\
+    Pike_interpreter.recoveries->onerror = (X);				\
   }while(0)
+
+#define SET_ONERROR(X,Y,Z) LOW_SET_ONERROR(&X, Y, Z)
 
 PMOD_EXPORT extern const char msg_last_setjmp[];
 PMOD_EXPORT extern const char msg_unset_onerr_nosync_1[];
