@@ -75,11 +75,11 @@
  *!     @value '|'
  *!       Centered within field size.
  *!     @value '='
- *!       Column mode if strings are greater than field size. Breaks
+ *!       Column mode if strings are greater than field width. Breaks
  *!       between words (possibly skipping or adding spaces). Can not be
  *!       used together with @expr{'/'@}.
  *!     @value '/'
- *!       Column mode with rough line break (break at exactly field size
+ *!       Column mode with rough line break (break at exactly field width
  *!       instead of between words). Can not be used together with @expr{'='@}.
  *!     @value '#'
  *!       Table mode, print a list of @expr{'\n'@} separated words
@@ -793,28 +793,41 @@ static int do_one(struct format_stack *fs,
                   struct format_info *f)
 {
   PCHARP rest;
-  ptrdiff_t e, d, lastspace;
+  ptrdiff_t e, d;
 
   rest.ptr=0;
   if(f->flags & (LINEBREAK|ROUGH_LINEBREAK))
   {
-    if(f->width==SPRINTF_UNDECIDED)
-      sprintf_error(fs, "Must have field width for linebreak.\n");
-    lastspace=-1;
-    for(e=0;e<f->len && e<=f->width;e++)
+    ptrdiff_t lastspace = -1;
+
+    /* Format info widths are used as follows:
+     *
+     * column_width  Position where the string will be broken.
+     *               Defaults to same as width.
+     *
+     * precision     Maximum number of input characters per
+     *               (unbroken) line. Defaults to unlimited. (TODO)
+     *
+     * width         Minimum width to pad broken lines to.
+     *               Defaults to no padding.
+     */
+    if(f->column_width <= 0)
+      f->column_width = f->width;
+    if(f->column_width <= 0)
+      sprintf_error(fs, "Must have a field width for linebreak.\n");
+
+    for(e = 0; e < f->len && e <= f->column_width; e++)
     {
       switch(INDEX_PCHARP(f->b,e))
       {
 	case '\n':
-	  lastspace=e;
-	  rest=ADD_PCHARP(f->b,e+1);
+	  lastspace = e;
 	  break;
 
 	case ' ':
 	  if(f->flags & LINEBREAK)
 	  {
-	    lastspace=e;
-	    rest=ADD_PCHARP(f->b,e+1);
+	    lastspace = e;
 	  }
 	  /* FALLTHRU */
 
@@ -823,14 +836,22 @@ static int do_one(struct format_stack *fs,
       }
       break;
     }
-    if(e==f->len && f->len<=f->width)
-    {
-      lastspace=e;
-      rest=ADD_PCHARP(f->b,lastspace);
-    }else if(lastspace==-1){
-      lastspace=MINIMUM(f->width,f->len);
-      rest=ADD_PCHARP(f->b,lastspace);
+
+    if (lastspace == -1) {
+      /* No suitable whitespace break point found.
+       * Perform a rough break at f->column_width.
+       */
+      if (e <= f->column_width) {
+	lastspace = e;
+      } else {
+	lastspace = f->column_width;
+      }
+      rest = ADD_PCHARP(f->b, lastspace);
+    } else {
+      /* Break at the found whitespace, and advance past it. */
+      rest = ADD_PCHARP(f->b, lastspace + 1);
     }
+
     fix_field(r,
 	      f->b,
 	      lastspace,
