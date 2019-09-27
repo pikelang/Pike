@@ -2523,6 +2523,13 @@ static int do_docode2(node *n, int flags)
 	    Pike_compiler->compiler_frame->generator_index-1);
       emit1(F_ASSIGN_LOCAL_AND_POP,
 	    Pike_compiler->compiler_frame->generator_local);
+    } else if (CDR(n) && CDR(n)->u.sval.u.integer) {
+      if (CDR(n)->u.sval.u.integer == 1) {
+	yywarning("Continue return statement in non-generator function.");
+      } else {
+	yywarning("Yield expression in non-generator function.");
+      }
+      yywarning("Converted into a plain return.");
     }
 
     /* Insert the appropriate number of F_ESCAPE_CATCH. The rest of
