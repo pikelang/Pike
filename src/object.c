@@ -3692,8 +3692,10 @@ static Buffer *io_buffer(struct object *o)
     push_static_text("Stdio.Buffer");
     SAFE_APPLY_MASTER("resolv", 1);
     iobuf_program = program_from_svalue(Pike_sp - 1);
-    if (!iobuf_program)
+    if (!iobuf_program) {
+      pop_stack();
       return 0;
+    }
     Pike_sp--;
   }
   return get_storage( o, iobuf_program );
