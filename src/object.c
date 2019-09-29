@@ -3669,19 +3669,7 @@ static struct sysmem *system_memory(struct object *o)
   return get_storage( o, shm_program );
 }
 
-static struct string_builder *string_buffer(struct object *o)
-{
-  if( !sbuf_program )
-  {
-    push_static_text("String.Buffer");
-    SAFE_APPLY_MASTER("resolv", 1);
-    sbuf_program = program_from_svalue(Pike_sp - 1);
-    if (!sbuf_program)
-      return 0;
-    Pike_sp--;
-  }
-  return get_storage( o, sbuf_program );
-}
+#define string_buffer(O)	string_builder_from_string_buffer(O)
 
 #include "modules/_Stdio/buffer.h"
 
