@@ -47,8 +47,9 @@
 #ifdef SSL3_DEBUG
 protected string stream_descr;
 #define SSL3_DEBUG_MSG(X...)						\
-  werror ("[thr:" + this_thread()->id_number() +			\
-	  "," + (stream ? "" : "ex ") + stream_descr + "] " + X)
+  werror ("[thr:" + sprintf("0x%08x", this_thread()->id_number()) +	\
+	  "," + (stream ? "" : "ex ") + stream_descr + "] " +		\
+	  __func__ + ": " + X)
 #ifdef SSL3_DEBUG_MORE
 #define SSL3_DEBUG_MORE_MSG(X...) SSL3_DEBUG_MSG (X)
 #endif
