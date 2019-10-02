@@ -40,6 +40,8 @@ mapping lay = ([
  "_fixmehead" : "</dt>\n",
  "fixmebody" : "<dd class='body--fixme'>",
  "_fixmebody" : "</dd>",
+ "annotation" : "<dd class='body--annotation'>",
+ "_annotation" : "</dd>",
 
  "parameter" : "<code class='parameter'>",
  "_parameter" : "</code>",
@@ -332,6 +334,17 @@ string parse_module(Node n, void|int noheader) {
   return ret;
 }
 
+string parse_annotations(Node n)
+{
+  string ret = "";
+  ret += lay->dochead + "Annotations" + lay->_dochead;
+  foreach(n->get_elements("annotation"), Node a) {
+    ret += lay->annotation + lay->code + quote(a->value_of_node()) +
+      lay->_code + lay->_annotation;
+  }
+  return ret;
+}
+
 ADT.Stack old_class_name = ADT.Stack();
 string parse_class(Node n, void|int noheader) {
   string ret ="";
@@ -341,6 +354,11 @@ string parse_class(Node n, void|int noheader) {
       n->get_attributes()->class_path + n->get_attributes()->name +
       "</b></h2>\n"
       "</dt><dd>";
+
+  Node a = n->get_first_element("annotations");
+  if (a) {
+    ret += "<dl class='group--annotations'>" + parse_annotations(a) + "</dl>\n";
+  }
 
   Node c = n->get_first_element("doc");
   old_class_name->push(class_name);
