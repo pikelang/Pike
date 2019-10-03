@@ -155,8 +155,9 @@ protected constant epipe_errnos = (<
   ((read_callback || write_callback || close_callback || accept_callback) && \
    close_state < NORMAL_CLOSE)
 
-#define SSL_HANDSHAKING (!conn || ((conn->state & CONNECTION_handshaking) && \
-				   (close_state != ABRUPT_CLOSE)))
+#define SSL_HANDSHAKING (!conn ||					\
+			 (((conn->state & (CONNECTION_handshaking|CONNECTION_local_fatal)) == CONNECTION_handshaking) && \
+			  (close_state != ABRUPT_CLOSE)))
 #define SSL_CLOSING_OR_CLOSED						\
   (conn->state & CONNECTION_local_closing)
 
@@ -171,7 +172,7 @@ protected constant epipe_errnos = (<
 // Try to write when there's data in the write buffer or when we have
 // a close packet to send. The packet is queued separately by
 // ssl_write_callback in the latter case.
-#define SSL_INTERNAL_WRITING (conn &&					\
+#define SSL_INTERNAL_WRITING (conn && !write_errno &&			\
 			      (sizeof (write_buffer) ||			\
 			       ((conn->state & CONNECTION_local_down) == \
 				CONNECTION_local_closing)))
