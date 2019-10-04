@@ -281,6 +281,7 @@ constant CONNECTION_server 	= 1;
 constant CONNECTION_client_auth = 2;
 
 /* Cipher suites */
+constant SSL_invalid_suite			= -1;
 constant SSL_null_with_null_null 		= 0x0000;	// SSL 3.0
 constant SSL_rsa_with_null_md5			= 0x0001;	// SSL 3.0
 constant SSL_rsa_with_null_sha			= 0x0002;	// SSL 3.0
