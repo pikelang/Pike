@@ -171,22 +171,17 @@ constant response_codes =
   proxy = Standards.URI(proxy);
   url = Standards.URI(url);
 
-  mapping(string:string|array(string)) proxy_headers;
+  mapping(string:string|array(string)) proxy_headers = ([]);
 
   if( user || password )
   {
-    if( !request_headers )
-      proxy_headers = ([]);
-    else
-      proxy_headers = request_headers + ([]);
-
     proxy_headers["Proxy-Authorization"] = "Basic "
       + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
-    if (has_value(proxy->host, ":")) {
-      proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
-    } else {
-      proxy_headers["host"] = proxy->host + ":" + proxy->port;
-    }
+  }
+  if (has_value(proxy->host, ":")) {
+    proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
+  } else {
+    proxy_headers["host"] = proxy->host + ":" + proxy->port;
   }
 
   if (url->scheme == "http") {
@@ -201,6 +196,10 @@ constant response_codes =
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
+
+    if (request_headers) {
+      proxy_headers = request_headers + proxy_headers;
+    }
 #if constant(SSL.File)
   } else if (url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
@@ -210,9 +209,7 @@ constant response_codes =
       // Make a CONNECT request to the proxy,
       // and use keep-alive to stack the real request on top.
       proxy->path = url->host + ":" + url->port;
-      if (!proxy_headers) proxy_headers = ([]);
       proxy_headers->connection = "keep-alive";
-      m_delete(proxy_headers, "authorization");	// Keep the proxy in the dark.
       con = do_method("CONNECT", proxy, 0, proxy_headers);
       con->data(0);
       if (con->status >= 300) {
@@ -557,22 +554,17 @@ void do_async_proxied_method(string|Standards.URI proxy,
     error("Asynchronous httpu or httpmu not yet supported.\n");
   }
 
-  mapping(string:string|array(string)) proxy_headers;
+  mapping(string:string|array(string)) proxy_headers = ([]);
 
   if( user || password )
   {
-    if( !request_headers )
-      proxy_headers = ([]);
-    else
-      proxy_headers = request_headers + ([]);
-
     proxy_headers["Proxy-Authorization"] = "Basic "
       + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
-    if (has_value(proxy->host, ":")) {
-      proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
-    } else {
-      proxy_headers["host"] = proxy->host + ":" + proxy->port;
-    }
+  }
+  if (has_value(proxy->host, ":")) {
+    proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
+  } else {
+    proxy_headers["host"] = proxy->host + ":" + proxy->port;
   }
 
   if (url->scheme == "http") {
@@ -587,7 +579,10 @@ void do_async_proxied_method(string|Standards.URI proxy,
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
-    if (!proxy_headers) proxy_headers = request_headers;
+
+    if (request_headers) {
+      proxy_headers = request_headers + proxy_headers;
+    }
 #if constant(SSL.File)
   } else if(url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
@@ -599,7 +594,6 @@ void do_async_proxied_method(string|Standards.URI proxy,
       proxy->path = url->host + ":" + url->port;
       if (!proxy_headers) proxy_headers = ([]);
       proxy_headers->connection = "keep-alive";
-      m_delete(proxy_headers, "authorization");	// Keep the proxy in the dark.
 
       array(mixed) orig_cb_info = ({
 	con->request_ok,
@@ -611,7 +605,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 			 orig_cb_info,
 			 url, method,
 			 query_variables,
-			 request_headers && request_headers + ([]),
+			 request_headers,
 			 data);
       method = "CONNECT";
       url = proxy;
