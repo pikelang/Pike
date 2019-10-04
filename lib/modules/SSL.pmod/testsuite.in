@@ -480,7 +480,7 @@ test_do([[
     };
 
     void server_check_suite() {
-      if ((server->query_version() != exp_version) ||
+      if (((exp_suite != -1) && (server->query_version() != exp_version)) ||
 	  (server->query_suite() != exp_suite)) {
         fail =
 	  sprintf("Unexpected cipher suite (server):\n"
@@ -521,7 +521,7 @@ test_do([[
     };
 
     void client_check_suite() {
-      if ((client->query_version() != exp_version) ||
+      if (((exp_suite != -1) && (client->query_version() != exp_version)) ||
 	  (client->query_suite() != exp_suite)) {
         fail =
 	  sprintf("Unexpected cipher suite (client):\n"
@@ -635,7 +635,7 @@ test_do([[
     };
 
     void server_check_suite() {
-      if ((server->query_version() != exp_version) ||
+      if (((exp_suite != -1) && (server->query_version() != exp_version)) ||
 	  (server->query_suite() != exp_suite)) {
         fail =
 	  sprintf("Unexpected cipher suite (server):\n"
@@ -664,7 +664,7 @@ test_do([[
     };
 
     void client_check_suite() {
-      if ((client->query_version() != exp_version) ||
+      if (((exp_suite != -1) && (client->query_version() != exp_version)) ||
 	  (client->query_suite() != exp_suite)) {
         fail =
 	  sprintf("Unexpected cipher suite (client):\n"
@@ -737,11 +737,6 @@ test_do([[
       exp_version = obsoleted_suites[suites[0] ];
     }
 
-    if ((exp_version < server_min) ||
-	(exp_version < client_min)) {
-      exp_data = 0;
-    }
-
     int exp_suite = -1;
 
     foreach(suites, int suite) {
@@ -768,6 +763,12 @@ test_do([[
       }
       exp_suite = suite;
       break;
+    }
+
+    if ((exp_version < server_min) ||
+	(exp_version < client_min)) {
+      exp_data = 0;
+      exp_suite = -1;
     }
 
     if (exp_suite == -1) exp_data = 0;
@@ -861,11 +862,12 @@ test_do([[
         server = SSL.sslfile(server_con, server_ctx);
         server->set_blocking();
 	if (!server->accept()) {
+	  server->close();
 	  return exp_data && "Server accept failed.\n";
         }
 
         if (exp_data &&
-	    ((server->query_version() != exp_version) ||
+	    (((exp_suite != -1) && (server->query_version() != exp_version)) ||
 	     (server->query_suite() != exp_suite))) {
 	  return
 	    sprintf("Unexpected cipher suite (server):\n"
@@ -901,7 +903,7 @@ test_do([[
       return exp_data ? ({ "Client failed to connect.\n" }) : ({});
     }
     if (exp_data &&
-	((client->query_version() != exp_version) ||
+	(((exp_suite != -1) && (client->query_version() != exp_version)) ||
 	 (client->query_suite() != exp_suite))) {
       return ({
 	sprintf("Unexpected cipher suite (client):\n"
