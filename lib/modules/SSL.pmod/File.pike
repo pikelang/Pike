@@ -2057,7 +2057,8 @@ protected int ssl_read_callback (int ignored, string input)
       queue_write();
     }
 
-    if (!conn || (conn->state & CONNECTION_peer_closed)) {
+    if (!conn || (conn->state & (CONNECTION_peer_closed |
+				 CONNECTION_local_fatal))) {
       // Deinstall read side cbs to avoid reading more.
       SSL3_DEBUG_MSG("SSL.File->direct_write: Removing read/close_callback.\n");
       if(stream) {

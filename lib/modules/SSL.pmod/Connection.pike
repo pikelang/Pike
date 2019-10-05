@@ -640,8 +640,7 @@ int(-1..2) to_write(Stdio.Buffer output)
   if (packet->content_type == PACKET_alert)
   {
     if (packet->level == ALERT_fatal) {
-      state = [int(0..0)|ConnectionState](state | CONNECTION_local_fatal |
-					  CONNECTION_peer_closed);
+      state = [int(0..0)|ConnectionState](state | CONNECTION_local_fatal);
       current_read_state = UNDEFINED;
       pending_read_state = ({});
       // SSL3 5.4:
