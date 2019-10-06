@@ -37,7 +37,7 @@ int compression_algorithm;
 
 //! Constant defining a choice of keyexchange, encryption and mac
 //! algorithm.
-int cipher_suite;
+int cipher_suite = SSL_invalid_suite;
 
 //! Information about the encryption method derived from the
 //! cipher_suite.
