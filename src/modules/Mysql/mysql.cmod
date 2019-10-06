@@ -54,9 +54,7 @@
 #endif /* HAVE_MYSQL_ERRMSG_H */
 #endif /* HAVE_ERRMGS_H */
 
-#if defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID >= 80000
-/* MySQL 8 no longer provides a my_bool type.
-   https://dev.mysql.com/doc/relnotes/mysql/8.0/en/news-8-0-1.html */
+#ifndef HAVE_MY_BOOL
 #define my_bool bool
 #endif
 
