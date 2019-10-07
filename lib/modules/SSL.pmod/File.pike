@@ -1281,8 +1281,9 @@ protected void internal_poll()
   //
   SSL3_DEBUG_MSG("poll: wcb: %O, cs: %d, we: %d\n",
 		 write_callback, close_state, write_errno);
-  if (((!sizeof(write_buffer) && write_callback
-	&& (close_state < NORMAL_CLOSE)) || write_errno) && !SSL_HANDSHAKING) {
+  if (write_callback &&
+      ((!sizeof(write_buffer) &&
+	(close_state < NORMAL_CLOSE)) || write_errno) && !SSL_HANDSHAKING) {
     // errno() should return the error in the write callback - need
     // to propagate it here.
     local_errno = write_errno;
