@@ -2291,11 +2291,11 @@ string `->application_protocol() {
 //! Return the currently active cipher suite.
 int query_suite()
 {
-  return conn?->session?->cipher_suite;
+  return conn?->session ? conn->session->cipher_suite:SSL_invalid_suite;
 }
 
 //! Return the currently active SSL/TLS version.
 ProtocolVersion query_version()
 {
-  return conn?->version;
+  return conn?conn->version:-1;
 }
