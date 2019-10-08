@@ -2099,6 +2099,9 @@ test_any_equal([[
     a[i] = TestResourceCount->acquire();
   }
   for(i = 0; i < 10; i++) {
+    // Make sure that the object is destructed properly before
+    // we call drained().
+    destruct(a[i]);
     a[i] = 0;
     a[i] = TestResourceCount->drained();
   }
