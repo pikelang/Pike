@@ -1899,6 +1899,9 @@ protected int queue_write()
     if (!stringp(res)) {
       SSL3_DEBUG_MSG ("queue_write: Connection closed %s\n",
 		      res == 1 ? "normally" : "abruptly");
+      if (!sizeof(write_buffer)) {
+	write_errno = System.EPIPE;
+      }
       break;
     }
 
