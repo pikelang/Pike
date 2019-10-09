@@ -243,6 +243,7 @@ void init_supporter(struct Supporter *s,
   s->dependants=0;
   s->next_dependant=0;
   s->fun=fun;
+  s->exit_fun=NULL;
   s->data=data;
   s->prog=0;
   verify_supporters();
@@ -287,6 +288,7 @@ void free_supporter(struct Supporter *c)
       if (*s == c) {*s = c->next_dependant; break;}
     c->depends_on = 0;
   }
+  if (c->exit_fun) c->exit_fun(c);
   verify_supporters();
 }
 
@@ -306,7 +308,7 @@ int call_dependants(struct Supporter *s, int finish)
     tmp->next_dependant=0;
 #endif
     verify_supporters();
-    if (!tmp->fun(tmp->data, finish)) ok = 0;
+    if (!tmp->fun(tmp, finish)) ok = 0;
     verify_supporters();
     free_object(tmp->self.u.object);
   }
@@ -1285,9 +1287,10 @@ static void run_cleanup(struct compilation *c, int delayed)
   c->flags |= COMPILER_DONE;
 }
 
-static int call_delayed_pass2(struct compilation *cc, int finish)
+static int call_delayed_pass2(struct Supporter *s, int finish)
 {
   int ok = 0;
+  struct compilation *cc = s->data;
   debug_malloc_touch(cc);
 
   debug_malloc_touch(cc->p);
@@ -1342,6 +1345,7 @@ static void compilation_event_handler(int e)
     SET_SVAL(c->supporter.self, T_OBJECT,
 	     Pike_fp->context - Pike_fp->current_object->prog->inherits,
 	     object, Pike_fp->current_object); /* NOTE: Not ref-counted! */
+    c->supporter.exit_fun = NULL;
     buffer_init(&c->used_modules);
     SET_SVAL(c->default_module, T_MAPPING, 0, mapping, get_builtin_constants());
     add_ref(c->default_module.u.mapping);

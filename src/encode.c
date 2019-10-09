@@ -2467,6 +2467,8 @@ struct decode_data
   int pickyness;
   int pass;
   int delay_counter;
+  int support_delay_counter;
+  struct compilation *support_compilation;
   struct pike_string *raw;
   struct decode_data *next;
 #ifdef PIKE_THREADS
@@ -2883,12 +2885,14 @@ static void low_decode_type(struct decode_data *data)
   (X)=pop_unfinished_type();			\
 } while(0)
 
-static void cleanup_new_program_decode (void *UNUSED(ignored))
+static void cleanup_new_program_decode (void *compilation)
 {
+  struct compilation *c = compilation;
   debug_malloc_touch(Pike_compiler->new_program);
   debug_malloc_touch(Pike_compiler->new_program->parent);
   /* The program is consistent enough to be freed... */
   Pike_compiler->new_program->flags &= ~PROGRAM_AVOID_CHECK;
+  unlink_current_supporter(& c->supporter);
   end_first_pass(0);
 }
 
@@ -3004,6 +3008,115 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
   }
   UNSET_ONERROR(err);
   return assemble(1);
+}
+
+static void low_do_decode (struct decode_data *data);
+static void free_decode_data (struct decode_data *data, int delay,
+			      int DEBUGUSED(free_after_error));
+
+static int call_delayed_decode(struct Supporter *s, int finish)
+{
+  JMP_BUF recovery;
+  struct decode_data *data = s->data;
+  struct compilation *cc = (struct compilation *)s;
+  volatile int ok = 0;
+
+  if (!data)
+    return 0;
+
+  debug_malloc_touch(cc);
+  debug_malloc_touch(cc->p);
+
+  if (finish) {
+#ifdef ENCODE_DEBUG
+    struct string_builder buf;
+#endif
+    struct svalue *osp = Pike_sp;
+    struct compilation *prevcc = data->support_compilation;
+    data->support_compilation = cc;
+    SET_SVAL(data->counter, T_INT, NUMBER_NUMBER, integer, COUNTER_START);
+    data->ptr=4; /* Skip 182 'k' 'e' '0' */
+#ifdef ENCODE_DEBUG
+    data->debug_ptr = 0;
+    if (data->debug && !data->debug_buf) {
+      data->debug_buf = &buf;
+      init_string_builder(data->debug_buf, 0);
+    }
+    data->depth = -2;
+#endif
+
+    if (SETJMP(recovery)) {
+      push_svalue (&throw_value);
+      SAFE_APPLY_MASTER ("describe_error", 1);
+      pop_stack();
+      UNSETJMP(recovery);
+      free_svalue(&throw_value);
+      mark_free_svalue (&throw_value);
+    } else {
+      int e;
+      struct keypair *k;
+
+      while(data->unfinished_programs)
+	{
+	  struct unfinished_prog_link *tmp=data->unfinished_programs;
+	  data->unfinished_programs=tmp->next;
+	  free(tmp);
+	}
+
+      while(data->unfinished_objects)
+	{
+	  struct unfinished_obj_link *tmp=data->unfinished_objects;
+	  data->unfinished_objects=tmp->next;
+	  free_svalue(&tmp->decode_arg);
+	  free_object(tmp->o);
+	  free(tmp);
+	}
+
+      while(data->unfinished_placeholders)
+	{
+	  struct unfinished_obj_link *tmp=data->unfinished_placeholders;
+	  data->unfinished_placeholders=tmp->next;
+	  free_object(tmp->o);
+	  free(tmp);
+	}
+
+      data->pass=1;
+
+      low_do_decode (data);
+
+      UNSETJMP(recovery);
+      ok = 1;
+    }
+#ifdef ENCODE_DEBUG
+    if (data->debug_buf == &buf) {
+      write_and_reset_string_builder(2, data->debug_buf);
+      free_string_builder(data->debug_buf);
+      data->debug_buf = NULL;
+    }
+#endif
+    data->support_compilation = prevcc;
+    pop_n_elems(Pike_sp-osp);
+  }
+
+  if(cc->p) {
+    free_program(cc->p); /* later */
+    cc->p = NULL;
+  }
+
+#ifdef PIKE_DEBUG
+  verify_supporters();
+#endif
+
+  return ok;
+}
+
+static void exit_delayed_decode(struct Supporter *s)
+{
+  if (s->data != NULL) {
+    struct decode_data *data = s->data;
+    --data->support_delay_counter;
+    free_decode_data(data, 0, 0);
+  }
 }
 
 static void decode_value2(struct decode_data *data)
@@ -3721,7 +3834,40 @@ static void decode_value2(struct decode_data *data)
 	    p = delayed_enc_val->u.program;
 	    debug_malloc_touch(p);
 	  }
-	  else
+	  else if (data->support_compilation) {
+	    struct svalue *val = low_mapping_lookup (data->decoded, &entry_id);
+	    if (val == NULL)
+	      p = NULL;
+	    else {
+	      if (TYPEOF(*val) != T_PROGRAM ||
+		  (val->u.program->flags &
+		   (PROGRAM_OPTIMIZED | PROGRAM_FIXED |
+		    PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)) !=
+		  PROGRAM_PASS_1_DONE) {
+		decode_error (data, NULL, "Didn't get pass 1 program "
+			      "for supporter delay encoded program <%O>: %O\n",
+			      &entry_id, val);
+	      }
+	      p = val->u.program;
+	      if (p != data->support_compilation->supporter.prog)
+		p = NULL;
+	      else {
+		debug_malloc_touch(p);
+		/* low_start_new_program will restore the program to
+		   a pristine state as long as p->program is NULL,
+		   so free it here */
+		if (p->program) {
+#ifdef PIKE_USE_MACHINE_CODE
+		  mexec_free(p->program);
+#else
+		  free(p->program);
+#endif
+		  p->program = NULL;
+		  p->num_program = 0;
+		}
+	      }
+	    }
+	  } else
 	    p = NULL;
 
 	  enter_compiler(NULL, 0);
@@ -3744,8 +3890,17 @@ static void decode_value2(struct decode_data *data)
 	  /* Kludge to get end_first_pass() to free the program. */
 	  Pike_compiler->num_parse_error++;
 
-	  SET_ONERROR(err, cleanup_new_program_decode, NULL);
+	  init_supporter(& c->supporter,
+			 (supporter_callback *) call_delayed_decode, NULL);
+	  c->supporter.exit_fun = exit_delayed_decode;
+	  c->supporter.prog = p;
+	  SET_ONERROR(err, cleanup_new_program_decode, c);
 
+	  if (data->support_compilation &&
+	      data->support_compilation->supporter.prog == p &&
+	      data->support_compilation->placeholder != NULL)
+	    add_ref(c->placeholder = data->support_compilation->placeholder);
+	  else
 	  {
 	    int fun = find_identifier("__register_new_program",
 				      decoder_codec (data)->prog);
@@ -4527,7 +4682,13 @@ static void decode_value2(struct decode_data *data)
 	  data->depth-=2;
 #endif
 
+	  int delay = unlink_current_supporter(& c->supporter);
 	  UNSET_ONERROR(err);
+
+	  if (delay) {
+	    data->support_delay_counter++;
+	    c->supporter.data = data;
+	  }
 
 	  /* De-kludge to get end_first_pass() to free the program. */
 	  Pike_compiler->num_parse_error--;
@@ -4539,13 +4700,14 @@ static void decode_value2(struct decode_data *data)
 	   * lfuns and identifier_index
 	   */
 	  ref_push_program (p);
-	  if (!(p = end_first_pass(2))) {
+	  if (!(p = end_first_pass(delay? 0 : 2)) ||
+	      !call_dependants(&c->supporter, !!p)) {
 	    decode_error(data, Pike_sp - 1, "Failed to decode program.\n");
 	  }
 	  pop_stack();
 	  push_program(p);
 
-	  if (c->placeholder) {
+	  if (c->placeholder && !delay) {
 	    push_object(placeholder = c->placeholder);
 	    c->placeholder = NULL;
 	  }
@@ -4573,7 +4735,9 @@ static void decode_value2(struct decode_data *data)
 			 (size_t) p->PIKE_CONCAT(num_, NAME),		\
 			 bytecode_method);				\
           }
+	  if (!delay) {
 #include "program_areas.h"
+	  }
 
 	  /* Decode the actual constants
 	   *
@@ -4708,7 +4872,7 @@ static void free_decode_data (struct decode_data *data, int delay,
     }
   }
 
-  if(delay)
+  if(delay || data->support_delay_counter)
   {
     debug_malloc_touch(data);
     /* We have been delayed */
@@ -4761,7 +4925,7 @@ static void free_decode_data (struct decode_data *data, int delay,
   if (!free_after_error) {
     NEW_MAPPING_LOOP (data->decoded->data) {
       if (TYPEOF(k->val) == T_PROGRAM &&
-	  !(k->val.u.program->flags & PROGRAM_FINISHED)) {
+	  !(k->val.u.program->flags & PROGRAM_PASS_1_DONE)) {
 	ONERROR err;
 	/* Move some references to the stack so that they
 	 * will be freed when decode_error() throws, but
@@ -4803,6 +4967,16 @@ static void error_free_decode_data (struct decode_data *data)
   delay = 0;
   free_decode_data (data, delay, 1);
 }
+
+#ifdef ENCODE_DEBUG
+static void error_debug_free_decode_data (struct decode_data *data)
+{
+  write_and_reset_string_builder(2, data->debug_buf);
+  free_string_builder(data->debug_buf);
+  data->debug_buf = NULL;
+  error_free_decode_data (data);
+}
+#endif
 
 static INT32 my_decode(struct pike_string *tmp,
 		       struct object *codec
@@ -4851,6 +5025,8 @@ static INT32 my_decode(struct pike_string *tmp,
   data->unfinished_objects=0;
   data->unfinished_placeholders = NULL;
   data->delay_counter = 0;
+  data->support_delay_counter = 0;
+  data->support_compilation = NULL;
   data->raw = tmp;
   data->next = current_decode;
 #ifdef PIKE_THREADS
@@ -4897,7 +5073,12 @@ static INT32 my_decode(struct pike_string *tmp,
 #ifdef PIKE_THREADS
   add_ref (data->thread_obj);
 #endif
-  SET_ONERROR(err, error_free_decode_data, data);
+#ifdef ENCODE_DEBUG
+  if (debug_buf == &buf)
+    SET_ONERROR(err, error_debug_free_decode_data, data);
+  else
+#endif
+    SET_ONERROR(err, error_free_decode_data, data);
 
   low_do_decode (data);
 
@@ -4911,6 +5092,7 @@ static INT32 my_decode(struct pike_string *tmp,
   if (debug_buf == &buf) {
     write_and_reset_string_builder(2, debug_buf);
     free_string_builder(debug_buf);
+    data->debug_buf = NULL;
   }
 #endif
 

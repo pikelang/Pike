@@ -19,7 +19,10 @@ extern struct object *compilation_environment;
 extern struct program *Annotation_program;
 extern struct object *Inherited_annotation;
 
-typedef int supporter_callback (void *, int);
+struct Supporter;
+
+typedef int supporter_callback (struct Supporter *, int);
+typedef void supporter_exit_callback (struct Supporter *);
 
 struct Supporter
 {
@@ -54,6 +57,7 @@ struct Supporter
 
   supporter_callback *fun;
   void *data;
+  supporter_exit_callback *exit_fun;
 
   struct program *prog;
   /* The top level program in the compilation unit. */
