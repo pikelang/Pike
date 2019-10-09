@@ -1908,6 +1908,9 @@ protected int queue_write()
     case 1:
       SSL3_DEBUG_MSG ("queue_write: Connection closed %s\n",
 		      res == 1 ? "normally" : "abruptly");
+      if (!sizeof(write_buffer)) {
+	write_errno = System.EPIPE;
+      }
       break loop;
     case 0:
       SSL3_DEBUG_MSG ("queue_write: Got nothing to write (%d bytes buffered)\n",
