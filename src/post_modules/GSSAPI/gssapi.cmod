@@ -666,8 +666,8 @@ PIKEFUN array(string) minor_status_messages (int minor_status, void|string mech)
  */
 PIKECLASS Error
 {
- /*! @decl inherit Error.Generic
-  */
+  /*! @decl inherit Error.Generic
+   */
   INHERIT generic_error;
 
   EXTRA
