@@ -348,7 +348,9 @@ string describe_state()
 {
   if (!state) return "ready";
   array(string) res = ({});
-  if (state & CONNECTION_handshaking) res += ({ "handshaking" });
+  if (state & CONNECTION_handshaking) {
+    res += ({ "handshaking(" + fmt_constant(handshake_state, "STATE") + ")" });
+  }
   if (state & CONNECTION_local_failing) {
     if (state & CONNECTION_local_fatal) {
       res += ({ "local_fatal" });
