@@ -1938,9 +1938,9 @@ protected int queue_write()
   }
 
   SSL3_DEBUG_MSG ("queue_write: Returning %O (%d bytes buffered)\n",
-		  res, sizeof(write_buffer));
+		  !sizeof(write_buffer) && res, sizeof(write_buffer));
 
-  return res;
+  return !sizeof(write_buffer) && res;
 }
 
 protected int direct_write()
