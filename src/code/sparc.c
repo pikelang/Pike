@@ -734,7 +734,7 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
-  if(off > MAX_SUPPORTED_INSTR)
+  if(b > MAX_SUPPORTED_INSTR)
     Pike_error("Instruction too big %d\n",b);
 #endif
 
