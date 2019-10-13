@@ -939,12 +939,15 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
       case 3:
 	check_object(Pike_fp->current_object);
 	/*	  break; */
+	/* FALLTHRU */
 
       case 2:
 	check_object_context(Pike_fp->current_object,
 			     Pike_fp->context->prog,
 			     Pike_fp->current_object->storage+
 			     Pike_fp->context->storage_offset);
+	/* FALLTHRU */
+
       case 1:
       case 0:
 	break;
