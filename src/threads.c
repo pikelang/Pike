@@ -2798,21 +2798,23 @@ static void f_rwmutex_rkey_create(INT32 args)
 {
   struct object *rwmutex_obj = NULL;
   struct rwmutex_storage *rwmutex = NULL;
+  struct rwmutex_key_storage *m;
 
   get_all_args("create", args, "%o", &rwmutex_obj);
   if (!(rwmutex = get_storage(rwmutex_obj, rwmutex_program))) {
     SIMPLE_ARG_TYPE_ERROR("create", 1, "RWMutex");
   }
 
-  if (rwmutex->writers == 1) {
-    struct rwmutex_key_storage *m;
-    for (m = rwmutex->first_key; m; m = m->next) {
-      if (m->owner && (m->owner = Pike_interpreter.thread_state)) {
-	/* NB: The only way we can come here is if
-	 *     it is we that have the write lock.
-	 */
-	Pike_error("Recursive mutex locks!\n");
-      }
+  for (m = rwmutex->first_key; m; m = m->next) {
+    if ((m->owner == Pike_interpreter.thread_state) && (m->owner)) {
+      /* NB: We have a lock already.
+       *
+       *     This is a bad idea, as it may lead to dead-locks
+       *     if another thread has started an attempt to get
+       *     a write lock between our two read locks, or if
+       *     we already hold the write lock.
+       */
+      Pike_error("Recursive mutex locks!\n");
     }
   }
 
