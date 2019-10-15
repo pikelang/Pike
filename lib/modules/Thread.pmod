@@ -516,41 +516,27 @@ class Farm
   //!   user discards the values returned from
   //!   @[run()] or @[run_multiple()], so that
   //!   any errors thrown aren't lost.
-  protected class ResultWrapper(Result ro)
+  protected class ResultWrapper
   {
+    //! @decl inherit Result
+    //!
+    //! Inherits @expr{Pike.ProxyFactory(Result)@}
+    //!
+    //! @seealso
+    //!   @[Pike.ProxyFactory()]
+
+    //! @ignore
+    local inherit Pike.ProxyFactory(Result) : Result;
+    //! @endignore
+
     protected int(0..1) value_fetched;
-    int `ready() { return ro->ready; }
     mixed `value() {
       value_fetched = 1;
-      return ro->value;
+      return Result::`value();
     }
-    function `done_cb() { return ro->done_cb; }
     void `done_cb=(function cb) {
       if (cb) value_fetched = 1;
-      ro->done_cb = cb;
-    }
-
-    //! @returns
-    //!   @int
-    //!     @value 1
-    //!       Returns @expr{1@} when the result is available.
-    //!     @value 0
-    //!       Returns @expr{0@} (zero) when the result hasn't
-    //!       arrived yet.
-    //!     @value -1
-    //!       Returns negative on failure.
-    //!   @endint
-    function(:int) `status() { return ro->status; }
-
-    //! @returns
-    //!   Returns the result if available, a backtrace on failure,
-    //!   and @expr{0@} (zero) otherwise.
-    function(:mixed) `result() { return ro->result; }
-
-    //! Wait for completion.
-    protected mixed `()()
-    {
-      return ro();
+      Result::`done_cb = cb;
     }
 
     //! Register a callback to be called when
@@ -564,40 +550,17 @@ class Farm
     //!   success, and @expr{1@} on failure.
     void set_done_cb(function cb) {
       if (cb) value_fetched = 1;
-      ro->set_done_cb(cb);
+      Result::set_done_cb(cb);
     }
-
-    //! Register a failure.
-    //!
-    //! @param what
-    //!   The corresponding backtrace.
-    function(mixed:void) `provide_error() { return ro->provide_error; }
-
-    //! Register a completed result.
-    //!
-    //! @param what
-    //!   The result to register.
-    function(mixed:void) `provide() { return ro->provide; }
 
     protected void _destruct()
     {
-      if (ro && !value_fetched && !ro->done_cb) {
+      if (!value_fetched /* && !done_cb */) {
 	// Make sure that any errors aren't lost.
-	ro->done_cb = report_errors;
-	if (ro->ready < 0) {
-	  report_errors(ro->value, 1);
+	done_cb = report_errors;
+	if (ready < 0) {
+	  report_errors(value, 1);
 	}
-      }
-    }
-
-    protected string _sprintf( int f )
-    {
-      switch( f )
-      {
-	case 't':
-	  return "Thread.Farm().ResultWrapper";
-	case 'O':
-	  return sprintf("%t(%O)", this, ro);
       }
     }
   }
