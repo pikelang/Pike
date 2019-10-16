@@ -2646,9 +2646,17 @@ static void exit_rwmutex_obj(struct object *o)
   co_destroy(&THIS_RWMUTEX->condition);
 }
 
-/*! @decl ReadKey read_lock()
+/*! @decl ReadKey read_lock(int(0..1)|void recursive)
  *!
  *!   Obtain a lock for reading (shared lock).
+ *!
+ *! @param recursive
+ *!   Support the same thread obtaining several locks
+ *!   (both read and write).
+ *!
+ *! @throws
+ *!   Throws an error if the current thread already has
+ *!   a lock (read or write) unless @[recursive] is @expr{1@}.
  *!
  *! @seealso
  *!   @[write_lock()]
@@ -2661,9 +2669,21 @@ static void f_rwmutex_read_lock(INT32 args)
   push_object(clone_object(rwmutex_rkey_program, 1));
 }
 
-/*! @decl WriteKey write_lock()
+/*! @decl WriteKey write_lock(int(0..1)|void recursive)
  *!
  *!   Obtain a lock for writing (exclusive lock).
+ *!
+ *! @param recursive
+ *!   Support the same thread obtaining several locks
+ *!   (both read and write).
+ *!
+ *! @throws
+ *!   Throws an error if the current thread already has
+ *!   a lock (read or write) unless @[recursive] is @expr{1@}.
+ *!
+ *!   If @[recursive] is @expr{1@} it will still throw an error
+ *!   if we have a read lock and another thread has started
+ *!   taking a write lock.
  *!
  *! @seealso
  *!   @[read_lock()]
@@ -2772,10 +2792,11 @@ static void exit_rwmutex_rkey_obj(struct object *UNUSED(o))
     THIS_RWKEY->next = NULL;
     THIS_RWKEY->prev = NULL;
 
-    if (!(--rwmutex->readers)) {
+    if (!--rwmutex->readers) {
       co_broadcast(&rwmutex->condition);
+
       if (rwmutex->writers) {
-	/* There's a writer waiting for us to complete.
+	/* There's probably a writer waiting for us to complete.
 	 * Attempt to force a thread switch.
 	 */
 	THREADS_ALLOW();
@@ -2799,28 +2820,34 @@ static void f_rwmutex_rkey_create(INT32 args)
   struct object *rwmutex_obj = NULL;
   struct rwmutex_storage *rwmutex = NULL;
   struct rwmutex_key_storage *m;
+  int recursive = 0;
+  int self_count = 0;
 
-  get_all_args("create", args, "%o", &rwmutex_obj);
+  get_all_args("create", args, "%o.%d", &rwmutex_obj, &recursive);
   if (!(rwmutex = get_storage(rwmutex_obj, rwmutex_program))) {
     SIMPLE_ARG_TYPE_ERROR("create", 1, "RWMutex");
-  }
-
-  for (m = rwmutex->first_key; m; m = m->next) {
-    if ((m->owner == Pike_interpreter.thread_state) && (m->owner)) {
-      /* NB: We have a lock already.
-       *
-       *     This is a bad idea, as it may lead to dead-locks
-       *     if another thread has started an attempt to get
-       *     a write lock between our two read locks, or if
-       *     we already hold the write lock.
-       */
-      Pike_error("Recursive mutex locks!\n");
-    }
   }
 
   while (THIS_RWKEY->rwmutex) {
     /* Not really a supported operation, but... */
     exit_rwmutex_rkey_obj(NULL);
+  }
+
+  for (m = rwmutex->first_key; m; m = m->next) {
+    if ((m->owner == Pike_interpreter.thread_state) && (m->owner)) {
+      self_count++;
+    }
+  }
+
+  if (self_count && recursive) {
+    /* NB: We have a lock already.
+     *
+     *     This is a bad idea, as it may lead to dead-locks
+     *     if another thread has started an attempt to get
+     *     a write lock between our two read locks, or if
+     *     we already hold the write lock.
+     */
+    Pike_error("Recursive mutex locks!\n");
   }
 
   init_rwmutex_key_obj(NULL);
@@ -2836,11 +2863,32 @@ static void f_rwmutex_rkey_create(INT32 args)
   }
   rwmutex->first_key = THIS_RWKEY;
 
-  SWAP_OUT_CURRENT_THREAD();
-  while(rwmutex->writers) {
-    co_wait_interpreter(&rwmutex->condition);
+  /* States:
+   *
+   * readers writers self_count Action
+   *       -       0          - Add reader.
+   *                            (No writers.)
+   *       0      -1          0 Wait for writers to go to 0.
+   *                            (Some other thread is attempting to
+   *                             take a write lock.)
+   *      >0      -1         >0 Add reader.
+   *                            (We already have a lock, which the other
+   *                             thread is waiting for, so avoid dead lock.)
+   *       -      >0          0 Wait for writers to go to 0.
+   *                            (Some other thread has a write lock.)
+   *       -      >0         >0 Add reader.
+   *                            (As we have a lock and there is at least
+   *                             one write lock, we must be the owners
+   *                             of the write lock.)
+   */
+
+  if (!self_count) {
+    SWAP_OUT_CURRENT_THREAD();
+    while(rwmutex->writers) {
+      co_wait_interpreter(&rwmutex->condition);
+    }
+    SWAP_IN_CURRENT_THREAD();
   }
-  SWAP_IN_CURRENT_THREAD();
 
   rwmutex->readers++;
 }
@@ -2897,11 +2945,11 @@ static void exit_rwmutex_wkey_obj(struct object *UNUSED(o))
     THIS_RWKEY->next = NULL;
     THIS_RWKEY->prev = NULL;
 
-    rwmutex->writers = 0;
+    rwmutex->writers--;
     co_broadcast(&rwmutex->condition);
 
     /* Attempt to force a thread switch in case there is
-     * ayone waiting on us.
+     * anyone waiting on us.
      */
     THREADS_ALLOW();
 #ifdef HAVE_NO_YIELD
@@ -2921,27 +2969,36 @@ static void f_rwmutex_wkey_create(INT32 args)
 {
   struct object *rwmutex_obj = NULL;
   struct rwmutex_storage *rwmutex = NULL;
+  struct rwmutex_key_storage *m;
+  int recursive = 0;
+  int self_count = 0;
 
-  get_all_args("create", args, "%o", &rwmutex_obj);
+  get_all_args("create", args, "%o.%d", &rwmutex_obj, &recursive);
   if (!(rwmutex = get_storage(rwmutex_obj, rwmutex_program))) {
     SIMPLE_ARG_TYPE_ERROR("create", 1, "RWMutex");
-  }
-
-  if (rwmutex->first_key) {
-    struct rwmutex_key_storage *m;
-    for (m = rwmutex->first_key; m; m = m->next) {
-      if (m->owner && (m->owner = Pike_interpreter.thread_state)) {
-	/* We already have a lock (read or write), and would
-	 * hang waiting on ourselves.
-	 */
-	Pike_error("Recursive mutex locks!\n");
-      }
-    }
   }
 
   while (THIS_RWKEY->rwmutex) {
     /* Not really a supported operation, but... */
     exit_rwmutex_wkey_obj(NULL);
+  }
+
+  for (m = rwmutex->first_key; m; m = m->next) {
+    if (m->owner && (m->owner = Pike_interpreter.thread_state)) {
+      self_count++;
+    }
+  }
+
+  if (self_count && (!recursive || (rwmutex->writers < 0))) {
+    /* Either: We already have a lock (read or write), and
+     *         would hang waiting on ourselves.
+     *
+     * Or: We already have a lock and some other thread is
+     *     already attempting to get a write lock. This
+     *     would end up in a hang waiting on the other
+     *     thread while it is waiting on us.
+     */
+    Pike_error("Recursive mutex locks!\n");
   }
 
   init_rwmutex_key_obj(NULL);
@@ -2957,18 +3014,51 @@ static void f_rwmutex_wkey_create(INT32 args)
   }
   rwmutex->first_key = THIS_RWKEY;
 
+  /* States:
+   *
+   * readers writers self_count Action
+   *       -       0          - Set writers to -1, wait for readers
+   *                            to go to 0, Set writers to 1.
+   *                            (No write lock active.)
+   *       -      -1          0 Wait for writers to go to 0, then as above.
+   *                            (Some other thread is attempting to
+   *                             get a write lock.)
+   *       -      >0          0 Wait for writers to go to 0, then as above.
+   *                            (Some other thread has a write lock.)
+   *       -      >0         >0 Add writer.
+   *                            (As we have a lock and there is at least
+   *                             one write lock, we must be the owners
+   *                             of the write lock.)
+   *
+   * Problem:
+   *      >0      -1         >0 (Some other thread is attempting to get
+   *                             a write lock (waiting on us). If
+   *                             self_count == readers, then we could
+   *                             take the write lock, complete and then
+   *                             restore the -1, but if the other thread
+   *                             also has a self_count >0 we run into
+   *                             a dead lock.)
+   */
+
   SWAP_OUT_CURRENT_THREAD();
-  while(rwmutex->writers) {
-    co_wait_interpreter(&rwmutex->condition);
+  if (!self_count) {
+    while(rwmutex->writers) {
+      co_wait_interpreter(&rwmutex->condition);
+    }
   }
 
-  rwmutex->writers = -1;
+  if (!rwmutex->writers) {
+    rwmutex->writers = -1;
 
-  while(rwmutex->readers) {
-    co_wait_interpreter(&rwmutex->condition);
+    while(rwmutex->readers > self_count) {
+      co_wait_interpreter(&rwmutex->condition);
+    }
+
+    rwmutex->writers = 1;
+  } else {
+    /* We already hold a write lock. */
+    rwmutex->writers++;
   }
-
-  rwmutex->writers = 1;
   SWAP_IN_CURRENT_THREAD();
 }
 
