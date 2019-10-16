@@ -879,8 +879,9 @@ optional class Farm
 //!   @[ResourceCount], @[MutexKey]
 //!
 optional class ResourceCountKey {
-
-  private inherit __builtin.DestructImmediate;
+#if constant(Pike.DestructImmediate)
+  private inherit Pike.DestructImmediate;
+#endif
 
   /*semi*/private ResourceCount parent;
 
