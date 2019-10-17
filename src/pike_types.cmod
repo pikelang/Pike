@@ -663,6 +663,16 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 struct pike_type **type_stack;
 struct pike_type ***pike_type_mark_stack;
 
+ptrdiff_t peek_stack_mark(void)
+{
+  if(Pike_compiler->pike_type_mark_stackp-1 < pike_type_mark_stack)
+    Pike_fatal("Type mark stack underflow\n");
+
+  TYPE_STACK_DEBUG("peek_stack_mark");
+
+  return Pike_compiler->type_stackp - Pike_compiler->pike_type_mark_stackp[-1];
+}
+
 ptrdiff_t pop_stack_mark(void)
 {
   Pike_compiler->pike_type_mark_stackp--;
