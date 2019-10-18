@@ -433,7 +433,12 @@ void ins_f_byte(unsigned int b)
   addr = instrs[b].address;
 
 #ifdef PIKE_DEBUG
-  if (d_flag < 3)
+  if (d_flag < 3
+#ifdef OPCODE_INLINE_RETURN
+      || b == F_CATCH - F_OFFSET
+      || b == F_CATCH_AT - F_OFFSET
+#endif
+      )
 #endif
   /* This is not very pretty */
   switch(b)
