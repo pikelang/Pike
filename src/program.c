@@ -8347,6 +8347,7 @@ static int run_pass1(struct compilation *c)
     }else{
       free_program(c->placeholder->prog);
       add_ref(c->placeholder->prog=Pike_compiler->new_program);
+      c->placeholder->program_id = Pike_compiler->new_program->id;
       debug_malloc_touch(c->placeholder);
     }
   }
