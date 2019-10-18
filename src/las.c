@@ -3152,9 +3152,11 @@ static struct pike_string *get_name_of_function(node *n)
 	name = n->u.sval.u.efun->name;
       } else {
 	struct program *p = n->u.sval.u.object->prog;
+#ifdef PIKE_DEBUG
 	if (!p) {
 	  p = id_to_program(n->u.sval.u.object->program_id);
 	}
+#endif
 	if (p) {
 	  name = ID_FROM_INT(p, SUBTYPEOF(n->u.sval))->name;
 	} else {
