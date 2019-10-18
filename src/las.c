@@ -3150,9 +3150,16 @@ static struct pike_string *get_name_of_function(node *n)
       if(SUBTYPEOF(n->u.sval) == FUNCTION_BUILTIN)
       {
 	name = n->u.sval.u.efun->name;
-      }else{
-	name =
-	  ID_FROM_INT(n->u.sval.u.object->prog, SUBTYPEOF(n->u.sval))->name;
+      } else {
+	struct program *p = n->u.sval.u.object->prog;
+	if (!p) {
+	  p = id_to_program(n->u.sval.u.object->program_id);
+	}
+	if (p) {
+	  name = ID_FROM_INT(p, SUBTYPEOF(n->u.sval))->name;
+	} else {
+	  MAKE_CONST_STRING(name, "function in destructed object");
+	}
       }
       break;
 
