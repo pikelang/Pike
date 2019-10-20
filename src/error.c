@@ -198,11 +198,17 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
     Pike_fatal("Stack error in error.\n");
 #endif
 
-  /* Note: The pop_n_elems below may trigger destruct callbacks being called
+  /* Note: The pop_stack() below may trigger destruct callbacks being called
    *       for objects having PROGRAM_DESTRUCT_IMMEDIATE. These may
    *       in turn throw (caught) errors and zap throw_value.
+   *
+   * Note: We can not use pop_n_elems() here as a nested error in an
+   *       immediate destruct callback may zap the stack for us during
+   *       our popping.
    */
-  pop_n_elems(Pike_sp - Pike_interpreter.evaluator_stack - Pike_interpreter.recoveries->stack_pointer);
+  while (Pike_sp > Pike_interpreter.evaluator_stack + Pike_interpreter.recoveries->stack_pointer) {
+    pop_stack();
+  }
   Pike_mark_sp = Pike_interpreter.mark_stack + Pike_interpreter.recoveries->mark_sp;
 
   /* Move the value to be thrown back so that it can be caught. */
