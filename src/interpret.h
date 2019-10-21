@@ -221,9 +221,10 @@ PMOD_EXPORT extern const char msg_pop_neg[];
    if(x_) {								\
      struct svalue *_sp_;						\
      check__positive(x_, (msg_pop_neg, x_));				\
-     _sp_ = Pike_sp = Pike_sp - x_;					\
-     debug_check_stack();						\
+     _sp_ = Pike_sp - x_;						\
      free_mixed_svalues(_sp_, x_);					\
+     Pike_sp = _sp_;							\
+     debug_check_stack();						\
    }									\
  } while (0)
 
