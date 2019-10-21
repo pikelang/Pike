@@ -127,6 +127,15 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_INI
 
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 {
+  struct svalue save_throw_value;
+
+  /* Save the value to be thrown in case error handlers etc below
+   * call eg safe_apply() et al, or cause a thread switch to
+   * code that does.
+   */
+  move_svalue(&save_throw_value, &throw_value);
+  mark_free_svalue(&throw_value);
+
 #ifdef TRACE_UNFINISHED_TYPE_FIELDS
   accept_unfinished_type_fields++;
 #endif
@@ -199,8 +208,22 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
     Pike_fatal("Stack error in error.\n");
 #endif
 
-  pop_n_elems(Pike_sp - Pike_interpreter.evaluator_stack - Pike_interpreter.recoveries->stack_pointer);
+  /* Note: The pop_stack() below may trigger destruct callbacks being called
+   *       for objects having PROGRAM_DESTRUCT_IMMEDIATE. These may
+   *       in turn throw (caught) errors and zap throw_value.
+   *
+   * Note: We can not use pop_n_elems() here as a nested error in an
+   *       immediate destruct callback may zap the stack for us during
+   *       our popping.
+   */
+  while (Pike_sp > Pike_interpreter.evaluator_stack + Pike_interpreter.recoveries->stack_pointer) {
+    pop_stack();
+  }
   Pike_mark_sp = Pike_interpreter.mark_stack + Pike_interpreter.recoveries->mark_sp;
+
+  /* Move the value to be thrown back so that it can be caught. */
+  free_svalue(&throw_value);
+  move_svalue(&throw_value, &save_throw_value);
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
   /* This will tell us where the value was caught (I hope) */
