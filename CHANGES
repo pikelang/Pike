@@ -497,6 +497,10 @@ o The contract for functions is now changed so that a function is no
   will be popped and discarded. Efuns still have to clean their stack
   as previously.
 
+o Object destructor callbacks may now run during pop_stack() and
+  pop_n_elems(). This means that code must be prepared for arbitrary
+  state changes after having called them.
+
 o Removed add_function, pike_add_function, pike_add_function2,
   simple_add_variable, map_variable and MAP_VARIABLE. This removes the
   remaining few API:s where text types were used. Use ADD_FUNCTION and
@@ -522,6 +526,14 @@ o guaranteed_memset() is replaced with secure_zero() which fills a
   loading it into the CPU cache, as this function is typically used
   before calling free() on memory with cryptographic key data.
 
+o The GC marker hash table has been removed. For types which require
+  GC markers, they are now allocated as part of the data type. Such
+  structures must now start with GC_MARKER_MEMBERS (which includes
+  eg the refs field). See "gc_header.h" for details.
+
+  This change significantly improves GC performance (up to a factor
+  of 2 in some situations).
+
 
 Documentation
 -------------
@@ -544,10 +556,3 @@ o C99 assumed
 
   The configure tests will not check for functions defined in C99
   anymore and C99 compiler support is assumed.
-
-Optimizations
--------------
-
-o Removed the GC marker hash table. For types which require GC markers,
-  they are now allocated as parf of the data type. This significantly
-  improves GC performance ( up to a factor if 2 in some situations ).
