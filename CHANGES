@@ -169,6 +169,17 @@ o Sql.Sql is no longer a wrapper class, but a function.
   new base class __builtin.Sql.Connection. Note that it is
   still possible to use Sql.Sql as the type of connection objects.
 
+o Named classes are always statements.
+
+  As mentioned above, it is no longer possible to define a named
+  class in an expression. Such code has been observed, but none
+  where the name was actually used. Use an anonymous class instead.
+
+o Anonymous classes are always expressions.
+
+  It used to be possible (but typically not useful) to define
+  an anonymous class as a statement. Add a name for the class.
+
 o Gz.crc32 and Nettle.crc32c now only return positive results.
 
 o glob() has changed.
