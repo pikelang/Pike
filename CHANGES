@@ -78,6 +78,11 @@ o Function local class definitions are now statements
   (and not expressions). This means that there is no longer
   any need to terminate them with a semicolon.
 
+o The inherit statement's argument is now a proper
+  constant expression. This means that it is possible
+  to dynamically (at compile-time) generate the value
+  to be inherited, eg with Pike.ProxyFactory().
+
 o Complain about shadowed variant functions.
 
 o Syntax for generator functions added.
