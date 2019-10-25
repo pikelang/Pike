@@ -545,6 +545,7 @@ PIKECLASS Shuffle
                 t->leftsuffix = t->suffix->len;
               }
               --sv;
+              /* FALLTHROUGH */
             case 1:
               if (TYPEOF (*sv) == T_STRING && !sv->u.string->size_shift) {
                 if (t->prefix)
