@@ -35,7 +35,7 @@ static struct data get_data( struct source *src, off_t len )
   struct data res;
   Buffer *io = io_buffer_from_object(s->obj);
 
-  res.data = io_read_pointer(io);
+  res.data = (char*)io_read_pointer(io);
   res.len = io_len(io);
   s->s.eof = 1;
   return res;
