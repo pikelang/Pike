@@ -515,6 +515,30 @@ string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
   return res[..bytes-1];
 }
 
+//! crypt()-style function using @[pbkdf2()].
+//!
+//! Compatible with PassLib and Phpass password hashing schemes
+//! @expr{"pbdkf2"@}, @expr{"pbdkf2-sha256"@} and @expr{"pbdkf2-sha512"@}.
+//!
+//! @note
+//!   This function is provided for interoperability with
+//!   password hashes provided from PassLib and/or Phpass.
+//!   It is not recommended for use for new code, as this
+//!   is not the indended use for the @[pbkdf2] algorithm.
+//!
+//! @seealso
+//!   @[pbkdf2()], @[Crypto.Password.hash()], @[Crypto.Password.verify()]
+string(7bit) crypt_pbkdf2(string(8bit) password, string(7bit) salt, int rounds)
+{
+  string(8bit) passwd = password;
+  password = "CENSORED";
+  if (!rounds) rounds = 29000;
+  string(8bit) slt = MIME.decode_base64(salt);
+  return [string(7bit)]replace(MIME.encode_base64(pbkdf2(passwd, slt, rounds,
+							 digest_size()), 1),
+			       ({ "+", "=" }), ({ ".", "" }));
+}
+
 //! HMAC-based Extract-and-Expand Key Derivation Function, HKDF,
 //! @rfc{5869@}. This is very similar to @[pbkdf2], with a few
 //! important differences. HKDF can use an "info" string that binds a

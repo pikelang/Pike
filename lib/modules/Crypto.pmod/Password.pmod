@@ -156,13 +156,9 @@ int verify(string(8bit) password, string(8bit) hash)
     }
 
     // Then try our implementations.
-    sscanf(hash, "$%s$%s$%s", scheme, string(8bit) salt, string(8bit) hash);
-    if( !salt || !hash ) return 0;
+    if (!sscanf(hash, "$%s$%s", scheme, hash)) return 0;
+    sscanf(hash, "%s$%s", string(8bit) salt, hash);
     int rounds = UNDEFINED;
-    if (has_prefix(salt, "rounds=")) {
-      sscanf(salt, "rounds=%d", rounds);
-      sscanf(hash, "%s$%s", salt, hash);
-    }
     switch(scheme) {
     case "1":	// crypt_md5
       return Nettle.crypt_md5(password, salt) == [string(7bit)]hash;
@@ -180,12 +176,40 @@ int verify(string(8bit) password, string(8bit) hash)
 
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
     case "5":	// SHA-256
+      if (salt && has_prefix(salt, "rounds=")) {
+	sscanf(salt, "rounds=%d", rounds);
+	sscanf(hash, "%s$%s", salt, hash);
+      }
       return Crypto.SHA256.crypt_hash(password, salt, rounds) ==
         [string(7bit)]hash;
 #if constant(Crypto.SHA512)
     case "6":	// SHA-512
+      if (salt && has_prefix(salt, "rounds=")) {
+	sscanf(salt, "rounds=%d", rounds);
+	sscanf(hash, "%s$%s", salt, hash);
+      }
       return Crypto.SHA512.crypt_hash(password, salt, rounds) ==
         [string(7bit)]hash;
+#endif
+
+    case "pbkdf2":		// PBKDF2 with SHA1
+      rounds = (int)salt;
+      sscanf(hash, "%s$%s", salt, hash);
+      return Crypto.SHA1.crypt_pbkdf2(password, salt, rounds) ==
+	[string(7bit)]hash;
+
+    case "pbkdf2-sha256":	// PBKDF2 with SHA256
+      rounds = (int)salt;
+      sscanf(hash, "%s$%s", salt, hash);
+      return Crypto.SHA256.crypt_pbkdf2(password, salt, rounds) ==
+	[string(7bit)]hash;
+
+#if constant(Crypto.SHA512)
+    case "pbkdf2-sha512":	// PBKDF2 with SHA512
+      rounds = (int)salt;
+      sscanf(hash, "%s$%s", salt, hash);
+      return Crypto.SHA512.crypt_pbkdf2(password, salt, rounds) ==
+	[string(7bit)]hash;
 #endif
     }
     break;
@@ -295,6 +319,15 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     return sprintf("$%s$%s$%s", scheme, salt, [string(7bit)]hash);
   };
 
+  string(7bit) render_old_crypt_hash(string(7bit) scheme, string(7bit) salt,
+				     string(8bit) hash, int rounds)
+  {
+    // We claim this to be a string(7bit) string, even though we add
+    // the string(0..256). It will however only be called with the
+    // already base64 encoded hashes.
+    return sprintf("$%s$%d$%s$%s", scheme, rounds, salt, [string(7bit)]hash);
+  };
+
   string(7bit) render_ldap_hash(string(8bit) scheme, string(7bit) salt,
                                 string(8bit) hash, int rounds)
   {
@@ -361,6 +394,32 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 		 };
     render_hash = render_ldap_hash;
     break;
+
+  case "pbkdf2":
+    crypt_hash = Crypto.SHA1.crypt_pbkdf2;
+    render_hash = render_old_crypt_hash;
+    // Defaults taken from PassLib.
+    salt_size = 22;		// 16 bytes after base64-encoding.
+    default_rounds = 29000;	// NB: The Passlib example defaults to 6400.
+    break;
+
+  case "pbkdf2-sha256":
+    crypt_hash = Crypto.SHA256.crypt_pbkdf2;
+    render_hash = render_old_crypt_hash;
+    // Defaults taken from PassLib.
+    salt_size = 22;		// 16 bytes after base64-encoding.
+    default_rounds = 29000;	// NB: The Passlib example defaults to 6400.
+    break;
+
+#if constant(Crypto.SHA512)
+  case "pbkdf2-sha512":
+    crypt_hash = Crypto.SHA512.crypt_pbkdf2;
+    render_hash = render_old_crypt_hash;
+    // Defaults taken from Passlib.
+    salt_size = 22;		// 16 bytes after base64-encoding.
+    default_rounds = 29000;	// NB: The Passlib example defaults to 6400.
+    break;
+#endif
 
   default:
     error("Unsupported hashing scheme: %O\n", scheme);
