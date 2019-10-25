@@ -396,28 +396,34 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     break;
 
   case "pbkdf2":
+  case "$pbkdf2$":
     crypt_hash = Crypto.SHA1.crypt_pbkdf2;
     render_hash = render_old_crypt_hash;
     // Defaults taken from PassLib.
     salt_size = 22;		// 16 bytes after base64-encoding.
     default_rounds = 29000;	// NB: The Passlib example defaults to 6400.
+    scheme = "pbkdf2";
     break;
 
   case "pbkdf2-sha256":
+  case "$pbkdf2-sha256$":
     crypt_hash = Crypto.SHA256.crypt_pbkdf2;
     render_hash = render_old_crypt_hash;
     // Defaults taken from PassLib.
     salt_size = 22;		// 16 bytes after base64-encoding.
     default_rounds = 29000;	// NB: The Passlib example defaults to 6400.
+    scheme = "pbkdf2-sha256";
     break;
 
 #if constant(Crypto.SHA512)
   case "pbkdf2-sha512":
+  case "$pbkdf2-sha512$":
     crypt_hash = Crypto.SHA512.crypt_pbkdf2;
     render_hash = render_old_crypt_hash;
     // Defaults taken from Passlib.
     salt_size = 22;		// 16 bytes after base64-encoding.
     default_rounds = 29000;	// NB: The Passlib example defaults to 6400.
+    scheme = "pbkdf2-sha512";
     break;
 #endif
 
