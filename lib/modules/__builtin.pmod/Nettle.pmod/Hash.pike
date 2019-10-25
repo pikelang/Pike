@@ -533,7 +533,7 @@ string(7bit) crypt_pbkdf2(string(8bit) password, string(7bit) salt, int rounds)
   string(8bit) passwd = password;
   password = "CENSORED";
   if (!rounds) rounds = 29000;
-  string(8bit) slt = MIME.decode_base64(salt);
+  string(8bit) slt = MIME.decode_base64(replace(salt, ".", "+"));
   return [string(7bit)]replace(MIME.encode_base64(pbkdf2(passwd, slt, rounds,
 							 digest_size()), 1),
 			       ({ "+", "=" }), ({ ".", "" }));
