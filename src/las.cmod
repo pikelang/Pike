@@ -78,6 +78,7 @@ int cdr_is_node(node *n)
   case F_LOCAL:
   case F_THIS:
   case F_VERSION:
+  case F_GENERATOR:
     return 0;
 
   default:
