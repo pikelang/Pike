@@ -1595,7 +1595,7 @@ static void low_ins_f_byte(unsigned int opcode)
   int flags;
   INT32 rel_addr = rel_addr;
 
-  ARM_ASSERT(opcode-F_OFFSET<=255);
+  ARM_ASSERT(opcode-F_OFFSET<=MAX_SUPPORTED_INSTR);
 
   flags = instrs[opcode-F_OFFSET].flags;
 
