@@ -2622,8 +2622,16 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       return;
   case F_MARK_AT:
       arm64_debug_instr_prologue_1(opcode, arg1);
-      arm64_load_locals_reg();
-      arm64_mark(ARM_REG_PIKE_LOCALS, arg1);
+      if (Pike_compiler->compiler_frame->generator_local != -1) {
+	enum arm64_register tmp = ra_alloc_any();
+	arm64_load_fp_reg();
+        load64_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, save_sp));
+	arm64_mark(tmp, arg1);
+	ra_free(tmp);
+      } else {
+	arm64_load_locals_reg();
+	arm64_mark(ARM_REG_PIKE_LOCALS, arg1);
+      }
       return;
   case F_STRING:
       arm64_debug_instr_prologue_1(opcode, arg1);
