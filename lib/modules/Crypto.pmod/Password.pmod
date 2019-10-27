@@ -116,31 +116,31 @@
 //!
 //! @seealso
 //!   @[hash()], @[predef::crypt()]
-int verify(string(8bit) password, string(8bit) hash)
+int verify(string(8bit) password, string(7bit) hash)
 {
   if (hash == "") return 1;
 
   // Detect the password hashing scheme.
   // First check for an LDAP-style marker.
-  string scheme = "crypt";
+  string(7bit) scheme = "crypt";
   sscanf(hash, "{%s}%s", scheme, hash);
   // NB: RFC2307 proscribes lower case schemes, while
   //     in practise they are usually in upper case.
   switch(lower_case(scheme)) {
   case "md5":	// RFC 2307
   case "smd5":
-    hash = MIME.decode_base64(hash);
-    password += hash[16..];
-    hash = hash[..15];
-    return Crypto.MD5.hash(password) == hash;
+    string(8bit) bin_hash = MIME.decode_base64(hash);
+    password += bin_hash[16..];
+    bin_hash = bin_hash[..15];
+    return Crypto.MD5.hash(password) == bin_hash;
 
   case "sha":	// RFC 2307
   case "ssha":
     // SHA1 and Salted SHA1.
-    hash = MIME.decode_base64(hash);
-    password += hash[20..];
-    hash = hash[..19];
-    return Crypto.SHA1.hash(password) == hash;
+    bin_hash = MIME.decode_base64(hash);
+    password += bin_hash[20..];
+    bin_hash = bin_hash[..19];
+    return Crypto.SHA1.hash(password) == bin_hash;
 
   case "crypt":	// RFC 2307
     // First try the operating systems crypt(3C),
@@ -157,11 +157,11 @@ int verify(string(8bit) password, string(8bit) hash)
 
     // Then try our implementations.
     if (!sscanf(hash, "$%s$%s", scheme, hash)) return 0;
-    sscanf(hash, "%s$%s", string(8bit) salt, hash);
+    sscanf(hash, "%s$%s", string(7bit) salt, hash);
     int rounds = UNDEFINED;
     switch(scheme) {
     case "1":	// crypt_md5
-      return Nettle.crypt_md5(password, salt) == [string(7bit)]hash;
+      return Nettle.crypt_md5(password, salt) == hash;
 
     case "2":	// Blowfish (obsolete)
     case "2a":	// Blowfish (possibly weak)
@@ -171,7 +171,7 @@ int verify(string(8bit) password, string(8bit) hash)
 
     case "nt":
     case "3":	// MD4 NT LANMANAGER (FreeBSD)
-      return this::hash(password, "3")[4..] == [string(7bit)]hash;
+      return this::hash(password, "3")[4..] == hash;
       break;
 
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
@@ -180,36 +180,31 @@ int verify(string(8bit) password, string(8bit) hash)
 	sscanf(salt, "rounds=%d", rounds);
 	sscanf(hash, "%s$%s", salt, hash);
       }
-      return Crypto.SHA256.crypt_hash(password, salt, rounds) ==
-        [string(7bit)]hash;
+      return Crypto.SHA256.crypt_hash(password, salt, rounds) == hash;
 #if constant(Crypto.SHA512)
     case "6":	// SHA-512
       if (salt && has_prefix(salt, "rounds=")) {
 	sscanf(salt, "rounds=%d", rounds);
 	sscanf(hash, "%s$%s", salt, hash);
       }
-      return Crypto.SHA512.crypt_hash(password, salt, rounds) ==
-        [string(7bit)]hash;
+      return Crypto.SHA512.crypt_hash(password, salt, rounds) == hash;
 #endif
 
     case "pbkdf2":		// PBKDF2 with SHA1
       rounds = (int)salt;
       sscanf(hash, "%s$%s", salt, hash);
-      return Crypto.SHA1.crypt_pbkdf2(password, salt, rounds) ==
-	[string(7bit)]hash;
+      return Crypto.SHA1.crypt_pbkdf2(password, salt, rounds) == hash;
 
     case "pbkdf2-sha256":	// PBKDF2 with SHA256
       rounds = (int)salt;
       sscanf(hash, "%s$%s", salt, hash);
-      return Crypto.SHA256.crypt_pbkdf2(password, salt, rounds) ==
-	[string(7bit)]hash;
+      return Crypto.SHA256.crypt_pbkdf2(password, salt, rounds) == hash;
 
 #if constant(Crypto.SHA512)
     case "pbkdf2-sha512":	// PBKDF2 with SHA512
       rounds = (int)salt;
       sscanf(hash, "%s$%s", salt, hash);
-      return Crypto.SHA512.crypt_pbkdf2(password, salt, rounds) ==
-	[string(7bit)]hash;
+      return Crypto.SHA512.crypt_pbkdf2(password, salt, rounds) == hash;
 #endif
     }
     break;
