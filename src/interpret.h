@@ -219,11 +219,9 @@ PMOD_EXPORT extern const char msg_pop_neg[];
  do {									\
    ptrdiff_t x_=(X);							\
    if(x_) {								\
-     struct svalue *_sp_;						\
      check__positive(x_, (msg_pop_neg, x_));				\
-     _sp_ = Pike_sp - x_;						\
-     free_mixed_svalues(_sp_, x_);					\
-     Pike_sp = _sp_;							\
+     if (x_ > 131072) Pike_fatal("Popping too much!\n");		\
+     while (x_--) pop_stack();						\
      debug_check_stack();						\
    }									\
  } while (0)
