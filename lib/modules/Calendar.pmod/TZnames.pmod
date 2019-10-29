@@ -612,6 +612,7 @@ mapping abbr2zones =
      "Pacific/Kwajalein",
      "Pacific/Majuro",
      "Pacific/Nauru",
+     "Pacific/Norfolk",
      "Pacific/Noumea",
      "Pacific/Tarawa",
      "Pacific/Wake",
@@ -1277,7 +1278,6 @@ mapping abbr2zones =
      "Europe/Tallinn",
      "Europe/Tirane",
      "Europe/Uzhgorod",
-     "Europe/Vaduz",
      "Europe/Vienna",
      "Europe/Vilnius",
      "Europe/Warsaw",
@@ -1693,6 +1693,9 @@ mapping abbr2zones =
      "Asia/Hong_Kong",
    }),
    "HKT": ({
+     "Asia/Hong_Kong",
+   }),
+   "HKWT": ({
      "Asia/Hong_Kong",
    }),
    "HMT": ({
