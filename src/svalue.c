@@ -1816,6 +1816,22 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
       describe_mapping(buf, s->u.mapping, p, indent);
       break;
 
+    case T_VOID:
+      buffer_add_str(buf, "<void>");
+      break;
+
+    case PIKE_T_FREE:
+      buffer_add_str(buf, "<free>");
+      break;
+
+    case PIKE_T_UNKNOWN:
+      buffer_add_str(buf, "<unknown>");
+      break;
+
+    case T_SVALUE_PTR:
+      buffer_advance(buf, sprintf(buffer_ensure_space(buf, 50), "<Svalue %p>", s->u.lval));
+      break;
+
     default:
       buffer_advance(buf, sprintf(buffer_ensure_space(buf, 50), "<Unknown %d>", TYPEOF(*s)));
       break;

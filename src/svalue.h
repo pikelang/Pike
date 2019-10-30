@@ -121,6 +121,12 @@ enum PIKE_TYPE {
     T_OBJ_INDEX=21,
     T_ARRAY_LVALUE=22,
 
+    /** Used to mark an svalue as free and not valid for input
+     *  to the svalue free functions.
+     *  Cf assert_free_svalue().
+     */
+    PIKE_T_UNKNOWN=247,
+
 /* No types above this value should appear on the stack. */
     PIKE_T_STACK_MAX=	T_ARRAY_LVALUE,
 };
@@ -205,7 +211,6 @@ struct svalue
 #define PIKE_T_TUPLE 244	/**< Not supported yet */
 #define T_ASSIGN 245
 #define T_DELETED 246
-#define PIKE_T_UNKNOWN 247
 #define PIKE_T_AUTO 248
 
 
