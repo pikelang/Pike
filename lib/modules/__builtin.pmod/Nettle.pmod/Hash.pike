@@ -453,18 +453,18 @@ string(7bit) crypt_php(string(8bit) password, string(7bit) salt)
 {
   string(8bit) passwd = password;
   password = "CENSORED";
-  int(8bit) exponent = search(b64tab, salt[0]);
+  int(-1..63) exponent = [int(-1..63)]search(b64tab, salt[0]);
   if ((exponent < 7) || (exponent > 30)) {
     error("Unsupported exponent for rounds: %d\n", exponent);
   }
-  int(0..) rounds = (1 << exponent);
+  int(0..) rounds = 1 << [int(0..63)]exponent;
   string(8bit) checksum = salt[1..8];
   do {
     checksum = hash(checksum + passwd);
   } while (rounds--);
 
   String.Buffer ret = String.Buffer();
-  foreach(checksum/3.0, string(8bit) bytes) {
+  foreach([array(string(8bit))](checksum/3.0), string(8bit) bytes) {
     bytes += "\0\0";
     b64enc(ret, bytes[0], bytes[1], bytes[2], sizeof(bytes)-1);
   }
