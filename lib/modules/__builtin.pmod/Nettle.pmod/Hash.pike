@@ -429,6 +429,50 @@ string(8bit) crypt_hash(string(8bit) password, string(8bit) salt, int rounds)
   return (string(8bit))ret;
 }
 
+//! Password hashing PHP Portable Hash-style.
+//!
+//! @param password
+//!   Password to hash.
+//!
+//! @param salt
+//!   7 bit string of length 9. The first character encodes the
+//!   exponent for the number of rounds.
+//!
+//! This algorithm used with @[Crypto.MD5] is the one used
+//! for PHP Portable Hashes (aka @expr{"$P$"@} and @expr{"$H$"@}).
+//!
+//! Used with @[Crypto.SHA1] it should be compatible with
+//! hashes from Escher CMS (aka @expr{"$Q$"@}).
+//!
+//! Used with @[Crypto.SHA256] it should be compatible with
+//! hashes from Drupal (aka @expr{"$S$"@}).
+//!
+//! @seealso
+//!   @[crypt_hash()@], @[Crypto.Password]
+string(7bit) crypt_php(string(8bit) password, string(7bit) salt)
+{
+  string(8bit) passwd = password;
+  password = "CENSORED";
+  int(8bit) exponent = search(b64tab, salt[0]);
+  if ((exponent < 7) || (exponent > 30)) {
+    error("Unsupported exponent for rounds: %d\n", exponent);
+  }
+  int(0..) rounds = (1 << exponent);
+  string(8bit) checksum = salt[1..8];
+  do {
+    checksum = hash(checksum + passwd);
+  } while (rounds--);
+
+  String.Buffer ret = String.Buffer();
+  foreach(checksum/3.0, string(8bit) bytes) {
+    bytes += "\0\0";
+    b64enc(ret, bytes[0], bytes[1], bytes[2], sizeof(bytes)-1);
+  }
+
+  string(7bit) res = (string(7bit)) ret;
+  return res;
+}
+
 //! Password Based Key Derivation Function #1 from @rfc{2898@}. This
 //! method is compatible with the one from PKCS#5 v1.5.
 //!
