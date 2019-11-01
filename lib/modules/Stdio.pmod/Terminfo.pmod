@@ -644,7 +644,7 @@ class TermcapDB {
     }
   }
 
-  protected Termcap load(string term, int|void maxrecurse)
+  Termcap load(string term, int|void maxrecurse)
   {
     int|string|Termcap cap;
 
