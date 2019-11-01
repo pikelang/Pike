@@ -435,8 +435,13 @@ string(8bit) crypt_hash(string(8bit) password, string(8bit) salt, int rounds)
 //!   Password to hash.
 //!
 //! @param salt
-//!   7 bit string of length 9. The first character encodes the
-//!   exponent for the number of rounds.
+//!   7 bit string of length 8 or 9. The first character may encode
+//!   the exponent for the number of rounds if @[rounds] is @expr{0@}.
+//!
+//! @param rounds
+//!   Number of rounds. Defaults to taking the value from the @[salt]
+//!   if the @[salt] has length @expr{9@}, otherwise defaults to
+//!   @expr{1<<19@}.
 //!
 //! This algorithm used with @[Crypto.MD5] is the one used
 //! for PHP Portable Hashes (aka @expr{"$P$"@} and @expr{"$H$"@}).
@@ -444,21 +449,40 @@ string(8bit) crypt_hash(string(8bit) password, string(8bit) salt, int rounds)
 //! Used with @[Crypto.SHA1] it should be compatible with
 //! hashes from Escher CMS (aka @expr{"$Q$"@}).
 //!
-//! Used with @[Crypto.SHA256] it should be compatible with
+//! Used with @[Crypto.SHA512] it should be compatible with
 //! hashes from Drupal (aka @expr{"$S$"@}).
 //!
 //! @seealso
 //!   @[crypt_hash()@], @[Crypto.Password]
-string(7bit) crypt_php(string(8bit) password, string(7bit) salt)
+string(7bit) crypt_php(string(8bit) password, string(7bit) salt,
+		       int(0..)|void rounds)
 {
   string(8bit) passwd = password;
   password = "CENSORED";
-  int(-1..63) exponent = [int(-1..63)]search(b64tab, salt[0]);
-  if ((exponent < 7) || (exponent > 30)) {
-    error("Unsupported exponent for rounds: %d\n", exponent);
+  if (!rounds) {
+    if (sizeof(salt) > 8) {
+      int(-1..63) exponent = [int(-1..63)]search(b64tab, salt[0]);
+      if ((exponent < 7) || (exponent > 30)) {
+	error("Unsupported exponent for rounds: %d\n", exponent);
+      }
+      rounds = 1 << [int(0..63)]exponent;
+      salt = salt[1..];
+    } else {
+      rounds = 1 << 19;
+    }
+  } else {
+    if (rounds < (1<<7)) rounds = 1<<7;
+    else if (rounds > (1<<30)) rounds = 1<<30;
+    else if (rounds & (rounds-1)) {
+      rounds <<= 1;
+      int(0..) tmp;
+      // This loop removes one extraneous bit at a time.
+      while (tmp = [int(0..)](rounds & (rounds-1))) {
+	rounds = tmp;
+      }
+    }
   }
-  int(0..) rounds = 1 << [int(0..63)]exponent;
-  string(8bit) checksum = salt[1..8];
+  string(8bit) checksum = salt[..7];
   do {
     checksum = hash(checksum + passwd);
   } while (rounds--);
