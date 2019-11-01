@@ -521,7 +521,7 @@ class conxion {
       PD("Nostash locked by %s\n",
        describe_backtrace(nostash->current_locking_thread()->backtrace()));
 #endif
-    while (lock = (waitforreal ? nostash->lock : nostash->trylock)(1)) {
+    while (lock = (waitforreal > 0 ? nostash->lock : nostash->trylock)(1)) {
       int mode;
       if (sizeof(stash) && (mode = getstash(KEEP)) > KEEP)
         sendcmd(mode);		// Force out stash to the server
@@ -540,7 +540,7 @@ class conxion {
       return this;
 #endif
     }
-    return bufcon(this)->start();
+    return !waitforreal && bufcon(this)->start();
   }
 
   private int write_cb() {
@@ -940,9 +940,15 @@ class Result {
       {
         Thread.MutexKey lock = closemux->lock();
         if (_fetchlimit) {
-          array reflock = ({ lock });
-          lock = 0;
-          _sendexecute(_fetchlimit = 0, reflock);
+          array reflock = ({ _fetchlimit = 0 });
+          for (;;) {
+            reflock[0] = lock;
+            lock = 0;
+            if (!_sendexecute(0, reflock)) {
+              lock = closemux->lock();
+              continue;
+            }
+          }
         } else
           lock = 0;			// Force release before acquiring next
         lock = _ddescribemux->lock();
@@ -1649,20 +1655,25 @@ class Result {
   private void replenishrows() {
    if (_fetchlimit && datarows->size() <= _fetchlimit >> 1
     && _state >= COMMITTED) {
-      Thread.MutexKey lock = closemux->lock();
-      if (_fetchlimit) {
-        _fetchlimit = pgsqlsess._fetchlimit;
-        if (bytesreceived)
-          _fetchlimit =
-           min((portalbuffersize >> 1) * index / bytesreceived || 1, _fetchlimit);
-        if (_fetchlimit)
-          if (inflight <= (_fetchlimit - 1) >> 1) {
-            array reflock = ({ lock });
-            lock = 0;
-            _sendexecute(_fetchlimit, reflock);
-          } else
-            PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
-             _portalname, _fetchlimit, inflight);
+      Thread.MutexKey lock;
+      for (;;) {
+        lock = closemux->lock();
+        if (_fetchlimit) {
+          _fetchlimit = pgsqlsess._fetchlimit;
+          if (bytesreceived)
+            _fetchlimit = min((portalbuffersize >> 1)
+             * index / bytesreceived || 1, _fetchlimit);
+          if (_fetchlimit)
+            if (inflight <= (_fetchlimit - 1) >> 1) {
+              array reflock = ({ lock });
+              lock = 0;
+              if (!_sendexecute(_fetchlimit, reflock))
+                continue;
+            } else
+              PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
+               _portalname, _fetchlimit, inflight);
+        }
+        break;
       }
     }
   }
@@ -1704,7 +1715,7 @@ class Result {
     array(Thread.MutexKey) reflock = ({closemux->lock()});
     if (!catch(plugbuffer = c->start()))
       plugbuffer->sendcmd(_closeportal(plugbuffer, reflock));
-    reflock = 0;
+    reflock[0] = 0;
     if (_state < CLOSED) {
       stmtifkey = 0;
       _state = CLOSED;
@@ -1719,7 +1730,7 @@ class Result {
     };
   }
 
-  final void _sendexecute(int fetchlimit,
+  final int _sendexecute(int fetchlimit,
    void|array(Thread.MutexKey)|bufcon|conxsess plugbuffer) {
     int flushmode;
     array(Thread.MutexKey) reflock;
@@ -1727,7 +1738,10 @@ class Result {
      fetchlimit, transtype);
     if (arrayp(plugbuffer)) {
       reflock = plugbuffer;
-      plugbuffer = c->start(1);
+      if (!(plugbuffer = c->start(-1))) {
+        reflock[0] = 0;
+        return 0;	// Found potential deadlock, release and try again
+      }
     }
     CHAIN(plugbuffer)->add_int8('E')->add_hstring(({_portalname, 0}), 4, 8)
      ->add_int32(fetchlimit);
@@ -1739,6 +1753,9 @@ class Result {
     } else
       inflight += fetchlimit, flushmode = FLUSHSEND;
     plugbuffer->sendcmd(flushmode, this);
+    if (reflock)
+      reflock[0] = 0;
+    return 1;
   }
 
   inline private array setuptimeout() {
@@ -1760,6 +1777,8 @@ class Result {
   //!  @[eof()], @[send_row()]
   /*semi*/final array(mixed) fetch_row() {
     int|array datarow;
+    if (!this)			// If object already destructed, return fast
+      return 0;
     replenishrows();
     if (arrayp(datarow = datarows->try_read()))
       return datarow;
