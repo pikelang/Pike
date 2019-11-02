@@ -15360,5 +15360,8 @@ try_load_test_module(5)
 
 test_do(Stdio.recursive_rm("recursive_module_dump_test"))
 
+dnl - Deprecated safe indexing
+test_compile_warning( mapping foo; foo?->bar; )
+
 
 END_MARKER
