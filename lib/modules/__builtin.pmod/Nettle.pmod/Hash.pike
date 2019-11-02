@@ -453,7 +453,7 @@ string(8bit) crypt_hash(string(8bit) password, string(8bit) salt, int rounds)
 //! hashes from Drupal (aka @expr{"$S$"@}).
 //!
 //! @seealso
-//!   @[crypt_hash()@], @[Crypto.Password]
+//!   @[crypt_hash()], @[Crypto.Password]
 string(7bit) crypt_php(string(8bit) password, string(7bit) salt,
 		       int(0..)|void rounds)
 {
