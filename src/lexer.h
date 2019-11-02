@@ -1178,6 +1178,7 @@ unknown_directive:
       if(GOBBLE('-') )
       {
         if( GOBBLE( '>' ) ) { /* ?-> */
+	  yywarning(" ?-> safe indexing is deprecated, use ->?");
 	  return TOK_SAFE_INDEX;
 	}
         SKIPN(-1); /* Undo GOBBLE('-') above */
