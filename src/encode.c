@@ -4557,6 +4557,7 @@ static void decode_value2(struct decode_data *data)
 		int parent_offset;
 		struct pike_string *name = NULL;
 		int no;
+		int save_compiler_flags;
 
 		decode_number(no, data);
 		EDB(1, {
@@ -4583,7 +4584,9 @@ static void decode_value2(struct decode_data *data)
 		}
 
 		/* prog */
+		SET_FORCE_RESOLVE(save_compiler_flags);
 		decode_value2(data);
+		UNSET_FORCE_RESOLVE(save_compiler_flags);
 		if (!(prog = program_from_svalue(Pike_sp-1))) {
 		  ref_push_program (p);
 		  decode_error(data, Pike_sp - 1,
