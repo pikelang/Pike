@@ -881,11 +881,13 @@ static inline void POP_PIKE_FRAME(void) {
   }
 # endif /* PIKE_DEBUG */
   Pike_interpreter.accounted_time += self_time;
-  /* FIXME: Can context->prog be NULL? */
-  function = frame->context->prog->identifiers + frame->ident;
-  if (!--function->recur_depth)
-    function->total_time += time_passed;
-  function->self_time += self_time;
+
+  if (frame->context) {
+    function = frame->context->prog->identifiers + frame->ident;
+    if (!--function->recur_depth)
+      function->total_time += time_passed;
+    function->self_time += self_time;
+  }
 #endif /* PROFILING */
 
   LOW_POP_PIKE_FRAME (frame);
