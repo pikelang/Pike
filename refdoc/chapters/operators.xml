@@ -467,10 +467,20 @@ complex data type.</p>
    <c><expr>`[]</expr></c>
    <c>Returns the index b from a.</c></r>
 
+<r><c>Safe Index</c>
+   <c><expr>a [? b ]</expr></c>
+   <c>none</c>
+   <c>Returns the index b from a, returning 0 instead of an error of a is 0</c></r>
+
 <r><c>Lookup</c>
    <c><expr>a -&gt;<i>identifier</i></expr></c>
    <c><expr>`-&gt;</expr></c>
    <c>Looks up the identifier. Same as a["<i>identifier</i>"].</c></r>
+
+<r><c>Safe Lookup</c>
+   <c><expr>a -&gt;?<i>identifier</i></expr></c>
+   <c>none</c>
+   <c>Looks up the identifier. Same as a[? "<i>identifier</i>"].</c></r>
 
 <r><c>Assign index</c>
    <c><expr>a [ b ] = c</expr></c>
