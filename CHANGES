@@ -91,6 +91,10 @@ o Compiler
   - Fixed some corner cases where file names where missing from
     backtraces.
 
+  - Check the proper flag to determine if a local variable may be used
+    before optimizing away certain assignments if the assignment is
+    immediately followed by a return of the variable in question.
+
 Crypto.ECC
 
   Now works against Nettle 3.5.
