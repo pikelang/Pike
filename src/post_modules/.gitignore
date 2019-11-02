@@ -11,3 +11,6 @@
 /modlist.h
 /modlist_headers.h
 /static_module_makefile
+/stamp-h
+/stamp-h.in
+

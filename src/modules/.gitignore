@@ -12,3 +12,6 @@
 /modlist_headers.h
 /remake
 /static_module_makefile
+/stamp-h
+/stamp-h.in
+
