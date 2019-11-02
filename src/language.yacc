@@ -112,7 +112,7 @@
 %token TOK_WHILE "while"
 %token TOK_XOR_EQ "^="
 %token TOK_OPTIONAL "optional"
-%token TOK_SAFE_INDEX "?->"
+%token TOK_SAFE_INDEX "->?"
 %token TOK_SAFE_START_INDEX "[?"
 %token TOK_BITS "bits"
 %token TOK_AUTO_ID "auto"
@@ -4227,7 +4227,7 @@ expr5: literal_expr
   }
   | expr4 TOK_SAFE_INDEX line_number_info TOK_IDENTIFIER
   {
-    /* A?->B to ((tmp=A) && tmp->B) */
+    /* A->?B to ((tmp=A) && tmp->B) */
     int temporary;
     if( $1 && ($1->token == F_LOCAL) )
     {
