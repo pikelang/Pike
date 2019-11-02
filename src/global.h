@@ -751,7 +751,7 @@ char *getenv (char *);
 #ifdef PROFILING_DEBUG
 #define W_PROFILING_DEBUG(...) WERR(__VA_ARGS__)
 #else /* !PROFILING_DEBUG */
-#define W_PROFILING_DEBIG(...)
+#define W_PROFILING_DEBUG(...)
 #endif /* PROFILING_DEBUG */
 
 #ifdef HAVE_C99_STRUCT_LITERAL_EXPR
