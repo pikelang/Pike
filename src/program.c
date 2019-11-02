@@ -6867,13 +6867,6 @@ INT32 define_function(struct pike_string *name,
   }
 #endif
 
-#ifdef PROFILING
-  fun.self_time=0;
-  fun.num_calls=0;
-  fun.recur_depth=0;
-  fun.total_time=0;
-#endif
-
   /* If this is an lfun, match against the predefined type. */
   if ((lfun_type = low_mapping_string_lookup(lfun_types, name))) {
     int orig_pragmas = c->lex.pragmas;
@@ -7098,6 +7091,14 @@ INT32 define_function(struct pike_string *name,
 #endif
 
     funp = ID_FROM_INT(prog, i);
+
+#ifdef PROFILING
+    funp->self_time=0;
+    funp->num_calls=0;
+    funp->recur_depth=0;
+    funp->total_time=0;
+#endif
+
     ref = prog->identifier_references[i];
 
     if (funp->identifier_flags & IDENTIFIER_HAS_BODY)
