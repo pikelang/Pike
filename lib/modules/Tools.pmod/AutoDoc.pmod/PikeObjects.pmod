@@ -757,7 +757,7 @@ class _Class_or_Module {
 	  werror("WARNING: Dropping documentation for %s. "
 		 "There is no such operator\n"
 		 "Found in documentation for %s\n",
-		 o->name,o->position?->filename||name);
+		 o->name,o->position->?filename||name);
 	  doge->objects[subindex] = 0;
 	}
 	else if( o->name[0..0] == "`" && !lfuns[o->name] )
@@ -804,7 +804,7 @@ class _Class_or_Module {
       outdoc->position = o[0]->position;
 
       mapping(string:Documentation) doc = docs[key];
-      if( doc?->set?->text && doc?->get?->text &&
+      if( doc->?set->?text && doc->?get->?text &&
 	  strlen(doc->set->text) && strlen(doc->get->text) &&
 	  doc->set->text != doc->get->text )
       {
@@ -815,11 +815,11 @@ class _Class_or_Module {
       }
       else
       {
-	if( doc?->set?->text && strlen(doc->set->text) )
+	if( doc->?set->?text && strlen(doc->set->text) )
 	{
 	  outdoc->text = doc->set->text;
 	}
-	else if( doc?->get?->text && strlen(doc->get->text) )
+	else if( doc->?get->?text && strlen(doc->get->text) )
 	{
 	  outdoc->text = doc->get->text;
 	}

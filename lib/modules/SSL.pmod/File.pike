@@ -2302,7 +2302,7 @@ string `->application_protocol() {
 //! Return the currently active cipher suite.
 int query_suite()
 {
-  return conn?->session ? conn->session->cipher_suite:SSL_invalid_suite;
+  return conn->?session ? conn->session->cipher_suite:SSL_invalid_suite;
 }
 
 //! Return the currently active SSL/TLS version.

@@ -283,7 +283,7 @@ void reparse_uri(this_program|string|void base_uri)
 
   // DWIM for "www.cnn.com" style input, when parsed in the context of
   // base "http://".
-  if( !has_prefix(uri, "//") && !scheme && this::base_uri?->scheme &&
+  if( !has_prefix(uri, "//") && !scheme && this::base_uri->?scheme &&
       this::base_uri->authority &&
       !sizeof(this::base_uri->authority) &&
       !sizeof(this::base_uri->path))

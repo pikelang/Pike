@@ -74,7 +74,7 @@ Alert|Packet decrypt_packet(Packet packet)
                        version & 0xff, packet->content_type, seq_num, data);
 
   int hmac_size = mac && (session->truncated_hmac ? 10 :
-			  session->cipher_spec?->hash_size);
+			  session->cipher_spec->?hash_size);
   int padding;
 
   if (hmac_size && session->encrypt_then_mac) {
@@ -296,7 +296,7 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
   }
 
   int hmac_size = mac && (session->truncated_hmac ? 10 :
-			  session->cipher_spec?->hash_size);
+			  session->cipher_spec->?hash_size);
 
   if (mac && !session->encrypt_then_mac) {
     digest = mac->hash_packet(packet, seq_num)[..hmac_size-1];

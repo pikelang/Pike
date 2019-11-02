@@ -18,7 +18,7 @@ class Request
 
   void _attach_fd(Stdio.NonblockingStream _fd, void|Concurrent.Promise p)
   {
-    ::attach_fd(_fd, Port(), p?->success || _callback);
+    ::attach_fd(_fd, Port(), p->?success || _callback);
   }
 
   array _requests = ({});

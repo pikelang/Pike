@@ -1491,7 +1491,7 @@ class LookupDB
   protected void create(string dir, string mode, mapping|void options)
   {
     ::create(dir, (mode-"t"));
-    minx = options?->index_size || 0x7ff;
+    minx = options->?index_size || 0x7ff;
     string file = combine_path(dir, "hs");
     if(!sscanf(Stdio.read_bytes(file)||"", "%4c", minx))
       Stdio.write_file(file, sprintf("%4c", minx));

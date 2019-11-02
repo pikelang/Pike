@@ -1226,7 +1226,7 @@ int main(int argc, array(string) argv)
           }) {
 	    if(t) trace(0);
             watchdog_show_last_test();
-            if (test->compilation_error?->is_cpp_or_compilation_error)
+            if (test->compilation_error->?is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
               log_msg ("%s failed:\n%s\n", fname,

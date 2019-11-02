@@ -168,7 +168,7 @@ class Verifier {
 
   protected int(0..1) `==(mixed o)
   {
-    return objectp(o) && o->pkc?->name && pkc->name()==o->pkc->name() &&
+    return objectp(o) && o->pkc->?name && pkc->name()==o->pkc->name() &&
       pkc->public_key_equal(o->pkc);
   }
 

@@ -91,7 +91,7 @@ protected string _sprintf(int type) {
     case 'O':
       res = sprintf(DRIVERNAME"(%s@%s:%d/%s,%d,%d)",
        proxy.user, proxy.host, proxy.port, proxy.database,
-       proxy.c?->socket && proxy.c->socket->query_fd(), proxy.backendpid);
+       proxy.c->?socket && proxy.c->socket->query_fd(), proxy.backendpid);
       break;
   }
   return res;
@@ -469,11 +469,11 @@ private string glob2reg(string glob) {
 private void waitauthready() {
   if (proxy.waitforauthready) {
     PD("%d Wait for auth ready %O\n",
-     proxy.c?->socket && proxy.c->socket->query_fd(), backtrace()[-2]);
+     proxy.c->?socket && proxy.c->socket->query_fd(), backtrace()[-2]);
     Thread.MutexKey lock = proxy.shortmux->lock();
     catch(PT(proxy.waitforauthready->wait(lock)));
     PD("%d Wait for auth ready released.\n",
-     proxy.c?->socket && proxy.c->socket->query_fd());
+     proxy.c->?socket && proxy.c->socket->query_fd());
   }
 }
 

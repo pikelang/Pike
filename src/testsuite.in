@@ -394,7 +394,7 @@ test_compile_any([[
   mixed foo()
   {
     array a;
-    array b = a->f("b")?->b;
+    array b = a->f("b")->?b;
     return b;
   }
 ]])

@@ -1713,7 +1713,7 @@ protected void call_compile_warning_lineno (object handler, string file,
                                             mixed ... args) {
   if (sizeof (args)) msg = sprintf (msg, @args);
   msg = trim (msg);
-  if (handler?->compile_warning)
+  if (handler->?compile_warning)
     handler->compile_warning (file, lineno, msg);
   else if (master()->compile_warning)
     master()->compile_warning (file, lineno, msg);
@@ -1965,11 +1965,11 @@ protected program low_findprog(string pname,
 	      resolv_debug ("low_findprog %s: decoding dumped\n", fname);
 	      INC_RESOLV_MSG_DEPTH();
 	      decoded = decode_value(read_precompiled (oname),
-				     (handler?->get_codec ||
+				     (handler->?get_codec ||
 				      get_codec)(fname, mkobj, handler));
 	      DEC_RESOLV_MSG_DEPTH();
 	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
-	      if (decoded?->this_program_does_not_exist) {
+	      if (decoded->?this_program_does_not_exist) {
 		resolv_debug ("low_findprog %s: program claims not to exist\n",
 			      fname);
 		return programs[fname] = 0;
@@ -2064,7 +2064,7 @@ protected program low_findprog(string pname,
 
     AUTORELOAD_FINISH(ret,programs,fname);
 
-    if (ret?->this_program_does_not_exist) {
+    if (ret->?this_program_does_not_exist) {
       resolv_debug ("low_findprog %s: program says it doesn't exist\n", fname);
       return programs[fname] = 0;
     }
