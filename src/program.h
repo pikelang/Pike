@@ -9,6 +9,7 @@
 
 #include "global.h"
 #include "pike_error.h"
+#include "pike_rusage.h"
 #include "svalue.h"
 #include "time_stuff.h"
 #include "program_id.h"
