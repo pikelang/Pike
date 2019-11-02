@@ -713,4 +713,4 @@ range_do_clone:
 	});
     }
 
-/*! @endclass */
+DOCSTART() @endclass DOCEND()

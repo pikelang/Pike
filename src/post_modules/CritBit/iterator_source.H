@@ -259,4 +259,4 @@
 	    push_int(!THIS->lastnode);
 	}
     }
-    /*! @endclass */
+    DOCSTART() @endclass DOCEND()
