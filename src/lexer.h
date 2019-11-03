@@ -1062,7 +1062,11 @@ unknown_directive:
 
     case '-':
       if(GOBBLE('=')) return TOK_SUB_EQ;
-      if(GOBBLE('>')) return TOK_ARROW;
+      if(GOBBLE('>'))
+	if(GOBBLE('?') ) /* ->? */
+	  return TOK_SAFE_INDEX;
+	else
+	  return TOK_ARROW;
       if(GOBBLE('-')) return TOK_DEC;
       return '-';
   
@@ -1132,23 +1136,12 @@ unknown_directive:
       if(GOBBLE(':'))
         return TOK_LOR;
 
-      if(GOBBLE('-') ) /* safe index: ?->  or ?[] */
+      if(GOBBLE('-') ) /* old safe index: ?->, depreceated in 8.1+ */
       {
         if( GOBBLE( '>' ) ) /* ?-> */
             return TOK_SAFE_INDEX;
         SKIPN(-1); /* Undo GOBBLE('-') above */
       }
-
-      /* Probably wanted:
-
-         ?.   for safe constant index
-         ?[]  for safe [] index
-
-         They however conflict with valid ?: syntaxes.
-      */
-
-      /* if( GOBBLE('.' ) ) */
-      /*   return TOK_SAFE_INDEX; */
 
     case ']':
     case ',':

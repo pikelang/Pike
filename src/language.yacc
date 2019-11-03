@@ -3755,7 +3755,7 @@ expr4: string
   }
   | expr4 TOK_SAFE_INDEX line_number_info TOK_IDENTIFIER
   {
-    /* A?->B to ((tmp=A) && tmp->B) */
+    /* A->?B to ((tmp=A) && tmp->B) */
     int temporary;
     if( $1 && ($1->token == F_LOCAL) )
     {
