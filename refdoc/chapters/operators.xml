@@ -676,6 +676,7 @@ not fit in any particular categories.</p>
 <matrix>
 <r><c><b>Function</b></c>	<c><b>Syntax</b></c>			<c><b>Identifier</b></c><c><b>Returns</b></c></r>
 <r><c>Calling</c><c><tt>a ( <i>args</i> )</tt></c><c><tt>`()</tt></c><c>Calls the function a.</c></r>
+<r><c>Safe Calling</c><c><tt>a (? <i>args</i> )</tt></c><c><tt>`()</tt></c><c>Calls a, unless a is 0.</c></r>
 <r><c>splice</c>	<c><tt>@ <i>a</i></tt></c>	<c>none</c>	<c>Sends each element in the array a as an individual argument to a function call.</c></r>
 <r><c>Increment</c>	<c><tt>++ a</tt></c>		<c>none</c>	<c>Increments a and returns the new value of a.</c></r>
 <r><c>Decrement</c>	<c><tt>-- a</tt></c>		<c>none</c>	<c>Decrements a and returns the new value of a.</c></r>
@@ -687,7 +688,7 @@ not fit in any particular categories.</p>
 
 <p>The most important of these operators is the calling operator. It is used
 to call functions. The operator itself is just a set of parenthesis placed
-after the expression that returns the function. Any arguments to the function
+after the expression that returns the function.  Any arguments to the function
 should be placed between the parenthesis, separated by commas. We have
 already seen many examples of this operator, although you might not have
 realized it was an operator at the time. The function call operator can
@@ -705,6 +706,10 @@ implemented like this:
 <code>
 object clone(mixed p, mixed ... args) { ( (program)p )(@args); }
 </code>
+
+Placing a '?' character immediately after the open parentehsis
+makes the operator return 0 instead of an error if the function
+expression evalutates to 0.
 
 On the subject of function calls, the splice operator should also be mentioned.
 The splice operator is an at sign in front of an expression. The expression

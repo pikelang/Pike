@@ -1169,6 +1169,8 @@ unknown_directive:
 
     case '(':
       if(GOBBLE('<')) return TOK_MULTISET_START;
+      if(GOBBLE('?') ) /* (? */
+	  return TOK_SAFE_APPLY;
       return '(';
 
     case '?':

@@ -114,6 +114,7 @@
 %token TOK_OPTIONAL "optional"
 %token TOK_SAFE_INDEX "->?"
 %token TOK_SAFE_START_INDEX "[?"
+%token TOK_SAFE_APPLY "(?"
 %token TOK_BITS "bits"
 %token TOK_AUTO_ID "auto"
 
@@ -326,7 +327,9 @@ int yylex(YYSTYPE *yylval);
 %type <n> block
 %type <n> optional_block
 %type <n> failsafe_block
+%type <n> safe_apply_with_line_info
 %type <n> open_paren_with_line_info
+%type <n> open_paren_or_safe_apply_with_line_info
 %type <n> close_paren_or_missing
 %type <n> open_bracket_with_line_info
 %type <n> block_or_semi
@@ -682,6 +685,17 @@ open_paren_with_line_info: '('
     /* Used to hold line-number info */
     $$ = mkintnode(0);
   }
+  ;
+
+safe_apply_with_line_info: TOK_SAFE_APPLY
+  {
+    /* Used to hold line-number info */
+    $$ = mkintnode(0);
+  }
+  ;
+
+open_paren_or_safe_apply_with_line_info: open_paren_with_line_info
+  | safe_apply_with_line_info
   ;
 
 close_paren_or_missing: ')'
@@ -4041,26 +4055,57 @@ apply:
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
-  | expr4 open_paren_with_line_info error ')' optional_block
+  | expr4 safe_apply_with_line_info expr_list ')' optional_block
+  {
+    /* A(?B...) to ((tmp=A) && tmp(B...)) */
+    int temporary;
+    if( $1 && ($1->token == F_LOCAL) )
+    {
+      $$=mknode(F_LAND, copy_node($1), mkapplynode($1, mknode(F_ARG_LIST, $3, $5)));
+    }
+    else
+    {
+      fix_type_field( $1 );
+      if( $1 && $1->type )
+      {
+        add_ref($1->type);
+        temporary = add_local_name(empty_pike_string, $1->type, 0);
+        Pike_compiler->compiler_frame->variable[temporary].flags |=
+	  LOCAL_VAR_IS_USED;
+        $$=mknode(F_LAND,
+                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
+		  mkapplynode(mklocalnode(temporary,0), mknode(F_ARG_LIST, $3, $5)));
+	$$ = pop_local_variables(temporary, $$);
+      }
+      else
+      {
+	$$ = mkapplynode($1, mknode(F_ARG_LIST, $3, $5));
+        yyerror("Indexing unexpected value.");
+      }
+    }
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node ($2);
+  }
+  | expr4 open_paren_or_safe_apply_with_line_info error ')' optional_block
   {
     $$=mkapplynode($1, $5);
     free_node ($2);
     yyerrok;
   }
-  | expr4 open_paren_with_line_info error TOK_LEX_EOF
+  | expr4 open_paren_or_safe_apply_with_line_info error TOK_LEX_EOF
   {
     yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
     $$=mkapplynode($1, NULL);
     free_node ($2);
   }
-  | expr4 open_paren_with_line_info error ';'
+  | expr4 open_paren_or_safe_apply_with_line_info error ';'
   {
     yyerror("Missing ')'.");
     $$=mkapplynode($1, NULL);
     free_node ($2);
   }
-  | expr4 open_paren_with_line_info error '}'
+  | expr4 open_paren_or_safe_apply_with_line_info error '}'
   {
     yyerror("Missing ')'.");
     $$=mkapplynode($1, NULL);
