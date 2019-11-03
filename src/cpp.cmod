@@ -2247,15 +2247,6 @@ static struct define_struct *add_define(struct CPP_struct *this,
   /* NB: alloc_empty_define() pushes the define object onto the stack.
    */
   def = alloc_empty_define(name);
-  mapping_string_insert(this->defines, def->name, Pike_sp-1);
-  pop_stack();
-
-  if (orig_name != name) {
-    /* Function-style macro. */
-    def->flags |= CPP_MACRO_VARARGS | CPP_MACRO_KEEP_NL;
-    def->args = 1;
-    pop_stack();
-  }
 
   if (!what || ((TYPEOF(*what) == PIKE_T_INT) && !what->u.integer)) {
     ref_push_string(empty_pike_string);
@@ -2265,11 +2256,25 @@ static struct define_struct *add_define(struct CPP_struct *this,
   } else if (TYPEOF(*what) == PIKE_T_ARRAY) {
     def->parts = what->u.array;
     add_ref(what->u.array);
-  } else {
+  } else if ((TYPEOF(*what) == PIKE_T_STRING) ||
+	     (TYPEOF(*what) == PIKE_T_FUNCTION)) {
     push_svalue(what);
     f_aggregate(1);
     def->parts = Pike_sp[-1].u.array;
     Pike_sp--;
+  } else {
+    Pike_error("Expected zero, string or function value for predefine %q.",
+	       name);
+  }
+
+  mapping_string_insert(this->defines, def->name, Pike_sp-1);
+  pop_stack();
+
+  if (orig_name != name) {
+    /* Function-style macro. */
+    def->flags |= CPP_MACRO_VARARGS | CPP_MACRO_KEEP_NL;
+    def->args = 1;
+    pop_stack();
   }
 
   return def;
