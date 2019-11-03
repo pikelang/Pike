@@ -1570,6 +1570,11 @@ static struct program *gc_mark_program_pos = 0;
       Pike_fatal ("Invalid file entry in linenumber info.\n");		\
   } while (0)
 
+#define CHECK_FILE_ENTRY_DBG(PROG, STRNO)                     \
+  do {                                                        \
+    if ((STRNO >= PROG->num_strings))                         \
+      Pike_fatal ("Invalid file entry in linenumber info.\n");\
+  } while (0)
 INT_TYPE get_small_number(char **q);
 
 PMOD_EXPORT void do_free_program (struct program *p)
@@ -8776,6 +8781,57 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
     return dash;
   }
   return res;
+}
+
+PMOD_EXPORT ptrdiff_t low_get_offset_for_line (struct program *prog,
+                                               struct pike_string * fname,
+                                               INT_TYPE linep)
+{
+  struct pike_string *file = NULL;
+  static char *cnt;
+  ptrdiff_t off = 0;
+  INT32 pid =  prog->id;
+  INT_TYPE line = 0;
+  int retval = 0, strno, wanted_file = 0;
+
+  if ( !prog->program || !prog->linenumbers) {
+      return 0;
+  }
+
+  cnt = prog->linenumbers;
+
+  while(cnt < prog->linenumbers + prog->num_linenumbers) {
+    if(*cnt == 127) {
+      ++cnt;
+      strno = get_small_number(&cnt);
+      CHECK_FILE_ENTRY_DBG(prog, strno);
+
+      if(strno < 0) {
+        ++cnt;
+        get_small_number(&cnt);
+        continue;
+      }
+
+      file = prog->strings[strno];
+
+      if(file == fname) {
+        wanted_file = 1;
+      } else {
+        wanted_file = 0;
+      }
+
+      continue;
+    }
+
+    off += get_small_number(&cnt);
+    line += get_small_number(&cnt);
+
+    if(/*wanted_file &&*/ line == linep) {
+      retval = off;
+    }
+  }
+
+  return retval;
 }
 
 PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
