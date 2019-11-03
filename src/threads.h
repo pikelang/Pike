@@ -34,7 +34,8 @@ struct pike_frame;
 #define THREAD_FLAG_INHIBIT	4	/* Inhibit signals. */
 
 /* Debug flags */
-#define THREAD_DEBUG_LOOSE  1	/* Thread is not bound to the interpreter. */
+#define THREAD_DEBUG_LOOSE      1 /* Thread is not bound to the interpreter. */
+#define THREAD_DEBUG_STEPPING   2 /* Debugger stepping mode. */
 
 struct thread_state {
   struct Pike_interpreter_struct state;
