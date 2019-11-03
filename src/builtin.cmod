@@ -529,6 +529,17 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
   push_array(res);
 }
 
+PMOD_EXPORT
+PIKEFUN int set_debugger(int i)
+optflags OPT_SIDE_EFFECT;
+efun;
+ {
+  int tmp = debugger_enabled;
+  debugger_enabled = i;
+  pop_stack();
+  push_int(tmp);
+}
+
 /*! @decl string basetype(mixed x)
  *!
  *! Same as sprintf("%t",x);
@@ -3959,7 +3970,6 @@ static node *optimize_yield(node *n)
 
 /*! @endmodule
  */
-
 void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 {
   struct svalue *stack_top = i->stack_pointer;
