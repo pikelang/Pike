@@ -178,16 +178,19 @@ static void low_verify_supporters(struct Supporter *s)
 #endif
 
   if(s->previous && SNUM(s->previous) <= m->level)
-    Pike_fatal("Que, numbers out of whack1\n");
+    Pike_fatal("Que, numbers out of whack1 (%ld <= %ld)\n",
+	       (long)SNUM(s->previous), (long)m->level);
 
   if(s->depends_on && SNUM(s->depends_on) <= m->level)
-    Pike_fatal("Que, numbers out of whack2\n");
+    Pike_fatal("Que, numbers out of whack2 (%ld <= %ld)\n",
+	       (long)SNUM(s->depends_on), (long)m->level);
 
   for(ss=s->dependants;ss;ss=ss->next_dependant) {
     if (ss->depends_on != s)
       Pike_fatal("Dependant hasn't got depends_on set properly.\n");
     if(SNUM(ss) >= m->level)
-      Pike_fatal("Que, numbers out of whack3\n");
+      Pike_fatal("Que, numbers out of whack3 (%ld >= %ld)\n",
+		 (long)SNUM(ss), (long)m->level);
   }
 
   low_verify_supporters(s->previous);
