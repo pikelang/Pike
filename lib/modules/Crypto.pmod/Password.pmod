@@ -95,6 +95,31 @@
 //!     from the password and the salt. Source: GNU libc
 //!     @url{http://www.gnu.org/software/libtool/manual/libc/crypt.html@}.
 //!
+//!   @value "$P$RSSSSSSSSXXXXXXXXXXXXXXXXXXXXXX"
+//!     The string is interpreted as a PHPass' Portable Hash password hash,
+//!     where @expr{R@} is an encoding of the 2-logarithm of the number of
+//!     rounds, @expr{SSSSSSSS@} is a salt of 8 characters, and
+//!     @expr{XXX@} is similarily the @[MIME.encode_crypt64] of running
+//!     @[MD5.hash()] repeatedly on the password and the salt.
+//!
+//!   @value "$H$RSSSSSSSS.XXXXXXXXXXXXXXXXXXXXXX"
+//!     Same as expr{"$P$"@} above. Used by phpBB3.
+//!
+//!   @value "U$P$RSSSSSSSSXXXXXXXXXXXXXXXXXXXXXX"
+//!     This is handled as a Drupal upgraded PHPass Portable Hash password.
+//!     The password is run once through @[MD5.hash()], and then passed
+//!     along to the @expr{"$P$"@}-handler above.
+//!
+//!   @value "$Q$RSSSSSSSSXXXXXXXXXXXXXXXXXXXXXX"
+//!     The string is interpreted as a PHPass' Portable Hash password hash,
+//!     where the base hashing alorithm has been switched to @[SHA1].
+//!     This method is apparently used by some versions of Escher CMS.
+//!
+//!   @value "$S$RSSSSSSSSXXXXXXXXXXXXXXXXXXXXXX"
+//!     The string is interpreted as a PHPass' Portable Hash password hash,
+//!     where the base hashing alorithm has been switched to @[SHA256].
+//!     This method is apparently used by some versions of Drupal.
+//!
 //!   @value "XXXXXXXXXXXXX"
 //!     The @expr{XXX@} string (which doesn't begin with @expr{"{"@}) is
 //!     taken to be a password hashed using the classic unix
@@ -120,6 +145,15 @@ int verify(string(8bit) password, string(7bit) hash)
 {
   if (hash == "") return 1;
 
+  string(8bit) passwd = password;
+  password = "CENSORED";
+
+  // Compatibility with Drupal upgraded passwords.
+  if (has_prefix(hash, "U$P")) {
+    password = Crypto.MD5.hash(password);
+    hash = hash[1..];
+  }
+
   // Detect the password hashing scheme.
   // First check for an LDAP-style marker.
   string(7bit) scheme = "crypt";
@@ -130,23 +164,23 @@ int verify(string(8bit) password, string(7bit) hash)
   case "md5":	// RFC 2307
   case "smd5":
     string(8bit) bin_hash = MIME.decode_base64(hash);
-    password += bin_hash[16..];
+    passwd += bin_hash[16..];
     bin_hash = bin_hash[..15];
-    return Crypto.MD5.hash(password) == bin_hash;
+    return Crypto.MD5.hash(passwd) == bin_hash;
 
   case "sha":	// RFC 2307
   case "ssha":
     // SHA1 and Salted SHA1.
     bin_hash = MIME.decode_base64(hash);
-    password += bin_hash[20..];
+    passwd += bin_hash[20..];
     bin_hash = bin_hash[..19];
-    return Crypto.SHA1.hash(password) == bin_hash;
+    return Crypto.SHA1.hash(passwd) == bin_hash;
 
   case "crypt":	// RFC 2307
     // First try the operating systems crypt(3C),
     // since it might support more schemes than we do.
     catch {
-      if ((hash == "") || crypt(password, hash)) return 1;
+      if ((hash == "") || crypt(passwd, hash)) return 1;
     };
     if (hash[0] != '$') {
       if (hash[0] == '_') {
@@ -161,18 +195,18 @@ int verify(string(8bit) password, string(7bit) hash)
     int rounds = UNDEFINED;
     switch(scheme) {
     case "1":	// crypt_md5
-      return Nettle.crypt_md5(password, salt) == hash;
+      return Nettle.crypt_md5(passwd, salt) == hash;
 
     case "2":	// Blowfish (obsolete)
     case "2a":	// Blowfish (possibly weak)
+    case "2b":	// Blowfish (long password bug fixed)
     case "2x":	// Blowfish (weak)
     case "2y":	// Blowfish (stronger)
       break;
 
     case "nt":
     case "3":	// MD4 NT LANMANAGER (FreeBSD)
-      return this::hash(password, "3")[4..] == hash;
-      break;
+      return this::hash(passwd, scheme)[sizeof(scheme) + 2..] == hash;
 
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
     case "5":	// SHA-256
@@ -180,31 +214,52 @@ int verify(string(8bit) password, string(7bit) hash)
 	sscanf(salt, "rounds=%d", rounds);
 	sscanf(hash, "%s$%s", salt, hash);
       }
-      return Crypto.SHA256.crypt_hash(password, salt, rounds) == hash;
+      return Crypto.SHA256.crypt_hash(passwd, salt, rounds) == hash;
+
 #if constant(Crypto.SHA512)
     case "6":	// SHA-512
       if (salt && has_prefix(salt, "rounds=")) {
 	sscanf(salt, "rounds=%d", rounds);
 	sscanf(hash, "%s$%s", salt, hash);
       }
-      return Crypto.SHA512.crypt_hash(password, salt, rounds) == hash;
+      return Crypto.SHA512.crypt_hash(passwd, salt, rounds) == hash;
 #endif
 
     case "pbkdf2":		// PBKDF2 with SHA1
       rounds = (int)salt;
       sscanf(hash, "%s$%s", salt, hash);
-      return Crypto.SHA1.crypt_pbkdf2(password, salt, rounds) == hash;
+      return Crypto.SHA1.crypt_pbkdf2(passwd, salt, rounds) == hash;
 
     case "pbkdf2-sha256":	// PBKDF2 with SHA256
       rounds = (int)salt;
       sscanf(hash, "%s$%s", salt, hash);
-      return Crypto.SHA256.crypt_pbkdf2(password, salt, rounds) == hash;
+      return Crypto.SHA256.crypt_pbkdf2(passwd, salt, rounds) == hash;
 
 #if constant(Crypto.SHA512)
     case "pbkdf2-sha512":	// PBKDF2 with SHA512
       rounds = (int)salt;
       sscanf(hash, "%s$%s", salt, hash);
-      return Crypto.SHA512.crypt_pbkdf2(password, salt, rounds) == hash;
+      return Crypto.SHA512.crypt_pbkdf2(passwd, salt, rounds) == hash;
+#endif
+
+    case "H": case "P":	// PHPass Portable Hash.
+      salt = hash[..8];
+      hash = hash[9..];
+      return Crypto.MD5.crypt_php(passwd, salt) == hash;
+      break;
+
+    case "Q":	// PHPass Portable Hash SHA1.
+      salt = hash[..8];
+      hash = hash[9..];
+      return Crypto.SHA1.crypt_php(passwd, salt) == hash;
+      break;
+
+#if constant(Crypto.SHA512)
+    case "S":	// PHPass Portable Hash SHA512.
+      salt = hash[..8];
+      hash = hash[9..];
+      return Crypto.SHA512.crypt_php(passwd, salt) == hash;
+      break;
 #endif
     }
     break;
@@ -249,6 +304,39 @@ int verify(string(8bit) password, string(7bit) hash)
 //!     @value "1"
 //!     @value "$1$"
 //!       @[MD5.crypt_hash()] with 48 bits of salt and @expr{1000@} rounds.
+//!
+//!     @value "P"
+//!     @value "$P$"
+//!     @value "H"
+//!     @value "$H$"
+//!       @[MD5.crypt_php()] with 48 bits of salt and a default of
+//!       @expr{1<<19@} rounds. The specified number of rounds will
+//!       be rounded up to the closest power of @expr{2@}.
+//!
+//!     @value "U$P$"
+//!       Same as @expr{"$P$"@}, the supplied @[password] is assumed to
+//!       have already been passed through @[MD5.hash()] once. Typically
+//!       used to upgrade unsalted @[MD5]-password databases.
+//!
+//!     @value "Q"
+//!     @value "$Q$"
+//!       Same as @expr{"$P$"@}, but with @[SHA1.crypt_php()].
+//!
+//!     @value "S"
+//!     @value "$S$"
+//!       Same as @expr{"$S$"@}, but with @[SHA512.crypt_php()].
+//!
+//!     @value "pbkdf2"
+//!     @value "$pbkdf2$"
+//!       @[SHA1.pbkdf2()].
+//!
+//!     @value "pbkdf2-sha256"
+//!     @value "$pbkdf2-sha256$"
+//!       @[SHA256.pbkdf2()].
+//!
+//!     @value "pbkdf2-sha512"
+//!     @value "$pbkdf2-sha512$"
+//!       @[SHA512.pbkdf2()].
 //!
 //!     @value ""
 //!       @[predef::crypt()] with 12 bits of salt.
@@ -297,30 +385,42 @@ int verify(string(8bit) password, string(7bit) hash)
 string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
                   int|void rounds)
 {
-  function(string(8bit), string(7bit), int:string(8bit)) crypt_hash;
+  function(string(8bit), string(7bit), int:string(7bit)) crypt_hash;
   int(0..) salt_size = 16;
   int default_rounds = 5000;
 
   string(7bit) render_crypt_hash(string(7bit) scheme, string(7bit) salt,
-                                 string(8bit) hash, int rounds)
+                                 string(7bit) hash, int rounds)
   {
     if (rounds != default_rounds) {
       salt = "rounds=" + rounds + "$" + salt;
     }
-
-    // We claim this to be a string(7bit) string, even though we add
-    // the string(0..256). It will however only be called with the
-    // already base64 encoded hashes.
-    return sprintf("$%s$%s$%s", scheme, salt, [string(7bit)]hash);
+    return sprintf("$%s$%s$%s", scheme, salt, hash);
   };
 
   string(7bit) render_old_crypt_hash(string(7bit) scheme, string(7bit) salt,
-				     string(8bit) hash, int rounds)
+				     string(7bit) hash, int rounds)
   {
-    // We claim this to be a string(7bit) string, even though we add
-    // the string(0..256). It will however only be called with the
-    // already base64 encoded hashes.
-    return sprintf("$%s$%d$%s$%s", scheme, rounds, salt, [string(7bit)]hash);
+    return sprintf("$%s$%d$%s$%s", scheme, rounds, salt, hash);
+  };
+
+  string(7bit) render_php_crypt_hash(string(7bit) scheme, string(7bit) salt,
+				     string(7bit) hash, int rounds)
+  {
+    if (!has_value(scheme, '$')) scheme = "$" + scheme + "$";
+    int exp2 = 0;
+    if (rounds < (1<<7)) exp2 = 7;
+    else if (rounds > (1<<30)) exp2 = 30;
+    else {
+      if (rounds & (rounds - 1)) exp2 = 1;
+      while (rounds) {
+	rounds >>= 1;
+	exp2++;
+      }
+    }
+    return sprintf("%s%c%s%s",
+		   scheme, "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[exp2],
+		   salt, hash);
   };
 
   string(7bit) render_ldap_hash(string(8bit) scheme, string(7bit) salt,
@@ -422,6 +522,35 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     break;
 #endif
 
+  case "P":
+  case "$P$":
+  case "U$P$":
+  case "H":
+  case "$H$":
+    crypt_hash = Crypto.MD5.crypt_php;
+    render_hash = render_php_crypt_hash;
+    salt_size = 8;
+    default_rounds = 1<<19;
+    break;
+
+  case "Q":
+  case "$Q$":
+    crypt_hash = Crypto.SHA1.crypt_php;
+    render_hash = render_php_crypt_hash;
+    salt_size = 8;
+    default_rounds = 1<<19;
+    break;
+
+#if constant(Crypto.SHA512)
+  case "S":
+  case "$S$":
+    crypt_hash = Crypto.SHA512.crypt_php;
+    render_hash = render_php_crypt_hash;
+    salt_size = 8;
+    default_rounds = 1<<19;
+    break;
+#endif
+
   default:
     error("Unsupported hashing scheme: %O\n", scheme);
   }
@@ -432,7 +561,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
   string(7bit) salt =
     [string(7bit)]replace(MIME.encode_base64(random_string(salt_size))[..salt_size-1], "+", ".");
 
-  string(8bit) hash = crypt_hash(password, salt, rounds);
+  string(7bit) hash = crypt_hash(password, salt, rounds);
 
   return render_hash([string(7bit)]scheme, salt, hash, rounds);
 }
