@@ -206,7 +206,7 @@ int verify(string(8bit) password, string(7bit) hash)
 
     case "nt":
     case "3":	// MD4 NT LANMANAGER (FreeBSD)
-      return this::hash(passwd, scheme)[sizeof(scheme) + 2..] == hash;
+      return this::hash(passwd, scheme)[sizeof(scheme) + 3..] == hash;
 
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
     case "5":	// SHA-256
