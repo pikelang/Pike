@@ -133,10 +133,12 @@ PIKE_MODULE_INIT
                  tFunc(tStr, tStr8), 0, OPT_TRY_OPTIMIZE );
 
   ADD_FUNCTION2( "encode_base64", f_encode_base64,
-                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+                 tFunc(tStr tOr(tVoid,tInt) tOr(tVoid,tInt), tStr7),
+		 0, OPT_TRY_OPTIMIZE );
 
   ADD_FUNCTION2( "encode_base64url", f_encode_base64url,
-                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+                 tFunc(tStr tOr(tVoid,tInt) tOr(tVoid,tInt), tStr7),
+		 0, OPT_TRY_OPTIMIZE );
 
   add_function_constant( "decode_qp", f_decode_qp,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
@@ -311,7 +313,7 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
   unsigned char *src;
   char *dest;
 
-  if(args != 1 && args != 2)
+  if(args != 1 && args != 2 && args != 3)
     Pike_error( "Wrong number of arguments to MIME.%s()\n",name );
   if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.%s()\n",name );
@@ -331,8 +333,13 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
   groups = (sp[-args].u.string->len+2)/3;
   last = (sp[-args].u.string->len-1)%3+1;
 
-  insert_crlf = !(args == 2 && TYPEOF(sp[-1]) == T_INT &&
-		  sp[-1].u.integer != 0);
+  insert_crlf = !(args >= 2 && TYPEOF(sp[1-args]) == T_INT &&
+		  sp[1-args].u.integer != 0);
+
+  if (args == 3 && (TYPEOF(sp[2-args]) == T_INT) &&
+      (sp[2-args].u.integer || !SUBTYPEOF(sp[2-args]))) {
+    pad = !sp[2-args].u.integer;
+  }
 
   /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak */
   length = groups*4+(insert_crlf? (groups/19)*2 : 0);
@@ -375,7 +382,8 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
     push_string( end_and_resize_shared_string( str, length-(3-last) ) );
 }
 
-/*! @decl string encode_base64(string data, void|int no_linebreaks)
+/*! @decl string encode_base64(string data, void|int no_linebreaks, @
+ *!                            void|int no_pad)
  *!
  *! This function encodes data using the @tt{base64@} transfer encoding.
  *!
@@ -390,7 +398,8 @@ static void f_encode_base64( INT32 args )
   encode_base64(args, "encode_base64", base64tab, 1);
 }
 
-/*! @decl string encode_base64url(string data, void|int no_linebreaks)
+/*! @decl string encode_base64url(string data, void|int no_linebreaks, @
+ *!                               void|int no_pad)
  *!
  *! Encode strings according to @rfc{4648@} base64url encoding. No
  *! padding is performed and no_linebreaks defaults to true.
