@@ -109,13 +109,23 @@ PIKE_MODULE_INIT
 
   /* Init reverse base32 mapping */
   memset( base32rtab, -1, sizeof(base32rtab) );
-  for (i = 0; i < 32; i++)
+  for (i = 0; i < 32; i++) {
     base32rtab[base32tab[i] - ' '] = i;
+    if (base32tab[i] >= 'A') {
+      /* Support lower-case too. */
+      base32rtab[base32tab[i] - ' ' + ('a' - 'A')] = i;
+    }
+  }
 
   /* Init reverse base32 mapping */
   memset( base32hexrtab, -1, sizeof(base32hexrtab) );
-  for (i = 0; i < 32; i++)
+  for (i = 0; i < 32; i++) {
     base32hexrtab[base32hextab[i] - ' '] = i;
+    if (base32hextab[i] >= 'A') {
+      /* Support lower-case too. */
+      base32hexrtab[base32hextab[i] - ' ' + ('a' - 'A')] = i;
+    }
+  }
 
   /* Init reverse qp mapping */
   memset( qprtab, -1, sizeof(qprtab) );

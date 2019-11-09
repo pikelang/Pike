@@ -19,12 +19,15 @@ define(test_base64url,[[
 define(test_base32,[[
   test_eq(MIME.encode_base32($1), $2)
   test_eq(MIME.decode_base32($2), $1)
+  test_eq(MIME.decode_base32(lower_case($2)), $1)
 ]])
 define(test_base32hex,[[
   test_eq(MIME.encode_base32hex($1), $2)
   test_eq(MIME.decode_base32hex($2), $1)
+  test_eq(MIME.decode_base32hex(lower_case($2)), $1)
   test_eq(MIME.encode_base32hex($1, UNDEFINED,  1), $2 - "=")
   test_eq(MIME.decode_base32hex($2 - "="), $1)
+  test_eq(MIME.decode_base32hex(lower_case($2) - "="), $1)
 ]])
 
 // Test vectors from RFC 4648
