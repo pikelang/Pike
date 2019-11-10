@@ -597,12 +597,7 @@ if test "x$pike_cv_sys_os" = xWindows_NT; then
   PIKE_FUNCS_NEED_DECLS(yes)
 fi
 
-# NB: We need to have gmp.h in the search path for the entirety of Pike,
-#     since gmp.h is included by bignum.h, which in turn is included
-#     by much of Pike.
-PIKE_PKG_CONFIG(libgmp)
-
-AC_CHECK_HEADERS(gmp.h stdlib.h string.h unistd.h sys/stat.h sys/types.h sys/errno.h)
+AC_CHECK_HEADERS(stdlib.h string.h unistd.h sys/stat.h sys/types.h sys/errno.h)
 
 if test "$GCC" = "yes"; then :; else
 #
@@ -2789,6 +2784,12 @@ elif test -d `eval echo "$libdir$pike_cv_lib_abi/."` -o \
   libdir="$libdir$pike_cv_lib_abi"
 fi
 AC_MSG_RESULT($libdir)
+
+# NB: We need to have gmp.h in the search path for the entirety of Pike,
+#     since gmp.h is included by bignum.h, which in turn is included
+#     by much of Pike.
+PIKE_PKG_CONFIG(libgmp)
+AC_CHECK_HEADERS(gmp.h)
 
 #############################################################################
 
