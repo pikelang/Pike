@@ -278,6 +278,9 @@ int unlink_current_supporter(struct Supporter *c)
               c->depends_on, c->depends_on->prog);
   }
   current_supporter=c->previous;
+#ifdef PIKE_DEBUG
+  c->previous=0;
+#endif
   verify_supporters();
   return ret;
 }
