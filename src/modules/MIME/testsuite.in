@@ -82,6 +82,27 @@ test_eq([[MIME.encode_base64("How much wood could a woodchuck "
 	"SG93IG11Y2ggd29vZCBjb3VsZCBhIHdvb2RjaHVjayBjaHVjayBpZiBhI"
 	"Hdvb2RjaHVjayBjb3VsZCBjaHVjayB3b29kPw==")
 
+define(test_buffer_handling, [[
+  test_any([[
+    // Test all lengths 0-127 to check that there are
+    // no buffering errors.
+    for (int i = 0; i < 128; i++) {
+      string(8bit) vector = "A"*i;
+      string(7bit) enc = MIME.encode_$1(vector);
+      string(8bit) dec = MIME.decode_$1(enc);
+      if (dec != vector) return ({ vector, enc, dec });
+    }
+    return 0;
+  ]], 0)
+]])
+
+test_buffer_handling(base64)
+test_buffer_handling(base64url)
+test_buffer_handling(base32)
+test_buffer_handling(base32hex)
+test_buffer_handling(qp)
+test_buffer_handling(uue)
+
 test_eq([[MIME.decode_qp("AbC=3a=4C=25z=\nxyz")]],"AbC:L%zxyz")
 test_eq([[MIME.encode_qp("åäöÅÄÖ=Ff")]],"=E5=E4=F6=C5=C4=D6=3DFf")
 test_eq([[MIME.encode_qp("How much wood could a woodchuck "
