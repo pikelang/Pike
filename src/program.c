@@ -9026,7 +9026,7 @@ PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
   return p->strings[id->filename_strno];
 }
 
-PMOD_EXPORT int low_quick_add_function(struct pike_string * name_tmp,
+PMOD_EXPORT int quick_add_function(const char *name, int name_length,
 				   void (*cfun)(INT32),
 				   const char *type,
 				   int UNUSED(type_length),
@@ -9034,6 +9034,7 @@ PMOD_EXPORT int low_quick_add_function(struct pike_string * name_tmp,
 				   unsigned opt_flags)
 {
   int ret;
+  struct pike_string * name_tmp = make_shared_binary_string(name, name_length);
   struct pike_type *type_tmp;
   union idptr tmp;
 /*  fprintf(stderr,"ADD_FUNC: %s\n",name); */

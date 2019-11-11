@@ -1024,12 +1024,12 @@ PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
 						    INT_TYPE *linep);
 struct supporter_marker;
 void count_memory_in_supporter_markers(size_t *num, size_t *size);
-PMOD_EXPORT int low_quick_add_function(struct pike_string *name_tmp,
-                                       void (*cfun)(INT32),
-                                       const char *type,
-                                       int type_length,
-                                       unsigned flags,
-                                       unsigned opt_flags);
+PMOD_EXPORT int quick_add_function(const char *name, int name_length,
+                                   void (*cfun)(INT32),
+                                   const char *type,
+                                   int type_length,
+                                   unsigned flags,
+                                   unsigned opt_flags);
 void check_all_programs(void);
 void init_program(void);
 void cleanup_program(void);
@@ -1095,12 +1095,6 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
     if (p->flags & PROGRAM_FIXED && lfun < NUM_LFUNS) return p->lfuns[lfun];
     return low_find_lfun(p, lfun);
 }
-
-#define quick_add_function(NAME, NLEN, FUNC, TYPE, TLEN, FLAGS, OPT)            \
-    low_quick_add_function(STATIC_IS_CONSTANT(NAME)                             \
-                           ? make_shared_static_string(NAME, NLEN, eightbit)    \
-                           : make_shared_binary_string(NAME, NLEN),             \
-                           FUNC, TYPE, TLEN, FLAGS, OPT)
 
 
 #ifndef PIKE_USE_MACHINE_CODE
