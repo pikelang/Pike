@@ -646,7 +646,7 @@ static void encode_base32( INT32 args, const char *name, const char *tab,
     unsigned char tmp[5], *tmpp = tmp;
     int i;
 
-    if (do_b32_encode( groups-1, &src, &dest, insert_crlf, tab ) == 8)
+    if (do_b32_encode( groups-1, &src, &dest, insert_crlf, tab ) == 7)
       /* Skip the final linebreak if it's not to be followed by anything */
       str->len -= 2;
 
