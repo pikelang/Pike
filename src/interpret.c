@@ -3227,7 +3227,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   add_ref(new_frame->current_object = o);
   add_ref(new_frame->current_program = prog);
   new_frame->context = prog->inherits;
-  new_frame->locals = Pike_sp;
+  new_frame->locals = new_frame->save_sp = Pike_sp;
   new_frame->args = 0;
   new_frame->num_args=0;
   new_frame->num_locals=0;
