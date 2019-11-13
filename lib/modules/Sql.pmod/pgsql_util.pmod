@@ -2455,6 +2455,7 @@ class proxy {
                                +showbindings(portal)));
               case "53000":case "53100":case "53200":case "53300":case "53400":
               case "57P01":case "57P02":case "57P03":case "57P04":case "3D000":
+              case "34000":
                 preplastmessage(msgresponse);
                 PD(a2nls(lastmessage)); throw(msgisfatal(msgresponse));
               case "08P01":case "42P05":
