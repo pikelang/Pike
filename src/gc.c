@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.330 2008/10/12 21:49:56 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -5511,6 +5511,11 @@ void f_count_memory (INT32 args)
       } while (m != &mc_complete);
     }
 
+    /* We've moved all the markers on mc_complete to the work queue,
+     * so we need to empty mc_complete in order to use it again for
+     * the next batch of indirect markers.
+     */
+    DL_MAKE_EMPTY(mc_complete);
     DL_MOVE (mc_indirect, mc_complete);
 
     TOGGLE_EXT_FLAGS();

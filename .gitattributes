@@ -378,7 +378,6 @@ testfont binary
 /src/fsort.c foreign_ident
 /src/fsort.h foreign_ident
 /src/fsort_template.h foreign_ident
-/src/gc.c foreign_ident
 /src/gc.h foreign_ident
 /src/global.h foreign_ident
 /src/hashtable.c foreign_ident
