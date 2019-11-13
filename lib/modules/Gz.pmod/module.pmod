@@ -18,8 +18,8 @@ string(8bit)
     return 0;
 
   array res = buf->sscanf("\x1f\x8b\x08%1c");
-  if (!sizeof(res))
-    return 0;
+  if (!res)
+    error("Missing gzip magic header %O\n", ((string)buf)[..2]);
 
   flags = res[0];
   if (flags & 0xe0 || !buf_read(6))
