@@ -5943,6 +5943,11 @@ void f_count_memory (INT32 args)
       } while (m != &mc_complete);
     }
 
+    /* We've moved all the markers on mc_complete to the work queue,
+     * so we need to empty mc_complete in order to use it again for
+     * the next batch of indirect markers.
+     */
+    DL_MAKE_EMPTY(mc_complete);
     DL_MOVE (mc_indirect, mc_complete);
 
     TOGGLE_EXT_FLAGS();
