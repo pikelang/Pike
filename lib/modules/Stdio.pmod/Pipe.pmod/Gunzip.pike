@@ -8,8 +8,15 @@ inherit .Base;
 
 protected void process_init() { _engine = Gz.inflate(-15); }
 
+private Stdio.Buffer temphead = Stdio.Buffer();
+
 protected string(8bit) process_header(string(8bit) data) {
-  Gz.make_header(buffer);
+  if (temphead) {
+    temphead->add(data);
+    data = Gz.check_header(0, (string)temphead);
+    if (data)
+      temphead = 0;
+  }
   return data;
 }
 
