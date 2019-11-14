@@ -3350,6 +3350,7 @@ void low_start_new_program(struct program *p,
 
   Pike_compiler->parent_identifier=id;
   Pike_compiler->compiler_pass = pass;
+  Pike_compiler->compiler = c;
 
   Pike_compiler->num_used_modules=0;	/* FIXME: Duplicate? */
 
