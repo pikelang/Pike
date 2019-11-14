@@ -916,9 +916,22 @@ static void free_compilation(struct compilation *c)
   verify_supporters();
 
 #ifndef PIKE_DEBUG
-  if(cumulative_parse_error) {
+  if(cumulative_parse_error)
 #endif
+  {
+    /* NB: The Pike_compiler has already been changed when we run,
+     *     so we need to reinstate a compiler that refers to us
+     *     during the ba_walk(), so that really_free_node_s() can
+     *     find the node_allocator.
+     */
+    struct program_state fake_compiler, *orig_compiler = Pike_compiler;
+    fake_compiler.compiler = c;
+    Pike_compiler = &fake_compiler;
+
     ba_walk(&c->node_allocator, &node_walker, NULL);
+
+    Pike_compiler = orig_compiler;
+
 #ifdef PIKE_DEBUG
     if(!cumulative_parse_error) {
       size_t n, s;
@@ -926,9 +939,8 @@ static void free_compilation(struct compilation *c)
       if (n)
 	Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",n);
     }
-#else
-  }
 #endif
+  }
   cumulative_parse_error=0;
   ba_destroy(&c->node_allocator);
 }
