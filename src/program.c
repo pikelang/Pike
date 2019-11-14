@@ -3346,8 +3346,6 @@ void low_start_new_program(struct program *p,
 #define PUSH
 #include "compilation.h"
 
-  ba_init(&Pike_compiler->node_allocator, sizeof(struct node_s), 512);
-
   Pike_compiler->parent_identifier=id;
   Pike_compiler->compiler_pass = pass;
   Pike_compiler->compiler = c;
@@ -3883,10 +3881,6 @@ static void toss_compilation_resources(void)
   }
 
   unuse_modules(Pike_compiler->num_used_modules);
-
-  free_all_nodes();
-
-  ba_destroy(&Pike_compiler->node_allocator);
 }
 
 int sizeof_variable(int run_time_type)

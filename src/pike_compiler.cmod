@@ -825,6 +825,50 @@ static void f_compilation_env_filter_exception(INT32 args)
  *!   compilation).
  */
 
+void node_walker(struct ba_iterator * it, void * UNUSED(data)) {
+  do {
+    node * tmp = ba_it_val(it);
+
+    /*
+     * since we free nodes from here, we might iterate over them again.
+     * to avoid that we check for the free mark.
+     */
+    if (tmp->token == USHRT_MAX) continue;
+
+#ifdef PIKE_DEBUG
+    if(!cumulative_parse_error)
+    {
+      fprintf(stderr,"Free node at %p, (%s:%ld) (token=%d:%s).\n",
+              (void *)tmp,
+              tmp->current_file->str, (long)tmp->line_number,
+              tmp->token, get_token_name(tmp->token));
+
+      debug_malloc_dump_references(tmp,0,2,0);
+
+      if(tmp->token==F_CONSTANT)
+        print_tree(tmp);
+    }
+    /* else */
+#endif
+    {
+      /* Free the node and be happy */
+      /* Make sure we don't free any nodes twice */
+      if(car_is_node(tmp)) _CAR(tmp)=0;
+      if(cdr_is_node(tmp)) _CDR(tmp)=0;
+#ifdef PIKE_DEBUG
+      if (l_flag > 3) {
+        fprintf(stderr, "Freeing node that had %d refs.\n",
+                tmp->refs);
+      }
+#endif /* PIKE_DEBUG */
+      /* Force the node to be freed. */
+      tmp->refs = 1;
+      debug_malloc_touch(tmp->type);
+      free_node(tmp);
+    }
+  } while (ba_it_step(it));
+}
+
 static void free_compilation(struct compilation *c)
 {
   debug_malloc_touch(c);
@@ -870,6 +914,23 @@ static void free_compilation(struct compilation *c)
   SET_SVAL(c->default_module, T_INT, NUMBER_NUMBER, integer, 0);
   free_supporter(&c->supporter);
   verify_supporters();
+
+#ifndef PIKE_DEBUG
+  if(cumulative_parse_error) {
+#endif
+    ba_walk(&c->node_allocator, &node_walker, NULL);
+#ifdef PIKE_DEBUG
+    if(!cumulative_parse_error) {
+      size_t n, s;
+      ba_count_all(&c->node_allocator, &n, &s);
+      if (n)
+	Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",n);
+    }
+#else
+  }
+#endif
+  cumulative_parse_error=0;
+  ba_destroy(&c->node_allocator);
 }
 
 static void run_init(struct compilation *c)
@@ -1348,6 +1409,7 @@ static void compilation_event_handler(int e)
   case PROG_EVENT_INIT:
     CDFPRINTF("th(%ld) compilation: INIT(%p).\n", (long) th_self(), c);
     memset(c, 0, sizeof(*c));
+    ba_init(&c->node_allocator, sizeof(struct node_s), 512);
     SET_SVAL(c->supporter.self, T_OBJECT,
 	     Pike_fp->context - Pike_fp->current_object->prog->inherits,
 	     object, Pike_fp->current_object); /* NOTE: Not ref-counted! */

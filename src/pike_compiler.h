@@ -83,9 +83,10 @@ struct compilation
 
   struct program *p;			/* Compiled program or NULL. */
   struct lex lex;
+  struct block_allocator node_allocator;/* Allocator for parse tree nodes. */
 
   struct svalue default_module;		/* predef:: */
-  struct byte_buffer used_modules;		/* Stack of svalues with imported
+  struct byte_buffer used_modules;	/* Stack of svalues with imported
 					 * modules. */
   INT32 num_used_modules;		/* Number of entries on the stack. */
 

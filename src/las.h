@@ -148,7 +148,6 @@ INT32 count_args(node *n);
 struct pike_type *find_return_type(node *n);
 int check_tailrecursion(void);
 struct node_chunk;
-void free_all_nodes(void);
 void debug_free_node(node *n);
 node *debug_mknode(int token,node *a,node *b);
 node *mknestednodes(int token, ...);
