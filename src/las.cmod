@@ -465,12 +465,22 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
 void init_node_s_blocks() { }
 
 void really_free_node_s(node * n) {
-    ba_free(&Pike_compiler->compiler->node_allocator, n);
+#ifdef PIKE_DEBUG
+  if (!Pike_compiler->compiler) {
+    Pike_fatal("Attempt to free a node with no active compiler.\n");
+  }
+#endif
+  ba_free(&Pike_compiler->compiler->node_allocator, n);
 }
 
 MALLOC_FUNCTION
 node * alloc_node_s() {
-    return ba_alloc(&Pike_compiler->compiler->node_allocator);
+#ifdef PIKE_DEBUG
+  if (!Pike_compiler->compiler) {
+    Pike_fatal("Attempt to allocate a node with no active compiler.\n");
+  }
+#endif
+  return ba_alloc(&Pike_compiler->compiler->node_allocator);
 }
 
 void count_memory_in_node_ss(size_t * num, size_t * size) {
@@ -480,11 +490,14 @@ void count_memory_in_node_ss(size_t * num, size_t * size) {
     *size = 0;
 
     while (state) {
+      /* NB: Pike_compiler_base has no active compiler. */
+      if (state->compiler) {
         size_t _num, _size;
         ba_count_all(&state->compiler->node_allocator, &_num, &_size);
         *num += _num;
         *size += _size;
-        state = state->previous;
+      }
+      state = state->previous;
     }
 }
 
