@@ -835,6 +835,7 @@ static void do_optimization(int topop, int topush, ...);
 static inline int opcode(int offset);
 static inline int argument(int offset);
 static inline int argument2(int offset);
+static inline unsigned int check_local_var_flag(int var, int flag);
 
 #include "peep_engine.c"
 
@@ -951,6 +952,18 @@ static inline int argument2(int offset)
   if(a) return a->arg2;
   return -1;
 }
+
+/* This is used from two peep.in rules, merely because coverity did not
+ * like accessing ...->variables[arguments(1)], as arguments() could in theory
+ * return a negative value. Neither very pretty nor generic... */
+static inline unsigned int check_local_var_flag(int var, int flag)
+{
+  if (var >= 0)
+    return Pike_compiler->compiler_frame->variable[var].flags & flag;
+
+  return 0;
+}
+
 
 static int advance(void)
 {
