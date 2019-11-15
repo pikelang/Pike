@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.59 2008/11/02 19:57:58 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -153,7 +153,6 @@ static void exit_builtin_modules(void)
    * THREADS_ALLOW/DISALLOW are NOPs beyond this point. */
   th_cleanup();
 #endif
-  free_all_pike_list_node_blocks();
 
   exit_pike_security();
   free_svalue(& throw_value);
@@ -355,6 +354,7 @@ static void exit_builtin_modules(void)
   cleanup_pike_type_table();
   cleanup_shared_string_table();
 
+  free_all_pike_list_node_blocks();
   free_dynamic_load();
   first_mapping=0;
   free_all_mapping_blocks();
