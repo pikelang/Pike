@@ -728,10 +728,10 @@ PIKECLASS Backend
 	}
 	CALL_(me->num_pending_calls) = NULL;
 	this->pos = -1;
+	EXIT_CO(this);
 	free_object(this->this);
 	this->this = NULL;
       }
-      EXIT_CO(this);
     }
 
     /*! @decl void create(int|float seconds, mixed fun, mixed ... args)
@@ -1352,8 +1352,10 @@ PIKECLASS Backend
 	 }
 	 CALL_(me->num_pending_calls) = NULL;
 	 c->pos = -1;
+	 EXIT_CO(c);
 
 	 free_object(c->this);
+	 c->this = NULL;
        }else{
 	 pop_n_elems(args);
 	 /* NB: This is a very exotic value! */
