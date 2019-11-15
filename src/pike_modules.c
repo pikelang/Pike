@@ -141,7 +141,6 @@ static void exit_builtin_modules(void)
    * THREADS_ALLOW/DISALLOW are NOPs beyond this point. */
   th_cleanup();
 #endif
-  free_all_pike_list_node_blocks();
 
   free_svalue(& throw_value);
   mark_free_svalue (&throw_value);
@@ -344,6 +343,7 @@ static void exit_builtin_modules(void)
   cleanup_pike_type_table();
   cleanup_shared_string_table();
 
+  free_all_pike_list_node_blocks();
   free_dynamic_load();
   first_mapping=0;
   free_all_mapping_blocks();
