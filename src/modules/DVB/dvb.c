@@ -1223,15 +1223,15 @@ static void f__sprintf(INT32 args) {
  *! Represents an elementary data stream (PES).
  */
 
-/*  @decl int set_buffer(int len)
- *
- *  Sets stream's internal buffer.
- *
- *  @note
- *    The size is 4096 by default.
- *
- *  @seealso
- *    @[read()]
+/*! @decl int set_buffer(int len)
+ *!
+ *! Sets stream's internal buffer.
+ *!
+ *! @note
+ *!   The size is 4096 by default.
+ *!
+ *! @seealso
+ *!   @[read()]
  */
 static void f_stream_set_buffer(INT32 args) {
 
@@ -1503,8 +1503,8 @@ static void f_audio_create(INT32 args) {
  *!
  *! Mute or unmute audio device.
  *!
- *| @seealso
- *|   @[mixer()]
+ *! @seealso
+ *!   @[mixer()]
  */
 static void f_audio_mute(INT32 args) {
 
@@ -1623,8 +1623,8 @@ static void f_audio_ctrl(INT32 args) {
  *!
  *! Sets output level on DVB audio device.
  *!
- *| @seealso
- *|   @[mute()]
+ *! @seealso
+ *!   @[mute()]
  */
 static void f_audio_mixer(INT32 args) {
 
