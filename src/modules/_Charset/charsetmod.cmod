@@ -1431,7 +1431,7 @@ static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi
  *!
  *!   This is the main entrypoint into the low-level @[_Charset] module.
  *!
- *| @returns
+ *! @returns
  *!   Returns a suitable encoder or decoder on success and @expr{0@}
  *!   (zero) on failure.
  *!
