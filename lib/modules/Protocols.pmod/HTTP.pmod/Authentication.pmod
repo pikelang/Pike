@@ -408,7 +408,6 @@ class DigestClient {
 
   int counter = 1;
   int userhash = 0;
-  int utf8 = 0;
 
   protected void create(mapping hdr, string user, string password,
                         void|string realm) {
@@ -430,7 +429,6 @@ class DigestClient {
       if( hdr->charset!="UTF-8" )
         error("Unknown charset %O\n", hdr->charset);
       user = string_to_utf8(user);
-      utf8 = 1;
     }
 
     ha1 = hash(user, realm, password);
