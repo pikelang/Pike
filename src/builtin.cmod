@@ -5889,9 +5889,9 @@ PIKECLASS List
    *   o Copy segment
    *   o Detach segment (requires new iterator implementation)
    *   o Iterator copy
-   *   o _equal() for iterators and lists.
-   *   o _values(), _search(), cast()
-   *   o _sizeof()?, _indices()??
+   *   o _equal() for iterators.
+   *   o _search(), cast()
+   *   o _indices()??
    *   o Support for reverse(), filter() and map().
    *   o Initialization from array.
    *   o Support for Pike.count_memory.
@@ -6658,6 +6658,29 @@ PIKECLASS List
   }
   /*! @endclass
    */
+
+  PIKEFUN int(1bit) _equal(mixed other)
+  {
+    struct List_struct *other_list;
+    struct pike_list_node *n1, *n2;
+    if ((TYPEOF(*other) != PIKE_T_OBJECT) ||
+	!(other_list = get_storage(other->u.object, List_program)) ||
+	(THIS->num_elems != other_list->num_elems)) {
+      push_int(0);
+      return;
+    }
+    n1 = THIS->head;
+    n2 = other_list->head;
+    while (n1->next && n2->next) {
+      if (!is_equal(&n1->val, &n2->val)) {
+	push_int(0);
+	return;
+      }
+      n1 = n1->next;
+      n2 = n2->next;
+    }
+    push_int(1);
+  }
 }
 /*! @endclass
  */
