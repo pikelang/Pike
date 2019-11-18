@@ -83,17 +83,16 @@ mapping(string:string) split_header(string hdr) {
   return parts;
 }
 
-//! Abstract class for hash algorithm.
+// Abstract class for hash algorithm.
 class Digest {
   protected extern function(string(8bit):string(8bit)) hash_function;
 
-  //! Perform hashing of the given strings.
+  // Perform hashing of the given strings.
   string(7bit) hash(string(8bit) ... args) {
     return sprintf("%032x", hash_function( args * ":" ));
   }
 }
 
-//! MD5 digest implementation
 class DigestMD5 {
   protected function(string(8bit):string(8bit)) hash_function=Crypto.MD5.hash;
   constant algorithm = "MD5";
@@ -443,6 +442,8 @@ class DigestClient {
     this::user = user;
   }
 
+  // Should we quote the parameter. RFC 7616 section 3.5 lists some
+  // parameters that MUST and some that MUST NOT be quoted.
   protected int(0..1) should_quote(string name, string value) {
     if( (< "nextonce", "rspauth", "cnonce" >)[name] )
       return 1;
