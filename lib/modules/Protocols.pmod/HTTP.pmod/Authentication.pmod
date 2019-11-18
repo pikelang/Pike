@@ -1,12 +1,21 @@
+#pike __REAL_VERSION__
 
-//! Implements a stateless Digest implementation with the MD5
-//! algorithm. To add an actual user lookup overload @[get_password]
-//! or @[get_hashed_password]. Hashed passwords must be hashed with
-//! the digest MD5 hash, e.g. by calling hash(user, realm, password).
+//! This module contains various HTTP Authentication implements for
+//! both server and client use. A Client implementation would
+//! typically call the @[make_authenticator] method with the incoming
+//! WWW-Authenticate header to get a @[Client] object. For each HTTP
+//! request the auth() method of the object can be called to get an
+//! appropriate Authorization header.
+//!
+//! Server code should create an authentication class and inherit the
+//! concrete authentication scheme implementation. To add an actual
+//! user lookup, overload @[get_password] or
+//! @[get_hashed_password]. Hashed passwords must be hashed with the
+//! scheme appropriate digest.
 //!
 //! @example
 //! class Auth {
-//!   inherit Protocols.HTTP.Authentication.DigestMD;
+//!   inherit Protocols.HTTP.Authentication.DigestMD5Server;
 //!   Concurrent.Future get_password(string user) {
 //!     Promise p = Concurrent.Promise();
 //!     if( user == "bob" )
@@ -18,8 +27,8 @@
 //! Auth auth = Auth("apps@@pike.org");
 //! Concurrent.Future authenticate(Protocols.HTTP.Server.Request req) {
 //!   Concurrent.Future authenticated = Concurrent.Promise();
-//!   auth->authenticate(req->request_headers->authorization,
-//!                      req->request_method, request->not_query)
+//!   auth->auth(req->request_headers->authorization,
+//!              req->request_method, request->not_query)
 //!     ->then(lambda(string user) {
 //!         authenticated->success(user);
 //!       },
@@ -33,11 +42,71 @@
 //!       });
 //!   return authenticated;
 //! }
-class DigestMD5
-{
 
-  string realm;
+//! Split client generated Authorization header into its parts.
+mapping(string:string) split_header(string hdr) {
+  mapping parts = ([]);
+  while( sizeof(hdr) ) {
+    hdr = String.trim_all_whites(hdr);
+
+    string name;
+    if( sscanf(hdr, "%s=%s", name, hdr)!=2 ) {
+
+      // Ignore unknown tokens. (RFC 2617 3.2.1 auth-param)
+      if( sscanf(hdr, "%s,%s", name, hdr)==2 )
+        continue;
+
+      return parts;
+    }
+    hdr = String.trim_all_whites(hdr);
+
+    string value;
+    if( !sizeof(hdr) ) return parts;
+    if( hdr[0]=='\"' ) {
+      if( sscanf(hdr, "\"%s\"%s", value, hdr)!=2 )
+        return parts;
+      hdr = String.trim_all_whites(hdr);
+      if( sizeof(hdr) && hdr[0]==',' )
+        hdr = hdr[1..];
+    }
+    else {
+      if( !sscanf(hdr, "%s,%s", value, hdr) ) {
+        value = hdr;
+        hdr = "";
+      }
+      value = String.trim_all_whites(value);
+    }
+
+    // Warn on overwrite?
+    parts[name] = value;
+  }
+  return parts;
+}
+
+//! Abstract class for hash algorithm.
+class Digest {
+  protected extern function(string(8bit):string(8bit)) hash_function;
+
+  //! Perform hashing of the given strings.
+  string(7bit) hash(string(8bit) ... args) {
+    return sprintf("%032x", hash_function( args * ":" ));
+  }
+}
+
+//! MD5 digest implementation
+class DigestMD5 {
+  protected function(string(8bit):string(8bit)) hash_function=Crypto.MD5.hash;
+  constant algorithm = "MD5";
+}
+
+//! Abstract HTTP Digest implementation.
+class DigestServer
+{
+  inherit Digest;
   protected Crypto.MAC.State hmac;
+
+  //! The current realm of the authentication.
+  string realm;
 
   //! @param realm
   //!   The realm to be authenticated.
@@ -47,15 +116,10 @@ class DigestMD5
   //!   signature using this key. The key can be any 8-bit string, but
   //!   should be the same across multiple instances on the same
   //!   domain, and over time.
-  protected void create(string(8bit) realm, void|string(8bit) key) {
+  protected void create(void|string(8bit) realm, void|string(8bit) key) {
     this::realm = realm;
     if( key )
       hmac = Crypto.SHA1.HMAC(key);
-  }
-
-  constant algorithm = "MD5";
-  string(7bit) hash(string(8bit) ... args) {
-    return sprintf("%032x", Crypto.MD5.hash( args * ":" ));
   }
 
   protected string(7bit) make_mac(string nonce) {
@@ -69,7 +133,7 @@ class DigestMD5
     // of 3 above to utilize base64 lenght fully.
     string nonce = MIME.encode_base64(random_string(18));
     string ret = sprintf("Digest realm=\"%s\", qop=\"auth\", "
-                         "nonce=\"%s\", algorithm=" + algorithm,
+                         "nonce=\"%s\", algorithm=" + this->algorithm,
                          realm, nonce);
     if( hmac )
       ret += sprintf(", opaque=\"%s\"", make_mac(nonce));
@@ -103,43 +167,6 @@ class DigestMD5
     return ret->future();
   }
 
-  //! Split client generated Authorization header into its parts.
-  mapping(string:string) split_response(string hdr) {
-    mapping parts = ([]);
-    while( sizeof(hdr) ) {
-      hdr = String.trim_all_whites(hdr);
-
-      string name;
-      if( sscanf(hdr, "%s=%s", name, hdr)!=2 ) {
-
-        // Ignore unknown tokens. (RFC 2617 3.2.1 auth-param)
-        if( sscanf(hdr, "%s,%s", name, hdr)==2 )
-          continue;
-
-        return parts;
-      }
-      hdr = String.trim_all_whites(hdr);
-
-      string value;
-      if( !sizeof(hdr) ) return parts;
-      if( hdr[0]=='\"' ) {
-        if( sscanf(hdr, "\"%s\"%s", value, hdr)!=2 )
-          return parts;
-        hdr = String.trim_all_whites(hdr);
-        if( sizeof(hdr) && hdr[0]==',' )
-          hdr = hdr[1..];
-      }
-      else {
-        sscanf(hdr, "%s,%s", value, hdr);
-        value = String.trim_all_whites(value);
-      }
-
-      // Warn on overwrite?
-      parts[name] = value;
-    }
-    return parts;
-  }
-
   //! Authenticate a request.
   //!
   //! @param hdr
@@ -151,7 +178,7 @@ class DigestMD5
   //!
   //! @param path
   //!   This is the path of the request.
-  Concurrent.Future authenticate(string hdr, string method, string path) {
+  Concurrent.Future auth(string hdr, string method, string path) {
 
     if(!hdr) return Concurrent.reject("Missing authenticate header");
     if(!method) return Concurrent.reject("Missing method");
@@ -160,7 +187,7 @@ class DigestMD5
     if( sscanf(hdr, "Digest %s", hdr)!=1 )
       return Concurrent.reject("Not a Digest header.");
 
-    mapping resp = split_response(hdr);
+    mapping resp = split_header(hdr);
 
     if( realm != resp->realm )
       return Concurrent.reject("Realms do not match");
@@ -189,7 +216,7 @@ class DigestMD5
         if( !ha1 )
           return p->failure("Failed to resolve hashed password.");
 
-        if( algorithm == "MD5-sess" ) {
+        if( this->algorithm == "MD5-sess" ) {
           ha1 = hash(ha1, nonce, resp->cnonce);
         }
 
@@ -225,10 +252,178 @@ class DigestMD5
   }
 }
 
-//! Implements the session version "MD5-sess" of the MD5 HTTP Digest
-//! authentication. Used identically to @[DigestMD5].
-class DigestMD5sess
-{
+//! HTTP Digest server implementation using MD5.
+class DigestMD5Server {
+  inherit DigestServer;
   inherit DigestMD5;
+}
+
+//! Implements the session version "MD5-sess" of the MD5 HTTP Digest
+//! authentication. Used identically to @[DigestMD5Server].
+class DigestMD5sessServer
+{
+  inherit DigestMD5Server;
   constant algorithm = "MD5-sess";
+}
+
+//! Abstract Client class.
+class Client {
+  protected void create(string hdr, string user, string password,
+                        void|string realm);
+  string(7bit) auth(string method, string path);
+}
+
+//! Create an authenticator for a server responding with the given
+//! HTTP authentication header. Currently only works for one realm.
+//!
+//! @param hdrs
+//!   The WWW-Authenticate HTTP header or headers.
+//!
+//! @param user
+//!   The username to use.
+//!
+//! @param password
+//!   The plaintext password.
+//!
+//! @param realm
+//!   Optionally the realm the user and password is valid in. If
+//!   omitted, the authentication will happen in whatever realm the
+//!   server is presenting.
+Client make_authenticator(string|array(string) hdrs,
+                          string user, string password,
+                          void|string realm) {
+  if( !arrayp(hdrs) )
+    hdrs = ({ hdrs });
+
+  foreach(hdrs;; string hdr) {
+    string type;
+    sscanf(hdr, "%s%*[ ]%s", type, hdr);
+    mapping auth = split_header(hdr);
+    switch(type) {
+    case "Basic":
+      return BasicClient(auth, user, password, realm);
+
+    case "Digest":
+      if( auth->qop ) {
+        // No implementation of auth-int yet.
+        int found = 0;
+        foreach(auth->qop/",";; string qop) {
+          if( String.trim(qop)=="auth" ) {
+            found = 1;
+            break;
+          }
+        }
+        if( !found ) continue;
+      }
+      switch( auth->algorithm ) {
+      default:
+      case "MD5":
+        return DigestMD5Client(auth, user, password, realm);
+      }
+    }
+  }
+}
+
+//! HTTP Basic authentication client.
+class BasicClient {
+
+  string realm;
+  string creds;
+
+  protected void create(mapping hdr, string user, string password,
+                        void|string realm) {
+    if( !hdr || !user || !password )
+      error("Missing argument.\n");
+
+    if( !hdr->realm )
+      error("Missing realm header argument.\n");
+    if( realm && hdr->realm != realm )
+      error("Realm mismatch %O!=%O\n", realm, hdr->realm);
+    this::realm = hdr->realm;
+
+    if( has_value(user, ":") )
+      error("Illegal user name");
+    creds = MIME.encode_base64(user+":"+password, 1);
+  }
+
+  string(7bit) auth(string method, string path) {
+    return "Basic "+creds;
+  }
+}
+
+//! Abstract HTTP Digest authentication client.
+class DigestClient {
+  inherit Digest;
+
+  string user;
+  string realm;
+  string ha1;
+  string nonce;
+  string qop;
+  string opaque;
+
+  int counter = 1;
+
+  protected void create(mapping hdr, string user, string password,
+                        void|string realm) {
+    if( !hdr || !user || !password )
+      error("Missing argument.\n");
+    this::user = user;
+
+    if( !hdr->realm )
+      error("Missing realm header argument.\n");
+    if( realm && hdr->realm != realm )
+      error("Realm mismatch %O!=%O\n", realm, hdr->realm);
+
+    this::realm = realm = hdr->realm;
+
+    nonce = hdr->nonce;
+    qop = hdr->qop;
+    opaque = hdr->opaque;
+
+    ha1 = hash(user, realm, password);
+  }
+
+  string(7bit) auth(string method, string path, string|void cnonce) {
+
+    if( !method || !path )
+      return 0;
+
+    string ha2 = hash(method, path);
+
+    mapping response = ([
+      "realm" : realm,
+      "nonce" : nonce,
+      "username" : user,
+      "uri" : path,
+      "algorithm" : this->algorithm,
+    ]);
+    if( opaque )
+      response->opaque = opaque;
+
+    if( (< "auth", "auth-int" >)[qop] ) {
+      response->nc = sprintf("%08d", counter++);
+      response->cnonce = cnonce || MIME.encode_base64(random_string(6));
+      response->response = hash(ha1,nonce,response->nc,response->cnonce,qop,ha2);
+      response->qop = qop;
+    }
+    else
+      response->response = hash(ha1, nonce, ha2);
+
+    String.Buffer buf = String.Buffer();
+    foreach(response; string name; string value) {
+      if( !sizeof(buf) )
+        buf->add("Digest ");
+      else
+        buf->add(",");
+      buf->add(name, "=\"", value, "\"");
+    }
+    return (string)buf;
+  }
+}
+
+//! HTTP Digest authentication client using MD5.
+class DigestMD5Client {
+  inherit DigestMD5;
+  inherit DigestClient;
 }
