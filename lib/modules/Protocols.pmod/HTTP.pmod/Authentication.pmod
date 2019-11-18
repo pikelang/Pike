@@ -406,6 +406,14 @@ class DigestClient {
     ha1 = hash(user, realm, password);
   }
 
+  protected int(0..1) should_quote(string name, string value) {
+    if( (< "nextonce", "rspauth", "cnonce" >)[name] )
+      return 1;
+    if( (< "qop", "nc" >)[name] )
+      return 0;
+    return has_value(value, ' ') || has_value(value, ',');
+  }
+
   string(7bit) auth(string method, string path, string|void cnonce) {
 
     if( !method || !path )
@@ -424,6 +432,7 @@ class DigestClient {
       response->opaque = opaque;
 
     if( (< "auth", "auth-int" >)[qop] ) {
+      // RFC 7616 3.5. nc MUST be exactly 8 characters.
       response->nc = sprintf("%08d", counter++);
       response->cnonce = cnonce || MIME.encode_base64(random_string(6));
       response->response = hash(ha1,nonce,response->nc,response->cnonce,qop,ha2);
@@ -438,7 +447,10 @@ class DigestClient {
         buf->add("Digest ");
       else
         buf->add(",");
-      buf->add(name, "=\"", value, "\"");
+      if( should_quote(name, value) )
+        buf->add(name, "=\"", value, "\"");
+      else
+        buf->add(name, "=", value);
     }
     return (string)buf;
   }
