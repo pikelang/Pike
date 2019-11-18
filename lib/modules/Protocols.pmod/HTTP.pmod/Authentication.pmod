@@ -99,6 +99,12 @@ class DigestMD5 {
   constant algorithm = "MD5";
 }
 
+class DigestSHA256 {
+  protected function(string(8bit):string(8bit))
+    hash_function=Crypto.SHA256.hash;
+  constant algorithm = "SHA-256";
+}
+
 //! Abstract HTTP Digest implementation.
 class DigestServer
 {
@@ -216,7 +222,7 @@ class DigestServer
         if( !ha1 )
           return p->failure("Failed to resolve hashed password.");
 
-        if( this->algorithm == "MD5-sess" ) {
+        if( has_suffix(this->algorithm, "-sess") ) {
           ha1 = hash(ha1, nonce, resp->cnonce);
         }
 
@@ -264,6 +270,20 @@ class DigestMD5sessServer
 {
   inherit DigestMD5Server;
   constant algorithm = "MD5-sess";
+}
+
+//! HTTP Digest server implementation using SHA256.
+class DigestSHA256Server {
+  inherit DigestServer;
+  inherit DigestSHA256;
+}
+
+//! Implements the session version "SHA256-sess" of the SHA356 HTTP
+//! Digest authentication. Used identically to @[DigestSHA256Server].
+class DigestSHA256sessServer
+{
+  inherit DigestSHA256Server;
+  constant algorithm = "SHA-256-sess";
 }
 
 //! Abstract Client class.
@@ -316,9 +336,11 @@ Client make_authenticator(string|array(string) hdrs,
         if( !found ) continue;
       }
       switch( auth->algorithm ) {
-      default:
+      case 0:
       case "MD5":
         return DigestMD5Client(auth, user, password, realm);
+      case "SHA-256":
+        return DigestSHA256Client(auth, user, password, realm);
       }
     }
   }
@@ -425,5 +447,11 @@ class DigestClient {
 //! HTTP Digest authentication client using MD5.
 class DigestMD5Client {
   inherit DigestMD5;
+  inherit DigestClient;
+}
+
+//! HTTP Digest authentication client using SHA256.
+class DigestSHA256Client {
+  inherit DigestSHA256;
   inherit DigestClient;
 }
