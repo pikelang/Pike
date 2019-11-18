@@ -284,6 +284,24 @@ test_any_equal([[
        "opaque":"FQhe/qaU925kfnzjCev0ciny7QMkPqMAFRtzCUYo5tdS"
        ]))
 
+test_any_equal([[
+  object c = A.make_authenticator("Digest realm=\"api@example.org\", qop=\"auth\", algorithm=SHA-512-256, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", "J\u00e4s\u00f8n Doe", "Secret, or not?");
+  string r = c->auth("GET","/doe.json","NTg6RKcb9boFIAS3KrFK9BGeh+iDa/sm6jUMp2wds69v");
+  sscanf(r, "Digest %s", r);
+  return A.split_header(r);
+]], ([ "username":"488869477bf257147b804c45308cd62ac4e25eb717b12b298c79e62dcea254ec",
+       "algorithm":"SHA-512-256",
+       "realm":"api@example.org",
+       "nonce":"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK",
+       "uri":"/doe.json",
+       "qop":"auth",
+       "nc":"00000001",
+       "cnonce":"NTg6RKcb9boFIAS3KrFK9BGeh+iDa/sm6jUMp2wds69v",
+       "response":"ae66e67d6b427bd3f120414a82e4acff38e8ecd9101d6c861229025f607a79dd",
+       "opaque":"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS",
+       "userhash":"true",
+       ]))
+
 
 test_do(add_constant("A"))
 

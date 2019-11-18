@@ -105,6 +105,13 @@ class DigestSHA256 {
   constant algorithm = "SHA-256";
 }
 
+class DigestSHA512256 {
+  protected string(8bit) hash_function(string(8bit) data) {
+    return Crypto.SHA512.hash(data)[..31];
+  }
+  constant algorithm = "SHA-512-256";
+}
+
 //! Abstract HTTP Digest implementation.
 class DigestServer
 {
@@ -278,12 +285,26 @@ class DigestSHA256Server {
   inherit DigestSHA256;
 }
 
-//! Implements the session version "SHA256-sess" of the SHA356 HTTP
+//! Implements the session version "SHA256-sess" of the SHA256 HTTP
 //! Digest authentication. Used identically to @[DigestSHA256Server].
 class DigestSHA256sessServer
 {
   inherit DigestSHA256Server;
   constant algorithm = "SHA-256-sess";
+}
+
+//! HTTP Digest server implementation using SHA512/256.
+class DigestSHA512256Server {
+  inherit DigestServer;
+  inherit DigestSHA512256;
+}
+
+//! Implements the session version "SHA-512-256-sess" of the SHA512/256 HTTP
+//! Digest authentication. Used identically to @[DigestSHA512256Server].
+class DigestSHA512256sessServer
+{
+  inherit DigestSHA512256Server;
+  constant algorithm = "SHA-512-256-sess";
 }
 
 //! Abstract Client class.
@@ -341,6 +362,8 @@ Client make_authenticator(string|array(string) hdrs,
         return DigestMD5Client(auth, user, password, realm);
       case "SHA-256":
         return DigestSHA256Client(auth, user, password, realm);
+      case "SHA-512-256":
+        return DigestSHA512256Client(auth, user, password, realm);
       }
     }
   }
@@ -385,12 +408,13 @@ class DigestClient {
   string opaque;
 
   int counter = 1;
+  int userhash = 0;
+  int utf8 = 0;
 
   protected void create(mapping hdr, string user, string password,
                         void|string realm) {
     if( !hdr || !user || !password )
       error("Missing argument.\n");
-    this::user = user;
 
     if( !hdr->realm )
       error("Missing realm header argument.\n");
@@ -403,7 +427,20 @@ class DigestClient {
     qop = hdr->qop;
     opaque = hdr->opaque;
 
+    if( hdr->charset) {
+      if( hdr->charset!="UTF-8" )
+        error("Unknown charset %O\n", hdr->charset);
+      user = string_to_utf8(user);
+      utf8 = 1;
+    }
+
     ha1 = hash(user, realm, password);
+
+    if( hdr->userhash=="true" ) {
+      user = hash(user, realm);
+      userhash = 1;
+    }
+    this::user = user;
   }
 
   protected int(0..1) should_quote(string name, string value) {
@@ -430,6 +467,8 @@ class DigestClient {
     ]);
     if( opaque )
       response->opaque = opaque;
+    if( userhash )
+      response->userhash = "true";
 
     if( (< "auth", "auth-int" >)[qop] ) {
       // RFC 7616 3.5. nc MUST be exactly 8 characters.
@@ -465,5 +504,11 @@ class DigestMD5Client {
 //! HTTP Digest authentication client using SHA256.
 class DigestSHA256Client {
   inherit DigestSHA256;
+  inherit DigestClient;
+}
+
+//! HTTP Digest authentication client using SHA512/256.
+class DigestSHA512256Client {
+  inherit DigestSHA512256;
   inherit DigestClient;
 }
