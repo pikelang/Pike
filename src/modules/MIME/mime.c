@@ -38,6 +38,7 @@ static void f_encode_base64( INT32 args );
 static void f_encode_base64url( INT32 args );
 static void f_encode_base32( INT32 args );
 static void f_encode_base32hex( INT32 args );
+static void f_encode_crypt64( INT32 args );
 static void f_decode_qp( INT32 args );
 static void f_encode_qp( INT32 args );
 static void f_decode_uue( INT32 args );
@@ -55,6 +56,7 @@ static const char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrs
 static const char base64urltab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 static const char base32tab[32] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 static const char base32hextab[32] = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+static const char crypt64tab[64] = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 static SIGNED char base64rtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base64urlrtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base32rtab[(1<<(CHAR_BIT-1))-' '];
@@ -181,6 +183,9 @@ PIKE_MODULE_INIT
   ADD_FUNCTION2( "encode_base32hex", f_encode_base32hex,
                  tFunc(tStr8 tOr(tVoid,tInt) tOr(tVoid,tInt), tStr7),
 		 0, OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "encode_crypt64", f_encode_crypt64,
+                 tFunc(tStr8, tStr7), 0, OPT_TRY_OPTIMIZE );
 
   add_function_constant( "decode_qp", f_decode_qp,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
@@ -749,6 +754,62 @@ static void f_encode_base32( INT32 args )
 static void f_encode_base32hex( INT32 args )
 {
   encode_base32(args, "encode_base32hex", base32hextab, 1);
+}
+
+/*! @decl string encode_crypt64(string(8bit) data)
+ *!
+ *! This function encodes data using the @tt{crypt64@} encoding.
+ *!
+ *! This is an ad hoc encoding similar to @tt{base64@} that several
+ *! password hashing algorithms use for entries in the password database.
+ *!
+ *! @note
+ *!   This is NOT a MIME-compliant encoding, and MUST NOT
+ *!   be used as such.
+ *!
+ *! @seealso
+ *! @[MIME.decode_crypt64()]
+ */
+static void f_encode_crypt64( INT32 args )
+{
+  const p_wchar0 *in_bytes;
+  const p_wchar0 *end_bytes;
+  p_wchar0 *out_bytes;
+  struct pike_string *res;
+  unsigned int bitbuf = 0;
+  int bits = 0;
+
+  if(args != 1)
+    Pike_error( "Wrong number of arguments to MIME.encode_crypt64()\n" );
+  if(TYPEOF(sp[-args]) != T_STRING)
+    Pike_error( "Wrong type of argument to MIME.encode_crypt64()\n" );
+  if (sp[-args].u.string->size_shift != 0)
+    Pike_error( "Char out of range for MIME.encode_crypt64()\n" );
+
+  in_bytes = STR0(Pike_sp[-args].u.string);
+  end_bytes = in_bytes + Pike_sp[-args].u.string->len;
+
+  res = begin_shared_string(Pike_sp[-args].u.string->len +
+			    (Pike_sp[-args].u.string->len + 2) / 3);
+  out_bytes = STR0(res);
+
+  while (in_bytes < end_bytes) {
+    if (bits < 6) {
+      bitbuf |= *in_bytes << bits;
+      in_bytes++;
+      bits += 8;
+    }
+    *out_bytes = crypt64tab[bitbuf & 0x3f];
+    out_bytes++;
+    bitbuf >>= 6;
+    bits -= 6;
+  }
+
+  if (bits) {
+    *out_bytes = crypt64tab[bitbuf & 0x3f];
+  }
+
+  push_string(end_shared_string(res));
 }
 
 /*! @decl string decode_qp(string encoded_data)
