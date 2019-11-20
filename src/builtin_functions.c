@@ -4395,6 +4395,7 @@ node *fix_object_program_type(node *n)
 /*! @decl string reverse(string s, int|void start, int|void end)
  *! @decl array reverse(array a, int|void start, int|void end)
  *! @decl int reverse(int i, int|void start, int|void end)
+ *! @decl mixed reverse(object o, mixed... options)
  *!
  *!   Reverses a string, array or int.
  *!
@@ -4404,6 +4405,8 @@ node *fix_object_program_type(node *n)
  *!     Array to reverse.
  *!   @param i
  *!     Integer to reverse.
+ *!   @param o
+ *!     Object to reverse.
  *!   @param start
  *!     Optional start index of the range to reverse.
  *!     Default: @expr{0@} (zero).
@@ -4412,10 +4415,13 @@ node *fix_object_program_type(node *n)
  *!     Default for strings: @expr{sizeof(s)-1@}.
  *!     Default for arrays: @expr{sizeof(a)-1@}.
  *!     Default for integers: @expr{Pike.get_runtime_info()->int_size - 1@}.
+ *!   @param options
+ *!     Optional arguments that are to be passed to @[lfun::_reverse()].
  *!
  *!   This function reverses a string, char by char, an array, value
  *!   by value or an int, bit by bit and returns the result. It's not
- *!   destructive on the input value.
+ *!   destructive on the input value. For objects it simply calls
+ *!   @[lfun::_reverse()] in the object, and returns the result.
  *!
  *!   Reversing strings can be particularly useful for parsing difficult
  *!   syntaxes which require scanning backwards.
@@ -4549,6 +4555,14 @@ PMOD_EXPORT void f_reverse(INT32 args)
     push_array(a);
     break;
   }
+
+  case T_OBJECT:
+    {
+      apply_lfun(sv->u.object, LFUN__REVERSE, args - 1);
+      stack_swap();
+      pop_stack();
+      break;
+    }
 
   default:
     SIMPLE_ARG_TYPE_ERROR("reverse", 1, "string|int|array");
@@ -10176,10 +10190,11 @@ void init_builtin_efuns(void)
 	    OPT_TRY_OPTIMIZE, optimize_replace, 0);
 
   ADD_EFUN("reverse",f_reverse,
-	   tOr3(tFunc(tInt tOr(tVoid, tInt) tOr(tVoid, tInt), tInt),
+	   tOr4(tFunc(tInt tOr(tVoid, tInt) tOr(tVoid, tInt), tInt),
 		tFunc(tStr tOr(tVoid, tInt) tOr(tVoid, tInt), tStr),
 		tFunc(tSetvar(0, tArray) tOr(tVoid, tInt) tOr(tVoid, tInt),
-		      tVar(0))),0);
+		      tVar(0)),
+		tFuncV(tObj, tOr(tMix, tVoid), tMix)),0);
 
   /* function(mixed,array:array) */
   ADD_EFUN("rows",f_rows,

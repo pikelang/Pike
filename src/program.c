@@ -188,6 +188,7 @@ const char *const lfun_names[]  = {
   "_annotations",
   "_m_clear",
   "_m_add",
+  "_reverse",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -257,6 +258,7 @@ static const char *const raw_lfun_types[] = {
 	 tOr(tInt01,tVoid),tVoid,tArray),   /* "_annotations", */
   tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
   tFuncV(tZero, tVoid, tVoid),	/* "_m_add", */
+  tFuncV(tNone, tOr(tZero, tVoid), tVoid),	/* "_reverse", */
 };
 
 /* These two are not true LFUNs! */
@@ -1454,6 +1456,11 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @seealso
  *!   @[lfun::_m_delete()], @[lfun::_m_clear()]
+ */
+
+/*! @decl mixed lfun::_reverse(mixed ... options)
+ *!
+ *!   Called by @[reverse()].
  */
 
 /**** END FAKE LFUNS ****/
