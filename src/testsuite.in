@@ -8162,7 +8162,17 @@ test_equal([[ ({ 557239244978618154304871 }) ]],
            [[ array_sscanf("0x76000000000001234567", "%x") ]])
 
 test_equal([[array_sscanf("foo \12345 bar <fie>","%[^<]")]],
-	     [[ ({"foo \12345 bar " }) ]])
+            [[ ({"foo \12345 bar " }) ]])
+
+test_eval_error([[
+ // Crash bug on Windows
+ object p = Parser.HTML();
+ p->add_tag("x", lambda(object p, mapping m, string h)
+   {
+     sscanf(h, "%s.js", h);
+   });
+ p->finish("<x/>");
+]])
 
 test_equal(471100000000000000000000000000000000000000000000042,
            (int)(mixed)471100000000000000000000000000000000000000000000042)
