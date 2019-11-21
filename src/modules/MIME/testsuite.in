@@ -105,6 +105,7 @@ test_buffer_handling(base64)
 test_buffer_handling(base64url)
 test_buffer_handling(base32)
 test_buffer_handling(base32hex)
+test_buffer_handling(crypt64)
 test_buffer_handling(qp)
 test_buffer_handling(uue)
 

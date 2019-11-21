@@ -34,6 +34,7 @@ static void f_decode_base64( INT32 args );
 static void f_decode_base64url( INT32 args );
 static void f_decode_base32( INT32 args );
 static void f_decode_base32hex( INT32 args );
+static void f_decode_crypt64( INT32 args );
 static void f_encode_base64( INT32 args );
 static void f_encode_base64url( INT32 args );
 static void f_encode_base32( INT32 args );
@@ -61,6 +62,7 @@ static SIGNED char base64rtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base64urlrtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base32rtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base32hexrtab[(1<<(CHAR_BIT-1))-' '];
+static SIGNED char crypt64rtab[(1<<(CHAR_BIT-1))-' '];
 static const char qptab[16] = "0123456789ABCDEF";
 static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 
@@ -129,6 +131,11 @@ PIKE_MODULE_INIT
     }
   }
 
+  /* Init reverse crypt64 mapping */
+  memset( crypt64rtab, -1, sizeof(crypt64rtab) );
+  for (i = 0; i < 64; i++)
+    crypt64rtab[crypt64tab[i] - ' '] = i;
+
   /* Init reverse qp mapping */
   memset( qprtab, -1, sizeof(qprtab) );
   for (i = 0; i < 16; i++)
@@ -166,6 +173,9 @@ PIKE_MODULE_INIT
                  tFunc(tStr7, tStr8), 0, OPT_TRY_OPTIMIZE );
 
   ADD_FUNCTION2( "decode_base32hex", f_decode_base32hex,
+                 tFunc(tStr7, tStr8), 0, OPT_TRY_OPTIMIZE );
+
+  ADD_FUNCTION2( "decode_crypt64", f_decode_crypt64,
                  tFunc(tStr7, tStr8), 0, OPT_TRY_OPTIMIZE );
 
   ADD_FUNCTION2( "encode_base64", f_encode_base64,
@@ -418,6 +428,57 @@ static void f_decode_base64( INT32 args )
 static void f_decode_base64url( INT32 args )
 {
   decode_base64(args, "decode_base64url", base64urlrtab);
+}
+
+/*! @decl string(8bit) decode_crypt64(string(7bit) encoded_data)
+ *!
+ *! This function decodes data encoded using the @tt{crypt64@}
+ *! encoding.
+ *!
+ *! This is an ad hoc encoding similar to @tt{base64@} that several
+ *! password hashing algorithms use for entries in the password database.
+ *!
+ *! @note
+ *!   This is NOT a MIME-compliant encoding, and MUST NOT
+ *!   be used as such.
+ *!
+ *! @seealso
+ *! @[MIME.encode_crypt64()]
+ */
+static void f_decode_crypt64( INT32 args )
+{
+  struct string_builder s;
+  const unsigned char *in;
+  const unsigned char *end;
+  unsigned int bitbuf = 0;
+  int bits = 0;
+
+  if(args != 1)
+    Pike_error( "Wrong number of arguments to MIME.decode_crypt64()\n");
+  if (TYPEOF(Pike_sp[-args]) != T_STRING)
+    Pike_error( "Wrong type of argument to MIME.decode_crypt64()\n" );
+  if (Pike_sp[-args].u.string->size_shift != 0)
+    Pike_error( "Char out of range for MIME.decode_crypt64()\n" );
+
+  in = STR0(Pike_sp[-args].u.string);
+  end = in + Pike_sp[-args].u.string->len;
+  init_string_builder(&s, 0);
+
+  while (in < end) {
+    int c = *in;
+    in++;
+    if ((c < ' ') || ((c = crypt64rtab[c - ' ']) < 0)) continue;
+    bitbuf |= c << bits;
+    bits += 6;
+
+    if (bits >= 8) {
+      string_builder_putchar(&s, bitbuf & 0xff);
+      bitbuf >>= 8;
+      bits -= 8;
+    }
+  }
+
+  push_string(finish_string_builder(&s));
 }
 
 /*! @decl string decode_base32(string encoded_data)
