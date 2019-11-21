@@ -91,11 +91,11 @@ define(test_buffer_handling, [[
       string(7bit) enc = MIME.encode_$1(vector);
       string(8bit) dec = MIME.decode_$1(enc);
       if (dec != vector) return ({ i, "with linebreaks", vector, enc, dec });
-      ]]ifelse([[$1]],[[uue]],[[]],[[
+      ]]ifelse([[$1]],[[uue]],[[]],ifelse([[$1]],[[crypt64]],[[]],[[
       enc = MIME.encode_$1(vector, 1);
       dec = MIME.decode_$1(enc);
       if (dec != vector) return ({ i, "without linebreaks", vector, enc, dec });
-      ]])[[
+      ]]))[[
     }
     return 0;
   ]], 0)
