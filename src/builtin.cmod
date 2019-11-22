@@ -5892,7 +5892,7 @@ PIKECLASS List
    *   o _equal() for iterators.
    *   o _search(), cast()
    *   o _indices()??
-   *   o Support for reverse(), filter() and map().
+   *   o Support for filter() and map().
    *   o Initialization from array.
    *   o Support for Pike.count_memory.
    */
@@ -6029,6 +6029,33 @@ PIKECLASS List
       }
     }
     stack_pop_n_elems_keep_top(args);
+  }
+
+  /*! @decl protected List _reverse()
+   *!
+   *!   Reverse the list.
+   *!
+   *! @seealso
+   *!   @[reverse()]
+   */
+  PIKEFUN List _reverse()
+    flags ID_PROTECTED;
+  {
+    struct object *res = clone_object(List_program, 0);
+    struct List_struct *other_list = get_storage(res, List_program);
+    struct pike_list_node *n;
+    struct pike_list_node *other_n;
+    push_object(res);
+#ifdef PIKE_DEBUG
+    if (!other_list) Pike_fatal("Internal error in List::_reverse()\n");
+#endif
+    for (n = THIS->head; n->next; n = n->next) {
+      other_n = alloc_pike_list_node();
+      assign_svalue_no_free(&other_n->val, &n->val);
+      prepend_list_node(other_list->head, other_n);
+      other_list->num_elems++;
+      free_list_node(other_n);
+    }
   }
 
   /*! @decl mixed head()
