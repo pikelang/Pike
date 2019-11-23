@@ -2466,6 +2466,25 @@ static void low_print_tree(node *foo,int needlval)
     fputs("})", stderr);
     return;
 
+  case F_RETURN:
+    switch(CDR(foo)?CDR(foo)->u.sval.u.integer:0) {
+    case 2:
+      fputs("yield", stderr);
+      break;
+
+    case 1:
+      fputs("continue_return", stderr);
+      break;
+
+    default:
+      fputs("return", stderr);
+      break;
+    }
+    fputc('(', stderr);
+    if(car_is_node(foo)) low_print_tree(_CAR(foo),0);
+    fputc(')', stderr);
+    return;
+
   default:
     if(!car_is_node(foo) && !cdr_is_node(foo))
     {
