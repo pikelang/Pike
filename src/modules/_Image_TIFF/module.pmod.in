@@ -68,30 +68,30 @@ private Long LONG = Long();
 
 
 
-// @decl mapping(int:mapping(string:mixed)) tiff_tags
-//   Defines TIFF tags to parse.
-//
-// @mapping
-//   Lookup from integer TIFF tag to parse information:
-//   @member mapping(string:string|TYPE|array(TYPE))
-//     For each supported TIFF tag the following information is kept:
-//       @mapping
-//         @member string "name"
-//           Name of the tag. Currently only used to aid the programmer
-//           when reading the rules.
-//         @member TYPE|array(TYPE) "type"
-//           Defines what types a tag can have.
-//         @member string|array(string) "prop"
-//           The property name that the value of tag will be displayed
-//           as in the resulting mapping.
-//         @member function "fn"
-//           Optional function to do processing on the tag value.
-//           Can return a single value or a mapping. If mapping, that mapping
-//           is added to the resulting mapping.
-//           Note that the first argument can either be an integer or a string.
-//       @endmapping
-//  @endmapping
-//
+//! @decl mapping(int:mapping(string:mixed)) tiff_tags
+//!   Defines TIFF tags to parse.
+//!
+//! @mapping
+//!   Lookup from integer TIFF tag to parse information:
+//!   @member mapping(string:string|TYPE|array(TYPE)) tag
+//!     For each supported TIFF tag the following information is kept:
+//!       @mapping
+//!         @member string "name"
+//!           Name of the tag. Currently only used to aid the programmer
+//!           when reading the rules.
+//!         @member TYPE|array(TYPE) "type"
+//!           Defines what types a tag can have.
+//!         @member string|array(string) "prop"
+//!           The property name that the value of tag will be displayed
+//!           as in the resulting mapping.
+//!         @member function "fn"
+//!           Optional function to do processing on the tag value.
+//!           Can return a single value or a mapping. If mapping, that mapping
+//!           is added to the resulting mapping.
+//!           Note that the first argument can either be an integer or a string.
+//!       @endmapping
+//!  @endmapping
+//!
 private mapping(int:mapping(string:mixed)) tiff_tags = ([
   254: ([ "name": "NewSubfileType",
           "type": LONG,
