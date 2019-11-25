@@ -9,6 +9,7 @@
 
 #include "global.h"
 #include "svalue.h"
+#include "program.h"
 #include "gc_header.h"
 #include "pike_error.h"
 
@@ -212,6 +213,25 @@ static inline void object_permit_destruct(struct object *o)
     o->flags &= ~OBJECT_PENDING_DESTRUCT;
     destruct_object(o, DESTRUCT_EXPLICIT);
   }
+}
+
+/**
+ * Look up the given lfun in the given inherit of the object.
+ * Returns the function number in inherit 0 if it exists,
+ * or -1 if not found.
+ */
+static inline int PIKE_UNUSED_ATTRIBUTE FIND_OBJECT_LFUN(struct object *o,
+							 int inherit,
+							 enum LFUN lfun)
+{
+  int f = -1;
+  if (o->prog && o->prog->num_inherits > inherit) {
+    f = FIND_LFUN(o->prog->inherits[inherit].prog, lfun);
+    if (f != -1) {
+      f += o->prog->inherits[inherit].identifier_level;
+    }
+  }
+  return f;
 }
 
 #ifdef DEBUG_MALLOC
