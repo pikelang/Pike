@@ -980,6 +980,9 @@ struct ff_hash;
 int find_shared_string_identifier(struct pike_string *name,
 				  const struct program *prog);
 PMOD_EXPORT int find_identifier(const char *name,const struct program *prog);
+PMOD_EXPORT int find_identifier_inh(const char *name,
+				    const struct program *prog,
+				    int inh);
 int store_prog_string(struct pike_string *str);
 int store_constant(const struct svalue *foo,
 		   int equal,

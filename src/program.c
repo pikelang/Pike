@@ -7875,6 +7875,30 @@ PMOD_EXPORT int find_identifier(const char *name,const struct program *prog)
   return find_shared_string_identifier(n,prog);
 }
 
+PMOD_EXPORT int find_identifier_inh(const char *name,
+				    const struct program *prog,
+				    int inh)
+{
+  struct pike_string *n;
+  int f;
+
+  if(!prog) {
+    if (strlen(name) < 1024) {
+      Pike_error("Lookup of identifier %s in destructed object.\n", name);
+    } else {
+      Pike_error("Lookup of long identifier in destructed object.\n");
+    }
+  }
+  if (prog->num_inherits <= inh) {
+    Pike_error("Lookup of identifier in invalid inherit.\n");
+  }
+  n=findstring(name);
+  if(!n) return -1;
+  f = find_shared_string_identifier(n, prog->inherits[inh].prog);
+  if (f != -1) f += prog->inherits[inh].identifier_level;
+  return f;
+}
+
 int store_prog_string(struct pike_string *str)
 {
   unsigned int i;
