@@ -105,6 +105,7 @@
 %token TOK_SUB_EQ "-="
 %token TOK_TYPEDEF "typedef"
 %token TOK_TYPEOF "typeof"
+%token TOK_UNUSED "__unused__"
 %token TOK_VARIANT "variant"
 %token TOK_VERSION "version prefix"
 %token TOK_VOID_ID "void"
@@ -1308,6 +1309,7 @@ modifier:
   | TOK_VARIANT    { $$ = ID_VARIANT; }
   | TOK_WEAK       { $$ = ID_WEAK; }
   | TOK_CONTINUE   { $$ = ID_GENERATOR; }
+  | TOK_UNUSED     { $$ = ID_USED; }
   ;
 
 magic_identifiers1:
@@ -1322,6 +1324,7 @@ magic_identifiers1:
   | TOK_OPTIONAL   { $$ = "optional"; }
   | TOK_VARIANT    { $$ = "variant"; }
   | TOK_WEAK       { $$ = "__weak__"; }
+  | TOK_UNUSED     { $$ = "__unused__"; }
   | TOK_STATIC_ASSERT	{ $$ = "_Static_assert"; }
   ;
 
