@@ -338,7 +338,7 @@ OPCODE2(F_TRAMPOLINE, "trampoline", I_UPDATE_SP, {
   }
   add_ref( ((struct pike_trampoline *)(o->storage))->frame=f );
   ((struct pike_trampoline *)(o->storage))->func=arg1+Pike_fp->context->identifier_level;
-  push_function(o, pike_trampoline_program->lfuns[LFUN_CALL]);
+  push_function(o, FIND_LFUN(pike_trampoline_program, LFUN_CALL));
   print_return_value();
 });
 
