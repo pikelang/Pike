@@ -2767,7 +2767,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       PIKE_ERROR("destructed object", "Apply on destructed object.\n", Pike_sp, args);
     lfun = FIND_LFUN(o->prog, fun);
     if (lfun < 0)
-      Pike_error ("Cannot call undefined lfun %s.\n", lfun_names[fun]);
+      Pike_error ("Cannot call undefined lfun %S.\n", lfun_strings[fun]);
     fun = lfun;
     goto apply_low;
   }
@@ -3456,7 +3456,7 @@ PMOD_EXPORT void apply_lfun(struct object *o, int lfun, int args)
 	       Pike_sp, args);
 
   if ((fun = (int)FIND_LFUN(o->prog, lfun)) < 0)
-    Pike_error("Calling undefined lfun::%s.\n", lfun_names[lfun]);
+    Pike_error("Calling undefined lfun::%S.\n", lfun_strings[lfun]);
 
   apply_low(o, fun, args);
 }
