@@ -1570,7 +1570,7 @@ PMOD_EXPORT int object_index_no_free(struct svalue *to,
 
   if(p->flags & PROGRAM_FIXED)
   {
-    l=p->lfuns[lfun];
+    l = QUICK_FIND_LFUN(p, lfun);
   }else{
     if(!(p->flags & PROGRAM_PASS_1_DONE))
     {
