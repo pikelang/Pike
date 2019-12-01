@@ -1096,7 +1096,9 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
     dmalloc_touch(struct program*, p);
     if ((int)lfun < 0) return find_lfun_fatal(p, lfun);
 #endif
-    if (p->flags & PROGRAM_FIXED && lfun < NUM_LFUNS) return p->lfuns[lfun];
+    if (p->flags & PROGRAM_FIXED && lfun < NUM_LFUNS) {
+      return QUICK_FIND_LFUN(p, lfun);
+    }
     return low_find_lfun(p, lfun);
 }
 

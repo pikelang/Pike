@@ -3094,7 +3094,7 @@ void fixate_program(void)
    * to allow the user to set and clear that flag while the program is
    * being built. */
   if (!(p->flags & PROGRAM_LIVE_OBJ)) {
-    int e, destruct = p->lfuns[LFUN__DESTRUCT];
+    int e, destruct = QUICK_FIND_LFUN(p, LFUN__DESTRUCT);
     if (destruct > -1) {
       struct identifier *id = ID_FROM_INT (p, destruct);
       if (!IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags) ||
@@ -4638,7 +4638,8 @@ struct program *end_first_pass(int finish)
     {
       int id;
       if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
-      id = Pike_compiler->new_program->inherits[e].prog->lfuns[LFUN___INIT];
+      id = QUICK_FIND_LFUN(Pike_compiler->new_program->inherits[e].prog,
+			   LFUN___INIT);
       id = really_low_reference_inherited_identifier(0, e, id);
       if(id!=-1)
       {
