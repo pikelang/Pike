@@ -193,6 +193,9 @@ PIKECLASS MAC
       key->flags |= STRING_CLEAR_ON_EXIT;
       NO_WIDE_STRING(key);
 
+      if (!meta)
+	Pike_error("MAC not properly initialized.\n");
+
       meta->set_key(ctx, key->len, STR0(key));
       pop_stack();
     }
