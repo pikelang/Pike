@@ -25,6 +25,11 @@ o Concurrent
   - Rewrite timeout() to reduce the memory footprint of a future in the
     common case.
 
+o SSL
+
+  The SSL module now supports session ticket both client and server side.
+  This functionality has been backported from 8.1/master.
+
 Bug fixes
 ---------
 
