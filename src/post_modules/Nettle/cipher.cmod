@@ -398,9 +398,9 @@ PIKECLASS Cipher
       if (THIS->ctx && Pike_fp->current_object->prog)
       {
 	struct Nettle_Cipher_struct *info = GET_INFO();
-	assert(info);
-	assert(info->meta);
-	memset(THIS->ctx, 0, info->meta->context_size);
+	if (info && info->meta) {
+	  memset(THIS->ctx, 0, info->meta->context_size);
+	}
       }
     }
   }
