@@ -271,6 +271,9 @@ PIKECLASS AEAD
     {
       const struct pike_aead *meta = GET_META();
 
+      if (!meta)
+	Pike_error("CipherState not properly initialized.\n");
+
       push_random_string(meta->key_size);
 
       stack_dup();
@@ -505,8 +508,9 @@ PIKECLASS AEAD
       if (THIS->ctx && Pike_fp->current_object->prog)
       {
 	const struct pike_aead *meta = GET_META();
-	assert(meta);
-	memset(THIS->ctx, 0, meta->context_size);
+	if (meta) {
+	  memset(THIS->ctx, 0, meta->context_size);
+	}
       }
     }
   }
