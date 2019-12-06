@@ -343,6 +343,9 @@ PIKECLASS Cipher
       struct Nettle_Cipher_struct *info = GET_INFO();
       assert(info);
 
+      if (!THIS->ctx || !info->meta)
+	Pike_error("CipherState not properly initialized.\n");
+
       /* NB: Some ciphers (eg Blowfish) have weak keys, for which
        *     set_encrypt_key() will throw an error. We thus need
        *     to retry with a new key on error.
