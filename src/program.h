@@ -20,6 +20,8 @@
 /* Needed to support dynamic loading on NT */
 PMOD_EXPORT extern struct program_state * Pike_compiler;
 
+/* #define PIKE_NEW_LFUN_LOOKUP */
+
 /* Compilation flags */
 #define COMPILATION_CHECK_FINAL         0x01
         /* This flag is set when resolve functions should force the lookup so
@@ -58,6 +60,116 @@ extern struct pike_string *parser_system_string;
 extern struct pike_string *type_check_system_string;
 
 extern struct pike_string *compat_lfun_destroy_string;
+
+#ifdef PIKE_NEW_LFUN_LOOKUP
+/**
+ * New LFUN lookup table.
+ *
+ * The lfun table is an array of INT16, where the first
+ * 10 (ie number of groups) entries contain offsets into
+ * the same array where the entries for the corresponding
+ * group start. An offset of 0 (zero) indicates that the
+ * group is empty. Group #0 is always present even if empty.
+ *
+ * Each group may currently contain at most 16 members. This is
+ * due to the way they are encoded in the LFUN_* constants.
+ *
+ * The groups partition the set of lfuns into subsets of
+ * related lfuns that are likely to be implemented together.
+ *
+ * The most significant nybble of an lfun number contains
+ * the group number, and the least significant nybble the
+ * offset in the group.
+ *
+ * Note that the values in this enum MUST match the
+ * corresponding tables in program.c.
+ */
+enum LFUN {
+    /* Group 0 */
+    LFUN___INIT 		= 0x00,
+    LFUN_CREATE,
+    LFUN__DESTRUCT,
+    LFUN__SPRINTF,
+
+    /* Group 1 */
+    LFUN_ADD 			= 0x10,
+    LFUN_SUBTRACT,
+    LFUN_MULTIPLY,
+    LFUN_DIVIDE,
+    LFUN_MOD,
+    LFUN_AND,
+    LFUN_OR,
+    LFUN_XOR,
+    LFUN_LSH,
+    LFUN_RSH,
+    LFUN_POW,
+
+    /* Group 2 */
+    LFUN_RADD			= 0x20,
+    LFUN_RSUBTRACT,
+    LFUN_RMULTIPLY,
+    LFUN_RDIVIDE,
+    LFUN_RMOD,
+    LFUN_RAND,
+    LFUN_ROR,
+    LFUN_RXOR,
+    LFUN_RLSH,
+    LFUN_RRSH,
+    LFUN_RPOW,
+
+    /* Group 3 */
+    LFUN_COMPL			= 0x30,
+    LFUN_NOT,
+    LFUN_CALL,
+    LFUN_CAST,
+    LFUN___HASH,
+    LFUN__SQRT,
+    LFUN__RANDOM,
+    LFUN__REVERSE,
+
+    /* Group 4 */
+    LFUN_EQ			= 0x40,
+    LFUN_LT,
+    LFUN_GT,
+    LFUN__EQUAL,
+    LFUN__IS_TYPE,
+
+    /* Group 5 */
+    LFUN_INDEX			= 0x50,
+    LFUN_ARROW,
+    LFUN_RANGE,
+    LFUN__SEARCH,
+    LFUN__SIZE_OBJECT,
+
+    /* Group 6 */
+    LFUN__SIZEOF		= 0x60,
+    LFUN__INDICES,
+    LFUN__VALUES,
+    LFUN__TYPES,
+    LFUN__ANNOTATIONS,
+    LFUN__GET_ITERATOR,
+
+    /* Group 7 */
+    LFUN_ADD_EQ			= 0x70,
+    LFUN_ASSIGN_INDEX,
+    LFUN_ASSIGN_ARROW,
+    LFUN__M_DELETE,
+    LFUN__M_CLEAR,
+    LFUN__M_ADD,
+
+    /* Group 8 */
+    LFUN__SERIALIZE		= 0x80,
+    LFUN__DESERIALIZE,
+
+    /* Group 9 */
+    LFUN_NEXT_FUN		= 0x90,
+    LFUN_INDEX_FUN,
+    LFUN_VALUE_FUN,
+
+    NUM_LFUNS,
+};
+
+#else
 
 enum LFUN {
     LFUN___INIT,
@@ -124,6 +236,7 @@ enum LFUN {
     LFUN__M_ADD,
     LFUN__REVERSE,
 };
+#endif
 
 extern const char *const lfun_names[];
 
@@ -684,7 +797,11 @@ struct program
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) NUMTYPE PIKE_CONCAT(num_,NAME) ;
 #include "program_areas.h"
 
+#ifdef PIKE_NEW_LFUN_LOOKUP
+  INT16 *lfuns;
+#else
   INT16 lfuns[NUM_LFUNS];
+#endif
 };
 
 struct local_variable_info
@@ -746,7 +863,12 @@ static inline struct identifier *ID_FROM_INT(const struct program *p, unsigned I
   return ID_FROM_PTR(p, ref);
 }
 
+#ifdef PIKE_NEW_LFUN_LOOKUP
+#define QUICK_FIND_LFUN(P,N) ((P)->lfuns[(N)>>4]?			\
+	       (P)->lfuns[(P)->lfuns[(N)>>4] + ((N) & 0x0f)]:-1)
+#else
 #define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
+#endif
 
 #ifdef DO_PIKE_CLEANUP
 PMOD_EXPORT extern int gc_external_refs_zapped;
