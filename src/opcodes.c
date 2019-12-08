@@ -21,10 +21,10 @@
 struct instr_counter
 {
   long runned;
-  struct instr_counter* next[256];
+  struct instr_counter* next[MAX_SUPPORTED_INSTR + 1];
 };
 
-int last_instruction[256];
+int last_instruction[MAX_SUPPORTED_INSTR+1];
 struct instr_counter *instr_counter_storage;
 
 struct instr_counter *init_instr_storage_pointers(int depth)
