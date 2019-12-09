@@ -261,6 +261,13 @@ int verify(string(8bit) password, string(7bit) hash)
       return Crypto.SHA512.crypt_php(passwd, salt) == hash;
       break;
 #endif
+
+    case "sha1":	// SHA1-HMAC
+      rounds = (int)salt;
+      sscanf(hash, "%s$%s", salt, hash);
+      return Crypto.SHA1.HMAC.crypt_hash(password, salt, rounds) ==
+	[string(7bit)]hash;
+      break;
     }
     break;
   }
@@ -488,6 +495,16 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 		   return Crypto.MD5.hash(passwd + salt);
 		 };
     render_hash = render_ldap_hash;
+    break;
+
+  case "sha1":
+  case "$sha1$":
+    // NetBSD-style crypt_sha1().
+    crypt_hash = Crypto.SHA1.HMAC.crypt_hash;
+    render_hash = render_old_crypt_hash;
+    // Defaults taken from PassLib.
+    salt_size = 8;
+    rounds = 480000;
     break;
 
   case "pbkdf2":

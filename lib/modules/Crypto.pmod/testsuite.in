@@ -1638,6 +1638,14 @@ cond_resolv(Crypto.SHA512, [[
   // Generated using the Python PassLib via Phpass
   test_true(P("password", "$pbkdf2-sha512$1212$RHY0Fr3IDMSVO/RSZyb5ow$eNLfBK.eVozomMr.1gYa17k9B7KIK25NOEshvhrSX.esqY3s.FvWZViXz4KoLlQI.BzY/YTNJOiKc5gBYFYGww"))
 ]])
+cond_resolv(Crypto.SHA1, [[
+  // Tests for SHA1-HMAC
+  // From Phpass
+  test_true(P("password", "$sha1$40000$jtNX3nZ2$hBNaIXkt4wBI2o5rsi8KejSjNqIq"))
+  test_true(P("password", "$sha1$19703$iVdJqfSE$v4qYKl1zqYThwpjJAoKX6UvlHq/a"))
+  test_true(P("password", "$sha1$21773$uV7PTeux$I9oHnvwPZHMO0Nq6/WgyGV/tDJIH"))
+  test_true(P("test", "$sha1$1$Wq3GL2Vp$C8U25GvfHS8qGHimExLaiSFlGkAe"))
+]])
 cond_resolv(Crypto.SHA256, [[
   // http://www.akkadia.org/drepper/SHA-crypt.txt
   test_true(P("Hello world!", "$5$saltstring$5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5"))
