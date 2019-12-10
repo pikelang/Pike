@@ -90,6 +90,7 @@ PIKECLASS PIKE_NAME
 	*!   Block size. Must @expr{0@} (zero) or equal to the @[block_size()].
       DOCEND()
       PIKEFUN void create(string(8bit) passwd, void|int b)
+	flags ID_PROTECTED;
       {
         const struct nettle_hash *meta = THIS->meta = ((struct Nettle_Hash_struct *)parent_storage(2, Nettle_Hash_program))->meta;
         NO_WIDE_STRING(passwd);
