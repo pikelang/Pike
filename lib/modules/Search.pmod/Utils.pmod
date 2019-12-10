@@ -672,6 +672,8 @@ class Logger {
   private int last_log_purge_time;
   private constant log_purge_freq = 8*60*60; // Purge log every 8 h or so.
 
+  private string indentation = "                    ";
+
   private Sql.Sql get_db() {
     Sql.Sql db;
 #if constant(DBManager)
@@ -690,10 +692,15 @@ class Logger {
   //! @decl void create(Sql.Sql db_object, int profile, int stderr_logging)
   //! @decl void create(string db_url, int profile, int stderr_logging)
   protected void create(string|Sql.Sql _logdb, int _profile,
-			int _stderr_logging) {
+                        int _stderr_logging,
+                        void|int indentation_width)
+  {
     logdb = _logdb;
     profile = _profile;
     stderr_logging = _stderr_logging;
+    if (!zero_type(indentation_width)) {
+      indentation = sprintf("%"+indentation_width+"n");
+    }
 
     // create table eventlog (event int unsigned auto_increment primary key,
     // at timestamp not null, code int unsigned not null, extra varchar(255))
@@ -716,8 +723,8 @@ class Logger {
 		       "warning" : "Warning",
 		       "notice" :  "Notice", ]);
 
-    werror(sprintf("%sSearch: %s: %s\n",
-		   "                    : ",
+    werror(sprintf("%s: Search: %s: %s\n",
+		   indentation,
 		   types[type],
 		   extra?sprintf(codes[(int)code], @(extra/"\n")):codes[(int)code]));
   }
