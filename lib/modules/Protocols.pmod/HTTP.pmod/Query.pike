@@ -570,31 +570,9 @@ string headers_encode(mapping(string:array(string)|string) h)
 //!
 mapping hostname_cache=([]);
 
-protected Protocols.DNS.async_client async_dns;
-protected int last_async_dns;
-protected mixed async_id;
-
 #ifndef PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT
 #define PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT	60
 #endif
-
-// Check if it's time to clean up the async dns object.
-protected void clean_async_dns()
-{
-  int time_left = last_async_dns + PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT - time(1);
-  if (time_left >= 0) {
-    // Not yet.
-    async_id = call_out(clean_async_dns, time_left + 1);
-    return;
-  }
-  async_id = 0;
-
-  if(async_dns)
-    async_dns->close();
-  async_dns = 0;
-
-  last_async_dns = 0;
-}
 
 void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
@@ -626,14 +604,7 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
       return;
    }
 
-   if (!async_dns) {
-     async_dns = Protocols.DNS.async_client();
-   }
-   async_dns->host_to_ip(hostname, dns_lookup_callback, callback, @extra);
-   last_async_dns = time(1);
-   if (!async_id) {
-     async_id = call_out(clean_async_dns, PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT+1);
-   }
+   Protocols.DNS.async_host_to_ip(hostname, dns_lookup_callback, callback, @extra);
 }
 
 string dns_lookup(string hostname)
@@ -1286,15 +1257,6 @@ object datafile()
 
 protected void destroy()
 {
-   if (async_id) {
-     remove_call_out(async_id);
-   }
-   async_id = 0;
-   if(async_dns) {
-     async_dns->close();
-     async_dns = 0;
-   }
-
    catch(close_connection(1));
 }
 
@@ -1303,10 +1265,6 @@ protected void destroy()
 void close()
 {
   close_connection();
-  if(async_dns) {
-    async_dns->close();
-    async_dns = 0;
-  }
 }
 
 private int(0..1) is_empty_response()
