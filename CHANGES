@@ -161,6 +161,15 @@ o Protocols.Websocket
 
   Tentative fix for error 'indexing the NULL value with "set_nonblocking'.
 
+o Sql.pgsql
+
+  - Ensure that the db connection is closed when the portal is closed.
+
+  - Small speed boost.
+
+  - Fix the only known deadlock-cause logged in the last year; only happened
+    (rarely) on multiple parallel queries on a single connection.
+
 o SSL.File
 
   Do not close automatically on write error.
