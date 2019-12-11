@@ -125,7 +125,7 @@
 //!     taken to be a password hashed using the classic unix
 //!     @expr{crypt(3C)@} function. If the string contains only chars
 //!     from the set @expr{[a-zA-Z0-9./]@} it uses DES and the first two
-//!     characters as salt, but other alternatives might be possible
+//!     characters as salt, but other alternatives may be possible
 //!     depending on the @expr{crypt(3C)@} implementation in the
 //!     operating system.
 //!
@@ -265,8 +265,7 @@ int verify(string(8bit) password, string(7bit) hash)
     case "sha1":	// SHA1-HMAC
       rounds = (int)salt;
       sscanf(hash, "%s$%s", salt, hash);
-      return Crypto.SHA1.HMAC.crypt_hash(password, salt, rounds) ==
-	[string(7bit)]hash;
+      return Crypto.SHA1.HMAC.crypt_hash(password, salt, rounds) == hash;
       break;
     }
     break;
@@ -390,11 +389,11 @@ int verify(string(8bit) password, string(7bit) hash)
 //!   @[verify()], @[predef::crypt()], @[Nettle.crypt_md5()],
 //!   @[Nettle.Hash()->crypt_hash()]
 string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
-                  int|void rounds)
+		  int(0..)|void rounds)
 {
-  function(string(8bit), string(7bit), int:string(7bit)) crypt_hash;
+  function(string(8bit), string(7bit), int(0..):string(7bit)) crypt_hash;
   int(0..) salt_size = 16;
-  int default_rounds = 5000;
+  int(0..) default_rounds = 5000;
 
   string(7bit) render_crypt_hash(string(7bit) scheme, string(7bit) salt,
                                  string(7bit) hash, int rounds)
@@ -430,14 +429,15 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 		   salt, hash);
   };
 
-  string(7bit) render_ldap_hash(string(8bit) scheme, string(7bit) salt,
-                                string(8bit) hash, int rounds)
+  string(7bit) render_ldap_hash(string(7bit) scheme, string(7bit) salt,
+                                string(7bit) hash, int rounds)
   {
     if (scheme[0] != '{') scheme = "{" + scheme + "}";
-    return [string(7bit)]upper_case(scheme) + MIME.encode_base64(hash + salt);
+    return [string(7bit)](upper_case(scheme) + hash);
   };
 
-  function(string(7bit), string(7bit), string(8bit), int:string(7bit)) render_hash = render_crypt_hash;
+  function(string(7bit), string(7bit), string(7bit), int(0..):string(7bit))
+    render_hash = render_crypt_hash;
 
   switch(lower_case(scheme)) {
   case "crypt":
@@ -480,7 +480,8 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
   case "ssha":
   case "{ssha}":
     crypt_hash = lambda(string(8bit) passwd, string(7bit) salt, int rounds) {
-		   return Crypto.SHA1.hash(passwd + salt);
+		   return MIME.encode_base64(Crypto.SHA1.hash(passwd + salt) +
+					     salt);
 		 };
     render_hash = render_ldap_hash;
     break;
@@ -492,7 +493,8 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
   case "smd5":
   case "{smd5}":
     crypt_hash = lambda(string(8bit) passwd, string(8bit) salt, int rounds) {
-		   return Crypto.MD5.hash(passwd + salt);
+		   return MIME.encode_base64(Crypto.MD5.hash(passwd + salt) +
+					     salt);
 		 };
     render_hash = render_ldap_hash;
     break;
