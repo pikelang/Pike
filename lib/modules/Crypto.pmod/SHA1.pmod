@@ -32,15 +32,20 @@ protected class _HMAC
       checksum = s(checksum);
     }
 
-    // Some stupid shuffling for no specific reason...
-    string(8bit) result = "";
-    foreach(({ 2, 1, 0, 5, 4, 3, 8, 7,
-	       6, 11, 10, 9, 14, 13, 12, 17,
-	       16, 15, 0, 19, 18 }), int i) {
-      result += checksum[i..i];
+    // Reorder to 24-bit bigendian and pad the last group
+    // with the first byte.
+    array(int(8bit)) result = allocate(21);
+    foreach(({ 2, 1, 0,
+	       5, 4, 3,
+	       8, 7, 6,
+	       11, 10, 9,
+	       14, 13, 12,
+	       17, 16, 15,
+	       0, 19, 18 }); int i; int j) {
+      result[i] += checksum[j];
     }
 
-    return MIME.encode_crypt64(result);
+    return MIME.encode_crypt64((string(8bit))result);
   }
 
   //! @ignore
