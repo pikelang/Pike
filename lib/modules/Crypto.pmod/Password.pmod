@@ -95,6 +95,14 @@
 //!     from the password and the salt. Source: GNU libc
 //!     @url{http://www.gnu.org/software/libtool/manual/libc/crypt.html@}.
 //!
+//!   @value "$sha1$RRRRR$SSSSSSSS$XXXXXXXXXXXXXXXXXXXX"
+//!     The string is interpreted as a NetBSD-style @[SHA1.HMAC.crypt_hash()]
+//!     (aka @tt{crypt_sha1(3C)@}),
+//!     where @expr{RRRRR@} is the number of rounds (default 480000),
+//!     @expr{SSSSSSSS@} is a @[MIME.crypt64()] encoded salt. and the
+//!     @expr{XXX@} string is an @[SHA1.HMAC]-based hash created from
+//!     the password and the salt.
+//!
 //!   @value "$P$RSSSSSSSSXXXXXXXXXXXXXXXXXXXXXX"
 //!     The string is interpreted as a PHPass' Portable Hash password hash,
 //!     where @expr{R@} is an encoding of the 2-logarithm of the number of
@@ -265,7 +273,7 @@ int verify(string(8bit) password, string(7bit) hash)
     case "sha1":	// SHA1-HMAC
       rounds = (int)salt;
       sscanf(hash, "%s$%s", salt, hash);
-      return Crypto.SHA1.HMAC.crypt_hash(password, salt, rounds) == hash;
+      return Crypto.SHA1.HMAC.crypt_hash(passwd, salt, rounds) == hash;
       break;
     }
     break;
@@ -310,6 +318,10 @@ int verify(string(8bit) password, string(7bit) hash)
 //!     @value "1"
 //!     @value "$1$"
 //!       @[MD5.crypt_hash()] with 48 bits of salt and @expr{1000@} rounds.
+//!
+//!     @value "sha1"
+//!       @[SHA1.HMAC.crypt_hash()] with 48 bits of salt and a default
+//!       of @expr{480000@} rounds.
 //!
 //!     @value "P"
 //!     @value "$P$"
