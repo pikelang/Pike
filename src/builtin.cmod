@@ -2620,7 +2620,7 @@ PIKECLASS RandomInterface
     struct object *co;
 
     if (f < 0)
-      Pike_error("Calling undefined lfun::%s.\n", lfun_names[LFUN__RANDOM]);
+      Pike_error("Calling undefined lfun::%S.\n", lfun_strings[LFUN__RANDOM]);
 
     co = Pike_fp->current_object;
     ref_push_function(co, f_RandomInterface_random_string_fun_num);
