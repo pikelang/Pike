@@ -101,7 +101,7 @@ void msg_set_result(int ok)
     if( ok )
       werror("BSON test %d\r", success+fail);
     else
-      werror("FAIL @ %s:%s´n", section, test);
+      werror("FAIL @ %s:%s\n", section, test);
   }
 }
 
