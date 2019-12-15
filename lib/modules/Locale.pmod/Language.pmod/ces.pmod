@@ -7,13 +7,13 @@
 
 inherit "abstract";
 
-constant name = "\33-B\415esky";
+constant name = "èesky";
 constant english_name = "czech";
 constant iso_639_1 = "cs";
 constant iso_639_2 = "ces";
 constant iso_639_2B = "cze";
 
-constant aliases = ({ "cs", "cz", "cze", "ces", "czech", "\33-B\415esky" });
+constant aliases = ({ "cs", "cz", "cze", "ces", "czech", "èesky" });
 
 constant required_charset = "iso-8859-2";
 
