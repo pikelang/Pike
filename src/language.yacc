@@ -4555,7 +4555,7 @@ low_idents: TOK_IDENTIFIER
   }
   | '.' TOK_IDENTIFIER
   {
-    push_constant_text(".");
+    push_constant_text("");
     if (call_handle_import()) {
       node *tmp=mkconstantsvaluenode(Pike_sp-1);
       pop_stack();

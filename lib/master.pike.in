@@ -1241,7 +1241,7 @@ constant high_master_get_dir = predef::get_dir;
 
 string combine_path_with_cwd(string ... paths)
 {
-  return combine_path(IS_ABSOLUTE_PATH(paths[0])?"":getcwd(),@paths);
+  return combine_path(IS_ABSOLUTE_PATH(paths[0])?"":getcwd(),@paths-({""}));
 }
 
 #ifdef FILE_STAT_CACHE
