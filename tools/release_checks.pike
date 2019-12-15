@@ -1,3 +1,4 @@
+#charset iso-8859-1
 
 
 // Ok, so this test is stupid

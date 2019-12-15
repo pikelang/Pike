@@ -5,6 +5,7 @@
  * Henrik Grubbström 1996-11-24
  */
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 //! LALR(1) parser generator.

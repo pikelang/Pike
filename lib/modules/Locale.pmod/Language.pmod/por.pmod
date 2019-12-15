@@ -1,3 +1,4 @@
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 //! Portuguese language locale

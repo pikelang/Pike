@@ -3,6 +3,7 @@
 // Translated to Pike and expanded by Mirar
 //
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 //! Decodes the given @[peerid], returning an identification string

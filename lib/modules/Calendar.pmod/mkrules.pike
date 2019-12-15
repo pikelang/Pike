@@ -11,6 +11,7 @@
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 object cal=Calendar.ISO->set_timezone("UTC");

@@ -2,6 +2,7 @@
 
 // Updated 2014-08-06 from http://lcweb.loc.gov/standards/iso639-2/
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 // Mapping from ISO 639-2/T code to language name.

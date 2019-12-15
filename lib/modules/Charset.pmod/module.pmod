@@ -1,5 +1,6 @@
 // -*- Pike -*-
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 //! @ignore
 protected private inherit _Charset;

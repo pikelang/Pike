@@ -59,6 +59,7 @@
 //!	which is a MAXINT on most systems - 13 Dec 1901 20:45:52
 //!	to 19 Jan 2038 3:14:07, UTC.
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 // ----------------------------------------------------------------

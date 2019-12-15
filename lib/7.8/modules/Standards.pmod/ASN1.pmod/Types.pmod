@@ -1,6 +1,7 @@
 //! Encodes various asn.1 objects according to the Distinguished
 //! Encoding Rules (DER)
 
+#charset iso-8859-1
 #pike 8.0
 #pragma no_deprecation_warnings
 

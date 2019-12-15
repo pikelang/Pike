@@ -7,6 +7,7 @@
 //!
 //! inherits Time
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 //  #pragma strict_types

@@ -1,3 +1,4 @@
+#charset iso-8859-2
 #pike __REAL_VERSION__
 
 //! Hungarian language locale by Zsolt Varga.

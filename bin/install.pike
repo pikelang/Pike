@@ -1,4 +1,5 @@
 #! /usr/bin/env pike
+#charset iso-8859-1
 
 // Pike installer and exporter.
 

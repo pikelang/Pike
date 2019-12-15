@@ -1,3 +1,4 @@
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 //! This class implements URI parsing and resolving of relative references to

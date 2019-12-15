@@ -2,6 +2,7 @@
 // original author: mirar
 //! @appears Regexp.PCRE
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 inherit @module@; // C-module
