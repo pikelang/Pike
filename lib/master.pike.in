@@ -4673,6 +4673,9 @@ protected object Charset;
 //! character code conversion.
 string decode_charset(string data, string charset)
 {
+  if (charset == "iso-8859-1")
+    return data;
+
   if (!Charset) {
     Charset = [object]resolv("Charset");
     if (!Charset)
