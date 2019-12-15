@@ -46,6 +46,10 @@
 
 #include "pike_error.h"
 
+#ifdef __amigaos__
+#undef HAVE_TIMES
+#endif
+
 /*
  * Here comes a long blob with stuff to see how to find out about
  * cpu usage.

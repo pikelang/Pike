@@ -2051,6 +2051,14 @@ echo "$posix_name" | \
   sed -e "s,^$posix_prefix,$native_prefix," | \
   sed -e 's/\/\//\//g'
 EOF
+  elif test "x$pike_cv_sys_os" = "xAmigaOS"; then
+    # AmigaOS system.
+  cat <<\EOF
+#!/bin/sh
+# Automatically generated.
+# AmigaOS-version. Do NOT edit.
+sed -e 's;//*;/;g' -e 's;\(^\|/\)\(\./\)*\.\($\|/\);\1;g' -e 's;^/\([[^:/]]*\)\($\|/\);\1:;' -e 's;/\.\./;//;g' -e 's;\(^\|:\|/\)\.\.\($\|/\);\1/;g'
+EOF
   else
     # Native POSIX system.
   cat <<\EOF
@@ -6440,7 +6448,7 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
 
 if test "${pike_cv_sys_nonblock}" = "UNKNOWN"; then
   AC_MSG_RESULT(none found)
-  if test "${pike_cv_sys_os}" = "Windows_NT"; then :; else
+  if test "${pike_cv_sys_os}" = "Windows_NT" -o "${pike_cv_sys_os}" = "AmigaOS"; then :; else
     config_fail="No way to set nonblocking I/O"
   fi
 else

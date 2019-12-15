@@ -79,7 +79,7 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
 
   do
   {
-#if defined(USE_IOCTL_FIONBIO) || defined(__NT__)
+#if defined(USE_IOCTL_FIONBIO) || defined(__NT__) || defined(__amigaos__)
     ret=fd_ioctl(fd, FIONBIO, &which);
 #else
 

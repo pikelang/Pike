@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "bitvector.h"
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(__amigaos__)
 /* encodings.a will never contain a crc32 symbol. */
 #define DYNAMIC_MODULE
 #endif

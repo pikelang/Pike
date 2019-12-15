@@ -3070,12 +3070,12 @@ void f_create_process(INT32 args)
     PROC_FPRINTF("[%d] SystemTags(\"%s\", SYS_Asynch, TRUE, NP_Input, %p, "
                  "NP_Output, %p, NP_Error, %p, %s, %p, TAG_END);\n",
                  getpid(),
-                 storage.cmd_buf.s.str, storage.stdin_b,
+                 buffer_get_string(&storage.cmd_buf), storage.stdin_b,
                  storage.stdout_b, storage.stderr_b,
                  (storage.cwd_lock!=0? "NP_CurrentDir":"TAG_IGNORE"),
                  storage.cwd_lock);
 
-    if(SystemTags(storage.cmd_buf.s.str, SYS_Asynch, TRUE,
+    if(SystemTags(buffer_get_string(&storage.cmd_buf), SYS_Asynch, TRUE,
 		  NP_Input, storage.stdin_b, NP_Output, storage.stdout_b,
 		  NP_Error, storage.stderr_b,
 	          (storage.cwd_lock!=0? NP_CurrentDir:TAG_IGNORE),
