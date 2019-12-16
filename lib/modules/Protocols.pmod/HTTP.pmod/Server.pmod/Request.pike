@@ -571,6 +571,7 @@ Stdio.IOBuffer low_make_response_header(mapping m, Stdio.IOBuffer res)
       radd("Content-Range: bytes ", m->start,"-",m->stop,"/",m->size);
 
    radd("Content-Type: ",m->type);
+   radd("Transfer-Encoding: ", m->transfer_encoding);
 
    if( m->size >= 0 )
       radd("Content-Length: ",(string)m->size);
