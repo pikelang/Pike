@@ -411,7 +411,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	ENCODE_WERR(".type    many");
       });
   } else if (t->type == T_STRING) {
-    if (t->car == int_type_string) {
+    if (t->cdr == int_type_string) {
       addchar(T_STRING ^ MIN_REF_TYPE);
       EDB(1, {
 	  ENCODE_WERR(".type    string");
@@ -422,7 +422,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       EDB(1, {
 	  ENCODE_WERR(".type    nstring");
 	});
-      encode_type(t->car, data);
+      encode_type(t->cdr, data);
     }
     return;
   } else if (t->type <= MAX_TYPE) {
@@ -498,9 +498,12 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       t = t->cdr;
       goto one_more_type;
 
+    case T_ARRAY:
+      t = t->cdr;
+      goto one_more_type;
+
     case T_TYPE:
     case T_PROGRAM:
-    case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
       t = t->car;

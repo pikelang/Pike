@@ -2091,7 +2091,7 @@ void f___handle_sscanf_format(INT32 args)
 	continue;
       case PIKE_T_ARRAY:
 	array_cnt++;
-	arg = arg->car;
+	arg = arg->cdr;
 	continue;
       default:
 	arg = NULL;
@@ -2184,7 +2184,7 @@ void f___handle_sscanf_format(INT32 args)
 	continue;
       case PIKE_T_ARRAY:
 	array_cnt++;
-	arg = arg->car;
+	arg = arg->cdr;
 	continue;
       default:
 	arg = NULL;
