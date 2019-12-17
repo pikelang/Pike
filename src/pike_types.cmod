@@ -7348,18 +7348,18 @@ static struct pike_type *low_get_first_arg_type(struct pike_type *arg_type,
       }
       /* FALLTHRU */
 
-    case T_ARRAY:
+    case T_MULTISET:
       /* Keep void! */
-      tmp = low_get_first_arg_type(arg_type->cdr, flags|FILTER_KEEP_VOID);
+      tmp = low_get_first_arg_type(arg_type->car, flags|FILTER_KEEP_VOID);
       type_stack_mark();
       push_finished_type(tmp);
       free_type(tmp);
       push_type(arg_type->type);
       return pop_unfinished_type();
 
-    case T_MULTISET:
+    case T_ARRAY:
       /* Keep void! */
-      tmp = low_get_first_arg_type(arg_type->car, flags|FILTER_KEEP_VOID);
+      tmp = low_get_first_arg_type(arg_type->cdr, flags|FILTER_KEEP_VOID);
       type_stack_mark();
       push_finished_type(tmp);
       free_type(tmp);
