@@ -32,6 +32,7 @@
 #include "bitvector.h"
 #include "pike_float.h"
 #include "sprintf.h"
+#include "modules/Gmp/my_gmp.h"
 
 /* #define ENCODE_DEBUG */
 
@@ -697,27 +698,26 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
         if (i != (INT32)i)
         {
           MP_INT tmp;
-          /* Note: Assumes sizeof_int_type is a multiple of 8. */
-#if (SIZEOF_INT_TYPE > SIZEOF_LONG) || (SIZEOF_INT_TYPE&7)
-#  error Assumption about size of int type not true.
-#endif
-          char buffer[16*(SIZEOF_INT_TYPE/8)];
-          size_t l;
-          /* Note: conversion to base 36 could be done directly here
-             using / and % instead.  Doing it like this is actually
-             only slightly slower, however, and saves on code size.
-          */
-          mpz_init_set_si( &tmp, i );
-          mpz_get_str( buffer, 36, &tmp );
-          mpz_clear( &tmp );
-          l = strlen(buffer);
-          code_entry(TAG_OBJECT, 2, data);
-          code_entry(TAG_STRING, l, data);
-          addstr(buffer,l);
 
+          code_entry(TAG_OBJECT, 2, data);
 	  EDB(1, {
-	      ENCODE_WERR(".bignum  %ld", i);
+	      ENCODE_WERR(".bignum  %*s# %ld", 20, "", i);
 	    });
+
+          /* Note: conversion to base 36 could be done directly here
+	   * using / and % instead.  Doing it like this is actually
+	   * only slightly slower, however, and saves on code size.
+	   *
+	   * Note that we also must adjust the data->encoded mapping,
+	   * to not confuse the decoder. This is easiest to do by
+	   * performing a recursive call, which means that we need
+	   * a proper pike_string anyway.
+	   */
+          mpz_init_set_si( &tmp, i );
+	  push_string(low_get_mpz_digits(&tmp, 36));
+	  mpz_clear( &tmp );
+	  encode_value2(Pike_sp-1, data, force_encode);
+	  pop_stack();
         }
         else
 #endif
