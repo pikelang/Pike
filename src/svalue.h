@@ -121,14 +121,60 @@ enum PIKE_TYPE {
     T_OBJ_INDEX=21,
     T_ARRAY_LVALUE=22,
 
+/* No types above this value should appear on the stack. */
+    PIKE_T_STACK_MAX=	T_ARRAY_LVALUE,
+
+/*
+ * The following types are only used in compile-time types and
+ * as markers in struct identifier.
+ */
+
+    PIKE_T_ATTRIBUTE = 238,	/* Attribute node. */
+    PIKE_T_NSTRING = 239,	/* Narrow string. Only for serialization. */
+    PIKE_T_RING = 240,
+    PIKE_T_NAME = 241,		/**< Named type. */
+    PIKE_T_SCOPE = 243,		/**< Not supported yet */
+    PIKE_T_TUPLE = 244,		/**< Not supported yet */
+    T_ASSIGN = 245,
+    T_DELETED = 246,
+
     /** Used to mark an svalue as free and not valid for input
      *  to the svalue free functions.
      *  Cf assert_free_svalue().
      */
     PIKE_T_UNKNOWN=247,
 
-/* No types above this value should appear on the stack. */
-    PIKE_T_STACK_MAX=	T_ARRAY_LVALUE,
+/* should only be used while compiling */
+
+    PIKE_T_AUTO = 248,
+
+    /* Historic values:
+     * T_OBJ_INDEX = 248,	// Renumbered to 21.
+     * T_LVALUE = 249,		// Renamed to T_SVALUE_PTR and renumbered to 20.
+     * T_ARRAY_LVALUE = 250,	// Renumbered to 22.
+     */
+
+    PIKE_T_MIXED = 251,
+    T_NOT = 253,
+    T_AND = 254,
+    T_OR = 255,
+
+/* This flag is only valid in struct reference, and corresponds
+ * to struct identifier identifier_flags IDENTIFIER_NO_THIS_REF. */
+#define PIKE_T_NO_REF_FLAG	256
+#define PIKE_T_NO_REF_OBJECT	(PIKE_T_NO_REF_FLAG|PIKE_T_OBJECT)
+#define PIKE_T_NO_REF_FUNCTION	(PIKE_T_NO_REF_FLAG|PIKE_T_FUNCTION)
+#define PIKE_T_NO_REF_MIXED	(PIKE_T_NO_REF_FLAG|PIKE_T_MIXED)
+#define PIKE_T_NO_REF_INT	(PIKE_T_NO_REF_FLAG|PIKE_T_INT)
+#define PIKE_T_NO_REF_FLOAT	(PIKE_T_NO_REF_FLAG|PIKE_T_FLOAT)
+
+/* These are only used together with describe() and friends. */
+#define T_STORAGE 10000
+#define T_MAPPING_DATA 10001
+#define T_PIKE_FRAME 10002
+#define T_MULTISET_DATA 10003
+#define T_STRUCT_CALLABLE 10004
+
 };
 
 /**
@@ -195,45 +241,6 @@ struct svalue
 */
 #define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE_DC(SVAL, 99) /* an invalid type */
 
-
-/*
- * The following types are only used in compile-time types and
- * as markers in struct identifier.
- */
-
-/* should only be used while compiling */
-
-#define PIKE_T_ATTRIBUTE 238	/* Attribute node. */
-#define PIKE_T_NSTRING 239	/* Narrow string. Only for serialization. */
-#define PIKE_T_RING 240
-#define PIKE_T_NAME 241		/**< Named type. */
-#define PIKE_T_SCOPE 243	/**< Not supported yet */
-#define PIKE_T_TUPLE 244	/**< Not supported yet */
-#define T_ASSIGN 245
-#define T_DELETED 246
-#define PIKE_T_AUTO 248
-
-
-#define PIKE_T_MIXED 251
-#define T_NOT 253
-#define T_AND 254
-#define T_OR 255
-
-/* This flag is only valid in struct reference, and corresponds
- * to struct identifier identifier_flags IDENTIFIER_NO_THIS_REF. */
-#define PIKE_T_NO_REF_FLAG	256
-#define PIKE_T_NO_REF_OBJECT	(PIKE_T_NO_REF_FLAG|PIKE_T_OBJECT)
-#define PIKE_T_NO_REF_FUNCTION	(PIKE_T_NO_REF_FLAG|PIKE_T_FUNCTION)
-#define PIKE_T_NO_REF_MIXED	(PIKE_T_NO_REF_FLAG|PIKE_T_MIXED)
-#define PIKE_T_NO_REF_INT	(PIKE_T_NO_REF_FLAG|PIKE_T_INT)
-#define PIKE_T_NO_REF_FLOAT	(PIKE_T_NO_REF_FLAG|PIKE_T_FLOAT)
-
-/* These are only used together with describe() and friends. */
-#define T_STORAGE 10000
-#define T_MAPPING_DATA 10001
-#define T_PIKE_FRAME 10002
-#define T_MULTISET_DATA 10003
-#define T_STRUCT_CALLABLE 10004
 
 /* NOTE: The t* macros below currently use the old type encoding
  *       to be compatible with __parse_pike_type() in older
