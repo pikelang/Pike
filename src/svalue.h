@@ -201,7 +201,7 @@ struct svalue
      */
     INT32 type_subtype;
 #if SIZEOF_CHAR_P == 8
-    INT32 pad__;
+    ptrdiff_t pad__;
 #endif
 #endif
   } tu;
