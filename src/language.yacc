@@ -301,6 +301,7 @@ int yylex(YYSTYPE *yylval);
 
 /* The following symbols return type information */
 
+%type <n> number
 %type <n> number_or_minint
 %type <n> number_or_maxint
 %type <n> cast
@@ -1592,11 +1593,7 @@ identifier_type: idents
   }
   ;
 
-number_or_maxint: /* Empty */
-  {
-    $$ = mkintnode(MAX_INT_TYPE);
-  }
-  | TOK_NUMBER
+number: TOK_NUMBER
   | '-' TOK_NUMBER
   {
 #ifdef PIKE_DEBUG
@@ -1609,22 +1606,17 @@ number_or_maxint: /* Empty */
   }
   ;
 
+number_or_maxint: /* Empty */
+  {
+    $$ = mkintnode(MAX_INT_TYPE);
+  }
+  | number;
+
 number_or_minint: /* Empty */
   {
     $$ = mkintnode(MIN_INT_TYPE);
   }
-  | TOK_NUMBER
-  | '-' TOK_NUMBER
-  {
-#ifdef PIKE_DEBUG
-    if (($2->token != F_CONSTANT) || (TYPEOF($2->u.sval) != T_INT)) {
-      Pike_fatal("Unexpected number in negative int-range.\n");
-    }
-#endif /* PIKE_DEBUG */
-    $$ = mkintnode(-($2->u.sval.u.integer));
-    free_node($2);
-  }
-  ;
+  | number;
 
 expected_dot_dot: TOK_DOT_DOT
   | TOK_DOT_DOT_DOT
@@ -1676,6 +1668,26 @@ opt_int_range: /* Empty */
 
     free_node($2);
     free_node($4);
+  }
+  | '(' number ')'
+  {
+    INT_TYPE val = MAX_INT_TYPE;
+
+    if($2->token == F_CONSTANT) {
+      if (TYPEOF($2->u.sval) == T_INT) {
+	val = $2->u.sval.u.integer;
+      } else if (is_bignum_object_in_svalue(&$2->u.sval)) {
+	push_int(0);
+	if (is_lt(&$2->u.sval, Pike_sp-1)) {
+	  val = MIN_INT_TYPE;
+	}
+	pop_stack();
+      }
+    }
+
+    push_int_type(val, val);
+
+    free_node($2);
   }
   | '(' error ')'
   {

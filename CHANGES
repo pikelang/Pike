@@ -32,6 +32,11 @@ o typeof(X) can now be used as a type.
   typeof, when used like this, behaves very much like the C++
   decltype() expression.
 
+o Shorthand for int(val..val) added: int(val).
+
+  A syntax for when the range of an integer type only
+  contains a single value.
+
 o ** operator added. It's exponentiation and works with most
   combination of numerical types (int,float,Gmp.mpq,Gmp.mpf,Gmp.mpz)
 
