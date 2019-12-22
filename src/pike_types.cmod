@@ -1943,6 +1943,8 @@ void stupid_describe_type_string(char *a, ptrdiff_t len)
 		j++;
 	      }
 	      fprintf(stderr, "(%dbit)", j);
+	    } else if (min == max) {
+	      fprintf(stderr, "(%ld)", (long)min);
 	    } else {
 	      fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
 	    }
@@ -2042,6 +2044,8 @@ void simple_describe_type(struct pike_type *s)
 		j++;
 	      }
 	      fprintf(stderr, "(%dbit)", j);
+	    } else if (min == max) {
+	      fprintf(stderr, "(%ld)", (long)min);
 	    } else {
 	      fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
 	    }
@@ -2089,12 +2093,14 @@ void simple_describe_type(struct pike_type *s)
 		}
 		fprintf(stderr, "%dbit", j);
 	      } else {
-		if (min != MIN_INT32) {
+		if ((min != MIN_INT32) || (max == min)) {
 		  fprintf(stderr, "%d", min);
 		}
-		fprintf(stderr, "..");
-		if (max != MAX_INT32) {
-		  fprintf(stderr, "%d", max);
+		if (max != min) {
+		  fprintf(stderr, "..");
+		  if (max != MAX_INT32) {
+		    fprintf(stderr, "%d", max);
+		  }
 		}
 	      }
 	      fprintf(stderr, " | ");
@@ -2124,12 +2130,14 @@ void simple_describe_type(struct pike_type *s)
 		}
 		fprintf(stderr, "%dbit", j);
 	      } else {
-		if (min != MIN_INT32) {
+		if ((min != MIN_INT32) || (min == max)) {
 		  fprintf(stderr, "%d", min);
 		}
-		fprintf(stderr, "..");
-		if (max != MAX_INT32) {
-		  fprintf(stderr, "%d", max);
+		if (min != max) {
+		  fprintf(stderr, "..");
+		  if (max != MAX_INT32) {
+		    fprintf(stderr, "%d", max);
+		  }
 		}
 	      }
 	    }
@@ -2285,6 +2293,8 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	  j++;
 	}
 	string_builder_sprintf(s, "int(%dbit)", j);
+      } else if (min == max) {
+	string_builder_sprintf(s, "int(%ld)", (long)min);
       } else if(min!=MIN_INT32 || max!=MAX_INT32) {
 	string_builder_sprintf(s, "int(%ld..%ld)", (long)min, (long)max);
       } else {
@@ -2352,12 +2362,14 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 		}
 		string_builder_sprintf(s, "%dbit", j);
 	      } else {
-		if (min != MIN_INT32) {
+		if ((min != MIN_INT32) || (min == max)) {
 		  string_builder_sprintf(s, "%d", min);
 		}
-		string_builder_strcat(s, "..");
-		if (max != MAX_INT32) {
-		  string_builder_sprintf(s, "%d", max);
+		if (min != max) {
+		  string_builder_strcat(s, "..");
+		  if (max != MAX_INT32) {
+		    string_builder_sprintf(s, "%d", max);
+		  }
 		}
 	      }
 	    }
@@ -2380,12 +2392,14 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	      }
 	      string_builder_sprintf(s, "%dbit", j);
 	    } else {
-	      if (min != MIN_INT32) {
+	      if ((min != MIN_INT32) || (min == max)) {
 		string_builder_sprintf(s, "%d", min);
 	      }
-	      string_builder_strcat(s, "..");
-	      if (max != MAX_INT32) {
-		string_builder_sprintf(s, "%d", max);
+	      if (min != max) {
+		string_builder_strcat(s, "..");
+		if (max != MAX_INT32) {
+		  string_builder_sprintf(s, "%d", max);
+		}
 	      }
 	    }
 	  }
