@@ -849,14 +849,14 @@ test_any([[return sprintf("%O", typeof(sprintf("%1H", "foo"))); ]],
 test_any([[return sprintf("%O", typeof(sprintf("foo"))); ]],
 	 "string(102..111)");
 test_any([[return sprintf("%O", typeof(sprintf("foo%c", 17))); ]],
-	 "string(17..17 | 102..111)");
+	 "string(17 | 102..111)");
 test_any([[return sprintf("%O", typeof(sprintf("%2c\n", 'a'))); ]],
 	 "string(8bit)");
 dnl Note the following tests the return type of int2char().
 test_any([[return sprintf("%O", typeof(sprintf("%c",  1023))); ]],
-	 "string(1023..1023)");
+	 "string(1023)");
 test_any([[return sprintf("%O", typeof(sprintf("%c\n",  1023))); ]],
-	 "string(10..10 | 1023..1023)");
+	 "string(10 | 1023)");
 dnl The following is due to (string & sprintf_result) == sprintf_result.
 test_any([[return sprintf("%O", typeof(sprintf("%c\n",  Stdio))); ]],
 	 sprintf("%O", sprintf_result));
@@ -944,7 +944,7 @@ test_any([[
   };
 };
   return Toplevel()->test();
-]], "aint(10..10)btype(int(10..10))");
+]], "aint(10)btype(int(10))");
 
 test_any([[{
   class Toplevel {
@@ -956,7 +956,7 @@ test_any([[{
     }
   };
   return Toplevel()->test()-" ";
-}]], "function(:int(10..10)|int(20..20)|int(30..30))");
+}]], "function(:int(10)|int(20)|int(30))");
 
 test_any([[{
   class Foo
@@ -8430,7 +8430,7 @@ cond([[all_constants()->kill && (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 ]])
 
 // typeof
-test_eq(sprintf("%O", typeof(1)),"int(1..1)")
+test_eq(sprintf("%O", typeof(1)),"int(1)")
 test_eq(sprintf("%O", typeof("")),"string(zero)")
 ignore_warning("Indexing the empty string.", [[
   test_aq([[ sprintf("%O", typeof(""[0])) ]], "zero")
@@ -8439,9 +8439,9 @@ test_eq(sprintf("%O", typeof(0.0)),"float")
 test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
 
 // _typeof
-test_eq(sprintf("%O", _typeof(1)),"int(1..1)")
+test_eq(sprintf("%O", _typeof(1)),"int(1)")
 test_eq(sprintf("%O", _typeof("")),"string(zero)")
-test_eq(sprintf("%O", _typeof("x"[0])),"int(120..120)")
+test_eq(sprintf("%O", _typeof("x"[0])),"int(120)")
 test_eq(sprintf("%O", _typeof(0.0)),"float")
 test_eq([[sscanf(sprintf("%Ox", _typeof(this_object))-" ",
 		 "function(void|int(0..%*[0-9]):object)%*c")]], 2)
