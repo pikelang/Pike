@@ -37,6 +37,11 @@ o Shorthand for int(val..val) added: int(val).
   A syntax for when the range of an integer type only
   contains a single value.
 
+o Shorthand for string(val..val) added: string(val).
+
+  A syntax for when the range of a string type only
+  contains a single value.
+
 o ** operator added. It's exponentiation and works with most
   combination of numerical types (int,float,Gmp.mpq,Gmp.mpf,Gmp.mpz)
 
