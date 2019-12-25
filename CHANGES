@@ -141,6 +141,11 @@ o Protocols.DNS now supports encoding and decoding CAA RRs.
 Bug fixes
 ---------
 
+o Runtime
+
+  The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
+  objects having destruct callbacks under some circumstances.
+
 o Operator functions
 
   Calling operator functions with more than two arguments will now
@@ -155,6 +160,13 @@ o Operator functions
   arguments. Pike implementations rarely implemented varargs on
   operator LFUNs, so this change should address many potential hidden
   errors.
+
+o Pike.Backend
+
+  Backend callbacks throwing errors could cause backends to
+  enter a state where they got stuck throwing "Backend already
+  running - cannot reenter.". This was typically triggered via
+  the Stdio.sendfile() result callback.
 
 o Protocols.HTTP.Server
 
