@@ -254,8 +254,12 @@ o RegGetValue(), RegGetKeyNames(), RegGetKeyValues(), openlog(),
   syslog() and closelog() have been moved to System.
 
 
-New modules
------------
+New modules and functions
+-------------------------
+
+o predef::m_add()
+
+  This function adds (as opposed to inserts) an element to a multiset.
 
 o ADT.Scheduler & ADT.TreeScheduler
 
