@@ -300,6 +300,13 @@ o Parser.ECMAScript
   This module simply provides a token splitter for
   ECMAScript/JavaScript.
 
+o Pike.LiveBacktraceFrame
+
+  This is similar to Pike.BacktraceFrame, but refers two-way
+  to an active (or not) execution context. It can be used
+  to eg examine (and change) local variables, and is intended
+  for debugger use.
+
 o Web.EngineIO & Web.SocketIO
 o Protocols.HTTP2
 o Bittorrent.DHT
@@ -309,6 +316,13 @@ o Web.Auth & Web.Api
 
 New features
 ------------
+
+o predef::backtrace()
+
+  predef::backtrace() now takes an optional argument that causes it
+  to return LiveBacktraceFrames (instead of BacktraceFrames), which
+  may be used to access local variables for the frame while they are
+  still in use. This is intended for debugger use.
 
 o predef::equal()
 
