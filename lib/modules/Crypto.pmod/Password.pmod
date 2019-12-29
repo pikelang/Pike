@@ -111,7 +111,7 @@
 //!     @[MD5.hash()] repeatedly on the password and the salt.
 //!
 //!   @value "$H$RSSSSSSSS.XXXXXXXXXXXXXXXXXXXXXX"
-//!     Same as expr{"$P$"@} above. Used by phpBB3.
+//!     Same as @expr{"$P$"@} above. Used by phpBB3.
 //!
 //!   @value "U$P$RSSSSSSSSXXXXXXXXXXXXXXXXXXXXXX"
 //!     This is handled as a Drupal upgraded PHPass Portable Hash password.
