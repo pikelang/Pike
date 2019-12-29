@@ -136,8 +136,6 @@ o Returning void
     void a() { return; }
     void b() { return a(); }
 
-o Protocols.DNS now supports encoding and decoding CAA RRs.
-
 
 Bug fixes
 ---------
@@ -384,11 +382,13 @@ o Parser.Pike
 
   Support new language features.
 
-o Protocols.DNS.server
+o Protocols.DNS
 
-  Derived classes can now override report_decode_error() and
-  handle_decode_error() to change how errors while decoding a DNS
-  packet are reported and handled.
+  - Protocols.DNS now supports encoding and decoding CAA RRs.
+
+  - Classes derived from Protocols.DNS.server may now override
+    report_decode_error() and handle_decode_error() to change how
+    errors while decoding a DNS packet are reported and handled.
 
 o Protocols.WebSocket
 
