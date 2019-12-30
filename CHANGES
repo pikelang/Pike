@@ -233,7 +233,8 @@ o hash() has been changed to use siphash. The old hash function is
 
 o Stdio.UDP()->send() no longer throws errors on EMSGSIZE and EWOULDBLOCK.
 
-o If a thread exits with by throwing, the thrown value is propagated to wait().
+o When a thread exits by throwing, the thrown value is propagated to
+  wait(). Previously it was sent directly to master()->handle_error().
 
 o String.trim_all_whites() renamed String.trim().
 
