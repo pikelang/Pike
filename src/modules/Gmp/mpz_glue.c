@@ -1766,9 +1766,8 @@ static void mpzmod_small_factor(INT32 args)
  *! Returns the next higher prime for positive numbers and the next
  *! lower for negative.
  *!
- *! @param count
- *!   The prime number testing is using Donald Knuth's probabilistic
- *!   primality test. The chance for a false positive is pow(0.25,25).
+ *! The prime number testing is using Donald Knuth's probabilistic
+ *! primality test. The chance for a false positive is pow(0.25,25).
  */
 static void mpzmod_next_prime(INT32 args)
 {
