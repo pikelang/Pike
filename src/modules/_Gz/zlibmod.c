@@ -1349,9 +1349,9 @@ PIKE_MODULE_INIT
   /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,void|int(0..1):string(8bit)) */
   ADD_FUNCTION("uncompress",gz_uncompress,tFunc(tOr(tStr8,tObj) tOr(tVoid,tInt01),tStr8),0);
 
-  PIKE_MODULE_EXPORT(Gz, crc32);
-  PIKE_MODULE_EXPORT(Gz, zlibmod_pack);
-  PIKE_MODULE_EXPORT(Gz, zlibmod_unpack);
+  PIKE_MODULE_EXPORT(_Gz, crc32);
+  PIKE_MODULE_EXPORT(_Gz, zlibmod_pack);
+  PIKE_MODULE_EXPORT(_Gz, zlibmod_unpack);
 #else
   HIDE_MODULE();
 #endif

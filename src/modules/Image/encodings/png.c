@@ -1951,9 +1951,9 @@ void init_image_png(void)
 {
   int gz = 0;
 #ifdef DYNAMIC_MODULE
-   crc32 = PIKE_MODULE_IMPORT(Gz, crc32);
-   zlibmod_pack = PIKE_MODULE_IMPORT(Gz, zlibmod_pack);
-   zlibmod_unpack = PIKE_MODULE_IMPORT(Gz, zlibmod_unpack);
+   crc32 = PIKE_MODULE_IMPORT(_Gz, crc32);
+   zlibmod_pack = PIKE_MODULE_IMPORT(_Gz, zlibmod_pack);
+   zlibmod_unpack = PIKE_MODULE_IMPORT(_Gz, zlibmod_unpack);
    if(crc32 && zlibmod_pack && zlibmod_unpack)
      gz = 1;
 #else
