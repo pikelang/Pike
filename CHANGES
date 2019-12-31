@@ -299,6 +299,26 @@ o Parser.ECMAScript
   This module simply provides a token splitter for
   ECMAScript/JavaScript.
 
+o Pike.DestructImmediate
+
+  Objects of classes that inherit Pike.DestructImmediate will be
+  destructed immediately on their references reaching zero (rather
+  than at some arbitrary time "soon"). This class should be used
+  for any classes that are (or hold) locks or similar.
+
+o Pike.InhibitDestruct
+
+  Objects of classes that inherit Pike.InhibitDestruct may
+  control whether explicit destruct() calls should succeed
+  (or be delayed until later). Note that this class is just
+  a convenience API, and that this functionality may also
+  be implemented by hand. The intended use is for C-classes
+  that do not want their storage to be zapped eg during
+  library calls.
+
+  Note that it is not possible to inhibit destruction due
+  to running out of references or by the gc.
+
 o Pike.LiveBacktraceFrame
 
   This is similar to Pike.BacktraceFrame, but refers two-way
