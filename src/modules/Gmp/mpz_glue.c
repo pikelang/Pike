@@ -1644,16 +1644,17 @@ CMPEQU(mpzmod_lt, "`<", <, RET_UNDEFINED)
  */
 CMPEQU(mpzmod_eq, "`==", ==, RET_UNDEFINED)
 
-/*! @decl int(0..1) probably_prime_p(int count)
+/*! @decl int(0..2) probably_prime_p(void|int count)
  *!
- *! Return 1 if this mpz object is a prime, and 0 most of the time if
- *! it is not.
+ *! Return 2 if this mpz object is a prime, 1 if it probably is a
+ *! prime, and 0 if it definitely is not a prime. Testing values below
+ *! 1000000 will only return 2 or 0.
  *!
  *! @param count
  *!   The prime number testing is using Donald Knuth's probabilistic
  *!   primality test. The chance for a false positive is
- *!   pow(0.25,count). The higher value, the more probable it is that
- *!   the number is a prime. Default value is 25.
+ *!   pow(0.25,count). Default value is 25 and resonable values are
+ *!   between 15 and 50.
  */
 static void mpzmod_probably_prime_p(INT32 args)
 {
@@ -1718,7 +1719,14 @@ static void mpzmod_small_factor(INT32 args)
   push_int(mpz_small_factor(THIS, limit));
 }
 
-/*! @decl Gmp.mpz next_prime(void|int count, void|int limit)
+/*! @decl Gmp.mpz next_prime()
+ *!
+ *! Returns the next higher prime for positive numbers and the next
+ *! lower for negative.
+ *!
+ *! @param count
+ *!   The prime number testing is using Donald Knuth's probabilistic
+ *!   primality test. The chance for a false positive is pow(0.25,25).
  */
 static void mpzmod_next_prime(INT32 args)
 {
@@ -2425,7 +2433,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("small_factor", mpzmod_small_factor,			\
 	       tFunc(tOr(tInt,tVoid),tInt), 0);				\
   ADD_FUNCTION("next_prime", mpzmod_next_prime,				\
-	       tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tMpz_ret), 0);	\
+	       tFunc(tNone, tMpz_ret), 0);				\
   									\
   ADD_FUNCTION("gcd",mpzmod_gcd, tMpz_binop_type, 0);			\
   ADD_FUNCTION("gcdext",mpzmod_gcdext,tFunc(tMpz_arg,tArr(tMpz_ret)),0);\
