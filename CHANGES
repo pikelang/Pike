@@ -343,6 +343,10 @@ o predef::backtrace()
   may be used to access local variables for the frame while they are
   still in use. This is intended for debugger use.
 
+o predef::destruct()
+
+  lfun::_destruct() may now inhibit explicit destruction.
+
 o predef::equal()
 
   equal() on functions now checks if their definitions are same identifier
