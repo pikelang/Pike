@@ -2346,7 +2346,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("small_factor", mpzmod_small_factor,			\
 	       tFunc(tOr(tInt,tVoid),tInt), 0);				\
   ADD_FUNCTION("next_prime", mpzmod_next_prime,				\
-	       tFunc(tNone, tMpz_ret), 0);				\
+	       tFunc(tDeprecated(tOr(tInt,tVoid)) tOr(tInt,tVoid), tMpz_ret), 0); \
   									\
   ADD_FUNCTION("gcd",mpzmod_gcd, tMpz_binop_type, 0);			\
   ADD_FUNCTION("gcdext",mpzmod_gcdext,tFunc(tMpz_arg,tArr(tMpz_ret)),0);\
