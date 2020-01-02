@@ -3567,7 +3567,7 @@ PIKECLASS AutoCodecClass
 	n = mknode(F_ARG_LIST, mkidentifiernode(e), n);
       }
     }
-    push_type(PIKE_T_ARRAY);
+    push_unlimited_array_type(PIKE_T_ARRAY);
     push_type(T_VOID);
     push_type(T_MANY);
 

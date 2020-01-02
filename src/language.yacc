@@ -1248,7 +1248,7 @@ new_arg_name: full_type optional_dot_dot_dot optional_identifier
 
     if($2)
     {
-      push_type(T_ARRAY);
+      push_unlimited_array_type(T_ARRAY);
       Pike_compiler->varargs=1;
     }
 
@@ -1522,7 +1522,7 @@ basic_type:
   | TOK_FUNCTION_ID opt_function_type {}
   | TOK_OBJECT_ID   opt_program_type  {}
   | TOK_PROGRAM_ID  opt_program_type  { push_type(T_PROGRAM); }
-  | TOK_ARRAY_ID    opt_array_type    { push_type(T_ARRAY); }
+  | TOK_ARRAY_ID    opt_array_type    { push_unlimited_array_type(T_ARRAY); }
   | TOK_MULTISET_ID opt_array_type    { push_type(T_MULTISET); }
   | TOK_ATTRIBUTE_ID '(' string_constant ',' full_type ')'
   {
@@ -1698,7 +1698,7 @@ opt_int_range: /* Empty */
 
 opt_string_width: opt_int_range
   {
-    push_type(T_STRING);
+    push_unlimited_array_type(T_STRING);
   }
   ;
 
@@ -3972,7 +3972,7 @@ optional_block: /* EMPTY */ { $$=0; }
      *     will be variable  #0.
      */
     push_type(T_MIXED);
-    push_type(T_ARRAY);
+    push_unlimited_array_type(T_ARRAY);
     add_local_name(args_string, compiler_pop_type(), 0);
   }
   statements end_block

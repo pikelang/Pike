@@ -3335,7 +3335,7 @@ void fix_foreach_type(node *val_lval)
 
 	  type_stack_mark();
 	  push_finished_type(lvalues->type);
-	  push_type(T_ARRAY);
+	  push_unlimited_array_type(T_ARRAY);
 	  array_value_type = pop_unfinished_type();
 
 	  check_node_type(expression, array_value_type,
@@ -3598,7 +3598,7 @@ void fix_type_field(node *n)
       struct pike_type *tmp;
       type_stack_mark();
       push_finished_type(CDR(n)->type);
-      push_type(T_ARRAY);
+      push_unlimited_array_type(T_ARRAY);
       n->type = and_pike_types(CAR(n)->type, tmp = pop_unfinished_type());
       free_type(tmp);
     }
@@ -3708,7 +3708,7 @@ void fix_type_field(node *n)
 	}
 	type_stack_mark();
 	push_finished_type(t);
-	push_type(T_ARRAY);
+	push_unlimited_array_type(T_ARRAY);
 	free_type(t);
 	n->type = pop_unfinished_type();
       }
@@ -3834,7 +3834,7 @@ void fix_type_field(node *n)
 	{
 	  type_stack_mark();
 	  push_finished_type(n->type);
-	  push_type(T_ARRAY);
+	  push_unlimited_array_type(T_ARRAY);
 	  free_type(n->type);
 	  n->type = pop_unfinished_type();
 	}

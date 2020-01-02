@@ -260,6 +260,7 @@ void type_stack_pop_to_mark(void);
 void type_stack_reverse(void);
 struct pike_type *debug_peek_type_stack(void);
 void debug_push_int_type(INT_TYPE min, INT_TYPE max);
+void debug_push_unlimited_array_type(enum PIKE_TYPE t);
 void debug_push_object_type(int flag, INT32 id);
 void debug_push_object_type_backwards(int flag, INT32 id);
 void debug_push_type_attribute(struct pike_string *attr);
@@ -382,6 +383,7 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define peek_type_stack() ((struct pike_type *)debug_malloc_pass(debug_peek_type_stack()))
 #define pop_type_stack(E) do { debug_malloc_pass(debug_peek_type_stack()); debug_pop_type_stack(E); } while(0)
 #define push_int_type(MIN,MAX) do { debug_push_int_type(MIN,MAX);debug_malloc_pass(debug_peek_type_stack()); } while(0)
+#define push_unlimited_array_type(ARRAY_OR_STRING) do { debug_push_unlimited_array_type(ARRAY_OR_STRING);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_object_type(FLAG,ID) do { debug_push_object_type(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_object_type_backwards(FLAG,ID) do { debug_push_object_type_backwards(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_scope_type(LEVEL) do { debug_push_scope_type(LEVEL);debug_malloc_pass(debug_peek_type_stack()); } while(0)
@@ -400,6 +402,7 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define peek_type_stack debug_peek_type_stack
 #define pop_type_stack debug_pop_type_stack
 #define push_int_type debug_push_int_type
+#define push_unlimited_array_type debug_push_unlimited_array_type
 #define push_object_type debug_push_object_type
 #define push_object_type_backwards debug_push_object_type_backwards
 #define push_scope_type debug_push_scope_type

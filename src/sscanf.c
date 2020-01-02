@@ -1916,8 +1916,8 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 		depth--;
 	      }
 	    }
-	    push_type(PIKE_T_ARRAY);
-	    push_type(PIKE_T_ARRAY);
+	    push_unlimited_array_type(PIKE_T_ARRAY);
+	    push_unlimited_array_type(PIKE_T_ARRAY);
 	  }
 	  cnt = e;
 	  break;
@@ -2136,7 +2136,7 @@ void f___handle_sscanf_format(INT32 args)
 	  }
 	}
 	while (array_cnt--) {
-	  push_type(PIKE_T_ARRAY);
+	  push_unlimited_array_type(PIKE_T_ARRAY);
 	}
 	found = 1;
       }
@@ -2204,7 +2204,7 @@ void f___handle_sscanf_format(INT32 args)
 	fmt_count--;
       }
       while (array_cnt--) {
-	push_type(PIKE_T_ARRAY);
+	push_unlimited_array_type(PIKE_T_ARRAY);
       }
 
       /* Rebuild the function type backwards. */

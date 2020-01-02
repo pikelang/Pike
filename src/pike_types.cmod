@@ -729,6 +729,26 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max)
   TYPE_STACK_DEBUG("push_int_type");
 }
 
+/**
+ * Used with arrays and strings.
+ *
+ * On entry the type stack contains the value type.
+ *
+ * Generates an array or string type with no length limits.
+ */
+void debug_push_unlimited_array_type(enum PIKE_TYPE t)
+{
+  struct compilation * c = MAYBE_THIS_COMPILATION;
+#ifdef PIKE_DEBUG
+  if ((t != PIKE_T_ARRAY) && (t != PIKE_T_STRING)) {
+    Pike_fatal("Invalid type for push_array_type(): %s (%d)\n",
+	       get_name_of_type(t), t);
+  }
+#endif
+  /* FIXME: Set car to unlimited length. */
+  push_type(t);
+}
+
 static int (*program_id_to_id)(int) = NULL;
 
 PMOD_EXPORT void set_program_id_to_id( int (*to)(int) )
@@ -1301,7 +1321,7 @@ static void push_type_field(TYPE_FIELD field)
     if (field & BIT_COMPLEX) {
       if (field & BIT_ARRAY) {
 	push_type(T_MIXED);
-	push_type(T_ARRAY);
+	push_unlimited_array_type(T_ARRAY);
 	push_type(T_OR);
       }
       if (field & BIT_MAPPING) {
@@ -1336,7 +1356,7 @@ static void push_type_field(TYPE_FIELD field)
     if (field & BIT_BASIC) {
       if (field & BIT_STRING) {
 	push_int_type(MIN_INT32, MAX_INT32);
-	push_type(T_STRING);
+	push_unlimited_array_type(T_STRING);
 	push_type(T_OR);
       }
       if (field & BIT_TYPE) {
@@ -1638,7 +1658,7 @@ static void internal_parse_typeA(const char **_s)
 	} else {
 	  push_finished_type(int_type_string);
 	}
-	push_type(T_STRING);
+	push_unlimited_array_type(T_STRING);
 	break;
       }
       goto bad_type;
@@ -1732,7 +1752,7 @@ static void internal_parse_typeA(const char **_s)
 	}else{
 	  push_type(T_MIXED);
 	}
-	push_type(T_ARRAY);
+	push_unlimited_array_type(T_ARRAY);
 	break;
       }
       goto bad_type;
@@ -1850,7 +1870,7 @@ static void internal_parse_typeCC(const char **s)
   {
     ++*s;
     while(isspace(EXTRACT_UCHAR(*s))) ++*s;
-    push_type(T_ARRAY);
+    push_unlimited_array_type(T_ARRAY);
   }
 }
 
@@ -2753,7 +2773,7 @@ static int lower_or_pike_types(struct pike_type *t1,
     case T_STRING:
       {
 	low_or_pike_types(t1->cdr, t2->cdr, 1);
-	push_type(T_STRING);
+	push_unlimited_array_type(T_STRING);
 	return 0;
       }
       break;
@@ -2928,7 +2948,7 @@ static int lower_or_pike_types(struct pike_type *t1,
       {
 	Pike_compiler->type_stackp--;
 	low_or_pike_types(t->cdr, top->cdr, 1);
-	push_type(T_STRING);
+	push_unlimited_array_type(T_STRING);
 	free_type(top);
       }
       break;
@@ -2940,7 +2960,7 @@ static int lower_or_pike_types(struct pike_type *t1,
     case T_ARRAY:
       Pike_compiler->type_stackp--;
       low_or_pike_types(t->cdr, top->cdr, zero_implied);
-      push_type(t->type);
+      push_unlimited_array_type(t->type);
       free_type(top);
       break;
     case T_MULTISET:
@@ -3120,7 +3140,7 @@ static void even_lower_and_pike_types(struct pike_type *t1,
     } else if (t1->type == T_STRING) {
       push_type(T_ZERO);
       even_lower_and_pike_types(t1->cdr, t2->cdr);
-      push_type(T_STRING);
+      push_unlimited_array_type(T_STRING);
       push_type(T_OR);
     } else {
       push_finished_type(t1);
@@ -3249,7 +3269,7 @@ static void low_and_pike_types(struct pike_type *t1,
   }
   else if ((t1->type == T_STRING) && (t2->type == T_STRING)) {
     low_and_pike_types(t1->cdr, t2->cdr);
-    push_type(T_STRING);
+    push_unlimited_array_type(T_STRING);
   }
   else if((t1->type == T_FLOAT) && (t2->type == T_FLOAT))
   {
@@ -4110,7 +4130,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       type_stack_mark();
       push_finished_type_with_markers(b, bb_markers, 0);
       for(i=array_cnt; i > 0; i--)
-	push_type(T_ARRAY);
+	push_unlimited_array_type(T_ARRAY);
       tmp=pop_unfinished_type();
 
       type_stack_mark();
@@ -4273,7 +4293,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       type_stack_mark();
       push_finished_type_with_markers(a, aa_markers, 0);
       for(i = array_cnt; i < 0; i++)
-	push_type(T_ARRAY);
+	push_unlimited_array_type(T_ARRAY);
       tmp=pop_unfinished_type();
 
       type_stack_mark();
@@ -4785,7 +4805,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
   case T_ARRAY:
     tmp = low_get_return_type(a->cdr, b);
     if(!tmp) return 0;
-    push_type(T_ARRAY);
+    push_unlimited_array_type(T_ARRAY);
     return 1;
   }
 
@@ -5013,7 +5033,7 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
 	type_stack_mark();
 	push_finished_type(a);
 	free_type(a);
-	push_type(T_ARRAY);
+	push_unlimited_array_type(T_ARRAY);
 
 	if (low_match_types(int_type_string, index_type, 0)) {
 	  /* Also possible to index the array with an int. */
@@ -5715,7 +5735,7 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
     if (arg_no < 0) {
       type_stack_mark();
       push_finished_type(fun = get_argument_type(fun->cdr, arg_no));
-      push_type(T_ARRAY);
+      push_unlimited_array_type(T_ARRAY);
       free_type(fun);
       return pop_unfinished_type();
     }
@@ -6030,7 +6050,7 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	push_finished_type(tmp2);
 	free_type(tmp2);
 	tmp2 = NULL;
-	while(array_cnt--) push_type(T_ARRAY);
+	while(array_cnt--) push_unlimited_array_type(T_ARRAY);
 	push_reverse_type(T_MANY);
 	while(loop_cnt--) push_reverse_type(T_FUNCTION);
 	res = pop_unfinished_type();
@@ -6084,7 +6104,7 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	} else {
 	  push_finished_type(zero_type_string);
 	}
-	push_type(T_ARRAY);
+	push_unlimited_array_type(T_ARRAY);
 	res = pop_unfinished_type();
 	break;
       case T_STRING:
@@ -6093,7 +6113,7 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	type_stack_mark();
 	push_finished_type(res);
 	free_type(res);
-	push_type(T_STRING);
+	push_unlimited_array_type(T_STRING);
 	res = pop_unfinished_type();
 	break;
       case T_INT:
@@ -6544,7 +6564,7 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
   push_finished_type(res);
   free_type(res);
   while(array_cnt--) {
-    push_type(PIKE_T_ARRAY);
+    push_unlimited_array_type(PIKE_T_ARRAY);
   }
   res = pop_type();
 
@@ -6918,7 +6938,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
   push_finished_type(res);
   free_type(res);
   while(array_cnt--) {
-    push_type(PIKE_T_ARRAY);
+    push_unlimited_array_type(PIKE_T_ARRAY);
   }
   res = pop_unfinished_type();
 
@@ -7287,7 +7307,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
   free_type(res);
 
   while(array_cnt--) {
-    push_type(PIKE_T_ARRAY);
+    push_unlimited_array_type(PIKE_T_ARRAY);
   }
 
 #ifdef PIKE_DEBUG
@@ -7377,7 +7397,7 @@ static struct pike_type *low_get_first_arg_type(struct pike_type *arg_type,
       type_stack_mark();
       push_finished_type(tmp);
       free_type(tmp);
-      push_type(arg_type->type);
+      push_unlimited_array_type(arg_type->type);
       return pop_unfinished_type();
 
     case T_MAPPING:
@@ -8021,7 +8041,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       }else
 	push_finished_type(zero_type_string);
 #endif /* 0 */
-      push_type(T_ARRAY);
+      push_unlimited_array_type(T_ARRAY);
       return pop_unfinished_type();
     }
 
@@ -8148,7 +8168,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
     } else {
       push_type(T_ZERO);
     }
-    push_type(T_STRING);
+    push_unlimited_array_type(T_STRING);
     return pop_unfinished_type();
 
   default:
@@ -8411,7 +8431,6 @@ static void low_make_pike_type(unsigned char *type_string,
   case T_FUNCTION:
     low_make_function_type(type_string+1, cont);
     break;
-  case T_ARRAY:
   case T_MULTISET:
   case T_TYPE:
   case T_NOT:
@@ -8444,13 +8463,16 @@ static void low_make_pike_type(unsigned char *type_string,
   case T_STRING:
     *cont = type_string + 1;
     push_finished_type(int_type_string);
-    push_type(T_STRING);
+    push_unlimited_array_type(T_STRING);
     break;
 
   case PIKE_T_NSTRING:
+    type = T_STRING;
+    /* FALLTHRU */
+  case T_ARRAY:
     low_make_pike_type(type_string + 1, cont);
-    /* FIXME: Add check for valid subtype. */
-    push_type(T_STRING);
+    /* FIXME: Add check for valid subtype in the string case. */
+    push_unlimited_array_type(type);
     break;
 
   case T_INT:

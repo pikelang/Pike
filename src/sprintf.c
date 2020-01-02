@@ -2090,7 +2090,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	}
 	/* Allow a mapping in all cases. */
 	push_int_type(MIN_INT32, MAX_INT32);
-	push_type(T_STRING);
+	push_unlimited_array_type(T_STRING);
 	push_int_type(MIN_INT32, MAX_INT32);
 	push_reverse_type(T_MAPPING);
 	push_type(T_OR);
@@ -2191,7 +2191,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	  push_assign_type(int_marker);
 	  uses_marker = 1;
 	}
-	push_type(T_STRING);
+	push_unlimited_array_type(T_STRING);
 	continue;
       }
 
@@ -2268,10 +2268,10 @@ static int push_sprintf_argument_types(PCHARP format,
 	  push_type(T_OR);
 	}
 	push_finished_type(peek_type_stack());	/* dup() */
-	push_type(PIKE_T_ARRAY);
+	push_unlimited_array_type(PIKE_T_ARRAY);
 	push_type(T_OR);
 
-	push_type(PIKE_T_ARRAY);
+	push_unlimited_array_type(PIKE_T_ARRAY);
 
 	INC_PCHARP(a,e);
 	break;
@@ -2324,7 +2324,7 @@ static int push_sprintf_argument_types(PCHARP format,
         if ('F' > max_char) max_char = 'F';
         if ('+' < min_char) min_char = '+';
         push_int_type(0, 255);
-	push_type(T_STRING);
+	push_unlimited_array_type(T_STRING);
         push_object_type(0, 0);
         push_type(T_OR);
         push_int_type(MIN_INT32, MAX_INT32);
@@ -2380,7 +2380,7 @@ static int push_sprintf_argument_types(PCHARP format,
       {
 	push_object_type(0, 0);
 	push_int_type(0, 255);
-	push_type(T_STRING);
+	push_unlimited_array_type(T_STRING);
 	push_type(T_OR);
 	if (min_char > 0) min_char = 0;
 	if (max_char < 255) max_char = 255;
@@ -2399,7 +2399,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	  push_assign_type(int_marker);
 	  ret |= PSAT_MARKER;
 	}
-	push_type(T_STRING);
+	push_unlimited_array_type(T_STRING);
 	push_type(T_OR);
 	break;
       }
@@ -2407,7 +2407,7 @@ static int push_sprintf_argument_types(PCHARP format,
       }
       break;
     }
-    while (num_snurkel--) push_type(T_ARRAY);
+    while (num_snurkel--) push_unlimited_array_type(T_ARRAY);
   }
 
   *min_charp = min_char;
@@ -2650,7 +2650,7 @@ void f___handle_sprintf_format(INT32 args)
 	    } else {
 	      push_type(PIKE_T_ZERO);
 	    }
-	    push_type(PIKE_T_STRING);
+	    push_unlimited_array_type(PIKE_T_STRING);
 	  } else {
 	    push_finished_type(tmp->cdr);	/* Return type */
 	  }
@@ -2749,7 +2749,7 @@ void f___handle_sprintf_format(INT32 args)
 	  } else {
 	    push_type(T_ZERO);
 	  }
-	  push_type(T_STRING);
+	  push_unlimited_array_type(T_STRING);
 	  push_type(T_MIXED);
 	  push_type(T_MANY);
 	  push_type_value(pop_unfinished_type());
