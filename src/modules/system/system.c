@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.190 2010/09/23 13:12:14 grubba Exp $
 */
 
 /*
@@ -3495,6 +3494,9 @@ PIKE_MODULE_EXIT
     extern void exit_nt_system_calls(void);
     exit_nt_system_calls();
   }
+#endif
+#ifdef HAVE_SYSLOG
+  free_svalue(&log_ident);
 #endif
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS
   mt_destroy(&gethostbyname_mutex);

@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.h,v 1.10 2003/10/10 19:28:21 nilsson Exp $
 */
 
 /*
@@ -42,6 +41,7 @@ void f_getgrent(INT32 args);
 /*
  * syslog.c
  */
+extern struct svalue log_ident;
 void f_openlog(INT32 args);
 void f_syslog(INT32 args);
 void f_closelog(INT32 args);
