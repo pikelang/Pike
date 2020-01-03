@@ -3530,6 +3530,9 @@ PIKE_MODULE_EXIT
     exit_nt_system_calls();
   }
 #endif
+#ifdef HAVE_SYSLOG
+  free_svalue(&log_ident);
+#endif
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS
   mt_destroy(&gethostbyname_mutex);
 #endif

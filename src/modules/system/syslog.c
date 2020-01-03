@@ -108,6 +108,8 @@
 /*! @module System
  */
 
+struct svalue log_ident = SVALUE_INIT_FREE;
+
 /*! @decl void openlog(string ident, int options, facility)
  *!
  *! Initializes the connection to syslogd.
@@ -187,6 +189,8 @@ void f_openlog(INT32 args)
   ASSERT_SECURITY_ROOT("System.openlog");
 
   get_all_args("openlog", args, "%s%i%i", &ident, &p_option, &p_facility);
+
+  assign_svalue(&log_ident, Pike_sp - args);
 
   if(p_option & (1<<0)) option |= LOG_CONS;
   if(p_option & (1<<1)) option |= LOG_NDELAY;
@@ -308,6 +312,8 @@ void f_closelog(INT32 args)
 {
   ASSERT_SECURITY_ROOT("System.closelog");
   closelog();
+  free_svalue(&log_ident);
+  SET_SVAL(log_ident, PIKE_T_FREE, 0, integer, 0);
   pop_n_elems(args);
 }
 
