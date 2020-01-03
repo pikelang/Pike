@@ -9086,6 +9086,7 @@ PMOD_EXPORT void *find_type(struct pike_type *t,
 
 PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
 {
+  if (!t) return;
   visit_enter(t, PIKE_T_TYPE, extra);
   switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
@@ -9110,12 +9111,12 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
     case T_OR:
     case T_AND:
     case PIKE_T_RING:
+    case T_ARRAY:
+    case T_STRING:
       visit_type_ref (t->car, REF_TYPE_INTERNAL, extra);
       /* FALLTHRU */
     case T_SCOPE:
     case T_ASSIGN:
-    case T_ARRAY:
-    case T_STRING:
       visit_type_ref (t->cdr, REF_TYPE_INTERNAL, extra);
       break;
     case T_MULTISET:
@@ -9271,7 +9272,9 @@ void gc_check_type (struct pike_type *t)
       case PIKE_T_RING:
       case T_ARRAY:
       case T_STRING:
-	debug_gc_check (t->car, " as car in a type");
+	if (t->car) {
+	  debug_gc_check (t->car, " as car in a type");
+	}
 	debug_gc_check (t->cdr, " as cdr in a type");
 	break;
       case PIKE_T_ATTRIBUTE:
