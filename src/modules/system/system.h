@@ -40,6 +40,7 @@ void f_getgrent(INT32 args);
 /*
  * syslog.c
  */
+extern struct svalue log_ident;
 void f_openlog(INT32 args);
 void f_syslog(INT32 args);
 void f_closelog(INT32 args);
