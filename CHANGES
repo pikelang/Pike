@@ -187,6 +187,13 @@ o sybase
   The module's configure script now respects ABI suffixes when searching
   for the sybase library dir.
 
+o System
+
+  - System.openlog() now keeps a reference to the ident passed, since
+    system level syslog() may access the string pointed to by the ident
+    passed to openlog. The reference will be released after a subsequent
+    call to openlog() or closelog().
+
 o Thread.Queue
 
   Attempt to work around glibc bugs.
