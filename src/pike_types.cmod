@@ -231,12 +231,12 @@ static void internal_parse_type(const char **s);
  * MAPPING	index type	value type
  * OR		type (not OR)	type
  * AND		type		type
- * ARRAY	-		type
+ * ARRAY	len type	type			len added in 8.1
  * MULTISET	type		-
  * NOT		type		-
  * '0'-'9'	-		-
  * FLOAT	-		-
- * STRING	-		ZERO, INT or OR		Range added in 7.7
+ * STRING	len type	ZERO, INT or OR		len:8.1, Range:7.7
  * TYPE		type		-
  * PROGRAM	type		-
  * MIXED	-		-
@@ -318,6 +318,8 @@ void debug_free_type(struct pike_type *t)
     case T_OR:
     case T_AND:
     case PIKE_T_RING:
+    case T_ARRAY:
+    case T_STRING:
       /* Free car & cdr */
       free_type(car);
       t = (struct pike_type *) cdr;
@@ -339,8 +341,6 @@ void debug_free_type(struct pike_type *t)
 
     case T_SCOPE:
     case T_ASSIGN:
-    case T_ARRAY:
-    case T_STRING:
       /* Free cdr */
       t = (struct pike_type *) cdr;
       debug_free_type_preamble (t);
@@ -491,6 +491,8 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
       case T_OR:
       case T_AND:
       case PIKE_T_RING:
+      case T_ARRAY:
+      case T_STRING:
 	/* Free car & cdr */
 	free_type((struct pike_type *)debug_malloc_pass(car));
 	free_type((struct pike_type *)debug_malloc_pass(cdr));
@@ -510,8 +512,6 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 
       case T_SCOPE:
       case T_ASSIGN:
-      case T_ARRAY:
-      case T_STRING:
 	/* Free cdr */
 	free_type((struct pike_type *)debug_malloc_pass(cdr));
 	break;
@@ -596,6 +596,8 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   case T_OR:
   case T_AND:
   case PIKE_T_RING:
+  case T_ARRAY:
+  case T_STRING:
     debug_malloc_pass(car);
     debug_malloc_pass(cdr);
     break;
@@ -612,8 +614,6 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
     t->flags |= PT_FLAG_ASSIGN_0 << PTR_TO_INT(car);
     /* FALLTHRU */
   case T_SCOPE:
-  case T_ARRAY:
-  case T_STRING:
     debug_malloc_pass(cdr);
     break;
 
@@ -9173,7 +9173,6 @@ void gc_mark_type_as_referenced(struct pike_type *t)
       case T_ASSIGN:
       case PIKE_T_NAME:
       case PIKE_T_ATTRIBUTE:
-      case PIKE_T_ARRAY:
 	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
 	break;
       case PIKE_T_FUNCTION:
@@ -9183,6 +9182,8 @@ void gc_mark_type_as_referenced(struct pike_type *t)
       case PIKE_T_MAPPING:
       case T_OR:
       case T_AND:
+      case PIKE_T_ARRAY:
+      case PIKE_T_STRING:
 	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
       /* FALLTHROUGH */
       case PIKE_T_MULTISET:
@@ -9268,6 +9269,8 @@ void gc_check_type (struct pike_type *t)
       case T_OR:
       case T_AND:
       case PIKE_T_RING:
+      case T_ARRAY:
+      case T_STRING:
 	debug_gc_check (t->car, " as car in a type");
 	debug_gc_check (t->cdr, " as cdr in a type");
 	break;
@@ -9289,8 +9292,6 @@ void gc_check_type (struct pike_type *t)
 	break;
       case T_SCOPE:
       case T_ASSIGN:
-      case T_ARRAY:
-      case T_STRING:
 	debug_gc_check (t->cdr, " as cdr in a type");
 	break;
 #ifdef PIKE_DEBUG
