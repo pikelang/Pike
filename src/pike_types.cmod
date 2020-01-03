@@ -9113,7 +9113,9 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
     case PIKE_T_RING:
     case T_ARRAY:
     case T_STRING:
-      visit_type_ref (t->car, REF_TYPE_INTERNAL, extra);
+      if (t->car) {
+	visit_type_ref (t->car, REF_TYPE_INTERNAL, extra);
+      }
       /* FALLTHRU */
     case T_SCOPE:
     case T_ASSIGN:
