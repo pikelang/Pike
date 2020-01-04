@@ -119,13 +119,23 @@ static void clear_markers(void)
   }
 }
 
+void compiler_discard_top_type(void)
+{
+  TYPE_STACK_DEBUG("discard_top_type");
+#ifdef PIKE_DEBUG
+  if (!peek_stack_mark())
+    Pike_fatal("Type stack underflow.\n");
+#endif
+  free_type(*(Pike_compiler->type_stackp--));
+}
+
 void compiler_discard_type (void)
 {
   ptrdiff_t len = pop_stack_mark();
-  TYPE_STACK_DEBUG("paranoid_pop_type");
+  TYPE_STACK_DEBUG("discard_type");
   for (;len > 0; len--) {
     /* Get rid of excess junk. */
-    free_type(*(Pike_compiler->type_stackp--));
+    compiler_discard_top_type();
   }
 }
 
