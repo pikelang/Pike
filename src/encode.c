@@ -2662,7 +2662,7 @@ static void restore_type_stack(struct pike_type **old_stackp)
   }
 #endif /* PIKE_DEBUG */
   while(Pike_compiler->type_stackp > old_stackp) {
-    free_type(*(Pike_compiler->type_stackp--));
+    compiler_discard_top_type();
   }
 }
 
