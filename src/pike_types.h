@@ -254,6 +254,7 @@ PMOD_EXPORT void really_free_pike_type(struct pike_type * t);
 PMOD_EXPORT ATTRIBUTE((malloc)) struct pike_type * alloc_pike_type(void);
 PMOD_EXPORT void count_memory_in_pike_types(size_t *n, size_t *s);
 void init_types(void);
+ptrdiff_t peek_stack_mark(void);
 ptrdiff_t pop_stack_mark(void);
 void debug_pop_type_stack(unsigned int expected);
 void type_stack_pop_to_mark(void);
