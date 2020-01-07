@@ -2687,7 +2687,7 @@ void f___handle_sprintf_format(INT32 args)
 	    push_type(T_OR);
 	  }
 	  while (array_cnt--) {
-	    push_type(PIKE_T_ARRAY);
+	    push_unlimited_array_type(PIKE_T_ARRAY);
 	  }
 	  if (severity < REPORT_ERROR) {
 	    push_type(T_VOID);
@@ -2704,7 +2704,7 @@ void f___handle_sprintf_format(INT32 args)
 	  if (array_cnt--) {
 	    push_type(PIKE_T_ZERO);	/* No args */
 	    while (array_cnt--) {
-	      push_type(PIKE_T_ARRAY);
+	      push_unlimited_array_type(PIKE_T_ARRAY);
 	      push_type(PIKE_T_ZERO);
 	      push_type(T_OR);
 	    }

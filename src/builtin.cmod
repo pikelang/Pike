@@ -1985,7 +1985,7 @@ PIKEFUN program ProxyFactory(program p)
       push_type(T_VOID);
       push_type(T_MANY);
       push_int_type(MIN_INT32, MAX_INT32);
-      push_type(T_STRING);
+      push_unlimited_array_type(T_STRING);
       push_int_type(MIN_INT32, MAX_INT32);
       push_type(T_MAPPING);
       push_type(T_VOID);
