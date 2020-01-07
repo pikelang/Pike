@@ -755,7 +755,7 @@ void debug_push_unlimited_array_type(enum PIKE_TYPE t)
 	       get_name_of_type(t), t);
   }
 #endif
-  /* FIXME: Set car to unlimited length. */
+  push_int_type(0, MAX_INT32);
   push_type(t);
 }
 
@@ -908,6 +908,8 @@ void debug_push_type(unsigned int type)
   case T_TUPLE:
   case T_MAPPING:
   case PIKE_T_RING:
+  case T_ARRAY:
+  case T_STRING:
     /* Make a new type of the top two types. */
     --Pike_compiler->type_stackp;
     *Pike_compiler->type_stackp = mk_type(type,
@@ -936,14 +938,6 @@ void debug_push_type(unsigned int type)
     *Pike_compiler->type_stackp = mk_type(type,
 					  *Pike_compiler->type_stackp, NULL,
 					  PT_COPY_CAR);
-    break;
-
-  case T_ARRAY:
-  case T_STRING:
-    /* Make a new type of the top type, and put it in cdr. */
-    *Pike_compiler->type_stackp = mk_type(type,
-					  NULL, *Pike_compiler->type_stackp,
-					  PT_COPY_CDR);
     break;
 
   case T_SCOPE:
@@ -1078,6 +1072,8 @@ void debug_push_reverse_type(unsigned int type)
   case T_OR:
   case T_AND:
   case PIKE_T_RING:
+  case PIKE_T_ARRAY:
+  case PIKE_T_STRING:
     {
       /* Binary type-node. -- swap the types. */
       struct pike_type *tmp = Pike_compiler->type_stackp[0];
