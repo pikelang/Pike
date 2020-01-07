@@ -2738,7 +2738,6 @@ static void low_decode_type(struct decode_data *data)
 
     case T_TYPE:
     case T_PROGRAM:
-    case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
       low_decode_type(data);
@@ -2766,13 +2765,16 @@ static void low_decode_type(struct decode_data *data)
     case T_STRING:
       /* Common case and compat */
       push_finished_type(int_type_string);
-      push_type(T_STRING);
+      push_unlimited_array_type(T_STRING);
       break;
 
     case PIKE_T_NSTRING:
+      tmp = T_STRING;
+      /* FALLTHRU */
+    case T_ARRAY:
       {
 	low_decode_type(data);
-	push_type(T_STRING);
+	push_unlimited_array_type(tmp);
       }
       break;
 
