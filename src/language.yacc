@@ -2815,7 +2815,7 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
 
     if ($3) {
       push_finished_type(Pike_compiler->compiler_frame->current_type);
-      push_type(T_ARRAY);
+      push_unlimited_array_type(T_ARRAY);
       type = compiler_pop_type();
     } else {
       copy_pike_type(type, Pike_compiler->compiler_frame->current_type);
