@@ -48,6 +48,7 @@ int max_correct_args;
 PMOD_EXPORT struct pike_type *string0_type_string;
 PMOD_EXPORT struct pike_type *string_type_string;
 PMOD_EXPORT struct pike_type *int_type_string;
+PMOD_EXPORT struct pike_type *int_pos_type_string;
 PMOD_EXPORT struct pike_type *float_type_string;
 PMOD_EXPORT struct pike_type *function_type_string;
 PMOD_EXPORT struct pike_type *object_type_string;
@@ -8870,7 +8871,8 @@ void init_types(void)
   Pike_compiler->type_stackp = type_stack;
   Pike_compiler->pike_type_mark_stackp = pike_type_mark_stack;
 
-  int_type_string = CONSTTYPE(tInt);	/* MUST come before string! */
+  int_type_string = CONSTTYPE(tInt);	/* MUST come before string and array! */
+  int_pos_type_string = CONSTTYPE(tIntPos);
   string0_type_string = CONSTTYPE(tStr0);
   string_type_string = CONSTTYPE(tStr32);
   object_type_string = CONSTTYPE(tObj);
@@ -8953,6 +8955,8 @@ void cleanup_pike_types(void)
   string_type_string = NULL;
   free_type(int_type_string);
   int_type_string = NULL;
+  free_type(int_pos_type_string);
+  int_pos_type_string = NULL;
   free_type(float_type_string);
   float_type_string = NULL;
   free_type(function_type_string);
@@ -9224,6 +9228,8 @@ static void gc_mark_external_types(struct callback *UNUSED(cb),
     gc_mark_external(string_type_string, " as string_type_string");
   if (int_type_string)
     gc_mark_external(int_type_string, " as int_type_string");
+  if (int_pos_type_string)
+    gc_mark_external(int_pos_type_string, " as int_pos_type_string");
   if (object_type_string)
     gc_mark_external(object_type_string, " as object_type_string");
   if (program_type_string)
