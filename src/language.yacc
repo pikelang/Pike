@@ -1522,8 +1522,8 @@ basic_type:
   | TOK_FUNCTION_ID opt_function_type {}
   | TOK_OBJECT_ID   opt_program_type  {}
   | TOK_PROGRAM_ID  opt_program_type  { push_type(T_PROGRAM); }
-  | TOK_ARRAY_ID    opt_array_type    { push_unlimited_array_type(T_ARRAY); }
-  | TOK_MULTISET_ID opt_array_type    { push_type(T_MULTISET); }
+  | TOK_ARRAY_ID    opt_array_type    {}
+  | TOK_MULTISET_ID opt_multiset_type { push_type(T_MULTISET); }
   | TOK_ATTRIBUTE_ID '(' string_constant ',' full_type ')'
   {
     push_type_attribute($3->u.sval.u.string);
@@ -1625,39 +1625,35 @@ expected_dot_dot: TOK_DOT_DOT
   }
   ;
 
-opt_int_range: /* Empty */
+safe_int_range_type: TOK_BITS
   {
-    push_int_type(MIN_INT_TYPE, MAX_INT_TYPE);
+    push_int_type( 0, (1<<$1->u.sval.u.integer)-1 );
+    free_node( $1 );
   }
-  | '(' TOK_BITS ')'
-  {
-      push_int_type( 0, (1<<$2->u.sval.u.integer)-1 );
-      free_node( $2 );
-  }
-  | '(' number_or_minint expected_dot_dot number_or_maxint ')'
+  | number_or_minint expected_dot_dot number_or_maxint
   {
     INT_TYPE min = MIN_INT_TYPE;
     INT_TYPE max = MAX_INT_TYPE;
 
-    /* FIXME: Check that $4 is >= $2. */
-    if($4->token == F_CONSTANT) {
-      if (TYPEOF($4->u.sval) == T_INT) {
-	max = $4->u.sval.u.integer;
-      } else if (is_bignum_object_in_svalue(&$4->u.sval)) {
+    /* FIXME: Check that $3 is >= $1. */
+    if($3->token == F_CONSTANT) {
+      if (TYPEOF($3->u.sval) == T_INT) {
+	max = $3->u.sval.u.integer;
+      } else if (is_bignum_object_in_svalue(&$3->u.sval)) {
 	push_int(0);
-	if (is_lt(&$4->u.sval, Pike_sp-1)) {
+	if (is_lt(&$3->u.sval, Pike_sp-1)) {
 	  max = MIN_INT_TYPE;
 	}
 	pop_stack();
       }
     }
 
-    if($2->token == F_CONSTANT) {
-      if (TYPEOF($2->u.sval) == T_INT) {
-	min = $2->u.sval.u.integer;
-      } else if (is_bignum_object_in_svalue(&$2->u.sval)) {
+    if($1->token == F_CONSTANT) {
+      if (TYPEOF($1->u.sval) == T_INT) {
+	min = $1->u.sval.u.integer;
+      } else if (is_bignum_object_in_svalue(&$1->u.sval)) {
 	push_int(0);
-	if (is_lt(Pike_sp-1, &$2->u.sval)) {
+	if (is_lt(Pike_sp-1, &$1->u.sval)) {
 	  min = MAX_INT_TYPE;
 	}
 	pop_stack();
@@ -1666,19 +1662,19 @@ opt_int_range: /* Empty */
 
     push_int_type(min, max);
 
-    free_node($2);
-    free_node($4);
+    free_node($1);
+    free_node($3);
   }
-  | '(' number ')'
+  | number
   {
     INT_TYPE val = MAX_INT_TYPE;
 
-    if($2->token == F_CONSTANT) {
-      if (TYPEOF($2->u.sval) == T_INT) {
-	val = $2->u.sval.u.integer;
-      } else if (is_bignum_object_in_svalue(&$2->u.sval)) {
+    if($1->token == F_CONSTANT) {
+      if (TYPEOF($1->u.sval) == T_INT) {
+	val = $1->u.sval.u.integer;
+      } else if (is_bignum_object_in_svalue(&$1->u.sval)) {
 	push_int(0);
-	if (is_lt(&$2->u.sval, Pike_sp-1)) {
+	if (is_lt(&$1->u.sval, Pike_sp-1)) {
 	  val = MIN_INT_TYPE;
 	}
 	pop_stack();
@@ -1687,16 +1683,36 @@ opt_int_range: /* Empty */
 
     push_int_type(val, val);
 
-    free_node($2);
+    free_node($1);
   }
-  | '(' error ')'
+  | error
   {
     push_int_type(MIN_INT32, MAX_INT32);
     yyerror("Expected integer range.");
   }
   ;
 
+opt_int_range: /* Empty */
+  {
+    push_int_type(MIN_INT_TYPE, MAX_INT_TYPE);
+  }
+  | '(' safe_int_range_type ')'
+  ;
+
 opt_string_width: opt_int_range
+  {
+    push_unlimited_array_type(T_STRING);
+  }
+  | '(' safe_int_range_type ':' safe_int_range_type ')'
+  {
+    push_reverse_type(T_STRING);
+  }
+  | '(' safe_int_range_type ':' ')'
+  {
+    push_finished_type(int_type_string);
+    push_reverse_type(T_STRING);
+  }
+  | '(' ':' safe_int_range_type ')'
   {
     push_unlimited_array_type(T_STRING);
   }
@@ -1773,8 +1789,20 @@ function_type_list2: full_type { $$=1; }
   full_type
   ;
 
-opt_array_type: '(' full_type ')'
+opt_multiset_type: '(' full_type ')'
   |  { push_type(T_MIXED); }
+  ;
+
+opt_array_type: '(' full_type ')'
+  { push_unlimited_array_type(T_ARRAY); }
+  | /* Empty */
+  { push_type(T_MIXED); push_unlimited_array_type(T_ARRAY); }
+  | '(' safe_int_range_type ':' full_type ')'
+  { push_reverse_type(T_ARRAY); }
+  | '(' ':' full_type ')'
+  { push_unlimited_array_type(T_ARRAY); }
+  | '(' safe_int_range_type ':' ')'
+  { push_type(T_MIXED); push_reverse_type(T_ARRAY); }
   ;
 
 opt_mapping_type: '('
