@@ -2088,9 +2088,26 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
       FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,rret));
       return rret;
 
+    case FD_PIPE:
+      if (len) {
+	DWORD available_bytes = 0;
+	if (PeekNamedFile(handle, NULL, 0, NULL, &available_bytes, NULL)) {
+	  if (available_bytes) {
+	    if (available_bytes < len) {
+	      len = available_bytes;
+	    }
+	  } else {
+	    /* Wait for some data, but avoid waiting for the entire
+	     * buffer to fill. Higher level code is responsible to
+	     * reschedule the read to get the rest (if any).
+	     */
+	    len = 1;
+	  }
+	}
+      }
+      /* FALLTHRU */
     case FD_CONSOLE:
     case FD_FILE:
-    case FD_PIPE:
       ret=0;
       if(len && !ReadFile(handle, to,
 			  DO_NOT_WARN((DWORD)len),
