@@ -2282,6 +2282,55 @@ void simple_describe_type(struct pike_type *s)
   }
 }
 
+static void low_describe_int_range(struct string_builder *s,
+				   struct pike_type *t)
+{
+  if (!t || (t == int_type_string)) return;
+ loop:
+  switch(t->type) {
+  case T_ZERO:
+    string_builder_strcat(s, "zero");
+    break;
+  case T_INT:
+    {
+      INT32 min=CAR_TO_INT(t);
+      INT32 max=CDR_TO_INT(t);
+
+      if (min == max) {
+	string_builder_sprintf(s, "%ld", (long) min);
+      } else if (!min && (max != MAX_INT32) && !(max & (max + 1))) {
+	int j = 0;
+	while (max) {
+	  max >>= 1;
+	  j++;
+	}
+	string_builder_sprintf(s, "%dbit", j);
+      } else {
+	if (min != MIN_INT32) {
+	  string_builder_sprintf(s, "%ld..", (long)min);
+	} else {
+	  string_builder_strcat(s, "..");
+	}
+	if (max != MAX_INT32) {
+	  string_builder_sprintf(s, "%ld", (long)max);
+	}
+      }
+    }
+    break;
+  case T_ASSIGN:
+    t = t->cdr;
+    goto loop;
+  case T_OR:
+    low_describe_int_range(s, t->car);
+    string_builder_strcat(s, " | ");
+    t = t->cdr;
+    goto loop;
+  default:
+    low_describe_type(s, t);
+    break;
+  }
+}
+
 void low_describe_type(struct string_builder *s, struct pike_type *t)
 {
   check_c_stack(1024);
@@ -2308,27 +2357,17 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
     case T_ZERO: string_builder_strcat(s, "zero"); break;
     case T_MIXED: string_builder_strcat(s, "mixed"); break;
     case PIKE_T_UNKNOWN: string_builder_strcat(s, "unknown"); break;
-    case T_INT:
-    {
-      INT32 min=CAR_TO_INT(t);
-      INT32 max=CDR_TO_INT(t);
 
-      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
-	int j = 0;
-	while (max) {
-	  max >>= 1;
-	  j++;
-	}
-	string_builder_sprintf(s, "int(%dbit)", j);
-      } else if (min == max) {
-	string_builder_sprintf(s, "int(%ld)", (long)min);
-      } else if(min!=MIN_INT32 || max!=MAX_INT32) {
-	string_builder_sprintf(s, "int(%ld..%ld)", (long)min, (long)max);
-      } else {
-	string_builder_strcat(s, "int");
-      }
+    case T_INT:
+      string_builder_strcat(s, "int");
+
+      if (t == int_type_string) break;
+
+      string_builder_putchar(s, '(');
+      low_describe_int_range(s, t);
+      string_builder_putchar(s, ')');
       break;
-    }
+
     case T_FLOAT: string_builder_strcat(s, "float"); break;
     case T_PROGRAM:
       if ((t->car->type == T_OBJECT) &&
@@ -2364,76 +2403,13 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 
     case T_STRING:
       {
-	INT32 min;
-	INT32 max;
-	t = t->cdr;
-	if (t->type == T_ZERO) {
-	  string_builder_strcat(s, "string(zero)");
-	} else if (t != int_type_string) {
-	  string_builder_strcat(s, "string(");
-	  while (t->type == T_OR) {
-	    struct pike_type *char_type = t->car;
-	    while(char_type->type == T_ASSIGN) {
-	      char_type = char_type->cdr;
-	    }
-	    if (char_type->type != T_INT) {
-	      low_describe_type(s, char_type);
-	    } else {
-	      min = CAR_TO_INT(char_type);
-	      max = CDR_TO_INT(char_type);
-	      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
-		int j = 0;
-		while (max) {
-		  max >>= 1;
-		  j++;
-		}
-		string_builder_sprintf(s, "%dbit", j);
-	      } else {
-		if ((min != MIN_INT32) || (min == max)) {
-		  string_builder_sprintf(s, "%d", min);
-		}
-		if (min != max) {
-		  string_builder_strcat(s, "..");
-		  if (max != MAX_INT32) {
-		    string_builder_sprintf(s, "%d", max);
-		  }
-		}
-	      }
-	    }
-	    string_builder_strcat(s, " | ");
-	    t = t->cdr;
-	  }
-	  while(t->type == T_ASSIGN) {
-	    t = t->cdr;
-	  }
-	  if (t->type != T_INT) {
-	    low_describe_type(s, t);
-	  } else {
-	    min = CAR_TO_INT(t);
-	    max = CDR_TO_INT(t);
-	    if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
-	      int j = 0;
-	      while (max) {
-		max >>= 1;
-		j++;
-	      }
-	      string_builder_sprintf(s, "%dbit", j);
-	    } else {
-	      if ((min != MIN_INT32) || (min == max)) {
-		string_builder_sprintf(s, "%d", min);
-	      }
-	      if (min != max) {
-		string_builder_strcat(s, "..");
-		if (max != MAX_INT32) {
-		  string_builder_sprintf(s, "%d", max);
-		}
-	      }
-	    }
-	  }
-	  string_builder_putchar(s, ')');
-	} else {
-	  string_builder_strcat(s, "string");
+	string_builder_strcat(s, "string");
+	if (t->cdr == int_type_string) {
+	  break;
 	}
+	string_builder_putchar(s, '(');
+	low_describe_int_range(s, t->cdr);
+	string_builder_putchar(s, ')');
 	break;
       }
     case T_TYPE:
@@ -2505,11 +2481,13 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
     }
 
     case T_ARRAY:
-      if(t->cdr->type != T_MIXED) {
-	string_builder_sprintf(s, "array(%T)", t->cdr);
-      } else {
-	string_builder_strcat(s, "array");
+      string_builder_strcat(s, "array");
+      if(t->cdr->type == T_MIXED) {
+	break;
       }
+      string_builder_putchar(s, '(');
+      string_builder_sprintf(s, "%T", t->cdr);
+      string_builder_putchar(s, ')');
       break;
 
     case T_MULTISET:
