@@ -1088,6 +1088,11 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   while (l && ISSEPARATOR(fname[l-1])) {
     fname[--l] = 0;
   }
+  if( l==0 )
+  {
+    errno = ENOENT;
+    return -1;
+  }
 
   /* get disk from file */
   if (fname[1] == ':')
@@ -1211,7 +1216,7 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
     fstype[0] = '-';
     fstype[1] = 0;
 
-    if (fname[1] == ':') {
+    if (l>=3 && fname[1] == ':') {
       /* Construct a string "X:\" in fname. */
       fname[0] = toupper(fname[0]);
       fname[2] = '\\';
@@ -1609,21 +1614,24 @@ PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
   /* Convert host and share in an UNC path to lowercase since Windows
    * Shell doesn't do that consistently.
    */
-  if (buffer[0] == '\\' && buffer[1] == '\\') {
-    size_t i;
-    int segments;
-    p_wchar1 c;
+  if (len>1)
+  {
+    if (buffer[0] == '\\' && buffer[1] == '\\') {
+      size_t i;
+      int segments;
+      p_wchar1 c;
 
-    for (i = segments = 2; (c = buffer[i]) && segments; i++) {
-      if (c >= 256) continue;
-      buffer[i] = tolower(buffer[i]);
-      if (c == '\\') {
-	segments--;
+      for (i = segments = 2; (c = buffer[i]) && segments; i++) {
+        if (c >= 256) continue;
+        buffer[i] = tolower(buffer[i]);
+        if (c == '\\') {
+          segments--;
+        }
       }
+    } else if ((buffer[1] == ':') && (buffer[0] < 256)) {
+      /* Normalize the drive letter to upper-case. */
+      buffer[0] = toupper(buffer[0]);
     }
-  } else if ((buffer[1] == ':') && (buffer[0] < 256)) {
-    /* Normalize the drive letter to upper-case. */
-    buffer[0] = toupper(buffer[0]);
   }
 
   res = pike_utf16_to_utf8(buffer);
@@ -2084,9 +2092,26 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
       FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,rret));
       return rret;
 
+    case FD_PIPE:
+      if (len) {
+	DWORD available_bytes = 0;
+	if (PeekNamedFile(handle, NULL, 0, NULL, &available_bytes, NULL)) {
+	  if (available_bytes) {
+	    if (available_bytes < len) {
+	      len = available_bytes;
+	    }
+	  } else {
+	    /* Wait for some data, but avoid waiting for the entire
+	     * buffer to fill. Higher level code is responsible to
+	     * reschedule the read to get the rest (if any).
+	     */
+	    len = 1;
+	  }
+	}
+      }
+      /* FALLTHRU */
     case FD_CONSOLE:
     case FD_FILE:
-    case FD_PIPE:
       ret=0;
       while(len && !ReadFile(handle, to,
 			     DO_NOT_WARN((DWORD)len),
