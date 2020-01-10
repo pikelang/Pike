@@ -2095,7 +2095,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
     case FD_PIPE:
       if (len) {
 	DWORD available_bytes = 0;
-	if (PeekNamedFile(handle, NULL, 0, NULL, &available_bytes, NULL)) {
+	if (PeekNamedPipe(handle, NULL, 0, NULL, &available_bytes, NULL)) {
 	  if (available_bytes) {
 	    if (available_bytes < len) {
 	      len = available_bytes;
