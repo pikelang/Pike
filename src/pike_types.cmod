@@ -2084,10 +2084,17 @@ void simple_describe_type(struct pike_type *s)
 	{
 	  INT32 min;
 	  INT32 max;
-	  s = s->cdr;
 	  fprintf(stderr, "string");
+	  if ((s->car == int_pos_type_string) && (s->cdr == int_type_string)) {
+	    break;
+	  }
+	  fprintf(stderr, "(");
+	  if (s->car != int_pos_type_string) {
+	    simple_describe_type(s->car);
+	    fprintf(stderr, ": ");
+	  }
+	  s = s->cdr;
 	  if (s != int_type_string) {
-	    fprintf(stderr, "(");
 	    while (s->type == T_OR) {
 	      struct pike_type *char_type = s->car;
 	      while(char_type->type == T_ASSIGN) {
@@ -2168,8 +2175,8 @@ void simple_describe_type(struct pike_type *s)
 		}
 	      }
 	    }
-	    fprintf(stderr, ")");
 	  }
+	  fprintf(stderr, ")");
 	  break;
 	}
       case T_TYPE:
@@ -2212,6 +2219,10 @@ void simple_describe_type(struct pike_type *s)
 	break;
       case T_ARRAY:
 	fprintf(stderr, "array(");
+	if (s->car != int_pos_type_string) {
+	  simple_describe_type(s->car);
+	  fprintf(stderr, ":");
+	}
 	simple_describe_type(s->cdr);
 	fprintf(stderr, ")");
 	break;
@@ -2404,10 +2415,14 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
     case T_STRING:
       {
 	string_builder_strcat(s, "string");
-	if (t->cdr == int_type_string) {
+	if ((t->cdr == int_type_string) && (t->car == int_pos_type_string)) {
 	  break;
 	}
 	string_builder_putchar(s, '(');
+	if (t->car != int_pos_type_string) {
+	  low_describe_int_range(s, t->car);
+	  string_builder_strcat(s, ": ");
+	}
 	low_describe_int_range(s, t->cdr);
 	string_builder_putchar(s, ')');
 	break;
@@ -2482,11 +2497,20 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 
     case T_ARRAY:
       string_builder_strcat(s, "array");
-      if(t->cdr->type == T_MIXED) {
+      if((t->cdr->type == T_MIXED) || (t->car == int_pos_type_string)) {
 	break;
       }
       string_builder_putchar(s, '(');
-      string_builder_sprintf(s, "%T", t->cdr);
+      if (t->car != int_pos_type_string) {
+	low_describe_int_range(s, t->car);
+	string_builder_putchar(s, ':');
+	if (t->cdr->type != T_MIXED) {
+	  string_builder_putchar(s, ' ');
+	}
+      }
+      if (t->cdr->type != T_MIXED) {
+	string_builder_sprintf(s, "%T", t->cdr);
+      }
       string_builder_putchar(s, ')');
       break;
 
