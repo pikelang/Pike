@@ -752,7 +752,7 @@ void debug_push_unlimited_array_type(enum PIKE_TYPE t)
   struct compilation * c = MAYBE_THIS_COMPILATION;
 #ifdef PIKE_DEBUG
   if ((t != PIKE_T_ARRAY) && (t != PIKE_T_STRING)) {
-    Pike_fatal("Invalid type for push_array_type(): %s (%d)\n",
+    Pike_fatal("Invalid type for push_unlimited_array_type(): %s (%d)\n",
 	       get_name_of_type(t), t);
   }
 #endif
