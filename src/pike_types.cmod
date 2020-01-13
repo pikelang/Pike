@@ -2497,7 +2497,7 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 
     case T_ARRAY:
       string_builder_strcat(s, "array");
-      if((t->cdr->type == T_MIXED) || (t->car == int_pos_type_string)) {
+      if((t->cdr->type == T_MIXED) && (t->car == int_pos_type_string)) {
 	break;
       }
       string_builder_putchar(s, '(');
