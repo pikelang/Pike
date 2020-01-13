@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.331 2004/01/12 23:37:07 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 
@@ -2818,6 +2818,9 @@ class Describer
       string t = sprintf("%O", m);
       if (sizeof(t) < (maxlen + 2))
 	return t;
+      // NB: The code further below requires maxlen <= sizeof(m).
+      //     We adjust maxlen so that this holds. Cf [PIKE-224].
+      maxlen = sizeof(m) - (sizeof(t) - maxlen);
       t = 0;
     }
     clipped++;
