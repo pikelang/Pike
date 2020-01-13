@@ -3926,6 +3926,9 @@ class Describer
       string t = sprintf("%q", m);
       if (sizeof(t) < (maxlen + 2))
 	return t;
+      // NB: The code further below requires maxlen <= sizeof(m).
+      //     We adjust maxlen so that this holds. Cf [PIKE-224].
+      maxlen = sizeof(m) - (sizeof(t) - maxlen);
       t = 0;
     }
     clipped++;
