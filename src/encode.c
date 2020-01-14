@@ -2798,13 +2798,13 @@ static void low_decode_type(struct decode_data *data)
     case PIKE_T_LSTRING:
       low_decode_type(data);
       low_decode_type(data);
-      push_type(PIKE_T_STRING);
+      push_reverse_type(PIKE_T_STRING);
       break;
 
     case PIKE_T_LARRAY:
       low_decode_type(data);
       low_decode_type(data);
-      push_type(PIKE_T_ARRAY);
+      push_reverse_type(PIKE_T_ARRAY);
       break;
 
     case '0':
