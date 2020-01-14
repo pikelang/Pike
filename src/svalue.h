@@ -129,6 +129,9 @@ enum PIKE_TYPE {
  * as markers in struct identifier.
  */
 
+    PIKE_T_LARRAY = 236,	/* Limited array. Only for serialization. */
+    PIKE_T_LSTRING = 237,	/* Limited string. Only for serialization. */
+
     PIKE_T_ATTRIBUTE = 238,	/* Attribute node. */
     PIKE_T_NSTRING = 239,	/* Narrow string. Only for serialization. */
     PIKE_T_RING = 240,
@@ -248,6 +251,7 @@ struct svalue
  */
 #define tArr(VAL) "\000" VAL
 #define tArray tArr(tMix)
+#define tLArr(LEN, VAL) "\354" LEN VAL
 #define tMap(IND,VAL) "\001" IND VAL
 #define tMapping tMap(tMix,tMix)
 #define tSet(IND) "\002" IND
@@ -278,6 +282,7 @@ struct svalue
 #define tStr8 "\357" "\010\000\000\000\000\000\000\000\377"
 #define tStr16 "\357" "\010\000\000\000\000\000\000\377\377"
 #define tStr32 "\006"
+#define tLStr(LEN, VAL) "\355" LEN VAL
 #define tType(T) "\007" T
 #define tInt "\022"
 #define tInt0 "\010\000\000\000\000\000\000\000\000"

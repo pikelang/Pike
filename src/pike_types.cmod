@@ -191,6 +191,8 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t)
     case PIKE_T_FREE:		return "PIKE_T_FREE";
     case PIKE_T_ATTRIBUTE:	return "PIKE_T_ATTRIBUTE";
     case PIKE_T_NSTRING:	return "PIKE_T_NSTRING";
+    case PIKE_T_LSTRING:	return "PIKE_T_LSTRING";
+    case PIKE_T_LARRAY:		return "PIKE_T_LARRAY";
     case PIKE_T_RING:		return "PIKE_T_RING";
     case PIKE_T_NAME:		return "PIKE_T_NAME";
     case PIKE_T_SCOPE:		return "PIKE_T_SCOPE";
@@ -8482,6 +8484,22 @@ static void low_make_pike_type(unsigned char *type_string,
     low_make_pike_type(type_string + 1, cont);
     /* FIXME: Add check for valid subtype in the string case. */
     push_unlimited_array_type(type);
+    break;
+
+  case PIKE_T_LSTRING:
+    type = T_STRING;
+    /* Order dependant */
+    low_make_pike_type(type_string+1, cont);
+    low_make_pike_type(*cont, cont);
+    push_reverse_type(type);
+    break;
+
+  case PIKE_T_LARRAY:
+    type = T_ARRAY;
+    /* Order dependant */
+    low_make_pike_type(type_string+1, cont);
+    low_make_pike_type(*cont, cont);
+    push_reverse_type(type);
     break;
 
   case T_INT:
