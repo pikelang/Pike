@@ -442,14 +442,15 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	  ENCODE_WERR(".type    larray");
 	});
       encode_type(t->car, data);
-      t = t->cdr;
-      goto one_more_type;
+    } else {
+      addchar(T_ARRAY ^ MIN_REF_TYPE);
+      EDB(1, {
+	  ENCODE_WERR(".type    %s",
+		      get_name_of_type(t->type));
+	});
     }
-    addchar(t->type);
-    EDB(1, {
-	ENCODE_WERR(".type    %s",
-		    get_name_of_type(t->type));
-      });
+    t = t->cdr;
+    goto one_more_type;
   } else if (t->type <= MAX_TYPE) {
     addchar(t->type ^ MIN_REF_TYPE);
     EDB(1, {
@@ -520,10 +521,6 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
     case T_OR:
     case T_AND:
       encode_type(t->car, data);
-      t = t->cdr;
-      goto one_more_type;
-
-    case T_ARRAY:
       t = t->cdr;
       goto one_more_type;
 
