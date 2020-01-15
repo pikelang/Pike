@@ -413,6 +413,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       });
   } else if (t->type == T_STRING) {
     if (t->car != int_pos_type_string) {
+      /* Limited length string. */
       addchar(PIKE_T_LSTRING);
       EDB(1, {
 	  ENCODE_WERR(".type    lstring");
@@ -435,14 +436,20 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
     return;
   } else if (t->type == T_ARRAY) {
     if (t->car != int_pos_type_string) {
+      /* Limited length array. */
       addchar(PIKE_T_LARRAY);
       EDB(1, {
-	  ENCODE_WERR(".type    lstring");
+	  ENCODE_WERR(".type    larray");
 	});
       encode_type(t->car, data);
       t = t->cdr;
       goto one_more_type;
     }
+    addchar(t->type);
+    EDB(1, {
+	ENCODE_WERR(".type    %s",
+		    get_name_of_type(t->type));
+      });
   } else if (t->type <= MAX_TYPE) {
     addchar(t->type ^ MIN_REF_TYPE);
     EDB(1, {
