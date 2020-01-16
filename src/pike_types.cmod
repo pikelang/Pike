@@ -8052,7 +8052,8 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       }else
 	push_finished_type(zero_type_string);
 #endif /* 0 */
-      push_unlimited_array_type(T_ARRAY);
+      push_int_type(a->size, a->size);
+      push_type(T_ARRAY);
       return pop_unfinished_type();
     }
 
@@ -8179,7 +8180,8 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
     } else {
       push_type(T_ZERO);
     }
-    push_unlimited_array_type(T_STRING);
+    push_int_type(s->u.string->len, s->u.string->len);
+    push_type(T_STRING);
     return pop_unfinished_type();
 
   default:
