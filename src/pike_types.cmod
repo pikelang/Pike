@@ -8903,6 +8903,8 @@ void init_types(void)
   Pike_compiler->type_stackp = type_stack;
   Pike_compiler->pike_type_mark_stackp = pike_type_mark_stack;
 
+  type_stack_mark();	/* Type stack marker sentinel. */
+
   int_type_string = CONSTTYPE(tInt);	/* MUST come before string and array! */
   int_pos_type_string = CONSTTYPE(tIntPos);
   string0_type_string = CONSTTYPE(tStr0);
