@@ -170,6 +170,12 @@ o Sql.pgsql
   - Fix the only known deadlock-cause logged in the last year; only happened
     (rarely) on multiple parallel queries on a single connection.
 
+o SSL
+
+  When verifying the hostname against the certificate, only accept *
+  (wildcard) for one level, i.e. *.example.com matches foo.example.com,
+  but not www.foo.example.com. Previously, all levels were matched.
+
 o SSL.File
 
   Do not close automatically on write error.
