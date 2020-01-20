@@ -1195,7 +1195,11 @@ class sql_result {
               value = (string)value;
               switch (cenc) {
                 case UTF8CHARSET:
-                  value = string_to_utf8(value);
+                  if (has_value(value, 0))
+                    SUSERERROR("NUL characters not allowed in PG-UTF-8: %O\n",
+                     value);
+                  else
+                    value = string_to_utf8(value);
                   break;
                 default:
                   if (String.width(value)>8) {
