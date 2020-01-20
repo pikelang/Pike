@@ -775,6 +775,8 @@ class File
   //!     @value PROP_SEND_FD
   //!       The resulting pipe might support sending of file descriptors
   //!       (see @[send_fd()] and @[receive_fd()] for details).
+  //!     @value PROP_TTY
+  //!       The resulting pipe is a pseudo-tty.
   //!     @value PROP_REVERSE
   //!       The resulting pipe supports communication "backwards" (but
   //!       not necessarily "forwards", see @[PROP_BIDIRECTIONAL]).
@@ -788,6 +790,9 @@ class File
   //!
   //! The two ends of a bi-directional pipe are indistinguishable.
   //!
+  //! For @[PROP_TTY] the returned object is the slave (unless
+  //! @[PROP_REVERSE] has been specified).
+  //!
   //! If the File object this function is called in was open to begin with,
   //! it will be closed before the pipe is created.
   //!
@@ -799,7 +804,7 @@ class File
   //!   @[Process.create_process()], @[send_fd()], @[receive_fd()],
   //!   @[PROP_IPC], @[PROP_NONBLOCK], @[PROP_SEND_FD],
   //!   @[PROP_SHUTDOWN], @[PROP_BUFFERED], @[PROP_REVERSE],
-  //!   @[PROP_BIDIRECTIONAL]
+  //!   @[PROP_BIDIRECTIONAL], @[PROP_TTY]
   //!
   File pipe(void|int required_properties)
   {
