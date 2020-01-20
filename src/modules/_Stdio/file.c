@@ -61,6 +61,13 @@
 #include <sys/ioctl.h>
 #endif
 
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#else /* HAVE_SYS_TERMIOS_H */
+/* NB: Deprecated by <termios.h> above. */
+#include <sys/termios.h>
+#endif
+
 #ifdef HAVE_LINUX_IF_H
 #include <linux/if.h>
 #endif
@@ -2490,23 +2497,19 @@ static int do_close(int flags)
   }
 }
 
-/*! @decl string grantpt()
- *!
- *!  If this file has been created by calling @[openpt()], return the
- *!  filename of the associated pts-file. This function should only be
- *!  called once.
- *!
- *! @returns
- *!   Returns the filename of the corresponding pts.
- *!
- *!  @note
- *!    This function is only available on some platforms.
- */
-#if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD) || defined(USE_CHGPT)
-static void file_grantpt( INT32 args )
+#if !defined(HAVE_POSIX_OPENPT) && defined(PTY_MASTER_PATHNAME)
+static int my_posix_openpt(int flags)
 {
-  pop_n_elems(args);
+  return open(PTY_MASTER_PATHNAME, flags);
+}
+#define HAVE_POSIX_OPENPT
+#define posix_openpt(FLAGS)	my_posix_openpt(FLAGS)
+#endif
+
+#ifndef HAVE_GRANTPT
 #if defined(USE_PT_CHMOD) || defined(USE_CHGPT)
+static int my_grantpt(int m)
+{
   push_static_text("Process.Process");
   APPLY_MASTER("resolv", 1);
 
@@ -2536,16 +2539,38 @@ static void file_grantpt( INT32 args )
   apply_svalue(Pike_sp-3, 2);
   apply(Pike_sp[-1].u.object, "wait", 0);
   if(!UNSAFE_IS_ZERO(Pike_sp-1)) {
-    Pike_error(
-#ifdef USE_PT_CHMOD
-	       USE_PT_CHMOD
-#else /* USE_CHGPT */
-	       USE_CHGPT
-#endif /* USE_PT_CHMOD */
-	       " returned error %d.\n", Pike_sp[-1].u.integer);
+    errno = EINVAL;
+    return -1;
   }
-  pop_n_elems(3);
-#else /* HAVE_GRANTPT */
+  return 0;
+}
+#define HAVE_GRANTPT
+#define grantpt(M)	my_grantpt(M)
+#endif
+#endif
+
+#ifndef HAVE_UNLOCKPT
+#define HAVE_UNLOCKPT
+#define unlockpt(m)	0
+#endif
+
+/*! @decl string grantpt()
+ *!
+ *!  If this file has been created by calling @[openpt()], return the
+ *!  filename of the associated pts-file. This function should only be
+ *!  called once.
+ *!
+ *! @returns
+ *!   Returns the filename of the corresponding pts.
+ *!
+ *!  @note
+ *!    This function is only available on some platforms.
+ */
+#if defined(HAVE_GRANTPT)
+static void file_grantpt( INT32 args )
+{
+  pop_n_elems(args);
+
   /* Make sure the fd doesn't get closed when it gets sent
    * to the subprocess (aka /usr/lib/pt_chmod).
    */
@@ -2553,14 +2578,13 @@ static void file_grantpt( INT32 args )
   if( grantpt( FD ) )
     Pike_error("grantpt failed: %s\n", strerror(errno));
   set_close_on_exec(FD, 1);
-#endif /* USE_PT_CHMOD || USE_CHGPT */
+
   push_text( ptsname( FD ) );
-#ifdef HAVE_UNLOCKPT
+
   if( unlockpt( FD ) )
     Pike_error("unlockpt failed: %s\n", strerror(errno));
-#endif
 }
-#endif /* HAVE_GRANTPT || USE_PT_CHMOD || USE_CHGPT */
+#endif /* HAVE_GRANTPT */
 
 /*! @decl int close()
  *! @decl int close(string direction)
@@ -2834,7 +2858,7 @@ static void file_openat(INT32 args)
 }
 #endif /* HAVE_OPENAT */
 
-#if !defined(__NT__) && (defined(HAVE_POSIX_OPENPT) || defined(PTY_MASTER_PATHNAME))
+#if !defined(__NT__) && defined(HAVE_POSIX_OPENPT)
 /*! @decl int openpt(string mode)
  *!
  *! Open the master end of a pseudo-terminal pair.
@@ -2848,9 +2872,8 @@ static void file_openat(INT32 args)
 static void file_openpt(INT32 args)
 {
   int flags,fd;
-#ifdef HAVE_POSIX_OPENPT
   struct pike_string *flag_str;
-#endif
+
   close_fd();
 
   if(args < 1)
@@ -2859,7 +2882,6 @@ static void file_openpt(INT32 args)
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     SIMPLE_BAD_ARG_ERROR("openpt", 1, "string");
 
-#ifdef HAVE_POSIX_OPENPT
   flags = parse((flag_str = Pike_sp[-args].u.string)->str);
 
   if(!( flags &  (FILE_READ | FILE_WRITE)))
@@ -2891,13 +2913,6 @@ static void file_openpt(INT32 args)
   }
   pop_n_elems(args);
   push_int(fd>=0);
-#else
-  if(args > 1)
-    pop_n_elems(args - 1);
-  push_text(PTY_MASTER_PATHNAME);
-  stack_swap();
-  file_open(2);
-#endif
 }
 #endif
 
