@@ -330,8 +330,25 @@ private array(Standards.X509.TBSCertificate)
     if (cert->ext_subjectAltName_dNSName) {
       globs += cert->ext_subjectAltName_dNSName;
     }
-    result->verified = glob(map(globs, lower_case),
-			    lower_case(session->server_name));
+
+    array(string) split_server_name = lower_case(session->server_name) / ".";
+
+    result->verified = 0;
+
+OUTER: foreach (map(globs, lower_case);; string the_glob) {
+      array(string) split_glob = the_glob / ".";
+
+      if (sizeof(split_glob) != sizeof(split_server_name))
+        continue;
+
+      foreach (split_glob; int i; string the_glob) {
+        if (!glob(the_glob, split_server_name[i]))
+          continue OUTER;
+      }
+
+      result->verified = 1;
+      break;
+    }
   }
 
   // This data isn't actually used internally.
