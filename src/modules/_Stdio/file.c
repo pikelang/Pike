@@ -62,6 +62,14 @@
 #include <sys/ioctl.h>
 #endif
 
+#ifdef HAVE_SYS_STROPTS_H
+#include <sys/stropts.h>
+#endif
+
+#ifdef HAVE_PTY_H
+#include <pty.h>
+#endif
+
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #else /* HAVE_SYS_TERMIOS_H */
@@ -2556,6 +2564,39 @@ static int my_grantpt(int m)
 #define unlockpt(m)	0
 #endif
 
+#if !defined(HAVE_OPENPTY) && defined(HAVE_PTSNAME) && defined(HAVE_POSIX_OPENPT)
+static int my_openpty(int *master, int *slave, void *ignored_name,
+		      void *ignored_termp, void *ignored_winp)
+{
+  int m = posix_openpt(O_RDWR | O_NOCTTY);
+  int s;
+  char *sname;
+  if (m < 0) return -1;
+  if (grantpt(m) && unlockpt(m) && (sname = ptsname(m))) {
+    int s = open(sname, O_RDWR | O_NOCTTY);
+    if (s >= 0) {
+      if (master) *master = m;
+      if (slave) *slave = s;
+#ifdef I_PUSH
+      /* Push required STREAMS modules.
+       * cf pts(4D)/pts(7D) on Solaris.
+       *
+       * Not required on Solaris 11.4 and later.
+       */
+      ioctl(s, I_PUSH, "ptem");		/* Pseudo terminal emulation mode */
+      ioctl(s, I_PUSH, "ldterm");	/* Terminal line discipline */
+      ioctl(s, I_PUSH, "ttcompat");	/* BSD terminal compatibility */
+#endif
+      return 0;
+    }
+  }
+  close(m);
+  return -1;
+}
+#define HAVE_OPENPTY
+#define openpty(M, S, N, T, W)	my_openpty(M, S, N, T, W)
+#endif
+
 /*! @decl string grantpt()
  *!
  *!  If this file has been created by calling @[openpt()], return the
@@ -4560,6 +4601,17 @@ static void file_pipe(INT32 args)
     }
 #endif
 
+#ifdef HAVE_OPENPTY
+    if (!(type & ~(TTY_CAPABILITIES)))
+    {
+      i = openpty(inout, inout + 1, NULL, NULL, NULL);
+      if (i >= 0) {
+	type = TTY_CAPABILITIES;
+	break;
+      }
+    }
+#endif
+
     if (!i) {
       Pike_error("Cannot create a pipe matching those parameters.\n");
     }
@@ -5902,6 +5954,14 @@ static void f_get_all_active_fd(INT32 args)
  */
 
 
+/*! @decl constant PROP_TTY = 128
+ *!
+ *!   The @[Stdio.File] object supports tty operations.
+ *!
+ *! @seealso
+ *!   @[Stdio.File()->pipe()]
+ */
+
 /*! @decl constant PROP_SEND_FD = 64
  *!
  *!   The @[Stdio.File] object might support the @[Stdio.File()->send_fd()]
@@ -6318,6 +6378,9 @@ PIKE_MODULE_INIT
   add_integer_constant("PROP_BUFFERED",fd_BUFFERED,0);
   add_integer_constant("PROP_BIDIRECTIONAL",fd_BIDIRECTIONAL,0);
   add_integer_constant("PROP_REVERSE",fd_REVERSE,0);
+#ifdef HAVE_OPENPTY
+  add_integer_constant("PROP_TTY",fd_TTY,0);
+#endif
 
   add_integer_constant("PROP_IS_NONBLOCKING", FILE_NONBLOCKING, 0);
 
