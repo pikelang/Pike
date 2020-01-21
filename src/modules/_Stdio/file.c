@@ -6136,10 +6136,6 @@ static void f_gethostip(INT32 args) {
   push_mapping(m);
 }
 
-#ifdef HAVE_OPENPTY
-#include <pty.h>
-#endif
-
 int fd_write_identifier_offset;
 
 PIKE_MODULE_INIT
