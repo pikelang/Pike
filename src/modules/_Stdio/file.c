@@ -6296,10 +6296,6 @@ static void f_getprotobyname(INT32 args) {
     Pike_error("Could not find protocol.\n");
 }
 
-#ifdef HAVE_OPENPTY
-#include <pty.h>
-#endif
-
 int fd_write_identifier_offset;
 
 PIKE_MODULE_INIT
