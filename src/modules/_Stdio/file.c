@@ -6263,10 +6263,6 @@ static void f_gethostip(INT32 args) {
   push_mapping(m);
 }
 
-#ifdef HAVE_OPENPTY
-#include <pty.h>
-#endif
-
 PIKE_MODULE_INIT
 {
   struct object *o;
