@@ -968,6 +968,8 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
     }
     if ((portal._tprepared=tp) && tp.datatypeoid) {
       mixed e = catch(portal->_preparebind(tp.datatypeoid));
+      if (!this)				// Already destructed?
+        throw(e);
       if (e && !portal.delayederror) {
         portal._unnamedstatementkey = 0;	// Release early, release often
         throw(e);
