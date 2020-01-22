@@ -2725,15 +2725,20 @@ static int my_grantpt(int m)
 static int my_openpty(int *master, int *slave, void *ignored_name,
 		      void *ignored_termp, void *ignored_winp)
 {
-  int m = posix_openpt(O_RDWR | O_NOCTTY);
+  int m;
   int s;
   char *sname;
+  if (!master || !slave) {
+    errno = EINVAL;
+    return -1;
+  }
+  m = posix_openpt(O_RDWR | O_NOCTTY);
   if (m < 0) return -1;
-  if (grantpt(m) && unlockpt(m) && (sname = ptsname(m))) {
+  if (!grantpt(m) && !unlockpt(m) && (sname = ptsname(m))) {
     int s = open(sname, O_RDWR | O_NOCTTY);
     if (s >= 0) {
-      if (master) *master = m;
-      if (slave) *slave = s;
+      *master = m;
+      *slave = s;
 #ifdef I_PUSH
       /* Push required STREAMS modules.
        * cf pts(4D)/pts(7D) on Solaris.
