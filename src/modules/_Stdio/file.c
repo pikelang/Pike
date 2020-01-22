@@ -2572,7 +2572,7 @@ static int my_openpty(int *master, int *slave, void *ignored_name,
   int s;
   char *sname;
   if (m < 0) return -1;
-  if (grantpt(m) && unlockpt(m) && (sname = ptsname(m))) {
+  if (!grantpt(m) && !unlockpt(m) && (sname = ptsname(m))) {
     int s = open(sname, O_RDWR | O_NOCTTY);
     if (s >= 0) {
       if (master) *master = m;
