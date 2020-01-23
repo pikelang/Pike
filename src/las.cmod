@@ -4607,16 +4607,9 @@ static node *eval(node *n)
       pop_stack();
       return n;
     }
-    if (n->token == F_SOFT_CAST) {
-      new = mksoftcastnode(n->type, mksvaluenode(Pike_sp-1));
-    } else {
-      new = mksvaluenode(Pike_sp-1);
-      if (n->type && (!new->type || ((n->type != new->type) &&
-				     pike_types_le(n->type,new->type)))) {
-	if (new->type)
-	  free_type(new->type);
-	copy_pike_type(new->type, n->type);
-      }
+    new = mksvaluenode(Pike_sp-1);
+    if (n->type && (!new->type || !pike_types_le(new->type, n->type))) {
+      new = mksoftcastnode(n->type, new);
     }
     free_node(n);
     n = new;

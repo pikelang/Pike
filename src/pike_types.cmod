@@ -6130,16 +6130,33 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	} else {
 	  push_finished_type(zero_type_string);
 	}
-	push_unlimited_array_type(T_ARRAY);
+	if (orig_type->type == T_ARRAY) {
+	  if ((tmp2 = soft_cast(soft_type->car, orig_type->car, flags))) {
+	    push_finished_type(tmp2);
+	  } else {
+	    push_finished_type(orig_type->car);
+	  }
+	} else {
+	  push_finished_type(soft_type->car);
+	}
+	push_type(T_ARRAY);
 	res = pop_unfinished_type();
 	break;
       case T_STRING:
-	res = soft_cast(soft_type->cdr, orig_type->cdr, flags);
-	if (!res) return NULL;
+	tmp = soft_cast(soft_type->cdr, orig_type->cdr, flags);
+	if (!tmp) return NULL;
 	type_stack_mark();
-	push_finished_type(res);
-	free_type(res);
-	push_unlimited_array_type(T_STRING);
+	push_finished_type(tmp);
+	if (orig_type->type == T_STRING) {
+	  if ((tmp2 = soft_cast(soft_type->car, orig_type->car, flags))) {
+	    push_finished_type(tmp2);
+	  } else {
+	    push_finished_type(orig_type->car);
+	  }
+	} else {
+	  push_finished_type(soft_type->car);
+	}
+	push_type(T_STRING);
 	res = pop_unfinished_type();
 	break;
       case T_INT:
