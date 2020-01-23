@@ -2038,7 +2038,7 @@ static node *optimize_binary(node *n)
     if (str_width != 32) {
       type_stack_mark();
       push_int_type(0, (1<<str_width)-1);
-      push_type(T_STRING);
+      push_unlimited_array_type(T_STRING);
       free_type(n->type);
       n->type = pop_unfinished_type();
     }
