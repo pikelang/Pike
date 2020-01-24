@@ -5872,7 +5872,7 @@ multiset & mapping -> mapping
             OPT_TRY_OPTIMIZE,0,0);
 
   ADD_EFUN2("`*", f_multiply,
-	    tOr9(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
+	    tOr8(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
 			tFuncV(tNone,tOr(tMix,tVoid),tMix)),
 		 tFunc(tArr(tArr(tSetvar(1,tMix)))
 		       tArr(tSetvar(1,tMix)),tArr(tVar(1))),
@@ -5885,8 +5885,8 @@ multiset & mapping -> mapping
 		 tFunc(tArr(tStr) tStr,tStr),
 		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
 		 tFunc(tArr(tSetvar(0,tMix)) tFlt,tArr(tVar(0))),
-		 tFunc(tSetvar(0, tStr) tInt,tVar(0)),
-		 tFunc(tSetvar(0, tStr) tFlt,tVar(0))),
+		 tFunc(tLStr(tIntPos, tSetvar(0, tInt)) tOr(tInt, tFlt),
+		       tLStr(tIntPos, tVar(0)))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
   /* !function(!object...:mixed)&function(mixed...:mixed)|"
