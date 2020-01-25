@@ -5938,7 +5938,10 @@ multiset & mapping -> mapping
 	    OPT_TRY_OPTIMIZE,0,generate_compl);
   /* function(string|multiset|array|mapping|object:int(0..)) */
   ADD_EFUN2("sizeof", f_sizeof,
-	    tFunc(tOr5(tStr,tMultiset,tArray,tMapping,tObj),tIntPos),
+	    tOr(tFunc(tOr3(tMultiset,tMapping,tObj),tIntPos),
+		tFunc(tOr(tLStr(tSetvar(0,tIntPos),tInt),
+			  tLArr(tSetvar(0,tIntPos),tMix)),
+		      tVar(0))),
 	    OPT_TRY_OPTIMIZE, optimize_sizeof, generate_sizeof);
 
   ADD_EFUN2("strlen", f_sizeof,
