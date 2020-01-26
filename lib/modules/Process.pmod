@@ -894,11 +894,14 @@ piece_loop:
   return ret;
 }
 
-Process spawn(string command, void|Stdio.Stream stdin,
-	      void|Stdio.Stream stdout, void|Stdio.Stream stderr,
-	      // These aren't used. Seems to be part of something unfinished. /mast
-	      //function|void cleanup, mixed ... args
-	     )
+__deprecated__ Process spawn(string command,
+			     void|Stdio.Stream stdin,
+			     void|Stdio.Stream stdout,
+			     void|Stdio.Stream stderr,
+			     // These aren't used.
+			     // Seems to be part of something unfinished. /mast
+			     //function|void cleanup, mixed ... args
+			     )
 //! Spawns a process that executes @[command] as a command shell
 //! statement ("@expr{/bin/sh -c @[command]@}" for Unix, "@expr{cmd /c
 //! @[command]@}" for Windows).
@@ -933,6 +936,8 @@ Process spawn(string command, void|Stdio.Stream stdin,
 #endif /* __NT__ */
 }
 
+#pragma no_deprecation_warnings
+
 //! @decl string popen(string command)
 //! Executes @[command] as a shell statement ("@expr{/bin/sh -c
 //! @[command]@}" for Unix, "@expr{cmd /c @[command]@}" for Windows),
@@ -958,15 +963,15 @@ Process spawn(string command, void|Stdio.Stream stdin,
 //! @seealso
 //!   @[system], @[spawn]
 
-variant string popen(string s) {
+variant __deprecated__ string popen(string s) {
    return fpopen(s)->read();
 }
 
-variant Stdio.FILE popen(string s, string mode) {
+variant __deprecated__ Stdio.FILE popen(string s, string mode) {
   return fpopen(s,mode);
 }
 
-protected Stdio.FILE fpopen(string s, string|void mode)
+protected __deprecated__ Stdio.FILE fpopen(string s, string|void mode)
 {
   Stdio.FILE f = Stdio.FILE();
   if (!f) error("Popen failed. (couldn't create file)\n");
@@ -984,8 +989,8 @@ protected Stdio.FILE fpopen(string s, string|void mode)
   return f;
 }
 
-int system(string command, void|Stdio.Stream stdin,
-	   void|Stdio.Stream stdout, void|Stdio.Stream stderr)
+__deprecated__ int system(string command, void|Stdio.Stream stdin,
+			  void|Stdio.Stream stdout, void|Stdio.Stream stderr)
 //! Executes @[command] as a shell statement ("@expr{/bin/sh -c
 //! @[command]@}" for Unix, "@expr{cmd /c @[command]@}" for Windows),
 //! waits until it has finished and returns its return value.
@@ -1003,6 +1008,8 @@ int system(string command, void|Stdio.Stream stdin,
 {
   return spawn(command, stdin, stdout, stderr)->wait();
 }
+
+#pragma deprecation_warnings
 
 #ifndef __NT__
 #if constant(fork)
