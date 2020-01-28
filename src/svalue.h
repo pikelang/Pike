@@ -93,9 +93,6 @@ enum PIKE_TYPE {
 
     PIKE_T_INT_UNTYPED= 18, /* Optimization of int type size */
 
-    PIKE_T_GET_SET= 32,	/* Getter setter.
-                         * Only valid in struct identifier */
-
 
 /* Type to put in freed svalues. Only the type field in such svalues
  * is defined. Freeing a PIKE_T_FREE svalue is allowed and does
@@ -123,6 +120,9 @@ enum PIKE_TYPE {
 
 /* No types above this value should appear on the stack. */
     PIKE_T_STACK_MAX=	T_ARRAY_LVALUE,
+
+    PIKE_T_GET_SET= 32,	/* Getter setter.
+                         * Only valid in struct identifier */
 
 /*
  * The following types are only used in compile-time types and
