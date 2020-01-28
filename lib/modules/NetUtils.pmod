@@ -581,7 +581,7 @@ private System find_system() {
     return NT;
 #else
     if( uname()->sysname == "Linux" ||
-        String.count(Process.popen(_ifconfig+" -s 2>/dev/null"),"\n") > 1 )
+        String.count(Process.run(({ _ifconfig, "-s" }))->stdout, "\n") > 1 )
         return Linux;
     return _ifconfig ? Other : Unsupported;
 #endif
@@ -602,19 +602,20 @@ string ifconfig( string command )
             {
                 case Linux:
                 {
-                    string data = Process.popen( _ifconfig + " -s" );
+                    string data = Process.run(({ _ifconfig, "-s" }))->stdout;
                     return column(((data/"\n")[*]/" ")[1..<1],0)*"\n";
                 }
                 case NT:
                     error("FIXME: NT not currently supported\n");
-                    return Process.popen( "ipconfig /all" );
+                    return Process.run(({ "ipconfig", "/all" }))->stdout;
 
                 default:
                  {
-                     string data = Process.popen(_ifconfig + " -a | grep -v '\t'");
+                     string data = Process.run(({ _ifconfig, "-a" }))->stdout;
                      array res = ({});
                      foreach( data/"\n", string x )
                      {
+                         if (has_value(x, "\t")) continue;
                          if( strlen( x ) )
                          {
                              x = (x/" ")[0];
@@ -626,10 +627,10 @@ string ifconfig( string command )
             }
         case "all":
             if( system == NT )
-                return Process.popen( "ipconfig /all");
-            return Process.popen( _ifconfig + " -a" );
-        default:
-            return Process.popen( _ifconfig +" "+ command );
+                return Process.run(({ "ipconfig", "/all" }))->stdout;
+            return Process.run(({ _ifconfig, "-a" }))->stdout;
+        default:	// Usually the name of an interface.
+            return Process.run(({ _ifconfig, command }))->stdout;
     }
 }
 
