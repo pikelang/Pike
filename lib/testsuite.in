@@ -49,10 +49,16 @@ test_any([[
 ]], 1)
 
 // - pike -e
-test_false( Process.system(RUNPIKE + " -e \"return 0;\"") )
-test_true( Process.system(RUNPIKE + " -e \"return 1;\"") )
-test_true( Process.system(RUNPIKE + " -e \"return NOT(0);\"") )
-test_true( Process.system(RUNPIKE + " -e \"return CHAR(A)==65;\"") )
-test_eq( Process.popen(RUNPIKE + " -e \"return (string)7;\""), "7\n" )
+test_false( Process.run(RUNPIKE + " -e \"return 0;\"")->exitcode )
+test_true( Process.run(RUNPIKE + " -e \"return 1;\"")->exitcode )
+test_true( Process.run(RUNPIKE + " -e \"return NOT(0);\"")->exitcode )
+test_true( Process.run(RUNPIKE + " -e \"return CHAR(A)==65;\"")->exitcode )
+test_eq( Process.run(RUNPIKE + " -e \"return (string)7;\"")->stdout, "7\n" )
+
+test_eq_deprecated( Process.system(RUNPIKE + " -e \"return 0;\""), 0 )
+test_eq_deprecated( Process.system(RUNPIKE + " -e \"return 1;\""), 1 )
+test_eq_deprecated( Process.system(RUNPIKE + " -e \"return NOT(0);\""), 1 )
+test_eq_deprecated( Process.system(RUNPIKE + " -e \"return CHAR(A)==65;\""), 1 )
+test_eq_deprecated( Process.popen(RUNPIKE + " -e \"return (string)7;\""), "7\n" )
 
 END_MARKER
