@@ -71,7 +71,7 @@
 
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
-#else /* HAVE_SYS_TERMIOS_H */
+#elif defined(HAVE_SYS_TERMIOS_H)
 /* NB: Deprecated by <termios.h> above. */
 #include <sys/termios.h>
 #endif
