@@ -549,14 +549,28 @@ $2], break, pike_cv_search_$1=no)
   fi
 ])
 
+AC_DEFUN([PIKE_AC_CC_IS_RNT],
+[
+  if test "x$pike_cc_is_rnt" = "x"; then
+    if echo foo "$CC" | egrep 'rntc.|rnt.cl' >/dev/null; then
+      pike_cc_is_rnt=yes
+    else
+      pike_cc_is_rnt=no
+    fi
+  fi
+])
+
+AC_DEFUN([PIKE_REQUIRE_AC_CC_IS_RNT], [AC_REQUIRE([PIKE_AC_CC_IS_RNT])])
+
 define([ORIG_AC_CHECK_SIZEOF], defn([AC_CHECK_SIZEOF]))
 pushdef([AC_CHECK_SIZEOF],
 [
   changequote(<<, >>)dnl
   define(<<AC_CV_NAME>>, translit(ac_cv_sizeof_$1, [ *], [_p]))dnl
   changequote([, ])dnl
-  if test "x$cross_compiling" = "xyes"; then
-    AC_MSG_CHECKING(size of $1 ... crosscompiling or tcc)
+  PIKE_REQUIRE_AC_CC_IS_RNT()dnl
+  if test "x$cross_compiling" = "xyes" -o "x$pike_cc_is_rnt" = "xyes"; then
+    AC_MSG_CHECKING(size of $1 ... crosscompiling or rnt)
     AC_CACHE_VAL(AC_CV_NAME,[
       cat > conftest.$ac_ext <<EOF
 dnl This sometimes fails to find confdefs.h, for some reason.
