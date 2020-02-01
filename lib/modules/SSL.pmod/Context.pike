@@ -943,7 +943,7 @@ Session decode_ticket(string(8bit) ticket)
 //!   @array
 //!     @elem string(8bit) 0
 //!       Non-empty string with the ticket.
-//!     @elem int
+//!     @elem int 1
 //!       Lifetime hint for the ticket.
 //!   @endarray
 //!
