@@ -799,8 +799,8 @@ string(8bit) handshake_buffer = "";
 //! This function is intended to be called from an i/o read callback.
 string(8bit)|int got_data(string(8bit) data)
 {
-  if (state & CONNECTION_peer_closed) {
-    // The peer has closed the connection.
+  if (state & (CONNECTION_peer_closed|CONNECTION_local_fatal)) {
+    // The peer has closed the connection, or we sent a fatal.
     return 1;
   }
   // If closing we continue to try to read a remote close message.
