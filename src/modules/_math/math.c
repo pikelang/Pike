@@ -539,6 +539,39 @@ void f_abs(INT32 args)
   if(is_lt(sp-1,&zero)) o_negate();
 }
 
+static node *optimize_abs(node *n)
+{
+  struct pike_type *t = n->type;
+  if (t->type == T_INT) {
+    INT32 min = CAR_TO_INT(t);
+    INT32 max = CDR_TO_INT(t);
+    INT32 res_max;
+    INT32 res_min;
+    if (min > 0) {
+      /* Both above zero. */
+      res_max = max;
+      res_min = min;
+    } else if (max < 0) {
+      /* Both below zero. */
+      res_max = -min;
+      res_min = -max;
+    } else if (-min > max) {
+      /* Zero in interval and more below zero. */
+      res_max = -min;
+      res_min = 0;
+    } else {
+      /* Zero in interval and more above zero. */
+      res_max = max;
+      res_min = 0;
+    }
+    type_stack_mark();
+    push_int_type(res_min, res_max);
+    n->type = pop_unfinished_type();
+    free_type(t);
+  }
+  return NULL;
+}
+
 /*! @decl int sgn(mixed value)
  *! @decl int sgn(mixed value, mixed zero)
  *!
@@ -671,7 +704,8 @@ PIKE_MODULE_INIT
 		 tOr3(tVar(0),tVar(1),tVar(2))),0);
 
   /* function(float|int|object:float|int|object) */
-  ADD_EFUN("abs",f_abs,tFunc(tSetvar(0,tOr3(tFlt,tInt,tObj)),tVar(0)),0);
+  ADD_EFUN2("abs", f_abs, tFunc(tSetvar(0, tOr3(tFlt, tInt, tObj)), tVar(0)),
+	    OPT_TRY_OPTIMIZE, optimize_abs, 0);
 
   /* function(mixed,mixed|void:int) */
   ADD_EFUN("sgn",f_sgn,tFunc(tMix tOr(tMix,tVoid),tInt_11),0);
