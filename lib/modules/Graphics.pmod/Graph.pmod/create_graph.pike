@@ -7,6 +7,8 @@
 //! @[create_graph] draws a graph but there are also some other functions
 //! used by @[create_pie] and @[create_bars].
 
+constant dont_dump_program = 1;
+
 #pike __REAL_VERSION__
 
 #include "graph.h"
