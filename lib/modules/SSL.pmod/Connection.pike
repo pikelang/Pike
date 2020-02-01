@@ -80,7 +80,7 @@ string(8bit) server_random;
 #define Packet .Packet
 #define Alert .Alert
 
-int(0..3) tickets_enabled = 0;
+int(0..1) tickets_enabled = 0;
 
 // RFC 7301 (ALPN) 3.1:
 //   Unlike many other TLS extensions, this extension does not establish
