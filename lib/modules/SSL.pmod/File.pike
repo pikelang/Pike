@@ -1251,9 +1251,9 @@ protected void internal_poll()
   //
   // NB: Don't call the close_callback before the user_read_buffer is empty.
   if (!sizeof(user_read_buffer) &&
-      (conn->state &
-       (CONNECTION_peer_closed | CONNECTION_local_closing)) ==
-      CONNECTION_peer_closed) {
+      (((conn->state &
+        (CONNECTION_peer_closed | CONNECTION_local_closing)) ==
+      CONNECTION_peer_closed) || (conn->state & CONNECTION_local_fatal))) {
     // Remote close or failure.
 
     function(void|mixed:int) close_cb;
