@@ -2272,7 +2272,6 @@ protected int ssl_close_callback (int ignored)
 	(conn->state | CONNECTION_peer_closed);
       SSL3_DEBUG_MSG ("ssl_close_callback: Abrupt close - "
 		      "simulating System.EPIPE\n");
-      cleanup_on_error();
       close_state = ABRUPT_CLOSE;
       if (!close_errno) {
 	close_errno = System.EPIPE;
