@@ -508,7 +508,7 @@ protected int(-1..1) got_new_session_ticket(Buffer input)
   COND_FATAL(!tickets_enabled, ALERT_handshake_failure,
 	     "Unexpected session ticket.\n");
   // Make sure that we only get one ticket.
-  tickets_enabled = 3;
+  tickets_enabled = 0;
 
   int lifetime_hint = input->read_int(4);
   string(8bit) ticket = input->read_hstring(2);
