@@ -5855,7 +5855,7 @@ cond(0, [[
 cond_begin([[all_constants()->thread_create]])
 
   // _disable_threads
-  test_any([[
+  test_any_deprecated([[ // FIXME: Uses deprecated function Process.system
 #ifndef __NT__
 // Using a named pipe here to make open() block. That doesn't exist on NT.
 
@@ -6016,7 +6016,7 @@ void test()
     return 1;
   ]], 1)
 
-  test_any([[
+  test_any_deprecated([[ // FIXME: Uses deprecated function Process.system
     Stdio.write_file ("testsuite_test.pike", #"\
       int main()
       {
@@ -8366,7 +8366,7 @@ test_any([[int k=10->pow(30);
 	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
           return sort(a)[0]==k && sort(a)[-1]==k+17]],1)
 
-test_do([[
+test_any_deprecated([[ // FIXME: Uses deprecated function Process.system
    // This is a memleak test
    rm("testsuite_test.pike");
    Stdio.write_file("testsuite_test.pike",
@@ -8374,7 +8374,8 @@ test_do([[
 	"int main() {}\n");
    Process.system(RUNPIKE +" testsuite_test.pike");
    rm("testsuite_test.pike");
-]])
+   return 0;
+]],0)
 
 // test the corresponding integer operations first
 test_any([[int k=100; int j=k+1;

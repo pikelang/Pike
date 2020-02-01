@@ -1853,22 +1853,22 @@ test_equal([[Process.split_quoted_string ("\"a\\bc")]],
 test_equal([[Process.split_quoted_string ("'a\\bc")]],
 	   [[({"a\\bc"})]])
 test_equal([[Process.split_quoted_string("pike -m master.pike 'write(\"test\");'")]],[[({"pike","-m","master.pike","write(\"test\");"})]])
-test_false([[
+test_eq_deprecated([[
 #ifdef __NT__
-  Process.system(RUNPIKE +" -e exit(0)")
+  !Process.system(RUNPIKE +" -e exit(0)")
 #else /* !__NT__ */
-  Process.system(RUNPIKE +" -e 'exit(0)'")
+  !Process.system(RUNPIKE +" -e 'exit(0)'")
 #endif /* __NT__ */
-]])
-test_true([[
+]], 1)
+test_eq_deprecated([[
 #ifdef __NT__
-  Process.system(RUNPIKE+" -e exit(1)")
+  !Process.system(RUNPIKE+" -e exit(1)")
 #else /* !__NT__ */
-  Process.system(RUNPIKE+" -e 'exit(1)'")
+  !Process.system(RUNPIKE+" -e 'exit(1)'")
 #endif /* __NT__ */
-]])
+]], 0)
 test_any([[object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(2)"})); sleep(2); return p->wait()]],2)
-test_eq([[
+test_eq_deprecated([[
 #ifdef __NT__
   Process.popen(RUNPIKE+" -e \"write(\\\"test\\\");\"")
 #else /* !__NT__ */
