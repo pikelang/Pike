@@ -332,12 +332,13 @@ static void port_bind(INT32 args)
   my_set_close_on_exec(fd,1);
 
   THREADS_ALLOW_UID();
-  if( !(tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0) )
+  if( !(tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0) ) {
 #ifdef TCP_FASTOPEN
-      tmp = 256,
-      setsockopt(fd,SOL_TCP, TCP_FASTOPEN, &tmp, sizeof(tmp)),
+    tmp = 256;
+    fd_setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, (char *)&tmp, sizeof(tmp));
 #endif
-      (tmp =  fd_listen(fd, 16384) < 0);
+    tmp = (fd_listen(fd, 16384) < 0);
+  }
   THREADS_DISALLOW_UID();
 
   if(!Pike_fp->current_object->prog)
