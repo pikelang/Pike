@@ -124,6 +124,21 @@ enum PIKE_TYPE {
     PIKE_T_GET_SET= 32,	/* Getter setter.
                          * Only valid in struct identifier */
 
+    /**
+     * Values 0x30 - 0x3f reserved for variables.
+     * Only 0x30 - 0x39 used currently.
+     */
+    PIKE_T_VAR_0 = '0',		/* 48 */
+    PIKE_T_VAR_1 = '1',
+    PIKE_T_VAR_2 = '2',
+    PIKE_T_VAR_3 = '3',
+    PIKE_T_VAR_4 = '4',
+    PIKE_T_VAR_5 = '5',
+    PIKE_T_VAR_6 = '6',
+    PIKE_T_VAR_7 = '7',
+    PIKE_T_VAR_8 = '8',
+    PIKE_T_VAR_9 = '9',		/* 57 */
+
 /*
  * The following types are only used in compile-time types and
  * as markers in struct identifier.
