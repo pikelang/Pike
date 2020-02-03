@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.41 1999/02/24 01:50:20 grubba Exp $
+ * $Id$
  */
 #include "global.h"
 #include "language.h"
@@ -2113,6 +2113,8 @@ static struct pike_string *recode_string(struct pike_string *data)
 
   /* Add an extra reference to data, since we may return it as is. */
   add_ref(data);
+
+  if (!data->len) return data;
 
   if ((!((unsigned char *)data->str)[0]) ||
       (((unsigned char *)data->str)[0] == 0xfe) ||

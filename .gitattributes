@@ -96,7 +96,6 @@ testfont binary
 /src/configure.in foreign_ident
 /src/constants.c foreign_ident
 /src/constants.h foreign_ident
-/src/cpp.c foreign_ident
 /src/cpp.h foreign_ident
 /src/crypt.c foreign_ident
 /src/cyclic.c foreign_ident
