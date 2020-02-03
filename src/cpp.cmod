@@ -2324,6 +2324,8 @@ static struct pike_string *recode_string(struct CPP_struct *this, struct pike_st
   /* Add an extra reference to data, since we may return it as is. */
   add_ref(data);
 
+  if (!data->len) return data;
+
   if ((!((unsigned char *)data->str)[0]) ||
       (((unsigned char *)data->str)[0] == 0xfe) ||
       (((unsigned char *)data->str)[0] == 0xff) ||
