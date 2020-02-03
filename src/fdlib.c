@@ -307,7 +307,7 @@ PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h)
 #endif
 
 /* Used by signal_handler.c:get_inheritable_handle(). */
-int fd_to_handle(int fd, int *type, HANDLE *handle)
+int fd_to_handle(int fd, int *type, HANDLE *handle, int exclusive)
 {
   int ret = -1;
 
@@ -315,7 +315,7 @@ int fd_to_handle(int fd, int *type, HANDLE *handle)
 
   if (fd >= FD_NO_MORE_FREE) {
     mt_lock(&fd_mutex);
-    while (fd_busy[fd]) {
+    while ((fd_busy[fd] < 0) || (exclusive && fd_busy[fd])) {
       FDDEBUG(fprintf(stderr, "fd %d is busy; waiting...\n", fd));
       co_wait(&fd_cond, &fd_mutex);
     }
@@ -323,7 +323,11 @@ int fd_to_handle(int fd, int *type, HANDLE *handle)
       FDDEBUG(fprintf(stderr, "fd %d is valid.\n", fd));
       if (type) *type = fd_type[fd];
       if (handle) *handle = da_handle[fd];
-      fd_busy[fd] = 1;
+      if (exclusive) {
+	fd_busy[fd] = -1;
+      } else {
+	fd_busy[fd]++;
+      }
       ret = 0;
       FDDEBUG(fprintf(stderr, "fd %d ==> handle: %ld (%d)\n",
 		      fd, (long)da_handle[fd], fd_type[fd]));
@@ -340,7 +344,7 @@ int fd_to_handle(int fd, int *type, HANDLE *handle)
   return ret;
 }
 
-static int fd_to_socket(int fd, SOCKET *socket)
+static int fd_to_socket(int fd, SOCKET *socket, int exclusive)
 {
   int ret = -1;
 
@@ -348,14 +352,18 @@ static int fd_to_socket(int fd, SOCKET *socket)
 
   if (fd >= FD_NO_MORE_FREE) {
     mt_lock(&fd_mutex);
-    while (fd_busy[fd]) {
+    while ((fd_busy[fd] < 0) || (exclusive && fd_busy[fd])) {
       FDDEBUG(fprintf(stderr, "fd %d is busy; waiting...\n", fd));
       co_wait(&fd_cond, &fd_mutex);
     }
     if (fd_type[fd] == FD_SOCKET) {
       FDDEBUG(fprintf(stderr, "fd %d is a valid socket.\n", fd));
       if (socket) *socket = (SOCKET)da_handle[fd];
-      fd_busy[fd] = 1;
+      if (exclusive) {
+	fd_busy[fd] = -1;
+      } else {
+	fd_busy[fd]++;
+      }
       ret = 0;
     } else if (fd_type[fd] < 0) {
       FDDEBUG(fprintf(stderr, "fd %d is not a socket.\n", fd));
@@ -395,7 +403,7 @@ static int allocate_fd(int type, HANDLE handle)
     first_free_handle = fd_type[fd];
     fd_type[fd] = type;
     da_handle[fd] = handle;
-    fd_busy[fd] = 1;
+    fd_busy[fd] = -1;
   } else {
     FDDEBUG(fprintf(stderr, "All fds are allocated.\n"));
     errno = EMFILE;
@@ -471,7 +479,7 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
   FDDEBUG(fprintf(stderr, "Allocating fd %d.\n", fd));
   fd_type[fd] = type;
   da_handle[fd] = handle;
-  fd_busy[fd] = 1;
+  fd_busy[fd] = -1;
   mt_unlock(&fd_mutex);
   return fd;
 }
@@ -489,7 +497,11 @@ void release_fd(int fd)
 
   assert(fd_busy[fd]);
 
-  fd_busy[fd] = 0;
+  if (fd_busy[fd] < 0) {
+    fd_busy[fd] = 0;
+  } else {
+    fd_busy[fd]--;
+  }
 
   FDDEBUG(fprintf(stderr, "Broadcasting now that fd %d is no longer busy.\n",
 		  fd));
@@ -508,7 +520,7 @@ static void free_fd(int fd)
   FDDEBUG(fprintf(stderr, "Freeing fd %d. Busy: %d\n", fd, fd_busy[fd]));
 
   if (fd_type[fd] < FD_NO_MORE_FREE) {
-    assert(fd_busy[fd]);
+    assert(fd_busy[fd] < 0);
 
     fd_type[fd] = first_free_handle;
     first_free_handle = fd;
@@ -531,7 +543,7 @@ static void set_fd_handle(int fd, HANDLE handle)
   }
 
   mt_lock(&fd_mutex);
-  assert(fd_busy[fd]);
+  assert(fd_busy[fd] < 0);
 
   da_handle[fd] = handle;
   mt_unlock(&fd_mutex);
@@ -561,7 +573,7 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
 
   FDDEBUG(fprintf(stderr, "fd_query_properties(%d, %d)...\n", fd, guess));
 
-  if (fd_to_handle(fd, &type, NULL) < 0) return 0;
+  if (fd_to_handle(fd, &type, NULL, 0) < 0) return 0;
   release_fd(fd);
 
   switch(type)
@@ -1832,7 +1844,7 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
 
   FDDEBUG(fprintf(stderr, "fd_accept(%d, %p, %p)...\n", fd, addr, addrlen));
 
-  if (fd_to_socket(fd, &s) < 0) return -1;
+  if (fd_to_socket(fd, &s, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr,"Accept on %d (%ld)..\n",
 		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)s)));
@@ -1871,7 +1883,7 @@ PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { \
   SOCKET s; \
   int ret; \
   FDDEBUG(fprintf(stderr, "fd_" #NAME "(%d, ...)...\n", fd)); \
-  if (fd_to_socket(fd, &s) < 0) return -1; \
+  if (fd_to_socket(fd, &s, 0) < 0) return -1;		      \
   FDDEBUG(fprintf(stderr, #NAME " on %d (%ld)\n", \
 		  fd, (long)(ptrdiff_t)s)); \
   ret = NAME X2; \
@@ -1918,7 +1930,7 @@ PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
 
   FDDEBUG(fprintf(stderr, "fd_connect(%d, %p, %d)...\n", fd, a, len));
 
-  if (fd_to_socket(fd, &ret) < 0) return -1;
+  if (fd_to_socket(fd, &ret, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr, "connect on %d (%ld)\n",
                   fd, (long)(ptrdiff_t)ret);
@@ -1946,7 +1958,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 
   FDDEBUG(fprintf(stderr, "fd_close(%d)...\n", fd));
 
-  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if (fd_to_handle(fd, &type, &h, 1) < 0) return -1;
 
   FDDEBUG(fprintf(stderr,"Closing %d (%ld)\n",
                   fd, (long)h));
@@ -1985,7 +1997,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 
   FDDEBUG(fprintf(stderr, "fd_write(%d, %p, %ld)...\n", fd, buf, (long)len));
 
-  if (fd_to_handle(fd, &kind, &handle) < 0) return -1;
+  if (fd_to_handle(fd, &kind, &handle, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr, "Writing %d bytes to %d (%d)\n",
 		  len, fd, (long)(ptrdiff_t)handle));
@@ -2043,7 +2055,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 
   FDDEBUG(fprintf("fd_read(%d, %p, %ld)...\n", fd, to, (long)len));
 
-  if (fd_to_handle(fd, &type, &handle) < 0) return -1;
+  if (fd_to_handle(fd, &type, &handle, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr,"Reading %d bytes from %d (%d) to %lx\n",
 		  len, fd, (long)(ptrdiff_t)h,
@@ -2147,7 +2159,7 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
 
   FDDEBUG(fprintf(stderr, "fd_lseek(%d)...\n", fd));
 
-  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
   if(type != FD_FILE)
   {
     release_fd(fd);
@@ -2207,7 +2219,7 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
 
   FDDEBUG(fprintf(stderr, "fd_ftruncate(%d)...\n", fd));
 
-  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
   if(type != FD_FILE)
   {
     release_fd(fd);
@@ -2267,7 +2279,7 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 
   FDDEBUG(fprintf(stderr, "fd_flock(%d)...\n", fd));
 
-  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
   if(type != FD_FILE)
   {
     release_fd(fd);
@@ -2326,7 +2338,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 
   FDDEBUG(fprintf(stderr, "fd_fstat(%d, %p)\n", fd, s));
 
-  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
   if (type != FD_FILE)
   {
     release_fd(fd);
@@ -2456,7 +2468,7 @@ PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
 
   FDDEBUG(fprintf(stderr, "fd_ioctl(%d, %d, %p)...\n", fd, cmd, data));
 
-  if (fd_to_socket(fd, &s) < 0) return -1;
+  if (fd_to_socket(fd, &s, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr,"ioctl(%d (%ld,%d,%p)\n",
 		  fd, (long)(ptrdiff_t)s, cmd, data));
@@ -2485,7 +2497,7 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 
   FDDEBUG(fprintf(stderr, "fd_dup(%d)...\n", from));
 
-  if (fd_to_handle(from, &type, &h) < 0) return -1;
+  if (fd_to_handle(from, &type, &h, 0) < 0) return -1;
 
   fd = allocate_fd(type,
 		   (type == FD_SOCKET)?
@@ -2527,7 +2539,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 
   FDDEBUG(fprintf(stderr, "fd_dup2(%d, %d)...\n", from, to));
 
-  if (fd_to_handle(from, &type, &h) < 0) return -1;
+  if (fd_to_handle(from, &type, &h, 0) < 0) return -1;
 
   if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS))
   {
