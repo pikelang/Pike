@@ -2155,7 +2155,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	fd=fd_from_object(Pike_sp[-1].u.object);
       }
 
-      if(fd_to_handle(fd, NULL, &h) < 0)
+      if(fd_to_handle(fd, NULL, &h, 0) < 0)
 	Pike_error("File for %s is not open.\n",name);
 
       if(!DuplicateHandle(GetCurrentProcess(),	/* Source process */
