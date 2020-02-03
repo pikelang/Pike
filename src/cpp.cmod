@@ -1734,6 +1734,8 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
   /* Add an extra reference to data, since we may return it as is. */
   add_ref(data);
 
+  if (!data->len) return data;
+
   if ((!((unsigned char *)data->str)[0]) ||
       (((unsigned char *)data->str)[0] == 0xfe) ||
       (((unsigned char *)data->str)[0] == 0xff) ||
