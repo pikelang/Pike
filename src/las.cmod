@@ -4608,7 +4608,11 @@ static node *eval(node *n)
       return n;
     }
     new = mksvaluenode(Pike_sp-1);
-    if (n->type && (!new->type || !pike_types_le(new->type, n->type))) {
+    if (new->type &&
+	((new->type->type == PIKE_T_INT) || (new->type->type == PIKE_T_TYPE))) {
+      /* Ok. */
+    } else if (n->type && (!new->type || !pike_types_le(new->type, n->type))) {
+      /* Try consolidating the type information. */
       new = mksoftcastnode(n->type, new);
     }
     free_node(n);
