@@ -64,6 +64,14 @@
 #define NTDDI_VERSION 0x05ffffff
 #endif
 
+/* NB: Defaults to 64. */
+#ifndef FD_SETSIZE
+/*
+ * In reality: almost unlimited actually.
+ */
+#define FD_SETSIZE 65536
+#endif
+
 #endif /* __NT__ */
 
 #ifdef __amigaos__

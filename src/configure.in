@@ -4445,11 +4445,14 @@ AC_CHECK_FUNCS( \
  closefrom \
  crypt \
  fdwalk \
+ ftruncate64 \
  gethrtime \
  gethrvtime \
  getrlimit \
  getrusage \
  gettimeofday \
+ getwd \
+ get_current_dir_name \
  inet_ntop \
  gmtime_r \
  gmtime_s \
@@ -4463,6 +4466,7 @@ AC_CHECK_FUNCS( \
  sigvec \
  strcasecmp \
  times \
+ truncate64 \
  tzset \
  _snprintf \
  snprintf \
@@ -4520,7 +4524,6 @@ AC_CHECK_FUNCS( \
  thread_info \
  host_get_clock_service \
  posix_memalign \
- _dosmaperr \
 )
 
 # SunOS 4 realloc() returns NULL when reallocing NULL.
@@ -4676,6 +4679,202 @@ int accept(int, struct sockaddr *, Psocklen_t);
 ])
 AC_MSG_RESULT($pike_cv_accept_size_t *)
 AC_DEFINE_UNQUOTED(ACCEPT_SIZE_T, $pike_cv_accept_size_t)
+
+AC_MSG_CHECKING(for working getcwd)
+AC_CACHE_VAL(pike_cv_func_working_getcwd,
+[
+# First try getcwd(NULL, 0).
+# This is the working == yes case, and is true on glibc and win32.
+AC_TRY_RUN([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif /* HAVE_DIRECT_H */
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+#include <signal.h>
+
+#include <stdlib.h>
+#include <string.h>
+
+#ifndef __NT__
+int sig_child(int arg)
+{
+#ifdef HAVE_WAITPID
+  waitpid(-1,0,WNOHANG);
+#else
+#ifdef HAVE_WAIT3
+  wait3(0,WNOHANG,0);
+#else
+#ifdef HAVE_WAIT4
+  wait3(-1,0,WNOHANG,0);
+#else
+
+  /* Leave them hanging */
+
+#endif /* HAVE_WAIT4 */
+#endif /* HAVE_WAIT3 */
+#endif /* HAVE_WAITPID */
+
+#ifdef SIGNAL_ONESHOT
+  signal(SIGCHLD, sig_child);
+#endif
+}
+
+int sig_alarm() { exit(1); }
+#endif /* !__NT__ */
+
+int main()
+{
+  char *tmp;
+#ifndef __NT__
+  signal(SIGCHLD,sig_child);
+  signal(SIGALRM,sig_alarm);
+  alarm(4);
+#endif /* !__NT__ */
+  tmp=getcwd(0,0);
+  if(tmp && tmp[0] && (strlen(tmp) < 10000)) {
+    free(tmp);
+    exit(0);
+  }
+  exit(1);
+}
+],pike_cv_func_working_getcwd=yes,[
+# The getcwd(NULL, 0) case failed.
+# Retry with getcwd(NULL, 10000).
+# This is the working == some case, and is true on Solaris.
+AC_TRY_RUN([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif /* HAVE_DIRECT_H */
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+#include <signal.h>
+
+#include <stdlib.h>
+#include <string.h>
+
+#ifndef __NT__
+int sig_child(int arg)
+{
+#ifdef HAVE_WAITPID
+  waitpid(-1,0,WNOHANG);
+#else
+#ifdef HAVE_WAIT3
+  wait3(0,WNOHANG,0);
+#else
+#ifdef HAVE_WAIT4
+  wait3(-1,0,WNOHANG,0);
+#else
+
+  /* Leave them hanging */
+
+#endif /* HAVE_WAIT4 */
+#endif /* HAVE_WAIT3 */
+#endif /* HAVE_WAITPID */
+
+#ifdef SIGNAL_ONESHOT
+  signal(SIGCHLD, sig_child);
+#endif
+}
+
+int sig_alarm() { exit(1); }
+#endif /* !__NT__ */
+
+int main()
+{
+  char *tmp;
+#ifndef __NT__
+  signal(SIGCHLD,sig_child);
+  signal(SIGALRM,sig_alarm);
+  alarm(4);
+#endif /* !__NT__ */
+  tmp=getcwd(0,10000);
+  if(tmp && tmp[0] && (strlen(tmp) < 10000)) {
+    free(tmp);
+    exit(0);
+  }
+  exit(1);
+}
+],pike_cv_func_working_getcwd=some,
+  pike_cv_func_working_getcwd=no,
+  # NB: This should be unreachable.
+  pike_cv_func_working_getcwd=no)
+],
+  # Assume that getcwd(NULL, val) works.
+  pike_cv_func_working_getcwd=some)
+])
+
+if test "$pike_cv_func_working_getcwd" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_WORKING_GETCWD, [1])
+elif test "$pike_cv_func_working_getcwd" = some; then
+  AC_MSG_RESULT(some)
+  AC_DEFINE(HAVE_WORKING_GETCWD, [0])
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING(if mkdir takes 1 or 2 arguments)
+AC_CACHE_VAL(pike_cv_func_mkdir_args,[
+AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif
+],[
+  mkdir("conftestdir",0666);
+],pike_cv_func_mkdir_args=2,pike_cv_func_mkdir_args=1)
+])
+
+AC_MSG_RESULT($pike_cv_func_mkdir_args)
+AC_DEFINE_UNQUOTED(MKDIR_ARGS,$pike_cv_func_mkdir_args)
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
  AC_DEFINE(HAVE_LOADLIBRARY)

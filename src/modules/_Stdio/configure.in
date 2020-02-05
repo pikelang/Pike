@@ -383,34 +383,6 @@ else
   :
 fi
 
-AC_MSG_CHECKING(if mkdir takes 1 or 2 arguments)
-AC_CACHE_VAL(pike_cv_func_mkdir_args,[
-AC_TRY_COMPILE([
-#ifndef _LARGEFILE_SOURCE
-#  define _FILE_OFFSET_BITS 64
-#  define _LARGEFILE_SOURCE
-#  define _LARGEFILE64_SOURCE 1
-#endif
-/* HPUX needs these too... */
-#ifndef __STDC_EXT__
-#  define __STDC_EXT__
-#endif /* !__STDC_EXT__ */
-
-#include <sys/types.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_DIRECT_H
-#include <direct.h>
-#endif
-],[
-  mkdir("conftestdir",0666);
-],pike_cv_func_mkdir_args=2,pike_cv_func_mkdir_args=1)
-])
-
-AC_MSG_RESULT($pike_cv_func_mkdir_args)
-AC_DEFINE_UNQUOTED(MKDIR_ARGS,$pike_cv_func_mkdir_args)
-
 if test x$ac_cv_func_getxattr = xyes ; then
   AC_MSG_CHECKING(if getxattr takes 4(Linux) or 6(Darwin) arguments)
   AC_CACHE_VAL(pike_cv_func_darwin_getxattr, [
@@ -1346,80 +1318,6 @@ fi
 
 AC_DEFINE_UNQUOTED(SOCKET_BUFFER_MAX,$pike_cv_socket_buffer_max)
 AC_MSG_RESULT($pike_cv_socket_buffer_max)
-
-AC_MSG_CHECKING(for working getcwd)
-AC_CACHE_VAL(pike_cv_func_working_getcwd,
-[
-AC_TRY_RUN([
-#ifndef _LARGEFILE_SOURCE
-#  define _FILE_OFFSET_BITS 64
-#  define _LARGEFILE_SOURCE
-#  define _LARGEFILE64_SOURCE 1
-#endif
-/* HPUX needs these too... */
-#ifndef __STDC_EXT__
-#  define __STDC_EXT__
-#endif /* !__STDC_EXT__ */
-
-#ifndef POSIX_SOURCE
-#define POSIX_SOURCE
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_DIRECT_H
-#include <direct.h>
-#endif /* HAVE_DIRECT_H */
-#include <signal.h>
-
-#ifndef __NT__
-int sig_child(int arg)
-{
-#ifdef HAVE_WAITPID
-  waitpid(-1,0,WNOHANG);
-#else
-#ifdef HAVE_WAIT3
-  wait3(0,WNOHANG,0);
-#else
-#ifdef HAVE_WAIT4
-  wait3(-1,0,WNOHANG,0);
-#else
-
-  /* Leave them hanging */
-
-#endif /* HAVE_WAIT4 */
-#endif /* HAVE_WAIT3 */
-#endif /* HAVE_WAITPID */
-
-#ifdef SIGNAL_ONESHOT
-  my_signal(SIGCHLD, sig_child);
-#endif
-}
-
-int sig_alarm() { exit(1); }
-#endif /* !__NT__ */
-
-int main()
-{
-  char *tmp;
-#ifndef __NT__
-  signal(SIGCHLD,sig_child);
-  signal(SIGALRM,sig_alarm);
-  alarm(4);
-#endif /* !__NT__ */
-  tmp=getcwd(0,10000);
-  if(tmp && strlen(tmp) <10000) exit(0);
-  exit(1);
-}
-],pike_cv_func_working_getcwd=yes,pike_cv_func_working_getcwd=no,
-  pike_cv_func_working_getcwd=yes)])
-
-if test "$pike_cv_func_working_getcwd" = yes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_WORKING_GETCWD)
-else
-  AC_MSG_RESULT(no)
-fi
 
 AC_MSG_CHECKING(for pty master device)
 AC_CACHE_VAL(pike_cv_pty_master_pathname, [

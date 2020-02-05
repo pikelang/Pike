@@ -2115,6 +2115,9 @@ static void free_perishables(struct perishables *storage)
 
 #ifdef __NT__
 
+/* NB: Handles returned by this function are only safe as
+ *     long as the interpreter lock isn't released.
+ */
 static HANDLE get_inheritable_handle(struct mapping *optional,
 				     char *name,
 				     int for_reading)
@@ -2127,6 +2130,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
     if(TYPEOF(*tmp) == T_OBJECT)
     {
       INT32 fd=fd_from_object(tmp->u.object);
+      HANDLE h;
 
       if(fd == -1)
 	Pike_error("File for %s is not open.\n",name);
@@ -2137,21 +2141,23 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 
 	create_proxy_pipe(tmp->u.object, for_reading);
 	fd=fd_from_object(Pike_sp[-1].u.object);
-
-	if(fd == -1)
-	  Pike_error("Proxy thread creation failed for %s.\n",name);
       }
 
+      if(fd_to_handle(fd, NULL, &h, 0) < 0)
+	Pike_error("File for %s is not open.\n",name);
 
       if(!DuplicateHandle(GetCurrentProcess(),	/* Source process */
-			  da_handle[fd],
+			  h,
 			  GetCurrentProcess(),	/* Target process */
 			  &ret,
 			  0,			/* Access */
 			  1,
-			  DUPLICATE_SAME_ACCESS))
-	  /* This could cause handle-leaks */
-	  Pike_error("Failed to duplicate handle %d.\n", GetLastError());
+			  DUPLICATE_SAME_ACCESS)) {
+	release_fd(fd);
+	/* This could cause handle-leaks */
+	Pike_error("Failed to duplicate handle %d.\n", GetLastError());
+      }
+      release_fd(fd);
     }
   }
   pop_n_elems(Pike_sp-save_stack);

@@ -3245,11 +3245,8 @@ static void file_truncate(INT32 args)
     Pike_error("File not open.\n");
 
   ERRNO=0;
-#ifdef HAVE_FTRUNCATE64
-  res = ftruncate64 (FD, len);
-#else
+
   res=fd_ftruncate(FD, len);
-#endif
 
   pop_n_elems(args);
 
@@ -5701,7 +5698,9 @@ static void f_get_all_active_fd(INT32 args)
   pop_n_elems(args);
   sp = Pike_sp;
   {
+#ifndef __NT__
     DIR *tmp;
+#endif
     THREADS_ALLOW();
 #ifndef __NT__
     if( (tmp = opendir(
@@ -6328,6 +6327,10 @@ PIKE_MODULE_INIT
   add_integer_constant("__HAVE_UNLINKAT__",1,0);
 #endif
 #endif /* 0 */
+
+#ifdef __NT__
+  add_integer_constant("__HAVE_UTF8_FS__", 1, 0);
+#endif
 
 #ifdef HAVE_PIKE_SEND_FD
   add_integer_constant("__HAVE_SEND_FD__", 1, 0);

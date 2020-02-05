@@ -359,12 +359,6 @@ long long gethrtime(void);
 #endif /* DOUBLE_IS_IEEE_LITTLE */
 #endif /* DOUBLE_IS_IEEE_BIG */
 
-#ifdef __MINGW32__
-#ifndef HAVE__DOSMAPERR
-void _dosmaperr(int x);
-#endif
-#endif
-
 #ifdef __clang__
 #define PIKE_CLANG_FEATURE(x)   __has_feature(x)
 #define PIKE_CLANG_BUILTIN(x)   __has_builtin(x)

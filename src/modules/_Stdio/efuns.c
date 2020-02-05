@@ -491,45 +491,7 @@ void f_file_truncate(INT32 args)
     return;
   }
 
-#ifdef __NT__
-  {
-    HANDLE h = CreateFile(str->str, GENERIC_WRITE,
-			  FILE_SHARE_READ|FILE_SHARE_WRITE,
-			  NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if(h == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
-      errno = GetLastError();
-      res=-1;
-    } else {
-      LONG high;
-      DWORD err;
-#ifdef INT64
-      high = DO_NOT_WARN ((LONG) (len >> 32));
-      len &= ((INT64) 1 << 32) - 1;
-#else
-      high = 0;
-#endif
-      if (SetFilePointer(h, DO_NOT_WARN ((LONG) len), &high, FILE_BEGIN) ==
-	  INVALID_SET_FILE_POINTER &&
-	  (err = GetLastError()) != NO_ERROR) {
-	errno = err;
-	res = -1;
-      }
-      else if (!SetEndOfFile(h)) {
-	errno = GetLastError();
-	res=-1;
-      }
-      else
-	res = 0;
-      CloseHandle(h);
-    }
-  }
-#else  /* !__NT__ */
-#ifdef HAVE_TRUNCATE64
-  res = truncate64 (str->str, len);
-#else
-  res=truncate(str->str, len);
-#endif
-#endif /* __NT__ */
+  res = fd_truncate(str->str, len);
 
   pop_n_elems(args);
 
@@ -588,6 +550,7 @@ void f_filesystem_stat( INT32 args )
   DWORD bytes_per_sector = -1;
   DWORD free_clusters = -1;
   DWORD total_clusters = -1;
+  p_wchar1 *root;
   char _p[4];
   char *p = _p;
   unsigned int free_sectors;
@@ -595,25 +558,27 @@ void f_filesystem_stat( INT32 args )
 
   get_all_args( "filesystem_stat", args, "%s", &path );
 
-  if(sp[-1].u.string->len < 2 || path[1] != ':')
-  {
-    p = 0;
+  root = pike_dwim_utf8_to_utf16(path);
+  if (root[0] && root[1] == ':') {
+    root[2] = '\\';
+    root[3] = 0;
   } else {
-    p[0] = path[0];
-    p[1] = ':';
-    p[2] = '\\';
-    p[3] = 0;
+    free(root);
+    root = NULL;
   }
 
-  if(!GetDiskFreeSpace( p, &sectors_per_cluster,
-			&bytes_per_sector,
-			&free_clusters,
-			&total_clusters ))
+  if(!GetDiskFreeSpaceW( root, &sectors_per_cluster,
+			 &bytes_per_sector,
+			 &free_clusters,
+			 &total_clusters ))
   {
+    if (root) free(root);
     pop_n_elems(args);
     push_int( 0 );
     return;
   }
+
+  if (root) free(root);
 
   free_sectors = sectors_per_cluster  * free_clusters;
   total_sectors = sectors_per_cluster * total_clusters;
@@ -852,36 +817,12 @@ void f_rm(INT32 args)
   {
     if(S_IFDIR == (S_IFMT & st.st_mode))
     {
-      while (!(i = rmdir(str->str) != -1) && (errno == EINTR))
+      while (!(i = fd_rmdir(str->str) != -1) && (errno == EINTR))
 	;
     }else{
-      while (!(i = unlink(str->str) != -1) && (errno == EINTR))
+      while (!(i = fd_unlink(str->str) != -1) && (errno == EINTR))
 	;
     }
-#ifdef __NT__
-    /* NT looks at the permissions on the file itself and refuses to
-     * remove files we don't have write access to. Thus we chmod it
-     * and try again, to make rm() more unix-like. */
-    if (!i && errno == EACCES && !(st.st_mode & _S_IWRITE)) {
-      if (chmod(str->str, st.st_mode | _S_IWRITE) == -1)
-	errno = EACCES;
-      else {
-	if(S_IFDIR == (S_IFMT & st.st_mode))
-	{
-	  while (!(i = rmdir(str->str) != -1) && (errno == EINTR))
-	    ;
-	}else{
-	  while (!(i = unlink(str->str) != -1) && (errno == EINTR))
-	    ;
-	}
-	if (!i) {		/* Failed anyway; try to restore the old mode. */
-	  int olderrno = errno;
-	  chmod(str->str, st.st_mode);
-	  errno = olderrno;
-	}
-      }
-    }
-#endif
   }
   THREADS_DISALLOW_UID();
 
@@ -946,65 +887,9 @@ void f_mkdir(INT32 args)
     }
   }
 
-#if MKDIR_ARGS == 2
   THREADS_ALLOW_UID();
-  i = mkdir(s, mode) != -1;
+  i = fd_mkdir(s, mode) != -1;
   THREADS_DISALLOW_UID();
-#else
-
-#ifdef HAVE_LSTAT
-#define LSTAT lstat
-#else
-#define LSTAT stat
-#endif
-
-  {
-    /* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
-    int mask = umask(0);
-    /* The following is basically the normal THREADS_ALLOW_UID/
-     * THREADS_DISALLOW_UID macros expanded. They cannot be used
-     * directly due to the nested disallow/allow block below. */
-    struct thread_state *cur_ts_ext = Pike_interpreter.thread_state;
-    pike_threads_allow_ext (cur_ts_ext COMMA_DLOC);
-    i = mkdir(s) != -1;
-    umask(mask);
-    if (i) {
-      /* Attempt to set the mode.
-       *
-       * This code needs to be as paranoid as possible.
-       */
-      struct stat statbuf1;
-      struct stat statbuf2;
-      i = LSTAT(s, &statbuf1) != -1;
-      if (i) {
-	i = ((statbuf1.st_mode & S_IFMT) == S_IFDIR);
-      }
-      if (i) {
-	mode = ((mode & 0777) | (statbuf1.st_mode & ~0777)) & ~mask;
-	do {
-	  i = chmod(s, mode) != -1;
-	  if (i || errno != EINTR) break;
-	  pike_threads_disallow_ext (cur_ts_ext COMMA_DLOC);
-	  check_threads_etc();
-	  pike_threads_allow_ext (cur_ts_ext COMMA_DLOC);
-	} while (1);
-      }
-      if (i) {
-	i = LSTAT(s, &statbuf2) != -1;
-      }
-      if (i) {
-	i = (statbuf2.st_mode == mode) && (statbuf1.st_ino == statbuf2.st_ino);
-	if (!i) {
-	  errno = EPERM;
-	}
-      }
-      if (!i) {
-	rmdir(s);
-      }
-    }
-    pike_threads_disallow_ext (cur_ts_ext COMMA_DLOC);
-  }
-#endif
 
   if (s_dup)
     free(s_dup);
@@ -1054,53 +939,50 @@ void f_get_dir(INT32 args)
 {
   HANDLE dir;
   WIN32_FIND_DATAW d;
-  struct string_builder sb;
   struct pike_string *str=0;
+  p_wchar1 *pattern;
+  size_t plen;
 
-  get_all_args("get_dir",args,".%T",&str);
+  get_all_args("get_dir", args, ".%S", &str);
 
   if(!str) {
     push_static_text(".");
     str = Pike_sp[-1].u.string;
     args++;
-  }
-
-  if (str->size_shift == 2) {
-    /* Filenames that are too wide are not supported. */
-    errno = ENOENT;
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
-
-  init_string_builder_alloc(&sb, str->len+2, 1);
-
-  string_builder_shared_strcat(&sb, str);
-
-  /* Append "/" "*". */
-  if (sb.s->len && (STR1(sb.s)[sb.s->len-1] != '/') &&
-      (STR1(sb.s)[sb.s->len-1] != '\\')) {
-    STR1(sb.s)[sb.s->len++] = '/';
-  }
-  STR1(sb.s)[sb.s->len++] = '*';
-  STR1(sb.s)[sb.s->len] = '\0';
-
-  if (wcslen(STR1(sb.s)) != (size_t)sb.s->len) {
+  } else if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
-    free_string_builder(&sb);
     errno = ENOENT;
     pop_n_elems(args);
     push_int(0);
     return;
   }
+
+  pattern = pike_dwim_utf8_to_utf16(str->str);
+
+  if (!pattern) {
+    SIMPLE_OUT_OF_MEMORY_ERROR("get_dir", (str->len + 4) * sizeof(p_wchar1));
+  }
+
+  plen = wcslen(pattern);
+
+  /* Append "/" "*".
+   *
+   * NB: pike_dwim_utf8_to_utf16() allocates space for at
+   *     least 3 extra characters.
+   */
+  if (plen && (pattern[plen-1] != '/') && (pattern[plen-1] != '\\')) {
+    pattern[plen++] = '/';
+  }
+  pattern[plen++] = '*';
+  pattern[plen] = 0;
 
 #ifdef READDIR_DEBUG
   fprintf(stderr, "FindFirstFile(\"%S\")...\n", STR1(sb.s));
 #endif /* READDIR_DEBUG */
 
-  dir = FindFirstFileW(STR1(sb.s), &d);
+  dir = FindFirstFileW(pattern, &d);
 
-  free_string_builder(&sb);
+  free(pattern);
 
   if (dir == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
     int err = GetLastError();
@@ -1132,6 +1014,9 @@ void f_get_dir(INT32 args)
     BEGIN_AGGREGATE_ARRAY(10);
 
     do {
+      ONERROR uwp;
+      p_wchar0 *utf8_fname;
+
 #ifdef READDIR_DEBUG
       fprintf(stderr, "  \"%S\"\n", d.cFileName);
 #endif /* READDIR_DEBUG */
@@ -1141,7 +1026,17 @@ void f_get_dir(INT32 args)
 	if(!d.cFileName[1]) continue;
 	if(d.cFileName[1]=='.' && !d.cFileName[2]) continue;
       }
-      push_string(make_shared_binary_string1(d.cFileName, wcslen(d.cFileName)));
+
+      utf8_fname = pike_utf16_to_utf8(d.cFileName);
+      if (!utf8_fname) {
+	SIMPLE_OUT_OF_MEMORY_ERROR("get_dir",
+				   (wcslen(d.cFileName) + 4) * sizeof(p_wchar1));
+      }
+
+      SET_ONERROR(uwp, free, utf8_fname);
+      push_text(utf8_fname);
+      CALL_AND_UNSET_ONERROR(uwp);
+
       DO_AGGREGATE_ARRAY(120);
     } while(FindNextFileW(dir, &d));
     err = GetLastError();
@@ -1419,7 +1314,7 @@ void f_cd(INT32 args)
     return;
   }
 
-  i = chdir(str->str) != -1;
+  i = fd_chdir(str->str) != -1;
   pop_n_elems(args);
   push_int(i);
 }
@@ -1433,38 +1328,14 @@ void f_cd(INT32 args)
  */
 void f_getcwd(INT32 args)
 {
-  char *e;
-  char *tmp;
-#if defined(HAVE_WORKING_GETCWD) || !defined(HAVE_GETWD)
-  INT32 size;
-
-  size=1000;
-  do {
-    tmp=xalloc(size);
-    e = getcwd(tmp,size);
-    if (e || errno!=ERANGE) break;
-    free(tmp);
-    tmp=0;
-    size*=2;
-  } while (size < 10000);
-#else
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 32768
-#endif
-  tmp=xalloc(MAXPATHLEN+1);
-  THREADS_ALLOW_UID();
-  e = getwd(tmp);
-  THREADS_DISALLOW_UID();
-#endif
-  if(!e) {
-    if (tmp)
-      free(tmp);
+  char *e = fd_get_current_dir_name();
+  if (!e) {
     Pike_error("Failed to fetch current path.\n");
   }
 
   pop_n_elems(args);
   push_text(e);
-  free(tmp);
+  free(e);
 }
 
 #ifdef HAVE_EXECVE
@@ -1627,11 +1498,6 @@ void f_mv(INT32 args)
   INT32 i;
   struct pike_string *str1;
   struct pike_string *str2;
-#ifdef __NT__
-  int orig_errno = errno;
-  int err;
-  PIKE_STAT_T st;
-#endif
 
   if(args<2)
     SIMPLE_TOO_FEW_ARGS_ERROR("mv", 2);
@@ -1657,170 +1523,7 @@ void f_mv(INT32 args)
     return;
   }
 
-#ifndef __NT__
-  i=rename(str1->str, str2->str);
-#else
-
-  /* Emulate the behavior of unix rename(2) when the destination exists. */
-
-  if (movefileex) {
-    if (MoveFileEx (str1->str, str2->str, 0)) {
-      i = 0;
-      goto no_nt_rename_kludge;
-    }
-    if ((i = GetLastError()) != ERROR_ALREADY_EXISTS)
-      goto no_nt_rename_kludge;
-  }
-  else {
-    /* Fall back to rename() for W98 and earlier. Unlike MoveFileEx,
-     * it can't move directories between directories. */
-    if (!rename (str1->str, str2->str)) {
-      i = 0;
-      goto no_nt_rename_kludge;
-    }
-    if ((i = errno) != EEXIST)
-      goto no_nt_rename_kludge;
-  }
-
-#ifdef HAVE_LSTAT
-  if (fd_lstat (str2->str, &st)) goto no_nt_rename_kludge;
-#else
-  if (fd_stat (str2->str, &st)) goto no_nt_rename_kludge;
-#endif
-
-  if ((st.st_mode & S_IFMT) != S_IFDIR && movefileex) {
-    /* MoveFileEx can overwrite a file but not a dir. */
-    if (!(st.st_mode & _S_IWRITE))
-      /* Like in f_rm, we got to handle the case that NT looks on the
-       * permissions on the file itself before removing it. */
-      if (chmod (str2->str, st.st_mode | _S_IWRITE))
-	goto no_nt_rename_kludge;
-    if (movefileex (str1->str, str2->str, MOVEFILE_REPLACE_EXISTING))
-      i = 0;			/* Success. */
-    else
-      chmod (str2->str, st.st_mode);
-  }
-
-  else {
-    char *s = malloc (str2->len + 2), *p;
-    if (!s) {
-      i = movefileex ? ERROR_NOT_ENOUGH_MEMORY : ENOMEM;
-      goto no_nt_rename_kludge;
-    }
-    memcpy (s, str2->str, str2->len);
-    p = s + str2->len;
-    p[2] = 0;
-
-    if ((st.st_mode & S_IFMT) == S_IFDIR) {
-      /* Check first that the target is empty if it's a directory, so
-       * that we won't even bother trying with the stunt below. */
-      WIN32_FIND_DATA *dir = malloc (sizeof (WIN32_FIND_DATA));
-      HANDLE h;
-      if (!dir) {
-	i = movefileex ? ERROR_NOT_ENOUGH_MEMORY : ENOMEM;
-	goto nt_rename_kludge_end;
-      }
-      p[0] = '/', p[1] = '*';
-      h = FindFirstFile (s, dir);
-      if (h != INVALID_HANDLE_VALUE) {
-	do {
-	  if (dir->cFileName[0] != '.' ||
-	      (dir->cFileName[1] &&
-	       (dir->cFileName[1] != '.' || dir->cFileName[2]))) {
-	    /* Target dir not empty. */
-	    FindClose (h);
-	    free (dir);
-	    goto nt_rename_kludge_end;
-	  }
-	} while (FindNextFile (h, dir));
-	FindClose (h);
-      }
-      free (dir);
-    }
-
-    /* Move away the target temporarily to do the move, then cleanup
-     * or undo depending on how it went. */
-    for (p[0] = 'A'; p[0] != 'Z'; p[0]++)
-      for (p[1] = 'A'; p[1] != 'Z'; p[1]++) {
-	if (movefileex) {
-	  if (!movefileex (str2->str, s, 0)) {
-	    if (GetLastError() == ERROR_ALREADY_EXISTS) continue;
-	    else goto nt_rename_kludge_end;
-	  }
-	}
-	else {
-	  if (rename (str2->str, s)) {
-	    if (errno == EEXIST) continue;
-	    else goto nt_rename_kludge_end;
-	  }
-	}
-	if (movefileex ?
-	    movefileex (str1->str, str2->str, MOVEFILE_REPLACE_EXISTING) :
-	    !rename (str1->str, str2->str)) {
-	  if (!(st.st_mode & _S_IWRITE))
-	    if (chmod (s, st.st_mode | _S_IWRITE))
-	      goto nt_rename_kludge_fail;
-	  if ((st.st_mode & S_IFMT) == S_IFDIR) {
-	    while ((err = rmdir (s)) && (errno == EINTR))
-	      ;
-	  } else {
-	    while ((err = unlink (s)) && (errno == EINTR))
-	      ;
-	  }
-	  if (!err) {		/* Success. */
-	    i = 0;
-	    goto nt_rename_kludge_end;
-	  }
-
-	nt_rename_kludge_fail:
-	  /* Couldn't remove the old target, perhaps the directory
-	   * grew files. */
-	  if (!(st.st_mode & _S_IWRITE))
-	    chmod (s, st.st_mode);
-	  if (movefileex ?
-	      !movefileex (str2->str, str1->str, MOVEFILE_REPLACE_EXISTING) :
-	      rename (str2->str, str1->str)) {
-	    /* Old target left behind but the rename is still
-	     * successful, so we claim success anyway in lack of
-	     * better error reporting capabilities. */
-	    i = 0;
-	    goto nt_rename_kludge_end;
-	  }
-	}
-
-	rename (s, str2->str);
-	goto nt_rename_kludge_end;
-      }
-
-  nt_rename_kludge_end:
-    free (s);
-  }
-
-no_nt_rename_kludge:
-  if (i) {
-    if (movefileex)
-      switch (i) {
-	/* Try to translate NT errors to errno codes that NT's rename()
-	 * would return. */
-	case ERROR_INVALID_NAME:
-	  errno = EINVAL;
-	  break;
-	case ERROR_NOT_ENOUGH_MEMORY:
-	  errno = ENOMEM;
-	  break;
-	case ERROR_FILE_NOT_FOUND:
-	case ERROR_PATH_NOT_FOUND:
-	  errno = ENOENT;
-	  break;
-	case ERROR_ALREADY_EXISTS:
-	  errno = EEXIST;
-	  break;
-	default:
-	  errno = EACCES;
-      }
-  }
-  else errno = orig_errno;
-#endif /* __NT__ */
+  i = fd_rename(str1->str, str2->str);
 
   pop_n_elems(args);
   push_int(!i);
