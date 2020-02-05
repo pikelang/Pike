@@ -3287,6 +3287,67 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h time.h sys/time.h sys/types.h \
 #endif
 ])
 
+AC_CHECK_TYPES([HPCON, LPPROC_THREAD_ATTRIBUTE_LIST, LPSTARTUPINFOEXW],,,[
+#if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
+#define __NT__
+#endif
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#endif
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+#ifndef _PROTOTYPES
+#  define _PROTOTYPES
+#endif /* !_PROTOTYPES */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif /* !_GNU_SOURCE */
+#ifdef __NT__
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef WIN32
+#define WIN32   100     /* WinNT 1.0 */
+#endif
+#if !defined(_WIN32_WINDOWS) || (_WIN32_WINDOWS < 0x500)
+#undef _WIN32_WINDOWS
+#define _WIN32_WINDOWS 0x0500
+#endif
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x500)
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0500
+#endif
+#if !defined(NTDDI_VERSION) || (NTDDI_VERSION < 0x05000000)
+#undef NTDDI_VERSION
+#define NTDDI_VERSION 0x05000000
+#endif
+#endif /* __NT__ */
+#ifdef __amigaos__
+#define __USE_NETINET_IN_H
+#endif
+#ifndef __BUILTIN_VA_ARG_INCR
+#define __BUILTIN_VA_ARG_INCR   1
+#endif /* !__BUILTIN_VA_ARG_INCR */
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#undef HAVE_WINDOWS_H
+#endif
+/* Necessary to find sys/socket.h on MacOS X 10.3 */
+#if HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+/* Necessary to find ws2tcpip.h on WIN32. */
+#ifdef HAVE_WINSOCK2_H
+# include <winsock2.h>
+#endif
+/* Necessary to find sys/user.h on OpenBSD */
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#endif
+])
+
 # Setjmp.
 #
 # POSIX defines sigsetjmp().
