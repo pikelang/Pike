@@ -1847,7 +1847,7 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
   if (fd_to_socket(fd, &s, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr,"Accept on %d (%ld)..\n",
-		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)s)));
+		  fd, (long)(ptrdiff_t)s));
 
   new_fd = allocate_fd(FD_SOCKET, (HANDLE)INVALID_SOCKET);
   if (new_fd < 0) return -1;
