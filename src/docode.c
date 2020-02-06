@@ -63,9 +63,8 @@ struct statement_label
   struct cleanup_frame *cleanups;
 };
 
-static struct statement_label top_statement_label_dummy =
-  {0, 0, -1, -1, 0, -1, 0};
-static struct statement_label *current_label = &top_statement_label_dummy;
+static struct statement_label *current_label = NULL;
+
 #ifdef PIKE_DEBUG
 static int current_stack_depth = -4711;
 #else
@@ -78,6 +77,9 @@ static int current_stack_depth = 0;
   cleanup_frame__.cleanup_arg = (void *)(ptrdiff_t) (arg);		\
   cleanup_frame__.stack_depth = current_stack_depth;			\
   DO_IF_DEBUG(								\
+    if (!current_label) {						\
+      Pike_fatal("no current_label!\n");				\
+    }									\
     if (current_label->cleanups == (void *)(ptrdiff_t) -1)		\
       Pike_fatal("current_label points to an unused statement_label.\n");	\
   )									\
@@ -137,7 +139,7 @@ static int current_stack_depth = 0;
 #define PUSH_STATEMENT_LABEL do {					\
   struct statement_label new_label__;					\
   new_label__.prev = current_label;					\
-  if (current_label->break_label != -2) {				\
+  if (!current_label || (current_label->break_label != -2)) {		\
     /* Only cover the current label if it's closed. */			\
     new_label__.name = 0;						\
     new_label__.break_label = new_label__.continue_label = -1;		\
@@ -1189,7 +1191,7 @@ static int do_docode2(node *n, int flags)
     return 1;
 
   case F_PUSH_ARRAY: {
-    if (current_label != &top_statement_label_dummy || current_label->cleanups) {
+    if (current_label) {
       /* Might not have a surrounding apply node if evaluated as a
        * constant by the optimizer. */
 #ifdef PIKE_DEBUG
@@ -3014,10 +3016,9 @@ INT32 do_code_block(node *n, int identifier_flags)
   INT32 entry_point;
   INT32 generator_switch = -1, *generator_jumptable = NULL;
   int aggregate_cnum = -1;
-  int save_stack_depth = current_stack_depth;
   int save_label_no = label_no;
+  struct statement_label *save_label;
   int tmp1, tmp2;
-  current_stack_depth = 0;
 
   if (Pike_compiler->compiler_frame->current_function_number >= 0) {
     id = Pike_compiler->new_program->identifier_references +
@@ -3026,6 +3027,11 @@ INT32 do_code_block(node *n, int identifier_flags)
 
   init_bytecode();
   label_no=1;
+  PUSH_STATEMENT_LABEL;
+  save_label = current_label->prev;
+  current_label->prev = NULL;
+  PUSH_CLEANUP_FRAME(NULL, NULL);
+  current_stack_depth = 0;
 
   /* NOTE: This is no ordinary label... */
   low_insert_label(0);
@@ -3243,8 +3249,12 @@ INT32 do_code_block(node *n, int identifier_flags)
   }
   entry_point = assemble(1);
 
-  current_stack_depth = save_stack_depth;
+  current_stack_depth = cleanup_frame__.stack_depth;
+  POP_AND_DONT_CLEANUP;
+  current_label->prev = save_label;
+  POP_STATEMENT_LABEL;
   label_no = save_label_no;
+
   return entry_point;
 }
 
@@ -3255,14 +3265,14 @@ INT32 docode(node *n)
   int label_no_save = label_no;
   int generator_local_save = Pike_compiler->compiler_frame->generator_local;
   struct byte_buffer instrbuf_save = instrbuf;
-  int stack_depth_save = current_stack_depth;
-  struct statement_label *label_save = current_label;
-  struct cleanup_frame *top_cleanups_save = top_statement_label_dummy.cleanups;
+  struct statement_label *label_save;
 
+  PUSH_STATEMENT_LABEL;
+  label_save = current_label->prev;
+  current_label->prev = NULL;
+  PUSH_CLEANUP_FRAME(NULL, NULL);
   label_no=1;
   current_stack_depth = 0;
-  current_label = &top_statement_label_dummy;	/* Fix these two to */
-  top_statement_label_dummy.cleanups = 0;	/* please F_PUSH_ARRAY. */
   Pike_compiler->compiler_frame->generator_local = -1;
   init_bytecode();
 
@@ -3274,9 +3284,13 @@ INT32 docode(node *n)
 
   instrbuf=instrbuf_save;
   Pike_compiler->compiler_frame->generator_local = generator_local_save;
+
+  current_stack_depth = cleanup_frame__.stack_depth;
+  POP_AND_DONT_CLEANUP;
+  current_label->prev = label_save;
+  POP_STATEMENT_LABEL;
+  Pike_compiler->compiler_frame->generator_local = generator_local_save;
   label_no = label_no_save;
-  current_stack_depth = stack_depth_save;
-  current_label = label_save;
-  top_statement_label_dummy.cleanups = top_cleanups_save;
+
   return entry_point;
 }
