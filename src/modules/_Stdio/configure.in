@@ -71,7 +71,7 @@ AC_CHECK_LIB(gmp, main)
 AC_HAVE_FUNCS(getwd readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
  openpty \
- madvise poll setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa \
+ madvise poll setsockopt getprotobyname inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
  fdopendir pathconf fpathconf dirfd fstatat openat unlinkat kqueue access)
 
