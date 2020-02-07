@@ -45,6 +45,7 @@
 #define fd_BIDIRECTIONAL     16
 #define fd_REVERSE	     32
 #define fd_SEND_FD           64
+#define fd_TTY		    128
 
 
 #if defined(HAVE_WINSOCK_H)
@@ -55,6 +56,7 @@
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE)
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED)
 #define SOCKET_CAPABILITIES (fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
+#define TTY_CAPABILITIES (fd_TTY | fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 
 #include <winbase.h>
 
@@ -68,6 +70,43 @@ typedef __int64 PIKE_OFF_T;
 typedef struct stat PIKE_STAT_T;
 typedef off_t PIKE_OFF_T;
 #define PRINTPIKEOFFT PRINTOFFT
+#endif
+
+/*
+ * Some macros, structures and typedefs that are needed for ConPTY.
+ */
+#ifndef HAVE_HPCON
+typedef VOID* HPCON;
+#endif
+#ifndef EXTENDED_STARTUPINFO_PRESENT
+#define EXTENDED_STARTUPINFO_PRESENT 0x00080000
+#endif
+#ifndef PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE
+#define PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE 0x00020016
+#endif
+#ifndef HAVE_LPPROC_THREAD_ATTRIBUTE_LIST
+typedef struct _PROC_THREAD_ATTRIBUTE_ENTRY
+{
+  DWORD_PTR	Attribute;
+  SIZE_T	cbSize;
+  PVOID		lpValue;
+} PROC_THREAD_ATTRIBUTE_ENTRY, *LPPROC_THREAD_ATTRIBUTE_ENTRY;
+typedef struct _PROC_THREAD_ATTRIBUTE_LIST
+{
+  DWORD			dwFlags;
+  ULONG			Size;
+  ULONG			Count;
+  ULONG			Reserved;
+  PULONG		Unknown;
+  PROC_THREAD_ATTRIBUTE_ENTRY	Entries[ANYSIZE_ARRAY];
+} PROC_THREAD_ATTRIBUTE_LIST, *LPPROC_THREAD_ATTRIBUTE_LIST;
+#endif
+#ifndef HAVE_LPSTARTUPINFOEXW
+typedef struct _STARTUPINFOEXW
+{
+  STARTUPINFOW StartupInfo;
+  LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList;
+} STARTUPINFOEXW, *LPSTARTUPINFOEXW;
 #endif
 
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
@@ -130,6 +169,7 @@ PMOD_EXPORT char *debug_fd_info(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init(void);
 void fd_exit(void);
+p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len);
 PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str);
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str);
 PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
@@ -538,6 +578,7 @@ typedef struct my_fd_set_s my_fd_set;
 #endif
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_SEND_FD)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
+#define TTY_CAPABILITIES (fd_TTY | fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 
 #endif /* Don't HAVE_WINSOCK */
 
