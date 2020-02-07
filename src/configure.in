@@ -4576,6 +4576,7 @@ AC_CHECK_FUNCS( \
  setsid \
  initgroups setgroups \
  socketpair \
+ openpty \
  fpclass \
  fp_class_d \
  isinf \

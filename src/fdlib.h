@@ -580,6 +580,10 @@ typedef struct my_fd_set_s my_fd_set;
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 #define TTY_CAPABILITIES (fd_TTY | fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 
+#ifdef HAVE_OPENPTY
+#define fd_openpty	openpty	/* FIXME */
+#endif
+
 #endif /* Don't HAVE_WINSOCK */
 
 #ifndef SEEK_SET
