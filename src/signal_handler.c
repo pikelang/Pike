@@ -2993,7 +2993,7 @@ void f_create_process(INT32 args)
 	     *     so we must use the low-level variant here.
 	     */
 	    env = low_dwim_utf8_to_utf16(Pike_sp[-1].u.string->str,
-					 Pike_sp[-1].u.string->str->len);
+					 Pike_sp[-1].u.string->len);
 	    pop_stack();
 	  }
 	}
