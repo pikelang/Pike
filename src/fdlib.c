@@ -891,7 +891,7 @@ static int IsUncRoot(const p_wchar1 *path)
   return 0 ;
 }
 
-PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
+p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len)
 {
   /* NB: Maximum expansion factor is 2.
    *
@@ -904,7 +904,6 @@ PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
    * NB: Some extra padding at the end for NUL and adding
    *     of terminating slashes, etc.
    */
-  size_t len = strlen(str);
   p_wchar1 *res = malloc((len + 4) * sizeof(p_wchar1));
   size_t i = 0, j = 0;
 
@@ -962,6 +961,11 @@ PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
  done:
   res[j++] = 0;	/* NUL-termination. */
   return res;
+}
+
+PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
+{
+  return low_dwim_utf8_to_utf16(str, strlen(str));
 }
 
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)

@@ -2803,12 +2803,11 @@ void f_create_process(INT32 args)
     HANDLE t1 = INVALID_HANDLE_VALUE;
     HANDLE t2 = INVALID_HANDLE_VALUE;
     HANDLE t3 = INVALID_HANDLE_VALUE;
-    STARTUPINFO info;
+    STARTUPINFOW info;
     PROCESS_INFORMATION proc;
     int ret,err;
-    TCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
-    void *env=NULL;
-    struct byte_buffer buf;
+    WCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
+    WCHAR *env=NULL;
 
     /* Quote command to allow all characters (if possible) */
     /* Damn! NT doesn't have quoting! The below code attempts to
@@ -2819,6 +2818,8 @@ void f_create_process(INT32 args)
      */
     {
       int e,d;
+      struct byte_buffer buf;
+
       buffer_init(&buf);
       for(e=0;e<cmd->size;e++)
       {
@@ -2897,7 +2898,8 @@ void f_create_process(INT32 args)
        *       operations on it.
        */
 
-      command_line = (TCHAR *)buffer_get_string(&buf);
+      command_line = pike_dwim_utf8_to_utf16(buffer_get_string(&buf));
+      buffer_free(&buf);
     }
 
     /* FIXME: Ought to set filename properly.
@@ -2906,7 +2908,7 @@ void f_create_process(INT32 args)
     memset(&info,0,sizeof(info));
     info.cb=sizeof(info);
 
-    GetStartupInfo(&info);
+    GetStartupInfoW(&info);
 
     /* Protect inherit status for handles */
     LOCK_IMUTEX(&handle_protection_mutex);
@@ -2925,7 +2927,7 @@ void f_create_process(INT32 args)
       {
 	if(TYPEOF(*tmp) == T_STRING)
 	{
-	  dir=(TCHAR *)STR0(tmp->u.string);
+	  dir = pike_dwim_utf8_to_utf16(STR0(tmp->u.string));
 	  /* fprintf(stderr,"DIR: %s\n",STR0(tmp->u.string)); */
 	}
       }
@@ -2974,8 +2976,13 @@ void f_create_process(INT32 args)
 	    f_aggregate(ptr+1);
 	    push_string(make_shared_binary_string("\0",1));
 	    o_multiply();
-	    /* FIXME: Wide strings? */
-	    env=(void *)Pike_sp[-1].u.string->str;
+
+	    /* NB: The environment string contains lots of NUL characters,
+	     *     so we must use the low-level variant here.
+	     */
+	    env = low_dwim_utf8_to_utf16(Pike_sp[-1].u.string->str,
+					 Pike_sp[-1].u.string->str->len);
+	    pop_stack();
 	  }
 	}
 
@@ -2985,27 +2992,32 @@ void f_create_process(INT32 args)
     THREADS_ALLOW_UID();
 
 
-    SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
-    SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
-    SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
-    ret=CreateProcess(filename,
-		      command_line,
-		      NULL,  /* process security attribute */
-		      NULL,  /* thread security attribute */
-		      1,     /* inherithandles */
-		      0,     /* create flags */
-		      env,  /* environment */
-		      dir,   /* current dir */
-		      &info,
-		      &proc);
+    SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT,
+			 HANDLE_FLAG_INHERIT);
+    SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT,
+			 HANDLE_FLAG_INHERIT);
+    SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT,
+			 HANDLE_FLAG_INHERIT);
+    ret = CreateProcessW(filename,
+			 command_line,
+			 NULL,  /* process security attribute */
+			 NULL,  /* thread security attribute */
+			 1,     /* inherithandles */
+			 CREATE_UNICODE_ENVIRONMENT,     /* create flags */
+			 env,  /* environment */
+			 dir,   /* current dir */
+			 &info,
+			 &proc);
     err=GetLastError();
 
     THREADS_DISALLOW_UID();
 
     UNLOCK_IMUTEX(&handle_protection_mutex);
 
-    if(env) pop_stack();
-    buffer_free(&buf);
+    if(env) free(env);
+    if(dir) free(dir);
+    if(filename) free(filename);
+    if(command_line) free(command_line);
 #if 1
     if(t1 != INVALID_HANDLE_VALUE) CloseHandle(t1);
     if(t2 != INVALID_HANDLE_VALUE) CloseHandle(t2);
