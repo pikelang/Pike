@@ -232,7 +232,7 @@ Known Problems and Missing Features
 	Currently Pike will always try to maximize the number of bits
 	used for certificates, key exchanges, cipher keys and
 	hashes. Another popular approach that should be supported is
-	to minimize the bits used, above the set threashold. The
+	to minimize the bits used, above the set threshold. The
 	rationale is that everything allowed is good enough and the
 	capability negotiation should optimize on consumed resources.
 
