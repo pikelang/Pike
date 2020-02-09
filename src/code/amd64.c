@@ -4771,8 +4771,8 @@ static struct amd64_opcode amd64_opcodes[4][256] = {
   { "or", ALI8, }, { "or", AI, }, { NULL, 0, }, { "F", OP_F, },
 
   /* 0x10 */
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "adc", RMR8, }, { "adc", RMR, }, { "adc", RRM8, }, { "adc", RRM, },
+  { "adc", ALI8, }, { "adc", AI, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
@@ -4821,12 +4821,12 @@ static struct amd64_opcode amd64_opcodes[4][256] = {
   /* 0x90 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "cbw/cwde/cdqe", OP_IMPLICIT_A, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
   /* 0xa0 */
   { "mov", ALM8, }, { "mov", AM, }, { "mov", MAL8, }, { "mov", MA, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { "cmpsb", 0, }, { "cmps", 0, },
   { "test", ALI8, }, { "test", AI, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
@@ -4864,7 +4864,7 @@ static struct amd64_opcode amd64_opcodes[4][256] = {
 {
   /* 0x00 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { "clts", 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
@@ -4878,7 +4878,7 @@ static struct amd64_opcode amd64_opcodes[4][256] = {
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "comiss/d", RRM, },
 
   /* 0x30 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
@@ -4894,8 +4894,8 @@ static struct amd64_opcode amd64_opcodes[4][256] = {
 
   /* 0x50 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "andps/d", RRM, }, { "andnps/d", RRM, }, { NULL, 0, }, { NULL, 0, },
+  { "add[p]s/d", RRM, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
   /* 0x60 */
@@ -5314,7 +5314,12 @@ size_t amd64_disassemble_modrm(PIKE_OPCODE_T *pc,
       bytes++;
       break;
     case 0x80:
-      bytes += amd64_readint32(pc + bytes, buf);
+      if (legacy_prefix[2] == 0x66) {
+	sprintf(buf, "%d", ((INT16 *)(pc + bytes))[0]);
+	bytes += 2;
+      } else {
+	bytes += amd64_readint32(pc + bytes, buf);
+      }
       sprintf(buf + strlen(buf), "(%s)", reg_buf);
       break;
     }
@@ -5400,6 +5405,10 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
       }
       if (op->flags & (OP_8|OP_S8)) {
 	sprintf(buffers[0] + strlen(buffers[0]), "$%d", ((signed char *)pc)[pos++]);
+      } else if (legacy_prefix[2] == 0x66) {
+	/* 16-bit */
+	sprintf(buffers[1] + strlen(buffers[1]), "$%d", ((signed INT16 *)(pc + pos))[0]);
+	pos += 2;
       } else {
 	sprintf(buffers[0] + strlen(buffers[0]), "$");
 	pos += amd64_readint32(pc + pos, buffers[0] + strlen(buffers[0]));
