@@ -128,6 +128,11 @@ o Odbc
   The module's configure script now respects ABI suffixes when searching
   for the ODBC library dir.
 
+o Parser.HTML
+
+  Fixed a Pike stack overflow occuring with certain inputs to the HTML
+  parser.
+
 o Process.run
 
   - Don't error if stdin modifier is supplied as the empty string.
