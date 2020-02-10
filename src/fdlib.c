@@ -269,6 +269,31 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
 
 #include "ntlibfuncs.h"
 
+static void close_pty(struct my_pty *pty)
+{
+  struct my_pty *other;
+
+  if (sub_ref(pty)) return;
+
+  CloseHandle(pty->write_pipe);
+  CloseHandle(pty->read_pipe);
+  if (pty->conpty) {
+    /* Closing the master side. */
+    Pike_NT_ClosePseudoConsole(pty->conpty);
+  }
+
+  /* Unlink the pair. */
+  mt_lock(&fd_mutex);
+  other = pty->other;
+  if (other) {
+    other->other = NULL;
+    pty->other = NULL;
+  }
+  mt_unlock(&fd_mutex);
+
+  free(pty);
+}
+
 #define ISSEPARATOR(a) ((a) == '\\' || (a) == '/')
 
 #ifdef PIKE_DEBUG
@@ -468,6 +493,9 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
   if (fd_type[fd] == FD_SOCKET) {
     FDDEBUG(fprintf(stderr, "Closing socket that was fd %d.\n", fd));
     closesocket((SOCKET)da_handle[fd]);
+  } else if (fd_type[fd] == FD_PTY) {
+    FDDEBUG(fprintf(stderr, "Closing pty that was fd %d.\n", fd));
+    close_pty((struct my_pty *)da_handle[fd]);
   } else {
     FDDEBUG(fprintf(stderr, "Closing handle that was fd %d.\n", fd));
     CloseHandle(da_handle[fd]);
@@ -562,6 +590,7 @@ PMOD_EXPORT char *debug_fd_info(int fd)
     case FD_CONSOLE: return "IS CONSOLE";
     case FD_FILE: return "IS FILE";
     case FD_PIPE: return "IS PIPE";
+    case FD_PTY: return "IS PTY";
     default: return "NOT OPEN";
   }
 }
@@ -588,6 +617,9 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
 
     case FD_PIPE:
       return fd_INTERPROCESSABLE | fd_BUFFERED;
+
+    case FD_PTY:
+      return fd_INTERPROCESSABLE | fd_BUFFERED | fd_BIDIRECTIONAL;
     default: return 0;
   }
 }
@@ -1999,6 +2031,12 @@ PMOD_EXPORT int debug_fd_close(FD fd)
       }
       break;
 
+    case FD_PTY:
+      {
+	close_pty((struct my_pty *)h);
+      }
+      break;
+
     default:
       if(!CloseHandle(h))
       {
@@ -2046,6 +2084,13 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 	FDDEBUG(fprintf(stderr, "Wrote %d bytes to %d)\n", len, fd));
 	return ret;
       }
+
+    case FD_PTY:
+      {
+	struct my_pty *pty = (struct my_pty *)handle;
+	handle = pty->write_pipe;
+      }
+      /* FALLTHRU */
 
     case FD_CONSOLE:
     case FD_FILE:
@@ -2103,6 +2148,13 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
       }
       FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,rret));
       return rret;
+
+    case FD_PTY:
+      {
+	struct my_pty *pty = (struct my_pty *)handle;
+	handle = pty->read_pipe;
+      }
+      break;
 
     case FD_PIPE:
       if (len) {
@@ -2405,6 +2457,10 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
       s->st_mode=S_IFSOCK;
       break;
 
+    case FD_PTY:
+      s->st_mode = S_IFIFO;
+      break;
+
     default:
       switch(GetFileType(h))
       {
@@ -2461,7 +2517,17 @@ static void dump_FDSET(FD_SET *x, int fds)
     fprintf(stderr,"[");
     for(e = 0; e < FD_SETSIZE; e++)
     {
-      if(FD_ISSET(da_handle[e],x))
+      HANDLE h = da_handle[e];
+      if (fd_type[e] == FD_PTY){
+	struct my_pty *pty = (struct my_pty *)h;
+	if(FD_ISSET(pty->read_pipe, x))
+	{
+	  h = pty->read_pipe;
+	} else {
+	  h = pty->write_pipe;
+	}
+      }
+      if(FD_ISSET(h, x))
       {
 	if(!first) fprintf(stderr,",",e);
 	fprintf(stderr,"%d",e);
@@ -2551,6 +2617,20 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 
   if (fd_to_handle(from, &type, &h, 0) < 0) return -1;
 
+  if (type == FD_PTY) {
+    struct my_pty *pty = (struct my_pty *)h;
+
+    fd = allocate_fd(type, h);
+
+    release_fd(from);
+
+    if (fd < 0) return -1;
+
+    add_ref(pty);
+    release_fd(fd);
+    return fd;
+  }
+
   fd = allocate_fd(type,
 		   (type == FD_SOCKET)?
 		   (HANDLE)INVALID_SOCKET:INVALID_HANDLE_VALUE);
@@ -2589,8 +2669,17 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 
   if (fd_to_handle(from, &type, &h, 0) < 0) return -1;
 
-  if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS))
-  {
+  if (type == FD_PTY) {
+    struct my_pty *pty = (struct my_pty *)h;
+    /* Note that we need to hold a reference, so that we
+     * do not disappear when from is released below.
+     *
+     * The reference is then either stolen by reallocate_fd()
+     * or freed by close_pty().
+     */
+    add_ref(pty);
+    x = h;
+  } else if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS)) {
     release_fd(from);
     set_errno_from_win32_error (GetLastError());
     return -1;
@@ -2605,7 +2694,9 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
   if (reallocate_fd(to, type, x) < 0) {
     release_fd(to);
 
-    if (type == FD_SOCKET) {
+    if (type == FD_PTY) {
+      close_pty((struct my_pty *)x);
+    } else if (type == FD_SOCKET) {
       closesocket((SOCKET)x);
     } else {
       CloseHandle(x);
@@ -2681,6 +2772,69 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
   return inet_ntop_funp(af, addr, cp, sz);
 }
 #endif /* HAVE_WINSOCK_H && !__GNUC__ */
+
+PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
+				 char *ignored_name,
+				 void *ignored_term,
+				 void *ignored_winp)
+{
+  struct my_pty *master_pty = NULL;
+  struct my_pty *slave_pty = NULL;
+  int master_fd = -1;
+  int slave_fd = -1;
+  if (!Pike_NT_CreatePseudoConsole) {
+    errno = ENOENT;
+    return -1;
+  }
+
+  if (!(master_pty = calloc(sizeof(struct my_pty), 1))) {
+    errno = ENOMEM;
+    goto fail;
+  }
+  if (!(slave_pty = calloc(sizeof(struct my_pty), 1))) {
+    errno = ENOMEM;
+    goto fail;
+  }
+
+  add_ref(master_pty);
+  master_pty->read_pipe = INVALID_HANDLE_VALUE;
+  master_pty->write_pipe = INVALID_HANDLE_VALUE;
+  master_pty->other = slave_pty;
+  add_ref(slave_pty);
+  slave_pty->read_pipe = INVALID_HANDLE_VALUE;
+  slave_pty->write_pipe = INVALID_HANDLE_VALUE;
+  slave_pty->other = master_pty;
+
+  master_fd = allocate_fd(FD_PTY, (HANDLE)master_pty);
+  if (master_fd < 0) goto fail;
+
+  slave_fd = allocate_fd(FD_PTY, (HANDLE)slave_pty);
+  if (slave_fd < 0) goto fail;
+
+  if (!CreatePipe(&master_pty->write_pipe, &slave_pty->read_pipe, NULL, 0)) {
+    goto fail;
+  }
+  if (!CreatePipe(&slave_pty->write_pipe, &master_pty->read_pipe, NULL, 0)) {
+    goto fail;
+  }
+
+  if (FAILED(Pike_NT_CreatePseudoConsole(sz, slave_pty->write_pipe,
+					 slave_pty->read_pipe,
+					 0, &master->pty))) {
+    goto fail;
+  }
+
+ fail:
+  /* NB: Order significant!
+   *
+   * In the case where master_fd >= 0 and slave_fd < 0, the
+   * slave_pty must not have been freed when master_fd is closed.
+   */
+  if (master_fd >= 0) fd_close(master_fd);
+  else if (master_pty) free(master_pty);
+  if (slave_fd >= 0) fd_close(slave_fd);
+  else if (slave_pty) free(slave_pty);
+}
 
 #ifdef EMULATE_DIRECT
 PMOD_EXPORT DIR *opendir(char *dir)

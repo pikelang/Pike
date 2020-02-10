@@ -159,6 +159,7 @@ typedef struct _STARTUPINFOEXW
 #define fd_dup2(fd,to) dmalloc_register_fd(debug_fd_dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to)))
 #define fd_connect(fd,X,Z) debug_fd_connect(dmalloc_touch_fd(fd),(X),(Z))
 #define fd_inet_ntop(af,addr,cp,sz) debug_fd_inet_ntop(af,addr,cp,sz)
+#define fd_openpty(m,s,name,term,win) debug_fd_openpty(m,s,name,term,win)
 
 
 /* Prototypes begin here */
@@ -210,6 +211,10 @@ PMOD_EXPORT FD debug_fd_dup(FD from);
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 					   char *cp, size_t sz);
+PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
+				 char *ignored_name,
+				 void *ignored_term,
+				 void *ignored_winp);
 /* Prototypes end here */
 
 #undef SOCKFUN1
@@ -245,6 +250,7 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #define fd_shutdown_write SD_SEND
 #define fd_shutdown_both SD_BOTH
 
+#define FD_PTY -6
 #define FD_PIPE -5
 #define FD_SOCKET -4
 #define FD_CONSOLE -3
@@ -260,6 +266,15 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 struct my_fd_set_s
 {
   char bits[FD_SETSIZE/8];
+};
+
+struct my_pty
+{
+  INT32 refs;		/* Number of references from da_handle[]. */
+  HPCON conpty;		/* Only valid for master side. */
+  struct my_pty *other;	/* Other end (if any), NULL otherwise. */
+  HANDLE read_pipe;	/* Pipe that supports read(). */
+  HANDLE write_pipe;	/* Pipe that supports write(). */
 };
 
 typedef struct my_fd_set_s my_fd_set;
