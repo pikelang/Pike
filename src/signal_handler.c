@@ -2132,7 +2132,8 @@ static void free_perishables(struct perishables *storage)
  */
 static HANDLE get_inheritable_handle(struct mapping *optional,
 				     char *name,
-				     int for_reading)
+				     int for_reading,
+				     HPCON *conpty)
 {
   HANDLE ret = DO_NOT_WARN(INVALID_HANDLE_VALUE);
   struct svalue *save_stack=Pike_sp;
@@ -2143,6 +2144,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
     {
       INT32 fd=fd_from_object(tmp->u.object);
       HANDLE h;
+      int type;
 
       if(fd == -1)
 	Pike_error("File for %s is not open.\n",name);
@@ -2155,8 +2157,41 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	fd=fd_from_object(Pike_sp[-1].u.object);
       }
 
-      if(fd_to_handle(fd, NULL, &h, 0) < 0)
+      if(fd_to_handle(fd, &type, &h, 0) < 0)
 	Pike_error("File for %s is not open.\n",name);
+
+      if (type == FD_PTY) {
+	struct my_pty *pty = (struct my_pty *)h;
+	if (!conpty || pty->conpty || !pty->other || !pty->other->conpty ||
+	    (*conpty && (*conpty != pty->other->conpty))) {
+	  /* Master side, or detached slave,
+	   * or we have already selected a different conpty.
+	   */
+	  if (for_reading) {
+	    h = pty->read_handle;
+	  } else {
+	    h = pty->write_handle;
+	  }
+	} else {
+	  /* Slave side. Get the conpty from the master side.
+	   *
+	   * NB: It seems stdin, stdout and stderr are handled
+	   *     automatically by setting the conpty. The conpty
+	   *     apparently has duplicated handles of the original
+	   *     pipes, which most likely have been modified to
+	   *     actually look like ttys. We thus do NOT return
+	   *     the base pipe handle.
+	   *
+	   * BUGS: It is not possible to have multiple conpty
+	   *       objects for the same process, so the first
+	   *       pty for stdin, stdout and stderr wins
+	   *       (see above).
+	   */
+	  *conpty = pty->other->conpty;
+	  release_fd(fd);
+	  return ret;
+	}
+      }
 
       if(!DuplicateHandle(GetCurrentProcess(),	/* Source process */
 			  h,
@@ -2937,6 +2972,8 @@ void f_create_process(INT32 args)
 
     if(optional)
     {
+      HPCON conpty = (HPCON)0;
+
       if( (tmp=simple_mapping_string_lookup(optional, "cwd")) )
       {
 	if(TYPEOF(*tmp) == T_STRING)
@@ -2946,14 +2983,46 @@ void f_create_process(INT32 args)
 	}
       }
 
-      t1=get_inheritable_handle(optional, "stdin",1);
+      t1 = get_inheritable_handle(optional, "stdin", 1, &conpty);
       if(t1 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdInput=t1;
 
-      t2=get_inheritable_handle(optional, "stdout",0);
+      t2 = get_inheritable_handle(optional, "stdout", 0, &conpty);
       if(t2 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdOutput=t2;
 
-      t3=get_inheritable_handle(optional, "stderr",0);
+      t3 = get_inheritable_handle(optional, "stderr", 0, &conpty);
       if(t3 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdError=t3;
+
+      if (conpty) {
+	LPPROC_THREAD_ATTRIBUTE_LIST attrlist = NULL;
+	SIZE_T attrlist_sz = 0;
+	/* Hook in the pty controller. */
+
+	/* Get the required size for a single attribute. */
+	Pike_NT_InitializeProcThreadAttributeList(attrlist, 1, 0, &attrlist_sz);
+
+	if (!(attrlist = malloc(attrlist_sz)) ||
+	    !(Pike_NT_InitializeProcThreadAttributeList(attrlist, 1, 0,
+							&attrlist_sz) &&
+	      (info.lpAttributeList = attrlist)) ||
+	    !Pike_NT_UpdateProcThreadAttribute(attrlist, 0,
+					       PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
+					       conpty, sizeof(conpty),
+					       NULL, NULL)) {
+	  /* Out of memory or similar. */
+	  if (attrlist) {
+	    err = GetLastError();
+	    if (!info.lpAttributeList) {
+	      /* InitializeProcThreadAttributeList() failed. */
+	      free(attrlist);
+	    }
+	  } else {
+	    /* malloc() failed. */
+	    err = ERROR_NOT_ENOUGH_MEMORY;
+	  }
+
+	  goto fail;
+	}
+      }
 
 	if((tmp=simple_mapping_string_lookup(optional, "env")))
 	{
@@ -3027,8 +3096,14 @@ void f_create_process(INT32 args)
     
     THREADS_DISALLOW_UID();
 
+  fail:
+
     UNLOCK_IMUTEX(&handle_protection_mutex);
 
+    if (info.lpAttributeList) {
+      Pike_NT_DeleteProcThreadAttributeList(info.lpAttributeList);
+      free(info.lpAttributeList);
+    }
     if(env) free(env);
     if(dir) free(dir);
     if(filename) free(filename);
