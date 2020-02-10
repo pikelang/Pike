@@ -157,6 +157,7 @@ typedef struct _STARTUPINFOEXW
 #define fd_dup2(fd,to) dmalloc_register_fd(debug_fd_dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to)))
 #define fd_connect(fd,X,Z) debug_fd_connect(dmalloc_touch_fd(fd),(X),(Z))
 #define fd_inet_ntop(af,addr,cp,sz) debug_fd_inet_ntop(af,addr,cp,sz)
+#define fd_openpty(m,s,name,term,win) debug_fd_openpty(m,s,name,term,win)
 
 
 /* Prototypes begin here */
@@ -208,6 +209,10 @@ PMOD_EXPORT FD debug_fd_dup(FD from);
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 					   char *cp, size_t sz);
+PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
+				 char *ignored_name,
+				 void *ignored_term,
+				 void *ignored_winp);
 /* Prototypes end here */
 
 #undef SOCKFUN1
@@ -243,6 +248,7 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #define fd_shutdown_write SD_SEND
 #define fd_shutdown_both SD_BOTH
 
+#define FD_PTY -6
 #define FD_PIPE -5
 #define FD_SOCKET -4
 #define FD_CONSOLE -3
@@ -254,6 +260,15 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #define fd_LOCK_EX 2
 #define fd_LOCK_UN 4
 #define fd_LOCK_NB 8
+
+struct my_pty
+{
+  INT32 refs;		/* Number of references from da_handle[]. */
+  HPCON conpty;		/* Only valid for master side. */
+  struct my_pty *other;	/* Other end (if any), NULL otherwise. */
+  HANDLE read_pipe;	/* Pipe that supports read(). */
+  HANDLE write_pipe;	/* Pipe that supports write(). */
+};
 
 #ifdef PIKE_DEBUG
 #define fd_check_fd(X) do { if(fd_type[X]>=0) Pike_fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
@@ -277,6 +292,17 @@ extern int fd_type[FD_SETSIZE];
 #ifndef S_IFIFO
 #define S_IFIFO 0010000
 #endif
+
+/* Make dynamically loaded functions available to the rest of pike. */
+#undef NTLIB
+#define NTLIB(LIB)
+
+#undef NTLIBFUNC
+#define NTLIBFUNC(LIB, RET, NAME, ARGLIST)				\
+  typedef RET (WINAPI * PIKE_CONCAT3(Pike_NT_, NAME, _type)) ARGLIST;	\
+  extern PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
+
+#include "ntlibfuncs.h"
 
 
 /* This may be inaccurate! /Hubbe */
@@ -531,6 +557,10 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_SEND_FD)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 #define TTY_CAPABILITIES (fd_TTY | fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
+
+#ifdef HAVE_OPENPTY
+#define fd_openpty	openpty	/* FIXME */
+#endif
 
 #endif /* Don't HAVE_WINSOCK_H */
 

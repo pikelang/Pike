@@ -4188,6 +4188,7 @@ AC_CHECK_FUNCS( \
  setsid \
  initgroups setgroups \
  socketpair \
+ openpty \
  bswap16 \
  __bswap16 \
  bswap32 \
