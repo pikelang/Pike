@@ -2770,7 +2770,6 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
   }
   return inet_ntop_funp(af, addr, cp, sz);
 }
-#endif /* HAVE_WINSOCK_H && !__GNUC__ */
 
 PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
 				 char *ignored_name,
@@ -2924,13 +2923,15 @@ PMOD_EXPORT void closedir(DIR *dir)
   }
   free(dir);
 }
-#endif
+#endif /* EMULATE_DIRECT */
 
-#if defined(HAVE_WINSOCK_H) && defined(USE_DL_MALLOC)
+#ifdef USE_DL_MALLOC
 /* NB: We use some calls above that allocate memory with the libc malloc. */
 #undef free
 static inline void libc_free(void *ptr)
 {
   if (ptr) free(ptr);
 }
-#endif
+#endif /* USE_DL_MALLOC */
+
+#endif /* HAVE_WINSOCK_H */
