@@ -2801,10 +2801,10 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
   if (slave_fd < 0) goto fail;
 
   if (!CreatePipe(&master_pty->write_pipe, &slave_pty->read_pipe, NULL, 0)) {
-    goto fail;
+    goto win32_fail;
   }
   if (!CreatePipe(&slave_pty->write_pipe, &master_pty->read_pipe, NULL, 0)) {
-    goto fail;
+    goto win32_fail;
   }
 
   /* Some reasonable defaults. */
@@ -2819,8 +2819,16 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
   if (FAILED(Pike_NT_CreatePseudoConsole(sz, slave_pty->write_pipe,
 					 slave_pty->read_pipe,
 					 0, &master_pty->conpty))) {
-    goto fail;
+    goto win32_fail;
   }
+
+  release_fd(master_fd);
+  release_fd(slave_fd);
+
+  return 0;
+
+ win32_fail:
+    set_errno_from_win32_error(GetLastError());
 
  fail:
   /* NB: Order significant!
@@ -2828,10 +2836,20 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
    * In the case where master_fd >= 0 and slave_fd < 0, the
    * slave_pty must not have been freed when master_fd is closed.
    */
-  if (master_fd >= 0) fd_close(master_fd);
-  else if (master_pty) free(master_pty);
-  if (slave_fd >= 0) fd_close(slave_fd);
-  else if (slave_pty) free(slave_pty);
+  if (master_fd >= 0) {
+    release_fd(master_fd);
+    fd_close(master_fd);
+  } else if (master_pty) {
+    free(master_pty);
+  }
+  if (slave_fd >= 0) {
+    release_fd(slave_fd);
+    fd_close(slave_fd);
+  } else if (slave_pty) {
+    free(slave_pty);
+  }
+
+  return -1;
 }
 
 #ifdef EMULATE_DIRECT
