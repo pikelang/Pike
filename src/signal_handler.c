@@ -2814,7 +2814,7 @@ void f_create_process(INT32 args)
     HANDLE t1 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
     HANDLE t2 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
     HANDLE t3 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
-    STARTUPINFOW info;
+    STARTUPINFOEXW info;
     PROCESS_INFORMATION proc;
     int ret,err;
     WCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
@@ -2920,7 +2920,7 @@ void f_create_process(INT32 args)
     memset(&info,0,sizeof(info));
     info.cb=sizeof(info);
 
-    GetStartupInfoW(&info);
+    GetStartupInfoW(&info.StartupInfo);
 
     /* Protect inherit status for handles */
     LOCK_IMUTEX(&handle_protection_mutex);
@@ -2932,6 +2932,8 @@ void f_create_process(INT32 args)
     SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT, 0);
     SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT, 0);
     SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT, 0);
+
+    info.lpAttributeList = NULL;
 
     if(optional)
     {
@@ -3015,10 +3017,11 @@ void f_create_process(INT32 args)
 			 NULL,  /* process security attribute */
 			 NULL,  /* thread security attribute */
 			 1,     /* inherithandles */
-			 CREATE_UNICODE_ENVIRONMENT,     /* create flags */
+			 CREATE_UNICODE_ENVIRONMENT |
+			 EXTENDED_STARTUPINFO_PRESENT,     /* create flags */
 			 env,  /* environment */
 			 dir,   /* current dir */
-			 &info,
+			 &info.StartupInfo,
 			 &proc);
     err=GetLastError();
     
