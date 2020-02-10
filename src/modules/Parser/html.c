@@ -2069,7 +2069,13 @@ in_quote_cont:
       while (1) {
 	res=scan_forward(feed=*destp,c=d_p[0]+1,destp,d_p,
 			 LOOK_FOR_END (this)[i], NUM_LOOK_FOR_END (this)[i]);
-	if (what == SCAN_ARG_PUSH) n += low_push_feed_range(feed,c,*destp,*d_p);
+	if (what == SCAN_ARG_PUSH) {
+          n += low_push_feed_range(feed,c,*destp,*d_p);
+          if (n > 20) {
+            f_add(n);
+            n = 1;
+          }
+        }
 
 	if (!res) {
 	  if (!finished)
