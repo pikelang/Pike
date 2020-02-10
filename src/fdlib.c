@@ -2836,6 +2836,9 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
   release_fd(master_fd);
   release_fd(slave_fd);
 
+  *master = master_fd;
+  *slave = slave_fd;
+
   return 0;
 
  win32_fail:
