@@ -2121,35 +2121,38 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 	  }
 	}
       }
-      /* FALLTHRU */
+      break;
+
     case FD_CONSOLE:
     case FD_FILE:
-      ret=0;
-      if(len && !ReadFile(handle, to,
-			  DO_NOT_WARN((DWORD)len),
-			  &ret,0) && ret<=0)
-      {
-	unsigned int err = GetLastError();
-	release_fd(fd);
-	set_errno_from_win32_error (err);
-	switch(err)
-	{
-	  /* Pretend we reached the end of the file */
-	  case ERROR_BROKEN_PIPE:
-	    return 0;
-	}
-	FDDEBUG(fprintf(stderr,"Read failed %d\n",errno));
-	return -1;
-      }
-      FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,ret));
-      release_fd(fd);
-      return ret;
+      break;
 
     default:
       errno=ENOTSUPP;
       release_fd(fd);
       return -1;
   }
+
+  ret=0;
+  if(len && !ReadFile(handle, to,
+		      DO_NOT_WARN((DWORD)len),
+		      &ret,0) && ret<=0)
+  {
+    unsigned int err = GetLastError();
+    release_fd(fd);
+    set_errno_from_win32_error (err);
+    switch(err)
+    {
+      /* Pretend we reached the end of the file */
+      case ERROR_BROKEN_PIPE:
+        return 0;
+    }
+    FDDEBUG(fprintf(stderr,"Read failed %d\n",errno));
+    return -1;
+  }
+  FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,ret));
+  release_fd(fd);
+  return ret;
 }
 
 PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
