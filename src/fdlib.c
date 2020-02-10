@@ -2160,9 +2160,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
   }
 
   ret=0;
-  while(len && !ReadFile(handle, to,
-			 DO_NOT_WARN((DWORD)len),
-			 &ret,0) && ret<=0) {
+  while(len && !ReadFile(handle, to, (DWORD)len, &ret,0) && ret<=0) {
     unsigned int err = GetLastError();
     release_fd(fd);
     set_errno_from_win32_error (err);
