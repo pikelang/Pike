@@ -2775,12 +2775,14 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
 				 char *ignored_name,
 				 void *ignored_term,
-				 void *ignored_winp)
+				 struct winsize *winp)
 {
   struct my_pty *master_pty = NULL;
   struct my_pty *slave_pty = NULL;
   int master_fd = -1;
   int slave_fd = -1;
+  COORD sz;
+
   if (!Pike_NT_CreatePseudoConsole) {
     errno = ENOENT;
     return -1;
@@ -2817,9 +2819,18 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
     goto fail;
   }
 
+  /* Some reasonable defaults. */
+  sz.X = 80;
+  sz.Y = 25;
+
+  if (winp) {
+    sz.X = winp->ws_col;
+    sz.y = winp->ws_row;
+  }
+
   if (FAILED(Pike_NT_CreatePseudoConsole(sz, slave_pty->write_pipe,
 					 slave_pty->read_pipe,
-					 0, &master->pty))) {
+					 0, &master_pty->conpty))) {
     goto fail;
   }
 

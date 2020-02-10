@@ -109,6 +109,13 @@ typedef struct _STARTUPINFOEXW
 } STARTUPINFOEXW, *LPSTARTUPINFOEXW;
 #endif
 
+#ifndef HAVE_STRUCT_WINSIZE
+/* Typically found in <termios.h>. */
+struct winsize {
+  unsigned short ws_row, ws_col, ws_xpixel, ws_ypixel;
+};
+#endif
+
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
 #define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
 #define SOCKFUN3(NAME,T1,T2,T3) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3);
@@ -214,7 +221,7 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
 				 char *ignored_name,
 				 void *ignored_term,
-				 void *ignored_winp);
+				 struct winsize *winp);
 /* Prototypes end here */
 
 #undef SOCKFUN1
