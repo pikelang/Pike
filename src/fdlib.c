@@ -264,8 +264,7 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
 
 #undef NTLIBFUNC
 #define NTLIBFUNC(LIB, RET, NAME, ARGLIST)				\
-  typedef RET (WINAPI * PIKE_CONCAT3(Pike_NT_, NAME, _type)) ARGLIST;	\
-  static PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
+  PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
 
 #include "ntlibfuncs.h"
 

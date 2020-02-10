@@ -327,6 +327,17 @@ extern int fd_type[FD_SETSIZE];
 #define S_IFIFO 0010000
 #endif
 
+/* Make dynamically loaded functions available to the rest of pike. */
+#undef NTLIB
+#define NTLIB(LIB)
+
+#undef NTLIBFUNC
+#define NTLIBFUNC(LIB, RET, NAME, ARGLIST)				\
+  typedef RET (WINAPI * PIKE_CONCAT3(Pike_NT_, NAME, _type)) ARGLIST;	\
+  extern PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
+
+#include "ntlibfuncs.h"
+
 
 /* This may be inaccurate! /Hubbe */
 #if defined(__NT__) && !defined(__MINGW32__)
