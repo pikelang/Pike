@@ -2133,9 +2133,9 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	   * or we have already selected a different conpty.
 	   */
 	  if (for_reading) {
-	    h = pty->read_handle;
+	    h = pty->read_pipe;
 	  } else {
-	    h = pty->write_handle;
+	    h = pty->write_pipe;
 	  }
 	} else {
 	  /* Slave side. Get the conpty from the master side.
@@ -2941,20 +2941,20 @@ void f_create_process(INT32 args)
      */
 
     memset(&info,0,sizeof(info));
-    info.cb=sizeof(info);
+    info.StartupInfo.cb = sizeof(info);
 
     GetStartupInfoW(&info.StartupInfo);
 
     /* Protect inherit status for handles */
     LOCK_IMUTEX(&handle_protection_mutex);
 
-    info.dwFlags|=STARTF_USESTDHANDLES;
-    info.hStdInput=GetStdHandle(STD_INPUT_HANDLE);
-    info.hStdOutput=GetStdHandle(STD_OUTPUT_HANDLE);
-    info.hStdError=GetStdHandle(STD_ERROR_HANDLE);
-    SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT, 0);
-    SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT, 0);
-    SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT, 0);
+    info.StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
+    info.StartupInfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    info.StartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    info.StartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    SetHandleInformation(info.StartupInfo.hStdInput, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(info.StartupInfo.hStdOutput, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(info.StartupInfo.hStdError, HANDLE_FLAG_INHERIT, 0);
 
     info.lpAttributeList = NULL;
 
@@ -2972,13 +2972,19 @@ void f_create_process(INT32 args)
       }
 
       t1 = get_inheritable_handle(optional, "stdin", 1, &conpty);
-      if(t1 != INVALID_HANDLE_VALUE) info.hStdInput=t1;
+      if(t1 != INVALID_HANDLE_VALUE) {
+	info.StartupInfo.hStdInput = t1;
+      }
 
       t2 = get_inheritable_handle(optional, "stdout", 0, &conpty);
-      if(t2 != INVALID_HANDLE_VALUE) info.hStdOutput=t2;
+      if(t2 != INVALID_HANDLE_VALUE) {
+	info.StartupInfo.hStdOutput = t2;
+      }
 
       t3 = get_inheritable_handle(optional, "stderr", 0, &conpty);
-      if(t3 != INVALID_HANDLE_VALUE) info.hStdError=t3;
+      if(t3 != INVALID_HANDLE_VALUE) {
+	info.StartupInfo.hStdError = t3;
+      }
 
       if (conpty) {
 	LPPROC_THREAD_ATTRIBUTE_LIST attrlist = NULL;
@@ -3063,11 +3069,11 @@ void f_create_process(INT32 args)
     THREADS_ALLOW_UID();
 
 
-    SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT,
+    SetHandleInformation(info.StartupInfo.hStdInput, HANDLE_FLAG_INHERIT,
 			 HANDLE_FLAG_INHERIT);
-    SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT,
+    SetHandleInformation(info.StartupInfo.hStdOutput, HANDLE_FLAG_INHERIT,
 			 HANDLE_FLAG_INHERIT);
-    SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT,
+    SetHandleInformation(info.StartupInfo.hStdError, HANDLE_FLAG_INHERIT,
 			 HANDLE_FLAG_INHERIT);
     ret = CreateProcessW(filename,
 			 command_line,
