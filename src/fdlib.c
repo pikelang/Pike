@@ -2825,7 +2825,7 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
 
   if (winp) {
     sz.X = winp->ws_col;
-    sz.y = winp->ws_row;
+    sz.Y = winp->ws_row;
   }
 
   if (FAILED(Pike_NT_CreatePseudoConsole(sz, slave_pty->write_pipe,
