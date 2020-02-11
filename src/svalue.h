@@ -292,10 +292,10 @@ struct svalue
 #define tStr "\006"
 #define tString "\006"
 #define tNStr(T) "\357" T
-#define tStr0 "\357" tZero
-#define tStr7 "\357" "\010\000\000\000\000\000\000\000\177"
-#define tStr8 "\357" "\010\000\000\000\000\000\000\000\377"
-#define tStr16 "\357" "\010\000\000\000\000\000\000\377\377"
+#define tStr0 tNStr(tZero)
+#define tStr7 tNStr(tInt7bit)
+#define tStr8 tNStr(tInt8bit)
+#define tStr16 tNStr(tInt16bit)
 #define tStr32 "\006"
 #define tLStr(LEN, VAL) "\355" LEN VAL
 #define tType(T) "\007" T
@@ -312,6 +312,9 @@ struct svalue
 #define tInt07 "\010\000\000\000\000\000\000\000\007"
 #define tInt08 "\010\000\000\000\000\000\000\000\010"
 #define tInt09 "\010\000\000\000\000\000\000\000\011"
+#define tInt7bit "\010\000\000\000\000\000\000\000\177"
+#define tInt8bit "\010\000\000\000\000\000\000\000\377"
+#define tInt16bit "\010\000\000\000\000\000\000\377\377"
 #define tIntPos "\010\000\000\000\000\177\377\377\377"
 #define tIntNeg "\010\200\000\000\000\000\000\000\000"
 #define tInt1Plus "\010\000\000\000\001\177\377\377\377"
