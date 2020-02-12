@@ -2840,7 +2840,7 @@ void f_create_process(INT32 args)
     HANDLE t3 = INVALID_HANDLE_VALUE;
     STARTUPINFOEXW info;
     PROCESS_INFORMATION proc;
-    int ret,err;
+    int ret = 0, err;
     WCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
     WCHAR *env=NULL;
 
@@ -2943,7 +2943,16 @@ void f_create_process(INT32 args)
     memset(&info,0,sizeof(info));
     info.StartupInfo.cb = sizeof(info);
 
+#if 0
+    /* CAUTION!!!!
+     *
+     * This function fills in several reserved fields in the
+     * StartupInfo, which in turn cause CreateProcessW() below
+     * to fail with error ERROR_INVALID_PARAMETER (87) when
+     * EXTENDED_STARTUPINFO_PRESENT is set.
+     */
     GetStartupInfoW(&info.StartupInfo);
+#endif
 
     /* Protect inherit status for handles */
     LOCK_IMUTEX(&handle_protection_mutex);

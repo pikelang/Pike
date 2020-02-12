@@ -2800,10 +2800,10 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
   slave_fd = allocate_fd(FD_PTY, (HANDLE)slave_pty);
   if (slave_fd < 0) goto fail;
 
-  if (!CreatePipe(&master_pty->write_pipe, &slave_pty->read_pipe, NULL, 0)) {
+  if (!CreatePipe(&slave_pty->read_pipe, &master_pty->write_pipe, NULL, 0)) {
     goto win32_fail;
   }
-  if (!CreatePipe(&slave_pty->write_pipe, &master_pty->read_pipe, NULL, 0)) {
+  if (!CreatePipe(&master_pty->read_pipe, &slave_pty->write_pipe, NULL, 0)) {
     goto win32_fail;
   }
 
@@ -2816,8 +2816,8 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
     sz.Y = winp->ws_row;
   }
 
-  if (FAILED(Pike_NT_CreatePseudoConsole(sz, slave_pty->write_pipe,
-					 slave_pty->read_pipe,
+  if (FAILED(Pike_NT_CreatePseudoConsole(sz, slave_pty->read_pipe,
+					 slave_pty->write_pipe,
 					 0, &master_pty->conpty))) {
     goto win32_fail;
   }
