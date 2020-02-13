@@ -169,6 +169,7 @@ struct winsize {
 
 /* Prototypes begin here */
 PMOD_EXPORT void set_errno_from_win32_error (unsigned long err);
+void free_pty(struct my_pty *pty);
 int fd_to_handle(int fd, int *type, HANDLE *handle, int exclusive);
 void release_fd(int fd);
 PMOD_EXPORT char *debug_fd_info(int fd);
@@ -270,9 +271,11 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
 
 struct my_pty
 {
-  INT32 refs;		/* Number of references from da_handle[]. */
+  INT32 refs;		/* Total number of references. */
+  INT32 fd_refs;	/* Number of references from da_handle[]. */
   HPCON conpty;		/* Only valid for master side. */
   struct my_pty *other;	/* Other end (if any), NULL otherwise. */
+  struct pid_status *clients; /* List of client processes. */
   HANDLE read_pipe;	/* Pipe that supports read(). */
   HANDLE write_pipe;	/* Pipe that supports write(). */
 };
