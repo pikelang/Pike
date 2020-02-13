@@ -2783,7 +2783,7 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
   COORD sz;
 
   if (!Pike_NT_CreatePseudoConsole) {
-    errno = ENOENT;
+    errno = ENOTSUPP;
     return -1;
   }
 
