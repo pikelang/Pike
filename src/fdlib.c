@@ -268,12 +268,22 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
 
 #include "ntlibfuncs.h"
 
+void free_pty(struct my_pty *pty)
+{
+  if (sub_ref(pty)) return;
+  free(pty);
+}
+
 /* NB: fd_mutex MUST be held at entry. */
 static void close_pty(struct my_pty *pty)
 {
   struct my_pty *other;
+  struct pid_status *pid;
 
-  if (sub_ref(pty)) return;
+  if (--pty->fd_refs) {
+    sub_ref(pty);
+    return;
+  }
 
   CloseHandle(pty->write_pipe);
   CloseHandle(pty->read_pipe);
@@ -289,6 +299,11 @@ static void close_pty(struct my_pty *pty)
     pty->other = NULL;
   }
 
+  while ((pid = pty->clients)) {
+    pid->clients = pid_status_unlink_pty(pid);
+  }
+
+  free_pty(pty);
 }
 
 #define ISSEPARATOR(a) ((a) == '\\' || (a) == '/')
@@ -2152,6 +2167,15 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
       {
 	struct my_pty *pty = (struct my_pty *)handle;
 	handle = pty->read_pipe;
+
+	if (pty->conpty && !pty->other && !check_pty_clients(pty)) {
+	  /* Master side, no local slave and all known clients are dead.
+	   *
+	   * Terminate the ConPTY so that we can get an EOF.
+	   */
+	  Pike_NT_ClosePseudoConsole(pty->conpty);
+	  pty->conpty = 0;
+	}
       }
       /* FALLTHRU */
 
@@ -2626,6 +2650,8 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
     if (fd < 0) return -1;
 
     add_ref(pty);
+    pty->fd_refs++;
+
     release_fd(fd);
     return fd;
   }
@@ -2677,6 +2703,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
      * or freed by close_pty().
      */
     add_ref(pty);
+    pty->fd_refs++;
     x = h;
   } else if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS)) {
     release_fd(from);
@@ -2799,10 +2826,12 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
   }
 
   add_ref(master_pty);
+  master_pty->fd_refs++;
   master_pty->read_pipe = INVALID_HANDLE_VALUE;
   master_pty->write_pipe = INVALID_HANDLE_VALUE;
   master_pty->other = slave_pty;
   add_ref(slave_pty);
+  slave_pty->fd_refs++;
   slave_pty->read_pipe = INVALID_HANDLE_VALUE;
   slave_pty->write_pipe = INVALID_HANDLE_VALUE;
   slave_pty->other = master_pty;

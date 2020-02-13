@@ -1254,6 +1254,8 @@ struct pid_status
   INT_TYPE pid;
 #ifdef __NT__
   HANDLE handle;
+  struct pid_status *next_pty_client;	/* PTY client chain. */
+  struct my_pty *pty;			/* PTY master, refcounted. */
 #else
   INT_TYPE sig;
   INT_TYPE flags;
@@ -1279,6 +1281,48 @@ static void init_pid_status(struct object *UNUSED(o))
 #endif
 }
 
+#ifdef __NT__
+struct pid_status *pid_status_unlink_pty(struct pid_status *pid)
+{
+  struct pid_status *ret;
+  if (!pid) return NULL;
+  ret = pid->next_pty_client;
+  pid->next_pty_client = NULL;
+  if (pid->pty) {
+    free_pty(pid->pty);
+    pid->pty = NULL;
+  }
+  return ret;
+}
+
+static void pid_status_link_pty(struct pid_status *pid, struct my_pty *pty)
+{
+  add_ref(pty);
+  pid->pty = pty;
+  pid->next_pty_client = pty->clients;
+  pty->clients = pid;
+}
+
+int check_pty_clients(struct my_pty *pty)
+{
+  struct pid_status *pid;
+  while ((pid = pty->clients)) {
+    DWORD status;
+    /* FIXME: RACE: pid->handle my be INVALID_HANDLE_VALUE if
+     *              the process is about to be started.
+     */
+    if ((pid->pid == -1) && (pid->handle == INVALID_HANDLE_VALUE)) return 1;
+    if (GetExitCodeProcess(pid->handle, &status) &&
+	(status == STILL_ACTIVE)) {
+      return 1;
+    }
+    /* Process has terminated. Unlink and check the next. */
+    pty->clients = pid_status_unlink_pty(pid);
+  }
+  return 0;
+}
+#endif /* __NT__ */
+
 static void exit_pid_status(struct object *UNUSED(o))
 {
 #ifdef USE_PID_MAPPING
@@ -1291,6 +1335,16 @@ static void exit_pid_status(struct object *UNUSED(o))
 #endif
 
 #ifdef __NT__
+  if (THIS->pty) {
+    struct my_pty *pty = THIS->pty;
+    struct pid_status *pidptr = &pty->clients;
+    while (*pidptr && (*pidptr != THIS)) {
+      pidptr = &(*pidptr)->next_pty_client;
+    }
+    if (*pidptr) {
+      *pidptr = pid_status_unlink_pty(THIS);
+    }
+  }
   CloseHandle(THIS->handle);
 #endif
 }
@@ -2187,6 +2241,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	   *       pty for stdin, stdout and stderr wins
 	   *       (see above).
 	   */
+	  pid_status_link_pty(pty->other);
 	  *conpty = pty->other->conpty;
 	  release_fd(fd);
 	  return ret;
