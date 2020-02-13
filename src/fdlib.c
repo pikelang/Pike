@@ -74,6 +74,9 @@ HANDLE da_handle[FD_SETSIZE];
  *
  *   FD_PIPE (-5)
  *     Handle from CreatePipe().
+ *
+ *   FD_PTY (-6)
+ *     struct my_pty * set by openpty().
  */
 int fd_type[FD_SETSIZE];
 
@@ -268,6 +271,35 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
   PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
 
 #include "ntlibfuncs.h"
+
+/* PTY-handling
+ *
+ * PTYs on NT are implemented via ConPTY (Windows 10 1809 (build 17763)
+ * and later).
+ *
+ * We attempt to have them behave similar to ptys on POSIX-systems.
+ * This does however require a bit of work.
+ *
+ * Ptys are allocated as a pair of pipes (one in each direction)
+ * between master and slave. The slave end is given to ConPTY.
+ *
+ * When a process is started that uses a slave for stdin, stdout
+ * or stderr, it will instead of the slave pipes be registered
+ * with the ConPTY, which in turn will provide the actual pty handles.
+ *
+ * Caveat: The ConPTY does not terminate its end of the pipes
+ *         when all client processes have closed their handles.
+ *         This is due to it still being possible to use the
+ *         ConPTY for further processes.
+ *
+ * Note also that closing the ConPTY causes ant remaining client
+ * processes to be terminated.
+ *
+ * In order to handle the above, we keep track of the processes
+ * that have been registered with the ConPTY, and use this list
+ * to close the ConPTY when all the processes are dead and
+ * we do not have the slave end any more.
+ */
 
 void free_pty(struct my_pty *pty)
 {
