@@ -2153,7 +2153,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 	struct my_pty *pty = (struct my_pty *)handle;
 	handle = pty->read_pipe;
       }
-      break;
+      /* FALLTHRU */
 
     case FD_PIPE:
       if (len) {
