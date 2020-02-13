@@ -46,6 +46,7 @@
 #endif
 
 #include "threads.h"
+#include "signal_handler.h"
 
 /* Mutex protecting da_handle, fd_type, fd_busy and first_free_handle. */
 static MUTEX_T fd_mutex;
@@ -287,10 +288,6 @@ static void close_pty(struct my_pty *pty)
 
   CloseHandle(pty->write_pipe);
   CloseHandle(pty->read_pipe);
-  if (pty->conpty) {
-    /* Closing the master side. */
-    Pike_NT_ClosePseudoConsole(pty->conpty);
-  }
 
   /* Unlink the pair. */
   other = pty->other;
@@ -299,8 +296,14 @@ static void close_pty(struct my_pty *pty)
     pty->other = NULL;
   }
 
+  if (pty->conpty) {
+    /* Closing the master side. */
+    Pike_NT_ClosePseudoConsole(pty->conpty);
+    pty->conpty = 0;
+  }
+
   while ((pid = pty->clients)) {
-    pid->clients = pid_status_unlink_pty(pid);
+    pty->clients = pid_status_unlink_pty(pid);
   }
 
   free_pty(pty);

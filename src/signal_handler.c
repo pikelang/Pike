@@ -1337,12 +1337,21 @@ static void exit_pid_status(struct object *UNUSED(o))
 #ifdef __NT__
   if (THIS->pty) {
     struct my_pty *pty = THIS->pty;
-    struct pid_status *pidptr = &pty->clients;
+    struct pid_status **pidptr = &pty->clients;
     while (*pidptr && (*pidptr != THIS)) {
       pidptr = &(*pidptr)->next_pty_client;
     }
     if (*pidptr) {
       *pidptr = pid_status_unlink_pty(THIS);
+    }
+    if (!pty->clients && !pty->other && pty->conpty) {
+      /* Last client for this ConPTY has terminated,
+       * and our local copy of the slave has been closed.
+       *
+       * Close the ConPTY.
+       */
+      Pike_NT_ClosePseudoConsole(pty->conpty);
+      pty->conpty = 0;
     }
   }
   CloseHandle(THIS->handle);
@@ -2229,22 +2238,38 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	} else {
 	  /* Slave side. Get the conpty from the master side.
 	   *
-	   * NB: It seems stdin, stdout and stderr are handled
-	   *     automatically by setting the conpty. The conpty
-	   *     apparently has duplicated handles of the original
-	   *     pipes, which most likely have been modified to
-	   *     actually look like ttys. We thus do NOT return
-	   *     the base pipe handle.
+	   * NB: Stdin, stdout and stderr are handled automatically
+	   *     by setting the conpty. The conpty has duplicated
+	   *     handles of the original pipes, and in turn provides
+	   *     actual CONSOLE handles to the subprocess. We thus
+	   *     do NOT return the base pipe handle.
 	   *
 	   * BUGS: It is not possible to have multiple conpty
 	   *       objects for the same process, so the first
 	   *       pty for stdin, stdout and stderr wins
 	   *       (see above).
+	   *
+	   * BUGS: As the conpty is a separate process that survives
+	   *       or subprocess terminating, we need to keep track
+	   *       of which master pty the process was bound to so
+	   *       that we can close the corresponding conpty
+	   *       when no one else will use it.
 	   */
-	  pid_status_link_pty(pty->other);
+	  pid_status_link_pty(THIS, pty->other);
 	  *conpty = pty->other->conpty;
 	  release_fd(fd);
-	  return ret;
+
+	  /* From the documentation for GetStdHandle():
+	   *
+	   *   If the existing value of the standard handle is NULL, or
+	   *   the existing value of the standard handle looks like a
+	   *   console pseudohandle, the handle is replaced with a
+	   *   console handle.
+	   *
+	   * This is not documented in conjunction with CreateProcess() or
+	   * PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, but it seems to work.
+	   */
+	  return 0;
 	}
       }
 
