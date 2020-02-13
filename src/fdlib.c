@@ -268,6 +268,7 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
 
 #include "ntlibfuncs.h"
 
+/* NB: fd_mutex MUST be held at entry. */
 static void close_pty(struct my_pty *pty)
 {
   struct my_pty *other;
@@ -282,15 +283,12 @@ static void close_pty(struct my_pty *pty)
   }
 
   /* Unlink the pair. */
-  mt_lock(&fd_mutex);
   other = pty->other;
   if (other) {
     other->other = NULL;
     pty->other = NULL;
   }
-  mt_unlock(&fd_mutex);
 
-  free(pty);
 }
 
 #define ISSEPARATOR(a) ((a) == '\\' || (a) == '/')
@@ -2032,7 +2030,9 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 
     case FD_PTY:
       {
+	mt_lock(&fd_mutex);
 	close_pty((struct my_pty *)h);
+	mt_unlock(&fd_mutex);
       }
       break;
 
@@ -2694,7 +2694,9 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
     release_fd(to);
 
     if (type == FD_PTY) {
+      mt_lock(&fd_mutex);
       close_pty((struct my_pty *)x);
+      mt_unlock(&fd_mutex);
     } else if (type == FD_SOCKET) {
       closesocket((SOCKET)x);
     } else {
