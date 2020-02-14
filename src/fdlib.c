@@ -2182,7 +2182,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
   if (fd_to_handle(fd, &type, &handle, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr,"Reading %d bytes from %d (%d) to %lx\n",
-		  len, fd, (long)(ptrdiff_t)h,
+		  len, fd, (long)(ptrdiff_t)handle,
 		  (unsigned long)(ptrdiff_t)to));
 
   switch(type)
