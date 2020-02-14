@@ -293,7 +293,10 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
  *         This is due to it still being possible to use the
  *         ConPTY for further processes.
  *
- * Note also that closing the ConPTY causes ant remaining client
+ * Update: The above behavior is apparently a bug. Cf
+ *         https://github.com/microsoft/terminal/issues/4564
+ *
+ * Note also that closing the ConPTY causes any remaining client
  * processes to be terminated.
  *
  * In order to handle the above, we keep track of the processes
@@ -2156,7 +2159,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
   if (fd_to_handle(fd, &type, &handle, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr,"Reading %d bytes from %d (%d) to %lx\n",
-		  len, fd, (long)(ptrdiff_t)h,
+		  len, fd, (long)(ptrdiff_t)handle,
 		  (unsigned long)(ptrdiff_t)to));
 
   switch(type)
