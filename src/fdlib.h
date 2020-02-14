@@ -109,6 +109,13 @@ typedef struct _STARTUPINFOEXW
 } STARTUPINFOEXW, *LPSTARTUPINFOEXW;
 #endif
 
+#ifndef HAVE_STRUCT_WINSIZE
+/* Typically found in <termios.h>. */
+struct winsize {
+  unsigned short ws_row, ws_col, ws_xpixel, ws_ypixel;
+};
+#endif
+
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
 #define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
 #define SOCKFUN3(NAME,T1,T2,T3) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3);
@@ -159,10 +166,12 @@ typedef struct _STARTUPINFOEXW
 #define fd_dup2(fd,to) dmalloc_register_fd(debug_fd_dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to)))
 #define fd_connect(fd,X,Z) debug_fd_connect(dmalloc_touch_fd(fd),(X),(Z))
 #define fd_inet_ntop(af,addr,cp,sz) debug_fd_inet_ntop(af,addr,cp,sz)
+#define fd_openpty(m,s,name,term,win) debug_fd_openpty(m,s,name,term,win)
 
 
 /* Prototypes begin here */
 PMOD_EXPORT void set_errno_from_win32_error (unsigned long err);
+void free_pty(struct my_pty *pty);
 int fd_to_handle(int fd, int *type, HANDLE *handle, int exclusive);
 void release_fd(int fd);
 PMOD_EXPORT char *debug_fd_info(int fd);
@@ -210,6 +219,10 @@ PMOD_EXPORT FD debug_fd_dup(FD from);
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 					   char *cp, size_t sz);
+PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
+				 char *ignored_name,
+				 void *ignored_term,
+				 struct winsize *winp);
 /* Prototypes end here */
 
 #undef SOCKFUN1
@@ -245,6 +258,7 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #define fd_shutdown_write SD_SEND
 #define fd_shutdown_both SD_BOTH
 
+#define FD_PTY -6
 #define FD_PIPE -5
 #define FD_SOCKET -4
 #define FD_CONSOLE -3
@@ -260,6 +274,17 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 struct my_fd_set_s
 {
   char bits[FD_SETSIZE/8];
+};
+
+struct my_pty
+{
+  INT32 refs;		/* Total number of references. */
+  INT32 fd_refs;	/* Number of references from da_handle[]. */
+  HPCON conpty;		/* Only valid for master side. */
+  struct my_pty *other;	/* Other end (if any), NULL otherwise. */
+  struct pid_status *clients; /* List of client processes. */
+  HANDLE read_pipe;	/* Pipe that supports read(). */
+  HANDLE write_pipe;	/* Pipe that supports write(). */
 };
 
 typedef struct my_fd_set_s my_fd_set;
@@ -311,6 +336,17 @@ extern int fd_type[FD_SETSIZE];
 #ifndef S_IFIFO
 #define S_IFIFO 0010000
 #endif
+
+/* Make dynamically loaded functions available to the rest of pike. */
+#undef NTLIB
+#define NTLIB(LIB)
+
+#undef NTLIBFUNC
+#define NTLIBFUNC(LIB, RET, NAME, ARGLIST)				\
+  typedef RET (WINAPI * PIKE_CONCAT3(Pike_NT_, NAME, _type)) ARGLIST;	\
+  extern PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
+
+#include "ntlibfuncs.h"
 
 
 /* This may be inaccurate! /Hubbe */
@@ -579,6 +615,10 @@ typedef struct my_fd_set_s my_fd_set;
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_SEND_FD)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 #define TTY_CAPABILITIES (fd_TTY | fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
+
+#ifdef HAVE_OPENPTY
+#define fd_openpty	openpty	/* FIXME */
+#endif
 
 #endif /* Don't HAVE_WINSOCK */
 

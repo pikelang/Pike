@@ -3310,9 +3310,17 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h time.h sys/time.h sys/types.h \
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
+/* Necessary to find struct winsize. */
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#elif defined(HAVE_SYS_TERMIOS_H)
+/* NB: Deprecated by <termios.h> above. */
+#include <sys/termios.h>
+#endif
 ])
 
-AC_CHECK_TYPES([HPCON, LPPROC_THREAD_ATTRIBUTE_LIST, LPSTARTUPINFOEXW],,,[
+AC_CHECK_TYPES([HPCON, LPPROC_THREAD_ATTRIBUTE_LIST, LPSTARTUPINFOEXW,
+                struct winsize],,,[
 #if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
 #define __NT__
 #endif
@@ -4578,6 +4586,7 @@ AC_CHECK_FUNCS( \
  setsid \
  initgroups setgroups \
  socketpair \
+ openpty \
  bswap16 \
  __bswap16 \
  bswap32 \

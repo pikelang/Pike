@@ -2579,8 +2579,12 @@ static int my_grantpt(int m)
 #define unlockpt(m)	0
 #endif
 
-#if !defined(HAVE_OPENPTY) && defined(HAVE_PTSNAME) && defined(HAVE_POSIX_OPENPT)
-static int my_openpty(int *master, int *slave, void *ignored_name,
+#ifdef fd_openpty
+#ifndef HAVE_OPENPTY
+#define HAVE_OPENPTY
+#endif
+#elif defined(HAVE_POSIX_OPENPT)
+static int fd_openpty(int *master, int *slave, void *ignored_name,
 		      void *ignored_termp, void *ignored_winp)
 {
   int m;
@@ -2614,7 +2618,6 @@ static int my_openpty(int *master, int *slave, void *ignored_name,
   return -1;
 }
 #define HAVE_OPENPTY
-#define openpty(M, S, N, T, W)	my_openpty(M, S, N, T, W)
 #endif
 
 /*! @decl string grantpt()
@@ -4624,7 +4627,7 @@ static void file_pipe(INT32 args)
 #ifdef HAVE_OPENPTY
     if (!(type & ~(TTY_CAPABILITIES)))
     {
-      i = openpty(inout, inout + 1, NULL, NULL, NULL);
+      i = fd_openpty(inout, inout + 1, NULL, NULL, NULL);
       if (i >= 0) {
 	type = TTY_CAPABILITIES;
 	break;

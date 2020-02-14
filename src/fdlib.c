@@ -46,6 +46,7 @@
 #endif
 
 #include "threads.h"
+#include "signal_handler.h"
 
 /* Mutex protecting da_handle, fd_type, fd_busy and first_free_handle. */
 static MUTEX_T fd_mutex;
@@ -73,6 +74,9 @@ HANDLE da_handle[FD_SETSIZE];
  *
  *   FD_PIPE (-5)
  *     Handle from CreatePipe().
+ *
+ *   FD_PTY (-6)
+ *     struct my_pty * set by openpty().
  */
 int fd_type[FD_SETSIZE];
 
@@ -264,10 +268,81 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
 
 #undef NTLIBFUNC
 #define NTLIBFUNC(LIB, RET, NAME, ARGLIST)				\
-  typedef RET (WINAPI * PIKE_CONCAT3(Pike_NT_, NAME, _type)) ARGLIST;	\
-  static PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
+  PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
 
 #include "ntlibfuncs.h"
+
+/* PTY-handling
+ *
+ * PTYs on NT are implemented via ConPTY (Windows 10 1809 (build 17763)
+ * and later).
+ *
+ * We attempt to have them behave similar to ptys on POSIX-systems.
+ * This does however require a bit of work.
+ *
+ * Ptys are allocated as a pair of pipes (one in each direction)
+ * between master and slave. The slave end is given to ConPTY.
+ *
+ * When a process is started that uses a slave for stdin, stdout
+ * or stderr, it will instead of the slave pipes be registered
+ * with the ConPTY, which in turn will provide the actual pty handles.
+ *
+ * Caveat: The ConPTY does not terminate its end of the pipes
+ *         when all client processes have closed their handles.
+ *         This is due to it still being possible to use the
+ *         ConPTY for further processes.
+ *
+ * Update: The above behavior is apparently a bug. Cf
+ *         https://github.com/microsoft/terminal/issues/4564
+ *
+ * Note also that closing the ConPTY causes any remaining client
+ * processes to be terminated.
+ *
+ * In order to handle the above, we keep track of the processes
+ * that have been registered with the ConPTY, and use this list
+ * to close the ConPTY when all the processes are dead and
+ * we do not have the slave end any more.
+ */
+
+void free_pty(struct my_pty *pty)
+{
+  if (sub_ref(pty)) return;
+  free(pty);
+}
+
+/* NB: fd_mutex MUST be held at entry. */
+static void close_pty(struct my_pty *pty)
+{
+  struct my_pty *other;
+  struct pid_status *pid;
+
+  if (--pty->fd_refs) {
+    sub_ref(pty);
+    return;
+  }
+
+  CloseHandle(pty->write_pipe);
+  CloseHandle(pty->read_pipe);
+
+  /* Unlink the pair. */
+  other = pty->other;
+  if (other) {
+    other->other = NULL;
+    pty->other = NULL;
+  }
+
+  if (pty->conpty) {
+    /* Closing the master side. */
+    Pike_NT_ClosePseudoConsole(pty->conpty);
+    pty->conpty = 0;
+  }
+
+  while ((pid = pty->clients)) {
+    pty->clients = pid_status_unlink_pty(pid);
+  }
+
+  free_pty(pty);
+}
 
 #define ISSEPARATOR(a) ((a) == '\\' || (a) == '/')
 
@@ -468,6 +543,9 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
   if (fd_type[fd] == FD_SOCKET) {
     FDDEBUG(fprintf(stderr, "Closing socket that was fd %d.\n", fd));
     closesocket((SOCKET)da_handle[fd]);
+  } else if (fd_type[fd] == FD_PTY) {
+    FDDEBUG(fprintf(stderr, "Closing pty that was fd %d.\n", fd));
+    close_pty((struct my_pty *)da_handle[fd]);
   } else {
     FDDEBUG(fprintf(stderr, "Closing handle that was fd %d.\n", fd));
     CloseHandle(da_handle[fd]);
@@ -562,6 +640,7 @@ PMOD_EXPORT char *debug_fd_info(int fd)
     case FD_CONSOLE: return "IS CONSOLE";
     case FD_FILE: return "IS FILE";
     case FD_PIPE: return "IS PIPE";
+    case FD_PTY: return "IS PTY";
     default: return "NOT OPEN";
   }
 }
@@ -588,6 +667,9 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
 
     case FD_PIPE:
       return fd_INTERPROCESSABLE | fd_BUFFERED;
+
+    case FD_PTY:
+      return fd_INTERPROCESSABLE | fd_BUFFERED | fd_BIDIRECTIONAL;
     default: return 0;
   }
 }
@@ -2003,6 +2085,14 @@ PMOD_EXPORT int debug_fd_close(FD fd)
       }
       break;
 
+    case FD_PTY:
+      {
+	mt_lock(&fd_mutex);
+	close_pty((struct my_pty *)h);
+	mt_unlock(&fd_mutex);
+      }
+      break;
+
     default:
       if(!CloseHandle(h))
       {
@@ -2051,6 +2141,13 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 	return ret;
       }
 
+    case FD_PTY:
+      {
+	struct my_pty *pty = (struct my_pty *)handle;
+	handle = pty->write_pipe;
+      }
+      /* FALLTHRU */
+
     case FD_CONSOLE:
     case FD_FILE:
     case FD_PIPE:
@@ -2089,7 +2186,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
   if (fd_to_handle(fd, &type, &handle, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr,"Reading %d bytes from %d (%d) to %lx\n",
-		  len, fd, PTRDIFF_T_TO_LONG((ptrdiff_t)h),
+		  len, fd, PTRDIFF_T_TO_LONG((ptrdiff_t)handle),
 		  PTRDIFF_T_TO_LONG((ptrdiff_t)to)));
 
   switch(type)
@@ -2108,6 +2205,22 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
       FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,rret));
       return rret;
 
+    case FD_PTY:
+      {
+	struct my_pty *pty = (struct my_pty *)handle;
+	handle = pty->read_pipe;
+
+	if (pty->conpty && !pty->other && !check_pty_clients(pty)) {
+	  /* Master side, no local slave and all known clients are dead.
+	   *
+	   * Terminate the ConPTY so that we can get an EOF.
+	   */
+	  Pike_NT_ClosePseudoConsole(pty->conpty);
+	  pty->conpty = 0;
+	}
+      }
+      /* FALLTHRU */
+
     case FD_PIPE:
       if (len) {
 	DWORD available_bytes = 0;
@@ -2125,64 +2238,67 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 	  }
 	}
       }
-      /* FALLTHRU */
+      break;
+
     case FD_CONSOLE:
     case FD_FILE:
-      ret=0;
-      while(len && !ReadFile(handle, to,
-			     DO_NOT_WARN((DWORD)len),
-			     &ret,0) && ret<=0) {
-	unsigned int err = GetLastError();
-	release_fd(fd);
-	set_errno_from_win32_error (err);
-	switch(err)
-	{
-	  case ERROR_NOT_ENOUGH_MEMORY:
-	    /* This can happen when reading from stdin, and can be due
-	     * to running out of OS io-buffers. cf ReadConsole():
-	     *
-	     * | lpBuffer [out]
-	     * |   A pointer to a buffer that receives the data read from
-	     * |   the console input buffer.
-	     * |
-	     * |   The storage for this buffer is allocated from a shared
-	     * |   heap for the process that is 64 KB in size. The maximum
-	     * |   size of the buffer will depend on heap usage.
-	     *
-	     * The limit seems to be 26608 bytes on Windows Server 2003,
-	     * and 31004 bytes on some versions of Windows XP.
-	     *
-	     * The gdb people ran into the same bug in 2006.
-	     * cf http://permalink.gmane.org/gmane.comp.gdb.patches/29669
-	     *
-	     * FIXME: We ought to attempt to fill the remainder of
-	     *        the buffer on success and full read, but as
-	     *        this failure mode usually only happens with
-	     *        the console, we would risk blocking, so let
-	     *        the higher levels of code deal with the
-	     *        resulting short reads.
-	     */
-	    /* Halve the size of the request and retry. */
-	    len = len >> 1;
-	    if (len) continue;
-	    /* Total failure. Fall out to the generic error return. */
-	    break;
-	  case ERROR_BROKEN_PIPE:
-	    /* Pretend we reached the end of the file */
-	    return 0;
-	}
-	FDDEBUG(fprintf(stderr,"Read failed %d\n",errno));
-	return -1;
-      }
-      FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,ret));
-      release_fd(fd);
-      return ret;
+      break;
 
     default:
       errno=ENOTSUPP;
       release_fd(fd);
       return -1;
   }
+
+  ret=0;
+  while(len && !ReadFile(handle, to,
+			 DO_NOT_WARN((DWORD)len),
+			 &ret,0) && ret<=0) {
+    unsigned int err = GetLastError();
+    release_fd(fd);
+    set_errno_from_win32_error (err);
+    switch(err)
+    {
+      case ERROR_NOT_ENOUGH_MEMORY:
+	/* This can happen when reading from stdin, and can be due
+	 * to running out of OS io-buffers. cf ReadConsole():
+	 *
+	 * | lpBuffer [out]
+	 * |   A pointer to a buffer that receives the data read from
+	 * |   the console input buffer.
+	 * |
+	 * |   The storage for this buffer is allocated from a shared
+	 * |   heap for the process that is 64 KB in size. The maximum
+	 * |   size of the buffer will depend on heap usage.
+	 *
+	 * The limit seems to be 26608 bytes on Windows Server 2003,
+	 * and 31004 bytes on some versions of Windows XP.
+	 *
+	 * The gdb people ran into the same bug in 2006.
+	 * cf http://permalink.gmane.org/gmane.comp.gdb.patches/29669
+	 *
+	 * FIXME: We ought to attempt to fill the remainder of
+	 *        the buffer on success and full read, but as
+	 *        this failure mode usually only happens with
+	 *        the console, we would risk blocking, so let
+	 *        the higher levels of code deal with the
+	 *        resulting short reads.
+	 */
+	/* Halve the size of the request and retry. */
+	len = len >> 1;
+	if (len) continue;
+	/* Total failure. Fall out to the generic error return. */
+	break;
+      case ERROR_BROKEN_PIPE:
+	/* Pretend we reached the end of the file */
+        return 0;
+    }
+    FDDEBUG(fprintf(stderr,"Read failed %d\n",errno));
+    return -1;
+  }
+  FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,ret));
+  release_fd(fd);
+  return ret;
 }
 
 PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
@@ -2406,6 +2522,10 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
       s->st_mode=S_IFSOCK;
       break;
 
+    case FD_PTY:
+      s->st_mode = S_IFIFO;
+      break;
+
     default:
       switch(GetFileType(h))
       {
@@ -2462,7 +2582,17 @@ static void dump_FDSET(FD_SET *x, int fds)
     fprintf(stderr,"[");
     for(e = 0; e < FD_SETSIZE; e++)
     {
-      if(FD_ISSET(da_handle[e],x))
+      HANDLE h = da_handle[e];
+      if (fd_type[e] == FD_PTY){
+	struct my_pty *pty = (struct my_pty *)h;
+	if(FD_ISSET(pty->read_pipe, x))
+	{
+	  h = pty->read_pipe;
+	} else {
+	  h = pty->write_pipe;
+	}
+      }
+      if(FD_ISSET(h, x))
       {
 	if(!first) fprintf(stderr,",",e);
 	fprintf(stderr,"%d",e);
@@ -2552,6 +2682,22 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 
   if (fd_to_handle(from, &type, &h, 0) < 0) return -1;
 
+  if (type == FD_PTY) {
+    struct my_pty *pty = (struct my_pty *)h;
+
+    fd = allocate_fd(type, h);
+
+    release_fd(from);
+
+    if (fd < 0) return -1;
+
+    add_ref(pty);
+    pty->fd_refs++;
+
+    release_fd(fd);
+    return fd;
+  }
+
   fd = allocate_fd(type,
 		   (type == FD_SOCKET)?
 		   (HANDLE)INVALID_SOCKET:INVALID_HANDLE_VALUE);
@@ -2590,8 +2736,18 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 
   if (fd_to_handle(from, &type, &h, 0) < 0) return -1;
 
-  if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS))
-  {
+  if (type == FD_PTY) {
+    struct my_pty *pty = (struct my_pty *)h;
+    /* Note that we need to hold a reference, so that we
+     * do not disappear when from is released below.
+     *
+     * The reference is then either stolen by reallocate_fd()
+     * or freed by close_pty().
+     */
+    add_ref(pty);
+    pty->fd_refs++;
+    x = h;
+  } else if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS)) {
     release_fd(from);
     set_errno_from_win32_error (GetLastError());
     return -1;
@@ -2606,7 +2762,11 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
   if (reallocate_fd(to, type, x) < 0) {
     release_fd(to);
 
-    if (type == FD_SOCKET) {
+    if (type == FD_PTY) {
+      mt_lock(&fd_mutex);
+      close_pty((struct my_pty *)x);
+      mt_unlock(&fd_mutex);
+    } else if (type == FD_SOCKET) {
       closesocket((SOCKET)x);
     } else {
       CloseHandle(x);
@@ -2681,7 +2841,103 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
   }
   return inet_ntop_funp(af, addr, cp, sz);
 }
-#endif /* HAVE_WINSOCK_H && !__GNUC__ */
+
+PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
+				 char *ignored_name,
+				 void *ignored_term,
+				 struct winsize *winp)
+{
+  struct my_pty *master_pty = NULL;
+  struct my_pty *slave_pty = NULL;
+  int master_fd = -1;
+  int slave_fd = -1;
+  COORD sz;
+
+  if (!Pike_NT_CreatePseudoConsole) {
+    errno = ENOTSUPP;
+    return -1;
+  }
+
+  if (!(master_pty = calloc(sizeof(struct my_pty), 1))) {
+    errno = ENOMEM;
+    goto fail;
+  }
+  if (!(slave_pty = calloc(sizeof(struct my_pty), 1))) {
+    errno = ENOMEM;
+    goto fail;
+  }
+
+  add_ref(master_pty);
+  master_pty->fd_refs++;
+  master_pty->read_pipe = INVALID_HANDLE_VALUE;
+  master_pty->write_pipe = INVALID_HANDLE_VALUE;
+  master_pty->other = slave_pty;
+  add_ref(slave_pty);
+  slave_pty->fd_refs++;
+  slave_pty->read_pipe = INVALID_HANDLE_VALUE;
+  slave_pty->write_pipe = INVALID_HANDLE_VALUE;
+  slave_pty->other = master_pty;
+
+  master_fd = allocate_fd(FD_PTY, (HANDLE)master_pty);
+  if (master_fd < 0) goto fail;
+
+  slave_fd = allocate_fd(FD_PTY, (HANDLE)slave_pty);
+  if (slave_fd < 0) goto fail;
+
+  if (!CreatePipe(&slave_pty->read_pipe, &master_pty->write_pipe, NULL, 0)) {
+    goto win32_fail;
+  }
+  if (!CreatePipe(&master_pty->read_pipe, &slave_pty->write_pipe, NULL, 0)) {
+    goto win32_fail;
+  }
+
+  /* Some reasonable defaults. */
+  sz.X = 80;
+  sz.Y = 25;
+
+  if (winp) {
+    sz.X = winp->ws_col;
+    sz.Y = winp->ws_row;
+  }
+
+  if (FAILED(Pike_NT_CreatePseudoConsole(sz, slave_pty->read_pipe,
+					 slave_pty->write_pipe,
+					 0, &master_pty->conpty))) {
+    goto win32_fail;
+  }
+
+  release_fd(master_fd);
+  release_fd(slave_fd);
+
+  *master = master_fd;
+  *slave = slave_fd;
+
+  return 0;
+
+ win32_fail:
+    set_errno_from_win32_error(GetLastError());
+
+ fail:
+  /* NB: Order significant!
+   *
+   * In the case where master_fd >= 0 and slave_fd < 0, the
+   * slave_pty must not have been freed when master_fd is closed.
+   */
+  if (master_fd >= 0) {
+    release_fd(master_fd);
+    fd_close(master_fd);
+  } else if (master_pty) {
+    free(master_pty);
+  }
+  if (slave_fd >= 0) {
+    release_fd(slave_fd);
+    fd_close(slave_fd);
+  } else if (slave_pty) {
+    free(slave_pty);
+  }
+
+  return -1;
+}
 
 #ifdef EMULATE_DIRECT
 PMOD_EXPORT DIR *opendir(char *dir)
@@ -2761,13 +3017,15 @@ PMOD_EXPORT void closedir(DIR *dir)
   }
   free(dir);
 }
-#endif
+#endif /* EMULATE_DIRECT */
 
-#if defined(HAVE_WINSOCK_H) && defined(USE_DL_MALLOC)
+#ifdef USE_DL_MALLOC
 /* NB: We use some calls above that allocate memory with the libc malloc. */
 #undef free
 static inline void libc_free(void *ptr)
 {
   if (ptr) free(ptr);
 }
-#endif
+#endif /* USE_DL_MALLOC */
+
+#endif /* HAVE_WINSOCK_H */

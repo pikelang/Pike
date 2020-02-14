@@ -1261,6 +1261,8 @@ struct pid_status
   INT_TYPE pid;
 #ifdef __NT__
   HANDLE handle;
+  struct pid_status *next_pty_client;	/* PTY client chain. */
+  struct my_pty *pty;			/* PTY master, refcounted. */
 #else
   INT_TYPE sig;
   INT_TYPE flags;
@@ -1286,6 +1288,48 @@ static void init_pid_status(struct object *UNUSED(o))
 #endif
 }
 
+#ifdef __NT__
+struct pid_status *pid_status_unlink_pty(struct pid_status *pid)
+{
+  struct pid_status *ret;
+  if (!pid) return NULL;
+  ret = pid->next_pty_client;
+  pid->next_pty_client = NULL;
+  if (pid->pty) {
+    free_pty(pid->pty);
+    pid->pty = NULL;
+  }
+  return ret;
+}
+
+static void pid_status_link_pty(struct pid_status *pid, struct my_pty *pty)
+{
+  add_ref(pty);
+  pid->pty = pty;
+  pid->next_pty_client = pty->clients;
+  pty->clients = pid;
+}
+
+int check_pty_clients(struct my_pty *pty)
+{
+  struct pid_status *pid;
+  while ((pid = pty->clients)) {
+    DWORD status;
+    /* FIXME: RACE: pid->handle my be INVALID_HANDLE_VALUE if
+     *              the process is about to be started.
+     */
+    if ((pid->pid == -1) && (pid->handle == INVALID_HANDLE_VALUE)) return 1;
+    if (GetExitCodeProcess(pid->handle, &status) &&
+	(status == STILL_ACTIVE)) {
+      return 1;
+    }
+    /* Process has terminated. Unlink and check the next. */
+    pty->clients = pid_status_unlink_pty(pid);
+  }
+  return 0;
+}
+#endif /* __NT__ */
+
 static void exit_pid_status(struct object *UNUSED(o))
 {
 #ifdef USE_PID_MAPPING
@@ -1298,6 +1342,25 @@ static void exit_pid_status(struct object *UNUSED(o))
 #endif
 
 #ifdef __NT__
+  if (THIS->pty) {
+    struct my_pty *pty = THIS->pty;
+    struct pid_status **pidptr = &pty->clients;
+    while (*pidptr && (*pidptr != THIS)) {
+      pidptr = &(*pidptr)->next_pty_client;
+    }
+    if (*pidptr) {
+      *pidptr = pid_status_unlink_pty(THIS);
+    }
+    if (!pty->clients && !pty->other && pty->conpty) {
+      /* Last client for this ConPTY has terminated,
+       * and our local copy of the slave has been closed.
+       *
+       * Close the ConPTY.
+       */
+      Pike_NT_ClosePseudoConsole(pty->conpty);
+      pty->conpty = 0;
+    }
+  }
   CloseHandle(THIS->handle);
 #endif
 }
@@ -2140,7 +2203,8 @@ static void free_perishables(struct perishables *storage)
  */
 static HANDLE get_inheritable_handle(struct mapping *optional,
 				     char *name,
-				     int for_reading)
+				     int for_reading,
+				     HPCON *conpty)
 {
   HANDLE ret = DO_NOT_WARN(INVALID_HANDLE_VALUE);
   struct svalue *save_stack=Pike_sp;
@@ -2151,6 +2215,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
     {
       INT32 fd=fd_from_object(tmp->u.object);
       HANDLE h;
+      int type;
 
       if(fd == -1)
 	Pike_error("File for %s is not open.\n",name);
@@ -2163,8 +2228,58 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	fd=fd_from_object(Pike_sp[-1].u.object);
       }
 
-      if(fd_to_handle(fd, NULL, &h, 0) < 0)
+      if(fd_to_handle(fd, &type, &h, 0) < 0)
 	Pike_error("File for %s is not open.\n",name);
+
+      if (type == FD_PTY) {
+	struct my_pty *pty = (struct my_pty *)h;
+	if (!conpty || pty->conpty || !pty->other || !pty->other->conpty ||
+	    (*conpty && (*conpty != pty->other->conpty))) {
+	  /* Master side, or detached slave,
+	   * or we have already selected a different conpty.
+	   */
+	  if (for_reading) {
+	    h = pty->read_pipe;
+	  } else {
+	    h = pty->write_pipe;
+	  }
+	} else {
+	  /* Slave side. Get the conpty from the master side.
+	   *
+	   * NB: Stdin, stdout and stderr are handled automatically
+	   *     by setting the conpty. The conpty has duplicated
+	   *     handles of the original pipes, and in turn provides
+	   *     actual CONSOLE handles to the subprocess. We thus
+	   *     do NOT return the base pipe handle.
+	   *
+	   * BUGS: It is not possible to have multiple conpty
+	   *       objects for the same process, so the first
+	   *       pty for stdin, stdout and stderr wins
+	   *       (see above).
+	   *
+	   * BUGS: As the conpty is a separate process that survives
+	   *       or subprocess terminating, we need to keep track
+	   *       of which master pty the process was bound to so
+	   *       that we can close the corresponding conpty
+	   *       when no one else will use it.
+	   */
+	  pid_status_link_pty(THIS, pty->other);
+	  *conpty = pty->other->conpty;
+	  release_fd(fd);
+
+	  /* From the documentation for GetStdHandle():
+	   *
+	   *   If the existing value of the standard handle is NULL, or
+	   *   the existing value of the standard handle looks like a
+	   *   console pseudohandle, the handle is replaced with a
+	   *   console handle.
+	   *
+	   * This is not documented in conjunction with CreateProcess() or
+	   * PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, but it seems to work.
+	   */
+	  return 0;
+	}
+      }
 
       if(!DuplicateHandle(GetCurrentProcess(),	/* Source process */
 			  h,
@@ -2847,9 +2962,9 @@ void f_create_process(INT32 args)
     HANDLE t1 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
     HANDLE t2 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
     HANDLE t3 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
-    STARTUPINFOW info;
+    STARTUPINFOEXW info;
     PROCESS_INFORMATION proc;
-    int ret,err;
+    int ret = 0, err;
     WCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
     WCHAR *env=NULL;
 
@@ -2951,23 +3066,36 @@ void f_create_process(INT32 args)
      */
 
     memset(&info,0,sizeof(info));
-    info.cb=sizeof(info);
+    info.StartupInfo.cb = sizeof(info);
 
-    GetStartupInfoW(&info);
+#if 0
+    /* CAUTION!!!!
+     *
+     * This function fills in several reserved fields in the
+     * StartupInfo, which in turn cause CreateProcessW() below
+     * to fail with error ERROR_INVALID_PARAMETER (87) when
+     * EXTENDED_STARTUPINFO_PRESENT is set.
+     */
+    GetStartupInfoW(&info.StartupInfo);
+#endif
 
     /* Protect inherit status for handles */
     LOCK_IMUTEX(&handle_protection_mutex);
 
-    info.dwFlags|=STARTF_USESTDHANDLES;
-    info.hStdInput=GetStdHandle(STD_INPUT_HANDLE);
-    info.hStdOutput=GetStdHandle(STD_OUTPUT_HANDLE);
-    info.hStdError=GetStdHandle(STD_ERROR_HANDLE);
-    SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT, 0);
-    SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT, 0);
-    SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT, 0);
+    info.StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
+    info.StartupInfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    info.StartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    info.StartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    SetHandleInformation(info.StartupInfo.hStdInput, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(info.StartupInfo.hStdOutput, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(info.StartupInfo.hStdError, HANDLE_FLAG_INHERIT, 0);
+
+    info.lpAttributeList = NULL;
 
     if(optional)
     {
+      HPCON conpty = (HPCON)0;
+
       if( (tmp=simple_mapping_string_lookup(optional, "cwd")) )
       {
 	if(TYPEOF(*tmp) == T_STRING)
@@ -2977,14 +3105,52 @@ void f_create_process(INT32 args)
 	}
       }
 
-      t1=get_inheritable_handle(optional, "stdin",1);
-      if(t1 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdInput=t1;
+      t1 = get_inheritable_handle(optional, "stdin", 1, &conpty);
+      if(t1 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
+	info.StartupInfo.hStdInput = t1;
+      }
 
-      t2=get_inheritable_handle(optional, "stdout",0);
-      if(t2 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdOutput=t2;
+      t2 = get_inheritable_handle(optional, "stdout", 0, &conpty);
+      if(t2 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
+	info.StartupInfo.hStdOutput = t2;
+      }
 
-      t3=get_inheritable_handle(optional, "stderr",0);
-      if(t3 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdError=t3;
+      t3 = get_inheritable_handle(optional, "stderr", 0, &conpty);
+      if(t3 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
+	info.StartupInfo.hStdError = t3;
+      }
+
+      if (conpty) {
+	LPPROC_THREAD_ATTRIBUTE_LIST attrlist = NULL;
+	SIZE_T attrlist_sz = 0;
+	/* Hook in the pty controller. */
+
+	/* Get the required size for a single attribute. */
+	Pike_NT_InitializeProcThreadAttributeList(attrlist, 1, 0, &attrlist_sz);
+
+	if (!(attrlist = malloc(attrlist_sz)) ||
+	    !(Pike_NT_InitializeProcThreadAttributeList(attrlist, 1, 0,
+							&attrlist_sz) &&
+	      (info.lpAttributeList = attrlist)) ||
+	    !Pike_NT_UpdateProcThreadAttribute(attrlist, 0,
+					       PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
+					       conpty, sizeof(conpty),
+					       NULL, NULL)) {
+	  /* Out of memory or similar. */
+	  if (attrlist) {
+	    err = GetLastError();
+	    if (!info.lpAttributeList) {
+	      /* InitializeProcThreadAttributeList() failed. */
+	      free(attrlist);
+	    }
+	  } else {
+	    /* malloc() failed. */
+	    err = ERROR_NOT_ENOUGH_MEMORY;
+	  }
+
+	  goto fail;
+	}
+      }
 
 	if((tmp=simple_mapping_string_lookup(optional, "env")))
 	{
@@ -3037,28 +3203,35 @@ void f_create_process(INT32 args)
     THREADS_ALLOW_UID();
 
 
-    SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT,
+    SetHandleInformation(info.StartupInfo.hStdInput, HANDLE_FLAG_INHERIT,
 			 HANDLE_FLAG_INHERIT);
-    SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT,
+    SetHandleInformation(info.StartupInfo.hStdOutput, HANDLE_FLAG_INHERIT,
 			 HANDLE_FLAG_INHERIT);
-    SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT,
+    SetHandleInformation(info.StartupInfo.hStdError, HANDLE_FLAG_INHERIT,
 			 HANDLE_FLAG_INHERIT);
     ret = CreateProcessW(filename,
 			 command_line,
 			 NULL,  /* process security attribute */
 			 NULL,  /* thread security attribute */
 			 1,     /* inherithandles */
-			 CREATE_UNICODE_ENVIRONMENT,     /* create flags */
+			 CREATE_UNICODE_ENVIRONMENT |
+			 EXTENDED_STARTUPINFO_PRESENT,     /* create flags */
 			 env,  /* environment */
 			 dir,   /* current dir */
-			 &info,
+			 &info.StartupInfo,
 			 &proc);
     err=GetLastError();
     
     THREADS_DISALLOW_UID();
 
+  fail:
+
     UNLOCK_IMUTEX(&handle_protection_mutex);
 
+    if (info.lpAttributeList) {
+      Pike_NT_DeleteProcThreadAttributeList(info.lpAttributeList);
+      free(info.lpAttributeList);
+    }
     if(env) free(env);
     if(dir) free(dir);
     if(filename) free(filename);
