@@ -6451,7 +6451,13 @@ PIKE_MODULE_INIT
   add_integer_constant("PROP_BIDIRECTIONAL",fd_BIDIRECTIONAL,0);
   add_integer_constant("PROP_REVERSE",fd_REVERSE,0);
 #ifdef HAVE_OPENPTY
+#ifdef __NT__
+  if (Pike_NT_OpenPseudoConsole) {
+    add_integer_constant("PROP_TTY",fd_TTY,0);
+  }
+#else
   add_integer_constant("PROP_TTY",fd_TTY,0);
+#endif
 #endif
 
   add_integer_constant("PROP_IS_NONBLOCKING", FILE_NONBLOCKING, 0);
