@@ -16,8 +16,9 @@ extern struct program *reporter_program;
 extern struct program *compilation_env_program;
 extern struct program *compilation_program;
 extern struct object *compilation_environment;
-extern struct program *Annotation_program;
-extern struct object *Inherited_annotation;
+PMOD_EXPORT struct program *Annotation_program;
+PMOD_EXPORT struct program *Implements_program;
+PMOD_EXPORT struct object *Inherited_annotation;
 
 struct Supporter;
 
@@ -213,9 +214,6 @@ node *low_pop_local_variables(int level, node *block);
 node *pop_local_variables(int level, node *block);
 void pop_compiler_frame(void);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
-PMOD_EXPORT struct program *Annotation_program;
-PMOD_EXPORT struct program *Implements_program;
-PMOD_EXPORT struct object *Inherited_annotation;
 void low_init_pike_compiler(void);
 void init_pike_compiler(void);
 void cleanup_pike_compiler(void);
