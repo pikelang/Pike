@@ -3917,6 +3917,8 @@ static void file_errno(INT32 args)
  *!     @[FILE_EXCLUSIVE]
  *!   @value 0x0400
  *!     @[FILE_NONBLOCKING]
+ *!   @value 0x0080
+ *!     @[PROP_TTY]
  *!   @value 0x0040
  *!     @[PROP_SEND_FD]
  *!   @value 0x0010
@@ -5985,6 +5987,11 @@ static void f_get_all_active_fd(INT32 args)
 /*! @decl constant PROP_TTY = 128
  *!
  *!   The @[Stdio.File] object supports tty operations.
+ *!
+ *! @note
+ *!   This constant is only present on platforms where pseudo tty
+ *!   (aka pty) operations are available, and may thus be used to
+ *!   detect whether such operations should be attempted.
  *!
  *! @seealso
  *!   @[Stdio.File()->pipe()]
