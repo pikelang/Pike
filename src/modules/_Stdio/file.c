@@ -208,6 +208,9 @@ struct program *file_ref_program;
  *! and returned by eg @[Fd()->mode()].
  */
 
+/*! @decl constant PROP_TTY = 0x0080
+ *!   File supports tty operations.
+ */
 /*! @decl constant PROP_SEND_FD = 0x0040
  *!   File is capable of sending open file descriptors.
  */
