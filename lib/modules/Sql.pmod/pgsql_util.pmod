@@ -1515,7 +1515,7 @@ class Result {
               else {
                 int w = dtoid[i] == FLOAT4OID ? 4 : 8;
                 plugbuffer->add_int32(w)
-                 ->sprintf(w == 4 ? "%4F" : "%8F", value);
+                 ->sprintf(w == 4 ? "%4F" : "%8F", (float)value);
               }
               break;
             case INT8OID:
