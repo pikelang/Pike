@@ -613,7 +613,8 @@ outer:
               add(PGFLUSH);
             case SENDOUT:;
           }
-          if (towrite = sizeof(this)) {
+          Thread.MutexKey lock = shortmux->trylock();
+          if (lock && (towrite = sizeof(this))) {
             PD("%d>Sendcmd %O\n",
              socket->query_fd(), ((string)this)[..towrite-1]);
             towrite -= output_to(socket, towrite);
