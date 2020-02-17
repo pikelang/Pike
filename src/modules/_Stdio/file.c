@@ -6462,7 +6462,7 @@ PIKE_MODULE_INIT
   add_integer_constant("PROP_REVERSE",fd_REVERSE,0);
 #ifdef HAVE_OPENPTY
 #ifdef __NT__
-  if (Pike_NT_OpenPseudoConsole) {
+  if (Pike_NT_CreatePseudoConsole) {
     add_integer_constant("PROP_TTY",fd_TTY,0);
   }
 #else
