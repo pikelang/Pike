@@ -172,8 +172,13 @@ o Sql.pgsql
 
   - Small speed boost.
 
-  - Fix the only known deadlock-cause logged in the last year; only happened
+  - Fix the only known deadlock-cause logged in the last year; happened
     (rarely) on multiple parallel queries on a single connection.
+
+  - Fix the only known race condition logged in the last year; happened
+    on some queries that store >32KB data per query.
+
+  - Cast integers to floats, when floats are desired.
 
 o SSL
 
