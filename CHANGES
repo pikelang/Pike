@@ -30,6 +30,11 @@ o SSL
   The SSL module now supports session ticket both client and server side.
   This functionality has been backported from 8.1/master.
 
+o Stdio.PROP_TTY
+
+  Stdio.File()->pipe() can now be used to create tty-capable
+  pipes (aka pseudo-ttys, aka ptys).
+
 Bug fixes
 ---------
 
