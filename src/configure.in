@@ -3313,6 +3313,8 @@ AC_CHECK_LIB(m, floor)
 
 AC_CHECK_LIB(socket, socket)
 
+AC_CHECK_LIB(util, openpty)
+
 AC_CHECK_LIB(crypt, crypt)
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
