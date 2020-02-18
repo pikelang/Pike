@@ -3690,6 +3690,8 @@ AC_CHECK_LIB(m, floor)
 
 AC_CHECK_LIB(socket, socket)
 
+AC_CHECK_LIB(util, openpty)
+
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
   AC_MSG_CHECKING(if we should use the 64 bit API)
   AC_CACHE_VAL(pike_cv_sys_win64, [
