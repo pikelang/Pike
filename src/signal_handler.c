@@ -2214,11 +2214,17 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	   *       pty for stdin, stdout and stderr wins
 	   *       (see above).
 	   *
-	   * BUGS: As the conpty is a separate process that survives
-	   *       or subprocess terminating, we need to keep track
+	   * BUGS: As the conpty is a separate process that may survive
+	   *       our subprocess terminating, we need to keep track
 	   *       of which master pty the process was bound to so
 	   *       that we can close the corresponding conpty
 	   *       when no one else will use it.
+	   *
+	   * BUGS: The above behavior is apparently a bug according
+	   *       to the ConPTY developers. Fixing the bug however
+	   *       leads to a race condition with respect to short-
+	   *       lived processes causing the ConPTY to terminate
+	   *       before we have closed out slave connection.
 	   */
 	  pid_status_link_pty(THIS, pty->other);
 	  *conpty = pty->other->conpty;
@@ -2829,6 +2835,10 @@ int fd_cleanup_cb(void *data, int fd)
  *!  maximum stack size in bytes
  *! @endmapping
  *!
+ *! @member Stdio.File "conpty"
+ *!  Bind the process to the console associated with this
+ *!  pty slave. NT only.
+ *!
  *! @endmapping
  *!
  *! @example
@@ -2857,8 +2867,8 @@ int fd_cleanup_cb(void *data, int fd)
  *!
  *! @note
  *!   On NT the only supported modifiers are: @expr{"cwd"@},
- *!   @expr{"stdin"@}, @expr{"stdout"@}, @expr{"stderr"@} and
- *!   @expr{"env"@}. All other modifiers are silently ignored.
+ *!   @expr{"conpty"@}, @expr{"stdin"@}, @expr{"stdout"@}, @expr{"stderr"@}
+ *!   and @expr{"env"@}. All other modifiers are silently ignored.
  *!
  *! @note
  *!   Support for @expr{"callback"@} was added in Pike 7.7.
@@ -3059,6 +3069,8 @@ void f_create_process(INT32 args)
 	  /* fprintf(stderr,"DIR: %s\n",STR0(tmp->u.string)); */
 	}
       }
+
+      CloseHandle(get_inheritable_handle(optional, "conpty", 1, &conpty));
 
       t1 = get_inheritable_handle(optional, "stdin", 1, &conpty);
       if(t1 != INVALID_HANDLE_VALUE) {
