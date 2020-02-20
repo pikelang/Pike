@@ -191,86 +191,74 @@ static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
 					     size_t nbytes, UINT64 key )
 {
   unsigned int h = len;
-  const unsigned int *p = s;
+  const unsigned char *c = s;
+  const unsigned int *p;
+  size_t trailer_bytes = 8;
 
   if( key )
       return low_hashmem_siphash24(s,len,nbytes,key);
 
+  if (UNLIKELY(!len)) return h;
+
   if( nbytes >= len )
   {
     /* Hash the whole memory area */
-    const unsigned int *e = p + (len>>2);
-    const unsigned char *c = (const unsigned char*)e;
-
-    /* .. all full integers .. */
-    while( p<e ) {
-      CRC32SI(h, p++ );
-    }
-
-    len &= 3;
-
-    /* any remaining bytes. */
-    while( len-- )
-      CRC32SQ( h, c++ );
-    return h;
+    nbytes = len;
+    trailer_bytes = 0;
   } else if (UNLIKELY(nbytes < 32)) {
-    /* Hash the whole memory area */
-    const unsigned int *e = p + (nbytes>>2);
-    const unsigned char *c = (const unsigned char*)e;
+    /* Hash the whole memory area once */
+    trailer_bytes = 0;
+  }
 
-    /* .. all full integers .. */
-    while( p<e ) {
-      CRC32SI(h, p++ );
-    }
+  /* Hash the initial unaligned bytes (if any). */
+  while (UNLIKELY(((size_t)c) & 0x03) && nbytes) {
+    CRC32SQ(h, c++);
+    nbytes--;
+  }
 
-    nbytes &= 3;
+  /* c is now aligned. */
 
-    /* any remaining bytes. */
-    while( nbytes-- )
-      CRC32SQ( h, c++ );
-    return h;
-  } else {
-    const unsigned int *e = p+(nbytes>>2);
-#ifdef PIKE_DEBUG
-    /*
-      This code makes assumputions that is not true if nbytes & 3 is true.
+  p = (const unsigned int *)c;
 
-      Specifically, it will not read enough (up to 3 bytes too
-      little) in the first loop.
+  /* .. all full integers in blocks of 8 .. */
+  while (nbytes & ~31) {
+    CRC32SI(h, &p[0]);
+    CRC32SI(h, &p[1]);
+    CRC32SI(h, &p[2]);
+    CRC32SI(h, &p[3]);
+    CRC32SI(h, &p[4]);
+    CRC32SI(h, &p[5]);
+    CRC32SI(h, &p[6]);
+    CRC32SI(h, &p[7]);
+    p += 8;
+    nbytes -= 32;
+  }
 
-      Also, if nbytes < 32 the unroll assumptions do not hold
+  /* .. all remaining full integers .. */
+  while (nbytes & ~3) {
+    CRC32SI(h, &p[0]);
+    p++;
+    nbytes -= 4;
+  }
 
-      This could easily be fixed, but all calls to hashmem tend
-      to use either power-of-two values or the length of the
-      whole memory area.
-    */
-    if( nbytes & 3 )
-      Pike_fatal("do_hash_ia32_crc32: nbytes & 3 should be 0.\n");
-    if( nbytes < 32 )
-      Pike_fatal("do_hash_ia32_crc32: nbytes is less than 32.\n");
-#endif
-    while( p+7 < e )
-    {
-      CRC32SI(h,&p[0]);
-      CRC32SI(h,&p[1]);
-      CRC32SI(h,&p[2]);
-      CRC32SI(h,&p[3]);
-      CRC32SI(h,&p[4]);
-      CRC32SI(h,&p[5]);
-      CRC32SI(h,&p[6]);
-      CRC32SI(h,&p[7]);
-      p+=8;
-    }
+  /* any remaining bytes. */
+  c = (const unsigned char *)p;
+  while (nbytes--) {
+    CRC32SQ( h, c++ );
+  }
+
+  if (trailer_bytes) {
     /* include 8 bytes from the end. Note that this might be a
      * duplicate of the previous bytes.
      *
      * Also note that this means we are rather likely to read
      * unaligned memory.  That is OK, however.
      */
-    e = (const unsigned int *)((const unsigned char *)s+len-8);
-    CRC32SI(h,e++);
-    CRC32SI(h,e);
+    p = (const unsigned int *)((const unsigned char *)s+len-8);
+    CRC32SI(h, p++);
+    CRC32SI(h, p);
   }
+
 #if SIZEOF_CHAR_P > 4
     /* FIXME: We could use the long long crc32 instructions that work on 64 bit values.
      * however, those are only available when compiling to amd64.
