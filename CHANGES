@@ -336,6 +336,10 @@ o Bittorrent.DHT
 o Standards.MsgPack
 o Web.Auth & Web.Api
 
+o Thread.RWMutex
+
+  This class implements a multiple reader / single writer mutex. 
+
 
 New features
 ------------
