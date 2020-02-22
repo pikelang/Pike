@@ -365,6 +365,14 @@ o predef::gc()
   gc() called with a weak mapping as argument now removes weak references
   that are only held by that mapping.
 
+o predef::m_clear()
+
+  m_clear() now supports operation on multisets and objects.
+
+o predef::m_delete()
+
+  m_delete() now supports operation on multisets.
+
 o ADT.Heap
 
   - An indirection object ADT.Heap.Element has been added to make it
