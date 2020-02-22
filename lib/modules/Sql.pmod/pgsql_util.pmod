@@ -87,11 +87,9 @@ private Result qalreadyprinted;
 private Thread.Mutex backendmux = Thread.Mutex();
 final multiset(proxy) clients = set_weak_flag((<>), Pike.WEAK);
 
-constant emptyarray = ({});
-constant describenodata
- = (["datarowdesc":emptyarray, "datarowtypes":emptyarray,
-     "datatypeoid":emptyarray]);
-private constant censoroptions = (<"use_ssl", "force_ssl",
+mapping describenodata
+ = (["datarowdesc":({}), "datarowtypes":({}), "datatypeoid":({})]);
+private multiset censoroptions = (<"use_ssl", "force_ssl",
  "cache_autoprepared_statements", "reconnect", "text_query", "is_superuser",
  "server_encoding", "server_version", "integer_datetimes",
  "session_authorization">);
@@ -671,7 +669,7 @@ outer:
           catch {
             foreach (runningportals; Result result; )
               if (!result.datarowtypes) {
-                result.datarowtypes = emptyarray;
+                result.datarowtypes = ({});
                 if (result._state != PURGED && !result.delayederror)
                   result.delayederror = LOSTERROR;
                 result._ddescribe->broadcast();
@@ -917,7 +915,7 @@ class Result {
   }
 
   final array(string) _showbindings() {
-    array(string) msgs = emptyarray;
+    array(string) msgs = ({});
     if (_params) {
       array from, to, paramValues;
       [from, to, paramValues] = _params;
@@ -1044,7 +1042,7 @@ class Result {
       waitfordescribe();
     if (!datarowdesc)
       error(LOSTERROR);
-    return datarowdesc + emptyarray;
+    return datarowdesc + ({});
   }
 
 #ifdef PG_DEBUG
@@ -1259,7 +1257,7 @@ class Result {
   }
 
   final void _preparebind(array dtoid) {
-    array(string|int) paramValues = _params ? _params[2] : emptyarray;
+    array(string|int) paramValues = _params ? _params[2] : ({});
     if (sizeof(dtoid) != sizeof(paramValues))
       SUSERERROR("Invalid number of bindings, expected %d, got %d\n",
                  sizeof(dtoid), sizeof(paramValues));
@@ -1701,7 +1699,7 @@ class Result {
     if (!datarowtypes) {
       if (_state != PURGED && !delayederror)
         delayederror = LOSTERROR;
-      datarowtypes = emptyarray;
+      datarowtypes = ({});
       _ddescribe->broadcast();
     }
     if (delayederror && pgsqlsess && !pgsqlsess.delayederror)
@@ -1940,7 +1938,7 @@ class proxy {
   private int backendpid;
   final int(-128..127) backendstatus;
   final mapping(string:mixed) options;
-  private array(string) lastmessage = emptyarray;
+  private array(string) lastmessage = ({});
   final int(0..1) clearmessage;
   final int(0..1) untolderror;
   private mapping(string:array(mixed)) notifylist = ([]);
@@ -2021,7 +2019,7 @@ class proxy {
     untolderror = 0;
     string s = lastmessage * "\n";
     if (clear)
-      lastmessage = emptyarray;
+      lastmessage = ({});
     warningscollected = 0;
     return sizeof(s) && s;
   }
@@ -2071,7 +2069,7 @@ class proxy {
   }
 
   private array(string) showbindings(Result portal) {
-    return portal ? portal._showbindings() : emptyarray;
+    return portal ? portal._showbindings() : ({});
   }
 
   private void preplastmessage(mapping(string:string) msgresponse) {
@@ -2203,7 +2201,7 @@ class proxy {
             if (msglen < 1)
               errtype = PROTOCOLERROR;
 #endif
-            array ret = emptyarray, aw = ({0});
+            array ret = ({}), aw = ({0});
             do {
               string w = cr->read_cstring();
               msglen -= sizeof(w) + 1; aw[0] = w; ret += aw;
@@ -2500,7 +2498,7 @@ class proxy {
             PD("NoData %O\n", portal._query);
 #endif
             portal._fetchlimit = 0;		// disables subsequent Executes
-            portal->_processrowdesc(emptyarray, emptyarray);
+            portal->_processrowdesc(({}), ({}));
             portal = 0;
             break;
           }
@@ -2677,7 +2675,7 @@ class proxy {
             if (clearmessage) {
               warningsdropcount += warningscollected;
               clearmessage = warningscollected = 0;
-              lastmessage = emptyarray;
+              lastmessage = ({});
             }
             warningscollected++;
             lastmessage = ({sprintf("%s %s: %s",

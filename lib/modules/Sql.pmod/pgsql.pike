@@ -512,9 +512,9 @@ private void resync_cb() {
   switch (proxy.backendstatus) {
     case 'T':case 'E':
       foreach (proxy.prepareds; ; mapping tp) {
-        m_delete(tp,"datatypeoid");
-        m_delete(tp,"datarowdesc");
-        m_delete(tp,"datarowtypes");
+        m_delete(tp, "datatypeoid");
+        m_delete(tp, "datarowdesc");
+        m_delete(tp, "datarowtypes");
       }
       Thread.Thread(reset_dbsession);	  // Urgently and deadlockfree
   }
@@ -701,7 +701,7 @@ private void resync_cb() {
 //! @param glob
 //! If specified, list only those databases matching it.
 /*semi*/final array(string) list_dbs (void|string glob) {
-  array row, ret = .pgsql_util.emptyarray;
+  array row, ret = ({});
   .pgsql_util.Result res=big_query("SELECT d.datname "
                                          "FROM pg_database d "
                                          "WHERE d.datname ILIKE :glob "
@@ -719,7 +719,7 @@ private void resync_cb() {
 //! @param glob
 //! If specified, list only the tables with matching names.
 /*semi*/final array(string) list_tables (void|string glob) {
-  array row, ret = .pgsql_util.emptyarray;
+  array row, ret = ({});
   .pgsql_util.Result res = big_query(     // due to missing schemasupport
    // This query might not work on PostgreSQL 7.4
    "SELECT CASE WHEN 'public'=n.nspname THEN '' ELSE n.nspname||'.' END "
@@ -778,7 +778,7 @@ private void resync_cb() {
 //! Setting it to @expr{*@} will include system columns in the list.
 /*semi*/final array(mapping(string:mixed)) list_fields(void|string table,
  void|string glob) {
-  array row, ret = .pgsql_util.emptyarray;
+  array row, ret = ({});
   string schema;
 
   sscanf(table||"*", "%s.%s", schema, table);
@@ -1065,13 +1065,13 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
   if (bindings) {
     if (forcetext)
       q = .sql_util.emulate_bindings(q, bindings, this),
-      paramValues = .pgsql_util.emptyarray;
+      paramValues = ({});
     else {
       int pi = 0;
       paramValues = allocate(sizeof(bindings));
       from = allocate(sizeof(bindings));
       array(string) litfrom, litto, to = allocate(sizeof(bindings));
-      litfrom = litto = .pgsql_util.emptyarray;
+      litfrom = ({}); litto = ({});
       foreach (bindings; mixed name; mixed value) {
         if (stringp(name)) {	       // Throws if mapping key is empty string
           if (name[0] != ':')
@@ -1106,14 +1106,14 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
         paramValues = paramValues[.. pi];
         q = replace(q, litfrom += from = from[.. pi], litto += to = to[.. pi]);
       } else {
-        paramValues = .pgsql_util.emptyarray;
+        paramValues = ({});
         if (sizeof(litfrom))
           q = replace(q, litfrom, litto);
       }
       from = ({from, to, paramValues});
     }
   } else
-    paramValues = .pgsql_util.emptyarray;
+    paramValues = ({});
   if (String.width(q) > 8)
     ERROR("Wide string literals in %O not supported\n", q);
   if (has_value(q, "\0"))
