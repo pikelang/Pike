@@ -214,7 +214,9 @@ protected void create(void|string host, void|string database,
 //! @seealso
 //!   @[big_query()]
 /*semi*/final string error(void|int clear) {
-  throwdelayederror(proxy);
+  mixed err = catch(throwdelayederror(proxy));
+  if (!clear && err)
+    throw(err);
   return proxy.geterror(clear);
 }
 
@@ -500,7 +502,6 @@ protected void _destruct() {
 
 private void reset_dbsession() {
   proxy.statementsinflight->wait_till_drained();
-  proxy.delayederror = 0;
   error(1);
   big_query("ROLLBACK");
   big_query("RESET ALL");
@@ -1042,7 +1043,6 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
 /*semi*/final variant .pgsql_util.Result big_query(string q,
                                    void|mapping(string|int:mixed) bindings,
                                    void|int _alltyped) {
-  throwdelayederror(proxy);
   string preparedname = "";
   mapping(string:mixed) options = proxy.options;
   .pgsql_util.conxion c = proxy.c;
@@ -1127,6 +1127,15 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
    */
   int transtype = .pgsql_util.transendprefix->match(q) ? TRANSEND
    : .pgsql_util.transbeginprefix->match(q) ? TRANSBEGIN : NOTRANS;
+  {
+    int inerror = proxy.backendstatus == 'E';
+    if (inerror && transtype == TRANSEND)
+      proxy.sendsync();
+    throwdelayederror(proxy);
+    if (inerror && transtype != TRANSEND)
+      ERROR("Current transaction is aborted, "
+       "commands ignored until end of transaction");
+  }
   if (transtype != NOTRANS)
     tp = .pgsql_util.describenodata;		// Description already known
   else if (!forcetext && forcecache == 1

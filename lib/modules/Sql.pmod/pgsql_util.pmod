@@ -210,8 +210,8 @@ final void throwdelayederror(Result|proxy parent) {
     if (!objectp(parent->pgsqlsess))
       parent->untolderror = 0;
     else if (parent->pgsqlsess)
-      parent->pgsqlsess->untolderror = 0;
-    parent.delayederror = 0;
+      parent->pgsqlsess->untolderror = parent->pgsqlsess->delayederror = 0;
+    parent->delayederror = 0;
     if (stringp(err))
       err = ({err, backtrace()[..<2]});
     throw(err);
@@ -1694,7 +1694,7 @@ class Result {
     replenishrows();
   }
 
-  private void releaseconditions() {
+  private void releaseconditions(void|int aborted) {
     _unnamedportalkey = _unnamedstatementkey = 0;
     if (!datarowtypes) {
       if (_state != PURGED && !delayederror)
@@ -1702,9 +1702,9 @@ class Result {
       datarowtypes = ({});
       _ddescribe->broadcast();
     }
-    if (delayederror && pgsqlsess && !pgsqlsess.delayederror)
+    if (aborted && delayederror && pgsqlsess && !pgsqlsess.delayederror)
       pgsqlsess.delayederror = delayederror;	// Preserve error upstream
-    pgsqlsess = 0;
+    pgsqlsess = 0;				// Sever connection to upstream
   }
 
   final void _releasesession(void|string statusccomplete) {
@@ -1725,7 +1725,7 @@ class Result {
       _state = CLOSED;
     }
     datarows->write(1);				// Signal EOF
-    releaseconditions();
+    releaseconditions(statusccomplete == "ABORT");
   }
 
   protected void _destruct() {
@@ -1941,6 +1941,7 @@ class proxy {
   private array(string) lastmessage = ({});
   final int(0..1) clearmessage;
   final int(0..1) untolderror;
+  final mixed delayederror;
   private mapping(string:array(mixed)) notifylist = ([]);
   final mapping(string:string) runtimeparameter;
   final mapping(string:mapping(string:mixed)) prepareds = ([]);
@@ -1952,7 +1953,6 @@ class proxy {
   private int warningscollected;
   final int(0..1) invalidatecache;
   private Thread.Queue qportals;
-  final mixed delayederror;
   final function (:void) readyforquery_cb;
 
   final string host;
