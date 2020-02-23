@@ -514,7 +514,10 @@ o Sql
 
   - Most Sql C-modules converted to cmod.
 
-  - Added next_result().
+  - All Sql driver modules have __builtin.Sql.Connection as
+    a common base class.
+
+  - Added next_result() to support queries returning multiple resultsets.
 
   - ODBC & tds: Support more datatypes.
 
