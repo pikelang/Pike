@@ -264,7 +264,9 @@ int verify_certificate_chain(array(string) certs)
   mapping result =
     Standards.X509.verify_certificate_chain(certs,
                                             context->trusted_issuers_cache,
-					    context->require_trust);
+					    context->require_trust,
+					    ([ "verifier_algorithms"
+                                               : context->verifier_algorithms]));
 
   // This data isn't actually used internally.
   session->cert_data = result;

@@ -70,6 +70,22 @@ ProtocolVersion max_version = PROTOCOL_TLS_MAX;
 //! protocol negotiation.
 array(string(8bit)) advertised_protocols;
 
+//! Mapping of supported verifier algorithms to hash implementation.
+//!
+//! @seealso
+//!   @[Standards.X509.get_algorithms()]
+mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) verifier_algorithms
+= filter(Standards.X509.get_algorithms(),
+                                     lambda(object o) {
+    return !(<
+#if constant(Crypto.MD2)
+        Crypto.MD2,
+#endif
+        Crypto.MD5,
+        Crypto.SHA1
+    >)[o];
+});
+
 //! The maximum amount of data that is sent in each SSL packet by
 //! @[File]. A value between 1 and @[Constants.PACKET_MAX_SIZE].
 int packet_max_size = PACKET_MAX_SIZE;
