@@ -317,7 +317,9 @@ private array(Standards.X509.TBSCertificate)
   catch {
     result = Standards.X509.verify_certificate_chain(certs,
                                      context->trusted_issuers_cache,
-                                     context->auth_level >= AUTHLEVEL_require);
+                                     context->auth_level >= AUTHLEVEL_require,
+                                     ([ "verifier_algorithms"
+                                        : context->verifier_algorithms ]));
   };
   if( !result->verified ) return 0;
 
