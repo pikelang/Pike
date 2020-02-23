@@ -153,6 +153,14 @@ protected {
   ]);
 }
 
+//! Returns the mapping of signature algorithm to hash algorithm
+//! supported by @[Verifier] and thus @[verify_ca_certificate()],
+//! @[verify_certificate()], and @[verify_certificate_chain()].
+mapping(Identifier:Crypto.Hash) get_algorithms()
+{
+  return algorithms + ([ ]);
+}
+
 class Verifier {
   constant type = "none";
   Crypto.Sign.State pkc;
@@ -160,11 +168,16 @@ class Verifier {
   optional __deprecated__(Crypto.DSA) dsa;
 
   //! Verifies the @[signature] of the certificate @[msg] using the
-  //! indicated hash @[algorithm].
-  int(0..1) verify(Sequence algorithm, string(8bit) msg, string(8bit) signature)
+  //! indicated hash @[algorithm], choosing from @[verifier_algorithms].
+  //!
+  //! @seealso
+  //!    @[get_algorithms()]
+  int(0..1) verify(Sequence algorithm, string(8bit) msg,
+                   string(8bit) signature,
+                   mapping(Identifier:Crypto.Hash)|void verifier_algorithms)
   {
     DBG("Verify hash %O\n", algorithm[0]);
-    Crypto.Hash hash = algorithms[algorithm[0]];
+    Crypto.Hash hash = (verifier_algorithms || algorithms)[algorithm[0]];
     if (!hash) return 0;
     return pkc && pkc->pkcs_verify(msg, hash, signature);
   }
@@ -1446,13 +1459,22 @@ TBSCertificate decode_certificate(string|object cert)
 //! TBSCertificate structure, or 0 if decoding or verification failes.
 //! The valid time range for the certificate is not checked.
 //!
-//! Authorities is a mapping from (DER-encoded) names to a verifiers.
+//! @param authorities
+//!   A mapping from (DER-encoded) names to a verifiers.
+//!
+//! @param options
+//!   @mapping
+//!     @member mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) "verifier_algorithms"
+//!       A mapping of verifier algorithm identifier to hash algorith
+//!       implementation.
+//!   @endmapping
 //!
 //! @note
 //!   This function allows self-signed certificates, and it doesn't
 //!   check that names or extensions make sense.
 TBSCertificate verify_certificate(string s,
-				  mapping(string:Verifier|array(Verifier)) authorities)
+				  mapping(string:Verifier|array(Verifier)) authorities,
+				  mapping(Standards.ASN1.Types.Identifier:Crypto.Hash)|void options)
 {
   object cert = Standards.ASN1.Decode.secure_der_decode(s);
 
@@ -1472,7 +1494,8 @@ TBSCertificate verify_certificate(string s,
   }
 
   foreach(verifiers || ({}), Verifier v) {
-    if (v->verify(cert[1], cert[0]->get_der(), cert[2]->value))
+    if (v->verify(cert[1], cert[0]->get_der(), cert[2]->value,
+                  options->?verifier_algorithms))
       return tbs;
   }
   return 0;
@@ -1705,6 +1728,13 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
   return res;
 }
 
+//! @decl mapping verify_certificate_chain(array(string) cert_chain, @
+//! mapping(string:Verifier|array(Verifier)) authorities, @
+//! int|void require_trust, bool|void strict)
+//! @decl mapping verify_certificate_chain(array(string) cert_chain, @
+//! mapping(string:Verifier|array(Verifier)) authorities, @
+//! int|void require_trust, mapping(string:mixed) options)
+//!
 //! Decodes a certificate chain, oredered from leaf to root, and
 //! checks the signatures. Verifies that the chain can be decoded
 //! correctly, is unbroken, and that all certificates are in effect
@@ -1756,14 +1786,27 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 //!   Some https-servers send extraneous intermediate certificates
 //!   that aren't used to validate the leaf certificate. So strict
 //!   mode will be incompatible with those srevers.
+//! @param options
+//!   @mapping
+//!     @member mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) "verifier_algorithm"
+//!       A mapping of verifier algorithm identifier to hash algorithm
+//!       implementation.
+//!     @member int "strict"
+//!       See @[strict] above.
+//!   @endmapping
+//!
+//! @seealso
+//!   @[get_algorithms()]
 //!
 //! See @[Standards.PKCS.Certificate.get_dn_string] for converting the
 //! RDN to an X500 style string.
 mapping verify_certificate_chain(array(string) cert_chain,
 				 mapping(string:Verifier|array(Verifier)) authorities,
-                                 int|void require_trust, bool|void strict)
+                                 int|void require_trust,
+                                 mapping(string:mixed)|bool|void options)
 {
   mapping m = ([ ]);
+  int strict = mappingp(options) ? options->strict : options;
 
 #define ERROR(X) do { \
     DBG("Error " #X "\n"); \
@@ -1894,7 +1937,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
     foreach(verifiers || ({}), Verifier v) {
       if( v->verify(chain_cert[idx][1],
                     chain_cert[idx][0]->get_der(),
-                    chain_cert[idx][2]->value)
+                    chain_cert[idx][2]->value, options->?verifier_algorithms)
           && tbs)
       {
         DBG("signature is verified..\n");
