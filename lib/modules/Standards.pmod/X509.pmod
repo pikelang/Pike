@@ -152,16 +152,29 @@ protected {
   ]);
 }
 
+//! Returns the mapping of signature algorithm to hash algorithm
+//! supported by @[Verifier] and thus @[verify_ca_certificate()],
+//! @[verify_certificate()], and @[verify_certificate_chain()].
+mapping(Identifier:Crypto.Hash) get_algorithms()
+{
+  return algorithms + ([ ]);
+}
+
 class Verifier {
   constant type = "none";
   Crypto.Sign.State pkc;
 
   //! Verifies the @[signature] of the certificate @[msg] using the
-  //! indicated hash @[algorithm].
-  int(0..1) verify(Sequence algorithm, string(8bit) msg, string(8bit) signature)
+  //! indicated hash @[algorithm], choosing from @[verifier_algorithms].
+  //!
+  //! @seealso
+  //!    @[get_algorithms()]
+  int(0..1) verify(Sequence algorithm, string(8bit) msg,
+                   string(8bit) signature,
+                   mapping(Identifier:Crypto.Hash)|void verifier_algorithms)
   {
     DBG("Verify hash %O\n", algorithm[0]);
-    Crypto.Hash hash = algorithms[algorithm[0]];
+    Crypto.Hash hash = (verifier_algorithms || algorithms)[algorithm[0]];
     if (!hash) return 0;
     return pkc && pkc->pkcs_verify(msg, hash, signature);
   }
@@ -1452,13 +1465,22 @@ TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
 //! TBSCertificate structure, or 0 if decoding or verification failes.
 //! The valid time range for the certificate is not checked.
 //!
-//! Authorities is a mapping from (DER-encoded) names to a verifiers.
+//! @param authorities
+//!   A mapping from (DER-encoded) names to a verifiers.
+//!
+//! @param options
+//!   @mapping
+//!     @member mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) "verifier_algorithms"
+//!       A mapping of verifier algorithm identifier to hash algorithm
+//!       implementation.
+//!   @endmapping
 //!
 //! @note
 //!   This function allows self-signed certificates, and it doesn't
 //!   check that names or extensions make sense.
 TBSCertificate verify_certificate(string s,
-				  mapping(string:Verifier|array(Verifier)) authorities)
+				  mapping(string:Verifier|array(Verifier)) authorities,
+				  mapping(Standards.ASN1.Types.Identifier:Crypto.Hash)|void options)
 {
   .PKCS.Signature.Signed cert = .PKCS.Signature.decode_signed(s, x509_types);
 
@@ -1481,7 +1503,8 @@ TBSCertificate verify_certificate(string s,
   }
 
   foreach(verifiers || ({}), Verifier v) {
-    if (v->verify(cert[1], cert[0]->get_der(), cert[2]->value))
+    if (v->verify(cert[1], cert[0]->get_der(), cert[2]->value,
+                  options->?verifier_algorithms))
       return tbs;
   }
   return 0;
@@ -1794,12 +1817,22 @@ mapping(string:array(Verifier))
 //! @param require_trust
 //!   Require that the certificate be traced to an authority, even if
 //!   it is self signed.
+//! @param options
+//!   @mapping
+//!     @member mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) "verifier_algorithms"
+//!       A mapping of verifier algorithm identifier to hash algorithm
+//!       implementation.
+//!   @endmapping
+//!
+//! @seealso
+//!   @[get_algorithms()]
 //!
 //! See @[Standards.PKCS.Certificate.get_dn_string] for converting the
 //! RDN to an X500 style string.
 mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain,
 				 mapping(string:Verifier|array(Verifier)) authorities,
-                                 int|void require_trust)
+                                 int|void require_trust,
+                                 mapping(string:mixed)|void options)
 {
   mapping m = ([ ]);
 
@@ -1915,7 +1948,7 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
     foreach(verifiers || ({}), Verifier v) {
       if( v->verify(chain_cert[idx][1],
                     chain_cert[idx][0]->get_der(),
-                    chain_cert[idx][2]->value)
+                    chain_cert[idx][2]->value, options->?verifier_algorithms)
           && tbs)
       {
         DBG("signature is verified..\n");
