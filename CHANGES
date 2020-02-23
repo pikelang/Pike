@@ -30,6 +30,11 @@ o SSL
   The SSL module now supports session ticket both client and server side.
   This functionality has been backported from 8.1/master.
 
+o Standards.X509
+
+  Standards.X509 now allows the user to select acceptable signature
+  algorithms to be used in the verification of certificates.
+
 o Stdio.PROP_TTY
 
   Stdio.File()->pipe() can now be used to create tty-capable
@@ -187,9 +192,19 @@ o Sql.pgsql
 
 o SSL
 
-  When verifying the hostname against the certificate, only accept *
-  (wildcard) for one level, i.e. *.example.com matches foo.example.com,
-  but not www.foo.example.com. Previously, all levels were matched.
+  - When verifying the hostname against the certificate, only accept *
+    (wildcard) for one level, i.e. *.example.com matches foo.example.com,
+    but not www.foo.example.com. Previously, all levels were matched.
+
+  - No longer accept MD2, MD5, and SHA1 as signature algorithms when
+    verification is requested. MD2 and MD5 are outright dangerous at
+    this point, and SHA1 should no longer be very relevant as web
+    browsers already force CAs for several years to no longer issue any
+    SHA1 certs anymore.
+
+    Acceptable signature algorithms are however configurable via
+    SSL.Context now, in case support of older/insecure algorithms is
+    vehemently required by an application.
 
 o SSL.File
 
