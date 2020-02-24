@@ -1937,7 +1937,8 @@ mapping verify_certificate_chain(array(string) cert_chain,
     foreach(verifiers || ({}), Verifier v) {
       if( v->verify(chain_cert[idx][1],
                     chain_cert[idx][0]->get_der(),
-                    chain_cert[idx][2]->value, options->?verifier_algorithms)
+                    chain_cert[idx][2]->value,
+                    mappingp(options) && options->verifier_algorithms)
           && tbs)
       {
         DBG("signature is verified..\n");
