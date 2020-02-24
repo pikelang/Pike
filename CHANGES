@@ -303,6 +303,10 @@ o Parser.ECMAScript
   This module simply provides a token splitter for
   ECMAScript/JavaScript.
 
+o Pike.Annotations
+
+  Multiple common annotations are available.
+
 o Pike.DestructImmediate
 
   Objects of classes that inherit Pike.DestructImmediate will be
