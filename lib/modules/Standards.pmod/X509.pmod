@@ -46,7 +46,7 @@ enum CertFailure
   //! another certificate.
   CERT_UNAUTHORIZED_CA = 1<<6,
 
-  //! The certificate is not allowed by it's key usage to sign data.
+  //! The certificate is not allowed by its key usage to sign data.
   CERT_UNAUTHORIZED_SIGNING = 1<<7,
 
   //! The certificate chain is longer than allowed by a certificate in
@@ -1462,7 +1462,7 @@ TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
 }
 
 //! Decodes a certificate, checks the signature. Returns the
-//! TBSCertificate structure, or 0 if decoding or verification failes.
+//! TBSCertificate structure, or 0 if decoding or verification fails.
 //! The valid time range for the certificate is not checked.
 //!
 //! @param authorities
@@ -1778,7 +1778,7 @@ mapping(string:array(Verifier))
 //! Decodes a certificate chain, ordered from leaf to root, and
 //! checks the signatures. Verifies that the chain can be decoded
 //! correctly, is unbroken, and that all certificates are in effect
-//! (time-wise.) and allowed to sign it's child certificate.
+//! (time-wise.) and allowed to sign its child certificate.
 //!
 //! No verifications are done on the leaf certificate to determine
 //! what it can and can not be used for.
