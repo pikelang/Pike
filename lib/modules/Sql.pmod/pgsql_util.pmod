@@ -473,6 +473,7 @@ class conxion {
              |SSL.File
 #endif
                        socket;
+  private int towrite;
   final multiset(Result) runningportals = (<>);
 
   final MUTEX nostash;
@@ -493,19 +494,17 @@ class conxion {
   final int queueinidx = -1;
 #endif
 
-  private inline void flushtosocket() {
 #if PG_DEBUGHISTORY > 0
+  final int(-1..) output_to(Stdio.Stream stm, void|int(0..) nbytes) {
     Stdio.Buffer tb = Stdio.Buffer(this);
-#endif
-    consume(socket->write(this));
-#if PG_DEBUGHISTORY > 0
-    int ret = sizeof(tb) - sizeof(this);
+    int ret = o::output_to(stm, nbytes);
     if (ret) {
       i->history += ({">>" + tb->read(ret)});
       i->history = i->history[<PG_DEBUGHISTORY - 1 ..];
     }
-#endif
+    return ret;
   }
+#endif
 
   private inline void queueup(Result portal) {
     qportals->write(portal); portal->_synctransact = synctransact;
@@ -545,7 +544,7 @@ class conxion {
   private int write_cb() {
     Thread.MutexKey lock = shortmux->lock();
     if (this) {				// Guard against async destructs
-      flushtosocket();
+      towrite -= output_to(socket, towrite);
       lock = 0;
       if (!i->fillread && !sizeof(this))
         close();
@@ -613,10 +612,10 @@ outer:
             case SENDOUT:;
           }
           Thread.MutexKey lock = shortmux->trylock();
-          if (lock && sizeof(this)) {
+          if (lock && (towrite = sizeof(this))) {
             PD("%d>Sendcmd %O\n",
-             socket->query_fd(), (string)this);
-            flushtosocket();
+             socket->query_fd(), ((string)this)[..towrite-1]);
+            towrite -= output_to(socket, towrite);
           }
         } while (0);
         started = 0;
