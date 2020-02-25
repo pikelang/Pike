@@ -473,7 +473,6 @@ class conxion {
              |SSL.File
 #endif
                        socket;
-  private int towrite;
   final multiset(Result) runningportals = (<>);
 
   final MUTEX nostash;
@@ -544,7 +543,7 @@ class conxion {
   private int write_cb() {
     Thread.MutexKey lock = shortmux->lock();
     if (this) {				// Guard against async destructs
-      towrite -= output_to(socket, towrite);
+      output_to(socket);
       lock = 0;
       if (!i->fillread && !sizeof(this))
         close();
@@ -612,10 +611,10 @@ outer:
             case SENDOUT:;
           }
           Thread.MutexKey lock = shortmux->trylock();
-          if (lock && (towrite = sizeof(this))) {
+          if (lock && sizeof(this)) {
             PD("%d>Sendcmd %O\n",
-             socket->query_fd(), ((string)this)[..towrite-1]);
-            towrite -= output_to(socket, towrite);
+             socket->query_fd(), (string)this);
+            output_to(socket);
           }
         } while (0);
         started = 0;
