@@ -190,6 +190,8 @@ o Sql.pgsql
 
   - Cast integers to floats, when floats are desired.
 
+  - Simplify error handling.
+
 o SSL
 
   - When verifying the hostname against the certificate, only accept *
