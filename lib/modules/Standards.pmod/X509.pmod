@@ -47,7 +47,7 @@ enum CertFailure
   //! another certificate.
   CERT_UNAUTHORIZED_CA = 1<<6,
 
-  //! The certificate is not allowed by it's key usage to sign data.
+  //! The certificate is not allowed by its key usage to sign data.
   CERT_UNAUTHORIZED_SIGNING = 1<<7,
 
   //! The certificate chain is longer than allowed by a certificate in
@@ -1456,7 +1456,7 @@ TBSCertificate decode_certificate(string|object cert)
 }
 
 //! Decodes a certificate, checks the signature. Returns the
-//! TBSCertificate structure, or 0 if decoding or verification failes.
+//! TBSCertificate structure, or 0 if decoding or verification fails.
 //! The valid time range for the certificate is not checked.
 //!
 //! @param authorities
@@ -1729,16 +1729,16 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 }
 
 //! @decl mapping verify_certificate_chain(array(string) cert_chain, @
-//! mapping(string:Verifier|array(Verifier)) authorities, @
-//! int|void require_trust, bool|void strict)
+//!   mapping(string:Verifier|array(Verifier)) authorities, @
+//!   int|void require_trust, bool|void strict)
 //! @decl mapping verify_certificate_chain(array(string) cert_chain, @
-//! mapping(string:Verifier|array(Verifier)) authorities, @
-//! int|void require_trust, mapping(string:mixed) options)
+//!   mapping(string:Verifier|array(Verifier)) authorities, @
+//!   int|void require_trust, mapping(string:mixed) options)
 //!
-//! Decodes a certificate chain, oredered from leaf to root, and
+//! Decodes a certificate chain, ordered from leaf to root, and
 //! checks the signatures. Verifies that the chain can be decoded
 //! correctly, is unbroken, and that all certificates are in effect
-//! (time-wise.) and allowed to sign it's child certificate.
+//! (time-wise.) and allowed to sign its child certificate.
 //!
 //! No verifications are done on the leaf certificate to determine
 //! what it can and can not be used for.
@@ -1785,7 +1785,7 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 //!
 //!   Some https-servers send extraneous intermediate certificates
 //!   that aren't used to validate the leaf certificate. So strict
-//!   mode will be incompatible with those srevers.
+//!   mode will be incompatible with such servers.
 //! @param options
 //!   @mapping
 //!     @member mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) "verifier_algorithm"
