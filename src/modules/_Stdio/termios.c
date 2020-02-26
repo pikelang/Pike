@@ -11,13 +11,16 @@
 
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
-#else /* HAVE_SYS_TERMIOS_H */
+#elif defined(HAVE_SYS_TERMIOS_H)
 /* NB: Deprecated by <termios.h> above. */
 #include <sys/termios.h>
 #endif
 
 #include <errno.h>
+
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif
 
 #include "fdlib.h"
 #include "interpret.h"
@@ -43,11 +46,7 @@
 /*! @module Stdio
  */
 
-/* The class below is not accurate, but it's the lowest exposed API
- * interface, which makes the functions appear where users actually
- * look for them. /mast */
-
-/*! @class File
+/*! @class Fd
  */
 
 /*! @decl mapping tcgetattr()
@@ -114,13 +113,12 @@
  *! @bugs
  *!   Terminal rows and columns setting by @[tcsetattr()] is not
  *!   currently supported.
+ *!
+ *! @seealso
+ *!   @[tcsetsize()]
  */
 
-/*! @endclass
- */
 
-/*! @endmodule
- */
 
 #undef THIS
 #define THIS ((struct my_file *)(Pike_fp->current_storage))
@@ -220,7 +218,7 @@ void file_tcgetattr(INT32 args)
 #ifdef TIOCGWINSZ
    {
       struct winsize winsize;
-      if (!ioctl(FD,TIOCGWINSZ,&winsize))
+      if (!fd_ioctl(FD, TIOCGWINSZ, &winsize))
       {
 	 push_static_text("rows");
 	 push_int(winsize.ws_row);
@@ -231,7 +229,6 @@ void file_tcgetattr(INT32 args)
       }
    }
 #endif
-
 
    f_aggregate_mapping(n*2);
 }
@@ -375,6 +372,26 @@ void file_tcsetattr(INT32 args)
   push_int(!tcsetattr(FD,optional_actions,&ti));
 }
 
+/*! @decl int(0..1) tcflush(string|void flush_direction)
+ *!
+ *! Flush queued terminal control messages.
+ *!
+ *! @param flush_direction
+ *!   @string
+ *!     @value "TCIFLUSH"
+ *!       Flush received but not read.
+ *!     @value "TCOFLUSH"
+ *!       Flush written but not transmitted.
+ *!     @value "TCIOFLUSH"
+ *!       Flush both of the above. Default.
+ *!   @endstring
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
+ *!
+ *! @seealso
+ *!   @[tcdrain()]
+ */
 void file_tcflush(INT32 args)
 {
   int action=TCIOFLUSH;
@@ -403,15 +420,83 @@ void file_tcflush(INT32 args)
   push_int(!tcflush(FD, action));
 }
 
+/*! @decl int(0..1) tcdrain()
+ *!
+ *! Wait for transmission buffers to empty.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
+ *!
+ *! @seealso
+ *!   @[tcflush()]
+ */
+void file_tcdrain(INT32 args)
+{
+  push_int(!tcdrain(FD));
+}
+
+/*! @decl int(0..1) tcsendbreak(int|void duration)
+ *!
+ *! Send a break signal.
+ *!
+ *! @param duration
+ *!   Duration to send the signal for. @expr{0@} (zero) causes
+ *!   a break signal to be sent for between 0.25 and 0.5 seconds.
+ *!   Other values are operating system dependent:
+ *!   @dl
+ *!     @item SunOS
+ *!       The number of joined break signals as above.
+ *!     @item Linux, AIX, Digital Unix, Tru64
+ *!       The time in milliseconds.
+ *!     @item FreeBSD, NetBSD, HP-UX, MacOS
+ *!       The value is ignored.
+ *!     @item Solaris, Unixware
+ *!       The behavior is changed to be similar to @[tcdrain()].
+ *!   @enddl
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
+ */
 void file_tcsendbreak(INT32 args)
 {
   INT_TYPE len=0;
 
-  get_all_args(NULL, args, "%i", &len);
+  get_all_args(NULL, args, ".%i", &len);
   pop_stack();
   push_int(!tcsendbreak(FD, len));
 }
 
+#ifdef TIOCSWINSZ
+/*! @decl int(0..1) tcsetsize(int rows, int cols)
+ *!
+ *! Set the number of rows and columns for a terminal.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
+ *!
+ *! @seealso
+ *!   @[tcgetattr()], @[tcsetattr()]
+ */
+void file_tcsetsize(INT32 args)
+{
+  INT_TYPE rows;
+  INT_TYPE cols;
+  struct winsize winsize;
+
+  get_all_args(NULL, args, "%i%i", &rows, &cols);
+
+  winsize.ws_row = rows;
+  winsize.ws_col = cols;
+
+  push_int(!fd_ioctl(FD, TIOCSWINSZ, &winsize));
+}
+#endif
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /* end of termios stuff */
 #endif
