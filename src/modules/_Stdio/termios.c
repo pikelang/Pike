@@ -484,7 +484,7 @@ void file_tcsetsize(INT32 args)
   INT_TYPE cols;
   struct winsize winsize;
 
-  get_all_args(NULL, args, "%i%i", &rows, &cols);
+  get_all_args("tcsetsize", args, "%i%i", &rows, &cols);
 
   winsize.ws_row = rows;
   winsize.ws_col = cols;
