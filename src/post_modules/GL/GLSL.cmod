@@ -16,8 +16,13 @@
 
 #ifdef HAVE_GLSL
 
+#ifdef HAVE_OPENGL_GL_H
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#else
 #include <GL/gl.h>
 #include <GL/glext.h>
+#endif
 
 #define UI(X) ((GLuint)X)
 
