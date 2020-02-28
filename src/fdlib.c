@@ -403,8 +403,8 @@ int fd_to_handle(int fd, int *type, HANDLE *handle, int exclusive)
 	fd_busy[fd]++;
       }
       ret = 0;
-      FDDEBUG(fprintf(stderr, "fd %d ==> handle: %ld (%d)\n",
-		      fd, (long)da_handle[fd], fd_type[fd]));
+      FDDEBUG(fprintf(stderr, "fd %d ==> handle: 0x%lx (%d)\n",
+		      fd, (unsigned long)da_handle[fd], fd_type[fd]));
     } else {
       FDDEBUG(fprintf(stderr, "fd %d is invalid.\n", fd));
       errno = EBADF;
@@ -511,7 +511,7 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
     goto reallocate;
   }
 
-  FDDEBUG(fprintf(stderr, "fd %d was not i use. Allocating.\n", fd));
+  FDDEBUG(fprintf(stderr, "fd %d was not in use. Allocating.\n", fd));
 
   prev_fd = first_free_handle;
 
@@ -540,6 +540,10 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
   return -1;
 
  reallocate:
+  FDDEBUG(fprintf(stderr, "Reallocating fd %d from handle 0x%08lx to 0x%08lx\n",
+		  fd, (unsigned long)(ptrdiff_t)da_handle[fd],
+		  (unsigned long)(ptrdiff_t)handle));
+
   if (fd_type[fd] == FD_SOCKET) {
     FDDEBUG(fprintf(stderr, "Closing socket that was fd %d.\n", fd));
     closesocket((SOCKET)da_handle[fd]);
@@ -2177,7 +2181,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
   ptrdiff_t rret;
   HANDLE handle;
 
-  FDDEBUG(fprintf("fd_read(%d, %p, %ld)...\n", fd, to, (long)len));
+  FDDEBUG(fprintf(stderr, "fd_read(%d, %p, %ld)...\n", fd, to, (long)len));
 
   if (fd_to_handle(fd, &type, &handle, 0) < 0) return -1;
 
