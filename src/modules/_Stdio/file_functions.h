@@ -172,9 +172,10 @@ FILE_FUNC("grantpt",file_grantpt, tFunc(tNone,tStr))
 #endif
 
 /* From termios.c */
-#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H) || defined(__NT__)
 /* function(void:mapping) */
 FILE_FUNC("tcgetattr",file_tcgetattr, tFunc(tNone,tMapping))
+#ifdef HAVE_TCGETATTR
 /* function(mapping, void|string: int(0..1)) */
 FILE_FUNC("tcsetattr", file_tcsetattr, tFunc(tMapping tOr(tVoid, tStr), tInt01))
 /* function(int: int(0..1)) */
@@ -185,6 +186,7 @@ FILE_FUNC("tcdrain", file_tcdrain, tFunc(tNone, tInt01))
 /*    FILE_FUNC("tcflow",file_tcflow,"function(string:int)"); */
 /*    FILE_FUNC("tcgetpgrp",file_tcgetpgrp,"function(void:int)"); */
 /*    FILE_FUNC("tcsetpgrp",file_tcsetpgrp,"function(int:int)"); */
+#endif
 #ifdef TIOCSWINSZ
 FILE_FUNC("tcsetsize", file_tcsetsize, tFunc(tIntPos tIntPos, tInt01))
 #endif

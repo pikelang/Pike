@@ -114,6 +114,11 @@ struct winsize {
 };
 #endif
 
+#ifndef TIOCGWINSZ
+#define TIOCGWINSZ	_IOR('T', 0x13, struct winsize)
+#define TIOCSWINSZ	_IOW('T', 0x14, struct winsize)
+#endif
+
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
 #define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
 #define SOCKFUN3(NAME,T1,T2,T3) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3);
@@ -278,6 +283,7 @@ struct my_pty
   struct pid_status *clients; /* List of client processes. */
   HANDLE read_pipe;	/* Pipe that supports read(). */
   HANDLE write_pipe;	/* Pipe that supports write(). */
+  COORD winsize;	/* There's no API to fetch the window size. */
 };
 
 #ifdef PIKE_DEBUG

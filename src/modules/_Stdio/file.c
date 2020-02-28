@@ -6169,8 +6169,9 @@ void check_static_file_data(struct callback *UNUSED(a), void *UNUSED(b),
 }
 #endif
 
-#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H) || defined(__NT__)
 void file_tcgetattr(INT32 args);
+#ifdef HAVE_TCGETATTR
 void file_tcsetattr(INT32 args);
 void file_tcsendbreak(INT32 args);
 void file_tcflush(INT32 args);
@@ -6178,6 +6179,7 @@ void file_tcdrain(INT32 args);
 /* void file_tcflow(INT32 args); */
 /* void file_tcgetpgrp(INT32 args); */
 /* void file_tcsetpgrp(INT32 args); */
+#endif
 #ifdef TIOCSWINSZ
 void file_tcsetsize(INT32 args);
 #endif
