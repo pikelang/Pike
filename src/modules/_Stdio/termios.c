@@ -126,6 +126,7 @@
 #define FD (THIS->box.fd)
 #define ERRNO (THIS->my_errno)
 
+#ifdef HAVE_TCGETATTR
 static int termios_bauds( int speed )
 {
     switch (speed)
@@ -158,6 +159,8 @@ static const struct {
 #undef c_oflag
 #undef c_lflag
 
+#endif /* HAVE_TCGETATTR */
+
 void file_tcgetattr(INT32 args)
 {
    struct termios ti;
@@ -168,6 +171,7 @@ void file_tcgetattr(INT32 args)
 
    pop_n_elems(args);
 
+#ifdef HAVE_TCGETATTR
    if (tcgetattr(FD,&ti)) /* error */
    {
       ERRNO=errno;
@@ -216,6 +220,8 @@ void file_tcgetattr(INT32 args)
    n++;
 #endif
 
+#endif /* HAVE_TCGETATTR */
+
 #ifdef TIOCGWINSZ
    {
       struct winsize winsize;
@@ -235,6 +241,7 @@ void file_tcgetattr(INT32 args)
 }
 
 
+#ifdef HAVE_TCGETATTR
 static int termios_speed( int speed )
 {
     switch (speed)
@@ -466,6 +473,8 @@ void file_tcsendbreak(INT32 args)
   pop_stack();
   push_int(!tcsendbreak(FD, len));
 }
+
+#endif /* HAVE_TCGETATTR */
 
 #ifdef TIOCSWINSZ
 /*! @decl int(0..1) tcsetsize(int rows, int cols)
