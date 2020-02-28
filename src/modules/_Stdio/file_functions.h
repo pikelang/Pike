@@ -166,19 +166,25 @@ FILE_FUNC("openpt",file_openpt, tFunc(tStr,tInt))
 FILE_FUNC("grantpt",file_grantpt, tFunc(tNone,tStr))
 #endif
 
-#if defined(HAVE_TERMIOS_H)
+/* From termios.c */
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H) || defined(__NT__)
 /* function(void:mapping) */
 FILE_FUNC("tcgetattr",file_tcgetattr, tFunc(tNone,tMapping))
-/* function(mapping,void|string:int) */
-FILE_FUNC("tcsetattr",file_tcsetattr, tFunc(tMapping tOr(tVoid,tStr),tInt))
-/* function(int:int) */
-FILE_FUNC("tcsendbreak",file_tcsendbreak, tFunc(tInt,tInt))
-/* function(void:string) */
-FILE_FUNC("tcflush",file_tcflush, tFunc(tNone,tStr))
-/*    FILE_FUNC("tcdrain",file_tcdrain,"function(void:int)"); */
+#ifdef HAVE_TCGETATTR
+/* function(mapping, void|string: int(0..1)) */
+FILE_FUNC("tcsetattr", file_tcsetattr, tFunc(tMapping tOr(tVoid, tStr), tInt01))
+/* function(int: int(0..1)) */
+FILE_FUNC("tcsendbreak", file_tcsendbreak, tFunc(tInt, tInt01))
+/* function(void|string: int(0..1)) */
+FILE_FUNC("tcflush", file_tcflush, tFunc(tOr(tVoid, tStr), tInt01))
+FILE_FUNC("tcdrain", file_tcdrain, tFunc(tNone, tInt01))
 /*    FILE_FUNC("tcflow",file_tcflow,"function(string:int)"); */
 /*    FILE_FUNC("tcgetpgrp",file_tcgetpgrp,"function(void:int)"); */
 /*    FILE_FUNC("tcsetpgrp",file_tcsetpgrp,"function(int:int)"); */
+#endif
+#ifdef TIOCSWINSZ
+FILE_FUNC("tcsetsize", file_tcsetsize, tFunc(tIntPos tIntPos, tInt01))
+#endif
 #endif
 
 #ifdef SO_KEEPALIVE
