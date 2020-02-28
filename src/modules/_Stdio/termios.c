@@ -7,7 +7,7 @@
 #include "global.h"
 #include "file_machine.h"
 
-#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H) || defined(__NT__)
 
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>

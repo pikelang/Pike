@@ -167,7 +167,7 @@ FILE_FUNC("grantpt",file_grantpt, tFunc(tNone,tStr))
 #endif
 
 /* From termios.c */
-#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H) || defined(__NT__)
 /* function(void:mapping) */
 FILE_FUNC("tcgetattr",file_tcgetattr, tFunc(tNone,tMapping))
 #ifdef HAVE_TCGETATTR
