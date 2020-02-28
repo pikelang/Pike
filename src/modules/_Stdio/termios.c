@@ -162,8 +162,10 @@ static const struct {
 
 void file_tcgetattr(INT32 args)
 {
+#ifdef HAVE_TCGETATTR
    struct termios ti;
-   unsigned int n;
+#endif
+   unsigned int n = 0;
 
    if(FD < 0)
       Pike_error("File not open.\n");

@@ -2609,7 +2609,7 @@ PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
     HANDLE h;
     int type;
     struct my_pty *pty;
-    HCON conpty;
+    HPCON conpty;
     struct winsize *win = data;
     COORD coord;
 
