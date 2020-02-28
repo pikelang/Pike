@@ -2643,24 +2643,81 @@ PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct
 PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
 {
   int ret;
-  SOCKET s;
 
   FDDEBUG(fprintf(stderr, "fd_ioctl(%d, %d, %p)...\n", fd, cmd, data));
 
-  if (fd_to_socket(fd, &s, 0) < 0) return -1;
+  if (((cmd >> 8) & 0xff) == 'T') {
+    /* TTY ioctl */
+    HANDLE h;
+    int type;
+    struct my_pty *pty;
+    HCON conpty;
+    struct winsize *win = data;
+    COORD coord;
 
-  FDDEBUG(fprintf(stderr,"ioctl(%d (%ld,%d,%p)\n",
-		  fd, (long)(ptrdiff_t)s, cmd, data));
+    if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
 
-  ret = ioctlsocket(s, cmd, data);
+    if ((type != FD_PTY) || !Pike_NT_ResizePseudoConsole) {
+      release_fd(fd);
+      errno = ENOTTY;
+      return -1;
+    }
+    pty = (struct my_pty *)h;
 
-  FDDEBUG(fprintf(stderr,"ioctlsocket returned %ld (%d)\n",ret,errno));
+    if (!(conpty = pty->conpty)) {
+      /* Slave, try looking at the master. */
+      if (!(pty = pty->other) || !(conpty = pty->conpty)) {
+	release_fd(fd);
+	errno = ENOTTY;
+	return -1;
+      }
+    }
+
+    switch(cmd) {
+    case TIOCSWINSZ:
+      coord.X = win->ws_col;
+      coord.Y = win->ws_row;
+      ret = Pike_NT_ResizePseudoConsole(conpty, coord);
+      if (ret == S_OK) {
+	pty->winsize = coord;
+      }
+      break;
+
+    case TIOCGWINSZ:
+      win->ws_col = pty->winsize.X;
+      win->ws_row = pty->winsize.Y;
+      ret = S_OK;
+      break;
+
+    default:
+      release_fd(fd);
+      errno = EINVAL;
+      return -1;
+    }
+  } else {
+    SOCKET s;
+
+    if (fd_to_socket(fd, &s, 0) < 0) {
+      return -1;
+    }
+
+    FDDEBUG(fprintf(stderr,"ioctl(%d (%ld,%d,%p)\n",
+		    fd, (long)(ptrdiff_t)s, cmd, data));
+
+    ret = ioctlsocket(s, cmd, data);
+
+    FDDEBUG(fprintf(stderr,"ioctlsocket returned %ld (%d)\n",ret,errno));
+  }
 
   release_fd(fd);
 
-  if(ret==SOCKET_ERROR)
+  if(ret != S_OK)
   {
-    set_errno_from_win32_error (WSAGetLastError());
+    if (ret == SOCKET_ERROR) {
+      set_errno_from_win32_error (WSAGetLastError());
+    } else {
+      set_errno_from_win32_error (GetLastError());
+    }
     return -1;
   }
 
@@ -2847,7 +2904,6 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
   struct my_pty *slave_pty = NULL;
   int master_fd = -1;
   int slave_fd = -1;
-  COORD sz;
 
   if (!Pike_NT_CreatePseudoConsole) {
     errno = ENOTSUPP;
@@ -2888,15 +2944,16 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
   }
 
   /* Some reasonable defaults. */
-  sz.X = 80;
-  sz.Y = 25;
+  master_pty->winsize.X = 80;
+  master_pty->winsize.Y = 25;
 
   if (winp) {
-    sz.X = winp->ws_col;
-    sz.Y = winp->ws_row;
+    master_pty->winsize.X = winp->ws_col;
+    master_pty->winsize.Y = winp->ws_row;
   }
 
-  if (FAILED(Pike_NT_CreatePseudoConsole(sz, slave_pty->read_pipe,
+  if (FAILED(Pike_NT_CreatePseudoConsole(master_pty->winsize,
+					 slave_pty->read_pipe,
 					 slave_pty->write_pipe,
 					 0, &master_pty->conpty))) {
     goto win32_fail;
