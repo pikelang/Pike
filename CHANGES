@@ -561,6 +561,10 @@ o Thread
   - Thread.Farm now supports a callback for thread creation and termination
     for the purpose of tracking thread names.
 
+  - Thread.Condition are now bound to the first Thread.Mutex object
+    that they are used together with. This ensures that the correct
+    Thread.Mutex is aways used.
+
 o sprintf %x
 
   %X and %x can now be used on 8-bit wide strings to get a hexadecimal
