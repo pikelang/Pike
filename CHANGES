@@ -386,7 +386,9 @@ o ADT.Heap
 
 o Crypto & Nettle
 
-  - Added Curve25519 and EdDSA25519.
+  - Added Curve25519 with EdDSA.
+
+  - Added support for CMAC.
 
 o Filesystem.Monitor
 
@@ -535,6 +537,8 @@ o SSL
 
   - Support Negotiated FF-DHE.
 
+  - Support Curve25519 key exchange.
+
   - Support client certificates.
 
   - Support ALPN.
@@ -660,6 +664,8 @@ Building and installing
 -----------------------
 
 o GMP 4.1 or later is now required.
+
+o Nettle 3.5 is now supported.
 
 o C99 assumed
 
