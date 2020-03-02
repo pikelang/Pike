@@ -2345,6 +2345,9 @@ void f_mutex_trylock(INT32 args)
   {
     push_object(o);
   } else {
+    /* NB: We know that mutex_key doesn't have an lfun:_destruct()
+     *     that inhibits our destruct().
+     */
     destruct(o);
     free_object(o);
     push_int(0);
@@ -2469,6 +2472,9 @@ void exit_mutex_obj(struct object *UNUSED(o))
 #else
   if(key) {
     m->key=0;
+    /* NB: We know that mutex_key doesn't have an lfun:_destruct()
+     *     that inhibits our destruct().
+     */
     destruct(key); /* Will destroy m->condition if m->num_waiting is zero. */
     if(m->num_waiting)
     {
@@ -4273,6 +4279,9 @@ void th_cleanup(void)
     /* Switch back to the original interpreter struct. */
     *original_interpreter = Pike_interpreter;
 
+    /* NB: We know that mutex_key doesn't have an lfun:_destruct()
+     *     that inhibits our destruct().
+     */
     destruct(backend_thread_obj);
     free_object(backend_thread_obj);
     backend_thread_obj = NULL;
