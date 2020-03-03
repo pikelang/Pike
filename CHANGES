@@ -334,11 +334,16 @@ o Pike.LiveBacktraceFrame
   to eg examine (and change) local variables, and is intended
   for debugger use.
 
+o Pike.ProxyFactory()
+
+  This is a function that generates a proxy class for objects
+  of the given class.
+
+o Web.Auth & Web.Api
 o Web.EngineIO & Web.SocketIO
 o Protocols.HTTP2
 o Bittorrent.DHT
 o Standards.MsgPack
-o Web.Auth & Web.Api
 
 o Thread.RWMutex
 
