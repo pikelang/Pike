@@ -192,6 +192,10 @@ o Sql.pgsql
 
   - Simplify error handling.
 
+  - Toggle cache_autoprepared_statements default to off;
+    turning it on triggers a bug in PostgreSQL sometimes
+    that causes spikes in CPU usage of the database.
+
 o SSL
 
   - When verifying the hostname against the certificate, only accept *
