@@ -541,6 +541,10 @@ o Sql
 
   - pgsql: Lots of changes and fixes.
 
+  - pgsql: Toggle cache_autoprepared_statements default to off;
+    turning it on triggers a bug in PostgreSQL sometimes
+    that causes spikes in CPU usage of the database.
+
 o SSL
 
   - Support session tickets.

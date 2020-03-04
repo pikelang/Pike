@@ -146,10 +146,12 @@ protected string _sprintf(int type) {
 //!     statement),
 //!     but it can speed up parsing due to increased parallelism.
 //!   @member int "cache_autoprepared_statements"
-//!	If set to zero, it disables the automatic statement prepare and
+//!	If set to one, it enables the automatic statement prepare and
 //!	cache logic; caching prepared statements can be problematic
 //!	when stored procedures and tables are redefined which leave stale
 //!	references in the already cached prepared statements.
+//!     The default is off, because PostgreSQL 10.1 (at least)
+//!     has a bug that makes it spike to 100% CPU sometimes when this is on.
 //!   @member string "client_encoding"
 //!	Character encoding for the client side, it defaults to using
 //!	the default encoding specified by the database, e.g.
@@ -932,7 +934,10 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
     if (!sizeof(preparedname) || !tp || !tp.preparedname) {
       if (!sizeof(preparedname))
         preparedname =
-          (portal._unnamedstatementkey = proxy.unnamedstatement->trylock(1))
+          (portal._unnamedstatementkey =
+            (proxy.options.cache_autoprepared_statements
+             ? proxy.unnamedstatement->trylock
+             : proxy.unnamedstatement->lock)(1))
            ? "" : PTSTMTPREFIX + int2hex(ptstmtcount++);
       PD("Parse statement %O=%O\n", preparedname, q);
       plugbuffer = c->start();
@@ -1148,8 +1153,7 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
 #endif
         preparedname = tp.preparedname;
       } else if(tp.trun && tp.tparse*FACTORPLAN >= tp.trun
-              && (undefinedp(options.cache_autoprepared_statements)
-             || options.cache_autoprepared_statements))
+              && options.cache_autoprepared_statements)
         preparedname = PREPSTMTPREFIX + int2hex(pstmtcount++);
     } else {
       if (proxy.totalhits >= cachedepth)
