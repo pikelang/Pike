@@ -389,6 +389,11 @@ o ADT.Heap
 
   - Added low_pop().
 
+o Calendar
+
+  - The timezone expert system has been updated for the first time
+    in quite a while.
+
 o Crypto & Nettle
 
   - Added Curve25519 with EdDSA.
