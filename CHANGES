@@ -32,12 +32,12 @@ o typeof(X) can now be used as a type.
   typeof, when used like this, behaves very much like the C++
   decltype() expression.
 
-o Shorthand for int(val..val) added: int(val).
+o Shorthand for int(val..val) added: int(val) .
 
   A syntax for when the range of an integer type only
   contains a single value.
 
-o Shorthand for string(val..val) added: string(val).
+o Shorthand for string(val..val) added: string(val) .
 
   A syntax for when the range of a string type only
   contains a single value.
@@ -366,8 +366,8 @@ o predef::destruct()
 
 o predef::equal()
 
-  equal() on functions now checks if their definitions are same identifier
-  in the same program.
+  equal() on functions now checks if their definitions are the same
+  identifier in the same program.
 
 o predef::gc()
 
@@ -510,13 +510,13 @@ o Random rewrite
 
   Objects implementing the _random lfun now get two arguments, the
   current random_string() and random() functions. This is convenient
-  for C-level functions that doesn't have to look up functions
+  for C-level functions in that they don't need to look up functions
   themselves. Note that it is possible for a user to replace these
   with non-conforming functions (returning values of the wrong type,
   strings of the wrong length or shift size, and values outside the
   given range) or even non-functions.
 
-  All code in Pike that uses random now uses the current random
+  All code in Pike that use random numbers now use the current random
   functions (though in some cases fixed at object creation). This
   allows for repeatable results if the random functions are replaced
   with a deterministic random generator, such as
@@ -589,8 +589,8 @@ o Unicode 10.0.0.
 
 o Unicode.is_whitespace()
 
-  This new function returns if a unicode character is a whitespace
-  characer or not.
+  This new function returns whether a unicode character is a whitespace
+  character or not.
 
 
 Deprecated symbols and modules
@@ -607,7 +607,7 @@ Removed features and modules
 
 o Compatibility for Pike versions before 7.8 is no longer available.
 
-o GTK1 library is deprecated, so glue code is removed.
+o GTK1 library is deprecated, so glue code has been removed.
 
 
 C-level API changes
