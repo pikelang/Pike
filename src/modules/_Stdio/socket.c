@@ -138,7 +138,21 @@ static void do_close(struct port *p)
 static void port_set_id(INT32 args)
 {
   check_all_args(NULL, args, BIT_MIXED, 0);
+
+  /* NB: Inlined code for PIKE_T_NO_REF_MIXED from object_lower_set_index(). */
+  if (((TYPEOF(THIS->id) == T_OBJECT) || (TYPEOF(THIS->id) == T_FUNCTION)) &&
+      (THIS->id.u.object == Pike_fp->current_object)) {
+    /* Restore the reference so that assign_svalue() below can remove it. */
+    add_ref(Pike_fp->current_object);
+  }
+
   assign_svalue(& THIS->id, Pike_sp-args);
+
+  if (((TYPEOF(THIS->id) == T_OBJECT) || (TYPEOF(THIS->id) == T_FUNCTION)) &&
+      (THIS->id.u.object == Pike_fp->current_object)) {
+    /* Remove the reference that assign_svalue() added above. */
+    sub_ref(Pike_fp->current_object);
+  }
   pop_n_elems(args-1);
 }
 
@@ -745,7 +759,8 @@ static void init_port_struct(struct object *o)
 {
   INIT_FD_CALLBACK_BOX(&THIS->box, NULL, o, -1, 0, got_port_event, 0);
   THIS->my_errno=0;
-  /* map_variable takes care of id and accept_callback. */
+  /* NB: NOT reference-counted! */
+  SET_SVAL(THIS->id, T_OBJECT, 0, object, Pike_fp->current_object);
 }
 
 static void exit_port_struct(struct object *UNUSED(o))
@@ -776,7 +791,7 @@ void init_stdio_port(void)
                     offset + OFFSETOF(port, accept_callback),
                     tMix, PIKE_T_MIXED, 0);
   PIKE_MAP_VARIABLE("_id",
-                    offset + OFFSETOF(port, id), tMix, PIKE_T_MIXED, 0);
+		    offset + OFFSETOF(port, id), tMix, PIKE_T_NO_REF_MIXED, 0);
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind", port_bind,
 	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr) tOr(tVoid,tInt),tInt), 0);
