@@ -132,6 +132,10 @@ static void do_close(struct port *p)
  *! This function sets the id used for accept_callback by this port.
  *! The default id is @[this_object()].
  *!
+ *! @note
+ *!   In Pike 8.0 and earlier the default value was @expr{0@} (zero)
+ *!   (even though it was documented as above).
+ *!
  *! @seealso
  *!   @[query_id]
  */
