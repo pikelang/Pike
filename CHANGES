@@ -199,6 +199,10 @@ o Sql.Sql is no longer a wrapper class, but a function.
   new base class __builtin.Sql.Connection. Note that it is
   still possible to use Sql.Sql as the type of connection objects.
 
+o Stdio.Port now has a default id of itself (as documented).
+
+  Previously the default id for Stdio.Port objects was 0.
+
 o Named classes are always statements.
 
   As mentioned above, it is no longer possible to define a named
