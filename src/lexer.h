@@ -1098,11 +1098,12 @@ unknown_directive:
 
     case '-':
       if(GOBBLE('=')) return TOK_SUB_EQ;
-      if(GOBBLE('>'))
+      if(GOBBLE('>')) {
 	if(GOBBLE('?') ) /* ->? */
 	  return TOK_SAFE_INDEX;
 	else
 	  return TOK_ARROW;
+      }
       if(GOBBLE('-')) return TOK_DEC;
       return '-';
 
