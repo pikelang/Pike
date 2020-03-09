@@ -2304,7 +2304,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     }
 
     PIKEFUN void destroy( int reason )
-      flags ID_PRIVATE;
+      flags ID_PROTECTED;
     {
       if( reason > 1 ) /* no refs or gc */
       {
@@ -2314,7 +2314,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     }
 
     PIKEFUN void create()
-      flags ID_PRIVATE;
+      flags ID_PROTECTED;
     {
       THIS->obj = 0;
       THIS->io = 0;
