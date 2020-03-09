@@ -2593,7 +2593,7 @@ PIKECLASS Buffer
     }
 
     PIKEFUN void destroy( int reason )
-      flags ID_PRIVATE;
+      flags ID_PROTECTED;
     {
       if( reason > 1 && THIS->auto_mode ) /* no refs or gc */
       {
@@ -2613,7 +2613,7 @@ PIKECLASS Buffer
     }
 
     PIKEFUN void create()
-      flags ID_PRIVATE;
+      flags ID_PROTECTED;
     {
       /* FIXME: The following zeroing isn't safe! */
       THIS->obj = 0;
