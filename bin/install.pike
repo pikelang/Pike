@@ -3051,6 +3051,7 @@ int main(int argc, array(string) argv)
     ({"--wix-module", Getopt.NO_ARG, ({ "--wix-module" })}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
     ({"--verbose",Getopt.NO_ARG,({"--verbose"})}),
+    ({"--redump-all",Getopt.NO_ARG,({"--redump-all"})}),
     ({"--release-crt",Getopt.NO_ARG,({"--release-crt"})}),
     ({"--debug-crt",Getopt.NO_ARG,({"--debug-crt"})}),
     ({"--collect-dlls", Getopt.HAS_ARG, ({"--collect-dlls"})}),
@@ -3076,6 +3077,10 @@ int main(int argc, array(string) argv)
 
 	case "--verbose":
 	  verbose=1;
+	  break;
+
+        case "--redump-all":
+	  redump_all = 1;
 	  break;
 
 	  // The following two are used to install the right dlls for
