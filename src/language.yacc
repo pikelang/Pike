@@ -1099,9 +1099,9 @@ modifier:
         !TEST_COMPAT(7, 8) && Pike_compiler->compiler_pass==1 )
       yywarning("Keyword static is deprecated in favour of 'protected'.");
     }
-  | TOK_EXTERN     { $$ = ID_EXTERN; }
+  | TOK_EXTERN     { $$ = ID_EXTERN | ID_OPTIONAL; }
   | TOK_OPTIONAL   { $$ = ID_OPTIONAL; }
-  | TOK_PRIVATE    { $$ = ID_PRIVATE | ID_PROTECTED; }
+  | TOK_PRIVATE    { $$ = ID_PRIVATE | ID_PROTECTED | ID_INLINE; }
   | TOK_LOCAL_ID   { $$ = ID_INLINE; }
   | TOK_PUBLIC     { $$ = ID_PUBLIC; }
   | TOK_PROTECTED  { $$ = ID_PROTECTED; }
