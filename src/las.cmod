@@ -4611,9 +4611,20 @@ static node *eval(node *n)
     if (new->type &&
 	((new->type->type == PIKE_T_INT) || (new->type->type == PIKE_T_TYPE))) {
       /* Ok. */
-    } else if (n->type && (!new->type || !pike_types_le(new->type, n->type))) {
-      /* Try consolidating the type information. */
-      new = mksoftcastnode(n->type, new);
+    } else if (n->type) {
+      if (!new->type) {
+	new->type = n->type;
+	add_ref(n->type);
+      } else if (!pike_types_le(new->type, n->type)) {
+	/* Try consolidating the type information. */
+	struct pike_type *t = soft_cast(n->type, new->type, 0);
+	if (t) {
+	  free_type(new->type);
+	  new->type = t;
+	} else {
+	  new = mksoftcastnode(n->type, new);
+	}
+      }
     }
     free_node(n);
     n = new;
