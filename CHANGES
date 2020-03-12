@@ -189,6 +189,9 @@ o Protocols.HTTP.Server
 
   Header names in "extra_heads" will not have their case modified.
 
+o ADT.OrderedMapping
+
+  Adding duplicate keys now replaces the existing keys.
 
 Incompatible changes
 --------------------
