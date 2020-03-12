@@ -670,10 +670,6 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
   }
   ;
 
-// [ vars... ] = [some_type]vals ==> [ vars ] = vals
-F_ASSIGN(1 = F_ARRAY_LVALUE, F_SOFT_CAST(0, *)):
-  F_ASSIGN($1, $0);
-
 // [ vars... ] = ({ vals... })  ==>  multi_assign(vars, vals)
 F_ASSIGN(F_ARRAY_LVALUE(1, -),
 	 F_APPLY(F_CONSTANT
