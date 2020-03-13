@@ -1,7 +1,8 @@
 #pike __REAL_VERSION__
 
 //! This class works pretty much as a mapping except the order of the indices
-//! is kept in the order they are added.
+//! is kept in the order they are added.  This class works equivalent
+//! to the Map() class in Javascript.
 //!
 //! @example
 //! @code
