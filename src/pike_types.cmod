@@ -8134,9 +8134,17 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
   case T_INT:
     if(s->u.integer) {
       type_stack_mark();
-      /* Fixme, check that the integer is in range of MIN_INT32 .. MAX_INT32!
-       */
-      push_int_type(s->u.integer, s->u.integer);
+      /* Check that the integer is in range of MIN_INT32 .. MAX_INT32. */
+      if (((s->u.integer & 0x7fffffff) == s->u.integer) ||
+	  ((s->u.integer | 0x7fffffff) == s->u.integer)) {
+	push_int_type(s->u.integer, s->u.integer);
+      } else {
+	/* Out of range. Depending on where the integer ends up it may
+	 * get truncated in various ways. Avoid confusion by reducing
+	 * the specificity of the type.
+	 */
+	push_int_type(MIN_INT32, MAX_INT32);
+      }
       return pop_unfinished_type();
     }else{
       copy_pike_type(ret, zero_type_string);
