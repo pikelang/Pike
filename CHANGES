@@ -144,6 +144,14 @@ o Returning void
 Bug fixes
 ---------
 
+o Compiler
+
+  Constant integers outside the 32-bit signed range not longer
+  get their types mapped to int(-0x80000000) or int(0x7fffffff),
+  (depending on sign) but instead keep the generic int type.
+  This fixes issues where the type resolution system derived
+  erroneous types from the truncated types.
+
 o Runtime
 
   The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
