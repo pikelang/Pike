@@ -25,6 +25,13 @@ o Concurrent
   - Rewrite timeout() to reduce the memory footprint of a future in the
     common case.
 
+o Process.Process
+
+  - On NT it is now possible to specify the preferred console handler
+    via the "conpty" option. The default is to take it from the first
+    pty of "stdin", "stdout", and "stderr". If none of them is a pty
+    the console handler is inherited from the current process.
+
 o SSL
 
   The SSL module now supports session ticket both client and server side.
