@@ -22,6 +22,11 @@
 
 #include <errno.h>
 
+#ifdef PIKE_DEBUG
+/* Needed for isprint(). */
+#include <ctype.h>
+#endif
+
 #define SET_HSIZE(X) htable_mask=(htable_size=(X))-1
 #define HMODULO(X) ((X) & (htable_mask))
 
