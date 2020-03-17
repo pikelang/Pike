@@ -132,6 +132,7 @@ array(string) split(string data)
       {
       case '/':
         while( !((< '\n', '\r' >)[data[pos++]]) );
+        pos--;
         break;
 
       default:
