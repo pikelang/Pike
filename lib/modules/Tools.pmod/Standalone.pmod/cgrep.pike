@@ -120,10 +120,10 @@ class PikeFile {
 #endif
       if(in_token==1 && token==target) {
 	found();
-	line += String.count(token, "\n");
-	continue;
+        line += String.count(token, "\n");
+        continue;
       }
-      if(token[0]=='"') {
+      if(token[0]=='"' || token[0]=='\'') {
 	if(in_string==1 && token[1..sizeof(token)-2]==target)
 	  found();
 	else if(in_string==2 && has_value(token[1..sizeof(token)-2], target))
@@ -134,7 +134,8 @@ class PikeFile {
       if(token[..1]=="//") {
 	if(in_comment && has_value(token[2..], target))
 	  found();
-	continue;
+        line += String.count(token, "\n");
+        continue;
       }
       if(token[..1]=="/*") {
 	foreach(token[2..sizeof(token)-3]/"\n", string l) {
@@ -173,6 +174,23 @@ class CFile {
   }
 }
 
+class JSFile {
+  inherit PikeFile;
+
+  array(string) split(string data, mapping state) {
+    return Parser.ECMAScript.split(data);
+  }
+
+  void feed(string str) {
+    queue += str;
+  }
+
+  int close() {
+    ::feed(queue);
+    return ::close();
+  }
+}
+
 void msg(string x, mixed ... y) {
   if(verbose)
     werror(x, @y);
@@ -206,10 +224,24 @@ int handle_file(string path, string fn) {
   if(suffix=="in" && sizeof(parts)>1)
     suffix = parts[-2];
 
-  if( (< "pike", "pmod", "java" >)[suffix] )
+  switch( suffix ) {
+  case "pike":
+  case "pmod":
+  case "java":
     f = PikeFile(fn);
-  else if( (< "h", "c", "cmod", "cpp" >)[suffix] )
+  break;
+
+  case "h":
+  case "c":
+  case "cmod":
+  case "cpp":
     f = CFile(fn);
+  break;
+
+  case "js":
+    f = JSFile(fn);
+    break;
+  }
 
   // We could add some heuristics here looking for #! rows ending
   // in pike and emacs -*- things with c or pike in them.
