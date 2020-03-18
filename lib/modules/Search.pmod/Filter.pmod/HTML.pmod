@@ -160,7 +160,8 @@ void parse_http_header(string header, string value, .Output res)
   array(string) parse_title(Parser.HTML p, mapping m, string c, mapping e) {
     if (e->noindex)
       return ({ });
-    res->fields->title = clean(c);
+    if (!res->fields->title)
+      res->fields->title = clean(c);
     return ({c});
   };
 
