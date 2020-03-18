@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.42 2007/03/16 14:45:38 jonasw Exp $
+// $Id$
 
 // Filter for text/html
 
@@ -139,7 +139,8 @@ static string clean(string data) {
   array(string) parse_title(Parser.HTML p, mapping m, string c, mapping e) {
     if (e->noindex)
       return ({ });
-    res->fields->title = clean(c);
+    if (!res->fields->title)
+      res->fields->title = clean(c);
     return ({c});
   };
 
