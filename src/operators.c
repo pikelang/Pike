@@ -2827,6 +2827,27 @@ PMOD_EXPORT void o_or(void)
       }
     } else {
       int args = 2;
+
+      if ((TYPEOF(Pike_sp[-1]) == PIKE_T_INT) &&
+	  (SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED)) {
+	if (TYPEOF(Pike_sp[-2]) == PIKE_T_MULTISET) {
+	  struct multiset *l = copy_multiset(Pike_sp[-2].u.multiset);
+	  pop_stack();
+	  pop_stack();
+	  push_multiset(l);
+	  return;
+	}
+      } else if ((TYPEOF(Pike_sp[-2]) == PIKE_T_INT) &&
+		 (SUBTYPEOF(Pike_sp[-2]) == NUMBER_UNDEFINED)) {
+	if (TYPEOF(Pike_sp[-1]) == PIKE_T_MULTISET) {
+	  struct multiset *l = copy_multiset(Pike_sp[-1].u.multiset);
+	  pop_stack();
+	  pop_stack();
+	  push_multiset(l);
+	  return;
+	}
+      }
+
       SIMPLE_ARG_TYPE_ERROR("`|", 2, get_name_of_type(TYPEOF(Pike_sp[-2])));
     }
   }
@@ -2973,6 +2994,9 @@ PMOD_EXPORT void o_or(void)
  *!   @mixed arg1
  *!     @type int
  *!       Bitwise or of @[arg1] and @[arg2].
+ *!     @type zero
+ *!       @[UNDEFINED] may be or:ed with multisets, behaving as if
+ *!       it was an empty multiset.
  *!     @type string
  *!       The result is a string where each character is the bitwise
  *!       or of the characters in the same position in @[arg1] and
@@ -2994,7 +3018,7 @@ PMOD_EXPORT void o_or(void)
  *!       and @[`==]) occur in both, the value from @[arg2] is used.
  *!     @type multiset
  *!       The result is like @[arg1] but extended with the entries in
- *!       @[arg2] that doesn't already occur in @[arg1] (according to
+ *!       @[arg2] that don't already occur in @[arg1] (according to
  *!       @[`>], @[`<] and @[`==]). Subsequences with orderwise equal
  *!       entries (i.e. where @[`<] returns false) are handled just
  *!       like the array case above.
@@ -3008,6 +3032,8 @@ PMOD_EXPORT void o_or(void)
  *!   If this operator is used with arrays or multisets containing objects
  *!   which implement @[lfun::`==()] but @b{not@} @[lfun::`>()] and
  *!   @[lfun::`<()], the result will be undefined.
+ *!
+ *!   The treatment of @[UNDEFINED] with multisets was new in Pike 8.1.
  *!
  *! @seealso
  *!   @[`&()], @[lfun::`|()], @[lfun::``|()]
