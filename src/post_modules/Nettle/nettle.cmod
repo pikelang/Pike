@@ -17,6 +17,7 @@
 
 #include <nettle/yarrow.h>
 #include <nettle/memxor.h>
+#include <nettle/blowfish.h>
 
 #ifdef HAVE_NETTLE_VERSION_H
 #include <nettle/version.h>
@@ -51,6 +52,92 @@ PIKEFUN string version()
   push_int(0);
 #endif
 }
+
+#ifdef HAVE_NETTLE_BLOWFISH_BCRYPT_HASH
+/*! @decl
+ *!
+ *! Low level implementation of the bcrypt password-hashing algorithm.
+ *!
+ *! @param password
+ *! The cleartext password.  Only accepts 8-bit strings.
+ *!
+ *! @param scheme
+ *! Specifies the scheme to be used to generate the hash.
+ *! The settings either cleanly specify the scheme of either "2a", "2b",
+ *! "2x" or "2y", or they contain the (part of the prefix of) normal
+ *! hashed password string, so an existing hashed password string can
+ *! be passed unmodified.
+ *!
+ *! When generating a new hash from scratch, the following minimum needs to be
+ *! specified, e.g. "$2y$10$1b2lPgo4XumibnJGN3r3sO".  In this "$" is the
+ *! separator, "2y" specifies
+ *! the used hash-algorithm, "10" specifies 2^10 encryption rounds
+ *! and "1b2lPgo4XumibnJGN3r3sO" is the salt (16 bytes, base64 encoded).
+ *! The minimal value for settings would be "$2y$".
+ *!
+ *! @param salt
+ *! The salt can be supplied as part of @[settings], or separately
+ *! as a 16-byte binary string.
+ *!
+ *! @param log2rounds
+ *! The log2 number of encryption rounds.  If unspecified it is taken
+ *! from the settings string, and if not specified there it defaults to
+ *! 10 which equals 1024 encryption rounds.
+ *!
+ *! @returns The (according to the specified algorithm, encryption
+ *! rounds, and salt) hashed and encoded version of the supplied password.
+ *! Throws an error on invalid input.
+ *!
+ *! @note You should normally use @[Crypto.Password] instead.
+ *!
+ *! @seealso
+ *!   @[Crypto.Password], @[Crypto.BLOWFISH]
+ */
+PIKEFUN string(7bit) bcrypt_hash(string(8bit) password, string(7bit) scheme,
+ string(8bit)|void salt, int|void log2rounds)
+{
+  int retval;
+  struct string_builder ret;
+  password->flags |= STRING_CLEAR_ON_EXIT;
+  if (salt)
+    NO_WIDE_STRING(salt);
+  init_string_builder_alloc(&ret, BLOWFISH_BCRYPT_HASH_SIZE, 0);
+  retval = nettle_blowfish_bcrypt_hash(BLOWFISH_BCRYPT_HASH_SIZE, STR0(ret.s),
+   STR0(password), STR0(scheme),
+   log2rounds ? log2rounds->u.integer : -1,
+   salt && salt->len >= BLOWFISH_BCRYPT_BINSALT_SIZE ? STR0(salt) : NULL);
+  if (!retval) {
+    free_string_builder(&ret);
+    Pike_error("Invalid password hash scheme for bcrypt.\n");
+  }
+  ret.s->len = strlen(STR0(ret.s));
+  RETURN finish_string_builder(&ret);
+}
+
+/*! @decl
+ *!
+ *! Low level implementation of the bcrypt password-verifying algorithm.
+ *!
+ *! @param password
+ *! The cleartext password.  Only accepts 8-bit strings.
+ *!
+ *! @param hashedpassword
+ *! This is the full hashed password string.
+ *!
+ *! @returns Returns 1 if the cleartext password matches the hashed password
+ *!  and zero otherwise.
+ *!
+ *! @note You should normally use @[Crypto.Password] instead.
+ *!
+ *! @seealso
+ *!   @[Crypto.Password], @[Crypto.BLOWFISH]
+ */
+PIKEFUN int bcrypt_verify(string(8bit) password, string(7bit) hashedpassword)
+{
+  password->flags |= STRING_CLEAR_ON_EXIT;
+  RETURN nettle_blowfish_bcrypt_verify(STR0(password), STR0(hashedpassword));
+}
+#endif
 
 /*! @class Yarrow
  *!

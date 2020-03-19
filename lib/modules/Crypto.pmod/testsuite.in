@@ -1628,6 +1628,13 @@ dnl  The following test is disabled since we do not perform any
 dnl  validation of the characters used in the salt.
 dnl  test_false(P("invalid salt", "$1$`!@#%^&*$E6hD76/pKTS8qToBCkux30"))
 ]])
+cond_resolv(Nettle.bcrypt_hash, [[
+  test_true(P("yawinpassword",
+     "$2a$04$MzVXtd4o0y4DOlyHMMLMDeE4/eezrsT5Xad.2lmGr/NkCpwBgvn3e"))
+  test_true(P("Bootq9sH5",
+     "$2y$10$1b2lPgo4XumibnJGN3r3sOsXFfVVYlebFjlw47qpaslC4KIwu9dAK"))
+  test_false(P("1234", "$2y$"))
+]])
 cond_resolv(Crypto.SHA1, [[
   // Generated using the Python PassLib via Phpass
   test_true(P("password", "$pbkdf2$1212$OB.dtnSEXZK8U5cgxU/GYQ$y5LKPOplRmok7CZp/aqVDVg8zGI"))

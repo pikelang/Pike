@@ -197,6 +197,7 @@ int verify(string(8bit) password, string(7bit) hash)
       return 0;
     }
 
+    string(7bit) fullhash = hash;
     // Then try our implementations.
     if (!sscanf(hash, "$%s$%s", scheme, hash)) return 0;
     sscanf(hash, "%s$%s", string(7bit) salt, hash);
@@ -205,12 +206,14 @@ int verify(string(8bit) password, string(7bit) hash)
     case "1":	// crypt_md5
       return Nettle.crypt_md5(passwd, salt) == hash;
 
+#if constant(Nettle.bcrypt_hash)
     case "2":	// Blowfish (obsolete)
     case "2a":	// Blowfish (possibly weak)
     case "2b":	// Blowfish (long password bug fixed)
     case "2x":	// Blowfish (weak)
     case "2y":	// Blowfish (stronger)
-      break;
+      return Nettle.bcrypt_verify(passwd, fullhash);
+#endif
 
     case "nt":
     case "3":	// MD4 NT LANMANAGER (FreeBSD)
@@ -314,6 +317,19 @@ int verify(string(8bit) password, string(7bit) hash)
 //!     @value "3"
 //!     @value "NT"
 //!       The NTLM MD4 hash.
+//!
+//!     @value "2"
+//!     @value "2a"
+//!     @value "2b"
+//!     @value "2x"
+//!     @value "2y"
+//!     @value "$2$"
+//!     @value "$2a$"
+//!     @value "$2b$"
+//!     @value "$2x$"
+//!     @value "$2y$"
+//!       @[Nettle.bcrypt()] with 128 bits of salt and a default
+//!       of @expr{10@} rounds.
 //!
 //!     @value "1"
 //!     @value "$1$"
@@ -426,16 +442,8 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 				     string(7bit) hash, int rounds)
   {
     if (!has_value(scheme, '$')) scheme = "$" + scheme + "$";
-    int exp2 = 0;
-    if (rounds < (1<<7)) exp2 = 7;
-    else if (rounds > (1<<30)) exp2 = 30;
-    else {
-      if (rounds & (rounds - 1)) exp2 = 1;
-      while (rounds) {
-	rounds >>= 1;
-	exp2++;
-      }
-    }
+    int(0..) exp2 = 7;
+    while (1 << exp2 < rounds && ++exp2 < 30);
     return sprintf("%s%c%s%s",
 		   scheme, "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[exp2],
 		   salt, hash);
@@ -451,25 +459,46 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
   function(string(7bit), string(7bit), string(7bit), int(0..):string(7bit))
     render_hash = render_crypt_hash;
 
-  switch(lower_case(scheme)) {
+  string schemeprefix = scheme;
+
+  if (schemeprefix && schemeprefix[0] == '$')
+    sscanf(schemeprefix, "$%s$", schemeprefix);
+
+  switch(lower_case(schemeprefix)) {
   case "crypt":
   case "{crypt}":
   case UNDEFINED:
     // FALL_THROUGH
 #if constant(Crypto.SHA512)
   case "6":
-  case "$6$":
     crypt_hash = Crypto.SHA512.crypt_hash;
     scheme = "6";
     break;
 #endif
   case "5":
-  case "$5$":
     crypt_hash = Crypto.SHA256.crypt_hash;
     scheme = "5";
     break;
+#if constant(Nettle.bcrypt_hash)
+  case "2":	// Blowfish (obsolete)
+  case "2a":	// Blowfish (possibly weak)
+  case "2b":	// Blowfish (long password bug fixed)
+  case "2x":	// Blowfish (weak)
+  case "2y":	// Blowfish (stronger)
+  {
+    string(8bit) salt;
+    int exp2 = -1;
+    if (rounds) {
+      int(0..) exp2;
+      for (exp2 = 0; 1 << exp2 < rounds && ++exp2 < 31; );
+      rounds = exp2;
+    }
+    if (sizeof(scheme) < 1 + 2 + 1 + 2 + 1 + 22)
+      salt = random_string(16);
+    return Nettle.bcrypt_hash(password, scheme, salt, rounds);
+  }
+#endif
   case "1":
-  case "$1$":
     crypt_hash = Crypto.MD5.crypt_hash;
     salt_size = 8;
     rounds = 1000;		// Currently only 1000 rounds is supported.
@@ -512,7 +541,6 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     break;
 
   case "sha1":
-  case "$sha1$":
     // NetBSD-style crypt_sha1().
     crypt_hash = Crypto.SHA1.HMAC.crypt_hash;
     render_hash = render_old_crypt_hash;
@@ -522,7 +550,6 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     break;
 
   case "pbkdf2":
-  case "$pbkdf2$":
     crypt_hash = Crypto.SHA1.crypt_pbkdf2;
     render_hash = render_old_crypt_hash;
     // Defaults taken from PassLib.
@@ -532,7 +559,6 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     break;
 
   case "pbkdf2-sha256":
-  case "$pbkdf2-sha256$":
     crypt_hash = Crypto.SHA256.crypt_pbkdf2;
     render_hash = render_old_crypt_hash;
     // Defaults taken from PassLib.
@@ -543,7 +569,6 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 
 #if constant(Crypto.SHA512)
   case "pbkdf2-sha512":
-  case "$pbkdf2-sha512$":
     crypt_hash = Crypto.SHA512.crypt_pbkdf2;
     render_hash = render_old_crypt_hash;
     // Defaults taken from Passlib.
@@ -554,10 +579,8 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 #endif
 
   case "P":
-  case "$P$":
   case "U$P$":
   case "H":
-  case "$H$":
     crypt_hash = Crypto.MD5.crypt_php;
     render_hash = render_php_crypt_hash;
     salt_size = 8;
@@ -565,7 +588,6 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     break;
 
   case "Q":
-  case "$Q$":
     crypt_hash = Crypto.SHA1.crypt_php;
     render_hash = render_php_crypt_hash;
     salt_size = 8;
@@ -574,7 +596,6 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 
 #if constant(Crypto.SHA512)
   case "S":
-  case "$S$":
     crypt_hash = Crypto.SHA512.crypt_php;
     render_hash = render_php_crypt_hash;
     salt_size = 8;

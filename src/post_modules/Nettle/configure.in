@@ -128,6 +128,7 @@ else
 		   nettle_curve25519_mul nettle_ed25519_sha512_sign \
                    nettle_version_major \
 		   nettle_cmac128_set_key \
+		   nettle_blowfish_bcrypt_hash \
 		   )
 
     AC_MSG_CHECKING([for idea.c])
