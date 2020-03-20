@@ -388,15 +388,15 @@ void parse_http_header(string header, string value, .Output res)
 				 }
 			       });
 
-  res->fields->title="";
-  res->fields->description="";
-  res->fields->keywords="";
-
   parser->finish(data);
 
   res->links = lf->read();
   res->fields->body=databuf->get();
   res->fix_relative_links(uri);
+
+  res->fields->title = res->fields->title || "";
+  res->fields->description = res->fields->description || "";
+  res->fields->keywords = res->fields->keywords || "";
 
   return res;
 }
