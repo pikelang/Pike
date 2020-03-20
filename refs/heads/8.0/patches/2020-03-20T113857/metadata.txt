@@ -1,0 +1,209 @@
+subject: Pike 8.0: SSL, Search, Postgres, Protocols.HTTP, describe_backtrace, tzdata2019c
+from: 9f8e0579bbb170291627bab7894018892a3b036b
+to: 5020c16ad709484ef870559acb394afe1270feb5
+originator: Henrik Grubbstrom
+depends: 2019-08-09T164123
+restart: true
+
+Multiple fixes:
+
+• Search.Filter.HTML: Return the first <title>.
+
+There may be multiple <title>-tags in an html document where the
+later are related to SVG.
+
+Fixes #10020.
+
+• pgsql: Toggle cache_autoprepared_statements default.
+
+• Documentation [Standards.X509]: Fixed some typos.
+
+Fixes #10012.
+
+• pgsql: Simplify code.
+
+• pgsql: Simplify error handling for users.
+
+• pgsql: Disentangle potentially shared empty arrays.
+
+• SSL: Do not accept MD2, MD5 and SHA1 signatures any longer
+
+Web browsers and others have distrusted SHA1 a long while ago, MD2 and
+MD5 are at this point simply dangerous to support. However, we now
+support configuration of supported signature algorithms via
+@[SSL.Context] in case any use case simply needs to support older
+signature algorithms.
+
+• Standard.X509: Make signature algorithms configurable
+
+• pgsql: Cast integers to floats, when floats are desired.
+
+• pgsql: Avoid output_to() race on large requests.
+
+• pgsql: Cater for destructed objects.
+
+• pgsql: Do not pass along strings with NUL characters in UTF-8.
+
+• pgsql: 08P01 is a protocol error that is fatal.
+
+• Graphics.Graph: Prevent dumping of create_graph.pike
+
+"Resolves" an issue with incorrect dumping of this module.
+
+• SSL.File: Signal errors during handshake via close callback
+
+We relatively recently stopped claiming that a connection was
+peer_closed when in fact we gave up on the SSL connection with a fatal
+alert. This caused us to signal some errors via the write callback
+instead. This restores the old signalling behaviour by checking for
+local_fatal state in some places we only checked for peer_closed before.
+
+• SSL: Fix ticket_enabled logic a little bit
+
+In practice this ought to have little effect though, as to accept a
+ticket we also need to be in STATE_wait_for_ticket anyway.
+
+• SSL: Do not purge sessions for crudely closed connections
+
+Not negotiating the close at the TLS level is in spec, and should not
+lead to sessions being purged.
+
+• SSL: Only accept wildcards for one level
+
+* in CN / SubjectAlternativeName:dNS is supposed to only match one level
+of the hostname, i.e. *.example.com matches foo.example.com but not
+www.foo.example.com.
+
+• Let client code detect support for new Search.Utils.Logger constructor, and
+simplify whitespace generation.
+
+• Master: Fix issue where describe_string() could lengthen the output.
+
+Fixes edge-case where the string to be formatted (m) is shorter than
+the maxlen, but the formatted string (t) is longer. This caused the
+truncation code to instead lengthen the string...
+
+Fixes [PIKE-224].
+
+• Search.Utils.Logger: Added support for specifying indentation width when creating a Logger instance. [WS-581]
+
+• Protocols.HTTP.Server.Request: Added http header 'Transfer-Encoding'.
+
+• pgsql: Closed portals should shut down the connection.
+
+• pgsql: Track back deadlock, explicitly release lock, speeds up code.
+
+• Protocols.HTTP: Use Protocols.DNS.async_host_to_ip().
+
+Most Protocols.HTTP.Query objects had their own Protocols.DNS.async_client
+(and related Stdio.UDP).
+
+Fixes [PIKE-195].
+
+• SSL.ClientConnection: Fix session ticket support
+
+The server signals reuse of the session by echoing the session_id we
+provide (as well as by a shortened handshake/server hello). Presence of
+the session ticket extension informs of the server's intention to send a
+new session ticket (or replace an existing one), hence tickets_enabled
+does not need to be true (and apparently rarely is) when we resume
+sessions based on tickets with other SSL implementations on the server
+side.
+
+• SSL.clientConnection: Session tickets (RFC 4507 and RFC 5077).
+
+Client side support for session tickets.
+
+Implementation only verified against itself.
+
+Backported from 95ad6e4388b6576d7012110efe0edb3479a8422f by Tobias
+Josefowitz.
+
+• SSL.ServerConnection: Session tickets (RFC 4507 and RFC 5077).
+
+Server side support for session tickets.
+
+Note that the default ticket encoding is to use the session_id,
+it thus uses server side state. The ticket encoding can be changed
+by overriding {en,de}code_ticket() in SSL.Context.
+
+Implementation verified against OpenSSL's s_client.
+
+Backported from 372b2a05d05fa0d0e052e6634d2acf8d03629ed4 by Tobias
+Josefowitz.
+
+• Updated to tzdata2019c.
+
+• Thread.ResourceCountKey: Survive being used with old pike binaries.
+
+Old pike 8.0 binaries do not have Pike.DestructImmediate, and it is
+not meaningful to attempt to kludge around it, as the corresponding
+program flag is not propagated with them anyway.
+
+• Pike: Move DestructImmediate to the Pike module.
+
+• Thread.ResourceCountKey: Make destruct immediate
+
+• SSL.File: Flush data before regarding the connection closed.
+
+• SSL.Connection: Improved diagnostics when handshaking.
+
+• SSL.File: Return EPIPE frome write() if the peer has closed the connection.
+
+• SSL.File: query_{suite,version}() now both return -1 when unknown.
+
+Fixes some testsuite failures.
+
+• SSL.File: Only call the write_callback if it exists...
+
+• SSL.Session: Initialize cipher_suite to SSL_invalid_suite.
+
+This makes it easy to see whether the handshake has completed
+successfully.
+
+• SSL.Connection: Only set peer_closed when the peer actually has closed.
+
+• SSL.Constants: Added SSL_invalid_suite.
+
+• SSL.File: Adjusted some state macros.
+
+SSL_HANDSHAKING is now terminated when the connection has
+entered the CONNECTION_local_fatal state.
+
+SSL_INTERNAL_WRITING now requires there to not be any write errors.
+
+• SSL.File: Improved diagnostics in SSL3_DEBUG mode.
+
+• SSL.File: The write callback must not be called during handshaking.
+
+Fixes several testsuite failures.
+
+• SSL.File: Call the write_callback when pending write error.
+
+• Protocols.HTTP: Keep proxy CONNECT and request headers separate.
+
+This makes sure that we do not leak Authorization- and Cookie-
+headers to the proxy.
+
+Fixes [PIKE-216].
+
+• Protocols.HTTP: Remove line breaks from base64 basic auth tokens
+
+• Master: Avoid adding end of line padding in describe_backtrace().
+
+describe_bactrace() sometimes used the rough-linebreak mode of sprintf()
+to handle long lines, this caused all lines to be padded to the linewith
+at end of line (ie often with several 1000s of extra spaces per line).
+
+Fixes [PIKE-211].
+
+• TURBO2-1398: Allow disabling of wrapping of describe_backtrace output.
+
+The wrapping can add lots of spaces to the end of lines to pad
+them, resulting in enormous backtrace files in some circumstances.
+
+• Calendar.Language: Fixed spelling for spanish septiembre.
+
+Thanks to David Tapia <davidtapia> for the report.
+
+Fixes [pikelang/pike #36].
