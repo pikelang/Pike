@@ -56,6 +56,9 @@ o ** operator added. It's exponentiation and works with most
   object. It has now been changed to also use `** (or, rather, pow()
   is now implemented using predef::`**()).
 
+* Binary or between a multiset and UNDEFINED is now behaves like
+  binary or between the multiset and the empty multiset.
+
 o Three pass compiler.
 
   An extra pass of the compiler has been added. It is used to properly
