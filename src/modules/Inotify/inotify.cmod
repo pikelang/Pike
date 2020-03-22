@@ -158,7 +158,7 @@ PIKEFUN array(string|int) parse_event(string data) {
  *!	@tt{inotify_init(2)@}. Every object of this class has its own inotify
  *!	file descriptor. Use this class only if you want direct access to
  *!	the file descriptor to read from it manually. For a more user
- *!	friendly inferface use @[System.Inotify.Instance].
+ *!	friendly interface use @[System.Inotify.Instance].
  *!
  *! @seealso
  *!     @[System.Inotify.Instance]
@@ -433,6 +433,7 @@ PIKECLASS _Instance {
 	    if (bytes > 0) {
 	      THIS->buf.s->len += bytes;
 	    }
+
 	    while (THIS->buf.s->len >=
 		   (off + (ptrdiff_t)sizeof(struct inotify_event))) {
 	        /* NB: Assumes that e->len has a valid alignment
@@ -442,10 +443,14 @@ PIKECLASS _Instance {
 		struct inotify_event *e = (void *)(THIS->buf.s->str + off);
 		const char *path = (char *)(e + 1);
 		ptrdiff_t new_off = off + sizeof(struct inotify_event) + e->len;
-		if (new_off > THIS->buf.s->len) {
-		    /* Not enough data for the filename yet. */
+		if ((new_off > THIS->buf.s->len) ||
+		    !callablep(&THIS->event_callback)) {
+		    /* Not enough data for the filename yet,
+		     * or the callback has been invalidated.
+		     */
 		    break;
 		}
+
 		off = new_off;
 
 		push_int(e->wd);
