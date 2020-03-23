@@ -54,26 +54,31 @@ PIKEFUN string version()
 }
 
 #ifdef HAVE_NETTLE_BLOWFISH_BCRYPT_HASH
-/*! @decl
+/*! @decl string(7bit) bcrypt_hash(string(8bit) password, @
+ *!                                string(7bit) scheme, @
+ *!                                string(8bit)|void salt, @
+ *!                                int|void log2rounds)
  *!
  *! Low level implementation of the bcrypt password-hashing algorithm.
  *!
  *! @param password
- *! The cleartext password.  Only accepts 8-bit strings.
+ *! The cleartext password.  Only accepts 8-bit strings.  Typically
+ *! passwords are encoded in UTF-8 NFC, but some platforms may have
+ *! other conventions.
  *!
  *! @param scheme
  *! Specifies the scheme to be used to generate the hash.
- *! The settings either cleanly specify the scheme of either "2a", "2b",
- *! "2x" or "2y", or they contain the (part of the prefix of) normal
- *! hashed password string, so an existing hashed password string can
- *! be passed unmodified.
+ *! The settings either cleanly specify the scheme of either @expr{"2a"@},
+ *! @expr{"2b"@}, @expr{"2x"@} or @expr{"2y"@}, or they contain the (or part
+ *! of the prefix of) normal hashed password string, so an existing hashed
+ *! password string may be passed unmodified.
  *!
  *! When generating a new hash from scratch, the following minimum needs to be
- *! specified, e.g. "$2y$10$1b2lPgo4XumibnJGN3r3sO".  In this "$" is the
- *! separator, "2y" specifies
- *! the used hash-algorithm, "10" specifies 2^10 encryption rounds
- *! and "1b2lPgo4XumibnJGN3r3sO" is the salt (16 bytes, base64 encoded).
- *! The minimal value for settings would be "$2y$".
+ *! specified, e.g. @expr{"$2y$10$1b2lPgo4XumibnJGN3r3sO"@}.  In this
+ *! @expr{"$"@} is the separator, @expr{"2y"@} specifies the used
+ *! hash-algorithm, @expr{"10"@} specifies @expr{2^10@} encryption rounds
+ *! and @expr{"1b2lPgo4XumibnJGN3r3sO"@} is the salt (16 bytes, base64 encoded).
+ *! The minimal value for settings would be @expr{"$2y$"@}.
  *!
  *! @param salt
  *! The salt can be supplied as part of @[settings], or separately
@@ -82,13 +87,15 @@ PIKEFUN string version()
  *! @param log2rounds
  *! The log2 number of encryption rounds.  If unspecified it is taken
  *! from the settings string, and if not specified there it defaults to
- *! 10 which equals 1024 encryption rounds.
+ *! @expr{10@} which equals 1024 encryption rounds.
  *!
- *! @returns The (according to the specified algorithm, encryption
+ *! @returns
+ *! Returns the (according to the specified algorithm, encryption
  *! rounds, and salt) hashed and encoded version of the supplied password.
  *! Throws an error on invalid input.
  *!
- *! @note You should normally use @[Crypto.Password] instead.
+ *! @note
+ *! You should normally use @[Crypto.Password] instead.
  *!
  *! @seealso
  *!   @[Crypto.Password], @[Crypto.BLOWFISH]
@@ -114,7 +121,7 @@ PIKEFUN string(7bit) bcrypt_hash(string(8bit) password, string(7bit) scheme,
   RETURN finish_string_builder(&ret);
 }
 
-/*! @decl
+/*! @decl int bcrypt_verify(string(8bit) password, string(7bit) hashedpassword)
  *!
  *! Low level implementation of the bcrypt password-verifying algorithm.
  *!
@@ -124,10 +131,12 @@ PIKEFUN string(7bit) bcrypt_hash(string(8bit) password, string(7bit) scheme,
  *! @param hashedpassword
  *! This is the full hashed password string.
  *!
- *! @returns Returns 1 if the cleartext password matches the hashed password
+ *! @returns
+ *!  Returns @expr{1@} if the cleartext password matches the hashed password
  *!  and zero otherwise.
  *!
- *! @note You should normally use @[Crypto.Password] instead.
+ *! @note
+ *!  You should normally use @[Crypto.Password] instead.
  *!
  *! @seealso
  *!   @[Crypto.Password], @[Crypto.BLOWFISH]
