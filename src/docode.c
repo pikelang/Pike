@@ -3277,8 +3277,28 @@ INT32 docode(node *n)
   init_bytecode();
 
   insert_opcode0(F_ENTRY, n->line_number, n->current_file);
-  /* FIXME: Should we check that do_docode() returns 1? */
+
+  /* NB: Add a mark (or rather do_pop_mark cleanup callback) so that
+   *     F_PUSH_ARRAY stays happy even when n is an F_ARG_LIST.
+   */
+  emit0(F_MARK);
+  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+
+  /* NB: Should we check that do_docode() returns 1?
+   *
+   *  - No, it returning multiple values (or none) is a
+   *    supported operation (cf F_ARG_LIST).
+   */
   do_docode(n,0);
+
+  /* Clean up the mark we set above.
+   *
+   * NB: We can not use POP_AND_DO_CLEANUP here as it will
+   *     also pop the value stack.
+   */
+  do_pop_mark(NULL);
+  POP_AND_DONT_CLEANUP;
+
   insert_opcode0(F_DUMB_RETURN, n->line_number, n->current_file);
   entry_point = assemble(0);		/* Don't store linenumbers. */
 
