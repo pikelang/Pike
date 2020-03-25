@@ -1,0 +1,3 @@
+Modified files:
+  pike/lib/modules/Standards.pmod/URI.pike
+  pike/lib/modules/Standards.pmod/X509.pmod
