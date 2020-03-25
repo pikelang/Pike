@@ -1495,7 +1495,7 @@ TBSCertificate verify_certificate(string s,
 
   foreach(verifiers || ({}), Verifier v) {
     if (v->verify(cert[1], cert[0]->get_der(), cert[2]->value,
-                  options->?verifier_algorithms))
+                  options?->verifier_algorithms))
       return tbs;
   }
   return 0;
