@@ -1,0 +1,19 @@
+subject: Pike 8.0: Fix syntax error in Standards.X509.
+from: 5020c16ad709484ef870559acb394afe1270feb5
+to: 5cf5f2a4b8ededbb0bc03f3eabc9bc97a71d61b9
+originator: Henrik Grubbstrom
+depends: 2020-03-20T113857
+restart: true
+
+Multiple fixes:
+
+• Standards.X509: Use old syntax for compatibility.
+
+Modules in Pike 8.0 need to be syntax-compatible with all released
+versions of Pike 8.0 (or at least Pike 8.0.232 and later).
+
+Fixes #10024.
+
+• Standards.URI: Updated list of unsafe characters to RFC 3986.
+
+Fixes some of [PIKE-4].
