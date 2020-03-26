@@ -1410,175 +1410,6 @@ static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi
   return s16;
 }
 
-/*! @decl object rfc1345(string charset, int(0..1)|void encoder, string|void rep, @
- *!                      function(string:string)|void repcb)
- *!
- *!   Low-level charset codec factory.
- *!
- *! @param charset
- *!   Canonical name of character set to look up.
- *!
- *! @param encoder
- *!   Flag indicating that an encoder and not a decoder is wanted.
- *!
- *! @param rep
- *!   String to use for characters not representable in the @[charset].
- *!   Only used for encoders.
- *!
- *! @param repcb
- *!   Function to call for characters not representable in the @[charset].
- *!   Only used for encoders.
- *!
- *!   This is the main entrypoint into the low-level @[_Charset] module.
- *!
- *! @returns
- *!   Returns a suitable encoder or decoder on success and @expr{0@}
- *!   (zero) on failure.
- *!
- *! @seealso
- *!   @[Charset.encoder()], @[Charset.decoder()]
- */
-PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
-		       function(string:string)|void repcb)
-{
-  struct pike_string *str;
-  int lo=0, hi=num_charset_def-1;
-  p_wchar1 const *tabl;
-
-  if(charset->size_shift) {
-    push_int(0);
-    return;
-  }
-
-  while(lo<=hi) {
-    int c, mid = (lo+hi)>>1;
-    if(!(c = strcmp((char *)STR0(charset), charset_map[mid].name))) {
-      struct program *p = NULL;
-
-      if(encoder && encoder->u.integer) {
-	unsigned lowtrans = 0;
-	int i, j, lo2=0, hi2=0, z, c;
-
-	switch(charset_map[mid].mode) {
-	case MODE_94: lowtrans=lo=33; hi=126; break;
-	case MODE_96: lowtrans=128; lo=160; hi=255; break;
-	case MODE_9494: lowtrans=lo=lo2=33; hi=hi2=126; break;
-	case MODE_9696: lowtrans=32; lo=lo2=160; hi=hi2=255; break;
-	case MODE_BIG5: lowtrans=32; lo=0xa1; lo2=0x40; hi=0xf9; hi2=0xfe; break;
-	default:
-	  Pike_fatal("Internal error in rfc1345\n");
-	}
-
-	if(hi2) {
-	  struct std16e_stor *s16;
-	  s16 = push_std_16bite((args>2? args-2:0), args, lowtrans, 65536);
-
-	  s16->lowtrans = lowtrans;
-	  s16->lo = lowtrans;
-	  s16->hi = lowtrans;
-
-	  for(z=0, i=lo; i<=hi; i++, z+=(hi2-lo2+1))
-	    for(j=lo2; j<=hi2; j++)
-	      if((c=charset_map[mid].table[z+j-lo2])!=0xfffd && c>=s16->lo) {
-		s16->revtab[c-s16->lo]=(i<<8)|j;
-		if(c>=s16->hi)
-		  s16->hi = c+1;
-	      }
-	} else {
-	  struct std8e_stor *s8;
-	  s8 = push_std_8bite((args>2? args-2:0), args, lowtrans, 65536);
-
-	  s8->lowtrans = lowtrans;
-	  s8->lo = lowtrans;
-	  s8->hi = lowtrans;
-
-	  for(i=lo; i<=hi; i++)
-	    if((c=charset_map[mid].table[i-lo])!=0xfffd && c>=s8->lo) {
-	      s8->revtab[c-s8->lo]=i;
-	      if(c>=s8->hi)
-		s8->hi = c+1;
-	    }
-	}
-	return;
-      }
-
-      switch(charset_map[mid].mode) {
-      case MODE_94: p = std_94_program; break;
-      case MODE_96: p = std_96_program; break;
-      case MODE_9494: p = std_9494_program; break;
-      case MODE_9696: p = std_9696_program; break;
-      case MODE_BIG5: p = std_big5_program; break;
-      default:
-	Pike_fatal("Internal error in rfc1345\n");
-      }
-
-      {
-	struct object *o = clone_object(p, 0);
-	((struct std_rfc_stor *)(o->storage+std_rfc_stor_offs))
-	  ->table = charset_map[mid].table;
-	copy_shared_string (*(struct pike_string **) (o->storage +
-						      rfc_charset_name_offs),
-			    charset);
-	push_object (o);
-      }
-      return;
-    }
-    if(c<0)
-      hi=mid-1;
-    else
-      lo=mid+1;
-  }
-
-  if((tabl = misc_charset_lookup((char *)STR0(charset), &lo, &hi))) {
-
-    if(encoder && encoder->u.integer) {
-      struct std8e_stor *s8;
-      int i, c;
-
-      s8 = push_std_8bite((args>2? args-2:0), args, lo, 65536);
-      s8->lowtrans = lo;
-      s8->lo = lo;
-      s8->hi = lo;
-      s8->zero_char = 0xfffd;
-      for(i=lo; i<=hi; i++) {
-	if((c=tabl[i-lo])!=0xfffd && c>=s8->lo) {
-	  s8->revtab[c-lo]=i;
-	  if(c>=s8->hi)
-	    s8->hi = c+1;
-	}
-      }
-      if (!lo && (c=tabl[0])!=0xfffd && c>=s8->lo) {
-	/* Character 0x00 is a valid character in the encoding
-	 * for this character set (eg GSM 03.38).
-	 *
-	 * Note: We need to encode this character separately
-	 *       due to 0x00 being used in revtab for the replacement
-	 *       character.
-	 */
-	s8->zero_char = c;
-      }
-      return;
-    }
-
-    {
-      struct object *o = clone_object(std_8bit_program, 0);
-      ((struct std_rfc_stor *)(o->storage+std_rfc_stor_offs))
-	->table = (UNICHAR *)tabl;
-      ((struct std_misc_stor *)(o->storage+std_misc_stor_offs))
-	->lo = lo;
-      ((struct std_misc_stor *)(o->storage+std_misc_stor_offs))
-	->hi = hi;
-      copy_shared_string (*(struct pike_string **) (o->storage +
-						    rfc_charset_name_offs),
-			  charset);
-      push_object(o);
-    }
-    return;
-  }
-
-  push_int(0);
-}
-
 static ptrdiff_t feed_94(struct pike_string *str, struct std_cs_stor *s)
 {
   UNICHAR const *table =
@@ -2439,6 +2270,175 @@ static void f_feed_std16e(INT32 args)
   push_object(this_object());
 }
 
+
+/*! @decl object rfc1345(string charset, int(0..1)|void encoder, string|void rep, @
+ *!                      function(string:string)|void repcb)
+ *!
+ *!   Low-level charset codec factory.
+ *!
+ *! @param charset
+ *!   Canonical name of character set to look up.
+ *!
+ *! @param encoder
+ *!   Flag indicating that an encoder and not a decoder is wanted.
+ *!
+ *! @param rep
+ *!   String to use for characters not representable in the @[charset].
+ *!   Only used for encoders.
+ *!
+ *! @param repcb
+ *!   Function to call for characters not representable in the @[charset].
+ *!   Only used for encoders.
+ *!
+ *!   This is the main entrypoint into the low-level @[_Charset] module.
+ *!
+ *! @returns
+ *!   Returns a suitable encoder or decoder on success and @expr{0@}
+ *!   (zero) on failure.
+ *!
+ *! @seealso
+ *!   @[Charset.encoder()], @[Charset.decoder()]
+ */
+PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
+		       function(string:string)|void repcb)
+{
+  struct pike_string *str;
+  int lo=0, hi=num_charset_def-1;
+  p_wchar1 const *tabl;
+
+  if(charset->size_shift) {
+    push_int(0);
+    return;
+  }
+
+  while(lo<=hi) {
+    int c, mid = (lo+hi)>>1;
+    if(!(c = strcmp((char *)STR0(charset), charset_map[mid].name))) {
+      struct program *p = NULL;
+
+      if(encoder && encoder->u.integer) {
+	unsigned lowtrans = 0;
+	int i, j, lo2=0, hi2=0, z, c;
+
+	switch(charset_map[mid].mode) {
+	case MODE_94: lowtrans=lo=33; hi=126; break;
+	case MODE_96: lowtrans=128; lo=160; hi=255; break;
+	case MODE_9494: lowtrans=lo=lo2=33; hi=hi2=126; break;
+	case MODE_9696: lowtrans=32; lo=lo2=160; hi=hi2=255; break;
+	case MODE_BIG5: lowtrans=32; lo=0xa1; lo2=0x40; hi=0xf9; hi2=0xfe; break;
+	default:
+	  Pike_fatal("Internal error in rfc1345\n");
+	}
+
+	if(hi2) {
+	  struct std16e_stor *s16;
+	  s16 = push_std_16bite((args>2? args-2:0), args, lowtrans, 65536);
+
+	  s16->lowtrans = lowtrans;
+	  s16->lo = lowtrans;
+	  s16->hi = lowtrans;
+
+	  for(z=0, i=lo; i<=hi; i++, z+=(hi2-lo2+1))
+	    for(j=lo2; j<=hi2; j++)
+	      if((c=charset_map[mid].table[z+j-lo2])!=0xfffd && c>=s16->lo) {
+		s16->revtab[c-s16->lo]=(i<<8)|j;
+		if(c>=s16->hi)
+		  s16->hi = c+1;
+	      }
+	} else {
+	  struct std8e_stor *s8;
+	  s8 = push_std_8bite((args>2? args-2:0), args, lowtrans, 65536);
+
+	  s8->lowtrans = lowtrans;
+	  s8->lo = lowtrans;
+	  s8->hi = lowtrans;
+
+	  for(i=lo; i<=hi; i++)
+	    if((c=charset_map[mid].table[i-lo])!=0xfffd && c>=s8->lo) {
+	      s8->revtab[c-s8->lo]=i;
+	      if(c>=s8->hi)
+		s8->hi = c+1;
+	    }
+	}
+	return;
+      }
+
+      switch(charset_map[mid].mode) {
+      case MODE_94: p = std_94_program; break;
+      case MODE_96: p = std_96_program; break;
+      case MODE_9494: p = std_9494_program; break;
+      case MODE_9696: p = std_9696_program; break;
+      case MODE_BIG5: p = std_big5_program; break;
+      default:
+	Pike_fatal("Internal error in rfc1345\n");
+      }
+
+      {
+	struct object *o = clone_object(p, 0);
+	((struct std_rfc_stor *)(o->storage+std_rfc_stor_offs))
+	  ->table = charset_map[mid].table;
+	copy_shared_string (*(struct pike_string **) (o->storage +
+						      rfc_charset_name_offs),
+			    charset);
+	push_object (o);
+      }
+      return;
+    }
+    if(c<0)
+      hi=mid-1;
+    else
+      lo=mid+1;
+  }
+
+  if((tabl = misc_charset_lookup((char *)STR0(charset), &lo, &hi))) {
+
+    if(encoder && encoder->u.integer) {
+      struct std8e_stor *s8;
+      int i, c;
+
+      s8 = push_std_8bite((args>2? args-2:0), args, lo, 65536);
+      s8->lowtrans = lo;
+      s8->lo = lo;
+      s8->hi = lo;
+      s8->zero_char = 0xfffd;
+      for(i=lo; i<=hi; i++) {
+	if((c=tabl[i-lo])!=0xfffd && c>=s8->lo) {
+	  s8->revtab[c-lo]=i;
+	  if(c>=s8->hi)
+	    s8->hi = c+1;
+	}
+      }
+      if (!lo && (c=tabl[0])!=0xfffd && c>=s8->lo) {
+	/* Character 0x00 is a valid character in the encoding
+	 * for this character set (eg GSM 03.38).
+	 *
+	 * Note: We need to encode this character separately
+	 *       due to 0x00 being used in revtab for the replacement
+	 *       character.
+	 */
+	s8->zero_char = c;
+      }
+      return;
+    }
+
+    {
+      struct object *o = clone_object(std_8bit_program, 0);
+      ((struct std_rfc_stor *)(o->storage+std_rfc_stor_offs))
+	->table = (UNICHAR *)tabl;
+      ((struct std_misc_stor *)(o->storage+std_misc_stor_offs))
+	->lo = lo;
+      ((struct std_misc_stor *)(o->storage+std_misc_stor_offs))
+	->hi = hi;
+      copy_shared_string (*(struct pike_string **) (o->storage +
+						    rfc_charset_name_offs),
+			  charset);
+      push_object(o);
+    }
+    return;
+  }
+
+  push_int(0);
+}
 
 PIKE_MODULE_INIT
 {
