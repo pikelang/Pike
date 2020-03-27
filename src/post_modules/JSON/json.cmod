@@ -211,6 +211,7 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
 
     if (notfirst) {
       int indent = ctx->indent;
+      fast_check_threads_etc(8);
       string_builder_putchar (buf, ',');
       if (indent >= 0) {
 	string_builder_putchar (buf, '\n');
@@ -293,6 +294,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	  }
 	  json_encode_recur (ctx, ITEM (a));
 	  for (i = 1; i < size; i++) {
+	    fast_check_threads_etc(8);
 	    string_builder_putchar (buf, ',');
 	    if (ctx->indent >= 0) {
 	      int indent = ctx->indent;
