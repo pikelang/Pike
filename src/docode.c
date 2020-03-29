@@ -3261,6 +3261,7 @@ INT32 do_code_block(node *n, int identifier_flags)
 /* Used by eval_low() to build code for constant expressions. */
 INT32 docode(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   INT32 entry_point;
   int label_no_save = label_no;
   int generator_local_save = Pike_compiler->compiler_frame->generator_local;
