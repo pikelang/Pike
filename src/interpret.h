@@ -707,7 +707,7 @@ PMOD_EXPORT extern unsigned long evaluator_callback_calls;
     low_check_threads_etc();						\
   } while (0)
 
-extern int fast_check_threads_counter;
+PMOD_EXPORT extern int fast_check_threads_counter;
 
 #define fast_check_threads_etc(X) do {					\
     DO_IF_DEBUG (if (Pike_interpreter.trace_level > 2)			\
