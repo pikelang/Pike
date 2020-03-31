@@ -204,9 +204,14 @@ o Protocols.HTTP.Server
 
   Header names in "extra_heads" will not have their case modified.
 
+o Standards.JSON and Standards.JSON5
+
+  encode() now allows other threads to run every now and then.
+
 o ADT.OrderedMapping
 
   Adding duplicate keys now replaces the existing keys.
+
 
 Incompatible changes
 --------------------
