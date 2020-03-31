@@ -231,6 +231,10 @@ o SSL.File
   This in turn caused errors like "Not open" from
   functions like read() and set_nonblocking().
 
+o Standards.JSON
+
+  encode() now allows other threads to run every now and then.
+
 o sybase
 
   The module's configure script now respects ABI suffixes when searching
