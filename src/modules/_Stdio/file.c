@@ -3248,27 +3248,26 @@ void file_sync(INT32 args)
  *!   @[tell()]
  */
 
-/*
- * @decl deprecated variant int seek(int unit, int mult)
- * @decl deprecated variant int seek(int unit, int mult, int add)
- *
- * Seek to a specified offset in a file.
- *
- * If @[mult] or @[add] are specified, @[pos] is calculated as
- * @expr{@[pos] = @[unit]*@[mult] + @[add]@}.
- *
- * If @[pos] is negative then it is relative to the end of the file,
- * otherwise it's an absolute offset from the start of the file.
- *
- * @returns
- *   Returns the new offset, or @expr{-1@} on failure.
- *
- * @note
- *   The arguments @[mult] and @[add] are considered obsolete, and
- *   should not be used.
- *
- * @seealso
- *   @[tell()]
+/*! @decl variant __deprecated__ int seek(int unit, int mult)
+ *! @decl variant __deprecated__ int seek(int unit, int mult, int add)
+ *!
+ *! Seek to a specified offset in a file.
+ *!
+ *! If @[mult] or @[add] are specified, @[pos] is calculated as
+ *! @expr{@[pos] = @[unit]*@[mult] + @[add]@}.
+ *!
+ *! If @[pos] is negative then it is relative to the end of the file,
+ *! otherwise it's an absolute offset from the start of the file.
+ *!
+ *! @returns
+ *!   Returns the new offset, or @expr{-1@} on failure.
+ *!
+ *! @note
+ *!   The arguments @[mult] and @[add] are considered obsolete, and
+ *!   should not be used.
+ *!
+ *! @seealso
+ *!   @[tell()]
  */
 static void file_seek(INT32 args)
 {
@@ -5931,59 +5930,66 @@ static void f_get_all_active_fd(INT32 args)
 }
 
 /*! @decl constant NOTE_ATTRIB = 8
- *
- *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for attribute changes on a file.
- *
- *  @note
- *   Available on systems that use kqueue.
+ *!
+ *!  Used with @[Stdio.File()->set_fs_event_callback()] to monitor
+ *!  for attribute changes on a file.
+ *!
+ *!  @note
+ *!   Available on systems that use kqueue.
  */
 
 /*! @decl constant NOTE_WRITE = 2
- *
- *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for writes to a file.
- *
- *  @note
- *   Available on systems that use kqueue.
+ *!
+ *!  Used with @[Stdio.File()->set_fs_event_callback()] to monitor
+ *!  for writes to a file.
+ *!
+ *!  @note
+ *!   Available on systems that use kqueue.
  */
 
 /*! @decl constant NOTE_DELETE = 1
- *
- *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for deletion of a file.
- *
- *  @note
- *   Available on systems that use kqueue.
+ *!
+ *!  Used with @[Stdio.File()->set_fs_event_callback()] to monitor
+ *!  for deletion of a file.
+ *!
+ *!  @note
+ *!   Available on systems that use kqueue.
  */
 
 /*! @decl constant NOTE_EXTEND = 4
- *
- *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for extension events on a file.
- *
- *  @note
- *   Available on systems that use kqueue.
+ *!
+ *!  Used with @[Stdio.File()->set_fs_event_callback()] to monitor
+ *!  for extension events on a file.
+ *!
+ *!  @note
+ *!   Available on systems that use kqueue.
  */
 
 /*! @decl constant NOTE_LINK = 16
- *
- *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for changes to a file's link count.
- *
- *  @note
- *   Available on systems that use kqueue.
+ *!
+ *!  Used with @[Stdio.File()->set_fs_event_callback()] to monitor
+ *!  for changes to a file's link count.
+ *!
+ *!  @note
+ *!   Available on systems that use kqueue.
  */
 
 /*! @decl constant NOTE_RENAME = 32
- *
- *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for move or rename events on a file.
- *
- *  @note
- *   Available on systems that use kqueue.
+ *!
+ *!  Used with @[Stdio.File()->set_fs_event_callback()] to monitor
+ *!  for move or rename events on a file.
+ *!
+ *!  @note
+ *!   Available on systems that use kqueue.
  */
 
 /*! @decl constant NOTE_REVOKE = 64
- *
- *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for access revokation (unmount, etc).
- *
- *  @note
- *   Available on systems that use kqueue.
+ *!
+ *!  Used with @[Stdio.File()->set_fs_event_callback()] to monitor
+ *!  for access revokation (unmount, etc).
+ *!
+ *!  @note
+ *!   Available on systems that use kqueue.
  */
 
 
