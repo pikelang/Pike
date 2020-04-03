@@ -3268,9 +3268,9 @@ INT32 docode(node *n)
   struct byte_buffer instrbuf_save = instrbuf;
   struct statement_label *label_save;
 
+  label_save = current_label;
+  current_label = NULL;
   PUSH_STATEMENT_LABEL;
-  label_save = current_label->prev;
-  current_label->prev = NULL;
   PUSH_CLEANUP_FRAME(NULL, NULL);
   label_no=1;
   current_stack_depth = 0;
@@ -3308,9 +3308,9 @@ INT32 docode(node *n)
 
   current_stack_depth = cleanup_frame__.stack_depth;
   POP_AND_DONT_CLEANUP;
-  current_label->prev = label_save;
   POP_STATEMENT_LABEL;
   Pike_compiler->compiler_frame->generator_local = generator_local_save;
+  current_label = label_save;
   label_no = label_no_save;
 
   return entry_point;
