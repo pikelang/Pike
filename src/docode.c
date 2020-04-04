@@ -3027,9 +3027,9 @@ INT32 do_code_block(node *n, int identifier_flags)
 
   init_bytecode();
   label_no=1;
+  save_label = current_label;
+  current_label = NULL;
   PUSH_STATEMENT_LABEL;
-  save_label = current_label->prev;
-  current_label->prev = NULL;
   PUSH_CLEANUP_FRAME(NULL, NULL);
   current_stack_depth = 0;
 
@@ -3251,8 +3251,8 @@ INT32 do_code_block(node *n, int identifier_flags)
 
   current_stack_depth = cleanup_frame__.stack_depth;
   POP_AND_DONT_CLEANUP;
-  current_label->prev = save_label;
   POP_STATEMENT_LABEL;
+  current_label = save_label;
   label_no = save_label_no;
 
   return entry_point;
