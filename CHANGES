@@ -159,6 +159,9 @@ o Compiler
     F_ESCAPE_CATCH opcodes. This could cause very strange
     runtime errors.
 
+  - The compiler could get confused by combinations of labels
+    with inline functions or constant expressions.
+
 o Runtime
 
   The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
