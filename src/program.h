@@ -1203,6 +1203,9 @@ PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
 						   enum Pike_opcodes op,
 						   int arg1,
 						   int arg2);
+PMOD_EXPORT void string_builder_append_comment(struct string_builder *s,
+					       const PIKE_OPCODE_T *addr,
+					       const char *comment);
 PMOD_EXPORT void add_reverse_symbol(struct pike_string *sym, void *addr);
 PMOD_EXPORT void simple_add_reverse_symbol(const char *sym, void *addr);
 PMOD_EXPORT void init_reverse_symbol_table();

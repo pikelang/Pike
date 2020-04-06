@@ -10761,6 +10761,34 @@ PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
 				    buf[2], params, NULL);
 }
 
+PMOD_EXPORT void string_builder_append_comment(struct string_builder *s,
+					       const PIKE_OPCODE_T *addr,
+					       const char *comment)
+{
+  while (comment && comment[0]) {
+    const char *ptr = strchr(comment, '\n');
+    ptrdiff_t bytes;
+    if (ptr) {
+      bytes = ptr - comment;
+    } else {
+      bytes = strlen(comment);
+    }
+    if (addr) {
+      string_builder_sprintf(s, "0x%016lx%*s# %*s\n",
+			     addr,
+			     15, "",
+			     bytes, comment);
+      addr = NULL;
+    } else {
+      string_builder_sprintf(s, "%*s# %*s\n",
+			     addr,
+			     33, "",
+			     bytes, comment);
+    }
+    comment += bytes + 1;
+  }
+}
+
 PMOD_EXPORT void add_reverse_symbol(struct pike_string *sym, void *addr)
 {
   struct svalue key;
