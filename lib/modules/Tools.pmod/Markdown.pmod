@@ -46,10 +46,12 @@ protected constant RI = OPTION.CASELESS;
 //!   @member bool "smart_lists"
 //!    Use smarter list behavior than the original markdown.              (true)
 //!   @member bool "smartypants"
-//!    Use "smart" typograhic punctuation for things like quotes and
+//!    Use "smart" typographic punctuation for things like quotes and
 //!    dashes.                                                           (false)
 //!   @member string "header_prefix"
 //!    Add prefix to ID attributes of header tags                        (empty)
+//!   @member bool "attributes"
+//!    Recognize attribute blocks @[{: ... }] after a para/list/table    (false)
 //!   @member bool "xhtml"
 //!    Generate self closing XHTML tags                                  (false)
 //!   @member bool "newline"
@@ -166,6 +168,7 @@ protected constant default_options = ([
   "lang_prefix"   : "lang-",
   "smartypants"   : false,
   "header_prefix" : "",
+  "attributes"    : false,
   "renderer"      : UNDEFINED,
   "xhtml"         : false,
   "newline"       : true
@@ -263,7 +266,8 @@ RuleMap get_block_rules()
     "list"       : R("^( *)(bull) [\\s\\S]+?(?:hr|def|\\n{2,}(?! )(?!\\1bull )\\n*|\\s*$)"),
     "html"       : R("^ *(?:comment *(?:\\n|\\s*$)|closed *(?:\\n{2,}|\\s*$)|closing *(?:\\n{2,}|\\s*$))"),
     "def"        : R("^ *\\[([^\\]]+)\\]: *<?([^\\s>]+)>?(?: +[\"(]([^\\n]+)[\")])? *(?:\\n+|$)"),
-    "paragraph"  : R("^((?:[^\\n]+\\n?(?!hr|heading|lheading|blockquote|tag|def))+)\\n*"),
+    "paragraph"  : R("^((?:[^\\n]+\\n?(?!hr|heading|lheading|blockquote|tag|def|attrblock))+)\\n*"),
+    "attrblock"  : R("^\\{:([^\\n}]*)\\}\\n*"),
     "text"       : R("^[^\\n]+"),
     "table"      : noop,
     "fences"     : noop,
@@ -309,6 +313,7 @@ RuleMap get_block_rules()
                ("blockquote", block->blockquote)
                ("tag",        "<" +  (string)block->_tag, true)
                ("def",        block->def)
+               ("attrblock",  block->attrblock)
                ();
 
   block->normal = copy_value(block);
@@ -439,6 +444,29 @@ protected class Parser
     return inline_lexer->output(body);
   }
 
+  protected mapping attrs()
+  {
+    //Return an attribute block if available, or zero
+    if (!peek() || peek()->type != "attrblock") return 0;
+    mapping attr = ([]);
+    string cls = "";
+    foreach (next()->text / " ", string att) {
+      if (att == "") continue;
+      if (att[0] == '#') {
+        attr["id"] = att[1..];
+      }
+      if (att[0] == '.') {
+        //Collect all classnames
+        cls += " " + att[1..];
+      }
+      if (sscanf(att, "%s=%s", string name, string value) == 2) {
+        attr[name] = value;
+      }
+    }
+    if (cls != "") attr["class"] = cls[1..];
+    return attr;
+  }
+
   protected string tok()
   {
     switch (token->type)
@@ -485,7 +513,7 @@ protected class Parser
           body += renderer->tablerow(cell);
         }
 
-        return renderer->table(header, body);
+        return renderer->table(header, body, attrs());
 
       case "blockquote_start":
         body = "";
@@ -504,7 +532,7 @@ protected class Parser
           body += tok();
         }
 
-        return renderer->list(body, ordered);
+        return renderer->list(body, ordered, attrs());
 
       case "list_item_start":
         body = "";
@@ -532,7 +560,7 @@ protected class Parser
         return renderer->html(html) + nl();
 
       case "paragraph":
-        return renderer->paragraph(inline_lexer->output(token->text));
+        return renderer->paragraph(inline_lexer->output(token->text), attrs());
 
       case "text":
         return renderer->paragraph(parse_text());
@@ -709,6 +737,13 @@ protected class Lexer
         continue;
       }
 
+      if (options->attributes && (cap = rules->attrblock->split2(src))) {
+	SRC_SUBSTR();
+        PUSH_TOKEN(([ "type" : "attrblock",
+                      "text" : cap[1] ]));
+        continue;
+      }
+
       // list
       if (cap = rules->list->split2(src)) {
         string bull = cap[2];
@@ -771,6 +806,11 @@ protected class Lexer
         }
 
         PUSH_TOKEN(([ "type" : "list_end" ]));
+        // An attribute block inside the last list item actually applies
+        // to the entire list. Move it to the end.
+        if (_tokens[-3]->type == "attrblock") {
+          _tokens = _tokens[..<3] + _tokens[<1..] + _tokens[<2..<2];
+        }
 
         continue;
       }
@@ -1105,6 +1145,11 @@ protected class Renderer
     options = opts;
   }
 
+  string htmlattr(mapping|void attrs)
+  {
+    return sprintf("%{ %s=%q%}", sort((array)attrs));
+  }
+
   string code(string code, string lang, bool escaped)
   {
     if (options->highlight) {
@@ -1151,9 +1196,10 @@ protected class Renderer
       + ">" + nl();
   }
 
-  string list(string body, void|bool ordered)
+  string list(string body, void|bool ordered, mapping|void attrs)
   {
-    return sprintf("<%s>%s%s</%[0]s>%[1]s", ordered ? "ol" : "ul", nl(), body);
+    return sprintf("<%s%s>%s%s</%[0]s>%[2]s", ordered ? "ol" : "ul",
+        htmlattr(attrs), nl(), body);
   }
 
   string listitem(string text)
@@ -1161,17 +1207,17 @@ protected class Renderer
     return sprintf("<li>%s</li>%s", text, nl());
   }
 
-  string paragraph(string text)
+  string paragraph(string text, mapping|void attrs)
   {
-    return sprintf("<p>%s</p>%s", text, nl());
+    return sprintf("<p%s>%s</p>%s", htmlattr(attrs), text, nl());
   }
 
-  string table(string header, string body)
+  string table(string header, string body, mapping|void attrs)
   {
     return sprintf(
-      "<table>%s<thead>%[0]s%s</thead>%[0]s"
-      "<tbody>%[0]s%s</tbody>%[0]s</table>%[0]s",
-      nl(), header, body
+      "<table%s>%s<thead>%[1]s%s</thead>%[1]s"
+      "<tbody>%[1]s%s</tbody>%[1]s</table>%[1]s",
+      htmlattr(attrs), nl(), header, body
     );
   }
 
