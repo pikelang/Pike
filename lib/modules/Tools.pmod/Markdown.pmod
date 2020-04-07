@@ -1147,6 +1147,7 @@ protected class Renderer
 
   string htmlattr(mapping|void attrs)
   {
+    if (!attrs) return "";
     return sprintf("%{ %s=%q%}", sort((array)attrs));
   }
 
