@@ -10761,6 +10761,29 @@ PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
 				    buf[2], params, NULL);
 }
 
+PMOD_EXPORT void string_builder_append_file_directive(struct string_builder *s,
+						      const PIKE_OPCODE_T *addr,
+						      const struct pike_string *file)
+{
+  string_builder_sprintf(s, "0x%016lx%*s%-9s\"",
+			 addr,
+			 15, "",
+			 ".file");
+  string_builder_quote_string(s, file, 0, 0x7fffffff, QUOTE_NO_STRING_CONCAT);
+  string_builder_sprintf(s, "\"\n");
+}
+
+PMOD_EXPORT void string_builder_append_line_directive(struct string_builder *s,
+						      const PIKE_OPCODE_T *addr,
+						      INT_TYPE line)
+{
+  string_builder_sprintf(s, "0x%016lx%*s%-9s%d\n",
+			 addr,
+			 15, "",
+			 ".line",
+			 line);
+}
+
 PMOD_EXPORT void string_builder_append_comment(struct string_builder *s,
 					       const PIKE_OPCODE_T *addr,
 					       const char *comment)

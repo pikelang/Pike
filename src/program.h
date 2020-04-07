@@ -1203,6 +1203,12 @@ PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
 						   enum Pike_opcodes op,
 						   int arg1,
 						   int arg2);
+PMOD_EXPORT void string_builder_append_file_directive(struct string_builder *s,
+						      const PIKE_OPCODE_T *addr,
+						      const struct pike_string *file);
+PMOD_EXPORT void string_builder_append_line_directive(struct string_builder *s,
+						      const PIKE_OPCODE_T *addr,
+						      INT_TYPE line);
 PMOD_EXPORT void string_builder_append_comment(struct string_builder *s,
 					       const PIKE_OPCODE_T *addr,
 					       const char *comment);
