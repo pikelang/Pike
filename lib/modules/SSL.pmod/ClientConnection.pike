@@ -855,7 +855,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     switch(type)
     {
     default:
-      COND_FATAL(1, ALERT_unexpected_message, "Unexpected server message.\n");
+      COND_FATAL(1, ALERT_unexpected_message,
+		 sprintf("Unexpected server message: %s.\n",
+			 fmt_constant(type, "HANDSHAKE")));
       break;
       /* FIXME: HANDSHAKE_encrypted_extensions */
     case HANDSHAKE_certificate:
@@ -876,7 +878,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     case HANDSHAKE_server_key_exchange:
       {
 	COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-		   "Unexpected server message.\n");
+		   sprintf("Unexpected server message: %s.\n",
+			   fmt_constant(type, "HANDSHAKE")));
 
 	if (ke) error("KE!\n");
 	ke = session->cipher_spec->ke_factory(context, session, this,
@@ -896,7 +899,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO_DONE\n");
 
       COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-		 "Unexpected server message.\n");
+		 sprintf("Unexpected server message: %s.\n",
+			 fmt_constant(type, "HANDSHAKE")));
 
       if (send_certs()) return -1;
 
@@ -918,7 +922,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     }
     switch(type) {
     default:
-      COND_FATAL(1, ALERT_unexpected_message, "Unexpected server message.\n");
+      COND_FATAL(1, ALERT_unexpected_message,
+		 sprintf("Unexpected server message: %s.\n",
+			 fmt_constant(type, "HANDSHAKE")));
       break;
     case HANDSHAKE_certificate_request:
       add_handshake_message(raw);
@@ -927,7 +933,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_VERIFY\n");
 
       COND_FATAL(version < PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-                 "Unexpected server message.\n");
+		 sprintf("Unexpected server message: %s.\n",
+			 fmt_constant(type, "HANDSHAKE")));
 
       SSL3_DEBUG_MSG("SERVER: handshake_messages: %d bytes.\n",
 		     sizeof(handshake_messages));
