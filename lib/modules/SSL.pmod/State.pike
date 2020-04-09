@@ -31,7 +31,7 @@ Cipher.CipherAlgorithm crypt;
 function(string(8bit),int(1bit)|void:string(8bit)) compress;
 
 //! 64-bit sequence number.
-int seq_num = 0;    /* Bignum, values 0, .. 2^64-1 are valid */
+int next_seq_num = 0;    /* Bignum, values 0, .. 2^64-1 are valid */
 
 //! TLS IV prefix length.
 int tls_iv;
@@ -69,13 +69,19 @@ Alert|Packet decrypt_packet(Packet packet)
                  "SSL.State: Failed to get fragment.\n");
   }
 
-  SSL3_DEBUG_CRYPT_MSG("SSL.State->decrypt_packet "
-                       "(3.%d, type: %d, seq_num: %d): data = %O\n",
-                       version & 0xff, packet->content_type, seq_num, data);
-
   int hmac_size = mac && (session->truncated_hmac ? 10 :
 			  session->cipher_spec->?hash_size);
   int padding;
+
+  if (undefinedp(packet->seq_num) && (hmac_size || crypt)) {
+    packet->seq_num = next_seq_num++;
+  }
+  SSL3_DEBUG_MSG("DECRYPT: Packet #%O\n", packet->seq_num);
+
+  SSL3_DEBUG_CRYPT_MSG("SSL.State->decrypt_packet "
+                       "(3.%d, type: %d, seq_num: %d): data = %O\n",
+                       version & 0xff, packet->content_type,
+		       packet->seq_num, data);
 
   if (hmac_size && session->encrypt_then_mac) {
     string(8bit) digest = data[<hmac_size-1..];
@@ -85,20 +91,18 @@ Alert|Packet decrypt_packet(Packet packet)
     // is smaller.
     packet->set_encrypted(data);
 
-    if (mac->hash_packet(packet, seq_num)[..hmac_size-1] !=
-	digest) {
+    if (mac->hash_packet(packet)[..hmac_size-1] != digest) {
       // Bad digest.
       SSL3_DEBUG_MSG("Failed MAC-verification!!\n");
       SSL3_DEBUG_CRYPT_MSG("Expected digest: %O\n"
                            "Calculated digest: %O\n"
                            "Seqence number: %O\n",
                            digest,
-                           mac->hash_packet(packet, seq_num)[..hmac_size-1],
-                           seq_num);
+                           mac->hash_packet(packet)[..hmac_size-1],
+                           packet->seq_num);
       return alert(ALERT_fatal, ALERT_bad_record_mac,
 		   "Bad MAC-verification.\n");
     }
-    seq_num++;
     hmac_size = 0;
   }
 
@@ -160,7 +164,8 @@ Alert|Packet decrypt_packet(Packet packet)
 	// ChaCha20-POLY1305 uses an implicit iv, and no salt,
 	// but we've generalized it here to allow for ciphers
 	// using salt and implicit iv.
-	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt), seq_num);
+	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt),
+		     packet->seq_num);
       }
       SSL3_DEBUG_CRYPT_MSG("SSL.State: AEAD IV: %O.\n", iv);
 
@@ -170,10 +175,11 @@ Alert|Packet decrypt_packet(Packet packet)
       string auth_data;
       if (version >= PROTOCOL_TLS_1_3) {
 	auth_data = sprintf("%8c%c%2c",
-			    seq_num, packet->content_type, version);
+			    packet->seq_num, packet->content_type,
+			    version);
       } else {
 	auth_data = sprintf("%8c%c%2c%2c",
-			    seq_num, packet->content_type, version,
+			    packet->seq_num, packet->content_type, version,
 			    sizeof(msg) -
 			    (session->cipher_spec->explicit_iv_size +
 			     digest_size));
@@ -184,7 +190,6 @@ Alert|Packet decrypt_packet(Packet packet)
       msg = crypt->crypt(msg[session->cipher_spec->explicit_iv_size..
                              <digest_size]);
       SSL3_DEBUG_CRYPT_MSG("SSL.State: Decrypted message: %O.\n", msg);
-      seq_num++;
       if (digest != crypt->digest()) {
         // Bad digest.
         fail = alert(ALERT_fatal, ALERT_bad_record_mac,
@@ -241,18 +246,17 @@ Alert|Packet decrypt_packet(Packet packet)
     // Set decrypted data without HMAC.
     fail = fail || [object(Alert)]packet->set_compressed(data);
 
-    if (digest != mac->hash_packet(packet, seq_num)[..hmac_size-1])
+    if (digest != mac->hash_packet(packet)[..hmac_size-1])
       {
         SSL3_DEBUG_MSG("Failed MAC-verification!!\n");
         SSL3_DEBUG_CRYPT_MSG("Expected digest: %O\n"
                              "Calculated digest: %O\n"
                              "Seqence number: %O\n",
-                             digest, mac->hash_packet(packet, seq_num),
-                             seq_num);
+                             digest, mac->hash_packet(packet),
+                             packet->seq_num);
 	fail = fail || alert(ALERT_fatal, ALERT_bad_record_mac,
 			     "Bad MAC.\n");
       }
-    seq_num++;
   }
   else
   {
@@ -283,6 +287,11 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
   string digest;
   Alert res;
 
+  if (undefinedp(packet->seq_num)) {
+    packet->seq_num = next_seq_num++;
+  }
+  SSL3_DEBUG_MSG("ENCRYPT: Packet #%d\n", packet->seq_num);
+
   if (compress)
   {
     // RFC 5246 6.2.2. states that data growth must be at most 1024
@@ -299,7 +308,7 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 			  session->cipher_spec->?hash_size);
 
   if (mac && !session->encrypt_then_mac) {
-    digest = mac->hash_packet(packet, seq_num)[..hmac_size-1];
+    digest = mac->hash_packet(packet)[..hmac_size-1];
     hmac_size = 0;
   } else
     digest = "";
@@ -307,7 +316,7 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
   if (crypt)
   {
     SSL3_DEBUG_CRYPT_MSG("SSL.State: Encrypting message #%d: %O.\n",
-                         seq_num, data);
+                         packet->seq_num, data);
 
     switch(session->cipher_spec->cipher_type) {
     case CIPHER_stream:
@@ -340,24 +349,26 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 	// The nonce_explicit MAY be the 64-bit sequence number.
 	//
 	explicit_iv = sprintf("%*c", session->cipher_spec->explicit_iv_size,
-			      seq_num);
+			      packet->seq_num);
 	iv = salt + explicit_iv;
       } else {
 	// Draft ChaCha20-Poly1305 5:
 	//   When used in TLS, the "record_iv_length" is zero and the nonce is
 	//   the sequence number for the record, as an 8-byte, big-endian
 	//   number.
-	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt), seq_num);
+	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt),
+		     packet->seq_num);
       }
       SSL3_DEBUG_CRYPT_MSG("SSL.State: AEAD IV: %O.\n", iv);
       crypt->set_iv(iv);
       string auth_data;
       if (version >= PROTOCOL_TLS_1_3) {
 	auth_data = sprintf("%8c%c%2c",
-			    seq_num, packet->content_type, version);
+			    packet->seq_num, packet->content_type,
+			    PROTOCOL_TLS_1_0);
       } else {
 	auth_data = sprintf("%8c%c%2c%2c",
-			    seq_num, packet->content_type,
+			    packet->seq_num, packet->content_type,
 			    version, sizeof(data));
       }
 
@@ -376,13 +387,12 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 
   if (hmac_size) {
     // Encrypt-then-MAC mode.
-    data += mac->hash_packet(packet, seq_num)[..hmac_size-1];
+    data += mac->hash_packet(packet)[..hmac_size-1];
 
     // Set HMAC protected data.
     res = [object(Alert)]packet->set_encrypted(data);
     if(res) return res;
   }
 
-  seq_num++;
   return packet;
 }

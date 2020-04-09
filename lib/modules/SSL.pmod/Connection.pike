@@ -975,7 +975,7 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
       {
         Stdio.Buffer.RewindKey here = read_buffer->rewind_key();
         read_buffer_key->rewind();
-        alert_callback(packet, current_read_state->seq_num,
+        alert_callback(packet, current_read_state->next_seq_num,
                        (string)read_buffer);
         here->rewind();
       }

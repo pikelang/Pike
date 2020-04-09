@@ -8,6 +8,8 @@ int content_type;
 ProtocolVersion protocol_version;
 string(8bit) fragment;  /* At most 2^14 */
 
+int seq_num = UNDEFINED;
+
 constant HEADER_SIZE = 5;
 
 private string buffer = "";
@@ -107,6 +109,7 @@ int(-1..1) recv(Stdio.Buffer data)
     return 0;
   }
 
+  seq_num = UNDEFINED;
   fragment = data->read(length);
   return 1;
 }
@@ -130,5 +133,6 @@ protected string _sprintf(int t)
   if(t!='O') return UNDEFINED;
   if(!fragment) return sprintf("SSL.Packet(unfinished)");
   string type = fmt_constant(content_type, "PACKET")[7..];
-  return sprintf("SSL.Packet(%s)", type);
+  return sprintf("SSL.Packet(#%d, %s, %d bytes)",
+		 seq_num, type, fragment && sizeof(fragment));
 }
