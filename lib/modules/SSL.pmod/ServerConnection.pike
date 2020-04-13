@@ -22,6 +22,15 @@ protected Packet hello_request()
   return handshake_packet(HANDSHAKE_hello_request, "");
 }
 
+protected Packet hello_verify_request(string(8bit) cookie)
+{
+  // FIXME: Dynamic DTLS version.
+  return handshake_packet(HANDSHAKE_hello_verify_request,
+			  sprintf("%2c%1H",
+				  PROTOCOL_DTLS_1_0,
+				  cookie));
+}
+
 protected Packet finished_packet(string(8bit) sender)
 {
   SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
