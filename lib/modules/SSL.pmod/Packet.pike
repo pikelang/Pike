@@ -111,6 +111,11 @@ int(-1..1) recv(Stdio.Buffer data)
   return 1;
 }
 
+protected string(8bit) format_payload()
+{
+  return fragment;
+}
+
 //! Serialize the packet for sending.
 void send(Stdio.Buffer output)
 {
@@ -122,7 +127,7 @@ void send(Stdio.Buffer output)
 
   output->add_int8(content_type);
   output->add_int16(protocol_version);
-  output->add_hstring(fragment, 2);
+  output->add_hstring(format_payload(), 2);
 }
 
 protected string _sprintf(int t)
