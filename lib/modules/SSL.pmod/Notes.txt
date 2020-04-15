@@ -256,3 +256,97 @@ Known Problems and Missing Features
 	is however by default not state-less. Making it state-less
 	can be done by overriding SSL.Context::encode_session() and
 	SSL.Context::decode_session() with a suitable encoding.
+
+Notes about DTLS
+----------------
+
+Example raw initial DTLS 1.0 handshake packet from openssl s_client:
+
+Packet #0: (DTLS Plaintext)
+  16				Content type #22 (handshake)
+  fe ff				Protocol version DTLS 1.0
+  00 00				Epoch 0
+  00 00 00 00 00 00		Sequence number #0
+  00 7e				Packet length
+  Fragment: (Handshake)
+     01				Message type #1 (ClientHello)
+     00 00 72			Handshake packet length
+     00 00			Handshake sequence number #0
+     00 00 00			Handshake fragment offset
+     00 00 72			Handshake fragment length
+     fe ff			Protocol version DTLS 1.0
+     15 a9 20 74 0e 38 09 50
+     40 04 9a 39 fe 8a 93 35
+     29 a7 74 12 83 24 94 d0
+     d1 54 c3 1f 19 01 05 dd	Random
+     00				SessionID
+     00				DTLS cookie
+     Cipher suites:
+        00 12			length
+	c0 0a
+	c0 14
+	00 39
+	c0 09
+	c0 13
+	00 33
+	00 35
+	00 2f
+	00 ff
+     Compression methods:
+	01			length
+	00			None
+     Extensions:
+	00 36				length
+	Extension:
+	   00 00			Server name
+	   00 0e			length
+	      00 0c			length
+	      00 00
+	      09 6c 6f 63 61 6c 68 6f 73 74	"localhost"
+	Extension:
+	   00 0b			EC Point Formats
+	   00 04			length
+	      03			length
+	      00 01 02
+	Extension:
+	   00 0a			Elliptic curves
+	   00 0c			length
+	      00 0a			length
+	      00 1d			x25519
+	      00 17			secp256r1
+	      00 1e			x448
+	      00 19			secp521r1
+	      00 18			secp384r1
+	Extension:
+	   00 23			Session ticket
+	   00 00			""
+	Extension:
+	   00 16			Encrypt then mac
+	   00 00			""
+	Extension:
+	   00 17			Extended master secret
+	   00 00			""
+
+Resent Packet #1: (DTLSPlaintext)
+
+  16					Content type #22
+  fe ff					DTLS 1.0
+  00 00					Epoch 0
+  00 00 00 00 00 01			Sequence number #1
+  00 7e					Packet length
+  [... Remainder identical to packet #0 ...]
+
+[...]
+
+Resent packet #12: (DTLSPlaintext)
+
+  16					Content type #22
+  fe ff					DTLS 1.0
+  00 00					Epoch 0
+  00 00 00 00 00 0c			Sequence number #12
+  00 7e					Packet length
+  [... Remainder identical to packet #0 ...]
+
+Terminates after packet #12 and ~493 seconds.
+
+Likely exponential backoff timeout for resend.
