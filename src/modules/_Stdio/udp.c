@@ -1396,13 +1396,14 @@ static void udp_set_buffer(INT32 args)
 }
 
 /*! @decl constant MSG_OOB
- *! @fixme
- *! Document this constant.
+ *!
+ *! Flag to specify to @[read()] to read out of band packets.
  */
 
 /*! @decl constant MSG_PEEK
- *! @fixme
- *! Document this constant.
+ *!
+ *! Flag to specify to @[read()] to cause it to not remove the packet
+ *! from the input buffer.
  */
 
 /*! @endclass
