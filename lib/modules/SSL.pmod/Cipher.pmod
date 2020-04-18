@@ -226,6 +226,11 @@ class CipherSpec {
     case SIGNATURE_ecdsa:
       {
         string sign = session->private_key->pkcs_sign(data, Crypto.SHA1);
+	SSL3_DEBUG_MSG("Signing...\n"
+		       "data: %s\n"
+		       "Signature: %s\n",
+		       String.string2hex(data),
+		       String.string2hex(sign));
         struct->add_hstring(sign, 2);
         return struct;
       }
@@ -281,7 +286,13 @@ class CipherSpec {
     case SIGNATURE_dsa:
     case SIGNATURE_ecdsa:
       {
-        return pkc->pkcs_verify(data, Crypto.SHA1, input->read_hstring(2));
+	string(8bit) sign = input->read_hstring(2);
+	SSL3_DEBUG_MSG("Verifying signature...\n"
+		       "Data: %s\n"
+		       "Signature: %s\n",
+		       String.string2hex(data),
+		       String.string2hex(sign));
+        return pkc->pkcs_verify(data, Crypto.SHA1, sign);
       }
     }
 
@@ -1195,6 +1206,7 @@ class KeyExchangeECDHE
     SSL3_DEBUG_MSG("secret: %O\n", secret);
     SSL3_DEBUG_MSG("x: %O\n", p->get_x());
     SSL3_DEBUG_MSG("y: %O\n", p->get_y());
+    SSL3_DEBUG_MSG("p: %O\n", p);
 
     Stdio.Buffer struct = Stdio.Buffer();
     struct->add_int(CURVETYPE_named_curve, 1);
@@ -1213,6 +1225,10 @@ class KeyExchangeECDHE
     object(Gmp.mpz)|string(8bit) secret =
       session->curve->new_scalar(context->random);
     Crypto.ECC.Curve.Point p = session->curve * secret;
+
+    SSL3_DEBUG_MSG("Client point: %O\n"
+		   "encoded, hex: %s (%d bytes)\n",
+		   p, String.string2hex(p->encode()), sizeof(p->encode()));
 
     // RFC 4492 5.10:
     // Note that this octet string (Z in IEEE 1363 terminology) as
@@ -1272,6 +1288,10 @@ class KeyExchangeECDHE
   {
     SSL3_DEBUG_MSG("KE_ECDHE\n");
 
+    SSL3_DEBUG_MSG("input: %O\n"
+		   "data: %s\n",
+		   input, String.string2hex(sprintf("%s", input)));
+
     Stdio.Buffer.RewindKey key = input->rewind_key();
     int len = sizeof(input);
 
@@ -1298,14 +1318,25 @@ class KeyExchangeECDHE
 
     // Then the point.
     catch {
-      point = session->curve->Point(input->read_hbuffer(1));
+      Stdio.Buffer sub = input->read_hbuffer(1);
+      SSL3_DEBUG_MSG("Raw point: %O\n", sub);
+      point = session->curve->Point(sub);
+      SSL3_DEBUG_MSG("Point: %O\n", point);
     };
     if (!point)
       return 0;
 
+    SSL3_DEBUG_MSG("input: %O\n", input);
     len = len - sizeof(input);
     key->rewind();
-    return input->read_buffer(len);
+    SSL3_DEBUG_MSG("len: %d\n", len);
+    SSL3_DEBUG_MSG("input (rewound): %O\n"
+		   "data: %s\n",
+		   input, String.string2hex(sprintf("%s", input)[..len-1]));
+    Stdio.Buffer res = input->read_buffer(len);
+    SSL3_DEBUG_MSG("Result: %O %s (%d bytes)\n",
+		   res, String.string2hex(sprintf("%s", res)), len);
+    return res;
   }
 }
 
