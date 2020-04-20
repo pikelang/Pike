@@ -156,15 +156,15 @@ string attribute_quote(string data, void|string ignore)
   case "\"":
     return replace(data, ([ "'":"&apos;",
                             "&":"&amp;",
-                            "\n":"&#a;",
-                            "\r":"&#d;",
+                            "\n":"&#10;",
+                            "\r":"&#13;",
                             "<":"&lt;",
                             ">":"&gt;" ]) );
   case "'":
     return replace(data, ([ "\"":"&quot;",
                             "&":"&amp;",
-                            "\n":"&#a;",
-                            "\r":"&#d;",
+                            "\n":"&#10;",
+                            "\r":"&#13;",
                             "<":"&lt;",
                             ">":"&gt;" ]) );
 
@@ -172,8 +172,8 @@ string attribute_quote(string data, void|string ignore)
     return replace(data, ([ "\"":"&quot;",
                             "'":"&apos;",
                             "&":"&amp;",
-                            "\n":"&#a;",
-                            "\r":"&#d;",
+                            "\n":"&#10;",
+                            "\r":"&#13;",
                             "<":"&lt;",
                             ">":"&gt;" ]) );
   }
@@ -1452,7 +1452,7 @@ protected class VirtualNode {
   {
     return Charset.encoder(encoding)->set_replacement_callback(lambda(string c)
       {
-        return sprintf("&#%x;", c[0]);
+        return sprintf("&#x%x;", c[0]);
       });
   }
 
