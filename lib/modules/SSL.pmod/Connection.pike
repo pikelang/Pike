@@ -973,6 +973,80 @@ void print_sequence_set()
   werror("])\n");
 }
 
+private class HandshakeFragment(int len, int offset, string(8bit) data) {}
+
+int next_handshake_message_seq = 0;
+mapping(int:array(HandshakeFragment)) handshake_fragments = ([]);
+
+protected void got_dtls_handshake_fragment(string(8bit) data)
+{
+  int ct;
+  int seq;
+  int len;
+  int offset;
+  int frag_len;
+  if ((sscanf(data, "%1c%3c%2c%3c%3c%s",
+	      ct, len, seq, offset, frag_len, data) != 6) ||
+      (ct != PACKET_handshake) ||
+      (sizeof(data) < frag_len)) {
+    return;
+  }
+  if ((seq < next_handshake_message_seq) ||
+      (seq > (next_handshake_message_seq + 16)) ||
+      (offset > len)) {
+    return;
+  }
+  if ((offset + frag_len) > len) {
+    frag_len = len - offset;
+  }
+  if (sizeof(data) > frag_len) {
+    data = data[..frag_len-1];
+  }
+  array(HandshakeFragment) frags = handshake_fragments[seq];
+  HandshakeFragment new_frag = HandshakeFragment(len, offset, data);
+  if (!frags || (!offset && (len == sizeof(data)))) {
+    handshake_fragments[seq] = ({ new_frag });
+  } else {
+    frags += ({ new_frag });
+    sort(frags->offset, frags);
+
+    HandshakeFragment prev;
+    foreach(frags; int i; HandshakeFragment frag) {
+      if (!prev) {
+	prev = frag;
+	continue;
+      }
+      if (frag->offset <= prev->offset + sizeof(prev->data)) {
+	prev->data +=
+	  frag->data[prev->offset + sizeof(prev->data) - frag->offset..];
+	frags[i] = 0;
+	continue;
+      }
+      prev = frag;
+    }
+    frags -= ({ 0 });
+    handshake_fragments[seq] = frags;
+  }
+}
+
+protected string(8bit) get_dtls_handshake_data()
+{
+  array(HandshakeFragment) frags =
+    handshake_fragments[next_handshake_message_seq];
+  if (!frags || (sizeof(frags) != 1)) return UNDEFINED;
+  HandshakeFragment frag = frags[0];
+  if (frag->len != sizeof(frag->data)) return UNDEFINED;
+  string(8bit) packet =
+    sprintf("%1c%3c%2c%3c%3c%s",
+	    PACKET_handshake,
+	    frag->len,
+	    next_handshake_message_seq,
+	    0, frag->len,
+	    frag->data);
+  m_delete(handshake_fragments, next_handshake_message_seq++);
+  return packet;
+}
+
 Stdio.Buffer handshake_buffer = Stdio.Buffer(); // Error mode 0.
 Stdio.Buffer alert_buffer = Stdio.Buffer();
 
