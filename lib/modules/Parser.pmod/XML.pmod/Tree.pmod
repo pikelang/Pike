@@ -1346,7 +1346,7 @@ protected class VirtualNode {
     Charset.Encoder e = Charset.encoder(encoding);
     e->set_replacement_callback(lambda(string c)
       {
-        return sprintf("&#%x;", c[0]);
+        return sprintf("&#x%x;", c[0]);
       });
     return e;
   }
