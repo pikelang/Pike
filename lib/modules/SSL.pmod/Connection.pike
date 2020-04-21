@@ -973,37 +973,48 @@ void print_sequence_set()
   werror("])\n");
 }
 
-private class HandshakeFragment(int len, int offset, string(8bit) data) {}
+private class HandshakeFragment(int mt, int len, int offset,
+				string(8bit) data) {}
 
 int next_handshake_message_seq = 0;
 mapping(int:array(HandshakeFragment)) handshake_fragments = ([]);
 
 protected void got_dtls_handshake_fragment(string(8bit) data)
 {
-  int ct;
+  int mt;
   int seq;
   int len;
   int offset;
   int frag_len;
   if ((sscanf(data, "%1c%3c%2c%3c%3c%s",
-	      ct, len, seq, offset, frag_len, data) != 6) ||
-      (ct != PACKET_handshake) ||
+	      mt, len, seq, offset, frag_len, data) != 6) ||
       (sizeof(data) < frag_len)) {
+    // Truncated fragment.
     return;
   }
   if ((seq < next_handshake_message_seq) ||
       (seq > (next_handshake_message_seq + 16)) ||
       (offset > len)) {
+    // Ignore fragments for messages already received or that
+    // aren't relevant yet.
     return;
   }
   if ((offset + frag_len) > len) {
+    // Paranoia - Fragment out of bounds.
     frag_len = len - offset;
   }
   if (sizeof(data) > frag_len) {
+    // More paranoia - Extraneous data in fragment.
     data = data[..frag_len-1];
   }
   array(HandshakeFragment) frags = handshake_fragments[seq];
-  HandshakeFragment new_frag = HandshakeFragment(len, offset, data);
+  if (sizeof(frags || ({})) &&
+      ((mt != frags[0]->mt) || (len != frags[0]->len))) {
+    // Inconsistent handshake message metadata.
+    // FIXME: Generate an alert.
+    return;
+  }
+  HandshakeFragment new_frag = HandshakeFragment(mt, len, offset, data);
   if (!frags || (!offset && (len == sizeof(data)))) {
     handshake_fragments[seq] = ({ new_frag });
   } else {
@@ -1038,7 +1049,7 @@ protected string(8bit) get_dtls_handshake_data()
   if (frag->len != sizeof(frag->data)) return UNDEFINED;
   string(8bit) packet =
     sprintf("%1c%3c%2c%3c%3c%s",
-	    PACKET_handshake,
+	    frag->mt,
 	    frag->len,
 	    next_handshake_message_seq,
 	    0, frag->len,
