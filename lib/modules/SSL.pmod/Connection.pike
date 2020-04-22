@@ -1200,82 +1200,116 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
       {
         SSL3_DEBUG_MSG("SSL.Connection: HANDSHAKE\n");
 
-        COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
-                   "Zero length Handshake fragments not allowed.\n");
+	if (dtls) {
+	  // FIXME: Defragment and serialize packets.
+	  got_dtls_handshake_fragment(packet->fragment);
+	  string(8bit) new_fragment = get_dtls_handshake_data();
+	  if (new_fragment) {
+	    packet->fragment = new_fragment;
+	  } else {
+	    packet = 0;
+	  }
+	}
 
-        // Don't allow renegotiation in unsecure mode, to address
-        // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
-        // For details see: http://www.g-sec.lu/practicaltls.pdf and
-        // RFC 5746.
-        COND_FATAL(!(state & CONNECTION_handshaking) &&
-                   !secure_renegotiation, ALERT_no_renegotiation,
-                   "Renegotiation not supported in unsecure mode.\n");
+	while(packet) {
+	  COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
+		     "Zero length Handshake fragments not allowed.\n");
 
-	COND_FATAL(!(state & CONNECTION_handshaking) &&
-		   !context->enable_renegotiation, ALERT_no_renegotiation,
-		   "Renegotiation disabled by context.\n");
+	  // Don't allow renegotiation in unsecure mode, to address
+	  // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
+	  // For details see: http://www.g-sec.lu/practicaltls.pdf and
+	  // RFC 5746.
+	  COND_FATAL(!(state & CONNECTION_handshaking) &&
+		     !secure_renegotiation, ALERT_no_renegotiation,
+		     "Renegotiation not supported in unsecure mode.\n");
 
-        /* No change_cipher message was received */
-        // FIXME: There's a bug somewhere since expect_change_cipher
-        // often remains set after the handshake is completed. The
-        // effect is that renegotiation doesn't work all the time.
-        //
-        // A side effect is that we are partly invulnerable to the
-        // renegotiation vulnerability mentioned above. It is however
-        // not safe to assume that, since there might be routes past
-        // this, maybe through the use of a version 2 hello message
-        // below.
-        COND_FATAL(expect_change_cipher && (version < PROTOCOL_TLS_1_3),
-                   ALERT_unexpected_message, "Expected change cipher.\n");
+	  COND_FATAL(!(state & CONNECTION_handshaking) &&
+		     !context->enable_renegotiation, ALERT_no_renegotiation,
+		     "Renegotiation disabled by context.\n");
 
-        int(-1..1) err;
-        handshake_buffer->add( packet->fragment );
+	  /* No change_cipher message was received */
+	  // FIXME: There's a bug somewhere since expect_change_cipher
+	  // often remains set after the handshake is completed. The
+	  // effect is that renegotiation doesn't work all the time.
+	  //
+	  // A side effect is that we are partly invulnerable to the
+	  // renegotiation vulnerability mentioned above. It is however
+	  // not safe to assume that, since there might be routes past
+	  // this, maybe through the use of a version 2 hello message
+	  // below.
+	  COND_FATAL(expect_change_cipher && (version < PROTOCOL_TLS_1_3),
+		     ALERT_unexpected_message, "Expected change cipher.\n");
 
-        while (sizeof(handshake_buffer) >= 4)
-        {
-          Stdio.Buffer.RewindKey key = handshake_buffer->rewind_key();
-          int type = handshake_buffer->read_int8();
-          Buffer input = Buffer(handshake_buffer->read_hbuffer(3));
-          if(!input)
-          {
-            // Not enough data.
-            key->rewind();
-            break;
-          }
+	  int(-1..1) err;
+	  handshake_buffer->add( packet->fragment );
 
-          int len = 1+3+sizeof(input);
-          key->rewind();
-          Stdio.Buffer raw = handshake_buffer->read_buffer(len);
+	  while (sizeof(handshake_buffer) >= 4)
+	  {
+	    Stdio.Buffer.RewindKey key = handshake_buffer->rewind_key();
+	    int type = handshake_buffer->read_int8();
+	    Buffer input = Buffer(handshake_buffer->read_hbuffer(3));
+	    if(!input)
+	    {
+	      // Not enough data.
+	      key->rewind();
+	      break;
+	    }
 
-          mixed exception = catch {
-              err = handle_handshake(type, input, raw);
-              COND_FATAL(err>=0 && sizeof(input), ALERT_record_overflow,
-                         sprintf("Extraneous handshake packet data (%O).\n",
-                                 type));
-            };
-          if( exception )
-          {
-            if( objectp(exception) && ([object]exception)->buffer_error )
-            {
-              Error.Generic e = [object(Error.Generic)]exception;
-              COND_FATAL(1, ALERT_decode_error, e->message());
-            }
-            throw(exception);
-          }
-          if (err < 0)
-            return err;
-          if (err > 0) {
-            state &= ~CONNECTION_handshaking;
-            if ((version >= PROTOCOL_TLS_1_3) || expect_change_cipher) {
-              // NB: Renegotiation is available in TLS 1.2 and earlier.
-              COND_FATAL(sizeof(handshake_buffer), ALERT_unexpected_message,
-                         "Extraneous handshake packets.\n");
-            }
-            COND_FATAL(sizeof(handshake_buffer) && !secure_renegotiation,
-                       ALERT_no_renegotiation,
-                       "Renegotiation not supported in unsecure mode.\n");
-          }
-        }
+	    int len = 1+3+sizeof(input);
+	    if (dtls) len += 2 + 3 + 3;	// Fragmentation info.
+	    key->rewind();
+	    Stdio.Buffer raw = handshake_buffer->read_buffer(len);
+
+	    SSL3_DEBUG_MSG("Connection: %s(%O)...\n",
+			   fmt_constant(type, "HANDSHAKE"),
+			   input);
+
+	    if (dtls) {
+	      // Strip fragmentation info.
+	      input->read(2 + 3 + 3);
+	    }
+
+	    mixed exception = catch {
+		err = handle_handshake(type, input, raw);
+		COND_FATAL(err>=0 && sizeof(input), ALERT_record_overflow,
+			   sprintf("Extraneous handshake packet data (%O).\n",
+				   type));
+	      };
+	    if( exception )
+	    {
+	      if( objectp(exception) && ([object]exception)->buffer_error )
+	      {
+		Error.Generic e = [object(Error.Generic)]exception;
+		COND_FATAL(1, ALERT_decode_error, e->message());
+	      }
+	      throw(exception);
+	    }
+	    if (err < 0)
+	      return err;
+	    if (err > 0) {
+	      state &= ~CONNECTION_handshaking;
+	      if ((version >= PROTOCOL_TLS_1_3) || expect_change_cipher) {
+		// NB: Renegotiation is available in TLS 1.2 and earlier.
+		COND_FATAL(sizeof(handshake_buffer), ALERT_unexpected_message,
+			   "Extraneous handshake packets.\n");
+	      }
+	      COND_FATAL(sizeof(handshake_buffer) && !secure_renegotiation,
+			 ALERT_no_renegotiation,
+			 "Renegotiation not supported in unsecure mode.\n");
+	    }
+	  }
+
+	  if (dtls) {
+	    string(8bit) new_fragment = get_dtls_handshake_data();
+	    if (new_fragment) {
+	      packet->fragment = new_fragment;
+	    } else {
+	      packet = 0;
+	    }
+	  } else {
+	    break;
+	  }
+	}
         break;
       }
     case PACKET_application_data:
@@ -1335,6 +1369,11 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
                      fmt_constant(packet->content_type, "PACKET"));
       break;
     }
+  }
+
+  if (dtls) {
+    // This should normally be a no-op, but better safe than sorry.
+    read_buffer->clear();
   }
 
   if (sizeof(res)) return res;
