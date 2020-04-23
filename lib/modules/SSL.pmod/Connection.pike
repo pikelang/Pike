@@ -1247,6 +1247,10 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
 	  {
 	    Stdio.Buffer.RewindKey key = handshake_buffer->rewind_key();
 	    int type = handshake_buffer->read_int8();
+	    if (dtls) {
+	      // Strip fragmentation info.
+	      handshake_buffer->read(2 + 3 + 3);
+	    }
 	    Buffer input = Buffer(handshake_buffer->read_hbuffer(3));
 	    if(!input)
 	    {
@@ -1263,11 +1267,6 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
 	    SSL3_DEBUG_MSG("Connection: %s(%O)...\n",
 			   fmt_constant(type, "HANDSHAKE"),
 			   input);
-
-	    if (dtls) {
-	      // Strip fragmentation info.
-	      input->read(2 + 3 + 3);
-	    }
 
 	    mixed exception = catch {
 		err = handle_handshake(type, input, raw);
