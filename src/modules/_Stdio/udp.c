@@ -1242,6 +1242,52 @@ static void udp_query_address(INT32 args)
   }
 }
 
+/*! @decl int query_mtu()
+ *!
+ *! Get the Max Transfer Unit for the object (if any).
+ *!
+ *! @returns
+ *!   @int
+ *!     @value -1
+ *!       Returns @expr{-1@} if the object is not a socket or
+ *!       if the mtu is unknown.
+ *!     @value 1..
+ *!       Returns a positive value with the mtu on success.
+ *!   @endint
+ */
+static void udp_query_mtu(INT32 args)
+{
+  int mtu = -1;
+  PIKE_SOCKADDR addr;
+  ACCEPT_SIZE_T len = sizeof(addr);
+  int level = SOL_SOCKET;
+  int option = IP_MTU;
+
+  if(FD <0)
+    Pike_error("Port not bound yet.\n");
+
+  if (fd_getsockname(FD, (struct sockaddr *)&addr, &len) < 0) {
+    THIS->my_errno = errno;
+    push_int(-1);
+    return;
+  }
+
+  if (SOCKADDR_FAMILY(addr) == AF_INET) {
+    level = IPPROTO_IP;
+  } else if (SOCKADDR_FAMILY(addr) == AF_INET6) {
+    level = IPPROTO_IPV6;
+    option = IPV6_MTU;
+  }
+
+  len = sizeof(mtu);
+  if (fd_getsockopt(FD, level, option, (void *)&mtu, &len) < 0) {
+    THIS->my_errno = errno;
+    push_int(-1);
+    return;
+  }
+  push_int(mtu);
+}
+
 /*! @decl void set_backend (Pike.Backend backend)
  *!
  *! Set the backend used for the read callback.
@@ -1475,6 +1521,7 @@ void init_stdio_udp(void)
 
   ADD_FUNCTION("set_blocking",udp_set_blocking,tFunc(tVoid,tObj), 0 );
   ADD_FUNCTION("query_address",udp_query_address,tFunc(tNone,tStr),0);
+  ADD_FUNCTION("query_mtu", udp_query_mtu, tFunc(tNone,tInt), 0);
 
   ADD_FUNCTION ("set_backend", udp_set_backend, tFunc(tObj,tVoid), 0);
   ADD_FUNCTION ("query_backend", udp_query_backend, tFunc(tVoid,tObj), 0);

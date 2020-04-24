@@ -5504,6 +5504,52 @@ static void file_query_address(INT32 args)
   }
 }
 
+/*! @decl int query_mtu()
+ *!
+ *! Get the Max Transfer Unit for the object (if any).
+ *!
+ *! @returns
+ *!   @int
+ *!     @value -1
+ *!       Returns @expr{-1@} if the object is not a socket or
+ *!       if the mtu is unknown.
+ *!     @value 1..
+ *!       Returns a positive value with the mtu on success.
+ *!   @endint
+ */
+static void file_query_mtu(INT32 args)
+{
+  int mtu = -1;
+  PIKE_SOCKADDR addr;
+  ACCEPT_SIZE_T len = sizeof(addr);
+  int level = SOL_SOCKET;
+  int option = IP_MTU;
+
+  if(FD <0)
+    Pike_error("Stdio.UDP->query_mtu(): Connection not open.\n");
+
+  if (fd_getsockname(FD, (struct sockaddr *)&addr, &len) < 0) {
+    ERRNO = errno;
+    push_int(-1);
+    return;
+  }
+
+  if (SOCKADDR_FAMILY(addr) == AF_INET) {
+    level = IPPROTO_IP;
+  } else if (SOCKADDR_FAMILY(addr) == AF_INET6) {
+    level = IPPROTO_IPV6;
+    option = IPV6_MTU;
+  }
+
+  len = sizeof(mtu);
+  if (fd_getsockopt(FD, level, option, (void *)&mtu, &len) < 0) {
+    ERRNO = errno;
+    push_int(-1);
+    return;
+  }
+  push_int(mtu);
+}
+
 /*! @decl void create(string filename)
  *! @decl void create(string filename, string mode)
  *! @decl void create(string filename, string mode, int access)
