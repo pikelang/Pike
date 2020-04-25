@@ -1254,6 +1254,11 @@ static void udp_query_address(INT32 args)
  *!     @value 1..
  *!       Returns a positive value with the mtu on success.
  *!   @endint
+ *!
+ *! @note
+ *!   The returned value is adjusted to take account for the
+ *!   IP and UDP headers, so that it should be usable without
+ *!   further adjustment unless further IP options are in use.
  */
 static void udp_query_mtu(INT32 args)
 {
@@ -1262,6 +1267,7 @@ static void udp_query_mtu(INT32 args)
   ACCEPT_SIZE_T len = sizeof(addr);
   int level = SOL_SOCKET;
   int option = IP_MTU;
+  int ip_udp_header_size = 20 + 8;	/* IPv4 and UDP header sizes. */
 
   if(FD <0)
     Pike_error("Port not bound yet.\n");
@@ -1277,6 +1283,7 @@ static void udp_query_mtu(INT32 args)
   } else if (SOCKADDR_FAMILY(addr) == AF_INET6) {
     level = IPPROTO_IPV6;
     option = IPV6_MTU;
+    int ip_udp_header_size = 40 + 8;	/* IPv6 and UDP header sizes. */
   }
 
   len = sizeof(mtu);
@@ -1285,7 +1292,7 @@ static void udp_query_mtu(INT32 args)
     push_int(-1);
     return;
   }
-  push_int(mtu);
+  push_int(mtu - ip_udp_header_size);
 }
 
 /*! @decl void set_backend (Pike.Backend backend)
