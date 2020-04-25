@@ -1283,7 +1283,7 @@ static void udp_query_mtu(INT32 args)
   } else if (SOCKADDR_FAMILY(addr) == AF_INET6) {
     level = IPPROTO_IPV6;
     option = IPV6_MTU;
-    int ip_udp_header_size = 40 + 8;	/* IPv6 and UDP header sizes. */
+    ip_udp_header_size = 40 + 8;	/* IPv6 and UDP header sizes. */
   }
 
   len = sizeof(mtu);
