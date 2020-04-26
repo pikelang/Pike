@@ -888,11 +888,20 @@ void udp_read(INT32 args)
 /*! @decl int send(string to, int|string port, string message)
  *! @decl int send(string to, int|string port, string message, int flags)
  *!
- *! Send data to a UDP socket. The recipient address will be @[to]
- *! and port will be @[port].
+ *! Send data to a UDP socket.
  *!
- *! Flag @[flag] is a bitfield, 1 for out of band data and
- *! 2 for don't route flag.
+ *! @param to
+ *!   The recipient address. For @[connect()]ed objects specifying a
+ *!   recipient of either @[UNDEFINED] or @expr{""@} causes the default
+ *!   recipient to be used.
+ *!
+ *! @param port
+ *!   The recipient port number. For @[connect()]ed objects specifying
+ *!   port number @expr{0@} casues the default recipient port to be used.
+ *!
+ *! @param flag
+ *!   A flag bitfield with @expr{1@} for out of band data and
+ *!   @expr{2@} for don't route flag.
  *!
  *! @returns
  *!   @int
@@ -915,15 +924,23 @@ void udp_read(INT32 args)
  *! @note
  *!   Versions of Pike prior to 8.1.5 threw errors also on EMSGSIZE
  *!   (@expr{"Too big message"@}) and EWOULDBLOCK
- *!  .(@expr{"Message would block."@}). These versions of Pike also
+ *!   (@expr{"Message would block."@}). These versions of Pike also
  *!   did not update the object errno on this function failing.
+ *!
+ *! @note
+ *!   Versions of Pike prior to 8.1.13 did not support the default
+ *!   recipient for @[connect()]ed objects.
+ *!
+ *! @seealso
+ *!   @[connect()], @[errno()], @[query_mtu()]
  */
 void udp_sendto(INT32 args)
 {
   int flags = 0, fd, e;
   ptrdiff_t res = 0;
-  PIKE_SOCKADDR to;
-  int to_len;
+  PIKE_SOCKADDR to_buf;
+  struct sockaddr *to = NULL;
+  int to_len = 0;
   char *str;
   ptrdiff_t len;
 
@@ -931,7 +948,8 @@ void udp_sendto(INT32 args)
     Pike_error("UDP: not open\n");
 
   check_all_args(NULL, args,
-		 BIT_STRING, BIT_INT|BIT_STRING, BIT_STRING, BIT_INT|BIT_VOID, 0);
+		 BIT_ZERO|BIT_STRING, BIT_INT|BIT_STRING,
+		 BIT_STRING, BIT_INT|BIT_VOID, 0);
 
   if(args>3)
   {
@@ -950,12 +968,17 @@ void udp_sendto(INT32 args)
     }
   }
 
-  to_len = get_inet_addr(&to, Pike_sp[-args].u.string->str,
-			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_STRING?
-			  Pike_sp[1-args].u.string->str : NULL),
-			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT?
-			  Pike_sp[1-args].u.integer : -1),
-			 THIS->inet_flags);
+  if ((TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) &&
+      Pike_sp[-args].u.string->len) {
+    to_len = get_inet_addr(&to_buf, Pike_sp[-args].u.string->str,
+			   (TYPEOF(Pike_sp[1-args]) == PIKE_T_STRING?
+			    Pike_sp[1-args].u.string->str : NULL),
+			   (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT?
+			    Pike_sp[1-args].u.integer : -1),
+			   THIS->inet_flags);
+    to = (struct sockaddr *)&to_buf;
+  }
+
   INVALIDATE_CURRENT_TIME();
 
   fd = FD;
@@ -964,7 +987,7 @@ void udp_sendto(INT32 args)
 
   do {
     THREADS_ALLOW();
-    res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to, to_len);
+    res = fd_sendto( fd, str, len, flags, to, to_len);
     e = errno;
     THREADS_DISALLOW();
 
