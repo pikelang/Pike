@@ -133,6 +133,7 @@ struct udp_storage {
   int protocol;
 
   struct svalue read_callback;	/* Mapped. */
+  struct svalue write_callback;	/* Mapped. */
 };
 
 void zero_udp(struct object *ignored);
@@ -1024,26 +1025,46 @@ void udp_sendto(INT32 args)
 }
 
 
-static int got_udp_event (struct fd_callback_box *box, int DEBUGUSED(event))
+static int got_udp_event (struct fd_callback_box *box, int event)
 {
   struct udp_storage *u = (struct udp_storage *) box;
 #ifdef PIKE_DEBUG
   if (event != PIKE_FD_READ)
-    Pike_fatal ("Got unexpected event %d.\n", event);
 #endif
 
   u->my_errno = errno;		/* Propagate backend setting. */
 
-  check_destructed (&u->read_callback);
-  if (UNSAFE_IS_ZERO (&u->read_callback))
-    set_fd_callback_events (&u->box, 0, 0);
-  else {
-    apply_svalue (&u->read_callback, 0);
-    if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
+  switch(event) {
+  case PIKE_FD_READ:
+    check_destructed (&u->read_callback);
+    if (UNSAFE_IS_ZERO (&u->read_callback))
+      set_fd_callback_events (&u->box, u->box.events & ~PIKE_BIT_FD_READ, 0);
+    else {
+      apply_svalue (&u->read_callback, 0);
+      if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
+	pop_stack();
+	return -1;
+      }
       pop_stack();
-      return -1;
     }
-    pop_stack();
+    break;
+  case PIKE_FD_WRITE:
+    check_destructed (&u->write_callback);
+    if (UNSAFE_IS_ZERO (&u->write_callback))
+      set_fd_callback_events (&u->box, u->box.events & ~PIKE_BIT_FD_WRITE, 0);
+    else {
+      apply_svalue (&u->write_callback, 0);
+      if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
+	pop_stack();
+	return -1;
+      }
+      pop_stack();
+    }
+    break;
+#ifdef PIKE_DEBUG
+  default:
+    Pike_fatal ("Got unexpected event %d.\n", event);
+#endif
   }
   return 0;
 }
@@ -1055,7 +1076,7 @@ void zero_udp(struct object *o)
   THIS->inet_flags = PIKE_INET_FLAG_UDP;
   THIS->type=SOCK_DGRAM;
   THIS->protocol=0;
-  /* map_variable handles read_callback. */
+  /* map_variable handles read_callback and write_callback. */
 }
 
 int low_exit_udp()
@@ -1073,7 +1094,7 @@ int low_exit_udp()
     THREADS_DISALLOW();
   }
 
-  /* map_variable handles read_callback. */
+  /* map_variable handles read_callback and write_callback. */
 
   return ret;
 }
@@ -1087,29 +1108,64 @@ static void udp_set_read_callback(INT32 args)
   assign_svalue(& u->read_callback, Pike_sp-1);
   if (UNSAFE_IS_ZERO (Pike_sp - 1)) {
     if (u->box.backend)
-      set_fd_callback_events (&u->box, 0, 0);
+      set_fd_callback_events (&u->box, u->box.events & ~PIKE_BIT_FD_READ, 0);
   }
   else {
     if (!u->box.backend)
       INIT_FD_CALLBACK_BOX (&u->box, default_backend, u->box.ref_obj,
-			    u->box.fd, PIKE_BIT_FD_READ, got_udp_event, 0);
+			    u->box.fd, u->box.events | PIKE_BIT_FD_READ,
+			    got_udp_event, 0);
     else
-      set_fd_callback_events (&u->box, PIKE_BIT_FD_READ, 0);
+      set_fd_callback_events (&u->box, u->box.events | PIKE_BIT_FD_READ, 0);
   }
 
-  pop_stack();
+  pop_n_elems(args);
   ref_push_object(THISOBJ);
 }
 
+static void udp_set_write_callback(INT32 args)
+{
+  struct udp_storage *u = THIS;
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set_write_callback", 1);
+
+  assign_svalue(& u->write_callback, Pike_sp-1);
+  if (UNSAFE_IS_ZERO (Pike_sp - 1)) {
+    if (u->box.backend)
+      set_fd_callback_events (&u->box, u->box.events & ~PIKE_BIT_FD_WRITE, 0);
+  }
+  else {
+    if (!u->box.backend)
+      INIT_FD_CALLBACK_BOX (&u->box, default_backend, u->box.ref_obj,
+			    u->box.fd, u->box.events | PIKE_BIT_FD_WRITE,
+			    got_udp_event, 0);
+    else
+      set_fd_callback_events (&u->box, u->box.events | PIKE_BIT_FD_WRITE, 0);
+  }
+
+  pop_n_elems(args);
+  ref_push_object(THISOBJ);
+}
+
+/*! @decl object set_nonblocking(function|void rcb, function|void wcb)
+ *!
+ *! Sets this object to be nonblocking and the read and write callbacks.
+ */
 static void udp_set_nonblocking(INT32 args)
 {
   if (FD < 0) Pike_error("File not open.\n");
 
-  if (args)
-  {
-     udp_set_read_callback(args);
-     pop_stack();
+  while (args < 2) {
+    push_undefined();
+    args++;
   }
+
+  udp_set_write_callback(args - 1);
+  pop_stack();
+
+  udp_set_read_callback(1);
+  pop_stack();
+
   set_nonblocking(FD,1);
   THIS->inet_flags |= PIKE_INET_FLAG_NB;
   ref_push_object(THISOBJ);
@@ -1497,6 +1553,9 @@ void init_stdio_udp(void)
   PIKE_MAP_VARIABLE("_read_callback", OFFSETOF(udp_storage, read_callback),
 		    tFunc(tNone, tInt_10), PIKE_T_MIXED, ID_PROTECTED|ID_PRIVATE);
 
+  PIKE_MAP_VARIABLE("_write_callback", OFFSETOF(udp_storage, write_callback),
+		    tFunc(tNone, tInt_10), PIKE_T_MIXED, ID_PROTECTED|ID_PRIVATE);
+
   ADD_FUNCTION("set_type",udp_set_type,
 	       tFunc(tInt tOr(tVoid,tInt),tObj),0);
   ADD_FUNCTION("get_type",udp_get_type,
@@ -1545,9 +1604,12 @@ void init_stdio_udp(void)
 	       tFunc(tString tOr(tInt,tStr),tInt),0);
 
   ADD_FUNCTION("_set_nonblocking", udp_set_nonblocking,
-	       tFunc(tOr(tFunc(tVoid,tVoid),tVoid),tObj), 0 );
+	       tFunc(tOr(tFunc(tVoid, tInt_10), tVoid)
+		     tOr(tFunc(tVoid, tInt_10), tVoid), tObj), 0 );
   ADD_FUNCTION("_set_read_callback", udp_set_read_callback,
-	       tFunc(tFunc(tVoid,tVoid),tObj), 0 );
+	       tFunc(tFunc(tVoid, tInt_10), tObj), 0 );
+  ADD_FUNCTION("_set_write_callback", udp_set_write_callback,
+	       tFunc(tFunc(tVoid, tInt_10), tObj), 0 );
 
   ADD_FUNCTION("set_blocking",udp_set_blocking,tFunc(tVoid,tObj), 0 );
   ADD_FUNCTION("query_address",udp_query_address,tFunc(tNone,tStr),0);
