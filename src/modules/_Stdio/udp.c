@@ -153,6 +153,127 @@ void exit_udp(struct object *UNUSED(ignored)) {
 /*! @class UDP
  */
 
+/*! @decl UDP fd_factory()
+ *!
+ *! Factory creating @[Stdio.UDP] objects.
+ *!
+ *! This function is called by @[dup()]
+ *! and other functions creating new UDP objects.
+ *!
+ *! The default implementation calls @expr{object_program(this_object())()@}
+ *! to create the new object, and returns the @[UDP] inherit in it.
+ *!
+ *! @note
+ *!   Note that this function must return the @[UDP] inherit in the object.
+ *!
+ *! @seealso
+ *!   @[dup()], @[Stdio.File()->fd_factory()]
+ */
+static int udp_fd_factory_fun_num = -1;
+static void udp_fd_factory(INT32 args)
+{
+  pop_n_elems(args);
+  push_object_inherit(clone_object_from_object(Pike_fp->current_object, 0),
+		      Pike_fp->context - Pike_fp->current_program->inherits);
+}
+
+/* Use ptrdiff_t for the fd since we're passed a void * and should
+ * read it as an integer of the same size. */
+static void do_close_udp(void *_fd)
+{
+  int ret;
+  ptrdiff_t fd = (ptrdiff_t)_fd;
+
+  if (fd < 0) return;
+  errno = 0;
+  do {
+    ret = fd_close(fd);
+  } while ((ret == -1) && (errno == EINTR));
+}
+
+static void push_new_udp_object(int factory_fun_num, int fd)
+{
+  struct object *o = NULL;
+  struct udp_storage *udp;
+  ONERROR err;
+  struct inherit *inh;
+  struct identifier *i;
+
+  SET_ONERROR(err, do_close_udp, (ptrdiff_t) fd);
+  apply_current(factory_fun_num, 0);
+  if ((TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT) ||
+      !(o = Pike_sp[-1].u.object)->prog ||
+      ((inh = &o->prog->inherits[SUBTYPEOF(Pike_sp[-1])])->prog !=
+       Pike_fp->context->prog)) {
+    Pike_error("Invalid return value from fd_factory(). "
+	       "Expected object(is Stdio.UDP).\n");
+  }
+  udp = (struct udp_storage *)(o->storage + inh->storage_offset);
+  if (udp->box.fd != -1) {
+    Pike_error("Invalid return value from fd_factory(). "
+	       "Expected unopened object(is Stdio.UDP). fd:%d\n",
+	       udp->box.fd);
+  }
+  UNSET_ONERROR(err);
+  change_fd_for_box(&udp->box, fd);
+#ifdef PIKE_DEBUG
+  if (fd >= 0) {
+    debug_check_fd_not_in_use (fd);
+  }
+#endif
+}
+
+static int got_udp_event (struct fd_callback_box *box, int event);
+
+static void low_dup_udp(struct udp_storage *to,
+			struct udp_storage *from)
+{
+  size_t ev;
+
+  my_set_close_on_exec(to->box.fd, to->box.fd > 2);
+
+  unhook_fd_callback_box (&to->box);
+  if (from->box.backend)
+    INIT_FD_CALLBACK_BOX (&to->box, from->box.backend, to->box.ref_obj,
+			  to->box.fd, from->box.events, got_udp_event,
+			  from->box.flags);
+
+  assign_svalue (&to->read_callback, &from->read_callback);
+  assign_svalue (&to->write_callback, &from->write_callback);
+}
+
+/*! @decl Stdio.UDP dup()
+ *!
+ *!   Duplicate the udp socket.
+ *!
+ *! @seealso
+ *!   @[fd_factory()]
+ */
+static void udp_dup(INT32 args)
+{
+  int fd;
+  struct object *o;
+  struct udp_storage *udp;
+
+  pop_n_elems(args);
+
+  if(FD < 0)
+    Pike_error("Not open.\n");
+
+  if((fd=fd_dup(FD)) < 0)
+  {
+    THIS->my_errno = errno;
+    push_int(0);
+    return;
+  }
+  push_new_udp_object(udp_fd_factory_fun_num, fd);
+  o = Pike_sp[-1].u.object;
+  udp = ((struct udp_storage *)
+	 (o->storage + o->prog->inherits[SUBTYPEOF(Pike_sp[-1])].storage_offset));
+  THIS->my_errno = 0;
+  low_dup_udp(udp, THIS);
+}
+
 /*! @decl int(0..1) close()
  *!
  *! Closes an open UDP port.
@@ -1556,6 +1677,10 @@ void init_stdio_udp(void)
   PIKE_MAP_VARIABLE("_write_callback", OFFSETOF(udp_storage, write_callback),
 		    tFunc(tNone, tInt_10), PIKE_T_MIXED, ID_PROTECTED|ID_PRIVATE);
 
+  udp_fd_factory_fun_num =
+    ADD_FUNCTION("fd_factory", udp_fd_factory,
+		 tFunc(tNone, tObjIs_STDIO_UDP), ID_PROTECTED);
+
   ADD_FUNCTION("set_type",udp_set_type,
 	       tFunc(tInt tOr(tVoid,tInt),tObj),0);
   ADD_FUNCTION("get_type",udp_get_type,
@@ -1571,6 +1696,8 @@ void init_stdio_udp(void)
 
   ADD_FUNCTION("query_fd",udp_query_fd,
          tFunc(tVoid,tInt),0);
+
+  ADD_FUNCTION("dup", udp_dup, tFunc(tNone, tObjImpl_STDIO_UDP), 0);
 
   ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,
 	       tFunc(tNone,tInt01), 0);
