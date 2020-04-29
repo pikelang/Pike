@@ -1833,6 +1833,12 @@ class Port
   //!
   //! This function is called by @[accept()] when it needs to create
   //! a new file.
+  //!
+  //! The default implementation returns the @[Fd] inherit in
+  //! an empty @[File] object.
+  //!
+  //! @seealso
+  //!   @[accept()]
   protected Fd fd_factory()
   {
     return File()->_fd;
@@ -1883,7 +1889,7 @@ class Port
   //! @[Stdio.File]. The new file is by initially set to blocking mode.
   //!
   //! @seealso
-  //! @[Stdio.File]
+  //!   @[Stdio.File], @[fd_factory()]
   //!
   File accept()
   {
