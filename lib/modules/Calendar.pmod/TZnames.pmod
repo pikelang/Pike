@@ -100,9 +100,9 @@ mapping zones =
                   "Curacao", "Danmarkshavn", "Dawson", "Dawson_Creek",
                   "Denver", "Detroit", "Dominica", "Edmonton", "Eirunepe",
                   "El_Salvador", "Ensenada", "Fort_Nelson", "Fortaleza",
-                  "Glace_Bay", "Godthab", "Goose_Bay", "Grand_Turk",
-                  "Grenada", "Guadeloupe", "Guatemala", "Guayaquil", "Guyana",
-                  "Halifax", "Havana", "Hermosillo", "Indiana/Indianapolis",
+                  "Glace_Bay", "Goose_Bay", "Grand_Turk", "Grenada",
+                  "Guadeloupe", "Guatemala", "Guayaquil", "Guyana", "Halifax",
+                  "Havana", "Hermosillo", "Indiana/Indianapolis",
                   "Indiana/Knox", "Indiana/Marengo", "Indiana/Petersburg",
                   "Indiana/Tell_City", "Indiana/Vevay", "Indiana/Vincennes",
                   "Indiana/Winamac", "Inuvik", "Iqaluit", "Jamaica", "Juneau",
@@ -113,7 +113,7 @@ mapping zones =
                   "Moncton", "Monterrey", "Montevideo", "Montreal",
                   "Montserrat", "Nassau", "New_York", "Nipigon", "Nome",
                   "Noronha", "North_Dakota/Beulah", "North_Dakota/Center",
-                  "North_Dakota/New_Salem", "Ojinaga", "Panama",
+                  "North_Dakota/New_Salem", "Nuuk", "Ojinaga", "Panama",
                   "Pangnirtung", "Paramaribo", "Phoenix", "Port-au-Prince",
                   "Port_of_Spain", "Porto_Velho", "Puerto_Rico",
                   "Punta_Arenas", "Rainy_River", "Rankin_Inlet", "Recife",
@@ -717,11 +717,11 @@ mapping abbr2zones =
      "America/Belem",
      "America/Danmarkshavn",
      "America/Fortaleza",
-     "America/Godthab",
      "America/Maceio",
      "America/Miquelon",
      "America/Montevideo",
      "America/Noronha",
+     "America/Nuuk",
      "America/Recife",
      "America/Rosario",
      "America/Sao_Paulo",
@@ -760,12 +760,12 @@ mapping abbr2zones =
      "America/Cuiaba",
      "America/Danmarkshavn",
      "America/Fortaleza",
-     "America/Godthab",
      "America/Guyana",
      "America/Maceio",
      "America/Manaus",
      "America/Miquelon",
      "America/Montevideo",
+     "America/Nuuk",
      "America/Paramaribo",
      "America/Porto_Velho",
      "America/Punta_Arenas",
@@ -1885,7 +1885,6 @@ mapping abbr2zones =
      "America/Fort_Nelson",
      "America/Fortaleza",
      "America/Glace_Bay",
-     "America/Godthab",
      "America/Goose_Bay",
      "America/Grand_Turk",
      "America/Grenada",
@@ -1935,6 +1934,7 @@ mapping abbr2zones =
      "America/North_Dakota/Beulah",
      "America/North_Dakota/Center",
      "America/North_Dakota/New_Salem",
+     "America/Nuuk",
      "America/Ojinaga",
      "America/Panama",
      "America/Paramaribo",
@@ -2284,6 +2284,7 @@ mapping abbr2zones =
      "America/Cambridge_Bay",
      "America/Chihuahua",
      "America/Creston",
+     "America/Dawson",
      "America/Dawson_Creek",
      "America/Denver",
      "America/Edmonton",
@@ -2301,6 +2302,7 @@ mapping abbr2zones =
      "America/Regina",
      "America/Swift_Current",
      "America/Tijuana",
+     "America/Whitehorse",
      "America/Yellowknife",
      "Europe/Moscow",
      "MST",
@@ -2782,8 +2784,8 @@ mapping timezone_expert_tree =
                -28800:
                   ([ "test":-708089400, // 1947-07-25 12:30:00
                      -32400:
-                        ([ "test":-2256365152, // 1898-07-01 15:54:08
-                           -29143:"Asia/Shanghai",
+                        ([ "test":-1597651372, // 1919-05-17 15:57:08
+                           -32400:"Asia/Shanghai",
                            -28800:"Asia/Taipei",
                         ]),
                      -28800:
@@ -3215,7 +3217,7 @@ mapping timezone_expert_tree =
    10800:
       ([ "test":1086579000, // 2004-06-07 03:30:00
          0:"America/Danmarkshavn",
-         7200:"America/Godthab",
+         7200:"America/Nuuk",
          10800:
             ([ "test":129158100, // 1974-02-03 21:15:00
                5400:"America/Montevideo",
@@ -3591,7 +3593,7 @@ mapping timezone_expert_tree =
       ]),
    30600:"Pacific/Pitcairn",
    32400:
-      ([ "test":454744800, // 1984-05-30 06:00:00
+      ([ "test":1599382800, // 2020-09-06 09:00:00
          25200:"America/Dawson",
          28800:"America/Yakutat",
          32400:"Pacific/Gambier",
