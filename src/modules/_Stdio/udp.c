@@ -1442,6 +1442,7 @@ static void udp_query_address(INT32 args)
   }
 }
 
+#ifdef IP_MTU
 /*! @decl int query_mtu()
  *!
  *! Get the Max Transfer Unit for the object (if any).
@@ -1480,10 +1481,12 @@ static void udp_query_mtu(INT32 args)
 
   if (SOCKADDR_FAMILY(addr) == AF_INET) {
     level = IPPROTO_IP;
+#ifdef IPV6_MTU
   } else if (SOCKADDR_FAMILY(addr) == AF_INET6) {
     level = IPPROTO_IPV6;
     option = IPV6_MTU;
     ip_udp_header_size = 40 + 8;	/* IPv6 and UDP header sizes. */
+#endif
   }
 
   len = sizeof(mtu);
@@ -1494,6 +1497,7 @@ static void udp_query_mtu(INT32 args)
   }
   push_int(mtu - ip_udp_header_size);
 }
+#endif /* IP_MTU */
 
 /*! @decl void set_backend (Pike.Backend backend)
  *!
@@ -1740,7 +1744,9 @@ void init_stdio_udp(void)
 
   ADD_FUNCTION("set_blocking",udp_set_blocking,tFunc(tVoid,tObj), 0 );
   ADD_FUNCTION("query_address",udp_query_address,tFunc(tNone,tStr),0);
+#ifdef IP_MTU
   ADD_FUNCTION("query_mtu", udp_query_mtu, tFunc(tNone,tInt), 0);
+#endif
 
   ADD_FUNCTION ("set_backend", udp_set_backend, tFunc(tObj,tVoid), 0);
   ADD_FUNCTION ("query_backend", udp_query_backend, tFunc(tVoid,tObj), 0);

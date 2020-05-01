@@ -146,8 +146,10 @@ FILE_FUNC("connect_unix",file_connect_unix, tFunc(tStr,tInt))
 #endif /* HAVE_SYS_UN_H */
 /* function(int|void:string) */
 FILE_FUNC("query_address",file_query_address, tFunc(tOr(tInt01,tVoid),tStr))
+#ifdef IP_MTU
 /* function(:int) */
 FILE_FUNC("query_mtu", file_query_mtu, tFunc(tNone, tInt))
+#endif
 /* function(void|string,void|string:void) */
 FILE_FUNC("create",file_create, tFunc(tOr3(tVoid,tInt,tStr) tOr(tVoid,tStr) tOr(tVoid,tInt),tVoid))
 

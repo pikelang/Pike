@@ -5504,6 +5504,7 @@ static void file_query_address(INT32 args)
   }
 }
 
+#ifdef IP_MTU
 /*! @decl int query_mtu()
  *!
  *! Get the Max Transfer Unit for the object (if any).
@@ -5536,9 +5537,11 @@ static void file_query_mtu(INT32 args)
 
   if (SOCKADDR_FAMILY(addr) == AF_INET) {
     level = IPPROTO_IP;
+#ifdef IPV6_MTU
   } else if (SOCKADDR_FAMILY(addr) == AF_INET6) {
     level = IPPROTO_IPV6;
     option = IPV6_MTU;
+#endif
   }
 
   len = sizeof(mtu);
@@ -5549,6 +5552,7 @@ static void file_query_mtu(INT32 args)
   }
   push_int(mtu);
 }
+#endif /* IP_MTU */
 
 /*! @decl void create(string filename)
  *! @decl void create(string filename, string mode)
