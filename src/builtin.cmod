@@ -1842,9 +1842,9 @@ static struct mapping *proxy_lookup = NULL;
  *!   The same proxy class will be returned if this function
  *!   is called with the same program multiple times.
  */
-PIKEFUN program ProxyFactory(program p)
-  optflags OPT_TRY_OPTIMIZE;
-  rawtype tFunc(tSetvar(0, tPrg(tObj)), tVar(0));
+PMOD_EXPORT struct program *proxy_factory(struct program *p,
+					  const char *var_name,
+					  int program_id)
 {
   struct array *a;
   int i = 0;
@@ -1852,19 +1852,34 @@ PIKEFUN program ProxyFactory(program p)
   union idptr ptr;
   int j;
   struct svalue *cached;
+  int var_flags = ID_LOCAL;
 
   ref_push_program(p);
   if (proxy_lookup &&
       (cached = low_mapping_lookup(proxy_lookup, Pike_sp-1))) {
-    push_svalue(cached);
-    return;
+    /* NB: This cache isn't a 100% sound, as it doesn't
+     *     take into account var_name and program_id.
+     *     On the other hand they are only available by
+     *     calling this function directly, ie by C-code
+     *     that presumably knows what it is doing.
+     */
+    pop_stack();
+    if (TYPEOF(*cached) == PIKE_T_PROGRAM) {
+      add_ref(cached->u.program);
+      return cached->u.program;
+    }
+    return NULL;
   }
   /* NB: Keep the program on the stack, we will use it
    *     later when we update the proxy_lookup cache.
    */
 
   enter_compiler(NULL, 0);
-  start_new_program();
+  if (program_id) {
+    START_NEW_PROGRAM_ID (STDIO_FD_REF);
+  } else {
+    start_new_program();
+  }
 
   /* Constant #0: The mapping from local reference # to external d:o. */
   /* NB: Over allocation. */
@@ -1884,12 +1899,17 @@ PIKEFUN program ProxyFactory(program p)
 
   /* Reference #0: The variable that we store the proxied object in. */
   /* NB: Use a name that will not clash. */
-  push_string(make_shared_static_string("proxied_obj\0", 12, eightbit));
+  if (var_name) {
+    push_text(var_name);
+    var_flags = ID_LOCAL;
+  } else {
+    push_string(make_shared_static_string("proxied_obj\0", 12, eightbit));
+    var_flags = ID_LOCAL|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN;
+  }
   type_stack_mark();
   push_object_type(0, p->id);
   fun_type = pop_unfinished_type();
-  define_variable(Pike_sp[-1].u.string, fun_type,
-		  ID_LOCAL|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN);
+  define_variable(Pike_sp[-1].u.string, fun_type, var_flags);
   free_type(fun_type);
   pop_stack();
 
@@ -2024,7 +2044,7 @@ PIKEFUN program ProxyFactory(program p)
   exit_compiler();
 
   if (p) {
-    push_program(p);
+    ref_push_program(p);
 
     if (!proxy_lookup) {
       proxy_lookup = allocate_mapping(10);
@@ -2032,6 +2052,22 @@ PIKEFUN program ProxyFactory(program p)
     }
 
     mapping_insert(proxy_lookup, Pike_sp-2, Pike_sp-1);
+
+    pop_stack();
+  }
+
+  pop_stack();
+
+  return p;
+}
+PIKEFUN program ProxyFactory(program p)
+  optflags OPT_TRY_OPTIMIZE;
+  rawtype tFunc(tSetvar(0, tPrg(tObj)), tVar(0));
+{
+  struct program *res = proxy_factory(p, NULL, 0);
+
+  if (res) {
+    push_program(res);
   } else {
     push_undefined();
   }

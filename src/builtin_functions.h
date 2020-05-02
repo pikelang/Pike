@@ -189,6 +189,9 @@ PMOD_EXPORT void f_string_trim(INT32 args);
 PMOD_EXPORT void f_program_implements(INT32 args);
 PMOD_EXPORT void f_program_inherits(INT32 args);
 PMOD_EXPORT void f_program_defined(INT32 args);
+PMOD_EXPORT struct program *proxy_factory(struct program *p,
+					  const char *var_name,
+					  int program_id);
 PMOD_EXPORT void f_string_width(INT32 args);
 PMOD_EXPORT void f_m_delete(INT32 args);
 PMOD_EXPORT void f_get_weak_flag(INT32 args);
