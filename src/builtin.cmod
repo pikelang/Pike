@@ -1852,6 +1852,7 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
   union idptr ptr;
   int j;
   struct svalue *cached;
+  struct pike_string *var_string = NULL;
   int var_flags = ID_LOCAL;
 
   ref_push_program(p);
@@ -1906,10 +1907,11 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
     push_string(make_shared_static_string("proxied_obj\0", 12, eightbit));
     var_flags = ID_LOCAL|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN;
   }
+  var_string = Pike_sp[-1].u.string;
   type_stack_mark();
   push_object_type(0, p->id);
   fun_type = pop_unfinished_type();
-  define_variable(Pike_sp[-1].u.string, fun_type, var_flags);
+  define_variable(var_string, fun_type, var_flags);
   free_type(fun_type);
   pop_stack();
 
@@ -1919,6 +1921,7 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
     struct identifier *id;
     if (ref->id_flags & ID_HIDDEN) continue;
     id = ID_FROM_PTR(p, ref);
+    if (id->name == var_string) continue;	/* Reserved. */
     if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
       /* Handle in second pass. */
       yyerror("Aliases not supported (yet).");
