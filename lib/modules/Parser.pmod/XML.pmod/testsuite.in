@@ -34,7 +34,7 @@ test_tree_eq([[ ("<?xml version='1.0' encoding='iso-8859-1'?><!DOCTYPE foo [ <!E
 test_tree_eq([[ ("<?xml version='1.0' encoding='utf-8'?><!DOCTYPE foo PUBLIC \"-//EN\" \"foo.dtd\" ><foo><foo/><foo/></foo>")->render_xml() ]],
   [[ "<?xml version='1.0' encoding='utf-8'?><!DOCTYPE foo PUBLIC \"-//EN\" \"foo.dtd\"><foo><foo/><foo/></foo>" ]])
 
-test_eq([[ Parser.XML.Tree.parse_input("<?xml version='1.0' encoding='iso-8859-1'?><a>\x2122</a>")->render_xml() ]], "<?xml version='1.0' encoding='iso-8859-1'?><a>&#2122;</a>" )
+test_eq([[ Parser.XML.Tree.parse_input("<?xml version='1.0' encoding='iso-8859-1'?><a>\x2122</a>")->render_xml() ]], "<?xml version='1.0' encoding='iso-8859-1'?><a>&#x2122;</a>" )
 
 test_any([[
 
