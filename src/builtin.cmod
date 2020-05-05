@@ -1612,7 +1612,9 @@ static void f_proxy_create(INT32 args)
   struct object *o;
   struct program *p;
   struct program *expected;
-  if (args != 1) {
+  if (!args) {
+    apply_svalue(&Pike_fp->context->prog->constants[1].sval, 0);
+  } else if (args != 1) {
     wrong_number_of_args_error("create", args, 1);
   }
   if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT) {
@@ -2035,7 +2037,9 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
   push_type(T_VOID);
   push_type(T_VOID);
   push_type(T_MANY);
+  push_type(T_VOID);
   push_object_type(0, p->id);
+  push_type(T_OR);
   push_type(T_FUNCTION);
   fun_type = pop_unfinished_type();
   ptr.c_fun = f_proxy_create;
