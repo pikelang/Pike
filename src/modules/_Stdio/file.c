@@ -6203,11 +6203,6 @@ PIKE_MODULE_EXIT
 
 #include "file_functions.h"
 
-static void file___init_ref(struct object *UNUSED(o))
-{
-  SET_SVAL(REF, PIKE_T_OBJECT, 0, object, file_make_object_from_fd(-1, 0, 0));
-}
-
 #ifdef PIKE_DEBUG
 void check_static_file_data(struct callback *UNUSED(a), void *UNUSED(b),
                             void *UNUSED(c))
@@ -6461,17 +6456,7 @@ PIKE_MODULE_INIT
   add_object_constant("_stderr",o,0);
   free_object(o);
 
-  START_NEW_PROGRAM_ID (STDIO_FD_REF);
-  ADD_STORAGE(struct svalue);
-  PIKE_MAP_VARIABLE("_fd", 0, tObjIs_STDIO_FD, PIKE_T_MIXED, 0);
-  set_init_callback(file___init_ref);
-
-#define FILE_FUNC(X,Y,Z)			\
-  ADD_FUNCTION(X, PIKE_CONCAT(Y,_ref), Z, 0);
-#define FILE_OBJ tObjImpl_STDIO_FD_REF
-#include "file_functions.h"
-
-  file_ref_program=end_program();
+  file_ref_program = proxy_factory(file_program, "_fd", PROG_STDIO_FD_REF_ID);
   add_program_constant("Fd_ref",file_ref_program,0);
 
   init_stdio_port();
