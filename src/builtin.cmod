@@ -1659,8 +1659,7 @@ static int low_proxy_ref(void)
    * may get added on demand via eg local::, etc.
    */
   struct reference *ref =
-    PTR_FROM_INT(Pike_fp->context->prog,
-		 Pike_fp->fun - Pike_fp->context->identifier_level);
+    PTR_FROM_INT(Pike_fp->current_program, Pike_fp->fun);
   struct array *a = Pike_fp->context->prog->constants[0].sval.u.array;
   return ITEM(a)[ref->identifier_offset].u.integer;
 }
