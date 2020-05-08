@@ -177,6 +177,18 @@ static void udp_fd_factory(INT32 args)
 		      Pike_fp->context - Pike_fp->current_program->inherits);
 }
 
+/*! @decl object(UDP) `_fd()
+ *!
+ *! Getter for the UDP object.
+ */
+static void udp_backtick__fd(INT32 args)
+{
+  pop_n_elems(args);
+  ref_push_object_inherit(Pike_fp->current_object,
+			  Pike_fp->context -
+			  Pike_fp->current_program->inherits);
+}
+
 /* Use ptrdiff_t for the fd since we're passed a void * and should
  * read it as an integer of the same size. */
 static void do_close_udp(void *_fd)
@@ -1684,6 +1696,8 @@ void init_stdio_udp(void)
   udp_fd_factory_fun_num =
     ADD_FUNCTION("fd_factory", udp_fd_factory,
 		 tFunc(tNone, tObjIs_STDIO_UDP), ID_PROTECTED);
+
+  ADD_FUNCTION("`_fd", udp_backtick__fd, tFunc(tNone, tObjIs_STDIO_UDP), 0);
 
   ADD_FUNCTION("set_type",udp_set_type,
 	       tFunc(tInt tOr(tVoid,tInt),tObj),0);
