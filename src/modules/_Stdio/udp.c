@@ -284,6 +284,9 @@ static void udp_dup(INT32 args)
 	 (o->storage + o->prog->inherits[SUBTYPEOF(Pike_sp[-1])].storage_offset));
   THIS->my_errno = 0;
   low_dup_udp(udp, THIS);
+
+  /* Return the top-level object. */
+  push_object(o);
 }
 
 /*! @decl int(0..1) close()
