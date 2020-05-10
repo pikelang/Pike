@@ -6181,45 +6181,6 @@ PIKE_MODULE_EXIT
   exit_stdio_port();
 }
 
-#define REF (*((struct svalue *)(Pike_fp->current_storage)))
-
-#define FILE_FUNC(X,Y,Z)					\
-  static ptrdiff_t PIKE_CONCAT(Y,_function_number);		\
-  void PIKE_CONCAT(Y,_ref) (INT32 args) {			\
-    struct object *o = REF.u.object;				\
-    int fun = PIKE_CONCAT(Y,_function_number);			\
-    struct program *prog;					\
-    debug_malloc_touch(o);					\
-    if(!o || (TYPEOF(REF) != PIKE_T_OBJECT) || !o->prog) {	\
-      /* This is a temporary kluge */				\
-      Pike_error("Stdio.File(): not open.\n");			\
-    }								\
-    prog = o->prog->inherits[SUBTYPEOF(REF)].prog;		\
-    fun += o->prog->inherits[SUBTYPEOF(REF)].identifier_level;	\
-    if(prog != file_program)					\
-      Pike_error("Wrong type of object in Stdio.File->_fd\n");	\
-    apply_low(o, fun, args);					\
-  }
-
-#include "file_functions.h"
-
-#ifdef PIKE_DEBUG
-void check_static_file_data(struct callback *UNUSED(a), void *UNUSED(b),
-                            void *UNUSED(c))
-{
-  if(file_program)
-  {
-#define FILE_FUNC(X,Y,Z)				    \
-    if(PIKE_CONCAT(Y,_function_number)<0 ||		    \
-       PIKE_CONCAT(Y,_function_number)>			    \
-       file_program->num_identifier_references)		    \
-      Pike_fatal(#Y "_function_number is incorrect: %ld\n", \
-                 (long)(PIKE_CONCAT(Y,_function_number)));
-#include "file_functions.h"
-  }
-}
-#endif
-
 #if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H) || defined(__NT__)
 void file_tcgetattr(INT32 args);
 #ifdef HAVE_TCGETATTR
@@ -6385,8 +6346,7 @@ PIKE_MODULE_INIT
   START_NEW_PROGRAM_ID(STDIO_FD);
   ADD_STORAGE(struct my_file);
 
-#define FILE_FUNC(X,Y,Z)					\
-  PIKE_CONCAT(Y,_function_number) = ADD_FUNCTION(X,Y,Z,0);
+#define FILE_FUNC(X,Y,Z)	ADD_FUNCTION(X,Y,Z,0);
 #define FILE_OBJ tObjImpl_STDIO_FD
 #include "file_functions.h"
 
@@ -6639,12 +6599,6 @@ PIKE_MODULE_INIT
   ADD_FUNCTION2("gethostip", f_gethostip, tFunc(tNone,tMapping),
 		0, OPT_EXTERNAL_DEPEND);
 
-#ifdef PIKE_DEBUG
-  dmalloc_accept_leak(add_to_callback(&do_debug_callbacks,
-				      check_static_file_data,
-				      0,
-				      0));
-#endif
   ADD_FUNCTION2("getprotobyname", f_getprotobyname, tFunc(tStr8,tInt), 0, 0);
 }
 
