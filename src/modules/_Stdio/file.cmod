@@ -6154,6 +6154,8 @@ static void f_get_all_active_fd(INT32 args)
 
 PIKE_MODULE_EXIT
 {
+  EXIT;
+
   exit_stdio_efuns();
   exit_stdio_stat();
 
@@ -6343,6 +6345,9 @@ PIKE_MODULE_INIT
   init_stdio_efuns();
   init_stdio_stat();
   init_stdio_buffer();
+
+  INIT;
+
   START_NEW_PROGRAM_ID(STDIO_FD);
   ADD_STORAGE(struct my_file);
 

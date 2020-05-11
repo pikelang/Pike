@@ -1,4 +1,4 @@
-AC_INIT(file.c)
+AC_INIT(file.cmod)
 AC_CONFIG_HEADER(file_machine.h)
 
 AC_MODULE_INIT()

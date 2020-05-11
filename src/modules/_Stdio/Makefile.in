@@ -9,6 +9,8 @@ PRECOMPILER_ARGS=--api=3 --base=''
 
 buffer.o: $(SRCDIR)/buffer.c
 
+file.o: $(SRCDIR)/file.c
+
 local_tests:
 	$(RUNPIKE) $(SRCDIR)/socktest.pike
 
