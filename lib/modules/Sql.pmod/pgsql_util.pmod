@@ -430,7 +430,6 @@ class conxion {
   final MUTEX nostash;
   final Thread.MutexKey started;
   final Thread.Queue stashqueue;
-  final Thread.Condition stashavail;
   final Stdio.Buffer stash;
   //! @ignore
   final int(KEEP..SYNCSEND) stashflushmode;
@@ -724,7 +723,6 @@ outer:
     shortmux = MUTEX();
     nostash = MUTEX();
     closenext = 0;
-    stashavail = Thread.Condition();
     stashqueue = Thread.Queue();
     stash = Stdio.Buffer();
     stashcount = Thread.ResourceCount();
@@ -2232,8 +2230,9 @@ class proxy {
             showportalstack("AFTER READYFORQUERY");
 #endif
             readyforquerycount--;
-            if (readyforquery_cb)
-              readyforquery_cb(), readyforquery_cb = 0;
+            function (:void) cb;
+            if (cb = readyforquery_cb)
+              readyforquery_cb = 0, cb();
             destruct(waitforauthready);
             break;
           }
@@ -2313,9 +2312,11 @@ class proxy {
             msglen -= 4;
             PD("NoData %O\n", portal._query);
 #endif
-            portal._fetchlimit = 0;		// disables subsequent Executes
-            portal->_processrowdesc(({}), ({}));
-            portal = 0;
+            if (!portal._forcetext) {
+              portal._fetchlimit = 0;		// disables subsequent Executes
+              portal->_processrowdesc(({}), ({}));
+              portal = 0;
+            }
             break;
           }
           case 'H':
@@ -2381,8 +2382,8 @@ class proxy {
               errtype = PROTOCOLERROR;
 #endif
             string s = cr->read(msglen - 1);
-            portal->_storetiming();
-            PD("%O CommandComplete %O\n", portal._portalname, s);
+            PD("%O CommandComplete %O\n",
+             objectp(portal) && portal._portalname, s);
 #ifdef PG_DEBUG
             if (cr->read_int8())
               errtype = PROTOCOLERROR;
@@ -2393,8 +2394,11 @@ class proxy {
 #ifdef PG_DEBUGMORE
             showportalstack("COMMANDCOMPLETE");
 #endif
-            portal->_releasesession(s);
-            portal = 0;
+            if (!portal._forcetext) {
+              portal->_storetiming();
+              portal->_releasesession(s);
+              portal = 0;
+            }
             break;
           }
           case 'I':
@@ -2405,8 +2409,10 @@ class proxy {
 #ifdef PG_DEBUGMORE
             showportalstack("EMPTYQUERYRESPONSE");
 #endif
-            portal->_releasesession();
-            portal = 0;
+            if (!portal._forcetext) {
+              portal->_releasesession();
+              portal = 0;
+            }
             break;
           case 'd':
             PD("%O CopyData\n", portal._portalname);
@@ -2432,7 +2438,8 @@ class proxy {
             PD("%O CopyDone\n", portal._portalname);
             msglen -= 4;
 #endif
-            portal = 0;
+            if (!portal._forcetext)
+              portal = 0;
             break;
           case 'E': {
 #ifdef PG_DEBUGMORE
