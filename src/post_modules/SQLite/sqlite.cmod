@@ -295,6 +295,16 @@ PIKECLASS TypedResult
    */
   PIKEFUN array(mapping(string:mixed)) fetch_fields() {
     int i,t;
+    if (!sqlite3_column_name(THIS->stmt, 0)) {
+      /* Documented to happen on malloc() failure,
+       * but can apparently happen in other cases too.
+       * The common case seems to be when called after
+       * the last row has been fetched.
+       * Cf #10035.
+       */
+      push_int(0);
+      return;
+    }
     for(i=0; i<THIS->columns; i++) {
       push_constant_text("name");
       push_text(sqlite3_column_name(THIS->stmt, i));
