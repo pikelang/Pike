@@ -84,6 +84,8 @@ private int timeout = QUERYTIMEOUT;
 private array connparmcache;
 private int reconnected;
 private int lastping = time(1);
+private Thread.Condition resynced;
+private Thread.Mutex resyncmux;
 
 protected string _sprintf(int type) {
   string res;
@@ -294,7 +296,7 @@ protected void create(void|string host, void|string database,
 //!   @url{https://www.postgresql.org/docs/current/static/multibyte.html@}
 /*semi*/final void set_charset(string charset) {
   if(charset)
-    big_query(sprintf("SET CLIENT_ENCODING TO '%s'", quote(charset)));
+    textquery(sprintf("SET CLIENT_ENCODING TO '%s'", quote(charset)));
 }
 
 //! @returns
@@ -502,17 +504,32 @@ protected void _destruct() {
   resync();
 }
 
+private void textquery(string q) {
+#if 1
+  foreach (q / ";"; ; string sq)
+    big_query(sq);
+#else				// textqueries and portals do not mix well
+  big_query(q, (["_text":1]));
+#endif
+}
+
+private void resyncdone() {
+  Thread.MutexKey lock = resyncmux->lock();
+  resynced.signal();			// Allow resync() to continue
+}
+
 private void reset_dbsession() {
   proxy.statementsinflight->wait_till_drained();
   error(1);
-  big_query("ROLLBACK");
-  big_query("RESET ALL");
-  big_query("CLOSE ALL");
-  big_query("DISCARD TEMP");
+  textquery("ROLLBACK;RESET ALL;CLOSE ALL;DISCARD TEMP");
+  resyncdone();
 }
 
 private void resync_cb() {
   switch (proxy.backendstatus) {
+    default:
+      resyncdone();
+      break;
     case 'T':case 'E':
       foreach (proxy.prepareds; ; mapping tp) {
         m_delete(tp, "datatypeoid");
@@ -549,8 +566,16 @@ private void resync_cb() {
       PD("Statementsinflight: %d  Portalsinflight: %d\n",
        proxy.statementsinflight, proxy.portalsinflight);
       if(!proxy.waitforauthready) {
+        if (!resynced) {
+          resynced = Thread.Condition();
+          resyncmux = Thread.Mutex();
+        }
         proxy.readyforquery_cb = resync_cb;
         proxy.sendsync();
+        if (proxy.readyforquery_cb) {
+          Thread.MutexKey lock = resyncmux->lock();
+          resynced.wait(lock);	      // Wait for the db to finish
+        }
       }
       return;
     };
@@ -668,7 +693,7 @@ private void resync_cb() {
 //! @seealso
 //!   @[drop_db()]
 /*semi*/final void create_db(string db) {
-  big_query(sprintf("CREATE DATABASE %s", db));
+  textquery(sprintf("CREATE DATABASE %s", db));
 }
 
 //! This function destroys a database and all the data it contains (assuming
@@ -682,7 +707,7 @@ private void resync_cb() {
 //! @seealso
 //!   @[create_db()]
 /*semi*/final void drop_db(string db) {
-  big_query(sprintf("DROP DATABASE %s", db));
+  textquery(sprintf("DROP DATABASE %s", db));
 }
 
 //! @returns
