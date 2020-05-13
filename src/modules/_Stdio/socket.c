@@ -57,10 +57,10 @@
 #define SOL_TCP	IPPROTO_TCP
 #endif
 
-/*! @module Stdio
+/*! @module _Stdio
  */
 
-/*! @class Port
+/*! @class _port
  */
 
 struct port

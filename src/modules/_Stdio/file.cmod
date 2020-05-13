@@ -169,7 +169,7 @@
 struct program *file_program;
 struct program *file_ref_program;
 
-/*! @module Stdio
+/*! @module _Stdio
  */
 
 /*! @enum FileModeFlags

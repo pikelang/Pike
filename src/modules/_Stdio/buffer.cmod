@@ -44,7 +44,7 @@ struct sysmem {
 
 static struct program *buffer_error_program;
 
-/*! @module Stdio
+/*! @module _Stdio
  */
 
 /* Remap to not clash with String.Buffer. */

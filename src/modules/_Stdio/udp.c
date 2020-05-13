@@ -147,7 +147,7 @@ void exit_udp(struct object *UNUSED(ignored)) {
 #define THISOBJ (Pike_fp->current_object)
 #define FD (THIS->box.fd)
 
-/*! @module Stdio
+/*! @module _Stdio
  */
 
 /*! @class UDP
