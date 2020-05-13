@@ -203,6 +203,11 @@ o Sql.pgsql
     turning it on triggers a bug in PostgreSQL sometimes
     that causes spikes in CPU usage of the database.
 
+  - Fix support for text-multiqueries (separated by semicolons).
+
+  - resync() is synchronous now, and prevents race conditions
+    if followed back-to-back with new queries.
+
 o SSL
 
   - When verifying the hostname against the certificate, only accept *
