@@ -387,10 +387,13 @@ array(mapping(string:mixed))
     if (arrayp(res_obj))
       rows = res_obj;
     else {
-      fields = 0;
+      fields = res_obj->fetch_fields();
       rows = ({});
-      while (row = res_obj->fetch_row_array())
-        rows += row;
+      while (row = res_obj->fetch_row()) {
+        rows += ({ row });
+	if (!fields)
+	  fields = res_obj->fetch_fields();
+      }
     }
 
     if (!fields)
