@@ -163,6 +163,9 @@ string usage = #"[options] <from> > <to>
    c_name;        The name to use for a PIKEVAR in a C struct.
    prototype;     Ignore the function body, just add a prototype entry.
    program_flags; PROGRAM_USES_PARENT | PROGRAM_DESTRUCT_IMMEDIATE etc.
+   program_id;    Set the program_id for the PIKECLASS. Note that this
+                  is only needed for program id constants that do not
+                  match the automatically generated PROG_*_ID pattern.
    gc_trivial;    Only valid for EXIT functions. This instructs the gc that
                   the EXIT function is trivial and that it's ok to destruct
                   objects of this program in any order. In general, if there
@@ -2271,6 +2274,10 @@ sprintf("        } else {\n"
 					       upper_case(lname)),
 				       proto[0]->line),
 			      "#else\n",
+			      attributes->program_id?
+			      PC.Token(sprintf("  START_NEW_PROGRAM_ID(%s);\n",
+					       attributes->program_id),
+				       proto[0]->line):
 			      PC.Token("  start_new_program();\n",
 				       proto[0]->line),
 			    })),
