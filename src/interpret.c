@@ -3353,7 +3353,11 @@ void gdb_backtrace (
 	if(of) {
           tmp = of->locals - f->locals;
         } else {
+#ifdef PIKE_THREADS
           tmp = ts->state.stack_pointer - f->locals;
+#else
+	  tmp = Pike_sp - f->locals;
+#endif
         }
         args = (INT32)tmp;
 	args = MAXIMUM(MINIMUM(args, f->num_args),0);
