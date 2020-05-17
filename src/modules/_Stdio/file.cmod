@@ -170,6 +170,14 @@ struct program *file_program;
 struct program *file_ref_program;
 
 /*! @module _Stdio
+ *!
+ *! Low-level I/O.
+ *!
+ *! This is usually NOT the module you want.
+ *! Try @[Stdio] instead.
+ *!
+ *! @seealso
+ *!   @[Stdio]
  */
 
 /*! @enum FileModeFlags
