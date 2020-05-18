@@ -505,14 +505,7 @@ protected void _destruct() {
 }
 
 private .pgsql_util.Result textquery(string q) {
-  .pgsql_util.Result res;
-#if 1
-  foreach (q / ";"; ; string sq)
-    res = big_query(sq);
-#else				// textqueries and portals do not mix well
-  res = big_query(q, (["_text":1]));
-#endif
-  return res;
+  return big_query(q, (["_text":1]));
 }
 
 private void resyncdone() {
@@ -521,11 +514,15 @@ private void resyncdone() {
 }
 
 private void reset_dbsession() {
-  proxy.statementsinflight->wait_till_drained();
-  error(1);
-  .pgsql_util.Result res
-   = textquery("ROLLBACK;RESET ALL;CLOSE ALL;DISCARD TEMP");
-  while (res->fetch_row());
+  mixed err = catch {
+    proxy.statementsinflight->wait_till_drained();
+    error(1);
+    .pgsql_util.Result res
+     = textquery("ROLLBACK;RESET ALL;CLOSE ALL;DISCARD TEMP");
+    while (res->fetch_row());
+  };
+  if (err && !proxy.delayederror)
+    proxy.delayederror = err;
   resyncdone();
 }
 
