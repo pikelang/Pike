@@ -2223,7 +2223,7 @@ void simple_describe_type(struct pike_type *s)
 	simple_describe_type(s->cdr);
 	fprintf(stderr, ")");
 	break;
-      case T_ARRAY:
+      case T_ARRAY: /* FIXME: cdr */
 	fprintf(stderr, "array(");
 	if (s->car != int_pos_type_string) {
 	  simple_describe_type(s->car);
@@ -5238,7 +5238,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
     /* FIXME: Strict type warning. */
     return 0;
 
-  case T_ARRAY:
+  case T_ARRAY: /* FIXME: cdr */
   case T_STRING:
     /* Check that the index types are compatible with int. */
     {
@@ -5426,7 +5426,7 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
   case PIKE_T_ATTRIBUTE:
     return low_key_type(t->cdr, n);
 
-  case T_ARRAY:
+  case T_ARRAY: /* FIXME: cdr */
   case T_STRING: /* always int */
     add_ref(int_type_string);
     return int_type_string;
