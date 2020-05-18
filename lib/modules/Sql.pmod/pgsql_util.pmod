@@ -861,7 +861,7 @@ class sql_result {
     if (c = _c)
       cr = c->i;
     else
-      losterror();
+      losterror(LOSTERROR);
     _query = query;
     datarows = Thread.Queue();
     _ddescribe = Thread.Condition();
@@ -986,11 +986,11 @@ class sql_result {
     return index;
   }
 
-  private void losterror() {
-    string err;
+  private void losterror(void|string err) {
     if (pgsqlsess)
-      err = pgsqlsess->geterror(1);
-    error("%s\n", err || LOSTERROR);
+      err = pgsqlsess->geterror(1) || err;
+    if (err)
+      error("%s\n", err);
   }
 
   private void trydelayederror() {
@@ -2353,11 +2353,9 @@ class proxy {
             msglen -= 4;
             PD("NoData %O\n", portal._query);
 #endif
-            if (!portal._forcetext) {
-              portal._fetchlimit = 0;		// disables subsequent Executes
-              portal->_processrowdesc(({}), ({}));
-              portal = 0;
-            }
+            portal._fetchlimit = 0;		// disables subsequent Executes
+            portal->_processrowdesc(({}), ({}));
+            portal = 0;
             break;
           }
           case 'H':
