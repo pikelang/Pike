@@ -1170,7 +1170,7 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
       ERROR("Current transaction is aborted, "
        "commands ignored until end of transaction");
   }
-  if (transtype != NOTRANS)
+  if (transtype != NOTRANS || .pgsql_util.nodataresprefix->match(q))
     tp = .pgsql_util.describenodata;		// Description already known
   else if (!forcetext && forcecache == 1
         || forcecache && sizeof(q) >= MINPREPARELENGTH) {
