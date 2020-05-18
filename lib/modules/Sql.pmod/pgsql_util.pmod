@@ -109,7 +109,7 @@ private Regexp dontcacheprefix = iregexp("^\a*(FETCH|COPY)\a");
 private Regexp paralleliseprefix
  = iregexp("^\a*((SELEC|INSER)T|(UPDA|DELE)TE|(FETC|WIT)H)\a");
 
- /* Statements matching transbeginprefix will cause the driver
+ /* Statements matching transbeginprefix will cause the driver to
   * insert a sync after the statement.
   * Failure to do so, will result in portal synchronisation errors
   * in the event of an ErrorResponse.
@@ -117,13 +117,20 @@ private Regexp paralleliseprefix
 final Regexp transbeginprefix
  = iregexp("^\a*(BEGIN|START)([; \t\f\r\n]|$)");
 
- /* Statements matching transendprefix will cause the driver
+ /* Statements matching transendprefix will cause the driver to
   * insert a sync after the statement.
   * Failure to do so, will result in portal synchronisation errors
   * in the event of an ErrorResponse.
   */
 final Regexp transendprefix
  = iregexp("^\a*(COMMIT|ROLLBACK|END)([; \t\f\r\n]|$)");
+
+ /* Statements matching nodataresprefix will cause the driver
+  * to skip asking for a query description and query results, since there
+  * are no arguments or results to begin with.
+  */
+final Regexp nodataresprefix
+ = iregexp("^\a*(RESET|CLOSE|DISCARD)\a");
 
  /* For statements matching execfetchlimit the resultrows will not be
   * fetched in pieces.  This heuristic will be sub-optimal whenever
@@ -138,7 +145,7 @@ final Regexp transendprefix
   * tradeoff.
   */
 private Regexp execfetchlimit
- = iregexp("^\a*((UPDA|DELE)TE|INSERT"
+ = iregexp("^\a*((UPDA|DELE)TE|INSERT|CREATE|DROP"
            "|RESET|CLOSE|DISCARD)\a|\aLIMIT\a+[1-9][; \t\f\r\n]*$");
 
 private void default_backend_runs() {		// Runs as soon as the
