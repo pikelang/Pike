@@ -124,7 +124,11 @@ void compiler_discard_top_type(void)
 {
   TYPE_STACK_DEBUG("discard_top_type");
 #ifdef PIKE_DEBUG
-  if (!peek_stack_mark())
+  if (pike_type_mark_stack == Pike_compiler->pike_type_mark_stackp) {
+    /* Type mark stack empty. */
+    if (type_stack == Pike_compiler->type_stackp)
+      Pike_fatal("Type stack underflow.\n");
+  } else if (!peek_stack_mark())
     Pike_fatal("Type stack underflow.\n");
 #endif
   free_type(*(Pike_compiler->type_stackp--));
