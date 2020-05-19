@@ -471,7 +471,7 @@ LookupKey PATH = LookupKey("PATH");
 
 //! @decl constant PATH;
 //!
-//! Constant used to represent the full paht of the applicatiojn from
+//! Constant used to represent the full path of the application from
 //! the command line. Can be used when indexing an @[Options] object.
 
 // FIXME: Support for rc files? ( Opt x = Opt("--x")|INIFile(path, name); )
