@@ -501,7 +501,7 @@ protected void destroy() {
   resync();
 }
 
-private .pgsql_util.Result textquery(string q) {
+private .pgsql_util.sql_result textquery(string q) {
   return big_query(q, (["_text":1]));
 }
 
@@ -514,7 +514,7 @@ private void reset_dbsession() {
   mixed err = catch {
     proxy.statementsinflight->wait_till_drained();
     error(1);
-    .pgsql_util.Result res
+    .pgsql_util.sql_result res
      = textquery("ROLLBACK;RESET ALL;CLOSE ALL;DISCARD TEMP");
     while (res->fetch_row());
   };
