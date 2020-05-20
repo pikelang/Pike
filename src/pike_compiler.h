@@ -16,9 +16,9 @@ extern struct program *reporter_program;
 extern struct program *compilation_env_program;
 extern struct program *compilation_program;
 extern struct object *compilation_environment;
-PMOD_EXPORT struct program *Annotation_program;
-PMOD_EXPORT struct program *Implements_program;
-PMOD_EXPORT struct object *Inherited_annotation;
+PMOD_EXPORT extern struct program *Annotation_program;
+PMOD_EXPORT extern struct program *Implements_program;
+PMOD_EXPORT extern struct object *Inherited_annotation;
 
 struct Supporter;
 
