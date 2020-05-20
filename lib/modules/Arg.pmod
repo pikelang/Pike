@@ -27,9 +27,13 @@
 //! @code
 //! class MyArguments {
 //!    inherit Arg.Options;
+//!    string help_pre = "Usage: somecommand";
 //!    Opt verbose = NoOpt("-v")|NoOpt("--verbose");
+//!    string verbose_help = "Turn on verbose output";
 //!    Opt help = MaybeOpt("--help");
 //!    Opt output = HasOpt("--output")|HasOpt("-o");
+//!    string output_help = "Determine where output goes to";
+//!    string help_post = "Command aborted";
 //! };
 //! @endcode
 //!
