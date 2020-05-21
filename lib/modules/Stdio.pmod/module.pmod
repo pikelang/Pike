@@ -92,6 +92,9 @@ class NonblockingStream
 {
   inherit Stream;
 
+  //! @decl @Pike.Implements(Stream)
+  @__builtin.Implements(Stream);
+
   //!
   NonblockingStream set_read_callback( function f, mixed ... rest );
   NonblockingStream set_write_callback( function f, mixed ... rest );
@@ -129,6 +132,9 @@ class NonblockingStream
 class BlockFile
 {
   inherit Stream;
+
+  //! @decl @Pike.Implements(Stream)
+  @__builtin.Implements(Stream);
 
   //!
   int seek(int to, string|void how);
@@ -182,6 +188,12 @@ local typedef
 class File
 {
   optional inherit Fd;
+
+  //! @decl @Pike.Implements(NonblockingStream)
+  @__builtin.Implements(NonblockingStream);
+
+  //! @decl @Pike.Implements(BlockFile)
+  @__builtin.Implements(BlockFile);
 
   // This is needed in case we get overloaded by strange code
   // (socktest.pike).
