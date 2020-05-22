@@ -57,11 +57,22 @@ protected constant RI = OPTION.CASELESS;
 //!    on one line (well, newlines in text will be kept).                (false)
 //!   @member Renderer "renderer"
 //!    Use this renderer to render output.                            (Renderer)
+//!   @member Lexer "lexer"
+//!    Use this lexer to parse blocks of text.                           (Lexer)
+//!   @member InlineLexer "inline_lexer"
+//!    Use this lexer to parse inline text.                        (InlineLexer)
+//!   @member Parser "parser"
+//!    Use this parser instead of the default.                          (Parser)
 //!  @endmapping
 string parse(string md, void|mapping options)
 {
   options = default_options + (options||([]));
-  return Parser(options)->parse(Lexer(options)->lex(md));
+  if (!options->lexer)
+    options->lexer = Lexer;
+  if (!options->parser)
+    options->parser = Parser;
+
+  return options->parser(options)->parse(options->lexer(options)->lex(md));
 }
 
 protected typedef mapping(string:R|mapping(string:R)) RuleMap;
@@ -388,6 +399,8 @@ RuleMap get_inline_rules()
   return inline_rules = inl;
 }
 
+//! Top-level parsing handler. It's usually easier to replace the Renderer
+//! instead.
 class Parser
 {
   protected mapping options;
@@ -403,6 +416,9 @@ class Parser
     if (!options->renderer)
       options->renderer = Renderer;
 
+    if (!options->inline_lexer)
+      options->inline_lexer = InlineLexer;
+
     renderer = options->renderer = options->renderer(options);
   }
 
@@ -411,10 +427,11 @@ class Parser
   #define next() (token = tokens[++pos])
   #define peek() tokens[pos + 1]
 
+  //!
   string parse(Lexer src)
   {
     token = UNDEFINED;
-    inline_lexer = InlineLexer(src->links, options);
+    inline_lexer = options->inline_lexer(src->links, options);
     tokens = src->tokens;
     tokens += ({ 0 }); // sentinel
 
@@ -428,6 +445,7 @@ class Parser
     return out->get();
   }
 
+  //!
   protected string parse_text()
   {
     string body = token->text;
@@ -439,6 +457,7 @@ class Parser
     return inline_lexer->output(body);
   }
 
+  //! Render a token (or group of tokens) to a string.
   protected string tok()
   {
     switch (token->type)
@@ -551,6 +570,7 @@ class Parser
 #define SRC_SUBSTR()  src = src[sizeof(cap[0]) .. ]
 #define PUSH_TOKEN(T) _tokens += ({ T })
 
+//! Block-level lexer (parses paragraphs, lists, tables, etc).
 class Lexer
 {
   protected array(mapping) _tokens = ({});
@@ -558,6 +578,7 @@ class Lexer
   protected mapping options;
   protected RuleMap rules, block;
 
+  //!
   mapping `links() { return token_links; }
   array(mapping) `tokens() { return _tokens; }
 
@@ -577,6 +598,8 @@ class Lexer
     }
   }
 
+  //! Main lexing entry point. Subclass Lexer and override this to add
+  //! post-processing or other changes.
   object_program lex(string src)
   {
     src = replace(src, ([ "\r\n"   : "\n",
@@ -875,6 +898,7 @@ class Lexer
   }
 }
 
+//! Lexer used for inline text (eg bold text inside a paragraph).
 class InlineLexer
 {
   protected mapping options, rules, links;
@@ -906,6 +930,7 @@ class InlineLexer
 
   private bool in_link = false;
 
+  //! Parse some inline Markdown and return the corresponding HTML.
   string output(string src)
   {
     String.Buffer buf = String.Buffer();
