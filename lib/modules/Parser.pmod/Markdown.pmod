@@ -388,7 +388,7 @@ RuleMap get_inline_rules()
   return inline_rules = inl;
 }
 
-protected class Parser
+class Parser
 {
   protected mapping options;
   protected array tokens = ({});
@@ -547,7 +547,7 @@ protected class Parser
 #define SRC_SUBSTR()  src = src[sizeof(cap[0]) .. ]
 #define PUSH_TOKEN(T) _tokens += ({ T })
 
-protected class Lexer
+class Lexer
 {
   protected array(mapping) _tokens = ({});
   protected mapping token_links = ([]);
@@ -871,7 +871,7 @@ protected class Lexer
   }
 }
 
-protected class InlineLexer
+class InlineLexer
 {
   protected mapping options, rules, links;
   protected Renderer renderer;
@@ -1096,7 +1096,7 @@ protected class InlineLexer
   }
 }
 
-protected class Renderer
+class Renderer
 {
   protected mapping options;
 
