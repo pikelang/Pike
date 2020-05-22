@@ -576,11 +576,13 @@ class DocGroup {
 // REPRESENTATION OF PIKES LEXICAL OBJECTS (class, function, variable ...)
 //========================================================================
 
-class Annotation(array(string) tokens)
+class Annotation
 {
   constant is_annotation = 1;
 
   constant objtype = "annotation";
+
+  array(string) tokens;
 
   string xml(.Flags|void flags)
   {
@@ -590,6 +592,11 @@ class Annotation(array(string) tokens)
   string `name()
   {
     return tokens * "";
+  }
+
+  protected void create(array(string) tokens)
+  {
+    this::tokens = filter(tokens, `!=, "\n");
   }
 }
 

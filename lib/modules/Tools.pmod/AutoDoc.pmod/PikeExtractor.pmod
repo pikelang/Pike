@@ -246,8 +246,7 @@ private class Extractor {
       object(PikeObject)|array(PikeObject)|Annotation p = parser->parseDecl();
 
       if (objectp(p) && p->is_annotation) {
-	c->annotations += ({ p });
-	continue;
+	return ({ ({ p }), 0 });
       }
 
       multiset(string) allowSqueeze = (<
@@ -372,7 +371,7 @@ private class Extractor {
 	}
       }
 
-      foreach (decls, PikeObject obj)
+      foreach (decls, object(PikeObject)|Annotation obj)
         if (obj->squeezedInDoc) {
           if (sizeof(decls) > 1)
             extractorError(
@@ -382,10 +381,10 @@ private class Extractor {
             extractorError("duplicate documentation");
           doc = obj->squeezedInDoc;
         }
-      array(PikeObject) docDecls = ({ });
+      array(PikeObject|Annotation) docDecls = ({ });
 
       if (!doc) {
-        foreach (decls, PikeObject obj)
+        foreach (decls, object(PikeObject)|Annotation obj)
           if ((< "class", "enum" >)[obj->objtype] && obj->containsDoc()) {
 	    extractorWarning("undocumented %s %O contains doc comments",
 			     obj->objtype, obj->name);
@@ -471,12 +470,12 @@ private class Extractor {
         if (sizeof(decls)) {
           if (sizeof(decls) != 1)
             extractorError("only one pike declaration can be combined with @decl %O", decls->position);
-          foreach(docDecls, PikeObject d)
+          foreach(docDecls, object(PikeObject)|Annotation d)
             if (decls[0]->objtype != d->objtype)
               extractorError("@decl of %s mismatches %s in pike code",
                             d->objtype, decls[0]->objtype);
-          foreach(docDecls, PikeObject d)
-            if (decls[0]->name != d->name)
+          foreach(docDecls, object(PikeObject)|Annotation d)
+            if ((d->objtype != "annotation") && (decls[0]->name != d->name))
               extractorError("@decl'd %s %s mismatches %s %s in pike code",
                              d->objtype, d->name, d->objtype, decls[0]->name);
         }
@@ -518,8 +517,12 @@ private class Extractor {
 
       mapping(string:int) contexts = ([]);
 
-      foreach(decls, PikeObject obj)
+      foreach(decls, object(PikeObject)|Annotation obj) {
+	if (obj->objtype == "annotation") {
+	  c->annotations += ({ obj });
+	}
 	contexts[obj->objtype] = 1;
+      }
 
       if (doc) {
         if (wasNonGroupable) {
