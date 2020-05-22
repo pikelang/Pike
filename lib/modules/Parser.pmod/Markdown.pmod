@@ -452,11 +452,13 @@ class Parser
       case "heading":
         return renderer->heading(inline_lexer->output(token->text),
                                  token->depth,
-                                 token->text);
+                                 token->text,
+                                 token);
       case "code":
         return renderer->code(token->text,
                               token->lang,
-                              token->escaped);
+                              token->escaped,
+                              token);
 
       case "table":
         string header = "", body = "", cell = "";
@@ -465,11 +467,12 @@ class Parser
         for (int i; i < sizeof(token->header); i++) {
           cell += renderer->tablecell(
             inline_lexer->output(token->header[i]),
-            ([ "header" : true, "align" : token->align[i] ])
+            ([ "header" : true, "align" : token->align[i] ]),
+            ([]),
           );
         }
 
-        header += renderer->tablerow(cell);
+        header += renderer->tablerow(cell, ([]));
 
         for (int i; i < sizeof(token->cells); i++) {
           row = token->cells[i];
@@ -478,14 +481,15 @@ class Parser
           for (int j; j < sizeof(row); j++) {
             cell += renderer->tablecell(
               inline_lexer->output(row[j]),
-              ([ "header" : false, "align" : token->align[j] ])
+              ([ "header" : false, "align" : token->align[j] ]),
+              ([]),
             );
           }
 
-          body += renderer->tablerow(cell);
+          body += renderer->tablerow(cell, ([]));
         }
 
-        return renderer->table(header, body);
+        return renderer->table(header, body, token);
 
       case "blockquote_start":
         body = "";
@@ -494,7 +498,7 @@ class Parser
           body += tok();
         }
 
-        return renderer->blockquote(body);
+        return renderer->blockquote(body, token);
 
       case "list_start":
         bool ordered = token->ordered;
@@ -504,7 +508,7 @@ class Parser
           body += tok();
         }
 
-        return renderer->list(body, ordered);
+        return renderer->list(body, ordered, token);
 
       case "list_item_start":
         body = "";
@@ -513,7 +517,7 @@ class Parser
           body += token->type == "text" ? parse_text() : tok();
         }
 
-        return renderer->listitem(body);
+        return renderer->listitem(body, token);
 
       case "loose_item_start":
         body = "";
@@ -522,20 +526,20 @@ class Parser
           body += tok();
         }
 
-        return renderer->listitem(body);
+        return renderer->listitem(body, token);
 
 
       case "html":
         string html = !token->pre && !options->pedantic
                         ? inline_lexer->output(token->text)
                         : token->text;
-        return renderer->html(html) + nl();
+        return renderer->html(html, token) + nl();
 
       case "paragraph":
-        return renderer->paragraph(inline_lexer->output(token->text));
+        return renderer->paragraph(inline_lexer->output(token->text), token);
 
       case "text":
-        return renderer->paragraph(parse_text());
+        return renderer->paragraph(parse_text(), token);
 
       default:
         error("Unhandled token: %O\n", token);
@@ -932,7 +936,7 @@ class InlineLexer
           href = text;
         }
 
-        add(renderer->link(href, UNDEFINED, text));
+        add(renderer->link(href, UNDEFINED, text, ([])));
         continue;
       }
 
@@ -941,7 +945,7 @@ class InlineLexer
         SRC_SUBSTR();
         text = encode_html(cap[1]);
         href = text;
-        add(renderer->link(href, UNDEFINED, text));
+        add(renderer->link(href, UNDEFINED, text, ([])));
         continue;
       }
 
@@ -993,47 +997,47 @@ class InlineLexer
       // strong
       if (cap = rules->strong->split2(src)) {
         SRC_SUBSTR();
-        add(renderer->strong(output(cap[2] || cap[1])));
+        add(renderer->strong(output(cap[2] || cap[1]), ([])));
         continue;
       }
 
       // em
       if (cap = rules->em->split2(src)) {
         SRC_SUBSTR();
-        add(renderer->em(output(cap[2] || cap[1])));
+        add(renderer->em(output(cap[2] || cap[1]), ([])));
         continue;
       }
 
       // code
       if (cap = rules->code->split2(src)) {
         SRC_SUBSTR();
-        add(renderer->codespan(encode_html(cap[2], true)));
+        add(renderer->codespan(encode_html(cap[2], true), ([])));
         continue;
       }
 
       // br
       if (cap = rules->br->split2(src)) {
         SRC_SUBSTR();
-        add(renderer->br());
+        add(renderer->br(([])));
         continue;
       }
 
       // del (gfm)
       if (cap = rules->del->split2(src)) {
         SRC_SUBSTR();
-        add(renderer->del(output(cap[1])));
+        add(renderer->del(output(cap[1]), ([])));
         continue;
       }
 
       // text
       if (cap = rules->text->split2(src)) {
         SRC_SUBSTR();
-        add(renderer->text(encode_html(smartypants(cap[0]))));
+        add(renderer->text(encode_html(smartypants(cap[0])), ([])));
         continue;
       }
 
       if (sizeof(src))
-        error("Inifinite loop! ");
+        error("Infinite loop! ");
     }
 
     return buf->get();
@@ -1071,8 +1075,8 @@ class InlineLexer
     string title = link->title ? encode_html(link->title) : UNDEFINED;
 
     return cap[0][0] != '!'
-                         ? renderer->link(href, title, output(cap[1]))
-                         : renderer->image(href, title, encode_html(cap[1]));
+                         ? renderer->link(href, title, output(cap[1]), ([]))
+                         : renderer->image(href, title, encode_html(cap[1]), ([]));
   }
 
   protected string mangle(string s)
@@ -1108,8 +1112,21 @@ class Renderer
     options = opts;
   }
 
+  //! Collect additional attributes from the token and render them as HTML
+  //! attributes. Default attributes can be provided.
+  string attrs(mapping token, mapping|void dflt)
+  {
+    mapping att = filter(dflt || ([]), stringp);
+    foreach (token; string key; mixed val) {
+      if (has_prefix(key, "attr_") && stringp(val)) {
+        att[key[5..]] = val;
+      }
+    }
+    return sprintf("%{ %s=%q%}", sort((array)att)); //TODO: Properly escape HTML
+  }
+
   //!
-  string code(string code, string lang, bool escaped)
+  string code(string code, string lang, bool escaped, mapping token)
   {
     if (options->highlight) {
       string out = options->highlight(code, lang);
@@ -1120,13 +1137,13 @@ class Renderer
     }
 
     if (!lang) {
-      return sprintf("<pre><code>%s%s</code></pre>%[1]s",
+      return sprintf("<pre%s><code>%s%s</code></pre>%[1]s", attrs(token),
                      !escaped ? encode_html(code, true) : code,
                      nl());
     }
 
     return sprintf(
-      "<pre><code class='%s%s'>%s%s</code></pre>%[3]s",
+      "<pre%s><code class='%s%s'>%s%s</code></pre>%[3]s", attrs(token),
       options->lang_prefix,
       encode_html(lang),
       !escaped ? encode_html(code, true) : code,
@@ -1135,23 +1152,22 @@ class Renderer
   }
 
   //!
-  string blockquote(string text)
+  string blockquote(string text, mapping token)
   {
-    return sprintf("<blockquote>%s%s</blockquote>%[0]s", nl(), text);
+    return sprintf("<blockquote%s>%s%s</blockquote>%[1]s", attrs(token), nl(), text);
   }
 
   //!
   string hr() { return options->xhtml ? "<hr/>" + nl() : "<hr>" + nl(); }
 
   //!
-  string heading(string text, int level, string raw)
+  string heading(string text, int level, string raw, mapping token)
   {
+    string id = options->header_prefix + lower_case(REGX("[^\\w]+")->replace(raw, "-"));
     return "<h"
       + level
-      + " id='"
-      + options->header_prefix
-      + lower_case(REGX("[^\\w]+")->replace(raw, "-"))
-      + "'>"
+      + attrs(token, (["id": id]))
+      + ">"
       + text
       + "</h"
       + level
@@ -1159,62 +1175,63 @@ class Renderer
   }
 
   //!
-  string list(string body, void|bool ordered)
+  string list(string body, void|bool ordered, mapping token)
   {
-    return sprintf("<%s>%s%s</%[0]s>%[1]s", ordered ? "ol" : "ul", nl(), body);
+    return sprintf("<%s%s>%s%s</%[0]s>%[2]s", ordered ? "ol" : "ul", attrs(token), nl(), body);
   }
 
   //!
-  string listitem(string text)
+  string listitem(string text, mapping token)
   {
-    return sprintf("<li>%s</li>%s", text, nl());
+    return sprintf("<li%s>%s</li>%s", attrs(token), text, nl());
   }
 
   //!
-  string paragraph(string text)
+  string paragraph(string text, mapping token)
   {
-    return sprintf("<p>%s</p>%s", text, nl());
+    return sprintf("<p%s>%s</p>%s", attrs(token), text, nl());
   }
 
   //!
-  string table(string header, string body)
+  string table(string header, string body, mapping token)
   {
     return sprintf(
-      "<table>%s<thead>%[0]s%s</thead>%[0]s"
-      "<tbody>%[0]s%s</tbody>%[0]s</table>%[0]s",
-      nl(), header, body
+      "<table%s>%s<thead>%[1]s%s</thead>%[1]s"
+      "<tbody>%[1]s%s</tbody>%[1]s</table>%[1]s",
+      attrs(token), nl(), header, body
     );
   }
 
   //!
-  string tablerow(string row)
+  string tablerow(string row, mapping token)
   {
-    return sprintf("<tr>%s%s</tr>%[0]s", nl(), row);
+    return sprintf("<tr%s>%s%s</tr>%[1]s", attrs(token), nl(), row);
   }
 
   //!
-  string tablecell(string cell, mapping flags)
+  string tablecell(string cell, mapping flags, mapping token)
   {
+    mapping align = flags->align && (["style": "text-align:" + flags->align]);
     return sprintf(
       "<%s%s>%s</%[0]s>%s",
       flags->header ? "th" : "td",
-      flags->align ? " style='text-align:" + flags->align + "'" : "",
+      attrs(token, align),
       cell,
       nl()
     );
   }
 
   //!
-  string html(string text)  { return text; }
-  string text(string t)     { return t; }
-  string strong(string t)   { return sprintf("<strong>%s</strong>", t); }
-  string em(string t)       { return sprintf("<em>%s</em>", t); }
-  string del(string t)      { return sprintf("<del>%s</del>", t); }
-  string codespan(string t) { return sprintf("<code>%s</code>", t); }
-  string br()               { return options->xhtml ? "<br/>" : "<br>"; }
+  string html(string text, mapping token)  { return text; }
+  string text(string t, mapping token)     { return t; }
+  string strong(string t, mapping token)   { return sprintf("<strong%s>%s</strong>", attrs(token), t); }
+  string em(string t, mapping token)       { return sprintf("<em%s>%s</em>", attrs(token), t); }
+  string del(string t, mapping token)      { return sprintf("<del%s>%s</del>", attrs(token), t); }
+  string codespan(string t, mapping token) { return sprintf("<code%s>%s</code>", attrs(token), t); }
+  string br(mapping token)                 { return options->xhtml ? "<br/>" : "<br>"; }
 
   //!
-  string link(string href, string title, string text)
+  string link(string href, string title, string text, mapping token)
   {
     if (options->sanitize) {
       mixed e = catch {
@@ -1231,15 +1248,14 @@ class Renderer
     }
 
     return sprintf(
-      "<a href='%s'%s>%s</a>",
-      href,
-      title ? " title='" + (title) + "'" : "",
+      "<a%s>%s</a>",
+      attrs(token, (["href": href, "title": title])),
       text
     );
   }
 
   //!
-  string image(string url, string title, string text)
+  string image(string url, string title, string text, mapping token)
   {
     string i = sprintf("<img src='%s' alt='%s'", url, text);
     if (text) i += sprintf(" title='%s'", text);
