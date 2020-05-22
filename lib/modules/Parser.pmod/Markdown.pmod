@@ -1096,8 +1096,11 @@ class InlineLexer
   }
 }
 
+//!
 class Renderer
 {
+  //! Markdown renderer. Subclass this to customize the output of @[parse].
+
   protected mapping options;
 
   protected void create(void|mapping opts)
@@ -1105,6 +1108,7 @@ class Renderer
     options = opts;
   }
 
+  //!
   string code(string code, string lang, bool escaped)
   {
     if (options->highlight) {
@@ -1130,13 +1134,16 @@ class Renderer
     );
   }
 
+  //!
   string blockquote(string text)
   {
     return sprintf("<blockquote>%s%s</blockquote>%[0]s", nl(), text);
   }
 
+  //!
   string hr() { return options->xhtml ? "<hr/>" + nl() : "<hr>" + nl(); }
 
+  //!
   string heading(string text, int level, string raw)
   {
     return "<h"
@@ -1151,21 +1158,25 @@ class Renderer
       + ">" + nl();
   }
 
+  //!
   string list(string body, void|bool ordered)
   {
     return sprintf("<%s>%s%s</%[0]s>%[1]s", ordered ? "ol" : "ul", nl(), body);
   }
 
+  //!
   string listitem(string text)
   {
     return sprintf("<li>%s</li>%s", text, nl());
   }
 
+  //!
   string paragraph(string text)
   {
     return sprintf("<p>%s</p>%s", text, nl());
   }
 
+  //!
   string table(string header, string body)
   {
     return sprintf(
@@ -1175,11 +1186,13 @@ class Renderer
     );
   }
 
+  //!
   string tablerow(string row)
   {
     return sprintf("<tr>%s%s</tr>%[0]s", nl(), row);
   }
 
+  //!
   string tablecell(string cell, mapping flags)
   {
     return sprintf(
@@ -1191,6 +1204,7 @@ class Renderer
     );
   }
 
+  //!
   string html(string text)  { return text; }
   string text(string t)     { return t; }
   string strong(string t)   { return sprintf("<strong>%s</strong>", t); }
@@ -1199,6 +1213,7 @@ class Renderer
   string codespan(string t) { return sprintf("<code>%s</code>", t); }
   string br()               { return options->xhtml ? "<br/>" : "<br>"; }
 
+  //!
   string link(string href, string title, string text)
   {
     if (options->sanitize) {
@@ -1223,6 +1238,7 @@ class Renderer
     );
   }
 
+  //!
   string image(string url, string title, string text)
   {
     string i = sprintf("<img src='%s' alt='%s'", url, text);
