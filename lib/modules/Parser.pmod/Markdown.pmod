@@ -2,8 +2,8 @@
 #pike __REAL_VERSION__
 #require constant(Regexp.PCRE.Widestring)
 
-//! This is a port of the Javascript Markdown parser
-//! @url{https://github.com/chjj/marked Marked@}. The only method needed to
+//! This is a port of the Javascript Markdown parser 'Marked'
+//! @url{https://github.com/chjj/marked@}. The only method needed to
 //! be used is @[parse()] which will transform Markdown text to HTML.
 //!
 //! For a description on Markdown, go to the web page of the inventor of
@@ -46,7 +46,7 @@ protected constant RI = OPTION.CASELESS;
 //!   @member bool "smart_lists"
 //!    Use smarter list behavior than the original markdown.              (true)
 //!   @member bool "smartypants"
-//!    Use "smart" typograhic punctuation for things like quotes and
+//!    Use "smart" typographic punctuation for things like quotes and
 //!    dashes.                                                           (false)
 //!   @member string "header_prefix"
 //!    Add prefix to ID attributes of header tags                        (empty)
