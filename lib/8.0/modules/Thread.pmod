@@ -4,6 +4,8 @@
 
 inherit Thread : pre;
 
+#if constant(thread_create)
+
 //! Create a new thread.
 //!
 //! @deprecated predef::Thread.Thread
@@ -11,3 +13,5 @@ optional Thread `()( mixed f, mixed ... args )
 {
   return thread_create( f, @args );
 }
+
+#endif
