@@ -932,7 +932,7 @@ int valid_seq_nump(int num)
   if (num < next_seq_num-(window_size)) return 0;
   if (num >= next_seq_num) return 1;
   if (num == next_seq_num-1) return 0;
-  return !(sequence_mask & (1<<(num + window_size - next_seq_num)));
+  return !(sequence_mask & (1<<[int(0..)](num + window_size - next_seq_num)));
 }
 
 //! Mark seqence number @[num] as seen and accepted.
@@ -944,12 +944,12 @@ void mark_seq_num(int num)
   if (num < next_seq_num-(window_size)) return;
   if (num == next_seq_num-1) return;
   if (num < next_seq_num) {
-    sequence_mask |= (1<<(num + window_size - next_seq_num));
+    sequence_mask |= (1<<[int(0..)](num + window_size - next_seq_num));
   } else {
     int delta = 1 + num - next_seq_num;
     if (delta < window_size) {
-      sequence_mask >>= delta;
-      sequence_mask |= 1 << (window_size-(delta + 1));
+      sequence_mask >>= [int(1..)]delta;
+      sequence_mask |= 1 << [int(0..)](window_size-(delta + 1));
     } else {
       sequence_mask = 0;
     }
