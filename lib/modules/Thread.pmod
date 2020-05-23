@@ -1099,7 +1099,7 @@ class MutexKey (protected function(:void) dec_locks)
 {
   inherit Builtin.DestructImmediate;
 
-  int `!()
+  protected int `!()
   {
     // Should be destructed when the mutex is, but we can't pull that
     // off. Try to simulate it as well as possible.
