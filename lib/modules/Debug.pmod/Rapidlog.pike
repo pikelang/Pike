@@ -3,6 +3,7 @@
 //! This allows for logging to occur with minimal timing interference.
 
 #pike __REAL_VERSION__
+#require constant(Thread.Thread)
 
 #pragma dynamic_dot
 
