@@ -234,11 +234,15 @@ define(run_sub_test, [[
   ]])
 ]])
 
+cond_begin([[all_constants()->thread_create]])
+
 dnl Displaced tests for SSL.File.
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "0", "0"}))
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "0", "1"}))
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "1", "0"}))
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "1", "1"}))
+
+cond_end // thread_create
 
 test_do([[
 #define ASSERT(X) if(!(X)) error("Assertion failed.\n")
