@@ -116,6 +116,32 @@ protected int(0..1) `==(mixed that) {
    : address == [int]that;
 }
 
+private int(0..1) containsorequal(int thataddress, int lmask) {
+  lmask = 128 - lmask;
+  lmask = ~0 << [int(0..)] lmask;
+  return (address & lmask) == (thataddress & lmask);
+}
+
+//! Is contained by.
+protected int(0..1) `<<(mixed that) {
+  if (objectp(that)) {
+    int lmask = [int]([object]that)->masklen;
+    if (masklen > lmask)
+      return containsorequal([int]([object]that)->address, lmask);
+  }
+  return 0;
+}
+
+//! Contains.
+protected int(0..1) `>>(mixed that) {
+  if (objectp(that)) {
+    if (masklen < [int]([object]that)->masklen)
+      return containsorequal([int]([object]that)->address, masklen);
+  } else if (intp(that) && masklen < 128)
+    return containsorequal([int]that, masklen);
+  return 0;
+}
+
 protected mixed cast(string to) {
   switch (to) {
     case "string":
