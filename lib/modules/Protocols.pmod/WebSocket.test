@@ -3,6 +3,8 @@
 // WebSocket testsuite
 //
 
+#if constant(Thread.Thread)
+
 constant loopback = "127.0.0.1";
 
 int successes;
@@ -306,3 +308,12 @@ int main(int argc, array(string) argv)
   Thread.thread_create(run_tests);
   return -1;
 }
+
+#else
+
+int main(int argc, array(string) argv)
+{
+  Tools.Testsuite.report_result(0, 0, 1);
+}
+
+#endif
