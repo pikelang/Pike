@@ -1168,7 +1168,7 @@ class Condition (protected Mutex|void mutex)
 {
   variant void wait(MutexKey key, void|int|float seconds)
   {
-    if (!seconds) {
+    if (!seconds || seconds == 0.0) {
       // To be really accurate we should hang now, but somehow
       // that doesn't seem too useful.
       error ("Deadlock detected.\n");
