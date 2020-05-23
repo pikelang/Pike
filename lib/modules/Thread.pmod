@@ -1352,4 +1352,58 @@ class Queue
   }
 }
 
+// Fallback implementation of Thread.ResourceCountKey.
+class ResourceCountKey {
+
+  private inherit __builtin.DestructImmediate;
+
+  /*semi*/private ResourceCount parent;
+
+  protected void create(ResourceCount _parent)
+  {
+    parent = _parent;
+  }
+
+  protected void _destruct()
+  {
+    --parent->_count;
+  }
+}
+
+// Fallback implementation of Thread.ResourceCount.
+class ResourceCount {
+  /*semi*/final int _count;
+
+  /*semi*/final int(0..1) drained(void|int level) {
+    return level >= _count;
+  }
+
+  /*semi*/final void wait_till_drained(void|int level) {
+    if (_count > level) {
+      // To be really accurate we should hang now, but somehow
+      // that doesn't seem too useful.
+      error ("Deadlock detected.\n");
+    }
+  }
+
+  /*semi*/final ResourceCountKey acquire() {
+    _count++;
+    return ResourceCountKey(this);
+  }
+
+  protected string _sprintf(int type)
+  {
+    string res = UNDEFINED;
+    switch(type) {
+      case 'O':
+        res = sprintf("Count: %d", _count);
+        break;
+      case 'd':
+        res = sprintf("%d", _count);
+        break;
+    }
+    return res;
+  }
+}
+
 #endif /* !constant(thread_create) */
