@@ -67,7 +67,11 @@ protected mapping(string:string) default_headers = ([
 
 protected int _call_id = 0;
 
+#if constant(this_thread)
 #define IS_BACKEND_THREAD() (this_thread() == master()->backend_thread())
+#else
+#define IS_BACKEND_THREAD() (1)
+#endif
 
 //! Creates a new Api instance
 //!
