@@ -197,7 +197,9 @@ int verify(string(8bit) password, string(7bit) hash)
       return 0;
     }
 
+#if constant(Nettle.bcrypt_hash)
     string(7bit) fullhash = hash;
+#endif
     // Then try our implementations.
     if (!sscanf(hash, "$%s$%s", scheme, hash)) return 0;
     sscanf(hash, "%s$%s", string(7bit) salt, hash);
