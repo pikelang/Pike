@@ -114,7 +114,11 @@ int main(int num, array(string) args)
     write("-"*65+"\n%-40s%18s%7s\n"+"-"*65+"\n",
           "Test","Result","Change");
 
+#if constant(Thread.Thread)
   call_out(Thread.Thread, 0, run_tests);
+#else
+  call_out(run_tests, 0);
+#endif
   return -1;
 }
 
