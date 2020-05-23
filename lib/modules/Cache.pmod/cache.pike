@@ -14,7 +14,7 @@
 #if constant(thread_create)
 #define do_possibly_threaded_call thread_create
 #else
-#define do_possibly_threaded_call call_function
+#define do_possibly_threaded_call predef::`()
 #endif
 
 #define DEFAULT_CLEANUP_CYCLE 300
