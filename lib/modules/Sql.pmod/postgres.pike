@@ -461,7 +461,7 @@ int|object streaming_query(object|string q,
   return big_query(q, bindings);
 }
 
-#else
+#elif constant(Sql.pgsql)
 /*
  * If libpq wasn't available at compile time, the pgsql-module can provide
  * near the same functionality as the postgres module.
@@ -479,4 +479,6 @@ int|object streaming_query(object|string q,
 //! @seealso
 //!   @[Sql.pgsql], @[Sql.Sql]
 inherit Sql.pgsql;
-#endif /* constant(Postgres.postgres) */
+#else /* constant(Sql.pgsql) */
+constant this_program_does_not_exist = 1;
+#endif
