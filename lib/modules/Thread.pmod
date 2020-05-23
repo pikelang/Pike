@@ -1125,6 +1125,7 @@ optional class Queue
 
   mixed try_read()
   {
+    if (w_ptr == r_ptr) return UNDEFINED;
     mixed tmp=buffer[r_ptr];
     buffer[r_ptr++] = 0;	// Throw away any references.
     return tmp;
