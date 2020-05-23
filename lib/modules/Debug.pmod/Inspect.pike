@@ -31,6 +31,7 @@
 //!  the file.
 
 #pike __REAL_VERSION__
+#require constant(Thread.Thread)
 
 #pragma dynamic_dot
 
