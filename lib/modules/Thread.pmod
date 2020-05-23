@@ -1156,6 +1156,38 @@ class Mutex
     locks++;
     return MutexKey (dec_locks);
   }
+
+  Condition condition ()
+  {
+    return Condition(this);
+  }
+}
+
+// Fallback implementation of Thread.Condition.
+class Condition (protected Mutex|void mutex)
+{
+  variant void wait(MutexKey key, void|int|float seconds)
+  {
+    if (!seconds) {
+      // To be really accurate we should hang now, but somehow
+      // that doesn't seem too useful.
+      error ("Deadlock detected.\n");
+    }
+    sleep(seconds);
+  }
+
+  variant void wait(MutexKey key, int seconds, int nanos)
+  {
+    wait(key, seconds + nanos*1e-9);
+  }
+
+  void signal()
+  {
+  }
+
+  void broadcast()
+  {
+  }
 }
 
 // Fallback implementation of Thread.Fifo.
