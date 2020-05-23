@@ -584,9 +584,57 @@ class Annotation
 
   array(string) tokens;
 
+  void format_xml(String.Buffer buf, array(string|array) tokens)
+  {
+    string end_tag;
+    foreach(tokens, string|array elem) {
+      if (arrayp(elem)) {
+	if (end_tag) {
+	  buf->add(end_tag);
+	  end_tag = UNDEFINED;
+	}
+	format_xml(buf, elem);
+      } else {
+	switch(elem) {
+	case ",": case "(": case "{": case "[": case ")": case "}": case "]":
+	  // Separator.
+	  if (end_tag) {
+	    buf->add(end_tag);
+	    end_tag = UNDEFINED;
+	  }
+	  buf->add(elem);
+	  break;
+	default:
+	  elem = String.trim_all_whites(elem);
+	  if (elem == "") continue;
+	  if ((elem[0] == '"') || (elem[0] == '\'')) {
+	    // String or character literal.
+	    if (end_tag) {
+	      buf->add(end_tag);
+	      end_tag = UNDEFINED;
+	    }
+	  } else if (!end_tag) {
+	    buf->add("<ref>");
+	    end_tag = "</ref>";
+	  }
+	  buf->add(xmlquote(elem));
+	  break;
+	}
+      }
+    }
+    if (end_tag) {
+      buf->add(end_tag);
+    }
+  }
+
   string xml(.Flags|void flags)
   {
-    return xmltag("annotation", tokens * "");
+    String.Buffer res = String.Buffer();
+    res->add("<annotation>");
+    array(string|array) grouped = Parser.Pike.group(tokens);
+    format_xml(res, tokens);
+    res->add("</annotation>");
+    return res->get();
   }
 
   string `name()

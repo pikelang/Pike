@@ -334,12 +334,12 @@ string parse_module(Node n, void|int noheader) {
   return ret;
 }
 
-string parse_annotations(Node n)
+string parse_annotations(Node n, void|int noheader)
 {
   string ret = "";
   ret += lay->dochead + "Annotations" + lay->_dochead;
   foreach(n->get_elements("annotation"), Node a) {
-    ret += lay->annotation + lay->code + quote(a->value_of_node()) +
+    ret += lay->annotation + lay->code + parse_text(a) +
       lay->_code + lay->_annotation;
   }
   return ret;
@@ -356,15 +356,15 @@ string parse_class(Node n, void|int noheader) {
       "</dt><dd>";
 
   Node a = n->get_first_element("annotations");
-  if (a) {
-    ret += "<dl class='group--annotations'>" + parse_annotations(a) + "</dl>\n";
-  }
-
   Node c = n->get_first_element("doc");
   old_class_name->push(class_name);
   class_name = n->get_attributes()->class_path+n->get_attributes()->name;
-  if(c)
-    ret += "<dl class='group--doc'>" + parse_doc(c) + "</dl>";
+  if(a || c) {
+    ret += "<dl class='group--doc'>";
+    if (a) ret += parse_annotations(a);
+    if (c) ret += parse_doc(c);
+    ret += "</dl>";
+  }
 
   if((sizeof(n->get_elements("doc"))>1) &&
      ((flags & (Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_DEBUG)) ==
