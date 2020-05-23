@@ -41,7 +41,9 @@ void set_delay( int t )
     delay = t;
 }
 
+#if constant(all_threads)
 protected object backend_thread = this_thread();
+#endif
 protected int delay, last_seen;
 protected int expected_cpu_time;
 protected array(function(void:void)) debug_funcs = ({});
@@ -51,13 +53,18 @@ protected array(function(void:bool)) probes = ({});
 //! debug information to stderr.
 void print_debug()
 {
+#if constant(_disable_threads)
     // Disable all threads to avoid potential locking problems while we
     // have the backtraces. It also gives an atomic view of the state.
     object threads_disabled = _disable_threads();
+#else
+    object threads_disabled = 0;
+#endif
     gc();
 
     Stdio.stderr.write("### Describing all Pike threads:\n\n");
     int n;
+#if constant(all_threads)
     foreach( all_threads(), Thread.Thread t )
     {
         array bt = t->backtrace();
@@ -66,6 +73,15 @@ void print_debug()
         Stdio.stderr.write(describe_backtrace(bt) + "\n");
         n++;
     }
+#else
+    {
+        array bt = backtrace();
+        Stdio.stderr.write("### Thread %O%s:\n",
+            UNDEFINED, " (backend thread)");
+        Stdio.stderr.write(describe_backtrace(bt) + "\n");
+        n++;
+    }
+#endif
 
     Stdio.stderr.write("Total %d Pike threads\n", n);
 
