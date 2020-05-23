@@ -1122,6 +1122,8 @@ define(test_ssl, [[
 
     if( `==($1,$3, SSL.Constants.PROTOCOL_SSL_3_0) && ($2 == $4) ) {
       // Test all known cipher suites.
+      server_ctx->min_version = $3;
+      server_ctx->max_version = $4;
       suites = server_ctx->get_suites(-1, 2);
     }
 
