@@ -641,7 +641,7 @@ void do_install(string name, string|void version)
       if(!Process.search_path("gzip"))
         exit(1, "install error: no gzip found in PATH.\n");
       else
-        res = Process.system("gzip -f -d " + fn);
+        res = Process.Process(({"gzip", "-f", "-d", fn}))->wait();
 
       if(res)
         exit(1, "install error: uncompress failed.\n");
@@ -672,7 +672,7 @@ void do_install(string name, string|void version)
     if(!Process.search_path("tar"))
       exit(1, "install error: no tar found in PATH.\n");
     else
-      res = Process.system("tar xvf " + fn);
+      res = Process.Process(({"tar", "xvf", fn}))->wait();
 
     if(res)
       exit(1, "install error: untar failed.\n");
