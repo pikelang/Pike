@@ -1326,6 +1326,11 @@ class Queue
     return ret;
   }
 
+  array peek_array()
+  {
+    return buffer[r_ptr..w_ptr-1];
+  }
+
   int write(mixed value)
   {
     if(w_ptr >= sizeof(buffer))
