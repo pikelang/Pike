@@ -478,9 +478,11 @@ protected void finalize()
   else
   {
     if (request_headers->cookie)
-      foreach (request_headers->cookie/";";;string cookie)
-        if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
-          cookies[a]=b;
+      foreach (Protocols.HTTP.params_decode(request_headers->cookie); ;
+               ADT.OrderedMapping m)
+	foreach (m; string key; string value)
+          if (value)
+            cookies[key] = value;
     request_callback(this);
   }
 }

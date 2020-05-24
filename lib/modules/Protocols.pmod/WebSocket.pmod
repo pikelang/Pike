@@ -141,50 +141,40 @@ string describe_opcode(FRAME op) {
 
 mapping(string:mapping) parse_websocket_extensions(string header) {
   mapping(string:mapping) retval = ([]);
-  if (!header) return retval;
-  // Parses extensions conforming RFCs, supports quoted values.
-  // FIXME Violates the RFC when commas or semicolons are quoted.
-  array tmp = array_sscanf(header,
-   "%*[ \t\r\n]%{%{%[^ \t\r\n=;,]%*[= \t\r\n]%[^;,]%*[ \t\r\n;]%}"
-   "%*[ \t\r\n,]%}")[0];
-  foreach (tmp; int i; array v) {
-    mapping m = ([]);
-    array d;
-    v = v[0];
-    retval[v[0][0]] = m;
-    v = v[1..];
-    foreach (v;; d) {
-      string sv = String.trim_whites(d[1]);
-      if (sizeof(sv) && sv[0] == '"')
-        sv = sv[1..<1];	    // Strip doublequotes
-      int|float|string tv;	    // Store numeric values natively
-      if ((string)(tv=(int)sv)!=sv && (string)(tv=(float)sv)!=sv)
-        tv = sv;
-      m[d[0]] = tv;
-    }
+  if (!header)
+    return retval;
+  foreach (Protocols.HTTP.params_decode(header); ; ADT.OrderedMapping m) {
+    string mainopt;
+    mapping subopt = ([]);
+    foreach (m; string key; string sv)
+      if (!mainopt)
+        mainopt = key;
+      else {
+        int|float|string tv;	    // Store numeric values natively
+        if ((string)(tv=(int)sv)!=sv && (string)(tv=(float)sv)!=sv)
+          tv = sv;
+        subopt[key] = tv;
+      }
+    retval[mainopt] = subopt;
   }
   return retval;
 }
 
 string encode_websocket_extensions(mapping(string:mapping) ext) {
-    array ev = ({});
-    foreach (ext; string name; mapping ext) {
-        array res = ({name});
-        foreach (ext; string pname; int|float|string pval) {
-            // FIXME We only look for embedded spaces to decide if
-            // we need to quote the parametervalue.  If you want to
-            // embed tabs or other whitespace, this needs to be
-            // amended.
-            if (stringp(pval) && has_value(pval, " "))
-                pval = "\"" + pval + "\"";
-            pval = (string)pval;
-            if (sizeof(pval))
-                pval = "="+pval;
-            res += ({pname+pval});
-        }
-        ev += ({res * ";"});
+  String.Buffer res = String.Buffer();
+  string name, sep = "";
+  foreach (ext; name; mapping args) {
+    res->add(sep, name);
+    if (sizeof(args)) {
+      args += ([]);
+      foreach (args; name; mixed value)
+        if (!stringp(value))
+          args[name] = (string)value;	// Convert numerics to strings first
+      res->add(";", Protocols.HTTP.params_encode(({ args })));
     }
-    return ev * ",";
+    sep = ",";
+  }
+  return res->get();
 }
 
 //! Parses one WebSocket frame. Throws an error if there isn't enough data in the buffer.
