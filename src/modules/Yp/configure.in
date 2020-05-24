@@ -81,7 +81,7 @@ int yp_order($str_type *, $str_type *, $order_type *);
 AC_DEFINE_UNQUOTED(YP_ORDER_TYPE, $pike_cv_yp_order_type)
 AC_MSG_RESULT($pike_cv_yp_order_type)
 
-AC_CHECK_FUNCS(yperr_string)
+AC_CHECK_FUNCS(yperr_string yp_bind)
 
 if test "$av_cv_func_yperr_string" = "yes"; then
   AC_MSG_CHECKING(if we need a prototype for yperr_string)
