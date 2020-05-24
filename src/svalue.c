@@ -485,18 +485,20 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
     } else {
 	union {
 	    FLOAT_TYPE f;
-#if SIZEOF_FLOAT_TYPE == 8
-	    unsigned INT64 i;
-#elif SIZEOF_FLOAT_TYPE == 4
-	    unsigned INT32 i;
+#if SIZEOF_FLOAT_TYPE % 4 == 0
+	    unsigned INT32 i[SIZEOF_FLOAT_TYPE / 4];
 #else
 #error Size of FLOAT_TYPE not supported.
 #endif
 	} ufloat;
 	ufloat.f = s->u.float_number;
-	q = (unsigned INT32)ufloat.i;
-#if SIZEOF_FLOAT_TYPE == 8
-	q ^= (unsigned INT32)(ufloat.i >> 32);
+	q = ufloat.i[0];
+#if SIZEOF_FLOAT_TYPE > 4
+	{
+	    int i;
+	    for (i = 1; i < SIZEOF_FLOAT_TYPE / 4; i++)
+	        q ^= ufloat.i[i];
+	}
 #endif
     }
     break;
