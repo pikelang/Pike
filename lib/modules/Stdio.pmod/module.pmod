@@ -92,7 +92,7 @@ class NonblockingStream
 {
   inherit Stream;
 
-  //! @decl @Pike.Implements(Stream)
+  //! @decl @Pike.Annotations.Implements(Stream)
   @__builtin.Implements(Stream);
 
   //!
@@ -133,7 +133,7 @@ class BlockFile
 {
   inherit Stream;
 
-  //! @decl @Pike.Implements(Stream)
+  //! @decl @Pike.Annotations.Implements(Stream)
   @__builtin.Implements(Stream);
 
   //!
@@ -189,10 +189,10 @@ class File
 {
   optional inherit Fd;
 
-  //! @decl @Pike.Implements(NonblockingStream)
+  //! @decl @Pike.Annotations.Implements(NonblockingStream)
   @__builtin.Implements(NonblockingStream);
 
-  //! @decl @Pike.Implements(BlockFile)
+  //! @decl @Pike.Annotations.Implements(BlockFile)
   @__builtin.Implements(BlockFile);
 
   // This is needed in case we get overloaded by strange code
