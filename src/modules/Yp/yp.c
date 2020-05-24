@@ -8,7 +8,7 @@
 #include "module.h"
 #include "config.h"
 
-#if defined(HAVE_RPCSVC_YPCLNT_H) && defined(HAVE_RPCSVC_YP_PROT_H)
+#if defined(HAVE_RPCSVC_YPCLNT_H) && defined(HAVE_RPCSVC_YP_PROT_H) && defined(HAVE_YP_BIND)
 #ifdef HAVE_RPC_TYPES_H
 #include <rpc/types.h>
 #endif /* HAVE_RPC_TYPES_H */
