@@ -493,12 +493,18 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
             UINT64 i;
 #elif SIZEOF_FLOAT_TYPE == 4
 	    unsigned INT32 i;
+#elif SIZEOF_FLOAT_TYPE == 16
+            UINT64 i[2];
 #else
 #error Size of FLOAT_TYPE not supported.
 #endif
 	} ufloat;
 	ufloat.f = s->u.float_number;
+#if SIZEOF_FLOAT_TYPE == 16
+	q = (size_t)(ufloat.i[0] ^ ufloat.i[1]);
+#else
 	q = (size_t)ufloat.i;
+#endif
 	break;
     }
 #endif
