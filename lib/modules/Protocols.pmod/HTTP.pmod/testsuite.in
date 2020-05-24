@@ -199,6 +199,18 @@ test_eq(H.iri_encode(":+<\00\x80\u0100"), "%3A%2B%3C%00\x80\u0100")
 dnl quoted_string_encode
 dnl quoted_string_decode
 
+dnl params_encode
+test_eq(H.params_encode(H.params_decode(
+     ";abc=def;;,fhjdf=ssss,djf=\"adfh  j\t;,s;\\\"s\",,ssdfd=kllkljlwer")),
+ replace("abc=def|fhjdf=ssss|djf=\"adfh  j\t;|s;\\\"s\"|ssdfd=kllkljlwer",
+  "|", ","))
+
+dnl params_decode
+test_equal(map(H.params_decode("indeed;abc=def;;ffff=sjkdf,fhjdf=ssss,rrr=sss;djf=\"adfh  j\t;,s;\\\"s\";aaa=3333,,ssdfd=kllkljlwer"),
+               lambda(mixed x){return (mapping)x;}),
+ ({ ([ "indeed": 0, "abc": "def", "ffff": "sjkdf" ]), ([ "fhjdf": "ssss" ]),
+    ([ "aaa": "3333", "djf": "adfh  j\t;,s;\"s", "rrr": "sss" ]),
+    ([ "ssdfd": "kllkljlwer" ]) }))
 
 test_do(add_constant("H"))
 test_do(add_constant("CON"))
