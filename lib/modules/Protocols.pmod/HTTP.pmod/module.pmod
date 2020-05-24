@@ -927,7 +927,7 @@ string quoted_string_encode (string s)
 //! @seealso
 //! @[quoted_string_decode]
 {
-  return replace (s, (["\"": "\\\"", "\\": "\\\\"]));
+  return MIME.quote(({s}))[1..<1];
 }
 
 string quoted_string_decode (string s)
@@ -938,107 +938,5 @@ string quoted_string_decode (string s)
 //! @seealso
 //! @[quoted_string_encode]
 {
-  return map (s / "\\\\", replace, "\\", "") * "\\";
-}
-
-#define ST_KEY		1
-#define ST_VALUE	2
-#define ST_QUOTEDVALUE	3
-#define ST_ESCAPEVALUE	4
-
-array(ADT.OrderedMapping) params_decode (string s)
-//! Decodes the given string as a parameter-value cascade
-//! according to e.g. @rfc{7239:4@}.
-//!
-//! @note
-//! This function will decode all conforming inputs, but it will also
-//! be forgiving when presented with non-conforming inputs.
-//!
-//! @seealso
-//! @[params_encode]
-{
-  array(mapping(string:string)|ADT.OrderedMapping) totres = ({});
-  ADT.OrderedMapping mapres = ADT.OrderedMapping();
-  String.Buffer word = String.Buffer();
-  int(ST_KEY..ST_ESCAPEVALUE) state = ST_KEY;
-  string key;
-  int i;
-  for (i = 0;; i++) {
-    int c;
-    if (i < sizeof(s))
-      c = s[i];
-    else if (i == sizeof(s)) {		   // Fake a terminating ','
-      c = ',';				  // to ensure proper post-processing
-      if (state > ST_VALUE)
-        state = ST_VALUE;		// EOL cannot be escaped
-    } else
-      break;
-    if (state >= ST_QUOTEDVALUE) {
-      if (state == ST_ESCAPEVALUE)
-        state = ST_QUOTEDVALUE;
-      else
-        switch (c) {
-          case '"':
-            state = ST_VALUE;
-            continue;
-          case '\\':
-            state = ST_ESCAPEVALUE;
-            continue;
-        }
-      word->putchar(c);
-    } else {
-      switch (c) {
-        case '=':
-          key = word->get();
-          state = ST_VALUE;
-          continue;
-        case '"':
-          state = ST_QUOTEDVALUE;
-          continue;
-        case ',':
-        case ';':
-          if (state == ST_KEY) {
-            if (!sizeof(word))
-              break;
-            key = word->get();
-          }
-          mapres[key] = state >= ST_VALUE && word->get();
-          state = ST_KEY;
-          break;
-        default:
-          word->putchar(c);
-        case ' ': case '\t': case '\n': case '\r': case '\f': case '\v':
-          continue;
-      }
-      if (c == ',' && sizeof(mapres))		// Skip empty sets
-        totres += ({ mapres }), mapres = ADT.OrderedMapping();
-    }
-  }
-  return totres;
-}
-
-Regexp toescape = Regexp("[;,\" \t\n\r\f\v]");
-
-string params_encode (array(mapping(string:string)|ADT.OrderedMapping) params)
-//! Encodes the given parameters as a string
-//! according to e.g. @rfc{7239:4@}.
-//!
-//! @seealso
-//! @[params_decode]
-{
-  String.Buffer res = String.Buffer();
-  string sep = "";
-  foreach (params; ; mapping(string:string)|ADT.OrderedMapping m) {
-    foreach (m; string key; string value) {
-      res->add(sep, key);
-      if (value)
-        res->add("=",
-         toescape->match(value)
-          ? "\"" + quoted_string_encode(value) + "\""
-          : value);
-        sep = ";";
-    }
-    sep = ",";
-  }
-  return res->get();
+  return MIME.tokenize("\"" + s + "\"")[0];
 }

@@ -6,4 +6,18 @@ test_eq(MIME.encode_base64url(Crypto.SHA256.hash("Hello World!")),
 test_eq(MIME.decode_base64url("f4OxZX_x_FO5LcGBSKHWXfwtSx-j1ncoSt3SABJtkGk"),
   Crypto.SHA256.hash("Hello World!"))
 
+dnl encode_headerfield_params
+test_eq(MIME.encode_headerfield_params(MIME.decode_headerfield_params(
+     ";abc=def;;,fhjdf=ssss,djf=\"adfh  j\t;,s;\\\"s\",,ssdfd=kllkljlwer")),
+ replace("abc=def|fhjdf=ssss|djf=\"adfh  j\t;|s;\\\"s\"|ssdfd=kllkljlwer",
+  "|", ","))
+
+dnl decode_headerfield_params
+test_equal(map(MIME.decode_headerfield_params("indeed;abc=def;;ffff=sjkdf,fhjdf=ssss,rrr=sss;djf=\"adfh  j\t;,s;\\\"s\";aaa=3333,,ssdfd=kllkljlwer"),
+               lambda(mixed x){return (mapping)x;}),
+ ({ ([ "indeed": 0, "abc": "def", "ffff": "sjkdf" ]), ([ "fhjdf": "ssss" ]),
+    ([ "aaa": "3333", "djf": "adfh  j\t;,s;\"s", "rrr": "sss" ]),
+    ([ "ssdfd": "kllkljlwer" ]) }))
+
+
 END_MARKER

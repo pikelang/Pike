@@ -143,7 +143,8 @@ mapping(string:mapping) parse_websocket_extensions(string header) {
   mapping(string:mapping) retval = ([]);
   if (!header)
     return retval;
-  foreach (Protocols.HTTP.params_decode(header); ; ADT.OrderedMapping m) {
+  foreach (MIME.decode_headerfield_params(header); ;
+           ADT.OrderedMapping m) {
     string mainopt;
     mapping subopt = ([]);
     foreach (m; string key; string sv)
@@ -170,7 +171,7 @@ string encode_websocket_extensions(mapping(string:mapping) ext) {
       foreach (args; name; mixed value)
         if (!stringp(value))
           args[name] = (string)value;	// Convert numerics to strings first
-      res->add(";", Protocols.HTTP.params_encode(({ args })));
+      res->add(";", MIME.encode_headerfield_params(({ args })));
     }
     sep = ",";
   }

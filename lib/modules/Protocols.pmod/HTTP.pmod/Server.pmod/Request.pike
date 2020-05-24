@@ -478,7 +478,7 @@ protected void finalize()
   else
   {
     if (request_headers->cookie)
-      foreach (Protocols.HTTP.params_decode(request_headers->cookie); ;
+      foreach (MIME.decode_headerfield_params(request_headers->cookie); ;
                ADT.OrderedMapping m)
 	foreach (m; string key; string value)
           if (value)

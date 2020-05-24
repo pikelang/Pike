@@ -550,6 +550,47 @@ decode_words_tokenized_labled_remapped(string phrase, int|void flags)
 		   });
 }
 
+//! Decodes the given string as a key-value parameter cascade
+//! according to e.g. @rfc{7239:4@}.
+//!
+//! @note
+//! This function will decode all conforming inputs, but it will also
+//! be forgiving when presented with non-conforming inputs.
+//!
+//! @seealso
+//! @[encode_headerfield_params]
+array(ADT.OrderedMapping) decode_headerfield_params (string s)
+{
+  array(mapping(string:string)|ADT.OrderedMapping) totres = ({});
+  ADT.OrderedMapping mapres = ADT.OrderedMapping();
+  string key, goteq;
+  int nextset;	   // Fake a terminating ',' to ensure proper post-processing
+  foreach (MIME.tokenize(s) + ({ ',' }); ; int|string token) {
+    switch (token) {
+      case ',':
+        nextset = 1;
+      case ';':
+        token = goteq;
+        goteq = 0;
+        break;
+      case '=':
+        goteq = "";
+        continue;
+      default:
+        if (key)
+          break;
+        key = token; goteq = 0;
+        continue;
+    }
+    if (key)
+      mapres[key] = token, key = 0;
+    if (nextset && sizeof(mapres))
+      totres += ({ mapres }), mapres = ADT.OrderedMapping();
+    nextset = 0;
+  }
+  return totres;
+}
+
 //! The inverse of @[decode_words_text()], this function accepts
 //! an array of strings or pairs of strings which will each be encoded
 //! by @[encode_word()], after which they are all pasted together.
@@ -747,6 +788,30 @@ string encode_words_quoted_labled_remapped(array(array(string|int)) phrase,
 				      return item;
 				    }
 				  }));
+}
+
+//! Encodes the given key-value parameters as a string
+//! according to e.g. @rfc{7239:4@}.
+//!
+//! @seealso
+//! @[decode_headerfield_params]
+string encode_headerfield_params
+               (array(mapping(string:string)|ADT.OrderedMapping) params)
+{
+  array res = ({});
+  int sep;
+  foreach (params; ; mapping(string:string)|ADT.OrderedMapping m) {
+    foreach (m; string key; string value) {
+      if (sep)
+        res += ({ sep });
+      res += ({ key });
+      if (value)
+        res += ({ '=', value });
+      sep = ';';
+    }
+    sep = ',';
+  }
+  return MIME.quote(res);
 }
 
 //! Provide a reasonable default for the subtype field.
