@@ -107,6 +107,9 @@ mapping(string:string) cookies=([]);
 //! external use only
 mapping misc=([]);
 
+//! the response sent to the client (for use in the log_cb)
+mapping response;
+
 //! send timeout (no activity for this period with data in send buffer)
 //! in seconds, default is 180
 int send_timeout_delay=180;
@@ -579,7 +582,7 @@ void response_and_finish(mapping m, function|void _log_cb)
 {
    string tmp;
    int stop;
-   m += ([ ]);
+   response = m += ([ ]);
    log_cb = _log_cb;
 
    if( !my_fd )
@@ -852,6 +855,7 @@ void finish(int clean)
 {
    if( log_cb )
      log_cb(this);
+   response = 0;
 
    remove_call_out(send_timeout);
    remove_call_out(connection_timeout);
