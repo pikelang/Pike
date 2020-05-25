@@ -339,7 +339,7 @@ string parse_annotations(Node n, void|int noheader)
   string ret = "";
   ret += lay->dochead + "Annotations" + lay->_dochead;
   foreach(n->get_elements("annotation"), Node a) {
-    ret += lay->annotation + lay->code + parse_text(a) +
+    ret += lay->annotation + lay->code + "@" + parse_text(a) +
       lay->_code + lay->_annotation;
   }
   return ret;
