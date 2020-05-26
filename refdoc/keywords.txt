@@ -91,8 +91,8 @@ Description:  Declare a Pike entity and state that the current
 
 Arguments:    <declaration>
               Where:
-                <declaration> is a valid Pike declaration. A trailing
-                  ";" is optional.
+                <declaration> is a valid Pike declaration or annotation.
+		A trailing ";" is optional.
 Children:     Documentation for the entity. After all @decl's may follow
               one of @appears or @belongs.
 Groups with:  @decl
