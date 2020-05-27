@@ -917,6 +917,7 @@ class sql_result {
               lock = closemux->lock();
               continue;
             }
+            break;
           }
         }
         lock = 0;			// Force release before acquiring next
