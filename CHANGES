@@ -703,6 +703,8 @@ o Added @enum/@endenum markup.
 
 o Support undocumented enums with documented constants.
 
+o Add some support for documenting annotations.
+
 
 Building and installing
 -----------------------
