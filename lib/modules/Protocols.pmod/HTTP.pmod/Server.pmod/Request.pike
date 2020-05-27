@@ -583,6 +583,7 @@ void response_and_finish(mapping m, function|void _log_cb)
 {
    string tmp;
    int stop;
+   send_buf->clear();
    response = m += ([ ]);
    log_cb = _log_cb;
 
