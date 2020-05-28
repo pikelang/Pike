@@ -1346,7 +1346,7 @@ class Result {
                 plugbuffer->add_int32(-1);
                 break;
               }
-              if (!objectp(value) || typeof(value) != typeof(Stdio.Buffer()));
+              if (!objectp(value) || typeof(value) != typeof(Stdio.Buffer()))
                 /*
                  *  Like Oracle and SQLite, we accept literal binary values
                  *  from single-valued multisets.
@@ -1355,20 +1355,20 @@ class Result {
                   value = indices(value)[0];
                 else {
                   value = (string)value;
-                  if (String.width(value) > 8)
-                    if (dtoid[i] == BYTEAOID)
+                  if (cenc == UTF8CHARSET
+                    && (dtoid[i] != BYTEAOID || String.width(value) > 8))
                       /*
-                       *  FIXME We should throw an error here, it would
-                       *  have been correct, but for historical reasons and
-                       *  as a DWIM convenience we autoconvert to UTF8 here.
+                       *  FIXME For BYTEAOID and wide strings we should
+                       *  throw an error here, but for historical reasons and
+                       *  as a DWIM convenience we autoconvert to UTF8 anyway.
                        */
-                      value = string_to_utf8(value);
-                    else {
-                      SUSERERROR(
-                        "Wide string %O not supported for type OID %d\n",
-                        value, dtoid[i]);
-                      value = "";
-                    }
+                    value = string_to_utf8(value);
+                  else if (String.width(value) > 8) {
+                    SUSERERROR(
+                      "Wide string %O not supported for type OID %d\n",
+                      value, dtoid[i]);
+                    value = "";
+                  }
                 }
               plugbuffer->add_hstring(value, 4);
               break;
