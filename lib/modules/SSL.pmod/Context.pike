@@ -954,14 +954,20 @@ Session decode_ticket(string(8bit) ticket)
 //!   server-side state-less session resumption.
 //!
 //! @returns
-//!   Returns @expr{0@} (zero) on failure (ie cache disabled), and
-//!   an array on success:
 //!   @array
 //!     @elem string(8bit) 0
 //!       Non-empty string with the ticket.
 //!     @elem int 1
 //!       Lifetime hint for the ticket.
 //!   @endarray
+//!
+//! @note
+//!   If the context signals that it does offer tickets via
+//!   @[offers_tickets()], this function @b{must@} offer an encoded ticket
+//!   for the session as the connection may have signalled to the client
+//!   that a ticket @b{will be@} offered. However, tickets are not guaranteed
+//!   to be actually usable, so if you cannot offer a ticket when you must,
+//!   @expr{"INVALID"@} might be an option...
 //!
 //! @seealso
 //!   @[decode_ticket()], @[record_session()], @rfc{4507:3.3@}
@@ -984,6 +990,13 @@ array(string(8bit)|int) encode_ticket(Session session)
   session->identity = orig_id;
   // FIXME: Calculate the lifetime from the ticket_expiry_time field?
   return ({ ticket, 3600 });
+}
+
+//! Signals if the context @b{will@} offer a session ticket via
+//! @[encode_ticket()].
+int(0..1) offers_tickets()
+{
+    return use_cache;
 }
 
 //! Create a new session.
