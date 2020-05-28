@@ -566,6 +566,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
 	  case EXTENSION_session_ticket:
 	    SSL3_DEBUG_MSG("SSL.ServerConnection: Got session ticket.\n");
+            if (!context->offers_tickets()) {
+              SSL3_DEBUG_MSG("SSL.ServerConnection: ...but !context->offers_tickets(), thus ignoring.\n");
+              break;
+            }
 	    tickets_enabled = 1;
 	    // NB: RFC 4507 and 5077 differ in encoding here.
 	    //     Apparently no implementations actually followed
