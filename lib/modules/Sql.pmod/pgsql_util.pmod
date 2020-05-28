@@ -2677,7 +2677,8 @@ class proxy {
       if (unnamedstatement)
         termlock = unnamedstatement->lock(1);
       foreach (c->runningportals; sql_result result; )
-        catch(result->status_command_complete());
+        if (result->_state < CLOSED)
+          catch(result->status_command_complete());
       if (c)				// Prevent trivial backtraces
         c->close();
       if (unnamedstatement)
