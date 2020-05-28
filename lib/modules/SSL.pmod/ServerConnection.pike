@@ -793,7 +793,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
           if (tickets_enabled) {
             SSL3_DEBUG_MSG("SSL.ServerConnection: Resending ticket.\n");
-            int lifetime_hint = [int](session->ticket_expiration_time - time(1));
+            int lifetime_hint = [int](session->ticket_expiry_time - time(1));
             string(8bit) ticket = session->ticket;
             send_packet(new_session_ticket_packet(lifetime_hint, ticket));
           }
