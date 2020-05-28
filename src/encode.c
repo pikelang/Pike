@@ -1821,7 +1821,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("offset",
 					  ".number  %ld",
-					  id->func.const_info.offset);
+					  id->func.offset);
 		    });
 
 		  /* opt_flags */
