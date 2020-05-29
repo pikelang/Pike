@@ -1223,7 +1223,7 @@ array(string(8bit)|int) encode_ticket(Session session)
 //! @[encode_ticket()].
 int(0..1) offers_tickets()
 {
-    return use_cache;
+    return !!use_cache;
 }
 
 //! Create a new session.
