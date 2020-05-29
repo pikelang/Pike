@@ -71,6 +71,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args);
 PMOD_EXPORT void f_unicode_to_string(INT32 args);
 PMOD_EXPORT void f_string_to_utf8(INT32 args);
 PMOD_EXPORT void f_utf8_to_string(INT32 args);
+PMOD_EXPORT void f_validate_utf8(INT32 args);
 void f___get_first_arg_type(INT32 args);
 PMOD_EXPORT void f_all_constants(INT32 args);
 PMOD_EXPORT void f_allocate(INT32 args);
