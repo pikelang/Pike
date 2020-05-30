@@ -4886,15 +4886,17 @@ PIKECLASS PollBackend
 	    box->revents |= PIKE_BIT_FD_ERROR;
 	  }
 
-	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLRDBAND)) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
+	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLRDBAND) ||
+	      PB_CHECK_ERROR_EVENT(pb->active_set.poll_fds[i], MY_POLLHUP)) {
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND|POLLHUP on %d\n",
 			  THR_NO, me->id, fd));
 	    box->revents |= PIKE_BIT_FD_READ_OOB;
 	    DO_IF_DEBUG(handled = 1);
 	  }
-	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLIN)) {
+	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLIN) ||
+	      PB_CHECK_ERROR_EVENT(pb->active_set.poll_fds[i], MY_POLLHUP)) {
 	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
+			  "[%d]BACKEND[%d]: POLLRDNORM|POLLIN|POLLHUP on %d\n",
 			  THR_NO, me->id, fd));
 	    box->revents |= PIKE_BIT_FD_READ;
 	    DO_IF_DEBUG(handled = 1);
