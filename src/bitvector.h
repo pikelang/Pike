@@ -195,6 +195,23 @@ static inline UINT64 PIKE_UNUSED_ATTRIBUTE bswap64(UINT64 x) {
 }
 #endif /* !HAVE___BSWAP64 && !HAVE_BSWAP64 */
 
+#if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
+/**
+ * Counts the number of leading zeros in a 128-bit unsigned
+ * integer. Returns a value between 0 and 128.
+ */
+static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz128(unsigned __int128 i) {
+# if SIZEOF_LONG == 16 && defined(HAS___BUILTIN_CLZL)
+    return i ? __builtin_clzl(i) : 128;
+# elif SIZEOF_LONG_LONG == 16 && defined(HAS___BUILTIN_CLZLL)
+    return i ? __builtin_clzll(i) : 128;
+# else
+    UINT64 hi = i >> 64;
+    return hi? clz64(hi) : 64 + clz64((UINT64)i);
+# endif
+}
+#endif /* __SIZEOF_INT128__ */
+
 static inline UINT64 PIKE_UNUSED_ATTRIBUTE round_up64(UINT64 v) {
     unsigned INT32 i;
 

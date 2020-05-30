@@ -7,9 +7,14 @@
 #if SIZEOF_FLOAT_TYPE == 8
 typedef UINT64 CB_NAME(string);
 typedef UINT64 CB_NAME(char);
-#else
+#elif SIZEOF_FLOAT_TYPE == 4
 typedef unsigned INT32 CB_NAME(string);
 typedef unsigned INT32 CB_NAME(char);
+#elif SIZEOF_FLOAT_TYPE == 16 && defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
+typedef unsigned __int128 CB_NAME(string);
+typedef unsigned __int128 CB_NAME(char);
+#else
+#error Size of FLOAT_TYPE not supported.
 #endif
 
 
@@ -26,8 +31,10 @@ typedef unsigned INT32 CB_NAME(char);
 #ifdef CB_SOURCE
 #if SIZEOF_FLOAT_TYPE == 4
 # define gclz(x) clz32(x)
-#else
+#elif SIZEOF_FLOAT_TYPE == 8
 # define gclz(x) clz64(x)
+#else
+# define gclz(x) clz128(x)
 #endif
 #define bitsof(x)	(sizeof(x)*8)
 #define int2float(x)	(*(FLOAT_TYPE*)&(x))
