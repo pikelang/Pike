@@ -166,6 +166,9 @@ string usage = #"[options] <from> > <to>
    program_id;    Set the program_id for the PIKECLASS. Note that this
                   is only needed for program id constants that do not
                   match the automatically generated PROG_*_ID pattern.
+                  Note that the symbol specified here will be prefixed
+                  and suffixed by PROG_/_ID when used as it is used as
+                  argument to START_NEW_PROGRAM_ID().
    gc_trivial;    Only valid for EXIT functions. This instructs the gc that
                   the EXIT function is trivial and that it's ok to destruct
                   objects of this program in any order. In general, if there
@@ -1549,6 +1552,7 @@ constant valid_attributes = (<
   "c_name",		/* Override of generated C-symbol */
   "prototype",
   "program_flags",
+  "program_id",
 >);
 
 /*
