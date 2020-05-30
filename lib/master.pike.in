@@ -1241,6 +1241,11 @@ constant high_master_get_dir = predef::get_dir;
 
 string combine_path_with_cwd(string ... paths)
 {
+#ifdef PIKE_MODULE_RELOC
+  /* This is necessary to find compat modules... */
+  if (has_prefix(paths[0], "/${PIKE_MODULE_PATH}/"+UPDIR))
+    return "/${PIKE_MODULE_PATH}/"+combine_path(paths[0][21..],@paths[1..]-({""}));
+#endif
   return combine_path(IS_ABSOLUTE_PATH(paths[0])?"":getcwd(),@paths-({""}));
 }
 
@@ -2175,7 +2180,11 @@ program low_cast_to_program(string pname,
     {
       return prog;
     }
-    pname=combine_path("",pname);
+#ifdef PIKE_MODULE_RELOC
+    /* This is necessary to find compat modules... */
+    if (!has_prefix(pname, "/${PIKE_MODULE_PATH}/"+UPDIR))
+#endif
+      pname=combine_path("",pname);
     return findprog(pname,ext,handler,mkobj);
   }
   else {
