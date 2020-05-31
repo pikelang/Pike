@@ -1305,7 +1305,7 @@ class Runtime_timezone_compiler
 
    }
 
-   string base_path=combine_path(__FILE__,"../tzdata/");
+   string base_path=master()->combine_path_with_cwd(__FILE__,"../tzdata/");
    array files=
    ({
       "africa",

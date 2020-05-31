@@ -32,7 +32,7 @@ string _zone_tab()
 {
    return raw_zone_tab ||
       (raw_zone_tab = ( master()->master_read_file(
-         combine_path(__FILE__,"..","tzdata/zone.tab")) - "\r"));
+         master()->combine_path_with_cwd(__FILE__,"..","tzdata/zone.tab")) - "\r"));
 }
 
 protected array(array(string)) parsed_zone_tab=0;
