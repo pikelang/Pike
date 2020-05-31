@@ -4986,6 +4986,18 @@ string program_path_to_name ( string path,
   string prefix = "";
 
   array(Version) versions = reverse(sort(indices(compat_handler_cache)));
+#ifdef PIKE_MODULE_RELOC
+  if (path == "/${PIKE_MODULE_PATH}" || has_prefix (path, "/${PIKE_MODULE_PATH}/")) {
+    path = path[21..];
+    if (has_prefix(path, UPDIR)) {
+      int pos = search(path, "/", strlen(UPDIR));
+      if (pos > 0 && has_prefix(path[pos..], "/modules/")) {
+	prefix = path[strlen(UPDIR)..pos-1] + "::";
+	path = path[pos+9..];
+      }
+    }
+  } else
+#endif
  find_prefix:
   foreach(versions, Version version) {
     CompatResolver r = compat_handler_cache[version];
