@@ -1032,7 +1032,7 @@ static void low_pike_sprintf(struct format_stack *fs,
   char buffer[140];
   ptrdiff_t start;
   struct format_info *f, *fsp;
-  double tf;
+  FLOAT_TYPE tf;
   struct svalue *arg=0;	/* pushback argument */
   struct svalue *lastarg=0;
 
@@ -1666,13 +1666,22 @@ cont_2:
 	x=(char *)xalloc(320+MAXIMUM(fsp->precision,3));
 	fsp->fi_free_string=x;
 	fsp->b=MKPCHARP(x,0);
-	sprintf(buffer,"%%*.*%c", mode);
+	sprintf(buffer,"%%*.*"PRINTPIKEFLOAT"%c", mode);
 
 	if(fsp->precision<0) {
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+	  FLOAT_TYPE m=powl(10.0, (double)fsp->precision);
+	  tf = rintl(tf*m)/m;
+#else
 	  double m=pow(10.0, (double)fsp->precision);
 	  tf = rint(tf*m)/m;
+#endif
 	} else if (fsp->precision==0) {
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+	  tf = rintl(tf);
+#else
 	  tf = rint(tf);
+#endif
         }
 
 	debug_malloc_touch(x);
@@ -1738,20 +1747,24 @@ cont_2:
 	  }
 	  break;
 	case 8:
+	  {
 #ifdef DOUBLE_IS_IEEE_BIG
-	  memcpy(x, &tf, 8);
+	    double d = (double)tf;
+	    memcpy(x, &d, 8);
 #elif defined(DOUBLE_IS_IEEE_LITTLE)
-	  x[0] = ((char *)&tf)[7];
-	  x[1] = ((char *)&tf)[6];
-	  x[2] = ((char *)&tf)[5];
-	  x[3] = ((char *)&tf)[4];
-	  x[4] = ((char *)&tf)[3];
-	  x[5] = ((char *)&tf)[2];
-	  x[6] = ((char *)&tf)[1];
-	  x[7] = ((char *)&tf)[0];
+	    double d = (double)tf;
+	    x[0] = ((char *)&d)[7];
+	    x[1] = ((char *)&d)[6];
+	    x[2] = ((char *)&d)[5];
+	    x[3] = ((char *)&d)[4];
+	    x[4] = ((char *)&d)[3];
+	    x[5] = ((char *)&d)[2];
+	    x[6] = ((char *)&d)[1];
+	    x[7] = ((char *)&d)[0];
 #else
-	  low_write_IEEE_float(x, tf, 8);
+	    low_write_IEEE_float(x, tf, 8);
 #endif
+	  }
 	}
 	if (fsp->flags & FIELD_LEFT) {
 	  /* Reverse the byte order. */
