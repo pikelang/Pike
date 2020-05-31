@@ -13,6 +13,21 @@
 
 #include <ctype.h>
 
+static FLOAT_TYPE mymy_strtod(const char *nptr, char **endptr)
+{
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+  FLOAT_TYPE tmp=strtold(nptr,endptr);
+#else
+  double tmp=strtod(nptr,endptr);
+#endif
+  if(*endptr>nptr)
+  {
+    if(endptr[0][-1]=='.')
+      endptr[0]--;
+  }
+  return tmp;
+}
+
 #define LEXDEBUG 0
 
 /* Make lexers for shifts 0, 1 and 2. */
