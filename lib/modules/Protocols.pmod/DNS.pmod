@@ -431,9 +431,9 @@ class protocol
 		      encode_T_LOC_tinyfloat(entry->size? entry->size:100.0), //Default is 1M
 		      encode_T_LOC_tinyfloat(entry->h_prec? entry->h_prec:1000*100.0), // Default is 10KM
 		      encode_T_LOC_tinyfloat(entry->v_prec? entry->v_prec:10*100.0), // Default is 10M
-		      entry->lat?(int)(entry->lat*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
-		      entry->long?(int)(entry->long*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
-		      entry->alt?(int)((entry->alt+100000)*100):100000, // Default to 0 WGS84 (which is 100000)
+		      entry->lat?(int)round(entry->lat*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
+		      entry->long?(int)round(entry->long*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
+		      entry->alt?(int)round((entry->alt+100000)*100):100000, // Default to 0 WGS84 (which is 100000)
 		      );
      case T_CAA:
        if (entry->tag == "" || !entry->tag)
