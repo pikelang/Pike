@@ -248,8 +248,8 @@ define(test_md_eq, [[
   test_eq(Tools.Markdown.parse($1, ([ "newline" : false ])), $2)
   ]])
 
-test_md_eq( [[ "# Header 1" ]],   [[ "<h1 id='header-1'>Header 1</h1>" ]] )
-test_md_eq( [[ "## Header 2" ]],  [[ "<h2 id='header-2'>Header 2</h2>" ]] )
+test_md_eq( [[ "# Header 1" ]],   [[ "<h1 id=\"header-1\">Header 1</h1>" ]] )
+test_md_eq( [[ "## Header 2" ]],  [[ "<h2 id=\"header-2\">Header 2</h2>" ]] )
 test_md_eq( [[ "\\# Header 1" ]], [[ "<p># Header 1</p>" ]] )
 
 ]])
