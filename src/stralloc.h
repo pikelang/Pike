@@ -395,6 +395,9 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 ptrdiff_t maxlength);
 PMOD_EXPORT int convert_stack_top_string_to_inumber(int base);
 PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr);
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr);
+#endif
 PMOD_EXPORT p_wchar0 *require_wstring0(const struct pike_string *s,
                                        char **to_free);
 PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,

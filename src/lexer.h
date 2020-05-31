@@ -141,11 +141,16 @@ static long lex_strtol(char *buf, char **end, int base)
   return ret;
 }
 
-static double lex_strtod(char *buf, char **end)
+static FLOAT_TYPE lex_strtod(char *buf, char **end)
 {
   PCHARP foo;
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+  FLOAT_TYPE ret;
+  ret=STRTOLD_PCHARP(MKPCHARP(buf,SHIFT),&foo);
+#else
   double ret;
   ret=STRTOD_PCHARP(MKPCHARP(buf,SHIFT),&foo);
+#endif
   if(end) end[0]=(char *)foo.ptr;
   return ret;
 }
@@ -1008,7 +1013,7 @@ unknown_directive:
     case '5': case '6': case '7': case '8': case '9':
     {
       char *p1, *p2;
-      double f;
+      FLOAT_TYPE f;
       long l;
       struct svalue sval;
 
@@ -1062,10 +1067,10 @@ unknown_directive:
 	  }
 	}
 	free_svalue(&sval);
-	yylval->fnum=(FLOAT_TYPE)f;
+	yylval->fnum=f;
 #if 0
-	fprintf(stderr, "LEX: \"%.8s\" => %f, %f\n",
-		(char *)lex->pos, f, yylval->fnum);
+	fprintf(stderr, "LEX: \"%.8s\" => %"PRINTPIKEFLOAT"f\n",
+		(char *)lex->pos, f);
 #endif /* 0 */
 	lex->pos=p1;
 	if (lex_isidchar (LOOK())) {

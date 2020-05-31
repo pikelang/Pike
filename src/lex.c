@@ -14,9 +14,13 @@
 #include <ctype.h>
 
 
-static double my_strtod(const char *nptr, char **endptr)
+static FLOAT_TYPE my_strtod(const char *nptr, char **endptr)
 {
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+  FLOAT_TYPE tmp=strtold(nptr,endptr);
+#else
   double tmp=strtod(nptr,endptr);
+#endif
   if(*endptr>nptr)
   {
     if(endptr[0][-1]=='.')
