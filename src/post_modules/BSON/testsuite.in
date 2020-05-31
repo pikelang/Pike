@@ -18,12 +18,12 @@ test_dec("\5\0\0\0\0", ([]))
 test_dec("\21\0\0\0\2foo\0\4\0\0\0bar\0\0", (["foo": "bar"]))
 
 test_dec("1\0\0\0\4BSON\0&\0\0\0\1""1\0"+ "333333\24@\2"+ "0\0\b\0\0\0awesome\0\20" +"2\0\302\a\0\0\0\0",
-  (["BSON": ({"awesome", 5.05, 1986})]))
+  (["BSON": ({"awesome", 5.04999999999999982236431605997495353221893310546875, 1986})]))
 
 test_enc_dec(Val.null)
 test_enc_dec(Val.false)
 test_enc_dec(Val.true)
-test_enc_dec(({ 2.15392757010452e+18, Math.e, Math.pi, Math.inf }));
+test_enc_dec(({ 2.153927570104519936e+18, Math.e, Math.pi, Math.inf }));
 test_enc_dec(({ -0xdeadbeefbadf00d, 0xbadf00ddeadbeef }))
 test_enc_dec(Calendar.ISO.Second("unix", 1426759260))
 test_enc_dec(Standards.BSON.Timestamp(0xdeadbeeff00dbad))
