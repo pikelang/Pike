@@ -43,7 +43,7 @@
 #undef CS6
 #endif
 
-/*! @module Stdio
+/*! @module _Stdio
  */
 
 /*! @class Fd
