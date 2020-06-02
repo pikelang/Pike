@@ -3426,7 +3426,17 @@ PIKEFUN string autoconvert(string s)
     }
   }
   IF_XMLDEBUG(fprintf(stderr,"No encoding detected.\n"));
-  f_utf8_to_string(1);
+
+  /* Check if utf-8. */
+  stack_dup();
+  f_validate_utf8(1);
+  if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
+    pop_stack();
+    f_utf8_to_string(1);
+  } else {
+    /* Use as-is. */
+    pop_stack();
+  }
 }
 
 /*! @endmodule
