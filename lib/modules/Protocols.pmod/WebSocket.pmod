@@ -166,13 +166,8 @@ string encode_websocket_extensions(mapping(string:mapping) ext) {
   string name, sep = "";
   foreach (ext; name; mapping args) {
     res->add(sep, name);
-    if (sizeof(args)) {
-      args += ([]);
-      foreach (args; name; mixed value)
-        if (!stringp(value))
-          args[name] = (string)value;	// Convert numerics to strings first
+    if (sizeof(args))
       res->add(";", MIME.encode_headerfield_params(({ args })));
-    }
     sep = ",";
   }
   return res->get();

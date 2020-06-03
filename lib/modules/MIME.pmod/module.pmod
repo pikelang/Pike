@@ -795,18 +795,17 @@ string encode_words_quoted_labled_remapped(array(array(string|int)) phrase,
 //!
 //! @seealso
 //! @[decode_headerfield_params]
-string encode_headerfield_params
-               (array(mapping(string:string)|ADT.OrderedMapping) params)
+string encode_headerfield_params(array(mapping|ADT.OrderedMapping) params)
 {
   array res = ({});
   int sep;
   foreach (params; ; mapping(string:string)|ADT.OrderedMapping m) {
-    foreach (m; string key; string value) {
+    foreach (m; mixed key; mixed value) {
       if (sep)
         res += ({ sep });
-      res += ({ key });
+      res += ({ (string)key });
       if (value)
-        res += ({ '=', value });
+        res += ({ '=', (string)value });
       sep = ';';
     }
     sep = ',';
