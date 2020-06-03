@@ -130,11 +130,6 @@
 #endif
 
 
-#undef THIS
-#define THIS ((struct my_file *)(Pike_fp->current_storage))
-#define FD (THIS->box.fd)
-#define ERRNO (THIS->my_errno)
-
 #define READ_BUFFER		8192
 #define DIRECT_BUFSIZE		(64*1024)
 #define SMALL_NETBUF		2048
@@ -269,6 +264,9 @@ struct program *file_ref_program;
 /*! @endclass
  */
 
+/* Use the traditional name at the C-level for now. */
+#define Fd_program file_program
+
 /*! @class Fd
  *!
  *! Low level I/O operations.
@@ -279,6 +277,107 @@ struct program *file_ref_program;
  *! @seealso
  *!   @[Stdio.File], @[Stdio.FILE], @[_Stdio.Fd_ref]
  */
+PIKECLASS Fd
+  program_id STDIO_FD;
+{
+
+  CVAR struct my_file my_file;
+
+  static int fd_receive_fd_fun_num = -1;
+  static void init_fd(int fd, int open_mode, int flags);
+  static int got_fd_event (struct fd_callback_box *box, int event);
+  static void close_fd(int quiet);
+  static void free_fd_stuff(void);
+
+#define ADD_FD_EVENTS(F, EVENTS) do {					\
+    struct my_file *f_ = (F);						\
+    if (!f_->box.backend)						\
+      INIT_FD_CALLBACK_BOX (&f_->box, default_backend, f_->box.ref_obj,	\
+			    f_->box.fd, (EVENTS), got_fd_event, 0);	\
+    else								\
+      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS), 0);	\
+  } while (0)
+
+#define ADD_FD_EVENTS2(F, EVENTS, FFLAGS) do {					\
+    struct my_file *f_ = (F);						\
+    if (!f_->box.backend)						\
+      INIT_FD_CALLBACK_BOX (&f_->box, default_backend, f_->box.ref_obj,	\
+			    f_->box.fd, (EVENTS), got_fd_event, FFLAGS);	\
+    else								\
+      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS), FFLAGS);	\
+  } while (0)
+
+/* Note: The file object might be freed after this. */
+#define SUB_FD_EVENTS(F, EVENTS) do {					\
+    struct my_file *f_ = (F);						\
+    if (f_->box.backend)						\
+      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS), 0);	\
+  } while (0)
+
+#define SUB_FD_EVENTS2(F, EVENTS, FLAGS) do {					\
+    struct my_file *f_ = (F);						\
+    if (f_->box.backend)						\
+      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS), FLAGS);	\
+  } while (0)
+
+  INIT
+  {
+    struct my_file *f = &THIS->my_file;
+    struct object *o = Pike_fp->current_object;
+    struct identifier *i;
+
+    f->box.backend = NULL;
+    init_fd (-1, 0, 0);
+    INIT_FD_CALLBACK_BOX(&f->box, NULL, o, f->box.fd, 0, got_fd_event, f->box.flags);
+
+    i = ID_FROM_INT(o->prog, fd_receive_fd_fun_num +
+		    Pike_fp->context->identifier_level);
+    if (((i->identifier_flags & IDENTIFIER_TYPE_MASK) ==
+	 IDENTIFIER_PIKE_FUNCTION) && (i->func.offset != -1)) {
+      /* receive_fd() is not a prototype. */
+      f->flags |= FILE_HAVE_RECV_FD;
+    }
+  }
+
+  EXIT
+  {
+    struct my_file *f = &THIS->my_file;
+
+    if(!(f->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
+		     FILE_LOCK_FD |
+		     FILE_NOT_OPENED)))
+      close_fd(1);
+    else
+      free_fd_stuff();
+#ifdef HAVE_PIKE_SEND_FD
+    if (f->fd_info) {
+      free(f->fd_info);
+      f->fd_info = NULL;
+    }
+#endif
+    unhook_fd_callback_box (&f->box);
+  }
+
+  GC_RECURSE
+  {
+    struct my_file *f = &THIS->my_file;
+
+    if (f->box.backend) {
+      /* Need to deregister events if the gc has freed callbacks.
+       * This might lead to the file object being freed altogether. */
+      int cb_events = 0;
+      size_t ev;
+      for (ev = 0; ev < NELEM (f->event_cbs); ev++)
+	if (TYPEOF(f->event_cbs[ev]) != PIKE_T_INT)
+	  cb_events |= 1 << ev;
+      SUB_FD_EVENTS (f, ~cb_events);
+    }
+  }
+
+#undef THIS
+#define THIS ((struct my_file *)(Pike_fp->current_storage))
+#define FD (THIS->box.fd)
+#define ERRNO (THIS->my_errno)
 
 /*! @decl Fd fd_factory()
  *!
@@ -375,36 +474,6 @@ static void debug_check_internals (struct my_file *f)
 #define debug_check_internals(f) do {} while (0)
 #endif
 
-#define ADD_FD_EVENTS(F, EVENTS) do {					\
-    struct my_file *f_ = (F);						\
-    if (!f_->box.backend)						\
-      INIT_FD_CALLBACK_BOX (&f_->box, default_backend, f_->box.ref_obj,	\
-			    f_->box.fd, (EVENTS), got_fd_event, 0);	\
-    else								\
-      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS), 0);	\
-  } while (0)
-
-#define ADD_FD_EVENTS2(F, EVENTS, FFLAGS) do {					\
-    struct my_file *f_ = (F);						\
-    if (!f_->box.backend)						\
-      INIT_FD_CALLBACK_BOX (&f_->box, default_backend, f_->box.ref_obj,	\
-			    f_->box.fd, (EVENTS), got_fd_event, FFLAGS);	\
-    else								\
-      set_fd_callback_events (&f_->box, f_->box.events | (EVENTS), FFLAGS);	\
-  } while (0)
-
-/* Note: The file object might be freed after this. */
-#define SUB_FD_EVENTS(F, EVENTS) do {					\
-    struct my_file *f_ = (F);						\
-    if (f_->box.backend)						\
-      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS), 0);	\
-  } while (0)
-
-#define SUB_FD_EVENTS2(F, EVENTS, FLAGS) do {					\
-    struct my_file *f_ = (F);						\
-    if (f_->box.backend)						\
-      set_fd_callback_events (&f_->box, f_->box.events & ~(EVENTS), FLAGS);	\
-  } while (0)
 
 static int got_fd_event (struct fd_callback_box *box, int event)
 {
@@ -429,8 +498,6 @@ static int got_fd_event (struct fd_callback_box *box, int event)
   }
   return 0;
 }
-
-static int fd_receive_fd_fun_num;
 
 static void init_fd(int fd, int open_mode, int flags)
 {
@@ -4688,59 +4755,6 @@ static void file_pipe(INT32 args)
   }
 }
 
-static void file_handle_events(int event)
-{
-  struct object *o=Pike_fp->current_object;
-  struct my_file *f = THIS;
-  struct identifier *i;
-
-  switch(event)
-  {
-    case PROG_EVENT_INIT:
-      f->box.backend = NULL;
-      init_fd (-1, 0, 0);
-      INIT_FD_CALLBACK_BOX(&f->box, NULL, o, f->box.fd, 0, got_fd_event, f->box.flags);
-
-      i = ID_FROM_INT(o->prog, fd_receive_fd_fun_num +
-		      Pike_fp->context->identifier_level);
-      if (((i->identifier_flags & IDENTIFIER_TYPE_MASK) ==
-	   IDENTIFIER_PIKE_FUNCTION) && (i->func.offset != -1)) {
-	/* receive_fd() is not a prototype. */
-	f->flags |= FILE_HAVE_RECV_FD;
-      }
-      break;
-
-    case PROG_EVENT_EXIT:
-      if(!(f->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
-		       FILE_LOCK_FD |
-		       FILE_NOT_OPENED)))
-	close_fd(1);
-      else
-	free_fd_stuff();
-#ifdef HAVE_PIKE_SEND_FD
-      if (f->fd_info) {
-	free(f->fd_info);
-	f->fd_info = NULL;
-      }
-#endif
-      unhook_fd_callback_box (&f->box);
-      break;
-
-    case PROG_EVENT_GC_RECURSE:
-      if (f->box.backend) {
-	/* Need to deregister events if the gc has freed callbacks.
-	 * This might lead to the file object being freed altogether. */
-	int cb_events = 0;
-	size_t ev;
-	for (ev = 0; ev < NELEM (f->event_cbs); ev++)
-	  if (TYPEOF(f->event_cbs[ev]) != PIKE_T_INT)
-	    cb_events |= 1 << ev;
-	SUB_FD_EVENTS (f, ~cb_events);
-      }
-      break;
-  }
-}
-
 
 static void low_dup(struct object *UNUSED(toob),
 		    struct my_file *to,
@@ -5897,7 +5911,48 @@ static void exit_file_locking(void)
 #define exit_file_locking()
 #endif /* HAVE_FD_FLOCK || HAVE_FD_LOCKF */
 
-/*! @endclass
+  EXTRA
+  {
+#define FILE_FUNC(X,Y,Z)	ADD_FUNCTION(X,Y,Z,0);
+#define FILE_OBJ tObjImpl_STDIO_FD
+#include "file_functions.h"
+
+    PIKE_MAP_VARIABLE("_errno", OFFSETOF(my_file, my_errno),
+		      tIntPos, PIKE_T_INT, ID_PROTECTED);
+    PIKE_MAP_VARIABLE("_read_callback",
+		      OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),
+		      tMix, PIKE_T_MIXED, 0);
+    PIKE_MAP_VARIABLE("_write_callback",
+		      OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE]),
+		      tMix, PIKE_T_MIXED, 0);
+    PIKE_MAP_VARIABLE("_read_oob_callback",
+		      OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),
+		      tMix, PIKE_T_MIXED, 0);
+    PIKE_MAP_VARIABLE("_write_oob_callback",
+		      OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),
+		      tMix, PIKE_T_MIXED, 0);
+    PIKE_MAP_VARIABLE("_fs_event_callback",
+		      OFFSETOF(my_file, event_cbs[PIKE_FD_FS_EVENT]),
+		      tMix, PIKE_T_MIXED, 0);
+
+    fd_fd_factory_fun_num =
+      ADD_FUNCTION("fd_factory", fd_fd_factory,
+		   tFunc(tNone, tObjIs_STDIO_FD), ID_PROTECTED);
+
+    fd_receive_fd_fun_num =
+      ADD_FUNCTION("receive_fd", NULL,
+		   tFunc(tObjIs_STDIO_FD, tVoid), ID_PROTECTED);
+
+    ADD_FUNCTION("`_fd", fd_backtick__fd, tFunc(tNone, tObjIs_STDIO_FD), 0);
+
+    /* function(int, void|mapping:string) */
+    ADD_FUNCTION("_sprintf",fd__sprintf,
+		 tFunc(tInt tOr(tVoid,tMapping),tString),ID_PROTECTED);
+
+    init_file_locking();
+  }
+}
+/*! @endclass Fd
  */
 
 /*! @decl array(int) get_all_active_fd()
@@ -6355,51 +6410,6 @@ PIKE_MODULE_INIT
   init_stdio_buffer();
 
   INIT;
-
-  START_NEW_PROGRAM_ID(STDIO_FD);
-  ADD_STORAGE(struct my_file);
-
-#define FILE_FUNC(X,Y,Z)	ADD_FUNCTION(X,Y,Z,0);
-#define FILE_OBJ tObjImpl_STDIO_FD
-#include "file_functions.h"
-
-  PIKE_MAP_VARIABLE("_errno", OFFSETOF(my_file, my_errno),
-                    tIntPos, PIKE_T_INT, ID_PROTECTED);
-  PIKE_MAP_VARIABLE("_read_callback",
-                    OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),
-                    tMix, PIKE_T_MIXED, 0);
-  PIKE_MAP_VARIABLE("_write_callback",
-                    OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE]),
-                    tMix, PIKE_T_MIXED, 0);
-  PIKE_MAP_VARIABLE("_read_oob_callback",
-                    OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),
-                    tMix, PIKE_T_MIXED, 0);
-  PIKE_MAP_VARIABLE("_write_oob_callback",
-                    OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),
-                    tMix, PIKE_T_MIXED, 0);
-  PIKE_MAP_VARIABLE("_fs_event_callback",
-                    OFFSETOF(my_file, event_cbs[PIKE_FD_FS_EVENT]),
-                    tMix, PIKE_T_MIXED, 0);
-
-  fd_fd_factory_fun_num =
-    ADD_FUNCTION("fd_factory", fd_fd_factory,
-		 tFunc(tNone, tObjIs_STDIO_FD), ID_PROTECTED);
-
-  fd_receive_fd_fun_num =
-    ADD_FUNCTION("receive_fd", NULL,
-		 tFunc(tObjIs_STDIO_FD, tVoid), ID_PROTECTED);
-
-  ADD_FUNCTION("`_fd", fd_backtick__fd, tFunc(tNone, tObjIs_STDIO_FD), 0);
-
-  /* function(int, void|mapping:string) */
-  ADD_FUNCTION("_sprintf",fd__sprintf,
-	       tFunc(tInt tOr(tVoid,tMapping),tString),ID_PROTECTED);
-
-  init_file_locking();
-  pike_set_prog_event_callback(file_handle_events);
-
-  file_program=end_program();
-  add_program_constant("Fd",file_program,0);
 
   write_fun_num = find_identifier("write", file_program);
   fd_write_identifier_offset =
