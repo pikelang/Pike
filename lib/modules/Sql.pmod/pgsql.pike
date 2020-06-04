@@ -571,12 +571,10 @@ private void resync_cb() {
           resynced = Thread.Condition();
           resyncmux = Thread.Mutex();
         }
+        Thread.MutexKey lock = resyncmux->lock();
         proxy.readyforquery_cb = resync_cb;
         proxy.sendsync();
-        if (proxy.readyforquery_cb) {
-          Thread.MutexKey lock = resyncmux->lock();
-          resynced.wait(lock);	      // Wait for the db to finish
-        }
+        resynced.wait(lock);	      // Wait for the db to finish
       }
       return;
     };
