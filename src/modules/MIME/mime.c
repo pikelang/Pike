@@ -521,17 +521,19 @@ static int do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
     INT32 d = *src++<<8;
     d = (*src++|d)<<8;
     d |= *src++;
-    /* Output in encoded from to dest */
-    *dest++ = tab[d>>18];
-    *dest++ = tab[(d>>12)&63];
-    *dest++ = tab[(d>>6)&63];
-    *dest++ = tab[d&63];
+
     /* Insert a linebreak once in a while... */
     if(insert_crlf && ++g == 19) {
       *dest++ = 13;
       *dest++ = 10;
       g=0;
     }
+
+    /* Output in encoded from to dest */
+    *dest++ = tab[d>>18];
+    *dest++ = tab[(d>>12)&63];
+    *dest++ = tab[(d>>6)&63];
+    *dest++ = tab[d&63];
   }
 
   /* Update pointers */
@@ -569,7 +571,7 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
      actually present in the last group. */
 
   groups = (sp[-args].u.string->len+2)/3;
-  last = (sp[-args].u.string->len-1)%3+1;
+  last = (sp[-args].u.string->len+2)%3+1;
 
   insert_crlf = !(args >= 2 && TYPEOF(sp[1-args]) == T_INT &&
 		  sp[1-args].u.integer != 0);
@@ -579,8 +581,9 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
     pad = !sp[2-args].u.integer;
   }
 
-  /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak */
-  length = groups*4+(insert_crlf? (groups/19)*2 : 0);
+  /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak.
+   * Note that we do not add any linebreak for the last group.  */
+  length = groups*4+(insert_crlf? ((groups - 1)/19)*2 : 0);
   str = begin_shared_string( length );
 
   src = (unsigned char *)sp[-args].u.string->str;
@@ -592,9 +595,7 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
     unsigned char tmp[3], *tmpp = tmp;
     int i;
 
-    if (do_b64_encode( groups-1, &src, &dest, insert_crlf, tab ) == 18)
-      /* Skip the final linebreak if it's not to be followed by anything */
-      str->len -= 2;
+    do_b64_encode( groups-1, &src, &dest, insert_crlf, tab );
 
     /* Copy the last group to temporary storage */
     tmp[1] = tmp[2] = 0;
@@ -637,6 +638,14 @@ static int do_b32_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
     d = (*src++|d)<<8;
     d = (*src++|d)<<8;
     d |= *src++;
+
+    /* Insert a linebreak once in a while... */
+    if(insert_crlf && ++g == 8) {
+      *dest++ = 13;
+      *dest++ = 10;
+      g=0;
+    }
+
     /* Output in encoded from to dest */
     *dest++ = tab[d>>35];
     *dest++ = tab[(d>>30)&31];
@@ -646,12 +655,6 @@ static int do_b32_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
     *dest++ = tab[(d>>10)&31];
     *dest++ = tab[(d>>5)&31];
     *dest++ = tab[d&31];
-    /* Insert a linebreak once in a while... */
-    if(insert_crlf && ++g == 8) {
-      *dest++ = 13;
-      *dest++ = 10;
-      g=0;
-    }
   }
 
   /* Update pointers */
@@ -700,7 +703,7 @@ static void encode_base32( INT32 args, const char *name, const char *tab,
   }
 
   /* We need 8 bytes for each 40 bit group, and 2 bytes for each linebreak */
-  length = groups*8+(insert_crlf? (groups/8)*2 : 0);
+  length = groups*8+(insert_crlf? ((groups - 1)/8)*2 : 0);
   str = begin_shared_string( length );
 
   src = (unsigned char *)sp[-args].u.string->str;
@@ -712,9 +715,7 @@ static void encode_base32( INT32 args, const char *name, const char *tab,
     unsigned char tmp[5], *tmpp = tmp;
     int i;
 
-    if (do_b32_encode( groups-1, &src, &dest, insert_crlf, tab ) == 7)
-      /* Skip the final linebreak if it's not to be followed by anything */
-      str->len -= 2;
+    do_b32_encode( groups-1, &src, &dest, insert_crlf, tab );
 
     /* Copy the last group to temporary storage */
     tmp[1] = tmp[2] = tmp[3] = tmp[4] = 0;
