@@ -523,10 +523,10 @@ static int do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
     d |= *src++;
 
     /* Insert a linebreak once in a while... */
-    if(insert_crlf && ++g == 19) {
+    if(insert_crlf && g++ == 19) {
       *dest++ = 13;
       *dest++ = 10;
-      g=0;
+      g -= 19;
     }
 
     /* Output in encoded from to dest */
@@ -640,10 +640,10 @@ static int do_b32_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
     d |= *src++;
 
     /* Insert a linebreak once in a while... */
-    if(insert_crlf && ++g == 8) {
+    if(insert_crlf && g++ == 8) {
       *dest++ = 13;
       *dest++ = 10;
-      g=0;
+      g -= 8;
     }
 
     /* Output in encoded from to dest */
