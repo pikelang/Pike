@@ -2618,6 +2618,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 
   int got_dot;      /* Found a decimal point.  */
   int got_digit;    /* Seen any digits.  */
+  int precision_loss;/* No more digits fit in mantissa */
 
   /* The exponent of the number.  */
   long int exponent;
@@ -2642,6 +2643,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   got_dot = 0;
   got_digit = 0;
   exponent = 0;
+  precision_loss = 0;
   for (;; INC_PCHARP(s,1))
   {
     if (WIDE_ISDIGIT (EXTRACT_PCHARP(s)))
@@ -2649,7 +2651,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
       got_digit = 1;
 
       /* Make sure that multiplication by 10 will not overflow.  */
-      if (num > DBL_MAX * 0.1)
+      if (precision_loss || num > DBL_MAX * 0.1)
 	/* The value of the digit doesn't matter, since we have already
 	   gotten as many digits as can be represented in a `double'.
 	   This doesn't necessarily mean the result will overflow.
@@ -2658,8 +2660,16 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 	   We just need to record that there was another
 	   digit so that we can multiply by 10 later.  */
 	++exponent;
-      else
-	num = (num * 10.0) + (EXTRACT_PCHARP(s) - '0');
+      else {
+	int v = EXTRACT_PCHARP(s) - '0';
+	num *= 10.0;
+	if (v != 0) {
+	  double check = num;
+	  num += v;
+	  if (num == check)
+	    precision_loss = 1;
+	}
+      }
 
       /* Keep track of the number of digits after the decimal point.
 	 If we just divided by 10 here, we would lose precision.  */
@@ -2775,6 +2785,7 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 
   int got_dot;      /* Found a decimal point.  */
   int got_digit;    /* Seen any digits.  */
+  int precision_loss;/* No more digits fit in mantissa */
 
   /* The exponent of the number.  */
   long int exponent;
@@ -2799,6 +2810,7 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   got_dot = 0;
   got_digit = 0;
   exponent = 0;
+  precision_loss = 0;
   for (;; INC_PCHARP(s,1))
   {
     if (WIDE_ISDIGIT (EXTRACT_PCHARP(s)))
@@ -2806,7 +2818,7 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
       got_digit = 1;
 
       /* Make sure that multiplication by 10 will not overflow.  */
-      if (num > LDBL_MAX * 0.1)
+      if (precision_loss || num > LDBL_MAX * 0.1)
 	/* The value of the digit doesn't matter, since we have already
 	   gotten as many digits as can be represented in a `long double'.
 	   This doesn't necessarily mean the result will overflow.
@@ -2815,8 +2827,16 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 	   We just need to record that there was another
 	   digit so that we can multiply by 10 later.  */
 	++exponent;
-      else
-	num = (num * 10.0) + (EXTRACT_PCHARP(s) - '0');
+      else {
+	int v = EXTRACT_PCHARP(s) - '0';
+	num *= 10.0;
+	if (v != 0) {
+	  long double check = num;
+	  num += v;
+	  if (num == check)
+	    precision_loss = 1;
+	}
+      }
 
       /* Keep track of the number of digits after the decimal point.
 	 If we just divided by 10 here, we would lose precision.  */
