@@ -2897,6 +2897,54 @@ static struct %s *%s_gdb_dummy_ptr;
 
 	      switch(arg->realtype())
 	      {
+	      case "int":
+		{
+		  // Clamp the integer range to 32 bit signed.
+		  [int low, int high] = clamp_int_range(arg->type(), "int");
+
+		  ret += ({
+		    PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s)",
+				     argnum,check_argbase,
+				     upper_case(arg->basetype())),
+			     arg->line()),
+		  });
+		  do {
+		    if (low == high) {
+		      ret += ({
+			PC.Token(sprintf(" || (Pike_sp[%d%s].u.integer != %d)",
+					 argnum, check_argbase, high),
+				 arg->line()),
+			});
+		      continue;
+		    }
+		    if (!low && !(high & (high + 1)) && (high < 0x7fffffff)) {
+		      ret += ({
+			PC.Token(sprintf(" || (Pike_sp[%d%s].u.integer & ~0x%x) ",
+					 argnum, check_argbase, high),
+				 arg->line()),
+		      });
+		      continue;
+		    }
+		    if (low > -0x80000000) {
+		      ret += ({
+			PC.Token(sprintf(" || (Pike_sp[%d%s].u.integer < %d)",
+					 argnum, check_argbase, low),
+				 arg->line()),
+		      });
+		    }
+		    if (high < -0x7fffffff) {
+		      ret += ({
+			PC.Token(sprintf(" || (Pike_sp[%d%s].u.integer > %d)",
+					 argnum, check_argbase, high),
+				 arg->line()),
+		      });
+		    }
+		  } while(0);
+		  ret += ({
+		    PC.Token(")", arg->line()),
+		  });
+		}
+		break;
 	      case "string":
 		// Clamp the integer range to 32 bit signed.
 		[int low, int high] = clamp_int_range(arg->type(), "string");
