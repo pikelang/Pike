@@ -21,6 +21,12 @@
 
 #define sp Pike_sp
 
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+#define STRTOFLOAT_PCHARP STRTOLD_PCHARP
+#else
+#define STRTOFLOAT_PCHARP STRTOD_PCHARP
+#endif
+
 /*
  * helper functions for sscanf %O
  */
@@ -975,8 +981,8 @@ INPUT_IS_WIDE(								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
 	  }								 \
-	  f = (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(input+eye,		 \
-						 INPUT_SHIFT),&t2);	 \
+	  f = (FLOAT_TYPE)STRTOFLOAT_PCHARP(MKPCHARP(input+eye,		 \
+						     INPUT_SHIFT),&t2);	 \
 	  t = (PIKE_CONCAT(p_wchar, INPUT_SHIFT) *)(t2.ptr);		 \
 	  if(input + eye == t)						 \
 	  {								 \

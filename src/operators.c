@@ -622,10 +622,17 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	    break;
 	    
 	  case T_STRING:
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+	    f =
+	      (FLOAT_TYPE)STRTOLD_PCHARP(MKPCHARP(Pike_sp[-1].u.string->str,
+						  Pike_sp[-1].u.string->size_shift),
+					0);
+#else
 	    f =
 	      (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(sp[-1].u.string->str,
 						 sp[-1].u.string->size_shift),
 					0);
+#endif
 	    free_string(sp[-1].u.string);
 	    break;
 	    
