@@ -602,6 +602,12 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
     for (i = 0; i < last; i++)
       tmp[i] = *src++;
 
+    /* Insert a linebreak before the last group if applicable */
+    if (insert_crlf && groups > 1 && !((groups - 1) % 19)) {
+      *dest++ = 13;
+      *dest++ = 10;
+    }
+
     /* Encode the last group, and replace output codes with pads as needed */
     do_b64_encode( 1, &tmpp, &dest, 0, tab );
     switch (last) {
@@ -721,6 +727,12 @@ static void encode_base32( INT32 args, const char *name, const char *tab,
     tmp[1] = tmp[2] = tmp[3] = tmp[4] = 0;
     for (i = 0; i < last; i++)
       tmp[i] = *src++;
+
+    /* Insert a linebreak before the last group if applicable */
+    if (insert_crlf && groups > 1 && !((groups - 1) % 8)) {
+      *dest++ = 13;
+      *dest++ = 10;
+    }
 
     /* Encode the last group, and replace output codes with pads as needed */
     do_b32_encode( 1, &tmpp, &dest, 0, tab );
