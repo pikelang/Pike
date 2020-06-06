@@ -590,10 +590,17 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	    break;
 
 	  case T_STRING:
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+	    f =
+	      (FLOAT_TYPE)STRTOLD_PCHARP(MKPCHARP(Pike_sp[-1].u.string->str,
+						  Pike_sp[-1].u.string->size_shift),
+					0);
+#else
 	    f =
 	      (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(Pike_sp[-1].u.string->str,
 						 Pike_sp[-1].u.string->size_shift),
 					0);
+#endif
 	    free_string(Pike_sp[-1].u.string);
 	    break;
 
@@ -1672,7 +1679,7 @@ PMOD_EXPORT void f_add(INT32 args)
 
   case BIT_FLOAT:
     {
-      double res = Pike_sp[-args].u.float_number;
+      FLOAT_ARG_TYPE res = Pike_sp[-args].u.float_number;
       for(e=args-1; e>0; e-- )
         res += Pike_sp[-e].u.float_number;
       Pike_sp -= args-1;
@@ -1682,13 +1689,13 @@ PMOD_EXPORT void f_add(INT32 args)
 
   case BIT_FLOAT|BIT_INT:
   {
-    double res = 0.0;
+    FLOAT_ARG_TYPE res = 0.0;
     int i;
     for(i=0; i<args; i++)
       if (TYPEOF(Pike_sp[i-args]) == T_FLOAT)
         res += Pike_sp[i-args].u.float_number;
       else
-        res += (double)Pike_sp[i-args].u.integer;
+        res += (FLOAT_ARG_TYPE)Pike_sp[i-args].u.integer;
     Pike_sp-=args;
     push_float(res);
     return;
@@ -3687,7 +3694,7 @@ PMOD_EXPORT void o_multiply(void)
  */
 PMOD_EXPORT void f_exponent(INT32 args)
 {
-  double a, b;
+  FLOAT_ARG_TYPE a, b;
 
   if(args != 2 )
     SIMPLE_WRONG_NUM_ARGS_ERROR("`**",2);
@@ -3701,17 +3708,21 @@ PMOD_EXPORT void f_exponent(INT32 args)
 
     case TWO_TYPES(T_FLOAT,T_INT):
       a = Pike_sp[-2].u.float_number;
-      b = (double)Pike_sp[-1].u.integer;
+      b = (FLOAT_ARG_TYPE)Pike_sp[-1].u.integer;
       goto res_is_powf;
 
     case TWO_TYPES(T_INT,T_FLOAT):
-      a = (double)Pike_sp[-2].u.integer;
-      b = (double)Pike_sp[-1].u.float_number;
+      a = (FLOAT_ARG_TYPE)Pike_sp[-2].u.integer;
+      b = (FLOAT_ARG_TYPE)Pike_sp[-1].u.float_number;
 
     res_is_powf:
       {
         Pike_sp-=2;
-        push_float( pow( a, b ) );
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+	push_float( powl( a, b ) );
+#else
+	push_float( pow( a, b ) );
+#endif
         return;
       }
     default:

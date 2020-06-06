@@ -2813,18 +2813,22 @@ static ptrdiff_t calcC(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   {
     PCHARP p1,p2;
     PCHARP p;
-    double f;
+    FLOAT_TYPE f;
     long l;
 
     /* FIXME: Support bignums. */
 
     p = ADD_PCHARP(data,pos);
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+    f = STRTOLD_PCHARP(p, &p1);
+#else
     f = STRTOD_PCHARP(p, &p1);
+#endif
     l = STRTOL_PCHARP(p, &p2, 0);
     if(COMPARE_PCHARP(p1,>,p2))
     {
       if(OUTP())
-        push_float((FLOAT_TYPE)f);
+        push_float(f);
       pos = SUBTRACT_PCHARP(p1,data);
     }else{
       if(OUTP())

@@ -58,6 +58,12 @@ static p_wchar2 next_char( PCHARP *str, ptrdiff_t *len )
 #define NOINLINE_UNALIGNED	ATTRIBUTE((noinline)) DECLSPEC((noinline))
 #endif
 
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+#define STRTOFLOAT_PCHARP STRTOLD_PCHARP
+#else
+#define STRTOFLOAT_PCHARP STRTOD_PCHARP
+#endif
+
 static void skip_comment( PCHARP *str, ptrdiff_t *len )
 {
   CONSUME(1); // Start '/' 
@@ -151,8 +157,8 @@ static int pcharp_to_svalue_rec(PCHARP *str,
 	  read_float:
 	    {
 	      void *integer_parse = str->ptr;
-	      double res;
-	      res = STRTOD_PCHARP(start,str);
+	      FLOAT_TYPE res;
+	      res = STRTOFLOAT_PCHARP(start,str);
 	      if( integer_parse < str->ptr )
 	      {
 		pop_stack();
@@ -1130,8 +1136,8 @@ INPUT_IS_WIDE(								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
 	  }								 \
-	  f = (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(input+eye,		 \
-						 INPUT_SHIFT),&t2);	 \
+	  f = (FLOAT_TYPE)STRTOFLOAT_PCHARP(MKPCHARP(input+eye,		 \
+						     INPUT_SHIFT),&t2);	 \
 	  t = (PIKE_CONCAT(p_wchar, INPUT_SHIFT) *)(t2.ptr);		 \
 	  if(input + eye == t)						 \
 	  {								 \
