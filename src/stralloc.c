@@ -2608,20 +2608,24 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
    character after the last one used in the number is put in *ENDPTR.  */
 PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 {
-  /* Note: Code duplication in strtod. */
+  /* Note: Code duplication in STRTOLD_PCHARP. */
 
-  PCHARP s;
+  PCHARP s, sdigits, sdigitsend;
   short int sign;
 
-  /* The number so far.  */
+  /* The number.  */
   double num;
 
-  int got_dot;      /* Found a decimal point.  */
-  int got_digit;    /* Seen any digits.  */
-  int precision_loss;/* No more digits fit in mantissa */
+  int got_dot;       /* Found a decimal point.  */
+  size_t got_digits; /* Number of digits seen.  */
 
   /* The exponent of the number.  */
   long int exponent;
+
+  /* Narrow string buffer */
+  char *buf, *p;
+  size_t buf_len;
+  int free_buf;
 
   if (nptr.ptr == NULL)
   {
@@ -2639,37 +2643,15 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   if (EXTRACT_PCHARP(s) == '-' || EXTRACT_PCHARP(s) == '+')
     INC_PCHARP(s,1);
 
-  num = 0.0;
   got_dot = 0;
-  got_digit = 0;
+  got_digits = 0;
   exponent = 0;
-  precision_loss = 0;
+  sdigits = s;
   for (;; INC_PCHARP(s,1))
   {
     if (WIDE_ISDIGIT (EXTRACT_PCHARP(s)))
     {
-      got_digit = 1;
-
-      /* Make sure that multiplication by 10 will not overflow.  */
-      if (precision_loss || num > DBL_MAX * 0.1)
-	/* The value of the digit doesn't matter, since we have already
-	   gotten as many digits as can be represented in a `double'.
-	   This doesn't necessarily mean the result will overflow.
-	   The exponent may reduce it to within range.
-
-	   We just need to record that there was another
-	   digit so that we can multiply by 10 later.  */
-	++exponent;
-      else {
-	int v = EXTRACT_PCHARP(s) - '0';
-	num *= 10.0;
-	if (v != 0) {
-	  double check = num;
-	  num += v;
-	  if (num == check)
-	    precision_loss = 1;
-	}
-      }
+      got_digits ++;
 
       /* Keep track of the number of digits after the decimal point.
 	 If we just divided by 10 here, we would lose precision.  */
@@ -2684,8 +2666,10 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
       break;
   }
 
-  if (!got_digit)
+  if (!got_digits)
     goto noconv;
+
+  sdigitsend = s;
 
   if (EXTRACT_PCHARP(s) == 'E' || EXTRACT_PCHARP(s) == 'e')
     {
@@ -2729,27 +2713,30 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   if (endptr != NULL)
     *endptr = s;
 
-  if (num == 0.0)
-    return 0.0;
+  /* Allocate enough for all digits, the exponent, the exponent sign,
+     the letter 'E' and the trailing NUL */
+  buf_len = got_digits + (3 + (sizeof(exponent) * CHAR_BIT + 2) / 3);
 
-  /* Multiply NUM by 10 to the EXPONENT power,
-     checking for overflow and underflow.  */
-
-  if (exponent < 0)
-  {
-    if (num < DBL_MIN * pow(10.0, (double) -exponent))
-      goto underflow;
-  }
-  else if (exponent > 0)
-  {
-    if (num > DBL_MAX * pow(10.0, (double) -exponent))
-      goto overflow;
+  if (buf_len > 100) {
+    buf = xalloc(buf_len);
+    free_buf = 1;
+  } else {
+    buf = alloca(buf_len);
+    free_buf = 0;
   }
 
-  if(exponent < 0 && exponent >-100) /* make sure we don't underflow */
-    num /= pow(10.0, (double) -exponent);
-  else
-    num *= pow(10.0, (double) exponent);
+  p = buf;
+  for (; COMPARE_PCHARP(sdigits,<,sdigitsend); INC_PCHARP(sdigits,1))
+  {
+    char ch = EXTRACT_PCHARP(sdigits);
+    if (ch != '.')
+      *p++ = ch;
+  }  
+  sprintf(p, "E%ld", exponent);
+
+  num = strtod(buf, NULL);
+  if (free_buf)
+    free (buf);
 
   return num * sign;
 
@@ -2775,20 +2762,24 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
    character after the last one used in the number is put in *ENDPTR.  */
 PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 {
-  /* Note: Code duplication in strtod. */
+  /* Note: Code duplication in STRTOD_PCHARP. */
 
-  PCHARP s;
+  PCHARP s, sdigits, sdigitsend;
   short int sign;
 
-  /* The number so far.  */
+  /* The number.  */
   long double num;
 
-  int got_dot;      /* Found a decimal point.  */
-  int got_digit;    /* Seen any digits.  */
-  int precision_loss;/* No more digits fit in mantissa */
+  int got_dot;       /* Found a decimal point.  */
+  size_t got_digits; /* Number of digits seen.  */
 
   /* The exponent of the number.  */
   long int exponent;
+
+  /* Narrow string buffer */
+  char *buf, *p;
+  size_t buf_len;
+  int free_buf;
 
   if (nptr.ptr == NULL)
   {
@@ -2806,37 +2797,15 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   if (EXTRACT_PCHARP(s) == '-' || EXTRACT_PCHARP(s) == '+')
     INC_PCHARP(s,1);
 
-  num = 0.0;
   got_dot = 0;
-  got_digit = 0;
+  got_digits = 0;
   exponent = 0;
-  precision_loss = 0;
+  sdigits = s;
   for (;; INC_PCHARP(s,1))
   {
     if (WIDE_ISDIGIT (EXTRACT_PCHARP(s)))
     {
-      got_digit = 1;
-
-      /* Make sure that multiplication by 10 will not overflow.  */
-      if (precision_loss || num > LDBL_MAX * 0.1)
-	/* The value of the digit doesn't matter, since we have already
-	   gotten as many digits as can be represented in a `long double'.
-	   This doesn't necessarily mean the result will overflow.
-	   The exponent may reduce it to within range.
-
-	   We just need to record that there was another
-	   digit so that we can multiply by 10 later.  */
-	++exponent;
-      else {
-	int v = EXTRACT_PCHARP(s) - '0';
-	num *= 10.0;
-	if (v != 0) {
-	  long double check = num;
-	  num += v;
-	  if (num == check)
-	    precision_loss = 1;
-	}
-      }
+      got_digits ++;
 
       /* Keep track of the number of digits after the decimal point.
 	 If we just divided by 10 here, we would lose precision.  */
@@ -2851,8 +2820,10 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
       break;
   }
 
-  if (!got_digit)
+  if (!got_digits)
     goto noconv;
+
+  sdigitsend = s;
 
   if (EXTRACT_PCHARP(s) == 'E' || EXTRACT_PCHARP(s) == 'e')
     {
@@ -2896,27 +2867,30 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   if (endptr != NULL)
     *endptr = s;
 
-  if (num == 0.0)
-    return 0.0;
+  /* Allocate enough for all digits, the exponent, the exponent sign,
+     the letter 'E' and the trailing NUL */
+  buf_len = got_digits + (3 + (sizeof(exponent) * CHAR_BIT + 2) / 3);
 
-  /* Multiply NUM by 10 to the EXPONENT power,
-     checking for overflow and underflow.  */
-
-  if (exponent < 0)
-  {
-    if (num < LDBL_MIN * pow(10.0, (double) -exponent))
-      goto underflow;
-  }
-  else if (exponent > 0)
-  {
-    if (num > LDBL_MAX * pow(10.0, (double) -exponent))
-      goto overflow;
+  if (buf_len > 100) {
+    buf = xalloc(buf_len);
+    free_buf = 1;
+  } else {
+    buf = alloca(buf_len);
+    free_buf = 0;
   }
 
-  if(exponent < 0 && exponent >-100) /* make sure we don't underflow */
-    num /= powl(10.0, (long double) -exponent);
-  else
-    num *= powl(10.0, (long double) exponent);
+  p = buf;
+  for (; COMPARE_PCHARP(sdigits,<,sdigitsend); INC_PCHARP(sdigits,1))
+  {
+    char ch = EXTRACT_PCHARP(sdigits);
+    if (ch != '.')
+      *p++ = ch;
+  }  
+  sprintf(p, "E%ld", exponent);
+
+  num = strtold(buf, NULL);
+  if (free_buf)
+    free (buf);
 
   return num * sign;
 
