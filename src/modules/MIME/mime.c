@@ -509,8 +509,8 @@ static void f_decode_base32hex( INT32 args )
 /*  Convenience function for encode_base64();  Encode groups*3 bytes from
  *  *srcp into groups*4 bytes at *destp.
  */
-static int do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
-                          int insert_crlf, const char *tab )
+static void do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
+			   int insert_crlf, const char *tab )
 {
   unsigned char *src = *srcp;
   char *dest = *destp;
@@ -522,24 +522,23 @@ static int do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
     d = (*src++|d)<<8;
     d |= *src++;
 
-    /* Insert a linebreak once in a while... */
-    if(insert_crlf && g++ == 19) {
-      *dest++ = 13;
-      *dest++ = 10;
-      g -= 19;
-    }
-
     /* Output in encoded from to dest */
     *dest++ = tab[d>>18];
     *dest++ = tab[(d>>12)&63];
     *dest++ = tab[(d>>6)&63];
     *dest++ = tab[d&63];
+
+    /* Insert a linebreak once in a while... */
+    if(insert_crlf && ++g == 19) {
+      *dest++ = 13;
+      *dest++ = 10;
+      g = 0;
+    }
   }
 
   /* Update pointers */
   *srcp = src;
   *destp = dest;
-  return g;
 }
 
 static void encode_base64( INT32 args, const char *name, const char *tab,
@@ -602,12 +601,6 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
     for (i = 0; i < last; i++)
       tmp[i] = *src++;
 
-    /* Insert a linebreak before the last group if applicable */
-    if (insert_crlf && groups > 1 && !((groups - 1) % 19)) {
-      *dest++ = 13;
-      *dest++ = 10;
-    }
-
     /* Encode the last group, and replace output codes with pads as needed */
     do_b64_encode( 1, &tmpp, &dest, 0, tab );
     switch (last) {
@@ -627,11 +620,11 @@ static void encode_base64( INT32 args, const char *name, const char *tab,
     push_string( end_and_resize_shared_string( str, length-(3-last) ) );
 }
 
-/*  Convenience function for encode_base64();  Encode groups*5 bytes from
+/*  Convenience function for encode_base32();  Encode groups*5 bytes from
  *  *srcp into groups*8 bytes at *destp.
  */
-static int do_b32_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
-                          int insert_crlf, const char *tab )
+static void do_b32_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
+			   int insert_crlf, const char *tab )
 {
   unsigned char *src = *srcp;
   char *dest = *destp;
@@ -645,13 +638,6 @@ static int do_b32_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
     d = (*src++|d)<<8;
     d |= *src++;
 
-    /* Insert a linebreak once in a while... */
-    if(insert_crlf && g++ == 8) {
-      *dest++ = 13;
-      *dest++ = 10;
-      g -= 8;
-    }
-
     /* Output in encoded from to dest */
     *dest++ = tab[d>>35];
     *dest++ = tab[(d>>30)&31];
@@ -661,12 +647,18 @@ static int do_b32_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
     *dest++ = tab[(d>>10)&31];
     *dest++ = tab[(d>>5)&31];
     *dest++ = tab[d&31];
+
+    /* Insert a linebreak once in a while... */
+    if(insert_crlf && ++g == 8) {
+      *dest++ = 13;
+      *dest++ = 10;
+      g = 0;
+    }
   }
 
   /* Update pointers */
   *srcp = src;
   *destp = dest;
-  return g;
 }
 
 static void encode_base32( INT32 args, const char *name, const char *tab,
@@ -727,12 +719,6 @@ static void encode_base32( INT32 args, const char *name, const char *tab,
     tmp[1] = tmp[2] = tmp[3] = tmp[4] = 0;
     for (i = 0; i < last; i++)
       tmp[i] = *src++;
-
-    /* Insert a linebreak before the last group if applicable */
-    if (insert_crlf && groups > 1 && !((groups - 1) % 8)) {
-      *dest++ = 13;
-      *dest++ = 10;
-    }
 
     /* Encode the last group, and replace output codes with pads as needed */
     do_b32_encode( 1, &tmpp, &dest, 0, tab );
