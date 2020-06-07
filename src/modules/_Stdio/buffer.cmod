@@ -1808,7 +1808,7 @@ PIKECLASS Buffer
   }
 
   /*! @decl protected int(-1..) _search(int(8bit) character, int|void start, @
-   *!                                   int|void end)
+   *!                                   int(0..)|void end)
    *!
    *! Search forward from the indicated @[start] position for the specified
    *! @[character].
@@ -1833,8 +1833,10 @@ PIKECLASS Buffer
    *! @seealso
    *!   @[read_cstring()], @[search()], @[lfun::_search()]
    */
-  PIKEFUN int _search(int(8bit) character, int|void start, int|void end)
+  PIKEFUN int(-1..) _search(int character, int|void start, int|void end)
     flags ID_PROTECTED;
+    rawtype tFunc(tInt8bit tOr(tInt, tVoid) tOr(tIntPos, tVoid),
+		  tOr(tInt_10, tIntPos));
   {
     Buffer *io = THIS;
     unsigned char *buf = io_read_pointer(io);
