@@ -28,6 +28,15 @@ mapping(string:string|array(string))
     return dest;
 }
 
+protected Regexp getextension = Regexp("\\.([^.~#]+)[~#]*$");
+
+//! Determine the extension for a given filename.
+string filename_to_extension(string filename)
+{
+   array(string) ext = getextension->split(filename);
+   return ext && ext[0] || "";
+}
+
 //! Looks up the file extension in a table to return a suitable MIME
 //! type.
 string extension_to_type(string extension)
@@ -39,14 +48,10 @@ string extension_to_type(string extension)
 //! type.
 string filename_to_type(string filename)
 {
-  array v=lower_case(filename)/".";
-  if (sizeof(v)<2) return extension_to_type("default");
-  string ext = v[-1];
-  sscanf(ext, "%s~", ext);
-  sscanf(ext, "%s#", ext);
-  return extension_to_type(ext);
+   filename = filename_to_extension(filename);
+   return extension_to_type(sizeof(filename)
+                            ? lower_case(filename) : "default");
 }
-
 
 private int lt=-1;
 private string lres;
