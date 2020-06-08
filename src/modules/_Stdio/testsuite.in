@@ -950,9 +950,9 @@ dnl search
 test_any_equal([[
   Stdio.Buffer b = Stdio.Buffer("foobar");
   return ({ search(b, 'f'), search(b, 'o'), search(b, 'x'), search(b, 0),
-	    _typeof(catch(search(b, -1))), search(b, 'o', 1), search(b, 'o', 2),
+	    search(b, -1), search(b, 'o', 1), search(b, 'o', 2),
 	    search(b, 'o', 0, 0), search(b, 'o', 0, 3) });
-]], ({ 0, 1, -1, -1, typeof(Builtin.BadArgumentError("")), 1, 2, -1, 1 }))
+]], ({ 0, 1, -1, -1, -1, 1, 2, -1, 1 }))
 
 test_any([[
   Stdio.Buffer b = Stdio.Buffer("hejhopp");
