@@ -2152,6 +2152,26 @@ class proxy {
     procmessage();
   }
 
+  private void stasherror(int|object portal, mixed err) {
+    if (stringp(err)) {
+      if (!objectp(portal))
+        portal = this;
+      if (!portal->delayederror)
+        portal->delayederror = err;
+    }
+    if (objectp(portal) && c)
+      portal->_purgeportal();
+  }
+
+  private void tryprepbind(Result portal, array dtoid) {
+    mixed err = catch(portal->_preparebind(dtoid));
+    if (err) {
+      stasherror(portal, err);
+      if (!stringp(err))
+        throw(err);
+    }
+  }
+
   private void procmessage() {
     mixed err;
     int terminating = 0;
@@ -2481,7 +2501,7 @@ class proxy {
 #endif
             if (portal._tprepared)
               portal._tprepared.datatypeoid = a;
-            Thread.Thread(portal->_preparebind, a);
+            Thread.Thread(tryprepbind, portal, a);
             break;
           }
           case 'T': {
@@ -2811,16 +2831,10 @@ class proxy {
         terminating = 1;
         err = 0;
       } else if (stringp(err)) {
-        Result or;
-        if (!objectp(or = portal))
-          or = this;
-        if (!or.delayederror)
-          or.delayederror = err;
 #ifdef PG_DEBUGMORE
         showportalstack("THROWN");
 #endif
-        if (objectp(portal))
-          portal->_releasesession("ERROR");
+        stasherror(portal, err);
         portal = 0;
         if (!waitforauthready)
           continue;		// Only continue if authentication did not fail
