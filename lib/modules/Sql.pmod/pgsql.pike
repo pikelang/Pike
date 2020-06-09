@@ -997,9 +997,10 @@ private void startquery(int forcetext, .pgsql_util.sql_result portal, string q,
       mixed e = catch(portal->_preparebind(tp.datatypeoid));
       if (!this)				// Already destructed?
         throw(e);
-      if (e && !portal.delayederror) {
-        portal._unnamedstatementkey = 0;	// Release early, release often
-        throw(e);
+      if (e) {
+        portal->_purgeportal();
+        if (!portal.delayederror)
+          throw(e);
       }
     }
     if (!proxy.unnamedstatement)
