@@ -3317,7 +3317,6 @@ joinnode handle_import(string path, string|void current_file,
     if (!path_stat && tmp)
       continue;
 #else
-  {
     auto path_stat = file_stat(path);
 #endif /* PIKE_MODULE_RELOC */
     if (!path_stat)
@@ -3328,7 +3327,9 @@ joinnode handle_import(string path, string|void current_file,
     else if (path_stat->isdir) {
       node->add_path(path);
     }
+#ifdef PIKE_MODULE_RELOC
   }
+#endif /* PIKE_MODULE_RELOC */
   return node;
 }
 
