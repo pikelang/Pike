@@ -577,7 +577,7 @@ private void resync_cb() {
     };
     PD("%O\n", err);
   }
-  if (sizeof(proxy.lastmessage))
+  if (proxy && proxy.lastmessage && sizeof(proxy.lastmessage))
     ERROR(proxy.a2nls(proxy.lastmessage));
 }
 
