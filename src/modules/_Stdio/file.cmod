@@ -267,6 +267,8 @@ struct program *file_ref_program;
 /* Use the traditional name at the C-level for now. */
 #define Fd_program file_program
 
+#define DEFAULT_CMOD_STORAGE static
+
 /*! @class Fd
  *!
  *! Low level I/O operations.
@@ -1332,9 +1334,9 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
     }
 }
 
-/*! @decl string read()
- *! @decl string read(int len)
- *! @decl string read(int len, int(0..1) not_all)
+/*! @decl string(8bit) read()
+ *! @decl string(8bit) read(int len)
+ *! @decl string(8bit) read(int len, int(0..1) not_all)
  *!
  *! Read data from a file or a stream.
  *!
@@ -1391,29 +1393,7 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
  *! @seealso
  *!   @[read_oob()], @[write()], @[receive_fd()], @[send_fd()]
  */
-
-/*! @decl int read(Stdio.Buffer|String.Buffer dst)
- *! 
- *! Reads data from a file or stream into the buffer @[dst]. Tries to
- *! read as many bytes as buffer space available.
- *! Will advance the write position in @[dst] by the number of bytes
- *! read.
- *!
- *! @returns
- *!     The number of bytes read. Returns @expr{-1@} on error and
- *!     @[errno()] will return the corresponding error code.
- */
-
-/*! @decl int read(System.Memory dst, void|int(0..) offset)
- *! 
- *! Reads data from a file or stream into the buffer @[dst] at offset
- *! @[offset]. Tries to read as many bytes as buffer space available.
- *!
- *! @returns
- *!     The number of bytes read. Returns @expr{-1@} on error and
- *!     @[errno()] will return the corresponding error code.
- */
-static void file_read(INT32 args)
+PIKEFUN string(8bit) read(int(0..)|void len, int(0..1)|void not_all)
 {
   struct my_file *file = THIS;
 
@@ -1422,73 +1402,18 @@ static void file_read(INT32 args)
   if(fd < 0)
     Pike_error("File not open.\n");
 
-  if (args && TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
-    struct pike_memory_object m;
-    struct object *o = Pike_sp[-args].u.object;
-    enum memobj_type type = pike_get_memory_object(o, &m, 1);
-    ptrdiff_t bytes_read;
-
-    if (type == MEMOBJ_NONE)
-      SIMPLE_BAD_ARG_ERROR("read()", 1, "int(0..)|Stdio.Buffer|String.Buffer|System.Memory");
-
-    if (m.shift)
-      Pike_error("Cannot read into wide-string buffer.\n");
-
-    if (args > 1)
-    {
-      INT_TYPE offset;
-
-      if (TYPEOF(Pike_sp[-args+1]) != PIKE_T_INT || Pike_sp[-args+1].u.integer < 0)
-        SIMPLE_BAD_ARG_ERROR("read()", 2, "int(0..)");
-
-      if (type != MEMOBJ_SYSTEM_MEMORY)
-        SIMPLE_BAD_ARG_ERROR("read()", 1, "System.Memory");
-
-      offset = Pike_sp[-args+1].u.integer;
-
-      if ((size_t)offset > m.len)
-        Pike_error("Offset out of bounds.\n");
-
-      m.len -= offset;
-      m.ptr = (char*)m.ptr + offset;
-    }
-
-    if (!m.len)
-      Pike_error("No buffer space.\n");
-
-    bytes_read = do_read_into_buffer(fd, m.ptr, (size_t)m.len, &file->my_errno);
-
-    if (bytes_read > 0)
-      pike_advance_memory_object(o, type, bytes_read);
-    
-    pop_n_elems(args);
-    push_int(bytes_read);
-  } else {
+  {
     struct pike_string *tmp;
     unsigned INT32 mode = 0;
     size_t count = DIRECT_BUFSIZE;
 
-    if(!args)
-    {
+    if (!len) {
       mode |= PIKE_READ_NO_LENGTH;
-    }
-    else
-    {
-      INT_TYPE len;
-      if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-        SIMPLE_ARG_TYPE_ERROR("read", 1, "int");
-      len=Pike_sp[-args].u.integer;
-      if(len<0)
-        Pike_error("Cannot read negative number of characters.\n");
-      if (!len && SUBTYPEOF(Pike_sp[-args])) {
-        mode |= PIKE_READ_NO_LENGTH;
-      } else {
-        count = len;
-      }
+    } else {
+      count = len->u.integer;
     }
 
-    if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp+1-args))
-    {
+    if(not_all && !UNSAFE_IS_ZERO(not_all)) {
       mode |= PIKE_READ_ONCE;
     }
 
@@ -1514,6 +1439,79 @@ static void file_read(INT32 args)
         push_int(0);
       }
     }
+  }
+
+  if (!(file->open_mode & FILE_NONBLOCKING))
+    INVALIDATE_CURRENT_TIME();
+
+  /* Race: A backend in another thread might have managed to set these
+   * again for something that arrived after the read above. Not that
+   * bad - it will get through in a later backend round. */
+  file->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
+}
+
+/*! @decl int read(Stdio.Buffer|String.Buffer dst)
+ *! 
+ *! Reads data from a file or stream into the buffer @[dst]. Tries to
+ *! read as many bytes as buffer space available.
+ *! Will advance the write position in @[dst] by the number of bytes
+ *! read.
+ *!
+ *! @returns
+ *!     The number of bytes read. Returns @expr{-1@} on error and
+ *!     @[errno()] will return the corresponding error code.
+ */
+/*! @decl int read(System.Memory dst, void|int(0..) offset)
+ *! 
+ *! Reads data from a file or stream into the buffer @[dst] at offset
+ *! @[offset]. Tries to read as many bytes as buffer space available.
+ *!
+ *! @returns
+ *!     The number of bytes read. Returns @expr{-1@} on error and
+ *!     @[errno()] will return the corresponding error code.
+ */
+PIKEFUN int(0..) read(object o, int(0..)|void offset)
+{
+  struct my_file *file = THIS;
+
+  int fd = file->box.fd;
+
+  if(fd < 0)
+    Pike_error("File not open.\n");
+
+  {
+    struct pike_memory_object m;
+    enum memobj_type type = pike_get_memory_object(o, &m, 1);
+    ptrdiff_t bytes_read;
+
+    if (type == MEMOBJ_NONE)
+      SIMPLE_BAD_ARG_ERROR("read()", 1, "int(0..)|Stdio.Buffer|String.Buffer|System.Memory");
+
+    if (m.shift)
+      Pike_error("Cannot read into wide-string buffer.\n");
+
+    if (offset)
+    {
+      if (type != MEMOBJ_SYSTEM_MEMORY)
+        SIMPLE_BAD_ARG_ERROR("read()", 1, "System.Memory");
+
+      if ((size_t)offset->u.integer > m.len)
+        Pike_error("Offset out of bounds.\n");
+
+      m.len -= offset->u.integer;
+      m.ptr = (char*)m.ptr + offset->u.integer;
+    }
+
+    if (!m.len)
+      Pike_error("No buffer space.\n");
+
+    bytes_read = do_read_into_buffer(fd, m.ptr, (size_t)m.len, &file->my_errno);
+
+    if (bytes_read > 0)
+      pike_advance_memory_object(o, type, bytes_read);
+    
+    pop_n_elems(args);
+    push_int(bytes_read);
   }
 
   if (!(file->open_mode & FILE_NONBLOCKING))

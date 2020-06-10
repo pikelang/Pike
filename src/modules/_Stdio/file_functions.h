@@ -14,8 +14,6 @@ FILE_FUNC("openat",file_openat, tFunc(tStr tStr tOr(tVoid,tInt),tObjImpl_STDIO_F
 #endif
 /* function(string|void:int) */
 FILE_FUNC("close",file_close, tFunc(tOr(tStr,tVoid),tInt))
-/* function(int|void,int|void:string) */
-FILE_FUNC("read",file_read, tOr(tFunc(tObj,tInt),tFunc(tOr(tInt,tVoid) tOr(tInt01,tVoid),tStr8)))
 /* function(float|int|void:int) */
 FILE_FUNC("peek",file_peek, tFunc(tOr3(tFlt,tInt,tVoid) tOr(tInt,tVoid), tInt))
 /* function(string|array(string),mixed...:int) */
