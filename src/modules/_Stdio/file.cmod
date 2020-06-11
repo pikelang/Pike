@@ -1590,21 +1590,29 @@ PIKEFUN int(0..) read(object o, int(0..)|void offset)
  *!    of the timeout (due to signals);
  *!    check the timing manually if this is imporant.
  */
-static void file_peek(INT32 args)
+PIKEFUN int(-1..1) peek(int|float|void timeout_sval, int|void not_eof_sval)
 {
   int ret;
-  int not_eof = 0;
-  FLOAT_TYPE tf = 0.0;
-
-  get_all_args(NULL, args, ".%F%d", &tf, &not_eof);
 
   {
 #ifdef HAVE_AND_USE_POLL
     struct pollfd fds;
     int timeout = 0;
-    if (args && !IS_UNDEFINED(Pike_sp - args)) {
-      timeout = (int)(tf*1000); /* ignore overflow for now */
+    int not_eof = 0;
+
+    if (timeout_sval) {
+      /* ignore overflow for now */
+      if (TYPEOF(*timeout_sval) == T_FLOAT) {
+	timeout = (int)(timeout_sval->u.float_number * 1000);
+      } else {
+	timeout = timeout_sval->u.integer * 1000;
+      }
     }
+
+    if (not_eof_sval) {
+      not_eof = not_eof_sval->u.integer;
+    }
+
     fds.fd=FD;
     fds.events=POLLIN;
     fds.revents=0;
@@ -1646,9 +1654,14 @@ static void file_peek(INT32 args)
     fd_FD_SET(FD, &tmp);
     ret = FD;
 
-    if (args && !IS_UNDEFINED(Pike_sp - args)) {
-      tv.tv_sec=(int)tf;
-      tv.tv_usec=(int)(1000000*(tf-tv.tv_sec));
+    if (timeout_sval) {
+      /* ignore overflow for now */
+      if (TYPEOF(*timeout_sval) == T_FLOAT) {
+	tv.tv_sec = (int)timeout_sval->u.float_number;
+	tv.tv_usec = (int)(1000000*(timeout_sval->u.float_number - tv.tv_sec));
+      } else {
+	tv.tv_sec = timeout_sval->u.integer;
+      }
     }
 
     /* FIXME: Handling of EOF and not_eof */
