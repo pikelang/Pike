@@ -109,8 +109,8 @@ PIKEFUN string(7bit) bcrypt_hash(string(8bit) password, string(7bit) scheme,
   if (salt)
     NO_WIDE_STRING(salt);
   init_string_builder_alloc(&ret, BLOWFISH_BCRYPT_HASH_SIZE, 0);
-  retval = nettle_blowfish_bcrypt_hash(BLOWFISH_BCRYPT_HASH_SIZE, STR0(ret.s),
-   STR0(password), STR0(scheme),
+  retval = nettle_blowfish_bcrypt_hash(STR0(ret.s),
+   password->len, STR0(password), scheme->len, STR0(scheme),
    log2rounds ? log2rounds->u.integer : -1,
    salt && salt->len >= BLOWFISH_BCRYPT_BINSALT_SIZE ? STR0(salt) : NULL);
   if (!retval) {
@@ -144,7 +144,8 @@ PIKEFUN string(7bit) bcrypt_hash(string(8bit) password, string(7bit) scheme,
 PIKEFUN int bcrypt_verify(string(8bit) password, string(7bit) hashedpassword)
 {
   password->flags |= STRING_CLEAR_ON_EXIT;
-  RETURN nettle_blowfish_bcrypt_verify(STR0(password), STR0(hashedpassword));
+  RETURN nettle_blowfish_bcrypt_verify(password->len, STR0(password),
+                                 hashedpassword->len, STR0(hashedpassword));
 }
 #endif
 

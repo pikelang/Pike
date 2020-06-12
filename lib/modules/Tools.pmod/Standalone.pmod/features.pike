@@ -276,6 +276,7 @@ int main(int num, array(string) args) {
 
   write("\nNettle\n");
   M(Nettle.Yarrow);
+  F(Nettle.bcrypt_hash);
   // F(Nettle.IDEA_Info); // Expose as Crypto.IDEA
 
   write("\nOdbc\n");
