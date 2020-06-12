@@ -2652,17 +2652,13 @@ static void exit_rwmutex_obj(struct object *o)
   co_destroy(&THIS_RWMUTEX->condition);
 }
 
-/*! @decl ReadKey read_lock(int(0..1)|void recursive)
+/*! @decl ReadKey read_lock()
  *!
  *!   Obtain a lock for reading (shared lock).
  *!
- *! @param recursive
- *!   Support the same thread obtaining several locks
- *!   (both read and write).
- *!
  *! @throws
  *!   Throws an error if the current thread already has
- *!   a lock (read or write) unless @[recursive] is @expr{1@}.
+ *!   a lock (read or write).
  *!
  *! @seealso
  *!   @[write_lock()]
@@ -2675,21 +2671,13 @@ static void f_rwmutex_read_lock(INT32 args)
   push_object(clone_object(rwmutex_rkey_program, 1));
 }
 
-/*! @decl WriteKey write_lock(int(0..1)|void recursive)
+/*! @decl WriteKey write_lock()
  *!
  *!   Obtain a lock for writing (exclusive lock).
  *!
- *! @param recursive
- *!   Support the same thread obtaining several locks
- *!   (both read and write).
- *!
  *! @throws
  *!   Throws an error if the current thread already has
- *!   a lock (read or write) unless @[recursive] is @expr{1@}.
- *!
- *!   If @[recursive] is @expr{1@} it will still throw an error
- *!   if we have a read lock and another thread has started
- *!   taking a write lock.
+ *!   a lock (read or write).
  *!
  *! @seealso
  *!   @[read_lock()]
@@ -2826,10 +2814,9 @@ static void f_rwmutex_rkey_create(INT32 args)
   struct object *rwmutex_obj = NULL;
   struct rwmutex_storage *rwmutex = NULL;
   struct rwmutex_key_storage *m;
-  int recursive = 0;
   int self_count = 0;
 
-  get_all_args("create", args, "%o.%d", &rwmutex_obj, &recursive);
+  get_all_args("create", args, "%o", &rwmutex_obj);
   if (!(rwmutex = get_storage(rwmutex_obj, rwmutex_program))) {
     SIMPLE_ARG_TYPE_ERROR("create", 1, "RWMutex");
   }
@@ -2845,7 +2832,7 @@ static void f_rwmutex_rkey_create(INT32 args)
     }
   }
 
-  if (self_count && recursive) {
+  if (self_count) {
     /* NB: We have a lock already.
      *
      *     This is a bad idea, as it may lead to dead-locks
@@ -2976,10 +2963,9 @@ static void f_rwmutex_wkey_create(INT32 args)
   struct object *rwmutex_obj = NULL;
   struct rwmutex_storage *rwmutex = NULL;
   struct rwmutex_key_storage *m;
-  int recursive = 0;
   int self_count = 0;
 
-  get_all_args("create", args, "%o.%d", &rwmutex_obj, &recursive);
+  get_all_args("create", args, "%o", &rwmutex_obj);
   if (!(rwmutex = get_storage(rwmutex_obj, rwmutex_program))) {
     SIMPLE_ARG_TYPE_ERROR("create", 1, "RWMutex");
   }
@@ -2995,14 +2981,9 @@ static void f_rwmutex_wkey_create(INT32 args)
     }
   }
 
-  if (self_count && (!recursive || (rwmutex->writers < 0))) {
+  if (self_count) {
     /* Either: We already have a lock (read or write), and
      *         would hang waiting on ourselves.
-     *
-     * Or: We already have a lock and some other thread is
-     *     already attempting to get a write lock. This
-     *     would end up in a hang waiting on the other
-     *     thread while it is waiting on us.
      */
     Pike_error("Recursive mutex locks!\n");
   }
