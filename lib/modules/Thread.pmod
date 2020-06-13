@@ -923,8 +923,7 @@ class Farm
 
 #if constant(__builtin.RWMutex)
 constant RWMutex = __builtin.RWMutex;
-constant ReadKey = __builtin.ReadKey;
-constant WriteKey = __builtin.WriteKey;
+constant RWKey = __builtin.RWKey;
 #else
 class RWMutex
 {
@@ -934,71 +933,74 @@ class RWMutex
   protected Mutex mux = Mutex();
   protected Condition cond = Condition();
 
-  protected class ReadKey
+  private enum RWMutexKind
+  {
+    RWMUX_NONE = 0,
+    RWMUX_READ,
+    RWMUX_WRITE,
+  };
+
+  protected class RWKey
   {
     inherit __builtin.DestructImmediate;
 
-    protected void create()
+    RWMutexKind kind = RWMUX_NONE;
+
+    protected void create(RWMutexKind kind)
     {
       MutexKey key = mux->lock();
+      if (!kind){
+	if (writers) {
+	  destruct();
+	  return;
+	}
+	kind = RWMUX_READ;
+      }
       while (writers) {
 	cond->wait(key);
       }
-      readers++;
+
+      if (kind == RWMUX_WRITE) {
+	// Take the write lock tentatively.
+	// This both causes any others attempting to take the write lock
+	// to halt in the loop above, and any upcoming readers to wait
+	// on us before taking the read lock.
+	writers = -1;
+
+	// Wait for any active readers to complete.
+	while (readers) {
+	  cond->wait(key);
+	}
+
+	// Take the write lock.
+	writers = 1;
+      } else {
+	readers++;
+      }
+
+      this::kind = kind;
     }
 
     protected void _destruct()
     {
       MutexKey key = mux->lock();
-      readers--;
+      if (kind == RWMUX_READ) {
+	readers--;
+      } else if (kind == RWMUX_WRITE) {
+	writers = 0;
+      }
       cond->broadcast();
     }
   }
 
-  protected class WriteKey
+  RWKey read_lock()
   {
-    inherit __builtin.DestructImmediate;
-
-    protected void create()
-    {
-      MutexKey key = mux->lock();
-
-      // Wait for any writer to complete.
-      while (writers) {
-	cond->wait(key);
-      }
-
-      // Take the write lock tentatively.
-      // This both causes any others attempting to take the write lock
-      // to halt in the loop above, and any upcoming readers to wait
-      // on us before taking the read lock.
-      writers = -1;
-
-      // Wait for any active readers to complete.
-      while (readers) {
-	cond->wait(key);
-      }
-
-      // Take the write lock.
-      writers = 1;
-    }
-
-    protected void _destruct()
-    {
-      MutexKey key = mux->lock();
-      writers = 0;
-      cond->broadcast();
-    }
+    return RWKey(RWMUX_READ);
   }
 
-  ReadKey read_lock()
+  RWKey write_lock()
   {
-    return ReadKey();
-  }
-
-  WriteKey write_lock()
-  {
-    return WriteKey();
+    return RWKey(RWMUX_WRITE);
   }
 }
 #endif /* !__builtin.RWMutex */

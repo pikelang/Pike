@@ -399,8 +399,7 @@ static PIKE_MUTEX_T interleave_lock;
 static struct program *mutex_program = NULL;
 static struct program *mutex_key = 0;
 static struct program *rwmutex_program = NULL;
-static struct program *rwmutex_rkey_program = NULL;
-static struct program *rwmutex_wkey_program = NULL;
+static struct program *rwmutex_key_program = NULL;
 static struct program *condition_program = NULL;
 PMOD_EXPORT struct program *thread_id_prog = 0;
 static struct program *thread_local_prog = 0;
@@ -2611,6 +2610,13 @@ static void f_mutex_key__sprintf(INT32 args)
 /*! @endclass
  */
 
+enum rwmux_kind
+  {
+    RWMUX_NONE = 0,
+    RWMUX_READ,
+    RWMUX_WRITE,
+  };
+
 struct rwmutex_key_storage
 {
   struct rwmutex_storage *rwmutex;
@@ -2619,6 +2625,7 @@ struct rwmutex_key_storage
   struct object *owner_obj;
   struct rwmutex_key_storage *prev;
   struct rwmutex_key_storage *next;
+  enum rwmux_kind kind;
 };
 
 /*! @class RWMutex
@@ -2652,7 +2659,7 @@ static void exit_rwmutex_obj(struct object *o)
   co_destroy(&THIS_RWMUTEX->condition);
 }
 
-/*! @decl ReadKey read_lock()
+/*! @decl RWKey read_lock()
  *!
  *!   Obtain a lock for reading (shared lock).
  *!
@@ -2668,10 +2675,11 @@ static void f_rwmutex_read_lock(INT32 args)
   ref_push_object_inherit(Pike_fp->current_object,
 			  Pike_fp->context -
 			  Pike_fp->current_object->prog->inherits);
-  push_object(clone_object(rwmutex_rkey_program, 1));
+  push_int(RWMUX_READ);
+  push_object(clone_object(rwmutex_key_program, 2));
 }
 
-/*! @decl WriteKey write_lock()
+/*! @decl RWKey write_lock()
  *!
  *!   Obtain a lock for writing (exclusive lock).
  *!
@@ -2680,14 +2688,15 @@ static void f_rwmutex_read_lock(INT32 args)
  *!   a lock (read or write).
  *!
  *! @seealso
- *!   @[read_lock()]
+ *!   @[read_lock()], @[try_read_lock()]
  */
 static void f_rwmutex_write_lock(INT32 args)
 {
   ref_push_object_inherit(Pike_fp->current_object,
 			  Pike_fp->context -
 			  Pike_fp->current_object->prog->inherits);
-  push_object(clone_object(rwmutex_wkey_program, 1));
+  push_int(RWMUX_WRITE);
+  push_object(clone_object(rwmutex_key_program, 2));
 }
 
 /*! @decl string _sprintf(int c)
@@ -2740,8 +2749,6 @@ static void f_rwmutex__sprintf(INT32 args)
 /*! @endclass
 */
 
-/* Stuff common for both ReadKey and WriteKey. */
-
 #define THIS_RWKEY ((struct rwmutex_key_storage *)(CURRENT_STORAGE))
 static void init_rwmutex_key_obj(struct object *UNUSED(o))
 {
@@ -2752,12 +2759,13 @@ static void init_rwmutex_key_obj(struct object *UNUSED(o))
   THIS_RWKEY->owner_obj = Pike_interpreter.thread_state->thread_obj;
   if (THIS_RWKEY->owner_obj)
     add_ref(THIS_RWKEY->owner_obj);
+  THIS_RWKEY->kind = RWMUX_NONE;
 }
 
-/*! @class ReadKey
+/*! @class RWKey
  */
 
-static void exit_rwmutex_rkey_obj(struct object *UNUSED(o))
+static void exit_rwmutex_key_obj(struct object *UNUSED(o))
 {
   if (THIS_RWKEY->rwmutex) {
     struct rwmutex_storage *rwmutex = THIS_RWKEY->rwmutex;
@@ -2785,45 +2793,56 @@ static void exit_rwmutex_rkey_obj(struct object *UNUSED(o))
     }
     THIS_RWKEY->next = NULL;
     THIS_RWKEY->prev = NULL;
+    THIS_RWKEY->rwmutex = NULL;
 
-    if (!--rwmutex->readers) {
-      co_broadcast(&rwmutex->condition);
-
-      if (rwmutex->writers) {
-	/* There's probably a writer waiting for us to complete.
-	 * Attempt to force a thread switch.
-	 */
-	THREADS_ALLOW();
-#ifdef HAVE_NO_YIELD
-	sleep(0);
-#else
-	th_yield();
-#endif
-	THREADS_DISALLOW();
-      }
+    switch(THIS_RWKEY->kind) {
+    case RWMUX_NONE:
+      break;
+    case RWMUX_READ:
+      rwmutex->readers--;
+      break;
+    case RWMUX_WRITE:
+      rwmutex->writers--;
+      break;
     }
+
+    THIS_RWKEY->kind = RWMUX_NONE;
+
+    co_broadcast(&rwmutex->condition);
 
     if (rwmutex_obj) {
       free_object(rwmutex_obj);
     }
+
+    /* Attempt to force a thread switch in case there is
+     * anyone waiting on us.
+     */
+    THREADS_ALLOW();
+#ifdef HAVE_NO_YIELD
+    sleep(0);
+#else
+    th_yield();
+#endif
+    THREADS_DISALLOW();
   }
 }
 
-static void f_rwmutex_rkey_create(INT32 args)
+static void f_rwmutex_key_create(INT32 args)
 {
   struct object *rwmutex_obj = NULL;
   struct rwmutex_storage *rwmutex = NULL;
   struct rwmutex_key_storage *m;
+  enum rwmux_kind kind = RWMUX_READ;
   int self_count = 0;
 
-  get_all_args("create", args, "%o", &rwmutex_obj);
+  get_all_args("create", args, "%o.%d", &rwmutex_obj, &kind);
   if (!(rwmutex = get_storage(rwmutex_obj, rwmutex_program))) {
     SIMPLE_ARG_TYPE_ERROR("create", 1, "RWMutex");
   }
 
   while (THIS_RWKEY->rwmutex) {
     /* Not really a supported operation, but... */
-    exit_rwmutex_rkey_obj(NULL);
+    exit_rwmutex_key_obj(NULL);
   }
 
   for (m = rwmutex->first_key; m; m = m->next) {
@@ -2856,200 +2875,85 @@ static void f_rwmutex_rkey_create(INT32 args)
   }
   rwmutex->first_key = THIS_RWKEY;
 
-  /* States:
-   *
-   * readers writers self_count Action
-   *       -       0          - Add reader.
-   *                            (No writers.)
-   *       0      -1          0 Wait for writers to go to 0.
-   *                            (Some other thread is attempting to
-   *                             take a write lock.)
-   *      >0      -1         >0 Add reader.
-   *                            (We already have a lock, which the other
-   *                             thread is waiting for, so avoid dead lock.)
-   *       -      >0          0 Wait for writers to go to 0.
-   *                            (Some other thread has a write lock.)
-   *       -      >0         >0 Add reader.
-   *                            (As we have a lock and there is at least
-   *                             one write lock, we must be the owners
-   *                             of the write lock.)
-   */
+  THIS_RWKEY->kind = RWMUX_NONE;	/* No lock taken (yet). */
 
-  if (!self_count) {
+  switch(kind) {
+  case RWMUX_READ:
+    /* States:
+     *
+     * readers writers self_count Action
+     *       -       0          - Add reader.
+     *                            (No writers.)
+     *       0      -1          0 Wait for writers to go to 0.
+     *                            (Some other thread is attempting to
+     *                             take a write lock.)
+     *      >0      -1         >0 Add reader.
+     *                            (We already have a lock, which the other
+     *                             thread is waiting for, so avoid dead lock.)
+     *       -      >0          0 Wait for writers to go to 0.
+     *                            (Some other thread has a write lock.)
+     *       -      >0         >0 Add reader.
+     *                            (As we have a lock and there is at least
+     *                             one write lock, we must be the owners
+     *                             of the write lock.)
+     */
+
     SWAP_OUT_CURRENT_THREAD();
     while(rwmutex->writers) {
       co_wait_interpreter(&rwmutex->condition);
     }
     SWAP_IN_CURRENT_THREAD();
-  }
 
-  rwmutex->readers++;
-}
+    rwmutex->readers++;
+    THIS_RWKEY->kind = RWMUX_READ;
+    break;
 
-static void f_rwmutex_rkey__sprintf(INT32 args)
-{
-  int c = 0;
-  get_all_args("_sprintf", args, "%d", &c);
-  if (c != 'O') {
-    push_undefined();
-    return;
-  }
-  if (THIS_RWKEY->rwmutex_obj) {
-    push_text("Thread.ReadKey(/* %O */)");
-    ref_push_object(THIS_RWKEY->rwmutex_obj);
-    f_sprintf(2);
-  } else {
-    push_text("Thread.ReadKey(/* Unlocked */)");
-  }
-}
-
-/*! @endclass
- */
-
-/*! @class WriteKey
- */
-
-static void exit_rwmutex_wkey_obj(struct object *UNUSED(o))
-{
-  if (THIS_RWKEY->rwmutex) {
-    struct rwmutex_storage *rwmutex = THIS_RWKEY->rwmutex;
-    struct object *rwmutex_obj = THIS_RWKEY->rwmutex_obj;
-
-    THIS_RWKEY->rwmutex = NULL;
-    THIS_RWKEY->rwmutex_obj = NULL;
-
-    if (THIS_RWKEY->owner_obj) {
-      free_object(THIS_RWKEY->owner_obj);
-    }
-    THIS_RWKEY->owner = NULL;
-    THIS_RWKEY->owner_obj = NULL;
-
-    /* Unlink */
-    if (THIS_RWKEY->prev) {
-      THIS_RWKEY->prev->next = THIS_RWKEY->next;
-    } else {
-      rwmutex->first_key = THIS_RWKEY->next;
-    }
-    if (THIS_RWKEY->next) {
-      THIS_RWKEY->next->prev = THIS_RWKEY->prev;
-    } else {
-      rwmutex->last_key = THIS_RWKEY->prev;
-    }
-    THIS_RWKEY->next = NULL;
-    THIS_RWKEY->prev = NULL;
-
-    rwmutex->writers--;
-    co_broadcast(&rwmutex->condition);
-
-    /* Attempt to force a thread switch in case there is
-     * anyone waiting on us.
+  case RWMUX_WRITE:
+    /* States:
+     *
+     * readers writers self_count Action
+     *       -       0          - Set writers to -1, wait for readers
+     *                            to go to 0, Set writers to 1.
+     *                            (No write lock active.)
+     *       -      -1          0 Wait for writers to go to 0, then as above.
+     *                            (Some other thread is attempting to
+     *                             get a write lock.)
+     *       -      >0          0 Wait for writers to go to 0, then as above.
+     *                            (Some other thread has a write lock.)
+     *       -      >0         >0 Add writer.
+     *                            (As we have a lock and there is at least
+     *                             one write lock, we must be the owners
+     *                             of the write lock.)
+     *
+     * Problem:
+     *      >0      -1         >0 (Some other thread is attempting to get
+     *                             a write lock (waiting on us). If
+     *                             self_count == readers, then we could
+     *                             take the write lock, complete and then
+     *                             restore the -1, but if the other thread
+     *                             also has a self_count >0 we run into
+     *                             a dead lock.)
      */
-    THREADS_ALLOW();
-#ifdef HAVE_NO_YIELD
-    sleep(0);
-#else
-    th_yield();
-#endif
-    THREADS_DISALLOW();
 
-    if (rwmutex_obj) {
-      free_object(rwmutex_obj);
-    }
-  }
-}
-
-static void f_rwmutex_wkey_create(INT32 args)
-{
-  struct object *rwmutex_obj = NULL;
-  struct rwmutex_storage *rwmutex = NULL;
-  struct rwmutex_key_storage *m;
-  int self_count = 0;
-
-  get_all_args("create", args, "%o", &rwmutex_obj);
-  if (!(rwmutex = get_storage(rwmutex_obj, rwmutex_program))) {
-    SIMPLE_ARG_TYPE_ERROR("create", 1, "RWMutex");
-  }
-
-  while (THIS_RWKEY->rwmutex) {
-    /* Not really a supported operation, but... */
-    exit_rwmutex_wkey_obj(NULL);
-  }
-
-  for (m = rwmutex->first_key; m; m = m->next) {
-    if (m->owner && (m->owner = Pike_interpreter.thread_state)) {
-      self_count++;
-    }
-  }
-
-  if (self_count) {
-    /* Either: We already have a lock (read or write), and
-     *         would hang waiting on ourselves.
-     */
-    Pike_error("Recursive mutex locks!\n");
-  }
-
-  init_rwmutex_key_obj(NULL);
-
-  THIS_RWKEY->rwmutex = rwmutex;
-  THIS_RWKEY->rwmutex_obj = rwmutex_obj;
-  add_ref(rwmutex_obj);
-
-  /* Link */
-  THIS_RWKEY->prev = NULL;
-  if ((THIS_RWKEY->next = rwmutex->first_key)) {
-    rwmutex->first_key->prev = THIS_RWKEY;
-  }
-  rwmutex->first_key = THIS_RWKEY;
-
-  /* States:
-   *
-   * readers writers self_count Action
-   *       -       0          - Set writers to -1, wait for readers
-   *                            to go to 0, Set writers to 1.
-   *                            (No write lock active.)
-   *       -      -1          0 Wait for writers to go to 0, then as above.
-   *                            (Some other thread is attempting to
-   *                             get a write lock.)
-   *       -      >0          0 Wait for writers to go to 0, then as above.
-   *                            (Some other thread has a write lock.)
-   *       -      >0         >0 Add writer.
-   *                            (As we have a lock and there is at least
-   *                             one write lock, we must be the owners
-   *                             of the write lock.)
-   *
-   * Problem:
-   *      >0      -1         >0 (Some other thread is attempting to get
-   *                             a write lock (waiting on us). If
-   *                             self_count == readers, then we could
-   *                             take the write lock, complete and then
-   *                             restore the -1, but if the other thread
-   *                             also has a self_count >0 we run into
-   *                             a dead lock.)
-   */
-
-  SWAP_OUT_CURRENT_THREAD();
-  if (!self_count) {
+    SWAP_OUT_CURRENT_THREAD();
     while(rwmutex->writers) {
       co_wait_interpreter(&rwmutex->condition);
     }
-  }
 
-  if (!rwmutex->writers) {
     rwmutex->writers = -1;
 
-    while(rwmutex->readers > self_count) {
+    while(rwmutex->readers) {
       co_wait_interpreter(&rwmutex->condition);
     }
 
     rwmutex->writers = 1;
-  } else {
-    /* We already hold a write lock. */
-    rwmutex->writers++;
+    SWAP_IN_CURRENT_THREAD();
+    THIS_RWKEY->kind = RWMUX_WRITE;
+    break;
   }
-  SWAP_IN_CURRENT_THREAD();
 }
 
-static void f_rwmutex_wkey__sprintf(INT32 args)
+static void f_rwmutex_key__sprintf(INT32 args)
 {
   int c = 0;
   get_all_args("_sprintf", args, "%d", &c);
@@ -3058,11 +2962,22 @@ static void f_rwmutex_wkey__sprintf(INT32 args)
     return;
   }
   if (THIS_RWKEY->rwmutex_obj) {
-    push_text("Thread.WriteKey(/* %O */)");
+    push_text("Thread.RWKey(/* %O, %s */)");
     ref_push_object(THIS_RWKEY->rwmutex_obj);
-    f_sprintf(2);
+    switch(THIS_RWKEY->kind) {
+    case RWMUX_NONE:
+      push_text("Unlocked");
+      break;
+    case RWMUX_READ:
+      push_text("Read-lock");
+      break;
+    case RWMUX_WRITE:
+      push_text("Write-lock");
+      break;
+    }
+    f_sprintf(3);
   } else {
-    push_text("Thread.WriteKey(/* Unlocked */)");
+    push_text("Thread.RWKey(/* Unlocked */)");
   }
 }
 
@@ -4042,7 +3957,7 @@ void th_init(void)
   add_ref(mutex_program);
   end_class("mutex", 0);
 
-  START_NEW_PROGRAM_ID(THREAD_RWMUTEX_RKEY);
+  START_NEW_PROGRAM_ID(THREAD_RWMUTEX_KEY);
   rwmutex_key_offset = ADD_STORAGE(struct rwmutex_key_storage);
   /* This is needed to allow the gc to find the possible circular reference.
    * It also allows a thread to take over ownership of a key.
@@ -4055,47 +3970,26 @@ void th_init(void)
 		    OFFSETOF(rwmutex_key_storage, rwmutex_obj),
 		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
   set_init_callback(init_rwmutex_key_obj);
-  set_exit_callback(exit_rwmutex_rkey_obj);
-  ADD_FUNCTION("create", f_rwmutex_rkey_create,
-	       tFunc(tOr(tObjIs_THREAD_RWMUTEX, tVoid), tVoid),
+  set_exit_callback(exit_rwmutex_key_obj);
+  ADD_FUNCTION("create", f_rwmutex_key_create,
+	       tFunc(tOr(tObjIs_THREAD_RWMUTEX, tVoid)
+		     tOr(tInt02, tVoid), tVoid),
 	       ID_PROTECTED);
-  ADD_FUNCTION("_sprintf", f_rwmutex_rkey__sprintf,
+  ADD_FUNCTION("_sprintf", f_rwmutex_key__sprintf,
 	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
-  rwmutex_rkey_program = Pike_compiler->new_program;
-  add_ref(rwmutex_rkey_program);
-  end_class("ReadKey", 0);
-  rwmutex_rkey_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
-
-  START_NEW_PROGRAM_ID(THREAD_RWMUTEX_WKEY);
-  rwmutex_key_offset = ADD_STORAGE(struct rwmutex_key_storage);
-  /* This is needed to allow the gc to find the possible circular reference.
-   * It also allows a thread to take over ownership of a key.
-   */
-  PIKE_MAP_VARIABLE("_owner",
-		    rwmutex_key_offset +
-		    OFFSETOF(rwmutex_key_storage, owner_obj),
-		    tObjIs_THREAD_ID, T_OBJECT, 0);
-  PIKE_MAP_VARIABLE("_mutex", rwmutex_key_offset +
-		    OFFSETOF(rwmutex_key_storage, rwmutex_obj),
-		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
-  set_init_callback(init_rwmutex_key_obj);
-  set_exit_callback(exit_rwmutex_wkey_obj);
-  ADD_FUNCTION("create", f_rwmutex_wkey_create,
-	       tFunc(tOr(tObjIs_THREAD_RWMUTEX, tVoid), tVoid),
-	       ID_PROTECTED);
-  ADD_FUNCTION("_sprintf", f_rwmutex_wkey__sprintf,
-	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
-  rwmutex_wkey_program = Pike_compiler->new_program;
-  add_ref(rwmutex_wkey_program);
-  end_class("WriteKey", 0);
-  rwmutex_wkey_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+  rwmutex_key_program = Pike_compiler->new_program;
+  add_ref(rwmutex_key_program);
+  end_class("RWKey", 0);
+  rwmutex_key_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   START_NEW_PROGRAM_ID(THREAD_RWMUTEX);
   ADD_STORAGE(struct rwmutex_storage);
   ADD_FUNCTION("read_lock", f_rwmutex_read_lock,
-	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_RKEY), 0);
+	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
+  ADD_FUNCTION("try_read_lock", f_rwmutex_try_read_lock,
+	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
   ADD_FUNCTION("write_lock", f_rwmutex_write_lock,
-	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_WKEY), 0);
+	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
   ADD_FUNCTION("_sprintf", f_rwmutex__sprintf,
 	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
   set_init_callback(init_rwmutex_obj);
@@ -4284,16 +4178,10 @@ void th_cleanup(void)
     rwmutex_program = NULL;
   }
 
-  if(rwmutex_wkey_program)
+  if(rwmutex_key_program)
   {
-    free_program(rwmutex_wkey_program);
-    rwmutex_wkey_program = NULL;
-  }
-
-  if(rwmutex_rkey_program)
-  {
-    free_program(rwmutex_rkey_program);
-    rwmutex_rkey_program = NULL;
+    free_program(rwmutex_key_program);
+    rwmutex_key_program = NULL;
   }
 
   if(mutex_program)
