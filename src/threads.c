@@ -2614,6 +2614,7 @@ enum rwmux_kind
   {
     RWMUX_NONE = 0,
     RWMUX_READ,
+    RWMUX_DOWNGRADED,
     RWMUX_WRITE,
   };
 
@@ -2641,8 +2642,13 @@ struct rwmutex_key_storage
 struct rwmutex_storage
 {
   COND_T condition;
-  int readers;
-  int writers;
+  int readers;		/* Number of read locks. */
+  int writers;		/* Write lock state.
+			 * -1 Downgraded write lock exists.
+			 *  0 No write lock exists.
+			 *  1 Write lock is pending.
+			 *  2 Write lock exists.
+			 */
   struct rwmutex_key_storage *first_key;
   struct rwmutex_key_storage *last_key;
 };
@@ -2801,8 +2807,12 @@ static void exit_rwmutex_key_obj(struct object *UNUSED(o))
     case RWMUX_READ:
       rwmutex->readers--;
       break;
+    case RWMUX_DOWNGRADED:
+      rwmutex->writers = 0;
+      rwmutex->readers--;
+      break;
     case RWMUX_WRITE:
-      rwmutex->writers--;
+      rwmutex->writers = 0;
       break;
     }
 
@@ -2882,24 +2892,24 @@ static void f_rwmutex_key_create(INT32 args)
     /* States:
      *
      * readers writers self_count Action
-     *       -       0          - Add reader.
-     *                            (No writers.)
-     *       0      -1          0 Wait for writers to go to 0.
+     *       -     <=0          - Add reader.
+     *                            (No active writers.)
+     *       0       1          0 Wait for writers to go to 0.
      *                            (Some other thread is attempting to
      *                             take a write lock.)
-     *      >0      -1         >0 Add reader.
+     *      >0       1         >0 Add reader.
      *                            (We already have a lock, which the other
      *                             thread is waiting for, so avoid dead lock.)
-     *       -      >0          0 Wait for writers to go to 0.
+     *       -      >1          0 Wait for writers to go to 0.
      *                            (Some other thread has a write lock.)
-     *       -      >0         >0 Add reader.
+     *       -      >1         >0 Add reader.
      *                            (As we have a lock and there is at least
      *                             one write lock, we must be the owners
      *                             of the write lock.)
      */
 
     SWAP_OUT_CURRENT_THREAD();
-    while(rwmutex->writers) {
+    while(rwmutex->writers > 0) {
       co_wait_interpreter(&rwmutex->condition);
     }
     SWAP_IN_CURRENT_THREAD();
@@ -2912,21 +2922,24 @@ static void f_rwmutex_key_create(INT32 args)
     /* States:
      *
      * readers writers self_count Action
-     *       -       0          - Set writers to -1, wait for readers
-     *                            to go to 0, Set writers to 1.
+     *       -       0          - Set writers to 1, wait for readers
+     *                            to go to 0, Set writers to 2.
      *                            (No write lock active.)
      *       -      -1          0 Wait for writers to go to 0, then as above.
+     *                            (Some other thread has a degraded write
+     *                             lock.)
+     *       -       1          0 Wait for writers to go to 0, then as above.
      *                            (Some other thread is attempting to
      *                             get a write lock.)
-     *       -      >0          0 Wait for writers to go to 0, then as above.
+     *       -      >1          0 Wait for writers to go to 0, then as above.
      *                            (Some other thread has a write lock.)
-     *       -      >0         >0 Add writer.
+     *       -      >1         >0 Add writer.
      *                            (As we have a lock and there is at least
      *                             one write lock, we must be the owners
      *                             of the write lock.)
      *
      * Problem:
-     *      >0      -1         >0 (Some other thread is attempting to get
+     *      >0       1         >0 (Some other thread is attempting to get
      *                             a write lock (waiting on us). If
      *                             self_count == readers, then we could
      *                             take the write lock, complete and then
@@ -2940,17 +2953,87 @@ static void f_rwmutex_key_create(INT32 args)
       co_wait_interpreter(&rwmutex->condition);
     }
 
-    rwmutex->writers = -1;
+    rwmutex->writers = 1;
 
     while(rwmutex->readers) {
       co_wait_interpreter(&rwmutex->condition);
     }
 
-    rwmutex->writers = 1;
+    rwmutex->writers = 2;
     SWAP_IN_CURRENT_THREAD();
     THIS_RWKEY->kind = RWMUX_WRITE;
     break;
   }
+}
+
+/*! @decl void downgrade()
+ *!
+ *! Downgrade this key into a (temporary) read-lock.
+ *!
+ *! This allows for concurrent read operations. This is
+ *! a no-op for keys that aren't write-locks.
+ *!
+ *! If the key was a write-lock, it may later be upgraded
+ *! back into a write-lock.
+ *!
+ *! @seealso
+ *!   @[upgrade()]
+ */
+static void f_rwmutex_key_downgrade(INT32 args)
+{
+  if (THIS_RWKEY->kind <= RWMUX_DOWNGRADED) {
+    /* Already a read lock or downgraded. */
+    return;
+  }
+  THIS_RWKEY->kind = RWMUX_DOWNGRADED;
+  THIS_RWKEY->rwmutex->readers = 1;
+  THIS_RWKEY->rwmutex->writers = -1;
+}
+
+/*! @decl void upgrade()
+ *!
+ *! Upgrade this key back into a write-lock.
+ *!
+ *! This operation is only allowed on keys that have started
+ *! out as write-locks.
+ *!
+ *! This is a no-op on keys that already are write-locks.
+ *!
+ *! For a downgraded write-lock, this operation will block
+ *! until all concurrent read-locks are released.
+ *!
+ *! @throws
+ *!   Throws an error for keys that didn't start out as write-locks.
+ *!
+ *! @seealso
+ *!   @[downgrade()]
+ */
+static void f_rwmutex_key_upgrade(INT32 args)
+{
+  struct rwmutex_storage *rwmutex = NULL;
+
+  if (THIS_RWKEY->kind < RWMUX_DOWNGRADED) {
+    Pike_error("Unsupported operation -- not a (degraded) write lock.\n");
+  }
+  if (THIS_RWKEY->kind == RWMUX_WRITE) {
+    /* Already upgraded. */
+    return;
+  }
+
+  THIS_RWKEY->kind = RWMUX_NONE;
+  rwmutex = THIS_RWKEY->rwmutex;
+
+  rwmutex->readers--;
+  rwmutex->writers = 1;
+
+  SWAP_OUT_CURRENT_THREAD();
+  while(rwmutex->readers) {
+    co_wait_interpreter(&rwmutex->condition);
+  }
+  SWAP_IN_CURRENT_THREAD();
+
+  rwmutex->writers = 2;
+  THIS_RWKEY->kind = RWMUX_WRITE;
 }
 
 static void f_rwmutex_key__sprintf(INT32 args)
@@ -2970,6 +3053,9 @@ static void f_rwmutex_key__sprintf(INT32 args)
       break;
     case RWMUX_READ:
       push_text("Read-lock");
+      break;
+    case RWMUX_DOWNGRADED:
+      push_text("Downgraded-write-lock");
       break;
     case RWMUX_WRITE:
       push_text("Write-lock");
@@ -3975,6 +4061,10 @@ void th_init(void)
 	       tFunc(tOr(tObjIs_THREAD_RWMUTEX, tVoid)
 		     tOr(tInt02, tVoid), tVoid),
 	       ID_PROTECTED);
+  ADD_FUNCTION("downgrade", f_rwmutex_key_downgrade,
+	       tFunc(tNone, tVoid), 0);
+  ADD_FUNCTION("upgrade", f_rwmutex_key_upgrade,
+	       tFunc(tNone, tVoid), 0);
   ADD_FUNCTION("_sprintf", f_rwmutex_key__sprintf,
 	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
   rwmutex_key_program = Pike_compiler->new_program;
@@ -3985,8 +4075,6 @@ void th_init(void)
   START_NEW_PROGRAM_ID(THREAD_RWMUTEX);
   ADD_STORAGE(struct rwmutex_storage);
   ADD_FUNCTION("read_lock", f_rwmutex_read_lock,
-	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
-  ADD_FUNCTION("try_read_lock", f_rwmutex_try_read_lock,
 	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
   ADD_FUNCTION("write_lock", f_rwmutex_write_lock,
 	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
