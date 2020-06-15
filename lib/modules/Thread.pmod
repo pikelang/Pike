@@ -921,10 +921,16 @@ class Farm
   }
 }
 
-#if constant(__builtin.RWMutex)
-constant RWMutex = __builtin.RWMutex;
+#if constant(__builtin.RWKey)
 constant RWKey = __builtin.RWKey;
+constant RWMutex = __builtin.RWMutex;
 #else
+class RWKey
+{
+  void downgrade();
+  void upgrade();
+};
+
 class RWMutex
 {
   protected int readers;
@@ -937,35 +943,68 @@ class RWMutex
   {
     RWMUX_NONE = 0,
     RWMUX_READ,
+    RWMUX_DOWNGRADED,
     RWMUX_WRITE,
   };
 
+  protected void release(RWMutexKind kind)
+  {
+    MutexKey key = mux->lock();
+    switch(kind) {
+    case RWMUX_NONE:
+      break;
+    case RWMUX_READ:
+      readers--;
+      break;
+    case RWMUX_DOWNGRADED:
+      readers--;
+      writers = 0;
+      break;
+    case RWMUX_WRITE:
+      writers = 0;
+      break;
+    }
+    cond->broadcast();
+  }
+
   protected class RWKey
   {
+    @Pike.Annotations.Implements(global::RWKey);
+
     inherit __builtin.DestructImmediate;
 
-    RWMutexKind kind = RWMUX_NONE;
+    protected RWMutexKind kind = RWMUX_NONE;
 
     protected void create(RWMutexKind kind)
     {
       MutexKey key = mux->lock();
-      if (!kind){
-	if (writers) {
+      switch(kind) {
+      case RWMUX_NONE:
+	if (writers > 0) {
 	  destruct();
 	  return;
 	}
 	kind = RWMUX_READ;
-      }
-      while (writers) {
-	cond->wait(key);
-      }
+	readers++;
+	break;
 
-      if (kind == RWMUX_WRITE) {
+      case RWMUX_READ:
+	while (writers > 0) {
+	  cond->wait(key);
+	}
+	readers++;
+	break;
+
+      case RWMUX_WRITE:
+	while (writers) {
+	  cond->wait(key);
+	}
+
 	// Take the write lock tentatively.
 	// This both causes any others attempting to take the write lock
 	// to halt in the loop above, and any upcoming readers to wait
 	// on us before taking the read lock.
-	writers = -1;
+	writers = 1;
 
 	// Wait for any active readers to complete.
 	while (readers) {
@@ -973,9 +1012,7 @@ class RWMutex
 	}
 
 	// Take the write lock.
-	writers = 1;
-      } else {
-	readers++;
+	writers = 2;
       }
 
       this::kind = kind;
@@ -983,13 +1020,44 @@ class RWMutex
 
     protected void _destruct()
     {
-      MutexKey key = mux->lock();
-      if (kind == RWMUX_READ) {
-	readers--;
-      } else if (kind == RWMUX_WRITE) {
-	writers = 0;
-      }
+      // NOTE: Mutex operations are not safe in a signal handler
+      //       context (ie like in _destruct()). We thus defer
+      //       the release to the next time the backend runs.
+      call_out(release, 0, kind);
+    }
+
+    void downgrade()
+    {
+      if (kind < RWMUX_WRITE) return;
+
+      readers = 1;
+      writers = -1;
+      kind = RWMUX_DOWNGRADED;
       cond->broadcast();
+    }
+
+    void upgrade()
+    {
+      if (kind == RWMUX_WRITE) return;
+      if (kind != RWMUX_DOWNGRADED) {
+	error("Unsupported operation.\n");
+      }
+
+      MutexKey key = mux->lock();
+
+      // Retake the write lock tentatively.
+      // This both causes any upcoming readers to wait on us before
+      // taking the read lock.
+      writers = 1;
+
+      // Wait for any active readers to complete.
+      while (readers) {
+	cond->wait(key);
+      }
+
+      // Take the write lock.
+      writers = 2;
+      kind = RWMUX_WRITE;
     }
   }
 
