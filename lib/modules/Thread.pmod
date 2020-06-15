@@ -1049,6 +1049,7 @@ class RWMutex
       // This both causes any upcoming readers to wait on us before
       // taking the read lock.
       writers = 1;
+      readers--;
 
       // Wait for any active readers to complete.
       while (readers) {
