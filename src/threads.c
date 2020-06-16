@@ -2988,6 +2988,8 @@ static void f_rwmutex_key_downgrade(INT32 args)
   THIS_RWKEY->kind = RWMUX_DOWNGRADED;
   THIS_RWKEY->rwmutex->readers = 1;
   THIS_RWKEY->rwmutex->writers = -1;
+
+  co_broadcast(&THIS_RWKEY->rwmutex->condition);
 }
 
 /*! @decl void upgrade()
