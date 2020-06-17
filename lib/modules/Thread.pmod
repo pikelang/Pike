@@ -1046,8 +1046,9 @@ class RWMutex
       MutexKey key = mux->lock();
 
       // Retake the write lock tentatively.
-      // This both causes any upcoming readers to wait on us before
-      // taking the read lock.
+      // This causes any upcoming readers to wait on us before
+      // taking the read lock. Any writers are already waiting
+      // due to our having set writers to -1 on downgrade.
       writers = 1;
       readers--;
 
