@@ -1224,7 +1224,8 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
     Thread.Thread(startquery, forcetext, portal, q, tp, preparedname);
   else
     startquery(forcetext, portal, q, tp, preparedname);
-  throwdelayederror(portal);
+  if (portal)			  // Catches race where portal already imploded
+    throwdelayederror(portal);
   return portal;
 }
 
