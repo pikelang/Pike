@@ -705,11 +705,11 @@ void response_and_finish(mapping m, function|void _log_cb)
        }
        break;
      default:
-       if (Protocols.HTTP.response_codes[(int)m->error])
+       if (intp(m->error) && Protocols.HTTP.response_codes[m->error])
          radd("%s %s", protocol,
-              Protocols.HTTP.response_codes[(int)m->error]);
+              Protocols.HTTP.response_codes[m->error]);
        else
-         radd("%s %s ERROR", protocol, m->error);
+         radd("%s %s", protocol, m->error);
        break;
    }
 
