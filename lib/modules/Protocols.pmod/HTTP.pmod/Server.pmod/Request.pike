@@ -498,14 +498,12 @@ protected void read_cb_post(mixed dummy,string s)
 
   int l = (int)request_headers["content-length"];
   if (sizeof(buf)>=l ||
-      ( max_request_size && sizeof(buf)>max_request_size ))
-  {
-    body_raw=buf[..l-1];
-    buf = buf[l..];
-    raw = raw[..strlen(raw)-strlen(buf)];
+      ( max_request_size && sizeof(buf)>max_request_size )) {
+    body_raw = buf[..l - 1];		    // Body only
+    buf = buf[l..];			    // Next pipelined request
+    raw = raw[..<strlen(buf)];		    // Strip off next request
     finalize();
-  }
-  else
+  } else
     call_out(connection_timeout,connection_timeout_delay);
 }
 
