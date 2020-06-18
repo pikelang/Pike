@@ -72,7 +72,7 @@ string(8bit) server_verify_data = "";
 ProtocolVersion version;
 ProtocolVersion client_version; /* Used to check for version roll-back attacks. */
 
-int(0..1) dtls;			/* Indicates wether DTLS or not. */
+int(0..1) dtls;			/* Indicates whether DTLS or not. */
 
 //! Random cookies, sent and received with the hello-messages.
 string(8bit) client_random;
