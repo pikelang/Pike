@@ -413,12 +413,10 @@ protected int parse_variables()
   }
 
   int l = (int)request_headers["content-length"];
-  if (l<=sizeof(buf))
-  {
-    int zap = strlen(buf) - l;
-    raw = raw[..<zap-1];
-    body_raw = buf[..l-1];
-    buf = buf[l..];
+  if (l <= sizeof(buf)) {		  // Completely received yet?
+    body_raw = buf[..l - 1];		  // Body only
+    buf = buf[l..];			  // Next pipelined request
+    raw = raw[..<strlen(buf)];		  // Strip off next request
     return 1;
   }
 
