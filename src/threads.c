@@ -3445,6 +3445,24 @@ void f_thread_id_status(INT32 args)
   push_int(THIS_THREAD->status);
 }
 
+/*! @decl int gethrvtime (void|int nsec)
+ *!
+ *! @returns
+ *!   The CPU time consumed by this thread.
+ *!
+ *! @seealso
+ *!   @[predef::gethrvtime()]
+ */
+void f_thread_id_gethrvtime(INT32 args)
+{
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
+  thread_gethrvtime(THIS_THREAD, args);
+#else
+  pop_n_elems(args);
+  push_int(0);
+#endif
+}
+
 /*! @decl protected string _sprintf(int c)
  *!
  *! Returns a string identifying the thread.
@@ -4146,6 +4164,7 @@ void th_init(void)
 	       tFunc(tOr(tVoid,tInt01),tArray), 0);
   ADD_FUNCTION("wait",f_thread_id_result,tFunc(tNone,tMix),0);
   ADD_FUNCTION("status",f_thread_id_status,tFunc(tNone,tInt),0);
+  ADD_FUNCTION("gethrvtime",f_thread_id_gethrvtime,tFunc(tNone,tInt),0);
   ADD_FUNCTION("_sprintf",f_thread_id__sprintf,tFunc(tInt,tStr),0);
   ADD_FUNCTION("id_number",f_thread_id_id_number,tFunc(tNone,tInt),0);
   ADD_FUNCTION("interrupt", f_thread_id_interrupt,

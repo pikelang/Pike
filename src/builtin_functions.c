@@ -8433,6 +8433,54 @@ PMOD_EXPORT void f_master(INT32 args)
 #include <sys/time.h>
 #endif
 
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
+void thread_gethrvtime(struct thread_state * ts, INT32 args)
+#else
+void thread_gethrvtime(INT32 args)
+#endif
+{
+  int nsec = 0;
+  cpu_time_t time = get_cpu_time();
+
+  if (time == (cpu_time_t) -1) {
+    pop_n_elems (args);
+    push_int (-1);
+    return;
+  }
+
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
+  if (cpu_time_is_thread_local)
+    time -= ts->auto_gc_time;
+  else
+#endif
+  {
+#ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
+    time -= auto_gc_time;
+#endif
+  }
+
+  nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
+
+  pop_n_elems(args);
+
+  if (nsec) {
+    push_int64(time);
+#ifndef LONG_CPU_TIME
+    push_int (1000000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
+  else {
+#if CPU_TIME_TICKS_LOW > 1000000
+    push_int64(time / (CPU_TIME_TICKS / 1000000));
+#else
+    push_int64 (time);
+    push_int (1000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
+}
+
 /*! @decl int gethrvtime (void|int nsec)
  *!
  *! Return the CPU time that has been consumed by this process or
@@ -8469,46 +8517,11 @@ PMOD_EXPORT void f_master(INT32 args)
  */
 PMOD_EXPORT void f_gethrvtime(INT32 args)
 {
-  int nsec = 0;
-  cpu_time_t time = get_cpu_time();
-
-  if (time == (cpu_time_t) -1) {
-    pop_n_elems (args);
-    push_int (-1);
-    return;
-  }
-
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
-  if (cpu_time_is_thread_local)
-    time -= Pike_interpreter.thread_state->auto_gc_time;
-  else
-#endif
-  {
-#ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
-    time -= auto_gc_time;
-#endif
-  }
-
-  nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
-
-  pop_n_elems(args);
-
-  if (nsec) {
-    push_int64(time);
-#ifndef LONG_CPU_TIME
-    push_int (1000000000 / CPU_TIME_TICKS);
-    o_multiply();
-#endif
-  }
-  else {
-#if CPU_TIME_TICKS_LOW > 1000000
-    push_int64(time / (CPU_TIME_TICKS / 1000000));
+  thread_gethrvtime(Pike_interpreter.thread_state, args);
 #else
-    push_int64 (time);
-    push_int (1000000 / CPU_TIME_TICKS);
-    o_multiply();
+  thread_gethrvtime(args);
 #endif
-  }
 }
 
 /*! @decl int gethrtime (void|int nsec)
