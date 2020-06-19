@@ -942,8 +942,10 @@ class RWMutex
   private enum RWMutexKind
   {
     RWMUX_NONE = 0,
+    RWMUX_TRY_READ = RWMUX_NONE,
     RWMUX_READ,
     RWMUX_DOWNGRADED,
+    RWMUX_TRY_WRITE = RWMUX_DOWNGRADED,
     RWMUX_WRITE,
   };
 
@@ -979,7 +981,7 @@ class RWMutex
     {
       MutexKey key = mux->lock();
       switch(kind) {
-      case RWMUX_NONE:
+      case RWMUX_TRY_READ:
 	if (writers > 0) {
 	  destruct();
 	  return;
@@ -993,6 +995,15 @@ class RWMutex
 	  cond->wait(key);
 	}
 	readers++;
+	break;
+
+      case RWMUX_TRY_WRITE:
+	if (writers) {
+	  destruct();
+	  return;
+	}
+	kind = RWMUX_WRITE;
+	writers = 2;
 	break;
 
       case RWMUX_WRITE:
@@ -1068,9 +1079,19 @@ class RWMutex
     return RWKey(RWMUX_READ);
   }
 
+  RWKey try_read_lock()
+  {
+    return RWKey(RWMUX_TRY_READ);
+  }
+
   RWKey write_lock()
   {
     return RWKey(RWMUX_WRITE);
+  }
+
+  RWKey try_write_lock()
+  {
+    return RWKey(RWMUX_TRY_WRITE);
   }
 }
 #endif /* !__builtin.RWMutex */
