@@ -1031,10 +1031,14 @@ class RWMutex
 
     protected void _destruct()
     {
-      // NOTE: Mutex operations are not safe in a signal handler
-      //       context (ie like in _destruct()). We thus defer
-      //       the release to the next time the backend runs.
-      call_out(release, 0, kind);
+      if (catch { release(kind); }) {
+	// Probably a recursive mutex failure.
+	//
+	// NOTE: Mutex operations are not safe in a signal handler
+	//       context (ie like in _destruct()). We thus defer
+	//       the release to the next time the backend runs.
+	call_out(release, 0, kind);
+      }
     }
 
     void downgrade()
