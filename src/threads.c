@@ -2649,8 +2649,7 @@ struct rwmutex_storage
 			 *  1 Write lock is pending.
 			 *  2 Write lock exists.
 			 */
-  struct rwmutex_key_storage *first_key;
-  struct rwmutex_key_storage *last_key;
+  struct rwmutex_key_storage *key;
 };
 
 #define THIS_RWMUTEX	((struct rwmutex_storage *)Pike_fp->current_storage)
@@ -2732,10 +2731,10 @@ static void f_rwmutex__sprintf(INT32 args)
   push_static_text("/w");
   push_int(m->writers);
 
-  if (m->first_key) {
+  if (m->key) {
     push_static_text(" Locked by");
 
-    for (key = m->first_key; key; key = key->next) {
+    for (key = m->key; key; key = key->next) {
       if (key->owner) {
 	if (!c) {
 	  push_static_text(",");
@@ -2790,12 +2789,10 @@ static void exit_rwmutex_key_obj(struct object *UNUSED(o))
     if (THIS_RWKEY->prev) {
       THIS_RWKEY->prev->next = THIS_RWKEY->next;
     } else {
-      rwmutex->first_key = THIS_RWKEY->next;
+      rwmutex->key = THIS_RWKEY->next;
     }
     if (THIS_RWKEY->next) {
       THIS_RWKEY->next->prev = THIS_RWKEY->prev;
-    } else {
-      rwmutex->last_key = THIS_RWKEY->prev;
     }
     THIS_RWKEY->next = NULL;
     THIS_RWKEY->prev = NULL;
@@ -2855,7 +2852,7 @@ static void f_rwmutex_key_create(INT32 args)
     exit_rwmutex_key_obj(NULL);
   }
 
-  for (m = rwmutex->first_key; m; m = m->next) {
+  for (m = rwmutex->key; m; m = m->next) {
     if ((m->owner == Pike_interpreter.thread_state) && (m->owner)) {
       self_count++;
     }
@@ -2880,10 +2877,10 @@ static void f_rwmutex_key_create(INT32 args)
 
   /* Link */
   THIS_RWKEY->prev = NULL;
-  if ((THIS_RWKEY->next = rwmutex->first_key)) {
-    rwmutex->first_key->prev = THIS_RWKEY;
+  if ((THIS_RWKEY->next = rwmutex->key)) {
+    rwmutex->key->prev = THIS_RWKEY;
   }
-  rwmutex->first_key = THIS_RWKEY;
+  rwmutex->key = THIS_RWKEY;
 
   THIS_RWKEY->kind = RWMUX_NONE;	/* No lock taken (yet). */
 
