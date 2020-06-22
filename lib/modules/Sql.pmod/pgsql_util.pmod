@@ -1966,7 +1966,7 @@ class proxy {
   final int _fetchlimit = FETCHLIMIT;
   final MUTEX unnamedportalmux;
   final MUTEX unnamedstatement;
-  private Thread.MutexKey termlock;
+  private Thread.MutexKey|int termlock;
   final Thread.ResourceCount portalsinflight, statementsinflight;
   final int(0..1) wasparallelisable;
   final int(0..1) intransaction;
@@ -2142,7 +2142,7 @@ class proxy {
       if (catch(cs = ci->start())) {
         destruct(waitforauthready);
         unnamedstatement = 0;
-        termlock = 0;
+        termlock = 1;
         return;
       } else {
         CHAIN(cs)->add_hstring(plugbuffer, 4, 4);
@@ -2850,13 +2850,13 @@ class proxy {
       portal->_purgeportal();
     }
     destruct(waitforauthready);
-    termlock = 0;
+    termlock = 1;
     if (err && !stringp(err))
       throw(err);
     };
     catch {
-     unnamedstatement = 0;
-     termlock = 0;
+      unnamedstatement = 0;
+      termlock = 1;
       if (err) {
         PD("Terminating processloop due to %s\n", describe_backtrace(err));
         delayederror = err;
@@ -2870,7 +2870,7 @@ class proxy {
     throwdelayederror(this);
     {
       Thread.MutexKey lock;
-      if (unnamedstatement)
+      if (unnamedstatement && !termlock)
         termlock = unnamedstatement->lock(1);
       foreach (c->runningportals; Result result; )
         if (result->_state < CLOSED)
