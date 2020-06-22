@@ -276,6 +276,7 @@ test_do([[
     (["organizationName":"Test"]),
   });
 
+  // NB: Default hash is SHA256.
   string _cert = Standards.PEM.build("CERTIFICATE",
     Standards.X509.make_selfsigned_certificate(rsa_again, 3600*24, attrs));
 
@@ -372,11 +373,14 @@ test_do([[
     "organizationName" : "Test",
     "commonName" : "*",
   ]);
+
+  // NB: Default hash is SHA256.
   string cert = Standards.X509.make_selfsigned_certificate(dsa,
     3600*24, attrs);
 
   server_ctx->add_cert(dsa, ({ cert }));
 
+  // Same public key, but with SHA1.
   cert = Standards.X509.make_selfsigned_certificate(dsa,
     3600*24, attrs, UNDEFINED, Crypto.SHA1);
 
@@ -395,11 +399,13 @@ test_do([[
     "organizationName" : "Test",
     "commonName" : "*",
   ]);
+  // NB: Default hash is SHA256.
   string cert = Standards.X509.make_selfsigned_certificate(ecdsa,
     3600*24, attrs);
 
   server_ctx->add_cert(ecdsa, ({ cert }));
 
+  // Same public key, but with SHA1.
   cert = Standards.X509.make_selfsigned_certificate(ecdsa,
     3600*24, attrs, UNDEFINED, Crypto.SHA1);
 
