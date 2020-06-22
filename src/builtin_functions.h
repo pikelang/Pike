@@ -144,6 +144,11 @@ PMOD_EXPORT void f__memory_usage(INT32 args);
 PMOD_EXPORT void f__typeof(INT32 args);
 PMOD_EXPORT void f_replace_master(INT32 args);
 PMOD_EXPORT void f_master(INT32 args);
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
+extern void thread_gethrvtime(struct thread_state * ts, INT32 args);
+#else
+extern void thread_gethrvtime(INT32 args);
+#endif
 PMOD_EXPORT void f_gethrvtime(INT32 args);
 PMOD_EXPORT void f_gethrtime(INT32 args);
 PMOD_EXPORT void f_object_variablep(INT32 args);
