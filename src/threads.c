@@ -2613,8 +2613,10 @@ static void f_mutex_key__sprintf(INT32 args)
 enum rwmux_kind
   {
     RWMUX_NONE = 0,
+    RWMUX_TRY_READ = RWMUX_NONE,
     RWMUX_READ,
     RWMUX_DOWNGRADED,
+    RWMUX_TRY_WRITE = RWMUX_DOWNGRADED,
     RWMUX_WRITE,
   };
 
@@ -2673,7 +2675,7 @@ static void exit_rwmutex_obj(struct object *o)
  *!   a lock (read or write).
  *!
  *! @seealso
- *!   @[write_lock()]
+ *!   @[try_read_lock()], @[write_lock()]
  */
 static void f_rwmutex_read_lock(INT32 args)
 {
@@ -2681,6 +2683,26 @@ static void f_rwmutex_read_lock(INT32 args)
 			  Pike_fp->context -
 			  Pike_fp->current_object->prog->inherits);
   push_int(RWMUX_READ);
+  push_object(clone_object(rwmutex_key_program, 2));
+}
+
+/*! @decl RWKey try_read_lock()
+ *!
+ *!   Attempt to obtain a lock for reading (shared lock).
+ *!
+ *! @throws
+ *!   Throws an error if the current thread already has
+ *!   a lock (read or write).
+ *!
+ *! @seealso
+ *!   @[read_lock()], @[write_lock()]
+ */
+static void f_rwmutex_try_read_lock(INT32 args)
+{
+  ref_push_object_inherit(Pike_fp->current_object,
+			  Pike_fp->context -
+			  Pike_fp->current_object->prog->inherits);
+  push_int(RWMUX_TRY_READ);
   push_object(clone_object(rwmutex_key_program, 2));
 }
 
@@ -2693,7 +2715,7 @@ static void f_rwmutex_read_lock(INT32 args)
  *!   a lock (read or write).
  *!
  *! @seealso
- *!   @[read_lock()], @[try_read_lock()]
+ *!   @[read_lock()], @[try_read_lock()], @[try_write_lock()]
  */
 static void f_rwmutex_write_lock(INT32 args)
 {
@@ -2701,6 +2723,26 @@ static void f_rwmutex_write_lock(INT32 args)
 			  Pike_fp->context -
 			  Pike_fp->current_object->prog->inherits);
   push_int(RWMUX_WRITE);
+  push_object(clone_object(rwmutex_key_program, 2));
+}
+
+/*! @decl RWKey try_write_lock()
+ *!
+ *!   Attempt to obtain a lock for writing (exclusive lock).
+ *!
+ *! @throws
+ *!   Throws an error if the current thread already has
+ *!   a lock (read or write).
+ *!
+ *! @seealso
+ *!   @[read_lock()], @[try_read_lock()], @[write_lock()]
+ */
+static void f_rwmutex_try_write_lock(INT32 args)
+{
+  ref_push_object_inherit(Pike_fp->current_object,
+			  Pike_fp->context -
+			  Pike_fp->current_object->prog->inherits);
+  push_int(RWMUX_TRY_WRITE);
   push_object(clone_object(rwmutex_key_program, 2));
 }
 
@@ -2885,6 +2927,17 @@ static void f_rwmutex_key_create(INT32 args)
   THIS_RWKEY->kind = RWMUX_NONE;	/* No lock taken (yet). */
 
   switch(kind) {
+  case RWMUX_TRY_READ:
+    if (rwmutex->writers > 0) {
+      /* There's a write lock. --  Attempt in try mode failed. */
+      destruct_object(Pike_fp->current_object, DESTRUCT_EXPLICIT);
+      break;
+    }
+
+    rwmutex->readers++;
+    THIS_RWKEY->kind = RWMUX_READ;
+    break;
+
   case RWMUX_READ:
     /* States:
      *
@@ -2913,6 +2966,19 @@ static void f_rwmutex_key_create(INT32 args)
 
     rwmutex->readers++;
     THIS_RWKEY->kind = RWMUX_READ;
+    break;
+
+  case RWMUX_TRY_WRITE:
+    if (rwmutex->writers || rwmutex->readers) {
+      /* There's a (degraded) write lock or a read lock.
+       * --  Attempt in try mode failed.
+       */
+      destruct_object(Pike_fp->current_object, DESTRUCT_EXPLICIT);
+      break;
+    }
+
+    rwmutex->writers = 2;
+    THIS_RWKEY->kind = RWMUX_WRITE;
     break;
 
   case RWMUX_WRITE:
@@ -3005,7 +3071,7 @@ static void f_rwmutex_key_downgrade(INT32 args)
  *!   Throws an error for keys that didn't start out as write-locks.
  *!
  *! @seealso
- *!   @[downgrade()]
+ *!   @[try_upgrade()], @[downgrade()]
  */
 static void f_rwmutex_key_upgrade(INT32 args)
 {
@@ -3033,6 +3099,53 @@ static void f_rwmutex_key_upgrade(INT32 args)
 
   rwmutex->writers = 2;
   THIS_RWKEY->kind = RWMUX_WRITE;
+}
+
+/*! @decl int(0..1) try_upgrade()
+ *!
+ *! Attempt to upgrade this key back into a write-lock.
+ *!
+ *! This operation is only allowed on keys that have started
+ *! out as write-locks.
+ *!
+ *! This is a no-op on keys that already are write-locks, in which
+ *! case @expr{1@} will be returned.
+ *!
+ *! For a downgraded write-lock, this operation will upgrade the
+ *! key into a write-lock if there are no active read locks.
+ *!
+ *! @throws
+ *!   Throws an error for keys that didn't start out as write-locks.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} if the key is now a write-lock, and
+ *!   @expr{0@} (zero) if it is (still) a read-lock.
+ *!
+ *! @seealso
+ *!   @[upgrade()], @[downgrade()]
+ */
+static void f_rwmutex_key_try_upgrade(INT32 args)
+{
+  struct rwmutex_storage *rwmutex = NULL;
+
+  if (THIS_RWKEY->kind < RWMUX_DOWNGRADED) {
+    Pike_error("Unsupported operation -- not a (degraded) write lock.\n");
+  }
+  if (THIS_RWKEY->kind == RWMUX_DOWNGRADED) {
+    rwmutex = THIS_RWKEY->rwmutex;
+
+    if (rwmutex->readers != 1) {
+      /* There are other readers active. */
+      push_int(0);
+      return;
+    }
+
+    rwmutex->readers = 0;
+    rwmutex->writers = 2;
+
+    THIS_RWKEY->kind = RWMUX_WRITE;
+  }
+  push_int(1);
 }
 
 static void f_rwmutex_key__sprintf(INT32 args)
@@ -4082,6 +4195,8 @@ void th_init(void)
 	       tFunc(tNone, tVoid), 0);
   ADD_FUNCTION("upgrade", f_rwmutex_key_upgrade,
 	       tFunc(tNone, tVoid), 0);
+  ADD_FUNCTION("try_upgrade", f_rwmutex_key_try_upgrade,
+	       tFunc(tNone, tInt01), 0);
   ADD_FUNCTION("_sprintf", f_rwmutex_key__sprintf,
 	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
   rwmutex_key_program = Pike_compiler->new_program;
@@ -4093,7 +4208,11 @@ void th_init(void)
   ADD_STORAGE(struct rwmutex_storage);
   ADD_FUNCTION("read_lock", f_rwmutex_read_lock,
 	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
+  ADD_FUNCTION("try_read_lock", f_rwmutex_try_read_lock,
+	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
   ADD_FUNCTION("write_lock", f_rwmutex_write_lock,
+	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
+  ADD_FUNCTION("try_write_lock", f_rwmutex_try_write_lock,
 	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
   ADD_FUNCTION("_sprintf", f_rwmutex__sprintf,
 	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
