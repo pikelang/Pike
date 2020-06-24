@@ -2126,13 +2126,19 @@ struct mutex_storage
   int num_waiting;
 };
 
+enum key_kind
+{
+  KEY_UNINITIALIZED = 0,
+  KEY_INITIALIZED,
+};
+
 struct key_storage
 {
   struct mutex_storage *mut;
   struct object *mutex_obj;
   struct thread_state *owner;
   struct object *owner_obj;
-  int initialized;
+  enum key_kind kind;
 };
 
 #define OB2KEY(X) ((struct key_storage *)((X)->storage))
@@ -2532,7 +2538,7 @@ void init_mutex_key_obj(struct object *UNUSED(o))
   THIS_KEY->owner_obj = Pike_interpreter.thread_state->thread_obj;
   if (THIS_KEY->owner_obj)
     add_ref(THIS_KEY->owner_obj);
-  THIS_KEY->initialized=1;
+  THIS_KEY->kind = KEY_INITIALIZED;
 }
 
 void exit_mutex_key_obj(struct object *DEBUGUSED(o))
@@ -2562,7 +2568,7 @@ void exit_mutex_key_obj(struct object *DEBUGUSED(o))
       THIS_KEY->owner_obj=0;
     }
     THIS_KEY->mut=0;
-    THIS_KEY->initialized=0;
+    THIS_KEY->kind = KEY_UNINITIALIZED;
     mutex_obj = THIS_KEY->mutex_obj;
     THIS_KEY->mutex_obj = NULL;
 
@@ -3340,7 +3346,7 @@ void f_cond_wait(INT32 args)
   c = THIS_COND;
 
   if ((key->prog != mutex_key) ||
-      (!(OB2KEY(key)->initialized)) ||
+      (!(OB2KEY(key)->kind)) ||
       (!(mut = OB2KEY(key)->mut)) ||
       (c->mutex_obj && OB2KEY(key)->mutex_obj &&
        (OB2KEY(key)->mutex_obj != c->mutex_obj))) {
