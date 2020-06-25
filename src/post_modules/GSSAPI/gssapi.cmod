@@ -36,6 +36,7 @@
 #include "gssapi_config.h"
 
 #include "bignum.h"
+#include "threads.h"
 #include "builtin_functions.h"
 #include "interpret.h"
 #include "operators.h"

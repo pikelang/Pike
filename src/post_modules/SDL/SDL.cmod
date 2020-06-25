@@ -16,10 +16,10 @@
 #include "backend.h"
 #include "module_support.h"
 #include "array.h"
+#include "threads.h"
 #include "builtin_functions.h"
 #include "mapping.h"
 #include "pike_types.h"
-#include "threads.h"
 
 #include "sdl_config.h"
 
