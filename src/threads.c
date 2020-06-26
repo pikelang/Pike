@@ -2119,10 +2119,12 @@ static void f_set_thread_quanta(INT32 args)
  * key object when the key is destructed.
  */
 
+struct key_storage;
+
 struct mutex_storage
 {
   COND_T condition;
-  struct object *key;
+  struct key_storage *key;
   int num_waiting;
 };
 
@@ -2134,6 +2136,7 @@ enum key_kind
 
 struct key_storage
 {
+  struct object *self;		/* NOT reference-counted! */
   struct mutex_storage *mut;
   struct object *mutex_obj;
   struct thread_state *owner;
@@ -2204,6 +2207,7 @@ struct key_storage
 void f_mutex_lock(INT32 args)
 {
   struct mutex_storage  *m;
+  struct key_storage *key;
   struct object *o;
   INT_TYPE type;
 
@@ -2224,11 +2228,11 @@ void f_mutex_lock(INT32 args)
 
     case 0:
     case 2:
-      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_state)
+      if(m->key && m->key->owner == Pike_interpreter.thread_state)
       {
 	THREADS_FPRINTF(0,
                         "Recursive LOCK k:%p, m:%p(%p), t:%p\n",
-                        OB2KEY(m->key), m, OB2KEY(m->key)->mut,
+                        m->key, m, m->key->mut,
                         Pike_interpreter.thread_state);
 
 	if(type==0) Pike_error("Recursive mutex locks!\n");
@@ -2277,7 +2281,7 @@ void f_mutex_lock(INT32 args)
   }
 #endif
 
-  m->key=o;
+  m->key = OB2KEY(o);
   OB2KEY(o)->mut=m;
   add_ref (OB2KEY(o)->mutex_obj = Pike_fp->current_object);
 
@@ -2303,6 +2307,7 @@ void f_mutex_lock(INT32 args)
 void f_mutex_trylock(INT32 args)
 {
   struct mutex_storage  *m;
+  struct key_storage *key;
   struct object *o;
   INT_TYPE type;
   int i=0;
@@ -2325,7 +2330,7 @@ void f_mutex_trylock(INT32 args)
                     "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
 
     case 0:
-      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_state)
+      if(m->key && m->key->owner == Pike_interpreter.thread_state)
       {
 	Pike_error("Recursive mutex locks!\n");
       }
@@ -2336,12 +2341,13 @@ void f_mutex_trylock(INT32 args)
   }
 
   o=clone_object(mutex_key,0);
+  key = OB2KEY(o);
 
   if(!m->key)
   {
-    OB2KEY(o)->mut=m;
-    add_ref (OB2KEY(o)->mutex_obj = Pike_fp->current_object);
-    m->key=o;
+    key->mut = m;
+    add_ref (key->mutex_obj = Pike_fp->current_object);
+    m->key = key;
     i=1;
   }
 
@@ -2373,8 +2379,8 @@ PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
 
   pop_n_elems(args);
 
-  if (m->key && OB2KEY(m->key)->owner)
-    ref_push_object(OB2KEY(m->key)->owner->thread_obj);
+  if (m->key && m->key->owner)
+    ref_push_object(m->key->owner->thread_obj);
   else
     push_int(0);
 }
@@ -2394,7 +2400,7 @@ PMOD_EXPORT void f_mutex_locking_key(INT32 args)
   pop_n_elems(args);
 
   if (m->key)
-    ref_push_object(m->key);
+    ref_push_object(m->key->self);
   else
     push_int(0);
 }
@@ -2415,9 +2421,9 @@ void f_mutex__sprintf (INT32 args)
     push_undefined();
     return;
   }
-  if (m->key && OB2KEY(m->key)->owner) {
+  if (m->key && m->key->owner) {
     push_static_text("Thread.Mutex(/*locked by 0x");
-    push_int64(PTR_TO_INT(THREAD_T_TO_PTR(OB2KEY(m->key)->owner->id)));
+    push_int64(PTR_TO_INT(THREAD_T_TO_PTR(m->key->owner->id)));
     f_int2hex(1);
     push_static_text("*/)");
     f_add(3);
@@ -2458,7 +2464,7 @@ void init_mutex_obj(struct object *UNUSED(o))
 void exit_mutex_obj(struct object *UNUSED(o))
 {
   struct mutex_storage *m = THIS_MUTEX;
-  struct object *key = m->key;
+  struct key_storage *key = m->key;
 
   THREADS_FPRINTF(1, "DESTROYING MUTEX m:%p\n", THIS_MUTEX);
 
@@ -2480,7 +2486,7 @@ void exit_mutex_obj(struct object *UNUSED(o))
     /* NB: We know that mutex_key doesn't have an lfun:_destruct()
      *     that inhibits our destruct().
      */
-    destruct(key); /* Will destroy m->condition if m->num_waiting is zero. */
+    destruct(key->self); /* Will destroy m->condition if m->num_waiting is zero. */
     if(m->num_waiting)
     {
       THREADS_FPRINTF(1, "Destructed mutex is being waited on.\n");
@@ -2534,6 +2540,7 @@ void init_mutex_key_obj(struct object *UNUSED(o))
   THIS_KEY->mut=0;
   THIS_KEY->mutex_obj = NULL;
 #endif
+  THIS_KEY->self = Pike_fp->current_object;
   THIS_KEY->owner = Pike_interpreter.thread_state;
   THIS_KEY->owner_obj = Pike_interpreter.thread_state->thread_obj;
   if (THIS_KEY->owner_obj)
@@ -2549,15 +2556,16 @@ void exit_mutex_key_obj(struct object *DEBUGUSED(o))
   if(THIS_KEY->mut)
   {
     struct mutex_storage *mut = THIS_KEY->mut;
+    struct key_storage *key = THIS_KEY;
     struct object *mutex_obj;
 
 #ifdef PIKE_DEBUG
     /* Note: mut->key can be NULL if our corresponding mutex
      *       has been destructed.
      */
-    if(mut->key && (mut->key != o))
+    if(mut->key && (mut->key != key))
       Pike_fatal("Mutex unlock from wrong key %p != %p!\n",
-		 THIS_KEY->mut->key, o);
+		 mut->key, key);
 #endif
     mut->key=0;
     if (THIS_KEY->owner) {
@@ -3325,8 +3333,9 @@ static void f_cond_create(INT32 args)
  */
 void f_cond_wait(INT32 args)
 {
-  struct object *key, *mutex_obj;
+  struct object *key_obj, *mutex_obj;
   struct mutex_storage *mut;
+  struct key_storage *key;
   struct pike_cond *c;
   INT_TYPE seconds = 0, nanos = 0;
 
@@ -3335,21 +3344,21 @@ void f_cond_wait(INT32 args)
 
   if (args <= 2) {
     FLOAT_TYPE fsecs = 0.0;
-    get_all_args(NULL, args, "%o.%F", &key, &fsecs);
+    get_all_args(NULL, args, "%o.%F", &key_obj, &fsecs);
     seconds = (INT_TYPE) fsecs;
     nanos = (INT_TYPE)((fsecs - seconds)*1000000000);
   } else {
     /* FIXME: Support bignum nanos. */
-    get_all_args(NULL, args, "%o%i%i", &key, &seconds, &nanos);
+    get_all_args(NULL, args, "%o%i%i", &key_obj, &seconds, &nanos);
   }
 
   c = THIS_COND;
 
-  if ((key->prog != mutex_key) ||
-      (!(OB2KEY(key)->kind)) ||
-      (!(mut = OB2KEY(key)->mut)) ||
-      (c->mutex_obj && OB2KEY(key)->mutex_obj &&
-       (OB2KEY(key)->mutex_obj != c->mutex_obj))) {
+  if ((key_obj->prog != mutex_key) ||
+      (!((key = OB2KEY(key_obj))->kind)) ||
+      (!(mut = key->mut)) ||
+      (c->mutex_obj && key->mutex_obj &&
+       (key->mutex_obj != c->mutex_obj))) {
     Pike_error("Bad argument 1 to wait()\n");
   }
 
@@ -3359,10 +3368,10 @@ void f_cond_wait(INT32 args)
   }
 
   /* Unlock mutex */
-  mutex_obj = OB2KEY(key)->mutex_obj;
+  mutex_obj = key->mutex_obj;
   mut->key=0;
-  OB2KEY(key)->mut=0;
-  OB2KEY(key)->mutex_obj = NULL;
+  key->mut = NULL;
+  key->mutex_obj = NULL;
   co_signal(& mut->condition);
 
   if (!c->mutex_obj) {
@@ -3395,8 +3404,8 @@ void f_cond_wait(INT32 args)
     check_threads_etc();
   }
   mut->key=key;
-  OB2KEY(key)->mut=mut;
-  OB2KEY(key)->mutex_obj = mutex_obj;
+  key->mut = mut;
+  key->mutex_obj = mutex_obj;
   mut->num_waiting--;
 
   pop_stack();
