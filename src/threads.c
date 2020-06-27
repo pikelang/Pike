@@ -2132,6 +2132,8 @@ enum key_kind
 {
   KEY_UNINITIALIZED = 0,
   KEY_INITIALIZED,
+  KEY_PENDING,
+  KEY_EXCLUSIVE,
 };
 
 struct key_storage
@@ -2141,6 +2143,8 @@ struct key_storage
   struct object *mutex_obj;
   struct thread_state *owner;
   struct object *owner_obj;
+  struct key_storage *prev;
+  struct key_storage *next;
   enum key_kind kind;
 };
 
@@ -2250,9 +2254,19 @@ void f_mutex_lock(INT32 args)
    */
   o=fast_clone_object(mutex_key);
 
+  key = OB2KEY(o);
+  key->mut = m;
+  add_ref (key->mutex_obj = Pike_fp->current_object);
+  key->prev = NULL;
+  if ((key->next = m->key)) {
+    m->key->prev = key;
+  }
+  m->key = key;
+  key->kind = KEY_PENDING;
+
   DEBUG_CHECK_THREAD();
 
-  if(m->key)
+  if(key->next)
   {
     m->num_waiting++;
     if(threads_disabled)
@@ -2267,7 +2281,7 @@ void f_mutex_lock(INT32 args)
       co_wait_interpreter(& m->condition);
       SWAP_IN_CURRENT_THREAD();
       check_threads_etc();
-    }while(m->key);
+    } while (key->next);
     m->num_waiting--;
   }
 
@@ -2281,14 +2295,12 @@ void f_mutex_lock(INT32 args)
   }
 #endif
 
-  m->key = OB2KEY(o);
-  OB2KEY(o)->mut=m;
-  add_ref (OB2KEY(o)->mutex_obj = Pike_fp->current_object);
+  key->kind = KEY_EXCLUSIVE;
 
   DEBUG_CHECK_THREAD();
 
   THREADS_FPRINTF(1, "LOCK k:%p, m:%p(%p), t:%p\n",
-                  OB2KEY(o), m, OB2KEY(m->key)->mut,
+                  key, m, key->mut,
                   Pike_interpreter.thread_state);
   pop_n_elems(args);
   push_object(o);
@@ -2330,9 +2342,11 @@ void f_mutex_trylock(INT32 args)
                     "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
 
     case 0:
-      if(m->key && m->key->owner == Pike_interpreter.thread_state)
-      {
-	Pike_error("Recursive mutex locks!\n");
+      for (key = m->key; key; key = key->next) {
+	if(key->owner == Pike_interpreter.thread_state)
+	{
+	  Pike_error("Recursive mutex locks!\n");
+	}
       }
 
     case 2:
@@ -2348,6 +2362,7 @@ void f_mutex_trylock(INT32 args)
     key->mut = m;
     add_ref (key->mutex_obj = Pike_fp->current_object);
     m->key = key;
+    key->kind = KEY_EXCLUSIVE;
     i=1;
   }
 
@@ -2376,13 +2391,18 @@ void f_mutex_trylock(INT32 args)
 PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
 {
   struct mutex_storage *m = THIS_MUTEX;
+  struct key_storage *k;
 
   pop_n_elems(args);
 
-  if (m->key && m->key->owner)
-    ref_push_object(m->key->owner->thread_obj);
-  else
-    push_int(0);
+  for (k = m->key; k; k = k->next) {
+    if (k->kind == KEY_PENDING) continue;
+    if (m->key->owner) {
+      ref_push_object(m->key->owner->thread_obj);
+      return;
+    }
+  }
+  push_int(0);
 }
 
 /*! @decl Thread.MutexKey current_locking_key()
@@ -2396,13 +2416,16 @@ PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
 PMOD_EXPORT void f_mutex_locking_key(INT32 args)
 {
   struct mutex_storage *m = THIS_MUTEX;
+  struct key_storage *k;
 
   pop_n_elems(args);
 
-  if (m->key)
+  for (k = m->key; k; k = k->next) {
+    if (k->kind == KEY_PENDING) continue;
     ref_push_object(m->key->self);
-  else
-    push_int(0);
+    return;
+  }
+  push_int(0);
 }
 
 /*! @decl protected string _sprintf(int c)
@@ -2413,6 +2436,7 @@ PMOD_EXPORT void f_mutex_locking_key(INT32 args)
 void f_mutex__sprintf (INT32 args)
 {
   struct mutex_storage *m = THIS_MUTEX;
+  struct key_storage *k;
   int c = 0;
   if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
     c = Pike_sp[-args].u.integer;
@@ -2421,12 +2445,34 @@ void f_mutex__sprintf (INT32 args)
     push_undefined();
     return;
   }
-  if (m->key && m->key->owner) {
-    push_static_text("Thread.Mutex(/*locked by 0x");
-    push_int64(PTR_TO_INT(THREAD_T_TO_PTR(m->key->owner->id)));
-    f_int2hex(1);
-    push_static_text("*/)");
-    f_add(3);
+
+  k = m->key;
+  if (k) {
+    enum key_kind kind = KEY_UNINITIALIZED;
+    struct svalue *save_sp = Pike_sp;
+    push_static_text("Thread.Mutex(/*");
+    for (; k; k = k->next) {
+      if (k->kind != kind) {
+	kind = k->kind;
+	switch(kind) {
+	case KEY_PENDING:
+	  push_static_text(" Waiting by");
+	  break;
+	case KEY_EXCLUSIVE:
+	  push_static_text(" Locked by");
+	  break;
+	default:
+	  break;
+	}
+      } else {
+	push_static_text(",");
+      }
+      push_static_text(" 0x");
+      push_int64(PTR_TO_INT(THREAD_T_TO_PTR(m->key->owner->id)));
+      f_int2hex(1);
+    }
+    push_static_text(" */)");
+    f_add(Pike_sp - save_sp);
   } else {
     push_static_text("Thread.Mutex(/* Unlocked */)");
   }
@@ -2482,11 +2528,18 @@ void exit_mutex_obj(struct object *UNUSED(o))
   }
 #else
   if(key) {
+    struct key_storage *next = key->next;
     m->key=0;
-    /* NB: We know that mutex_key doesn't have an lfun:_destruct()
-     *     that inhibits our destruct().
-     */
-    destruct(key->self); /* Will destroy m->condition if m->num_waiting is zero. */
+    for (; key; key = next) {
+      next = key->next;
+      key->prev = NULL;
+      key->next = NULL;
+
+      /* NB: We know that mutex_key doesn't have an lfun:_destruct()
+       *     that inhibits our destruct().
+       */
+      destruct(key->self); /* Will destroy m->condition if m->num_waiting is zero. */
+    }
     if(m->num_waiting)
     {
       THREADS_FPRINTF(1, "Destructed mutex is being waited on.\n");
@@ -2539,6 +2592,8 @@ void init_mutex_key_obj(struct object *UNUSED(o))
 #ifdef PIKE_NULL_IS_SPECIAL
   THIS_KEY->mut=0;
   THIS_KEY->mutex_obj = NULL;
+  THIS_KEY->prev = NULL;
+  THIS_KEY->next = NULL;
 #endif
   THIS_KEY->self = Pike_fp->current_object;
   THIS_KEY->owner = Pike_interpreter.thread_state;
@@ -2559,15 +2614,35 @@ void exit_mutex_key_obj(struct object *DEBUGUSED(o))
     struct key_storage *key = THIS_KEY;
     struct object *mutex_obj;
 
+    /* Unlink */
+    if (key->prev) {
 #ifdef PIKE_DEBUG
-    /* Note: mut->key can be NULL if our corresponding mutex
-     *       has been destructed.
-     */
-    if(mut->key && (mut->key != key))
-      Pike_fatal("Mutex unlock from wrong key %p != %p!\n",
-		 mut->key, key);
+      if(key->prev->next != key)
+	Pike_fatal("Inconsistent mutex key link %p != %p!\n",
+		   key->prev->next, key);
 #endif
-    mut->key=0;
+      if ((key->prev->next = key->next)) {
+	key->next->prev = key->prev;
+      }
+      key->prev = NULL;
+    } else {
+#ifdef PIKE_DEBUG
+      /* Note: mut->key can be NULL if our corresponding mutex
+       *       has been destructed.
+       *
+       * FIXME: What about the case with temporary unlinking in
+       *        Condition()->wait()?
+       */
+      if(mut->key && (mut->key != key))
+	Pike_fatal("Mutex unlock from wrong key %p != %p!\n",
+		   key->mut->key, key);
+#endif
+      if ((mut->key = key->next)) {
+	key->next->prev = NULL;
+      }
+    }
+    key->next = NULL;
+
     if (THIS_KEY->owner) {
       THIS_KEY->owner = NULL;
     }
@@ -2582,7 +2657,7 @@ void exit_mutex_key_obj(struct object *DEBUGUSED(o))
 
     if (mut->num_waiting) {
       THREADS_ALLOW();
-      co_signal(&mut->condition);
+      co_broadcast(&mut->condition);
 
       /* Try to wake up the waiting thread(s) immediately
        * in an attempt to avoid starvation.
@@ -3369,10 +3444,21 @@ void f_cond_wait(INT32 args)
 
   /* Unlock mutex */
   mutex_obj = key->mutex_obj;
-  mut->key=0;
+  if (key->prev) {
+    if ((key->prev->next = key->next)) {
+      key->next->prev = key->prev;
+    }
+    key->prev = NULL;
+  } else {
+    if ((mut->key = key->next)) {
+      key->next->prev = NULL;
+    }
+  }
+  key->next = NULL;
   key->mut = NULL;
   key->mutex_obj = NULL;
-  co_signal(& mut->condition);
+  key->kind = KEY_INITIALIZED;
+  co_broadcast(& mut->condition);
 
   if (!c->mutex_obj) {
     /* Lock the condition to the first mutex it is used together with. */
@@ -3397,15 +3483,22 @@ void f_cond_wait(INT32 args)
 
   /* Lock mutex */
   mut->num_waiting++;
-  while(mut->key) {
-    SWAP_OUT_CURRENT_THREAD();
-    co_wait_interpreter(& mut->condition);
-    SWAP_IN_CURRENT_THREAD();
-    check_threads_etc();
+  {
+    key->kind = KEY_PENDING;
+    if ((key->next = mut->key)) {
+      key->next->prev = key;
+    }
+    mut->key = key;
+    key->mut = mut;
+    key->mutex_obj = mutex_obj;
+    while(key->next) {
+      SWAP_OUT_CURRENT_THREAD();
+      co_wait_interpreter(& mut->condition);
+      SWAP_IN_CURRENT_THREAD();
+      check_threads_etc();
+    }
+    key->kind = KEY_EXCLUSIVE;
   }
-  mut->key=key;
-  key->mut = mut;
-  key->mutex_obj = mutex_obj;
   mut->num_waiting--;
 
   pop_stack();
