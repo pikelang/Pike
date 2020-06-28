@@ -490,6 +490,7 @@ private void waitauthready() {
 }
 
 protected void destroy() {
+  proxy.unnamedstatement = 0;		// Forget about pending statements
   destruct(proxy);
 }
 
