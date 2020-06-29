@@ -2334,14 +2334,16 @@ void f_mutex_lock(INT32 args)
  *! @endint
  *!
  *! @note
+ *!   Note that if the current thread already holds a shared key,
+ *!   a new will be created without waiting, and regardless of
+ *!   the value of @[type].
+ *!
+ *! @note
  *! If the mutex is destructed while it's locked or while threads are
  *! waiting on it, it will continue to exist internally until the last
  *! thread has stopped waiting and the last @[MutexKey] has
  *! disappeared, but further calls to the functions in this class will
  *! fail as is usual for destructed objects.
- *!
- *! @note
- *! A thread may hold several shared locks concurrently.
  *!
  *! @seealso
  *!   @[lock()], @[trylock()], @[try_shared_lock()]
@@ -2349,49 +2351,47 @@ void f_mutex_lock(INT32 args)
 void f_mutex_shared_lock(INT32 args)
 {
   struct mutex_storage  *m;
-  struct key_storage *key;
-  struct object *o;
-  INT_TYPE type;
+  struct key_storage *key, *prev = NULL;
+  struct object *o, *prev_o = NULL;
+  INT_TYPE type = 0;
 
   DEBUG_CHECK_THREAD();
 
   m=THIS_MUTEX;
-  if(!args)
-    type=0;
-  else
-    get_all_args(NULL, args, "%i", &type);
+  get_all_args(NULL, args, ".%i", &type);
 
-  switch(type)
-  {
-    default:
-      bad_arg_error("shared_lock", args, 2, "int(0..2)", Pike_sp+1-args,
-                    "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
+  if ((type < 0) || (type > 2)) {
+    bad_arg_error("shared_lock", args, 2, "int(0..2)", Pike_sp+1-args,
+		  "Unknown mutex locking style: %"PRINTPIKEINT"d\n", type);
+  }
 
+  for (key = m->key; key; key = key->next) {
+    if (key->owner == Pike_interpreter.thread_state) {
+      THREADS_FPRINTF(0,
+		      "Recursive LOCK k:%p, m:%p(%p), t:%p\n",
+		      key, m, key->mut,
+		      Pike_interpreter.thread_state);
 
-    case 0:
-    case 2:
-      if (m->key && (m->key->kind >= KEY_PENDING)) {
-	/* There are active or waiting exclusive locks. */
-	for (key = m->key; key; key = key->next) {
-	  if(key->owner == Pike_interpreter.thread_state)
-	  {
-	    THREADS_FPRINTF(0,
-			    "Recursive LOCK k:%p, m:%p(%p), t:%p\n",
-			    key, m, key->mut,
-			    Pike_interpreter.thread_state);
-
-	    if(type==0) {
-	      Pike_error("Recursive mutex locks!\n");
-	    }
-
-	    pop_n_elems(args);
-	    push_int(0);
-	    return;
-	  }
+      if (key->kind >= KEY_PENDING) {
+	/* This thread already has an exclusive lock. */
+	switch(type) {
+	case 0:
+	  Pike_error("Recursive mutex locks!\n");
+	  break;
+	case 1:
+	  continue;
+	case 2:
+	  pop_n_elems(args);
+	  push_int(0);
+	  return;
 	}
       }
-    case 1:
+
+      prev = key;
+      prev_o = prev->self;
+      add_ref(prev_o);
       break;
+    }
   }
 
   /* Needs to be cloned here, since create()
@@ -2401,22 +2401,47 @@ void f_mutex_shared_lock(INT32 args)
 
   DEBUG_CHECK_THREAD();
 
-  while (m->key && (m->key->kind >= KEY_PENDING)) {
-    if(threads_disabled)
-    {
-      free_object(o);
-      Pike_error("Cannot wait for mutexes when threads are disabled!\n");
+  if (prev_o && !prev_o->prog) {
+    /* Paranoia: prev got destructed during the clone above.
+     *
+     * NB: We rely on this thread not having added a new key
+     *     during the clone above.
+     *
+     * NB: We also rely on prev not getting unlinked for any other
+     *     reason than getting destructed.
+     */
+    prev = NULL;
+    free_object(prev_o);
+    prev_o = NULL;
+    for (key = m->key; key; key = key->next) {
+      if (key->kind >= KEY_PENDING) continue;
+      if (key->owner == Pike_interpreter.thread_state) {
+	prev = key;
+	prev_o = prev->self;
+	add_ref(prev_o);
+	break;
+      }
     }
+  }
 
-    m->num_waiting++;
+  if (!prev) {
+    while (m->key && (m->key->kind >= KEY_PENDING)) {
+      if(threads_disabled)
+      {
+	free_object(o);
+	Pike_error("Cannot wait for mutexes when threads are disabled!\n");
+      }
 
-    THREADS_FPRINTF(1, "WAITING TO SHARE LOCK m:%p\n", m);
-    SWAP_OUT_CURRENT_THREAD();
-    co_wait_interpreter(& m->condition);
-    SWAP_IN_CURRENT_THREAD();
-    check_threads_etc();
+      m->num_waiting++;
 
-    m->num_waiting--;
+      THREADS_FPRINTF(1, "WAITING TO SHARE LOCK m:%p\n", m);
+      SWAP_OUT_CURRENT_THREAD();
+      co_wait_interpreter(& m->condition);
+      SWAP_IN_CURRENT_THREAD();
+      check_threads_etc();
+
+      m->num_waiting--;
+    }
   }
 
 #ifdef PICKY_MUTEX
@@ -2431,20 +2456,31 @@ void f_mutex_shared_lock(INT32 args)
   }
 #endif
 
-  /* Two cases here:
+  /* Three cases here:
    *
-   * mut->key == NULL
-   * mut->key && mut->key->kind == KEY_READ
+   * prev != NULL
+   * prev == NULL && m->key == NULL
+   * prev == NULL && m->key && m->key->kind == KEY_READ
    */
   key = OB2KEY(o);
   key->mut = m;
   add_ref (key->mutex_obj = Pike_fp->current_object);
-  key->prev = NULL;
-  if ((key->next = m->key)) {
-    m->key->prev = key;
+  if (prev) {
+    /* Add key after prev in the list. */
+    key->prev = prev;
+    if ((key->next = prev->next)) {
+      prev->next->prev = key;
+    }
+    prev->next = key;
+    free_object(prev_o);
+  } else {
+    /* Add key first in the list. */
+    key->prev = NULL;
+    if ((key->next = m->key)) {
+      m->key->prev = key;
+    }
+    m->key = key;
   }
-  m->key = key;
-
   key->kind = KEY_SHARED;
 
   DEBUG_CHECK_THREAD();
@@ -2543,9 +2579,9 @@ void f_mutex_trylock(INT32 args)
 void f_mutex_try_shared_lock(INT32 args)
 {
   struct mutex_storage  *m;
-  struct key_storage *key;
+  struct key_storage *key, *prev = NULL;
   struct object *o;
-  INT_TYPE type;
+  INT_TYPE type = 0;
   int i=0;
 
   /* No reason to release the interpreter lock here
@@ -2554,35 +2590,43 @@ void f_mutex_try_shared_lock(INT32 args)
 
   m=THIS_MUTEX;
 
-  if(!args)
-    type=0;
-  else
-    get_all_args(NULL, args, "%i", &type);
+  get_all_args(NULL, args, ".%i", &type);
 
-  switch(type)
-  {
-    default:
-      bad_arg_error("try_shared_lock", args, 2, "int(0..2)", Pike_sp+1-args,
-                    "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
-
-    case 0:
-      for (key = m->key; key; key = key->next) {
-	if(key->owner == Pike_interpreter.thread_state)
-	{
-	  Pike_error("Recursive mutex locks!\n");
-	}
-      }
-
-    case 2:
-    case 1:
-      break;
+  if ((type < 0) || (type > 2)) {
+    bad_arg_error("try_shared_lock", args, 2, "int(0..2)", Pike_sp+1-args,
+		  "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
   }
 
-  o=clone_object(mutex_key,0);
+  o = clone_object(mutex_key, 0);
+
+  for (key = m->key; key; key = key->next) {
+    if(key->owner == Pike_interpreter.thread_state)
+    {
+      if (key->kind >= KEY_PENDING) {
+	if (type == 0) {
+	  free_object(o);
+	  Pike_error("Recursive mutex locks!\n");
+	}
+	continue;
+      }
+      prev = key;
+      break;
+    }
+  }
+
   key = OB2KEY(o);
 
-  if (!m->key || (m->key->kind < KEY_PENDING))
-  {
+  if (prev) {
+    key->mut = m;
+    add_ref (key->mutex_obj = Pike_fp->current_object);
+    key->prev = prev;
+    if ((key->next = prev)) {
+      prev->next->prev = key;
+    }
+    prev->next = key;
+    key->kind = KEY_SHARED;
+    i=1;
+  } else if (!m->key || (m->key->kind < KEY_PENDING)) {
     key->mut = m;
     add_ref (key->mutex_obj = Pike_fp->current_object);
     if ((key->next = m->key)) {
