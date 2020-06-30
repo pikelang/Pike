@@ -2617,10 +2617,11 @@ void f_mutex_try_shared_lock(INT32 args)
   key = OB2KEY(o);
 
   if (prev) {
+    /* Link after prev. */
     key->mut = m;
     add_ref (key->mutex_obj = Pike_fp->current_object);
     key->prev = prev;
-    if ((key->next = prev)) {
+    if ((key->next = prev->next)) {
       prev->next->prev = key;
     }
     prev->next = key;
