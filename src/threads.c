@@ -2215,15 +2215,12 @@ void f_mutex_lock(INT32 args)
   struct mutex_storage  *m;
   struct key_storage *key;
   struct object *o;
-  INT_TYPE type;
+  INT_TYPE type = 0;
 
   DEBUG_CHECK_THREAD();
 
   m=THIS_MUTEX;
-  if(!args)
-    type=0;
-  else
-    get_all_args(NULL, args, "%i", &type);
+  get_all_args(NULL, args, ".%i", &type);
 
   switch(type)
   {
@@ -2507,7 +2504,7 @@ void f_mutex_trylock(INT32 args)
   struct mutex_storage  *m;
   struct key_storage *key;
   struct object *o;
-  INT_TYPE type;
+  INT_TYPE type = 0;
   int i=0;
 
   /* No reason to release the interpreter lock here
@@ -2516,10 +2513,7 @@ void f_mutex_trylock(INT32 args)
 
   m=THIS_MUTEX;
 
-  if(!args)
-    type=0;
-  else
-    get_all_args(NULL, args, "%i", &type);
+  get_all_args(NULL, args, ".%i", &type);
 
   switch(type)
   {
