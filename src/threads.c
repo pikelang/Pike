@@ -2134,6 +2134,7 @@ enum key_kind
   KEY_INITIALIZED,
   KEY_NONE = KEY_INITIALIZED,
   KEY_SHARED,
+  KEY_DOWNGRADED,
   KEY_PENDING,
   KEY_EXCLUSIVE,
 };
@@ -2439,6 +2440,13 @@ void f_mutex_shared_lock(INT32 args)
 
       m->num_waiting--;
     }
+
+    if (m->key && (m->key->kind == KEY_DOWNGRADED)) {
+      /* Link new read keys after the downgraded key (if any). */
+      prev = m->key;
+      prev_o = prev->self;
+      add_ref(prev_o);
+    }
   }
 
 #ifdef PICKY_MUTEX
@@ -2449,6 +2457,7 @@ void f_mutex_shared_lock(INT32 args)
     if (!m->num_waiting) {
       co_destroy (&m->condition);
     }
+    if (prev_o) free_object(prev_o);
     Pike_error ("Mutex was destructed while waiting for lock.\n");
   }
 #endif
@@ -2478,6 +2487,7 @@ void f_mutex_shared_lock(INT32 args)
     }
     m->key = key;
   }
+
   key->kind = KEY_SHARED;
 
   DEBUG_CHECK_THREAD();
@@ -2606,6 +2616,11 @@ void f_mutex_try_shared_lock(INT32 args)
       prev = key;
       break;
     }
+  }
+
+  if (m->key && (m->key->kind == KEY_DOWNGRADED) && !prev) {
+    /* Keep the downgraded key first. */
+    prev = m->key;
   }
 
   key = OB2KEY(o);
@@ -2961,6 +2976,80 @@ static void f_mutex_key__sprintf(INT32 args)
   } else {
     push_text("Thread.MutexKey(/* Unlocked */)");
   }
+}
+
+static void f_mutex_key_downgrade(INT32 args)
+{
+  struct key_storage *key = THIS_KEY;
+
+  if (key->kind < KEY_PENDING) return;
+
+  if (key->kind == KEY_PENDING) {
+    Pike_error("It is not possible to downgrade a key that is waiting.\n");
+  }
+
+  key->kind = KEY_DOWNGRADED;
+
+  co_broadcast(&key->mut->condition);
+}
+
+static void f_mutex_key_upgrade(INT32 args)
+{
+  struct key_storage *key = THIS_KEY;
+  struct mutex_storage *m = key->mut;
+
+  if (key->kind >= KEY_PENDING) return;
+
+  if (key->kind != KEY_DOWNGRADED) {
+    Pike_error("Upgrade is not allowed for non-degraded mutex keys.\n");
+  }
+
+  if(key->next)
+  {
+    if(threads_disabled)
+    {
+      /* Restore the key state. */
+      Pike_error("Cannot wait for mutexes when threads are disabled!\n");
+    }
+
+    key->kind = KEY_PENDING;
+
+    m->num_waiting++;
+    do
+    {
+      THREADS_FPRINTF(1, "WAITING TO LOCK m:%p\n", m);
+      SWAP_OUT_CURRENT_THREAD();
+      co_wait_interpreter(& m->condition);
+      SWAP_IN_CURRENT_THREAD();
+      check_threads_etc();
+    } while (key->next);
+    m->num_waiting--;
+  }
+
+  key->kind = KEY_EXCLUSIVE;
+}
+
+static void f_mutex_key_try_upgrade(INT32 args)
+{
+  struct key_storage *key = THIS_KEY;
+
+  if (key->kind >= KEY_PENDING) {
+    push_int(1);
+    return;
+  }
+
+  if (key->kind != KEY_DOWNGRADED) {
+    Pike_error("Upgrade is not allowed for non-degraded mutex keys.\n");
+  }
+
+  if (key->next) {
+    push_int(0);
+    return;
+  }
+
+  key->kind = KEY_EXCLUSIVE;
+
+  push_int(1);
 }
 
 /*! @endclass
@@ -4526,6 +4615,9 @@ void th_init(void)
   PIKE_MAP_VARIABLE("_mutex", mutex_key_offset + OFFSETOF(key_storage, mutex_obj),
 		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
   ADD_FUNCTION("_sprintf",f_mutex_key__sprintf,tFunc(tInt,tStr),ID_PROTECTED);
+  ADD_FUNCTION("downgrade", f_mutex_key_downgrade, tFunc(tNone,tVoid), 0);
+  ADD_FUNCTION("upgrade", f_mutex_key_upgrade, tFunc(tNone,tVoid), 0);
+  ADD_FUNCTION("try_upgrade", f_mutex_key_try_upgrade, tFunc(tNone,tInt01), 0);
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=Pike_compiler->new_program;
