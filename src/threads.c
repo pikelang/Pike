@@ -2270,12 +2270,12 @@ void f_mutex_lock(INT32 args)
 
   if(key->next)
   {
-    m->num_waiting++;
     if(threads_disabled)
     {
       free_object(o);
       Pike_error("Cannot wait for mutexes when threads are disabled!\n");
     }
+    m->num_waiting++;
     do
     {
       THREADS_FPRINTF(1, "WAITING TO LOCK m:%p\n", m);
