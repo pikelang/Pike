@@ -544,6 +544,10 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
      * below. Doing it the naughty way without going through
      * init_threads_disable etc to avoid hanging on runaway locks. */
 #ifdef PIKE_THREADS
+#ifdef PIKE_DEBUG
+    THREAD_T save_threads_disabled_thread = threads_disabled_thread;
+    threads_disabled_thread = th_self();
+#endif
     threads_disabled++;
 #endif
     memset (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
@@ -559,6 +563,9 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
     UNSETJMP (jmp);
 #ifdef PIKE_THREADS
     threads_disabled--;
+#ifdef PIKE_DEBUG
+    threads_disabled_thread = save_threads_disabled_thread;
+#endif
 #endif
     evaluator_callbacks = saved_eval_cbs;
   }else{

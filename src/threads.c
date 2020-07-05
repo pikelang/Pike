@@ -386,7 +386,8 @@ PMOD_EXPORT cpu_time_t threads_disabled_acc_time = 0;
 PMOD_EXPORT cpu_time_t threads_disabled_start = 0;
 
 #ifdef PIKE_DEBUG
-static THREAD_T threads_disabled_thread = 0;
+/* NB: Accessed from error.c:debug_va_fatal(). */
+extern THREAD_T threads_disabled_thread = 0;
 #endif
 #ifdef INTERNAL_PROFILING
 PMOD_EXPORT unsigned long thread_yields = 0;
