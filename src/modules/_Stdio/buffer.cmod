@@ -990,8 +990,10 @@ PIKECLASS Buffer
     if (f)
       assign_svalue(&io->output, f);
     else {
-      if (io->output.u.object)
+      if (io->output.u.object) {
         free_svalue(&io->output);
+        io->output.u.object = 0;	// free_svalue() puts in -1
+      }
       SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     }
   }
