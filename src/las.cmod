@@ -3743,8 +3743,13 @@ void fix_type_field(node *n)
       if (!efun_string ||
 	  !(efun_node = find_module_identifier(efun_string, 0))) {
 	UNSET_FORCE_RESOLVE(orig_flags);
-	my_yyerror("Efun implementing opcode %s undefined.",
-		   low_get_f_name(n->token, NULL));
+	if (instrs[n->token-F_OFFSET].name) {
+	  my_yyerror("Efun implementing opcode %s undefined.",
+		     instrs[n->token-F_OFFSET].name);
+	} else {
+	  my_yyerror("Efun implementing opcode <OTHER %d> undefined.",
+		     n->token);
+	}
 	copy_pike_type(n->type, mixed_type_string);
 	break;
       }
