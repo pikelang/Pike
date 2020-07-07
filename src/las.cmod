@@ -3675,6 +3675,155 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_AND_EQ:
+  case F_OR_EQ:
+  case F_XOR_EQ:
+  case F_LSH_EQ:
+  case F_RSH_EQ:
+  case F_ADD_EQ:
+  case F_SUB_EQ:
+  case F_MULT_EQ:
+  case F_POW_EQ:
+  case F_MOD_EQ:
+  case F_DIV_EQ:
+    /*  <lval> <op>= <rval> */
+    {
+      const char *efun_name = NULL;
+      struct pike_string *efun_string = NULL;
+      int orig_flags;
+      node *efun_node = NULL;
+      struct pike_type *f;
+      enum Pike_opcodes opcode = n->token;
+      INT32 args = 0;
+
+      switch(opcode) {
+      case F_AND_EQ:
+	efun_name = "`&";
+	break;
+      case F_OR_EQ:
+	efun_name = "`|";
+	break;
+      case F_XOR_EQ:
+	efun_name = "`^";
+	break;
+      case F_LSH_EQ:
+	efun_name = "`<<";
+	break;
+      case F_RSH_EQ:
+	efun_name = "`>>";
+	break;
+      case F_ADD_EQ:
+	efun_name = "`+";
+	break;
+      case F_SUB_EQ:
+	efun_name = "`-";
+	break;
+      case F_MULT_EQ:
+	efun_name = "`*";
+	break;
+      case F_POW_EQ:
+	efun_name = "`**";
+	break;
+      case F_MOD_EQ:
+	efun_name = "`%";
+	break;
+      case F_DIV_EQ:
+	efun_name = "`/";
+	break;
+      default:	/* Keep compiler warnings away. */
+	break;
+      }
+
+      if (efun_name) {
+	efun_string = findstring(efun_name);
+      }
+
+      SET_FORCE_RESOLVE(orig_flags);
+
+      if (!efun_string ||
+	  !(efun_node = find_module_identifier(efun_string, 0))) {
+	UNSET_FORCE_RESOLVE(orig_flags);
+	my_yyerror("Efun implementing opcode %s undefined.",
+		   low_get_f_name(n->token, NULL));
+	copy_pike_type(n->type, mixed_type_string);
+	break;
+      }
+
+      UNSET_FORCE_RESOLVE(orig_flags);
+
+      fix_type_field(efun_node);	/* Just in case. */
+
+      /* NOTE: new_check_call() steals a reference from f! */
+      copy_pike_type(f, efun_node->type);
+
+      free_node(efun_node);
+
+      /* NOTE: Temporarily convert the node into an argument list node
+       *       for new_check_call(),
+       */
+      n->token = F_ARG_LIST;
+      f = debug_malloc_pass(new_check_call(efun_string, f, n, &args, 0));
+      n->token = opcode;
+      if (f) {
+	struct pike_type *ret = new_get_return_type(f, 0);
+	free_type(f);
+	f = ret;
+      }
+
+      if (f) {
+	/* Check that the returned type is compatible with the
+	 * variable type.
+	 */
+	if (!pike_types_le(f, CAR(n)->type)) {
+	  /* a["b"]+=c and a->b+=c can be valid when a is an array.
+	   *
+	   * FIXME: Exactly what case is the problem?
+	   *	/grubba 2005-02-15
+	   *
+	   * Example:
+	   *   array tmp = ({([]),([])});
+	   *   tmp->foo += 7;		// Multi-assign.
+	   *	/grubba 2007-04-27
+	   */
+	  if (((CAR(n)->token != F_INDEX && CAR(n)->token != F_ARROW) ||
+	       !(match_types(array_type_string, CAAR(n)->type))) &&
+	      !match_types(CAR(n)->type, f)) {
+	    yytype_report(REPORT_ERROR, NULL, 0, CAR(n)->type,
+			  NULL, 0, f,
+			  0, "Bad type in assignment.");
+	  } else {
+	    if (c->lex.pragmas & ID_STRICT_TYPES) {
+	      struct pike_string *t1 = describe_type(f);
+	      struct pike_string *t2 = describe_type(CAR(n)->type);
+#ifdef PIKE_DEBUG
+	      if (l_flag > 0) {
+		fputs("Warning: Invalid assignment: ", stderr);
+		print_tree(n);
+	      }
+#endif /* PIKE_DEBUG */
+	      yywarning("An expression of type %S cannot be assigned to "
+			"a variable of type %S.", t1, t2);
+	      free_string(t2);
+	      free_string(t1);
+	    }
+#if 0
+	    if (runtime_options & RUNTIME_CHECK_TYPES) {
+	      /* The following is NOT correct code! */
+	      _CDR(n) = mksoftcastnode(CAR(n)->type,
+				       mkcastnode(mixed_type_string, CDR(n)));
+	    }
+#endif /* 0 */
+	  }
+	}
+	n->type = and_pike_types(f, CAR(n)->type);
+
+	free_type(f);
+      } else {
+	copy_pike_type(n->type, mixed_type_string);
+      }
+    }
+    break;
+
   case F_ARRAY_LVALUE:
     {
       node *lval_list;
