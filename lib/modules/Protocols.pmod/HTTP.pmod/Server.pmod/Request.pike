@@ -398,7 +398,7 @@ protected void update_mime_var(string name, string new)
   }
   if( !arrayp(val) )
     variables[name] = ({ val });
-  variables += ({ new });
+  variables[name] += ({ new });
 }
 
 protected void parse_post()
