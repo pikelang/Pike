@@ -597,9 +597,9 @@ class Interval {
   protected mixed `*(mixed that) {
     this_program n = this_program(this);
     if (intp(that)) {
-      n->nsecs *= that;
-      n->days *= that;
-      n->months *= that;
+      n->nsecs *= [int]that;
+      n->days *= [int]that;
+      n->months *= [int]that;
     } else if (floatp(that)) {
       n->nsecs = (int)(nsecs * that);
       n->days = (int)(days * that);
@@ -627,9 +627,9 @@ class Interval {
     if (!objectp(that) || !([object]that)->is_interval)
       error("Cannot add %O\n", that);
     this_program n = this_program(this);
-    n->nsecs += ([object]that)->nsecs;
-    n->days += ([object]that)->days;
-    n->months += ([object]that)->months;
+    n->nsecs += ([object(this_program)]that)->nsecs;
+    n->days += ([object(this_program)]that)->days;
+    n->months += ([object(this_program)]that)->months;
     return n;
   }
 
@@ -642,9 +642,9 @@ class Interval {
     } else if (!objectp(that) || !([object]that)->is_interval)
       error("Cannot substract %O\n", that);
     else {
-      n->nsecs  -= ([object]that)->nsecs;
-      n->days   -= ([object]that)->days;
-      n->months -= ([object]that)->months;
+      n->nsecs  -= ([object(this_program)]that)->nsecs;
+      n->days   -= ([object(this_program)]that)->days;
+      n->months -= ([object(this_program)]that)->months;
     }
     return n;
   }
@@ -862,14 +862,14 @@ class Date {
     object n = this_program(this);
     if (objectp(that)) {
       if (([object]that)->is_interval) {
-        n->days += ([object]that)->days;
+        n->days += ([object(Interval)]that)->days;
         if(([object]that)->months) {
           mapping(string:int) t = [mapping(string:int)]n->tm();
-          t->mon += ([object]that)->months;
+          t->mon += ([object(Interval)]that)->months;
           n = this_program(t);
         }
         if (([object]that)->nsecs)
-          (n = Timestamp(n))->nsecs += ([object]that)->nsecs;
+          (n = Timestamp(n))->nsecs += ([object(Interval)]that)->nsecs;
       } else if (([object]that)->is_time) {
           mapping(string:int) t = [mapping(string:int)]n->tm()
            + [mapping(string:int)]([object]that)->tm();
