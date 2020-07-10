@@ -42,7 +42,7 @@ protected class _HMAC
 	       14, 13, 12,
 	       17, 16, 15,
 	       0, 19, 18 }); int i; int j) {
-      result[i] += checksum[j];
+      result[i] = checksum[j];
     }
 
     return MIME.encode_crypt64((string(8bit))result);
