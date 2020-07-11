@@ -199,7 +199,7 @@ class Messages
     foreach(fragments, string|Message m)
     {
       if(objectp(m) && labels[m->pre])
-        ret += ({ m });
+        ret += ({ [object(Message)]m });
     }
     return ret;
   }
