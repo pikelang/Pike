@@ -62,6 +62,8 @@ enum PIKE_TYPE {
     PIKE_T_INT=0,
     PIKE_T_FLOAT=1,
 
+    PIKE_T_FUNCTION_ARG = 4,	/* Only used in type strings. */
+
 /* NB: The reference counted types all have bit 4 set. */
     PIKE_T_ARRAY=8,
     PIKE_T_MAPPING=9,
@@ -260,7 +262,11 @@ struct svalue
 #define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE_DC(SVAL, 99) /* an invalid type */
 
 
-/* NOTE: The t* macros below currently use the old type encoding
+/* Macros for generating strings compatible with
+ * pike_types.cmod:make_pike_type() et al, as well
+ * as encode.c:decode_type().
+ *
+ * NOTE: The t* macros below currently use the old type encoding
  *       to be compatible with __parse_pike_type() in older
  *       versions of Pike.
  */
@@ -275,6 +281,7 @@ struct svalue
 
 #define tFuncV(ARGS,REST,RET) MagictFuncV(RET,REST,ARGS)
 #define tFunc(ARGS,RET) MagictFunc(RET,ARGS)
+#define tFuncArg(ARG,REST) "\014" ARG REST
 
 #define tTuple(T1,T2)		"\364" T1 T2
 #define tTriple(T1,T2,T3)	tTuple(T1, tTuple(T2, T3))

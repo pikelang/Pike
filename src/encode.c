@@ -452,6 +452,22 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
     t = t->cdr;
     goto one_more_type;
   } else if (t->type <= MAX_TYPE) {
+    if (t->type == T_FUNCTION) {
+      struct pike_type *tmp = t;
+      while (tmp->type == T_FUNCTION) tmp = tmp->cdr;
+      if (tmp->type != T_MANY) {
+	/* Function type needing tFuncArg. */
+	while (t->type == T_FUNCTION) {
+	  addchar(t->type);	/* Intentional !!!!! */
+	  EDB(1, {
+	      ENCODE_WERR(".type    function_arg");
+	    });
+	  encode_type(t->car, data);
+	  t = t->cdr;
+	}
+	goto one_more_type;
+      }
+    }
     addchar(t->type ^ MIN_REF_TYPE);
     EDB(1, {
 	ENCODE_WERR(".type    %s",
@@ -2729,6 +2745,12 @@ static void low_decode_type(struct decode_data *data)
       tmp = GETC();
       low_decode_type(data);
       push_scope_type(tmp);	/* Actually reverse, but they're the same */
+      break;
+
+    case PIKE_T_FUNCTION_ARG:
+      low_decode_type(data);	/* Argument */
+      low_decode_type(data);	/* Continuation */
+      push_reverse_type(T_FUNCTION);
       break;
 
     case T_FUNCTION:
