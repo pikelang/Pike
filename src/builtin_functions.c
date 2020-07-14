@@ -10483,25 +10483,40 @@ void init_builtin_efuns(void)
   ADD_FUNCTION2("longest_ordered_sequence", f_longest_ordered_sequence,
 		tFunc(tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
 
-#define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
-  tOr6( tFuncV(IN tFuncV(SUB,tSetvar(0,tAnd(tMix,tZero)),	     \
-			 tSetvar(2,tAny)),tVar(0),		     \
-	       OUTFUN),						     \
-	tFuncV(IN tSet(tMix),tMix,OUTSET), \
+  /* Type variable use in map():
+   *
+   * 0: Accumulated argument types for callback function.
+   * 1: Iterator value type (aka indices). First arg to callback function.
+   * 2: Result value type. Return type for callback function.
+   * 3: Mapping index type when looping over mapping.
+   * 4: Callback function continuation type for optional arguments and result.
+   */
+#define tMapStuffLow(IN,SUB,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
+  tOr5( tFuncV(IN tSet(tMix),tMix,OUTSET), \
 	tFuncV(IN tMap(tMix, tSetvar(2,tMix)), tMix, OUTMAP), \
         tFuncV(IN tArray, tMix, OUTARR), \
 	tIfnot(tFuncV(IN, tNot(tMix), tMix), \
 	       tFuncV(IN, tMix, OUTMIX)), \
 	tFuncV(IN, tVoid, OUTMIX) )
 
+#define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
+  tOr( tFuncV(IN tFuncV(SUB,tSetvar(0,tAnd(tMix,tZero)),	     \
+			 tSetvar(2,tAny)),tVar(0),		     \
+	       OUTFUN),						     \
+       tMapStuffLow(IN,SUB,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP))
+
   ADD_EFUN2("map", f_map,
-	    tOr7(tMapStuff(tArr(tSetvar(1,tMix)),tVar(1),
-			   tArr(tVar(2)),
-			   tArr(tInt01),
-			   tArr(tObj),
-			   tArr(tMix),
-			   tArr(tArr(tMix)),
-			   tArr(tOr(tInt0,tVar(2)))),
+	    tOr8(tFuncArg(tArr(tSetvar(1,tMix)),
+			  tFuncArg(tFuncArg(tVar(1),
+					    tSetvar(4,
+						    tFuncV(tNone, tZero, tMix))),
+				   tArr(tVar(4)))),
+		 tMapStuffLow(tArr(tSetvar(1,tMix)),tVar(1),
+			      tArr(tInt01),
+			      tArr(tObj),
+			      tArr(tMix),
+			      tArr(tArr(tMix)),
+			      tArr(tOr(tInt0,tVar(2)))),
 
 		 tMapStuff(tMap(tSetvar(3,tMix),tSetvar(1,tMix)),tVar(1),
 			   tMap(tVar(3),tVar(2)),
