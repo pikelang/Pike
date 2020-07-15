@@ -2779,6 +2779,10 @@ static int lower_or_pike_types(struct pike_type *t1,
     t = t2;
   } else if (zero_implied && (t2->type == T_ZERO)) {
     t = t1;
+  } else if ((t1->type == T_NOT) && pike_types_le(t1->car, t2)) {
+    t = mixed_type_string;
+  } else if ((t2->type == T_NOT) && pike_types_le(t2->car, t1)) {
+    t = mixed_type_string;
   } else if ((t1->type ^ '0') < (t2->type ^ '0')) {
     /* Note: Adjusted order to get markers first. */
     t = t1;
