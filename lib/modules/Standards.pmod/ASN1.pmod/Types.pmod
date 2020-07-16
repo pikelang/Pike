@@ -176,7 +176,7 @@ class Compound
     WERROR("asn1_compound[%s]->begin_decode_constructed\n", type_name);
   }
 
-  void decode_constructed_element(int i, object e) {
+  void decode_constructed_element(int i, Object e) {
     WERROR("asn1_compound[%s]->decode_constructed_element(%O)\n",
 	   type_name, e);
     if (i != sizeof(elements))
