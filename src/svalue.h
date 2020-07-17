@@ -141,6 +141,17 @@ enum PIKE_TYPE {
     PIKE_T_VAR_8 = '8',
     PIKE_T_VAR_9 = '9',		/* 57 */
 
+    /* Operators. These all have 0x80 in the low 8 bits, and
+     * a non-zero function number in the next 8 bits.
+     *
+     * Bit 15 (0x8000) indicates that cdr is a type-node.
+     *
+     * Note that this overlaps with the PIKE_T_NO_REF_FLAG,
+     * but that should be safe, as operators aren't valid
+     * run-time types.
+     */
+    PIKE_T_OPERATOR = 0x0080,
+
 /*
  * The following types are only used in compile-time types and
  * as markers in struct identifier.

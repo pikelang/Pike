@@ -392,6 +392,7 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define push_scope_type(LEVEL) do { debug_push_scope_type(LEVEL);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_type_attribute(ATTR) do { debug_push_type_attribute((struct pike_string *)debug_malloc_pass(ATTR));debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_type_name(NAME) do { debug_push_type_name((struct pike_string *)debug_malloc_pass(NAME));debug_malloc_pass(debug_peek_type_stack()); } while(0)
+#define push_type_operator(OP, ARG) do { debug_push_type_operator(OP, (struct pike_type *)debug_malloc_pass(ARG));debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_unfinished_type(S) ERROR
 #define push_assign_type(MARKER) do { debug_push_assign_type(MARKER);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_finished_type(T) do { debug_push_finished_type((struct pike_type *)debug_malloc_pass(T));debug_malloc_pass(debug_peek_type_stack()); } while(0)
@@ -411,6 +412,7 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define push_scope_type debug_push_scope_type
 #define push_type_attribute debug_push_type_attribute
 #define push_type_name debug_push_type_name
+#define push_type_operator debug_push_type_operator
 #define push_unfinished_type debug_push_unfinished_type
 #define push_assign_type debug_push_assign_type
 #define push_finished_type debug_push_finished_type
