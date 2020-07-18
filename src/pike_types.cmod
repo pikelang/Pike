@@ -194,6 +194,9 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t)
     case PIKE_T_GET_SET:	return "PIKE_T_GET_SET";
     case PIKE_T_FREE:		return "PIKE_T_FREE";
     case PIKE_T_FUNCTION_ARG:	return "PIKE_T_FUNCTION_ARG";
+
+    case PIKE_T_FIND_LFUN:	return "PIKE_T_FIND_LFUN";
+
     case PIKE_T_ATTRIBUTE:	return "PIKE_T_ATTRIBUTE";
     case PIKE_T_NSTRING:	return "PIKE_T_NSTRING";
     case PIKE_T_LSTRING:	return "PIKE_T_LSTRING";
@@ -264,6 +267,7 @@ static void internal_parse_type(const char **s);
  * INT		min (int)	max (int)
  * OBJECT	implements/is	object id(int)
  * OPERATOR	type		Depends on bit #15.	Added in 8.1
+ * FIND_LFUN	object type	lfun (int)		Added in 8.1
  *
  * Note that the cdr of a FUNCTION is a valid FUNCTION for the rest of
  * the arguments.
@@ -2156,6 +2160,7 @@ void stupid_describe_type_string(char *a, ptrdiff_t len)
 	fprintf(stderr, "operator ");
 	e++;
 	switch(EXTRACT_UCHAR(a+e)<<8 | PIKE_T_OPERATOR) {
+	case PIKE_T_FIND_LFUN: fprintf(stderr, "find_lfun"); break;
 	default:
 	  fprintf(stderr, "unknown<0x%04x>",
 		  EXTRACT_UCHAR(a+e)<<8 | PIKE_T_OPERATOR);
@@ -2448,6 +2453,9 @@ void simple_describe_type(struct pike_type *s)
 	  simple_describe_type(s->cdr);
 	} else {
 	  switch(s->type) {
+	  case PIKE_T_FIND_LFUN:
+	    fprintf(stderr, ",\"%s\")", STR0(lfun_strings[CDR_TO_INT(s)]));
+	    break;
 	  default:
 	    if (s->cdr) {
 	      fprintf(stderr, ",0x%08lx)", CDR_TO_INT(s));
@@ -2770,6 +2778,12 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	string_builder_strcat(s, "auto");
       }
       break;
+
+    case PIKE_T_FIND_LFUN:
+      string_builder_sprintf(s, "find_lfun(%T, \"%S\")",
+			     t->car, lfun_strings[CDR_TO_INT(t)]);
+      break;
+
     default:
       {
 	if ((t->type & 0xff) == PIKE_T_OPERATOR) {
@@ -2834,6 +2848,7 @@ TYPE_T compile_type_to_runtime_type(struct pike_type *t)
     return compile_type_to_runtime_type(t->cdr);
 
   case T_MANY:
+  case PIKE_T_FIND_LFUN:
     return T_FUNCTION;
 
   case T_ARRAY:
@@ -3550,6 +3565,104 @@ static struct pike_type *low_object_lfun_type(struct pike_type *t, short lfun)
   i=FIND_LFUN(p, lfun);
   if(i==-1) return 0;
   return ID_FROM_INT(p, i)->type;
+}
+
+/**
+ * This function differs from low_object_lfun_type() above in
+ * that it handles more cases, falls back to the default lfun
+ * type (with a warning), and adds a reference to the returned
+ * type.
+ */
+static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
+{
+  struct pike_type *ret = NULL;
+  struct svalue *s;
+
+  if (!t) return NULL;
+
+ loop:
+  switch(t->type) {
+  case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
+    t = t->cdr;
+    goto loop;
+
+  case T_OBJECT:
+    {
+      struct program *p = NULL;
+      if (t->cdr) {
+	p = id_to_program(CDR_TO_INT(t));
+      }
+      if (p) {
+	int f = FIND_LFUN(p, lfun);
+
+	if (f != -1) {
+	  struct identifier *id = ID_FROM_INT(p, f);
+	  ret = id->type;
+	  add_ref(ret);
+	  return ret;
+	}
+	ref_push_string(lfun_strings[lfun]);
+	yytype_report(REPORT_WARNING, NULL, 0, NULL,
+		      NULL, 0, t,
+		      1, "Expected object implementing lfun %s.");
+      }
+      break;
+    }
+  case T_PROGRAM:
+    t = t->car;
+    goto loop;
+
+  case T_FUNCTION:
+  case T_MANY:
+    t = t->cdr;
+    goto loop;
+
+  case T_OR:
+  case T_AND:
+    type_stack_mark();
+    push_finished_type(find_lfun_type(t->car, lfun));
+    push_finished_type(find_lfun_type(t->cdr, lfun));
+    push_type(t->type);
+    return pop_unfinished_type();
+
+  case T_MIXED:
+  case T_ZERO:
+  case T_VOID:
+    break;
+
+  default:
+    ref_push_string(lfun_strings[lfun]);
+    yytype_report(REPORT_WARNING, NULL, 0, NULL,
+		  NULL, 0, t,
+		  1, "Expected object implementing lfun %s.");
+    break;
+  }
+
+#if 0
+  /* FIXME: This does not work, as lfun_types contains narrow types
+   *        (zero for arguments, etc), while we here want the wide type
+   *        (mixed for arguments, etc).
+   */
+  s = low_mapping_string_lookup(lfun_types, lfun_strings[lfun]);
+
+#ifdef PIKE_DEBUG
+  if (!s) {
+    Pike_fatal("Unknown lfun: %s\n", STR0(lfun_strings[lfun]));
+  }
+#endif
+
+  if (TYPEOF(*s) == PIKE_T_TYPE) {
+    ret = s->u.type;
+    add_ref(ret);
+    return ret;
+  }
+
+  return NULL;
+#else
+  add_ref(function_type_string);
+  return function_type_string;
+#endif
 }
 
 
@@ -8327,6 +8440,9 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
 {
   struct pike_type *res = NULL;
   switch(op) {
+  case PIKE_T_FIND_LFUN:
+    res = find_lfun_type(arg1, (ptrdiff_t)(void*)arg2);
+    break;
   default:
     Pike_fatal("apply_type_operator(): Unknown operator: 0x%04x\n", op);
     break;
@@ -8992,6 +9108,32 @@ static void low_make_pike_type(unsigned char *type_string,
 	push_reverse_type(type);
       } else {
 	switch(type) {
+	case PIKE_T_FIND_LFUN:
+	  {
+	    struct pike_string *str;
+	    int lfun = -1;
+	    int i;
+	    low_make_pike_type(type_string + 2, cont);
+	    str = findstring((const char *)*cont);
+	    if (!str) {
+	      Pike_fatal("compile_type_string(): Invalid lfun name: \"%s\"\n", *cont);
+	    }
+	    for (i = 0; i < 256; i++) {
+	      if (lfun_strings[i] == str) {
+		lfun = i;
+		break;
+	      }
+	    }
+	    if (lfun == -1) {
+	      Pike_fatal("compile_type_string(): Unknown lfun: \"%s\"\n", *cont);
+	    }
+	    *cont += str->len + 1;
+
+	    push_type_operator(PIKE_T_FIND_LFUN,
+			       (struct pike_type *)(ptrdiff_t)lfun);
+	    break;
+	  }
+
 	default:
 	  Pike_fatal("compile_type_string(): Unknown operator: 0x%04x\n", type);
 	  break;
