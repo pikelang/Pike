@@ -5771,8 +5771,9 @@ void init_operators(void)
   add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
 
   ADD_EFUN2("`+",f_add,
-	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
-			tFuncV(tNone,tMix,tMix)),
+	    tOr7(tIfnot(tFuncV(tNone,tNot(tObj),tMix),
+			tOr(tFuncArg(tSetvar(2,tObj), tFindLFun(tVar(2), "`+")),
+			    tFuncV(tNot(tObj), tMix, tMix))),
 		 tOr3(tFuncV(tIntPos,tIntPos,tIntPos),
 		      tFuncV(tIntNeg,tIntNeg,tIntNeg),
 		      tIfnot(tFuncV(tNone, tNot(tIntNeg), tMix),
