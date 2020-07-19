@@ -4322,6 +4322,177 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   if(a == b) return 1;
 
 #ifdef TYPE_GROUPING
+  if (b->type != T_OR) {
+    flags &= ~LE_B_GROUPED;
+  }
+#endif
+
+  switch(b->type & 0xff)
+  {
+  case T_AND:
+    /* OK, if a is a subset of both parts. */
+    ret = low_pike_types_le(a, b->car, array_cnt, flags);
+    if(!ret) return 0;
+    b = b->cdr;
+    goto recurse;
+
+  case T_OR:
+    /* OK if a is a subset of either of the parts,
+     * unless we are grouped, in which case both
+     * parts need to be a subset.
+     */
+    ret = low_pike_types_le(a, b->car, array_cnt, flags);
+#ifdef TYPE_GROUPING
+    if (!ret != !(flags & LE_B_GROUPED)) {
+      if ((a->flags | b->flags) & PT_FLAG_ASSIGN) {
+	/* Note: Needed for side effects... */
+	low_pike_types_le(a, b->cdr, array_cnt, flags);
+      }
+      return ret;
+    }
+#else
+    if (ret) return ret;
+#endif
+    b = b->cdr;
+    goto recurse;
+
+  case PIKE_T_RING:
+    b = b->car;
+    goto recurse;
+
+  case PIKE_T_ATTRIBUTE:
+    if (!c) {
+      b = b->cdr;
+      goto recurse;
+    }
+    if (!low_pike_types_le(a, b->cdr, array_cnt, flags)) return 0;
+    ref_push_string((struct pike_string *)b->car);
+    ref_push_type_value(a);
+    ref_push_type_value(b->cdr);
+    safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 3,
+			"push_type_attribute");
+    if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
+	(SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
+	(!Pike_sp[-1].u.integer)) {
+      pop_stack();
+      return 0;
+    }
+    pop_stack();
+    return 1;
+  case PIKE_T_SCOPE:
+#ifdef TYPE_GROUPING
+    flags |= LE_B_GROUPED;
+#endif
+    /* FALLTHRU */
+  case PIKE_T_NAME:
+    b = b->cdr;
+    goto recurse;
+
+  case T_NOT:
+    /* Some common cases. */
+    switch(b->car->type) {
+    case T_NOT:
+      b = b->car->car;
+      goto recurse;
+    case T_MIXED:
+      b = zero_type_string;
+      goto recurse;
+    case T_ZERO:
+    case T_VOID:
+      b = mixed_type_string;
+      goto recurse;
+    }
+    if (low_pike_types_le(a, b->car, array_cnt, flags)) {
+      return 0;
+    }
+    flags ^= LE_A_B_SWAPPED;
+#ifdef TYPE_GROUPING
+    if (flags & LE_A_B_GROUPED) {
+      if ((flags & LE_A_B_GROUPED) == LE_A_B_GROUPED) {
+	flags ^= LE_A_B_GROUPED;
+      }
+    } else {
+      flags |= LE_A_B_GROUPED;
+    }
+#endif
+    /* FIXME: This is wrong... */
+    return !low_pike_types_le(b->car, a, -array_cnt, flags);
+
+  case T_ASSIGN: {
+    struct pike_type **aa_markers = a_markers;
+    struct pike_type **bb_markers = b_markers;
+    int m = CAR_TO_INT(b);
+    ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
+
+    if (flags & LE_A_B_SWAPPED) {
+      aa_markers = b_markers;
+      bb_markers = a_markers;
+    }
+
+    if(ret && (!bb_markers[m] || a->type != T_VOID))
+    {
+      int m = CAR_TO_INT(b);
+      struct pike_type *tmp;
+      int i;
+
+      type_stack_mark();
+      push_finished_type_with_markers(a, aa_markers, 0);
+      for(i = array_cnt; i < 0; i++)
+	push_unlimited_array_type(T_ARRAY);
+      tmp=pop_unfinished_type();
+
+      type_stack_mark();
+      low_or_pike_types(bb_markers[m], tmp, 0);
+      if(bb_markers[m]) free_type(bb_markers[m]);
+      free_type(tmp);
+      bb_markers[m] = pop_unfinished_type();
+#ifdef PIKE_TYPE_DEBUG
+      if (l_flag>2) {
+	if (flags & LE_A_B_SWAPPED) {
+	  fprintf(stderr, "%*sa_markers[%c]=",
+		  indent * 2, "", (char)(m+'0'));
+	  simple_describe_type(a_markers[m]);
+	} else {
+	  fprintf(stderr, "%*sb_markers[%c]=",
+		  indent * 2, "", (char)(m+'0'));
+	  simple_describe_type(b_markers[m]);
+	}
+	fprintf(stderr, "\n");
+      }
+#endif
+    }
+    return ret;
+  }
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    {
+      int m = b->type - '0';
+      if (flags & LE_A_B_SWAPPED) {
+	if(a_markers[m]) {
+	  b = a_markers[m];
+	} else {
+	  b = mixed_type_string;
+	}
+      } else {
+	if(b_markers[m]) {
+	  b = b_markers[m];
+	} else {
+	  b = mixed_type_string;
+	}
+      }
+      goto recurse;
+    }
+
+  case PIKE_T_OPERATOR:
+    {
+      struct pike_type *t = apply_type_operator(b->type, b->car, b->cdr);
+      ret = low_pike_types_le(a, t, array_cnt, flags);
+      free_type(t);
+      return ret;
+    }
+  }
+
+#ifdef TYPE_GROUPING
   if (a->type != T_OR) {
     flags &= ~LE_A_GROUPED;
   }
@@ -4537,177 +4708,6 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     {
       struct pike_type *t = apply_type_operator(a->type, a->car, a->cdr);
       ret = low_pike_types_le(t, b, array_cnt, flags);
-      free_type(t);
-      return ret;
-    }
-  }
-
-#ifdef TYPE_GROUPING
-  if (b->type != T_OR) {
-    flags &= ~LE_B_GROUPED;
-  }
-#endif
-
-  switch(b->type & 0xff)
-  {
-  case T_AND:
-    /* OK, if a is a subset of both parts. */
-    ret = low_pike_types_le(a, b->car, array_cnt, flags);
-    if(!ret) return 0;
-    b = b->cdr;
-    goto recurse;
-
-  case T_OR:
-    /* OK if a is a subset of either of the parts,
-     * unless we are grouped, in which case both
-     * parts need to be a subset.
-     */
-    ret = low_pike_types_le(a, b->car, array_cnt, flags);
-#ifdef TYPE_GROUPING
-    if (!ret != !(flags & LE_B_GROUPED)) {
-      if ((a->flags | b->flags) & PT_FLAG_ASSIGN) {
-	/* Note: Needed for side effects... */
-	low_pike_types_le(a, b->cdr, array_cnt, flags);
-      }
-      return ret;
-    }
-#else
-    if (ret) return ret;
-#endif
-    b = b->cdr;
-    goto recurse;
-
-  case PIKE_T_RING:
-    b = b->car;
-    goto recurse;
-
-  case PIKE_T_ATTRIBUTE:
-    if (!c) {
-      b = b->cdr;
-      goto recurse;
-    }
-    if (!low_pike_types_le(a, b->cdr, array_cnt, flags)) return 0;
-    ref_push_string((struct pike_string *)b->car);
-    ref_push_type_value(a);
-    ref_push_type_value(b->cdr);
-    safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 3,
-			"push_type_attribute");
-    if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
-	(SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
-	(!Pike_sp[-1].u.integer)) {
-      pop_stack();
-      return 0;
-    }
-    pop_stack();
-    return 1;
-  case PIKE_T_SCOPE:
-#ifdef TYPE_GROUPING
-    flags |= LE_B_GROUPED;
-#endif
-    /* FALLTHRU */
-  case PIKE_T_NAME:
-    b = b->cdr;
-    goto recurse;
-
-  case T_NOT:
-    /* Some common cases. */
-    switch(b->car->type) {
-    case T_NOT:
-      b = b->car->car;
-      goto recurse;
-    case T_MIXED:
-      b = zero_type_string;
-      goto recurse;
-    case T_ZERO:
-    case T_VOID:
-      b = mixed_type_string;
-      goto recurse;
-    }
-    if (low_pike_types_le(a, b->car, array_cnt, flags)) {
-      return 0;
-    }
-    flags ^= LE_A_B_SWAPPED;
-#ifdef TYPE_GROUPING
-    if (flags & LE_A_B_GROUPED) {
-      if ((flags & LE_A_B_GROUPED) == LE_A_B_GROUPED) {
-	flags ^= LE_A_B_GROUPED;
-      }
-    } else {
-      flags |= LE_A_B_GROUPED;
-    }
-#endif
-    /* FIXME: This is wrong... */
-    return !low_pike_types_le(b->car, a, -array_cnt, flags);
-
-  case T_ASSIGN: {
-    struct pike_type **aa_markers = a_markers;
-    struct pike_type **bb_markers = b_markers;
-    int m = CAR_TO_INT(b);
-    ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
-
-    if (flags & LE_A_B_SWAPPED) {
-      aa_markers = b_markers;
-      bb_markers = a_markers;
-    }
-
-    if(ret && (!bb_markers[m] || a->type != T_VOID))
-    {
-      int m = CAR_TO_INT(b);
-      struct pike_type *tmp;
-      int i;
-
-      type_stack_mark();
-      push_finished_type_with_markers(a, aa_markers, 0);
-      for(i = array_cnt; i < 0; i++)
-	push_unlimited_array_type(T_ARRAY);
-      tmp=pop_unfinished_type();
-
-      type_stack_mark();
-      low_or_pike_types(bb_markers[m], tmp, 0);
-      if(bb_markers[m]) free_type(bb_markers[m]);
-      free_type(tmp);
-      bb_markers[m] = pop_unfinished_type();
-#ifdef PIKE_TYPE_DEBUG
-      if (l_flag>2) {
-	if (flags & LE_A_B_SWAPPED) {
-	  fprintf(stderr, "%*sa_markers[%c]=",
-		  indent * 2, "", (char)(m+'0'));
-	  simple_describe_type(a_markers[m]);
-	} else {
-	  fprintf(stderr, "%*sb_markers[%c]=",
-		  indent * 2, "", (char)(m+'0'));
-	  simple_describe_type(b_markers[m]);
-	}
-	fprintf(stderr, "\n");
-      }
-#endif
-    }
-    return ret;
-  }
-  case '0': case '1': case '2': case '3': case '4':
-  case '5': case '6': case '7': case '8': case '9':
-    {
-      int m = b->type - '0';
-      if (flags & LE_A_B_SWAPPED) {
-	if(a_markers[m]) {
-	  b = a_markers[m];
-	} else {
-	  b = mixed_type_string;
-	}
-      } else {
-	if(b_markers[m]) {
-	  b = b_markers[m];
-	} else {
-	  b = mixed_type_string;
-	}
-      }
-      goto recurse;
-    }
-
-  case PIKE_T_OPERATOR:
-    {
-      struct pike_type *t = apply_type_operator(b->type, b->car, b->cdr);
-      ret = low_pike_types_le(a, t, array_cnt, flags);
       free_type(t);
       return ret;
     }
