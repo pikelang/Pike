@@ -106,7 +106,7 @@ protected void my_error(string err, int throw_errors) {
 //! @seealso
 //!   @[Getopt.get_args()]
 //!
-string|int(0..1) find_option(array(string) argv,
+void|string|int(0..1) find_option(array(string) argv,
 			     array(string)|string shortform,
 			     array(string)|string|void longform,
 			     array(string)|string|void envvars,
