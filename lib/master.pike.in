@@ -4352,6 +4352,7 @@ void _main(array(string(0..255)) orig_argv)
 	exit(0);
   }
 
+  main_resolv( "Stdio.FILE" );
   main_resolv( "Gmp.bignum" );
 
   if(sizeof(argv)==1)
