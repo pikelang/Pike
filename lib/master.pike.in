@@ -6500,13 +6500,17 @@ protected void locale_werror(mixed ... args)
 {
   function werror = locale_werror_cache;
   if (!werror) {
-    catch {
+    if (catch {
+      locale_werror_cache = Files()->_stderr->write;
       object stderr = main_resolv( "Stdio.FILE" )( "stderr", "w" );
       stderr->set_charset( 0 );
       werror = stderr->write;
-      if (werror && !locale_werror_cache)
+      if (werror)
 	locale_werror_cache = werror;
-    };
+      }) {
+      werror = locale_werror_cache;
+      locale_werror_cache = UNDEFINED;
+    }
     if (!werror)
       werror = Files()->_stderr->write;
   }
