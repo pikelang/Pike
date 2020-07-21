@@ -2854,6 +2854,7 @@ PIKECLASS Buffer
 
   EXIT {
     Buffer *io = THIS;
+    io->this = 0;
     io_unlink_external_storage( io );
     if( io->error_mode )
         free_program( io->error_mode );
