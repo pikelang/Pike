@@ -344,7 +344,7 @@ class Timebase {
   }
 
   protected mixed `-(mixed that) {
-    return this + -that;
+    return this + -[int|float|object]that;
   }
 
   protected int(0..1) `<(mixed that) {
@@ -433,7 +433,7 @@ class Time {
 
   protected mixed `+(mixed that) {
     if (objectp(that) && ([object]that)->is_date)
-      return that + this;
+      return ([object(Date)]that) + this;
     return ::`+(that);
   }
 
@@ -545,7 +545,7 @@ class TimeTZ {
 
   protected mixed cast(string to) {
     if (to == "string")
-      return ::cast(to) + iso_timezone(timezone);
+      return ([string]::cast(to)) + iso_timezone(timezone);
     return ::cast(to);
   }
 
@@ -601,9 +601,9 @@ class Interval {
       n->days *= [int]that;
       n->months *= [int]that;
     } else if (floatp(that)) {
-      n->nsecs = (int)(nsecs * that);
-      n->days = (int)(days * that);
-      n->months = (int)(months * that);
+      n->nsecs = (int)(nsecs * [float]that);
+      n->days = (int)(days * [float]that);
+      n->months = (int)(months * [float]that);
       if (days && n->days % days || months && n->months % months)
         error("Cannot create fractional days or months\n");
     } else
@@ -652,19 +652,22 @@ class Interval {
   protected int(0..1) `<(mixed that) {
     return objectp(that) && ([object]that)->is_interval
      &&
-      (  months <= ([object]that)->months && days <= ([object]that)->days
-         && nsecs  < ([object]that)->nsecs
-      || months <= ([object]that)->months && days  < ([object]that)->days
-         && nsecs <= ([object]that)->nsecs
-      || months  < ([object]that)->months && days <= ([object]that)->days
-         && nsecs <= ([object]that)->nsecs);
+      (  (months <= ([object(this_program)]that)->months &&
+	  days   <= ([object(this_program)]that)->days &&
+	  nsecs  <  ([object(this_program)]that)->nsecs) ||
+	 (months <= ([object(this_program)]that)->months &&
+	  days   <  ([object(this_program)]that)->days &&
+	  nsecs  <= ([object(this_program)]that)->nsecs) ||
+	 (months <  ([object(this_program)]that)->months &&
+	  days   <= ([object(this_program)]that)->days &&
+	  nsecs  <= ([object(this_program)]that)->nsecs));
   }
 
   protected int(0..1) `==(mixed that) {
     return objectp(that) && ([object]that)->is_interval
-     && months == [int]([object]that)->months
-     && days == [int]([object]that)->days
-     && nsecs == [int]([object]that)->nsecs;
+      && months == ([object(this_program)]that)->months
+      && days == ([object(this_program)]that)->days
+      && nsecs == ([object(this_program)]that)->nsecs;
   }
 
   //! @returns
@@ -773,11 +776,11 @@ class Timestamp {
       if (!([object]that)->is_interval)
         error("Cannot substract %O\n", that);
     }
-    return this + -that;
+    return this + -([int|float|object(Interval)]that);
   }
 
   inline protected int(0..1) `<(mixed that) {
-    return intp(that) ? (int)this < that : ::`<(that);
+    return intp(that) ? (int)this < ([int]that) : ::`<(that);
   }
 
   //! @returns
@@ -859,17 +862,17 @@ class Date {
   }
 
   protected mixed `+(mixed that) {
-    object n = this_program(this);
+    object(this_program)|object(Timestamp) n = this_program(this);
     if (objectp(that)) {
       if (([object]that)->is_interval) {
-        n->days += ([object(Interval)]that)->days;
+        ([object(this_program)]n)->days += ([object(Interval)]that)->days;
         if(([object]that)->months) {
           mapping(string:int) t = [mapping(string:int)]n->tm();
           t->mon += ([object(Interval)]that)->months;
           n = this_program(t);
         }
         if (([object]that)->nsecs)
-          (n = Timestamp(n))->nsecs += ([object(Interval)]that)->nsecs;
+          (n = Timestamp(n))->nsecs += ([object(Timebase)]that)->nsecs;
       } else if (([object]that)->is_time) {
           mapping(string:int) t = [mapping(string:int)]n->tm()
            + [mapping(string:int)]([object]that)->tm();
@@ -877,7 +880,7 @@ class Date {
       } else
         error("Cannot add %O\n", that);
     } else if (intp(that))
-      n->days += that;
+      ([object(this_program)]n)->days += [int]that;
     else
       error("Cannot add %O\n", that);
     return n;
@@ -898,36 +901,36 @@ class Date {
       }
       error("Cannot substract %O\n", that);
     }
-    return this + -that;
+    return this + -[int|float]that;
   }
 
   inline protected int(0..1) `<(mixed that) {
     return
-       intp(that) ? (int)this < that
-     : floatp(that) ? (float)this < that
+       intp(that) ? (int)this < [int]that
+     : floatp(that) ? (float)this < [float]that
      : objectp(that)
-      && (([object]that)->is_date ? days < ([object]that)->days
+      && (([object]that)->is_date ? days < ([object(Date)]that)->days
         : ([object]that)->is_timestamp
-          && days * 24 * 3600 * NANOSECONDS < ([object]that)->nsecs);
+          && days * 24 * 3600 * NANOSECONDS < ([object(Timestamp)]that)->nsecs);
   }
 
   inline protected int(0..1) `>(mixed that) {
     return
-       intp(that) ? (int)this > that
-     : floatp(that) ? (float)this > that
+       intp(that) ? (int)this > [int]that
+     : floatp(that) ? (float)this > [float]that
      : objectp(that)
-      && (([object]that)->is_date ? days > ([object]that)->days
+      && (([object]that)->is_date ? days > ([object(Date)]that)->days
         : ([object]that)->is_timestamp
-          && days * 24 * 3600 * NANOSECONDS > ([object]that)->nsecs);
+          && days * 24 * 3600 * NANOSECONDS > ([object(Timestamp)]that)->nsecs);
   }
 
   protected int(0..1) `==(mixed that) {
     return
         objectp(that)
-         && (days == [int]([object]that)->days
+      && (days == ([object(Interval)]that)->days
              && !zero_type(([object]that)->days)
           || !zero_type(([object]that)->nsecs)
-           && days * 24 * 3600 * NANOSECONDS == [int]([object]that)->nsecs)
+	  && days * 24 * 3600 * NANOSECONDS == ([object(Interval)]that)->nsecs)
      || intp(that) && (int)this == [int]that
      || floatp(that) && (float)this == [float]that;
   }
