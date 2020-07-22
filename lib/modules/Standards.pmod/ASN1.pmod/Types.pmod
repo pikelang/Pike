@@ -515,7 +515,7 @@ class BitString
     {
       value = value[..(len + 7)/8];
       unused = [int(0..7)]((- len) % 8);
-      value[-1] &= 256-(1<<unused);
+      value[-1] &= [int(8bit)](256-(1<<unused));
     } else {
       unused = 0;
       value = "";
@@ -723,7 +723,7 @@ class Identifier
     if( !objectp(other) ||
         (this_program != object_program(other)) )
       return 0;
-    array oid = ([object(Identifier)]other)->id;
+    array(int) oid = ([object(Identifier)]other)->id;
     for( int i; i<min(sizeof(id),sizeof(oid)); i++ )
     {
       if( id[i] < oid[i] ) return 1;
@@ -948,7 +948,7 @@ class UTC
   {
     if( !value || sizeof(value)!=13 ) error("Data not UTC date string.\n");
 
-    array t = (array(int))(value[..<1]/2);
+    array(int) t = (array(int))(value[..<1]/2);
     if(t[0]>49)
       t[0]+=1900;
     else
