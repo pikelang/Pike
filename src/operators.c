@@ -5794,8 +5794,9 @@ void init_operators(void)
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
 
   ADD_EFUN2("`-",f_minus,
-	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
-			tFuncV(tNone,tMix,tMix)),
+	    tOr7(tIfnot(tFuncV(tNone,tNot(tObj),tMix),
+			tOr(tFuncArg(tSetvar(2,tObj), tFindLFun(tVar(2), "`-")),
+			    tFuncV(tNot(tObj), tMix, tMix))),
 		 tOr4(tFuncV(tIntNeg,tIntPos,tIntNeg),
 		      tFuncV(tIntPos,tIntNeg,tIntPos),
 		      tIfnot(tFuncV(tNot(tIntPos), tNot(tIntPos), tMix),
