@@ -594,7 +594,7 @@ class Interval {
     months = copy->months;
   }
 
-  protected mixed `*(mixed that) {
+  protected this_program `*(int|float that) {
     this_program n = this_program(this);
     if (intp(that)) {
       n->nsecs *= [int]that;
@@ -611,7 +611,7 @@ class Interval {
     return n;
   }
 
-  protected mixed `/(mixed that) {
+  protected this_program `/(int|float that) {
     if (!intp(that) && !floatp(that))
       error("Cannot divide by %O\n", that);
     this_program n = this_program(this);
@@ -623,17 +623,17 @@ class Interval {
     return n;
   }
 
-  protected mixed `+(mixed that) {
+  protected mixed `+(this_program that) {
     if (!objectp(that) || !([object]that)->is_interval)
       error("Cannot add %O\n", that);
     this_program n = this_program(this);
-    n->nsecs += ([object(this_program)]that)->nsecs;
-    n->days += ([object(this_program)]that)->days;
-    n->months += ([object(this_program)]that)->months;
+    n->nsecs += that->nsecs;
+    n->days += that->days;
+    n->months += that->months;
     return n;
   }
 
-  protected mixed `-(void|mixed that) {
+  protected this_program `-(void|this_program that) {
     this_program n = this_program(this);
     if (zero_type(that)) {
       n->nsecs  = -n->nsecs;
