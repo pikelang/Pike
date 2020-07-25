@@ -1476,7 +1476,7 @@ class Evaluator {
   //! Adds another output function.
   void add_writer(object|function(string : int(0..)) new) {
     if(arrayp(write))
-      write += ({ new });
+      write = ([array]write) + ({ new });
     else if (write)
       write = ({ write, new });
     else
@@ -1486,7 +1486,7 @@ class Evaluator {
   //! Removes an output function.
   void remove_writer(object|function old) {
     if(arrayp(write))
-      write -= ({ old });
+      write = ([array]write) - ({ old });
     else
       write = 0;
   }
