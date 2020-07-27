@@ -8013,11 +8013,13 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
     return i;
   }
   id = ID_FROM_INT(p, i);
+#if 0
   if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
       (id->func.offset == -1)) {
     /* Function prototype. */
     return -1;
   }
+#endif /* 0 */
   return i;
 }
 #ifdef PIKE_DEBUG
