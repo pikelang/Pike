@@ -684,7 +684,7 @@ PIKE_MODULE_INIT
   /* function(int|float:float) */
   ADD_EFUN("round",f_round,tFunc(tNUM,tFlt),0);
 
-#define CMP_TYPE							\
+#define MINMAX_TYPE							\
   tOr4(tIfnot(tFuncV(tNone,tNot(tString),tMix),				\
 	      tFuncV(tString,tString,tString)),				\
        tFunc(tVoid,tInt0),						\
@@ -692,10 +692,11 @@ PIKE_MODULE_INIT
 	      tFuncV(tSetvar(0,tOr(tInt,tFloat)),			\
                      tSetvar(1,tOr(tInt,tFloat)),tOr(tVar(0),tVar(1)))),\
        tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),			\
-	      tFuncV(tMix,tMix,tMix)))
+	      tFuncV(tSetvar(0,tOr(tObj,tMix)),				\
+		     tSetvar(1,tOr(tObj,tMix)),tOr(tVar(0),tVar(1)))))
 
-  ADD_EFUN("max",f_max,CMP_TYPE,0);
-  ADD_EFUN("min",f_min,CMP_TYPE,0);
+  ADD_EFUN("max", f_max, MINMAX_TYPE, 0);
+  ADD_EFUN("min", f_min, MINMAX_TYPE, 0);
 
   ADD_EFUN("limit",f_limit,
 	   tFunc(tSetvar(0,tOr3(tFlt,tInt,tObj))
