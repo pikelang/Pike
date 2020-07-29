@@ -2,7 +2,8 @@
 #pragma strict_types
 
 //!   Generic lightweight range type.  Supports any values for lower
-//!   and upper boundaries that implement the @expr{`<@} lfun.
+//!   and upper boundaries that implement @[lfun::`<()] and @[lfun::`-@()],
+//!   and preferrably also cast to @expr{int@} and @expr{string@}.
 //! @note
 //!   Can only contain a single contiguous range.
 //! @note
@@ -11,17 +12,19 @@
 
 constant is_range = 1;
 
+protected typedef int|float|string|object value_type;
+
 //!  The lower inclusive boundary.
-mixed from;
+value_type from;
 
 //!  The upper exclusive boundary.
-mixed till;
+value_type till;
 
-array(mixed) _encode() {
+array(value_type) _encode() {
   return ({from, till});
 }
 
-void _decode(array(mixed) x) {
+void _decode(array(value_type) x) {
   from = x[0];
   till = x[1];
 }
@@ -41,7 +44,7 @@ protected int __hash() {
 //!   by filling in @expr{Math.inf@}.
 //! @seealso
 //!   @[Math.inf]
-protected variant void create(mixed from, mixed till) {
+protected variant void create(value_type from, value_type till) {
   if (from >= till) {
     from = Math.inf;
     till = -Math.inf;
@@ -57,9 +60,9 @@ protected variant void create() {
 }
 
 //! Difference
-protected mixed `-(mixed that) {
-  this_program n = this_program(max(from, ([object]that)->from),
-                                min(till, ([object]that)->till));
+protected this_program `-(this_program that) {
+  this_program n = this_program(max(from, that->from),
+				min(till, that->till));
   if (!n)
     return this;
   if (till == n->till) {
@@ -76,38 +79,41 @@ protected mixed `-(mixed that) {
 }
 
 //! Union
-protected mixed `+(mixed that) {
+protected this_program `+(this_program that) {
   if (from != ([object]that)->till && ([object]that)->from != till
       && !(this & ([object]that)))
     error("Result of range union would not be contiguous\n");
-  return this_program(min(from, ([object]that)->from),
-                      max(till, ([object]that)->till));
+  return this_program(min(from, that->from),
+		      max(till, that->till));
 }
 
 //! Intersection
-protected mixed `*(mixed that) {
-  return this_program(max(from, ([object]that)->from),
-                      min(till, ([object]that)->till));
+protected this_program `*(this_program that) {
+  return this_program(max(from, that->from),
+                      min(till, that->till));
 }
 
 //! Overlap: have points in common.
-protected int(0..1) `&(mixed that) {
-  return till > ([object]that)->from && ([object]that)->till > from;
+protected int(0..1) `&(this_program that) {
+  return till > that->from && that->till > from;
 }
 
 //! Is adjacent to
-protected int(0..1) `|(mixed that) {
-  return till == ([object]that)->from || from == ([object]that)->till;
+//!
+//! @fixme
+//!   This does NOT seem like a good operator for this operation.
+protected int(0..1) `|(this_program that) {
+  return till == that->from || from == that->till;
 }
 
 //! Strictly left of
-protected int(0..1) `<<(mixed that) {
-  return till <= ([object]that)->from;
+protected int(0..1) `<<(this_program that) {
+  return till <= that->from;
 }
 
 //! Strictly right of
-protected int(0..1) `>>(mixed that) {
-  return from >= ([object]that)->till;
+protected int(0..1) `>>(this_program that) {
+  return from >= that->till;
 }
 
 protected int(0..1) `<(mixed that) {
@@ -122,12 +128,18 @@ protected int(0..1) `==(mixed that) {
 
 //! @returns
 //!   True if range is empty.
+//!
+//! @seealso
+//!   @[isempty()]
 protected inline int(0..1) `!() {
   return from >= till;
 }
 
 //! @returns
 //!   True if range is empty.
+//!
+//! @seealso
+//!   @[`!()]
 inline int(0..1) isempty() {
   return !this;
 }
@@ -135,15 +147,18 @@ inline int(0..1) isempty() {
 //! @param other
 //!  Extends the current range to the smallest range which encompasses
 //!  itself and all other given ranges.
+//!
+//! @fixme
+//!   This seems like the operation that @expr{`|()@} ought to do.
 this_program merge(this_program ... other) {
-  from = min(from, @other->from);
-  till = max(till, @other->till);
+  from = [object(value_type)]min(from, @other->from);
+  till = [object(value_type)]max(till, @other->till);
   return this;
 }
 
 //! @returns
 //!  True if this range fully contains another range or element.
-int(0..1) contains(mixed other) {
+int(0..1) contains(object(this_program)|value_type other) {
   return objectp(other) && ([object]other)->is_range
     ? from <= ([object]other)->from && ([object]other)->till <= till
     : from <= other && other < till;
