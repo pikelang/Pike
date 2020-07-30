@@ -350,7 +350,7 @@ UUID make_version3(string name, string|UUID namespace) {
 #endif
 
   // step 3
-  string ret = Crypto.MD5.hash(namespace+name);
+  string ret = Crypto.MD5.hash(([string(8bit)]namespace)+name);
 
 #if 0
   ret = reverse(ret[0..3]) + reverse(ret[4..5]) +
@@ -396,7 +396,7 @@ UUID make_version5(string name, string|UUID namespace) {
     namespace = UUID(namespace);
   namespace = namespace->encode();
 
-  string ret = Crypto.SHA1.hash(namespace+name)[..15];
+  string ret = Crypto.SHA1.hash(([string(8bit)]namespace)+name)[..15];
 
   ret &=
     "\xff\xff\xff\xff"		// time_low
