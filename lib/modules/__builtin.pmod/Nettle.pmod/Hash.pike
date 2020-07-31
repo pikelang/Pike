@@ -601,7 +601,7 @@ string(7bit) crypt_pbkdf2(string(8bit) password, string(7bit) salt, int rounds)
   string(8bit) passwd = password;
   password = "CENSORED";
   if (!rounds) rounds = 29000;
-  string(8bit) slt = MIME.decode_base64(replace(salt, ".", "+"));
+  string(8bit) slt = MIME.decode_base64([string(7bit)]replace(salt, ".", "+"));
   return [string(7bit)]replace(MIME.encode_base64(pbkdf2(passwd, slt, rounds,
 							 digest_size()), 1),
 			       ({ "+", "=" }), ({ ".", "" }));
@@ -1286,7 +1286,7 @@ class SCRAM
 				    first[3..], r, salt, iters, line);
       if (pass != "")
 	pass = [string(7bit)]Standards.IDNA.to_ascii(pass);
-      salt = MIME.decode_base64(salt);
+      salt = MIME.decode_base64([string(7bit)]salt);
       nonce = [string(8bit)]sprintf("%s,%s,%d", pass, salt, iters);
       if (!(r = SCRAM_get_salted_password(nonce))) {
 	r = pbkdf2(pass, salt, iters, digest_size());
