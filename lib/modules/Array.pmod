@@ -552,11 +552,14 @@ mixed sum(array a)
       return `+(@a);
    else
    {
-      mixed mem=`+(@a[..999]);
+      int|float|array|mapping|multiset|object|string mem =
+	[int|float|array|mapping|multiset|object|string]`+(@a[..999]);
       int j=1000;
       array v;
-      while (sizeof(v=a[j..j+999]))
-	 mem=`+(mem,@v),j+=1000;
+      while (sizeof(v=a[j..j+999])) {
+	mem = [int|float|array|mapping|multiset|object|string]`+(mem,@v);
+	j+=1000;
+      }
       return mem;
    }
 }
