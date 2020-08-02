@@ -2400,6 +2400,12 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
   check_stack(256);
   check_mark_stack(256);
 
+#ifdef PIKE_USE_MACHINE_CODE
+  call_check_threads_etc();
+#else
+  FAST_CHECK_THREADS_ON_CALL();
+#endif
+
   if( (p = o->prog) )
   {
     struct svalue *save_sp = Pike_sp - args;
@@ -2469,9 +2475,6 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
           function->num_calls++;
           function->recur_depth++;
 #endif
-#ifdef PIKE_USE_MACHINE_CODE
-          call_check_threads_etc();
-#endif
 
           if( !constant )
           {
@@ -2500,9 +2503,6 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
               new_frame->num_args = args;
               new_frame->num_locals = args;
               new_frame->pc = 0;
-#ifndef PIKE_USE_MACHINE_CODE
-              FAST_CHECK_THREADS_ON_CALL();
-#endif
               (*function->func.c_fun)(args);
 
               /* .. and below follows what is basically a copy of the
@@ -2592,6 +2592,8 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     }
 #endif
 
+  FAST_CHECK_THREADS_ON_CALL();
+
   switch(type)
   {
   case APPLY_STACK:
@@ -2654,7 +2656,6 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 			s->u.efun->name->str : "[widestring fn name]",
 			"");
 	}
-	FAST_CHECK_THREADS_ON_CALL();
 	(*(s->u.efun->function))(args);
 	if (PIKE_FN_DONE_ENABLED()) {
 	  /* DTrace leave probe

@@ -221,7 +221,6 @@
 	Pike_fp->num_args=args;
 	new_frame->current_storage = o->storage+new_frame->context->storage_offset;
 	new_frame->num_locals=args;
-	FAST_CHECK_THREADS_ON_CALL();
 	(*function->func.c_fun)(args);
 	break;
 
@@ -233,7 +232,6 @@
 	if(TYPEOF(*s) == T_PROGRAM)
 	{
 	  struct object *tmp;
-	  FAST_CHECK_THREADS_ON_CALL();
 	  Pike_fp->num_args=args;
 	  tmp=parent_clone_object(s->u.program,
 				  o,
@@ -296,7 +294,6 @@
 	int num_args;
 	int num_locals;
 	PIKE_OPCODE_T *pc;
-	FAST_CHECK_THREADS_ON_CALL();
 
 #ifdef PIKE_DEBUG
 	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
