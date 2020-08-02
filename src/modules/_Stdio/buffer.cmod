@@ -455,7 +455,7 @@ PIKECLASS Buffer
 
   PMOD_EXPORT void io_actually_trigger_output( Buffer *io )
   {
-    if (PIKE_TYPEOF(io->output) == PIKE_T_FUNCTION) {
+    if (io->output.tu.named_type == PIKE_T_FUNCTION) {
       if (UNLIKELY(!io->output.u.object->prog)) {
         /* Destructed object. */
         free_svalue(&io->output);
@@ -994,7 +994,7 @@ PIKECLASS Buffer
     if (f)
       assign_svalue(&io->output, f);
     else {
-      if (PIKE_TYPEOF(io->output) == PIKE_T_FUNCTION)
+      if (io->output.tu.named_type == PIKE_T_FUNCTION)
         free_svalue(&io->output);
     }
   }
