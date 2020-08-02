@@ -455,14 +455,16 @@ PIKECLASS Buffer
 
   PMOD_EXPORT void io_actually_trigger_output( Buffer *io )
   {
-    if (io->output.tu.named_type == PIKE_T_FUNCTION) {
-      if (UNLIKELY(!io->output.u.object->prog)) {
-        /* Destructed object. */
-        free_svalue(&io->output);
-        return;
-      }
+    if (UNLIKELY(!io->output.u.object->prog)) {
+      /* Destructed object. */
+      free_svalue(&io->output);
+      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+      return;
+    }
 
+    if ( io->output.u.object ) {
       move_svalue(Pike_sp++, &io->output);
+      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
       apply_svalue(Pike_sp-1, 0);
       pop_n_elems(2);
     }
@@ -988,8 +990,11 @@ PIKECLASS Buffer
     if (f)
       assign_svalue(&io->output, f);
     else {
-      if (io->output.tu.named_type == PIKE_T_FUNCTION)
+      if (io->output.u.object) {
         free_svalue(&io->output);
+        io->output.u.object = 0;	// free_svalue() puts in -1
+      }
+      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     }
   }
 
