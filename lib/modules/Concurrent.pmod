@@ -884,9 +884,6 @@ class Promise
 
   final int _materialised;
   final AggregateState _astate;
-#if CONCURRENT_DEBUG
-  array(Pike.BacktraceFrame) createdat;
-#endif
 
   //! Creates a new promise, optionally initialised from a traditional callback
   //! driven method via @expr{executor(success, failure, @@extra)@}.
@@ -897,9 +894,6 @@ class Promise
    function(function(mixed:void),
             function(mixed:void), mixed ...:void) executor, mixed ... extra)
   {
-#if CONCURRENT_DEBUG
-    createdat = backtrace()[..<1];
-#endif
     state = STATE_NO_FUTURE;
     if (executor)
       executor(success, failure, @extra);
@@ -1201,15 +1195,21 @@ class Promise
     return max_failures(-1);
   }
 
+  private string orig_backtrace =
+#ifdef CONCURRENT_DEBUG
+    sprintf("%s\n------\n", describe_backtrace(backtrace()))
+#else
+    ""
+#endif
+    ;
+
   protected void _destruct()
   {
     // NB: Don't complain about dropping STATE_NO_FUTURE on the floor.
     if (state == STATE_PENDING)
-      try_failure(({ sprintf("%O: Promise broken.\n", this),
-#if CONCURRENT_DEBUG
-                     this->createdat ||
-#endif
-                     backtrace() }));
+      try_failure(({ sprintf("%O: Promise broken.\n%s",
+			     this, orig_backtrace),
+		     backtrace() }));
     if ((state == STATE_REJECTED) && global_on_failure)
       call_callback(global_on_failure, result);
     result = UNDEFINED;
