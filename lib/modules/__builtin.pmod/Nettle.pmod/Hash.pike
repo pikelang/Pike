@@ -718,13 +718,14 @@ class SCRAM
   string(7bit) server_3(string(8bit) line,
 			string(8bit) salted_password) {
     constant format = "c=biws,r=%s,p=%s";
-    string r, p;
+    string(8bit) r, p;
+    string(7bit) ret;
     if (!catch([r, p] = array_sscanf(line, format))
 	&& r == nonce) {
       first += sprintf("c=biws,r=%s", r);
-      p = p == clientproof(salted_password) && sprintf("v=%s", nonce);
+      ret = p == clientproof(salted_password) && sprintf("v=%s", nonce);
     }
-    return [string(7bit)]p;
+    return ret;
   }
 
   //! Final client-side step in the SCRAM handshake.  If we get this far, the
