@@ -300,7 +300,7 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
 //!
 //! @seealso
 //!   @[crypt_md5()]
-string(8bit) crypt_hash(string(8bit) password, string(8bit) salt, int rounds)
+string(7bit) crypt_hash(string(8bit) password, string(8bit) salt, int rounds)
 {
   int dsz = digest_size();
   int plen = sizeof(password);
@@ -426,7 +426,7 @@ string(8bit) crypt_hash(string(8bit) password, string(8bit) salt, int rounds)
   t = dsz/3*3;
   b64enc(ret, a[t], a[t+1], a[t+2], dsz%3+1);
 
-  return (string(8bit))ret;
+  return (string(7bit))ret;
 }
 
 //! Password hashing PHP Portable Hash-style.
