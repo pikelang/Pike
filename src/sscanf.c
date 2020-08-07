@@ -1929,14 +1929,14 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  break;
 	}
 
-	case 'n':
+	case 'n':	/* FIXME: tIntPos? */
         case 'b':
         case 'o':
         case 'd':
         case 'x':
         case 'D':
         case 'i':
-	case 'c':
+	case 'c':	/* FIXME: Use the width of the input string. */
 	  if (!no_assign)
 	    push_finished_type(int_type_string);
 	  break;
@@ -2002,8 +2002,10 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  /* FALLTHRU */
       case 's':
       case 'H':
-	if (!no_assign)
+	if (!no_assign) {
+	  /* FIXME: Use the type of the input string. */
 	  push_finished_type(string_type_string);
+	}
 	break;
 
 	case 'F':
@@ -2043,7 +2045,7 @@ void f___handle_sscanf_format(INT32 args)
   int fmt_count;
 
 #if 0
-  fprintf(stderr, "__handle_sprintf_format()\n");
+  fprintf(stderr, "__handle_sscanf_format()\n");
 #endif /* 0 */
   if (args != 4)
     SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sscanf_format", 4);
