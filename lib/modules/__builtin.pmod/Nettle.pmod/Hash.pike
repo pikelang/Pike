@@ -1228,11 +1228,11 @@ class SCRAM
   //!   @[server_2]
   string server_1(string(8bit) line) {
     constant format = "n,,n=%s,r=%s";
-    string username, r;
+    string(8bit) username, r;
     catch {
       first = [string(8bit)]line[3..];
-      [username, r] = array_sscanf(line, format);
-      nonce = [string(8bit)]r;
+      [username, r] = [array(string(8bit))]array_sscanf(line, format);
+      nonce = r;
       r = Standards.IDNA.to_unicode(username);
     };
     return r;
@@ -1317,7 +1317,7 @@ class SCRAM
     constant format = "c=biws,r=%s,p=%s";
     string(8bit) r, p;
     string(7bit) ret;
-    if (!catch([r, p] = array_sscanf(line, format))
+    if (!catch([r, p] = [array(string(8bit))]array_sscanf(line, format))
 	&& r == nonce) {
       first += sprintf("c=biws,r=%s", r);
       ret = p == clientproof(salted_password) && sprintf("v=%s", nonce);
