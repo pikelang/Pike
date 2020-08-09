@@ -347,20 +347,27 @@ void call_pike_initializers(struct object *o, int args)
   fun=FIND_LFUN(p, LFUN_CREATE);
   if(fun!=-1)
   {
-    apply_low(o,fun,args);
+    struct identifier *id = ID_FROM_INT(p, fun);
+    if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
+	(id->func.offset == -1)) {
+      /* Function prototype. */
+      pop_n_elems(args);
+    } else {
+      apply_low(o,fun,args);
 
-    /* Currently, we do not require void functions to clean up the stack
-     * (this is presumably also true for create()s?), so how are
-     * C-level constructors supposed to actually comply?
+      /* Currently, we do not require void functions to clean up the stack
+       * (this is presumably also true for create()s?), so how are
+       * C-level constructors supposed to actually comply?
 #ifdef PIKE_DEBUG
-    if( TYPEOF(Pike_sp[-1])!=T_INT || Pike_sp[-1].u.integer )
-    {
-      Pike_error("Illegal create() return type.\n");
-    }
+      if( TYPEOF(Pike_sp[-1])!=T_INT || Pike_sp[-1].u.integer )
+      {
+        Pike_error("Illegal create() return type.\n");
+      }
 #endif
-     */
+       */
 
-    pop_stack();
+      pop_stack();
+    }
   } else {
     pop_n_elems(args);
   }
@@ -789,6 +796,17 @@ static int call_destruct(struct object *o, enum object_destruct_reason reason)
 #endif
     && (o->prog->flags & PROGRAM_FINISHED))
   {
+    struct identifier *id = ID_FROM_INT(o->prog, e);
+    if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
+	(id->func.offset == -1)) {
+      /* Function prototype. */
+#ifdef GC_VERBOSE
+      if (Pike_in_gc > GC_PASS_PREPARE)
+	fprintf(stderr, "|   Prototype _destruct() in %p with %d refs.\n",
+		o, o->refs);
+#endif
+      return 0;
+    }
 #ifdef PIKE_DEBUG
     if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
       Pike_fatal("Calling _destruct() inside gc.\n");
