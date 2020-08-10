@@ -1125,7 +1125,7 @@ class PikeType
 	    replace_names(tok, a);
 
 	  array(array(PC.Token|array(PC.Token|array))) tmp;
-	  tmp=tok/({"|"});
+	  tmp = ([array]tok)/({"|"});
 
 	  if(sizeof(tmp) >1)
 	  {
@@ -1134,7 +1134,7 @@ class PikeType
 	    return;
 	  }
 
-	  tmp=tok/({"&"});
+	  tmp = ([array]tok)/({"&"});
 	  if(sizeof(tmp) >1)
 	  {
 	    t=PC.Token("&");
@@ -1142,7 +1142,7 @@ class PikeType
 	    return;
 	  }
 
-	  tmp=tok/({"="});
+	  tmp = ([array]tok)/({"="});
 	  if(sizeof(tmp) >1)
 	  {
 	    t=PC.Token("=");
