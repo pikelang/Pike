@@ -183,6 +183,12 @@ o Protocols.Websocket
 
   Tentative fix for error 'indexing the NULL value with "set_nonblocking'.
 
+o Runtime
+
+  Certain operations on arrays of only objects could have triggered a type
+  confusion under some circumstances, causing integers to be freed as
+  objects, and thus a NULL derefence (SIGSEGV).
+
 o Sql.pgsql
 
   - Ensure that the db connection is closed when the portal is closed.
