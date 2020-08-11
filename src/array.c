@@ -680,7 +680,8 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
   }
 }
 
-static ptrdiff_t fast_array_search( struct array *v, struct svalue *s, ptrdiff_t start )
+static ptrdiff_t fast_array_search( struct array *v, const struct svalue *s,
+                                    ptrdiff_t start )
 {
   ptrdiff_t e;
   struct svalue *ip = ITEM(v);
@@ -697,7 +698,7 @@ static ptrdiff_t fast_array_search( struct array *v, struct svalue *s, ptrdiff_t
  * @param start the index to start search at
  * @return the index if found, -1 otherwise
  */
-PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
+PMOD_EXPORT ptrdiff_t array_search(struct array *v, const struct svalue *s,
 				   ptrdiff_t start)
 {
 #ifdef PIKE_DEBUG
@@ -707,7 +708,7 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(v);
 #endif
-  check_destructed(s);
+  safe_check_destructed(s);
 
   /* Why search for something that is not there?
    * however, we must explicitly check for searches

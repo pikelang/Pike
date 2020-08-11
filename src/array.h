@@ -126,7 +126,7 @@ void o_append_array(INT32 args);
 PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size);
 PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size);
 PMOD_EXPORT struct array *array_remove(struct array *v,INT32 ind);
-PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
+PMOD_EXPORT ptrdiff_t array_search(struct array *v, const struct svalue *s,
 				   ptrdiff_t start);
 PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
 				      ptrdiff_t end);
