@@ -535,7 +535,7 @@ array(string) ip_and_port_of( RemoteAddressObject|string|int(0..0) inc,
     if( !stringp(inc) )
         return 0;
 
-    array ip_and_port = inc / " ";
+    array(string) ip_and_port = ([string]inc) / " ";
     if (sizeof(ip_and_port) < 2)
         ip_and_port += ({ 0 });
     return ip_and_port;
