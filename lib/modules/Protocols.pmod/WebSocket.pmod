@@ -865,7 +865,6 @@ class Connection {
         if (opcode == FRAME_CLOSE) {
             state = CLOSING;
             close_reason = frame->reason;
-            stream->close("w");
         }
     }
 
