@@ -710,7 +710,7 @@ class Runtime_timezone_compiler
       {
 	 if (!s) return this;
 	 if (!arrayp(s)) s=({s});
-	 return s+({this});
+	 return ([array]s) + ({this});
       }
 
       int ldayl_is_fix_l(int d1,int wd,int d2,int yn1,int yn2)
