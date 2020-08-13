@@ -5697,7 +5697,7 @@ static void exit_string_assignment_storage(struct object *UNUSED(o))
 void init_operators(void)
 {
   ADD_EFUN ("`[..]", f_range,
-	    tOr3(tFunc(tStr tInt tRangeBound tInt tRangeBound, tStr),
+	    tOr3(tFunc(tSetvar(1,tStr) tInt tRangeBound tInt tRangeBound, tVar(1)),
 		 tFunc(tArr(tSetvar(0,tMix)) tInt tRangeBound tInt tRangeBound, tArr(tVar(0))),
 		 tFunc(tObj tMix tRangeBound tMix tRangeBound, tMix)),
 	    OPT_TRY_OPTIMIZE);
