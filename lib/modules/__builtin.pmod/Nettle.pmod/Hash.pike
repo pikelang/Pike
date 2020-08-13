@@ -720,7 +720,7 @@ class SCRAM
     constant format = "c=biws,r=%s,p=%s";
     string(8bit) r, p;
     string(7bit) ret;
-    if (!catch([r, p] = array_sscanf(line, format))
+    if (!catch([r, p] = [array(string(8bit))]array_sscanf(line, format))
 	&& r == nonce) {
       first += sprintf("c=biws,r=%s", r);
       ret = p == clientproof(salted_password) && sprintf("v=%s", nonce);
