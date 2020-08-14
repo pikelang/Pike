@@ -1178,6 +1178,7 @@ final void SCRAM_set_salted_password(string(8bit) SaltedPassword, string key) {
 class SCRAM
 {
   private string(8bit) first, nonce;
+  private string(7bit) server_signature;
 
   private string(7bit) encode64(string(8bit) raw) {
     return MIME.encode_base64(raw, 1);
@@ -1190,8 +1191,8 @@ class SCRAM
   private string(7bit) clientproof(string(8bit) salted_password) {
     _HMAC.State hmacsaltedpw = HMAC(salted_password);
     salted_password = hmacsaltedpw("Client Key");
-    // Returns ServerSignature through nonce
-    nonce = encode64(HMAC(hmacsaltedpw("Server Key"))(first));
+    // Returns ServerSignature through server_signature
+    server_signature = encode64(HMAC(hmacsaltedpw("Server Key"))(first));
     return encode64([string(8bit)]
 		    (salted_password ^ HMAC(hash(salted_password))(first)));
   }
@@ -1229,14 +1230,15 @@ class SCRAM
   //!   @[server_2]
   string server_1(string(8bit) line) {
     constant format = "n,,n=%s,r=%s";
-    string(8bit) username, r;
+    string username;
+    string(8bit) r;
     catch {
       first = [string(8bit)]line[3..];
       [username, r] = [array(string(8bit))]array_sscanf(line, format);
       nonce = r;
-      r = Standards.IDNA.to_unicode(username);
+      username = Standards.IDNA.to_unicode(username);
     };
-    return r;
+    return username;
   }
 
   //! Server-side step 2 in the SCRAM handshake.
@@ -1254,7 +1256,7 @@ class SCRAM
   //! @seealso
   //!   @[server_3]
   string(7bit) server_2(string(8bit) salt, int iters) {
-    string response = sprintf("r=%s,s=%s,i=%d",
+    string(8bit) response = sprintf("r=%s,s=%s,i=%d",
       nonce += randomstring(), encode64(salt), iters);
     first += "," + response + ",";
     return [string(7bit)]response;
@@ -1288,10 +1290,10 @@ class SCRAM
       if (pass != "")
 	pass = [string(7bit)]Standards.IDNA.to_ascii(pass);
       salt = MIME.decode_base64([string(7bit)]salt);
-      nonce = [string(8bit)]sprintf("%s,%s,%d", pass, salt, iters);
-      if (!(r = SCRAM_get_salted_password(nonce))) {
+      string(8bit) key = [string(8bit)]sprintf("%s,%s,%d", pass, salt, iters);
+      if (!(r = SCRAM_get_salted_password(key))) {
 	r = pbkdf2(pass, salt, iters, digest_size());
-	SCRAM_set_salted_password(r, nonce);
+	SCRAM_set_salted_password(r, key);
       }
       salt = sprintf("%s,p=%s", line, clientproof(r));
       first = 0;                         // Free memory
@@ -1321,7 +1323,7 @@ class SCRAM
     if (!catch([r, p] = [array(string(8bit))]array_sscanf(line, format))
 	&& r == nonce) {
       first += sprintf("c=biws,r=%s", r);
-      ret = p == clientproof(salted_password) && sprintf("v=%s", nonce);
+      ret = p == clientproof(salted_password) && sprintf("v=%s", server_signature);
     }
     return ret;
   }
@@ -1340,6 +1342,6 @@ class SCRAM
     constant format = "v=%s";
     string v;
     return !catch([v] = array_sscanf(line, format))
-      && v == nonce;
+      && v == server_signature;
   }
 }
