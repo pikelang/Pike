@@ -3280,30 +3280,31 @@ PMOD_EXPORT void f_crypt(INT32 args)
 #error No crypt function found and fallback failed.
 #endif
 #endif
-  if (!ret) {
-    switch(errno) {
-#ifdef ELIBACC
-    case ELIBACC:
-      Pike_error("Failed to load a required shared library. "
-		 "Unsupported salt.\n");
-      break;
-#endif
-    case ENOMEM:
-      Pike_error("Out of memory.\n");
-      break;
-    case EINVAL:
-    default:
-      Pike_error("Unsupported salt (%d).\n", errno);
-      break;
-    }
-  }
   if(args < 2)
   {
+    if (!ret) {
+      switch(errno) {
+#ifdef ELIBACC
+      case ELIBACC:
+	Pike_error("Failed to load a required shared library. "
+		   "Unsupported salt.\n");
+	break;
+#endif
+      case ENOMEM:
+	Pike_error("Out of memory.\n");
+	break;
+      case EINVAL:
+      default:
+	Pike_error("Unsupported salt (%d).\n", errno);
+	break;
+      }
+    }
+
     pop_n_elems(args);
     push_text(ret);
   }else{
     int i;
-    i=!strcmp(ret,saltp);
+    i = ret && !strcmp(ret,saltp);
     pop_n_elems(args);
     push_int(i);
   }
