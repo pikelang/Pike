@@ -18,7 +18,7 @@ constant set_thread_quatna = predef::set_thread_quanta;
 constant THREAD_NOT_STARTED = __builtin.THREAD_NOT_STARTED;
 constant THREAD_RUNNING = __builtin.THREAD_RUNNING;
 constant THREAD_EXITED = __builtin.THREAD_EXITED;
-
+constant THREAD_ABORTED = __builtin.THREAD_ABORTED;
 
 //! @[Fifo] implements a fixed length first-in, first-out queue.
 //! A fifo is a queue of values and is often used as a stream of data
