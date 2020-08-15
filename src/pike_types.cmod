@@ -3605,7 +3605,7 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
 	ref_push_string(lfun_strings[lfun]);
 	yytype_report(REPORT_WARNING, NULL, 0, NULL,
 		      NULL, 0, t,
-		      1, "Expected object implementing lfun %s.");
+		      1, "Expected object implementing lfun::%s().");
       }
       break;
     }
@@ -3635,7 +3635,7 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
     ref_push_string(lfun_strings[lfun]);
     yytype_report(REPORT_WARNING, NULL, 0, NULL,
 		  NULL, 0, t,
-		  1, "Expected object implementing lfun %s.");
+		  1, "Expected object implementing lfun::%s().");
     break;
   }
 
@@ -3859,7 +3859,12 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case PIKE_T_OPERATOR:
     {
-      struct pike_type *t = apply_type_operator(a->type, a->car, a->cdr);
+      struct pike_type *t = a->car;
+      if ((t->type >= '0') && (t->type <= '9')) {
+	t = a_markers[t->type - '0'];
+	if (!t) t = zero_type_string;
+      }
+      t = apply_type_operator(a->type, t, a->cdr);
       ret = low_match_types(t, b, flags);
       free_type(t);
       return ret;
@@ -3959,7 +3964,12 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case PIKE_T_OPERATOR:
     {
-      struct pike_type *t = apply_type_operator(b->type, b->car, b->cdr);
+      struct pike_type *t = b->car;
+      if ((t->type >= '0') && (t->type <= '9')) {
+	t = b_markers[t->type - '0'];
+	if (!t) t = zero_type_string;
+      }
+      t = apply_type_operator(b->type, t, b->cdr);
       ret = low_match_types(a, t, flags);
       free_type(t);
       return ret;
@@ -4485,7 +4495,12 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case PIKE_T_OPERATOR:
     {
-      struct pike_type *t = apply_type_operator(b->type, b->car, b->cdr);
+      struct pike_type *t = b->car;
+      if ((t->type >= '0') && (t->type <= '9')) {
+	t = ((flags & LE_A_B_SWAPPED)?a_markers:b_markers)[t->type - '0'];
+	if (!t) t = zero_type_string;
+      }
+      t = apply_type_operator(b->type, t, b->cdr);
       ret = low_pike_types_le(a, t, array_cnt, flags);
       free_type(t);
       return ret;
@@ -4706,7 +4721,12 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case PIKE_T_OPERATOR:
     {
-      struct pike_type *t = apply_type_operator(a->type, a->car, a->cdr);
+      struct pike_type *t = a->car;
+      if ((t->type >= '0') && (t->type <= '9')) {
+	t = ((flags & LE_A_B_SWAPPED)?b_markers:a_markers)[t->type - '0'];
+	if (!t) t = zero_type_string;
+      }
+      t = apply_type_operator(a->type, t, a->cdr);
       ret = low_pike_types_le(t, b, array_cnt, flags);
       free_type(t);
       return ret;
