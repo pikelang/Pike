@@ -26,6 +26,7 @@ optional constant all_threads = predef::all_threads;
 constant THREAD_NOT_STARTED = __builtin.THREAD_NOT_STARTED;
 constant THREAD_RUNNING = __builtin.THREAD_RUNNING;
 constant THREAD_EXITED = __builtin.THREAD_EXITED;
+constant THREAD_ABORTED = __builtin.THREAD_ABORTED;
 
 private local void unlock(MutexKey key)
 {
