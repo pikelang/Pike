@@ -642,7 +642,7 @@ test_any_equal([[
 dnl Generator function with stack.
 test_any_equal([[
   class Foo {
-    continue int foo(int end)
+    continue int|float foo(int end)
     {
       return 1000.0 + gauge {
 	  int i = 0;
@@ -736,7 +736,7 @@ test_any_equal([[
 
 dnl Local generator function with stack.
 test_any_equal([[
-  continue int foo(int end)
+  continue int|float foo(int end)
   {
     return 1000.0 + gauge {
 	int i = 0;
