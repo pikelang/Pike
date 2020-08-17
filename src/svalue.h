@@ -153,6 +153,8 @@ enum PIKE_TYPE {
     PIKE_T_OPERATOR = 0x0080,
     PIKE_T_FIND_LFUN = 0x0180,	/* Look up an lfun in an object type. */
 
+    PIKE_T_TRANSITIVE = 0x00c0,	/* Repeatedly apply a function type. */
+
 /*
  * The following types are only used in compile-time types and
  * as markers in struct identifier.
@@ -391,6 +393,8 @@ struct svalue
 #define tUtf8Str		tAttr("utf8", tStr8)
 
 #define tFindLFun(X, LFUN)	"\200\001" X LFUN "\0"
+
+#define tTransitive(X, Y)	"\300" X Y
 
 #define tSimpleCallable tOr3(tArray,tFunction,tObj)
 #define tCallable tOr3(tArr(tSimpleCallable),tFunction,tObj)
