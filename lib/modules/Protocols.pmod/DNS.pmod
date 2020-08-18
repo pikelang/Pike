@@ -1950,6 +1950,7 @@ class async_client
 		   function(string,mapping,mixed...:void) callback,
 		   mixed ... args)
   {
+    if (!callback) return UNDEFINED;
     for(int e=next_client ? 100 : 256;e>=0;e--)
     {
       int lid = random(65536);
@@ -2006,6 +2007,7 @@ class async_client
 					function callback,
 					mixed ... args)
   {
+    if (!callback) return UNDEFINED;
     if(!answer || !answer->an || !sizeof(answer->an))
     {
       if(multi == -1 || multi >= sizeof(domains)) {
@@ -2189,6 +2191,7 @@ class async_tcp_client
 
     protected void connectedcb(int ok)
     {
+      if (!callback) return;
       if (!ok) {callback(domain, 0, @args); return;}
       sock->set_nonblocking(readcb, writecb, closecb);
       writebuf=sprintf("%2H",req);
