@@ -1,0 +1,125 @@
+subject: Pike 8.0: Parser.XML, SSL, SQL.pgsql, Hash.SCRAM, Protocols.DNS
+from: 5cf5f2a4b8ededbb0bc03f3eabc9bc97a71d61b9
+to: 70fb93b6149b2f99cf42fb6405373e6f8e5935b0
+originator: Henrik Grubbström <grubba@roxen.com>
+depends: 2020-03-25T110609
+restart: true
+
+Multiple changes:
+
+• Protocols.DNS.async_client: Survive NULL callbacks.
+
+Do not complain if the callback function has become NULL when
+it is time to call it (the initiator may have gone away).
+
+Fixes #10051.
+
+• release number bumped to 8.0.1059 by export.pike
+
+• Make Thread.THREAD_ABORTED visible.
+
+• __builtin.Nettle.Hash.SCRAM: Validate incoming nonce and make it 7bit
+
+Also remove lots of superfluous softcasts.
+
+• __builtin.Nettle.Hash.SCRAM: Don't reuse "nonce" for other crap
+
+This fixes some warnings.
+
+Also, remove crazy reuse of variable "r" in server_1().
+
+• __builtin.Nettle.Hash: Fixed warning.
+
+• __builtin.Nettle.Hash.SCRAM: Fix security issue in server_3().
+
+The password was not validated properly if the syntax was valid,
+but not the nonce.
+
+• Protocols.HTTP.Server: Fixed bug in Request()->update_mime_var().
+
+Detected by the type-checker for +=.
+
+Fall-out from fixing bug #10033.
+
+• pgsql: When destructing the connection, discard pending statements.
+
+• pgsql: Terminate early if the processloop has already folded.
+
+• pgsql: Skip already imploded portals.
+
+• pgsql: Release portals that had background-exceptions during bind.
+
+• pgsql: resync() in a destructed connection must end gracefully.
+
+• pgsql: Catch very fast resync responses.
+
+• 7.6::Calendar: Fix failures with PIKE_MODULE_RELOC
+
+• Thread: Mark simulated MutexKey objects for immediate destruction.
+
+• Master: Fix program_path_to_name with PIKE_MODULE_RELOC
+
+• Master: Fixes for combine_path removal of .. breaking PIKE_MODULE_RELOC
+
+• SSL.Context: Honor int(0..1) return type in offers_tickets()
+
+• SSL.Context: Context commits to tickets via offers_tickets()
+
+In certain situations, i.e. after receiving an empty Session Ticket
+extension (client supports, but does not yet have a ticket), by
+including the Session Ticket extension in the server hello commits us to
+providing a ticket later.
+
+As SSL.Context would simply return 0 in encode_ticket() when use_cache
+was zero (not the default), we used to break the protocol on such
+occasions. Instead, we now use SSL.Context()->offers_tickets() to signal
+whether Session Tickets should be supported on the connection (and
+whether the Context commits to encoding a session as ticket later on).
+
+• SSL.ServerConnection: Fix typo
+
+session->ticket_expiration_time should be session->ticket_expiry_time
+
+• pgsql: Autoconvert to UTF-8 for types as CITEXT.
+
+• pgsql: Only wait for queries that have not closed their portals yet.
+
+• pgsql: Do not retry indefinitely.
+
+• Sql.postgres: Only inherit Sql.pgsql if it exists
+
+• Debug.Inspect: Mark as requiring threads
+
+• Pike.Watchdog: Fix problems when without threads
+
+• Thread.Condition: Backport fallback implementation from 8.1
+
+This is needed by Concurrent.
+
+Thread.Condition: Fix edge case in fallback implementation
+
+• Thread.ResourceCount: Provide fallback implementation
+
+• Thread.Queue: Fix broken fallback implementation of try_read()
+
+• Thread.Queue: Provide fallback implementation of peek_array()
+
+• Threads: Move #ifdef so that we get Pike_interpreter_pointer even without threads
+
+• pgsql: Use sql_result instead of Result.
+
+• pgsql: Speed up resync() again (using textonly-queries).
+
+• pgsql: Speed up resync().
+
+• pgsql: Release a portal only once (destructor becomes a no-op).
+
+• pgsql: Avoid a closemux mutex race in parallel queries.
+
+• Concurrent: Add CONCURRENT_DEBUG to get more meaningful broken-promises.
+
+• pgsql: Wait till completion on database connection reset.
+
+• pgsql: Synchronous resync() and fix portalstack for text-multiqueries.
+
+• Parser.XML.Tree: Fixed broken entity serialization.
