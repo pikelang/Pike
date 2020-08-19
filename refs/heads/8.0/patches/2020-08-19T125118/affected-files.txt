@@ -1,0 +1,2 @@
+Modified files:
+  pike/lib/modules/Tools.pmod/Standalone.pmod/features.pike
