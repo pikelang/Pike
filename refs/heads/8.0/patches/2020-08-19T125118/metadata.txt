@@ -1,0 +1,8 @@
+subject: Pike 8.0: Added feature probe for SQLite.
+from: 70fb93b6149b2f99cf42fb6405373e6f8e5935b0
+to: 587e7636e2177ea41df9e5072531f6c13a956b78
+originator: Henrik Grubbström <grubba@roxen.com>
+depends: 2020-08-18T134910
+restart: true
+
+• Tools.Standalone.features: Added check for SQLite.
