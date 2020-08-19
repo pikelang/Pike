@@ -3705,16 +3705,16 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
  * match two type strings, return zero if they don't match, and return
  * the part of 'a' that _did_ match if it did.
  */
-#ifdef PIKE_TYPE_DEBUG
 static struct pike_type *low_match_types2(struct pike_type *a,
 					  struct pike_type *b,
 					  int flags);
-#endif
 static struct pike_type *low_match_types(struct pike_type *a,
 					 struct pike_type *b,
 					 int flags)
-#ifdef PIKE_TYPE_DEBUG
 {
+  struct pike_type *ret = NULL;
+  DECLARE_CYCLIC();
+#ifdef PIKE_TYPE_DEBUG
   int e;
   char *s;
 
@@ -3760,29 +3760,40 @@ static struct pike_type *low_match_types(struct pike_type *a,
     fprintf(stderr, ");\n");
     indent++;
   }
+#endif
 
-  a = low_match_types2(a, b, flags);
+  if ((a == b) || (!a)) {
+    ret = a;
+  } else {
+    ret = BEGIN_CYCLIC(a, b);
+    if (!ret) {
+      SET_CYCLIC_RET(a);
 
+      ret = low_match_types2(a, b, flags);
+    }
+    END_CYCLIC();
+  }
+
+#ifdef PIKE_TYPE_DEBUG
   if (l_flag>2) {
     indent--;
     fprintf(stderr, "%*s= ", indent*2, "");
-    if(a)
-      simple_describe_type(a);
+    if(ret)
+      simple_describe_type(ret);
     else
       fprintf(stderr, "NULL");
     fputc('\n', stderr);
   }
-  return a;
+#endif
+  return ret;
 }
 
 static struct pike_type *low_match_types2(struct pike_type *a,
 					  struct pike_type *b,
 					  int flags)
-#endif
 {
   int correct_args;
   struct pike_type *ret;
-  if(a == b) return a;
 
 #ifdef PIKE_DEBUG
   fatal_check_c_stack(1024);
