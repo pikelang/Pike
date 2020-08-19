@@ -1,0 +1,28 @@
+subject: Pike 7.8: Calendar.Timezone, Protocols.DNS.server
+from: 753463364a8f64178d7976f0de82d845bdca0196
+to: 1ff78befc56cc61430d8fce9804c1386f3cae00d
+originator: Henrik Grubbström <grubba@roxen.com>
+depends: 2017-04-07T145304
+restart: true
+
+Multiple changes:
+
+• Calendar.Timezone: Document the timezone file format.
+
+• Calendar.Timezone: Use the symlink target as timezone candidate.
+
+• Calendar.Timezone: Fixed bug in handling of multi-line tz-files.
+
+• Calendar.Timezone: Add support for /etc/timezone (Linux).
+
+• Calendar.Timezone: Scan time zone files in a deterministic order.
+
+• Add extensible error handling in Protocols.DNS.server
+
+Some servers might want to report errors during other mechanisms than
+werror.  By moving the error reporting to the new
+report_decode_error() method, it is easy to override that method and
+do something else.
+
+Likewise, some servers might want to not reply to malformed requests.
+Move that code to the new handle_decode_error() method.
