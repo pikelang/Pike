@@ -1,0 +1,3 @@
+Modified files:
+  pike/lib/modules/Calendar.pmod/Timezone.pmod
+  pike/lib/modules/Protocols.pmod/DNS.pmod
