@@ -5528,14 +5528,14 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
 	free_type(a);
 	push_unlimited_array_type(T_ARRAY);
 
-	if (low_match_types(int_type_string, index_type, 0)) {
+	if (match_types(int_type_string, index_type)) {
 	  /* Also possible to index the array with an int. */
 	  push_finished_type(t->cdr);
 	  push_type(T_OR);
 	}
 	return pop_unfinished_type();
       }
-      if (low_match_types(int_type_string, index_type, 0)) {
+      if (match_types(int_type_string, index_type)) {
 	/* Possible to index the array with an int. */
 	add_ref(t->cdr);
 	return t->cdr;
@@ -5709,7 +5709,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
   case T_STRING:
     /* Check that the index types are compatible with int. */
     {
-      if (index1_type && !low_match_types(int_type_string, index1_type, 0)) {
+      if (index1_type && !match_types(int_type_string, index1_type)) {
 	ref_push_type_value(t);
 	yytype_report(REPORT_WARNING, NULL, 0, int_type_string,
 		      NULL, 0, index1_type,
@@ -5717,7 +5717,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
 	/* Bad index1 type. */
 	return 0;
       }
-      if (index2_type && !low_match_types(int_type_string, index2_type, 0)) {
+      if (index2_type && !match_types(int_type_string, index2_type)) {
 	ref_push_type_value(t);
 	yytype_report(REPORT_WARNING, NULL, 0, int_type_string,
 		      NULL, 0, index2_type,
@@ -5966,12 +5966,12 @@ static int low_check_indexing(struct pike_type *type,
     return low_check_indexing(type->cdr, index_type, n);
 
   case T_ARRAY:
-    if(low_match_types(string_type_string, index_type, 0) &&
+    if(match_types(string_type_string, index_type) &&
        low_check_indexing(type->cdr, index_type, n))
       return 1;
     /* FALLTHRU */
   case T_STRING:
-    return !!low_match_types(int_type_string, index_type, 0);
+    return match_types(int_type_string, index_type);
 
   case T_OBJECT:
   {
@@ -5996,7 +5996,7 @@ static int low_check_indexing(struct pike_type *type,
 	}
 	return 0;
       }
-      return !!low_match_types(string_type_string, index_type,0);
+      return match_types(string_type_string, index_type);
     }else{
       return 1;
     }
@@ -6009,7 +6009,7 @@ static int low_check_indexing(struct pike_type *type,
      *  - There were complaints when people got compilation errors
      *    for indexing operations that would always fail.
      */
-    return low_match_types(type->car, index_type, 0) ? 1 : -1;
+    return match_types(type->car, index_type) ? 1 : -1;
 
   case T_FUNCTION:
     while ((type = type->cdr) && (type->type == T_FUNCTION))
@@ -6030,7 +6030,7 @@ static int low_check_indexing(struct pike_type *type,
 
     case T_INT:
     case T_PROGRAM:
-      return !!low_match_types(string_type_string, index_type, 0);
+      return match_types(string_type_string, index_type);
 
   case T_MIXED:
     return 1;
@@ -8233,7 +8233,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
   case PIKE_T_FUNCTION:
     if (!(flags & CALL_NOT_LAST_ARG) &&
 	(fun_type->cdr->type == PIKE_T_FUNCTION) &&
-	!low_match_types(fun_type->cdr->car, void_type_string, 0)) {
+	!match_types(fun_type->cdr->car, void_type_string)) {
       /* Last argument and more arguments required. */
       res = NULL;
       break;
