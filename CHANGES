@@ -246,6 +246,10 @@ o Standards.JSON
 
   encode() now allows other threads to run every now and then.
 
+o Standards.EXIF
+
+  Improved detection of EXIF section in get_properties().
+
 o sybase
 
   The module's configure script now respects ABI suffixes when searching
