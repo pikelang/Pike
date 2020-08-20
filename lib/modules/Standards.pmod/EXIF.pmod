@@ -1167,10 +1167,15 @@ mapping(string:mixed) get_properties(Stdio.File file, void|mapping tags)
     default:
       int size;
       sscanf(file->read(2), "%2c", size);
-      if( marker==0xe1 && file->read(6) == "Exif\0\0" )
-      {
-        file = Stdio.FakeFile(file->read(size-2-6));
-        break loop;
+      if (marker == 0xe1) {
+        //  There could be other app sections tagged with 0xE1, not just EXIF
+        if (file->read(6) == "Exif\0\0") {
+          file = Stdio.FakeFile(file->read(size - 2 - 6));
+          break loop;
+        } else {
+          //  Undo last read
+          file->seek(file->tell() - 6);
+        }
       }
       file->read(size-2);
       continue;
