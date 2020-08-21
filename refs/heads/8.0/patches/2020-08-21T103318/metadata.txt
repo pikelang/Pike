@@ -1,0 +1,9 @@
+subject: Pike 8.0: Fix broken detection of EXIF section when multiple 0XE1 markers are present.
+from: 587e7636e2177ea41df9e5072531f6c13a956b78
+to: 6a692a5cbc8173caf749bd8ab5124e7c96576646
+originator: Henrik Grubbström <grubba@roxen.com>
+depends: 2020-08-19T125118
+restart: true
+
+• Fix broken detection of EXIF section when multiple 0xE1 app markers were
+present in the file.
