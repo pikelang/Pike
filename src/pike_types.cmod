@@ -3764,12 +3764,15 @@ static struct pike_type *low_match_types(struct pike_type *a,
 
   if ((a == b) || (!a)) {
     ret = a;
+    if (ret) add_ref(ret);
   } else {
     ret = BEGIN_CYCLIC(a, b);
     if (!ret) {
       SET_CYCLIC_RET(a);
 
       ret = low_match_types2(a, b, flags);
+    } else {
+      add_ref(ret);
     }
     END_CYCLIC();
   }
@@ -3793,7 +3796,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 					  int flags)
 {
   int correct_args;
-  struct pike_type *ret;
+  struct pike_type *ret = NULL;
+  struct pike_type *tmp;
 
 #ifdef PIKE_DEBUG
   fatal_check_c_stack(1024);
@@ -3804,6 +3808,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case T_AND:
     ret = low_match_types(a->car, b, flags);
     if(!ret) return 0;
+    free_type(ret);
     return low_match_types(a->cdr, b, flags);
 
   case T_OR:
@@ -3811,7 +3816,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     if(ret && !(flags & NO_SHORTCUTS)) return ret;
     if(ret)
     {
-      low_match_types(a->cdr, b, flags);
+      struct pike_type *t = low_match_types(a->cdr, b, flags);
+      if (t) {
+	free_type(t);
+      }
       return ret;
     }else{
       return low_match_types(a->cdr, b, flags);
@@ -3826,8 +3834,12 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     return low_match_types(a->cdr, b, flags);
 
   case T_NOT:
-    if(low_match_types(a->car, b, (flags ^ B_EXACT ) | NO_MAX_ARGS))
+    ret = low_match_types(a->car, b, (flags ^ B_EXACT ) | NO_MAX_ARGS);
+    if (ret) {
+      free_type(ret);
       return 0;
+    }
+    add_ref(a);
     return a;
 
   case T_ASSIGN:
@@ -3836,8 +3848,6 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       ret = low_match_types(a->cdr, b, flags);
       if(ret && (!a_markers[m] || b->type != T_VOID))
       {
-	struct pike_type *tmp;
-
 #ifdef PIKE_DEBUG
 	if ((m < 0) || (m > 9)) {
 	  Pike_fatal("marker out of range: %d\n", m);
@@ -3876,7 +3886,6 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       if(a_markers[m])
       {
 	struct pike_type *t = a_markers[m];
-	struct pike_type *res;
 #ifdef PIKE_DEBUG
 	if(a_markers[m]->type == a->type)
 	  Pike_fatal("Cyclic type!\n");
@@ -3885,19 +3894,19 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	  Pike_fatal("Cyclic type!\n");
 #endif
 	a_markers[m] = NULL;
-	res = low_match_types(t, b, flags);
+	ret = low_match_types(t, b, flags);
 	if (a_markers[m]) {
-	  struct pike_type *tmp;
 	  a_markers[m] = or_pike_types(tmp = a_markers[m], t, 0);
 	  free_type(tmp);
 	  free_type(t);
 	} else {
 	  a_markers[m] = t;
 	}
-	return res;
+	return ret;
       }
-      else
+      else {
 	return low_match_types(mixed_type_string, b, flags);
+      }
     }
 
   case PIKE_T_OPERATOR:
@@ -3916,6 +3925,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case PIKE_T_TRANSITIVE:
     {
       /* FIXME */
+      add_ref(a);
       return a;
     }
   }
@@ -3925,6 +3935,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case T_AND:
     ret = low_match_types(a, b->car, flags);
     if(!ret) return 0;
+    free_type(ret);
     return low_match_types(a, b->cdr, flags);
 
   case T_OR:
@@ -3932,7 +3943,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     if(ret && !(flags & NO_SHORTCUTS)) return ret;
     if(ret)
     {
-      low_match_types(a, b->cdr, flags);
+      struct pike_type *t = low_match_types(a, b->cdr, flags);
+      if (t) {
+	free_type(t);
+      }
       return ret;
     }else{
       return low_match_types(a, b->cdr, flags);
@@ -3947,8 +3961,12 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     return low_match_types(a, b->cdr, flags);
 
   case T_NOT:
-    if(low_match_types(a, b->car, (flags ^ A_EXACT ) | NO_MAX_ARGS))
+    ret = low_match_types(a, b->car, (flags ^ A_EXACT ) | NO_MAX_ARGS);
+    if (ret) {
+      free_type(ret);
       return 0;
+    }
+    add_ref(a);
     return a;
 
   case T_ASSIGN:
@@ -3957,8 +3975,6 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       ret = low_match_types(a, b->cdr, flags);
       if(ret && (!b_markers[m] || a->type != T_VOID))
       {
-	struct pike_type *tmp;
-
 	type_stack_mark();
 	push_finished_type_with_markers(a, a_markers, 0);
 	tmp=pop_unfinished_type();
@@ -3990,25 +4006,24 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       if(b_markers[m])
       {
 	struct pike_type *t = b_markers[m];
-	struct pike_type *res;
 #ifdef PIKE_DEBUG
 	if(b_markers[m]->type == b->type)
 	  Pike_fatal("Cyclic type!\n");
 #endif
 	b_markers[m] = NULL;
-	res = low_match_types(a, t, flags);
+	ret = low_match_types(a, t, flags);
 	if (b_markers[m]) {
-	  struct pike_type *tmp;
 	  b_markers[m] = or_pike_types(tmp = b_markers[m], t, 0);
 	  free_type(tmp);
 	  free_type(t);
 	} else {
 	  b_markers[m] = t;
 	}
-	return res;
+	return ret;
       }
-      else
+      else {
 	return low_match_types(a, mixed_type_string, flags);
+      }
     }
 
   case PIKE_T_OPERATOR:
@@ -4027,6 +4042,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case PIKE_T_TRANSITIVE:
     {
       /* FIXME */
+      add_ref(a);
       return a;
     }
   }
@@ -4038,24 +4054,27 @@ static struct pike_type *low_match_types2(struct pike_type *a,
      (b->type != T_VOID))
   {
 #if 1
+    ret = NULL;
     switch(b->type)
     {
       /* These types can contain sub-types */
       case T_ARRAY:
-	low_match_types(array_type_string, b, flags);
+	ret = low_match_types(array_type_string, b, flags);
 	break;
       case T_MAPPING:
-	low_match_types(mapping_type_string, b, flags);
+	ret = low_match_types(mapping_type_string, b, flags);
 	break;
       case T_FUNCTION:
       case T_MANY:
-	low_match_types(function_type_string, b, flags);
+	ret = low_match_types(function_type_string, b, flags);
 	break;
       case T_MULTISET:
-	low_match_types(multiset_type_string, b, flags);
+	ret = low_match_types(multiset_type_string, b, flags);
 	break;
     }
+    if (ret) free_type(ret);
 #endif
+    add_ref(a);
     return a;
   }
 
@@ -4064,24 +4083,27 @@ static struct pike_type *low_match_types2(struct pike_type *a,
      (a->type != T_VOID))
   {
 #if 1
+    ret = NULL;
     switch(a->type)
     {
       /* These types can contain sub-types */
       case T_ARRAY:
-	low_match_types(a, array_type_string, flags);
+	ret = low_match_types(a, array_type_string, flags);
 	break;
       case T_MAPPING:
-	low_match_types(a, mapping_type_string, flags);
+	ret = low_match_types(a, mapping_type_string, flags);
 	break;
       case T_FUNCTION:
       case T_MANY:
-	low_match_types(a, function_type_string, flags);
+	ret = low_match_types(a, function_type_string, flags);
 	break;
       case T_MULTISET:
-	low_match_types(a, multiset_type_string, flags);
+	ret = low_match_types(a, multiset_type_string, flags);
 	break;
     }
+    if (ret) free_type(ret);
 #endif
+    add_ref(a);
     return a;
   }
 
@@ -4095,6 +4117,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     /* FIXME: Should look at the sub-type of the program
      * to determine the prototype to use.
      */
+    add_ref(a);
     return a;
 
   case TWOT(PIKE_T_TYPE, T_FUNCTION):
@@ -4110,6 +4133,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     a = pop_unfinished_type();
     if (low_match_types(a, b, flags)) {
       free_type(a);
+      add_ref(ret);
       return ret;
     }
     free_type(a);
@@ -4137,12 +4161,14 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case TWOT(T_OBJECT, T_MANY):
   {
     struct pike_type *s;
-    if((s = low_object_lfun_type(a, LFUN_CALL)))
+    if((s = low_object_lfun_type(a, LFUN_CALL))) {
        return low_match_types(s, b, flags);
+    }
     if (flags & B_EXACT) {
       /* A function isn't an object */
       return 0;
     }
+    add_ref(a);
     return a;
   }
 
@@ -4156,6 +4182,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       /* A function isn't an object */
       return 0;
     }
+    add_ref(a);
     return a;
   }
   case TWOT(T_INT, T_ZERO):
@@ -4163,6 +4190,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     if ((CAR_TO_INT(a) > 0) || (CDR_TO_INT(a) < 0)) {
       return 0;
     }
+    add_ref(a);
     return a;
   }
   case TWOT(T_ZERO, T_INT):
@@ -4170,6 +4198,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     if ((CAR_TO_INT(b) > 0) || (CDR_TO_INT(b) < 0)) {
       return 0;
     }
+    add_ref(a);
     return a;
   }
   case TWOT(T_FUNCTION, T_FUNCTION):
@@ -4197,9 +4226,11 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	b = b->cdr;
       }
 
-      if(!low_match_types(a_tmp, b_tmp,
-			  (flags | NO_MAX_ARGS) & ~(A_EXACT|B_EXACT)))
+      if(!(tmp = low_match_types(a_tmp, b_tmp,
+				 (flags | NO_MAX_ARGS) & ~(A_EXACT|B_EXACT)))) {
 	return 0;
+      }
+      free_type(tmp);
       if(++correct_args > max_correct_args)
 	if(!(flags & NO_MAX_ARGS))
 	  max_correct_args=correct_args;
@@ -4214,9 +4245,11 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     if(b->car->type != T_VOID &&
        a->car->type != T_VOID)
     {
-      if(!low_match_types(a->car, b->car,
-			  (flags | NO_MAX_ARGS) & ~(A_EXACT|B_EXACT)))
+      if(!(tmp = low_match_types(a->car, b->car,
+				 (flags | NO_MAX_ARGS) & ~(A_EXACT|B_EXACT)))) {
 	return 0;
+      }
+      free_type(tmp);
     }
     if(!(flags & NO_MAX_ARGS))
        max_correct_args=MAX_INT32;
@@ -4225,13 +4258,25 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     b = b->cdr;
     if ((b->type == T_VOID) && (a->type != T_VOID)) {
       /* Promote b to a function returning zero. */
-      if (!low_match_types(a, zero_type_string, flags & ~(A_EXACT|B_EXACT)))
+      if (!(tmp = low_match_types(a, zero_type_string,
+				  flags & ~(A_EXACT|B_EXACT)))) {
 	return 0;
+      }
+      free_type(tmp);
     } else if ((a->type == T_VOID) && (b->type != T_VOID)) {
       /* Promote a to a function returning zero. */
-      if(!low_match_types(zero_type_string, b, flags & ~(A_EXACT|B_EXACT)))
+      if(!(tmp = low_match_types(zero_type_string, b,
+				 flags & ~(A_EXACT|B_EXACT)))) {
 	return 0;
-    } else if(!low_match_types(a, b, flags & ~(A_EXACT|B_EXACT))) return 0;
+      }
+      free_type(tmp);
+    } else {
+      if(!(tmp = low_match_types(a, b, flags & ~(A_EXACT|B_EXACT)))) {
+	return 0;
+      }
+      free_type(tmp);
+    }
+    add_ref(ret);
     return ret;
   }
 
@@ -4241,10 +4286,16 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   switch(a->type)
   {
   case T_MAPPING:
-    if(!low_match_types(a->car, b->car,
-			flags & ~(A_EXACT|B_EXACT))) return 0;
-    if(!low_match_types(a->cdr, b->cdr,
-			flags & ~(A_EXACT|B_EXACT))) return 0;
+    if(!(tmp = low_match_types(a->car, b->car,
+			       flags & ~(A_EXACT|B_EXACT)))) {
+      return 0;
+    }
+    free_type(tmp);
+    if(!(tmp = low_match_types(a->cdr, b->cdr,
+			       flags & ~(A_EXACT|B_EXACT)))) {
+      return 0;
+    }
+    free_type(tmp);
     break;
 
   case T_OBJECT:
@@ -4276,8 +4327,9 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
       implements_mode = 0;
 
-      if (!is_compatible(implements_a=ap,implements_b=bp))
+      if (!is_compatible(implements_a=ap,implements_b=bp)) {
 	return 0;
+      }
     }
     break;
 
@@ -4295,15 +4347,21 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case T_ARRAY:
   case T_STRING:
-    if(!low_match_types(a->cdr, b->cdr,
-			flags & ~(A_EXACT|B_EXACT))) return 0;
+    if(!(tmp = low_match_types(a->cdr, b->cdr,
+			       flags & ~(A_EXACT|B_EXACT)))) {
+      return 0;
+    }
+    free_type(tmp);
     /* FALLTHRU */
 
   case T_PROGRAM:
   case T_TYPE:
   case T_MULTISET:
-    if(!low_match_types(a->car, b->car,
-			flags & ~(A_EXACT|B_EXACT))) return 0;
+    if(!(tmp = low_match_types(a->car, b->car,
+			       flags & ~(A_EXACT|B_EXACT)))) {
+      return 0;
+    }
+    free_type(tmp);
     break;
 
   case T_FLOAT:
@@ -4316,6 +4374,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     Pike_fatal("Error in type string.\n");
 #endif
   }
+
+  if (ret) add_ref(ret);
   return ret;
 }
 
@@ -5221,6 +5281,7 @@ int check_soft_cast(struct pike_type *to, struct pike_type *from)
 static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 {
   struct compilation *c = THIS_COMPILATION;
+  struct pike_type *t;
   int tmp;
   CHECK_COMPILER();
   switch(a->type & 0xff)
@@ -5288,9 +5349,10 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
     }
   }
 
-  a = low_match_types(a, b, NO_SHORTCUTS);
-  if(a)
+  t = low_match_types(a, b, NO_SHORTCUTS);
+  if(t)
   {
+    a = t;
 #if 0
     if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 	!low_pike_types_le(a, b, 0, 0)) {
@@ -5305,9 +5367,12 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 	if (a->type == T_MANY) {
 	  a = a->cdr;
 	  push_finished_type_with_markers(a, a_markers, 0);
+	  free_type(t);
 	  return 1;
 	}
-	return low_get_return_type(a, mixed_type_string);
+	tmp = low_get_return_type(a, mixed_type_string);
+	free_type(t);
+	return tmp;
       }
       /* FALLTHRU */
     case T_FUNCTION:
@@ -5316,23 +5381,29 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 	a = a->cdr;
       }
       if (a->type != T_MANY) {
-	return low_get_return_type(a, mixed_type_string);
+	tmp = low_get_return_type(a, mixed_type_string);
+	free_type(t);
+	return tmp;
       }
       /* FALLTHRU */
     case T_MANY:
       a = a->cdr;
       push_finished_type_with_markers(a, a_markers, 0);
+      free_type(t);
       return 1;
 
     case T_TYPE:
     case T_PROGRAM:
       push_finished_type(a->car);
+      free_type(t);
       return 1;
 
     default:
       push_type(T_MIXED);
+      free_type(t);
       return 1;
     }
+    free_type(t);
   }
   return 0;
 }
@@ -5341,7 +5412,9 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 int match_types(struct pike_type *a, struct pike_type *b)
 {
   clear_markers();
-  return !!low_match_types(a, b, 0);
+  a = low_match_types(a, b, 0);
+  free_type(a);
+  return !!a;
 }
 
 int pike_types_le(struct pike_type *a,struct pike_type *b)
@@ -6149,8 +6222,11 @@ static int low_minimum_arguments(struct pike_type *q)
       num = 0;
       while(q->type == T_FUNCTION)
       {
-	if(low_match_types(void_type_string, q->car, B_EXACT))
+	struct pike_type *t;
+	if ((t = low_match_types(void_type_string, q->car, B_EXACT))) {
+	  free_type(t);
 	  return num;
+	}
 
 	num++;
 	q = q->cdr;
@@ -7472,12 +7548,13 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 #endif /* PIKE_DEBUG */
     /* No need to perform advanced checking in the trivial case... */
     if (arg_type != (tmp2 = fun_type->car)) {
+      struct pike_type *t = NULL;
       if (!((flags & CALL_INVERTED_TYPES)?
 	    low_pike_types_le(tmp2, arg_type, 0,
 			      LE_A_B_SWAPPED|LE_EXPLICIT_ZERO):
 	    low_pike_types_le(arg_type, tmp2, 0, 0)) &&
 	  ((flags & CALL_STRICT) ||
-	   !low_match_types(arg_type, tmp2, NO_SHORTCUTS))) {
+	   !(t = low_match_types(arg_type, tmp2, NO_SHORTCUTS)))) {
       /* No match. */
 #ifdef PIKE_DEBUG
 	if (l_flag>2) {
@@ -7488,9 +7565,11 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	if (tmp) free_type(tmp);
 	break;
       }
+      if (t) free_type(t);
     }
     /* Match. */
     if (fun_type->type == PIKE_T_FUNCTION) {
+      struct pike_type *t = NULL;
       /* Advance to the next argument. */
       fun_type = fun_type->cdr;
 #if 0
@@ -7500,7 +7579,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
        */
       if (!(flags & CALL_NOT_LAST_ARG) &&
 	  (fun_type->type == PIKE_T_FUNCTION) &&
-	  !low_match_types(fun_type->car, void_type_string, 0)) {
+	  !(t = low_match_types(fun_type->car, void_type_string, 0))) {
 	/* There are more required arguments. */
 #ifdef PIKE_DEBUG
 	if (l_flag>2) {
@@ -7511,6 +7590,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	if (tmp) free_type(tmp);
 	break;
       }
+      if (t) free_type(t);
 #endif /* 0 */
     }
     type_stack_mark();
