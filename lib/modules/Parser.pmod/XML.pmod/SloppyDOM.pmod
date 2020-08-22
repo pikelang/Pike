@@ -509,23 +509,27 @@ protected class NodeWithChildElements
 	if (!sizeof (name))
 	  simple_path_error ("No attribute name after @ in ");
 
+	mapping(string:string) map_res;
+
 	foreach (rec_search ? ({this}) + get_descendant_elements() :
 		 ({this}), NodeWithChildElements node) {
 	  mapping(string:string) attr = node->attributes;
 	  if (!mappingp (attr))
 	    simple_path_error ("Cannot access an attribute %O in ", name);
 	  if (name == "*") {
-	    if (res) res += attr;
-	    else res = attr + ([]);
+	    if (map_res) map_res += attr;
+	    else map_res = attr + ([]);
 	  }
 	  else if (string val = attr[name]) {
-	    if (res) res[name] = val;
-	    else res = ([name: val]);
+	    if (map_res) map_res[name] = val;
+	    else map_res = ([name: val]);
 	  }
 	}
 
-	if (!res)
+	if (!map_res)
 	  return xml_format && "";
+
+	res = map_res;
       }
 
       else if (sscanf (path, "."WS"%s", path))
@@ -566,14 +570,14 @@ protected class NodeWithChildElements
 
       else {
 	CHECK_CONTENT;
-	res = ({});
+	array(Node|int) arr_res = ({});
 
 	switch (name) {
 	  case "comment":
 	    if (rec_search) {
 	      foreach (get_descendant_nodes(), Node node)
 		if (node->node_type == COMMENT_NODE)
-		  res += ({node});
+		arr_res += ({node});
 	    }
 
 	    else {
@@ -581,11 +585,11 @@ protected class NodeWithChildElements
 		string|Node child = content[i];
 		if (objectp (child)) {
 		  if (child->node_type == COMMENT_NODE)
-		    res += ({child});
+		    arr_res += ({child});
 		}
 		else
 		  if (has_prefix (child, "<!--"))
-		    res += ({i});
+		    arr_res += ({i});
 	      }
 	    }
 	    break;
@@ -595,7 +599,7 @@ protected class NodeWithChildElements
 	      foreach (get_descendant_nodes(), Node node)
 		if ((<TEXT_NODE, ENTITY_REFERENCE_NODE,
 		      CDATA_SECTION_NODE>)[node->node_type])
-		  res += ({node});
+		  arr_res += ({node});
 	    }
 
 	    else {
@@ -605,11 +609,11 @@ protected class NodeWithChildElements
 		if (objectp (child)) {
 		  if ((<TEXT_NODE, ENTITY_REFERENCE_NODE,
 			CDATA_SECTION_NODE>)[child->node_type])
-		    res += ({child});
+		    arr_res += ({child});
 		}
 		else
 		  if (!has_prefix (child, "<!--") && !has_prefix (child, "<?"))
-		    res += ({i});
+		    arr_res += ({i});
 	      }
 	    }
 	    break;
@@ -623,7 +627,7 @@ protected class NodeWithChildElements
 		foreach (get_descendant_nodes(), Node node)
 		  if (node->node_type == PROCESSING_INSTRUCTION_NODE &&
 		      node->node_name == arg)
-		    res += ({node});
+		    arr_res += ({node});
 	      }
 
 	      else {
@@ -632,12 +636,12 @@ protected class NodeWithChildElements
 		  if (objectp (child)) {
 		    if (child->node_type == PROCESSING_INSTRUCTION_NODE &&
 			child->node_name == arg)
-		      res += ({child});
+		      arr_res += ({child});
 		  }
 		  else
 		    if (sscanf (child, scanfmt, string ws) &&
 			(sizeof (ws) || sizeof (child) == sizeof (arg) + 4))
-		      res += ({i});
+		      arr_res += ({i});
 		}
 	      }
 	    }
@@ -646,7 +650,7 @@ protected class NodeWithChildElements
 	      if (rec_search) {
 		foreach (get_descendant_nodes(), Node node)
 		  if (node->node_type == PROCESSING_INSTRUCTION_NODE)
-		    res += ({node});
+		    arr_res += ({node});
 	      }
 
 	      else {
@@ -654,11 +658,11 @@ protected class NodeWithChildElements
 		  string|Node child = content[i];
 		  if (objectp (child)) {
 		    if (child->node_type == PROCESSING_INSTRUCTION_NODE)
-		      res += ({child});
+		      arr_res += ({child});
 		  }
 		  else
 		    if (has_prefix (child, "<?"))
-		      res += ({i});
+		      arr_res += ({i});
 		}
 	      }
 	    }
@@ -667,6 +671,8 @@ protected class NodeWithChildElements
 	  default:
 	    simple_path_error ("Invalid node type %s in ", name);
 	}
+
+	res = arr_res;
       }
     }
 
@@ -675,12 +681,14 @@ protected class NodeWithChildElements
 	if (name == "*")
 	  res = get_descendant_elements();
 	else {
-	  res = ({});
+	  array(Node|int) arr_res = ({});
 	  // Can't use get_elements here since we need to preserve the
 	  // document order.
 	  foreach (get_descendant_elements(), NodeWithChildElements node)
 	    if (node->node_name == name)
-	      res += ({node});
+	      arr_res += ({node});
+
+	  res = arr_res;
 	}
       }
       else
