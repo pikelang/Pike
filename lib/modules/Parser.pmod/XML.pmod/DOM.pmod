@@ -89,7 +89,7 @@ class NodeList
 {
   protected array(Node) nodes;
 
-  protected NodeList `+(NodeList nl) {
+  protected NodeList `+(NodeList|array(Node) nl) {
     return NodeList(values(this)+values(nl));
   }
   protected Node `[](int index) { return item(index); }
