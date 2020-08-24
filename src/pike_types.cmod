@@ -3818,7 +3818,13 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     {
       struct pike_type *t = low_match_types(a->cdr, b, flags);
       if (t) {
+	type_stack_mark();
+	push_finished_type(ret);
+	push_finished_type(t);
+	push_type(T_OR);
+	free_type(ret);
 	free_type(t);
+	ret = pop_unfinished_type();
       }
       return ret;
     }else{
@@ -3945,7 +3951,13 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     {
       struct pike_type *t = low_match_types(a, b->cdr, flags);
       if (t) {
+	type_stack_mark();
+	push_finished_type(ret);
+	push_finished_type(t);
+	push_type(T_OR);
+	free_type(ret);
 	free_type(t);
+	ret = pop_unfinished_type();
       }
       return ret;
     }else{
