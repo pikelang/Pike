@@ -754,7 +754,14 @@ class AggregateState
   private Promise promise;
   private int(0..) promises;
   private int(0..) succeeded, failed;
+
+  // CAVEAT LECTOR:
+  //   Before materialize() results contains an array of Futures.
+  //   After it is either set to 0 (if there is a fold_fun),
+  //   or retained with its elements successively replaced by
+  //   their results.
   final array(mixed) results;
+
   final int(0..) min_failures;
   final int(-1..) max_failures;
   final mixed accumulator;
