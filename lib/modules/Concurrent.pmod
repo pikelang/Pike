@@ -749,133 +749,6 @@ class Future
   }
 }
 
-protected class AggregateState
-{
-  private Promise promise;
-  private int(0..) promises;
-  private int(0..) succeeded, failed;
-
-  // CAVEAT LECTOR:
-  //   Before materialize() results contains an array of Futures.
-  //   After it is either set to 0 (if there is a fold_fun),
-  //   or retained with its elements successively replaced by
-  //   their results.
-  final array(mixed) results;
-
-  final int(0..) min_failures;
-  final int(-1..) max_failures;
-  final mixed accumulator;
-  final function(mixed, mixed, mixed ... : mixed) fold_fun;
-  final array(mixed) extra;
-
-  protected void create(Promise p)
-  {
-    if (p->_materialised || p->_materialised++)
-      error("Cannot materialise a Promise more than once.\n");
-    promise = p;
-  }
-
-  final void materialise()
-  {
-    if (promise->_astate)
-    {
-      promise->_astate = 0;
-      if (results)
-      {
-        promises = sizeof(results);
-        array(Future) futures = results;
-        if (fold_fun)
-          results = 0;
-        foreach(futures; int idx; Future f)
-          f->on_failure(cb_failure, idx)->on_success(cb_success, idx);
-      }
-    }
-  }
-
-  private void fold_one(mixed val)
-  {
-    mixed err = catch (accumulator = fold_fun(val, accumulator, @extra));
-    if (err && promise)
-      promise->failure(err);
-  }
-
-  private void fold(function(mixed:void) failsucc)
-  {
-    failsucc(fold_fun ? accumulator : results);
-    results = 0;			// Free memory
-  }
-
-  private void cb_failure(mixed value, int idx)
-  {
-    Promise p;				// Cache it, to cover a failure race
-    if (p = promise)
-    {
-      Thread.MutexKey key = mux->lock();
-      do
-      {
-        if (p->state <= STATE_PENDING)
-        {
-          ++failed;
-          if (max_failures < failed && max_failures >= 0)
-          {
-            key = 0;
-            p->try_failure(value);
-            break;
-          }
-          int success = succeeded + failed == promises;
-          key = 0;
-          if (results)
-            results[idx] = value;
-          else
-            fold_one(value);
-          if (success)
-          {
-            fold(failed >= min_failures ? p->success : p->failure);
-            break;
-          }
-        }
-        return;
-      } while (0);
-      promise = 0;			// Free backreference
-    }
-  }
-
-  private void cb_success(mixed value, int idx)
-  {
-    Promise p;				// Cache it, to cover a failure race
-    if (p = promise)
-    {
-      Thread.MutexKey key = mux->lock();
-      do
-      {
-        if (p->state <= STATE_PENDING)
-        {
-          ++succeeded;
-          if (promises - min_failures < succeeded)
-          {
-            key = 0;
-            p->try_failure(value);
-            break;
-          }
-          int success = succeeded + failed == promises;
-          key = 0;
-          if (results)
-            results[idx] = value;
-          else
-            fold_one(value);
-          if (success)
-          {
-            fold(p->success);
-            break;
-          }
-        }
-        return;
-      } while (0);
-      promise = 0;			// Free backreference
-    }
-  }
-}
-
 //! Promise to provide a @[Future] value.
 //!
 //! Objects of this class are typically kept internal to the
@@ -889,8 +762,151 @@ class Promise
 {
   inherit Future;
 
-  final int _materialised;
-  final AggregateState _astate;
+  //! @array
+  //!   @item mapping(int:mixed) 0
+  //!     Successful results.
+  //!   @item mapping(int:mixed) 1
+  //!     Failed results.
+  //! @endarray
+  protected array(mapping(int:mixed)) dependency_results = ({ ([]), ([]) });
+
+  protected int(0..) num_dependencies;
+  protected int(1bit) started;
+  protected int(0..) min_failure_threshold;
+  protected int(-1..) max_failure_threshold;
+  protected function(mixed, mixed, mixed ... : mixed) fold_fun;
+  protected array(mixed) extra_fold_args;
+
+  //! Callback used to aggregate the results from dependencies.
+  //!
+  //! @param value
+  //!   Value received from the dependency.
+  //!
+  //! @param idx
+  //!   Identification number for the dependency.
+  //!
+  //! @param results
+  //!   Either of the mappings in @[dependency_results] depending on
+  //!   whether this was a success or a failure callback.
+  //!
+  //! @note
+  //!   The function may also be called with all arguments set to
+  //!   @[UNDEFINED] in order to poll the current state. This is
+  //!   typically done via a call to @[start()].
+  //!
+  //! @seealso
+  //!   @[start()]
+  protected void aggregate_cb(mixed value, int idx, mapping(int:mixed) results)
+  {
+    // Check if aggregation is to be performed.
+    if (!num_dependencies) return;
+
+    Thread.MutexKey key = mux->lock();
+    mixed accumulator;
+    if (state <= STATE_PENDING) {
+      if (results) {
+	results[idx] = value;
+      }
+
+      if (!started) {
+	// Not started yet, so we don't know if all dependencies
+	// have been added yet, or if the limits or fold function
+	// are to be set.
+	//
+	// start() will call us again when it is called.
+	destruct(key);
+	return;
+      }
+
+      [int num_successes, int num_failures] =
+	predef::map(dependency_results, sizeof);
+      accumulator = result;
+      destruct(key);
+
+      // Note: Use try_{failure,success}() from this point forward,
+      //       as we may race with a different thread.
+
+      if (max_failure_threshold >= 0) {
+	if (num_failures > max_failure_threshold) {
+	  // Too many failures.
+	  value = values(dependency_results[1])[0];
+	  try_failure(value);
+	  return;
+	}
+      }
+
+      if ((num_successes + min_failure_threshold) > num_dependencies) {
+	// Too many successes.
+	// NB: num_failures in this case may very well be 0.
+	try_failure(value);
+	return;
+      }
+
+      if ((num_successes + num_failures) < num_dependencies) {
+	// More results needed.
+	return;
+      }
+
+      // All results have been received.
+      if (num_failures < min_failure_threshold) {
+	// Too few failures.
+	// FIXME: Can this actually be reached?
+	// FIXME: What is a suitable failure value?
+	try_failure(value);
+	return;
+      }
+
+      if (fold_fun) {
+	foreach(values(dependency_results[0]), mixed val) {
+	  // NB: The fold_fun may get called multiple times for
+	  //     the same set of results. This is fine though,
+	  //     as we retrieved the initial value for the
+	  //     accumulator while we still held the lock.
+	  mixed err = catch {
+	      accumulator = fold_fun(accumulator, val, @extra_fold_args);
+	    };
+	  if (err) {
+	    // Broken folding function, or the folding function
+	    // wants to convert the success into a failure.
+	    try_failure(err);
+	    return;
+	  }
+	}
+	try_success(accumulator);
+      } else {
+	// Convert the dependency_results[0] mapping into an array.
+	//
+	// NB: first_completed() (which sets num_dependencies to 1)
+	//     also sets fold_fun, so num_dependencies will be
+	//     correct here.
+	try_success(predef::map(indices(allocate(num_dependencies)),
+				dependency_results[0]));
+      }
+    }
+  }
+
+  //! Start the aggregation of values from dependencies.
+  //!
+  //! @note
+  //!   This function is called from several functions. These
+  //!   include @[on_success()], @[on_failure()], @[wait()],
+  //!   @[get()], @[fold()] and @[first_completed()].
+  //!
+  //! @note
+  //!   After this function has been called, several functions
+  //!   may no longer be called. These include @[depend()],
+  //!   @[fold()], @[first_completed()], @[max_failures()],
+  //!   @[min_failures()], @[any_results()].
+  protected void start()
+  {
+    if (!started) {
+      started = 1;
+
+      // Check if the results are already present (in the
+      // aggregate results case).
+      aggregate_cb(UNDEFINED, UNDEFINED, UNDEFINED);
+    }
+  }
 
   //! Creates a new promise, optionally initialised from a traditional callback
   //! driven method via @expr{executor(success, failure, @@extra)@}.
@@ -908,29 +924,25 @@ class Promise
 
   Future on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
-    if (_astate)
-      _astate->materialise();
+    start();
     return ::on_success(cb, @extra);
   }
 
   Future on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
-    if (_astate)
-      _astate->materialise();
+    start();
     return ::on_failure(cb, @extra);
   }
 
   Future wait()
   {
-    if (_astate)
-      _astate->materialise();
+    start();
     return ::wait();
   }
 
   mixed get()
   {
-    if (_astate)
-      _astate->materialise();
+    start();
     return ::get();
   }
 
@@ -1046,12 +1058,6 @@ class Promise
     return (state > STATE_PENDING) ? this_program::this : failure(value, 1);
   }
 
-  inline private void fill_astate()
-  {
-    if (!_astate)
-      _astate = AggregateState(this);
-  }
-
   //! Add futures to the list of futures which the current object depends upon.
   //!
   //! If called without arguments it will produce a new @[Future]
@@ -1076,9 +1082,15 @@ class Promise
   //!   @[any_results()], @[Concurrent.results()], @[Concurrent.all()]
   this_program depend(array(Future) futures)
   {
+    if (started) {
+      error("Sequencing error. Not possible to add more dependencies.\n");
+    }
     if (sizeof(futures)) {
-      fill_astate();
-      _astate->results += futures;
+      foreach(futures, Future f) {
+	int idx = num_dependencies++;
+	f->on_failure(aggregate_cb, idx, dependency_results[1])->
+	  on_success(aggregate_cb, idx, dependency_results[0]);
+      }
     }
     return this_program::this;
   }
@@ -1123,13 +1135,13 @@ class Promise
 	            function(mixed, mixed, mixed ... : mixed) fun,
 	            mixed ... extra)
   {
-    if (_astate) {
-      _astate->accumulator = initial;
-      _astate->fold_fun = fun;
-      _astate->extra = extra;
-      _astate->materialise();
-    } else
-      success(initial);
+    if (started) {
+      error("Sequencing error. Not possible to add a folding function.\n");
+    }
+    result = initial;
+    extra_fold_args = extra;
+    fold_fun = fun;
+    start();
     return this_program::this;
   }
 
@@ -1143,11 +1155,14 @@ class Promise
   //!   @[depend()], @[Concurrent.first_completed()]
   this_program first_completed()
   {
-    if (_astate) {
-      _astate->results->on_failure(try_failure)->on_success(try_success);
-      _astate = 0;
-    } else
-      success(0);
+    if (started) {
+      error("Sequencing error. Not possible to switch to first completed.\n");
+    }
+    extra_fold_args = ({});
+    fold_fun = lambda(mixed a, mixed b) { return b; };
+    num_dependencies = 1;
+    start();
+
     return this_program::this;
   }
 
@@ -1166,8 +1181,10 @@ class Promise
   //!   @[depend()], @[min_failures()], @[any_results()]
   this_program max_failures(int(-1..) max)
   {
-    fill_astate();
-    _astate->max_failures = max;
+    if (started) {
+      error("Sequencing error. Not possible to set max failure threshold.\n");
+    }
+    max_failure_threshold  = max;
     return this_program::this;
   }
 
@@ -1183,8 +1200,10 @@ class Promise
   //!   @[depend()], @[max_failures()]
   this_program min_failures(int(0..) min)
   {
-    fill_astate();
-    _astate->min_failures = min;
+    if (started) {
+      error("Sequencing error. Not possible to set min failure threshold.\n");
+    }
+    min_failure_threshold = min;
     return this_program::this;
   }
 
