@@ -2703,7 +2703,7 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	  t = t->cdr;
 	}
 	if (t->type != T_MANY) {
-	  string_builder_sprintf(s, ", @%T", t);
+	  string_builder_sprintf(s, ", @%T)", t);
 	} else {
 	  if(t->car->type != T_VOID)
 	  {
