@@ -806,6 +806,8 @@ void debug_push_unlimited_array_type(enum PIKE_TYPE t)
     push_int_type(0, MAX_INT32);
   }
   push_type(t);
+
+  TYPE_STACK_DEBUG("push_array_type");
 }
 
 static int (*program_id_to_id)(int) = NULL;
@@ -865,7 +867,7 @@ void debug_push_type_attribute(struct pike_string *attr)
 					(void *)attr,
 					*Pike_compiler->type_stackp,
 					PT_COPY_CDR);
-  TYPE_STACK_DEBUG("push_type_name");
+  TYPE_STACK_DEBUG("push_type_attribute");
 }
 
 void debug_push_type_name(struct pike_string *name)
@@ -970,6 +972,7 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
   if (free_arg) {
     free_type(arg);
   }
+  TYPE_STACK_DEBUG("push_type_operator");
 }
 
 void debug_push_finished_type(struct pike_type *t)
@@ -1548,6 +1551,7 @@ static void push_type_field(TYPE_FIELD field)
       }
     }
   }
+  TYPE_STACK_DEBUG("push_type_field");
 }
 
 INT32 extract_type_int(char *p)
