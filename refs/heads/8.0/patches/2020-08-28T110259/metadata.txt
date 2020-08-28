@@ -1,0 +1,21 @@
+subject: Pike 8.0: Concurrent.Promise
+from: 6a692a5cbc8173caf749bd8ab5124e7c96576646
+to: 390d6181d989365f3ed1dd1c7a7d0daa2ef56877
+originator: Henrik Grubbström <grubba@roxen.com>
+depends: 2020-08-21T103318
+restart: true
+
+Multiple changes:
+
+• Concurrent.AggregateState: Added CAVEAT LECTOR.
+
+• Concurrent.Promise: Improved behavior for CONCURRENT_DEBUG.
+
+Don't store raw backtraces, they may contain references to stuff
+that the user doesn't expect to get extra references.
+
+• Concurrent.Future: Added try_get().
+
+• Concurrent.Future: Added query_{success,failure}_callbacks().
+
+• Concurrent.AggregateState: Protect create().
