@@ -3795,6 +3795,123 @@ static struct pike_type *low_match_types(struct pike_type *a,
   return ret;
 }
 
+static void push_expand_transitive_type(struct pike_type *cont,
+					struct pike_type *trans,
+					struct pike_type **markers,
+					int num_args)
+{
+  struct pike_type *tmp;
+  TYPE_STACK_DEBUG("expand_transitive");
+  switch(cont->type) {
+  case T_OR: case T_AND:
+    push_expand_transitive_type(cont->cdr, trans, markers, num_args);
+    push_expand_transitive_type(cont->car, trans, markers, num_args);
+    push_type(cont->type);
+    break;
+  case PIKE_T_FUNCTION:
+    /*
+     * transitive(function(a, b, ...:c), X)
+     *
+     * ==>
+     *
+     * function(a, @transitive(function(b, ...:c), X)
+     */
+    push_expand_transitive_type(cont->cdr, trans, markers, num_args + 1);
+    push_finished_type(cont->car);
+    push_type(cont->type);
+    break;
+  case T_MANY:
+    if (num_args) {
+      /* No need to expand futher for now. */
+      push_finished_type(trans);
+      push_finished_type(cont);
+      push_type(PIKE_T_TRANSITIVE);
+    } else {
+      /* Two cases:
+       *
+       * transitive(function(:x), function(x, a, b, ...: c))
+       *
+       * ==>
+       *
+       * function(:x) | expand(transitive(function(a, b, ...: c),
+       *                                  function(x, a, b, ...:c)))
+       *
+       * And
+       *
+       * transitive(function(t...:x), function(x, a, b, ...: c))
+       *
+       * ==>
+       *
+       * function(t...:x) |
+       *   function(t, @transitive(function(t...:x),
+       *                           function(x, a, b, c, ...:c)))) |
+       *   expand(transitive(function(a, b, ...: c),
+       *                     function(x, a, b, ...:c)))
+       */
+      DECLARE_CYCLIC();
+
+      push_finished_type(cont);
+
+      if (!BEGIN_CYCLIC(cont, trans)) {
+	SET_CYCLIC_RET(1);
+
+	/* Check many arg. */
+	push_finished_type_with_markers(cont->car, markers, 0);
+	if (peek_type_stack()->type != T_VOID) {
+	  push_finished_type(trans);
+	  push_finished_type(cont);
+	  push_type(PIKE_T_TRANSITIVE);
+	  push_reverse_type(PIKE_T_FUNCTION);
+	  push_type(T_OR);
+	} else {
+	  compiler_discard_top_type();
+	}
+
+	push_finished_type_with_markers(cont->cdr, markers, 0);
+	tmp = low_new_check_call(trans, peek_type_stack(), 0, NULL);
+	compiler_discard_top_type();
+
+	if (tmp) {
+	  /* Valid recursion. */
+	  push_expand_transitive_type(tmp, trans, markers, 0);
+	  free_type(tmp);
+	  push_type(T_OR);
+	}
+      }
+      END_CYCLIC();
+    }
+    break;
+  case PIKE_T_MIXED:
+    push_type(PIKE_T_MIXED);
+    break;
+  default:
+    /* Unsupported. */
+    fprintf(stderr, "Attempting to expand unsupported type: ");
+    simple_describe_type(cont);
+    fprintf(stderr, "\n");
+    push_finished_type(function_type_string);
+    Pike_fatal("Attempt to expand unsupported type: %d\n", cont->type);
+    break;
+  }
+}
+
+/* Partially expand transitive types, so that eg matching
+ * against function types works as expected.
+ */
+static struct pike_type *expand_transitive(struct pike_type *fun,
+					   struct pike_type **markers,
+					   int flags)
+{
+  struct pike_type *ret_type;
+  struct pike_type *cont_type;
+  assert(fun->type == PIKE_T_TRANSITIVE);
+
+  type_stack_mark();
+  push_expand_transitive_type(fun->car, fun->cdr, markers, 0);
+
+  return pop_unfinished_type();
+}
+
 static struct pike_type *low_match_types2(struct pike_type *a,
 					  struct pike_type *b,
 					  int flags)
@@ -3934,9 +4051,16 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case PIKE_T_TRANSITIVE:
     {
+#if 1
+      struct pike_type *t = expand_transitive(a, a_markers, flags);
+      ret = low_match_types(t, b, flags);
+      free_type(t);
+      return ret;
+#else
       /* FIXME */
       add_ref(a);
       return a;
+#endif
     }
   }
 
@@ -4057,9 +4181,16 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case PIKE_T_TRANSITIVE:
     {
+#if 1
+      struct pike_type *t = expand_transitive(b, b_markers, flags);
+      ret = low_match_types(a, t, flags);
+      free_type(t);
+      return ret;
+#else
       /* FIXME */
       add_ref(a);
       return a;
+#endif
     }
   }
 
