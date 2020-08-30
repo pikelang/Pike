@@ -4542,16 +4542,15 @@ static struct pike_type *low_match_types2(struct pike_type *a,
  * with a mapping(int:int) won't change the type of the mapping after the
  * operation.
  */
-#ifdef PIKE_TYPE_DEBUG
 static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 			      int array_cnt, unsigned int flags);
-#endif /* PIKE_TYPE_DEBUG */
 static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
 			     int array_cnt, unsigned int flags)
-#ifdef PIKE_TYPE_DEBUG
 {
   int res;
+  DECLARE_CYCLIC();
 
+#ifdef PIKE_TYPE_DEBUG
   if (l_flag>2) {
 #if 0
     struct compilation *c = MAYBE_THIS_COMPILATION;
@@ -4567,20 +4566,27 @@ static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
 	    indent*2 + 18, "", array_cnt, flags);
     indent++;
   }
+#endif /* PIKE_TYPE_DEBUG */
 
-  res = low_pike_types_le2(a, b, array_cnt, flags);
+  if (!(res = (int)(ptrdiff_t)BEGIN_CYCLIC(a, b))) {
+    SET_CYCLIC_RET(1);
 
+    res = low_pike_types_le2(a, b, array_cnt, flags);
+  }
+  END_CYCLIC();
+
+#ifdef PIKE_TYPE_DEBUG
   if (l_flag>2) {
     indent--;
 
     fprintf(stderr, "%*s= %d\n", indent*2, "", res);
   }
+#endif /* PIKE_TYPE_DEBUG */
   return res;
 }
 
 static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 			      int array_cnt, unsigned int flags)
-#endif /* PIKE_TYPE_DEBUG */
 {
   struct compilation *c = MAYBE_THIS_COMPILATION;
   int ret;
@@ -4770,8 +4776,11 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case PIKE_T_TRANSITIVE:
     {
-      /* FIXME */
-      return 1;
+      struct pike_type *t =
+	expand_transitive(b, ((flags & LE_A_B_SWAPPED)?a_markers:b_markers), 0);
+      ret = low_pike_types_le(a, t, array_cnt, flags);
+      free_type(t);
+      return ret;
     }
   }
 
@@ -5002,8 +5011,11 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case PIKE_T_TRANSITIVE:
     {
-      /* FIXME */
-      return 1;
+      struct pike_type *t =
+	expand_transitive(a, ((flags & LE_A_B_SWAPPED)?b_markers:a_markers), 0);
+      ret = low_pike_types_le(t, b, array_cnt, flags);
+      free_type(t);
+      return ret;
     }
   }
 
