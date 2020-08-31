@@ -7641,31 +7641,55 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     break;
 
   case PIKE_T_TRANSITIVE:
+#if 0
+    /* NB: In theory we could use expand_transitive() here and recurse,
+     *     but this leads to a combinatorial explosion.
+     */
+    tmp = expand_transitive(fun_type, a_markers, 0);
+    tmp2 = lower_new_check_call(tmp, arg_type, flags, sval CHECK_CALL_ARGS);
+    free_type(tmp);
+#else
+    /* There are two cases here; arg_type can belong to either
+     * fun_type->car, or (if fun_type->car can return here) the
+     * second argument to fun_type->cdr (or both).
+     */
     tmp = new_get_return_type(fun_type->car, 0);
     if (tmp) {
       tmp2 = low_new_check_call(fun_type->cdr, tmp, 0, NULL);
       free_type(tmp);
+      tmp = NULL;
       if (tmp2) {
-	tmp = or_pike_types(fun_type->car, tmp2, 1);
+	/* tmp is a valid argument to fun_type->cdr,
+	 * so check if arg_type is also valid. */
+	tmp = lower_new_check_call(tmp2, arg_type, flags,
+				   sval CHECK_CALL_ARGS);
 	free_type(tmp2);
-      } else {
-	tmp = fun_type->car;
-	add_ref(tmp);
       }
-    } else {
-      tmp = fun_type->car;
-      add_ref(tmp);
     }
-    tmp2 = lower_new_check_call(tmp, arg_type, flags, sval CHECK_CALL_ARGS);
-    free_type(tmp);
+
+    tmp2 = lower_new_check_call(fun_type->car, arg_type,
+				flags, sval CHECK_CALL_ARGS);
     if (tmp2) {
-      type_stack_mark();
-      push_finished_type(fun_type->cdr);
-      push_finished_type(tmp2);
-      push_type(PIKE_T_TRANSITIVE);
-      free_type(tmp2);
-      tmp2 = pop_unfinished_type();
+      if (!tmp) {
+	tmp = tmp2;
+      } else {
+	/* NB: Using arg_type as a temporary variable. */
+	arg_type = or_pike_types(tmp, tmp2, 1);
+	free_type(tmp);
+	free_type(tmp2);
+	tmp = arg_type;
+      }
     }
+
+    if (!tmp) return NULL;
+
+    type_stack_mark();
+    push_finished_type(fun_type->cdr);
+    push_finished_type(tmp);
+    push_type(PIKE_T_TRANSITIVE);
+    free_type(tmp);
+    tmp2 = pop_unfinished_type();
+#endif
     return tmp2;
 
   case PIKE_T_FUNCTION:
