@@ -5770,7 +5770,7 @@ void init_operators(void)
   add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
 
-#if 0
+#if 1
   /* Old */
   ADD_EFUN2("`+",f_add,
 	    tOr7(tIfnot(tFuncV(tNone,tNot(tObj),tMix),
