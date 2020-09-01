@@ -1436,7 +1436,7 @@ static int do_docode2(node *n, int flags)
 #endif
               code_expression(CDR(n), 0, "RHS");
             } else {
-              code_expression(CAR(n), 0, "RHS");
+              code_expression(CDR(n), 0, "RHS");
 #ifndef USE_APPLY_N
               emit0(F_MARK);
 #endif
