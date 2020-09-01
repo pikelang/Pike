@@ -5770,6 +5770,8 @@ void init_operators(void)
   add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
 
+#if 0
+  /* Old */
   ADD_EFUN2("`+",f_add,
 	    tOr7(tIfnot(tFuncV(tNone,tNot(tObj),tMix),
 			tOr(tFuncArg(tSetvar(2,tObj), tFindLFun(tVar(2), "`+")),
@@ -5791,6 +5793,39 @@ void init_operators(void)
 			tOr(tVar(0),tVar(1))),
 		 tFuncV(tSetvar(0,tMultiset),tSetvar(1,tMultiset),
 			tOr(tVar(0),tVar(1)))),
+	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
+#define TRANS_NAME	"ADD"
+#else
+#define TRANS_NAME	"`+"
+#endif
+
+  /* Transitive */
+  ADD_EFUN2(TRANS_NAME, f_add,
+	    tTransitive(tFunc(tSetvar(0, tOr7(tObj, tInt, tFloat, tStr,
+					      tArr(tMix), tMapping, tMultiset)),
+			      tVar(0)),
+			tOr7(tOr(tFuncArg(tSetvar(1, tObj),
+					  tFindLFun(tVar(1), "`+")),
+				 tFunc(tNot(tObj) tObj, tMix)),
+			     tOr3(tFunc(tIntPos tIntPos, tIntPos),
+				  tFunc(tIntNeg tIntNeg, tIntNeg),
+				  tIfnot(tFuncV(tNone, tNot(tIntNeg), tMix),
+					 tIfnot(tFuncV(tNone, tNot(tIntPos), tMix),
+						tFunc(tInt tInt, tInt)))),
+			     tOr(tFunc(tFloat tOr(tFloat, tInt), tFloat),
+				 tFunc(tOr(tFloat, tInt) tFloat, tFloat)),
+			     tOr3(tFunc(tSetvar(2, tStr) tSetvar(3, tStr),
+					tOr(tVar(2), tVar(3))),
+				  tFunc(tSetvar(2, tStr) tOr(tInt, tFloat),
+					tOr(tVar(2), tStr7)),
+				  tFunc(tOr(tInt, tFloat) tSetvar(3, tStr),
+					tOr(tStr7, tVar(3)))),
+			     tFunc(tArr(tSetvar(0,tMix)) tArr(tSetvar(1,tMix)),
+				   tArr(tOr(tVar(0), tVar(1)))),
+			     tFunc(tSetvar(0, tMapping) tSetvar(1, tMapping),
+				   tOr(tVar(0), tVar(1))),
+			     tFunc(tSetvar(0, tMultiset) tSetvar(1, tMultiset),
+				   tOr(tVar(0), tVar(1))))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
 
   ADD_EFUN2("`-",f_minus,
