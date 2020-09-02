@@ -2102,7 +2102,7 @@ int foreach_iterate(struct object *o, int do_step)
   /* Generic iteration */
 
   if (do_step) {
-    if ((fun = find_shared_string_identifier(MK_STRING("next"), prog)) < 0) {
+    if ((fun = FIND_LFUN(prog, LFUN_NEXT_FUN)) < 0) {
       fun = FIND_LFUN (prog, LFUN_ADD_EQ);
       if (fun < 0)
 	Pike_error("Iterator object lacks both next() and `+=().\n");
@@ -2154,7 +2154,7 @@ int foreach_iterate(struct object *o, int do_step)
 
   if(TYPEOF(Pike_sp[-4]) != T_INT)
   {
-    fun = find_identifier ("index", prog);
+    fun = FIND_LFUN(prog, LFUN_INDEX_FUN);
     if (fun < 0) Pike_error ("Iterator object lacks index().\n");
     apply_low(o, fun, 0);
     if (IS_UNDEFINED (Pike_sp - 1)) {
@@ -2167,7 +2167,7 @@ int foreach_iterate(struct object *o, int do_step)
 
   if(TYPEOF(Pike_sp[-2]) != T_INT)
   {
-    fun = find_identifier ("value", prog);
+    fun = FIND_LFUN(prog, LFUN_VALUE_FUN);
     if (fun < 0) Pike_error ("Iterator object lacks value().\n");
     apply_low(o, fun, 0);
     if (IS_UNDEFINED (Pike_sp - 1)) {
@@ -2206,18 +2206,14 @@ int foreach_iterate(struct object *o, int do_step)
 
   if(TYPEOF(Pike_sp[-4]) != T_INT)
   {
-    fun = find_shared_string_identifier(MK_STRING("index"), prog);
-    if (fun < 0) Pike_error ("Iterator object lacks index().\n");
-    apply_low(o, fun, 0);
+    apply_lfun(o, LFUN_INDEX_FUN, 0);
     assign_lvalue(Pike_sp-5,Pike_sp-1);
     pop_stack();
   }
 
   if(TYPEOF(Pike_sp[-2]) != T_INT)
   {
-    fun = find_shared_string_identifier(MK_STRING("value"), o->prog);
-    if (fun < 0) Pike_error ("Iterator object lacks value().\n");
-    apply_low(o, fun, 0);
+    apply_lfun(o, LFUN_VALUE_FUN, 0);
     assign_lvalue(Pike_sp-3,Pike_sp-1);
     pop_stack();
   }
