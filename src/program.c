@@ -272,6 +272,9 @@ const char *const lfun_names[]  = {
   "_m_clear",
   "_m_add",
   "_reverse",
+  "next",
+  "index",
+  "value",
 #endif
 };
 

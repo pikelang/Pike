@@ -235,6 +235,9 @@ enum LFUN {
     LFUN__M_CLEAR,
     LFUN__M_ADD,
     LFUN__REVERSE,
+    LFUN_NEXT_FUN,
+    LFUN_INDEX_FUN,
+    LFUN_VALUE_FUN,
 };
 #endif
 
