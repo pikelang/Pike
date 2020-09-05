@@ -278,6 +278,12 @@ int main(int argc, array(string) argv)
 	    c, entry[0], entry[1]);
     }
     if (!zero_type(seen[code])) {
+      werror("Code: 0x%08x\n"
+	     "Entry #%d: 0x%08x (%d bits)\n"
+	     "Entry #%d: 0x%08x (%d bits)\n",
+	     code,
+	     seen[code], huffman_tab[seen[code]][0], huffman_tab[seen[code]][1],
+	     c, entry[0], entry[1]);
       error("Duplicate code for entries #%d and #%d.\n",
 	    c, seen[code]);
     }
