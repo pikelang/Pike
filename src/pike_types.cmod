@@ -6823,28 +6823,16 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	  if (soft_type->type == T_FUNCTION) soft_type = soft_type->cdr;
 	  if (orig_type->type == T_FUNCTION) orig_type = orig_type->cdr;
 	}
-#ifdef PIKE_DEBUG
-	if ((soft_type->type != T_MANY) || (orig_type->type != T_MANY)) {
-	  fprintf(stderr,
-		  "Strange function type (expected MANY node).\n"
-		  "Orig type: ");
-	  simple_describe_type(orig_type);
-	  fprintf(stderr, "\n"
-		  "Soft type: ");
-	  simple_describe_type(soft_type);
-	  fprintf(stderr, "\n");
-	  Pike_fatal("Strange function type in soft cast.\n");
-	}
-#endif /* PIKE_DEBUG */
-	if (!(tmp2 = soft_cast(soft_type->car, orig_type->car,
-			       flags ^ SOFT_WEAKER))) {
-	  goto function_cast_fail;
-	}
-	push_finished_type(tmp2);
-	free_type(tmp2);
-	tmp2 = NULL;
 	if ((orig_type->type == T_MANY) &&
 	    (soft_type->type == T_MANY)) {
+	  if (!(tmp2 = soft_cast(soft_type->car, orig_type->car,
+				 flags ^ SOFT_WEAKER))) {
+	    goto function_cast_fail;
+	  }
+	  push_finished_type(tmp2);
+	  free_type(tmp2);
+	  tmp2 = NULL;
+
 	  /* Note: Special case for the return type in case of create(). */
 	  if (tmp) {
 	    orig_type = tmp;
