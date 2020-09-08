@@ -762,6 +762,179 @@ class Promise
 {
   inherit Future;
 
+  //! Creates a new promise, optionally initialised from a traditional callback
+  //! driven method via @expr{executor(success, failure, @@extra)@}.
+  //!
+  //! @seealso
+  //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
+  protected void create(void|
+   function(function(mixed:void),
+            function(mixed:void), mixed ...:void) executor, mixed ... extra)
+  {
+    state = STATE_NO_FUTURE;
+    if (executor)
+      executor(success, failure, @extra);
+  }
+
+  //! The future value that we promise.
+  Future future()
+  {
+    werror("Promise: %O\n", this_function);
+    if (state == STATE_NO_FUTURE) state = STATE_PENDING;
+    return Future::this;
+  }
+
+  protected this_program finalise(State newstate, mixed value, int try,
+    array(array(function(mixed, mixed ...: void)|array(mixed))) cbs)
+  {
+    Thread.MutexKey key = mux->lock();
+    if (state <= STATE_PENDING)
+    {
+      state = newstate;
+      result = value;
+      key = 0;
+      cond->broadcast();
+      if (sizeof(cbs))
+      {
+        foreach(cbs; ; array cb)
+          if (cb)
+            call_callback(cb[0], value, @cb[1..]);
+	if (newstate == STATE_REJECTED) {
+	  state = STATE_REJECTION_REPORTED;
+	}
+      }
+      failure_cbs = success_cbs = 0;		// Free memory and references
+    }
+    else
+    {
+      key = 0;
+      if (!try)
+        error("Promise has already been finalised.\n");
+    }
+    return this_program::this;
+  }
+
+  //! @decl this_program success(mixed value)
+  //!
+  //! Fulfill the @[Future].
+  //!
+  //! @param value
+  //!   Result of the @[Future].
+  //!
+  //! @throws
+  //!   Throws an error if the @[Future] already has been fulfilled
+  //!   or failed.
+  //!
+  //! Mark the @[Future] as fulfilled, and schedule the @[on_success()]
+  //! callbacks to be called as soon as possible.
+  //!
+  //! @seealso
+  //!   @[try_success()], @[try_failure()], @[failure()], @[on_success()]
+  this_program success(mixed value, void|int try)
+  {
+    werror("Promise: %O\n", this_function);
+    return finalise(STATE_FULFILLED, value, try, success_cbs);
+  }
+
+  //! Fulfill the @[Future] if it hasn't been fulfilled or failed already.
+  //!
+  //! @param value
+  //!   Result of the @[Future].
+  //!
+  //! Mark the @[Future] as fulfilled if it hasn't already been fulfilled
+  //! or failed, and in that case schedule the @[on_success()] callbacks
+  //! to be called as soon as possible.
+  //!
+  //! @seealso
+  //!   @[success()], @[try_failure()], @[failure()], @[on_success()]
+  inline this_program try_success(mixed value)
+  {
+    werror("Promise: %O\n", this_function);
+    return (state > STATE_PENDING) ? this_program::this : success(value, 1);
+  }
+
+  //! @decl this_program failure(mixed value)
+  //!
+  //! Reject the @[Future] value.
+  //!
+  //! @param value
+  //!   Failure result of the @[Future].
+  //!
+  //! @throws
+  //!   Throws an error if the @[Future] already has been fulfilled
+  //!   or failed.
+  //!
+  //! Mark the @[Future] as failed, and schedule the @[on_failure()]
+  //! callbacks to be called as soon as possible.
+  //!
+  //! @seealso
+  //!   @[try_failure()], @[success()], @[on_failure()]
+  this_program failure(mixed value, void|int try)
+  {
+    werror("Promise: %O\n", this_function);
+    return
+     finalise(STATE_REJECTED, value, try, failure_cbs);
+  }
+
+  //! Maybe reject the @[Future] value.
+  //!
+  //! @param value
+  //!   Failure result of the @[Future].
+  //!
+  //! Mark the @[Future] as failed if it hasn't already been fulfilled,
+  //! and in that case schedule the @[on_failure()] callbacks to be
+  //! called as soon as possible.
+  //!
+  //! @seealso
+  //!   @[failure()], @[success()], @[on_failure()]
+  inline this_program try_failure(mixed value)
+  {
+    werror("Promise: %O\n", this_function);
+    return (state > STATE_PENDING) ? this_program::this : failure(value, 1);
+  }
+
+  private string orig_backtrace =
+#ifdef CONCURRENT_DEBUG
+    sprintf("%s\n------\n", describe_backtrace(backtrace()))
+#else
+    ""
+#endif
+    ;
+
+  protected void _destruct()
+  {
+    // NB: Don't complain about dropping STATE_NO_FUTURE on the floor.
+    if (state == STATE_PENDING)
+      try_failure(({ sprintf("%O: Promise broken.\n%s",
+			     this, orig_backtrace),
+		     backtrace() }));
+    if ((state == STATE_REJECTED) && global_on_failure)
+      call_callback(global_on_failure, result);
+    result = UNDEFINED;
+  }
+}
+
+//! Promise to provide an aggregated @[Future] value.
+//!
+//! Objects of this class are typically kept internal to the
+//! code that provides the @[Future] value. The only thing
+//! that is directly returned to the user is the return
+//! value from @[future()].
+//!
+//! @note
+//!   It is currently possible to use this class as a normal @[Promise]
+//!   (ie without aggregation), but those functions may get removed
+//!   in a future version of Pike. Functions to avoid include
+//!   @[success()] and @[try_success()]. If you do not need aggregation
+//!   use @[Promise].
+//!
+//! @seealso
+//!   @[Future], @[future()], @[Promise], @[first_completed()],
+//!   @[race()], @[results()], @[all()], @[fold()]
+class AggregatedPromise
+{
+  inherit Promise;
+
   //! @array
   //!   @item mapping(int:mixed) 0
   //!     Successful results.
@@ -908,20 +1081,6 @@ class Promise
     }
   }
 
-  //! Creates a new promise, optionally initialised from a traditional callback
-  //! driven method via @expr{executor(success, failure, @@extra)@}.
-  //!
-  //! @seealso
-  //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
-  protected void create(void|
-   function(function(mixed:void),
-            function(mixed:void), mixed ...:void) executor, mixed ... extra)
-  {
-    state = STATE_NO_FUTURE;
-    if (executor)
-      executor(success, failure, @extra);
-  }
-
   Future on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
     start();
@@ -944,118 +1103,6 @@ class Promise
   {
     start();
     return ::get();
-  }
-
-  //! The future value that we promise.
-  Future future()
-  {
-    if (state == STATE_NO_FUTURE) state = STATE_PENDING;
-    return Future::this;
-  }
-
-  protected this_program finalise(State newstate, mixed value, int try,
-    array(array(function(mixed, mixed ...: void)|array(mixed))) cbs)
-  {
-    Thread.MutexKey key = mux->lock();
-    if (state <= STATE_PENDING)
-    {
-      state = newstate;
-      result = value;
-      key = 0;
-      cond->broadcast();
-      if (sizeof(cbs))
-      {
-        foreach(cbs; ; array cb)
-          if (cb)
-            call_callback(cb[0], value, @cb[1..]);
-	if (newstate == STATE_REJECTED) {
-	  state = STATE_REJECTION_REPORTED;
-	}
-      }
-      failure_cbs = success_cbs = 0;		// Free memory and references
-    }
-    else
-    {
-      key = 0;
-      if (!try)
-        error("Promise has already been finalised.\n");
-    }
-    return this_program::this;
-  }
-
-  //! @decl this_program success(mixed value)
-  //!
-  //! Fulfill the @[Future].
-  //!
-  //! @param value
-  //!   Result of the @[Future].
-  //!
-  //! @throws
-  //!   Throws an error if the @[Future] already has been fulfilled
-  //!   or failed.
-  //!
-  //! Mark the @[Future] as fulfilled, and schedule the @[on_success()]
-  //! callbacks to be called as soon as possible.
-  //!
-  //! @seealso
-  //!   @[try_success()], @[try_failure()], @[failure()], @[on_success()]
-  this_program success(mixed value, void|int try)
-  {
-    return finalise(STATE_FULFILLED, value, try, success_cbs);
-  }
-
-  //! Fulfill the @[Future] if it hasn't been fulfilled or failed already.
-  //!
-  //! @param value
-  //!   Result of the @[Future].
-  //!
-  //! Mark the @[Future] as fulfilled if it hasn't already been fulfilled
-  //! or failed, and in that case schedule the @[on_success()] callbacks
-  //! to be called as soon as possible.
-  //!
-  //! @seealso
-  //!   @[success()], @[try_failure()], @[failure()], @[on_success()]
-  inline this_program try_success(mixed value)
-  {
-    return (state > STATE_PENDING) ? this_program::this : success(value, 1);
-  }
-
-  //! @decl this_program failure(mixed value)
-  //!
-  //! Reject the @[Future] value.
-  //!
-  //! @param value
-  //!   Failure result of the @[Future].
-  //!
-  //! @throws
-  //!   Throws an error if the @[Future] already has been fulfilled
-  //!   or failed.
-  //!
-  //! Mark the @[Future] as failed, and schedule the @[on_failure()]
-  //! callbacks to be called as soon as possible.
-  //!
-  //! @seealso
-  //!   @[try_failure()], @[success()], @[on_failure()]
-  this_program failure(mixed value, void|int try)
-  {
-    return
-     finalise(STATE_REJECTED, value, try, failure_cbs);
-  }
-
-  //! Maybe reject the @[Future] value.
-  //!
-  //! @param value
-  //!   Failure result of the @[Future].
-  //!
-  //! Mark the @[Future] as failed if it hasn't already been fulfilled,
-  //! and in that case schedule the @[on_failure()] callbacks to be
-  //! called as soon as possible.
-  //!
-  //! @seealso
-  //!   @[failure()], @[success()], @[on_failure()]
-  inline this_program try_failure(mixed value)
-  {
-    return (state > STATE_PENDING) ? this_program::this : failure(value, 1);
   }
 
   //! Add futures to the list of futures which the current object depends upon.
@@ -1220,26 +1267,6 @@ class Promise
   {
     return max_failures(-1);
   }
-
-  private string orig_backtrace =
-#ifdef CONCURRENT_DEBUG
-    sprintf("%s\n------\n", describe_backtrace(backtrace()))
-#else
-    ""
-#endif
-    ;
-
-  protected void _destruct()
-  {
-    // NB: Don't complain about dropping STATE_NO_FUTURE on the floor.
-    if (state == STATE_PENDING)
-      try_failure(({ sprintf("%O: Promise broken.\n%s",
-			     this, orig_backtrace),
-		     backtrace() }));
-    if ((state == STATE_REJECTED) && global_on_failure)
-      call_callback(global_on_failure, result);
-    result = UNDEFINED;
-  }
 }
 
 //! @returns
@@ -1254,7 +1281,7 @@ class Promise
 //!   @[race()], @[Promise.first_completed()]
 variant Future first_completed(array(Future) futures)
 {
-  return Promise()->depend(futures)->first_completed()->future();
+  return AggregatedPromise()->depend(futures)->first_completed()->future();
 }
 variant inline Future first_completed(Future ... futures)
 {
@@ -1293,7 +1320,7 @@ variant Future results(array(Future) futures)
   if(!sizeof(futures))
     return resolve(({}));
 
-  return Promise()->depend(futures)->future();
+  return AggregatedPromise()->depend(futures)->future();
 }
 inline variant Future results(Future ... futures)
 {
@@ -1394,5 +1421,5 @@ Future fold(array(Future) futures,
 	    function(mixed, mixed, mixed ... : mixed) fun,
 	    mixed ... extra)
 {
-  return Promise()->depend(futures)->fold(initial, fun, extra)->future();
+  return AggregatedPromise()->depend(futures)->fold(initial, fun, extra)->future();
 }
