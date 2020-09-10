@@ -6856,15 +6856,18 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	  push_finished_type(tmp2);
 	  free_type(tmp2);
 	  tmp2 = NULL;
+
+	  while(array_cnt--) push_unlimited_array_type(T_ARRAY);
+	  push_reverse_type(T_MANY);
 	} else {
 	  /* Some kind of complex function type. */
 	  /* FIXME: Handle the case where tmp != NULL */
 	  push_finished_type(orig_type);
 	  push_finished_type(soft_type);
 	  push_type(T_AND);
+
+	  while(array_cnt--) push_unlimited_array_type(T_ARRAY);
 	}
-	while(array_cnt--) push_unlimited_array_type(T_ARRAY);
-	push_reverse_type(T_MANY);
 	while(loop_cnt--) push_reverse_type(T_FUNCTION);
 	res = pop_unfinished_type();
 	break;
