@@ -3569,7 +3569,7 @@ static void low_and_pike_types(struct pike_type *t1,
       if (low_and_push_complex_pike_type(t2)) {
 	/* t2 also contains complex types. */
 	low_and_push_complex_pike_type(t1);
-	push_type(T_AND);
+	push_reverse_joiner_type(T_AND);
 	push_type(T_OR);
       }
     }
@@ -3856,7 +3856,7 @@ static void push_expand_transitive_type(struct pike_type *cont,
        */
       DECLARE_CYCLIC();
 
-      push_finished_type(cont);
+      push_finished_type_with_markers(cont, markers, 0);
 
       if (!BEGIN_CYCLIC(cont, trans)) {
 	SET_CYCLIC_RET(1);
