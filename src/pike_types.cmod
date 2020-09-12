@@ -6803,6 +6803,11 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	    break;
 	  }
 	}
+	if ((orig_type->type & 0xff) == PIKE_T_OPERATOR) {
+	  /* Assume ok. */
+	  copy_pike_type(res, orig_type);
+	  break;
+	}
 	/* FIXME: Loop above until function? */
 	if ((orig_type->type != T_FUNCTION) &&
 	    (orig_type->type != T_MANY)) {
