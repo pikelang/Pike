@@ -271,6 +271,9 @@ void new_cipher_states()
 //! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
+//!
+//! @note
+//!   On entry the handshake header has been removed from @[input].
 int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 {
 #ifdef SSL3_PROFILING
