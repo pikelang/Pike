@@ -6485,44 +6485,10 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
       goto loop;
     }
 
-    tmp = fun->car;
-    add_ref(tmp);
-
-    do {
-      tmp2 = new_get_return_type(tmp, 0);
-      if (tmp2) {
-	/* Apply fun->cdr with tmp2. */
-	struct pike_type *tmp3 =
-	  low_new_check_call(fun->cdr, tmp2, 0, NULL);
-	free_type(tmp2);
-	if (!tmp3) {
-	  tmp3 = get_argument_type(tmp, arg_no);
-	  free_type(tmp);
-	  return tmp3;
-	}
-	tmp2 = or_pike_types(tmp, tmp3, 1);
-	free_type(tmp);
-	free_type(tmp3);
-	tmp = tmp2;
-	tmp2 = NULL;
-      }
-
-      if (!arg_no) break;
-
-      tmp2 = low_new_check_call(tmp, mixed_type_string, 0, NULL);
-      free_type(tmp);
-      if (!tmp2) {
-	add_ref(void_type_string);
-	return void_type_string;
-      }
-      tmp = tmp2;
-      tmp2 = NULL;
-      arg_no--;
-    } while(1);
-
-    tmp2 = get_argument_type(tmp, 0);
-    free_type(tmp);
-    return tmp2;
+    tmp2 = expand_transitive(fun, a_markers, 0);
+    tmp = get_argument_type(tmp2, arg_no);
+    free_type(tmp2);
+    return tmp;
 
   case T_FUNCTION:
     if (arg_no > 0) {
