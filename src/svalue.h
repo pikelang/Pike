@@ -209,6 +209,8 @@ enum PIKE_TYPE {
 #define T_MULTISET_DATA 10003
 #define T_STRUCT_CALLABLE 10004
 
+/* Mask to get rid of flag bits from the type. */
+    PIKE_T_MASK = 255,
 };
 
 /**
