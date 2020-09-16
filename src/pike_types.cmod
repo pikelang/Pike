@@ -175,7 +175,7 @@ struct pike_type *debug_compiler_pop_type(void)
 
 PMOD_EXPORT char *get_name_of_type(TYPE_T t)
 {
-  switch(t & 0xff)
+  switch(t & PIKE_T_MASK)
   {
     case T_ARRAY:	return "array";
     case T_MAPPING:	return "mapping";
@@ -343,7 +343,7 @@ void debug_free_type(struct pike_type *t)
     really_free_pike_type((struct pike_type*)debug_malloc_pass(t));
 
     /* FIXME: Recursion: Should we use a stack? */
-    switch(type & 0xff) {
+    switch(type & PIKE_T_MASK) {
     case T_FUNCTION:
     case T_MANY:
     case T_TUPLE:
@@ -449,7 +449,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 #endif /* PIKE_EXTRA_DEBUG */
 #ifdef PIKE_DEBUG
   /* PIKE_DEBUG code */
-  if ((type & ~255) && ((type & 0xff) != PIKE_T_OPERATOR)) {
+  if ((type & ~PIKE_T_MASK) && ((type & PIKE_T_MASK) != PIKE_T_OPERATOR)) {
     /* The bad type node on OSF/1 seems to be:
      *
      * type: 0xffff
@@ -527,7 +527,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
     if ((t->hash == hash) && (t->type == type) &&
 	(t->car == car) && (t->cdr == cdr)) {
       /* Free car & cdr as appropriate. */
-      switch(type & 0xff) {
+      switch(type & PIKE_T_MASK) {
       case T_FUNCTION:
       case T_MANY:
       case T_TUPLE:
@@ -641,7 +641,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   }
 
 #ifdef DEBUG_MALLOC
-  switch(type & 0xff) {
+  switch(type & PIKE_T_MASK) {
   case T_FUNCTION:
   case T_MANY:
   case T_TUPLE:
@@ -894,10 +894,11 @@ static struct pike_type *apply_type_operator(enum PIKE_TYPE op,
 void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
 {
   struct pike_type *t = *Pike_compiler->type_stackp;
+  struct pike_type *tmp;
   int free_arg = 0;
 
 #ifdef PIKE_DEBUG
-  if ((op & 0xff) != 0x80) {
+  if ((op & PIKE_T_MASK) != 0x80) {
     Pike_fatal("Invalid operator for push_operator: 0x%04x\n", op);
   }
 #endif
@@ -911,7 +912,7 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
   }
 
   /* Attempt to propagate the operator towards the leaf nodes. */
-  switch(t->type & 0xff) {
+  switch(t->type & PIKE_T_MASK) {
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
   case T_ASSIGN:
@@ -992,7 +993,7 @@ static void push_reverse_joiner_type(unsigned int type)
 {
   /* fprintf(stderr, "push_reverse_joiner_type(%d)\n", type); */
 
-  switch(type & 0xff) {
+  switch(type & PIKE_T_MASK) {
   case T_OR:
   case T_AND:
     /* Special case: Check if the two top elements are equal. */
@@ -1025,7 +1026,7 @@ void debug_push_type(unsigned int type)
 {
   /* fprintf(stderr, "push_type(%d)\n", type); */
 
-  switch(type & 0xff) {
+  switch(type & PIKE_T_MASK) {
   case T_OR:
   case T_AND:
     /* Special case: Check if the two top elements are equal. */
@@ -1156,7 +1157,7 @@ void debug_pop_type_stack(unsigned int expected)
   /* OPTIMIZE: It looks like this function is always called with
    * expected == T_ARRAY.
    */
-  switch(top->type & 0xff) {
+  switch(top->type & PIKE_T_MASK) {
   case T_FUNCTION:
   case T_MANY:
   case T_TUPLE:
@@ -1257,7 +1258,7 @@ void debug_push_reverse_type(unsigned int type)
 static int is_int_type(struct pike_type *t)
 {
  loop:
-  switch(t->type & 0xff) {
+  switch(t->type & PIKE_T_MASK) {
   case T_INT:
   case T_ZERO:
   case T_VOID:
@@ -1407,7 +1408,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     push_finished_type_with_markers(type->cdr, markers, marker_set);
     push_type_attribute((struct pike_string *)type->car);
     goto done;
-  } else if ((type->type & 0xff) == PIKE_T_OPERATOR) {
+  } else if ((type->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
     push_finished_type_with_markers(type->car, markers, marker_set);
     push_type_operator(type->type, type->cdr);
     goto done;
@@ -2208,7 +2209,7 @@ void simple_describe_type(struct pike_type *s)
 {
   if (s) {
     /* fprintf(stderr, "[[[%p]]]", s); */
-    switch(s->type & 0xff) {
+    switch(s->type & PIKE_T_MASK) {
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
 	fprintf(stderr, "%d", s->type-'0');
@@ -2827,7 +2828,7 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 
     default:
       {
-	if ((t->type & 0xff) == PIKE_T_OPERATOR) {
+	if ((t->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
 	  string_builder_sprintf(s, "operator(0x%04x)(%T", t->type, t->car);
 	  if (t->type & 0x8000) {
 	    string_builder_sprintf(s, ",%T)", t->cdr);
@@ -2920,7 +2921,7 @@ int deprecated_typep(struct pike_type *t)
   MAKE_CONST_STRING(deprecated_string, "deprecated");
 
   while (t) {
-    switch(t->type & 0xff) {
+    switch(t->type & PIKE_T_MASK) {
     case PIKE_T_ATTRIBUTE:
       if (((struct pike_string*)t->car) == deprecated_string) {
 	return 1;
@@ -3930,7 +3931,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   fatal_check_c_stack(1024);
 #endif
 
-  switch(a->type & 0xff)
+  switch(a->type & PIKE_T_MASK)
   {
   case T_AND:
     ret = low_match_types(a->car, b, flags);
@@ -4070,7 +4071,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     }
   }
 
-  switch(b->type & 0xff)
+  switch(b->type & PIKE_T_MASK)
   {
   case T_AND:
     ret = low_match_types(a, b->car, flags);
@@ -4611,7 +4612,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   }
 #endif
 
-  switch(b->type & 0xff)
+  switch(b->type & PIKE_T_MASK)
   {
   case T_AND:
     /* OK, if a is a subset of both parts. */
@@ -4796,7 +4797,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   }
 #endif
 
-  switch(a->type & 0xff)
+  switch(a->type & PIKE_T_MASK)
   {
   case T_AND:
     /* OK if either of the parts is a subset. */
@@ -5449,7 +5450,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
   struct pike_type *t;
   int tmp;
   CHECK_COMPILER();
-  switch(a->type & 0xff)
+  switch(a->type & PIKE_T_MASK)
   {
   case T_OR:
     {
@@ -5524,7 +5525,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
       yyreport_type(REPORT_WARNING, NULL, 0, b, NULL, 0, a, 0, "Type mismatch");
     }
 #endif /* 0 */
-    switch(a->type & 0xff)
+    switch(a->type & PIKE_T_MASK)
     {
     case PIKE_T_TRANSITIVE:
       a = a->car;
@@ -6289,7 +6290,7 @@ static int low_count_arguments(struct pike_type *q)
 {
   int num=0, num2;
 
-  switch(q->type & 0xff)
+  switch(q->type & PIKE_T_MASK)
   {
     case T_OR:
       num = low_count_arguments(q->car);
@@ -6464,7 +6465,7 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
   struct pike_type *tmp, *tmp2;
 
  loop:
-  switch(fun->type & 0xff) {
+  switch(fun->type & PIKE_T_MASK) {
   case T_OR:
     fun = or_pike_types(tmp = get_argument_type(fun->car, arg_no),
 			tmp2 = get_argument_type(fun->cdr, arg_no),
@@ -6769,7 +6770,7 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	    break;
 	  }
 	}
-	if ((orig_type->type & 0xff) == PIKE_T_OPERATOR) {
+	if ((orig_type->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
 	  /* Assume ok. */
 	  copy_pike_type(res, orig_type);
 	  break;
@@ -7427,7 +7428,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     fun_type = fun_type->cdr;
   }
 
-  switch(fun_type->type & 0xff) {
+  switch(fun_type->type & PIKE_T_MASK) {
   case T_SCOPE:
     /* FIXME: Save and restore the corresponding marker set. */
   case T_ASSIGN:
@@ -8008,7 +8009,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     fun_type = fun_type->cdr;
   }
 
-  switch(fun_type->type & 0xff) {
+  switch(fun_type->type & PIKE_T_MASK) {
   case PIKE_T_SCOPE:
   case T_ASSIGN:
   case PIKE_T_NAME:
@@ -8329,7 +8330,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
   }
 #endif
 
-  switch(fun_type->type & 0xff) {
+  switch(fun_type->type & PIKE_T_MASK) {
   case PIKE_T_SCOPE:
   case T_ASSIGN:
   case PIKE_T_NAME:
@@ -8791,7 +8792,7 @@ struct pike_type *zzap_function_return(struct pike_type *a,
 				       struct pike_type *fun_ret)
 {
   struct pike_type *ret = NULL;
-  switch(a->type & 0xff)
+  switch(a->type & PIKE_T_MASK)
   {
     case T_SCOPE:
       ret = zzap_function_return(a->cdr, fun_ret);
@@ -9636,7 +9637,7 @@ int pike_type_allow_premature_toss(struct pike_type *type)
   fprintf(stderr, "pike_type_allow_premature_toss(): Type: %d\n",
 	  type->type);
 #endif /* 0 */
-  switch(type->type & 0xff)
+  switch(type->type & PIKE_T_MASK)
   {
     default:
 #ifdef PIKE_DEBUG
@@ -10058,7 +10059,7 @@ PMOD_EXPORT void *find_type(struct pike_type *t,
   res = cb(t);
   if (res) return res;
 
-  switch(t->type & 0xff) {
+  switch(t->type & PIKE_T_MASK) {
     case T_FUNCTION:
     case T_MANY:
     case T_TUPLE:
@@ -10137,7 +10138,7 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
       break;
   }
 
-  switch (t->type & 0xff) {
+  switch (t->type & PIKE_T_MASK) {
     case T_FUNCTION:
     case T_MANY:
     case T_TUPLE:
@@ -10214,7 +10215,7 @@ void gc_mark_type_as_referenced(struct pike_type *t)
 {
   if (gc_mark(t, PIKE_T_TYPE)) {
     GC_ENTER(t, PIKE_T_TYPE) {
-      switch(t->type & 0xff) {
+      switch(t->type & PIKE_T_MASK) {
       case PIKE_T_SCOPE:
       case T_ASSIGN:
       case PIKE_T_NAME:
@@ -10316,7 +10317,7 @@ void gc_check_type (struct pike_type *t)
   debug_malloc_touch (t);
 
   GC_ENTER (t, T_TYPE) {
-    switch (t->type & 0xff) {
+    switch (t->type & PIKE_T_MASK) {
       case T_FUNCTION:
       case T_MANY:
       case T_TUPLE:
