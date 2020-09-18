@@ -3712,6 +3712,45 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
 
 /******/
 
+struct remap_state {
+  unsigned char map[0x20];
+  unsigned INT32 allocated;
+};
+
+static int remap_marker(struct remap_state *remap, int marker, int alloc)
+{
+  int ret;
+
+  if (!remap) return '0' | (marker & 0x0f);
+
+  if ((ret = remap->map[marker & 0x1f])) return ret;
+
+  if (!alloc) return 0;
+
+  for (ret = 0; ret < 10; ret++) {
+    if (!(remap->allocated & (1 << ret))) {
+      remap->allocated |= (1 << ret);
+      ret |= '0';
+      remap->map[marker & 0x1f] = ret;
+      return ret;
+    }
+  }
+
+  return 0;
+}
+
+static void free_marker(struct remap_state *remap, int marker)
+{
+  int m;
+
+  if (!remap) return;
+
+  if (!(m = remap->map[marker & 0x1f])) return;
+
+  remap->map[marker & 0x1f] = 0;
+  remap->allocated &= ~(1 << (m & 0x0f));
+}
+
 /*
  * match two type strings, return zero if they don't match, and return
  * the part of 'a' that _did_ match if it did.
