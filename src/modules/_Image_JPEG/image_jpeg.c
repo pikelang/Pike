@@ -1299,14 +1299,14 @@ static void img_jpeg_decode(INT32 args,int mode)
 	 {
 	    int q=mds.cinfo.quant_tbl_ptrs[0]->quantval[4*DCTSIZE+4];
 	    int a=0,b=100,c,w;
-	    while (b>a)
+	    do
 	    {
 	       c=(b+a)/2;
 	       w=reverse_quality[c];
 	       if (w==q) break;
 	       else if (w>q) a=++c;
 	       else b=c;
-	    }
+	    } while (b>a);
 	    push_static_text("quality");
 	    push_int(c);
 	    n++;
