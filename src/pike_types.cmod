@@ -3751,6 +3751,125 @@ static void free_marker(struct remap_state *remap, int marker)
   remap->allocated &= ~(1 << (m & 0x0f));
 }
 
+static void push_remap_markers(struct pike_type *t,
+			       struct remap_state *remap,
+			       int flags)
+{
+  if (!remap) {
+    push_finished_type(t);
+    return;
+  }
+
+  /* FIXME: Use the type flags to detect whether we can just push
+   *        the type verbatim.
+   */
+
+  switch(t->type & PIKE_T_MASK) {
+  case T_ASSIGN:
+    {
+      int marker = remap_marker(remap, CAR_TO_IN(t), 1);
+      push_remap_markers(t->cdr, remap, flags);
+      push_assign_type(marker);
+      break;
+    }
+
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    {
+      int marker = remap_marker(remap, a->type, 0);
+      if (!marker) {
+	/* FIXME: Improved error handling here. */
+	push_type(T_MIXED);
+      } else {
+	push_type(marker);
+      }
+      break;
+    }
+
+  case T_NAME:
+    push_remap_markers(t->cdr, remap, flags);
+    push_type_name((struct pike_string)(t->car));
+    break;
+
+  case T_ATTRIBUTE:
+    push_remap_markers(t->cdr, remap, flags);
+    push_type_attribute((struct pike_string)(t->car));
+    break;
+
+  case T_SCOPE:
+    push_remap_markers(t->cdr, remap, flags);
+    push_scope_type(CAR_TO_INT(t));
+    break;
+
+  case PIKE_T_OPERATOR:
+    push_remap_markers(t->car, remap, flags);
+
+    if (t->type & 0x8000) {
+      push_remap_markers(t->cdr, remap, flags);
+      push_reverse_type(t->type);
+    } else {
+      switch(t->type) {
+      case PIKE_T_FIND_LFUN:
+	push_type_operator(t->type, t->cdr);
+	break;
+      default:
+	Pike_fatal("Unsupported operator %d in push_remap_markers().\n",
+		   t->type);
+	break;
+      }
+    }
+    break;
+
+    /* Verbatim */
+  case T_OBJECT:
+  case T_VOID:
+  case T_ZERO:
+  case T_INT:
+  case T_FLOAT:
+  case PIKE_T_MIXED:
+    push_finished_type(t);
+    break;
+
+    /* Unary */
+  case T_PROGRAM:
+  case T_MULTISET:
+  case T_NOT:
+  case T_TYPE:
+  case PIKE_T_AUTO:
+    push_remap_type(t->car, remap, flags);
+    push_type(t->type);
+    break;
+
+    /* Binary */
+  case T_OR:
+  case T_AND:
+  case T_FUNCTION:
+  case T_MANY:
+  case T_TUPLE:
+  case T_MAPPING:
+  case PIKE_T_RING:
+  case T_ARRAY:
+  case T_STRING:
+  case PIKE_T_TRANSITIVE:
+    push_remap_type(t->car, remap, flags);
+    push_remap_type(t->cdr, remap, flags);
+    push_reverse_type(t->type);
+    break;
+  }
+}
+
+/**
+ * Remap markers (if any) in the type.
+ */
+static struct pike_type *remap_markers(struct pike_type *t,
+				       struct remap_state *remap,
+				       int flags)
+{
+  type_stack_mark();
+  push_remap_markers(t, remap, flags);
+  return pop_unfinished_type();
+}
+
 /*
  * match two type strings, return zero if they don't match, and return
  * the part of 'a' that _did_ match if it did.
