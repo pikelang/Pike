@@ -3717,15 +3717,37 @@ struct remap_state {
   unsigned INT32 allocated;
 };
 
-static int remap_marker(struct remap_state *remap, int marker, int alloc)
+static int alloc_remap_marker(struct remap_state *remap, int marker, int flags)
 {
   int ret;
 
   if (!remap) return '0' | (marker & 0x0f);
 
+  if (flags & PT_FLAG_SWAP_MARKERS) flags ^= 0x10;
+
   if ((ret = remap->map[marker & 0x1f])) return ret;
 
-  if (!alloc) return 0;
+  for (ret = 0; ret < 10; ret++) {
+    if (!(remap->allocated & (1 << ret))) {
+      remap->allocated |= (1 << ret);
+      ret |= '0';
+      remap->map[marker & 0x1f] = ret;
+      return ret;
+    }
+  }
+
+  return 0;
+}
+
+static int remap_marker(struct remap_state *remap, int marker, int flags)
+{
+  int ret;
+
+  if (!remap) return '0' | (marker & 0x0f);
+
+  if (flags & PT_FLAG_SWAP_MARKERS) flags ^= 0x10;
+
+  if ((ret = remap->map[marker & 0x1f])) return ret;
 
   for (ret = 0; ret < 10; ret++) {
     if (!(remap->allocated & (1 << ret))) {
@@ -3767,7 +3789,7 @@ static void push_remap_markers(struct pike_type *t,
   switch(t->type & PIKE_T_MASK) {
   case T_ASSIGN:
     {
-      int marker = remap_marker(remap, CAR_TO_IN(t), 1);
+      int marker = alloc_remap_marker(remap, CAR_TO_IN(t), flags);
       push_remap_markers(t->cdr, remap, flags);
       push_assign_type(marker);
       break;
@@ -3776,7 +3798,7 @@ static void push_remap_markers(struct pike_type *t,
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
     {
-      int marker = remap_marker(remap, a->type, 0);
+      int marker = remap_marker(remap, a->type, flags);
       if (!marker) {
 	/* FIXME: Improved error handling here. */
 	push_type(T_MIXED);
