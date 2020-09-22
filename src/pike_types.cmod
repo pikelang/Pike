@@ -3789,7 +3789,7 @@ static void push_remap_markers(struct pike_type *t,
   switch(t->type & PIKE_T_MASK) {
   case T_ASSIGN:
     {
-      int marker = alloc_remap_marker(remap, CAR_TO_IN(t), flags);
+      int marker = alloc_remap_marker(remap, CAR_TO_INT(t), flags);
       push_remap_markers(t->cdr, remap, flags);
       push_assign_type(marker);
       break;
@@ -3798,7 +3798,7 @@ static void push_remap_markers(struct pike_type *t,
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
     {
-      int marker = remap_marker(remap, a->type, flags);
+      int marker = remap_marker(remap, t->type, flags);
       if (!marker) {
 	/* FIXME: Improved error handling here. */
 	push_type(T_MIXED);
@@ -3858,7 +3858,7 @@ static void push_remap_markers(struct pike_type *t,
   case T_NOT:
   case T_TYPE:
   case PIKE_T_AUTO:
-    push_remap_type(t->car, remap, flags);
+    push_remap_markers(t->car, remap, flags);
     push_type(t->type);
     break;
 
@@ -3873,8 +3873,8 @@ static void push_remap_markers(struct pike_type *t,
   case T_ARRAY:
   case T_STRING:
   case PIKE_T_TRANSITIVE:
-    push_remap_type(t->car, remap, flags);
-    push_remap_type(t->cdr, remap, flags);
+    push_remap_markers(t->car, remap, flags);
+    push_remap_markers(t->cdr, remap, flags);
     push_reverse_type(t->type);
     break;
   }
