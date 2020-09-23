@@ -3810,12 +3810,12 @@ static void push_remap_markers(struct pike_type *t,
 
   case PIKE_T_NAME:
     push_remap_markers(t->cdr, remap, flags);
-    push_type_name((struct pike_string)(t->car));
+    push_type_name((struct pike_string *)(t->car));
     break;
 
   case PIKE_T_ATTRIBUTE:
     push_remap_markers(t->cdr, remap, flags);
-    push_type_attribute((struct pike_string)(t->car));
+    push_type_attribute((struct pike_string *)(t->car));
     break;
 
   case T_SCOPE:
