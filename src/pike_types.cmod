@@ -3805,6 +3805,26 @@ static void push_remap_markers(struct pike_type *t,
       } else {
 	push_type(marker);
       }
+      if (flags & PT_FLAG_BOTH_MARKERS) {
+	marker = remap_marker(remap, t->type ^ 0x10, flags);
+	if (!marker) {
+	  /* FIXME: Improved error handling here. */
+	  push_type(T_MIXED);
+	} else {
+	  push_type(marker);
+	}
+	switch(flags & PT_FLAG_BOTH_MARKERS_MASK) {
+	case PT_FLAG_BOTH_MARKERS_AND:
+	  push_type(T_AND);
+	  break;
+	case PT_FLAG_BOTH_MARKERS_OR:
+	  push_type(T_OR);
+	  break;
+	default:
+	  Pike_fatal("Unsupported marker joining method.\n");
+	  break;
+	}
+      }
       break;
     }
 

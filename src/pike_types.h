@@ -74,6 +74,10 @@ extern size_t pike_type_hash_size;
  * Flags used by remap_marker{,s}()
  */
 #define PT_FLAG_SWAP_MARKERS		0x01000000	/* Swap A & B */
+#define PT_FLAG_BOTH_MARKERS		0x02000000	/* Look in both sets. */
+#define PT_FLAG_BOTH_MARKERS_AND	0x02000000	/* And both markers */
+#define PT_FLAG_BOTH_MARKERS_OR		0x06000000	/* Or both markers */
+#define PT_FLAG_BOTH_MARKERS_MASK	0x06000000	/* Mask for the above */
 
 /*
  * Flags used by low_match_types().
