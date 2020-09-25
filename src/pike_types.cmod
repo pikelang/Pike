@@ -51,6 +51,7 @@ PMOD_EXPORT struct pike_type *int_type_string;
 PMOD_EXPORT struct pike_type *int_pos_type_string;
 PMOD_EXPORT struct pike_type *float_type_string;
 PMOD_EXPORT struct pike_type *function_type_string;
+PMOD_EXPORT struct pike_type *void_function_type_string;
 PMOD_EXPORT struct pike_type *object_type_string;
 PMOD_EXPORT struct pike_type *program_type_string;
 PMOD_EXPORT struct pike_type *array_type_string;
@@ -10100,6 +10101,7 @@ void init_types(void)
   multiset_type_string = CONSTTYPE(tMultiset);
   mapping_type_string = CONSTTYPE(tMapping);
   function_type_string = CONSTTYPE(tFunction);
+  void_function_type_string = CONSTTYPE(tFunc(tNone,tVoid));
   type_type_string = CONSTTYPE(tType(tMix));
   void_type_string = CONSTTYPE(tVoid);
   zero_type_string = CONSTTYPE(tZero);
@@ -10176,6 +10178,8 @@ void cleanup_pike_types(void)
   int_pos_type_string = NULL;
   free_type(float_type_string);
   float_type_string = NULL;
+  free_type(void_function_type_string);
+  void_function_type_string = NULL;
   free_type(function_type_string);
   function_type_string = NULL;
   free_type(object_type_string);
