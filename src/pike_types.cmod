@@ -3718,13 +3718,14 @@ struct remap_state {
   unsigned INT32 allocated;
 };
 
-static int alloc_remap_marker(struct remap_state *remap, int marker, int flags)
+static int alloc_remap_marker(struct remap_state *remap, int marker,
+			      enum pt_remap_flags flags)
 {
   int ret;
 
   if (!remap) return '0' | (marker & 0x0f);
 
-  if (flags & PT_FLAG_SWAP_MARKERS) flags ^= 0x10;
+  if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker ^= 0x10;
 
   if ((ret = remap->map[marker & 0x1f])) return ret;
 
@@ -3740,13 +3741,14 @@ static int alloc_remap_marker(struct remap_state *remap, int marker, int flags)
   return 0;
 }
 
-static int remap_marker(struct remap_state *remap, int marker, int flags)
+static int remap_marker(struct remap_state *remap, int marker,
+			enum pt_remap_flags flags)
 {
   int ret;
 
   if (!remap) return '0' | (marker & 0x0f);
 
-  if (flags & PT_FLAG_SWAP_MARKERS) flags ^= 0x10;
+  if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker ^= 0x10;
 
   if ((ret = remap->map[marker & 0x1f])) return ret;
 
@@ -3762,11 +3764,14 @@ static int remap_marker(struct remap_state *remap, int marker, int flags)
   return 0;
 }
 
-static void free_marker(struct remap_state *remap, int marker)
+static void free_marker(struct remap_state *remap, int marker,
+			enum pt_remap_flags flags)
 {
   int m;
 
   if (!remap) return;
+
+  if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker ^= 0x10;
 
   if (!(m = remap->map[marker & 0x1f])) return;
 
@@ -3776,7 +3781,7 @@ static void free_marker(struct remap_state *remap, int marker)
 
 static void push_remap_markers(struct pike_type *t,
 			       struct remap_state *remap,
-			       int flags)
+			       enum pt_remap_flags flags)
 {
   if (!remap) {
     push_finished_type(t);
@@ -3801,24 +3806,25 @@ static void push_remap_markers(struct pike_type *t,
     {
       int marker = remap_marker(remap, t->type, flags);
       if (!marker) {
-	/* FIXME: Improved error handling here. */
+	/* FIXME: Improve error handling here. */
 	push_type(T_MIXED);
       } else {
 	push_type(marker);
       }
-      if (flags & PT_FLAG_BOTH_MARKERS) {
-	marker = remap_marker(remap, t->type ^ 0x10, flags);
+      if (flags & PT_FLAG_REMAP_BOTH_MARKERS) {
+	marker = remap_marker(remap, t->type,
+			      flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	if (!marker) {
-	  /* FIXME: Improved error handling here. */
+	  /* FIXME: Improve error handling here. */
 	  push_type(T_MIXED);
 	} else {
 	  push_type(marker);
 	}
-	switch(flags & PT_FLAG_BOTH_MARKERS_MASK) {
-	case PT_FLAG_BOTH_MARKERS_AND:
+	switch(flags & PT_FLAG_REMAP_BOTH_MARKERS_MASK) {
+	case PT_FLAG_REMAP_BOTH_MARKERS_AND:
 	  push_type(T_AND);
 	  break;
-	case PT_FLAG_BOTH_MARKERS_OR:
+	case PT_FLAG_REMAP_BOTH_MARKERS_OR:
 	  push_type(T_OR);
 	  break;
 	default:
@@ -3906,7 +3912,7 @@ static void push_remap_markers(struct pike_type *t,
  */
 static struct pike_type *remap_markers(struct pike_type *t,
 				       struct remap_state *remap,
-				       int flags)
+				       enum pt_remap_flags flags)
 {
   type_stack_mark();
   push_remap_markers(t, remap, flags);

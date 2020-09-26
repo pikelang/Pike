@@ -71,13 +71,16 @@ extern size_t pike_type_hash_size;
 #define PT_FLAG_INT_ONLY	0x1000000	/* Filter non-integers. */
 
 /*
- * Flags used by remap_marker{,s}()
+ * Flags used by remap_marker{,s}():
  */
-#define PT_FLAG_SWAP_MARKERS		0x01000000	/* Swap A & B */
-#define PT_FLAG_BOTH_MARKERS		0x02000000	/* Look in both sets. */
-#define PT_FLAG_BOTH_MARKERS_AND	0x02000000	/* And both markers */
-#define PT_FLAG_BOTH_MARKERS_OR		0x06000000	/* Or both markers */
-#define PT_FLAG_BOTH_MARKERS_MASK	0x06000000	/* Mask for the above */
+enum pt_remap_flags
+  {
+    PT_FLAG_REMAP_SWAP_MARKERS =	0x01,	/* Swap A & B */
+    PT_FLAG_REMAP_BOTH_MARKERS =	0x02,	/* Look in both sets. */
+    PT_FLAG_REMAP_BOTH_MARKERS_AND =	0x02,	/* And both markers */
+    PT_FLAG_REMAP_BOTH_MARKERS_OR =	0x06,	/* Or both markers */
+    PT_FLAG_REMAP_BOTH_MARKERS_MASK =	0x06,	/* Mask for the above */
+  };
 
 /*
  * Flags used by low_match_types().
