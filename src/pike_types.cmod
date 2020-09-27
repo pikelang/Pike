@@ -3919,6 +3919,1319 @@ static struct pike_type *remap_markers(struct pike_type *t,
   return pop_unfinished_type();
 }
 
+static struct pike_type *low_intersect_types(struct pike_type *a,
+					     struct pike_type *b,
+					     struct remap_state *remap,
+					     enum pt_cmp_flags aflags,
+					     enum pt_cmp_flags bflags,
+					     enum pt_remap_flags remap_flags);
+static struct pike_type *expand_transitive(struct pike_type *fun,
+					   struct pike_type **markers,
+					   int flags);
+
+/**
+ * Low-level subtraction (aka And-not) of two types.
+ *
+ * Note:
+ *   There are two major operating modes; the external, where
+ *   the two types have unrelated markers, which then need to
+ *   be remapped in the result, and the internal, where the
+ *   two types have related markers (this mode is used mainly
+ *   when evaluating a type).
+ *
+ * The internal mode is indicated via the remap state being NULL.
+ */
+static struct pike_type *low_subtract_types(struct pike_type *a,
+					    struct pike_type *b,
+					    struct remap_state *remap,
+					    enum pt_cmp_flags aflags,
+					    enum pt_cmp_flags bflags,
+					    enum pt_remap_flags remap_flags)
+{
+  struct pike_type *tmp, *tmp2, *ret;
+  struct pike_type *aret = NULL, *bret = NULL;
+  enum pt_cmp_flags avoidable;
+  enum pt_cmp_flags bvoidable;
+
+  if (!a || !b) return NULL;
+
+  if (a == b) {
+    return NULL;
+  }
+
+  /* First check for markers. */
+  switch(a->type) {
+  case T_ASSIGN:
+    {
+      int marker = alloc_remap_marker(remap, CAR_TO_INT(a), remap_flags);
+      tmp = low_subtract_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+      if (tmp) {
+	type_stack_mark();
+	push_finished_type(tmp);
+	push_assign_type(marker);
+	free_type(tmp);
+	return pop_unfinished_type();
+      }
+      free_marker(remap, CAR_TO_INT(a), remap_flags);
+      return NULL;
+    }
+
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    {
+      int marker = remap_marker(remap, a->type, remap_flags);
+      if (!marker) return NULL;
+
+      tmp = remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (!tmp) return NULL;
+      type_stack_mark();
+      push_finished_type(tmp);
+      push_type(T_NOT);
+      push_type(marker);
+      push_reverse_type(T_AND);
+      free_type(tmp);
+      return pop_unfinished_type();
+    }
+  }
+  switch(b->type) {
+  case T_ASSIGN:
+    {
+      int marker = alloc_remap_marker(remap, CAR_TO_INT(b),
+				      remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      tmp = low_subtract_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+      if (tmp) {
+	type_stack_mark();
+	push_finished_type(tmp);
+	push_assign_type(marker);
+	free_type(tmp);
+	return pop_unfinished_type();
+      }
+      free_marker(remap, CAR_TO_INT(b),
+		  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      return NULL;
+    }
+
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    {
+      int marker = remap_marker(remap, b->type,
+				remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (!marker) return NULL;
+
+      tmp = remap_markers(a, remap, remap_flags);
+      if (!tmp) return NULL;
+      type_stack_mark();
+      push_finished_type(tmp);
+      push_type(marker);
+      push_type(T_NOT);
+      push_reverse_type(T_AND);
+      free_type(tmp);
+      return pop_unfinished_type();
+    }
+  }
+
+  /* Attributes and names. */
+  switch(a->type) {
+  case PIKE_T_NAME:
+    tmp = low_subtract_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_name((struct pike_string *)(a->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case PIKE_T_ATTRIBUTE:
+    tmp = low_subtract_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_attribute((struct pike_string *)(a->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case T_SCOPE:
+    tmp = low_subtract_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_scope_type(CAR_TO_INT(a));
+    free_type(tmp);
+    return pop_unfinished_type();
+  }
+  switch(b->type) {
+  case PIKE_T_NAME:
+    tmp = low_subtract_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_name((struct pike_string *)(b->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case PIKE_T_ATTRIBUTE:
+    tmp = low_subtract_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_attribute((struct pike_string *)(b->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case T_SCOPE:
+    tmp = low_subtract_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_scope_type(CAR_TO_INT(b));
+    free_type(tmp);
+    return pop_unfinished_type();
+  }
+
+  /* Check consolidated types. */
+  switch(a->type) {
+  case T_OR:
+  case T_AND:
+    tmp = low_subtract_types(a->car, b, remap, aflags, bflags, remap_flags);
+    if (!tmp && (a->type == T_AND)) return NULL;
+    tmp2 = low_subtract_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp2) {
+      if (a->type == T_OR) return tmp;
+      free_type(tmp);
+      return NULL;
+    }
+    if (a->type == T_AND) {
+      ret = low_intersect_types(tmp, tmp2, NULL, aflags, bflags, remap_flags);
+    } else {
+      ret = or_pike_types(tmp, tmp2, 0);
+    }
+    free_type(tmp);
+    free_type(tmp2);
+    return ret;
+  }
+  switch(b->type) {
+  case T_OR:
+    /* DeMorgan
+     *
+     * a & ~(b1 | b2) <==> a & ~b1 & ~b2
+     */
+    tmp = low_subtract_types(a, b->car, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    ret = low_intersect_types(tmp, b->cdr, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case T_AND:
+    /* DeMorgan
+     *
+     * a & ~(b1 & b2) <==> a & (~b1 | ~b2) <==> (a & ~b1) | (a & ~b2)
+     */
+    tmp = low_subtract_types(a, b->car, remap, aflags, bflags, remap_flags);
+    tmp2 = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp2) return tmp;
+    ret = or_pike_types(tmp, tmp2, 0);
+    free_type(tmp);
+    free_type(tmp2);
+    return ret;
+  }
+
+  /* NB: Complex types from this point onwards are containers,
+   *     and the voidable property does not propagate into them.
+   */
+  avoidable = aflags & PT_FLAG_CMP_VOIDABLE;
+  aflags &= ~PT_FLAG_CMP_VOIDABLE;
+  bvoidable = bflags & PT_FLAG_CMP_VOIDABLE;
+  bflags &= ~PT_FLAG_CMP_VOIDABLE;
+
+  /* Check implicit casting. */
+ loop:
+  switch(TWOT(a->type & PIKE_T_MASK, b->type & PIKE_T_MASK)) {
+  case TWOT(T_PROGRAM, T_FUNCTION):
+  case TWOT(T_PROGRAM, T_MANY):
+    aret = a->car;
+    a = low_object_lfun_type(aret, LFUN_CREATE);
+    if (!a) {
+      a = void_function_type_string;
+    }
+    goto loop;
+
+  case TWOT(T_FUNCTION, T_PROGRAM):
+  case TWOT(T_MANY, T_PROGRAM):
+    bret = b->car;
+    b = low_object_lfun_type(bret, LFUN_CREATE);
+    if (!b) {
+      b = void_function_type_string;
+    }
+    goto loop;
+
+  case TWOT(T_OBJECT, T_FUNCTION):
+  case TWOT(T_OBJECT, T_MANY):
+  case TWOT(T_OBJECT, T_PROGRAM):
+  case TWOT(T_OBJECT, PIKE_T_TRANSITIVE):
+    a = low_object_lfun_type(a, LFUN_CALL);
+    if (!a) return NULL;
+    goto loop;
+
+  case TWOT(T_FUNCTION, T_OBJECT):
+  case TWOT(T_MANY, T_OBJECT):
+  case TWOT(T_PROGRAM, T_OBJECT):
+  case TWOT(PIKE_T_TRANSITIVE, T_OBJECT):
+    b = low_object_lfun_type(b, LFUN_CALL);
+    if (!b) return NULL;
+    goto loop;
+
+  case TWOT(PIKE_T_TRANSITIVE, T_FUNCTION):
+  case TWOT(PIKE_T_TRANSITIVE, T_MANY):
+  case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
+  case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
+    tmp = expand_transitive(a, NULL, 0);
+    ret = low_subtract_types(tmp, b, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
+  case TWOT(T_MANY, PIKE_T_TRANSITIVE):
+  case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
+    tmp = expand_transitive(b, NULL, 0);
+    ret = low_subtract_types(a, tmp, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(T_FUNCTION, PIKE_T_OPERATOR):
+  case TWOT(PIKE_T_OPERATOR, T_FUNCTION):
+    type_stack_mark();
+    push_finished_type(a);
+    push_finished_type(b);
+    push_type(T_NOT);
+    push_reverse_type(T_AND);
+    return pop_unfinished_type();
+
+  case TWOT(T_FUNCTION, T_FUNCTION):
+  case TWOT(T_FUNCTION, T_MANY):
+  case TWOT(T_MANY, T_FUNCTION):
+  case TWOT(T_MANY, T_MANY):
+    /*
+     * function(a1, a2, a3...:aa) & ~function(b1, b2, b3...:bb)
+     *
+     * <==>
+     *
+     *   If
+     *     All ai & ~bi == ai
+     *   Then
+     *     function(a1, a2, a3...:aa)
+     *
+     *   If
+     *     All ai & ~bi == Ø
+     *   Then
+     *     Ø
+     *
+     *   Otherwise
+     *     Keep for later evaluation.
+     */
+    {
+      int nargs;
+      struct pike_type *ai = a;
+      struct pike_type *bi = b;
+      int got_empty = 0;
+      int got_full = 0;
+
+      while(1) {
+	/* Invariant:
+	 *   a->type and b->type are either T_FUNCTION or T_MANY.
+	 */
+	enum pt_cmp_flags avoidable = 0;
+	enum pt_cmp_flags bvoidable = 0;
+
+	/* Check the argument. */
+
+	/* NB: The MANY argument is always voidable. */
+	if (ai->type == T_MANY) avoidable |= PT_FLAG_CMP_VOIDABLE;
+	if (bi->type == T_MANY) bvoidable |= PT_FLAG_CMP_VOIDABLE;
+
+	tmp = low_subtract_types(ai->car, bi->car, NULL,
+				 aflags | avoidable, bflags | bvoidable,
+				 remap_flags);
+	if (!tmp) {
+	  if (got_full) break;
+	  got_empty = 1;
+	} else {
+	  if (tmp == ai) {
+	    got_full = 1;
+	  } else {
+	    break;
+	  }
+	  free_type(tmp);
+	  if (got_empty) break;
+	}
+
+	if (avoidable && bvoidable) {
+	  /* Time to check the return types. */
+
+	  if (!aret) aret = ai->cdr;
+	  if (!bret) bret = bi->cdr;
+
+	  tmp = low_subtract_types(aret, bret, NULL, aflags, bflags,
+				   remap_flags);
+	  if (!tmp) {
+	    if (got_full) break;
+	    got_empty = 1;
+	  } else {
+	    if (tmp == aret) {
+	      got_full = 1;
+	    } else {
+	      break;
+	    }
+	    free_type(tmp);
+	    if (got_empty) break;
+	  }
+
+	  if (!got_full) {
+	    return NULL;
+	  }
+
+	  type_stack_mark();
+	  push_remap_markers(a, remap, remap_flags);
+	  return pop_unfinished_type();
+	}
+
+	/* Advance to the next argument. */
+	if (ai->type == T_FUNCTION) {
+	  ai = ai->cdr;
+	}
+	if (bi->type == T_FUNCTION) {
+	  bi = bi->cdr;
+	}
+	if ((ai->type != T_FUNCTION) && (ai->type != T_MANY)) {
+	  break;
+	}
+	if ((bi->type != T_FUNCTION) && (bi->type != T_MANY)) {
+	  break;
+	}
+      }
+
+      /* Either of a and/or b is a complex type, or a partial overlap. */
+
+      type_stack_mark();
+      push_remap_markers(a, remap, remap_flags);
+      push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_type(T_NOT);
+      push_reverse_type(T_AND);
+
+      return pop_unfinished_type();
+    }
+
+  case TWOT(T_ZERO, T_INT):
+    if ((CAR_TO_INT(b) <= 0) && (CDR_TO_INT(b) >= 0)) {
+      return NULL;
+    }
+    add_ref(a);
+    return a;
+
+  case TWOT(T_INT, T_ZERO):
+    if ((CAR_TO_INT(a) > 0) || (CDR_TO_INT(a) < 0)) {
+      add_ref(a);
+      return a;
+    }
+    type_stack_mark();
+    if (CAR_TO_INT(a) < 0) {
+      push_int_type(CAR_TO_INT(a), -1);
+    }
+    if (CDR_TO_INT(a) > 0) {
+      push_int_type(1, CDR_TO_INT(a));
+      if (CAR_TO_INT(a) < 0) {
+	push_reverse_type(T_OR);
+      }
+    }
+    return pop_unfinished_type();
+
+    /* T_TYPE and T_PROGRAM are essentially the same thing. */
+  case TWOT(T_TYPE, T_TYPE):
+  case TWOT(T_TYPE, T_PROGRAM):
+  case TWOT(T_PROGRAM, T_TYPE):
+  case TWOT(T_PROGRAM, T_PROGRAM):
+    tmp = low_subtract_types(a->car, b->car, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    if (a->type == b->type) {
+      push_type(a->type);
+    } else {
+      push_type(T_TYPE);
+    }
+    free_type(tmp);
+    return pop_unfinished_type();
+
+  case TWOT(T_TYPE, T_FUNCTION):
+  case TWOT(T_TYPE, T_MANY):
+  case TWOT(T_TYPE, PIKE_T_TRANSITIVE):
+    type_stack_mark();
+    push_finished_type(a->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_MIXED);
+    push_type(T_FUNCTION);
+    tmp = pop_unfinished_type();
+
+    ret = low_subtract_types(tmp, b, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(T_FUNCTION, T_TYPE):
+  case TWOT(T_MANY, T_TYPE):
+  case TWOT(PIKE_T_TRANSITIVE, T_TYPE):
+    type_stack_mark();
+    push_finished_type(b->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_MIXED);
+    push_type(T_FUNCTION);
+    tmp = pop_unfinished_type();
+
+    ret = low_subtract_types(a, tmp, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+#if 0
+    /* FIXME: */
+  case PIKE_T_RING:
+#endif
+  }
+
+  if (a->type == T_VOID) {
+    if (bvoidable) {
+      return NULL;
+    }
+    add_ref(a);
+    return a;
+  }
+  if (b->type == T_VOID) {
+    add_ref(a);
+    return a;
+  }
+
+  if (b->type == T_MIXED) {
+    /* NB: a being void has been handled above. */
+    return NULL;
+  }
+  if (a->type == T_MIXED) {
+    type_stack_mark();
+    push_type(T_MIXED);
+    push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    push_type(T_NOT);
+    push_reverse_type(T_AND);
+    return pop_unfinished_type();
+  }
+
+  if (b->type == T_NOT) {
+    return low_intersect_types(a, b->car, remap, aflags, bflags, remap_flags);
+  }
+  if (a->type == T_NOT) {
+    /* DeMorgan and(not(a), not(b)) <==> not(or(a, b)) */
+    type_stack_mark();
+    push_remap_markers(a, remap, remap_flags);
+    push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    push_type(T_OR);
+    push_type(T_NOT);
+    return pop_unfinished_type();
+  }
+
+  if (a->type != b->type) {
+    if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
+	((b->type & PIKE_T_MASK) == PIKE_T_OPERATOR)) {
+      type_stack_mark();
+      push_remap_markers(a, remap, remap_flags);
+      push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_type(T_NOT);
+      push_reverse_type(T_AND);
+      return pop_unfinished_type();
+    }
+    add_ref(a);
+    return a;
+  }
+
+  switch(a->type) {
+  case T_VOID:
+  case T_ZERO:
+  case T_FLOAT:
+    /* Not reached. Should be handled by the a == b test at
+     * the beginning of the function.
+     */
+    Pike_fatal("Type hashing has duplicates.\n");
+    return NULL;
+
+  case T_INT:
+    {
+      INT32 alow,blow;
+      INT32 ahigh,bhigh;
+
+      alow = CAR_TO_INT(a);
+      blow = CAR_TO_INT(b);
+      ahigh = CDR_TO_INT(a);
+      bhigh = CDR_TO_INT(b);
+
+      if ((blow > ahigh) || (bhigh < alow)) {
+	/* No Overlap */
+	add_ref(a);
+	return a;
+      }
+
+      type_stack_mark();
+      if (blow > alow) {
+	push_int_type(alow, blow - 1);
+      }
+      if (bhigh < ahigh) {
+	push_int_type(bhigh + 1, ahigh);
+      }
+      switch(peek_stack_mark()) {
+      case 2:
+	push_type(T_OR);
+	break;
+      case 1:
+	break;
+      case 0:
+	return NULL;
+      }
+      return pop_unfinished_type();
+    }
+
+  case T_ARRAY:
+  case T_MAPPING:
+  case T_STRING:
+    tmp = low_subtract_types(a->car, b->car, remap,
+			     aflags, bflags, remap_flags);
+    tmp2 = low_subtract_types(a->cdr, b->cdr, remap,
+			      aflags, bflags, remap_flags);
+    if (!tmp && !tmp2) return NULL;
+    type_stack_mark();
+    if (tmp) {
+      push_finished_type(a->cdr);
+      push_finished_type(tmp);
+      push_reverse_type(a->type);
+      free_type(tmp);
+    }
+    if (tmp2) {
+      push_finished_type(tmp2);
+      push_finished_type(a->car);
+      push_reverse_type(a->type);
+      free_type(tmp2);
+    }
+    if (peek_stack_mark() == 2) push_type(T_OR);
+    return pop_unfinished_type();
+
+  case T_MULTISET:
+  case T_PROGRAM:
+  case T_TYPE:
+    tmp = low_subtract_types(a->car, b->car, remap,
+			     aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type(a->type);
+    return pop_unfinished_type();
+
+  case T_OBJECT:
+    if (!b->cdr) {
+      return NULL;
+    }
+    if (a->cdr) {
+      if (a->cdr == b->cdr) {
+	return NULL;
+      }
+      if (a->car && b->car) {
+	/* This is only possible if a->cdr == b->cdr, but that is
+	 * handled above.
+	 */
+	add_ref(a);
+	return a;
+      }
+      {
+	struct program *ap = id_to_program(CDR_TO_INT(a));
+	struct program *bp = id_to_program(CDR_TO_INT(b));
+
+	if (!b->car && implements(ap, bp)) {
+	  return NULL;
+	}
+	if (!is_compatible(ap, bp)) {
+	  add_ref(a);
+	  return a;
+	}
+      }
+    }
+
+    type_stack_mark();
+    push_finished_type(a);
+    push_finished_type(b);
+    push_type(T_NOT);
+    push_reverse_type(T_AND);
+    return pop_unfinished_type();
+  }
+
+  /* Leaf type. */
+  return NULL;
+}
+
+struct pike_type *subtract_types(struct pike_type *a,
+				 struct pike_type *b,
+				 enum pt_cmp_flags aflags,
+				 enum pt_cmp_flags bflags,
+				 enum pt_remap_flags remap_flags)
+{
+  struct remap_state remap;
+
+  memset(&remap, 0, sizeof(remap));
+
+  return low_subtract_types(a, b, &remap, aflags, bflags, remap_flags);
+}
+
+/**
+ * Low-level intersection (aka And) of two types.
+ *
+ * Note:
+ *   There are two major operating modes; the external, where
+ *   the two types have unrelated markers, which then need to
+ *   be remapped in the result, and the internal, where the
+ *   two types have related markers (this mode is used mainly
+ *   when evaluating a type).
+ *
+ * The internal mode is indicated via the remap state being NULL.
+ */
+static struct pike_type *low_intersect_types(struct pike_type *a,
+					     struct pike_type *b,
+					     struct remap_state *remap,
+					     enum pt_cmp_flags aflags,
+					     enum pt_cmp_flags bflags,
+					     enum pt_remap_flags remap_flags)
+{
+  struct pike_type *tmp, *tmp2, *ret;
+  struct pike_type *aret = NULL, *bret = NULL;
+  enum pt_cmp_flags avoidable;
+  enum pt_cmp_flags bvoidable;
+
+  if (!a || !b) return NULL;
+
+  if (a == b) {
+    /* FIXME: Perform masking of remap_flags here. */
+    return remap_markers(a, remap,
+			 remap_flags | PT_FLAG_REMAP_BOTH_MARKERS_AND);
+  }
+
+  /* First check for markers. */
+  switch(a->type) {
+  case T_ASSIGN:
+    {
+      int marker = alloc_remap_marker(remap, CAR_TO_INT(a), remap_flags);
+      tmp = low_intersect_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+      if (tmp) {
+	type_stack_mark();
+	push_finished_type(tmp);
+	push_assign_type(marker);
+	free_type(tmp);
+	return pop_unfinished_type();
+      }
+      free_marker(remap, CAR_TO_INT(a), remap_flags);
+      return NULL;
+    }
+
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    {
+      int marker = remap_marker(remap, a->type, remap_flags);
+      if (!marker) return NULL;
+
+      tmp = remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (!tmp) return NULL;
+      type_stack_mark();
+      push_finished_type(tmp);
+      push_type(marker);
+      push_reverse_type(T_AND);
+      free_type(tmp);
+      return pop_unfinished_type();
+    }
+  }
+  switch(b->type) {
+  case T_ASSIGN:
+    {
+      int marker = alloc_remap_marker(remap, CAR_TO_INT(b),
+				      remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      tmp = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+      if (tmp) {
+	type_stack_mark();
+	push_finished_type(tmp);
+	push_assign_type(marker);
+	free_type(tmp);
+	return pop_unfinished_type();
+      }
+
+      free_marker(remap, CAR_TO_INT(b),
+		  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      return NULL;
+    }
+
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    {
+      int marker = remap_marker(remap, b->type,
+				remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (!marker) return NULL;
+
+      tmp = remap_markers(a, remap, remap_flags);
+      if (!tmp) return NULL;
+      type_stack_mark();
+      push_finished_type(tmp);
+      push_type(marker);
+      push_reverse_type(T_AND);
+      free_type(tmp);
+      return pop_unfinished_type();
+    }
+  }
+
+  /* Attributes and names. */
+  switch(a->type) {
+  case PIKE_T_NAME:
+    tmp = low_intersect_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_name((struct pike_string *)(a->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case PIKE_T_ATTRIBUTE:
+    tmp = low_intersect_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_attribute((struct pike_string *)(a->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case T_SCOPE:
+    tmp = low_intersect_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_scope_type(CAR_TO_INT(a));
+    free_type(tmp);
+    return pop_unfinished_type();
+  }
+  switch(b->type) {
+  case PIKE_T_NAME:
+    tmp = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_name((struct pike_string *)(b->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case PIKE_T_ATTRIBUTE:
+    tmp = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_attribute((struct pike_string *)(b->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case T_SCOPE:
+    tmp = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_scope_type(CAR_TO_INT(b));
+    free_type(tmp);
+    return pop_unfinished_type();
+  }
+
+  /* Check consolidated types. */
+  switch(a->type) {
+  case T_OR:
+  case T_AND:
+    tmp = low_intersect_types(a->car, b, remap, aflags, bflags, remap_flags);
+    if (!tmp && (a->type == T_AND)) return NULL;
+    tmp2 = low_intersect_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp2) {
+      if (a->type == T_OR) return tmp;
+      free_type(tmp);
+      return NULL;
+    }
+    if (a->type == T_AND) {
+      ret = low_intersect_types(tmp, tmp2, NULL, aflags, bflags, remap_flags);
+    } else {
+      ret = or_pike_types(tmp, tmp2, 0);
+    }
+    free_type(tmp);
+    free_type(tmp2);
+    return ret;
+  }
+  switch(b->type) {
+  case T_OR:
+  case T_AND:
+    tmp = low_intersect_types(a, b->car, remap, aflags, bflags, remap_flags);
+    if (!tmp && (b->type == T_AND)) return NULL;
+    tmp2 = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp2) {
+      if (b->type == T_OR) return tmp;
+      free_type(tmp);
+      return NULL;
+    }
+    if (b->type == T_AND) {
+      ret = low_intersect_types(tmp, tmp2, NULL, aflags, bflags, remap_flags);
+    } else {
+      ret = or_pike_types(tmp, tmp2, 0);
+    }
+    free_type(tmp);
+    free_type(tmp2);
+    return ret;
+  }
+
+  /* NB: Complex types from this point onwards are containers,
+   *     and the voidable property does not propagate into them.
+   */
+  avoidable = aflags & PT_FLAG_CMP_VOIDABLE;
+  aflags &= ~PT_FLAG_CMP_VOIDABLE;
+  bvoidable = bflags & PT_FLAG_CMP_VOIDABLE;
+  bflags &= ~PT_FLAG_CMP_VOIDABLE;
+
+  /* Check implicit casting. */
+ loop:
+  switch(TWOT(a->type & PIKE_T_MASK, b->type & PIKE_T_MASK)) {
+  case TWOT(T_PROGRAM, T_FUNCTION):
+  case TWOT(T_PROGRAM, T_MANY):
+    aret = a->car;
+    a = low_object_lfun_type(aret, LFUN_CREATE);
+    if (!a) {
+      a = void_function_type_string;
+    }
+    goto loop;
+
+  case TWOT(T_FUNCTION, T_PROGRAM):
+  case TWOT(T_MANY, T_PROGRAM):
+    bret = b->car;
+    b = low_object_lfun_type(bret, LFUN_CREATE);
+    if (!b) {
+      b = void_function_type_string;
+    }
+    goto loop;
+
+  case TWOT(T_OBJECT, T_FUNCTION):
+  case TWOT(T_OBJECT, T_MANY):
+  case TWOT(T_OBJECT, T_PROGRAM):
+  case TWOT(T_OBJECT, PIKE_T_TRANSITIVE):
+    a = low_object_lfun_type(a, LFUN_CALL);
+    if (!a) return NULL;
+    goto loop;
+
+  case TWOT(T_FUNCTION, T_OBJECT):
+  case TWOT(T_MANY, T_OBJECT):
+  case TWOT(T_PROGRAM, T_OBJECT):
+  case TWOT(PIKE_T_TRANSITIVE, T_OBJECT):
+    b = low_object_lfun_type(b, LFUN_CALL);
+    if (!b) return NULL;
+    goto loop;
+
+  case TWOT(PIKE_T_TRANSITIVE, T_FUNCTION):
+  case TWOT(PIKE_T_TRANSITIVE, T_MANY):
+  case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
+  case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
+    tmp = expand_transitive(a, NULL, 0);
+    ret = low_intersect_types(tmp, b, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
+  case TWOT(T_MANY, PIKE_T_TRANSITIVE):
+  case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
+    tmp = expand_transitive(b, NULL, 0);
+    ret = low_intersect_types(a, tmp, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(T_FUNCTION, PIKE_T_OPERATOR):
+  case TWOT(PIKE_T_OPERATOR, T_FUNCTION):
+    type_stack_mark();
+    push_finished_type(a);
+    push_finished_type(b);
+    push_reverse_type(T_AND);
+    return pop_unfinished_type();
+
+  case TWOT(T_FUNCTION, T_FUNCTION):
+  case TWOT(T_FUNCTION, T_MANY):
+  case TWOT(T_MANY, T_FUNCTION):
+  case TWOT(T_MANY, T_MANY):
+    /* NB: For simplicity in the (common case)
+     *       many(assign(m, mixed), m),
+     *     we expand the many node (as required) to
+     *       function(assign(m, mixed), many(assign(m, mixed), m)),
+     *     and leave it to the evaluator to join the multiple
+     *     assignments with or. The alternative (and stricter) would
+     *     be to allocate a new marker for each step of the expansion
+     *     and to have explicit or nodes:
+     *       function(assign(m1, mixed), many(assign(m2, mixed), or(m1, m2))).
+     */
+    {
+      int nargs;
+
+      type_stack_mark();
+      type_stack_mark();	/* To keep track of the number of args. */
+
+      while(1) {
+	/* Invariant:
+	 *   a->type and b->type are either T_FUNCTION or T_MANY.
+	 */
+	enum pt_cmp_flags avoidable = 0;
+	enum pt_cmp_flags bvoidable = 0;
+
+	/* Check the argument. */
+
+	/* NB: The MANY argument is always voidable. */
+	if (a->type == T_MANY) avoidable |= PT_FLAG_CMP_VOIDABLE;
+	if (b->type == T_MANY) bvoidable |= PT_FLAG_CMP_VOIDABLE;
+
+	tmp = low_intersect_types(a->car, b->car, remap,
+				  aflags | avoidable,
+				  bflags | bvoidable,
+				  remap_flags);
+	if (!tmp) {
+	  if (avoidable && bvoidable) {
+	    /* NB: The VOIDABLE flag only affects comparisons with
+	     *     explicit void. If both arguments have implicit void,
+	     *     and nothing other in common, we arrive here.
+	     */
+	    push_type(T_VOID);
+	  } else {
+	    goto function_fail;
+	  }
+	}
+	push_finished_type(tmp);
+	free_type(tmp);
+
+	if (avoidable && bvoidable) {
+	  /* Time to check the return types. */
+
+	  if (!aret) aret = a->cdr;
+	  if (!bret) bret = b->cdr;
+
+	  tmp = low_intersect_types(aret, bret, remap,
+				    aflags, bflags, remap_flags);
+	  if (!tmp) goto function_fail;
+
+	  nargs = pop_stack_mark();
+
+	  push_finished_type(tmp);
+	  free_type(tmp);
+
+	  nargs--;
+	  push_reverse_type(T_MANY);
+
+	  while (nargs--) {
+	    push_reverse_type(T_FUNCTION);
+	  }
+	  return pop_unfinished_type();
+	}
+
+	/* Advance to the next argument. */
+	if (a->type == T_FUNCTION) {
+	  a = a->cdr;
+	}
+	if (b->type == T_FUNCTION) {
+	  b = b->cdr;
+	}
+	if ((a->type != T_FUNCTION) && (a->type != T_MANY)) {
+	  if (aret) {
+	    Pike_fatal("Unsupported type operation.\n");
+	  }
+	  break;
+	}
+	if ((b->type != T_FUNCTION) && (b->type != T_MANY)) {
+	  if (bret) {
+	    Pike_fatal("Unsupported type operation.\n");
+	  }
+	  break;
+	}
+      }
+
+      nargs = pop_stack_mark();
+
+      /* Either of a and/or b is a complex type. */
+      tmp = remap_markers(a, remap, remap_flags);
+      push_finished_type(tmp);
+      free_type(tmp);
+
+      tmp = remap_markers(b, remap, remap_flags);
+      push_finished_type(tmp);
+      free_type(tmp);
+
+      push_reverse_type(T_AND);
+
+      while (nargs--) {
+	push_reverse_type(T_FUNCTION);
+      }
+      return pop_unfinished_type();
+
+    function_fail:
+      compiler_discard_type();
+      pop_stack_mark();
+      return NULL;
+    }
+
+  case TWOT(T_VOID, T_ZERO):
+    /* Return zero. */
+    add_ref(b);
+    return b;
+
+  case TWOT(T_ZERO, T_VOID):
+    /* Return zero. */
+    add_ref(a);
+    return a;
+
+  case TWOT(T_ZERO, T_INT):
+    if ((CAR_TO_INT(b) <= 0) && (CDR_TO_INT(b) >= 0)) {
+      add_ref(a);
+      return a;
+    }
+    return NULL;
+
+  case TWOT(T_INT, T_ZERO):
+    if ((CAR_TO_INT(a) <= 0) && (CDR_TO_INT(a) >= 0)) {
+      add_ref(b);
+      return b;
+    }
+    return NULL;
+
+    /* T_TYPE and T_PROGRAM are essentially the same thing. */
+  case TWOT(T_TYPE, T_TYPE):
+  case TWOT(T_TYPE, T_PROGRAM):
+  case TWOT(T_PROGRAM, T_TYPE):
+  case TWOT(T_PROGRAM, T_PROGRAM):
+    tmp = low_intersect_types(a->car, b->car, remap,
+			      aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    if (a->type == b->type) {
+      push_type(a->type);
+    } else {
+      push_type(T_TYPE);
+    }
+    free_type(tmp);
+    return pop_unfinished_type();
+
+  case TWOT(T_TYPE, T_FUNCTION):
+  case TWOT(T_TYPE, T_MANY):
+  case TWOT(T_TYPE, PIKE_T_TRANSITIVE):
+    type_stack_mark();
+    push_finished_type(a->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_MIXED);
+    push_type(T_FUNCTION);
+    tmp = pop_unfinished_type();
+
+    ret = low_intersect_types(tmp, b, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(T_FUNCTION, T_TYPE):
+  case TWOT(T_MANY, T_TYPE):
+  case TWOT(PIKE_T_TRANSITIVE, T_TYPE):
+    type_stack_mark();
+    push_finished_type(b->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_MIXED);
+    push_type(T_FUNCTION);
+    tmp = pop_unfinished_type();
+
+    ret = low_intersect_types(a, tmp, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+#if 0
+    /* FIXME: */
+  case PIKE_T_RING:
+#endif
+  }
+
+  if (a->type == T_VOID) {
+    if (bvoidable) {
+      add_ref(a);
+      return a;
+    }
+    return NULL;
+  }
+  if (b->type == T_VOID) {
+    if (avoidable) {
+      add_ref(b);
+      return b;
+    }
+    return NULL;
+  }
+
+  if (a->type == T_MIXED) {
+    return remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+  }
+  if (b->type == T_MIXED) {
+    return remap_markers(a, remap, remap_flags);
+  }
+
+  if (a->type == T_NOT) {
+    if (b->type == T_NOT) {
+      /* DeMorgan and(not(a), not(b)) <==> not(or(a, b)) */
+      type_stack_mark();
+      push_remap_markers(a, remap, remap_flags);
+      push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_type(T_OR);
+      push_type(T_NOT);
+      return pop_unfinished_type();
+    }
+    /* NB: Swapped argument order! */
+    return low_subtract_types(b, a->car, remap, bflags, aflags,
+			      remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+  }
+  if (b->type == T_NOT) {
+    return low_subtract_types(a, b->car, remap, aflags, bflags, remap_flags);
+  }
+
+  if (a->type != b->type) {
+    if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
+	((b->type & PIKE_T_MASK) == PIKE_T_OPERATOR)) {
+      type_stack_mark();
+      push_remap_markers(a, remap, remap_flags);
+      push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_reverse_type(T_AND);
+      return pop_unfinished_type();
+    }
+    return NULL;
+  }
+
+  switch(a->type) {
+  case T_VOID:
+  case T_ZERO:
+  case T_FLOAT:
+    /* Not reached. Should be handled by the a == b test at
+     * the beginning of the function.
+     */
+    Pike_fatal("Type hashing has duplicates.\n");
+    return NULL;
+
+  case T_INT:
+    {
+      INT32 i1,i2;
+      INT32 upper_bound, lower_bound;
+      i1 = CDR_TO_INT(a);
+      i2 = CDR_TO_INT(b);
+      upper_bound = MINIMUM(i1,i2);
+
+      i1 = CAR_TO_INT(a);
+      i2 = CAR_TO_INT(b);
+      lower_bound = MAXIMUM(i1,i2);
+
+      if (upper_bound < lower_bound) {
+	/* No overlap! */
+	return NULL;
+      }
+
+      type_stack_mark();
+      push_int_type(lower_bound, upper_bound);
+      return pop_unfinished_type();
+    }
+
+  case T_ARRAY:
+  case T_MAPPING:
+  case T_STRING:
+    tmp = low_intersect_types(a->car, b->car, remap,
+			      aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    tmp2 = low_intersect_types(a->cdr, b->cdr, remap,
+			       aflags, bflags, remap_flags);
+    if (!tmp2) {
+      free_type(tmp);
+      return NULL;
+    }
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_reverse_type(a->type);
+    free_type(tmp);
+    free_type(tmp2);
+    return pop_unfinished_type();
+
+  case T_MULTISET:
+  case T_PROGRAM:
+  case T_TYPE:
+    tmp = low_intersect_types(a->car, b->car, remap,
+			      aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type(a->type);
+    return pop_unfinished_type();
+
+  case T_OBJECT:
+    if (!a->cdr) {
+      add_ref(b);
+      return b;
+    }
+    if (!b->cdr) {
+      add_ref(a);
+      return a;
+    }
+    if (a->cdr == b->cdr) {
+      /* We know that they differ due to the a == b test at
+       * the befinning of the function. The only way they
+       * can differ is that car differs. There are only two
+       * valid values for car, so select the stricter (ie 'is-a')
+       */
+      type_stack_mark();
+      push_object_type(1, CDR_TO_INT(a));
+      return pop_unfinished_type();
+    }
+    if (a->car && b->car) {
+      /* This is only possible if a->cdr == b->cdr, but that is
+       * handled above.
+       */
+      return NULL;
+    }
+    {
+      struct program *ap = id_to_program(CDR_TO_INT(a));
+      struct program *bp = id_to_program(CDR_TO_INT(b));
+
+      if (!b->car && implements(ap, bp)) {
+	add_ref(a);
+	return a;
+      }
+      if (!a->car && implements(bp, ap)) {
+	add_ref(b);
+	return b;
+      }
+      if ((a->car == b->car) && is_compatible(ap, bp)) {
+	/* Both car must be 0 due to test above.
+	 * It is possible to implement a class that
+	 * implements both of the classes.
+	 */
+	type_stack_mark();
+	push_finished_type(a);
+	push_finished_type(b);
+	push_reverse_type(T_AND);
+	return pop_unfinished_type();
+      }
+      return NULL;
+    }
+  }
+
+  /* Leaf type. */
+  add_ref(a);
+  return a;
+}
+
+struct pike_type *intersect_types(struct pike_type *a,
+				  struct pike_type *b,
+				  enum pt_cmp_flags aflags,
+				  enum pt_cmp_flags bflags,
+				  enum pt_remap_flags remap_flags)
+{
+  struct remap_state remap;
+
+  memset(&remap, 0, sizeof(remap));
+
+  return low_intersect_types(a, b, &remap, aflags, bflags, remap_flags);
+}
+
 /*
  * match two type strings, return zero if they don't match, and return
  * the part of 'a' that _did_ match if it did.

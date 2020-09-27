@@ -83,6 +83,14 @@ enum pt_remap_flags
   };
 
 /*
+ * Flags used by intersect_types() and subtract_types().
+ */
+enum pt_cmp_flags
+  {
+    PT_FLAG_CMP_VOIDABLE =		0x0100,	/* Type may be void */
+  };
+
+/*
  * Flags used by low_match_types().
  */
 #define A_EXACT 1
@@ -304,6 +312,16 @@ struct pike_type *or_pike_types(struct pike_type *a,
 				int zero_implied);
 struct pike_type *and_pike_types(struct pike_type *a,
 				 struct pike_type *b);
+struct pike_type *subtract_types(struct pike_type *a,
+				 struct pike_type *b,
+				 enum pt_cmp_flags aflags,
+				 enum pt_cmp_flags bflags,
+				 enum pt_remap_flags remap_flags);
+struct pike_type *intersect_types(struct pike_type *a,
+				  struct pike_type *b,
+				  enum pt_cmp_flags aflags,
+				  enum pt_cmp_flags bflags,
+				  enum pt_remap_flags remap_flags);
 int strict_check_call(struct pike_type *fun_type, struct pike_type *arg_type);
 int check_soft_cast(struct pike_type *to, struct pike_type *from);
 int match_types(struct pike_type *a,struct pike_type *b);
