@@ -4096,14 +4096,16 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
       free_type(tmp);
       return NULL;
     }
-    if (a->type == T_AND) {
-      ret = low_intersect_types(tmp, tmp2, NULL, aflags, bflags, remap_flags);
-    } else {
-      ret = or_pike_types(tmp, tmp2, 0);
+    if (!tmp) {
+      return tmp2;
     }
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_reverse_type(a->type);
     free_type(tmp);
     free_type(tmp2);
-    return ret;
+    return pop_unfinished_type();
   }
   switch(b->type) {
   case T_OR:
@@ -4748,14 +4750,16 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       free_type(tmp);
       return NULL;
     }
-    if (a->type == T_AND) {
-      ret = low_intersect_types(tmp, tmp2, NULL, aflags, bflags, remap_flags);
-    } else {
-      ret = or_pike_types(tmp, tmp2, 0);
+    if (!tmp) {
+      return tmp2;
     }
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_reverse_type(a->type);
     free_type(tmp);
     free_type(tmp2);
-    return ret;
+    return pop_unfinished_type();
   }
   switch(b->type) {
   case T_OR:
@@ -4768,14 +4772,16 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       free_type(tmp);
       return NULL;
     }
-    if (b->type == T_AND) {
-      ret = low_intersect_types(tmp, tmp2, NULL, aflags, bflags, remap_flags);
-    } else {
-      ret = or_pike_types(tmp, tmp2, 0);
+    if (!tmp) {
+      return tmp2;
     }
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_reverse_type(b->type);
     free_type(tmp);
     free_type(tmp2);
-    return ret;
+    return pop_unfinished_type();
   }
 
   /* NB: Complex types from this point onwards are containers,
