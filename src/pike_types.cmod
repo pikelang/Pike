@@ -3723,17 +3723,19 @@ static int alloc_remap_marker(struct remap_state *remap, int marker,
 {
   int ret;
 
-  if (!remap) return '0' | (marker & 0x0f);
+  marker = marker & 0x0f;
 
-  if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker ^= 0x10;
+  if (!remap) return '0' | marker;
 
-  if ((ret = remap->map[marker & 0x1f])) return ret;
+  if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
+
+  if ((ret = remap->map[marker])) return ret;
 
   for (ret = 0; ret < 10; ret++) {
     if (!(remap->allocated & (1 << ret))) {
       remap->allocated |= (1 << ret);
       ret |= '0';
-      remap->map[marker & 0x1f] = ret;
+      remap->map[marker] = ret;
       return ret;
     }
   }
@@ -3746,17 +3748,19 @@ static int remap_marker(struct remap_state *remap, int marker,
 {
   int ret;
 
-  if (!remap) return '0' | (marker & 0x0f);
+  marker = marker & 0x0f;
 
-  if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker ^= 0x10;
+  if (!remap) return '0' | marker;
 
-  if ((ret = remap->map[marker & 0x1f])) return ret;
+  if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
+
+  if ((ret = remap->map[marker])) return ret;
 
   for (ret = 0; ret < 10; ret++) {
     if (!(remap->allocated & (1 << ret))) {
       remap->allocated |= (1 << ret);
       ret |= '0';
-      remap->map[marker & 0x1f] = ret;
+      remap->map[marker] = ret;
       return ret;
     }
   }
@@ -3771,11 +3775,13 @@ static void free_marker(struct remap_state *remap, int marker,
 
   if (!remap) return;
 
-  if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker ^= 0x10;
+  marker &= 0x0f;
 
-  if (!(m = remap->map[marker & 0x1f])) return;
+  if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
 
-  remap->map[marker & 0x1f] = 0;
+  if (!(m = remap->map[marker])) return;
+
+  remap->map[marker] = 0;
   remap->allocated &= ~(1 << (m & 0x0f));
 }
 
