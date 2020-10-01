@@ -4123,8 +4123,14 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
      */
     tmp = low_subtract_types(a, b->car, remap, aflags, bflags, remap_flags);
     if (!tmp) return NULL;
-    ret = low_intersect_types(tmp, b->cdr, remap, aflags, bflags, remap_flags);
+    /* NB: We need to remap b->cdr separately to avoid remapping
+     *     markers in a and b->car twice.
+     */
+    tmp2 = remap_markers(b->cdr, remap,
+			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    ret = low_subtract_types(tmp, tmp2, NULL, aflags, bflags, 0);
     free_type(tmp);
+    free_type(tmp2);
     return ret;
 
   case T_AND:
@@ -4133,7 +4139,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
      * a & ~(b1 & b2) <==> a & (~b1 | ~b2) <==> (a & ~b1) | (a & ~b2)
      */
     tmp = low_subtract_types(a, b->car, remap, aflags, bflags, remap_flags);
-    tmp2 = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+    tmp2 = low_subtract_types(a, b->cdr, remap, aflags, bflags, remap_flags);
     if (!tmp2) return tmp;
     ret = or_pike_types(tmp, tmp2, 0);
     free_type(tmp);
@@ -4264,6 +4270,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
 	  if (tmp == ai) {
 	    got_full = 1;
 	  } else {
+	    free_type(tmp);
 	    break;
 	  }
 	  free_type(tmp);
@@ -4285,6 +4292,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
 	    if (tmp == aret) {
 	      got_full = 1;
 	    } else {
+	      free_type(tmp);
 	      break;
 	    }
 	    free_type(tmp);
@@ -4422,10 +4430,8 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
   }
   if (a->type == T_MIXED) {
     type_stack_mark();
-    push_type(T_MIXED);
     push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
     push_type(T_NOT);
-    push_reverse_type(T_AND);
     return pop_unfinished_type();
   }
 
@@ -4435,7 +4441,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
   if (a->type == T_NOT) {
     /* DeMorgan and(not(a), not(b)) <==> not(or(a, b)) */
     type_stack_mark();
-    push_remap_markers(a, remap, remap_flags);
+    push_remap_markers(a->car, remap, remap_flags);
     push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
     push_type(T_OR);
     push_type(T_NOT);
