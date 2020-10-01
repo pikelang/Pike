@@ -75,6 +75,16 @@ static void f_hp_exit( struct object *UNUSED(o) )
 static void f_hp_feed( INT32 args )
 /*! @decl array(string|mapping) feed(string data, void|int(0..1) keep_case)
  *!
+ *! Feeds data into the parser. Once enough data has been fed the
+ *! result array is returned. Feeding data after that destroys the
+ *! state of the parser. For typical use, once the result array is
+ *! returned, extract the trailing data, check it against expected
+ *! payload (e.g. as defined by the Content-Length header or chunked
+ *! transfer encoding), and add incoming data to that until enough is
+ *! recieved. In the connection is pipe-lining, send excess data to a
+ *! new header parser object. Note that the trailing data from the
+ *! first parse object could contain the start of the next response.
+ *!
  *! @param data
  *!   Fragment of data to parse.
  *!
