@@ -1085,13 +1085,29 @@ void debug_push_type(unsigned int type)
     }
     /* FALLTHRU */
   case T_MULTISET:
-  case T_NOT:
   case T_TYPE:
   case PIKE_T_AUTO:
     /* Make a new type of the top type, and put it in car. */
     *Pike_compiler->type_stackp = mk_type(type,
 					  *Pike_compiler->type_stackp, NULL,
 					  PT_COPY_CAR);
+    break;
+
+  case T_NOT:
+    /* Make a new type of the top type, and put it in car.
+     *
+     * Special case: Remove double inversions.
+     */
+    {
+      struct pike_type *t = *Pike_compiler->type_stackp;
+      if (t->type == T_NOT) {
+	*Pike_compiler->type_stackp = t->car;
+	add_ref(t->car);
+	free_type(t);
+	break;
+      }
+      *Pike_compiler->type_stackp = mk_type(type, t, NULL, PT_COPY_CAR);
+    }
     break;
 
   case T_SCOPE:
