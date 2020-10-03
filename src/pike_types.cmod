@@ -4771,44 +4771,102 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
   /* Check consolidated types. */
   switch(a->type) {
   case T_OR:
-  case T_AND:
     tmp = low_intersect_types(a->car, b, remap, aflags, bflags, remap_flags);
-    if (!tmp && (a->type == T_AND)) return NULL;
     tmp2 = low_intersect_types(a->cdr, b, remap, aflags, bflags, remap_flags);
-    if (!tmp2) {
-      if (a->type == T_OR) return tmp;
-      free_type(tmp);
-      return NULL;
-    }
-    if (!tmp) {
-      return tmp2;
-    }
+    if (!tmp2) return tmp;
+    if (!tmp) return tmp2;
+
     type_stack_mark();
     push_finished_type(tmp);
     push_finished_type(tmp2);
-    push_reverse_type(a->type);
+    push_reverse_type(T_OR);
+    free_type(tmp);
+    free_type(tmp2);
+    return pop_unfinished_type();
+
+  case T_AND:
+    /* NB: Attempt to avoid keeping the result from inverted types,
+     *     in order to reduce type expansion.
+     */
+    if (a->car->type == T_NOT) {
+      tmp2 = low_intersect_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+      if (!tmp2) return NULL;
+      tmp = low_intersect_types(a->car, b, remap, aflags, bflags, remap_flags);
+      if (!tmp) {
+	free_type(tmp2);
+	return NULL;
+      }
+      free_type(tmp);
+      tmp = remap_markers(a->car, remap, remap_flags);
+    } else {
+      tmp = low_intersect_types(a->car, b, remap, aflags, bflags, remap_flags);
+      if (!tmp) return NULL;
+      tmp2 = low_intersect_types(a->cdr, b, remap, aflags, bflags, remap_flags);
+      if (!tmp2) {
+	free_type(tmp);
+	return NULL;
+      }
+      if (a->cdr->type == T_NOT) {
+	free_type(tmp2);
+	tmp2 = remap_markers(a->cdr, remap, remap_flags);
+      }
+    }
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_reverse_type(T_AND);
     free_type(tmp);
     free_type(tmp2);
     return pop_unfinished_type();
   }
   switch(b->type) {
   case T_OR:
-  case T_AND:
     tmp = low_intersect_types(a, b->car, remap, aflags, bflags, remap_flags);
-    if (!tmp && (b->type == T_AND)) return NULL;
     tmp2 = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
-    if (!tmp2) {
-      if (b->type == T_OR) return tmp;
-      free_type(tmp);
-      return NULL;
-    }
-    if (!tmp) {
-      return tmp2;
-    }
+    if (!tmp2) return tmp;
+    if (!tmp) return tmp2;
+
     type_stack_mark();
     push_finished_type(tmp);
     push_finished_type(tmp2);
-    push_reverse_type(b->type);
+    push_reverse_type(T_OR);
+    free_type(tmp);
+    free_type(tmp2);
+    return pop_unfinished_type();
+
+  case T_AND:
+    /* NB: Attempt to avoid keeping the result from inverted types,
+     *     in order to reduce type expansion.
+     */
+    if (b->car->type == T_NOT) {
+      tmp = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+      if (!tmp) return NULL;
+      tmp2 = low_intersect_types(a, b->car, remap, aflags, bflags, remap_flags);
+      if (tmp2) {
+	free_type(tmp2);
+	tmp2 = remap_markers(b->car, remap,
+			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      }
+    } else {
+      tmp = low_intersect_types(a, b->car, remap, aflags, bflags, remap_flags);
+      if (!tmp) return NULL;
+      tmp2 = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
+      if (tmp2 && (b->cdr->type == T_NOT)) {
+	free_type(tmp2);
+	tmp2 = remap_markers(b->cdr, remap,
+			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      }
+    }
+    if (!tmp2) {
+      free_type(tmp);
+      return NULL;
+    }
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_reverse_type(T_AND);
     free_type(tmp);
     free_type(tmp2);
     return pop_unfinished_type();
