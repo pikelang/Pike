@@ -5167,8 +5167,8 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
     if (b->type == T_NOT) {
       /* DeMorgan and(not(a), not(b)) <==> not(or(a, b)) */
       type_stack_mark();
-      push_remap_markers(a, remap, remap_flags);
-      push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_remap_markers(a->car, remap, remap_flags);
+      push_remap_markers(b->car, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       push_type(T_OR);
       push_type(T_NOT);
       return pop_unfinished_type();
