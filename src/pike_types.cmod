@@ -4770,23 +4770,6 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       free_marker(remap, CAR_TO_INT(a), remap_flags);
       return NULL;
     }
-
-  case '0': case '1': case '2': case '3': case '4':
-  case '5': case '6': case '7': case '8': case '9':
-    {
-      int marker = remap_marker(remap, a->type, remap_flags);
-      if (!marker) return NULL;
-
-      tmp = remap_markers(b, NULL, remap,
-			  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      if (!tmp) return NULL;
-      type_stack_mark();
-      push_finished_type(tmp);
-      push_type(marker);
-      push_reverse_type(T_AND);
-      free_type(tmp);
-      return pop_unfinished_type();
-    }
   }
   switch(b->type) {
   case T_ASSIGN:
@@ -4805,23 +4788,6 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       free_marker(remap, CAR_TO_INT(b),
 		  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       return NULL;
-    }
-
-  case '0': case '1': case '2': case '3': case '4':
-  case '5': case '6': case '7': case '8': case '9':
-    {
-      int marker = remap_marker(remap, b->type,
-				remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      if (!marker) return NULL;
-
-      tmp = remap_markers(a, NULL, remap, remap_flags);
-      if (!tmp) return NULL;
-      type_stack_mark();
-      push_finished_type(tmp);
-      push_type(marker);
-      push_reverse_type(T_AND);
-      free_type(tmp);
-      return pop_unfinished_type();
     }
   }
 
@@ -5292,6 +5258,43 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
   }
   if (b->type == T_NOT) {
     return low_subtract_types(a, b->car, remap, aflags, bflags, remap_flags);
+  }
+
+  switch(a->type) {
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    {
+      int marker = remap_marker(remap, a->type, remap_flags);
+      if (!marker) return NULL;
+
+      tmp = remap_markers(b, NULL, remap,
+			  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (!tmp) return NULL;
+      type_stack_mark();
+      push_finished_type(tmp);
+      push_type(marker);
+      push_reverse_type(T_AND);
+      free_type(tmp);
+      return pop_unfinished_type();
+    }
+  }
+  switch(b->type) {
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    {
+      int marker = remap_marker(remap, b->type,
+				remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (!marker) return NULL;
+
+      tmp = remap_markers(a, NULL, remap, remap_flags);
+      if (!tmp) return NULL;
+      type_stack_mark();
+      push_finished_type(tmp);
+      push_type(marker);
+      push_reverse_type(T_AND);
+      free_type(tmp);
+      return pop_unfinished_type();
+    }
   }
 
   if (a->type != b->type) {
