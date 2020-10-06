@@ -276,6 +276,11 @@ o Thread.ResourceCount
 
   Fixed mutex handling.
 
+o Tools.Standalone.httpserver
+
+  The builtin webserver tool shipped with Pike (pike -x httpserver) was
+  previously susceptible to a directory traversal attack via URL encoding.
+
 Building & Tools
 ----------------
 
