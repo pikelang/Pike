@@ -15,6 +15,8 @@ constant version = sprintf(#"Pike httpserver %d.%d.%d
 
 constant description = "Minimal HTTP-server.";
 
+string cwd;
+
 int main(int argc, array(string) argv)
 {
     int my_port = 8080;
@@ -28,13 +30,14 @@ int main(int argc, array(string) argv)
          default:
              my_port=(int)argv[-1];
         }
+    cwd = getcwd();
     Protocols.HTTP.Server.Port(handle_request, my_port);
     write("%s is now accessible on port %d through http, "
           "without password.\n", getcwd(), my_port);
     return -1;
 }
 
-string dirlist( string dir )
+string dirlist( string dir, string rel_dir )
 {
     string res = 
 	"<html><head>\n"
@@ -43,7 +46,7 @@ string dirlist( string dir )
 	".even { background-color:#fefefe; }\n"
         "</style>\n"
 	"</head><body>\n"
-	"<h1>"+Parser.encode_html_entities(dir[2..])+"</h1>"
+	"<h1>"+Parser.encode_html_entities(rel_dir)+"</h1>"
         "<table cellspacing='0' cellpadding='2'>\n"
         "<tr><th align='left'>Filename</th>"
 	"<th align='right'>Type</th>"
@@ -81,8 +84,9 @@ string file_not_found(string fname)
 
 void handle_request(Protocols.HTTP.Server.Request request)
 {
-    string file = "."+combine_path("/",request->not_query);
-    file = Protocols.HTTP.uri_decode(file);
+    string file = Protocols.HTTP.uri_decode(request->not_query);
+    string rel_file = combine_path_unix("/", file)[1..];
+    file = combine_path(cwd, rel_file);
     Stdio.Stat s = file_stat( file );
     if( !s )
 	request->response_and_finish( (["data":
@@ -90,7 +94,7 @@ void handle_request(Protocols.HTTP.Server.Request request)
 					"type":"text/html",
 					"error":404]) );
     else if( s->isdir )
-        request->response_and_finish( ([ "data":dirlist(file),
+        request->response_and_finish( ([ "data":dirlist(file, rel_file),
 					 "type":"text/html" ]) );
     else
         request->response_and_finish( ([ "file":Stdio.File(file),
