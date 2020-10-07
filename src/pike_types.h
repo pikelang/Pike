@@ -84,6 +84,37 @@ enum pt_remap_flags
   };
 
 /*
+ * Operations for type_binop().
+ */
+enum pt_binop
+  {
+    /* First the minterms */
+    PT_BINOP_AND =			0x01,	/* A & B */
+    PT_BINOP_MINUS =			0x02,	/* A & ~B */
+    PT_BINOP_INVERSE_MINUS =		0x04,	/* ~A & B */
+    PT_BINOP_NOR =			0x08,	/* ~A & ~B */
+
+    PT_BINOP_XOR =			0x06,	/* A ^ B */
+    PT_BINOP_OR =			0x07,	/* A | B */
+    PT_BINOP_XNOR =			0x09,	/* ~(A ^ B) */
+    PT_BINOP_NAND =			0x0e,	/* ~(A & B) */
+
+    PT_BINOP_A =			0x03,
+    PT_BINOP_B =			0x05,
+    PT_BINOP_NOT_A =			0x0c,
+    PT_BINOP_NOT_B =			0x0a,
+
+    PT_BINOP_NONE =			0x00,
+    PT_BINOP_ALL =			0x0f,
+
+    /* Missing:
+     *
+     * 0x0b (0b1011) A | ~B
+     * 0x0d (0b1101) B | ~A
+     */
+  };
+
+/*
  * Flags used by intersect_types() and subtract_types().
  */
 enum pt_cmp_flags
