@@ -4193,6 +4193,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
     if (!tmp) return NULL;
     type_stack_mark();
     push_finished_type(tmp);
+    /* FIXME: Is this a good idea? */
     push_type_name((struct pike_string *)(b->car));
     free_type(tmp);
     return pop_unfinished_type();
@@ -4201,6 +4202,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
     if (!tmp) return NULL;
     type_stack_mark();
     push_finished_type(tmp);
+    /* FIXME: Is this a good idea? */
     push_type_attribute((struct pike_string *)(b->car));
     free_type(tmp);
     return pop_unfinished_type();
