@@ -779,7 +779,9 @@ class Promise
   //! The future value that we promise.
   Future future()
   {
+#ifdef CONCURRENT_DEBUG
     werror("Promise: %O\n", this_function);
+#endif
     if (state == STATE_NO_FUTURE) state = STATE_PENDING;
     return Future::this;
   }
@@ -832,7 +834,9 @@ class Promise
   //!   @[try_success()], @[try_failure()], @[failure()], @[on_success()]
   this_program success(mixed value, void|int try)
   {
+#ifdef CONCURRENT_DEBUG
     werror("Promise: %O\n", this_function);
+#endif
     return finalise(STATE_FULFILLED, value, try, success_cbs);
   }
 
@@ -849,7 +853,9 @@ class Promise
   //!   @[success()], @[try_failure()], @[failure()], @[on_success()]
   inline this_program try_success(mixed value)
   {
+#ifdef CONCURRENT_DEBUG
     werror("Promise: %O\n", this_function);
+#endif
     return (state > STATE_PENDING) ? this_program::this : success(value, 1);
   }
 
@@ -871,7 +877,9 @@ class Promise
   //!   @[try_failure()], @[success()], @[on_failure()]
   this_program failure(mixed value, void|int try)
   {
+#ifdef CONCURRENT_DEBUG
     werror("Promise: %O\n", this_function);
+#endif
     return
      finalise(STATE_REJECTED, value, try, failure_cbs);
   }
@@ -889,7 +897,9 @@ class Promise
   //!   @[failure()], @[success()], @[on_failure()]
   inline this_program try_failure(mixed value)
   {
+#ifdef CONCURRENT_DEBUG
     werror("Promise: %O\n", this_function);
+#endif
     return (state > STATE_PENDING) ? this_program::this : failure(value, 1);
   }
 
