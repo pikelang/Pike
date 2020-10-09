@@ -13,7 +13,7 @@
 #include <errno.h>
 #include "rusage.h"
 
-RCSID("$Id: rusage.c,v 1.13 2000/07/11 19:05:02 neotron Exp $");
+RCSID("$Id$");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -136,9 +136,14 @@ INT32 *low_rusage(void)
   stime = rus.ru_stime.tv_sec * 1000 + rus.ru_stime.tv_usec / 1000;
 
 #ifndef GETRUSAGE_RESTRICTED
+  /* ru_maxrss on Linux and most BSDs is in KB. */
   maxrss = rus.ru_maxrss;
 #ifdef sun
+  /* ru_maxrss on Solaris is in pages. */
   maxrss *= getpagesize() / 1024;
+#elif defined(__APPLE__) && defined(__MACH__)
+  /* ru_maxrss on MacOS X is in bytes. */
+  maxrss /= 1024;
 #endif
 #endif
   rusage_values[0] = utime;
