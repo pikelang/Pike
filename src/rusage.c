@@ -157,9 +157,14 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
   stime = rus.ru_stime.tv_sec * 1000L + rus.ru_stime.tv_usec / 1000;
 
 #ifndef GETRUSAGE_RESTRICTED
+  /* ru_maxrss on Linux and most BSDs is in KB. */
   maxrss = rus.ru_maxrss;
 #ifdef sun
+  /* ru_maxrss on Solaris is in pages. */
   maxrss *= getpagesize() / 1024;
+#elif defined(__APPLE__) && defined(__MACH__)
+  /* ru_maxrss on MacOS X is in bytes. */
+  maxrss /= 1024;
 #endif
 #endif
   rusage_values[0] = utime;
