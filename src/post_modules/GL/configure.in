@@ -24,7 +24,7 @@ else
 
   # MacOS X.
   # FIXME: Should really have a separate test for -framework.
-  CPPFLAGS="-framework OpenGL $old_CPPFLAGS"
+  CPPFLAGS="-DGL_SILENCE_DEPRECATION -DGL_EXT_texture -framework OpenGL $old_CPPFLAGS"
   AC_CHECK_HEADERS(OpenGL/gl.h)
   if test "x$ac_cv_header_OpenGL_gl_h" = "xno"; then
     CPPFLAGS="$old_CPPFLAGS"
