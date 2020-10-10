@@ -4268,7 +4268,7 @@ PMOD_EXPORT void f_types(INT32 args)
  *!
  *! @seealso
  *!   @[indices()], @[values()], @[types()], @[lfun::_annotations()],
- *!   @[::_annotations()]
+ *!   @[::_annotations()], @[Program.annotations]
  */
 PMOD_EXPORT void f_annotations(INT32 args)
 {
@@ -4310,6 +4310,78 @@ PMOD_EXPORT void f_annotations(INT32 args)
   pop_n_elems(args);
   push_array(a);
 }
+
+
+/*! @decl multiset(Pike.Annotation) annotations(program x, @
+ *!                                                    int(0..1)|void recurse)
+ *! @appears Program.annotations
+ *!
+ *!   Return a multiset with the annotations for all symbols in @[x] attached
+ *!   to this program.
+ *!
+ *! @param x
+ *!   Program whose identifiers should be returned.
+ *!
+ *! @param recurse
+ *!   Include annotations recursively added via inherits.
+ *!
+ *! @returns
+ *!       Returns an multiset with annotations added directly to this program.
+ *!   
+ *!
+ *! @note
+ *!   This function was added in Pike 8.1.
+ *!
+ *! @seealso
+ *!   @[indices()], @[values()], @[types()], @[lfun::_annotations()],
+ *!   @[::_annotations()]
+ */
+PMOD_EXPORT void f_direct_program_annotations(INT32 args)
+{
+  ptrdiff_t size;
+  struct array *m = NULL;
+  struct pike_type *default_type = mixed_type_string;
+  struct svalue *arg = NULL;
+  int flag;
+  int found = 0;
+  
+  get_all_args("direct_program_annotations", args, "%*.%i", &arg, &flag);
+
+  switch(TYPEOF(*arg))
+  {
+  case T_PROGRAM:
+    m = program_inherit_annotations(arg->u.program);
+    break;
+
+    /* FALLTHRU */
+
+  default:
+    SIMPLE_ARG_TYPE_ERROR("direct_program_annotations", 1, "program");
+  }  
+  
+   pop_n_elems(args);
+ 
+   if(m != NULL && m->size > 0)
+   {
+     struct multiset * set;
+	 if((flag & 1) &&TYPEOF(ITEM(m)[(m->size -1)]) == PIKE_T_MULTISET) {
+	  found = 1;
+	  set = ITEM(m)[(m->size -1)].u.multiset;
+     ref_push_multiset(set);
+ 	}
+    else if(!(flag & 1) && TYPEOF(ITEM(m)[0]) == PIKE_T_MULTISET) {
+  	  found = 1;
+  	  set = ITEM(m)[0].u.multiset;
+       ref_push_multiset(set);    	
+    }
+
+   }
+   if(!found){
+    push_int(0);
+  }
+}
+
+
 
 /*! @decl program|function object_program(mixed o)
  *!
@@ -10318,7 +10390,9 @@ void init_builtin_efuns(void)
   /* function(object|program, int(0..1)|void:array(multiset)) */
   ADD_EFUN2("annotations", f_annotations,
 	    tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tArr(tSet(tMix))),0,NULL,0);
-
+		
+  ADD_FUNCTION2("direct_program_annotations", f_direct_program_annotations,
+	    tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tSet(tMix)),0,OPT_TRY_OPTIMIZE);
   /* function(mixed:int) */
   ADD_EFUN2("zero_type",f_zero_type,tFunc(tMix,tInt01),0,0,generate_zero_type);
 
