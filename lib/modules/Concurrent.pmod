@@ -946,9 +946,9 @@ class AggregatedPromise
   inherit Promise;
 
   //! @array
-  //!   @item mapping(int:mixed) 0
+  //!   @elem mapping(int:mixed) 0
   //!     Successful results.
-  //!   @item mapping(int:mixed) 1
+  //!   @elem mapping(int:mixed) 1
   //!     Failed results.
   //! @endarray
   protected array(mapping(int:mixed)) dependency_results = ({ ([]), ([]) });
