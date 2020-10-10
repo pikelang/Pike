@@ -4054,9 +4054,1016 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
 					     enum pt_cmp_flags aflags,
 					     enum pt_cmp_flags bflags,
 					     enum pt_remap_flags remap_flags);
+
 static struct pike_type *expand_transitive(struct pike_type *fun,
 					   struct pike_type **markers,
 					   int flags);
+
+/**
+ * Low-level intersection (aka And) of two types.
+ *
+ * Note:
+ *   There are two major operating modes; the external, where
+ *   the two types have unrelated markers, which then need to
+ *   be remapped in the result, and the internal, where the
+ *   two types have related markers (this mode is used mainly
+ *   when evaluating a type).
+ *
+ * The internal mode is indicated via the remap state being NULL.
+ */
+static struct pike_type *low_type_binop(enum pt_binop op,
+					struct pike_type *a,
+					struct pike_type *b,
+					struct remap_state *remap,
+					enum pt_cmp_flags aflags,
+					enum pt_cmp_flags bflags,
+					enum pt_remap_flags remap_flags)
+{
+  struct pike_type *tmp, *tmp2, *ret;
+  struct pike_type *aret = NULL, *bret = NULL;
+  enum pt_cmp_flags avoidable;
+  enum pt_cmp_flags bvoidable;
+
+  switch(op) {
+  case PT_BINOP_AND:
+  case PT_BINOP_MINUS:
+    break;
+  case PT_BINOP_INVERSE_MINUS:
+    tmp = a;
+    a = b;
+    b = tmp;
+    avoidable = aflags;
+    aflags = bflags;
+    bflags = avoidable;
+    remap_flags ^= PT_FLAG_REMAP_SWAP_MARKERS;
+    op = PT_BINOP_MINUS;
+    break;
+  case PT_BINOP_NOR:
+    type_stack_mark();
+    push_remap_markers(a, NULL, remap, remap_flags);
+    push_remap_markers(b, NULL, remap,
+		       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    push_type(T_OR);
+    push_type(T_NOT);
+    return pop_unfinished_type();
+  case PT_BINOP_OR:
+    type_stack_mark();
+    push_remap_markers(a, NULL, remap, remap_flags);
+    push_remap_markers(b, NULL, remap,
+		       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    push_type(T_OR);
+    return pop_unfinished_type();
+
+#ifdef PIKE_DEBUG
+  default:
+    Pike_fatal("Unsupported binary type operation: 0x%02x\n", op);
+#endif
+  }
+
+  if (!a || !b) return NULL;
+
+  if (a == b) {
+    if (op & PT_BINOP_AND) {
+      /* FIXME: Perform masking of remap_flags here. */
+      return remap_markers(a, NULL, remap,
+			   remap_flags | PT_FLAG_REMAP_BOTH_MARKERS_AND);
+    } else {
+      return NULL;
+    }
+  }
+
+  /* First check for markers. */
+  switch(a->type) {
+  case T_ASSIGN:
+    {
+      int marker = alloc_remap_marker(remap, CAR_TO_INT(a), remap_flags);
+      tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+      if (tmp) {
+	type_stack_mark();
+	push_finished_type(tmp);
+	push_assign_type(marker);
+	free_type(tmp);
+	return pop_unfinished_type();
+      }
+      free_marker(remap, CAR_TO_INT(a), remap_flags);
+      return NULL;
+    }
+  }
+  switch(b->type) {
+  case T_ASSIGN:
+    {
+      int marker = alloc_remap_marker(remap, CAR_TO_INT(b),
+				      remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+      if (tmp) {
+	type_stack_mark();
+	push_finished_type(tmp);
+	push_assign_type(marker);
+	free_type(tmp);
+	return pop_unfinished_type();
+      }
+
+      free_marker(remap, CAR_TO_INT(b),
+		  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      return NULL;
+    }
+  }
+
+  /* Attributes and names. */
+  switch(a->type) {
+  case PIKE_T_NAME:
+    tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_name((struct pike_string *)(a->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case PIKE_T_ATTRIBUTE:
+    tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_attribute((struct pike_string *)(a->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case T_SCOPE:
+    tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_scope_type(CAR_TO_INT(a));
+    free_type(tmp);
+    return pop_unfinished_type();
+  }
+  switch(b->type) {
+  case PIKE_T_NAME:
+    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_name((struct pike_string *)(b->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case PIKE_T_ATTRIBUTE:
+    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_attribute((struct pike_string *)(b->car));
+    free_type(tmp);
+    return pop_unfinished_type();
+  case T_SCOPE:
+    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_scope_type(CAR_TO_INT(b));
+    free_type(tmp);
+    return pop_unfinished_type();
+  }
+
+  /* Check consolidated types. */
+  switch(a->type) {
+  case T_OR:
+    /* (a1 | a2) op b  <==> (a1 op b) | (a2 op b) */
+    tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
+    tmp2 = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp2) return tmp;
+    if (!tmp) return tmp2;
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_reverse_type(T_OR);
+    free_type(tmp);
+    free_type(tmp2);
+    return pop_unfinished_type();
+
+  case T_AND:
+    tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    tmp2 = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp2) {
+      free_type(tmp);
+      return NULL;
+    }
+
+    switch(op) {
+    case PT_BINOP_AND:
+      /* NB: Attempt to avoid keeping the result from inverted types,
+       *     in order to reduce type expansion.
+       */
+      if (a->car->type == T_NOT) {
+	/* (!a1 & a2) & b  <==>  (a2 & b) & !a1 */
+	free_type(tmp);
+	tmp = remap_markers(a->car, NULL, remap, remap_flags);
+      } else if (a->cdr->type == T_NOT) {
+	/* (a1 & !a2) & b  <==>  (a1 & b) & !a2 */
+	free_type(tmp2);
+	tmp2 = remap_markers(a->cdr, NULL, remap, remap_flags);
+      }
+      break;
+    }
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_reverse_type(T_AND);
+    free_type(tmp);
+    free_type(tmp2);
+    return pop_unfinished_type();
+  case T_NOT:
+    /* Rotate the opcode 2 bits.
+     *
+     * This converts A to ~A and vice versa.
+     */
+    op = ((op << 2) | (op >> 2)) & PT_BINOP_ALL;
+    return low_type_binop(op, a->car, b,
+			  remap, aflags, bflags, remap_flags);
+  }
+  switch(b->type) {
+  case T_OR:
+    tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
+    tmp2 = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp2) return tmp;
+    if (!tmp) return tmp2;
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_reverse_type(T_OR);
+    free_type(tmp);
+    free_type(tmp2);
+    return pop_unfinished_type();
+
+  case T_AND:
+    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    tmp2 = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
+    if (!tmp2) {
+      free_type(tmp2);
+      return NULL;
+    }
+
+    switch(op) {
+    case PT_BINOP_AND:
+      /* NB: Attempt to avoid keeping the result from inverted types,
+       *     in order to reduce type expansion.
+       */
+      if (b->car->type == T_NOT) {
+	free_type(tmp);
+	tmp = remap_markers(b->car, NULL, remap,
+			    remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      } else if (b->cdr->type == T_NOT) {
+	free_type(tmp2);
+	tmp2 = remap_markers(b->cdr, NULL, remap,
+			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      }
+      break;
+    }
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_reverse_type(T_AND);
+    free_type(tmp);
+    free_type(tmp2);
+    return pop_unfinished_type();
+  case T_NOT:
+    /* Swap the bits of the opcode pairwise.
+     *
+     * This converts B to ~B and vice versa.
+     */
+    op = (((op & PT_BINOP_B) << 1) | ((op >> 1) & PT_BINOP_B)) & PT_BINOP_ALL;
+    return low_type_binop(op, a, b->car,
+			  remap, aflags, bflags, remap_flags);
+  }
+
+  /* NB: Complex types from this point onwards are containers,
+   *     and the voidable property does not propagate into them.
+   */
+  avoidable = aflags & PT_FLAG_CMP_VOIDABLE;
+  aflags &= ~PT_FLAG_CMP_VOIDABLE;
+  bvoidable = bflags & PT_FLAG_CMP_VOIDABLE;
+  bflags &= ~PT_FLAG_CMP_VOIDABLE;
+
+  /* Check implicit casting. */
+ loop:
+  switch(TWOT(a->type & PIKE_T_MASK, b->type & PIKE_T_MASK)) {
+  case TWOT(T_PROGRAM, T_FUNCTION):
+  case TWOT(T_PROGRAM, T_MANY):
+    aret = a->car;
+    a = low_object_lfun_type(aret, LFUN_CREATE);
+    if (!a) {
+      a = void_function_type_string;
+    }
+    goto loop;
+
+  case TWOT(T_FUNCTION, T_PROGRAM):
+  case TWOT(T_MANY, T_PROGRAM):
+    bret = b->car;
+    b = low_object_lfun_type(bret, LFUN_CREATE);
+    if (!b) {
+      b = void_function_type_string;
+    }
+    goto loop;
+
+  case TWOT(T_OBJECT, T_FUNCTION):
+  case TWOT(T_OBJECT, T_MANY):
+  case TWOT(T_OBJECT, T_PROGRAM):
+  case TWOT(T_OBJECT, PIKE_T_TRANSITIVE):
+    a = low_object_lfun_type(a, LFUN_CALL);
+    if (!a) return NULL;
+    goto loop;
+
+  case TWOT(T_FUNCTION, T_OBJECT):
+  case TWOT(T_MANY, T_OBJECT):
+  case TWOT(T_PROGRAM, T_OBJECT):
+  case TWOT(PIKE_T_TRANSITIVE, T_OBJECT):
+    b = low_object_lfun_type(b, LFUN_CALL);
+    if (!b) return NULL;
+    goto loop;
+
+  case TWOT(PIKE_T_TRANSITIVE, T_FUNCTION):
+  case TWOT(PIKE_T_TRANSITIVE, T_MANY):
+  case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
+  case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
+    tmp = expand_transitive(a, NULL, 0);
+    ret = low_type_binop(op, tmp, b, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
+  case TWOT(T_MANY, PIKE_T_TRANSITIVE):
+  case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
+    tmp = expand_transitive(b, NULL, 0);
+    ret = low_type_binop(op, a, tmp, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(T_FUNCTION, PIKE_T_OPERATOR):
+  case TWOT(PIKE_T_OPERATOR, T_FUNCTION):
+    type_stack_mark();
+    push_finished_type(a);
+    push_finished_type(b);
+    switch(op) {
+    case PT_BINOP_AND:
+      push_reverse_type(T_AND);
+      break;
+    case PT_BINOP_OR:
+      push_reverse_type(T_OR);
+      break;
+    case PT_BINOP_MINUS:
+      push_type(T_NOT);
+      push_reverse_type(T_AND);
+      break;
+    default:
+      Pike_fatal("Unsupported.\n");
+    }
+    return pop_unfinished_type();
+
+  case TWOT(T_FUNCTION, T_FUNCTION):
+  case TWOT(T_FUNCTION, T_MANY):
+  case TWOT(T_MANY, T_FUNCTION):
+  case TWOT(T_MANY, T_MANY):
+    /* NB: For simplicity in the (common case)
+     *       many(assign(m, mixed), m),
+     *     we expand the many node (as required) to
+     *       function(assign(m, mixed), many(assign(m, mixed), m)),
+     *     and leave it to the evaluator to join the multiple
+     *     assignments with or. The alternative (and stricter) would
+     *     be to allocate a new marker for each step of the expansion
+     *     and to have explicit or nodes:
+     *       function(assign(m1, mixed), many(assign(m2, mixed), or(m1, m2))).
+     */
+    {
+      int nargs;
+      struct pike_type *ai = a;
+      struct pike_type *bi = b;
+      int got_empty = 0;
+      int got_full = 0;
+
+      type_stack_mark();
+      type_stack_mark();	/* To keep track of the number of args. */
+
+      while(1) {
+	/* Invariant:
+	 *   a->type and b->type are either T_FUNCTION or T_MANY.
+	 */
+	enum pt_cmp_flags avoidable = 0;
+	enum pt_cmp_flags bvoidable = 0;
+
+	/* Check the argument. */
+
+	/* NB: The MANY argument is always voidable. */
+	if (ai->type == T_MANY) avoidable |= PT_FLAG_CMP_VOIDABLE;
+	if (bi->type == T_MANY) bvoidable |= PT_FLAG_CMP_VOIDABLE;
+
+	tmp = low_type_binop(op, ai->car, bi->car, remap,
+			     aflags | avoidable,
+			     bflags | bvoidable,
+			     remap_flags);
+
+	switch(op) {
+	case PT_BINOP_AND:
+	  if (!tmp) {
+	    if (avoidable && bvoidable) {
+	      /* NB: The VOIDABLE flag only affects comparisons with
+	       *     explicit void. If both arguments have implicit void,
+	       *     and nothing other in common, we arrive here.
+	       */
+	      push_type(T_VOID);
+	    } else {
+	      goto function_fail;
+	    }
+	  }
+	  push_finished_type(tmp);
+	  free_type(tmp);
+
+	  if (avoidable && bvoidable) {
+	    /* Time to check the return types. */
+
+	    if (!aret) aret = ai->cdr;
+	    if (!bret) bret = bi->cdr;
+
+	    tmp = low_type_binop(op, aret, bret, remap,
+				 aflags, bflags, remap_flags);
+	    if (!tmp) goto function_fail;
+
+	    nargs = pop_stack_mark();
+
+	    push_finished_type(tmp);
+	    free_type(tmp);
+
+	    nargs--;
+	    push_reverse_type(T_MANY);
+
+	    while (nargs--) {
+	      push_reverse_type(T_FUNCTION);
+	    }
+	    return pop_unfinished_type();
+	  }
+	  break;
+	case PT_BINOP_MINUS:
+	  if (!tmp) {
+	    if (got_full) goto function_next;
+	    got_empty = 1;
+	  } else {
+	    if (tmp == ai) {
+	      got_full = 1;
+	    } else {
+	      free_type(tmp);
+	      break;
+	    }
+	    free_type(tmp);
+	    if (got_empty) goto function_next;
+	  }
+
+	  if (avoidable && bvoidable) {
+	    /* Time to check the return types. */
+
+	    if (!aret) aret = ai->cdr;
+	    if (!bret) bret = bi->cdr;
+
+	    tmp = low_type_binop(op, aret, bret, NULL, aflags, bflags,
+				 remap_flags);
+	    if (!tmp) {
+	      if (got_full) goto function_next;
+	      got_empty = 1;
+	    } else {
+	      if (tmp == aret) {
+		got_full = 1;
+	      } else {
+		free_type(tmp);
+		goto function_next;
+	      }
+	      free_type(tmp);
+	      if (got_empty) goto function_next;
+	    }
+
+	    if (!got_full) {
+	      return NULL;
+	    }
+
+	    type_stack_mark();
+	    push_remap_markers(a, NULL, remap, remap_flags);
+	    return pop_unfinished_type();
+	  }
+	  break;
+	default:
+	  Pike_fatal("Unsupported.\n");
+	}
+      function_next:
+
+	/* Advance to the next argument. */
+	if (ai->type == T_FUNCTION) {
+	  ai = ai->cdr;
+	}
+	if (bi->type == T_FUNCTION) {
+	  bi = bi->cdr;
+	}
+	if ((ai->type != T_FUNCTION) && (ai->type != T_MANY)) {
+	  if (aret) {
+	    Pike_fatal("Unsupported type operation.\n");
+	  }
+	  break;
+	}
+	if ((bi->type != T_FUNCTION) && (bi->type != T_MANY)) {
+	  if (bret) {
+	    Pike_fatal("Unsupported type operation.\n");
+	  }
+	  break;
+	}
+      }
+
+      nargs = pop_stack_mark();
+      if (op & PT_BINOP_NOT_B) {
+	nargs = 0;
+	ai = a;
+	bi = b;
+      }
+
+      /* Either of a and/or b is a complex type. */
+      push_remap_markers(ai, NULL, remap, remap_flags);
+      push_remap_markers(bi, NULL, remap,
+			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+
+      switch(op) {
+      case PT_BINOP_AND:
+	push_reverse_type(T_AND);
+	break;
+      case PT_BINOP_OR:
+	push_reverse_type(T_OR);
+	break;
+      case PT_BINOP_MINUS:
+	push_type(T_NOT);
+	push_reverse_type(T_AND);
+	break;
+      default:
+	Pike_fatal("Unsupported.\n");
+      }
+
+      while (nargs--) {
+	push_reverse_type(T_FUNCTION);
+      }
+      return pop_unfinished_type();
+
+    function_fail:
+      compiler_discard_type();
+      pop_stack_mark();
+      return NULL;
+    }
+
+  case TWOT(T_VOID, T_ZERO):
+    if (op & PT_BINOP_AND) {
+      /* Return zero. */
+      add_ref(b);
+      return b;
+    }
+    return NULL;
+
+  case TWOT(T_ZERO, T_VOID):
+    if (op & PT_BINOP_AND) {
+      /* Return zero. */
+      add_ref(a);
+      return a;
+    }
+    return NULL;
+
+  case TWOT(T_ZERO, T_INT):
+    if ((CAR_TO_INT(b) <= 0) && (CDR_TO_INT(b) >= 0)) {
+      if (op == PT_BINOP_AND) {
+	add_ref(a);
+	return a;
+      } else if (op == PT_BINOP_MINUS) {
+	return NULL;
+      }
+    }
+    if (op == PT_BINOP_AND) {
+      return NULL;
+    } else if (op == PT_BINOP_MINUS) {
+      add_ref(a);
+      return a;
+    }
+    break;
+
+  case TWOT(T_INT, T_ZERO):
+    if ((CAR_TO_INT(a) <= 0) && (CDR_TO_INT(a) >= 0)) {
+      if (op == PT_BINOP_AND) {
+	add_ref(b);
+	return b;
+      } else if (op == PT_BINOP_MINUS) {
+	return NULL;
+      }
+    }
+    if (op == PT_BINOP_AND) {
+      return NULL;
+    } else if (op == PT_BINOP_MINUS) {
+      type_stack_mark();
+      if (CAR_TO_INT(a) < 0) {
+	push_int_type(CAR_TO_INT(a), -1);
+      }
+      if (CDR_TO_INT(a) > 0) {
+	push_int_type(1, CDR_TO_INT(a));
+	if (CAR_TO_INT(a) < 0) {
+	  push_reverse_type(T_OR);
+	}
+      }
+      return pop_unfinished_type();
+    }
+    break;
+
+    /* T_TYPE and T_PROGRAM are essentially the same thing. */
+  case TWOT(T_TYPE, T_TYPE):
+  case TWOT(T_TYPE, T_PROGRAM):
+  case TWOT(T_PROGRAM, T_TYPE):
+  case TWOT(T_PROGRAM, T_PROGRAM):
+    tmp = low_type_binop(op, a->car, b->car, remap,
+			 aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    if (a->type == b->type) {
+      push_type(a->type);
+    } else {
+      push_type(T_TYPE);
+    }
+    free_type(tmp);
+    return pop_unfinished_type();
+
+  case TWOT(T_TYPE, T_FUNCTION):
+  case TWOT(T_TYPE, T_MANY):
+  case TWOT(T_TYPE, PIKE_T_TRANSITIVE):
+    type_stack_mark();
+    push_finished_type(a->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_MIXED);
+    push_type(T_FUNCTION);
+    tmp = pop_unfinished_type();
+
+    ret = low_type_binop(op, tmp, b, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(T_FUNCTION, T_TYPE):
+  case TWOT(T_MANY, T_TYPE):
+  case TWOT(PIKE_T_TRANSITIVE, T_TYPE):
+    type_stack_mark();
+    push_finished_type(b->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_MIXED);
+    push_type(T_FUNCTION);
+    tmp = pop_unfinished_type();
+
+    ret = low_type_binop(op, a, tmp, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+#if 0
+    /* FIXME: */
+  case PIKE_T_RING:
+#endif
+  }
+
+  if (a->type == T_VOID) {
+    if (bvoidable) {
+      if (op & PT_BINOP_AND) {
+	add_ref(a);
+	return a;
+      } else {
+	return NULL;
+      }
+    }
+    if (op == PT_BINOP_MINUS) {
+      add_ref(a);
+      return a;
+    }
+    return NULL;
+  }
+  if (b->type == T_VOID) {
+    if (op == PT_BINOP_MINUS) {
+      add_ref(a);
+      return a;
+    }
+    if (avoidable) {
+      add_ref(b);
+      return b;
+    }
+    return NULL;
+  }
+
+  if (b->type == T_MIXED) {
+    /* NB: a being void has been handled above. */
+    if (op == PT_BINOP_MINUS) return NULL;
+    return remap_markers(a, NULL, remap, remap_flags);
+  }
+  if (a->type == T_MIXED) {
+    type_stack_mark();
+    push_remap_markers(b, NULL, remap,
+		       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    if (op == PT_BINOP_MINUS) {
+      push_type(T_NOT);
+    }
+    return pop_unfinished_type();
+  }
+
+  switch(a->type) {
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    {
+      int marker = remap_marker(remap, a->type, remap_flags);
+      if (!marker) return NULL;
+
+      tmp = remap_markers(b, NULL, remap,
+			  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (!tmp) return NULL;
+      type_stack_mark();
+      push_finished_type(tmp);
+      if (op == PT_BINOP_MINUS) {
+	push_type(T_NOT);
+      }
+      push_type(marker);
+      push_reverse_type(T_AND);
+      free_type(tmp);
+      return pop_unfinished_type();
+    }
+  }
+  switch(b->type) {
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+    {
+      int marker = remap_marker(remap, b->type,
+				remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (!marker) return NULL;
+
+      tmp = remap_markers(a, NULL, remap, remap_flags);
+      if (!tmp) return NULL;
+      type_stack_mark();
+      push_finished_type(tmp);
+      push_type(marker);
+      if (op == PT_BINOP_MINUS) {
+	push_type(T_NOT);
+      }
+      push_reverse_type(T_AND);
+      free_type(tmp);
+      return pop_unfinished_type();
+    }
+  }
+
+  if (a->type != b->type) {
+    if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
+	((b->type & PIKE_T_MASK) == PIKE_T_OPERATOR)) {
+      type_stack_mark();
+      push_remap_markers(a, NULL, remap, remap_flags);
+      push_remap_markers(b, NULL, remap,
+			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (op == PT_BINOP_MINUS) {
+	push_type(T_NOT);
+      }
+      push_reverse_type(T_AND);
+      return pop_unfinished_type();
+    }
+    return NULL;
+  }
+
+  switch(a->type) {
+  case T_VOID:
+  case T_ZERO:
+  case T_FLOAT:
+    /* Not reached. Should be handled by the a == b test at
+     * the beginning of the function.
+     */
+    Pike_fatal("Type hashing has duplicates.\n");
+    return NULL;
+
+  case T_INT:
+    {
+      INT32 bounds[6] = { MIN_INT32, };
+      int ab[6] = { 0, 0, };
+      int i;
+      int nbounds = 1;
+      INT32 bound;
+      INT32 other;
+
+      /* NB: The bits in ab are selected so that they match
+       *     the shifts for the minterms in enum pt_binop.
+       */
+      bound = CAR_TO_INT(a);
+      for (i = nbounds; i-- && bounds[i] > bound;) {
+	ab[i] |= 2;
+      }
+      if (bounds[i] < bound) {
+	/* We need to insert a bound. */
+	i++;
+	memmove(bounds + i + 1, bounds + i,
+		sizeof(bounds[i]) * (nbounds - i));
+	nbounds++;
+	bounds[i] = bound;
+      } else if (bounds[i] == bound) {
+	ab[i] |= 2;
+      }
+
+      bound = CDR_TO_INT(a);
+      if (bound < MAX_INT32) {
+	bound++;
+	for (i = nbounds; i-- && bounds[i] > bound;) {
+	  ab[i] &= ~2;
+	}
+	if (bounds[i] < bound) {
+	  /* We need to insert a bound. */
+	  i++;
+	  memmove(bounds + i + 1, bounds + i,
+		  sizeof(bounds[i]) * (nbounds - i));
+	  nbounds++;
+	  bounds[i] = bound;
+	} else if (bounds[i] == bound) {
+	  ab[i] &= ~2;
+	}
+      }
+
+      bound = CAR_TO_INT(b);
+      for (i = nbounds; i-- && bounds[i] > bound;) {
+	ab[i] |= 1;
+      }
+      if (bounds[i] < bound) {
+	/* We need to insert a bound. */
+	i++;
+	memmove(bounds + i + 1,
+		bounds + i, sizeof(bounds[i]) * (nbounds - i));
+	nbounds++;
+	bounds[i] = bound;
+      } else if (bounds[i] == bound) {
+	ab[i] |= 1;
+      }
+
+      bound = CDR_TO_INT(b);
+      if (bound < MAX_INT32) {
+	bound++;
+	for (i = nbounds; i-- && bounds[i] > bound;) {
+	  ab[i] &= ~1;
+	}
+	if (bounds[i] < bound) {
+	  /* We need to insert a bound. */
+	  i++;
+	  memmove(bounds + i + 1, bounds + i,
+		  sizeof(bounds[i]) * (nbounds - i));
+	  nbounds++;
+	  bounds[i] = bound;
+	} else if (bounds[i] == bound) {
+	  ab[i] &= ~1;
+	}
+      }
+
+      type_stack_mark();
+
+      for (i = 0; i < nbounds;) {
+	bound = MAX_INT32;
+	for (i = 0; i < nbounds; i++) {
+	  if ((PT_BINOP_NOR >> ab[i]) & op) {
+	    /* Found start of range. */
+	    bound = bounds[i];
+	  }
+	}
+	if (i == nbounds) break;
+	for (; i < nbounds; i++) {
+	  if (!((PT_BINOP_NOR >> ab[i]) & op)) {
+	    /* Found end of range. */
+	    break;
+	  }
+	}
+	if (i < nbounds) {
+	  push_int_type(bound, bounds[i]-1);
+	} else {
+	  push_int_type(bound, MAX_INT32);
+	}
+      }
+
+      nbounds = peek_stack_mark();
+      if (!nbounds) {
+	pop_stack_mark();
+	return NULL;
+      }
+      /* NB: Loop starts at 1! */
+      for (i = 1; i < nbounds; i++) {
+	push_type(T_OR);
+      }
+      return pop_unfinished_type();
+    }
+
+  case T_ARRAY:
+  case T_MAPPING:
+  case T_STRING:
+    tmp = low_type_binop(op, a->car, b->car, remap,
+			 aflags, bflags, remap_flags);
+    if (!tmp && (op == PT_BINOP_AND)) return NULL;
+    tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
+			  aflags, bflags, remap_flags);
+    if (!tmp2) {
+      if (op == PT_BINOP_AND) {
+	free_type(tmp);
+	return NULL;
+      } else if (!tmp) {
+	return NULL;
+      }
+    }
+    type_stack_mark();
+    if (op == PT_BINOP_MINUS) {
+      if (tmp) {
+	push_finished_type(a->cdr);
+	push_finished_type(tmp);
+	push_reverse_type(a->type);
+	free_type(tmp);
+      }
+      if (tmp2) {
+	push_finished_type(tmp2);
+	push_finished_type(a->car);
+	push_reverse_type(a->type);
+	free_type(tmp2);
+      }
+      if (peek_stack_mark() == 2) push_type(T_OR);
+    } else {
+      /* PT_BINOP_AND */
+      push_finished_type(tmp);
+      push_finished_type(tmp2);
+      push_reverse_type(a->type);
+      free_type(tmp);
+      free_type(tmp2);
+    }
+    return pop_unfinished_type();
+
+  case T_MULTISET:
+  case T_PROGRAM:
+  case T_TYPE:
+    tmp = low_type_binop(op, a->car, b->car, remap,
+			 aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type(a->type);
+    return pop_unfinished_type();
+
+    /* FIXME: AND only from this point on. ======================= */
+
+  case T_OBJECT:
+    if (!a->cdr) {
+      add_ref(b);
+      return b;
+    }
+    if (!b->cdr) {
+      add_ref(a);
+      return a;
+    }
+    if (a->cdr == b->cdr) {
+      /* We know that they differ due to the a == b test at
+       * the befinning of the function. The only way they
+       * can differ is that car differs. There are only two
+       * valid values for car, so select the stricter (ie 'is-a')
+       */
+      type_stack_mark();
+      push_object_type(1, CDR_TO_INT(a));
+      return pop_unfinished_type();
+    }
+    if (a->car && b->car) {
+      /* This is only possible if a->cdr == b->cdr, but that is
+       * handled above.
+       */
+      return NULL;
+    }
+    {
+      struct program *ap = id_to_program(CDR_TO_INT(a));
+      struct program *bp = id_to_program(CDR_TO_INT(b));
+
+      if (!b->car && implements(ap, bp)) {
+	add_ref(a);
+	return a;
+      }
+      if (!a->car && implements(bp, ap)) {
+	add_ref(b);
+	return b;
+      }
+      if ((a->car == b->car) && is_compatible(ap, bp)) {
+	/* Both car must be 0 due to test above.
+	 * It is possible to implement a class that
+	 * implements both of the classes.
+	 */
+	type_stack_mark();
+	push_finished_type(a);
+	push_finished_type(b);
+	push_reverse_type(T_AND);
+	return pop_unfinished_type();
+      }
+      return NULL;
+    }
+  }
+
+  /* Leaf type. */
+  add_ref(a);
+  return a;
+}
 
 /**
  * Low-level subtraction (aka And-not) of two types.
