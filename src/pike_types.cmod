@@ -4059,6 +4059,90 @@ static struct pike_type *expand_transitive(struct pike_type *fun,
 					   struct pike_type **markers,
 					   int flags);
 
+static void push_binop(enum pt_binop op)
+{
+  struct pike_type *a, *b;
+  switch(op) {
+  case PT_BINOP_AND:
+    push_type(T_AND);
+    break;
+  case PT_BINOP_OR:
+    push_type(T_OR);
+    break;
+  case PT_BINOP_B:
+    a = low_pop_type();
+    b = low_pop_type();
+    push_finished_type(b);
+    free_type(a);
+    free_type(b);
+    break;
+  case PT_BINOP_A:
+    a = low_pop_type();
+    b = low_pop_type();
+    push_finished_type(a);
+    free_type(a);
+    free_type(b);
+    break;
+  case PT_BINOP_ALL:
+    a = low_pop_type();
+    b = low_pop_type();
+    push_type(T_MIXED);
+    free_type(a);
+    free_type(b);
+    break;
+  case PT_BINOP_NONE:
+    Pike_fatal("Unsupported binop.\n");
+  case PT_BINOP_MINUS:
+  case PT_BINOP_INVERSE_MINUS:
+    /* One of the minterms. */
+    if (op & PT_BINOP_NOT_B) {
+      a = low_pop_type();
+      push_type(T_NOT);
+      push_finished_type(a);
+      free_type(a);
+    }
+    if (op & PT_BINOP_NOT_A) {
+      push_type(T_NOT);
+    }
+    push_type(T_AND);
+    break;
+  case PT_BINOP_NOR:
+    push_type(T_OR);
+    push_type(T_NOT);
+    break;
+  default:
+    {
+      enum pt_binop inv_op = (~op) & PT_BINOP_ALL;
+
+      if (!(inv_op & (inv_op - 1))) {
+	/* An inverted minterm. */
+	if (inv_op & PT_BINOP_NOT_B) {
+	  a = low_pop_type();
+	  push_type(T_NOT);
+	  push_finished_type(a);
+	  push_type(T_NOT);
+	  free_type(a);
+	}
+	if (inv_op & PT_BINOP_NOT_A) {
+	  push_type(T_NOT);
+	}
+	push_type(T_OR);
+	break;
+      }
+      /* FIXME: XOR, NXOR */
+      Pike_fatal("Unsupported binary type operation: 0x%02x\n", op);
+    }
+  }
+}
+
+static void push_reverse_binop(enum pt_binop op)
+{
+  /* Swap bits 1 & 2 in op to reverse the meanings of the arguments. */
+  push_binop((op & PT_BINOP_XNOR) |
+	     ((op & PT_BINOP_MINUS) ? PT_BINOP_INVERSE_MINUS : 0) |
+	     ((op & PT_BINOP_INVERSE_MINUS) ? PT_BINOP_MINUS : 0));
+}
+
 /**
  * Low-level intersection (aka And) of two types.
  *
