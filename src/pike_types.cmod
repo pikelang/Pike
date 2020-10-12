@@ -1583,6 +1583,13 @@ INT32 extract_type_int(char *p)
   return get_unaligned_be32(p);
 }
 
+static struct pike_type *low_pop_type(void)
+{
+  TYPE_STACK_DEBUG("low_pop_type");
+
+  return *(Pike_compiler->type_stackp--);
+}
+
 struct pike_type *debug_pop_unfinished_type(void)
 {
   ptrdiff_t len;
