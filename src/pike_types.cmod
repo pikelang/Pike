@@ -4496,22 +4496,9 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   case TWOT(T_FUNCTION, PIKE_T_OPERATOR):
   case TWOT(PIKE_T_OPERATOR, T_FUNCTION):
     type_stack_mark();
-    push_finished_type(a);
     push_finished_type(b);
-    switch(op) {
-    case PT_BINOP_AND:
-      push_reverse_type(T_AND);
-      break;
-    case PT_BINOP_OR:
-      push_reverse_type(T_OR);
-      break;
-    case PT_BINOP_MINUS:
-      push_type(T_NOT);
-      push_reverse_type(T_AND);
-      break;
-    default:
-      Pike_fatal("Unsupported.\n");
-    }
+    push_finished_type(a);
+    push_binop(op);
     return pop_unfinished_type();
 
   case TWOT(T_FUNCTION, T_FUNCTION):
@@ -4669,31 +4656,18 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       }
 
       nargs = pop_stack_mark();
-      if (op & PT_BINOP_NOT_B) {
+      if (op != PT_BINOP_AND) {
 	nargs = 0;
 	ai = a;
 	bi = b;
       }
 
       /* Either of a and/or b is a complex type. */
-      push_remap_markers(ai, NULL, remap, remap_flags);
       push_remap_markers(bi, NULL, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_remap_markers(ai, NULL, remap, remap_flags);
 
-      switch(op) {
-      case PT_BINOP_AND:
-	push_reverse_type(T_AND);
-	break;
-      case PT_BINOP_OR:
-	push_reverse_type(T_OR);
-	break;
-      case PT_BINOP_MINUS:
-	push_type(T_NOT);
-	push_reverse_type(T_AND);
-	break;
-      default:
-	Pike_fatal("Unsupported.\n");
-      }
+      push_binop(op);
 
       while (nargs--) {
 	push_reverse_type(T_FUNCTION);
@@ -4874,11 +4848,8 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       if (!tmp) return NULL;
       type_stack_mark();
       push_finished_type(tmp);
-      if (op == PT_BINOP_MINUS) {
-	push_type(T_NOT);
-      }
       push_type(marker);
-      push_reverse_type(T_AND);
+      push_binop(op);
       free_type(tmp);
       return pop_unfinished_type();
     }
@@ -4894,12 +4865,9 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       tmp = remap_markers(a, NULL, remap, remap_flags);
       if (!tmp) return NULL;
       type_stack_mark();
-      push_finished_type(tmp);
       push_type(marker);
-      if (op == PT_BINOP_MINUS) {
-	push_type(T_NOT);
-      }
-      push_reverse_type(T_AND);
+      push_finished_type(tmp);
+      push_binop(op);
       free_type(tmp);
       return pop_unfinished_type();
     }
@@ -4909,13 +4877,10 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
 	((b->type & PIKE_T_MASK) == PIKE_T_OPERATOR)) {
       type_stack_mark();
-      push_remap_markers(a, NULL, remap, remap_flags);
       push_remap_markers(b, NULL, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      if (op == PT_BINOP_MINUS) {
-	push_type(T_NOT);
-      }
-      push_reverse_type(T_AND);
+      push_remap_markers(a, NULL, remap, remap_flags);
+      push_binop(op);
       return pop_unfinished_type();
     }
     return NULL;
