@@ -5031,13 +5031,13 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       if (tmp) {
 	push_finished_type(a->cdr);
 	push_finished_type(tmp);
-	push_reverse_type(a->type);
+	push_type(a->type);
 	free_type(tmp);
       }
       if (tmp2) {
 	push_finished_type(tmp2);
 	push_finished_type(a->car);
-	push_reverse_type(a->type);
+	push_type(a->type);
 	free_type(tmp2);
       }
       if (peek_stack_mark() == 2) push_type(T_OR);
@@ -5062,63 +5062,98 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     push_type(a->type);
     return pop_unfinished_type();
 
-    /* FIXME: AND only from this point on. ======================= */
-
   case T_OBJECT:
-    if (!a->cdr) {
-      add_ref(b);
-      return b;
-    }
-    if (!b->cdr) {
-      add_ref(a);
-      return a;
-    }
-    if (a->cdr == b->cdr) {
-      /* We know that they differ due to the a == b test at
-       * the befinning of the function. The only way they
-       * can differ is that car differs. There are only two
-       * valid values for car, so select the stricter (ie 'is-a')
-       */
-      type_stack_mark();
-      push_object_type(1, CDR_TO_INT(a));
-      return pop_unfinished_type();
-    }
-    if (a->car && b->car) {
-      /* This is only possible if a->cdr == b->cdr, but that is
-       * handled above.
-       */
-      return NULL;
-    }
-    {
-      struct program *ap = id_to_program(CDR_TO_INT(a));
-      struct program *bp = id_to_program(CDR_TO_INT(b));
-
-      if (!b->car && implements(ap, bp)) {
-	add_ref(a);
-	return a;
-      }
-      if (!a->car && implements(bp, ap)) {
+    switch(op) {
+    case PT_BINOP_AND:
+      if (!a->cdr) {
 	add_ref(b);
 	return b;
       }
-      if ((a->car == b->car) && is_compatible(ap, bp)) {
-	/* Both car must be 0 due to test above.
-	 * It is possible to implement a class that
-	 * implements both of the classes.
+      if (!b->cdr) {
+	add_ref(a);
+	return a;
+      }
+      if (a->cdr == b->cdr) {
+	/* We know that they differ due to the a == b test at
+	 * the befinning of the function. The only way they
+	 * can differ is that car differs. There are only two
+	 * valid values for car, so select the stricter (ie 'is-a')
 	 */
 	type_stack_mark();
-	push_finished_type(a);
-	push_finished_type(b);
-	push_reverse_type(T_AND);
+	push_object_type(1, CDR_TO_INT(a));
 	return pop_unfinished_type();
       }
-      return NULL;
+      if (a->car && b->car) {
+	/* This is only possible if a->cdr == b->cdr, but that is
+	 * handled above.
+	 */
+	return NULL;
+      }
+      {
+	struct program *ap = id_to_program(CDR_TO_INT(a));
+	struct program *bp = id_to_program(CDR_TO_INT(b));
+
+	if (!b->car && implements(ap, bp)) {
+	  add_ref(a);
+	  return a;
+	}
+	if (!a->car && implements(bp, ap)) {
+	  add_ref(b);
+	  return b;
+	}
+	if ((a->car != b->car) || !is_compatible(ap, bp)) {
+	  /* It is not possible to implement a class that
+	   * implements both of the classes.
+	   */
+	  return NULL;
+	}
+      }
+    case PT_BINOP_MINUS:
+      if (!b->cdr) {
+	return NULL;
+      }
+      if (a->cdr) {
+	if (a->cdr == b->cdr) {
+	  return NULL;
+	}
+	if (a->car && b->car) {
+	  /* This is only possible if a->cdr == b->cdr, but that is
+	   * handled above.
+	   */
+	  add_ref(a);
+	  return a;
+	}
+	{
+	  struct program *ap = id_to_program(CDR_TO_INT(a));
+	  struct program *bp = id_to_program(CDR_TO_INT(b));
+
+	  if (!b->car && implements(ap, bp)) {
+	    return NULL;
+	  }
+	  if (!is_compatible(ap, bp)) {
+	    add_ref(a);
+	    return a;
+	  }
+	}
+      }
+      break;
+    default:
+      break;
     }
+
+    type_stack_mark();
+    push_finished_type(b);
+    push_finished_type(a);
+    push_binop(op);
+    return pop_unfinished_type();
   }
 
   /* Leaf type. */
-  add_ref(a);
-  return a;
+  if (op & PT_BINOP_AND) {
+    add_ref(a);
+    return a;
+  }
+  return NULL;
 }
 
 /**
@@ -5763,10 +5798,10 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
     }
 
     type_stack_mark();
-    push_finished_type(a);
     push_finished_type(b);
     push_type(T_NOT);
-    push_reverse_type(T_AND);
+    push_finished_type(a);
+    push_type(T_AND);
     return pop_unfinished_type();
   }
 
