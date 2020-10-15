@@ -4898,15 +4898,32 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 
   case T_INT:
     {
-      INT32 bounds[6] = { MIN_INT32, };
+      INT32 bounds[6] = { MIN_INT32, };	/* Start sentinel. */
       int ab[6] = { 0, 0, };
       int i;
       int nbounds = 1;
       INT32 bound;
       INT32 other;
 
-      /* NB: The bits in ab are selected so that they match
+      /*
+       * Implementation notes:
+       *
+       * bounds[] contains the values where the set changes in order
+       * from smallest to largest. It always contains at least the
+       * start sentinel value (MIN_INT32) at position 0.
+       *
+       * ab[] contains one bit for each of a and b indicating whether
+       * the corresponding value in bounds[] is a member of a and/or b.
+       *
+       * nbounds contains the number of valid entries in bounds[] and ab[].
+       *
+       * To avoid issues with overflow and similar the end sentinel
+       * (ie MAX_INT32 + 1) is not in bounds[].
+       *
+       * NB: The bits in ab are selected so that they match
        *     the shifts for the minterms in enum pt_binop.
+       *
+       * bounds[] and ab[] are created with insert sort.
        */
       bound = CAR_TO_INT(a);
       for (i = nbounds; i-- && bounds[i] > bound;) {
