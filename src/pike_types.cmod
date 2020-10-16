@@ -4527,7 +4527,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 
       while(1) {
 	/* Invariant:
-	 *   a->type and b->type are either T_FUNCTION or T_MANY.
+	 *   ai->type and bi->type are either T_FUNCTION or T_MANY.
 	 */
 	enum pt_cmp_flags avoidable = 0;
 	enum pt_cmp_flags bvoidable = 0;
@@ -4555,9 +4555,10 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	    } else {
 	      goto function_fail;
 	    }
+	  } else {
+	    push_finished_type(tmp);
+	    free_type(tmp);
 	  }
-	  push_finished_type(tmp);
-	  free_type(tmp);
 
 	  if (avoidable && bvoidable) {
 	    /* Time to check the return types. */
@@ -4592,7 +4593,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	      got_full = 1;
 	    } else {
 	      free_type(tmp);
-	      break;
+	      goto complex_function;
 	    }
 	    free_type(tmp);
 	    if (got_empty) goto function_next;
@@ -4632,7 +4633,10 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	default:
 	  Pike_fatal("Unsupported.\n");
 	}
+
       function_next:
+
+	if (avoidable && bvoidable) break;
 
 	/* Advance to the next argument. */
 	if (ai->type == T_FUNCTION) {
@@ -4654,6 +4658,8 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	  break;
 	}
       }
+
+    complex_function:
 
       nargs = pop_stack_mark();
       if (op != PT_BINOP_AND) {
@@ -5125,6 +5131,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	  return NULL;
 	}
       }
+      break;
     case PT_BINOP_MINUS:
       if (!b->cdr) {
 	return NULL;
