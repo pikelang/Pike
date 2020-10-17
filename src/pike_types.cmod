@@ -4937,11 +4937,14 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       }
       if (bounds[i] < bound) {
 	/* We need to insert a bound. */
-	i++;
 	memmove(bounds + i + 1, bounds + i,
 		sizeof(bounds[i]) * (nbounds - i));
+	memmove(ab + i + 1,
+		ab + i, sizeof(ab[i]) * (nbounds - i));
+	i++;
 	nbounds++;
 	bounds[i] = bound;
+	ab[i] |= 2;
       } else if (bounds[i] == bound) {
 	ab[i] |= 2;
       }
@@ -4954,11 +4957,14 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	}
 	if (bounds[i] < bound) {
 	  /* We need to insert a bound. */
-	  i++;
 	  memmove(bounds + i + 1, bounds + i,
 		  sizeof(bounds[i]) * (nbounds - i));
+	  memmove(ab + i + 1,
+		  ab + i, sizeof(ab[i]) * (nbounds - i));
+	  i++;
 	  nbounds++;
 	  bounds[i] = bound;
+	  ab[i] &= ~2;
 	} else if (bounds[i] == bound) {
 	  ab[i] &= ~2;
 	}
@@ -4970,11 +4976,14 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       }
       if (bounds[i] < bound) {
 	/* We need to insert a bound. */
-	i++;
 	memmove(bounds + i + 1,
 		bounds + i, sizeof(bounds[i]) * (nbounds - i));
+	memmove(ab + i + 1,
+		ab + i, sizeof(ab[i]) * (nbounds - i));
+	i++;
 	nbounds++;
 	bounds[i] = bound;
+	ab[i] |= 1;
       } else if (bounds[i] == bound) {
 	ab[i] |= 1;
       }
@@ -4987,11 +4996,14 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	}
 	if (bounds[i] < bound) {
 	  /* We need to insert a bound. */
-	  i++;
 	  memmove(bounds + i + 1, bounds + i,
 		  sizeof(bounds[i]) * (nbounds - i));
+	  memmove(ab + i + 1,
+		  ab + i, sizeof(ab[i]) * (nbounds - i));
+	  i++;
 	  nbounds++;
 	  bounds[i] = bound;
+	  ab[i] &= ~1;
 	} else if (bounds[i] == bound) {
 	  ab[i] &= ~1;
 	}
@@ -5001,10 +5013,11 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 
       for (i = 0; i < nbounds;) {
 	bound = MAX_INT32;
-	for (i = 0; i < nbounds; i++) {
+	for (;i < nbounds; i++) {
 	  if ((PT_BINOP_NOR >> ab[i]) & op) {
 	    /* Found start of range. */
 	    bound = bounds[i];
+	    break;
 	  }
 	}
 	if (i == nbounds) break;
