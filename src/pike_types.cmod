@@ -4621,11 +4621,16 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	      if (got_empty) goto function_next;
 	    }
 
+	    /* Note: We have pushed two typoe stack marks earlier,
+	     *       so we need to get rid of them before returning.
+	     */
 	    if (!got_full) {
+	      pop_stack_mark();
+	      pop_stack_mark();
 	      return NULL;
 	    }
 
-	    type_stack_mark();
+	    pop_stack_mark();
 	    push_remap_markers(a, NULL, remap, remap_flags);
 	    return pop_unfinished_type();
 	  }
