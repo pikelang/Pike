@@ -772,8 +772,20 @@ class Promise
             function(mixed:void), mixed ...:void) executor, mixed ... extra)
   {
     state = STATE_NO_FUTURE;
-    if (executor)
-      executor(success, failure, @extra);
+
+    if (executor) {
+      mixed err = catch(executor(success, failure, @extra));
+
+      // This unfortunately does hide the real error in case of
+      // double-finalization, i.e.
+      //   fail("I reject!");
+      //   error("I rejected.\n");
+      // in the executor will leave our caller with an error about the
+      // Promise already having been finalized, not giving anyone too much
+      // information about where the double-finalization occured...
+      if (err)
+        failure(err);
+    }
   }
 
   //! The future value that we promise.
