@@ -8494,8 +8494,55 @@ int match_types(struct pike_type *a, struct pike_type *b)
 
 int pike_types_le(struct pike_type *a,struct pike_type *b)
 {
+  int res;
+#ifdef PIKE_DEBUG
+  struct remap_state remap;
+  struct pike_type *tmp, *tmp2;
+  struct mapping *markers;
+  struct pike_type **save_type_stackp = Pike_compiler->type_stackp;
+  struct pike_type ***save_mark_stackp = Pike_compiler->pike_type_mark_stackp;
+
+  memset(&remap, 0, sizeof(remap));
+
+  tmp = low_type_binop(PT_BINOP_MINUS, a, b, &remap, 0, 0, 0);
+
+  markers = allocate_mapping(10);
+  tmp2 = remap_markers(tmp, markers, NULL, PT_FLAG_REMAP_EVAL_MARKERS);
+#endif
+
   clear_markers();
-  return low_pike_types_le(a, b, 0, 0);
+  res = low_pike_types_le(a, b, 0, 0);
+
+#ifdef PIKE_DEBUG
+  if ((save_type_stackp != Pike_compiler->type_stackp) ||
+      (save_mark_stackp != Pike_compiler->pike_type_mark_stackp) ||
+      (res != !tmp2)) {
+    fprintf(stderr, "pike_types_le mismatch!\n"
+	    "a: ");
+    simple_describe_type(a);
+    fprintf(stderr, "\nb: ");
+    simple_describe_type(b);
+    fprintf(stderr, "\nres: %d\ntmp: ", res);
+    simple_describe_type(tmp);
+    fprintf(stderr, "\ntmp2: ");
+    simple_describe_type(tmp2);
+    fprintf(stderr, "\n\n");
+    if ((save_type_stackp != Pike_compiler->type_stackp) ||
+	(save_mark_stackp != Pike_compiler->pike_type_mark_stackp)) {
+      Pike_fatal("Stack level corruption!\n"
+		 "type stack: %p (expected: %p)\n"
+		 "mark stack: %p (expected: %p)\n",
+		 Pike_compiler->type_stackp, save_type_stackp,
+		 Pike_compiler->pike_type_mark_stackp, save_mark_stackp);
+    }
+  }
+
+  free_type(tmp);
+  free_type(tmp2);
+  free_mapping(markers);
+#endif
+
+  return res;
 }
 
 int check_variant_overload(struct pike_type *a, struct pike_type *b)
