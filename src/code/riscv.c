@@ -406,11 +406,18 @@ void riscv_upd_int(PIKE_OPCODE_T *ptr, INT32 n)
 #endif
 }
 
+#if PIKE_BYTEORDER == 4321
+/* Big endian RISC-V stores parcels as little endian */
+#define RISCV_SWAP_PARCEL(x) (__builtin_bswap16((x)))
+#else
+#define RISCV_SWAP_PARCEL(x) (x)
+#endif
+
 static void rv_emit(unsigned INT32 instr)
 {
-  add_to_program((unsigned INT16)instr);
+  add_to_program(RISCV_SWAP_PARCEL((unsigned INT16)instr));
   if ((instr & 3) == 3)
-    add_to_program((unsigned INT16)(instr >> 16));
+    add_to_program(RISCV_SWAP_PARCEL((unsigned INT16)(instr >> 16)));
 }
 
 static void rv_call_millicode(enum rv_register reg, enum rv_millicode milli)
@@ -429,10 +436,10 @@ static void rv_func_epilogue(void)
 void riscv_update_f_jump(INT32 offset, INT32 to_offset)
 {
   PIKE_OPCODE_T *op = &Pike_compiler->new_program->program[offset];
-  unsigned INT32 instr = op[0];
+  unsigned INT32 instr = RISCV_SWAP_PARCEL(op[0]);
   to_offset -= offset;
   if ((instr & 3) == 3) {
-    instr |= op[1] << 16;
+    instr |= RISCV_SWAP_PARCEL(op[1]) << 16;
     if ((instr & 0x7f) == 111) {
       /* JAL */
       if (to_offset < -524288 || to_offset > 524287)
@@ -447,8 +454,8 @@ void riscv_update_f_jump(INT32 offset, INT32 to_offset)
     } else {
       Pike_fatal("riscv_update_f_jump on unknown instruction: %x\n", (unsigned)instr);
     }
-    op[0] = instr;
-    op[1] = instr >> 16;
+    op[0] = RISCV_SWAP_PARCEL(instr);
+    op[1] = RISCV_SWAP_PARCEL(instr >> 16);
   } else {
 #ifdef __riscv_compressed
     if ((instr & 0x6003) == 0x2001) {
@@ -463,7 +470,7 @@ void riscv_update_f_jump(INT32 offset, INT32 to_offset)
       instr = RV_CB(1, instr>>13, ((instr & 0x0380)>>7)+8, to_offset*2);
     } else
       Pike_fatal("riscv_update_f_jump on unknown instruction: %x\n", (unsigned)instr);
-    op[0] = instr;
+    op[0] = RISCV_SWAP_PARCEL(instr);
 #else
     Pike_fatal("riscv_update_f_jump on unknown instruction: %x\n", (unsigned)instr);
 #endif
@@ -473,9 +480,9 @@ void riscv_update_f_jump(INT32 offset, INT32 to_offset)
 int riscv_read_f_jump(INT32 offset)
 {
   PIKE_OPCODE_T *op = &Pike_compiler->new_program->program[offset];
-  INT32 instr = op[0];
+  INT32 instr = RISCV_SWAP_PARCEL(op[0]);
   if ((instr & 3) == 3) {
-    instr |= (INT32)(op[1] << 16);
+    instr |= (INT32)(RISCV_SWAP_PARCEL(op[1]) << 16);
     if ((instr & 0x7f) == 111) {
       /* JAL */
       return offset +
@@ -515,11 +522,11 @@ static void rv_update_pcrel(INT32 offset, enum rv_register reg, INT32 delta)
   PIKE_OPCODE_T *instr = &Pike_compiler->new_program->program[offset];
   unsigned INT32 first = RV_AUIPC(reg, delta);
   unsigned INT32 second = RV_ADDI_(reg, reg, delta);
-  if ((instr[0] & 0xfff) != (first & 0xfff) || instr[2] != (unsigned INT16)second)
+  if ((RISCV_SWAP_PARCEL(instr[0]) & 0xfff) != (first & 0xfff) || RISCV_SWAP_PARCEL(instr[2]) != (unsigned INT16)second)
     Pike_fatal("rv_update_pcrel on mismatching instruction pair\n");
-  instr[0] = first;
-  instr[1] = first >> 16;
-  instr[3] = second >> 16;
+  instr[0] = RISCV_SWAP_PARCEL(first);
+  instr[1] = RISCV_SWAP_PARCEL(first >> 16);
+  instr[3] = RISCV_SWAP_PARCEL(second >> 16);
 }
 
 static void rv_mov_int32(enum rv_register reg, INT32 val)
@@ -1047,7 +1054,7 @@ void riscv_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes)
   const unsigned INT16 *parcel = addr;
 
   while (bytes >= 2) {
-    unsigned INT32 instr = *parcel;
+    unsigned INT32 instr = RISCV_SWAP_PARCEL(*parcel);
     if ((instr&3) != 3) {
       /* 16-bit format */
       fprintf(stderr, "%p  %04x          ", parcel, instr);
@@ -1340,7 +1347,7 @@ void riscv_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes)
     } else if((instr&0x1f) != 0x1f) {
       /* 32-bit format */
       if (bytes < 4) break;
-      instr |= ((unsigned INT32)parcel[1])<<16;
+      instr |= ((unsigned INT32)RISCV_SWAP_PARCEL(parcel[1]))<<16;
       fprintf(stderr, "%p  %08x      ", parcel, instr);
       switch ((instr >> 2) & 0x1f) {
       case 0:
@@ -1511,7 +1518,7 @@ void riscv_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes)
 	break;
       fprintf(stderr, "%p  ", parcel);
       for (i = parcel_count; i > 0; ) {
-	fprintf(stderr, "%04x", parcel[--i]);
+	fprintf(stderr, "%04x", RISCV_SWAP_PARCEL(parcel[--i]));
       }
       fprintf(stderr, "\n");
       bytes -= parcel_count * 2;
