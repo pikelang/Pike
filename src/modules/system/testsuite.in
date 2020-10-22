@@ -304,10 +304,10 @@ test_eq(intp(System.TM(1513871300)->gmtoff), 1)
 test_eq(stringp(System.TM(1513871300)->zone), 1)
 test_eq(stringp(System.TM(1513871300)->asctime()), 1)
 test_eq(System.TM(1513871300)->unix_time(), 1513871300)
-test_equal(map("%d%D%e%G%g%H%I%k%l%M%m%p%r%R%T%u%U%V%w"/2,
+test_equal(map("%d%D%e%G%g%H%I%M%m%p%r%R%T%u%U%V%w"/2,
                System.TM(1513871300)->strftime),
   ({ "21", "12/21/17", "21", "2017", "17",
-     "15", "03", "15", " 3", "48", "12", "PM",
+     "15", "03", "48", "12", "PM",
      "03:48:20 PM", "15:48", "15:48:20", "4", "51", "51", "4" }))
 
 test_eq(stringp((string)System.TM(1513871300)), 1)
