@@ -6534,14 +6534,6 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!   @item %j
  *!     The day of the year as a decimal number (range 001 to 366).
  *!
- *!   @item %k
- *!     The hour (24-hour clock) as a decimal number (range 0 to 23);
- *!     single digits are preceded by a blank.  (See also @expr{%H@}.)
- *!
- *!   @item %l
- *!     The hour (12-hour clock) as a decimal number (range 1 to 12);
- *!     single digits are preceded by a blank.  (See also @expr{%I@}.)
- *!
  *!   @item %m
  *!     The month as a decimal number (range 01 to 12).
  *!
