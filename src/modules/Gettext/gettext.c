@@ -145,7 +145,7 @@ void f_dcgettext(INT32 args)
  *! The textdomain() function sets or queries the name of the
  *! current domain of the active @[LC_MESSAGES] locale category. The
  *! @[domain] argument is a string that can contain only the
- *! characters allowed in legal filenames.
+ *! characters allowed in legal filenames.  It must be non-empty.
  *! 
  *! The domain argument is the unique name of a domain on the
  *! system. If there are multiple versions of the same domain on
@@ -171,6 +171,8 @@ void f_textdomain(INT32 args)
   const char *domain = NULL;
   char *returnstring;
   get_all_args ("textdomain", args, ".%C", &domain);
+  if (domain != NULL && !*domain)
+    Pike_error ("String argument to textdomain must be non-empty.\n");
   returnstring = textdomain(domain);
   pop_n_elems(args);
   push_text(returnstring);

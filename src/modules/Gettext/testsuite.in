@@ -17,7 +17,7 @@ test_eq(Gettext.dcgettext("hej","hopp",Gettext.LC_ALL),"hopp")
 test_eq(Gettext.textdomain(),"messages")
 test_eq(Gettext.textdomain("hopp"),"hopp")
 test_eq(Gettext.textdomain(),"hopp")
-test_eq(Gettext.textdomain(""),"messages")
+test_eval_error([[Gettext.textdomain("")]])
 
 test_eq(Gettext.bindtextdomain(0,0),0)
 test_true(stringp(Gettext.bindtextdomain("hopp",getcwd())))
