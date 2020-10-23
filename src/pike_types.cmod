@@ -4050,6 +4050,8 @@ static struct pike_type *remap_markers(struct pike_type *t,
 				       struct remap_state *remap,
 				       enum pt_remap_flags flags)
 {
+  if (!t) return NULL;
+
   type_stack_mark();
   push_remap_markers(t, markers, remap, flags);
   return pop_unfinished_type();
