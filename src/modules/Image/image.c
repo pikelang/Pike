@@ -208,7 +208,8 @@ static void exit_image_struct(struct object *UNUSED(obj))
 static void gc_recurse_image_struct(struct object *UNUSED(obj))
 {
   if (mc_count_bytes(Pike_fp->current_object) && THIS->img) {
-    mc_counted_bytes += sizeof(rgb_group)*THIS->xsize*(long)THIS->ysize;
+    mc_counted_bytes += sizeof(rgb_group)*THIS->xsize*(long)THIS->ysize +
+      RGB_VEC_PAD;
   }
 }
 
