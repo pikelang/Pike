@@ -246,14 +246,15 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
 
 static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 {
+  const enum PIKE_TYPE type = PIKE_TYPEOF(*val);
   DECLARE_CYCLIC();
 
   check_c_stack (1024);
 
-  if (TYPEOF(*val) <= MAX_COMPLEX && BEGIN_CYCLIC (val->u.ptr, 0))
+  if (IS_COMPLEX_TYPE(type) && BEGIN_CYCLIC (val->u.ptr, 0))
     Pike_error ("Cyclic data structure - already visited %O.\n", val);
 
-  switch (TYPEOF(*val)) {
+  switch (type) {
     case PIKE_T_STRING: {
       struct string_builder *buf = &ctx->buf;
       string_builder_putchar (buf, '"');
@@ -374,7 +375,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
       Pike_error ("Cannot json encode %s.\n", get_name_of_type (TYPEOF(*val)));
   }
 
-  if (TYPEOF(*val) <= MAX_COMPLEX)
+  if (IS_COMPLEX_TYPE(type))
     END_CYCLIC();
 }
 
