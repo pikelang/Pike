@@ -444,6 +444,14 @@ struct svalue
 
 #define REFCOUNTED_TYPE(T)	(((T) & ~(MIN_REF_TYPE - 1)) == MIN_REF_TYPE)
 
+/**
+ * Returns true if the given type is one of the complex types defined
+ * by BIT_COMPLEX.
+ */
+static inline int IS_COMPLEX_TYPE(enum PIKE_TYPE type) {
+  return type <= MAX_TYPE && (1 << type) & BIT_COMPLEX;
+}
+
 #define NUMBER_NUMBER 0
 #define NUMBER_UNDEFINED 1
 #define NUMBER_DESTRUCTED 2
