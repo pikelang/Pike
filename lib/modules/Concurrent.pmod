@@ -783,8 +783,20 @@ class Promise
       // in the executor will leave our caller with an error about the
       // Promise already having been finalized, not giving anyone too much
       // information about where the double-finalization occured...
-      if (err)
-        failure(err);
+      if (err) {
+        if (mixed err2 = catch(failure(err))) {
+          string finalisation_error;
+
+          if (catch(finalisation_error = describe_error(err2)))
+            finalisation_error = sprintf("%O", err2);
+
+          while (has_suffix(finalisation_error, "\n"))
+            finalisation_error = finalisation_error[..<1];
+
+          error("%O->create(): Got error \"%s\" while trying to finalise promise with %O thrown by executor.\n",
+                this, finalisation_error, err);
+        }
+      }
     }
   }
 
