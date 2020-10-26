@@ -232,6 +232,7 @@ class Future
   //!   @[on_failure()], @[query_success_callbacks()]
   this_program on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
+    Thread.MutexKey key = mux->lock();
     switch (state) {
       case STATE_FULFILLED:
         call_callback(cb, result, @extra);
@@ -274,6 +275,7 @@ class Future
   //!   @[on_success()], @[query_failure_callbacks()]
   this_program on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
+    Thread.MutexKey key = mux->lock();
     switch (state) {
       case STATE_REJECTED:
 	state = STATE_REJECTION_REPORTED;
@@ -810,14 +812,19 @@ class Promise
     return Future::this;
   }
 
-  protected this_program finalise(State newstate, mixed value, int try,
-    array(array(function(mixed, mixed ...: void)|array(mixed))) cbs)
+  protected this_program finalise(State newstate, mixed value, int try)
   {
     Thread.MutexKey key = mux->lock();
     if (state <= STATE_PENDING)
     {
       state = newstate;
       result = value;
+      array(array(function(mixed, mixed ...: void)|array(mixed))) cbs;
+      if (state == STATE_FULFILLED) {
+	cbs = success_cbs;
+      } else {
+	cbs = failure_cbs;
+      }
       key = 0;
       cond->broadcast();
       if (sizeof(cbs))
@@ -861,7 +868,7 @@ class Promise
 #ifdef CONCURRENT_DEBUG
     werror("Promise: %O\n", this_function);
 #endif
-    return finalise(STATE_FULFILLED, value, try, success_cbs);
+    return finalise(STATE_FULFILLED, value, try);
   }
 
   //! Fulfill the @[Future] if it hasn't been fulfilled or failed already.
@@ -905,7 +912,7 @@ class Promise
     werror("Promise: %O\n", this_function);
 #endif
     return
-     finalise(STATE_REJECTED, value, try, failure_cbs);
+     finalise(STATE_REJECTED, value, try);
   }
 
   //! Maybe reject the @[Future] value.
