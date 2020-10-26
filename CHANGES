@@ -117,7 +117,12 @@ o Compiler
     before optimizing away certain assignments if the assignment is
     immediately followed by a return of the variable in question.
 
-Crypto.ECC
+o Concurrent.Promise
+
+  Fixed race condition where success- and/or failure- callbacks
+  could get lost.
+
+o Crypto.ECC
 
   Now works against Nettle 3.5.
 
