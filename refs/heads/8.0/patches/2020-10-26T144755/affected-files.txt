@@ -1,0 +1,3 @@
+Modified files:
+  pike/lib/modules/Concurrent.pmod
+  pike/lib/modules/Tools.pmod/Standalone.pmod/httpserver.pike
