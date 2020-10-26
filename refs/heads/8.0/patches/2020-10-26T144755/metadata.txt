@@ -1,0 +1,20 @@
+subject: Pike 8.0: Fix race-condition in Concurrent.Promise
+from: 390d6181d989365f3ed1dd1c7a7d0daa2ef56877
+to: 30dcc4ac544c71544191678bf6a42ad2dbc62753
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2020-08-28T110259
+restart: true
+
+Multiple fixes:
+
+• Concurrent.Promise: Fixed race-condition in finalise().
+
+The API for finalise() raced with on_{success,failure}(), as
+new callbacks could get registered after finalise() was called,
+but before the state was updated.
+
+Fixes #10055.
+
+• Tools.Standalone.httpserver: Fix directory traversal vulnerability
+
+Thanks to Chris Angelico <rosuav@gmail.com> for the report.
