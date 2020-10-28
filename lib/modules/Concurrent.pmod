@@ -235,6 +235,7 @@ class Future
     Thread.MutexKey key = mux->lock();
     switch (state) {
       case STATE_FULFILLED:
+	key = 0;
         call_callback(cb, result, @extra);
         break;
       case STATE_NO_FUTURE:
@@ -281,6 +282,7 @@ class Future
 	state = STATE_REJECTION_REPORTED;
 	// FALL_THROUGH
       case STATE_REJECTION_REPORTED:
+	key = 0;
         call_callback(cb, result, @extra);
         break;
       case STATE_NO_FUTURE:
