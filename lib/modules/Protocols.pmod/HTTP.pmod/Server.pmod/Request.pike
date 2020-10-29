@@ -57,10 +57,27 @@ Stdio.NonblockingStream my_fd;
 Port server_port;
 .HeaderParser headerparser;
 
-string buf="";    // content buffer
+protected Stdio.Buffer content_buffer = Stdio.Buffer();
+string `buf()
+{
+  return (string)content_buffer;    // content buffer
+}
+void `buf=(string(8bit) val)
+{
+  content_buffer = Stdio.Buffer(val);
+}
+
+protected Stdio.Buffer raw_buffer = Stdio.Buffer();
 
 //! raw unparsed full request (headers and body)
-string raw = "";
+string `raw()
+{
+  return (string)raw_buffer;
+}
+void `raw=(string(8bit) val)
+{
+  raw_buffer = Stdio.Buffer(val);
+}
 
 //! raw unparsed body of the request (@[raw] minus request line and headers)
 string body_raw="";
@@ -173,13 +190,13 @@ protected void flatten_headers()
 // read callback.
 protected void read_cb(mixed dummy,string s)
 {
-   if( !sizeof( raw ) )
+   if( !sizeof( raw_buffer ) )
    {
       sscanf(s,"%*[ \t\n\r]%s", s );
       if( !strlen( s ) )
          return;
    }
-   raw+=s;
+   raw_buffer->add(s);
    remove_call_out(connection_timeout);
    array v=headerparser->feed(s);
    if (v)
@@ -259,7 +276,7 @@ enum ChunkedState {
 private ChunkedState chunked_state = READ_SIZE;
 private int chunk_size;
 private string current_chunk = "";
-private string actual_data = "";
+private Stdio.Buffer actual_data = Stdio.Buffer();
 private string trailers = "";
 
 // Appends data to raw and buf. Parses the data with the clunky-
@@ -267,18 +284,29 @@ private string trailers = "";
 // body_raw and request_headers and calls finalize.
 private void read_cb_chunked( mixed dummy, string data )
 {
-  raw += data;
-  buf += data;
+  raw_buffer->add(data);
+  content_buffer->add(data);
   remove_call_out(connection_timeout);
-  while( chunked_state == FINISHED || strlen( buf ) )
+  while( chunked_state == FINISHED || sizeof( content_buffer ) )
   {
     switch( chunked_state )
     {
       case READ_SIZE:
-	if( !has_value( buf, "\r\n" ) )
-	  return;
-	// SIZE[ extension]*\r\n
-	sscanf( buf, "%x%*[^\r\n]\r\n%s", chunk_size, buf);
+	if (content_buffer->truncate) {
+	  // Recent Pike 8.0.
+	  if( search( content_buffer, "\r\n" ) < 0 )
+	    return;
+	  // SIZE[ extension]*\r\n
+	  array(int) a = content_buffer->sscanf( "%x%*[^\r\n]\r\n");
+	  chunk_size = sizeof(a) && a[0];
+	} else {
+	  // Old Pike 8.0.
+	  if ( !has_value( buf, "\r\n" ) )
+	    return;
+	  // SIZE[ extension]*\r\n
+	  sscanf( buf, "%x%*[^\r\n]\r\n%s", chunk_size, buf);
+	}
+
 	if( chunk_size == 0 )
 	  chunked_state = READ_TRAILER;
 	else
@@ -286,23 +314,22 @@ private void read_cb_chunked( mixed dummy, string data )
 	break;
 
       case READ_CHUNK:
-	int l = min( strlen(buf), chunk_size );
+	int l = min( sizeof(content_buffer), chunk_size );
 	chunk_size -= l;
-	actual_data += buf[..l-1];
-	buf = buf[l..];
+	actual_data->add(content_buffer->read(l));
 	if( !chunk_size )
 	  chunked_state = READ_POSTNL;
 	break;
 
       case READ_POSTNL:
-	if( strlen( buf ) < 2 )
+	if( sizeof( content_buffer ) < 2 )
 	  return;
-	if( has_prefix( buf, "\r\n" ) )
-	  buf = buf[2..];
+	content_buffer->sscanf("\r\n");
 	chunked_state = READ_SIZE;
 	break;
 
       case READ_TRAILER:
+	// FIXME: Use Stdio.Buffer here.
 	trailers += buf;
 	buf = "";
 	if( has_value( trailers, "\r\n\r\n" ) || has_prefix( trailers, "\r\n" ) )
@@ -312,7 +339,7 @@ private void read_cb_chunked( mixed dummy, string data )
 	    sscanf( trailers, "%s\r\n\r\n%s", trailers, buf );
 	  else
 	  {
-	    buf = buf[2..];
+	    content_buffer->read(2);
 	    trailers = "";
 	  }
 	}
@@ -339,8 +366,8 @@ private void read_cb_chunked( mixed dummy, string data )
 
 
 	// And FINALLY we are done..
-	body_raw = actual_data;
-	request_headers["content-length"] = ""+strlen(actual_data);
+	body_raw = actual_data->read();
+	request_headers["content-length"] = ""+strlen(body_raw);
 	finalize();
 	return;
     }
@@ -370,12 +397,18 @@ protected int parse_variables()
   }
 
   int l = (int)request_headers["content-length"];
-  if (l<=sizeof(buf))
+  if (l <= sizeof(content_buffer))
   {
-    int zap = strlen(buf) - l;
-    raw = raw[..<zap-1];
-    body_raw = buf[..l-1];
-    buf = buf[l..];
+    if (content_buffer->truncate) {
+      // Recent Pike 8.0.
+      int zap = content_buffer->truncate(l);
+      raw_buffer->truncate(sizeof(raw_buffer) - zap);
+    } else {
+      // Old Pike 8.0.
+      int zap = sizeof(content_buffer) - l;
+      raw_buffer = Stdio.Buffer(raw_buffer->read(sizeof(raw_buffer) - zap));
+    }
+    body_raw = content_buffer->read(l);
     return 1;
   }
   else if (request_type == "PUT" )
@@ -454,17 +487,23 @@ protected void finalize()
 // max_request_size data has been received, finalize is called.
 protected void read_cb_post(mixed dummy,string s)
 {
-  raw += s;
-  buf += s;
+  raw_buffer->add(s);
+  content_buffer->add(s);
   remove_call_out(connection_timeout);
 
   int l = (int)request_headers["content-length"];
-  if (sizeof(buf)>=l ||
-      ( max_request_size && sizeof(buf)>max_request_size ))
+  if (sizeof(content_buffer)>=l ||
+      ( max_request_size && sizeof(content_buffer)>max_request_size ))
   {
-    body_raw=buf[..l-1];
-    buf = buf[l..];
-    raw = raw[..strlen(raw)-strlen(buf)];
+    if (content_buffer->truncate) {
+      // Recent Pike 8.0.
+      raw_buffer->truncate(sizeof(raw_buffer) + l - sizeof(content_buffer));
+    } else {
+      // Old Pike 8.0.
+      raw_buffer = Stdio.Buffer(raw_buffer->read(sizeof(raw_buffer) + l -
+						 sizeof(content_buffer)));
+    }
+    body_raw = content_buffer->read(l);
     finalize();
   }
   else
@@ -831,5 +870,5 @@ void send_close()
 
 void send_read(mixed dummy,string s)
 {
-   buf+=s; // for HTTP/1.1
+  content_buffer->add(s); // for HTTP/1.1
 }
