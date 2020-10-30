@@ -2056,6 +2056,7 @@ class async_client
   protected private void rec_data(mapping m)
   {
     mixed err;
+    mapping res;
     if (err = catch {
       if(m->port != 53 || !has_value(nameservers, m->ip)) return;
       sscanf(m->data,"%2c",int id);
@@ -2066,12 +2067,21 @@ class async_client
 	return;
       }
       m_delete(requests,id);
-      r->callback(r->domain,decode_res(m->data),@r->args);
-      destruct(r);
+      res = decode_res(m->data);
     }) {
       werror("DNS: Failed to read UDP packet. Connection refused?\n%s\n",
 	     describe_backtrace(err));
     }
+    // NB: The callback may have gone away during our processing.
+    //     Don't complain if that is the case.
+    if (r->callback && (err = catch {
+	r->callback(r->domain, res, @r->args);
+      })) {
+      werror("DNS: Callback failed:\n"
+	     "%s\n",
+	     describe_backtrace(err));
+    }
+    destruct(r);
   }
 
   protected private Request generic_get(string d,
