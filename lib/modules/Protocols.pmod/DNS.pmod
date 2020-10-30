@@ -2056,11 +2056,12 @@ class async_client
   protected private void rec_data(mapping m)
   {
     mixed err;
+    object r;
     mapping res;
     if (err = catch {
       if(m->port != 53 || !has_value(nameservers, m->ip)) return;
       sscanf(m->data,"%2c",int id);
-      object r=requests[id];
+      r = requests[id];
       if(!r) {
 	// Invalid request id. Spoofed answer?
 	// FIXME: Consider black- or greylisting the answer.
