@@ -1132,11 +1132,12 @@ class async_client
   static private void rec_data(mapping m)
   {
     mixed err;
+    object r;
     mapping res;
     if (err = catch {
       if(m->port != 53 || !has_value(nameservers, m->ip)) return;
       sscanf(m->data,"%2c",int id);
-      object r=requests[id];
+      r = requests[id];
       if(!r) return;
       m_delete(requests,id);
       res = decode_res(m->data);
