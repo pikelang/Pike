@@ -617,12 +617,11 @@ PIKE_MODULE_INIT
   add_integer_constant ("HTTP_IMPORT_GREEDY", 1, 0);
   add_integer_constant ("HTTP_IMPORT_ANY",    2, 0);
 
-  /**
-   * @decl constant SASS2SCSS_KEEP_COMMENT = 32
-   * @decl constant SASS2SCSS_STRIP_COMMENT = 64
-   * @decl constant SASS2SCSS_CONVERT_COMMENT = 128
-   *
-   * Constants that can be given as option to @[sass2scss()].
+  /*! @decl constant SASS2SCSS_KEEP_COMMENT = 32
+   *! @decl constant SASS2SCSS_STRIP_COMMENT = 64
+   *! @decl constant SASS2SCSS_CONVERT_COMMENT = 128
+   *!
+   *! Constants that can be given as option to @[sass2scss()].
    */
 
   add_integer_constant ("SASS2SCSS_KEEP_COMMENT", SASS2SCSS_KEEP_COMMENT, 0);
