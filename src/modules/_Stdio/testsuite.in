@@ -899,9 +899,8 @@ dnl search
 test_any_equal([[
   Stdio.Buffer b = Stdio.Buffer("foobar");
   return ({ search(b, 'f'), search(b, 'o'), search(b, 'x'), search(b, 0),
-	    search(b, -1), search(b, 'o', 1), search(b, 'o', 2),
-	    search(b, 'o', 0, 0), search(b, 'o', 0, 3) });
-]], ({ 0, 1, -1, -1, -1, 1, 2, -1, 1 }))
+	    search(b, -1), search(b, 'o', 1), search(b, 'o', 2) });
+]], ({ 0, 1, -1, -1, -1, 1, 2, }))
 
 test_any([[
   Stdio.Buffer b = Stdio.Buffer("hejhopp");
@@ -928,9 +927,5 @@ test_any([[
   Stdio.Buffer b = Stdio.Buffer("hejhopphej");
   return search(b, "he", 1);
 ]], 7)
-test_any([[
-  Stdio.Buffer b = Stdio.Buffer("hejhopp");
-  return search(b, "ho", 0, 3);
-]], -1)
 
 END_MARKER
