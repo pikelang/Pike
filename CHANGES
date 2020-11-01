@@ -119,8 +119,11 @@ o Compiler
 
 o Concurrent.Promise
 
-  Fixed race condition where success- and/or failure- callbacks
-  could get lost.
+  - Fixed race condition where success- and/or failure- callbacks
+    could get lost.
+
+  - Convert errors thrown by the executor passed to Concurrent.Promise()
+    on create into promise rejection.
 
 o Crypto.ECC
 
