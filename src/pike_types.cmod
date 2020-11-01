@@ -4357,6 +4357,9 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	tmp2 = remap_markers(a->cdr, NULL, remap, remap_flags);
       }
       break;
+    default:
+      /* Make the C-compiler happy. */
+      break;
     }
 
     type_stack_mark();
@@ -4413,6 +4416,9 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	tmp2 = remap_markers(b->cdr, NULL, remap,
 			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       }
+      break;
+    default:
+      /* Make the C-compiler happy. */
       break;
     }
 
