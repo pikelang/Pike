@@ -4902,7 +4902,59 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       push_binop(op);
       return pop_unfinished_type();
     }
-    return NULL;
+    /* NB: We know that a and b do not intersect, so the operations
+     *     come in pairs and complementary pairs.
+     */
+    type_stack_mark();
+    switch(op) {
+    case PT_BINOP_NONE:
+    case PT_BINOP_AND:
+      pop_stack_mark();
+      return NULL;
+    case PT_BINOP_NAND:
+    case PT_BINOP_ALL:
+      push_type(T_MIXED);
+      break;
+
+    case PT_BINOP_MINUS:
+    case PT_BINOP_A:
+      push_remap_markers(a, NULL, remap, remap_flags);
+      break;
+    case PT_BINOP_NOT_A:
+    case PT_BINOP_NOT_A_OR_B:
+      push_remap_markers(a, NULL, remap, remap_flags);
+      push_type(T_NOT);
+      break;
+
+    case PT_BINOP_INVERSE_MINUS:
+    case PT_BINOP_B:
+      push_remap_markers(b, NULL, remap,
+			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      break;
+    case PT_BINOP_NOT_B:
+    case PT_BINOP_A_OR_NOT_B:
+      push_remap_markers(b, NULL, remap,
+			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_type(T_NOT);
+      break;
+
+    case PT_BINOP_OR:
+    case PT_BINOP_XOR:
+      push_remap_markers(b, NULL, remap,
+			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_remap_markers(a, NULL, remap, remap_flags);
+      push_type(T_OR);
+      break;
+    case PT_BINOP_NOR:
+    case PT_BINOP_XNOR:
+      push_remap_markers(b, NULL, remap,
+			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_remap_markers(a, NULL, remap, remap_flags);
+      push_type(T_OR);
+      push_type(T_NOT);
+      break;
+    }
+    return pop_unfinished_type();
   }
 
   switch(a->type) {
