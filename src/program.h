@@ -1317,7 +1317,11 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
     (Pike_compiler->compat_major == (MAJOR) && \
      Pike_compiler->compat_minor <= (MINOR)))
 
-
+/* Optimizer flags.
+ *
+ * NB: Only the low 16 bit are used in struct identifier.
+ *     The higher flags are only used by the compiler.
+ */
 #define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
 				    * only used in node_info
 				    */
