@@ -4313,7 +4313,7 @@ PMOD_EXPORT void f_annotations(INT32 args)
 
 
 /*! @decl multiset(Pike.Annotation) annotations(program x, @
- *!                                                    int(0..1)|void recurse)
+ *!                                                    int(0..1)|void no_recurse)
  *! @appears Program.annotations
  *!
  *!   Return a multiset with the annotations for all symbols in @[x] attached
@@ -4322,8 +4322,8 @@ PMOD_EXPORT void f_annotations(INT32 args)
  *! @param x
  *!   Program whose identifiers should be returned.
  *!
- *! @param recurse
- *!   Include annotations recursively added via inherits.
+ *! @param no_recurse
+ *!   Do not include annotations recursively added via inherits.
  *!
  *! @returns
  *!       Returns an multiset with annotations added directly to this program.
@@ -4364,12 +4364,12 @@ PMOD_EXPORT void f_direct_program_annotations(INT32 args)
    if(m != NULL && m->size > 0)
    {
      struct multiset * set;
-	 if((flag & 1) &&TYPEOF(ITEM(m)[(m->size -1)]) == PIKE_T_MULTISET) {
+	 if(!(flag & 1) && TYPEOF(ITEM(m)[(m->size -1)]) == PIKE_T_MULTISET) {
 	  found = 1;
 	  set = ITEM(m)[(m->size -1)].u.multiset;
      ref_push_multiset(set);
  	}
-    else if(!(flag & 1) && TYPEOF(ITEM(m)[0]) == PIKE_T_MULTISET) {
+    else if((flag & 1) && TYPEOF(ITEM(m)[0]) == PIKE_T_MULTISET) {
   	  found = 1;
   	  set = ITEM(m)[0].u.multiset;
        ref_push_multiset(set);    	
