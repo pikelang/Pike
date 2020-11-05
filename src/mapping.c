@@ -960,24 +960,33 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #endif
 
   LOW_FIND(is_eq, key,
+	   /* Key found. */
 	   struct svalue *tmp=&k->ind;
 	   SAME_DATA(goto mi_set_value,
+		     /* Mapping data has changed. */
 		     omd=md;
 		     LOW_FIND(is_identical, tmp,
+			      /* The key is still unmodified in the mapping. */
 			      free_mapping_data(omd);
 			      goto mi_set_value,
+			      /* The key has changed??? */
 			      free_mapping_data(omd);
 			      goto mi_do_nothing)),
+	   /* Key not found. */
 	   Z:
 	   SAME_DATA(goto mi_insert,
+		     /* Mapping data has changed. */
 		     omd=md;
 		     LOW_FIND2(is_eq, key,
+			       /* The key has appeared in the mapping??? */
 			       free_mapping_data(omd);
 			       goto mi_do_nothing,
+			       /* The key is still not in the mapping. */
 			       free_mapping_data(omd);
 			       goto Z)));
 
  mi_do_nothing:
+  /* Don't do anything??? */
   free_mapping_data(md);
   return;
 
