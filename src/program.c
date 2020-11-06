@@ -435,6 +435,9 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
   tFuncV(tZero, tVoid, tVoid),	/* "_m_add", */
   tFuncV(tNone, tOr(tZero, tVoid), tVoid),	/* "_reverse", */
+  tFuncV(tNone, tZero, tMix),	/* "next", */
+  tFuncV(tNone, tZero, tMix),	/* "index", */
+  tFuncV(tNone, tZero, tMix),	/* "value", */
 #endif
 };
 
