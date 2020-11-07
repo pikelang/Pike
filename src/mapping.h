@@ -218,6 +218,9 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 			const struct svalue *key,
 			struct svalue *to);
+PMOD_EXPORT void map_replace(struct mapping *m,
+			     const struct svalue *key,
+			     struct svalue *from_to);
 PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m);
 
 /** Look up the specified key in the indicated mapping and return

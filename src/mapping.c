@@ -1298,6 +1298,155 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   return;
 }
 
+
+PMOD_EXPORT void map_replace(struct mapping *m,
+			     const struct svalue *key,
+			     struct svalue *from_to)
+{
+  size_t h,h2;
+  struct keypair *k, **prev;
+  struct mapping_data *md,*omd;
+  struct svalue tmp;
+  int grow_md;
+  int refs;
+
+  if (IS_UNDEFINED(from_to)) {
+    /* NB: Overwrites the UNDEFINED without looking,
+     *     but that is fine.
+     */
+    map_delete_no_free(m, key, from_to);
+    return;
+  }
+
+#ifdef PIKE_DEBUG
+  if(m->data->refs <=0)
+    Pike_fatal("Zero refs in mapping->data\n");
+#endif
+
+  h2=hash_svalue(key);
+
+#ifdef PIKE_DEBUG
+  if(d_flag>1)  check_mapping(m);
+#endif
+
+  LOW_FIND(is_eq, key,
+	   /* Key found. */
+	   struct svalue *tmp=&k->ind;
+	   SAME_DATA(goto mr_replace,
+		     /* Mapping data has changed. */
+		     omd=md;
+		     LOW_FIND(is_identical, tmp,
+			      /* The key is still unmodified in the mapping. */
+			      free_mapping_data(omd);
+			      goto mr_replace,
+			      /* The key has changed??? */
+			      free_mapping_data(omd);
+			      goto mr_do_nothing)),
+	   /* Key not found. */
+	   Z:
+	   SAME_DATA(goto mr_insert,
+		     /* Mapping data has changed. */
+		     omd=md;
+		     LOW_FIND2(is_eq, key,
+			       /* The key has appeared in the mapping??? */
+			       free_mapping_data(omd);
+			       goto mr_do_nothing,
+			       /* The key is still not in the mapping. */
+			       free_mapping_data(omd);
+			       goto Z)));
+
+ mr_do_nothing:
+  /* Don't do anything??? */
+  free_mapping_data(md);
+  return;
+
+ mr_replace:
+#ifdef PIKE_DEBUG
+  if(m->data != md)
+    Pike_fatal("Wrong dataset in mapping_insert!\n");
+  if(d_flag>1)  check_mapping(m);
+#endif
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
+
+  PREPARE_FOR_DATA_CHANGE2();
+  PROPAGATE(); /* propagate after preparing */
+  md->val_types |= 1 << TYPEOF(*from_to);
+#if 0
+  if (overwrite == 2 && TYPEOF(*key) == T_OBJECT)
+    /* Should replace the index too. It's only for objects that it's
+     * possible to tell the difference. */
+    assign_svalue (&k->ind, key);
+#endif
+  tmp = k->val;
+  k->val = *from_to;
+  *from_to = tmp;
+#ifdef PIKE_DEBUG
+  if(d_flag>1)  check_mapping(m);
+#endif
+  return;
+
+ mr_insert:
+#ifdef PIKE_DEBUG
+  if(m->data != md)
+    Pike_fatal("Wrong dataset in mapping_insert!\n");
+  if(d_flag>1)  check_mapping(m);
+#endif
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
+
+  grow_md = MD_FULLP(md);
+
+  /* We do a re-hash here instead of copying the mapping. */
+  if(grow_md || md->refs>1)
+  {
+    debug_malloc_touch(m);
+    rehash(m, md->hashsize ? md->hashsize << grow_md : AVG_LINK_LENGTH);
+    md=m->data;
+  }
+  h=h2 & ( md->hashsize - 1);
+
+  /* no need to lock here since we are not calling is_eq - Hubbe */
+
+  k=md->free_list;
+#ifndef PIKE_MAPPING_KEYPAIR_LOOP
+  md->free_list=k->next;
+#else /* PIKE_MAPPING_KEYPAIR_LOOP */
+  md->free_list++;
+#endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
+  k->next=md->hash[h];
+  md->hash[h]=k;
+  md->ind_types |= 1 << TYPEOF(*key);
+  md->val_types |= 1 << TYPEOF(*from_to);
+  assign_svalue_no_free(& k->ind, key);
+  k->val = *from_to;
+  k->hval = h2;
+  md->size++;
+#ifdef MAPPING_SIZE_DEBUG
+  if(m->data ==md)
+    m->debug_size++;
+#endif
+  SET_SVAL(*from_to, T_INT, NUMBER_UNDEFINED, integer, 0);
+
+#ifdef PIKE_DEBUG
+  if(d_flag>1)  check_mapping(m);
+#endif
+}
+
 PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 {
   INT32 e;
