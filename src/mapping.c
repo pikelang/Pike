@@ -1299,9 +1299,9 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 }
 
 
-PMOD_EXPORT void map_replace(struct mapping *m,
-			     const struct svalue *key,
-			     struct svalue *from_to)
+PMOD_EXPORT void map_atomic_get_set(struct mapping *m,
+				    const struct svalue *key,
+				    struct svalue *from_to)
 {
   size_t h,h2;
   struct keypair *k, **prev;
