@@ -384,6 +384,39 @@ PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct sval
 }
 
 /**
+ *  Atomically set an element in an array to a value and get
+ *  the previous value.
+ *
+ *  @param a the array whose element is to be set
+ *  @param i the index to get and set
+ *  @param from_to the value to get and set
+ *
+ *  On return the @ref svalue at position @b i of the array @b a has been
+ *  swapped with the @ref svalue at @b from_to.
+ */
+PMOD_EXPORT void array_atomic_get_set(struct array *a, INT32 i,
+				      struct svalue *from_to)
+{
+  INT32 p = i;
+  struct svalue tmp;
+
+  if (i < 0) i += a->size;
+
+  if(i<0 || i>=a->size) {
+    if (a->size) {
+      Pike_error("Index %"PRINTPIKEINT"d is out of array range "
+		 "%d..%d.\n", p, -a->size, a->size-1);
+    } else {
+      Pike_error("Attempt to index the empty array with %"PRINTPIKEINT"d.\n", p);
+    }
+  }
+
+  tmp = ITEM(a)[i];
+  ITEM(a)[i] = *from_to;
+  *from_to = tmp;
+}
+
+/**
  * Insert an svalue into an array and grow the array if necessary.
  */
 PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 index)

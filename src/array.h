@@ -131,6 +131,8 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind);
 PMOD_EXPORT void array_free_index(struct array *v,INT32 ind);
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s);
+PMOD_EXPORT void array_atomic_get_set(struct array *a, INT32 i,
+				      struct svalue *from_to);
 PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 ind);
 void o_append_array(INT32 args);
 PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size);
