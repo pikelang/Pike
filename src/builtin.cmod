@@ -2208,6 +2208,69 @@ PIKEFUN void m_clear(mapping|multiset|object map)
   pop_n_elems(args);
 }
 
+/*! @decl mixed atomic_get_set(mapping|object map, mixed key, mixed val)
+ *! @decl mixed atomic_get_set(array arr, int index, mixed val)
+ *!
+ *!   Replace atomically the value for a key in a mapping or array.
+ *!
+ *! @param map
+ *! @param arr
+ *!   Mapping or array to alter.
+ *!
+ *! @param key
+ *! @param index
+ *!   Key or index to change the value for.
+ *!
+ *! @param val
+ *!   Value to change to. If value is @[UNDEFINED] and @[map] is a mapping
+ *!   this function function behaves exactly as @expr{m_delete(map, key)@}.
+ *!
+ *! @returns
+ *!   Returns the previous value for @[key]. If @[map] is a mapping and
+ *!   there was no previous value @[UNDEFINED] is returned.
+ *!
+ *!   If @[map] is an object @[lfun::_m_replace()] will be called
+ *!   in it.
+ *!
+ *! @seealso
+ *!   @[m_delete()]
+ */
+PMOD_EXPORT
+PIKEFUN mixed atomic_get_set(mapping|array|object map, mixed index, mixed value)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tOr3(tFunc(tMap(tSetvar(0, tMix), tSetvar(1, tMix))
+		    tVar(0) tVar(1), tVar(1)),
+	       tFuncArg(tSetvar(2, tObj), tFindLFun(tVar(2), "_atomic_get_set")),
+	       tFunc(tArr(tSetvar(1, tMix)) tInt tVar(1), tVar(1)));
+{
+  struct program *p;
+  if (TYPEOF(*map) == PIKE_T_MAPPING) {
+    map_atomic_get_set(map->u.mapping, index, value);
+    args--;
+  } else if (TYPEOF(*map) == PIKE_T_ARRAY) {
+    if (TYPEOF(*index) == PIKE_T_INT) {
+      array_atomic_get_set(map->u.array, index->u.integer, value);
+      args--;
+    } else {
+      SIMPLE_ARG_TYPE_ERROR("atomic_get_set", 2, "int");
+    }
+  } else if ((TYPEOF(*map) == PIKE_T_OBJECT) && (p = map->u.object->prog)) {
+    int id = FIND_LFUN(p->inherits[SUBTYPEOF(*map)].prog, LFUN__ATOMIC_GET_SET);
+    if( id == -1 ) {
+      SIMPLE_ARG_TYPE_ERROR("atomic_get_set", 1,
+			    "object with lfun::_atomic_get_set()");
+    }
+    apply_low(map->u.object,
+	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 2);
+    args -= 2;
+  } else {
+    SIMPLE_ARG_TYPE_ERROR("atomic_get_set", 1, "mapping|array");
+  }
+  stack_pop_n_elems_keep_top(args);
+  return;
+}
+
 /*! @decl void m_add(multiset|object l, mixed val)
  *!
  *!   Add a member to a multiset.
