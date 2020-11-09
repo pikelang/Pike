@@ -201,6 +201,7 @@ const char *const lfun_names[]  = {
   "_m_delete",
   "_m_clear",
   "_m_add",
+  "_atomic_get_set",
   0,
 
   "_serialize",
@@ -275,6 +276,7 @@ const char *const lfun_names[]  = {
   "next",
   "index",
   "value",
+  "_atomic_get_set",
 #endif
 };
 
@@ -362,6 +364,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tZero,tVoid,tMix),	/* "_m_delete", */
   tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
   tFuncV(tZero, tVoid, tVoid),	/* "_m_add", */
+  tFuncV(tZero tZero, tVoid, tMix),	/* "_atomic_get_set", */
   0,
 
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_serialize", */
@@ -438,6 +441,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone, tZero, tMix),	/* "next", */
   tFuncV(tNone, tZero, tMix),	/* "index", */
   tFuncV(tNone, tZero, tMix),	/* "value", */
+  tFuncV(tZero tZero, tVoid, tMix),	/* "_atomic_get_set", */
 #endif
 };
 

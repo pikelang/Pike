@@ -156,6 +156,7 @@ enum LFUN {
     LFUN__M_DELETE,
     LFUN__M_CLEAR,
     LFUN__M_ADD,
+    LFUN__ATOMIC_GET_SET,
 
     /* Group 8 */
     LFUN__SERIALIZE		= 0x80,
@@ -238,6 +239,7 @@ enum LFUN {
     LFUN_NEXT_FUN,
     LFUN_INDEX_FUN,
     LFUN_VALUE_FUN,
+    LFUN__ATOMIC_GET_SET,
 };
 #endif
 
