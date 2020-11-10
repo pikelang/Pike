@@ -1123,7 +1123,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! object to @[value].
  *!
  *! @seealso
- *!   @[predef::`[]=()], @[lfun::`->=()]
+ *!   @[predef::`[]=()], @[lfun::`->=()], @[lfun::_atomic_get_set()]
  */
 
 /*! @decl mixed lfun::`->(string index, object|void context, int|void access)
@@ -1192,7 +1192,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! object to @[value].
  *!
  *! @seealso
- *!   @[predef::`->=()], @[::`->=()], @[lfun::`[]=()]
+ *!   @[predef::`->=()], @[::`->=()], @[lfun::`[]=()],
+ *!   @[lfun::_atomic_get_set()]
  */
 
 /*! @decl int lfun::_sizeof()
@@ -1645,6 +1646,28 @@ static struct pike_type *lfun_setter_type_string = NULL;
 /*! @decl mixed lfun::_reverse(mixed ... options)
  *!
  *!   Called by @[reverse()].
+ */
+
+/* FIXME: lfun::next() */
+/* FIXME: lfun::index() */
+/* FIXME: lfun::prev() */
+
+/*! @decl mixed _atomic_get_set(mixed index, mixed value)
+ *!
+ *! Get and set the value for an index atomically.
+ *!
+ *! @param index
+ *!   Index for which to get and set the value.
+ *!
+ *! @param value
+ *!   Value to set.
+ *!
+ *! @returns
+ *!   Returns the previous value at index @[index].
+ *!
+ *! @seealso
+ *!  @[lfun::`->=()], @[lfun::`[]=()], @[atomic_get_set()],
+ *!  @[lfun::_m_delete()], @[lfun::`[]()], @[lfun::`->()]
  */
 
 /**** END FAKE LFUNS ****/
