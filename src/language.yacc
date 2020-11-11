@@ -118,6 +118,7 @@
 %token TOK_SAFE_APPLY "(?"
 %token TOK_BITS "bits"
 %token TOK_AUTO_ID "auto"
+%token TOK_ATOMIC_GET_SET "?="
 
 
 %right '='

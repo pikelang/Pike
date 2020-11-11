@@ -1194,6 +1194,9 @@ unknown_directive:
         SKIPN(-1); /* Undo GOBBLE('-') above */
       }
 
+      if (GOBBLE('='))
+	return TOK_ATOMIC_GET_SET;
+
       /* FALLTHRU */
 
     case ']':
