@@ -3334,6 +3334,14 @@ OPCODE0_PTRJUMP(F_CATCH_AT, "catch_at", I_UPDATE_ALL|I_RETURN, {
   }
 });
 
+OPCODE0(F_ATOMIC_GET_SET, "?=", I_UPDATE_SP, {
+  atomic_get_set_lvalue(Pike_sp-3, Pike_sp-1);
+  free_svalue(Pike_sp-3);
+  free_svalue(Pike_sp-2);
+  move_svalue(Pike_sp - 3, Pike_sp - 1);
+  Pike_sp-=2;
+});
+
 /*
 #undef PROG_COUNTER
 */

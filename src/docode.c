@@ -1318,6 +1318,24 @@ static int do_docode2(node *n, int flags)
       yyerror("[*] is not yet supported here\n");
     return emit_ltosval_call_and_assign( CAR(n), CAADR(n), CDADR(n) );
 
+  case F_ATOMIC_GET_SET:
+    if (CAR(n)->token == F_AUTO_MAP_MARKER) {
+      yyerror("Unsupported lvalue for =?.");
+      emit0(F_UNDEFINED);
+      return 1;
+    }
+    if (!(flags & DO_POP)) {
+      tmp1 = do_docode(CAR(n), DO_LVALUE);
+      if (do_docode(CDR(n), 0) != 1) yyerror("RHS is void!");
+      emit0(F_ATOMIC_GET_SET);
+      return 1;
+    }
+
+    yywarning("Use of operator =? without using return value.");
+    n->token = F_ASSIGN;
+
+    /* FALLTHROUGH */
+
   case F_ASSIGN:
 
     if( CAR(n)->token == F_AUTO_MAP_MARKER )

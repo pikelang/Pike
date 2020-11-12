@@ -3850,6 +3850,7 @@ assign: '='    { $$=F_ASSIGN; }
   | TOK_POW_EQ { $$=F_POW_EQ; }
   | TOK_MOD_EQ { $$=F_MOD_EQ; }
   | TOK_DIV_EQ { $$=F_DIV_EQ; }
+  | TOK_ATOMIC_GET_SET { $$=F_ATOMIC_GET_SET; }
   ;
 
 optional_comma: { $$=0; } | ',' { $$=1; };

@@ -653,6 +653,8 @@ void gc_mark_stack_external (struct pike_frame *frame,
 PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter_struct *interpreter);
 PMOD_EXPORT void init_interpreter(void);
 int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval);
+PMOD_EXPORT void atomic_get_set_lvalue(struct svalue *lval,
+				       struct svalue *from_to);
 PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from);
 PMOD_EXPORT union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
 void print_return_value(void);

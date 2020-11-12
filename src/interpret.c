@@ -400,6 +400,84 @@ int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
   return run_time_type;
 }
 
+PMOD_EXPORT void atomic_get_set_lvalue(struct svalue *lval,
+				       struct svalue *from_to)
+{
+  struct svalue tmp;
+
+  switch(TYPEOF(*lval))
+  {
+#if 0
+   case T_ARRAY_LVALUE:
+    {
+      INT32 e;
+      struct array *a;
+      TYPE_FIELD types = 0;
+      ONERROR err;
+      a=allocate_array(lval[1].u.array->size>>1);
+      SET_ONERROR(err, do_free_array, a);
+      for(e=0;e<a->size;e++) {
+	lvalue_to_svalue_no_free(ITEM(a)+e, ITEM(lval[1].u.array)+(e<<1));
+	types |= 1 << TYPEOF(ITEM(a)[e]);
+      }
+      a->type_field = types;
+      SET_SVAL(*to, T_ARRAY, 0, array, a);
+      UNSET_ONERROR(err);
+      break;
+    }
+#endif
+
+    case T_SVALUE_PTR:
+      dmalloc_touch_svalue(lval->u.lval);
+      tmp = *lval->u.lval;
+      *lval->u.lval = *from_to;
+      *from_to = tmp;
+      break;
+
+#if 0
+    case T_OBJECT:
+      /* FIXME: Index subtypes! */
+      if (TYPEOF(lval[1]) == T_OBJ_INDEX)
+	run_time_type = low_object_index_no_free(to, lval->u.object,
+						 lval[1].u.identifier);
+      else
+	run_time_type = object_index_no_free(to, lval->u.object,
+					     SUBTYPEOF(*lval), lval+1);
+      break;
+#endif
+
+    case T_ARRAY:
+      if (TYPEOF(lval[1]) == T_INT) {
+	array_atomic_get_set(lval->u.array, lval[1].u.integer, from_to);
+      } else {
+	index_error(0, 0, lval, lval+1,
+		    "Invalid array indexing for ?=.\n");
+      }
+      break;
+
+    case T_MAPPING:
+      map_atomic_get_set(lval->u.mapping, lval+1, from_to);
+      break;
+
+#if 0
+    case T_MULTISET:
+      if(multiset_member(lval->u.multiset,lval+1))
+      {
+	SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, 1);
+      }else{
+	SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
+      }
+      break;
+#endif
+
+    default:
+      if(SAFE_IS_ZERO(lval))
+        index_error(0, 0, lval, lval+1, "Indexing the NULL value.\n");
+      else
+        index_error(0, 0, lval, lval+1, "Indexing a basic type.\n");
+  }
+}
+
 PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
 {
   switch(TYPEOF(*lval))
