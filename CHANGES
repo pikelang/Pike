@@ -3,6 +3,12 @@ Changes since Pike 8.0.702 (release 13)
 New Features
 ------------
 
+o Core
+
+  - Added "->?" as the safe indexing variant of "->".
+
+  - Added int(7,8,16bit).
+
 o ADT.History
 
   Support encode/decode_value().
@@ -10,6 +16,11 @@ o ADT.History
 o Pike.FakeObject
 
   This is used as a placeholder used in place of other objects in backtraces.
+
+o Pike.DestructImmediate
+
+  An empty class that can be inherited to get the PROGRAM_DESTRUCT_IMMEDIATE 
+  flag set.
 
 o Image.Dims.exif_get and Image.exif_decode
 
@@ -24,6 +35,9 @@ o Concurrent
 
   - Rewrite timeout() to reduce the memory footprint of a future in the
     common case.
+
+  - Added query_{success,failure}_callbacks() and  try_get() to 
+    Concurrent.Future.
 
 o Process.Process
 
@@ -42,6 +56,14 @@ o Standards.X509
   Standards.X509 now allows the user to select acceptable signature
   algorithms to be used in the verification of certificates.
 
+o Stdio.Buffer
+
+  Added truncate() and the ability to search for substrings.
+
+o Stdio.File
+
+  Support openat() with a single argument().
+
 o Stdio.PROP_TTY
 
   Stdio.File()->pipe() can now be used to create tty-capable
@@ -49,6 +71,10 @@ o Stdio.PROP_TTY
 
 Bug fixes
 ---------
+
+o ADT.CritBit.FloatTree
+
+  Fix FloatTree when using 128bit floats.
 
 o ADT.CritBit.IntTree
 
@@ -92,15 +118,33 @@ o describe_backtrace()
 
   - Fix clipped/canclip propagation.
 
+o mktime()
+
+  Fix zone handling when localtime is in daylight savings time.
+
+o strftime()
+
+  Remove non-standard conversions %k and %l.
+
 o types()
 
   Fixed reference leak.
+
+o crypt()
+
+  Do not throw errorss on validation failure. Primarily ocurrs on 
+  RHEL 8, return a failure code instead, consistent with historical
+  use.
+
+o Backend.PollBackend
+
+  Signal read events on POLLHUP.
 
 o Calendar
 
   - Fixed typo in the Catalan word for the month December.
 
-  - Updated tzdata to 2018g.
+  - Updated tzdata to 2019c.
 
 o Compiler
 
@@ -125,6 +169,9 @@ o Concurrent.Promise
   - Convert errors thrown by the executor passed to Concurrent.Promise()
     on create into promise rejection.
 
+  - Fixes for some recursive mutex lock errors.
+
+
 o Crypto.ECC
 
   Now works against Nettle 3.5.
@@ -141,12 +188,20 @@ o Filesystem.Tar
   and then chmod(), restoring the historical order for chown() and
   chmod().
 
+o Gettext
+
+  Prevent argument of textdomain from being empty.  
+
 o Image.Dims
 
   - Fixed the inconsistency that Image.Dims.get_JPEG (and thus
     Image.Dims.get) would flip the dimensions on JPEGs with EXIF
     orientation information, even though Image.JPEG.decode does not
     actually perform the rotations.
+
+o Inotify
+
+  Improved handling of invalid event callbacks. [bug 8042]
 
 o Odbc
 
@@ -158,6 +213,10 @@ o Parser.HTML
   Fixed a Pike stack overflow occuring with certain inputs to the HTML
   parser.
 
+o Pike.count_memory
+
+  Prevents a loop with ADT.List objects.
+
 o Process.run
 
   - Don't error if stdin modifier is supplied as the empty string.
@@ -168,6 +227,12 @@ o Protoocls.HTTP
   - Protocols.HTTP.do_async_proxied_method() did not pass on request
     headers unless credentials were given to the proxy or the protocol
     to be used was HTTPS.
+
+  - Add Host header to proxied requests.
+
+o Protocols.HTTP.Server
+
+  Fixed bug in Request()->update_mime_var(). [bug 10033]
 
 o Protocols.HTTP.Session
 
@@ -182,6 +247,12 @@ o Protocols.HTTP.Session
     This should alleviate issues with stuff being left around from
     previous queries.
 
+o Protocols.DNS
+
+  Improved error handling when calling async callbacks.
+
+  Survive Stdio.UDP()->bind() failing with EACCES.
+
 o Protocols.HTTP.Query
 
   On Solaris 11 Stdio.File()->connect() often fails with EADDRINUSE.
@@ -193,9 +264,18 @@ o Protocols.Websocket
 
 o Runtime
 
-  Certain operations on arrays of only objects could have triggered a type
-  confusion under some circumstances, causing integers to be freed as
-  objects, and thus a NULL derefence (SIGSEGV).
+  - Certain operations on arrays of only objects could have triggered a type
+    confusion under some circumstances, causing integers to be freed as
+    objects, and thus a NULL derefence (SIGSEGV).
+
+  - Fix some gratuitous rounding to double with long-double-precision.
+
+  - Improved Fix some gratuitous rounding to double with
+    long-double-precision.
+
+o Search.Filter.HTML
+
+  Fix title always being set to "". [bug 10020]
 
 o Sql.pgsql
 
@@ -221,6 +301,8 @@ o Sql.pgsql
 
   - resync() is synchronous now, and prevents race conditions
     if followed back-to-back with new queries.
+
+  - disregard pending statements on connection destruction.
 
 o SSL
 
@@ -252,12 +334,23 @@ o SSL.File
 
 o Standards.JSON
 
-  encode() now allows other threads to run every now and then.
+  - encode() now allows other threads to run every now and then.
+
+  - Fix floating point literals with long-double-precision
+
 
 o Standards.EXIF
 
   Improved detection of EXIF section in get_properties().
 
+o Standards.URI
+
+  Updated list of unsafe characters to RFC 3986. [bug 8004]
+
+o Standards.X509
+
+  Use old syntax for compatibility.
+ 
 o sybase
 
   The module's configure script now respects ABI suffixes when searching
@@ -269,6 +362,10 @@ o System
     system level syslog() may access the string pointed to by the ident
     passed to openlog. The reference will be released after a subsequent
     call to openlog() or closelog().
+
+o Thread.MutexKey
+
+  When simulated, mark for immediate destruction.
 
 o Thread.Queue
 
@@ -317,6 +414,15 @@ o Improved pkg-config search path detection on Solaris.
   a SIGSEGV in ffi_closure_unix64_inner() due to the differing sizes
   of ffi_closure in 32-bit and 64-bit abi.
 
+o Check for actual availability of YP functions, not just headers.
+
+o Attempt to use paxctl to alter the PaX flags for the pike binary to 
+  allow for generation of machine code on NetBSD.
+
+o Silence GL deprecation warning and fix a missing definition error on
+  Darwin for newer versions of MacOS.
+
+o Fix check for my_bool and compilation errors related to MySQL 8.
 
 Changes since Pike 8.0.610 (release 12)
 
