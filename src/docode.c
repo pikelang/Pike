@@ -1320,7 +1320,7 @@ static int do_docode2(node *n, int flags)
 
   case F_ATOMIC_GET_SET:
     if (CAR(n)->token == F_AUTO_MAP_MARKER) {
-      yyerror("Unsupported lvalue for =?.");
+      yyerror("Unsupported lvalue for ?=.");
       emit0(F_UNDEFINED);
       return 1;
     }
@@ -1331,7 +1331,7 @@ static int do_docode2(node *n, int flags)
       return 1;
     }
 
-    yywarning("Use of operator =? without using return value.");
+    yywarning("Use of operator ?= without using return value.");
     n->token = F_ASSIGN;
 
     /* FALLTHROUGH */
