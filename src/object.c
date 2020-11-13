@@ -1624,6 +1624,161 @@ PMOD_EXPORT int object_index_no_free(struct svalue *to,
   }
 }
 
+static void object_atomic_get_set_index(struct object *o, union idptr func,
+					int rtt, struct svalue *from_to)
+{
+  struct svalue tmp;
+  do {
+    void *ptr = PIKE_OBJ_STORAGE(o) + func.offset;
+    union anything *u = (union anything *)ptr;
+    struct svalue *to = (struct svalue *)ptr;
+    switch(rtt) {
+    case T_SVALUE_PTR: case T_OBJ_INDEX:
+      Pike_error("Cannot assign functions or constants.\n");
+      break;
+    case PIKE_T_FREE:
+      Pike_error("Attempt to store data in extern variable.\n");
+      break;
+
+    case PIKE_T_GET_SET:
+      {
+	int fun = func.gs_info.setter;
+	if (fun >= 0) {
+	  DECLARE_CYCLIC();
+	  if (!BEGIN_CYCLIC(o, (size_t) fun)) {
+	    SET_CYCLIC_RET(1);
+	    push_svalue(from_to);
+	    apply_low(o, fun, 1);
+	    *from_to = Pike_sp[-1];
+	    Pike_sp--;
+	  } else {
+	    END_CYCLIC();
+	    Pike_error("Cyclic loop on setter.\n");
+	  }
+	  END_CYCLIC();
+	} else {
+	  Pike_error("No setter for variable.\n");
+	}
+	return;
+      }
+
+    /* Partial code duplication from assign_to_short_svalue. */
+    case T_MIXED:
+      tmp = *to;
+      *to = *from_to;
+      *from_to = tmp;
+      return;
+    case PIKE_T_NO_REF_MIXED:
+      /* Don't count references to ourselves to help the gc. DDTAH. */
+      dmalloc_touch_svalue(to);
+      if ((TYPEOF(*to) == T_OBJECT || TYPEOF(*to) == T_FUNCTION) &&
+	  to->u.object == o) {
+	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" ref_global"));
+	add_ref(o);
+#ifdef DEBUG_MALLOC
+      } else {
+	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
+	dmalloc_touch_svalue (to);
+#endif /* DEBUG_MALLOC */
+      }
+      tmp = *to;
+      *to = *from_to;
+      *from_to = tmp;
+      dmalloc_touch_svalue (to);
+      if ((TYPEOF(*to) == T_OBJECT || TYPEOF(*to) == T_FUNCTION) &&
+	  (to->u.object == o)) {
+	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" self_global"));
+	dmalloc_touch_svalue (to);
+	sub_ref(o);
+      } else {
+#ifdef DEBUG_MALLOC
+	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
+#endif /* DEBUG_MALLOC */
+      }
+      return;
+
+    case T_INT:
+    case PIKE_T_NO_REF_INT:
+      if (TYPEOF(*from_to) != T_INT)
+	break;
+      {
+	INT_TYPE tmp_int = u->integer;
+	u->integer = from_to->u.integer;
+	SET_SVAL(*from_to, T_INT, NUMBER_NUMBER, integer, tmp_int);
+      }
+      return;
+    case T_FLOAT:
+    case PIKE_T_NO_REF_FLOAT:
+      if (TYPEOF(*from_to) != T_FLOAT)
+	break;
+      {
+	FLOAT_TYPE tmp_float = u->float_number;
+	u->float_number = from_to->u.float_number;
+	from_to->u.float_number = tmp_float;
+      }
+      return;
+
+    case PIKE_T_NO_REF_OBJECT:
+      {
+        int is_zero = UNSAFE_IS_ZERO(from_to);
+	struct object *tmp_o;
+
+        /* Don't count references to ourselves to help the gc. */
+        if ((TYPEOF(*from_to) != T_OBJECT) && !is_zero) break;
+        debug_malloc_touch(u->object);
+	tmp_o = u->object;
+	if (tmp_o == o) add_ref(tmp_o);
+        if (is_zero) {
+          debug_malloc_touch(u->ptr);
+          u->refs = NULL;
+        } else {
+	  u->refs = from_to->u.refs;
+	  debug_malloc_touch(u->refs);
+	  if (u->object == o) {
+	    debug_malloc_touch(o);
+	    sub_ref(u->dummy);
+#ifdef DEBUG_MALLOC
+	  } else {
+	    debug_malloc_touch(o);
+#endif /* DEBUG_MALLOC */
+	  }
+	}
+	if (tmp_o) {
+	  SET_SVAL(*from_to, T_OBJECT, 0, object, tmp_o);
+	} else {
+	  SET_SVAL(*from_to, T_INT, NUMBER_NUMBER, integer, 0);
+	}
+      }
+      return;
+
+    default:
+      {
+        int is_zero = UNSAFE_IS_ZERO(from_to);
+	void *tmp_refs;
+        rtt &= ~PIKE_T_NO_REF_FLAG;
+        if ((rtt != TYPEOF(*from_to)) && !is_zero) break;	/* Error. */
+        debug_malloc_touch(u->refs);
+	tmp_refs = u->refs;
+        if (is_zero) {
+          debug_malloc_touch(u->ptr);
+          u->refs = NULL;
+        } else {
+	  u->refs = from_to->u.refs;
+	}
+	if (tmp_refs) {
+	  SET_SVAL(*from_to, rtt, 0, refs, tmp_refs);
+	} else {
+	  SET_SVAL(*from_to, T_INT, NUMBER_NUMBER, integer, 0);
+	}
+        return;
+      }
+    }
+    Pike_error("Wrong type in assignment, expected %s, got %s.\n",
+	       get_name_of_type(rtt & ~PIKE_T_NO_REF_FLAG),
+	       get_name_of_type(TYPEOF(*from_to)));
+  } while(0);
+}
+
 static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 				   struct svalue *from)
 {
