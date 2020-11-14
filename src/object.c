@@ -1782,6 +1782,22 @@ static void object_atomic_get_set_index(struct object *o, union idptr func,
 static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 				   struct svalue *from)
 {
+#if 0
+  /* Enable this code to perform heavy testing of object_atomic_get_set().
+   *
+   * It is disabled by default since it is (likely) slightly slower
+   * than the original, and this is a commonly called function.
+   */
+  struct svalue tmp;
+  ONERROR err;
+
+  assign_svalue_no_free(&tmp, from);
+  SET_ONERROR(err, do_free_svalue, &tmp);
+
+  object_atomic_get_set_index(o, func, rtt, &tmp);
+
+  CALL_AND_UNSET_ONERROR(err);
+#else
   do {
     void *ptr = PIKE_OBJ_STORAGE(o) + func.offset;
     union anything *u = (union anything *)ptr;
@@ -1918,6 +1934,7 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 	       get_name_of_type(rtt & ~PIKE_T_NO_REF_FLAG),
 	       get_name_of_type(TYPEOF(*from)));
   } while(0);
+#endif
 }
 
 /* Assign a variable through internal indexing, i.e. directly by
