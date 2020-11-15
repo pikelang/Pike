@@ -126,9 +126,20 @@ PMOD_EXPORT int object_index_no_free(struct svalue *to,
 				     struct object *o,
 				     int inherit_level,
 				     struct svalue *key);
+PMOD_EXPORT void object_low_atomic_get_set_index(struct object *o,
+						 int f,
+						 struct svalue *from_to);
 PMOD_EXPORT void object_low_set_index(struct object *o,
 				      int f,
 				      struct svalue *from);
+PMOD_EXPORT void object_atomic_get_set_index2(struct object *o,
+					      int inherit_level,
+					      struct svalue *key,
+					      struct svalue *from_to);
+PMOD_EXPORT void object_atomic_get_set_index(struct object *o,
+					     int inherit_level,
+					     struct svalue *key,
+					     struct svalue *from_to);
 PMOD_EXPORT void object_set_index2(struct object *o,
 				   int inherit_level,
 				   struct svalue *key,

@@ -434,17 +434,17 @@ PMOD_EXPORT void atomic_get_set_lvalue(struct svalue *lval,
       *from_to = tmp;
       break;
 
-#if 0
     case T_OBJECT:
       /* FIXME: Index subtypes! */
       if (TYPEOF(lval[1]) == T_OBJ_INDEX)
-	run_time_type = low_object_index_no_free(to, lval->u.object,
-						 lval[1].u.identifier);
+	object_low_atomic_get_set_index(lval->u.object,
+					lval[1].u.identifier,
+					from_to);
       else
-	run_time_type = object_index_no_free(to, lval->u.object,
-					     SUBTYPEOF(*lval), lval+1);
+	object_atomic_get_set_index(lval->u.object,
+				    SUBTYPEOF(*lval), lval+1,
+				    from_to);
       break;
-#endif
 
     case T_ARRAY:
       if (TYPEOF(lval[1]) == T_INT) {

@@ -1624,8 +1624,9 @@ PMOD_EXPORT int object_index_no_free(struct svalue *to,
   }
 }
 
-static void object_atomic_get_set_index(struct object *o, union idptr func,
-					int rtt, struct svalue *from_to)
+static void object_lower_atomic_get_set_index(struct object *o,
+					      union idptr func,
+					      int rtt, struct svalue *from_to)
 {
   struct svalue tmp;
   do {
@@ -1783,7 +1784,10 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 				   struct svalue *from)
 {
 #if 0
-  /* Enable this code to perform heavy testing of object_atomic_get_set().
+  /* Alternative implementation.
+   *
+   * Enable this code to perform heavy testing of
+   * object_lower_atomic_get_set_index().
    *
    * It is disabled by default since it is (likely) slightly slower
    * than the original, and this is a commonly called function.
@@ -1794,7 +1798,7 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
   assign_svalue_no_free(&tmp, from);
   SET_ONERROR(err, do_free_svalue, &tmp);
 
-  object_atomic_get_set_index(o, func, rtt, &tmp);
+  object_lower_atomic_get_set_index(o, func, rtt, &tmp);
 
   CALL_AND_UNSET_ONERROR(err);
 #else
@@ -1937,6 +1941,105 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 #endif
 }
 
+/* Atomically swap the value of a variable and a specified svalue
+ * through internal indexing, i.e. directly by identifier index
+ * without going through `->= or `[]= lfuns.
+ */
+PMOD_EXPORT void object_low_atomic_get_set_index(struct object *o,
+						 int f,
+						 struct svalue *from_to)
+{
+  struct identifier *i;
+  struct program *p = NULL;
+  struct reference *ref;
+  int rtt, id_flags;
+
+  while(1) {
+    struct external_variable_context loc;
+
+    if(!o || !(p=o->prog))
+    {
+      Pike_error("Lookup in destructed object.\n");
+      UNREACHABLE(return);
+    }
+
+    debug_malloc_touch(o);
+    debug_malloc_touch(o->storage);
+
+    if ((ref = PTR_FROM_INT(p, f))->run_time_type != PIKE_T_UNKNOWN) {
+      /* Cached vtable lookup.
+       *
+       * The most common cases of object indexing should match these.
+       */
+      object_lower_atomic_get_set_index(o, ref->func,
+					ref->run_time_type, from_to);
+      return;
+    }
+
+    i=ID_FROM_INT(p, f);
+
+    if (!IDENTIFIER_IS_ALIAS(i->identifier_flags)) break;
+
+    loc.o = o;
+    loc.inherit = INHERIT_FROM_INT(p, f);
+    loc.parent_identifier = f;
+    find_external_context(&loc, i->func.ext_ref.depth);
+    f = i->func.ext_ref.id + loc.inherit->identifier_level;
+    o = loc.o;
+  }
+
+  check_destructed(from_to);
+  rtt = i->run_time_type;
+  id_flags = i->identifier_flags;
+
+  if(!IDENTIFIER_IS_VARIABLE(id_flags))
+  {
+    Pike_error("Cannot assign functions or constants.\n");
+  }
+  else if(rtt == T_MIXED)
+  {
+    ref->func.offset = INHERIT_FROM_INT(p, f)->storage_offset +
+      i->func.offset;
+    ref->run_time_type = i->run_time_type;
+    if (id_flags & IDENTIFIER_NO_THIS_REF) {
+      ref->run_time_type |= PIKE_T_NO_REF_FLAG;
+    }
+    object_lower_atomic_get_set_index(o, ref->func,
+				      ref->run_time_type, from_to);
+  }
+  else if (rtt == PIKE_T_GET_SET)
+  {
+    /* Getter/setter type variable. */
+    struct reference *ref = p->identifier_references + f;
+    struct program *pp = p->inherits[ref->inherit_offset].prog;
+    int fun = i->func.gs_info.getter;
+    if (fun >= 0) {
+      fun += p->inherits[ref->inherit_offset].identifier_level;
+    }
+    ref->func.gs_info.getter = fun;
+    fun = i->func.gs_info.setter;
+    if (fun >= 0) {
+      fun += p->inherits[ref->inherit_offset].identifier_level;
+    }
+    ref->func.gs_info.setter = fun;
+    ref->run_time_type = PIKE_T_GET_SET;
+    object_lower_atomic_get_set_index(o, ref->func,
+				      ref->run_time_type, from_to);
+  }
+  else if (rtt == PIKE_T_FREE) {
+    Pike_error("Attempt to store data in extern variable %S.\n", i->name);
+  } else {
+    ref->func.offset = INHERIT_FROM_INT(p, f)->storage_offset +
+      i->func.offset;
+    ref->run_time_type = i->run_time_type;
+    if (id_flags & IDENTIFIER_NO_THIS_REF) {
+      ref->run_time_type |= PIKE_T_NO_REF_FLAG;
+    }
+    object_lower_atomic_get_set_index(o, ref->func,
+				      ref->run_time_type, from_to);
+  }
+}
+
 /* Assign a variable through internal indexing, i.e. directly by
  * identifier index without going through `->= or `[]= lfuns. */
 PMOD_EXPORT void object_low_set_index(struct object *o,
@@ -2027,6 +2130,128 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
       ref->run_time_type |= PIKE_T_NO_REF_FLAG;
     }
     object_lower_set_index(o, ref->func, ref->run_time_type, from);
+  }
+}
+
+/* Assign a variable without going through `->= or `[]= lfuns. If
+ * index is a string then the externally visible identifiers are
+ * indexed. If index is T_OBJ_INDEX then any identifier is accessed
+ * through identifier index. */
+PMOD_EXPORT void object_atomic_get_set_index2(struct object *o,
+					      int inherit_number,
+					      struct svalue *index,
+					      struct svalue *from_to)
+{
+  struct program *p;
+  struct inherit *inh;
+  int f = -1;
+
+  if(!o || !(p=o->prog))
+  {
+    Pike_error("Lookup in destructed object.\n");
+    UNREACHABLE(return);
+  }
+
+  p = (inh = p->inherits + inherit_number)->prog;
+
+  switch(TYPEOF(*index))
+  {
+  case T_STRING:
+    f=find_shared_string_identifier(index->u.string, p);
+    if (f >= 0) f += inh->identifier_level;
+    break;
+
+  case T_OBJ_INDEX:
+    f=index->u.identifier;
+    break;
+
+  default:
+#ifdef PIKE_DEBUG
+    if (TYPEOF(*index) > MAX_TYPE)
+      Pike_fatal ("Invalid type %d in index.\n", TYPEOF(*index));
+#endif
+    Pike_error("Lookup on non-string value.\n");
+  }
+
+  if(f < 0)
+  {
+    if (TYPEOF(*index) == T_STRING && index->u.string->len < 1024)
+      Pike_error("No such variable (%S) in object.\n", index->u.string);
+    else
+      Pike_error("No such variable in object.\n");
+  }else{
+    object_low_atomic_get_set_index(o, f, from_to);
+  }
+}
+
+/* Get a variable through external indexing, i.e. by going through
+ * `-> or `[] lfuns, not seeing private and protected etc. */
+PMOD_EXPORT void object_atomic_get_set_index(struct object *o,
+					     int inherit_number,
+					     struct svalue *index,
+					     struct svalue *from_to)
+{
+  struct program *p = NULL;
+  struct inherit *inh;
+  int lfun,l;
+
+  if(!o || !(p=o->prog))
+  {
+    Pike_error("Lookup in destructed object.\n");
+    UNREACHABLE(return);
+  }
+
+  p = (inh = p->inherits + inherit_number)->prog;
+
+#ifdef PIKE_DEBUG
+  if (TYPEOF(*index) > MAX_TYPE)
+    Pike_fatal ("Invalid index type %d.\n", TYPEOF(*index));
+#endif
+
+  lfun=ARROW_INDEX_P(index) ? LFUN_ARROW : LFUN_INDEX;
+
+  if(p->flags & PROGRAM_FIXED)
+  {
+    l = QUICK_FIND_LFUN(p, lfun);
+  }else{
+    if(!(p->flags & PROGRAM_PASS_1_DONE))
+    {
+      if(report_compiler_dependency(p))
+      {
+#if 0
+	struct svalue tmp;
+	fprintf(stderr,"Placeholder deployed for %p when indexing ", p);
+	SET_SVAL(tmp, T_OBJECT, 0, object, o);
+	print_svalue (stderr, &tmp);
+	fputs (" with ", stderr);
+	print_svalue (stderr, index);
+	fputc ('\n', stderr);
+#endif
+	free_svalue(from_to);
+	SET_SVAL(*from_to, T_OBJECT, 0, object, placeholder_object);
+	add_ref(placeholder_object);
+	return;
+      }
+    }
+    l=low_find_lfun(p, lfun);
+  }
+  if(l != -1)
+  {
+#if 0
+    /* FIXME */
+    l += inh->identifier_level;
+    push_svalue(index);
+    apply_lfun(o, lfun, 1);
+    *from_to = Pike_sp[-1];
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
+    return;
+#else
+    /* Not yet supported. */
+    Pike_error("The ?= operator is not supported for this object.\n");
+#endif
+  } else {
+    object_atomic_get_set_index2(o, inherit_number, index, from_to);
   }
 }
 
