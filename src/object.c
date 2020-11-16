@@ -2237,19 +2237,15 @@ PMOD_EXPORT void object_atomic_get_set_index(struct object *o,
   }
   if(l != -1)
   {
-#if 0
-    /* FIXME */
     l += inh->identifier_level;
     push_svalue(index);
-    apply_lfun(o, lfun, 1);
+    push_svalue(from_to);
+    apply_lfun(o, lfun, 2);
+    free_svalue(from_to);
     *from_to = Pike_sp[-1];
     Pike_sp--;
     dmalloc_touch_svalue(Pike_sp);
     return;
-#else
-    /* Not yet supported. */
-    Pike_error("The ?= operator is not supported for this object.\n");
-#endif
   } else {
     object_atomic_get_set_index2(o, inherit_number, index, from_to);
   }
@@ -3388,10 +3384,10 @@ static void f_magic_index(INT32 args)
   }
 }
 
-/*! @decl void ::`->=(string index, mixed value, @
- *!                   object|void context, int|void access)
+/*! @decl mixed ::`->=(string index, mixed value, @
+ *!                    object|void context, int|void access)
  *!
- *! Builtin arrow set operator.
+ *! Builtin atomic arrow get and set operator.
  *!
  *! @param index
  *!   Symbol in @[context] to change the value of.
@@ -3418,6 +3414,9 @@ static void f_magic_index(INT32 args)
  *! This function indexes the current object with the string @[index],
  *! and sets it to @[value].
  *! This is useful when the arrow set operator has been overloaded.
+ *!
+ *! @returns
+ *!   Returns the previous value at index @[index] of the current object.
  *!
  *! @seealso
  *!   @[::`->()]
@@ -3498,8 +3497,13 @@ static void f_magic_set_index(INT32 args)
     else
       Pike_error("No such variable in object.\n");
   }
-  object_low_set_index(o, f+inherit->identifier_level, val);
-  pop_n_elems(args);
+
+  object_low_atomic_get_set_index(o, f+inherit->identifier_level, val);
+
+  if (args > 2) {
+    /* Make sure that val is at the top of the stack. */
+    pop_n_elems(args - 2);
+  }
 }
 
 /*! @decl array(string) ::_indices(object|void context, int|void access)

@@ -1091,10 +1091,10 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::`[]()], @[predef::`[..]]
  */
 
-/*! @decl void lfun::`[]=(zero index, zero value, @
- *!                       object|void context, int|void access)
+/*! @decl mixed lfun::`[]=(zero index, zero value, @
+ *!                        object|void context, int|void access)
  *!
- *!   Index assignment callback.
+ *!   Atomic get and set index callback.
  *!
  *! @param index
  *!   Index to change the value of.
@@ -1121,6 +1121,9 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! This function is to set the value at index @[index] of the current
  *! object to @[value].
+ *!
+ *! @returns
+ *!   Returns the previous value at index @[index] of the current object.
  *!
  *! @seealso
  *!   @[predef::`[]=()], @[lfun::`->=()], @[lfun::_atomic_get_set()]
@@ -1160,10 +1163,10 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::`->()], @[::`->()]
  */
 
-/*! @decl void lfun::`->=(string index, zero value, @
+/*! @decl mixed lfun::`->=(string index, zero value, @
  *!                        object|void context, int|void access)
  *!
- *!   Arrow index assignment callback.
+ *!   Atomic get and set arrow index callback.
  *!
  *! @param index
  *!   Symbol in @[context] to change the value of.
@@ -1190,6 +1193,9 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! This function is to set the value at symbol @[index] of the current
  *! object to @[value].
+ *!
+ *! @returns
+ *!   Returns the previous value at symbol @[index] of the current object.
  *!
  *! @seealso
  *!   @[predef::`->=()], @[::`->=()], @[lfun::`[]=()],
@@ -9504,7 +9510,9 @@ void init_program(void)
 #endif
 
   lfun_getter_type_string = make_pike_type(tFuncV(tNone, tVoid, tMix));
-  lfun_setter_type_string = make_pike_type(tFuncV(tZero, tVoid, tVoid));
+  lfun_setter_type_string =
+    make_pike_type(tOr(tDeprecated(tFuncV(tZero, tVoid, tVoid)),
+		       tFuncV(tZero, tVoid, tMix)));
 
   low_init_pike_compiler();
 
