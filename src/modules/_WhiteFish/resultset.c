@@ -990,9 +990,10 @@ void init_resultset_program(void)
   start_new_program();
   {
     ADD_STORAGE( struct result_set_p );
-    ADD_FUNCTION("cast", f_resultset_cast, tFunc( tStr, tMix ), ID_PRIVATE );
+    ADD_FUNCTION("cast", f_resultset_cast, tFunc( tStr, tMix ), ID_PROTECTED);
     ADD_FUNCTION("create",f_resultset_create,
-                 tFunc( tOr(tArr(tOr(tInt,tArr(tInt))),tVoid), tVoid ), 0);
+                 tFunc( tOr(tArr(tOr(tInt,tArr(tInt))),tVoid), tVoid ),
+		 ID_PROTECTED);
 
     ADD_FUNCTION("sort",f_resultset_sort,tFunc(tVoid,tObj),0);
     ADD_FUNCTION("sort_rev",f_resultset_sort_rev,tFunc(tVoid,tObj),0);
@@ -1004,21 +1005,21 @@ void init_resultset_program(void)
                  tFunc(tInt tInt,tArr(tArr(tInt))),0);
 
     ADD_FUNCTION( "or", f_resultset_or, tFunc(tObj,tObj), 0 );
-    ADD_FUNCTION( "`|", f_resultset_or, tFunc(tObj,tObj), 0 );
-    ADD_FUNCTION( "`+", f_resultset_or, tFunc(tObj,tObj), 0 );
+    ADD_FUNCTION( "`|", f_resultset_or, tFunc(tObj,tObj), ID_PROTECTED);
+    ADD_FUNCTION( "`+", f_resultset_or, tFunc(tObj,tObj), ID_PROTECTED);
 
     ADD_FUNCTION( "sub", f_resultset_sub, tFunc(tObj,tObj), 0 );
-    ADD_FUNCTION( "`-", f_resultset_sub, tFunc(tObj,tObj), 0 );
+    ADD_FUNCTION( "`-", f_resultset_sub, tFunc(tObj,tObj), ID_PROTECTED);
 
     ADD_FUNCTION( "add_ranking", f_resultset_add_ranking, tFunc(tObj,tObj), 0);
 
     ADD_FUNCTION( "intersect", f_resultset_intersect, tFunc(tObj,tObj), 0);
-    ADD_FUNCTION( "`&", f_resultset_intersect, tFunc(tObj,tObj), 0 );
+    ADD_FUNCTION( "`&", f_resultset_intersect, tFunc(tObj,tObj), ID_PROTECTED);
 
     ADD_FUNCTION("add", f_resultset_add, tFunc(tInt tInt,tVoid), 0 );
     ADD_FUNCTION("add_many", f_resultset_add_many,
                  tFunc(tArr(tInt) tArr(tInt),tVoid), 0 );
-    ADD_FUNCTION("_sizeof",f_resultset__sizeof,tFunc(tVoid,tInt), 0 );
+    ADD_FUNCTION("_sizeof",f_resultset__sizeof,tFunc(tVoid,tInt), ID_PROTECTED);
     ADD_FUNCTION("size",f_resultset__sizeof,tFunc(tVoid,tInt), 0 );
 
     /* debug related functions */
