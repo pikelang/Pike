@@ -9,7 +9,7 @@ int main()
 
 class Port
 {
-  Request request_program = Request;
+  program(Request) request_program = Request;
 }
 
 class Request
@@ -18,7 +18,8 @@ class Request
 
   void _attach_fd(Stdio.NonblockingStream _fd, void|Concurrent.Promise p)
   {
-    ::attach_fd(_fd, Port(), p->?success || _callback);
+    // NB: Do NOT use the inherited Port.
+    ::attach_fd(_fd, global::Port(), p->?success || _callback);
   }
 
   array _requests = ({});
