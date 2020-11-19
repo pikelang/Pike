@@ -918,7 +918,8 @@ void init_system_memory(void)
 		tOr3(tFunc(tVoid,tVoid),
 		     tFunc(tOr(tStr,tObj)
 			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
-		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)), 0);
+		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)),
+		ID_PROTECTED);
 
 #if defined(HAVE_SYS_SHM_H) || defined(WIN32SHM)
    ADD_FUNCTION("shmat", memory_shm, tFunc(tInt tInt, tInt), 0 );
@@ -944,17 +945,17 @@ void init_system_memory(void)
    ADD_FUNCTION("valid",memory_valid,tFunc(tVoid,tInt01),0);
    ADD_FUNCTION("writeable",memory_writeable,tFunc(tVoid,tInt01),0);
 
-   ADD_FUNCTION("_sizeof",memory__sizeof,tFunc(tVoid,tIntPos),0);
+   ADD_FUNCTION("_sizeof", memory__sizeof, tFunc(tVoid,tIntPos), ID_PROTECTED);
    ADD_FUNCTION("cast",memory_cast,
-		tFunc(tStr,tOr(tArr(tInt),tStr)),ID_PRIVATE);
+		tFunc(tStr,tOr(tArr(tInt),tStr)), ID_PROTECTED);
 
    ADD_FUNCTION("`[]",memory_index,
 		tOr(tFunc(tInt,tInt),
-		    tFunc(tInt tInt,tStr)),0);
+		    tFunc(tInt tInt,tStr)), ID_PROTECTED);
 
    ADD_FUNCTION("`[]=",memory_index_write,
 		tOr(tFunc(tInt tInt,tInt),
-		    tFunc(tInt tInt tStr,tStr)),0);
+		    tFunc(tInt tInt tStr,tStr)), ID_PROTECTED);
 
    ADD_FUNCTION("pread",memory_pread,tFunc(tInt tInt,tStr8),0);
    ADD_FUNCTION("pread16",memory_pread16,tFunc(tInt tInt,tStr16),0);
