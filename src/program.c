@@ -121,8 +121,6 @@ static struct pike_string *UNDEFINED_string;
 struct pike_string *parser_system_string;
 struct pike_string *type_check_system_string;
 
-struct pike_string *compat_lfun_destroy_string;
-
 /* NOTE: There is a corresponding list to this one in
    Tools.AutoDoc.PikeObjects
 
@@ -133,7 +131,7 @@ const char *const lfun_names[]  = {
 #ifdef PIKE_NEW_LFUN_LOOKUP
   "__INIT",
   "create",
-  "_destruct",
+  "_destruct destroy",
   "_sprintf",
   0,
 
@@ -208,15 +206,15 @@ const char *const lfun_names[]  = {
   "_deserialize",
   0,
 
-  "next",
-  "index",
-  "value",
+  "_iterator_next next",
+  "_iterator_index index",
+  "_iterator_value value",
   0,
   0,		/* End marker. */
 #else
   "__INIT",
   "create",
-  "_destruct",
+  "_destruct destroy",
   "`+",
   "`-",
   "`&",
@@ -273,17 +271,19 @@ const char *const lfun_names[]  = {
   "_m_clear",
   "_m_add",
   "_reverse",
-  "next",
-  "index",
-  "value",
+  "_iterator_next next",
+  "_iterator_index index",
+  "_iterator_value value",
   "_atomic_get_set",
 #endif
 };
 
 #ifdef PIKE_NEW_LFUN_LOOKUP
 struct pike_string *lfun_strings[0x100];
+struct pike_string *lfun_compat_strings[0x100];
 #else
 struct pike_string *lfun_strings[NELEM(lfun_names)];
+struct pike_string *lfun_compat_strings[NELEM(lfun_names)];
 #endif
 
 static struct mapping *lfun_ids;
@@ -371,9 +371,9 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_deserialize", */
   0,
 
-  tFuncV(tNone, tZero, tMix),	/* "next", */
-  tFuncV(tNone, tZero, tMix),	/* "index", */
-  tFuncV(tNone, tZero, tMix),	/* "value", */
+  tFuncV(tNone, tZero, tMix),	/* "_iterator_next", */
+  tFuncV(tNone, tZero, tMix),	/* "_iterator_index", */
+  tFuncV(tNone, tZero, tMix),	/* "_iterator_value", */
   0,
   0,		/* End marker. */
 
@@ -438,9 +438,9 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
   tFuncV(tZero, tVoid, tVoid),	/* "_m_add", */
   tFuncV(tNone, tOr(tZero, tVoid), tVoid),	/* "_reverse", */
-  tFuncV(tNone, tZero, tMix),	/* "next", */
-  tFuncV(tNone, tZero, tMix),	/* "index", */
-  tFuncV(tNone, tZero, tMix),	/* "value", */
+  tFuncV(tNone, tZero, tMix),	/* "_iterator_next", */
+  tFuncV(tNone, tZero, tMix),	/* "_iterator_index", */
+  tFuncV(tNone, tZero, tMix),	/* "_iterator_value", */
   tFuncV(tZero tZero, tVoid, tMix),	/* "_atomic_get_set", */
 #endif
 };
@@ -1654,9 +1654,9 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   Called by @[reverse()].
  */
 
-/* FIXME: lfun::next() */
-/* FIXME: lfun::index() */
-/* FIXME: lfun::prev() */
+/* FIXME: lfun::_iterator_next() */
+/* FIXME: lfun::_iterator_index() */
+/* FIXME: lfun::_iterator_prev() */
 
 /*! @decl mixed _atomic_get_set(mixed index, mixed value)
  *!
@@ -8033,17 +8033,20 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 					       dmalloc_touch(struct program *,
 							     p),
 					       SEE_PROTECTED);
-
-  if ((i < 0) && (lfun == LFUN__DESTRUCT)) {
-    /* Try the Pike 8.0 compatibility name. */
-    i = really_low_find_shared_string_identifier(compat_lfun_destroy_string,
-						 dmalloc_touch(struct program *,
+  if (i < 0) {
+    const struct pike_string *lfun_compat_name = lfun_compat_strings[lfun];
+    if (lfun_compat_name) {
+      /* Try the Pike 8.0 compatibility name. */
+      i = really_low_find_shared_string_identifier(lfun_compat_name,
+						   dmalloc_touch(struct program *,
 							       p),
-						 SEE_PROTECTED);
-    if ((i >= 0) && !(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(8,0)) {
-      struct compilation *c = MAYBE_THIS_COMPILATION;
-      if (c && !(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
-	yywarning("Compat: Substituting destroy() for _destruct().");
+						   SEE_PROTECTED);
+      if ((i >= 0) && !(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(8,0)) {
+	struct compilation *c = MAYBE_THIS_COMPILATION;
+	if (c && !(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
+	  yywarning("Compat: Substituting %S() for %S().",
+		    lfun_compat_name, lfun_name);
+	}
       }
     }
   }
@@ -9455,13 +9458,24 @@ void init_program(void)
   lfun_types = allocate_mapping(NUM_LFUNS + 1);
 #ifdef PIKE_NEW_LFUN_LOOKUP
   for (i=0; i < NELEM(lfun_names); i++,n++) {
+    const char *name, *compat_name;
     if (!lfun_names[i]) {
       n |= 0xf;
       continue;
     }
-    lfun_strings[n] =
-      make_shared_static_string(lfun_names[i],
-				strlen(lfun_names[i]), eightbit);
+    name = lfun_names[i];
+    compat_name = strchr(name, ' ');
+    if (compat_name) {
+      lfun_strings[n] =
+	make_shared_static_string(name, compat_name - name, eightbit);
+      lfun_compat_strings[n] =
+	make_shared_static_string(compat_name + 1,
+				  strlen(compat_name + 1), eightbit);
+    } else {
+      lfun_strings[n] =
+	make_shared_static_string(name, strlen(name), eightbit);
+      lfun_compat_strings[n] = NULL;
+    }
 
     SET_SVAL(id, T_INT, NUMBER_NUMBER, integer, n);
     SET_SVAL(key, T_STRING, 0, string, lfun_strings[n]);
@@ -9470,9 +9484,9 @@ void init_program(void)
     SET_SVAL(val, T_TYPE, 0, type, make_pike_type(raw_lfun_types[i]));
     mapping_insert(lfun_types, &key, &val);
 
-    if (n == LFUN__DESTRUCT) {
-      /* Special case for lfun::destroy(). */
-      SET_SVAL(key, T_STRING, 0, string, compat_lfun_destroy_string);
+    if (compat_name) {
+      /* Special case for lfun::destroy() et al. */
+      SET_SVAL(key, T_STRING, 0, string, lfun_compat_strings[n]);
       /* FIXME: Adjust the type to be __deprecated__? */
       mapping_insert(lfun_types, &key, &val);
       free_type(val.u.type);
@@ -9485,7 +9499,20 @@ void init_program(void)
   }
 #else
   for (i=0; i < NELEM(lfun_names); i++) {
-    lfun_strings[i] = make_shared_static_string(lfun_names[i], strlen(lfun_names[i]), eightbit);
+    const char *name, *compat_name;
+    name = lfun_names[i];
+    compat_name = strchr(name, ' ');
+    if (compat_name) {
+      lfun_strings[i] =
+	make_shared_static_string(name, compat_name - name, eightbit);
+      lfun_compat_strings[i] =
+	make_shared_static_string(compat_name + 1,
+				  strlen(compat_name + 1), eightbit);
+    } else {
+      lfun_strings[i] =
+	make_shared_static_string(name, strlen(name), eightbit);
+      lfun_compat_strings[i] = NULL;
+    }
 
     SET_SVAL(id, T_INT, NUMBER_NUMBER, integer, i);
     SET_SVAL(key, T_STRING, 0, string, lfun_strings[i]);
@@ -9494,9 +9521,9 @@ void init_program(void)
     SET_SVAL(val, T_TYPE, 0, type, make_pike_type(raw_lfun_types[i]));
     mapping_insert(lfun_types, &key, &val);
 
-    if (i == LFUN__DESTRUCT) {
-      /* Special case for lfun::destroy(). */
-      SET_SVAL(key, T_STRING, 0, string, compat_lfun_destroy_string);
+    if (compat_name) {
+      /* Special case for lfun::destroy() et al. */
+      SET_SVAL(key, T_STRING, 0, string, lfun_compat_strings[i]);
       /* FIXME: Adjust the type to be __deprecated__? */
       mapping_insert(lfun_types, &key, &val);
       free_type(val.u.type);
