@@ -1979,7 +1979,7 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
       }
       if ((id->name == lfun_strings[LFUN_CREATE]) ||
 	  (id->name == lfun_strings[LFUN__DESTRUCT]) ||
-	  (id->name == compat_lfun_destroy_string) ||
+	  (id->name == lfun_compat_strings[LFUN__DESTRUCT]) ||
 	  (id->name == lfun_strings[LFUN__SPRINTF])) {
 	/* Skip. We add a custom create() and _sprintf() below. */
 	continue;
