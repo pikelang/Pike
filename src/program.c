@@ -9451,8 +9451,6 @@ void init_program(void)
   MAKE_CONST_STRING(parser_system_string, "parser");
   MAKE_CONST_STRING(type_check_system_string, "type_check");
 
-  MAKE_CONST_STRING(compat_lfun_destroy_string, "destroy");
-
   /* NB: One extra entry needed for lfun::destroy(). */
   lfun_ids = allocate_mapping(NUM_LFUNS + 1);
   lfun_types = allocate_mapping(NUM_LFUNS + 1);
