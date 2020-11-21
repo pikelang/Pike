@@ -46,8 +46,8 @@ DECLARATIONS
  *! @[foreach] to iterate over objects conveniently.
  *!
  *! It's not an error to advance an iterator past the beginning or end
- *! of the data set; @[`!()] will only return true then, and @[index]
- *! and @[value] will return @[UNDEFINED]. An iterator in that state
+ *! of the data set; @[`!()] will only return true then, and @[_iterator_index]
+ *! and @[_iterator_value] will return @[UNDEFINED]. An iterator in that state
  *! need not keep track of positions, so it's undefined what happens
  *! if it's "moved back" into the set of items.
  *!
@@ -106,7 +106,7 @@ PIKECLASS Iterator
    *! throw an exception in that case.
    *!
    *! @seealso
-   *!   @[next], @[`+=], @[`-]
+   *!   @[_iterator_next], @[`+=], @[`-]
    */
   PIKEFUN Iterator `+(int steps)
     flags ID_PROTECTED|ID_OPTIONAL;
@@ -122,7 +122,7 @@ PIKECLASS Iterator
    *!
    *! @note
    *!   @[foreach] calls this function with a step value of @expr{1@}
-   *!   if @[next()] doesn't exist for compatibility with Pike 7.6
+   *!   if @[_iterator_next()] doesn't exist for compatibility with Pike 7.6
    *!   and earlier.
    *!
    *! @note
@@ -140,12 +140,10 @@ PIKECLASS Iterator
    *!
    *! @note
    *!   Even though this function is sufficient for @[foreach] to
-   *!   advance the iterator, @[next()] is the preferred API.
-   *!   @[next()] has the additional advantage of not being an
-   *!   lfun, so it is possible to advance the iterator by hand.
+   *!   advance the iterator, @[_iterator_next()] is the preferred API.
    *!
    *! @seealso
-   *!   @[next], @[`+], @[`-]
+   *!   @[_iterator_next], @[`+], @[`-]
    */
   PIKEFUN Iterator `+=(int steps)
     prototype;
@@ -160,14 +158,14 @@ PIKECLASS Iterator
    *! forward.
    *!
    *! @seealso
-   *!   @[next], @[`+], @[`+=]
+   *!   @[_iterator_next], @[`+], @[`+=]
    */
   PIKEFUN int(0..1) `-(int steps)
     flags ID_PROTECTED|ID_OPTIONAL;
     prototype;
   {}
 
-  /*! @decl mixed index()
+  /*! @decl mixed _iterator_index()
    *!
    *! Returns the current index, or @[UNDEFINED] if the iterator
    *! doesn't point to any item.
@@ -175,16 +173,18 @@ PIKECLASS Iterator
    *! If there's no obvious index set then the index is the current
    *! position in the data set, counting from @expr{0@} (zero).
    */
-  PIKEFUN mixed index()
+  PIKEFUN mixed _iterator_index()
+    flags ID_PROTECTED;
     prototype;
   {}
 
-  /*! @decl mixed value()
+  /*! @decl mixed _iterator_value()
    *!
    *! Returns the current value, or @[UNDEFINED] if the iterator
    *! doesn't point to any item.
    */
-  PIKEFUN mixed value()
+  PIKEFUN mixed _iterator_value()
+    flags ID_PROTECTED;
     prototype;
   {}
 
@@ -231,7 +231,7 @@ PIKECLASS Iterator
     prototype;
   {}
 
-  /*! @decl int next()
+  /*! @decl int _iterator_next()
    *!
    *! If this function is defined it should advance the iterator one
    *! step, just like @expr{@[`+=](1)@} would do.
@@ -250,7 +250,8 @@ PIKECLASS Iterator
    *! @seealso
    *!   @[`+], @[`+=], @[`-]
    */
-  PIKEFUN int(0..1) next()
+  PIKEFUN int(0..1) _iterator_next()
+    flags ID_PROTECTED;
     prototype;
   {}
 
@@ -307,7 +308,8 @@ PIKECLASS mapping_iterator
   CVAR struct mapping_data *md;
   CVAR struct keypair *current;
 
-  PIKEFUN mixed value()
+  PIKEFUN mixed _iterator_value()
+    flags ID_PROTECTED;
     {
       if(THIS->current)
 	push_svalue(& THIS->current->val);
@@ -317,7 +319,28 @@ PIKECLASS mapping_iterator
       }
     }
 
-  PIKEFUN mixed index()
+  PIKEFUN mixed _iterator_index()
+    flags ID_PROTECTED;
+    {
+      if(THIS->current)
+	push_svalue(& THIS->current->ind);
+      else
+      {
+	push_undefined();
+      }
+    }
+
+  PIKEFUN mixed value()		/* Compat. */
+    {
+      if(THIS->current)
+	push_svalue(& THIS->current->val);
+      else
+      {
+	push_undefined();
+      }
+    }
+
+  PIKEFUN mixed index()		/* Compat. */
     {
       if(THIS->current)
 	push_svalue(& THIS->current->ind);
@@ -442,7 +465,13 @@ PIKECLASS mapping_iterator
       REF_RETURN Pike_fp->current_object;
     }
 
-  PIKEFUN int next() { RETURN mi_step(THIS); }
+  PIKEFUN int _iterator_next()
+    flags ID_PROTECTED;
+  {
+    RETURN mi_step(THIS);
+  }
+  PIKEFUN int next() { RETURN mi_step(THIS); }	/* Compat. */
+
   PIKEFUN int `!() {
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
     RETURN (THIS->current == THIS->md->free_list);
@@ -514,7 +543,8 @@ PIKECLASS array_iterator
   CVAR int pos;
   CVAR struct array *a;
 
-  PIKEFUN mixed value()
+  PIKEFUN mixed _iterator_value()
+    flags ID_PROTECTED;
     {
       if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
       {
@@ -524,7 +554,28 @@ PIKECLASS array_iterator
       }
     }
 
-  PIKEFUN int index()
+  PIKEFUN int _iterator_index()
+    flags ID_PROTECTED;
+    {
+      if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
+      {
+	push_undefined();
+      }else{
+	RETURN THIS->pos;
+      }
+    }
+
+  PIKEFUN mixed value()		/* Compat. */
+    {
+      if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
+      {
+	push_undefined();
+      }else{
+	push_svalue(THIS->a->item + THIS->pos);
+      }
+    }
+
+  PIKEFUN int index()		/* Compat. */
     {
       if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
       {
@@ -595,7 +646,14 @@ PIKECLASS array_iterator
       REF_RETURN Pike_fp->current_object;
     }
 
-  PIKEFUN int next()
+  PIKEFUN int _iterator_next()
+    flags ID_PROTECTED;
+    {
+      THIS->pos++;
+      RETURN THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size;
+    }
+
+  PIKEFUN int next()		/* Compat. */
     {
       THIS->pos++;
       RETURN THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size;
@@ -654,7 +712,8 @@ PIKECLASS multiset_iterator
   CVAR int lock_index;
   CVAR ptrdiff_t nodepos;
 
-  PIKEFUN int value()
+  PIKEFUN int _iterator_value()
+    flags ID_PROTECTED;
     {
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
       if (THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos))
@@ -663,7 +722,26 @@ PIKECLASS multiset_iterator
 	push_multiset_value (THIS->l, THIS->nodepos);
     }
 
-  PIKEFUN mixed index()
+  PIKEFUN mixed _iterator_index()
+    flags ID_PROTECTED;
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos))
+	push_undefined();
+      else
+	push_multiset_index (THIS->l, THIS->nodepos);
+    }
+
+  PIKEFUN int value()		/* Compat. */
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos))
+	push_undefined();
+      else
+	push_multiset_value (THIS->l, THIS->nodepos);
+    }
+
+  PIKEFUN mixed index()		/* Compat. */
     {
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
       if (THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos))
@@ -756,7 +834,19 @@ PIKECLASS multiset_iterator
       RETURN THIS->nodepos >= 0;
     }
 
-  PIKEFUN int next()
+  PIKEFUN int _iterator_next()
+    flags ID_PROTECTED;
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos >= 0) {
+	THIS->nodepos = multiset_next (THIS->l, THIS->nodepos);
+	if (THIS->nodepos >= 0) RETURN 1;
+	sub_msnode_ref (THIS->l);
+      }
+      RETURN 0;
+    }
+
+  PIKEFUN int next()		/* Compat. */
     {
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
       if (THIS->nodepos >= 0) {
@@ -870,7 +960,8 @@ PIKECLASS string_iterator
   CVAR int pos;
   CVAR struct pike_string *s;
 
-  PIKEFUN int value()
+  PIKEFUN int _iterator_value()
+    flags ID_PROTECTED;
     {
       if(!THIS->s || THIS->pos < 0 || THIS->pos >= THIS->s->len)
       {
@@ -880,7 +971,28 @@ PIKECLASS string_iterator
       }
     }
 
-  PIKEFUN int index()
+  PIKEFUN int _iterator_index()
+    flags ID_PROTECTED;
+    {
+      if(!THIS->s || THIS->pos < 0 || THIS->pos >= THIS->s->len)
+      {
+	push_undefined();
+      }else{
+	RETURN THIS->pos;
+      }
+    }
+
+  PIKEFUN int value()		/* Compat. */
+    {
+      if(!THIS->s || THIS->pos < 0 || THIS->pos >= THIS->s->len)
+      {
+	push_undefined();
+      }else{
+	RETURN index_shared_string(THIS->s, THIS->pos);
+      }
+    }
+
+  PIKEFUN int index()		/* Compat. */
     {
       if(!THIS->s || THIS->pos < 0 || THIS->pos >= THIS->s->len)
       {
@@ -948,7 +1060,14 @@ PIKECLASS string_iterator
       REF_RETURN Pike_fp->current_object;
     }
 
-  PIKEFUN int next()
+  PIKEFUN int _iterator_next()
+    flags ID_PROTECTED;
+    {
+      THIS->pos++;
+      RETURN THIS->s && THIS->pos >= 0 && THIS->pos < THIS->s->len;
+    }
+
+  PIKEFUN int next()		/* Compat. */
     {
       THIS->pos++;
       RETURN THIS->s && THIS->pos >= 0 && THIS->pos < THIS->s->len;
@@ -1088,7 +1207,8 @@ PIKECLASS file_line_iterator
       return;
    }
 
-  PIKEFUN string value()
+  PIKEFUN string _iterator_value()
+    flags ID_PROTECTED;
     {
       if (THIS->current) {
 	ref_push_string(THIS->current);
@@ -1097,7 +1217,26 @@ PIKECLASS file_line_iterator
       }
     }
 
-  PIKEFUN int index()
+  PIKEFUN int _iterator_index()
+    flags ID_PROTECTED;
+    {
+      if (!THIS->current) {
+	push_undefined();
+      }else{
+	RETURN THIS->index;
+      }
+    }
+
+  PIKEFUN string value()	/* Compat. */
+    {
+      if (THIS->current) {
+	ref_push_string(THIS->current);
+      } else {
+	push_undefined();
+      }
+    }
+
+  PIKEFUN int index()		/* Compat. */
     {
       if (!THIS->current) {
 	push_undefined();
@@ -1136,7 +1275,14 @@ PIKECLASS file_line_iterator
       REF_RETURN Pike_fp->current_object;
     }
 
-  PIKEFUN int next()
+  PIKEFUN int _iterator_next()
+    flags ID_PROTECTED;
+    {
+      fl_find_next(THIS);
+      RETURN !!THIS->current;
+    }
+
+  PIKEFUN int next()		/* Compat. */
     {
       fl_find_next(THIS);
       RETURN !!THIS->current;
@@ -1439,7 +1585,8 @@ PIKECLASS string_split_iterator
       }
     }
 
-  PIKEFUN string value()
+  PIKEFUN string _iterator_value()
+    flags ID_PROTECTED;
     {
       if (THIS->current) {
 	ref_push_string(THIS->current);
@@ -1448,7 +1595,26 @@ PIKECLASS string_split_iterator
       }
     }
 
-  PIKEFUN int index()
+  PIKEFUN int _iterator_index()
+    flags ID_PROTECTED;
+    {
+      if (!THIS->current) {
+	push_undefined();
+      }else{
+	RETURN THIS->index;
+      }
+    }
+
+  PIKEFUN string value()	/* Compat. */
+    {
+      if (THIS->current) {
+	ref_push_string(THIS->current);
+      } else {
+	push_undefined();
+      }
+    }
+
+  PIKEFUN int index()		/* Compat. */
     {
       if (!THIS->current) {
 	push_undefined();
@@ -1491,7 +1657,14 @@ PIKECLASS string_split_iterator
     REF_RETURN Pike_fp->current_object;
   }
 
-  PIKEFUN int next()
+  PIKEFUN int _iterator_next()
+    flags ID_PROTECTED;
+    {
+      find_next(THIS);
+      RETURN !!THIS->current;
+    }
+
+  PIKEFUN int next()		/* Compat. */
     {
       find_next(THIS);
       RETURN !!THIS->current;
