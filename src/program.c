@@ -8043,6 +8043,28 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 						   SEE_PROTECTED);
       if ((i >= 0) && !(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(8,0)) {
 	struct compilation *c = MAYBE_THIS_COMPILATION;
+	if ((lfun >= LFUN__ITERATOR_NEXT_FUN) &&
+	    (lfun <= LFUN__ITERATOR_VALUE_FUN)) {
+	  /* Only fallback and warn if all three are implemented in old style.
+	   *
+	   * Otherwise the symbols are probably used for some
+	   * other purpose.
+	   *
+	   * Cf Calendar.TimeRanges.TimeRange.
+	   */
+	  int iterator_lfun;
+	  for (iterator_lfun = LFUN__ITERATOR_NEXT_FUN;
+	       iterator_lfun <= LFUN__ITERATOR_VALUE_FUN;
+	       iterator_lfun++) {
+	    if (really_low_find_shared_string_identifier(
+                  lfun_compat_strings[iterator_lfun],
+                  dmalloc_touch(struct program *, p),
+		  SEE_PROTECTED) < 0) {
+	      /* One of them is missing. */
+	      return -1;
+	    }
+	  }
+	}
 	if (c && !(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
 	  yywarning("Compat: Substituting %S() for %S().",
 		    lfun_compat_name, lfun_name);
