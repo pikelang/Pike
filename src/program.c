@@ -7188,6 +7188,40 @@ INT32 define_function(struct pike_string *name,
     }
 #endif /* PIKE_DEBUG */
     if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+      struct svalue *lfun_id = low_mapping_string_lookup(lfun_ids, name);
+      if (lfun_id && (TYPEOF(*lfun_id) == PIKE_T_INT)) {
+	if (lfun_compat_strings[lfun_id->u.integer] == name) {
+	  /* Compat lfun.
+	   *
+	   * Check if we actually have an lfun.
+	   *
+	   * NB: We're in the last pass, so all symbols should be
+	   *     present (at least for the Pike code case).
+	   */
+	  if ((lfun >= LFUN__ITERATOR_NEXT_FUN) &&
+	      (lfun <= LFUN__ITERATOR_VALUE_FUN)) {
+	    /* Only fallback and warn if all three are implemented in old style.
+	     *
+	     * Otherwise the symbols are probably used for some
+	     * other purpose.
+	     *
+	     * Cf Calendar.TimeRanges.TimeRange.
+	     */
+	    int iterator_lfun;
+	    for (iterator_lfun = LFUN__ITERATOR_NEXT_FUN;
+		 iterator_lfun <= LFUN__ITERATOR_VALUE_FUN;
+		 iterator_lfun++) {
+	      if (really_low_find_shared_string_identifier(
+                    lfun_compat_strings[iterator_lfun],
+                    dmalloc_touch(struct program *, p),
+		    SEE_PROTECTED) < 0) {
+		/* One of them is missing. */
+		goto skip_special_cases;
+	      }
+	    }
+	  }
+	}
+      }
       /* Inhibit deprecation warnings during the comparison. */
       c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
       if (!pike_types_le(type, lfun_type->u.type)) {
@@ -7210,9 +7244,9 @@ INT32 define_function(struct pike_string *name,
 	  !(orig_pragmas & ID_NO_DEPRECATION_WARNINGS) &&
 	  !deprecated_typep(type)) {
 	if (!(flags & (ID_PROTECTED|ID_PRIVATE))) {
-	  yywarning("Lfun %S is public.", name);
+	  yywarning("Lfun %S() is public.", name);
 	} else {
-	  yywarning("Lfun %S is private.", name);
+	  yywarning("Lfun %S() is private.", name);
 	}
       }
     }
@@ -7309,6 +7343,8 @@ INT32 define_function(struct pike_string *name,
       free_string(symbol);
     }
   }
+
+ skip_special_cases:
 
   if(IDENTIFIER_IS_C_FUNCTION(function_flags))
     prog->flags |= PROGRAM_HAS_C_METHODS;
