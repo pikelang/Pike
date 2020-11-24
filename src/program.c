@@ -7198,8 +7198,8 @@ INT32 define_function(struct pike_string *name,
 	   * NB: We're in the last pass, so all symbols should be
 	   *     present (at least for the Pike code case).
 	   */
-	  if ((lfun >= LFUN__ITERATOR_NEXT_FUN) &&
-	      (lfun <= LFUN__ITERATOR_VALUE_FUN)) {
+	  if ((lfun_id->u.integer >= LFUN__ITERATOR_NEXT_FUN) &&
+	      (lfun_id->u.integer <= LFUN__ITERATOR_VALUE_FUN)) {
 	    /* Only fallback and warn if all three are implemented in old style.
 	     *
 	     * Otherwise the symbols are probably used for some
@@ -7213,7 +7213,7 @@ INT32 define_function(struct pike_string *name,
 		 iterator_lfun++) {
 	      if (really_low_find_shared_string_identifier(
                     lfun_compat_strings[iterator_lfun],
-                    dmalloc_touch(struct program *, p),
+                    dmalloc_touch(struct program *, prog),
 		    SEE_PROTECTED) < 0) {
 		/* One of them is missing. */
 		goto skip_special_cases;
