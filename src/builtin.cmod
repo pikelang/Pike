@@ -6570,11 +6570,38 @@ PIKECLASS List
       RETURN (!THIS->cur->next || !THIS->cur->prev);
     }
 
-    PIKEFUN int(0..) index()
+    PIKEFUN int(0..) _iterator_index()
+      flags ID_PROTECTED
     {
       pop_n_elems(args);
       if (THIS->cur->next && THIS->cur->prev) {
 	push_int(THIS->ind);
+      } else {
+	push_undefined();
+      }
+    }
+
+    PIKEFUN int(0..) index()		/* Compat. */
+    {
+      pop_n_elems(args);
+      if (THIS->cur->next && THIS->cur->prev) {
+	push_int(THIS->ind);
+      } else {
+	push_undefined();
+      }
+    }
+
+    /*! @decl protected mixed _iterator_value()
+     *!
+     *! @returns
+     *!   Returns the value at the current position.
+     */
+    PIKEFUN mixed _iterator_value()
+      flags ID_PROTECTED;
+    {
+      pop_n_elems(args);
+      if (THIS->cur->next && THIS->cur->prev) {
+	push_svalue(&THIS->cur->val);
       } else {
 	push_undefined();
       }
@@ -6585,7 +6612,7 @@ PIKECLASS List
      *! @returns
      *!   Returns the value at the current position.
      */
-    PIKEFUN mixed value()
+    PIKEFUN mixed value()		/* Compat. */
     {
       pop_n_elems(args);
       if (THIS->cur->next && THIS->cur->prev) {
@@ -6628,6 +6655,31 @@ PIKECLASS List
       }
     }
 
+    /*! @decl protected int(0..1) _iterator_next()
+     *!
+     *!   Advance to the next element in the list.
+     *!
+     *! @returns
+     *!   Returns @expr{1@} on success, and @expr{0@} (zero)
+     *!   at the end of the list.
+     *!
+     *! @seealso
+     *!   @[prev()]
+     */
+    PIKEFUN int(0..1) _iterator_next()
+      flags ID_PROTECTED;
+    {
+      struct pike_list_node *next;
+      if ((next = THIS->cur->next)) {
+	free_list_node(THIS->cur);
+	add_ref(THIS->cur = next);
+	THIS->ind++;
+        if (next->next)
+          RETURN 1;
+      }
+      RETURN 0;
+    }
+
     /*! @decl int(0..1) next()
      *!
      *!   Advance to the next element in the list.
@@ -6639,7 +6691,7 @@ PIKECLASS List
      *! @seealso
      *!   @[prev()]
      */
-    PIKEFUN int(0..1) next()
+    PIKEFUN int(0..1) next()		/* Compat. */
     {
       struct pike_list_node *next;
       if ((next = THIS->cur->next)) {
