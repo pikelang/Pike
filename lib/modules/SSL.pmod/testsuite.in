@@ -322,6 +322,7 @@ test_do([[
 
     protected void create()
     {
+      ::create();
       // Test support for private FFDHE groups with the weakest MODP group.
       private_ffdhe_groups[GROUP_ffdhe_private0] = Crypto.DH.MODPGroup1;
     }
