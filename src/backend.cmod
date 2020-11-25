@@ -3484,7 +3484,6 @@ PIKECLASS PollDeviceBackend
   static void pdb_REOPEN_POLL_DEVICE(struct PollDeviceBackend_struct *me)
   {
     int fd;
-
     while ((close(me->set) < 0) && (errno == EINTR))
       ;
     while (((fd = OPEN_POLL_DEVICE(me)) < 0) && (errno == EINTR))
@@ -3636,6 +3635,15 @@ PIKECLASS PollDeviceBackend
 	  pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLOUT);
 	}
       }
+	  
+	  // TODO kqueue ADD fflags
+	        if (changed_events & PIKE_BIT_FD_FS_EVENT) {
+	  	if (new_events & PIKE_BIT_FD_FS_EVENT)
+	  	  pdb_MY_FD_SET2(&pdb->set, fd, MY_POLLFSEVENT, flags);
+	  	else {
+	  	    pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLFSEVENT);
+	  	}
+	  }
 
       if (new_events & PIKE_BIT_FD_FS_EVENT) {
 	struct fd_callback_box *box = safe_get_box(me, fd);
@@ -3718,14 +3726,7 @@ PIKECLASS PollDeviceBackend
 	}
       }
 
-// TODO kqueue ADD fflags
-      if (changed_events & PIKE_BIT_FD_FS_EVENT) {
-	if (new_events & PIKE_BIT_FD_FS_EVENT)
-	  pdb_MY_FD_SET2(&pdb->set, fd, MY_POLLFSEVENT, flags);
-	else {
-	    pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLFSEVENT);
-	}
-      }
+      
 
 #endif	/* !BACKEND_USES_POLL_DEVICE */
 
