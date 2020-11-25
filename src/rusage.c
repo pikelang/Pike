@@ -49,6 +49,7 @@
 #endif
 #include "pike_error.h"
 
+#include "pike_threadlib.h"
 /*
  * Here comes a long blob with stuff to see how to find out about
  * cpu usage.
@@ -832,6 +833,12 @@ void init_rusage (void)
   {
 #ifdef HAVE_HOST_GET_CLOCK_SERVICE
     init_mach_clock();
+
+	/* mach ports are invalid across fork() so we should re-initialize
+	   the mach clock service in the child. macOS 10.12+ enforce 
+	   this requirement
+	*/
+	th_atfork(NULL, NULL, init_mach_clock);
 #elif defined (MIGHT_HAVE_POSIX_REALTIME_GRT)
     /* Always exists according to POSIX - no need to check with sysconf. */
     get_real_time_impl = posix_realtime_grt_impl;
