@@ -80,13 +80,13 @@ class ScriptTestsuite(string file_name)
     return this;
   }
   protected int(0..1) `!() { return !file_name; }
-  int(0..0) next()
+  protected int(0..0) _iterator_next()
   {
     file_name = 0;
     return 0;
   }
-  int(0..) index() { return 0; }
-  Test value()
+  protected int(0..) _iterator_index() { return 0; }
+  protected Test _iterator_value()
   {
     return Test(file_name, 1, 1, "RUNCT",
                 sprintf("array a() { return Tools.Testsuite.run_script (({ %q })); }", file_name));
