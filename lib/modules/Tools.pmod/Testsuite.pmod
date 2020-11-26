@@ -590,9 +590,9 @@ class Testsuite
   protected int(0..) _sizeof();
   protected this_program `+(mixed steps);
   protected int(0..1) `!();
-  int(0..1) next();
-  int(0..) index();
-  Test value();
+  protected int(0..1) _iterator_next();
+  protected int(0..) _iterator_index();
+  protected Test _iterator_value();
   optional string name();
 }
 
@@ -681,7 +681,7 @@ class M4Testsuite
     return position >= sizeof(tests);
   }
 
-  int(0..) next()
+  protected int(0..) _iterator_next()
   {
     position++;
     return position < sizeof(tests);
@@ -695,12 +695,12 @@ class M4Testsuite
     return this;
   }
 
-  int index()
+  protected int _iterator_index()
   {
     return position;
   }
 
-  Test value()
+  protected Test _iterator_value()
   {
     if( `!() ) return UNDEFINED;
     Test ret = M4Test(tests[position]);
@@ -1036,7 +1036,7 @@ test_equal(max($2,$1,$3), $3)
     return (string)ret;
   }
 
-  Test value()
+  protected Test _iterator_value()
   {
     if( `!() ) return UNDEFINED;
     Test ret = tests[position];
