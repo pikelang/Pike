@@ -8134,7 +8134,12 @@ int lfun_lookup_id(struct pike_string *lfun_name)
 {
   struct svalue *id = low_mapping_string_lookup(lfun_ids, lfun_name);
   if (!id) return -1;
-  if (TYPEOF(*id) == T_INT) return id->u.integer;
+  if (TYPEOF(*id) == T_INT) {
+    if (lfun_strings[id->u.integer] == lfun_name) {
+      return id->u.integer;
+    }
+    return -1;		/* Compat lfun name. */
+  }
   my_yyerror("Bad entry in lfun lookup table for %S.", lfun_name);
   return -1;
 }
