@@ -227,7 +227,9 @@
 	    ref_push_object(Pike_fp->current_object);
 	}
 
-	PIKEFUN int next() {
+	PIKEFUN int _iterator_next()
+	  flags ID_PROTECTED;
+	{
 	    if(cmod_CONCAT_EVAL(tree_class,_,iterator_class,_step)()) {
 		push_int(1);
 		return;
@@ -236,7 +238,9 @@
 	    return;
 	}
 
-	PIKEFUN key_ptype index() {
+	PIKEFUN key_ptype _iterator_index()
+	  flags ID_PROTECTED;
+	{
 	    if (THIS->lastnode) {
 		struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
                 TREE_T *T = GET_TREE_STORAGE(tree);
@@ -247,7 +251,9 @@
 	    } else push_undefined();
 	}
 
-	PIKEFUN mixed value() {
+	PIKEFUN mixed _iterator_value()
+	  flags ID_PROTECTED;
+	{
 	    if (THIS->lastnode) {
 		CB_PUSH_VALUE(THIS->lastval);
 		return;
