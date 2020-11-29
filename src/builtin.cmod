@@ -2300,6 +2300,57 @@ PIKEFUN void m_add(multiset|object l, mixed val)
   pop_n_elems(args);
 }
 
+/*! @decl int(0..1) iterator_next(object iter)
+ *!
+ *! Advance @[iter] one step.
+ *!
+ *! @seealso
+ *!   @[get_iterator()]
+ */
+PIKEFUN int(0..1) iterator_next(object iter)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_next"));
+{
+  apply_lfun(iter, LFUN__ITERATOR_NEXT_FUN, args - 1);
+  stack_swap();
+  pop_stack();
+}
+
+/*! @decl mixed iterator_value(object iter)
+ *!
+ *! Get the current value for @[iter].
+ *!
+ *! @seealso
+ *!   @[get_iterator()]
+ */
+PIKEFUN mixed iterator_value(object iter)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_value"));
+{
+  apply_lfun(iter, LFUN__ITERATOR_VALUE_FUN, args - 1);
+  stack_swap();
+  pop_stack();
+}
+
+/*! @decl mixed iterator_index(object iter)
+ *!
+ *! Get the current index for @[iter].
+ *!
+ *! @seealso
+ *!   @[get_iterator()]
+ */
+PIKEFUN mixed iterator_index(object iter)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_index"));
+{
+  apply_lfun(iter, LFUN__ITERATOR_INDEX_FUN, args - 1);
+  stack_swap();
+  pop_stack();
+}
+
 /*! @decl int get_weak_flag(array|mapping|multiset m)
  *!
  *! Returns the weak flag settings for @[m]. It's a combination of
