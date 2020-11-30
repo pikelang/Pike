@@ -248,7 +248,7 @@ protected class InternalIterator {
     return sizeof(__indices);
   }
 
-  bool next() {
+  protected bool _iterator_next() {
     return idx < sizeof(__indices) && ++idx < sizeof(__indices);
   }
 
@@ -259,12 +259,12 @@ protected class InternalIterator {
   }
 
 
-  string index() {
+  protected string _iterator_index() {
     return __indices[idx];
   }
 
 
-  mixed value() {
+  protected mixed _iterator_value() {
     return __map[__indices[idx]];
   }
 
