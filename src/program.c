@@ -9619,13 +9619,13 @@ void cleanup_program(void)
   free_mapping(lfun_ids);
 #ifdef PIKE_NEW_LFUN_LOOKUP
   for (e=0; e < NELEM(lfun_strings); e++) {
-    free_string(lfun_strings[e]);
-    free_string(lfun_compat_strings[e]);
+    do_free_string(lfun_strings[e]);
+    do_free_string(lfun_compat_strings[e]);
   }
 #else
   for (e=0; e < NELEM(lfun_names); e++) {
-    free_string(lfun_strings[e]);
-    free_string(lfun_compat_strings[e]);
+    do_free_string(lfun_strings[e]);
+    do_free_string(lfun_compat_strings[e]);
   }
 #endif
 #ifdef FIND_FUNCTION_HASHSIZE
