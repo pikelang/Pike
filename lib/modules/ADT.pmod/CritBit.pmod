@@ -629,19 +629,22 @@ class MultiTree {
 	    return !sizeof(it);
 	}
 
-	int(0..1) next() {
-	    while (sizeof(it) && !it[0]->next()) it = it[1..];
+	protected int(0..1) _iterator_next()
+        {
+	    while (sizeof(it) && !iterator_next(it[0])) it = it[1..];
 	    return !!sizeof(it);
 	}
 
-	mixed value() {
+	protected mixed _iterator_value()
+        {
 	    if (!sizeof(it)) return UNDEFINED;
-	    return it[0]->value();
+	    return iterator_value(it[0]);
 	}
 
-	mixed index() {
+	protected mixed _iterator_index()
+        {
 	    if (!sizeof(it)) return UNDEFINED;
-	    return it[0]->index();
+	    return iterator_index(it[0]);
 	}
 
 	protected object _get_iterator() {
