@@ -559,7 +559,7 @@ string get_http_path_query() {
   return http_encode(((path||"")/"/")[*])*"/" + (q?"?"+q:"");
 }
 
-int __hash() { return hash_value(_sprintf('s')); }
+int __hash() { return hash_value(_sprintf('x')); }
 
 private mapping(int:string) sprintf_cache = ([]);
 string _sprintf(int how, mapping|void args)
