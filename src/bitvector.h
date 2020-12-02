@@ -283,7 +283,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u32(unsigned INT32 v) {
 }
 
 #if !defined(HAVE___BSWAP16) && !defined(HAVE_BSWAP16)
-#define bswap16(x)     ((unsigned INT16)bswap32((unsigned INT32)x << 16))
+#define bswap16(x)     ((unsigned INT16)bswap32((unsigned INT32)(x) << 16))
 #endif /* !HAVE___BSWAP16 && !HAVE_BSWAP16 */
 
 #if PIKE_BYTEORDER == 1234
