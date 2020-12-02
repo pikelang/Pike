@@ -322,15 +322,20 @@ o SSL
 
 o SSL.File
 
-  Do not close automatically on write error.
+  - Do not close automatically on write error.
 
-  The internal ssl_write_callback() would call shutdown()
-  on write error, which would cause the object to enter
-  one of the closed states, without the user actually
-  having closed the file.
+    The internal ssl_write_callback() would call shutdown()
+    on write error, which would cause the object to enter
+    one of the closed states, without the user actually
+    having closed the file.
   
-  This in turn caused errors like "Not open" from
-  functions like read() and set_nonblocking().
+    This in turn caused errors like "Not open" from
+    functions like read() and set_nonblocking().
+
+  - Fix a situation where setting callbacks before the TLS 
+    handshake had completed would cause the connection to hang
+    if an alert was generated (for instance when the peers are 
+    unable to agree on a cipher suite.)
 
 o Standards.JSON
 
