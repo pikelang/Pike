@@ -49,12 +49,20 @@ string raw_uri;
 // FIXME: What about decoding of Percent-Encoding (RFC3986 2.1)?
 //        cf pct-encoded in the functions below.
 
+protected enum cache_advice {
+    DO_NOT_CACHE,
+    MAY_CACHE,
+};
+
 // Parse authority component (according to RFC 1738, § 3.1)
 // Updated to RFC 3986 $ 3.2.
 // NOTE: Censors the userinfo from the @[authority] variable.
-protected void parse_authority()
+protected cache_advice parse_authority()
 {
   string host_port = authority;
+  int default_port;
+  cache_advice advice = MAY_CACHE;
+
   // authority   = [ userinfo "@" ] host [ ":" port ]
   array(string) a = authority/"@";
   if (sizeof(a) > 1) {
@@ -65,18 +73,28 @@ protected void parse_authority()
     DEBUG("parse_authority(): user=%O, password=%O", user, password);
   }
   if(scheme)
-    port = Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
+    default_port = port = Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
   // host        = IP-literal / IPv4address / reg-name
   if (has_prefix(host_port, "[")) {
     // IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
     // IPvFuture  = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
-    sscanf(host_port, "[%s]%*[:]%d", host, port);
+    if (sscanf(host_port, "[%s]%*[:]%d", host, port) == 3
+        && port == default_port)
+    {
+      advice = DO_NOT_CACHE;
+    }
   } else {
     // IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
     // reg-name    = *( unreserved / pct-encoded / sub-delims )
-    sscanf(host_port, "%[^:]%*[:]%d", host, port);
+    if (sscanf(host_port, "%[^:]%*[:]%d", host, port) == 3
+        && port == default_port)
+    {
+      advice = DO_NOT_CACHE;
+    }
   }
   DEBUG("parse_authority(): host=%O, port=%O", host, port);
+
+  return advice;
 }
 
 // Inherit all properties except raw_uri and base_uri from the URI uri. :-)
@@ -333,12 +351,15 @@ void reparse_uri(this_program|string|void base_uri)
   //    scheme is inherited from the base URI's scheme component.
   if(scheme)
   {
+    int do_cache = 1;
+
     if(authority)
-      parse_authority();
+      do_cache = parse_authority() == MAY_CACHE;
 
     DEBUG("Scheme found! RFC 2396, §5.2, step 3 "
 	  "says we're absolute. Done!");
-    sprintf_cache['s'] = raw_uri;
+    if (do_cache)
+      sprintf_cache['s'] = raw_uri;
     return;
   }
   scheme = this::base_uri->scheme;
