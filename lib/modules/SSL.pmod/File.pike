@@ -93,6 +93,11 @@ protected Stdio.read_callback_t read_callback;
 protected Stdio.write_callback_t write_callback;
 protected function(void|mixed:int) close_callback;
 
+// callbacks set during handshake are temporarily deferred and stored here.
+protected Stdio.read_callback_t d_read_callback;
+protected Stdio.write_callback_t d_write_callback;
+protected function(void|mixed:int) d_close_callback;
+
 protected Pike.Backend real_backend;
 // The real backend for the stream.
 
@@ -1416,14 +1421,21 @@ void set_nonblocking(void|Stdio.read_callback_t read,
     nonblocking_mode = 1;
 
     accept_callback = accept;
-    read_callback = read;
-    write_callback = write;
-    close_callback = close;
+    
+    if(SSL_HANDSHAKING) {
+      d_read_callback = read;
+      d_write_callback = write;
+      d_close_callback = close;
+    } else {
+      read_callback = read;
+      write_callback = write;
+      close_callback = close;
+    }
 
     if (stream) {
       stream->set_backend(real_backend);
 
-      schedule_poll();
+     schedule_poll();
 
       // Has to restore here since a backend waiting in another thread
       // might be woken immediately when callbacks are registered.
@@ -1497,7 +1509,8 @@ void set_blocking()
 
     nonblocking_mode = 0;
     accept_callback = read_callback = write_callback = close_callback = 0;
-
+    d_read_callback = d_write_callback = d_close_callback = 0;
+   
     if (!local_backend) local_backend = Pike.SmallBackend();
 
     if (stream) {
@@ -2022,7 +2035,12 @@ protected int ssl_read_callback (int ignored, string input)
 	if (stringp (data)) {
 	  if (!handshake_already_finished &&
 	      !(conn->state & CONNECTION_handshaking)) {
-	    SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
+ 	        SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
+            // set deferred callbacks set during handshake
+            if(d_read_callback) read_callback = d_read_callback;
+            if(d_write_callback) write_callback = d_write_callback;
+            if(d_close_callback) close_callback = d_close_callback;
+            d_read_callback = d_write_callback = d_close_callback = 0;
 	  }
 
 	  SSL3_DEBUG_MSG ("ssl_read_callback: "
