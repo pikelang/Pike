@@ -5133,6 +5133,85 @@ test_equal(encode_value_canonic ((<"en","sv","de">)),
 test_equal(encode_value_canonic ((<"en","sv","de">)),
            encode_value_canonic ((<"sv","en","de">)))
 
+define(test_encode_basic, [[
+  test_equal(decode_value(encode_value_basic($1)), $1)
+  test_equal(decode_value_basic(encode_value_basic($1)), $1) ]])
+
+test_encode_basic(0);
+test_encode_basic(1);
+// Test numbers at around where the encoding
+// length changes
+test_encode_basic(0x1010100 + 3 + 1);
+test_encode_basic(0x1010100 + 3);
+test_encode_basic(0x1010100 + 3 - 1);
+test_encode_basic(0x10100 + 3 + 1);
+test_encode_basic(0x10100 + 3);
+test_encode_basic(0x10100 + 3 - 1);
+test_encode_basic(0x100 + 3 + 1);
+test_encode_basic(0x100 + 3);
+test_encode_basic(0x100 + 3 - 1);
+test_encode_basic(3 + 1);
+test_encode_basic(3);
+test_encode_basic(3 - 1);
+
+test_encode_basic(-1);
+test_encode_basic("Foo");
+test_encode_basic(({ "Foo" }));
+test_encode_basic(([ "Foo": 1, 2: 3 ]));
+test_encode_basic((< "foo", 1, 3, ({ 1, 2, 3 }) >));
+test_encode_basic(-0.0);
+test_encode_basic(0.0);
+test_encode_basic(1.0);
+test_encode_basic(-1.0);
+test_encode_basic(Math.inf);
+test_encode_basic(-Math.inf);
+
+test_any([[
+  mixed v = decode_value(encode_value_basic(Math.nan));
+
+  return v != v;
+]], 1);
+
+test_encode_basic(Val.null);
+test_encode_basic(Val.true);
+test_encode_basic(Val.false);
+
+// Test that cyclic data leads to an error.
+test_eval_error([[
+  array a = ({ 0 });
+  a[0] = a;
+  return encode_value_basci(a);
+]])
+test_eval_error([[
+  mapping m = ([ ]);
+  m[m] = 1;
+  return encode_value_basci(a);
+]])
+test_eval_error([[
+  multiset m = (< >);
+  m[m] = 1;
+  return encode_value_basci(a);
+]])
+
+// Test that max_depth works.
+test_eval_error([[
+  return decode_value_basic(encode_value_basic(({ })), 0);
+]])
+test_any([[
+  return equal(
+    decode_value_basic(encode_value_basic(({ })), 1),
+    ({ })
+  );
+]], 1)
+test_eval_error([[
+  return decode_value_basic(encode_value_basic(({ 0, ({ }) })), 1);
+]])
+test_any([[
+  return equal(
+    decode_value_basic(encode_value_basic(({ 0, ({ }) })), 2),
+    ({ 0, ({ }) })
+  );
+]], 1)
 
 test_any([[
 // bug 3013

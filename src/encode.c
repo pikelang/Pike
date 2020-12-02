@@ -9,6 +9,7 @@
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
+#include "cyclic.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
@@ -2477,6 +2478,984 @@ void f_encode_value_canonic(INT32 args)
   push_string(buffer_finish_pike_string(&data->buf));
 }
 
+static inline size_t code_entry_encoded_length(INT32 num)
+{
+  int t;
+
+  if (num<0)
+    num = ~num;
+
+  unsigned INT32 n = num;
+
+  if (n < MAX_SMALL)
+    return 1;
+
+  n -= MAX_SMALL;
+
+  for (t = 0; (size_t)t < 3; t++)
+  {
+    if (n >= (((INT64)256) << (t<<3)))
+      n -= (((INT64)256) << (t<<3));
+    else
+      break;
+  }
+
+  return 2 + t;
+}
+
+static size_t encode_value_basic_encoded_length(const struct svalue *val)
+{
+  switch (TYPEOF(*val)) {
+  case T_INT:
+    {
+      INT_TYPE i=val->u.integer;
+#if SIZEOF_INT_TYPE > 4
+      if (i > MAX_INT32 || i < MIN_INT32)
+      {
+        size_t length;
+        MP_INT tmp;
+
+        length = code_entry_encoded_length(2);
+
+        /* Note: conversion to base 36 could be done directly here
+         * using / and % instead.  Doing it like this is actually
+         * only slightly slower, however, and saves on code size.
+         *
+         * Note that we also must adjust the data->encoded mapping,
+         * to not confuse the decoder. This is easiest to do by
+         * performing a recursive call, which means that we need
+         * a proper pike_string anyway.
+         */
+        mpz_init_set_si( &tmp, i );
+        push_string(low_get_mpz_digits(&tmp, 36));
+        mpz_clear( &tmp );
+        length += encode_value_basic_encoded_length(Pike_sp-1);
+        pop_stack();
+        return length;
+      }
+      else
+#endif
+      {
+        return code_entry_encoded_length(i);
+      }
+    }
+    break;
+  case T_FLOAT:
+    {
+      double d = val->u.float_number;
+
+      {
+	int pike_ftype=Pike_FP_UNKNOWN;
+        if(PIKE_ISINF(d))
+          pike_ftype=Pike_FP_PINF;
+        else if(PIKE_ISNAN(d))
+          pike_ftype=Pike_FP_SNAN;
+#ifdef HAVE_ISZERO
+        else if(iszero(d))
+          pike_ftype=Pike_FP_PZERO;
+#endif
+
+	if(
+#ifdef HAVE_SIGNBIT
+	  signbit(d)
+#else
+	  d<0.0
+#endif
+	  ) {
+	  switch(pike_ftype)
+	  {
+	    case Pike_FP_PINF:
+	      pike_ftype=Pike_FP_NINF;
+	      break;
+
+#ifdef HAVE_ISZERO
+	    case Pike_FP_PZERO:
+	      pike_ftype=Pike_FP_NZERO;
+	      break;
+#endif
+	  }
+	}
+
+	if(pike_ftype != Pike_FP_UNKNOWN)
+	{
+          return code_entry_encoded_length(0) + code_entry_encoded_length(pike_ftype);
+	}
+      }
+
+      if(d == 0.0)
+      {
+        return code_entry_encoded_length(0) * 2;
+      }else{
+	INT64 x;
+	int y;
+	double tmp;
+
+	tmp = frexp(d, &y);
+        x = (INT64)((((INT64)1)<<(sizeof(INT64)*8 - 2))*tmp);
+	y -= sizeof(INT64)*8 - 2;
+
+        x >>= 32;
+        y += 32;
+
+        return code_entry_encoded_length(x) + code_entry_encoded_length(y);
+      }
+      break;
+    }
+  case T_STRING:
+    {
+      const struct pike_string *str = val->u.string;
+
+      size_t length = str->len;
+
+      if (length > INT_MAX)
+        Pike_error("Cannot encode strings longer than 2GB.\n");
+
+      if (str->size_shift) {
+        length <<= (size_t)str->size_shift;
+        length += code_entry_encoded_length(-1);
+      }
+
+      length += code_entry_encoded_length(str->len);
+
+      return length;
+    }
+    break;
+  case T_ARRAY:
+    {
+      const struct array *a = val->u.array;
+      INT32 size = a->size;
+      const struct svalue *item = ITEM(a);
+      DECLARE_CYCLIC();
+      size_t length = code_entry_encoded_length(size);
+
+      if (a->refs > 1 && BEGIN_CYCLIC (a, 0))
+        Pike_error ("Cyclic array structure - already visited %O.\n", val);
+
+      check_c_stack(1024);
+
+      for(int i=0; i < size; i++)
+	length += encode_value_basic_encoded_length(item+i);
+
+      if (a->refs > 1)
+        END_CYCLIC();
+
+      return length;
+    }
+    break;
+  case T_MAPPING:
+    {
+      const struct mapping_data *md = val->u.mapping->data;
+      INT32 size = md->size;
+      INT32 e;
+      const struct keypair *k;
+      DECLARE_CYCLIC();
+      size_t length = code_entry_encoded_length(size);
+
+      if (val->u.mapping->refs > 1 && BEGIN_CYCLIC (md, 0))
+        Pike_error ("Cyclic mapping structure - already visited %O.\n", val);
+
+      check_c_stack(1024);
+
+      NEW_MAPPING_LOOP(md)
+      {
+        length += encode_value_basic_encoded_length(&k->ind);
+        length += encode_value_basic_encoded_length(&k->val);
+      }
+
+      if (val->u.mapping->refs > 1)
+        END_CYCLIC();
+
+      return length;
+    }
+    break;
+  case T_MULTISET:
+    {
+      struct multiset *l = val->u.multiset;
+      struct svalue ind;
+      size_t length;
+      union msnode *node;
+      DECLARE_CYCLIC();
+
+      if (TYPEOF(*multiset_get_cmp_less(l)) != T_INT)
+	Pike_error ("FIXME: Encoding of multisets with "
+		    "custom sort function not yet implemented.\n");
+
+      if (l->refs > 1 && BEGIN_CYCLIC (l, 0))
+        Pike_error ("Cyclic multiset structure - already visited %O.\n", val);
+
+      length = code_entry_encoded_length(multiset_sizeof(l));
+
+      for (union msnode *node = low_multiset_first (l->msd);
+           node; node = low_multiset_next (node))
+      {
+        length += encode_value_basic_encoded_length (low_use_multiset_index (node, ind));
+      }
+
+      if (l->refs > 1)
+        END_CYCLIC();
+
+      return length;
+    }
+    break;
+  case T_OBJECT:
+    {
+      // This code _only_ handles Val.null, Val.true and Val.false and bignums.
+      const struct object *o = val->u.object;
+      size_t _strlen;
+
+      if (is_bignum_object(o))
+      {
+        MP_INT *i = (MP_INT*)val->u.object->storage;
+        char *buffer;
+        size_t l;
+
+        buffer = xalloc(mpz_sizeinbase(i, 36)+2);
+        mpz_get_str( buffer, 36, i );
+        _strlen = strlen(buffer);
+        free(buffer);
+      } else if (o == get_val_null()) {
+        _strlen = strlen("rVal.null");
+      } else if (o == get_val_true()) {
+        _strlen = strlen("rVal.true");
+      } else if (o == get_val_false()) {
+        _strlen = strlen("rVal.false");
+      } else {
+        Pike_error("Cannot encode generic objects.\n");
+      }
+
+      // The object num for bignums is 2, while the code for the other objects
+      // is 0. Both encode into the same length, so the below is ok.
+      return code_entry_encoded_length(0)
+          + _strlen + code_entry_encoded_length(_strlen);
+    }
+    break;
+  default:
+    Pike_error("Cannot encode value type: %s\n",
+               get_name_of_type(TYPEOF(*val)));
+  }
+}
+
+static inline unsigned char *code_entry_simple(unsigned char * dst, int tag, INT64 num)
+{
+  int t;
+
+  if (num < 0)
+  {
+    tag |= TAG_NEG;
+    num = ~num;
+  }
+
+  if (num < MAX_SMALL)
+  {
+    tag |= TAG_SMALL | (num << SIZE_SHIFT);
+    *(dst++) = (unsigned char)tag;
+    return dst;
+  }
+
+  num -= MAX_SMALL;
+
+  /* NB: There's only space for two bits of length info. */
+  for(t = 0; (size_t)t < 3; t++)
+  {
+    if(num >= (((INT64)256) << (t<<3)))
+      num -= (((INT64)256) << (t<<3));
+    else
+      break;
+  }
+
+  tag |= t << SIZE_SHIFT;
+  *(dst++) = (unsigned char)tag;
+
+  switch(t)
+  {
+  case 3: *(dst++) = (char)((num >> 24)&0xff); /* FALLTHRU */
+  case 2: *(dst++) = (char)((num >> 16)&0xff); /* FALLTHRU */
+  case 1: *(dst++) = (char)((num >>  8)&0xff);  /* FALLTHRU */
+  case 0: *(dst++) = (char)(num&0xff);
+  }
+
+  return dst;
+}
+
+static unsigned char *encode_value_basic_to(unsigned char * dst, const struct svalue *val)
+{
+  switch (TYPEOF(*val))
+  {
+  case T_INT:
+    {
+      INT_TYPE i=val->u.integer;
+#if SIZEOF_INT_TYPE > 4
+      if (i > MAX_INT32 || i < MIN_INT32)
+      {
+        size_t length;
+        MP_INT tmp;
+
+        dst = code_entry_simple(dst, TAG_OBJECT, 2);
+
+        /* Note: conversion to base 36 could be done directly here
+         * using / and % instead.  Doing it like this is actually
+         * only slightly slower, however, and saves on code size.
+         *
+         * Note that we also must adjust the data->encoded mapping,
+         * to not confuse the decoder. This is easiest to do by
+         * performing a recursive call, which means that we need
+         * a proper pike_string anyway.
+         */
+        mpz_init_set_si( &tmp, i );
+        push_string(low_get_mpz_digits(&tmp, 36));
+        mpz_clear( &tmp );
+        dst = encode_value_basic_to(dst, Pike_sp-1);
+        pop_stack();
+      }
+      else
+#endif
+      {
+        dst = code_entry_simple(dst, TAG_INT, i);
+      }
+    }
+    break;
+  case T_FLOAT:
+    {
+      double d = val->u.float_number;
+
+      {
+	int pike_ftype=Pike_FP_UNKNOWN;
+        if(PIKE_ISINF(d))
+          pike_ftype=Pike_FP_PINF;
+        else if(PIKE_ISNAN(d))
+          pike_ftype=Pike_FP_SNAN;
+#ifdef HAVE_ISZERO
+        else if(iszero(d))
+          pike_ftype=Pike_FP_PZERO;
+#endif
+
+	if(
+#ifdef HAVE_SIGNBIT
+	  signbit(d)
+#else
+	  d<0.0
+#endif
+	  ) {
+	  switch(pike_ftype)
+	  {
+	    case Pike_FP_PINF:
+	      pike_ftype=Pike_FP_NINF;
+	      break;
+
+#ifdef HAVE_ISZERO
+	    case Pike_FP_PZERO:
+	      pike_ftype=Pike_FP_NZERO;
+	      break;
+#endif
+	  }
+	}
+
+	if(pike_ftype != Pike_FP_UNKNOWN)
+	{
+	  dst = code_entry_simple(dst, TAG_FLOAT, 0);
+	  dst = code_entry_simple(dst, TAG_FLOAT, pike_ftype);
+	  break;
+	}
+      }
+
+      if(d == 0.0)
+      {
+	dst = code_entry_simple(dst, TAG_FLOAT, 0);
+	dst = code_entry_simple(dst, TAG_FLOAT, 0);
+      }else{
+	INT64 x;
+	int y;
+	double tmp;
+
+	tmp = frexp(d, &y);
+        x = (INT64)((((INT64)1)<<(sizeof(INT64)*8 - 2))*tmp);
+	y -= sizeof(INT64)*8 - 2;
+
+        x >>= 32;
+        y += 32;
+
+	dst = code_entry_simple(dst, TAG_FLOAT, x);
+	dst = code_entry_simple(dst, TAG_FLOAT, y);
+      }
+      break;
+    }
+  case T_STRING:
+    {
+      const struct pike_string *str = val->u.string;
+      size_t length = str->len;
+      unsigned size_shift = str->size_shift;
+
+      if (!size_shift)
+      {
+        dst = code_entry_simple(dst, TAG_STRING, length);
+        memcpy(dst, STR0(str), length);
+        dst += length;
+      }
+      else if (size_shift)
+      {
+        dst = code_entry_simple(dst, TAG_STRING, -1);
+        dst = code_entry_simple(dst, size_shift, length);
+
+        if (size_shift == 1)
+        {
+          const p_wchar1 *src = STR1(str);
+
+          for (size_t i = 0; i < length; i++)
+          {
+            set_unaligned_be16(dst, src[i]);
+            dst += 2;
+          }
+        }
+        else
+        {
+          const p_wchar2 *src = STR2(str);
+
+          for (size_t i = 0; i < length; i++)
+          {
+            set_unaligned_be32(dst, src[i]);
+            dst += 4;
+          }
+        }
+      }
+    }
+    break;
+  case T_ARRAY:
+    {
+      const struct array *a = val->u.array;
+      INT32 size = a->size;
+      const struct svalue *item = ITEM(a);
+
+      dst = code_entry_simple(dst, TAG_ARRAY, size);
+
+      check_c_stack(1024);
+
+      for(int i=0; i < size; i++)
+	dst = encode_value_basic_to(dst, item+i);
+    }
+    break;
+  case T_MAPPING:
+    {
+      const struct mapping_data *md = val->u.mapping->data;
+      INT32 size = md->size;
+      INT32 e;
+      const struct keypair *k;
+
+      dst = code_entry_simple(dst, TAG_MAPPING, size);
+
+      check_c_stack(1024);
+
+      NEW_MAPPING_LOOP(md)
+      {
+        dst = encode_value_basic_to(dst, &k->ind);
+        dst = encode_value_basic_to(dst, &k->val);
+      }
+    }
+    break;
+  case T_MULTISET:
+    {
+      struct multiset *l = val->u.multiset;
+      struct svalue ind;
+      union msnode *node;
+
+      dst = code_entry_simple(dst, TAG_MULTISET, multiset_sizeof(l));
+
+      for (union msnode *node = low_multiset_first (l->msd);
+           node; node = low_multiset_next (node))
+      {
+        dst = encode_value_basic_to(dst, low_use_multiset_index (node, ind));
+      }
+    }
+    break;
+  case T_OBJECT:
+    {
+      // This code _only_ handles Val.null, Val.true and Val.false and bignums.
+      const struct object *o = val->u.object;
+
+      // We assume here that encode_value_basic_encoded_length() has
+      // been called on this object and only the cases below may happen.
+
+      if (is_bignum_object(o))
+      {
+        MP_INT *i = (MP_INT*)val->u.object->storage;
+        char *buffer;
+        size_t length;
+
+        dst = code_entry_simple(dst, TAG_OBJECT, 2);
+
+        buffer = xalloc(mpz_sizeinbase(i, 36)+2);
+
+        mpz_get_str( buffer, 36, i );
+
+        length = strlen(buffer);
+
+        dst = code_entry_simple(dst, TAG_STRING, length);
+        memcpy(dst, buffer, length);
+        dst += length;
+        free(buffer);
+      }
+      else
+      {
+        const char *name;
+        size_t length;
+
+        dst = code_entry_simple(dst, TAG_OBJECT, 0);
+
+        if (o == get_val_null())
+          name = "rVal.null";
+        else if (o == get_val_true())
+          name = "rVal.true";
+        else if (o == get_val_false())
+          name = "rVal.false";
+        else
+          UNREACHABLE(break);
+
+        length = strlen(name);
+
+        dst = code_entry_simple(dst, TAG_STRING, length);
+        memcpy(dst, name, length);
+        dst += length;
+      }
+    }
+    break;
+  default:
+    Pike_error("Cannot encode value type: %s\n",
+               get_name_of_type(TYPEOF(*val)));
+  }
+
+  return dst;
+}
+
+/*! @decl string encode_value_basic(int|float|array|mapping|multiset|object value)
+ *!
+ *! Encode a value into a string using an encoding compatible with @[decode_value()].
+ *!
+ *! Unlike @[encode_value()], this function does not support programs, functions or
+ *! object other than @[Val.true], @[Val.false] and @[Val.null]. It also does not
+ *! support cyclic structures. It will throw an error if it is passed a value which
+ *! contains any of the unsupported types.
+ *!
+ *! This function is significantly faster than @[encode_value()]. The encoded string
+ *! may be larger in some situations.
+ *!
+ *! @seealso
+ *!   @[decode_value()], @[encode_value_canonic()], @[decode_value_basic()]
+ */
+void f_encode_value_basic(INT32 args)
+{
+  size_t byte_length;
+  struct pike_string *result;
+  unsigned char *dst;
+
+  check_all_args("encode_value_basic", args, BIT_MIXED, 0);
+
+  byte_length = 4 + encode_value_basic_encoded_length(Pike_sp - 1);
+
+  result = begin_shared_string(byte_length);
+  dst = STR0(result);
+
+  memcpy(dst, "\266ke0", 4);
+  dst += 4;
+
+  encode_value_basic_to(dst, Pike_sp - 1);
+
+  pop_n_elems(args);
+  push_string(end_shared_string(result));
+}
+
+static const unsigned char *decode_entry_simple(const unsigned char *src,
+                                                const unsigned char *src_end,
+                                                int *tag, INT32 *num)
+{
+  unsigned char b1;
+  unsigned int n;
+
+  if (src == src_end)
+    Pike_error("Not enough data.\n");
+
+  b1 = *(src++);
+
+  n = b1 >> SIZE_SHIFT;
+  *tag = b1 & TAG_MASK;
+
+  INT32 tmp;
+
+  if (b1 & TAG_SMALL)
+  {
+    tmp = n;
+  }
+  else
+  {
+    if (src + n >= src_end)
+      Pike_error("Not enough data.\n");
+
+    tmp = 0;
+
+    for (unsigned int i = 0; i <= n; i++)
+    {
+      tmp = ((UINT64)tmp<<8) + (*(src++)+1);
+    }
+
+    tmp += MAX_SMALL - 1;
+  }
+
+  if(b1 & TAG_NEG)
+  {
+    tmp = ~tmp;
+  }
+
+  *num = tmp;
+
+  return src;
+}
+
+static const unsigned char *decode_value_basic_from(struct svalue *dst,
+                                                     const unsigned char *src,
+                                                     const unsigned char *src_end,
+                                                     INT_TYPE max_depth)
+{
+  int tag;
+  INT32 num;
+
+  src = decode_entry_simple(src, src_end, &tag, &num);
+
+  switch (tag)
+  {
+  case TAG_INT:
+    SET_SVAL(*dst, T_INT, NUMBER_NUMBER, integer, num);
+    break;
+  case TAG_FLOAT:
+    {
+      FLOAT_TYPE result;
+      INT32 exp;
+
+      src = decode_entry_simple(src, src_end, &tag, &exp);
+
+      if (tag != TAG_FLOAT)
+        Pike_error("Unsupported FLOAT encoding.\n");
+
+
+      if (num)
+      {
+        result = (FLOAT_TYPE)ldexp((double)num, exp);
+      }
+      else
+      {
+        switch (exp)
+        {
+	  case Pike_FP_SNAN: /* Signal Not A Number */
+            result = ((FLOAT_TYPE)MAKE_NAN());
+	    break;
+	  case Pike_FP_QNAN: /* Quiet Not A Number */
+            result = ((FLOAT_TYPE)MAKE_NAN());
+	    break;
+
+	  case Pike_FP_NINF: /* Negative infinity */
+            result = (-(FLOAT_TYPE)MAKE_INF());
+	    break;
+
+	  case Pike_FP_PINF: /* Positive infinity */
+            result = ((FLOAT_TYPE)MAKE_INF());
+	    break;
+	  case Pike_FP_NZERO: /* Negative Zero */
+	    result = (-0.0); /* Does this do what we want? */
+            break;
+	  default:
+            result = 0.0;
+            break;
+        }
+      }
+
+      SET_SVAL(*dst, T_FLOAT, 0, float_number, result);
+    }
+    break;
+  case TAG_STRING:
+    {
+      struct pike_string *str;
+
+      if (num > -1)
+      {
+        if (src_end - src < num)
+          Pike_error("Not enough data.\n");
+
+        str = make_shared_binary_string((const char*)src, num);
+        src += num;
+      }
+      else
+      {
+        int size_shift;
+
+        src = decode_entry_simple(src, src_end, &size_shift, &num);
+
+        if (size_shift <= 0 || size_shift > 2)
+          Pike_error("Bad shift size in encoded string.\n");
+
+        if (num < 0)
+          Pike_error("Bad length in encoded string.\n");
+
+        if (src_end - src < num << size_shift)
+          Pike_error("Not enough data.\n");
+
+        str = begin_wide_shared_string(num, (enum size_shift)size_shift);
+
+        if (size_shift == 1)
+        {
+          p_wchar1 *dst = STR1(str);
+
+          for (INT32 i = 0; i < num; i++)
+          {
+            dst[i] = get_unaligned_be16(src);
+            src += 2;
+          }
+        }
+        else
+        {
+          p_wchar2 *dst = STR2(str);
+
+          for (INT32 i = 0; i < num; i++)
+          {
+            dst[i] = get_unaligned_be32(src);
+            src += 4;
+          }
+        }
+
+        str = end_shared_string(str);
+      }
+
+      SET_SVAL(*dst, T_STRING, 0, string, str);
+    }
+    break;
+  case TAG_ARRAY:
+    {
+      struct array *a;
+      struct svalue *item;
+
+      if (num < 0)
+        Pike_error("Negative length in encoded array.\n");
+
+      a = allocate_array(num);
+      item = ITEM(a);
+
+      SET_SVAL(*dst, T_ARRAY, 0, array, a);
+
+      check_c_stack(1024);
+
+      if (!max_depth)
+        Pike_error("Maximum recursion depth reached.\n");
+
+      for(INT32 i = 0; i < num; i++)
+	src = decode_value_basic_from(item+i, src, src_end, max_depth - 1);
+    }
+    break;
+  case TAG_MAPPING:
+    {
+      struct mapping *m;
+      struct svalue *key, *val;
+
+      if (num < 0)
+        Pike_error("Negative size in encoded mapping.\n");
+
+      check_stack(2);
+
+      push_undefined();
+      push_undefined();
+
+      m = allocate_mapping(num);
+
+      SET_SVAL(*dst, T_MAPPING, 0, mapping, m);
+
+      check_c_stack(1024);
+
+      if (!max_depth)
+        Pike_error("Maximum recursion depth reached.\n");
+
+      key = Pike_sp - 2;
+      val = Pike_sp - 1;
+
+      for(INT32 i = 0; i < num; i++)
+      {
+	src = decode_value_basic_from(key, src, src_end, max_depth - 1);
+	src = decode_value_basic_from(val, src, src_end, max_depth - 1);
+
+        mapping_insert(m, key, val);
+
+        // Note: they cannot run out of references, since
+        // we just added them to a mapping.
+        if (REFCOUNTED_TYPE(TYPEOF(*key)))
+          sub_ref(key->u.dummy);
+
+        if (REFCOUNTED_TYPE(TYPEOF(*val)))
+          sub_ref(val->u.dummy);
+      }
+
+      Pike_sp -= 2;
+    }
+    break;
+  case TAG_MULTISET:
+    {
+      struct array *a;
+      struct svalue *item;
+
+      if (num < 0)
+        Pike_error("Negative length in encoded multiset.\n");
+
+      a = allocate_array(num);
+      item = ITEM(a);
+
+      // We store this array here temporarily to make sure it
+      // it cleaned up in case of error.
+      SET_SVAL(*dst, T_ARRAY, 0, array, a);
+
+      check_c_stack(1024);
+
+      if (!max_depth)
+        Pike_error("Maximum recursion depth reached.\n");
+
+      for(INT32 i = 0; i < num; i++)
+	src = decode_value_basic_from(item+i, src, src_end, max_depth - 1);
+
+      SET_SVAL(*dst, T_MULTISET, 0, multiset, mkmultiset(a));
+      free_array(a);
+    }
+    break;
+  case TAG_OBJECT:
+    {
+      INT32 length;
+
+      src = decode_entry_simple(src, src_end, &tag, &length);
+
+      if (tag != TAG_STRING || length <= 0)
+        Pike_error("Unsupported object payload tag %d.\n", tag);
+
+      if (src_end - src < length)
+        Pike_error("Not enough data.\n");
+
+
+      if (num == 0)
+      {
+        struct object *o = NULL;
+
+        if (length == strlen("rVal.null"))
+        {
+          if (!memcmp(src, "rVal.null", length))
+            o = get_val_null();
+          else if (!memcmp(src, "rVal.true", length))
+            o = get_val_true();
+        }
+        else if (length == strlen("rVal.false"))
+        {
+          if (!memcmp(src, "rVal.false", length))
+            o = get_val_false();
+        }
+
+        if (!o)
+        {
+          Pike_error("Cannot decode generic objects.\n");
+        }
+
+        add_ref(o);
+        SET_SVAL(*dst, T_OBJECT, 0, object, o);
+      }
+      else if (num == 2)
+      {
+        MP_INT tmp;
+        char *buffer;
+        int status;
+
+        check_stack(1);
+
+        buffer = xalloc(length+1);
+        memcpy(buffer, src, length);
+        buffer[length] = 0;
+
+        status = mpz_init_set_str(&tmp, buffer, 36);
+        free(buffer);
+
+        if (status)
+        {
+          mpz_clear(&tmp);
+          Pike_error("Failed to decode bignum object.\n");
+        }
+
+        push_bignum(&tmp);
+        assign_svalue_no_free(dst, Pike_sp - 1);
+        Pike_sp--;
+        mpz_clear(&tmp);
+      }
+
+      src += length;
+    }
+    break;
+  default:
+    Pike_error("Unsupported tag type %d in encoded data.\n", tag);
+  }
+
+  return src;
+}
+
+/*! @decl int|float|array|mapping|multiset|object decode_value_basic(string(8bit) data, int|void max_depth)
+ *!
+ *! Decode a value from @expr{data@}.
+ *!
+ *! Unlike @[decode_value()], this function only supports that subset of
+ *! encodings generated by @[encode_value_basic()].
+ *!
+ *! This function is significantly faster than @[decode_value()].
+ *!
+ *! The @expr{max_depth@} parameter can be used to limit the maximum depth
+ *! of data to be decoded. When using @[decode_value_basic()] to decode
+ *! untrusted data it is advisable to use this parameter to set this
+ *! parameter to some limit which is sufficient for the application.
+ *!
+ *! @seealso
+ *!   @[decode_value()], @[encode_value_basic()]
+ */
+void f_decode_value_basic(INT32 args)
+{
+  const struct pike_string *input;
+  INT_TYPE max_depth;
+  const unsigned char *src, *src_end;
+
+  check_all_args("encode_value_basic", args, BIT_STRING, BIT_VOID|BIT_INT, 0);
+
+  input = Pike_sp[-args].u.string;
+
+  if (args >= 2)
+  {
+    max_depth = Pike_sp[1 - args].u.integer;
+  }
+  else
+  {
+    max_depth = -1;
+  }
+
+  if (input->size_shift)
+    Pike_error("Expected binary string.\n");
+
+  src = STR0(input);
+  src_end = src + input->len;
+
+  if (src_end - src < 5)
+    Pike_error("Not enought data.\n");
+
+  if (memcmp("\266ke0", src, 4))
+    Pike_error("String does not contain encoded data.\n");
+
+  src += 4;
+
+  check_stack(1);
+
+  push_undefined();
+
+  src = decode_value_basic_from(Pike_sp - 1, src, src_end, max_depth);
+
+  if (src != src_end)
+  {
+    pop_stack();
+    Pike_error("Data at end of encoded string.\n");
+  }
+
+  stack_pop_n_elems_keep_top(args);
+}
 
 struct unfinished_prog_link
 {

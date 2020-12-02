@@ -10511,6 +10511,16 @@ void init_builtin_efuns(void)
 	   tFunc(tMix tOr(tVoid,tObj) tOr3(tVoid, tIntPos, tObj),tStr8),
 	   OPT_TRY_OPTIMIZE);
 
+  /* function(mixed:string) */
+  ADD_EFUN("encode_value_basic", f_encode_value_basic,
+	   tFunc(tMix,tStr8),
+	   OPT_TRY_OPTIMIZE);
+
+  /* function(mixed:string) */
+  ADD_EFUN("decode_value_basic", f_decode_value_basic,
+	   tFunc(tStr8 tOr(tIntPos, tVoid),tMix),
+	   OPT_TRY_OPTIMIZE);
+
   /* function(string,void|object:mixed) */
   ADD_EFUN("decode_value", f_decode_value,
 	   tFunc(tStr tOr(tVoid,tObj) tOr3(tVoid, tIntPos, tObj),tMix),
