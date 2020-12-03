@@ -2679,7 +2679,7 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	} else {
 	  if (t->car != int_pos_type_string) {
 	    low_describe_int_range(s, t->car);
-	    string_builder_strcat(s, ":");
+	    string_builder_strcat(s, ": ");
 	  }
 	  low_describe_int_range(s, t->cdr);
 	}
