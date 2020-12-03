@@ -2576,7 +2576,7 @@ if test $ldflags_is_set = yes -a $cppflags_is_set = yes ; then :; else
     $with_root/usr/freeware $with_root/usr/pkg \
     `echo $with_root/opt/gnome* | sort -r` \
     `echo $with_root/usr/X* | sort -r` \
-    $with_root/opt/local $with_root/usr/pkg $with_root/opt/pkg \ 
+    $with_root/usr/pkg $with_root/opt/pkg \
     $with_root/usr/sfw $with_root/opt/sfw $with_root/opt/csw \
     $with_root/usr/ccs
   do
