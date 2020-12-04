@@ -2,7 +2,7 @@
 
 // Enable CONCURRENT_DEBUG to get more meaningful broken-promise messages
 
-#define CONCURRENT_DEBUG 0
+// #define CONCURRENT_DEBUG
 
 //! Module for handling multiple concurrent events.
 //!
@@ -1253,12 +1253,7 @@ class Promise
   }
 
   private string orig_backtrace =
-#ifdef CONCURRENT_DEBUG
-    sprintf("%s\n------\n", describe_backtrace(backtrace()))
-#else
-    ""
-#endif
-    ;
+    sprintf("%s\n------\n", describe_backtrace(backtrace()));
 
   protected void destroy()
   {
