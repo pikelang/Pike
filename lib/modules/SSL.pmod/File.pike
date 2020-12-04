@@ -889,8 +889,6 @@ string read (void|int length, void|int(0..1) not_all)
   SSL3_DEBUG_MSG ("SSL.File->read (%d, %d)\n", length, not_all);
 
   ENTER (0) {
-    if (close_state > STREAM_OPEN) error ("Not open.\n");
-
     if (read_errno && !sizeof(user_read_buffer)) {
       local_errno = read_errno;
       SSL3_DEBUG_MSG ("SSL.File->read: Propagating old callback error: %s\n",
@@ -923,6 +921,12 @@ string read (void|int length, void|int(0..1) not_all)
 			      nonblocking_mode);
       }
     }
+
+    // if the stream is closed and the buffer contains no unread data,
+    // throw an exception. this allows data receieved to be retrieved
+    // even if the read happens after the stream is closed.
+    if (close_state > STREAM_OPEN && !sizeof(user_read_buffer)) 
+      error ("Not open.\n");
 
     string res = user_read_buffer->try_read(length);
 
