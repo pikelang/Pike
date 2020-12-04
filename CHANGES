@@ -337,6 +337,10 @@ o SSL.File
     if an alert was generated (for instance when the peers are 
     unable to agree on a cipher suite.)
 
+ -  Permit data received to be read() after the connection is
+    closed by the peer. Previously, read would throw a "Not open"
+    error rendering the data irretrievable.
+
 o Standards.JSON
 
   - encode() now allows other threads to run every now and then.
