@@ -4151,9 +4151,10 @@ static void push_reverse_binop(enum pt_binop op)
 	     ((op & PT_BINOP_MINUS) ? PT_BINOP_INVERSE_MINUS : 0) |
 	     ((op & PT_BINOP_INVERSE_MINUS) ? PT_BINOP_MINUS : 0));
 }
+#endif
 
 /**
- * Low-level intersection (aka And) of two types.
+ * Low-level set operation (AND, MINUS, OR, etc) on two types.
  *
  * Note:
  *   There are two major operating modes; the external, where
@@ -4575,7 +4576,8 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	    if (!bret) bret = bi->cdr;
 
 	    tmp = low_type_binop(op, aret, bret, remap,
-				 aflags, bflags, remap_flags);
+				 aflags | PT_FLAG_CMP_VOIDABLE,
+				 bflags | PT_FLAG_CMP_VOIDABLE, remap_flags);
 	    if (!tmp) goto function_fail;
 
 	    nargs = pop_stack_mark();
@@ -4613,8 +4615,9 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	    if (!aret) aret = ai->cdr;
 	    if (!bret) bret = bi->cdr;
 
-	    tmp = low_type_binop(op, aret, bret, NULL, aflags, bflags,
-				 remap_flags);
+	    tmp = low_type_binop(op, aret, bret, NULL,
+				 aflags | PT_FLAG_CMP_VOIDABLE,
+				 bflags | PT_FLAG_CMP_VOIDABLE, remap_flags);
 	    if (!tmp) {
 	      if (got_full) goto function_next;
 	      got_empty = 1;
@@ -4629,7 +4632,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	      if (got_empty) goto function_next;
 	    }
 
-	    /* Note: We have pushed two typoe stack marks earlier,
+	    /* Note: We have pushed two type stack marks earlier,
 	     *       so we need to get rid of them before returning.
 	     */
 	    if (!got_full) {
