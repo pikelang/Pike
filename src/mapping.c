@@ -3348,8 +3348,6 @@ size_t gc_free_all_unreferenced_mappings(void)
   return unreferenced;
 }
 
-#ifdef PIKE_DEBUG
-
 void simple_describe_mapping(struct mapping *m)
 {
   struct byte_buffer buf = BUFFER_INIT();
@@ -3358,6 +3356,8 @@ void simple_describe_mapping(struct mapping *m)
   fputs(buffer_get_string(&buf), stderr);
   buffer_free(&buf);
 }
+
+#ifdef PIKE_DEBUG
 
 
 void debug_dump_mapping(struct mapping *m)
