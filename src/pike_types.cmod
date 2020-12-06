@@ -4052,8 +4052,22 @@ static struct pike_type *remap_markers(struct pike_type *t,
 {
   if (!t) return NULL;
 
+  if (flags & PT_FLAG_REMAP_TRACE) {
+    fprintf(stderr, "remap_markers(");
+    simple_describe_type(t);
+    fprintf(stderr, ", ");
+    simple_describe_mapping(markers);
+    fprintf(stderr, ", %p, 0x%02x)\n", remap, flags);
+  }
+
   type_stack_mark();
   push_remap_markers(t, markers, remap, flags);
+
+  if (flags & PT_FLAG_REMAP_TRACE) {
+    fprintf(stderr, "remap ==> ");
+    simple_describe_type(peek_type_stack());
+    fprintf(stderr, "\n");
+  }
   return pop_unfinished_type();
 }
 
@@ -4177,6 +4191,15 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   struct pike_type *aret = NULL, *bret = NULL;
   enum pt_cmp_flags avoidable;
   enum pt_cmp_flags bvoidable;
+
+  if (remap_flags & PT_FLAG_REMAP_TRACE) {
+    fprintf(stderr, "low_type_binop(0x%04x, ", op);
+    simple_describe_type(a);
+    fprintf(stderr, ", ");
+    simple_describe_type(b);
+    fprintf(stderr, ", %p, 0x%04x, 0x%04x, 0x%02x)\n",
+	    remap, aflags, bflags, remap_flags);
+  }
 
   switch(op) {
   case PT_BINOP_AND:
@@ -4552,6 +4575,14 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 			     bflags | bvoidable,
 			     remap_flags);
 
+	if (remap_flags & PT_FLAG_REMAP_TRACE) {
+	  fprintf(stderr, "got_empty: %d, got_full: %d\n"
+		  "tmp: ",
+		  got_empty, got_full);
+	  simple_describe_type(tmp);
+	  fprintf(stderr, "\n");
+	}
+
 	switch(op) {
 	case PT_BINOP_AND:
 	  if (!tmp) {
@@ -4578,6 +4609,12 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	    tmp = low_type_binop(op, aret, bret, remap,
 				 aflags | PT_FLAG_CMP_VOIDABLE,
 				 bflags | PT_FLAG_CMP_VOIDABLE, remap_flags);
+
+	    if (remap_flags & PT_FLAG_REMAP_TRACE) {
+	      fprintf(stderr, "ret_tmp: ");
+	      simple_describe_type(tmp);
+	      fprintf(stderr, "\n");
+	    }
 	    if (!tmp) goto function_fail;
 
 	    nargs = pop_stack_mark();
@@ -4615,9 +4652,19 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	    if (!aret) aret = ai->cdr;
 	    if (!bret) bret = bi->cdr;
 
+	    /* NB: Ignore the return type if matching against void. */
 	    tmp = low_type_binop(op, aret, bret, NULL,
 				 aflags | PT_FLAG_CMP_VOIDABLE,
 				 bflags | PT_FLAG_CMP_VOIDABLE, remap_flags);
+
+	    if (remap_flags & PT_FLAG_REMAP_TRACE) {
+	      fprintf(stderr, "got_empty: %d, got_full: %d\n"
+		      "ret tmp: ",
+		      got_empty, got_full);
+	      simple_describe_type(tmp);
+	      fprintf(stderr, "\n");
+	    }
+
 	    if (!tmp) {
 	      if (got_full) goto function_next;
 	      got_empty = 1;
@@ -8580,6 +8627,8 @@ int pike_types_le(struct pike_type *a,struct pike_type *b)
   if ((save_type_stackp != Pike_compiler->type_stackp) ||
       (save_mark_stackp != Pike_compiler->pike_type_mark_stackp) ||
       (res != !tmp2)) {
+    struct pike_type *tmp3;
+
     fprintf(stderr, "pike_types_le mismatch!\n"
 	    "a: ");
     simple_describe_type(a);
@@ -8590,6 +8639,13 @@ int pike_types_le(struct pike_type *a,struct pike_type *b)
     fprintf(stderr, "\ntmp2: ");
     simple_describe_type(tmp2);
     fprintf(stderr, "\n\n");
+
+    tmp3 = low_type_binop(PT_BINOP_MINUS, a, b, &remap,
+			  0, 0, PT_FLAG_REMAP_TRACE);
+    fprintf(stderr, "tmp3: ");
+    simple_describe_type(tmp3);
+    fprintf(stderr, "\n\n");
+
     if ((save_type_stackp != Pike_compiler->type_stackp) ||
 	(save_mark_stackp != Pike_compiler->pike_type_mark_stackp)) {
       Pike_fatal("Stack level corruption!\n"
@@ -8598,6 +8654,8 @@ int pike_types_le(struct pike_type *a,struct pike_type *b)
 		 Pike_compiler->type_stackp, save_type_stackp,
 		 Pike_compiler->pike_type_mark_stackp, save_mark_stackp);
     }
+
+    free_type(tmp3);
   }
 
   free_type(tmp);
