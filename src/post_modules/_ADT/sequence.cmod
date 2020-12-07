@@ -612,13 +612,14 @@ PIKECLASS Sequence
 
     }
 
-    /*! @decl int index()
+    /*! @decl int _iterator_index()
      *!
      *! @returns
      *!    The index at the current position.
      */
 
-    PIKEFUN int index()
+    PIKEFUN int _iterator_index()
+      flags ID_PROTECTED;
     {
       if(!THIS->sequence ||
 	 !THIS->sequence->a ||
@@ -633,13 +634,14 @@ PIKECLASS Sequence
     }
 
 
-    /*! @decl mixed value()
+    /*! @decl mixed _iterator_value()
      *!
      *! @returns
      *!    The value at the current position.
      */
 
-    PIKEFUN mixed value()
+    PIKEFUN mixed _iterator_value()
+      flags ID_PROTECTED;
     {
       if(!THIS->sequence ||
 	 !THIS->sequence->a ||
@@ -653,6 +655,21 @@ PIKECLASS Sequence
       }
     }
 
+    PIKEFUN int _iterator_next()
+      flags ID_PROTECTED;
+    {
+      if (!THIS->sequence || !THIS->sequence->a) {
+	push_int(0);
+	return;
+      }
+      THIS->pos++;
+      if (THIS->pos >= THIS->sequence->a->size) {
+	THIS->pos = THIS->sequence->a->size;
+	push_int(0);
+      } else{
+	push_int(1);
+      }
+    }
 
     /*! @decl SequenceIterator `+(int steps)
      *!   Move the iterator @[steps] steps forward (negative value on @[steps]

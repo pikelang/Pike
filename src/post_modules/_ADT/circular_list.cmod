@@ -915,13 +915,14 @@ PIKECLASS CircularList
       }
     }
 
-    /*! @decl int index()
+    /*! @decl int _iterator_index()
      *!
      *! @returns
      *!    The index at the current position.
      */
 
-    PIKEFUN int index()
+    PIKEFUN int _iterator_index()
+      flags ID_PROTECTED;
     {
       if(!THIS->list ||
 	 !THIS->list->a ||
@@ -936,13 +937,14 @@ PIKECLASS CircularList
     }
 
 
-    /*! @decl mixed value()
+    /*! @decl mixed _iterator_value()
      *!
      *! @returns
      *!    The value at the current position.
      */
 
-    PIKEFUN mixed value()
+    PIKEFUN mixed _iterator_value()
+      flags ID_PROTECTED;
     {
       if(!THIS->list ||
 	 !THIS->list->a ||
@@ -957,6 +959,21 @@ PIKECLASS CircularList
       }
     }
 
+    PIKEFUN int _iterator_next()
+      flags ID_PROTECTED;
+    {
+      if (!THIS->list || !THIS->list->a) {
+	push_int(0);
+	return;
+      }
+      THIS->pos++;
+      if (THIS->pos >= THIS->list->size) {
+	THIS->pos = THIS->list->size;
+	push_int(0);
+      } else {
+	push_int(1);
+      }
+    }
 
     /*! @decl CircularListIterator `+(int steps)
      *!   Move the iterator @[steps] steps forward (negative value on @[steps]
