@@ -3063,11 +3063,13 @@ enum rwmux_kind
     RWMUX_READ,
     RWMUX_DOWNGRADED,
     RWMUX_TRY_WRITE = RWMUX_DOWNGRADED,
+    RWMUX_UPGRADING,
     RWMUX_WRITE,
   };
 
 struct rwmutex_key_storage
 {
+  struct object *self;			/* NOT ref-counted! */
   struct rwmutex_storage *rwmutex;
   struct object *rwmutex_obj;
   struct thread_state *owner;
@@ -3192,6 +3194,50 @@ static void f_rwmutex_try_write_lock(INT32 args)
   push_object(clone_object(rwmutex_key_program, 2));
 }
 
+/*! @decl array(Thread.Thread) current_locking_threads()
+ *!
+ *! Return an array with the treads that are holding
+ *! keys to the mutex.
+ *!
+ *! @seealso
+ *!   @[current_locking_threads()]
+ */
+static void f_rwmutex_current_locking_threads(INT32 args)
+{
+  struct rwmutex_storage *m = THIS_RWMUTEX;
+  struct rwmutex_key_storage *key;
+  int count = 0;
+  for (key = m->key; key; key = key->next) {
+    if (key->owner_obj && key->owner_obj->prog) {
+      ref_push_object(key->owner_obj);
+      count++;
+    }
+  }
+  f_aggregate(count);
+}
+
+/*! @decl array(Thread.Thread) current_locking_keys()
+ *!
+ *! Return an array with the currently active keys
+ *! to the mutex.
+ *!
+ *! @seealso
+ *!   @[current_locking_threads()]
+ */
+static void f_rwmutex_current_locking_keys(INT32 args)
+{
+  struct rwmutex_storage *m = THIS_RWMUTEX;
+  struct rwmutex_key_storage *key;
+  int count = 0;
+  for (key = m->key; key; key = key->next) {
+    if (key->self && key->self->prog) {
+      ref_push_object(key->self);
+      count++;
+    }
+  }
+  f_aggregate(count);
+}
+
 /*! @decl string _sprintf(int c)
  *!
  *! Describes the mutex including the thread(s) that currently hold
@@ -3242,9 +3288,17 @@ static void f_rwmutex__sprintf(INT32 args)
 /*! @endclass
 */
 
+/*! @class RWKey
+ */
+
 #define THIS_RWKEY ((struct rwmutex_key_storage *)(CURRENT_STORAGE))
 static void init_rwmutex_key_obj(struct object *UNUSED(o))
 {
+  /* NB: This function is also called from create(), so it
+   *     needs to support being called multiple times on
+   *     the same storage.
+   */
+  THIS_RWKEY->self = Pike_fp->current_object;
   if (THIS_RWKEY->owner_obj) {
     free_object(THIS_RWKEY->owner_obj);
   }
@@ -3254,9 +3308,6 @@ static void init_rwmutex_key_obj(struct object *UNUSED(o))
     add_ref(THIS_RWKEY->owner_obj);
   THIS_RWKEY->kind = RWMUX_NONE;
 }
-
-/*! @class RWKey
- */
 
 static void exit_rwmutex_key_obj(struct object *UNUSED(o))
 {
@@ -4690,6 +4741,10 @@ void th_init(void)
 	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
   ADD_FUNCTION("try_write_lock", f_rwmutex_try_write_lock,
 	       tFunc(tNone, tObjIs_THREAD_RWMUTEX_KEY), 0);
+  ADD_FUNCTION("current_locking_threads", f_rwmutex_current_locking_threads,
+	       tFunc(tNone, tArr(tObjImpl_THREAD_ID)), 0);
+  ADD_FUNCTION("current_locking_keys", f_rwmutex_current_locking_keys,
+	       tFunc(tNone, tArr(tObjImpl_THREAD_RWMUTEX_KEY)), 0);
   ADD_FUNCTION("_sprintf", f_rwmutex__sprintf,
 	       tFunc(tOr(tInt, tVoid), tStr), ID_PROTECTED);
   set_init_callback(init_rwmutex_obj);
