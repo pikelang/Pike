@@ -496,7 +496,7 @@ test_false(_ADT.Sequence.SequenceIterator i =
 test_false(!(_ADT.Sequence(({1,2,3,4}))->first()))
 
 
-test_false(!get_iterator(_ADT.Sequence(({1,2,3,4}), 3)))
+test_false(!get_iterator(_ADT.Sequence(({1,2,3,4})), 3))
 
 
 test_true(!(_ADT.Sequence(({1,2,3,4}))->last()))
@@ -618,7 +618,7 @@ test_any(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,5,6,7,8,9}));
 
 test_any(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,5,6,7,8,9}));
 	 a->last()->set_value(99);
-	 return zero_type(a->last()->value()), 1);
+	 return zero_type(iterator_value(a->last())), 1);
 
 
 ****************************************************************************
