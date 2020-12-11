@@ -44,6 +44,8 @@ protected void create(mixed ... args)
     id = "(" + args[0] + ") ";
 }
 
+//! @ignore
+
 protected void PROXY(_destruct, 0);
 
 protected mixed PROXY(`->, 0);
@@ -90,7 +92,6 @@ protected int(0..1) PROXY(_is_type, 0);
 protected int PROXY(_equal, 0);
 protected mixed PROXY(_m_delete, 0);
 
-//! @ignore
 protected array PROXY(_indices, ::_indices());
 protected array PROXY(_values, ::_values());
 //! @endignore
@@ -125,4 +126,8 @@ protected string _sprintf(int|void t, mapping|void opt, mixed ... x)
   return "Debug.Subject" + id[..<1];
 }
 
+//! @ignore
+
 protected mixed PROXY(_random, 0);
+
+//! @endignore
