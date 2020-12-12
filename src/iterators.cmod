@@ -195,7 +195,7 @@ PIKECLASS Iterator
    *! unknown then this function shouldn't be defined.
    */
   PIKEFUN int _sizeof()
-    flags ID_OPTIONAL;
+    flags ID_PROTECTED|ID_OPTIONAL;
     prototype;
   {}
 
@@ -397,6 +397,7 @@ PIKECLASS mapping_iterator
 
 
   PIKEFUN object `+(int(0..) steps)
+    flags ID_PROTECTED;
     {
       struct object *o=low_clone(mapping_iterator_program);
       if (steps < 0)
@@ -414,6 +415,7 @@ PIKECLASS mapping_iterator
     }
 
   PIKEFUN object `+=(int(0..) steps)
+    flags ID_PROTECTED;
     {
       if (steps < 0)
 	SIMPLE_ARG_ERROR ("`+=", 1,
@@ -436,6 +438,7 @@ PIKECLASS mapping_iterator
 
   /* Hubbe: Should this really be destructive ?? */
   PIKEFUN object _random(function rnd_str, function rnd)
+    flags ID_PROTECTED;
     {
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
       size_t k = call_random(THIS->md->size);
@@ -472,7 +475,9 @@ PIKECLASS mapping_iterator
   }
   PIKEFUN int next() { RETURN mi_step(THIS); }	/* Compat. */
 
-  PIKEFUN int `!() {
+  PIKEFUN int `!()
+    flags ID_PROTECTED;
+  {
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
     RETURN (THIS->current == THIS->md->free_list);
 #else /* !PIKE_MAPPING_KEYPAIR_LOOP */
@@ -481,6 +486,7 @@ PIKECLASS mapping_iterator
   }
 
   PIKEFUN void create(mapping map)
+    flags ID_PROTECTED;
     {
       if(THIS->m)
 	Pike_error("Mapping iterators cannot be reused.\n");
@@ -596,6 +602,7 @@ PIKECLASS array_iterator
   }
 
   PIKEFUN object `+(int steps)
+    flags ID_PROTECTED;
     {
       struct object *o=low_clone(array_iterator_program);
       OBJ2_ARRAY_ITERATOR(o)[0]=*THIS;
@@ -606,12 +613,14 @@ PIKECLASS array_iterator
     }
 
   PIKEFUN object `+=(int steps)
+    flags ID_PROTECTED;
   {
     THIS->pos+=steps;
     REF_RETURN Pike_fp->current_object;
   }
 
   PIKEFUN object `-(int steps)
+    flags ID_PROTECTED;
   {
     struct object *o=low_clone(array_iterator_program);
     OBJ2_ARRAY_ITERATOR(o)[0]=*THIS;
@@ -638,6 +647,7 @@ PIKECLASS array_iterator
 
   /* Hubbe: Should this really be destructive ?? */
   PIKEFUN object _random(function rnd_str, function rnd)
+    flags ID_PROTECTED;
     {
       if(THIS->a && THIS->a->size)
         THIS->pos=call_random(THIS->a->size);
@@ -660,11 +670,13 @@ PIKECLASS array_iterator
     }
 
   PIKEFUN int `!()
+    flags ID_PROTECTED;
     {
       RETURN !(THIS->a && THIS->pos >= 0 && THIS->pos < THIS->a->size);
     }
 
   PIKEFUN void create(array a)
+    flags ID_PROTECTED;
     {
       if(THIS->a)
 	Pike_error("Array iterators cannot be reused.\n");
@@ -802,6 +814,7 @@ PIKECLASS multiset_iterator
     }
 
   PIKEFUN object `+= (int steps)
+    flags ID_PROTECTED;
     {
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
       li_step (THIS, steps);
@@ -809,6 +822,7 @@ PIKECLASS multiset_iterator
     }
 
   PIKEFUN object `+ (int steps)
+    flags ID_PROTECTED;
     {
       struct object *o;
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
@@ -818,6 +832,7 @@ PIKECLASS multiset_iterator
     }
 
   PIKEFUN object `- (int steps)
+    flags ID_PROTECTED;
     {
       struct object *o;
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
@@ -858,6 +873,7 @@ PIKECLASS multiset_iterator
     }
 
   PIKEFUN int `!()
+    flags ID_PROTECTED;
     {
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
       RETURN THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos);
@@ -866,6 +882,7 @@ PIKECLASS multiset_iterator
   /* Hubbe: Should this really be destructive ??
    * I let this question stand; I'm only adapting multiset_iterator. /mast */
   PIKEFUN object _random(function rnd_str, function rnd)
+    flags ID_PROTECTED;
     {
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
       if (THIS->nodepos >= 0) {
@@ -907,6 +924,7 @@ PIKECLASS multiset_iterator
    * in foreach, to behave more like the mapping iterator. */
 
   PIKEFUN void create (multiset l)
+    flags ID_PROTECTED;
     {
       if (THIS->l) Pike_error ("Multiset iterators cannot be reused.\n");
       add_ref (THIS->l = l);
@@ -1013,6 +1031,7 @@ PIKECLASS string_iterator
   }
 
   PIKEFUN object `+(int steps)
+    flags ID_PROTECTED;
     {
       struct object *o=low_clone(string_iterator_program);
       OBJ2_STRING_ITERATOR(o)[0]=*THIS;
@@ -1022,12 +1041,14 @@ PIKECLASS string_iterator
     }
 
   PIKEFUN object `+=(int steps)
+    flags ID_PROTECTED;
   {
     THIS->pos+=steps;
     REF_RETURN Pike_fp->current_object;
   }
 
   PIKEFUN object `-(int steps)
+    flags ID_PROTECTED;
   {
     struct object *o=low_clone(string_iterator_program);
     OBJ2_STRING_ITERATOR(o)[0]=*THIS;
@@ -1052,6 +1073,7 @@ PIKECLASS string_iterator
 
   /* Hubbe: Should this really be destructive ?? */
   PIKEFUN object _random(function rnd_str, function rnd)
+    flags ID_PROTECTED;
     {
       if(THIS->s->len)
         THIS->pos=call_random(THIS->s->len);
@@ -1074,6 +1096,7 @@ PIKECLASS string_iterator
     }
 
   PIKEFUN int `!()
+    flags ID_PROTECTED;
     {
       RETURN !(THIS->s && THIS->pos >= 0 && THIS->pos < THIS->s->len);
     }
@@ -1100,6 +1123,7 @@ PIKECLASS string_iterator
     }
 
   PIKEFUN void create(string s)
+    flags ID_PROTECTED;
     {
       if(THIS->s)
 	Pike_error("String iterators cannot be reused.\n");
@@ -1246,6 +1270,7 @@ PIKECLASS file_line_iterator
     }
 
   PIKEFUN object `+(int(0..) steps)
+    flags ID_PROTECTED;
     {
       struct object *o=low_clone(file_line_iterator_program);
       struct file_line_iterator_struct *ssi;
@@ -1266,6 +1291,7 @@ PIKECLASS file_line_iterator
     }
 
   PIKEFUN object `+=(int(0..) steps)
+    flags ID_PROTECTED;
     {
       if (steps < 0)
 	SIMPLE_ARG_ERROR ("`+=", 1,
@@ -1289,11 +1315,13 @@ PIKECLASS file_line_iterator
     }
 
   PIKEFUN int `!()
+    flags ID_PROTECTED;
     {
       RETURN !THIS->current;
     }
 
   PIKEFUN void create(function(:string) feed)
+    flags ID_PROTECTED;
     {
       if (THIS->buffer) {
 	Pike_error("iterators cannot be reused.\n");
@@ -1624,6 +1652,7 @@ PIKECLASS string_split_iterator
     }
 
   PIKEFUN object `+(int(0..) steps)
+    flags ID_PROTECTED;
     {
       struct object *o=low_clone(string_split_iterator_program);
       int i;
@@ -1646,6 +1675,7 @@ PIKECLASS string_split_iterator
     }
 
   PIKEFUN object `+=(int(0..) steps)
+    flags ID_PROTECTED;
   {
     int i;
     if (steps < 0)
@@ -1671,11 +1701,13 @@ PIKECLASS string_split_iterator
     }
 
   PIKEFUN int `!()
+    flags ID_PROTECTED;
     {
       RETURN !THIS->current;
     }
 
   PIKEFUN int _sizeof()
+    flags ID_PROTECTED;
   {
     INT_TYPE res = 0;
     if (THIS->buffer) {
@@ -1764,6 +1796,7 @@ PIKECLASS string_split_iterator
    */
   PIKEFUN void create(string buffer, int|array(int)|multiset(int) split_set,
 		      int|void flags, function(:string)|void feed)
+    flags ID_PROTECTED;
     {
       if (THIS->buffer) {
 	Pike_error("String.split() iterators cannot be reused.\n");
