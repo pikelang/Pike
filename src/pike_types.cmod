@@ -4191,6 +4191,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   enum pt_cmp_flags avoidable;
   enum pt_cmp_flags bvoidable;
 
+ recur:
   if (remap_flags & PT_FLAG_REMAP_TRACE) {
     fprintf(stderr, "low_type_binop(0x%04x, ", op);
     simple_describe_type(a);
@@ -4862,48 +4863,6 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 #endif
   }
 
-  if (a->type == T_VOID) {
-    if (bvoidable) {
-      if (op & PT_BINOP_AND) {
-	add_ref(a);
-	return a;
-      } else {
-	return NULL;
-      }
-    }
-    if (op == PT_BINOP_MINUS) {
-      add_ref(a);
-      return a;
-    }
-    return NULL;
-  }
-  if (b->type == T_VOID) {
-    if (op == PT_BINOP_MINUS) {
-      add_ref(a);
-      return a;
-    }
-    if (avoidable) {
-      add_ref(b);
-      return b;
-    }
-    return NULL;
-  }
-
-  if (b->type == T_MIXED) {
-    /* NB: a being void has been handled above. */
-    if (op == PT_BINOP_MINUS) return NULL;
-    return remap_markers(a, NULL, remap, remap_flags);
-  }
-  if (a->type == T_MIXED) {
-    type_stack_mark();
-    push_remap_markers(b, NULL, remap,
-		       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-    if (op == PT_BINOP_MINUS) {
-      push_type(T_NOT);
-    }
-    return pop_unfinished_type();
-  }
-
   switch(a->type) {
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
@@ -4942,6 +4901,30 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   }
 
   if (a->type != b->type) {
+    if ((a->type == T_VOID) && bvoidable) {
+      b = a;
+      goto recur;
+    }
+    if ((b->type == T_VOID) && avoidable) {
+      a = b;
+      goto recur;
+    }
+
+    if (b->type == T_MIXED) {
+      /* NB: a being void has been handled above. */
+      if (op == PT_BINOP_MINUS) return NULL;
+      return remap_markers(a, NULL, remap, remap_flags);
+    }
+    if (a->type == T_MIXED) {
+      type_stack_mark();
+      push_remap_markers(b, NULL, remap,
+			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (op == PT_BINOP_MINUS) {
+	push_type(T_NOT);
+      }
+      return pop_unfinished_type();
+    }
+
     if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
 	((b->type & PIKE_T_MASK) == PIKE_T_OPERATOR)) {
       type_stack_mark();
