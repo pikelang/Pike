@@ -1,4 +1,7 @@
 AC_INIT(interpret.c)
+
+PIKE_PARSE_SITE_PREFIXES
+
 AC_CONFIG_HEADER(machine.h)
 
 AC_SUBST(CONFIG_HEADERS)
@@ -984,10 +987,6 @@ AC_ARG_WITH(crt, MY_DESCR([--with-crt=dynamic|static],
 AC_ARG_WITH(debug-crt, MY_DESCR([--with-debug-crt],
 				[compile and link with debug CRT in Visual Studio]),
 	    [], [with_debug_crt=no])
-
-AC_ARG_WITH(site-prefixes,
-	    MY_DESCR([--with-site-prefixes],
-		     [:-separated list of prefixes to search for include, lib and bin dirs.]))
 AC_ARG_WITH(include-path,
 	    MY_DESCR([--with-include-path],
 		     [a list of paths to search for include files.]))
@@ -2167,10 +2166,9 @@ fi
 
 primary_path=""
 fallback_path=""
-
 if test $ldflags_is_set = yes -a $cppflags_is_set = yes ; then :; else
   for dd in \
-    `echo "${with_site_prefixes}"|sed -e 's/:/ /g'` \
+    `echo "${p_site_prefixes_to_add}"|sed -e 's/:/ /g'` \
     `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$with_root$ac_default_prefix@g"` \
     $with_root/usr \
     $with_root/usr/local $with_root/sw/local $with_root/sw $with_root/opt/local \
@@ -2182,6 +2180,18 @@ if test $ldflags_is_set = yes -a $cppflags_is_set = yes ; then :; else
     $with_root/usr/sfw $with_root/opt/sfw $with_root/opt/csw \
     $with_root/usr/ccs $with_root/opt/homebrew
   do
+    O_IFS=${IFS}
+    IFS=":"
+    sp_exclude="no"
+    for spx in ${p_site_prefixes_to_remove} ; do
+      if test "x$with_root$spx" = "x$dd" ; then
+        sp_exclude="yes"
+      fi
+    done 
+       
+    IFS="$O_IFS"
+       
+    if test "$sp_exclude" = "yes" ; then continue; fi
     if test "$dd" = "/"; then continue; fi
     #if test "$dd" = "/usr"; then continue; fi
     AC_MSG_CHECKING($dd)
