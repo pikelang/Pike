@@ -788,7 +788,19 @@ string combine_path_with_cwd(string ... paths)
   return combine_path(IS_ABSOLUTE_PATH(paths[0])?"":getcwd(),@paths);
 }
 
-#ifdef FILE_STAT_CACHE
+#if defined(PIKE_FAKEROOT)
+ 
+array(string) master_get_dir(string|void x)
+{
+  return get_dir(fakeroot(x));
+}
+ 
+Stat master_file_stat(string x)
+{
+  return predef::file_stat(fakeroot(x));
+}
+ 
+#elseif defined(FILE_STAT_CACHE)
 
 #define FILE_STAT_CACHE_TIME 20
 
@@ -834,11 +846,11 @@ Stat master_file_stat(string x)
   if(d && !d[file]) return 0;
 
   return predef::file_stat(x);
-}
+
 #else
 constant master_file_stat = predef::file_stat;
 constant master_get_dir = predef::get_dir;
-#endif // FILE_STAT_CACHE
+#endif // PIKE_FAKEROOT || FILE_STAT_CACHE
 
 
 protected mapping(string:string) environment;
