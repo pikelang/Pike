@@ -1922,3 +1922,33 @@ AC_DEFUN(PIKE_PKG_CONFIG,
     fi
   ])
 ])
+
+define([PIKE_PARSE_SITE_PREFIXES], [
+p_site_prefixes_to_add=""
+p_site_prefixes_to_remove=""
+for p_option in $ac_configure_args ; do
+  p_option=`eval echo $p_option`
+  case $p_option in
+    --with-site-prefixes*)
+      p_useropt=`expr "x$p_option" : 'x--with-site-prefixes=\(.*\)'`
+      if test "x$p_useropt" != 'x'  ; then
+        p_site_prefixes_to_add="${p_site_prefixes_to_add}:${p_useropt}"
+      fi
+    ;;
+
+    --with-exclude-site-prefixes*)
+      p_useropt=`expr "x$p_option" : 'x--with-exclude-site-prefixes=\(.*\)'`
+      if test "x$p_useropt" != 'x' ; then
+        p_site_prefixes_to_remove="${p_site_prefixes_to_remove}:${p_useropt}"
+      fi
+    ;;
+  esac
+done
+
+m4_divert_once([HELP_WITH], [[
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)]])
+m4_divert_once([HELP_WITH], AS_HELP_STRING([--with-site-prefixes=path], [:-separated list of prefixes to search for include, lib and bin dirs.]))
+m4_divert_once([HELP_WITH], AS_HELP_STRING([--with-exclude-site-prefixes=path], [:-separated list of prefixes to exclude for include, lib and bin dirs.]))
+])
