@@ -281,9 +281,11 @@ const char *get_f_name(int n)
 const char *get_token_name(int n)
 {
   static char buf[30];
-  if (n<F_MAX_INSTR && instrs[n-F_OFFSET].name)
+  if ((n<F_MAX_INSTR) && (n >= F_OFFSET) && instrs[n-F_OFFSET].name)
   {
     return instrs[n-F_OFFSET].name;
+  } else if ((n >= ' ') && (n <= 0x7f)) {
+    sprintf(buf, "<OTHER '%c'>", n);
   }else{
     sprintf(buf, "<OTHER %d>", n);
     return buf;
