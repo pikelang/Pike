@@ -846,6 +846,7 @@ Stat master_file_stat(string x)
   if(d && !d[file]) return 0;
 
   return predef::file_stat(x);
+}
 
 #else
 constant master_file_stat = predef::file_stat;
