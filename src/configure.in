@@ -2564,6 +2564,11 @@ fi
 
 primary_path=""
 fallback_path=""
+
+case "$pike_cv_sys_os" in
+  Solaris*)   p_site_prefixes_to_add="$p_site_prefixes_to_add:$with_root/opt/local";;
+esac
+
 if test $ldflags_is_set = yes -a $cppflags_is_set = yes ; then :; else
   for dd in \
     `echo "${p_site_prefixes_to_add}"|sed -e 's/:/ /g'` \
