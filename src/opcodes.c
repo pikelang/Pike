@@ -288,8 +288,8 @@ const char *get_token_name(int n)
     sprintf(buf, "<OTHER '%c'>", n);
   }else{
     sprintf(buf, "<OTHER %d>", n);
-    return buf;
   }
+  return buf;
 }
 
 void init_opcodes(void)
