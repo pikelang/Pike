@@ -403,6 +403,13 @@ o Tools.Standalone.httpserver
 Building & Tools
 ----------------
 
+o Add --with-exclude-site-prefixes configure option.
+
+  This will cause any directory specified in this option to be
+  excluded from the search path for binaries/includes/libraries. This
+  option will override any paths found by other means, allowing "system"
+  directories like /usr/local to be exluded for making binary distributions.
+
 o Drop support for Postgres 7.1.
 
 o Fix compilation with Nettle 3.1.1.
