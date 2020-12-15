@@ -2722,20 +2722,30 @@ static void f_mutex_key__sprintf(INT32 args)
  *!
  *! Typical wait operation:
  *! @ol
- *!  @item Take mutex lock
- *!  @item Read/write shared resource
- *!  @item Wait for the signal with the mutex lock in released state
- *!  @item Reacquire mutex lock
- *!  @item If needed, jump back to step 2 again
- *!  @item Release mutex lock
+ *!  @item 
+ *!	Take mutex lock
+ *!  @item 
+ *!	Read/write shared resource
+ *!  @item 
+ *!	Wait for the signal with the mutex lock in released state
+ *!  @item 
+ *!	Reacquire mutex lock
+ *!  @item 
+ *!	If needed, jump back to step 2 again
+ *!  @item 
+ *!	Release mutex lock
  *! @endol
  *!
  *! Typical signal operation:
  *! @ol
- *!  @item Take mutex lock
- *!  @item Read/write shared resource
- *!  @item Send signal
- *!  @item Release mutex lock
+ *!  @item 
+ *!	Take mutex lock
+ *!  @item 
+ *! 	Read/write shared resource
+ *!  @item 
+ *!	Send signal
+ *!  @item 
+ *!	Release mutex lock
  *! @endol
  *!
  *! @example
