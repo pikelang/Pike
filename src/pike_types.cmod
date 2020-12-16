@@ -48,6 +48,7 @@ int max_correct_args;
 PMOD_EXPORT struct pike_type *string0_type_string;
 PMOD_EXPORT struct pike_type *string_type_string;
 PMOD_EXPORT struct pike_type *int_type_string;
+PMOD_EXPORT struct pike_type *int0_type_string;
 PMOD_EXPORT struct pike_type *int_pos_type_string;
 PMOD_EXPORT struct pike_type *float_type_string;
 PMOD_EXPORT struct pike_type *function_type_string;
@@ -4766,46 +4767,11 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     return NULL;
 
   case TWOT(T_ZERO, T_INT):
-    if ((CAR_TO_INT(b) <= 0) && (CDR_TO_INT(b) >= 0)) {
-      if (op == PT_BINOP_AND) {
-	add_ref(a);
-	return a;
-      } else if (op == PT_BINOP_MINUS) {
-	return NULL;
-      }
-    }
-    if (op == PT_BINOP_AND) {
-      return NULL;
-    } else if (op == PT_BINOP_MINUS) {
-      add_ref(a);
-      return a;
-    }
+    a = int0_type_string;
     break;
 
   case TWOT(T_INT, T_ZERO):
-    if ((CAR_TO_INT(a) <= 0) && (CDR_TO_INT(a) >= 0)) {
-      if (op == PT_BINOP_AND) {
-	add_ref(b);
-	return b;
-      } else if (op == PT_BINOP_MINUS) {
-	return NULL;
-      }
-    }
-    if (op == PT_BINOP_AND) {
-      return NULL;
-    } else if (op == PT_BINOP_MINUS) {
-      type_stack_mark();
-      if (CAR_TO_INT(a) < 0) {
-	push_int_type(CAR_TO_INT(a), -1);
-      }
-      if (CDR_TO_INT(a) > 0) {
-	push_int_type(1, CDR_TO_INT(a));
-	if (CAR_TO_INT(a) < 0) {
-	  push_reverse_type(T_OR);
-	}
-      }
-      return pop_unfinished_type();
-    }
+    b = int0_type_string;
     break;
 
     /* T_TYPE and T_PROGRAM are essentially the same thing. */
@@ -12948,6 +12914,7 @@ void init_types(void)
   type_stack_mark();	/* Type stack marker sentinel. */
 
   int_type_string = CONSTTYPE(tInt);	/* MUST come before string and array! */
+  int0_type_string = CONSTTYPE(tInt0);
   int_pos_type_string = CONSTTYPE(tIntPos);
   string0_type_string = CONSTTYPE(tStr0);
   string_type_string = CONSTTYPE(tStr32);
@@ -13032,6 +12999,8 @@ void cleanup_pike_types(void)
   string_type_string = NULL;
   free_type(int_type_string);
   int_type_string = NULL;
+  free_type(int0_type_string);
+  int0_type_string = NULL;
   free_type(int_pos_type_string);
   int_pos_type_string = NULL;
   free_type(float_type_string);
@@ -13331,6 +13300,8 @@ static void gc_mark_external_types(struct callback *UNUSED(cb),
     gc_mark_external(string_type_string, " as string_type_string");
   if (int_type_string)
     gc_mark_external(int_type_string, " as int_type_string");
+  if (int0_type_string)
+    gc_mark_external(int0_type_string, " as int0_type_string");
   if (int_pos_type_string)
     gc_mark_external(int_pos_type_string, " as int_pos_type_string");
   if (object_type_string)
