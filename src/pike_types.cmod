@@ -5159,6 +5159,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     type_stack_mark();
     push_finished_type(tmp);
     push_type(a->type);
+    free_type(tmp);
     return pop_unfinished_type();
 
   case T_OBJECT:
