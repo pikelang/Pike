@@ -38,6 +38,9 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 #include <errno.h>
 
 #ifdef HAVE_SYS_ERRNO_H
