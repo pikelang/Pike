@@ -612,10 +612,9 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   }
 #endif
 
-  debug_malloc_pass(t = ba_alloc(&type_allocator));
+  debug_malloc_pass(t = alloc_pike_type());
 
   t->refs = 0;
-  gc_init_marker(t);
   add_ref(t);	/* For DMALLOC... */
   t->type = type;
   t->flags = 0;
