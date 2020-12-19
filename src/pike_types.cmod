@@ -291,12 +291,14 @@ static void internal_parse_type(const char **s);
 static struct block_allocator type_allocator = BA_INIT(sizeof(struct pike_type), 128);
 
 PMOD_EXPORT void really_free_pike_type(struct pike_type * t) {
+    dmalloc_unregister(t, 0);
     ba_free(&type_allocator, t);
 }
 
 ATTRIBUTE((malloc))
 PMOD_EXPORT struct pike_type * alloc_pike_type(void) {
     struct pike_type *t = ba_alloc(&type_allocator);
+    dmalloc_register(t, sizeof(struct pike_type), DMALLOC_LOCATION());
     gc_init_marker(t);
     return t;
 }
