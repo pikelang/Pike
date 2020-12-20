@@ -4465,14 +4465,6 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 			  remap, aflags, bflags, remap_flags);
   }
 
-  /* NB: Complex types from this point onwards are containers,
-   *     and the voidable property does not propagate into them.
-   */
-  avoidable = aflags & PT_FLAG_CMP_VOIDABLE;
-  aflags &= ~PT_FLAG_CMP_VOIDABLE;
-  bvoidable = bflags & PT_FLAG_CMP_VOIDABLE;
-  bflags &= ~PT_FLAG_CMP_VOIDABLE;
-
   /* Check implicit casting. */
  loop:
   switch(TWOT(a->type & PIKE_T_MASK, b->type & PIKE_T_MASK)) {
@@ -4573,8 +4565,8 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	if (bi->type == T_MANY) bvoidable |= PT_FLAG_CMP_VOIDABLE;
 
 	tmp = low_type_binop(op, ai->car, bi->car, remap,
-			     aflags | avoidable,
-			     bflags | bvoidable,
+			     avoidable,
+			     bvoidable,
 			     remap_flags);
 
 	if (remap_flags & PT_FLAG_REMAP_TRACE) {
@@ -4609,8 +4601,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	    if (!bret) bret = bi->cdr;
 
 	    tmp = low_type_binop(op, aret, bret, remap,
-				 aflags | PT_FLAG_CMP_VOIDABLE,
-				 bflags | PT_FLAG_CMP_VOIDABLE, remap_flags);
+				 0, 0, remap_flags);
 
 	    if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	      fprintf(stderr, "ret_tmp: ");
@@ -4656,8 +4647,8 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 
 	    /* NB: Ignore the return type if matching against void. */
 	    tmp = low_type_binop(op, aret, bret, NULL,
-				 aflags | PT_FLAG_CMP_VOIDABLE,
-				 bflags | PT_FLAG_CMP_VOIDABLE, remap_flags);
+				 PT_FLAG_CMP_VOIDABLE,
+				 0, remap_flags);
 
 	    if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	      fprintf(stderr, "got_empty: %d, got_full: %d\n"
@@ -4781,7 +4772,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   case TWOT(T_PROGRAM, T_TYPE):
   case TWOT(T_PROGRAM, T_PROGRAM):
     tmp = low_type_binop(op, a->car, b->car, remap,
-			 aflags, bflags, remap_flags);
+			 0, 0, remap_flags);
     if (!tmp) return NULL;
 
     type_stack_mark();
@@ -4868,11 +4859,11 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   }
 
   if (a->type != b->type) {
-    if ((a->type == T_VOID) && bvoidable) {
+    if ((a->type == T_VOID) && (bflags & PT_FLAG_CMP_VOIDABLE)) {
       b = a;
       goto recur;
     }
-    if ((b->type == T_VOID) && avoidable) {
+    if ((b->type == T_VOID) && (aflags & PT_FLAG_CMP_VOIDABLE)) {
       a = b;
       goto recur;
     }
@@ -5114,10 +5105,10 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   case T_MAPPING:
   case T_STRING:
     tmp = low_type_binop(op, a->car, b->car, remap,
-			 aflags, bflags, remap_flags);
+			 0, 0, remap_flags);
     if (!tmp && (op == PT_BINOP_AND)) return NULL;
     tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
-			  aflags, bflags, remap_flags);
+			  0, 0, remap_flags);
     if (!tmp2) {
       if (op == PT_BINOP_AND) {
 	free_type(tmp);
@@ -5155,7 +5146,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   case T_PROGRAM:
   case T_TYPE:
     tmp = low_type_binop(op, a->car, b->car, remap,
-			 aflags, bflags, remap_flags);
+			 0, 0, remap_flags);
     if (!tmp) return NULL;
     type_stack_mark();
     push_finished_type(tmp);
