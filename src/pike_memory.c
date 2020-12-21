@@ -1891,6 +1891,18 @@ PMOD_EXPORT int dmalloc_unregister(void *p, int already_gone)
   return ret;
 }
 
+static void dmalloc_ba_walk_unregister_cb(struct ba_iterator *it, void *ignored)
+{
+  low_dmalloc_unregister(it->cur, 0);
+}
+
+PMOD_EXPORT void dmalloc_unregister_all(struct block_allocator *a)
+{
+  mt_lock(&debug_malloc_mutex);
+  ba_walk(a, dmalloc_ba_walk_unregister_cb, NULL);
+  mt_unlock(&debug_malloc_mutex);
+}
+
 static int low_dmalloc_mark_as_free(void *p, int UNUSED(already_gone))
 {
   struct memhdr *mh=find_memhdr(p);

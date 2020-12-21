@@ -75,6 +75,7 @@ typedef void describe_block_fn (void *);
 
 #ifdef DEBUG_MALLOC
 struct memhdr;
+struct block_allocator;
 
 void dump_memhdr_locations(struct memhdr *from,
 			   struct memhdr *notfrom,
@@ -87,6 +88,7 @@ extern int verbose_debug_malloc;
 PMOD_EXPORT void dmalloc_trace(void *);
 PMOD_EXPORT void dmalloc_register(void *, int, LOCATION);
 PMOD_EXPORT int dmalloc_unregister(void *, int);
+PMOD_EXPORT void dmalloc_unregister_all(struct block_allocator *);
 PMOD_EXPORT void *debug_malloc(size_t, LOCATION);
 PMOD_EXPORT void *debug_calloc(size_t, size_t, LOCATION);
 PMOD_EXPORT void *debug_realloc(void *, size_t, LOCATION);
@@ -241,6 +243,7 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define dmalloc_trace(X)
 #define dmalloc_register(X,Y,Z)
 #define dmalloc_unregister(X,Y) 1
+#define dmalloc_unregister_all(X)
 #define debug_free(X,Y,Z) free((X))
 #define debug_malloc_name(P,FN,LINE)
 #define debug_malloc_copy_names(p,p2) 0
