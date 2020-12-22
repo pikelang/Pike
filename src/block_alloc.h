@@ -80,12 +80,19 @@ static struct block_allocator PIKE_CONCAT(DATA,_allocator) =                 \
                                                                              \
 struct DATA *PIKE_CONCAT(alloc_,DATA)(void) {	                             \
   struct DATA * ptr = (struct DATA *)ba_alloc(&PIKE_CONCAT(DATA,_allocator));\
+  DO_IF_DMALLOC(							     \
+    dmalloc_register(ptr, sizeof(struct DATA),				     \
+		     DMALLOC_NAMED_LOCATION(TOSTR(DATA)))		     \
+  );									     \
   INIT_BLOCK(ptr);                                                           \
   return ptr;                                                                \
 }									     \
                                                                              \
 void PIKE_CONCAT(really_free_,DATA)(struct DATA *d) {		             \
   EXIT_BLOCK(d);							     \
+  DO_IF_DMALLOC(							     \
+    dmalloc_unregister(d, 0)						     \
+  );									     \
   ba_free(&PIKE_CONCAT(DATA,_allocator), d);                                 \
 }                                                                            \
                                                                              \
@@ -230,8 +237,9 @@ static void PIKE_UNUSED_ATTRIBUTE PIKE_CONCAT3(init_,DATA,_hash)(void)       \
   PIKE_CONCAT3(low_init_,DATA,_hash)(BSIZE);		                     \
 }									     \
 									     \
-static void PIKE_CONCAT3(exit_,DATA,_hash)(void)				     \
+static void PIKE_CONCAT3(exit_,DATA,_hash)(void)			     \
 {									     \
+  DO_IF_DMALLOC(dmalloc_unregister_all(& PIKE_CONCAT(DATA,_allocator)));     \
   ba_free_all(& PIKE_CONCAT(DATA,_allocator));                               \
   free(PIKE_CONCAT(DATA,_hash_table));					     \
   PIKE_CONCAT(DATA,_hash_table)=0;					     \
