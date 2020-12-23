@@ -48,7 +48,6 @@ int max_correct_args;
 PMOD_EXPORT struct pike_type *string0_type_string;
 PMOD_EXPORT struct pike_type *string_type_string;
 PMOD_EXPORT struct pike_type *int_type_string;
-PMOD_EXPORT struct pike_type *int0_type_string;
 PMOD_EXPORT struct pike_type *int_pos_type_string;
 PMOD_EXPORT struct pike_type *float_type_string;
 PMOD_EXPORT struct pike_type *function_type_string;
@@ -82,6 +81,19 @@ PMOD_EXPORT struct pike_string *literal_mapping_string;
 PMOD_EXPORT struct pike_string *literal_type_string;
 PMOD_EXPORT struct pike_string *literal_mixed_string;
 
+/* Special case for converting T_ZERO into int(0) during processing.
+ * Note that int(0) is usually automatically converted into T_ZERO,
+ * so we need to define the type by hand explicitly here.
+ */
+static struct pike_type int0_type_string_storage = {
+  GC_HEADER_INIT(1),
+  0,
+  NULL,
+  0,
+  T_INT,
+  NULL, NULL,
+};
+#define int0_type_string (&int0_type_string_storage)
 
 #ifdef DO_PIKE_CLEANUP
 struct pike_type_location *all_pike_type_locations = NULL;
