@@ -12919,7 +12919,6 @@ void init_types(void)
   type_stack_mark();	/* Type stack marker sentinel. */
 
   int_type_string = CONSTTYPE(tInt);	/* MUST come before string and array! */
-  int0_type_string = CONSTTYPE(tInt0);
   int_pos_type_string = CONSTTYPE(tIntPos);
   string0_type_string = CONSTTYPE(tStr0);
   string_type_string = CONSTTYPE(tStr32);
@@ -13004,8 +13003,6 @@ void cleanup_pike_types(void)
   string_type_string = NULL;
   free_type(int_type_string);
   int_type_string = NULL;
-  free_type(int0_type_string);
-  int0_type_string = NULL;
   free_type(int_pos_type_string);
   int_pos_type_string = NULL;
   free_type(float_type_string);
