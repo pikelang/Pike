@@ -4879,6 +4879,22 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       a = b;
       goto recur;
     }
+    if ((a->type == T_ZERO) && (bflags & PT_FLAG_CMP_NULLABLE)) {
+      b = a;
+      goto recur;
+    }
+    if ((b->type == T_ZERO) && (aflags & PT_FLAG_CMP_NULLABLE)) {
+      a = b;
+      goto recur;
+    }
+    if ((a->type == T_INT) && (bflags & PT_FLAG_CMP_NULLABLE)) {
+      b = zero_type_string;
+      goto recur;
+    }
+    if ((b->type == T_INT) && (aflags & PT_FLAG_CMP_NULLABLE)) {
+      a = zero_type_string;
+      goto recur;
+    }
 
     if (b->type == T_MIXED) {
       /* NB: a being void has been handled above. */
