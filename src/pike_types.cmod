@@ -13318,8 +13318,7 @@ static void gc_mark_external_types(struct callback *UNUSED(cb),
     gc_mark_external(string_type_string, " as string_type_string");
   if (int_type_string)
     gc_mark_external(int_type_string, " as int_type_string");
-  if (int0_type_string)
-    gc_mark_external(int0_type_string, " as int0_type_string");
+  gc_mark_external(int0_type_string, " as int0_type_string");
   if (int_pos_type_string)
     gc_mark_external(int_pos_type_string, " as int_pos_type_string");
   if (object_type_string)
