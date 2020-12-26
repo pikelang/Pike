@@ -4576,9 +4576,10 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	if (ai->type == T_MANY) avoidable |= PT_FLAG_CMP_VOIDABLE;
 	if (bi->type == T_MANY) bvoidable |= PT_FLAG_CMP_VOIDABLE;
 
+	/* FIXME: Only use implicit nullable for legacy types. */
 	tmp = low_type_binop(op, ai->car, bi->car, remap,
-			     avoidable,
-			     bvoidable,
+			     avoidable | PT_FLAG_CMP_NULLABLE,
+			     bvoidable | PT_FLAG_CMP_NULLABLE,
 			     remap_flags);
 
 	if (remap_flags & PT_FLAG_REMAP_TRACE) {
@@ -5135,8 +5136,18 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     tmp = low_type_binop(op, a->car, b->car, remap,
 			 0, 0, remap_flags);
     if (!tmp && (op == PT_BINOP_AND)) return NULL;
-    tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
-			  0, 0, remap_flags);
+    if (a->type == T_STRING) {
+      tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
+			    0, 0, remap_flags);
+    } else {
+      /* Mappings may always result in UNDEFINED on indexing.
+       * Arrays are typically initialized to all zeroes.
+       */
+      tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
+			    PT_FLAG_CMP_NULLABLE,
+			    PT_FLAG_CMP_NULLABLE,
+			    remap_flags);
+    }
     if (!tmp2) {
       if (op == PT_BINOP_AND) {
 	free_type(tmp);
