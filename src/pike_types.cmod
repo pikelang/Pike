@@ -4976,6 +4976,8 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     return pop_unfinished_type();
   }
 
+  /* Invariant: a->type == b->type. */
+
   switch(a->type) {
   case T_VOID:
   case T_ZERO:
@@ -5280,7 +5282,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     return pop_unfinished_type();
   }
 
-  /* Leaf type. */
+  /* Leaf type. Most likely not reached. */
   if (op & PT_BINOP_AND) {
     add_ref(a);
     return a;
