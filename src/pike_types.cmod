@@ -4557,8 +4557,6 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       int nargs;
       struct pike_type *ai = a;
       struct pike_type *bi = b;
-      int got_empty = 0;
-      int got_full = 0;
 
       type_stack_mark();
       type_stack_mark();	/* To keep track of the number of args. */
@@ -4582,10 +4580,28 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 			     bvoidable | PT_FLAG_CMP_NULLABLE,
 			     remap_flags);
 
+	/* Advance to the next argument. */
+	if (ai->type == T_FUNCTION) {
+	  ai = ai->cdr;
+	}
+	if (bi->type == T_FUNCTION) {
+	  bi = bi->cdr;
+	}
+	if ((ai->type != T_FUNCTION) && (ai->type != T_MANY)) {
+	  if (aret) {
+	    Pike_fatal("Unsupported type operation.\n");
+	  }
+	  break;
+	}
+	if ((bi->type != T_FUNCTION) && (bi->type != T_MANY)) {
+	  if (bret) {
+	    Pike_fatal("Unsupported type operation.\n");
+	  }
+	  break;
+	}
+
 	if (remap_flags & PT_FLAG_REMAP_TRACE) {
-	  fprintf(stderr, "got_empty: %d, got_full: %d\n"
-		  "tmp: ",
-		  got_empty, got_full);
+	  fprintf(stderr, "tmp: ");
 	  simple_describe_type(tmp);
 	  fprintf(stderr, "\n");
 	}
@@ -4638,21 +4654,13 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	  }
 	  break;
 	case PT_BINOP_MINUS:
-	  if (!tmp) {
-	    if (got_full) goto function_next;
-	    got_empty = 1;
-	  } else {
-	    if (tmp == ai) {
-	      got_full = 1;
-	    } else {
+	  if (avoidable && bvoidable) {
+	    if (tmp != a->car) {
+	      if (!tmp) goto function_fail;
 	      free_type(tmp);
 	      goto complex_function;
 	    }
-	    free_type(tmp);
-	    if (got_empty) goto function_next;
-	  }
 
-	  if (avoidable && bvoidable) {
 	    /* Time to check the return types. */
 
 	    if (!aret) aret = ai->cdr;
@@ -4664,68 +4672,46 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 				 0, remap_flags);
 
 	    if (remap_flags & PT_FLAG_REMAP_TRACE) {
-	      fprintf(stderr, "got_empty: %d, got_full: %d\n"
-		      "ret tmp: ",
-		      got_empty, got_full);
+	      fprintf(stderr, "ret tmp: ");
 	      simple_describe_type(tmp);
 	      fprintf(stderr, "\n");
 	    }
 
-	    if (!tmp) {
-	      if (got_full) goto function_next;
-	      got_empty = 1;
-	    } else {
-	      if (tmp == aret) {
-		got_full = 1;
-	      } else {
-		free_type(tmp);
-		goto function_next;
-	      }
-	      free_type(tmp);
-	      if (got_empty) goto function_next;
-	    }
-
-	    /* Note: We have pushed two type stack marks earlier,
-	     *       so we need to get rid of them before returning.
-	     */
-	    if (!got_full) {
-	      pop_stack_mark();
-	      pop_stack_mark();
-	      return NULL;
-	    }
+	    if (!tmp) goto function_fail;
 
 	    pop_stack_mark();
-	    push_remap_markers(a, NULL, remap, remap_flags);
+	    push_finished_type(tmp);
+	    push_remap_markers(a->car, NULL, remap, remap_flags);
+	    push_type(T_MANY);
+
 	    return pop_unfinished_type();
 	  }
-	  break;
+	  if (tmp) {
+	    push_remap_markers(ai, NULL, remap, remap_flags);
+	    push_finished_type(tmp);
+	    push_type(T_FUNCTION);
+	    free_type(tmp);
+	  }
+	  tmp = low_type_binop(op, ai, bi, NULL, aflags, bflags, remap_flags);
+	  if (tmp) {
+	    push_finished_type(tmp);
+	    push_remap_markers(a->car, NULL, remap, remap_flags);
+	    push_type(T_FUNCTION);
+	    free_type(tmp);
+	  }
+	  nargs = pop_stack_mark();
+	  if (!nargs) {
+	    pop_stack_mark();
+	    return NULL;
+	  }
+	  while (nargs-- > 1) push_type(T_OR);
+	  return pop_unfinished_type();
+
 	default:
 	  Pike_fatal("Unsupported.\n");
 	}
 
-      function_next:
-
 	if (avoidable && bvoidable) break;
-
-	/* Advance to the next argument. */
-	if (ai->type == T_FUNCTION) {
-	  ai = ai->cdr;
-	}
-	if (bi->type == T_FUNCTION) {
-	  bi = bi->cdr;
-	}
-	if ((ai->type != T_FUNCTION) && (ai->type != T_MANY)) {
-	  if (aret) {
-	    Pike_fatal("Unsupported type operation.\n");
-	  }
-	  break;
-	}
-	if ((bi->type != T_FUNCTION) && (bi->type != T_MANY)) {
-	  if (bret) {
-	    Pike_fatal("Unsupported type operation.\n");
-	  }
-	  break;
-	}
       }
 
     complex_function:
@@ -4750,8 +4736,8 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       return pop_unfinished_type();
 
     function_fail:
-      compiler_discard_type();
       pop_stack_mark();
+      compiler_discard_type();
       return NULL;
     }
 
