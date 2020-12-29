@@ -51,11 +51,14 @@ static struct block_allocator program_allocator = BA_INIT_PAGES(sizeof(struct pr
 
 ATTRIBUTE((malloc))
 struct program * alloc_program(void) {
-    return ba_alloc(&program_allocator);
+    struct program *p = ba_alloc(&program_allocator);
+    dmalloc_register(p, sizeof(struct program), DMALLOC_LOCATION());
+    return p;
 }
 
 void really_free_program(struct program * p) {
     exit_program_struct(p);
+    dmalloc_unregister(p, 0);
     ba_free(&program_allocator, p);
 }
 
