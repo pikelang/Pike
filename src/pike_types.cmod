@@ -4559,7 +4559,6 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       struct pike_type *bi = b;
 
       type_stack_mark();
-      type_stack_mark();	/* To keep track of the number of args. */
 
       while(1) {
 	/* Invariant:
@@ -4639,7 +4638,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	    }
 	    if (!tmp) goto function_fail;
 
-	    nargs = pop_stack_mark();
+	    nargs = peek_stack_mark();
 
 	    push_finished_type(tmp);
 	    free_type(tmp);
@@ -4699,7 +4698,6 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	  if (avoidable && bvoidable) {
 	    /* FIXME: What if tmp only differs due to remapping? */
 	    if (tmp != a->car) {
-	      pop_stack_mark();
 	      if (!tmp) {
 		push_remap_markers(a->cdr, NULL, remap, remap_flags);
 		push_type(T_VOID);
@@ -4747,7 +4745,6 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 
 	    if (!tmp) goto function_fail;
 
-	    pop_stack_mark();
 	    push_finished_type(tmp);
 	    push_remap_markers(a->car, NULL, remap, remap_flags);
 	    push_type(T_MANY);
@@ -4782,7 +4779,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	    push_type(T_FUNCTION);
 	    free_type(tmp);
 	  }
-	  nargs = pop_stack_mark();
+	  nargs = peek_stack_mark();
 	  if (!nargs) {
 	    pop_stack_mark();
 	    return NULL;
@@ -4799,7 +4796,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 
     complex_function:
 
-      nargs = pop_stack_mark();
+      nargs = peek_stack_mark();
       if (op != PT_BINOP_AND) {
 	nargs = 0;
 	ai = a;
