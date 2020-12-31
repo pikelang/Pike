@@ -1969,6 +1969,7 @@ AC_DEFUN(PIKE_CHECK_ABI_LIB_DIR,
       LDFLAGS="${LDFLAGS} $add_ldflags -lm"
       AC_TRY_RUN([
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 int main(int argc, char **argv)
 {
@@ -1982,6 +1983,7 @@ int main(int argc, char **argv)
             add_ldflags=""
         ],[AC_TRY_LINK([
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
     	   ],[
     	     double (*foo)(double) = ceil;
@@ -2082,6 +2084,7 @@ AC_DEFUN(PIKE_PKG_CONFIG,
       AC_MSG_CHECKING([if $1 breaks compilation...])
       AC_TRY_COMPILE([
 #include <stdio.h>
+#include <stdlib.h>
 ],[
         printf("Hello, world\n");
 	exit(0);

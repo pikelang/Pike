@@ -296,6 +296,7 @@ int accept4(int fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen, int flags)
 
 #ifdef TESTING
 
+#include <stdlib.h>
 
 #if defined(HAVE_WINSOCK_H) && defined(USE_IOCTLSOCKET_FIONBIO)
 int main()

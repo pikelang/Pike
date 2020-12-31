@@ -2559,6 +2559,7 @@ for YACC in pyacc "byacc -s" "bison -y" yacc "None"; do
 cat >conftest.y<<\EOF
 %pure_parser
 %{
+#include <stdlib.h>
 void parse();
 void yyerror(char *);
 %}
@@ -2672,6 +2673,7 @@ void yyerror(char *fel) { errors++; }
 EOF
     if $YACC -d conftest.y 1>&AC_FD_CC 2>&AC_FD_CC; then
       AC_TRY_COMPILE([
+#include <stdlib.h>
 #include "y.tab.c"
 ],[
 yyparse();
@@ -2733,6 +2735,7 @@ EOF
       cat conftest.y 1>&AC_FD_CC
       if $YACC -d conftest.y 1>&AC_FD_CC 2>&AC_FD_CC; then
         AC_TRY_LINK([
+#include <stdlib.h>
 #include "y.tab.c"
         ], [
   yyparse();
@@ -3559,6 +3562,7 @@ int main(int argc, char **argv)
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS 1
 
+#include <stdlib.h>
 #include <pthread.h>
 
 void *foo(void *bar) { pthread_exit(0); return 0; }
@@ -3589,6 +3593,7 @@ int main()
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS 1
 
+#include <stdlib.h>
 #include <pthread.h>
 
 void *foo(void *bar) { pthread_exit(0); return 0; }
@@ -3802,6 +3807,7 @@ pthread_t gazonk;
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS 1
 
+#include <stdlib.h>
 #include <pthread.h>
 
 void *foo(void *bar) { return (void *)getpid();  }
@@ -3878,6 +3884,7 @@ extern pthread_t bar;
 #define _REENTRANT
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS 1
+#include <stdlib.h>
 #include <thread.h>
 #ifdef _UNIXWARE_THREADS_
 #include <synch.h>
@@ -3951,6 +3958,7 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; t
     rm -f confdefs.out.2 >/dev/null 2>&1 || :
     AC_TRY_RUN([
 #include <stdio.h>
+#include <stdlib.h>
 
       static int depth=0;
       FILE *f;
@@ -4619,6 +4627,7 @@ fi
 # with AC_CHECK_FUNCS().
 MY_CHECK_FUNCTION(isfinite,
 [
+#include <stdlib.h>
 #include <math.h>
 ], [
   int t = isfinite(0.0);
@@ -4638,6 +4647,7 @@ AC_CACHE_VAL(pike_cv_broken_f_setfd, [
 #include <fcntl.h>
 #endif /* HAVE_FCNTL_H */
 #include <stdio.h>
+#include <stdlib.h>
 #ifndef FD_CLOEXEC
 #define FD_CLOEXEC 1
 #endif /* FD_CLOEXEC */
@@ -5157,6 +5167,7 @@ AC_CACHE_VAL(pike_cv_hardware_stack_direction,
 [
   AC_TRY_RUN([
 #include <stdio.h>
+#include <stdlib.h>
 static int find_stack_direction(void *foo, int cnt)
 {
   if (cnt) return 1*find_stack_direction(foo, cnt>>1);
@@ -5568,6 +5579,7 @@ fi
 ########################################################################
 MY_CHECK_FUNCTION(fork,
 [
+#include <stdlib.h>
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -5579,6 +5591,7 @@ MY_CHECK_FUNCTION(fork,
 ########################################################################
 MY_CHECK_FUNCTION(fpsetmask,
 [
+#include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -5594,6 +5607,7 @@ MY_CHECK_FUNCTION(fpsetmask,
 ########################################################################
 MY_CHECK_FUNCTION(fpsetround,
 [
+#include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -5613,6 +5627,7 @@ MY_CHECK_FUNCTION(fpsetround,
 ########################################################################
 MY_CHECK_FUNCTION(isless,
 [
+#include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -5629,6 +5644,7 @@ MY_CHECK_FUNCTION(isless,
 ########################################################################
 MY_CHECK_FUNCTION(isunordered,
 [
+#include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -5646,6 +5662,7 @@ MY_CHECK_FUNCTION(isunordered,
 ########################################################################
 MY_CHECK_FUNCTION(dlopen,
 [
+#include <stdlib.h>
 #include <dlfcn.h>
 ], [
   dlopen(0, 0);
@@ -5655,6 +5672,7 @@ MY_CHECK_FUNCTION(dlopen,
 ########################################################################
 MY_CHECK_FUNCTION(rint,
 [
+#include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -5679,6 +5697,7 @@ MY_CHECK_FUNCTION(rint,
 #############################################################################
 MY_CHECK_FUNCTION(GetSystemTimeAsFileTime,
 [
+#include <stdlib.h>
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
 #endif
@@ -5693,6 +5712,7 @@ MY_CHECK_FUNCTION(GetSystemTimeAsFileTime,
 #############################################################################
 MY_CHECK_FUNCTION(gethostname,
 [
+#include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -5727,6 +5747,7 @@ fi
 
 AC_MSG_CHECKING([for union wait (old BSD convention)])
 AC_CACHE_VAL(pike_cv_union_wait, [ AC_TRY_COMPILE([
+#include <stdlib.h>
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif /* HAVE_SYS_WAIT_H */
@@ -5760,6 +5781,7 @@ AC_MSG_CHECKING(how to extract an unsigned char)
 AC_CACHE_VAL(pike_cv_method_extract_uchar,
 [
 AC_TRY_RUN([
+#include <stdlib.h>
 int main()
 {
   char i,*p;
@@ -5785,6 +5807,7 @@ AC_MSG_CHECKING(how to extract a signed char)
 AC_CACHE_VAL(pike_cv_method_extract_char,
 [
 AC_TRY_RUN([
+#include <stdlib.h>
 int main()
 {
   char i,*p;
@@ -5809,6 +5832,7 @@ AC_MSG_CHECKING(if float conversion can cause SIGFPE)
 AC_CACHE_VAL(pike_cv_sys_idiot_sigfpe,
 [
  AC_TRY_RUN([
+#include <stdlib.h>
 #include <math.h>
 
 #ifdef HAVE_FLOATINGPOINT_H
@@ -5857,6 +5881,7 @@ if test $pike_cv_sys_idiot_sigfpe = yes ; then
  OLD_CFLAGS="$CFLAGS"
  CFLAGS="$CFLAGS $OPTIMIZE"
  AC_TRY_RUN([
+#include <stdlib.h>
 #include <math.h>
 
 #ifdef HAVE_FLOATINGPOINT_H
@@ -5903,6 +5928,7 @@ if test $TEST_IGNORE_SIGFPE = yes; then
  OLD_CFLAGS="$CFLAGS"
  CFLAGS="$CFLAGS $OPTIMIZE"
 AC_TRY_RUN([
+#include <stdlib.h>
 #include <signal.h>
 #include <math.h>
 int counter=0;
@@ -5946,6 +5972,7 @@ fi # pike_cv_sys_idiot_sigfpe
 #############################################################################
 
 define(float_check, [[
+#include <stdlib.h>
 #include <math.h>
 #define TY $1
 #define TEST_$1
@@ -6251,6 +6278,7 @@ AC_MSG_CHECKING(if __func__ exists and works)
 AC_CACHE_VAL(pike_cv_have_working___func__,
 [
   AC_TRY_RUN([
+#include <stdlib.h>
 #include <string.h>
 int main()
 {
@@ -6270,6 +6298,7 @@ AC_MSG_CHECKING(if __FUNCTION__ exists and works)
 AC_CACHE_VAL(pike_cv_have_working___FUNCTION__,
 [
   AC_TRY_RUN([
+#include <stdlib.h>
 #include <string.h>
 int main()
 {
@@ -6300,6 +6329,7 @@ AC_MSG_CHECKING(for lc __declspec)
 AC_CACHE_VAL(pike_cv_lc___declspec,
 [
   AC_TRY_RUN([
+#include <stdlib.h>
 #include <stdarg.h>
 __declspec(noreturn) void fatal(char *foo,...);
 
@@ -6317,6 +6347,7 @@ int main() {  exit(0); }
   ], pike_cv_lc___declspec=yes, pike_cv_lc___declspec=no, [
     echo $ac_n "crosscompiling... $ac_c" 1>&6
     AC_TRY_LINK([
+#include <stdlib.h>
 #include <stdarg.h>
 __declspec(noreturn) void fatal(char *foo,...);
 
@@ -7000,6 +7031,7 @@ AC_MSG_CHECKING(if gettimeofday takes two arguments)
 AC_CACHE_VAL(pike_cv_func_gettimeofday_has_two_args,
 [
   AC_TRY_RUN([
+#include <stdlib.h>
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>
 # include <time.h>
@@ -7028,6 +7060,7 @@ int main() {
   ], [ pike_cv_func_gettimeofday_has_two_args=no
   ], [
     AC_TRY_LINK([
+#include <stdlib.h>
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>
 # include <time.h>
@@ -7519,7 +7552,8 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
   fi
   OLD_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $CCSHARED"
-  AC_TRY_COMPILE([], [exit(0);],
+  AC_TRY_COMPILE([#include <stdlib.h>
+    ], [exit(0);],
     pike_cv_sys_ccshared="$CCSHARED", pike_cv_sys_ccshared='')
   CFLAGS="$OLD_CFLAGS"
 ])
@@ -7562,7 +7596,8 @@ then
       UnixWare*|OpenUNIX*) LINKFORSHARED="-fpic -Wl,-Bexport";;
 
       FreeBSD*)
-        AC_TRY_RUN([int main(){exit(
+        AC_TRY_RUN([#include <stdlib.h>
+int main(){exit(
 #ifdef __ELF__
     0
 #else
@@ -7585,7 +7620,8 @@ then
       UnixWare*|OpenUNIX*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
 
       FreeBSD*)
-        AC_TRY_RUN([int main(){exit(
+        AC_TRY_RUN([#include <stdlib.h>
+int main(){exit(
 #ifdef __ELF__
     0
 #else
@@ -7601,7 +7637,8 @@ fi
 
    OLD_CFLAGS="$CFLAGS"
    CFLAGS="$CFLAGS $LINKFORSHARED"
-   AC_TRY_RUN([int main() { exit(0); }],
+   AC_TRY_RUN([#include <stdlib.h>
+int main() { exit(0); }],
  pike_cv_sys_linkforshared="$LINKFORSHARED", pike_cv_sys_linkforshared='', pike_cv_sys_linkforshared='')
    CFLAGS="$OLD_CFLAGS"
 ])
@@ -7658,6 +7695,7 @@ EOF
       ;;
     esac
     AC_TRY_RUN([
+#include <stdlib.h>
 #define TESTING
 #include "dynamic_load.c"
 #if __GNUC__ >= 4
