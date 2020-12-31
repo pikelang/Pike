@@ -4590,6 +4590,9 @@ AC_TRY_COMPILE([
 #ifdef HAVE_DIRECT_H
 #include <direct.h>
 #endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
 ],[
   mkdir("conftestdir",0666);
 ],pike_cv_func_mkdir_args=2,pike_cv_func_mkdir_args=1)
