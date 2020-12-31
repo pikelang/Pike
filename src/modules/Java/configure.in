@@ -337,7 +337,7 @@ if test "x$with_java" = xyes; then
     AC_SYS_COMPILER_FLAG(-DMACOSX, define_macosx, CPPFLAGS)
   ])
 
-  AC_CHECK_HEADERS(jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h setjmp.h)
+  AC_CHECK_HEADERS(jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h setjmp.h unistd.h)
 
   if test x"$pike_cv_option_framework_JavaVM" = xyes ; then
   AC_CHECK_HEADERS(JavaVM/jni.h)
@@ -519,6 +519,10 @@ if test "x$with_java" = xyes; then
 #include <setjmp.h>
 #endif
 #include <stdio.h>
+#include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #ifdef __NT__
 #include <windows.h>
 #include "ntdl.c"

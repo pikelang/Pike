@@ -284,7 +284,20 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       ], [
         /* Try HPUX */
         return (int)sendfile(0,0,0,0,(void *)0,0);
-      ], [ pike_cv_sendfile_args=6 ], [ pike_cv_sendfile_args=4 ])
+      ], [ pike_cv_sendfile_args=6 ], [
+        AC_TRY_COMPILE([
+#include <sys/types.h>
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+        ], [
+          /* Try Linux */
+          return sendfile(0,0,(void *)0,0);
+        ], [ pike_cv_sendfile_args=4 ], [ pike_cv_sendfile_args=bad ])
+      ])
     ])
   ])
   if test "$pike_cv_sendfile_args" = "7"; then
@@ -376,7 +389,12 @@ if test "$ac_cv_func_sendfile" = "yes"; then
         AC_DEFINE(HAVE_HPUX_SENDFILE)
       fi
     else
-      AC_MSG_RESULT([4 - Linux style])
+      if test "$pike_cv_sendfile_args" = "4"; then
+        AC_MSG_RESULT([4 - Linux style])
+      else
+        AC_MSG_RESULT(failed - disabling use of sendfile)
+        AC_DEFINE(HAVE_BROKEN_SENDFILE)
+      fi
     fi
   fi
 else
@@ -400,6 +418,7 @@ if test x$ac_cv_func_getxattr = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #include <sys/types.h>
 #ifdef HAVE_SYS_XATTR_H
 #include <sys/xattr.h>
@@ -424,6 +443,7 @@ if test x$ac_cv_func_getxattr = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #include <sys/types.h>
 #ifdef HAVE_SYS_XATTR_H
 #include <sys/xattr.h>
@@ -474,6 +494,7 @@ if test x$ac_cv_func_readdir_r = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #include <sys/types.h>
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
@@ -525,6 +546,7 @@ if test x$pike_cv_func_posix_readdir_r = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #include <sys/errno.h>
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
@@ -609,6 +631,7 @@ else
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #include <sys/errno.h>
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
@@ -843,6 +866,7 @@ if test x$ac_cv_func_statfs = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -1080,6 +1104,7 @@ AC_CACHE_VAL(pike_cv_func_failsafe_strerror,
 AC_TRY_RUN([
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 int main()
 {
   int e;
@@ -1116,6 +1141,7 @@ AC_TRY_RUN([
 #define POSIX_SOURCE
 #endif
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <netinet/in.h>
