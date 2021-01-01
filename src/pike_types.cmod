@@ -4245,6 +4245,36 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     push_type(T_OR);
     return pop_unfinished_type();
 
+  case PT_BINOP_XOR:
+    /* A XOR B == (A OR B) - (A AND B) */
+    tmp = low_type_binop(PT_BINOP_OR, a, b, remap,
+			 aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+
+    tmp2 = low_type_binop(PT_BINOP_AND, a, b, remap,
+			  aflags, bflags, remap_flags);
+    if (!tmp2) return tmp;
+
+    ret = low_type_binop(PT_BINOP_MINUS, tmp, tmp2, NULL, 0, 0, 0);
+    free_type(tmp);
+    free_type(tmp2);
+    return ret;
+
+  case PT_BINOP_XNOR:
+    /* A XNOR B == (A NAND B) - (A NOR B) */
+    tmp = low_type_binop(PT_BINOP_NAND, a, b, remap,
+			 aflags, bflags, remap_flags);
+    if (!tmp) return NULL;
+
+    tmp2 = low_type_binop(PT_BINOP_NOR, a, b, remap,
+			  aflags, bflags, remap_flags);
+    if (!tmp2) return tmp;
+
+    ret = low_type_binop(PT_BINOP_MINUS, tmp, tmp2, NULL, 0, 0, 0);
+    free_type(tmp);
+    free_type(tmp2);
+    return ret;
+
 #ifdef PIKE_DEBUG
   default:
     Pike_fatal("Unsupported binary type operation: 0x%02x\n", op);
