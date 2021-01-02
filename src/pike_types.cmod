@@ -4846,7 +4846,6 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       return pop_unfinished_type();
 
     function_fail:
-      pop_stack_mark();
       compiler_discard_type();
       return NULL;
     }
