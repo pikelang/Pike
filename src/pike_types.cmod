@@ -4727,12 +4727,24 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	   */
 	  if (avoidable && bvoidable) {
 	    /* FIXME: What if tmp only differs due to remapping? */
+	    if (tmp && tmp->type == T_VOID) {
+	      free_type(tmp);
+	      tmp = NULL;
+	    }
 	    if (tmp != a->car) {
 	      if (!tmp) {
-		push_remap_markers(a->cdr, NULL, remap, remap_flags);
-		push_type(T_VOID);
-		push_type(T_MANY);
-		return pop_unfinished_type();
+		tmp = low_type_binop(op, a->cdr, b->cdr, remap,
+				     PT_FLAG_CMP_VOIDABLE,
+				     0, remap_flags);
+		if (tmp) {
+		  push_finished_type(tmp);
+		  push_type(T_VOID);
+		  push_type(T_MANY);
+		  free_type(tmp);
+		  return pop_unfinished_type();
+		}
+		pop_stack_mark();
+		return NULL;
 	      }
 	      /* FIXME: What about tmp->type == T_VOID? */
 	      push_type(T_MIXED);
