@@ -1847,6 +1847,9 @@ PMOD_EXPORT void do_free_program (struct program *p)
  * machine code. For decoding efficiency we also want a multi copy
  * variant to be used by decode().
  */
+#if !defined(HAVE_PTHREAD_JIT_WRITE_PROTECT_NP) && !defined(pthread_jit_write_protect_np)
+#define phtread_jit_write_protect_np(enable) do{}while(0)
+#endif
 #define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)					\
 void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
                                     TYPE ARG) {				\
@@ -1865,8 +1868,10 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
     state->new_program->NAME=tmp;					\
   }									\
+  pthread_jit_write_protect_np(0);					\
   state->new_program->							\
     NAME[state->new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);		\
+  pthread_jit_write_protect_np(1);					\
 }									\
 void PIKE_CONCAT(low_add_many_to_,NAME) (struct program_state *state,	\
 					 TYPE *ARG, NUMTYPE cnt) {	\
@@ -1889,9 +1894,11 @@ void PIKE_CONCAT(low_add_many_to_,NAME) (struct program_state *state,	\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
     state->new_program->NAME=tmp;					\
   }									\
+  pthread_jit_write_protect_np(0);					\
   memcpy(state->new_program->NAME +					\
 	 state->new_program->PIKE_CONCAT(num_,NAME),			\
 	 ARG, sizeof(TYPE) * cnt);					\
+  pthread_jit_write_protect_np(1);					\
   state->new_program->PIKE_CONCAT(num_,NAME) += cnt;			\
 }									\
 void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
@@ -5311,7 +5318,13 @@ static void add_compat_event_handler(void)
 PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
 {
   add_compat_event_handler();
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_INIT]=init;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
 }
 
 /**
@@ -5334,7 +5347,13 @@ PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
 PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
 {
   add_compat_event_handler();
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_EXIT]=exit;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
   Pike_compiler->new_program->flags |= PROGRAM_LIVE_OBJ;
 }
 
@@ -5370,7 +5389,13 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
 {
   add_compat_event_handler();
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_GC_RECURSE]=m;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
 }
 
 /**
@@ -5392,7 +5417,13 @@ PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
 {
   add_compat_event_handler();
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_GC_CHECK]=m;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
 }
 
 /**

@@ -3555,7 +3555,8 @@ int main(int argc, char **argv)
   PIKE_AC_DEBUG
 
   AC_CHECK_FUNCS(pthread_init pthread_mutexattr_init pthread_kill \
-                 pthread_cond_reltimedwait_np pthread_mach_thread_np)
+                 pthread_cond_reltimedwait_np pthread_mach_thread_np \
+                 pthread_jit_write_protect_np)
 
   AC_MSG_CHECKING(posix threads)
 
@@ -4070,6 +4071,9 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
 #define MAP_ANONYMOUS	MAP_ANON
 #endif /* !MAP_ANONYMOUS && MAP_ANON */
+#ifndef MAP_JIT
+#define MAP_JIT 0
+#endif
 
       int main(int argc, char **argv)
       {
@@ -4088,10 +4092,10 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 #define MAP_ANONYMOUS	0
 #endif /* !MAP_ANONYMOUS */
 	if ((ptr = mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,
-		        MAP_PRIVATE|MAP_ANONYMOUS,
+		        MAP_PRIVATE|MAP_ANONYMOUS|MAP_JIT,
 			dev_zero, 0)) == MAP_FAILED) {
 	  fprintf(stderr, "mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,\n"
-			  "MAP_PRIVATE|MAP_ANONYMOUS, %d, 0) failed. errno: %d\n",
+			  "MAP_PRIVATE|MAP_ANONYMOUS|MAP_JIT, %d, 0) failed. errno: %d\n",
 		  dev_zero,
 		  errno);
 	  return 2;
@@ -4127,6 +4131,9 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
 #define MAP_ANONYMOUS	MAP_ANON
 #endif /* !MAP_ANONYMOUS && MAP_ANON */
+#ifndef MAP_JIT
+#define MAP_JIT 0
+#endif
       ], [
         void *ptr;
 	int dev_zero = -1;
@@ -4139,7 +4146,7 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 #define MAP_ANONYMOUS	0
 #endif /* !MAP_ANONYMOUS */
 	if ((ptr = mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,
-		        MAP_PRIVATE|MAP_ANONYMOUS,
+		        MAP_PRIVATE|MAP_ANONYMOUS|MAP_JIT,
 			dev_zero, 0)) == MAP_FAILED) {
 	  return 2;
 	}

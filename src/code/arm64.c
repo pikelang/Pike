@@ -12,6 +12,7 @@
 #include "builtin_functions.h"
 #include "bignum.h"
 #include "constants.h"
+#include "pike_threadlib.h"
 
 #define MACRO  ATTRIBUTE((unused)) static
 

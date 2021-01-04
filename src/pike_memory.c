@@ -8,6 +8,7 @@
 #include "pike_memory.h"
 #include "pike_error.h"
 #include "pike_macros.h"
+#include "pike_threadlib.h"
 #include "gc.h"
 #include "fd_control.h"
 #include "block_allocator.h"
@@ -393,10 +394,14 @@ static int dev_zero = -1;
 #define MAP_ANONYMOUS	0
 #endif
 
+#ifndef MAP_JIT
+#define MAP_JIT 0
+#endif
+
 static inline void *mexec_do_alloc (void *start, size_t length)
 {
   void *blk = mmap(start, length, PROT_EXEC|PROT_READ|PROT_WRITE,
-		   MAP_PRIVATE|MAP_ANONYMOUS, dev_zero, 0);
+		   MAP_PRIVATE|MAP_ANONYMOUS|MAP_JIT, dev_zero, 0);
   if (blk == MAP_FAILED) {
     fprintf(stderr, "mmap of %"PRINTSIZET"u bytes failed, errno=%d. "
 	    "(dev_zero=%d)\n", length, errno, dev_zero);
@@ -534,6 +539,9 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 
   hdr = mexec_do_alloc (wanted, sz);
   if (!hdr) return NULL;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   if (hdr == wanted) {
     /* We succeeded in growing. */
 #ifdef MY_MEXEC_ALLOC_STATS
@@ -541,6 +549,9 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
     total_size += sz;
 #endif
     base->size += sz;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+    pthread_jit_write_protect_np(1);
+#endif
     verify_mexec_hdr(base);
     return base;
   }
@@ -557,6 +568,9 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 	total_size += sz;
 #endif
 	wanted->next->size += sz;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+        pthread_jit_write_protect_np(1);
+#endif
 	verify_mexec_hdr(wanted->next);
 	return wanted->next;
       }
@@ -574,6 +588,9 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
   hdr->size = sz;
   hdr->free = NULL;
   hdr->bottom = (char *)(hdr+1);
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
   verify_mexec_hdr(hdr);
   return hdr;
 }
@@ -587,6 +604,9 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
   /* fprintf(stderr, "low_mexec_alloc(%p, %p)\n", hdr, (void *)sz); */
   if (!hdr) return NULL;
   verify_mexec_hdr(hdr);
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   free = &hdr->free;
   while (*free && ((*free)->size < (ptrdiff_t)sz)) {
     free = &((*free)->next);
@@ -613,6 +633,9 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
     }
     hdr->bottom += sz;
   } else {
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+    pthread_jit_write_protect_np(1);
+#endif
     return NULL;
   }
   res->size = sz;
@@ -620,6 +643,9 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
 #ifdef MEXEC_MAGIC
   res->magic = MEXEC_MAGIC;
 #endif /* MEXEC_MAGIC */
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
   verify_mexec_hdr(hdr);
   return res;
 }
@@ -651,6 +677,9 @@ PMOD_EXPORT void mexec_free(void *ptr)
   VALGRIND_DISCARD_TRANSLATIONS (mblk, mblk->size);
 #endif
 
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   blk = (struct mexec_free_block *)mblk;
 
   next = hdr->free;
@@ -689,6 +718,9 @@ PMOD_EXPORT void mexec_free(void *ptr)
       hdr->free = blk;
     }
   }
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
   verify_mexec_hdr(hdr);
 }
 
@@ -773,8 +805,14 @@ void *mexec_realloc(void *ptr, size_t sz)
   if ((((char *)old) + old->size) == hdr->bottom) {
     /* Attempt to grow the block. */
     if ((((char *)old) - ((char *)hdr)) <= (hdr->size - (ptrdiff_t)sz)) {
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+      pthread_jit_write_protect_np(0);
+#endif
       old->size = sz;
       hdr->bottom = ((char *)old) + sz;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+      pthread_jit_write_protect_np(1);
+#endif
       /* fprintf(stderr, " ==> %p (succeded in growing)\n", ptr); */
 #ifdef PIKE_DEBUG
       if (old->hdr != hdr) {
@@ -804,8 +842,14 @@ void *mexec_realloc(void *ptr, size_t sz)
       }
       if (hdr == old_hdr) {
 	/* Succeeded in growing our old hdr. */
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+        pthread_jit_write_protect_np(0);
+#endif
 	old->size = sz;
 	hdr->bottom = ((char *)old) + sz;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+        pthread_jit_write_protect_np(1);
+#endif
 	/* fprintf(stderr, " ==> %p (succeded in growing hdr)\n", ptr); */
 #ifdef PIKE_DEBUG
 	if (old->hdr != hdr) {
@@ -835,7 +879,13 @@ void *mexec_realloc(void *ptr, size_t sz)
 
   /* fprintf(stderr, " ==> %p\n", res + 1); */
 
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   memcpy(res+1, old+1, old->size - sizeof(*old));
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
   mexec_free(ptr);
 
 #ifdef PIKE_DEBUG
