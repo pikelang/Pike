@@ -673,7 +673,9 @@ case "$pike_cv_sys_os" in
       fi
    ;;
   Darwin*)
+   # macOS lacks prototypes for these with _POSIX_C_SOURCE
    ac_cv_func_getpagesize="no"
+   ac_cv_func_chroot="no"
    ;;
 esac
 
@@ -4565,6 +4567,7 @@ AC_CHECK_FUNCS( \
  _crypt \
  poll \
  accept4 \
+ chroot \
  closefrom \
  crypt \
  fdwalk \

@@ -4111,6 +4111,7 @@ void f_create_process(INT32 args)
 #endif /* _sys_nsig */
       }
 
+#ifdef HAVE_CHROOT
       if(mchroot)
       {
 	if( chroot( mchroot ) )
@@ -4129,6 +4130,7 @@ void f_create_process(INT32 args)
 	  PROCERROR(PROCE_CHDIR, 1);
 	}
       }
+#endif
 
       if(tmp_cwd)
       {
