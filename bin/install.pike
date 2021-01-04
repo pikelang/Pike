@@ -2586,6 +2586,135 @@ void dump_modules()
   status_clear(1);
 }
 
+// Recalculate adhoc signature hashes on macOS after updating the master cookie
+array(int) find_macho_signature(Stdio.File f)
+{
+  int magic;
+  string endian;
+  f->seek(0);
+  sscanf(f->read(4), "%4c", magic);
+  if (magic == 0xfeedfacf) {
+    endian = "";
+  } else if (magic == 0xcffaedfe) {
+    endian = "-";
+  } else
+    return 0;
+  array(int) header = array_sscanf(f->read(4*7), ("%"+endian+"4c")*7);
+  if (sizeof(header) < 7)
+    return 0;
+  int ncmds = header[3];
+  for(int i=0; i<ncmds; i++) {
+    int cmdstart = f->tell();
+    array(int) command = array_sscanf(f->read(4*2), ("%"+endian+"4c")*2);
+    if (sizeof(command) < 2)
+      return 0;
+    if (command[0] == 0x1d && command[1] >= 8) {
+      array(int) sig = array_sscanf(f->read(4*2), ("%"+endian+"4c")*2);
+      if (sizeof(sig) == 2)
+        return sig;
+    }
+    f->seek(cmdstart + command[1]);
+  }
+  return 0;
+}
+
+int find_superblob_code_directory(Stdio.File f, int sb_offs, int sb_len)
+{
+  if (sb_len < 4*3)
+    return 0;
+  f->seek(sb_offs);
+  array(int) header = array_sscanf(f->read(4*3), "%4c"*3);
+  if (sizeof(header) < 3 || header[0] != 0xfade0cc0 || header[1] > sb_len)
+    return 0;
+  sb_len = header[1];
+  int nslot = header[2];
+  if (sb_len < 4*3 + 4*2*nslot)
+    return 0;
+  for (int i=0; i<nslot; i++) {
+    array(int) slot = array_sscanf(f->read(4*2), "%4c"*2);
+    if (sizeof(slot) < 2)
+      return 0;
+    if (slot[0] == 0)
+      return slot[1];
+  }
+  return 0;
+}
+
+array(int) find_code_directory_hash_layout(Stdio.File f, int sb_offs, int sb_len, int cd_offs)
+{
+  if (cd_offs + 40 > sb_len)
+    return 0;
+  f->seek(sb_offs + cd_offs);
+  array(int) header = array_sscanf(f->read(40), "%4c"*9 + "%1c"*4);
+  if (sizeof(header) < 13 || header[0] != 0xfade0c02 ||
+      header[1] < 40 || cd_offs + header[1] > sb_len)
+    return 0;
+  int hash_offs = header[4];
+  int n_code_slots = header[7];
+  int code_limit = header[8];
+  int hash_size = header[9];
+  int hash_type = header[10];
+  int page_size = header[12];
+  if (hash_offs + n_code_slots * hash_size > sb_len)
+    return 0;
+  return ({ sb_offs + cd_offs + hash_offs, hash_type, hash_size,
+            n_code_slots, page_size, code_limit });
+}
+
+void update_signature_hashes(Stdio.File f, int hash_offs, int hash_type,
+                             int hash_size, int n_code_slots, int page_size,
+                             int code_limit)
+{
+  Crypto.Hash hash;
+  switch(hash_type) {
+#if constant(Crypto.SHA256)
+  case 2:
+    hash = Crypto.SHA256;
+    break;
+#endif
+  default:
+    error("Hash type %d not supported!\n", hash_type);
+  }
+  if (hash_size != hash()->digest_size())
+    error("Error wrong digest size %d (!= %d) for hash type %d\n",
+          hash_size, hash()->digest_size(), hash_type);
+  f->seek(hash_offs);
+  array(string) hashes = f->read(n_code_slots * hash_size) / hash_size;
+  if (sizeof(hashes) < n_code_slots)
+    n_code_slots = sizeof(hashes);
+  int pos = 0;
+  for (int i=0; i<n_code_slots; i++) {
+    string data = "";
+    if (pos < code_limit) {
+      int sz = 1 << page_size;
+      if (pos + sz > code_limit)
+        sz = code_limit - pos;
+      f->seek(pos);
+      data = f->read(sz);
+      pos += sizeof(data);
+      if (sizeof(data) < sz)
+        code_limit = pos;
+    }
+    hashes[i] = hash()->update(data)->digest();
+  }
+  f->seek(hash_offs);
+  f->write(hashes * "");
+}
+
+void fix_macos_adhoc_signature(Stdio.File f)
+{
+  array(int) macho_sig = find_macho_signature(f);
+  if (macho_sig) {
+    int sb_code_dir = find_superblob_code_directory(f, @macho_sig);
+    if (sb_code_dir) {
+      array(int) hash_layout = find_code_directory_hash_layout(f, @macho_sig,
+                                                               sb_code_dir);
+      if (hash_layout)
+        update_signature_hashes(f, @hash_layout);
+    }
+  }
+}
+
 void finalize_pike()
 {
   pike=combine_path(exec_prefix,"pike");
@@ -2641,6 +2770,7 @@ void finalize_pike()
       Stdio.File f=Stdio.File(pike_bin_file,"rw");
       f->seek(pos+sizeof(MASTER_COOKIE));
       f->write(combine_path(lib_prefix,"master.pike"));
+      fix_macos_adhoc_signature(f);
       f->close();
       status("Finalizing",pike_bin_file,"done");
       if(install_file(pike_bin_file,pike,0755)) {
