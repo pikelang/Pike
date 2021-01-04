@@ -273,7 +273,20 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       ], [
         /* Try HPUX */
         return (int)sendfile(0,0,0,0,(void *)0,0);
-      ], [ pike_cv_sendfile_args=6 ], [ pike_cv_sendfile_args=4 ])
+      ], [ pike_cv_sendfile_args=6 ], [
+        AC_TRY_COMPILE([
+#include <sys/types.h>
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+        ], [
+          /* Try Linux */
+          return sendfile(0,0,(void *)0,0);
+        ], [ pike_cv_sendfile_args=4 ], [ pike_cv_sendfile_args=bad ])
+      ])
     ])
   ])
   if test "$pike_cv_sendfile_args" = "7"; then
@@ -363,7 +376,12 @@ if test "$ac_cv_func_sendfile" = "yes"; then
         AC_DEFINE(HAVE_HPUX_SENDFILE)
       fi
     else
-      AC_MSG_RESULT([4 - Linux style])
+      if test "$pike_cv_sendfile_args" = "4"; then
+        AC_MSG_RESULT([4 - Linux style])
+      else
+        AC_MSG_RESULT(failed - disabling use of sendfile)
+        AC_DEFINE(HAVE_BROKEN_SENDFILE)
+      fi
     fi
   fi
 else
