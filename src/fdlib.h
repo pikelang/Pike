@@ -575,6 +575,9 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 #define TTY_CAPABILITIES (fd_TTY | fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 
 #ifdef HAVE_OPENPTY
+#ifdef HAVE_UTIL_H
+#include <util.h>
+#endif
 #define fd_openpty	openpty	/* FIXME */
 #endif
 
