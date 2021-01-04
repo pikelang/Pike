@@ -12,4 +12,5 @@ ptrdiff_t aap_swrite(int to, char *buf, size_t towrite);
 #define H_STRING 2
 
 
+struct args;
 int aap_get_header(struct args *req, char *header, int operation, void *res);

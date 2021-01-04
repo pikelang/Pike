@@ -623,6 +623,9 @@ typedef struct my_fd_set_s my_fd_set;
 #define TTY_CAPABILITIES (fd_TTY | fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 
 #ifdef HAVE_OPENPTY
+#ifdef HAVE_UTIL_H
+#include <util.h>
+#endif
 #define fd_openpty	openpty	/* FIXME */
 #endif
 
