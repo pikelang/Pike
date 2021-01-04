@@ -1848,7 +1848,7 @@ PMOD_EXPORT void do_free_program (struct program *p)
  * variant to be used by decode().
  */
 #if !defined(HAVE_PTHREAD_JIT_WRITE_PROTECT_NP) && !defined(pthread_jit_write_protect_np)
-#define phtread_jit_write_protect_np(enable) do{}while(0)
+#define pthread_jit_write_protect_np(enable) do{}while(0)
 #endif
 #define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)					\
 void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
