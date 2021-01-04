@@ -23,6 +23,7 @@
 #  include "lex.h"
 #  include "object.h"
 #  include "cyclic.h"
+#  include "pike_modules.h"
 
 #else /* TESTING */
 
