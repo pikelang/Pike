@@ -599,6 +599,9 @@ case "$pike_cv_sys_os" in
 	 export SDL_CONFIG
       fi
    ;;
+  Darwin*)
+   ac_cv_func_getpagesize="no"
+   ;;
 esac
 
 # Skip if user does not wish to use smartlink binary.
