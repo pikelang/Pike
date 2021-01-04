@@ -2786,7 +2786,7 @@ if test "$ac_cv_c_const" = "yes"; then
     AC_TRY_COMPILE([
 const int foo(int bar) { return bar; }
     ], [
-      return bar(0);
+      return foo(0);
     ], [
        pike_cv_c_really_const=yes
     ], [
