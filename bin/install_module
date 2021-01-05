@@ -78,6 +78,9 @@ if [ -d "$FROM" ]; then
   CPFLAGS="-r"
 fi
 
+if [ -f "$TO" ]; then
+  rm -f "$TO"
+fi
 cp $CPFLAGS "$FROM" "$TO"
 
 exit $?
