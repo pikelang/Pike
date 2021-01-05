@@ -1942,7 +1942,7 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
       ptr.c_fun = f_proxy_getter;
       j = define_function(Pike_sp[-1].u.string, fun_type,
 			  ref->id_flags | ID_LOCAL,
-			  IDENTIFIER_C_FUNCTION, &ptr, 0);
+			  IDENTIFIER_C_FUNCTION, &ptr, OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
       SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
 		       identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
       free_type(fun_type);
@@ -1961,7 +1961,7 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
 	ptr.c_fun = f_proxy_setter;
 	j = define_function(Pike_sp[-1].u.string, fun_type,
 			    ref->id_flags | ID_LOCAL,
-			    IDENTIFIER_C_FUNCTION, &ptr, 0);
+			    IDENTIFIER_C_FUNCTION, &ptr, OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 	SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
 			 identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
 	free_type(fun_type);
@@ -1986,7 +1986,7 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
       }
       ptr.c_fun = f_proxy_fun;
       j = define_function(id->name, id->type, ref->id_flags,
-			  IDENTIFIER_C_FUNCTION | ID_LOCAL, &ptr, 0);
+			  IDENTIFIER_C_FUNCTION | ID_LOCAL, &ptr, id->opt_flags);
       SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
 		       identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
     }
@@ -2023,7 +2023,7 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
     ptr.c_fun = f_proxy__sprintf;
     j = define_function(lfun_strings[LFUN__SPRINTF], fun_type,
 			id_flags | ID_LOCAL,
-			IDENTIFIER_C_FUNCTION, &ptr, 0);
+			IDENTIFIER_C_FUNCTION, &ptr, OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
 		     identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
     if (i < 0) {
@@ -2043,7 +2043,7 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
   fun_type = pop_unfinished_type();
   ptr.c_fun = f_proxy_create;
   j = define_function(lfun_strings[LFUN_CREATE], fun_type, ID_PROTECTED,
-		      IDENTIFIER_C_FUNCTION, &ptr, 0);
+		      IDENTIFIER_C_FUNCTION, &ptr, OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
   free_type(fun_type);
 
   p = end_program();
