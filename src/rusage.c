@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "pike_rusage.h"
+#include "pike_threadlib.h"
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -837,6 +838,9 @@ void init_rusage (void)
 
   {
 #ifdef HAVE_HOST_GET_CLOCK_SERVICE
+#ifdef _REENTRANT
+    th_atfork(NULL, NULL, init_mach_clock);
+#endif
     init_mach_clock();
 #elif defined (MIGHT_HAVE_POSIX_REALTIME_GRT)
     /* Always exists according to POSIX - no need to check with sysconf. */
