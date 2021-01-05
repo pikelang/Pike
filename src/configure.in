@@ -2852,8 +2852,8 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 		 sys/id.h mach-o/dyld.h sys/ptrace.h \
 		 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h \
 		 sys/procfs.h sys/socket.h sys/uio.h fcntl.h \
-		 malloc.h netinet/in.h sys/wait.h windows.h grp.h pwd.h \
-		 passwd.h group.h winsock.h sys/file.h poll.h \
+		 malloc.h netinet/in.h arpa/inet.h sys/wait.h windows.h \
+		 grp.h pwd.h passwd.h group.h winsock.h sys/file.h poll.h \
 		 sys/poll.h socket.h ieeefp.h fp_class.h floatingpoint.h \
 		 sys/priocntl.h sys/sched.h winbase.h \
 		 sys/termio.h termios.h sys/termios.h \
@@ -6598,12 +6598,18 @@ AC_CACHE_VAL(pike_cv_system_oob_working,[
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 #ifdef HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif
 #include <fcntl.h>
 #ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 #define SP_DEBUG(X)	fprintf X
