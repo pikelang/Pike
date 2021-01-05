@@ -7681,6 +7681,7 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
   cat >conftest.c <<EOF
 #include <stdio.h>
 #include <stdlib.h>
+extern void testfunc2(void);
 #if __GNUC__ >= 4
 __attribute__ ((visibility("default")))
 # endif
