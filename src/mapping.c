@@ -3350,11 +3350,15 @@ size_t gc_free_all_unreferenced_mappings(void)
 
 void simple_describe_mapping(struct mapping *m)
 {
-  struct byte_buffer buf = BUFFER_INIT();
-  describe_mapping(&buf,m,0,2);
-  buffer_add_str(&buf, "\n");
-  fputs(buffer_get_string(&buf), stderr);
-  buffer_free(&buf);
+  if (m) {
+    struct byte_buffer buf = BUFFER_INIT();
+    describe_mapping(&buf,m,0,2);
+    buffer_add_str(&buf, "\n");
+    fputs(buffer_get_string(&buf), stderr);
+    buffer_free(&buf);
+  } else {
+    fputs("(NULL mapping)",stderr);
+  }
 }
 
 #ifdef PIKE_DEBUG
