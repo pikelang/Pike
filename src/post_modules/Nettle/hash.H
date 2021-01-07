@@ -72,13 +72,15 @@ PIKECLASS PIKE_NAME
 
       EXTRA
       {
-	int hmac_create_fun_num = -1;
-        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
-	hmac_create_fun_num =
-	  FIND_LFUN(Pike_compiler->new_program->inherits[1].prog, LFUN_CREATE);
-	if (hmac_create_fun_num >= 0) {
-	  cmod_CONCAT_EVAL(f_Hash__HMAC_, NETTLE_NAME, _create_fun_num) =
-	    really_low_reference_inherited_identifier(NULL, 1, hmac_create_fun_num);
+        if (lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR)) {
+	  int hmac_create_fun_num =
+	    FIND_LFUN(Pike_compiler->new_program->inherits[1].prog,
+		      LFUN_CREATE);
+	  if (hmac_create_fun_num >= 0) {
+	    cmod_CONCAT_EVAL(f_Hash__HMAC_, NETTLE_NAME, _create_fun_num) =
+	      really_low_reference_inherited_identifier(NULL, 1,
+							hmac_create_fun_num);
+	  }
 	}
       }
 
