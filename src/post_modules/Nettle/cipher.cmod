@@ -4135,21 +4135,21 @@ PIKECLASS BlockCipher16
 	/* Perform an inherit of the _CTR.State class that our parent
 	 * contains via its inherit of _CTR.
 	 */
-        lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
-
-	/* We want to call some of our inherited functions recursively... */
-	ccm_state_inh_ctr_state_create_fun_num =
-	  really_low_reference_inherited_identifier(NULL, 1,
+        if (lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR)) {
+	  /* We want to call some of our inherited functions recursively... */
+	  ccm_state_inh_ctr_state_create_fun_num =
+	    really_low_reference_inherited_identifier(NULL, 1,
 		    f_Nettle_BlockCipher_cq__CTR_State_create_fun_num);
-	ccm_state_inh_ctr_state_crypt_fun_num =
-	  really_low_reference_inherited_identifier(NULL, 1,
+	  ccm_state_inh_ctr_state_crypt_fun_num =
+	    really_low_reference_inherited_identifier(NULL, 1,
 		    f_Nettle_BlockCipher_cq__CTR_State_crypt_fun_num);
-	ccm_state_inh_ctr_state_set_encrypt_key_fun_num =
-	  really_low_reference_inherited_identifier(NULL, 1,
+	  ccm_state_inh_ctr_state_set_encrypt_key_fun_num =
+	    really_low_reference_inherited_identifier(NULL, 1,
 		    f_Nettle_BlockCipher_cq__CTR_State_set_encrypt_key_fun_num);
-        ccm_state_inh_ctr_state_set_decrypt_key_fun_num =
-	  really_low_reference_inherited_identifier(NULL, 1,
+	  ccm_state_inh_ctr_state_set_decrypt_key_fun_num =
+	    really_low_reference_inherited_identifier(NULL, 1,
 		    f_Nettle_BlockCipher_cq__CTR_State_set_decrypt_key_fun_num);
+	}
       }
 
       CVAR int decrypt_mode;
@@ -4570,9 +4570,13 @@ PIKECLASS BlockCipher16
       /* Perform an inherit of the _CCM class that our parent contains.
        */
       /* FIXME: */
-      low_inherit(Nettle_BlockCipher16_cq__CCM_program, 0,
-		  Nettle_BlockCipher16_cq__CCM_program_fun_num,
-		  1 + 42, 0, NULL);
+      if (Nettle_BlockCipher16_cq__CCM_program) {
+	low_inherit(Nettle_BlockCipher16_cq__CCM_program, 0,
+		    Nettle_BlockCipher16_cq__CCM_program_fun_num,
+		    1 + 42, 0, NULL);
+      } else {
+	yyerror("Symbol to inherit (_CCM) not found in parent scope #1.");
+      }
     }
 
     /*! @decl string(8bit) name()
