@@ -4959,11 +4959,15 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return NULL;
 
   case TWOT(T_ZERO, T_INT):
-    a = int0_type_string;
+    if (!(bflags & PT_FLAG_CMP_NULLABLE)) {
+      a = int0_type_string;
+    }
     break;
 
   case TWOT(T_INT, T_ZERO):
-    b = int0_type_string;
+    if (!(aflags & PT_FLAG_CMP_NULLABLE)) {
+      b = int0_type_string;
+    }
     break;
 
     /* T_TYPE and T_PROGRAM are essentially the same thing. */
@@ -5067,6 +5071,22 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       a = b;
       goto recur;
     }
+
+    if (b->type == T_MIXED) {
+      /* NB: a being void has been handled above. */
+      if (op == PT_BINOP_MINUS) return NULL;
+      return remap_markers(a, NULL, remap, remap_flags);
+    }
+    if (a->type == T_MIXED) {
+      type_stack_mark();
+      push_remap_markers(b, NULL, remap,
+			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      if (op == PT_BINOP_MINUS) {
+	push_type(T_NOT);
+      }
+      return pop_unfinished_type();
+    }
+
     if ((a->type == T_ZERO) && (bflags & PT_FLAG_CMP_NULLABLE)) {
       b = a;
       goto recur;
@@ -5082,21 +5102,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     if ((b->type == T_INT) && (aflags & PT_FLAG_CMP_NULLABLE)) {
       a = zero_type_string;
       goto recur;
-    }
-
-    if (b->type == T_MIXED) {
-      /* NB: a being void has been handled above. */
-      if (op == PT_BINOP_MINUS) return NULL;
-      return remap_markers(a, NULL, remap, remap_flags);
-    }
-    if (a->type == T_MIXED) {
-      type_stack_mark();
-      push_remap_markers(b, NULL, remap,
-			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      if (op == PT_BINOP_MINUS) {
-	push_type(T_NOT);
-      }
-      return pop_unfinished_type();
     }
 
     if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
