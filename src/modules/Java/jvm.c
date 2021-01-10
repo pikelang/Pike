@@ -1517,7 +1517,11 @@ static void native_dispatch(struct native_method_context *ctx,
 #endif
 
 struct cpu_context {
+#ifdef HAVE_FFI_PREP_CLOSURE_LOC
+  ffi_closure *closure;
+#else
   ffi_closure closure;
+#endif
   ffi_cif cif;
   ffi_type **atypes;
   int statc;
@@ -1613,6 +1617,7 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc,
   ffi_type *rtype, **atypes;
   ffi_abi abi;
   int na = 2;
+  void *r;
 
   ctx->statc = statc;
   ctx->atypes = atypes = xalloc(args*sizeof(ffi_type *));
@@ -1649,27 +1654,38 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc,
     Pike_error("ffi error %d\n", s);
 
 #ifdef HAVE_FFI_PREP_CLOSURE_LOC
-  /* FIXME: Use ffi_closure_alloc() et al. */
-  s = ffi_prep_closure_loc (&ctx->closure, &ctx->cif,
-			    ffi_dispatch, data, &ctx->closure);
+  if (!(ctx->closure = ffi_closure_alloc(sizeof(ffi_closure), &r)))
+    Pike_error("ffi failed to allocate closure\n");
+  s = ffi_prep_closure_loc (ctx->closure, &ctx->cif,
+			    ffi_dispatch, data, r);
 #else
+  r = &ctx->closure;
   s = ffi_prep_closure (&ctx->closure, &ctx->cif,
 			ffi_dispatch, data);
 #endif
   if(s != FFI_OK)
     Pike_error("ffi error %d\n", s);
 
-  return &ctx->closure;
+  return r;
 }
 
 #define ARGS_TYPE void**
 #define GET_NATIVE_ARG(ty) (*(ty*)*(args)++)
 #define USE_SMALL_ARGS
 
+#ifdef HAVE_FFI_PREP_CLOSURE_LOC
+#define EXTRA_FREE_NATIVE_CON(c) do {		\
+    if((c).cpu.closure)				\
+      ffi_closure_free((c).cpu.closure);        \
+    if((c).cpu.atypes)				\
+      free((c).cpu.atypes);			\
+  } while(0)
+#else
 #define EXTRA_FREE_NATIVE_CON(c) do {		\
     if((c).cpu.atypes)				\
       free((c).cpu.atypes);			\
   } while(0)
+#endif
 
 #else
 
@@ -2540,7 +2556,11 @@ static void exit_natives_struct(struct object *PIKE_UNUSED(o))
       EXTRA_FREE_NATIVE_CON(n->cons[i]);
 #endif
     }
+#if defined(HAVE_FFI) && defined(HAVE_FFI_PREP_CLOSURE_LOC)
+    free(n->cons);
+#else
     mexec_free(n->cons);
+#endif
   }
 }
 
@@ -2603,11 +2623,20 @@ static void f_natives_create(INT32 args)
     n->jnms = xalloc(arr->size * sizeof(JNINativeMethod));
 
     if (n->cons) {
+#if defined(HAVE_FFI) && defined(HAVE_FFI_PREP_CLOSURE_LOC)
+      free(n->cons);
+#else
       mexec_free(n->cons);
+#endif
     }
 
     if (!(n->cons = (struct native_method_context *)
-          mexec_alloc(arr->size * sizeof(struct native_method_context)))) {
+#if defined(HAVE_FFI) && defined(HAVE_FFI_PREP_CLOSURE_LOC)
+          calloc(arr->size, sizeof(struct native_method_context))
+#else
+          mexec_alloc(arr->size * sizeof(struct native_method_context))
+#endif
+          )) {
       SIMPLE_OUT_OF_MEMORY_ERROR("create",0);
     }
 
