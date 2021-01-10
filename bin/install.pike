@@ -2663,7 +2663,7 @@ array(int) find_code_directory_hash_layout(Stdio.File f, int sb_offs, int sb_len
 
 void update_signature_hashes(Stdio.File f, int hash_offs, int hash_type,
                              int hash_size, int n_code_slots, int page_size,
-                             int code_limit)
+                             int code_limit, int|void offset, int|void length)
 {
   Crypto.Hash hash;
   switch(hash_type) {
@@ -2689,6 +2689,11 @@ void update_signature_hashes(Stdio.File f, int hash_offs, int hash_type,
       int sz = 1 << page_size;
       if (pos + sz > code_limit)
         sz = code_limit - pos;
+      if (length &&
+          (pos + sz <= offset || pos >= offset + length)) {
+        pos += sz;
+        continue;
+      }
       f->seek(pos);
       data = f->read(sz);
       pos += sizeof(data);
@@ -2701,7 +2706,7 @@ void update_signature_hashes(Stdio.File f, int hash_offs, int hash_type,
   f->write(hashes * "");
 }
 
-void fix_macos_adhoc_signature(Stdio.File f)
+void fix_macos_adhoc_signature(Stdio.File f, int|void offset, int|void length)
 {
   array(int) macho_sig = find_macho_signature(f);
   if (macho_sig) {
@@ -2710,7 +2715,7 @@ void fix_macos_adhoc_signature(Stdio.File f)
       array(int) hash_layout = find_code_directory_hash_layout(f, @macho_sig,
                                                                sb_code_dir);
       if (hash_layout)
-        update_signature_hashes(f, @hash_layout);
+        update_signature_hashes(f, @hash_layout, offset, length);
     }
   }
 }
@@ -2768,9 +2773,11 @@ void finalize_pike()
       pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp");
       Stdio.write_file(pike_bin_file, pike_bin);
       Stdio.File f=Stdio.File(pike_bin_file,"rw");
-      f->seek(pos+sizeof(MASTER_COOKIE));
-      f->write(combine_path(lib_prefix,"master.pike"));
-      fix_macos_adhoc_signature(f);
+      int master_pos = pos+sizeof(MASTER_COOKIE);
+      string master_value = combine_path(lib_prefix,"master.pike");
+      f->seek(master_pos);
+      f->write(master_value);
+      fix_macos_adhoc_signature(f, master_pos, sizeof(master_value));
       f->close();
       status("Finalizing",pike_bin_file,"done");
       if(install_file(pike_bin_file,pike,0755)) {
