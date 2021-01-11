@@ -1657,11 +1657,41 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   Called by @[reverse()].
  */
 
-/* FIXME: lfun::_iterator_next() */
-/* FIXME: lfun::_iterator_index() */
-/* FIXME: lfun::_iterator_prev() */
+/*! @decl int lfun::_iterator_next()
+ *!
+ *!   Called in @[Iterator] objects by foreach.
+ *!
+ *!   Advances the iterator one step.
+ *!
+ *! @note
+ *!   This is the preferred way to advance an iterator, since it
+ *!   reduces the overhead.
+ *!
+ *! @returns
+ *!   Returns @tt{1@} if it succeeded in advancing, and
+ *!   @tt{0@} (zero) if it has reached the end of the iterator.
+ */
 
-/*! @decl mixed _atomic_get_set(mixed index, mixed value)
+/*! @decl mixed lfun::_iterator_index()
+ *!
+ *!   Called in @[Iterator] objects by foreach.
+ *!
+ *!   Returns the current index for an iterator, or @[UNDEFINED]
+ *!   if the iterator doesn't point to any item.
+ *!
+ *!   If there's no obvious index set then the index is the current
+ *!   position in the data set, counting from @expr{0@} (zero).
+ */
+
+/*! @decl mixed lfun::_iterator_value()
+ *!
+ *!   Called in @[Iterator] objects by foreach.
+ *!
+ *!   Returns the current value for an iterator, or @[UNDEFINED]
+ *!   if the iterator doesn't point to any item.
+ */
+
+/*! @decl mixed lfun::_atomic_get_set(mixed index, mixed value)
  *!
  *! Get and set the value for an index atomically.
  *!
