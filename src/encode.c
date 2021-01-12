@@ -2254,7 +2254,7 @@ void f_encode_value(INT32 args)
   int i;
   data=&d;
 
-  check_all_args(NULL, args,
+  check_all_args("encode_value", args,
 		 BIT_MIXED,
 		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
@@ -2380,7 +2380,7 @@ void f_encode_value_canonic(INT32 args)
   int i;
   data=&d;
 
-  check_all_args(NULL, args,
+  check_all_args("encode_value_canonic", args,
 		 BIT_MIXED,
 		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
@@ -5479,7 +5479,7 @@ void f_decode_value(INT32 args)
   struct string_builder *debug_buf = NULL;
 #endif /* ENCODE_DEBUG */
 
-  check_all_args(NULL, args,
+  check_all_args("decode_value", args,
 		 BIT_STRING,
 		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
