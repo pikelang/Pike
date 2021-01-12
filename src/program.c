@@ -1128,6 +1128,10 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @returns
  *!   Returns the previous value at index @[index] of the current object.
  *!
+ *! @note
+ *!   In Pike 8.0 and earlier the return value of this function was
+ *!   ignored.
+ *!
  *! @seealso
  *!   @[predef::`[]=()], @[lfun::`->=()], @[lfun::_atomic_get_set()]
  */
@@ -1199,6 +1203,10 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @returns
  *!   Returns the previous value at symbol @[index] of the current object.
+ *!
+ *! @note
+ *!   In Pike 8.0 and earlier the return value of this function was
+ *!   ignored.
  *!
  *! @seealso
  *!   @[predef::`->=()], @[::`->=()], @[lfun::`[]=()],
