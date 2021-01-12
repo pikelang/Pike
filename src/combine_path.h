@@ -281,7 +281,7 @@ void F_FUNC(COMBINE_PATH)(INT32 args)
   struct string_builder ret;
   ONERROR tmp;
 
-  check_all_args(NULL,args,
+  check_all_args(DEFINETOSTR(COMBINE_PATH), args,
 		 BIT_STRING, BIT_STRING | BIT_MANY | BIT_VOID, 0);
 
   init_string_builder(&ret, 0);
