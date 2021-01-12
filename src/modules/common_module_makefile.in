@@ -41,7 +41,7 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	) || exit $$?
 
 .SUFFIXES:
-.SUFFIXES: .c .o .S .cmod .protos .m .mmod .cc .ccmod
+.SUFFIXES: .c .o .S .cmod .m .mmod .cc .ccmod
 
 $(PMOD_TARGETS): $(wildcard $(BUILD_BASE)/precompile.sh-stamp) $(TMP_BINDIR)/precompile.pike $(wildcard $(PIKE_SRC_DIR)/../lib/modules/Tools.pmod/Standalone.pmod/precompile.pike) Makefile.in
 
@@ -77,7 +77,7 @@ $(PMOD_TARGETS): $(wildcard $(BUILD_BASE)/precompile.sh-stamp) $(TMP_BINDIR)/pre
 	  exit $$status; \
 	fi
 
-.c.protos: $(BUILD_BASE)/precompile.sh-stamp
+%.protos: %.c $(BUILD_BASE)/precompile.sh-stamp
 	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
 	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
 	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
@@ -103,7 +103,7 @@ $(PMOD_TARGETS): $(wildcard $(BUILD_BASE)/precompile.sh-stamp) $(TMP_BINDIR)/pre
 	  exit $$status; \
 	fi
 
-.m.protos: $(BUILD_BASE)/precompile.sh-stamp
+%.protos: %.m $(BUILD_BASE)/precompile.sh-stamp
 	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
 	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
 	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
@@ -129,7 +129,7 @@ $(PMOD_TARGETS): $(wildcard $(BUILD_BASE)/precompile.sh-stamp) $(TMP_BINDIR)/pre
 	  exit $$status; \
 	fi
 
-.cc.protos: $(BUILD_BASE)/precompile.sh-stamp
+%.protos: %.cc $(BUILD_BASE)/precompile.sh-stamp
 	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
 	  $(CXXCPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
 	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
