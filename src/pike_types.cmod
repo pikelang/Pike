@@ -5482,6 +5482,20 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   return NULL;
 }
 
+struct pike_type *type_binop(enum pt_binop op,
+			     struct pike_type *a,
+			     struct pike_type *b,
+			     enum pt_cmp_flags aflags,
+			     enum pt_cmp_flags bflags,
+			     enum pt_remap_flags remap_flags)
+{
+  struct remap_state remap;
+
+  memset(&remap, 0, sizeof(remap));
+
+  return low_type_binop(op, a, b, &remap, aflags, bflags, remap_flags);
+}
+
 /**
  * Low-level subtraction (aka And-not) of two types.
  *
