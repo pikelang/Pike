@@ -35,4 +35,4 @@ protected mixed lookup(mixed ... args)
   return f(@args);
 }
 
-protected function(mixed...:int(0..0)) `() = lookup;
+protected function(mixed...:mixed) `() = lookup;
