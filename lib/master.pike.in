@@ -5234,7 +5234,7 @@ string describe_function (function f)
   else
     if (catch (name = function_name (f))) name = "function";
 
-  object o = function_object([function(mixed...:void|mixed)]f);
+  object o = function_object(f);
   if(object_program (o)) { // Check if it's an object in a way that
 			   // (hopefully) doesn't call any functions
 			   // in it (neither `== nor `!).
