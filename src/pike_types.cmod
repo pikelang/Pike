@@ -5072,19 +5072,58 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       goto recur;
     }
 
+    if (((b->type == T_MIXED) && (a->type == T_VOID)) ||
+	((a->type == T_MIXED) && (b->type == T_VOID))) {
+      switch (op & (PT_BINOP_MINUS | PT_BINOP_INVERSE_MINUS)) {
+      case 0:
+	return NULL;
+      case PT_BINOP_MINUS:
+	add_ref(a);
+	return a;
+      case PT_BINOP_INVERSE_MINUS:
+	add_ref(b);
+	return b;
+      default:
+	type_stack_mark();
+	push_finished_type(a);
+	push_finished_type(b);
+	push_type(T_OR);
+	return pop_unfinished_type();
+      }
+    }
     if (b->type == T_MIXED) {
-      /* NB: a being void has been handled above. */
-      if (op == PT_BINOP_MINUS) return NULL;
-      return remap_markers(a, NULL, remap, remap_flags);
+      switch(op & PT_BINOP_B) {
+      case 0:
+	return NULL;
+      case PT_BINOP_AND:
+	return remap_markers(a, NULL, remap, remap_flags);
+      case PT_BINOP_INVERSE_MINUS:
+	type_stack_mark();
+	push_remap_markers(a, NULL, remap, remap_flags);
+	push_type(T_NOT);
+	return pop_unfinished_type();
+      default:
+	add_ref(b);
+	return b;
+      }
     }
     if (a->type == T_MIXED) {
-      type_stack_mark();
-      push_remap_markers(b, NULL, remap,
-			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      if (op == PT_BINOP_MINUS) {
+      switch(op & PT_BINOP_A) {
+      case 0:
+	return NULL;
+      case PT_BINOP_AND:
+	return remap_markers(b, NULL, remap,
+			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      case PT_BINOP_MINUS:
+	type_stack_mark();
+	push_remap_markers(b, NULL, remap,
+			   remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	push_type(T_NOT);
+	return pop_unfinished_type();
+      default:
+	add_ref(a);
+	return a;
       }
-      return pop_unfinished_type();
     }
 
     if ((a->type == T_ZERO) && (bflags & PT_FLAG_CMP_NULLABLE)) {
