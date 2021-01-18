@@ -4944,6 +4944,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
   case TWOT(T_VOID, T_ZERO):
     if (op & PT_BINOP_AND) {
+      if (bflags & PT_FLAG_CMP_VOIDABLE) {
+	/* Return void. */
+	add_ref(a);
+	return a;
+      }
       /* Return zero. */
       add_ref(b);
       return b;
@@ -4952,6 +4957,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
   case TWOT(T_ZERO, T_VOID):
     if (op & PT_BINOP_AND) {
+      if (aflags & PT_FLAG_CMP_VOIDABLE) {
+	/* Return void. */
+	add_ref(b);
+	return b;
+      }
       /* Return zero. */
       add_ref(a);
       return a;
