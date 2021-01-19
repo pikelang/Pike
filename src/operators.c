@@ -2303,6 +2303,20 @@ PMOD_EXPORT void o_subtract(void)
     return;
   }
 
+  case T_TYPE:
+    {
+      struct pike_type *t = type_binop(PT_BINOP_MINUS,
+				       Pike_sp[-2].u.type, Pike_sp[-1].u.type,
+				       0, 0, 0);
+      pop_n_elems(2);
+      if (t) {
+	push_type_value(t);
+      } else {
+	push_undefined();
+      }
+      return;
+    }
+
   /* FIXME: Support types? */
 
   default:
@@ -5829,7 +5843,7 @@ void init_operators(void)
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
 
   ADD_EFUN2("`-",f_minus,
-	    tOr7(tIfnot(tFuncV(tNone,tNot(tObj),tMix),
+	    tOr8(tIfnot(tFuncV(tNone,tNot(tObj),tMix),
 			tOr(tFuncArg(tSetvar(2,tObj), tFindLFun(tVar(2), "`-")),
 			    tFuncV(tNot(tObj), tMix, tMix))),
 		 tOr4(tFuncV(tIntNeg,tIntPos,tIntNeg),
@@ -5845,7 +5859,8 @@ void init_operators(void)
 			tOr3(tMapping,tArray,tMultiset),
 			tMap(tVar(1),tVar(2))),
 		 tFunc(tSet(tSetvar(3,tMix)) tMultiset,tSet(tVar(3))),
-		 tFuncV(tNStr(tSetvar(0,tInt)),tStr,tNStr(tVar(0)))),
+		 tFuncV(tNStr(tSetvar(0,tInt)),tStr,tNStr(tVar(0))),
+		 tFuncV(tType(tSetvar(0, tMix)), tType(tMix), tType(tVar(0)))),
 	    OPT_TRY_OPTIMIZE,0,generate_minus);
 
 /*
