@@ -4653,29 +4653,168 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case TWOT(T_FUNCTION, T_MANY):
   case TWOT(T_MANY, T_FUNCTION):
   case TWOT(T_MANY, T_MANY):
-    /* NB: For simplicity in the (common case)
-     *       many(assign(m, mixed), m),
-     *     we expand the many node (as required) to
-     *       function(assign(m, mixed), many(assign(m, mixed), m)),
-     *     and leave it to the evaluator to join the multiple
-     *     assignments with or. The alternative (and stricter) would
-     *     be to allocate a new marker for each step of the expansion
-     *     and to have explicit or nodes:
-     *       function(assign(m1, mixed), many(assign(m2, mixed), or(m1, m2))).
-     */
     {
       int nargs;
       struct pike_type *ai = a;
       struct pike_type *bi = b;
+      enum pt_cmp_flags avoidable = 0;
+      enum pt_cmp_flags bvoidable = 0;
 
       type_stack_mark();
 
-      while(1) {
-	/* Invariant:
-	 *   ai->type and bi->type are either T_FUNCTION or T_MANY.
+      switch(op) {
+      case PT_BINOP_AND:
+	/* NB: For simplicity in the (common case)
+	 *       many(assign(m, mixed), m),
+	 *     we expand the many node (as required) to
+	 *       function(assign(m, mixed), many(assign(m, mixed), m)),
+	 *     and leave it to the evaluator to join the multiple
+	 *     assignments with or. The alternative (and stricter) would
+	 *     be to allocate a new marker for each step of the expansion
+	 *     and to have explicit or nodes:
+	 *       function(assign(m1, mixed),
+	 *                many(assign(m2, mixed), or(m1, m2))).
 	 */
-	enum pt_cmp_flags avoidable = 0;
-	enum pt_cmp_flags bvoidable = 0;
+	while(1) {
+	  /* Invariant:
+	   *   ai->type and bi->type are either T_FUNCTION or T_MANY.
+	   */
+
+	  /* Check the argument. */
+
+	  /* NB: The MANY argument is always voidable. */
+	  if (ai->type == T_MANY) avoidable |= PT_FLAG_CMP_VOIDABLE;
+	  if (bi->type == T_MANY) bvoidable |= PT_FLAG_CMP_VOIDABLE;
+
+#if 0
+	  fprintf(stderr, "arg_check(op: 0x%x, ", op);
+	  simple_describe_type(ai);
+	  fprintf(stderr, " (%d), ", avoidable);
+	  simple_describe_type(bi);
+	  fprintf(stderr, " (%d))\n\n", bvoidable);
+#endif
+
+	  /* FIXME: Use implicit nullable only for legacy types. */
+	  /* NOTE: Intentional use of PT_BINOP_OR below!
+	   *       Note that for function types a larger type for
+	   *       the arguments implies that the function type
+	   *       is stricter. This is a DeMorgan-style effect
+	   *       due to the implicit ALL and EXIST operators
+	   *       for arguments in function types. Eg there are
+	   *       many more functions that accept 0 as an argument
+	   *       than there are functions that accept any integer.
+	   *       Thus function(int:mixed) is a stricter type
+	   *       than function(zero:mixed).
+	   */
+	  tmp = low_type_binop(PT_BINOP_OR, ai->car, bi->car, remap,
+			       avoidable | PT_FLAG_CMP_NULLABLE,
+			       bvoidable | PT_FLAG_CMP_NULLABLE,
+			       remap_flags);
+
+	  /* Advance to the next argument. */
+	  if (ai->type == T_FUNCTION) {
+	    ai = ai->cdr;
+	  }
+	  if (bi->type == T_FUNCTION) {
+	    bi = bi->cdr;
+	  }
+	  if ((ai->type != T_FUNCTION) && (ai->type != T_MANY)) {
+	    if (aret) {
+	      Pike_fatal("Unsupported type operation.\n");
+	    }
+	    break;
+	  }
+	  if ((bi->type != T_FUNCTION) && (bi->type != T_MANY)) {
+	    if (bret) {
+	      Pike_fatal("Unsupported type operation.\n");
+	    }
+	    break;
+	  }
+
+	  if (remap_flags & PT_FLAG_REMAP_TRACE) {
+	    fprintf(stderr, "tmp: ");
+	    simple_describe_type(tmp);
+	    fprintf(stderr, "\n");
+	  }
+
+	  push_finished_type(tmp);
+	  free_type(tmp);
+
+	  if (avoidable && bvoidable) {
+	    /* Time to check the return types. */
+
+	    if (!aret) aret = ai->cdr;
+	    if (!bret) bret = bi->cdr;
+
+	    tmp = low_type_binop(op, aret, bret, remap,
+				 0, 0, remap_flags);
+
+	    if (remap_flags & PT_FLAG_REMAP_TRACE) {
+	      fprintf(stderr, "ret_tmp: ");
+	      simple_describe_type(tmp);
+	      fprintf(stderr, "\n");
+	    }
+	    if (!tmp) goto function_fail;
+
+	    nargs = peek_stack_mark();
+
+	    push_finished_type(tmp);
+	    free_type(tmp);
+
+	    nargs--;
+	    push_reverse_type(T_MANY);
+
+	    while (nargs--) {
+	      push_reverse_type(T_FUNCTION);
+	    }
+	    return pop_unfinished_type();
+	  }
+	}
+	break;
+
+      case PT_BINOP_MINUS:
+	/* Subtraction (A - B)
+	 *
+	 *   The result is the subset of function A where at least one
+	 *   of the arguments or the return type differs from function B.
+	 *
+	 * T_FUNCTION(A, X) - T_FUNCTION(B, Y) ==
+	 *   T_OR(T_FUNCTION(A - B, X), T_FUNCTION(A, X - Y))
+	 *
+	 * T_FUNCTION(A, X) - T_MANY(T_VOID, Y) ==
+	 *   T_OR(T_FUNCTION(A - T_VOID, X),
+	 *        T_MANY(T_VOID, X* - Y))
+	 *
+	 * T_FUNCTION(A, X) - T_MANY(B, Y) ==
+	 *   T_OR(T_FUNCTION(A - B, X), T_FUNCTION(A, X - MANY(B, Y)))
+	 *
+	 * T_MANY(T_VOID, X) - T_FUNCTION(B, Y) ==
+	 *   T_MANY(T_VOID, X)	(if B not voidable)
+	 *   T_MANY(T_VOID, X - Y*)	(if B voidable) ==
+	 *     T_MANY(T_VOID, X) - Y
+	 *
+	 * T_MANY(A, X) - T_FUNCTION(B, Y) ==
+	 *   T_OR(T_FUNCTION(A - B, T_MANY(A, X)),
+	 *        T_FUNCTION(A, T_MANY(A, X) - Y))
+	 *
+	 * Caveat for the above: Handle the special case where
+	 *                       A - B == T_VOID.
+	 *
+	 * T_MANY(A, X) - T_MANY(A, Y) == T_MANY(T_VOID, X - Y)
+	 *
+	 * T_MANY(T_VOID, X) - T_MANY(B, Y) == T_MANY(T_VOID, X - Y)
+	 *
+	 * T_MANY(A, X) - T_MANY(T_VOID, Y) ==
+	 *   T_OR(T_FUNCTION(A, T_MANY(A, X)),
+	 *        T_MANY(T_VOID, X - Y))
+	 *
+	 * T_MANY(A, X) - T_MANY(~A, Y) == T_MANY(A, X - Y)
+	 *
+	 * T_MANY(A, X) - T_MANY(B, Y) ==
+	 *   T_OR(T_MANY(A, X - Y),
+	 *        T_AND(T_MANY(A, X),
+	 *              T_NOT(T_MANY(T_NOT(A - B), T_MIXED))))
+	 */
 
 	/* Check the argument. */
 
@@ -4683,7 +4822,15 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	if (ai->type == T_MANY) avoidable |= PT_FLAG_CMP_VOIDABLE;
 	if (bi->type == T_MANY) bvoidable |= PT_FLAG_CMP_VOIDABLE;
 
-	/* FIXME: Only use implicit nullable for legacy types. */
+#if 0
+	fprintf(stderr, "arg_check(op: 0x%x, ", op);
+	simple_describe_type(ai);
+	fprintf(stderr, " (%d), ", avoidable);
+	simple_describe_type(bi);
+	fprintf(stderr, " (%d))\n\n", bvoidable);
+#endif
+
+	/* FIXME: Use implicit nullable only for legacy types. */
 	tmp = low_type_binop(op, ai->car, bi->car, remap,
 			     avoidable | PT_FLAG_CMP_NULLABLE,
 			     bvoidable | PT_FLAG_CMP_NULLABLE,
@@ -4715,205 +4862,109 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  fprintf(stderr, "\n");
 	}
 
-	switch(op) {
-	case PT_BINOP_AND:
-	  if (!tmp) {
-	    if (avoidable && bvoidable) {
-	      /* NB: The VOIDABLE flag only affects comparisons with
-	       *     explicit void. If both arguments have implicit void,
-	       *     and nothing other in common, we arrive here.
-	       */
-	      push_type(T_VOID);
-	    } else {
-	      goto function_fail;
-	    }
-	  } else {
-	    push_finished_type(tmp);
+	if (avoidable && bvoidable) {
+	  /* FIXME: What if tmp only differs due to remapping? */
+	  if (tmp && tmp->type == T_VOID) {
 	    free_type(tmp);
+	    tmp = NULL;
 	  }
-
-	  if (avoidable && bvoidable) {
-	    /* Time to check the return types. */
-
-	    if (!aret) aret = ai->cdr;
-	    if (!bret) bret = bi->cdr;
-
-	    tmp = low_type_binop(op, aret, bret, remap,
-				 0, 0, remap_flags);
-
-	    if (remap_flags & PT_FLAG_REMAP_TRACE) {
-	      fprintf(stderr, "ret_tmp: ");
-	      simple_describe_type(tmp);
-	      fprintf(stderr, "\n");
-	    }
-	    if (!tmp) goto function_fail;
-
-	    nargs = peek_stack_mark();
-
-	    push_finished_type(tmp);
-	    free_type(tmp);
-
-	    nargs--;
-	    push_reverse_type(T_MANY);
-
-	    while (nargs--) {
-	      push_reverse_type(T_FUNCTION);
-	    }
-	    return pop_unfinished_type();
-	  }
-	  break;
-	case PT_BINOP_MINUS:
-	  /* Subtraction (A - B)
-	   *
-	   *   The result is the subset of function A where at least one
-	   *   of the arguments or the return type differs from function B.
-	   *
-	   * T_FUNCTION(A, X) - T_FUNCTION(B, Y) ==
-	   *   T_OR(T_FUNCTION(A - B, X), T_FUNCTION(A, X - Y))
-	   *
-	   * T_FUNCTION(A, X) - T_MANY(T_VOID, Y) ==
-	   *   T_OR(T_FUNCTION(A - T_VOID, X),
-	   *        T_MANY(T_VOID, X* - Y))
-	   *
-	   * T_FUNCTION(A, X) - T_MANY(B, Y) ==
-	   *   T_OR(T_FUNCTION(A - B, X), T_FUNCTION(A, X - MANY(B, Y)))
-	   *
-	   * T_MANY(T_VOID, X) - T_FUNCTION(B, Y) ==
-	   *   T_MANY(T_VOID, X)	(if B not voidable)
-	   *   T_MANY(T_VOID, X - Y*)	(if B voidable) ==
-	   *     T_MANY(T_VOID, X) - Y
-	   *
-	   * T_MANY(A, X) - T_FUNCTION(B, Y) ==
-	   *   T_OR(T_FUNCTION(A - B, T_MANY(A, X)),
-	   *        T_FUNCTION(A, T_MANY(A, X) - Y))
-	   *
-	   * Caveat for the above: Handle the special case where
-	   *                       A - B == T_VOID.
-	   *
-	   * T_MANY(A, X) - T_MANY(A, Y) == T_MANY(T_VOID, X - Y)
-	   *
-	   * T_MANY(T_VOID, X) - T_MANY(B, Y) == T_MANY(T_VOID, X - Y)
-	   *
-	   * T_MANY(A, X) - T_MANY(T_VOID, Y) ==
-	   *   T_OR(T_FUNCTION(A, T_MANY(A, X)),
-	   *        T_MANY(T_VOID, X - Y))
-	   *
-	   * T_MANY(A, X) - T_MANY(~A, Y) == T_MANY(A, X - Y)
-	   *
-	   * T_MANY(A, X) - T_MANY(B, Y) ==
-	   *   T_OR(T_MANY(A, X - Y),
-	   *        T_AND(T_MANY(A, X),
-	   *              T_NOT(T_MANY(T_NOT(A - B), T_MIXED))))
-	   */
-	  if (avoidable && bvoidable) {
-	    /* FIXME: What if tmp only differs due to remapping? */
-	    if (tmp && tmp->type == T_VOID) {
-	      free_type(tmp);
-	      tmp = NULL;
-	    }
-	    if (tmp != a->car) {
-	      if (!tmp) {
-		tmp = low_type_binop(op, a->cdr, b->cdr, remap,
-				     PT_FLAG_CMP_VOIDABLE,
-				     0, remap_flags);
-		if (tmp) {
-		  push_finished_type(tmp);
-		  push_type(T_VOID);
-		  push_type(T_MANY);
-		  free_type(tmp);
-		  return pop_unfinished_type();
-		}
-		pop_stack_mark();
-		return NULL;
-	      }
-	      /* FIXME: What about tmp->type == T_VOID? */
-	      push_type(T_MIXED);
-	      push_finished_type(tmp);
-	      push_type(T_NOT);
-	      push_type(T_MANY);
-	      push_type(T_NOT);
-	      push_remap_markers(a, NULL, remap, remap_flags);
-	      push_type(T_AND);
-	      free_type(tmp);
-
+	  if (tmp != a->car) {
+	    if (!tmp) {
 	      tmp = low_type_binop(op, a->cdr, b->cdr, remap,
 				   PT_FLAG_CMP_VOIDABLE,
 				   0, remap_flags);
 	      if (tmp) {
 		push_finished_type(tmp);
-		push_remap_markers(a->car, NULL, remap, remap_flags);
+		push_type(T_VOID);
 		push_type(T_MANY);
-		push_type(T_OR);
 		free_type(tmp);
+		return pop_unfinished_type();
 	      }
-	      return pop_unfinished_type();
+	      pop_stack_mark();
+	      return NULL;
 	    }
+	    /* FIXME: What about tmp->type == T_VOID? */
+	    push_type(T_MIXED);
+	    push_finished_type(tmp);
+	    push_type(T_NOT);
+	    push_type(T_MANY);
+	    push_type(T_NOT);
+	    push_remap_markers(a, NULL, remap, remap_flags);
+	    push_type(T_AND);
+	    free_type(tmp);
 
-	    /* Time to check the return types. */
-
-	    if (!aret) aret = ai->cdr;
-	    if (!bret) bret = bi->cdr;
-
-	    /* NB: Ignore the return type if matching against void. */
-	    tmp = low_type_binop(op, aret, bret, remap,
+	    tmp = low_type_binop(op, a->cdr, b->cdr, remap,
 				 PT_FLAG_CMP_VOIDABLE,
 				 0, remap_flags);
-
-	    if (remap_flags & PT_FLAG_REMAP_TRACE) {
-	      fprintf(stderr, "ret tmp: ");
-	      simple_describe_type(tmp);
-	      fprintf(stderr, "\n");
+	    if (tmp) {
+	      push_finished_type(tmp);
+	      push_remap_markers(a->car, NULL, remap, remap_flags);
+	      push_type(T_MANY);
+	      push_type(T_OR);
+	      free_type(tmp);
 	    }
-
-	    if (!tmp) goto function_fail;
-
-	    push_finished_type(tmp);
-	    push_remap_markers(a->car, NULL, remap, remap_flags);
-	    push_type(T_MANY);
-
 	    return pop_unfinished_type();
 	  }
-	  if (tmp) {
-	    if (tmp->type != T_VOID) {
-	      push_remap_markers(ai, NULL, remap, remap_flags);
-	      push_finished_type(tmp);
-	      push_type(T_FUNCTION);
-	    } else if (a->type == T_FUNCTION) {
-	      push_remap_markers(ai, NULL, remap, remap_flags);
-	      if ((ai->type != T_MANY) || (ai->car != T_VOID)) {
-		/* Convert voidable arguments into zero|void
-		 * if they must be present for later arguments.
-		 */
-		push_type(T_ZERO);
-		push_type(T_VOID);
-		push_type(T_OR);
-		push_type(T_FUNCTION);
-	      }
-	    } else {
-	      /* a->type == T_MANY */
-	    }
-	    free_type(tmp);
+
+	  /* Time to check the return types. */
+
+	  if (!aret) aret = ai->cdr;
+	  if (!bret) bret = bi->cdr;
+
+	  /* NB: Ignore the return type if matching against void. */
+	  tmp = low_type_binop(op, aret, bret, remap,
+			       PT_FLAG_CMP_VOIDABLE,
+			       0, remap_flags);
+
+	  if (remap_flags & PT_FLAG_REMAP_TRACE) {
+	    fprintf(stderr, "ret tmp: ");
+	    simple_describe_type(tmp);
+	    fprintf(stderr, "\n");
 	  }
-	  tmp = low_type_binop(op, ai, bi, remap, aflags, bflags, remap_flags);
-	  if (tmp) {
-	    push_finished_type(tmp);
-	    push_remap_markers(a->car, NULL, remap, remap_flags);
-	    push_type(T_FUNCTION);
-	    free_type(tmp);
-	  }
-	  nargs = peek_stack_mark();
-	  if (!nargs) {
-	    pop_stack_mark();
-	    return NULL;
-	  }
-	  while (nargs-- > 1) push_type(T_OR);
+
+	  if (!tmp) goto function_fail;
+
+	  push_finished_type(tmp);
+	  push_remap_markers(a->car, NULL, remap, remap_flags);
+	  push_type(T_MANY);
+
 	  return pop_unfinished_type();
-
-	default:
-	  Pike_fatal("Unsupported.\n");
 	}
-
-	if (avoidable && bvoidable) break;
+	if (tmp) {
+	  if (tmp->type != T_VOID) {
+	    push_remap_markers(ai, NULL, remap, remap_flags);
+	    push_finished_type(tmp);
+	    push_type(T_FUNCTION);
+	  } else if (a->type == T_FUNCTION) {
+	    push_remap_markers(ai, NULL, remap, remap_flags);
+	    if ((ai->type != T_MANY) || (ai->car != T_VOID)) {
+	      /* Convert voidable arguments into zero|void
+	       * if they must be present for later arguments.
+	       */
+	      push_type(T_ZERO);
+	      push_type(T_VOID);
+	      push_type(T_OR);
+	      push_type(T_FUNCTION);
+	    }
+	  } else {
+	    /* a->type == T_MANY */
+	  }
+	  free_type(tmp);
+	}
+	tmp = low_type_binop(op, ai, bi, remap, aflags, bflags, remap_flags);
+	if (tmp) {
+	  push_finished_type(tmp);
+	  push_remap_markers(a->car, NULL, remap, remap_flags);
+	  push_type(T_FUNCTION);
+	  free_type(tmp);
+	}
+	nargs = peek_stack_mark();
+	if (!nargs) {
+	  pop_stack_mark();
+	  return NULL;
+	}
+	while (nargs-- > 1) push_type(T_OR);
+	return pop_unfinished_type();
       }
 
     complex_function:
