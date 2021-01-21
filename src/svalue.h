@@ -310,6 +310,7 @@ struct svalue
 #define MagictFunc(RET,ARGS) tFuncV(ARGS "", tVoid, RET)
 #define tFunction tFuncV("" ,tOr(tZero,tVoid),tOr(tMix,tVoid))
 #define tNone ""
+#define tUnknown "\367"
 #define tPrg(X) "\005" X
 #define tProgram(X) "\005" X
 #define tStr "\006"
