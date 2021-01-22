@@ -4357,7 +4357,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       push_type(T_MIXED);
       push_type(T_VOID);
       push_type(T_OR);
-      return pop_unfinished_string();
+      return pop_unfinished_type();
     }
     return NULL;
   }
