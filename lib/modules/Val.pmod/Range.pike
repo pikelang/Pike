@@ -180,7 +180,7 @@ final string sql() {
 }
 
 public string encode_json() {
-  return (string)this;
+  return sprintf("\"%s\"", this);
 }
 
 protected mixed cast(string to) {

@@ -367,7 +367,7 @@ class Timebase {
   }
 
   public string encode_json() {
-    return (string)this;
+    return sprintf("\"%s\"", this);
   }
 
   //! Can be casted to string, float and int.
