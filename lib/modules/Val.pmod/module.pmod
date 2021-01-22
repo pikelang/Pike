@@ -366,6 +366,10 @@ class Timebase {
     return (["nsec": abs(nsecs) % NANOSECONDS ]);
   }
 
+  public string encode_json() {
+    return (string)this;
+  }
+
   //! Can be casted to string, float and int.
   //! Casting it to float and int return unix-time values.
   //!  @seealso
@@ -937,6 +941,10 @@ class Date {
 
   public mapping(string:int) tm() {
     return gmtime((int)this);
+  }
+
+  public string encode_json() {
+    return (string)this;
   }
 
   protected mixed cast(string to) {

@@ -179,6 +179,10 @@ final string sql() {
     till == Math.inf ? "" : (string)till);
 }
 
+public string encode_json() {
+  return (string)this;
+}
+
 protected mixed cast(string to) {
   if (to!="string") return UNDEFINED;
   if (!this) return "[]";

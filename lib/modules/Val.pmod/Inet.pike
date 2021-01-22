@@ -142,6 +142,10 @@ protected int(0..1) `>>(mixed that) {
   return 0;
 }
 
+public string encode_json() {
+  return (string)this;
+}
+
 protected mixed cast(string to) {
   switch (to) {
     case "string":
