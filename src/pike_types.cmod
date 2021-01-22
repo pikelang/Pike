@@ -4341,7 +4341,26 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 #endif
   }
 
-  if (!a || !b) return NULL;
+  if (!a || !b) {
+    if (a) {
+      if (op & PT_BINOP_MINUS) {
+	add_ref(a);
+	return a;
+      }
+    } else if (b) {
+      if (op & PT_BINOP_INVERSE_MINUS) {
+	add_ref(b);
+	return b;
+      }
+    } else if (op & PT_BINOP_NOR) {
+      type_stack_mark();
+      push_type(T_MIXED);
+      push_type(T_VOID);
+      push_type(T_OR);
+      return pop_unfinished_string();
+    }
+    return NULL;
+  }
 
   if (a == b) {
     if (op & PT_BINOP_AND) {
