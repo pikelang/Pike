@@ -27,7 +27,10 @@ struct processing
   void *pointer_a, *pointer_b;
 };
 
-struct ref_dummy;
+struct ref_dummy
+{
+  INT32 refs;
+};
 
 /** the union of possible types in an svalue.
 */
@@ -518,6 +521,12 @@ do{ \
 #define add_ref(X) ((void)((X)->refs++))
 #define sub_ref(X) (--(X)->refs > 0)
 
+static inline void safe_add_ref(void *ptr)
+{
+  if (!ptr) return;
+  add_ref((struct ref_dummy *)ptr);
+}
+
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
 PMOD_EXPORT extern const char msg_type_error[];
@@ -971,11 +980,6 @@ static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_cycle_check_svalues (s
 #define EXIT_PIKE_MEMOBJ(X) do {                        \
   struct ref_dummy *v_=(struct ref_dummy *)(X); 	\
 }while(0)
-
-struct ref_dummy
-{
-  INT32 refs;
-};
 
 /* The following macro is useful to initialize static svalues. . */
 /* assumes sizeof void* >= all initialization arguments. */
