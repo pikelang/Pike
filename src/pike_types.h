@@ -182,11 +182,8 @@ enum pt_cmp_flags
 #define SOFT_WEAKER	0x0001	/* Soft cast to a weaker type. */
 
 void debug_free_type(struct pike_type *t);
-#ifdef DEBUG_MALLOC
-#define copy_pike_type(D, S) add_ref((struct pike_type *)debug_malloc_pass(D = (S)))
-#else /* !DEBUG_MALLOC */
-#define copy_pike_type(D, S)	add_ref(D = (S))
-#endif /* DEBUG_MALLOC */
+#define copy_pike_type(D, S)					\
+  safe_add_ref(D = (struct pike_type *)debug_malloc_pass(S))
 #define CONSTTYPE(X) make_pike_type(X)
 
 extern struct pike_type **type_stack;
