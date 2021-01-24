@@ -2201,9 +2201,12 @@ PIKECLASS Backend
 	if (next_timeout->tv_sec < 0) {
 	  co_wait_interpreter(&me->backend_signal);
 	} else {
-	  co_wait_interpreter_timeout(&me->backend_signal,
-				      next_timeout->tv_sec,
-				      next_timeout->tv_usec * 1000);
+          struct timeval timeout = *next_timeout;
+          my_subtract_timeval(&timeout, &now);
+          if (timeout.tv_sec >= 0)
+            co_wait_interpreter_timeout(&me->backend_signal,
+                                        timeout.tv_sec,
+                                        timeout.tv_usec * 1000);
 	}
 	SWAP_IN_CURRENT_THREAD();
 	if (me->done_counter == old_done_counter) {
