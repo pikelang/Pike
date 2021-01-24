@@ -197,11 +197,12 @@ extern struct pike_type ***pike_type_mark_stack;
 	  gc_check_zapped (T, PIKE_T_TYPE, __FILE__, __LINE__)));	\
   } while (0)
 
-#define free_type(T) do {						\
-    struct pike_type *t_ = (T);						\
-    debug_free_type_preamble (t_);					\
-    debug_free_type (t_);						\
-  } while (0)
+static inline void free_type(struct pike_type *t)
+{
+  debug_free_type_preamble(t);
+  debug_free_type(t);
+}
+#define free_type(T) free_type(debug_malloc_pass(T))
 
 #define free_pike_type free_type
 
