@@ -521,6 +521,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
     extra_debug_index = index;
   }
 #endif /* PIKE_EXTRA_DEBUG */
+  if (type == PIKE_T_UNKNOWN) return NULL;
   for(t = pike_type_hash[index]; t; t = t->next) {
 #ifdef PIKE_EXTRA_DEBUG
     if (index == extra_debug_index) {
