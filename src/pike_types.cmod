@@ -1176,7 +1176,7 @@ void debug_pop_type_stack(unsigned int expected)
 
   top = *(Pike_compiler->type_stackp);
   /* Special case... */
-  if (top->type == T_MIXED) return;	/* Probably due to an earlier error */
+  if (!top || top->type == T_MIXED) return;	/* Probably due to an earlier error */
 
   Pike_compiler->type_stackp--;
 #ifdef PIKE_DEBUG
@@ -2734,7 +2734,8 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	 t->cdr->type == T_OR &&
 	 ((t->cdr->car->type == T_MIXED && t->cdr->cdr->type == T_VOID) ||
 	  (t->cdr->cdr->type == T_MIXED && t->cdr->car->type == T_VOID)) &&
-	 (t->car->type == T_ZERO ||
+	 (!t->car ||
+	  t->car->type == T_ZERO ||
 	  (t->car->type == T_OR &&
 	   ((t->car->car->type == T_ZERO && t->car->cdr->type == T_VOID) ||
 	    (t->car->cdr->type == T_ZERO && t->car->car->type == T_VOID)))))
@@ -2757,10 +2758,10 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	if (t->type != T_MANY) {
 	  string_builder_sprintf(s, ", @%T)", t);
 	} else {
-	  if(t->car->type != T_VOID)
+	  if(!t->car || (t->car->type != T_VOID))
 	  {
 	    if(arg++) string_builder_strcat(s, ", ");
-	    low_describe_type(s, t->car);
+	    if (t->car) low_describe_type(s, t->car);
 	    string_builder_strcat(s, " ...");
 	  }
 	  t = t->cdr;
@@ -3859,7 +3860,7 @@ static void push_remap_markers(struct pike_type *t,
 			       struct remap_state *remap,
 			       enum pt_remap_flags flags)
 {
-  if (!remap && !markers && !(flags & PT_FLAG_REMAP_EVAL_MARKERS)) {
+  if (!t || (!remap && !markers && !(flags & PT_FLAG_REMAP_EVAL_MARKERS))) {
     push_finished_type(t);
     return;
   }
@@ -9738,7 +9739,7 @@ static int low_count_arguments(struct pike_type *q)
       /* FALLTHRU */
     case T_MANY:
       q = q->car;
-      if(q->type != T_VOID) return ~num;
+      if(!q || (q->type != T_VOID)) return ~num;
       return num;
   }
 }
@@ -9891,7 +9892,7 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
       add_ref(fun->cdr);
       return fun->cdr;
     }
-    add_ref(fun->car);
+    safe_add_ref(fun->car);
     return fun->car;
 
   case T_MIXED:
@@ -11066,6 +11067,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     tmp = NULL;
     if (((arg_type->type != T_NOT) ||
 	 (arg_type->car->type != T_MIXED)) &&
+	fun_type->car &&
 	(fun_type->car->type == T_NOT) &&
 	(fun_type->car->car->type == T_OR) &&
 	((fun_type->car->car->car->type == T_MIXED) ||
@@ -11098,12 +11100,15 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     /* No need to perform advanced checking in the trivial case... */
     if (arg_type != (tmp2 = fun_type->car)) {
       struct pike_type *t = NULL;
-      if (!((flags & CALL_INVERTED_TYPES)?
-	    low_pike_types_le(tmp2, arg_type, 0,
-			      LE_A_B_SWAPPED|LE_EXPLICIT_ZERO):
-	    low_pike_types_le(arg_type, tmp2, 0, 0)) &&
-	  ((flags & CALL_STRICT) ||
-	   !(t = low_match_types(arg_type, tmp2, NO_SHORTCUTS)))) {
+      if (!tmp2) {
+	if (flags & CALL_STRICT) goto no_match;
+      } else if (!((flags & CALL_INVERTED_TYPES)?
+		   low_pike_types_le(tmp2, arg_type, 0,
+				     LE_A_B_SWAPPED|LE_EXPLICIT_ZERO):
+		   low_pike_types_le(arg_type, tmp2, 0, 0)) &&
+		 ((flags & CALL_STRICT) ||
+		  !(t = low_match_types(arg_type, tmp2, NO_SHORTCUTS)))) {
+      no_match:
       /* No match. */
 #ifdef PIKE_DEBUG
 	if (l_flag>2) {
