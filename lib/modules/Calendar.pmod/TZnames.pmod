@@ -237,6 +237,10 @@ mapping abbr2zones =
      "Africa/Accra",
      "Europe/Amsterdam",
    }),
+   "+0030": ({
+     "Africa/Accra",
+     "Africa/Lagos",
+   }),
    "+01": ({
      "Africa/Casablanca",
      "Africa/El_Aaiun",
@@ -295,6 +299,7 @@ mapping abbr2zones =
      "Europe/Volgograd",
    }),
    "+0330": ({
+     "Asia/Bahrain",
      "Asia/Tehran",
    }),
    "+04": ({
@@ -568,7 +573,6 @@ mapping abbr2zones =
    }),
    "+11": ({
      "Antarctica/Casey",
-     "Antarctica/Macquarie",
      "Asia/Anadyr",
      "Asia/Kamchatka",
      "Asia/Khandyga",
@@ -1051,6 +1055,9 @@ mapping abbr2zones =
      "America/Tortola",
      "Atlantic/Bermuda",
    }),
+   "AT": ({
+     "Atlantic/Bermuda",
+   }),
    "AWDT": ({
      "Australia/Perth",
    }),
@@ -1084,6 +1091,7 @@ mapping abbr2zones =
      "Asia/Baghdad",
      "Asia/Bangkok",
      "Asia/Jakarta",
+     "Atlantic/Bermuda",
      "Europe/Brussels",
      "Europe/Bucharest",
      "Europe/Chisinau",
@@ -1098,6 +1106,7 @@ mapping abbr2zones =
      "America/Adak",
      "America/La_Paz",
      "America/Nome",
+     "Atlantic/Bermuda",
      "Europe/Belfast",
      "Europe/Dublin",
      "Europe/Gibraltar",
@@ -1310,6 +1319,7 @@ mapping abbr2zones =
    }),
    "CPT": ({
      "America/Atikokan",
+     "America/Belize",
      "America/Cambridge_Bay",
      "America/Chicago",
      "America/Indiana/Indianapolis",
@@ -1395,6 +1405,7 @@ mapping abbr2zones =
    "CWT": ({
      "America/Atikokan",
      "America/Bahia_Banderas",
+     "America/Belize",
      "America/Cambridge_Bay",
      "America/Cancun",
      "America/Chicago",
@@ -1660,6 +1671,7 @@ mapping abbr2zones =
      "Africa/Conakry",
      "Africa/Dakar",
      "Africa/Freetown",
+     "Africa/Lagos",
      "Africa/Lome",
      "Africa/Malabo",
      "Africa/Monrovia",
