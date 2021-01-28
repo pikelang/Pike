@@ -24,6 +24,10 @@ BEGIN {
   print "# NIST format leap-seconds.list file, which can be copied from"
   print "# <ftp://ftp.nist.gov/pub/time/leap-seconds.list>"
   print "# or <ftp://ftp.boulder.nist.gov/pub/time/leap-seconds.list>."
+  print "# The NIST file is used instead of its IERS upstream counterpart"
+  print "# <https://hpiers.obspm.fr/iers/bul/bulc/ntp/leap-seconds.list>"
+  print "# because under US law the NIST file is public domain"
+  print "# whereas the IERS file's copyright and license status is unclear."
   print "# For more about leap-seconds.list, please see"
   print "# The NTP Timescale and Leap Seconds"
   print "# <https://www.eecis.udel.edu/~mills/leap.html>."
@@ -68,11 +72,11 @@ BEGIN {
   monthabbr[11] = "Nov"
   monthabbr[12] = "Dec"
 
-  # Strip trailing CR, in case the input has CRLF form a la NIST.
-  RS = "\r?\n"
-
   sstamp_init()
 }
+
+# In case the input has CRLF form a la NIST.
+{ sub(/\r$/, "") }
 
 /^#[ \t]*[Uu]pdated through/ || /^#[ \t]*[Ff]ile expires on/ {
     last_lines = last_lines $0 "\n"
@@ -100,6 +104,19 @@ BEGIN {
 }
 
 END {
+    sstamp_to_ymdhMs(expires, ss_NTP)
+
+    print ""
+    print "# UTC timestamp when this leap second list expires."
+    print "# Any additional leap seconds will come after this."
+    if (! EXPIRES_LINE) {
+      print "# This Expires line is commented out for now,"
+      print "# so that pre-2020a zic implementations do not reject this file."
+    }
+    printf "%sExpires %.4d\t%s\t%.2d\t%.2d:%.2d:%.2d\n", \
+      EXPIRES_LINE ? "" : "#", \
+      ss_year, monthabbr[ss_month], ss_mday, ss_hour, ss_min, ss_sec
+
     # The difference between the NTP and POSIX epochs is 70 years
     # (including 17 leap days), each 24 hours of 60 minutes of 60
     # seconds each.
