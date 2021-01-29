@@ -2690,42 +2690,38 @@ mapping timezone_expert_tree =
          -41400:"Pacific/Nauru",
       ]),
    -39600:
-      ([ "test":1285770600, // 2010-09-29 14:30:00
+      ([ "test":702867600, // 1992-04-10 01:00:00
          -43200:
-            ([ "test":1437836400, // 2015-07-25 15:00:00
-               -39600:"Asia/Srednekolymsk",
-               -36000:"Asia/Magadan",
+            ([ "test":1079182800, // 2004-03-13 13:00:00
+               -39600:
+                  ([ "test":1437836400, // 2015-07-25 15:00:00
+                     -39600:"Asia/Srednekolymsk",
+                     -36000:"Asia/Magadan",
+                  ]),
+               -36000:"Asia/Sakhalin",
             ]),
          -39600:
-            ([ "test":776482200, // 1994-08-10 01:30:00
-               -43200:"Asia/Sakhalin",
-               -39600:
-                  ([ "test":-2003439184, // 1906-07-08 01:06:56
-                     -40396:"Pacific/Efate",
-                     -39948:"Pacific/Noumea",
-                     -39600:"Pacific/Pohnpei",
-                     -38388:"Pacific/Guadalcanal",
-                  ]),
-               -36000:"Antarctica/Macquarie",
+            ([ "test":-2003439184, // 1906-07-08 01:06:56
+               -40396:"Pacific/Efate",
+               -39948:"Pacific/Noumea",
+               -39600:"Pacific/Pohnpei",
+               -38388:"Pacific/Guadalcanal",
             ]),
          -36000:
-            ([ "test":378597600, // 1981-12-30 22:00:00
+            ([ "test":-31543200, // 1968-12-31 22:00:00
                -39600:
-                  ([ "test":-1675200600, // 1916-12-01 02:30:00
-                     -39600:
-                        ([ "test":-2345794942, // 1895-08-31 14:17:38
-                           -36000:"Australia/Hobart",
-                           -34528:"Australia/Currie",
-                        ]),
-                     -36000:
-                        ([ "test":-2364112342, // 1895-01-31 14:07:38
-                           -36000:"Australia/Sydney",
-                           -34792:"Australia/Melbourne",
-                        ]),
+                  ([ "test":1278072000, // 2010-07-02 12:00:00
+                     -39600:"Antarctica/Macquarie",
+                     -36000:"Australia/Hobart",
                   ]),
                -36000:
                   ([ "test":725763600, // 1992-12-31 01:00:00
-                     -39600:"Australia/Lindeman",
+                     -39600:
+                        ([ "test":-2365452024, // 1895-01-16 01:59:36
+                           -36292:"Australia/Sydney",
+                           -36000:"Australia/Lindeman",
+                           -34792:"Australia/Melbourne",
+                        ]),
                      -36000:"Australia/Brisbane",
                   ]),
             ]),
@@ -2949,10 +2945,10 @@ mapping timezone_expert_tree =
          -14400:
             ([ "test":670372200, // 1991-03-30 22:30:00
                -14400:
-                  ([ "test":-1997408754, // 1906-09-15 20:14:06
-                     -14400:"Indian/Mahe",
-                     -13800:"Indian/Mauritius",
+                  ([ "test":-1988163954, // 1906-12-31 20:14:06
+                     -14400:"Indian/Mauritius",
                      -13312:"Indian/Reunion",
+                     -13308:"Indian/Mahe",
                      -13272:"Asia/Dubai",
                   ]),
                -10800:
@@ -2979,7 +2975,7 @@ mapping timezone_expert_tree =
                -10800:
                   ([ "test":325803600, // 1980-04-28 21:00:00
                      -14400:
-                        ([ "test":1556460000, // 2019-04-28 14:00:00
+                        ([ "test":1574850600, // 2019-11-27 10:30:00
                            -14400:"Europe/Volgograd",
                            -10800:"Europe/Kirov",
                         ]),
@@ -3005,9 +3001,9 @@ mapping timezone_expert_tree =
                -10800:
                   ([ "test":1076634000, // 2004-02-13 01:00:00
                      -10800:
-                        ([ "test":-563722406, // 1952-02-20 10:26:34
-                           -10800:"Asia/Riyadh",
-                           -9900:"Africa/Nairobi",
+                        ([ "test":-792471356, // 1944-11-20 21:04:04
+                           -11212:"Asia/Riyadh",
+                           -10800:"Africa/Nairobi",
                            0:"Antarctica/Syowa",
                         ]),
                      -7200:
@@ -3065,12 +3061,15 @@ mapping timezone_expert_tree =
                   ]),
             ]),
          -7200:
-            ([ "test":1525262400, // 2018-05-02 12:00:00
+            ([ "test":1560805200, // 2019-06-17 21:00:00
                -10800:
-                  ([ "test":-2035462972, // 1905-07-02 09:37:08
-                     -8624:"Asia/Amman",
-                     -7588:"Africa/Juba",
-                     -7200:"Asia/Beirut",
+                  ([ "test":1627905600, // 2021-08-02 12:00:00
+                     -10800:
+                        ([ "test":-2035462972, // 1905-07-02 09:37:08
+                           -8624:"Asia/Amman",
+                           -7200:"Asia/Beirut",
+                        ]),
+                     -7200:"Africa/Juba",
                   ]),
                -7200:
                   ([ "test":1228714200, // 2008-12-08 05:30:00
@@ -3115,9 +3114,9 @@ mapping timezone_expert_tree =
                            -1476:"Europe/Luxembourg",
                            -1172:"Europe/Amsterdam",
                            -561:
-                              ([ "test":-1855958931, // 1911-03-10 23:51:09
-                                 -561:"Europe/Paris",
-                                 0:"Europe/Monaco",
+                              ([ "test":-1855181361, // 1911-03-19 23:50:39
+                                 -561:"Europe/Monaco",
+                                 0:"Europe/Paris",
                               ]),
                            0:
                               ([ "test":-1653764400, // 1917-08-06 05:00:00
@@ -3127,7 +3126,7 @@ mapping timezone_expert_tree =
                         ]),
                   ]),
                -3600:
-                  ([ "test":327243600, // 1980-05-15 13:00:00
+                  ([ "test":331347600, // 1980-07-02 01:00:00
                      -7200:
                         ([ "test":-766967400, // 1945-09-12 01:30:00
                            -10800:"Europe/Berlin",
@@ -3154,9 +3153,9 @@ mapping timezone_expert_tree =
                                  -3600:"Europe/Gibraltar",
                               ]),
                            -3600:
-                              ([ "test":-2016706063, // 1906-02-04 11:52:17
+                              ([ "test":-1898424281, // 1909-11-04 11:55:19
                                  -3600:"Europe/Belgrade",
-                                 -816:"Africa/Lagos",
+                                 -815:"Africa/Lagos",
                                  -561:"Africa/Tunis",
                                  0:"Europe/Andorra",
                               ]),
@@ -3190,19 +3189,19 @@ mapping timezone_expert_tree =
                   ]),
             ]),
          0:
-            ([ "test":-847882774, // 1943-02-18 13:00:26
+            ([ "test":1311467400, // 2011-07-24 00:30:00
+               -7200:"Antarctica/Troll",
                -3600:"Africa/Casablanca",
                0:
                   ([ "test":1530536400, // 2018-07-02 13:00:00
-                     -7200:"Antarctica/Troll",
                      -3600:"Africa/Sao_Tome",
                      0:
-                        ([ "test":-1735689090, // 1915-01-01 00:08:30
+                        ([ "test":-818640900, // 1944-01-22 23:45:00
+                           -1800:"Africa/Accra",
                            0:"Africa/Abidjan",
-                           52:"Africa/Accra",
+                           3600:"Atlantic/Reykjavik",
                         ]),
                   ]),
-               3600:"Atlantic/Reykjavik",
             ]),
          10800:"Antarctica/Rothera",
       ]),
@@ -3413,9 +3412,9 @@ mapping timezone_expert_tree =
                      18000:
                         ([ "test":957043800, // 2000-04-29 21:30:00
                            14400:
-                              ([ "test":1483536600, // 2017-01-04 13:30:00
-                                 14400:"America/Grand_Turk",
-                                 18000:"America/Nipigon",
+                              ([ "test":-901753200, // 1941-06-05 01:00:00
+                                 14400:"America/Nipigon",
+                                 18000:"America/Grand_Turk",
                               ]),
                            18000:
                               ([ "test":-1267889730, // 1929-10-28 08:24:30
@@ -3570,7 +3569,7 @@ mapping timezone_expert_tree =
             ]),
       ]),
    28800:
-      ([ "test":1544623200, // 2018-12-12 14:00:00
+      ([ "test":1576071000, // 2019-12-11 13:30:00
          25200:
             ([ "test":187853400, // 1975-12-15 05:30:00
                25200:"America/Dawson_Creek",
@@ -3581,15 +3580,11 @@ mapping timezone_expert_tree =
                   ]),
             ]),
          28800:
-            ([ "test":78912000, // 1972-07-02 08:00:00
+            ([ "test":53652600, // 1971-09-13 23:30:00
                25200:
-                  ([ "test":486365400, // 1985-05-31 05:30:00
-                     25200:
-                        ([ "test":-2715760426, // 1883-12-10 14:06:14
-                           28800:"America/Los_Angeles",
-                           29548:"America/Vancouver",
-                        ]),
-                     28800:"America/Metlakatla",
+                  ([ "test":-2715760426, // 1883-12-10 14:06:14
+                     28800:"America/Los_Angeles",
+                     29548:"America/Vancouver",
                   ]),
                28800:
                   ([ "test":-183025800, // 1964-03-14 15:30:00
@@ -3599,13 +3594,17 @@ mapping timezone_expert_tree =
             ]),
          32400:
             ([ "test":333482400, // 1980-07-26 18:00:00
-               25200:"America/Sitka",
+               25200:
+                  ([ "test":437634000, // 1983-11-14 05:00:00
+                     28800:"America/Metlakatla",
+                     32400:"America/Sitka",
+                  ]),
                28800:"America/Juneau",
             ]),
       ]),
    30600:"Pacific/Pitcairn",
    32400:
-      ([ "test":1599382800, // 2020-09-06 09:00:00
+      ([ "test":1021564800, // 2002-05-16 16:00:00
          25200:"America/Dawson",
          28800:"America/Yakutat",
          32400:"Pacific/Gambier",
