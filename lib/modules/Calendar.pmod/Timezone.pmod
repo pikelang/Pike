@@ -1319,8 +1319,10 @@ class Runtime_timezone_compiler
       "europe",
       "northamerica",
       "southamerica",
+#if 0
       "pacificnew",
       "systemv",
+#endif
    });
 
    mapping zone_cache;
