@@ -465,10 +465,10 @@ static int PIKE_UNUSED_ATTRIBUTE debug_fd_mkdir(const char *dir, int mode)
 #endif
 #define fd_rename(O,N)	rename(O,N)
 #define fd_chdir(DIR)	chdir(DIR)
-#ifdef HAVE_GET_CURRENT_DIR_NAME
+#if defined(HAVE_GET_CURRENT_DIR_NAME) && !defined(USE_DL_MALLOC)
 /* Glibc extension... */
 #define fd_get_current_dir_name()	get_current_dir_name()
-#elif defined(HAVE_WORKING_GETCWD)
+#elif defined(HAVE_WORKING_GETCWD) && !defined(USE_DL_MALLOC)
 #if HAVE_WORKING_GETCWD
 /* Glibc and win32 (HAVE_WORKING_GETCWD == 1).
  *
