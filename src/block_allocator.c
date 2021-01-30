@@ -7,9 +7,9 @@
 
 #include <stdlib.h>
 
-#define BA_BLOCKN(l, p, n) ((struct ba_block_header *)((char*)(p) + (l).doffset + (n)*((l).block_size)))
-#define BA_LASTBLOCK(l, p) ((struct ba_block_header*)((char*)(p) + (l).doffset + (l).offset))
-#define BA_CHECK_PTR(l, p, ptr)	((size_t)((char*)(ptr) - (char*)(p)) <= (l).offset + (l).doffset)
+#define BA_BLOCKN(l, p, n) ((struct ba_block_header *)((char*)(p) + sizeof(struct ba_page) + (n)*((l).block_size)))
+#define BA_LASTBLOCK(l, p) ((struct ba_block_header*)((char*)(p) + sizeof(struct ba_page) + (l).offset))
+#define BA_CHECK_PTR(l, p, ptr)	((size_t)((char*)(ptr) - (char*)(p)) <= (l).offset + sizeof(struct ba_page))
 
 #define BA_ONE	((struct ba_block_header *)1)
 #define BA_FLAG_SORTED 1u
@@ -71,7 +71,7 @@ static INLINE void ba_clear_page(struct block_allocator * VALGRINDUSED(a), struc
 
 static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     struct ba_layout l = ba_get_layout(a, i);
-    size_t n = l.offset + l.block_size + l.doffset;
+    size_t n = l.offset + l.block_size + sizeof(struct ba_page);
     struct ba_page * p;
 
     /*
@@ -82,9 +82,7 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
         Pike_error("Overflow.\n");
     }
 
-    if (l.alignment) {
-	p = xalloc_aligned(n, l.alignment);
-    } else {
+    {
 #ifdef DEBUG_MALLOC
 	/* In debug malloc mode, calling xalloc from the block alloc may result
 	 * in a deadlock, since xalloc will call ba_alloc, which in turn may call xalloc.
@@ -99,7 +97,7 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
 #endif
     }
     ba_clear_page(a, p, &a->l);
-    PIKE_MEM_NA_RANGE((char*)p + l.doffset, n - l.doffset);
+    PIKE_MEM_NA_RANGE((char*)p + sizeof(struct ba_page), n - sizeof(struct ba_page));
     return p;
 }
 
@@ -123,20 +121,10 @@ static void ba_free_empty_pages(struct block_allocator * a) {
     }
 }
 
-PMOD_EXPORT void ba_low_init_aligned(struct block_allocator * a) {
+static void ba_low_init(struct block_allocator * a) {
     unsigned INT32 block_size = MAXIMUM(a->l.block_size, sizeof(struct ba_block_header));
 
     PIKE_MEMPOOL_CREATE(a);
-
-    if (a->l.alignment) {
-	if (a->l.alignment & (a->l.alignment - 1))
-	    Pike_fatal("Block allocator a->l.alignment is not a power of 2.\n");
-	if (block_size & (a->l.alignment-1))
-	    Pike_fatal("Block allocator block size is not aligned.\n");
-	a->l.doffset = PIKE_ALIGNTO(sizeof(struct ba_page), a->l.alignment);
-    } else {
-	a->l.doffset = sizeof(struct ba_page);
-    }
 
     if (a->l.blocks & (a->l.blocks - 1)) {
         unsigned INT32 tmp = round_up32(a->l.blocks);
@@ -146,12 +134,11 @@ PMOD_EXPORT void ba_low_init_aligned(struct block_allocator * a) {
     a->l.offset = block_size * (a->l.blocks-1);
 }
 
-PMOD_EXPORT void ba_init_aligned(struct block_allocator * a, unsigned INT32 block_size,
-				 unsigned INT32 blocks, unsigned INT32 alignment) {
+PMOD_EXPORT void ba_init(struct block_allocator * a, unsigned INT32 block_size,
+			 unsigned INT32 blocks) {
     a->l.blocks = blocks;
     a->l.block_size = block_size;
-    a->l.alignment = alignment;
-    ba_low_init_aligned(a);
+    ba_low_init(a);
     a->alloc = a->last_free = a->size = 0;
     memset(a->pages, 0, sizeof(a->pages));
 }
@@ -206,7 +193,7 @@ PMOD_EXPORT void ba_count_all(const struct block_allocator * a, size_t * num, si
     for( i=0; i<a->size; i++ )
     {
         struct ba_layout l = ba_get_layout( a, i );
-        b += l.offset + l.block_size + l.doffset;
+        b += l.offset + l.block_size + sizeof(struct ba_page);
         n += a->pages[i]->h.used;
     }
     *num = n;
@@ -217,7 +204,7 @@ static void ba_low_alloc(struct block_allocator * a) {
     int i;
 
     if (!a->l.offset) {
-        ba_low_init_aligned(a);
+        ba_low_init(a);
     }
 
     /*
@@ -275,13 +262,6 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     }
     PIKE_MEM_WO_RANGE(ptr, sizeof(struct ba_block_header));
 
-#if PIKE_DEBUG
-    if (a->l.alignment && (size_t)ptr & (a->l.alignment - 1)) {
-	print_allocator(a);
-	Pike_fatal("Returning unaligned pointer.\n");
-    }
-#endif
-
     return ptr;
 }
 
@@ -289,13 +269,6 @@ PMOD_EXPORT void ba_free(struct block_allocator * a, void * ptr) {
     int i = a->last_free;
     struct ba_page * p = a->pages[i];
     struct ba_layout l = ba_get_layout(a, i);
-
-#if PIKE_DEBUG
-    if (a->l.alignment && (size_t)ptr & (a->l.alignment - 1)) {
-	print_allocator(a);
-	Pike_fatal("Returning unaligned pointer.\n");
-    }
-#endif
 
     if (BA_CHECK_PTR(l, p, ptr)) goto found;
 

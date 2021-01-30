@@ -10,11 +10,9 @@ struct ba_layout {
     unsigned INT32 offset;
     unsigned INT32 block_size;
     unsigned INT32 blocks;
-    unsigned INT32 alignment;
-    unsigned INT32 doffset;
 };
 
-#define BA_LAYOUT_INIT(block_size, blocks, alignment)  { 0, (block_size), (blocks), (alignment), 0 }
+#define BA_LAYOUT_INIT(block_size, blocks)  { 0, (block_size), (blocks) }
 
 struct ba_page_header {
     struct ba_block_header * first;
@@ -62,20 +60,17 @@ static INLINE void ATTRIBUTE((unused)) * ba_it_val(struct ba_iterator * it) {
     return it->cur;
 }
 
-#define BA_INIT_ALIGNED(block_size, blocks, alignment) {    \
-    BA_LAYOUT_INIT(block_size, blocks, alignment),	    \
+#define BA_INIT(block_size, blocks) {			    \
+    BA_LAYOUT_INIT(block_size, blocks),			    \
     0, 0, 0,						    \
     { NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,		    \
       NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,		    \
       NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL }		    \
 }
 
-#define BA_INIT(block_size, blocks) BA_INIT_ALIGNED(block_size, blocks, 0)
-
 #define BA_INIT_PAGES(block_size, pages)	BA_INIT(block_size, ((pages) * PIKE_MALLOC_PAGE_SIZE)/(block_size))
 
-PMOD_EXPORT void ba_init_aligned(struct block_allocator * a, unsigned INT32 block_size, unsigned INT32 blocks,
-				 unsigned INT32 alignment);
+PMOD_EXPORT void ba_init(struct block_allocator * a, unsigned INT32 block_size, unsigned INT32 blocks);
 ATTRIBUTE((malloc)) PMOD_EXPORT void * ba_alloc(struct block_allocator * a);
 PMOD_EXPORT void ba_free(struct block_allocator * a, void * ptr);
 PMOD_EXPORT void ba_destroy(struct block_allocator * a);
@@ -83,7 +78,4 @@ PMOD_EXPORT void ba_free_all(struct block_allocator * a);
 PMOD_EXPORT size_t ba_count(const struct block_allocator * a);
 PMOD_EXPORT void ba_count_all(const struct block_allocator * a, size_t * num, size_t * size);
 
-static INLINE void ATTRIBUTE((unused)) ba_init(struct block_allocator * a, unsigned INT32 block_size, unsigned INT32 blocks) {
-    ba_init_aligned(a, block_size, blocks, 0);
-}
 #endif
