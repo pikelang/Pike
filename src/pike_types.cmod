@@ -2444,7 +2444,7 @@ void simple_describe_type(struct pike_type *s)
 	  simple_describe_type(s);
 	  fprintf(stderr, ")");
 	} else {
-	  if (s->car->type != T_VOID) {
+	  if (!s->car || (s->car->type != T_VOID)) {
 	    simple_describe_type(s->car);
 	    fprintf(stderr, "...");
 	  }
@@ -7691,8 +7691,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     }
 
     /* check the 'many' type */
-    if(b->car->type != T_VOID &&
-       a->car->type != T_VOID)
+    if(b->car && (b->car->type != T_VOID) &&
+       a->car && (a->car->type != T_VOID))
     {
       if(!(tmp = low_match_types(a->car, b->car,
 				 (flags | NO_MAX_ARGS) & ~(A_EXACT|B_EXACT)))) {
@@ -8530,7 +8530,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     /* FALLTHRU */
   case TWOT(T_MANY, T_MANY):
     /* check the 'many' type */
-    if ((a->car->type != T_VOID) && (b->car->type != T_VOID)) {
+    if (a->car && (a->car->type != T_VOID) &&
+	b->car && (b->car->type != T_VOID)) {
       /* Note: flags never has grouping at this point. */
       if (!low_pike_types_le(b->car, a->car, 0, flags ^ LE_A_B_SWAPPED)) {
 	return 0;
