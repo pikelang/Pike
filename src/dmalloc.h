@@ -196,7 +196,7 @@ PMOD_EXPORT void* dlmemalign(size_t, size_t);
 PMOD_EXPORT void* dlvalloc(size_t);
 PMOD_EXPORT void* dlpvalloc(size_t);
 PMOD_EXPORT struct mallinfo dlmallinfo(void);
-#define malloc	  dlmalloc
+#define malloc(x) dlmalloc(x)
 #define free	  dlfree
 #define calloc    dlcalloc
 #define realloc	  dlrealloc
