@@ -1021,7 +1021,7 @@ static PIKE_MUTEX_T debug_malloc_mutex;
 #undef ENCAPSULATE_MALLOC
 #define calloc    dlcalloc
 #define free	  dlfree
-#define malloc	  dlmalloc
+#define malloc(x) dlmalloc(x)
 #define memalign  dlmemalign
 #define realloc	  dlrealloc
 #define valloc	  dlvalloc
@@ -1305,7 +1305,7 @@ void *fake_calloc(size_t x, size_t y)
 #define fake_calloc calloc
 #define fake_realloc realloc
 #else
-#define malloc fake_malloc
+#define malloc(x) fake_malloc(x)
 #define free fake_free
 #define realloc fake_realloc
 #define calloc fake_calloc
@@ -1315,7 +1315,7 @@ void *fake_calloc(size_t x, size_t y)
 /* Don't understand what this is supposed to do, but it won't work
  * with USE_DL_MALLOC. /mast */
 #ifdef WRAP
-#define malloc __real_malloc
+#define malloc(x) __real_malloc(x)
 #define free __real_free
 #define realloc __real_realloc
 #define calloc __real_calloc
