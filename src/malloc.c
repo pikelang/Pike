@@ -2,7 +2,9 @@
 /* This is only used when --enable-dlmalloc is specified (default on
  * Windows). */
 #include "global.h"
+#ifdef PIKE_THREADS
 #define USE_LOCKS 1
+#endif
 #define USE_DL_PREFIX 1
 /* Further pike changes below: PMOD_EXPORTs and lines marked "PIKE". */
 /* End pike preamble */
