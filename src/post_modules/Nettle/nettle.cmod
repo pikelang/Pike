@@ -117,7 +117,7 @@ PIKEFUN string(7bit) bcrypt_hash(string(8bit) password, string(7bit) scheme,
     free_string_builder(&ret);
     Pike_error("Invalid password hash scheme for bcrypt.\n");
   }
-  ret.s->len = strlen(STR0(ret.s));
+  ret.s->len = strlen((char *)STR0(ret.s));
   RETURN finish_string_builder(&ret);
 }
 
