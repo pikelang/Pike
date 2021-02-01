@@ -4958,7 +4958,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	    push_type(T_FUNCTION);
 	  } else if (a->type == T_FUNCTION) {
 	    push_remap_markers(ai, NULL, remap, remap_flags);
-	    if ((ai->type != T_MANY) || (ai->car != T_VOID)) {
+	    if ((ai->type != T_MANY) || (ai->car->type != T_VOID)) {
 	      /* Convert voidable arguments into zero|void
 	       * if they must be present for later arguments.
 	       */
