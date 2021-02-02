@@ -216,17 +216,17 @@ class _get_iterator
   protected int|array(string|int) row = fetch_row();
   protected int pos = 0;
 
-  int index()
+  protected int index()
   {
     return pos;
   }
 
-  int|array(string|int) value()
+  protected int|array(string|int) value()
   {
     return row;
   }
 
-  int(0..1) next()
+  protected int(0..1) next()
   {
     pos++;
     return !!(row = fetch_row());

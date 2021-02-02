@@ -80,8 +80,8 @@ protected this_program `-(this_program that) {
 
 //! Union
 protected this_program `+(this_program that) {
-  if (from != ([object]that)->till && ([object]that)->from != till
-      && !(this & ([object]that)))
+  if (from != that->till && that->from != till
+      && !(this & that))
     error("Result of range union would not be contiguous\n");
   return this_program(min(from, that->from),
 		      max(till, that->till));
