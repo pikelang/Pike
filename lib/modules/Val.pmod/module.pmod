@@ -628,7 +628,7 @@ class Interval {
   }
 
   protected mixed `+(this_program that) {
-    if (!objectp(that) || !([object]that)->is_interval)
+    if (!objectp(that) || !that->is_interval)
       error("Cannot add %O\n", that);
     this_program n = this_program(this);
     n->nsecs += that->nsecs;
