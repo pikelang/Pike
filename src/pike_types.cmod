@@ -4130,7 +4130,12 @@ static void push_binop(enum pt_binop op)
     free_type(b);
     break;
   case PT_BINOP_NONE:
-    Pike_fatal("Unsupported binop.\n");
+    a = low_pop_type();
+    b = low_pop_type();
+    push_type(PIKE_T_UNKNOWN);
+    free_type(a);
+    free_type(b);
+    break;
   case PT_BINOP_MINUS:
   case PT_BINOP_INVERSE_MINUS:
     /* One of the minterms. */
