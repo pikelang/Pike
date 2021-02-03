@@ -210,13 +210,17 @@ PIKECLASS _Instance {
       }
     }
 
-    /*! @decl int add_watch(string file, int mask)
+    /*! @decl int add_watch(string path, int mask)
+     *!
      *! Add a watch for a certain file or directory and specific events.
-     *! Adding more than one watch for one file will overwrite the
+     *!
+     *! Adding more than one watch for a path will overwrite the
      *! previous watch unless @[System.Inotify.IN_MASK_ADD] is contained
      *! in the mask.
+     *!
      *! @param path
      *!	    Path of the file or directory.
+     *!
      *! @param mask
      *!	    Integer mask specifying the event type. This can be a
      *!	    combination of different event types using bitwise OR.
@@ -224,14 +228,21 @@ PIKECLASS _Instance {
      *!	    description. The values defined by the inotify header
      *!	    file are exported by @[System.Inotify] as constants
      *!	    using the same names (e.g. @[System.Inotify.IN_CREATE]).
+     *!
      *! @returns
-     *!     Returns a watch descriptor.
+     *!     Returns a watch descriptor on success, and @expr{-1@}
+     *!     on filesystem-related failures, in which case @[errno()]
+     *!     will indicate the cause. These typically indicate time of
+     *!     check, time of use race conditions. For other failures
+     *!     errors are thrown.
+     *!
      *! @note
      *!	    Subdirectories are not watched. If you want to watch
      *!	    subdirectories as well, you need to add watches for
      *!	    them individually.
+     *!
      *! @note
-     *!     At creation of a watch for a directory simulated
+     *!     At creation of a watch for a directory, simulated
      *!     @[IN_CREATE]-events with cookie @expr{0x7fffffff@} will
      *!     be added for the initial contents of the directory.
      *!     This is to reduce the risk of losing state changes
@@ -239,6 +250,10 @@ PIKECLASS _Instance {
      *!     paths are in flux or not. Note also that there may
      *!     be multiple notifications for content that is created
      *!     at the moment the watch is created.
+     *!
+     *! @note
+     *!     In old versions of Pike errors were thrown for
+     *!     all failures.
      *!
      *! @seealso
      *!     @[rm_watch()], @[parse_event()]
@@ -251,9 +266,18 @@ PIKECLASS _Instance {
 
 	wd = inotify_add_watch(THIS->box.fd, file->str, mask);
 
-	if (wd == -1)
+	if (wd == -1) {
+	  if ((errno == EACCES) || (errno == ENOENT) || (errno == ENOTDIR)) {
+	    /* The above errors may occur due to concurrent
+	     * filesystem changes.
+	     */
+	    push_int(-1);
+	    return;
+	  } else {
 	    Pike_error("inotify_add_watch failed: %s\n",
 		       strerror(errno));
+	  }
+	}
 
 	if (mask & IN_CREATE) {
 	  DIR *dir = opendir(file->str);
