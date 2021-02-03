@@ -1,4 +1,5 @@
 Changes since Pike 8.0.1116 (release 14)
+----------------------------------------------------------------------
 
 Bug Fixes
 ---------
@@ -9,6 +10,7 @@ o Inotify
   that may be due to the filsystem being in flux.
 
 Changes since Pike 8.0.702 (release 13)
+----------------------------------------------------------------------
 
 New Features
 ------------
@@ -456,6 +458,7 @@ o Silence GL deprecation warning and fix a missing definition error on
 o Fix check for my_bool and compilation errors related to MySQL 8.
 
 Changes since Pike 8.0.610 (release 12)
+----------------------------------------------------------------------
 
 New Features
 ------------
