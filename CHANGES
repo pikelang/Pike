@@ -1,3 +1,13 @@
+Changes since Pike 8.0.1116 (release 14)
+
+Bug Fixes
+---------
+
+o Inotify
+
+  add_watch() now returns -1 for filsystem-related failures
+  that may be due to the filsystem being in flux.
+
 Changes since Pike 8.0.702 (release 13)
 
 New Features
