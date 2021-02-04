@@ -5032,6 +5032,12 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       /* Return zero. */
       add_ref(b);
       return b;
+    } else if (op & PT_BINOP_MINUS) {
+      if (!(bflags & PT_FLAG_CMP_VOIDABLE)) {
+	/* Return void. */
+	add_ref(a);
+	return a;
+      }
     }
     return NULL;
 
@@ -5045,6 +5051,12 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       /* Return zero. */
       add_ref(a);
       return a;
+    } else if (op & PT_BINOP_MINUS) {
+      if (!(aflags & PT_FLAG_CMP_VOIDABLE)) {
+	/* Return zero. */
+	add_ref(a);
+	return a;
+      }
     }
     return NULL;
 
