@@ -324,13 +324,13 @@ size_t pike_type_hash_size = 0;
 
 void debug_free_type(struct pike_type *t)
 {
+ loop:
   if (!t) return;
 #ifdef DEBUG_MALLOC
   if (t == (struct pike_type *)(size_t)0x55555555) {
     Pike_fatal("Freeing dead type.\n");
   }
 #endif /* DEBUG_MALLOC */
- loop:
   if (!sub_ref(t)) {
     unsigned INT32 hash = t->hash & pike_type_hash_size;
     struct pike_type **t2 = pike_type_hash + hash;
