@@ -3303,7 +3303,7 @@ void fix_foreach_type(node *val_lval)
     } else {
       /* Old-style foreach */
       struct pike_type *array_zero;
-      MAKE_CONSTANT_TYPE(array_zero, tLArr(tZero,tZero));
+      MAKE_CONSTANT_TYPE(array_zero, tLArr(tUnknown, tUnknown));
 
       if (!pike_types_le(array_zero, expression->type)) {
         yytype_report(REPORT_ERROR,
