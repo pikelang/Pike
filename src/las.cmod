@@ -439,6 +439,22 @@ int check_tailrecursion(void)
 
 static int check_node_type(node *n, struct pike_type *t, const char *msg)
 {
+#if 1
+  struct pike_type *diff = type_binop(PT_BINOP_MINUS, n->type, t,
+				      0, PT_FLAG_CMP_NULLABLE, 0);
+  if (!diff) return 1;	/* Strict match. */
+  if (diff == n->type) {
+    /* Strict mismatch. */
+    yytype_report(REPORT_ERROR, NULL, 0, t, NULL, 0, diff, 0, msg);
+    free_type(diff);
+    /* print_tree(n); */
+    return 0;
+  }
+  if (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) {
+    yytype_report(REPORT_WARNING, NULL, 0, t, NULL, 0, diff, 0, msg);
+  }
+  free_type(diff);
+#else
   if (pike_types_le(n->type, t)) return 1;
   if (!match_types(n->type, t)) {
     yytype_report(REPORT_ERROR, NULL, 0, t, NULL, 0, n->type, 0, msg);
@@ -447,6 +463,7 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
   if (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) {
     yytype_report(REPORT_WARNING, NULL, 0, t, NULL, 0, n->type, 0, msg);
   }
+#endif
   if (runtime_options & RUNTIME_CHECK_TYPES) {
     node *p = n->parent;
     if (p && (CAR(p) == n)) {
