@@ -1459,7 +1459,7 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
     }
 
     if (n->type) {
-      if (!(result_type = soft_cast(type, n->type, 0))) {
+      if (!(result_type = soft_cast(type, n->type, SOFT_WEAKER))) {
 	ref_push_type_value(n->type);
 	ref_push_type_value(type);
 	yytype_report(REPORT_ERROR,
