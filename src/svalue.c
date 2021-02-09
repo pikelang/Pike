@@ -1378,10 +1378,12 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 	for(i=0; i < len; i++)
         {
 	  p_wchar2 j;
-          /* the longest possible escape sequence are unicode escapes, which are
-           * 8 byte hex plus \U
+          /* The longest possible escape sequences are unicode escapes,
+	   * which are \U plus 8 byte hex.
+	   * Note that due to the use of sprintf(3C) we also need
+	   * space for the terminating NUL.
            */
-          buffer_ensure_space(buf, 10);
+          buffer_ensure_space(buf, 11);
 	  switch(j = index_shared_string(str,i))
           {
 	  case '\n':
