@@ -134,7 +134,7 @@ const char *const lfun_names[]  = {
 #ifdef PIKE_NEW_LFUN_LOOKUP
   "__INIT",
   "create",
-  "_destruct destroy",
+  "\0_destruct\0destroy",
   "_sprintf",
   0,
 
@@ -209,15 +209,15 @@ const char *const lfun_names[]  = {
   "_deserialize",
   0,
 
-  "_iterator_next next",
-  "_iterator_index index",
-  "_iterator_value value",
+  "\0_iterator_next\0next",
+  "\0_iterator_index\0index",
+  "\0_iterator_value\0value",
   0,
   0,		/* End marker. */
 #else
   "__INIT",
   "create",
-  "_destruct destroy",
+  "\0_destruct\0destroy",
   "`+",
   "`-",
   "`&",
@@ -274,9 +274,9 @@ const char *const lfun_names[]  = {
   "_m_clear",
   "_m_add",
   "_reverse",
-  "_iterator_next next",
-  "_iterator_index index",
-  "_iterator_value value",
+  "\0_iterator_next\0next",
+  "\0_iterator_index\0index",
+  "\0_iterator_value\0value",
   "_atomic_get_set",
 #endif
 };
@@ -4429,7 +4429,8 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
       }
       if (QUICK_FIND_LFUN(p, n) != -1) {
 	fprintf(stderr, "%*s  0x%02x: %04d %s\n",
-		indent, "", n, QUICK_FIND_LFUN(p, n), lfun_names[d]);
+		indent, "", n, QUICK_FIND_LFUN(p, n),
+		lfun_names[d][0]?lfun_names[d]:(lfun_names[d]+1));
       }
     }
   }
@@ -4437,7 +4438,8 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
   for (d = 0; d < NUM_LFUNS; d++) {
     if (p->lfuns[d] != -1) {
       fprintf(stderr, "%*s  %4d: %04d %s\n",
-	      indent, "", d, p->lfuns[d], lfun_names[d]);
+	      indent, "", d, p->lfuns[d],
+	      lfun_names[d][0]?lfun_names[d]:(lfun_names[d]+1));
     }
   }
 #endif
@@ -9591,19 +9593,22 @@ void init_program(void)
   lfun_types = allocate_mapping(NUM_LFUNS + 1);
 #ifdef PIKE_NEW_LFUN_LOOKUP
   for (i=0; i < NELEM(lfun_names); i++,n++) {
-    const char *name, *compat_name;
+    const char *name, *compat_name = NULL;
     if (!lfun_names[i]) {
       n |= 0xf;
       continue;
     }
     name = lfun_names[i];
-    compat_name = strchr(name, ' ');
+    if (!name[0]) {
+      name += 1;
+      compat_name = name + strlen(name) + 1;
+    }
     if (compat_name) {
       lfun_strings[n] =
-	make_shared_static_string(name, compat_name - name, eightbit);
+	make_shared_static_string(name, compat_name - (name + 1), eightbit);
       lfun_compat_strings[n] =
-	make_shared_static_string(compat_name + 1,
-				  strlen(compat_name + 1), eightbit);
+	make_shared_static_string(compat_name,
+				  strlen(compat_name), eightbit);
     } else {
       lfun_strings[n] =
 	make_shared_static_string(name, strlen(name), eightbit);
@@ -9632,15 +9637,18 @@ void init_program(void)
   }
 #else
   for (i=0; i < NELEM(lfun_names); i++) {
-    const char *name, *compat_name;
+    const char *name, *compat_name = NULL;
     name = lfun_names[i];
-    compat_name = strchr(name, ' ');
+    if (!name[0]) {
+      name += 1;
+      compat_name = name + strlen(name) + 1;
+    }
     if (compat_name) {
       lfun_strings[i] =
-	make_shared_static_string(name, compat_name - name, eightbit);
+	make_shared_static_string(name, compat_name - (name + 1), eightbit);
       lfun_compat_strings[i] =
-	make_shared_static_string(compat_name + 1,
-				  strlen(compat_name + 1), eightbit);
+	make_shared_static_string(compat_name,
+				  strlen(compat_name), eightbit);
     } else {
       lfun_strings[i] =
 	make_shared_static_string(name, strlen(name), eightbit);
