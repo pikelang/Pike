@@ -7243,6 +7243,17 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   fatal_check_c_stack(1024);
 #endif
 
+  if (!a) {
+    if (b) {
+      add_ref(b);
+      return b;
+    }
+    return NULL;
+  } else if (!b) {
+    add_ref(a);
+    return a;
+  }
+
   switch(a->type & PIKE_T_MASK)
   {
   case T_AND:
@@ -7917,6 +7928,9 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 #endif /* 0 */
 
   if(a == b) return 1;
+
+  if (!a) return 1;
+  if (!b) return 0;
 
 #ifdef TYPE_GROUPING
   if (b->type != T_OR) {
