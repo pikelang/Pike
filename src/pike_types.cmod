@@ -13770,7 +13770,9 @@ void gc_check_type (struct pike_type *t)
 	if (t->car) {
 	  debug_gc_check (t->car, " as car in a type");
 	}
-	debug_gc_check (t->cdr, " as cdr in a type");
+	if (t->cdr) {
+	  debug_gc_check (t->cdr, " as cdr in a type");
+	}
 	break;
       case PIKE_T_ATTRIBUTE:
       case PIKE_T_NAME:
