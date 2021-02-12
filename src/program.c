@@ -3188,6 +3188,70 @@ void fixate_program(void)
 #ifdef PIKE_DEBUG
   if(p->flags & PROGRAM_OPTIMIZED)
     Pike_fatal("Cannot fixate optimized program\n");
+
+  /* Verify that all identifier references are valid. */
+  for (i = 0; i < p->num_identifier_references; i++) {
+    struct reference *ref = p->identifier_references + i;
+    struct identifier *fun = ID_FROM_PTR(p, ref);
+    struct inherit *inh;
+
+    if (IDENTIFIER_IS_ALIAS(fun->identifier_flags)) {
+      /* FIXME: Not verified yet. */
+      continue;
+    }
+
+    inh = INHERIT_FROM_INT(p, i);
+
+    switch(fun->identifier_flags & IDENTIFIER_TYPE_MASK) {
+    case IDENTIFIER_PIKE_FUNCTION:
+      if (fun->func.offset == -1) {
+	/* Prototype. */
+	continue;
+      }
+      if (((size_t)fun->func.offset) >= inh->prog->num_program) {
+	Pike_fatal("Function %s offset (%ld) out of whack (max: %ld)!\n",
+		   fun->name?fun->name->str:"<no-name>",
+		   fun->func.const_info.offset,
+		   (long)inh->prog->num_program);
+      }
+      break;
+    case IDENTIFIER_C_FUNCTION:
+      /* C funtion pointer. */
+      continue;
+    case IDENTIFIER_CONSTANT:
+      if (fun->func.const_info.offset < 0) {
+	/* Prototype constant. */
+	continue;
+      }
+      if (fun->func.const_info.offset >= inh->prog->num_constants) {
+	Pike_fatal("Constant %s offset (%d) out of whack (max: %ld)!\n",
+		   fun->name?fun->name->str:"<no-name>",
+		   fun->func.const_info.offset,
+		   (long)inh->prog->num_constants);
+      }
+      break;
+    case IDENTIFIER_VARIABLE:
+      switch(fun->run_time_type) {
+      case PIKE_T_GET_SET:
+	break;
+      case PIKE_T_FREE:
+	/* ID_EXTERN */
+	continue;
+      default:
+	{
+	  ptrdiff_t offset = inh->storage_offset + fun->func.offset +
+	    sizeof_variable(fun->run_time_type);
+	  if (offset > p->storage_needed) {
+	    Pike_fatal("Variable %s offset (%ld (%d)) out of whack (max: %ld)!\n",
+		       fun->name?fun->name->str:"<no-name>",
+		       (long)offset, fun->func.offset,
+		       (long)p->storage_needed);
+	  }
+	}
+      }
+      break;
+    }
+  }
 #endif
 
   /* Fixup the runtime type for functions.
