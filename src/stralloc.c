@@ -697,6 +697,9 @@ static struct pike_string * make_static_string(const char * str, size_t len,
   struct pike_string * t = ba_alloc(&string_allocator);
 #ifdef PIKE_DEBUG
   gc_init_marker(t);
+  if (generic_extract(str, shift, len)) {
+    Pike_fatal("Static string \"%.*s\" is not NUL-terminated!\n", len, str);
+  }
 #endif
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   t->size_shift = shift;
@@ -715,6 +718,12 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
 {
   struct pike_string *s;
   ptrdiff_t h = StrHash(str, len);
+
+#ifdef PIKE_DEBUG
+  if (generic_extract(str, shift, len)) {
+    Pike_fatal("Static string \"%.*s\" is not NUL-terminated!\n", len, str);
+  }
+#endif
 
   s = internal_findstring(str,len,shift,h);
 
