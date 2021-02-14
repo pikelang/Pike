@@ -2773,23 +2773,24 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 
     case T_ARRAY:
       string_builder_strcat(s, "array");
-      if((t->cdr->type == T_MIXED) && (t->car == int_pos_type_string)) {
+      if (t->cdr && (t->cdr->type == T_MIXED) &&
+	  (t->car == int_pos_type_string)) {
 	break;
       }
       string_builder_putchar(s, '(');
-      if (t->car == zero_type_string) {
-	/* Zero-length array. */
-	string_builder_strcat(s, "zero");
-      } else {
-	if (t->car != int_pos_type_string) {
+      if (t->car != int_pos_type_string) {
+	if (t->car == zero_type_string) {
+	  /* Zero-length array. */
+	  string_builder_strcat(s, "zero");
+	} else {
 	  low_describe_int_range(s, t->car);
-	  string_builder_putchar(s, ':');
-	  if (t->cdr->type != T_MIXED) {
-	    string_builder_putchar(s, ' ');
-	  }
+	}
+	string_builder_putchar(s, ':');
+	if (t->cdr->type != T_MIXED) {
+	  string_builder_putchar(s, ' ');
 	}
       }
-      if (t->cdr->type != T_MIXED) {
+      if (t->cdr && (t->cdr->type != T_MIXED)) {
 	string_builder_sprintf(s, "%T", t->cdr);
       }
       string_builder_putchar(s, ')');
