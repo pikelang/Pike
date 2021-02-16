@@ -9981,7 +9981,7 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 #if 1
   if (flags & SOFT_WEAKER) {
     return type_binop(PT_BINOP_AND, orig_type, soft_type,
-		      PT_FLAG_CMP_NULLABLE, PT_FLAG_CMP_NULLABLE, 0);
+		      PT_FLAG_CMP_NULLABLE, 0, 0);
   } else {
     return type_binop(PT_BINOP_AND, orig_type, soft_type, 0, 0, 0);
   }
