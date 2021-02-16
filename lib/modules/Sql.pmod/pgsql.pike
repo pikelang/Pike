@@ -1030,6 +1030,8 @@ private void startquery(int forcetext, .pgsql_util.sql_result portal, string q,
 //!   (e.g. references to temporary tables created in the preceding
 //!   statement),
 //!   but it can speed up parsing due to increased parallelism.
+//!  @member int ":_debug"
+//!   Sets the debuglevel for query tracing.
 //! @endmapping
 //!
 //! @note
@@ -1077,6 +1079,7 @@ private void startquery(int forcetext, .pgsql_util.sql_result portal, string q,
   int forcecache = -1, forcetext = options.text_query;
   int syncparse = zero_type(options.sync_parse)
                    ? -1 : options.sync_parse;
+  int debuglevel;
   if (proxy.waitforauthready)
     waitauthready();
   string cenc = proxy.runtimeparameter[CLIENT_ENCODING];
@@ -1114,6 +1117,9 @@ private void startquery(int forcetext, .pgsql_util.sql_result portal, string q,
                 break;
               case ":_sync":
                 syncparse = (int)value;
+                break;
+              case ":_debug":
+                debuglevel = (int)value;
                 break;
             }
             continue;
@@ -1212,6 +1218,8 @@ private void startquery(int forcetext, .pgsql_util.sql_result portal, string q,
   .pgsql_util.sql_result portal;
   portal = .pgsql_util.sql_result(proxy, c, q, portalbuffersize, _alltyped,
    from, forcetext, timeout, syncparse, transtype);
+  if (debuglevel)
+    werror("{{\n%s\n}}\n%s\n", q, portal->_showbindings() * "\n");
   portal._tprepared = tp;
 #ifdef PG_STATS
   portalsopened++;
