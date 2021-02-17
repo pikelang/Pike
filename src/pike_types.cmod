@@ -9172,8 +9172,11 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
     return pop_unfinished_type();
 
   case T_MAPPING:
-    add_ref(t = t->cdr);
-    return t;
+    type_stack_mark();
+    push_finished_type(t->cdr);
+    push_type(T_ZERO);
+    push_type(T_OR);
+    return pop_unfinished_type();;
 
   case T_ARRAY:
     {
