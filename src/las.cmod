@@ -3332,8 +3332,8 @@ void fix_foreach_type(node *val_lval)
         if ((c->lex.pragmas & ID_STRICT_TYPES) &&
             !pike_types_le(expression->type, array_type_string)) {
           yytype_report(REPORT_WARNING,
-                        NULL, 0, expression->type,
                         NULL, 0, array_type_string,
+                        NULL, 0, expression->type,
                         0,
                         "Argument 1 to foreach() is not always an array.");
         }
@@ -3345,8 +3345,8 @@ void fix_foreach_type(node *val_lval)
 	  fix_auto_node(lvalues, expression->type->car);
 	} else if (pike_types_le(lvalues->type, void_type_string)) {
 	  yytype_report(REPORT_ERROR,
-			NULL, 0, lvalues->type,
 			NULL, 0, expression->type->car,
+			NULL, 0, lvalues->type,
 			0,
 			"Bad argument 2 to foreach().");
 	} else {
