@@ -3593,7 +3593,15 @@ void fix_type_field(node *n)
     {
       copy_pike_type(n->type, CDR(n)->type);
     }else{
-      n->type = or_pike_types(CAR(n)->type, CDR(n)->type, 0);
+      if (n->token == F_LOR) {
+	struct pike_type *tmp =
+	  type_binop(PT_BINOP_MINUS, CAR(n)->type, zero_type_string,
+		     0, PT_FLAG_CMP_VOIDABLE, 0);
+	n->type = or_pike_types(tmp, CDR(n)->type, 0);
+	free_type(tmp);
+      } else {
+	n->type = or_pike_types(CAR(n)->type, CDR(n)->type, 0);
+      }
     }
     break;
 
