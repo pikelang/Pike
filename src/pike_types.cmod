@@ -3112,12 +3112,32 @@ static int lower_or_pike_types(struct pike_type *t1,
       }
       break;
     case T_MAPPING:
+      if (!t1->car) {
+	t = t1;
+	ret = -1;
+	break;
+      }
+      if (!t2->car) {
+	t = t2;
+	ret = 1;
+	break;
+      }
       if (t1->car->type < t2->car->type) {
 	t = t1;
 	ret = -1;
 	break;
       }
       if (t1->car->type > t2->car->type) {
+	t = t2;
+	ret = 1;
+	break;
+      }
+      if (!t1->cdr) {
+	t = t1;
+	ret = -1;
+	break;
+      }
+      if (!t2->cdr) {
 	t = t2;
 	ret = 1;
 	break;
@@ -3136,6 +3156,22 @@ static int lower_or_pike_types(struct pike_type *t1,
       ret = -1;
       break;
     case T_ARRAY:
+      if (!t1->cdr) {
+	if (!t2->cdr) {
+	  /* Probably not reached as t1 and t2 ought to be equal. */
+	  t = t1;
+	  ret = 0;
+	  break;
+	}
+	t = t1;
+	ret = -1;
+	break;
+      }
+      if (!t2->cdr) {
+	t = t2;
+	ret = 1;
+	break;
+      }
       if (t1->cdr->type < t2->cdr->type) {
 	t = t1;
 	ret = -1;
@@ -3154,6 +3190,21 @@ static int lower_or_pike_types(struct pike_type *t1,
       }
       break;
     case T_MULTISET:
+      if (!t1->car) {
+	if (!t2->car) {
+	  t = t1;
+	  ret = 0;
+	  break;
+	}
+	t = t1;
+	ret = -1;
+	break;
+      }
+      if (!t2->car) {
+	t = t2;
+	ret = 1;
+	break;
+      }
       if (t1->car->type < t2->car->type) {
 	t = t1;
 	ret = -1;
