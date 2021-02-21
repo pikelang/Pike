@@ -1852,6 +1852,22 @@ new_name: TOK_IDENTIFIER
     struct pike_type *type;
     node *n;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
+    if (!TEST_COMPAT(8,0) &&
+	(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) &&
+	(Pike_compiler->compiler_frame->current_type->type != PIKE_T_AUTO)) {
+      if (!pike_types_le(zero_type_string,
+			 Pike_compiler->compiler_frame->current_type)) {
+	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+	  ref_push_string($1->u.sval.u.string);
+	  yytype_report(REPORT_WARNING, NULL, 0, zero_type_string,
+			NULL, 0, Pike_compiler->compiler_frame->current_type,
+			1, "Type does not contain zero for variable without "
+			"initializer %s. Type adjusted.");
+	}
+	push_type(PIKE_T_ZERO);
+	push_type(T_OR);
+      }
+    }
     n = Pike_compiler->current_attributes;
     while(n) {
       push_type_attribute(CDR(n)->u.sval.u.string);
@@ -5488,6 +5504,15 @@ static int call_handle_import(void)
 /* Set compiler_frame->current_type from the type stack. */
 static void update_current_type(void)
 {
+  if (TEST_COMPAT(8,0) ||
+      !(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
+    struct pike_type *t = peek_type_stack();
+    if (!t || (t->type != PIKE_T_AUTO)) {
+      /* Implicit zero */
+      push_type(PIKE_T_ZERO);
+      push_type(T_OR);
+    }
+  }
   if(Pike_compiler->compiler_frame->current_type)
     free_type(Pike_compiler->compiler_frame->current_type);
   Pike_compiler->compiler_frame->current_type = compiler_pop_type();
