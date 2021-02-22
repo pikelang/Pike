@@ -1834,23 +1834,7 @@ new_name: TOK_IDENTIFIER
   {
     struct pike_type *type;
     node *n;
-    push_finished_type(Pike_compiler->compiler_frame->current_type);
-    n = Pike_compiler->current_attributes;
-    while(n) {
-      push_type_attribute(CDR(n)->u.sval.u.string);
-      n = CAR(n);
-    }
-    type=compiler_pop_type();
-    define_variable($1->u.sval.u.string, type,
-		    Pike_compiler->current_modifiers);
-    free_type(type);
-    free_node($1);
-  }
-  | bad_identifier {}
-  | TOK_IDENTIFIER '='
-  {
-    struct pike_type *type;
-    node *n;
+
     push_finished_type(Pike_compiler->compiler_frame->current_type);
     if (!TEST_COMPAT(8,0) &&
 	(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) &&
@@ -1868,6 +1852,24 @@ new_name: TOK_IDENTIFIER
 	push_type(T_OR);
       }
     }
+    n = Pike_compiler->current_attributes;
+    while(n) {
+      push_type_attribute(CDR(n)->u.sval.u.string);
+      n = CAR(n);
+    }
+    type=compiler_pop_type();
+    define_variable($1->u.sval.u.string, type,
+		    Pike_compiler->current_modifiers);
+    free_type(type);
+    free_node($1);
+  }
+  | bad_identifier {}
+  | TOK_IDENTIFIER '='
+  {
+    struct pike_type *type;
+    node *n;
+
+    push_finished_type(Pike_compiler->compiler_frame->current_type);
     n = Pike_compiler->current_attributes;
     while(n) {
       push_type_attribute(CDR(n)->u.sval.u.string);
