@@ -3281,10 +3281,16 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
         // Note: they cannot run out of references, since
         // we just added them to a mapping.
         if (REFCOUNTED_TYPE(TYPEOF(*key)))
+        {
           sub_ref(key->u.dummy);
+          SET_SVAL(*key, T_INT, NUMBER_UNDEFINED, integer, 0);
+        }
 
         if (REFCOUNTED_TYPE(TYPEOF(*val)))
+        {
           sub_ref(val->u.dummy);
+          SET_SVAL(*val, T_INT, NUMBER_UNDEFINED, integer, 0);
+        }
       }
 
       Pike_sp -= 2;
