@@ -2338,6 +2338,7 @@ constant master_efuns = ({
   "normalize_path",
   "true",
   "false",
+  "zero",
   "getenv",
   "putenv",
 
@@ -2365,6 +2366,9 @@ string ldflags; // Not yet used
 
 //! Boolean datatype.
 enum bool { false=0, true=1 };
+
+//! Zero datatype.
+typedef int(0..0) zero;
 
 //! @decl int write(string fmt, mixed ... args)
 //! Writes a string on stdout. Works just like @[Stdio.File.write]
