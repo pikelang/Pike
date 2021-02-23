@@ -2899,8 +2899,9 @@ static unsigned char *encode_value_basic_to(unsigned char * dst, const struct sv
         if (size_shift == 1)
         {
           const p_wchar1 *src = STR1(str);
+          size_t i;
 
-          for (size_t i = 0; i < length; i++)
+          for (i = 0; i < length; i++)
           {
             set_unaligned_be16(dst, src[i]);
             dst += 2;
@@ -2909,8 +2910,9 @@ static unsigned char *encode_value_basic_to(unsigned char * dst, const struct sv
         else
         {
           const p_wchar2 *src = STR2(str);
+          size_t i;
 
-          for (size_t i = 0; i < length; i++)
+          for (i = 0; i < length; i++)
           {
             set_unaligned_be32(dst, src[i]);
             dst += 4;
@@ -2924,12 +2926,13 @@ static unsigned char *encode_value_basic_to(unsigned char * dst, const struct sv
       const struct array *a = val->u.array;
       INT32 size = a->size;
       const struct svalue *item = ITEM(a);
+      INT32 i;
 
       dst = code_entry_simple(dst, TAG_ARRAY, size);
 
       check_c_stack(1024);
 
-      for(int i=0; i < size; i++)
+      for(i = 0; i < size; i++)
 	dst = encode_value_basic_to(dst, item+i);
     }
     break;
@@ -2959,7 +2962,7 @@ static unsigned char *encode_value_basic_to(unsigned char * dst, const struct sv
 
       dst = code_entry_simple(dst, TAG_MULTISET, multiset_sizeof(l));
 
-      for (union msnode *node = low_multiset_first (l->msd);
+      for (node = low_multiset_first (l->msd);
            node; node = low_multiset_next (node))
       {
         dst = encode_value_basic_to(dst, low_use_multiset_index (node, ind));
@@ -3068,6 +3071,7 @@ static const unsigned char *decode_entry_simple(const unsigned char *src,
 {
   unsigned char b1;
   unsigned int n;
+  INT32 tmp;
 
   if (src == src_end)
     Pike_error("Not enough data.\n");
@@ -3077,20 +3081,20 @@ static const unsigned char *decode_entry_simple(const unsigned char *src,
   n = b1 >> SIZE_SHIFT;
   *tag = b1 & TAG_MASK;
 
-  INT32 tmp;
-
   if (b1 & TAG_SMALL)
   {
     tmp = n;
   }
   else
   {
+    unsigned int i;
+
     if (src + n >= src_end)
       Pike_error("Not enough data.\n");
 
     tmp = 0;
 
-    for (unsigned int i = 0; i <= n; i++)
+    for (i = 0; i <= n; i++)
     {
       tmp = ((UINT64)tmp<<8) + (*(src++)+1);
     }
@@ -3200,8 +3204,9 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
         if (size_shift == 1)
         {
           p_wchar1 *dst = STR1(str);
+          INT32 i;
 
-          for (INT32 i = 0; i < num; i++)
+          for (i = 0; i < num; i++)
           {
             dst[i] = get_unaligned_be16(src);
             src += 2;
@@ -3210,8 +3215,9 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
         else
         {
           p_wchar2 *dst = STR2(str);
+          INT32 i;
 
-          for (INT32 i = 0; i < num; i++)
+          for (i = 0; i < num; i++)
           {
             dst[i] = get_unaligned_be32(src);
             src += 4;
@@ -3228,6 +3234,7 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
     {
       struct array *a;
       struct svalue *item;
+      INT32 i;
 
       if (num < 0)
         Pike_error("Negative length in encoded array.\n");
@@ -3242,7 +3249,7 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
       if (!max_depth)
         Pike_error("Maximum recursion depth reached.\n");
 
-      for(INT32 i = 0; i < num; i++)
+      for(i = 0; i < num; i++)
 	src = decode_value_basic_from(item+i, src, src_end, max_depth - 1);
     }
     break;
@@ -3250,6 +3257,7 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
     {
       struct mapping *m;
       struct svalue *key, *val;
+      INT32 i;
 
       if (num < 0)
         Pike_error("Negative size in encoded mapping.\n");
@@ -3271,7 +3279,7 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
       key = Pike_sp - 2;
       val = Pike_sp - 1;
 
-      for(INT32 i = 0; i < num; i++)
+      for(i = 0; i < num; i++)
       {
 	src = decode_value_basic_from(key, src, src_end, max_depth - 1);
 	src = decode_value_basic_from(val, src, src_end, max_depth - 1);
@@ -3300,6 +3308,7 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
     {
       struct array *a;
       struct svalue *item;
+      INT32 i;
 
       if (num < 0)
         Pike_error("Negative length in encoded multiset.\n");
@@ -3316,7 +3325,7 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
       if (!max_depth)
         Pike_error("Maximum recursion depth reached.\n");
 
-      for(INT32 i = 0; i < num; i++)
+      for(i = 0; i < num; i++)
 	src = decode_value_basic_from(item+i, src, src_end, max_depth - 1);
 
       SET_SVAL(*dst, T_MULTISET, 0, multiset, mkmultiset(a));
