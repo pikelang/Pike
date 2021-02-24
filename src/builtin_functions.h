@@ -51,6 +51,9 @@ struct Pike_interpreter_struct;
 PMOD_EXPORT struct object *get_val_true(void);
 PMOD_EXPORT struct object *get_val_false(void);
 PMOD_EXPORT struct object *get_val_null(void);
+PMOD_EXPORT int is_val_null(const struct object *o);
+PMOD_EXPORT int is_val_false(const struct object *o);
+PMOD_EXPORT int is_val_true(const struct object *o);
 PMOD_EXPORT struct program *get_sql_null_prog(void);
 
 PMOD_EXPORT void f_equal(INT32 args);

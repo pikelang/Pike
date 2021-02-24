@@ -2713,11 +2713,11 @@ static size_t encode_value_basic_encoded_length(const struct svalue *val)
         mpz_get_str( buffer, 36, i );
         _strlen = strlen(buffer);
         free(buffer);
-      } else if (o == get_val_null()) {
+      } else if (is_val_null(o)) {
         _strlen = strlen("rVal.null");
-      } else if (o == get_val_true()) {
+      } else if (is_val_true(o)) {
         _strlen = strlen("rVal.true");
-      } else if (o == get_val_false()) {
+      } else if (is_val_false(o)) {
         _strlen = strlen("rVal.false");
       } else {
         Pike_error("Cannot encode generic objects.\n");
@@ -3003,11 +3003,11 @@ static unsigned char *encode_value_basic_to(unsigned char * dst, const struct sv
 
         dst = code_entry_simple(dst, TAG_OBJECT, 0);
 
-        if (o == get_val_null())
+        if (is_val_null(o))
           name = "rVal.null";
-        else if (o == get_val_true())
+        else if (is_val_true(o))
           name = "rVal.true";
-        else if (o == get_val_false())
+        else if (is_val_false(o))
           name = "rVal.false";
         else
           UNREACHABLE(break);
@@ -3367,7 +3367,6 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
           Pike_error("Cannot decode generic objects.\n");
         }
 
-        add_ref(o);
         SET_SVAL(*dst, T_OBJECT, 0, object, o);
       }
       else if (num == 2)

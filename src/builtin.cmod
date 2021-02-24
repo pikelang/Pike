@@ -7310,6 +7310,27 @@ GET_VAL (true)
 GET_VAL (false)
 GET_VAL (null)
 
+PMOD_EXPORT int is_val_null(const struct object *o)
+{
+  return o->prog == Null_program;
+}
+
+PMOD_EXPORT int is_val_false(const struct object *o)
+{
+  struct object *val_object = get_val_false();
+  int result = o == val_object;
+  free_object(o);
+  return result;
+}
+
+PMOD_EXPORT int is_val_true(const struct object *o)
+{
+  struct object *val_object = get_val_true();
+  int result = o == val_object;
+  free_object(o);
+  return result;
+}
+
 /* Kludge needed for the static null objects in the oracle module. It
  * ought to be fixed to use dynamic lookup of them instead. */
 PMOD_EXPORT struct program *get_sql_null_prog(void)
