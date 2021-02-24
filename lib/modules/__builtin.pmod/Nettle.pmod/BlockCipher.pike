@@ -47,9 +47,9 @@ protected class _CTR
   {
     inherit ::this_program;
 
-    protected global::State obj;
-    protected Gmp.mpz iv;
-    protected int(1..) _block_size;
+    protected zero|global::State obj;
+    protected zero|Gmp.mpz iv;
+    protected int(0..) _block_size;
 
     protected void create()
     {
@@ -65,12 +65,12 @@ protected class _CTR
 
     int(1..) block_size()
     {
-      return _block_size;
+      return [int(1..)]_block_size;
     }
 
     int(1..) iv_size()
     {
-      return _block_size;
+      return [int(1..)]_block_size;
     }
 
     int(0..) key_size()

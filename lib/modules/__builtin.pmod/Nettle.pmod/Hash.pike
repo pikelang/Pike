@@ -140,10 +140,10 @@ protected class _HMAC
   {
     inherit ::this_program;
 
-    protected string(8bit) ikey; /* ipad XOR:ed with the key */
-    protected string(8bit) okey; /* opad XOR:ed with the key */
+    protected zero|string(8bit) ikey; /* ipad XOR:ed with the key */
+    protected zero|string(8bit) okey; /* opad XOR:ed with the key */
 
-    protected global::State h;
+    protected zero|global::State h;
 
     //! @param passwd
     //!   The secret password (K).
@@ -617,8 +617,8 @@ string(7bit) crypt_pbkdf2(string(8bit) password, string(7bit) salt, int rounds)
 //! attacks.
 class HKDF
 {
-  protected string(8bit) prk;
-  protected object(_HMAC.State) hmac;
+  protected zero|string(8bit) prk;
+  protected zero|object(_HMAC.State) hmac;
 
   //! Initializes the HKDF object with a RFC 5869 2.2
   //! HKDF-Extract(salt, IKM) call.
@@ -1177,8 +1177,8 @@ final void SCRAM_set_salted_password(string(8bit) SaltedPassword, string key) {
 //!   @[client_1], @[server_1]
 class SCRAM
 {
-  private string(8bit) first;
-  private string(7bit) nonce, server_signature;
+  private zero|string(8bit) first;
+  private zero|string(7bit) nonce, server_signature;
 
   private string(7bit) encode64(string(8bit) raw) {
     return MIME.encode_base64(raw, 1);
