@@ -1509,10 +1509,45 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     if (type->cdr) {
       /* In all other cases type->cdr will be a valid node if is not NULL. */
       push_finished_type_with_markers(type->cdr, markers, cdr_set);
+    } else {
+      switch(type->type) {
+      case T_OR:
+      case T_AND:
+      case T_FUNCTION:
+      case T_MANY:
+      case T_TUPLE:
+      case T_MAPPING:
+      case PIKE_T_RING:
+      case T_ARRAY:
+      case T_STRING:
+      case PIKE_T_TRANSITIVE:
+	push_type(PIKE_T_UNKNOWN);
+	break;
+      }
     }
     if (type->car) {
       /* In all other cases type->car will be a valid node if it is not NULL. */
       push_finished_type_with_markers(type->car, markers, car_set);
+    } else {
+      switch(type->type) {
+      case T_OR:
+      case T_AND:
+      case T_FUNCTION:
+      case T_MANY:
+      case T_TUPLE:
+      case T_MAPPING:
+      case PIKE_T_RING:
+      case T_ARRAY:
+      case T_STRING:
+      case PIKE_T_TRANSITIVE:
+      case T_PROGRAM:
+      case T_MULTISET:
+      case T_TYPE:
+      case PIKE_T_AUTO:
+      case T_NOT:
+	push_type(PIKE_T_UNKNOWN);
+	break;
+      }
     }
     /* push_type has sufficient magic to recreate the type. */
     push_type(type->type);
