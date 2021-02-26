@@ -2830,9 +2830,9 @@ static int find_used_variables(node *n,
 
    case F_DO:
     a=copy_vars(p);
-    find_used_variables(CAR(n),a,noblock,0);
+    find_used_variables(CDR(n),a,noblock,0);
     do_and_vars(p, a);
-    find_used_variables(CDR(n),p,noblock,0);
+    find_used_variables(CAR(n),p,noblock,0);
     break;
 
   default:
@@ -4216,9 +4216,9 @@ void fix_type_field(node *n)
     break;
 
   case F_DO:
-    if (!CDR(n) || (CDR(n)->type == void_type_string)) {
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       yyerror("do - while(): Conditional expression is void.");
-    } else if(!match_types(CDR(n)->type, mixed_type_string))
+    } else if(!match_types(CAR(n)->type, mixed_type_string))
       yyerror("Bad conditional expression do - while().");
     copy_pike_type(n->type, void_type_string);
     break;

@@ -1910,9 +1910,9 @@ static int do_docode2(node *n, int flags)
     current_label->continue_label=alloc_label();
 
     tmp2=ins_label(-1);
-    DO_CODE_BLOCK(CAR(n));
+    DO_CODE_BLOCK(CDR(n));
     ins_label(current_label->continue_label);
-    do_jump_when_non_zero(CDR(n), (INT32)tmp2);
+    do_jump_when_non_zero(CAR(n), (INT32)tmp2);
     ins_label(current_label->break_label);
 
     current_switch.jumptable = prev_switch_jumptable;

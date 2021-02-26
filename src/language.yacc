@@ -3682,7 +3682,7 @@ foreach: TOK_FOREACH save_block_level save_locals line_number_info
 do: TOK_DO line_number_info statement
   TOK_WHILE '(' safe_comma_expr end_cond expected_semicolon
   {
-    $$=mknode(F_DO,$3,$6);
+    $$=mknode(F_DO,$6,$3);
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
