@@ -574,6 +574,11 @@ F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_CONTINUE), +[!($$->tree_info & OPT_CASE)]):
 F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_BREAK), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
+// Simplify code below by converting F_INITIALIZE to F_ASSIGN
+// in this case.
+F_COMMA_EXPR(F_INITIALIZE(0, 1), 2):
+  F_COMMA_EXPR(F_ASSIGN($0, $1), $2);
+
 // x = expr; --x;  ==>  x = expr-1;
 F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_DEC($1, -)):
   {
@@ -802,10 +807,16 @@ F_LOR(0, F_LOR(1, 2)):
 F_LOR(0 = F_ASSIGN(*, +[node_is_false($$)]), 2):
   F_COMMA_EXPR($0, $2);
 
+F_LOR(0 = F_INITIALIZE(*, +[node_is_false($$)]), 2):
+  F_COMMA_EXPR($0, $2);
+
 F_LOR(F_COMMA_EXPR(0, 1[$$->token != F_POP_VALUE]), 2):
   F_COMMA_EXPR($0, F_LOR($1, $2));
 
 F_LOR(0 = F_ASSIGN(*, +[node_is_true($$)]), *):
+  $0;
+
+F_LOR(0 = F_INITIALIZE(*, +[node_is_true($$)]), *):
   $0;
 
 // Note: This rule is not sound. Consider the cases
@@ -849,7 +860,13 @@ F_LAND(0, F_LAND(1, 2)):
 F_LAND(0 = F_ASSIGN(*, +[node_is_true($$)]), 2):
   F_COMMA_EXPR($0, $2);
 
+F_LAND(0 = F_INITIALIZE(*, +[node_is_true($$)]), 2):
+  F_COMMA_EXPR($0, $2);
+
 F_LAND(0 = F_ASSIGN(*, +[node_is_false($$)]), *):
+  $0;
+
+F_LAND(0 = F_INITIALIZE(*, +[node_is_false($$)]), *):
   $0;
 
 F_LAND(F_COMMA_EXPR(0, 1[$$->token != F_POP_VALUE]), 2):

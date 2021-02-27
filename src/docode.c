@@ -1337,6 +1337,7 @@ static int do_docode2(node *n, int flags)
     /* FALLTHROUGH */
 
   case F_ASSIGN:
+  case F_INITIALIZE:
 
     if( CAR(n)->token == F_AUTO_MAP_MARKER )
     {
@@ -1406,7 +1407,9 @@ static int do_docode2(node *n, int flags)
 	  emit0(CDR(n)->token);
 
 	emit0(n->token);
-	return n->token==F_ASSIGN; /* So when is this false? /mast */
+
+	/* So when is this false? /mast */
+	return (n->token == F_ASSIGN) || (n->token == F_INITIALIZE);
       }
       goto do_not_suboptimize_assign;
 

@@ -792,6 +792,7 @@ node *debug_mknode(int token, node *a, node *b)
     case F_ASSIGN:
     case F_MULTI_ASSIGN:
     case F_ASSIGN_SELF:
+    case F_INITIALIZE:
       if ((!a || a->token == F_CONSTANT) &&
 	  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
 	yyerror("Illegal lvalue.");
@@ -994,6 +995,7 @@ node *debug_mknode(int token, node *a, node *b)
   case F_MULTI_ASSIGN:
   case F_ASSIGN:
   case F_ASSIGN_SELF:
+  case F_INITIALIZE:
     res->node_info |= OPT_ASSIGNMENT;
     if (a) {
       res->tree_info |= a->tree_info;
@@ -2359,6 +2361,7 @@ static void low_print_tree(node *foo,int needlval)
     break;
 
   case F_ASSIGN:
+  case F_INITIALIZE:
     low_print_tree(_CAR(foo),1);
     fputc('=', stderr);
     low_print_tree(_CDR(foo),0);
@@ -2796,6 +2799,7 @@ static int find_used_variables(node *n,
 
   case F_ASSIGN:
   case F_ASSIGN_SELF:
+  case F_INITIALIZE:
     find_used_variables(CDR(n),p,noblock,0);
     find_used_variables(CAR(n),p,noblock,1);
     break;
@@ -2922,6 +2926,7 @@ static void find_written_vars(node *n,
   case F_ASSIGN:
   case F_ASSIGN_SELF:
   case F_MULTI_ASSIGN:
+  case F_INITIALIZE:
     find_written_vars(CDR(n), p, 0);
     find_written_vars(CAR(n), p, 1);
     break;
@@ -3633,6 +3638,7 @@ void fix_type_field(node *n)
 
   case F_ASSIGN:
   case F_ASSIGN_SELF:
+  case F_INITIALIZE:
     if (!CDR(n) || (CDR(n)->type == void_type_string)) {
       yyerror("Assigning a void expression.");
       copy_pike_type(n->type, void_type_string);

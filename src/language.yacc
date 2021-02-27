@@ -2006,7 +2006,7 @@ new_local_name: TOK_IDENTIFIER
 	/* Only warn about unused initialized variables in strict types mode. */
 	Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
       }
-      $$=mknode(F_ASSIGN, mklocalnode(id,0), $4);
+      $$ = mknode(F_INITIALIZE, mklocalnode(id, 0), $4);
     } else
       $$ = 0;
     free_node($1);
