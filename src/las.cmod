@@ -3541,6 +3541,42 @@ void fix_type_field(node *n)
   n->type = 0;
   n->node_info &= ~OPT_TYPE_NOT_FIXED;
 
+  /* Special cases */
+  switch(n->token) {
+  case '?':
+    if (CDR(n) && (CDR(n)->token == ':') && CDDR(n)) {
+      /* There's an else statement. */
+      break;
+    }
+    /* FALLTHRU */
+  case F_FOR:
+  case F_LAND:
+    /* Special case to handle code like:
+     *
+     *   if (string foo = expr) { xxx }
+     *
+     * where foo never will be zero even though expr may
+     * very well be zero.
+     */
+    if (CAR(n) && (CAR(n)->token == F_INITIALIZE)) {
+      fix_type_field(CDAR(n));
+      if (CDAR(n)->type && (CDAR(n)->type != mixed_type_string)) {
+	struct pike_type *not_zero =
+	  type_binop(PT_BINOP_MINUS, CDAR(n)->type, zero_type_string, 0, 0, 0);
+	if (not_zero && (not_zero != CDAR(n)->type)) {
+	  free_type(CDAR(n)->type);
+	  CDAR(n)->type = not_zero;
+	} else {
+	  free_type(not_zero);
+	}
+      }
+    }
+    break;
+  default:
+    /* Make the C compiler happy. */
+    break;
+  }
+
   /*
     These two are needed if we want to extract types
     from nodes while building the tree.
