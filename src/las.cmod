@@ -1029,7 +1029,43 @@ node *debug_mknode(int token, node *a, node *b)
     res->node_info |= OPT_NOT_CONST|OPT_SIDE_EFFECT;
     break;
 
+  case '?':
+    if (b && (b->token == ':') && CDR(b)) {
+      /* There's an else statement. */
+      goto set_default_tree_info;
+    }
+    /* FALLTHRU */
+  case F_FOR:
+  case F_LAND:
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+      if (a && (a->token == F_INITIALIZE)) {
+	/* Special case to handle code like:
+	 *
+	 *   if (string foo = expr) { xxx; }
+	 *   while (string foo = expr) { xxx; }
+	 *   for (;string foo = expr;yyy) { xxx; }
+	 *   (string foo = expr) && xxx;
+	 *
+	 * where foo never will be zero even though expr may
+	 * very well be zero.
+	 */
+	fix_type_field(CDR(a));
+	if (CDR(a)->type && (CDR(a)->type != mixed_type_string)) {
+	  struct pike_type *not_zero =
+	    type_binop(PT_BINOP_MINUS, CDR(a)->type, zero_type_string, 0, 0, 0);
+	  if (not_zero && (not_zero != CDR(a)->type)) {
+	    free_type(CDR(a)->type);
+	    _CDR(a)->type = not_zero;
+	  } else {
+	    free_type(not_zero);
+	  }
+	}
+      }
+    }
+    goto set_default_tree_info;
+
   default:
+  set_default_tree_info:
     if(a) res->tree_info |= a->tree_info;
     if(b) res->tree_info |= b->tree_info;
   }
@@ -3540,42 +3576,6 @@ void fix_type_field(node *n)
   old_type = n->type;
   n->type = 0;
   n->node_info &= ~OPT_TYPE_NOT_FIXED;
-
-  /* Special cases */
-  switch(n->token) {
-  case '?':
-    if (CDR(n) && (CDR(n)->token == ':') && CDDR(n)) {
-      /* There's an else statement. */
-      break;
-    }
-    /* FALLTHRU */
-  case F_FOR:
-  case F_LAND:
-    /* Special case to handle code like:
-     *
-     *   if (string foo = expr) { xxx }
-     *
-     * where foo never will be zero even though expr may
-     * very well be zero.
-     */
-    if (CAR(n) && (CAR(n)->token == F_INITIALIZE)) {
-      fix_type_field(CDAR(n));
-      if (CDAR(n)->type && (CDAR(n)->type != mixed_type_string)) {
-	struct pike_type *not_zero =
-	  type_binop(PT_BINOP_MINUS, CDAR(n)->type, zero_type_string, 0, 0, 0);
-	if (not_zero && (not_zero != CDAR(n)->type)) {
-	  free_type(CDAR(n)->type);
-	  CDAR(n)->type = not_zero;
-	} else {
-	  free_type(not_zero);
-	}
-      }
-    }
-    break;
-  default:
-    /* Make the C compiler happy. */
-    break;
-  }
 
   /*
     These two are needed if we want to extract types
