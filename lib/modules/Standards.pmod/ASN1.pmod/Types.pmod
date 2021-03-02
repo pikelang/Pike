@@ -220,7 +220,7 @@ class String
   inherit Object;
 
   //! value of object
-  string value;
+  string value = "";
 
   //! @ignore
   CODEC(string);
@@ -310,7 +310,7 @@ class Integer
   constant type_name = "INTEGER";
 
   //! value of object
-  Gmp.mpz value;
+  Gmp.mpz value = Gmp.mpz(0);
 
   //! @ignore
   CODEC(Gmp.mpz);
@@ -377,7 +377,7 @@ class Real
   int(1..) tag = 9;
   constant type_name = "REAL";
 
-  float value;
+  float value = 0.0;
 
   //! @ignore
   CODEC(float);
@@ -482,7 +482,7 @@ class BitString
   constant type_name = "BIT STRING";
 
   //! value of object
-  string(0..255) value;
+  string(0..255) value = "";
 
   int(0..7) unused = 0;
 
@@ -630,7 +630,7 @@ class Identifier
   constant type_name = "OBJECT IDENTIFIER";
 
   //! value of object
-  array(int) id;
+  array(int) id = ({});
 
   this_program init(int ... args) {
     if ( (sizeof(args) < 2)
@@ -1071,9 +1071,9 @@ class BMPString
 class MetaExplicit
 {
   int(0..3) real_cls;
-  int(1..) real_tag;
+  int(1..) real_tag = 1;
 
-  mapping(int:program(Object)) valid_types;
+  mapping(int:program(Object)) valid_types = ([]);
 
   class `() {
     inherit Compound;
@@ -1083,7 +1083,7 @@ class MetaExplicit
     int(0..3) get_cls() { return real_cls; }
     int(1..) get_tag() { return real_tag; }
 
-    Object contents;
+    Object|int(0..0) contents;
 
     array(Object) `elements() { return contents ? ({ contents }) : ({}); }
     void `elements=(array(Object) args)
