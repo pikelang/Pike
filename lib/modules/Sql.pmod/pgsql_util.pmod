@@ -155,7 +155,7 @@ private void default_backend_runs() {		// Runs as soon as the
 private void create() {
   atexit(destroy);
   // Run callbacks from our local_backend until DefaultBackend has started
-  cb_backend = local_backend = Pike.SmallBackend();
+  cb_backend = local_backend = Pike.Backend();
   call_out(default_backend_runs, 0);
 }
 
