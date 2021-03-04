@@ -1,0 +1,81 @@
+subject: Pike 8.0: Sync with Roxen 6.3.818-r1, Parser.XML.Tree, pgsql, Protocols.DNS, Protocols.HTTP, SSL.File, Standards.URI, tzdata2021a
+from: 30dcc4ac544c71544191678bf6a42ad2dbc62753
+to: 69f3583ce93bb2cafb3463f9b9ed52b966e4ff2f
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2020-10-26T144755
+restart: true
+
+Multiple fixes:
+
+• release number bumped to 8.0.1206 by export.pike
+
+• Added set_text() to update the contents of a text node.
+
+• pgsql: Simplify SQL logging.
+
+• Updated to tzdata2021a.
+
+• Documentation: fix markup errors
+
+• SSL: update testsuite to reflect new read() behavior, and also permit
+certain tests to run a bit longer to prevent unnecessary failures on
+some systems.
+
+• SSL.File: if there's received data yet to be read, allow it to be
+returned, regardless of whether the connection is open.
+
+• Standards.URI: make __hash() invariant to case of hostname
+
+`==() is invariant to it already, and the hashes of two "identical" URI
+objects should ideally be equal as well.
+
+• Standards.URI: Never use the input string as string representation
+
+Case in scheme, host and so on also can desync the raw input uri from
+the parsed components.
+
+• Standards.URI: Make string representation canonical again
+
+We used to simply put the raw string input URI into the sprintf_cache
+for the object. Unfortunately, since __hash() depends on the output of
+_sprintf('s') while `==() does not, this lead to identical URIs with
+differing hash values, as well as non-canonically-formatted string
+representations of the URI returned from (string)uri and _sprintf('s').
+
+• SSL: fix protocol hangs when non-blocking callbacks are set before handshake completes.
+
+• Administrivia: update some copyright dates found by release checks
+
+• Concurrent: Explicit error on executor rejection failure
+
+This is not perfect (as we currently have no way of properly chaining
+errors), but this should provide more helpful error messages to
+developers who somehow manage to throw in the executor after finalising
+the promise some other way.
+
+• Concurrent: Catch executor throwing and convert to rejection
+
+There is arguably little reason to use the executor 'API' if not for it
+doing this.
+
+• Protocols.DNS: Improved error handling when calling async callbacks.
+
+Do not complain if the originator for an asynchronous request has
+gone away.
+
+Do not output a misleading message about failing to read the UDP
+packet or connection refused, if it is the user callback that fails.
+
+Fixes #10057.
+
+• Protocols.HTTP.Server.Request: Use Stdio.Buffer to buffer input.
+
+Improves performance for large inputs.
+
+Fixes #10056.
+
+• Concurrent.Promise: Fix recursive mutex lock errors.
+
+Do not call callbacks while holding the mutex lock.
+
+Fixes multiple testsuite failures.
