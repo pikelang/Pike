@@ -105,22 +105,24 @@ string common_prefix(array(string) strs)
   if(!sizeof(strs))
     return "";
 
-  strs = Array.uniq(strs);
+  strs = Array.uniq(sort(strs));
 
   if (sizeof(strs) == 1)
     return strs[0];
 
   string strs0 = strs[0];
-  int n, i;
+  string strsn = strs[-1];
 
-  int sz = min(@map(strs, sizeof));
+  int n;
+
+  int sz = min(sizeof(strs0), sizeof(strsn));
 
   for(n = 0; n < sz; n++)
-    for(i = 1; i < sizeof(strs); i++)
-      if(strs[i][n] != strs0[n])
-	return strs0[0..n-1];
+    if(strs0[n] != strsn[n])
+      return strs0[0..n-1];
 
-  return strs0[..sz-1];
+  // NB: strs0 MUST be the short string (aka prefix) in this case.
+  return strs0;
 }
 
 // Do a fuzzy matching between two different strings and return a
