@@ -146,7 +146,7 @@ final Regexp nodataresprefix
   * tradeoff.
   */
 private Regexp execfetchlimit
- = iregexp("^\a*((UPDA|DELE)TE|INSERT|CREATE|DROP"
+ = iregexp("^\a*((UPDA|DELE)TE|INSERT|CREATE|DROP|CALL"
            "|RESET|CLOSE|DISCARD)\a|\aLIMIT\a+[1-9][; \t\f\r\n]*$");
 
 private void default_backend_runs() {		// Runs as soon as the
