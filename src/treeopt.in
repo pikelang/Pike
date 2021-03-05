@@ -565,7 +565,10 @@ F_COMMA_EXPR(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
 F_COMMA_EXPR(0 = F_BREAK, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_RETURN), +[!($$->tree_info & OPT_CASE)]):
+// Code after a return statement can be eliminated, as long as
+// it's not a 'continue return' statement.
+F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_RETURN(*, F_CONSTANT[!($$->u.sval.u.integer)])),
+             +[!($$->tree_info & OPT_CASE)]):
   $0;
 
 F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_CONTINUE), +[!($$->tree_info & OPT_CASE)]):
