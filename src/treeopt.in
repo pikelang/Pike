@@ -556,7 +556,8 @@ F_COMMA_EXPR(0, F_COMMA_EXPR(1, 2)):
 // Dead-code elimination.
 // FIXME: Should it be a warning here?
 // Is really the OPT_CASE needed for the following three?
-F_COMMA_EXPR(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_RETURN(*, F_CONSTANT[!($$->u.sval.u.integer)]),
+             +[!($$->tree_info & OPT_CASE)]):
   $0;
 
 F_COMMA_EXPR(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
