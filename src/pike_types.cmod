@@ -3929,6 +3929,7 @@ static struct pike_type *lookup_marker(struct mapping *markers, int marker)
   }
   return NULL;
 }
+#define lookup_marker(MAP, M) ((struct pike_type *)debug_malloc_pass(lookup_marker(debug_malloc_pass(MAP), M)))
 
 static void store_marker(struct mapping *markers, int marker,
 			 struct pike_type *value)
@@ -3941,6 +3942,7 @@ static void store_marker(struct mapping *markers, int marker,
   SET_SVAL(val, T_TYPE, 0, type, value);
   mapping_insert(markers, &key, &val);
 }
+#define store_marker(MAP, M, T) store_marker(debug_malloc_pass(MAP), M, debug_malloc_pass(T))
 
 static void push_remap_markers(struct pike_type *t,
 			       struct mapping *markers,
