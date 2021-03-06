@@ -4431,10 +4431,12 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     free_type(tmp2);
     return ret;
 
-#ifdef PIKE_DEBUG
   default:
+    /* Make the C-compiler happy. */
+#ifdef PIKE_DEBUG
     Pike_fatal("Unsupported binary type operation: 0x%02x\n", op);
 #endif
+    break;
   }
 
   if (!a || !b) {
