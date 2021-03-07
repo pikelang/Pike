@@ -1,11 +1,11 @@
-Pike by Fredrik Hübinette 1994-2001 and the Pike team 2001-2020
+Pike by Fredrik Hübinette 1994-2001 and the Pike team 2001-2021
 
 Permission to copy, modify, and distribute this source for any legal
 purpose granted as long as my name is still attached to it.  More
 specifically, the GPL, LGPL and MPL licenses apply to this software.
 
 New releases can be found on http://pike.lysator.liu.se/download/
-Report bugs at http://bugs.roxen.com/
+Report bugs at https://git.lysator.liu.se/pikelang/pike/-/issues
 There is also a mailing list, to subscribe to it mail:
 pike-request@roxen.com
 
@@ -32,8 +32,8 @@ If you find a bug in the interpreter, the first thing to do is to make
 sure the interpreter is compiled with PIKE_DEBUG defined.  If not,
 recompile with PIKE_DEBUG and see if you get another error.  When
 you've done this, please report the bug to us at
-http://bugs.roxen.com/ and include as much as you can muster of the
-following:
+https://git.lysator.liu.se/pikelang/pike/-/issues and include as much
+as you can muster of the following:
 
   o The version of the driver. (Try pike --version or look in
     src/version.h)
