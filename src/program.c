@@ -7371,8 +7371,8 @@ INT32 define_function(struct pike_string *name,
 	}
 	if (level != REPORT_NOTICE) {
 	  yytype_report(level,
-			NULL, 0, type,
 			NULL, 0, lfun_type->u.type,
+			NULL, 0, type,
 			0, "Type mismatch for callback function %S:", name);
 	}
       }
