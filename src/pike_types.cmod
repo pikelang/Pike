@@ -2591,7 +2591,7 @@ void simple_describe_type(struct pike_type *s)
       fprintf(stderr, "[%06x]", s->flags);
     }
   } else {
-    fprintf(stderr, "NULL");
+    fprintf(stderr, "__unknown__");
   }
 }
 
