@@ -2587,7 +2587,7 @@ void simple_describe_type(struct pike_type *s)
 #endif
 	break;
     }
-    if (s->flags) {
+    if (s && (s->flags)) {
       fprintf(stderr, "[%06x]", s->flags);
     }
   } else {
