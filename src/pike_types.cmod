@@ -2649,6 +2649,10 @@ static void low_describe_int_range(struct string_builder *s,
 void low_describe_type(struct string_builder *s, struct pike_type *t)
 {
   check_c_stack(1024);
+  if (!t) {
+    string_builder_strcat(s, "__unknown__");
+    return;
+  }
   switch(t->type)	/* NB: No masking here! */
   {
     case '0': case '1': case '2': case '3': case '4':
