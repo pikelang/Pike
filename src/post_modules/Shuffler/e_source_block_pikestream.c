@@ -84,7 +84,10 @@ static void free_source( struct source *src )
 {
   struct pf_source *s = (struct pf_source *)src;
   frees(s);
-  free_object(s->obj);
+  if (s->obj)
+    free_object(s->obj);
+  debug_malloc_touch(s);
+  free(s);
 }
 
 struct source *source_block_pikestream_make( struct svalue *s,

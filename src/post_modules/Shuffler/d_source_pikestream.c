@@ -151,7 +151,17 @@ static void
 }
 
 static void free_source( struct source *src ) {
-  free_object(((struct pf_source *)src)->self);
+  struct pf_source *s = (struct pf_source *)src;
+  remove_callbacks(src);
+  frees(s);
+  if (s->when_data_cb_arg)
+    free_object(s->when_data_cb_arg);
+  if (s->obj) {
+    free_object(s->obj);
+    s->obj = 0;
+  }
+  if (s->self)
+    free_object(s->self);
 }
 
 struct source *source_pikestream_make(struct svalue *sv,
@@ -184,14 +194,6 @@ struct source *source_pikestream_make(struct svalue *sv,
   return (struct source *)s;
 }
 
-static void source_destruct(struct object *UNUSED(o)) {
-  remove_callbacks((struct source*)THIS);
-  free_object(THIS->obj);
-  THIS->obj = 0;
-  if (THIS->when_data_cb_arg)
-    free_object(THIS->when_data_cb_arg);
-}
-
 void source_pikestream_exit() {
   free_program(source_program);
 }
@@ -200,6 +202,5 @@ void source_pikestream_init() {
   start_new_program();
   ADD_STORAGE(struct pf_source);
   ADD_FUNCTION("`()", f_got_data, tFunc(tInt tStr,tVoid),0);
-  set_exit_callback(source_destruct);
   source_program = end_program();
 }

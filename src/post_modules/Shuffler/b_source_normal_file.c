@@ -57,7 +57,11 @@ static struct data get_data( struct source *src, off_t len )
 
 static void free_source( struct source *src )
 {
-  free_object(((struct fd_source *)src)->obj);
+  struct fd_source *s = (struct fd_source *)src;
+  if (s->obj)
+    free_object(s->obj);
+  debug_malloc_touch(s);
+  free(s);
 }
 
 static int is_stdio_file(struct object *o)

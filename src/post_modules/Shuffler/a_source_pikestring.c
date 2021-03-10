@@ -39,7 +39,11 @@ static struct data get_data( struct source *src, off_t len )
 
 static void free_source( struct source *src )
 {
-  free_string(((struct ps_source *)src)->str);
+  struct ps_source *s = (struct ps_source *)src;
+  if (s->str)
+    free_string(s->str);
+  debug_malloc_touch(s);
+  free(s);
 }
 
 struct source *source_pikestring_make( struct svalue *s,

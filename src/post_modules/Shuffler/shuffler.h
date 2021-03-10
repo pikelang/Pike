@@ -14,6 +14,7 @@ struct source
 {
   struct source *next;
   int eof;
+  int dataref;	/* points to the last connected iov chunk */
 
   struct svalue wrap_callback;
 

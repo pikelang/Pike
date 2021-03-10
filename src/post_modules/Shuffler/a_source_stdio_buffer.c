@@ -44,7 +44,10 @@ static struct data get_data( struct source *src, off_t len )
 static void free_source( struct source *src )
 {
   struct sb_source *s = (struct sb_source *)src;
-  free_object(s->obj);
+  if (s->obj)
+    free_object(s->obj);
+  debug_malloc_touch(s);
+  free(s);
 }
 
 struct source *source_stdio_buffer_make( struct svalue *s,
@@ -90,7 +93,7 @@ struct source *source_stdio_buffer_make( struct svalue *s,
 
   res->s.get_data = get_data;
   res->s.free_source = free_source;
-  add_ref(res->obj = o);
+  res->obj = o;
   return (struct source *)res;
 }
 

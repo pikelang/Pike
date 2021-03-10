@@ -68,7 +68,7 @@ static int doread(struct fd_source *s) {
 
 static void remove_callbacks(struct source *src) {
   struct fd_source *s = (struct fd_source *)src;
-  if (s->obj->prog)
+  if (s->obj && s->obj->prog)
     set_read_callback(s->fd, 0, 0);
 }
 
@@ -141,7 +141,16 @@ static int is_stdio_file(struct object *o)
 }
 
 static void free_source(struct source *src) {
-  free_object(((struct fd_source*)src)->self);
+  struct fd_source *s = (struct fd_source *)src;
+  remove_callbacks(src);
+  if (s->when_data_cb_arg)
+    free_object(s->when_data_cb_arg);
+  if (s->obj) {
+    free_object(s->obj);
+    s->obj = 0;
+  }
+  if (s->self)
+    free_object(s->self);
 }
 
 struct source *source_stream_make(struct svalue *sv,
@@ -179,14 +188,6 @@ struct source *source_stream_make(struct svalue *sv,
   return (struct source *)s;
 }
 
-static void source_destruct(struct object *UNUSED(o)) {
-  remove_callbacks((struct source*)THIS);
-  free_object(THIS->obj);
-  THIS->obj = 0;
-  if (THIS->when_data_cb_arg)
-    free_object(THIS->when_data_cb_arg);
-}
-
 void source_stream_exit() {
   free_program(source_program);
 }
@@ -194,6 +195,5 @@ void source_stream_exit() {
 void source_stream_init() {
   start_new_program();
   ADD_STORAGE(struct fd_source);
-  set_exit_callback(source_destruct);
   source_program = end_program();
 }

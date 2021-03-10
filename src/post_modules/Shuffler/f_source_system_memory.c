@@ -41,7 +41,11 @@ static struct data get_data( struct source *src, off_t len )
 
 static void free_source( struct source *src )
 {
-  free_object(((struct sm_source *)src)->obj);
+  struct sm_source *s = (struct sm_source *)src;
+  if (s->obj)
+    free_object(s->obj);
+  debug_malloc_touch(s);
+  free(s);
 }
 
 struct source *source_system_memory_make( struct svalue *s,
