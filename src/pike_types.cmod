@@ -5049,6 +5049,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  push_remap_markers(a->car, NULL, remap, remap_flags);
 	  push_type(T_MANY);
 
+	  free_type(tmp);
+
 	  return pop_unfinished_type();
 	}
 	if (tmp) {
