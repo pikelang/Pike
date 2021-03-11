@@ -373,6 +373,7 @@ PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra);
 void gc_mark_string_as_referenced (struct pike_string *s);
 unsigned gc_touch_all_strings(void);
 void gc_mark_all_strings(void);
+PMOD_EXPORT struct pike_string *first_pike_string ();
 PMOD_EXPORT struct pike_string *next_pike_string (const struct pike_string *s);
 PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len);
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);

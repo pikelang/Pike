@@ -55,6 +55,42 @@ PIKEFUN int(0..) map_all_objects(function(object:void) cb)
     RETURN total;
 }
 
+/*! @decl int(0..) map_all_strings(function(string:void) cb)
+ *!
+ *! Call cb for all strings that currently exist.
+ *!
+ *! strings might be missed if @[cb] creates new strings or destroys
+ *! old ones.
+ *!
+ *! This function is only intended to be used for debug purposes.
+ *!
+ *! @returns
+ *!   The total number of strings
+ *!
+ *! @seealso
+ *!   @[next_object()]
+ */
+PIKEFUN int(0..) map_all_strings(function(string:void) cb)
+{
+    struct pike_string *o = first_pike_string();
+    INT32 total = 0;
+
+    while( o )
+    {
+        struct pike_string * next;
+        add_ref(o);
+        ref_push_string( o );
+        safe_apply_svalue( Pike_sp-2, 1, 1 );
+        pop_stack();
+        total++;
+        next = next_pike_string(o);
+        sub_ref(o = next);
+        if (o == first_pike_string())
+          break;
+    }
+    RETURN total;
+}
+
 /*! @decl array(object) find_all_clones(program p, @
  *!                                     int(0..1)|void include_subclasses)
  *!

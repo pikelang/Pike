@@ -2281,6 +2281,20 @@ void gc_mark_all_strings(void)
 }
 #endif
 
+PMOD_EXPORT struct pike_string *first_pike_string ()
+{
+  unsigned INT32 e;
+  if (base_table)
+  {
+    for(e=0;e<htable_size;e++)
+    {
+      struct pike_string *p;
+      for(p=base_table[e];p;p=p->next) return p;
+    }
+  }
+  return 0;
+}
+
 PMOD_EXPORT struct pike_string *next_pike_string (const struct pike_string *s)
 {
   struct pike_string *next = s->next;
@@ -2294,7 +2308,6 @@ PMOD_EXPORT struct pike_string *next_pike_string (const struct pike_string *s)
   }
   return next;
 }
-
 
 PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len)
 {
