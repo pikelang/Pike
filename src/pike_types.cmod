@@ -9140,11 +9140,16 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
       return zero_type_string;
   }
 
-  while((t->type == PIKE_T_NAME) ||
-	(t->type == PIKE_T_ATTRIBUTE) ||
-	(t->type == T_ASSIGN) ||
-	(t->type == T_SCOPE)) {
+  while(t &&
+	((t->type == PIKE_T_NAME) ||
+	 (t->type == PIKE_T_ATTRIBUTE) ||
+	 (t->type == T_ASSIGN) ||
+	 (t->type == T_SCOPE))) {
     t = t->cdr;
+  }
+  if (!t) {
+    add_ref(mixed_type_string);
+    return mixed_type_string;
   }
   while((index_type->type == PIKE_T_NAME) ||
         (index_type->type == PIKE_T_ATTRIBUTE) ||
@@ -9684,6 +9689,7 @@ static int low_check_indexing(struct pike_type *type,
 			      struct pike_type *index_type,
 			      node *n)
 {
+  if (!type) return 1;
   switch(type->type)
   {
   case T_OR:
