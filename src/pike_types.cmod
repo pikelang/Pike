@@ -9111,16 +9111,14 @@ int check_variant_overload(struct pike_type *a, struct pike_type *b)
   return !low_pike_types_le(b, a, 0, LE_TYPE_SVALUE);
 }
 
-#ifdef DEBUG_MALLOC
-#define low_index_type(X,Y,Z) ((struct pike_type *)debug_malloc_pass(debug_low_index_type((X),(Y),(Z))))
-#else
-#define low_index_type debug_low_index_type
-#endif
 
 /* FIXME, add the index */
-static struct pike_type *debug_low_index_type(struct pike_type *t,
-					      struct pike_type *index_type,
-					      node *n)
+static struct pike_type *low_index_type(struct pike_type *t,
+					struct pike_type *index_type,
+					node *n)
+#ifdef DEBUG_MALLOC
+#define low_index_type(X,Y,Z) ((struct pike_type *)debug_malloc_pass(low_index_type((X),(Y),(Z))))
+#endif
 {
   struct pike_type *tmp;
   struct program *p;
