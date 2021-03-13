@@ -224,11 +224,9 @@ PIKECLASS Buffer
   PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
   {
     if( bytes && io->len+bytes < io->len )
-      Pike_error("Too large buffer, can not have more than %lu bytes.",
+      Pike_error("Buffer too large, can not have more than %lu bytes.",
                  (size_t)-1);
 
-
-    io_ensure_unlocked(io);
     io_ensure_malloced(io, bytes);
 
     /*
@@ -240,7 +238,8 @@ PIKECLASS Buffer
      * as much.
      *
      */
-    if( UNLIKELY((force && io->offset)
+    if( LIKELY(!io->locked)
+     && UNLIKELY((force && io->offset)
               || (io_len(io) && io->offset > io->allocated / 2)) )
     {
       /* more than 50% of the buffer is available before the read pointer,
@@ -256,6 +255,8 @@ PIKECLASS Buffer
       size_t growth =
           (io->allocated>>1) +
           (io->allocated>>3);/* io->allocated * 0.625 */
+
+      io_ensure_unlocked(io);
 
       if( growth < bytes )
           growth = bytes + (bytes>>1);
