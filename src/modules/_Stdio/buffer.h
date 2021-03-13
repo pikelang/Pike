@@ -5,16 +5,21 @@ struct _Buffer
   size_t offset; /* reading */
   size_t len, allocated; /* writing */
 
-  struct object *sub, *source, *this;
+  struct object *this;
   struct program *error_mode;
-  struct svalue output;
-  struct pike_string *str;
 
+  union {
+    struct pike_string *str;	/* PIKE_T_STRING */
+    struct object *obj;		/* PIKE_T_OBJECT */
+    struct _Buffer *parent;	/* PIKE_T_MIXED */
+  } source;
+  int sourcetype;		/* type for the source union */
+
+  struct svalue output;
 
   INT_TYPE num_malloc, num_move; /* debug mainly, for testsuite*/
   INT32 locked, locked_move;
   float max_waste;
-  char malloced;
 };
 
 struct rewind_to {

@@ -120,18 +120,6 @@ PIKECLASS Buffer
   static void io_was_locked( )
     ATTRIBUTE((noclone,noinline));
 
-  static void io_was_locked( )
-  {
-      Pike_error("Cannot modify the buffer right now, "
-                 " there are active subbuffers.\n");
-  }
-
-  static void io_ensure_unlocked(Buffer *io)
-  {
-    if( io->locked )
-      io_was_locked( );
-  }
-
   PMOD_EXPORT void io_trim( Buffer *io )
     ATTRIBUTE((noinline));
 
@@ -166,7 +154,7 @@ PIKECLASS Buffer
 
   PMOD_EXPORT void io_trim( Buffer *io )
   {
-      if( io->malloced && (io->offset > 64 || io->len > 64) && !io->locked)
+      if( io->allocated && (io->offset > 64 || io->len > 64) && !io->locked)
       {
           if( io->offset > 64 && io->offset > io_len(io) )
               io_discard_bufstart(io);
@@ -185,49 +173,71 @@ PIKECLASS Buffer
 
   static void io_unlink_external_storage( Buffer *io )
   {
-      if( io->sub ) {
-          io_unlock( get_storage(io->sub,Buffer_program ) );
-          free_object( io->sub );
+      switch (io->sourcetype) {
+	case PIKE_T_STRING:
+	  free_string(io->source.str);
+	  break;
+	case PIKE_T_MIXED: {
+          Buffer *parent = io->source.parent;
+          io_unlock(parent);
+	  free_object(parent->this);
+	  break;
+        }
+	case PIKE_T_OBJECT:
+	  free_object(io->source.obj);
+	  break;
       }
-      if( io->source ) free_object( io->source );
-      if( io->str ) free_string( io->str );
-      io->source = 0;
-      io->sub = 0;
-      io->str = 0;
+      io->sourcetype = 0;
   }
 
-  PMOD_EXPORT void io_ensure_malloced( Buffer *io, size_t bytes )
+  PMOD_EXPORT void io_ensure_malloced( Buffer *io, size_t headroom )
   {
-    if( UNLIKELY(!io->malloced) )
+    if( UNLIKELY(!io->allocated) )
     {
       /* convert to malloced buffer from a shared one. */
-        unsigned char *old = io->buffer;
+        unsigned char *old = io_read_pointer(io);
 
-        bytes += io->len;
+        headroom += io->len - io->offset;
 
-        if (bytes < io->len || bytes + 100 < bytes)
-            Pike_error(msg_out_of_mem_2, bytes + 100);
+        if (headroom < io->len - io->offset)
+            Pike_error(msg_out_of_mem_2, headroom);
 
-        bytes += 100;
-
-        io->buffer = xalloc( bytes );
-        io->malloced = 1;
-        io->allocated = bytes;
+        io->buffer = xalloc( headroom );
+        io->allocated = headroom;
+        io->len -= io->offset;
+        io->offset = 0;
         io->num_malloc++;
         memcpy( io->buffer, old, io->len );
         io_unlink_external_storage(io);
     }
   }
 
+  static struct object *
+   io_read_buffer( Buffer *io, size_t len, int do_copy, size_t headroom )
+    ATTRIBUTE((noclone,noinline));
+
   PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
     ATTRIBUTE((noclone,noinline));
   PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
   {
-    if( bytes && io->len+bytes < io->len )
-      Pike_error("Buffer too large, can not have more than %lu bytes.",
-                 (size_t)-1);
+    size_t growth =
+        (io->allocated>>1) +
+        (io->allocated>>3);/* io->allocated * 0.625 */
 
-    io_ensure_malloced(io, bytes);
+    if( growth < 100 )
+        growth = 100;		/* minimum growth in bytes */
+    if( growth < bytes )
+        growth = bytes + (bytes>>1);
+
+    if( io->allocated + growth < io->allocated )
+    {
+        growth = bytes;
+        if( io->allocated + growth < io->allocated )
+            Pike_error("Buffer too large, can not have more than %lu bytes.",
+                       (size_t)-1);
+    }
+
+    io_ensure_malloced(io, growth);
 
     /*
      * It is actually not certain that checking this is a good idea.
@@ -252,24 +262,36 @@ PIKECLASS Buffer
     if( UNLIKELY(io->len + bytes > io->allocated) )
     {
       /* Actually grow the buffer. */
-      size_t growth =
-          (io->allocated>>1) +
-          (io->allocated>>3);/* io->allocated * 0.625 */
 
-      io_ensure_unlocked(io);
-
-      if( growth < bytes )
-          growth = bytes + (bytes>>1);
-
-      if( io->allocated + growth < io->allocated )
-      {
-          growth = bytes+1;
-          if( io->allocated + growth < io->allocated )
-              Pike_error("Overflow in buffer size calculations.\n");
+      if (UNLIKELY(io->locked)) {
+        struct object *oldobj = io->this;
+        struct object *newobj
+         = io_read_buffer(io, io->len - io->offset, 1, growth);
+        Buffer *newbuffer = get_storage(newobj, Buffer_program);
+        unsigned char*cbuf = newbuffer->buffer;
+        int locks = io->locked - (io->max_waste < 0);
+        oldobj->refs -= locks;			/* Swap refs too */
+        newobj->refs += locks;
+        /* Orphaned members in the copied (parked) buffer:
+         *  locked
+         *  allocated
+         *  offset
+         *  len
+         */
+        io->locked = 0;
+        newbuffer->buffer = io->buffer;
+        io->buffer = cbuf;
+        io->len = newbuffer->len;
+        io->offset = 0;
+        io->allocated = newbuffer->allocated;
+        io->this = newobj;
+        newbuffer->this = oldobj;
+        io->max_waste = newbuffer->max_waste;
+      } else {
+        io->buffer = xrealloc( io->buffer, io->allocated + growth );
+        io->num_malloc++;
+        io->allocated += growth;
       }
-      io->buffer = xrealloc( io->buffer, io->allocated + growth );
-      io->num_malloc++;
-      io->allocated += growth;
     }
     return io->buffer+io->len;
   }
@@ -554,26 +576,43 @@ PIKECLASS Buffer
     return end_shared_string(s);
   }
 
-  static struct object *io_read_buffer( Buffer *io, size_t len, int do_copy )
+  static struct object *
+   io_read_buffer( Buffer *io, size_t len, int do_copy, size_t headroom )
   {
     struct object *b;
     Buffer *to;
-    if( !io_avail(io,len))
+
+    if (UNLIKELY(!io_avail(io, len)))
       return NULL;
 
     b = fast_clone_object( Buffer_program );
-    to = get_storage(b,Buffer_program);
-
-    io_lock( io );
+    to = get_storage(b, Buffer_program);
 
     to->buffer = io_read_pointer(io);
     to->len = len;
-    to->sub = Pike_fp->current_object;
-    add_ref(to->sub);
+
     io_consume( io, len );
 
-    if( do_copy )
-      io_ensure_malloced( to, 0 );
+    if (UNLIKELY(do_copy))
+      io_ensure_malloced( to, headroom );
+    else {
+      Buffer *parent = io;
+      switch (to->sourcetype = io->sourcetype) {
+	case PIKE_T_STRING:
+	  add_ref(to->source.str = io->source.str);
+	  break;
+	case PIKE_T_MIXED:
+          parent = io->source.parent;
+        default:
+          to->sourcetype = PIKE_T_MIXED;
+          io_lock(to->source.parent = parent);
+          add_ref(parent->this);
+          break;
+	case PIKE_T_OBJECT:
+	  add_ref(to->source.obj = io->source.obj);
+	  break;
+      }
+    }
 
     return b;
   }
@@ -833,12 +872,12 @@ PIKECLASS Buffer
           if( !io->buffer )
           {
 #ifdef PIKE_DEBUG
-	    if (io->str) Pike_fatal("Buffer with string but NULL buffer.\n");
+	    if (io->sourcetype) Pike_fatal("Buffer with string and sourcetype not NULL.\n");
 #endif
-            io->str = s;
+            io->sourcetype = PIKE_T_STRING;
+            add_ref(io->source.str = s);
             io->buffer = (unsigned char*)s->str;
             io->len = s->len;
-            add_ref(s);
             io_trigger_output( io );
           }
           else
@@ -872,8 +911,11 @@ PIKECLASS Buffer
             io->buffer = ptr;
             io->len = len;
 
-            io->source = p->u.object;
-            add_ref(io->source);
+#ifdef PIKE_DEBUG
+	    if (io->sourcetype) Pike_fatal("Buffer with object and sourcetype not NULL.\n");
+#endif
+            io->sourcetype = PIKE_T_OBJECT;
+            add_ref(io->source.obj = p->u.object);
             return;
           }
           if( t != MEMOBJ_NONE )
@@ -1159,7 +1201,7 @@ PIKECLASS Buffer
   PIKEFUN int(0..) _size_object( )
   {
       Buffer *io = THIS;
-      if (io->malloced)
+      if (io->allocated)
       {
         push_ulongest(THIS->allocated);
       }
@@ -1689,7 +1731,7 @@ PIKECLASS Buffer
    */
   PIKEFUN Buffer lock()
   {
-    push_object( io_read_buffer( THIS, 0, 0 ) );
+    push_object( io_read_buffer( THIS, 0, 0, 0 ) );
   }
 
   PIKEFUN string(8bit) _sprintf(int o, mapping|void UNUSED)
@@ -1712,7 +1754,20 @@ PIKECLASS Buffer
           push_int(THIS->len-1);
           push_int(THIS->len);
           push_int(THIS->allocated);
-          push_static_text( (THIS->str ? "string" : THIS->malloced ? "allocated" : "subbuffer" ) );
+	  switch (THIS->sourcetype) {
+            case PIKE_T_STRING:
+              push_static_text("string");
+              break;
+            case PIKE_T_OBJECT:
+              push_static_text("object");
+              break;
+            case PIKE_T_MIXED:
+              push_static_text("subbuffer");
+              break;
+            default:
+              push_static_text("allocated");
+              break;
+          }
           if( THIS->locked )
             push_static_text(" (read only)");
           else
@@ -2065,7 +2120,7 @@ PIKECLASS Buffer
     len = io_read_number( io, bytes, 1 );
     if( len >= 0 && io_avail( io, len ) )
     {
-      push_object( io_read_buffer( io, len, do_copy ) );
+      push_object( io_read_buffer( io, len, do_copy, 0 ) );
       io_unset_rewind_on_error( io, &e );
       return;
     }
@@ -2082,7 +2137,7 @@ PIKECLASS Buffer
    *! points into the old one.
    *!
    *! @note
-   *!  As long as the subbuffer exists no data can be added to the main buffer.
+   *!  As long as the subbuffer exists the main buffer is locked in memory.
    *!
    *!  Usually this is OK, since it often represents something that
    *!  should be parsed before the next whatever is extracted from
@@ -2095,7 +2150,7 @@ PIKECLASS Buffer
     if( copy )
       do_copy = copy->u.integer;
     Pike_sp-=args;
-    if( (o = io_read_buffer( THIS, bytes, do_copy )) )
+    if( (o = io_read_buffer( THIS, bytes, do_copy, 0 )) )
       push_object(o);
     else
       push_int(0);
@@ -2680,21 +2735,26 @@ PIKECLASS Buffer
     if( x->size_shift )
       Pike_error("Cannot handle non-8bit data.\n");
     this->buffer = (unsigned char*)x->str;
+    this->sourcetype = PIKE_T_STRING;
     this->len = x->len;
-    this->malloced = 0;
-    this->str = x;
+    this->source.str = x;
     add_ref(x);
   }
 
   /*! @decl void read_only()
    *!
-   *! Make the buffer permanently read only.
+   *! This makes the existing data in the buffer permanently read only.
+   *!
    *! @note
    *! You can use lock() to do this temporarily.
    */
   PIKEFUN void read_only()
   {
-    io_lock( THIS );
+    Buffer *io = THIS;
+    if (!(io->max_waste < 0)) {
+      io->max_waste = -1.0;	/* Marker to distinguish read-only buffers */
+      io_lock(io);
+    }
   }
 
 
@@ -2806,7 +2866,6 @@ PIKECLASS Buffer
     {
       this->buffer = xalloc(256-32);
       this->allocated = 256-32;
-      this->malloced = 1;
     }
     else if( TYPEOF(*x) == PIKE_T_INT )
     {
@@ -2816,7 +2875,6 @@ PIKECLASS Buffer
       else
         this->buffer = xalloc(len);
       this->allocated = MAXIMUM(len,1);
-      this->malloced = 1;
       pop_stack();
     }
     else
@@ -2837,7 +2895,7 @@ PIKECLASS Buffer
     io_unlink_external_storage( this );
     if( this->error_mode )
         free_program( this->error_mode );
-    if( this->malloced )
+    if( this->allocated )
       free( this->buffer );
   }
 
