@@ -57,7 +57,7 @@ static struct program *buffer_error_program;
  *! A buffer to use as input or buffering when doing I/O. It is
  *! similar to @[String.Buffer], but can only contain 8bit data and is
  *! designed for protocol parsing. It is optimized for reading from
- *! the beginning and adding to the end, and will try to minimize the
+ *! the beginning and adding to the end, and will try to minimise the
  *! amount of data copying that is done.
  *!
  *! The class maintains two separate offsets, one for reading and one
@@ -122,7 +122,7 @@ PIKECLASS Buffer
 
   static void io_was_locked( )
   {
-      Pike_error("Can not modify the buffer right now, "
+      Pike_error("Cannot modify the buffer right now, "
                  " there are active subbuffers.\n");
   }
 
@@ -956,7 +956,7 @@ PIKECLASS Buffer
         if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING || Pike_sp[-1].u.string->len == 0 )
           break;
         if( Pike_sp[-1].u.string->size_shift )
-            Pike_error("Can not handle non-8bit data.\n");
+            Pike_error("Cannot handle non-8bit data.\n");
         io_append( io, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len );
         nbytes -= Pike_sp[-1].u.string->len;
 	bread += Pike_sp[-1].u.string->len;
@@ -1389,7 +1389,7 @@ PIKECLASS Buffer
 
     if( size_size < (int)sizeof(size_t) &&
         len > (((size_t)1)<<(8*size_size))-1 )
-      Pike_error("Too long string, need larger size field.\n");
+      Pike_error("String too long, need larger size field.\n");
 
     io_add_int( io, len, size_size );
     io_append_svalue( io, str );
@@ -2675,9 +2675,9 @@ PIKECLASS Buffer
   {
     Buffer *this = THIS;
     if( this->buffer )
-      Pike_error("Can not initialize twice.\n");
+      Pike_error("Cannot initialise twice.\n");
     if( x->size_shift )
-      Pike_error("Can not handle non-8bit data.\n");
+      Pike_error("Cannot handle non-8bit data.\n");
     this->buffer = (unsigned char*)x->str;
     this->len = x->len;
     this->malloced = 0;
@@ -2800,7 +2800,7 @@ PIKECLASS Buffer
   {
     Buffer *this = THIS;
     if( this->buffer )
-      Pike_error("Can not initialize twice.\n");
+      Pike_error("Cannot initialise twice.\n");
     if( !x )
     {
       this->buffer = xalloc(256-32);
