@@ -129,6 +129,7 @@ PIKECLASS Shuffle
   CVAR int write_callback;
 
   CVAR int sent;
+  CVAR int autopause;
   CVAR ShuffleState state;
 
   CVAR struct data leftovers;
@@ -240,6 +241,7 @@ PIKECLASS Shuffle
     THIS->shuffler = 0;
     THIS->throttler = 0;
     THIS->sent = 0;
+    THIS->autopause = 0;
     mark_free_svalue (&THIS->done_callback);
     SET_SVAL(THIS->request_arg, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     THIS->prefix = 0;
@@ -334,17 +336,23 @@ PIKECLASS Shuffle
   {
     SHUFFLE_DEBUG2("_all_done(%d)\n", t,reason );
 
+    /* Remove our callbacks. */
+    _remove_callbacks( t );
+
     /* We should set the reason for being done first of all */
     switch( reason )
     {
-      case 0: t->state = DONE; break;
+      case 0:
+        if (t->autopause) {
+          t->state = PAUSED;
+          return;
+        }
+        t->state = DONE;
+        break;
       case 1: t->state = WRITE_ERROR; break;
       case 2: t->state = USER_ABORT; break;
       case 3: t->state = READ_ERROR; break;
     }
-
-    /* Remove our callbacks. */
-    _remove_callbacks( t );
 
     take_fd(t);
 
@@ -743,15 +751,19 @@ PIKECLASS Shuffle
     pop_n_elems(args);
   }
 
-  PIKEFUN void start()
-   /*! @decl void start();
+  PIKEFUN void start(void|int autopause)
+   /*! @decl void start(void|int autopause);
     *! Start sending data from the sources.
     *!
+    *! @param autopause
+    *! If true, automatically pause the shuffler when all sources
+    *! have been consumed.
     */
     optflags OPT_SIDE_EFFECT;
   {
     if( !THIS->file_obj )
       Pike_error("Cannot start, no destination.\n");
+    THIS->autopause = autopause && autopause->u.integer;
     THIS->state = RUNNING;
     SHUFFLE_DEBUG1("start()\n", THIS );
     _set_callbacks(THIS->self);  /* Shuffle */
@@ -889,8 +901,6 @@ PIKECLASS Shuffler
 {
   PIKEVAR object backend;
   PIKEVAR object throttler;
-
-  CVAR int paused;
 
   PIKEVAR array sources;
 
