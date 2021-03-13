@@ -30,6 +30,8 @@ _$*
 *.Z
 *.elc
 *.ln
+SRCDIR
+config.warnings
 testsuite
 core
 core.*
