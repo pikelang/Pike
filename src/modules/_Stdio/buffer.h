@@ -17,9 +17,12 @@ struct _Buffer
 
   struct svalue output;
 
-  INT_TYPE num_malloc, num_move; /* debug mainly, for testsuite*/
   INT32 locked, locked_move;
   float max_waste;
+
+#ifdef PIKE_DEBUG
+  INT_TYPE num_malloc, num_move; /* debug mainly, for testsuite*/
+#endif
 };
 
 struct rewind_to {

@@ -82,8 +82,10 @@ PIKECLASS Buffer
   program_flags PROGRAM_DESTRUCT_IMMEDIATE;
 {
 #if PRECOMPILE_API_VERSION > 5
+#ifdef PIKE_DEBUG
   PIKEVAR int b.num_malloc;
   PIKEVAR int b.num_move;
+#endif
 #endif
 
   CVAR Buffer b;
@@ -147,7 +149,9 @@ PIKECLASS Buffer
       {
           memmove( io->buffer, io_read_pointer(io), io_len(io) );
           io->len -= io->offset;
+#ifdef PIKE_DEBUG
           io->num_move++;
+#endif
           io->offset = 0;
       }
   }
@@ -162,7 +166,9 @@ PIKECLASS Buffer
           if( io->len > 64 && ((io->allocated > (io->len)*(1.0+io->max_waste))))
           {
               io->buffer = xrealloc( io->buffer, io->len );
+#ifdef PIKE_DEBUG
               io->num_malloc++;
+#endif
               io->allocated = io->len;
           }
       }
@@ -206,7 +212,9 @@ PIKECLASS Buffer
         io->allocated = headroom;
         io->len -= io->offset;
         io->offset = 0;
+#ifdef PIKE_DEBUG
         io->num_malloc++;
+#endif
         memcpy( io->buffer, old, io->len );
         io_unlink_external_storage(io);
     }
@@ -289,7 +297,9 @@ PIKECLASS Buffer
         io->max_waste = newbuffer->max_waste;
       } else {
         io->buffer = xrealloc( io->buffer, io->allocated + growth );
+#ifdef PIKE_DEBUG
         io->num_malloc++;
+#endif
         io->allocated += growth;
       }
     }
