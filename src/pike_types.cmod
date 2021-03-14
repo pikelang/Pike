@@ -13889,17 +13889,23 @@ void gc_check_type (struct pike_type *t)
       case T_TYPE:
       case T_PROGRAM:
       case PIKE_T_AUTO:
-	debug_gc_check (t->car, " as car in a type");
+	if (t->car) {
+	  debug_gc_check (t->car, " as car in a type");
+	}
 	break;
       case T_SCOPE:
       case T_ASSIGN:
-	debug_gc_check (t->cdr, " as cdr in a type");
+	if (t->cdr) {
+	  debug_gc_check (t->cdr, " as cdr in a type");
+	}
 	break;
       case PIKE_T_OPERATOR:
 	if (t->type & 0x8000) {
 	  debug_gc_check (t->cdr, " as cdr in a type");
 	}
-	debug_gc_check (t->car, " as car in a type");
+	if (t->car) {
+	  debug_gc_check (t->car, " as car in a type");
+	}
 	break;
 #ifdef PIKE_DEBUG
       case '0':
