@@ -51,11 +51,13 @@ static unsigned char *io_read_pointer(Buffer *io)
 PIKE_UNUSED_ATTRIBUTE
 static unsigned char *io_add_space( Buffer *io, size_t bytes, int force )
 {
-  if( io->len == io->offset )
-    io->offset = io->len = 0;
-  if( !force && io->malloced && !io->locked && io->len+bytes < io->allocated &&
-      (!bytes || io->len+bytes > io->len))
-    return io->buffer+io->len;
+  if (LIKELY(!io->locked)) {
+    if (UNLIKELY(io->len == io->offset) && LIKELY(!io->locked_move))
+      io->offset = io->len = 0;
+    if (LIKELY(!force && io->len+bytes < io->allocated
+               && io->len+bytes >= io->len))
+      return io->buffer+io->len;
+  }
   return io_add_space_do_something( io, bytes, force );
 }
 
