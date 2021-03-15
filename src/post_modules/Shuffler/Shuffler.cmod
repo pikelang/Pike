@@ -806,6 +806,8 @@ PIKECLASS Shuffle
     *!
     *! Currently supported sources
     *! @dl
+    *!   @item int
+    *!     An ordinary 8-bit wide byte.
     *!   @item string
     *!     An ordinary 8-bit wide pike string.
     *!   @item System.Memory
