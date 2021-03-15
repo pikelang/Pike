@@ -178,6 +178,8 @@ static struct image_alpha load_image(struct pike_string *str)
 
   if(buffer.len < 3)
     Pike_error("Not enough data in buffer to decode a TGA image\n");
+  if (buffer.len > str->len - sizeof(struct tga_header))
+    Pike_error("Malformed TGA header.\n");
 
   return ReadImage (&buffer, &hdr);
 }
@@ -532,12 +534,16 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
      rle = 1;
    case TGA_TYPE_GRAY:
      itype = GRAY;
+     if (bpp != 8 && bpp != 16)
+       Pike_error("Malformed TGA.\n");
      break;
 
    case TGA_TYPE_COLOR_RLE:
      rle = 1;
    case TGA_TYPE_COLOR:
      itype = RGB;
+     if (bpp != 24 && bpp != 32)
+       Pike_error("Malformed TGA.\n");
      break;
 
    default:
@@ -662,7 +668,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
            {
              id->r =  id->g = id->b = *(sd++);
 	     id++;
-             if(abpp)
+             if(abpp && bpp == 16)
              {
                ad->r = ad->g = ad->b = *(sd++);
 	       ad++;
