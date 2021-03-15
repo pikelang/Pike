@@ -11287,11 +11287,11 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     if (tmp) free_type(tmp);
 
     if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) && sval) {
-      while (tmp2->type == PIKE_T_NAME) {
+      while (tmp2 && (tmp2->type == PIKE_T_NAME)) {
 	tmp2 = tmp2->cdr;
       }
 
-      if (tmp2->type == PIKE_T_ATTRIBUTE) {
+      if (tmp2 && (tmp2->type == PIKE_T_ATTRIBUTE)) {
 	struct compilation *c = MAYBE_THIS_COMPILATION;
 	if (c) {
 	  /* Perform extra argument checking based on the attribute. */
