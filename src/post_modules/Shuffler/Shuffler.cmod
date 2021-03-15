@@ -13,6 +13,7 @@
 #include "program_id.h"
 #include "object.h"
 #include "operators.h"
+#include "cyclic.h"
 #include "fdlib.h"
 #include "fd_control.h"
 #include "backend.h"
@@ -792,11 +793,56 @@ PIKECLASS Shuffle
     _all_done( THIS, 2 );
   }
 
+  static void low_add_source(struct Shuffle_struct *this,
+    struct svalue *source, struct svalue *wrap_cb, INT64 rstart, INT64 rlength)
+  {
+    if (TYPEOF(*source) == PIKE_T_ARRAY) {
+      struct array *argp = source->u.array;
+      INT_TYPE i;
+      DECLARE_CYCLIC();
+
+      if (BEGIN_CYCLIC(this, argp))
+        Pike_error("Attempt to add a cyclic array to a shuffler.\n");
+
+      for(i=0; i < argp->size; i++ )
+        low_add_source(this, argp->item+i, 0, 0, -1);
+
+      END_CYCLIC();
+    } else {
+      struct source *res;
+
+      debug_malloc_touch( source );
+      
+      res = source_make( source, rstart, rlength );
+      mark_free_svalue(&res->wrap_callback);
+      
+      debug_malloc_touch( res );
+      
+      SHUFFLE_DEBUG4("add_source(XX,%d,%d) --> %p\n", this,
+          	  (int)rstart, (int)rlength, res );
+      if( !res )
+        Pike_error("Failed to convert argument to a source\n");
+      
+      if (wrap_cb)
+        assign_svalue(&res->wrap_callback, wrap_cb);
+      
+      res->next = NULL;
+      if( this->current_source )
+      {
+        this->last_source->next = res;
+        this->last_source = res;
+      }
+      else
+        this->current_source = this->last_source = res;
+    }
+  }
+
   PIKEFUN void
     add_source(mixed source, int|object|void start, int|object|void length)
    /*! @decl void add_source( mixed source, int|void start, int|void length );
     *! @decl void add_source( mixed source, @
     *!                        function(Shuffle, int:array(string)) wrap_cb );
+    *! @decl void add_source( array source );
     *! Add a new source to the list of data sources.
     *! The data from the sources will be sent in order.
     *!
@@ -823,16 +869,21 @@ PIKECLASS Shuffle
     *!   @item Stdio.NonblockingStream|Stdio.Stream
     *!     An object implementing the callback based reading
     *!     (set_read_callback and set_close_callback).
+    *!   @item array
+    *!     An array of any of the supported sources.  Note that neither
+    *!     @[start], nor @[length], nor @[wrap_cb] cannot be specified then.
     *! @enddl
     */
     optflags OPT_SIDE_EFFECT;
   {
     INT64 rstart = 0, rlength = -1;
-    struct source *res;
     struct svalue *wrap_cb = 0;
 
     if( !THIS->file_obj )
       Pike_error("Cannot add source, no destination.\n");
+
+    if (TYPEOF(*source) == PIKE_T_ARRAY && (start || length))
+      Pike_error("An array source does not support extra arguments.\n");
 
     if (start)
       switch (TYPEOF(*start)) {
@@ -861,30 +912,8 @@ PIKECLASS Shuffle
       if (!rlength)
         return;
     }
-    debug_malloc_touch( source );
 
-    res = source_make( source, rstart, rlength );
-    mark_free_svalue(&res->wrap_callback);
-
-    debug_malloc_touch( res );
-
-    SHUFFLE_DEBUG4("add_source(XX,%d,%d) --> %p\n", THIS,
-		  (int)rstart, (int)rlength, res );
-    if( !res )
-      Pike_error("Failed to convert argument to a source\n");
-
-    if (wrap_cb)
-      assign_svalue(&res->wrap_callback, wrap_cb);
-
-    res->next = NULL;
-    if( THIS->current_source )
-    {
-      THIS->last_source->next = res;
-      THIS->last_source = res;
-    }
-    else {
-      THIS->current_source = THIS->last_source = res;
-    }
+    low_add_source(THIS, source, wrap_cb, rstart, rlength);
   }
 }
 
