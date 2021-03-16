@@ -52,7 +52,10 @@ findprog() {
 # for. There are also configure.in scripts (e.g. in Pike) that tries
 # to detect which autoconf they're running in. These tend to fool each
 # other, so try to avoid the script wrappers.
-if findprog autoconf2.50 && findprog autoheader2.50; then
+if findprog autoconf-2.69 && findprog autoheader-2.69; then
+  autoconf=autoconf-2.69
+  autoheader=autoheader-2.69
+elif findprog autoconf2.50 && findprog autoheader2.50; then
   autoconf=autoconf2.50
   autoheader=autoheader2.50
 else
