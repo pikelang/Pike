@@ -5199,9 +5199,10 @@ AC_CACHE_VAL(pike_cv_hardware_stack_direction,
   AC_TRY_RUN([
 #include <stdio.h>
 #include <stdlib.h>
+static int (* volatile find_stack_direction_funptr)(void *foo, int cnt);
 static int find_stack_direction(void *foo, int cnt)
 {
-  if (cnt) return 1*find_stack_direction(foo, cnt>>1);
+  if (cnt) return 1*find_stack_direction_funptr(foo, cnt>>1);
   if (((void *)&foo) > foo) {
     return 1;
   } else {
@@ -5209,7 +5210,10 @@ static int find_stack_direction(void *foo, int cnt)
   }
 }
 
-int main() { void *bar; exit( find_stack_direction(&bar, 0x10) > 0); }
+int main() {
+  find_stack_direction_funptr = &find_stack_direction;
+  void *bar; exit( find_stack_direction_funptr(&bar, 0x10) > 0);
+}
   ], [ pike_cv_hardware_stack_direction=down
   ], [ pike_cv_hardware_stack_direction=up
   ], [
