@@ -9,6 +9,13 @@ o Inotify
   add_watch() now returns -1 for filsystem-related failures
   that may be due to the filsystem being in flux.
 
+Building & Tools
+----------------
+
+o Improved check for stack direction to also report correct results when
+  compiling with Clang 11.
+
+
 Changes since Pike 8.0.702 (release 13)
 ----------------------------------------------------------------------
 
