@@ -5,7 +5,6 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.1 1999/10/21 22:18:44 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
