@@ -175,7 +175,7 @@ static void low_image_f_wbf_decode_type0( struct wbf_header *wh,
   {
     unsigned char q = 0; /* avoid warning */
     unsigned char *data = buff->str + y * rowsize;
-    if( buff->len < (rowsize+1)*y )
+    if( buff->len < rowsize * (y + 1) )
       break;
     for( x = 0; x<wh->width; x++ )
     {
