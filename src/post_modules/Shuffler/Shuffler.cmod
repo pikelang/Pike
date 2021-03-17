@@ -42,11 +42,11 @@ DECLARATIONS
 #define SHUFFLE_DEBUG3(fmt, arg1, arg2, arg3)
 #define SHUFFLE_DEBUG4(fmt, arg1, arg2, arg3, arg4)
 #endif
-#define BLOCK 8192
+#define BLOCK (64*1024)
 
 static void free_source(struct source *s) {
-  debug_malloc_touch(s);
   free_svalue(&s->wrap_callback);
+  free_svalue(&s->wrap_array);
   s->free_source(s);
 }
 
@@ -98,9 +98,6 @@ static void free_source(struct source *s) {
 
 PIKECLASS Shuffle
 {
-  CVAR struct fd_callback_box box;
-  CVAR int oldbulkmode;
-
   PIKEVAR object shuffler;
   /*! @decl Shuffler shuffler;
    *! The @[Shuffler] that owns this @[Shuffle] object
@@ -114,13 +111,12 @@ PIKECLASS Shuffle
   */
 
   PIKEVAR function(object, int:array(string(8bit))) done_callback;
-  PIKEVAR string(8bit) prefix;
-  PIKEVAR string(8bit) suffix;
-
-  CVAR INT64 skip, left;
-  CVAR int leftprefix, leftsuffix;
 
   PIKEVAR mixed request_arg;
+
+  CVAR struct fd_callback_box box;
+  CVAR int oldbulkmode;
+  CVAR INT64 skip, left;
 
   CVAR struct object *self;   /* points to this shuffler object */
   CVAR struct source *current_source;
@@ -133,7 +129,10 @@ PIKECLASS Shuffle
   CVAR int autopause;
   CVAR ShuffleState state;
 
-  CVAR struct data leftovers;
+  CVAR struct iovec *iov;
+  CVAR int iovalloc;
+  CVAR int iovamount;
+  CVAR int iovfilled;
 
   static void take_fd(struct Shuffle_struct*s) {
     if (s->box.fd >= 0) {
@@ -145,6 +144,16 @@ PIKECLASS Shuffle
         safe_apply(s->file_obj, "take_fd", 1);
       pop_stack();
     }
+  }
+
+  static void cur_remove_callbacks(struct source *cursource) {
+    if (cursource && cursource->remove_callbacks)
+      cursource->remove_callbacks(cursource);
+  }
+
+  static void cur_setup_callbacks(struct source *cursource) {
+    if (cursource && cursource->setup_callbacks)
+      cursource->setup_callbacks(cursource);
   }
 
   static void _send_more( struct Shuffle_struct *t );
@@ -237,6 +246,16 @@ PIKECLASS Shuffle
     RETURN THIS->state;
   }
 
+  static void _free_all_sources( struct Shuffle_struct *t, int dataref ) {
+    struct source *sp = t->current_source;
+    while (sp && (!dataref || sp->eof && sp->dataref == dataref)) {
+      struct source *n = sp->next;
+      free_source( sp );
+      sp = n;
+    }
+    t->current_source = sp;
+  }
+
   INIT
   {
     THIS->shuffler = 0;
@@ -245,15 +264,12 @@ PIKECLASS Shuffle
     THIS->autopause = 0;
     mark_free_svalue (&THIS->done_callback);
     SET_SVAL(THIS->request_arg, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-    THIS->prefix = 0;
-    THIS->suffix = 0;
-    THIS->leftprefix = 0;
-    THIS->leftovers.len = 0;
-    THIS->leftsuffix = 0;
     THIS->current_source = NULL;
     THIS->file_obj = NULL;
     THIS->state = INITIAL;
     THIS->self = Pike_fp->current_object;
+    THIS->iov = 0;
+    THIS->iovfilled = 0;
     THIS->callback =
       find_identifier("send_more_callback",Pike_fp->current_object->prog);
 
@@ -272,17 +288,11 @@ PIKECLASS Shuffle
 
     take_fd(THIS);
 
-    if( THIS->file_obj )
-    {
-      free_object( THIS->file_obj );
-      THIS->file_obj = 0;
+    if (THIS->iov) {
+      debug_malloc_touch(THIS->iov);
+      free(THIS->iov);
     }
-    while( THIS->current_source )
-    {
-      struct source *n = THIS->current_source->next;
-      free_source( THIS->current_source );
-      THIS->current_source = n;
-    }
+    _free_all_sources(THIS, 0);
   }
 
   static void __send_more_callback( struct Shuffle_struct *t, int amount );
@@ -311,25 +321,29 @@ PIKECLASS Shuffle
   {
     int l = BLOCK;
     SHUFFLE_DEBUG2("_send_more(%d)\n", t, t->box.fd );
-    if( t->leftovers.len > 0 )
-      l = t->leftovers.len;
     _request( t, l );
+  }
+
+  static struct source *_active_source(struct source* current_source)
+  {
+    struct source *n = current_source;
+    if (current_source && current_source->eof)
+      while ((current_source = current_source->next) && current_source->eof);
+    return current_source;
   }
 
   static void _set_callbacks(struct object *shuffle)
   {
     struct Shuffle_struct *t = (struct Shuffle_struct *)shuffle->storage;
     SHUFFLE_DEBUG1("_set_callbacks()\n", t );
-    if( t->current_source && t->current_source->setup_callbacks )
-      t->current_source->setup_callbacks( t->current_source );
+    cur_setup_callbacks(_active_source(t->current_source));
     __set_callbacks( t );
   }
 
   static void _remove_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG1("_remove_callbacks()\n",t );
-    if( t->current_source && t->current_source->remove_callbacks )
-      t->current_source->remove_callbacks( t->current_source );
+    cur_remove_callbacks(_active_source(t->current_source));
     __remove_callbacks( t );
   }
 
@@ -377,12 +391,7 @@ PIKECLASS Shuffle
     }
 
     /* Destroy all our sources. */
-    while( t->current_source )
-    {
-      struct source *n = t->current_source->next;
-      free_source( t->current_source );
-      t->current_source = n;
-    }
+    _free_all_sources(t, 0);
 
     /* If a callback exists, we call it at the end, because done_callback might
      * explicitly destruct this object. This happened in one of the testcases.
@@ -451,199 +460,239 @@ PIKECLASS Shuffle
     }
   }
 
+  static void allocmore_iov(struct Shuffle_struct*t) {
+    if (t->iovfilled >= t->iovalloc) {
+      t->iov = xrealloc(t->iov, (t->iovalloc <<= 1) * sizeof(*t->iov));
+      debug_malloc_touch(t->iov);
+    }
+  }
+
+  static int
+   add_to_iov(struct Shuffle_struct*t, char*ptr, int len, int amount) {
+    int reslen;
+    struct iovec *iov;
+    allocmore_iov(t);
+    iov = t->iov;
+    if (amount)
+      t->iovamount = t->iovfilled;
+    else
+      amount = len;
+    reslen = MINIMUM(len, amount);
+    iov[t->iovfilled].iov_base = ptr;
+    amount -= iov[t->iovfilled].iov_len = reslen;
+    t->iovfilled++;
+    len -= reslen;
+    if (len)
+      return add_to_iov(t, ptr + reslen, len, 0);
+    return amount;
+  }
+
+  static struct pike_string *get_wrapstring(struct source *s, int index) {
+    struct svalue *wrap_ar = &s->wrap_array;
+    struct pike_string *res = 0;
+    struct array *v;
+
+    if (TYPEOF(*wrap_ar) == PIKE_T_ARRAY
+     && index < (v = wrap_ar->u.array)->size) {
+      struct svalue *sv = ITEM(v) + index;
+      if (TYPEOF (*sv) == T_STRING) {
+        res = sv->u.string;
+        if (res->size_shift || !res->len)
+          res = 0;
+      }
+    }
+    return res;
+  }
+
   static void __send_more_callback( struct Shuffle_struct *t, int amount )
   {
-    int sent = 0, fulllen, len, iof;
-    struct iovec iov[3];
+    int sent, len, amntleft = amount;
+    int reason = -1;
+    struct source *cursource = t->current_source;
+    struct iovec *iov
     SHUFFLE_DEBUG2("__send_more_callback(%d)\n", t, amount );
-    while (t->leftovers.len + t->leftsuffix <= 0)
+    t->iovamount = -1;
+    for (;;)
     {
-      while( t->current_source && t->current_source->eof )
-      {
-	struct source *n = t->current_source->next;
-	SHUFFLE_DEBUG2("__send_more_callback(): source done: %p\n", t, t->current_source );
-	if( t->current_source->remove_callbacks )
-	  t->current_source->remove_callbacks( t->current_source );
-	free_source( t->current_source );
-	t->current_source = n;
-	if( n && n->setup_callbacks )
-	  n->setup_callbacks( n );
+      struct data leftovers;
+      if (amntleft) {
+        if (t->iovamount + 1 < t->iovfilled) {
+          int iova = ++t->iovamount;
+          int len;
+          amntleft -= t->iov[iova].iov_len;
+          if (amntleft >= 0)
+            continue;
+          allocmore_iov(t);
+          memmove(t->iov + iova + 2, t->iov + iova + 1,
+                  (t->iovfilled++ - iova - 1) * sizeof(*t->iov));
+          len = t->iov[iova].iov_len += amntleft;
+          t->iov[iova + 1].iov_base = t->iov[iova].iov_base + len;
+          t->iov[iova + 1].iov_len = -amntleft;
+          {
+            struct source *sp;
+            iova++;
+            /* Adjust dataref entries to account for moved iov part */
+            for (sp = cursource; sp; sp = sp->next)
+              if (iova >= sp->dataref)
+                sp->dataref++;
+          }
+          break;
+        }
+      } else
+        break;
+
+      cursource = _active_source(cursource);
+      if (cursource && cursource->eof) {
+        cursource = cursource->next;
+        cur_setup_callbacks(cursource);	  // FIXME setup too often?
       }
 
-      if( !t->current_source )
-      {
+      if (t->iovfilled && cursource && cursource->dataref == t->iovfilled)
+        break;			/* Still working on the current source */
+
+      if( !cursource ) {
 	SHUFFLE_DEBUG1("__send_more_callback(): no sources\n", t );
-	_give_back( t, amount );
-	_all_done( t, 0 );
-	return;
+        reason = 0;
+        break;
       }
 
       /* The length argument to get_data is a guideline, the callee can
        * ignore it if so desired and return more data.
        */
-      t->leftovers = t->current_source->get_data(t->current_source,
-						 MAXIMUM(amount, BLOCK));
+      leftovers = cursource->get_data(cursource, amntleft);
 
-      if (t->current_source->eof && t->leftovers.len == -2)
-        t->leftovers.len = 0;	/* force eof recognition */
-      if( t->leftovers.len == -2 )
+      if (cursource->eof) {
+        cur_remove_callbacks(cursource);  // FIXME removed too often?
+        if (leftovers.len == -2)
+          leftovers.len = 0;	/* force eof recognition */
+      }
+      if( leftovers.len == -2 )
       {
 	/* come back later (nonblocking source without more data to read) */
 	SHUFFLE_DEBUG1("__send_more_callback(): read pending\n", t );
 	__remove_callbacks( t );
-	t->current_source->set_callback(t->current_source,
+	cursource->set_callback(cursource,
 					(void *)_set_callbacks,
                       /* Shuffler */    t->self);
-	_give_back( t, amount );
-	return;
+	break;
       }
-      else if( t->leftovers.len < 0 )
+      else if( leftovers.len < 0 )
       {
 	SHUFFLE_DEBUG1("__send_more_callback(): read error\n", t );
 	/* read error */
-	_give_back( t, amount );
-	_all_done( t, 3 );
-	return;
+        reason = 3;
+	break;
       }
 
-      if (t->skip >= t->leftovers.len) {
-        t->skip -= t->leftovers.len;
-        t->leftovers.len = 0;
+      if (t->skip >= leftovers.len) {
+        t->skip -= leftovers.len;
         continue;
       }
-      t->leftovers.data += t->skip;
-      t->leftovers.len -= t->skip;
+      leftovers.data += t->skip;
+      leftovers.len -= t->skip;
       t->skip = 0;
       if (t->left >= 0) {
         if (!t->left) {
-          _give_back( t, amount );
-          _all_done( t, 1 );
-          return;
+          reason = 1;
+          break;
         }
-        if (t->left < t->leftovers.len)
-          t->leftovers.len = t->left;
-        t->left -= t->leftovers.len;
+        if (t->left < leftovers.len)
+          leftovers.len = t->left;
+        t->left -= leftovers.len;
       }
-
-      t->leftsuffix = t->leftprefix = 0;
-      if (TYPEOF(t->current_source->wrap_callback) != PIKE_T_FREE) {
+      if (TYPEOF(cursource->wrap_callback) == PIKE_T_FUNCTION) {
         SHUFFLE_DEBUG2("_wrap: Calling wrap callback: %p\n", t,
-                       t->current_source->wrap_callback.u.object);
-        push_svalue(&t->current_source->wrap_callback);
-
+                       cursource->wrap_callback.u.object);
         ref_push_object(t->box.ref_obj);
-        push_int(t->leftovers.len);
+        push_int(leftovers.len);
+        apply_svalue(&cursource->wrap_callback, 2);
+        assign_svalue(&cursource->wrap_array, Pike_sp - 1);
+        pop_stack();
+      }
+      {
+        struct pike_string *wrap;
+        SHUFFLE_DEBUG2("__send_more_callback(): sending(%d)\n", t, amntleft);
 
-        apply_svalue(Pike_sp - 3, 2);
-
-        if (TYPEOF(Pike_sp[-1]) == PIKE_T_ARRAY) {
-          struct array *v = Pike_sp[-1].u.array;
-          struct svalue *sv;
-
-          sv = ITEM(v);
-          switch (v->size) {
-            case 2:             // FIXME Error message for wide strings?
-              if (TYPEOF (*++sv) == T_STRING && !sv->u.string->size_shift) {
-                if (t->suffix)
-                  free_string(t->suffix);
-                copy_shared_string(t->suffix, sv->u.string);
-                t->leftsuffix = t->suffix->len;
-              }
-              --sv;
-              /* FALLTHROUGH */
-            case 1:
-              if (TYPEOF (*sv) == T_STRING && !sv->u.string->size_shift) {
-                if (t->prefix)
-                  free_string(t->prefix);
-                copy_shared_string(t->prefix, sv->u.string);
-                t->leftprefix = t->prefix->len;
-              }
-          }
+        if (wrap = get_wrapstring(cursource, 0)) {
+          amntleft = add_to_iov(t, wrap->str, wrap->len, amntleft);
         }
-        pop_stack();
-        pop_stack();
+        amntleft = add_to_iov(t, leftovers.data, leftovers.len, amntleft);
+        cursource->dataref = t->iovfilled;
+        if (wrap = get_wrapstring(cursource, 1)) {
+          amntleft = add_to_iov(t, wrap->str, wrap->len, amntleft);
+          cursource->dataref = t->iovfilled;
+        }
       }
     }
 
     /* Now it's time to actually send the data. */
-    fulllen = len
-     = MINIMUM(amount, t->leftprefix + t->leftovers.len + t->leftsuffix);
-    SHUFFLE_DEBUG2("__send_more_callback(): sending(%d)\n", t, len);
-    sent = -1; iof = 0;
-    if (t->leftprefix) {
-      (*iov).iov_base
-       = t->prefix->str + t->prefix->len - t->leftprefix;
-      (*iov).iov_len = MINIMUM(t->leftprefix, len);
-      iof++;
-    }
-    if ((len -= t->leftprefix) > 0) {
-      if (t->leftovers.len) {
-        iov[iof].iov_base = t->leftovers.data;
-        iov[iof].iov_len = MINIMUM(t->leftovers.len, len);
-        iof++;
+    if (++t->iovamount) {
+      iov = t->iov;
+      sent = -1;
+      if (t->box.fd >= 0) {
+        THREADS_ALLOW();
+        sent = writev(t->box.fd, iov, t->iovamount);
+        THREADS_DISALLOW();
+      } else if(t->file_obj) {
+        int i;
+        for (i = 0; i < t->iovamount; i++) {
+          int wret, len;
+          struct pike_string *s =
+           make_shared_binary_string(iov[i].iov_base, len = iov[i].iov_len);
+          push_string(s);
+          apply (t->file_obj, "write", 1);
+          if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
+            wret = Pike_sp[-1].u.integer;
+          else {
+            SHUFFLE_DEBUG2("Oops: write returned object of type %d, not integer\n",
+            	       t, TYPEOF(Pike_sp[-1]) );
+            wret = len;
+          }
+          pop_stack();
+          SHUFFLE_DEBUG3("__send_more_callback(): sending(%d): sent %d\n", t,
+          	       MINIMUM(leftovers.len,amount),sent );
+          if (wret < 0)
+            break;
+          if (sent < 0)
+            sent = 0;
+          sent += wret;
+          if (wret < len)
+            break;
+        }
       }
-      if ((len -= t->leftovers.len) > 0) {
-        iov[iof].iov_base
-         = t->suffix->str + t->suffix->len - t->leftsuffix;
-        iov[iof].iov_len = len;
-        iof++;
-      }
-    }
-    if (t->box.fd >= 0) {
-      THREADS_ALLOW();
-      sent = writev(t->box.fd, iov, iof);
-      THREADS_DISALLOW();
-    } else if(t->file_obj) {
-      struct pike_string *s = begin_shared_string(fulllen);
-      memcpy(s->str, (*iov).iov_base, len = (*iov).iov_len);
-      switch (iof) {
-        case 3:
-          memcpy(s->str + len + iov[1].iov_len, iov[2].iov_base,
-                 iov[2].iov_len);
-          /* FALL THROUGH */
-        case 2:
-          memcpy(s->str + len, iov[1].iov_base, iov[1].iov_len);
-          /* FALL THROUGH */
-      }
-      push_string(end_shared_string(s));
-      apply( t->file_obj, "write", 1 );
-      if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
-	sent = Pike_sp[-1].u.integer;
-      else {
-	SHUFFLE_DEBUG2("Oops: write returned object of type %d, not integer\n",
-		       t, TYPEOF(Pike_sp[-1]) );
-      }
-      pop_stack();
-    }
-    SHUFFLE_DEBUG3("__send_more_callback(): sending(%d): sent %d\n", t,
-		  MINIMUM(t->leftovers.len,amount),sent );
-
-    if( sent < 0 )
-    {
-      _give_back( t, amount );
-      _all_done( t, 1 );
-      return;
-    }
-    if (sent) {
-      int n;
-      t->sent += n = sent;
-      if (t->leftprefix >= n)
-        t->leftprefix -= n;
-      else {
-        n -= t->leftprefix;
-        t->leftprefix = 0;
-
-        if (t->leftovers.len > n) {
-          t->leftovers.len -= n;
-          t->leftovers.data += n;
-        } else {
-          t->leftsuffix -= n - t->leftovers.len;
-          t->leftovers.len = 0;
+      if (sent < 0) {
+        reason = 1;
+      } else if (sent) {
+        int i;
+        amount -= sent;
+        for (i = 0; i < t->iovamount; ) {
+          int n = iov[i].iov_len;
+          if (sent < n)
+            n = sent;
+          sent -= n;
+          if (!sent) {
+            iov[i].iov_len -= n;
+            iov[i].iov_base += n;
+            break;
+          }
+          _free_all_sources(t, ++i);
+        }
+        if (!iov[i].iov_len)
+          _free_all_sources(t, ++i);
+        memmove(iov, iov + i, (t->iovfilled - i) * sizeof(*iov));
+        t->iovfilled -= i;
+        {
+          struct source *sp;
+          for (sp = t->current_source; sp; sp = sp->next)
+            sp->dataref -= i;
         }
       }
     }
-    if( sent < amount )
-      _give_back( t, amount-sent );
+
+    if (amount)
+      _give_back( t, amount );
+    if (reason >= 0)
+      _all_done( t, reason );
   }
 
   /* internal use.. */
@@ -699,6 +748,9 @@ PIKECLASS Shuffle
       THIS->throttler = throttler->u.object;
       add_ref(THIS->throttler);
     }
+
+    THIS->iov = xalloc((THIS->iovalloc = 16) * sizeof(*THIS->iov));
+    debug_malloc_touch(THIS->iov);
 
     if (start) {
       if (TYPEOF(*start) == PIKE_T_OBJECT)
@@ -812,20 +864,22 @@ PIKECLASS Shuffle
       struct source *res;
 
       debug_malloc_touch( source );
-      
+
       res = source_make( source, rstart, rlength );
-      mark_free_svalue(&res->wrap_callback);
-      
-      debug_malloc_touch( res );
-      
-      SHUFFLE_DEBUG4("add_source(XX,%d,%d) --> %p\n", this,
-          	  (int)rstart, (int)rlength, res );
+
       if( !res )
         Pike_error("Failed to convert argument to a source\n");
-      
+
+      mark_free_svalue(&res->wrap_callback);
+      mark_free_svalue(&res->wrap_array);
+
+      debug_malloc_touch( res );
+
+      SHUFFLE_DEBUG4("add_source(XX,%d,%d) --> %p\n", this,
+          	  (int)rstart, (int)rlength, res );
       if (wrap_cb)
         assign_svalue(&res->wrap_callback, wrap_cb);
-      
+
       res->next = NULL;
       if( this->current_source )
       {

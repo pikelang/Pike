@@ -49,10 +49,11 @@ cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
     sf->add_source("xyz\n" * 9);
     sf->add_source(Stdio.Buffer("xyz\n" * 65900));
     sf->add_source("xyz\n" * 9);
-    sf->set_done_callback( lambda() { sf->stop(); destruct(sf); });
+    sf->set_done_callback( lambda() { sf->stop(); f->close(); });
     sf->start();
     string res = "";
     f2->set_read_callback( lambda(mixed id, string s) { res += s; });
+    f2->set_close_callback( lambda(mixed id) { sf = 0; });
     fp->other->write("xyz\n" * 1000);
     fp->other->write("xyz\n" * 9000);
     fp->other->write("xyz\n" * 12500);
@@ -75,11 +76,12 @@ cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
     sfr->set_backend (pb);
     Shuffler.Shuffle sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
-    sf->set_done_callback( lambda() { sf->stop(); destruct(sf); });
+    sf->set_done_callback( lambda() { sf->stop(); f->close(); });
     sf->start();
     string res = "";
     f2->set_backend(pb);
     f2->set_read_callback( lambda(mixed id, string s) { res += s; });
+    f2->set_close_callback( lambda(mixed id) { sf = 0; });
     while (sf) {
       pb(1.0);
     }
@@ -96,11 +98,12 @@ cond([[master()->resolv("Pike.PollBackend")]], [[
     sfr->set_backend (pb);
     Shuffler.Shuffle sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
-    sf->set_done_callback( lambda() { sf->stop(); destruct(sf); });
+    sf->set_done_callback( lambda() { sf->stop(); f->close(); });
     sf->start();
     string res = "";
     f2->set_backend(pb);
     f2->set_read_callback( lambda(mixed id, string s) { res += s; });
+    f2->set_close_callback( lambda(mixed id) { sf = 0; });
     while (sf) {
       pb(1.0);
     }
@@ -117,11 +120,12 @@ cond([[master()->resolv("Pike.SelectBackend")]], [[
     sfr->set_backend (pb);
     Shuffler.Shuffle sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
-    sf->set_done_callback( lambda() { sf->stop(); destruct(sf); });
+    sf->set_done_callback( lambda() { sf->stop(); f->close(); });
     sf->start();
     string res = "";
     f2->set_backend(pb);
     f2->set_read_callback( lambda(mixed id, string s) { res += s; });
+    f2->set_close_callback( lambda(mixed id) { sf = 0; });
     while (sf) {
       pb(1.0);
     }

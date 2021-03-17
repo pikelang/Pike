@@ -17,6 +17,7 @@ struct source
   int dataref;	/* points to the last connected iov chunk */
 
   struct svalue wrap_callback;
+  struct svalue wrap_array;	/* the last return value from wrap_callback */
 
   /* Must be implemented by all sources */
   struct data (*get_data)(struct source *s,off_t len);
