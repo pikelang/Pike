@@ -179,6 +179,8 @@ static struct image_alpha load_image(struct pike_string *str)
 
   if(buffer.len < 3)
     Pike_error("Not enough data in buffer to decode a TGA image\n");
+  if (buffer.len > str->len - sizeof(struct tga_header))
+    Pike_error("Malformed TGA header.\n");
 
   return ReadImage (&buffer, &hdr);
 }
@@ -503,6 +505,8 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
    case TGA_TYPE_GRAY:
      itype = GRAY;
+     if (bpp != 8 && bpp != 16)
+       Pike_error("Malformed TGA.\n");
      break;
 
    case TGA_TYPE_COLOR_RLE:
@@ -511,6 +515,8 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
    case TGA_TYPE_COLOR:
      itype = RGB;
+     if (bpp != 24 && bpp != 32)
+       Pike_error("Malformed TGA.\n");
      break;
 
    default:
@@ -635,7 +641,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
            {
              id->r =  id->g = id->b = *(sd++);
 	     id++;
-             if(abpp)
+             if(abpp && bpp == 16)
              {
                ad->r = ad->g = ad->b = *(sd++);
 	       ad++;
@@ -668,6 +674,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
       apply( i.io, "mirrorx", 0 );
       free_object(i.io);
       i.io = Pike_sp[-1].u.object;
+      i.img = (struct image*)get_storage(i.io, image_program);
       Pike_sp--;
       apply( i.ao, "mirrorx", 0 );
       free_object(i.ao);
@@ -679,6 +686,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
       apply( i.io, "mirrory", 0 );
       free_object(i.io);
       i.io = Pike_sp[-1].u.object;
+      i.img = (struct image*)get_storage(i.io, image_program);
       Pike_sp--;
       apply( i.ao, "mirrory", 0 );
       free_object(i.ao);
