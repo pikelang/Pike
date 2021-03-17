@@ -4,7 +4,6 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.3 2000/03/22 16:59:14 peter Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
