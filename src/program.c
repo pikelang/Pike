@@ -302,7 +302,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tInt tOr(tMap(tStr,tInt),tVoid),tVoid,tStr),	/* "_sprintf", */
   0,
 
-  tFuncV(tZero,tZero,tMix),	/* "`+", */
+  tFuncV(tZero,tVoid,tMix),	/* "`+", */
   tFunc(tOr(tVoid,tZero),tMix),	/* "`-", */
   tFuncV(tNone,tZero,tMix),	/* "`*", */
   tFuncV(tNone,tZero,tMix),	/* "`/", */
@@ -315,7 +315,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "pow", */
   0,
 
-  tFuncV(tZero,tZero,tMix),	/* "``+", */
+  tFuncV(tZero,tVoid,tMix),	/* "``+", */
   tFuncV(tZero,tVoid,tMix),	/* "``-", */
   tFuncV(tNone,tZero,tMix),	/* "``*", */
   tFuncV(tNone,tZero,tMix),	/* "``/", */
@@ -361,7 +361,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tObj),	/* "_get_iterator", */
   0,
 
-  tFuncV(tZero,tZero,tMix),	/* "`+=", */
+  tFuncV(tZero,tVoid,tMix),	/* "`+=", */
   tFuncV(tZero tSetvar(0,tZero),tVoid,tVar(0)),	/* "`[]=", */
   tFuncV(tStr tSetvar(0,tZero) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`->=", */
   tFuncV(tZero,tVoid,tMix),	/* "_m_delete", */
@@ -384,7 +384,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tVoid),	/* "__INIT", */
   tFuncV(tNone,tZero,tVoid),	/* "create", */
   tFuncV(tOr(tVoid,tInt),tVoid,tInt01), /* "_destruct", */
-  tFuncV(tZero,tZero,tMix),	/* "`+", */
+  tFuncV(tZero,tVoid,tMix),	/* "`+", */
   tFunc(tOr(tVoid,tZero),tMix),	/* "`-", */
   tFuncV(tNone,tZero,tMix),	/* "`&", */
   tFuncV(tNone,tZero,tMix),	/* "`|", */
@@ -409,7 +409,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tArray),	/* "_indices", */
   tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tArray),	/* "_values", */
   tFuncV(tNone,tZero,tMix),	/* "`()", */
-  tFuncV(tZero,tZero,tMix),	/* "``+", */
+  tFuncV(tZero,tVoid,tMix),	/* "``+", */
   tFuncV(tZero,tVoid,tMix),	/* "``-", */
   tFuncV(tNone,tZero,tMix),	/* "``&", */
   tFuncV(tNone,tZero,tMix),	/* "``|", */
@@ -419,7 +419,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tZero,tMix),	/* "``*", */
   tFuncV(tNone,tZero,tMix),	/* "``/", */
   tFuncV(tNone,tZero,tMix),	/* "``%", */
-  tFuncV(tZero,tZero,tMix),	/* "`+=", */
+  tFuncV(tZero,tVoid,tMix),	/* "`+=", */
   tFuncV(tStr,tVoid,tInt),	/* "_is_type", */
   tFuncV(tInt tOr(tMap(tStr,tInt),tVoid),tVoid,tStr),	/* "_sprintf", */
   tFuncV(tMix,tVoid,tInt),	/* "_equal", */
@@ -683,32 +683,36 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[lfun::create()], @[predef::destruct()]
  */
 
-/*! @decl mixed lfun::`+(zero arg, zero ... rest)
+/*! @decl mixed lfun::`+(zero arg)
  *!
  *!   Left side addition/concatenation callback.
  *!
- *!   This is used by @[predef::`+]. It's called with any arguments
+ *!   This is used by @[predef::`+]. It's called with the argument
  *!   that follow this object in the argument list of the call to
  *!   @[predef::`+]. The returned value should be a new instance that
  *!   represents the addition/concatenation between this object and
- *!   the arguments in the order they are given.
+ *!   the argument.
  *!
  *! @note
  *!   It's assumed that this function is side-effect free.
+ *!
+ *! @note
+ *!   In versions of Pike prior to 8.1.10 this function could get
+ *!   called with multiple arguments.
  *!
  *! @seealso
  *!   @[lfun::``+()], @[lfun::`+=()], @[predef::`+()]
  */
 
-/*! @decl this_program lfun::`+=(zero arg, zero ... rest)
+/*! @decl this_program lfun::`+=(zero arg)
  *!
  *!   Destructive addition/concatenation callback.
  *!
- *!   This is used by @[predef::`+]. It's called with any arguments
+ *!   This is used by @[predef::`+]. It's called with the argument
  *!   that follow this object in the argument list of the call to
  *!   @[predef::`+]. It should update this object to represent the
- *!   addition/concatenation between it and the arguments in the order
- *!   they are given. It should always return this object.
+ *!   addition/concatenation between it and the argument.
+ *!   It should always return this object.
  *!
  *! @note
  *!   This function should only be implemented if @[lfun::`+()] also
@@ -723,22 +727,30 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @expr{+@} operator and the @expr{+=@} operator can call either
  *!   one.
  *!
+ *! @note
+ *!   In versions of Pike prior to 8.1.10 this function could get
+ *!   called with multiple arguments.
+ *!
  *! @seealso
  *!   @[lfun::`+()], @[predef::`+()]
  */
 
-/*! @decl mixed lfun::``+(zero arg, zero ... rest)
+/*! @decl mixed lfun::``+(zero arg)
  *!
  *!   Right side addition/concatenation callback.
  *!
- *!   This is used by @[predef::`+]. It's called with any arguments
- *!   that precede this object in the argument list of the call to
- *!   @[predef::`+]. The returned value should be a new instance that
- *!   represents the addition/concatenation between the arguments in
- *!   the order they are given and this object.
+ *!   This is used by @[predef::`+]. It's called with the sum of the
+ *!   arguments that precede this object in the argument list of the
+ *!   call to @[predef::`+]. The returned value should be a new
+ *!   instance that represents the addition/concatenation between the
+ *!   argument and this object.
  *!
  *! @note
  *!   It's assumed that this function is side-effect free.
+ *!
+ *! @note
+ *!   In versions of Pike prior to 8.1.10 this function could get
+ *!   called with multiple arguments.
  *!
  *! @seealso
  *!   @[lfun::`+()], @[predef::`+()]
