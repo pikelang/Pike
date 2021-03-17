@@ -451,7 +451,6 @@ testfont binary
 /src/modules/Image/encodings/ilbm.c foreign_ident
 /src/modules/Image/encodings/neo.c foreign_ident
 /src/modules/Image/encodings/pcx.c foreign_ident
-/src/modules/Image/encodings/png.c foreign_ident
 /src/modules/Image/encodings/pnm.c foreign_ident
 /src/modules/Image/encodings/psd.c foreign_ident
 /src/modules/Image/encodings/psd_constant_strings.h foreign_ident
