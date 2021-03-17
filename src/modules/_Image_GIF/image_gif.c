@@ -1,9 +1,5 @@
-/* $Id: image_gif.c,v 1.2 2000/12/01 08:10:31 hubbe Exp $ */
-
 /*
 **! module Image
-**! note
-**!	$Id: image_gif.c,v 1.2 2000/12/01 08:10:31 hubbe Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -35,7 +31,6 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.2 2000/12/01 08:10:31 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

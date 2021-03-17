@@ -443,7 +443,6 @@ testfont binary
 /src/modules/_Image_GIF/configure.in foreign_ident
 /src/modules/_Image_GIF/gif_lzw.c foreign_ident
 /src/modules/_Image_GIF/gif_lzw.h foreign_ident
-/src/modules/_Image_GIF/image_gif.c foreign_ident
 /src/modules/_Image_JPEG/Makefile.in foreign_ident
 /src/modules/_Image_JPEG/acconfig.h foreign_ident
 /src/modules/_Image_JPEG/configure.in foreign_ident
