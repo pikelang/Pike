@@ -441,6 +441,7 @@ void debug_free_type(struct pike_type *t)
   }
 }
 
+/* NB: Steals the references to car and cdr. */
 static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 					      struct pike_type *car,
 					      struct pike_type *cdr,
