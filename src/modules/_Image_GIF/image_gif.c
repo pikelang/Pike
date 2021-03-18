@@ -1922,6 +1922,12 @@ void image_gif__decode(INT32 args)
 			"array has illegal contents "
 			"(illegal type(s) in block array in position %d)\n",i);
 
+               if (b->item[7].u.integer > 12 || b->item[7].u.integer < 2)
+                  Pike_error("Image.GIF._decode: given (__decode'd) "
+                             "array has illegal contents "
+                             "(illegal bit count in block array in position %d)\n",
+                             i);
+
 	       push_int(GIF_RENDER);
 
 	       push_svalue(b->item+1);
