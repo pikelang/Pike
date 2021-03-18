@@ -8,7 +8,8 @@
 //! of CPU cores.
 //!
 
-#define DEFAULT_COMPRESSION_LEVEL 3
+#define DEFAULT_COMPRESSION_LEVEL	3
+#define MINFLUSHBUFFERSIZE		2048
 
 inherit .Base;
 
@@ -27,7 +28,10 @@ protected string(8bit) process_header(string(8bit) data) {
 
 protected void process_data(string(8bit) data) {
   crc = Gz.crc32(data, crc);
-  buffer->add(_engine->deflate(data, Gz.NO_FLUSH));
+  buffer->add(_engine->deflate(data,
+   // Avoid a small leftover header/buffer
+   sizeof(buffer) && sizeof(buffer) < MINFLUSHBUFFERSIZE
+    ? Gz.PARTIAL_FLUSH : Gz.NO_FLUSH));
 }
 
 protected void process_trailer() {        // Gz.FINISH
