@@ -556,8 +556,9 @@ static int _png_write_rgb(rgb_group *w1,
 	 {
 	    case 1:
 	       x=width;
-	       while (len--)
+	       while (len-- && n >= (x > 8 ? 8 : x))
 	       {
+                  n -= x > 8 ? 8 : x;
 		  if (x) x--,*(d1++)=((*s)&128)?white:black;
 		  if (x) x--,*(d1++)=((*s)&64)?white:black;
 		  if (x) x--,*(d1++)=((*s)&32)?white:black;
@@ -572,9 +573,9 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	    case 2:
 	       x=width;
-	       if(len>(n/4)) len=n/4;
-	       while (len--)
+	       while (len-- && n >= (x > 4 ? 4 : x))
 	       {
+                  n -= x > 4 ? 4 : x;
 		  if (x) x--,*(d1++)=grey4[((*s)>>6)&3];
 		  if (x) x--,*(d1++)=grey4[((*s)>>4)&3];
 		  if (x) x--,*(d1++)=grey4[((*s)>>2)&3];
