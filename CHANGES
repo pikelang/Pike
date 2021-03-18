@@ -9,6 +9,29 @@ o Inotify
   add_watch() now returns -1 for filsystem-related failures
   that may be due to the filsystem being in flux.
 
+o Image.GIF
+
+  - Improve detection of malformed LZW bit sizes.
+  - Improve detection of malformed LZW dictionary extensions.
+
+o Image.PNG
+
+  Improved size check better detects malformed PNG images.
+
+o Image.TGA
+
+  - Improve detection of malformed TGA images.
+  - Correctly update pointer when horizontal or vertical flipping is
+    requested by the TGA image.
+
+o Image.TIM
+
+  Improved size checks better detect malformed TIM images.
+
+o Image.WBF
+
+  Improved size check better detects malformed WBF images.
+
 Building & Tools
 ----------------
 
