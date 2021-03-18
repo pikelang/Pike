@@ -203,6 +203,8 @@ void img_tim_decode(INT32 args, int header_only)
   
   if(attr&FLAG_CLUT) {
     bsize = s[0]|(s[1]<<8)|(s[2]<<16)|(s[3]<<24);   
+    if (bsize > len || bsize < 0)
+      Pike_error("Malformed TIM.\n");
 #ifdef TIM_DEBUG
     printf("bsize: %d\n", bsize);
 #endif
@@ -211,6 +213,9 @@ void img_tim_decode(INT32 args, int header_only)
 
   /* FIXME: Unknown what this comes from */
   s += 4; len -= 4;
+
+  if (len < 8)
+    Pike_error("Malformed TIM.\n");
 
   switch(attr&7) {
    case MODE_DC15:
