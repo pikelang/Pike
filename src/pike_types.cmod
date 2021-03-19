@@ -4531,7 +4531,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     free_type(tmp);
     return pop_unfinished_type();
   case T_SCOPE:
-    tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+    tmp = low_type_binop(op, a->cdr, b, remap,
+			 aflags | PT_FLAG_CMP_INSEPARABLE, bflags,
+			 remap_flags);
     if (!tmp) return NULL;
     type_stack_mark();
     push_finished_type(tmp);
@@ -4557,7 +4559,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     free_type(tmp);
     return pop_unfinished_type();
   case T_SCOPE:
-    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    tmp = low_type_binop(op, a, b->cdr, remap,
+			 aflags, bflags | PT_FLAG_CMP_INSEPARABLE,
+			 remap_flags);
     if (!tmp) return NULL;
     type_stack_mark();
     push_finished_type(tmp);
@@ -4566,14 +4570,29 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return pop_unfinished_type();
   }
 
+  if (remap_flags & PT_FLAG_REMAP_TRACE) {
+    fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
+  }
+
   /* Check consolidated types. */
   switch(a->type) {
   case T_OR:
     /* (a1 | a2) op b  <==> (a1 op b) | (a2 op b) */
     tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
     tmp2 = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
-    if (!tmp2) return tmp;
-    if (!tmp) return tmp2;
+    if ((op & PT_BINOP_NOT_A) || (aflags & PT_FLAG_CMP_INSEPARABLE)) {
+      if (!tmp2) {
+	free_type(tmp);
+	return NULL;
+      }
+      if (!tmp) {
+	free_type(tmp2);
+	return NULL;
+      }
+    } else {
+      if (!tmp2) return tmp;
+      if (!tmp) return tmp2;
+    }
 
     type_stack_mark();
     push_finished_type(tmp);
@@ -4897,6 +4916,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       case PT_BINOP_MINUS:
 	/* Subtraction (A - B)
 	 *
+	 * Old approach (broken, separable argument types):
+	 *
 	 *   The result is the subset of function A where at least one
 	 *   of the arguments or the return type differs from function B.
 	 *
@@ -4954,8 +4975,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
 	/* FIXME: Use implicit nullable only for legacy types. */
 	tmp = low_type_binop(op, ai->car, bi->car, remap,
-			     avoidable | PT_FLAG_CMP_NULLABLE,
-			     bvoidable | PT_FLAG_CMP_NULLABLE,
+			     avoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
+			     bvoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
 			     remap_flags);
 
 	/* Advance to the next argument. */
@@ -4993,8 +5014,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  if (tmp != a->car) {
 	    if (!tmp) {
 	      tmp = low_type_binop(op, a->cdr, b->cdr, remap,
-				   PT_FLAG_CMP_VOIDABLE,
-				   0, remap_flags);
+				   PT_FLAG_CMP_VOIDABLE |
+				   (aflags & PT_FLAG_CMP_INSEPARABLE),
+				   0 |
+				   (bflags & PT_FLAG_CMP_INSEPARABLE),
+				   remap_flags);
 	      if (tmp) {
 		push_finished_type(tmp);
 		push_type(T_VOID);
@@ -5035,8 +5059,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
 	  /* NB: Ignore the return type if matching against void. */
 	  tmp = low_type_binop(op, aret, bret, remap,
-			       PT_FLAG_CMP_VOIDABLE,
-			       0, remap_flags);
+			       PT_FLAG_CMP_VOIDABLE |
+			       (aflags & PT_FLAG_CMP_INSEPARABLE),
+			       0 |
+			       (bflags & PT_FLAG_CMP_INSEPARABLE),
+			       remap_flags);
 
 	  if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	    fprintf(stderr, "ret tmp: ");
@@ -5089,6 +5116,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	}
 	while (nargs-- > 1) push_type(T_OR);
 	return pop_unfinished_type();
+
       default:
 	/* Fall back to complex_function below. */
 	break;
@@ -5292,6 +5320,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	case PT_BINOP_AND:
 	  return remap_markers(a, NULL, remap, remap_flags);
 	case PT_BINOP_INVERSE_MINUS:
+	  if (bflags & PT_FLAG_CMP_INSEPARABLE) {
+	    return NULL;
+	  }
 	  type_stack_mark();
 	  push_remap_markers(a, NULL, remap, remap_flags);
 	  push_type(T_NOT);
@@ -5311,6 +5342,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  return remap_markers(b, NULL, remap,
 			       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	case PT_BINOP_MINUS:
+	  if (aflags & PT_FLAG_CMP_INSEPARABLE) {
+	    return NULL;
+	  }
 	  type_stack_mark();
 	  push_remap_markers(b, NULL, remap,
 			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
@@ -5369,6 +5403,10 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       break;
     case PT_BINOP_NOT_A:
     case PT_BINOP_NOT_A_OR_B:
+      if (aflags & PT_FLAG_CMP_INSEPARABLE) {
+	pop_stack_mark();
+	return NULL;
+      }
       push_remap_markers(a, NULL, remap, remap_flags);
       push_type(T_NOT);
       break;
@@ -5380,6 +5418,10 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       break;
     case PT_BINOP_NOT_B:
     case PT_BINOP_A_OR_NOT_B:
+      if (bflags & PT_FLAG_CMP_INSEPARABLE) {
+	pop_stack_mark();
+	return NULL;
+      }
       push_remap_markers(b, NULL, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       push_type(T_NOT);
@@ -5394,6 +5436,10 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       break;
     case PT_BINOP_NOR:
     case PT_BINOP_XNOR:
+      if ((aflags | bflags) & PT_FLAG_CMP_INSEPARABLE) {
+	pop_stack_mark();
+	return NULL;
+      }
       push_remap_markers(b, NULL, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       push_remap_markers(a, NULL, remap, remap_flags);
@@ -5553,6 +5599,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	pop_stack_mark();
 	return NULL;
       }
+
+      if ((op == PT_BINOP_MINUS) && (aflags & PT_FLAG_CMP_INSEPARABLE)) {
+	if ((nbounds != 1) || (peek_type_stack() != a)) {
+	  compiler_discard_type();
+	  return NULL;
+	}
+      }
+
       /* NB: Loop starts at 1! */
       for (i = 1; i < nbounds; i++) {
 	push_type(T_OR);
@@ -5563,6 +5617,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_ARRAY:
   case T_MAPPING:
   case T_STRING:
+    /* FIXME: Handle PT_FLAG_CMP_INSEPARABLE. */
     tmp = low_type_binop(op, a->car, b->car, remap,
 			 0, 0, remap_flags);
     if (!tmp && (op == PT_BINOP_AND)) return NULL;
@@ -5614,6 +5669,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_MULTISET:
   case T_PROGRAM:
   case T_TYPE:
+    /* FIXME: Handle PT_FLAG_CMP_INSEPARABLE. */
     tmp = low_type_binop(op, a->car, b->car, remap,
 			 0, 0, remap_flags);
     if (!tmp) return NULL;
@@ -5624,6 +5680,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return pop_unfinished_type();
 
   case T_OBJECT:
+    /* FIXME: Handle PT_FLAG_CMP_INSEPARABLE. */
     switch(op) {
     case PT_BINOP_AND:
       if (!a->cdr) {
