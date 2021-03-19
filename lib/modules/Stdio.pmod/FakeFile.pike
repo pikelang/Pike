@@ -249,7 +249,8 @@ private void do_readcb() {
     string s = data[ptr..];
     ptr = sizeof(data);
     call_out(read_cb, 0, id, s);
-  } else if (ptr == sizeof(data)) {
+  }
+  if (ptr == sizeof(data)) {
     function cb;
     if (write_cb) {
       cb = write_cb;
@@ -258,8 +259,6 @@ private void do_readcb() {
       cb = write_oob_cb;
 #endif /* 0 */
     } else if (close_cb) {
-      // FIXME: This seems a bit strange; shouldn't the sender
-      //        indicate that it is done before we call the close_cb?
       cb = close_cb;
       close_cb = 0;	      // Close callback only once please
     }
