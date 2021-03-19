@@ -506,189 +506,190 @@ PIKECLASS Shuffle
 
   static void __send_more_callback( struct Shuffle_struct *t, int amount )
   {
-    int sent, len, amntleft = amount;
-    int reason = -1;
     struct source *cursource = t->current_source;
-    struct iovec *iov
+    int reason = -2;
     SHUFFLE_DEBUG2("__send_more_callback(%d)\n", t, amount );
-    t->iovamount = -1;
-    for (;;)
-    {
-      struct data leftovers;
-      if (amntleft) {
-        if (t->iovamount + 1 < t->iovfilled) {
-          int iova = ++t->iovamount;
-          int len;
-          amntleft -= t->iov[iova].iov_len;
-          if (amntleft >= 0)
-            continue;
-          allocmore_iov(t);
-          memmove(t->iov + iova + 2, t->iov + iova + 1,
-                  (t->iovfilled++ - iova - 1) * sizeof(*t->iov));
-          len = t->iov[iova].iov_len += amntleft;
-          t->iov[iova + 1].iov_base = t->iov[iova].iov_base + len;
-          t->iov[iova + 1].iov_len = -amntleft;
-          {
-            struct source *sp;
-            iova++;
-            /* Adjust dataref entries to account for moved iov part */
-            for (sp = cursource; sp; sp = sp->next)
-              if (iova >= sp->dataref)
-                sp->dataref++;
+    do {		/* Outer loop, start over as long as amount > 0 */
+      int sent, len, amntleft = amount;
+      struct iovec *iov;
+
+      t->iovamount = -1;
+      for (;;) {		/* Inner loop source collection */
+        struct data leftovers;
+        if (amntleft) {
+          if (t->iovamount + 1 < t->iovfilled) {
+            int iova = ++t->iovamount;
+            int len;
+            amntleft -= t->iov[iova].iov_len;
+            if (amntleft >= 0)
+              continue;
+            allocmore_iov(t);
+            memmove(t->iov + iova + 2, t->iov + iova + 1,
+                    (t->iovfilled++ - iova - 1) * sizeof(*t->iov));
+            len = t->iov[iova].iov_len += amntleft;
+            t->iov[iova + 1].iov_base = t->iov[iova].iov_base + len;
+            t->iov[iova + 1].iov_len = -amntleft;
+            {
+              struct source *sp;
+              iova++;
+              /* Adjust dataref entries to account for moved iov part */
+              for (sp = cursource; sp; sp = sp->next)
+                if (iova >= sp->dataref)
+                  sp->dataref++;
+            }
+            break;
           }
+        } else
+          break;
+      
+        cursource = _active_source(cursource);
+        if (cursource && cursource->eof) {
+          cursource = cursource->next;
+          cur_setup_callbacks(cursource);	  // FIXME setup too often?
+        }
+      
+        if (t->iovfilled && cursource && cursource->dataref == t->iovfilled)
+          break;			/* Still working on the current source */
+      
+        if (!cursource) {
+          SHUFFLE_DEBUG1("__send_more_callback(): no sources\n", t );
+          reason = 0;
           break;
         }
-      } else
-        break;
-
-      cursource = _active_source(cursource);
-      if (cursource && cursource->eof) {
-        cursource = cursource->next;
-        cur_setup_callbacks(cursource);	  // FIXME setup too often?
+      
+        /* The length argument to get_data is a guideline, the callee can
+         * ignore it if so desired and return more data.
+         */
+        leftovers = cursource->get_data(cursource, amntleft);
+      
+        if (cursource->eof) {
+          cur_remove_callbacks(cursource);  // FIXME removed too often?
+          if (leftovers.len == -2)
+            leftovers.len = 0;	/* force eof recognition */
+        }
+        if (leftovers.len == -2) {
+          /* come back later (nonblocking source without more data to read) */
+          SHUFFLE_DEBUG1("__send_more_callback(): read pending\n", t );
+          __remove_callbacks( t );
+          cursource->set_callback(cursource,
+          				(void *)_set_callbacks,
+                        /* Shuffler */    t->self);
+          reason = -1;
+          break;
+        } else if (leftovers.len < 0) {
+          SHUFFLE_DEBUG1("__send_more_callback(): read error\n", t );
+          /* read error */
+          reason = 3;
+          break;
+        }
+      
+        if (t->skip >= leftovers.len) {
+          t->skip -= leftovers.len;
+          continue;
+        }
+        leftovers.data += t->skip;
+        leftovers.len -= t->skip;
+        t->skip = 0;
+        if (t->left >= 0) {
+          if (!t->left) {
+            reason = 1;
+            break;
+          }
+          if (t->left < leftovers.len)
+            leftovers.len = t->left;
+          t->left -= leftovers.len;
+        }
+        if (TYPEOF(cursource->wrap_callback) == PIKE_T_FUNCTION) {
+          SHUFFLE_DEBUG2("_wrap: Calling wrap callback: %p\n", t,
+                         cursource->wrap_callback.u.object);
+          ref_push_object(t->box.ref_obj);
+          push_int(leftovers.len);
+          apply_svalue(&cursource->wrap_callback, 2);
+          assign_svalue(&cursource->wrap_array, Pike_sp - 1);
+          pop_stack();
+        }
+        {
+          struct pike_string *wrap;
+          SHUFFLE_DEBUG2("__send_more_callback(): sending(%d)\n", t, amntleft);
+      
+          if (wrap = get_wrapstring(cursource, 0))
+            amntleft = add_to_iov(t, wrap->str, wrap->len, amntleft);
+          amntleft = add_to_iov(t, leftovers.data, leftovers.len, amntleft);
+          cursource->dataref = t->iovfilled;
+          if (wrap = get_wrapstring(cursource, 1)) {
+            amntleft = add_to_iov(t, wrap->str, wrap->len, amntleft);
+            cursource->dataref = t->iovfilled;
+          }
+        }
       }
-
-      if (t->iovfilled && cursource && cursource->dataref == t->iovfilled)
-        break;			/* Still working on the current source */
-
-      if( !cursource ) {
-	SHUFFLE_DEBUG1("__send_more_callback(): no sources\n", t );
-        reason = 0;
-        break;
-      }
-
-      /* The length argument to get_data is a guideline, the callee can
-       * ignore it if so desired and return more data.
-       */
-      leftovers = cursource->get_data(cursource, amntleft);
-
-      if (cursource->eof) {
-        cur_remove_callbacks(cursource);  // FIXME removed too often?
-        if (leftovers.len == -2)
-          leftovers.len = 0;	/* force eof recognition */
-      }
-      if( leftovers.len == -2 )
-      {
-	/* come back later (nonblocking source without more data to read) */
-	SHUFFLE_DEBUG1("__send_more_callback(): read pending\n", t );
-	__remove_callbacks( t );
-	cursource->set_callback(cursource,
-					(void *)_set_callbacks,
-                      /* Shuffler */    t->self);
-	break;
-      }
-      else if( leftovers.len < 0 )
-      {
-	SHUFFLE_DEBUG1("__send_more_callback(): read error\n", t );
-	/* read error */
-        reason = 3;
-	break;
-      }
-
-      if (t->skip >= leftovers.len) {
-        t->skip -= leftovers.len;
-        continue;
-      }
-      leftovers.data += t->skip;
-      leftovers.len -= t->skip;
-      t->skip = 0;
-      if (t->left >= 0) {
-        if (!t->left) {
+      
+      /* Now it's time to actually send the data. */
+      if (++t->iovamount) {
+        iov = t->iov;
+        sent = -1;
+        if (t->box.fd >= 0) {
+          THREADS_ALLOW();
+          sent = writev(t->box.fd, iov, t->iovamount);
+          THREADS_DISALLOW();
+        } else if(t->file_obj) {
+          int i;
+          for (i = 0; i < t->iovamount; i++) {
+            int wret, len;
+            struct pike_string *s =
+             make_shared_binary_string(iov[i].iov_base, len = iov[i].iov_len);
+            push_string(s);
+            apply (t->file_obj, "write", 1);
+            if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
+              wret = Pike_sp[-1].u.integer;
+            else {
+              SHUFFLE_DEBUG2(
+                       "Oops: write returned object of type %d, not integer\n",
+              	       t, TYPEOF(Pike_sp[-1]) );
+              wret = len;
+            }
+            pop_stack();
+            SHUFFLE_DEBUG3("__send_more_callback(): sending(%d): sent %d\n", t,
+            	       MINIMUM(leftovers.len,amount),sent );
+            if (wret < 0)
+              break;
+            if (sent < 0)
+              sent = 0;
+            sent += wret;
+            if (wret < len)
+              break;
+          }
+        }
+        if (sent < 0) {
           reason = 1;
           break;
-        }
-        if (t->left < leftovers.len)
-          leftovers.len = t->left;
-        t->left -= leftovers.len;
-      }
-      if (TYPEOF(cursource->wrap_callback) == PIKE_T_FUNCTION) {
-        SHUFFLE_DEBUG2("_wrap: Calling wrap callback: %p\n", t,
-                       cursource->wrap_callback.u.object);
-        ref_push_object(t->box.ref_obj);
-        push_int(leftovers.len);
-        apply_svalue(&cursource->wrap_callback, 2);
-        assign_svalue(&cursource->wrap_array, Pike_sp - 1);
-        pop_stack();
-      }
-      {
-        struct pike_string *wrap;
-        SHUFFLE_DEBUG2("__send_more_callback(): sending(%d)\n", t, amntleft);
-
-        if (wrap = get_wrapstring(cursource, 0)) {
-          amntleft = add_to_iov(t, wrap->str, wrap->len, amntleft);
-        }
-        amntleft = add_to_iov(t, leftovers.data, leftovers.len, amntleft);
-        cursource->dataref = t->iovfilled;
-        if (wrap = get_wrapstring(cursource, 1)) {
-          amntleft = add_to_iov(t, wrap->str, wrap->len, amntleft);
-          cursource->dataref = t->iovfilled;
-        }
-      }
-    }
-
-    /* Now it's time to actually send the data. */
-    if (++t->iovamount) {
-      iov = t->iov;
-      sent = -1;
-      if (t->box.fd >= 0) {
-        THREADS_ALLOW();
-        sent = writev(t->box.fd, iov, t->iovamount);
-        THREADS_DISALLOW();
-      } else if(t->file_obj) {
-        int i;
-        for (i = 0; i < t->iovamount; i++) {
-          int wret, len;
-          struct pike_string *s =
-           make_shared_binary_string(iov[i].iov_base, len = iov[i].iov_len);
-          push_string(s);
-          apply (t->file_obj, "write", 1);
-          if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
-            wret = Pike_sp[-1].u.integer;
-          else {
-            SHUFFLE_DEBUG2("Oops: write returned object of type %d, not integer\n",
-            	       t, TYPEOF(Pike_sp[-1]) );
-            wret = len;
+        } else if (sent) {
+          int i;
+          amount -= sent;
+          for (i = 0; i < t->iovamount; ) {
+            int n = iov[i].iov_len;
+            if (sent < n)
+              n = sent;
+            sent -= n;
+            if (!sent) {
+              iov[i].iov_len -= n;
+              iov[i].iov_base += n;
+              break;
+            }
+            _free_all_sources(t, ++i);
           }
-          pop_stack();
-          SHUFFLE_DEBUG3("__send_more_callback(): sending(%d): sent %d\n", t,
-          	       MINIMUM(leftovers.len,amount),sent );
-          if (wret < 0)
-            break;
-          if (sent < 0)
-            sent = 0;
-          sent += wret;
-          if (wret < len)
-            break;
-        }
-      }
-      if (sent < 0) {
-        reason = 1;
-      } else if (sent) {
-        int i;
-        amount -= sent;
-        for (i = 0; i < t->iovamount; ) {
-          int n = iov[i].iov_len;
-          if (sent < n)
-            n = sent;
-          sent -= n;
-          if (!sent) {
-            iov[i].iov_len -= n;
-            iov[i].iov_base += n;
-            break;
+          if (!iov[i].iov_len)
+            _free_all_sources(t, ++i);
+          memmove(iov, iov + i, (t->iovfilled - i) * sizeof(*iov));
+          t->iovfilled -= i;
+          {
+            struct source *sp;
+            for (sp = t->current_source; sp; sp = sp->next)
+              sp->dataref -= i;
           }
-          _free_all_sources(t, ++i);
-        }
-        if (!iov[i].iov_len)
-          _free_all_sources(t, ++i);
-        memmove(iov, iov + i, (t->iovfilled - i) * sizeof(*iov));
-        t->iovfilled -= i;
-        {
-          struct source *sp;
-          for (sp = t->current_source; sp; sp = sp->next)
-            sp->dataref -= i;
         }
       }
-    }
-
+    } while (reason < -1 && amount);
+      
     if (amount)
       _give_back( t, amount );
     if (reason >= 0)
