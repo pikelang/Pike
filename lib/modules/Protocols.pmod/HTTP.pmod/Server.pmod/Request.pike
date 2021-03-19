@@ -810,8 +810,7 @@ void response_and_finish(mapping m, function|void _log_cb)
      if (m->file || m->data) {
        if (arrayp(m->data)) {
          void addrest() {
-           foreach (m->data; ; mixed data)
-             sf->add_source(data, chunker);
+           sf->add_source(m->data, chunker);
            sf->add_source("0\r\n\r\n");   // Trailing headers can be added here
            sent += 5;
          }
