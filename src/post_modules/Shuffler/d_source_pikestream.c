@@ -48,11 +48,11 @@ static void setup_callbacks( struct source *src )
 {
   struct pf_source *s = (struct pf_source *)src;
   ref_push_object(s->self);
-  apply(s->obj, "set_read_callback", 1);
+  apply(s->obj, "set_close_callback", 1);	/* Set this first */
   pop_stack();
   ref_push_object(s->self);
-  apply(s->obj, "set_close_callback", 1);
-  pop_stack();
+  apply(s->obj, "set_read_callback", 1);	/* Set this second */
+  pop_stack();					/* Ordering is significant */
 }
 
 static void remove_callbacks( struct source *src )
@@ -60,10 +60,10 @@ static void remove_callbacks( struct source *src )
   struct pf_source *s = (struct pf_source *)src;
   if (s->obj && s->obj->prog) {
     push_int(0);
-    apply(s->obj, "set_read_callback", 1);
+    apply(s->obj, "set_close_callback", 1);
     pop_stack();
     push_int(0);
-    apply(s->obj, "set_close_callback", 1);
+    apply(s->obj, "set_read_callback", 1);
     pop_stack();
   }
 }
@@ -110,12 +110,12 @@ static void f_got_data( INT32 args )
   remove_callbacks( (struct source *)s );
 
   if (args < 2
-   || TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
+   || TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {	/* Called as close_cb? */
     s->eof = 1;		    /* signal EOF */
     pop_n_elems(args);
     if (!s->available)
       goto cb;
-  } else {
+  } else {					/* Called as read_cb */
     size_t slen;
     frees(s);
     s->str = Pike_sp[-1].u.string;
