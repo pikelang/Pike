@@ -858,7 +858,7 @@ PIKECLASS Shuffle
         Pike_error("Attempt to add a cyclic array to a shuffler.\n");
 
       for(i=0; i < argp->size; i++ )
-        low_add_source(this, argp->item+i, 0, 0, -1);
+        low_add_source(this, argp->item+i, wrap_cb, 0, -1);
 
       END_CYCLIC();
     } else {
@@ -897,7 +897,9 @@ PIKECLASS Shuffle
    /*! @decl void add_source( mixed source, int|void start, int|void length );
     *! @decl void add_source( mixed source, @
     *!                        function(Shuffle, int:array(string)) wrap_cb );
-    *! @decl void add_source( array source );
+    *! @decl void add_source( array source);
+    *! @decl void add_source( array source, @
+    *!                        function(Shuffle, int:array(string)) wrap_cb );
     *! Add a new source to the list of data sources.
     *! The data from the sources will be sent in order.
     *!
@@ -926,7 +928,7 @@ PIKECLASS Shuffle
     *!     (set_read_callback and set_close_callback).
     *!   @item array
     *!     An array of any of the supported sources.  Note that neither
-    *!     @[start], nor @[length], nor @[wrap_cb] cannot be specified then.
+    *!     @[start] nor @[length] can be specified then.
     *! @enddl
     */
     optflags OPT_SIDE_EFFECT;
@@ -936,9 +938,6 @@ PIKECLASS Shuffle
 
     if( !THIS->file_obj )
       Pike_error("Cannot add source, no destination.\n");
-
-    if (TYPEOF(*source) == PIKE_T_ARRAY && (start || length))
-      Pike_error("An array source does not support extra arguments.\n");
 
     if (start)
       switch (TYPEOF(*start)) {
@@ -967,6 +966,10 @@ PIKECLASS Shuffle
       if (!rlength)
         return;
     }
+
+    if (TYPEOF(*source) == PIKE_T_ARRAY && (start && !wrap_cb || length))
+      Pike_error(
+       "An array source does not support start or length arguments.\n");
 
     low_add_source(THIS, source, wrap_cb, rstart, rlength);
   }
