@@ -815,7 +815,7 @@ void response_and_finish(mapping m, function|void _log_cb)
            sf->add_source("0\r\n\r\n");   // Trailing headers can be added here
            sent += 5;
          }
-         if (m->start)
+         if (m->start) {
            sf->set_done_callback(lambda() {
               // Special offset handling, the header has been sent already
              // using the previous shuffle
@@ -825,7 +825,7 @@ void response_and_finish(mapping m, function|void _log_cb)
              sf->set_done_callback(send_close);
              sf->start();
            });
-         else
+         } else
            addrest();
        } else {
          sf->add_source(m->file || m->data, m->start, m->size);
@@ -885,18 +885,12 @@ void finish(int clean)
 
    send_buf = 0;
 
-   if (!clean
-       || !my_fd
-       || !keep_alive)
-   {
-      if (my_fd) { catch(my_fd->close()); destruct(my_fd); my_fd=0; }
-      return;
+   if (clean && my_fd && keep_alive) {
+     // create new request
+
+     this_program r=server_port->request_program();
+     r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
    }
-
-   // create new request
-
-   this_program r=server_port->request_program();
-   r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
 
    my_fd=0; // and drop this object
 }
