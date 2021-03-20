@@ -90,13 +90,6 @@ PIKECLASS Buffer
 
   CVAR Buffer b;
 
-  EXTRA
-  {
-    PIKE_MAP_VARIABLE("__output", OFFSETOF(Buffer_struct, b.output),
-		      tMix, PIKE_T_MIXED, ID_PRIVATE|ID_HIDDEN|ID_PROTECTED);
-  }
-
-
   static void io_set_error_mode( Buffer *io, struct program *m )
   {
     if( m ) add_ref(m);
@@ -191,6 +184,9 @@ PIKECLASS Buffer
         }
 	case PIKE_T_OBJECT:
 	  free_object(io->source.obj);
+	  break;
+	case PIKE_T_FUNCTION:
+	  free_object(io->source.output);
 	  break;
       }
       io->sourcetype = 0;
@@ -488,19 +484,10 @@ PIKECLASS Buffer
 
   PMOD_EXPORT void io_actually_trigger_output( Buffer *io )
   {
-    if (UNLIKELY(!io->output.u.object->prog)) {
-      /* Destructed object. */
-      free_svalue(&io->output);
-      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-      return;
-    }
-
-    if ( io->output.u.object ) {
-      move_svalue(Pike_sp++, &io->output);
-      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-      apply_svalue(Pike_sp-1, 0);
-      pop_n_elems(2);
-    }
+    push_object(io->source.output);
+    io->sourcetype = 0;
+    apply_svalue(Pike_sp-1, 0);
+    pop_n_elems(2);
   }
 
   static int io_range_error( Buffer *io, ptrdiff_t howmuch )
@@ -1040,15 +1027,22 @@ PIKECLASS Buffer
   {
     Buffer *io = THIS;
 
-    if (f)
-      assign_svalue(&io->output, f);
-    else {
-      if (io->output.u.object) {
-        free_svalue(&io->output);
-        io->output.u.object = 0;	// free_svalue() puts in -1
-      }
-      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+    switch (io->sourcetype) {
+      default:
+        Pike_error("Impossible to add callback on a dependent buffer.");
+        /* FALLTHROUGH */
+      case PIKE_T_FUNCTION:
+        free_object(io->source.output);
+        break;
+      case 0:;
+        /* FALLTHROUGH */
     }
+
+    if (f && TYPEOF(*f) == PIKE_T_OBJECT) {
+      add_ref(io->source.output = f->u.object);
+      io->sourcetype = PIKE_T_FUNCTION;
+    } else
+      io->sourcetype = 0;
   }
 
   /*! @decl int(-1..) output_to( Stdio.Stream|function(string(8bit):int) fun, @
@@ -2994,8 +2988,7 @@ PIKECLASS Buffer
   {
     struct object *o = fast_clone_object( Buffer_RewindKey_program );
     struct Buffer_RewindKey_struct *s = (void*)o->storage;
-    add_ref(io->this);
-    s->obj = io->this;
+    add_ref(s->obj = io->this);
     s->rewind_to = io->offset;
     s->io = io;
     s->auto_mode = auto_mode;

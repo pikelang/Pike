@@ -12,10 +12,9 @@ struct _Buffer
     struct pike_string *str;	/* PIKE_T_STRING */
     struct object *obj;		/* PIKE_T_OBJECT */
     struct _Buffer *parent;	/* PIKE_T_MIXED */
+    struct object *output;      /* PIKE_T_FUNCTION */
   } source;
-  int sourcetype;		/* type for the source union */
-
-  struct svalue output;
+  INT32 sourcetype;		/* type for the source union */
 
   INT32 locked, locked_move;
   float max_waste;
@@ -79,7 +78,7 @@ static INT_TYPE io_consume( Buffer *io, ptrdiff_t num )
 PIKE_UNUSED_ATTRIBUTE
 static void io_trigger_output( Buffer *io )
 {
-  if( UNLIKELY(io->output.u.object) )
+  if (UNLIKELY(io->sourcetype == PIKE_T_FUNCTION))
     io_actually_trigger_output(io);
 }
 
