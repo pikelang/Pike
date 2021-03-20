@@ -9,7 +9,7 @@
 //!
 
 #define DEFAULT_COMPRESSION_LEVEL	3
-#define MINFLUSHBUFFERSIZE		2048
+#define MINFLUSHBUFFERSIZE		8192	// For large MTUs
 
 inherit .Base;
 

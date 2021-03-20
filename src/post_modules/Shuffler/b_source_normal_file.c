@@ -17,8 +17,7 @@
 
 #include "shuffler.h"
 
-#define CHUNK 8192
-
+#define CHUNK (64*1024)
 
 /* Source: Normal file
  * Argument: Stdio.File instance pointing to a normal file

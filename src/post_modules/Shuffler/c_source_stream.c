@@ -17,7 +17,7 @@
 
 #include "shuffler.h"
 
-#define CHUNK 8192
+#define CHUNK (64*1024)
 
 
 /* Source: Stream
