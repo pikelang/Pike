@@ -244,13 +244,24 @@ int(0..1) truncate(int length) {
   return sizeof(data)==length;
 }
 
+private void do_call_read_cb(function(mixed, string:void) read_cb,
+			     mixed id, string s)
+{
+  mixed err = catch {
+      read_cb(id, s);
+    };
+  if (err) {
+    master()->handle_error(err);
+  }
+  do_readcb();
+}
+
 private void do_readcb() {
   if (read_cb && ptr < sizeof(data)) {
     string s = data[ptr..];
     ptr = sizeof(data);
-    call_out(read_cb, 0, id, s);
-  }
-  if (ptr == sizeof(data)) {
+    call_out(do_call_read_cb, 0, read_cb, id, s);
+  } else if (ptr == sizeof(data)) {
     function cb;
     if (write_cb) {
       cb = write_cb;
