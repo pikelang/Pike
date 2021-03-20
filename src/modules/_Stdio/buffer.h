@@ -78,7 +78,7 @@ static INT_TYPE io_consume( Buffer *io, ptrdiff_t num )
 PIKE_UNUSED_ATTRIBUTE
 static void io_trigger_output( Buffer *io )
 {
-  if( UNLIKELY(io->output.u.object) )
+  if (UNLIKELY(TYPEOF(io->output) == PIKE_T_OBJECT))
     io_actually_trigger_output(io);
 }
 

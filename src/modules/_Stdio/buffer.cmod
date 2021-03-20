@@ -490,17 +490,16 @@ PIKECLASS Buffer
 
   PMOD_EXPORT void io_actually_trigger_output( Buffer *io )
   {
+    int destructed = 0;
+    move_svalue(Pike_sp, &io->output);
     if (UNLIKELY(!io->output.u.object->prog)) {
       /* Destructed object. */
       free_svalue(&io->output);
-      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-      return;
+      destructed = 1;
     }
-
-    if ( io->output.u.object ) {
-      move_svalue(Pike_sp++, &io->output);
-      SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-      apply_svalue(Pike_sp-1, 0);
+    SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+    if (LIKELY(!destructed)) {
+      apply_svalue(Pike_sp++, 0);
       pop_n_elems(2);
     }
   }
