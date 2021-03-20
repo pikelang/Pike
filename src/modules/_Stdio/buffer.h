@@ -13,12 +13,11 @@ struct _Buffer
     struct object *obj;		/* PIKE_T_OBJECT */
     struct _Buffer *parent;	/* PIKE_T_MIXED */
   } source;
-  int sourcetype;		/* type for the source union */
-
-  struct svalue output;
-
+  INT32 sourcetype;		/* type for the source union */
   INT32 locked, locked_move;
   float max_waste;
+
+  struct svalue output;
 
 #ifdef PIKE_DEBUG
   INT_TYPE num_malloc, num_move; /* debug mainly, for testsuite*/

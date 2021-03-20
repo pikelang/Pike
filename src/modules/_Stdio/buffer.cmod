@@ -92,6 +92,8 @@ PIKECLASS Buffer
 
   EXTRA
   {
+    /* The __output variable is merely for the benefit of the GC so that
+       it can detect cycles */
     PIKE_MAP_VARIABLE("__output", OFFSETOF(Buffer_struct, b.output),
 		      tMix, PIKE_T_MIXED, ID_PRIVATE|ID_HIDDEN|ID_PROTECTED);
   }
@@ -2994,8 +2996,7 @@ PIKECLASS Buffer
   {
     struct object *o = fast_clone_object( Buffer_RewindKey_program );
     struct Buffer_RewindKey_struct *s = (void*)o->storage;
-    add_ref(io->this);
-    s->obj = io->this;
+    add_ref(s->obj = io->this);
     s->rewind_to = io->offset;
     s->io = io;
     s->auto_mode = auto_mode;
