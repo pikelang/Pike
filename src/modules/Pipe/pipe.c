@@ -1375,6 +1375,7 @@ PIKE_MODULE_INIT
    set_init_callback(init_output_struct);
    set_exit_callback(exit_output_struct);
    output_program=end_program();
+   add_program_constant("__output",output_program, 0);
 
    /* function(:array) */
   ADD_FUNCTION("_pipe_debug", f__pipe_debug,tFunc(tNone,tArray), 0);
