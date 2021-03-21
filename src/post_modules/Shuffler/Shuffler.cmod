@@ -137,12 +137,9 @@ PIKECLASS Shuffle
   static void take_fd(struct Shuffle_struct*s) {
     if (s->box.fd >= 0) {
       bulkmode_restore(s->box.fd, s->oldbulkmode);
-      push_int(s->box.fd);
+      close(s->box.fd);
       unhook_fd_callback_box(&s->box);
       s->box.fd = -1;
-      if (s->file_obj)
-        safe_apply(s->file_obj, "take_fd", 1);
-      pop_stack();
     }
   }
 
@@ -768,10 +765,11 @@ PIKECLASS Shuffle
     } else
       THIS->left = -1;
 
-    if (find_identifier("release_fd", fd->prog) < 0)
+    if (find_identifier("query_fd", fd->prog) < 0)
       change_fd_for_box(&THIS->box, -1);
     else {
-      safe_apply( fd, "release_fd", 0 );
+      int dupedfd;
+      safe_apply( fd, "query_fd", 0 );
       args++;
       if(TYPEOF(*backend) == PIKE_T_OBJECT && backend->u.object) {
         be = get_storage(backend->u.object, Backend_program);
@@ -780,7 +778,10 @@ PIKECLASS Shuffle
                                 "object(Pike.__Backend)");
 	}
       }
-      change_fd_for_box(&THIS->box, Pike_sp[-1].u.integer);
+      dupedfd = dup(Pike_sp[-1].u.integer);
+      if (dupedfd < 0)
+        Pike_error("Out of filedescriptors.");
+      change_fd_for_box(&THIS->box, dupedfd);
     }
 
     if( THIS->box.fd >= 0 )
@@ -796,10 +797,7 @@ PIKECLASS Shuffle
     }
     else
     {
-      push_int( 0 ); /* read */
-      push_int( 0 ); /* write */
-      push_int( 0 ); /* close */
-      safe_apply( THIS->file_obj, "set_nonblocking", 3 );
+      safe_apply( THIS->file_obj, "set_nonblocking_keep_callbacks", 0 );
       args++;
     }
     pop_n_elems(args);
@@ -917,7 +915,7 @@ PIKECLASS Shuffle
     *!     An initialized instance of the System.Memory class.
     *!   @item Stdio.Buffer
     *!     A Stdio.Buffer object which will be called once
-    *!     with consume() and read_buffer() to acquire the data.
+    *!     with read_buffer() to acquire the data.
     *!   @item Stdio.File
     *!     Stdio.File instance pointing to a normal file.
     *!   @item Stdio.Stream
@@ -1085,7 +1083,9 @@ PIKECLASS Shuffler
      *!                       int|void start, int|void length);
      *! Create a new @[Shuffle] object.
      *!
-     *! The destination has to support nonblocking I/O.
+     *! The destination has to support nonblocking I/O
+     *! through @[set_nonblocking_keep_callbacks] and @[set_write_callback]
+     *! member functions.
      */
   {
     struct svalue cstart, clength;
