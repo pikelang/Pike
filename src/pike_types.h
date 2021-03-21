@@ -121,7 +121,8 @@ enum pt_cmp_flags
   {
     PT_FLAG_CMP_VOIDABLE =		0x0100,	/* Type may be void */
     PT_FLAG_CMP_NULLABLE =		0x0200,	/* Type may be zero */
-    PT_FLAG_CMP_INSEPARABLE =		0x0400,	/* Type may not be split */
+    PT_FLAG_CMP_VOID_IS_ZERO =		0x0400,	/* Expression context */
+    PT_FLAG_CMP_INSEPARABLE =		0x0800,	/* Type may not be split */
   };
 
 /*
