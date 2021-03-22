@@ -75,7 +75,7 @@ static struct program *buffer_error_program;
  *!
  */
 PIKECLASS Buffer
-  /* This is needed to get consisten behavior in case this
+  /* This is needed to get consistent behaviour in case this
    * buffer is a sub-buffer, in which case the source
    * buffer needs to be unlocked as soon as possible.
    */
@@ -98,6 +98,9 @@ PIKECLASS Buffer
 		      tMix, PIKE_T_MIXED, ID_PRIVATE|ID_HIDDEN|ID_PROTECTED);
   }
 
+#undef THIS
+#define THIS  (&(((struct Buffer_struct *)Pike_fp->current_storage)->b))
+#define THIS_OBJECT (Pike_fp->current_object)
 
   static void io_set_error_mode( Buffer *io, struct program *m )
   {
@@ -151,10 +154,10 @@ PIKECLASS Buffer
       {
           memmove( io->buffer, io_read_pointer(io), io_len(io) );
           io->len -= io->offset;
+          io->offset = 0;
 #ifdef PIKE_DEBUG
           io->num_move++;
 #endif
-          io->offset = 0;
       }
   }
 
@@ -205,9 +208,9 @@ PIKECLASS Buffer
       /* convert to malloced buffer from a shared one. */
         unsigned char *old = io_read_pointer(io);
 
-        headroom += io->len - io->offset;
+        headroom += io_len(io);
 
-        if (headroom < io->len - io->offset)
+        if (headroom < io_len(io))
             Pike_error(msg_out_of_mem_2, headroom);
 
         io->buffer = xalloc( headroom );
@@ -217,7 +220,7 @@ PIKECLASS Buffer
 #ifdef PIKE_DEBUG
         io->num_malloc++;
 #endif
-        memcpy( io->buffer, old, io->len );
+        memcpy( io->buffer, old, io_len(io) );
         io_unlink_external_storage(io);
     }
   }
@@ -523,11 +526,11 @@ PIKECLASS Buffer
 
   static int io_avail( Buffer *io, ptrdiff_t len )
   {
-    if( len < 0 || len + io->offset > io->len )
+    if (UNLIKELY(len < 0 || len > io_len(io)))
     {
-        if( len < 0 )
+        if (UNLIKELY(len < 0))
             io_range_error_throw( io, 0 );
-        else if( io_range_error( io, len+io->len-io->offset ) )
+        else if( io_range_error( io, len + io_len(io) ) )
             return io_avail(io,len);
         return 0;
     }
@@ -546,7 +549,7 @@ PIKECLASS Buffer
 
     if( (total/(size_t)each) < (size_t)len )
     {
-        if( io_range_error( io, len+io->len-io->offset ) )
+        if( io_range_error( io, len + io_len(io) ) )
           return io_avail_mul(io,len,each);
         return 0;
     }
@@ -597,7 +600,7 @@ PIKECLASS Buffer
       return NULL;
 
     b = fast_clone_object( Buffer_program );
-    to = get_storage(b, Buffer_program);
+    to = io_buffer_from_object(b);
 
     to->buffer = io_read_pointer(io);
     to->len = len;
@@ -942,10 +945,6 @@ PIKECLASS Buffer
         }
     }
   }
-
-#undef THIS
-#define THIS (&(((struct Buffer_struct *)Pike_fp->current_storage)->b))
-
 
   /* pike functions */
 
@@ -1297,7 +1296,7 @@ PIKECLASS Buffer
     io->len++;
     Pike_sp--;
     io_trigger_output( io );
-    ref_push_object(Pike_fp->current_object);
+    ref_push_object(THIS_OBJECT);
   }
 
   /*! @decl Buffer add_int8( Gmp.mpz )
@@ -1313,7 +1312,7 @@ PIKECLASS Buffer
     }
     *p = i;
     io->len++;
-    ref_push_object(Pike_fp->current_object);
+    ref_push_object(THIS_OBJECT);
   }
 
   /*! @decl Buffer add_int16( int(16bit) )
@@ -1328,7 +1327,7 @@ PIKECLASS Buffer
     p[1] = i;
     io->len += 2;
     io_trigger_output( io );
-    ref_push_object(Pike_fp->current_object);
+    ref_push_object(THIS_OBJECT);
   }
 
   /*! @decl Buffer add_int16( Gmp.mpz )
@@ -1346,7 +1345,7 @@ PIKECLASS Buffer
     p[0] = i>>8;
     p[1] = i;
     io->len += 2;
-    ref_push_object(Pike_fp->current_object);
+    ref_push_object(THIS_OBJECT);
   }
 
   /*! @decl Buffer add_int32( int i )
@@ -1362,7 +1361,7 @@ PIKECLASS Buffer
     p[3] = i;
     io->len += 4;
     io_trigger_output( io );
-    ref_push_object(Pike_fp->current_object);
+    ref_push_object(THIS_OBJECT);
   }
 
   /*! @decl Buffer add_int32( Gmp.mpz i )
@@ -1382,7 +1381,7 @@ PIKECLASS Buffer
     p[3] = i;
     io->len += 4;
     io_trigger_output( io );
-    ref_push_object(Pike_fp->current_object);
+    ref_push_object(THIS_OBJECT);
   }
 
   /*! @decl Buffer add_hstring( string(8bit) data, int size_size )
@@ -1473,7 +1472,7 @@ PIKECLASS Buffer
       io_add_bignum( THIS, i->u.object, width );
       pop_stack(); /* o. */
     }
-    ref_push_object(Pike_fp->current_object);
+    ref_push_object(THIS_OBJECT);
   }
 
   /*! @decl Buffer add_hint( int i, int(0..) size_width )
@@ -1512,7 +1511,7 @@ PIKECLASS Buffer
       io_add_bignum( THIS, i->u.object, width );
       pop_stack(); /* o. */
     }
-    ref_push_object(Pike_fp->current_object);
+    ref_push_object(THIS_OBJECT);
   }
 
   /*! @decl Buffer add_ints( array(int) integers, int(8bit) len )
@@ -1730,7 +1729,7 @@ PIKECLASS Buffer
       io_set_error_mode( THIS, program_from_svalue(m));
 
     pop_stack();
-    ref_push_object(Pike_fp->current_object);
+    ref_push_object(THIS_OBJECT);
   }
 
   /*! @decl object lock()
@@ -1756,7 +1755,7 @@ PIKECLASS Buffer
       case 'O':
         {
           push_static_text("%O(%d bytes, read=[..%d] data=[%d..%d] free=[%d..%d] %s%s)");
-          ref_push_program(Pike_fp->current_object->prog);
+          ref_push_program(THIS_OBJECT->prog);
           /* io_len [..offset] [offset..len] [..allocated] */
           push_int(io_len(THIS));
           push_int(THIS->offset-1);
@@ -2188,7 +2187,7 @@ PIKECLASS Buffer
     io_append( THIS, tmp.s->str, tmp.s->len );
     pop_n_elems(args);
     CALL_AND_UNSET_ONERROR(_e);
-    ref_push_object(Pike_fp->current_object);
+    ref_push_object(THIS_OBJECT);
   }
 
   /*! @decl array sscanf(string(8bit) format)
@@ -2387,7 +2386,6 @@ PIKECLASS Buffer
   PIKEFUN void trim(  )
   {
     Buffer *io = THIS;
-
     io_add_space( io, 0, 1 );
     io_trim(io);
   }
@@ -2415,10 +2413,10 @@ PIKECLASS Buffer
   PIKEFUN int(-1..) consume( int n )
   {
     Pike_sp--;
-    if( !io_avail( THIS, n ) )
-      push_int(-1);
-    else
+    if (LIKELY(io_avail(THIS, n)))
       push_int64( io_consume( THIS, n ) );
+    else
+      push_int(-1);
   }
 
   /*! @decl int(0..)|int(-1..-1) truncate( int(0..) n )
@@ -2433,7 +2431,7 @@ PIKECLASS Buffer
     ptrdiff_t diff = io_len(io) - n;
     Pike_sp--;
 
-    if( diff < 0 || io_len(io) < (size_t)diff )
+    if (UNLIKELY(diff < 0 || io_len(io) < (size_t)diff))
       push_int(-1);
     else {
       io->len -= diff;
@@ -2476,9 +2474,9 @@ PIKECLASS Buffer
   {
     struct pike_string *s;
     Pike_sp--;
-    s = io_read_string(THIS, bytes );
-    if( s )
-      push_string( s );
+    s = io_read_string(THIS, bytes);
+    if (LIKELY(s))
+      push_string(s);
     else
       push_undefined();
   }
@@ -2898,7 +2896,7 @@ PIKECLASS Buffer
   INIT {
     Buffer *this = THIS;
     this->max_waste = 0.615;
-    this->this = Pike_fp->current_object;
+    this->this = THIS_OBJECT;
   }
 
   EXIT {
@@ -2938,7 +2936,7 @@ PIKECLASS Buffer
      */
     PIKEFUN void release()
     {
-      destruct_object(Pike_fp->current_object, DESTRUCT_EXPLICIT);
+      destruct_object(THIS_OBJECT, DESTRUCT_EXPLICIT);
     }
 
     /*! @decl void update()
@@ -2975,7 +2973,7 @@ PIKECLASS Buffer
      */
     PIKEFUN void rewind() {
       THIS->auto_mode = 1;
-      destruct_object(Pike_fp->current_object, DESTRUCT_GC);
+      destruct_object(THIS_OBJECT, DESTRUCT_GC);
     }
 
     PIKEFUN void create()

@@ -20,7 +20,7 @@ struct _Buffer
   struct svalue output;
 
 #ifdef PIKE_DEBUG
-  INT_TYPE num_malloc, num_move; /* debug mainly, for testsuite*/
+  INT32 num_malloc, num_move; /* debug mainly, for testsuite*/
 #endif
 };
 
@@ -36,17 +36,15 @@ typedef struct _Buffer Buffer;
 
 extern void init_stdio_buffer(void);
 extern void exit_stdio_buffer(void);
+extern unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force );
+extern void io_actually_trigger_output( Buffer *io );
 
-PMOD_EXPORT void io_ensure_malloced( Buffer *io, size_t bytes );
-PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force );
 PMOD_EXPORT Buffer *io_buffer_from_object(struct object *o);
-PMOD_EXPORT void io_trim( Buffer *io );
-PMOD_EXPORT void io_actually_trigger_output( Buffer *io );
 
 PIKE_UNUSED_ATTRIBUTE
 static size_t io_len( Buffer *io )
 {
-  return io->len-io->offset;
+  return io->len - io->offset;
 }
 
 PIKE_UNUSED_ATTRIBUTE
@@ -62,7 +60,7 @@ static unsigned char *io_add_space( Buffer *io, size_t bytes, int force )
     if (UNLIKELY(io->len == io->offset) && LIKELY(!io->locked_move))
       io->offset = io->len = 0;
     if (LIKELY(!force && io->len+bytes < io->allocated
-               && io->len+bytes >= io->len))
+            && io->len+bytes >= io->len))
       return io->buffer+io->len;
   }
   return io_add_space_do_something( io, bytes, force );
@@ -81,4 +79,3 @@ static void io_trigger_output( Buffer *io )
   if (UNLIKELY(TYPEOF(io->output) == PIKE_T_OBJECT))
     io_actually_trigger_output(io);
 }
-
