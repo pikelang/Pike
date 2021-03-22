@@ -59,6 +59,10 @@ final void set_nonblocking(function rcb, function wcb, function ccb) {
   set_close_callback(ccb);
 }
 
+//!
+final void set_nonblocking_keep_callbacks() {
+}
+
 private void close_worker() {
   process_trailer();
   payloadlen = -1;
