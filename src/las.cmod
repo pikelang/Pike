@@ -279,7 +279,7 @@ static int low_count_args(node *n)
        TYPEOF(CAR(n)->u.sval) == T_FUNCTION &&
        SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) {
       if (!n->type) fix_type_field(n);
-      return !pike_types_le(n->type, void_type_string);
+      return !pike_types_le(n->type, void_type_string, 0, 0);
     }
     return 1;
 
@@ -456,7 +456,7 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
   }
   free_type(diff);
 #else
-  if (pike_types_le(n->type, t)) return 1;
+  if (pike_types_le(n->type, t, 0, 0)) return 1;
   if (!match_types(n->type, t)) {
     yytype_report(REPORT_ERROR, NULL, 0, t, NULL, 0, n->type, 0, msg);
     return 0;
@@ -3250,7 +3250,7 @@ void fix_foreach_type(node *val_lval)
   expression = CAR(val_lval);
   lvalues = CDR(val_lval);
 
-  if (!expression || pike_types_le(expression->type, void_type_string)) {
+  if (!expression || pike_types_le(expression->type, void_type_string, 0, 0)) {
     yyerror("foreach(): Looping over a void expression.");
   } else {
     if(lvalues && lvalues->token == ':')
@@ -3302,7 +3302,7 @@ void fix_foreach_type(node *val_lval)
           {
 	    fix_auto_node(CAR(lvalues), index_type);
           }
-          else if (!pike_types_le(index_type, CAR(lvalues)->type)) {
+          else if (!pike_types_le(index_type, CAR(lvalues)->type, 0, 0)) {
             int level = REPORT_NOTICE;
             if (!match_types(CAR(lvalues)->type, index_type)) {
               level = REPORT_ERROR;
@@ -3342,7 +3342,7 @@ void fix_foreach_type(node *val_lval)
           {
 	    fix_auto_node(CDR(lvalues), value_type);
           }
-          else if (!pike_types_le(value_type, CDR(lvalues)->type)) {
+          else if (!pike_types_le(value_type, CDR(lvalues)->type, 0, 0)) {
             int level = REPORT_NOTICE;
             if (!match_types(CDR(lvalues)->type, value_type)) {
               level = REPORT_ERROR;
@@ -3364,14 +3364,14 @@ void fix_foreach_type(node *val_lval)
       struct pike_type *array_zero;
       MAKE_CONSTANT_TYPE(array_zero, tLArr(tUnknown, tUnknown));
 
-      if (!pike_types_le(array_zero, expression->type)) {
+      if (!pike_types_le(array_zero, expression->type, 0, 0)) {
         yytype_report(REPORT_ERROR,
                       NULL, 0, array_zero,
                       NULL, 0, expression->type,
                       0, "Bad argument 1 to foreach().");
       } else {
         if ((c->lex.pragmas & ID_STRICT_TYPES) &&
-            !pike_types_le(expression->type, array_type_string)) {
+            !pike_types_le(expression->type, array_type_string, 0, 0)) {
           yytype_report(REPORT_WARNING,
                         NULL, 0, array_type_string,
                         NULL, 0, expression->type,
@@ -3384,7 +3384,7 @@ void fix_foreach_type(node *val_lval)
 	   * by treeopt. */
         } else if( lvalues->type->type == PIKE_T_AUTO ) {
 	  fix_auto_node(lvalues, expression->type->car);
-	} else if (pike_types_le(lvalues->type, void_type_string)) {
+	} else if (pike_types_le(lvalues->type, void_type_string, 0, 0)) {
 	  yytype_report(REPORT_ERROR,
 			NULL, 0, expression->type->car,
 			NULL, 0, lvalues->type,
@@ -3700,7 +3700,7 @@ void fix_type_field(node *n)
       /* This test isn't sufficient, see below. */
       check_node_type(CDR(n), CAR(n)->type, "Bad type in assignment.");
 #else /* !0 */
-      if (!pike_types_le(CDR(n)->type, CAR(n)->type)) {
+      if (!pike_types_le(CDR(n)->type, CAR(n)->type, 0, 0)) {
 	/* a["b"]=c and a->b=c can be valid when a is an array.
 	 *
 	 * FIXME: Exactly what case is the problem?
@@ -3848,7 +3848,7 @@ void fix_type_field(node *n)
 	/* Check that the returned type is compatible with the
 	 * variable type.
 	 */
-	if (!pike_types_le(f, CAR(n)->type)) {
+	if (!pike_types_le(f, CAR(n)->type, 0, 0)) {
 	  /* a["b"]+=c and a->b+=c can be valid when a is an array.
 	   *
 	   * FIXME: Exactly what case is the problem?
@@ -3987,7 +3987,7 @@ void fix_type_field(node *n)
     if (CAR(n)) {
       struct pike_type *array_type;
       MAKE_CONSTANT_TYPE(array_type, tArr(tZero));
-      if (!pike_types_le(array_type, CAR(n)->type)) {
+      if (!pike_types_le(array_type, CAR(n)->type, 0, 0)) {
 	yytype_report(REPORT_ERROR, NULL, 0, array_type,
 		      NULL, 0, CAR(n)->type,
 		      0, "Bad argument to splice operator.");
@@ -4204,18 +4204,18 @@ void fix_type_field(node *n)
       } else if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 		 (CAR(n)->type != CDR(n)->type)) {
 	/* The type should be the same for both CAR & CDR. */
-	if (!pike_types_le(CDR(n)->type, CAR(n)->type)) {
+	if (!pike_types_le(CDR(n)->type, CAR(n)->type, 0, 0)) {
 	  /* Note that zero should be handled as int(0..0) here. */
 	  if (!(CAR(n)->type == zero_type_string) ||
-	      !(pike_types_le(CDR(n)->type, int_type_string))) {
+	      !(pike_types_le(CDR(n)->type, int_type_string, 0, 0))) {
 	    yytype_report(REPORT_ERROR,
 			  NULL, 0, CAR(n)->type,
 			  NULL, 0, CDR(n)->type,
 			  0, "Type mismatch in case range.");
 	  }
-	} else if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
+	} else if (!pike_types_le(CAR(n)->type, CDR(n)->type, 0, 0)) {
 	  if (!(CDR(n)->type == zero_type_string) ||
-	      !(pike_types_le(CAR(n)->type, int_type_string))) {
+	      !(pike_types_le(CAR(n)->type, int_type_string, 0, 0))) {
 	    yytype_report(REPORT_WARNING,
 			  NULL, 0, CAR(n)->type,
 			  NULL, 0, CDR(n)->type,
@@ -4289,7 +4289,7 @@ void fix_type_field(node *n)
     if (!CAR(n) || (CAR(n)->token != F_FOREACH_VAL_LVAL)) {
       yyerror("foreach(): No expression to loop over.");
     } else {
-      if (!CAAR(n) || pike_types_le(CAAR(n)->type, void_type_string)) {
+      if (!CAAR(n) || pike_types_le(CAAR(n)->type, void_type_string, 0, 0)) {
 	yyerror("foreach(): Looping over a void expression.");
       } else {
         fix_foreach_type(CAR(n));
@@ -4840,7 +4840,7 @@ static node *eval(node *n)
       if (!new->type) {
 	new->type = n->type;
 	add_ref(n->type);
-      } else if (!pike_types_le(new->type, n->type)) {
+      } else if (!pike_types_le(new->type, n->type, 0, 0)) {
 	/* Try consolidating the type information. */
 	struct pike_type *t = soft_cast(n->type, new->type, 0);
 	if (t) {

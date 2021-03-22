@@ -969,8 +969,8 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
       }
 
     case T_TYPE:
-      return pike_types_le(a->u.type, b->u.type) &&
-	pike_types_le(b->u.type, a->u.type);
+      return pike_types_le(a->u.type, b->u.type, 0, 0) &&
+	pike_types_le(b->u.type, a->u.type, 0, 0);
 
     case T_OBJECT:
       return object_equal_p(a->u.object, b->u.object, proc);
@@ -1222,8 +1222,8 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
     /* fall through */
 
     case T_TYPE:
-      return pike_types_le(a->u.type, b->u.type) &&
-	!pike_types_le(b->u.type, a->u.type);
+      return pike_types_le(a->u.type, b->u.type, 0, 0) &&
+	!pike_types_le(b->u.type, a->u.type, 0, 0);
   }
 }
 
@@ -1273,7 +1273,7 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
       }
     }
 
-    res = pike_types_le(a_type, b_type);
+    res = pike_types_le(a_type, b_type, 0, 0);
     free_type(a_type);
     free_type(b_type);
     return res;

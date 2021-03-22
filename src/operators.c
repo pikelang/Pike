@@ -1777,8 +1777,8 @@ static int generate_sum(node *n)
       emit0(F_ADD_FLOATS);
     }
     else if(first_arg[0]->type && second_arg[0]->type &&
-	    pike_types_le(first_arg[0]->type, int_type_string) &&
-	    pike_types_le(second_arg[0]->type, int_type_string))
+	    pike_types_le(first_arg[0]->type, int_type_string, 0, 0) &&
+	    pike_types_le(second_arg[0]->type, int_type_string, 0, 0))
     {
       emit0(F_ADD_INTS);
     }
@@ -1809,15 +1809,15 @@ static int generate_sum(node *n)
       }
     }
     else if(first_arg[0]->type && second_arg[0]->type &&
-	    pike_types_le(first_arg[0]->type, int_type_string) &&
-	    pike_types_le(second_arg[0]->type, int_type_string))
+	    pike_types_le(first_arg[0]->type, int_type_string, 0, 0) &&
+	    pike_types_le(second_arg[0]->type, int_type_string, 0, 0))
     {
       do_docode(*first_arg, 0);
       do_docode(*second_arg, 0);
       emit0(F_ADD_INTS);
       modify_stack_depth(-1);
       if (third_arg[0]->type &&
-	  pike_types_le(third_arg[0]->type, int_type_string)) {
+	  pike_types_le(third_arg[0]->type, int_type_string, 0, 0)) {
 	do_docode(*third_arg, 0);
 	emit0(F_ADD_INTS);
 	modify_stack_depth(-1);
@@ -1947,9 +1947,9 @@ static node *optimize_not(node *n)
       node *search_args = *more_args;
       if ((search_args->token == F_ARG_LIST) &&
 	  CAR(search_args) &&
-	  pike_types_le(CAR(search_args)->type, string_type_string) &&
+	  pike_types_le(CAR(search_args)->type, string_type_string, 0, 0) &&
 	  CDR(search_args) &&
-	  pike_types_le(CDR(search_args)->type, string_type_string)) {
+	  pike_types_le(CDR(search_args)->type, string_type_string, 0, 0)) {
 	/* !search(string a, string b)  =>  has_prefix(a, b) */
 	ADD_NODE_REF(*more_args);
 	return mkefuncallnode("has_prefix", search_args);
@@ -5485,7 +5485,7 @@ static node *optimize_sizeof(node *n)
     /* sizeof(efun(...)) */
     if ((CADR(n)->u.sval.u.efun->function == f_divide) &&
 	CDDR(n) && (CDDR(n)->token == F_ARG_LIST) &&
-	CADDR(n) && pike_types_le(CADDR(n)->type, string_type_string) &&
+	CADDR(n) && pike_types_le(CADDR(n)->type, string_type_string, 0, 0) &&
 	CDDDR(n) && (CDDDR(n)->token == F_CONSTANT) &&
 	(TYPEOF(CDDDR(n)->u.sval) == T_STRING) &&
 	(CDDDR(n)->u.sval.u.string->len == 1)) {
@@ -5507,7 +5507,7 @@ static node *optimize_sizeof(node *n)
 	(SUBTYPEOF(CAADDR(n)->u.sval) == FUNCTION_BUILTIN) &&
 	(CAADDR(n)->u.sval.u.efun->function == f_divide) &&
 	CDADDR(n) && (CDADDR(n)->token == F_ARG_LIST) &&
-	CADADDR(n) && pike_types_le(CADADDR(n)->type, string_type_string) &&
+	CADADDR(n) && pike_types_le(CADADDR(n)->type, string_type_string, 0, 0) &&
 	CDDADDR(n) && (CDDADDR(n)->token == F_CONSTANT) &&
 	(TYPEOF(CDDADDR(n)->u.sval) == T_STRING) &&
 	(CDDADDR(n)->u.sval.u.string->len == 1) &&
@@ -5552,9 +5552,9 @@ static int generate_sizeof(node *n)
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     Pike_fatal("Count args was wrong in sizeof().\n");
-  if( pike_types_le( my_get_arg(&CDR(n), 0)[0]->type, string_type_string ) )
+  if( pike_types_le( my_get_arg(&CDR(n), 0)[0]->type, string_type_string, 0, 0 ) )
       emit0(F_SIZEOF_STRING);
-  /* else if( pike_types_le( my_get_arg(&CDR(n), 0)[0]->type, array_type_string ) ) */
+  /* else if( pike_types_le( my_get_arg(&CDR(n), 0)[0]->type, array_type_string, 0, 0 ) ) */
   /*     emit0(F_SIZEOF_ARRAY); */
   else
       emit0(F_SIZEOF);

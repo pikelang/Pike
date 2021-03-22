@@ -122,7 +122,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
       z = new_get_return_type(type, CALL_INHIBIT_WARNINGS);
       free_type(type);
     }
-    f->may_return_void = pike_types_le(z, void_type_string);
+    f->may_return_void = pike_types_le(z, void_type_string, 0, 0);
     if(!z) Pike_fatal("Function has no valid return type.\n");
     free_type(z);
   }

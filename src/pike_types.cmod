@@ -3102,9 +3102,9 @@ static int lower_or_pike_types(struct pike_type *t1,
     t = t2;
   } else if (zero_implied && (t2->type == T_ZERO)) {
     t = t1;
-  } else if ((t1->type == T_NOT) && pike_types_le(t1->car, t2)) {
+  } else if ((t1->type == T_NOT) && pike_types_le(t1->car, t2, 0, 0)) {
     t = mixed_type_string;
-  } else if ((t2->type == T_NOT) && pike_types_le(t2->car, t1)) {
+  } else if ((t2->type == T_NOT) && pike_types_le(t2->car, t1, 0, 0)) {
     t = mixed_type_string;
   } else if ((t1->type ^ '0') < (t2->type ^ '0')) {
     /* Note: Adjusted order to get markers first. */
@@ -3257,9 +3257,9 @@ static int lower_or_pike_types(struct pike_type *t1,
       /* FALLTHRU */
     default:
 #if 0
-      if (pike_types_le(t1, t2)) {
+      if (pike_types_le(t1, t2, 0, 0)) {
 	t = t2;
-      } else if (pike_types_le(t2, t1)) {
+      } else if (pike_types_le(t2, t1, 0, 0)) {
 	t = t1;
       } else
 #endif /* 0 */
@@ -9098,7 +9098,8 @@ int match_types(struct pike_type *a, struct pike_type *b)
   return !!res;
 }
 
-int pike_types_le(struct pike_type *a,struct pike_type *b)
+int pike_types_le(struct pike_type *a, struct pike_type *b,
+		  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags)
 {
   struct remap_state remap;
   struct pike_type *tmp, *tmp2 = NULL;
@@ -9110,7 +9111,7 @@ int pike_types_le(struct pike_type *a,struct pike_type *b)
 
   memset(&remap, 0, sizeof(remap));
 
-  tmp = low_type_binop(PT_BINOP_MINUS, a, b, &remap, 0, 0, 0);
+  tmp = low_type_binop(PT_BINOP_MINUS, a, b, &remap, aflags, bflags, 0);
 
   if (tmp) {
     struct mapping *markers = allocate_mapping(10);
@@ -9139,7 +9140,7 @@ int pike_types_le(struct pike_type *a,struct pike_type *b)
     fprintf(stderr, "\n\n");
 
     tmp3 = low_type_binop(PT_BINOP_MINUS, a, b, &remap,
-			  0, 0, PT_FLAG_REMAP_TRACE);
+			  aflags, bflags, PT_FLAG_REMAP_TRACE);
     fprintf(stderr, "tmp3: ");
     simple_describe_type(tmp3);
     fprintf(stderr, "\n\n");
@@ -10546,9 +10547,9 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	    } else {
 	      copy_pike_type(res, soft_type);
 	    }
-	  } else if (pike_types_le(soft_type, orig_type)) {
+	  } else if (pike_types_le(soft_type, orig_type, 0, 0)) {
 	    copy_pike_type(res, orig_type);
-	  } else if (pike_types_le(orig_type, soft_type)) {
+	  } else if (pike_types_le(orig_type, soft_type, 0, 0)) {
 	    copy_pike_type(res, soft_type);
 	  } else {
 	    copy_pike_type(res, object_type_string);
@@ -10564,9 +10565,9 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	    } else {
 	      copy_pike_type(res, soft_type);
 	    }
-	  } else if (pike_types_le(soft_type, orig_type)) {
+	  } else if (pike_types_le(soft_type, orig_type, 0, 0)) {
 	    copy_pike_type(res, soft_type);
-	  } else if (pike_types_le(orig_type, soft_type)) {
+	  } else if (pike_types_le(orig_type, soft_type, 0, 0)) {
 	    copy_pike_type(res, orig_type);
 	  }
 	}
@@ -12839,7 +12840,7 @@ void yyexplain_nonmatching_types(int severity_level,
   implements_mode=0;
 
   /* Note the argument order. */
-  pike_types_le(type_b, type_a);
+  pike_types_le(type_b, type_a, 0, 0);
 
 #if 0
   if(!(implements_a && implements_b &&
@@ -12884,7 +12885,7 @@ void string_builder_explain_nonmatching_types(struct string_builder *s,
   implements_mode=0;
 
   /* Note the argument order. */
-  pike_types_le(type_b, type_a);
+  pike_types_le(type_b, type_a, 0, 0);
 
 #if 0
   if(!(implements_a && implements_b &&

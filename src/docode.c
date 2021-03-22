@@ -2037,7 +2037,7 @@ static int do_docode2(node *n, int flags)
 	    }
 	  }
 	  if (!n->type) fix_type_field(n);
-	  return !pike_types_le(n->type, void_type_string);
+	  return !pike_types_le(n->type, void_type_string, 0, 0);
 	}else{
 	  if(CAR(n)->u.sval.u.object == Pike_compiler->fake_object)
 	    return do_lfun_call(SUBTYPEOF(CAR(n)->u.sval), CDR(n));
@@ -2321,7 +2321,7 @@ static int do_docode2(node *n, int flags)
 	    yyerror("Case label isn't constant.");
 
 	  if (case_val->type) {
-	    if (!pike_types_le(case_val->type, current_switch.type)) {
+	    if (!pike_types_le(case_val->type, current_switch.type, 0, 0)) {
 	      if (!match_types(case_val->type, current_switch.type)) {
 		yytype_error("Type mismatch in case.",
 			     current_switch.type, case_val->type, 0);

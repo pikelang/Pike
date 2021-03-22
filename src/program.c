@@ -3149,7 +3149,7 @@ int override_identifier (struct reference *new_ref, struct pike_string *name,
 	if (IDENTIFIER_IS_FUNCTION(sub_id->identifier_flags)) {
 	  if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	      !pike_types_le(ID_FROM_PTR(Pike_compiler->new_program,
-					 new_ref)->type, sub_id->type)) {
+					 new_ref)->type, sub_id->type, 0, 0)) {
 	    yytype_report(REPORT_WARNING,
 			  NULL, 0, sub_id->type,
 			  NULL, 0, ID_FROM_PTR(Pike_compiler->new_program,
@@ -3165,7 +3165,7 @@ int override_identifier (struct reference *new_ref, struct pike_string *name,
 	   */
 	  if (!pike_types_le(sub_id->type,
 			     (new_id = ID_FROM_PTR(Pike_compiler->new_program,
-						   new_ref))->type) &&
+						   new_ref))->type, 0, 0) &&
 	      !((i->run_time_type == PIKE_T_INT) &&
 		(new_id->run_time_type == PIKE_T_INT) &&
 		(IDENTIFIER_IS_CONSTANT(sub_id->identifier_flags) ||
@@ -3340,7 +3340,7 @@ void fixate_program(void)
 	    if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 		(funp->id_flags & ID_USED)) {
 	      /* Verify that the types are compatible. */
-	      if (!pike_types_le(funb->type, fun->type)) {
+	      if (!pike_types_le(funb->type, fun->type, 0, 0)) {
 		yytype_report(REPORT_WARNING, NULL, 0, fun->type,
 			      NULL, 0, funb->type,
 			      0, "Type mismatch when overloading %S.",
@@ -3355,7 +3355,7 @@ void fixate_program(void)
 	    if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 		(funpb->id_flags & ID_USED)) {
 	      /* Verify that the types are compatible. */
-	      if (!pike_types_le(fun->type, funb->type)) {
+	      if (!pike_types_le(fun->type, funb->type, 0, 0)) {
 		yytype_report(REPORT_WARNING, NULL, 0, funb->type,
 			      NULL, 0, fun->type,
 			      0, "Type mismatch when overloading %S.",
@@ -6369,7 +6369,7 @@ void compiler_do_inherit(node *n,
 
   fix_type_field(n);
 
-  if (!pike_types_le(n->type, inheritable_type_string) &&
+  if (!pike_types_le(n->type, inheritable_type_string, 0, 0) &&
       (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
     yytype_report(REPORT_WARNING,
 		  n->current_file, n->line_number, inheritable_type_string,
@@ -6816,7 +6816,8 @@ int define_variable(struct pike_string *name,
 
  	if(ID_FROM_INT(Pike_compiler->new_program, n)->type != type &&
 	   !pike_types_le(type,
-			  ID_FROM_INT(Pike_compiler->new_program, n)->type)) {
+			  ID_FROM_INT(Pike_compiler->new_program, n)->type,
+			  0, 0)) {
 	  int level = REPORT_WARNING;
 	  if (!match_types(ID_FROM_INT(Pike_compiler->new_program, n)->type,
 			   type)) {
@@ -7374,7 +7375,7 @@ INT32 define_function(struct pike_string *name,
       }
       /* Inhibit deprecation warnings during the comparison. */
       c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
-      if (!pike_types_le(type, lfun_type->u.type)) {
+      if (!pike_types_le(type, lfun_type->u.type, 0, 0)) {
 	int level = REPORT_NOTICE;
 	if (!match_types(type, lfun_type->u.type)) {
 	  level = REPORT_ERROR;
@@ -7436,7 +7437,7 @@ INT32 define_function(struct pike_string *name,
       int orig_pragmas = c->lex.pragmas;
       /* Inhibit deprecation warnings during the comparison. */
       c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
-      if (!pike_types_le(type, gs_type)) {
+      if (!pike_types_le(type, gs_type, 0, 0)) {
 	int level = REPORT_NOTICE;
 	if (!match_types(type, gs_type)) {
 	  level = REPORT_ERROR;
@@ -10467,7 +10468,7 @@ static int low_implements(struct program *a, struct program *b)
       break;
     }
 
-    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
+    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type, 0, 0)) {
       if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
 #if 0
 	fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
@@ -10770,7 +10771,7 @@ void yyexplain_not_implements(int severity_level,
       continue;
     }
 
-    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
+    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type, 0, 0)) {
       INT_TYPE aid_line = a_line;
       INT_TYPE bid_line = b_line;
       struct pike_string *aid_file = get_identifier_line(a, i, &aid_line);
@@ -10900,7 +10901,7 @@ void string_builder_explain_not_implements(struct string_builder *s,
       continue;
     }
 
-    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
+    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type, 0, 0)) {
       ref_push_type_value(bid->type);
       ref_push_type_value(ID_FROM_INT(a, i)->type);
       if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {

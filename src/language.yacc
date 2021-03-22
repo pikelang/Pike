@@ -1564,7 +1564,7 @@ identifier_type: idents
     if ($1) {
       fix_type_field($1);
 
-      if (!pike_types_le($1->type, typeable_type_string) &&
+      if (!pike_types_le($1->type, typeable_type_string, 0, 0) &&
 	  (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
 	yytype_report(REPORT_WARNING,
 		      $1->current_file, $1->line_number, typeable_type_string,
@@ -1840,7 +1840,7 @@ new_name: TOK_IDENTIFIER
 	(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) &&
 	(Pike_compiler->compiler_frame->current_type->type != PIKE_T_AUTO)) {
       if (!pike_types_le(zero_type_string,
-			 Pike_compiler->compiler_frame->current_type)) {
+			 Pike_compiler->compiler_frame->current_type, 0, 0)) {
 	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	  ref_push_string($1->u.sval.u.string);
 	  yytype_report(REPORT_WARNING, NULL, 0, zero_type_string,
@@ -5202,7 +5202,7 @@ int low_add_local_name(struct compiler_frame *frame,
   } else {
     int var = frame->current_number_of_locals;
 
-    if (pike_types_le(type, void_type_string)) {
+    if (pike_types_le(type, void_type_string, 0, 0)) {
       if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	yywarning("Declaring local variable %S with type void "
 		  "(converted to type zero).", str);
@@ -5221,7 +5221,7 @@ int low_add_local_name(struct compiler_frame *frame,
 
     if (frame->generator_local != -1) {
       frame->variable[var].flags = LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
-    } else if (pike_types_le(void_type_string, type)) {
+    } else if (pike_types_le(void_type_string, type, 0, 0)) {
       /* Don't warn about unused voidable variables. */
       frame->variable[var].flags = LOCAL_VAR_IS_USED;
     } else {

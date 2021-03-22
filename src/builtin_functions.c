@@ -5129,8 +5129,8 @@ node *optimize_replace(node *n)
   MAKE_CONSTANT_TYPE(array_zero, tArr(tZero));
   MAKE_CONSTANT_TYPE(mapping_zero, tMap(tZero, tZero));
 
-  if ((pike_types_le(array_zero, (*arg0)->type) ||
-       pike_types_le(mapping_zero, (*arg0)->type))) {
+  if ((pike_types_le(array_zero, (*arg0)->type, 0, 0) ||
+       pike_types_le(mapping_zero, (*arg0)->type, 0, 0))) {
     /* First argument might be an array or a mapping.
      *
      * replace() is destructive on arrays and mappings.
@@ -5150,11 +5150,11 @@ node *optimize_replace(node *n)
      */
     struct program * volatile replace_compiler = NULL;
 
-    if (arg1 && ((pike_types_le((*arg1)->type, array_type_string) &&
+    if (arg1 && ((pike_types_le((*arg1)->type, array_type_string, 0, 0) &&
 		  arg2 &&
-		  (pike_types_le((*arg2)->type, array_type_string) ||
-		   pike_types_le((*arg2)->type, string_type_string))) ||
-		 (pike_types_le((*arg1)->type, mapping_type_string)))) {
+		  (pike_types_le((*arg2)->type, array_type_string, 0, 0) ||
+		   pike_types_le((*arg2)->type, string_type_string, 0, 0))) ||
+		 (pike_types_le((*arg1)->type, mapping_type_string, 0, 0)))) {
       /* Handle the cases:
        *
        *   replace(string, array, array)
@@ -5163,8 +5163,8 @@ node *optimize_replace(node *n)
        */
       extern struct program *multi_string_replace_program;
       replace_compiler = multi_string_replace_program;
-    } else if (arg1 && pike_types_le((*arg1)->type, string_type_string) &&
-	       arg2 && pike_types_le((*arg2)->type, string_type_string)) {
+    } else if (arg1 && pike_types_le((*arg1)->type, string_type_string, 0, 0) &&
+	       arg2 && pike_types_le((*arg2)->type, string_type_string, 0, 0)) {
       extern struct program *single_string_replace_program;
       replace_compiler = single_string_replace_program;
     }

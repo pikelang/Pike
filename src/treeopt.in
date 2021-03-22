@@ -81,7 +81,7 @@ F_APPLY(0 = F_CONSTANT
 		[TYPEOF($$->u.sval) == T_FUNCTION]
 		[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		[$$->u.sval.u.efun->function == f_multiply],
-		F_ARG_LIST(2 = +[pike_types_le($$->type, int_type_string)],
+		F_ARG_LIST(2 = +[pike_types_le($$->type, int_type_string, 0, 0)],
 			   3 = +[!match_types(object_type_string, $$->type)]))):
   F_APPLY($1, F_ARG_LIST($2, F_APPLY($0, $3)));
 
@@ -95,7 +95,7 @@ F_APPLY(0 = F_CONSTANT
 		[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		[$$->u.sval.u.efun->function == f_multiply],
 		F_ARG_LIST(2 = +[!match_types(object_type_string, $$->type)],
-			   3 = +[pike_types_le($$->type, int_type_string)]))):
+			   3 = +[pike_types_le($$->type, int_type_string, 0, 0)]))):
   F_APPLY($1, F_ARG_LIST(F_APPLY($0, $2), $3));
 
 // search(indices(map), key) < 0)  =>  zero_type(map[key]) if typeof(map) <= mapping
@@ -107,7 +107,7 @@ F_LT(F_APPLY(F_CONSTANT
 				[TYPEOF($$->u.sval) == T_FUNCTION]
 				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
-				0 = +[pike_types_le($$->type, mapping_type_string)]),
+				0 = +[pike_types_le($$->type, mapping_type_string, 0, 0)]),
 			1)),
      F_CONSTANT
      [TYPEOF($$->u.sval) == T_INT]
@@ -125,7 +125,7 @@ F_EQ(F_APPLY(F_CONSTANT
 				[TYPEOF($$->u.sval) == T_FUNCTION]
 				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
-				0 = +[pike_types_le($$->type, mapping_type_string)]),
+				0 = +[pike_types_le($$->type, mapping_type_string, 0, 0)]),
 			1)),
      F_CONSTANT
      [TYPEOF($$->u.sval) == T_INT]
@@ -143,7 +143,7 @@ F_GE(F_APPLY(F_CONSTANT
 				[TYPEOF($$->u.sval) == T_FUNCTION]
 				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
-				0 = +[pike_types_le($$->type, mapping_type_string)]),
+				0 = +[pike_types_le($$->type, mapping_type_string, 0, 0)]),
 			1)),
      F_CONSTANT
      [TYPEOF($$->u.sval) == T_INT]
@@ -161,7 +161,7 @@ F_GE(F_APPLY(F_CONSTANT
 				[TYPEOF($$->u.sval) == T_FUNCTION]
 				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
-				0 = +[pike_types_le($$->type, mapping_type_string)]),
+				0 = +[pike_types_le($$->type, mapping_type_string, 0, 0)]),
 			1)),
      F_CONSTANT
      [TYPEOF($$->u.sval) == T_INT]
@@ -176,9 +176,9 @@ F_GE(F_APPLY(F_CONSTANT
 //
 // (sscanf(s, "%*!" + A + "s" + "xxxx", ...) || 1) - 1
 F_SSCANF(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
-                                                 string_type_string)],
+                                                 string_type_string, 0, 0)],
                             ':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
-                                                                      int_type_string)], -),
+                                                                      int_type_string, 0, 0)], -),
                                 F_RANGE_OPEN)),
                     2 = +), 3):
 {
@@ -481,7 +481,7 @@ F_RANGE(0, ':'(F_RANGE_FROM_BEG(1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT], *),
   /* Objects may want to use the range for obscure purposes. */
   if (!match_types(object_type_string, $0->type)) {
     yywarning("Range is always empty.");
-    if (pike_types_le($0->type, string_type_string)) {
+    if (pike_types_le($0->type, string_type_string, 0, 0)) {
       $$ = mkstrnode(empty_pike_string);
     }
   }
@@ -930,8 +930,8 @@ F_LAND(0 = F_LAND(*, +[node_is_false($$)]), *):
 '?'(0, ':'(F_COMMA_EXPR(1, 2), F_COMMA_EXPR(3, $2))):
   F_COMMA_EXPR('?'($0, ':'($1, $3)), $2);
 
-'?'(*, ':'(0=+, +[(pike_types_le($0->type, void_type_string) !=
-		   pike_types_le($$->type, void_type_string))])):
+'?'(*, ':'(0=+, +[(pike_types_le($0->type, void_type_string, 0, 0) !=
+		   pike_types_le($$->type, void_type_string, 0, 0))])):
 {
   yyerror("The arguments to ?: may not be void.");
 }
@@ -943,20 +943,20 @@ F_NOT(-, *):
 
 // The following only work on total orders. We can't assume that,
 // since it's not true for floats, and might not be true for objects.
-F_NOT(F_LT(0 [pike_types_le($$->type, int_type_string)],
-	   1 [pike_types_le($$->type, int_type_string)]), *):
+F_NOT(F_LT(0 [pike_types_le($$->type, int_type_string, 0, 0)],
+	   1 [pike_types_le($$->type, int_type_string, 0, 0)]), *):
   F_GE($0, $1);
 
-F_NOT(F_GT(0 [pike_types_le($$->type, int_type_string)],
-	   1 [pike_types_le($$->type, int_type_string)]), *):
+F_NOT(F_GT(0 [pike_types_le($$->type, int_type_string, 0, 0)],
+	   1 [pike_types_le($$->type, int_type_string, 0, 0)]), *):
   F_LE($0, $1);
 
-F_NOT(F_LE(0 [pike_types_le($$->type, int_type_string)],
-	   1 [pike_types_le($$->type, int_type_string)]), *):
+F_NOT(F_LE(0 [pike_types_le($$->type, int_type_string, 0, 0)],
+	   1 [pike_types_le($$->type, int_type_string, 0, 0)]), *):
   F_GT($0, $1);
 
-F_NOT(F_GE(0 [pike_types_le($$->type, int_type_string)],
-	   1 [pike_types_le($$->type, int_type_string)]), *):
+F_NOT(F_GE(0 [pike_types_le($$->type, int_type_string, 0, 0)],
+	   1 [pike_types_le($$->type, int_type_string, 0, 0)]), *):
   F_LT($0, $1);
 
 F_NOT(F_EQ(0, 1), *):
@@ -1095,7 +1095,7 @@ F_LOOP(0, -):
   F_POP_VALUE($0, -);
 
 // foreach(arr ; ; val) body; -> foreach(arr, val) body;
-F_FOREACH(F_FOREACH_VAL_LVAL(0[ pike_types_le($$->type, array_type_string) ],
+F_FOREACH(F_FOREACH_VAL_LVAL(0[ pike_types_le($$->type, array_type_string, 0, 0) ],
 		     ':'(-, 1) ), 2):
   F_FOREACH(F_FOREACH_VAL_LVAL($0, $1), $2);
 
@@ -1120,7 +1120,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 			     [TYPEOF($$->u.sval) == T_FUNCTION]
 			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_divide],
-			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string)],
+			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string, 0, 0)],
 					1 = F_CONSTANT
 					[TYPEOF($$->u.sval) == T_STRING]
 					[$$->u.sval.u.string->len == 1])),
@@ -1161,7 +1161,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 			     [TYPEOF($$->u.sval) == T_FUNCTION]
 			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_divide],
-			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string)],
+			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string, 0, 0)],
 					1 = F_CONSTANT
 					[TYPEOF($$->u.sval) == T_STRING]
 					[$$->u.sval.u.string->len == 1])),
@@ -1207,7 +1207,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 			     [TYPEOF($$->u.sval) == T_FUNCTION]
 			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_divide],
-			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string)],
+			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string, 0, 0)],
 					1 = F_CONSTANT
 					[TYPEOF($$->u.sval) == T_STRING]
 					[$$->u.sval.u.string->len == 1])),
@@ -1562,25 +1562,25 @@ F_LOOP(0, F_POP_VALUE(1, -)):
 
 // loop(n) ++x;  ==>  x+=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
-       F_INC [ pike_types_le($$->type, int_type_string) ]
+       F_INC [ pike_types_le($$->type, int_type_string, 0, 0) ]
        (1 = +[ !depend_p($$, $$) ], -)):
   F_POP_VALUE(F_ADD_EQ($1, $0), -);
 
 // loop(n) x++;  ==>  x+=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
-       F_POST_INC [ pike_types_le($$->type, int_type_string) ]
+       F_POST_INC [ pike_types_le($$->type, int_type_string, 0, 0) ]
        (1 = +[ !depend_p($$, $$) ], -)):
   F_POP_VALUE(F_ADD_EQ($1, $0), -);
 
 // loop(n) --x;  ==>  x-=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
-       F_DEC [ pike_types_le($$->type, int_type_string) ]
+       F_DEC [ pike_types_le($$->type, int_type_string, 0, 0) ]
        (1 = +[ !depend_p($$, $$) ], -)):
   F_POP_VALUE(F_SUB_EQ($1, $0), -);
 
 // loop(n) x--;  ==>  x-=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
-       F_POST_DEC [ pike_types_le($$->type, int_type_string) ]
+       F_POST_DEC [ pike_types_le($$->type, int_type_string, 0, 0) ]
        (1 = +[ !depend_p($$, $$) ], -)):
   F_POP_VALUE(F_SUB_EQ($1, $0), -);
 
@@ -1594,7 +1594,7 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 		[ !($$->tree_info & OPT_SIDE_EFFECT) ]
 		[ ((($$->type == int_type_string) &&
 		    ($1->type == int_type_string)) ||
-		   pike_types_le($$->type, string_type_string)) ])):
+		   pike_types_le($$->type, string_type_string, 0, 0)) ])):
   {
     $$ = mknode(F_POP_VALUE,
 		mknode('?',

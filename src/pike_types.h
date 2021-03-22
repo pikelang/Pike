@@ -136,7 +136,7 @@ enum pt_cmp_flags
 #define TYPE_GROUPING
 
 /*
- * Flags used by pike_types_le()
+ * Flags used by low_pike_types_le()
  */
 #define LE_WEAK_OBJECTS	1	/* Perform weaker checking of objects. */
 #define LE_A_B_SWAPPED	2	/* Argument A and B have been swapped.
@@ -364,7 +364,8 @@ struct pike_type *intersect_types(struct pike_type *a,
 int strict_check_call(struct pike_type *fun_type, struct pike_type *arg_type);
 int check_soft_cast(struct pike_type *to, struct pike_type *from);
 int match_types(struct pike_type *a,struct pike_type *b);
-int pike_types_le(struct pike_type *a, struct pike_type *b);
+int pike_types_le(struct pike_type *a, struct pike_type *b,
+		  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags);
 int check_variant_overload(struct pike_type *a, struct pike_type *b);
 struct pike_type *index_type(struct pike_type *type,
 			     struct pike_type *type_of_index,
