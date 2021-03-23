@@ -7319,7 +7319,7 @@ PMOD_EXPORT int is_val_false(const struct object *o)
 {
   struct object *val_object = get_val_false();
   int result = o == val_object;
-  free_object(o);
+  free_object(val_object);
   return result;
 }
 
@@ -7327,7 +7327,7 @@ PMOD_EXPORT int is_val_true(const struct object *o)
 {
   struct object *val_object = get_val_true();
   int result = o == val_object;
-  free_object(o);
+  free_object(val_object);
   return result;
 }
 
