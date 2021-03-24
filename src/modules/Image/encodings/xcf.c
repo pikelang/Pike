@@ -497,8 +497,8 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
     struct buffer loffset = *initial;
     struct layer_mask *m=(struct layer_mask *)xalloc(sizeof(struct layer_mask));
     res.mask = m;
-    read_data( &loffset, lm_offset );
     MEMSET(m, 0, sizeof( struct layer_mask ));
+    read_data( &loffset, lm_offset );
     *m = read_layer_mask( &loffset, initial );
   }
 
