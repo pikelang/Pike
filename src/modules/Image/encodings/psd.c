@@ -220,7 +220,12 @@ static void decode_layers_and_masks( struct psd_image *dst,
     layer->left = psd_read_int( src );
     layer->bottom = psd_read_int( src );
     layer->right = psd_read_int( src );
-    layer->num_channels = psd_read_short( src );
+    layer->num_channels = psd_read_ushort( src );
+
+    if (layer->num_channels > 24)
+      Pike_error("Cannot process PSDs with more than 24 layers (PSD claims to have: %d).\n",
+		 layer->num_channels);
+
     for(cnt=0; cnt<layer->num_channels; cnt++)
     {
       layer->channel_info[cnt].id = psd_read_ushort(src);
@@ -429,6 +434,8 @@ static void f_decode_image_data( INT32 args )
   pop_stack();
   if(s->len < w*h*d)
     Pike_error("Not enough data in string for this channel\n");
+  if (d == 1 && w && h && ct->len < 256 * 3)
+    Pike_error("Not enough data in color table.\n");
   source = (unsigned char *)s->str;
   source2 = source+w*h;
   source3 = source+w*h*2;
