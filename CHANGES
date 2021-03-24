@@ -9,14 +9,26 @@ o Inotify
   add_watch() now returns -1 for filsystem-related failures
   that may be due to the filsystem being in flux.
 
+o Image.BMP
+
+  Improved size check better detects malformed BMP images.
+
 o Image.GIF
 
   - Improve detection of malformed LZW bit sizes.
   - Improve detection of malformed LZW dictionary extensions.
 
+o Image.PCX
+
+  Improved size checks better detect malformed PCX images.
+
 o Image.PNG
 
   Improved size check better detects malformed PNG images.
+
+o Image.PSD
+
+  Improved size check better detects malformed PSD images.
 
 o Image.TGA
 
@@ -31,6 +43,10 @@ o Image.TIM
 o Image.WBF
 
   Improved size check better detects malformed WBF images.
+
+o Image.XCF
+
+  Fixed to properly initialize the layer mask structure.
 
 Building & Tools
 ----------------
