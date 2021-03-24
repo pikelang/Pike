@@ -1,9 +1,5 @@
-/* $Id: bmp.c,v 1.16 1999/07/11 15:46:19 marcus Exp $ */
-
 /*
 **! module Image
-**! note
-**!	$Id: bmp.c,v 1.16 1999/07/11 15:46:19 marcus Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +18,6 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.16 1999/07/11 15:46:19 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
