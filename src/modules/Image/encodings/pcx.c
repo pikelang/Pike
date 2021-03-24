@@ -1,5 +1,4 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.1 1999/04/06 03:50:50 per Exp $");
 
 #include "config.h"
 
