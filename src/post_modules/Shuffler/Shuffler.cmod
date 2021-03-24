@@ -248,7 +248,7 @@ PIKECLASS Shuffle
 
   static void _free_all_sources( struct Shuffle_struct *t, int dataref ) {
     struct source *sp = t->current_source;
-    while (sp && (!dataref || sp->eof && sp->dataref == dataref)) {
+    while (sp && (!dataref || (sp->eof && (sp->dataref == dataref)))) {
       struct source *n = sp->next;
       free_source( sp );
       sp = n;
@@ -527,7 +527,7 @@ PIKECLASS Shuffle
             memmove(t->iov + iova + 2, t->iov + iova + 1,
                     (t->iovfilled++ - iova - 1) * sizeof(*t->iov));
             len = t->iov[iova].iov_len += amntleft;
-            t->iov[iova + 1].iov_base = t->iov[iova].iov_base + len;
+            t->iov[iova + 1].iov_base = ((char *)t->iov[iova].iov_base) + len;
             t->iov[iova + 1].iov_len = -amntleft;
             {
               struct source *sp;
@@ -612,11 +612,11 @@ PIKECLASS Shuffle
           struct pike_string *wrap;
           SHUFFLE_DEBUG2("__send_more_callback(): sending(%d)\n", t, amntleft);
       
-          if (wrap = get_wrapstring(cursource, 0))
+          if ((wrap = get_wrapstring(cursource, 0)))
             amntleft = add_to_iov(t, wrap->str, wrap->len, amntleft);
           amntleft = add_to_iov(t, leftovers.data, leftovers.len, amntleft);
           cursource->dataref = t->iovfilled;
-          if (wrap = get_wrapstring(cursource, 1)) {
+          if ((wrap = get_wrapstring(cursource, 1))) {
             amntleft = add_to_iov(t, wrap->str, wrap->len, amntleft);
             cursource->dataref = t->iovfilled;
           }
@@ -672,7 +672,7 @@ PIKECLASS Shuffle
             sent -= n;
             if (!sent) {
               iov[i].iov_len -= n;
-              iov[i].iov_base += n;
+              iov[i].iov_base = ((char *)iov[i].iov_base) + n;
               break;
             }
             _free_all_sources(t, ++i);
@@ -967,7 +967,7 @@ PIKECLASS Shuffle
         return;
     }
 
-    if (TYPEOF(*source) == PIKE_T_ARRAY && (start && !wrap_cb || length))
+    if (TYPEOF(*source) == PIKE_T_ARRAY && ((start && !wrap_cb) || length))
       Pike_error(
        "An array source does not support start or length arguments.\n");
 
