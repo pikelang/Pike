@@ -1,5 +1,4 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.26 2000/12/01 08:10:05 hubbe Exp $");
 
 #include "image_machine.h"
 
