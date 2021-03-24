@@ -241,6 +241,9 @@ void img_tim_decode(INT32 args, int header_only)
      printf("CLUT4\n");
      printf("dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
 #endif
+     if (!(attr&FLAG_CLUT))
+       Pike_error("Malformed TIM image (CLUT mode but no CLUT bit)\n");
+
      s += 4; len -= 4;
      w = (s[0]|(s[1]<<8))*4;
      h = s[2]|(s[3]<<8);
@@ -254,6 +257,8 @@ void img_tim_decode(INT32 args, int header_only)
      printf("CLUT8\n");
      printf("dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
 #endif
+     if (!(attr&FLAG_CLUT))
+       Pike_error("Malformed TIM image (CLUT mode but no CLUT bit)\n");
      s += 4; len -= 4;
      w = (s[0]|(s[1]<<8))*2;
      h = s[2]|(s[3]<<8);
