@@ -47,7 +47,7 @@ int(0..3) extract_cls(int(0..) i) { return [int(0..3)](i & 3); }
 class Object
 {
   int(0..3) cls = 0;
-  int(1..) tag = 0;
+  int(0..) tag = 0;
   constant constructed = 0;
 
   constant type_name = "";
@@ -77,7 +77,7 @@ class Object
     return make_combined_tag(get_cls(), get_tag());
   }
 
-  protected string(0..255) der;
+  protected string(0..255)|zero der;
 
   // Should be overridden by subclasses
   this_program decode_primitive(string contents,
