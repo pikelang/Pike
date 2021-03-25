@@ -3391,8 +3391,7 @@ static const unsigned char *decode_value_basic_from(struct svalue *dst,
         }
 
         push_bignum(&tmp);
-        assign_svalue_no_free(dst, Pike_sp - 1);
-        Pike_sp--;
+        *dst = *--Pike_sp;
         mpz_clear(&tmp);
       }
 
