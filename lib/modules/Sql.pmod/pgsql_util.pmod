@@ -82,6 +82,7 @@ private class MUTEX {
 //! The instance of the pgsql dedicated backend.
 final Pike.Backend local_backend;
 
+private Shuffler.Shuffler shuffler = Shuffler.Shuffler();
 private Pike.Backend cb_backend;
 private Result qalreadyprinted;
 private Thread.Mutex backendmux = Thread.Mutex();
@@ -156,7 +157,7 @@ private void default_backend_runs() {		// Runs as soon as the
 protected void create() {
   atexit(_destruct);
   // Run callbacks from our local_backend until DefaultBackend has started
-  cb_backend = local_backend = Pike.Backend();
+  shuffler->set_backend(cb_backend = local_backend = Pike.Backend());
   call_out(default_backend_runs, 0);
 }
 
@@ -485,6 +486,7 @@ class conxion {
              |SSL.File
 #endif
                        socket;
+  final Shuffler.Shuffle shuffle;
   final multiset(Result) runningportals = (<>);
 
   final MUTEX nostash;
@@ -502,18 +504,6 @@ class conxion {
 #ifdef PG_DEBUG
   final int queueoutidx;
   final int queueinidx = -1;
-#endif
-
-#if PG_DEBUGHISTORY > 0
-  final int(-1..) output_to(Stdio.Stream stm, void|int(0..) nbytes) {
-    Stdio.Buffer tb = Stdio.Buffer(this);
-    int ret = o::output_to(stm, nbytes);
-    if (ret) {
-      i->history += ({">>" + tb->read(ret)});
-      i->history = i->history[<PG_DEBUGHISTORY - 1 ..];
-    }
-    return ret;
-  }
 #endif
 
   private inline void queueup(Result portal) {
@@ -558,15 +548,11 @@ class conxion {
     return !waitforreal && bufcon(this)->start();
   }
 
-  private int write_cb() {
-    Thread.MutexKey lock = shortmux->lock();
+  private void done_cb() {
     if (this) {				// Guard against async destructs
-      output_to(socket);
-      lock = 0;
-      if (!i->fillread && !sizeof(this))
+      if (!i->fillread)
         close();
     }
-    return 0;
   }
 
   private int getstash(int mode) {
@@ -628,10 +614,14 @@ outer:
               add(PGFLUSH);
             case SENDOUT:;
           }
-          Thread.MutexKey lock = shortmux->trylock();
-          if (lock && sizeof(this)) {
+          if (sizeof(this)) {
             PD("%d>Sendcmd %O\n", socket->query_fd(), (string)this);
-            output_to(socket);
+#if PG_DEBUGHISTORY > 0
+            i->history += ({">>" + (string)this});
+            i->history = i->history[<PG_DEBUGHISTORY - 1 ..];
+#endif
+            shuffle->add_source(this);
+            shuffle->start(1);
           }
         } while (0);
         started = 0;
@@ -752,7 +742,8 @@ outer:
         error(strerror(socket->errno()) + ".\n");
       socket->set_backend(local_backend);
       socket->set_buffer_mode(i, 0);
-      socket->set_nonblocking(i->read_cb, write_cb, close);
+      socket->set_nonblocking(i->read_cb, 0, close);
+      (shuffle = shuffler->shuffle(socket))->set_done_callback(done_cb);
       if (nossl != 2)
         Thread.Thread(pgsqlsess->processloop, this);
       return;
