@@ -113,20 +113,6 @@ PIKECLASS Buffer
     return get_storage(o, Buffer_program);
   }
 
-
-  static void io_unlock( Buffer *io )
-  {
-    io->locked--;
-  }
-
-  static void io_lock( Buffer *io )
-  {
-    io->locked++;
-  }
-
-  static void io_was_locked( )
-    ATTRIBUTE((noclone,noinline));
-
   PMOD_EXPORT void io_trim( Buffer *io )
     ATTRIBUTE((noinline));
 
@@ -163,7 +149,7 @@ PIKECLASS Buffer
 
   PMOD_EXPORT void io_trim( Buffer *io )
   {
-      if( io->allocated && (io->offset > 64 || io->len > 64) && !io->locked)
+      if( io->allocated && (io->offset > 64 || io->len > 64) && !io->child)
       {
           if( io->offset > 64 && io->offset > io_len(io) )
               io_discard_bufstart(io);
@@ -188,9 +174,15 @@ PIKECLASS Buffer
 	case PIKE_T_STRING:
 	  free_string(io->source.str);
 	  break;
-	case PIKE_T_MIXED: {
+	case PIKE_T_RING: {
           Buffer *parent = io->source.parent;
-          io_unlock(parent);
+          {
+            Buffer *cp = parent, *lc;
+            while ((lc = cp->child) != io)
+              cp = lc;
+            cp->child = io->child;	/* Unhook from ring */
+            io->child = 0;
+          }
 	  free_object(parent->this);
 	  break;
         }
@@ -261,7 +253,7 @@ PIKECLASS Buffer
      * as much.
      *
      */
-    if( LIKELY(!io->locked)
+    if( LIKELY(!io->child)
      && UNLIKELY((force && io->offset)
               || (io_len(io) && io->offset > io->allocated / 2)) )
     {
@@ -276,30 +268,52 @@ PIKECLASS Buffer
     {
       /* Actually grow the buffer. */
 
-      if (UNLIKELY(io->locked)) {
-        struct object *oldobj = io->this;
-        struct object *newobj
-         = io_read_buffer(io, io->len - io->offset, 1, growth);
-        Buffer *newbuffer = get_storage(newobj, Buffer_program);
-        unsigned char*cbuf = newbuffer->buffer;
-        int locks = io->locked - (io->max_waste < 0);
-        oldobj->refs -= locks;			/* Swap refs too */
-        newobj->refs += locks;
-        /* Orphaned members in the copied (parked) buffer:
-         *  locked
-         *  allocated
-         *  offset
-         *  len
+      if (UNLIKELY(io->child)) {
+        /*
+         * Growing a locked buffer goes in steps:
+         * - Copy the unconsumed content of the locked buffer to new space
+         *   with room for growth.
+         * - Swap the number of refs from the old buffer to the new buffer.
+         * - Swap the backreferences to the objects.
+         * - The new buffer now is orphaned, and merely exists
+         *   for the benefit of its subbuffers.  As soon as the last
+         *   subbuffer vanishes, it will get freed as well.
          */
-        io->locked = 0;
+        struct object *newobj;
+        Buffer *newbuffer;
+        struct object *oldobj;
+        int locks;
+        void *ptmp;
+        {
+          Buffer *cp = io, *lc;
+          while (UNLIKELY(lc = cp->child)) {
+            if (UNLIKELY(lc == io))
+              Pike_error("Readonly buffer cannot be extended.");
+            cp = lc;
+          }
+        }
+        newobj = io_read_buffer(io, io_len(io), 1, growth);
+        newbuffer = io_buffer_from_object(newobj);
+        locks = 0;
+        {
+          Buffer *cp = io, *lc;
+          while (UNLIKELY((lc = cp->child) != io && lc)) {
+            cp = lc;
+            cp->source.parent = newbuffer;
+            locks++;
+          }
+        }
+        oldobj = io->this;
+        oldobj->refs -= locks;			/* Swap refs too */
+        newobj->refs += locks - 1;	/* Compensate for initial copy */
+        ptmp = newbuffer->buffer;		/* Swap buffers */
         newbuffer->buffer = io->buffer;
-        io->buffer = cbuf;
+        io->buffer = ptmp;
+        newbuffer->child = io->child;
+        io->child = 0;
+        io->offset = newbuffer->offset;
         io->len = newbuffer->len;
-        io->offset = 0;
         io->allocated = newbuffer->allocated;
-        io->this = newobj;
-        newbuffer->this = oldobj;
-        io->max_waste = newbuffer->max_waste;
       } else {
         io->buffer = xrealloc( io->buffer, io->allocated + growth );
 #ifdef PIKE_DEBUG
@@ -615,11 +629,14 @@ PIKECLASS Buffer
 	case PIKE_T_STRING:
 	  add_ref(to->source.str = io->source.str);
 	  break;
-	case PIKE_T_MIXED:
+	case PIKE_T_RING:
           parent = io->source.parent;
+          /* FALLTHROUGH */
         default:
-          to->sourcetype = PIKE_T_MIXED;
-          io_lock(to->source.parent = parent);
+          to->sourcetype = PIKE_T_RING;
+          to->source.parent = parent;
+          to->child = parent->child;
+          parent->child = to;		/* Hook on ring */
           add_ref(parent->this);
           break;
 	case PIKE_T_OBJECT:
@@ -1771,14 +1788,14 @@ PIKECLASS Buffer
             case PIKE_T_OBJECT:
               push_static_text("object");
               break;
-            case PIKE_T_MIXED:
+            case PIKE_T_RING:
               push_static_text("subbuffer");
               break;
             default:
               push_static_text("allocated");
               break;
           }
-          if( THIS->locked )
+          if( THIS->child )
             push_static_text(" (read only)");
           else
             push_static_text("");
@@ -2367,9 +2384,11 @@ PIKECLASS Buffer
   PIKEFUN void set_max_waste(float howmuch)
   {
       Buffer *io = THIS;
-      io->max_waste = howmuch;
-      io_add_space( io, 0, 1 );
-      io_trim_waste( io );
+      if (LIKELY(howmuch >= 0 && io->max_waste >= 0)) {
+        io->max_waste = howmuch;
+        io_add_space( io, 0, 1 );
+        io_trim_waste( io );
+      }
   }
 
   /*! @decl void trim()
@@ -2760,9 +2779,16 @@ PIKECLASS Buffer
   PIKEFUN void read_only()
   {
     Buffer *io = THIS;
-    if (!(io->max_waste < 0)) {
-      io->max_waste = -1.0;	/* Marker to distinguish read-only buffers */
-      io_lock(io);
+    {
+      Buffer *cp = io, *lc;
+      while ((lc = cp->child) != io) {
+        if (!lc) {
+          /* Append yourself to force readonly */
+          cp->child = io;
+          break;
+        }
+        cp = lc;
+      }
     }
   }
 

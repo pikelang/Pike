@@ -7,14 +7,15 @@ struct _Buffer
 
   struct object *this;
   struct program *error_mode;
+  struct _Buffer *child;
 
   union {
     struct pike_string *str;	/* PIKE_T_STRING */
     struct object *obj;		/* PIKE_T_OBJECT */
-    struct _Buffer *parent;	/* PIKE_T_MIXED */
+    struct _Buffer *parent;	/* PIKE_T_RING */
   } source;
   INT32 sourcetype;		/* type for the source union */
-  INT32 locked, locked_move;
+  INT32 locked_move;
   float max_waste;
 
   struct svalue output;
@@ -56,7 +57,7 @@ static unsigned char *io_read_pointer(Buffer *io)
 PIKE_UNUSED_ATTRIBUTE
 static unsigned char *io_add_space( Buffer *io, size_t bytes, int force )
 {
-  if (LIKELY(!io->locked)) {
+  if (LIKELY(!io->child)) {
     if (UNLIKELY(io->len == io->offset) && LIKELY(!io->locked_move))
       io->offset = io->len = 0;
     if (LIKELY(!force && io->len+bytes < io->allocated
