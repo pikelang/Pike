@@ -719,6 +719,7 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   'f'	Insert double.
  *   'g'	Insert double.
  *   'o'	Insert octal integer.
+ *   'p'	Insert pointer.
  *   's'	Insert string.
  *   'u'	Insert unsigned decimal integer.
  *   'x'	Insert lower-case hexadecimal integer.
@@ -949,6 +950,18 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  break;
 	case 'o':
 	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args), flags), 8,
+					flags, min_width, precision);
+	  break;
+	case 'p':
+	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args),
+#if SIZEOF_CHAR_P == SIZEOF_LONG
+						       APPEND_WIDTH_LONG
+#elif SIZEOF_CHAR_P == 64
+						       APPEND_WIDTH_LONG_LONG
+#else /* SIZEOF_CHAR_P == 32 */
+						       0
+#endif
+						       ), 16,
 					flags, min_width, precision);
 	  break;
 	case 'x':
