@@ -363,6 +363,27 @@ PIKECLASS Shuffle
     __remove_callbacks( t );
   }
 
+  static void call_done_callback(struct Shuffle_struct *t, int reason) {
+    if (TYPEOF(t->done_callback) != PIKE_T_FREE) {
+      SHUFFLE_DEBUG3("_all_done(%d): Calling done callback: %p\n", t,
+		    reason, t->done_callback.u.object);
+      push_svalue( &t->done_callback );
+
+      if (t->state != PAUSED) {
+        /* Ensure us only calling the callback once. */
+        free_svalue(&t->done_callback);
+        mark_free_svalue(&t->done_callback);
+      }
+
+      ref_push_object(t->box.ref_obj);
+      push_int(reason);
+
+      apply_svalue(Pike_sp-3, 2);
+      pop_stack();
+      pop_stack();
+    }
+  }
+
   static void _all_done( struct Shuffle_struct *t, int reason )
   {
     SHUFFLE_DEBUG2("_all_done(%d)\n", t,reason );
@@ -378,6 +399,7 @@ PIKECLASS Shuffle
       case 0:
         if (t->autopause) {
           t->state = PAUSED;
+          call_done_callback(t, reason);
           return;
         }
         t->state = DONE;
@@ -417,23 +439,7 @@ PIKECLASS Shuffle
      * 95865471b36a441ad345cd7f23fe7d3260578c2f.
      *	/arne
      */
-    if( TYPEOF(t->done_callback) != PIKE_T_FREE )
-    {
-      SHUFFLE_DEBUG3("_all_done(%d): Calling done callback: %p\n", t,
-		    reason, t->done_callback.u.object);
-      push_svalue( &t->done_callback );
-
-      /* Ensure us only calling the callback once. */
-      free_svalue(&t->done_callback);
-      mark_free_svalue(&t->done_callback);
-
-      ref_push_object( t->box.ref_obj );
-      push_int( reason );
-
-      apply_svalue( Pike_sp-3, 2 );
-      pop_stack();
-      pop_stack();
-    }
+    call_done_callback(t, reason);
   }
 
   PIKEFUN void set_done_callback( function(object, int:void) cb )
@@ -830,7 +836,8 @@ PIKECLASS Shuffle
     *!
     *! @param autopause
     *! If true, automatically pause the shuffler when all sources
-    *! have been consumed.
+    *! have been consumed.  Everytime this happens, the @[done_callback]
+    *! will ben called.
     */
     optflags OPT_SIDE_EFFECT;
   {
