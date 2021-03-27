@@ -2887,15 +2887,15 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *UNUSED(me),
 
     /* The /dev/epoll interface exposes kernel implementation details...
      */
-    PDWERR("epoll_ctl(%d, EPOLL_CTL_MOD, %d, { 0x%08x, %d })\n",
+    PDWERR("epoll_ctl(%d, EPOLL_CTL_ADD, %d, { 0x%08x, %d })\n",
            pfd, fd, events, fd);
-    while (((e = epoll_ctl(pfd, EPOLL_CTL_MOD, fd, &ev)) < 0)  &&
+    while (((e = epoll_ctl(pfd, EPOLL_CTL_ADD, fd, &ev)) < 0)  &&
 	   (errno == EINTR))
       ;
-    if ((e < 0) && (errno == ENOENT)) {
-      PDWERR("epoll_ctl(%d, EPOLL_CTL_ADD, %d, { 0x%08x, %d })\n",
+    if ((e < 0) && (errno == EEXIST)) {
+      PDWERR("epoll_ctl(%d, EPOLL_CTL_MOD, %d, { 0x%08x, %d })\n",
              pfd, fd, events, fd);
-      while (((e = epoll_ctl(pfd, EPOLL_CTL_ADD, fd, &ev)) < 0)  &&
+      while (((e = epoll_ctl(pfd, EPOLL_CTL_MOD, fd, &ev)) < 0)  &&
 	     (errno == EINTR))
 	;
     }
