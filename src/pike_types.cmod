@@ -1396,7 +1396,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
       push_type(type->type);
       if (markers[m]) push_type(T_OR);
     } else if (!markers[m]) {
-      push_type(T_ZERO);
+      push_type(PIKE_T_UNKNOWN);
     }
     TYPE_STACK_DEBUG("push_finished_type_with_markers");
     return;
