@@ -704,6 +704,7 @@ outer:
     catch {
       for (; ; clear()) {
         socket->connect(pgsqlsess. host, pgsqlsess. port);
+        socket->nodelay(1);
 #if constant(SSL.File)
         if (!nossl && !pgsqlsess->nossl
          && (pgsqlsess.options.use_ssl || pgsqlsess.options.force_ssl)) {

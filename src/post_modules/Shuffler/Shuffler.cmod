@@ -134,9 +134,18 @@ PIKECLASS Shuffle
   CVAR int iovamount;
   CVAR int iovfilled;
 
+  static void set_fdstate(struct Shuffle_struct*s) {
+    if (s->box.fd >= 0)
+      s->oldbulkmode = bulkmode_start(s->box.fd);
+  }
+
+  static void restore_fdstate(struct Shuffle_struct*s) {
+    if (s->box.fd >= 0)
+      bulkmode_restore(s->box.fd, s->oldbulkmode);
+  }
+
   static void take_fd(struct Shuffle_struct*s) {
     if (s->box.fd >= 0) {
-      bulkmode_restore(s->box.fd, s->oldbulkmode);
       close(s->box.fd);
       unhook_fd_callback_box(&s->box);
       s->box.fd = -1;
@@ -283,6 +292,7 @@ PIKECLASS Shuffle
   {
     SHUFFLE_DEBUG1("exit()\n", THIS );
 
+    restore_fdstate(THIS);
     take_fd(THIS);
 
     if (THIS->iov) {
@@ -356,6 +366,8 @@ PIKECLASS Shuffle
   static void _all_done( struct Shuffle_struct *t, int reason )
   {
     SHUFFLE_DEBUG2("_all_done(%d)\n", t,reason );
+
+    restore_fdstate(t);
 
     /* Remove our callbacks. */
     _remove_callbacks( t );
@@ -797,7 +809,6 @@ PIKECLASS Shuffle
     if( THIS->box.fd >= 0 )
     {
       set_nonblocking( THIS->box.fd, 1 );
-      THIS->oldbulkmode = bulkmode_start(THIS->box.fd);
       if(THIS->box.backend) {
 	/* FIXME: Ought to change backend to be here. */
         set_fd_callback_events(&THIS->box, 0, 0);
@@ -828,6 +839,7 @@ PIKECLASS Shuffle
     THIS->autopause = autopause && autopause->u.integer;
     THIS->state = RUNNING;
     SHUFFLE_DEBUG1("start()\n", THIS );
+    set_fdstate(THIS);
     _set_callbacks(THIS->self);  /* Shuffle */
   }
 
