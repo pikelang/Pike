@@ -434,7 +434,7 @@ static void f_decode_image_data( INT32 args )
   pop_stack();
   if(s->len < w*h*d)
     Pike_error("Not enough data in string for this channel\n");
-  if (d == 1 && w && h && ct->len < 256 * 3)
+  if (ct && (d == 1 || d == 2) && w && h && ct->len < 256 * 3)
     Pike_error("Not enough data in color table.\n");
   source = (unsigned char *)s->str;
   source2 = source+w*h;
