@@ -321,26 +321,35 @@ PIKECLASS Shuffle
     _request( t, l );
   }
 
-  static struct source *_active_source(struct source* current_source)
+  static struct source *_lastactive_source(struct source* current_source)
   {
     struct source *n = current_source;
-    if (current_source && current_source->eof)
-      while ((current_source = current_source->next) && current_source->eof);
+    while (n && n->eof) {
+      current_source = n;
+      n = n->next;
+    }
     return current_source;
+  }
+
+  static struct source *_nextactive_source(struct source* current_source)
+  {
+    current_source = _lastactive_source(current_source);
+    return current_source && current_source->eof
+           ? current_source->next : current_source;
   }
 
   static void _set_callbacks(struct object *shuffle)
   {
     struct Shuffle_struct *t = (struct Shuffle_struct *)shuffle->storage;
     SHUFFLE_DEBUG1("_set_callbacks()\n", t );
-    cur_setup_callbacks(_active_source(t->current_source));
+    cur_setup_callbacks(_nextactive_source(t->current_source));
     __set_callbacks( t );
   }
 
   static void _remove_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG1("_remove_callbacks()\n",t );
-    cur_remove_callbacks(_active_source(t->current_source));
+    cur_remove_callbacks(_nextactive_source(t->current_source));
     __remove_callbacks( t );
   }
 
@@ -539,7 +548,8 @@ PIKECLASS Shuffle
         } else
           break;
       
-        cursource = _active_source(cursource);
+        cursource = _lastactive_source(cursource);
+
         if (cursource && cursource->eof) {
           cursource = cursource->next;
           cur_setup_callbacks(cursource);	  // FIXME setup too often?
@@ -550,7 +560,6 @@ PIKECLASS Shuffle
       
         if (!cursource) {
           SHUFFLE_DEBUG1("__send_more_callback(): no sources\n", t );
-          reason = 0;
           break;
         }
       
@@ -684,7 +693,8 @@ PIKECLASS Shuffle
               sp->dataref -= i;
           }
         }
-      }
+      } else if (!cursource && !(cursource = _nextactive_source(t->current_source)))
+        reason = 0;
     } while (reason < -1 && amount);
       
     if (amount)
