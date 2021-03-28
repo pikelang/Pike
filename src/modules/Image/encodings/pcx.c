@@ -295,12 +295,12 @@ static struct object *low_pcx_decode( struct pike_string *data )
      switch(pcx_header.planes)
      {
       case 1:
-	if (pcx_header.bytesperline < (width >> 3))
+	if (pcx_header.bytesperline <= ((width - 1) >> 3))
 	  Pike_error("Malformed PCX Image.\n");
         load_mono_pcx( &pcx_header, &b, dest );
         break;
       case 4: /* palette 16 bpl planar image!? */
-	if (pcx_header.bytesperline < (width >> 3))
+	if (pcx_header.bytesperline <= ((width - 1) >> 3))
 	  Pike_error("Malformed PCX Image.\n");
         load_planar_palette_pcx( &pcx_header, &b, dest );
         break;
