@@ -2573,7 +2573,6 @@ static void file_send_fd(INT32 args)
 
 #endif
 
-#ifdef SO_LINGER
 /*! @decl int(0..1) linger(int(-1..65535)|void seconds)
  *!
  *! Set the socket linger behaviour on @[close()].
@@ -2628,11 +2627,15 @@ static void file_linger(INT32 args)
     li.l_linger = linger;
   }
 
+#ifdef SO_LINGER
   while ((fd_setsockopt(fd, SOL_SOCKET, SO_LINGER,
 			(char *)&li, sizeof(li)) < 0) &&
 	 (errno == EINTR)) {
     errno = 0;
   }
+#else
+  errno = ENOPROTOOPT;
+#endif
   if (errno) {
     ERRNO = errno;
     push_int(0);
@@ -2640,9 +2643,7 @@ static void file_linger(INT32 args)
     push_int(1);
   }
 }
-#endif
 
-#ifdef TCP_NODELAY
 /*! @decl int(0..1) set_nodelay(int(0..1)|void state)
  *!
  *! Control Nagle's Algorithm (RFC 896)
@@ -2678,12 +2679,16 @@ static void file_nodelay(INT32 args)
     SIMPLE_ARG_TYPE_ERROR("set_nodelay()", 1, "int(0..1)");
   }
 
+#ifdef TCP_NODELAY
   errno = 0;
   while ((fd_setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
 			&state, sizeof(state)) < 0) &&
 	 (errno == EINTR)) {
     errno = 0;
   }
+#else
+  errno = ENOPROTOOPT;
+#endif
   if (errno) {
     ERRNO = errno;
     push_int(0);
@@ -2691,7 +2696,6 @@ static void file_nodelay(INT32 args)
     push_int(1);
   }
 }
-#endif
 
 #ifndef SHUT_RD
 #define SHUT_RD	0
