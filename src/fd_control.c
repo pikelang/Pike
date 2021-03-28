@@ -154,12 +154,6 @@ PMOD_EXPORT int bulkmode_start(int fd) {
   int ret = 0;
   // FIXME Cache NODELAY/CORK state to avoid getsockopt() system calls
 #ifdef SOL_TCP
-#ifdef TCP_NODELAY
-  if (!gsockopt(fd, TCP_NODELAY)) {
-    ssockopt(fd, TCP_NODELAY, 1);	// Disable Nagle mode.
-    ret = 1;
-  }
-#endif /* TCP_NODELAY */
 #ifdef TCP_CORK
   if (!gsockopt(fd, TCP_CORK)) {
     ssockopt(fd, TCP_CORK, 1);		// Turn on cork mode.
@@ -177,10 +171,6 @@ PMOD_EXPORT void bulkmode_restore(int fd, int which) {
   if (!(which & 2))		// Only replug cork if it was on before
     ssockopt(fd, TCP_CORK, 1);
 #endif
-#ifdef TCP_NODELAY
-  if (which & 1)	// Only enable Nagle if it was enabled before
-    ssockopt(fd, TCP_NODELAY, 0);
-#endif /* TCP_CORK || TCP_NODELAY */
 #endif /* SOL_TCP */
 }
 

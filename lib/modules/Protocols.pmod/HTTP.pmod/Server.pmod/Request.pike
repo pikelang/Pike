@@ -151,6 +151,7 @@ void attach_fd(Stdio.NonblockingStream _fd, Port server,
    request_callback=_request_callback;
    error_callback = _error_callback;
    my_fd->set_nonblocking(read_cb,0,close_cb);
+   my_fd->set_nodelay(1);
    call_out(connection_timeout,connection_timeout_delay);
    if (already_data && strlen(already_data))
       read_cb(0,already_data);
