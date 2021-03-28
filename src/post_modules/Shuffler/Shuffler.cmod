@@ -19,6 +19,7 @@
 #include "backend.h"
 #include "module_support.h"
 #include "array.h"
+#include "multiset.h"
 #include "builtin_functions.h"
 #include "bignum.h"
 
@@ -1025,20 +1026,7 @@ PIKECLASS Shuffler
   PIKEVAR object backend;
   PIKEVAR object throttler;
 
-  PIKEVAR array shuffles;
-
-  static void update_shuffles(void)
-  {
-    push_array( THIS->shuffles );
-    debug_malloc_touch( THIS->shuffles );
-    push_int(0);
-    f_aggregate(1);
-    o_subtract();
-    THIS->shuffles = Pike_sp[-1].u.array;
-    debug_malloc_touch( THIS->shuffles );
-    Pike_sp--;
-  }
-
+  PIKEVAR multiset shuffles;
 
   PIKEFUN void set_backend( object b )
     /*! @decl void set_backend( Pike.Backend b );
@@ -1074,14 +1062,14 @@ PIKECLASS Shuffler
      *!
      */
   {
-    int i;
-    update_shuffles();
-    for( i = 0; i<THIS->shuffles->size; i++ )
-    {
+    ptrdiff_t p = multiset_first(THIS->shuffles);
+    for (; p >= 0; p = multiset_next(THIS->shuffles, p)) {
+      struct svalue shuf;
+      use_multiset_index(THIS->shuffles, p, shuf);
       struct Shuffle_struct *s =
-	(struct Shuffle_struct *)THIS->shuffles->item[i].u.object->storage;
+	(struct Shuffle_struct *)shuf.u.object->storage;
       if( s->state == RUNNING )
-	_remove_callbacks( s );
+	_remove_callbacks(s);
     }
   }
 
@@ -1091,12 +1079,12 @@ PIKECLASS Shuffler
      *!
      */
   {
-    int i;
-    update_shuffles();
-    for( i = 0; i<THIS->shuffles->size; i++ )
-    {
+    ptrdiff_t p = multiset_first(THIS->shuffles);
+    for (; p >= 0; p = multiset_next(THIS->shuffles, p)) {
+      struct svalue shuf;
+      use_multiset_index(THIS->shuffles, p, shuf);
       struct Shuffle_struct *s =
-	(struct Shuffle_struct *)THIS->shuffles->item[i].u.object->storage;
+	(struct Shuffle_struct *)shuf.u.object->storage;
       if( s->state == RUNNING )
 	_set_callbacks(s->self);   /* Shuffle */
     }
@@ -1104,13 +1092,7 @@ PIKECLASS Shuffler
 
   PIKEFUN void ___remove_shuffle( object so )
   {
-    f_aggregate(1);
-    push_array( THIS->shuffles );
-    stack_swap();
-    o_subtract();
-    THIS->shuffles = Pike_sp[-1].u.array;
-    debug_malloc_touch( THIS->shuffles );
-    Pike_sp--;
+    multiset_delete(THIS->shuffles, Pike_sp - 1);
   }
 
   PIKEFUN object
@@ -1151,20 +1133,13 @@ PIKECLASS Shuffler
         *Pike_sp++ = cstart;
         /* FALL THROUGH */
     }
-    push_object( clone_object( Shuffle_program, 3 + args) );
-    stack_dup();
-    f_aggregate( 1 );
-    push_array( THIS->shuffles );
-    stack_swap();
-    f_add(2);
-    THIS->shuffles = Pike_sp[-1].u.array;
-    debug_malloc_touch( THIS->shuffles );
-    Pike_sp--;
+    ref_push_object(clone_object(Shuffle_program, 3 + args));
+    multiset_insert(THIS->shuffles, Pike_sp - 1);
   }
 
   INIT
   {
-    THIS->shuffles = allocate_array(0);
+    THIS->shuffles = allocate_multiset (0, 0, NULL);
   }
 }
 
