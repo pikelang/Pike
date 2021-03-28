@@ -274,10 +274,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
      switch(pcx_header.planes)
      {
       case 1:
-	if (pcx_header.bytesperline < width
-	    || b.len < ((256 * 3)
-	       + (unsigned INT64)height
-	       * (unsigned INT64)pcx_header.bytesperline))
+	if (pcx_header.bytesperline < width || b.len < 256 * 3)
 	{
 	  Pike_error("Malformed PCX Image.\n");
 	}
