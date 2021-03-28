@@ -69,8 +69,8 @@ extern struct program *image_program;
 
 
 static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
-			    unsigned char *clut, unsigned int h,
-			    unsigned int w)
+			    unsigned char *clut, int clutlength,
+                            unsigned int h, unsigned int w)
 {
   INT32 cnt = h * w;
   switch(attr&7) {
@@ -90,9 +90,13 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
        int i, cluti = (src[0]&0xf)*2;
        unsigned int p;
 
+       if (clutlength <= cluti + 1)
+         Pike_error("Malformed TIM image.\n");
+
+       p = clut[cluti]|(clut[cluti+1]<<8);
+
        for(i=0; i<2; i++)
        {
-	 p = clut[cluti]|(clut[cluti+1]<<8);
          dst->b = ((p&0x7c00)>>7)|((p&0x7000)>>12);
          dst->g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
          dst->r = ((p&0x001f)<<3)|((p&0x001c)>>2);
@@ -105,7 +109,12 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
    case MODE_CLUT8:
      while(cnt--) {
        int cluti = (src[0])*2;
-       unsigned int p = clut[cluti]|(clut[cluti+1]<<8);
+       unsigned int p;
+
+       if (clutlength <= cluti + 1)
+         Pike_error("Malformed TIM image.\n");
+
+       p = clut[cluti]|(clut[cluti+1]<<8);
 
        dst->b = ((p&0x7c00)>>7)|((p&0x7000)>>12);
        dst->g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
@@ -301,7 +310,7 @@ void img_tim_decode(INT32 args, int header_only)
     push_object(o);
     n++;
 
-    tim_decode_rect(attr, s, img->img, clut, h, w);
+    tim_decode_rect(attr, s, img->img, clut, bsize, h, w);
 
     if(hasalpha) {
       push_static_text("alpha");
