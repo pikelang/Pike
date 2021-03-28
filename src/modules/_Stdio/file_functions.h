@@ -43,7 +43,7 @@ FILE_FUNC("linger", file_linger,
 
 #ifdef TCP_NODELAY
 /* function(int(0..1)|void:int(0..1)) */
-FILE_FUNC("nodelay", file_nodelay,
+FILE_FUNC("set_nodelay", file_nodelay,
 	  tFunc(tOr(tInt01, tVoid), tInt01))
 #endif
 
