@@ -299,6 +299,11 @@ PIKECLASS Shuffle
       debug_malloc_touch(THIS->iov);
       free(THIS->iov);
     }
+    if (THIS->file_obj) {
+      debug_malloc_touch(THIS->file_obj);
+      free_object(THIS->file_obj);
+      THIS->file_obj = 0;
+    }
     _free_all_sources(THIS, 0);
   }
 
