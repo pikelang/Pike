@@ -3410,6 +3410,25 @@ named_class: TOK_CLASS line_number_info simple_identifier
       }
     }
 
+    /* Update the type for the program constant,
+     * since we may have a lfun::create().
+     *
+     * Do this before end_first_pass(), to keep
+     * override_identifier() et al happy.
+     */
+    {
+      struct identifier *i;
+      struct svalue sv;
+      SET_SVAL(sv, T_PROGRAM, 0, program, Pike_compiler->new_program);
+      i = ID_FROM_INT(Pike_compiler->previous->new_program, $<number>4);
+      free_type(i->type);
+      i->type = get_type_of_svalue(&sv);
+      if (Pike_compiler->new_program->flags & PROGRAM_CONSTANT) {
+	/* Update, in case of @constant. */
+	i->opt_flags = 0;
+      }
+    }
+
     if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
       p=end_first_pass(0);
     else
@@ -3418,18 +3437,6 @@ named_class: TOK_CLASS line_number_info simple_identifier
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS end\n"); */
 
     if(p) {
-      /* Update the type for the program constant,
-       * since we might have a lfun::create(). */
-      struct identifier *i;
-      struct svalue sv;
-      SET_SVAL(sv, T_PROGRAM, 0, program, p);
-      i = ID_FROM_INT(Pike_compiler->new_program, $<number>4);
-      free_type(i->type);
-      i->type = get_type_of_svalue(&sv);
-      if (p->flags & PROGRAM_CONSTANT) {
-	/* Update, in case of @constant. */
-	i->opt_flags = 0;
-      }
       free_program(p);
     } else if (!Pike_compiler->num_parse_error) {
       /* Make sure code in this class is aware that something went wrong. */
