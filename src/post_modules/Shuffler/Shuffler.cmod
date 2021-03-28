@@ -1023,17 +1023,17 @@ PIKECLASS Shuffler
   PIKEVAR object backend;
   PIKEVAR object throttler;
 
-  PIKEVAR array sources;
+  PIKEVAR array shuffles;
 
-  static void update_sources(void)
+  static void update_shuffles(void)
   {
-    push_array( THIS->sources );
-    debug_malloc_touch( THIS->sources );
+    push_array( THIS->shuffles );
+    debug_malloc_touch( THIS->shuffles );
     push_int(0);
     f_aggregate(1);
     o_subtract();
-    THIS->sources = Pike_sp[-1].u.array;
-    debug_malloc_touch( THIS->sources );
+    THIS->shuffles = Pike_sp[-1].u.array;
+    debug_malloc_touch( THIS->shuffles );
     Pike_sp--;
   }
 
@@ -1073,11 +1073,11 @@ PIKECLASS Shuffler
      */
   {
     int i;
-    update_sources();
-    for( i = 0; i<THIS->sources->size; i++ )
+    update_shuffles();
+    for( i = 0; i<THIS->shuffles->size; i++ )
     {
       struct Shuffle_struct *s =
-	(struct Shuffle_struct *)THIS->sources->item[i].u.object->storage;
+	(struct Shuffle_struct *)THIS->shuffles->item[i].u.object->storage;
       if( s->state == RUNNING )
 	_remove_callbacks( s );
     }
@@ -1090,11 +1090,11 @@ PIKECLASS Shuffler
      */
   {
     int i;
-    update_sources();
-    for( i = 0; i<THIS->sources->size; i++ )
+    update_shuffles();
+    for( i = 0; i<THIS->shuffles->size; i++ )
     {
       struct Shuffle_struct *s =
-	(struct Shuffle_struct *)THIS->sources->item[i].u.object->storage;
+	(struct Shuffle_struct *)THIS->shuffles->item[i].u.object->storage;
       if( s->state == RUNNING )
 	_set_callbacks(s->self);   /* Shuffle */
     }
@@ -1103,11 +1103,11 @@ PIKECLASS Shuffler
   PIKEFUN void ___remove_shuffle( object so )
   {
     f_aggregate(1);
-    push_array( THIS->sources );
+    push_array( THIS->shuffles );
     stack_swap();
     o_subtract();
-    THIS->sources = Pike_sp[-1].u.array;
-    debug_malloc_touch( THIS->sources );
+    THIS->shuffles = Pike_sp[-1].u.array;
+    debug_malloc_touch( THIS->shuffles );
     Pike_sp--;
   }
 
@@ -1152,17 +1152,17 @@ PIKECLASS Shuffler
     push_object( clone_object( Shuffle_program, 3 + args) );
     stack_dup();
     f_aggregate( 1 );
-    push_array( THIS->sources );
+    push_array( THIS->shuffles );
     stack_swap();
     f_add(2);
-    THIS->sources = Pike_sp[-1].u.array;
-    debug_malloc_touch( THIS->sources );
+    THIS->shuffles = Pike_sp[-1].u.array;
+    debug_malloc_touch( THIS->shuffles );
     Pike_sp--;
   }
 
   INIT
   {
-    THIS->sources = allocate_array(0);
+    THIS->shuffles = allocate_array(0);
   }
 }
 
