@@ -549,10 +549,8 @@ class conxion {
   }
 
   private void done_cb() {
-    if (this) {				// Guard against async destructs
-      if (!i->fillread)
-        close();
-    }
+    if (!i->fillread)
+      close();
   }
 
   private int getstash(int mode) {
@@ -649,6 +647,7 @@ outer:
       {
         Thread.MutexKey lock = i->fillreadmux->lock();
         if (i->fillread) {  // Delayed close() after flushing the output buffer
+          shuffle->set_done_callback(done_cb);
           i->fillread.signal();
           i->fillread = 0;
         }
@@ -686,6 +685,7 @@ outer:
         if (socket->set_non_blocking)
           socket->set_non_blocking();			// Drop all callbacks
         PD("%d>Close socket\n", socket->query_fd());
+        shuffle->stop();
         socket->close();		// This will be an asynchronous close
       }
       destruct(this);
@@ -744,7 +744,7 @@ outer:
       socket->set_backend(local_backend);
       socket->set_buffer_mode(i, 0);
       socket->set_nonblocking(i->read_cb, 0, close);
-      (shuffle = shuffler->shuffle(socket))->set_done_callback(done_cb);
+      shuffle = shuffler->shuffle(socket);
       if (nossl != 2)
         Thread.Thread(pgsqlsess->processloop, this);
       return;
