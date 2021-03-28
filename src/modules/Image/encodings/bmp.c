@@ -704,6 +704,10 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
    push_int(xsize);
    push_int(ysize);
+
+   if (!(xsize || ysize))
+      Pike_error("Image.BMP.decode: Cannot decode image with less than two dimensions.\n");
+
    push_object(o=clone_object(image_program,2));
    img=(struct image*)get_storage(o,image_program);
    n++;
