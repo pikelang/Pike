@@ -1104,6 +1104,12 @@ PIKECLASS Shuffler
      *! The destination has to support nonblocking I/O
      *! through @[set_nonblocking_keep_callbacks] and @[set_write_callback]
      *! member functions.
+     *!
+     *! @note
+     *!  For destinations that connect directly to a kernel-filedescriptor
+     *!  please note that the filedescriptor will be dup()ed for the duration
+     *!  of the shuffle.  This means that if the original destination object
+     *!  is kept, we temporarily use two filedescriptors for it.
      */
   {
     struct svalue cstart, clength;
