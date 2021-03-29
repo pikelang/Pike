@@ -3144,11 +3144,11 @@ int override_identifier (struct reference *new_ref, struct pike_string *name,
 
       /* Check if the symbol was used before it was inherited. */
       if ((c->lex.pragmas & ID_STRICT_TYPES) &&
+	  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	  (sub_ref->id_flags & ID_USED)) {
 	struct identifier *sub_id = ID_FROM_PTR(inh->prog, sub_ref);
 	if (IDENTIFIER_IS_FUNCTION(sub_id->identifier_flags)) {
-	  if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-	      !pike_types_le(ID_FROM_PTR(Pike_compiler->new_program,
+	  if (!pike_types_le(ID_FROM_PTR(Pike_compiler->new_program,
 					 new_ref)->type, sub_id->type, 0, 0)) {
 	    yytype_report(REPORT_WARNING,
 			  NULL, 0, sub_id->type,
