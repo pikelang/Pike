@@ -113,22 +113,6 @@ PIKECLASS Buffer
     return get_storage(o, Buffer_program);
   }
 
-
-  static void io_unlock( Buffer *io )
-  {
-    io->locked--;
-  }
-
-  static void io_lock( Buffer *io )
-  {
-    io->locked++;
-  }
-
-#if 0
-  static void io_was_locked( )
-    ATTRIBUTE((noclone,noinline));
-#endif
-
   PMOD_EXPORT void io_trim( Buffer *io )
     ATTRIBUTE((noinline));
 
