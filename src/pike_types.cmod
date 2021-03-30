@@ -1051,6 +1051,23 @@ void debug_push_type(unsigned int type)
       free_type(*(Pike_compiler->type_stackp--));
       return;
     }
+    if (!Pike_compiler->type_stackp[0]) {
+      Pike_compiler->type_stackp--;
+      if ((type & PIKE_T_MASK) == T_AND) {
+	free_type(Pike_compiler->type_stackp[0]);
+	Pike_compiler->type_stackp[0] = NULL;
+      }
+      return;
+    }
+    if (!Pike_compiler->type_stackp[-1]) {
+      if ((type & PIKE_T_MASK) == T_AND) {
+	free_type(Pike_compiler->type_stackp[0]);
+      } else {
+	Pike_compiler->type_stackp[-1] = Pike_compiler->type_stackp[0];
+      }
+      Pike_compiler->type_stackp--;
+      return;
+    }
     if (Pike_compiler->type_stackp[0]->type == type) {
       /* The top type is the same as our type.
        * Split it and join the parts with the other type.
@@ -1116,6 +1133,13 @@ void debug_push_type(unsigned int type)
      */
     {
       struct pike_type *t = *Pike_compiler->type_stackp;
+      if (!t) {
+	Pike_compiler->type_stackp--;
+	push_type(T_MIXED);
+	push_type(T_VOID);
+	push_type(T_OR);
+	break;
+      }
       if (t->type == T_NOT) {
 	*Pike_compiler->type_stackp = t->car;
 	add_ref(t->car);
