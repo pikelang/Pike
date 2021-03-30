@@ -2632,7 +2632,7 @@ PIKECLASS Buffer
 
   /*! @decl int read_le_int( int n )
    *!
-   *! Read a big endian byte order unsigned number of size n*8 bits,
+   *! Read a little endian byte order unsigned number of size n*8 bits,
    *! then return it.
    *!
    *! Will return -1 if there is not enough buffer space available
