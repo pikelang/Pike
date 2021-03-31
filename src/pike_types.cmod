@@ -929,7 +929,7 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
   }
 
   /* Attempt to propagate the operator towards the leaf nodes. */
-  switch(t->type & PIKE_T_MASK) {
+  switch(t?(t->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
   case T_ASSIGN:
