@@ -7909,25 +7909,27 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     /* check the returntype */
     a = a->cdr;
     b = b->cdr;
-    if ((b->type == T_VOID) && (a->type != T_VOID)) {
-      /* Promote b to a function returning zero. */
-      if (!(tmp = low_match_types(a, zero_type_string,
-				  flags & ~(A_EXACT|B_EXACT)))) {
-	return 0;
+    if (a && b) {
+      if ((b->type == T_VOID) && (a->type != T_VOID)) {
+	/* Promote b to a function returning zero. */
+	if (!(tmp = low_match_types(a, zero_type_string,
+				    flags & ~(A_EXACT|B_EXACT)))) {
+	  return 0;
+	}
+	free_type(tmp);
+      } else if ((a->type == T_VOID) && (b->type != T_VOID)) {
+	/* Promote a to a function returning zero. */
+	if(!(tmp = low_match_types(zero_type_string, b,
+				   flags & ~(A_EXACT|B_EXACT)))) {
+	  return 0;
+	}
+	free_type(tmp);
+      } else {
+	if(!(tmp = low_match_types(a, b, flags & ~(A_EXACT|B_EXACT)))) {
+	  return 0;
+	}
+	free_type(tmp);
       }
-      free_type(tmp);
-    } else if ((a->type == T_VOID) && (b->type != T_VOID)) {
-      /* Promote a to a function returning zero. */
-      if(!(tmp = low_match_types(zero_type_string, b,
-				 flags & ~(A_EXACT|B_EXACT)))) {
-	return 0;
-      }
-      free_type(tmp);
-    } else {
-      if(!(tmp = low_match_types(a, b, flags & ~(A_EXACT|B_EXACT)))) {
-	return 0;
-      }
-      free_type(tmp);
     }
     add_ref(ret);
     return ret;
