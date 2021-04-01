@@ -1093,6 +1093,7 @@ PIKECLASS Shuffler
   PIKEFUN void ___remove_shuffle( object so )
   {
     multiset_delete(THIS->shuffles, Pike_sp - 1);
+    pop_stack();
   }
 
   PIKEFUN object
@@ -1139,7 +1140,7 @@ PIKECLASS Shuffler
         *Pike_sp++ = cstart;
         /* FALL THROUGH */
     }
-    ref_push_object(clone_object(Shuffle_program, 3 + args));
+    push_object(clone_object(Shuffle_program, 3 + args));
     multiset_insert(THIS->shuffles, Pike_sp - 1);
   }
 
