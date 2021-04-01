@@ -269,7 +269,7 @@ PIKECLASS Shuffle
     THIS->throttler = 0;
     THIS->sent = 0;
     THIS->autopause = 0;
-    mark_free_svalue (&THIS->done_callback);
+    SET_SVAL(THIS->done_callback, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     SET_SVAL(THIS->request_arg, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     THIS->current_source = NULL;
     THIS->file_obj = NULL;
@@ -369,6 +369,11 @@ PIKECLASS Shuffle
     __remove_callbacks( t );
   }
 
+  static void zero_svalue(struct svalue *s) {
+    free_svalue(s);
+    SET_SVAL(*s, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+  }
+
   static void call_done_callback(struct Shuffle_struct *t, int reason) {
     if (TYPEOF(t->done_callback) == PIKE_T_FUNCTION) {
       if (t->done_callback.u.object->prog) {	/* not destructed? */
@@ -376,11 +381,9 @@ PIKECLASS Shuffle
           	    reason, t->done_callback.u.object);
         push_svalue( &t->done_callback );
       
-        if (t->state != PAUSED) {
+        if (t->state != PAUSED)
           /* Ensure us only calling the callback once. */
-          free_svalue(&t->done_callback);
-          mark_free_svalue(&t->done_callback);
-        }
+          zero_svalue(&t->done_callback);
       
         ref_push_object(t->box.ref_obj);
         push_int(reason);
@@ -389,10 +392,8 @@ PIKECLASS Shuffle
         pop_stack();
         pop_stack();
       }
-    } else {
-      free_svalue(&t->done_callback);
-      mark_free_svalue(&t->done_callback);
-    }
+    } else
+      zero_svalue(&t->done_callback);
   }
 
   static void _all_done( struct Shuffle_struct *t, int reason )
@@ -461,7 +462,7 @@ PIKECLASS Shuffle
     SHUFFLE_DEBUG2("set_done_callback(%p)\n", THIS, cb->u.object );
     assign_svalue( &THIS->done_callback,cb);
     if (TYPEOF(THIS->done_callback) == PIKE_T_INT)
-      mark_free_svalue (&THIS->done_callback);
+      zero_svalue(&THIS->done_callback);
   }
 
   PIKEFUN void set_request_arg( mixed arg )

@@ -305,7 +305,9 @@ PIKECLASS Buffer
         }
         oldobj = io->this;
         oldobj->refs -= locks;			/* Swap refs too */
+        assert(oldobj->refs > 0);
         newobj->refs += locks - 1;	/* Compensate for initial copy */
+        assert(newobj->refs > 0);
         ptmp = newbuffer->buffer;		/* Swap buffers */
         newbuffer->buffer = io->buffer;
         io->buffer = ptmp;
