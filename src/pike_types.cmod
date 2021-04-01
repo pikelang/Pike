@@ -11623,12 +11623,13 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
 
  loop:
   /* Count the number of array levels. */
-  while(fun_type->type == PIKE_T_ARRAY) {
+  while(fun_type && (fun_type->type == PIKE_T_ARRAY)) {
     array_cnt++;
+    if (!fun_type->cdr) break;
     fun_type = fun_type->cdr;
   }
 
-  switch(fun_type->type & PIKE_T_MASK) {
+  switch(fun_type?(fun_type->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
   case PIKE_T_SCOPE:
   case T_ASSIGN:
   case PIKE_T_NAME:
@@ -11744,6 +11745,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
 
     /* FALLTHRU */
   case PIKE_T_MIXED:
+  case PIKE_T_UNKNOWN:
     copy_pike_type(res, mixed_type_string);
     break;
 
