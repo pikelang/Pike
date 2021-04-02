@@ -461,8 +461,6 @@ PIKECLASS Shuffle
   {
     SHUFFLE_DEBUG2("set_done_callback(%p)\n", THIS, cb->u.object );
     assign_svalue( &THIS->done_callback,cb);
-    if (TYPEOF(THIS->done_callback) == PIKE_T_INT)
-      zero_svalue(&THIS->done_callback);
   }
 
   PIKEFUN void set_request_arg( mixed arg )
