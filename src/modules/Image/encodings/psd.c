@@ -338,6 +338,9 @@ static void f_decode_packbits_encoded(INT32 args)
 	       &src, &nelems, &width,
 	       &multiplier, &compression);
 
+  if (nelems <= 0 || width <= 0 || multiplier <= 0)
+    Pike_error("Malformed Photoshop PSD file.\n");
+
   nelems *= multiplier;
   b.str = (unsigned char *)src->str;
   b.len = src->len;
