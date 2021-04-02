@@ -3845,7 +3845,7 @@ void fix_type_field(node *n)
 	f = ret;
       }
 
-      if (f) {
+      if (f && CAR(n)) {
 	/* Check that the returned type is compatible with the
 	 * variable type.
 	 */
