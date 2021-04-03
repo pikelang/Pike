@@ -2388,7 +2388,7 @@ void simple_describe_type(struct pike_type *s)
 	    fprintf(stderr, ": ");
 	  }
 	  s = s->cdr;
-	  if (s != int_type_string) {
+	  if (s && (s != int_type_string)) {
 	    while (s->type == T_OR) {
 	      struct pike_type *char_type = s->car;
 	      while(char_type->type == T_ASSIGN) {
@@ -2439,6 +2439,8 @@ void simple_describe_type(struct pike_type *s)
 	    }
 	    if (s->type == T_ZERO) {
 	      fprintf(stderr, "zero");
+	    } else if (s->type == T_MIXED) {
+	      fprintf(stderr, "mixed");
 	    } else if ((s->type >= '0') && (s->type <= '9')) {
 	      fprintf(stderr, "$%c", s->type);
 	    } else {
@@ -2861,7 +2863,7 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
       break;
 
     case T_MULTISET:
-      if(t->car->type != T_MIXED) {
+      if(t->car && (t->car->type != T_MIXED)) {
 	string_builder_sprintf(s, "multiset(%T)", t->car);
       } else {
 	string_builder_strcat(s, "multiset");
