@@ -12619,7 +12619,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       push_type(T_MIXED);
     }
     else {
-      push_type(T_ZERO);
+      push_type(PIKE_T_UNKNOWN);
     }
     push_type(T_MULTISET);
     return pop_unfinished_type();
@@ -12631,8 +12631,8 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       push_type_field(s->u.mapping->data->ind_types);
     }
     else {
-      push_type(T_ZERO);
-      push_type(T_ZERO);
+      push_type(PIKE_T_UNKNOWN);
+      push_type(PIKE_T_UNKNOWN);
     }
     push_type(T_MAPPING);
     return pop_unfinished_type();
