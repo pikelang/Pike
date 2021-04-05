@@ -17,6 +17,7 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "bignum.h"
 
 
 #include "image.h"
@@ -278,8 +279,16 @@ void img_tim_decode(INT32 args, int header_only)
   if(!header_only) {
     struct object *o;
     struct image *img;
+    INT32 bytes_needed;
+
+    if ((INT32)h < 0 || (INT32)w < 0
+        || DO_INT32_MUL_OVERFLOW(h, w, &bytes_needed)
+        || DO_INT32_MUL_OVERFLOW(bytes_needed, bitpp, &bytes_needed))
+    {
+      Pike_error("TIM Image too large.\n");
+    }
     
-    if(len < (INT32)(bitpp*(h*w)/8))
+    if(len < bytes_needed)
       Pike_error("short pixel data\n");
     
     push_text("image");
