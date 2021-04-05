@@ -2797,14 +2797,15 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
     case T_MANY:
     {
       if(t->type == T_MANY &&
-	 t->cdr->type == T_OR &&
-	 ((t->cdr->car->type == T_MIXED && t->cdr->cdr->type == T_VOID) ||
-	  (t->cdr->cdr->type == T_MIXED && t->cdr->car->type == T_VOID)) &&
-	 (!t->car ||
-	  t->car->type == T_ZERO ||
-	  (t->car->type == T_OR &&
-	   ((t->car->car->type == T_ZERO && t->car->cdr->type == T_VOID) ||
-	    (t->car->cdr->type == T_ZERO && t->car->car->type == T_VOID)))))
+	 ((!t->cdr && !t->car) ||
+	  (t->cdr && t->cdr->type == T_OR &&
+	   ((t->cdr->car->type == T_MIXED && t->cdr->cdr->type == T_VOID) ||
+	    (t->cdr->cdr->type == T_MIXED && t->cdr->car->type == T_VOID)) &&
+	   (!t->car ||
+	    t->car->type == T_ZERO ||
+	    (t->car->type == T_OR &&
+	     ((t->car->car->type == T_ZERO && t->car->cdr->type == T_VOID) ||
+	      (t->car->cdr->type == T_ZERO && t->car->car->type == T_VOID)))))))
       {
 	/* function == function(zero...:mixed|void) or
 	 *             function(zero|void...:mixed|void)
