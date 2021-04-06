@@ -487,7 +487,6 @@ testfont binary
 /src/modules/Image/encodings/xbm.c foreign_ident
 /src/modules/Image/encodings/xcf.c foreign_ident
 /src/modules/Image/encodings/xcf_constant_strings.h foreign_ident
-/src/modules/Image/encodings/xwd.c foreign_ident
 /src/modules/Image/font.c foreign_ident
 /src/modules/Image/image.c foreign_ident
 /src/modules/Image/image.h foreign_ident

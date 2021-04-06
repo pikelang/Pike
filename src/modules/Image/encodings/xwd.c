@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xwd.c,v 1.29 2005/05/06 00:48:09 nilsson Exp $
 */
 
 /*
