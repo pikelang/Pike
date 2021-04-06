@@ -1,9 +1,5 @@
-/* $Id: x.c,v 1.35 2000/12/01 08:10:07 hubbe Exp $ */
-
 /*
 **! module Image
-**! note
-**!	$Id: x.c,v 1.35 2000/12/01 08:10:07 hubbe Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +25,6 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.35 2000/12/01 08:10:07 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

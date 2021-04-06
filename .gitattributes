@@ -273,7 +273,6 @@ testfont binary
 /src/modules/Image/encodings/tga.c foreign_ident
 /src/modules/Image/encodings/tim.c foreign_ident
 /src/modules/Image/encodings/wbf.c foreign_ident
-/src/modules/Image/encodings/x.c foreign_ident
 /src/modules/Image/encodings/xbm.c foreign_ident
 /src/modules/Image/encodings/xcf.c foreign_ident
 /src/modules/Image/encodings/xwd.c foreign_ident
