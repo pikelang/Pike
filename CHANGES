@@ -18,6 +18,11 @@ o Image.GIF
   - Improve detection of malformed LZW bit sizes.
   - Improve detection of malformed LZW dictionary extensions.
 
+o Image.ILBM
+
+  - Guard alloca() allocations with check_c_stack().
+  - Improved length accounting in unpackByteRun1().
+
 o Image.PCX
 
   Improved size checks better detect malformed PCX images.
@@ -44,9 +49,17 @@ o Image.WBF
 
   Improved size check better detects malformed WBF images.
 
+o Image.X
+
+  Guard alloca() allocations with check_c_stack().
+
 o Image.XCF
 
   Fixed to properly initialize the layer mask structure.
+
+o Image.XWD
+
+  Improved size check better detects malformed XWD images.
 
 Building & Tools
 ----------------
