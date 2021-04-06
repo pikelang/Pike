@@ -250,10 +250,13 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
   int rbyt = ((bmhd->w+15)&~15)>>3;
   int eplanes = (bmhd->masking == mskHasMask? bmhd->nPlanes+1:bmhd->nPlanes);
   unsigned char *line=0;
-  unsigned INT32 *cptr, *cline = alloca((rbyt<<3)*sizeof(unsigned INT32));
+  unsigned INT32 *cptr, *cline;
   ptrdiff_t suse=0;
   rgb_group *dest = img->img;
   rgb_group *adest = (alpha==NULL? NULL : alpha->img);
+
+  check_c_stack((rbyt<<3)*sizeof(unsigned INT32));
+  cline = alloca((rbyt<<3)*sizeof(unsigned INT32));
 
   if(ctable != NULL && ctable->type != NCT_FLAT)
     ctable = NULL;
@@ -262,6 +265,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
   case cmpNone:
     break;
   case cmpByteRun1:
+    check_c_stack(rbyt*eplanes);
     line = alloca(rbyt*eplanes);
     break;
   default:
