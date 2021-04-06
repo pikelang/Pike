@@ -2872,7 +2872,7 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
       break;
 
     case T_NOT:
-      if (t->car->type > T_NOT) {
+      if (t->car && (t->car->type > T_NOT)) {
 	string_builder_sprintf(s, "!(%T)", t->car);
       } else {
 	string_builder_sprintf(s, "!%T", t->car);
@@ -2885,13 +2885,13 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
       break;
 
     case T_OR:
-      if (t->car->type > T_OR) {
+      if (t->car && (t->car->type > T_OR)) {
 	string_builder_sprintf(s, "(%T)", t->car);
       } else {
 	low_describe_type(s, t->car);
       }
       string_builder_strcat(s, " | ");
-      if (t->cdr->type > T_OR) {
+      if (t->cdr && (t->cdr->type > T_OR)) {
 	string_builder_sprintf(s, "(%T)", t->cdr);
       } else {
 	low_describe_type(s, t->cdr);
@@ -2899,13 +2899,13 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
       break;
 
     case T_AND:
-      if (t->car->type > T_AND) {
+      if (t->car && (t->car->type > T_AND)) {
 	string_builder_sprintf(s, "(%T)", t->car);
       } else {
 	low_describe_type(s, t->car);
       }
       string_builder_strcat(s, " & ");
-      if (t->cdr->type > T_AND) {
+      if (t->cdr && (t->cdr->type > T_AND)) {
 	string_builder_sprintf(s, "(%T)", t->cdr);
       } else {
 	low_describe_type(s, t->cdr);
@@ -2913,14 +2913,16 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
       break;
 
     case T_MAPPING:
-      if(t->car->type != T_MIXED || t->cdr->type != T_MIXED) {
+      if((t->car && (t->car->type != T_MIXED)) ||
+	 (t->cdr && (t->cdr->type != T_MIXED))) {
 	string_builder_sprintf(s, "mapping(%T:%T)", t->car, t->cdr);
       } else {
 	string_builder_strcat(s, "mapping");
       }
       break;
+
     case PIKE_T_AUTO:
-      if (t->car->type != T_ZERO) {
+      if (t->car && (t->car->type != T_ZERO)) {
 	string_builder_sprintf(s, "auto(%T)", t->car);
       } else {
 	string_builder_strcat(s, "auto");
