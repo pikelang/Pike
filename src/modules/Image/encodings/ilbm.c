@@ -202,6 +202,7 @@ static ptrdiff_t unpackByteRun1(unsigned char *src, INT32 srclen,
 	srclen -= c+2;
 	if(1+c>left) {
 	  c = left-1;
+	  left = 0;
 	} else
 	  left -= c+1;
 	do { *dest++ = *src++; } while(c--);
