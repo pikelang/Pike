@@ -519,8 +519,9 @@ class conxion {
       PD("Nostash locked by %s\n",
        describe_backtrace(nostash->current_locking_thread()->backtrace()));
 #endif
-    while (lock = (intp(waitforreal) && waitforreal > 0
-                   ? nostash->lock : nostash->trylock)(1)) {
+    while (lock = nostash
+               && ((intp(waitforreal) && waitforreal > 0
+                   ? nostash->lock : nostash->trylock)(1))) {
       int mode;
       if (sizeof(stash) && (mode = getstash(KEEP)) > KEEP)
         sendcmd(mode);		// Force out stash to the server
