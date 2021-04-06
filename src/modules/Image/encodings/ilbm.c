@@ -1,9 +1,5 @@
-/* $Id: ilbm.c,v 1.18 2000/08/11 18:34:07 grubba Exp $ */
-
 /*
 **! module Image
-**! note
-**!	$Id: ilbm.c,v 1.18 2000/08/11 18:34:07 grubba Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +10,6 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.18 2000/08/11 18:34:07 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
