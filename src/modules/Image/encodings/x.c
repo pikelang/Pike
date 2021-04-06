@@ -820,6 +820,13 @@ static void image_x_decode_truecolor(INT32 args)
        bshift>=bpp || bshift<0)
 	 Pike_error("Image.X.decode_truecolor: illegal colorshifts\n");
 
+   if (rbits < 0 || gbits < 0 || bbits < 0 ||
+       rbits > 24 || gbits > 24 || bbits > 24 ||
+       rbits + gbits + bbits > 24)
+   {
+	 Pike_error("Image.X.decode_truecolor: illegal colorbits\n");
+   }
+
    if (args>12)
    {
       if (sp[12-args].type!=T_OBJECT ||
@@ -925,9 +932,19 @@ static void image_x_decode_truecolor(INT32 args)
       else
       {
 	 int i,j;
-	 COLORTYPE *rtbl=alloca(1<<rbits);
-	 COLORTYPE *gtbl=alloca(1<<gbits);
-	 COLORTYPE *btbl=alloca(1<<bbits);
+	 COLORTYPE *rtbl;
+	 COLORTYPE *gtbl;
+	 COLORTYPE *btbl;
+
+	 if (!(rbits && gbits && bbits))
+	   Pike_error("Image.X.decode_truecolor: illegal colorshifts\n");
+
+	 check_c_stack((1 << rbits) + (1 << gbits) + (1 << bbits));
+
+	 *rtbl=alloca(1<<rbits);
+	 *gtbl=alloca(1<<gbits);
+	 *btbl=alloca(1<<bbits);
+
 	 if (!rtbl || !gtbl || !btbl)
 	    resource_error(NULL,0,0,"memory",(1<<rbits)+(1<<rbits)+(1<<rbits),
 			   "Out of memory.\n");
