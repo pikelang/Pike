@@ -302,7 +302,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
       n++;
       push_text("image");
 
-      if (s->len-(int)(header.header_size+header.ncolors*12)<0)
+      if (s->len-(unsigned int)(header.header_size+header.ncolors*12)<0)
 	 push_empty_string();
       else
 	 push_string(make_shared_binary_string(
