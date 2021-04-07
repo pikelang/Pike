@@ -9348,7 +9348,7 @@ static struct pike_type *low_index_type(struct pike_type *t,
 
   case T_STRING: /* always int */
     {
-      if (t->cdr->type == T_ZERO) {
+      if (!t->cdr || (t->cdr->type == T_ZERO)) {
 	yywarning("Indexing the empty string.");
       }
       add_ref(t->cdr);
