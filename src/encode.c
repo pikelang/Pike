@@ -407,6 +407,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
     EDB(1, {
 	ENCODE_WERR(".type    __unknown__");
       });
+    return;
   }
   if (t->type == T_MANY) {
     addchar(T_FUNCTION ^ MIN_REF_TYPE);
