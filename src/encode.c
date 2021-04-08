@@ -402,6 +402,12 @@ static void code_number(ptrdiff_t num, struct encode_data *data)
 static void encode_type(struct pike_type *t, struct encode_data *data)
 {
  one_more_type:
+  if (!t) {
+    addchar(PIKE_T_UNKNOWN);
+    EDB(1, {
+	ENCODE_WERR(".type    __unknown__");
+      });
+  }
   if (t->type == T_MANY) {
     addchar(T_FUNCTION ^ MIN_REF_TYPE);
     EDB(1, {
