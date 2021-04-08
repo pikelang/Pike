@@ -2152,7 +2152,7 @@ class proxy {
       if (!portal->delayederror)
         portal->delayederror = err;
     }
-    if (objectp(portal))
+    if (objectp(portal) && portal->_purgeportal)
       portal->_purgeportal();
   }
 
