@@ -4677,8 +4677,29 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 			  remap, aflags, bflags, remap_flags);
   }
   switch(b->type) {
-  case T_AND:
   case T_OR:
+    if ((op == PT_BINOP_MINUS) || (op == PT_BINOP_OR)) {
+      /* Special case to avoid excessively complicated expressions
+       * in the result.
+       *
+       *   A - (B | C)  ==  (A - B) - C
+       * rather than
+       *   A - (B | C)  ==  (A - B) & (A - C)
+       *
+       *   A | (B | C)  ==  (A | B) | C
+       * rather than
+       *   A | (B | C)  ==  (A | B) | (A | C)
+       */
+      tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
+      tmp2 = remap_markers(b->cdr, NULL, remap,
+			   remap_flags | PT_FLAG_REMAP_SWAP_MARKERS);
+      ret = low_type_binop(op, tmp, tmp2, NULL, aflags, bflags, 0);
+      free_type(tmp);
+      free_type(tmp2);
+      return ret;
+    }
+    /* FALLTHRU */
+  case T_AND:
     /* op	secondary(T_AND)	secondary(T_OR)
      * 0  0000	0		0000	0		0000
      * 1  0001	1		0001	7		0111
