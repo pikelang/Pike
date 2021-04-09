@@ -3557,10 +3557,13 @@ struct pike_type *or_pike_types(struct pike_type *a,
 static void even_lower_and_pike_types(struct pike_type *t1,
 				      struct pike_type *t2)
 {
-  while(t2->type == T_OR)
+  while(t2 && (t2->type == T_OR))
   {
     even_lower_and_pike_types(t1, t2->car);
     t2 = t2->cdr;
+  }
+  if (!t1 || !t2) {
+    return;
   }
   if (t1->type == t2->type) {
     if (t1->type == T_INT) {
