@@ -9239,10 +9239,11 @@ static struct pike_type *low_index_type(struct pike_type *t,
     add_ref(mixed_type_string);
     return mixed_type_string;
   }
-  while((index_type->type == PIKE_T_NAME) ||
-        (index_type->type == PIKE_T_ATTRIBUTE) ||
-	(index_type->type == T_ASSIGN) ||
-	(index_type->type == T_SCOPE)) {
+  while(index_type &&
+	((index_type->type == PIKE_T_NAME) ||
+	 (index_type->type == PIKE_T_ATTRIBUTE) ||
+	 (index_type->type == T_ASSIGN) ||
+	 (index_type->type == T_SCOPE))) {
     index_type = index_type->cdr;
   }
 
