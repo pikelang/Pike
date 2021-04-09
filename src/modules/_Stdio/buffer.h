@@ -21,7 +21,7 @@ struct _Buffer
   struct svalue output;
 
 #ifdef PIKE_DEBUG
-  INT32 num_malloc, num_move; /* debug mainly, for testsuite*/
+  INT_TYPE num_malloc, num_move; /* debug mainly, for testsuite*/
 #endif
 };
 
