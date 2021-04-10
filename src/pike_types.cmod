@@ -4497,6 +4497,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return NULL;
   }
 
+ full_loop:
   if (a == b) {
     if (op & PT_BINOP_AND) {
       /* FIXME: Perform masking of remap_flags here. */
@@ -5202,6 +5203,10 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
 
   case TWOT(T_VOID, T_ZERO):
+    if (aflags & PT_FLAG_CMP_VOID_IS_ZERO) {
+      a = zero_type_string;
+      goto full_loop;
+    }
     if (op & PT_BINOP_AND) {
       if (bflags & PT_FLAG_CMP_VOIDABLE) {
 	/* Return void. */
@@ -5221,6 +5226,10 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return NULL;
 
   case TWOT(T_ZERO, T_VOID):
+    if (bflags & PT_FLAG_CMP_VOID_IS_ZERO) {
+      b = zero_type_string;
+      goto full_loop;
+    }
     if (op & PT_BINOP_AND) {
       if (aflags & PT_FLAG_CMP_VOIDABLE) {
 	/* Return void. */
