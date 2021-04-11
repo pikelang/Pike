@@ -8217,7 +8217,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case T_NOT:
     /* Some common cases. */
-    switch(b->car->type) {
+    switch(b->car?b->car->type:PIKE_T_UNKNOWN) {
     case T_NOT:
       b = b->car->car;
       goto recurse;
@@ -8226,6 +8226,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       goto recurse;
     case T_ZERO:
     case T_VOID:
+    case PIKE_T_UNKNOWN:
       b = mixed_type_string;
       goto recurse;
     }
@@ -8451,7 +8452,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       goto recurse;
     }
     /* Some common cases. */
-    switch(a->car->type) {
+    switch(a->car?a->car->type:PIKE_T_UNKNOWN) {
     case T_NOT:
       a = a->car->car;
       goto recurse;
@@ -8460,6 +8461,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       goto recurse;
     case T_ZERO:
     case T_VOID:
+    case PIKE_T_UNKNOWN:
       a = mixed_type_string;
       goto recurse;
     }
