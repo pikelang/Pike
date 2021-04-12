@@ -7459,6 +7459,8 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   struct svalue *ss;
 #ifdef USE_DL_MALLOC
   struct mallinfo mi = dlmallinfo();
+#elif HAVE_MALLINFO2
+  struct mallinfo2 mi = mallinfo2();
 #elif HAVE_MALLINFO
   struct mallinfo mi = mallinfo();
 #endif
@@ -7470,11 +7472,14 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
    * statistics from our bundled Doug Lea malloc, and not the
    * underlying system malloc. Ideally we should include both. */
 
-#if defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
+#if defined(HAVE_MALLINFO2) || defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
 
   push_text("num_malloc_blocks");
   push_ulongest(1 + mi.hblks);	/* 1 for the arena. */
   push_text("malloc_block_bytes");
+#ifdef HAVE_MALLINFO2
+  size = mi.arena + mi.hblkhd;
+#else
   if (mi.arena < 0) {
     /* Kludge for broken Linux libc, where the fields are ints.
      *
@@ -7499,11 +7504,15 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   } else {
     size += mi.hblkhd;
   }
+#endif
   push_ulongest(size);
 
   push_text("num_malloc");
   push_ulongest(mi.ordblks + mi.smblks);
   push_text("malloc_bytes");
+#ifdef HAVE_MALLINFO2
+  size = mi.uordblks + mi.usmblks;
+#else
   if (mi.uordblks < 0) {
     size = (unsigned int)mi.uordblks;
   } else {
@@ -7517,11 +7526,15 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
       size += mi.usmblks;
     }
   }
+#endif
   push_ulongest(size);
 
   push_text("num_free_blocks");
   push_int(1);
   push_text("free_block_bytes");
+#ifdef HAVE_MALLINFO2
+  size = mi.fsmblks + mi.fordblks;
+#else
   if (mi.fsmblks < 0) {
     size = (unsigned int)mi.fsmblks;
   } else {
@@ -7532,6 +7545,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   } else {
     size += mi.fordblks;
   }
+#endif
   push_ulongest(size);
 
 #endif
