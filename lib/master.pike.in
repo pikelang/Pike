@@ -4476,7 +4476,7 @@ void _main(array(string(0..255)) orig_argv)
   trace = predef::trace(trace);
   if (err) {
     handle_error (err);
-    ret = 10;
+    exit(10, "Error: Exiting due to uncaught error.\n");
   }
   if(!intp(ret))
     exit(10, "Error: Non-integer value %O returned from main.\n", ret);
