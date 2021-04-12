@@ -247,7 +247,7 @@ protected class _HMAC
       mapping(string(7bit):string(7bit)) jwk = ([
 	"kty":"oct",
 	"alg":jwa(),
-	"k": MIME.encode_base64url(ikey ^ ("6" * block_size())),
+	"k": MIME.encode_base64url(([string]ikey) ^ ("6" * block_size())),
       ]);
       return jwk;
     }
