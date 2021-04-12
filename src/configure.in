@@ -4204,6 +4204,7 @@ AC_CHECK_FUNCS( \
  gmtime_s \
  strptime \
  mallinfo \
+ mallinfo2 \
  mallopt \
  ptrace \
  setrlimit \
