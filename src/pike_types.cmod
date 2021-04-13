@@ -823,7 +823,7 @@ void debug_push_unlimited_array_type(enum PIKE_TYPE t)
 	       get_name_of_type(t), t);
   }
 #endif
-  if (peek_type_stack()->type == PIKE_T_ZERO) {
+  if (!peek_type_stack() || (peek_type_stack()->type == PIKE_T_ZERO)) {
     push_type(PIKE_T_ZERO);
   } else {
     push_int_type(0, MAX_INT32);
