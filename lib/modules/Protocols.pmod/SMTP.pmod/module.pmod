@@ -1541,4 +1541,13 @@ class Server {
        error("Cannot bind to socket, already bound ?\n");
      }
    }
+
+   protected void _destruct()
+   {
+     catch {
+       fdport->close();
+       destruct(fdport);
+     };
+   }
+
 };
