@@ -2714,12 +2714,14 @@ class proxy {
        * inside a destructor, throwing an error will not work anymore.
        * Warnings will be silently discarded at this point.
        */
-      lastmessage = filter(lastmessage, lambda(string val) {
-        return has_prefix(val, "ERROR ") || has_prefix(val, "FATAL "); });
-      if (err || (err = catch(errstring = geterror(1))))
-        werror(describe_backtrace(err));
-      else if (errstring && sizeof(errstring))
-        werror("%s\n", errstring);	// Add missing terminating newline
+      catch {	// Use yet another catch for exceptions in backtraces
+        lastmessage = filter(lastmessage, lambda(string val) {
+          return has_prefix(val, "ERROR ") || has_prefix(val, "FATAL "); });
+        if (err || (err = catch(errstring = geterror(1))))
+          werror(describe_backtrace(err));
+        else if (errstring && sizeof(errstring))
+          werror("%s\n", errstring);	// Add missing terminating newline
+      };
     }
   }
 
