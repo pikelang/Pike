@@ -2597,6 +2597,12 @@ static void decode_value2(struct decode_data *data)
       if (!(delayed_enc_val = low_mapping_lookup (data->decoded, &entry_id)))
 	decode_error (data, NULL, "Failed to find previous record of "
 		      "delay encoded entry <%d>.\n", num);
+      if (TYPEOF(*delayed_enc_val) != T_PROGRAM ||
+	  delayed_enc_val->u.program->flags != PROGRAM_VIRGIN) {
+	decode_error (data, NULL, "Didn't get program embryo "
+		      "for delay encoded program <%O>: %O\n",
+		      &entry_id, delayed_enc_val);
+      }
       DECODE ("decode_value2");
       break;
 
@@ -3204,12 +3210,6 @@ static void decode_value2(struct decode_data *data)
 			  data->depth, "");
 		print_svalue(stderr, delayed_enc_val);
 		fputc('\n', stderr););
-	    if (TYPEOF(*delayed_enc_val) != T_PROGRAM ||
-		delayed_enc_val->u.program->flags != PROGRAM_VIRGIN) {
-	      decode_error (data, NULL, "Didn't get program embryo "
-			    "for delay encoded program <%O>: %O\n",
-			    &entry_id, delayed_enc_val);
-	    }
 	    /* No new ref here; low_start_new_program will add one for
 	     * Pike_compiler->new_program and we want ride on that one
 	     * just like when it's created there. */
