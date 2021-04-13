@@ -3458,7 +3458,7 @@ static void decode_value2(struct decode_data *data)
       SETUP_DECODE_MEMOBJ (T_MULTISET, multiset, m,
 			   allocate_multiset (0, 0, NULL), ;);
       /* FIXME: This array could be avoided by building the multiset directly. */
-      a = low_allocate_array (num, 0);
+      push_array(a = low_allocate_array (num, 0));
 
       types = 0;
       for(e=0;e<num;e++)
@@ -3470,7 +3470,7 @@ static void decode_value2(struct decode_data *data)
       a->type_field = types;
       {
 	struct multiset *l = mkmultiset (a);
-	free_array (a);
+	pop_stack();
 	/* This special case is handled efficiently by merge_multisets. */
 	merge_multisets (m, l, PIKE_MERGE_DESTR_A | PIKE_ARRAY_OP_ADD);
 	free_multiset (l);
