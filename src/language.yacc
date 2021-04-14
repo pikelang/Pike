@@ -1564,7 +1564,8 @@ identifier_type: idents
     if ($1) {
       fix_type_field($1);
 
-      if (!pike_types_le($1->type, typeable_type_string, 0, 0) &&
+      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
+	  !pike_types_le($1->type, typeable_type_string, 0, 0) &&
 	  (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
 	yytype_report(REPORT_WARNING,
 		      $1->current_file, $1->line_number, typeable_type_string,
