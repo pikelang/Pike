@@ -9387,7 +9387,9 @@ static struct pike_type *low_index_type(struct pike_type *t,
       if (!t->cdr || (t->cdr->type == T_ZERO)) {
 	yywarning("Indexing the empty string.");
       }
-      add_ref(t->cdr);
+      if (t->cdr) {
+	add_ref(t->cdr);
+      }
       return t->cdr;
     }
 
@@ -9422,7 +9424,7 @@ static struct pike_type *low_index_type(struct pike_type *t,
 	}
 	return pop_unfinished_type();
       }
-      if (match_types(int_type_string, index_type)) {
+      if (t->cdr && match_types(int_type_string, index_type)) {
 	/* Possible to index the array with an int. */
 	add_ref(t->cdr);
 	return t->cdr;
