@@ -717,6 +717,8 @@ outer:
 
   private string _sprintf(int type) {
     string res;
+    if (!this)					// Not in destructed objects
+      return "";
     switch (type) {
       case 'O':
         int fd = -1;
@@ -822,6 +824,8 @@ class sql_result {
 
   protected string _sprintf(int type) {
     string res;
+    if (!this)					// Not in destructed objects
+      return "";
     switch (type) {
       case 'O':
         int fd = -1;
@@ -1822,6 +1826,8 @@ class proxy {
 
   private string _sprintf(int type) {
     string res;
+    if (!this)					// Not in destructed objects
+      return "";
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME".proxy(%s@%s:%d/%s,%d,%d)",
