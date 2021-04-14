@@ -1704,6 +1704,9 @@ cond_resolv(Crypto.SHA512, [[
 ]])
 test_do( add_constant( "P" ) )
 
+dnl From Django auth_tests/test_hashers.py
+test_true(Crypto.Password.verify("l\xe8tmein","pbkdf2_sha256$320000$seasalt$Toj2II2rBvFiGQcPmUml1Nlni2UtvyRWwz/jz4q6q/4="))
+
 test_true( Crypto.DH.MODPGroup1 )
 test_true( Crypto.DH.MODPGroup2 )
 test_true( Crypto.DH.MODPGroup5 )

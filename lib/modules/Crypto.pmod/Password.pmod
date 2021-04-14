@@ -162,6 +162,13 @@ int verify(string(8bit) password, string(7bit) hash)
     hash = hash[1..];
   }
 
+  array split = hash/"$";
+  switch( split[0] ) {
+  case "pbkdf2_sha256":  // As implemented by Django
+    password = string_to_utf8(password);
+    return MIME.encode_base64(Crypto.SHA256.pbkdf2(passwd, split[2], (int)split[1], 32)) == split[3];
+  }
+
   // Detect the password hashing scheme.
   // First check for an LDAP-style marker.
   string(7bit) scheme = "crypt";
