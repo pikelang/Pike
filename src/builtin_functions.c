@@ -4008,7 +4008,7 @@ static node *fix_aggregate_mapping_type(node *n)
     }
 
     if (!types[0]) {
-      MAKE_CONSTANT_TYPE(new_type, tMap(tZero, tZero));
+      MAKE_CONSTANT_TYPE(new_type, tMap(tUnknown, tUnknown));
       goto set_type;
     }
 
@@ -4018,7 +4018,7 @@ static node *fix_aggregate_mapping_type(node *n)
     push_type(T_MAPPING);
     new_type = pop_unfinished_type();
   } else {
-    MAKE_CONSTANT_TYPE(new_type, tMap(tZero, tZero));
+    MAKE_CONSTANT_TYPE(new_type, tMap(tUnknown, tUnknown));
     goto set_type;
   }
   if (new_type) {
