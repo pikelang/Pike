@@ -6019,7 +6019,7 @@ class Encoder
     // here. They can go stale too.
 
     ENC_MSG ("  encoding recursively\n");
-    return ([])[0];
+    return UNDEFINED;
   }
 
   mixed encode_object(object x)
