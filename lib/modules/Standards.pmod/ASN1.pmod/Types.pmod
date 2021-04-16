@@ -67,7 +67,7 @@ class Object
   //!
   //! @returns
   //!   The tag for this object.
-  int(1..) get_tag() { return tag; }
+  int(0..) get_tag() { return tag; }
 
   //! Get the combined tag (tag + class) for this object.
   //!
@@ -934,7 +934,7 @@ class UTC
       error( "Times earlier than 1950 not supported.\n" );
 
     value = sprintf("%02d%02d%02d%02d%02d%02dZ",
-                    [int]second->year_no() % 100,
+                    [int](second->year_no() % 100),
                     [int]second->month_no(),
                     [int]second->month_day(),
                     [int]second->hour_no(),
@@ -1149,7 +1149,7 @@ class MetaExplicit
 			mapping(int:program(Object))|void types) {
     real_cls = cls;
     real_tag = tag;
-    valid_types = types;
+    valid_types = types || ([]);
   }
 
   array _encode()

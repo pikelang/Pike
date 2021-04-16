@@ -118,7 +118,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
 
   data = [object(Stdio.Buffer)]data->read_buffer(len);
 
-  program(.Types.Object) p = types[ .Types.make_combined_tag(cls, tag) ];
+  program(.Types.Object)|zero p = types[ .Types.make_combined_tag(cls, tag) ];
 
   if (constructed)
   {
@@ -143,7 +143,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
       return Constructed(cls, tag, (string(8bit))data, elements);
     }
 
-    .Types.Object res = p();
+    .Types.Object res = ([program]p)();
     res->cls = cls;
     res->tag = tag;
     res->begin_decode_constructed((string(8bit))data);
@@ -164,7 +164,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
 
   if (p)
   {
-    .Types.Object res = p();
+    .Types.Object res = ([program]p)();
     res->cls = cls;
     res->tag = tag;
     return res->decode_primitive((string(8bit))data, this, types);
