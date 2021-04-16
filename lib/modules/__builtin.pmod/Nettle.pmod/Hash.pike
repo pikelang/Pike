@@ -1250,7 +1250,7 @@ class SCRAM
       [username, r] = [array(string(8bit))]array_sscanf(line, format);
       if (!(nonce = validate_nonce(r)))
 	return 0;
-      username = Standards.IDNA.to_unicode(username);
+      username = [string]Standards.IDNA.to_unicode(username);
     };
     return username;
   }
