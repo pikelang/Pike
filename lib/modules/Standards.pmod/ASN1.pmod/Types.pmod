@@ -109,7 +109,7 @@ class Object
   protected string(0..255) encode_tag()
   {
     int(0..3) cls = get_cls();
-    int(1..) tag = get_tag();
+    int(0..) tag = get_tag();
     if (tag < 31)
       return [string(0..255)]sprintf("%c",
 				     (cls << 6) | (constructed << 5) | tag);
