@@ -857,13 +857,20 @@ static void image_x_decode_truecolor(INT32 args)
 	    gpos=Bpp-1-gpos,
 	    bpos=Bpp-1-bpos;
 
+      n=width*height;
+
+      if (n && ((rpos < 0 || gpos < 0 || bpos < 0) ||
+          !((size_t)rpos < len && (size_t)gpos < len && (size_t)bpos < len)))
+      {
+         Pike_error("Image.X.decode_trucolor: Malformed X image data\n");
+      }
+
       push_int(width);
       push_int(height);
       o=clone_object(image_program,2);
       img=(struct image*)get_storage(o,image_program);
 
       d=img->img;
-      n=width*height;
 
       if (nct)
 	 while (n--)
