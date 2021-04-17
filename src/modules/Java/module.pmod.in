@@ -305,7 +305,7 @@ protected class jobject {
     object m = cls->_methods[n];
     if(m)
       return m->for_object(obj);
-    return ([])[0];
+    return UNDEFINED;
   }
 
   protected array(string) _indices()
@@ -326,7 +326,7 @@ protected class jobject {
       if(m2)
 	return jmethod(info, obj, ([sig:m2]));
     }
-    return ([])[0];
+    return UNDEFINED;
   }
 
   protected mixed `->(string n)
@@ -393,7 +393,7 @@ protected class jarray {
     else if(n == "_monitor_enter")
       return obj->monitor_enter;
     else
-      return ([])[0];
+      return UNDEFINED;
   }
 
   protected mixed `[]=(int n, mixed value)

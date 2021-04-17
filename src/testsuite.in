@@ -5156,7 +5156,7 @@ class Test
       string nameof (mixed what)
       {
 	if (string name = search (all_constants(), what)) return name;
-	return ([])[0];
+	return UNDEFINED;
       }
 
       mixed encode_object (object o) {}
@@ -5193,7 +5193,7 @@ class Test
     {
       mixed nameof (mixed what)
       {
-	return ([])[0];
+	return UNDEFINED;
       }
       mixed encode_object (object o) {}
       void decode_object (object o, mixed d) {}
@@ -14078,9 +14078,9 @@ test_eq(zero_type (allocate (5, 0)[2]), 0);
 test_eq(zero_type (allocate (5)[2]), 0);
 
 test_true([[lambda (int|void a) { return zero_type(a); }()]])
-test_true([[lambda () {mixed a; return zero_type(a = ([])[0]);}()]])
-test_true([[lambda () {mapping a=([]); return zero_type(a[0] = ([])[0]);}()]])
-test_true([[zero_type (lambda () {return ([])[0];}())]])
+test_true([[lambda () {mixed a; return zero_type(a = UNDEFINED);}()]])
+test_true([[lambda () {mapping a=([]); return zero_type(a[0] = UNDEFINED);}()]])
+test_true([[zero_type (lambda () {return UNDEFINED;}())]])
 
 test_any([[
   class A {
