@@ -300,7 +300,7 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
 //!
 //! @seealso
 //!   @[crypt_md5()]
-string(7bit) crypt_hash(string(8bit) password, string(8bit) salt, int rounds)
+string(7bit) crypt_hash(string(8bit) password, string(8bit) salt, int(0..) rounds)
 {
   int dsz = digest_size();
   int plen = sizeof(password);

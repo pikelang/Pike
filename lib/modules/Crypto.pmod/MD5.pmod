@@ -24,7 +24,7 @@ Standards.ASN1.Types.Identifier pkcs_hash_id()
 //! @seealso
 //!   @[Nettle.Hash()->crypt_hash()], @[crypt_md5()]
 string(7bit) crypt_hash(string(8bit) password, string(7bit) salt,
-                        int|void rounds)
+                        int(0..)|void rounds)
 {
   string(8bit) orig_password = password;
   password = "censored";

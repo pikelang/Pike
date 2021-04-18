@@ -23,7 +23,7 @@ protected class _HMAC
   inherit ::this_program;
 
   //! crypt_sha1() from NetBSD.
-  string(7bit) crypt_hash(string(8bit) password, string(7bit) salt, int rounds)
+  string(7bit) crypt_hash(string(8bit) password, string(7bit) salt, int(0..) rounds)
   {
     State s = `()(password);
     password = "CENSORED";

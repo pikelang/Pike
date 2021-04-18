@@ -162,7 +162,7 @@ int verify(string(8bit) password, string(7bit) hash)
     hash = hash[1..];
   }
 
-  array split = hash/"$";
+  array(string(7bit)) split = [array(string(7bit))](hash/"$");
   switch( split[0] ) {
   case "pbkdf2_sha256":  // As implemented by Django
     password = string_to_utf8(password);
@@ -210,7 +210,7 @@ int verify(string(8bit) password, string(7bit) hash)
     // Then try our implementations.
     if (!sscanf(hash, "$%s$%s", scheme, hash)) return 0;
     sscanf(hash, "%s$%s", string(7bit) salt, hash);
-    int rounds = UNDEFINED;
+    int(0..) rounds = UNDEFINED;
     switch(scheme) {
     case "1":	// crypt_md5
       return Nettle.crypt_md5(passwd, salt) == hash;
@@ -246,18 +246,18 @@ int verify(string(8bit) password, string(7bit) hash)
 #endif
 
     case "pbkdf2":		// PBKDF2 with SHA1
-      rounds = (int)salt;
+      rounds = (int(0..))salt;
       sscanf(hash, "%s$%s", salt, hash);
       return Crypto.SHA1.crypt_pbkdf2(passwd, salt, rounds) == hash;
 
     case "pbkdf2-sha256":	// PBKDF2 with SHA256
-      rounds = (int)salt;
+      rounds = (int(0..))salt;
       sscanf(hash, "%s$%s", salt, hash);
       return Crypto.SHA256.crypt_pbkdf2(passwd, salt, rounds) == hash;
 
 #if constant(Crypto.SHA512)
     case "pbkdf2-sha512":	// PBKDF2 with SHA512
-      rounds = (int)salt;
+      rounds = (int(0..))salt;
       sscanf(hash, "%s$%s", salt, hash);
       return Crypto.SHA512.crypt_pbkdf2(passwd, salt, rounds) == hash;
 #endif
@@ -283,7 +283,7 @@ int verify(string(8bit) password, string(7bit) hash)
 #endif
 
     case "sha1":	// SHA1-HMAC
-      rounds = (int)salt;
+      rounds = (int(0..))salt;
       sscanf(hash, "%s$%s", salt, hash);
       return Crypto.SHA1.HMAC.crypt_hash(passwd, salt, rounds) == hash;
       break;
@@ -468,7 +468,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
   function(string(7bit), string(7bit), string(7bit), int(0..):string(7bit))
     render_hash = render_crypt_hash;
 
-  string schemeprefix = scheme;
+  string|zero schemeprefix = scheme;
 
   if (schemeprefix && schemeprefix[0] == '$')
     sscanf(schemeprefix, "$%s$", schemeprefix);
@@ -542,7 +542,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     // FALL_THROUGH
   case "smd5":
   case "{smd5}":
-    crypt_hash = lambda(string(8bit) passwd, string(8bit) salt, int rounds) {
+    crypt_hash = lambda(string(8bit) passwd, string(8bit) salt, int(0..) rounds) {
 		   return MIME.encode_base64(Crypto.MD5.hash(passwd + salt) +
 					     salt);
 		 };
