@@ -23,14 +23,14 @@ protected class LowState {
   // --- Variables and accessors
   //
 
-  protected Gmp.mpz n;  /* modulo */
-  protected Gmp.mpz e;  /* public exponent */
-  protected Gmp.mpz d;  /* private exponent (if known) */
+  protected Gmp.mpz|zero n;  /* modulo */
+  protected Gmp.mpz|zero e;  /* public exponent */
+  protected Gmp.mpz|zero d;  /* private exponent (if known) */
 
   /* Extra info associated with a private key. Not currently used. */
 
-  protected Gmp.mpz p;
-  protected Gmp.mpz q;
+  protected Gmp.mpz|zero p;
+  protected Gmp.mpz|zero q;
 
   protected function(int(0..):string(8bit)) random = random_string;
 
