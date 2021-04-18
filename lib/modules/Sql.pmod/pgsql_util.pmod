@@ -1132,14 +1132,7 @@ class sql_result {
               if (!alltext)
                 value = (int)value;
             } else {
-              switch (typ) {
-                case INT8OID:value = cr->read_sint(8);
-                  break;
-                case INT2OID:value = cr->read_sint(2);
-                  break;
-                case OIDOID:
-                case INT4OID:value = cr->read_sint(4);
-              }
+              value = cr->read_sint(collen);
               if (alltext)
                 value = (string)value;
             }
