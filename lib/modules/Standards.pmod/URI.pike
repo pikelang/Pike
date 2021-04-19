@@ -9,37 +9,37 @@
 #pragma strict_types
 
 //! Scheme component of URI
-string scheme;
+string|zero scheme;
 
 //! Authority component of URI (formerly called net_loc, from @rfc{2396@}
 //! known as authority)
-string authority;
+string|zero authority;
 
 //! Path component of URI. May be empty, but not undefined.
-string path;
+string path = "";
 
 //! Query component of URI. May be 0 if not present.
-string query;
+string|zero query;
 
 //! The fragment part of URI. May be 0 if not present.
-string fragment;
+string|zero fragment;
 
 //! Certain classes of URI (e.g. URL) may have these defined
-string host, user, password;
+string|zero host, user, password;
 
 //! If no port number is present in URI, but the scheme used has a
 //! default port number, this number is put here.
 int port;
 
 //! The base URI object, if present
-this_program base_uri;
+this_program|zero base_uri;
 
 // URI hacker docs:
 // This string is the raw uri the object was instantiated from in the
 // first place. We save it here for the sole purpose of being able to
 // replace the base URI, hence also needing to reresolve all of our
 // properties with respect to that change.
-string raw_uri;
+string raw_uri = "";
 
 #ifdef STANDARDS_URI_DEBUG
 #define DEBUG(X, Y ...) werror("Standards.URI: "+X+"\n", Y)
