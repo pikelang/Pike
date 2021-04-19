@@ -604,7 +604,7 @@ string http_encode(string in)
 {
   // We shouldn't really have to soft case here. Bug(ish) in constant
   // type generation...
-  return replace(in, [array(string)]url_from, [array(string)]url_to);
+  return replace(in, url_from, url_to);
 }
 
 //! Return the query part, coded according to @rfc{1738@}, or zero.
