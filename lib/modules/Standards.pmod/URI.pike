@@ -55,7 +55,7 @@ string raw_uri = "";
 // NOTE: Censors the userinfo from the @[authority] variable.
 protected void parse_authority()
 {
-  string host_port = authority;
+  string host_port = [string]authority;
   // authority   = [ userinfo "@" ] host [ ":" port ]
   array(string) a = authority/"@";
   if (sizeof(a) > 1) {
@@ -256,7 +256,7 @@ void reparse_uri(this_program|string|void base_uri)
       DEBUG("Fragment only. Using entire base URI, except fragment.");
       if( !this::base_uri )
         error("fragment only URI lacking base URI.\n");
-      string f = fragment;
+      string f = [string]fragment;
       inherit_properties(this::base_uri);
       fragment = f;
       return;
@@ -278,7 +278,7 @@ void reparse_uri(this_program|string|void base_uri)
      * "http") for the sake of robustness but should only produce
      * lowercase scheme names for consistency.
      */
-    scheme = lower_case(scheme);
+    scheme = lower_case([string]scheme);
   }
   DEBUG("Found scheme %O", scheme);
 
@@ -627,9 +627,10 @@ protected string _sprintf(int how, mapping|void args)
   if( how == 't' ) return "Standards.URI";
   if( string res = sprintf_cache[how] )
       return res;
-  string look, _host = host, getstring;
+  string look, getstring;
+  string|zero _host = host;
   if(how == 'x' && _host)
-      _host = lower_case(_host);
+      _host = lower_case([string]_host);
   getstring = (path||"") + (query ? "?" + query : "");
   if(args && args->flag_left)
       return getstring;
