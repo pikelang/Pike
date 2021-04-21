@@ -23,20 +23,20 @@ class State {
   // --- Variables and accessors
   //
 
-  protected Gmp.mpz p; // Modulo
-  protected Gmp.mpz q; // Group order
-  protected Gmp.mpz g; // Generator
+  protected Gmp.mpz|zero p; // Modulo
+  protected Gmp.mpz|zero q; // Group order
+  protected Gmp.mpz|zero g; // Generator
 
-  protected Gmp.mpz y; // Public key
-  protected Gmp.mpz x; // Private key
+  protected Gmp.mpz|zero y; // Public key
+  protected Gmp.mpz|zero x; // Private key
 
   protected function(int(0..):string(8bit)) random = random_string;
 
-  Gmp.mpz get_p() { return p; } //! Returns the DSA modulo (p).
-  Gmp.mpz get_q() { return q; } //! Returns the DSA group order (q).
-  Gmp.mpz get_g() { return g; } //! Returns the DSA generator (g).
-  Gmp.mpz get_y() { return y; } //! Returns the DSA public key (y).
-  Gmp.mpz get_x() { return x; } //! Returns the DSA private key (x).
+  Gmp.mpz|zero get_p() { return p; } //! Returns the DSA modulo (p).
+  Gmp.mpz|zero get_q() { return q; } //! Returns the DSA group order (q).
+  Gmp.mpz|zero get_g() { return g; } //! Returns the DSA generator (g).
+  Gmp.mpz|zero get_y() { return y; } //! Returns the DSA public key (y).
+  Gmp.mpz|zero get_x() { return x; } //! Returns the DSA private key (x).
 
   //! Sets the random function, used to generate keys and parameters, to
   //! the function @[r]. Default is @[random_string].
