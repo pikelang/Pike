@@ -88,22 +88,22 @@ class Message
   //! Pre-encapsulation boundary string.
   //!
   //! Typically a string like @expr{"CERTIFICATE"@} or @expr{"PRIVATE KEY"@}.
-  string pre;
+  string|zero pre;
 
   //! Post-encapsulation boundary string.
   //!
   //! Usually the same value as @[pre].
-  string post;
+  string|zero post;
 
   //! Encapsulated headers. If headers occur multiple times, they
   //! will be concatenated separated by delimiting NUL characters.
-  mapping(string(8bit):string(8bit)) headers;
+  mapping(string(8bit):string(8bit))|zero headers;
 
   //! The decode message body.
-  string(8bit) body;
+  string(8bit)|zero body;
 
   //! Message trailer, like @rfc{4880@} checksum.
-  string trailer;
+  string|zero trailer;
 
   protected void create(string|array(string) data)
   {
