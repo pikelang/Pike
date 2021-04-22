@@ -1153,7 +1153,7 @@ class TBSCertificate
     foreach(s->elements, Object o)
     {
       if( o->cls!=2 ) continue;
-#define CASE(X) do { if(!ext_subjectAltName_##X) ext_subjectAltName_##X=0; \
+#define CASE(X) do { if(!ext_subjectAltName_##X) ext_subjectAltName_##X=({}); \
         ext_subjectAltName_##X += ({ o->value }); } while(0)
 
       switch(o->tag)
