@@ -508,6 +508,11 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   if (in_fatal)
   {
     if (fmt) (void)vfprintf(stderr, fmt, args);
+    /* Prevent triple fatal. */
+    if (in_fatal == 1) {
+      in_fatal = 2;
+      gdb_backtraces();
+    }
     do_abort();
   }
 
@@ -551,9 +556,11 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
     threads_disabled++;
 #endif
     memset (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
-    if (SETJMP (jmp))
+    if (SETJMP (jmp)) {
       fprintf(stderr,"Got exception when trying to describe backtrace.\n");
-    else {
+      in_fatal = 2;
+      gdb_backtraces();
+    } else {
       jmp.severity = THROW_EXIT; /* Don't want normal exit code to run here. */
       push_error("Backtrace at time of fatal:\n");
       APPLY_MASTER("describe_backtrace",1);
@@ -569,7 +576,9 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
 #endif
     evaluator_callbacks = saved_eval_cbs;
   }else{
-    fprintf(stderr,"No stack - no backtrace.\n");
+    fprintf(stderr,"No master.\n");
+    in_fatal = 2;
+    gdb_backtraces();
   }
   fflush(stderr);
   do_abort();

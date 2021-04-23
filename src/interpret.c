@@ -3946,6 +3946,9 @@ void gdb_backtrace (
  *:
  *: This function is intended only for convenient use inside a
  *: debugger session; it can't be used from inside the program.
+ *:
+ *: It is also used as a fallback from Pike_fatal() if the master
+ *: object doesn't exist or fails to format the backtrace.
  */
 void gdb_backtraces()
 {
