@@ -2099,8 +2099,17 @@ static void mpzmod_pow(INT32 args)
   size = mpz_size(THIS);
   if (INT_TYPE_MUL_OVERFLOW(exponent, size) ||
       size * exponent > (INT_TYPE)(0x40000000/sizeof(mp_limb_t))) {
-    if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
-      SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
+    if ((mpz_cmp_si(THIS, -1) < 0) || (mpz_cmp_si(THIS, 1) > 0)) {
+      /* Could be a problem. Let's look closer... */
+      long e;
+      double mantissa = mpz_get_d_2exp(&e, THIS);
+      if (mantissa < 0) mantissa = -mantissa;
+      ep = e * log2(mantissa) * exponent;	/* ~= log2(result) */
+      ep /= 8.0;	/* bits ==> bytes */
+      if (ep > ((double)0x40000000)) {	/* 1GB */
+	SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
+      }
+    }
   }
 
   res = fast_clone_object(THIS_PROGRAM);
