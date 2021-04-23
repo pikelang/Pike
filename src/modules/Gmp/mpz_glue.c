@@ -2104,7 +2104,7 @@ static void mpzmod_pow(INT32 args)
       long e;
       double mantissa = mpz_get_d_2exp(&e, THIS);
       if (mantissa < 0) mantissa = -mantissa;
-      ep = e * log2(mantissa) * exponent;	/* ~= log2(result) */
+      ep = (e + log2(mantissa)) * exponent;	/* ~= log2(result) */
       ep /= 8.0;	/* bits ==> bytes */
       if (ep > ((double)0x40000000)) {	/* 1GB */
 	SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
