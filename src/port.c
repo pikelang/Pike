@@ -430,3 +430,10 @@ char *strdup(const char *str)
   return(res);
 }
 #endif /* !HAVE_STRDUP */
+
+#ifndef HAVE_LOG2
+double log2(double val)
+{
+  return log(val)/log(2);
+}
+#endif

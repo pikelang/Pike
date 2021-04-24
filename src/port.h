@@ -137,6 +137,10 @@ char *strchr(const char *s,int c);
 #ifdef HAVE__STRDUP
 #define strdup(X) _strdup(X)
 #endif
+
+#ifndef HAVE_LOG2
+#undef log2
+double log2(double val);
 #endif
 
 #ifdef EXTRACT_UCHAR_BY_CAST

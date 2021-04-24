@@ -4203,6 +4203,7 @@ AC_CHECK_FUNCS( \
  gmtime_r \
  gmtime_s \
  strptime \
+ log2 \
  mallinfo \
  mallinfo2 \
  mallopt \
