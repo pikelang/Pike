@@ -136,12 +136,12 @@ PIKECLASS Shuffle
   CVAR int iovfilled;
 
   static void set_fdstate(struct Shuffle_struct*s) {
-    if (s->box.fd >= 0)
+    if (s->box.fd >= 0 && s->oldbulkmode != -1)
       s->oldbulkmode = bulkmode_start(s->box.fd);
   }
 
   static void restore_fdstate(struct Shuffle_struct*s) {
-    if (s->box.fd >= 0)
+    if (s->box.fd >= 0 && s->oldbulkmode != -1)
       bulkmode_restore(s->box.fd, s->oldbulkmode);
   }
 
@@ -837,20 +837,24 @@ PIKECLASS Shuffle
     pop_n_elems(args);
   }
 
-  PIKEFUN void start(void|int autopause)
-   /*! @decl void start(void|int autopause);
+  PIKEFUN void start(void|int autopause, void|int freerun)
+   /*! @decl void start(void|int autopause, void|int freerun);
     *! Start sending data from the sources.
     *!
     *! @param autopause
     *! If true, automatically pause the shuffler when all sources
     *! have been consumed.  Everytime this happens, the @[done_callback]
     *! will ben called.
+    *!
+    *! @param freerun
+    *! If true, do not attempt to coalesce output by using bulkmode.
     */
     optflags OPT_SIDE_EFFECT;
   {
     if( !THIS->file_obj )
       Pike_error("Cannot start, no destination.\n");
     THIS->autopause = autopause && autopause->u.integer;
+    THIS->oldbulkmode = freerun && freerun->u.integer ? -1 : 0;
     THIS->state = RUNNING;
     SHUFFLE_DEBUG1("start()\n", THIS );
     set_fdstate(THIS);
