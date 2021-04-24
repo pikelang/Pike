@@ -620,7 +620,7 @@ outer:
             i->history = i->history[<PG_DEBUGHISTORY - 1 ..];
 #endif
             shuffle->add_source(this);
-            shuffle->start(1);
+            shuffle->start(1, 1);
           }
         } while (0);
         started = 0;
