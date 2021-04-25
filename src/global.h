@@ -615,7 +615,7 @@ typedef struct p_wchar_p
 /* According to Clang source the protected behavior is ELF-specific and not
    applicable to OS X. */
 #  define PMOD_EXPORT    __attribute__ ((visibility("default")))
-# elif __GNUC__ >= 4
+# elif __GNUC__ >= 4 && defined(HAVE_FUNCTION_ATTRIBUTE_VISIBILITY)
 #  ifdef DYNAMIC_MODULE
 #    define PMOD_EXPORT  __attribute__ ((visibility("default")))
 #  else
