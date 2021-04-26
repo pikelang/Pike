@@ -6458,28 +6458,6 @@ void fatal(char *foo,...)
 AC_MSG_RESULT($pike_cv_gcc_attributes)
 if test "$pike_cv_gcc_attributes" = yes; then
   AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
-
-  # __attribute__ ((visibility("default"))) is parsed, but generates
-  # warnings on some architectures (eg Solaris 8).
-  AC_MSG_CHECKING(if visibility attribute is supported)
-  AC_CACHE_VAL(pike_cv_gcc_attribute_visibility,
-  [
-    ORIG_CFLAGS="$CFLAGS"
-    CFLAGS="-Werror $CFLAGS"
-    AC_TRY_COMPILE([
-void foobar(void) __attribute__ ((visibility("default")));
-void foobar(void) {}
-    ], [],
-      pike_cv_gcc_attribute_visibility=yes,
-      pike_cv_gcc_attribute_visibility=no)
-    CFLAGS="$ORIG_CFLAGS"
-  ])
-
-  AC_MSG_RESULT($pike_cv_gcc_attribute_visibility)
-  if test "$pike_cv_gcc_attribute_visibility" = yes; then
-    AC_DEFINE(HAVE_FUNCTION_ATTRIBUTE_VISIBILITY, [],
-              [__attribute__((visibility("default"))) supported])
-  fi
 fi
 
 AC_MSG_CHECKING(if va_list is a state pointer)
