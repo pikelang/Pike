@@ -38,6 +38,7 @@
 //!   @[finalize]
 //! @endcode
 
+#define BLOCKSIZE	2048
 
 int max_request_size = 0;
 
@@ -180,7 +181,7 @@ constant singular_use_headers = ({
 });
 
 private int sent;
-private OutputBuffer send_buf = OutputBuffer(2048);
+private OutputBuffer send_buf = OutputBuffer(BLOCKSIZE);
 private Stdio.File send_fd=0;
 private int send_stop;
 private int keep_alive=0;
@@ -600,6 +601,7 @@ void response_and_finish(mapping m, function|void _log_cb)
 {
    string tmp;
    int stop;
+   int dochunked;
    send_buf->clear();
    response = m += ([ ]);
    log_cb = _log_cb;
@@ -750,6 +752,17 @@ void response_and_finish(mapping m, function|void _log_cb)
      radd("Content-Type: %s", m->type);
    }
 
+   if (!extra->connection) {
+     string cc = lower_case(request_headers["connection"]||"");
+     if (protocol=="HTTP/1.1" && !has_value(cc, "close") || cc == "keep-alive")
+     {
+       radd("Connection: keep-alive");
+       keep_alive=1;
+     }
+     else
+       radd("Connection: close");
+   }
+
    if (m->start < stop)
      radd("Content-Range: bytes %d-%d/%s", m->start,stop,
           undefinedp(m->instance_size) ? "*" : (string)m->instance_size);
@@ -759,10 +772,14 @@ void response_and_finish(mapping m, function|void _log_cb)
        radd("Content-Length: %d", m->size);
    } else if (arrayp(m->data) || m->file) {
      if (m->file) {
-       m->data = ({m->file});
+       m->data = ({ m->file });
        m_delete(m, "file");
      }
-     radd("Transfer-Encoding: chunked");
+     if (keep_alive && protocol == "HTTP/1.1") {
+       dochunked = 1;
+       radd("Transfer-Encoding: chunked");
+     } else
+       keep_alive = 0;
    }
 
    if (!extra->server)
@@ -783,17 +800,6 @@ void response_and_finish(mapping m, function|void _log_cb)
      }
    }
 
-   if (!extra->connection) {
-     string cc = lower_case(request_headers["connection"]||"");
-     if (protocol=="HTTP/1.1" && !has_value(cc, "close") || cc == "keep-alive")
-     {
-       radd("Connection: keep-alive");
-       keep_alive=1;
-     }
-     else
-       radd("Connection: close");
-   }
-
    radd("");
 
    if (_mode & SHUFFLER) {
@@ -811,9 +817,12 @@ void response_and_finish(mapping m, function|void _log_cb)
      if (m->file || m->data) {
        if (arrayp(m->data)) {
          void addrest() {
-           sf->add_source(m->data, chunker);
-           sf->add_source("0\r\n\r\n");   // Trailing headers can be added here
-           sent += 5;
+           if (dochunked) {
+             sf->add_source(m->data, chunker);
+             sf->add_source("0\r\n\r\n");   // Trailing headers could be added
+             sent += 5;
+           } else
+             sf->add_source(m->data);
          }
          if (m->start) {
            sf->set_done_callback(lambda() {
