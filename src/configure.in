@@ -846,7 +846,10 @@ else
 fi
 fi
 
+ORIG_CFLAGS="$CFLAGS"
+CFLAGS="-Werror $CFLAGS"
 AC_SYS_COMPILER_FLAG([-fvisibility=hidden],[fvisibility_hidden],CFLAGS)
+CFLAGS="$ORIG_CFLAGS"
 
 AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
   AC_SYS_COMPILER_FLAG(-O3,O3,OPTIMIZE, [
