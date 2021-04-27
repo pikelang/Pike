@@ -848,7 +848,10 @@ fi
 
 ORIG_CFLAGS="$CFLAGS"
 CFLAGS="-Werror $CFLAGS"
-AC_SYS_COMPILER_FLAG([-fvisibility=hidden],[fvisibility_hidden],CFLAGS)
+AC_SYS_COMPILER_FLAG([-fvisibility=hidden],[fvisibility_hidden],CFLAGS, [
+  AC_DEFINE(DISABLE_ATTRIBUTE_VISIBILITY, 1,
+	    [Disable use of __attribute__((visibility("default"))).])
+])
 CFLAGS="$ORIG_CFLAGS"
 
 AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
