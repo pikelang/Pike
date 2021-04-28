@@ -84,12 +84,12 @@ protected class LowState {
 	[mapping(string(8bit):string(7bit))]params;
       params = ([]);
       foreach(({ "n", "e", "d", "p", "q" }), string s) {
-	string(7bit) val;
+	string(7bit)|zero val;
 	if (!zero_type(val = jwk[s])) {
 	  // RFC 7517 A.1:
 	  //    In both cases, integers are represented using the base64url
 	  //    encoding of their big-endian representations.
-	  params[s] = Gmp.mpz(MIME.decode_base64url(val), 256);
+	  params[s] = Gmp.mpz(MIME.decode_base64url([string]val), 256);
 	}
       }
     }
@@ -817,7 +817,8 @@ class PKCS1_5State
   //! v2.2.
   string(8bit) pkcs_sign(string(8bit) message, .Hash h)
   {
-    string(8bit) di = Standards.PKCS.Signature.build_digestinfo(message, h);
+    string(8bit) di =
+      [string]Standards.PKCS.Signature.build_digestinfo(message, h);
     return [string(8bit)]sprintf("%*c", n->size(256), raw_sign(di));
   }
 
@@ -826,7 +827,8 @@ class PKCS1_5State
   int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign)
   {
     if( sizeof(sign)!=n->size(256) ) return 0;
-    string(8bit) s = Standards.PKCS.Signature.build_digestinfo(message, h);
+    string(8bit) s =
+      [string]Standards.PKCS.Signature.build_digestinfo(message, h);
     return raw_verify(s, Gmp.mpz(sign, 256));
   }
 
