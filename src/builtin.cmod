@@ -3824,7 +3824,7 @@ PIKECLASS LiveBacktraceFrame
     push_undefined();
   }
 
-  PIKEFUN string `line()
+  PIKEFUN int `line()
   {
     apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
     pop_stack();
