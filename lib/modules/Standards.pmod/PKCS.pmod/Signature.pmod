@@ -149,12 +149,12 @@ Signed sign(Sequence tbs, Crypto.Sign sign, Crypto.Hash hash)
   return res->sign(sign, hash);
 }
 
-Signed decode_signed(string|Sequence signed,
+Signed decode_signed(string(8bit)|Sequence signed,
 		     mapping(int:program(Object))|void asn1_types)
 {
   if (stringp(signed))
-    signed = Standards.ASN1.Decode.secure_der_decode(signed, asn1_types);
-  if (signed)
-    return Signed(signed);
+    signed = Standards.ASN1.Decode.secure_der_decode([string(8bit)]signed, asn1_types);
+  if (signed && signed->type_name=="SEQUENCE")
+    return Signed([object(Sequence)]signed);
   return 0;
 }
