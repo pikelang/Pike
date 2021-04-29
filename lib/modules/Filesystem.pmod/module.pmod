@@ -347,6 +347,10 @@ class Traversion {
   }
 
   string index() {
+    return _iterator_index();
+  }
+
+  protected string _iterator_index() {
     if(current && current->is_traversion)
       return current->index();
     if( pos >= sizeof(files) ) return UNDEFINED;
@@ -354,6 +358,10 @@ class Traversion {
   }
 
   string value() {
+    return _iterator_value();
+  }
+
+  protected string _iterator_value() {
     if(current && current->is_traversion)
       return current->value();
     if( pos >= sizeof(files) ) return UNDEFINED;
