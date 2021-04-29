@@ -868,11 +868,17 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
         session = old_session;
         send_packet(server_hello_packet());
 
-	if (tickets_enabled) {
-	  SSL3_DEBUG_MSG("SSL.ServerConnection: Resending ticket.\n");
-	  int lifetime_hint = [int](session->ticket_expiry_time - time(1));
-	  string(8bit) ticket = session->ticket;
-	  send_packet(new_session_ticket_packet(lifetime_hint, ticket));
+        if (tickets_enabled) {
+          if( !session->ticket ) {
+            SSL3_DEBUG_MSG("Missing ticket in session.\n");
+          } else if( !session->ticket_expiry_time ) {
+            SSL3_DEBUG_MSG("Missing ticket expiry time in session.\n");
+          } else {
+            SSL3_DEBUG_MSG("SSL.ServerConnection: Resending ticket.\n");
+            int lifetime_hint = [int](session->ticket_expiry_time - time(1));
+            string(8bit) ticket = [string(8bit)]session->ticket;
+            send_packet(new_session_ticket_packet(lifetime_hint, ticket));
+          }
 	}
 
         new_cipher_states();
