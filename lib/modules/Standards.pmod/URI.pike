@@ -509,7 +509,7 @@ string get_path_query()
   return (path||"") + (query ? "?" + query : "");
 }
 
-protected mapping(string:string) variables;
+protected mapping(string:string)|zero variables;
 
 //! Returns the query variables as a @expr{mapping(string:string)@}.
 mapping(string:string) get_query_variables() {

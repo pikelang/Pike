@@ -78,7 +78,7 @@ array(ProtocolVersion) get_versions(ProtocolVersion client)
 
 //! List of advertised protocols using using TLS application level
 //! protocol negotiation.
-array(string(8bit)) advertised_protocols;
+array(string(8bit))|zero advertised_protocols;
 
 //! Mapping of supported verifier algorithms to hash implementation.
 //!
@@ -243,7 +243,7 @@ function(int(0..):string(8bit)) random = random_string;
 //! first. By default set to all suites with at least 128 bits cipher
 //! key length, excluding RC4, and ephemeral and non-ephemeral
 //! certificate based key exchange.
-array(int) preferred_suites;
+array(int)|zero preferred_suites;
 
 //! Supported elliptical curve cipher curves in order of
 //! preference. Defaults to all supported curves, ordered with the

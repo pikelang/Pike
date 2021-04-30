@@ -11,8 +11,8 @@ import Constants;
 inherit Connection;
 
 //! A few storage variables for client certificate handling on the client side.
-array(int) client_cert_types;
-array(string(8bit)) client_cert_distinguished_names;
+array(int)|zero client_cert_types;
+array(string(8bit))|zero client_cert_distinguished_names;
 
 protected string _sprintf(int t)
 {

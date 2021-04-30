@@ -22,18 +22,18 @@ import Constants;
 int last_activity = time();
 
 //! Identifies the session to the server
-string(8bit) identity;
+string(8bit)|zero identity;
 
 //! Alternative identification of the session to the server.
 //! @seealso
 //!   @rfc{4507@}, @rfc{5077@}
-string(8bit) ticket;
+string(8bit)|zero ticket;
 
 //! Expiry time for @[ticket].
-int ticket_expiry_time;
+int|zero ticket_expiry_time;
 
 //! Always COMPRESSION_null.
-int compression_algorithm;
+int|zero compression_algorithm;
 
 //! Constant defining a choice of keyexchange, encryption and mac
 //! algorithm.
@@ -41,30 +41,30 @@ int cipher_suite = SSL_invalid_suite;
 
 //! Information about the encryption method derived from the
 //! cipher_suite.
-Cipher.CipherSpec cipher_spec;
+Cipher.CipherSpec|zero cipher_spec;
 
 //! 48 byte secret shared between the client and the server. Used for
 //! deriving the actual keys.
-string(8bit) master_secret;
+string(8bit)|zero master_secret;
 
 //! Information about the certificate in use by the peer, such as
 //! issuing authority, and verification status.
-mapping cert_data;
+mapping|zero cert_data;
 
 //! Negotiated protocol version.
-ProtocolVersion version;
+ProtocolVersion|zero version;
 
 //! The peer certificate chain
-array(string(8bit)) peer_certificate_chain;
+array(string(8bit))|zero peer_certificate_chain;
 
 //! Our certificate chain
-array(string(8bit)) certificate_chain;
+array(string(8bit))|zero certificate_chain;
 
 //! Our private key.
-Crypto.Sign.State private_key;
+Crypto.Sign.State|zero private_key;
 
 //! The peer's public key (from the certificate).
-Crypto.Sign.State peer_public_key;
+Crypto.Sign.State|zero peer_public_key;
 
 //! The max fragment size requested by the client.
 int max_packet_size = PACKET_MAX_SIZE;
@@ -89,7 +89,7 @@ protected void create(string(8bit)|void id)
  */
 
 //! @rfc{6066:3.1@} (SNI)
-string(8bit) server_name;
+string(8bit)|zero server_name;
 
 //! The set of <hash, signature> combinations supported by the peer.
 //!
@@ -116,7 +116,7 @@ array(int) signature_algorithms = ({
 //!   @type array(int)
 //!     List of supported groups, with the most preferred first.
 //! @endmixed
-array(int) ffdhe_groups;
+array(int)|zero ffdhe_groups;
 
 //! Supported elliptical curve cipher curves in order of preference.
 array(int) ecc_curves = ({});
@@ -150,7 +150,7 @@ int encrypt_then_mac = 0;
 //!     (typically the largest curve supported by both
 //!     the client and the server).
 //! @endint
-Crypto.ECC.Curve curve;
+Crypto.ECC.Curve|zero curve;
 #endif /* Crypto.ECC.Curve */
 
 //! Heartbeat mode.

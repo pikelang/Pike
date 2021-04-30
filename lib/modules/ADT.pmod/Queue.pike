@@ -4,7 +4,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-array l;
+array|zero l;
 
 //! Creates a queue with the initial items @[args] in it.
 protected void create(mixed ...args)

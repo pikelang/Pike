@@ -8,10 +8,10 @@ import .Constants;
 //! Based on the base @[Packet].
 inherit .Packet;
 
-int(1..2) level;
-int(8bit) description;
+int(1..2)|zero level;
+int(8bit)|zero description;
 
-string message;
+string|zero message;
 
 constant is_alert = 1;
 

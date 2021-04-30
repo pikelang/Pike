@@ -38,8 +38,8 @@ private constant Session = .Session;
 private constant Context = .Context;
 private constant Buffer = .Buffer;
 
-Session session;
-Context context;
+Session|zero session;
+Context|zero context;
 
 array(State) pending_read_state = ({});
 array(State) pending_write_state = ({});
@@ -67,7 +67,7 @@ string(8bit) server_verify_data = "";
 //      ClientHello and the ServerHello.
 
 //! The active @[Cipher.KeyExchange] (if any).
-.Cipher.KeyExchange ke;
+.Cipher.KeyExchange|zero ke;
 
 ProtocolVersion version;
 ProtocolVersion client_version; /* Used to check for version roll-back attacks. */
@@ -75,8 +75,8 @@ ProtocolVersion client_version; /* Used to check for version roll-back attacks. 
 int(0..1) dtls;			/* Indicates whether DTLS or not. */
 
 //! Random cookies, sent and received with the hello-messages.
-string(8bit) client_random;
-string(8bit) server_random;
+string(8bit)|zero client_random;
+string(8bit)|zero server_random;
 
 private constant Packet = .Packet;
 private constant Alert = .Alert;
@@ -94,7 +94,7 @@ int(0..1) tickets_enabled = 0;
 //! @note
 //!   Note that this is a connection property, and needs to be renegotiated
 //!   on session resumption.
-string(8bit) application_protocol;
+string(8bit)|zero application_protocol;
 
 Alert alert(int(1..2) level, int(8bit) description,
             string|void message)
@@ -231,8 +231,8 @@ Packet heartbeat_packet(Buffer s)
   return Packet(version, PACKET_heartbeat, s->read());
 }
 
-protected Crypto.AES heartbeat_encode;
-protected Crypto.AES heartbeat_decode;
+protected Crypto.AES|zero heartbeat_encode;
+protected Crypto.AES|zero heartbeat_decode;
 
 Packet heartbleed_packet()
 {
@@ -471,18 +471,18 @@ void shutdown()
 //
 
 
-State current_read_state;
-State current_write_state;
-Stdio.Buffer read_buffer = Stdio.Buffer();
-Packet packet;
+State|zero current_read_state;
+State|zero current_write_state;
+Stdio.Buffer|zero read_buffer = Stdio.Buffer();
+Packet|zero packet;
 
 //! Number of application data bytes sent by us.
-int sent;
+int|zero sent;
 
 //! Bitfield with the current connection state.
 ConnectionState state = CONNECTION_handshaking;
 
-function(object,int|object,string:void) alert_callback;
+function(object,int|object,string:void)|zero alert_callback;
 
 constant PRI_alert = 1;
 constant PRI_urgent = 2;
