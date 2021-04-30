@@ -764,6 +764,8 @@ outer:
         int fd = -1;
         if (socket)
           catch(fd = socket->query_fd());
+        if (!this)				// Not in destructed objects
+          return "";
         res = predef::sprintf("conxion  fd: %d input queue: %d/%d "
                     "queued portals: %d  output queue: %d/%d\n"
                     "started: %d\n",
@@ -872,6 +874,8 @@ class Result {
         int fd = -1;
         if (c && c->socket)
           catch(fd = c->socket->query_fd());
+        if (!this)				// Not in destructed objects
+          return "";
         res = sprintf(
                       "Result state: %d numrows: %d eof: %d inflight: %d\n"
                       "fd: %O portalname: %O  coltypes: %d"
