@@ -317,7 +317,8 @@ private array(Standards.X509.TBSCertificate)
   // chain is unbroken.
   mapping result = ([]);
   catch {
-    result = Standards.X509.verify_certificate_chain(certs,
+    result = [mapping]
+      Standards.X509.verify_certificate_chain(certs,
                                      context->trusted_issuers_cache,
                                      context->auth_level >= AUTHLEVEL_require,
                                      ([ "verifier_algorithms"
@@ -679,7 +680,7 @@ int(-1..2) to_write(Stdio.Buffer output)
       state = [int(0..0)|ConnectionState](state | CONNECTION_local_closed);
     }
   }
-  packet = current_write_state->encrypt_packet(packet, context);
+  packet = [object]current_write_state->encrypt_packet(packet, context);
   if (packet->content_type == PACKET_change_cipher_spec) {
     if (sizeof(pending_write_state)) {
       current_write_state = pending_write_state[0];
@@ -1007,7 +1008,7 @@ protected void got_dtls_handshake_fragment(string(8bit) data)
     // More paranoia - Extraneous data in fragment.
     data = data[..frag_len-1];
   }
-  array(HandshakeFragment) frags = handshake_fragments[seq];
+  array(HandshakeFragment)|zero frags = handshake_fragments[seq];
   if (sizeof(frags || ({})) &&
       ((mt != frags[0]->mt) || (len != frags[0]->len))) {
     // Inconsistent handshake message metadata.
@@ -1042,7 +1043,7 @@ protected void got_dtls_handshake_fragment(string(8bit) data)
 
 protected string(8bit) get_dtls_handshake_data()
 {
-  array(HandshakeFragment) frags =
+  array(HandshakeFragment)|zero frags =
     handshake_fragments[next_handshake_message_seq];
   if (!frags || (sizeof(frags) != 1)) return UNDEFINED;
   HandshakeFragment frag = frags[0];
