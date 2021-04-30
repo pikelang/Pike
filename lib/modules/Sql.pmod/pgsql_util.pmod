@@ -1743,13 +1743,16 @@ class Result {
     array(Thread.MutexKey) reflock = ({ 0 });
     for (;;) {
       reflock[0] = closemux->lock(aborted);
-      if (!catch(plugbuffer = c->start(reflock)))
+      if (!catch(plugbuffer = c->start(reflock))) {
+        if (!this)				// If dead
+          return;
         if (plugbuffer)
           plugbuffer->sendcmd(_closeportal(plugbuffer, reflock));
         else {
           PD("Releasesession retry closemux %O\n", _portalname);
           continue;
         }
+      }
       break;
     }
     reflock[0] = 0;
@@ -2136,9 +2139,11 @@ class proxy {
       PD("%O\n", (string)plugbuffer);
       void|bufcon|conxsess cs;
       if (catch(cs = ci->start())) {
-        destruct(waitforauthready);
-        unnamedstatement = 0;
-        termlock = 1;
+        if (this) {				// Only if still alive
+          destruct(waitforauthready);
+          unnamedstatement = 0;
+          termlock = 1;
+        }
         return;
       } else {
         CHAIN(cs)->add_hstring(plugbuffer, 4, 4);
