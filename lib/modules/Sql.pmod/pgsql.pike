@@ -270,7 +270,8 @@ protected void create(void|string host, void|string database,
    && (t = time(1)) - lastping > MINPINGINTERVAL
    && (ret = !catch(proxy.c->start()->sendcmd(FLUSHSEND))))
     lastping = t;
-  return ret ? !!reconnected : -1;
+  // After catch(start()) we might have been destructed
+  return this && ret ? !!reconnected : -1;
 }
 
 //! Cancels all currently running queries in this session.
