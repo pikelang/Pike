@@ -12544,10 +12544,10 @@ test_any([[
    float f=t2-t1;
 
    array r=({});
-   if (e<tts-0.1 || e>tts+0.1) 
+   if (e<tts-0.1 || e>tts+0.2)
       r+=({sprintf("hrtime %.6f, %+.6f",e,e-tts)});
 
-   if (f<tts-0.1 || f>tts+0.1) 
+   if (f<tts-0.1 || f>tts+0.2)
       r+=({sprintf("timeofday %.6f, %+.6f",f,f-tts)});
 
    if (sizeof(r)) return r*" / ";
