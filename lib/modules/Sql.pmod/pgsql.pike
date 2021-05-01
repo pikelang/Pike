@@ -87,7 +87,7 @@ private Thread.Mutex resyncmux;
 protected string _sprintf(int type) {
   string res;
   if (!this)					// Not in destructed objects
-    return "";
+    return UNDEFINED;
   switch(type) {
     case 'O':
       res = sprintf(DRIVERNAME"(%s@%s:%d/%s,%d,%d)",
