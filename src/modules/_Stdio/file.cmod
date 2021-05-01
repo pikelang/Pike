@@ -2353,8 +2353,10 @@ static void file_write(INT32 args)
   }
 
 #ifdef _REENTRANT
+#ifdef PIKE_DEBUG
   if (file->box.fd < 0)
     Pike_error("File closed while in file->write.\n");
+#endif
 #endif
 
   if (!file->my_errno) {
@@ -2437,7 +2439,9 @@ static void file_write_oob(INT32 args)
     check_threads_etc();
 
 #ifdef _REENTRANT
+#ifdef PIKE_DEBUG
     if(FD<0) Pike_error("File closed while in file->write_oob.\n");
+#endif
 #endif
 
     if(i<0)
