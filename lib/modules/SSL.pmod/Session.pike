@@ -193,7 +193,7 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
     if (!(ke_mask & cp->ke_mask_invariant)) return 0;
 
     // Check that all sign_algs in the cert chain are supported by the peer.
-    foreach(cp->sign_algs, int sign_alg) {
+    foreach([array(SignatureScheme)]cp->sign_algs, int sign_alg) {
       int found;
       foreach(signature_algorithms, int sup_alg) {
 	if (found = (sign_alg == sup_alg)) break;
@@ -206,8 +206,8 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
 #if constant(Crypto.ECC.Curve)
   if (cp->key->get_curve) {
     // Is the ECC curve supported by the client?
-    Crypto.ECC.Curve c =
-      ([object(Crypto.ECC.Curve.ECDSA)]cp->key)->get_curve();
+    Crypto.ECC.Curve c = [object(Crypto.ECC.Curve)]
+       ([object(Crypto.ECC.Curve.ECDSA)]cp->key)->get_curve();
     SSL3_DEBUG_MSG("Curve: %O (%O)\n",
 		   c, ECC_NAME_TO_CURVE[c->name()]);
     return has_value(ecc_curves, ECC_NAME_TO_CURVE[c->name()]);

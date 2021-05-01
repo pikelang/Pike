@@ -42,7 +42,7 @@ protected Packet client_hello(string(8bit)|void server_name,
   struct->add(client_random);
   struct->add_hstring(session->identity || "", 1);
 
-  array(int) cipher_suites = context->preferred_suites;
+  array(int) cipher_suites = [array] context->preferred_suites;
   if ((state & CONNECTION_handshaking) && !secure_renegotiation) {
     // Initial handshake.
     // Use the backward-compat way of asking for
@@ -232,7 +232,7 @@ protected Packet client_hello(string(8bit)|void server_name,
     SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d packets of early data.\n",
 		   sizeof(early_data));
     Buffer buf = Buffer();
-    foreach(early_data, Packet p) {
+    foreach([array] early_data, Packet p) {
       p->send(buf);
     }
     return buf;
@@ -294,7 +294,7 @@ protected Packet client_key_exchange_packet()
       return 0;
     }
   }
-  string(8bit) premaster_secret =
+  string(8bit)|zero premaster_secret =
     ke->client_key_exchange_packet(packet_data, version);
 
   if (!premaster_secret) {
@@ -384,7 +384,7 @@ protected int send_certs()
 
                // Are the individual hash and sign algorithms in the
                // certificate chain supported?
-               foreach(cp->sign_algs, int cert_scheme)
+               foreach([array] cp->sign_algs, int cert_scheme)
                {
                  int match;
                  foreach(session->signature_algorithms, int signature_scheme)

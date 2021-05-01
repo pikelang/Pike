@@ -65,7 +65,7 @@ array(ProtocolVersion) get_versions(ProtocolVersion client)
 
   // Client is TLS 1.2 and we have something later supported? Then we
   // expect supported_versions extension.
-  int high = max(@supported_versions);
+  ProtocolVersion high = max(@supported_versions);
   if( client==PROTOCOL_TLS_1_2 && high > PROTOCOL_TLS_1_2 )
     return ({ PROTOCOL_IN_EXTENSION });
 
@@ -1049,7 +1049,7 @@ variant void add_cert(CertificatePair cp)
 
   // Insert cp in cert_chains both under all DN/SNI names/globs and
   // under issuer DER. Keep lists sorted by strength.
-  foreach( cp->globs, string id )
+  foreach( [array(string(8bit))] cp->globs, string(8bit) id )
     add(id, cert_chains_domain);
 
   add(cp->issuers[0], cert_chains_issuer);
@@ -1062,8 +1062,11 @@ private void update_authorities()
   mapping(int:int) cert_types = ([]);
   foreach(authorities, string a)
   {
-    Standards.X509.TBSCertificate tbs = Standards.X509.decode_certificate(a);
-    Standards.ASN1.Types.Identifier id = [object(Standards.ASN1.Types.Identifier)]tbs->algorithm[0];
+    Standards.X509.TBSCertificate tbs = [object(Standards.X509.TBSCertificate)]
+                                        Standards.X509.decode_certificate(a);
+    Standards.ASN1.Types.Identifier id
+                                    = [object(Standards.ASN1.Types.Identifier)]
+                                      tbs->algorithm[0];
 
     // --- START Duplicated code from CertificatePair
     SignatureScheme sign_alg =
@@ -1090,7 +1093,8 @@ private void update_trusted_issuers()
   foreach(trusted_issuers, array(string) i)
   {
     // make sure the chain is valid and intact.
-    mapping result = Standards.X509.verify_certificate_chain(i, ([]), 0);
+    mapping result
+     = [mapping] Standards.X509.verify_certificate_chain(i, ([]), 0);
 
     if(!result->verified)
       error("Broken trusted issuer chain!\n");
@@ -1201,7 +1205,7 @@ Session decode_ticket(string(8bit) ticket)
 array(string(8bit)|int) encode_ticket(Session session)
 {
   if (!use_cache) return 0;
-  string(8bit) ticket = session->ticket;
+  string(8bit) ticket = [string(8bit)] session->ticket;
   if (!sizeof(ticket||"")) {
     do {
       ticket = random(32);
@@ -1211,7 +1215,7 @@ array(string(8bit)|int) encode_ticket(Session session)
     session->ticket = ticket;
     session->ticket_expiry_time = time(1) + 3600;
   }
-  string(8bit) orig_id = session->identity;
+  string(8bit)|zero orig_id = session->identity;
   session->identity = ticket;
   record_session(session);
   session->identity = orig_id;

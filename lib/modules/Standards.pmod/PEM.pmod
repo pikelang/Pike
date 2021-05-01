@@ -44,7 +44,7 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
   array(string) d = dek_info/",";
   if (sizeof(d) != 2) error("Unsupported DEK-Info.\n");
   string method = lower_case(String.trim(d[0]));
-  Crypto.AES.CBC._Buffer cipher = ([
+  object(Crypto.AES.CBC._Buffer)|zero cipher = ([
     "des-cbc": Crypto.DES.CBC.Buffer,
     "des-ede3-cbc": Crypto.DES3.CBC.Buffer,
     "aes-128-cbc": Crypto.AES.CBC.Buffer,
@@ -77,7 +77,7 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
 string decrypt_fragment(Message m, string(8bit) pwd)
 {
   // FIXME: Check proc-type = "4,ENCRYPTED"?
-  string(8bit) dek = m->headers["dek-info"];
+  string(8bit)|zero dek = m->headers["dek-info"];
   if(!dek) return 0;;
   return decrypt_body(dek, m->body, pwd);
 }
@@ -132,7 +132,7 @@ class Message
       lines = lines[..<1];
     }
 
-    array res = MIME.parse_headers(lines*"\n");
+    array res = [array]MIME.parse_headers(lines*"\n");
     headers = [mapping(string(8bit):string(8bit))]res[0];
     body = MIME.decode_base64([string(8bit)]res[1]);
   }

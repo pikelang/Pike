@@ -429,7 +429,8 @@ void derive_master_secret(string(8bit) premaster_secret)
   } else {
     session->master_secret =
       session->cipher_spec->prf(premaster_secret, "master secret",
-				client_random + server_random, 48);
+				[string(8bit)](client_random + server_random),
+                                48);
   }
 
   new_cipher_states();

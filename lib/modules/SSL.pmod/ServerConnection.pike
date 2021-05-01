@@ -147,7 +147,7 @@ protected Packet server_key_exchange_packet()
   if (ke) error("KE!\n");
   ke = session->cipher_spec->ke_factory(context, session, this, client_version);
   if (!ke->init_server()) return 0;
-  string(8bit) data =
+  string(8bit)|zero data =
     ke->server_key_exchange_packet(client_random, server_random);
   return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
@@ -609,7 +609,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
               // Although the protocol list is sent in client
               // preference order, it is the server preference that
               // wins.
-              foreach(context->advertised_protocols;; string(8bit) prot)
+              foreach([array(string(8bit))]context->advertised_protocols;;
+                      string(8bit) prot)
                 if( protocols[prot] )
                 {
                   application_protocol = prot;
@@ -767,7 +768,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
                      fmt_cipher_suites(context->preferred_suites),
                      fmt_cipher_suites(cipher_suites));
-      cipher_suites = context->preferred_suites & cipher_suites;
+      cipher_suites = [array(int)] context->preferred_suites & cipher_suites;
       SSL3_DEBUG_MSG("intersection:\n%s\n",
                      fmt_cipher_suites((array(int))cipher_suites));
 
