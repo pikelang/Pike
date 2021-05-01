@@ -388,6 +388,8 @@ class Timebase {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return UNDEFINED;
     switch (fmt) {
       case 's': return (string)this;
       default: return sprintf(sprintf("%%*%c", fmt), params, 0);
@@ -455,6 +457,8 @@ class Time {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return UNDEFINED;
     if (fmt == 'O')
       return sprintf("Time(%s)", (string)this);
     return ::_sprintf(fmt, params);
@@ -554,6 +558,8 @@ class TimeTZ {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return UNDEFINED;
     if (fmt == 'O')
       return sprintf("TimeTZ(%s)", (string)this);
     return ::_sprintf(fmt, params);
@@ -706,6 +712,8 @@ class Interval {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return UNDEFINED;
     if (fmt == 'O')
       return sprintf("Interval(%s)", (string)this);
     return ::_sprintf(fmt, params);
@@ -813,6 +821,8 @@ class Timestamp {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return UNDEFINED;
     if (fmt == 'O')
       return sprintf("Timestamp(%s)", (string)this);
     return ::_sprintf(fmt, params);
@@ -963,6 +973,8 @@ class Date {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return UNDEFINED;
     switch (fmt) {
       case 'O': return sprintf("Date(%s)", (string)this);
       case 's': return (string)this;
