@@ -2777,8 +2777,8 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   push_string(out);
 }
 
-/*! @decl string validate_utf8(utf8_string s)
- *! @decl string validate_utf8(utf8_string s, int extended)
+/*! @decl int(0..1) validate_utf8(utf8_string s)
+ *! @decl int(0..1) validate_utf8(utf8_string s, int extended)
  *!
  *!   Checks whether a string is a valid UTF-8 byte-stream.
  *!
@@ -2933,7 +2933,7 @@ PMOD_EXPORT void f_validate_utf8(INT32 args)
   push_int(ret);
 }
 
-/*! @decl int(..1) deprecated_typep(type t)
+/*! @decl int(0..1) deprecated_typep(type t)
  *!
  *!   Checks if the supplied type has the "deprecated" attribute. This would
  *!   generally only be true in static types of identifiers that have been
