@@ -240,7 +240,7 @@ optional class Fifo {
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     return f=='O' && sprintf( "%O(%d / %d)", this_program,
 			      size(), read_tres );
   }
@@ -410,7 +410,7 @@ optional class Queue {
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     return f=='O' && sprintf( "%O(%d)", this_program, size() );
   }
 }
@@ -511,7 +511,7 @@ optional class Farm
     protected string _sprintf( int f )
     {
       if (!this)				// Only if not destructed
-        return UNDEFINED;
+        return "(destructed)";
       switch( f )
       {
 	case 't':
@@ -627,7 +627,7 @@ optional class Farm
     protected string _sprintf( int f )
     {
       if (!this)				// Only if not destructed
-        return UNDEFINED;
+        return "(destructed)";
       switch( f )
       {
 	case 't':
@@ -873,7 +873,7 @@ optional class Farm
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     return f=='O' && sprintf( "%O(/* %s */)", this_program, debug_status() );
   }
 
@@ -950,7 +950,7 @@ optional class ResourceCount {
   /*semi*/private string _sprintf(int type) {
     string res = UNDEFINED;
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     switch(type) {
       case 'O':
         res = sprintf("Count: %d", _count);
@@ -1152,7 +1152,7 @@ optional class Fifo
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     return f=='O' && sprintf( "%O(%d / %d)", this_program,
 			      size(), read_tres );
   }
@@ -1232,7 +1232,7 @@ optional class Queue
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     return f=='O' && sprintf( "%O(%d)", this_program, size() );
   }
 }
@@ -1280,7 +1280,7 @@ class ResourceCount {
   {
     string res = UNDEFINED;
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     switch(type) {
       case 'O':
         res = sprintf("Count: %d", _count);
