@@ -193,7 +193,7 @@ protected mixed cast(string to) {
 
 protected string _sprintf(int fmt, mapping(string:mixed) params) {
   if (!this)					// Not in destructed objects
-    return UNDEFINED;
+    return "(destructed)";
   switch (fmt) {
     case 'O': return sprintf("this_program( %s )", (string)this);
     case 's': return (string)this;

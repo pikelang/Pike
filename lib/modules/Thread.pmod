@@ -224,7 +224,7 @@ class Fifo {
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     return f=='O' && sprintf( "%O(%d / %d)", this_program,
 			      size(), read_tres );
   }
@@ -394,7 +394,7 @@ class Queue {
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     return f=='O' && sprintf( "%O(%d)", this_program, size() );
   }
 }
@@ -498,7 +498,7 @@ class Farm
     protected string _sprintf( int f )
     {
       if (!this)				// Only if not destructed
-        return UNDEFINED;
+        return "(destructed)";
       switch( f )
       {
 	case 't':
@@ -675,7 +675,7 @@ class Farm
     protected string _sprintf( int f )
     {
       if (!this)				// Only if not destructed
-        return UNDEFINED;
+        return "(destructed)";
       switch( f )
       {
 	case 't':
@@ -921,7 +921,7 @@ class Farm
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     return f=='O' && sprintf( "%O(/* %s */)", this_program, debug_status() );
   }
 
@@ -1178,7 +1178,7 @@ class ResourceCount {
   {
     string res = UNDEFINED;
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     switch(type) {
       case 'O':
         res = sprintf("Count: %d", _count);
@@ -1380,7 +1380,7 @@ class Fifo
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     return f=='O' && sprintf( "%O(%d / %d)", this_program,
 			      size(), read_tres );
   }
@@ -1460,7 +1460,7 @@ class Queue
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     return f=='O' && sprintf( "%O(%d)", this_program, size() );
   }
 }
@@ -1508,7 +1508,7 @@ class ResourceCount {
   {
     string res = UNDEFINED;
     if (!this)				// Only if not destructed
-      return UNDEFINED;
+      return "(destructed)";
     switch(type) {
       case 'O':
         res = sprintf("Count: %d", _count);

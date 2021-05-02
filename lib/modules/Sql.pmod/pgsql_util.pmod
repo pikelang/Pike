@@ -758,14 +758,14 @@ outer:
   protected string _sprintf(int type) {
     string res;
     if (!this)					// Not in destructed objects
-      return UNDEFINED;
+      return "(destructed)";
     switch (type) {
       case 'O':
         int fd = -1;
         if (socket)
           catch(fd = socket->query_fd());
         if (!this)				// Not in destructed objects
-          return UNDEFINED;
+          return "(destructed)";
         res = predef::sprintf("conxion  fd: %d input queue: %d/%d "
                     "queued portals: %d  output queue: %d/%d\n"
                     "started: %d\n",
@@ -868,7 +868,7 @@ class Result {
   protected string _sprintf(int type) {
     string res;
     if (!this)					// Not in destructed objects
-      return UNDEFINED;
+      return "(destructed)";
     switch (type) {
       case 'O':
         int fd = -1;
@@ -2001,7 +2001,7 @@ class proxy {
   protected string _sprintf(int type) {
     string res;
     if (!this)					// Not in destructed objects
-      return UNDEFINED;
+      return "(destructed)";
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME".proxy(%s@%s:%d/%s,%d,%d)",
