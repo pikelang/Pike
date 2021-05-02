@@ -67,7 +67,7 @@ enum PIKE_TYPE {
 
     PIKE_T_FUNCTION_ARG = 4,	/* Only used in type strings. */
 
-/* NB: The reference counted types all have bit 4 set. */
+/* NB: The reference counted types all have bit 3 (8) set. */
     PIKE_T_ARRAY=8,
     PIKE_T_MAPPING=9,
     PIKE_T_MULTISET=10,
@@ -178,6 +178,9 @@ enum PIKE_TYPE {
     /** Used to mark an svalue as free and not valid for input
      *  to the svalue free functions.
      *  Cf assert_free_svalue().
+     *
+     *  Also used as a placeholder for the empty many type in
+     *  serialized function types (eg tFunction) (cf tUnknown).
      */
     PIKE_T_UNKNOWN=247,
 
