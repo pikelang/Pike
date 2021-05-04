@@ -903,8 +903,10 @@ void finish(int clean)
      r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
    }
 
-   my_fd->set_blocking();
-   my_fd = 0; // and drop this object
+   if (my_fd) {
+     my_fd->set_blocking();
+     my_fd = 0; // and drop this object
+   }
 }
 
 class OutputBuffer
