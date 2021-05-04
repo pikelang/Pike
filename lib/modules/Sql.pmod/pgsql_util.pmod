@@ -752,7 +752,8 @@ outer:
     };
     PD("Connect error %s\n", describe_backtrace(err));
     catch(destruct(pgsqlsess->waitforauthready));
-    destruct(this);
+    if (this)
+      destruct(this);
   }
 
   protected string _sprintf(int type) {
