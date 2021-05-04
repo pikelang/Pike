@@ -532,7 +532,11 @@ protected void read_cb_post(mixed dummy,string s)
 protected void close_cb()
 {
 // closed by peer before request read
-   if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }
+   if (my_fd) {
+     my_fd->set_blocking();
+     my_fd->close();
+     my_fd=0;
+   }
 }
 
 protected string _sprintf(int t)
@@ -899,7 +903,8 @@ void finish(int clean)
      r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
    }
 
-   my_fd=0; // and drop this object
+   my_fd->set_blocking();
+   my_fd = 0; // and drop this object
 }
 
 class OutputBuffer
