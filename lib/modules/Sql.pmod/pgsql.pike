@@ -493,8 +493,10 @@ private void waitauthready() {
 }
 
 protected void destroy() {
-  proxy.unnamedstatement = 0;		// Forget about pending statements
-  destruct(proxy);
+  if (proxy) {
+    proxy.unnamedstatement = 0;		// Forget about pending statements
+    destruct(proxy);
+  }
 }
 
 //! For PostgreSQL this function performs the same function as @[resync()].
