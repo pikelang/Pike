@@ -313,8 +313,8 @@ struct svalue
  * even if 'ARGS' is empty.
  */
 #define MagictFuncV(RET,REST,ARGS) "\004" ARGS "\021" REST RET
-#define MagictFunc(RET,ARGS) tFuncV(ARGS "", tVoid, RET)
-#define tFunction tFuncV("" ,tOr(tZero,tVoid),tOr(tMix,tVoid))
+#define MagictFunc(RET,ARGS) tFuncV(ARGS tNone, tVoid, RET)
+#define tFunction tFuncV(tNone, tUnknown, tOr(tMix,tVoid))
 #define tNone ""
 #define tUnknown "\367"
 #define tPrg(X) "\005" X
