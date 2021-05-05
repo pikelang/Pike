@@ -902,8 +902,7 @@ void finish(int clean)
      this_program r=server_port->request_program();
      r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
    }
-
-   if (my_fd) {
+   else if (my_fd) {
      my_fd->set_blocking();
      my_fd = 0; // and drop this object
    }
