@@ -13,26 +13,40 @@
 //!
 //! Typical use is to break circular compilation dependencies between modules.
 
-protected string path;
-
-protected void create(void|string path)
-{
-  this::path = path;
-}
+protected mapping(string: LazyValue) lazy_values =
+  set_weak_flag(([]), Pike.WEAK_VALUES);
 
 protected mixed `[](string id)
 {
-  if(path)
-    id = path + "." + id;
-  return this_program(id);
+  mixed res = lazy_values[id];
+  if (!undefinedp(res)) return res;
+  res = LazyValue(id);
+  if (!undefinedp(lazy_values[id])) return lazy_values[id];	// Race
+  return lazy_values[id] = res;
 }
 
-protected mixed lookup(mixed ... args)
+protected class LazyValue(string path)
 {
-  function f = master()->resolv(path);
-  if(!f) error("Failed to resolve %O\n");
-  `() = f;
-  return f(@args);
-}
+  protected mixed `[](string id)
+  {
+    return global::this[path + "." + id];
+  }
 
-protected function(mixed...:mixed) `() = lookup;
+  protected mixed lookup(mixed ... args)
+  {
+    function f = master()->resolv(path);
+    if(!f) error("Failed to resolve %O\n", path);
+    lazy_values[path] = `() = f;
+    return f(@args);
+  }
+
+  protected function(mixed...:mixed) `() = lookup;
+
+  protected string _sprintf(int c)
+  {
+    if (c == 'O') {
+      return sprintf("%O(%O)", this_program, path);
+    }
+    return UNDEFINED;
+  }
+}
