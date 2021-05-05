@@ -535,7 +535,7 @@ protected void close_cb()
    if (my_fd) {
      my_fd->set_blocking();
      my_fd->close();
-     my_fd=0;
+     my_fd = 0;
    }
 }
 
@@ -896,14 +896,15 @@ void finish(int clean)
    remove_call_out(send_timeout);
    remove_call_out(connection_timeout);
 
-   if (clean && my_fd && keep_alive) {
-     // create new request
+   if (my_fd) {
+     if (clean && keep_alive) {
+       // create new request
 
-     this_program r=server_port->request_program();
-     r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
-   }
-   else if (my_fd) {
-     my_fd->set_blocking();
+       this_program r=server_port->request_program();
+       r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
+     } else
+       my_fd->set_blocking();  // Setup for close, disable callbacks
+
      my_fd = 0; // and drop this object
    }
 }
