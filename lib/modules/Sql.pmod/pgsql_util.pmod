@@ -765,7 +765,7 @@ outer:
         int fd = -1;
         if (socket)
           catch(fd = socket->query_fd());
-        if (!this)				// Not in destructed objects
+        if (!this || !i)			// Not in destructed objects
           return "(destructed)";
         res = predef::sprintf("conxion  fd: %d input queue: %d/%d "
                     "queued portals: %d  output queue: %d/%d\n"
