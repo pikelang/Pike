@@ -83,7 +83,7 @@ enum PIKE_TYPE {
 
 /* NB: 6 & 7 below are selected for easy backward compat with Pike 7.8. */
     PIKE_T_ZERO= 6,	/**< Can return 0, but nothing else */
-    T_UNFINISHED=7,
+    PIKE_T_UNFINISHED=7,
 
 /*
  * NOTE: The following types may show up on the stack, but are NOT
@@ -91,10 +91,11 @@ enum PIKE_TYPE {
  *       lvalues. They MUST NOT have a value that has bit 3 (8) set.
  */
 
-    T_VOID=       16, /**< Can't return any value. Also used on stack to fill out the second
- * svalue on an lvalue when it isn't used. */
+    PIKE_T_VOID=       16, /**< Can't return any value. Also used on stack
+			    * to fill out the second
+			    * svalue on an lvalue when it isn't used. */
 
-    T_MANY=       17,
+    PIKE_T_MANY=       17,
 
     PIKE_T_INT_UNTYPED= 18, /* Optimization of int type size */
 
@@ -114,17 +115,17 @@ enum PIKE_TYPE {
 /** svalue.u.lval points to an svalue. Primarily used in lvalues on
  * stack, but can also occur in arrays containing lvalue pairs.
  */
-    T_SVALUE_PTR=20,
+    PIKE_T_SVALUE_PTR=20,
 
 /** svalue.u.identifer is an identifier index in an object. Primarily
  * used in lvalues on stack, but can also occur in arrays containing
  * lvalue pairs.
  */
-    T_OBJ_INDEX=21,
-    T_ARRAY_LVALUE=22,
+    PIKE_T_OBJ_INDEX=21,
+    PIKE_T_ARRAY_LVALUE=22,
 
 /* No types above this value should appear on the stack. */
-    PIKE_T_STACK_MAX=	T_ARRAY_LVALUE,
+    PIKE_T_STACK_MAX=	PIKE_T_ARRAY_LVALUE,
 
     PIKE_T_GET_SET= 32,	/* Getter setter.
                          * Only valid in struct identifier */
@@ -172,8 +173,8 @@ enum PIKE_TYPE {
     PIKE_T_NAME = 241,		/**< Named type. */
     PIKE_T_SCOPE = 243,		/**< Not supported yet */
     PIKE_T_TUPLE = 244,		/**< Not supported yet */
-    T_ASSIGN = 245,
-    T_DELETED = 246,
+    PIKE_T_ASSIGN = 245,
+    PIKE_T_DELETED = 246,
 
     /** Used to mark an svalue as free and not valid for input
      *  to the svalue free functions.
@@ -195,9 +196,9 @@ enum PIKE_TYPE {
      */
 
     PIKE_T_MIXED = 251,
-    T_NOT = 253,
-    T_AND = 254,
-    T_OR = 255,
+    PIKE_T_NOT = 253,
+    PIKE_T_AND = 254,
+    PIKE_T_OR = 255,
 
 /* This flag is only valid in struct reference, and corresponds
  * to struct identifier identifier_flags IDENTIFIER_NO_THIS_REF. */
@@ -423,17 +424,17 @@ struct svalue
 
 /** Used to signify that the type field hasn't been set according to
  * reality. */
-#define BIT_UNFINISHED (1 << T_UNFINISHED)
+#define BIT_UNFINISHED (1 << PIKE_T_UNFINISHED)
 
 /** This is only used in typechecking to signify that this
  * argument may be omitted.
  */
-#define BIT_VOID (1 << T_VOID)
+#define BIT_VOID (1 << PIKE_T_VOID)
 
 /** This is used in typechecking to signify that the rest of the
  * arguments have to be of this type.
  */
-#define BIT_MANY (1 << T_MANY)
+#define BIT_MANY (1 << PIKE_T_MANY)
 
 #define BIT_NOTHING 0
 #define BIT_MIXED 0xff7f
@@ -950,6 +951,18 @@ static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_cycle_check_svalues (s
 #define gc_cycle_check_short_svalue(U,T) real_gc_cycle_check_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),(T))
 #define gc_free_svalue(S) real_gc_free_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
 #define gc_free_short_svalue(U,T) real_gc_free_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),(T))
+
+#define T_UNFINISHED	PIKE_T_UNFINISHED
+#define T_VOID		PIKE_T_VOID
+#define T_MANY		PIKE_T_MANY
+#define T_SVALUE_PTR	PIKE_T_SVALUE_PTR
+#define T_OBJ_INDEX	PIKE_T_OBJ_INDEX
+#define T_ARRAY_LVALUE	PIKE_T_ARRAY_LVALUE
+#define T_ASSIGN	PIKE_T_ASSIGN
+#define T_DELETED	PIKE_T_DELETED
+#define T_NOT		PIKE_T_NOT
+#define T_AND		PIKE_T_AND
+#define T_OR		PIKE_T_OR
 
 #ifndef NO_PIKE_SHORTHAND
 
