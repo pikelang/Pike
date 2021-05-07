@@ -373,7 +373,7 @@ void debug_free_type(struct pike_type *t)
       /* Free car & cdr */
       free_type(car);
       t = (struct pike_type *) cdr;
-      debug_free_type_preamble (t);
+      if (t) debug_free_type_preamble (t);
       goto loop;
 
     case PIKE_T_AUTO:
@@ -386,21 +386,21 @@ void debug_free_type(struct pike_type *t)
     case T_PROGRAM:
       /* Free car */
       t = (struct pike_type *) car;
-      debug_free_type_preamble (t);
+      if (t) debug_free_type_preamble (t);
       goto loop;
 
     case T_SCOPE:
     case T_ASSIGN:
       /* Free cdr */
       t = (struct pike_type *) cdr;
-      debug_free_type_preamble (t);
+      if (t) debug_free_type_preamble (t);
       goto loop;
 
     case PIKE_T_ATTRIBUTE:
     case PIKE_T_NAME:
       free_string((struct pike_string *)car);
       t = (struct pike_type *) cdr;
-      debug_free_type_preamble (t);
+      if (t) debug_free_type_preamble (t);
       goto loop;
 
     case PIKE_T_OPERATOR:
@@ -410,7 +410,7 @@ void debug_free_type(struct pike_type *t)
 	free_type(cdr);
       }
       t = car;
-      debug_free_type_preamble(t);
+      if (t) debug_free_type_preamble(t);
       goto loop;
 
 #ifdef PIKE_DEBUG
