@@ -621,7 +621,7 @@ class File
   {
     // Copy the args to avoid races.
     function(int, mixed ...:void) cb = _async_cb;
-    array(mixed) args = _async_args;
+    array args = _async_args;
     _async_cb = 0;
     _async_args = 0;
     set_callbacks (0,0,0,0,0);
@@ -753,18 +753,16 @@ class File
     _async_cb = callback;
     _async_args = args;
     set_nonblocking(0, _async_check_cb, _async_check_cb, _async_check_cb, 0);
-    mixed err;
+
     int res;
-    if (err = catch(res = connect(host, port))) {
-      // Illegal format. -- Bad hostname?
-      set_callbacks (0, 0, 0, 0, 0);
-      call_out(_async_check_cb, 0);
-    } else if (!res) {
-      // Connect failed.
+    mixed err = catch(res = connect(host, port));
+
+    if (err || !res) {
       set_callbacks (0, 0, 0, 0, 0);
       call_out(_async_check_cb, 0);
     }
-    return 1;	// OK so far. (Or rather the callback will be used).
+
+    return 1;	// The callback will be used.
   }
 
   //! Opens a TCP connection asynchronously using a Concurrent Future
