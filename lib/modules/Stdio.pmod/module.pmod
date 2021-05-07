@@ -767,6 +767,34 @@ class File
     return 1;	// OK so far. (Or rather the callback will be used).
   }
 
+  //! Opens a TCP connection asynchronously using a Concurrent Future
+  //! object.
+  //!
+  //! @param host
+  //!   Hostname or IP to connect to.
+  //!
+  //! @param port
+  //!   Port number or service name to connect to.
+  //!
+  //! @returns
+  //!   Returns a @[Concurrent.Future] that resolves into the
+  //!   connection object at success.
+  variant Concurrent.Future async_connect(string host, int|string port)
+  {
+    void attempt_connect(function success, function failure) {
+      void callback(int done) {
+        if( done ) {
+          success(this);
+        } else {
+          failure("Failed to connect to "+host+":"+port+".\n");
+        }
+      }
+      if( !async_connect(host, port, callback) )
+        failure("Failed to open socket.\n");
+    }
+    return Concurrent.Promise(attempt_connect)->future();
+  }
+
   //! This function creates a pipe between the object it was called in
   //! and an object that is returned.
   //!
