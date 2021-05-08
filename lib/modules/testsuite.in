@@ -62,6 +62,30 @@ define(exit_promise, [[
   ]], $2)
 ]])
 
+dnl - create with executor
+test_any([[
+  void f(function yay, function nay) {
+    yay(1);
+  }
+  Concurrent.Promise p = Concurrent.Promise(f);
+  return p->get();
+]], 1)
+dnl test_any([[
+dnl   void f(function yay, function nay) {
+dnl     nay(2);
+dnl   }
+dnl   Concurrent.Promise p = Concurrent.Promise(f);
+dnl   return catch(p->get());
+dnl ]], 2)
+test_any([[
+  void f(function yay, function nay, string extra, string stuff) {
+    yay(extra+stuff);
+  }
+  Concurrent.Promise p = Concurrent.Promise(f, "extra", "stuff");
+  return p->get();
+]], "extrastuff")
+
+
 dnl - success()
 std_init_promise()
 test_do([[ promise->success(1); ]])
