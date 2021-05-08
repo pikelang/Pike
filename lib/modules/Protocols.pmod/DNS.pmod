@@ -2131,7 +2131,7 @@ class async_client
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
   //!   using the @[cancel] method.
-  Request host_to_ip(string host, function(string,string:void) callback, mixed ... args)
+  Request host_to_ip(string host, function(string,string,mixed...:void) callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
       return do_query(host, C_IN, T_A,
@@ -2162,7 +2162,7 @@ class async_client
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
   //!   using the @[cancel] method.
-  Request ip_to_host(string ip, function(string,string:void) callback, mixed ... args)
+  Request ip_to_host(string ip, function(string,string,mixed...:void) callback, mixed ... args)
   {
     return do_query(arpa_from_ip(ip), C_IN, T_PTR,
 		    generic_get, -1, 0, T_PTR, "ptr",
@@ -2189,7 +2189,7 @@ class async_client
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
   //!   using the @[cancel] method.
-  Request get_mx_all(string host, function callback, mixed ... args)
+  Request get_mx_all(string host, function(string,array(mapping(string:string|int)),mixed...:void) callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
       return do_query(host, C_IN, T_MX,
@@ -2220,7 +2220,7 @@ class async_client
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
   //!   using the @[cancel] method.
-  Request get_mx(string host, function(array(string):void) callback, mixed ... args)
+  Request get_mx(string host, function(array(string),mixed...:void) callback, mixed ... args)
   {
     return get_mx_all(host,
 		      lambda(string domain, array(mapping) mx,
