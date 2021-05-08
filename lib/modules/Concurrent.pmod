@@ -78,8 +78,9 @@ private void auto_use_backend()
 protected function(function(mixed ...:void), int|float, mixed ...:mixed)
   callout = ((callout = callnow), call_out(auto_use_backend, 0), callout);
 
-//! Value that will be provided asynchronously
-//! sometime in the future.
+//! Value that will be provided asynchronously sometime in the
+//! future. A Future object is typically produced from a @[Promise]
+//! object by calling its @[future()] method.
 //!
 //! @seealso
 //!   @[Promise]
