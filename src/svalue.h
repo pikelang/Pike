@@ -952,6 +952,8 @@ static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_cycle_check_svalues (s
 #define gc_free_svalue(S) real_gc_free_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
 #define gc_free_short_svalue(U,T) real_gc_free_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),(T))
 
+#ifndef NO_PIKE_SHORTHAND
+
 #define T_UNFINISHED	PIKE_T_UNFINISHED
 #define T_VOID		PIKE_T_VOID
 #define T_MANY		PIKE_T_MANY
@@ -963,8 +965,6 @@ static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_cycle_check_svalues (s
 #define T_NOT		PIKE_T_NOT
 #define T_AND		PIKE_T_AND
 #define T_OR		PIKE_T_OR
-
-#ifndef NO_PIKE_SHORTHAND
 
 #define T_ARRAY    PIKE_T_ARRAY
 #define T_MAPPING  PIKE_T_MAPPING
