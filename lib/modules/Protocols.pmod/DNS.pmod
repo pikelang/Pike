@@ -28,14 +28,27 @@ final constant SERVFAIL=2;
 final constant NXDOMAIN=3;
 
 //! The name server does not support the specified Opcode.
-final constant NOTIMPL=4;
+final constant NOTIMP=4;
+final constant NOTIMPL=4;		// Deprecated
 
 //! The name server refuses to perform the specified operation for
 //! policy or security reasons.
 final constant REFUSED=5;
 
+//! Name that should not exist, does exist.
+final constant YXDOMAIN=6;
+
+//! RRset that should not exist, does exist.
+final constant YXRRSET=7;
+
 //! Some RRset that ought to exist, does not exist.
 final constant NXRRSET=8;
+
+//! Server not authoritative for zone.
+final constant NOTAUTH=9;
+
+//! Name not contained in zone.
+final constant NOTZONE=10;
 
 final constant QUERY=0;
 
