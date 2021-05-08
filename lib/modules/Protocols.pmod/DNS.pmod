@@ -2124,8 +2124,14 @@ class async_client
     return UNDEFINED;
   }
 
+  //! Looks up the IP number for a host, and when done calls the
+  //! function callback with the host name and IP number as arguments.
   //!
-  Request host_to_ip(string host, function callback, mixed ... args)
+  //! @returns
+  //!   Returns a @[Request] object where progress can be observed
+  //!   from the retries variable and the request can be cancelled
+  //!   using the @[cancel] method.
+  Request host_to_ip(string host, function(string,string:void) callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
       return do_query(host, C_IN, T_A,
@@ -2137,8 +2143,26 @@ class async_client
     }
   }
 
+  //! Looks up the IP number for a host. Returns a
+  //! @[Concurrent.Future] object that resolves into the IP number as
+  //! a string, or 0 if it is missing.
+  variant Concurrent.Future host_to_ip(string host) {
+    Concurrent.Promise p = Concurrent.Promise();
+    void success(string host, string ip) {
+      p->success(ip);
+    }
+    host_to_ip(host, success);
+    return p->future();
+  }
+
+  //! Looks up the host name for an IP number, and when done calls the
+  //! function callback with the IP number adn host name as arguments.
   //!
-  Request ip_to_host(string ip, function callback, mixed ... args)
+  //! @returns
+  //!   Returns a @[Request] object where progress can be observed
+  //!   from the retries variable and the request can be cancelled
+  //!   using the @[cancel] method.
+  Request ip_to_host(string ip, function(string,string:void) callback, mixed ... args)
   {
     return do_query(arpa_from_ip(ip), C_IN, T_PTR,
 		    generic_get, -1, 0, T_PTR, "ptr",
@@ -2146,7 +2170,25 @@ class async_client
 		    @args);
   }
 
+  //! Looks up the host name for an IP number. Returns a
+  //! @[Concurrent.Future] object that resolves into the host name, or
+  //! 0 if it is missing.
+  variant Concurrent.Future ip_to_host(string ip) {
+    Concurrent.Promise p = Concurrent.Promise();
+    void success(string ip, string host) {
+      p->success(host);
+    }
+    ip_to_host(ip, success);
+    return p->future();
+  }
+
+  //! Looks up the mx pointers for a host, and when done calls the
+  //! function callback with the results as an array of mappings.
   //!
+  //! @returns
+  //!   Returns a @[Request] object where progress can be observed
+  //!   from the retries variable and the request can be cancelled
+  //!   using the @[cancel] method.
   Request get_mx_all(string host, function callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -2158,8 +2200,27 @@ class async_client
     }
   }
 
+  //! Looks up the mx pointers for a host. Returns a
+  //! @[Concurrent.Future] object that resolves into an array of
+  //! mappings.
+  variant Concurrent.Future get_mx_all(string host) {
+    Concurrent.Promise p = Concurrent.Promise();
+    void success(string host, array(mapping(string:string|int)) results) {
+      p->success(results);
+    }
+    get_mx_all(host, success);
+    return p->future();
+  }
+
+  //! Looks up the mx pointers for a host, and when done calls the
+  //! function callback with the results as an array of strings. These
+  //! can be host names, IP numbers, or a mix.
   //!
-  Request get_mx(string host, function callback, mixed ... args)
+  //! @returns
+  //!   Returns a @[Request] object where progress can be observed
+  //!   from the retries variable and the request can be cancelled
+  //!   using the @[cancel] method.
+  Request get_mx(string host, function(array(string):void) callback, mixed ... args)
   {
     return get_mx_all(host,
 		      lambda(string domain, array(mapping) mx,
@@ -2171,6 +2232,18 @@ class async_client
 			}
 			callback(a, @args);
 		      }, callback, @args);
+  }
+
+  //! Looks up the mx pointers for a host. Returns a
+  //! @[Concurrent.Future] object that resolves into an array of
+  //! strings.
+  variant Concurrent.Future get_mx(string host) {
+    Concurrent.Promise p = Concurrent.Promise();
+    void success(array(string) results) {
+      p->success(results);
+    }
+    get_mx(host, success);
+    return p->future();
   }
 
   //! Close the client.
@@ -2376,27 +2449,48 @@ async_client.Request async_##X( string host, function callback, mixed ... args )
   if( !global_async_client )						\
     global_async_client = async_client();				\
   return global_async_client->X(host,callback,@args);			\
+}                                                                       \
+variant Concurrent.Future async_##X( string host ) {                    \
+  if( !global_async_client )						\
+    global_async_client = async_client();				\
+  return global_async_client->X(host);                                  \
 }
 
 //! @ignore
 GAC(ip_to_host);
 //! @endignore
-//! @decl void async_ip_to_host(string ip, function cb, mixed ... cba)
+//! @decl client.Request async_ip_to_host(string ip, function cb, mixed ... cba)
+//! @decl Concurrent.Future async_ip_to_host(string ip)
+//! Calls ip_to_host in a global async_client created on demand.
+//! @seealso
+//!   @[async_client.ip_to_host()]
 
 //! @ignore
 GAC(host_to_ip);
 //! @endignore
-//! @decl void async_host_to_ip(string host, function cb, mixed ... cba)
+//! @decl client.Request async_host_to_ip(string host, function cb, mixed ... cba)
+//! @decl Concurrent.Future async_host_to_ip(string host)
+//! Calls host_to_ip in a global async_client created on demand.
+//! @seealso
+//!   @[async_client.host_to_ip()]
 
 //! @ignore
 GAC(get_mx_all);
 //! @endignore
-//! @decl void async_get_mx_all(string host, function cb, mixed ... cba)
+//! @decl client.Request async_get_mx_all(string host, function cb, mixed ... cba)
+//! @decl Concurrent.Future async_get_mx_all(string host)
+//! Calls get_mx_all in a global async_client created on demand.
+//! @seealso
+//!   @[async_client.get_mx_all()]
 
 //! @ignore
 GAC(get_mx);
 //! @endignore
-//! @decl void async_get_mx(string host, function cb, mixed ... cba)
+//! @decl client.Request async_get_mx(string host, function cb, mixed ... cba)
+//! @decl Concurrent.Future async_get_mx(string host)
+//! Calls get_mx in a global async_client created on demand.
+//! @seealso
+//!   @[async_client.get_mx()]
 
 
 client global_client;
