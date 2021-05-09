@@ -29,12 +29,25 @@
 #ifdef INLINE
 #undef INLINE
 #endif
+
+/* Disable declaration of depreecated types. We will define them
+ * ourselves later instead.
+ */
+#define TIFF_DISABLE_DEPRECATED
+
 #include <tiff.h>
 #ifdef HAVE_TIFFIOP_H
 #include <tiffiop.h>
 #endif
 #include <tiffio.h>
 
+#ifdef TIFF_GCC_DEPRECATED
+/* Recent version of libtiff. We use old-style types below,
+ * so provide some compat.
+ */
+#define	uint32		uint32_t
+#define uint16		uint16_t
+#endif
 
 #define sp Pike_sp
 
