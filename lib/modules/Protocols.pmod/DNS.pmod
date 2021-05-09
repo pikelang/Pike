@@ -1440,15 +1440,21 @@ class client
     return sizeof(res) ? res : ({ fallbackvalue });
   }
 
+  //! Return /etc/hosts records
+  array(string)|zero match_etc_hosts(string host)
+  {
+    return UNDEFINED;
+  }
 #else /* !__NT__ */
 
-  protected private mapping(string:string) etc_hosts;
+  protected private mapping(string:array(string)) etc_hosts;
 
-  protected private int is_ip(string ip)
+  private Regexp is_ip_regex
+   = Regexp("^([0-9a-fA-F:]+:[0-9a-fA-F:]*|[0-9]+(\\.[0-9]+)+)$");
+
+  protected private int is_ip(string(8bit) ip)
   {
-    if( has_value( ip, ":") )
-        return (replace(ip, "0123456789abcdefABCDEF:"/1, allocate(23,"")) == "");
-    return (replace(ip, "0123456789."/1, allocate(11,"")) == "");
+    return is_ip_regex->match(ip);
   }
 
   protected private string read_etc_file(string fname)
@@ -1477,10 +1483,11 @@ class client
     return res;
   }
 
-  protected private string match_etc_hosts(string host)
+  //! Return /etc/hosts records
+  array(string)|zero match_etc_hosts(string host)
   {
     if (!etc_hosts) {
-      etc_hosts = ([ "localhost":"127.0.0.1" ]);
+      etc_hosts = ([ "localhost":({ "127.0.0.1" }) ]);
 
       string raw = read_etc_file("hosts");
 
@@ -1493,7 +1500,10 @@ class client
 	  if (sizeof(arr) > 1) {
 	    if (is_ip(arr[0])) {
 	      foreach(arr[1..], string name) {
-		etc_hosts[name] = arr[0];
+                if (!etc_hosts[name])
+		  etc_hosts[name] = ({ arr[0] });
+                else
+		  etc_hosts[name] += ({ arr[0] });
 	      }
 	    } else {
 	      // Bad /etc/hosts entry ignored.
@@ -1601,13 +1611,14 @@ class client
 	      if (!is_ip(rest)) {
 		// Not an IP-number!
 		string host = rest;
-		if (!(rest = match_etc_hosts(host))) {
+		array(string)|zero hostip = match_etc_hosts(host);
+		if (!hostip) {
 		  werror("Protocols.DNS.client(): "
 			 "Can't resolv nameserver \"%s\"\n", host);
 		  break;
 		}
-	      }
-	      if (sizeof(rest)) {
+                nameservers += hostip;
+	      } else if (sizeof(rest)) {
 		nameservers += ({ rest });
 	      }
 	      break;
