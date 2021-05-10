@@ -1500,10 +1500,7 @@ class client
 	  if (sizeof(arr) > 1) {
 	    if (is_ip(arr[0])) {
 	      foreach(arr[1..], string name) {
-                if (!etc_hosts[name])
-		  etc_hosts[name] = ({ arr[0] });
-                else
-		  etc_hosts[name] += ({ arr[0] });
+                etc_hosts[name] += ({ arr[0] });
 	      }
 	    } else {
 	      // Bad /etc/hosts entry ignored.
