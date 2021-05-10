@@ -1951,33 +1951,36 @@ class proxy {
 #endif
 
   final void processloop(conxion ci) {
-    (c = ci)->socket->set_id(procmessage);
-    cancelsecret = 0;
-    portal = 0;
-    {
-      Stdio.Buffer plugbuffer = Stdio.Buffer()->add_int32(PG_PROTOCOL(3, 0));
-      if (user)
-        plugbuffer->add("user\0", user, 0);
-      if (database)
-        plugbuffer->add("database\0", database, 0);
-      foreach (options - censoroptions; string name; mixed value)
-        plugbuffer->add(name, 0, (string)value, 0);
-      plugbuffer->add_int8(0);
-      PD("%O\n", (string)plugbuffer);
-      void|bufcon|conxsess cs;
-      if (catch(cs = ci->start())) {
-        if (this) {				// Only if still alive
-          destruct(waitforauthready);
-          unnamedstatement = 0;
-          termlock = 1;
+    mixed err = catch {
+      (c = ci)->socket->set_id(procmessage);
+      cancelsecret = 0;
+      portal = 0;
+      {
+        Stdio.Buffer plugbuffer = Stdio.Buffer()->add_int32(PG_PROTOCOL(3, 0));
+        if (user)
+          plugbuffer->add("user\0", user, 0);
+        if (database)
+          plugbuffer->add("database\0", database, 0);
+        foreach (options - censoroptions; string name; mixed value)
+          plugbuffer->add(name, 0, (string)value, 0);
+        plugbuffer->add_int8(0);
+        PD("%O\n", (string)plugbuffer);
+        void|bufcon|conxsess cs;
+        if (catch(cs = ci->start())) {
+          if (this) {				// Only if still alive
+            destruct(waitforauthready);
+            unnamedstatement = 0;
+            termlock = 1;
+          }
+          return;
+        } else {
+          CHAIN(cs)->add_hstring(plugbuffer, 4, 4);
+          cs->sendcmd(SENDOUT);
         }
-        return;
-      } else {
-        CHAIN(cs)->add_hstring(plugbuffer, 4, 4);
-        cs->sendcmd(SENDOUT);
-      }
-    }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
-    procmessage();
+      }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
+    };
+    if (!err)
+      procmessage();
   }
 
   private void stasherror(int|object portal, mixed err) {
