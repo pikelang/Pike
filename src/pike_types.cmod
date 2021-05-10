@@ -10990,12 +10990,12 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 
  loop:
   /* Count the number of array levels. */
-  while(fun_type->type == PIKE_T_ARRAY) {
+  while(fun_type && (fun_type->type == PIKE_T_ARRAY)) {
     array_cnt++;
     fun_type = fun_type->cdr;
   }
 
-  switch(fun_type->type & PIKE_T_MASK) {
+  switch(fun_type?(fun_type->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
   case T_SCOPE:
     /* FIXME: Save and restore the corresponding marker set. */
   case T_ASSIGN:
@@ -11067,7 +11067,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     break;
 
   case T_NOT:
-    if (arg_type->type == T_NOT) {
+    if (arg_type && (arg_type->type == T_NOT)) {
       /* Both sides are inverted. Pop both inversions. */
       arg_type = arg_type->car;
       fun_type = fun_type->car;
