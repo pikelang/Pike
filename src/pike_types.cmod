@@ -1586,7 +1586,7 @@ static void push_type_field(TYPE_FIELD field)
   field &= (BIT_BASIC|BIT_COMPLEX);
   if (!field) {
     /* No values. */
-    push_type(T_ZERO);
+    push_type(PIKE_T_UNKNOWN);
   } else if (field == (BIT_BASIC|BIT_COMPLEX)) {
     /* All values. */
     push_type(T_MIXED);
