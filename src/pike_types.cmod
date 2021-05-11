@@ -9030,7 +9030,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 int match_types(struct pike_type *a, struct pike_type *b)
 {
   struct pike_type *res;
-#ifdef PIKE_DEBUG
+#ifdef PIKE_EXTRA_DEBUG
   struct remap_state remap;
   struct mapping *markers;
   struct pike_type *tmp, *tmp2;
@@ -9047,7 +9047,7 @@ int match_types(struct pike_type *a, struct pike_type *b)
   res = low_match_types(a, b, 0);
   free_type(res);
 
-#ifdef PIKE_DEBUG
+#ifdef PIKE_EXTRA_DEBUG
   if ((!!res) != (!!tmp2)) {
     fprintf(stderr, "match_types mismatch!\n"
 	    "a: ");
@@ -9076,7 +9076,7 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
 {
   struct remap_state remap;
   struct pike_type *tmp, *tmp2 = NULL;
-#ifdef PIKE_DEBUG
+#ifdef PIKE_EXTRA_DEBUG
   int res;
   struct pike_type **save_type_stackp = Pike_compiler->type_stackp;
   struct pike_type ***save_mark_stackp = Pike_compiler->pike_type_mark_stackp;
@@ -9092,7 +9092,7 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
     free_mapping(markers);
   }
 
-#ifdef PIKE_DEBUG
+#ifdef PIKE_EXTRA_DEBUG
   clear_markers();
   res = low_pike_types_le(a, b, 0, 0);
 
