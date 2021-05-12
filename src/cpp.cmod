@@ -1267,6 +1267,94 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
  */
 
+/*! @directive #elifdef
+ *! @directive #elseifdef
+ *!
+ *! These work as a combined @[#else] and @[#ifdef] without
+ *! adding an extra level of nesting.
+ *!
+ *! @example
+ *!
+ *!   The following two are equivalent:
+ *!
+ *!   @code
+ *!   #ifdef A
+ *!     // Code for A.
+ *!   #else
+ *!   #ifdef B
+ *!     // Code for B.
+ *!   #else
+ *!   #ifdef C
+ *!     // Code for C.
+ *!   #else
+ *!     // Code for D.
+ *!   #endif
+ *!   #endif
+ *!   #endif
+ *!   @endcode
+ *!
+ *!   And
+ *!
+ *!   @code
+ *!   #ifdef A
+ *!     // Code for A.
+ *!   #elifdef B
+ *!     // Code for B.
+ *!   #elseifdef C
+ *!     // Code for C.
+ *!   #else
+ *!     // Code for D.
+ *!   #endif
+ *!   @endcode
+ *!
+ *! @seealso
+ *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
+ */
+
+/*! @directive #elifndef
+ *! @directive #elseifndef
+ *!
+ *! These work as a combined @[#else] and @[#ifndef] without
+ *! adding an extra level of nesting.
+ *!
+ *! @example
+ *!
+ *!   The following two are equivalent:
+ *!
+ *!   @code
+ *!   #ifndef A
+ *!     // Code for not A.
+ *!   #else
+ *!   #ifndef B
+ *!     // Code for not B.
+ *!   #else
+ *!   #ifdef C
+ *!     // Code for not C.
+ *!   #else
+ *!     // Code for ABC.
+ *!   #endif
+ *!   #endif
+ *!   #endif
+ *!   @endcode
+ *!
+ *!   And
+ *!
+ *!   @code
+ *!   #ifndef A
+ *!     // Code for not A.
+ *!   #elifndef B
+ *!     // Code for not B.
+ *!   #elseifndef C
+ *!     // Code for not C.
+ *!   #else
+ *!     // Code for ABC.
+ *!   #endif
+ *!   @endcode
+ *!
+ *! @seealso
+ *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
+ */
+
   /*! @directive #error
    *!
    *!   Throw an error during preprocessing.
@@ -2743,7 +2831,11 @@ static const char ifndef_[] = { 'i', 'f', 'n', 'd', 'e', 'f' };
 static const char endif_[] = { 'e', 'n', 'd', 'i', 'f' };
 static const char else_[] = { 'e', 'l', 's', 'e' };
 static const char elseif_[] = { 'e', 'l', 's', 'e', 'i', 'f' };
+static const char elseifdef_[] = { 'e', 'l', 's', 'e', 'i', 'f', 'd', 'e', 'f' };
+static const char elseifndef_[] = { 'e', 'l', 's', 'e', 'i', 'f', 'n', 'd', 'e', 'f' };
 static const char elif_[] = { 'e', 'l', 'i', 'f' };
+static const char elifdef_[] = { 'e', 'l', 'i', 'f', 'd', 'e', 'f' };
+static const char elifndef_[] = { 'e', 'l', 'i', 'f', 'n', 'd', 'e', 'f' };
 static const char define_[] = { 'd', 'e', 'f', 'i', 'n', 'e' };
 static const char undef_[] = { 'u', 'n', 'd', 'e', 'f' };
 static const char undefine_[] = { 'u', 'n', 'd', 'e', 'f', 'i', 'n', 'e' };
@@ -4229,6 +4321,64 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                   free_string_builder(&tmp);
                   if(!SAFE_IS_ZERO(Pike_sp-1)) flags&=~CPP_NO_OUTPUT;
                   pop_stack();
+                } else {
+                  FIND_EOL();
+                  flags |= CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT;
+                }
+                break;
+              }
+              if(GOBBLE_WORD(elifdef_) || GOBBLE_WORD(elseifdef_))
+              {
+                if(!(flags & CPP_EXPECT_ELSE))
+                  cpp_error(this, "Unmatched #elifdef.");
+
+                flags|=CPP_EXPECT_ENDIF;
+
+                if((flags & (CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT)) == CPP_NO_OUTPUT)
+                {
+		  INT32 nflags;
+		  struct pike_string *s;
+		  SKIPSPACE();
+
+		  s = GOBBLE_IDENTIFIER();
+		  if(!s)
+		    cpp_error(this, "#elifdef what?");
+
+		  flags |= CPP_EXPECT_ELSE | CPP_NO_OUTPUT;
+		  if (s) {
+		    if(FIND_DEFINE(s))
+		      flags &= ~CPP_NO_OUTPUT;
+		    free_string (s);
+		  }
+                } else {
+                  FIND_EOL();
+                  flags |= CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT;
+                }
+                break;
+              }
+              if(GOBBLE_WORD(elifndef_) || GOBBLE_WORD(elseifndef_))
+              {
+                if(!(flags & CPP_EXPECT_ELSE))
+                  cpp_error(this, "Unmatched #elifndef.");
+
+                flags|=CPP_EXPECT_ENDIF;
+
+                if((flags & (CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT)) == CPP_NO_OUTPUT)
+                {
+		  INT32 nflags;
+		  struct pike_string *s;
+		  SKIPSPACE();
+
+		  s = GOBBLE_IDENTIFIER();
+		  if(!s)
+		    cpp_error(this, "#elifndef what?");
+
+		  flags |= CPP_EXPECT_ELSE | CPP_NO_OUTPUT;
+		  if (s) {
+		    if(!FIND_DEFINE(s))
+		      flags &= ~CPP_NO_OUTPUT;
+		    free_string (s);
+		  }
                 } else {
                   FIND_EOL();
                   flags |= CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT;
