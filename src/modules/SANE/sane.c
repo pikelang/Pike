@@ -608,7 +608,7 @@ struct row_scan_struct
   struct svalue callback;
 };
 
-static void nonblocking_row_scan_callback( int fd, void *_c )
+static int nonblocking_row_scan_callback( int fd, void *_c )
 {
   struct row_scan_struct *c = (struct row_scan_struct *)_c;
   int done = 0;
@@ -650,7 +650,7 @@ static void nonblocking_row_scan_callback( int fd, void *_c )
     THREADS_DISALLOW();
 
     if( !nbytes || c->bufferpos )
-      return; /* await more data */
+      return 0; /* await more data */
 
     c->current_row++;
 
@@ -674,6 +674,7 @@ static void nonblocking_row_scan_callback( int fd, void *_c )
     free( c->buffer );
     free( c );
   }
+  return 0;
 }
 
 /*! @decl void nonblocking_row_scan(function(Image.Image,int,Scanner,int:void) callback)
