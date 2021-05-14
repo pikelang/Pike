@@ -518,11 +518,16 @@ PIKEFUN void disassemble(function fun)
 	      PIKE_CONCAT(STR, SHIFT)(tripples);	\
 	    int i=0;					\
 	    while(i < tripples->len) {			\
-              WERR("@@@ %d: %s, %d, %d\n",              \
-		      i/3,				\
-		      instrs[*str - F_OFFSET].		\
-		      name,				\
-		      str[1], str[2]);			\
+	      if (*str >= F_OFFSET) {			\
+		WERR("@@@ %d: %s, %d, %d\n",		\
+		     i/3,				\
+		     instrs[*str - F_OFFSET].		\
+		     name,				\
+		     str[1], str[2]);			\
+	      } else {					\
+		WERR("@@@ %d: INVALID 0x%x, 0x%x, 0x%x\n", \
+		     i/3, *str, str[1], str[2]);	\
+	      }						\
 	      str += 3;					\
 	      i += 3;					\
 	    }						\
