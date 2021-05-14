@@ -1448,6 +1448,7 @@ class client
 #else /* !__NT__ */
 
   protected private mapping(string:array(string)) etc_hosts;
+  protected private mapping(string:array(string)) etc_hosts_reverse;
 
   private Regexp is_ip_regex
    = Regexp("^([0-9a-fA-F:]+:[0-9a-fA-F:]*|[0-9]+(\\.[0-9]+)+)$");
@@ -1488,6 +1489,7 @@ class client
   {
     if (!etc_hosts) {
       etc_hosts = ([ "localhost":({ "127.0.0.1" }) ]);
+      etc_hosts_reverse = ([ "127.0.0.1":({ "localhost" }) ]);
 
       string raw = read_etc_file("hosts");
 
@@ -1499,6 +1501,8 @@ class client
 
 	  if (sizeof(arr) > 1) {
 	    if (is_ip(arr[0])) {
+              if (sizeof(arr) > 1)
+                etc_hosts_reverse[arr[0]] += arr[1..];
 	      foreach(arr[1..], string name) {
                 etc_hosts[name] += ({ arr[0] });
 	      }
@@ -1511,7 +1515,7 @@ class client
 	// Couldn't read or no  /etc/hosts.
       }
     }
-    return etc_hosts[lower_case(host)];
+    return etc_hosts[lower_case(host)] || etc_hosts_reverse[host];
   }
 #endif /* !__NT__ */
 
@@ -2012,6 +2016,15 @@ class client
 #define REMOVE_DELAY 120
 #define GIVE_UP_DELAY (RETRIES * RETRY_DELAY + REMOVE_DELAY)*2
 
+private mapping dnstypetonum = ([
+  "A":    Protocols.DNS.T_A,
+  "MX":   Protocols.DNS.T_MX,
+  "MXIP": Protocols.DNS.T_MX,
+  "TXT":  Protocols.DNS.T_TXT,
+  "AAAA": Protocols.DNS.T_AAAA,
+  "PTR":  Protocols.DNS.T_PTR,
+]);
+
 // FIXME: Randomized source port!
 //! Asynchronous DNS client.
 class async_client
@@ -2106,6 +2119,219 @@ class async_client
     destruct(r);
   }
 
+  private void collect_return(string domain, mapping res,
+                              function(array, array:void) cb, array restargs) {
+    array an = res->an;
+    switch (res->rcode) {
+      case Protocols.DNS.SERVFAIL:
+      case Protocols.DNS.NOTIMP:
+      case Protocols.DNS.REFUSED:
+      case Protocols.DNS.YXDOMAIN:
+      case Protocols.DNS.YXRRSET:
+      case Protocols.DNS.NXRRSET:
+      case Protocols.DNS.NOTZONE:
+        if (!sizeof(an)) {
+          cb(0, restargs);
+          return;
+        }
+    }
+    sort(an->preference, an);
+    cb(an->aaaa + an->a + an->mx + an->txt + an->ptr - ({ 0 }), restargs);
+  }
+
+  private array prepslots(int numslots, array restargs) {
+    array slots = allocate(numslots + 1);
+    slots[0] = numslots;
+    return ({ slots }) + restargs;
+  }
+
+   // FIXME This actually is a hand-rolled Promise/Future construction.
+  //        Would it be more elegant (but more overhead) to use a real Promise?
+  private void collectslots(array|zero results, array restargs) {
+    // All queries are racing; collect all results in order
+    array slots = restargs[1];
+    int slot = restargs[0];
+    slots[slot] = results;
+    if (!--slots[0]) {				// Last slot filled
+      array|zero allresults;
+      for (slot = 0; ++slot < sizeof(slots);) {
+        if (results = slots[slot]) {
+          if (allresults)
+            results -= allresults;		// Eliminate duplicates
+          else
+            allresults = ({});
+          allresults += results;
+        }
+      }
+      restargs[2](allresults, restargs[3]);	// Report back
+    }
+  }
+
+  private void multicallback(array|zero results, array restargs) {
+    // If we have results, return early
+    if (results && sizeof(results))
+      restargs[3](results, restargs[4]);
+    else {
+      string type = restargs[0];
+      string domain = restargs[1];
+      array(string) multiq = restargs[2];
+      function(array(string)|zero, array:void) result_cb = restargs[3];
+      // No results, so try the next domain extension
+      domain += "." + multiq[0];
+      if (sizeof(multiq) == 1)
+        restargs = restargs[4];		// Last try, short to final callback
+      else {
+        restargs[2] = multiq = multiq[1..];	// Shift domain list
+        result_cb = multicallback;
+      }
+      generic_query(type, domain, result_cb, restargs, 2);
+    }
+  }
+
+  private void mxfallback(array|zero results, array restargs) {
+    // We just want the names, not the IP addresses
+    if (results && sizeof(results))
+      results = ({ restargs[0] });
+    restargs[1](results, restargs[2]);
+  }
+
+  private void collectmx(array|zero results, array restargs) {
+    if (results && sizeof(results))
+      restargs[1](results, restargs[2]);	// Got actual MX records
+    else
+      // Promote any A records to MX 0 records
+      generic_query("AAAA", restargs[0], mxfallback, restargs);
+  }
+
+  private void collectmxip(array|zero results, array restargs) {
+    if (results && sizeof(results)) {
+      restargs = prepslots(sizeof(results), restargs[1..]);
+      foreach (results; int i; string mx)	// MX -> IP
+        generic_query("AAAA", mx, collectslots,
+                      ({ i + 1 }) + restargs, 1);
+    } else
+      // Promote A any records to MX 0 records
+      generic_query("AAAA", restargs[0], restargs[1], restargs[2]);
+  }
+
+  //! Asynchronous DNS query with multiple results and a distinction
+  //! between failure and empty results.
+  //!
+  //! @param type
+  //!  DNS query type (case sensitive).
+  //!  Currently supported: A, MX, MXIP, TXT, AAAA, PTR.
+  //!  Querying for AAAA gives both IPv4 and IPv6 results.
+  //!  Querying for PTR expects normal IP addresses for @expr{domain@}.
+  //!  Querying for MXIP is similar to querying for MX, except it
+  //!  returns IP addresses instead of the MX records themselves.
+  //!
+  //! @param domain
+  //!  The domain name we are querying.  Add a trailing dot to prohibit
+  //!  domain-postfix searching.
+  //!
+  //! @param result_cb
+  //!  The callback function that receives the result of the DNS query.
+  //!  It should be declared as follows:
+  //!     @expr{void result_cb(array(string)|zero results, array restargs);@}
+  //!  If the request fails it will return @expr{zero@} for @expr{results@}.
+  //!  @expr{restargs@} is passed unaltered to the callback function.
+  //!
+  //! @param restrictsearch
+  //!   @int
+  //!     @value 0
+  //!       Try @expr{/etc/hosts@} first, then try all configured
+  //!       domain-postfixes when querying the DNS servers (default).
+  //!     @value 1
+  //!       Try @expr{/etc/hosts@} first, then try an unaltered query
+  //!       on the DNS servers.
+  //!     @value 2
+  //!       Just try an unaltered query on the DNS servers.
+  //!   @endint
+  //!
+  //! @note
+  //!   There is a notable difference between @expr{results@} equal
+  //!   to @expr{zero@} (= request failed and can be retried) and
+  //!   @expr{({})@} (= request definitively answered the record
+  //!   does not exist; retries are pointless).
+  //!
+  //! @note
+  //!   This method uses the exact same heuristics as the standard DNS
+  //!   resolver library (regarding the use of /etc/hosts, and when to
+  //!   perform a domain-postfix search, and when not (i.e. trailing
+  //!   dot)).
+  //!
+  //! @note
+  //!   All queries sort automatically by preference (lowest numbers first).
+  void generic_query(string type, string domain,
+       function(array(string)|zero, array:void) result_cb, array restargs,
+       void|int restrictsearch) {
+    int itype = dnstypetonum[type];
+    if (!itype) {
+      result_cb(0, restargs);
+      return;
+    }
+    // Check /etc/hosts only in particular circumstances
+    if (restrictsearch <= 1) {
+      switch (type) {
+        case "PTR":
+        case "AAAA":
+        case "A":
+          array(string)|zero etchosts = match_etc_hosts(domain);
+          if (etchosts) {
+            result_cb(etchosts, restargs);
+            return;
+          }
+      }
+    }
+    switch (type) {
+      case "MXIP":
+      case "MX":
+        restargs = ({ domain, result_cb, restargs });
+        result_cb = collectmx;
+        break;
+      case "PTR":
+        domain = arpa_from_ip(domain);
+        break;
+      case "AAAA":
+      case "A":
+        if (!restrictsearch) {
+          if (domain[-1] != '.' && sizeof(domains)) {
+            array(string) multiq;
+            if (has_value(domain, "."))
+              multiq = domains;
+            else {
+              multiq += domains[1..] + ({ "" });
+              domain = domain + "." + domains[0];
+            }
+            restargs = ({ domain, type, multiq, result_cb, restargs });
+            result_cb = multicallback;
+          }
+        }
+        break;
+    }
+    switch (type) {
+      case "MXIP":
+        result_cb = collectmxip;
+        break;
+      case "AAAA":
+        restargs = prepslots(2, ({ result_cb, restargs }));
+        do_query(domain, Protocols.DNS.C_IN, dnstypetonum["A"],
+                 collect_return, collectslots, ({ 1 }) + restargs);
+        restargs = ({ 2 }) + restargs;
+        result_cb = collectslots;
+        break;
+    }
+    do_query(domain, Protocols.DNS.C_IN, itype,
+             collect_return, result_cb, restargs);
+  }
+
+  private void single_result(array|zero results, array restargs) {
+    string domain = restargs[0];
+    function(string, string, mixed...:void) result_cb = restargs[1];
+    result_cb(domain, results && sizeof(results) ? results[0] : "",
+              @restargs[2]);
+  }
+
   protected private Request generic_get(string d,
 					mapping answer,
 					int multi,
@@ -2154,14 +2380,7 @@ class async_client
   //!   using the @[cancel] method.
   Request host_to_ip(string host, function(string,string,mixed...:void) callback, mixed ... args)
   {
-    if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
-      return do_query(host, C_IN, T_A,
-		      generic_get, 0, 0, T_A, "a", host, callback, @args );
-    } else {
-      return do_query(host, C_IN, T_A,
-		      generic_get, -1, 0, T_A, "a",
-		      host, callback, @args);
-    }
+    generic_query("AAAA", host, single_result, ({ host, callback }) + args);
   }
 
   //! Looks up the IP number for a host. Returns a
@@ -2185,10 +2404,7 @@ class async_client
   //!   using the @[cancel] method.
   Request ip_to_host(string ip, function(string,string,mixed...:void) callback, mixed ... args)
   {
-    return do_query(arpa_from_ip(ip), C_IN, T_PTR,
-		    generic_get, -1, 0, T_PTR, "ptr",
-		    ip, callback,
-		    @args);
+    generic_query("PTR", ip, single_result, ({ ip, callback }) + args);
   }
 
   //! Looks up the host name for an IP number. Returns a
