@@ -1440,12 +1440,7 @@ class client
     return sizeof(res) ? res : ({ fallbackvalue });
   }
 
-  //! Return /etc/hosts records
-  array(string)|zero match_etc_hosts(string host)
-  {
-    return UNDEFINED;
-  }
-#else /* !__NT__ */
+#endif /* !__NT__ */
 
   protected private mapping(string:array(string)) etc_hosts;
   protected private mapping(string:array(string)) etc_hosts_reverse;
@@ -1517,7 +1512,6 @@ class client
     }
     return etc_hosts[lower_case(host)] || etc_hosts_reverse[host];
   }
-#endif /* !__NT__ */
 
   // FIXME: Read hosts entry in /etc/nswitch.conf?
 
