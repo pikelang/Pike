@@ -1011,8 +1011,8 @@ static int do_docode2(node *n, int flags)
 
   /* Stack check */
   {
-    ptrdiff_t x_= ((char *)&x_) + STACK_DIRECTION * (32768) -
-      Pike_interpreter.stack_top ;
+    ptrdiff_t x_= ((char *)&x_) - Pike_interpreter.stack_top +
+      STACK_DIRECTION * (32768);
     x_*=STACK_DIRECTION;
     if(x_>0)
     {
