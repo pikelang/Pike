@@ -2409,7 +2409,7 @@ class async_client
   //!   using the @[cancel] method.
   Request host_to_ip(string host, function(string,string,mixed...:void) callback, mixed ... args)
   {
-    generic_query("AAAA", host, single_result, ({ host, callback }) + args);
+    generic_query("AAAA", host, single_result, host, callback, @args);
   }
 
   //! Looks up the IP number for a host. Returns a
@@ -2433,7 +2433,7 @@ class async_client
   //!   using the @[cancel] method.
   Request ip_to_host(string ip, function(string,string,mixed...:void) callback, mixed ... args)
   {
-    generic_query("PTR", ip, single_result, ({ ip, callback }) + args);
+    generic_query("PTR", ip, single_result, ip, callback, @args);
   }
 
   //! Looks up the host name for an IP number. Returns a
