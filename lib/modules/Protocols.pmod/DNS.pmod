@@ -1443,7 +1443,6 @@ class client
 #endif /* !__NT__ */
 
   protected private mapping(string:array(string)) etc_hosts;
-  protected private mapping(string:array(string)) etc_hosts_reverse;
 
   private Regexp is_ip_regex
    = Regexp("^([0-9a-fA-F:]+:[0-9a-fA-F:]*|[0-9]+(\\.[0-9]+)+)$");
@@ -1483,8 +1482,8 @@ class client
   array(string)|zero match_etc_hosts(string host)
   {
     if (!etc_hosts) {
-      etc_hosts = ([ "localhost":({ "127.0.0.1" }) ]);
-      etc_hosts_reverse = ([ "127.0.0.1":({ "localhost" }) ]);
+      etc_hosts = ([ "localhost":({ "127.0.0.1" }) ,
+                     "127.0.0.1":({ "localhost" }) ]);
 
       string raw = read_etc_file("hosts");
 
@@ -1496,11 +1495,12 @@ class client
 
 	  if (sizeof(arr) > 1) {
 	    if (is_ip(arr[0])) {
+              // Store reverse lookup
               if (sizeof(arr) > 1)
-                etc_hosts_reverse[arr[0]] += arr[1..];
-	      foreach(arr[1..], string name) {
+                etc_hosts[arr[0]] += arr[1..];
+              // Store forward lookups
+	      foreach (arr[1..], string name)
                 etc_hosts[name] += ({ arr[0] });
-	      }
 	    } else {
 	      // Bad /etc/hosts entry ignored.
 	    }
@@ -1510,7 +1510,7 @@ class client
 	// Couldn't read or no  /etc/hosts.
       }
     }
-    return etc_hosts[lower_case(host)] || etc_hosts_reverse[host];
+    return etc_hosts[lower_case(host)];
   }
 
   // FIXME: Read hosts entry in /etc/nswitch.conf?
