@@ -2114,7 +2114,8 @@ class async_client
   }
 
   private void collect_return(string domain, mapping res,
-                              function(array, array:void) cb, array restargs) {
+                              function(array, mixed ...:void) callback,
+                              mixed ... restargs) {
     array an = res->an;
     switch (res->rcode) {
       case Protocols.DNS.SERVFAIL:
@@ -2125,26 +2126,32 @@ class async_client
       case Protocols.DNS.NXRRSET:
       case Protocols.DNS.NOTZONE:
         if (!sizeof(an)) {
-          cb(0, restargs);
+          if (callback)				// Callback might have vanished
+            callback(0, @restargs);
           return;
         }
     }
     sort(an->preference, an);
-    cb(an->aaaa + an->a + an->mx + an->txt + an->ptr - ({ 0 }), restargs);
+    if (callback) {				// Callback might have vanished
+      callback(an->aaaa + an->a + an->mx + an->txt + an->ptr - ({ 0 }),
+               @restargs);
+    }
   }
 
-  private array prepslots(int numslots, array restargs) {
+  private array prepslots(int numslots,
+      function(array(string)|zero, mixed ...:void) callback,
+      mixed ... restargs) {
     array slots = allocate(numslots + 1);
     slots[0] = numslots;
-    return ({ slots }) + restargs;
+    return ({ slots, callback }) + restargs;
   }
 
    // FIXME This actually is a hand-rolled Promise/Future construction.
   //        Would it be more elegant (but more overhead) to use a real Promise?
-  private void collectslots(array|zero results, array restargs) {
+  private void collectslots(array|zero results, int slot, array slots,
+      function(array(string)|zero, mixed ...:void) callback,
+      mixed ... restargs) {
     // All queries are racing; collect all results in order
-    array slots = restargs[1];
-    int slot = restargs[0];
     slots[slot] = results;
     if (!--slots[0]) {				// Last slot filled
       array|zero allresults;
@@ -2157,79 +2164,64 @@ class async_client
           allresults += results;
         }
       }
-      restargs[2](allresults, restargs[3]);	// Report back
+      if (callback)				// Callback might have vanished
+        callback(allresults, @restargs);	// Report back
     }
   }
 
-  private void multicallback(array|zero results, array restargs) {
+  private void multicallback(array|zero results,
+      string type, string domain, array(string) multiq,
+      function(array(string)|zero, mixed ...:void) callback,
+      mixed ... restargs) {
     // If we have results, return early
-    if (results && sizeof(results))
-      restargs[3](results, restargs[4]);
-    else {
-      string type = restargs[0];
-      string domain = restargs[1];
-      array(string) multiq = restargs[2];
-      function(array(string)|zero, array:void) result_cb = restargs[3];
+    if (results && sizeof(results)) {
+      if (callback)			// Callback might have vanished
+        callback(results, @restargs);
+    } else {
       // No results, so try the next domain extension
       domain += "." + multiq[0];
-      if (sizeof(multiq) == 1)
-        restargs = restargs[4];		// Last try, short to final callback
+      if (sizeof(multiq) == 1)		// Last try, short to final callback
+        low_generic_query(2, type, domain, callback, @restargs);
       else {
-        restargs[2] = multiq = multiq[1..];	// Shift domain list
-        result_cb = multicallback;
+        low_generic_query(2, type, domain,	// Shift remaining domain list
+          multicallback, type, domain, multiq[1..], callback, @restargs);
       }
-      generic_query(type, domain, result_cb, restargs, 2);
     }
   }
 
-  private void mxfallback(array|zero results, array restargs) {
+  private void mxfallback(array|zero results, string domain,
+      function(array(string)|zero, mixed ...:void) callback,
+      mixed ... restargs) {
     // We just want the names, not the IP addresses
     if (results && sizeof(results))
-      results = ({ restargs[0] });
-    restargs[1](results, restargs[2]);
+      results = ({ domain });
+    if (callback)			// Callback might have vanished
+      callback(results, @restargs);
   }
 
-  private void collectmx(array|zero results, array restargs) {
-    if (results && sizeof(results))
-      restargs[1](results, restargs[2]);	// Got actual MX records
-    else
-      // Promote any A records to MX 0 records
-      generic_query("AAAA", restargs[0], mxfallback, restargs);
-  }
-
-  private void collectmxip(array|zero results, array restargs) {
+  private void collectmx(array|zero results, string domain,
+      function(array(string)|zero, mixed ...:void) callback,
+      mixed ... restargs) {
     if (results && sizeof(results)) {
-      restargs = prepslots(sizeof(results), restargs[1..]);
+      if (callback)			// Callback might have vanished
+        callback(results, @restargs);	// Got actual MX records
+    } else
+      // Promote any A records to MX 0 records
+      generic_query("AAAA", domain, mxfallback, domain, callback, @restargs);
+  }
+
+  private void collectmxip(array|zero results, string domain,
+      function(array(string)|zero, mixed ...:void) callback,
+      mixed ... restargs) {
+    if (results && sizeof(results)) {
+      restargs = prepslots(sizeof(results), callback, @restargs);
       foreach (results; int i; string mx)	// MX -> IP
-        generic_query("AAAA", mx, collectslots,
-                      ({ i + 1 }) + restargs, 1);
+        low_generic_query(1, "AAAA", mx, collectslots, i + 1, @restargs);
     } else
       // Promote A any records to MX 0 records
-      generic_query("AAAA", restargs[0], restargs[1], restargs[2]);
+      generic_query("AAAA", domain, callback, @restargs);
   }
 
-  //! Asynchronous DNS query with multiple results and a distinction
-  //! between failure and empty results.
-  //!
-  //! @param type
-  //!  DNS query type (case sensitive).
-  //!  Currently supported: A, MX, MXIP, TXT, AAAA, PTR.
-  //!  Querying for AAAA gives both IPv4 and IPv6 results.
-  //!  Querying for PTR expects normal IP addresses for @expr{domain@}.
-  //!  Querying for MXIP is similar to querying for MX, except it
-  //!  returns IP addresses instead of the MX records themselves.
-  //!
-  //! @param domain
-  //!  The domain name we are querying.  Add a trailing dot to prohibit
-  //!  domain-postfix searching.
-  //!
-  //! @param result_cb
-  //!  The callback function that receives the result of the DNS query.
-  //!  It should be declared as follows:
-  //!     @expr{void result_cb(array(string)|zero results, array restargs);@}
-  //!  If the request fails it will return @expr{zero@} for @expr{results@}.
-  //!  @expr{restargs@} is passed unaltered to the callback function.
-  //!
   //! @param restrictsearch
   //!   @int
   //!     @value 0
@@ -2242,26 +2234,12 @@ class async_client
   //!       Just try an unaltered query on the DNS servers.
   //!   @endint
   //!
-  //! @note
-  //!   There is a notable difference between @expr{results@} equal
-  //!   to @expr{zero@} (= request failed and can be retried) and
-  //!   @expr{({})@} (= request definitively answered the record
-  //!   does not exist; retries are pointless).
-  //!
-  //! @note
-  //!   This method uses the exact same heuristics as the standard DNS
-  //!   resolver library (regarding the use of /etc/hosts, and when to
-  //!   perform a domain-postfix search, and when not (i.e. trailing
-  //!   dot)).
-  //!
-  //! @note
-  //!   All queries sort automatically by preference (lowest numbers first).
-  void generic_query(string type, string domain,
-       function(array(string)|zero, array:void) result_cb, array restargs,
-       void|int restrictsearch) {
+  private void low_generic_query(int restrictsearch, string type,
+       string domain, function(array(string)|zero, mixed ...:void) callback,
+       mixed ... restargs) {
     int itype = dnstypetonum[type];
     if (!itype) {
-      result_cb(0, restargs);
+      callback(0, @restargs);
       return;
     }
     // Check /etc/hosts only in particular circumstances
@@ -2272,7 +2250,7 @@ class async_client
         case "A":
           array(string)|zero etchosts = match_etc_hosts(domain);
           if (etchosts) {
-            result_cb(etchosts, restargs);
+            callback(etchosts, @restargs);
             return;
           }
       }
@@ -2280,8 +2258,8 @@ class async_client
     switch (type) {
       case "MXIP":
       case "MX":
-        restargs = ({ domain, result_cb, restargs });
-        result_cb = collectmx;
+        restargs = ({ domain, callback }) + restargs;
+        callback = collectmx;
         break;
       case "PTR":
         domain = arpa_from_ip(domain);
@@ -2297,33 +2275,90 @@ class async_client
               multiq += domains[1..] + ({ "" });
               domain = domain + "." + domains[0];
             }
-            restargs = ({ domain, type, multiq, result_cb, restargs });
-            result_cb = multicallback;
+            restargs = ({ domain, type, multiq, callback }) + restargs;
+            callback = multicallback;
           }
         }
         break;
     }
     switch (type) {
       case "MXIP":
-        result_cb = collectmxip;
+        callback = collectmxip;
         break;
       case "AAAA":
-        restargs = prepslots(2, ({ result_cb, restargs }));
+        restargs = prepslots(2, callback, @restargs);
         do_query(domain, Protocols.DNS.C_IN, dnstypetonum["A"],
-                 collect_return, collectslots, ({ 1 }) + restargs);
-        restargs = ({ 2 }) + restargs;
-        result_cb = collectslots;
+                 collect_return, collectslots, 2, @restargs);
+        restargs = ({ 1 }) + restargs;
+        callback = collectslots;
         break;
     }
     do_query(domain, Protocols.DNS.C_IN, itype,
-             collect_return, result_cb, restargs);
+             collect_return, callback, @restargs);
   }
 
-  private void single_result(array|zero results, array restargs) {
-    string domain = restargs[0];
-    function(string, string, mixed...:void) result_cb = restargs[1];
-    result_cb(domain, results && sizeof(results) ? results[0] : "",
-              @restargs[2]);
+  //! Asynchronous DNS query with multiple results and a distinction
+  //! between failure and empty results.
+  //!
+  //! @param type
+  //!  DNS query type. Currenlty supported:
+  //!   @string
+  //!     @value "A"
+  //!       Return just IPv4 records.
+  //!     @value "AAAA"
+  //!       Return both IPv6 and IPv4 records.
+  //!     @value "PTR"
+  //!       Reverse lookup for IP addresses, it expects normal
+  //!       IP addresses for @expr{domain@}.
+  //!     @value "TXT"
+  //!       Return TXT records.
+  //!     @value "MX"
+  //!       Return MX records sorted by @expr{preference@}, lowest
+  //!       numbers first.
+  //!     @value "MXIP"
+  //!       Like querying for @expr{MX@}, except it returns IP
+  //!       addresses instead of the MX records themselves.
+  //!   @endstring
+  //!
+  //! @param domain
+  //!  The domain name we are querying.  Add a trailing dot to prohibit
+  //!  domain-postfix searching.
+  //!
+  //! @param callback
+  //!  The callback function that receives the result of the DNS query.
+  //!  It should be declared as follows:
+  //!     @expr{void callback(array(string)|zero results, mixed ... restargs);@}
+  //!  If the request fails it will return @expr{zero@} for @expr{results@}.
+  //!
+  //! @param restargs
+  //!  They are passed unaltered to the @expr{callback@} function.
+  //!
+  //! @note
+  //!   There is a notable difference between @expr{results@} equal
+  //!   to @expr{zero@} (= request failed and can be retried) and
+  //!   @expr{({})@} (= request definitively answered the record
+  //!   does not exist; retries are pointless).
+  //!
+  //! @note
+  //!   This method uses the exact same heuristics as the standard DNS
+  //!   resolver library (regarding the use of /etc/hosts, and when to
+  //!   perform a domain-postfix search, and when not to (i.e. trailing
+  //!   dot)).
+  //!
+  //! @note
+  //!   All queries sort automatically by preference (lowest numbers first).
+  void generic_query(string type, string domain,
+       function(array(string)|zero, mixed ...:void) callback,
+       mixed ... restargs) {
+    low_generic_query(0, upper_case(type), domain, callback, @restargs);
+  }
+
+  private void single_result(array|zero results,
+      string domain, function(string, string, mixed ...:void) callback,
+      mixed ... restargs) {
+    if (callback)
+      callback(domain, results && sizeof(results) ? results[0] : "",
+               @restargs);
   }
 
   protected private Request generic_get(string d,
