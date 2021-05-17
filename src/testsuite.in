@@ -11019,6 +11019,72 @@ return 0;
 #endif
 ]],1)
 
+// #elifdef
+test_any([[
+#if 0
+return 0;
+#elifdef FOOl
+return 0;
+#else
+return 1;
+#endif
+]],1)
+
+test_any([[
+#define FOOm
+#if 0
+return 0;
+#elifdef FOOm
+return 1;
+#else
+return 0;
+#endif
+]],1)
+
+test_any([[
+#define FOOm
+#if 1
+return 1;
+#elifdef FOOm
+return 0;
+#else
+return 0;
+#endif
+]],1)
+
+// #elifndef
+test_any([[
+#define FOOo
+#if 0
+return 0;
+#elifndef FOOo
+return 0;
+#else
+return 1;
+#endif
+]],1)
+
+test_any([[
+#if 0
+return 0;
+#elifndef FOOp
+return 1;
+#else
+return 0;
+#endif
+]],1)
+
+test_any([[
+#if 1
+return 1;
+#elifndef FOOp
+return 0;
+#else
+return 0;
+#endif
+]],1)
+
+
 // #pragma
 // FIXME: add tests for real pragmas
 test_compile_warning([[
