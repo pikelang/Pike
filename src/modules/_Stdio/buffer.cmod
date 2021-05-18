@@ -542,7 +542,7 @@ PIKECLASS Buffer
 
   static int io_avail( Buffer *io, ptrdiff_t len )
   {
-    if (UNLIKELY(len < 0 || len > io_len(io)))
+    if (UNLIKELY((len < 0) || (((size_t)len) > io_len(io))))
     {
         if (UNLIKELY(len < 0))
             io_range_error_throw( io, 0 );
