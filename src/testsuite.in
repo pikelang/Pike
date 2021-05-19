@@ -10958,6 +10958,7 @@ return 0;
 #elif 1
 return 1;
 #else
+FEL
 return 0;
 #endif
 ]],1)
@@ -10966,8 +10967,10 @@ test_any([[
 #if 1
 return 1;
 #elif 1
+FEL
 return 0;
 #else
+FEL
 return 0;
 #endif
 ]],1)
@@ -10991,8 +10994,10 @@ return 0;
 #elseif 1
 return 1;
 #elseif 0
+FEL
 return 0;
 #elseif 0
+FEL
 return 0;
 #else
 FEL
@@ -11005,6 +11010,7 @@ return 0;
 #elseif 1
 return 1;
 #else
+FEL
 return 0;
 #endif
 ]],1)
@@ -11013,8 +11019,10 @@ test_any([[
 #if 1
 return 1;
 #elseif 1
+FEL
 return 0;
 #else
+FEL
 return 0;
 #endif
 ]],1)
@@ -11037,6 +11045,7 @@ return 0;
 #elifdef FOOm
 return 1;
 #else
+FEL
 return 0;
 #endif
 ]],1)
@@ -11046,8 +11055,10 @@ test_any([[
 #if 1
 return 1;
 #elifdef FOOm
+FEL
 return 0;
 #else
+FEL
 return 0;
 #endif
 ]],1)
@@ -11070,6 +11081,7 @@ return 0;
 #elifndef FOOp
 return 1;
 #else
+FEL
 return 0;
 #endif
 ]],1)
@@ -11078,8 +11090,10 @@ test_any([[
 #if 1
 return 1;
 #elifndef FOOp
+FEL
 return 0;
 #else
+FEL
 return 0;
 #endif
 ]],1)
