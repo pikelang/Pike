@@ -5014,7 +5014,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  tmp = low_type_binop(PT_BINOP_MINUS, bi->car, ai->car, remap,
 			       bvoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
 			       avoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
-			       remap_flags);
+			       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	  if (tmp) {
 	    push_finished_type(ai);
 	    /* FIXME: What if tmp differs due to remapping? */
