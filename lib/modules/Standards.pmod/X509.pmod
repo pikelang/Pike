@@ -2042,7 +2042,7 @@ Crypto.Sign.State parse_private_key(Sequence seq)
   case 3:
   case 4:
     // Either PKCS#8 or ECDSA.
-    Crypto.Sign res = Standards.PKCS.parse_private_key(seq);
+    Crypto.Sign.State res = Standards.PKCS.parse_private_key(seq);
     if (res) return res;
 #if constant(Nettle.ECC_Curve)
     // EDCSA
@@ -2053,7 +2053,7 @@ Crypto.Sign.State parse_private_key(Sequence seq)
 }
 
 //! DWIM-parse the DER-sequence for a private key.
-variant Crypto.Sign.State parse_private_key(string private_key)
+variant Crypto.Sign.State parse_private_key(string(8bit) private_key)
 {
   Object seq = Standards.ASN1.Decode.secure_der_decode(private_key);
   if (!seq || (seq->type_name != "SEQUENCE")) return UNDEFINED;
