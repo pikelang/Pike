@@ -803,6 +803,10 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  {
 	    lex->pragmas |= ID_STRICT_TYPES;
 	  }
+	  else if (ISWORD("no_strict_types"))
+	  {
+	    lex->pragmas &= ~ID_STRICT_TYPES;
+	  }
 	  else if (ISWORD("save_parent"))
 	  {
 	    lex->pragmas |= ID_SAVE_PARENT;
