@@ -72,6 +72,11 @@ o #pragma disassemble
   The byte code output is now interleaved with the generated machine code
   on selected architectures.
 
+o #pragma no_strict_types
+
+  It is now possible to turn off the strict types mode for a section
+  of code.
+
 o Complain about redundant backslash escapes.
 
 o '__weak__' modifier added.
