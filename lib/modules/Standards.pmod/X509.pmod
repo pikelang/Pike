@@ -95,6 +95,7 @@ protected BitString build_keyUsage(keyUsage i)
   return b;
 }
 
+#pragma strict_types
 
 //! Unique identifier for the certificate issuer.
 //!
@@ -113,6 +114,8 @@ class SubjectId {
   int(0..3) cls = 2;
   int(1..) tag = 2;
 }
+
+#pragma no_strict_types
 
 protected {
   MetaExplicit extension_sequence = MetaExplicit(2, 3);
