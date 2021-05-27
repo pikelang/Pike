@@ -364,8 +364,7 @@ class State {
   //  --- Below are methods for DSA applied in other standards.
   //
 
-
-  //! Makes a DSA hash of the messge @[msg].
+  //! Makes a DSA hash of the message @[msg].
   Gmp.mpz hash(string(8bit) msg, .Hash h)
   {
     string(8bit) digest = h->hash(msg)[..q->size()/8-1];
