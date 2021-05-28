@@ -1674,6 +1674,17 @@ cond_resolv(Crypto.SHA512, [[
   // Generated using the Python PassLib via Phpass
   test_true(P("password", "$pbkdf2-sha512$1212$RHY0Fr3IDMSVO/RSZyb5ow$eNLfBK.eVozomMr.1gYa17k9B7KIK25NOEshvhrSX.esqY3s.FvWZViXz4KoLlQI.BzY/YTNJOiKc5gBYFYGww"))
 ]])
+cond_resolv(Crypto.MD5, [[
+  // Tests for crypt_php
+  // From John the Ripper 1.7.9 via Phpass
+  test_true(P("test1", "$H$9aaaaaSXBjgypwqm.JsMssPLiS8YQ00"))
+  test_true(P("123456", "$H$9PE8jEklgZhgLmZl5.HYJAzfGCQtzi1"))
+  test_true(P("123456", "$H$9pdx7dbOW3Nnt32sikrjAxYFjX8XoK1"))
+  test_true(P("thisisalongertestPW", "$P$912345678LIjjb6PhecupozNBmDndU0"))
+  test_true(P("JohnRipper", "$P$612345678si5M0DDyPpmRCmcltU/YW/"))
+  test_true(P("JohnRipper", "$H$712345678WhEyvy1YWzT4647jzeOmo0"))
+  test_true(P("JohnRipper", "$P$B12345678L6Lpt4BxNotVIMILOa9u81"))
+]])
 cond_resolv(Crypto.SHA1, [[
   // Tests for SHA1-HMAC
   // From Phpass
