@@ -683,8 +683,8 @@ tidy:
 
 # make clean
 clean_here: tidy doc_clean
-	-( cd tlib; find . -name testsuite | xargs rm )
-	-( cd extra_tests; find . -name testsuite | xargs rm )
+	-find tlib -name testsuite | xargs rm
+	-find extra_tests -name testsuite | xargs rm
 	-rm -f confdefs.h
 	-rm -rf test-install test-pike tpike tpike.* *.pdb
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
