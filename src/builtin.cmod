@@ -229,12 +229,12 @@ PIKECLASS TM
         RETURN THIS->unix_time;
     }
 
-    /*! @decl string asctime()
+    /*! @decl string|zero asctime()
      *! Return a string representing the time. Mostly useful for debug
      *! purposes, the exact format is very locale (see
      *! @[Gettext.setlocale]) and OS dependent.
      */
-    PIKEFUN string asctime()
+    PIKEFUN string|zero asctime()
     {
         FIX_THIS();
         {
@@ -306,11 +306,11 @@ PIKECLASS TM
         push_undefined();
     }
 
-    /*! @decl string zone
+    /*! @decl string|zero zone
      *!
      *! The timezone of this structure
      */
-    PIKEFUN string `zone() {
+    PIKEFUN string|zero `zone() {
         FIX_THIS();
         if( GET_ZONE(THIS) )
             push_text( GET_ZONE(THIS) );
@@ -1585,7 +1585,7 @@ PIKEFUN int program_inherits(program|object child, program parent)
  *! (zero) will be returned.
  */
 PMOD_EXPORT
-PIKEFUN string program_defined(program p)
+PIKEFUN string|zero program_defined(program p)
   errname defined;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -2006,6 +2006,8 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
       type_stack_mark();
       push_int_type(MIN_INT32, MAX_INT32);
       push_unlimited_array_type(T_STRING);
+      push_type(PIKE_T_ZERO);
+      push_type(T_OR);
       push_type(T_VOID);
       push_type(T_MANY);
       push_int_type(MIN_INT32, MAX_INT32);
@@ -2066,9 +2068,9 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
 
   return p;
 }
-PIKEFUN program ProxyFactory(program p)
+PIKEFUN program|zero ProxyFactory(program p)
   optflags OPT_TRY_OPTIMIZE;
-  rawtype tFunc(tSetvar(0, tPrg(tObj)), tVar(0));
+  rawtype tFunc(tSetvar(0, tPrg(tObj)), tOr(tVar(0), tZero));
 {
   struct program *res = proxy_factory(p, NULL, 0);
 
@@ -2411,7 +2413,7 @@ static struct pike_string *delambda(struct pike_string *str)
  *! @[function_object()]
  */
 PMOD_EXPORT
-PIKEFUN string function_name(program|function func)
+PIKEFUN string|zero function_name(program|function func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -2504,10 +2506,10 @@ PIKEFUN string function_name(program|function func)
  *!   @[function_name()], @[function_program()]
  */
 PMOD_EXPORT
-PIKEFUN object function_object(function|program func)
+PIKEFUN object|zero function_object(function|program func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
-  type function(function:object);
+  type function(function:object|zero);
 {
   switch(TYPEOF(*func))
   {
@@ -2547,7 +2549,7 @@ PIKEFUN object function_object(function|program func)
  *!   @[function_name()], @[function_object()]
  */
 PMOD_EXPORT
-PIKEFUN program function_program(program|function func)
+PIKEFUN program|zero function_program(program|function func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -2907,8 +2909,9 @@ static struct mapping *env_allocs = NULL;
 /* Works exactly like the getenv efun defined in the master, but only
  * accesses the real environment. Everyone should use the caching
  * version in the master instead. */
-PIKEFUN string|mapping _getenv (void|string var)
-  rawtype tOr(tFunc(tStr, tString), tFunc(tVoid, tMap (tStr, tStr)));
+PIKEFUN string|mapping|zero _getenv (void|string var)
+  rawtype tOr(tFunc(tStr, tOr(tString, tZero)),
+	      tFunc(tNone, tMap (tStr, tStr)));
 {
   /* FIXME: Perhaps add the amigaos4 stuff from pike_push_env here too. */
 
@@ -3402,7 +3405,7 @@ PIKECLASS backtrace_frame
     fill_in_file_and_line(THIS, NULL);
   }
 
-  PIKEFUN string `filename()
+  PIKEFUN string|zero `filename()
   {
     apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
     pop_stack();
@@ -3422,7 +3425,7 @@ PIKECLASS backtrace_frame
 
   /*! @decl string _sprintf(int c, mapping|void opts)
    */
-  PIKEFUN string _sprintf(int c, mapping|void opts)
+  PIKEFUN string|zero _sprintf(int c, mapping|void opts)
     flags ID_PROTECTED;
   {
     pop_n_elems(args);
@@ -3765,7 +3768,7 @@ PIKECLASS LiveBacktraceFrame
     RETURN (t == literal_array_string);
   }
 
-  PIKEFUN array `args()
+  PIKEFUN array|zero `args()
   {
     struct pike_frame *fp = THIS->fp;
     struct array *res;
@@ -3813,7 +3816,7 @@ PIKECLASS LiveBacktraceFrame
     }
   }
 
-  PIKEFUN string `filename()
+  PIKEFUN string|zero `filename()
   {
     apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
     pop_stack();
@@ -3979,7 +3982,7 @@ PIKECLASS LiveBacktraceFrame
     assign_svalue(fp->locals + l, val);
   }
 
-  PIKEFUN string get_local_name(int(0..) l)
+  PIKEFUN string|zero get_local_name(int(0..) l)
   {
     struct pike_frame *fp = THIS->fp;
     if (!fp || (l >= fp->num_locals)) {
@@ -3998,7 +4001,7 @@ PIKECLASS LiveBacktraceFrame
     push_undefined();
   }
 
-  PIKEFUN type get_local_type(int(0..) l)
+  PIKEFUN type|zero get_local_type(int(0..) l)
   {
     struct pike_frame *fp = THIS->fp;
     if (!fp || (l >= fp->num_locals)) {
@@ -4451,7 +4454,7 @@ PIKECLASS multi_string_replace
 
   /*! @decl array(array(string)) _encode()
    */
-  PIKEFUN array(array(string)) _encode()
+  PIKEFUN array(array(string))|zero _encode()
   {
     if (THIS->from) {
       ref_push_array(THIS->from);
@@ -4647,9 +4650,9 @@ PIKECLASS single_string_replace
     RETURN end_shared_string(ret);
   }
 
-  /*! @decl array(string) _encode()
+  /*! @decl array(string)|zero _encode()
    */
-  PIKEFUN array(string) _encode()
+  PIKEFUN array(string)|zero _encode()
   {
     if (THIS->del) {
       ref_push_string(THIS->del);
@@ -5133,7 +5136,7 @@ PIKECLASS automap_marker
       pop_n_elems(2);
     }
 
-  PIKEFUN string _sprintf(int mode, mapping flags)
+  PIKEFUN string|zero _sprintf(int mode, mapping flags)
     {
       pop_n_elems(args);
       if (mode != 'O') {
@@ -5339,7 +5342,7 @@ PMOD_EXPORT struct object *get_setter(struct object *o, int f)
   return res;
 }
 
-/*! @decl function(mixed_void) _get_setter(object o, string varname)
+/*! @decl function(mixed_void)|zero _get_setter(object o, string varname)
  *!
  *! Get a setter for the variable named @[varname] in object @[o].
  *!
@@ -5350,7 +5353,7 @@ PMOD_EXPORT struct object *get_setter(struct object *o, int f)
  *! @seealso
  *!   @[object_variablep()]
  */
-PIKEFUN function(mixed:void) _get_setter(object o, string s)
+PIKEFUN function(mixed:void)|zero _get_setter(object o, string s)
 {
   struct program *p;
   struct inherit *inh;
@@ -5406,13 +5409,13 @@ PIKECLASS Null
     add_integer_constant("is_sql_null", 1, 0);
   }
 
-  PIKEFUN int `!()
+  PIKEFUN int(0..1) `!()
     flags ID_PROTECTED;
   {
     RETURN 1;
   }
 
-  PIKEFUN string _sprintf(int fmt, mixed ... extras)
+  PIKEFUN string|zero _sprintf(int fmt, mixed ... extras)
     flags ID_PROTECTED;
   {
     pop_n_elems(args);
@@ -6324,12 +6327,12 @@ PIKECLASS List
       }
     }
 
-  /*! @decl array cast(string type)
+  /*! @decl array|zero cast(string type)
    *!
    *! 	Cast the lists. @expr{array@} is the only
    *! 	supported type.
    */
-  PIKEFUN array cast(string type)
+  PIKEFUN array|zero cast(string type)
     flags ID_PROTECTED;
   {
     pop_stack(); /* type as at least one more reference. */
@@ -7204,7 +7207,7 @@ PIKECLASS Stack
     }
   }
 
-  PIKEFUN string _sprintf(int t)
+  PIKEFUN string|zero _sprintf(int t)
     flags ID_PROTECTED;
   {
     if (t != '0') {
@@ -7376,7 +7379,7 @@ PIKECLASS pike_trampoline
     }
   }
 
-  PIKEFUN string _sprintf(int c, mapping|void opts)
+  PIKEFUN string|zero _sprintf(int c, mapping|void opts)
   {
     struct byte_buffer buf = BUFFER_INIT();
 
