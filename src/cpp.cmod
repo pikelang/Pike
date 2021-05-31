@@ -2257,6 +2257,7 @@ static struct define_struct *alloc_empty_define(struct pike_string *name)
  */
 static void undefine(struct CPP_struct *this, struct pike_string *name)
 {
+  if (!this->defines) return;
   ref_push_string(name);
   push_int(0);
   map_delete_no_free(this->defines, Pike_sp - 2, Pike_sp - 1);
@@ -2324,6 +2325,10 @@ static struct define_struct *add_define(struct CPP_struct *this,
 {
   struct pike_string *orig_name = name;
   struct define_struct *def;
+
+  if (!this->defines) {
+    this->defines = allocate_mapping(32);
+  }
 
   if( (name->len > 2) &&
       (index_shared_string(name, name->len-1) == ')') &&
@@ -3561,6 +3566,10 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   int include_mode;
   INT_TYPE first_line = this->current_line;
   /* FIXME: What about this->current_file? */
+
+  if (!this->defines) {
+    this->defines = allocate_mapping(32);
+  }
 
   for(pos=0; pos<len;)
   {
