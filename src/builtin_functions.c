@@ -2955,7 +2955,7 @@ PMOD_EXPORT void f_deprecated_typep(INT32 args)
   push_int(ret);
 }
 
-/*! @decl type typeof_identifier(program p, string identifier)
+/*! @decl type|zero typeof_identifier(program p, string identifier)
  *!
  *!   Allows access to the static type of an identifier ("member") in a
  *!   program.
@@ -3009,7 +3009,7 @@ static void f_parse_pike_type( INT32 args )
 /*! @module Pike
  */
 
-/*! @decl type soft_cast(type to, type from)
+/*! @decl type|zero soft_cast(type to, type from)
  *!
  *!   Return the resulting type from a soft cast of @[from] to @[to].
  */
@@ -3033,8 +3033,8 @@ static void f___soft_cast(INT32 args)
   }
 }
 
-/*! @decl type low_check_call(type fun_type, type arg_type)
- *! @decl type low_check_call(type fun_type, type arg_type, int flags)
+/*! @decl type|zero low_check_call(type fun_type, type arg_type)
+ *! @decl type|zero low_check_call(type fun_type, type arg_type, int flags)
  *!
  *!   Check whether a function of type @[fun_type] may be called
  *!   with a first argument of type @[arg_type].
@@ -3085,7 +3085,7 @@ static void f___low_check_call(INT32 args)
   }
 }
 
-/*! @decl type get_return_type(type fun_type)
+/*! @decl type|zero get_return_type(type fun_type)
  *!
  *!   Check what a function of the type @[fun_type] will
  *!   return if called with no arguments.
@@ -3113,7 +3113,7 @@ static void f___get_return_type(INT32 args)
   }
 }
 
-/*! @decl type get_first_arg_type(type fun_type)
+/*! @decl type|zero get_first_arg_type(type fun_type)
  *!
  *!   Check if a function of the type @[fun_type] may be called
  *!   with an argument, and return the type of that argument.
@@ -3194,7 +3194,7 @@ PMOD_EXPORT void f_all_constants(INT32 args)
   ref_push_mapping(get_builtin_constants());
 }
 
-/*! @decl CompilerEnvironment.PikeCompiler get_active_compiler()
+/*! @decl CompilerEnvironment.PikeCompiler|zero get_active_compiler()
  *!
  *!   Returns the most recent of the currently active pike compilers,
  *!   or @[UNDEFINED] if none is active.
@@ -10124,7 +10124,7 @@ void init_builtin_efuns(void)
 
   /* function(:object) */
   ADD_EFUN("get_active_compiler", f_get_active_compiler,
-	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
+	   tFunc(tNone, tOr(tObj, tZero)), OPT_EXTERNAL_DEPEND);
 
   /* function(int,void|0=mixed:array(0)) */
   ADD_EFUN("allocate", f_allocate,
@@ -10444,26 +10444,26 @@ void init_builtin_efuns(void)
            tFunc(tType(tMix),tInt), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("typeof_identifier", f_typeof_identifier,
-           tFunc(tPrg(tObj) tStr, tType(tMix)), OPT_TRY_OPTIMIZE);
+           tFunc(tPrg(tObj) tStr, tOr(tType(tMix), tZero)), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__soft_cast", f___soft_cast,
 	   tFunc(tSetvar(0, tType(tMix)) tSetvar(1, tType(tMix)),
-		 tAnd(tVar(0), tVar(1))),
+		 tOr(tAnd(tVar(0), tVar(1)), tZero)),
 	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__low_check_call", f___low_check_call,
 	   tFunc(tType(tCallable) tType(tMix) tOr(tInt,tVoid) tOr(tMix,tVoid),
-		 tType(tCallable)),
+		 tOr(tType(tCallable), tZero)),
 	   OPT_TRY_OPTIMIZE);
 
   /* FIXME: Could have a stricter type. */
   ADD_EFUN("__get_return_type", f___get_return_type,
-	   tFunc(tType(tCallable), tType(tMix)),
+	   tFunc(tType(tCallable), tOr(tType(tMix), tZero)),
 	   OPT_TRY_OPTIMIZE);
 
   /* FIXME: Could have a stricter type. */
   ADD_EFUN("__get_first_arg_type", f___get_first_arg_type,
-	   tFunc(tType(tCallable), tType(tMix)),
+	   tFunc(tType(tCallable), tOr(tType(tMix), tZero)),
 	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__get_type_attributes", f___get_type_attributes,
