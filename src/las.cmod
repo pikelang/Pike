@@ -3719,7 +3719,8 @@ void fix_type_field(node *n)
 			NULL, 0, CDR(n)->type,
 			0, "Bad type in assignment.");
 	} else {
-	  if ((c->lex.pragmas & ID_STRICT_TYPES) &&
+	  if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
+	      (c->lex.pragmas & ID_STRICT_TYPES) &&
 	      (CDR(n)->type != zero_type_string)) {
 	    struct pike_string *t1 = describe_type(CDR(n)->type);
 	    struct pike_string *t2 = describe_type(CAR(n)->type);
