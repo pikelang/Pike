@@ -1358,6 +1358,10 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     fprintf(stderr, "),..., 0x%08x)...\n", marker_set);
   }
 #endif /* PIKE_TYPE_DEBUG */
+  if (!type) {
+    push_type(PIKE_T_UNKNOWN);
+    return;
+  }
   /* We need to replace if there are any markers, or if there's a
    * non-masked assign.
    */
