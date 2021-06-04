@@ -4010,13 +4010,15 @@ static void push_remap_markers(struct pike_type *t,
       } else {
 	struct pike_type *old = lookup_marker(markers, marker);
 	struct pike_type *new = t->cdr;
-	if (old) {
-	  new = or_pike_types(old, new, 0);
-	} else {
-	  add_ref(new);
+	if (new) {
+	  if (old) {
+	    new = or_pike_types(old, new, 0);
+	  } else {
+	    add_ref(new);
+	  }
+	  store_marker(markers, marker, new);
+	  free_pike_type(new);
 	}
-	store_marker(markers, marker, new);
-	free_pike_type(new);
 	push_remap_markers(t->cdr, markers, remap, flags);
       }
 
