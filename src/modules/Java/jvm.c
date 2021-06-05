@@ -3899,9 +3899,9 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct jobj_storage);
-  ADD_FUNCTION("cast", f_jobj_cast, tFunc(tStr,tMix), 0);
-  ADD_FUNCTION("`==", f_jobj_eq, tFunc(tMix,tInt01), 0);
-  ADD_FUNCTION("__hash", f_jobj_hash, tFunc(tNone,tInt), 0);
+  ADD_FUNCTION("cast", f_jobj_cast, tFunc(tStr,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`==", f_jobj_eq, tFunc(tMix,tInt01), ID_PROTECTED);
+  ADD_FUNCTION("__hash", f_jobj_hash, tFunc(tNone,tInt), ID_PROTECTED);
   ADD_FUNCTION("is_instance_of", f_jobj_instance, tFunc(tObj,tInt01), 0);
   ADD_FUNCTION("monitor_enter", f_monitor_enter, tFunc(tNone,tObj), 0);
   ADD_FUNCTION("get_object_class", f_jobj_get_class, tFunc(tNone,tObj), 0);
@@ -3943,19 +3943,19 @@ PIKE_MODULE_INIT
   start_new_program();
   do_inherit(&prog, 0, NULL);
   jarray_stor_offs = ADD_STORAGE(struct jarray_storage);
-  ADD_FUNCTION("_sizeof", f_javaarray_sizeof, tFunc(tNone,tInt), 0);
+  ADD_FUNCTION("_sizeof", f_javaarray_sizeof, tFunc(tNone,tInt), ID_PROTECTED);
   ADD_FUNCTION("`[]", f_javaarray_getelt,
-	       tFunc(tInt tOr(tInt,tVoid), tMix), 0);
-  ADD_FUNCTION("`[]=", f_javaarray_setelt, tFunc(tInt tMix,tMix), 0);
-  ADD_FUNCTION("_indices", f_javaarray_indices, tFunc(tNone,tArr(tInt)), 0);
-  ADD_FUNCTION("_values", f_javaarray_values, tFunc(tNone,tArray), 0);
+	       tFunc(tInt tOr(tInt,tVoid), tMix), ID_PROTECTED);
+  ADD_FUNCTION("`[]=", f_javaarray_setelt, tFunc(tInt tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("_indices", f_javaarray_indices, tFunc(tNone,tArr(tInt)), ID_PROTECTED);
+  ADD_FUNCTION("_values", f_javaarray_values, tFunc(tNone,tArray), ID_PROTECTED);
   jarray_program = end_program();
   jarray_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
   ADD_STORAGE(struct method_storage);
-  ADD_FUNCTION("create", f_method_create, tFunc(tStr tStr tObj,tVoid), 0);
-  ADD_FUNCTION("`()", f_call_static, tFuncV(tNone,tMix,tMix), 0);
+  ADD_FUNCTION("create", f_method_create, tFunc(tStr tStr tObj,tVoid), ID_PROTECTED);
+  ADD_FUNCTION("`()", f_call_static, tFuncV(tNone,tMix,tMix), ID_PROTECTED);
   set_init_callback(init_method_struct);
   set_exit_callback(exit_method_struct);
   set_gc_check_callback(method_gc_check);
@@ -3965,8 +3965,8 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct method_storage);
-  ADD_FUNCTION("create", f_method_create, tFunc(tStr tStr tObj,tVoid), 0);
-  ADD_FUNCTION("`()", f_call_virtual, tFuncV(tObj,tMix,tMix), 0);
+  ADD_FUNCTION("create", f_method_create, tFunc(tStr tStr tObj,tVoid), ID_PROTECTED);
+  ADD_FUNCTION("`()", f_call_virtual, tFuncV(tObj,tMix,tMix), ID_PROTECTED);
   ADD_FUNCTION("call_nonvirtual", f_call_nonvirtual, tFuncV(tObj,tMix,tMix),0);
   set_init_callback(init_method_struct);
   set_exit_callback(exit_method_struct);
@@ -3977,7 +3977,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct field_storage);
-  ADD_FUNCTION("create", f_field_create, tFunc(tStr tStr tObj,tVoid), 0);
+  ADD_FUNCTION("create", f_field_create, tFunc(tStr tStr tObj,tVoid), ID_PROTECTED);
   ADD_FUNCTION("set", f_field_set, tFunc(tObj tMix,tMix), 0);
   ADD_FUNCTION("get", f_field_get, tFunc(tObj,tMix), 0);
   set_init_callback(init_field_struct);
@@ -3989,7 +3989,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct field_storage);
-  ADD_FUNCTION("create", f_field_create, tFunc(tStr tStr tObj,tVoid), 0);
+  ADD_FUNCTION("create", f_field_create, tFunc(tStr tStr tObj,tVoid), ID_PROTECTED);
   ADD_FUNCTION("set", f_static_field_set, tFunc(tMix,tMix), 0);
   ADD_FUNCTION("get", f_static_field_get, tFunc(tNone,tMix), 0);
   set_init_callback(init_field_struct);
@@ -4001,7 +4001,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct monitor_storage);
-  ADD_FUNCTION("create", f_monitor_create, tFunc(tObj,tVoid), 0);
+  ADD_FUNCTION("create", f_monitor_create, tFunc(tObj,tVoid), ID_PROTECTED);
   set_init_callback(init_monitor_struct);
   set_exit_callback(exit_monitor_struct);
   set_gc_check_callback(monitor_gc_check);
@@ -4013,7 +4013,7 @@ PIKE_MODULE_INIT
   start_new_program();
   ADD_STORAGE(struct natives_storage);
   ADD_FUNCTION("create", f_natives_create,
-	       tFunc(tArr(tArr(tOr(tStr,tFunction))) tObj,tVoid), 0);
+	       tFunc(tArr(tArr(tOr(tStr,tFunction))) tObj,tVoid), ID_PROTECTED);
   set_init_callback(init_natives_struct);
   set_exit_callback(exit_natives_struct);
   set_gc_check_callback(natives_gc_check);
@@ -4026,7 +4026,7 @@ PIKE_MODULE_INIT
 #ifdef _REENTRANT
   start_new_program();
   ADD_STORAGE(struct att_storage);
-  ADD_FUNCTION("create", f_att_create, tFunc(tObj,tVoid), 0);
+  ADD_FUNCTION("create", f_att_create, tFunc(tObj,tVoid), ID_PROTECTED);
   set_init_callback(init_att_struct);
   set_exit_callback(exit_att_struct);
   set_gc_check_callback(att_gc_check);
@@ -4037,7 +4037,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct jvm_storage);
-  ADD_FUNCTION("create", f_create, tFunc(tOr(tStr,tVoid),tVoid), 0);
+  ADD_FUNCTION("create", f_create, tFunc(tOr(tStr,tVoid),tVoid), ID_PROTECTED);
   ADD_FUNCTION("get_version", f_get_version, tFunc(tNone,tInt), 0);
   ADD_FUNCTION("find_class", f_find_class, tFunc(tStr,tObj), 0);
   ADD_FUNCTION("define_class", f_define_class, tFunc(tStr tObj tStr,tObj), 0);
