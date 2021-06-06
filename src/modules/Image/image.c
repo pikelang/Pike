@@ -4829,7 +4829,8 @@ void init_image_image(void)
    ADD_FUNCTION("create",image_create,
 		tOr3(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),
 		     tFunc(tObj, tVoid),
-		     tFuncV(tInt tInt tString,tMixed,tVoid)),0);
+		     tFuncV(tInt tInt tString,tMixed,tVoid)),
+		ID_PROTECTED);
    ADD_FUNCTION("clone",image_clone,
 		tOr3(tFunc(tInt tInt tInt tInt tRGB,tObj),
                      tFunc(tRGB,tObj),

@@ -3271,11 +3271,12 @@ void init_image_layers(void)
 		     tFunc(tObj tOr(tObj,tVoid) tOr(tString,tVoid),tVoid),
 		     tFunc(tLayerMap,tVoid),
 		     tFunc(tInt tInt
-			   tOr(tColor,tVoid) tOr(tColor,tVoid),tVoid)),0);
+			   tOr(tColor,tVoid) tOr(tColor,tVoid),tVoid)),
+		ID_PROTECTED);
 
 
    ADD_FUNCTION("_sprintf",image_layer__sprintf,
-                tFunc(tInt tMapping,tString),0);
+                tFunc(tInt tMapping,tString),ID_PROTECTED);
    ADD_FUNCTION("cast",image_layer_cast,
                 tFunc(tString,tOr(tMapping,tString)),ID_PROTECTED);
 
