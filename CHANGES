@@ -56,6 +56,12 @@ o ** operator added. It's exponentiation and works with most
   object. It has now been changed to also use `** (or, rather, pow()
   is now implemented using predef::`**()).
 
+* __cast() added.
+
+  This efun performs a cast of a value to a specified type, where the type
+  may be specified either as a type value or as a string. It is intended
+  to help in implementing lfun::cast().
+
 * Binary or between a multiset and UNDEFINED is now behaves like
   binary or between the multiset and the empty multiset.
 

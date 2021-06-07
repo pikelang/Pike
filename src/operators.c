@@ -932,6 +932,108 @@ PMOD_EXPORT void f_cast(void)
   dmalloc_touch_svalue(Pike_sp);
 }
 
+/*! @decl mixed __cast(mixed val, string|type type_name)
+ *!
+ *! Cast @[val] to the type indicated by @[type_name].
+ *!
+ *! @seealso
+ *!   @[lfun::cast()]
+ */
+static void f___cast(INT32 args)
+{
+  DECLARE_CYCLIC();
+
+  if (args != 2) {
+    SIMPLE_WRONG_NUM_ARGS_ERROR("__cast", 2);
+  }
+
+  if (BEGIN_CYCLIC(Pike_sp[-1].u.refs, Pike_sp[2].u.refs)) {
+    END_CYCLIC();
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
+
+  SET_CYCLIC_RET(1);
+
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
+    struct pike_string *type_name = Pike_sp[-1].u.string;
+    if ((type_name->len >= 3) && (type_name->size_shift == eightbit)) {
+      /* Recognized primary types:
+       *
+       * array
+       * float
+       * function
+       * int
+       * mapping
+       * multiset
+       * object
+       * program
+       * string
+       */
+      switch(type_name->str[0]) {
+      case 'a':
+	if (type_name == literal_array_string) {
+	  pop_stack();
+	  ref_push_type_value(array_type_string);
+	}
+	break;
+      case 'f':
+	if (type_name == literal_float_string) {
+	  pop_stack();
+	  ref_push_type_value(float_type_string);
+	}
+	break;
+      case 'i':
+	if (type_name == literal_int_string) {
+	  pop_stack();
+	  ref_push_type_value(int_type_string);
+	}
+	break;
+      case 'm':
+	if (type_name == literal_mapping_string) {
+	  pop_stack();
+	  ref_push_type_value(mapping_type_string);
+	}
+	if (type_name == literal_multiset_string) {
+	  pop_stack();
+	  ref_push_type_value(multiset_type_string);
+	}
+	break;
+      case 'o':
+	if (type_name == literal_object_string) {
+	  pop_stack();
+	  ref_push_type_value(object_type_string);
+	}
+	break;
+      case 'p':
+	if (type_name == literal_program_string) {
+	  pop_stack();
+	  ref_push_type_value(program_type_string);
+	}
+	break;
+      case 's':
+	if (type_name == literal_string_string) {
+	  pop_stack();
+	  ref_push_type_value(string_type_string);
+	}
+	break;
+      }
+    }
+  }
+
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE) {
+    END_CYCLIC();
+    bad_arg_error("__cast", args, 2, "string|type", Pike_sp - 2,
+		  "Expected type or type name.\n");
+  }
+
+  stack_swap();
+  f_cast();
+
+  END_CYCLIC();
+}
+
 /* Returns 1 if s is a valid in the type type. */
 int low_check_soft_cast(struct svalue *s, struct pike_type *type)
 {
@@ -5710,6 +5812,8 @@ static void exit_string_assignment_storage(struct object *UNUSED(o))
 
 void init_operators(void)
 {
+  ADD_EFUN("__cast", f___cast, tFunc(tMix tOr(tStr,tType(tMix)), tMix),
+	   OPT_TRY_OPTIMIZE);
   ADD_EFUN ("`[..]", f_range,
 	    tOr3(tFunc(tSetvar(1,tStr) tInt tRangeBound tInt tRangeBound, tVar(1)),
 		 tFunc(tArr(tSetvar(0,tMix)) tInt tRangeBound tInt tRangeBound, tArr(tVar(0))),
