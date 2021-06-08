@@ -294,7 +294,7 @@ protected class jobject {
 
   protected mixed cast(mixed ... args)
   {
-    return obj->cast(@unwrap_args(args));
+    return __cast(obj, @unwrap_args(args));
   }
 
   protected mixed `[](string n)
