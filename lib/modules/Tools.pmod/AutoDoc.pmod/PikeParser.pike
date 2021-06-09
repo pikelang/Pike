@@ -790,7 +790,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
   peekToken();
   SourcePosition position = currentPosition;
   Annotation a = parseAnnotation();
-  array(Annotation) annotations;
+  array(Annotation) annotations = UNDEFINED;
   if (a) {
     switch(peekToken()) {
     case ";":

@@ -658,7 +658,7 @@ class Annotation
 //!   @[Modifier], @[Method], @[Constant], @[Typedef], @[EnumConstant],
 //!   @[Enum], @[Variable]
 class PikeObject {
-  array(Annotation) annotations;
+  array(Annotation) annotations = UNDEFINED;
 
   //! The set of modifiers affecting this entity.
   array(string) modifiers = ({ });
