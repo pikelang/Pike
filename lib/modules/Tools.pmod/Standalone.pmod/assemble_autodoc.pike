@@ -96,7 +96,7 @@ class Entry (Node target) {
   constant type = "";
   mapping args;
 
-  protected string _sprintf() {
+  protected string _sprintf(int t) {
     return sprintf("%sEntry( %O )", type, target);
   }
 

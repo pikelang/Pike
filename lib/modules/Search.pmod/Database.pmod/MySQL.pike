@@ -48,7 +48,7 @@ protected void _destruct()
 }
 #endif
 
-protected string _sprintf()
+protected string _sprintf(int t)
 {
   return sprintf("Search.Database.MySQL(%O,%O)",
 		 Sql.censor_sql_url(host), mergefile_path);

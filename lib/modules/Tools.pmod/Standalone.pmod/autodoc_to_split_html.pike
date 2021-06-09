@@ -126,7 +126,7 @@ class Node
 
   Node parent;
 
-  protected string _sprintf() {
+  protected string _sprintf(int t) {
     return sprintf("Node(%O,%O,%d)", type, name, data?sizeof(data):0);
   }
 
