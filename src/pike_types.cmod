@@ -3310,7 +3310,7 @@ static int lower_or_pike_types(struct pike_type *t1,
     if (t) {
       push_finished_type(t);
     } else {
-      push_type(T_ZERO);
+      push_type(PIKE_T_UNKNOWN);
     }
   } else if (!t) {
     /* No need to do anything. */
@@ -3327,7 +3327,7 @@ static int lower_or_pike_types(struct pike_type *t1,
   } else if (t == top) {
     /* No need to do anything. */
   } else {
-    switch(t->type) {
+    switch(t?t->type:PIKE_T_UNKNOWN) {
     case T_FLOAT:
     case T_MIXED:
     case T_VOID:
@@ -3454,6 +3454,7 @@ static void low_or_pike_types(struct pike_type *t1,
   struct pike_type *arg1 = t1;
   struct pike_type *arg2 = t2;
 #endif
+  check_c_stack(1024);
 #if 0
   fprintf(stderr, "  low_or_pike_types(");
   simple_describe_type(t1);
