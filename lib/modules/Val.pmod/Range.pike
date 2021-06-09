@@ -2,7 +2,7 @@
 #pragma strict_types
 
 //!   Generic lightweight range type.  Supports any values for lower
-//!   and upper boundaries that implement @[lfun::`<()] and @[lfun::`-@()],
+//!   and upper boundaries that implement @[lfun::`<()] and @[lfun::`-()],
 //!   and preferrably also cast to @expr{int@} and @expr{string@}.
 //! @note
 //!   Can only contain a single contiguous range.
