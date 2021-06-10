@@ -2976,18 +2976,31 @@ struct pike_string *describe_type(struct pike_type *type)
 
 /******/
 
-TYPE_T compile_type_to_runtime_type(struct pike_type *t)
+static TYPE_T low_compile_type_to_runtime_type(struct pike_type *t)
 {
-  switch(t->type)	/* Note: No masking here. */
+  switch(t?t->type:PIKE_T_UNKNOWN)	/* Note: No masking here. */
   {
   case PIKE_T_RING:
-    return compile_type_to_runtime_type(t->car);
+    return low_compile_type_to_runtime_type(t->car);
 
   case T_OR:
     {
-      TYPE_T tmp = compile_type_to_runtime_type(t->car);
-      if(tmp == compile_type_to_runtime_type(t->cdr))
-	return tmp;
+      TYPE_T car_t = low_compile_type_to_runtime_type(t->car);
+      TYPE_T cdr_t = low_compile_type_to_runtime_type(t->cdr);
+      if(car_t = cdr_t)
+	return car_t;
+      if (car_t == PIKE_T_VOID) {
+	car_t = PIKE_T_ZERO;
+      }
+      if (cdr_t == PIKE_T_VOID) {
+	cdr_t = PIKE_T_ZERO;
+      }
+      if ((car_t == PIKE_T_ZERO) && (cdr_t != PIKE_T_FLOAT)) {
+	return cdr_t;
+      }
+      if ((cdr_t == PIKE_T_ZERO) && (car_t != PIKE_T_FLOAT)) {
+	return car_t;
+      }
     }
     /* FALLTHRU */
 
@@ -2997,13 +3010,10 @@ TYPE_T compile_type_to_runtime_type(struct pike_type *t)
   default:
     return T_MIXED;
 
-  case T_ZERO:
-    return T_INT;
-
   case T_SCOPE:
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
-    return compile_type_to_runtime_type(t->cdr);
+    return low_compile_type_to_runtime_type(t->cdr);
 
   case T_MANY:
   case PIKE_T_FIND_LFUN:
@@ -3021,8 +3031,20 @@ TYPE_T compile_type_to_runtime_type(struct pike_type *t)
   case T_TYPE:
   case T_INT:
   case T_FLOAT:
+  case T_ZERO:
+  case T_VOID:
     return t->type;
   }
+}
+
+TYPE_T compile_type_to_runtime_type(struct pike_type *t)
+{
+  TYPE_T ret = low_compile_type_to_runtime_type(t);
+
+  if ((ret == PIKE_T_ZERO) || (ret == PIKE_T_VOID)) {
+    return PIKE_T_INT;
+  }
+  return ret;
 }
 
 /**
