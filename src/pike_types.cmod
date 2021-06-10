@@ -2987,7 +2987,7 @@ static TYPE_T low_compile_type_to_runtime_type(struct pike_type *t)
     {
       TYPE_T car_t = low_compile_type_to_runtime_type(t->car);
       TYPE_T cdr_t = low_compile_type_to_runtime_type(t->cdr);
-      if(car_t = cdr_t)
+      if (car_t == cdr_t)
 	return car_t;
       if (car_t == PIKE_T_VOID) {
 	car_t = PIKE_T_ZERO;
