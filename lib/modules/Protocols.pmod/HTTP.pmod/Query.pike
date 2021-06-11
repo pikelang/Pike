@@ -663,6 +663,7 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
    }
    if (hostname==id) {
       call_out(callback,0,({id}),@extra);
+      return;
    } else if (id=hostname_cache[hostname]) {
       call_out(callback,0,id,@extra);
       return;
