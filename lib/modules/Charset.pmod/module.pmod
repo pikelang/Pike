@@ -444,11 +444,11 @@ string normalize(string in) {
   return out;
 }
 
-private mapping(string:Decoder) custom_decoders = ([]);
+private mapping(string:program(Decoder)) custom_decoders = ([]);
 
 //! Adds a custom defined character set decoder. The name is
 //! normalized through the use of @[normalize].
-void set_decoder(string name, Decoder decoder)
+void set_decoder(string name, program(Decoder) decoder)
 {
   custom_decoders[normalize(name)]=decoder;
 }
@@ -602,7 +602,7 @@ private class ASCIIEnc
     repcb = rc;
     return this;
   }
-  protected void create(string|void r, string|void rc)
+  protected void create(string|void r, function(string:string)|void rc)
   {
     replacement = r && low_convert(r);
     repcb = rc;
@@ -781,11 +781,11 @@ private class GSM03_38enc {
   }
 }
 
-private mapping(string:Encoder) custom_encoders = ([]);
+private mapping(string:program(Encoder)) custom_encoders = ([]);
 
 //! Adds a custom defined character set encoder. The name is
 //! normalized through the use of @[normalize].
-void set_encoder(string name, Encoder encoder)
+void set_encoder(string name, program(Encoder) encoder)
 {
   custom_encoders[normalize(name)]=encoder;
 }
