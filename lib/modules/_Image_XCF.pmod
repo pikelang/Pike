@@ -912,7 +912,7 @@ string encode(Image.Image img) {
   buf->add("gimp xcf file\0");
 
   // width, height, type
-  buf->add( sprintf("%4c%4c%4c", img->xsize(), img->ysize(), 0) );
+  buf->sprintf("%4c%4c%4c", img->xsize(), img->ysize(), 0);
 
   // Properties
 
