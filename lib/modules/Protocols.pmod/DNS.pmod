@@ -2361,6 +2361,13 @@ class async_client
                @restargs);
   }
 
+  private void multiple_results(array|zero results,
+      string domain, function(string, string, mixed ...:void) callback,
+      mixed ... restargs) {
+    if (callback)
+      callback(domain, results, @restargs);
+  }
+
   protected private Request generic_get(string d,
 					mapping answer,
 					int multi,
@@ -2421,6 +2428,29 @@ class async_client
       p->success(ip);
     }
     host_to_ip(host, success);
+    return p->future();
+  }
+
+  //! Looks up the IP number(s) for a host, and when done calls the
+  //! function callback with the host name and array of IP addresses
+  //! as arguments. If IPv6 and IPv4 addresses are both available,
+  //! IPv6 addresses will be earlier in the array.
+  //!
+  //! @returns
+  //!   Returns a @[Request] object where progress can be observed
+  //!   from the retries variable and the request can be cancelled
+  //!   using the @[cancel] method.
+  Request host_to_ips(string host, function(string,string,mixed...:void) callback, mixed ... args)
+  {
+    generic_query("AAAA", host, multiple_results, host, callback, @args);
+  }
+
+  //! Looks up the IP number for a host. Returns a
+  //! @[Concurrent.Future] object that resolves into an array of
+  //! IP addresses as strings, or an empty array if it is missing.
+  variant Concurrent.Future host_to_ips(string host) {
+    Concurrent.Promise p = Concurrent.Promise();
+    host_to_ips(host) {p->success(__ARGS__[1]);};
     return p->future();
   }
 
@@ -2739,6 +2769,15 @@ GAC(host_to_ip);
 //! Calls host_to_ip in a global async_client created on demand.
 //! @seealso
 //!   @[async_client.host_to_ip()]
+
+//! @ignore
+GAC(host_to_ips);
+//! @endignore
+//! @decl client.Request async_host_to_ips(string host, function cb, mixed ... cba)
+//! @decl Concurrent.Future async_host_to_ips(string host)
+//! Calls host_to_ips in a global async_client created on demand.
+//! @seealso
+//!   @[async_client.host_to_ips()]
 
 //! @ignore
 GAC(get_mx_all);
