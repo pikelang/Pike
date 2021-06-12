@@ -2087,10 +2087,19 @@ static void mpzmod_pow(INT32 args)
       else
       {
           mi = get_mpz(sp-1, 1, "pow", 1, 1);
-          exponent=mpz_get_ui(mi);
-	  if(mpz_sgn(mi)<0)
-	  {
-	    goto negative_exponent;
+	  if (mpz_fits_ulong_p(mi) ||
+	      ((mpz_cmp_si(THIS, -1) >= 0) && (mpz_cmp_si(THIS, 1) <= 0))) {
+	      /* The exponent fits in an unsigned long, or
+	       * the base is -1, 0, or 1 in which case the higher bits
+	       * of the exponent are not relevant.
+	       */
+	      exponent=mpz_get_ui(mi);
+	      if(mpz_sgn(mi)<0)
+	      {
+		goto negative_exponent;
+	      }
+	  } else {
+	      SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
 	  }
       }
   }
