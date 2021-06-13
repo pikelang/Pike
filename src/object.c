@@ -341,6 +341,7 @@ void call_pike_initializers(struct object *o, int args)
   if(fun!=-1)
   {
     apply_low(o,fun,0);
+    STACK_LEVEL_CHECK(args+1);
     Pike_sp--;
   }
   STACK_LEVEL_CHECK(args);
@@ -354,6 +355,7 @@ void call_pike_initializers(struct object *o, int args)
       pop_n_elems(args);
     } else {
       apply_low(o,fun,args);
+      STACK_LEVEL_CHECK(1);
 
       /* Currently, we do not require void functions to clean up the stack
        * (this is presumably also true for create()s?), so how are
