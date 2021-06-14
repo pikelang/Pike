@@ -263,7 +263,7 @@ private class UTF32LEdec {
 }
 
 private class ISO6937dec {
-  protected Decoder decoder = rfc1345("iso6937");
+  protected Decoder decoder = [object(Decoder)]rfc1345("iso6937");
   protected string trailer = "";
   string drain()
   {
@@ -310,7 +310,7 @@ private class ISO6937dec {
 
 // Decode GSM 03.38.
 private class GSM03_38dec {
-  protected Decoder decoder = rfc1345("gsm0338");
+  protected Decoder decoder = [object(Decoder)]rfc1345("gsm0338");
   protected string trailer = "";
   string drain()
   {
@@ -552,8 +552,8 @@ private class ASCIIEnc
 {
   constant charset = "iso88591";
   protected string s = "";
-  protected string|void replacement;
-  protected function(string:string)|void repcb;
+  protected string|zero|void replacement;
+  protected function(string:string)|zero|void repcb;
   protected string low_convert(string s, string|void r,
 			       function(string:string)|void rc)
   {
@@ -1197,13 +1197,13 @@ class DecodeError
   constant error_type = "charset_decode";
   constant is_charset_decode_error = 1;
 
-  string err_str;
+  string err_str = "";
   //! The string that failed to be decoded.
 
   int err_pos;
   //! The failing position in @[err_str].
 
-  string charset;
+  string charset = "";
   //! The decoding charset, typically as known to
   //! @[Charset.decoder].
   //!
@@ -1250,13 +1250,13 @@ class EncodeError
   constant error_type = "charset_encode";
   constant is_charset_encode_error = 1;
 
-  string err_str;
+  string err_str = "";
   //! The string that failed to be encoded.
 
   int err_pos;
   //! The failing position in @[err_str].
 
-  string charset;
+  string charset = "";
   //! The encoding charset, typically as known to
   //! @[Charset.encoder].
   //!
