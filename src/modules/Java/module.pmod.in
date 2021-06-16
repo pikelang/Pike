@@ -43,10 +43,10 @@ protected mixed wrap_result(mixed x, mapping(string:mixed) info)
 {
   check_exception(info);
   if(objectp(x)) {
-    if(x->_values) {
+    object cls = info->getclass_method(x);
+    if(cls->is_array()) {
       return jarray(x, info);
     } else {
-      object cls = info->getclass_method(x);
       return jobject(info->classes[cls] || jclass(cls, info), x, info);
     }
   } else

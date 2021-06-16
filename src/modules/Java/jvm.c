@@ -2685,6 +2685,20 @@ static void f_super_class(INT32 args)
     push_int(0);
 }
 
+static void f_is_array(INT32 args)
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  JNIEnv *env;
+
+  if((env = jvm_procure_env(jo->jvm))) {
+    /* jclass jc = (*env)->GetObjectClass(env, jo); */
+    struct jvm_storage *j = get_storage(jo->jvm, jvm_program);
+    push_int((*env)->CallBooleanMethod(env, jo->jobj /*jc*/, j->method_isarray));
+  } else {
+    push_undefined();
+  }
+}
+
 static void f_is_assignable_from(INT32 args)
 {
   struct jobj_storage *jc, *jo = THIS_JOBJ;
@@ -3916,6 +3930,7 @@ PIKE_MODULE_INIT
   prog.u.program = jobj_program;
   do_inherit(&prog, 0, NULL);
   ADD_FUNCTION("super_class", f_super_class, tFunc(tNone,tObj), 0);
+  ADD_FUNCTION("is_array", f_is_array, tFunc(tNone, tInt01), 0);
   ADD_FUNCTION("is_assignable_from", f_is_assignable_from,
 	       tFunc(tObj,tInt), 0);
   ADD_FUNCTION("throw_new", f_throw_new, tFunc(tStr,tVoid), 0);
