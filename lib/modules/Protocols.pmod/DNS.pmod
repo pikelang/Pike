@@ -2407,21 +2407,27 @@ class async_client
     return UNDEFINED;
   }
 
-  //! Looks up the IP number for a host, and when done calls the
+  //! Looks up the IPv4 address for a host, and when done calls the
   //! function callback with the host name and IP number as arguments.
   //!
   //! @returns
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
   //!   using the @[cancel] method.
+  //!
+  //! @seealso
+  //!   @[host_to_ips]
   Request host_to_ip(string host, function(string,string,mixed...:void) callback, mixed ... args)
   {
-    generic_query("AAAA", host, single_result, host, callback, @args);
+    generic_query("A", host, single_result, host, callback, @args);
   }
 
-  //! Looks up the IP number for a host. Returns a
+  //! Looks up the IPv4 address for a host. Returns a
   //! @[Concurrent.Future] object that resolves into the IP number as
   //! a string, or 0 if it is missing.
+  //!
+  //! @seealso
+  //!   @[host_to_ips]
   variant Concurrent.Future host_to_ip(string host) {
     Concurrent.Promise p = Concurrent.Promise();
     void success(string host, string ip) {
