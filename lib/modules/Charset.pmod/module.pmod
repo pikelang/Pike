@@ -2,6 +2,9 @@
 
 #charset iso-8859-1
 #pike __REAL_VERSION__
+
+#pragma strict_types
+
 //! @ignore
 protected private inherit _Charset;
 //! @endignore
@@ -208,7 +211,7 @@ private class UTF16dec {
   constant charset = "utf16";
   protected int check_bom=1, le=0;
   string drain() {
-    string s = ::drain();
+    string(8bit) s = [string(8bit)]::drain();
     if(sizeof(s)&1) {
       feed(s[sizeof(s)-1..]);
       s = s[..<1];
@@ -223,7 +226,7 @@ private class UTF16dec {
 	 check_bom=0;
       }
     if(le)
-      s = map(s/2, reverse)*"";
+      s = [string(8bit)](map(s/2, reverse)*"");
     return unicode_to_string(s);
   }
 }
@@ -483,7 +486,7 @@ Decoder decoder(string name)
   if(has_prefix(name, "iso2022"))
     return ISO2022Dec();
 
-  program p = ([
+  program(Decoder)|zero p = ([
     "utf7": UTF7dec,
     "utf8": UTF8dec,
     "utfebcdic": UTF_EBCDICdec,
@@ -514,7 +517,7 @@ Decoder decoder(string name)
   }
 
   if(has_prefix(name, "euc")) {
-    string sub = ([
+    string|zero sub = ([
       "kr":"ksc5601",	// FIXME: Ought to be KS X 1001!
       "jp":"x0208",
       "cn":"gb2312",
@@ -533,16 +536,20 @@ Decoder decoder(string name)
   if( (< "gb18030", "gbk", "936", "949" >)[ name ] )
     return MulticharDec(name);
 
-  Decoder o = rfc1345(name);
+  object(Decoder)|zero o = [object(Decoder)]rfc1345(name);
 
   if(o)
     return o;
 
-  if ((o = .Tables[name]) && (p = o->decoder)) {
+  mixed oo;
+
+  if ((oo = .Tables[name]) && objectp(oo) &&
+      (p = [program(Decoder)|zero](([object]oo)->decoder))) {
     return p();
   }
 
-  if( p = master()->resolv(orig_name+".CharsetDecoder") )
+  if( p = [program(Decoder)|zero]
+      (master()->resolv(orig_name+".CharsetDecoder")) )
     return p();
 
   error("Unknown character encoding "+orig_name+"\n");
@@ -712,11 +719,12 @@ private class UTF32LEenc {
 }
 
 private class ISO6937enc {
-  protected Encoder encoder;
+  protected Encoder encoder = [object(Encoder)]rfc1345("iso6937", 1);
   protected void create(string|void replacement,
-		     function(string:string)|void repcb)
+			function(string:string)|void repcb)
   {
-    encoder = rfc1345("iso6937", 1, replacement, repcb);
+    if (!replacement && !repcb) return;
+    encoder = [object(Encoder)]rfc1345("iso6937", 1, replacement, repcb);
   }
   string drain()
   {
@@ -754,11 +762,12 @@ private class ISO6937enc {
 
 // Encode GSM 03.38.
 private class GSM03_38enc {
-  protected Encoder encoder;
+  protected Encoder encoder = [object(Encoder)]rfc1345("gsm0338", 1);
   protected void create(string|void replacement,
-		     function(string:string)|void repcb)
+			function(string:string)|void repcb)
   {
-    encoder = rfc1345("gsm0338", 1, replacement, repcb);
+    if (!replacement && !repcb) return;
+    encoder = [object(Encoder)]rfc1345("gsm0338", 1, replacement, repcb);
   }
   string drain()
   {
@@ -841,7 +850,7 @@ Encoder encoder(string name, string|void replacement,
   if(has_prefix(name, "iso2022"))
     return ISO2022Enc(name[7..], replacement, repcb);
 
-  program p = ([
+  program(Encoder)|zero p = ([
     "utf7": UTF7enc,
     "utf8": UTF8enc,
     "utfebcdic": UTF_EBCDICenc,
@@ -874,7 +883,7 @@ Encoder encoder(string name, string|void replacement,
   }
 
   if(has_prefix(name, "euc")) {
-    string sub = ([
+    string|zero sub = ([
       "kr":"ksc5601",	// FIXME: Ought to be KS X 1001!
       "jp":"x0208",
       "cn":"gb2312",
@@ -889,12 +898,15 @@ Encoder encoder(string name, string|void replacement,
 	 "eucpkdfmtjapanese" >)[ name ] )
     return EUCEnc("x0208", "eucpkdfmtjapanese", replacement, repcb);
 
-  Encoder o = rfc1345(name, 1, replacement, repcb);
+  Encoder o = [object(Encoder)]rfc1345(name, 1, replacement, repcb);
 
   if(o)
     return o;
 
-  if ((o = .Tables[name]) && (p = o->encoder)) {
+  mixed oo;
+
+  if ((oo = .Tables[name]) && objectp(oo) &&
+      (p = [program(Encoder)|zero](([object]oo)->encoder))) {
     return p(replacement, repcb);
   }
 
@@ -1164,24 +1176,31 @@ Encoder encoder_from_mib(int mib,  string|void replacement,
   return e;
 }
 
-protected string format_err_msg (
-  string intro, string err_str, int err_pos, string charset, string reason)
+protected class CharsetGenericError
+//! Base class for errors thrown by the @[Charset] module.
 {
-  string pre_context = err_pos > 23 ?
-    sprintf ("...%O", err_str[err_pos - 20..err_pos - 1]) :
-    err_pos > 0 ?
-    sprintf ("%O", err_str[..err_pos - 1]) :
-    "";
-  string post_context = err_pos < sizeof (err_str) - 24 ?
-    sprintf ("%O...", err_str[err_pos + 1..err_pos + 20]) :
-    err_pos + 1 < sizeof (err_str) ?
-    sprintf ("%O", err_str[err_pos + 1..]) :
-    "";
-  err_str = sprintf ("%s[0x%x]%s",
-		     pre_context, err_str[err_pos], post_context);
+  inherit Error.Generic;
+  constant error_type = "charset";
 
-  return intro + " " + err_str + " using " + charset +
-    (reason ? ": " + reason : ".\n");
+  protected string format_err_msg (
+    string intro, string err_str, int err_pos, string charset, string reason)
+  {
+    string pre_context = err_pos > 23 ?
+      sprintf ("...%O", err_str[err_pos - 20..err_pos - 1]) :
+      err_pos > 0 ?
+      sprintf ("%O", err_str[..err_pos - 1]) :
+      "";
+    string post_context = err_pos < sizeof (err_str) - 24 ?
+      sprintf ("%O...", err_str[err_pos + 1..err_pos + 20]) :
+      err_pos + 1 < sizeof (err_str) ?
+      sprintf ("%O", err_str[err_pos + 1..]) :
+      "";
+    err_str = sprintf ("%s[0x%x]%s",
+		       pre_context, err_str[err_pos], post_context);
+
+    return intro + " " + err_str + " using " + charset +
+      (reason ? ": " + reason : ".\n");
+  }
 }
 
 class DecodeError
@@ -1193,7 +1212,7 @@ class DecodeError
 //! errors are still thrown as untyped error arrays. At this point it
 //! exists only for use by other modules.
 {
-  inherit Error.Generic;
+  inherit CharsetGenericError;
   constant error_type = "charset_decode";
   constant is_charset_decode_error = 1;
 
@@ -1246,7 +1265,7 @@ class EncodeError
 //! errors are still thrown as untyped error arrays. At this point it
 //! exists only for use by other modules.
 {
-  inherit Error.Generic;
+  inherit CharsetGenericError;
   constant error_type = "charset_encode";
   constant is_charset_encode_error = 1;
 
