@@ -13,6 +13,7 @@ MY_CHECK_FUNCTION(FindFirstChangeNotification,
 #ifdef HAVE_FILEAPI_H
 #include <FileAPI.h>
 #endif
+#include <stdlib.h>
 ], [
   FindFirstChangeNotification("", 0, 0);
   exit(0);

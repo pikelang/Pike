@@ -6201,6 +6201,11 @@ AC_CACHE_VAL(pike_cv_sys_signal_oneshot,
 #ifdef HAVE_POLL_H
 #include <poll.h>
 #endif
+#include <string.h>
+#include <stdio.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 VOLATILE sig_atomic_t sigrun[2]= { 0, 0 };
 RETSIGTYPE func(int sig)
 {
@@ -6373,6 +6378,7 @@ AC_CACHE_VAL(pike_cv_lc___declspec,
 [
   AC_TRY_RUN([
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdarg.h>
 __declspec(noreturn) void fatal(char *foo,...);
 
