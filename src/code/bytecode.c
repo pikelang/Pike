@@ -17,7 +17,7 @@ void ins_f_byte(unsigned int b)
       Pike_error("Instruction too big: %d\n", b);
     }
 #endif
-    add_to_program((unsigned char)F_INSTR_PREFIX_256 - F_OFFSET);
+    add_to_program((unsigned char)(F_INSTR_PREFIX_256 - F_OFFSET));
     b -= 256;
   }
 
