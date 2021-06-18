@@ -64,6 +64,7 @@ if test x$with_ttflib = xyes ; then
       AC_CACHE_VAL(pike_cv_lib_ttf_works, [
         AC_TRY_RUN([
 #include <stdio.h>
+#include <stdlib.h>
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
 
 #include <freetype/freetype.h>

@@ -87,6 +87,7 @@ dnl    undefine(PIKE_PREFIX_NAME)
       LIBS="${LIBS-} -l$1"
       AC_TRY_RUN([
 #include <stdio.h>
+#include <stdlib.h>
 
 /* Kludge for some compilers only defining __STDC__ in strict mode. */
 #if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)

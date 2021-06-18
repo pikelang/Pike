@@ -5041,6 +5041,7 @@ MY_CHECK_FUNCTION(infnan,
 [
 #include <errno.h>
 #include <math.h>
+#include <stdlib.h>
 ], [
   double pinf = infnan(ERANGE);
   double ninf = infnan(-ERANGE);
@@ -5051,6 +5052,7 @@ MY_CHECK_FUNCTION(infnan,
 MY_CHECK_FUNCTION(_isnan,
 [
 #include <float.h>
+#include <stdlib.h>
 ], [
   exit(_isnan(0.0));
 ])
@@ -6523,6 +6525,11 @@ AC_CACHE_VAL(pike_cv_sys_signal_oneshot,
 #ifdef HAVE_POLL_H
 #include <poll.h>
 #endif
+#include <string.h>
+#include <stdio.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 VOLATILE sig_atomic_t sigrun[2]= { 0, 0 };
 RETSIGTYPE func(int sig)
 {
@@ -6734,6 +6741,7 @@ AC_CACHE_VAL(pike_cv_lc___declspec,
   AC_TRY_RUN([
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
 __declspec(noreturn) void fatal(char *foo,...);
 
 __declspec(noreturn) void fatal(char *foo,...)
@@ -6752,6 +6760,7 @@ int main() {  exit(0); }
     AC_TRY_LINK([
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
 __declspec(noreturn) void fatal(char *foo,...);
 
 __declspec(noreturn) void fatal(char *foo,...)
