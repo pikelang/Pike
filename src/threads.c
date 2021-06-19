@@ -4983,4 +4983,32 @@ void th_cleanup(void)
 
 #endif	/* !CONFIGURE_TEST */
 
-#endif
+#else /* !_REENTRANT */
+
+PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
+{
+  JMP_BUF back;
+
+  if(SETJMP(back))
+  {
+    if(throw_severity <= THROW_ERROR) {
+      call_handle_error();
+    }
+
+    if(throw_severity == THROW_EXIT)
+    {
+      /* This is too early to get a clean exit if DO_PIKE_CLEANUP is
+       * active. Otoh it cannot be done later since it requires the
+       * evaluator stacks in the gc calls. It's difficult to solve
+       * without handing over the cleanup duty to the main thread. */
+      pike_do_exit(throw_value.u.integer);
+    }
+  } else {
+    back.severity=THROW_EXIT;
+    func(ctx);
+  }
+
+  UNSETJMP(back);
+}
+
+#endif /* _REENTRANT */
