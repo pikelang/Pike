@@ -318,7 +318,7 @@ void start_tls(int|void blocking, int|void async)
   }
 }
 
-protected void connect(string server,int port,int blocking)
+protected void connect(array(string) server,int port,int blocking)
 {
    DBG("<- (connect %O:%d)\n",server,port);
 
@@ -326,11 +326,11 @@ protected void connect(string server,int port,int blocking)
    while(1) {
      int success;
      if(con->_fd)
-       success = con->connect(server, port);
+       success = con->connect(server[0], port);
      else
        // What is this supposed to do? /mast
        // SSL.File?
-       success = con->connect(server, port, blocking);
+       success = con->connect(server[0], port, blocking);
 
      if (success) {
        if (count) DBG("<- (connect success)\n");
@@ -341,6 +341,10 @@ protected void connect(string server,int port,int blocking)
      DBG("<- (connect error: %s)\n", strerror (errno));
      count++;
      if ((count > 10) || (errno != System.EADDRINUSE)) {
+       if (sizeof(server) > 1) {
+         server = server[1..];
+         continue;
+       }
        DBG("<- (connect fail)\n");
        close_connection();
        ok = 0;
@@ -476,10 +480,10 @@ protected void async_timeout(void|bool force)
 #endif
 }
 
-void async_got_host(string server,int port)
+void async_got_host(array(string) server,int port)
 {
-   DBG("async_got_host %s:%d\n", server || "NULL", port);
-   if (!server)
+   DBG("async_got_host %O:%d\n", server || "NULL", port);
+   if (!server || !sizeof(server))
    {
       async_failed();
       if (this) {
@@ -490,7 +494,7 @@ void async_got_host(string server,int port)
    }
 
    con = Stdio.File();
-   if( !con->async_connect(server, port,
+   if( !con->async_connect(server[0], port,
                            lambda(int success)
                            {
                              if (success) {
@@ -506,7 +510,11 @@ void async_got_host(string server,int port)
                                  // Other code assumes an existing con is
                                  // an open one.
                                  con = 0;
-                               async_failed();
+                               if (sizeof(server) > 1)
+                                 // Try the next IP address if available.
+                                 async_got_host(server[1..], port);
+                               else
+                                 async_failed();
                              }
                            }))
    {
@@ -629,17 +637,18 @@ mapping hostname_cache=([]);
 #define PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT	60
 #endif
 
-void dns_lookup_callback(string name,string ip,function callback,
+void dns_lookup_callback(string name,array(string) ips,function callback,
 			 mixed ...extra)
 {
-   DBG("dns_lookup_callback %s = %s\n", name, ip||"NULL");
-   hostname_cache[name]=ip;
+   DBG("dns_lookup_callback %s = %O\n", name, ips||"NULL");
+   hostname_cache[name]=ips;
    if (functionp(callback))
-      callback(ip,@extra);
+      callback(ips,@extra);
 }
 
 void dns_lookup_async(string hostname,function callback,mixed ...extra)
 {
+   DBG("dns_lookup_async %s\n", hostname);
    string id;
    if (!hostname || hostname=="")
    {
@@ -652,17 +661,18 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
    } else {
      sscanf(hostname,"%[0-9.]",id);
    }
-   if (hostname==id ||
-       (id=hostname_cache[hostname]))
-   {
+   if (hostname==id) {
+      call_out(callback,0,({id}),@extra);
+      return;
+   } else if (id=hostname_cache[hostname]) {
       call_out(callback,0,id,@extra);
       return;
    }
 
-   Protocols.DNS.async_host_to_ip(hostname, dns_lookup_callback, callback, @extra);
+   Protocols.DNS.async_host_to_ips(hostname, dns_lookup_callback, callback, @extra);
 }
 
-string dns_lookup(string hostname)
+array(string) dns_lookup(string hostname)
 {
    string id;
    if (has_value(hostname, ":")) {
@@ -671,22 +681,20 @@ string dns_lookup(string hostname)
    } else {
      sscanf(hostname,"%[0-9.]",id);
    }
-   if (hostname==id ||
-       (id=hostname_cache[hostname]))
+   if (hostname==id)
+      return ({id});
+   else if (id=hostname_cache[hostname])
       return id;
 
    array hosts = gethostbyname(hostname);//RUNTIME_RESOLVE(Protocols.DNS.client)()->gethostbyname( hostname );
    if (array ip = hosts && hosts[1])
      if (sizeof(ip)) {
-       //  Prefer IPv4 addresses
+       //  Prefer IPv6 addresses
        array(string) v6 = filter(ip, has_value, ":");
        array(string) v4 = ip - v6;
-       
-       if (sizeof(v4))
-	 return v4[random(sizeof(v4))];
-       return sizeof(v6) && v6[random(sizeof(v6))];
+       return v6 + v4;
      }
-   return 0;
+   return ({});
 }
 
 
@@ -751,13 +759,13 @@ this_program thread_request(string server, int port, string query,
 {
    // start open the connection
 
-   string server1=dns_lookup(server);
+   array(string) ips=dns_lookup(server);
 
-   if (server1) server=server1; // cheaty, if host doesn't exist
+   if (!ips || !sizeof(ips)) ips = ({server}); // cheaty, if host doesn't exist
 
    con = 0;
    Stdio.File new_con = Stdio.File();
-   if (!new_con->open_socket(-1, 0, server)) {
+   if (!new_con->open_socket(-1, 0, ips[0])) {
      int errno = con->errno();
      new_con = 0;
      error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
@@ -786,7 +794,7 @@ this_program thread_request(string server, int port, string query,
 
    request=query+"\r\n"+headers+"\r\n"+data;
 
-   conthread=thread_create(connect,server,port,1);
+   conthread=thread_create(connect,ips,port,1);
 
    return this;
 }
@@ -798,6 +806,7 @@ this_program sync_request(string server, int port, string query,
 			  void|string data)
 {
   int kept_alive;
+  array(string) ips;
 
   this::real_host = server;
   // start open the connection
@@ -824,12 +833,12 @@ this_program sync_request(string server, int port, string query,
     this::host = server;
     this::port = port;
 
-    string ip = dns_lookup( server );
-    if(ip) server = ip; // cheaty, if host doesn't exist
+    ips = dns_lookup( server );
+    if(!ips || !sizeof(ips)) ips = ({server}); // cheaty, if host doesn't exist
 
     con = 0;
     Stdio.File new_con = Stdio.File();
-    if(!new_con->open_socket(-1, 0, server)) {
+    if(!new_con->open_socket(-1, 0, ips[0])) {
       int errno = con->errno();
       new_con = 0;
       error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
@@ -891,7 +900,7 @@ this_program sync_request(string server, int port, string query,
 	return sync_request (server, port, query, http_headers, data);
       }
   } else
-    connect(server, port,1);
+    connect(ips, port,1);
 
   return this;
 }
