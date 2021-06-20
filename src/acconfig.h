@@ -562,6 +562,15 @@
  */
 #define PIKE_OOB_WORKS -1
 
+#ifdef USE_DL_MALLOC
+/* Increase alignment to 128 bits on platforms with such datatypes. */
+#if defined(SIZEOF_UNSIGNED___INT128) || defined(SIZEOF_UNSIGNED___INT128_T)
+#define MALLOC_ALIGNMENT	(size_t)16
+#elif defined(SIZEOF_LONG_DOUBLE) && (SIZEOF_LONG_DOUBLE > 8)
+#define MALLOC_ALIGNMENT	(size_t)16
+#endif
+#endif
+
 /* dlmalloc has mallinfo. */
 #if defined(USE_DL_MALLOC) && !defined(HAVE_MALLINFO)
 #define HAVE_MALLINFO
