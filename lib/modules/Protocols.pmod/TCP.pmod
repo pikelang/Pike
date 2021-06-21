@@ -15,7 +15,9 @@ class HappyEyeballs {
 		//Connection attempts will remove addresses from all three arrays.
 		array(string) ipv6, ipv4;
 		array(string) addresses;
-		System.Timer connection_delay;
+		System.Timer connection_delay = System.Timer();
+		float no_connection_before = 0.0;
+		mixed next_connection_call_out;
 		int address_weight = FIRST_ADDRESS_FAMILY_WEIGHTING;
 		int connecting = 0; //Number of in-flight socket connections
 
@@ -36,29 +38,28 @@ class HappyEyeballs {
 		void got_ipv4(string host, mapping result) {
 			ipv4 = result->an->a - ({0});
 			write("Got IPv4: %O%{ %s%}\n", host, ipv4);
-			//Note that this will spawn a second connection attempt iterator,
-			//which may cause some minor unnecessary load.
-			if (ipv6) attempt_connect(); //Unpreferred family delays connection attempt unless we have both results.
-			else call_out(attempt_connect, RESOLUTION_DELAY);
+			//Unpreferred family delays connection attempt unless we have both results.
+			attempt_connect(!ipv6 && RESOLUTION_DELAY);
 		}
 
-		void attempt_connect() {
+		void attempt_connect(float|void wait) {
+			if (connecting < 0) return;
+			if (connection_delay) wait = max(wait, no_connection_before - connection_delay->peek());
+			write("Attempt connect, wait %.3fs\n", (float)wait);
+			if (next_connection_call_out) remove_call_out(next_connection_call_out);
+			if (wait > 0.0) {next_connection_call_out = call_out(attempt_connect, wait); return;}
+			next_connection_call_out = 0;
 			//Step 2: Sort addresses, interleaving address families as available.
 			//We actually don't sort the addresses per se; instead, we select from
 			//the IPv6 or IPv4 pool based on the current address weight counter.
-			float wait = 0.0;
-			if (!connection_delay) connection_delay = System.Timer();
-			else wait = CONNECTION_ATTEMPT_DELAY - connection_delay->peek();
-			if (wait > 0.0) {call_out(attempt_connect, wait); return;}
 			int family;
 			int have4 = ipv4 && sizeof(ipv4);
 			if (ipv6 && sizeof(ipv6)) family = (!have4 || address_weight > 0) ? 6 : 4;
 			else if (have4) family = 4;
 			else {
-				//No addresses left. If one of the lookups isn't done yet, we may get
-				//retriggered (by the duplicate spawn, cf got_ipv4), but otherwise,
-				//we've started every connection we're going to, and it's up to the
-				//connections to succeed or fail.
+				//No addresses left. If one of the lookups isn't done yet, we'll get
+				//retriggered, but otherwise, we've started every connection we're
+				//going to, and it's up to the connections to succeed or fail.
 				return;
 			}
 			string address;
@@ -77,27 +78,34 @@ class HappyEyeballs {
 				//reject this entire family and try again.
 				if (family == 6) ipv6 = ({ });
 				else ipv4 = ({ });
-				connection_delay = 0;
 				attempt_connect();
 				return;
 			}
 			++connecting;
+			no_connection_before = CONNECTION_ATTEMPT_DELAY;
+			attempt_connect(); //Queue the next connection attempt
 		}
 
 		void got_connection(int success, Stdio.File conn) {
 			if (connecting < 0) return; //Already succeeded!
 			if (!success) {
-				if (--connecting || !ipv4 || !ipv6 || sizeof(ipv4) || sizeof(ipv6)) {
-					//Other attempts are already being made.
-					//Should we speed up the connection attempts if one fails fast?
+				if (--connecting) return; //Other connections are in flight, all's good
+				if (!ipv4 || sizeof(ipv4) || !ipv6 || sizeof(ipv6)) {
+					//There are more addresses to try. Hasten failures by queueing
+					//another connection ASAP.
+					write("Hastening failure reconnect\n");
+					no_connection_before = 0.025;
+					attempt_connect();
 					return;
 				}
+				//if (!ipv4 || !ipv6) return; //There are DNS lookups in flight, hang tight, try later.
 				//We've run out of addresses to try. The connection cannot succeed.
 				promise->failure(error("Unable to connect to %s.\n", host));
+				connecting = -1;
 				return;
 			}
 			promise->success(conn);
-			ipv4 = ipv6 = ({ }); //No more attempts needed, yay!
+			connecting = -1; //No more attempts needed, yay!
 		}
 	}
 
