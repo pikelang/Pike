@@ -9,7 +9,7 @@ class HappyEyeballs {
 	Protocols.DNS.async_client resolver;
 	protected void create() {resolver = Protocols.DNS.async_client();}
 
-	class Connection(string host, int port) {
+	class Connection(string host, int port, array bt) {
 		Concurrent.Promise promise = Concurrent.Promise();
 		//Addresses not yet connected to
 		//Connection attempts will remove addresses from all three arrays.
@@ -60,6 +60,7 @@ class HappyEyeballs {
 				//No addresses left. If one of the lookups isn't done yet, we'll get
 				//retriggered, but otherwise, we've started every connection we're
 				//going to, and it's up to the connections to succeed or fail.
+				if (!connecting && ipv4 && ipv6) got_connection(0, 0);
 				return;
 			}
 			string address;
@@ -89,7 +90,7 @@ class HappyEyeballs {
 		void got_connection(int success, Stdio.File conn) {
 			if (connecting < 0) return; //Already succeeded!
 			if (!success) {
-				if (--connecting) return; //Other connections are in flight, all's good
+				if (--connecting > 0) return; //Other connections are in flight, all's good
 				if (!ipv4 || sizeof(ipv4) || !ipv6 || sizeof(ipv6)) {
 					//There are more addresses to try. Hasten failures by queueing
 					//another connection ASAP.
@@ -100,7 +101,7 @@ class HappyEyeballs {
 				}
 				//if (!ipv4 || !ipv6) return; //There are DNS lookups in flight, hang tight, try later.
 				//We've run out of addresses to try. The connection cannot succeed.
-				promise->failure(error("Unable to connect to %s.\n", host));
+				promise->failure(({sprintf("Unable to connect to %s.\n", host), bt}));
 				connecting = -1;
 				return;
 			}
@@ -110,6 +111,6 @@ class HappyEyeballs {
 	}
 
 	Concurrent.Future connect(string host, int port) {
-		return Connection(host, port)->promise->future();
+		return Connection(host, port, backtrace())->promise->future();
 	}
 }
