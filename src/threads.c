@@ -4985,6 +4985,7 @@ void th_cleanup(void)
 
 #else /* !_REENTRANT */
 
+#ifndef CONFIGURE_TEST
 PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
 {
   JMP_BUF back;
@@ -5010,5 +5011,6 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
 
   UNSETJMP(back);
 }
+#endif /* !CONFIGURE_TEST */
 
 #endif /* _REENTRANT */
