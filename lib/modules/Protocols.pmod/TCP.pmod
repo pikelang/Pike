@@ -88,6 +88,8 @@ class HappyEyeballs {
 				return;
 			}
 			++connecting;
+			DBG("That makes %d connections in flight.\n", connecting);
+			connection_delay->get();
 			no_connection_before = CONNECTION_ATTEMPT_DELAY;
 			attempt_connect(); //Queue the next connection attempt
 		}
