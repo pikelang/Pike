@@ -1,6 +1,11 @@
 //! Establish a TCP/IP socket connection to the given host and port.
 //! If successful, resolves with an open @[File] object.
 //! Follows the Happy Eyeballs algorithm as defined in RFC 8305.
+#ifdef HAPPY_EYEBALLS_DEBUG
+#define DBG(X ...) werror(X)
+#else
+#define DBG(X ...)
+#endif
 class HappyEyeballs {
 	constant RESOLUTION_DELAY = 0.05; //If IPv4 results come in first, delay by this many seconds in case IPv6 comes in.
 	//TODO: Make it configurable which family is preferred (currently, hard-coded to prefer IPv6)
@@ -31,13 +36,13 @@ class HappyEyeballs {
 		//success responses.
 		void got_ipv6(string host, mapping result) {
 			ipv6 = result->an->aaaa - ({0});
-			write("Got IPv6: %O%{ %s%}\n", host, ipv6);
+			DBG("Got IPv6: %O%{ %s%}\n", host, ipv6);
 			//TODO: Sort according to Destination Address Selection
 			attempt_connect(); //Preferred family immediately causes connection attempt
 		}
 		void got_ipv4(string host, mapping result) {
 			ipv4 = result->an->a - ({0});
-			write("Got IPv4: %O%{ %s%}\n", host, ipv4);
+			DBG("Got IPv4: %O%{ %s%}\n", host, ipv4);
 			//Unpreferred family delays connection attempt unless we have both results.
 			attempt_connect(!ipv6 && RESOLUTION_DELAY);
 		}
@@ -45,7 +50,7 @@ class HappyEyeballs {
 		void attempt_connect(float|void wait) {
 			if (connecting < 0) return;
 			if (connection_delay) wait = max(wait, no_connection_before - connection_delay->peek());
-			write("Attempt connect, wait %.3fs\n", (float)wait);
+			DBG("Attempt connect, wait %.3fs\n", (float)wait);
 			if (next_connection_call_out) remove_call_out(next_connection_call_out);
 			if (wait > 0.0) {next_connection_call_out = call_out(attempt_connect, wait); return;}
 			next_connection_call_out = 0;
@@ -72,7 +77,7 @@ class HappyEyeballs {
 				[address, ipv4] = Array.shift(ipv4);
 				address_weight = FIRST_ADDRESS_FAMILY_WEIGHTING;
 			}
-			write("Attempting to connect to %s via %s...\n", host, address);
+			DBG("Attempting to connect to %s via %s...\n", host, address);
 			Stdio.File new_con = Stdio.File();
 			if (!new_con->async_connect(address, port, got_connection, new_con)) {
 				//Unable to initialize a socket for this address family. Immediately
@@ -94,7 +99,7 @@ class HappyEyeballs {
 				if (!ipv4 || sizeof(ipv4) || !ipv6 || sizeof(ipv6)) {
 					//There are more addresses to try. Hasten failures by queueing
 					//another connection ASAP.
-					write("Hastening failure reconnect\n");
+					DBG("Hastening failure reconnect\n");
 					no_connection_before = 0.025;
 					attempt_connect();
 					return;
