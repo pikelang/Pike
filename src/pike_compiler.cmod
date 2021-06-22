@@ -1122,6 +1122,10 @@ static int run_pass1(struct compilation *c)
 #ifdef PIKE_DEBUG
       c->placeholder->program_id = Pike_compiler->new_program->id;
 #endif
+      /* Make gc_check_object() avoid this object for now
+       * as it has no storage.
+       */
+      Pike_compiler->new_program->flags |= PROGRAM_AVOID_CHECK;
       debug_malloc_touch(c->placeholder);
     }
   }
@@ -1163,11 +1167,17 @@ static int run_pass1(struct compilation *c)
       if (c->placeholder->prog != c->p)
 	Pike_fatal("Placeholder object got wrong program after first pass.\n");
 #endif
+      yywarning("Pass: %d: Setting storage for placeholder 0x%p.",
+		Pike_compiler->compiler_pass, c->placeholder)
       debug_malloc_touch(c->placeholder);
       c->placeholder->storage=c->p->storage_needed ?
 	(char *)xcalloc(c->p->storage_needed, 1) :
 	(char *)NULL;
       call_c_initializers(c->placeholder);
+      /* gc_check_object() should now be happy about the object
+       * cf above.
+       */
+      c->placeholder->prog->flags &= ~PROGRAM_AVOID_CHECK;
     }
   }
 
