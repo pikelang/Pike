@@ -260,7 +260,6 @@ static inline struct marker *get_marker(void *ptr) {
 }
 
 static inline void remove_marker(void *ptr) {
-    ptr = ptr;
 }
 
 static inline void move_marker(struct marker *m, void *ptr) {
