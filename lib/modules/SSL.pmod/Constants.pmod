@@ -530,10 +530,33 @@ enum CipherSuite {
   TLS_dhe_dss_with_camellia_256_cbc_sha256	= 0x00c3,	// RFC 5932
   TLS_dhe_rsa_with_camellia_256_cbc_sha256	= 0x00c4,	// RFC 5932
   TLS_dh_anon_with_camellia_256_cbc_sha256	= 0x00c5,	// RFC 5932
+  TLS_sm4_gcm_sm3                               = 0x00c6,       // RFC 8998
+  TLS_sm4_ccm_sm3                               = 0x00c7,       // RFC 8998
 
   TLS_empty_renegotiation_info_scsv		= 0x00ff,	// RFC 5746
 
+  // 0x0a0a Reserved in RFC 8701
+
+  TLS_aes_128_gcm_sha256                        = 0x1301,       // RFC 8446
+  TLS_aes_256_gcm_sha384                        = 0x1302,       // RFC 8446
+  TLS_chacha20_poly1305_sha256                  = 0x1303,       // RFC 8446
+  TLS_aes_128_ccm_sha256                        = 0x1304,       // RFC 8446
+  TLS_aes_128_ccm_8_sha256                      = 0x1305,       // RFC 8446
+
+  // 0x1a1a Reserved in RFC 8701
+  // 0x2a2a Reserved in RFC 8701
+  // 0x3a3a Reserved in RFC 8701
+  // 0x4a4a Reserved in RFC 8701
+
   TLS_fallback_scsv				= 0x5600,	// RFC 7507
+
+  // 0x5a5a Reserved in RFC 8701
+  // 0x6a6a Reserved in RFC 8701
+  // 0x7a7a Reserved in RFC 8701
+  // 0x8a8a Reserved in RFC 8701
+  // 0x9a9a Reserved in RFC 8701
+  // 0xaaaa Reserved in RFC 8701
+  // 0xbaba Reserved in RFC 8701
 
   TLS_ecdh_ecdsa_with_null_sha			= 0xc001,	// RFC 4492
   TLS_ecdh_ecdsa_with_rc4_128_sha		= 0xc002,	// RFC 4492
@@ -710,8 +733,24 @@ enum CipherSuite {
   TLS_ecdhe_ecdsa_with_aes_256_ccm		= 0xc0ad,	// RFC 7251
   TLS_ecdhe_ecdsa_with_aes_128_ccm_8		= 0xc0ae,	// RFC 7251
   TLS_ecdhe_ecdsa_with_aes_256_ccm_8		= 0xc0af,	// RFC 7251
+  TLS_eccpwd_with_aes_128_gcm_sha256            = 0xc0b0,       // RFC 8492
+  TLS_eccpwd_with_aes_256_gcm_sha384            = 0xc0b1,       // RFC 8492
+  TLS_eccpwd_with_aes_128_ccm_sha256            = 0xc0b2,       // RFC 8492
+  TLS_eccpwd_with_aes_256_ccm_sha384            = 0xc0b3,       // RFC 8492
+  // TLS_sha256_sha256  camwinget-tls-ts13-macciphersuites-12
+  // TLS_sha384_sha384  camwinget-tls-ts13-macciphersuites-12
 
-  TLS_ecdhe_psk_with_aes_128_gcm_sha256		= 0xcafe,	// BoringSSL
+  // TLS_gostr341112_256_with_kuznyechik_ctr_omac
+  // TLS_gostr341112_256_with_magma_ctr_omac
+  // TLS_gostr341112_256_with_28147_cnr_imit
+  // TLS_gostr341112_256_with_kuznyechik_mgm_l
+  // TLS_gostr341112_256_with_magma_mgm_l
+  // TLS_gostr341112_256_with_kuznyechik_mgm_s
+  // TLS_gostr341112_256_with_magma_mgm_s
+
+  // TLS_ecdhe_psk_with_aes_128_gcm_sha256	= 0xcafe,	// BoringSSL
+
+  // 0xcaca Reserved in RFC 8701
 
   TLS_ecdhe_rsa_with_oldchacha20_poly1305_sha256 = 0xcc13,  // draft-agl-tls-chacha20poly1305-02
   TLS_ecdhe_ecdsa_with_oldchacha20_poly1305_sha256 = 0xcc14,// draft-agl-tls-chacha20poly1305-02
@@ -724,6 +763,16 @@ enum CipherSuite {
   TLS_ecdhe_psk_with_chacha20_poly1305_sha256	= 0xccac,	// RFC 7905
   TLS_dhe_psk_with_chacha20_poly1305_sha256	= 0xccad,	// RFC 7905
   TLS_rsa_psk_with_chacha20_poly1305_sha256	= 0xccae,	// RFC 7905
+
+  TLS_ecdhe_psk_with_aes_128_gcm_sha256         = 0xd001,       // RFC 8442
+  TLS_ecdhe_psk_with_aes_256_gcm_sha384         = 0xd002,       // RFC 8442
+  TLS_ecdhe_psk_with_aes_128_ccm_8_sha256       = 0xd003,       // RFC 8442
+
+  TLS_ecdhe_psk_with_aes_128_ccm_sha256         = 0xd005,       // RFC 8442
+
+  // 0xdada Reserved in RFC 8701
+  // 0xeaea Reserved in RFC 8701
+  // 0xfafa Reserved in RFC 8701
 
 // These were introduced by Netscape while developing SSL 3.1 after
 // feedback from NIST. Eventually the feedback led to TLS 1.0.
