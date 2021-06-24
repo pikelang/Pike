@@ -23,6 +23,7 @@
 
 DECLARATIONS
 
+#ifndef USE_SEMIDYNAMIC_MODULES
 /* NB: Usually pulled in from crtbeginS.o, but we compile with -nostartfiles...
  *
  *     cf http://wiki.osdev.org/C%2B%2B#GCC
@@ -31,6 +32,7 @@ DECLARATIONS
  *     It is needed due to vcdiff_wrapper.cc pulling in iostream.
  */
 void *__dso_handle = NULL;
+#endif
 
 /*! @module VCDiff
  *!
