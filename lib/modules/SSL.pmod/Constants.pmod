@@ -16,7 +16,7 @@ enum ProtocolVersion {
   PROTOCOL_TLS_1_0	= 0x301, //! TLS 1.0 - The @rfc{2246@} version of TLS.
   PROTOCOL_TLS_1_1	= 0x302, //! TLS 1.1 - The @rfc{4346@} version of TLS.
   PROTOCOL_TLS_1_2	= 0x303, //! TLS 1.2 - The @rfc{5246@} version of TLS.
-  PROTOCOL_TLS_1_3      = 0x304, //! TLS 1.3 - draft
+  PROTOCOL_TLS_1_3      = 0x304, //! TLS 1.3 - The @rfc{8446@} version of TLS.
   PROTOCOL_TLS_1_3_DRAFT= 0x7f16, //! TLS 1.3 draft 22
 
   PROTOCOL_DTLS_1_0	= 0xfeff, //! DTLS 1.0 - The @rfc{4347@}
