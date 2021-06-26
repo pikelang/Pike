@@ -537,6 +537,7 @@ enum CipherSuite {
 
   // 0x0a0a Reserved in RFC 8701
 
+  // These are TLS 1.3 only.
   TLS_aes_128_gcm_sha256                        = 0x1301,       // RFC 8446
   TLS_aes_256_gcm_sha384                        = 0x1302,       // RFC 8446
   TLS_chacha20_poly1305_sha256                  = 0x1303,       // RFC 8446
@@ -898,6 +899,8 @@ string fmt_version(ProtocolVersion version)
 constant CIPHER_SUITES =
 ([
    // The following cipher suites are only intended for testing.
+   // NB: TLS_rsa_with_null_sha256 has an explicit MODE_cbc in
+   //     order to make it invalid for TLS 1.1 and earlier.
    SSL_null_with_null_null :    	({ 0, 0, 0 }),
    SSL_rsa_with_null_md5 :      	({ KE_rsa_export, 0, HASH_md5 }),
    SSL_rsa_with_null_sha :      	({ KE_rsa_export, 0, HASH_sha1 }),
