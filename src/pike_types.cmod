@@ -12080,7 +12080,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
     }
     /* FALLTHRU */
   case T_MANY:
-    if ((res = fun_type->car)->type == T_VOID) {
+    if (!(res = fun_type->car) || (res->type == T_VOID)) {
       res = NULL;
       break;
     }
