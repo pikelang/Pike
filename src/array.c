@@ -1201,28 +1201,44 @@ int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
       else
 	if (!b->u.array->size)
 	  return 1;
+      check_c_stack(1024);
       return alpha_svalue_cmpfun(ITEM(a->u.array), ITEM(b->u.array));
 
     case T_MULTISET:
       if (a == b) return 0;
       {
+        /* Note that multiset_first takes a reference to the multiset
+         * data if it does not return -1.
+         */
 	ptrdiff_t a_pos = multiset_first (a->u.multiset);
 	ptrdiff_t b_pos = multiset_first (b->u.multiset);
 	int res;
 	struct svalue ind_a, ind_b;
 	if (a_pos < 0)
-	  if (b_pos < 0)
-	    return 0;
-	  else
-	    return -1;
-	else
-	  if (b_pos < 0)
-	    return 1;
-	res = alpha_svalue_cmpfun (
-	  use_multiset_index (a->u.multiset, a_pos, ind_a),
-	  use_multiset_index (b->u.multiset, b_pos, ind_b));
-	sub_msnode_ref (a->u.multiset);
-	sub_msnode_ref (b->u.multiset);
+        {
+          res = (b_pos < 0) ? 0 : -1;
+        }
+        else if (b_pos < 0)
+        {
+          res = 1;
+        }
+        else
+        {
+          ONERROR a_uwp, b_uwp;
+          SET_ONERROR(a_uwp, do_sub_msnode_ref, a->u.multiset);
+          SET_ONERROR(b_uwp, do_sub_msnode_ref, b->u.multiset);
+
+          check_c_stack(1024);
+
+          res = alpha_svalue_cmpfun (
+            use_multiset_index (a->u.multiset, a_pos, ind_a),
+            use_multiset_index (b->u.multiset, b_pos, ind_b));
+
+          UNSET_ONERROR(a_uwp);
+          UNSET_ONERROR(b_uwp);
+        }
+        if (b_pos >= 0) sub_msnode_ref (b->u.multiset);
+        if (a_pos >= 0) sub_msnode_ref (a->u.multiset);
 	return res;
       }
 
