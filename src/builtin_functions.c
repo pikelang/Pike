@@ -3012,6 +3012,13 @@ static void f_parse_pike_type( INT32 args )
 /*! @decl type|zero soft_cast(type to, type from)
  *!
  *!   Return the resulting type from a soft cast of @[from] to @[to].
+ *!
+ *! @reeturns
+ *!   Returns @expr{UNDEFINED@} if the cast is invalid.
+ *!
+ *! @note
+ *!   The return value for the invalid case may in the future
+ *!   change to @expr{__unknown__@}.
  */
 static void f___soft_cast(INT32 args)
 {
