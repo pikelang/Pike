@@ -448,19 +448,19 @@ static void f_decode(INT32 args) {
   push_int(len);
 }
 
-/* @decl mapping|int encode(string data)
- *
- * Returns mapping with new encoded frame and lenght of
- * @[data] which was used for encoding.
- *
- * @decl int encode(string data, function shuffler);
- * Returns @expr{1@} on success, @expr{0@} otherwise.
- *
- * @note
- *   Usable only in encoder
- *
- * @seealso
- *   @[create()]
+/*! @decl mapping|int encode(string data)
+ *!
+ *! Returns mapping with new encoded frame and length of
+ *! @[data] which was used for encoding.
+ *!
+ *! @decl int encode(string data, function shuffler);
+ *! Returns @expr{1@} on success, @expr{0@} otherwise.
+ *!
+ *! @note
+ *!   Usable only in encoder
+ *!
+ *! @seealso
+ *!   @[create()]
  */
 static void f_encode(INT32 args) {
 
@@ -551,8 +551,9 @@ static void f_list_codecs(INT32 args) {
  *!
  *! @note
  *!   The list of supported codecs depends on Ffmpeg library.
- *!
- *! @decl constant CODEC_TYPE_AUDIO
+ */
+
+/*! @decl constant CODEC_TYPE_AUDIO
  *! @decl constant CODEC_TYPE_VIDEO
  *!
  *!  Type of codec.
