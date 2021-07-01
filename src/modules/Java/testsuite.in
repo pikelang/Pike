@@ -8,6 +8,8 @@ cond_begin([[ master()->resolv("Java")->?jvm ]])
   test_eq([[(string)Java.pkg.java.lang.String()->concat("FOO")
 	->toLowerCase()]],"foo")
   test_eq([[(string)Java.pkg.java.lang.Character(4711)]],"\11147")
+
+  // Note: The source code for conftest.class is at the end of this file.
   test_do(Stdio.write_file("conftest.class", MIME.decode_base64(#"
 yv66vgAAAC4AYAcAAgEACGNvbmZ0ZXN0BwAEAQAQamF2YS9sYW5nL09iamVjdAcABgEAEmphdmEv
 bGFuZy9SdW5uYWJsZQEABXZhcl9hAQABQgEABXZhcl9iAQABRAEABXZhcl9jAQABUwEABXZhcl9k
