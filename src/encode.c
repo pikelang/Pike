@@ -2533,6 +2533,8 @@ static struct object *decoder_codec (struct decode_data *data)
 {
   struct pike_string *decoder_str;
   if (data->codec) return data->codec;
+  if (data->explicit_codec)
+    Pike_fatal("Trying to load codec while explicitely opted out.\n");
   MAKE_CONST_STRING (decoder_str, "Decoder");
   return data->codec = lookup_codec (decoder_str);
 }
@@ -3199,6 +3201,7 @@ static void decode_value2(struct decode_data *data)
   INT64 num;
   struct svalue entry_id, *tmp2;
   struct svalue *delayed_enc_val;
+  static const char *DECODING_NEEDS_CODEC_ERROR = "Attempt to decode value requiring codec.\n";
 
 #ifdef ENCODE_DEBUG
   data->depth += 2;
@@ -3357,6 +3360,9 @@ static void decode_value2(struct decode_data *data)
     {
       struct pike_type *t;
 
+      if (!data->codec && data->explicit_codec)
+        Pike_error(DECODING_NEEDS_CODEC_ERROR);
+
       EDB(1, {
 	  DECODE_WERR(".entry   type, %ld", num);
 	});
@@ -3482,6 +3488,10 @@ static void decode_value2(struct decode_data *data)
     case TAG_OBJECT:
     {
       int subtype = 0;
+
+      if (!data->codec && data->explicit_codec)
+        Pike_error(DECODING_NEEDS_CODEC_ERROR);
+
       EDB(1, {
 	  if (!num) {
 	    DECODE_WERR(".entry   object");
@@ -3491,6 +3501,7 @@ static void decode_value2(struct decode_data *data)
 	    DECODE_WERR(".entry   object, %ld", num);
 	  }
 	});
+
       if (num == 4) {
 	decode_number(subtype, data);
 	EDB(1, {
@@ -3649,6 +3660,9 @@ static void decode_value2(struct decode_data *data)
     }
 
     case TAG_FUNCTION:
+      if (!data->codec && data->explicit_codec)
+        Pike_error(DECODING_NEEDS_CODEC_ERROR);
+
       EDB(1, {
 	  if (num) {
 	    DECODE_WERR(".entry   function, %ld", num);
@@ -3728,6 +3742,8 @@ static void decode_value2(struct decode_data *data)
 
 
     case TAG_PROGRAM:
+      if (!data->codec && data->explicit_codec)
+        Pike_error(DECODING_NEEDS_CODEC_ERROR);
       EDB(3,
 	  fprintf(stderr, "%*s  TAG_PROGRAM(%ld)\n",
 		  data->depth, "", num));
@@ -5049,7 +5065,8 @@ static void error_debug_free_decode_data (struct decode_data *data)
 #endif
 
 static INT32 my_decode(struct pike_string *tmp,
-		       struct object *codec
+		       struct object *codec,
+                       int explicit_codec
 #ifdef ENCODE_DEBUG
 		       , int debug, struct string_builder *debug_buf
 #endif
@@ -5088,7 +5105,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->len=tmp->len;
   data->ptr=0;
   data->codec=codec;
-  data->explicit_codec = codec ? 1 : 0;
+  data->explicit_codec = explicit_codec;
   data->pickyness=0;
   data->pass=1;
   data->unfinished_programs=0;
@@ -5460,7 +5477,7 @@ static void restore_current_decode (struct decode_data *old_data)
 /* Defined in builtin.cmod. */
 extern struct program *MasterCodec_program;
 
-/*! @decl mixed decode_value(string coded_value, void|Codec codec)
+/*! @decl mixed decode_value(string coded_value, void|Codec|int(-1..-1) codec)
  *!
  *! Decode a value from the string @[coded_value].
  *!
@@ -5472,6 +5489,13 @@ extern struct program *MasterCodec_program;
  *! If none is specified, then one is instantiated through
  *! @expr{master()->Decoder()@}. As a compatibility fallback, the
  *! master itself is used if it has no @expr{Decoder@} class.
+ *! If @[codec] is the special value @expr{-1@}, then decoding of
+ *! types, functions, programs and objects is disabled.
+ *!
+ *! @note
+ *!   Decoding a @[coded_value] that you have not generated yourself
+ *!   is a @b{security risk@} that can lead to execution of arbitrary
+ *!   code, unless @[codec] is specified as @expr{-1@}.
  *!
  *! @seealso
  *!   @[encode_value()], @[encode_value_canonic()]
@@ -5479,7 +5503,8 @@ extern struct program *MasterCodec_program;
 void f_decode_value(INT32 args)
 {
   struct pike_string *s;
-  struct object *codec;
+  struct object *codec = NULL;
+  int explicit_codec = 0;
 
 #ifdef ENCODE_DEBUG
   int debug = 0;
@@ -5488,7 +5513,7 @@ void f_decode_value(INT32 args)
 
   check_all_args("decode_value", args,
 		 BIT_STRING,
-		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
+		 BIT_VOID | BIT_INT | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
 		 /* This argument is only an internal debug helper.
 		  * It's intentionally not part of the function
@@ -5523,7 +5548,20 @@ void f_decode_value(INT32 args)
 		       "The codec may not be a subtyped object yet.\n");
 	}
 	codec = Pike_sp[1-args].u.object;
+        explicit_codec = 1;
 	break;
+      }
+      if (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT)
+      {
+        if (Pike_sp[1-args].u.integer == -1)
+        {
+          explicit_codec = 1; // the NULL-codec, in this case
+          break;
+        }
+        else if (Pike_sp[1-args].u.integer)
+        {
+          SIMPLE_ARG_TYPE_ERROR("decode_value", 2, "int(-1..0) | object");
+        }
       }
       /* Fall through. */
     case 1:
@@ -5532,12 +5570,11 @@ void f_decode_value(INT32 args)
 	push_object (clone_object (MasterCodec_program, 0));
 	args++;
 	codec = Pike_sp[-1].u.object;
+        explicit_codec = 1;
       }
-      else
-	codec = NULL;
   }
 
-  if(!my_decode(s, codec
+  if(!my_decode(s, codec, explicit_codec
 #ifdef ENCODE_DEBUG
 		, debug, debug_buf
 #endif
