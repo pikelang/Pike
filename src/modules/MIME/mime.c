@@ -5,7 +5,7 @@
 */
 
 /*
- * @rfc{1521@} functionality for Pike
+ * @rfc{1521@} and @rfc{4648@} functionality for Pike
  *
  * Marcus Comstedt 1996-1999
  */
@@ -162,12 +162,11 @@ PIKE_MODULE_INIT
 
   /* Add global functions */
 
-  /* Really tFunc(tStr7, tStr8), but cut down on warnings for now. */
   ADD_FUNCTION2( "decode_base64", f_decode_base64,
-                 tFunc(tStr, tStr8), 0, OPT_TRY_OPTIMIZE );
+                 tFunc(tStr7, tStr8), 0, OPT_TRY_OPTIMIZE );
 
   ADD_FUNCTION2( "decode_base64url", f_decode_base64url,
-                 tFunc(tStr, tStr8), 0, OPT_TRY_OPTIMIZE );
+                 tFunc(tStr7, tStr8), 0, OPT_TRY_OPTIMIZE );
 
   ADD_FUNCTION2( "decode_base32", f_decode_base32,
                  tFunc(tStr7, tStr8), 0, OPT_TRY_OPTIMIZE );
@@ -201,13 +200,13 @@ PIKE_MODULE_INIT
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
 
   ADD_FUNCTION2( "encode_qp", f_encode_qp,
-                 tFunc(tStr tOr(tVoid,tInt),tStr7), 0, OPT_TRY_OPTIMIZE );
+                 tFunc(tStr8 tOr(tVoid, tInt), tStr7), 0, OPT_TRY_OPTIMIZE );
 
   add_function_constant( "decode_uue", f_decode_uue,
 			 "function(string:string)", OPT_TRY_OPTIMIZE );
 
   ADD_FUNCTION2( "encode_uue", f_encode_uue,
-                 tFunc(tStr tOr(tVoid,tStr),tStr7), 0, OPT_TRY_OPTIMIZE );
+                 tFunc(tStr8 tOr(tVoid, tStr7), tStr7), 0, OPT_TRY_OPTIMIZE );
 
   add_integer_constant("TOKENIZE_KEEP_ESCAPES", TOKENIZE_KEEP_ESCAPES, 0);
 
@@ -1140,7 +1139,8 @@ static void do_uue_encode(ptrdiff_t groups, unsigned char **srcp, char **destp,
 
 /* MIME.encode_uue() */
 
-/*! @decl string encode_uue(string encoded_data,  void|string filename)
+/*! @decl string(7bit) encode_uue(string(8bit) encoded_data, @
+ *!                               void|string(7bit) filename)
  *!
  *! This function encodes data using the @tt{x-uue@} transfer encoding.
  *!
