@@ -1,6 +1,12 @@
 Changes since Pike 8.0.1116 (release 14)
 ----------------------------------------------------------------------
 
+New Features
+------------
+
+o decode_value can be called with codec -1, which disables decoding of
+  functions, objects, programs and types.
+
 Bug Fixes
 ---------
 
