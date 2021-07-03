@@ -99,6 +99,10 @@ string quote(string s)
   return replace(s, "\'", "\'\'");
 }
 
+// The following time conversion functions assume the SQL server
+// handles time in the local timezone. They map the special zero
+// time/date spec to 0.
+
 private int timezone = localtime (0)->timezone;
 
 //! Converts a system time value to an appropriately formatted time
