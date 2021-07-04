@@ -201,8 +201,10 @@ extern struct pike_type ***pike_type_mark_stack;
 
 static inline void free_type(struct pike_type *t)
 {
-  debug_free_type_preamble(t);
-  debug_free_type(t);
+  if (t) {
+    debug_free_type_preamble(t);
+    debug_free_type(t);
+  }
 }
 #define free_type(T) free_type(debug_malloc_pass(T))
 

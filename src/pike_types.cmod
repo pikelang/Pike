@@ -216,6 +216,8 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t)
     case PIKE_T_FUNCTION_ARG:	return "PIKE_T_FUNCTION_ARG";
 
     case PIKE_T_FIND_LFUN:	return "PIKE_T_FIND_LFUN";
+    case PIKE_T_SET_CAR:	return "PIKE_T_SET_CAR";
+    case PIKE_T_SET_CDR:	return "PIKE_T_SET_CDR";
 
     case PIKE_T_ATTRIBUTE:	return "PIKE_T_ATTRIBUTE";
     case PIKE_T_NSTRING:	return "PIKE_T_NSTRING";
@@ -288,6 +290,8 @@ static void internal_parse_type(const char **s);
  * OBJECT	implements/is	object id(int)
  * OPERATOR	type		Depends on bit #15.	Added in 8.1
  * FIND_LFUN	object type	lfun (int)		Added in 8.1
+ * SET_CAR	type		type			Added in 8.1
+ * SET_CDR	type		type			Added in 8.1
  * TRANSITIVE	fun_type	fun_type		Added in 8.1
  *
  * Note that the cdr of a FUNCTION is a valid FUNCTION for the rest of
@@ -2290,6 +2294,8 @@ void stupid_describe_type_string(char *a, ptrdiff_t len)
 	e++;
 	switch(EXTRACT_UCHAR(a+e)<<8 | PIKE_T_OPERATOR) {
 	case PIKE_T_FIND_LFUN: fprintf(stderr, "find_lfun"); break;
+	case PIKE_T_SET_CAR: fprintf(stderr, "set_car"); break;
+	case PIKE_T_SET_CDR: fprintf(stderr, "set_cdr"); break;
 	default:
 	  fprintf(stderr, "unknown<0x%04x>",
 		  EXTRACT_UCHAR(a+e)<<8 | PIKE_T_OPERATOR);
@@ -2945,7 +2951,18 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
     default:
       {
 	if ((t->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
-	  string_builder_sprintf(s, "operator(0x%04x)(%T", t->type, t->car);
+	  switch(t->type) {
+	  case PIKE_T_SET_CAR:
+	    string_builder_strcat(s, "set_car");
+	    break;
+	  case PIKE_T_SET_CDR:
+	    string_builder_strcat(s, "set_cdr");
+	    break;
+	  default:
+	    string_builder_sprintf(s, "operator(0x%04x)", t->type);
+	    break;
+	  }
+	  string_builder_sprintf(s, "(%T", t->car);
 	  if (t->type & 0x8000) {
 	    string_builder_sprintf(s, ",%T)", t->cdr);
 	  } else if (t->cdr) {
@@ -2981,6 +2998,8 @@ static TYPE_T low_compile_type_to_runtime_type(struct pike_type *t)
   switch(t?t->type:PIKE_T_UNKNOWN)	/* Note: No masking here. */
   {
   case PIKE_T_RING:
+  case PIKE_T_SET_CAR:
+  case PIKE_T_SET_CDR:
     return low_compile_type_to_runtime_type(t->car);
 
   case T_OR:
@@ -12504,6 +12523,41 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
   case PIKE_T_FIND_LFUN:
     res = find_lfun_type(arg1, (ptrdiff_t)(void*)arg2);
     break;
+  case PIKE_T_SET_CAR:
+    if (!arg1) return NULL;
+    switch(arg1->type) {
+    case PIKE_T_FUNCTION:
+    case PIKE_T_MANY:
+    case PIKE_T_RING:
+    case PIKE_T_TUPLE:
+    case PIKE_T_MAPPING:
+    case PIKE_T_ARRAY:
+    case PIKE_T_STRING:
+    case PIKE_T_MULTISET:
+      type_stack_mark();
+      push_finished_type(arg2);
+      push_finished_type(arg1->cdr);
+      push_reverse_type(arg1->type);
+      return pop_unfinished_type();
+    }
+    break;
+  case PIKE_T_SET_CDR:
+    if (!arg1) return NULL;
+    switch(arg1->type) {
+    case PIKE_T_FUNCTION:
+    case PIKE_T_MANY:
+    case PIKE_T_RING:
+    case PIKE_T_TUPLE:
+    case PIKE_T_MAPPING:
+    case PIKE_T_ARRAY:
+    case PIKE_T_STRING:
+      type_stack_mark();
+      push_finished_type(arg2);
+      push_finished_type(arg1->car);
+      push_type(arg1->type);
+      return pop_unfinished_type();
+    }
+    break;
   default:
     Pike_fatal("apply_type_operator(): Unknown operator: 0x%04x\n", op);
     break;
@@ -13852,7 +13906,7 @@ void gc_mark_type_as_referenced(struct pike_type *t)
 	if (t->car) gc_mark_type_as_referenced(t->car);
 	break;
       case PIKE_T_OPERATOR:
-	if (t->type & 0x8000) {
+	if ((t->type & 0x8000) && t->cdr) {
 	  gc_mark_type_as_referenced(t->cdr);
 	}
 	gc_mark_type_as_referenced(t->car);
@@ -13972,7 +14026,7 @@ void gc_check_type (struct pike_type *t)
 	}
 	break;
       case PIKE_T_OPERATOR:
-	if (t->type & 0x8000) {
+	if ((t->type & 0x8000) && t->cdr) {
 	  debug_gc_check (t->cdr, " as cdr in a type");
 	}
 	if (t->car) {
