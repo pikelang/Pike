@@ -3205,6 +3205,9 @@ PMOD_EXPORT void call_handle_error(void)
 
   if (Pike_interpreter.svalue_stack_margin > LOW_SVALUE_STACK_MARGIN) {
     int old_t_flag = Pike_interpreter.trace_level;
+    ONERROR tmp;
+    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
+
     Pike_interpreter.trace_level = 0;
     Pike_interpreter.svalue_stack_margin = LOW_SVALUE_STACK_MARGIN;
     Pike_interpreter.c_stack_margin = LOW_C_STACK_MARGIN;
@@ -3212,15 +3215,12 @@ PMOD_EXPORT void call_handle_error(void)
     mark_free_svalue (&throw_value);
 
     if (get_master()) {		/* May return NULL at odd times. */
-      ONERROR tmp;
-      SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
       APPLY_MASTER("handle_error", 1);
-      UNSET_ONERROR(tmp);
     }
     else {
       struct byte_buffer buf = BUFFER_INIT();
       fprintf (stderr, "There's no master to handle the error. Dumping it raw:\n");
-      safe_describe_svalue (&buf, Pike_sp - 1, 0, 0);
+      describe_svalue (&buf, Pike_sp - 1, 0, 0);
       fprintf(stderr,"%s\n",buffer_get_string(&buf));
       buffer_free(&buf);
       if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT && Pike_sp[-1].u.object->prog) {
@@ -3228,13 +3228,15 @@ PMOD_EXPORT void call_handle_error(void)
 	if (fun != -1) {
 	  fprintf(stderr, "Attempting to extract the backtrace.\n");
 	  safe_apply_low2(Pike_sp[-1].u.object, fun, 0, 0);
-	  safe_describe_svalue(&buf, Pike_sp - 1, 0, 0);
+	  describe_svalue(&buf, Pike_sp - 1, 0, 0);
 	  pop_stack();
 	  fprintf(stderr,"%s\n",buffer_get_string(&buf));
 	  buffer_free(&buf);
 	}
       }
     }
+
+    UNSET_ONERROR(tmp);
 
     pop_stack();
     Pike_interpreter.svalue_stack_margin = SVALUE_STACK_MARGIN;
