@@ -503,11 +503,15 @@ class Scheduler {
 	crawl_queue[dbp->id] = next;
 	check_priority_queue(id);
 	if(!quiet) WERR(" Crawl: "+(next-time()));
+      } else {
+        m_delete(crawl_queue, dbp->id);
       }
       next = dbp->next_compact();
       if(next != -1) {
 	compact_queue[dbp->id] = next;
 	if(!quiet) WERR(" Compact: "+(next-time()));
+      } else {
+        m_delete(compact_queue, dbp->id);
       }
       if(!quiet) WERR("");
     }
