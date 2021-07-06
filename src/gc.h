@@ -300,8 +300,8 @@ PMOD_EXPORT void debug_describe_svalue(struct svalue *s);
 PMOD_EXPORT void gc_watch(void *a);
 #endif
 void debug_gc_touch(void *a);
-PMOD_EXPORT int real_gc_check(void *a);
-PMOD_EXPORT int real_gc_check_weak(void *a);
+PMOD_EXPORT INT32 real_gc_check(void *a);
+PMOD_EXPORT INT32 real_gc_check_weak(void *a);
 void exit_gc(void);
 PMOD_EXPORT void locate_references(void *a);
 void debug_gc_add_extra_ref(void *a);
@@ -401,6 +401,7 @@ static inline int PIKE_UNUSED_ATTRIBUTE debug_gc_check (void *a, const char *pla
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
+  if (!a) return 0;
   gc_found_place = place;
   res = gc_check (a);
   gc_found_place = orig_gc_found_place;
@@ -411,6 +412,7 @@ static inline int PIKE_UNUSED_ATTRIBUTE debug_gc_check_weak (void *a, const char
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
+  if (!a) return 0;
   gc_found_place = place;
   res = gc_check_weak (a);
   gc_found_place = orig_gc_found_place;
