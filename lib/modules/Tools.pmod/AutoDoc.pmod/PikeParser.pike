@@ -29,7 +29,10 @@ protected mapping(string : string) reverseMatchTokens =
 protected multiset(string) modifiers =
 (< "nomask", "final", "static", "extern",
    "private", "local", "public", "protected",
-   "inline", "optional", "variant"  >);
+   "inline", "optional", "variant",
+
+   "continue",
+>);
 
 protected multiset(string) scopeModules =
 (< "predef", "top", "lfun", "efun" >);
@@ -720,12 +723,16 @@ array(string) parseModifiers() {
   if (sizeof(mods) > 1) {
     // Clean up implied modifiers.
     if (has_value(mods, "private")) {
-      // private implies protected.
-      mods -= ({ "protected", });
+      // private implies local & protected.
+      mods -= ({ "local", "protected", });
     }
     if (has_value(mods, "final")) {
       // final implies local.
       mods -= ({ "local" });
+    }
+    if (has_value(mods, "extern")) {
+      // extern implies optional.
+      mods -= ({ "optional" });
     }
   }
   return mods;
