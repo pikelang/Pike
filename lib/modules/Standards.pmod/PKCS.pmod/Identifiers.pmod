@@ -221,11 +221,14 @@ Identifier sha512_256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 6);
 
 Identifier dh_id = Identifier(1, 2, 840, 10046, 2, 1);
 
-// RFC 3394 3:
+// RFC 3394 3: and RFC 5649:5
 Identifier aes_id = Identifier(2, 16, 840, 1, 101, 3, 4, 1);
 Identifier aes128_wrap_id = aes_id->append(5);
+Identifier aes128_wrap_pad_id = aes_id->append(8);
 Identifier aes192_wrap_id = aes_id->append(25);
+Identifier aes192_wrap_pad_id = aes_id->append(28);
 Identifier aes256_wrap_id = aes_id->append(45);
+Identifier aes256_wrap_pad_id = aes_id->append(48);
 
 /* Object Identifiers used in X509 distinguished names */
 
