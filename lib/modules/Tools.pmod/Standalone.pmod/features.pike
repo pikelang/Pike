@@ -134,11 +134,19 @@ int main(int num, array(string) args) {
   M(COM.com);
 
   write("\nCrypto\n");
+  F(Crypto.AES.CMAC);
+  F(Crypto.AES.EAX);
   F(Crypto.AES.GCM);
   F(Crypto.Blowfish);
   F(Crypto.Camellia);
   F(Crypto.ChaCha20);
   F(Crypto.ECC.Curve);
+  F(Crypto.ECC.Curve25519);
+  F(Crypto.ECC.SECP_192R1);
+  F(Crypto.ECC.SECP_224R1);
+  F(Crypto.ECC.SECP_256R1);
+  F(Crypto.ECC.SECP_384R1);
+  F(Crypto.ECC.SECP_521R1);
   F(Crypto.GOST94);
   F(Crypto.IDEA);
   F(Crypto.RIPEMD160);

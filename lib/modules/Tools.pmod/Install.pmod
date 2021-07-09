@@ -60,7 +60,7 @@ array(string) features()
 #endif
 
   foreach(({ "Nettle", "Crypto.AES.GCM", "Crypto.ECC.Curve", "Dbm", "DVB",
-             "_Ffmpeg", "GL", "GLUT", "Gdbm",
+             "_Ffmpeg", "GL", "GLUT", "Gdbm", "Crypto.ECC.Curve25519",
 	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",
 	     "Java.machine", "Mird", "Msql", "Mysql", "Odbc", "Oracle",
