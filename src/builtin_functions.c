@@ -10140,7 +10140,8 @@ void init_builtin_efuns(void)
   /* function(mixed:int) */
   ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt01),0);
 
-  ADD_EFUN("basename", f_basename, tFunc(tSetvar(0, tStr), tVar(0)), 0);
+  ADD_EFUN("basename", f_basename,
+	   tFunc(tSetvar(0, tStr), tSetCar(tVar(0), tIntPos)), 0);
 
   /* function(string...:string) */
   ADD_EFUN("combine_path_nt", f_combine_path_nt,
