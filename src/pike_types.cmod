@@ -2316,6 +2316,12 @@ void stupid_describe_type_string(char *a, ptrdiff_t len)
 
 void simple_describe_type(struct pike_type *s)
 {
+  DECLARE_CYCLIC();
+  if (BEGIN_CYCLIC(s, NULL)) {
+    Pike_fatal("Circular type!\n");
+  }
+  SET_CYCLIC_RET(1);
+
   if (s) {
     /* fprintf(stderr, "[[[%p]]]", s); */
     switch(s->type & PIKE_T_MASK) {
@@ -2630,6 +2636,8 @@ void simple_describe_type(struct pike_type *s)
   } else {
     fprintf(stderr, "__unknown__");
   }
+
+  END_CYCLIC();
 }
 
 static void low_describe_int_range(struct string_builder *s,
