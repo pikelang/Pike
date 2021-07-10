@@ -10176,7 +10176,8 @@ void init_builtin_efuns(void)
   /* function(object|void:int(0..1)) */
   ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tInt01),OPT_SIDE_EFFECT);
 
-  ADD_EFUN("dirname", f_dirname, tFunc(tSetvar(0, tStr), tVar(0)), 0);
+  ADD_EFUN("dirname", f_dirname,
+	   tFunc(tSetvar(0, tStr), tSetCar(tVar(0), tIntPos)), 0);
 
   /* function(mixed,mixed:int) */
   ADD_EFUN("equal",f_equal,tFunc(tMix tMix,tInt01),OPT_TRY_OPTIMIZE);
