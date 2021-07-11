@@ -941,6 +941,7 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
   case PIKE_T_SCOPE:
     /* Deferred evaluation. */
     if (op & 0x8000) {
+      add_ref(arg);
       *Pike_compiler->type_stackp = mk_type(op,
 					    *Pike_compiler->type_stackp,
 					    arg,
@@ -996,9 +997,6 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
     *Pike_compiler->type_stackp = apply_type_operator(op, t, arg);
     free_type(t);
     break;
-  }
-  if (free_arg) {
-    free_type(arg);
   }
   TYPE_STACK_DEBUG("push_type_operator");
 }
@@ -1175,7 +1173,14 @@ void debug_push_type(unsigned int type)
     break;
 
   case PIKE_T_OPERATOR:
-    push_type_operator(type, NULL);
+    if (type & 0x8000) {
+      struct pike_type *t = *(--Pike_compiler->type_stackp);
+      *Pike_compiler->type_stackp = Pike_compiler->type_stackp[1];
+      push_type_operator(type, t);
+      free_type(t);
+    } else {
+      push_type_operator(type, NULL);
+    }
     break;
 
   case '0':
