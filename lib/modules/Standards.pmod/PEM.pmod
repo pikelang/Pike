@@ -105,9 +105,9 @@ class Message
   //! Message trailer, like @rfc{4880@} checksum.
   string|zero trailer;
 
-  protected void create(string|array(string) data)
+  protected void create(string(8bit)|array(string(8bit)) data)
   {
-    array(string) lines;
+    array(string(8bit)) lines;
     if(stringp(data))
     {
        lines = data/"\n";
@@ -115,7 +115,7 @@ class Message
          lines = lines[..<1];
     }
     else
-      lines = [array(string)]data;
+      lines = [array(string(8bit))]data;
 
     if( sscanf(lines[0], "%*[ \t]-----BEGIN %s-----", pre)!=2 )
       return;
@@ -128,13 +128,13 @@ class Message
 
     if( sizeof(lines[-1]) && lines[-1][0]=='=' )
     {
-      trailer = MIME.decode_base64(lines[-1][1..]);
+      trailer = MIME.decode_base64([string(7bit)]lines[-1][1..]);
       lines = lines[..<1];
     }
 
     array res = [array]MIME.parse_headers(lines*"\n");
     headers = [mapping(string(8bit):string(8bit))]res[0];
-    body = MIME.decode_base64([string(8bit)]res[1]);
+    body = MIME.decode_base64([string(7bit)]res[1]);
   }
 }
 
