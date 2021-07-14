@@ -14457,6 +14457,22 @@ test_compile_any(
   class A { int foo(__deprecated__(int)|void x) { return (int)x; } };
   mixed bar = A()->foo();
 )
+test_compile_any([[
+  class A {
+    inherit Stdio.File;
+
+    // NB: Stdio.File()->seek() has a deprecated variant, which this
+    //     should NOT match.
+    int seek(int pos) {}
+
+    int close()
+    {
+      // In the broken case this complains:
+      //   Warning: Using deprecated function(int, int, void | int : int) value.
+      object(this_program) f = Stdio.File();
+    }
+  };
+]])
 test_compile_warning(
   class A {
     __deprecated__ mapping m;

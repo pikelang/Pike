@@ -151,7 +151,8 @@ enum pt_cmp_flags
 #endif
 #define LE_USE_HANDLERS	16	/* Call handlers if appropriate. */
 #define LE_EXPLICIT_ZERO 32	/* Zero is not subtype of all others. */
-#define LE_TYPE_SVALUE	64	/* Same matching as match_type_svalue(). */
+#define LE_STRICT_FUN	64	/* Require all arguments to functions. */
+#define LE_TYPE_SVALUE	128	/* Same matching as match_type_svalue(). */
 
 /*
  * Flags used by low_get_first_arg_type()
