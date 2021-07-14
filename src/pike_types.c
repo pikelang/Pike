@@ -61,6 +61,8 @@
 #define LE_USE_HANDLERS	16	/* Call handlers if appropriate. */
 #define LE_EXPLICIT_ZERO 32	/* Zero is not subtype of all others. */
 
+#define LE_STRICT_FUN	64	/* Require all arguments to functions. */
+
 /*
  * Flags used by low_get_first_arg_type()
  *
@@ -4199,7 +4201,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       b = b->cdr;
       goto recurse;
     }
-    if (!low_pike_types_le(a, b->cdr, array_cnt, flags)) return 0;
+    if (!low_pike_types_le(a, b->cdr, array_cnt, flags|LE_STRICT_FUN)) return 0;
     ref_push_string((struct pike_string *)b->car);
     ref_push_type_value(a);
     ref_push_type_value(b->cdr);
@@ -4502,7 +4504,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 	b = b->cdr;
       }
 
-      if (a_tmp->type != T_VOID) {
+      if ((a_tmp->type != T_VOID) || (flags & LE_STRICT_FUN)) {
 	/* Note: flags never has grouping at this point. */
 	if (!low_pike_types_le(b_tmp, a_tmp, 0, flags ^ LE_A_B_SWAPPED)) {
 	  return 0;
