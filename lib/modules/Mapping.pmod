@@ -13,8 +13,8 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
 {
   protected mapping shadow = ([]);
 
-  protected mapping joined;
-  protected mapping parent_copy;
+  protected mapping|zero joined;
+  protected mapping|zero parent_copy;
 
   protected int(0..1) modify_parent;
 
