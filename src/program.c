@@ -9033,7 +9033,7 @@ void ext_store_program_line (struct program *prog, INT_TYPE line, struct pike_st
   prog->num_linenumbers = ptr - prog->linenumbers;
 }
 
-void store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
+int store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
 {
 /*  if(!store_linenumbers)  Pike_fatal("Fnord.\n"); */
 #ifdef PIKE_DEBUG
@@ -9155,7 +9155,10 @@ void store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
     insert_small_number(current_line-Pike_compiler->last_line);
     Pike_compiler->last_line = current_line;
     Pike_compiler->last_pc = (INT32)PIKE_PC;
+
+    return 1;
   }
+  return 0;
 }
 
 void store_linenumber_local_name(int local_num, int string_num)

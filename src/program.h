@@ -1126,7 +1126,7 @@ INT_TYPE get_small_number(char **q);
 void ext_store_program_line (struct program *prog, INT_TYPE line,
 			     struct pike_string *file);
 void start_line_numbering(void);
-void store_linenumber(INT_TYPE current_line, struct pike_string *current_file);
+int store_linenumber(INT_TYPE current_line, struct pike_string *current_file);
 void store_linenumber_local_name(int local_num, int string_num);
 void store_linenumber_local_type(int local_num, int constant_num);
 void store_linenumber_local_end(int local_num);

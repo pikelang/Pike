@@ -521,14 +521,22 @@ INT32 assemble(int store_linenumbers)
 #endif
     }
 
-    if(store_linenumbers) {
-      store_linenumber(c->line, dmalloc_touch_named(struct pike_string *,
-						    c->file,
-						    "store_line"));
+    if(store_linenumbers && (c->opcode != F_ALIGN)) {
+      int new_line =
+	store_linenumber(c->line, dmalloc_touch_named(struct pike_string *,
+						      c->file,
+						      "store_line"));
 #ifdef PIKE_DEBUG
       if (c->opcode < F_MAX_OPCODE)
 	ADD_COMPILED(c->opcode);
 #endif /* PIKE_DEBUG */
+#ifdef INS_TRACE_POINT
+      if (new_line && (c->opcode != F_ENTRY) &&
+	  (c->opcode != F_BYTE) && (c->opcode != F_DATA) &&
+	  (c->opcode != F_LABEL) && (c->opcode != F_POINTER)) {
+	INS_TRACE_POINT();
+      }
+#endif
     }
 
     switch(c->opcode)
