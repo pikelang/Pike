@@ -818,6 +818,7 @@ int main(int argc, array(string) argv)
 	exit(EXIT_WATCHDOG_FAILED);
       }
       pipe_2->dup2 (Stdio.stdout);
+      pipe_2->close();
       watchdog=Process.create_process(
 	backtrace()[0][3] + ({ "--watchdog="+getpid() }),
 	(["stdin": pipe_1, "stdout": orig_stdout]));
