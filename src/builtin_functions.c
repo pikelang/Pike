@@ -10071,32 +10071,53 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("_typeof", f__typeof, tFunc(tSetvar(0, tMix), tType(tVar(0))), 0);
 
-  /* class __master
-   * Used to prototype the master object.
+  /*! @module Builtin
+   */
+
+  /*! @class __master
+   *!
+   *! Used to prototype the master object.
    */
   start_new_program();
+  /*! @decl void _main(array(string) argv, array(string) env) */
   ADD_PROTOTYPE("_main", tFunc(tArr(tStr) tArr(tStr),tVoid), 0);
-
+  /*! @decl object cast_to_object(string oname, string current_file) */
   ADD_PROTOTYPE("cast_to_object", tFunc(tStr tStr tOr(tVoid, tObj), tObj), 0);
+  /*! @decl program cast_to_program(string pname, string current_file, object|void handler) */
   ADD_PROTOTYPE("cast_to_program", tFunc(tStr tStr tOr(tVoid, tObj), tPrg(tObj)), 0);
+  /*! @decl void compile_error(string file, int line, string err) */
   ADD_PROTOTYPE("compile_error", tFunc(tStr tInt tStr, tVoid), 0);
+  /*! @decl void compile_warning(string file, int line, string warn) */
   ADD_PROTOTYPE("compile_warning", tFunc(tStr tInt tStr, tVoid), 0);
+  /*! @decl string decode_charset(string data, string charset) */
   ADD_PROTOTYPE("decode_charset", tFunc(tStr tStr, tStr), 0);
+  /*! @decl string describe_backtrace(object|array trace, int|void line_width) */
   ADD_PROTOTYPE("describe_backtrace", tFunc(tOr(tObj, tArr(tMix)) tOr(tVoid, tInt), tStr), 0);
+  /*! @decl void handle_error(array|object trace) */
   ADD_PROTOTYPE("handle_error", tFunc(tOr(tArr(tMix),tObj), tVoid), 0);
+  /*! @decl mixed handle_import(string what, string|void current_file, object|void handler) */
   ADD_PROTOTYPE("handle_import",
 		tFunc(tStr tOr(tStr, tVoid) tOr(tObj, tVoid), tMix), 0);
-  ADD_PROTOTYPE("handle_include", tFunc(tStr tStr tInt, tStr), 0);
+  /*! @decl string handle_include(string f, string current_file, int(0..1) local_include) */
+  ADD_PROTOTYPE("handle_include", tFunc(tStr tStr tInt01, tStr), 0);
+  /*! @decl program handle_inherit(string pname, string current_file, object|void handler) */
   ADD_PROTOTYPE("handle_inherit", tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
-  ADD_PROTOTYPE("write", tFunc(tStr tOr(tVoid,tMix), tVoid), OPT_SIDE_EFFECT);
-  ADD_PROTOTYPE("werror", tFunc(tStr tOr(tVoid,tMix), tVoid), OPT_SIDE_EFFECT);
-
+  /*! @decl void write(string fmt, mixed ... args) */
+  ADD_PROTOTYPE("write", tFuncV(tStr, tOr(tVoid,tMix), tInt), OPT_SIDE_EFFECT);
+  /*! @decl void werror(string fmt, mixed ... args) */
+  ADD_PROTOTYPE("werror", tFuncV(tStr, tOr(tVoid,tMix), tInt), OPT_SIDE_EFFECT);
+  /*! @decl string read_include(string path) */
   ADD_PROTOTYPE("read_include", tFunc(tStr, tStr), 0);
+  /*! @decl mixed resolv(string identifier, string|void current_file, object|void handler) */
   ADD_PROTOTYPE("resolv",
 		tFunc(tStr tOr(tStr,tVoid) tOr(tObj,tVoid), tMix), 0);
 
   pike___master_program = end_program();
   add_program_constant("__master", pike___master_program, 0);
+  /*! @endclass
+   */
+  /*! @endmodule Builtin
+   */
 
   /* FIXME: */
   ADD_EFUN("replace_master", f_replace_master,

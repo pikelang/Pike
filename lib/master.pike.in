@@ -19,6 +19,8 @@
 //! @seealso
 //!   @[predef::master()], @[predef::replace_master()]
 
+//! @decl inherit Builtin.__master
+
 // --- Some configurable parameters
 
 #define PIKE_AUTORELOAD
