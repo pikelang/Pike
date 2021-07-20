@@ -3013,7 +3013,7 @@ static void f_parse_pike_type( INT32 args )
  *!
  *!   Return the resulting type from a soft cast of @[from] to @[to].
  *!
- *! @reeturns
+ *! @returns
  *!   Returns @expr{UNDEFINED@} if the cast is invalid.
  *!
  *! @note
