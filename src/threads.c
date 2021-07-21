@@ -2173,6 +2173,9 @@ struct key_storage
 
 /*! @decl MutexKey lock()
  *! @decl MutexKey lock(int type)
+ *! @decl MutexKey lock(int type, int(0..)|float seconds)
+ *! @decl MutexKey lock(int type, int(0..) seconds @
+ *!                     int(0..999999999) nanos)
  *!
  *! This function attempts to lock the mutex. If the mutex is already
  *! locked by a different thread the current thread will sleep until the
@@ -2193,6 +2196,23 @@ struct key_storage
  *!     code, but in conjunction with other locks it easily leads
  *!     to unspecified locking order and therefore a risk for deadlocks.
  *! @endint
+ *!
+ *! @param seconds
+ *!   Seconds to wait before the timeout is reached.
+ *!
+ *! @param nanos
+ *!   Nano (1/1000000000) seconds to wait before the timeout is reached.
+ *!   This value is added to the number of seconds specified by @[seconds].
+ *!
+ *! A timeout of zero seconds disables the timeout.
+ *!
+ *! @note
+ *!   The support for timeouts was added in Pike 8.1.14, which was
+ *!   before the first public release of Pike 8.1.
+ *!
+ *! @note
+ *!   Note that the timeout is approximate (best effort), and may
+ *!   be exceeded if eg the interpreter is busy after the timeout.
  *!
  *! @note
  *! If the mutex is destructed while it's locked or while threads are
@@ -2218,11 +2238,28 @@ void f_mutex_lock(INT32 args)
   struct key_storage *key;
   struct object *o;
   INT_TYPE type = 0;
+  INT_TYPE seconds = 0, nanos = 0;
 
   DEBUG_CHECK_THREAD();
 
   m=THIS_MUTEX;
-  get_all_args(NULL, args, ".%i", &type);
+  if (args <= 2) {
+    FLOAT_TYPE fsecs = 0.0;
+    get_all_args(NULL, args, ".%i%F", &type, &fsecs);
+    if (fsecs > 0.0) {
+      seconds = (INT_TYPE)fsecs;
+      nanos = (INT_TYPE)((fsecs - seconds) * 1000000000);
+    }
+  } else {
+    INT_TYPE adj = 0;
+    get_all_args(NULL, args, "%i%i%i", &type, &seconds, &nanos);
+
+    /* Normalize. */
+    adj = nanos / 1000000000;
+    if (nanos < 0) adj--;
+    nanos -= adj * 1000000000;
+    seconds += adj;
+  }
 
   switch(type)
   {
@@ -2277,15 +2314,63 @@ void f_mutex_lock(INT32 args)
       Pike_error("Cannot wait for mutexes when threads are disabled!\n");
     }
     m->num_waiting++;
-    do
-    {
-      THREADS_FPRINTF(1, "WAITING TO LOCK m:%p\n", m);
-      SWAP_OUT_CURRENT_THREAD();
-      co_wait_interpreter(& m->condition);
-      SWAP_IN_CURRENT_THREAD();
-      check_threads_etc();
-    } while (key->next);
+    if (seconds || nanos) {
+      /* NB: Negative seconds ==> try lock. */
+      if (seconds >= 0) {
+	struct timeval timeout;
+	ACCURATE_GETTIMEOFDAY(&timeout);
+	timeout.tv_sec += seconds;
+	timeout.tv_usec += nanos/1000;
+	do
+	{
+	  THREADS_FPRINTF(1, "WAITING TO LOCK m:%p\n", m);
+	  SWAP_OUT_CURRENT_THREAD();
+	  co_wait_interpreter_timeout(& m->condition, seconds, nanos);
+	  SWAP_IN_CURRENT_THREAD();
+	  check_threads_etc();
+	  if (key->next) {
+	    /* Check for timeout, and update seconds & nanos. */
+	    struct timeval now;
+	    ACCURATE_GETTIMEOFDAY(&now);
+	    seconds = timeout.tv_sec - now.tv_sec;
+	    nanos = (timeout.tv_usec - now.tv_usec) * 1000;
+	    if (nanos < 0) {
+	      seconds--;
+	      nanos += 1000000000;
+	    }
+	    if ((seconds < 0) || (!seconds && !nanos)) break;
+	  }
+	} while (key->next);
+      }
+    } else {
+      do
+      {
+	THREADS_FPRINTF(1, "WAITING TO LOCK m:%p\n", m);
+	SWAP_OUT_CURRENT_THREAD();
+	co_wait_interpreter(& m->condition);
+	SWAP_IN_CURRENT_THREAD();
+	check_threads_etc();
+      } while (key->next);
+    }
     m->num_waiting--;
+  }
+
+  if (key->next) {
+    /* Timeout. */
+    /* NB: We know that mutex_key doesn't have an lfun:_destruct()
+     *     that inhibits our destruct().
+     */
+    destruct(o);
+    free_object(o);
+
+    DEBUG_CHECK_THREAD();
+
+    THREADS_FPRINTF(1, "LOCK k:%p, m:%p(%p), t:%p\n",
+		    NULL, m, NULL,
+		    Pike_interpreter.thread_state);
+    pop_n_elems(args);
+    push_int(0);
+    return;
   }
 
 #ifdef PICKY_MUTEX
@@ -2311,6 +2396,9 @@ void f_mutex_lock(INT32 args)
 
 /*! @decl MutexKey shared_lock()
  *! @decl MutexKey shared_lock(int type)
+ *! @decl MutexKey shared_lock(int type, int(0..)|float seconds)
+ *! @decl MutexKey shared_lock(int type, int(0..) seconds @
+ *!                            int(0..999999999) nanos)
  *!
  *! This function attempts to lock the mutex. If the mutex is already
  *! locked by a different thread the current thread will sleep until the
@@ -2332,6 +2420,19 @@ void f_mutex_lock(INT32 args)
  *!     to unspecified locking order and therefore a risk for deadlocks.
  *! @endint
  *!
+ *! @param seconds
+ *!   Seconds to wait before the timeout is reached.
+ *!
+ *! @param nanos
+ *!   Nano (1/1000000000) seconds to wait before the timeout is reached.
+ *!   This value is added to the number of seconds specified by @[seconds].
+ *!
+ *! A timeout of zero seconds disables the timeout.
+ *!
+ *! @note
+ *!   Note that the timeout is approximate (best effort), and may
+ *!   be exceeded if eg the interpreter is busy after the timeout.
+ *!
  *! @note
  *!   Note that if the current thread already holds a shared key,
  *!   a new will be created without waiting, and regardless of
@@ -2344,6 +2445,9 @@ void f_mutex_lock(INT32 args)
  *! disappeared, but further calls to the functions in this class will
  *! fail as is usual for destructed objects.
  *!
+ *! @note
+ *!   Support for shared keys was added in Pike 8.1.
+ *!
  *! @seealso
  *!   @[lock()], @[trylock()], @[try_shared_lock()]
  */
@@ -2353,11 +2457,28 @@ void f_mutex_shared_lock(INT32 args)
   struct key_storage *key, *prev = NULL;
   struct object *o, *prev_o = NULL;
   INT_TYPE type = 0;
+  INT_TYPE seconds = 0, nanos = 0;
 
   DEBUG_CHECK_THREAD();
 
   m=THIS_MUTEX;
-  get_all_args(NULL, args, ".%i", &type);
+  if (args <= 2) {
+    FLOAT_TYPE fsecs = 0.0;
+    get_all_args(NULL, args, ".%i%F", &type, &fsecs);
+    if (fsecs > 0.0) {
+      seconds = (INT_TYPE)fsecs;
+      nanos = (INT_TYPE)((fsecs - seconds) * 1000000000);
+    }
+  } else {
+    INT_TYPE adj = 0;
+    get_all_args(NULL, args, "%i%i%i", &type, &seconds, &nanos);
+
+    /* Normalize. */
+    adj = nanos / 1000000000;
+    if (nanos < 0) adj--;
+    nanos -= adj * 1000000000;
+    seconds += adj;
+  }
 
   if ((type < 0) || (type > 2)) {
     bad_arg_error("shared_lock", args, 2, "int(0..2)", Pike_sp+1-args,
@@ -2424,23 +2545,51 @@ void f_mutex_shared_lock(INT32 args)
   }
 
   if (!prev) {
-    while (m->key && (m->key->kind >= KEY_PENDING)) {
-      if(threads_disabled)
-      {
-	free_object(o);
-	Pike_error("Cannot wait for mutexes when threads are disabled!\n");
-      }
-
-      m->num_waiting++;
-
-      THREADS_FPRINTF(1, "WAITING TO SHARE LOCK m:%p\n", m);
-      SWAP_OUT_CURRENT_THREAD();
-      co_wait_interpreter(& m->condition);
-      SWAP_IN_CURRENT_THREAD();
-      check_threads_etc();
-
-      m->num_waiting--;
+    if(threads_disabled)
+    {
+      free_object(o);
+      Pike_error("Cannot wait for mutexes when threads are disabled!\n");
     }
+
+    m->num_waiting++;
+    if (seconds || nanos) {
+      /* NB: Negative seconds ==> try lock. */
+      if (seconds >= 0) {
+	struct timeval timeout;
+	ACCURATE_GETTIMEOFDAY(&timeout);
+	timeout.tv_sec += seconds;
+	timeout.tv_usec += nanos/1000;
+	while (m->key && (m->key->kind >= KEY_PENDING)) {
+	  THREADS_FPRINTF(1, "WAITING TO SHARE LOCK m:%p\n", m);
+	  SWAP_OUT_CURRENT_THREAD();
+	  co_wait_interpreter_timeout(& m->condition, seconds, nanos);
+	  SWAP_IN_CURRENT_THREAD();
+	  check_threads_etc();
+
+	  if (m->key && (m->key->kind >= KEY_PENDING)) {
+	    /* Check for timeout, and update seconds & nanos. */
+	    struct timeval now;
+	    ACCURATE_GETTIMEOFDAY(&now);
+	    seconds = timeout.tv_sec - now.tv_sec;
+	    nanos = (timeout.tv_usec - now.tv_usec) * 1000;
+	    if (nanos < 0) {
+	      seconds--;
+	      nanos += 1000000000;
+	    }
+	    if ((seconds < 0) || (!seconds && !nanos)) break;
+	  }
+	}
+      }
+    } else {
+      while (m->key && (m->key->kind >= KEY_PENDING)) {
+	THREADS_FPRINTF(1, "WAITING TO SHARE LOCK m:%p\n", m);
+	SWAP_OUT_CURRENT_THREAD();
+	co_wait_interpreter(& m->condition);
+	SWAP_IN_CURRENT_THREAD();
+	check_threads_etc();
+      }
+    }
+    m->num_waiting--;
 
     if (m->key && (m->key->kind == KEY_DOWNGRADED)) {
       /* Link new read keys after the downgraded key (if any). */
@@ -2448,6 +2597,24 @@ void f_mutex_shared_lock(INT32 args)
       prev_o = prev->self;
       add_ref(prev_o);
     }
+  }
+
+  if (m->key && (m->key->kind >= KEY_PENDING)) {
+    /* Timeout. */
+    /* NB: We know that mutex_key doesn't have an lfun:_destruct()
+     *     that inhibits our destruct().
+     */
+    destruct(o);
+    free_object(o);
+
+    DEBUG_CHECK_THREAD();
+
+    THREADS_FPRINTF(1, "SHARED_LOCK k:%p, m:%p(%p), t:%p\n",
+		    NULL, m, NULL,
+		    Pike_interpreter.thread_state);
+    pop_n_elems(args);
+    push_int(0);
+    return;
   }
 
 #ifdef PICKY_MUTEX
@@ -2577,6 +2744,9 @@ void f_mutex_trylock(INT32 args)
  *! This function performs the same operation as @[shared_lock()],
  *! but if the mutex is already locked exclusively, it will return
  *! zero instead of sleeping until it's unlocked.
+ *!
+ *! @note
+ *!   Support for shared keys was added in Pike 8.1.
  *!
  *! @seealso
  *!   @[shared_lock()], @[lock()], @[trylock()]
@@ -4690,9 +4860,13 @@ void th_init(void)
   START_NEW_PROGRAM_ID(THREAD_MUTEX);
   ADD_STORAGE(struct mutex_storage);
   ADD_FUNCTION("lock",f_mutex_lock,
-	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
+	       tOr(tFunc(tOr(tInt02,tVoid) tOr3(tVoid, tIntPos, tFloat),
+			 tObjIs_THREAD_MUTEX_KEY),
+		   tFunc(tInt02 tIntPos tIntPos, tObjIs_THREAD_MUTEX_KEY)), 0);
   ADD_FUNCTION("shared_lock",f_mutex_shared_lock,
-	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
+	       tOr(tFunc(tOr(tInt02,tVoid) tOr3(tVoid, tIntPos, tFloat),
+			 tObjIs_THREAD_MUTEX_KEY),
+		   tFunc(tInt02 tIntPos tIntPos, tObjIs_THREAD_MUTEX_KEY)), 0);
   ADD_FUNCTION("trylock",f_mutex_trylock,
 	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
   ADD_FUNCTION("try_shared_lock",f_mutex_try_shared_lock,
