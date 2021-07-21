@@ -1211,8 +1211,8 @@ int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
             use_multiset_index (a->u.multiset, a_pos, ind_a),
             use_multiset_index (b->u.multiset, b_pos, ind_b));
 
-          UNSET_ONERROR(a_uwp);
           UNSET_ONERROR(b_uwp);
+          UNSET_ONERROR(a_uwp);
         }
         if (b_pos >= 0) sub_msnode_ref (b->u.multiset);
         if (a_pos >= 0) sub_msnode_ref (a->u.multiset);
