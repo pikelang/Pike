@@ -3026,7 +3026,7 @@ void exit_mutex_obj(struct object *UNUSED(o))
 /*! @class MutexKey
  *!
  *! Objects of this class are returned by @[Mutex()->lock()]
- *! and @[Mutex()->trylock()]. They are also passed as arguments
+ *! and @[Mutex()->trylock()] et al. They are also passed as arguments
  *! to @[Condition()->wait()].
  *!
  *! As long as they are held, the corresponding mutex will be locked.
@@ -3130,6 +3130,7 @@ void exit_mutex_key_obj(struct object *DEBUGUSED(o))
   }
 }
 
+/*! @decl protected string _sprintf(int c) */
 static void f_mutex_key__sprintf(INT32 args)
 {
   int c = 0;
@@ -3149,6 +3150,16 @@ static void f_mutex_key__sprintf(INT32 args)
   }
 }
 
+/*! @decl void downgrade()
+ *!
+ *! Downgrade an exclusive lock into a shared lock.
+ *!
+ *! A downgraded lock may be upgraded back to an exclusive lock
+ *! by calling @[upgrade()] or @[try_upgrade()].
+ *!
+ *! @seealso
+ *!   @[upgrade()], @[try_upgrade()]
+ */
 static void f_mutex_key_downgrade(INT32 args)
 {
   struct key_storage *key = THIS_KEY;
@@ -3164,6 +3175,18 @@ static void f_mutex_key_downgrade(INT32 args)
   co_broadcast(&key->mut->condition);
 }
 
+/*! @decl void upgrade()
+ *!
+ *! Upgrade a downgraded lock into an exclusive lock.
+ *!
+ *! Waits until all concurrent shared locks are released,
+ *! and upgrades this lock into being an exclusive lock.
+ *! Any attempts to make new shared locks will block as
+ *! soon as this function is called.
+ *!
+ *! @seealso
+ *!   @[downgrade()], @[try_upgrade()]
+ */
 static void f_mutex_key_upgrade(INT32 args)
 {
   struct key_storage *key = THIS_KEY;
@@ -3200,6 +3223,23 @@ static void f_mutex_key_upgrade(INT32 args)
   key->kind = KEY_EXCLUSIVE;
 }
 
+/*! @decl int(0..1) try_upgrade()
+ *!
+ *! Try to upgrade a downgraded lock into an exclusive lock.
+ *!
+ *! @returns
+ *!   @int
+ *!     @value 0
+ *!       Returns @expr{0@} (zero) if there are other concurrent
+ *!       shared locks active.
+ *!     @value 1
+ *!       Returns @expr{1@} if this is the only active lock, and
+ *!       upgrading it to being exclusive succeeded.
+ *!   @endint
+ *!
+ *! @seealso
+ *!   @[downgrade()], @[upgrade()]
+ */
 static void f_mutex_key_try_upgrade(INT32 args)
 {
   struct key_storage *key = THIS_KEY;
