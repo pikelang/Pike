@@ -2174,7 +2174,7 @@ struct key_storage
 /*! @decl MutexKey lock()
  *! @decl MutexKey lock(int type)
  *! @decl MutexKey lock(int type, int(0..)|float seconds)
- *! @decl MutexKey lock(int type, int(0..) seconds @
+ *! @decl MutexKey lock(int type, int(0..) seconds, @
  *!                     int(0..999999999) nanos)
  *!
  *! This function attempts to lock the mutex. If the mutex is already
@@ -2397,7 +2397,7 @@ void f_mutex_lock(INT32 args)
 /*! @decl MutexKey shared_lock()
  *! @decl MutexKey shared_lock(int type)
  *! @decl MutexKey shared_lock(int type, int(0..)|float seconds)
- *! @decl MutexKey shared_lock(int type, int(0..) seconds @
+ *! @decl MutexKey shared_lock(int type, int(0..) seconds, @
  *!                            int(0..999999999) nanos)
  *!
  *! This function attempts to lock the mutex. If the mutex is already
