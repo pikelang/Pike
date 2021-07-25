@@ -96,8 +96,9 @@ TREE_CLASSIFY(_transform_svalue_to_key)(const struct svalue * s) {
 	key = CB_LOW_KEY_FROM_SVALUE(Pike_sp-1);
 	pop_stack();
     } else {
-      if (!((1<<TYPEOF(*s)) & T_KEY)) Pike_error("Expected type " cmod_STRFY_EVAL(key_ptype) ".\n");
-	key = CB_LOW_KEY_FROM_SVALUE(s);
+      if (!((1<<TYPEOF(*s)) & T_KEY))
+	Pike_error("Expected type " cmod_STRFY_EVAL(key_ptype) ".\n");
+      key = CB_LOW_KEY_FROM_SVALUE(s);
     }
     return key;
 }
