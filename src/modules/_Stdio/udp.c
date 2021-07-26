@@ -1681,6 +1681,40 @@ static void udp_set_buffer(INT32 args)
 /*! @endclass
  */
 
+/*! @module SOCK
+ *!
+ *! Module containing constants for specifying socket options.
+ */
+
+/*! @decl constant STREAM
+ */
+
+/*! @decl constant DGRAM
+ */
+
+/*! @decl constant SEQPACKET
+ */
+
+/*! @decl constant RAW
+ */
+
+/*! @decl constant RDM
+ */
+
+/*! @decl constant PACKET
+ */
+
+/*! @endmodule
+ */
+
+/*! @module IPPROTO
+ *!
+ *! Module containing various IP-protocol options.
+ */
+
+/*! @endmodule
+ */
+
 /*! @endmodule
  */
 
