@@ -96,13 +96,6 @@
 #define tObjImpl_GMP_BIGNUM                   "\003\000\000\000\000\041"
 #define   tObjIs_GMP_BIGNUM                   "\003\001\000\000\000\041"
 
-#define     PROG_THREAD_RWMUTEX_ID                                  042
-#define tObjImpl_THREAD_RWMUTEX               "\003\000\000\000\000\042"
-#define   tObjIs_THREAD_RWMUTEX               "\003\001\000\000\000\042"
-#define     PROG_THREAD_RWMUTEX_KEY_ID                              043
-#define tObjImpl_THREAD_RWMUTEX_KEY           "\003\000\000\000\000\043"
-#define   tObjIs_THREAD_RWMUTEX_KEY           "\003\001\000\000\000\043"
-
 /* Classes in builtin.cmod. */
 #define     PROG_SINGLE_STRING_REPLACE_ID			    050
 #define     PROG_BOOTSTRING_ID					    051
