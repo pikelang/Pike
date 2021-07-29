@@ -2154,9 +2154,10 @@ struct key_storage
 
 /*! @class Mutex
  *!
- *! @[Mutex] is a class that implements mutual exclusion locks.
+ *! @[Mutex] is a class that implements mutual exclusion and shared locks.
+ *!
  *! Mutex locks are used to prevent multiple threads from simultaneously
- *! execute sections of code which access or change shared data. The basic
+ *! executing sections of code which access or change shared data. The basic
  *! operations for a mutex is locking and unlocking. If a thread attempts
  *! to lock an already locked mutex the thread will sleep until the mutex
  *! is unlocked.
@@ -2164,6 +2165,9 @@ struct key_storage
  *! @note
  *!   This class is simulated when Pike is compiled without thread support,
  *!   so it's always available.
+ *!
+ *! @note
+ *!   Support for shared locks was added in Pike 8.1.14.
  *!
  *! In POSIX threads, mutex locks can only be unlocked by the same thread
  *! that locked them. In Pike any thread can unlock a locked mutex.
