@@ -3177,9 +3177,24 @@ static void f_mutex_key_downgrade(INT32 args)
   co_broadcast(&key->mut->condition);
 }
 
-/*! @decl void upgrade()
+/*! @decl int(0..1) upgrade()
+ *! @decl int(0..1) upgrade(int(0..)|float seconds)
+ *! @decl int(0..1) upgrade(int(0..) seconds, int(0..999999999) nanos)
  *!
  *! Upgrade a downgraded lock into an exclusive lock.
+ *!
+ *! @param seconds
+ *!   Seconds to wait before the timeout is reached.
+ *!
+ *! @param nanos
+ *!   Nano (1/1000000000) seconds to wait before the timeout is reached.
+ *!   This value is added to the number of seconds specified by @[seconds].
+ *!
+ *! A timeout of zero seconds disables the timeout.
+ *!
+ *! @note
+ *!   Note that the timeout is approximate (best effort), and may
+ *!   be exceeded if eg the interpreter is busy after the timeout.
  *!
  *! Waits until all concurrent shared locks are released,
  *! and upgrades this lock into being an exclusive lock.
@@ -3193,11 +3208,30 @@ static void f_mutex_key_upgrade(INT32 args)
 {
   struct key_storage *key = THIS_KEY;
   struct mutex_storage *m = key->mut;
+  INT_TYPE seconds = 0, nanos = 0;
 
   if (key->kind >= KEY_PENDING) return;
 
   if (key->kind != KEY_DOWNGRADED) {
     Pike_error("Upgrade is not allowed for non-degraded mutex keys.\n");
+  }
+
+  if (args <= 1) {
+    FLOAT_TYPE fsecs = 0.0;
+    get_all_args(NULL, args, ".%F", &fsecs);
+    if (fsecs > 0.0) {
+      seconds = (INT_TYPE)fsecs;
+      nanos = (INT_TYPE)((fsecs - seconds) * 1000000000);
+    }
+  } else {
+    INT_TYPE adj = 0;
+    get_all_args(NULL, args, "%i%i", &seconds, &nanos);
+
+    /* Normalize. */
+    adj = nanos / 1000000000;
+    if (nanos < 0) adj--;
+    nanos -= adj * 1000000000;
+    seconds += adj;
   }
 
   if(key->next)
@@ -3211,18 +3245,68 @@ static void f_mutex_key_upgrade(INT32 args)
     key->kind = KEY_PENDING;
 
     m->num_waiting++;
-    do
-    {
-      THREADS_FPRINTF(1, "WAITING TO LOCK m:%p\n", m);
-      SWAP_OUT_CURRENT_THREAD();
-      co_wait_interpreter(& m->condition);
-      SWAP_IN_CURRENT_THREAD();
-      check_threads_etc();
-    } while (key->next);
+    if (seconds || nanos) {
+      /* NB: Negative seconds ==> try lock. */
+      if (seconds >= 0) {
+	struct timeval timeout;
+	ACCURATE_GETTIMEOFDAY(&timeout);
+	timeout.tv_sec += seconds;
+	timeout.tv_usec += nanos/1000;
+
+	do
+	{
+	  THREADS_FPRINTF(1, "WAITING TO LOCK m:%p\n", m);
+	  SWAP_OUT_CURRENT_THREAD();
+	  co_wait_interpreter_timeout(& m->condition, seconds, nanos);
+	  SWAP_IN_CURRENT_THREAD();
+	  check_threads_etc();
+	  if (key->next) {
+	    /* Check for timeout, and update seconds & nanos. */
+	    struct timeval now;
+	    ACCURATE_GETTIMEOFDAY(&now);
+	    seconds = timeout.tv_sec - now.tv_sec;
+	    nanos = (timeout.tv_usec - now.tv_usec) * 1000;
+	    if (nanos < 0) {
+	      seconds--;
+	      nanos += 1000000000;
+	    }
+	    if ((seconds < 0) || (!seconds && !nanos)) break;
+	  }
+	} while (key->next);
+      }
+    } else {
+      do
+      {
+	THREADS_FPRINTF(1, "WAITING TO LOCK m:%p\n", m);
+	SWAP_OUT_CURRENT_THREAD();
+	co_wait_interpreter(& m->condition);
+	SWAP_IN_CURRENT_THREAD();
+	check_threads_etc();
+      } while (key->next);
+    }
     m->num_waiting--;
   }
 
+  if (key->next) {
+    /* Timeout. */
+    key->kind = KEY_DOWNGRADED;
+    /* Wake up any shared locks that were blocked by us. */
+    co_broadcast(&m->condition);
+
+    DEBUG_CHECK_THREAD();
+
+    THREADS_FPRINTF(1, "LOCK k:%p, m:%p(%p), t:%p\n",
+		    NULL, m, NULL,
+		    Pike_interpreter.thread_state);
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
   key->kind = KEY_EXCLUSIVE;
+
+  pop_n_elems(args);
+  push_int(1);
 }
 
 /*! @decl int(0..1) try_upgrade()
@@ -4267,7 +4351,9 @@ void th_init(void)
 		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
   ADD_FUNCTION("_sprintf",f_mutex_key__sprintf,tFunc(tInt,tStr),ID_PROTECTED);
   ADD_FUNCTION("downgrade", f_mutex_key_downgrade, tFunc(tNone,tVoid), 0);
-  ADD_FUNCTION("upgrade", f_mutex_key_upgrade, tFunc(tNone,tVoid), 0);
+  ADD_FUNCTION("upgrade", f_mutex_key_upgrade,
+	       tOr(tFunc(tOr3(tVoid, tIntPos, tFloat), tInt01),
+		   tFunc(tIntPos tIntPos, tInt01)), 0);
   ADD_FUNCTION("try_upgrade", f_mutex_key_try_upgrade, tFunc(tNone,tInt01), 0);
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
