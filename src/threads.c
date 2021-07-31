@@ -3413,6 +3413,12 @@ static void f_mutex_key_try_upgrade(INT32 args)
  *!   support. The Condition class is not simulated otherwise, since that
  *!   can't be done accurately without continuations.
  *!
+ *! @note
+ *!   Signals may currently be sent without holding the lock,
+ *!   but this should be avoided as it may cause the signal
+ *!   to be lost (especially when the signal is not associated
+ *!   with a corresponding change of the shared resource).
+ *!
  *! @seealso
  *!   @[Mutex]
  */
