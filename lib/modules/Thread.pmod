@@ -1195,6 +1195,10 @@ class ResourceCount {
 
 // Simulations of some of the classes for nonthreaded use.
 
+//! @ignore
+// The autodoc extractor should ignore these, as the canonical
+// implementations are the C-implementations.
+
 /* Fallback implementation of Thread.Local */
 class Local
 {
@@ -1520,5 +1524,7 @@ class ResourceCount {
     return res;
   }
 }
+
+//! @endignore
 
 #endif /* !constant(thread_create) */
