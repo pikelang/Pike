@@ -3756,9 +3756,14 @@ void f_thread_backtrace(INT32 args)
  *! @returns
  *!   @int
  *!     @value Thread.THREAD_NOT_STARTED
+ *!       The thread has not yet started executing.
  *!     @value Thread.THREAD_RUNNING
+ *!       The thread has started and has not yet terminated.
  *!     @value Thread.THREAD_EXITED
+ *!       The thread has terminated by returning a value from the
+ *!       thread function.
  *!     @value Thread.THREAD_ABORTED
+ *!       The thread has terminated by throwing an uncaught error.
  *!   @endint
  */
 void f_thread_id_status(INT32 args)
