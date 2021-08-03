@@ -1,6 +1,17 @@
 #pike __REAL_VERSION__
 
 #if constant(__builtin.thread_id)
+
+//! This module contains classes and functions for interacting
+//! and synchronizing with threads.
+//!
+//! @note
+//!   For convenience some of the classes here are implemented
+//!   (and are thus available) even when threads are not supported.
+//!
+//! @seealso
+//!   @[thread_create()], @[Thread], @[Mutex], @[Condition]
+
 constant Thread=__builtin.thread_id;
 
 constant MutexKey=__builtin.mutex_key;
