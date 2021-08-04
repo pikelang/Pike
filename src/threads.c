@@ -4501,6 +4501,8 @@ void th_init(void)
   add_integer_constant("THREAD_EXITED", THREAD_EXITED, 0);
   add_integer_constant("THREAD_ABORTED", THREAD_ABORTED, 0);
 
+  add_integer_constant("MUTEX_SUPPORTS_SHARED_LOCKS", 1, 0);
+
   original_interpreter = Pike_interpreter_pointer;
   backend_thread_obj = fast_clone_object(thread_id_prog);
   INIT_THREAD_STATE((struct thread_state *)(backend_thread_obj->storage +

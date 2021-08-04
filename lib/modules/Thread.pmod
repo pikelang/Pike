@@ -31,6 +31,14 @@ constant THREAD_RUNNING = __builtin.THREAD_RUNNING;
 constant THREAD_EXITED = __builtin.THREAD_EXITED;
 constant THREAD_ABORTED = __builtin.THREAD_ABORTED;
 
+#if constant(__builtin.MUTEX_SUPPORTS_SHARED_LOCKS)
+//! Recognition constant for support of shared locks.
+//!
+//! If this symbol exists and is not @expr{0@} then the @[Mutex] class
+//! supports shared locks (ie has @[Mutex()->shared_lock()] et al).
+constant MUTEX_SUPPORTS_SHARED_LOCKS = __builtin.MUTEX_SUPPORTS_SHARED_LOCKS;
+#endif
+
 //! @[Fifo] implements a fixed length first-in, first-out queue.
 //! A fifo is a queue of values and is often used as a stream of data
 //! between two threads.
