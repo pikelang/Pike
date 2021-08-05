@@ -10,7 +10,7 @@
 //!   (and are thus available) even when threads are not supported.
 //!
 //! @seealso
-//!   @[thread_create()], @[Thread], @[Mutex], @[Condition]
+//!   @[Thread], @[Mutex], @[Condition]
 
 constant Thread=__builtin.thread_id;
 
