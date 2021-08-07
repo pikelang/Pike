@@ -126,6 +126,8 @@ static rgba_group parse_color_line( struct pike_string *cn, int sl )
   struct buffer s;
   rgba_group res;
   int i;
+
+  s.str = cn->str;
   for(i=sl; i<cn->len; i++)
   {
     switch(cn->str[i])
