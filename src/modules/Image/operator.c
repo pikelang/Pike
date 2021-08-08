@@ -70,16 +70,16 @@ extern struct program *image_program;
    }									\
    else									\
    {									\
-     if (args<1 || TYPEOF(sp[-args]) != T_OBJECT			\
-       || !sp[-args].u.object						\
-       || sp[-args].u.object->prog!=image_program)			\
-      Pike_error("illegal arguments to "what".\n");		\
+      if (args<1 || TYPEOF(sp[-args]) != T_OBJECT			\
+          || !sp[-args].u.object					\
+          || sp[-args].u.object->prog!=image_program)			\
+         Pike_error("illegal arguments to "what".\n");			\
 									\
       oper=(struct image*)sp[-args].u.object->storage;			\
       if (!oper->img) Pike_error("no image (operand)\n");		\
       if (oper->xsize!=THIS->xsize					\
           || oper->ysize!=THIS->ysize)					\
-        Pike_error("operands differ in size.\n");                       \
+         Pike_error("operands differ in size.\n");                       \
       rgb.r=rgb.b=rgb.g=0;    /*silence warning,hyperminimal suboptimization..*/ \
    }									\
 									\
