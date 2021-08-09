@@ -6,8 +6,11 @@
 //! and synchronizing with threads.
 //!
 //! @note
-//!   For convenience some of the classes here are implemented
-//!   (and are thus available) even when threads are not supported.
+//!   For convenience some of the classes here are emulated
+//!   (and are thus available) when threads are not supported.
+//!
+//!   Some of the classes that have such fallbacks are: @[Condition],
+//!   @[Fifo], @[Local], @[Mutex], @[MutexKey] and @[Queue].
 //!
 //! @seealso
 //!   @[Thread], @[Mutex], @[Condition]
