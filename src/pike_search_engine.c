@@ -220,6 +220,7 @@ void NameN(init_memsearch)(
   switch(needlelen)
   {
     case 0:
+      s->mojt.data = NULL;
       s->mojt.vtab=&nil_search_vtable;
       return;
 
