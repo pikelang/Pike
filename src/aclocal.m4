@@ -1466,7 +1466,8 @@ dnl variable, file-path
 AC_DEFUN(PIKE_CHECK_FILE_ABI,
 [
   PIKE_filetype=`file "$2" 2>/dev/null | sed -e 's/.*://'`
-  case "[$]PIKE_filetype" in
+  PIKE_filetype_L=`file -L "$2" 2>/dev/null | sed -e 's/.*://'`
+  case "[$]PIKE_filetype:[$]PIKE_filetype_L" in
     *64-bit*)
       $1=64
       ;;
@@ -1492,7 +1493,7 @@ AC_DEFUN(PIKE_CHECK_FILE_ABI,
       ;;
     *)
       # Unknown. Probably cross-compiling.
-      PIKE_MSG_WARN([Unrecognized object file format: $filetype])
+      PIKE_MSG_WARN([Unrecognized object file format: $PIKE_filetype:$PIKE_filetype_L])
       if dd if="$2" count=2 bs=1 2>/dev/null | \
 	grep 'L' >/dev/null; then
 	# A common case is rntcl...
