@@ -1694,7 +1694,7 @@ AC_DEFUN(PIKE_SELECT_ABI,
   # Prefix for pkg-config and other tools that don't support multiple ABIs
   # natively.
   if test "x$ac_tool_prefix" = x; then
-    AC_MSG_CHECKING(For $pike_cv_abi ABI tool prefix)
+    AC_MSG_CHECKING(For $pike_cv_abi-bit ABI tool prefix)
     AC_CACHE_VAL(pike_cv_tool_prefix, [
       SAVE_IFS="$IFS"
       IFS=":"
