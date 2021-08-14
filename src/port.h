@@ -136,6 +136,8 @@ char *strchr(const char *s,int c);
 #undef strdup
 #ifdef HAVE__STRDUP
 #define strdup(X) _strdup(X)
+#else
+char *strdup(const char *str);
 #endif
 #endif
 
