@@ -2165,7 +2165,7 @@ PIKECLASS Backend
 #endif
     struct timeval *next_timeout = &me->next_timeout, now;
 
-    alloca(0);			/* Do garbage collect */
+    void *keep_compiler_happy = alloca(0);	/* Do garbage collect */
 #ifdef PIKE_DEBUG
     if(d_flag > 1) do_debug();
 #endif
