@@ -29,6 +29,11 @@ o Image.ILBM
   - Guard alloca() allocations with check_c_stack().
   - Improved length accounting in unpackByteRun1().
 
+o Image.JPEG
+
+  - Do not over-allocate memory for decoded image.
+  - Limit decoded size of images to 2 GB.
+
 o Image.PCX
 
   Improved size checks better detect malformed PCX images.
