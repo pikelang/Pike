@@ -4689,7 +4689,12 @@ void runtime_warning (string where, string what, mixed... args)
 	break;
 
       default:
-	werror ("%s warning: %s %O\n", capitalize (where), what, args);
+	if (sizeof(args)) {
+	  werror ("%s warning: %s %O\n", capitalize (where), what, args);
+	} else {
+	  werror ("%s warning: %s\n", capitalize (where), what);
+	}
+	break;
     }
 }
 
