@@ -147,7 +147,7 @@
 }%%
 
 static ptrdiff_t _parse_JSON5_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
-    int hexchr0, hexchr1;
+    int hexchr0 = 0, hexchr1 = 0;
     ptrdiff_t start = p, mark = 0;
     struct string_builder s;
     int cs;

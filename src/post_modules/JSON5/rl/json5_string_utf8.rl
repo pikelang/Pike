@@ -186,7 +186,7 @@ static ptrdiff_t _parse_JSON5_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t e
     struct string_builder s;
     int cs;
     ONERROR handle;
-    int hexchr0, hexchr1;
+    int hexchr0 = 0, hexchr1 = 0;
     const int validate = !(state->flags&JSON5_VALIDATE);
     p_wchar2 unicode = 0;
 
