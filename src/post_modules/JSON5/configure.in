@@ -1,3 +1,6 @@
 AC_INIT(json5.cmod)
 AC_MODULE_INIT()
+
+AC_CHECK_PROGS(RAGEL, ragel-c ragel)
+
 AC_OUTPUT(Makefile)

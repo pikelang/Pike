@@ -15,15 +15,20 @@ OBJS=json5.o
 # Enable this to include ragel in the build chain.
 #ENABLE_RAGEL=yes
 
-RAGEL = ragel -G2 -C
+# NB: Support for the -C option has apparently been removed in favor
+#     of instead having separate binaries for each target language.
+#
+#     Even with old versions of ragel, the C target language was default.
+RAGEL=@RAGEL@
+RAGEL_OPTS=-G2
 
 RAGEL_TARGETS=json5_parser.c json5_string.c json5_mapping.c json5_array.c json5_number.c json5_string_utf8.c
 
 $(SRCDIR)/%.c: rl/%.rl rl/json5_defaults.rl
 	@if [ x"$(ENABLE_RAGEL)" != x ]; then \
-	  if ragel --version | head -1 | grep -q 'version [7-9].' ; then \
+	  if $(RAGEL) --version | head -1 | grep -q 'version [7-9].' ; then \
 	    echo "cd $(SRCDIR) && $(RAGEL) -o $*.c rl/$*.rl"; \
-	    cd "$(SRCDIR)" && $(RAGEL) -o $*.c rl/$*.rl; \
+	    cd "$(SRCDIR)" && $(RAGEL) $(RAGEL_OPTS) -o $*.c rl/$*.rl; \
 	  else \
 	    echo "Too old ragel version"; \
 	    false; \
