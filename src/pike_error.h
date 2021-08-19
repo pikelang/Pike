@@ -54,6 +54,7 @@ PMOD_EXPORT extern const char msg_fatal_error[];
 #define pike_fatal_dloc							\
  (fprintf (stderr, msg_fatal_error, DLOC_ARGS), debug_fatal)
 
+PMOD_EXPORT void pike_atfatal(void (*fun)(void));
 PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn));
 

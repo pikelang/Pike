@@ -497,6 +497,32 @@ PMOD_EXPORT void fatal_on_error(const void *msg)
   do_abort();
 }
 
+#define MAX_ATFATAL	16
+static void (*atfatals[MAX_ATFATAL])(void);
+static size_t num_atfatals = 0;
+
+/**
+ * Register a function to be called when a fatal error is triggered.
+ *
+ * Registered functions will be called in the reverse order of
+ * their registration.
+ */
+PMOD_EXPORT void pike_atfatal(void (*fun)(void))
+{
+  if (!fun) return;
+  if (num_atfatals >= MAX_ATFATAL) {
+    Pike_fatal("Too many atfatals()!\n");
+  }
+  atfatals[num_atfatals++] = fun;
+}
+
+static void call_atfatals(void)
+{
+  while (num_atfatals) {
+    atfatals[--num_atfatals]();
+  }
+}
+
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
@@ -538,6 +564,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   Pike_in_gc = GC_PASS_DISABLED;
 
   d_flag=Pike_interpreter.trace_level=0;
+
+  call_atfatals();
 
   if(Pike_sp && Pike_interpreter.evaluator_stack &&
      master_object && master_object->prog)
