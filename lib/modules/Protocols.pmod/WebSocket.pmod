@@ -434,6 +434,12 @@ class Connection {
         this::id = id;
     }
 
+    //! Return the @expr{id@} as is passed as last argument to all
+    //! callbacks.
+    mixed query_id() {
+        return id;
+    }
+
     //! Constructor for server mode
     protected void create(Stdio.File|SSL.File f, void|int|array(object) extensions) {
         if (arrayp(extensions)) this_program::extensions = extensions;
