@@ -3441,7 +3441,8 @@ size_t do_gc(int explicit_call)
   if(debug_options & GC_RESET_DMALLOC)
     reset_debug_malloc();
 #endif
-  gc_generation++;
+  /* For paranoia reasons; avoid gc_generation #0. */
+  if (gc_generation++ == 0xffff) gc_generation = 1;
   Pike_in_gc=GC_PASS_PREPARE;
 
   if (!SAFE_IS_ZERO(&gc_pre_cb)) {
