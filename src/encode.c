@@ -128,6 +128,8 @@
 #define ID_ENTRY_INHERIT	3
 #define ID_ENTRY_ALIAS		4
 
+static const char * const DECODING_NEEDS_CODEC_ERROR = "Attempt to decode value requiring codec.\n";
+
 static struct object *lookup_codec (struct pike_string *codec_name)
 {
   struct object *m = get_master();
@@ -2561,7 +2563,6 @@ static void decode_value2(struct decode_data *data)
   INT64 num;
   struct svalue entry_id, *tmp2;
   struct svalue *delayed_enc_val;
-  static const char *DECODING_NEEDS_CODEC_ERROR = "Attempt to decode value requiring codec.\n";
 
 #ifdef ENCODE_DEBUG
   data->depth += 2;
@@ -4545,7 +4546,7 @@ static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
   return i;
 }
 
-static void rec_restore_value(char **v, ptrdiff_t *l)
+static void rec_restore_value(char **v, ptrdiff_t *l, int no_codec)
 {
   ptrdiff_t t, i;
 
@@ -4583,7 +4584,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     if(t<0) decode_error(current_decode, NULL,
 			 "length of array is negative.\n");
     check_stack(t);
-    for(i=0;i<t;i++) rec_restore_value(v,l);
+    for(i=0;i<t;i++) rec_restore_value(v,l,no_codec);
     f_aggregate(DO_NOT_WARN(t)); /* FIXME: Unbounded stack consumption. */
     return;
 
@@ -4591,7 +4592,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     if(t<0) decode_error(current_decode, NULL,
 			 "length of multiset is negative.\n");
     check_stack(t);
-    for(i=0;i<t;i++) rec_restore_value(v,l);
+    for(i=0;i<t;i++) rec_restore_value(v,l,no_codec);
     f_aggregate_multiset(DO_NOT_WARN(t)); /* FIXME: Unbounded stack consumption. */
     return;
 
@@ -4601,13 +4602,14 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     check_stack(t*2);
     for(i=0;i<t;i++)
     {
-      rec_restore_value(v,l);
-      rec_restore_value(v,l);
+      rec_restore_value(v,l,no_codec);
+      rec_restore_value(v,l,no_codec);
     }
     f_aggregate_mapping(DO_NOT_WARN(t*2)); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_OBJECT:
+    if (no_codec) Pike_error(DECODING_NEEDS_CODEC_ERROR);
     if(t<0) decode_error(current_decode, NULL,
 			 "length of object is negative.\n");
     if(*l < t) decode_error(current_decode, NULL, "string too short\n");
@@ -4617,6 +4619,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     return;
 
   case TAG_FUNCTION:
+    if (no_codec) Pike_error(DECODING_NEEDS_CODEC_ERROR);
     if(t<0) decode_error(current_decode, NULL,
 			 "length of function is negative.\n");
     if(*l < t) decode_error(current_decode, NULL, "string too short\n");
@@ -4626,6 +4629,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     return;
 
   case TAG_PROGRAM:
+    if (no_codec) Pike_error(DECODING_NEEDS_CODEC_ERROR);
     if(t<0) decode_error(current_decode, NULL,
 			 "length of program is negative.\n");
     if(*l < t) decode_error(current_decode, NULL, "string too short\n");
@@ -4751,7 +4755,7 @@ void f_decode_value(INT32 args)
     data.data_str = s;		/* Not refcounted. */
     SET_ONERROR (uwp, restore_current_decode, current_decode);
     current_decode = &data;
-    rec_restore_value(&v, &l);
+    rec_restore_value(&v, &l, !codec && explicit_codec);
     CALL_AND_UNSET_ONERROR (uwp);
   }
   assign_svalue(Pike_sp-args-1, Pike_sp-1);
