@@ -136,11 +136,26 @@ IFS=''
 	cd "$dir"
 	if grep AC_CONFIG_HEADER configure.in >/dev/null; then
 	  echo "Running $autoheader in $dir"
-	  "$autoheader" $ah_args && echo foo >stamp-h.in
+	  if "$autoheader" $ah_args; then :; else
+	    # Paranoia. Cf autoconf below.
+	    echo "$autoheader in $dir failed with code $$."
+	    echo "Retrying..."
+	    "$autoheader" $ah_args
+	  fi
 	fi
 	if grep AC_INIT configure.in >/dev/null; then
 	  echo "Running $autoconf in $dir"
-	  "$autoconf" $ac_args
+	  if "$autoconf" $ac_args; then :; else
+	    # Apparently autoconf can fail due to autom4te:
+	    #   autom4te: cannot lock autom4te.cache/requests with mode 2
+	    #   (perhaps you are running make -j on a lame NFS client?):
+	    #   Input/output error
+	    #   autoheader2.50: /usr/bin/autom4te failed with exit status: 1
+	    # Attempt to retry on failure.
+	    echo "$autoconf in $dir failed with code $$."
+	    echo "Retrying..."
+	    "$autoconf" $ac_args
+	  fi
 	else
 	  echo "$dir seems to use Cygnus-configure."
 	fi
@@ -150,6 +165,7 @@ IFS=''
 	    test -d "$d" && rm -rf "$d"
 	  done
 	fi
+	echo foo >stamp-h.in
       ) &
       num=`expr $num + 1`
       if [ $num -ge 12 ] ; then
