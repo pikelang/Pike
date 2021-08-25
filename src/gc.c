@@ -1230,14 +1230,33 @@ again:
 	  else
 	    fprintf(stderr, "%*s**Function %s at unknown location.\n",
 		    indent, "", id->name->str);
-
-	  if (depth && o->prog) {
-	    fprintf (stderr, "%*s**Describing function's object:\n",
-		     indent, "");
-	    describe_something (o, T_OBJECT, indent + 2, depth - 1,
-				(flags & DESCRIBE_SHORT) & ~DESCRIBE_MEM,
-				0);
+	} else {
+	  fprintf(stderr, "%*s**Function #%d\n", indent, "", t->func);
+	}
+	fprintf(stderr, "%*s**Context frame: %p (%d refs)\n",
+		indent, "", t->frame, t->frame->refs);
+	if (p) {
+	  id = ID_FROM_INT(p, t->frame->fun);
+	  if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
+	      id->func.offset >= 0 &&
+	      (file = get_line(p->program + id->func.offset, p, &line))) {
+	    fprintf(stderr, "%*s**Lexical parent function %s at %s:%ld\n",
+		    indent, "", id->name->str, file->str, (long) line);
+	    free_string(file);
 	  }
+	  else
+	    fprintf(stderr, "%*s**Lexical parent function %s at unknown location.\n",
+		    indent, "", id->name->str);
+	} else {
+	  fprintf(stderr, "%*s**Lexical parent function #%d\n",
+		  indent, "", t->frame->fun);
+	}
+	if (depth && o->prog) {
+	  fprintf (stderr, "%*s**Describing function's object:\n",
+		   indent, "");
+	  describe_something (o, T_OBJECT, indent + 2, depth - 1,
+			      (flags & DESCRIBE_SHORT) & ~DESCRIBE_MEM,
+			      0);
 	}
       }
 
