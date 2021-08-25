@@ -1,20 +1,41 @@
-//! Establish a TCP/IP socket connection to the given host and port.
-//! If successful, resolves with an open @[File] object.
-//! Follows the Happy Eyeballs algorithm as defined in RFC 8305.
+//! Utilities relating to the TCP/IP protocol family.
+
 #ifdef HAPPY_EYEBALLS_DEBUG
 #define DBG(X ...) werror(X)
 #else
 #define DBG(X ...)
 #endif
+
+//! Establish a TCP/IP socket connection to the given host and port.
+//! If successful, resolves with an open @[File] object.
+//! Follows the Happy Eyeballs algorithm as defined in RFC 8305.
+//! @example
+//!   @code
+//!     // Attempt to connect to an HTTP server via either IPv6 or IPv4
+//!     object he = Protocols.TCP.HappyEyeballs();
+//!     he->connect("pike.lysator.liu.se", 80)->then() {
+//!       [Stdio.File sock] = __ARGS__;
+//!        write("Connected socket: %O\n", sock);
+//!     };
+//!   @endcode
 class HappyEyeballs {
-	constant RESOLUTION_DELAY = 0.05; //If IPv4 results come in first, delay by this many seconds in case IPv6 comes in.
-	//TODO: Make it configurable which family is preferred (currently, hard-coded to prefer IPv6)
-	constant FIRST_ADDRESS_FAMILY_WEIGHTING = 1; //Number of favoured addresses to attempt before going to the other family
-	constant CONNECTION_ATTEMPT_DELAY = 0.25; //Minimum gap between socket connection attempts
+	//! If IPv4 results come in first, delay by this many seconds in case IPv6 comes in.
+	constant RESOLUTION_DELAY = 0.05;
+
+	//! Number of favoured addresses to attempt before going to the other family
+	constant FIRST_ADDRESS_FAMILY_WEIGHTING = 1;
+
+	//! Minimum gap between socket connection attempts
+	constant CONNECTION_ATTEMPT_DELAY = 0.25;
+
+	//! DNS resolver to use. Defaults to a vanilla async_client; may be replaced as required.
 	Protocols.DNS.async_client resolver;
+
+	//!
 	protected void create() {resolver = Protocols.DNS.async_client();}
 
-	class Connection(string host, int port, array bt) {
+	//! Pending connection
+	protected class Connection(string host, int port, array bt) {
 		Concurrent.Promise promise = Concurrent.Promise();
 		//Addresses not yet connected to
 		//Connection attempts will remove addresses from all three arrays.
@@ -117,6 +138,8 @@ class HappyEyeballs {
 		}
 	}
 
+	//! Establish a connection to the given @[host]:@[port].
+	//! Resolves with a connected socket, or rejects with a failure message.
 	Concurrent.Future connect(string host, int port) {
 		return Connection(host, port, backtrace())->promise->future();
 	}
