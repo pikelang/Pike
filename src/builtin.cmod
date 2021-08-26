@@ -68,8 +68,12 @@
 #define SET_ZONE(this, VAL)	((this)->extra.tm_zone = (VAL))
 #endif
 
-static void gc_check_frame(struct pike_frame *f)
+static void gc_check_frame(struct pike_frame *f, const char *place)
 {
+  int marker_refs;
+  if (!f) return;
+  marker_refs = debug_gc_check(f, place);
+  if (marker_refs) return;
   if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
   {
     if(f->current_object)
@@ -77,21 +81,20 @@ static void gc_check_frame(struct pike_frame *f)
     if(f->current_program)
       debug_gc_check (f->current_program, " as current_program in a frame");
     debug_gc_check_svalues (f->locals - 1, 1, " in malloced locals of a frame");
-    if(f->scope && !debug_gc_check (f->scope, " as scope frame of a frame"))
-      gc_check_frame(f->scope);
+    gc_check_frame(f->scope, " as scope frame of a frame");
   }
 }
 
 static void gc_recurse_frame(struct pike_frame *f)
 {
+  if (!f) return;
   if(f->current_object)
     gc_recurse_object(f->current_object);
   if(f->current_program)
     gc_recurse_program(f->current_program);
   if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
     gc_recurse_svalues(f->locals - 1, 1);
-  if(f->scope)
-    gc_recurse_frame(f->scope);
+  gc_recurse_frame(f->scope);
 }
 
 DECLARATIONS
@@ -3692,13 +3695,12 @@ PIKECLASS LiveBacktraceFrame
 
   GC_CHECK
   {
-    if (THIS->fp && !debug_gc_check(THIS->fp, " as live backtrace frame"))
-      gc_check_frame(THIS->fp);
+    gc_check_frame(THIS->fp, " as live backtrace frame");
   }
 
   GC_RECURSE
   {
-    if (THIS->fp) gc_recurse_frame(THIS->fp);
+    gc_recurse_frame(THIS->fp);
   }
 
   PIKEFUN void fill_in_file_and_line()
@@ -7354,14 +7356,12 @@ PIKECLASS pike_trampoline
 
   GC_CHECK
   {
-    if (THIS->trampoline.frame &&
-	!debug_gc_check(THIS->trampoline.frame, " as trampoline frame"))
-      gc_check_frame(THIS->trampoline.frame);
+    gc_check_frame(THIS->trampoline.frame, " as trampoline frame");
   }
 
   GC_RECURSE
   {
-    if (THIS->trampoline.frame) gc_recurse_frame(THIS->trampoline.frame);
+    gc_recurse_frame(THIS->trampoline.frame);
   }
 
   PIKEFUN void `()(mixed ... ignored)
