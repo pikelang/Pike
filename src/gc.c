@@ -102,6 +102,10 @@ struct svalue gc_done_cb;
  * And the following simulated passes:
  *
  * GC_PASS_LOCATE
+ *   Search for check_for. Note that markers are (intentionally)
+ *   NOT used in this pass, and the reported number of references
+ *   may be thus larger than the actual number of references due
+ *   to double traversal of C-structures caused by this.
  *
  * GC_PASS_DISABLED
  */
