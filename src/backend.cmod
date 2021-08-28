@@ -2286,6 +2286,8 @@ PIKECLASS Backend
                                            struct Backend_struct *PDUNUSED(me))
   {
     struct fd_callback_box *box;
+    PDWERR("[%d]BACKEND[%d]: backend_call_active_callbacks.\n",
+	   THR_NO, me->id);
     while((box = fd_list->next))
     {
       int fd = box->fd;
@@ -2449,9 +2451,13 @@ PIKECLASS Backend
 
       CALL_AND_UNSET_ONERROR(uwp);
     }
+    PDWERR("[%d]BACKEND[%d]: backend_call_active_callbacks: done.\n",
+	   THR_NO, me->id);
     return 0;
 
   backend_round_done:
+    PDWERR("[%d]BACKEND[%d]: backend_call_active_callbacks: early exit.\n",
+	   THR_NO, me->id);
     return 1;
   }
 
