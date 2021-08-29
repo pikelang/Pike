@@ -64,6 +64,25 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
   return decoder->unpad(iv + body, Crypto.PAD_PKCS7)[sizeof(iv)..];
 }
 
+//! Decrypt a PEM Message.
+//!
+//! @param body
+//!   Fragment with encypted PEM body.
+//!
+//! @param password
+//!   Decryption password.
+//!
+//! @returns
+//!   Returns the decrypted body text.
+string decrypt_fragment(Message m, string(8bit) pwd)
+{
+  // FIXME: Check proc-type = "4,ENCRYPTED"?
+  string(8bit) dek = [string(8bit)]m->headers["dek-info"];
+  if(!dek) return 0;;
+  return decrypt_body(dek, [string(8bit)]m->body, pwd);
+}
+
+
 //! Represents a PEM-style message.
 class Message
 {
@@ -168,6 +187,71 @@ class Messages
     if( !sizeof(lines) || !has_prefix(lines[0], "-----BEGIN ") )
       return ({ lines*"\n" });
     return ({ Message(lines) });
+  }
+
+  //! Returns an array of all fragments with any of the given
+  //! @[labels] in the boundy preamble.
+  array(Message) get_fragments(multiset labels)
+  {
+    array(Message) ret = ({});
+    foreach(fragments, string|Message m)
+    {
+      if(objectp(m) && labels[m->pre])
+        ret += ({ [object(Message)]m });
+    }
+    return ret;
+  }
+
+  //! Returns an array of the string bodies of all fragments with any
+  //! of the given @[labels] in the boundy preamble.
+  array(string) get_fragment_bodies(multiset labels)
+  {
+    return get_fragments(labels)->body;
+  }
+
+  //! Returns an array of all the bodies of @expr{"CERTIFICATE"@} and
+  //! @expr{"X509 CERTIFICATE"@} fragments.
+  array(string) get_certificates()
+  {
+    // FIXME: Support "TRUSTED CERTIFICATE" that contains additional
+    // information (trusted uses, rejected uses, alias and key id).
+    return get_fragment_bodies( (< "CERTIFICATE", "X509 CERTIFICATE" >) );
+  }
+
+  //! Convenience wrapper for @[get_certificates] that returns the
+  //! first available certificate, or @expr{0@}.
+  string get_certificate()
+  {
+    return get_certificates()[?0];
+  }
+
+    protected array(Message) low_get_private_keys()
+  {
+    return get_fragments( (< "RSA PRIVATE KEY", "DSA PRIVATE KEY",
+                             "EC PRIVATE KEY", "ANY PRIVATE KEY" >) );
+  }
+
+  //! Returns an array of all the bodies of @expr{"RSA PRIVATE KEY"@},
+  //! @expr{"DSA PRIVATE KEY"@}, @expr{"EC PRIVATE KEY"@} and
+  //! @expr{"ANY PRIVATE KEY"@} fragments.
+  array(string) get_private_keys()
+  {
+    return low_get_private_keys()->body;
+  }
+
+  //! Convenience wrapper for @[get_private_key] that returns the
+  //! first available key, or @expr{0@}.
+  string get_private_key()
+  {
+    return get_private_keys()[?0];
+  }
+
+  //! Returns the first key, decoded by the @[pwd] password.
+  string get_encrypted_private_key(string(8bit) pwd)
+  {
+    Message m = low_get_private_keys()[?0];
+    if(!m) return 0;
+    return decrypt_fragment(m, pwd);
   }
 
   protected string _sprintf(int t)
