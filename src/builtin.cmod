@@ -87,6 +87,14 @@ static void gc_check_frame(struct pike_frame *f, const char *place)
 
 static void gc_recurse_frame(struct pike_frame *f)
 {
+  /* BROKEN!
+   *
+   * In memory-count mode references from the frame are
+   * counted once per refrence to the frame. This leads
+   * to over counting and is due to there not being a
+   * separate struct mc_marker for the struct pike_frame.
+   */
+#if 0
   if (!f) return;
   if(f->current_object)
     gc_recurse_object(f->current_object);
@@ -95,6 +103,7 @@ static void gc_recurse_frame(struct pike_frame *f)
   if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
     gc_recurse_svalues(f->locals - 1, 1);
   gc_recurse_frame(f->scope);
+#endif
 }
 
 DECLARATIONS
