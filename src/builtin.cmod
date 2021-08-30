@@ -70,6 +70,7 @@
 
 static void gc_check_frame(struct pike_frame *f, const char *place)
 {
+#if 0
   int marker_refs;
   if (!f) return;
   marker_refs = debug_gc_check(f, place);
@@ -83,6 +84,7 @@ static void gc_check_frame(struct pike_frame *f, const char *place)
     debug_gc_check_svalues (f->locals - 1, 1, " in malloced locals of a frame");
     gc_check_frame(f->scope, " as scope frame of a frame");
   }
+#endif
 }
 
 static void gc_recurse_frame(struct pike_frame *f)
