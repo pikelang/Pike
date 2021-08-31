@@ -70,7 +70,6 @@
 
 static void gc_check_frame(struct pike_frame *f, const char *place)
 {
-#if 0
   int marker_refs;
   if (!f) return;
   marker_refs = debug_gc_check(f, place);
@@ -84,28 +83,76 @@ static void gc_check_frame(struct pike_frame *f, const char *place)
     debug_gc_check_svalues (f->locals - 1, 1, " in malloced locals of a frame");
     gc_check_frame(f->scope, " as scope frame of a frame");
   }
+}
+
+static void visit_frame(void *fptr, int action, void *extra)
+{
+  struct pike_frame *f = fptr;
+  visit_enter(fptr, T_PIKE_FRAME, extra);
+  if (f) {
+    switch (action & VISIT_MODE_MASK) {
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unknown visit action %d.\n", action);
+    case VISIT_NORMAL:
+    case VISIT_COMPLEX_ONLY:
+      break;
 #endif
+    case VISIT_COUNT_BYTES:
+      mc_counted_bytes += sizeof(struct pike_frame);
+      /* NB: f->locals is lifting itself, so we do not need to
+       *     account for it here.
+       */
+      break;
+    }
+    /* NB: We could use the gc_recurse_* functions here
+     *     too, but that leads to a bit of overhead when
+     *     the macros are expanded.
+     */
+    if(f->current_object)
+      visit_object_ref(f->current_object, REF_TYPE_NORMAL, extra);
+    if(f->current_program)
+      visit_program_ref(f->current_program, REF_TYPE_NORMAL, extra);
+    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+      visit_svalues(f->locals - 1, 1, REF_TYPE_NORMAL, extra);
+    if (f->scope)
+      visit_ref(f->scope, REF_TYPE_INTERNAL, visit_frame, extra);
+  }
+  visit_leave(fptr, T_PIKE_FRAME, extra);
 }
 
 static void gc_recurse_frame(struct pike_frame *f)
 {
-  /* BROKEN!
-   *
-   * In memory-count mode references from the frame are
-   * counted once per refrence to the frame. This leads
-   * to over counting and is due to there not being a
-   * separate struct mc_marker for the struct pike_frame.
-   */
-#if 0
   if (!f) return;
-  if(f->current_object)
-    gc_recurse_object(f->current_object);
-  if(f->current_program)
-    gc_recurse_program(f->current_program);
-  if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-    gc_recurse_svalues(f->locals - 1, 1);
-  gc_recurse_frame(f->scope);
-#endif
+  /*
+   * There are several states of the gc when this function
+   * is called. The states are differentiated by Pike_in_gc:
+   *
+   * Pike_in_gc        Action
+   * ----------------------------------
+   * GC_PASS_CYCLE     gc_cycle_check_*
+   * GC_PASS_MARK      gc_mark_*
+   * GC_PASS_ZAP_WEAK  gc_mark_*
+   * All others        visit_*
+   *
+   * As struct pike_frame is reference-counted, it must be visited
+   * via visit_ref() (cf the visit_thing_fn doc in gc.h).
+   */
+  switch (Pike_in_gc) {
+  case GC_PASS_CYCLE:
+  case GC_PASS_MARK:
+  case GC_PASS_ZAP_WEAK:
+    if(f->current_object)
+      gc_recurse_object(f->current_object);
+    if(f->current_program)
+      gc_recurse_program(f->current_program);
+    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+      gc_recurse_svalues(f->locals - 1, 1);
+    gc_recurse_frame(f->scope);
+    break;
+  default:
+    visit_ref(f, REF_TYPE_INTERNAL, visit_frame, NULL);
+  }
 }
 
 DECLARATIONS
