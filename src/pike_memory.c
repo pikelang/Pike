@@ -990,8 +990,7 @@ int exit_cleanup_in_progress = 0;
 #ifdef _REENTRANT
 static PIKE_MUTEX_T debug_malloc_mutex;
 
-#ifndef mt_init_recursive
-static void debug_malloc_on_fatal(void)
+static void debug_malloc_atfatal(void)
 {
   /* Release the debug_malloc_mutex if we already hold it
    * so that we don't end up in a dead-lock on attempting
@@ -1000,7 +999,6 @@ static void debug_malloc_on_fatal(void)
   mt_trylock(&debug_malloc_mutex);
   mt_unlock(&debug_malloc_mutex);
 }
-#endif
 #endif
 
 #undef malloc
@@ -2730,8 +2728,8 @@ static void initialize_dmalloc(void)
     mt_init_recursive(&debug_malloc_mutex);
 #else
     mt_init(&debug_malloc_mutex);
-    pike_atfatal(debug_malloc_atfatal);
 #endif
+    pike_atfatal(debug_malloc_atfatal);
 
     th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
 #endif
