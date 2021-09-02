@@ -137,10 +137,24 @@ string low_bump_version(int|void bump_minor)
 
 string git_cmd(string ... args)
 {
-  mapping r = Process.run( ({ "git" }) + args );
-  if( r->exitcode )
-    exit(r->exitcode, "Git command \"git %s\" failed.\n%s", args*" ", r->stderr||"");
-  return trim(r->stdout||"");
+  mapping r;
+  for (int i = 0; i < 10; i++) {
+    if (i) {
+      werror("Git command \"git %s\" failed.\n%s", args*" ", r->stderr||"");
+      werror("\nProbably a remote/network issue. Retrying in 5 seconds...\n");
+      sleep(5);
+    }
+    r = Process.run( ({ "git" }) + args );
+    if( !r->exitcode ) {
+      return trim(r->stdout||"");
+    }
+    if ((< "push", "pull" >)[args[0]] && has_value(r->stderr, "ssh")) {
+      // Retry.
+      continue;
+    }
+    break;
+  }
+  exit(r->exitcode, "Git command \"git %s\" failed.\n%s", args*" ", r->stderr||"");
 }
 
 void git_bump_version()
