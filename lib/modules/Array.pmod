@@ -468,8 +468,13 @@ array(array(array)) compact_diff3 (array a, array b, array old)
 }
 #endif
 
-//! Sort without respect to number formatting (most notably leading
-//! zeroes).
+//! Sort strings containing numbers with respect to their values
+//! rather than according to their formatting (this most notably
+//! causes leading zeroes to be ignored/unnecessary).
+//!
+//! @example
+//!   "foo7" will be sorted before "foo27", which will be before
+//!   "foo100".
 int(-1..1) dwim_sort_func(string a, string b)
 {
   if( a==b ) return 0;
