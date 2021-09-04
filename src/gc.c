@@ -4891,17 +4891,19 @@ static void mc_wq_enqueue (struct mc_marker *m)
 
   else {
     if (mc_wq_used > mc_wq_size) {
-      struct mc_marker **p;
+      void *p;
       mc_wq_size *= 2;
-      p = realloc (mc_work_queue + 1, mc_wq_size * sizeof (mc_work_queue[0]));
+      /* NB: Add 1 to size to compensate for 1-based indexing. */
+      p = realloc (mc_work_queue, (mc_wq_size + 1) * sizeof (mc_work_queue[0]));
       if (!p) {
-	make_error (msg_out_of_mem_2, mc_wq_size * sizeof (mc_work_queue[0]));
+	make_error (msg_out_of_mem_2,
+		    (mc_wq_size + 1) * sizeof (mc_work_queue[0]));
 	free_svalue (&throw_value);
 	move_svalue (&throw_value, --Pike_sp);
 	mc_wq_size /= 2;
 	return;
       }
-      mc_work_queue = p - 1;	/* Compensate for 1-based indexing. */
+      mc_work_queue = p;
     }
     pos = mc_wq_used++;
   }
@@ -5607,14 +5609,15 @@ void f_count_memory (INT32 args)
   }
 
   assert (mc_work_queue == NULL);
-  mc_work_queue = malloc (MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+  /* NB: Add 1 to size to compensate for 1-based indexing. */
+  mc_work_queue = malloc ((MC_WQ_START_SIZE + 1) * sizeof (mc_work_queue[0]));
   if (!mc_work_queue) {
     stop_mc();
     SIMPLE_OUT_OF_MEMORY_ERROR ("Pike.count_memory",
-				MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+				(MC_WQ_START_SIZE + 1) *
+				sizeof (mc_work_queue[0]));
   }
   mc_wq_size = MC_WQ_START_SIZE;
-  mc_work_queue--;		/* Compensate for 1-based indexing. */
   mc_wq_used = 1;
 
   assert (!mc_pass);
@@ -5634,7 +5637,6 @@ void f_count_memory (INT32 args)
 	continue;
 
       else if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
-	mc_work_queue++;		/* Compensate for 1-based indexing. */
 	free(mc_work_queue);
 	mc_work_queue = NULL;
 	stop_mc();
@@ -5647,7 +5649,6 @@ void f_count_memory (INT32 args)
 	if (TYPEOF(*s) == T_FUNCTION) {
 	  struct svalue s2;
 	  if (!(s2.u.program = program_from_function (s))) {
-	    mc_work_queue++;		/* Compensate for 1-based indexing. */
 	    free(mc_work_queue);
 	    mc_work_queue = NULL;
 	    stop_mc();
@@ -5672,7 +5673,6 @@ void f_count_memory (INT32 args)
 	  if (!mc_block_pike_cycle_depth && TYPEOF(*s) == T_OBJECT) {
 	    int cycle_depth = mc_cycle_depth_from_obj (s->u.object);
 	    if (TYPEOF(throw_value) != PIKE_T_FREE) {
-	      mc_work_queue++;		/* Compensate for 1-based indexing. */
 	      free(mc_work_queue);
 	      mc_work_queue = NULL;
 	      stop_mc();
@@ -5802,7 +5802,6 @@ void f_count_memory (INT32 args)
       }
 
       if (TYPEOF(throw_value) != PIKE_T_FREE) {
-	mc_work_queue++;		/* Compensate for 1-based indexing. */
 	free(mc_work_queue);
 	mc_work_queue = NULL;
 	stop_mc();
@@ -6051,7 +6050,6 @@ void f_count_memory (INT32 args)
 #endif
 
   assert (mc_wq_used == 1);
-  mc_work_queue++;		/* Compensate for 1-based indexing. */
   free(mc_work_queue);
   mc_work_queue = NULL;
   stop_mc();
@@ -6168,14 +6166,13 @@ void f_identify_cycle(INT32 args)
   }
 
   assert (mc_work_queue == NULL);
-  mc_work_queue = malloc (MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+  /* NB: Add 1 to size to compensate for 1-based indexing. */
+  mc_work_queue = malloc ((MC_WQ_START_SIZE + 1) * sizeof (mc_work_queue[0]));
   if (!mc_work_queue) {
     stop_mc();
     SIMPLE_OUT_OF_MEMORY_ERROR ("Pike.count_memory",
-				MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+				(MC_WQ_START_SIZE + 1) * sizeof (mc_work_queue[0]));
   }
-  /* NB: 1-based indexing in mc_work_queue. */
-  mc_work_queue--;
   mc_wq_size = MC_WQ_START_SIZE;
   mc_wq_used = 1;
   mc_lookahead = -1;
@@ -6212,7 +6209,6 @@ void f_identify_cycle(INT32 args)
   mc_ref_from = (void *) (ptrdiff_t) -1;
 #endif
 
-  mc_work_queue++;		/* Compensate for 1-based indexing. */
   free(mc_work_queue);
   mc_work_queue = NULL;
 
