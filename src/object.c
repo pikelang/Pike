@@ -2335,7 +2335,9 @@ PMOD_EXPORT void object_set_index(struct object *o,
   {
     push_svalue(index);
     push_svalue(from);
-    apply_low(o, fun + inh->identifier_level, 2);
+    ref_push_object_inherit(o, inherit_number);
+    push_int(0);
+    apply_low(o, fun + inh->identifier_level, 4);
     pop_stack();
   } else {
     object_set_index2(o, inherit_number, index, from);
