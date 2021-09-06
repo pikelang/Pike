@@ -1860,10 +1860,18 @@ PMOD_EXPORT void dmalloc_trace(void *p)
 
 PMOD_EXPORT void dmalloc_register(void *p, int s, LOCATION location)
 {
+  struct memhdr *mh;
   GET_ALLOC_BT (bt);
   mt_lock(&debug_malloc_mutex);
-  low_make_memhdr(p, s, location BT_ARGS (bt));
+  mh = my_find_memhdr(p, 0);
+  if (!mh) {
+    low_make_memhdr(p, s, location BT_ARGS (bt));
+  }
   mt_unlock(&debug_malloc_mutex);
+  if (mh) {
+    Pike_fatal("dmalloc_register(%p, %d, \"%s\"): Already registered\n",
+	       p, s, location);
+  }
 }
 
 PMOD_EXPORT void dmalloc_accept_leak(void *p)
