@@ -690,6 +690,7 @@ OCIError *get_global_error_handle(void)
     }
 
     PIKEFUN mixed cast(string s)
+      flags ID_PROTECTED;
     {
       if(s == literal_string_string) {
 	apply_current(f_Oracle_oracle_LOB_read_fun_num, 0);
