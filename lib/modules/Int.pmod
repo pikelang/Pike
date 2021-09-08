@@ -175,7 +175,8 @@ class NInf {
   constant neg = 1;
 }
 
-protected Inf ninf = NInf();
+//! An object that behaves like negative infinity.
+Inf ninf = NInf();
 
 //! An object that behaves like positive infinity.
 Inf inf = Inf();
