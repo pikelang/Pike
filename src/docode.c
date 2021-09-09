@@ -55,7 +55,7 @@ struct statement_label
   struct statement_label_name *name;
   /* -2 in break_label is used to flag "open" statement_label entries.
    * If an open entry is on top of the stack, it's used instead of a
-   * new one. That's used to associate statement labels to the
+   * new one. This is used to associate statement labels to the
    * following statement. */
   INT32 break_label, continue_label;
   int emit_break_label;
