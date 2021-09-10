@@ -597,7 +597,7 @@ void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
                     }
                     break;
                 } else if (free_block == BA_ONE) {
-                    /* all consecutive blocks are free, so we are dont */
+                    /* all consecutive blocks are free, so we are done. */
                     break;
                 }
 
@@ -623,7 +623,7 @@ void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
                     cb(&it, data);
                 }
 
-                it.cur = (char*)it.end + it.l.block_size;
+                it.cur = (char*)it.cur + it.l.block_size;
             }
 
             /* if the callback throws, this will never happen */
