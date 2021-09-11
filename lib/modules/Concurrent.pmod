@@ -735,20 +735,22 @@ class Future
   {
     Promise p = promise_factory();
     array call_out_handle;
+    function backend_remove_call_out;
 
     call_out_handle = (backend->?call_out || call_out)
       (p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
+    backend_remove_call_out = backend->?remove_call_out || remove_call_out;
 
     on_success(
       lambda(mixed res)
       {
-        (backend->?remove_call_out || remove_call_out)(call_out_handle);
+        backend_remove_call_out(call_out_handle);
         p->try_success(res);
       });
     on_failure(
       lambda(mixed err)
       {
-        (backend->?remove_call_out || remove_call_out)(call_out_handle);
+        backend_remove_call_out(call_out_handle);
         p->try_failure(err);
       });
 
