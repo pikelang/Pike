@@ -703,7 +703,7 @@ class Future
     return then(0, onrejected, @extra);
   }
 
-  private this_program setup_call_out(int|float seconds, void|int tout)
+  private this_program setup_call_out(int|float seconds)
   {
     array call_out_handle;
     Promise p = promise_factory();
@@ -717,20 +717,8 @@ class Future
      */
     on_failure(cancelcout);
     call_out_handle = (backend ? backend->call_out : call_out)
-      (p[tout ? "try_failure" : "try_success"], seconds,
-       tout && ({ "Timeout.\n", backtrace() }));
-    if (tout)
-      on_success(cancelcout);
+      (p->try_success, seconds, 0);
     return p->future();
-  }
-
-  //! Return a @[Future] that will either be fulfilled with the fulfilled
-  //! result of this @[Future], or be failed after @[seconds] have expired.
-  this_program timeout(int|float seconds)
-  {
-    return first_completed(
-     ({ this_program::this, setup_call_out(seconds, 1) })
-    );
   }
 
   //! Return a @[Future] that will be fulfilled with the fulfilled
@@ -740,6 +728,32 @@ class Future
     return results(
      ({ this_program::this, setup_call_out(seconds) })
     )->map(`[], 0);
+  }
+
+  //! Return a @[Future] that will either be fulfilled with the fulfilled
+  //! result of this @[Future], or be failed after @[seconds] have expired.
+  this_program timeout(int|float seconds)
+  {
+    Promise p = promise_factory();
+    array call_out_handle;
+
+    call_out_handle = (backend->?call_out || call_out)
+      (p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
+
+    on_success(
+      lambda(mixed res)
+      {
+        (backend->?remove_call_out || remove_call_out)(call_out_handle);
+        p->try_success(res);
+      });
+    on_failure(
+      lambda(mixed err)
+      {
+        (backend->?remove_call_out || remove_call_out)(call_out_handle);
+        p->try_failure(err);
+      });
+
+    return p->future();
   }
 
   protected string _sprintf(int t)
