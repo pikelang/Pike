@@ -2376,7 +2376,9 @@ void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame)
 {
   debug_malloc_touch(frame);
 
-  if (frame->flags & PIKE_FRAME_SAVE_LOCALS) {
+  if (frame->flags & PIKE_FRAME_MALLOCED_LOCALS) {
+    /* Already done. */
+  } else if (frame->flags & PIKE_FRAME_SAVE_LOCALS) {
     int num_new_locals = 0;
     int num_locals = frame->num_locals;
     int i;
