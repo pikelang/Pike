@@ -350,6 +350,61 @@ test_do([[ add_constant("p13"); ]])
 test_do([[ add_constant("p212"); ]])
 exit_promise(1, ({11, 12, 13, 13, 11, 312, 14, 15}))
 
+dnl - Promise.timeout no backend - true
+init_promise()
+test_do([[ Concurrent.use_backend(0); ]])
+test_do([[ add_constant("future",
+            promise->timeout(0.01)
+             ->thencatch(lambda(mixed err)
+             {
+                if (arrayp(err) && sizeof(err) == 2 && err[0] == "Timeout.\n")
+                    throw(600);
+                throw(err);
+             })); ]])
+init_future()
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ sleep(0.1); ]])
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ promise->success(528); ]])
+exit_promise(-1, 600)
+test_do([[ Concurrent.use_backend(1); ]]);
+
+dnl - Promise.timeout no backend - false w/ success
+init_promise()
+test_do([[ Concurrent.use_backend(0); ]])
+test_do([[ add_constant("future",
+            promise->timeout(9)
+             ->thencatch()
+             {
+                throw(600);
+             }); ]])
+init_future()
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ sleep(0.1); ]])
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ promise->success(528); ]])
+exit_promise(1, 528)
+test_do([[ Concurrent.use_backend(1); ]]);
+
+dnl - Promise.timeout no backend - false w/ failure
+init_promise()
+test_do([[ Concurrent.use_backend(0); ]])
+test_do([[ add_constant("future",
+            promise->timeout(9)
+             ->thencatch(lambda(mixed err)
+             {
+                if (err == 528)
+                    throw(600);
+                throw(err);
+             })); ]])
+init_future()
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ sleep(0.1); ]])
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ promise->failure(528); ]])
+exit_promise(-1, 600)
+test_do([[ Concurrent.use_backend(1); ]]);
+
 dnl - Promise.delay() - false
 init_promise()
 test_do([[ add_constant("p11", Concurrent.Promise()); ]])
