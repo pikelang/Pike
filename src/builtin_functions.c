@@ -3589,7 +3589,7 @@ PMOD_EXPORT void f_time(INT32 args)
  */
 PMOD_EXPORT void f_crypt(INT32 args)
 {
-  char salt[2];
+  char salt[3];
   char *ret, *pwd = NULL, *saltp = NULL;
   char *alphabet =
     "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -3631,6 +3631,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
 
     salt[0] = alphabet[ Pike_sp[-1].u.integer & 0x3f ];
     salt[1] = alphabet[ (Pike_sp[-1].u.integer>>6) & 0x3f ];
+    salt[2] = 0;
     pop_stack();
 
     saltp=salt;
