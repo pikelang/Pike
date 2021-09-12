@@ -3257,7 +3257,7 @@ PMOD_EXPORT void f_time(INT32 args)
  */
 PMOD_EXPORT void f_crypt(INT32 args)
 {
-  char salt[2];
+  char salt[3];
   char *ret, *pwd, *saltp = NULL;
   char *choise =
     "cbhisjKlm4k65p7qrJfLMNQOPxwzyAaBDFgnoWXYCZ0123tvdHueEGISRTUV89./";
@@ -3278,6 +3278,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
     salt[0] = choise[foo % (size_t) strlen(choise)];
     foo=my_rand();
     salt[1] = choise[foo % (size_t) strlen(choise)];
+    salt[2] = 0;
     saltp=salt;
     if (args > 1) {
       pop_n_elems(args-1);
