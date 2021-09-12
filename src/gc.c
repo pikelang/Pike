@@ -4615,10 +4615,12 @@ static unsigned mc_ext_toggle_bias = 0;
 
 #define INIT_CLEARED_EXTERNAL(M) do {					\
     struct mc_marker *_m = (M);						\
+    debug_malloc_touch_named(_m, "INIT_CLEARED_EXTERNAL");		\
     if (mc_ext_toggle_bias) _m->flags |= MC_FLAG_EXT_TOGGLE;		\
   } while (0)
 #define FLAG_EXTERNAL(M) do {						\
     struct mc_marker *_m = (M);						\
+    debug_malloc_touch_named(_m, "FLAG_EXTERNAL");			\
     assert (!IS_EXTERNAL (_m));						\
     _m->flags ^= MC_FLAG_EXT_TOGGLE;					\
   } while (0)
@@ -4744,6 +4746,8 @@ static struct mc_marker mc_indirect = {
       assert (_m->dl_prev == (void *) (ptrdiff_t) -1);			\
       assert (_m->dl_next == (void *) (ptrdiff_t) -1);			\
     );									\
+    debug_malloc_touch_named(_m, "DL_ADD_LAST (_m)");			\
+    debug_malloc_touch_named(_list_prev, "DL_ADD_LAST (_list_prev)");	\
     _m->dl_prev = _list_prev;						\
     _m->dl_next = &LIST;						\
     LIST.dl_prev = _list_prev->dl_next = _m;				\
@@ -4755,6 +4759,9 @@ static struct mc_marker mc_indirect = {
     struct mc_marker *_list_next = _m->dl_next;				\
     assert (_m->dl_prev != (void *) (ptrdiff_t) -1);			\
     assert (_m->dl_next != (void *) (ptrdiff_t) -1);			\
+    debug_malloc_touch_named(_m, "DL_REMOVE (_m)");			\
+    debug_malloc_touch_named(_list_prev, "DL_REMOVE (_list_prev)");	\
+    debug_malloc_touch_named(_list_next, "DL_REMOVE (_list_next)");	\
     _list_prev->dl_next = _list_next;					\
     _list_next->dl_prev = _list_prev;					\
     DO_IF_DEBUG (_m->dl_prev = _m->dl_next = (void *) (ptrdiff_t) -1);	\
@@ -4763,6 +4770,9 @@ static struct mc_marker mc_indirect = {
 #define DL_MOVE(FROM_LIST, TO_LIST) do {				\
     if (FROM_LIST.dl_next != &FROM_LIST) {				\
       struct mc_marker *to_list_last = TO_LIST.dl_prev;			\
+      debug_malloc_touch_named(&FROM_LIST, "DL_MOVE (FROM_LIST");	\
+      debug_malloc_touch_named(&TO_LIST, "DL_MOVE (TO_LIST)");		\
+      debug_malloc_touch_named(to_list_last, "DL_MOVE (to_list_last)");	\
       TO_LIST.dl_prev = FROM_LIST.dl_prev;				\
       to_list_last->dl_next = FROM_LIST.dl_next;			\
       FROM_LIST.dl_prev->dl_next = &TO_LIST;				\
@@ -4796,6 +4806,7 @@ static void MC_DEBUG_MSG (struct mc_marker *m, const char *msg)
     fprintf (stderr, "} %s\n", msg);
   }
 }
+#define MC_DEBUG_MSG(m, msg) MC_DEBUG_MSG(debug_malloc_pass_named(m, TOSTR(msg)), msg)
 #else
 #define MC_DEBUG_MSG(m, msg) do {} while (0)
 #endif
@@ -4842,6 +4853,7 @@ static struct mc_marker *mc_wq_dequeue()
     struct mc_marker *n, *last = mc_work_queue[mc_wq_used];
     int last_la_count = last->la_count;
     unsigned pos = 1;
+    debug_malloc_touch_named(last, "last");
 
     while (pos <= mc_wq_used / 2) {
       unsigned child_pos = 2 * pos;
@@ -4853,11 +4865,14 @@ static struct mc_marker *mc_wq_dequeue()
       if (mc_work_queue[child_pos]->la_count <= last_la_count)
 	break;
 
+      debug_malloc_touch_named(mc_work_queue[pos], "mc_work_queue[pos]");
       n = mc_work_queue[pos] = mc_work_queue[child_pos];
       n->queuepos = pos;
+      debug_malloc_touch_named(n, "n");
       pos = child_pos;
     }
 
+    debug_malloc_touch_named(mc_work_queue[pos], "mc_work_queue[pos] = last");
     mc_work_queue[pos] = last;
     last->queuepos = pos;
   }
@@ -4909,10 +4924,14 @@ static void mc_wq_enqueue (struct mc_marker *m)
   }
 
   while (pos > 1 && (n = mc_work_queue[pos / 2])->la_count < m_la_count) {
+    debug_malloc_touch_named(n, "n");
+    debug_malloc_touch_named(mc_work_queue[pos], "mc_work_queue[pos]");
     mc_work_queue[pos] = n;
     n->queuepos = pos;
     pos /= 2;
   }
+  debug_malloc_touch_named(mc_work_queue[pos], "mc_work_queue[pos] = m");
+  debug_malloc_touch_named(m, "m");
   mc_work_queue[pos] = m;
   m->queuepos = pos;
 
@@ -4986,12 +5005,14 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
   }
 
   ref_to = find_mc_marker (thing);
+  debug_malloc_touch_named(ref_to, "ref_to");
   ref_from_flags = mc_ref_from->flags;
 
   /* Create mc_marker if necessary. */
 
   if (!ref_to) {
     ref_to = my_make_mc_marker (thing, visit_fn, extra);
+    debug_malloc_touch(ref_to);
     MC_DEBUG_MSG (ref_to, "visiting new thing");
     assert (!(ref_from_flags & (MC_FLAG_INT_VISITED | MC_FLAG_LA_VISITED)));
     ref_to_la_count = old_la_count = 0;
@@ -5302,6 +5323,7 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
 #ifdef PIKE_DEBUG
     if (!m) Pike_fatal ("mc_marker not found for %p.\n", thing);
 #endif
+    MC_DEBUG_MSG(m, "mc_count_bytes (LA)");
     if ((m->flags & (MC_FLAG_INTERNAL|MC_FLAG_INT_VISITED)) == MC_FLAG_INTERNAL)
       return 1;
   }
@@ -5669,6 +5691,7 @@ void f_count_memory (INT32 args)
 	else {
 	  struct mc_marker *m =
 	    my_make_mc_marker (s->u.ptr, visit_fn_from_type[TYPEOF(*s)], NULL);
+	  debug_malloc_touch(m);
 	  m->flags |= MC_FLAG_INTERNAL;
 	  if (!mc_block_pike_cycle_depth && TYPEOF(*s) == T_OBJECT) {
 	    int cycle_depth = mc_cycle_depth_from_obj (s->u.object);
@@ -6084,6 +6107,8 @@ void identify_loop_visit_ref(void *dst, int UNUSED(ref_type),
   ref_to = my_make_mc_marker(dst, visit_dst, extra);
   ref_to->la_count = 0; /* initialize just so the queue doesn't order on
                            uninitialized memory (... valgrind) */
+
+  MC_DEBUG_MSG(ref_to, "identify_loop_visit_ref()");
 
   if (type != PIKE_T_UNKNOWN) {
     /* NB: low_mapping_insert() for object indices may throw errors
