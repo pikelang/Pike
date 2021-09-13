@@ -4228,8 +4228,9 @@ void f_create_process(INT32 args)
 		/* NOTE: OpenBSD sets errno to EBADF if fd is > than
 		 *       any open fd.
 		 */
-	      } while (UNLIKELY(errno && (errno != EBADF)));
-	      break;
+	      } while (UNLIKELY(errno && (errno != EBADF && errno != ENOSYS)));
+	      if (errno != ENOSYS)
+		break;
 	    }
 #endif
 #ifdef HAVE_BROKEN_F_SETFD
