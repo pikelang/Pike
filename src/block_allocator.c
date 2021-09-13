@@ -328,8 +328,8 @@ static void print_allocator(const struct block_allocator * a) {
 
     for (i = a->size-1, l = ba_get_layout(a, i); i >= 0; ba_half_layout(&l), i--) {
 	struct ba_page * p = a->pages[i];
-	fprintf(stderr, "page: %p used: %u/%u last: %p p+offset: %p\n", a->pages[i],
-		p->h.used, l.blocks,
+	fprintf(stderr, "page: %p used: %u/%u*%u bytes last: %p p+offset: %p\n", a->pages[i],
+		p->h.used, l.blocks, l.block_size,
 		BA_BLOCKN(l, p, l.blocks-1), BA_LASTBLOCK(l, p));
     }
 }
