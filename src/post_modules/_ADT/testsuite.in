@@ -1226,7 +1226,7 @@ test_any(_ADT.CircularList.CircularListIterator i =
 test_any(_ADT.CircularList.CircularListIterator i =
 	 _ADT.CircularList(({1,2,3,4}))->first();
 	 i = i + 10;
-	 return zero_type(iterator_value(i), 1)
+	 return zero_type(iterator_value(i)), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
