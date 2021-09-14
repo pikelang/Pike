@@ -1940,9 +1940,12 @@ PMOD_EXPORT int dmalloc_unregister(void *p, int already_gone)
   return ret;
 }
 
-static void dmalloc_ba_walk_unregister_cb(struct ba_iterator *it, void *ignored)
+static void dmalloc_ba_walk_unregister_cb(struct ba_iterator *it,
+					  void *UNUSED(ignored))
 {
-  low_dmalloc_unregister(it->cur, 0);
+  do {
+    low_dmalloc_unregister(ba_it_val(it), 0);
+  } while (ba_it_step(it));
 }
 
 PMOD_EXPORT void dmalloc_unregister_all(struct block_allocator *a)
