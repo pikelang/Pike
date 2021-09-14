@@ -80,7 +80,7 @@ class Rule
   int nonterminal;
 
   //! The actual rule
-  array(string|int) symbols;
+  array(string|int) symbols = ({ });
 
   //! Action to do when reducing this rule.
   //! function - call this function.
@@ -89,7 +89,7 @@ class Rule
   //! the elements of the rule. The return value of the function will be
   //! the value of this non-terminal. The default rule is to return the first
   //! argument.
-  function|string action;
+  function|string|zero action;
 
   /* Variables used when compiling */
 
@@ -109,7 +109,7 @@ class Rule
   int number = 0;
 
   //! Priority and associativity of this rule.
-  Priority pri;
+  Priority|zero pri;
 
   //! Create a BNF rule.
   //!
@@ -241,7 +241,7 @@ class Parser
   protected mapping(int : multiset(Rule)) used_by = ([]);
 
   //! The initial LR0 state.
-  Kernel start_state;
+  Kernel|zero start_state;
 
   //! Error code
   int lr_error=0;
@@ -275,16 +275,16 @@ class Parser
   protected class Item
   {
     //! The rule
-    Rule r;
+    Rule|zero r;
 
     //! How long into the rule the parsing has come.
     int offset;
 
     //! The state we will get if we shift according to this rule
-    Kernel next_state;
+    Kernel|zero next_state;
 
     //! Item representing this one (used for shifts).
-    Item master_item;
+    Item|zero master_item;
 
     //! Look-ahead set for this item.
     multiset(string) direct_lookahead = (<>);
@@ -386,7 +386,7 @@ class Parser
     {
       closure_set[nonterminal] = 1;
       if (grammar[nonterminal]) {
-	foreach (grammar[nonterminal], Rule r) {
+	foreach ([array(Rule)]grammar[nonterminal], Rule r) {
 	  if (!rules[r]) {
 
 	    Item new_item = Item();
@@ -438,7 +438,7 @@ class Parser
     //!   Symbol to make goto on.
     Kernel do_goto(int|string symbol)
     {
-      multiset(Item) items;
+      multiset(Item)|zero items;
 
       report(NOTICE, "do_goto",
 	     "Performing GOTO on <%s>",
@@ -446,23 +446,23 @@ class Parser
 
       items = symbol_items[symbol];
       if (items) {
-	array(int) item_ids = map(sort(indices(items)->item_id), `+, 1);
+	array(int) item_ids = [array(int)]map(sort(indices([multiset]items)->item_id), `+, 1);
 	string kernel_hash = sprintf("%@4c", item_ids);
 
-	Kernel new_state = known_states[kernel_hash];
+	int(0)|Kernel new_state = known_states[kernel_hash];
 
 	if (!new_state) {
 	  known_states[kernel_hash] = new_state = Kernel();
 
-	  foreach (indices(items), Item i) {
+	  foreach ([array(Item)]indices(items), Item i) {
 	    int|string lookahead;
 
 	    Item new_item = Item();
-	    Rule r;
+	    Rule r = [object]i->r;
 	    int offset = i->offset;
 
 	    new_item->offset = ++offset;
-	    new_item->r = r = i->r;
+	    new_item->r = r;
 	    new_item->item_id = r->number + offset;
 
 	    new_state->add_item(new_item);
@@ -488,7 +488,7 @@ class Parser
 	/* !DEBUG */
 
 	if (items) {
-	  foreach (indices(items), Item i) {
+	  foreach ([array(Item)]indices(items), Item i) {
 	    i->next_state = new_state;
 	  }
 	}
@@ -602,9 +602,9 @@ class Parser
   {
     array(string) res = ({});
 
-    foreach (indices(grammar), int nonterminal) {
+    foreach (grammar; int nonterminal; array(Rule) rules) {
       res += ({ symbol_to_string(nonterminal) });
-      foreach (grammar[nonterminal], Rule r) {
+      foreach (rules, Rule r) {
 	res += ({ "\t: " });
 	if (sizeof(r->symbols)) {
 	  foreach (r->symbols, int|string symbol) {
@@ -646,7 +646,7 @@ class Parser
   //!   Priority; higher = prefer this terminal.
   void set_priority(string terminal, int pri_val)
   {
-    Priority pri;
+    int(0)|Priority pri;
 
     if (pri = operator_priority[terminal]) {
       pri->value = pri_val;
@@ -664,7 +664,7 @@ class Parser
   //!   zero - no associativity.
   void set_associativity(string terminal, int assoc)
   {
-    Priority pri;
+    int(0)|Priority pri;
 
     if (pri = operator_priority[terminal]) {
       pri->assoc = assoc;
@@ -750,7 +750,7 @@ class Parser
 		 symbol_to_string(symbol));
 	  nullable[symbol] = 1;
 	  if (used_by[symbol]) {
-	    foreach (indices(used_by[symbol]), Rule r2) {
+	    foreach ([array(Rule)]indices(used_by[symbol]), Rule r2) {
 	      if (!(--r2->num_nonnullables)) {
 		new_nullables->push(r2->nonterminal);
 	      }
@@ -841,7 +841,7 @@ class Parser
     string kernel_hash = sprintf("%@4c", first_state_item_ids);
     known_states[kernel_hash] = state;
 
-    foreach (grammar[0], Rule r) {
+    foreach ([array]grammar[0], Rule r) {
       if (!state->rules[r]) {
 	Item i = Item();
 
@@ -864,9 +864,9 @@ class Parser
 
   //! Contains all states used.
   //! In the queue section are the states that remain to be compiled.
-  StateQueue s_q;
+  StateQueue|zero s_q;
 
-  protected ADT.Stack item_stack;
+  protected ADT.Stack|zero item_stack;
 
   protected void traverse_items(Item i,
 			     function(int:void) conflict_func)
@@ -979,7 +979,7 @@ class Parser
   protected int go_through(Kernel state, int item_id,
 			Item current_item)
   {
-    Item i, master;
+    int(0)|Item i, master;
 
     i = state->item_id_to_item[item_id];
 
@@ -1035,8 +1035,8 @@ class Parser
       int reduce_count = 0;
       int shift_count = 0;
       int only_operators = 1;
-      Priority shift_pri, reduce_pri, pri;
-      Rule min_rule = 0;
+      int(0)|Priority shift_pri, reduce_pri, pri;
+      int(0)|Rule min_rule = 0;
 
       /* Analyse the items */
       /* This loses if there are reduce-reduce conflicts,
@@ -1087,7 +1087,7 @@ class Parser
 	  if (i->offset == sizeof(i->r->symbols)) {
 	    /* Reduce */
 	    if (i->direct_lookahead[symbol]) {
-	      Priority new_pri;
+	      int(0)|Priority new_pri;
 	      if ((new_pri = i->r->pri)->value < pri->value) {
 		report(NOTICE, "repair",
 		       "Ignoring reduction of item\n%s\n"
@@ -1431,13 +1431,13 @@ class Parser
 	    }
 
 	    /* Find items which can reduce to the nonterminal from above */
-	    foreach (lookup[symbol], Item i) {
+	    foreach ([array(Item)]lookup[symbol], Item i) {
 	      if (sizeof(i->r->symbols)) {
 		if (go_through(i->next_state, i->item_id + 1, transition)) {
 		  /* Nullable */
 		  Item master = i;
 		  if (i->master_item) {
-		    master = i->master_item;
+		    master = [object]i->master_item;
 		  }
 		  /* Is this a nonterminal transition? */
 		  if ((master->offset != sizeof(master->r->symbols)) &&
@@ -1575,7 +1575,7 @@ class Parser
   {
     ADT.Stack value_stack = ADT.Stack(4096);
     ADT.Stack state_stack = ADT.Stack(4096);
-    Kernel state = start_state;
+    Kernel state = [object]start_state;
 
     string input;
     mixed value;
@@ -1612,7 +1612,7 @@ class Parser
 	  do {
 	    if (r->action) {
 	      /* REDUCE */
-	      string|function func = 0;
+	      string|function|int(0) func = 0;
 
 	      if (stringp(func = r->action)) {
 		if (action_object) {
