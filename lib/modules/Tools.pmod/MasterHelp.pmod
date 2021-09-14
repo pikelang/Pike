@@ -53,7 +53,7 @@ Driver options:
  -W --no-warnings     : Disable warnings
  --picky-cpp          : Enable usually supressed cpp warnings and errors.
  --autoreload         : Automatically reload changed modules.
- --no-preload         : Always compile all modules on start.
+ --no-precompile      : Always compile all modules on start.
  --compiler-trace     : Turn on tracing of the Pike compiler.
  --assembler-debug=#  : Set peephole optimizer debug level.
  --optimizer-debug=#  : Set global optimizer debug level.
