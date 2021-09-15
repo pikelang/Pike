@@ -2887,11 +2887,11 @@ static int lower_or_pike_types(struct pike_type *t1,
 	  }
 	}
 
-	if ((min1 > max2) && (min1 > max2 + 1)) {
+	if ((max2 < MAX_INT32) && (min1 > max2 + 1)) {
 	  /* No overlap. */
 	  push_finished_type(t);
 #ifdef PIKE_DEBUG
-	} else if ((min2 > max1) && (min2 > max1 + 1)) {
+	} else if ((max1 < MAX_INT32) && (min2 > max1 + 1)) {
 	  /* No overlap and wrong order! */
 	  Pike_fatal("Bad integer ordering in lower_or_pike_types().\n");
 #endif
