@@ -592,11 +592,26 @@ int send_streaming_data (string(8bit) data)
   return size;
 }
 
-protected int handle_alert(string s)
+//! Handle an alert received from the peer.
+//!
+//! @param level
+//!   Alert level; either @[ALERT_warning] or @[ALERT_fatal].
+//!
+//! @param description
+//!   Alert description code; one of
+//!   @expr{indices(SSL.Constants.ALERT_descriptions)@}.
+//!
+//! @returns
+//! @int
+//!   @elem value -1
+//!     A Fatal error occurred and processing should stop.
+//!   @elem value 0
+//!     Processing can continue.
+//!   @elem value 1
+//!     Connection should close.
+//! @endint
+int(-1..1) handle_alert(int level, int description)
 {
-  // sizeof(s)==2, checked at caller.
-  int level = s[0];
-  int description = s[1];
   if (! (ALERT_levels[level] && ALERT_descriptions[description]))
   {
     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
@@ -853,7 +868,7 @@ string(8bit)|int got_data(string(8bit) data)
 	 for (i = 0;
 	      !err && ((sizeof(alert_buffer) - i) >= 2);
 	      i+= 2)
-	   err = handle_alert(alert_buffer[i..i+1]);
+	   err = handle_alert(alert_buffer[i], alert_buffer[i+1]);
 
 	 alert_buffer = alert_buffer[i..];
 	 if (err)
