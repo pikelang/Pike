@@ -1989,9 +1989,17 @@ protected int direct_write()
       return 0;
     }
 
-    if (SSL_INTERNAL_WRITING || SSL_INTERNAL_READING)
+    if (SSL_INTERNAL_WRITING || SSL_INTERNAL_READING) {
       RUN_MAYBE_BLOCKING (SSL_INTERNAL_WRITING || SSL_INTERNAL_READING,
 			  nonblocking_mode);
+      if (!conn || (conn->state & CONNECTION_peer_closed)) {
+	SSL3_DEBUG_MSG ("direct_write: "
+			"Connection aborted - simulating System.EPIPE\n");
+	cleanup_on_error();
+	local_errno = System.EPIPE;
+	return 0;
+      }
+    }
   }
 
   SSL3_DEBUG_MORE_MSG ("direct_write: Ok\n");
