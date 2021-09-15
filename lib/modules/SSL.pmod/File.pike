@@ -74,6 +74,11 @@ protected Stdio.File stream;
 protected int(-1..65535) linger_time = -1;
 // The linger behaviour set by linger().
 
+protected int(0..0)|float timeout = 0;
+// The timeout in seconds for blocking operations.
+// This value is passed unmodified to local_backend(), and the
+// integer value 0 thus means infinite timeout.
+
 protected .Context context;
 // The context to use.
 
@@ -284,10 +289,11 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 		     !!stream->query_write_callback());
       return local_backend(0.0);
     } else {
-      SSL3_DEBUG_MSG("Running local backend [r:%O w:%O], infinite timeout\n",
+      SSL3_DEBUG_MSG("Running local backend [r:%O w:%O], %s timeout\n",
 		     !!stream->query_read_callback(),
-		     !!stream->query_write_callback());
-      return local_backend(0);
+		     !!stream->query_write_callback(),
+		     timeout?(timeout + " seconds"):"infinite");
+      return local_backend(timeout);
     }
   }
 }
@@ -305,18 +311,29 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 									\
       action = backend_once(NONWAITING_MODE);				\
 									\
-      if (!conn || (NONWAITING_MODE && !action)) {			\
-	SSL3_DEBUG_MSG ("Nonwaiting local backend ended - nothing to do\n"); \
+      if (!conn) {							\
+	SSL3_DEBUG_MSG ("Connection has gone away.\n");			\
 	break;								\
       }									\
 									\
-      if (!action && (conn->state & CONNECTION_local_closing)) {	\
-	SSL3_DEBUG_MSG ("Did not get a remote close - "			\
-			"signalling delayed error from writing close message\n"); \
-	cleanup_on_error();						\
-	close_errno = write_errno = System.EPIPE;			\
-	if (close_state != CLEAN_CLOSE)					\
-	  close_state = ABRUPT_CLOSE;					\
+      if (!action) {							\
+	if (NONWAITING_MODE) {						\
+	  SSL3_DEBUG_MSG ("Nonwaiting local backend ended - nothing to do.\n"); \
+	  break;							\
+	}								\
+									\
+	if (conn->state & CONNECTION_local_closing) {			\
+	  SSL3_DEBUG_MSG ("Did not get a remote close - "		\
+			  "signalling delayed error from writing close message\n"); \
+	  cleanup_on_error();						\
+	  close_errno = write_errno = System.EPIPE;			\
+	  if (close_state != CLEAN_CLOSE)				\
+	    close_state = ABRUPT_CLOSE;					\
+	} else {							\
+	  SSL3_DEBUG_MSG ("Timeout waiting on peer - simulating peer fatal.\n"); \
+	  conn->handle_alert(ALERT_fatal, ALERT_internal_error);	\
+	  break;							\
+	}								\
       }									\
 									\
       if (!stream) {							\
@@ -600,6 +617,31 @@ bool set_nodelay(bool|void state)
 {
   function f = stream && stream->set_nodelay;
   return f && f(state);
+}
+
+//! Set timeout for blocking operations.
+//!
+//! @param seconds
+//!   Time in seconds allowed for blocking operations
+//!   before triggering a timeout. Set to @expr{0@}
+//!   (zero) to disable.
+//!
+//! By default there is no timeout.
+//!
+//! @seealso
+//!   @[query_timeout()]
+void set_timeout(int(0..0)|float seconds)
+{
+  timeout = seconds;
+}
+
+//! Get the timeout for blocking operations.
+//!
+//! @seealso
+//!   @[set_timeout()]
+int(0..0)|float query_timeout()
+{
+  return timeout;
 }
 
 int close (void|string how, void|int clean_close, void|int dont_throw)
