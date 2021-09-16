@@ -2421,6 +2421,11 @@ void simple_describe_type(struct pike_type *s)
 		s = s->cdr;
 		continue;
 	      }
+	      if (char_type->type == T_MIXED) {
+		fprintf(stderr, "mixed | ");
+		s = s->cdr;
+		continue;
+	      }
 	      if ((char_type->type >= '0') && (char_type->type <= '9')) {
 		fprintf(stderr, "$%c | ", char_type->type);
 		s = s->cdr;
@@ -2603,6 +2608,7 @@ void simple_describe_type(struct pike_type *s)
 	if (s->type & 0x8000) {
 	  fprintf(stderr, ",");
 	  simple_describe_type(s->cdr);
+	  fprintf(stderr, ")");
 	} else {
 	  switch(s->type) {
 	  case PIKE_T_FIND_LFUN:
