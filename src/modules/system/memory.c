@@ -843,56 +843,34 @@ static void memory_index(INT32 args)
 }
 
 /*! @decl int `[]=(int pos,int char)
- *! @decl string `[]=(int pos1,int pos2,string str)
  */
 static void memory_index_write(INT32 args)
 {
+   INT_TYPE pos,ch;
+   size_t rpos = 0;
    MEMORY_VALID(THIS);
 
    if (!(THIS->flags&MEM_WRITE))
       Pike_error("Can't write in this memory.\n");
 
-   if (args==2)
-   {
-      INT_TYPE pos,ch;
-      size_t rpos = 0;
-      get_all_args("`[]=",args,"%i%i",&pos,&ch);
-      if (pos<0)
-         if ((off_t)-pos>=(off_t)THIS->size)
-            Pike_error("Index is out of range.\n");
-	 else
-            rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
+   get_all_args("`[]=",args,"%i%i",&pos,&ch);
+   if (pos<0)
+      if ((off_t)-pos>=(off_t)THIS->size)
+         Pike_error("Index is out of range.\n");
       else
-      {
-	 rpos=(size_t)pos;
-
-	 if (rpos>THIS->size)
-            Pike_error("Index is out of range.\n");
-      }
-      if (ch<0 || ch>255)
-         Pike_error("Can only write bytes (0..255).\n");
-
-      push_int( (((unsigned char*)(THIS->p)))[rpos] = ch );
-   }
+         rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
    else
    {
-     INT_TYPE pos1, pos2;
-     struct pike_string *ps;
+      rpos=(size_t)pos;
 
-     get_all_args("`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
-
-     if (pos1 < 0) pos1 = 0;
-     if (pos2 < 0) pos2 = 0;
-
-     if ((pos2<pos1) || (ps->len != pos2-pos1+1))
-       Pike_error("Source and destination "
-                  "not equally long (%ld v/s %ld; can't resize memory).\n",
-                  (long)ps->len, (long)pos2-(long)pos1);
-     else
-       memcpy(THIS->p+pos1, ps->str, ps->len);
-
-     ref_push_string(ps);
+      if (rpos>THIS->size)
+         Pike_error("Index is out of range.\n");
    }
+   if (ch<0 || ch>255)
+      Pike_error("Can only write bytes (0..255).\n");
+
+   push_int(((unsigned char*)(THIS->p))[rpos]);
+   (((unsigned char*)(THIS->p)))[rpos] = ch;
    stack_pop_n_elems_keep_top(args);
 }
 
@@ -954,8 +932,7 @@ void init_system_memory(void)
 		    tFunc(tInt tInt,tStr)), ID_PROTECTED);
 
    ADD_FUNCTION("`[]=",memory_index_write,
-		tOr(tFunc(tInt tInt,tInt),
-		    tFunc(tInt tInt tStr,tStr)), ID_PROTECTED);
+		tOr(tFunc(tInt tInt,tInt)), ID_PROTECTED);
 
    ADD_FUNCTION("pread",memory_pread,tFunc(tInt tInt,tStr8),0);
    ADD_FUNCTION("pread16",memory_pread16,tFunc(tInt tInt,tStr16),0);
