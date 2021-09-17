@@ -932,7 +932,7 @@ void init_system_memory(void)
 		    tFunc(tInt tInt,tStr)), ID_PROTECTED);
 
    ADD_FUNCTION("`[]=",memory_index_write,
-		tOr(tFunc(tInt tInt,tInt)), ID_PROTECTED);
+		tFunc(tInt tInt,tInt), ID_PROTECTED);
 
    ADD_FUNCTION("pread",memory_pread,tFunc(tInt tInt,tStr8),0);
    ADD_FUNCTION("pread16",memory_pread16,tFunc(tInt tInt,tStr16),0);
