@@ -850,11 +850,13 @@ gdb_verify: testsuites master-stamp
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass
 	@echo >>.gdbinit handle SIGLWP nostop noprint pass
+	@echo >>.gdbinit handle SIGPIPE nostop noprint pass
 	@if kill -l | grep SIGRTMIN >/dev/null ; then \
 	  echo >>.gdbinit handle SIG32 nostop noprint pass ;\
 	else :; fi
 	@echo >>.gdbinit break debug_fatal
 	@echo >>.gdbinit break pike_gdb_breakpoint
+	@echo >>.gdbinit break abort
 	@if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK) -v" ; else \
 	  args="$(TESTARGS)" ; fi;  \
 	echo >>.gdbinit set args \
@@ -868,11 +870,13 @@ gdb_hilfe: master.pike
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass
 	@echo >>.gdbinit handle SIGLWP nostop noprint pass
+	@echo >>.gdbinit handle SIGPIPE nostop noprint pass
 	@if kill -l | grep SIGRTMIN >/dev/null ; then \
 	  echo >>.gdbinit handle SIG32 nostop noprint pass ;\
 	else :; fi
 	@echo >>.gdbinit break debug_fatal
 	@echo >>.gdbinit break pike_gdb_breakpoint
+	@echo >>.gdbinit break abort
 	@echo >>.gdbinit set args -m$(TMP_BUILDDIR)/master.pike $$ARGS
 	$(GDB) $(TMP_BUILDDIR)/pike
 	@rm .gdbinit
