@@ -305,15 +305,17 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
   run_local_backend: {							\
       CHECK_CB_MODE (THIS_THREAD());					\
 									\
+      int tloop = 0;							\
       while (1) {							\
 	float|int(0..0) action;						\
+	int nwmode = NONWAITING_MODE;					\
 									\
 	if (conn->state & CONNECTION_peer_fatal) {			\
 	  SSL3_DEBUG_MSG ("Backend ended efter peer fatal.\n");		\
 	  break;							\
 	}								\
 									\
-	action = backend_once(NONWAITING_MODE);				\
+	action = backend_once(nwmode);					\
 									\
 	if (!conn) {							\
 	  SSL3_DEBUG_MSG ("Connection has gone away.\n");		\
@@ -321,7 +323,11 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 	}								\
 									\
 	if (!action) {							\
-	  if (NONWAITING_MODE) {					\
+	  /* NB: backend_once() may return spurious zeroes		\
+	   *     when multiple threads use the backend			\
+	   *     concurrently.						\
+	   */								\
+	  if (nwmode) {							\
 	    SSL3_DEBUG_MSG ("Nonwaiting local backend ended - nothing to do\n"); \
 	    break;							\
 	  }								\
@@ -333,7 +339,7 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 	    close_errno = write_errno = System.EPIPE;			\
 	    if (close_state != CLEAN_CLOSE)				\
 	      close_state = ABRUPT_CLOSE;				\
-	  } else {							\
+	  } else if (timeout && tloop++) {				\
 	    SSL3_DEBUG_MSG ("Timeout waiting on peer - simulating peer fatal.\n"); \
 	    conn->handle_alert(ALERT_fatal, ALERT_internal_error);	\
 	    break;							\
@@ -2026,7 +2032,7 @@ protected int direct_write()
     if (SSL_INTERNAL_WRITING || SSL_INTERNAL_READING) {
       RUN_MAYBE_BLOCKING (SSL_INTERNAL_WRITING || SSL_INTERNAL_READING,
 			  nonblocking_mode);
-      if (!conn || (conn->state & CONNECTION_peer_closed)) {
+      if (!conn || (conn->state & CONNECTION_peer_fatal)) {
 	SSL3_DEBUG_MSG ("direct_write: "
 			"Connection aborted - simulating System.EPIPE\n");
 	cleanup_on_error();
