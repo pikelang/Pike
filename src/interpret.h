@@ -844,7 +844,7 @@ static inline void POP_PIKE_FRAME(void) {
   struct identifier *function;
   W_PROFILING_DEBUG("%p}: Pop got %" PRINT_CPU_TIME
                     " (%" PRINT_CPU_TIME ")"
-                    " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")n",
+                    " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")\n",
                     Pike_interpreter.thread_state, time_passed,
                     frame->start_time,
                     Pike_interpreter.accounted_time,
@@ -856,7 +856,7 @@ static inline void POP_PIKE_FRAME(void) {
                " now: %" PRINT_CPU_TIME
                " unlocked_time: %" PRINT_CPU_TIME
                " start_time: %" PRINT_CPU_TIME
-               "n", time_passed, get_cpu_time(),
+               "\n", time_passed, get_cpu_time(),
                Pike_interpreter.unlocked_time,
                frame->start_time);
   }
@@ -864,11 +864,10 @@ static inline void POP_PIKE_FRAME(void) {
   time_in_children = Pike_interpreter.accounted_time - frame->children_base;
 # ifdef PIKE_DEBUG
   if (time_in_children < 0) {
-    Pike_fatal("Negative time_in_children: %"
-               PRINT_CPU_TIME
+    Pike_fatal("Negative time_in_children: %" PRINT_CPU_TIME
                " accounted_time: %" PRINT_CPU_TIME
                " children_base: %" PRINT_CPU_TIME
-               "n", time_in_children,
+               "\n", time_in_children,
                Pike_interpreter.accounted_time,
                frame->children_base);
   }
@@ -879,7 +878,7 @@ static inline void POP_PIKE_FRAME(void) {
     Pike_fatal("Negative self_time: %" PRINT_CPU_TIME
                " time_passed: %" PRINT_CPU_TIME
                " time_in_children: %" PRINT_CPU_TIME
-               "n", self_time, time_passed,
+               "\n", self_time, time_passed,
                time_in_children);
   }
 # endif /* PIKE_DEBUG */
