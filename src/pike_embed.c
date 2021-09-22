@@ -426,6 +426,14 @@ void pike_do_exit(int num)
    * (from eg an atexit() function) can be easily identified.
    */
   struct pike_frame *new_frame = alloc_pike_frame();
+#ifdef PROFILING
+  new_frame->children_base = Pike_interpreter.accounted_time;
+  new_frame->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
+  W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME
+		    " %" PRINT_CPU_TIME "\n",
+		    Pike_interpreter.thread_state, new_frame->start_time,
+		    new_frame->children_base);
+#endif
   new_frame->next = Pike_fp;
   new_frame->pc = (PIKE_OPCODE_T *)pike_do_exit;
   Pike_fp = new_frame;

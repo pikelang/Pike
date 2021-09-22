@@ -2432,6 +2432,10 @@ static void low_enter_compiler(struct object *ce, int inherit)
   new_frame->children_base = Pike_interpreter.accounted_time;
   new_frame->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
   new_frame->ident = PC_COMPILE_FUN_NUM;	/* Fake call of compile(). */
+  W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME
+		    " %" PRINT_CPU_TIME "\n",
+		    Pike_interpreter.thread_state, new_frame->start_time,
+		    new_frame->children_base);
 #endif /* PROFILING */
   new_frame->next = Pike_fp;
   new_frame->current_object = ce;

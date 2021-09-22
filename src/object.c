@@ -193,6 +193,16 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 
 #define LOW_PUSH_FRAME2(O, P)			\
   pike_frame=alloc_pike_frame();		\
+  DO_IF_PROFILING(pike_frame->children_base =	\
+	  Pike_interpreter.accounted_time);	\
+  DO_IF_PROFILING(pike_frame->start_time =	\
+	  get_cpu_time() -			\
+	  Pike_interpreter.unlocked_time);	\
+  W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME	\
+		    " %" PRINT_CPU_TIME "\n",	\
+		    Pike_interpreter.thread_state,	\
+		    pike_frame->start_time,	\
+		    pike_frame->children_base);	\
   pike_frame->next=Pike_fp;			\
   pike_frame->current_object=O;			\
   pike_frame->current_program=P;		\
