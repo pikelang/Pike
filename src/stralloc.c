@@ -541,6 +541,7 @@ static void free_string_content(struct pike_string * s)
 static void free_unlinked_pike_string(struct pike_string * s)
 {
   free_string_content(s);
+  dmalloc_unregister(s, 0);
   switch(s->struct_type)
   {
    case STRING_STRUCT_STRING:
@@ -669,6 +670,7 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum 
 #ifdef PIKE_DEBUG
   gc_init_marker(t);
 #endif
+  dmalloc_register(t, sizeof(struct pike_string), DMALLOC_LOCATION());
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   t->alloc_type = STRING_ALLOC_STATIC;
   t->struct_type = STRING_STRUCT_STRING;
@@ -701,6 +703,7 @@ static struct pike_string * make_static_string(const char * str, size_t len,
     Pike_fatal("Static string \"%.*s\" is not NUL-terminated!\n", len, str);
   }
 #endif
+  dmalloc_register(t, sizeof(struct pike_string), DMALLOC_LOCATION());
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   t->size_shift = shift;
   t->alloc_type = STRING_ALLOC_STATIC; 
@@ -759,6 +762,7 @@ PMOD_EXPORT struct pike_string * make_shared_malloc_string(char *str, size_t len
 #ifdef PIKE_DEBUG
     gc_init_marker(s);
 #endif
+    dmalloc_register(s, sizeof(struct pike_string), DMALLOC_LOCATION());
 
     s->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
     s->size_shift = shift;
@@ -1903,6 +1907,7 @@ static struct pike_string *make_shared_substring( struct pike_string *s,
 #ifdef PIKE_DEBUG
   gc_init_marker(&res->str);
 #endif
+  dmalloc_register(res, sizeof(struct substring_pike_string), DMALLOC_LOCATION());
   res->parent = s;
   s->flags |= STRING_IS_LOCKED;	/* Make sure the string data isn't reallocated. */
   add_ref(s);
