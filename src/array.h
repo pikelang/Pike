@@ -261,7 +261,15 @@ void assign_array_level( struct array *a, struct array *b, int level );
       /* BIT_MIXED|BIT_UNFINISHED from the allocation above. */		\
       memcpy(ITEM(base_sval[-1].u.array) + oldsize__,                   \
 	     base_sval, diff__ * sizeof(struct svalue));                \
+      if (!oldsize__) {							\
+	/* Make sure that BIT_UNFINISHED is set. */			\
+	base_sval[-1].u.array->type_field |=				\
+	  BIT_MIXED | BIT_UNFINISHED;					\
+      }									\
       Pike_sp = base_sval;						\
+      DO_IF_DMALLOC(while(diff__--) {					\
+	  dmalloc_touch_svalue(Pike_sp + diff__);			\
+	});								\
     }									\
   } while (0)
 
@@ -275,11 +283,14 @@ void assign_array_level( struct array *a, struct array *b, int level );
     }									\
     else								\
       AGGR_ARR_CHECK (base_sval, 0);					\
-    if (base_sval[-1].u.array->type_field & BIT_UNFINISHED)		\
-      array_fix_type_field(Pike_sp[-1].u.array);			\
+    DO_IF_DEBUG(if (Pike_sp != base_sval) {				\
+	Pike_fatal("Lost track of stack depth when aggregating.\n");	\
+      });								\
     DO_IF_DEBUG(if (TYPEOF(Pike_sp[-1]) != T_ARRAY) {			\
 	Pike_fatal("Lost track of aggregated array.\n");		\
       });								\
+    if (base_sval[-1].u.array->type_field & BIT_UNFINISHED)		\
+      array_fix_type_field(Pike_sp[-1].u.array);			\
   } while (0)
 
 #define BEGIN_AGGREGATE_ARRAY(estimated_size) do {			\
