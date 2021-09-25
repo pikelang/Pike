@@ -3895,8 +3895,10 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
   case T_OR:
   case T_AND:
     type_stack_mark();
-    push_finished_type(find_lfun_type(t->car, lfun));
-    push_finished_type(find_lfun_type(t->cdr, lfun));
+    push_finished_type(ret = find_lfun_type(t->car, lfun));
+    free_type(ret);
+    push_finished_type(ret = find_lfun_type(t->cdr, lfun));
+    free_type(ret);
     push_type(t->type);
     return pop_unfinished_type();
 
