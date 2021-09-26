@@ -4992,12 +4992,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	    if (aret) {
 	      Pike_fatal("Unsupported type operation.\n");
 	    }
+	    free_type(tmp);
 	    break;
 	  }
 	  if ((bi->type != T_FUNCTION) && (bi->type != T_MANY)) {
 	    if (bret) {
 	      Pike_fatal("Unsupported type operation.\n");
 	    }
+	    free_type(tmp);
 	    break;
 	  }
 
