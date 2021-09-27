@@ -164,6 +164,14 @@ void compiler_discard_type (void)
   }
 }
 
+static struct pike_type *low_pop_type(void)
+{
+  TYPE_STACK_DEBUG("low_pop_type");
+
+  return *(Pike_compiler->type_stackp--);
+}
+#define low_pop_type()	((struct pike_type *)debug_malloc_pass(low_pop_type()))
+
 struct pike_type *debug_pop_type(void)
 {
   struct pike_type *t = pop_unfinished_type();
@@ -1036,6 +1044,10 @@ static void push_reverse_joiner_type(unsigned int type)
     Pike_fatal("Illegal reverse joiner type: %d\n", type);
   }
 }
+#define push_reverse_joiner_type(T) do {		\
+    push_reverse_joiner_type(T);			\
+    debug_malloc_touch(debug_peek_type_stack());	\
+  } while (0)
 
 static void low_or_pike_types(struct pike_type *t1,
 			      struct pike_type *t2,
@@ -1074,7 +1086,7 @@ void debug_push_type(unsigned int type)
       /* The top type is the same as our type.
        * Split it and join the parts with the other type.
        */
-      struct pike_type *top = *(Pike_compiler->type_stackp--);
+      struct pike_type *top = low_pop_type();
       push_finished_type(top->cdr);
       push_type(type);
       push_finished_type(top->car);
@@ -1083,8 +1095,8 @@ void debug_push_type(unsigned int type)
       return;
     }
     if (type == T_OR) {
-      struct pike_type *t1 = *(Pike_compiler->type_stackp--);
-      struct pike_type *t2 = *(Pike_compiler->type_stackp--);
+      struct pike_type *t1 = low_pop_type();
+      struct pike_type *t2 = low_pop_type();
       low_or_pike_types(t1, t2, 0);
       free_type(t2);
       free_type(t1);
@@ -1671,13 +1683,6 @@ INT32 extract_type_int(char *p)
   return get_unaligned_be32(p);
 }
 
-static struct pike_type *low_pop_type(void)
-{
-  TYPE_STACK_DEBUG("low_pop_type");
-
-  return *(Pike_compiler->type_stackp--);
-}
-
 struct pike_type *debug_pop_unfinished_type(void)
 {
   ptrdiff_t len;
@@ -1690,7 +1695,7 @@ struct pike_type *debug_pop_unfinished_type(void)
 
   TYPE_STACK_DEBUG("pop_unfinished_type");
 
-  return *(Pike_compiler->type_stackp--);
+  return low_pop_type();
 }
 
 /******/
@@ -4432,8 +4437,8 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 	    remap, aflags, bflags, remap_flags);
   }
 
-  ret = lower_type_binop(op, a, b, remap,
-			 aflags, bflags, remap_flags);
+  ret = debug_malloc_pass(lower_type_binop(op, a, b, remap,
+					   aflags, bflags, remap_flags));
 
   if (remap_flags & PT_FLAG_REMAP_TRACE) {
     fprintf(stderr, "ret: ");
