@@ -43,7 +43,7 @@ static size_t cyclic_hash_func(CYCLIC *c)
   return h & (CYCLIC_HASH_SIZE-1);
 }
 
-static void low_unlink_cyclic(CYCLIC *c)
+void low_unlink_cyclic(CYCLIC *c)
 {
   size_t h;
   CYCLIC **p;
@@ -74,11 +74,11 @@ PMOD_EXPORT void unlink_cyclic(CYCLIC *c)
   low_unlink_cyclic(c);
 }
 
-PMOD_EXPORT void *begin_cyclic(CYCLIC *c,
-			       char *id,
-			       void *th,
-			       void *a,
-			       void *b)
+void *low_begin_cyclic(CYCLIC *c,
+		       char *id,
+		       void *th,
+		       void *a,
+		       void *b)
 {
   size_t h;
   void *ret = 0;
@@ -106,9 +106,19 @@ PMOD_EXPORT void *begin_cyclic(CYCLIC *c,
 
   c->next = cyclic_hash[h];
   cyclic_hash[h] = c;
-  SET_ONERROR(c->onerr, low_unlink_cyclic, c);
 #ifdef CYCLIC_DEBUG
   if (!ret) fprintf (stderr, "%s: BEGIN_CYCLIC a=%p b=%p: no cycle\n", id, a, b);
 #endif
+  return ret;
+}
+
+PMOD_EXPORT void *begin_cyclic(CYCLIC *c,
+			       char *id,
+			       void *th,
+			       void *a,
+			       void *b)
+{
+  void *ret = low_begin_cyclic(c, id, th, a, b);
+  SET_ONERROR(c->onerr, low_unlink_cyclic, c);
   return ret;
 }

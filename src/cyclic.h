@@ -31,6 +31,9 @@ typedef struct CYCLIC
 #define BEGIN_CYCLIC(A,B) \
    begin_cyclic(&cyclic_struct__, cyclic_identifier__, \
                 THREAD_T_TO_PTR(th_self()), (void *)(A), (void *)(B))
+#define LOW_BEGIN_CYCLIC(A,B) \
+   low_begin_cyclic(&cyclic_struct__, cyclic_identifier__, \
+		    THREAD_T_TO_PTR(th_self()), (void *)(A), (void *)(B))
 
 #else  /* CYCLIC_DEBUG */
 
@@ -40,6 +43,9 @@ typedef struct CYCLIC
 #define BEGIN_CYCLIC(A,B) \
    begin_cyclic(&cyclic_struct__, &cyclic_identifier__, \
                 THREAD_T_TO_PTR(th_self()), (void *)(A), (void *)(B))
+#define LOW_BEGIN_CYCLIC(A,B) \
+   low_begin_cyclic(&cyclic_struct__, &cyclic_identifier__, \
+		    THREAD_T_TO_PTR(th_self()), (void *)(A), (void *)(B))
 
 #endif	/* !CYCLIC_DEBUG */
 
@@ -47,9 +53,16 @@ typedef struct CYCLIC
    cyclic_struct__.ret=(void *)(RET)
 
 #define END_CYCLIC()  unlink_cyclic(&cyclic_struct__)
+#define LOW_END_CYCLIC()  low_unlink_cyclic(&cyclic_struct__)
 
 /* Prototypes begin here */
+void low_unlink_cyclic(CYCLIC *c);
 PMOD_EXPORT void unlink_cyclic(CYCLIC *c);
+void *low_begin_cyclic(CYCLIC *c,
+		       char *id,
+		       void *thread,
+		       void *a,
+		       void *b);
 PMOD_EXPORT void *begin_cyclic(CYCLIC *c,
 			       char *id,
 			       void *thread,
