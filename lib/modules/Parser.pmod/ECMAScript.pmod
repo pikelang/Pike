@@ -152,10 +152,26 @@ array(string) split(string data)
         };
         if( regexp_context() )
         {
-          while( 1 )
-          {
-            if( data[pos]=='\\' ) { pos += 2; continue; }
-            if( data[pos]=='/' ) { pos++; break; }
+          int in_range = 0;
+
+        loop:while( 1 ) {
+            switch( data[pos] ) {
+            case '\\':
+              pos++;
+              break;
+            case '/':
+              if(!in_range) {
+                pos++;
+                break loop;
+              }
+              break;
+            case '[':
+              in_range=1;
+              break;
+            case ']':
+              in_range=0;
+              break;
+            }
             pos++;
           }
 
