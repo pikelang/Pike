@@ -131,7 +131,7 @@ array(string) split(string data)
       switch(data[pos])
       {
       case '/':
-        while( !((< '\n', '\r' >)[data[pos++]]) );
+        while( !((< '\n', '\r', 0 >)[data[pos++]]) );
         pos--;
         break;
 

@@ -470,6 +470,7 @@ test_js_token("*")
 test_js_token("**")
 test_js_token("=")
 test_js_token("==")
+test_js_token("//")
 
 
 END_MARKER
