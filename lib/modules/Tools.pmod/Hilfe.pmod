@@ -2357,11 +2357,11 @@ class Evaluator {
       float eval_time = gauge {
 	err = catch {
 	  res = o->___HilfeWrapper();
-	  trace(0);
-#if constant(_debug)
-	  _debug(0);
-#endif
 	};
+	trace(0);
+#if constant(_debug)
+	_debug(0);
+#endif
       };
       last_eval_time = (int)(eval_time*1000000);
 
