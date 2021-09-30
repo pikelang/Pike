@@ -488,6 +488,7 @@ void really_free_node_s(node * n) {
     Pike_fatal("Attempt to free a node with no active compiler.\n");
   }
 #endif
+  dmalloc_unregister(n, 0);
   ba_free(&Pike_compiler->compiler->node_allocator, n);
 }
 
@@ -663,6 +664,8 @@ static node *debug_mkemptynode(void)
   node *res=alloc_node_s();
 
   CHECK_COMPILER();
+
+  dmalloc_register(res, sizeof(struct node_s), DMALLOC_LOCATION());
 
 #ifdef __CHECKER__
   memset(res, 0, sizeof(node));
