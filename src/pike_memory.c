@@ -14,6 +14,7 @@
 #include "block_allocator.h"
 #include "pike_cpulib.h"
 #include "siphash24.h"
+#include "cyclic.h"
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -1491,22 +1492,37 @@ void check_pad(struct memhdr *mh, int freeok)
   unsigned long q,e;
   char *mem=mh->data;
   long size=mh->size;
+  DECLARE_CYCLIC();
+
   if(out_biking) return;
 
   if(!(mh->flags & MEM_PADDED)) return;
+
+  /* NB: We need to use the LOW_CYCLIC_* variants here as
+   *     we do not necessarily hold the interpreter lock.
+   */
+  if (LOW_BEGIN_CYCLIC(mh, NULL)) return;
+  SET_CYCLIC_RET(1);
+
   if(size < 0)
   {
     if(!freeok)
     {
       fprintf(stderr,"Access to free block: %p (size %ld)!\n",mem, ~mh->size);
       dump_memhdr_locations(mh, 0, 0);
+      debug_malloc_atfatal();
+      locate_references(mem);
+      describe(mem);
       abort();
     }else{
       size = ~size;
     }
   }
 
-  if (PIKE_MEM_CHECKER()) return;
+  if (PIKE_MEM_CHECKER()) {
+    LOW_END_CYCLIC();
+    return;
+  }
 
 /*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
 #if 1
@@ -1576,6 +1592,7 @@ void check_pad(struct memhdr *mh, int freeok)
     BLORG(3, (q >> 15) | 1)
   }
 #endif
+  LOW_END_CYCLIC();
 }
 #else
 #define do_pad(X,Y) (X)
@@ -1869,6 +1886,7 @@ PMOD_EXPORT void dmalloc_register(void *p, int s, LOCATION location)
   }
   mt_unlock(&debug_malloc_mutex);
   if (mh) {
+    dump_memhdr_locations(mh, NULL, 0);
     Pike_fatal("dmalloc_register(%p, %d, \"%s\"): Already registered\n",
 	       p, s, location);
   }
