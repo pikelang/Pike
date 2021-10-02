@@ -3508,35 +3508,43 @@ static void apply_define(struct CPP_struct *this,
 			 struct pike_string *charset)
 {
   struct svalue *save_sp = Pike_sp;
-  int save_flags;
+  JMP_BUF tmp;
 
   /* Keep d around... */
   push_svalue(&d->self);
 
   stack_swap();
 
-  if ((d->args == 1) && !Pike_sp[-1].u.array->size &&
-      !(d->flags & CPP_MACRO_VARARGS)) {
-    // Allow a single argument to be left out.
-    pop_stack();
-    ref_push_string(empty_pike_string);
-    f_aggregate(1);
-  }
-  ref_push_object(Pike_fp->current_object);
-  push_int(flags);
-  apply_lfun(d->self.u.object, LFUN_CALL, 3);
+  if (!SETJMP(tmp)) {
+    if ((d->args == 1) && !Pike_sp[-1].u.array->size &&
+	!(d->flags & CPP_MACRO_VARARGS)) {
+      // Allow a single argument to be left out.
+      pop_stack();
+      ref_push_string(empty_pike_string);
+      f_aggregate(1);
+    }
+    ref_push_object(Pike_fp->current_object);
+    push_int(flags);
+    apply_lfun(d->self.u.object, LFUN_CALL, 3);
 
-  if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
-    save_flags = d->flags;
-    d->flags |= CPP_MACRO_DISABLED;
+    UNSETJMP(tmp);
 
-    /* NB: We're executing in the CPP context object. */
-    low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string), Pike_sp[-1].u.string->len,
-	    flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
-	    charset);
+    if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
+      int save_flags = d->flags;
+      d->flags |= CPP_MACRO_DISABLED;
 
-    d->flags = save_flags;
+      /* NB: We're executing in the CPP context object. */
+      low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string), Pike_sp[-1].u.string->len,
+	      flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
+	      charset);
+
+      d->flags = save_flags;
+    } else {
+      this->compile_errors++;
+    }
   } else {
+    UNSETJMP(tmp);
+
     this->compile_errors++;
   }
 
