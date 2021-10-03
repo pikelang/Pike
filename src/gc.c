@@ -4685,6 +4685,7 @@ static struct mc_marker *my_make_mc_marker (void *thing,
   m->dl_prev = m->dl_next = (void *) (ptrdiff_t) -1;
   m->la_count = ((unsigned INT16) -1) >> 1;
 #endif
+  assert(find_mc_marker(thing) == m);
   return m;
 }
 
