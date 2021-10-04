@@ -93,6 +93,8 @@ struct compilation
 
   int compilation_depth;		/* Current class nesting depth. */
 
+  int cumulative_parse_error;		/* Number of parse errors. */
+
 #ifdef PIKE_THREADS
   int saved_lock_depth;
 #endif

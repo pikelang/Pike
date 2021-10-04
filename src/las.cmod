@@ -42,7 +42,6 @@
 static node *eval(node *);
 static void optimize(node *n);
 
-int cumulative_parse_error=0;
 extern char *get_type_name(int);
 
 #define MAX_GLOBAL 2048

@@ -825,7 +825,9 @@ static void f_compilation_env_filter_exception(INT32 args)
  *!   compilation).
  */
 
-void node_walker(struct ba_iterator * it, void * UNUSED(data)) {
+void node_walker(struct ba_iterator * it, void * data)
+{
+  struct compilation *c = data;
   do {
     node * tmp = ba_it_val(it);
 
@@ -836,7 +838,7 @@ void node_walker(struct ba_iterator * it, void * UNUSED(data)) {
     if (tmp->token == USHRT_MAX) continue;
 
 #ifdef PIKE_DEBUG
-    if(!cumulative_parse_error)
+    if(!c->cumulative_parse_error)
     {
       fprintf(stderr,"Free node at %p, (%s:%ld) (token=%d:%s).\n",
               (void *)tmp,
@@ -916,7 +918,7 @@ static void free_compilation(struct compilation *c)
   verify_supporters();
 
 #ifndef PIKE_DEBUG
-  if(cumulative_parse_error)
+  if(c->cumulative_parse_error)
 #endif
   {
     /* NB: The Pike_compiler has already been changed when we run,
@@ -928,12 +930,12 @@ static void free_compilation(struct compilation *c)
     fake_compiler.compiler = c;
     Pike_compiler = &fake_compiler;
 
-    ba_walk(&c->node_allocator, &node_walker, NULL);
+    ba_walk(&c->node_allocator, &node_walker, c);
 
     Pike_compiler = orig_compiler;
 
 #ifdef PIKE_DEBUG
-    if(!cumulative_parse_error) {
+    if(!c->cumulative_parse_error) {
       size_t n, s;
       ba_count_all(&c->node_allocator, &n, &s);
       if (n)
@@ -941,7 +943,7 @@ static void free_compilation(struct compilation *c)
     }
 #endif
   }
-  cumulative_parse_error=0;
+  c->cumulative_parse_error=0;
   ba_destroy(&c->node_allocator);
 }
 
@@ -2562,7 +2564,7 @@ PMOD_EXPORT void va_yyreport(int severity_level,
       return;
     }
     Pike_compiler->num_parse_error++;
-    cumulative_parse_error++;
+    c->cumulative_parse_error++;
   }
 
   push_int(severity_level);

@@ -32,9 +32,6 @@ int add_local_name(struct pike_string *str,
 int verify_declared(struct pike_string *str);
 
 
-extern int cumulative_parse_error;
-
-
 #ifndef STRUCT_NODE_S_DECLARED
 #define STRUCT_NODE_S_DECLARED
 struct node_s;
