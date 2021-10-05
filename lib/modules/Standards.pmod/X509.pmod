@@ -1624,7 +1624,8 @@ mapping(string:array(Verifier))
     key = root_cert_dirs;
   else if(arrayp(root_cert_dirs))
     key = root_cert_dirs*":";
-  if( cache && authorities_cache_expire[key] > time() )
+  if( cache && sizeof(authorities_cache) &&
+      authorities_cache_expire[key] > time() )
     return authorities_cache[key];
 
   root_cert_dirs = root_cert_dirs || ({
