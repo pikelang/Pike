@@ -4926,12 +4926,10 @@ static void mc_wq_enqueue (struct mc_marker *m)
 
   while (pos > 1 && (n = mc_work_queue[pos / 2])->la_count < m_la_count) {
     debug_malloc_touch_named(n, "n");
-    debug_malloc_touch_named(mc_work_queue[pos], "mc_work_queue[pos]");
     mc_work_queue[pos] = n;
     n->queuepos = pos;
     pos /= 2;
   }
-  debug_malloc_touch_named(mc_work_queue[pos], "mc_work_queue[pos] = m");
   debug_malloc_touch_named(m, "m");
   mc_work_queue[pos] = m;
   m->queuepos = pos;
