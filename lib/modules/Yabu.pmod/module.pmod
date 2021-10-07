@@ -14,6 +14,7 @@
 #define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n", msg, strerror(errno()), errno() )
 #define WARN(msg) werror(msg)
 #if constant(hash_7_0)
+#pragma no_deprecation_warnings
 #define hash hash_7_0
 #endif
 
