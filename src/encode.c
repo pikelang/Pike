@@ -483,16 +483,34 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 		    get_name_of_type(t->type));
       });
   } else {
-    addchar(t->type);
+    addchar(t->type & PIKE_T_MASK);
     EDB(1, {
 	ENCODE_WERR(".type    %s",
-		    get_name_of_type(t->type));
+		    get_name_of_type(t->type & 0xff));
       });
+    if ((t->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
+      addchar(t->type>>8);
+      EDB(1, {
+	  ENCODE_WERR(".htype    %s",
+		      get_name_of_type(t->type));
+	});
+    }
   }
-  switch(t->type) {
+  switch(t->type & PIKE_T_MASK) {
     default:
-      Pike_fatal("error in type tree: %d.\n", t->type);
+      Pike_fatal("error in type tree: 0x%04x.\n", t->type);
       UNREACHABLE(break);
+
+    case PIKE_T_OPERATOR:
+      if (t->type & 0x8000) {
+	encode_type(t->cdr, data);
+      } else if (t->type == PIKE_T_FIND_LFUN) {
+	struct svalue sval;
+	SET_SVAL(sval, PIKE_T_STRING, 0, string, (void *)t->cdr);
+	encode_value2(&sval, data, 0);
+      }
+      t = t->car;
+      goto one_more_type;
 
     case PIKE_T_ATTRIBUTE:	/* FIXME: Strip this in compat mode. */
     case PIKE_T_NAME:
