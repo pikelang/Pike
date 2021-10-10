@@ -5276,6 +5276,7 @@ static void current_only_visit_ref (void *thing, int ref_type,
 
   if (!ref_to) {
     ref_to = my_make_mc_marker (thing, visit_fn, extra);
+    debug_malloc_touch(ref_to);
     ref_to->la_count = 0; /* initialize so the queue doesn't order on
                              uninitialized memory (... valgrind) */
     MC_DEBUG_MSG (ref_to, "got new thing");
@@ -6104,6 +6105,7 @@ void identify_loop_visit_ref(void *dst, int UNUSED(ref_type),
   }
 
   ref_to = my_make_mc_marker(dst, visit_dst, extra);
+  debug_malloc_touch(ref_to);
   ref_to->la_count = 0; /* initialize just so the queue doesn't order on
                            uninitialized memory (... valgrind) */
 
