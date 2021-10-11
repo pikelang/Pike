@@ -4805,10 +4805,21 @@ static void decode_value2(struct decode_data *data)
 	   * lfuns and identifier_index
 	   */
 	  ref_push_program (p);
+	  if (delay && (p->flags & PROGRAM_USES_PARENT)) {
+	    /* Kludge for end_first_pass(0) not allocating
+	     * parent_info_storage (intentionally).
+	     */
+	    p->parent_info_storage =
+	      add_xstorage(sizeof(struct parent_info),
+			   ALIGNOF(struct parent_info),
+			   0);
+	  }
+
 	  if (!(p = end_first_pass(delay? 0 : 2)) ||
 	      !call_dependants(&c->supporter, !!p)) {
 	    decode_error(data, Pike_sp - 1, "Failed to decode program.\n");
 	  }
+
 	  pop_stack();
 	  push_program(p);
 

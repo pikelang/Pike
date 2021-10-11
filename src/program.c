@@ -40,9 +40,6 @@
 #include <fcntl.h>
 
 static void exit_program_struct(struct program *);
-static size_t add_xstorage(size_t size,
-			   size_t alignment,
-			   ptrdiff_t modulo_orig);
 
 /* mapping(int:string) */
 static struct mapping *reverse_symbol_table = NULL;
@@ -5197,10 +5194,12 @@ struct program *end_first_pass(int finish)
     {
       if(Pike_compiler->new_program->flags & PROGRAM_USES_PARENT)
       {
-	Pike_compiler->new_program->parent_info_storage =
-	  add_xstorage(sizeof(struct parent_info),
-		       ALIGNOF(struct parent_info),
-		       0);
+	if (!Pike_compiler->new_program->parent_info_storage) {
+	  Pike_compiler->new_program->parent_info_storage =
+	    add_xstorage(sizeof(struct parent_info),
+			 ALIGNOF(struct parent_info),
+			 0);
+	}
       }else{
 	/* Cause errors if used hopefully */
 	Pike_compiler->new_program->parent_info_storage=-1;
@@ -5364,9 +5363,9 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
  * Internal function.
  * Adds object storage that will *not* be inherited.
  */
-static size_t add_xstorage(size_t size,
-			   size_t alignment,
-			   ptrdiff_t modulo_orig)
+size_t add_xstorage(size_t size,
+		    size_t alignment,
+		    ptrdiff_t modulo_orig)
 {
   ptrdiff_t offset, modulo, available;
   int e;
