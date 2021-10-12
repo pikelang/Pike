@@ -314,6 +314,9 @@ static struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr,		     \
 									     \
   DO_IF_DEBUG( if(!PIKE_CONCAT(DATA,_hash_table))			     \
     Pike_fatal("Hash table error!\n"); )				     \
+  DO_IF_DEBUG( if (PIKE_CONCAT(find_, DATA)(ptr))			     \
+    Pike_fatal("%s for %p already exists!\n",				     \
+	       TOSTR(DATA), ptr); )					     \
   PIKE_CONCAT(num_,DATA)++;						     \
 									     \
   if(( PIKE_CONCAT(num_,DATA)>>BLOCK_ALLOC_HSIZE_SHIFT ) >=		     \
@@ -328,5 +331,9 @@ static struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr,		     \
   p->PTR_HASH_ALLOC_DATA=ptr;						     \
   p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];		     \
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
+									     \
+  DO_IF_DEBUG( if (!PIKE_CONCAT(find_, DATA)(ptr))			     \
+    Pike_fatal("%s for %p not found after insertion!\n",		     \
+	       TOSTR(DATA), ptr); )					     \
   return p;								     \
 }
