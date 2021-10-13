@@ -3852,8 +3852,7 @@ void fix_type_field(node *n)
 	/* Check that the returned type is compatible with the
 	 * variable type.
 	 */
-	if (!pike_types_le(f, CAR(n)->type,
-			   PT_FLAG_CMP_VOID_IS_ZERO, 0)) {
+	if (!pike_types_le(f, CAR(n)->type, PT_FLAG_CMP_VOID_IS_ZERO, 0)) {
 	  /* a["b"]+=c and a->b+=c can be valid when a is an array.
 	   *
 	   * FIXME: Exactly what case is the problem?
@@ -4177,8 +4176,7 @@ void fix_type_field(node *n)
 	if (retval->token == F_COMMA_EXPR) {
 	  retval = CDR(retval);
 	}
-	if ((Pike_compiler->compiler_frame->current_return_type !=
-		  void_type_string) ||
+	if ((t != void_type_string) ||
 	    (retval->token != F_CONSTANT) ||
 	    !SAFE_IS_ZERO(&retval->u.sval)) {
 	  check_node_type(CAR(n), t, "Wrong return type.");
@@ -4851,7 +4849,7 @@ static node *eval(node *n)
 	if (t) {
 	  free_type(new->type);
 	  new->type = t;
-	} else {
+	} else /* if (!SAFE_IS_ZERO(Pike_sp-1)) */ {
 	  new = mksoftcastnode(n->type, new);
 	}
       }
