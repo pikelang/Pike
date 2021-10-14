@@ -12,10 +12,10 @@ int seq_num = UNDEFINED;
 
 constant HEADER_SIZE = 5;
 
-// The fragment max size is 2^14 (RFC 5246 6.2.1). Compressed
-// fragments are however allowed to be 1024 bytes over (6.2.2), and
-// Ciphertexts 2048 bytes (6.2.3). State the additional headroom in
-// this variable.
+//! The fragment max size is 2^14 (RFC 5246 6.2.1). Compressed
+//! fragments are however allowed to be 1024 bytes over (6.2.2), and
+//! Ciphertexts 2048 bytes (6.2.3). State the additional headroom in
+//! this variable.
 protected int marginal_size;
 
 /* Circular dependence */
