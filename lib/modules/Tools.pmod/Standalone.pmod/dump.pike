@@ -14,8 +14,6 @@ int quiet=1, report_failed=0, recursive=0, update=0, nt_install=0;
 string target_dir = 0;
 string update_stamp = 0;
 
-program p; /* program being dumped */
-
 #ifdef PIKE_FAKEROOT
 string fakeroot(string s)
 {
@@ -203,6 +201,7 @@ do_dump: {
       break do_dump;
     }
 
+    program p; /* program being dumped */
     mixed err;
     if(!(err = catch {
 	// Kludge: Resolve the module through master()->resolv since
