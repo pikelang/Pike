@@ -1070,6 +1070,22 @@ static int do_docode2(node *n, int flags)
 	  emit1(F_GLOBAL_LVALUE, n->u.integer.b);
 	}
 	return 2;
+      } else if (n->u.integer.b == IDREF_MAGIC_THIS) {
+	if (n->token == F_GET_SET) {
+	  my_yyerror("this is not a getter/setter.");
+	}
+	if (level) {
+	  struct program_state *state = Pike_compiler;
+	  int e;
+	  for (e = level; e; e--) {
+	    state->new_program->flags |=
+	      PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+	    state = state->previous;
+	  }
+	  emit2(F_EXTERNAL, IDREF_MAGIC_THIS, level);
+	} else {
+	  emit1(F_THIS_OBJECT, 0);
+	}
       } else {
 	struct reference *ref =
 	  PTR_FROM_INT(state->new_program, n->u.integer.b);
@@ -1133,8 +1149,6 @@ static int do_docode2(node *n, int flags)
 	    }
 	    emit2(F_EXTERNAL, n->u.integer.b, level);
 	  }
-	} else if (n->u.integer.b == IDREF_MAGIC_THIS) {
-	  emit1(F_THIS_OBJECT, 0);
 	} else if(IDENTIFIER_IS_FUNCTION(id->identifier_flags) &&
 		  id->identifier_flags & IDENTIFIER_HAS_BODY)
 	{
