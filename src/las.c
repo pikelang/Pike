@@ -2143,6 +2143,7 @@ node **is_call_to(node *n, c_fun f)
   return 0;
 }
 
+#ifdef PIKE_DEBUG
 /* FIXME: Ought to use parent pointer to avoid recursion. */
 static void low_print_tree(node *foo,int needlval)
 {
@@ -2382,6 +2383,7 @@ void print_tree(node *n)
   low_print_tree(n,0);
   fputc('\n', stderr);
 }
+#endif
 
 /* The following routines need much better commenting. */
 /* They also needed to support lexical scoping and external variables.
