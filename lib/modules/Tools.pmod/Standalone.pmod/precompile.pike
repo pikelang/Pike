@@ -399,6 +399,7 @@ int parse_type(array t, int p)
 	  case "bignum":
 	  case "longest":
 	  case "float":
+	  case "zero":
 	    break;
 	}
       }
