@@ -35,9 +35,13 @@
     <chapter-ref file="chapters/hilfe.xml"/>
   </file>
   <file>
-    <chapter title="LFUN">
-      <insert-move entity="lfun::"/>
-      <insert-move entity="::"/>
+    <chapter title="Special object functions">
+      <section title="LFUN">
+	<insert-move entity="lfun::"/>
+      </section>
+      <section title="::">
+	<insert-move entity="::"/>
+      </section>
     </chapter>
   </file>
   <file>
@@ -134,17 +138,28 @@
       <insert-move entity="Image.Font"/>
       <insert-move entity="Image.Colortable"/>
       <insert-move entity="Image.Color"/>
+      <insert-move entity="Colors"/>
       <insert-move entity="Image.ANY"/>
       <insert-move entity="Image"/>
     </chapter>
   </file>
   <file>
     <chapter title="Protocols">
-      <insert-move entity="Protocols.HTTP"/>
-      <insert-move entity="SSL"/>
-      <insert-move entity="Protocols.LysKOM"/>
-      <insert-move entity="Protocols.DNS"/>
-      <insert-move entity="Protocols"/>
+      <section title="HTTP">
+	<insert-move entity="Protocols.HTTP"/>
+      </section>
+      <section title="TLS/SSL">
+	<insert-move entity="SSL"/>
+      </section>
+      <section title="DNS">
+	<insert-move entity="Protocols.DNS"/>
+      </section>
+      <section title="LysKOM">
+	<insert-move entity="Protocols.LysKOM"/>
+      </section>
+      <section title="Other protocols">
+	<insert-move entity="Protocols"/>
+      </section>
     </chapter>
   </file>
   <file>
@@ -236,6 +251,22 @@
     </chapter>
   </file>
   <file>
+    <chapter title="Asynchronous Operation">
+      <section title="Backends">
+	<insert-move entity="call_out"/>
+	<insert-move entity="Pike.Backend"/>
+      </section>
+      <section title="Promises and Futures">
+	<insert-move entity="Concurrent"/>
+      </section>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Calendar">
+      <insert-move entity="Calendar"/>
+    </chapter>
+  </file>
+  <file>
     <chapter title="Cryptography">
       <section title="Password hashing">
 	<insert-move entity="crypt"/>
@@ -248,6 +279,11 @@
 	<insert-move entity="Crypto"/>
 	<insert-move entity="Nettle"/>
       </section>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Charset">
+      <insert-move entity="Charset"/>
     </chapter>
   </file>
   <file>
@@ -289,6 +325,45 @@
       </section>
       <section title="Type inspection">
 	<insert-move entity="deprecated_typep"/>
+      </section>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Runtime">
+      <insert-move entity="exit"/>
+      <insert-move entity="_exit"/>
+      <insert-move entity="atexit"/>
+      <insert-move entity="trace"/>
+      <insert-move entity="backtrace"/>
+      <insert-move entity="gc"/>
+      <insert-move entity="query_num_arg"/>
+      <insert-move entity="version"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Implementation internals">
+      <insert-move entity="Builtin"/>
+      <insert-move entity="__builtin"/>
+      <insert-move entity="_static_modules"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Operation System Specific">
+      <section title="POSIX">
+	<insert-move entity="alarm"/>
+	<insert-move entity="fork"/>
+	<insert-move entity="exece"/>
+      </section>
+      <section title="Apple OS X">
+	<insert-move entity="Apple"/>
+      </section>
+      <section title="Microsoft Windows">
+	<subsection title="Registry handling">
+	  <insert-move entity="RegGetKeyNames"/>
+	  <!-- insert-move entity="HKEY_CLASSES_ROOT"/ -->
+	  <insert-move entity="RegGetValue"/>
+	  <insert-move entity="RegGetValues"/>
+	</subsection>
       </section>
     </chapter>
   </file>
