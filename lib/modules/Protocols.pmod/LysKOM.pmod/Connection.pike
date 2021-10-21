@@ -1,4 +1,4 @@
-//!	This class contains nice abstraction for calls into the
+//!	This class contains nice abstractions for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or
 //!	"@tt{async_cb_@i{call@}@}", depending on
@@ -7,18 +7,18 @@
 //! @decl mixed XXX(mixed ...args)
 //! @decl object async_XXX(mixed ...args)
 //! @decl object async_cb_XXX(function callback,mixed ...args)
-//!	Do a call to the server. This really
+//!	Perform a call to the server. This actually
 //!	clones a @[Protocols.LysKOM.Request] object,
-//!	and initialises it. @tt{XXX@} is to be read as
+//!	and initializes it. @tt{XXX@} is to be read as
 //!	one of the calls in the lyskom protocol. ('-' is replaced
 //!	with '_'.) (ie, logout, async_login or async_cb_get_conf_stat.)
 //!
-//!	The first method is a synchronous call. This will
+//!	The first variant is a synchronous call. This will
 //!	send the command, wait for the server to execute it,
 //!	and then return the result.
 //!
 //!	The last two are asynchronous calls, returning an
-//!	initialised @[Protocols.LysKOM.Request] object.
+//!	initialized @[Protocols.LysKOM.Request] object.
 //!
 
 #pike __REAL_VERSION__

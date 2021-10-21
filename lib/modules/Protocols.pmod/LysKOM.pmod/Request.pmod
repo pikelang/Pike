@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//!	This module contains nice abstraction for calls into the
+//!	This module contains nice abstractions for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or
 //!	"@tt{async_cb_@i{call@}@}", depending on
@@ -11,7 +11,7 @@ import .ProtocolTypes;
 
 int _no=1;
 
-//!	This is the main request class. All lyskom request
+//!	This is the base class for lyskom requests. All lyskom request
 //!	classes inherit this class.
 //!
 class _Request
