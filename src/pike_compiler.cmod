@@ -654,8 +654,22 @@ static void f_compilation_env_resolv(INT32 args)
     }
     END_CYCLIC();
   } else {
-    pop_n_elems(args);
-    push_undefined();
+    /* Fall-back to indexing all_constants(). */
+    struct array *a;
+    int i;
+    ref_push_string(ident);
+    push_constant_text(".");
+    o_divide();
+    a = Pike_sp[-1].u.array;
+    f_all_constants(0);
+    for (i = 0; i < a->size; i++) {
+      ref_push_string(ITEM(a)[i].u.string);
+      o_index();
+      if (IS_UNDEFINED(Pike_sp-1)) {
+	return;
+      }
+    }
+    return;
   }
 }
 
