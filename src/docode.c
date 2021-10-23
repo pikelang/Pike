@@ -621,6 +621,15 @@ static void emit_apply_builtin(char *func)
   free_node(n);
 }
 
+static void emit_automap_marker(void)
+{
+  if (master_object) {
+    emit_apply_builtin("__builtin.automap_marker");
+  } else {
+    emit_apply_builtin("_static_modules.Builtin.automap_marker");
+  }
+}
+
 static int do_encode_automap_arg_list(node *n,
 				      int flags)
 {
@@ -654,7 +663,7 @@ static int do_encode_automap_arg_list(node *n,
       PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       code_expression(n, 0, "[*]");
       emit1(F_NUMBER, depth);
-      emit_apply_builtin("__builtin.automap_marker");
+      emit_automap_marker();
       POP_AND_DONT_CLEANUP;
       return 1;
     }
@@ -1619,7 +1628,7 @@ static int do_docode2(node *n, int flags)
       emit0(F_MARK);
       emit0(F_LTOSVAL);
       emit1(F_NUMBER, depth);
-      emit_apply_builtin("__builtin.automap_marker");
+      emit_automap_marker();
       POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`+");
       emit2(F_REARRANGE,1,1);
@@ -1685,7 +1694,7 @@ static int do_docode2(node *n, int flags)
       emit0(F_MARK);
       emit0(F_LTOSVAL);
       emit1(F_NUMBER, depth);
-      emit_apply_builtin("__builtin.automap_marker");
+      emit_automap_marker();
       POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`-");
       emit2(F_REARRANGE,1,1);
