@@ -967,23 +967,19 @@ int main(int argc, array(string) argv)
     case "git-dir":
       if (git_dir)
 	warn("Destination git repository specified multiple times.\n");
-      git_dir = opt[1];
+      // Make absolute path.
+      git_dir = combine_path(getcwd(), opt[1]);
       break;
     case "source":
       if (src_git)
 	warn("Source git repository specified multiple times.\n");
-      src_git = opt[1];
+      // Make absolute path.
+      src_git = combine_path(getcwd(), opt[1]);
       break;
     }
   }
 
-
   exporter = Git.Export(git_dir);
-
-  if (git_dir) {
-    // Make absolute path.
-    git_dir = combine_path(getcwd(), git_dir);
-  }
 
   if (git_dir && Stdio.exist(git_dir)) {
     string desc = Stdio.read_bytes(git_dir + "/description");
@@ -1096,13 +1092,15 @@ int main(int argc, array(string) argv)
     if (src_git) {
       if (catch {
 	  string old_src_git =
-            String.trim(git("config", "--get",
-                            "remotes.origin.url"));
-	  if (old_src_git != src_git) {
+            String.trim(git("config", "--get", "remote.origin.url"));
+	  if (combine_path(getcwd(), old_src_git) !=
+	      combine_path(getcwd(), src_git)) {
 	    if (verbose) {
-	      werror("Updating source repository URL to %O.\n", src_git);
+	      werror("Updating source repository URL from %O to %O.\n",
+		     old_src_git, combine_path(getcwd(), src_git));
 	    }
-	    git("config", "--set", "remotes.origin.url", src_git);
+	    git("config", "--set", "remote.origin.url",
+		combine_path(getcwd(), src_git));
 	  }
 	}) {
 	if (verbose) {
