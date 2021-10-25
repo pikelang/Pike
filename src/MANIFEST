@@ -168,7 +168,7 @@ Compiler
     The yacc/bison language productions. These primarily build node
     trees (i.e. abstract syntax trees) from the language constructs.
 
-  las.c
+  las.cmod
   las.h
     Node tree handling. Wrap together the tree optimizer. Also contains
     an evaluator for constant expressions and dooptcode which wraps
