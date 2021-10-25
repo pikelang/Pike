@@ -126,11 +126,12 @@ mapping zones =
    "Pacific":   ({"Apia", "Auckland", "Bougainville", "Chatham", "Chuuk",
                   "Easter", "Efate", "Enderbury", "Fakaofo", "Fiji",
                   "Funafuti", "Galapagos", "Gambier", "Guadalcanal", "Guam",
-                  "Honolulu", "Johnston", "Kiritimati", "Kosrae", "Kwajalein",
-                  "Majuro", "Marquesas", "Midway", "Nauru", "Niue", "Norfolk",
-                  "Noumea", "Pago_Pago", "Palau", "Pitcairn", "Pohnpei",
-                  "Port_Moresby", "Rarotonga", "Saipan", "Tahiti", "Tarawa",
-                  "Tongatapu", "Wake", "Wallis"}),
+                  "Honolulu", "Johnston", "Kanton", "Kiritimati", "Kosrae",
+                  "Kwajalein", "Majuro", "Marquesas", "Midway", "Nauru",
+                  "Niue", "Norfolk", "Noumea", "Pago_Pago", "Palau",
+                  "Pitcairn", "Pohnpei", "Port_Moresby", "Rarotonga",
+                  "Saipan", "Tahiti", "Tarawa", "Tongatapu", "Wake",
+                  "Wallis"}),
    "Antarctica":({"Casey", "Davis", "DumontDUrville", "Macquarie", "Mawson",
                   "McMurdo", "Palmer", "Rothera", "Syowa", "Troll",
                   "Vostok"}),
@@ -244,7 +245,6 @@ mapping abbr2zones =
    "+01": ({
      "Africa/Casablanca",
      "Africa/El_Aaiun",
-     "Africa/Freetown",
      "Atlantic/Madeira",
      "Etc/GMT-1",
    }),
@@ -639,9 +639,9 @@ mapping abbr2zones =
      "Asia/Kamchatka",
      "Etc/GMT-13",
      "Pacific/Apia",
-     "Pacific/Enderbury",
      "Pacific/Fakaofo",
      "Pacific/Fiji",
+     "Pacific/Kanton",
      "Pacific/Tongatapu",
    }),
    "+1345": ({
@@ -675,8 +675,10 @@ mapping abbr2zones =
      "Antarctica/Vostok",
      "Factory",
      "Indian/Kerguelen",
+     "Pacific/Enderbury",
+     "Pacific/Kanton",
    }),
-   "-0020": ({
+   "-0040": ({
      "Africa/Freetown",
    }),
    "-01": ({
@@ -784,6 +786,7 @@ mapping abbr2zones =
      "Etc/GMT+3",
    }),
    "-0330": ({
+     "America/Barbados",
      "America/Montevideo",
      "America/Paramaribo",
    }),
@@ -890,8 +893,8 @@ mapping abbr2zones =
    "-11": ({
      "Etc/GMT+11",
      "Pacific/Apia",
-     "Pacific/Enderbury",
      "Pacific/Fakaofo",
+     "Pacific/Kanton",
      "Pacific/Midway",
      "Pacific/Niue",
    }),
@@ -900,12 +903,15 @@ mapping abbr2zones =
    }),
    "-1130": ({
      "Pacific/Apia",
-     "Pacific/Niue",
    }),
    "-12": ({
      "Etc/GMT+12",
      "Pacific/Enderbury",
+     "Pacific/Kanton",
      "Pacific/Kwajalein",
+   }),
+   "A%sT": ({
+     "America/Blanc-Sablon",
    }),
    "ACDT": ({
      "Australia/Adelaide",
@@ -928,7 +934,6 @@ mapping abbr2zones =
    "ADT": ({
      "America/Anchorage",
      "America/Barbados",
-     "America/Blanc-Sablon",
      "America/Glace_Bay",
      "America/Goose_Bay",
      "America/Halifax",
@@ -1015,7 +1020,6 @@ mapping abbr2zones =
    }),
    "APT": ({
      "America/Anchorage",
-     "America/Blanc-Sablon",
      "America/Glace_Bay",
      "America/Goose_Bay",
      "America/Halifax",
@@ -1056,6 +1060,7 @@ mapping abbr2zones =
      "Atlantic/Bermuda",
    }),
    "AT": ({
+     "America/Barbados",
      "Atlantic/Bermuda",
    }),
    "AWDT": ({
@@ -1066,7 +1071,6 @@ mapping abbr2zones =
    }),
    "AWT": ({
      "America/Anchorage",
-     "America/Blanc-Sablon",
      "America/Glace_Bay",
      "America/Goose_Bay",
      "America/Halifax",
@@ -1086,7 +1090,6 @@ mapping abbr2zones =
    }),
    "BMT": ({
      "Africa/Banjul",
-     "America/Barbados",
      "America/Bogota",
      "Asia/Baghdad",
      "Asia/Bangkok",
@@ -1118,6 +1121,9 @@ mapping abbr2zones =
    "BWT": ({
      "America/Adak",
      "America/Nome",
+   }),
+   "C%sT": ({
+     "America/Atikokan",
    }),
    "CAST": ({
      "Africa/Gaborone",
@@ -1318,7 +1324,6 @@ mapping abbr2zones =
      "Europe/Tiraspol",
    }),
    "CPT": ({
-     "America/Atikokan",
      "America/Belize",
      "America/Cambridge_Bay",
      "America/Chicago",
@@ -1347,7 +1352,6 @@ mapping abbr2zones =
      "CST6CDT",
    }),
    "CST": ({
-     "America/Atikokan",
      "America/Bahia_Banderas",
      "America/Belize",
      "America/Cambridge_Bay",
@@ -1403,7 +1407,6 @@ mapping abbr2zones =
      "Asia/Macau",
    }),
    "CWT": ({
-     "America/Atikokan",
      "America/Bahia_Banderas",
      "America/Belize",
      "America/Cambridge_Bay",
@@ -1452,6 +1455,7 @@ mapping abbr2zones =
    "E%sT": ({
      "America/Coral_Harbour",
      "America/Montreal",
+     "America/Nassau",
    }),
    "EAST": ({
      "Indian/Antananarivo",
@@ -1670,7 +1674,6 @@ mapping abbr2zones =
      "Africa/Bissau",
      "Africa/Conakry",
      "Africa/Dakar",
-     "Africa/Freetown",
      "Africa/Lagos",
      "Africa/Lome",
      "Africa/Malabo",
@@ -2649,6 +2652,9 @@ mapping abbr2zones =
      "America/Sitka",
      "America/Whitehorse",
      "America/Yakutat",
+   }),
+   "ZMT": ({
+     "Africa/Blantyre",
    }),
 ]);
 
