@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Utilities relating to the TCP/IP protocol family.
 
 #ifdef HAPPY_EYEBALLS_DEBUG
