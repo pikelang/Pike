@@ -602,7 +602,7 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
       m->type = .filename_to_type(not_query);
 
    if( m->error == 206 )
-      radd("Content-Range: bytes ", m->start,"-",m->stop,"/",m->size);
+     radd("Content-Range: bytes ", m->start,"-", m->stop==-1 ? m->size-1 : m->stop,"/",m->size);
 
    radd("Content-Type: ",m->type);
    if( m->transfer_encoding )
@@ -753,7 +753,7 @@ void response_and_finish(mapping m, function|void _log_cb)
 
    low_make_response_header(m,send_buf);
 
-   if (m->stop) m->size=1+m->stop-m->start;
+   if (m->stop>0) m->size=1+m->stop-m->start;
    if (m->start) {
       if( m->file )
          m->file->seek(m->start, Stdio.SEEK_CUR);
