@@ -1760,6 +1760,11 @@ string layout_toploop(Node n, Git.Export|void exporter) {
       res += parse_chapter(c);
       break;
 
+    case "chapter-ref":
+    case "appendix-ref":
+      werror("Missing chapter or appendix.\n");
+      break;
+
     default:
       error("Unknown element %O.\n", c->get_any_name());
     }
