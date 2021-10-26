@@ -235,46 +235,47 @@ class NSNode {
   {
     String.Buffer data = String.Buffer();
 	
-    walk_preorder_2(
-		    lambda(Node n) {
-		      switch(n->get_node_type()) {
+    walk_preorder_2(lambda(Node n) {
+        switch(n->get_node_type()) {
 
-		      case XML_TEXT:
-                        data->add( text_quote(n->get_text()) );
-			break;
+        case XML_TEXT:
+          data->add( text_quote(n->get_text()) );
+          break;
 
-		      case XML_ELEMENT:
-			if (!sizeof(n->get_tag_name()))
-			  break;
+        case XML_ELEMENT:
+          if (!sizeof(n->get_tag_name()))
+            break;
 
-			data->add("<", n->get_xml_name());
+          data->add("<", n->get_xml_name());
 
-			if (mapping attr = n->get_attributes()) { // FIXME
-                          foreach(indices(attr), string a)
-                            data->add(" ", a, "='",
-				      attribute_quote(attr[a]), "'");
-			}
-			/*
-			mapping attr = n->get_ns_attrubutes();
-			if(sizeof(attr)) {
-			  foreach(attr; string ns; mapping attr) {
-			  }
-			}
-			*/
-			if (n->count_children())
-			  data->add(">");
-			else
-			  data->add("/>");
-			break;
-		      }
-		    },
+          if (mapping attr = n->get_attributes()) { // FIXME
+            foreach(indices(attr), string a)
+              if( has_value(attr[a], "'") )
+                data->add(" ", a, "=\"", attribute_quote(attr[a], "'"), "\"");
+              else
+                data->add(" ", a, "='", attribute_quote(attr[a], "\""), "'");
+          }
+          /*
+            mapping attr = n->get_ns_attrubutes();
+            if(sizeof(attr)) {
+            foreach(attr; string ns; mapping attr) {
+            }
+            }
+          */
+          if (n->count_children())
+            data->add(">");
+          else
+            data->add("/>");
+          break;
+        }
+      },
 
-		    lambda(Node n) {
-		      if (n->get_node_type() == XML_ELEMENT)
-			if (n->count_children())
-			  if (sizeof(n->get_tag_name()))
-			    data->add("</", n->get_xml_name(), ">");
-		    });
+      lambda(Node n) {
+        if (n->get_node_type() == XML_ELEMENT)
+          if (n->count_children())
+            if (sizeof(n->get_tag_name()))
+              data->add("</", n->get_xml_name(), ">");
+      });
 	
     return (string)data;
   }

@@ -149,13 +149,34 @@ string roxen_text_quote(string data) {
 }
 
 //! Quotes the string given in @[data] by escaping &, <, >, ' and ".
-string attribute_quote(string data)
+string attribute_quote(string data, void|string ignore)
 {
-  return replace(data, ([ "\"":"&quot;",
-			  "'":"&apos;",
-			  "&":"&amp;",
-			  "<":"&lt;",
-			  ">":"&gt;" ]) );
+  switch(ignore)
+  {
+  case "\"":
+    return replace(data, ([ "'":"&apos;",
+                            "&":"&amp;",
+                            "\n":"&#10;",
+                            "\r":"&#13;",
+                            "<":"&lt;",
+                            ">":"&gt;" ]) );
+  case "'":
+    return replace(data, ([ "\"":"&quot;",
+                            "&":"&amp;",
+                            "\n":"&#10;",
+                            "\r":"&#13;",
+                            "<":"&lt;",
+                            ">":"&gt;" ]) );
+
+  default:
+    return replace(data, ([ "\"":"&quot;",
+                            "'":"&apos;",
+                            "&":"&amp;",
+                            "\n":"&#10;",
+                            "\r":"&#13;",
+                            "<":"&lt;",
+                            ">":"&gt;" ]) );
+  }
 }
 
 //! Quotes strings just like @[attribute_quote], but entities in the
@@ -1057,7 +1078,7 @@ protected class VirtualNode {
   // FIXME: Consider moving this to the corresponding base node classes?
   protected void low_render_xml(String.Buffer data, Node n,
 			     function(string:string) textq,
-			     function(string:string) attrq,
+                                function(string,void|string:string) attrq,
 			     void|mapping(string:string) namespace_lookup)
   {
     string tagname;
@@ -1073,8 +1094,11 @@ protected class VirtualNode {
       data->add("<", tagname);
       if (mapping attr = n->get_short_attributes()) {
 	foreach(sort(indices(attr)), string a) {
-	  data->add(" ", a, "='", attrq(attr[a]), "'");
-	}
+          if( has_value(attr[a], "'") )
+            data->add(" ", a, "=\"", attrq(attr[a], "'"), "\"");
+          else
+            data->add(" ", a, "='", attrq(attr[a], "\""), "'");
+        }
       }
       if (n->count_children())
 	data->add(">");
