@@ -1170,7 +1170,7 @@ test_do([[
     SSL_dhe_dss_with_3des_ede_cbc_sha,
     SSL_dh_rsa_with_3des_ede_cbc_sha,
     SSL_dh_dss_with_3des_ede_cbc_sha,
-#if constant(Crypto.ECC.Curve)
+#if constant(Crypto.ECC.Curve) || constant(Crypto.ECC.Curve25519)
     TLS_ecdh_anon_with_3des_ede_cbc_sha,
     TLS_ecdhe_rsa_with_3des_ede_cbc_sha,
     TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha,
@@ -1184,13 +1184,13 @@ test_do([[
   // Try some AEAD suites that are available with most versions of Nettle.
   add_constant("aead_suites", ({
     TLS_dhe_rsa_with_aes_128_ccm,
-#if constant(Crypto.ECC.Curve)
+#if constant(Crypto.ECC.Curve) || constant(Crypto.ECC.Curve25519)
     TLS_ecdhe_ecdsa_with_aes_128_ccm,
 #endif
 #if constant(Crypto.AES.GCM)
     TLS_dh_anon_with_aes_128_gcm_sha256,
     TLS_dhe_dss_with_aes_256_gcm_sha384,
-#if constant(Crypto.ECC.Curve)
+#if constant(Crypto.ECC.Curve) || constant(Crypto.ECC.Curve25519)
     TLS_ecdhe_rsa_with_aes_256_gcm_sha384
 #endif
 #endif

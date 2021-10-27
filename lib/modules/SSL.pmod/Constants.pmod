@@ -1455,6 +1455,7 @@ constant ECC_NAME_TO_CURVE = ([
   "SECP_384R1": GROUP_secp384r1,
   "SECP_521R1": GROUP_secp521r1,
   "Curve25519": GROUP_x25519,
+  "Curve448": GROUP_x448,
 ]);
 
 /* ECC point formats from RFC 4492 5.1.2 (ECPointFormat). */
@@ -1554,6 +1555,9 @@ constant ECC_CURVES = ([
 #endif
 #if constant(Crypto.ECC.Curve25519)
   GROUP_x25519: Crypto.ECC.Curve25519,
+#endif
+#if constant(Crypto.ECC.Curve448) && defined(SSL3_EXPERIMENTAL)
+  GROUP_x448: Crypto.ECC.Curve448,
 #endif
 ]);
 

@@ -1152,10 +1152,10 @@ class KeyShareDHE
 }
 
 #if constant(Crypto.ECC.Curve)
-//! KeyExchange for @[KE_ecdhe_rsa] and @[KE_ecdhe_ecdsa].
+//! KeyExchange for @[KE_ecdhe_rsa], @[KE_ecdhe_ecdsa] and @[KE_ecdh_anon].
 //!
-//! KeyExchange that uses Elliptic Curve Diffie-Hellman to
-//! generate an Ephemeral key.
+//! KeyExchange that uses Elliptic Curve Diffie-Hellman or
+//! Edwards Curve Diffie-Hellman to generate an Ephemeral key.
 class KeyExchangeECDHE
 {
   inherit KeyExchange;
@@ -1186,9 +1186,22 @@ class KeyExchangeECDHE
     case 129..256:
       // Suite B requires SECP384r1
       c = GROUP_secp384r1;
+#if constant(Crypto.ECC.Curve448)
+      if ((session->cipher_spec->key_bits <= 224) &&
+	  has_value(session->ecc_curves, GROUP_x448)) {
+	// RFC 7748 ~224bit strength.
+	c = GROUP_x448;
+      }
+#endif
       break;
     case ..128:
       c = GROUP_secp256r1;
+#if constant(Crypto.ECC.Curve25519)
+      if (has_value(session->ecc_curves, GROUP_x25519)) {
+	// RFC 7748 ~128bit strength.
+	c = GROUP_x25519;
+      }
+#endif
       break;
     }
 
@@ -1407,6 +1420,9 @@ class KeyExchangeECDHEPSK
 //! This KeyExchange uses the Elliptic Curve parameters from
 //! the ECDSA certificate on the server side, and ephemeral
 //! parameters on the client side.
+//!
+//! @note
+//!   Deprecated in @rfc{8422:5.5@}.
 class KeyExchangeECDH
 {
   inherit KeyExchangeECDHE;
