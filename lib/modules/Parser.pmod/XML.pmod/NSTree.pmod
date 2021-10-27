@@ -252,6 +252,11 @@ class NSNode {
     return ::add_child_after (c, old);
   }
 
+  NSNode replace_child (NSNode old, NSNode|array(NSNode) new) {
+    ::replace_child(old, new);
+    new->set_parent (this);
+  }
+
   //! @decl void remove_child(NSNode child)
   //! The remove_child is a not updated to take care of name
   //! space issues. To properly remove all the parents name spaces
