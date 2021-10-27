@@ -377,6 +377,30 @@ nstree_eq("<a:foo xmlns:a='ns-one'><foo xmlns='ns-two'/></a:foo>",
 dnl nstree_eq("<a:foo xmlns:a='ns-one' xmlns:b='ns-one'><b:foo/></a:foo>",
 dnl "<a:foo xmlns:a='ns-one' xmlns:b='ns-one'><b:foo/></a:foo>")
 
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input(#"<x xmlns:a='a' xmlns:b='b'>
+<y xmlns:b='B' xmlns:c='c'/>
+</x>");
+x = x->get_first_element("x");
+x = x->get_first_element("y");
+return x->diff_namespaces();
+]],[[ (["b":"B","c":"c"]) ]])
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input("<x>\xa3</x>");
+return (string)x;
+]], "<x>\302\243</x>")
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input("<x>\xa3</x>");
+return x->render_xml("iso-8859-1");
+]], "<x>\243</x>")
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input("<?xml version='1.0' encoding='iso-8859-1'?><x>\xa3</x>");
+return (string)x;
+]], "<?xml version='1.0' encoding='iso-8859-1'?><x>\243</x>")
+
 
 // Simple
 

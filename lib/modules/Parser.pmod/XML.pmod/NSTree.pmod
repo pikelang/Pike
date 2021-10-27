@@ -79,13 +79,14 @@ class NSNode {
     get_children()->add_namespace(ns, symbol, 1);
   }
 
-  //! Returns the difference between this nodes and its parents namespaces.
+  //! Returns the difference between this node and its parent namespaces.
   mapping(string:string) diff_namespaces() {
-    mapping res = ([]);
-    if(!nss) return res;
-    foreach(nss; string sym; string ns)
-      if(nss[sym]!=ns)
-	res[sym]=nss[sym];
+    mapping pnss = mParent && mParent->get_defined_nss();
+    if(!nss || !pnss) return ([]);
+    mapping res = nss + ([]);
+    foreach(pnss; string sym; string ns)
+      if(nss[sym]==ns)
+        m_delete(res, sym);
     return res;
   }
 
@@ -131,6 +132,17 @@ class NSNode {
     }
     foreach(mChildren, Node c)
       c->change_namespace(from, to);
+  }
+
+  //! Renames the namespace prefix of a namespace. No checks will be
+  //! made to see if the namespace represented is the same throughout
+  //! the subtree.
+  void rename_namespace(string from, string to) {
+    string ns = m_delete(nss, from);
+    if( ns ) {
+      nss[to] = ns;
+    }
+    get_children()->rename_namespace(from, to);
   }
 
   // Override old stuff
@@ -271,7 +283,7 @@ class NSNode {
   //!
   //! @param intermediate
   //!   If namespaces are clobbered, the node that needs additional
-  //!   xmlns aattributes are added to this mapping.
+  //!   xmlns attributes are added to this mapping.
   mapping child_namespaces(mapping(Node:mapping(string:string)) intermediate) {
     if( !sizeof(mChildren) )
       return nss;
@@ -293,7 +305,12 @@ class NSNode {
     return ret;
   }
 
-  string render_xml()
+  //! Renders the object tree to a string.
+  //!
+  //! @param encoding
+  //!   The character encoding to be used. Defaults the character
+  //!   encoding in the XML header, or UTF-8 if none.
+  string render_xml(void|string encoding)
   {
     String.Buffer data = String.Buffer();
 
@@ -350,6 +367,12 @@ class NSNode {
             data->add("/>");
           break;
 
+        case XML_HEADER:
+          if( !encoding ) {
+            encoding = n->get_attributes()->encoding;
+          }
+          // Fallthrough
+
         default:
           low_render_xml(data, n, text_quote, attribute_quote);
           break;
@@ -363,7 +386,7 @@ class NSNode {
               data->add("</", n->get_xml_name(), ">");
       });
 
-    return (string)data;
+    return get_encoder(encoding||"utf-8")->feed((string)data)->drain();
   }
 
   protected string _sprintf(int t) {
