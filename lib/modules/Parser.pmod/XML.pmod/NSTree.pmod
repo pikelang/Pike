@@ -231,7 +231,13 @@ class NSNode {
   }
 
   void set_parent(NSNode parent) {
-    nss = parent->get_defined_nss() + diff_namespaces();
+    if( nss ) {
+      foreach(parent->get_defined_nss(); string sym; string ns) {
+        if( nss[sym] ) continue;
+        if( has_value(nss, ns) ) continue;
+        nss[sym] = ns;
+      }
+    }
     ::set_parent(parent);
   }
 
@@ -294,8 +300,9 @@ class NSNode {
       return nss;
 
     mapping ret = nss  ? nss + ([]) : ([]);
+    intermediate = intermediate || ([]);
     foreach(mChildren, Node c) {
-      mapping child_ns = c->child_namespaces();
+      mapping child_ns = c->child_namespaces(intermediate);
       foreach(child_ns; string sym; string ns) {
         if( ret[sym] && ret[sym] != ns ) {
           if( !intermediate[c] ) intermediate[c] = ([]);

@@ -45,6 +45,25 @@ test_eq([[ Parser.XML.Tree.parse_input("<?xml version='1.0' encoding='iso-8859-1
 test_eq([[ Parser.XML.Tree.parse_input("\xef\xbb\xbf<i></i>")->render_xml() ]], "<i/>")
 
 test_any([[
+  object doc = Parser.XML.Tree.parse_input("<a>Hello</a>");
+  object a = doc->get_first_element();
+  array c = a->get_children();
+  c[0]->remove_node();
+  return (string)doc;
+]], "<a/>")
+
+test_any([[
+  object doc = Parser.XML.Tree.parse_input("<a> <b/> <c> <d/> </c> </a>");
+  object a = doc->get_first_element();
+  a->walk_inorder(lambda(object node) {
+    if( node->get_node_type()==Parser.XML.Tree.XML_TEXT ) {
+      node->remove_node();
+    }
+  });
+  return (string)doc;
+]], "<a><b/><c><d/></c></a>")
+
+test_any([[
 
 class A {
   inherit Parser.XML.Tree.RootNode;
@@ -401,6 +420,58 @@ object x=Parser.XML.NSTree.parse_input("<?xml version='1.0' encoding='iso-8859-1
 return (string)x;
 ]], "<?xml version='1.0' encoding='iso-8859-1'?><x>\243</x>")
 
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input("<x:a xmlns:x='X'><x:b>foo</x:b></x:a>");
+x->walk_inorder(lambda(object n) {
+  if( n->get_xml_name()=="x:b" ) {
+    string s = n->value_of_node();
+    n->replace_node(Parser.XML.NSTree.NSNode(Parser.XML.Tree.XML_TEXT, "", 0, s));
+  }
+});
+return (string)x;
+]], "<x:a xmlns:x='X'>foo</x:a>")
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<x:a xmlns:x='B'></x:a>");
+a->get_first_element()->add_child(b->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A'><x:a xmlns:x='B'/></x:a>");
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<x:a xmlns:x='B'><x:c/></x:a>");
+a->get_first_element()->add_child(b->get_first_element()->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A'><x:c xmlns:x='B'/></x:a>");
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<x:b xmlns:x='A'></x:b>");
+a->get_first_element()->add_child(b->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A'><x:b/></x:a>");
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<x:b xmlns:x='A'><x:c/></x:b>");
+a->get_first_element()->add_child(b->get_first_element()->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A'><x:c/></x:a>");
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<y:b xmlns:y='A'></y:b>");
+a->get_first_element()->add_child(b->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A' xmlns:y='A'><y:b/></x:a>");
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<y:b xmlns:y='A'><y:c/></y:b>");
+a->get_first_element()->add_child(b->get_first_element()->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A' xmlns:y='A'><y:c/></x:a>");
 
 // Simple
 
