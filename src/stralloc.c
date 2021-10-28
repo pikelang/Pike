@@ -317,6 +317,7 @@ PMOD_EXPORT void pike_string_cpy(PCHARP to, const struct pike_string *from)
 PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s,
                                          ptrdiff_t pos)
 {
+  /* NB: Allows access to the NUL-terminator. */
   if(pos > s->len || pos<0) {
     if (s->len) {
       Pike_fatal("String index %"PRINTPTRDIFFT"d is out of "
