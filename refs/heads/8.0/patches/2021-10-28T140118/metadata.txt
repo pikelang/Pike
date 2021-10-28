@@ -1,0 +1,109 @@
+subject: Pike 8.0: Sync with Roxen 6.3.1060-r2
+from: 69f3583ce93bb2cafb3463f9b9ed52b966e4ff2f
+to: 90fc2625804ab4d14c68bdaaea29aa3d4e25b20e
+originator: Henrik Grubbström (Grubba)
+depends: 2021-03-04T160618|pike/8.0.1206
+restart: true
+
+Multiple fixes:
+
+• Backported more compact attribute rendering.
+
+• Updated to tzdata2021e.
+
+• Protocols.HTTP.Client: Fix range requests where range is 0-
+
+• SSL.File: Fix erroneous timeouts.
+
+Backends may return 0 early in some circumstances when
+multiple threads are using the backend concurrently.
+This is triggered by the testsuite, and caused erroneous
+timeouts which terminated connections.
+
+• SSL.File: Fix "Failed to close SSL connection: Success".
+
+• Protocols.LDAP.client: Set the timeout for ldaps connections.
+
+LDAP connections secured with TLS/SSL now timeout if the
+server does not respond within 10 seconds. This fixes
+issues where LDAP connections used to hang indefinitely
+when the LDAP server did not respond.
+
+Fixes [CMS-741].
+
+• SSL.File: Add {query,set}_timeout().
+
+This adds an API to set an optional timeout to be used
+for blocking operations. When the timeout expires it is
+handled as if the peer sent a fatal internal error alert.
+
+• SSL.File: Detect connection closed by peer in direct_write().
+
+If the connection is closed by the peer while running
+the backend during direct_write(), it is now signalled
+with as an EPIPE failure (just as it already was if it
+was closed before running the backend).
+
+Improves error detection in eg connect().
+
+• SSL.Connection: Change API of handle_alert() and make it visible.
+
+handle_alert() is useful to eg simulate external alerts,
+so make it easier to use.
+
+• Concurrent: Handle possible backend change in timeout()
+
+Concurrent.Future()->timeout() could fail to remove the call_out if
+the backend of the corresponding Promise is changed after calling
+timeout().
+
+• Concurrent: Fix Future()->timeout()
+
+call_callback() may use call_out(cb, 0, ...) to call a callback. This
+means that if we call multiple callbacks with call_callback(), they may
+be executed in arbitrary order. The implementation of
+Future()->timeout() was subject to races in this regard, leading to the
+Future returned by ->timeout() to resolve with 0 instead of the result
+or instead of rejecting with the same reason as the original
+Promise/Future was rejected before the timeout triggered.
+
+Using less abstractions, we save on such races, Future objects, and even
+lambdas while getting arguably easier to read code.
+
+• Standards.PEM: Allow armor tokens to be prefixed by whitespace
+
+• Standards.PEM: Backported fragment helper methods.
+
+• String: Backported trim_all_whites alias trim.
+
+• Search.Utils: Unschedule already scheduled maintenance when new frequency is "Never".
+
+• pgsql: Ease out of early destructs.
+
+• pgsql: Verify objects are still live at these points.
+
+• pgsql: Complex _sprintfs in destructed objects fixated.
+
+• pgsql: Exceptions in backtrace protection.
+
+• Thread: Protect against exceptions in backtraces.
+
+• pgsql: Catch even more double traps.
+
+• pgsql: Attempt to avoid double traps.
+
+• pgsql: Simplify code.
+
+• pgsql: Clip _sprintf() in destructed objects.
+
+• pgsql: Attempt at preventing exceptions during backtrace display.
+
+• pgsql: Cater for exotic error case.
+
+• pgsql: Avoid recursive errors in case of async destruct.
+
+• pgsql: Make CALL return faster.
+
+• pgsql: Use DefaultBackend instead SmallBackend.
+
+• Calendar.TZnames: Updated expert system.
