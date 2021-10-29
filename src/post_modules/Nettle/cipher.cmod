@@ -3637,10 +3637,6 @@ PIKECLASS BlockCipher16
    */
   INHERIT BlockCipher;
 
-#ifdef HAVE_NETTLE_GCM_H
-  PIKEVAR object(Nettle_AEAD) GCM;
-#endif
-
   /*! @module KW
    *!
    *! The AES Key Wrapping algorithm from @rfc{3394@}.
@@ -3650,8 +3646,8 @@ PIKECLASS BlockCipher16
    *! and at least 16 bytes long.
    *!
    *! @note
-   *!   This mode uses the @[AEAD] APIs, but it does NOT
-   *!   have support for authenticated data.
+   *!   @rfc{6931:2.6.3@} indicates that this algorithm is also
+   *!   appropriate for @[Camellia].
    */
   PIKEVAR object(Nettle_BufferedCipher) KW;
 
@@ -5059,6 +5055,7 @@ PIKECLASS BlockCipher16
    *! @seealso
    *!   @[CBC]
    */
+  PIKEVAR object(Nettle_AEAD) GCM;
 
   PIKECLASS _GCM
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
