@@ -94,8 +94,14 @@ PIKECLASS PIKE_NAME
       PIKEFUN void create(string(8bit) passwd, void|int b)
 	flags ID_PROTECTED;
       {
-        const struct nettle_hash *meta = THIS->meta = ((struct Nettle_Hash_struct *)parent_storage(2, Nettle_Hash_program))->meta;
+        const struct nettle_hash *meta = THIS->meta =
+	  ((struct Nettle_Hash_struct *)
+	   parent_storage(2, Nettle_Hash_program))->meta;
         NO_WIDE_STRING(passwd);
+	if (b && b->u.integer && (b->u.integer != meta->block_size)) {
+	  Pike_error("Block sizes other than %d are not supported.\n",
+		     meta->block_size);
+	}
         HMAC_SET_KEY(&THIS->ctx, meta, passwd->len, (const uint8_t *)passwd->str);
 	if (cmod_CONCAT_EVAL(f_Hash__HMAC_, NETTLE_NAME, _create_fun_num) != -1) {
 	  /* Pass along the password to the inherited pike-level code. */
