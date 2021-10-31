@@ -211,7 +211,11 @@
          function->func.offset == -1) {
 	new_frame->num_args = args;
 	generic_error(NULL, Pike_sp, args,
-		      "Calling undefined function.\n");
+		      "Calling undefined function %S%s%S().\n",
+		      (ref->inherit_offset && new_frame->context->name)?
+		      new_frame->context->name : empty_pike_string,
+		      ref->inherit_offset? "::" : "",
+		      function->name);
       }
 
       switch(function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS))
