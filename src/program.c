@@ -359,7 +359,7 @@ static const char *const raw_lfun_types[] = {
   0,
 
   tFuncV(tZero,tVoid,tMix),	/* "`+=", */
-  tFuncV(tZero tSetvar(0,tZero),tVoid,tVar(0)),	/* "`[]=", */
+  tFuncV(tZero tSetvar(0,tZero) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`[]=", */
   tFuncV(tStr tSetvar(0,tZero) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`->=", */
   tFuncV(tZero,tVoid,tMix),	/* "_m_delete", */
   tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
@@ -399,7 +399,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tString,tVoid,tMix),	/* "cast", */
   tFuncV(tNone,tVoid,tInt),	/* "`!", */
   tFuncV(tZero,tVoid,tMix),	/* "`[]", */
-  tFuncV(tZero tSetvar(0,tZero),tVoid,tVar(0)),	/* "`[]=", */
+  tFuncV(tZero tSetvar(0,tZero) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`[]=", */
   tFuncV(tStr tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tMix),	/* "`->", */
   tFuncV(tStr tSetvar(0,tZero) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`->=", */
   tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tInt),	/* "_sizeof", */
