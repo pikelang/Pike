@@ -195,8 +195,11 @@ DOCEND()
 	ref_push_array(&empty_array);
     }
 
-    /*! @decl mixed `[]=(mixed key, mixed val) */
-    PIKEFUN mixed `[]=(mixed key, mixed val) {
+DOCSTART() @decl mixed `[]=(mixed key, mixed val, @
+ *!                         mixed|void context, int|void access)
+DOCEND()
+    PIKEFUN mixed `[]=(mixed key, mixed val,
+		       mixed|void context, int|void access) {
 	cb_key k = CB_KEY_FROM_SVALUE(key);
 	cb_insert(& THIS->tree, k, val);
 #ifdef DEBUG_CHECK
