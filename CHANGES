@@ -66,6 +66,10 @@ o Image.TGA
   - Correctly update pointer when horizontal or vertical flipping is
     requested by the TGA image.
 
+o Image.TIFF
+
+  Improved size checks in image decoding
+
 o Image.TIM
 
   Improved size checks better detect malformed TIM images.
