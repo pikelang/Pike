@@ -15,6 +15,7 @@ if test x$with_tifflib = xyes ; then
     AC_CHECK_LIB(jpeg, jpeg_CreateCompress)
     AC_SEARCH_LIBS(inflate, z gz zlib)
     AC_SEARCH_LIBS(TIFFOpen, tiff libtiff)
+    AC_CHECK_SIZEOF(tsize_t, 4, [#include <tiffio.h>])
 
     AC_MSG_CHECKING([if this tifflib is working])
     AC_CACHE_VAL(pike_cv_working_tiff, [
