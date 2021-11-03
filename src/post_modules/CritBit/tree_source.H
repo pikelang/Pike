@@ -71,7 +71,9 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
     /*! @decl mixed _m_delete(mixed key)
      *! m_delete callback.
      */
-    PIKEFUN mixed _m_delete(mixed key) {
+    PIKEFUN mixed _m_delete(mixed key)
+	flags ID_PROTECTED;
+    {
 	size_t size, oldsize;
 	cb_key k;
 
@@ -103,7 +105,9 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
     DOCSTART() @decl void create(array|mapping|void o)
      *! Create a tree_class from o.
     DOCEND()
-    PIKEFUN void create (array|mapping|void o) {
+    PIKEFUN void create (array|mapping|void o)
+	flags ID_PROTECTED;
+    {
 	if (o) {
 	  switch (TYPEOF(*o)) {
 	    case PIKE_T_MAPPING: {
@@ -139,14 +143,18 @@ ARG_ERROR:
 DOCSTART() @decl int _sizeof()
  *! Gives the number of entries in the @[tree_class].
 DOCEND()
-    PIKEFUN int _sizeof() {
+    PIKEFUN int _sizeof()
+	flags ID_PROTECTED;
+    {
 	push_int(THIS->tree.root ? THIS->tree.root->size : 0);
     }
 
 DOCSTART() @decl array _indices()
  *! Returns a sorted array of indices of the @[tree_class].
 DOCEND()
-    PIKEFUN array _indices() {
+    PIKEFUN array _indices()
+	flags ID_PROTECTED;
+    {
 	size_t size = THIS->tree.root ? THIS->tree.root->size : 0;
 	if (size) {
 	    size_t start = 0;
@@ -184,7 +192,9 @@ DOCSTART() @decl array _values()
  *! @[_indices] so that @expr{mkmapping(indices(tree), values(tree))@} would
  *! create a mapping with the same contents as this @[tree_class].
 DOCEND()
-    PIKEFUN array _values() {
+    PIKEFUN array _values()
+	flags ID_PROTECTED;
+    {
 	size_t size = THIS->tree.root ? THIS->tree.root->size : 0;
 	if (size) {
 	    struct array * a = allocate_array_no_init(size, 0);
@@ -199,7 +209,9 @@ DOCSTART() @decl mixed `[]=(mixed key, mixed val, @
  *!                         mixed|void context, int|void access)
 DOCEND()
     PIKEFUN mixed `[]=(mixed key, mixed val,
-		       mixed|void context, int|void access) {
+		       mixed|void context, int|void access)
+	flags ID_PROTECTED;
+    {
 	cb_key k = CB_KEY_FROM_SVALUE(key);
 	cb_insert(& THIS->tree, k, val);
 #ifdef DEBUG_CHECK
@@ -226,7 +238,9 @@ DOCEND()
      *! Cast callback. Supports only cast to mapping and
      *! behaves as the inverse of create().
      */
-    PIKEFUN mapping cast(string type) {
+    PIKEFUN mapping cast(string type)
+	flags ID_PROTECTED;
+    {
       pop_stack(); /* type as at least one more reference. */
 
       if (type == literal_mapping_string) {
@@ -269,7 +283,9 @@ DOCEND()
      *! @returns
      *! 	An array @expr{({ key, value })@}.
      */
-    PIKEFUN array _random(function random_string, function random) {
+    PIKEFUN array _random(function random_string, function random)
+	flags ID_PROTECTED;
+    {
         cb_node_t node;
 
         if (THIS->tree.root) {
@@ -295,7 +311,9 @@ DOCEND()
 
     /*! @decl mixed `[](mixed key)
      */
-    PIKEFUN mixed `[](mixed key) {
+    PIKEFUN mixed `[](mixed key)
+	flags ID_PROTECTED;
+    {
 	CB_TRANSFORM_KEY(key);
 	if ((1 << TYPEOF(*key)) & T_KEY) {
 	    cb_node_t n;
@@ -313,7 +331,9 @@ DOCEND()
 
     /*! @decl int(0..1) _equal(mixed o)
      */
-    PIKEFUN int _equal(mixed o) {
+    PIKEFUN int _equal(mixed o)
+	flags ID_PROTECTED;
+    {
 	if (TYPEOF(*o) == PIKE_T_OBJECT
 	    && o->u.object->prog == Pike_fp->current_object->prog) {
 	    cb_node_t tree1, tree2;
@@ -346,7 +366,9 @@ DOCEND()
     /*! @decl mixed `-(mixed o)
      *! Sub[s]tract two trees from each other (key-wise).
      */
-    PIKEFUN mixed `-(mixed o) {
+    PIKEFUN mixed `-(mixed o)
+	flags ID_PROTECTED;
+    {
 	struct object * res;
 	cb_node_t node, tree = NULL;
 
@@ -380,7 +402,9 @@ DOCEND()
     /*! @decl mixed `+(mixed o)
      *!	Add callback. Returns the union of two trees.
      */
-    PIKEFUN mixed `+(mixed o) {
+    PIKEFUN mixed `+(mixed o)
+	flags ID_PROTECTED;
+    {
 	cb_node_t tree1, tree2;
         TREE_T *T;
 
@@ -422,7 +446,9 @@ DOCEND()
      *! @seealso
      *! 	@[predef::`[..]]
      */
-    PIKEFUN mixed `[..](mixed a, int atype, mixed b, int btype) {
+    PIKEFUN mixed `[..](mixed a, int atype, mixed b, int btype)
+	flags ID_PROTECTED;
+    {
 	struct object * o = NULL;
 
 	if (THIS->tree.root) {
@@ -487,7 +513,9 @@ illegal_index:
     }
 
 #cmod_if 0
-    PIKEFUN mixed `[](mixed a, mixed b) {
+    PIKEFUN mixed `[](mixed a, mixed b)
+	flags ID_PROTECTED;
+    {
 	struct object * o = NULL;
 
 	if (THIS->tree.root) {

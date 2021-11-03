@@ -11,6 +11,7 @@
     DOCEND()
     PIKECLASS _get_iterator
 	program_flags PROGRAM_USES_PARENT;
+	flags ID_PROTECTED;
     {
 	CVAR cb_node_t lastnode, tree;
 	CVAR cb_key lastkey;
@@ -143,7 +144,9 @@
 	 *! @expr{tree->last()@}, respectively.
 	DOCEND()
 	PIKEFUN void create(void|int step, void|mixed start,
-			    void|mixed stop) {
+			    void|mixed stop)
+	  flags ID_PROTECTED;
+	{
 	    cb_node_t t = NULL;
 	    struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
             TREE_T *T = GET_TREE_STORAGE(tree);
@@ -223,7 +226,9 @@
             pop_n_elems(args);
         }
 
-	PIKEFUN object _get_iterator() {
+	PIKEFUN object _get_iterator()
+	  flags ID_PROTECTED;
+	{
 	    ref_push_object(Pike_fp->current_object);
 	}
 
@@ -261,7 +266,9 @@
 	    push_undefined();
 	}
 
-	PIKEFUN int `!() {
+	PIKEFUN int `!()
+	  flags ID_PROTECTED;
+	{
 	    push_int(!THIS->lastnode);
 	}
     }
