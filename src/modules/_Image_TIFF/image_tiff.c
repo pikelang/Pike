@@ -31,6 +31,7 @@
 #include "pike_error.h"
 #include "stralloc.h"
 #include "operators.h"
+#include "bignum.h"
 #include "../Image/image.h"
 
 #ifdef INLINE
@@ -430,7 +431,8 @@ void low_image_tiff_decode( struct buffer *buf,
 {
   TIFF *tif;
   unsigned int i;
-  uint32 w, h, *raster,  *s;
+  uint32 w, h, pixels, *raster,  *s;
+  tsize_t bytes_needed;
   rgb_group *di, *da=NULL;
   tif = TIFFClientOpen("memoryfile", "r", (thandle_t) buf,
 		       read_buffer, write_buffer,
@@ -442,11 +444,37 @@ void low_image_tiff_decode( struct buffer *buf,
 
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
-  s = raster = (uint32 *)_TIFFmalloc(w*h*sizeof(uint32));
+
+  if (DO_UINT32_MUL_OVERFLOW(w, h, &pixels)
+	|| pixels > 0x7fffffff) {
+    /* There is no need to continue, Image.Image does not support >2G
+     * pixels. */
+    TIFFClose(tif);
+    Pike_error("Image.TIFF: Image too large (%u x %u >2G pixels)\n",
+               w, h);
+  }
+
+#if SIZEOF_TSIZE_T == 8
+  /* We can expect sizeof(uint32) * pixels to fit into a tsize_t. */
+  bytes_needed = (tsize_t)pixels * sizeof(uint32);
+#else /* reasonably safe to assume sizeof(tsize_t) == 4 */
+  /* tsize_t is signed, the amount of space we need may not fit into the
+   * type. */
+  if (!(DO_UINT32_MUL_OVERFLOW(pixels, sizeof(uint32), &pixels)
+      || pixels > MAX_INT)) {
+    bytes_needed = pixels;
+  } else {
+    TIFFClose(tif);
+    Pike_error("Image.TIFF: Cannot allocate buffer for %u x %u image.\n",
+               w, h);
+  }
+#endif
+
+  s = raster = (uint32 *)_TIFFmalloc(bytes_needed);
   if (raster == NULL) {
     TIFFClose (tif);
-    Pike_error("Malloc failed to allocate buffer for %ldx%ld image\n",
-	  (long)w, (long)h);
+    Pike_error("Malloc failed to allocate buffer for %ux%u image\n",
+               w, h);
   }
 
   if(!TIFFReadRGBAImage(tif, w, h, raster, 0)) {
