@@ -450,6 +450,7 @@ dnl This sometimes fails to find confdefs.h, for some reason.
 dnl [#]line __oline__ "[$]0"
 [#]line __oline__ "configure"
 #include "confdefs.h"
+[$3]
 
 /* The worlds most stringent C compiler? */
 #ifdef __TenDRA__
