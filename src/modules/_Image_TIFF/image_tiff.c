@@ -461,7 +461,7 @@ void low_image_tiff_decode( struct buffer *buf,
   /* tsize_t is signed, the amount of space we need may not fit into the
    * type. */
   if (!(DO_UINT32_MUL_OVERFLOW(pixels, sizeof(uint32), &pixels)
-      || pixels > MAX_INT)) {
+      || pixels > INT_MAX)) {
     bytes_needed = pixels;
   } else {
     TIFFClose(tif);
