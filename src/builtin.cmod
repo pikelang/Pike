@@ -2555,6 +2555,13 @@ PIKECLASS backtrace_frame
   CVAR struct pike_string *filename;
   CVAR INT_TYPE lineno;
 
+#ifdef PROFILING
+  PIKEVAR bignum total_time;
+  /* FIXME: self_time */
+#endif
+
+  DECLARE_STORAGE;
+
   INIT
   {
     THIS->pc = NULL;
@@ -2931,6 +2938,12 @@ void low_backtrace(struct Pike_interpreter_struct *i)
     SET_SVAL(res->item[size], PIKE_T_OBJECT, 0, object, o);
 
     bf = OBJ2_BACKTRACE_FRAME(o);
+
+#ifdef PROFILING
+    push_int64(get_cpu_time() - (i->unlocked_time + f->start_time));
+    bf->total_time = Pike_sp[-1];
+    Pike_sp--;
+#endif
 
     if ((bf->prog = f->context->prog)) {
       add_ref(bf->prog);
