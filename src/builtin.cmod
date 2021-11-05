@@ -3369,6 +3369,13 @@ PIKECLASS backtrace_frame
   CVAR struct pike_string *filename;
   CVAR INT_TYPE lineno;
 
+#ifdef PROFILING
+  PIKEVAR bignum total_time;
+  /* FIXME: self_time */
+#endif
+
+  DECLARE_STORAGE;
+
 #ifdef PIKE_NULL_IS_SPECIAL
   INIT
   {
@@ -3726,7 +3733,13 @@ PIKECLASS LiveBacktraceFrame
   /* The live frame to inspect. */
   CVAR struct pike_frame *fp;
 
-  /* FIXME: Keep track of the corresponding thread? */
+  /* The thread that owns the frame.
+   *
+   * NB: This is required for PROFILING, but may be useful
+   *     in other cases too.
+   */
+  PIKEVAR object thread_obj flags ID_PRIVATE;
+  CVAR struct thread_state *thread_state;
 
   /* fp->pc when low_get_line() was last called. */
   CVAR PIKE_OPCODE_T *pc;
@@ -4024,6 +4037,19 @@ PIKECLASS LiveBacktraceFrame
     }
   }
 
+#ifdef PROFILING
+  PIKEFUN int `total_time()
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || !THIS->thread_state) {
+      push_undefined();
+    } else {
+      push_int64(get_cpu_time() -
+		 (THIS->thread_state->state.unlocked_time + fp->start_time));
+    }
+  }
+#endif
+
   PIKEFUN mixed get_local(int(0..) l)
   {
     struct pike_frame *fp = THIS->fp;
@@ -4211,6 +4237,10 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 
       add_ref(bf->fp = f);
 
+      if ((bf->thread_state = i->thread_state)) {
+	add_ref(bf->thread_obj = i->thread_state->thread_obj);
+      }
+
       /* FIXME: Keep track of the corresponding thread? */
 
       continue;
@@ -4221,6 +4251,12 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
     SET_SVAL(res->item[size], PIKE_T_OBJECT, 0, object, o);
 
     bf = OBJ2_BACKTRACE_FRAME(o);
+
+#ifdef PROFILING
+    push_int64(get_cpu_time() - (i->unlocked_time + f->start_time));
+    bf->total_time = Pike_sp[-1];
+    Pike_sp--;
+#endif
 
     SET_SVAL(bf->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
 
