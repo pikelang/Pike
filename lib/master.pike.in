@@ -4548,23 +4548,23 @@ string describe_backtrace(mixed trace, void|int linewidth)
 
     for(e = sizeof(trace)-1; e>=end; e--)
     {
-      mixed tmp;
+      mixed frame;
       string row;
       if (array err=[array]catch {
-	tmp = trace[e];
-	if(stringp(tmp))
+	frame = trace[e];
+	if(stringp(frame))
 	{
-	  row=[string]tmp;
+	  row = [string]frame;
 	}
-	else if(arrayp(tmp))
+	else if(arrayp(frame))
 	{
-	  if(sprintf("%t",tmp)=="object") {
+	  if(objectp(frame)) {
 	    // tmp is backtrace_frame
-	    desc->identify_parts( tmp->args );
+	    desc->identify_parts( frame->args );
 	  }
 	  else
-	    desc->identify_parts( tmp );
-	  array tmp = [array]tmp;
+	    desc->identify_parts( frame );
+	  array tmp = [array]frame;
 	  string pos;
 	  if(sizeof(tmp)>=2 && stringp(tmp[0])) {
 	    if (intp(tmp[1])) {
@@ -4587,6 +4587,11 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	      };
 	    }
 	    pos=desc;
+	  }
+
+	  if (objectp(frame) && !undefinedp(frame->total_time)) {
+	    // Profiling.
+	    pos += sprintf(": %dns", frame->total_time);
 	  }
 
 	  string data;
@@ -4619,9 +4624,9 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	}
 	else
 	{
-	  if (tmp) {
-	    if (catch (row = sprintf("%O", tmp)))
-	      row = describe_program(object_program(tmp)) + " with broken _sprintf()";
+	  if (frame) {
+	    if (catch (row = sprintf("%O", frame)))
+	      row = describe_program(object_program(frame)) + " with broken _sprintf()";
 	  } else {
 	    row = "Destructed object";
 	  }
