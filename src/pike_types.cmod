@@ -2468,7 +2468,9 @@ void simple_describe_type(struct pike_type *s)
 	    while(s->type == T_ASSIGN) {
 	      s = s->cdr;
 	    }
-	    if (s->type == T_ZERO) {
+	    if (!s) {
+	      fprintf(stderr, "__unknown__");
+	    } else if (s->type == T_ZERO) {
 	      fprintf(stderr, "zero");
 	    } else if (s->type == T_MIXED) {
 	      fprintf(stderr, "mixed");
