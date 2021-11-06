@@ -389,7 +389,7 @@ class State {
     if(!k) k = random_exponent();
 
     Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
-    Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + x*r)) % q);
+    Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + [object(Gmp.mpz)](x*r))) % q);
 
     return ({ r, s });
   }
