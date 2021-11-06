@@ -4603,6 +4603,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case PIKE_T_NAME:
     tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
     if (!tmp) return NULL;
+    if (tmp != a->cdr) return tmp;
     type_stack_mark();
     push_finished_type(tmp);
     push_type_name((struct pike_string *)(a->car));
@@ -4631,6 +4632,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case PIKE_T_NAME:
     tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
     if (!tmp) return NULL;
+    if (tmp != b->cdr) return tmp;
     type_stack_mark();
     push_finished_type(tmp);
     push_type_name((struct pike_string *)(b->car));
