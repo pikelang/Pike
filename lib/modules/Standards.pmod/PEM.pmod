@@ -97,17 +97,17 @@ class Message
 
   //! Encapsulated headers. If headers occur multiple times, they
   //! will be concatenated separated by delimiting NUL characters.
-  mapping(string(8bit):string(8bit))|zero headers;
+  mapping(string:string)|zero headers;
 
   //! The decode message body.
   string(8bit)|zero body;
 
   //! Message trailer, like @rfc{4880@} checksum.
-  string|zero trailer;
+  string(8bit)|zero trailer;
 
-  protected void create(string(8bit)|array(string(8bit)) data)
+  protected void create(string|array(string) data)
   {
-    array(string(8bit)) lines;
+    array(string) lines;
     if(stringp(data))
     {
        lines = data/"\n";
@@ -115,7 +115,7 @@ class Message
          lines = lines[..<1];
     }
     else
-      lines = [array(string(8bit))]data;
+      lines = [array(string)]data;
 
     if( sscanf(lines[0], "%*[ \t]-----BEGIN %s-----", pre)!=2 )
       return;
@@ -128,13 +128,21 @@ class Message
 
     if( sizeof(lines[-1]) && lines[-1][0]=='=' )
     {
-      trailer = MIME.decode_base64([string(7bit)]lines[-1][1..]);
+      string trailing = lines[-1][1..];
+      if( String.bits(trailing) > 7 ) {
+        error("Trailer contains 8-bit characters.\n");
+      }
+      trailer = MIME.decode_base64([string(7bit)]trailing);
       lines = lines[..<1];
     }
 
     array res = [array]MIME.parse_headers(lines*"\n");
-    headers = [mapping(string(8bit):string(8bit))]res[0];
-    body = MIME.decode_base64([string(7bit)]res[1]);
+    headers = [mapping(string:string)]res[0];
+    string _body = [string]res[1];
+    if( String.bits(_body) > 7 ) {
+      error("Message body contains 8-bit characters.\n");
+    }
+    body = MIME.decode_base64([string(7bit)]_body);
   }
 }
 
