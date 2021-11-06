@@ -544,7 +544,7 @@ array flatten(array a, mapping(array:array)|void state)
   foreach(a; int i; mixed b) {
     res[i] = arrayp(b)?flatten([array]b, state):({b});
   }
-  return state[a] = (res*({}));
+  return state[a] = [array](res*({}));
 }
 
 //! Sum the elements of an array using `+. The empty array
