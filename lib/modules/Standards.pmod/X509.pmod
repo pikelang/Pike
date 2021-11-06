@@ -1794,6 +1794,47 @@ mapping(string:array(Verifier))
   return res;
 }
 
+//! Read and decode certificate chain for the given @[host] from the
+//! letsencrypt directory (/etc/letsencrypt/live/{host}/). Note that
+//! the process has to have read privileges for the directory.
+//!
+//! The resulting array can be used directly as input to the
+//! @[SSL.Context()->add_cert()] method.
+//!
+//! @returns
+//!   @array
+//!     @elem Crypto.Sign.State 0
+//!       A signing object using the private key.
+//!     @elem array(string) 1
+//!       An array of DER encoded certificates representing the
+//!       certificate chain.
+//!   @endarray
+//!
+array get_letsencrypt_cert(string host)
+{
+  if( has_value(host, "/") ) {
+    error("Host %O contains '/'.", host);
+  }
+
+  string cert, der;
+  cert = Stdio.read_file("/etc/letsencrypt/live/"+host+"/fullchain.pem");
+  der = Stdio.read_file("/etc/letsencrypt/live/"+host+"/privkey.pem");
+
+  if( !cert ) {
+    error("Could not load certificate chain file.\n");
+  }
+  if( !der ) {
+    error("Could not load private key file.\n");
+  }
+
+  object certs = Standards.PEM.Messages(cert);
+  der = Standards.PEM.simple_decode(der);
+  object asn = Standards.ASN1.Decode.simple_der_decode(der);
+  Crypto.RSA rsa = Standards.PKCS.parse_private_key(asn);
+  return ({ rsa, certs->get_certificates() });
+}
+
+
 //! Decodes a certificate chain, ordered from leaf to root, and
 //! checks the signatures. Verifies that the chain can be decoded
 //! correctly, is unbroken, and that all certificates are in effect
