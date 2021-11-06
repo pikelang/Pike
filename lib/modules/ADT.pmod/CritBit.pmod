@@ -352,7 +352,7 @@ class Reverse(object tree) {
 
     protected object _get_iterator(void|int step, void|mixed start,
 				   void|mixed stop) {
-	return tree->_get_iterator(-1*(step||1), stop, start);
+	return get_iterator(tree, -1*(step||1), stop, start);
     }
 
     protected mixed `[..](mixed a, int atype, mixed b, int btype) {
@@ -403,7 +403,7 @@ class Reverse(object tree) {
     }
 
     protected mixed cast(string type) {
-	return tree->cast(type);
+	return __cast(tree, type);
     }
 
     protected this_program `+(mixed o) {
