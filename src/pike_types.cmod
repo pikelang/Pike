@@ -3727,9 +3727,9 @@ static int low_and_push_complex_pike_type(struct pike_type *type)
 static void low_and_pike_types(struct pike_type *t1,
 			       struct pike_type *t2)
 {
-  if(!t1 || t1->type == T_VOID ||
-     !t2 || t2->type == T_VOID)
-  {
+  if (!t1 || !t2) {
+    push_type(PIKE_T_UNKNOWN);
+  } else if(t1->type == T_VOID || t2->type == T_VOID) {
     push_type(T_VOID);
   }
   else if(t1->type == T_ZERO ||
