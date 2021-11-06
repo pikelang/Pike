@@ -5059,20 +5059,22 @@ struct program *end_first_pass(int finish)
   init_name = lfun_strings[LFUN___INIT];
 
   /* Collect references to inherited __INIT functions */
-  for(e=Pike_compiler->new_program->num_inherits-1;e;e--)
-  {
-    int id;
-    if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
-    id = FIND_LFUN(Pike_compiler->new_program->inherits[e].prog,
-		   LFUN___INIT);
-    if(id!=-1)
+  if (finish != 2) {
+    for(e=Pike_compiler->new_program->num_inherits-1;e;e--)
     {
-      id = really_low_reference_inherited_identifier(0, e, id);
-      Pike_compiler->init_node =
-	mknode(F_COMMA_EXPR,
-	       mkcastnode(void_type_string,
-			  mkapplynode(mkidentifiernode(id),0)),
-	       Pike_compiler->init_node);
+      int id;
+      if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
+      id = FIND_LFUN(Pike_compiler->new_program->inherits[e].prog,
+		     LFUN___INIT);
+      if(id!=-1)
+      {
+	id = really_low_reference_inherited_identifier(0, e, id);
+	Pike_compiler->init_node =
+	  mknode(F_COMMA_EXPR,
+		 mkcastnode(void_type_string,
+			    mkapplynode(mkidentifiernode(id),0)),
+		 Pike_compiler->init_node);
+      }
     }
   }
 
