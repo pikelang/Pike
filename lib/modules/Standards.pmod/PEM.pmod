@@ -36,7 +36,7 @@ string(8bit) derive_key(string(8bit) password, string(8bit) salt, int bytes)
 //!
 //! @returns
 //!   Returns the decrypted body text.
-string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) password)
+string decrypt_body(string dek_info, string(8bit) body, string(8bit) password)
 {
   string(8bit) key = password;
   password = "CENSORED";
@@ -77,7 +77,7 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
 string decrypt_fragment(Message m, string(8bit) pwd)
 {
   // FIXME: Check proc-type = "4,ENCRYPTED"?
-  string(8bit)|zero dek = m->headers["dek-info"];
+  string|zero dek = m->headers["dek-info"];
   if(!dek) return 0;;
   return decrypt_body(dek, m->body, pwd);
 }
