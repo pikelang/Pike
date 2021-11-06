@@ -112,7 +112,8 @@ PIKECLASS CircularList
  *!   An error if the index is out of range.
  */
 
-  PIKEFUN mixed `[]=(int index, mixed value) {
+  PIKEFUN mixed `[]=(int index, mixed value, mixed|void context,
+                     int|void access) {
     struct svalue ind;
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(index));
