@@ -747,7 +747,6 @@ class TerminfoDB {
   protected array(object) _values()
   {
     return predef::map(_indices(),
-                       [function(string:object(Terminfo))]
                        lambda(string name) {
                          return cache[name] ||
                            Terminfo(dir+name[..0]+"/"+name);
