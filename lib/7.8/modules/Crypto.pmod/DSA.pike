@@ -1,3 +1,4 @@
+#pike 7.8
 
 //! The Digital Signature Algorithm (aka DSS, Digital Signature Standard).
 
