@@ -8,7 +8,7 @@ mapping _continents=
       "GI","GR","HR","HU","IE","IM","IS","IT","JE","LI",
       "LT","LU","LV","MC","MD","ME","MK","MT","NL","NO",
       "PL","PT","RO","RS","RU","SE","SI","SJ","SK","SM",
-      "TM","UA","VA"
+      "TM","UA","VA","EU"
    }),
 
    "Africa":
@@ -145,7 +145,7 @@ array(Country) countries=
    // EP NOT USED
    Country("ES","Spain","SP"),
    Country("ET","Ethiopia","ET"),
-   // EU EXCEPTIONALLY RESERVED
+   Country("EU","European Union",0),
    // EV NOT USED
    // EW INDETERMINATELY RESERVED
    // EZ EXCEPTIONALLY RESERVED
@@ -238,7 +238,7 @@ array(Country) countries=
    Country("MC","Monaco","MN"),
    Country("MD","Moldova","MD",(["aka":({"Republic of Moldova"})])),
    Country("ME","Montenegro","MW"),
-   Country("MF","Saint Martin","??",(["aka":({"French Saint Martin"})])),
+   Country("MF","Saint Martin","RN",(["aka":({"French Saint Martin"})])),
    Country("MG","Madagascar","MA"),
    Country("MH","Marshall Islands","RM"),
    Country("MK","Macedonia","MK",
