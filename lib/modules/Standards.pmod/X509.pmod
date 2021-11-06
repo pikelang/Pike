@@ -1248,7 +1248,7 @@ variant TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
 Sequence sign_tbs(TBSCertificate tbs,
 		  Crypto.Sign.State sign, Crypto.Hash hash)
 {
-  return Sequence(({ [object(Sequence)]tbs,
+  return Sequence(({ tbs,
 		     sign->pkcs_signature_algorithm_id(hash),
 		     BitString(sign->pkcs_sign(tbs->get_der(), hash)),
 		  }));
