@@ -55,3 +55,55 @@ string get_home()
 
   return 0;
 }
+
+//! Drops the process privileges to the provided @[user] and
+//! optionally @[group]. If no group is provided the default group for
+//! the user is used.
+//!
+//! @param exception
+//!   If true, an error exception will be thrown if
+void drop_privs(string user, void|string group, void|int exception) {
+
+  void my_error(string msg, mixed ... args) {
+    if( exception )
+      error(msg, @args);
+    exit(1, msg, @args);
+  }
+
+  int uid=-1, gid=-1;
+  array pwent;
+  while( pwent = System.getpwent() ) {
+    if( pwent[0]==user ) {
+      uid = [int]pwent[2];
+      gid = [int]pwent[3];
+      break;
+    }
+  }
+  if( uid==-1 ) {
+    my_error("Unable to drop privileges. Unknown user %O.\n", user);
+  }
+
+  if( group ) {
+    gid = -1;
+    array grent;
+    while( grent = System.getgrent() ) {
+      if( grent[0]==group ) {
+        gid = [int]grent[2];
+        break;
+      }
+    }
+    if( gid==-1 ) {
+      my_error("Unable to drop privileges. Unknown group %O.\n", group);
+    }
+  }
+
+  if( System.setgid(gid) != 0 ) {
+    my_error("Unable to change group to gid %d\n", gid);
+  }
+  if( System.setuid(uid) != 0 ) {
+    my_error("Unable to change user to uid %d\n", uid);
+  }
+  if( System.setuid(0) == 0 ) {
+    my_error("Privileges not actually dropped.\n");
+  }
+}
