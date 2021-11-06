@@ -756,57 +756,6 @@ protected class SubSysLogger {
   int(0..1) runningp() { return running; }
 }
 
-protected class SubSysPhish {
-
-  constant startdoc = "phish\n"
-    "\tStart the Pike Hilfe Shell.\n";
-  constant stopdoc = "phish\n\tTurns off phish.\n";
-
-  protected int(0..1) running;
-  protected int(0..1) in_expr;
-  protected Evaluator e;
-
-  int(0..1) runningp() { return running; }
-
-  protected int(0..1) do_cmd(string cmd) {
-    if(in_expr) {
-      return 0;
-    }
-
-    array c = cmd[..<1]/" ";
-    if(e->commands[c[0]] || cmd==".\n")
-      return 0;
-
-    string src = c[0]+"(";
-    array arg = ({});
-    for(int i=1; i<sizeof(c); i++) {
-      if(c[i][0]=="\"") {
-	string str = "";
-	do {
-	  str += c[i++];
-	} while(i+1<sizeof(c) && c[i+1][-1]!="\"");
-	arg += ({ str });
-      }
-      else
-	arg += ({ "\"" + c[i] + "\"" });
-    }
-    e->add_buffer(src + arg*"," + ");\n");
-    return 1;
-  }
-
-  void start(Evaluator _e, array(string) words) {
-    if(running) return;
-    e = _e;
-    e->add_input_hook(do_cmd);
-    running = 1;
-  }
-
-  void stop(Evaluator e, void|array(string) words) {
-    e->remove_input_hook(do_cmd);
-    running = 0;
-  }
-}
-
 //
 // Support stuff..
 //
@@ -823,7 +772,6 @@ protected class SubSystems {
       "backend":SubSysBackend(),
 #endif
       "logging":SubSysLogger(),
-      "phish":SubSysPhish(),
     ]);
   }
 
