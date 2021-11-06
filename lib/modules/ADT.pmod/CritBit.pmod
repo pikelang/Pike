@@ -580,7 +580,7 @@ class MultiTree {
     }
 
     protected mixed cast(string type) {
-	return predef::`+(@trees->cast(type));
+	return predef::`+(@map(trees, __cast, type));
     }
 
     protected this_program `+(mixed o) {
