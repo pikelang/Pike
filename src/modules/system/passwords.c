@@ -50,8 +50,6 @@
 # include <shadow.h>
 #endif /* HAVE_SHADOW_H */
 
-#define sp Pike_sp
-
 /*
  * Emulation
  */
@@ -566,7 +564,7 @@ void f_get_all_users(INT32 args)
     if(!pw) break;
 
     push_pwent(pw);
-    a = append_array(a, sp-1);
+    a = append_array(a, Pike_sp-1);
     pop_stack();
   }
   endpwent();
@@ -722,7 +720,7 @@ void f_get_all_groups(INT32 args)
     if(!gr) break;
 
     push_grent(gr);
-    a = append_array(a, sp-1);
+    a = append_array(a, Pike_sp-1);
     pop_stack();
   }
   endgrent();
@@ -765,9 +763,9 @@ void f_get_groups_for_user(INT32 arg)
   check_all_args(NULL,arg,BIT_INT | BIT_STRING, 0);
   pop_n_elems(arg-1);
   a=low_allocate_array(0,10);
-  if(TYPEOF(sp[-1]) == T_INT)
+  if(TYPEOF(Pike_sp[-1]) == T_INT)
   {
-    int uid=sp[-1].u.integer;
+    int uid=Pike_sp[-1].u.integer;
 
     LOCK_IMUTEX(&password_protection_mutex);
 
@@ -777,11 +775,11 @@ void f_get_groups_for_user(INT32 arg)
 
     if(pw)
     {
-      SET_SVAL(sp[-1], T_STRING, 0, string, make_shared_string(pw->pw_name));
-      user=sp[-1].u.string->str;
+      SET_SVAL(Pike_sp[-1], T_STRING, 0, string, make_shared_string(pw->pw_name));
+      user=Pike_sp[-1].u.string->str;
     }
   }else{
-    user=sp[-1].u.string->str;
+    user=Pike_sp[-1].u.string->str;
 
     LOCK_IMUTEX(&password_protection_mutex);
 
@@ -801,7 +799,7 @@ void f_get_groups_for_user(INT32 arg)
     return;
   }
   push_int(base_gid=pw->pw_gid);
-  a=append_array(a,sp-1);
+  a=append_array(a,Pike_sp-1);
   pop_stack();
 
   setgrent();
@@ -823,7 +821,7 @@ void f_get_groups_for_user(INT32 arg)
     if(!gr) break;
 
     push_int(gr->gr_gid);
-    a=append_array(a,sp-1);
+    a=append_array(a,Pike_sp-1);
     pop_stack();
   } while(gr);
   endgrent();
