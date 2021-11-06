@@ -1,32 +1,41 @@
 UNICODE CHARACTER DATABASE
-Version 10.0.0
+Version 14.0.0
 
- Revision           10.0.0
- Authors            Asmus Freytag and Mark Davis
- Date               2017-06-18
- This Version       http://www.unicode.org/Public/10.0.0/ucd/
- Previous Version   http://www.unicode.org/Public/9.0.0/ucd/
+ Revision           14.0.0
+ Date               2021-09-10
+ This Version       http://www.unicode.org/Public/14.0.0/ucd/
  Latest Version     http://www.unicode.org/Public/UCD/latest/
 
-          Copyright � 1991-2017 Unicode, Inc. All Rights reserved.
-	  Distributed under the Terms of Use in
-	  http://www.unicode.org/copyright.html.
+UNICODE, INC. LICENSE AGREEMENT - DATA FILES AND SOFTWARE
+
+See Terms of Use <https://www.unicode.org/copyright.html>
+for definitions of Unicode Inc.’s Data Files and Software.
+
+NOTICE TO USER: Carefully read the following legal agreement.
+BY DOWNLOADING, INSTALLING, COPYING OR OTHERWISE USING UNICODE INC.'S
+DATA FILES ("DATA FILES"), AND/OR SOFTWARE ("SOFTWARE"),
+YOU UNEQUIVOCALLY ACCEPT, AND AGREE TO BE BOUND BY, ALL OF THE
+TERMS AND CONDITIONS OF THIS AGREEMENT.
+IF YOU DO NOT AGREE, DO NOT DOWNLOAD, INSTALL, COPY, DISTRIBUTE OR USE
+THE DATA FILES OR SOFTWARE.
+
+COPYRIGHT AND PERMISSION NOTICE
+
+Copyright © 1991-2021 Unicode, Inc. All rights reserved.
+Distributed under the Terms of Use in https://www.unicode.org/copyright.html.
 
 Permission is hereby granted, free of charge, to any person obtaining
-a copy of the Unicode data files and any associated documentation (the
-"Data Files") or Unicode software and any associated documentation
-(the "Software") to deal in the Data Files or Software without
-restriction, including without limitation the rights to use, copy,
-modify, merge, publish, distribute, and/or sell copies of the Data
-Files or Software, and to permit persons to whom the Data Files or
-Software are furnished to do so, provided that
-(a) this copyright and permission notice appear with all copies of
-    the Data Files or Software,
+a copy of the Unicode data files and any associated documentation
+(the "Data Files") or Unicode software and any associated documentation
+(the "Software") to deal in the Data Files or Software
+without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, and/or sell copies of
+the Data Files or Software, and to permit persons to whom the Data Files
+or Software are furnished to do so, provided that either
+(a) this copyright and permission notice appear with all copies
+of the Data Files or Software, or
 (b) this copyright and permission notice appear in associated
-    documentation, and
-(c) there is clear notice in each modified Data File or in the Software
-    as well as in the documentation associated with the Data File(s) or
-    Software that the data or software has been modified.
+Documentation.
 
 THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF
 ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -40,6 +49,6 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THE DATA FILES OR SOFTWARE.
 
 Except as contained in this notice, the name of a copyright holder
-shall not be used in advertising or otherwise to promote the sale, use
-or other dealings in these Data Files or Software without prior
+shall not be used in advertising or otherwise to promote the sale,
+use or other dealings in these Data Files or Software without prior
 written authorization of the copyright holder.
