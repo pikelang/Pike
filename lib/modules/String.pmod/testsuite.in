@@ -366,6 +366,15 @@ test_eq([[
 
 test_equal(String.secure("foo"),"foo")
 
+test_equal(String.bits(""),0)
+test_equal(String.bits("\0"),1)
+test_equal(String.bits("\1"),1)
+test_equal(String.bits("\2"),2)
+test_equal(String.bits("0"),6)
+test_equal(String.bits("Foo"),7)
+test_equal(String.bits("Fo\xf6"),8)
+
+
 dnl MISSING TEST: String.HTML.simple_obox
 dnl MISSING TEST: String.HTML.Obox
 END_MARKER

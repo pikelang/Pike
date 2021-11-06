@@ -392,3 +392,13 @@ protected string line_expand_tab(string line, int tab_width,
   }
   return result;
 }
+
+//! Gives the actual number of bits needed to represent every
+//! character in the string. Unlike @[width] that only looks at the
+//! allocated string width, @[bits] actually looks at the maximum used
+//! character and delivers a more precise answer than just 8, 16, or
+//! 32 bits. The empty string results in 0.
+int(0..) bits(string data) {
+  if(data=="") return 0;
+  return Gmp.mpz(String.range(data)[1])->size();
+}
