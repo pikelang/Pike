@@ -6076,7 +6076,8 @@ multiset & mapping -> mapping
 		      tFuncV(tIntNeg,tIntPos,tIntNeg)),
 		 tIfnot(tFuncV(tNone,tNot(tFlt),tMix),
 			tFuncV(tOr(tFlt,tInt),tOr(tFlt,tInt),tFlt)),
-		 tFunc(tArr(tStr) tStr,tStr),
+		 tFunc(tArr(tSetvar(0, tStr)) tSetvar(1, tStr),
+		       tOr(tVar(0), tVar(1))),
 		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
 		 tFunc(tArr(tSetvar(0,tMix)) tFlt,tArr(tVar(0))),
 		 tFunc(tLStr(tIntPos, tSetvar(0, tInt)) tOr(tInt, tFlt),
@@ -6101,7 +6102,7 @@ multiset & mapping -> mapping
 		 tFuncV(tArr(tSetvar(0,tMix)),
 			tOr3(tArray,tInt,tFlt),
 			tArr(tArr(tVar(0)))),
-		 tFuncV(tStr,tOr3(tStr,tInt,tFlt),tArr(tStr))),
+		 tFuncV(tSetvar(2, tStr),tOr3(tStr,tInt,tFlt),tArr(tVar(2)))),
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
   /* function(mixed,object:mixed)|"
