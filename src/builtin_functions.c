@@ -10163,7 +10163,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt01),0);
 
   ADD_EFUN("basename", f_basename,
-	   tFunc(tSetvar(0, tStr), tSetCar(tVar(0), tIntPos)), 0);
+	   tFunc(tNStr(tSetvar(0, tInt)), tNStr(tVar(0))), 0);
 
   /* function(string...:string) */
   ADD_EFUN("combine_path_nt", f_combine_path_nt,
@@ -10197,7 +10197,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tInt01),OPT_SIDE_EFFECT);
 
   ADD_EFUN("dirname", f_dirname,
-	   tFunc(tSetvar(0, tStr), tSetCar(tVar(0), tIntPos)), 0);
+	   tFunc(tNStr(tSetvar(0, tInt)), tNStr(tVar(0))), 0);
 
   /* function(mixed,mixed:int) */
   ADD_EFUN("equal",f_equal,tFunc(tMix tMix,tInt01),OPT_TRY_OPTIMIZE);
