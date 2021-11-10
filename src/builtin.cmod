@@ -3733,6 +3733,7 @@ PIKECLASS LiveBacktraceFrame
   /* The live frame to inspect. */
   CVAR struct pike_frame *fp;
 
+#ifdef PIKE_THREADS
   /* The thread that owns the frame.
    *
    * NB: This is required for PROFILING, but may be useful
@@ -3740,6 +3741,7 @@ PIKECLASS LiveBacktraceFrame
    */
   PIKEVAR object thread_obj flags ID_PRIVATE;
   CVAR struct thread_state *thread_state;
+#endif
 
   /* fp->pc when low_get_line() was last called. */
   CVAR PIKE_OPCODE_T *pc;
@@ -4041,11 +4043,16 @@ PIKECLASS LiveBacktraceFrame
   PIKEFUN int `total_time()
   {
     struct pike_frame *fp = THIS->fp;
-    if (!fp || !THIS->thread_state) {
+    if (!fp) {
       push_undefined();
-    } else {
+#ifdef PIKE_THREADS
+    } else if (THIS->thread_state) {
       push_int64(get_cpu_time() -
 		 (THIS->thread_state->state.unlocked_time + fp->start_time));
+#endif
+    } else {
+      push_int64(get_cpu_time() -
+		 (Pike_interpreter.unlocked_time + fp->start_time));
     }
   }
 #endif
@@ -4237,11 +4244,11 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 
       add_ref(bf->fp = f);
 
+#ifdef PIKE_THREADS
       if ((bf->thread_state = i->thread_state)) {
 	add_ref(bf->thread_obj = i->thread_state->thread_obj);
       }
-
-      /* FIXME: Keep track of the corresponding thread? */
+#endif
 
       continue;
     }
