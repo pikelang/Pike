@@ -836,7 +836,7 @@ void debug_push_unlimited_array_type(enum PIKE_TYPE t)
   }
 #endif
   if (!peek_type_stack() || (peek_type_stack()->type == PIKE_T_ZERO)) {
-    push_type(PIKE_T_ZERO);
+    push_type(t == PIKE_T_STRING ? PIKE_T_UNKNOWN : PIKE_T_ZERO);
   } else {
     push_int_type(0, MAX_INT32);
   }
@@ -2792,7 +2792,7 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	string_builder_putchar(s, '(');
 	if (t->car == zero_type_string) {
 	  /* Zero-length string. */
-	  string_builder_strcat(s, "zero");
+	  string_builder_strcat(s, "zero:");
 	} else {
 	  if (t->car != int_pos_type_string) {
 	    low_describe_int_range(s, t->car);
@@ -3654,7 +3654,7 @@ static void even_lower_and_pike_types(struct pike_type *t1,
 	push_type(T_OR);
       }
     } else if (t1->type == T_STRING) {
-      push_type(T_ZERO);
+      push_type(PIKE_T_UNKNOWN);
       even_lower_and_pike_types(t1->cdr, t2->cdr);
       push_unlimited_array_type(T_STRING);
       push_type(T_OR);
@@ -5688,7 +5688,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 			    PT_FLAG_CMP_NULLABLE,
 			    remap_flags);
     }
-    if (!tmp2) {
+    if (!tmp2 &&
+            (a->type != PIKE_T_STRING
+             || op == PT_BINOP_MINUS || (a->cdr && b->cdr))) {
       if (op == PT_BINOP_AND) {
 	free_type(tmp);
 	return NULL;
@@ -8031,8 +8033,12 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     break;
   }
 
-  case T_ARRAY:
   case T_STRING:
+    if (!a->cdr || !b->cdr)
+      break;
+    /* FALLTHRU */
+  case T_ARRAY:
+
     if(!(tmp = low_match_types(a->cdr, b->cdr,
 			       flags & ~(A_EXACT|B_EXACT)))) {
       return 0;
@@ -8922,8 +8928,10 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     array_cnt = 0;
     goto recurse;
 
-  case T_ARRAY:
   case T_STRING:
+    if (!a->car) return 1;
+    /* FALLTHRU */
+  case T_ARRAY:
     if (flags & LE_TYPE_SVALUE) return 1;
     if (!low_pike_types_le(a->car, b->car, 0, flags)) return 0;
     a = a->cdr;
@@ -12811,7 +12819,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       check_string_range( s->u.string, 0, &min, &max );
       push_int_type(min, max);
     } else {
-      push_type(T_ZERO);
+      push_type(PIKE_T_UNKNOWN);
     }
     push_int_type(s->u.string->len, s->u.string->len);
     push_type(T_STRING);

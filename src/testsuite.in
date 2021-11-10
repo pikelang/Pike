@@ -8432,7 +8432,7 @@ cond([[all_constants()->kill && (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 
 // typeof
 test_eq(sprintf("%O", typeof(1)),"int(1)")
-test_eq(sprintf("%O", typeof("")),"string(zero)")
+test_eq(sprintf("%O", typeof("")),"string(zero:)")
 ignore_warning("Indexing the empty string.", [[
   test_aq([[ sprintf("%O", typeof(""[0])) ]], "zero")
 ]])
@@ -8441,7 +8441,7 @@ test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
 
 // _typeof
 test_eq(sprintf("%O", _typeof(1)),"int(1)")
-test_eq(sprintf("%O", _typeof("")),"string(zero)")
+test_eq(sprintf("%O", _typeof("")),"string(zero:)")
 test_eq(sprintf("%O", _typeof("x"[0])),"int(120)")
 test_eq(sprintf("%O", _typeof(0.0)),"float")
 test_eq([[sscanf(sprintf("%Ox", _typeof(this_object))-" ",
