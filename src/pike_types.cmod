@@ -285,7 +285,7 @@ static void internal_parse_type(const char **s);
  * ARRAY	len type	type			len added in 8.1
  * MULTISET	type		-
  * NOT		type		-
- * '0'-'9'	-		-
+ * '0'-'9'	-		-			Marker $0-$9.
  * FLOAT	-		-
  * STRING	len type	ZERO, INT or OR		len:8.1, Range:7.7
  * TYPE		type		-
@@ -1407,7 +1407,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     unsigned int m = type->type - '0';
 #ifdef PIKE_TYPE_DEBUG
     if ((l_flag > 2) && m) {
-      fprintf(stderr, "Marker %d: %p.\n", m, markers[m]);
+      fprintf(stderr, "Marker $%d: %p.\n", m, markers[m]);
     }
 #endif /* PIKE_TYPE_DEBUG */
     if (markers[m]) {
@@ -1454,7 +1454,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     int marker = PTR_TO_INT(type->car);
 #ifdef PIKE_TYPE_DEBUG
     if (l_flag > 2) {
-      fprintf(stderr, "Assign to marker %"PRINTPTRDIFFT"d.\n",
+      fprintf(stderr, "Assign to marker $%"PRINTPTRDIFFT"d.\n",
 	      CAR_TO_INT(type));
     }
 #endif /* PIKE_TYPE_DEBUG */
@@ -2246,7 +2246,7 @@ void stupid_describe_type_string(char *a, ptrdiff_t len)
     {
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-	fprintf(stderr, "%c",EXTRACT_UCHAR(a+e));
+	fprintf(stderr, "$%c",EXTRACT_UCHAR(a+e));
 	break;
 
       case T_SCOPE: fprintf(stderr, "scope"); break;
@@ -2337,7 +2337,7 @@ void simple_describe_type(struct pike_type *s)
     switch(s->type & PIKE_T_MASK) {
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-	fprintf(stderr, "%d", s->type-'0');
+	fprintf(stderr, "$%d", s->type-'0');
 	break;
 
       case PIKE_T_NAME:
@@ -2374,7 +2374,7 @@ void simple_describe_type(struct pike_type *s)
 	fprintf(stderr, ")");
 	break;
       case T_ASSIGN:
-	fprintf(stderr, "(%"PRINTPTRDIFFT"d = ", CAR_TO_INT(s));
+	fprintf(stderr, "($%"PRINTPTRDIFFT"d = ", CAR_TO_INT(s));
 	simple_describe_type(s->cdr);
 	fprintf(stderr, ")");
 	break;
@@ -2694,7 +2694,7 @@ static void low_describe_int_range(struct string_builder *s,
     }
     break;
   case T_ASSIGN:
-    string_builder_sprintf(s, "%ld = (", CAR_TO_INT(t));
+    string_builder_sprintf(s, "$%ld = (", CAR_TO_INT(t));
     low_describe_int_range(s, t->cdr);
     string_builder_strcat(s, ")");
     break;
@@ -2720,11 +2720,12 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
   {
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
+      string_builder_putchar(s, '$');
       string_builder_putchar(s, t->type);
       break;
 
     case T_ASSIGN:
-      string_builder_sprintf(s, "(%c=%T)", '0' + CAR_TO_INT(t), t->cdr);
+      string_builder_sprintf(s, "($%c=%T)", '0' + CAR_TO_INT(t), t->cdr);
       break;
 
     case T_SCOPE:
@@ -7516,7 +7517,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       {
 #ifdef PIKE_DEBUG
 	if ((m < 0) || (m > 9)) {
-	  Pike_fatal("marker out of range: %d\n", m);
+	  Pike_fatal("marker out of range: $%d\n", m);
 	}
 #endif /* PIKE_DEBUG */
 
@@ -13063,7 +13064,7 @@ static void low_make_pike_type(unsigned char *type_string,
 #endif
   case T_ASSIGN:
     if ((type_string[1] < '0') || (type_string[1] > '9')) {
-      Pike_fatal("low_make_pike_type(): Bad marker: %d\n", type_string[1]);
+      Pike_fatal("low_make_pike_type(): Bad marker: $%d\n", type_string[1]);
     }
     low_make_pike_type(type_string+2, cont);
     push_assign_type(type_string[1]);
