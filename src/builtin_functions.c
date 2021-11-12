@@ -10167,11 +10167,14 @@ void init_builtin_efuns(void)
 
   /* function(string...:string) */
   ADD_EFUN("combine_path_nt", f_combine_path_nt,
-	   tFuncV(tNone, tSetvar(0, tStr), tSetCar(tVar(0), tIntPos)), 0);
+	   tFuncV(tNone, tNStr(tSetvar(0, tInt)),
+		  tNStr(tOr(tVar(0), tIntSlash))), 0);
   ADD_EFUN("combine_path_unix", f_combine_path_unix,
-	   tFuncV(tNone, tSetvar(0, tStr), tSetCar(tVar(0), tIntPos)), 0);
+	   tFuncV(tNone, tNStr(tSetvar(0, tInt)),
+		  tNStr(tOr(tVar(0), tIntSlash))), 0);
   ADD_EFUN("combine_path_amigaos", f_combine_path_amigaos,
-	   tFuncV(tNone, tSetvar(0, tStr), tSetCar(tVar(0), tIntPos)), 0);
+	   tFuncV(tNone, tNStr(tSetvar(0, tInt)),
+		  tNStr(tOr(tVar(0), tIntSlash))), 0);
   ADD_EFUN("combine_path",
 #if defined(__NT__)
 	   f_combine_path_nt,
@@ -10180,7 +10183,8 @@ void init_builtin_efuns(void)
 #else
 	   f_combine_path_unix,
 #endif
-	   tFuncV(tNone, tSetvar(0, tStr), tSetCar(tVar(0), tIntPos)), 0);
+	   tFuncV(tNone, tNStr(tSetvar(0, tInt)),
+		  tNStr(tOr(tVar(0), tIntSlash))), 0);
 
   ADD_EFUN("compile", f_compile,
 	   tFunc(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) tOr(tPrg(tObj), tVoid) tOr(tObj, tVoid) ,tPrg(tObj)),
