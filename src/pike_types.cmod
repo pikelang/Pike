@@ -2234,96 +2234,6 @@ struct pike_type *parse_type(const char *s)
   return ret;
 }
 
-#ifdef PIKE_DEBUG
-/* FIXME: */
-void stupid_describe_type_string(char *a, ptrdiff_t len)
-{
-  ptrdiff_t e;
-  for(e=0;e<len;e++)
-  {
-    if(e) fprintf(stderr, " ");
-    switch(EXTRACT_UCHAR(a+e))
-    {
-      case '0': case '1': case '2': case '3': case '4':
-      case '5': case '6': case '7': case '8': case '9':
-	fprintf(stderr, "$%c",EXTRACT_UCHAR(a+e));
-	break;
-
-      case T_SCOPE: fprintf(stderr, "scope"); break;
-      case T_TUPLE: fprintf(stderr, "tuple"); break;
-      case T_ASSIGN: fprintf(stderr, "="); break;
-      case T_INT:
-	{
-	  INT32 min=extract_type_int(a+e+1);
-	  INT32 max=extract_type_int(a+e+1+sizeof(INT32));
-	  fprintf(stderr, "int");
-	  if(min!=MIN_INT32 || max!=MAX_INT32) {
-	    if (!min && max && !(max & (max+1))) {
-	      int j = 0;
-	      while (max) {
-		max >>= 1;
-		j++;
-	      }
-	      fprintf(stderr, "(%dbit)", j);
-	    } else if (min == max) {
-	      fprintf(stderr, "(%ld)", (long)min);
-	    } else {
-	      fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
-	    }
-	  }
-	  e+=sizeof(INT32)*2;
-	  break;
-	}
-      case T_FLOAT: fprintf(stderr, "float"); break;
-      case T_STRING: fprintf(stderr, "string"); break;
-      case T_TYPE: fprintf(stderr, "type"); break;
-      case T_PROGRAM: fprintf(stderr, "program"); break;
-      case T_OBJECT:
-	fprintf(stderr, "object(%s %ld)",
-	       EXTRACT_UCHAR(a+e+1)?"is":"implements",
-	       (long)extract_type_int(a+e+2));
-	e+=sizeof(INT32)+1;
-	break;
-      case T_FUNCTION: fprintf(stderr, "function"); break;
-      case PIKE_T_FUNCTION_ARG: fprintf(stderr, "function_arg"); break;
-      case T_ARRAY: fprintf(stderr, "array"); break;
-      case T_MAPPING: fprintf(stderr, "mapping"); break;
-      case T_MULTISET: fprintf(stderr, "multiset"); break;
-
-      case PIKE_T_UNKNOWN: fprintf(stderr, "unknown"); break;
-      case T_MANY: fprintf(stderr, "many"); break;
-      case T_OR: fprintf(stderr, "or"); break;
-      case T_AND: fprintf(stderr, "and"); break;
-      case T_NOT: fprintf(stderr, "not"); break;
-      case T_VOID: fprintf(stderr, "void"); break;
-      case T_ZERO: fprintf(stderr, "zero"); break;
-      case T_MIXED: fprintf(stderr, "mixed"); break;
-
-      case PIKE_T_OPERATOR:
-	fprintf(stderr, "operator ");
-	e++;
-	switch(EXTRACT_UCHAR(a+e)<<8 | PIKE_T_OPERATOR) {
-	case PIKE_T_FIND_LFUN: fprintf(stderr, "find_lfun"); break;
-	case PIKE_T_SET_CAR: fprintf(stderr, "set_car"); break;
-	case PIKE_T_SET_CDR: fprintf(stderr, "set_cdr"); break;
-	default:
-	  fprintf(stderr, "unknown<0x%04x>",
-		  EXTRACT_UCHAR(a+e)<<8 | PIKE_T_OPERATOR);
-	  break;
-	}
-	break;
-
-      case PIKE_T_TRANSITIVE:
-	fprintf(stderr, "transitive");
-	break;
-
-      default: fprintf(stderr, "%d",EXTRACT_UCHAR(a+e)); break;
-    }
-  }
-  fprintf(stderr, "\n");
-}
-#endif
-
 void simple_describe_type(struct pike_type *s)
 {
   DECLARE_CYCLIC();
@@ -7992,9 +7902,9 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     if(a->cdr || b->cdr)
     {
       fprintf(stderr,"Type match1: ");
-      stupid_describe_type(a,type_length(a));
+      simple_describe_type(a);
       fprintf(stderr,"Type match2: ");
-      stupid_describe_type(b,type_length(b));
+      simple_describe_type(b);
     }
 #endif
 
@@ -8835,9 +8745,9 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     if(a->cdr || b->cdr)
     {
       fprintf(stderr,"Type match1: ");
-      stupid_describe_type(a,type_length(a));
+      simple_describe_type(a);
       fprintf(stderr,"Type match2: ");
-      stupid_describe_type(b,type_length(b));
+      simple_describe_type(b);
     }
 #endif
 
