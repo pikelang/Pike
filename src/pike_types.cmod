@@ -3875,7 +3875,7 @@ static int alloc_remap_marker(struct remap_state *remap, int marker,
 
   marker = marker & 0x0f;
 
-  if (!remap) return '0' | marker;
+  if (!remap || (flags & PT_FLAG_REMAP_INHIBIT)) return '0' | marker;
 
   if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
 
@@ -3900,7 +3900,7 @@ static int remap_marker(struct remap_state *remap, int marker,
 
   marker = marker & 0x0f;
 
-  if (!remap) return '0' | marker;
+  if (!remap || (flags & PT_FLAG_REMAP_INHIBIT)) return '0' | marker;
 
   if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
 
@@ -3923,7 +3923,7 @@ static void free_marker(struct remap_state *remap, int marker,
 {
   int m;
 
-  if (!remap) return;
+  if (!remap || (flags & PT_FLAG_REMAP_INHIBIT)) return;
 
   marker &= 0x0f;
 
@@ -3971,7 +3971,8 @@ static void push_remap_markers(struct pike_type *t,
 			       struct remap_state *remap,
 			       enum pt_remap_flags flags)
 {
-  if (!t || (!remap && !markers && !(flags & PT_FLAG_REMAP_EVAL_MARKERS))) {
+  if (!t || (flags & PT_FLAG_REMAP_INHIBIT) ||
+      (!remap && !markers && !(flags & PT_FLAG_REMAP_EVAL_MARKERS))) {
     push_finished_type(t);
     return;
   }

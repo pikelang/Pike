@@ -83,6 +83,7 @@ enum pt_remap_flags
     PT_FLAG_REMAP_EVAL_MARKERS =	0x08,	/* Eval marker assignments */
 
 
+    PT_FLAG_REMAP_INHIBIT =		0x40,	/* Inhibit remapping */
     PT_FLAG_REMAP_TRACE =		0x80,	/* Trace the operations */
   };
 
