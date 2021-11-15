@@ -128,7 +128,6 @@ struct pike_string *type_check_system_string;
    that list.
 */
 const char *const lfun_names[]  = {
-#ifdef PIKE_NEW_LFUN_LOOKUP
   "__INIT",
   "create",
   "\0_destruct\0destroy",
@@ -211,80 +210,10 @@ const char *const lfun_names[]  = {
   "\0_iterator_value\0value",
   0,
   0,		/* End marker. */
-#else
-  "__INIT",
-  "create",
-  "\0_destruct\0destroy",
-  "`+",
-  "`-",
-  "`&",
-  "`|",
-  "`^",
-  "`<<",
-  "`>>",
-  "`*",
-  "`/",
-  "`%",
-  "`~",
-  "`==",
-  "`<",
-  "`>",
-  "__hash",
-  "cast",
-  "`!",
-  "`[]",
-  "`[]=",
-  "`->",
-  "`->=",
-  "_sizeof",
-  "_indices",
-  "_values",
-  "`()",
-  "``+",
-  "``-",
-  "``&",
-  "``|",
-  "``^",
-  "``<<",
-  "``>>",
-  "``*",
-  "``/",
-  "``%",
-  "`+=",
-  "_is_type",
-  "_sprintf",
-  "_equal",
-  "_m_delete",
-  "_get_iterator",
-  "`[..]",
-  /* NOTE: After this point there are only fake lfuns. */
-  "_search",
-  "_types",
-  "_serialize",
-  "_deserialize",
-  "_size_object",
-  "_random",
-  "`**",
-  "``**",
-  "_sqrt",
-  "_annotations",
-  "_m_clear",
-  "_m_add",
-  "_reverse",
-  "\0_iterator_next\0next",
-  "\0_iterator_index\0index",
-  "\0_iterator_value\0value",
-  "_atomic_get_set",
-#endif
 };
 
-#ifdef PIKE_NEW_LFUN_LOOKUP
 struct pike_string *lfun_strings[0x100];
 struct pike_string *lfun_compat_strings[0x100];
-#else
-struct pike_string *lfun_strings[NELEM(lfun_names)];
-struct pike_string *lfun_compat_strings[NELEM(lfun_names)];
-#endif
 
 static struct mapping *lfun_ids;
 
@@ -292,7 +221,6 @@ static struct mapping *lfun_ids;
 static struct mapping *lfun_types;
 
 static const char *const raw_lfun_types[] = {
-#ifdef PIKE_NEW_LFUN_LOOKUP
   tFuncV(tNone,tVoid,tVoid),	/* "__INIT", */
   tFuncV(tNone,tZero,tVoid),	/* "create", */
   tFuncV(tOr(tVoid,tInt),tVoid,tInt01), /* "_destruct", */
@@ -376,73 +304,6 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone, tZero, tMix),	/* "_iterator_value", */
   0,
   0,		/* End marker. */
-
-#else
-  tFuncV(tNone,tVoid,tVoid),	/* "__INIT", */
-  tFuncV(tNone,tZero,tVoid),	/* "create", */
-  tFuncV(tOr(tVoid,tInt),tVoid,tInt01), /* "_destruct", */
-  tFuncV(tZero,tVoid,tMix),	/* "`+", */
-  tFunc(tOr(tVoid,tZero),tMix),	/* "`-", */
-  tFuncV(tNone,tZero,tMix),	/* "`&", */
-  tFuncV(tNone,tZero,tMix),	/* "`|", */
-  tFuncV(tNone,tZero,tMix),	/* "`^", */
-  tFuncV(tZero,tVoid,tMix),	/* "`<<", */
-  tFuncV(tZero,tVoid,tMix),	/* "`>>", */
-  tFuncV(tNone,tZero,tMix),	/* "`*", */
-  tFuncV(tNone,tZero,tMix),	/* "`/", */
-  tFuncV(tNone,tZero,tMix),	/* "`%", */
-  tFuncV(tNone,tVoid,tMix),	/* "`~", */
-  tFuncV(tMix,tVoid,tInt),	/* "`==", */
-  tFuncV(tMix,tVoid,tInt),	/* "`<", */
-  tFuncV(tMix,tVoid,tInt),	/* "`>", */
-  tFuncV(tNone,tVoid,tInt),	/* "__hash", */
-  tFuncV(tString,tVoid,tMix),	/* "cast", */
-  tFuncV(tNone,tVoid,tInt),	/* "`!", */
-  tFuncV(tZero,tVoid,tMix),	/* "`[]", */
-  tFuncV(tZero tSetvar(0,tZero) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`[]=", */
-  tFuncV(tStr tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tMix),	/* "`->", */
-  tFuncV(tStr tSetvar(0,tZero) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`->=", */
-  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tInt),	/* "_sizeof", */
-  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tArray),	/* "_indices", */
-  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tArray),	/* "_values", */
-  tFuncV(tNone,tZero,tMix),	/* "`()", */
-  tFuncV(tZero,tVoid,tMix),	/* "``+", */
-  tFuncV(tZero,tVoid,tMix),	/* "``-", */
-  tFuncV(tNone,tZero,tMix),	/* "``&", */
-  tFuncV(tNone,tZero,tMix),	/* "``|", */
-  tFuncV(tNone,tZero,tMix),	/* "``^", */
-  tFuncV(tZero,tVoid,tMix),	/* "``<<", */
-  tFuncV(tZero,tVoid,tMix),	/* "``>>", */
-  tFuncV(tNone,tZero,tMix),	/* "``*", */
-  tFuncV(tNone,tZero,tMix),	/* "``/", */
-  tFuncV(tNone,tZero,tMix),	/* "``%", */
-  tFuncV(tZero,tVoid,tMix),	/* "`+=", */
-  tFuncV(tStr,tVoid,tInt),	/* "_is_type", */
-  tFuncV(tInt tOr(tMap(tStr,tInt),tVoid),tVoid,tStr),	/* "_sprintf", */
-  tFuncV(tMix,tVoid,tInt),	/* "_equal", */
-  tFuncV(tZero,tVoid,tMix),	/* "_m_delete", */
-  tFuncV(tNone,tVoid,tObj),	/* "_get_iterator", */
-  tFuncV(tZero tRangeBound tZero tRangeBound, tVoid, tMix), /* "`[..]" */
-  /* NOTE: After this point there are only fake lfuns. */
-  tFuncV(tZero tOr(tZero, tVoid), tZero, tMix), /* "_search", */
-  tFuncV(tNone,tVoid,tArray),	/* "_types", */
-  tFuncV(tObj tZero, tVoid, tVoid),	/* "_serialize", */
-  tFuncV(tObj tZero, tVoid, tVoid),	/* "_deserialize", */
-  tFuncV(tNone, tVoid, tInt),	/* "_size_object", */
-  tFuncV(tFunction tFunction, tVoid, tMix),	/* "_random", */
-  tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "pow", */
-  tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "rpow", */
-  tFunc(tVoid,tMix),            /* "_sqrt", */
-  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt)
-	 tOr(tInt01,tVoid),tVoid,tArray),   /* "_annotations", */
-  tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
-  tFuncV(tZero, tVoid, tVoid),	/* "_m_add", */
-  tFuncV(tNone, tOr(tZero, tVoid), tVoid),	/* "_reverse", */
-  tFuncV(tNone, tZero, tMix),	/* "_iterator_next", */
-  tFuncV(tNone, tZero, tMix),	/* "_iterator_index", */
-  tFuncV(tNone, tZero, tMix),	/* "_iterator_value", */
-  tFuncV(tZero tZero, tVoid, tMix),	/* "_atomic_get_set", */
-#endif
 };
 
 /* These two are not true LFUNs! */
@@ -3401,7 +3262,6 @@ void fixate_program(void)
 
   p->flags |= PROGRAM_FIXED;
 
-#ifdef PIKE_NEW_LFUN_LOOKUP
   {
     int found = 1;		/* Assume __INIT */
     int n;
@@ -3460,16 +3320,6 @@ void fixate_program(void)
       }
     }
   }
-#else
-  /* Yes, it is supposed to start at 1  /Hubbe */
-  for(i=1;i<NUM_LFUNS;i++) {
-    int id = p->lfuns[i] = low_find_lfun(p, i);
-    if (id >= 0) {
-      // LFUNs are used.
-      p->identifier_references[id].id_flags |= ID_USED;
-    }
-  }
-#endif
 
   /* Complain about unused private symbols. */
   for (i = 0; i < p->num_identifier_references; i++) {
@@ -3671,12 +3521,11 @@ struct program *low_allocate_program(void)
   DOUBLELINK(first_program, p);
   ACCURATE_GETTIMEOFDAY(& p->timestamp);
 
-#ifdef PIKE_NEW_LFUN_LOOKUP
   p->lfuns = malloc(sizeof(INT16) * ((NUM_LFUNS >> 4) + 1 + 16));
   memset(p->lfuns, 0x00, sizeof(INT16) * ((NUM_LFUNS >> 4) + 1));	/* 0 */
   memset(p->lfuns + (NUM_LFUNS >> 4) + 1, 0xff, sizeof(INT16) * 16);	/* -1 */
   p->lfuns[0] = (NUM_LFUNS >> 4) + 1;		/* __INIT et al. */
-#endif
+
   return p;
 }
 
@@ -4111,11 +3960,9 @@ static void exit_program_struct(struct program *p)
 #include "program_areas.h"
   }
 
-#ifdef PIKE_NEW_LFUN_LOOKUP
   if (p->lfuns) {
     free(p->lfuns);
   }
-#endif
 
   EXIT_PIKE_MEMOBJ(p);
 
@@ -4492,7 +4339,6 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
 	  "%*sLFUN table:\n"
 	  "%*s  LFUN  Ref# Name\n",
 	  indent, "", indent, "");
-#ifdef PIKE_NEW_LFUN_LOOKUP
   {
     int n = 0;
     for (d = 0; d < (int)NELEM(lfun_names); d++,n++) {
@@ -4507,15 +4353,6 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
       }
     }
   }
-#else
-  for (d = 0; d < NUM_LFUNS; d++) {
-    if (p->lfuns[d] != -1) {
-      fprintf(stderr, "%*s  %4d: %04d %s\n",
-	      indent, "", d, p->lfuns[d],
-	      lfun_names[d][0]?lfun_names[d]:(lfun_names[d]+1));
-    }
-  }
-#endif
 
   fprintf(stderr, "\n"
 	  "%*sLinenumber table:\n",
@@ -5170,13 +5007,10 @@ struct program *end_first_pass(int finish)
      */
     e=-1;
   }
-#ifdef PIKE_NEW_LFUN_LOOKUP
+
   /* NB: We know that LFUN___INIT is 0! */
   assert(!LFUN___INIT);
   Pike_compiler->new_program->lfuns[Pike_compiler->new_program->lfuns[0]] = e;
-#else
-  Pike_compiler->new_program->lfuns[LFUN___INIT] = e;
-#endif
 
   pop_compiler_frame(); /* Pop __INIT local variables */
 
@@ -9656,9 +9490,7 @@ void init_program(void)
   struct svalue key;
   struct svalue val;
   struct svalue id;
-#ifdef PIKE_NEW_LFUN_LOOKUP
   size_t n = 0;
-#endif
 
   MAKE_CONST_STRING(this_function_string,"this_function");
   MAKE_CONST_STRING(this_program_string,"this_program");
@@ -9672,7 +9504,6 @@ void init_program(void)
   /* NB: One extra entry needed for lfun::destroy(). */
   lfun_ids = allocate_mapping(NUM_LFUNS + 1);
   lfun_types = allocate_mapping(NUM_LFUNS + 1);
-#ifdef PIKE_NEW_LFUN_LOOKUP
   for (i=0; i < NELEM(lfun_names); i++,n++) {
     const char *name, *compat_name = NULL;
     if (!lfun_names[i]) {
@@ -9716,47 +9547,6 @@ void init_program(void)
       free_type(val.u.type);
     }
   }
-#else
-  for (i=0; i < NELEM(lfun_names); i++) {
-    const char *name, *compat_name = NULL;
-    name = lfun_names[i];
-    if (!name[0]) {
-      name += 1;
-      compat_name = name + strlen(name) + 1;
-    }
-    if (compat_name) {
-      lfun_strings[i] =
-	make_shared_static_string(name, compat_name - (name + 1), eightbit);
-      lfun_compat_strings[i] =
-	make_shared_static_string(compat_name,
-				  strlen(compat_name), eightbit);
-    } else {
-      lfun_strings[i] =
-	make_shared_static_string(name, strlen(name), eightbit);
-      lfun_compat_strings[i] = NULL;
-    }
-
-    SET_SVAL(id, T_INT, NUMBER_NUMBER, integer, i);
-    SET_SVAL(key, T_STRING, 0, string, lfun_strings[i]);
-    mapping_insert(lfun_ids, &key, &id);
-
-    SET_SVAL(val, T_TYPE, 0, type, make_pike_type(raw_lfun_types[i]));
-    mapping_insert(lfun_types, &key, &val);
-
-    if (compat_name) {
-      /* Special case for lfun::destroy() et al. */
-      SET_SVAL(key, T_STRING, 0, string, lfun_compat_strings[i]);
-      /* FIXME: Adjust the type to be __deprecated__? */
-      mapping_insert(lfun_types, &key, &val);
-      free_type(val.u.type);
-
-      SET_SVAL(id, T_INT, NUMBER_NUMBER, integer, i);
-      mapping_insert(lfun_ids, &key, &id);
-    } else {
-      free_type(val.u.type);
-    }
-  }
-#endif
 
   lfun_getter_type_string = make_pike_type(tFuncV(tNone, tVoid, tMix));
   lfun_setter_type_string =
@@ -9778,17 +9568,10 @@ void cleanup_program(void)
   free_type(lfun_getter_type_string);
   free_mapping(lfun_types);
   free_mapping(lfun_ids);
-#ifdef PIKE_NEW_LFUN_LOOKUP
   for (e=0; e < NELEM(lfun_strings); e++) {
     do_free_string(lfun_strings[e]);
     do_free_string(lfun_compat_strings[e]);
   }
-#else
-  for (e=0; e < NELEM(lfun_names); e++) {
-    do_free_string(lfun_strings[e]);
-    do_free_string(lfun_compat_strings[e]);
-  }
-#endif
 #ifdef FIND_FUNCTION_HASHSIZE
   for(e=0;e<FIND_FUNCTION_HASHSIZE;e++)
   {

@@ -20,8 +20,6 @@
 /* Needed to support dynamic loading on NT */
 PMOD_EXPORT extern struct program_state * Pike_compiler;
 
-/* #define PIKE_NEW_LFUN_LOOKUP */
-
 /* Compilation flags */
 #define COMPILATION_CHECK_FINAL         0x01
         /* This flag is set when resolve functions should force the lookup so
@@ -59,7 +57,6 @@ extern struct pike_string *args_string;
 extern struct pike_string *parser_system_string;
 extern struct pike_string *type_check_system_string;
 
-#ifdef PIKE_NEW_LFUN_LOOKUP
 /**
  * New LFUN lookup table.
  *
@@ -167,79 +164,6 @@ enum LFUN {
 
     NUM_LFUNS,
 };
-
-#else
-
-enum LFUN {
-    LFUN___INIT,
-    LFUN_CREATE,
-    LFUN__DESTRUCT,
-    LFUN_ADD,
-    LFUN_SUBTRACT,
-    LFUN_AND,
-    LFUN_OR,
-    LFUN_XOR,
-    LFUN_LSH,
-    LFUN_RSH,
-    LFUN_MULTIPLY,
-    LFUN_DIVIDE,
-    LFUN_MOD,
-    LFUN_COMPL,
-    LFUN_EQ,
-    LFUN_LT,
-    LFUN_GT,
-    LFUN___HASH,
-    LFUN_CAST,
-    LFUN_NOT,
-    LFUN_INDEX,
-    LFUN_ASSIGN_INDEX,
-    LFUN_ARROW,
-    LFUN_ASSIGN_ARROW,
-    LFUN__SIZEOF,
-    LFUN__INDICES,
-    LFUN__VALUES,
-    LFUN_CALL,
-    LFUN_RADD,
-    LFUN_RSUBTRACT,
-    LFUN_RAND,
-    LFUN_ROR,
-    LFUN_RXOR,
-    LFUN_RLSH,
-    LFUN_RRSH,
-    LFUN_RMULTIPLY,
-    LFUN_RDIVIDE,
-    LFUN_RMOD,
-    LFUN_ADD_EQ,
-    LFUN__IS_TYPE,
-    LFUN__SPRINTF,
-    LFUN__EQUAL,
-    LFUN__M_DELETE,
-    LFUN__GET_ITERATOR,
-    LFUN_RANGE,
-
-    NUM_LFUNS,
-/* NOTE: After this point there are only fake lfuns.
- */
-
-    LFUN__SEARCH = NUM_LFUNS,
-    LFUN__TYPES,
-    LFUN__SERIALIZE,
-    LFUN__DESERIALIZE,
-    LFUN__SIZE_OBJECT,
-    LFUN__RANDOM,
-    LFUN_POW,
-    LFUN_RPOW,
-    LFUN__SQRT,
-    LFUN__ANNOTATIONS,
-    LFUN__M_CLEAR,
-    LFUN__M_ADD,
-    LFUN__REVERSE,
-    LFUN__ITERATOR_NEXT_FUN,
-    LFUN__ITERATOR_INDEX_FUN,
-    LFUN__ITERATOR_VALUE_FUN,
-    LFUN__ATOMIC_GET_SET,
-};
-#endif
 
 extern const char *const lfun_names[];
 
@@ -801,11 +725,7 @@ struct program
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) NUMTYPE PIKE_CONCAT(num_,NAME) ;
 #include "program_areas.h"
 
-#ifdef PIKE_NEW_LFUN_LOOKUP
   INT16 *lfuns;
-#else
-  INT16 lfuns[NUM_LFUNS];
-#endif
 };
 
 struct local_variable_info
@@ -867,12 +787,8 @@ static inline struct identifier *ID_FROM_INT(const struct program *p, unsigned I
   return ID_FROM_PTR(p, ref);
 }
 
-#ifdef PIKE_NEW_LFUN_LOOKUP
 #define QUICK_FIND_LFUN(P,N) ((P)->lfuns[(N)>>4]?			\
 	       (P)->lfuns[(P)->lfuns[(N)>>4] + ((N) & 0x0f)]:-1)
-#else
-#define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
-#endif
 
 #ifdef DO_PIKE_CLEANUP
 PMOD_EXPORT extern int gc_external_refs_zapped;

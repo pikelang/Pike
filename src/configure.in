@@ -1228,14 +1228,6 @@ MY_AC_ARG_WITH(keypair-loop,
 	       [AC_DEFINE(PIKE_MAPPING_KEYPAIR_LOOP)],[],
 	       [])
 
-MY_AC_ARG_WITH(new-lfun-lookup,
-	MY_DESCR([--without-new-lfun-lookup],
-		 [Do not use the new 2-level lfun lookup table.]), [
-	    AC_DEFINE(PIKE_NEW_LFUN_LOOKUP)
-	], [], [
-	    AC_DEFINE(PIKE_NEW_LFUN_LOOKUP)
-	])
-
 if test "x$with_pike_type" = "xno"; then
   PIKE_MSG_WARN([Disabling of USE_PIKE_TYPE is no longer supported.])
 fi

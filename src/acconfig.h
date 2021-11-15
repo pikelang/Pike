@@ -278,9 +278,6 @@
 /* Define this if eval_instruction gets large on your platform. */
 #undef PIKE_SMALL_EVAL_INSTRUCTION
 
-/* Define this to enable the new 2-level lfun lookup tables. */
-#undef PIKE_NEW_LFUN_LOOKUP
-
 /* Define this to use machine code */
 #undef PIKE_USE_MACHINE_CODE
 
