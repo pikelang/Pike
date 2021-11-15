@@ -15431,6 +15431,19 @@ void bar(C c)
 {
 }
 ")]])
+test_do([[Stdio.write_file("recursive_module_dump_test/Xyzzy.pike", #"
+void foo()
+{
+}
+")]])
+test_do([[Stdio.write_file("recursive_module_dump_test/Quux.pmod", #"
+inherit Xyzzy;
+
+void bar()
+{
+  Quux.foo();
+}
+")]])
 define(dump_test_module, [[test_tests([[ array a() {
   Tools.Testsuite.log_status("Dumping ]]$1[[, case=$2");
   return Tools.Testsuite.run_script(({"-M", "recursive_module_dump_test", "-x", "dump", "recursive_module_dump_test/]]$1[["}));
@@ -15438,31 +15451,41 @@ define(dump_test_module, [[test_tests([[ array a() {
 define(try_load_test_module, [[test_tests([[ array a() {
   Tools.Testsuite.log_status("Instantiating TestModule.A, case=$1");
   return Tools.Testsuite.run_script(({"-M", "recursive_module_dump_test", "-e", "TestModule.A"}));
+}]])
+test_tests([[ array a() {
+  Tools.Testsuite.log_status("Calling Quux.bar(), case=$1");
+  return Tools.Testsuite.run_script(({"-M", "recursive_module_dump_test", "-e", "Quux.bar()"}));
 }]])]])
 
 dnl - First, try without dumping
 try_load_test_module(1)
 
-dnl - Next, dump only A.pmod
+dnl - Next, dump only A.pmod / Xyzzy.pike
 dump_test_module(TestModule.pmod/A.pmod, 2)
+dump_test_module(Xyzzy.pike, 2)
 try_load_test_module(2)
 
-dnl - Now, only module.pmod
+dnl - Now, only module.pmod / Quux.pmod
 test_do(rm("recursive_module_dump_test/TestModule.pmod/A.pmod.o"))
 dump_test_module(TestModule.pmod/module.pmod, 3)
+dump_test_module(Quux.pmod, 3)
 try_load_test_module(3)
 
-dnl - A.pmod before module.pmod
+dnl - A.pmod before module.pmod, Xyzzy before Quux
 test_do(rm("recursive_module_dump_test/TestModule.pmod/module.pmod.o"))
 dump_test_module(TestModule.pmod/A.pmod, 4)
 dump_test_module(TestModule.pmod/module.pmod, 4)
+dump_test_module(Xyzzy.pike, 4)
+dump_test_module(Quux.pmod, 4)
 try_load_test_module(4)
 
-dnl - module.pmod before A.pmod
+dnl - module.pmod before A.pmod, Quux before Xyzzy
 test_do(rm("recursive_module_dump_test/TestModule.pmod/A.pmod.o"))
 test_do(rm("recursive_module_dump_test/TestModule.pmod/module.pmod.o"))
 dump_test_module(TestModule.pmod/module.pmod, 5)
 dump_test_module(TestModule.pmod/A.pmod, 5)
+dump_test_module(Quux.pmod, 5)
+dump_test_module(Xyzzy.pike, 5)
 try_load_test_module(5)
 
 test_do(Stdio.recursive_rm("recursive_module_dump_test"))
