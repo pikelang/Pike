@@ -450,8 +450,28 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
     /* print_tree(n); */
     return 0;
   }
-  if (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) {
-    yytype_report(REPORT_WARNING, NULL, 0, t, NULL, 0, diff, 0, msg);
+  if (n->type != zero_type_string) {
+    /* Report if the only match was for zero. */
+    struct pike_type *diff2 =
+      type_binop(PT_BINOP_MINUS, n->type, zero_type_string, 0, 0, 0);
+    if (l_flag > 10) {
+      fprintf(stderr, "diff2 = ");
+      simple_describe_type(diff2);
+      fprintf(stderr, "\n");
+    }
+    if (diff == diff2) {
+      /* Mismatch for everything but zero. */
+      yytype_report(REPORT_ERROR, NULL, 0, t, NULL, 0, diff, 0, msg);
+      free_type(diff2);
+      free_type(diff);
+      /* print_tree(n); */
+      return 0;
+    }
+    free_type(diff2);
+
+    if (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) {
+      yytype_report(REPORT_WARNING, NULL, 0, t, NULL, 0, diff, 0, msg);
+    }
   }
   free_type(diff);
 #else
