@@ -15467,12 +15467,14 @@ try_load_test_module(2)
 
 dnl - Now, only module.pmod / Quux.pmod
 test_do(rm("recursive_module_dump_test/TestModule.pmod/A.pmod.o"))
+test_do(rm("recursive_module_dump_test/Xyzzy.pike.o"))
 dump_test_module(TestModule.pmod/module.pmod, 3)
 dump_test_module(Quux.pmod, 3)
 try_load_test_module(3)
 
 dnl - A.pmod before module.pmod, Xyzzy before Quux
 test_do(rm("recursive_module_dump_test/TestModule.pmod/module.pmod.o"))
+test_do(rm("recursive_module_dump_test/Quux.pmod.o"))
 dump_test_module(TestModule.pmod/A.pmod, 4)
 dump_test_module(TestModule.pmod/module.pmod, 4)
 dump_test_module(Xyzzy.pike, 4)
@@ -15482,6 +15484,8 @@ try_load_test_module(4)
 dnl - module.pmod before A.pmod, Quux before Xyzzy
 test_do(rm("recursive_module_dump_test/TestModule.pmod/A.pmod.o"))
 test_do(rm("recursive_module_dump_test/TestModule.pmod/module.pmod.o"))
+test_do(rm("recursive_module_dump_test/Xyzzy.pike.o"))
+test_do(rm("recursive_module_dump_test/Quux.pmod.o"))
 dump_test_module(TestModule.pmod/module.pmod, 5)
 dump_test_module(TestModule.pmod/A.pmod, 5)
 dump_test_module(Quux.pmod, 5)
