@@ -5324,20 +5324,23 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
     }
 
-    if ((a->type == T_ZERO) && (bflags & PT_FLAG_CMP_NULLABLE)) {
-      b = a;
-      goto recur;
-    }
-    if ((b->type == T_ZERO) && (aflags & PT_FLAG_CMP_NULLABLE)) {
-      a = b;
-      goto recur;
-    }
-    if ((a->type == T_INT) && (bflags & PT_FLAG_CMP_NULLABLE)) {
+    /* NB: TWOT(T_INT, T_ZERO) and TWOT(T_ZERO, T_INT) have
+     *     been handled above.
+     */
+    if (((a->type == T_ZERO) || (a->type == T_INT)) &&
+	(bflags & PT_FLAG_CMP_NULLABLE)) {
+      /* FIXME: Only valid for AND and MINUS. */
       b = zero_type_string;
+      bflags &= ~PT_FLAG_CMP_NULLABLE;
       goto recur;
     }
-    if ((b->type == T_INT) && (aflags & PT_FLAG_CMP_NULLABLE)) {
-      a = zero_type_string;
+    if (((b->type == T_ZERO) || (b->type == T_INT)) &&
+	(aflags & PT_FLAG_CMP_NULLABLE)) {
+      /* FIXME: Only valid for AND and MINUS. */
+      if (op == PT_BINOP_AND) {
+	a = zero_type_string;
+      }
+      aflags &= ~PT_FLAG_CMP_NULLABLE;
       goto recur;
     }
 
