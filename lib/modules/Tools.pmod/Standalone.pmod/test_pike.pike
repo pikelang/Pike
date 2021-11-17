@@ -451,7 +451,7 @@ class SaveParentPlugin
     return (t->number/6)&1;
   }
 
-  string process_name(string name, string source)
+  string process_name(string name)
   {
     return name + " (save parent)";
   }
