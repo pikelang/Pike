@@ -631,7 +631,7 @@ string headers_encode(mapping(string:array(string)|string) h)
 //!	Set this to a global mapping if you want to use a cache,
 //!	prior of calling *request().
 //!
-mapping hostname_cache=([]);
+mapping(string:array(string)) hostname_cache = ([]);
 
 #ifndef PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT
 #define PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT	60
@@ -649,7 +649,7 @@ void dns_lookup_callback(string name,array(string) ips,function callback,
 void dns_lookup_async(string hostname,function callback,mixed ...extra)
 {
    DBG("dns_lookup_async %s\n", hostname);
-   string id;
+   string|array(string) id;
    if (!hostname || hostname=="")
    {
       call_out(callback,0,0,@extra); // can't lookup that...
@@ -674,7 +674,7 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
 
 array(string) dns_lookup(string hostname)
 {
-   string id;
+   string|array(string) id;
    if (has_value(hostname, ":")) {
      //  IPv6
      sscanf(hostname, "%[0-9a-fA-F:.]", id);
