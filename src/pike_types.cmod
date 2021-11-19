@@ -5627,7 +5627,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	push_type(a->type);
 	free_type(tmp2);
       }
-      if (peek_stack_mark() == 2) push_type(T_OR);
+      switch(peek_stack_mark()) {
+      case 0:
+	push_type(PIKE_T_UNKNOWN);
+	break;
+      case 2:
+	push_type(T_OR);
+	break;
+      }
     } else {
       /* PT_BINOP_AND */
       push_finished_type(tmp);
