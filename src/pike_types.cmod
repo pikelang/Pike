@@ -1617,7 +1617,7 @@ static void push_type_field(TYPE_FIELD field)
     push_type(T_MIXED);
   } else {
     /* Check the bits... */
-    push_type(T_ZERO);
+    push_type(PIKE_T_UNKNOWN);
 
     if (field & BIT_COMPLEX) {
       if (field & BIT_ARRAY) {
@@ -12602,10 +12602,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
 	free_type(arg_type);
       }
 #else /* !0 */
-      if (a->size) {
-	push_type_field(a->type_field);
-      }else
-	push_finished_type(zero_type_string);
+      push_type_field(a->size ? a->type_field : 0);
 #endif /* 0 */
       push_int_type(a->size, a->size);
       push_type(T_ARRAY);
