@@ -5588,9 +5588,10 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_MAPPING:
   case T_STRING:
     /* FIXME: Handle PT_FLAG_CMP_INSEPARABLE. */
+    /* FIXME: The recursive op should probably be inverted. */
     tmp = low_type_binop(op, a->car, b->car, remap,
 			 0, 0, remap_flags);
-    if (!tmp && (op == PT_BINOP_AND)) return NULL;
+    if (!tmp && (op == PT_BINOP_AND) && a->car && b->car) return NULL;
     if (a->type == T_STRING) {
       tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
 			    0, 0, remap_flags);
@@ -5603,9 +5604,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 			    PT_FLAG_CMP_NULLABLE,
 			    remap_flags);
     }
-    if (!tmp2 &&
-            (a->type != PIKE_T_STRING
-             || op == PT_BINOP_MINUS || (a->cdr && b->cdr))) {
+    if (!tmp2 && (op == PT_BINOP_MINUS || (a->cdr && b->cdr))) {
       if (op == PT_BINOP_AND) {
 	free_type(tmp);
 	return NULL;
