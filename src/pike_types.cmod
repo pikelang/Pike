@@ -7955,11 +7955,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     break;
   }
 
+  case T_ARRAY:
   case T_STRING:
     if (!a->cdr || !b->cdr)
       break;
-    /* FALLTHRU */
-  case T_ARRAY:
 
     if(!(tmp = low_match_types(a->cdr, b->cdr,
 			       flags & ~(A_EXACT|B_EXACT)))) {
@@ -8850,11 +8849,10 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     array_cnt = 0;
     goto recurse;
 
-  case T_STRING:
-    if (!a->car) return 1;
-    /* FALLTHRU */
   case T_ARRAY:
+  case T_STRING:
     if (flags & LE_TYPE_SVALUE) return 1;
+    if (!a->car) return 1;
     if (!low_pike_types_le(a->car, b->car, 0, flags)) return 0;
     a = a->cdr;
     b = b->cdr;
