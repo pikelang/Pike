@@ -4855,6 +4855,27 @@ static void decode_value2(struct decode_data *data)
 #include "program_areas.h"
 	  }
 
+	  if (placeholder) {
+	    if (placeholder->prog != null_program) {
+	      decode_error(data, NULL,
+			   "Placeholder has been zapped during decoding.\n");
+	    }
+	    debug_malloc_touch(placeholder);
+	    free_program(placeholder->prog);
+	    add_ref(placeholder->prog = p);
+	    placeholder->storage = p->storage_needed ?
+	      (char *)xcalloc(p->storage_needed, 1) :
+	      (char *)NULL;
+	    call_c_initializers(placeholder);
+	    /* It's not safe to call __INIT() or create() yet */
+	    struct unfinished_obj_link *up =
+	      ALLOC_STRUCT(unfinished_obj_link);
+	    up->next = data->unfinished_placeholders;
+	    data->unfinished_placeholders = up;
+	    add_ref(up->o = placeholder);
+	    pop_stack();
+	  }
+
 	  /* Decode the actual constants
 	   *
 	   * This must be done after the program has been ended.
@@ -4894,33 +4915,6 @@ static void decode_value2(struct decode_data *data)
 
 	  EDB(5, fprintf(stderr, "%*sProgram flags: 0x%04x\n",
 			 data->depth, "", p->flags));
-
-	  if (placeholder) {
-	    if (placeholder->prog != null_program) {
-	      decode_error(data, NULL,
-			   "Placeholder has been zapped during decoding.\n");
-	    }
-	    debug_malloc_touch(placeholder);
-	    free_program(placeholder->prog);
-	    add_ref(placeholder->prog = p);
-	    placeholder->storage = p->storage_needed ?
-	      (char *)xcalloc(p->storage_needed, 1) :
-	      (char *)NULL;
-	    call_c_initializers(placeholder);
-	    if (!data->delay_counter) {
-	      call_pike_initializers(placeholder, 0);
-	    } else {
-	      /* It's not safe to call __INIT() or create() yet, since
-	       * there are delayed programs left.
-	       */
-	      struct unfinished_obj_link *up =
-		ALLOC_STRUCT(unfinished_obj_link);
-	      up->next = data->unfinished_placeholders;
-	      data->unfinished_placeholders = up;
-	      add_ref(up->o = placeholder);
-	    }
-	    pop_stack();
-	  }
 
 	  if (!data->delay_counter) {
 	    /* Call the Pike initializers for the delayed placeholders. */
