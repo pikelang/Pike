@@ -3309,7 +3309,9 @@ void fix_foreach_type(node *val_lval)
                                            tMix), tVar(0)),
                                 tFunc(tSet(tSetvar(1, tMix)),
                                       tVar(1)),
-                                tFunc(tObj, tZero)));
+                                tFuncArg(tSetvar(2, tObj),
+					 tFindLFun(tVar(2),
+						   "_iterator_index"))));
         index_type = check_call(foreach_call_type, index_fun_type, 0);
         if (!index_type) {
           /* Should not happen. */
@@ -3345,11 +3347,14 @@ void fix_foreach_type(node *val_lval)
         MAKE_CONSTANT_TYPE(value_fun_type,
                            tOr5(tFunc(tArr(tSetvar(0, tMix)),
                                       tVar(0)),
-                                tFunc(tStr, tZero),
-                                tFunc(tMap(tMix,tSetvar(1, tMix)),
-                                      tVar(1)),
+                                tFunc(tNStr(tSetvar(1, tMix)),
+				      tVar(1)),
+                                tFunc(tMap(tMix,tSetvar(2, tMix)),
+                                      tVar(2)),
                                 tFunc(tMultiset, tInt1),
-                                tFunc(tObj, tZero)));
+                                tFuncArg(tSetvar(3, tObj),
+					 tFindLFun(tVar(3),
+						   "_iterator_value"))));
         value_type = check_call(foreach_call_type, value_fun_type, 0);
         if (!value_type) {
           /* Should not happen. */
