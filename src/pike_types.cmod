@@ -7435,6 +7435,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       ret = low_match_types(a->cdr, b, flags);
       if(ret && (!a_markers[m] || b->type != T_VOID))
       {
+	struct pike_type *filtered_b = NULL;
+
 #ifdef PIKE_DEBUG
 	if ((m < 0) || (m > 9)) {
 	  Pike_fatal("marker out of range: $%d\n", m);
@@ -7444,6 +7446,14 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	type_stack_mark();
 	push_finished_type_with_markers(b, b_markers, 0);
 	tmp = pop_unfinished_type();
+
+	filtered_b = type_binop(PT_BINOP_AND,
+				tmp, a->cdr,
+				PT_FLAG_CMP_NULLABLE,
+				PT_FLAG_CMP_NULLABLE,
+				PT_FLAG_REMAP_INHIBIT);
+	free_type(tmp);
+	tmp = filtered_b;
 
 	type_stack_mark();
 	low_or_pike_types(a_markers[m], tmp, 0);
@@ -7575,9 +7585,19 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       ret = low_match_types(a, b->cdr, flags);
       if(ret && (!b_markers[m] || a->type != T_VOID))
       {
+	struct pike_type *filtered_a = NULL;
+
 	type_stack_mark();
 	push_finished_type_with_markers(a, a_markers, 0);
 	tmp=pop_unfinished_type();
+
+	filtered_a = type_binop(PT_BINOP_AND,
+				tmp, b->cdr,
+				PT_FLAG_CMP_NULLABLE,
+				PT_FLAG_CMP_NULLABLE,
+				PT_FLAG_REMAP_INHIBIT);
+	free_type(tmp);
+	tmp = filtered_a;
 
 	type_stack_mark();
 	low_or_pike_types(b_markers[m], tmp, 0);
