@@ -349,7 +349,11 @@ array(array) find_all_options(array(string) argv,
       }
     }
     else {
-      Iterator iter = get_iterator(opt);
+      /* NB: This module is used by the master and the symbol
+       *     String.Iterator is not available yet at load time.
+       */
+      __builtin.string_iterator iter =
+	[object(__builtin.string_iterator)]get_iterator(opt);
       iter->next();
       foreach(iter; int j; int opt_letter) {
 	if(array option=quick[opt_letter]) {
