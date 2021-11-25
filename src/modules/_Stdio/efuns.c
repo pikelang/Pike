@@ -57,6 +57,10 @@ static libzfs_handle_t *libzfs_handle;
 #define RDWERR(...)
 #endif
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 32768
+#endif
+
 #ifdef __NT__
 
 #include <winbase.h>
