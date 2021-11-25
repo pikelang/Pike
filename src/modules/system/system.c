@@ -400,12 +400,19 @@ void f_resolvepath(INT32 args)
 #endif /* ENAMETOOLONG */
 	  (len >= buflen - 1));
 #elif defined(HAVE_REALPATH)
+#ifdef PATH_MAX
   buflen = PATH_MAX+1;
 
   if (!(buf = alloca(buflen))) {
     Pike_error("Out of memory.\n");
   }
-
+#else
+  /* Later revisions of POSIX define realpath() to dynamically
+   * allocate the result if passed NULL.
+   * cf https://www.gnu.org/software/hurd/hurd/porting/guidelines.html
+   */
+  buf = NULL;
+#endif
   if ((buf = realpath(path, buf))) {
     len = strlen(buf);
   }
@@ -418,6 +425,10 @@ void f_resolvepath(INT32 args)
   }
   pop_n_elems(args);
   push_string(make_shared_binary_string(buf, len));
+#if !defined(HAVE_RESOLVEPATH) && !defined(PATH_MAX)
+  /* Free the dynamically allocated buf. */
+  free(buf);
+#endif
 }
 #endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
 
