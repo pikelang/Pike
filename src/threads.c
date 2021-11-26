@@ -313,6 +313,11 @@ PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, long s, long nanos)
   ACCURATE_GETTIMEOFDAY(&ct);
   timeout.tv_sec = ct.tv_sec + s;
   timeout.tv_nsec = ct.tv_usec * 1000 + nanos;
+  s = timeout.tv_nsec/1000000000;
+  if (s) {
+    timeout.tv_sec += s;
+    timeout.tv_nsec -= s * 1000000000;
+  }
   return pthread_cond_timedwait(c, m, &timeout);
 #endif /* HAVE_PTHREAD_COND_RELTIMEDWAIT_NP */
 #else /* !POSIX_THREADS */
