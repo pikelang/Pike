@@ -80,6 +80,12 @@
 #ifdef USE_DARWIN_THREADS_WITHOUT_MACH
 /* OSX Threads don't get along with mach headers! */
 #else
+#ifdef HAVE_MACH_PORT_H
+#include <mach/port.h>
+#endif
+#ifdef HAVE_MACH_MESSAGE_H
+#include <mach/message.h>
+#endif
 #ifdef HAVE_MACH_TASK_INFO_H
 #include <mach/task_info.h>
 #endif
