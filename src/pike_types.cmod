@@ -298,6 +298,7 @@ static void internal_parse_type(const char **s);
  * OBJECT	implements/is	object id(int)
  * OPERATOR	type		Depends on bit #15.	Added in 8.1
  * FIND_LFUN	object type	lfun (int)		Added in 8.1
+ * GET_RETURN	fun type	-			Added in 8.1
  * SET_CAR	type		type			Added in 8.1
  * SET_CDR	type		type			Added in 8.1
  * TRANSITIVE	fun_type	fun_type		Added in 8.1
@@ -2889,6 +2890,9 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
       {
 	if ((t->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
 	  switch(t->type) {
+	  case PIKE_T_GET_RETURN:
+	    string_builder_strcat(s, "get_return");
+	    break;
 	  case PIKE_T_SET_CAR:
 	    string_builder_strcat(s, "set_car");
 	    break;
@@ -4123,6 +4127,9 @@ static void push_remap_markers(struct pike_type *t,
       push_reverse_type(t->type);
     } else {
       switch(t->type) {
+      case PIKE_T_GET_RETURN:
+	push_type_operator(t->type, NULL);
+	break;
       case PIKE_T_FIND_LFUN:
 	push_type_operator(t->type, t->cdr);
 	break;
@@ -12499,6 +12506,9 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
 {
   struct pike_type *res = NULL;
   switch(op) {
+  case PIKE_T_GET_RETURN:
+    res = new_get_return_type(arg1, 0);
+    break;
   case PIKE_T_FIND_LFUN:
     res = find_lfun_type(arg1, (ptrdiff_t)(void*)arg2);
     break;
@@ -13225,6 +13235,11 @@ static void low_make_pike_type(unsigned char *type_string,
 			       (struct pike_type *)(ptrdiff_t)lfun);
 	    break;
 	  }
+
+	case PIKE_T_GET_RETURN:
+	  low_make_pike_type(type_string + 2, cont);
+	  push_type_operator(type, NULL);
+	  break;
 
 	default:
 	  Pike_fatal("compile_type_string(): Unknown operator: 0x%04x\n", type);
