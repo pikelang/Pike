@@ -502,7 +502,8 @@ EOF
   ORIG_AC_CHECK_SIZEOF($1,$2)
 ])
 
-define([ORIG_CHECK_HEADERS], defn([AC_CHECK_HEADERS]))
+m4_copy([AC_CHECK_HEADERS], [ORIG_CHECK_HEADERS])
+ifdef([_AC_CHECK_HEADERS], m4_copy([_AC_CHECK_HEADERS], [_ORIG_CHECK_HEADERS]))
 define([AC_CHECK_HEADERS],
 [
   if test "x$enable_binary" != "xno"; then
