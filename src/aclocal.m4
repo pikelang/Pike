@@ -10,6 +10,10 @@ ifdef([_AC_OUTPUT_SUBDIRS], ,
       [define([_AC_OUTPUT_SUBDIRS],
 	      [AC_OUTPUT_SUBDIRS(AC_LIST_SUBDIRS)])])
 
+dnl Autoconf 2.71+ has put AC_REQUIRE[AC_CANONICAL_HOST] everywhere...
+m4_copy([AC_CANONICAL_HOST], [ORIG_AC_CANONICAL_HOST])
+m4_defun([AC_CANONICAL_HOST], [])
+
 dnl Not really a prerequisite, but suggest the use of Autoconf 2.50 to
 dnl autoconf-wrapper if it is used.  dnl can't be used since the wrapper
 dnl checks for it, so just store it in a dummy define.
