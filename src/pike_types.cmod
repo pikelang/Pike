@@ -7515,12 +7515,21 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case PIKE_T_OPERATOR:
     {
-      struct pike_type *t = a->car;
-      if ((t->type >= '0') && (t->type <= '9')) {
-	t = a_markers[t->type - '0'];
-	/* if (!t) t = zero_type_string; */
+      /* First match car & cdr against mixed to evaluate markers.
+       * It also applies any related type operators.
+       */
+      struct pike_type *t;
+      struct pike_type *t1 = low_match_types(a->car, any_type_string, flags);
+      if (a->type & 0x8000) {
+	struct pike_type *t2 = low_match_types(a->cdr, any_type_string, flags);
+	t = apply_type_operator(a->type, t1, t2);
+	free_type(t2);
+      } else {
+	t = apply_type_operator(a->type, t1, a->cdr);
       }
-      t = apply_type_operator(a->type, t, a->cdr);
+      free_type(t1);
+
+      if (!t) return NULL;
       ret = low_match_types(t, b, flags);
       free_type(t);
       return ret;
@@ -7655,12 +7664,21 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case PIKE_T_OPERATOR:
     {
-      struct pike_type *t = b->car;
-      if ((t->type >= '0') && (t->type <= '9')) {
-	t = b_markers[t->type - '0'];
-	/* if (!t) t = zero_type_string; */
+      /* First match car & cdr against mixed to evaluate markers.
+       * It also applies any related type operators.
+       */
+      struct pike_type *t;
+      struct pike_type *t1 = low_match_types(any_type_string, b->car, flags);
+      if (b->type & 0x8000) {
+	struct pike_type *t2 = low_match_types(any_type_string, b->cdr, flags);
+	t = apply_type_operator(b->type, t1, t2);
+	free_type(t2);
+      } else {
+	t = apply_type_operator(b->type, t1, b->cdr);
       }
-      t = apply_type_operator(b->type, t, b->cdr);
+      free_type(t1);
+
+      if (!t) return NULL;
       ret = low_match_types(a, t, flags);
       free_type(t);
       return ret;
