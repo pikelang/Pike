@@ -300,7 +300,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 # undef _XOPEN_SOURCE
 
 # if defined(_XOPEN_SOURCE) && ((_XOPEN_SOURCE + 0) < 500)
-   /* Define to 4 for XPG 4. NB: Overrides _XOPEN_SOURCE_EXTENDED below). */
+   /* Define to 4 for XPG 4. NB: Overrides _XOPEN_SOURCE_EXTENDED below. */
 #  undef _XOPEN_VERSION
 
    /* Define to 1 (and do NOT define _XOPEN_VERSION) for XPG 4v2. */
