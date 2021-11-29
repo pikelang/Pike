@@ -71,7 +71,7 @@ pushdef([AC_PROG_CC],
     fi
   fi
 
-  if test "$ac_test_CFLAGS" = set; then :; else
+  if test "$ac_test_CFLAGS"; then :; else
     if test "$GCC" = yes; then
       # Remove -O2, and use a real test to restore it.
       if test "$ac_cv_prog_cc_g" = yes; then
