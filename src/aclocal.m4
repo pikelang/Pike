@@ -2122,8 +2122,10 @@ AC_DEFUN(PIKE_PKG_CONFIG,
 define([PIKE_PARSE_SITE_PREFIXES], [
 p_site_prefixes_to_add=""
 p_site_prefixes_to_remove=""
-for p_option in $ac_configure_args ; do
-  p_option=`eval echo $p_option`
+eval "set ignored $ac_configure_args"
+shift
+for p_option; do
+  echo "Option: $p_option"
   case $p_option in
     --with-site-prefixes*)
       p_useropt=`expr "x$p_option" : 'x--with-site-prefixes=\(.*\)'`
