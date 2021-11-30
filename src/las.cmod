@@ -3267,6 +3267,9 @@ void fix_foreach_type(node *val_lval)
   if (!val_lval || (val_lval->token != F_FOREACH_VAL_LVAL)) return;
 
   fix_type_field(val_lval);
+
+  if (Pike_compiler->compiler_pass != COMPILER_PASS_LAST) return;
+
   expression = CAR(val_lval);
   lvalues = CDR(val_lval);
 
@@ -3310,14 +3313,16 @@ void fix_foreach_type(node *val_lval)
                                 tFunc(tSet(tSetvar(1, tMix)),
                                       tVar(1)),
                                 tFuncArg(tSetvar(2, tObj),
-					 tFindLFun(tVar(2),
+					 tFindLFun(tOr(tVar(2),
+						       tGetReturn(tFindLFun(tVar(2),
+									    "_get_iterator"))),
 						   "_iterator_index"))));
         index_type = check_call(foreach_call_type, index_fun_type, 0);
         if (!index_type) {
           /* Should not happen. */
           yytype_report(REPORT_ERROR,
                         NULL, 0, NULL,
-                        NULL, 0, NULL,
+                        NULL, 0, expression->type,
                         0, "Bad iterator type for index in foreach().");
         } else {
           if( CAR(lvalues)->type->type == PIKE_T_AUTO )
@@ -3332,8 +3337,8 @@ void fix_foreach_type(node *val_lval)
               level = REPORT_WARNING;
             }
             yytype_report(level,
-                          NULL, 0, index_type,
                           NULL, 0, CAR(lvalues)->type,
+                          NULL, 0, index_type,
                           0, "Type mismatch for index in foreach().");
           }
           free_type(index_type);
@@ -3353,7 +3358,9 @@ void fix_foreach_type(node *val_lval)
                                       tVar(2)),
                                 tFunc(tMultiset, tInt1),
                                 tFuncArg(tSetvar(3, tObj),
-					 tFindLFun(tVar(3),
+					 tFindLFun(tOr(tVar(3),
+						       tGetReturn(tFindLFun(tVar(3),
+									    "_get_iterator"))),
 						   "_iterator_value"))));
         value_type = check_call(foreach_call_type, value_fun_type, 0);
         if (!value_type) {
@@ -3375,8 +3382,8 @@ void fix_foreach_type(node *val_lval)
               level = REPORT_WARNING;
             }
             yytype_report(level,
-                          NULL, 0, value_type,
                           NULL, 0, CDR(lvalues)->type,
+                          NULL, 0, value_type,
                           0, "Type mismatch for value in foreach().");
           }
           free_type(value_type);
