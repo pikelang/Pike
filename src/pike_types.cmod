@@ -3799,9 +3799,11 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
 	  return ret;
 	}
 	ref_push_string(lfun_strings[lfun]);
+#if 0
 	yytype_report(REPORT_WARNING, NULL, 0, NULL,
 		      NULL, 0, t,
 		      1, "Expected object implementing lfun::%s().");
+#endif
       }
       break;
     }
