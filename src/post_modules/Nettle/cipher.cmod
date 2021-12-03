@@ -4502,6 +4502,7 @@ PIKECLASS BlockCipher16
 	if (!pstr->len) {
 	  // Unlikely, but make sure that it is initialized.
           blockcipher16_ccm_init_mac_mask();
+	  mac_mask = THIS->mac_mask;
 	}
 
 	if (THIS->ctr->crypt_state && THIS->ctr->crypt_state->crypt) {
