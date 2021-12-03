@@ -3772,6 +3772,7 @@ static struct pike_type *low_object_lfun_type(struct pike_type *t, short lfun)
 static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
 {
   struct pike_type *ret = NULL;
+  struct pike_type *tmp;
   struct svalue *s;
 
   if (!t) return NULL;
@@ -3819,13 +3820,25 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
 
   case T_OR:
   case T_AND:
-    type_stack_mark();
-    push_finished_type(ret = find_lfun_type(t->car, lfun));
-    free_type(ret);
-    push_finished_type(ret = find_lfun_type(t->cdr, lfun));
-    free_type(ret);
-    push_type(t->type);
-    return pop_unfinished_type();
+    ret = find_lfun_type(t->car, lfun);
+    tmp = find_lfun_type(t->cdr, lfun);
+    if (!ret) {
+      if (!tmp) return NULL;
+      if (t->type == T_AND) {
+	free_type(tmp);
+      } else {
+	ret = tmp;
+      }
+    } else if (tmp) {
+      type_stack_mark();
+      push_finished_type(ret);
+      free_type(ret);
+      push_finished_type(tmp);
+      free_type(tmp);
+      push_type(t->type);
+      return pop_unfinished_type();
+    }
+    return ret;
 
   case T_MIXED:
   case T_ZERO:
