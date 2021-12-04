@@ -418,6 +418,9 @@ array(string) find_test(string ts)
 class WidenerPlugin
 {
   inherit Plugin;
+
+  @Pike.Annotations.Implements(Plugin);
+
   int shift;
 
   int(0..1) active(Test t)
@@ -444,6 +447,8 @@ class SaveParentPlugin
 {
   inherit Plugin;
 
+  @Pike.Annotations.Implements(Plugin);
+
   int(0..1) active(Test t)
   {
     if( has_value(t->source, "don't save parent") ) return 0;
@@ -466,6 +471,8 @@ class CRNLPlugin
 {
   inherit Plugin;
 
+  @Pike.Annotations.Implements(Plugin);
+
   int(0..1) active(Test t)
   {
     return (t->number/3)&1;
@@ -485,6 +492,9 @@ class CRNLPlugin
 class LinePlugin
 {
   inherit Plugin;
+
+  @Pike.Annotations.Implements(Plugin);
+
   string preprocess(string source)
   {
     if(source[-1]!='\n') source+="\n";

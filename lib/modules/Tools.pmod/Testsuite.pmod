@@ -1072,6 +1072,8 @@ class CompatPlugin(string pike_compat)
 {
   inherit Plugin;
 
+  @Pike.Annotations.Implements(Plugin);
+
   //! Modifies the name by adding the version and "compat" after the
   //! test name, e.g. "testsuite:1: Test 1 (7.8 compat)".
   string process_name(string name)
