@@ -12585,10 +12585,6 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
     Pike_fatal("apply_type_operator(): Unknown operator: 0x%04x\n", op);
     break;
   }
-  if (!res) {
-    res = mixed_type_string;
-    add_ref(res);
-  }
   return res;
 }
 
