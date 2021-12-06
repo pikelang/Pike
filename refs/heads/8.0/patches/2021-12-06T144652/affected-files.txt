@@ -1,0 +1,3 @@
+Modified files:
+  pike/lib/master.pike.in
+  pike/lib/modules/Concurrent.pmod
