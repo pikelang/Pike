@@ -1,0 +1,11 @@
+subject: Pike 8.0: Concurrent: Fix syntax to be compatible with Pike 8.0.886 and earlier.
+from: 90fc2625804ab4d14c68bdaaea29aa3d4e25b20e
+to: afe5663964e066475ff38b5b83114f5b82e38afc
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2021-10-28T140118|pike/8.0.1690
+restart: true
+
+• Concurrent: Fix syntax to be compatible with Pike 8.0.886 and earlier.
+
+Modules in Pike 8.0 need to be syntax-compatible with all released
+versions of Pike 8.0 (or at least Pike 8.0.232 and later).
