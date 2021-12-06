@@ -11771,7 +11771,6 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
 
     /* FALLTHRU */
   case PIKE_T_MIXED:
-  case PIKE_T_UNKNOWN:
     copy_pike_type(res, mixed_type_string);
     break;
 
@@ -11803,6 +11802,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     fun_type = fun_type->car;
     goto loop;
 
+  case PIKE_T_UNKNOWN:
   default:
     /* Not a callable. */
     break;
