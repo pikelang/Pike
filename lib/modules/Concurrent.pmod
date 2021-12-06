@@ -737,9 +737,10 @@ class Future
     array call_out_handle;
     function backend_remove_call_out;
 
-    call_out_handle = (backend->?call_out || call_out)
+    call_out_handle = ((backend && backend->call_out) || call_out)
       (p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
-    backend_remove_call_out = backend->?remove_call_out || remove_call_out;
+    backend_remove_call_out =
+      (backend && backend->remove_call_out) || remove_call_out;
 
     on_success(
       lambda(mixed res)
