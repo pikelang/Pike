@@ -4804,6 +4804,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   /* Check implicit casting. */
  loop:
   switch(TWOT(a->type & PIKE_T_MASK, b->type & PIKE_T_MASK)) {
+  case TWOT(T_PROGRAM, T_TYPE):
+  case TWOT(T_PROGRAM, T_PROGRAM):
   case TWOT(T_PROGRAM, T_FUNCTION):
   case TWOT(T_PROGRAM, T_MANY):
     aret = a->car;
@@ -5188,11 +5190,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
     break;
 
-    /* T_TYPE and T_PROGRAM are essentially the same thing. */
   case TWOT(T_TYPE, T_TYPE):
-  case TWOT(T_TYPE, T_PROGRAM):
-  case TWOT(T_PROGRAM, T_TYPE):
-  case TWOT(T_PROGRAM, T_PROGRAM):
     tmp = low_type_binop(op, a->car, b->car, remap,
 			 0, 0, remap_flags);
     if (!tmp) return NULL;
@@ -5207,6 +5205,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     free_type(tmp);
     return pop_unfinished_type();
 
+  case TWOT(T_TYPE, T_PROGRAM):
   case TWOT(T_TYPE, T_FUNCTION):
   case TWOT(T_TYPE, T_MANY):
   case TWOT(T_TYPE, PIKE_T_TRANSITIVE):
