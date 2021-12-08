@@ -117,6 +117,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
       constructed, tag, len);
 
   data = [object(Stdio.Buffer)]data->read_buffer(len);
+  data->set_error_mode(1);
 
   program(.Types.Object)|zero p = types[ .Types.make_combined_tag(cls, tag) ];
 
@@ -241,7 +242,7 @@ mapping(int:program(.Types.Object)) universal_types =
 				mapping(int:program(.Types.Object))|void types)
 {
   types = types ? universal_types+types : universal_types;
-  Stdio.Buffer buf = Stdio.Buffer(data);
+  Stdio.Buffer buf = Stdio.Buffer(data)->set_error_mode(1);
   .Types.Object ret = der_decode(buf, types);
   if( sizeof(buf) ) return 0;
   return ret;
