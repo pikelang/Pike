@@ -3,6 +3,10 @@ START_MARKER
 test_do( add_constant("Types", Standards.ASN1.Types); )
 
 test_eval_error(Standards.ASN1.Decode.simple_der_decode(""))
+test_eval_error(Standards.ASN1.Decode.secure_der_decode(""))
+
+test_eval_error(Standards.ASN1.Decode.simple_der_decode(String.hex2string("a2184515521e4c5d26f05590543c696ca2bd04b7754a18107d7f62744fbcb3a52ee80de3dca53339c3f6b2196afe3c540adfeb92686029f2")))
+test_eval_error(Standards.ASN1.Decode.secure_der_decode(String.hex2string("a2184515521e4c5d26f05590543c696ca2bd04b7754a18107d7f62744fbcb3a52ee80de3dca53339c3f6b2196afe3c540adfeb92686029f2")))
 
 define(test_decode,[[
   test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" ")))-"Standards.ASN1.",$2)
