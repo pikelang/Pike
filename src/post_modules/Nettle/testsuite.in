@@ -1296,6 +1296,15 @@ test_aead(Crypto.AES.CCM,
 	"F3 29 05 B8  8A 64 1B 04  B9 C9 FF B5  8C C3 90 90  0F 3D A1 2A  B1",
 	"6D CE 9E 82  EF A1 6D A6  20 59", 10)
 
+dnl Bug #10074 - Broken digest for authenticated data of lengths 14 - 0xfeff.
+test_aead(Crypto.AES.CCM,
+	"1a44f3550688fddbc1e5041dc98952c0",
+	"5d2904298f668ba95eaa1797",
+	"d55908958b70abee81054cdf3d3df5",
+	"",
+	"",
+	"5c71b4f069cfa13b7634db4b13e7be7d")
+
 test_generic_aead(Crypto.AES.EAX)
 
 dnl EAX-AES128 test vectors from www.cs.ucdavis.edu/~rogaway/papers/eax.pdf.

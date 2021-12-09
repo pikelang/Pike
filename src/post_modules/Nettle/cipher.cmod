@@ -3365,7 +3365,7 @@ PIKECLASS BlockCipher16
 	      memxor(buf[1]+2, ptr, asize);
 	      asize = 0;
 	    } else {
-	      memxor(buf[1], ptr, 14);
+	      memxor(buf[1]+2, ptr, 14);
 	      ptr += 14;
 	      asize -= 14;
 	    }
