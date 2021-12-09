@@ -27,7 +27,7 @@ define([if_autoconf],
    translit(substr(AC_ACVERSION, 0, index(AC_ACVERSION,.)),[A-Za-z])-0 > $1 ||
    translit(substr(AC_ACVERSION, index(+AC_ACVERSION,.)),[A-Za-z])-0 >= $2
   )
-)]),1,$3,$4)])
+)]),1,[$3],[$4])])
 
 dnl Autoconf 2.60 is the first version that supports C99.
 dnl C99-compilers complain about implicit declarations.
@@ -37,10 +37,11 @@ if_autoconf(2,60,,[
   m4_copy([AC_LANG_SOURCE(C)], [ORIG_AC_LANG_SOURCE_C])
   m4_define([AC_LANG_SOURCE(C)], [
     ORIG_AC_LANG_SOURCE_C([
+/* Kludge for C99 */
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-]$1)
+$1])
   ])
 ])
 
