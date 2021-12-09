@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.118 2006/05/20 14:05:35 marcus Exp $
+dnl $Id$
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -17,6 +17,7 @@ dnl autoconf-wrapper if it is used.  dnl can't be used since the wrapper
 dnl checks for it, so just store it in a dummy define.
 define([require_autoconf_2_50],[AC_PREREQ(2.50)])
 
+dnl major, minor, on_ge, on_lt
 define([if_autoconf],
 [ifelse(ifelse(index(AC_ACVERSION,.),-1,0,[m4_eval(
   translit(substr(AC_ACVERSION, 0, index(AC_ACVERSION,.)),[A-Za-z])-0 >= $1 &&
@@ -25,6 +26,21 @@ define([if_autoconf],
    translit(substr(AC_ACVERSION, index(+AC_ACVERSION,.)),[A-Za-z])-0 >= $2
   )
 )]),1,$3,$4)])
+
+dnl Autoconf 2.60 is the first version that supports C99.
+dnl C99-compilers complain about implicit declarations.
+dnl For autoconf 2.59 and earlier: Make sure at least
+dnl exit(3C) is declared by always including <stdlib.h>.
+if_autoconf(2,60,,[
+  m4_copy([AC_LANG_SOURCE(C)], [ORIG_AC_LANG_SOURCE_C])
+  m4_define([AC_LANG_SOURCE(C)], [
+    ORIG_AC_LANG_SOURCE_C([
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+]$1)
+  ])
+])
 
 pushdef([AC_PROG_CC_WORKS],
 [
@@ -378,7 +394,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.118 2006/05/20 14:05:35 marcus Exp $
+  # $Id$
 
   MY_AC_PROG_CC
 
