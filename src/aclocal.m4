@@ -47,15 +47,11 @@ if_autoconf(2,60,,[
     ORIG__AC_PROG_CC_STDC
     # Some C99 compilers default to -Werror,-Wimplicit-function-declaration
     # Attempt to find a suitable prototype for exit(3C).
-    _AC_PROG_CXX_EXIT_DECLARATION
-    if test -n "$ac_declaration"; then
-      if echo "$ac_declaration" | grep extern >/dev/null; then :; else
-        # Looks like valid C code.
-	echo '#ifndef __cplusplus' >>confdefs.h
-	echo $ac_declaration >>confdefs.h
-	echo '#endif' >>confdefs.h
-      fi
-    fi
+    _AC_COMPILE_IFELSE([@%:@ifdef __cplusplus
+      choke me
+@%:@endif], [
+      patsubst(_AC_PROG_CXX_EXIT_DECLARATION, [ifdef], [ifndef])
+    ])
   ])
 ])
 
