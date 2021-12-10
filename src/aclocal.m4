@@ -32,16 +32,30 @@ define([if_autoconf],
 dnl Autoconf 2.60 is the first version that supports C99.
 dnl C99-compilers complain about implicit declarations.
 dnl For autoconf 2.59 and earlier: Make sure at least
-dnl exit(3C) is declared by always including <stdlib.h>.
+dnl exit(3C) is declared.
+dnl
+dnl NB: Simply always including <stdlib.h> causes some
+dnl     AC_HAVE_FUNC tests to fail due to mismatching
+dnl     prototypes.
+dnl
+dnl We overload _AC_PROG_CC_STDC to insert an extra
+dnl call of _AC_PROG_CXX_EXIT_DECLARATION due to it
+dnl usually only being used for C++.
 if_autoconf(2,60,,[
-  m4_copy([AC_LANG_SOURCE(C)], [ORIG_AC_LANG_SOURCE_C])
-  m4_define([AC_LANG_SOURCE(C)], [
-    ORIG_AC_LANG_SOURCE_C([
-/* Kludge for C99 */
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-$1])
+  m4_copy([_AC_PROG_CC_STDC], [ORIG__AC_PROG_CC_STDC])
+  m4_define([_AC_PROG_CC_STDC], [
+    ORIG__AC_PROG_CC_STDC
+    # Some C99 compilers default to -Werror,-Wimplicit-function-declaration
+    # Attempt to find a suitable prototype for exit(3C).
+    _AC_PROG_CXX_EXIT_DECLARATION
+    if test -n "$ac_declaration"; then
+      if echo "$ac_declaration" | grep extern >/dev/null; then :; else
+        # Looks like valid C code.
+	echo '#ifndef __cplusplus' >>confdefs.h
+	echo $ac_declaration >>confdefs.h
+	echo '#endif' >>confdefs.h
+      fi
+    fi
   ])
 ])
 
