@@ -9578,6 +9578,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
   case T_STRING:
     /* Check that the index types are compatible with int. */
     {
+      /* FIXME: Validate index1 and index2 type against index type. */
       if (index1_type && !match_types(int_type_string, index1_type)) {
 	ref_push_type_value(t);
 	yytype_report(REPORT_WARNING, NULL, 0, int_type_string,
@@ -9594,6 +9595,10 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
 	/* Bad index2 type. */
 	return 0;
       }
+      /* FIXME: Adjust index type of result to be from
+       *        min(index1) to max(index2).
+       * FIXME: Do we need to check against the index type too?
+       */
     }
     /* FALLTHROUGH */
   default:
