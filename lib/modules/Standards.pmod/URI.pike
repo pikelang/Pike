@@ -57,7 +57,7 @@ protected void parse_authority()
 {
   string host_port = [string]authority;
   // authority   = [ userinfo "@" ] host [ ":" port ]
-  array(string) a = authority/"@";
+  array(string) a = host_port/"@";
   if (sizeof(a) > 1) {
     host_port = a[-1];
     string userinfo = a[..<1] * "@";
@@ -120,7 +120,7 @@ protected int `==(mixed something)
 string combine_uri_path(string base, string rel, int(0..1)|void is_abs_path)
 {
   string buf = rel;
-  array segments;
+  array(string) segments;
 
   // RFC 2396, §5.2.5:
   //    If the path component begins with a slash character ("/"),
