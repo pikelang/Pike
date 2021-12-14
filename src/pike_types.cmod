@@ -3067,7 +3067,7 @@ int get_int_type_range(struct pike_type *t, INT_TYPE *range)
     goto loop;
   case T_OR:
   case T_AND:
-    ret = get_int_type_range(t->car, range);
+    ret = ret | get_int_type_range(t->car, range);
     t = t->cdr;
     goto loop;
   default:
