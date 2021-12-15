@@ -1806,9 +1806,12 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val)
 
 PMOD_EXPORT void clear_mapping(struct mapping *m)
 {
-  struct mapping_data *md = m->data;
-  int flags = md->flags;
+  struct mapping_data *md;
+  int flags;
 
+  if (!m) return;
+  md = m->data;
+  flags = md->flags;
   if (!md->size) return;
   unlink_mapping_data(md);
 
@@ -1836,6 +1839,8 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 {
   struct mapping *n;
 
+  if (!m) return NULL;
+
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
     Pike_fatal("Zero refs in mapping->data\n");
@@ -1860,6 +1865,8 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
  */
 static struct mapping *destructive_copy_mapping(struct mapping *m)
 {
+  if (!m) return NULL;
+
   if ((m->refs == 1) && !m->data->hardlinks &&
       !(m->data->flags & MAPPING_WEAK)) {
     /* We may perform destructive operations on the mapping. */
