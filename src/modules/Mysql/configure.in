@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.62 2010/05/03 11:26:21 grubba Exp $
+# $Id$
 #
 # Configure script for the mysql-module
 #
@@ -324,9 +324,22 @@ int main(int argc, char *argv[])
 {
 #ifdef MYSQL_VERSION_ID
   unsigned long ver = mysql_get_client_version();
-  if((ver/100) != (MYSQL_VERSION_ID/100)) {
+  unsigned long expected_ver = MYSQL_VERSION_ID;
+#if defined(MARIADB_PACKAGE_VERSION_ID) && (MARIADB_PACKAGE_VERSION_ID >= 30201)
+  /* From MariaDB/mysql_get_client_version(3) (CONC-509/CONC-554):
+   *
+   *   Note: Since MariaDB Server 10.2.6 and MariaDB Connector/C 3.0.1 the
+   *   client library is bundled with server package and returns the server
+   *   package version.
+   *
+   * The above however does not seem to be true, and the change instead
+   * happened a few commits before the bump to MariaDB Connector/C 3.2.1.
+   */
+  expected_ver = MARIADB_PACKAGE_VERSION_ID;
+#endif
+  if((ver/100) != (expected_ver/100)) {
     fprintf(stderr, "Version mismatch: compile=%lu, run=%lu\n",
-            (unsigned long)MYSQL_VERSION_ID, ver);
+            (unsigned long)expected_ver, ver);
     exit(1);
   }
 #endif
