@@ -3886,7 +3886,27 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
 struct remap_state {
   unsigned char map[0x20];
   unsigned INT32 allocated;
+  struct mapping *markers;
 };
+
+#ifdef PIKE_NULL_IS_SPECIAL
+#define INIT_REMAP_STATE(REMAP) do {			\
+    memset(&REMAP, 0, sizeof(struct remap_state));	\
+    REMAP.markers = NULL;				\
+  } while(0)
+#else
+#define INIT_REMAP_STATE(REMAP) do {			\
+    memset(&REMAP, 0, sizeof(struct remap_state));	\
+  } while(0)
+#endif
+static inline void exit_remap_state(struct remap_state *remap)
+{
+  if (remap && remap->markers) {
+    free_mapping(remap->markers);
+    remap->markers = NULL;
+  }
+}
+#define EXIT_REMAP_STATE(REMAP) exit_remap_state(&REMAP)
 
 static int alloc_remap_marker(struct remap_state *remap, int marker,
 			      enum pt_remap_flags flags)
@@ -3955,15 +3975,15 @@ static void free_marker(struct remap_state *remap, int marker,
   remap->allocated &= ~(1 << (m & 0x0f));
 }
 
-static struct pike_type *lookup_marker(struct mapping *markers, int marker)
+static struct pike_type *lookup_marker(struct remap_state *remap, int marker)
 {
   struct svalue key, *val;
 
-  if (!markers || !marker) return NULL;
+  if (!remap || !remap->markers || !marker) return NULL;
 
   SET_SVAL(key, T_INT, NUMBER_NUMBER, integer, marker);
 
-  val = low_mapping_lookup(markers, &key);
+  val = low_mapping_lookup(remap->markers, &key);
   if (!val) return NULL;
 
   if (TYPEOF(*val) == PIKE_T_TYPE) {
@@ -3971,28 +3991,31 @@ static struct pike_type *lookup_marker(struct mapping *markers, int marker)
   }
   return NULL;
 }
-#define lookup_marker(MAP, M) ((struct pike_type *)debug_malloc_pass(lookup_marker(debug_malloc_pass(MAP), M)))
+#define lookup_marker(REMAP, M) ((struct pike_type *)debug_malloc_pass(lookup_marker(REMAP, M)))
 
-static void store_marker(struct mapping *markers, int marker,
+static void store_marker(struct remap_state *remap, int marker,
 			 struct pike_type *value)
 {
   struct svalue key, val;
 
-  if (!markers || !marker) return;
+  if (!remap || !marker) return;
+
+  if (!remap->markers) {
+    remap->markers = allocate_mapping(10);
+  }
 
   SET_SVAL(key, T_INT, NUMBER_NUMBER, integer, marker);
   SET_SVAL(val, T_TYPE, 0, type, value);
-  mapping_insert(markers, &key, &val);
+  mapping_insert(remap->markers, &key, &val);
 }
-#define store_marker(MAP, M, T) store_marker(debug_malloc_pass(MAP), M, debug_malloc_pass(T))
+#define store_marker(REMAP, M, T) store_marker(REMAP, M, debug_malloc_pass(T))
 
 static void push_remap_markers(struct pike_type *t,
-			       struct mapping *markers,
 			       struct remap_state *remap,
 			       enum pt_remap_flags flags)
 {
   if (!t || (flags & PT_FLAG_REMAP_INHIBIT) ||
-      (!remap && !markers && !(flags & PT_FLAG_REMAP_EVAL_MARKERS))) {
+      (!remap && !(flags & PT_FLAG_REMAP_EVAL_MARKERS))) {
     push_finished_type(t);
     return;
   }
@@ -4006,11 +4029,11 @@ static void push_remap_markers(struct pike_type *t,
     {
       int marker = alloc_remap_marker(remap, CAR_TO_INT(t), flags);
 
-      if (!markers || !(flags & PT_FLAG_REMAP_EVAL_MARKERS)) {
-	push_remap_markers(t->cdr, markers, remap, flags);
+      if (!(flags & PT_FLAG_REMAP_EVAL_MARKERS)) {
+	push_remap_markers(t->cdr, remap, flags);
 	push_assign_type(marker);
       } else {
-	struct pike_type *old = lookup_marker(markers, marker);
+	struct pike_type *old = lookup_marker(remap, marker);
 	struct pike_type *new = t->cdr;
 	if (new) {
 	  if (old) {
@@ -4018,29 +4041,29 @@ static void push_remap_markers(struct pike_type *t,
 	  } else {
 	    add_ref(new);
 	  }
-	  store_marker(markers, marker, new);
+	  store_marker(remap, marker, new);
 	  free_pike_type(new);
 	}
-	push_remap_markers(t->cdr, markers, remap, flags);
+	push_remap_markers(t->cdr, remap, flags);
       }
 
       if (flags & PT_FLAG_REMAP_BOTH_MARKERS) {
 	marker = alloc_remap_marker(remap, CAR_TO_INT(t),
 				    flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 
-	if (!markers || !(flags & PT_FLAG_REMAP_EVAL_MARKERS)) {
+	if (!(flags & PT_FLAG_REMAP_EVAL_MARKERS)) {
 	  push_assign_type(marker);
 	} else {
-	  struct pike_type *old = lookup_marker(markers, marker);
+	  struct pike_type *old = lookup_marker(remap, marker);
 	  struct pike_type *new = t->cdr;
 	  if (old) {
 	    new = or_pike_types(old, new, 0);
 	  } else {
 	    add_ref(new);
 	  }
-	  store_marker(markers, marker, new);
+	  store_marker(remap, marker, new);
 	  free_pike_type(new);
-	  push_remap_markers(t->cdr, markers, remap, flags);
+	  push_remap_markers(t->cdr, remap, flags);
 
 	  switch(flags & PT_FLAG_REMAP_BOTH_MARKERS_MASK) {
 	  case PT_FLAG_REMAP_BOTH_MARKERS_AND:
@@ -4062,11 +4085,11 @@ static void push_remap_markers(struct pike_type *t,
   case '5': case '6': case '7': case '8': case '9':
     {
       int marker = remap_marker(remap, t->type, flags);
-      struct pike_type *value = lookup_marker(markers, marker);
+      struct pike_type *value = lookup_marker(remap, marker);
 
       if (value) {
-	push_remap_markers(value, markers, remap, flags);
-      } else if ((markers) && (flags & PT_FLAG_REMAP_EVAL_MARKERS)) {
+	push_remap_markers(value, remap, flags);
+      } else if (flags & PT_FLAG_REMAP_EVAL_MARKERS) {
 	/* Marker without matching assign. */
 	/* FIXME: Report error? */
 	push_type(T_MIXED);
@@ -4085,11 +4108,11 @@ static void push_remap_markers(struct pike_type *t,
       if (flags & PT_FLAG_REMAP_BOTH_MARKERS) {
 	marker = remap_marker(remap, t->type,
 			      flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-	value = lookup_marker(markers, marker);
+	value = lookup_marker(remap, marker);
 
 	if (value) {
-	  push_remap_markers(value, markers, remap, flags);
-	} else if ((markers) && (flags & PT_FLAG_REMAP_EVAL_MARKERS)) {
+	  push_remap_markers(value, remap, flags);
+	} else if (flags & PT_FLAG_REMAP_EVAL_MARKERS) {
 	  /* Marker without matching assign. */
 	  /* FIXME: Report error? */
 	  push_type(T_MIXED);
@@ -4121,25 +4144,25 @@ static void push_remap_markers(struct pike_type *t,
     }
 
   case PIKE_T_NAME:
-    push_remap_markers(t->cdr, markers, remap, flags);
+    push_remap_markers(t->cdr, remap, flags);
     push_type_name((struct pike_string *)(t->car));
     break;
 
   case PIKE_T_ATTRIBUTE:
-    push_remap_markers(t->cdr, markers, remap, flags);
+    push_remap_markers(t->cdr, remap, flags);
     push_type_attribute((struct pike_string *)(t->car));
     break;
 
   case T_SCOPE:
-    push_remap_markers(t->cdr, markers, remap, flags);
+    push_remap_markers(t->cdr, remap, flags);
     push_scope_type(CAR_TO_INT(t));
     break;
 
   case PIKE_T_OPERATOR:
-    push_remap_markers(t->car, markers, remap, flags);
+    push_remap_markers(t->car, remap, flags);
 
     if (t->type & 0x8000) {
-      push_remap_markers(t->cdr, markers, remap, flags);
+      push_remap_markers(t->cdr, remap, flags);
       push_reverse_type(t->type);
     } else {
       switch(t->type) {
@@ -4173,7 +4196,7 @@ static void push_remap_markers(struct pike_type *t,
   case T_NOT:
   case T_TYPE:
   case PIKE_T_AUTO:
-    push_remap_markers(t->car, markers, remap, flags);
+    push_remap_markers(t->car, remap, flags);
     push_type(t->type);
     break;
 
@@ -4188,8 +4211,8 @@ static void push_remap_markers(struct pike_type *t,
   case T_ARRAY:
   case T_STRING:
   case PIKE_T_TRANSITIVE:
-    push_remap_markers(t->car, markers, remap, flags);
-    push_remap_markers(t->cdr, markers, remap, flags);
+    push_remap_markers(t->car, remap, flags);
+    push_remap_markers(t->cdr, remap, flags);
     push_reverse_type(t->type);
     break;
   }
@@ -4199,7 +4222,6 @@ static void push_remap_markers(struct pike_type *t,
  * Remap markers (if any) in the type.
  */
 static struct pike_type *remap_markers(struct pike_type *t,
-				       struct mapping *markers,
 				       struct remap_state *remap,
 				       enum pt_remap_flags flags)
 {
@@ -4209,12 +4231,12 @@ static struct pike_type *remap_markers(struct pike_type *t,
     fprintf(stderr, "remap_markers(");
     simple_describe_type(t);
     fprintf(stderr, ", ");
-    simple_describe_mapping(markers);
+    simple_describe_mapping(remap->markers);
     fprintf(stderr, ", %p, 0x%02x)\n", remap, flags);
   }
 
   type_stack_mark();
-  push_remap_markers(t, markers, remap, flags);
+  push_remap_markers(t, remap, flags);
 
   if (flags & PT_FLAG_REMAP_TRACE) {
     fprintf(stderr, "remap ==> ");
@@ -4435,17 +4457,15 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     break;
   case PT_BINOP_NOR:
     type_stack_mark();
-    push_remap_markers(a, NULL, remap, remap_flags);
-    push_remap_markers(b, NULL, remap,
-		       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    push_remap_markers(a, remap, remap_flags);
+    push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
     push_type(T_OR);
     push_type(T_NOT);
     return pop_unfinished_type();
   case PT_BINOP_OR:
     type_stack_mark();
-    push_remap_markers(a, NULL, remap, remap_flags);
-    push_remap_markers(b, NULL, remap,
-		       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    push_remap_markers(a, remap, remap_flags);
+    push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
     push_type(T_OR);
     return pop_unfinished_type();
 
@@ -4491,7 +4511,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   if (a == b) {
     if (op & PT_BINOP_AND) {
       /* FIXME: Perform masking of remap_flags here. */
-      return remap_markers(a, NULL, remap,
+      return remap_markers(a, remap,
 			   remap_flags | PT_FLAG_REMAP_BOTH_MARKERS_AND);
     } else {
       return NULL;
@@ -4640,11 +4660,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       if (a->car->type == T_NOT) {
 	/* (!a1 & a2) & b  <==>  (a2 & b) & !a1 */
 	free_type(tmp);
-	tmp = remap_markers(a->car, NULL, remap, remap_flags);
+	tmp = remap_markers(a->car, remap, remap_flags);
       } else if (a->cdr->type == T_NOT) {
 	/* (a1 & !a2) & b  <==>  (a1 & b) & !a2 */
 	free_type(tmp2);
-	tmp2 = remap_markers(a->cdr, NULL, remap, remap_flags);
+	tmp2 = remap_markers(a->cdr, remap, remap_flags);
       }
       break;
     default:
@@ -4683,7 +4703,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
        *   A | (B | C)  ==  (A | B) | (A | C)
        */
       tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
-      tmp2 = remap_markers(b->cdr, NULL, remap,
+      tmp2 = remap_markers(b->cdr, remap,
 			   remap_flags | PT_FLAG_REMAP_SWAP_MARKERS);
       ret = low_type_binop(op, tmp, tmp2, NULL, aflags, bflags, 0);
       free_type(tmp);
@@ -4733,11 +4753,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	 */
 	if (b->car->type == T_NOT) {
 	  free_type(tmp);
-	  tmp = remap_markers(b->car, NULL, remap,
+	  tmp = remap_markers(b->car, remap,
 			      remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	} else if (b->cdr->type == T_NOT) {
 	  free_type(tmp2);
-	  tmp2 = remap_markers(b->cdr, NULL, remap,
+	  tmp2 = remap_markers(b->cdr, remap,
 			       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	}
       }
@@ -4785,7 +4805,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	break;
       }
 
-      tmp = remap_markers(b, NULL, remap,
+      tmp = remap_markers(b, remap,
 			  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       if (!tmp) {
 	b = NULL;
@@ -4810,7 +4830,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	break;
       }
 
-      tmp = remap_markers(a, NULL, remap, remap_flags);
+      tmp = remap_markers(a, remap, remap_flags);
       if (!tmp) {
 	a = NULL;
 	break;
@@ -5165,9 +5185,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
 
       /* Either of a and/or b is a complex type. */
-      push_remap_markers(bi, NULL, remap,
+      push_remap_markers(bi, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      push_remap_markers(ai, NULL, remap, remap_flags);
+      push_remap_markers(ai, remap, remap_flags);
 
       push_binop(op);
 
@@ -5319,13 +5339,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	case 0:
 	  return NULL;
 	case PT_BINOP_AND:
-	  return remap_markers(a, NULL, remap, remap_flags);
+	  return remap_markers(a, remap, remap_flags);
 	case PT_BINOP_INVERSE_MINUS:
 	  if (bflags & PT_FLAG_CMP_INSEPARABLE) {
 	    return NULL;
 	  }
 	  type_stack_mark();
-	  push_remap_markers(a, NULL, remap, remap_flags);
+	  push_remap_markers(a, remap, remap_flags);
 	  push_type(T_NOT);
 	  return pop_unfinished_type();
 	default:
@@ -5340,14 +5360,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	case 0:
 	  return NULL;
 	case PT_BINOP_AND:
-	  return remap_markers(b, NULL, remap,
+	  return remap_markers(b, remap,
 			       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	case PT_BINOP_MINUS:
 	  if (aflags & PT_FLAG_CMP_INSEPARABLE) {
 	    return NULL;
 	  }
 	  type_stack_mark();
-	  push_remap_markers(b, NULL, remap,
+	  push_remap_markers(b, remap,
 			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	  push_type(T_NOT);
 	  return pop_unfinished_type();
@@ -5381,12 +5401,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
 	((b->type & PIKE_T_MASK) == PIKE_T_OPERATOR)) {
       type_stack_mark();
-      push_remap_markers(b, NULL, remap,
+      push_remap_markers(b, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      push_remap_markers(a, NULL, remap, remap_flags);
+      push_remap_markers(a, remap, remap_flags);
       push_binop(op);
       return pop_unfinished_type();
     }
+
     /* NB: We know that a and b do not intersect, so the operations
      *     come in pairs and complementary pairs.
      */
@@ -5403,7 +5424,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
     case PT_BINOP_MINUS:
     case PT_BINOP_A:
-      push_remap_markers(a, NULL, remap, remap_flags);
+      push_remap_markers(a, remap, remap_flags);
       break;
     case PT_BINOP_NOT_A:
     case PT_BINOP_NOT_A_OR_B:
@@ -5411,13 +5432,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	pop_stack_mark();
 	return NULL;
       }
-      push_remap_markers(a, NULL, remap, remap_flags);
+      push_remap_markers(a, remap, remap_flags);
       push_type(T_NOT);
       break;
 
     case PT_BINOP_INVERSE_MINUS:
     case PT_BINOP_B:
-      push_remap_markers(b, NULL, remap,
+      push_remap_markers(b, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       break;
     case PT_BINOP_NOT_B:
@@ -5426,16 +5447,16 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	pop_stack_mark();
 	return NULL;
       }
-      push_remap_markers(b, NULL, remap,
+      push_remap_markers(b, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       push_type(T_NOT);
       break;
 
     case PT_BINOP_OR:
     case PT_BINOP_XOR:
-      push_remap_markers(b, NULL, remap,
+      push_remap_markers(b, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      push_remap_markers(a, NULL, remap, remap_flags);
+      push_remap_markers(a, remap, remap_flags);
       push_type(T_OR);
       break;
     case PT_BINOP_NOR:
@@ -5444,9 +5465,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	pop_stack_mark();
 	return NULL;
       }
-      push_remap_markers(b, NULL, remap,
+      push_remap_markers(b, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      push_remap_markers(a, NULL, remap, remap_flags);
+      push_remap_markers(a, remap, remap_flags);
       push_type(T_OR);
       push_type(T_NOT);
       break;
@@ -5795,10 +5816,15 @@ struct pike_type *type_binop(enum pt_binop op,
 			     enum pt_remap_flags remap_flags)
 {
   struct remap_state remap;
+  struct pike_type *ret;
 
-  memset(&remap, 0, sizeof(remap));
+  INIT_REMAP_STATE(remap);
 
-  return low_type_binop(op, a, b, &remap, aflags, bflags, remap_flags);
+  ret = low_type_binop(op, a, b, &remap, aflags, bflags, remap_flags);
+
+  EXIT_REMAP_STATE(remap);
+
+  return ret;
 }
 
 /**
@@ -5854,8 +5880,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
       int marker = remap_marker(remap, a->type, remap_flags);
       if (!marker) return NULL;
 
-      tmp = remap_markers(b, NULL, remap,
-			  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      tmp = remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       if (!tmp) return NULL;
       type_stack_mark();
       push_finished_type(tmp);
@@ -5891,7 +5916,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
 				remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       if (!marker) return NULL;
 
-      tmp = remap_markers(a, NULL, remap, remap_flags);
+      tmp = remap_markers(a, remap, remap_flags);
       if (!tmp) return NULL;
       type_stack_mark();
       push_finished_type(tmp);
@@ -5993,7 +6018,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
     /* NB: We need to remap b->cdr separately to avoid remapping
      *     markers in a and b->car twice.
      */
-    tmp2 = remap_markers(b->cdr, NULL, remap,
+    tmp2 = remap_markers(b->cdr, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
     ret = low_subtract_types(tmp, tmp2, NULL, aflags, bflags, 0);
     free_type(tmp);
@@ -6171,7 +6196,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
 	  }
 
 	  type_stack_mark();
-	  push_remap_markers(a, NULL, remap, remap_flags);
+	  push_remap_markers(a, remap, remap_flags);
 	  return pop_unfinished_type();
 	}
 
@@ -6193,9 +6218,8 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
       /* Either of a and/or b is a complex type, or a partial overlap. */
 
       type_stack_mark();
-      push_remap_markers(a, NULL, remap, remap_flags);
-      push_remap_markers(b, NULL, remap,
-			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_remap_markers(a, remap, remap_flags);
+      push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       push_type(T_NOT);
       push_reverse_type(T_AND);
 
@@ -6298,8 +6322,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
   }
   if (a->type == T_MIXED) {
     type_stack_mark();
-    push_remap_markers(b, NULL, remap,
-		       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
     push_type(T_NOT);
     return pop_unfinished_type();
   }
@@ -6310,9 +6333,8 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
   if (a->type == T_NOT) {
     /* DeMorgan and(not(a), not(b)) <==> not(or(a, b)) */
     type_stack_mark();
-    push_remap_markers(a->car, NULL, remap, remap_flags);
-    push_remap_markers(b, NULL, remap,
-		       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    push_remap_markers(a->car, remap, remap_flags);
+    push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
     push_type(T_OR);
     push_type(T_NOT);
     return pop_unfinished_type();
@@ -6322,9 +6344,8 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
     if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
 	((b->type & PIKE_T_MASK) == PIKE_T_OPERATOR)) {
       type_stack_mark();
-      push_remap_markers(a, NULL, remap, remap_flags);
-      push_remap_markers(b, NULL, remap,
-			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_remap_markers(a, remap, remap_flags);
+      push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       push_type(T_NOT);
       push_reverse_type(T_AND);
       return pop_unfinished_type();
@@ -6461,10 +6482,15 @@ struct pike_type *subtract_types(struct pike_type *a,
 				 enum pt_remap_flags remap_flags)
 {
   struct remap_state remap;
+  struct pike_type *sub_res;
 
-  memset(&remap, 0, sizeof(remap));
+  INIT_REMAP_STATE(remap);
 
-  return low_subtract_types(a, b, &remap, aflags, bflags, remap_flags);
+  sub_res = low_subtract_types(a, b, &remap, aflags, bflags, remap_flags);
+
+  EXIT_REMAP_STATE(remap);
+
+  return sub_res;
 }
 
 /**
@@ -6495,7 +6521,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
 
   if (a == b) {
     /* FIXME: Perform masking of remap_flags here. */
-    return remap_markers(a, NULL, remap,
+    return remap_markers(a, remap,
 			 remap_flags | PT_FLAG_REMAP_BOTH_MARKERS_AND);
   }
 
@@ -6619,7 +6645,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
 	return NULL;
       }
       free_type(tmp);
-      tmp = remap_markers(a->car, NULL, remap, remap_flags);
+      tmp = remap_markers(a->car, remap, remap_flags);
     } else {
       tmp = low_intersect_types(a->car, b, remap, aflags, bflags, remap_flags);
       if (!tmp) return NULL;
@@ -6630,7 +6656,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       }
       if (a->cdr->type == T_NOT) {
 	free_type(tmp2);
-	tmp2 = remap_markers(a->cdr, NULL, remap, remap_flags);
+	tmp2 = remap_markers(a->cdr, remap, remap_flags);
       }
     }
 
@@ -6667,7 +6693,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       tmp2 = low_intersect_types(a, b->car, remap, aflags, bflags, remap_flags);
       if (tmp2) {
 	free_type(tmp2);
-	tmp2 = remap_markers(b->car, NULL, remap,
+	tmp2 = remap_markers(b->car, remap,
 			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       }
     } else {
@@ -6676,7 +6702,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       tmp2 = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
       if (tmp2 && (b->cdr->type == T_NOT)) {
 	free_type(tmp2);
-	tmp2 = remap_markers(b->cdr, NULL, remap,
+	tmp2 = remap_markers(b->cdr, remap,
 			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       }
     }
@@ -6863,11 +6889,11 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       nargs = pop_stack_mark();
 
       /* Either of a and/or b is a complex type. */
-      tmp = remap_markers(a, NULL, remap, remap_flags);
+      tmp = remap_markers(a, remap, remap_flags);
       push_finished_type(tmp);
       free_type(tmp);
 
-      tmp = remap_markers(b, NULL, remap, remap_flags);
+      tmp = remap_markers(b, remap, remap_flags);
       push_finished_type(tmp);
       free_type(tmp);
 
@@ -6979,19 +7005,18 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
   }
 
   if (a->type == T_MIXED) {
-    return remap_markers(b, NULL, remap,
-			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    return remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
   }
   if (b->type == T_MIXED) {
-    return remap_markers(a, NULL, remap, remap_flags);
+    return remap_markers(a, remap, remap_flags);
   }
 
   if (a->type == T_NOT) {
     if (b->type == T_NOT) {
       /* DeMorgan and(not(a), not(b)) <==> not(or(a, b)) */
       type_stack_mark();
-      push_remap_markers(a->car, NULL, remap, remap_flags);
-      push_remap_markers(b->car, NULL, remap,
+      push_remap_markers(a->car, remap, remap_flags);
+      push_remap_markers(b->car, remap,
 			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       push_type(T_OR);
       push_type(T_NOT);
@@ -7012,8 +7037,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       int marker = remap_marker(remap, a->type, remap_flags);
       if (!marker) return NULL;
 
-      tmp = remap_markers(b, NULL, remap,
-			  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      tmp = remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       if (!tmp) return NULL;
       type_stack_mark();
       push_finished_type(tmp);
@@ -7031,7 +7055,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
 				remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       if (!marker) return NULL;
 
-      tmp = remap_markers(a, NULL, remap, remap_flags);
+      tmp = remap_markers(a, remap, remap_flags);
       if (!tmp) return NULL;
       type_stack_mark();
       push_finished_type(tmp);
@@ -7046,9 +7070,8 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
     if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
 	((b->type & PIKE_T_MASK) == PIKE_T_OPERATOR)) {
       type_stack_mark();
-      push_remap_markers(a, NULL, remap, remap_flags);
-      push_remap_markers(b, NULL, remap,
-			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_remap_markers(a, remap, remap_flags);
+      push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       push_reverse_type(T_AND);
       return pop_unfinished_type();
     }
@@ -7182,10 +7205,15 @@ struct pike_type *intersect_types(struct pike_type *a,
 				  enum pt_remap_flags remap_flags)
 {
   struct remap_state remap;
+  struct pike_type *and_res;
 
-  memset(&remap, 0, sizeof(remap));
+  INIT_REMAP_STATE(remap);
 
-  return low_intersect_types(a, b, &remap, aflags, bflags, remap_flags);
+  and_res = low_intersect_types(a, b, &remap, aflags, bflags, remap_flags);
+
+  EXIT_REMAP_STATE(remap);
+
+  return and_res;
 }
 
 /*
@@ -9117,15 +9145,17 @@ int match_types(struct pike_type *a, struct pike_type *b)
   struct pike_type *res;
 #ifdef PIKE_EXTRA_DEBUG
   struct remap_state remap;
-  struct mapping *markers;
   struct pike_type *tmp, *tmp2;
 
-  memset(&remap, 0, sizeof(remap));
+  INIT_REMAP_STATE(remap);
 
   tmp = low_type_binop(PT_BINOP_AND, a, b, &remap, 0, 0, 0);
 
-  markers = allocate_mapping(10);
-  tmp2 = remap_markers(tmp, markers, NULL, PT_FLAG_REMAP_EVAL_MARKERS);
+  clear_mapping(remap.markers);
+
+  tmp2 = remap_markers(tmp, &remap, PT_FLAG_REMAP_EVAL_MARKERS);
+
+  EXIT_REMAP_STATE(remap);
 #endif
 
   clear_markers();
@@ -9167,14 +9197,14 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
   struct pike_type ***save_mark_stackp = Pike_compiler->pike_type_mark_stackp;
 #endif
 
-  memset(&remap, 0, sizeof(remap));
+  INIT_REMAP_STATE(remap);
 
   tmp = low_type_binop(PT_BINOP_MINUS, a, b, &remap, aflags, bflags, 0);
 
   if (tmp) {
-    struct mapping *markers = allocate_mapping(10);
-    tmp2 = remap_markers(tmp, markers, NULL, PT_FLAG_REMAP_EVAL_MARKERS);
-    free_mapping(markers);
+    clear_mapping(remap.markers);
+
+    tmp2 = remap_markers(tmp, &remap, PT_FLAG_REMAP_EVAL_MARKERS);
   }
 
 #ifdef PIKE_EXTRA_DEBUG
@@ -9197,6 +9227,8 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
     simple_describe_type(tmp2);
     fprintf(stderr, "\n\n");
 
+    clear_mapping(remap.markers);
+
     tmp3 = low_type_binop(PT_BINOP_MINUS, a, b, &remap,
 			  aflags, bflags, PT_FLAG_REMAP_TRACE);
     fprintf(stderr, "tmp3: ");
@@ -9215,6 +9247,8 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
     free_type(tmp3);
   }
 #endif
+
+  EXIT_REMAP_STATE(remap);
 
   free_type(tmp);
   free_type(tmp2);
