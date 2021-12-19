@@ -4619,8 +4619,29 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   switch(a?a->type:PIKE_T_UNKNOWN) {
   case T_OR:
     /* (a1 | a2) op b  <==> (a1 op b) | (a2 op b) */
-    tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
-    tmp2 = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+    {
+      struct mapping *orig_markers = NULL;
+      if (remap) {
+	/* Do not propagate marker changes between the branches
+	 * of the T_OR node.
+	 *
+	 * FIXME: It is theoretically possible to propagate marker
+	 *        changes up if they are compatible in both branches.
+	 */
+	orig_markers = remap->markers;
+	remap->markers = copy_mapping(orig_markers);
+      }
+      tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
+      if (remap) {
+	do_free_mapping(remap->markers);
+	remap->markers = copy_mapping(orig_markers);
+      }
+      tmp2 = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+      if (remap) {
+	do_free_mapping(remap->markers);
+	remap->markers = orig_markers;
+      }
+    }
     if ((op & PT_BINOP_NOT_A) || (aflags & PT_FLAG_CMP_INSEPARABLE)) {
       if (!tmp2) {
 	free_type(tmp);
@@ -4690,6 +4711,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   }
   switch(b?b->type:PIKE_T_UNKNOWN) {
   case T_OR:
+    /* FIXME: Handle marker propagation. */
     if ((op == PT_BINOP_MINUS) || (op == PT_BINOP_OR)) {
       /* Special case to avoid excessively complicated expressions
        * in the result.
