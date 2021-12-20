@@ -4711,46 +4711,122 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   }
   switch(b?b->type:PIKE_T_UNKNOWN) {
   case T_OR:
-    /* FIXME: Handle marker propagation. */
-    if ((op == PT_BINOP_MINUS) || (op == PT_BINOP_OR)) {
-      /* Special case to avoid excessively complicated expressions
-       * in the result.
-       *
-       *   A - (B | C)  ==  (A - B) - C
-       * rather than
-       *   A - (B | C)  ==  (A - B) & (A - C)
-       *
-       *   A | (B | C)  ==  (A | B) | C
-       * rather than
-       *   A | (B | C)  ==  (A | B) | (A | C)
-       */
+    {
+      struct mapping *orig_markers = NULL;
+      if (remap) {
+	/* Do not propagate marker changes between the branches
+	 * of the T_OR node.
+	 *
+	 * FIXME: It is theoretically possible to propagate marker
+	 *        changes up if they are compatible in both branches.
+	 */
+	orig_markers = remap->markers;
+	remap->markers = copy_mapping(orig_markers);
+      }
+
       tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
-      tmp2 = remap_markers(b->cdr, remap,
-			   remap_flags | PT_FLAG_REMAP_SWAP_MARKERS);
-      ret = low_type_binop(op, tmp, tmp2, NULL, aflags, bflags, 0);
-      free_type(tmp);
-      free_type(tmp2);
-      return ret;
+      if (remap) {
+	do_free_mapping(remap->markers);
+	remap->markers = copy_mapping(orig_markers);
+      }
+      if ((op == PT_BINOP_MINUS) || (op == PT_BINOP_OR)) {
+	/* Special case to avoid excessively complicated expressions
+	 * in the result.
+	 *
+	 *   A - (B | C)  ==  (A - B) - C
+	 * rather than
+	 *   A - (B | C)  ==  (A - B) & (A - C)
+	 *
+	 *   A | (B | C)  ==  (A | B) | C
+	 * rather than
+	 *   A | (B | C)  ==  (A | B) | (A | C)
+	 */
+	tmp2 = remap_markers(b->cdr, remap,
+			     remap_flags | PT_FLAG_REMAP_SWAP_MARKERS);
+	ret = low_type_binop(op, tmp, tmp2, NULL, aflags, bflags, 0);
+	if (remap) {
+	  do_free_mapping(remap->markers);
+	  remap->markers = orig_markers;
+	}
+	free_type(tmp);
+	free_type(tmp2);
+	return ret;
+      }
+      /* op		secondary
+       * 0  0000	0		0000
+       * 1  0001	7		0111
+       * 2  0010	1	        0001
+       * 3  0011	1, 3, 5, 7	0011
+       * 4  0100	7		0111
+       * 5  0101	7		0111
+       * 6  0110	-
+       * 7  0111	7		0111
+       * 8  1000	1		0001
+       * 9  1001	-
+       * 10 1010	1		0001
+       * 11 1011	1		0001
+       * 12 1100	1, 3, 5, 7	0011
+       * 13 1101	7		0111
+       * 14 1110	1		0001
+       * 15 1111	15		1111
+       *
+       * Note that secondary ops 1 and 7 are swapped for T_AND and T_OR.
+       */
+      tmp2 = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+      if (remap) {
+	do_free_mapping(remap->markers);
+	remap->markers = orig_markers;
+      }
     }
-    /* FALLTHRU */
+
+    /* FIXME: XOR and XNOR not supported cf above. */
+    if ("071377-71-11371f"[op] == '1') {
+      /* Secondary operator is AND. */
+      if (!tmp2) {
+	free_type(tmp);
+	return NULL;
+      }
+      if (!tmp) {
+	free_type(tmp2);
+	return NULL;
+      }
+
+      type_stack_mark();
+      push_finished_type(tmp);
+      push_finished_type(tmp2);
+      push_reverse_type(T_AND);
+    } else {
+      /* Secondary operator is OR. */
+      if (!tmp2) return tmp;
+      if (!tmp) return tmp2;
+
+      type_stack_mark();
+      push_finished_type(tmp);
+      push_finished_type(tmp2);
+      push_reverse_type(T_OR);
+    }
+    free_type(tmp);
+    free_type(tmp2);
+    return pop_unfinished_type();
+
   case T_AND:
-    /* op	secondary(T_AND)	secondary(T_OR)
-     * 0  0000	0		0000	0		0000
-     * 1  0001	1		0001	7		0111
-     * 2  0010	7		0111	1	        0001
-     * 3  0011	1, 3, 5, 7	0011	1, 3, 5, 7	0011
-     * 4  0100	1		0001	7		0111
-     * 5  0101	1		0001	7		0111
-     * 6  0110	-			-
-     * 7  0111	1		0001	7		0111
-     * 8  1000	7		0111	1		0001
-     * 9  1001	-			-
-     * 10 1010	7		0111	1		0001
-     * 11 1011	7		0111	1		0001
-     * 12 1100	1, 3, 5, 7	0011	1, 3, 5, 7	0011
-     * 13 1101	1		0001	7		0111
-     * 14 1110	7		0111	1		0001
-     * 15 1111	15		1111	15		1111
+    /* op	secondary
+     * 0  0000	0		0000
+     * 1  0001	1		0001
+     * 2  0010	7		0111
+     * 3  0011	1, 3, 5, 7	0011
+     * 4  0100	1		0001
+     * 5  0101	1		0001
+     * 6  0110	-
+     * 7  0111	1		0001
+     * 8  1000	7		0111
+     * 9  1001	-
+     * 10 1010	7		0111
+     * 11 1011	7		0111
+     * 12 1100	1, 3, 5, 7	0011
+     * 13 1101	1		0001
+     * 14 1110	7		0111
+     * 15 1111	15		1111
      *
      * Note that secondary ops 1 and 7 are swapped for T_AND and T_OR.
      */
@@ -4758,7 +4834,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     tmp2 = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
 
     /* FIXME: XOR and XNOR not supported cf above. */
-    if (("017311-17-77317f"[op] == '1') == (b->type == T_AND)) {
+    if ("017311-17-77317f"[op] == '1') {
       /* Secondary operator is AND. */
       if (!tmp2) {
 	free_type(tmp);
