@@ -3986,7 +3986,8 @@ static struct pike_type *lookup_marker(struct remap_state *remap, int marker)
   val = low_mapping_lookup(remap->markers, &key);
   if (!val) return NULL;
 
-  if (TYPEOF(*val) == PIKE_T_TYPE) {
+  if ((TYPEOF(*val) == PIKE_T_TYPE) && val->u.type) {
+    add_ref(val->u.type);
     return val->u.type;
   }
   return NULL;
@@ -4005,7 +4006,11 @@ static void store_marker(struct remap_state *remap, int marker,
   }
 
   SET_SVAL(key, T_INT, NUMBER_NUMBER, integer, marker);
-  SET_SVAL(val, T_TYPE, 0, type, value);
+  if (value) {
+    SET_SVAL(val, T_TYPE, 0, type, value);
+  } else {
+    SET_SVAL(val, T_INT, NUMBER_NUMBER, integer, 0);
+  }
   mapping_insert(remap->markers, &key, &val);
 }
 #define store_marker(REMAP, M, T) store_marker(REMAP, M, debug_malloc_pass(T))
@@ -4042,8 +4047,9 @@ static void push_remap_markers(struct pike_type *t,
 	    add_ref(new);
 	  }
 	  store_marker(remap, marker, new);
-	  free_pike_type(new);
+	  free_type(new);
 	}
+	free_type(old);
 	push_remap_markers(t->cdr, remap, flags);
       }
 
@@ -4062,7 +4068,8 @@ static void push_remap_markers(struct pike_type *t,
 	    add_ref(new);
 	  }
 	  store_marker(remap, marker, new);
-	  free_pike_type(new);
+	  free_type(new);
+	  free_type(old);
 	  push_remap_markers(t->cdr, remap, flags);
 
 	  switch(flags & PT_FLAG_REMAP_BOTH_MARKERS_MASK) {
@@ -4089,6 +4096,7 @@ static void push_remap_markers(struct pike_type *t,
 
       if (value) {
 	push_remap_markers(value, remap, flags);
+	free_type(value);
       } else if (flags & PT_FLAG_REMAP_EVAL_MARKERS) {
 	/* Marker without matching assign. */
 	/* FIXME: Report error? */
@@ -4112,6 +4120,7 @@ static void push_remap_markers(struct pike_type *t,
 
 	if (value) {
 	  push_remap_markers(value, remap, flags);
+	  free_type(value);
 	} else if (flags & PT_FLAG_REMAP_EVAL_MARKERS) {
 	  /* Marker without matching assign. */
 	  /* FIXME: Report error? */
