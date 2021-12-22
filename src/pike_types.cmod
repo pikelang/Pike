@@ -289,19 +289,22 @@ static void internal_parse_type(const char **s);
  * FLOAT	-		-
  * STRING	len type	ZERO, INT or OR		len:8.1, Range:7.7
  * TYPE		type		-
+ * AUTO		type		-			Added in 8.1
  * PROGRAM	type		-
  * MIXED	-		-
  * VOID		-		-
  * ZERO		-		-
- * UNKNOWN	-		-
+ * UNKNOWN	-		-			Represented as NULL
  * INT		min (int)	max (int)
  * OBJECT	implements/is	object id(int)
  * OPERATOR	type		Depends on bit #15.	Added in 8.1
+ * TRANSITIVE	fun_type	fun_type		Added in 8.1
+ *
+ * Operator types:
  * FIND_LFUN	object type	lfun (int)		Added in 8.1
  * GET_RETURN	fun type	-			Added in 8.1
  * SET_CAR	type		type			Added in 8.1
  * SET_CDR	type		type			Added in 8.1
- * TRANSITIVE	fun_type	fun_type		Added in 8.1
  *
  * Note that the cdr of a FUNCTION is a valid FUNCTION for the rest of
  * the arguments.
