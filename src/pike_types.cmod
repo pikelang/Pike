@@ -4018,6 +4018,101 @@ static void store_marker(struct remap_state *remap, int marker,
 }
 #define store_marker(REMAP, M, T) store_marker(REMAP, M, debug_malloc_pass(T))
 
+/**
+ * Copy marker assignments from remap->markers to
+ * their corresponding T_ASSIGN nodes.
+ *
+ * Leave the result on the type stack.
+ */
+static void push_and_fixup_markers(struct pike_type *t,
+				   struct remap_state *remap)
+{
+  if (!t || !(t->flags & PT_FLAG_ASSIGN) || !remap || !remap->markers) {
+    /* Type t does not contain any marker assignments,
+     * or the remap state has no markers set.
+     */
+    push_finished_type(t);
+    return;
+  }
+  /* NB: Many of the cases in the switch below are unreached
+   *     as they never contain a T_ASSIGN and thus are
+   *     handled by the PT_FLAG_ASSIGN test above.
+   */
+  switch(t->type & (0x8000 | PIKE_T_MASK)) {
+  case T_ASSIGN:
+    {
+      int marker = '0' + CAR_TO_INT(t);
+      struct pike_type *t2 = lookup_marker(remap, marker);
+      push_finished_type(t2);
+      push_assign_type(marker);
+      free_type(t2);
+    }
+    break;
+
+  case PIKE_T_NAME:
+    push_and_fixup_markers(t->cdr, remap);
+    push_type_name((struct pike_string *)(t->car));
+    break;
+
+  case PIKE_T_ATTRIBUTE:
+    push_and_fixup_markers(t->cdr, remap);
+    push_type_attribute((struct pike_string *)(t->car));
+    break;
+
+  case T_SCOPE:
+    push_and_fixup_markers(t->cdr, remap);
+    push_scope_type(CAR_TO_INT(t));
+    break;
+
+  case T_MULTISET:
+  case T_NOT:
+  case T_TYPE:
+  case PIKE_T_AUTO:
+  case T_PROGRAM:
+    /* t->car is node. */
+    push_and_fixup_markers(t->car, remap);
+    push_type(t->type);
+    break;
+
+  case PIKE_T_OPERATOR:
+    push_finished_type(t->car);
+    push_type_operator(t->type, t->cdr);
+    break;
+
+  case T_FUNCTION:
+  case T_MANY:
+  case PIKE_T_RING:
+  case T_TUPLE:
+  case T_MAPPING:
+  case T_OR:
+  case T_AND:
+  case T_ARRAY:
+  case T_STRING:
+  case PIKE_T_TRANSITIVE:
+  case PIKE_T_OPERATOR | 0x8000:
+    /* t->car and t->cdr are nodes. */
+    push_and_fixup_markers(t->cdr, remap);
+    push_and_fixup_markers(t->car, remap);
+    push_type(t->type);
+    break;
+
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+  case T_MIXED:
+  case T_VOID:
+  case T_ZERO:
+  case T_FLOAT:
+  case T_INT:
+  case T_OBJECT:
+    /* Leaf type. */
+    push_finished_type(t);
+    break;
+
+  default:
+    Pike_fatal("Unsupported type in push_and_fixup_markers().\n");
+  }
+}
+
 static void push_remap_markers(struct pike_type *t,
 			       struct remap_state *remap,
 			       enum pt_remap_flags flags)
@@ -5931,6 +6026,32 @@ struct pike_type *type_binop(enum pt_binop op,
   INIT_REMAP_STATE(remap);
 
   ret = low_type_binop(op, a, b, &remap, aflags, bflags, remap_flags);
+
+  if (remap.markers && ret &&
+      ((op == PT_BINOP_AND) || (op == PT_BINOP_MINUS))) {
+    /* We may need to backpatch marker restrictions. */
+#ifdef PIKE_DEBUG
+    if (l_flag > 1) {
+      fprintf(stderr, "Back-patching markers.\n"
+	      "Original result: ");
+      simple_describe_type(ret);
+      fprintf(stderr, "\nMarkers: ");
+      simple_describe_mapping(remap.markers);
+      fprintf(stderr, "\n");
+    }
+#endif
+    type_stack_mark();
+    push_and_fixup_markers(ret, &remap);
+    free_type(ret);
+    ret = pop_unfinished_type();
+#ifdef PIKE_DEBUG
+    if (l_flag > 1) {
+      fprintf(stderr, "Result after back-patching: ");
+      simple_describe_type(ret);
+      fprintf(stderr, "\n");
+    }
+#endif
+  }
 
   EXIT_REMAP_STATE(remap);
 
