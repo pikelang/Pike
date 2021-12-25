@@ -1247,6 +1247,8 @@ void debug_pop_type_stack(unsigned int expected)
   case T_OR:
   case T_AND:
   case PIKE_T_RING:
+  case T_ARRAY:
+  case T_STRING:
   case PIKE_T_TRANSITIVE:
     /* Both car & cdr. */
     push_finished_type(top->cdr);
@@ -1262,8 +1264,6 @@ void debug_pop_type_stack(unsigned int expected)
     break;
   case T_SCOPE:
   case T_ASSIGN:
-  case T_ARRAY:
-  case T_STRING:
     /* cdr */
     push_finished_type(top->cdr);
     break;
