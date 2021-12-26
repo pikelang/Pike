@@ -120,12 +120,12 @@ int test_unicode() {
   string readme = Protocols.HTTP.
     get_url_data("http://ftp.unicode.org/Public/UNIDATA/ReadMe.txt");
   int a,b,c;
-  sscanf(readme, "Version %d.%d.%d", a,b,c);
+  sscanf(readme, "%*sVersion %d.%d.%d", a,b,c);
   int x,y,z;
   sscanf(Stdio.read_file("src/UnicodeData-ReadMe.txt"),
-	 "Version %d.%d.%d", x,y,z);
+         "%*sVersion %d.%d.%d", x,y,z);
   if( a!=x || b!=y || c!=z ) {
-    write("Unicode database out of sync with unicode.org.\n");
+    write("Unicode database (%d.%d.%d) behind unicode.org (%d.%d.%d).\n", x,y,z,a,b,c);
     return 0;
   }
   return 1;
