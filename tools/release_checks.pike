@@ -114,12 +114,12 @@ int test_unicode() {
   string readme = Protocols.HTTP.
     get_url_data("http://ftp.unicode.org/Public/UNIDATA/ReadMe.txt");
   int a,b,c;
-  sscanf(readme, "Version %d.%d.%d", a,b,c);
+  sscanf(readme, "%*sVersion %d.%d.%d", a,b,c);
   int x,y,z;
   sscanf(Stdio.read_file("src/UnicodeData-ReadMe.txt"),
-	 "Version %d.%d.%d", x,y,z);
+         "%*sVersion %d.%d.%d", x,y,z);
   if( a!=x || b!=y || c!=z ) {
-    write("Unicode database out of sync with unicode.org.\n");
+    write("Unicode database (%d.%d.%d) behind unicode.org (%d.%d.%d).\n", x,y,z,a,b,c);
     return 0;
   }
   return 1;
@@ -127,6 +127,10 @@ int test_unicode() {
 
 int test_realpike() {
   int status = 1;
+
+  multiset whitelist = (<
+    "lib/modules/Calendar.pmod/mkexpert.pike",
+  >);
 
   // bin and tools shouldn't really be #pike-ified, since they
   // should run with the pike it is bundled with.
@@ -136,7 +140,7 @@ int test_realpike() {
       {
         string f = Stdio.read_file(path+file);
         if(!f) { write("Unable to read %O\n", path+file); continue; }
-	if(!has_value(f,"#pike")) {
+        if(!whitelist[path+file] && !has_value(f,"#pike")) {
 	  write("%s%s is missing a #pike directive.\n", path,file);
 	  status = 0;
 	}
