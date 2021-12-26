@@ -880,12 +880,17 @@ def: modifiers optional_attributes simple_type optional_constant
     }
 
     e = $<number>8 + $9 - 1;
-    if(Pike_compiler->varargs &&
+    if(Pike_compiler->varargs && $9 &&
        (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      pop_type_stack(T_ARRAY);
+      if (Pike_compiler->compiler_frame->variable[e+1].type->type != T_ARRAY) {
+	yywarning("Varargs variable is not an array!! (Internal error)");
+      } else {
+	pop_type_stack(T_ARRAY);
+	compiler_discard_top_type();
+      }
     }else{
       push_type(T_VOID);
     }
@@ -1080,6 +1085,7 @@ def: modifiers optional_attributes simple_type optional_constant
           push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
           e--;
           pop_type_stack(T_ARRAY);
+	  compiler_discard_top_type();
         }else{
           push_type(T_VOID);
         }
@@ -2347,6 +2353,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
 	push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
 	e--;
 	pop_type_stack(T_ARRAY);
+	compiler_discard_top_type();
       }else{
 	push_type(T_VOID);
       }
@@ -2405,6 +2412,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       pop_type_stack(T_ARRAY);
+      compiler_discard_top_type();
     }else{
       push_type(T_VOID);
     }
@@ -2501,6 +2509,7 @@ local_function: TOK_IDENTIFIER start_function func_args
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       pop_type_stack(T_ARRAY);
+      compiler_discard_top_type();
     }else{
       push_type(T_VOID);
     }
@@ -2681,6 +2690,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       pop_type_stack(T_ARRAY);
+      compiler_discard_top_type();
     }else{
       push_type(T_VOID);
     }
@@ -3062,6 +3072,7 @@ anon_class: TOK_CLASS line_number_info
 	  e = nargs = -nargs;
 	  push_finished_type(Pike_compiler->compiler_frame->variable[--e].type);
 	  pop_type_stack(T_ARRAY); /* Pop one level of array. */
+	  compiler_discard_top_type();
 	} else {
 	  /* Not varargs. */
 	  push_type(T_VOID);
@@ -3319,6 +3330,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
 	  e = nargs = -nargs;
 	  push_finished_type(Pike_compiler->compiler_frame->variable[--e].type);
 	  pop_type_stack(T_ARRAY); /* Pop one level of array. */
+	  compiler_discard_top_type();
 	} else {
 	  /* Not varargs. */
 	  push_type(T_VOID);
