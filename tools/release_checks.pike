@@ -134,6 +134,10 @@ int test_unicode() {
 int test_realpike() {
   int status = 1;
 
+  multiset whitelist = (<
+    "lib/modules/Calendar.pmod/mkexpert.pike",
+  >);
+
   // bin and tools shouldn't really be #pike-ified, since they
   // should run with the pike it is bundled with.
   foreach( ({ "lib", /* "bin", "tools" */ }), string dir)
@@ -142,8 +146,8 @@ int test_realpike() {
       {
         string f = Stdio.read_file(path+file);
         if(!f) { write("Unable to read %O\n", path+file); continue; }
-	if(!has_value(f,"#pike")) {
-	  write("%s%s is missing a #pike directive.\n", path,file);
+        if(!whitelist[path+file] && !has_value(f,"#pike")) {
+          write("%s%s is missing a #pike directive.\n", path,file);
 	  status = 0;
 	}
       }
