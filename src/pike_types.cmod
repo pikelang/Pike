@@ -4745,6 +4745,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	remap->markers = orig_markers;
       }
     }
+#if 0
     if ((op & PT_BINOP_NOT_A) || (aflags & PT_FLAG_CMP_INSEPARABLE)) {
       if (!tmp2) {
 	free_type(tmp);
@@ -4758,6 +4759,10 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       if (!tmp2) return tmp;
       if (!tmp) return tmp2;
     }
+#else
+    if (!tmp2) return tmp;
+    if (!tmp) return tmp2;
+#endif
 
     type_stack_mark();
     push_finished_type(tmp);
