@@ -5324,16 +5324,26 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 			       avoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
 			       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	  if (tmp) {
-	    push_finished_type(ai);
-	    /* FIXME: What if tmp differs due to remapping? */
-	    if (tmp != bi->car) {
-	      /* Some overlap. */
-	      push_finished_type(bi);
-	      push_type(T_NOT);
-	      push_type(T_AND);
+	    if ((ai->car == void_type_string) && (tmp != bi->car) &&
+		(aflags & PT_FLAG_CMP_IGNORE_EXTRA_ARGS)) {
+	      /* End of argument list for a, and it is valid to end the
+	       * argument list here (void matched), and a implicitly
+	       * ignores any further arguments.
+	       */
+	      free_type(tmp);
+	      tmp = NULL;
+	    } else {
+	      push_finished_type(ai);
+	      /* FIXME: What if tmp differs due to remapping? */
+	      if (tmp != bi->car) {
+		/* Some overlap. */
+		push_finished_type(bi);
+		push_type(T_NOT);
+		push_type(T_AND);
+	      }
+	      free_type(tmp);
+	      return pop_unfinished_type();
 	    }
-	    free_type(tmp);
-	    return pop_unfinished_type();
 	  }
 	}
 
