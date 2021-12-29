@@ -7174,6 +7174,7 @@ INT32 define_function(struct pike_string *name,
 #endif /* PIKE_DEBUG */
     if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
       struct svalue *lfun_id = low_mapping_string_lookup(lfun_ids, name);
+      enum pt_cmp_flags aflags = 0;
       if (lfun_id && (TYPEOF(*lfun_id) == PIKE_T_INT)) {
 	if (lfun_compat_strings[lfun_id->u.integer] == name) {
 	  /* Compat lfun.
