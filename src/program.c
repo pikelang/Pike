@@ -7207,9 +7207,16 @@ INT32 define_function(struct pike_string *name,
 	  }
 	}
       }
+      if (!IDENTIFIER_IS_C_FUNCTION(function_flags)) {
+	/* Functions compiled by the Pike compiler
+	 * ignore extra arguments, so do not complain
+	 * if they are missing.
+	 */
+	aflags |= PT_FLAG_CMP_IGNORE_EXTRA_ARGS;
+      }
       /* Inhibit deprecation warnings during the comparison. */
       c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
-      if (!pike_types_le(type, lfun_type->u.type, 0, 0)) {
+      if (!pike_types_le(type, lfun_type->u.type, aflags, 0)) {
 	int level = REPORT_NOTICE;
 	if (!match_types(type, lfun_type->u.type)) {
 	  level = REPORT_ERROR;
