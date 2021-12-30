@@ -4586,7 +4586,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 			  aflags, bflags, remap_flags);
     if (!tmp2) return tmp;
 
-    ret = low_type_binop(PT_BINOP_MINUS, tmp, tmp2, NULL, 0, 0, 0);
+    ret = low_type_binop(PT_BINOP_MINUS, tmp, tmp2, NULL, 0, 0,
+			 remap_flags & PT_FLAG_REMAP_INEXACT);
     free_type(tmp);
     free_type(tmp2);
     return ret;
@@ -4601,7 +4602,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 			  aflags, bflags, remap_flags);
     if (!tmp2) return tmp;
 
-    ret = low_type_binop(PT_BINOP_MINUS, tmp, tmp2, NULL, 0, 0, 0);
+    ret = low_type_binop(PT_BINOP_MINUS, tmp, tmp2, NULL, 0, 0,
+			 remap_flags & PT_FLAG_REMAP_INEXACT);
     free_type(tmp);
     free_type(tmp2);
     return ret;
@@ -4735,6 +4737,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	remap->markers = copy_mapping(orig_markers);
       }
       tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
+      if ((remap_flags & PT_FLAG_REMAP_INEXACT) && tmp) {
+	if ((op == PT_BINOP_AND) || (op == PT_BINOP_MINUS)) {
+	  free_type(tmp);
+	  add_ref(a);
+	  return a;
+	}
+      }
       if (remap) {
 	do_free_mapping(remap->markers);
 	remap->markers = copy_mapping(orig_markers);
@@ -4833,6 +4842,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
 
       tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
+      if ((remap_flags & PT_FLAG_REMAP_INEXACT) && tmp) {
+	if (op == PT_BINOP_AND) {
+	  free_type(tmp);
+	  add_ref(a);
+	  return a;
+	}
+      }
       if (remap) {
 	do_free_mapping(remap->markers);
 	remap->markers = copy_mapping(orig_markers);
@@ -9457,7 +9473,8 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
 
   INIT_REMAP_STATE(remap);
 
-  tmp = low_type_binop(PT_BINOP_MINUS, a, b, &remap, aflags, bflags, 0);
+  tmp = low_type_binop(PT_BINOP_MINUS, a, b, &remap, aflags, bflags,
+		       PT_FLAG_REMAP_INEXACT);
 
   if (tmp) {
     clear_mapping(remap.markers);
