@@ -9708,22 +9708,29 @@ static struct pike_type *low_index_type(struct pike_type *t,
 
   case T_ARRAY:
     {
-      struct pike_type *a;
+      struct pike_type *str_type;
 
-      if(low_pike_types_le(string0_type_string, index_type, 0, 0) &&
-	 (a = low_index_type(t->cdr, string0_type_string, n))) {
-	/* Possible to index the array with a string. */
-	type_stack_mark();
-	push_finished_type(a);
-	free_type(a);
-	push_unlimited_array_type(T_ARRAY);
+      if ((str_type = type_binop(PT_BINOP_AND, index_type, string_type_string,
+				 0, 0, 0))) {
+	struct pike_type *a;
+	if((a = low_index_type(t->cdr, str_type, n))) {
+	  /* Possible to index the array with a string. */
+	  free_type(str_type);
 
-	if (match_types(int_type_string, index_type)) {
-	  /* Also possible to index the array with an int. */
-	  push_finished_type(t->cdr);
-	  push_type(T_OR);
+	  type_stack_mark();
+	  push_finished_type(a);
+	  free_type(a);
+	  push_unlimited_array_type(T_ARRAY);
+
+	  if (match_types(int_type_string, index_type)) {
+	    /* Also possible to index the array with an int. */
+	    push_finished_type(t->cdr);
+	    push_type(T_OR);
+	  }
+
+	  return pop_unfinished_type();
 	}
-	return pop_unfinished_type();
+	free_type(str_type);
       }
       if (t->cdr && match_types(int_type_string, index_type)) {
 	/* Possible to index the array with an int. */
