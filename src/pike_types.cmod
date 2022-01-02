@@ -4020,7 +4020,7 @@ static void store_marker(struct remap_state *remap, int marker,
 
 /**
  * Copy marker assignments from remap->markers to
- * their corresponding T_ASSIGN nodes.
+ * their corresponding T_ASSIGN nodes (aka backpatch).
  *
  * Leave the result on the type stack.
  */
@@ -4042,7 +4042,7 @@ static void push_and_fixup_markers(struct pike_type *t,
   case T_ASSIGN:
     {
       int marker = '0' + CAR_TO_INT(t);
-      struct pike_type *t2 = lookup_marker(remap, marker);
+      struct pike_type *t2 = lookup_marker(remap, marker | 0x100);
       push_finished_type(t2);
       push_assign_type(marker);
       free_type(t2);
@@ -4632,10 +4632,30 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_ASSIGN:
     {
       int marker;
-      tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
-      if (!tmp) return NULL;
+      tmp = low_type_binop(PT_BINOP_AND, a->cdr, b, remap,
+			   aflags, bflags, remap_flags);
+
       marker = alloc_remap_marker(remap, CAR_TO_INT(a), remap_flags);
       store_marker(remap, marker, tmp);
+
+      if (op != PT_BINOP_AND) {
+	if ((op == PT_BINOP_MINUS) && !tmp) {
+	  tmp = a->cdr;
+	  if (tmp) add_ref(tmp);
+	} else if ((op == PT_BINOP_MINUS) && (tmp == a->cdr)) {
+	  free_type(tmp);
+	  tmp = NULL;
+	} else {
+	  free_type(tmp);
+	  tmp = low_type_binop(op, a->cdr, b, remap,
+			       aflags, bflags, remap_flags);
+	}
+      }
+
+      store_marker(remap, marker | 0x100, tmp);
+
+      if (!tmp) return NULL;
+
       type_stack_mark();
       push_finished_type(tmp);
       push_assign_type(marker);
@@ -4647,11 +4667,31 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_ASSIGN:
     {
       int marker;
-      tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
-      if (!tmp) return NULL;
+      tmp = low_type_binop(PT_BINOP_AND, a, b->cdr, remap,
+			   aflags, bflags, remap_flags);
+
       marker = alloc_remap_marker(remap, CAR_TO_INT(b),
 				  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       store_marker(remap, marker, tmp);
+
+      if (op != PT_BINOP_AND) {
+	if ((op == PT_BINOP_MINUS) && !tmp) {
+	  tmp = a;
+	  if (tmp) add_ref(tmp);
+	} else if ((op == PT_BINOP_MINUS) && (tmp == a)) {
+	  free_type(tmp);
+	  tmp = NULL;
+	} else {
+	  free_type(tmp);
+	  tmp = low_type_binop(op, a, b->cdr, remap,
+			       aflags, bflags, remap_flags);
+	}
+      }
+
+      store_marker(remap, marker | 0x100, tmp);
+
+      if (!tmp) return NULL;
+
       type_stack_mark();
       push_finished_type(tmp);
       push_assign_type(marker);
@@ -5045,11 +5085,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       free_type(a);
 
       store_marker(remap, marker, tmp);
-
-      if (!tmp) {
-	a = NULL;
-	break;
+      if ((op == PT_BINOP_AND) || (op == PT_BINOP_MINUS)) {
+	store_marker(remap, marker | 0x100, tmp);
       }
+
+      if (!tmp) return NULL;
       free_type(tmp);
 
       type_stack_mark();
@@ -5076,12 +5116,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
       free_type(b);
 
+      /* FIXME: Do we need to invert for PT_BINOP_MINUS here? */
       store_marker(remap, marker, tmp);
-
-      if (!tmp) {
-	b = NULL;
-	break;
+      if (op == PT_BINOP_AND) {
+	store_marker(remap, marker | 0x100, tmp);
       }
+
+      if (!tmp) return NULL;
       free_type(tmp);
 
       type_stack_mark();
