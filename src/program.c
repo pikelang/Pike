@@ -286,9 +286,9 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tObj),	/* "_get_iterator", */
   0,
 
-  tFuncV(tZero,tVoid,tMix),	/* "`+=", */
-  tFuncV(tZero tSetvar(0,tZero) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`[]=", */
-  tFuncV(tStr tSetvar(0,tZero) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`->=", */
+  tFuncV(tUnknown,tVoid,tMix),	/* "`+=", */
+  tFuncV(tUnknown tSetvar(0,tMix) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`[]=", */
+  tFuncV(tLStr(tUnknown, tUnknown) tSetvar(0,tMix) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`->=", */
   tFuncV(tZero,tVoid,tMix),	/* "_m_delete", */
   tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
   tFuncV(tZero, tVoid, tVoid),	/* "_m_add", */
