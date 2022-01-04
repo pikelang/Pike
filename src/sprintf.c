@@ -2365,7 +2365,6 @@ static int push_sprintf_argument_types(PCHARP format,
       case 'f':
       case 'g':
       case 'E':
-      case 'F':
       case 'G':
       {
 	push_object_type(0, 0);
@@ -2375,6 +2374,16 @@ static int push_sprintf_argument_types(PCHARP format,
 	if ('+' < min_char) min_char = '+';
 	break;
       }
+
+      case 'F':
+      {
+	push_object_type(0, 0);
+	push_type(PIKE_T_FLOAT);
+	push_type(T_OR);
+	if (min_char > 0) min_char = 0;
+	if (max_char < 255) max_char = 255;
+	break;
+      }	
 
       case 'O':
       {
