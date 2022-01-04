@@ -2058,6 +2058,7 @@ static int push_sprintf_argument_types(PCHARP format,
     int num_snurkel, column;
     ptrdiff_t width = 0;
     p_wchar2 c;
+    int uses_tilde = 0;
 
     if(EXTRACT_PCHARP(a)!='%')
     {
@@ -2098,6 +2099,13 @@ static int push_sprintf_argument_types(PCHARP format,
       case '*':
 	if (setwhat < 2) {
 	  push_int_type(0, MAX_INT32);
+	  if (uses_tilde) {
+	    max_char = 0x7fffffff;
+	    min_char = -0x80000000;
+	  } else {
+	    if (' ' < min_char) min_char = ' ';
+	    if (' ' > max_char) max_char = ' ';
+	  }
 	} else {
 	  push_int_type(MIN_INT32, MAX_INT32);
 	}
@@ -2127,8 +2135,13 @@ static int push_sprintf_argument_types(PCHARP format,
 	  }
 	  width = tmp;
 	  if (width) {
-	    if (' ' < min_char) min_char = ' ';
-	    if (' ' > max_char) max_char = ' ';
+	    if (uses_tilde) {
+	      max_char = 0x7fffffff;
+	      min_char = -0x80000000;
+	    } else {
+	      if (' ' < min_char) min_char = ' ';
+	      if (' ' > max_char) max_char = ' ';
+	    }
 	  }
 	/* FALLTHRU */
 	case 2: case 3: case 4: break;
@@ -2205,6 +2218,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	  uses_marker = 1;
 	}
 	push_unlimited_array_type(T_STRING);
+	uses_tilde = 1;
 	continue;
       }
 
