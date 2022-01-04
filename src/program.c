@@ -287,8 +287,10 @@ static const char *const raw_lfun_types[] = {
   0,
 
   tFuncV(tUnknown,tVoid,tMix),	/* "`+=", */
-  tFuncV(tUnknown tSetvar(0,tMix) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`[]=", */
-  tFuncV(tLStr(tUnknown, tUnknown) tSetvar(0,tMix) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tVar(0)),	/* "`->=", */
+  tFuncV(tUnknown tSetvar(0,tMix) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,
+	 tOr(tVar(0),tVoid)),	/* "`[]=", */
+  tFuncV(tLStr(tUnknown, tUnknown) tSetvar(0,tMix) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,
+	 tOr(tVar(0),tVoid)),	/* "`->=", */
   tFuncV(tZero,tVoid,tMix),	/* "_m_delete", */
   tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
   tFuncV(tZero, tVoid, tVoid),	/* "_m_add", */
