@@ -20,6 +20,14 @@ dnl AC_DEFINE(HAVE_GNOME)
 dnl AC_DEFINE(HAVE_DPMS)
 dnl AC_DEFINE(PGTK_AUTO_UTF8)
 
+# Inhibit deprecation warnings about GTK2 using deprecated APIs in glib-2.0.
+#
+# NB: Any glib version prior to 2.36 should do, but we do not
+#     want to cause issues if the version of glib actually is
+#     older than 2.36, so select the oldest still supported.
+AC_DEFINE(GLIB_VERSION_MIN_REQUIRED, GLIB_VERSION_2_26,
+	  [Define to something prior to 2.36 to inhibit deprecation warnings from glib.])
+
 AC_DEFINE(FUNCPROTO)
 
 AC_HEADER_STDC
