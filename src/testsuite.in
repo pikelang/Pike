@@ -878,11 +878,11 @@ test_any([[array(string) a; return sprintf("%O", typeof(a[0])); ]], "string")
 
 test_any([[class foo { string a; };
 	   object(foo) bar;
-	   return sprintf("%O", typeof(bar->a));]], "string");
+           return sprintf("%O", typeof(bar->a));]], "zero | string");
 
 test_any([[class foo { string a; };
 	   array(object(foo)) bar;
-	   return sprintf("%O", typeof(bar[0]->a));]], "string");
+           return sprintf("%O", typeof(bar[0]->a));]], "zero | string");
 
 test_any([[function(:string)|function(int:int) f;
 	   return sprintf("%O", typeof(f())); ]],
@@ -902,7 +902,7 @@ test_any([[function(:string)|function(mixed, mixed ...:int) f;
 
 test_any([[mapping(object:string)|mapping(string:int) f;
 	  return sprintf("%O", typeof(f[class{}()])); ]],
-	 "string")
+         "string")
 
 test_any([[mapping(object:string)|mapping(string:int) f;
 	  return sprintf("%O", typeof(f[""])); ]],
@@ -976,7 +976,7 @@ test_any([[{
   Bar d;
   return sprintf("%O$%O$%O$%O",
                  Bar()->f(), typeof(c->m), typeof(d->m), typeof(d->b->m));
-}]], "mixed$mixed$string$mixed")
+}]], "mixed$mixed$zero | string$mixed")
 
 // las.c:find_return_type() checks.
 test_eq([[
