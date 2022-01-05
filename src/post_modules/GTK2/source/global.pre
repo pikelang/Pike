@@ -272,7 +272,13 @@ void flush()
 //! Flush GDK. Not normally needed, can be useful while doing calculations.
 {
   gdk_flush();
+
+#ifdef HAVE_GTK22
+  while(g_main_context_iteration(NULL,0));
+#else
   while(g_main_iteration( 0 ) );
+#endif
+
   pgtk2_pop_n_elems(args);
   push_int(0);
 }
@@ -329,7 +335,11 @@ int main_iteration_do(int block)
   INT_TYPE n;
   get_all_args( "gtk_main_iteration_do", args, "%i", &n );
   pgtk2_pop_n_elems(args);
+#ifdef HAVE_GTK22
+  push_int(g_main_context_iteration(NULL, n));
+#else
   push_int( g_main_iteration( n ) );
+#endif
 }
 
 int true()
