@@ -4861,14 +4861,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     free_type(tmp);
     free_type(tmp2);
     return pop_unfinished_type();
-  case T_NOT:
-    /* Rotate the opcode 2 bits.
-     *
-     * This converts A to ~A and vice versa.
-     */
-    op = ((op << 2) | (op >> 2)) & PT_BINOP_ALL;
-    return low_type_binop(op, a->car, b,
-			  remap, aflags, bflags, remap_flags);
   }
   switch(b?b->type:PIKE_T_UNKNOWN) {
   case T_OR:
@@ -5049,15 +5041,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     free_type(tmp);
     free_type(tmp2);
     return pop_unfinished_type();
-
-  case T_NOT:
-    /* Swap the bits of the opcode pairwise.
-     *
-     * This converts B to ~B and vice versa.
-     */
-    op = (((op & PT_BINOP_B) << 1) | ((op >> 1) & PT_BINOP_B)) & PT_BINOP_ALL;
-    return low_type_binop(op, a, b->car,
-			  remap, aflags, bflags, remap_flags);
   }
 
   /*
@@ -5675,6 +5658,25 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
     }
 
+    if (a->type == T_NOT) {
+      /* Rotate the opcode 2 bits.
+       *
+       * This converts A to ~A and vice versa.
+       */
+      op = ((op << 2) | (op >> 2)) & PT_BINOP_ALL;
+      return low_type_binop(op, a->car, b, remap,
+			    aflags, bflags, remap_flags);
+    }
+    if (b->type == T_NOT) {
+      /* Swap the bits of the opcode pairwise.
+       *
+       * This converts B to ~B and vice versa.
+       */
+      op = (((op & PT_BINOP_B) << 1) | ((op >> 1) & PT_BINOP_B)) & PT_BINOP_ALL;
+      return low_type_binop(op, a, b->car, remap,
+			    aflags, bflags, remap_flags);
+    }
+
     /* NB: TWOT(T_INT, T_ZERO) and TWOT(T_ZERO, T_INT) have
      *     been handled above.
      */
@@ -5775,6 +5777,28 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   /* Invariant: a->type == b->type. */
 
   switch(a->type) {
+  case T_NOT:
+    /* Reverse the order of the bits.
+     *
+     *   1 <=> 8	AND <=> NOR
+     *   2 <=> 4	MINUS <=> INVERSE_MINUS
+     *
+     * This inverts both A and B.
+     */
+    {
+      int i;
+      enum pt_binop newop = 0;
+      for (i = 0; i < 4; i++) {
+	newop <<= 1;
+	if (op & 1) {
+	  newop |= 1;
+	}
+	op >>= 1;
+      }
+      return low_type_binop(newop, a->car, b->car, remap,
+			    aflags, bflags, remap_flags);
+    }
+
   case T_VOID:
   case T_ZERO:
   case T_FLOAT:
