@@ -5442,7 +5442,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
 	if (tmp) {
 	  push_finished_type(tmp);
-	  push_finished_type(a->car);
+	  push_finished_type(ai->car);
 	  push_type(PIKE_T_FUNCTION);
 	  free_type(tmp);
 	  return pop_unfinished_type();
