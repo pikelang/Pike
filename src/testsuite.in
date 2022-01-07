@@ -8438,6 +8438,7 @@ ignore_warning("Indexing the empty string.", [[
 ]])
 test_eq(sprintf("%O", typeof(0.0)),"float")
 test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
+test_true(typeof("hej"+3) >= typeof("hej3"))
 
 // _typeof
 test_eq(sprintf("%O", _typeof(1)),"int(1)")
@@ -9150,6 +9151,12 @@ test_equal( (<4,5,6>) ^ (<5,5,5>), (<4,5,5,6>) )
 test_equal( ([-4:8,8:7]) ^ ([3:3,8:3]), ([-4:8,3:3]) )
 test_equal(({1,3,3,3,4}) ^ ({2,3,3,5}), ({1,3,4,2,5}))
 test_equal(({1,3,3,4}) ^ ({2,3,3,3,5}), ({1,4,2,3,5}))
+test_any([[
+  string(7bit) cyrillic_to_7bit(string(0x401..0x45f) text) {
+    return text ^ "\u0400"*sizeof(text);
+  }
+  return cyrillic_to_7bit("\u041d\u0435\u0442");
+]], "\35""5B")
 
 // testing <<
 test_eq(1<<0,1)
