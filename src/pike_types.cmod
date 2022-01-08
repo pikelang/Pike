@@ -4878,8 +4878,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
 
       tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
-      if ((remap_flags & PT_FLAG_REMAP_INEXACT) && tmp) {
-	if (op == PT_BINOP_AND) {
+      if (remap_flags & PT_FLAG_REMAP_INEXACT) {
+	if (tmp && (op == PT_BINOP_AND)) {
 	  if (remap) {
 	    do_free_mapping(remap->markers);
 	    remap->markers = orig_markers;
@@ -4887,6 +4887,12 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  free_type(tmp);
 	  add_ref(a);
 	  return a;
+	} else if (!tmp && (op == PT_BINOP_MINUS)) {
+	  if (remap) {
+	    do_free_mapping(remap->markers);
+	    remap->markers = orig_markers;
+	  }
+	  return NULL;
 	}
       }
       if (remap) {
