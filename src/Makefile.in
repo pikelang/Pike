@@ -49,6 +49,7 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
 lib_prefix = @libdir@/pike
+datarootdir = @datarootdir@
 data_prefix = @datadir@
 share_prefix = $(data_prefix)/pike
 man_prefix = @mandir@
