@@ -9560,8 +9560,8 @@ void init_program(void)
 
   lfun_getter_type_string = make_pike_type(tFuncV(tNone, tVoid, tMix));
   lfun_setter_type_string =
-    make_pike_type(tOr(tDeprecated(tFuncV(tZero, tVoid, tVoid)),
-		       tFuncV(tZero, tVoid, tMix)));
+    make_pike_type(tOr(tDeprecated(tFuncV(tUnknown, tVoid, tVoid)),
+		       tFuncV(tSetvar(0, tMix), tVoid, tVar(0))));
 
   low_init_pike_compiler();
 
