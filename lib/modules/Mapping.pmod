@@ -102,25 +102,25 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
     return values(joined);
   }
 
-  protected mixed `+(mixed arg)
+  protected mixed `+(mapping|zero|this_program arg)
   {
     update_joined();
     return predef::`+(joined, arg);
   }
 
-  protected mixed ``+(mixed arg)
+  protected mixed ``+(mapping|zero|this_program arg)
   {
     update_joined();
     return predef::`+(arg, joined);
   }
 
-  protected mixed `-(mixed arg)
+  protected mixed `-(mapping|zero|this_program arg)
   {
     update_joined();
     return predef::`-(joined, arg);
   }
 
-  protected mixed ``-(mixed arg)
+  protected mixed ``-(mapping|zero|this_program arg)
   {
     update_joined();
     return predef::`-(arg, joined);
