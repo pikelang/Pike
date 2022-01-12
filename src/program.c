@@ -224,7 +224,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tVoid),	/* "__INIT", */
   tFuncV(tNone,tZero,tVoid),	/* "create", */
   tFuncV(tOr(tVoid,tInt),tVoid,tInt01), /* "_destruct", */
-  tFuncV(tInt tOr(tMap(tStr,tInt),tVoid),tVoid,tStr),	/* "_sprintf", */
+  tFuncV(tOr(tVoid,tInt7bit) tOr(tMap(tStr,tInt),tVoid),tVoid,tStr),	/* "_sprintf", */
   0,
 
   tFuncV(tZero,tVoid,tMix),	/* "`+", */
