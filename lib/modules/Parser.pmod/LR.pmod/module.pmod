@@ -305,8 +305,9 @@ class Parser
     //! Equal to r->number + offset.
     int item_id;
 
-    protected string _sprintf()
+    protected string _sprintf(int t)
     {
+      if( t!='O' ) return undefined;
       array(string) res = ({ symbol_to_string(r->nonterminal), ":\t" });
 
       if (offset) {
@@ -499,9 +500,9 @@ class Parser
       }
     }
 
-    protected string _sprintf()
+    protected string _sprintf(int t)
     {
-      return sprintf("%{%s\n%}", items);
+      return t=='O' && sprintf("%{%s\n%}", items);
     }
   }
 
