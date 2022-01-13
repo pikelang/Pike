@@ -1032,7 +1032,7 @@ static void f_sqlstate(INT32 args)
  *! you want to access with this function.
  *!
  *! @seealso
- *!   @[create()], @[create_db()], @[drop_db()]
+ *!   @[create()], @[create_db()], @[drop_db()], @[query_db()]
  */
 static void f_select_db(INT32 args)
 {
@@ -1071,6 +1071,26 @@ static void f_select_db(INT32 args)
   add_ref(PIKE_MYSQL->database = sp[-args].u.string);
 
   pop_n_elems(args);
+}
+
+/*! @decl string|zero query_db()
+ *!
+ *! Returns the currently selected database.
+ *!
+ *! @seealso
+ *!   @[select_db()]
+ */
+static void f_query_db(INT32 args)
+{
+  MYSQL *mysql = PIKE_MYSQL->mysql;
+
+  pop_n_elems(args);
+
+  if (mysql && mysql->db) {
+    push_text(mysql->db);
+  } else {
+    push_undefined();
+  }
 }
 
 static void low_query(INT32 args, char *name, int flags)
@@ -2026,6 +2046,8 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("insert_id", f_insert_id,tFunc(tVoid,tInt), ID_PUBLIC);
   /* function(string:void) */
   ADD_FUNCTION("select_db", f_select_db,tFunc(tStr,tVoid), ID_PUBLIC);
+  /* function(:string) */
+  ADD_FUNCTION("query_db", f_query_db, tFunc(tNone,tStr), ID_PUBLIC);
   /* function(string:int|object) */
   ADD_FUNCTION("big_query", f_big_query,tFunc(tStr,tObj), ID_PUBLIC);
   /* function(string:int|object) */
