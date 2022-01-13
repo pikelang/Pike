@@ -4,8 +4,34 @@ Changes since Pike 8.0.1116 (release 14)
 New Features
 ------------
 
-o decode_value can be called with codec -1, which disables decoding of
-  functions, objects, programs and types.
+o Calendar 
+
+  Updated to use tzdata2021e.
+
+o Parser.XML.Tree
+
+  Added set_text() to update the contents of a text node.
+ 
+o Sql.Sql
+
+  Add query_db() to API.
+
+o SSL.SSLFile
+
+  Add {query,set}_timeout(). This adds an API to set an optional timeout to be
+  used for blocking operations. When the timeout expires it is handled as if 
+  the peer sent a fatal internal error alert.
+
+o Standards.PEM
+
+  Added helper methods, including: get_certificates() , get_private_keys(), 
+  get_private_key() and decrypt_fragment().  
+
+o Runtime and EFUNS
+
+  - describe_backtrace() now reports cpu time --with-profiling.
+  - decode_value can be called with codec -1, which disables decoding of
+    functions, objects, programs and types.
 
 Bug Fixes
 ---------
@@ -23,6 +49,9 @@ o Concurrent
   - If the original promise resolves or rejects, we now attempt to
     unschedule the timeout call_out from the backend we scheduled it in,
     not the one (now) configured in the Future.
+
+o Critbit
+  - Fix a number of memory and behavior errors.
 
 o Inotify
 
@@ -89,7 +118,16 @@ o Image.XCF
 o Image.XWD
 
   Improved size check better detects malformed XWD images.
+  
+o Protocols.LDAP.client
 
+  LDAP connections secured with TLS/SSL now timeout if the server does not 
+  respond within 10 seconds.   
+
+o Sql.pgsql
+
+  Numerous bug fixes.
+  
 Building & Tools
 ----------------
 
@@ -98,6 +136,12 @@ o Improved check for stack direction to also report correct results when
 
 o _TIME_BITS is now set to 64, to get a 64-bit time_t on 32-bit systems
   running glibc 2.34 or newer.
+
+o Improvements to building and installer code signing on macOS.
+
+o Fixes to better support building with future versions of GNU make.
+
+o Use updated FFI API in Java module, to better support recent libffi.
 
 
 Changes since Pike 8.0.702 (release 13)
