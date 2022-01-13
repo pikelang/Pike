@@ -797,6 +797,37 @@ PIKEFUN void create(string(1..255)|void host, string(1..255)|void database,
   pop_n_elems(args);
 }
 
+/*! @decl void reset()
+ *!
+ *! Reset connection state.
+ *!
+ *! Currently this just releases all table locks.
+ */
+PIKEFUN void reset()
+{
+  MYSQL *mysql = PIKE_MYSQL->mysql;
+
+  if (mysql) {
+    const char *query = "UNLOCK TABLES";
+    size_t qlen = strlen(query);
+    int tmp;
+
+#ifdef HAVE_MYSQL_REAL_QUERY
+    tmp = mysql_real_query(mysql, query, qlen);
+#else
+    tmp = mysql_query(mysql, query);
+#endif /* HAVE_MYSQL_REAL_QUERY */
+
+    if (!tmp) {
+      MYSQL_RES *result;
+      result = mysql_store_result(mysql);
+      if (result) {
+	mysql_free_result(result);
+      }
+    }
+  }
+}
+
 /*! @decl string _sprintf(int type, void|mapping flags)
  */
 PIKEFUN string _sprintf(int type, void|mapping flags)
@@ -1054,7 +1085,7 @@ PIKEFUN string sqlstate()
  *! you want to access with this function.
  *!
  *! @seealso
- *!   @[create()], @[create_db()], @[drop_db()]
+ *!   @[create()], @[create_db()], @[drop_db()], @[query_db()]
  */
 PIKEFUN void select_db(string(1..255) database)
 {
@@ -1082,6 +1113,24 @@ PIKEFUN void select_db(string(1..255) database)
   add_ref(PIKE_MYSQL->database = database);
 
   pop_n_elems(args);
+}
+
+/*! @decl string|zero query_db()
+ *!
+ *! Returns the currently selected database.
+ *!
+ *! @seealso
+ *!   @[select_db()]
+ */
+PIKEFUN string|zero query_db()
+{
+  MYSQL *mysql = PIKE_MYSQL->mysql;
+
+  if (mysql && mysql->db) {
+    push_text(mysql->db);
+  } else {
+    push_undefined();
+  }
 }
 
 static void low_query(INT32 args, char *name, int flags)
