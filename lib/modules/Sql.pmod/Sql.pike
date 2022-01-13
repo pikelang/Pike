@@ -533,6 +533,12 @@ void select_db(string db)
   master_sql->select_db(db);
 }
 
+//! Get the currently selected db if possible.
+string query_db()
+{
+  return master_sql->query_db && master_sql->query_db();
+}
+
 //! Compiles the query (if possible). Otherwise returns it as is.
 //! The resulting object can be used multiple times to the query
 //! functions.
