@@ -281,6 +281,9 @@ protected void create(string host, void|string|mapping(string:int|string) db,
 		      void|string user, void|string _password,
 		      void|mapping(string:int|string) options);
 
+//! Reset connection state.
+void reset();
+
 //! Returns true if the connection seems to be open.
 //!
 //! @note
@@ -457,7 +460,19 @@ string sqlstate()
 }
 
 //! Select database to access.
+//!
+//! @seealso
+//!   @[query_db()]
 void select_db(string db);
+
+//! Query current database.
+//!
+//! @returns
+//!   Returns the currently selected database.
+//!
+//! @seealso
+//!   @[select_db()]
+string|zero query_db();
 
 //! Compiles the query (if possible). Otherwise returns it as is.
 //! The resulting object can be used multiple times to the query
