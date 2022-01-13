@@ -394,6 +394,11 @@ void drop_db( string db )
 }
 #endif
 
+void reset()
+{
+  ::big_query("UNLOCK TABLES");
+}
+
 //! Quote a string so that it can safely be put in a query.
 //!
 //! @param s
