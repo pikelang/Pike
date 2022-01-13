@@ -307,7 +307,7 @@ class Parser
 
     protected string _sprintf(int t)
     {
-      if( t!='O' ) return undefined;
+      if( t!='O' ) return UNDEFINED;
       array(string) res = ({ symbol_to_string(r->nonterminal), ":\t" });
 
       if (offset) {
