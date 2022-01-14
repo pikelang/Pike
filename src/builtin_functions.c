@@ -10671,9 +10671,11 @@ void init_builtin_efuns(void)
 
 #if 1
   ADD_EFUN2("filter", f_filter,
-	    tOr3(tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
+	    tOr5(tFuncV(tSetvar(1,tOr(tMapping,tMultiset)),
 			tMixed,
 			tVar(1)),
+		 tFuncV(tNStr(tSetvar(0,tInt)), tMixed, tNStr(tVar(0))),
+		 tFuncV(tArr(tSetvar(0,tInt)), tMixed, tArr(tVar(0))),
 		 tFuncV(tOr(tPrg(tObj),tFunction),tMixed,tMap(tString,tMix)),
 		 tFuncV(tObj,tMix,tMix) ) ,
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
