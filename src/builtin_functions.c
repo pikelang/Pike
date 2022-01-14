@@ -10675,7 +10675,7 @@ void init_builtin_efuns(void)
 			tMixed,
 			tVar(1)),
 		 tFuncV(tNStr(tSetvar(0,tInt)), tMixed, tNStr(tVar(0))),
-		 tFuncV(tArr(tSetvar(0,tInt)), tMixed, tArr(tVar(0))),
+		 tFuncV(tArr(tSetvar(0,tMixed)), tMixed, tArr(tVar(0))),
 		 tFuncV(tOr(tPrg(tObj),tFunction),tMixed,tMap(tString,tMix)),
 		 tFuncV(tObj,tMix,tMix) ) ,
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
