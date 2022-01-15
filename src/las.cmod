@@ -4019,19 +4019,27 @@ void fix_type_field(node *n)
 
   case F_PUSH_ARRAY:
     if (CAR(n)) {
-      struct pike_type *array_type;
-      MAKE_CONSTANT_TYPE(array_type, tArr(tZero));
-      if (!pike_types_le(array_type, CAR(n)->type, 0, 0)) {
-	yytype_report(REPORT_ERROR, NULL, 0, array_type,
+      struct pike_type *array_type =
+	type_binop(PT_BINOP_AND, CAR(n)->type, array_type_string, 0, 0, 0);
+      if (!array_type) {
+	yytype_report(REPORT_ERROR, NULL, 0, array_type_string,
 		      NULL, 0, CAR(n)->type,
 		      0, "Bad argument to splice operator.");
+#if 0
+      } else if ((array_type != CAR(n)->type) &&
+		 (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) &&
+		 (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
+	yytype_report(REPORT_WARNING, NULL, 0, array_type,
+		      NULL, 0, CAR(n)->type,
+		      0, "Bad argument to splice operator.");
+#endif
       }
-      free_type(array_type);
       /* FIXME: The type field of the splice operator is not yet utilized.
        *
        * It probably ought to be something similar to MANY(..., VOID).
        */
-      n->type = index_type(CAR(n)->type, int_type_string, n);
+      n->type = index_type(array_type, int_type_string, n);
+      free_type(array_type);
     } else {
       copy_pike_type(n->type, mixed_type_string);
     }
