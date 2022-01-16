@@ -4025,14 +4025,19 @@ void fix_type_field(node *n)
 	yytype_report(REPORT_ERROR, NULL, 0, array_type_string,
 		      NULL, 0, CAR(n)->type,
 		      0, "Bad argument to splice operator.");
-#if 0
+	array_type = array_type_string;
+	add_ref(array_type);
       } else if ((array_type != CAR(n)->type) &&
 		 (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) &&
 		 (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
-	yytype_report(REPORT_WARNING, NULL, 0, array_type,
-		      NULL, 0, CAR(n)->type,
-		      0, "Bad argument to splice operator.");
-#endif
+	struct pike_type *diff_type =
+	  type_binop(PT_BINOP_MINUS, CAR(n)->type, array_type_string, 0, 0, 0);
+	if (diff_type) {
+	  yytype_report(REPORT_WARNING, NULL, 0, array_type,
+			NULL, 0, diff_type,
+			0, "Bad argument to splice operator.");
+	  free_type(diff_type);
+	}
       }
       /* FIXME: The type field of the splice operator is not yet utilized.
        *
