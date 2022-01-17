@@ -3109,6 +3109,15 @@ node *low_pop_local_variables(int level, node *block)
     e=--(Pike_compiler->compiler_frame->current_number_of_locals);
     if (block) {
       struct local_variable *var = Pike_compiler->compiler_frame->variable + e;
+      /* NB: We assign 0 to all dead local variables here regardless of
+       *     their types, so we use F_CLEAR_LOCAL rather than F_ASSIGN
+       *     with 0 to avoid complaints about type mismatches (which
+       *     are irrelevant as the variables will no longer be used).
+       *
+       * NB: We must have an explicit F_POP_VALUE here (ie not
+       *     embedded in F_CLEAR_LOCAL) in order for treeopt not
+       *     to break the generated code.
+       */
       if (var->name->len) {
 	block = mknestednodes(F_COMMA_EXPR,
 			      mknode(F_SET_LOCAL_NAME, mkintnode(e),
@@ -3117,9 +3126,9 @@ node *low_pop_local_variables(int level, node *block)
 				     mktypenode(var->type)),
 			      block,
 			      mknode(F_POP_VALUE,
-				     mknode(F_ASSIGN,
+				     mknode(F_CLEAR_LOCAL,
 					    mklocalnode(e, 0),
-					    mkintnode(0)),
+					    NULL),
 				     NULL),
 			      mknode(F_SET_LOCAL_END, mkintnode(e), NULL),
 			      NULL);
@@ -3136,9 +3145,9 @@ node *low_pop_local_variables(int level, node *block)
 	block = mknestednodes(F_COMMA_EXPR,
 			      block,
 			      mknode(F_POP_VALUE,
-				     mknode(F_ASSIGN,
+				     mknode(F_CLEAR_LOCAL,
 					    mklocalnode(e, 0),
-					    mkintnode(0)),
+					    NULL),
 				     NULL),
 			      NULL);
       }

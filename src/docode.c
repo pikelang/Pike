@@ -1559,6 +1559,20 @@ static int do_docode2(node *n, int flags)
       return flags & DO_POP ? 0 : 1;
     }
 
+  case F_CLEAR_LOCAL:
+#ifdef PIKE_DEBUG
+    if (!CAR(n) || (CAR(n)->token != F_LOCAL) || CAR(n)->u.integer.b) {
+      print_tree(n);
+      Pike_fatal("Invalid CLEAR_LOCAL variable.\n");
+    }
+#endif
+    emit1(F_CLEAR_LOCAL, CAR(n)->u.integer.a);
+    if (!(flags & DO_POP)) {
+      emit0(F_CONST0);
+      return 1;
+    }
+    return 0;
+
   case F_LAND:
   case F_LOR:
     tmp1=alloc_label();

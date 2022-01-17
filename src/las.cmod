@@ -2417,6 +2417,11 @@ static void low_print_tree(node *foo,int needlval)
     }
     break;
 
+  case F_CLEAR_LOCAL:
+    low_print_tree(_CAR(foo),1);
+    fprintf(stderr, "=0");
+    break;
+
   case F_ASSIGN:
   case F_INITIALIZE:
     low_print_tree(_CAR(foo),1);
