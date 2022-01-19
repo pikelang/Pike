@@ -1823,7 +1823,7 @@ test_do([[
   // Test for [bug 5085].
   for (int i=0; i < 100; i++) {
     // The following line trigged the bug 33% of the time.
-    get_iterator(([1:1]))->_random(random_string, random);
+    random(get_iterator(([1:1])));
   }
 ]])
 
