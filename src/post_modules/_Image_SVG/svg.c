@@ -230,8 +230,16 @@ static void low__decode( INT32 args, int header_only )
     struct svalue *osp = Pike_sp;
     RsvgDimensionData dimensions;
     gint width, height;
-
+#ifdef HAVE_RSVG_HANDLE_GET_INTRINSIC_SIZE_IN_PIXELS
+    gdouble dwidth, dheight;
+    rsvg_handle_get_intrinsic_size_in_pixels(handle, &dwidth, &dheight);
+    /* FIXME: Rounding? */
+    dimensions.width = (gint)dwidth;
+    dimensions.height = (gint)dheight;
+#else
+    /* NB: Obsoleted in librsvg-2.52. */
     rsvg_handle_get_dimensions(handle, &dimensions);
+#endif
     width = dimensions.width;
     height = dimensions.height;
     do_resize(&width, &height, (void *)opts);
@@ -297,7 +305,19 @@ static void low__decode( INT32 args, int header_only )
       }
 
       /* Render to cairo. */
+#ifdef HAVE_RSVG_HANDLE_RENDER_DOCUMENT
+      {
+	RsvgRectangle viewport;
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = width;
+	viewport.height = height;
+	rsvg_handle_render_document(handle, cr, &viewport, NULL);
+      }
+#else
+      /* NB: Obsoleted in librsvg-2.52. */
       rsvg_handle_render_cairo(handle, cr);
+#endif
 
       cairo_surface_flush(surface);
 
