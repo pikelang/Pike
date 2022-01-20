@@ -97,12 +97,12 @@ define(test_ssl, [[
 
     int state;
 
-    int trigged = 10;
+    int trigged = 15;
 
     string server_buf = "";
     void server_send_data()
     {
-      trigged = 2;
+      trigged = 10;
       int bytes = server->write(server_buf);
       server_buf = server_buf[bytes..];
       if (!sizeof(server_buf)) {
@@ -115,7 +115,7 @@ define(test_ssl, [[
     };
     void server_got_data(mixed ignored, string data)
     {
-      trigged = 2;
+      trigged = 10;
       if (!sizeof(server_buf)) server->set_write_callback(server_send_data);
       server_buf += data;
     };
@@ -133,12 +133,12 @@ define(test_ssl, [[
     string client_send_buf = client_msg;
     void client_got_data(mixed ignored, string data)
     {
-      trigged = 2;
+      trigged = 10;
       client_recv_buf += data;
     };
     void client_send_data()
     {
-      trigged = 2;
+      trigged = 10;
       int bytes = client->write(client_send_buf[..4095]);
       client_send_buf = client_send_buf[bytes..];
       if (!sizeof(client_send_buf)) {
