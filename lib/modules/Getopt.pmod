@@ -106,7 +106,7 @@ protected void my_error(string err, int throw_errors) {
 //! @seealso
 //!   @[Getopt.get_args()]
 //!
-void|string|int(0..1) find_option(array(string) argv,
+void|string|int(0..1) find_option(array(string|zero) argv,
 			     array(string)|string shortform,
 			     array(string)|string|void longform,
 			     array(string)|string|void envvars,
@@ -120,13 +120,13 @@ void|string|int(0..1) find_option(array(string) argv,
   if(!arrayp(shortform)) shortform = ({ [string]shortform });
   if(stringp(envvars)) envvars = ({ [string]envvars });
 
-  foreach(argv; int i; string opt) {
+  foreach(argv; int i; string|zero opt) {
     if(!i || !opt || sizeof(opt)<2 || opt[0]!='-') continue;
 
     if(opt[1] == '-') {
       if(opt=="--") break;
 
-      string tmp=opt;
+      string tmp = [string]opt;
       sscanf(tmp, "%s=%s", tmp, value);
 
       if(has_value([array(string)]longform, tmp[2..])) {
