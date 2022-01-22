@@ -99,13 +99,16 @@ define(test_ssl, [[
 
     int trigged = 15;
 
+    int ssd = 0;
+
     string server_buf = "";
     void server_send_data()
     {
       trigged = 10;
       int bytes = server->write(server_buf);
+      ssd += bytes;
       server_buf = server_buf[bytes..];
-      if (!sizeof(server_buf)) {
+      if (!sizeof(server_buf) && ssd == sizeof($5)) {
         server->set_write_callback(UNDEFINED);
         if (state) {
           server->close();
