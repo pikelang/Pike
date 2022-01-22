@@ -120,13 +120,18 @@ void|string|int(0..1) find_option(array(string|zero) argv,
   if(!arrayp(shortform)) shortform = ({ [string]shortform });
   if(stringp(envvars)) envvars = ({ [string]envvars });
 
-  foreach(argv; int i; string|zero opt) {
-    if(!i || !opt || sizeof(opt)<2 || opt[0]!='-') continue;
+  foreach(argv; int i; string|zero opt_or_zero) {
+    if(!i || !opt_or_zero || sizeof(opt_or_zero)<2 || opt_or_zero[0]!='-') {
+      continue;
+    }
+
+    string opt = [string]opt_or_zero;
 
     if(opt[1] == '-') {
       if(opt=="--") break;
 
-      string tmp = [string]opt;
+      string tmp = opt;
+
       sscanf(tmp, "%s=%s", tmp, value);
 
       if(has_value([array(string)]longform, tmp[2..])) {
@@ -286,7 +291,7 @@ constant MAY_HAVE_ARG=3;
 //! @seealso
 //!   @[Getopt.get_args()], @[Getopt.find_option()]
 //!
-array(array) find_all_options(array(string) argv,
+array(array) find_all_options(array(string|zero) argv,
 		       array(array(array(string)|string|int)) options,
 		       void|int(-1..1) posix_me_harder, void|int throw_errors)
 {
@@ -321,8 +326,9 @@ array(array) find_all_options(array(string) argv,
 
   array(array) ret=({});
   for (int e=1; e < sizeof(argv); e++) {
-    string opt;
-    if(!(opt = argv[e])) continue;
+    if(!argv[e]) continue;
+
+    string opt = [string]argv[e];
 
     if(sizeof(opt)<2 || opt[0]!='-') {
       if(posix_me_harder) break;
@@ -333,7 +339,7 @@ array(array) find_all_options(array(string) argv,
 
       if(opt=="--") break;
 
-      string arg;
+      string|zero arg;
       sscanf(opt, "%s=%s", opt, arg);
       if(array option=quick[opt]) {
 	argv[e]=0;
@@ -358,7 +364,7 @@ array(array) find_all_options(array(string) argv,
       foreach(iter; int j; int opt_letter) {
 	if(array option=quick[opt_letter]) {
 	  opt[j]=0;
-	  string arg;
+	  string|zero arg;
 
 	  if(option[TYPE]!=NO_ARG) { // HAS_ARG or MAY_HAVE_ARG
 	    arg = opt[j+1..];
@@ -433,15 +439,19 @@ array(array) find_all_options(array(string) argv,
 //! @seealso
 //! @[Getopt.find_option()], @[Getopt.find_all_options()]
 //!
-array(string) get_args(array(string) argv, void|int(-1..1) posix_me_harder,
+array(string) get_args(array(string|zero) argv,
+		       void|int(-1..1) posix_me_harder,
 		       void|int throw_errors)
 {
   posix_me_harder = posix_me_harder!=-1 &&
     (posix_me_harder || !!getenv("POSIX_ME_HARDER"));
 
-  foreach(argv; int i; string opt) {
+  foreach(argv; int i; string|zero opt_or_zero) {
 
-    if(!i || !stringp(opt)) continue;
+    if(!i || !stringp(opt_or_zero)) continue;
+
+    string opt = [string]opt_or_zero;
+
     if(sizeof(opt)<2 || opt[0]!='-') {
       if(posix_me_harder) break;
       continue;
@@ -465,5 +475,5 @@ array(string) get_args(array(string) argv, void|int(-1..1) posix_me_harder,
 
   argv -= ({0, 1});
 
-  return argv;
+  return [array(string)]argv;
 }
