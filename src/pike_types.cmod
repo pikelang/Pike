@@ -5974,7 +5974,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     tmp = low_type_binop(op, a->car, b->car, remap,
 			 0, 0, remap_flags);
     if (!tmp && (op == PT_BINOP_AND) && a->car && b->car) return NULL;
-    if (a->type == T_STRING) {
+    if ((a->type == T_STRING) || (op == PT_BINOP_AND)) {
       tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
 			    0, 0, remap_flags);
     } else {
