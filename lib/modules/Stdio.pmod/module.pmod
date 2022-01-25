@@ -3514,11 +3514,11 @@ protected class nb_sendfile
   /* Starter */
 
   protected void create(array(string) hd,
-		     File f, int off, int l,
-		     array(string) tr,
-		     File t,
-		     function(int, mixed ...:void)|void cb,
-		     mixed ... a)
+			object(File)|zero f, int off, int l,
+			array(string)|zero tr,
+			File t,
+			function(int, mixed ...:void)|void cb,
+			mixed ... a)
   {
     backend = (t->query_backend && t->query_backend()) ||
       Pike.DefaultBackend;
