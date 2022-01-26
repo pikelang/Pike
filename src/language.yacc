@@ -1783,6 +1783,26 @@ opt_function_type: '('
    push_type(T_OR);
 
    push_type(T_MANY);
+
+   if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
+     /* For type validation we also need this.
+      * Otherwise code like
+      *
+      *   function foo;
+      *   function(string:void) bar = foo;
+      *
+      * will fail.
+      */
+     push_type(PIKE_T_UNKNOWN);
+
+     push_type(T_MIXED);
+     push_type(T_VOID);
+     push_type(T_OR);
+
+     push_type(T_MANY);
+
+     push_type(T_OR);
+   }
   }
   ;
 
