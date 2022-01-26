@@ -215,12 +215,11 @@ protected void create (function(void:Sql.Sql) get_db,
     col_types = ([]);
     timestamp_cols = ([]);
     datetime_cols = ([]);
-    array(mapping(string:mixed)) col_list =
-      conn->list_fields (string_to_utf8 (table));
+    array(mapping(string:mixed)) col_list = conn->list_fields(table);
     mapping(string:mixed) prop_col_info;
 
     foreach (col_list, mapping(string:mixed) col_info) {
-      string name = utf8_to_string (col_info->name);
+      string name = col_info->name;
       if (String.width (name) > 8) query_charset = 0;
       if (col_types[name])
 	error ("Strange duplicate column %O in %O\n", name, col_list);
