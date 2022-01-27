@@ -828,8 +828,15 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
     return fix_result_charset(::list_fields(@a));
   }
 
-  // Very uncommon case, but...
-  //
+  // Very uncommon cases, but...
+
+  if (sizeof(a) == 1) {
+    // The split marker has been recoded.
+    // Assume that fix_query_charset() is stable.
+    return fix_result_charset(::list_fields(fix_query_charset(table)[0],
+					    fix_query_charset(wild)[0]));
+  }
+
   // Assume that the table name can not contain NUL characters.
   return fix_result_charset(::list_fields(a[0], a[1..] * "\0\0PIKE\0\0"));
 }
