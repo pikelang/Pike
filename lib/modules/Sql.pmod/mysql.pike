@@ -872,12 +872,18 @@ Mysql.mysql_result streaming_typed_query (string query,
 
 array(string) list_dbs(string|void wild)
 {
-  return fix_result_charset(::list_dbs(wild && fix_query_charset(wild)[0]));
+  if (!wild) {
+    return fix_result_charset(::list_dbs());
+  }
+  return fix_result_charset(::list_dbs(fix_query_charset(wild)[0]));
 }
 
 array(string) list_tables(string|void wild)
 {
-  return fix_result_charset(::list_tables(wild && fix_query_charset(wild)[0]));
+  if (!wild) {
+    return fix_result_charset(::list_tables());
+  }
+  return fix_result_charset(::list_tables(fix_query_charset(wild)[0]));
 }
 
 array(mapping(string:mixed)) list_fields(string table, string|void wild)
@@ -895,8 +901,15 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
     return fix_result_charset(::list_fields(@a));
   }
 
-  // Very uncommon case, but...
-  //
+  // Very uncommon cases, but...
+
+  if (sizeof(a) == 1) {
+    // The split marker has been recoded.
+    // Assume that fix_query_charset() is stable.
+    return fix_result_charset(::list_fields(fix_query_charset(table)[0],
+					    fix_query_charset(wild)[0]));
+  }
+
   // Assume that the table name can not contain NUL characters.
   return fix_result_charset(::list_fields(a[0], a[1..] * "\0\0PIKE\0\0"));
 }
