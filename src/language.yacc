@@ -1992,7 +1992,27 @@ new_local_name: TOK_IDENTIFIER
   {
     int id;
     struct pike_type *type;
-    copy_pike_type(type, Pike_compiler->compiler_frame->current_type);
+    if (pike_types_le(zero_type_string,
+		      Pike_compiler->compiler_frame->current_type, 0, 0)) {
+      copy_pike_type(type, Pike_compiler->compiler_frame->current_type);
+    } else {
+      struct compilation *c = THIS_COMPILATION;
+
+      type_stack_mark();
+      push_finished_type(Pike_compiler->compiler_frame->current_type);
+      push_type(PIKE_T_ZERO);
+      push_type(T_OR);
+      type = pop_unfinished_type();
+
+      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
+	  (c->lex.pragmas & ID_STRICT_TYPES)) {
+	ref_push_string($1->u.sval.u.string);
+	yytype_report(REPORT_WARNING, NULL, 0, zero_type_string,
+		      NULL, 0, Pike_compiler->compiler_frame->current_type,
+		      1, "Type does not contain zero for variable without "
+		      "initializer %s. Type adjusted.");
+      }
+    }
     id = add_local_name($1->u.sval.u.string, type, 0);
     if( type->type == PIKE_T_AUTO )
     {
