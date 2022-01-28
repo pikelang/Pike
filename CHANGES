@@ -124,6 +124,10 @@ o Protocols.LDAP.client
   LDAP connections secured with TLS/SSL now timeout if the server does not 
   respond within 10 seconds.   
 
+o Sql.mysql
+
+  Improved character set handling
+
 o Sql.pgsql
 
   Numerous bug fixes.
@@ -143,6 +147,8 @@ o Fixes to better support building with future versions of GNU make.
 
 o Use updated FFI API in Java module, to better support recent libffi.
 
+o Fix testsuite generation for BSD m4 users; POSIX systems must continue
+  to use GNU m4 (gm4).
 
 Changes since Pike 8.0.702 (release 13)
 ----------------------------------------------------------------------
