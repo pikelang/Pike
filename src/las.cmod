@@ -3737,11 +3737,12 @@ void fix_type_field(node *n)
       /* This test isn't sufficient, see below. */
       check_node_type(CDR(n), CAR(n)->type, "Bad type in assignment.");
 #else /* !0 */
-      if (!pike_types_le(CDR(n)->type, CAR(n)->type,
-			 PT_FLAG_CMP_VOID_IS_ZERO,
-			 PT_FLAG_CMP_VOID_IS_ZERO)) {
-	/* NB: VOID_IS_ZERO for both a and b above is needed
-	 *     to support both of the assignments below:
+      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
+	  (t = type_binop(PT_BINOP_MINUS, CDR(n)->type, CAR(n)->type,
+			  PT_FLAG_CMP_VOID_IS_ZERO,
+			  PT_FLAG_CMP_VOID_IS_ZERO, 0))) {
+	/* NB: VOID_IS_ZERO above needed to support both
+	 *     of the assignments below:
 	 *
 	 * string|zero foo(string|void bar) {
 	 *   bar = UNDEFINED;
@@ -3759,34 +3760,26 @@ void fix_type_field(node *n)
 	 *   tmp->foo = 7;		// Multi-assign.
 	 *	/grubba 2007-04-27
 	 */
-	if (((CAR(n)->token != F_INDEX && CAR(n)->token != F_ARROW) ||
-	     !(match_types(array_type_string, CAAR(n)->type))) &&
-	    !match_types(CAR(n)->type, CDR(n)->type)) {
-	  yytype_report(REPORT_ERROR, NULL, 0, CAR(n)->type,
+	if ((t == CDR(n)->type) &&
+	    ((CAR(n)->token != F_INDEX && CAR(n)->token != F_ARROW) ||
+	     !(match_types(array_type_string, CAAR(n)->type)))) {
+	  yytype_report(REPORT_ERROR,
+			NULL, 0, CAR(n)->type,
 			NULL, 0, CDR(n)->type,
 			0, "Bad type in assignment.");
 	} else {
-	  if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-	      (c->lex.pragmas & ID_STRICT_TYPES) &&
-	      (CDR(n)->type != zero_type_string)) {
-	    struct pike_string *t1 = describe_type(CDR(n)->type);
-	    struct pike_string *t2 = describe_type(CAR(n)->type);
-#ifdef PIKE_DEBUG
-	    if (l_flag > 0) {
-	      fputs("Warning: Invalid assignment: ", stderr);
-	      print_tree(n);
-	    }
-#endif /* PIKE_DEBUG */
-	    yywarning("An expression of type %S cannot be assigned to "
-		      "a variable of type %S.", t1, t2);
-	    free_string(t2);
-	    free_string(t1);
+	  if (c->lex.pragmas & ID_STRICT_TYPES) {
+	    yytype_report(REPORT_WARNING,
+			  NULL, 0, CAR(n)->type,
+			  NULL, 0, t,
+			  0, "Assignment not valid for some values.");
 	  }
 	  if (runtime_options & RUNTIME_CHECK_TYPES) {
 	    _CDR(n) = mksoftcastnode(CAR(n)->type,
 				     mkcastnode(mixed_type_string, CDR(n)));
 	  }
 	}
+	free_type(t);
       }
 #endif /* 0 */
       n->type = and_pike_types(CDR(n)->type, CAR(n)->type);
