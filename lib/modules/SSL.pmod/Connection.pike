@@ -602,14 +602,14 @@ int send_streaming_data (string(8bit) data)
 //!   @expr{indices(SSL.Constants.ALERT_descriptions)@}.
 //!
 //! @returns
-//! @int
-//!   @elem value -1
-//!     A Fatal error occurred and processing should stop.
-//!   @elem value 0
-//!     Processing can continue.
-//!   @elem value 1
-//!     Connection should close.
-//! @endint
+//!   @mixed
+//!     @type int(-1..-1)
+//!      Returns @expr{-1@} if a fatal error occurred and processing should stop.
+//!     @type int(0..0)
+//!       Returns @expr{0@} if processing can continue.
+//!     @type int(1..1)
+//!       Returns @expr{-1@} if connection should close.
+//!  @endmixed
 int(-1..1) handle_alert(int level, int description)
 {
   if (! (ALERT_levels[level] && ALERT_descriptions[description]))

@@ -656,9 +656,9 @@ int decode_datetime (string timestr)
 //! @returns
 //!   Returns an array:
 //!   @array
-//!     @item string 0
+//!     @elem string 0
 //!       The adjusted query.
-//!     @item string|zero 1
+//!     @elem string|zero 1
 //!       The charset to restore after performing the query (if any).
 //!       This is only set when @[charset] has been set.
 //!   @endarray
