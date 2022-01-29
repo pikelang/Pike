@@ -186,7 +186,6 @@ array sort_array(array arr, function(int(0..0),int(0..0),mixed ...:int)|void cmp
   // functions. The correct way to fix it would be to infer the real
   // type from the array elements in arr.
 
-  array bar,tmp;
   int len,start;
   int length;
   int foop, fooend, barp, barend;
@@ -207,7 +206,7 @@ array sort_array(array arr, function(int(0..0),int(0..0),mixed ...:int)|void cmp
 
   length=sizeof(arr);
 
-  bar=allocate(length);
+  array bar = allocate(length);
 
   for(len=1;len<length;len*=2)
   {
@@ -243,7 +242,7 @@ array sort_array(array arr, function(int(0..0),int(0..0),mixed ...:int)|void cmp
     }
     while(start < length) bar[start]=arr[start++];
 
-    tmp=arr;
+    array tmp = arr;
     arr=bar;
     bar=tmp;
   }
@@ -310,8 +309,8 @@ array(array(array)) diff3 (array a, array b, array c)
       // Got cyclically interlocking equivalences. Have to break one
       // of them. Prefer the shortest.
       int which, merge, inv_side = side ^ 3, i, oi;
-      array(int) eq, oeq;
-      array arr, oarr;
+      array(int)|zero eq, oeq;
+      array|zero arr, oarr;
       int atest = side == 1 ? ceq[ci] != 3 : beq[bi] != 3;
       int btest = side == 1 ? aeq[ai] != 3 : ceq[ci] != 3;
       int ctest = side == 1 ? beq[bi] != 3 : aeq[ai] != 3;
@@ -479,12 +478,10 @@ int(-1..1) dwim_sort_func(string a, string b)
 {
   if( a==b ) return 0;
 
-  string a_int,b_int;
-  string a_str,b_str;
   while(1)
   {
-    sscanf(a, "%[0-9]%[^0-9]%s", a_int,a_str,a);
-    sscanf(b, "%[0-9]%[^0-9]%s", b_int,b_str,b);
+    sscanf(a, "%[0-9]%[^0-9]%s", string a_int, string a_str, a);
+    sscanf(b, "%[0-9]%[^0-9]%s", string b_int, string b_str, b);
 
     // Need only be done first iteration
     if( !sizeof(a_int) ^ !sizeof(b_int) )
@@ -560,7 +557,7 @@ mixed sum(array a)
       int|float|array|mapping|multiset|object|string mem =
 	[int|float|array|mapping|multiset|object|string]`+(@a[..999]);
       int j=1000;
-      array v;
+      array v = ({});
       while (sizeof(v=a[j..j+999])) {
 	mem = [int|float|array|mapping|multiset|object|string]`+(mem,@v);
 	j+=1000;
@@ -578,10 +575,9 @@ mixed sum(array a)
 //! See also the @[uniq] function.
 array uniq2(array a)
 {
-   array res;
-   mixed last;
    if (!sizeof(a)) return ({});
-   res=({last=a[0]});
+   mixed last;
+   array res = ({ last = a[0] });
    foreach (a,mixed v)
       if (v!=last) last=v,res+=({v});
    return res;
@@ -639,25 +635,25 @@ int(-1..1) oid_sort_func(string a, string b)
 
 protected array(array(array)) low_greedy_diff(array(array) d1, array(array) d2)
 {
-  array r1, r2, x, y, yb, b, c;
-  r1 = r2 = ({});
+  array(array) r1 = ({}), r2 = ({});
   int at, last, seen;
   while(-1 != (at = search(d1, ({}), last)))
   {
     last = at + 1;
     if(at < 2) continue;
-    b = d2[at-1]; yb = d2[at];
+    array b = d2[at-1];
+    array yb = d2[at];
 out:if(sizeof(yb) > sizeof(b))
     {
       int i = sizeof(b), j = sizeof(yb);
       while(i)
 	if(b[--i] != yb[--j])
 	  break out; // past five lines implement an if(has_suffix(yb, b))
-      x = d2[at-2];
-      y = yb[..sizeof(yb)-sizeof(b)-1];
+      array x = d2[at-2];
+      array y = yb[..sizeof(yb)-sizeof(b)-1];
       if(at+1 <= sizeof(d1))
       {
-	c = d2[at+1];
+	array c = d2[at+1];
 	array bc = b+c;
 	r1 += d1[seen..at-2] + ({ bc });
 	r2 += d2[seen..at-3] + ({ x+b+y }) + ({ bc });
@@ -673,8 +669,7 @@ out:if(sizeof(yb) > sizeof(b))
   }
   if(!seen)
     return ({ d1, d2 });	// No change.
-  return ({ [array(array)]r1 + d1[seen..],
-	    [array(array)]r2 + d2[seen..] });
+  return ({ r1 + d1[seen..], r2 + d2[seen..] });
 }
 
 //! Like @[Array.diff], but tries to generate bigger continuous chunks of the
@@ -687,8 +682,7 @@ out:if(sizeof(yb) > sizeof(b))
 //! @expr{({ ..., A, X+B+Y, B+C, ... })@}
 array(array(array)) greedy_diff(array from, array to)
 {
-  array(array) d1, d2;
-  [d1, d2] = diff(from, to);
+  [array(array) d1, array(array) d2] = diff(from, to);
   [d2, d1] = low_greedy_diff(d2, d1);
   return low_greedy_diff(d1, d2);
 }
