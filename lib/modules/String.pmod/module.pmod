@@ -129,18 +129,18 @@ string common_prefix(array(string) strs)
 // "similarity index". The higher, the closer the strings match.
 protected int low_fuzzymatch(string str1, string str2)
 {
-  string tmp1, tmp2;
-  int offset, length;
   int fuzz;
   fuzz = 0;
   while(sizeof(str1) && sizeof(str2))
   {
-    /* Now we will look for the first character of tmp1 in tmp2 */
+    int offset, length;
+
+    /* Now we will look for the first character of str1 in str2 */
     if((offset = search(str2, str1[0..0])) != -1)
     {
-      tmp2 = str2[offset..];
+      string tmp2 = str2[offset..];
       /* Ok, so we have found one character, let's check how many more */
-      tmp1 = str1;
+      string tmp1 = str1;
       length = 1;
       while(1)
       {
@@ -368,11 +368,11 @@ string expand_tabs(string s, int|void tab_width,
 protected string line_expand_tab(string line, int tab_width,
 			      string space, string tab)
 {
-  string ws, chunk, result = "";
+  string result = "";
   int col, next_tab_stop, i;
   while(sizeof(line))
   {
-    sscanf(line, "%[ \t\n]%[^ \t\n]%s", ws, chunk, line);
+    sscanf(line, "%[ \t\n]%[^ \t\n]%s", string ws, string chunk, line);
     for(i=0; i<sizeof(ws); i++)
       switch(ws[i])
       {
