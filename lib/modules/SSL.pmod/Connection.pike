@@ -608,7 +608,7 @@ int send_streaming_data (string(8bit) data)
 //!     @type int(0..0)
 //!       Returns @expr{0@} if processing can continue.
 //!     @type int(1..1)
-//!       Returns @expr{-1@} if connection should close.
+//!       Returns @expr{1@} if connection should close.
 //!  @endmixed
 int(-1..1) handle_alert(int level, int description)
 {
