@@ -70,8 +70,9 @@ void drop_privs(string user, void|string group, void|int exception) {
     exit(1, msg, @args);
   }
 
+  // FIXME: Reset the cursor for System.getpwent()!
   int uid=-1, gid=-1;
-  array pwent;
+  array|zero pwent;
   while( pwent = System.getpwent() ) {
     if( pwent[0]==user ) {
       uid = [int]pwent[2];
@@ -84,8 +85,9 @@ void drop_privs(string user, void|string group, void|int exception) {
   }
 
   if( group ) {
+    // FIXME: Reset the cursor for System.getgrent()!
     gid = -1;
-    array grent;
+    array|zero grent;
     while( grent = System.getgrent() ) {
       if( grent[0]==group ) {
         gid = [int]grent[2];
