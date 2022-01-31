@@ -608,9 +608,9 @@ class InputController
   }
 
   //!
-  function bindstr(string str, function f)
+  function bindstr(string str, function|zero f)
   {
-    function oldf = 0;
+    function|zero oldf = 0;
     if (mappingp(f))
       f = 0; // Paranoia
     switch (sizeof(str||""))
