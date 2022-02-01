@@ -45,7 +45,7 @@ string(8bit) hash(string(8bit) data)
 variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source,
                     int|void bytes)
 {
-  function(int|void:string(8bit)) f;
+  function(int|void:string(8bit))|zero f;
 
   if (source->read)
   {
@@ -1243,11 +1243,11 @@ class SCRAM
   //!   @[server_2]
   string server_1(string(8bit) line) {
     constant format = "n,,n=%s,r=%s";
-    string username;
-    string(8bit) r;
+    string|zero username;
     catch {
       first = line[3..];
-      [username, r] = [array(string(8bit))]array_sscanf(line, format);
+      [username, string(8bit) r] =
+	[array(string(8bit))]array_sscanf(line, format);
       if (!(nonce = validate_nonce(r)))
 	return 0;
       username = [string]Standards.IDNA.to_unicode(username);
@@ -1290,15 +1290,13 @@ class SCRAM
   //!
   //! @seealso
   //!   @[client_3]
-  string(7bit) client_2(string(8bit) line, string pass) {
+  string(7bit)|zero client_2(string(8bit) line, string pass) {
     constant format = "r=%s,s=%s,i=%d";
-    string(8bit) r, salt;
-    string(7bit) punypass;
-    string(7bit) validated_r;
-    string(7bit) response;
-    int iters;
-    if (!catch([r, salt, iters] = [array(string(8bit)|int)]
-				   array_sscanf(line, format))
+    string(7bit) punypass = "";
+    string(7bit)|zero validated_r;
+    string(7bit)|zero response;
+    if (!catch([string(8bit) r, string(8bit) salt, int iters] =
+	       [array(string(8bit)|int)]array_sscanf(line, format))
 	&& iters > 0
 	&& (validated_r = validate_nonce(r))
 	&& has_prefix(r, nonce)) {
@@ -1338,9 +1336,9 @@ class SCRAM
   string(7bit) server_3(string(8bit) line,
 			string(8bit) salted_password) {
     constant format = "c=biws,r=%s,p=%s";
-    string(8bit) r, p;
-    string(7bit) ret;
-    if (!catch([r, p] = [array(string(8bit))]array_sscanf(line, format))
+    string(7bit)|zero ret;
+    if (!catch([string(8bit) r, string(8bit) p] =
+	       [array(string(8bit))]array_sscanf(line, format))
 	&& r == nonce) {
       first += sprintf("c=biws,r=%s", r);
       ret = p == clientproof(salted_password) && sprintf("v=%s", server_signature);
@@ -1360,8 +1358,7 @@ class SCRAM
   //!   True if the server is valid, false if the server is invalid.
   int(0..1) client_3(string(8bit) line) {
     constant format = "v=%s";
-    string v;
-    return !catch([v] = array_sscanf(line, format))
+    return !catch(string v = array_sscanf(line, format)[0])
       && v == server_signature;
   }
 }

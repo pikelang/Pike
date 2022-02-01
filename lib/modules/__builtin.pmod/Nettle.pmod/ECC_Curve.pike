@@ -173,7 +173,7 @@ class Point {
 
     Stdio.Buffer buf = stringp(data) ?
       Stdio.Buffer(data) : [object(Stdio.Buffer)]data;
-    Gmp.mpz x,y;
+    object(Gmp.mpz)|zero x,y;
 
     // ANSI x9.62 4.3.7.
     switch(buf->read_int(1))

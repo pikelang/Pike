@@ -114,9 +114,9 @@ class State
     if (!alg) return 0;
     array(string(7bit)) segments = [array(string(7bit))](jws/".");
     if (sizeof(segments) != 3) return 0;
-    mapping(string(7bit):string(7bit)|int) headers;
     catch {
-      headers = [mapping(string(7bit):string(7bit)|int)](mixed)
+      mapping(string(7bit):string(7bit)|int) headers =
+	[mapping(string(7bit):string(7bit)|int)](mixed)
         Pike.Lazy.Standards.JSON.decode(utf8_to_string([string(8bit)]Pike.Lazy.MIME.decode_base64url(segments[0])));
       if (!mappingp(headers)) return 0;
       if (headers->alg != alg) return 0;
