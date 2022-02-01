@@ -181,7 +181,7 @@ protected program(Connection) find_dbm(string program_name)
 //!
 //! @seealso
 //!   @[8.0::Sql.Sql], @[Connection]
-Connection Sql(string host,
+Connection Sql(string|zero host,
 	       void|string|mapping(string:int|string) db,
 	       void|string user, void|string _password,
 	       void|mapping(string:int|string) options)
