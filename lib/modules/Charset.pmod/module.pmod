@@ -569,7 +569,7 @@ private class ASCIIEnc
     String.Buffer res = String.Buffer();
     function(string ...:void) add = res->add;
 
-    string rr;
+    string|zero rr;
     int l;
     foreach(s; int i; int c) {
       if(c>255) {
@@ -626,7 +626,7 @@ private class USASCIIEnc {
     String.Buffer res = String.Buffer();
     function(string ...:void) add = res->add;
 
-    string rr;
+    string|zero rr;
     int l;
     foreach(s; int i; int c) {
       if(c>127) {
@@ -658,7 +658,7 @@ private class UTF16enc {
     String.Buffer res = String.Buffer();
     function(string ...:void) add = res->add;
 
-    string rr;
+    string|zero rr;
     int l;
     foreach(s; int i; int c) {
       if(c>0x10ffff) {
