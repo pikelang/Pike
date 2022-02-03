@@ -978,7 +978,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       }
 
       // Handshake hash is calculated for both directions above.
-      handshake_messages = 0;
+      handshake_messages = Buffer();
 
       handshake_state = STATE_wait_for_hello;
 
