@@ -218,7 +218,7 @@ int local_timezone = lambda() {
 //!  @[localtime()]
 final string iso_timezone(int timezone) {
   if (timezone) {
-    string res;
+    string res = "";
     if (timezone < 0)
       timezone = -timezone, res = "+";
     else
@@ -312,7 +312,7 @@ class Timebase {
 
   protected mixed `+(mixed that) {
     if (objectp(that) && ([object]that)->is_interval) {
-      this_program n;
+      object(this_program)|zero n;
       if (([object]that)->days || ([object]that)->months) {
         mapping(string:int) t = tm();
         if (([object]that)->days)
