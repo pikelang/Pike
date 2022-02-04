@@ -324,7 +324,7 @@ class Integer
 
   string(0..255) get_der_content()
   {
-    string(0..255) s;
+    string(0..255) s = "";
 
     if (value < 0)
     {
