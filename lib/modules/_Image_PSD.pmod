@@ -354,12 +354,12 @@ Layer decode_layer(mapping layer, mapping i)
 //! @endmapping
 mapping __decode( mapping|string what, mapping|void options )
 {
-  mapping data;
+  mapping data = ([]);
   if(mappingp(what))
     data = what;
   else
     data = ___decode( what );
-  what=0;
+  what = "";
   array rl = ({});
   foreach( data->layers, mapping l )
     rl += ({ decode_layer( l, data ) });

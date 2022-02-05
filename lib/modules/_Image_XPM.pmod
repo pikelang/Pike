@@ -64,7 +64,7 @@ mapping _decode( string what, void|mapping opts )
 
   TD("Explode");
   data = what/"\n";
-  what = 0;
+  what = "";
   int len = sizeof(data);
 
   TD("Trim");
@@ -114,7 +114,7 @@ constant ok = ({
   "O",  "P",  "Q",  "R",  "S",  "T",  "U",  "V",  "W",  "X",  "Y",  "Z",  " ",
 });
 
-private array cmap_t;
+private array|zero cmap_t;
 
 //! @decl string encode(Image.Image image, mapping|void options)
 //! @belongs Image.XPM

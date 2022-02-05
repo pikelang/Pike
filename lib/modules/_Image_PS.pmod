@@ -252,7 +252,7 @@ string encode(  object img, mapping|void options )
   int w = img->xsize(), h = img->ysize();
   string i = (string)img;
   float scl = 72.0 / ((options&&options->dpi)||100);
-  img = 0;
+  img = this;
   string res;
   res =("%!PS-Adobe-3.0\n"
         "%%DocumentData: Clean8Bit\n"
