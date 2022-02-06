@@ -111,7 +111,7 @@ string(8bit) make_crypt_md5(string(8bit) password,
 //!   @[make_crypt_md5]
 bool verify_crypt_md5(string(8bit) password, string(7bit) hash)
 {
-  string(7bit) salt;
+  string(7bit) salt = "";
   if( sscanf(hash, "$1$%s$%s", salt, hash)!=2 )
     error("Error in hash.\n");
   return Nettle.crypt_md5(password, salt) == hash;
