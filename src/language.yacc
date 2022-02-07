@@ -1784,7 +1784,8 @@ opt_function_type: '('
 
    push_type(T_MANY);
 
-   if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
+   if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) ||
+       TEST_COMPAT(8, 0)) {
      /* For type validation we also need this.
       * Otherwise code like
       *
@@ -1862,16 +1863,16 @@ new_name: TOK_IDENTIFIER
     struct pike_type *type;
     node *n;
 
-    push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if (!TEST_COMPAT(8,0) &&
-	(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) &&
-	(Pike_compiler->compiler_frame->current_type->type != PIKE_T_AUTO)) {
-      if (!pike_types_le(zero_type_string,
-			 Pike_compiler->compiler_frame->current_type, 0, 0)) {
-	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+    type = Pike_compiler->compiler_frame->current_type;
+    push_finished_type(type);
+    if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
+	(!type || (type->type != PIKE_T_AUTO))) {
+      if (!pike_types_le(zero_type_string, type, 0, 0)) {
+	if (!TEST_COMPAT(8,0) &&
+	    (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
 	  ref_push_string($1->u.sval.u.string);
 	  yytype_report(REPORT_WARNING, NULL, 0, zero_type_string,
-			NULL, 0, Pike_compiler->compiler_frame->current_type,
+			NULL, 0, type,
 			1, "Type does not contain zero for variable without "
 			"initializer %s. Type adjusted.");
 	}
@@ -2005,7 +2006,7 @@ new_local_name: TOK_IDENTIFIER
       type = pop_unfinished_type();
 
       if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-	  (c->lex.pragmas & ID_STRICT_TYPES)) {
+	  (c->lex.pragmas & ID_STRICT_TYPES) && !TEST_COMPAT(8, 0)) {
 	ref_push_string($1->u.sval.u.string);
 	yytype_report(REPORT_WARNING, NULL, 0, zero_type_string,
 		      NULL, 0, Pike_compiler->compiler_frame->current_type,
