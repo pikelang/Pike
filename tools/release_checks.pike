@@ -58,13 +58,6 @@ int test_install_year() {
                     "%*s 1994-%d IDA", "install.pike");
 }
 
-int test_unbug_year() {
-  string data = Stdio.read_file("bin/unbug");
-  if( Crypto.MD5.hash(data) == "D\262\307\336\276g\33""6DBk\335}\343^\272" )
-    return 1;
-  return test_year( data, "%*s 2002-%d, Department", "unbug");
-}
-
 int test_legal_year() {
   return test_year( Tools.Legal.Copyright.get_latest_pike(),
                     "%*s 2002-%d,", "Tools.Legal.Copyright");
@@ -247,7 +240,6 @@ void main(int args) {
   test_copying();
   test_master_year();
   test_install_year();
-  test_unbug_year();
   test_charset_table("tables.c");
   test_charset_table("misc.c");
   test_unicode();
