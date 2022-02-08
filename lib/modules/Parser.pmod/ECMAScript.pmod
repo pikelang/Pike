@@ -124,7 +124,7 @@ array(string) split(string data)
       switch(data[pos])
       {
       case '/':
-        while( !((< '\n', '\r', 0x2028, 0x2029 >)[data[pos++]]) );
+        while( !((< '\n', '\r', 0x2028, 0x2029, 0 >)[data[pos++]]) );
         pos--;
         break;
 
