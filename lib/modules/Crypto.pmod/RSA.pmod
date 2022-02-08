@@ -727,12 +727,12 @@ class PSSState {
     {
       array(string(7bit)) segments = [array(string(7bit))](jws/".");
       if (sizeof(segments) != 3) return 0;
-      mapping(string(7bit):string(7bit)|int) headers;
       catch {
-	headers = [mapping(string(7bit):string(7bit)|int)](mixed)
+	mapping(string(7bit):string(7bit)|int) headers =
+	  [mapping(string(7bit):string(7bit)|int)](mixed)
 	  Standards.JSON.decode(utf8_to_string(MIME.decode_base64url(segments[0])));
 	if (!mappingp(headers)) return 0;
-	.Hash h;
+	object(.Hash)|zero h;
 	switch(headers->alg) {
         case "PS256":
 	  h = .SHA256;
@@ -907,12 +907,12 @@ class PKCS1_5State
     //     pkcs_sign(), and compare with the correct alg values.
     array(string(7bit)) segments = [array(string(7bit))](jws/".");
     if (sizeof(segments) != 3) return 0;
-    mapping(string(7bit):string(7bit)|int) headers;
     catch {
-      headers = [mapping(string(7bit):string(7bit)|int)](mixed)
+      mapping(string(7bit):string(7bit)|int) headers =
+	[mapping(string(7bit):string(7bit)|int)](mixed)
 	Standards.JSON.decode(utf8_to_string(MIME.decode_base64url(segments[0])));
       if (!mappingp(headers)) return 0;
-      .Hash h;
+      object(.Hash)|zero h;
       switch(headers->alg) {
       case "RS256":
 	h = .SHA256;
