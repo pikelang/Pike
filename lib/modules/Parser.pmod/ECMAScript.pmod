@@ -3,11 +3,6 @@
 //! ECMAScript/JavaScript token parser based on ECMAScript 2017
 //! (ECMA-262), chapter 11: Lexical Grammar.
 
-// Bug: Unicode.is_whitespace looks at WS while ecma-262 looks at
-// Zs. Also, 0xfeff is considered a whitespace.
-
-// Bug: 0x2028 and 0x2029 are also line terminators.
-
 protected constant keywords = (<
   "await", "break", "case", "catch", "class", "const", "continue",
   "debugger", "default", "delete", "do", "else", "export", "extends",
@@ -24,6 +19,12 @@ protected constant punctuators = (<
   "?", ":", "=", "+=", "-=", "**=", "<<=", ">>=", ">>>=", "&=", "|=",
   "^=", "=>", "/", "/=",
 >);
+
+int(0..1) is_whitespace(int c) {
+  return (< 0x9, 0xb, 0xc, 0x20, 0xa0, 0x1680, 0x2000, 0x2001, 0x2002,
+            0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009,
+            0x200a, 0x202f, 0x205f, 0x3000, 0xfeff >)[c];
+}
 
 //! Splits the ECMAScript source @[data] in tokens.
 array(string) split(string data)
@@ -44,20 +45,12 @@ array(string) split(string data)
     case 0:
       return ret;
 
-    case 0xfeff:
-      pos++;
-      break;
-
     case '\r':
-      // End of line
-      pos++;
-      if(data[pos]=='\n') pos++;
-      break;
-
     case '\n':
-      // End of line
+    case 0xfeff:
+    case 0x2028:
+    case 0x2029:
       pos++;
-      if(data[pos]=='\r') pos++;
       break;
 
     case '.':
@@ -131,7 +124,7 @@ array(string) split(string data)
       switch(data[pos])
       {
       case '/':
-        while( !((< '\n', '\r', 0 >)[data[pos++]]) );
+        while( !((< '\n', '\r', 0x2028, 0x2029 >)[data[pos++]]) );
         pos--;
         break;
 
@@ -143,7 +136,7 @@ array(string) split(string data)
           while( ++p ) {
             if( sizeof(ret)<p ) return 1;
             t = ret[-p];
-            if( Unicode.is_whitespace(t[0]) ) continue;
+            if( is_whitespace(t[0]) ) continue;
             if( has_prefix(t, "//") || has_prefix(t, "/*") ) continue;
             break;
           };
@@ -261,9 +254,9 @@ array(string) split(string data)
     default:
 
       // White spaces
-      if( Unicode.is_whitespace(data[pos]) )
+      if( is_whitespace(data[pos]) )
       {
-        while( Unicode.is_whitespace(data[++pos]) );
+        while( is_whitespace(data[++pos]) );
         break;
       }
 
