@@ -6,12 +6,12 @@
 #pragma strict_types
 #require constant(Crypto.Random)
 
-protected Gmp.mpz p; // Modulo
-protected Gmp.mpz q; // Group order
-protected Gmp.mpz g; // Generator
+protected object(Gmp.mpz)|zero p; // Modulo
+protected object(Gmp.mpz)|zero q; // Group order
+protected object(Gmp.mpz)|zero g; // Generator
 
-protected Gmp.mpz y; // Public key
-protected Gmp.mpz x; // Private key
+protected object(Gmp.mpz)|zero y; // Public key
+protected object(Gmp.mpz)|zero x; // Private key
 
 function(int(0..):string) random = Crypto.Random.random_string;
 
@@ -78,7 +78,7 @@ array(Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
 //! Verify the signature @[r],@[s] against the message @[h].
 int(0..1) raw_verify(Gmp.mpz h, Gmp.mpz r, Gmp.mpz s)
 {
-  Gmp.mpz w;
+  object(Gmp.mpz)|zero w;
   if (catch
       {
 	w = s->invert(q);
@@ -205,7 +205,7 @@ array(Gmp.mpz) nist_primes(int l)
 protected Gmp.mpz find_generator(Gmp.mpz p, Gmp.mpz q)
 {
   Gmp.mpz e = [object(Gmp.mpz)]((p - 1) / q);
-  Gmp.mpz g;
+  object(Gmp.mpz)|zero g;
 
   do
   {

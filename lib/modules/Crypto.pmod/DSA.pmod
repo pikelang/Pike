@@ -397,7 +397,7 @@ class State {
   //! Verify the signature @[r],@[s] against the message @[h].
   int(0..1) raw_verify(Gmp.mpz h, Gmp.mpz r, Gmp.mpz s)
   {
-    Gmp.mpz w;
+    object(Gmp.mpz)|zero w;
     if (catch
       {
 	w = s->invert(q);
