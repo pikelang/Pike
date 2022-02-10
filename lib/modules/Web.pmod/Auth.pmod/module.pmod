@@ -188,10 +188,10 @@ class Params
   //!
   //! @returns
   //!  A new @[Params] object
-  protected this_program `+(Param|this_program p)
+  protected this_program `+(mapping(string:string)|Param|this_program p)
   {
     if (mappingp(p)) {
-      foreach (p; string k; string v) {
+      foreach ([mapping]p; string k; string v) {
         params += ({ Param(k, v) });
       }
 
