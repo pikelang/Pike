@@ -120,7 +120,7 @@ protected int `==(mixed something)
 string combine_uri_path(string base, string rel, int(0..1)|void is_abs_path)
 {
   string buf = rel;
-  array(string) segments;
+  array(string|zero) segments = ({});
 
   // RFC 2396, §5.2.5:
   //    If the path component begins with a slash character ("/"),
@@ -627,14 +627,13 @@ protected string _sprintf(int how, mapping|void args)
   if( how == 't' ) return "Standards.URI";
   if( string res = sprintf_cache[how] )
       return res;
-  string look, getstring;
   string|zero _host = host;
   if(how == 'x' && _host)
       _host = lower_case([string]_host);
-  getstring = (path||"") + (query ? "?" + query : "");
+  string getstring = (path||"") + (query ? "?" + query : "");
   if(args && args->flag_left)
       return getstring;
-  look =
+  string look =
       (scheme?(scheme + ":"):"") +
       (authority ?
        "//" +
