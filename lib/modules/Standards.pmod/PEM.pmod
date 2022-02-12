@@ -107,7 +107,7 @@ class Message
 
   protected void create(string|array(string) data)
   {
-    array(string) lines;
+    array(string) lines = ({});
     if(stringp(data))
     {
        lines = data/"\n";
