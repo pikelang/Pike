@@ -67,7 +67,7 @@ protected Packet client_hello(string(8bit)|void server_name,
                  fmt_cipher_suites(cipher_suites));
   struct->add_int_array(cipher_suites, 2, 2);
 
-  array(int) compression_methods;
+  array(int) compression_methods = ({});
   if (client_version >= PROTOCOL_TLS_1_3) {
     // TLS 1.3 (draft 3) does not allow any compression.
     compression_methods = ({ COMPRESSION_null });
@@ -354,7 +354,7 @@ protected int send_certs()
   /* Send Certificate, ClientKeyExchange, CertificateVerify and
    * ChangeCipherSpec as appropriate, and then Finished.
    */
-  CertificatePair cert;
+  object(CertificatePair)|zero cert;
 
   /* Only send a certificate if it's been requested. */
   if(client_cert_types)
@@ -583,14 +583,11 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     case HANDSHAKE_server_hello:
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO\n");
 
-      string(8bit) session_id;
-      int cipher_suite, compression_method;
-
       version = [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
       server_random = input->read(32);
-      session_id = input->read_hstring(1);
-      cipher_suite = input->read_int(2);
-      compression_method = input->read_int(1);
+      string(8bit) session_id = input->read_hstring(1);
+      int cipher_suite = input->read_int(2);
+      int compression_method = input->read_int(1);
 
       if( !has_value(context->supported_versions, version) )
       {
@@ -972,7 +969,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       SSL3_DEBUG_MSG("SSL.ClientConnection: FINISHED\n");
 
-      string my_digest;
+      string my_digest = "";
       if (version == PROTOCOL_SSL_3_0) {
         server_verify_data = input->read(36);
         my_digest = hash_messages("SRVR");

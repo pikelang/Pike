@@ -52,7 +52,7 @@ protected Packet server_hello_packet()
   struct->add_int(session->compression_algorithm, 1);
 
   Buffer extensions = Buffer();
-  Alert fail;
+  object(Alert)|zero fail;
 
   void ext(int id, int condition, function(void:Buffer) code)
   {
@@ -322,13 +322,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if (type != HANDSHAKE_client_hello)
         COND_FATAL(1, ALERT_unexpected_message, "Expected client_hello.\n");
 
-      string(8bit) session_id;
-      int cipher_len;
-      array(int) client_cipher_suites;
-      array(int) cipher_suites;
-      array(int) compression_methods;
-      array(int(16bit)) versions;
-
       SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_HELLO\n");
 
       client_version =
@@ -340,7 +333,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                  sprintf("Unsupported version %s.\n",
                          fmt_version(client_version)));
 
-      versions = context->get_versions(client_version);
+      array(int(16bit)) versions = context->get_versions(client_version);
       COND_FATAL(!sizeof(versions), ALERT_protocol_version,
                  sprintf("Unsupported version %s.\n",
                          fmt_version(client_version)));
@@ -349,15 +342,16 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                      fmt_version(client_version), fmt_version(version));
 
       client_random = input->read(32);
-      session_id = input->read_hstring(1);
+      string(8bit) session_id = input->read_hstring(1);
 
-      cipher_len = input->read_int(2);
+      int cipher_len = input->read_int(2);
       COND_FATAL(cipher_len & 1, ALERT_unexpected_message,
                  "Invalid client_hello.\n");
 
-      client_cipher_suites = cipher_suites = input->read_ints(cipher_len/2, 2);
+      array(int) cipher_suites = input->read_ints(cipher_len/2, 2);
+      array(int) client_cipher_suites = cipher_suites;
 
-      compression_methods = input->read_int_array(1, 1);
+      array(int) compression_methods = input->read_int_array(1, 1);
       SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
                      "version = %s\n"
                      "session_id=%O\n"
@@ -367,14 +361,12 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                      session_id, fmt_cipher_suites(cipher_suites),
                      compression_methods);
 
-      Stdio.Buffer extensions;
-      if (sizeof(input))
-        extensions = input->read_hbuffer(2);
-
       Stdio.Buffer early_data = Stdio.Buffer();
       int missing_secure_renegotiation = secure_renegotiation;
-      if (extensions)
+      if (sizeof(input))
       {
+	Stdio.Buffer extensions = input->read_hbuffer(2);
+
         // FIXME: Control Safari workaround detection from the
         // context.
         int maybe_safari_10_8 = 1;
@@ -830,7 +822,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       session->set_compression_method(compression_methods[0]);
 
-      Session old_session;
+      object(Session)|zero old_session;
       if (tickets_enabled) {
 	SSL3_DEBUG_MSG("SSL.ServerConnection: Decoding ticket: %O...\n",
 		       session->ticket);
@@ -917,8 +909,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if (type != HANDSHAKE_finished)
         COND_FATAL(1, ALERT_unexpected_message, "Expected finished.\n");
 
-      string(8bit) my_digest;
-      string(8bit) digest;
+      string(8bit) my_digest = "";
+      string(8bit) digest = "";
 
       SSL3_DEBUG_MSG("SSL.ServerConnection: FINISHED\n");
 

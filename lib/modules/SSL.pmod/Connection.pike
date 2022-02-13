@@ -851,7 +851,7 @@ void handle_heartbeat(string(8bit) s)
   SSL3_DEBUG_MSG("SSL.Connection: Heartbeat %s (%d bytes)\n",
 		 fmt_constant(hb_type, "HEARTBEAT_MESSAGE"), hb_len);
 
-  string(8bit) payload;
+  string(8bit) payload = "";
   int(0..) pad_len = 16;
 
   // RFC 6520 4:
@@ -1015,7 +1015,7 @@ protected void got_dtls_handshake_fragment(string(8bit) data)
     // More paranoia - Extraneous data in fragment.
     data = data[..frag_len-1];
   }
-  array(HandshakeFragment)|zero frags = handshake_fragments[seq];
+  array(HandshakeFragment|zero)|zero frags = handshake_fragments[seq];
   if (sizeof(frags || ({})) &&
       ((mt != frags[0]->mt) || (len != frags[0]->len))) {
     // Inconsistent handshake message metadata.
@@ -1029,8 +1029,8 @@ protected void got_dtls_handshake_fragment(string(8bit) data)
     frags += ({ new_frag });
     sort(frags->offset, frags);
 
-    HandshakeFragment prev;
-    foreach(frags; int i; HandshakeFragment frag) {
+    object(HandshakeFragment)|zero prev;
+    foreach([array]frags; int i; HandshakeFragment frag) {
       if (!prev) {
 	prev = frag;
 	continue;
@@ -1121,8 +1121,7 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
   Stdio.Buffer.RewindKey read_buffer_key = read_buffer->rewind_key();
 
   string(8bit) res = "";
-  Packet packet;
-  while (packet = recv_packet())
+  while (Packet packet = recv_packet())
   {
     if (packet->is_alert)
     {

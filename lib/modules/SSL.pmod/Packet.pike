@@ -6,7 +6,7 @@ import .Constants;
 
 int content_type;
 ProtocolVersion protocol_version;
-string(8bit) fragment;  /* At most 2^14 */
+string(8bit) fragment = "";  /* At most 2^14 */
 
 int seq_num = UNDEFINED;
 
@@ -133,7 +133,7 @@ void send(Stdio.Buffer output)
 protected string _sprintf(int t)
 {
   if(t!='O') return UNDEFINED;
-  if(!fragment) return sprintf("SSL.Packet(unfinished)");
+  if(fragment == "") return sprintf("SSL.Packet(empty)");
   string type = fmt_constant(content_type, "PACKET")[7..];
   return sprintf("SSL.Packet(#%d, %s, %d bytes)",
 		 seq_num, type, fragment && sizeof(fragment));

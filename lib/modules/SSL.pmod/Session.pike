@@ -432,7 +432,7 @@ int select_cipher_suite(array(CertificatePair) certs,
 
   // Now we can select the actual cert to use.
   if ( !KE_Anonymous[ke_method] ) {
-    CertificatePair cert;
+    CertificatePair|zero cert;
 
     if (version >= PROTOCOL_TLS_1_2) {
       foreach(certs, CertificatePair cp) {
