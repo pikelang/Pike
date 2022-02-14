@@ -1121,7 +1121,7 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
   Stdio.Buffer.RewindKey read_buffer_key = read_buffer->rewind_key();
 
   string(8bit) res = "";
-  while (Packet packet = recv_packet())
+  while (object(Packet)|zero packet = recv_packet())
   {
     if (packet->is_alert)
     {
