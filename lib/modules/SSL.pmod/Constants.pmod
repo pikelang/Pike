@@ -1151,7 +1151,7 @@ constant ECC_CURVES = ([
 enum HeartBeatModeType {
   HEARTBEAT_MODE_disabled = 0,
   HEARTBEAT_MODE_peer_allowed_to_send = 1,
-  HEARTBEAT_MODE_peer_not_allowed_to_send = 1,
+  HEARTBEAT_MODE_peer_not_allowed_to_send = 2,
 };
 
 enum HeartBeatMessageType {
