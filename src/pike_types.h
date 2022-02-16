@@ -70,6 +70,8 @@ extern size_t pike_type_hash_size;
 
 #define PT_FLAG_INT_ONLY	0x1000000	/* Filter non-integers. */
 
+#define PT_FLAG_VOIDABLE	0x2000000
+
 /*
  * Flags used by remap_marker{,s}():
  */

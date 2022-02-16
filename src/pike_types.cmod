@@ -649,7 +649,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   t->refs = 0;
   add_ref(t);	/* For DMALLOC... */
   t->type = type;
-  t->flags = 0;
+  t->flags = flag_method & ~PT_FLAG_MARK_ASSIGN;
   t->car = car;
   t->cdr = cdr;
 
@@ -663,12 +663,19 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
     } else if (type == PIKE_T_SCOPE) {
       /* The scope blocks propagation of markers. */
       t->flags = cdr->flags & ~(PT_FLAG_MARKER|PT_FLAG_ASSIGN);
-    } else {
-      if (car && (flag_method & PT_COPY_CAR)) {
+    } else if (type == T_OR) {
+      if (car) {
 	t->flags |= car->flags;
       }
-      if (cdr && (flag_method & PT_COPY_CDR)) {
+      if (cdr) {
 	t->flags |= cdr->flags;
+      }
+    } else {
+      if (car && (flag_method & PT_COPY_CAR)) {
+	t->flags |= car->flags & PT_FLAG_MARK_ASSIGN;
+      }
+      if (cdr && (flag_method & PT_COPY_CDR)) {
+	t->flags |= cdr->flags & PT_FLAG_MARK_ASSIGN;;
       }
     }
   }
@@ -1179,10 +1186,14 @@ void debug_push_type(unsigned int type)
     Pike_fatal("Unsupported argument to push_type(): %d\n", type);
     break;
 
-  case T_FLOAT:
-  case T_MIXED:
   case T_VOID:
+    /* Leaf type. */
+    *(++Pike_compiler->type_stackp) = mk_type(type, NULL, NULL,
+					      PT_FLAG_VOIDABLE);
+    break;
+  case T_MIXED:
   case T_ZERO:
+  case T_FLOAT:
   case PIKE_T_UNKNOWN:
     /* Leaf type. */
     *(++Pike_compiler->type_stackp) = mk_type(type, NULL, NULL, 0);
@@ -12189,8 +12200,22 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     do {
       if (!match_types(fun_type->car, void_type_string)) {
 	/* Too few arguments. */
+#ifdef PIKE_DEBUG
+	if (fun_type->car && (fun_type->car->flags & PT_FLAG_VOIDABLE)) {
+	  fprintf(stderr, "voidable mismatch for ");
+	  simple_describe_type(fun_type->car);
+	  fprintf(stderr, " flags: 0x%08x\n", fun_type->car->flags);
+	}
+#endif
 	break;
       }
+#ifdef PIKE_DEBUG
+      if (fun_type->car && !(fun_type->car->flags & PT_FLAG_VOIDABLE)) {
+	fprintf(stderr, "voidable mismatch for ");
+	simple_describe_type(fun_type->car);
+	fprintf(stderr, " flags: 0x%08x\n", fun_type->car->flags);
+      }
+#endif
       fun_type = fun_type->cdr;
     } while(fun_type->type == PIKE_T_FUNCTION);
     if (fun_type->type != T_MANY) {
