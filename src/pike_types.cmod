@@ -670,6 +670,10 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
       if (cdr) {
 	t->flags |= cdr->flags;
       }
+    } else if (type == T_NOT) {
+      if (car) {
+	t->flags |= car->flags ^ ~PT_FLAG_MARK_ASSIGN;
+      }
     } else {
       if (car && (flag_method & PT_COPY_CAR)) {
 	t->flags |= car->flags & PT_FLAG_MARK_ASSIGN;
