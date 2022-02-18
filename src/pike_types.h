@@ -167,11 +167,14 @@ enum pt_cmp_flags
 
 /*
  * Flags used as flag_method to mk_type()
+ *
+ * Note that PT_FLAG_VOIDABLE is also valid.
  */
 #define PT_COPY_CAR	1
 #define PT_COPY_CDR	2
 #define PT_COPY_BOTH	3
 #define PT_IS_MARKER	4	/* The node is a marker. */
+#define PT_COPY_MORE	8	/* Copy VOIDABLE too. */
 
 /*
  * new_check_call(), check_splice_call() and get_first_arg_type() flags

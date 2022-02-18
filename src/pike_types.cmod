@@ -663,16 +663,16 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
     } else if (type == PIKE_T_SCOPE) {
       /* The scope blocks propagation of markers. */
       t->flags = cdr->flags & ~(PT_FLAG_MARKER|PT_FLAG_ASSIGN);
-    } else if (type == T_OR) {
-      if (car) {
-	t->flags |= car->flags;
-      }
-      if (cdr) {
-	t->flags |= cdr->flags;
-      }
     } else if (type == T_NOT) {
       if (car) {
 	t->flags |= car->flags ^ ~PT_FLAG_MARK_ASSIGN;
+      }
+    } else if (flag_method & PT_COPY_MORE) {
+      if (car && (flag_method & PT_COPY_CAR)) {
+	t->flags |= car->flags;
+      }
+      if (cdr && (flag_method & PT_COPY_CDR)) {
+	t->flags |= cdr->flags;
       }
     } else {
       if (car && (flag_method & PT_COPY_CAR)) {
@@ -888,7 +888,7 @@ void debug_push_scope_type(int level)
   *Pike_compiler->type_stackp = mk_type(T_SCOPE,
 					(void *)(ptrdiff_t)level,
 					*Pike_compiler->type_stackp,
-					PT_COPY_CDR);
+					PT_COPY_MORE|PT_COPY_CDR);
 
   TYPE_STACK_DEBUG("push_scope_type");
 }
@@ -916,7 +916,7 @@ void debug_push_type_attribute(struct pike_string *attr)
   *Pike_compiler->type_stackp = mk_type(PIKE_T_ATTRIBUTE,
 					(void *)attr,
 					*Pike_compiler->type_stackp,
-					PT_COPY_CDR);
+					PT_COPY_MORE|PT_COPY_CDR);
   TYPE_STACK_DEBUG("push_type_attribute");
 }
 
@@ -927,7 +927,7 @@ void debug_push_type_name(struct pike_string *name)
   *Pike_compiler->type_stackp = mk_type(PIKE_T_NAME,
 					(void *)name,
 					*Pike_compiler->type_stackp,
-					PT_COPY_CDR);
+					PT_COPY_MORE|PT_COPY_CDR);
   TYPE_STACK_DEBUG("push_type_name");
 }
 
@@ -1053,6 +1053,7 @@ static void push_reverse_joiner_type(unsigned int type)
     *Pike_compiler->type_stackp = mk_type(type,
 					  *Pike_compiler->type_stackp,
 					  *(Pike_compiler->type_stackp+1),
+					  ((type == T_OR)? PT_COPY_MORE : 0) |
 					  PT_COPY_BOTH);
     break;
   default:
