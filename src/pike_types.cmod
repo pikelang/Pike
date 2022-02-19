@@ -3465,15 +3465,9 @@ static void low_or_pike_types(struct pike_type *t1,
 #endif
   if(!t1)
   {
-    if(!t2)
-      push_type(T_VOID);
-    else
-      push_finished_type(t2);
+    push_finished_type(t2);
   }
-  else if((!t2)
-	  || (t2->type == T_ZERO && zero_implied)
-
-    )
+  else if((!t2) || (t2->type == T_ZERO && zero_implied))
   {
     push_finished_type(t1);
   }
@@ -3483,6 +3477,19 @@ static void low_or_pike_types(struct pike_type *t1,
   }
   else if (t1 == t2) {
     push_finished_type(t1);
+  }
+  else if ((t1->type == T_MIXED) && (t2->type != T_VOID)) {
+    push_finished_type(t1);
+    if (t2->flags & PT_FLAG_VOIDABLE) {
+      push_type(T_VOID);
+      push_type(T_OR);
+    }
+  } else if ((t2->type == T_MIXED) && (t1->type != T_VOID)) {
+    push_finished_type(t2);
+    if (t1->flags & PT_FLAG_VOIDABLE) {
+      push_type(T_VOID);
+      push_type(T_OR);
+    }
   }
   else if ((t1->type == T_OR) || (t2->type == T_OR)) {
     int on_stack = 0;
