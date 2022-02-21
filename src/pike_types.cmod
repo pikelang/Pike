@@ -11621,8 +11621,11 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	  }
 	  res = pop_unfinished_type();
 	}
-      } else if ((flags & CALL_NOT_LAST_ARG) &&
-		 (fun_type->car->type == T_MANY)) {
+      } else if (!fun_type->car ||
+		 ((fun_type->car->type != T_FUNCTION) &&
+		  (fun_type->car->type != T_MANY)) ||
+		 ((flags & CALL_NOT_LAST_ARG) &&
+		  (fun_type->car->type == T_MANY))) {
 	/* The next argument might match. */
 	add_ref(fun_type);
 	res = fun_type;
