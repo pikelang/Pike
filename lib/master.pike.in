@@ -121,6 +121,7 @@ void `is_pike_master=(int one)
   }
 }
 
+protected int arguments_parsed = 0;
 
 mapping(string:object) fs_map = ([]);
 object root_fs;
@@ -4315,7 +4316,11 @@ void _main(array(string(0..255)) orig_argv)
 	exit(ret);
 
       case "preprocess":
+	main_resolv( "Stdio.FILE" );
 	main_resolv( "Gmp.bignum" );
+
+	arguments_parsed = 1;
+
 	write(cpp(master_read_file(opts[1]),opts[1]));
 	exit(0);
 
@@ -4350,6 +4355,11 @@ void _main(array(string(0..255)) orig_argv)
   else
     cur_compat_ver = Version (compat_major, compat_minor);
 
+  main_resolv( "Stdio.FILE" );
+  main_resolv( "Gmp.bignum" );
+
+  arguments_parsed = 1;
+
   switch (postparseaction)
   {
      case "features":
@@ -4368,9 +4378,6 @@ void _main(array(string(0..255)) orig_argv)
 	     "\n");
 	exit(0);
   }
-
-  main_resolv( "Stdio.FILE" );
-  main_resolv( "Gmp.bignum" );
 
   if(sizeof(argv)==1)
   {
@@ -6527,7 +6534,7 @@ protected void locale_werror(mixed ... args)
 {
   function werror = locale_werror_cache;
   if (!werror) {
-    if (catch {
+    if (arguments_parsed && catch {
       locale_werror_cache = Files()->_stderr->write;
       object stderr = main_resolv( "Stdio.FILE" )( "stderr", "w" );
       stderr->set_charset( 0 );
