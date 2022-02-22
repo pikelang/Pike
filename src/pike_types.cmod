@@ -8614,6 +8614,21 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case T_NOT:
     /* Some common cases. */
+    if (a && (a->type == T_NOT)) {
+      /* ~A <= ~B   <=>   B <= A */
+      struct pike_type *tmp = b->car;
+      b = a->car;
+      a = tmp;
+      array_cnt = -array_cnt;
+#ifdef TYPE_GROUPING
+      if ((flags & LE_A_B_GROUPED) &&
+	  ((flags & LE_A_B_GROUPED) != LE_A_B_GROUPED)) {
+	flags ^= LE_A_B_GROUPED;
+      }
+#endif
+      flags ^= LE_A_B_SWAPPED;
+      goto recurse;
+    }
     switch(b->car?b->car->type:PIKE_T_UNKNOWN) {
     case T_NOT:
       b = b->car->car;
