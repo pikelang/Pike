@@ -71,6 +71,8 @@ extern size_t pike_type_hash_size;
 #define PT_FLAG_INT_ONLY	0x1000000	/* Filter non-integers. */
 
 #define PT_FLAG_VOIDABLE	0x2000000
+#define PT_FLAG_NULLABLE	0x4000000
+#define PT_FLAG_MIXED		0x8000000
 
 /*
  * Flags used by remap_marker{,s}():
@@ -168,13 +170,13 @@ enum pt_cmp_flags
 /*
  * Flags used as flag_method to mk_type()
  *
- * Note that PT_FLAG_VOIDABLE is also valid.
+ * Note that PT_FLAG_{VOIDABLE,NULLABLE,MIXED} are also valid.
  */
 #define PT_COPY_CAR	1
 #define PT_COPY_CDR	2
 #define PT_COPY_BOTH	3
 #define PT_IS_MARKER	4	/* The node is a marker. */
-#define PT_COPY_MORE	8	/* Copy VOIDABLE too. */
+#define PT_COPY_MORE	8	/* Copy {VOIDABLE,NULLABLE,MIXED} too. */
 
 /*
  * new_check_call(), check_splice_call() and get_first_arg_type() flags

@@ -831,9 +831,14 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max)
     /* Special case... */
     push_type(T_ZERO);
   } else {
+    unsigned int flag_method = 0;
+    if ((min <= 0) && (max >= 0)) {
+      flag_method = PT_FLAG_NULLABLE;
+    }
     *(++Pike_compiler->type_stackp) = mk_type(T_INT,
 					      (void *)(ptrdiff_t)min,
-					      (void *)(ptrdiff_t)max, 0);
+					      (void *)(ptrdiff_t)max,
+					      flag_method);
   }
   TYPE_STACK_DEBUG("push_int_type");
 }
@@ -1200,8 +1205,16 @@ void debug_push_type(unsigned int type)
     *(++Pike_compiler->type_stackp) = mk_type(type, NULL, NULL,
 					      PT_FLAG_VOIDABLE);
     break;
-  case T_MIXED:
   case T_ZERO:
+    /* Leaf type. */
+    *(++Pike_compiler->type_stackp) = mk_type(type, NULL, NULL,
+					      PT_FLAG_NULLABLE);
+    break;
+  case T_MIXED:
+    /* Leaf type. */
+    *(++Pike_compiler->type_stackp) = mk_type(type, NULL, NULL,
+					      PT_FLAG_MIXED|PT_FLAG_NULLABLE);
+    break;
   case T_FLOAT:
   case PIKE_T_UNKNOWN:
     /* Leaf type. */
@@ -3473,16 +3486,25 @@ static void low_or_pike_types(struct pike_type *t1,
   {
     push_finished_type(t2);
   }
-  else if((!t2) || (t2->type == T_ZERO && zero_implied))
-  {
+  else if((!t2) ||
+	  ((t2->type == T_ZERO) &&
+	   (zero_implied || (t1->flags & PT_FLAG_NULLABLE)))) {
     push_finished_type(t1);
   }
-  else if (t1->type == T_ZERO && zero_implied)
-  {
+  else if ((t1->type == T_ZERO) &&
+	   (zero_implied || (t2->flags & PT_FLAG_NULLABLE))) {
     push_finished_type(t2);
   }
   else if (t1 == t2) {
     push_finished_type(t1);
+  }
+  else if ((t1->flags & (PT_FLAG_MIXED|PT_FLAG_VOIDABLE)) ==
+	   (PT_FLAG_MIXED|PT_FLAG_VOIDABLE)) {
+    push_finished_type(t1);
+  }
+  else if ((t2->flags & (PT_FLAG_MIXED|PT_FLAG_VOIDABLE)) ==
+	   (PT_FLAG_MIXED|PT_FLAG_VOIDABLE)) {
+    push_finished_type(t2);
   }
   else if ((t1->type == T_MIXED) && (t2->type != T_VOID)) {
     push_finished_type(t1);
