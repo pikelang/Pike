@@ -665,7 +665,11 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
       t->flags = cdr->flags & ~(PT_FLAG_MARKER|PT_FLAG_ASSIGN);
     } else if (type == T_NOT) {
       if (car) {
-	t->flags |= car->flags ^ ~PT_FLAG_MARK_ASSIGN;
+	/* NB: We cannot set the PT_FLAG_MIXED flag,
+	 *     as inverting a non-mixed type does not
+	 *     give mixed.
+	 */
+	t->flags |= (car->flags ^ ~PT_FLAG_MARK_ASSIGN) & ~PT_FLAG_MIXED;
       }
     } else if (flag_method & PT_COPY_MORE) {
       if (car && (flag_method & PT_COPY_CAR)) {
