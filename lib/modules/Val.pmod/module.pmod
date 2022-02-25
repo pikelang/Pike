@@ -701,7 +701,7 @@ class Interval {
         string res = months ? sprintf("%d MONTH", months) : "";
         if (days)
           res += (res > "" ? " " : "") + sprintf("%d DAY", days);
-        return res + (nsecs ? (res > "" ? " " : "") + ::cast(to) : "");
+        return res + (nsecs ? (res > "" ? " " : "") + [string]::cast(to) : "");
       }
       case "float":
       case "int":
