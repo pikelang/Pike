@@ -5,7 +5,7 @@
 #pragma strict_types
 #require constant(Crypto.Hash)
 
-protected .Hash H;  // hash object
+protected object(.Hash)|zero H;  // hash object
 
 // B is the size of one compression block, in octets.
 protected int B;
