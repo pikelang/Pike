@@ -6110,7 +6110,9 @@ multiset & mapping -> mapping
 		 tFuncV(tArr(tSetvar(0,tMix)),
 			tOr3(tArray,tInt,tFlt),
 			tArr(tArr(tVar(0)))),
-		 tFuncV(tSetvar(2, tStr),tOr3(tStr,tInt,tFlt),tArr(tVar(2)))),
+		 tFuncV(tNStr(tSetvar(2, tInt)),
+			tOr3(tNStr(tVar(2)), tInt, tFlt),
+			tArr(tNStr(tVar(2))))),
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
   /* function(mixed,object:mixed)|"
