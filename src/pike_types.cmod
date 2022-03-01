@@ -8160,11 +8160,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   /* 'mixed' matches anything */
 
-  if((a->type == T_ZERO || a->type == T_MIXED) &&
-     !(flags & (A_EXACT|B_EXACT)) &&
+  if(((a->type == T_MIXED) ||
+      ((a->type == T_ZERO) && !(flags & (A_EXACT|B_EXACT)))) &&
      (b->type != T_VOID))
   {
-#if 1
     ret = NULL;
     switch(b->type)
     {
@@ -8183,17 +8182,27 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	ret = low_match_types(multiset_type_string, b, flags);
 	break;
     }
+#if 0
+    if (a->type == T_ZERO) {
+      if (ret) free_type(ret);
+      ret = a;
+      add_ref(ret);
+    } else if (!ret) {
+      ret = b;
+      add_ref(ret);
+    }
+#else
     if (ret) free_type(ret);
+    ret = a;
+    add_ref(ret);
 #endif
-    add_ref(a);
-    return a;
+    return ret;
   }
 
-  if((b->type == T_ZERO || b->type == T_MIXED) &&
-     !(flags & (A_EXACT|B_EXACT)) &&
+  if(((b->type == T_MIXED) ||
+      ((b->type == T_ZERO) && !(flags & (A_EXACT|B_EXACT)))) &&
      (a->type != T_VOID))
   {
-#if 1
     ret = NULL;
     switch(a->type)
     {
@@ -8212,10 +8221,21 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	ret = low_match_types(a, multiset_type_string, flags);
 	break;
     }
+#if 0
+    if (b->type == T_ZERO) {
+      if (ret) free_type(ret);
+      ret = b;
+      add_ref(ret);
+    } else if (!ret) {
+      ret = a;
+      add_ref(ret);
+    }
+#else
     if (ret) free_type(ret);
+    ret = a;
+    add_ref(ret);
 #endif
-    add_ref(a);
-    return a;
+    return ret;
   }
 
   /* Special cases (tm) */
