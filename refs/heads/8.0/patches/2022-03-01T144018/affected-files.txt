@@ -1,0 +1,9 @@
+Modified files:
+  pike/lib/master.pike.in
+  pike/lib/modules/Mysql.pmod/SqlTable.pike
+  pike/lib/modules/SSL.pmod/Connection.pike
+  pike/lib/modules/SSL.pmod/Constants.pmod
+  pike/lib/modules/Sql.pmod/Sql.pike
+  pike/lib/modules/Sql.pmod/mysql.pike
+  pike/lib/modules/Standards.pmod/ASN1.pmod/Decode.pmod
+  pike/lib/modules/Tools.pmod/Legal.pmod/Copyright.pmod
