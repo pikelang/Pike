@@ -1,0 +1,54 @@
+subject: Pike 8.0: Sync with Pike 8.0.1745
+from: afe5663964e066475ff38b5b83114f5b82e38afc
+to: fec9b7f5bf9caacb975c668c95c54eca364ee120
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2021-12-06T144652
+restart: true
+
+Multiple changes:
+
+• release number bumped to 8.0.1745 by export.pike
+
+• SSL.Constants: Fix typo in value for HEARTBEAT_MODE_peer_no_allowed_to_send.
+
+• Documentation [SSL] [Sql]: Fix some autodoc markup
+
+• Sql.mysql: Clean up backport.
+
+The Mysql module in Pike 8.0 does not handle an argument value
+of UNDEFINED identically to as if the corresponding argument
+was omitted.
+
+Fixes list_{dbs,tables}() with omitted wild card argument.
+
+Also fixes an obscure special case in list_fields().
+
+• Sql.mysql: Clean up character set handling.
+
+Adds helper functions fix_{query,result}_charset() that contain
+code that used to be in the QUERY_BODY() macro. This makes the
+code quite a bit easier to read.
+
+Adds charset wrappers to list_{dbs,tables,fields}() that previously
+changed behavior depending on what the send_charset was.
+
+Remove some now obsoleted character set handling from Mysql.SqlTable.
+
+Potential fix for intermittent failures for Mysql.SqlTable to handle
+tables with wide characters in the table name.
+
+• Sql.Sql: Added query_db() to the API.
+
+• Sql.mysql: Added reset().
+
+• Updated copyright.
+
+• Standards.ASN1.Decode: Set error mode on Stdio.Buffer.
+
+Throw errors on buffer underflow.
+
+Thanks to Joshua Rogers for the report and test vectors.
+
+Fixes #10075.
+
+• Standards.ASN1.Decode: Prevent infinite loops when decoding incomplete data.
