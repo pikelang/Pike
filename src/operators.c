@@ -6099,9 +6099,10 @@ multiset & mapping -> mapping
 	    "function(array(0=mixed),array|int|float...:array(array(0)))|"
 	    "function(string,string|int|float...:array(string)) */
   ADD_EFUN2("`/", f_divide,
-	    tOr5(tIfnot(tFuncV(tNone,tNot(tObj),tMix),
-			tOr(tFuncArg(tSetvar(1,tObj), tFindLFun(tVar(1), "`/")),
-			    tFuncV(tNot(tObj),tMix,tMix))),
+	    tOr5(tOr(tFuncArg(tSetvar(1,tObj), tFindLFun(tVar(1), "`/")),
+		     tFuncArg(tNot(tObj),
+			      tIfnot(tFuncV(tNone,tNot(tObj),tMix),
+				     tFuncV(tNone,tMix,tMix)))),
 		 tOr4(tFuncV(tIntPos,tIntPos,tIntPos),
 		      tFuncV(tIntNeg,tIntNeg,tIntPos),
 		      tFuncV(tIntPos,tIntNeg,tIntNeg),
@@ -6112,7 +6113,7 @@ multiset & mapping -> mapping
 			tOr3(tArray,tInt,tFlt),
 			tArr(tArr(tVar(0)))),
 		 tFuncV(tNStr(tSetvar(2, tInt)),
-			tOr3(tNStr(tVar(2)), tInt, tFlt),
+			tOr3(tStr, tInt, tFlt),
 			tArr(tNStr(tVar(2))))),
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
