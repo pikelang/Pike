@@ -10135,7 +10135,9 @@ void init_builtin_efuns(void)
 
   /* function(0=mixed ...:array(0)) */
   ADD_EFUN2("aggregate",debug_f_aggregate,
-	    tFuncV(tNone,tSetvar(0,tMix),tArr(tVar(0))),
+	    tOr(tAnd(tFuncV(tMix, tMix, tArr(tMix)),
+		     tFuncV(tNone,tSetvar(0,tMix),tArr(tVar(0)))),
+		tFunc(tNone, tLArr(tZero, tUnknown))),
 	    OPT_TRY_OPTIMIZE, optimize_f_aggregate, 0);
 
   /* function(0=mixed ...:multiset(0)) */
