@@ -12013,6 +12013,14 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
      */
 
   case T_OR:
+    if (arg_type->car == zero_type_string) {
+      arg_type = arg_type->cdr;
+      goto loop;
+    }
+    if (arg_type->cdr == zero_type_string) {
+      arg_type = arg_type->car;
+      goto loop;
+    }
     if (!(tmp = low_new_check_call(fun_type, arg_type->car,
 				   flags | CALL_WEAK_VOID, sval))) {
       if (flags & CALL_STRICT) {
