@@ -11662,7 +11662,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	  type_stack_mark();
 	  if ((res->type == T_MANY) &&
 	      (fun_type->car->type == T_MANY) &&
-	      (res->car->type == T_NOT)) {
+	      res->car && (res->car->type == T_NOT)) {
 	    /* Exist criteria is fulfilled.
 	     * Reduce !function(!type...:type) to function(mixed...:type).
 	     * FIXME: Probably ought to move the inner inversion
