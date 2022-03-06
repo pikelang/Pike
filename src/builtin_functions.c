@@ -10333,6 +10333,7 @@ void init_builtin_efuns(void)
 		tFunc(tOr4(tObj,tFunction,tPrg(tObj),tInt) tArray, tArray)), 0);
 
   /* FIXME: Is the third arg a good idea when the first is a mapping? */
+  /* FIXME: Improve type for the fallback to iterator object case. */
   ADD_EFUN("search",f_search,
 	   tOr4(tFunc(tStr tOr(tStr,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt),
 		      tInt),
@@ -10340,7 +10341,10 @@ void init_builtin_efuns(void)
 		      tInt),
 		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2)
                       tOr(tVoid,tVar(1)), tVar(1)),
-		tFuncV(tObj tMix tOr(tVoid, tSetvar(3, tMix)), tMix, tVar(3))),
+		tFuncArg(tSetvar(3, tObj),
+			 tOr(tFindLFun(tVar(3), "_search"),
+			     tIfnot(tFindLFun(tVar(3), "_search"),
+				    tFuncV(tMix, tMix, tMix))))),
 	   0);
 
   ADD_EFUN2("has_prefix", f_has_prefix, tFunc(tOr(tStr,tObj) tStr,tInt01),
