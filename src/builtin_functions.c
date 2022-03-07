@@ -10255,12 +10255,16 @@ void init_builtin_efuns(void)
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tIntPos),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN2("indices",f_indices,
-	    tOr3(tFunc(tArray,tArr(tIntPos)),
+	    tOr4(tFunc(tArray,tArr(tIntPos)),
 		 tFunc(tOr3(tMap(tSetvar(1,tMix),tMix),
 			    tSet(tSetvar(1,tMix)),
 			    tNStr(tSetvar(1,tInt))),
 		       tArr(tVar(1))),
-		 tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
+		 tFunc(tPrg(tObj), tArr(tStr)),
+		 tFuncArg(tSetvar(2, tObj),
+			  tOr(tFindLFun(tVar(2), "_indices"),
+			      tIfnot(tFindLFun(tVar(2), "_indices"),
+				     tFunc(tNone, tArr(tStr)))))),
 	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
 
   ADD_EFUN2("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE,
