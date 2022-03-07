@@ -3827,9 +3827,9 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
   struct pike_type *tmp;
   struct svalue *s;
 
+ loop:
   if (!t) return NULL;
 
- loop:
   switch(t->type) {
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
