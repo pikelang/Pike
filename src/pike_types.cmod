@@ -932,6 +932,13 @@ void debug_push_type_attribute(struct pike_string *attr)
 void debug_push_type_name(struct pike_string *name)
 {
   /* fprintf(stderr, "push_type_name(\"%s\")\n", name->str); */
+  if ((peek_type_stack() == zero_type_string) && (name->len == 4) &&
+      !name->size_shift && !strcmp(name->str, "zero")) {
+    /* Do not generate a name node for zero = zero.
+     * This simplifies detecting zero.
+     */
+    return;
+  }
   add_ref(name);
   *Pike_compiler->type_stackp = mk_type(PIKE_T_NAME,
 					(void *)name,
