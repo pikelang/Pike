@@ -2362,7 +2362,7 @@ class async_client
   }
 
   private void multiple_results(array|zero results,
-      string domain, function(string, string, mixed ...:void) callback,
+      string domain, function(string, array, mixed ...:void) callback,
       mixed ... restargs) {
     if (callback)
       callback(domain, results, @restargs);
@@ -2446,7 +2446,9 @@ class async_client
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
   //!   using the @[cancel] method.
-  Request host_to_ips(string host, function(string,string,mixed...:void) callback, mixed ... args)
+  Request host_to_ips(string host,
+		      function(string, array, mixed...:void) callback,
+		      mixed ... args)
   {
     generic_query("AAAA", host, multiple_results, host, callback, @args);
   }
