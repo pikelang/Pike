@@ -10347,10 +10347,7 @@ void init_builtin_efuns(void)
   ADD_FUNCTION ("implicit_gc_real_time", f_implicit_gc_real_time,
 		tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION ("count_memory", f_count_memory,
-		tFuncV(tOr(tInt,tMap(tString,tInt)),
-		       tOr8(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
-			    tString,tType(tMix),tInt),
-		       tInt), 0);
+		tFuncV(tOr(tInt,tMap(tString,tInt)), tMixed, tInt), 0);
   ADD_FUNCTION("identify_cycle", f_identify_cycle,
 	       tFunc(tOr7(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
 			  tString,tType(tMix)),
