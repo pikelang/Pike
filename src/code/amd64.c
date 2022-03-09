@@ -1699,6 +1699,7 @@ static void amd64_call_c_opcode(void *addr, int flags)
 #ifdef PIKE_DEBUG
 static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
 {
+  /* NB: instr has been offset by F_OFFSET. */
   int flags = instrs[instr].flags;
 
   /* Note: maybe_update_pc() is called by amd64_call_c_opcode() above,
@@ -3417,7 +3418,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     {
     LABELS();
     amd64_load_sp_reg();
-    ins_debug_instr_prologue(a,b,0);
+    ins_debug_instr_prologue(a-F_OFFSET,b,0);
     mov_mem8_reg(sp_reg,SVAL(-1).type, P_REG_RAX);
     test_reg32(P_REG_RAX);
     jnz(&label_A);
