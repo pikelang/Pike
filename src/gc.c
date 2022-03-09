@@ -5331,7 +5331,7 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
 }
 
 /*! @decl int count_memory (int|mapping(string:int) options, @
- *!         array|multiset|mapping|object|program|string|type|int... things)
+ *!         mixed ... things)
  *! @appears Pike.count_memory
  *!
  *! In brief, if you call @expr{Pike.count_memory(0,x)@} you get back
@@ -5659,29 +5659,33 @@ void f_count_memory (INT32 args)
 	continue;
 
       else if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
-	free(mc_work_queue);
-	mc_work_queue = NULL;
-	stop_mc();
-	SIMPLE_ARG_TYPE_ERROR (
-	  "count_memory", i + args + 1,
-	  "array|multiset|mapping|object|program|string|type|int");
+	/* Not refcounted. Replace with 0 and ignore. */
+	SET_SVAL(*s, T_INT, NUMBER_NUMBER, integer, 0);
+	continue;
       }
-
       else {
 	if (TYPEOF(*s) == T_FUNCTION) {
 	  struct svalue s2;
-	  if (!(s2.u.program = program_from_function (s))) {
-	    free(mc_work_queue);
-	    mc_work_queue = NULL;
-	    stop_mc();
-	    SIMPLE_ARG_TYPE_ERROR (
-	      "count_memory", i + args + 1,
-	      "array|multiset|mapping|object|program|string|type|int");
+	  if ((s2.u.program = program_from_function (s))) {
+	    add_ref (s2.u.program);
+	    SET_SVAL_TYPE(s2, T_PROGRAM);
+	    free_svalue (s);
+	    move_svalue (s, &s2);
+	  } else if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) {
+	    free_svalue(s);
+	    SET_SVAL(*s, T_INT, NUMBER_NUMBER, integer, 0);
+	    continue;
+	  } else {
+	    /* Convert from function to object. */
+	    SET_SVAL_TYPE_SUBTYPE(*s, T_OBJECT, 0);
 	  }
-	  add_ref (s2.u.program);
-	  SET_SVAL_TYPE(s2, T_PROGRAM);
-	  free_svalue (s);
-	  move_svalue (s, &s2);
+	}
+
+	if (!visit_fn_from_type[TYPEOF(*s)]) {
+	  /* Unsupported type. Replace with 0 and ignore. */
+	  free_svalue(s);
+	  SET_SVAL(*s, T_INT, NUMBER_NUMBER, integer, 0);
+	  continue;
 	}
 
 	if (find_mc_marker (s->u.ptr)) {
