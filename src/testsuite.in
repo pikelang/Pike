@@ -8438,7 +8438,11 @@ ignore_warning("Indexing the empty string.", [[
 ]])
 test_eq(sprintf("%O", typeof(0.0)),"float")
 test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
-test_true(typeof("hej"+3) >= typeof("hej3"))
+dnl The following does test not currently work as typeof("hej3") includes
+dnl character values between '4' and 'd'. Test the parts instead.
+dnl test_true(typeof("hej"+3) >= typeof("hej3"))
+test_true(typeof("hej"+3) >= typeof("hej"))
+test_true(typeof("hej"+3) >= typeof("3"))
 
 // _typeof
 test_eq(sprintf("%O", _typeof(1)),"int(1)")

@@ -357,7 +357,14 @@ struct svalue
 #define tIntMinus "\010\200\000\000\000\377\377\377\377"
 #define tInt_10 "\010\377\377\377\377\000\000\000\000"
 #define tInt_11 "\010\377\377\377\377\000\000\000\001"
-#define tIntSlash "\010\000\000\000\057\000\000\000\057"
+#define tIntCharRange(LOW,HIGH) "\010\000\000\000" LOW "\000\000\000" HIGH
+#define tIntChar(CHAR) tIntCharRange(CHAR, CHAR)
+#define tIntDigits tIntCharRange("0", "9")
+#define tIntPlusSign tIntChar("+")
+#define tIntMinusSign tIntChar("-")
+#define tIntDecimal tIntChar(".")
+#define tIntSlash tIntChar("/")
+#define tIntExp tIntChar("e")
 #define tByte "\010\000\000\000\000\000\000\000\377"
 #define tWord "\010\000\000\000\000\000\000\377\377"
 #define tFlt "\011"
