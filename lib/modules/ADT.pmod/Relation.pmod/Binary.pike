@@ -260,11 +260,11 @@ protected class _get_iterator {
     first();
   }
 
-  mixed index() {
+  protected mixed _iterator_index() {
     return finished ? UNDEFINED : lefts[ipos];
   }
 
-  mixed value() {
+  protected mixed _iterator_value() {
     return finished ? UNDEFINED : rights[vpos];
   }
 
@@ -272,7 +272,7 @@ protected class _get_iterator {
     return finished;
   }
 
-  int(0..1) next() {
+  protected int(0..1) _iterator_next() {
 
     if(finished || (ipos==sizeof(lefts)-1 &&
 		    vpos==sizeof(rights)-1)) {
@@ -293,7 +293,7 @@ protected class _get_iterator {
   protected this_program `+=(int steps) {
     if (steps < 0) error ("Cannot step backwards.\n");
     while(steps--)
-      next();
+      _iterator_next();
     return this;
   }
 
