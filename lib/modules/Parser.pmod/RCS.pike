@@ -347,7 +347,7 @@ void parse_deltatext_sections(array raw,
 {
   DeltatextIterator iterate = DeltatextIterator(raw, progress_callback,
 						callback_args);
-  while(iterate->next());
+  foreach(iterate;;);
 }
 
 //! Iterator for the deltatext sections of the RCS file. Typical usage:
@@ -407,14 +407,14 @@ class DeltatextIterator
   //! @returns
   //! the number of deltatext entries processed so far (0..N-1, N
   //! being the total number of revisions in the rcs file)
-  int index()
+  protected int _iterator_index()
   {
     return this_no;
   }
 
   //! @returns
   //! the @[Revision] at whose deltatext data we are, updated with its info
-  Revision value()
+  protected Revision _iterator_value()
   {
     return revisions[this_rev];
   }
@@ -433,12 +433,12 @@ class DeltatextIterator
   protected this_program `+=(int nsteps)
   {
     while(nsteps--)
-      next();
+      _iterator_next();
     return this;
   }
 
   //! like @expr{@[`+=](1)@}, but returns 0 if the iterator is finished
-  int(0..1) next()
+  protected int(0..1) _iterator_next()
   {
     return read_next() && (++this_no, 1);
   }
