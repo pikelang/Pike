@@ -93,17 +93,17 @@ class _get_iterator
   protected int|array(string|int) row = fetch_row();
   protected int pos = 0;
 
-  int index()
+  protected int _iterator_index()
   {
     return pos;
   }
 
-  int|array(string|int) value()
+  protected int|array(string|int) _iterator_value()
   {
     return row;
   }
 
-  int(0..1) next()
+  protected int(0..1) _iterator_next()
   {
     pos++;
     return !!(row = fetch_row());
@@ -118,7 +118,7 @@ class _get_iterator
       pos += steps-1;
       seek(steps-1);
     }
-    next();
+    _iterator_next();
     return this;
   }
 
