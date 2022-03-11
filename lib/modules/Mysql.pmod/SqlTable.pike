@@ -1369,18 +1369,18 @@ class Result
 		 Result::this && cur_row, cached_num_rows);
     }
 
-    int index()
+    protected int _iterator_index()
     {
       return cur_row < cached_num_rows ? cur_row : UNDEFINED;
     }
 
-    mapping(string:mixed) value()
+    protected mapping(string:mixed) _iterator_value()
     {
       if (!cur_rec) fetch();
       return cur_row < cached_num_rows ? cur_rec : UNDEFINED;
     }
 
-    int next()
+    protected int _iterator_next()
     {
       fetch();
       return cur_row < cached_num_rows;
@@ -1390,7 +1390,7 @@ class Result
     // Old interface for pike 7.4 compat.
     {
       if (steps < 0) error ("Stepping backwards not supported.\n");
-      while (steps--) if (!next()) break;
+      while (steps--) if (!_iterator_next()) break;
       return this;
     }
   }
