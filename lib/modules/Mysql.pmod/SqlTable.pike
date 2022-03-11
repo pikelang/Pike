@@ -215,7 +215,7 @@ protected void create (function(void:Sql.Sql) get_db,
     col_types = ([]);
     timestamp_cols = ([]);
     datetime_cols = ([]);
-    array(mapping(string:mixed)) col_list = conn->list_fields(table));
+    array(mapping(string:mixed)) col_list = conn->list_fields(table);
     mapping(string:mixed) prop_col_info;
 
     foreach (col_list, mapping(string:mixed) col_info) {
@@ -1729,7 +1729,7 @@ protected void update_props (Sql.mysql conn, string pk_where,
 }
 
 protected mapping(string:mixed) update_pack_fields (
-  Sql.mysql conn, mapping(string:mixed) rec, string pk_where,
+  Sql.mysql conn, mapping(string:mixed) rec, string|zero pk_where,
   int replace_properties)
 // Returns a record mapping where all fields that don't have columns
 // have been packed into a prop_col entry. The table is queried if
