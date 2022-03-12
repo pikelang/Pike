@@ -124,7 +124,7 @@ function peer_update_status=0;
 function download_completed_callback=0;
 
 //! Called if there is a protocol error.
-function(string,mixed...:void|mixed) warning=lambda() {};
+function(string,mixed...:void|mixed) warning = lambda(string w) {};
 
 
 Protocols.DNS.async_client dns_async=Protocols.DNS.async_client();
