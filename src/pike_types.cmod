@@ -12675,7 +12675,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 struct pike_type *check_splice_call(struct pike_string *fun_name,
 				    struct pike_type *fun_type,
 				    INT32 argno,
-				    struct pike_type *arg_type,
+				    struct pike_type *args_type,
 				    struct svalue *sval,
 				    INT32 flags)
 {
@@ -12683,6 +12683,8 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
   struct pike_type *tmp = NULL;
   struct pike_type *res = NULL;
   struct pike_type *prev = fun_type;
+  struct pike_type *arg_type = index_type(args_type, int_type_string, NULL);
+  struct pike_type *ind_type = key_type(args_type, NULL);
   int cnt = 256;
   /* This argument can expand to anything between zero and MAX_ARGS args. */
 
@@ -12734,6 +12736,9 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
 		argno, fun_name, 256-cnt);
     }
   }
+
+  free_type(ind_type);
+  free_type(arg_type);
 
   return res;
 }

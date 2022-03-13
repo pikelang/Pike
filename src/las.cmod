@@ -4047,12 +4047,13 @@ void fix_type_field(node *n)
 	  free_type(diff_type);
 	}
       }
-      /* FIXME: The type field of the splice operator is not yet utilized.
+      /* NOTE: The type field of the splice operator is used by
+       *       new_check_call_arg() in its call of check_splice_call().
        *
-       * It probably ought to be something similar to MANY(..., VOID).
+       * NOTE: The type for the node keeps the array type in order to
+       *       keep track of the array length information (if any).
        */
-      n->type = index_type(array_type, int_type_string, n);
-      free_type(array_type);
+      n->type = array_type;
     } else {
       copy_pike_type(n->type, mixed_type_string);
     }
