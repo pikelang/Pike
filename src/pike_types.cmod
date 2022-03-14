@@ -9913,6 +9913,14 @@ static struct pike_type *low_index_type(struct pike_type *t,
   }
 }
 
+/**
+ * Returns the type resulting from indexing type with index_type.
+ *
+ * The node n is used to determine whether the indexing method
+ * is `[]() (the default) or `->().
+ *
+ * See also key_type().
+ */
 struct pike_type *index_type(struct pike_type *type,
 			     struct pike_type *index_type,
 			     node *n)
@@ -9920,9 +9928,6 @@ struct pike_type *index_type(struct pike_type *type,
   struct pike_type *t;
   clear_markers();
   t = low_index_type(type, index_type, n);
-  if(!t) {
-    copy_pike_type(t, mixed_type_string);
-  }
   return t;
 }
 
@@ -10192,7 +10197,7 @@ struct pike_type *array_value_type(struct pike_type *array_type)
 /* FIXME, add the index */
 static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
 {
-  switch(t->type)
+  switch(t?t->type:PIKE_T_UNKNOWN)
   {
   case T_OBJECT:
   {
@@ -10231,17 +10236,20 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
     add_ref(string_type_string);
     return string_type_string;
   }
-  default:
+
+  case PIKE_T_MIXED:
     add_ref(mixed_type_string);
     return mixed_type_string;
 
+  default:
+    case PIKE_T_UNKNOWN:
     case T_VOID:
     case T_ZERO:
     case T_TYPE:
     case PIKE_T_RING:
     case T_FLOAT:
     case T_INT:
-      return 0;
+      return NULL;
 
   case T_OR:
   {
@@ -10258,33 +10266,55 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
   }
 
   case T_AND:
-    /* FIXME: Shouldn't this look at both branches? */
-    return low_key_type(t->cdr, n);
+  {
+    struct pike_type *a,*b;
+    a = low_key_type(t->car, n);
+    b = low_key_type(t->cdr, n);
+    t = and_pike_types(a, b);
+    free_type(a);
+    free_type(b);
+    return t;
+  }
 
+  case T_NOT:
+    t = low_key_type(t->car, n);
+    type_stack_mark();
+    push_finished_type(t);
+    push_type(T_NOT);
+    free_type(t);
+    return pop_unfinished_type();
+
+  case PIKE_T_SCOPE:
+  case PIKE_T_ASSIGN:
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
     return low_key_type(t->cdr, n);
 
-  case T_ARRAY: /* FIXME: cdr */
-  case T_STRING: /* always int */
-    add_ref(int_type_string);
-    return int_type_string;
-
+  case T_ARRAY:
+  case T_STRING:
   case T_MAPPING:
   case T_MULTISET:
+    /* FIXME: Arrays may also be indexed with strings when
+     *        strings are valid indices for their values.
+     */
     copy_pike_type(t, t->car);
     return t;
   }
 }
 
+/**
+ * Returns the type of valid indices of type.
+ *
+ * The node n is used to determine whether the indexing method
+ * is `[]() (the default) or `->().
+ *
+ * See also index_type().
+ */
 struct pike_type *key_type(struct pike_type *type, node *n)
 {
   struct pike_type *t;
   clear_markers();
   t = low_key_type(type,n);
-  if(!t) {
-    copy_pike_type(t, mixed_type_string);
-  }
   return t;
 }
 
