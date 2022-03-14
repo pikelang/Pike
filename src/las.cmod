@@ -3719,7 +3719,7 @@ void fix_type_field(node *n)
       copy_pike_type(n->type, CDR(n)->type);
     } else {
       struct pike_type *t;
-      if( CDR(n)->type->type == PIKE_T_AUTO )
+      if( CDR(n)->type && (CDR(n)->type->type == PIKE_T_AUTO) )
       {
           /* Update to actual type (assign from soft-cast to auto). */
           free_type( CDR(n)->type );
