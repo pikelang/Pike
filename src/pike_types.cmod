@@ -11781,6 +11781,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 
   case PIKE_T_OPERATOR:
     tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
+    if (!tmp) {
+      return NULL;
+    }
     res = lower_new_check_call(tmp, arg_type, flags, sval CHECK_CALL_ARGS);
     free_type(tmp);
     break;
@@ -12040,7 +12043,7 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
  loop:
   clear_markers();
   /* First split the argument type into basic types. */
-  switch(arg_type->type) {
+  switch(arg_type?arg_type->type:PIKE_T_UNKNOWN) {
   case T_ASSIGN:
   case PIKE_T_NAME:
     arg_type = arg_type->cdr;
