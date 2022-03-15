@@ -2196,7 +2196,8 @@ PMOD_EXPORT
 PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index)
   efun;
   optflags OPT_SIDE_EFFECT;
-  rawtype tOr3(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),tVar(1)),
+  rawtype tOr3(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),
+		     tOr(tVar(1), tZero)),
 	       tFunc(tSet(tSetvar(0,tMix)) tVar(0),tInt01),
 	       tFunc(tObj tMix,tMix));
 {
