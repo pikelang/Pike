@@ -90,6 +90,8 @@ class FDWrapper
       if( this && w ) w();
     }
 
+    void set_nodelay(int(0..1)|void state) { }
+
     void set_read_callback(function a) { }
     void set_blocking() { }
     int write(string d)
