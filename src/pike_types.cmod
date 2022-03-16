@@ -1033,7 +1033,12 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
       break;
     }
   default:
-    *Pike_compiler->type_stackp = apply_type_operator(op, t, arg);
+    tmp = apply_type_operator(op, t, arg);
+    if (!tmp) {
+      tmp = void_type_string;
+      add_ref(tmp);
+    }
+    *Pike_compiler->type_stackp = tmp;
     free_type(t);
     break;
   }
