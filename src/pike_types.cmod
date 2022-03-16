@@ -9597,26 +9597,51 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 
   add_ref(a);
 
-  while (a && b &&
-	 ((b->type == T_FUNCTION) ||
-	  ((b->type == T_MANY) && (b->car != void_type_string) &&
-	   (a->type == T_FUNCTION)))) {
-    struct pike_type *cont = low_new_check_call(a, b->car, 0, NULL);
+  push_type(PIKE_T_UNKNOWN);
+
+  do {
+    struct pike_type *cont;
+
+    if (!b || b->type == T_MANY ||
+	(b->car && (b->car->flags & PT_FLAG_VOIDABLE))) {
+      struct pike_type *tmp = new_get_return_type(a, 0);
+      if (tmp) {
+	push_finished_type(tmp);
+	push_type(T_OR);
+
+	free_type(tmp);
+      }
+
+      if (!b || !b->car ||
+	  ((b->type == T_MANY) && (b->car == void_type_string))) {
+	break;
+      }
+    }
+
+#ifdef PIKE_DEBUG
+    if ((b->type != T_MANY) && (b->type != T_FUNCTION)) {
+      Pike_fatal("Invalid argument type to check_call().\n");
+    }
+#endif
+
+    cont = low_new_check_call(a, b->car, 0, NULL);
     free_type(a);
     a = cont;
+
+    if (!a) break;
+
     if (b->type == T_FUNCTION) b = b->cdr;
+  } while(1);
+
+  if (a) {
+    free_type(a);
+
+    if (peek_type_stack()) {
+      return 1;
+    }
   }
 
-  if (!a) return 0;
-
-  b = new_get_return_type(a, 0);
-  free_type(a);
-
-  if (b) {
-    push_finished_type(b);
-    free_type(b);
-    return 1;
-  }
+  compiler_discard_top_type();
   return 0;
 #endif
 }
