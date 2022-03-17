@@ -3866,7 +3866,17 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int UNU
       t = t->cdr;
     }
 
-    /* FIXME: Ought to handle or-nodes here. */
+    /* FIXME: Ought to handle or-nodes generically here. */
+    while (t && (t->type == T_OR)) {
+      /* Handle some common cases. */
+      if ((t->car == zero_type_string) || (t->car == void_type_string)) {
+	t = t->cdr;
+      } else if ((t->cdr == zero_type_string) || (t->cdr == void_type_string)) {
+	t = t->car;
+      } else {
+	break;
+      }
+    }
     if(t && (t->type == T_OBJECT))
     {
       struct program *p = id_to_program(CDR_TO_INT(t));
