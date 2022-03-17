@@ -120,7 +120,7 @@ protected int `==(mixed something)
 string combine_uri_path(string base, string rel, int(0..1)|void is_abs_path)
 {
   string buf = rel;
-  array(string|zero) segments = ({});
+  array(string) segments = ({});
 
   // RFC 2396, §5.2.5:
   //    If the path component begins with a slash character ("/"),
@@ -150,11 +150,12 @@ string combine_uri_path(string base, string rel, int(0..1)|void is_abs_path)
 
   // c) All occurrences of "./", where "." is a complete path segment,
   //    are removed from the buffer string.
-  for(int i=0; i<sizeof(segments)-1; i++)
-    if(segments[i]==".")
-      segments[i]=0;
+  array(string|zero) tmp = segments;
+  for(int i=0; i<sizeof(tmp)-1; i++)
+    if(tmp[i]==".")
+      tmp[i]=0;
 
-  segments -= ({ 0 });
+  segments = [array(string)](tmp - ({ 0 }));
 
   // d) If the buffer string ends with "." as a complete path segment,
   //    that "." is removed.
