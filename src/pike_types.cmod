@@ -7897,8 +7897,11 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       free_type(ret);
       return 0;
     }
-    add_ref(a);
-    return a;
+    /* We know that a->car and b do not overlap, it is thus safe
+     * to use mixed|void in place of a to get proper values for
+     * any markers in b.
+     */
+    return low_match_types(any_type_string, b, flags);
 
   case T_ASSIGN:
     {
@@ -8056,8 +8059,11 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       free_type(ret);
       return 0;
     }
-    add_ref(a);
-    return a;
+    /* We know that a and b->car do not overlap, it is thus safe
+     * to use mixed|void in place of b to get proper values for
+     * any markers in a.
+     */
+    return low_match_types(a, any_type_string, flags);
 
   case T_ASSIGN:
     {
