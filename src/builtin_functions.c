@@ -3861,22 +3861,28 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int UNU
   t=first_arg[0]->type;
   if(!t || match_types(t, object_type_string))
   {
-    /* Skip any name-nodes. */
-    while(t && t->type == PIKE_T_NAME) {
-      t = t->cdr;
-    }
-
-    /* FIXME: Ought to handle or-nodes generically here. */
-    while (t && (t->type == T_OR)) {
-      /* Handle some common cases. */
-      if ((t->car == zero_type_string) || (t->car == void_type_string)) {
+    while (t) {
+      if (t->type == PIKE_T_NAME) {
+	/* Skip any name-nodes. */
 	t = t->cdr;
-      } else if ((t->cdr == zero_type_string) || (t->cdr == void_type_string)) {
-	t = t->car;
+      } else if (t->type == T_OR) {
+	/* FIXME: Ought to handle or-nodes generically here. */
+
+	/* Handle some common cases. */
+	if ((t->car == zero_type_string) ||
+	    (t->car == void_type_string)) {
+	  t = t->cdr;
+	} else if ((t->cdr == zero_type_string) ||
+		   (t->cdr == void_type_string)) {
+	  t = t->car;
+	} else {
+	  break;
+	}
       } else {
 	break;
       }
     }
+
     if(t && (t->type == T_OBJECT))
     {
       struct program *p = id_to_program(CDR_TO_INT(t));
