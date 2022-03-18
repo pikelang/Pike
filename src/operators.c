@@ -2701,7 +2701,7 @@ PMOD_EXPORT void o_and(void)
   case T_TYPE:
   {
     struct pike_type *t;
-    t = and_pike_types(Pike_sp[-2].u.type, Pike_sp[-1].u.type);
+    t = intersect_types(Pike_sp[-2].u.type, Pike_sp[-1].u.type, 0, 0, 0);
     pop_n_elems(2);
     push_type_value(t);
     return;
