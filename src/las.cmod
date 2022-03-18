@@ -713,10 +713,22 @@ static int is_automap_arg_list(node *n)
   {
     default: return 0;
     case F_ARG_LIST:
-      return is_automap_arg_list(CAR(n)) ||
-	is_automap_arg_list(CDR(n));
+      {
+	int car_depth = is_automap_arg_list(CAR(n));
+	int cdr_depth = is_automap_arg_list(CDR(n));
+	if (car_depth > cdr_depth) return car_depth;
+	return cdr_depth;
+      }
 
-    case F_AUTO_MAP_MARKER: return 1;
+    case F_AUTO_MAP_MARKER:
+      {
+	int depth = 0;
+	while (n && (n->token == F_AUTO_MAP_MARKER)) {
+	  depth++;
+	  n = CAR(n);
+	}
+	return depth;
+      }
   }
 }
 
@@ -4113,9 +4125,12 @@ void fix_type_field(node *n)
 	free_type(f);
 	if(n->token == F_AUTO_MAP)
 	{
+	  int depth;
 	  type_stack_mark();
 	  push_finished_type(n->type);
-	  push_unlimited_array_type(T_ARRAY);
+	  for (depth = is_automap_arg_list(CDR(n)); depth > 0; depth--) {
+	    push_unlimited_array_type(T_ARRAY);
+	  }
 	  free_type(n->type);
 	  n->type = pop_unfinished_type();
 	}
