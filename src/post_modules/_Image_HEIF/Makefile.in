@@ -1,0 +1,10 @@
+@make_variables@
+VPATH=@srcdir@
+OBJS=image_heif.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+@dynamic_module_makefile@
+
+image_heif.o : $(SRCDIR)/image_heif.c
+
+@dependencies@

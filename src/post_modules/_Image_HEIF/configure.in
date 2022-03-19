@@ -1,0 +1,21 @@
+#
+AC_INIT(image_heif.cmod)
+AC_MODULE_INIT()
+AC_CONFIG_HEADER(config.h)
+
+PIKE_FEATURE_NODEP(Image.HEIF)
+
+AC_CHECK_HEADERS(libheif/heif.h)
+if test $ac_cv_header_libheif_heif_h = yes ; then
+  have_libheif=false
+  AC_CHECK_LIB([heif], [heif_context_encode_image], [
+    LIBS="${LIBS-} -lheif"
+    have_libheif=true
+  ])
+  if $have_libheif; then
+    AC_DEFINE(HAVE_LIBHEIF,[],[Define when the -lheif library is available])
+    PIKE_FEATURE_OK(Image.HEIF)
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

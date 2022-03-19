@@ -1,0 +1,665 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "pike_macros.h"
+#include "object.h"
+#include "constants.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "threads.h"
+#include "array.h"
+#include "builtin_functions.h"
+#include "mapping.h"
+#include "pike_error.h"
+#include "operators.h"
+#include "module_support.h"
+#include "../../modules/Image/image.h"
+#include "config.h"
+
+#ifdef HAVE_LIBHEIF
+DECLARATIONS
+
+/* #define DEFAULT_CMOD_STORAGE static*/
+#define true 1
+#define false 0
+
+#ifdef HAVE_LIBHEIF_HEIF_H
+#include <libheif/heif.h>
+#endif /* HAVE_LIBHEIF_HEIF_H */
+
+typedef struct object object;
+typedef struct program program;
+
+static program *img_program;
+
+static program *image_program()
+{
+  if( !img_program )
+  {
+    push_text("Image.Image");
+    SAFE_APPLY_MASTER("resolv",1);
+    img_program = Pike_sp[-1].u.program;
+    Pike_sp--;
+  }
+  return img_program;
+}
+
+static object *allocate_image(int w, int h )
+{
+  push_int(w);
+  push_int(h);
+  return clone_object(image_program(),2);
+}
+
+static inline int image_width( object *img )
+{
+  char *x;
+  if( !img ) return 0;
+  x = get_storage( img, image_program() );
+  if( !x ) return 0;
+  return ((struct image *)x)->xsize;
+}
+
+static inline int image_height( object *img )
+{
+  char *x;
+  if( !img ) return 0;
+  x = get_storage( img, image_program() );
+  if( !x ) return 0;
+  return ((struct image *)x)->ysize;
+}
+
+static inline unsigned char *image_ptr( object *img )
+{
+  char *x;
+  if( !img ) return 0;
+  x = get_storage( img, image_program() );
+  if( !x ) return 0;
+  return (unsigned char *)(((struct image  *)x)->img);
+}
+
+static int parameter_int(struct mapping *map, const char *what, int def )
+{
+   struct svalue *v = simple_mapping_string_lookup(map,what);
+   if (v && TYPEOF(*v) == PIKE_T_INT) return v->u.integer;
+   return def;
+}
+
+static double parameter_float(struct mapping *map, const char *what,
+			      double def )
+{
+   struct svalue *v = simple_mapping_string_lookup(map,what);
+   if (!v) return def;
+   if( TYPEOF(*v) == PIKE_T_INT )
+       return (float)v->u.integer;
+   if( TYPEOF(*v) == PIKE_T_FLOAT )
+       return (float)v->u.float_number;
+   return def;
+}
+
+static object *parameter_obj(struct mapping *map, const char *what )
+{
+   struct svalue *v = simple_mapping_string_lookup(map,what);
+   if( v && TYPEOF(*v) == PIKE_T_OBJECT )
+       return v->u.object;
+   return NULL;
+}
+
+struct writer_data {
+  size_t size;
+  uint8_t* mem;
+};
+
+static struct heif_error heif_write_func(struct heif_context *context,
+  const void* data,size_t size,void* userdata) {
+   struct writer_data * wd;
+   wd = (struct writer_data *)userdata;
+
+  struct heif_error err;
+
+  err.code=heif_error_Ok;
+  err.subcode=heif_suberror_Unspecified;
+  err.message="ok";
+
+  uint8_t * d = malloc(size);
+   if(d == NULL) {
+     err.code = heif_error_Memory_allocation_error;
+     err.message="malloc failed";
+     return err;
+   }
+
+   wd->mem = d;
+   wd->size = size;
+   memcpy(d, data, size);
+
+   return err;
+}
+
+void throw_heif_error(const char * msg, struct heif_error err) {
+  Pike_error("%s: %s\n", msg, err.message);
+}
+
+static size_t Encode(const uint8_t* rgb, const uint8_t* a, int width, int height, 
+	int stride, struct mapping * options, uint8_t** output)
+{
+ int ok;
+ struct heif_image* image;
+ struct heif_error err;
+ struct heif_image * out_image;
+ enum heif_chroma desired_chroma;
+ int out_stride;
+ uint8_t * imgdata;
+ int npix;
+ struct writer_data wrt;
+ struct heif_writer writer;
+
+ struct heif_context* ctx = heif_context_alloc();
+ enum heif_compression_format compressor = heif_compression_HEVC;
+ npix = width * height;
+
+ writer.write = heif_write_func;
+ writer.writer_api_version = 1;
+
+ if(options) {
+    compressor = parameter_int( options, "compressor", heif_compression_HEVC);
+ }
+
+ // get the default encoder
+ struct heif_encoder* encoder;
+ err = heif_context_get_encoder_for_format(ctx, compressor, &encoder);
+ if(err.code != heif_error_Ok) {
+     heif_context_free(ctx);
+     throw_heif_error("Error getting encoder", err);
+ }
+
+ // set the encoder parameters
+ if(options) {
+   err = heif_encoder_set_lossless(encoder, !!parameter_int( options, "lossless", 0));
+   if(err.code != heif_error_Ok) {
+	  heif_encoder_release(encoder);
+      heif_context_free(ctx);
+      throw_heif_error("Error setting lossless flag", err);
+   }
+   err = heif_encoder_set_lossy_quality(encoder, parameter_int( options, "quality", 50));
+   if(err.code != heif_error_Ok) {
+	  heif_encoder_release(encoder);
+      heif_context_free(ctx);
+      throw_heif_error("Error setting quality", err);
+   }
+
+ }
+ else {
+   heif_encoder_set_lossy_quality(encoder, 50);
+   if(err.code != heif_error_Ok) {
+     heif_encoder_release(encoder);
+     heif_context_free(ctx);
+     throw_heif_error("Error setting quality", err);
+   }
+ }
+ 
+ if(stride == 4) desired_chroma = heif_chroma_interleaved_RGBA;
+ else desired_chroma = heif_chroma_interleaved_RGB;
+
+ // encode the image
+ err = heif_image_create(width, height,
+                         heif_colorspace_RGB,
+                         desired_chroma,
+                         &image);
+
+ if(err.code != heif_error_Ok) {
+    heif_encoder_release(encoder);
+    heif_context_free(ctx);
+    throw_heif_error("Error creating image storage", err);
+ }
+
+ err = heif_image_add_plane(image,
+                          heif_channel_interleaved,
+                          width, height, 8);
+
+ if(err.code != heif_error_Ok) {
+    heif_image_release(image);
+    heif_encoder_release(encoder);
+    heif_context_free(ctx);
+    throw_heif_error("Error allocating image storage", err);
+ }
+
+ imgdata = heif_image_get_plane(image, heif_channel_interleaved, &out_stride);
+
+  if(stride == 3)
+    memcpy(imgdata, rgb, npix*3);
+  else {
+    while( npix-- )
+    {
+      *(imgdata++) = *(rgb++); // R
+      *(imgdata++) = *(rgb++); // G
+      *(imgdata++) = *(rgb++); // B
+      *(imgdata++) = *(a); a+=3; // A 
+	}   
+  }
+  
+ heif_context_encode_image(ctx, image, encoder, NULL, NULL);
+
+ err = heif_context_write(ctx, &writer, &wrt);
+
+ heif_image_release(image);
+ heif_encoder_release(encoder);
+ heif_context_free(ctx);
+ 
+ if(err.code != heif_error_Ok) {
+   if(wrt.mem != NULL) free(wrt.mem);
+   throw_heif_error("Error encoding image", err);
+ } 
+
+ *output = wrt.mem;
+ return wrt.size;
+}
+
+
+/*! @module Image
+ *!
+ *! @module HEIF
+ *!
+ *! HEIF is a truecolor image format with alpha channel support
+ *! developed by Moving Picture Experts Group (MPEG).
+ *!
+ *! This module supports decoding and encoding of lossy and lossless
+ *! HEIF images with and without alpha channels using the libheif library.
+ *!
+ *! HEIF images are generally smaller than the same quality JPEG or
+ *! PNG image, but takes longer to encode and decode, and support in
+ *! various applications is less common.
+ *!
+ */
+
+/*! @decl mapping get_image_info( string data )
+ *!
+ *! Gather information about a HEIF/HEIC encoded image.
+ *!
+ *! @returns
+ *! @mapping
+ *! @member int "primary_image_id"
+ *! @member array(int) "image_ids"
+ *! @member string "mime_type"
+ *! @endmapping
+ */
+PIKEFUN mapping(string:int) get_image_info( string data )
+{
+  struct heif_context* ctx; 
+  struct heif_error err;
+  const char * mimetype;
+  heif_item_id primary_image_id;
+  int image_count;
+  heif_item_id* image_ids;
+    
+  ctx = heif_context_alloc();
+
+  err = heif_context_read_from_memory_without_copy(ctx, data->str, data->len, NULL);
+  if(err.code != heif_error_Ok) {
+    heif_context_free(ctx);
+    throw_heif_error("Error decoding container", err);
+  }
+  
+  err = heif_context_get_primary_image_ID(ctx, &primary_image_id);
+  if(err.code != heif_error_Ok) {
+    heif_context_free(ctx);
+    throw_heif_error("Error getting primary image ID", err);
+  }
+
+  image_count = heif_context_get_number_of_top_level_images(ctx);
+
+  image_ids = malloc(sizeof(heif_item_id) * image_count);
+  
+  if(image_ids == NULL) {
+    heif_context_free(ctx);
+	Pike_error("Unable to allocate image id list.\n");
+  }
+  
+  if(image_count != 
+  	heif_context_get_list_of_top_level_image_IDs(ctx, image_ids, image_count)) {
+	heif_context_free(ctx);
+	Pike_error("Got back incorrect number of image IDs.\n");
+  }
+
+  heif_context_free(ctx);
+
+  mimetype = heif_get_file_mime_type(data->str, data->len);
+
+  pop_n_elems(args);
+
+  push_text( "mime_type" );  push_text( mimetype );
+  push_text( "primary_image_id" );  push_int( primary_image_id );
+  push_text( "image_ids");
+  
+  for(int c = 0; c < image_count; c++) {
+    push_int(image_ids[c]);
+  }
+  
+  f_aggregate(image_count);
+
+  f_aggregate_mapping( 6 );
+}
+
+/*! @decl mapping _decode( string data )
+ *!
+ *! Decode a HEIF image.
+ *!
+ *! @returns
+ *! @mapping
+ *! @member Image.Image "alpha"
+ *! @member Image.Image "image"
+ *! @member string "format"
+ *! @member int(1..16384) "width"
+ *! @member int(1..16384) "height"
+ *! @endmapping
+ */
+ 
+ /*! @decl mapping _decode( string data, mapping(string:int) options )
+  *!
+  *! Decode a HEIF image.
+  *!
+  *! @param options
+  *! @mapping
+  *! @member int "image_id"
+  *!   Image ID to select. See @get_image_info()
+  *! @member int "ignore_transformations"
+  *!   Ignore any transformations specified in the image data.
+  *! @endmapping  
+  *! @returns
+  *! @mapping
+  *! @member Image.Image "alpha"
+  *! @member Image.Image "image"
+  *! @member string "format"
+  *! @member int(1..16384) "width"
+  *! @member int(1..16384) "height"
+  *! @endmapping
+  */
+
+/*! @decl Image.Image decode( string data )
+ *!
+ *! Decode a HEIF image, like @[_decode].
+ *! @returns
+ *! The decoded image or an error
+ */
+
+PIKEFUN mapping(string:object(Image.Image)|string) _decode( string data,
+	mapping(string:int)|void options )
+{
+  int width, height, npix, alpha;
+  uint8_t *ip, *rp, *ap;
+  object *i = NULL, *a = NULL;
+  const char * mimetype;
+  struct heif_context* ctx; 
+  struct heif_error err;
+  struct heif_image_handle* handle;
+  struct heif_image* img;
+  int stride;
+  const uint8_t* res;
+  enum heif_chroma desired_chroma;
+  struct heif_decoding_options * opts;
+  
+  int ignore_transformations = 0;
+  heif_item_id image_id;
+  int image_id_set = -1;
+  
+  if(options) {
+    image_id_set = parameter_int(options, "image_id", -1);
+	if(image_id_set != -1) {
+	  image_id = ((heif_item_id)image_id_set);
+	}
+    ignore_transformations = parameter_int(options, "ignore_transformations", 0);
+  }
+
+  ctx = heif_context_alloc();
+
+  err = heif_context_read_from_memory_without_copy(ctx, data->str, data->len, NULL);
+  if(err.code != heif_error_Ok) {
+    heif_context_free(ctx);
+    throw_heif_error("Error decoding image", err);
+  }
+  
+  if(image_id_set != -1) {
+    err = heif_context_get_image_handle(ctx, image_id, &handle);
+
+    if(err.code != heif_error_Ok) {
+      heif_context_free(ctx);
+      throw_heif_error("Error getting image", err);
+    }
+  }
+  else {
+    err = heif_context_get_primary_image_handle(ctx, &handle);
+
+    if(err.code != heif_error_Ok) {
+      heif_context_free(ctx);
+      throw_heif_error("Error getting image", err);
+    }
+  }
+  
+  alpha = heif_image_handle_has_alpha_channel(handle);
+
+  if(alpha)
+    desired_chroma = heif_chroma_interleaved_RGBA;
+  else
+    desired_chroma = heif_chroma_interleaved_RGB;
+	
+  opts = heif_decoding_options_alloc();
+  if(opts == NULL) {
+    heif_image_handle_release(handle);
+    heif_context_free(ctx);
+	Pike_error("Failed to allocate decode options.\n");
+  }
+  
+  /* Image.Image expects 8 bit channels. */
+  opts->convert_hdr_to_8bit = 1; 
+  opts->ignore_transformations = ignore_transformations;
+  
+  err = heif_decode_image(handle, &img, heif_colorspace_RGB, desired_chroma, opts); 
+
+  heif_decoding_options_free(opts);
+
+  if(err.code != heif_error_Ok) {
+    heif_image_handle_release(handle);
+    heif_context_free(ctx);
+    throw_heif_error("Error decoding image", err);
+  }
+
+  res = heif_image_get_plane_readonly(img, heif_channel_interleaved, &stride);
+
+  width = heif_image_handle_get_width(handle);
+  height = heif_image_handle_get_height(handle);
+
+
+  if( !res ) {
+    heif_image_release(img);
+    heif_image_handle_release(handle);
+    heif_context_free(ctx);
+    throw_heif_error("Error getting image data", err);
+  }
+
+  ip = ap = NULL;
+  rp = res;
+  npix = width * height;
+
+  if( alpha )
+  {
+    a = allocate_image( width, height );
+    ap = image_ptr( a );
+  }
+
+  i = allocate_image( width, height );
+  ip = image_ptr( i );
+
+  if(!alpha) 
+    memcpy(ip, rp, npix*3);
+  else {
+    while( npix-- )
+    {
+      *(ip++) = *(rp++); // R
+      *(ip++) = *(rp++); // G
+      *(ip++) = *(rp++); // B
+      *(ap) = *(rp++); ap+=3; // A
+    } 
+  }
+  
+  heif_image_release(img);
+  heif_image_handle_release(handle);
+  heif_context_free(ctx);
+
+  mimetype = heif_get_file_mime_type(data->str, data->len);
+
+  pop_n_elems(args);
+
+  push_text( "image" );  push_object( i );
+  push_text( "img" );  ref_push_object( i );
+  push_text( "alpha" );
+  if( a )
+    push_object( a );
+  else
+    push_undefined( );
+  // TODO read the format from the image.
+  push_text("format"); push_text(mimetype);
+  push_text( "xsize" ); push_int( width );
+  push_text( "ysize" ); push_int( height );
+  f_aggregate_mapping( 12 );
+}
+
+PIKEFUN object(Image.Image) decode( string data )
+{
+  struct mapping *m;
+  struct svalue *p;
+
+  apply(Pike_fp->current_object, "_decode", args);
+
+  m = Pike_sp[-1].u.mapping;
+
+  if( TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING )
+      Pike_error("Decoding failed\n");
+
+  p = simple_mapping_string_lookup(m,"image");
+
+  if( !p || TYPEOF(*p) != PIKE_T_OBJECT )
+      Pike_error("Decoding failed\n");
+
+  ref_push_object( p->u.object );
+  stack_unlink(1);
+}
+
+/*! @decl string encode( Image.Image image, mapping(string:int|float|Image.Image)|void options )
+ *!
+ *! Encode an image using the HEIF format.
+ *!
+ *! Commonly used options:
+ *!
+ *! @mapping
+ *! @member Image.Image "alpha"
+ *!  If present, the alpha channel for the image will be the green
+ *!  component of this image. Has to be the same size as the @[image]
+ *! @member int "quality"
+ *!  Quality level (0-100) to use for lossy compression. Note that the specific
+ *!  behavior varies by compression mechanism.
+ *! @member bool "lossless"
+ *!  If set, do lossless encoding. Note that the specific behavior varies by
+ *!  compression mechanism.
+ *! @member int "compressor"
+ *!  If set, select the compression format from @[compression_HEVC],
+ *!  @[compression_AVC], @[compression_JPEG] or @[compression_AV1]. 
+ *!  Note that availability of a compressor may vary. Defaults to @[compression_HEVC].
+ *! @endmapping
+ *!
+ *! @returns
+ *! Always returns the encoded image as a string or throws an error.
+ *!
+ */
+PIKEFUN string(0..255) encode( object(Image.Image) i,
+                               mapping(string:int|float|object(Image.Image))|void options )
+{
+    unsigned char *result = NULL;
+    size_t size;
+    object *a;
+    int width  = image_width( i );
+    int height  = image_height( i );
+    unsigned char *iptr = image_ptr( i );
+    unsigned char *aptr = NULL;
+    if( !iptr || !width || !height )
+    {
+        Pike_error("Image argument is not a valid image.");
+    }
+    if( options )
+    {
+        a = parameter_obj( options, "alpha" );
+		
+	}
+
+    if( a )
+    {
+        aptr = image_ptr( a );
+        unsigned char *dst;
+        if( !aptr )
+            Pike_error("Alpha channels is not an image object\n");
+        if( image_width( a ) != width || image_height( a ) != height )
+            Pike_error("The alpha channel does not have the same size as the image\n");
+    }
+
+    size = Encode( iptr, aptr, width, height, (aptr?4:3), options,
+                   &result );
+
+    if( size == 0  )
+        Pike_error( (const char *)result );
+
+    push_string( make_shared_binary_string( (const char *)result, size ) );
+    free( result );
+}
+
+EXIT {
+    if (img_program) {
+        free_program(img_program);
+        img_program = NULL;
+    }
+}
+
+/*
+*! @decl constant compression_HEVC
+*! @decl constant compression_AVC
+*! @decl constant compression_JPEG
+*! @decl constant compression_AV1
+*!  Constants used to select the compression mechanism employed by @[encode].
+*!
+*! @decl constant HINT_GRAPH
+*!  Constants used to give hints to the lossless encoder when using @[encode].
+*!  (selected automatically when using a hint.)
+*/
+
+EXTRA {
+#define CONST(X)  add_integer_constant( #X, heif_##X, 0 );
+  CONST(compression_undefined);
+  CONST(compression_HEVC);
+  CONST(compression_AVC);
+  CONST(compression_JPEG);
+  CONST(compression_AV1);
+
+  CONST(chroma_undefined);
+  CONST(chroma_monochrome);
+  CONST(chroma_420);
+  CONST(chroma_422);
+  CONST(chroma_444);
+  CONST(chroma_interleaved_RGB);
+  CONST(chroma_interleaved_RRGGBB_BE);
+  CONST(chroma_interleaved_RRGGBBAA_BE);
+  CONST(chroma_interleaved_RRGGBB_LE);
+  CONST(chroma_interleaved_RRGGBBAA_LE);
+
+
+  CONST(colorspace_undefined); 
+  CONST(colorspace_YCbCr); 
+  CONST(colorspace_RGB); 
+  CONST(colorspace_monochrome); 
+#undef CONST
+}
+#endif /* HAVE_LIBHEIF */
+
+/*! @endmodule
+ *!
+ *! @endmodule
+ */

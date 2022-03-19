@@ -1,0 +1,7 @@
+START_MARKER
+
+cond_resolv( Image.HEIF.decode, [[
+   test_true( stringp(Image.HEIF.encode(Image.Image(100,100)->test())) )
+   test_true( Image.HEIF.decode(Image.HEIF.encode(Image.Image(100,100)->test()))->xsize() == 100 )
+]])
+END_MARKER
