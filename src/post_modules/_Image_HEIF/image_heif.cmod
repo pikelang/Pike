@@ -625,10 +625,6 @@ EXIT {
 *! @decl constant compression_JPEG
 *! @decl constant compression_AV1
 *!  Constants used to select the compression mechanism employed by @[encode].
-*!
-*! @decl constant HINT_GRAPH
-*!  Constants used to give hints to the lossless encoder when using @[encode].
-*!  (selected automatically when using a hint.)
 */
 
 EXTRA {
