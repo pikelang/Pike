@@ -2419,8 +2419,6 @@ PMOD_EXPORT void o_subtract(void)
       return;
     }
 
-  /* FIXME: Support types? */
-
   default:
     {
       int args = 2;
@@ -4745,6 +4743,10 @@ PMOD_EXPORT void o_negate(void)
       goto do_lfun_negate;
     }
     SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer, -Pike_sp[-1].u.integer);
+    return;
+
+  case T_TYPE:
+    o_compl();
     return;
 
   default:
