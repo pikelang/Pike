@@ -3081,11 +3081,27 @@ int deprecated_typep(struct pike_type *t)
   return 0;
 }
 
+/**
+ * Get the range for an integer type.
+ *
+ * @param t
+ *   Integer type to check.
+ *
+ * @param range
+ *   Array of two elements (min, max) before calling the
+ *   function, the array should be initialized to (max, min).
+ *
+ * Returns 1 if t contained an integer type. This also implies
+ * that range has been updated accordingly.
+ *
+ * Returns 0 if t did not contain any integer type. The range
+ * array will be left unmodified in this case.
+ */
 int get_int_type_range(struct pike_type *t, INT_TYPE *range)
 {
   int ret = 0;
  loop:
-  switch(t->type) {
+  switch(t?t->type:PIKE_T_UNKNOWN) {
   case T_INT:
     {
       INT_TYPE min = CAR_TO_INT(t);
@@ -3112,7 +3128,8 @@ int get_int_type_range(struct pike_type *t, INT_TYPE *range)
     t = t->cdr;
     goto loop;
   case T_MIXED:
-    return 1;
+    t = int_type_string;
+    goto loop;
   default:
     break;
   }
