@@ -329,7 +329,7 @@ class smtp_style
   //!
   void send(int(100 .. 999) code, array(string)|string|void lines)
   {
-    lines = lines || errorcodes[code] || "Error";
+    lines = lines || ([mapping(int:string)](mixed)errorcodes)[code] || "Error";
 
     if (stringp(lines)) {
       lines /= "\n";

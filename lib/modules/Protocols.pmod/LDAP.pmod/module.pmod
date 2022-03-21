@@ -1246,7 +1246,8 @@ protected void create()
 
   void complete (mapping(string:mixed) descr) {
     mapping(string:mixed) sup_descr =
-      _standard_attr_type_descrs[lower_case (descr->SUP)];
+      ([mapping(mixed:mapping(string:mixed))](mixed)_standard_attr_type_descrs)
+      [lower_case (descr->SUP)];
     if (!sup_descr)
       error ("Got SUP reference to unknown attribute %O: %O\n",
 	     descr->SUP, descr);
