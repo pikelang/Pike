@@ -6031,8 +6031,9 @@ multiset & mapping -> mapping
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
 #define LOG_TYPE								\
-  tOr7(tOr(tFuncV(tMix tObj,tMix,tMix),						\
-	   tFuncV(tObj,tMix,tMix)),						\
+  tOr7(tIfnot(tFuncV(tNone, tNot(tObj), tMix),					\
+	      tOr(tFuncV(tMix tObj,tMix,tMix),					\
+		  tFuncV(tObj,tMix,tMix))),					\
        tFuncV(tInt,tInt,tInt),							\
        tFuncV(tSetvar(1,tMapping),tSetvar(2,tMapping),tOr(tVar(1),tVar(2))),	\
        tFuncV(tSetvar(3,tMultiset),tSetvar(4,tMultiset),tOr(tVar(3),tVar(4))),	\
