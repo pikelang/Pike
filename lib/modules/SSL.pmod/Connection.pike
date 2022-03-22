@@ -1030,7 +1030,7 @@ protected void got_dtls_handshake_fragment(string(8bit) data)
     sort(frags->offset, frags);
 
     object(HandshakeFragment)|zero prev;
-    foreach([array]frags; int i; HandshakeFragment frag) {
+    foreach([array(HandshakeFragment)]frags; int i; HandshakeFragment frag) {
       if (!prev) {
 	prev = frag;
 	continue;
@@ -1170,7 +1170,7 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
         int(-1..1) err = 0;
         alert_buffer->add( packet->fragment );
         while(!err && sizeof(alert_buffer)>1)
-          err = handle_alert(@((array(int))alert_buffer->read(2)));
+          err = handle_alert(@((array(2:int))alert_buffer->read(2)));
 
         if (err)
         {
