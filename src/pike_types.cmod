@@ -1032,11 +1032,31 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
       push_type(binop);
       break;
     }
+
   default:
-    *Pike_compiler->type_stackp = apply_type_operator(op, t, arg);
-    free_type(t);
+    /* Check the second argument. */
+    switch(((op & 0x8000) && arg)?(arg->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+    case T_ASSIGN:
+    case PIKE_T_OPERATOR:
+    case PIKE_T_SCOPE:
+      /* Deferred evaluation. */
+      add_ref(arg);
+      *Pike_compiler->type_stackp = mk_type(op,
+					    *Pike_compiler->type_stackp,
+					    arg,
+					    PT_COPY_BOTH);
+      break;
+
+    default:
+      *Pike_compiler->type_stackp = apply_type_operator(op, t, arg);
+      free_type(t);
+      break;
+    }
     break;
   }
+
   TYPE_STACK_DEBUG("push_type_operator");
 }
 
