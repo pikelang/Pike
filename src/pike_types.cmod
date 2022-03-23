@@ -13236,6 +13236,101 @@ struct pike_type *zzap_function_return(struct pike_type *a,
   return NULL;
 }
 
+struct pike_type *low_type_int_op(enum PIKE_TYPE op,
+				  struct pike_type *arg1,
+				  struct pike_type *arg2)
+{
+  INT64 min1 = CAR_TO_INT(arg1), min2 = CAR_TO_INT(arg2);
+  INT64 max1 = CDR_TO_INT(arg1), max2 = CDR_TO_INT(arg2);
+  INT64 minres, maxres;
+
+  switch(op) {
+  case PIKE_T_INT_OP_SUB:
+    if ((min1 == MIN_INT32) || (max2 == MAX_INT32)) {
+      minres = MIN_INT32;
+    } else {
+      minres = min1 - max2;
+    }
+    if ((max1 == MAX_INT32) || (min2 == MIN_INT32)) {
+      maxres = MAX_INT32;
+    } else {
+      maxres = max1 - min2;
+    }
+    break;
+  default:
+    Pike_fatal("low_type_int_op(): Unknown operator: 0x%04x\n", op);
+    break;
+  }
+
+  if (minres < MIN_INT32) minres = MIN_INT32;
+  else if (minres > MAX_INT32) minres = MAX_INT32;
+
+  if (maxres < MIN_INT32) maxres = MIN_INT32;
+  else if (maxres > MAX_INT32) maxres = MAX_INT32;
+
+  type_stack_mark();
+  push_int_type(minres, maxres);
+  return pop_unfinished_type();
+}
+
+struct pike_type *type_int_op(enum PIKE_TYPE op,
+			      struct pike_type *arg1,
+			      struct pike_type *arg2)
+{
+  while (1) {
+    if (!arg1) {
+      return NULL;
+    }
+    switch(arg1->type) {
+    case PIKE_T_ZERO:
+    case PIKE_T_VOID:
+      arg1 = int0_type_string;
+      break;
+    case PIKE_T_ATTRIBUTE:
+    case PIKE_T_NAME:
+      arg1 = arg1->cdr;
+      continue;
+    }
+    break;
+  }
+  while (1) {
+    if (!arg2) {
+      return NULL;
+    }
+    switch(arg2->type) {
+    case PIKE_T_ZERO:
+    case PIKE_T_VOID:
+      arg2 = int0_type_string;
+      break;
+    case PIKE_T_ATTRIBUTE:
+    case PIKE_T_NAME:
+      arg2 = arg2->cdr;
+      continue;
+    }
+    break;
+  }
+  if (arg1->type == PIKE_T_OBJECT) {
+    /* FIXME: Check type for LFUN corresponding to op. */
+    add_ref(mixed_type_string);
+    return mixed_type_string;
+  }
+  if (arg2->type == PIKE_T_OBJECT) {
+    /* FIXME: Check type for LFUN corresponding to op. */
+    add_ref(mixed_type_string);
+    return mixed_type_string;
+  }
+  if (arg1->type != arg2->type) return NULL;
+  switch(arg1->type) {
+  case PIKE_T_INT:
+    return low_type_int_op(op, arg1, arg2);
+  default:
+    return type_binop(PT_BINOP_OR, arg1, arg2, 0, 0, 0);
+  }
+
+  /* FIXME */
+  return NULL;
+}
+
 struct pike_type *apply_type_operator(enum PIKE_TYPE op,
 				      struct pike_type *arg1,
 				      struct pike_type *arg2)
@@ -13247,6 +13342,9 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
     break;
   case PIKE_T_FIND_LFUN:
     res = find_lfun_type(arg1, (ptrdiff_t)(void*)arg2);
+    break;
+  case PIKE_T_INT_OP_SUB:
+    res = type_int_op(op, arg1, arg2);
     break;
   case PIKE_T_SET_CAR:
     if (!arg1) return NULL;

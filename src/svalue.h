@@ -153,6 +153,8 @@ enum PIKE_TYPE {
      * Note that this overlaps with the PIKE_T_NO_REF_FLAG,
      * but that should be safe, as operators aren't valid
      * run-time types.
+     *
+     * Bin 14 (0x4000) indicates that it is an int op.
      */
     PIKE_T_OPERATOR = 0x0080,
     PIKE_T_FIND_LFUN = 0x0180,	/* Look up an lfun in an object type. */
@@ -160,6 +162,8 @@ enum PIKE_TYPE {
 
     PIKE_T_SET_CAR = 0x8280,	/* Set the CAR of the CAR type to CDR. */
     PIKE_T_SET_CDR = 0x8380,	/* Set the CDR of the CAR type to CDR. */
+
+    PIKE_T_INT_OP_SUB = 0xc080,	/* INT OP `-. */
 
     PIKE_T_TRANSITIVE = 0x00c0,	/* Repeatedly apply a function type. */
 
@@ -355,6 +359,7 @@ struct svalue
 #define tInt1Plus "\010\000\000\000\001\177\377\377\377"
 #define tInt2Plus "\010\000\000\000\002\177\377\377\377"
 #define tIntMinus "\010\200\000\000\000\377\377\377\377"
+#define tInt_1 "\010\377\377\377\377\377\377\377\377"
 #define tInt_10 "\010\377\377\377\377\000\000\000\000"
 #define tInt_11 "\010\377\377\377\377\000\000\000\001"
 #define tIntCharRange(LOW,HIGH) "\010\000\000\000" LOW "\000\000\000" HIGH
@@ -418,6 +423,11 @@ struct svalue
 #define tFindLFun(X, LFUN)	"\200\001" X LFUN "\0"
 #define tSetCar(X, Y)		"\200\202" X Y
 #define tSetCdr(X, Y)		"\200\203" X Y
+
+#define tSubInt(X, Y)		"\200\300" X Y
+#define tNegateInt(X)		tSubInt(tInt0, X)
+#define tAddInt(X, Y)		tSubInt(X, tNegateInt(Y))
+#define tInvertInt(X)		tSubInt(tInt_1, X)
 
 #define tTransitive(X, Y)	"\300" X Y
 
