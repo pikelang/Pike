@@ -962,14 +962,6 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
     Pike_fatal("Invalid operator for push_operator: 0x%04x\n", op);
   }
 #endif
-  if (op & 0x8000) {
-    if (!arg) {
-      Pike_compiler->type_stackp--;
-      arg = *Pike_compiler->type_stackp;
-      free_arg = 1;
-      *Pike_compiler->type_stackp = t;
-    }
-  }
 
   /* Attempt to propagate the operator towards the leaf nodes. */
   switch(t?(t->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
