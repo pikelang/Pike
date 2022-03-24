@@ -1548,7 +1548,16 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     goto done;
   } else if ((type->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
     push_finished_type_with_markers(type->car, markers, marker_set);
-    push_type_operator(type->type, type->cdr);
+    if (type->type & 0x8000) {
+      struct pike_type *t;
+      type_stack_mark();
+      push_finished_type_with_markers(type->cdr, markers, marker_set);
+      t = pop_unfinished_type();
+      push_type_operator(type->type, t);
+      free_type(t);
+    } else {
+      push_type_operator(type->type, type->cdr);
+    }
     goto done;
   } else if (type->type == PIKE_T_TRANSITIVE) {
     push_finished_type(type->cdr);
