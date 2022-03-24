@@ -6148,9 +6148,8 @@ multiset & mapping -> mapping
 
   /* function(object:mixed)|function(int:int)|function(float:float)|function(string:string) */
   ADD_EFUN2("`~",f_compl,
-	    tOr7(tFunc(tObj,tMix),
-		 tFunc(tIntPos,tIntMinus),
-		 tFunc(tIntMinus,tIntPos),
+	    tOr6(tFunc(tObj,tMix),
+		 tFunc(tSetvar(1, tInt), tInvertInt(tVar(1))),
 		 tFunc(tFlt,tFlt),
 		 tFunc(tStr,tStr),
 		 tFunc(tType(tSetvar(0, tMix)), tType(tNot(tVar(0)))),
