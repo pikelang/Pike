@@ -695,7 +695,7 @@ mapping(string:string|Image.Image) _decode( string|mapping|GimpImage what, mappi
     data = what;
   else
     data = __decode( what );
-  what = 0;
+  what = "";
 
   int shrink = (opts->shrink_fact||1);
   Image.Layer res = Image.lay(decode_layers( data, opts, 1 ),

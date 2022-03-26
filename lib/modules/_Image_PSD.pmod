@@ -595,7 +595,7 @@ mapping _decode( string|mapping what, mapping|void opts )
     data = what;
   else
     data = __decode( what );
-  what=0;
+  what="";
 
   Image.Layer res = Image.lay(decode_layers( data, opts ),
                               0,0,data->width,data->height );
@@ -624,7 +624,7 @@ Image.Image decode( string|mapping what, mapping|void opts )
     data = what;
   else
     data = __decode( what );
-  what=0;
+  what="";
 
   Image.Layer res = Image.lay(decode_layers( data, opts ),
                               0,0,data->width,data->height );
