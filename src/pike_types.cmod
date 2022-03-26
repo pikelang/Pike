@@ -11725,7 +11725,6 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
    */
 
  loop:
-  clear_markers();
   /* First split the argument type into basic types. */
   switch(arg_type?arg_type->type:PIKE_T_UNKNOWN) {
   case T_ASSIGN:
@@ -12656,6 +12655,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 
   debug_malloc_touch(fun_type);
 
+  clear_markers();
   while (args && fun_type) {
     if ((args->token == F_ARG_LIST) || (args->token == F_LVALUE_LIST)) {
       if (CDR(args)) {
