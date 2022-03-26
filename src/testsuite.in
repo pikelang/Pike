@@ -901,8 +901,8 @@ test_any([[function(:string)|function(mixed, mixed ...:int) f;
 	 "int")
 
 test_any([[mapping(object:string)|mapping(string:int) f;
-	  return sprintf("%O", typeof(f[class{}()]) & ~typeof(0)); ]],
-         "string")
+          return sprintf("%O", typeof(f[class{}()])); ]],
+         "zero | string")
 
 test_any([[mapping(object:string)|mapping(string:int) f;
 	  return sprintf("%O", typeof(f[""])); ]],
@@ -914,18 +914,18 @@ test_any([[mapping(object:string)|mapping(string:int) f;
 
 test_any([[class Foo { protected string `[](mixed y) {return "";} };
 	  object(Foo) foo;
-	  return sprintf("%O", typeof(foo[0]) & ~typeof(0)); ]],
-	 "string")
+          return sprintf("%O", typeof(foo[0])); ]],
+         "zero | string")
 
 test_any([[class Foo { protected array(int) _indices() {return ({0});} };
 	  object(Foo) foo;
-	  return sprintf("%O", typeof(indices(foo)) & ~typeof(0)); ]],
-	 "array(int)")
+          return sprintf("%O", typeof(indices(foo))); ]],
+         "zero | array(int)")
 
 test_any([[class Foo { protected array(string) _values() {return ({""});} };
 	  object(Foo) foo;
-	  return sprintf("%O", typeof(values(foo)) & ~typeof(0)); ]],
-	 "array(string)")
+          return sprintf("%O", typeof(values(foo))); ]],
+         "zero | array(string)")
 
 test_any([[mapping(string:int) foo;
 	  array(string) bar;
