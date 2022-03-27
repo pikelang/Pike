@@ -11314,7 +11314,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     push_finished_type(res);
     push_type_attribute((struct pike_string *)fun_type->car);
     free_type(res);
-    return pop_unfinished_type();
+    res = pop_unfinished_type();
+    break;
 
   case T_OR:
     res = lower_new_check_call(fun_type->car, arg_type, flags, sval CHECK_CALL_ARGS);
@@ -11477,7 +11478,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
      *     but this leads to a combinatorial explosion.
      */
     tmp = expand_transitive(fun_type, a_markers, 0);
-    tmp2 = lower_new_check_call(tmp, arg_type, flags, sval CHECK_CALL_ARGS);
+    res = lower_new_check_call(tmp, arg_type, flags, sval CHECK_CALL_ARGS);
     free_type(tmp);
 #else
     /* There are two cases here; arg_type can belong to either
@@ -11519,9 +11520,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     push_finished_type(tmp);
     push_type(PIKE_T_TRANSITIVE);
     free_type(tmp);
-    tmp2 = pop_unfinished_type();
+    res = pop_unfinished_type();
 #endif
-    return tmp2;
+    break;
 
   case PIKE_T_FUNCTION:
   case T_MANY:
