@@ -1214,7 +1214,7 @@ protected void create()
   // syntax_encode_fns
 
   foreach (indices (syntax_decode_fns), string syntax) {
-    function(string:string) encoder = ([
+    zero|function(string:string) encoder = ([
       utf8_to_string: string_to_utf8,
     ])[syntax_decode_fns[syntax]];
     if (!encoder)
