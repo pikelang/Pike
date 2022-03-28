@@ -4539,6 +4539,7 @@ static void push_binop(enum pt_binop op)
   }
 }
 
+#if 0 /* unused */
 static void push_reverse_binop(enum pt_binop op)
 {
   /* Swap bits 1 & 2 in op to reverse the meanings of the arguments. */
@@ -4546,6 +4547,7 @@ static void push_reverse_binop(enum pt_binop op)
 	     ((op & PT_BINOP_MINUS) ? PT_BINOP_INVERSE_MINUS : 0) |
 	     ((op & PT_BINOP_INVERSE_MINUS) ? PT_BINOP_MINUS : 0));
 }
+#endif
 
 /**
  * Low-level set operation (AND, MINUS, OR, etc) on two types.
