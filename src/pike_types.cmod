@@ -12865,7 +12865,7 @@ struct pike_type *type_int_op(enum PIKE_TYPE op,
 			      struct pike_type *arg2)
 {
   while (1) {
-    if (!arg1) {
+    if (!arg1 || !arg2) {
       return NULL;
     }
     switch(arg1->type) {
@@ -12873,21 +12873,21 @@ struct pike_type *type_int_op(enum PIKE_TYPE op,
     case PIKE_T_VOID:
       arg1 = int0_type_string;
       break;
+    case T_MIXED:
+      arg1 = int_type_string;
+      break;
     case PIKE_T_ATTRIBUTE:
     case PIKE_T_NAME:
       arg1 = arg1->cdr;
       continue;
     }
-    break;
-  }
-  while (1) {
-    if (!arg2) {
-      return NULL;
-    }
     switch(arg2->type) {
     case PIKE_T_ZERO:
     case PIKE_T_VOID:
       arg2 = int0_type_string;
+      break;
+    case T_MIXED:
+      arg2 = int_type_string;
       break;
     case PIKE_T_ATTRIBUTE:
     case PIKE_T_NAME:
