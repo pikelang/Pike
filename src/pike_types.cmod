@@ -8822,14 +8822,18 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case PIKE_T_OPERATOR:
     {
-      struct pike_type *t = b->car;
-      if ((t->type >= '0') && (t->type <= '9')) {
-	t = ((flags & LE_A_B_SWAPPED)?a_markers:b_markers)[t->type - '0'];
-	/* if (!t) t = zero_type_string; */
+      struct pike_type *t1 = b->car;
+      struct pike_type *t2 = b->cdr;
+      if (t1 && (t1->type >= '0') && (t1->type <= '9')) {
+	t1 = ((flags & LE_A_B_SWAPPED)?a_markers:b_markers)[t1->type - '0'];
       }
-      t = apply_type_operator(b->type, t, b->cdr);
-      ret = low_pike_types_le(a, t, array_cnt, flags);
-      free_type(t);
+      if ((b->type & 0x8000) && t2 && (t2->type >= '0') && (t2->type <= '9')) {
+	t2 = ((flags & LE_A_B_SWAPPED)?a_markers:b_markers)[t2->type - '0'];
+      }
+      t1 = apply_type_operator(b->type, t1, t2);
+      if (!t1) return 0;
+      ret = low_pike_types_le(a, t1, array_cnt, flags);
+      free_type(t1);
       return ret;
     }
 
@@ -9058,14 +9062,18 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   case PIKE_T_OPERATOR:
     {
-      struct pike_type *t = a->car;
-      if ((t->type >= '0') && (t->type <= '9')) {
-	t = ((flags & LE_A_B_SWAPPED)?b_markers:a_markers)[t->type - '0'];
-	/* if (!t) t = zero_type_string; */
+      struct pike_type *t1 = a->car;
+      struct pike_type *t2 = a->cdr;
+      if (t1 && (t1->type >= '0') && (t1->type <= '9')) {
+	t1 = ((flags & LE_A_B_SWAPPED)?b_markers:a_markers)[t2->type - '0'];
       }
-      t = apply_type_operator(a->type, t, a->cdr);
-      ret = low_pike_types_le(t, b, array_cnt, flags);
-      free_type(t);
+      if ((b->type & 0x8000) && t2 && (t2->type >= '0') && (t2->type <= '9')) {
+	t2 = ((flags & LE_A_B_SWAPPED)?b_markers:a_markers)[t2->type - '0'];
+      }
+      t1 = apply_type_operator(a->type, t1, t2);
+      if (!t1) return 0;
+      ret = low_pike_types_le(t1, b, array_cnt, flags);
+      free_type(t1);
       return ret;
     }
 
