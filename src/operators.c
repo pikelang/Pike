@@ -5937,11 +5937,16 @@ void init_operators(void)
 			tOr7(tOr(tFuncArg(tSetvar(1, tObj),
 					  tFindLFun(tVar(1), "`+")),
 				 tFunc(tNot(tObj) tObj, tMix)),
+#if 0
 			     tOr3(tFunc(tIntPos tIntPos, tIntPos),
 				  tFunc(tIntNeg tIntNeg, tIntNeg),
 				  tIfnot(tFuncV(tNone, tNot(tIntNeg), tMix),
 					 tIfnot(tFuncV(tNone, tNot(tIntPos), tMix),
 						tFunc(tInt tInt, tInt)))),
+#else
+			     tFunc(tSetvar(2, tInt) tSetvar(3, tInt),
+				   tAddInt(tVar(2), tVar(3))),
+#endif
 			     tOr(tFunc(tFloat tOr(tFloat, tInt), tFloat),
 				 tFunc(tOr(tFloat, tInt) tFloat, tFloat)),
 			     tOr3(tFunc(tSetvar(2, tStr) tSetvar(3, tStr),
