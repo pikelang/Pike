@@ -6034,7 +6034,9 @@ multiset & mapping -> mapping
   tOr7(tIfnot(tFuncV(tNone, tNot(tObj), tMix),					\
 	      tOr(tFuncV(tMix tObj,tMix,tMix),					\
 		  tFuncV(tObj,tMix,tMix))),					\
-       tFuncV(tInt,tInt,tInt),							\
+       tOr(tFuncV(tIntPos, tIntPos, tIntPos),					\
+	   tIfnot(tFuncV(tNone, tNot(tIntMinus), tMix),				\
+		  tFuncV(tInt, tInt, tInt))),					\
        tFuncV(tSetvar(1,tMapping),tSetvar(2,tMapping),tOr(tVar(1),tVar(2))),	\
        tFuncV(tSetvar(3,tMultiset),tSetvar(4,tMultiset),tOr(tVar(3),tVar(4))),	\
        tFuncV(tSetvar(5,tArray),tSetvar(6,tArray),tOr(tVar(5),tVar(6))),	\
