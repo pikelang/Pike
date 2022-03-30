@@ -9068,7 +9068,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       if (t1 && (t1->type >= '0') && (t1->type <= '9')) {
 	t1 = ((flags & LE_A_B_SWAPPED)?b_markers:a_markers)[t2->type - '0'];
       }
-      if ((b->type & 0x8000) && t2 && (t2->type >= '0') && (t2->type <= '9')) {
+      if ((a->type & 0x8000) && t2 && (t2->type >= '0') && (t2->type <= '9')) {
 	t2 = ((flags & LE_A_B_SWAPPED)?b_markers:a_markers)[t2->type - '0'];
       }
       t1 = apply_type_operator(a->type, t1, t2);
