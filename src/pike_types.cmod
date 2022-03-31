@@ -3939,16 +3939,12 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
     return ret;
 
   case T_MIXED:
-  case T_ZERO:
-  case T_VOID:
     break;
 
+  case T_ZERO:
+  case T_VOID:
   default:
-    ref_push_string(lfun_strings[lfun]);
-    yytype_report(REPORT_WARNING, NULL, 0, NULL,
-		  NULL, 0, t,
-		  1, "Expected object implementing lfun::%s().");
-    break;
+    return NULL;
   }
 
 #if 0
