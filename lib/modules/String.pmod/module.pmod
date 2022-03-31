@@ -52,12 +52,12 @@ string(0..127) string2hex(string(0..255) s)
 string implode_nicely(array(string|int|float) foo, string|void separator)
 {
   if(!separator) separator="and";
-  foo=(array(string))foo;
+  array(string) bar = (array(string))foo;
   switch(sizeof(foo))
   {
   case 0: return "";
-  case 1: return ([array(string)]foo)[0];
-  default: return foo[..<1]*", "+" "+separator+" "+foo[-1];
+  case 1: return bar[0];
+  default: return bar[..<1] * ", " + " " + [string]separator + " " + bar[-1];
   }
 }
 
