@@ -428,7 +428,7 @@ int verify(string(8bit) password, string(7bit) hash)
 string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 		  int(0..)|void rounds)
 {
-  function(string(8bit), string(7bit), int(0..):string(7bit)) crypt_hash;
+  function(string(8bit), string(7bit), int(0..):string(7bit))|zero crypt_hash;
   int(0..) salt_size = 16;
   int(0..) default_rounds = 5000;
 
@@ -473,10 +473,9 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
   if (schemeprefix && schemeprefix[0] == '$')
     sscanf(schemeprefix, "$%s$", schemeprefix);
 
-  switch(lower_case(schemeprefix)) {
+  switch(lower_case(schemeprefix || "crypt")) {
   case "crypt":
   case "{crypt}":
-  case UNDEFINED:
     // FALL_THROUGH
 #if constant(Crypto.SHA512)
   case "6":
