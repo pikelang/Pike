@@ -101,7 +101,7 @@ string(8bit) make_crypt_md5(string(8bit) password,
     salt = ([function(string(8bit):string(7bit))]MIME["encode_base64"])
       (.Random.random_string(6));
 
-  return "$1$"+salt+"$"+Nettle.crypt_md5(password, salt);
+  return "$1$" + [string]salt + "$" + Nettle.crypt_md5(password, salt);
 }
 
 //! Verifies the @[password] against the crypt_md5 hash.

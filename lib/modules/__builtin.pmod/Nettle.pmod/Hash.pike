@@ -974,7 +974,7 @@ string(8bit) emsa_pss_encode(string(8bit) message, int(1..) bits,
   //    M' = (0x)00 00 00 00 00 00 00 00 || mHash || salt;
   //    M' is an octet string of length 8 + hLen + sLen with eight initial
   //    zero octets.
-  string(8bit) m = "\0\0\0\0\0\0\0\0" + mhash + salt;
+  string(8bit) m = "\0\0\0\0\0\0\0\0" + mhash + [string]salt;
 
   // 6. Let H = Hash(M'), an octet string of length hLen.
   string(8bit) h = hash(m);
@@ -985,7 +985,7 @@ string(8bit) emsa_pss_encode(string(8bit) message, int(1..) bits,
 
   // 8. Let DB = PS || 0x01 || salt; DB is an octet string of length
   //    emLen - hLen - 1.
-  string(8bit) db = ps + "\1" + salt;
+  string(8bit) db = ps + "\1" + [string]salt;
 
   // 9. Let dbMask = MGF(H, emLen - hLen - 1).
   string(8bit) dbmask = mgf(h, [int(1..)](emlen - (sizeof(h) + 1)));
@@ -1041,7 +1041,7 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
   /* N/A */
 
   // 3. If emLen < hLen + sLen + 2, output "inconsistent" and stop.
-  if (sizeof(sign) < digest_size() + saltlen + 2) {
+  if (sizeof(sign) < digest_size() + [int]saltlen + 2) {
     return 0;
   }
 
@@ -1085,7 +1085,7 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
   //     not zero or if the octet at position emLen - hLen - sLen - 1
   //     (the leftmost position is "position 1") does not have
   //     hexadecimal value 0x01, output "inconsistent" and stop.
-  string(8bit) ps = db[..sizeof(sign) -(sizeof(mhash) + saltlen + 3)];
+  string(8bit) ps = db[..sizeof(sign) -(sizeof(mhash) + [int]saltlen + 3)];
   if ((ps != "\0"*sizeof(ps)) || (db[sizeof(ps)] != 0x01)) {
     return 0;
   }
