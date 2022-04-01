@@ -5278,20 +5278,50 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     if (!b) return NULL;
     goto loop;
 
-  case TWOT(PIKE_T_TRANSITIVE, T_FUNCTION):
   case TWOT(PIKE_T_TRANSITIVE, T_MANY):
+    if (op == PT_BINOP_AND) {
+      type_stack_mark();
+      tmp = low_type_binop(op, a->cdr, b, NULL, aflags, bflags, remap_flags);
+      push_finished_type(tmp);
+      free_type(tmp);
+      tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
+      push_finished_type(tmp);
+      free_type(tmp);
+      push_type(PIKE_T_TRANSITIVE);
+      return pop_unfinished_type();
+    }
+    /* FALLTHRU */
+  case TWOT(PIKE_T_TRANSITIVE, T_FUNCTION):
   case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
-  case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
     tmp = expand_transitive(a, NULL, 0);
     ret = low_type_binop(op, tmp, b, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
 
-  case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
   case TWOT(T_MANY, PIKE_T_TRANSITIVE):
+    if (op == PT_BINOP_AND) {
+      type_stack_mark();
+      tmp = low_type_binop(op, a, b->cdr, NULL, aflags, bflags, remap_flags);
+      push_finished_type(tmp);
+      free_type(tmp);
+      tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
+      push_finished_type(tmp);
+      free_type(tmp);
+      push_type(PIKE_T_TRANSITIVE);
+      return pop_unfinished_type();
+    }
+    /* FALLTHRU */
+  case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
   case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
     tmp = expand_transitive(b, NULL, 0);
     ret = low_type_binop(op, a, tmp, remap, aflags, bflags, remap_flags);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
+    /* FIXME: Is there a better approach? */
+    tmp = expand_transitive(a, NULL, 0);
+    ret = low_type_binop(op, tmp, b, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
 
