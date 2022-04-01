@@ -5281,13 +5281,17 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case TWOT(PIKE_T_TRANSITIVE, T_MANY):
     if (op == PT_BINOP_AND) {
       type_stack_mark();
-      tmp = low_type_binop(op, a->cdr, b, NULL, aflags, bflags, remap_flags);
-      push_finished_type(tmp);
-      free_type(tmp);
       tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
       push_finished_type(tmp);
-      free_type(tmp);
-      push_type(PIKE_T_TRANSITIVE);
+      if (tmp || !a->car) {
+	free_type(tmp);
+	tmp = low_type_binop(op, a->cdr, b, NULL, aflags, bflags, remap_flags);
+	if (tmp) {
+	  push_finished_type(tmp);
+	  free_type(tmp);
+	  push_reverse_type(PIKE_T_TRANSITIVE);
+	}
+      }
       return pop_unfinished_type();
     }
     /* FALLTHRU */
@@ -5301,13 +5305,17 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case TWOT(T_MANY, PIKE_T_TRANSITIVE):
     if (op == PT_BINOP_AND) {
       type_stack_mark();
-      tmp = low_type_binop(op, a, b->cdr, NULL, aflags, bflags, remap_flags);
-      push_finished_type(tmp);
-      free_type(tmp);
       tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
       push_finished_type(tmp);
-      free_type(tmp);
-      push_type(PIKE_T_TRANSITIVE);
+      if (tmp || !b->car) {
+	free_type(tmp);
+	tmp = low_type_binop(op, a, b->cdr, NULL, aflags, bflags, remap_flags);
+	if (tmp) {
+	  push_finished_type(tmp);
+	  free_type(tmp);
+	  push_reverse_type(PIKE_T_TRANSITIVE);
+	}
+      }
       return pop_unfinished_type();
     }
     /* FALLTHRU */
