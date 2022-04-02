@@ -7797,7 +7797,17 @@ static void push_expand_transitive_type(struct pike_type *cont,
 {
   struct pike_type *tmp;
   TYPE_STACK_DEBUG("expand_transitive");
-  switch(cont->type) {
+  switch(cont?(cont->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
+  case PIKE_T_UNKNOWN:
+    if (!trans) {
+      push_type(PIKE_T_UNKNOWN);
+    } else {
+      /* A car of __unknown__ is short-hand for having it identical
+       * to the cdr.
+       */
+      push_expand_transitive_type(trans, trans, markers, num_args);
+    }
+    break;
   case T_OR: case T_AND:
     push_expand_transitive_type(cont->cdr, trans, markers, num_args);
     push_expand_transitive_type(cont->car, trans, markers, num_args);
@@ -11533,7 +11543,11 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
      * fun_type->car, or (if fun_type->car can return here) the
      * second argument to fun_type->cdr (or both).
      */
-    tmp = new_get_return_type(fun_type->car, 0);
+    if (fun_type->car) {
+      tmp = new_get_return_type(fun_type->car, 0);
+    } else {
+      tmp = new_get_return_type(fun_type->cdr, 0);
+    }
     if (tmp) {
       tmp2 = low_new_check_call(fun_type->cdr, tmp, 0, NULL);
       free_type(tmp);
@@ -11547,8 +11561,13 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       }
     }
 
-    tmp2 = lower_new_check_call(fun_type->car, arg_type,
-				flags, sval CHECK_CALL_ARGS);
+    if (fun_type->car) {
+      tmp2 = lower_new_check_call(fun_type->car, arg_type,
+				  flags, sval CHECK_CALL_ARGS);
+    } else {
+      tmp2 = lower_new_check_call(fun_type->cdr, arg_type,
+				  flags, sval CHECK_CALL_ARGS);
+    }
     if (tmp2) {
       if (!tmp) {
 	tmp = tmp2;
@@ -12094,7 +12113,11 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
 
   case PIKE_T_TRANSITIVE:
     /* NB: Not 100% correct, but good enough for most purposes. */
-    fun_type = fun_type->car;
+    if (fun_type->car) {
+      fun_type = fun_type->car;
+    } else {
+      fun_type = fun_type->cdr;
+    }
     goto loop;
 
   case PIKE_T_UNKNOWN:
@@ -12292,6 +12315,11 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
     break;
 
   case PIKE_T_TRANSITIVE:
+    if (!fun_type->car) {
+      fun_type = fun_type->cdr;
+      goto loop;
+    }
+
     tmp = new_get_return_type(fun_type->car, 0);
 
     if (!tmp) {
