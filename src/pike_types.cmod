@@ -7886,8 +7886,22 @@ static void push_expand_transitive_type(struct pike_type *cont,
       END_CYCLIC();
     }
     break;
+  case PIKE_T_OPERATOR:
+    if (num_args) {
+      /* No need to expand futher for now. */
+      push_finished_type(trans);
+      push_finished_type(cont);
+      push_type(PIKE_T_TRANSITIVE);
+    } else {
+      /* We have no idea. */
+      push_type(PIKE_T_MIXED);
+    }
+    break;
   case PIKE_T_MIXED:
     push_type(PIKE_T_MIXED);
+    break;
+  case T_VOID:
+    push_type(T_VOID);
     break;
   default:
     /* Unsupported. */
