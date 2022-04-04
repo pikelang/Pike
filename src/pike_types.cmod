@@ -5005,7 +5005,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	 *   A | (B | C)  ==  (A | B) | (A | C)
 	 */
 	tmp2 = remap_markers(b->cdr, remap,
-			     remap_flags | PT_FLAG_REMAP_SWAP_MARKERS);
+			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	ret = low_type_binop(op, tmp, tmp2, NULL, aflags, bflags, 0);
 	if (remap) {
 	  do_free_mapping(remap->markers);
