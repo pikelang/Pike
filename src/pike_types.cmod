@@ -4286,10 +4286,20 @@ static void push_remap_markers(struct pike_type *t,
       if (value) {
 	push_remap_markers(value, remap, flags);
 	free_type(value);
+	if (marker && (flags & PT_FLAG_REMAP_KEEP_MARKERS)) {
+	  push_type(marker);
+	  push_type(T_OR);
+	}
       } else if (flags & PT_FLAG_REMAP_EVAL_MARKERS) {
-	/* Marker without matching assign. */
-	/* FIXME: Report error? */
-	push_type(T_MIXED);
+	/* Marker without matching assign.
+	 * NB: Not an error. Consider
+	 *
+	 *       function($0 = mixed...: $0|float)
+	 *
+	 *     when evaluating the $0|float to get the
+	 *     return value, $0 will not be bound.
+	 */
+	push_type(PIKE_T_UNKNOWN);
       } else {
 
 	/* Remap the marker. */

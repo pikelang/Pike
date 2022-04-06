@@ -85,6 +85,7 @@ enum pt_remap_flags
     PT_FLAG_REMAP_BOTH_MARKERS_OR =	0x06,	/* Or both markers */
     PT_FLAG_REMAP_BOTH_MARKERS_MASK =	0x06,	/* Mask for the above */
     PT_FLAG_REMAP_EVAL_MARKERS =	0x08,	/* Eval marker assignments */
+    PT_FLAG_REMAP_KEEP_MARKERS =	0x10,	/* Keep markers */
 
     PT_FLAG_REMAP_INEXACT =		0x20,	/* Result is used as flag */
     PT_FLAG_REMAP_INHIBIT =		0x40,	/* Inhibit remapping */
