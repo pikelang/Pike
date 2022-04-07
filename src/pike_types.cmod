@@ -4739,6 +4739,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 			   aflags, bflags, remap_flags);
 
       marker = alloc_remap_marker(remap, CAR_TO_INT(a), remap_flags);
+      /* Marker value */
       store_marker(remap, marker, tmp);
 
       if (op != PT_BINOP_AND) {
@@ -4755,6 +4756,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	}
       }
 
+      /* Value to backpatch. */
       store_marker(remap, marker | 0x100, tmp);
 
       if (!tmp) return NULL;
@@ -4775,6 +4777,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
       marker = alloc_remap_marker(remap, CAR_TO_INT(b),
 				  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      /* Marker value */
       store_marker(remap, marker, tmp);
 
       if (op != PT_BINOP_AND) {
@@ -4791,15 +4794,23 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	}
       }
 
+      /* Value to backpatch. */
       store_marker(remap, marker | 0x100, tmp);
 
-      if (!tmp) return NULL;
+      /* NB: We can only keep the marker assignment in the PT_BINOP_AND
+       *     case.
+       *
+       * See also the b->type == '0'..'9' case further below.
+       */
+      if ((op == PT_BINOP_AND) && tmp) {
+	type_stack_mark();
+	push_finished_type(tmp);
+	push_assign_type(marker);
+	free_type(tmp);
+	tmp = pop_unfinished_type();
+      }
 
-      type_stack_mark();
-      push_finished_type(tmp);
-      push_assign_type(marker);
-      free_type(tmp);
-      return pop_unfinished_type();
+      return tmp;
     }
   }
 
@@ -5210,16 +5221,23 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
       /* FIXME: Do we need to invert for PT_BINOP_MINUS here? */
       store_marker(remap, marker, tmp);
-      if (op == PT_BINOP_AND) {
+
+      /* NB: We can only keep the marker in the PT_BINOP_AND case,
+       *     as in the other cases we do not have the corresponding
+       *     assignment in the result.
+       *
+       * See also the b->type == T_ASSIGN case further above.
+       */
+      if ((op == PT_BINOP_AND) && tmp) {
 	store_marker(remap, marker | 0x100, tmp);
+
+	free_type(tmp);
+	type_stack_mark();
+	push_type(marker);
+	return pop_unfinished_type();
       }
 
-      if (!tmp) return NULL;
-      free_type(tmp);
-
-      type_stack_mark();
-      push_type(marker);
-      return pop_unfinished_type();
+      return tmp;
     }
   }
 
