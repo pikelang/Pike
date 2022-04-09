@@ -5304,6 +5304,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case TWOT(T_PROGRAM, T_PROGRAM):
   case TWOT(T_PROGRAM, T_FUNCTION):
   case TWOT(T_PROGRAM, T_MANY):
+  case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
     aret = a->car;
     a = low_object_lfun_type(aret, LFUN_CREATE);
     if (!a) {
@@ -5313,6 +5314,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
   case TWOT(T_FUNCTION, T_PROGRAM):
   case TWOT(T_MANY, T_PROGRAM):
+  case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
     bret = b->car;
     b = low_object_lfun_type(bret, LFUN_CREATE);
     if (!b) {
@@ -5354,7 +5356,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
     /* FALLTHRU */
   case TWOT(PIKE_T_TRANSITIVE, T_FUNCTION):
-  case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
     tmp = expand_transitive(a, NULL, 0);
     ret = low_type_binop(op, tmp, b, remap, aflags, bflags, remap_flags);
     free_type(tmp);
@@ -5378,7 +5379,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
     /* FALLTHRU */
   case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
-  case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
     tmp = expand_transitive(b, NULL, 0);
     ret = low_type_binop(op, a, tmp, remap, aflags, bflags, remap_flags);
     free_type(tmp);
