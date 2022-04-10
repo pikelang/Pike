@@ -5533,12 +5533,16 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	 *		 ==>  Ø				# Full overlap
 	 *
 	 *   B - A == Ø  &&  X - Y == Z			# Argument overlap
-	 *               ==>  T_FUNCTION(A, Z)
+	 *               ==>  T_FUNCTION(A, Z)		# (Recurse)
 	 *
 	 *   B - A == B  ==>  T_FUNCTION(A, X)		# No overlap
+	 *						# No need to recurse
 	 *
-	 *   B - A == C  ==>  T_FUNCTION(A, X) &	# Partial overlap
-	 *                    ~T_FUNCTION(B, Y)
+	 *   B - A == C  &&  X - Y == Z			# Partial overlap
+	 *		 ==>  T_FUNCTION(A - B, X) |	# Keep and
+	 *		      T_FUNCTION(A, Z)		# Recurse
+	 *
+	 *   T_FUNCTION(A - B, X) | T_FUNCTION(A, X - Y)
 	 *
 	 * T_MANY analogous with T_MANY substituted for T_FUNCTION above.
 	 */
@@ -5561,12 +5565,16 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  /* Common case */
 	  tmp = NULL;
 	} else {
-	  /* FIXME: Use implicit nullable only for legacy types. */
+	  /* FIXME: Use implicit nullable only for legacy types.
+	   * FIXME: What about PT_FLAG_CMP_VOID_IS_NULL?
+	   */
 	  tmp = low_type_binop(PT_BINOP_MINUS, bi->car, ai->car, remap,
 			       bvoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
 			       avoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
 			       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	  if (tmp) {
+	    /* No or not full overlap. */
+
 	    if ((ai->car == void_type_string) && (tmp != bi->car) &&
 		(aflags & PT_FLAG_CMP_IGNORE_EXTRA_ARGS)) {
 	      /* End of argument list for a, and it is valid to end the
@@ -5576,16 +5584,37 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	      free_type(tmp);
 	      tmp = NULL;
 	    } else {
-	      push_finished_type(ai);
-	      /* FIXME: What if tmp differs due to remapping? */
-	      if (tmp != bi->car) {
-		/* Some overlap. */
-		push_finished_type(bi);
-		push_type(T_NOT);
-		push_type(T_AND);
+	      if (tmp == bi->car) {
+		/* Common case, no overlap. */
+		pop_stack_mark();
+		free_type(tmp);
+		add_ref(ai);
+		return ai;
 	      }
 	      free_type(tmp);
-	      return pop_unfinished_type();
+
+	      tmp = low_type_binop(PT_BINOP_MINUS, ai->car, bi->car, remap,
+				   avoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
+				   bvoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
+				   remap_flags);
+
+	      if (tmp == ai->car) {
+		/* No overlap.
+		 *
+		 * The first overlap test likely failed due
+		 * to remapping.
+		 */
+		pop_stack_mark();
+		free_type(tmp);
+		add_ref(ai);
+		return ai;
+	      }
+
+	      push_finished_type(ai->cdr);
+	      push_finished_type(tmp);
+	      push_type(ai->type);
+	      free_type(tmp);
+	      tmp = NULL;
 	    }
 	  }
 	}
@@ -5601,13 +5630,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  if (aret) {
 	    Pike_fatal("Unsupported type operation.\n");
 	  }
-	  break;
 	}
 	if ((bi->type != T_FUNCTION) && (bi->type != T_MANY)) {
 	  if (bret) {
 	    Pike_fatal("Unsupported type operation.\n");
 	  }
-	  break;
 	}
 
 	if (avoidable && bvoidable) {
@@ -5625,25 +5652,28 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	    push_finished_type(a->car);
 	    push_type(T_MANY);
 	    free_type(tmp);
-	    return pop_unfinished_type();
+	  } else {
+	    push_type(PIKE_T_UNKNOWN);
 	  }
-	  pop_stack_mark();
-	  return NULL;
+	} else {
+	  /* Recurse. */
+	  tmp = low_type_binop(PT_BINOP_MINUS, ai, bi, remap,
+			       aflags, bflags, remap_flags);
+
+	  if (tmp) {
+	    push_finished_type(tmp);
+	    push_finished_type(a->car);
+	    push_type(PIKE_T_FUNCTION);
+	    free_type(tmp);
+	  } else {
+	    push_type(PIKE_T_UNKNOWN);
+	  }
 	}
 
-	/* Recurse. */
-	tmp = low_type_binop(PT_BINOP_MINUS, ai, bi, remap,
-			     aflags, bflags, remap_flags);
-
-	if (tmp) {
-	  push_finished_type(tmp);
-	  push_finished_type(ai->car);
-	  push_type(PIKE_T_FUNCTION);
-	  free_type(tmp);
-	  return pop_unfinished_type();
+	while (peek_stack_mark() > 1) {
+	  push_type(T_OR);
 	}
-	pop_stack_mark();
-	return NULL;
+	return pop_unfinished_type();
 
       default:
 	/* Fall back to complex_function below. */
@@ -5651,20 +5681,36 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
 
     complex_function:
+      /* Either of ai and/or bi is a complex type. */
 
-      nargs = peek_stack_mark();
       if (op != PT_BINOP_AND) {
-	nargs = 0;
-	ai = a;
-	bi = b;
+	compiler_discard_type();
+	type_stack_mark();
+
+	push_remap_markers(b, remap,
+			   remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+	push_remap_markers(a, remap, remap_flags);
+
+	push_binop(op);
+
+	return pop_unfinished_type();
       }
 
-      /* Either of a and/or b is a complex type. */
-      push_remap_markers(bi, remap,
-			 remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      push_remap_markers(ai, remap, remap_flags);
+      nargs = peek_stack_mark();
+      if ((ai && (ai->type == PIKE_T_TRANSITIVE)) ||
+	  (bi && (bi->type == PIKE_T_TRANSITIVE))) {
+	/* Expand ai and/or bi. */
+	tmp =
+	  low_type_binop(op, ai, bi, remap, aflags, bflags, remap_flags);
+	push_finished_type(tmp);
+	free_type(tmp);
+      } else {
+	push_remap_markers(bi, remap,
+			   remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+	push_remap_markers(ai, remap, remap_flags);
 
-      push_binop(op);
+	push_binop(op);
+      }
 
       while (nargs--) {
 	push_reverse_type(T_FUNCTION);
