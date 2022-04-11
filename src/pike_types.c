@@ -6496,7 +6496,7 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
   while(array_cnt--) {
     push_type(PIKE_T_ARRAY);
   }
-  res = pop_type();
+  res = pop_unfinished_type();
 
 #ifdef PIKE_DEBUG
   if (Pike_interpreter.trace_level > 2) {
