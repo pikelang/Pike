@@ -4476,16 +4476,162 @@ static struct pike_type *remap_markers(struct pike_type *t,
   return pop_unfinished_type();
 }
 
+static void push_expand_transitive_remap(struct pike_type *cont,
+					 struct pike_type *trans,
+					 struct remap_state *remap,
+					 enum pt_remap_flags flags,
+					 int num_args)
+{
+  struct pike_type *tmp;
+  TYPE_STACK_DEBUG("expand_transitive_remap");
+  switch(cont?(cont->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
+  case PIKE_T_UNKNOWN:
+    if (!trans) {
+      push_type(PIKE_T_UNKNOWN);
+    } else {
+      /* A car of __unknown__ is short-hand for having it identical
+       * to the cdr.
+       */
+      push_expand_transitive_remap(trans, trans, remap, flags, num_args);
+    }
+    break;
+  case T_OR: case T_AND:
+    push_expand_transitive_remap(cont->cdr, trans, remap, flags, num_args);
+    push_expand_transitive_remap(cont->car, trans, remap, flags, num_args);
+    push_type(cont->type);
+    break;
+  case PIKE_T_FUNCTION:
+    /*
+     * transitive(function(a, b, ...:c), X)
+     *
+     * ==>
+     *
+     * function(a, @transitive(function(b, ...:c), X)
+     */
+    push_expand_transitive_remap(cont->cdr, trans, remap, flags, num_args + 1);
+    push_remap_markers(cont->car, remap, flags);
+    push_type(cont->type);
+    break;
+  case T_MANY:
+    if (num_args) {
+      /* No need to expand further for now. */
+      push_finished_type(trans);
+      push_remap_markers(cont, remap, flags);
+      push_type(PIKE_T_TRANSITIVE);
+    } else {
+      /* Two cases:
+       *
+       * transitive(function(:x), function(x, a, b, ...: c))
+       *
+       * ==>
+       *
+       * function(:x) | expand(transitive(function(a, b, ...: c),
+       *                                  function(x, a, b, ...:c)))
+       *
+       * And
+       *
+       * transitive(function(t...:x), function(x, a, b, ...: c))
+       *
+       * ==>
+       *
+       * function(t...:x) |
+       *   function(t, @transitive(function(t...:x),
+       *                           function(x, a, b, c, ...:c)))) |
+       *   expand(transitive(function(a, b, ...: c),
+       *                     function(x, a, b, ...:c)))
+       */
+      DECLARE_CYCLIC();
+
+      push_remap_markers(cont, remap, flags);
+
+      if (!BEGIN_CYCLIC(cont, trans)) {
+	SET_CYCLIC_RET(1);
+
+	/* Check many arg. */
+	push_remap_markers(cont->car, remap, flags);
+	if (peek_type_stack() != void_type_string) {
+	  push_finished_type(trans);
+	  push_remap_markers(cont, remap, flags);
+	  push_type(PIKE_T_TRANSITIVE);
+	  push_reverse_type(PIKE_T_FUNCTION);
+	  push_type(T_OR);
+	} else {
+	  compiler_discard_top_type();
+	}
+
+	push_remap_markers(cont->cdr, remap, flags);
+	tmp = low_new_check_call(trans, peek_type_stack(), 0, NULL);
+	compiler_discard_top_type();
+
+	if (tmp) {
+	  /* Valid recursion. */
+	  push_expand_transitive_remap(tmp, trans, remap, flags, 0);
+	  free_type(tmp);
+	  push_type(T_OR);
+	}
+      }
+      END_CYCLIC();
+    }
+    break;
+  case PIKE_T_OPERATOR:
+    if (num_args) {
+      /* No need to expand futher for now. */
+      push_finished_type(trans);
+      push_finished_type(cont);
+      push_type(PIKE_T_TRANSITIVE);
+    } else {
+      /* We have no idea. */
+      push_type(PIKE_T_MIXED);
+    }
+    break;
+  case PIKE_T_MIXED:
+    push_type(PIKE_T_MIXED);
+    break;
+  case T_VOID:
+    push_type(T_VOID);
+    break;
+  default:
+    /* Unsupported. */
+    fprintf(stderr, "Attempting to expand unsupported type: ");
+    simple_describe_type(cont);
+    fprintf(stderr, "\n");
+    push_finished_type(function_type_string);
+    Pike_fatal("Attempt to expand unsupported type: %d\n", cont->type);
+    break;
+  }
+}
+
+/* Partially expand transitive types, so that eg matching
+ * against function types works as expected.
+ */
+static struct pike_type *expand_transitive_remap(struct pike_type *fun,
+						 struct remap_state *remap,
+						 enum pt_remap_flags flags)
+{
+  struct pike_type *ret_type;
+  struct pike_type *cont_type;
+  assert(fun->type == PIKE_T_TRANSITIVE);
+
+  type_stack_mark();
+  push_expand_transitive_remap(fun->car, fun->cdr, remap, flags, 0);
+
+#if 0
+  fprintf(stderr, "expand_transitive_remap(");
+  simple_describe_type(fun);
+  fprintf(stderr, ") ==> ");
+  simple_describe_type(peek_type_stack());
+  fprintf(stderr, "\n");
+#endif
+
+  return pop_unfinished_type();
+}
+
 static struct pike_type *low_intersect_types(struct pike_type *a,
 					     struct pike_type *b,
 					     struct remap_state *remap,
 					     enum pt_cmp_flags aflags,
 					     enum pt_cmp_flags bflags,
 					     enum pt_remap_flags remap_flags);
-
-static struct pike_type *expand_transitive(struct pike_type *fun,
-					   struct pike_type **markers,
-					   int flags);
 
 static void push_binop(enum pt_binop op)
 {
@@ -5356,7 +5502,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
     /* FALLTHRU */
   case TWOT(PIKE_T_TRANSITIVE, T_FUNCTION):
-    tmp = expand_transitive(a, NULL, 0);
+    tmp = expand_transitive_remap(a, NULL, 0);
     ret = low_type_binop(op, tmp, b, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
@@ -5379,14 +5525,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
     /* FALLTHRU */
   case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
-    tmp = expand_transitive(b, NULL, 0);
+    tmp = expand_transitive_remap(b, NULL, 0);
     ret = low_type_binop(op, a, tmp, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
 
   case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
     /* FIXME: Is there a better approach? */
-    tmp = expand_transitive(a, NULL, 0);
+    tmp = expand_transitive_remap(a, NULL, 0);
     ret = low_type_binop(op, tmp, b, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
@@ -6680,7 +6826,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
   case TWOT(PIKE_T_TRANSITIVE, T_MANY):
   case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
   case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
-    tmp = expand_transitive(a, NULL, 0);
+    tmp = expand_transitive_remap(a, NULL, 0);
     ret = low_subtract_types(tmp, b, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
@@ -6688,7 +6834,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
   case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
   case TWOT(T_MANY, PIKE_T_TRANSITIVE):
   case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
-    tmp = expand_transitive(b, NULL, 0);
+    tmp = expand_transitive_remap(b, NULL, 0);
     ret = low_subtract_types(a, tmp, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
@@ -7361,7 +7507,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
   case TWOT(PIKE_T_TRANSITIVE, T_MANY):
   case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
   case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
-    tmp = expand_transitive(a, NULL, 0);
+    tmp = expand_transitive_remap(a, NULL, 0);
     ret = low_intersect_types(tmp, b, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
@@ -7369,7 +7515,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
   case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
   case TWOT(T_MANY, PIKE_T_TRANSITIVE):
   case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
-    tmp = expand_transitive(b, NULL, 0);
+    tmp = expand_transitive_remap(b, NULL, 0);
     ret = low_intersect_types(a, tmp, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
@@ -7935,7 +8081,7 @@ static void push_expand_transitive_type(struct pike_type *cont,
     break;
   case T_MANY:
     if (num_args) {
-      /* No need to expand futher for now. */
+      /* No need to expand further for now. */
       push_finished_type(trans);
       push_finished_type(cont);
       push_type(PIKE_T_TRANSITIVE);
@@ -8032,6 +8178,7 @@ static struct pike_type *expand_transitive(struct pike_type *fun,
   struct pike_type *ret_type;
   struct pike_type *cont_type;
   assert(fun->type == PIKE_T_TRANSITIVE);
+  assert(markers);
 
   type_stack_mark();
   push_expand_transitive_type(fun->car, fun->cdr, markers, 0);
