@@ -3833,9 +3833,7 @@ static void low_and_pike_types(struct pike_type *t1,
 struct pike_type *and_pike_types(struct pike_type *a,
 				 struct pike_type *b)
 {
-  type_stack_mark();
-  low_and_pike_types(a, b);
-  return pop_unfinished_type();
+  return type_binop(PT_BINOP_AND, a, b, 0, 0, 0);
 }
 
 static struct pike_type *low_object_lfun_type(struct pike_type *t, short lfun)
