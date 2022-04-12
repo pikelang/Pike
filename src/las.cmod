@@ -4243,9 +4243,15 @@ void fix_type_field(node *n)
 	if (retval->token == F_COMMA_EXPR) {
 	  retval = CDR(retval);
 	}
-	if ((t != void_type_string) ||
-	    (retval->token != F_CONSTANT) ||
-	    !SAFE_IS_ZERO(&retval->u.sval)) {
+	/* NB: Always allow F_RETURN(0) as it is automatically added
+	 *     as an end-sentinel by the compiler regardless of the
+	 *     type of the function. It is typically not reached, so
+	 *     complaining about it is not useful.
+	 *
+	 * FIXME: Consider complaining about it if it is reached
+	 *        by docode.
+	 */
+	if ((retval->token != F_CONSTANT) || !SAFE_IS_ZERO(&retval->u.sval)) {
 	  check_node_type(CAR(n), t, "Wrong return type.");
 	}
       }
