@@ -7,11 +7,11 @@ constant implements = __builtin.program_implements;
 constant annotations = __builtin.direct_program_annotations;
 
 // documented in the C-code.
-string defined(program x,string|void y)
+string|zero defined(program x,string|void y)
 {
     if( !y )
         return __builtin.program_defined(x);
-    return __builtin.program_identifier_defined(x,y);
+    return __builtin.program_identifier_defined(x, [string]y);
 }
 
 

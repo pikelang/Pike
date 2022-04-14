@@ -9836,7 +9836,7 @@ slow_path:
  */
 
 
-/*! @decl string defined(program x, string identifier)
+/*! @decl string|zero defined(program x, string identifier)
  *!
  *!   Returns a string with filename and linenumber where @[idenfifier]
  *!   in @[x] was defined.
@@ -9844,7 +9844,7 @@ slow_path:
  *!   Returns @expr{0@} (zero) when no line can be found, e.g. for
  *!   builtin functions.
  *!
- *!   If @[idenfier] can not be found in @[x] this function returns
+ *!   If @[identifier] can not be found in @[x] this function returns
  *!   where the program is defined.
  */
 PMOD_EXPORT void f_program_identifier_defined(INT32 args)
@@ -10733,7 +10733,7 @@ void init_builtin_efuns(void)
                 OPT_TRY_OPTIMIZE);
 
   ADD_FUNCTION2("program_identifier_defined", f_program_identifier_defined,
-               tFunc(tOr(tObj,tPrg(tObj)) tString,tString), 0,
+		tFunc(tOr(tObj,tPrg(tObj)) tString, tOr(tString, tZero)), 0,
                 OPT_TRY_OPTIMIZE);
 
   ADD_FUNCTION2("function_defined", f_function_defined,
