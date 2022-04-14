@@ -4851,7 +4851,7 @@ struct program *end_first_pass(int finish)
 	struct pike_type * temp = type;
 	if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	    !ref->inherit_offset &&
-	    !check_variant_overload(id->type, type)) {
+	    !check_variant_overload(type, id->type)) {
 	  /* This symbol is shadowed by later variants. */
 	  yytype_report(REPORT_WARNING,
 			NULL, 0, NULL,

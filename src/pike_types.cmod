@@ -9960,10 +9960,21 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
   return !tmp2;
 }
 
+/**
+ * Check whether a is a valid variant overload of b.
+ *
+ * Returns 0 if a shadows all cases of b (ie b will never be used).
+ *
+ * Returns 1 otherwise.
+ */
 int check_variant_overload(struct pike_type *a, struct pike_type *b)
 {
-  clear_markers();
-  return !low_pike_types_le(b, a, 0, LE_TYPE_SVALUE);
+  struct pike_type *diff = type_binop(PT_BINOP_MINUS, b, a, 0, 0, 0);
+  if (diff) {
+    free_type(diff);
+    return 1;
+  }
+  return 0;
 }
 
 
