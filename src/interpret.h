@@ -357,9 +357,13 @@ PMOD_EXPORT void push_random_string(unsigned len);
 #define push_type_value(S) do{						\
     struct pike_type *_=(S);						\
     struct svalue *_sp_ = Pike_sp++;					\
-    debug_malloc_touch(_);						\
-    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_TYPE);				\
-    _sp_->u.type=_;							\
+    if (_) {								\
+      debug_malloc_touch(_);						\
+      SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_TYPE);			\
+      _sp_->u.type=_;							\
+    } else {								\
+      SET_SVAL(*_sp_, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);	\
+    }									\
   }while(0)
 
 #define push_object(O) push_object_inherit(O,0)
@@ -452,9 +456,13 @@ PMOD_EXPORT extern void push_static_text( const char *x );
 #define ref_push_type_value(S) do{					\
     struct pike_type *_=(S);						\
     struct svalue *_sp_ = Pike_sp++;					\
-    add_ref(_);								\
-    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_TYPE,0);			\
-    _sp_->u.type=_;							\
+    if (_) {								\
+      add_ref(_);							\
+      SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_TYPE,0);			\
+      _sp_->u.type=_;							\
+    } else {								\
+      SET_SVAL(*_sp_, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);	\
+    }									\
   }while(0)
 
 #define ref_push_object(O) ref_push_object_inherit(O,0)
