@@ -4,7 +4,7 @@
 || for more information.
 */
 
-#define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
+#define CB_FUNC tOr(tFunc(tNone,tOr(tVoid,tMixed)), tZero)
 
 /* function(string,string,void|int:int) */
 FILE_FUNC("open",file_open, tFunc(tStr tStr tOr(tVoid,tInt),tInt))
@@ -93,7 +93,7 @@ FILE_FUNC("set_read_oob_callback",file_set_read_oob_callback, tFunc(CB_FUNC,tVoi
 /* function(mixed:void) */
 FILE_FUNC("set_write_oob_callback",file_set_write_oob_callback, tFunc(CB_FUNC,tVoid))
 /* function(mixed,int:void) */
-FILE_FUNC("set_fs_event_callback",file_set_fs_event_callback, tFunc(tFunc(tInt,tOr(tVoid,tMixed)) tInt,tVoid))
+FILE_FUNC("set_fs_event_callback",file_set_fs_event_callback, tFunc(tOr(tFunc(tInt,tOr(tVoid,tMixed)), tZero) tInt,tVoid))
 
 FILE_FUNC("query_fs_event_flags",file_query_fs_event_flags, tFunc(tVoid,tInt))
 
