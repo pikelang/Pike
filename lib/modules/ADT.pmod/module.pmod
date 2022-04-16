@@ -35,7 +35,7 @@ class struct {
   //! value @[s].
   __deprecated__ void create(void|string(0..255) s)
   {
-     if( s && strlen(s) )
+     if( s && strlen([string]s) )
          ::create(s);
      else
          ::create();
