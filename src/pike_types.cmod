@@ -9969,7 +9969,23 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
  */
 int check_variant_overload(struct pike_type *a, struct pike_type *b)
 {
-  struct pike_type *diff = type_binop(PT_BINOP_MINUS, b, a, 0, 0, 0);
+  /* NOTE: This test is non-intuitive. The intuitive test would be
+   *       a - b == Ø, but that does not work.
+   *
+   * Consider
+   *
+   *   a: function(:mixed)
+   *   b: function(__unknown__ ...:mixed)
+   *
+   * ie
+   *
+   *   a: "The set of functions that accept 0 arguments."
+   *   b: "The set of functions that accept any number of arguments."
+   *
+   * b - a will then result in Ø, even though b actually can handle
+   * some cases that a can't.
+   */
+  struct pike_type *diff = type_binop(PT_BINOP_MINUS, a, b, 0, 0, 0);
   if (diff) {
     free_type(diff);
     return 1;
