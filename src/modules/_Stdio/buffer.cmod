@@ -620,6 +620,8 @@ PIKECLASS Buffer
 
     to->buffer = io_read_pointer(io);
     to->len = len;
+    to->error_mode = io->error_mode;
+    if (to->error_mode) add_ref(to->error_mode);
 
     io_consume( io, len );
 
@@ -2930,8 +2932,10 @@ PIKECLASS Buffer
   EXIT {
     Buffer *this = THIS;
     io_unlink_external_storage( this );
-    if( this->error_mode )
-        free_program( this->error_mode );
+    if( this->error_mode ) {
+      free_program( this->error_mode );
+      this->error_mode = NULL;
+    }
     if( this->allocated )
       free( this->buffer );
   }
