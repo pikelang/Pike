@@ -3660,9 +3660,9 @@ protected class nb_sendfile
 //! @seealso
 //! @[Stdio.File->set_nonblocking()]
 //!
-object sendfile(array(string) headers,
-		File from, int offset, int len,
-		array(string) trailers,
+object sendfile(array(string)|zero headers,
+		File|zero from, int offset, int len,
+		array(string)|zero trailers,
 		File to,
 		function(int, mixed ...:void)|void cb,
 		mixed ... args)

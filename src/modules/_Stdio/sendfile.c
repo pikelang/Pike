@@ -1130,7 +1130,8 @@ void init_stdio_sendfile(void)
 
   /* function(array(string),object,int,int,array(string),object,function(int,mixed...:void),mixed...:void) */
   ADD_FUNCTION("create", sf_create,
-	       tFuncV(tArr(tStr) tObj tInt tInt tArr(tStr) tObj
+	       tFuncV(tOr(tArr(tStr), tZero) tOr(tObj, tZero) tInt tInt
+		      tOr(tArr(tStr), tZero) tObj
 		      tFuncV(tInt, tMix, tVoid), tMix, tVoid), 0);
 
   set_exit_callback(exit_pike_sendfile);
