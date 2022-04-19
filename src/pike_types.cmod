@@ -9961,7 +9961,7 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
 }
 
 /**
- * Check whether a is a valid variant overload of b.
+ * Check whether a (after) is a valid variant overload of b (before).
  *
  * Returns 0 if a shadows all cases of b (ie b will never be used).
  *
@@ -9970,7 +9970,7 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
 int check_variant_overload(struct pike_type *a, struct pike_type *b)
 {
   /* NOTE: This test is non-intuitive. The intuitive test would be
-   *       a - b == Ø, but that does not work.
+   *       b - a == Ø, but that does not work.
    *
    * Consider
    *
