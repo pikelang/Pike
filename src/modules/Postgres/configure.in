@@ -105,10 +105,11 @@ if test x$with_postgres = xyes; then
     fi
   ])
 
-  # Final check, just to be sure we did not mess up
-  AC_CHECK_HEADERS(libpq-fe.h)
+  if test x$ac_pike_postgres_works = xyes; then
+    # Final check, just to be sure we did not mess up
+    AC_CHECK_HEADERS(libpq-fe.h)
 
-  if test "x$ac_cv_header_libpq_fe_h = xyes"; then
+    if test "x$ac_cv_header_libpq_fe_h = xyes"; then
       # Rational: OpenSolaris as of 20070128 includes a libpq-fe.h that
       # includes openssl/ssl.h if server/pg_config.h is included before
       # that, but does not include openssl/ssl.h in the dist.
@@ -121,13 +122,13 @@ if test x$with_postgres = xyes; then
           AC_MSG_RESULT(no)
           ac_pike_postgres_works=no
       ])
-  else
-    ac_pike_postgres_skip=yes
-    ac_pike_postgres_works=no
+    else
+      ac_pike_postgres_works=no
+    fi
   fi
 
   # Okay, now let us start working on the libraries
-  if test x$ac_pike_postgres_skip$pike_cv_pkg_config_libpq = xnono; then
+  if test x$ac_pike_postgres_works$pike_cv_pkg_config_libpq = xyesno; then
     AC_MSG_CHECKING(for location of the Postgres library)
     AC_CACHE_VAL(pike_cv_pgres_lib_dir,[
       for pike_cv_pgres_lib_dir in $lib_searchpath no; do
@@ -172,13 +173,15 @@ if test x$with_postgres = xyes; then
     AC_CHECK_LIB(crypt, crypt)
     AC_SEARCH_LIBS(PQclear, pq libpq)
   fi
-  AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking PQunescapeBytea \
-		 PQescapeStringConn PQescapeString)
-  if test x$ac_cv_func_PQsetdbLogin = xno; then
-    AC_MSG_WARN([No Login-related functions, username and password will be silently ignored])
-  fi
-  if test x$ac_cv_func_PQescapeStringConn = xno; then
-    AC_MSG_WARN([Outdated postgresql version, using potentially unsafe string escaping function])
+  if test x$ac_pike_postgres_works = xyes; then
+    AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking PQunescapeBytea \
+		   PQescapeStringConn PQescapeString)
+    if test x$ac_cv_func_PQsetdbLogin = xno; then
+      AC_MSG_WARN([No Login-related functions, username and password will be silently ignored])
+    fi
+    if test x$ac_cv_func_PQescapeStringConn = xno; then
+      AC_MSG_WARN([Outdated postgresql version, using potentially unsafe string escaping function])
+    fi
   fi
 fi
 
