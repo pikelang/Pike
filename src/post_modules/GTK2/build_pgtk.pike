@@ -1439,7 +1439,7 @@ Constant get_constant_def( string name, Type t, string file, int line )
 }
 
 Class get_class_ref( string name, string file, int line,
-                     Class p )
+                     object(Class)|zero p )
 {
   Class res = classes[ name ];
   if(!res)
