@@ -81,7 +81,7 @@ static void f_hp_feed( INT32 args )
  *! returned, extract the trailing data, check it against expected
  *! payload (e.g. as defined by the Content-Length header or chunked
  *! transfer encoding), and add incoming data to that until enough is
- *! recieved. In the connection is pipe-lining, send excess data to a
+ *! received. If the connection is pipe-lining, send excess data to a
  *! new header parser object. Note that the trailing data from the
  *! first parse object could contain the start of the next response.
  *!
@@ -93,6 +93,8 @@ static void f_hp_feed( INT32 args )
  *!   mapping. If this parameter is @expr{1@} the header names are kept as is.
  *!
  *! @returns
+ *!   Returns @expr{0@} (zero) if more data is needed, and otherwise an
+ *!   array with the following content:
  *!   @array
  *!     @elem string 0
  *!       Trailing data.
