@@ -899,6 +899,15 @@ protected string format_bytes(string str)
 protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info,
                             int discard_unknown)
 {
+  // JEITA CP-3451 4.6.2:
+  //
+  //   Each of the 12-byte field Interoperability consists
+  //   of the following four elements respectively.
+  //
+  //     Bytes 0-1	Tag
+  //     Bytes 2-3	Type
+  //     Bytes 4-7	Count
+  //     Bytes 8-11	Value Offset
   int tag_id=file->read_short();
   int tag_type=file->read_short();
   int tag_count=file->read_long();
@@ -1191,7 +1200,24 @@ mapping(string:mixed) get_properties(Stdio.File file, void|mapping tags)
   return low_get_properties(file, tags, discard_unknown) || ([]);
 }
 
-protected mapping low_get_properties(Stdio.File file, mapping tags,
+protected int parse_ifd(TIFF tiff, mapping tags, mapping exif_info,
+			int discard_unknown)
+{
+  // JEITA CP-3451 4.6.2:
+  //   The IFD used in this standard consists of a 2-byte count
+  //   (number of fields), 12-byte field Interoperability arrays,
+  //   and 4-byte offset to the next IFD, in conformance with
+  //   TIFF Rev. 6.0.
+  int num_entries=tiff->read_short();
+  if (!num_entries) return 0;
+
+  for(int i=0; i<num_entries; i++)
+    parse_tag(tiff, tags, exif_info, discard_unknown);
+
+  return 1;
+}
+
+protected mapping low_get_properties(Stdio.File file, mapping exif_info,
                                      int discard_unknown)
 {
   TIFF tiff = TIFF(file);
@@ -1206,26 +1232,23 @@ protected mapping low_get_properties(Stdio.File file, mapping tags,
   {
     // Parse the IFD at offset.
     tiff->exif_seek(offset);
-    int num_entries=tiff->read_short();
-    for(int i=0; i<num_entries; i++)
-      ret|=parse_tag(tiff, ret, tags, discard_unknown);
 
-    mixed err;
-    if (err = catch { offset=tiff->read_long(); }) {
-      if (!num_entries) {
-	// Seen in the wild:
-	//   IFD chain terminated by an empty IFD without next field at EOTIFF.
-	offset = 0;
-      } else {
-	throw(err);
-      }
+    if (!parse_ifd(tiff, ret, exif_info, discard_unknown)) {
+      // Seen in the wild:
+      //   IFD chain terminated by an empty IFD without next field at EOTIFF.
+      break;
     }
 
-    if(offset == 0 && ret["ExifOffset"])
-      offset=(int)m_delete(ret, "ExifOffset");
+    offset = tiff->read_long();
 
-    if( seent[offset] ) return ret;
+    if( seent[offset] ) break;	// Circular IFD loop.
     seent[offset]=1;
+  }
+
+  // There can be more info at the ExifOffset (aka Exif IFD).
+  if (offset = (int)m_delete(ret, "ExifOffset")) {
+    tiff->seek(offset);
+    parse_ifd(tiff, ret, exif_info, discard_unknown);
   }
 
   return ret;
