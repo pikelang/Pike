@@ -135,8 +135,8 @@ private constant Files = _static_modules._Stdio;
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 #define trim(X) (Builtin.string_trim (X))
 
-private function write = Files()->_stdout->write;
-private function werror = Files()->_stderr->write;
+private function(string,mixed...:int) write = Files()->_stdout->write;
+private function(string,mixed...:int) werror = Files()->_stderr->write;
 
 // Tell Pike.count_memory this is global.
 constant pike_cycle_depth = 0;
@@ -247,7 +247,7 @@ protected class Pike_7_8_master
   array(string) explode_path(string p);
   string dirname(string x);
   string basename(string x);
-  object low_cast_to_object(string oname, string current_file);
+  object low_cast_to_object(string oname, string|zero current_file);
   extern int want_warnings;
   program compile_string(string data, void|string name);
   program compile_file(string file);
@@ -298,7 +298,7 @@ protected class Pike_7_8_master
   extern int compat_major;
   extern int compat_minor;
   Stat master_file_stat(string x);
-  object low_cast_to_object(string oname, string current_file,
+  object low_cast_to_object(string oname, string|zero current_file,
 			    object|void current_handler);
   object findmodule(string fullname, object|void handler);
   extern multiset no_resolv;
@@ -331,7 +331,7 @@ protected class Pike_7_8_master
   string fc_reverse_lookup (object obj);
   void unregister(program p);
   program low_cast_to_program(string pname,
-			      string current_file,
+			      string|zero current_file,
 			      object|void handler,
 			      void|int mkobj);
   extern string include_prefix;
@@ -2161,7 +2161,7 @@ protected program findprog(string pname,
 }
 
 program low_cast_to_program(string pname,
-			    string current_file,
+			    string|zero current_file,
 			    object|void handler,
 			    void|int mkobj)
 {
@@ -2528,7 +2528,7 @@ program handle_inherit(string pname, string current_file, object|void handler)
   return ret;
 }
 
-object low_cast_to_object(string oname, string current_file,
+object low_cast_to_object(string oname, string|zero current_file,
 			  object|void current_handler)
 {
   program p;
@@ -6529,10 +6529,10 @@ object get_compat_master(int major, int minor)
   return this;
 }
 
-private function locale_werror_cache;
+private function(string, mixed ...:int) locale_werror_cache;
 protected void locale_werror(mixed ... args)
 {
-  function werror = locale_werror_cache;
+  function(string, mixed ...:int) werror = locale_werror_cache;
   if (!werror) {
     if (arguments_parsed && catch {
       locale_werror_cache = Files()->_stderr->write;
