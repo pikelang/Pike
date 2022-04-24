@@ -611,7 +611,7 @@ private class ASCIIEnc
   }
   protected void create(string|void r, function(string:string)|void rc)
   {
-    replacement = r && low_convert(r);
+    replacement = r && low_convert([string]r);
     repcb = rc;
   }
 }
@@ -636,7 +636,7 @@ private class USASCIIEnc {
 	if(rc && (rr = rc(s[i..i])))
 	  add(low_convert(rr,r));
 	else if(r)
-	  add(r);
+	  add([string]r);
 	else
 	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
       }
@@ -668,7 +668,7 @@ private class UTF16enc {
 	if(rc && (rr = rc(s[i..i])))
 	  add(low_convert(rr,r));
 	else if(r)
-	  add(r);
+	  add([string]r);
 	else
 	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
       }
@@ -1183,7 +1183,8 @@ protected class CharsetGenericError
   constant error_type = "charset";
 
   protected string format_err_msg (
-    string intro, string err_str, int err_pos, string charset, string reason)
+    string intro, string err_str, int err_pos, string charset,
+    string|zero reason)
   {
     string pre_context = err_pos > 23 ?
       sprintf ("...%O", err_str[err_pos - 20..err_pos - 1]) :
@@ -1247,12 +1248,12 @@ class DecodeError
 }
 
 void decode_error (string err_str, int err_pos, string charset,
-		   void|string reason, void|mixed... args)
+		   void|string reason, mixed... args)
 //! Throws a @[DecodeError] exception. See @[DecodeError.create] for
 //! details about the arguments. If @[args] is given then the error
 //! reason is formatted using @expr{sprintf(@[reason], @@@[args])@}.
 {
-  if (sizeof (args)) reason = sprintf (reason, @args);
+  if (reason && sizeof (args)) reason = sprintf ([string]reason, @args);
   throw (DecodeError (err_str, err_pos, charset, reason, backtrace()[..<1]));
 }
 
@@ -1300,11 +1301,11 @@ class EncodeError
 }
 
 void encode_error (string err_str, int err_pos, string charset,
-		   void|string reason, void|mixed... args)
+		   void|string reason, mixed... args)
 //! Throws an @[EncodeError] exception. See @[EncodeError.create] for
 //! details about the arguments. If @[args] is given then the error
 //! reason is formatted using @expr{sprintf(@[reason], @@@[args])@}.
 {
-  if (sizeof (args)) reason = sprintf (reason, @args);
+  if (reason && sizeof (args)) reason = sprintf ([string]reason, @args);
   throw (EncodeError (err_str, err_pos, charset, reason, backtrace()[..<1]));
 }
