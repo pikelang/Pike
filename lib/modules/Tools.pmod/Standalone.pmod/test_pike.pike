@@ -1108,7 +1108,8 @@ int main(int argc, array(string) argv)
           test->compile();
           if(test->compilation_error)
 	  {
-            if (test->compilation_error->is_cpp_or_compilation_error)
+            if (objectp(test->compilation_error) &&
+		test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
               log_msg ("%s failed:\n%s", fname,
@@ -1132,7 +1133,8 @@ int main(int argc, array(string) argv)
           test->compile();
           if(test->compilation_error)
 	  {
-            if (test->compilation_error->is_cpp_or_compilation_error) {
+            if (objectp(test->compilation_error) &&
+		test->compilation_error->is_cpp_or_compilation_error) {
               successes++;
 	    }
 	    else {
@@ -1156,7 +1158,8 @@ int main(int argc, array(string) argv)
           test->compile();
           if(test->compilation_error)
 	  {
-            if (test->compilation_error->is_cpp_or_compilation_error)
+            if (objectp(test->compilation_error) &&
+		test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
               log_msg ("%s failed:\n%s", fname,
@@ -1237,7 +1240,8 @@ int main(int argc, array(string) argv)
           }) {
 	    if(t) trace(0);
             watchdog_show_last_test();
-            if (test->compilation_error->?is_cpp_or_compilation_error)
+            if (objectp(test->compilation_error) &&
+		test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
               log_msg ("%s failed:\n%s\n", fname,
