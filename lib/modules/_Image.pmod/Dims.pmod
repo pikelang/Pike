@@ -2,7 +2,7 @@
 #pike __REAL_VERSION__
 
 //   Imagedimensionreadermodule for Pike.
-//   Created by Johan Sch�n, <js@roxen.com>.
+//   Created by Johan Schön, <js@roxen.com>.
 //
 //   This software is based in part on the work of the Independent JPEG Group.
 
@@ -406,7 +406,7 @@ array(int|string) get(string|Stdio.File file, int(0..1)|void exif) {
   case "\x89P":
     if(file->read(4)=="NG\r\n")
     {
-      file->read(6+4);
+      file->read(6+4); // offset+IHDR
       return array_sscanf(file->read(8), "%4c%4c") + ({ "png" });
     }
     break;
@@ -414,7 +414,13 @@ array(int|string) get(string|Stdio.File file, int(0..1)|void exif) {
   case "8B":
     if(file->read(4)=="PS\0\1")
     {
+      //  Photoshop PSD
+      //
+      //  4 bytes signature + 2 bytes version
+      //  6 bytes reserved
+      //  2 bytes channel count
       file->read(6+2);
+      //  4 bytes height, 4 bytes width (big-endian)
       return reverse(array_sscanf(file->read(8), "%4c%4c")) + ({ "psd" });
     }
     break;
