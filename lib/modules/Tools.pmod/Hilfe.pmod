@@ -32,7 +32,7 @@ class Command {
 
   //! Returns a one line description of the command. This help should
   //! be shorter than 54 characters.
-  string help(string what);
+  string help(string|zero what);
 
   //! A more elaborate documentation of the command. This should be
   //! less than 68 characters per line.
@@ -486,7 +486,7 @@ class CommandDump {
   protected function(array(string)|string, mixed ... : int) write;
 
   string help(string what) { return "Dump variables and other info."; }
-  string doc(string what, string with) { return documentation_dump; }
+  string doc(string|zero what, string|zero with) { return documentation_dump; }
 
   protected void wrapper(Evaluator e) {
     if(!e->last_compiled_expr) {
@@ -1765,8 +1765,8 @@ class Evaluator {
   // Some debug code to intercept calls to relocate. Aspect
   // Oriented Programming would be handy here...
   protected int relocate( Expression expr, multiset(string) symbols,
-			multiset(string) next_symbols, int p,
-			void|string safe_word, void|int(0..1) top) {
+			  multiset(string)|zero next_symbols, int p,
+			  void|string safe_word, void|int(0..1) top) {
     int op = p;
     werror("%O %O %d\n", (symbols?indices(symbols||(<>))*", ":0),
            (next_symbols?indices(next_symbols||(<>))*", ":0), top );
@@ -1777,8 +1777,8 @@ class Evaluator {
 #endif
 
   protected int relocate( Expression expr, multiset(string) symbols,
-			multiset(string) next_symbols, int p,
-			void|string safe_word, void|int(0..1) top) {
+			  multiset(string)|zero next_symbols, int p,
+			  void|string safe_word, void|int(0..1) top) {
     // Type declaration?
     int pos = expr->endoftype(p);
     if(pos>=0) {
