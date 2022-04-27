@@ -325,10 +325,10 @@ class File
   }
 
   protected string|int debug_file;
-  protected string debug_mode;
+  protected string|zero debug_mode;
   protected int debug_bits;
 
-  optional void _setup_debug( string f, string m, int|void b )
+  optional void _setup_debug( string f, string|zero m, int|void b )
   {
     debug_file = f;
     debug_mode = m;
