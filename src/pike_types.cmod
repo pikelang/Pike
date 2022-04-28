@@ -2206,7 +2206,7 @@ static void internal_parse_typeB(const char **s)
   while(isspace(EXTRACT_UCHAR(*s))) ++*s;
   switch(**s)
   {
-  case '!':
+  case '!': case '~':
     ++*s;
     internal_parse_typeB(s);
     push_type(T_NOT);
@@ -2885,9 +2885,9 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 
     case T_NOT:
       if (t->car && (t->car->type > T_NOT)) {
-	string_builder_sprintf(s, "!(%T)", t->car);
+	string_builder_sprintf(s, "~(%T)", t->car);
       } else {
-	string_builder_sprintf(s, "!%T", t->car);
+	string_builder_sprintf(s, "~%T", t->car);
       }
       break;
 
