@@ -2829,13 +2829,13 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
       } else {
 	int arg = 0;
 	string_builder_strcat(s, "function(");
-	while(t->type == T_FUNCTION)
+	while(t && (t->type == T_FUNCTION))
 	{
 	  if(arg++) string_builder_strcat(s, ", ");
 	  low_describe_type(s, t->car);
 	  t = t->cdr;
 	}
-	if (t->type != T_MANY) {
+	if (!t || (t->type != T_MANY)) {
 	  string_builder_sprintf(s, ", @%T)", t);
 	} else {
 	  if(!t->car || (t->car->type != T_VOID))
