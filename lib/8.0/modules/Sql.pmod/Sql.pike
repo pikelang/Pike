@@ -243,7 +243,7 @@ protected program find_dbm(string program_name) {
 //! @note
 //!   Support for @[options] was added in Pike 7.3.
 //!
-void create(string|object host, void|string|mapping(string:int|string) db,
+void create(string|object|zero host, void|string|mapping(string:int|string) db,
 	    void|string user, void|string _password,
 	    void|mapping(string:int|string) options)
 {
