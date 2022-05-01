@@ -487,14 +487,16 @@ static void f_reporter_report(INT32 args)
 	args++;
       }
     } else {
-      /* We hope that errors from compiling the master
-       * won't contain wide-strings... */
+      const char *fname = filename->str;
+      if (filename->size_shift) {
+	fname = "WIDE";
+      }
       if (level >= REPORT_ERROR) {
-	fprintf(stderr, "%s:%ld: %s\n",
-		filename->str, (long)linenumber, message->str);
+	fprintf(stderr, "%s:%ld: Error: %s\n",
+		fname, (long)linenumber, message->str);
       } else {
 	fprintf(stderr, "%s:%ld: Warning: %s\n",
-		filename->str, (long)linenumber, message->str);
+		fname, (long)linenumber, message->str);
       }
       fflush(stderr);
     }

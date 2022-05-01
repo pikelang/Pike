@@ -4619,7 +4619,7 @@ void compile_error(string file,int line,string err)
   mixed val;
   if(! (val = get_inhibit_compile_errors() ))
   {
-    werror( "%s:%s:%s\n",trim_file_name(file),
+    werror( "%s:%s: Error: %s\n",trim_file_name(file),
 	    line?(string)line:"-",narrowify_string(err) );
   }
   else if(objectp(val) ||
