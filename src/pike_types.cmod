@@ -4004,10 +4004,15 @@ static void push_and_fixup_markers(struct pike_type *t,
   case T_AND:
   case T_ARRAY:
   case T_STRING:
-  case PIKE_T_TRANSITIVE:
   case PIKE_T_OPERATOR | 0x8000:
     /* t->car and t->cdr are nodes. */
     push_and_fixup_markers(t->cdr, remap, flags);
+    push_and_fixup_markers(t->car, remap, flags);
+    push_type(t->type);
+    break;
+
+  case PIKE_T_TRANSITIVE:
+    push_finished_type(t->cdr);
     push_and_fixup_markers(t->car, remap, flags);
     push_type(t->type);
     break;
@@ -4246,9 +4251,15 @@ static void push_remap_markers(struct pike_type *t,
   case PIKE_T_RING:
   case T_ARRAY:
   case T_STRING:
-  case PIKE_T_TRANSITIVE:
     push_remap_markers(t->car, remap, flags);
     push_remap_markers(t->cdr, remap, flags);
+    push_reverse_type(t->type);
+    break;
+
+    /* Special */
+  case PIKE_T_TRANSITIVE:
+    push_remap_markers(t->car, remap, flags);
+    push_finished_type(t->cdr);
     push_reverse_type(t->type);
     break;
   }
