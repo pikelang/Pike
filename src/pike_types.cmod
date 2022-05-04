@@ -11753,71 +11753,87 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       push_type(fun_type->type);
       tmp = fun_type = pop_unfinished_type();
     }
-    /* Note: Use the low variants of pike_types_le and match_types,
-     *       so that markers get set and kept. */
+
+    {
+      struct remap_state remap;
+      struct pike_type *old_res;
+      struct pike_type *fun_cont;
+
+      INIT_REMAP_STATE(remap);
+
 #ifdef PIKE_DEBUG
-    if (l_flag>2) {
-      fprintf(stderr, "%*sChecking argument type ", indent*2+2, "");
-      simple_describe_type(arg_type);
-      fprintf(stderr, " against function type ");
-      simple_describe_type(fun_type);
-      fprintf(stderr, ".\n");
-    }
-#endif /* PIKE_DEBUG */
-    /* No need to perform advanced checking in the trivial case... */
-    if (arg_type != (tmp2 = fun_type->car)) {
-      struct pike_type *t = NULL;
-      if (!tmp2) {
-	if (flags & CALL_STRICT) goto no_match;
-      } else if (!((flags & CALL_INVERTED_TYPES)?
-		   low_pike_types_le(tmp2, arg_type, 0,
-				     LE_A_B_SWAPPED|LE_EXPLICIT_ZERO):
-		   low_pike_types_le(arg_type, tmp2, 0, 0)) &&
-		 ((flags & CALL_STRICT) ||
-		  !(t = low_match_types(arg_type, tmp2, NO_SHORTCUTS)))) {
-      no_match:
-      /* No match. */
-#ifdef PIKE_DEBUG
-	if (l_flag>2) {
-	  fprintf(stderr, "%*sNo match.\n", indent*2+2, "");
-	}
-#endif /* PIKE_DEBUG */
-	res = NULL;
-	if (tmp) free_type(tmp);
-	break;
+      if (l_flag>2) {
+	fprintf(stderr, "%*sChecking argument type ", indent*2+2, "");
+	simple_describe_type(arg_type);
+	fprintf(stderr, " against function type ");
+	simple_describe_type(fun_type);
+	fprintf(stderr, ".\n");
       }
-      if (t) free_type(t);
-    }
-    /* Match. */
-    if (fun_type->type == PIKE_T_FUNCTION) {
-      struct pike_type *t = NULL;
-      /* Advance to the next argument. */
-      fun_type = fun_type->cdr;
-#if 0
-      /* This test is too strict, and causes the type checker
-       * to complain about the last argument (even if correct)
-       * when there are too few arguments to the function.
+#endif /* PIKE_DEBUG */
+
+      /* No need to perform advanced checking in the trivial case... */
+      if (arg_type != (tmp2 = fun_type->car)) {
+	if (!tmp2) {
+	  if (flags & CALL_STRICT) goto no_match;
+	} else {
+	  struct pike_type *bin_t =
+	    low_type_binop((flags & CALL_INVERTED_TYPES)?
+			   PT_BINOP_INVERSE_MINUS:
+			   PT_BINOP_MINUS,
+			   arg_type, tmp2, &remap,
+			   PT_FLAG_CMP_VOID_IS_ZERO,
+			   PT_FLAG_CMP_VOID_IS_ZERO,
+			   PT_FLAG_REMAP_EVAL_MARKERS);
+
+	  /* Legend for mismatch:
+	   *   0 - Strict match.
+	   *   1 - Partial match.
+	   *   3 - Strict mismatch.
+	   */
+	  int mismatch = bin_t?((bin_t == arg_type)?3:1):0;
+	  int mask = (flags & (CALL_INVERTED_TYPES|CALL_STRICT))?3:2;
+	  free_type(bin_t);
+
+	  if (mismatch & mask) {
+	  no_match:
+	    /* No match. */
+#ifdef PIKE_DEBUG
+	    if (l_flag>2) {
+	      fprintf(stderr, "%*sNo match.\n", indent*2+2, "");
+	    }
+#endif /* PIKE_DEBUG */
+	    res = NULL;
+	    if (tmp) free_type(tmp);
+
+	    EXIT_REMAP_STATE(remap);
+
+	    break;
+	  }
+	}
+      }
+
+      /* Match. */
+      if (fun_type->type == PIKE_T_FUNCTION) {
+	struct pike_type *t = NULL;
+	/* Advance to the next argument. */
+	fun_cont = fun_type->cdr;
+      } else {
+	fun_cont = fun_type;
+      }
+
+      if (tmp) free_type(tmp);
+
+      /* NB: KEEP_MARKERS is needed if we are staying on
+       *     the same function type, as it (by definition)
+       *     then still holds the same assignments too.
        */
-      if (!(flags & CALL_NOT_LAST_ARG) &&
-	  (fun_type->type == PIKE_T_FUNCTION) &&
-	  !(t = low_match_types(fun_type->car, void_type_string, 0))) {
-	/* There are more required arguments. */
-#ifdef PIKE_DEBUG
-	if (l_flag>2) {
-	  fprintf(stderr, "%*sMore arguments required.\n", indent*2+2, "");
-	}
-#endif /* PIKE_DEBUG */
-	res = NULL;
-	if (tmp) free_type(tmp);
-	break;
-      }
-      if (t) free_type(t);
-#endif /* 0 */
+      res = remap_markers(fun_cont, &remap,
+			  PT_FLAG_REMAP_SWAP_MARKERS|
+			  ((fun_type == fun_cont)?
+			   PT_FLAG_REMAP_KEEP_MARKERS:0));
+
+      EXIT_REMAP_STATE(remap);
     }
-    type_stack_mark();
-    push_finished_type_with_markers(fun_type, b_markers, 0);
-    res = pop_unfinished_type();
-    if (tmp) free_type(tmp);
 
     if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) && sval) {
       while (tmp2 && (tmp2->type == PIKE_T_NAME)) {
