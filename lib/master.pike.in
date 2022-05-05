@@ -6469,13 +6469,13 @@ CompatResolver get_compilation_handler(int major, int minor)
 
 	string base;
 #if "#lib_prefix#"[0]!='#'
-	base=combine_path("#lib_prefix#",sprintf("%s",tmp));
+	base=combine_path("#lib_prefix#",sprintf("%s",[string](mixed)tmp));
 	compat_handler->add_module_path(combine_path(base,"modules"));
 	compat_handler->add_include_path(combine_path(base,"include"));
 #endif
 
 #if "#share_prefix#"[0]!='#'
-	base=combine_path("#share_prefix#",sprintf("%s",tmp));
+	base=combine_path("#share_prefix#",sprintf("%s",[string](mixed)tmp));
 	compat_handler->add_module_path(combine_path(base,"modules"));
 	compat_handler->add_include_path(combine_path(base,"include"));
 #endif
