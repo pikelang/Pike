@@ -131,7 +131,12 @@ o Sql.mysql
 o Sql.pgsql
 
   Numerous bug fixes.
-  
+
+o Standards.BSON
+
+  Improved robustness of the BSON parser with regards to large size headers
+  and truncated input data.
+
 Building & Tools
 ----------------
 

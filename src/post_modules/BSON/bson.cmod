@@ -139,7 +139,7 @@ struct mapping * decode_document(struct pike_string * pike_slist)
 {
   char * slist;
   struct mapping * doc;
-  INT32 len;
+  unsigned INT32 len;
   INT32 left;
   char * n;
   char * end;
@@ -161,9 +161,9 @@ struct mapping * decode_document(struct pike_string * pike_slist)
     
   left = pike_slist->len - (n - slist);
     
-  if(left < len)
+  if(len > INT_MAX || left < (INT32)len)
   {
-    Pike_error("invalid BSON. not enough data left to form document: expected %d bytes, have %d.\n", len, left);  
+    Pike_error("invalid BSON. not enough data left to form document: expected %u bytes, have %d.\n", len, left);
   }
   
   n += 4;
@@ -236,16 +236,24 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_STRING:
     {
       struct pike_string * val;
-      INT32 bump;
-      INT32 left;
-      bump = get_unaligned_le32(n);
-      left = pike_slist->len - (n - slist);
+      unsigned INT32 bump;
+      INT32 left = pike_slist->len - (n - slist);
 
-      if(bump <= 0 || bump > left)
+      if (left < 4)
+        Pike_error("Invalid BSON. Not enough data.\n");
+
+      bump = get_unaligned_le32(n);
+      n += 4;
+      left -= 4;
+
+      if(bump > INT_MAX || (INT32)bump > left)
       {
         Pike_error("invalid BSON. not enough data: need %d, have %d.\n", bump, left);
       }
-      n+=4;
+      if(bump == 0)
+      {
+        Pike_error("Invalid BSON: string length zero.\n");
+      }
       val = make_shared_binary_string(n, bump-1); /* length includes null. */
       n += (bump);
       push_string(val);
@@ -256,16 +264,21 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_BINARY:
     {
       struct pike_string * val;
-      INT32 bump = get_unaligned_le32(n);
-      INT32 left;
+      unsigned INT32 bump;
+      INT32 left = pike_slist->len - (n - slist);
       unsigned INT8 subtype;
+
+      if (left < 5)
+        Pike_error("Invalid BSON. Not enough data.\n");
+
+      bump = get_unaligned_le32(n);
       n+=4;
       subtype = *(unsigned INT8*)n;
       n++;
+      left -= 5;
 
-      left = pike_slist->len - (n - slist);
 
-      if(bump < 0 || bump > left)
+      if(bump > INT_MAX || (INT32)bump > left)
       {
         Pike_error("invalid BSON. not enough data 5.\n");
       }
@@ -469,7 +482,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       struct mapping * doc;
       struct array * arr;
       INT_TYPE asize;
-      INT32 len;
+      unsigned INT32 len;
       /* used by NEW_MAPPING_LOOP */
       const struct keypair *k=0;
       const struct mapping_data *md;
@@ -484,7 +497,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       len = get_unaligned_le32(n);
       
       left = pike_slist->len - (n - slist);
-      if(left < len)
+      if(len > INT_MAX || left < (INT32)len)
       {
         Pike_error("invalid BSON. not enough data left to form document.\n");      
       }
@@ -529,7 +542,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     {
       struct pike_string * d;
       struct mapping * doc;
-      INT32 len;
+      unsigned INT32 len;
       INT32 left = pike_slist->len - (n - slist);
       if(left < 4)
       {
@@ -538,7 +551,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       len = get_unaligned_le32(n);
       
       left = pike_slist->len - (n - slist);
-      if(left < len)
+      if(len > INT_MAX || left < (INT32)len)
       {
         Pike_error("invalid BSON. not enough data left to form document.\n");      
       }
@@ -579,11 +592,11 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_JAVASCRIPT:
     {
       struct pike_string * val;
-      INT32 bump = get_unaligned_le32(n);
+      unsigned INT32 bump = get_unaligned_le32(n);
       INT32 left;
       n+=4;
       left = pike_slist->len - (n - slist);
-      if(bump <= 0 || bump > left)
+      if(bump > INT_MAX || bump < 1 || (INT32)bump > left)
         Pike_error("invalid BSON. not enough data.\n");
       val = make_shared_binary_string(n, bump-1); /* length includes null. */
       n += (bump);
