@@ -5271,20 +5271,34 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
     aret = a->car;
     a = low_object_lfun_type(aret, LFUN_CREATE);
-    if (!a) {
-      a = void_function_type_string;
-    }
-    goto loop;
+    if (a) goto loop;
+
+    type_stack_mark();
+    push_finished_type(aret);
+    push_type(PIKE_T_UNKNOWN);
+    push_type(T_MANY);
+    a = pop_unfinished_type();
+
+    ret = low_type_binop(op, a, b, remap, aflags, bflags, remap_flags);
+    free_type(a);
+    return ret;
 
   case TWOT(T_FUNCTION, T_PROGRAM):
   case TWOT(T_MANY, T_PROGRAM):
   case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
     bret = b->car;
     b = low_object_lfun_type(bret, LFUN_CREATE);
-    if (!b) {
-      b = void_function_type_string;
-    }
-    goto loop;
+    if (b) goto loop;
+
+    type_stack_mark();
+    push_finished_type(bret);
+    push_type(PIKE_T_UNKNOWN);
+    push_type(T_MANY);
+    b = pop_unfinished_type();
+
+    ret = low_type_binop(op, a, b, remap, aflags, bflags, remap_flags);
+    free_type(b);
+    return ret;
 
   case TWOT(T_OBJECT, T_FUNCTION):
   case TWOT(T_OBJECT, T_MANY):
@@ -5317,6 +5331,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	}
       }
       return pop_unfinished_type();
+    } else if (op == PT_BINOP_MINUS) {
+      if ((!b->car || (b->car == zero_type_string)) &&
+	  ((b->cdr == mixed_type_string) || (b->cdr == any_type_string))) {
+	return NULL;
+      }
     }
     /* FALLTHRU */
   case TWOT(PIKE_T_TRANSITIVE, T_FUNCTION):
