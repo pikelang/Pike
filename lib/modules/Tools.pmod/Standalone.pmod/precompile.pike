@@ -16,6 +16,11 @@ constant precompile_api_version = "6";
 constant precompile_api_version = "3";
 #endif
 
+#if !constant(zero)
+/* Compat with Pike 8.0 and earlier. */
+typedef int(0..0) zero;
+#endif
+
 constant want_args = 1;
 
 //! Convert .cmod-files to .c files.
