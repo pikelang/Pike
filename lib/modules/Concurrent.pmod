@@ -1024,7 +1024,8 @@ class AggregatedPromise
   //!
   //! @seealso
   //!   @[start()]
-  protected void aggregate_cb(mixed value, int idx, mapping(int:mixed) results)
+  protected void aggregate_cb(mixed value, int idx,
+			      mapping(int:mixed)|zero results)
   {
     // Check if aggregation is to be performed.
     if (!num_dependencies) return;
