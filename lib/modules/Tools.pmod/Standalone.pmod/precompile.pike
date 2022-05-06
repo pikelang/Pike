@@ -1616,7 +1616,7 @@ mapping parse_attributes(array attr, void|string location,
  * Generate an #ifdef/#else/#endif
  */
 array IFDEF(string|array(string) define,
-	    array yes,
+	    array|zero yes,
 	    void|array no)
 {
   array ret=({});
@@ -2682,7 +2682,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	  {
 	    warn("%s must take one argument.\n");
 	  }
-	  if(sprintf("%s",args[0]->type()) != "mixed")
+	  if(sprintf("%s", [string](mixed)args[0]->type()) != "mixed")
 	  {
 	    warn("%s:%s must take a mixed argument (was declared as %s)\n",
 		 location, name, args[0]->type());
