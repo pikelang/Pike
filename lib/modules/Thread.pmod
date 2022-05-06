@@ -429,7 +429,7 @@ class Farm
   protected Condition ft_cond = Condition();
   protected Queue job_queue = Queue();
   protected object dispatcher_thread;
-  protected function(object, string:void) thread_name_cb;
+  protected function(object, string|zero: void) thread_name_cb;
   protected string thread_name_prefix;
 
   //! An asynchronous result.
@@ -440,7 +440,7 @@ class Farm
   {
     int ready;
     mixed value;
-    function done_cb;
+    function(mixed, int(0..1):void) done_cb;
 
     //! @returns
     //!   @int
@@ -484,7 +484,7 @@ class Farm
     //!   the result or the failure backtrace,
     //!   and the second @expr{0@} (zero) on
     //!   success, and @expr{1@} on failure.
-    void set_done_cb( function to )
+    void set_done_cb( function(mixed, int(0..1):void) to )
     {
       if( ready )
         to( value, ready<0 );
