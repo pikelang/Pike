@@ -1256,7 +1256,7 @@ private InputController input_controller;
 private string prompt="";
 private array(string) prompt_attrs=0;
 private string text="", readtext;
-private function(string:void) newline_func;
+private function(string|zero:void) newline_func;
 private int cursorpos = 0;
 private int mark = 0;
 /* private */ History historyobj = 0;
@@ -1600,7 +1600,7 @@ private void read_newline(string s)
 
 //! @fixme
 //!   Document this function
-void set_nonblocking(function f)
+void set_nonblocking(function(string|zero:void)|zero f)
 {
   int p=cursorpos;
   if (newline_func = f) {
