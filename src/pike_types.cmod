@@ -12269,6 +12269,14 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     /* FALLTHRU */
   case T_MANY:
     copy_pike_type(res, fun_type->cdr);
+    if (!res) {
+      /* Upgrade from __unknown__ to mixed
+       * when there is an explicit __unknown__.
+       * This applies to eg calling the default function type
+       * (ie function(mixed...:__unknown__)).
+       */
+      copy_pike_type(res, mixed_type_string);
+    }
     break;
 
   case PIKE_T_OPERATOR:
