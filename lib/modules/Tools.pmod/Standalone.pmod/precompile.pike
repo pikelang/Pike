@@ -846,7 +846,7 @@ class PikeType
 	  return fiddle("tAnd",args->output_c_type());
 
 	case "|":
-	  array(PikeType) a = strip_zero_alt();
+	  array(PikeType) a = args; // strip_zero_alt();
 	  if (sizeof (a) == 1) return a[0]->output_c_type();
 	  return fiddle("tOr",a->output_c_type());
 
