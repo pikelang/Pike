@@ -177,7 +177,7 @@ void fail(string fmt, mixed ... args)
 }
 
 
-void status(string doing, void|string file, string|void msg)
+void status(string|void doing, void|string file, string|void msg)
 {
   if(!file) file="";
 
