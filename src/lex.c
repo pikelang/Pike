@@ -10,6 +10,7 @@
 #include "bignum.h"
 #include "pike_compiler.h"
 #include "interpret.h"
+#include "pike_embed.h"
 
 #include <ctype.h>
 
