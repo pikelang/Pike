@@ -10345,7 +10345,7 @@ void init_builtin_efuns(void)
   /* function(mixed,array:array) */
   ADD_EFUN("rows",f_rows,
 	   tOr6(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tArr(tVar(0)),
-		      tArr(tVar(1))),
+		      tArr(tOr(tVar(1), tZero))),
 		tFunc(tSet(tSetvar(0,tMix)) tArr(tVar(0)), tArr(tInt01)),
 		tFunc(tString tArr(tInt), tArr(tInt)),
 		tFunc(tArr(tSetvar(0,tMix)) tArr(tInt), tArr(tVar(1))),
