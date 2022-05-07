@@ -102,8 +102,8 @@ final this_program discard_records(int(-1..) over) {
 }
 
 protected
- void create(.Connection db, string q, mapping(string:mixed) bindings,
-             function(array, .Result, array :array) map_cb) {
+ void create(.Connection db, string q, mapping(string:mixed)|zero bindings,
+             function(array, .Result, array :array)|zero map_cb) {
   PD("Create future %O %O %O\n", db, q, bindings);
   this::map_cb = map_cb;
   res = .FutureResult(db, q, bindings);

@@ -74,7 +74,7 @@ protected string _sprintf(int type) {
 }
 
 protected
- void create(.Connection db, string q, mapping(string:mixed) bindings) {
+ void create(.Connection db, string q, zero|mapping(string:mixed) bindings) {
   PD("Create future result %O %O %O\n", db, q, bindings);
   query = q;
   this::bindings = bindings;
