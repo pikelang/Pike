@@ -147,7 +147,7 @@ class NSNode {
 
   // Override old stuff
 
-  protected void create(int type, string name, mapping attr, string text,
+  protected void create(int type, string name, mapping|zero attr, string text,
 			void|NSNode parent) {
 
     // Get the parent namespace context.

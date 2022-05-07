@@ -1030,7 +1030,7 @@ protected class VirtualNode {
   }
 
   //!
-  protected void create(int type, string name, mapping attr, string text)
+  protected void create(int type, string name, mapping|zero attr, string text)
   {
     if (name) {
       if (has_value(name, ":") && sscanf (name, "%*[^/:]%*c") == 2) {
@@ -1779,7 +1779,7 @@ class XMLParser
   //! This function finds a suitable @[node_factory()] given the
   //! current parser context to call with the same arguments.
   protected AbstractSimpleNode node_factory_dispatch(int type, string name,
-						     mapping attr, string text)
+						     mapping|zero attr, string text)
   {
     foreach(reverse(values(container_stack)), AbstractNode n) {
       if (!n || !n->node_factory) continue;
@@ -2239,7 +2239,7 @@ class SimpleDoctypeNode
 
   //!
   protected void create(string name, mapping(string:string) attrs,
-		     array contents)
+		     array|zero contents)
   {
     ::create(XML_DOCTYPE, name, attrs, "");
     if (contents) {
@@ -2533,7 +2533,7 @@ class DoctypeNode
 
   //!
   protected void create(string name, mapping(string:string) attrs,
-		     array contents)
+		     array|zero contents)
   {
     ::create(XML_DOCTYPE, name, attrs, "");
     if (contents) {
