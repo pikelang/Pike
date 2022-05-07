@@ -89,7 +89,8 @@ enum pt_remap_flags
 
     PT_FLAG_REMAP_INEXACT =		0x20,	/* Result is used as flag */
     PT_FLAG_REMAP_INHIBIT =		0x40,	/* Inhibit remapping */
-    PT_FLAG_REMAP_TRACE =		0x80,	/* Trace the operations */
+    PT_FLAG_REMAP_ALTERNATE =		0x80,	/* Use C & D */
+    PT_FLAG_REMAP_TRACE =		0x100,	/* Trace the operations */
   };
 
 /*

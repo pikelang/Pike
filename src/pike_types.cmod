@@ -3786,7 +3786,7 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
 /******/
 
 struct remap_state {
-  unsigned char map[0x20];
+  unsigned char map[0x40];
   unsigned INT32 allocated;
   struct mapping *markers[2];
 };
@@ -3840,6 +3840,8 @@ static void simple_describe_remap_state(struct remap_state *remap)
     simple_describe_mapping(remap->markers[1]);
   }
 }
+#else
+#define simple_describe_remap_state(X)	do { (X); } while(0)
 #endif
 
 static int alloc_remap_marker(struct remap_state *remap, int marker,
@@ -3852,6 +3854,7 @@ static int alloc_remap_marker(struct remap_state *remap, int marker,
   if (!remap || (flags & PT_FLAG_REMAP_INHIBIT)) return '0' | marker;
 
   if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
+  if (flags & PT_FLAG_REMAP_ALTERNATE) marker |= 0x20;
 
   if ((ret = remap->map[marker])) return ret;
 
@@ -3877,6 +3880,7 @@ static int remap_marker(struct remap_state *remap, int marker,
   if (!remap || (flags & PT_FLAG_REMAP_INHIBIT)) return '0' | marker;
 
   if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
+  if (flags & PT_FLAG_REMAP_ALTERNATE) marker |= 0x20;
 
   if ((ret = remap->map[marker])) return ret;
 
@@ -3902,6 +3906,7 @@ static void free_marker(struct remap_state *remap, int marker,
   marker &= 0x0f;
 
   if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
+  if (flags & PT_FLAG_REMAP_ALTERNATE) marker |= 0x20;
 
   if (!(m = remap->map[marker])) return;
 
@@ -4345,8 +4350,12 @@ static void push_expand_transitive_remap(struct pike_type *cont,
     } else {
       /* A car of __unknown__ is short-hand for having it identical
        * to the cdr.
+       *
+       * NB: Use ALTERNATE set of markers to de-couple the markers
+       *     of trans from those of the rest of the function.
        */
-      push_expand_transitive_remap(trans, trans, remap, flags, num_args);
+      push_expand_transitive_remap(trans, trans, remap,
+				   flags|PT_FLAG_REMAP_ALTERNATE, num_args);
     }
     break;
   case T_OR: case T_AND:
