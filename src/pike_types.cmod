@@ -5857,9 +5857,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
     }
     if (b->type == T_VOID) {
-      if (aflags & PT_FLAG_CMP_VOIDABLE) {
-	a = b;
-	goto recur;
+      if (op & PT_BINOP_AND) {
+	if (aflags & PT_FLAG_CMP_VOIDABLE) {
+	  a = b;
+	  goto recur;
+	}
       }
       if (bflags & (PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_VOID_IS_ZERO)) {
 	b = zero_type_string;
