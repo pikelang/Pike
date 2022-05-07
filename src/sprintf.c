@@ -2713,6 +2713,8 @@ void f___handle_sprintf_format(INT32 args)
 	      push_int_type(min_char, max_char);
 	      if (ret & PSAT_MARKER) {
 		push_type(marker);
+		push_finished_type(int_type_string);
+		push_type(T_AND);
 		push_type(T_OR);
 	      }
 	    } else if (ret & PSAT_MARKER) {
