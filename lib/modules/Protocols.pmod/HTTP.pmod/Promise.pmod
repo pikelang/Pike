@@ -386,7 +386,7 @@ protected class Session
     }
 
     protected void async_data() {
-      string s = con->data();
+      string|zero s = con->data();
 
       if (!s)		// data incomplete, try again later
         return;

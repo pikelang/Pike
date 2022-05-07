@@ -1256,7 +1256,7 @@ class Renderer
   string br(mapping token)                 { return options->xhtml ? "<br/>" : "<br>"; }
 
   //!
-  string link(string href, string title, string text, mapping token)
+  string link(string href, string|zero title, string text, mapping token)
   {
     if (options->sanitize) {
       mixed e = catch {
