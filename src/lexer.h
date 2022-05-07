@@ -842,16 +842,10 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
           else if (ISWORD("compiler_trace"))
           {
             lex->pragmas |= ID_COMPILER_TRACE;
-#ifdef PIKE_DEBUG
-	    l_flag = 3;
-#endif
           }
           else if (ISWORD("no_compiler_trace"))
           {
             lex->pragmas &= ~ID_COMPILER_TRACE;
-#ifdef PIKE_DEBUG
-	    l_flag = 0;
-#endif
           }
           else
           {
