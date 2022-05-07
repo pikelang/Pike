@@ -628,7 +628,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
       sfr->set_backend (backend);
       Shuffler.Shuffle sf = sfr->shuffle( mystdin );
       sf->add_source(stdin_str);
-      sf->set_done_callback (lambda () {
+      sf->set_done_callback (lambda (mixed ...) {
                                catch { mystdin->close(); };
                                mystdin = 0;
                              });
