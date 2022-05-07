@@ -1062,7 +1062,7 @@ class cSuperTimeRange
 
    TimeRange subtract(TimeRange with,mixed ...extra)
    {
-      array r=({});
+      array(TimeRange) r=({});
       foreach (parts,TimeRange part)
 	 r+=({part->subtract(part,with,@extra)});
       return predef::`|(@r);
