@@ -4928,7 +4928,7 @@ struct program *end_first_pass(int finish)
 	 * or it will be optimized away when inherited...
 	 */
 	define_function(init_name, init_type,
-			ID_PROTECTED|ID_LOCAL,
+			ID_PROTECTED,
 			IDENTIFIER_PIKE_FUNCTION, NULL,
 			OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
       }
@@ -4992,7 +4992,7 @@ struct program *end_first_pass(int finish)
 		       Pike_compiler->init_node,
 		       mknode(F_RETURN,mkintnode(0),0)),
 		init_type,
-		ID_PROTECTED|ID_LOCAL);
+		ID_PROTECTED);
     Pike_compiler->init_node=0;
   } else if (finish == 2) {
     /* Called from decode_value(). */
