@@ -895,9 +895,9 @@ Request async_do_method_url(string method,
 			    void|mapping query_variables,
 			    void|string|mapping data,
 			    void|mapping extra_headers,
-			    function callback_headers_ok,
-			    function callback_data_ok,
-			    function callback_fail,
+			    function|zero callback_headers_ok,
+			    function|zero callback_data_ok,
+			    function|zero callback_fail,
 			    array callback_arguments)
 {
    if(stringp(url)) url=Standards.URI(url);
@@ -925,28 +925,28 @@ Request async_do_method_url(string method,
 
 //! @decl Request async_get_url(URL url,@
 //! 			    void|mapping query_variables,@
-//! 			    function callback_headers_ok,@
-//! 			    function callback_data_ok,@
-//! 			    function callback_fail,@
+//! 			    function|zero callback_headers_ok,@
+//! 			    function|zero callback_data_ok,@
+//! 			    function|zero callback_fail,@
 //! 			    mixed... callback_arguments)
 //! @decl Request async_put_url(URL url,@
 //! 			    void|string file,@
 //! 			    void|mapping query_variables,@
-//! 			    function callback_headers_ok,@
-//! 			    function callback_data_ok,@
-//! 			    function callback_fail,@
+//! 			    function|zero callback_headers_ok,@
+//! 			    function|zero callback_data_ok,@
+//! 			    function|zero callback_fail,@
 //! 			    mixed... callback_arguments)
 //! @decl Request async_delete_url(URL url,@
 //! 			       void|mapping query_variables,@
-//! 			       function callback_headers_ok,@
-//! 			       function callback_data_ok,@
-//! 			       function callback_fail,@
+//! 			       function|zero callback_headers_ok,@
+//! 			       function|zero callback_data_ok,@
+//! 			       function|zero callback_fail,@
 //! 			       mixed... callback_arguments)
 //! @decl Request async_post_url(URL url,@
 //! 			     mapping query_variables,@
-//! 			     function callback_headers_ok,@
-//! 			     function callback_data_ok,@
-//! 			     function callback_fail,@
+//! 			     function|zero callback_headers_ok,@
+//! 			     function|zero callback_data_ok,@
+//! 			     function|zero callback_fail,@
 //! 			     mixed... callback_arguments)
 //!
 //! 	Sends a HTTP GET, POST, PUT or DELETE request to the server in
@@ -968,9 +968,9 @@ Request async_do_method_url(string method,
 
 Request async_get_url(URL url,
 		      void|mapping query_variables,
-		      function callback_headers_ok,
-		      function callback_data_ok,
-		      function callback_fail,
+		      function|zero callback_headers_ok,
+		      function|zero callback_data_ok,
+		      function|zero callback_fail,
 		      mixed ...callback_arguments)
 {
    return async_do_method_url("GET", url, query_variables,0,0,
@@ -981,9 +981,9 @@ Request async_get_url(URL url,
 Request async_put_url(URL url,
 		      void|string file,
 		      void|mapping query_variables,
-		      function callback_headers_ok,
-		      function callback_data_ok,
-		      function callback_fail,
+		      function|zero callback_headers_ok,
+		      function|zero callback_data_ok,
+		      function|zero callback_fail,
 		      mixed ...callback_arguments)
 {
    return async_do_method_url("PUT", url, query_variables, file,0,
@@ -993,9 +993,9 @@ Request async_put_url(URL url,
 
 Request async_delete_url(URL url,
 			 void|mapping query_variables,
-			 function callback_headers_ok,
-			 function callback_data_ok,
-			 function callback_fail,
+			 function|zero callback_headers_ok,
+			 function|zero callback_data_ok,
+			 function|zero callback_fail,
 			 mixed ...callback_arguments)
 {
    return async_do_method_url("DELETE", url, query_variables, 0,0,
@@ -1005,9 +1005,9 @@ Request async_delete_url(URL url,
 
 Request async_post_url(URL url,
 		       mapping|string query_variables,
-		       function callback_headers_ok,
-		       function callback_data_ok,
-		       function callback_fail,
+		       function|zero callback_headers_ok,
+		       function|zero callback_data_ok,
+		       function|zero callback_fail,
 		       mixed ...callback_arguments)
 {
    return async_do_method_url("POST", url, 0, query_variables, 0,
