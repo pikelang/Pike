@@ -3815,6 +3815,33 @@ static inline void exit_remap_state(struct remap_state *remap)
 }
 #define EXIT_REMAP_STATE(REMAP) exit_remap_state(&REMAP)
 
+#ifdef PIKE_DEBUG
+static void simple_describe_remap_state(struct remap_state *remap)
+{
+  int i;
+  if (!remap) {
+    fprintf(stderr, "remap: NULL\n");
+    return;
+  }
+  fprintf(stderr, "remap:\n");
+  for(i = 0; i < 0x40; i++) {
+    if (remap->map[i]) {
+      fprintf(stderr, "$%c%d ==> $%d\n",
+	      (i & 0x20)?((i & 0x10)?'d':'c'):((i & 0x10)?'b':'a'),
+	      i & 0xf, remap->map[i] & 0xf);
+    }
+  }
+  if (remap->markers[0]) {
+    fprintf(stderr, "markers[0]:\n");
+    simple_describe_mapping(remap->markers[0]);
+  }
+  if (remap->markers[1]) {
+    fprintf(stderr, "markers[1]:\n");
+    simple_describe_mapping(remap->markers[1]);
+  }
+}
+#endif
+
 static int alloc_remap_marker(struct remap_state *remap, int marker,
 			      enum pt_remap_flags flags)
 {
