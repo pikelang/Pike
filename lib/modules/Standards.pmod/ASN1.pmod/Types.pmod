@@ -16,9 +16,9 @@
 //! Combines tag and class to a single integer, for internal uses.
 //!
 //! @param cls
-//!   ASN1 type class (0..3).
+//!   ASN1 type class.
 //! @param tag
-//!   ASN1 type tag (1..).
+//!   ASN1 type tag.
 //! @returns
 //!   The combined tag.
 //! @seealso
