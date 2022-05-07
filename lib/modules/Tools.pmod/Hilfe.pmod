@@ -1115,7 +1115,8 @@ class Expression {
 //! that manages the current state of the parser. Essentially tokens are
 //! entered in one end and complete expressions are output in the other.
 //! The parser object is accessible as ___Hilfe->state from Hilfe expressions.
-protected class ParserState {
+protected class ParserState(Evaluator evaluator) {
+
   protected ADT.Stack pstack = ADT.Stack();
   protected constant starts = ([ ")":"(", "}":"{", "]":"[",
 			       ">)":"(<", "})":"({", "])":"([" ]);
@@ -1280,8 +1281,12 @@ protected class ParserState {
 	return 0;
       }
       if( has_prefix(tmp, "#pragma") ){
-	caught_error = "Pragma does not work inside Hilfe.\n";
-	return 0;
+        if( tmp=="#pragmastrict_types\n" ) {
+          evaluator->strict_types = 1;
+        } else {
+          caught_error = "Pragma does not work inside Hilfe.\n";
+        }
+        return 0;
       }
       if( has_prefix(tmp, "#if") || has_prefix(tmp, "#elif") ||
 	  has_prefix(tmp, "#else") || has_prefix(tmp, "#endif") ) {
@@ -1392,7 +1397,7 @@ class Evaluator {
   mapping(string:Command) commands = ([]);
 
   //! Keeps the state, e.g. multiline input in process etc.
-  ParserState state = ParserState();
+  ParserState state = ParserState(this);
 
   //! The locally defined variables (name:value).
   mapping(string:mixed) variables;
@@ -2235,7 +2240,7 @@ class Evaluator {
 
       map(imports, lambda(string f) { return "import "+f+";\n"; }) * "" +
 
-      "mapping(string:mixed) ___hilfe = ___Hilfe->variables;\n# 1\n" + f +
+      "mapping(string:mixed)|zero ___hilfe = ___Hilfe->variables;\n# 1\n" + f +
       "\n";
 
     HilfeCompileHandler handler = HilfeCompileHandler (sizeof (backtrace()));
