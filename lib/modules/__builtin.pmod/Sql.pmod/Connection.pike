@@ -655,7 +655,7 @@ variant .Result big_query(object|string q);
 //!   @[query], @[emulate_bindings], @[streaming_query], @[big_typed_query],
 //!   @[streaming_typed_query]
 variant .Result big_query(object|string q,
-			      mapping(string|int:mixed) bindings)
+                          mapping(string|int:mixed) bindings)
 {
   return big_query(emulate_bindings(q, bindings));
 }
@@ -694,8 +694,8 @@ variant .Result big_query(object|string q,
 //! @seealso
 //!   @[query], @[handle_extraargs], @[streaming_query]
 variant .Result big_query(object|string q,
-			      string|multiset|int|float|object extraarg,
-			      string|multiset|int|float|object ... extraargs)
+                          string|multiset|int|float|object extraarg,
+                          string|multiset|int|float|object ... extraargs)
 {
   return big_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
@@ -788,7 +788,7 @@ variant .Result big_typed_query(object|string q)
 //! @seealso
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
 variant .Result big_typed_query(object|string q,
-				    mapping(string|int:mixed) bindings)
+                                mapping(string|int:mixed) bindings)
 {
   return big_typed_query(emulate_bindings(q, bindings));
 }
@@ -816,8 +816,8 @@ variant .Result big_typed_query(object|string q,
 //! @seealso
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
 variant .Result big_typed_query(object|string q,
-				    string|multiset|int|float|object extraarg,
-				    string|multiset|int|float|object ... extraargs)
+                                string|multiset|int|float|object extraarg,
+                                string|multiset|int|float|object ... extraargs)
 {
   return big_typed_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
@@ -895,7 +895,7 @@ variant .Result streaming_query(object|string q)
 //! @seealso
 //!   @[big_query], @[streaming_typed_query]
 variant .Result streaming_query(object|string q,
-				    mapping(string:mixed) bindings)
+                                mapping(string:mixed) bindings)
 {
   return streaming_query(emulate_bindings(q, bindings));
 }
@@ -913,8 +913,8 @@ variant .Result streaming_query(object|string q,
 //! @seealso
 //!   @[big_query], @[streaming_typed_query]
 variant .Result streaming_query(object|string q,
-				    string|multiset|int|float|object extraarg,
-				    string|multiset|int|float|object ... extraargs)
+                                string|multiset|int|float|object extraarg,
+                                string|multiset|int|float|object ... extraargs)
 {
   return streaming_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
@@ -953,7 +953,7 @@ variant .Result streaming_typed_query(object|string q)
 //! @seealso
 //!   @[big_query], @[streaming_query], @[big_typed_query]
 variant .Result streaming_typed_query(object|string q,
-					  mapping(string|int:mixed) bindings)
+                                      mapping(string|int:mixed) bindings)
 {
   return streaming_typed_query(emulate_bindings(q, bindings));
 }
@@ -971,8 +971,8 @@ variant .Result streaming_typed_query(object|string q,
 //! @seealso
 //!   @[big_query], @[streaming_query], @[big_typed_query]
 variant .Result streaming_typed_query(object|string q,
-					  string|multiset|int|float|object extraarg,
-					  string|multiset|int|float|object ... extraargs)
+                                      string|multiset|int|float|object extraarg,
+                                      string|multiset|int|float|object ... extraargs)
 {
   return streaming_typed_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
@@ -1254,6 +1254,6 @@ public variant .Promise promise_query(string q,
   return __builtin.Sql.Promise(this, q, bindings, map_cb);
 }
 public variant .Promise promise_query(string q,
-                          function(array, .Result, array :array) map_cb) {
+                     function(array, .Result, array :array) map_cb) {
   return __builtin.Sql.Promise(this, q, 0, map_cb);
 }
