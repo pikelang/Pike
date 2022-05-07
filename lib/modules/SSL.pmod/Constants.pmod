@@ -1789,7 +1789,7 @@ class CertificatePair
       error("Empty list of certificates.\n");
     }
 
-    array(Standards.X509.TBSCertificate) tbss =
+    array(Standards.X509.TBSCertificate|zero) tbss =
       map(certs, Standards.X509.decode_certificate);
 
     if (has_value(tbss, 0)) error("Invalid cert\n");

@@ -1467,7 +1467,7 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
 
 //! Decodes a certificate and verifies that it is structually sound.
 //! Returns a @[TBSCertificate] object if ok, otherwise @expr{0@}.
-TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
+TBSCertificate|zero decode_certificate(string|.PKCS.Signature.Signed cert)
 {
   if (stringp (cert))
   {
