@@ -650,9 +650,13 @@ static void f_compilation_env_resolv(INT32 args)
     {
       my_yyerror("Recursive module dependency in %S.", ident);
     }else{
+      ONERROR err;
+
       SET_CYCLIC_RET(1);
 
+      SET_ONERROR(err, unlink_cyclic, &cyclic_struct__);
       low_unsafe_apply_handler("resolv", handler, compat_handler, args);
+      UNSET_ONERROR(err);
     }
     END_CYCLIC();
   } else {
