@@ -494,7 +494,7 @@ int select_cipher_suite(array(CertificatePair) certs,
 //! @param max_hash_size
 //!
 int set_cipher_suite(int suite, ProtocolVersion version,
-		     array(int) signature_algorithms,
+		     array(int)|zero signature_algorithms,
 		     int max_hash_size)
 {
   this::version = version;

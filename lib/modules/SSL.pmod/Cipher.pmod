@@ -300,7 +300,7 @@ class CipherSpec {
   }
 
   void set_hash(int max_hash_size,
-                array(int) signature_algorithms)
+                array(int)|zero signature_algorithms)
   {
     // Stay with SHA1 for requests without signature algorithms
     // extensions (RFC 5246 7.4.1.4.1) and anonymous requests.
@@ -1958,7 +1958,7 @@ class RC2
 //!   Returns @expr{0@} (zero) for unsupported combinations, otherwise
 //!   returns an initialized @[CipherSpec] for the @[suite].
 CipherSpec lookup(int suite, ProtocolVersion|int version,
-                  array(int) signature_algorithms,
+                  array(int)|zero signature_algorithms,
                   int max_hash_size)
 {
   CipherSpec res = CipherSpec();
