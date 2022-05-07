@@ -3938,7 +3938,8 @@ static int lookup_marker(struct remap_state *remap, int marker,
 static void store_marker(struct remap_state *remap, int marker,
 			 struct pike_type *value, enum pt_remap_flags flags)
 {
-  struct svalue key, val;
+  struct svalue key, val, *old;
+  struct pike_type *both = NULL;
   int marker_set = !!(flags & PT_FLAG_REMAP_SWAP_MARKERS);
 
   if (!remap || !marker) return;
@@ -3948,12 +3949,19 @@ static void store_marker(struct remap_state *remap, int marker,
   }
 
   SET_SVAL(key, T_INT, NUMBER_NUMBER, integer, marker);
+  old = low_mapping_lookup(remap->markers[marker_set], &key);
   if (value) {
+    if (old && (TYPEOF(*old) == T_TYPE)) {
+      value = both = or_pike_types(old->u.type, value, 0);
+    }
     SET_SVAL(val, T_TYPE, 0, type, value);
-  } else {
+  } else if (!old) {
     SET_SVAL(val, T_INT, NUMBER_NUMBER, integer, 0);
+  } else {
+    val = *old;
   }
   mapping_insert(remap->markers[marker_set], &key, &val);
+  free_type(both);
 }
 #define store_marker(REMAP, M, T, F) store_marker(REMAP, M, debug_malloc_pass(T), F)
 
