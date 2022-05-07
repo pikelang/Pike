@@ -11793,6 +11793,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       struct remap_state remap;
       struct pike_type *old_res;
       struct pike_type *fun_cont;
+      enum pt_remap_flags remap_flags = 0;
 
       INIT_REMAP_STATE(remap);
 
@@ -11803,6 +11804,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	fprintf(stderr, " against function type ");
 	simple_describe_type(fun_type);
 	fprintf(stderr, ".\n");
+	remap_flags |= PT_FLAG_REMAP_TRACE;
       }
 #endif /* PIKE_DEBUG */
 
@@ -11818,7 +11820,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 			   arg_type, tmp2, &remap,
 			   PT_FLAG_CMP_VOID_IS_ZERO,
 			   PT_FLAG_CMP_VOID_IS_ZERO,
-			   PT_FLAG_REMAP_EVAL_MARKERS);
+			   remap_flags|PT_FLAG_REMAP_EVAL_MARKERS);
 
 	  /* Legend for mismatch:
 	   *   0 - Strict match.
@@ -11863,7 +11865,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
        *     then still holds the same assignments too.
        */
       res = remap_markers(fun_cont, &remap,
-			  PT_FLAG_REMAP_SWAP_MARKERS|
+			  remap_flags|PT_FLAG_REMAP_SWAP_MARKERS|
 			  ((fun_type == fun_cont)?
 			   PT_FLAG_REMAP_KEEP_MARKERS:0));
 
