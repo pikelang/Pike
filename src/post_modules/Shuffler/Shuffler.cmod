@@ -451,7 +451,7 @@ PIKECLASS Shuffle
     }
   }
 
-  PIKEFUN void set_done_callback( function(object, int:void) cb )
+  PIKEFUN void set_done_callback( function(object, int:void)|zero cb )
    /*! @decl void set_done_callback( function(Shuffle,int:void) cb )
     *! Sets the done callback. This function will be called when all
     *! sources have been processed, or if an error occurs.
