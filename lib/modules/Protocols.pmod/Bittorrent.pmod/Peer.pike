@@ -281,7 +281,7 @@ void connect2(string ip2)
       });
 }
 
-void drop(string how,void|string misc)
+void drop(string|zero how,void|string misc)
 {
    online=0;
    if (how) _status(how,misc);
