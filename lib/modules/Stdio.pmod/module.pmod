@@ -157,7 +157,7 @@ class BlockFile
 local typedef
   function(mixed|void,string:int|void)|
   function(mixed|void,Buffer:int|void)|
-  function(mixed|void:int|void) read_callback_t;
+  function(mixed|void:int|void)|zero read_callback_t;
 
 //! The various write_callback signatures.
 //!
@@ -168,7 +168,7 @@ local typedef
 //! for writing, add data to that buffer to send it.
 local typedef
   function(mixed|void:int|void) |
-  function(mixed|void,Buffer:int|void) write_callback_t;
+  function(mixed|void,Buffer:int|void)|zero write_callback_t;
 
 
 //! This is the basic I/O object, it provides socket and pipe
@@ -293,10 +293,10 @@ class File
 
   protected read_callback_t ___read_callback;
   protected write_callback_t ___write_callback;
-  protected function(mixed|void:int) ___close_callback;
-  protected function(mixed|void,string|void:int) ___read_oob_callback;
-  protected function(mixed|void:int) ___write_oob_callback;
-  protected function(mixed|void,int:int) ___fs_event_callback;
+  protected function(mixed|void:int)|zero ___close_callback;
+  protected function(mixed|void,string|void:int)|zero ___read_oob_callback;
+  protected function(mixed|void:int)|zero ___write_oob_callback;
+  protected function(mixed|void,int:int)|zero ___fs_event_callback;
   protected mixed ___id;
 
 #ifdef __STDIO_DEBUG
