@@ -6394,6 +6394,12 @@ struct pike_type *type_binop(enum pt_binop op,
   struct remap_state remap;
   struct pike_type *ret;
 
+#ifdef PIKE_DEBUG
+  if (l_flag > 2) {
+    remap_flags |= PT_FLAG_REMAP_TRACE;
+  }
+#endif
+
   INIT_REMAP_STATE(remap);
 
   ret = low_type_binop(op, a, b, &remap, aflags, bflags, remap_flags);
