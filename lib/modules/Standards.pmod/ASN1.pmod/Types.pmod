@@ -23,8 +23,8 @@
 //!   The combined tag.
 //! @seealso
 //!  @[extract_tag], @[extract_cls]
-int(4..) make_combined_tag(int(0..3) cls, int(1..) tag)
-{ return [int(4..)](tag << 2 | cls); }
+int(0..) make_combined_tag(int(0..3) cls, int(0..) tag)
+{ return (tag << 2 | cls); }
 
 //! Extract ASN1 type tag from a combined tag.
 //! @seealso
@@ -1071,7 +1071,7 @@ class BMPString
 class MetaExplicit
 {
   int(0..3) real_cls;
-  int(1..) real_tag = 1;
+  int(0..) real_tag = 1;
 
   mapping(int:program(Object)) valid_types = ([]);
 
@@ -1081,7 +1081,7 @@ class MetaExplicit
     constant constructed = 1;
 
     int(0..3) get_cls() { return real_cls; }
-    int(1..) get_tag() { return real_tag; }
+    int(0..) get_tag() { return real_tag; }
 
     Object|int(0..0) contents;
 
@@ -1145,7 +1145,7 @@ class MetaExplicit
   }
 
   //!
-  protected void create(int(0..3) cls, int(1..) tag,
+  protected void create(int(0..3) cls, int(0..) tag,
 			mapping(int:program(Object))|void types) {
     real_cls = cls;
     real_tag = tag;
