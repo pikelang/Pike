@@ -250,7 +250,7 @@ protected class jmethod {
       return wrap_result(mm(@unwrap_args(args)), info);
   }
 
-  protected void create(mapping(string:mixed) i, object o,
+  protected void create(mapping(string:mixed) i, object|zero o,
 			mapping(string:object) p)
   {
     info = i;
