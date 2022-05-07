@@ -2015,6 +2015,7 @@ void f_sprintf(INT32 args)
 
 #define PSAT_INVALID	1
 #define PSAT_MARKER	2
+#define PSAT_SMARKER	4
 
 /* Push the types corresponding to the %-directives in the format string.
  *
@@ -2034,6 +2035,7 @@ static int push_sprintf_argument_types(PCHARP format,
 				       ptrdiff_t format_len,
 				       int ret,
 				       int int_marker,
+				       int str_marker,
 				       p_wchar2 *min_charp,
 				       p_wchar2 *max_charp,
 				       int severity)
@@ -2287,7 +2289,8 @@ static int push_sprintf_argument_types(PCHARP format,
 	 * ... Unless there was a syntax error...
 	 */
 	ret = push_sprintf_argument_types(ADD_PCHARP(a,1), e-2, ret,
-					  int_marker, &min_char, &max_char,
+					  int_marker, str_marker,
+					  &min_char, &max_char,
 					  severity);
 	/* Join the argument types for our array. */
 	push_type(PIKE_T_ZERO);
@@ -2424,19 +2427,26 @@ static int push_sprintf_argument_types(PCHARP format,
       }
 
       case 'q':
+      {
+	push_object_type(0, 0);
+	push_finished_type(int_type_string);
+	push_unlimited_array_type(T_STRING);
+	push_type(T_OR);
+	if (min_char > 32) min_char = 32;	// Control characters and
+	if (max_char < 255) max_char = 255;	// non-8-bit are escaped.
+	break;
+      }
+
       case 's':
       {
 	push_object_type(0, 0);
-	if (int_marker) {
-	  push_assign_type(int_marker);
-	}
 	push_finished_type(int_type_string);
-	if (int_marker) {
-	  push_assign_type(int_marker);
-	  ret |= PSAT_MARKER;
-	}
 	push_unlimited_array_type(T_STRING);
 	push_type(T_OR);
+	if (str_marker) {
+	  push_assign_type(str_marker);
+	}
+	ret |= PSAT_SMARKER;
 	break;
       }
 
@@ -2573,6 +2583,7 @@ void f___handle_sprintf_format(INT32 args)
   int found = 0;
   int fmt_count;
   int marker;
+  int str_marker = 0;
   int marker_mask;
 
   if (args != 4)
@@ -2619,6 +2630,15 @@ void f___handle_sprintf_format(INT32 args)
     marker_mask <<= 1;
   }
   if (marker > '9') marker = 0;
+  else {
+    str_marker = marker + 1;
+    marker_mask <<= 1;
+    while (tmp->flags & marker_mask) {
+      str_marker++;
+      marker_mask <<= 1;
+    }
+    if (str_marker > '9') str_marker = 0;
+  }
 
   fmt = Pike_sp[-3].u.string;
   MAKE_CONST_STRING(attr, "sprintf_args");
@@ -2654,11 +2674,25 @@ void f___handle_sprintf_format(INT32 args)
 
       type_stack_mark();
       ret = push_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-					fmt->len, 0, marker,
+					fmt->len, 0, marker, str_marker,
 					&min_char, &max_char, severity);
       switch(ret) {
-      case 0:
+      case PSAT_SMARKER:
+      case PSAT_MARKER|PSAT_SMARKER:
+	if (!str_marker) {
+	  min_char = -0x80000000;
+	  max_char = 0x7fffffff;
+	  ret &= ~PSAT_SMARKER;
+	}
+	/* FALLTHRU */
       case PSAT_MARKER:
+	if (!marker && (ret & PSAT_MARKER)) {
+	  min_char = -0x80000000;
+	  max_char = 0x7fffffff;
+	  ret &= ~PSAT_MARKER;
+	}
+	/* FALLTHRU */
+      case 0:
 	/* Ok. */
 	if (!array_cnt) {
 	  struct pike_type *trailer;
@@ -2684,9 +2718,25 @@ void f___handle_sprintf_format(INT32 args)
 	    } else if (ret & PSAT_MARKER) {
 	      push_type(marker);
 	    } else {
-	      push_type(PIKE_T_ZERO);
+	      push_type(PIKE_T_UNKNOWN);
 	    }
 	    push_unlimited_array_type(PIKE_T_STRING);
+	    if (ret & PSAT_SMARKER) {
+	      push_finished_type(int_type_string);	/* Len */
+	      push_type(str_marker);
+	      push_finished_type(string_type_string);
+	      push_type(T_AND);
+	      push_type(str_marker);
+	      push_finished_type(object_type_string);
+	      push_type(T_AND);
+	      push_type_operator(PIKE_T_FIND_LFUN,
+				 (struct pike_type *)(ptrdiff_t)LFUN__SPRINTF);
+	      /* FIXME: Need splice apply with mixed. */
+	      push_type_operator(PIKE_T_GET_RETURN, NULL);
+	      push_type(T_OR);
+	      push_type(PIKE_T_SET_CAR);
+	      push_type(T_OR);
+	    }
 	  } else {
 	    push_finished_type(tmp->cdr);	/* Return type */
 	  }
