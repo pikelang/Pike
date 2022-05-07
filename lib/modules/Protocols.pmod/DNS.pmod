@@ -1979,7 +1979,7 @@ class client
 
   //!
   class Request(string domain, string req,
-		function(string,mapping,mixed...:void) callback,
+		function(string,mapping|zero,mixed...:void)|zero callback,
 		array(mixed) args)
   {
     int retries;
@@ -2114,7 +2114,7 @@ class async_client
   }
 
   private void collect_return(string domain, mapping res,
-                              function(array, mixed ...:void) callback,
+                              function(array|zero, mixed ...:void)|zero callback,
                               mixed ... restargs) {
     array an = res->an;
     switch (res->rcode) {
