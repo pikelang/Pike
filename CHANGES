@@ -33,6 +33,8 @@ o Runtime and EFUNS
   - decode_value can be called with codec -1, which disables decoding of
     functions, objects, programs and types.
 
+o Unicode databases updated to 14.0.0 from 7.0.0
+
 Bug Fixes
 ---------
 
