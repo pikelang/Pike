@@ -2505,12 +2505,13 @@ void simple_describe_type(struct pike_type *s)
 	while(s->type == T_FUNCTION) {
 	  simple_describe_type(s->car);
 	  s = s->cdr;
-	  if ((s->type == T_FUNCTION) ||
-	      ((s->type == T_MANY) && (s->car->type != T_VOID))) {
+	  if (s &&
+	      ((s->type == T_FUNCTION) ||
+	       ((s->type == T_MANY) && (s->car->type != T_VOID)))) {
 	    fprintf(stderr, ", ");
 	  }
 	}
-	if (s->type != T_MANY) {
+	if (!s || (s->type != T_MANY)) {
 	  fprintf(stderr, ", @");
 	  simple_describe_type(s);
 	  fprintf(stderr, ")");
