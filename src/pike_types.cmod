@@ -4577,11 +4577,20 @@ static struct pike_type *low_type_binop(enum pt_binop op,
 				    debug_malloc_pass(REMAP),		\
 				    AFLAGS, BFLAGS, REMAP_FLAGS)))
 #endif /* DEBUG_MALLOC */
-#ifdef PIKE_DEBUG
-  struct pike_type **save_type_stackp = Pike_compiler->type_stackp;
-  struct pike_type ***save_mark_stackp = Pike_compiler->pike_type_mark_stackp;
-#endif
   struct pike_type *ret;
+  DECLARE_CYCLIC();
+
+  if (BEGIN_CYCLIC3(a, b, (ptrdiff_t)op)) {
+#if 0
+    END_CYCLIC();
+
+    if (op & PT_BINOP_AND) {
+      return remap_markers(a, remap, remap_flags);
+    }
+    return NULL;
+#endif
+  }
+  SET_CYCLIC_RET(1);
 
   if (remap_flags & PT_FLAG_REMAP_TRACE) {
     fprintf(stderr, "low_type_binop(0x%04x, ", op);
@@ -4590,37 +4599,21 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     simple_describe_type(b);
     fprintf(stderr, ", %p, 0x%04x, 0x%04x, 0x%02x)\n",
 	    remap, aflags, bflags, remap_flags);
+
+    ret = debug_malloc_pass(lower_type_binop(op, a, b, remap,
+					     aflags, bflags, remap_flags));
+
+    fprintf(stderr, "ret: ");
+    simple_describe_type(ret);
+    fprintf(stderr, "\n");
+
+    END_CYCLIC();
+    return ret;
   }
 
   ret = debug_malloc_pass(lower_type_binop(op, a, b, remap,
 					   aflags, bflags, remap_flags));
-
-  if (remap_flags & PT_FLAG_REMAP_TRACE) {
-    fprintf(stderr, "ret: ");
-    simple_describe_type(ret);
-    fprintf(stderr, "\n");
-  }
-
-#ifdef PIKE_DEBUG
-  if ((save_type_stackp != Pike_compiler->type_stackp) ||
-      (save_mark_stackp != Pike_compiler->pike_type_mark_stackp)) {
-    fprintf(stderr, "low_type_binop stack level corruption!\n"
-	    "op : 0x%x\na: ", op);
-    simple_describe_type(a);
-    fprintf(stderr, "\nb: ");
-    simple_describe_type(b);
-    fprintf(stderr, "\nret: ");
-    simple_describe_type(ret);
-    fprintf(stderr, "\n\n");
-
-    Pike_fatal("Stack level corruption!\n"
-	       "type stack: %p (expected: %p)\n"
-	       "mark stack: %p (expected: %p)\n",
-	       Pike_compiler->type_stackp, save_type_stackp,
-	       Pike_compiler->pike_type_mark_stackp, save_mark_stackp);
-  }
-#endif
-
+  END_CYCLIC();
   return ret;
 }
 static struct pike_type *lower_type_binop(enum pt_binop op,
