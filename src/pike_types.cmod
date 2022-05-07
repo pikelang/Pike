@@ -5656,15 +5656,19 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  if (!bret) bret = bi->cdr;
 
 	  /* NB: Ignore the return type if matching against void. */
-	  tmp = low_type_binop(PT_BINOP_MINUS, aret, bret, remap,
-			       PT_FLAG_CMP_VOIDABLE, 0, remap_flags);
+	  if (bret != void_type_string) {
+	    tmp = low_type_binop(PT_BINOP_MINUS, aret, bret, remap,
+				 PT_FLAG_CMP_VOIDABLE, 0, remap_flags);
 
-	  if (tmp) {
-	    /* Not full overlap for the return value. */
-	    push_finished_type(tmp);
-	    push_finished_type(a->car);
-	    push_type(T_MANY);
-	    free_type(tmp);
+	    if (tmp) {
+	      /* Not full overlap for the return value. */
+	      push_finished_type(tmp);
+	      push_finished_type(a->car);
+	      push_type(T_MANY);
+	      free_type(tmp);
+	    } else {
+	      push_type(PIKE_T_UNKNOWN);
+	    }
 	  } else {
 	    push_type(PIKE_T_UNKNOWN);
 	  }
