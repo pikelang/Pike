@@ -2507,7 +2507,7 @@ void simple_describe_type(struct pike_type *s)
 	  s = s->cdr;
 	  if (s &&
 	      ((s->type == T_FUNCTION) ||
-	       ((s->type == T_MANY) && (s->car->type != T_VOID)))) {
+	       ((s->type == T_MANY) && (s->car != void_type_string)))) {
 	    fprintf(stderr, ", ");
 	  }
 	}
