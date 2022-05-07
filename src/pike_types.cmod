@@ -4117,7 +4117,7 @@ static void push_remap_markers(struct pike_type *t,
       struct pike_type *value = NULL;
 
       if (lookup_marker(remap, marker, flags, &value)) {
-	push_remap_markers(value, remap, flags);
+	push_finished_type(value);
 	free_type(value);
 	if (marker && (flags & PT_FLAG_REMAP_KEEP_MARKERS)) {
 	  push_type(marker);
@@ -4151,7 +4151,7 @@ static void push_remap_markers(struct pike_type *t,
 	value = NULL;
 	if (lookup_marker(remap, marker,
 			  flags ^ PT_FLAG_REMAP_SWAP_MARKERS, &value)) {
-	  push_remap_markers(value, remap, flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+	  push_finished_type(value);
 	  free_type(value);
 	} else if (flags & PT_FLAG_REMAP_EVAL_MARKERS) {
 	  /* Marker without matching assign. */
