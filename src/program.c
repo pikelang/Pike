@@ -4801,6 +4801,7 @@ struct program *end_first_pass(int finish)
   int e;
   struct program *prog = Pike_compiler->new_program;
   struct pike_string *init_name;
+  struct pike_type *init_type = NULL;
   int num_refs = prog->num_identifier_references;
   union idptr dispatch_fun;
 
@@ -4911,6 +4912,10 @@ struct program *end_first_pass(int finish)
     }
   }
 
+  if (Pike_compiler->init_node) {
+    init_type = low_mapping_string_lookup(lfun_types, init_name)->u.type;
+  }
+
   if (finish == 1) {
     if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
       /* Called from end_program(). */
@@ -4922,7 +4927,8 @@ struct program *end_first_pass(int finish)
 	 * Also make sure that it is marked as having side effects,
 	 * or it will be optimized away when inherited...
 	 */
-	define_function(init_name, function_type_string, ID_PROTECTED,
+	define_function(init_name, init_type,
+			ID_PROTECTED|ID_LOCAL,
 			IDENTIFIER_PIKE_FUNCTION, NULL,
 			OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
       }
@@ -4985,8 +4991,8 @@ struct program *end_first_pass(int finish)
 		mknode(F_COMMA_EXPR,
 		       Pike_compiler->init_node,
 		       mknode(F_RETURN,mkintnode(0),0)),
-		function_type_string,
-		ID_PROTECTED);
+		init_type,
+		ID_PROTECTED|ID_LOCAL);
     Pike_compiler->init_node=0;
   } else if (finish == 2) {
     /* Called from decode_value(). */
