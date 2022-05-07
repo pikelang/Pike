@@ -51,3 +51,5 @@
       }									\
     }									\
   } while(0)
+
+void add_relocated_int_to_program(INT32 i);

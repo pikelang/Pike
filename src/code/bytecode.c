@@ -8,6 +8,12 @@
  * Default bytecode assembler for Pike.
  */
 
+void add_relocated_int_to_program(INT32 i)
+{
+  add_to_relocations(Pike_compiler->new_program->num_program);
+  ins_int(i, add_to_program);
+}
+
 void ins_f_byte(unsigned int b)
 {
   b-=F_OFFSET;

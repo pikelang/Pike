@@ -2023,12 +2023,6 @@ static int add_identifier(struct compilation *c,
   return n;
 }
 
-void add_relocated_int_to_program(INT32 i)
-{
-  add_to_relocations(Pike_compiler->new_program->num_program);
-  ins_int(i, add_to_program);
-}
-
 void use_module(struct svalue *s)
 {
   struct compilation *c = THIS_COMPILATION;
