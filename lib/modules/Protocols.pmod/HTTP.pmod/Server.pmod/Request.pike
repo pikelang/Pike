@@ -829,7 +829,7 @@ void response_and_finish(mapping m, function|void _log_cb)
              sf->add_source(m->data);
          }
          if (m->start) {
-           sf->set_done_callback(lambda() {
+           sf->set_done_callback(lambda(mixed ...) {
               // Special offset handling, the header has been sent already
              // using the previous shuffle
              sf = sfr->shuffle(my_fd, m->start, m->size);
@@ -964,7 +964,7 @@ void send_timeout()
    finish(0);
 }
 
-void send_close()
+void send_close(mixed ... dummy)
 {
 /* socket closed by peer */
    finish(0);
