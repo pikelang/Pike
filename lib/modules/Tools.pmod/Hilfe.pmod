@@ -3037,9 +3037,10 @@ format
 
 hedda
     Initializes some variables for quick access, unless they are
-    already defined. These variables may be added: mixed foo,
-    mixed bar, int i, float f=0.0, mapping m=([]), array a=({})
-    and string s=\"\".
+    already defined. These variables may be added: mixed foo, mixed
+    bar, int i, float f=0.0, mapping m=([]), array a=({}) and string
+    s=\"\". The indices function will also sort indices made on
+    objects and programs.
 
 history
     Change the maximum number of entries that are kept in the
