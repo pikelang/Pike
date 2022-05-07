@@ -100,7 +100,7 @@ int datapos, discarded_bytes, cpos;
 object conthread;
 #endif
 
-local function request_ok,request_fail;
+local function|zero request_ok,request_fail;
 array extra_args;
 
 void init_async_timeout()
@@ -700,8 +700,8 @@ array(string) dns_lookup(string hostname)
 
 /****** called methods *********************************************/
 
-//! @decl Protocols.HTTP.Query set_callbacks(function request_ok, @
-//!                                          function request_fail, @
+//! @decl Protocols.HTTP.Query set_callbacks(function|zero request_ok, @
+//!                                          function|zero request_fail, @
 //!                                          mixed ... extra)
 //! @decl Protocols.HTTP.Query async_request(string server, int port, @
 //!                                          string query)
@@ -722,8 +722,8 @@ array(string) dns_lookup(string hostname)
 //! @returns
 //!	Returns the called object
 
-this_program set_callbacks(function(object,mixed...:mixed) _ok,
-			   function(object,mixed...:mixed) _fail,
+this_program set_callbacks(function(object,mixed...:mixed)|zero _ok,
+			   function(object,mixed...:mixed)|zero _fail,
 			   mixed ...extra)
 {
    extra_args=extra;

@@ -215,9 +215,9 @@ class Request
 
 // ---------------- async
 
-   protected function(mixed...:mixed) headers_callback;
-   protected function(mixed...:mixed) data_callback;
-   protected function(mixed...:mixed) fail_callback;
+   protected function(mixed...:mixed)|zero headers_callback;
+   protected function(mixed...:mixed)|zero data_callback;
+   protected function(mixed...:mixed)|zero fail_callback;
    protected array(mixed) extra_callback_arguments;
 
 //!	Setup callbacks for async mode,
@@ -228,9 +228,9 @@ class Request
 //!
 //!	Note here that an error message from the server isn't
 //!	considered a failure, only a failed TCP connection.
-   void set_callbacks(function(mixed...:mixed) headers,
-		      function(mixed...:mixed) data,
-		      function(mixed...:mixed) fail,
+   void set_callbacks(function(mixed...:mixed)|zero headers,
+		      function(mixed...:mixed)|zero data,
+		      function(mixed...:mixed)|zero fail,
 		      mixed ...callback_arguments)
    {
       headers_callback=headers;
@@ -305,7 +305,7 @@ class Request
       con->set_callbacks(0,0);
 
       array eca=extra_callback_arguments;
-      function fc=fail_callback;
+      function|zero fc=fail_callback;
       set_callbacks(0,0,0); // drop all references
 
       if (fc) fc(@eca); // note that we may be destructed here
