@@ -5264,8 +5264,20 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
   /* Check implicit casting. */
   switch(TWOT(a->type & PIKE_T_MASK, b->type & PIKE_T_MASK)) {
-  case TWOT(T_PROGRAM, T_TYPE):
   case TWOT(T_PROGRAM, T_PROGRAM):
+    if (a->car == object_type_string) {
+      if (op & PT_BINOP_AND) {
+	return remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      }
+    }
+    if (b->car == object_type_string) {
+      if (op & PT_BINOP_AND) {
+	return remap_markers(a, remap, remap_flags);
+      }
+      return NULL;
+    }
+    /* FALLTHRU */
+  case TWOT(T_PROGRAM, T_TYPE):
   case TWOT(T_PROGRAM, T_FUNCTION):
   case TWOT(T_PROGRAM, T_MANY):
   case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
