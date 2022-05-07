@@ -95,24 +95,24 @@ class NonblockingStream
   //! @decl @Pike.Annotations.Implements(Stream)
   @__builtin.Implements(Stream);
 
-  //!
-  NonblockingStream set_read_callback( function f, mixed ... rest );
-  NonblockingStream set_write_callback( function f, mixed ... rest );
-  NonblockingStream set_close_callback( function f, mixed ... rest );
-  NonblockingStream set_fs_event_callback( function f, int event_mask, mixed ... rest );
+  //!11
+  NonblockingStream set_read_callback( function|zero f, mixed ... rest );
+  NonblockingStream set_write_callback( function|zero f, mixed ... rest );
+  NonblockingStream set_close_callback( function|zero f, mixed ... rest );
+  NonblockingStream set_fs_event_callback( function|zero f, int event_mask, mixed ... rest );
 
   //!
-  optional NonblockingStream set_read_oob_callback(function f, mixed ... rest)
+  optional NonblockingStream set_read_oob_callback(function|zero f, mixed ... rest)
   {
     error("OOB not implemented for this stream type\n");
   }
-  optional NonblockingStream set_write_oob_callback(function f, mixed ... rest)
+  optional NonblockingStream set_write_oob_callback(function|zero f, mixed ... rest)
   {
     error("OOB not implemented for this stream type\n");
   }
 
   //!
-  void set_nonblocking( function a, function b, function c,
+  void set_nonblocking( function|zero a, function|zero b, function|zero c,
                         function|void d, function|void e);
 
   //!
@@ -1377,14 +1377,14 @@ class File
     return ___write_oob_callback(___id||this);
   }
 
-  //! @decl void set_read_callback(function(mixed,string:int) read_cb)
-  //! @decl void set_read_callback(function(mixed,Buffer:int) read_cb)
-  //! @decl void set_write_callback(function(mixed:int) write_cb)
-  //! @decl void set_write_callback(function(mixed,Buffer:int) write_cb)
-  //! @decl void set_read_oob_callback(function(mixed, string:int) read_oob_cb)
-  //! @decl void set_write_oob_callback(function(mixed:int) write_oob_cb)
-  //! @decl void set_close_callback(function(mixed:int) close_cb)
-  //! @decl void set_fs_event_callback(function(mixed,int:int) fs_event_cb, int event_mask)
+  //! @decl void set_read_callback(function(mixed,string:int)|zero read_cb)
+  //! @decl void set_read_callback(function(mixed,Buffer:int)|zero read_cb)
+  //! @decl void set_write_callback(function(mixed:int)|zero write_cb)
+  //! @decl void set_write_callback(function(mixed,Buffer:int)|zero write_cb)
+  //! @decl void set_read_oob_callback(function(mixed, string:int)|zero read_oob_cb)
+  //! @decl void set_write_oob_callback(function(mixed:int)|zero write_oob_cb)
+  //! @decl void set_close_callback(function(mixed:int)|zero close_cb)
+  //! @decl void set_fs_event_callback(function(mixed,int:int)|zero fs_event_cb, int event_mask)
   //!
   //! These functions set the various callbacks, which will be called
   //! when various events occur on the stream. A zero as argument will
@@ -1583,12 +1583,12 @@ class File
     ::_enable_callbacks();
   }
 
-  //! @decl read_callback_t query_read_callback()
-  //! @decl write_callback_t query_write_callback()
-  //! @decl function(mixed, string:int) query_read_oob_callback()
-  //! @decl function(mixed:int) query_write_oob_callback()
-  //! @decl function(mixed:int) query_close_callback()
-  //! @decl array(function(mixed,void|string:int)) query_callbacks()
+  //! @decl read_callback_t|zero query_read_callback()
+  //! @decl write_callback_t|zero query_write_callback()
+  //! @decl function(mixed, string:int)|zero query_read_oob_callback()
+  //! @decl function(mixed:int)|zero query_write_oob_callback()
+  //! @decl function(mixed:int)|zero query_close_callback()
+  //! @decl array(function(mixed,void|string:int)|zero) query_callbacks()
   //!
   //! These functions return the currently installed callbacks for the
   //! respective events.
@@ -1604,7 +1604,7 @@ class File
 
   //! @ignore
 
-  void set_read_callback(read_callback_t read_cb)
+  void set_read_callback(read_callback_t|zero read_cb)
   {
     BE_WERR("setting read_callback to %O\n", read_cb);
     ::set_read_callback(((___read_callback = read_cb) &&
@@ -1612,19 +1612,19 @@ class File
 			(___close_callback && __stdio_close_callback));
   }
 
-  read_callback_t query_read_callback()
+  read_callback_t|zero query_read_callback()
   {
     return ___read_callback;
   }
 
 #define CBFUNC(TYPE, X)					\
-  void set_##X (TYPE l##X)				\
+  void set_##X (TYPE|zero l##X)				\
   {							\
     BE_WERR("setting " #X " to %O\n", l##X);            \
     SET( X , l##X );					\
   }							\
 							\
-  TYPE query_##X ()					\
+  TYPE|zero query_##X ()				\
   {							\
     return ___##X;					\
   }
@@ -1633,7 +1633,7 @@ class File
   CBFUNC(function(mixed|void,string|void:int), read_oob_callback)
   CBFUNC(function(mixed|void:int), write_oob_callback)
 
-  void set_fs_event_callback(function(mixed|void,int:int) c, int event_mask)
+  void set_fs_event_callback(function(mixed|void,int:int)|zero c, int event_mask)
   {
     ___fs_event_callback=c;
     if(c)
@@ -1646,7 +1646,7 @@ class File
     }
   }
 
-  void set_close_callback(function(mixed|void:int) c)  {
+  void set_close_callback(function(mixed|void:int)|zero c)  {
     ___close_callback=c;
     if (!___read_callback) {
       if (c) {
@@ -1657,9 +1657,9 @@ class File
     }
   }
 
-  function(mixed|void:int) query_close_callback() { return ___close_callback; }
+  function(mixed|void:int)|zero query_close_callback() { return ___close_callback; }
 
-  function(mixed|void,int:int) query_fs_event_callback()
+  function(mixed|void,int:int)|zero query_fs_event_callback()
   {
     return ___fs_event_callback;
   }
@@ -1668,7 +1668,7 @@ class File
   // this getter is provided by Stdio.Fd.
   // function(mixed|void:int) query_fs_event_callback() { return ___fs_event_callback; }
 
-  array(function(mixed,void|string|Buffer:int)) query_callbacks()
+  array(function(mixed,void|string|Buffer:int)|zero) query_callbacks()
   {
     return ({
       ___read_callback,
@@ -1709,14 +1709,14 @@ class File
   //!
   mixed query_id() { return ___id; }
 
-  //! @decl void set_nonblocking(read_callback_t read_callback, @
-  //!                            write_callback_t write_callback, @
-  //!                            function(mixed:int) close_callback)
-  //! @decl void set_nonblocking(read_callback_t read_callback, @
-  //!                            write_callback_t write_callback, @
-  //!                            function(mixed:int) close_callback, @
-  //!                            function(mixed, string:int) read_oob_callback, @
-  //!                            function(mixed:int) write_oob_callback)
+  //! @decl void set_nonblocking(read_callback_t|zero read_callback, @
+  //!                            write_callback_t|zero write_callback, @
+  //!                            function(mixed:int)|zero close_callback)
+  //! @decl void set_nonblocking(read_callback_t|zero read_callback, @
+  //!                            write_callback_t|zero write_callback, @
+  //!                            function(mixed:int)|zero close_callback, @
+  //!                            function(mixed, string:int)|zero read_oob_callback, @
+  //!                            function(mixed:int)|zero write_oob_callback)
   //! @decl void set_nonblocking()
   //!
   //! This function sets a stream to nonblocking mode and installs the
@@ -3694,8 +3694,8 @@ class UDP
   private function(mapping,mixed...:void) callback=0;
 
   //! @decl UDP set_nonblocking()
-  //! @decl UDP set_nonblocking(function(mapping(string:int|string), @
-  //!                                    mixed ...:void) read_cb, @
+  //! @decl UDP set_nonblocking(void|function(mapping(string:int|string), @
+  //!                                         mixed ...:void) read_cb, @
   //!                           mixed ... extra_args)
   //!
   //! Set this object to nonblocking mode.
@@ -3715,7 +3715,7 @@ class UDP
   }
 
   //! @decl UDP set_read_callback(function(mapping(string:int|string), @
-  //!                                      mixed...) read_cb, @
+  //!                                      mixed...)|zero read_cb, @
   //!                             mixed ... extra_args);
   //!
   //! The @[read_cb] function will receive a mapping similar to the mapping
@@ -3735,7 +3735,7 @@ class UDP
   //! @seealso
   //! @[read()]
   //!
-  this_program set_read_callback(function(mapping,mixed ...:void) f,
+  this_program set_read_callback(function(mapping,mixed ...:void)|zero f,
 				 mixed ...ext)
   {
     extra=ext;
