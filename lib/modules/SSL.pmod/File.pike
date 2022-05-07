@@ -93,15 +93,15 @@ protected Stdio.Buffer user_write_buffer;	// Unencrypted data to write.
 protected int read_buffer_threshold;	// Max number of bytes to read.
 
 protected mixed callback_id;
-protected function(void|object,void|mixed:int) accept_callback;
-protected Stdio.read_callback_t read_callback;
-protected Stdio.write_callback_t write_callback;
-protected function(void|mixed:int) close_callback;
+protected function(void|object,void|mixed:int)|zero accept_callback;
+protected Stdio.read_callback_t|zero read_callback;
+protected Stdio.write_callback_t|zero write_callback;
+protected function(void|mixed:int)|zero close_callback;
 
 // callbacks set during handshake are temporarily deferred and stored here.
-protected Stdio.read_callback_t d_read_callback;
-protected Stdio.write_callback_t d_write_callback;
-protected function(void|mixed:int) d_close_callback;
+protected Stdio.read_callback_t|zero d_read_callback;
+protected Stdio.write_callback_t|zero d_write_callback;
+protected function(void|mixed:int)|zero d_close_callback;
 
 protected Pike.Backend real_backend;
 // The real backend for the stream.
@@ -1431,7 +1431,7 @@ void set_callbacks(void|Stdio.read_callback_t read,
 //!
 //! @seealso
 //!   @[set_callbacks], @[set_nonblocking]
-array(function(mixed,void|string:int)) query_callbacks()
+array(function(mixed,void|string:int)|zero) query_callbacks()
 {
   return ({
     read_callback,
@@ -1611,7 +1611,7 @@ int errno()
   return local_errno ? local_errno : stream && stream->errno();
 }
 
-void set_alert_callback (function(object,int|object,string:void) alert)
+void set_alert_callback (function(object,int|object,string:void)|zero alert)
 //! Install a function that will be called when an alert packet is about
 //! to be sent. It doesn't affect the callback mode - it's called both
 //! from backends and from within normal function calls like @[read]
@@ -1647,7 +1647,7 @@ void set_alert_callback (function(object,int|object,string:void) alert)
     });
 }
 
-function(object,int|object,string:void) query_alert_callback()
+function(object,int|object,string:void)|zero query_alert_callback()
 //! @returns
 //!   Returns the current alert callback.
 //!
@@ -1657,7 +1657,7 @@ function(object,int|object,string:void) query_alert_callback()
   return conn && conn->alert_callback;
 }
 
-void set_accept_callback (function(void|object,void|mixed:int) accept)
+void set_accept_callback (function(void|object,void|mixed:int)|zero accept)
 //! Install a function that will be called when the handshake is
 //! finished and the connection is ready for use.
 //!
@@ -1683,7 +1683,7 @@ void set_accept_callback (function(void|object,void|mixed:int) accept)
   } LEAVE;
 }
 
-function(void|object,void|mixed:int) query_accept_callback()
+function(void|object,void|mixed:int)|zero query_accept_callback()
 //! @returns
 //!   Returns the current accept callback.
 //!
@@ -1693,7 +1693,7 @@ function(void|object,void|mixed:int) query_accept_callback()
   return accept_callback;
 }
 
-void set_read_callback(Stdio.read_callback_t read)
+void set_read_callback(Stdio.read_callback_t|zero read)
 //! Install a function to be called when data is available.
 //!
 //! @seealso
@@ -1710,7 +1710,7 @@ void set_read_callback(Stdio.read_callback_t read)
   } LEAVE;
 }
 
-Stdio.read_callback_t query_read_callback()
+Stdio.read_callback_t|zero query_read_callback()
 //! @returns
 //!   Returns the current read callback.
 //!
@@ -1720,7 +1720,7 @@ Stdio.read_callback_t query_read_callback()
   return read_callback;
 }
 
-void set_write_callback(Stdio.write_callback_t write)
+void set_write_callback(Stdio.write_callback_t|zero write)
 //! Install a function to be called when data can be written.
 //!
 //! @seealso
@@ -1737,7 +1737,7 @@ void set_write_callback(Stdio.write_callback_t write)
   } LEAVE;
 }
 
-Stdio.write_callback_t query_write_callback()
+Stdio.write_callback_t|zero query_write_callback()
 //! @returns
 //!   Returns the current write callback.
 //!
@@ -1747,7 +1747,7 @@ Stdio.write_callback_t query_write_callback()
   return write_callback;
 }
 
-void set_close_callback (function(void|mixed:int) close)
+void set_close_callback (function(void|mixed:int)|zero close)
 //! Install a function to be called when the connection is closed,
 //! either normally or due to an error (use @[errno] to retrieve it).
 //!
@@ -1765,7 +1765,7 @@ void set_close_callback (function(void|mixed:int) close)
   } LEAVE;
 }
 
-function(void|mixed:int) query_close_callback()
+function(void|mixed:int)|zero query_close_callback()
 //! @returns
 //!   Returns the current close callback.
 //!
