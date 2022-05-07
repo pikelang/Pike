@@ -334,6 +334,7 @@ void debug_push_object_type(int flag, INT32 id);
 void debug_push_object_type_backwards(int flag, INT32 id);
 void debug_push_type_attribute(struct pike_string *attr);
 void debug_push_type_name(struct pike_string *name);
+void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg);
 INT32 extract_type_int(char *p);
 void debug_push_unfinished_type(char *s);
 void debug_push_assign_type(int marker);
