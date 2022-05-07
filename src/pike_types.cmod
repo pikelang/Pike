@@ -4581,14 +4581,12 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   DECLARE_CYCLIC();
 
   if (BEGIN_CYCLIC3(a, b, (ptrdiff_t)op)) {
-#if 0
     END_CYCLIC();
 
     if (op & PT_BINOP_AND) {
       return remap_markers(a, remap, remap_flags);
     }
     return NULL;
-#endif
   }
   SET_CYCLIC_RET(1);
 
