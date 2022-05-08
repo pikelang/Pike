@@ -579,7 +579,7 @@ private class ASCIIEnc
 	if(rc && (rr = rc(s[i..i])))
 	  add(low_convert(rr,r));
 	else if(r)
-	  add(r);
+	  add([string]r);
 	else
 	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
       }
