@@ -3960,10 +3960,10 @@ static void store_marker(struct remap_state *remap, int marker,
       value = both = or_pike_types(old->u.type, value, 0);
     }
     SET_SVAL(val, T_TYPE, 0, type, value);
-  } else if (!old) {
+  } else if (!(old && TYPEOF(*old) == T_TYPE)) {
     SET_SVAL(val, T_INT, NUMBER_NUMBER, integer, 0);
   } else {
-    val = *old;
+    return;
   }
   mapping_insert(remap->markers[marker_set], &key, &val);
   free_type(both);
