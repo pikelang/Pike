@@ -648,6 +648,8 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	    return TOK_WEAK;
 	  if(ISWORD("__unused__"))
 	    return TOK_UNUSED;
+	  if(ISWORD("__unknown__"))
+	    return TOK_UNKNOWN;
 	  /* Allow triple (or more) underscore for the user, and make sure we
 	   * don't get false matches below for wide strings.
 	   */

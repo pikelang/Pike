@@ -105,6 +105,7 @@
 %token TOK_SUB_EQ "-="
 %token TOK_TYPEDEF "typedef"
 %token TOK_TYPEOF "typeof"
+%token TOK_UNKNOWN "__unknown__"
 %token TOK_UNUSED "__unused__"
 %token TOK_VARIANT "variant"
 %token TOK_VERSION "version prefix"
@@ -1353,6 +1354,7 @@ magic_identifiers2:
   | TOK_INT_ID        { $$ = "int"; }
   | TOK_ENUM	      { $$ = "enum"; }
   | TOK_TYPEDEF       { $$ = "typedef"; }
+  | TOK_UNKNOWN	      { $$ = "__unknown__"; }
   /* | TOK_AUTO_ID       { $$ = "auto"; } */
   ;
 
@@ -1522,6 +1524,7 @@ basic_type:
     TOK_FLOAT_ID                      { push_type(T_FLOAT); }
   | TOK_VOID_ID                       { push_type(T_VOID); }
   | TOK_MIXED_ID                      { push_type(T_MIXED); }
+  | TOK_UNKNOWN			      { push_type(PIKE_T_UNKNOWN); }
   | TOK_AUTO_ID			{ push_type(T_ZERO); push_type(PIKE_T_AUTO); }
   | TOK_STRING_ID   opt_string_width  {}
   | TOK_INT_ID      opt_int_range     {}
@@ -5132,6 +5135,8 @@ bad_inherit: bad_expr_ident
   { yyerror_reserved("typedef"); }
   | TOK_TYPEOF
   { yyerror_reserved("typeof"); }
+  | TOK_UNKNOWN
+  { yyerror_reserved("__unknown__"); }
   | TOK_VOID_ID
   { yyerror_reserved("void"); }
   | TOK_RESERVED
