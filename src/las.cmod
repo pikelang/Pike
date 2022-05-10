@@ -440,8 +440,8 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
 {
 #if 1
   struct pike_type *diff = type_binop(PT_BINOP_MINUS, n->type, t,
-				      PT_FLAG_CMP_NULLABLE,
-				      PT_FLAG_CMP_NULLABLE, 0);
+				      PT_FLAG_CMP_VOID_IS_ZERO,
+				      PT_FLAG_CMP_VOID_IS_ZERO, 0);
   if (!diff) return 1;	/* Strict match. */
   if (diff == n->type) {
     /* Strict mismatch. */
