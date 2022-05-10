@@ -5822,9 +5822,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	add_ref(a);
 	return a;
       }
-      /* Return zero. */
-      add_ref(b);
-      return b;
+      if (aflags & PT_FLAG_CMP_NULLABLE) {
+	/* Return zero. */
+	add_ref(b);
+	return b;
+      }
     } else if (op & PT_BINOP_MINUS) {
       if (!(bflags & PT_FLAG_CMP_VOIDABLE)) {
 	/* Return void. */
@@ -5845,11 +5847,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	add_ref(b);
 	return b;
       }
-      /* Return zero. */
-      add_ref(a);
-      return a;
+      if (bflags & PT_FLAG_CMP_NULLABLE) {
+	/* Return zero. */
+	add_ref(a);
+	return a;
+      }
     } else if (op & PT_BINOP_MINUS) {
-      if (!(aflags & PT_FLAG_CMP_VOIDABLE)) {
+      if (!(bflags & PT_FLAG_CMP_NULLABLE)) {
 	/* Return zero. */
 	add_ref(a);
 	return a;
@@ -5927,7 +5931,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	b = a;
 	goto recur;
       }
-      if (aflags & (PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_VOID_IS_ZERO)) {
+      if (aflags & PT_FLAG_CMP_VOID_IS_ZERO) {
+	a = zero_type_string;
+	goto recur;
+      }
+      if ((aflags & PT_FLAG_CMP_NULLABLE) && (op == PT_BINOP_AND)) {
 	a = zero_type_string;
 	goto recur;
       }
@@ -5961,8 +5969,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  push_type(T_NOT);
 	  return pop_unfinished_type();
 	default:
-	  add_ref(b);
-	  return b;
+	  return remap_markers(b, remap,
+			       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	}
       }
     }
@@ -5984,8 +5992,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  push_type(T_NOT);
 	  return pop_unfinished_type();
 	default:
-	  add_ref(a);
-	  return a;
+	  return remap_markers(a, remap, remap_flags);
 	}
       }
     }
