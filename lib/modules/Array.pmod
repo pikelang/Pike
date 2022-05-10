@@ -534,7 +534,7 @@ int(-1..1) lyskom_sort_func(string a,string b)
 //!   with cyclic data-structures.
 array flatten(array a, mapping(array:array)|void state)
 {
-  if (state && state[a]) return state[a];
+  if (state && state[a]) return [array]state[a];
   if (!state) state = ([a:({})]);
   else state[a] = ({});
   array res = allocate(sizeof(a));
