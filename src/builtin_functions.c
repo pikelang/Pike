@@ -10175,7 +10175,9 @@ void init_builtin_efuns(void)
 
   /* function(int,void|0=mixed:array(0)) */
   ADD_EFUN("allocate", f_allocate,
-	   tFunc(tInt tOr(tVoid,tSetvar(0,tMix)),tArr(tVar(0))), 0);
+	   tFuncArg(tSetvar(0, tInt),
+		    tOr(tFunc(tNone, tLArr(tVar(0), tZero)),
+			tFunc(tSetvar(1,tMix),tLArr(tVar(0), tVar(1))))), 0);
 
   /* function(mixed:int) */
   ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt01),0);
