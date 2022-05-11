@@ -87,7 +87,7 @@ array shuffle(array arr)
 //!
 //! @seealso
 //!   @[permute()]
-array(array) combinations(array arr, int len)
+array(array) combinations(array arr, int(-1..) len)
 {
   if (len > sizeof(arr)) return ({});
   if (len == sizeof(arr)) return ({arr+({})});
@@ -187,7 +187,7 @@ array sort_array(array arr, function(int(0..0),int(0..0),mixed ...:int)|void cmp
   // type from the array elements in arr.
 
   int len,start;
-  int length;
+  int(0..) length;
   int foop, fooend, barp, barend;
 
   arr+=({});
