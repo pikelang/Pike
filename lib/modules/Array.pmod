@@ -87,7 +87,7 @@ array shuffle(array arr)
 //!
 //! @seealso
 //!   @[permute()]
-array(array) combinations(array arr, int(-1..) len)
+array(array) combinations(array arr, int(0..) len)
 {
   if (len > sizeof(arr)) return ({});
   if (len == sizeof(arr)) return ({arr+({})});
