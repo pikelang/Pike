@@ -5541,11 +5541,11 @@ PMOD_EXPORT void f_arrow_assign(INT32 args)
   }
 }
 
-/*! @decl int sizeof(string arg)
- *! @decl int sizeof(array arg)
- *! @decl int sizeof(mapping arg)
- *! @decl int sizeof(multiset arg)
- *! @decl int sizeof(object arg)
+/*! @decl int(0..) sizeof(string arg)
+ *! @decl int(0..) sizeof(array arg)
+ *! @decl int(0..) sizeof(mapping arg)
+ *! @decl int(0..) sizeof(multiset arg)
+ *! @decl int(0..) sizeof(object arg)
  *!
  *!   Size query.
  *!
@@ -6116,15 +6116,14 @@ multiset & mapping -> mapping
 	    OPT_TRY_OPTIMIZE,0,generate_compl);
   /* function(string|multiset|array|mapping|object:int(0..)) */
   ADD_EFUN2("sizeof", f_sizeof,
-	    tOr(tFunc(tOr3(tMultiset,tMapping,tObj),tIntPos),
-		tFunc(tOr(tLStr(tSetvar(0,tIntPos),tInt),
-			  tLArr(tSetvar(0,tIntPos),tMix)),
-		      tVar(0))),
+	    tOr3(tFunc(tOr3(tMultiset,tMapping,tObj),tIntPos),
+		 tFunc(tLStr(tSetvar(0,tIntPos),tInt), tVar(0)),
+		 tFunc(tLArr(tSetvar(0,tIntPos),tMix), tVar(0))),
 	    OPT_TRY_OPTIMIZE, optimize_sizeof, generate_sizeof);
 
   ADD_EFUN2("strlen", f_sizeof,
-            tFunc(tStr,tIntPos), OPT_TRY_OPTIMIZE, optimize_sizeof,
-            generate_sizeof);
+	    tFunc(tLStr(tSetvar(0, tIntPos), tInt), tVar(0)),
+	    OPT_TRY_OPTIMIZE, optimize_sizeof, generate_sizeof);
 
   /* function(mixed,mixed ...:mixed) */
   ADD_EFUN2("`()",f_call_function,tFuncV(tMix,tMix,tMix),OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
