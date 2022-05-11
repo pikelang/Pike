@@ -301,7 +301,7 @@ array(array) find_all_options(array(string|zero) argv,
 
   foreach(options; int i; array(array(string)|string|int) opt) {
     if(sizeof(opt)!=SIZE) {
-      options[i] = opt + allocate(SIZE-sizeof(opt));
+      options[i] = opt + allocate(SIZE-[int(0..4)]sizeof(opt));
       opt = options[i];
     }
     array(string)|string aliases = [array(string)|string]opt[ALIASES];
