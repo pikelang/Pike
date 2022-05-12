@@ -161,7 +161,7 @@ protected class StringRange
   }
 }
 
-private string boundary_prefix;
+private string|zero boundary_prefix;
 
 //! Set a message boundary prefix. The @[MIME.generate_boundary()] will use this
 //! prefix when creating a boundary string.
@@ -243,7 +243,7 @@ string generate_boundary( )
 //! @seealso
 //! @[MIME.encode()]
 //!
-string|StringRange decode( string|StringRange data, string encoding )
+string|StringRange decode( string|StringRange data, void|string encoding )
 {
   switch (lower_case( encoding || "binary" )) {
   case "base64":
@@ -285,7 +285,7 @@ string|StringRange decode( string|StringRange data, string encoding )
 //! @seealso
 //! @[MIME.decode()]
 //!
-string encode( string data, string encoding, void|string filename,
+string encode( string data, void|string encoding, void|string filename,
 	       void|int no_linebreaks )
 {
   switch (lower_case( encoding || "binary" )) {
@@ -352,7 +352,7 @@ array(string) decode_word( string word )
 //! @seealso
 //! @[MIME.decode_word()]
 //!
-string encode_word( string|array(string) word, string encoding )
+string encode_word( string|array(string|zero) word, string|zero encoding )
 {
   if (stringp(word))
     return word;
@@ -377,7 +377,7 @@ string encode_word( string|array(string) word, string encoding )
   return "=?"+word[1]+"?"+encoding[0..0]+"?"+ enc +"?=";
 }
 
-protected string remap(array(string) item)
+protected string remap(array(string|zero) item)
 {
   if (sizeof(item)>1 && item[1])
     return Charset.decoder(item[1])->feed(item[0])->drain();
