@@ -560,7 +560,7 @@ Decoder decoder(string name)
   object(Decoder)|zero o = [object(Decoder)]rfc1345(name);
 
   if(o)
-    return o;
+    return [object]o;
 
   mixed oo;
 
