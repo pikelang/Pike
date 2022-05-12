@@ -200,7 +200,7 @@ protected class _HMAC
     this_program init(string(8bit)|void data)
     {
       h = 0;
-      if (data) update(data);
+      if (data) update([string]data);
       return this;
     }
 
@@ -796,7 +796,7 @@ string(8bit) eme_oaep_encode(string(8bit) message,
   // a. If the label L is not provided, let L be the empty string. Let
   //    lHash = Hash(L), an octet string of length hLen (see the note below).
   if (!label) label = "";
-  string(8bit) lhash = hash(label);
+  string(8bit) lhash = hash([string]label);
 
   // b. Generate an octet string PS consisting of k - mLen - 2hLen - 2
   //    zero octets. The length of PS may be zero.
@@ -871,7 +871,7 @@ string(8bit) eme_oaep_decode(string(8bit) message,
   //    lHash = Hash(L), an octet string of length hLen (see the note
   //    in Section 7.1.1).
   if (!label) label = "";
-  string(8bit) lhash = hash(label);
+  string(8bit) lhash = hash([string]label);
 
   // b. Separate the encoded message EM into a single octet Y, an octet
   //    string maskedSeed of length hLen, and an octet string maskedDB
@@ -960,7 +960,7 @@ string(8bit) emsa_pss_encode(string(8bit) message, int(1..) bits,
   int emlen = (bits+7)/8;
 
   // 3. If emLen < hLen + sLen + 2, output "encoding error" and stop.
-  if (emlen < sizeof(salt) + digest_size() + 2) return 0;
+  if (emlen < sizeof([string]salt) + digest_size() + 2) return 0;
 
   // 2. Let mHash = Hash(M), an octet string of length hLen.
   string(8bit) mhash = hash(message);
@@ -981,7 +981,7 @@ string(8bit) emsa_pss_encode(string(8bit) message, int(1..) bits,
 
   // 7. Generate an octet string PS consisting of emLen - sLen - hLen - 2
   //    zero octets. The length of PS may be 0.
-  string(8bit) ps = "\0" * (emlen - (sizeof(salt) + sizeof(h) + 2));
+  string(8bit) ps = "\0" * (emlen - (sizeof([string]salt) + sizeof(h) + 2));
 
   // 8. Let DB = PS || 0x01 || salt; DB is an octet string of length
   //    emLen - hLen - 1.
@@ -1142,7 +1142,7 @@ int hotp(string(8bit) secret, int factor, void|int length)
 // FIXME: Consider mark as weak?
 private mapping(string:string(8bit)) SCRAM_salted_password_cache = ([]);
 
-final string(8bit) SCRAM_get_salted_password(string key) {
+final string(8bit)|zero SCRAM_get_salted_password(string key) {
   mapping(string:string(8bit)) m = SCRAM_salted_password_cache;
   return m && m[key];
 }
@@ -1224,7 +1224,7 @@ class SCRAM
     string(7bit) request =
       sprintf("n,,n=%s,r=%s",
 	      username && username != "" ?
-	      [string(7bit)]Standards.IDNA.to_ascii(username, 1) : "",
+	      [string(7bit)]Standards.IDNA.to_ascii([string]username, 1) : "",
 	      nonce);
     first = request;
     return request;
@@ -1241,7 +1241,7 @@ class SCRAM
   //!
   //! @seealso
   //!   @[server_2]
-  string server_1(string(8bit) line) {
+  string|zero server_1(string(8bit) line) {
     constant format = "n,,n=%s,r=%s";
     string|zero username;
     catch {
@@ -1333,8 +1333,8 @@ class SCRAM
   //!   The server-final response to send to the client.  If the response
   //!   is null, the client did not supply the correct credentials or
   //!   the response was unparseable.
-  string(7bit) server_3(string(8bit) line,
-			string(8bit) salted_password) {
+  string(7bit)|zero server_3(string(8bit) line,
+			     string(8bit) salted_password) {
     constant format = "c=biws,r=%s,p=%s";
     string(7bit)|zero ret;
     if (!catch([string(8bit) r, string(8bit) p] =

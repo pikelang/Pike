@@ -31,7 +31,7 @@ class State
   protected void create(string(8bit)|void data)
   {
     if (data) {
-      update(data);
+      update([string]data);
     }
   }
 
