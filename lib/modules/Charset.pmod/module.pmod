@@ -185,7 +185,10 @@ class Encoder
   this_program set_replacement_callback(function(string:string) rc);
 }
 
-private class ASCIIDec {
+private class ASCIIDec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   constant charset = "iso88591";
   protected private string s = "";
   this_program feed(string ss)
@@ -206,7 +209,10 @@ private class ASCIIDec {
   }
 }
 
-private class UTF16dec {
+private class UTF16dec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   inherit ASCIIDec;
   constant charset = "utf16";
   protected int check_bom=1, le=0;
@@ -231,13 +237,19 @@ private class UTF16dec {
   }
 }
 
-private class UTF16LEdec {
+private class UTF16LEdec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   inherit UTF16dec;
   constant charset = "utf16le";
   protected void create() { le=1; }
 }
 
-private class UTF32dec {
+private class UTF32dec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   inherit ASCIIDec;
   constant charset = "utf32";
   string drain()
@@ -251,7 +263,10 @@ private class UTF32dec {
   }
 }
 
-private class UTF32LEdec {
+private class UTF32LEdec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   inherit ASCIIDec;
   constant charset = "utf32le";
   string drain()
@@ -265,7 +280,10 @@ private class UTF32LEdec {
   }
 }
 
-private class ISO6937dec {
+private class ISO6937dec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   protected Decoder decoder = [object(Decoder)]rfc1345("iso6937");
   protected string trailer = "";
   string drain()
@@ -312,7 +330,10 @@ private class ISO6937dec {
 }
 
 // Decode GSM 03.38.
-private class GSM03_38dec {
+private class GSM03_38dec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   protected Decoder decoder = [object(Decoder)]rfc1345("gsm0338");
   protected string trailer = "";
   string drain()
@@ -557,6 +578,8 @@ Decoder decoder(string name)
 
 private class ASCIIEnc
 {
+  @Pike.Annotations.Implements(Encoder);
+
   constant charset = "iso88591";
   protected string s = "";
   protected string|zero|void replacement;
@@ -616,7 +639,10 @@ private class ASCIIEnc
   }
 }
 
-private class USASCIIEnc {
+private class USASCIIEnc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   //  7-bit US ASCII
   inherit ASCIIEnc;
   constant charset = "usascii";
@@ -647,7 +673,10 @@ private class USASCIIEnc {
   }
 }
 
-private class UTF16enc {
+private class UTF16enc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   inherit ASCIIEnc;
   constant charset = "utf16";
   protected private string low_convert(string s, string|void r,
@@ -692,7 +721,10 @@ private class UTF16enc {
   }
 }
 
-private class UTF16LEenc {
+private class UTF16LEenc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   inherit UTF16enc;
   constant charset = "utf16le";
   string drain() {
@@ -700,7 +732,10 @@ private class UTF16LEenc {
   }
 }
 
-private class UTF32enc {
+private class UTF32enc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   inherit ASCIIEnc;
   protected string low_convert(string s, string|void r,
 			       function(string:string)|void rc)
@@ -709,7 +744,10 @@ private class UTF32enc {
   }
 }
 
-private class UTF32LEenc {
+private class UTF32LEenc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   inherit ASCIIEnc;
   protected string low_convert(string s, string|void r,
 			       function(string:string)|void rc)
@@ -718,7 +756,10 @@ private class UTF32LEenc {
   }
 }
 
-private class ISO6937enc {
+private class ISO6937enc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   protected Encoder encoder = [object(Encoder)]rfc1345("iso6937", 1);
   protected void create(string|void replacement,
 			function(string:string)|void repcb)
@@ -761,7 +802,10 @@ private class ISO6937enc {
 }
 
 // Encode GSM 03.38.
-private class GSM03_38enc {
+private class GSM03_38enc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   protected Encoder encoder = [object(Encoder)]rfc1345("gsm0338", 1);
   protected void create(string|void replacement,
 			function(string:string)|void repcb)
