@@ -386,7 +386,7 @@ static void image_gif__gce_block(INT32 args)
 
 
 /*
-**! method string _render_block(int x,int y,int xsize,int ysize,int bpp,string indices,0|string colortable,int interlace);
+**! method string _render_block(int x,int y,int xsize,int ysize,int bpp,string indices,zero|string colortable,int interlace);
 **!	Advanced (!) method for writing renderblocks for placement
 **!	in a GIF file. This method only applies LZW encoding on the
 **!	indices and makes the correct headers.
@@ -2791,7 +2791,7 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("_gce_block", image_gif__gce_block,
 	       tFunc(tInt tInt tInt tInt tInt, tStr), 0);
   ADD_FUNCTION("_render_block", image_gif__render_block,
-	       tFunc(tInt tInt tInt tInt tInt tStr tStr tInt, tStr), 0);
+	       tFunc(tInt tInt tInt tInt tInt tStr tOr(tStr, tZero) tInt, tStr), 0);
 
   ADD_FUNCTION("header_block", image_gif_header_block,
 	       tFunc(tInt tInt tOr(tInt,tObj)
