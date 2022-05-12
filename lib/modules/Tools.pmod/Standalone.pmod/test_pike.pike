@@ -125,7 +125,7 @@ class WarningFlag {
   void compile_warning(string file, int line, string text) {
     if (pushed_warnings[text]) return;
     if (sizeof(filter(indices(pushed_warnings), glob, text))) return;
-    warnings += ({ sprintf("%s:%d: %s", file, line, text) });
+    warnings += ({ sprintf("%s:%d: Warning: %s", file, line, text) });
     warning = 1;
   }
 
@@ -137,7 +137,7 @@ class WarningFlag {
   }
 
   void compile_error(string file, int line, string text) {
-    log_msg("%s:%d: %s\n", file,line,text);
+    log_msg("%s:%d: Error: %s\n", file,line,text);
   }
 }
 
