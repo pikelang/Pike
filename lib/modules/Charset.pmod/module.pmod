@@ -799,6 +799,11 @@ private class ISO6937enc
     encoder->clear();
     return this;
   }
+  this_program set_replacement_callback(function(string:string) rc)
+  {
+    encoder->set_replacement_callback(rc);
+    return this;
+  }
 }
 
 // Encode GSM 03.38.
@@ -830,6 +835,11 @@ private class GSM03_38enc
   this_program clear()
   {
     encoder->clear();
+    return this;
+  }
+  this_program set_replacement_callback(function(string:string) rc)
+  {
+    encoder->set_replacement_callback(rc);
     return this;
   }
 }
