@@ -12099,6 +12099,12 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
     /* FIXME: PIKE_T_ATTRIBUTE's ought to propagate out to the basic types.
      */
 
+  case PIKE_T_SCOPE:
+    /* We're good if any part of the nested T_OR is good. */
+    flags &= ~CALL_STRICT;
+    arg_type = arg_type->cdr;
+    goto loop;
+
   case T_OR:
     if (arg_type->car == zero_type_string) {
       arg_type = arg_type->cdr;
