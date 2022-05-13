@@ -2819,6 +2819,7 @@ void f___handle_sprintf_format(INT32 args)
 	  return;
 	}
 	/* FALLTHRU */
+      default:
       case PSAT_INVALID:
       case PSAT_INVALID|PSAT_MARKER:
 	/* There was a position argument or a parse error in strict mode. */
@@ -2826,7 +2827,7 @@ void f___handle_sprintf_format(INT32 args)
 	pop_stack_mark();
 	type_stack_pop_to_mark();
 	pop_n_elems(args);
-	if (ret & PSAT_MARKER) {
+	if (ret & (PSAT_MARKER|PSAT_SMARKER)) {
 	  /* Error or marker that we can't trust. */
 	  push_undefined();
 	} else {
