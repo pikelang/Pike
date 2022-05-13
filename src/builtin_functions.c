@@ -10650,7 +10650,7 @@ void init_builtin_efuns(void)
 	    tOr8(tFuncArg(tArr(tSetvar(1,tMix)),
 			  tFuncArg(tFuncArg(tVar(1),
 					    tSetvar(4,
-						    tFuncV(tNone, tZero, tMix))),
+						    tFuncV(tNone, tUnknown, tMix))),
 				   tArr(tVar(4)))),
 		 tMapStuffLow(tArr(tSetvar(1,tMix)),tVar(1),
 			      tArr(tInt01),
