@@ -11931,29 +11931,39 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 			   PT_FLAG_CMP_VOID_IS_ZERO,
 			   remap_flags|PT_FLAG_REMAP_EVAL_MARKERS);
 
-	  /* Legend for mismatch:
-	   *   0 - Strict match.
-	   *   1 - Partial match.
-	   *   3 - Strict mismatch.
-	   */
-	  int mismatch = bin_t?((bin_t == arg_type)?3:1):0;
-	  int mask = (flags & (CALL_INVERTED_TYPES|CALL_STRICT))?3:2;
-	  free_type(bin_t);
+	  if (bin_t) {
+	    /* Partial or strict mismatch. */
+	    free_type(bin_t);
 
-	  if (mismatch & mask) {
-	  no_match:
-	    /* No match. */
-#ifdef PIKE_DEBUG
-	    if (l_flag>2) {
-	      fprintf(stderr, "%*sNo match.\n", indent*2+2, "");
+	    if (flags & (CALL_INVERTED_TYPES|CALL_STRICT)) {
+	      goto no_match;
 	    }
+
+	    /* Partial matches allowed. */
+
+	    bin_t = low_type_binop(PT_BINOP_AND,
+				   arg_type, tmp2, &remap,
+				   PT_FLAG_CMP_VOID_IS_ZERO,
+				   PT_FLAG_CMP_VOID_IS_ZERO,
+				   remap_flags);
+
+	    if (!bin_t) {
+	    no_match:
+	      /* No match. */
+#ifdef PIKE_DEBUG
+	      if (l_flag>2) {
+		fprintf(stderr, "%*sNo match.\n", indent*2+2, "");
+	      }
 #endif /* PIKE_DEBUG */
-	    res = NULL;
-	    if (tmp) free_type(tmp);
+	      res = NULL;
+	      if (tmp) free_type(tmp);
 
-	    EXIT_REMAP_STATE(remap);
+	      EXIT_REMAP_STATE(remap);
 
-	    break;
+	      break;
+	    }
+
+	    free_type(bin_t);
 	  }
 	}
       }
