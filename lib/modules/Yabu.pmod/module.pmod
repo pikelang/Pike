@@ -631,7 +631,7 @@ class Table
   INHERIT_MUTEX;
   //! @endignore
   private Chunk index, db;
-  private ProcessLock lock_file;
+  private ProcessLock|zero lock_file;
 
   private string mode, filename;
   private mapping handles, changes;
@@ -1022,7 +1022,8 @@ class Table
     UNLOCK();
   }
 
-  protected void create(string filename, string mode, ProcessLock lock_file)
+  protected void create(string filename, string mode,
+			ProcessLock|zero lock_file)
   {
     this::filename = filename;
     this::mode = mode;
