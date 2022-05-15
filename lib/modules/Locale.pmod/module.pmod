@@ -319,7 +319,7 @@ object get_object(string project, string lang) {
     data = line+data;
 
   string|int id;
-  string str_tag(string t, mapping m, string c) {
+  string str_tag(Parser.HTML parser, mapping m, string c) {
     id = 0;
     if(m->id && m->id!="" && c!="") {
       if((int)m->id) m->id = (int)m->id;
@@ -328,7 +328,7 @@ object get_object(string project, string lang) {
     }
     return 0;
   };
-  string t_tag(string t, mapping m, string c) {
+  string t_tag(Parser.HTML parser, mapping m, string c) {
     if(!id) {
       if(!m->id)
 	return 0;
@@ -347,7 +347,7 @@ object get_object(string project, string lang) {
     bindings[id]=c;
     return 0;
   };
-  string pike_tag(string t, mapping m, string c) {
+  string pike_tag(Parser.HTML parser, mapping m, string c) {
     // Replace encoded entities
     c = replace(c, ({"&lt;","&gt;","&amp;"}),
 		({ "<",   ">",    "&"  }));
