@@ -5420,8 +5420,15 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  ((b->cdr == mixed_type_string) || (b->cdr == any_type_string))) {
 	return NULL;
       }
+
+      type_stack_mark();
+      push_remap_type(a, remap, remap_flags);
+      push_remap_type(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_type(T_NOT);
+      push_reverse_type(T_AND);
+      return pop_unfinished_type();
     }
-    /* FALLTHRU */
+
   case TWOT(PIKE_T_TRANSITIVE, T_FUNCTION):
     tmp = expand_transitive_remap(a, NULL, 0);
     ret = low_type_binop(op, tmp, b, remap, aflags, bflags, remap_flags);
