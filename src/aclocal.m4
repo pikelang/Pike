@@ -251,11 +251,12 @@ define([MY_AC_PROG_CC],
   AC_PROG_CC
   undefine([ac_cv_prog_CC])
   AC_PROG_CPP
-  if test "x$enable_binary" = "no"; then
+  if test "x$enable_binary" = x"no"; then
     # Do the check above even when --disable-binary is used, since we
     # need a real $CPP, and AC_PROG_CPP wants AC_PROG_CC to be called
     # earlier.
     CC="$BINDIR/nobinary_dummy cc"
+    ac_cv_c_undeclared_builtin_options='none needed'
   fi
 ])
 
