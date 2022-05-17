@@ -1776,8 +1776,8 @@ test_do([[
     class Foo
     {
       int c;
-      object foo;
-      protected void create(object o)
+      object|zero foo;
+      protected void create(object|zero o)
       {
 	foo = o;
 	c = count++;
@@ -2863,7 +2863,7 @@ test_program([[
 dnl This test used to get the last line of the else block
 test_any([[
   int expected_line;
-  void foo(object o)
+  void foo(object|zero o)
   {
     expected_line = __LINE__ + 1;
     if (o->a && b) {
