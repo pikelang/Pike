@@ -1100,7 +1100,7 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info,
 protected class TIFF
 {
   protected int start, order;
-  protected Stdio.File file;
+  protected Stdio.BlockFile file;
 
   protected int read_number(int size)
   {
@@ -1117,7 +1117,7 @@ protected class TIFF
   int read_short() { return read_number(2); }
   int read_long() { return read_number(4); }
 
-  protected void create(Stdio.File f)
+  protected void create(Stdio.BlockFile f)
   {
     file = f;
     start = f->tell();
@@ -1144,7 +1144,7 @@ protected class TIFF
   void exif_seek(int position) { file->seek(start+position); }
 }
 
-protected int read_marker(Stdio.File f)
+protected int read_marker(Stdio.BlockFile f)
 {
   string x;
   do {
@@ -1162,7 +1162,7 @@ protected int read_marker(Stdio.File f)
 //!   will be ignored.
 //! @returns
 //!   A mapping with all found EXIF properties.
-mapping(string:mixed) get_properties(Stdio.File file, void|mapping tags)
+mapping(string:mixed) get_properties(Stdio.BlockFile file, void|mapping tags)
 {
  loop: while(1)
   {
@@ -1219,7 +1219,7 @@ protected int parse_ifd(TIFF tiff, mapping tags, mapping exif_info,
   return 1;
 }
 
-protected mapping low_get_properties(Stdio.File file, mapping exif_info,
+protected mapping low_get_properties(Stdio.BlockFile file, mapping exif_info,
                                      int discard_unknown)
 {
   TIFF tiff = TIFF(file);
