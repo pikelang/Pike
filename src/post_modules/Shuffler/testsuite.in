@@ -6,7 +6,7 @@ cond_begin([[ Shuffler.Shuffle ]])
 test_any([[
     Stdio.File f = Stdio.File()->pipe();
     Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( f );
-    sf->set_done_callback( lambda() { sf->stop(); } );
+    sf->set_done_callback( lambda(mixed ...) { sf->stop(); } );
     sf->start();
 
     Pike.DefaultBackend( 1.0 );
@@ -49,7 +49,7 @@ cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
     sf->add_source("xyz\n" * 9);
     sf->add_source(Stdio.Buffer("xyz\n" * 65900));
     sf->add_source("xyz\n" * 9);
-    sf->set_done_callback( lambda() { sf->stop(); f->close(); });
+    sf->set_done_callback( lambda(mixed ...) { sf->stop(); f->close(); });
     sf->start();
     string res = "";
     f2->set_read_callback( lambda(mixed id, string s) { res += s; });
@@ -76,7 +76,7 @@ cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
     sfr->set_backend (pb);
     Shuffler.Shuffle sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
-    sf->set_done_callback( lambda() { sf->stop(); f->close(); });
+    sf->set_done_callback( lambda(mixed ...) { sf->stop(); f->close(); });
     sf->start();
     string res = "";
     f2->set_backend(pb);
@@ -98,7 +98,7 @@ cond([[master()->resolv("Pike.PollBackend")]], [[
     sfr->set_backend (pb);
     Shuffler.Shuffle sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
-    sf->set_done_callback( lambda() { sf->stop(); f->close(); });
+    sf->set_done_callback( lambda(mixed ...) { sf->stop(); f->close(); });
     sf->start();
     string res = "";
     f2->set_backend(pb);
