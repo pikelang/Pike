@@ -10641,9 +10641,8 @@ void init_builtin_efuns(void)
 	tFuncV(IN, tVoid, OUTMIX) )
 
 #define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
-  tOr( tFuncV(IN tFuncV(SUB,tSetvar(0,tAnd(tMix,tZero)),	     \
-			 tSetvar(2,tAny)),tVar(0),		     \
-	       OUTFUN),						     \
+  tOr( tFuncV(IN tFuncV(SUB, tSetvar(0, tAny), tSetvar(2,tAny)),     \
+	      tVar(0), OUTFUN),					     \
        tMapStuffLow(IN,SUB,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP))
 
   ADD_EFUN2("map", f_map,
