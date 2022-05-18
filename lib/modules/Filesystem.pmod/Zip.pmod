@@ -1054,7 +1054,7 @@ class _Zip
 
   //! add a file to an archive.
   //!
-  void add_file(string filename, string|Stdio.File data,
+  void add_file(string filename, string|Stdio.File|zero data,
                 int|object|void stamp, int|void no_compress)
   {
     mapping entry = ([]);
