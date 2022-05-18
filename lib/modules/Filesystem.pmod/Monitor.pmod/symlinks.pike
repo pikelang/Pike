@@ -247,7 +247,7 @@ protected class DefaultMonitor
   }
 
   //! Check whether a symlink has changed.
-  protected void check_symlink(string path, Stdio.Stat st,
+  protected void check_symlink(string path, Stdio.Stat|zero st,
 			       int|void inhibit_notify)
   {
     MON_WERR("%O(%O, %O, %O)...\n", this_function, path, st, inhibit_notify);
