@@ -11707,51 +11707,23 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       flags ^= CALL_INVERTED_TYPES;
       goto loop;
     } else {
-      /* Move the inversion to the argument type. */
-      type_stack_mark();
-      push_finished_type(arg_type);
-      push_type(T_NOT);
-      arg_type = pop_unfinished_type();
       res = lower_new_check_call(fun_type->car, arg_type,
 				 flags ^ CALL_INVERTED_TYPES,
 				 sval CHECK_CALL_ARGS);
-      free_type(arg_type);
       if (res) {
+	/* The argument matched the function type. */
 	/* Move the inversion back to the function type. */
-	if (res->type == T_NOT) {
-	  tmp = res->car;
-	  free_type(res);
-	  res = tmp;
-	} else {
-	  type_stack_mark();
-	  if ((res->type == T_MANY) &&
-	      (fun_type->car->type == T_MANY) &&
-	      res->car && (res->car->type == T_NOT)) {
-	    /* Exist criteria is fulfilled.
-	     * Reduce !function(!type...:type) to function(mixed...:type).
-	     * FIXME: Probably ought to move the inner inversion
-	     *        to the result type, but that is incompatible
-	     *        with current types.
-	     * FIXME: What about the limited number of args case?
-	     */
-	    push_finished_type(mixed_type_string);
-	    free_type(res);
-	  } else {
-	    /* More arguments to check. */
-	    push_finished_type(res);
-	    free_type(res);
-	    push_type(T_NOT);
-	  }
-	  res = pop_unfinished_type();
-	}
-      } else if (!fun_type->car ||
-		 ((fun_type->car->type != T_FUNCTION) &&
-		  (fun_type->car->type != T_MANY)) ||
-		 ((flags & CALL_NOT_LAST_ARG) &&
-		  (fun_type->car->type == T_MANY))) {
-	/* The next argument might match. */
-	add_ref(fun_type);
-	res = fun_type;
+	type_stack_mark();
+	push_finished_type(res);
+	free_type(res);
+	push_type(T_NOT);
+	res = pop_unfinished_type();
+      } else {
+	/* The argument did not match the function type.
+	 * ie the inverted type got a full match.
+	 */
+	add_ref(any_type_string);
+	res = any_type_string;
       }
     }
     break;
@@ -11933,9 +11905,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	  goto no_match;
 	} else {
 	  struct pike_type *bin_t =
-	    low_type_binop((flags & CALL_INVERTED_TYPES)?
-			   PT_BINOP_INVERSE_MINUS:
-			   PT_BINOP_MINUS,
+	    low_type_binop(PT_BINOP_MINUS,
 			   arg_type, tmp2, &remap,
 			   PT_FLAG_CMP_VOID_IS_ZERO,
 			   PT_FLAG_CMP_VOID_IS_ZERO,
@@ -12354,6 +12324,9 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
       tmp = res;
       copy_pike_type(res, tmp->car);
       free_type(tmp);
+    } else if ((res == mixed_type_string) || (res == any_type_string)) {
+      free_type(res);
+      return NULL;
     } else {
       type_stack_mark();
       push_finished_type(res);
@@ -12467,7 +12440,9 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
 
 #ifdef PIKE_DEBUG
   if (l_flag>2) {
-    fprintf(stderr, "Ok, cleaning up markers... ");
+    fprintf(stderr, "  Got return type ");
+    simple_describe_type(res);
+    fprintf(stderr, "\n  Cleaning up markers...\n");
   }
 #endif /* PIKE_DEBUG */
 
