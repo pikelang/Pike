@@ -238,11 +238,11 @@ class Namedays
    int last_year=-1;
 
    array namelist;
-   mapping lookup;
+   mapping|zero lookup;	// Unused???
 
    protected void create(string _id,string _name,
 			 array(array(string)) _names,
-			 mapping(string:int|array(int)) _lookup,
+			 mapping(string:int|array(int))|zero _lookup,
 			 void|int start,void|int stop,void|int _leapdayshift)
    {
       id=_id;
