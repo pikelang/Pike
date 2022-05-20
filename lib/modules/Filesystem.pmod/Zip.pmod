@@ -1229,7 +1229,7 @@ class `()
 {
   inherit _ZipFS;
 
-  protected void create(string|object filename,
+  protected void create(string|object|zero filename,
                         void|Filesystem.Base parent,
                         void|object f)
   {
@@ -1239,7 +1239,7 @@ class `()
 
     if(f)
       fd = f;
-    else
+    else if (filename)
       fd = parent->open(filename, "r");
 
     if(!fd)
