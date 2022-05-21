@@ -399,17 +399,29 @@ array(Country) countries=
 //! Country
 class Country
 {
-   string iso2; // iso-2-character-code aka domain name
-   //!    ISO 2-character code aka domain name
+   string|zero iso2;
+   //!    ISO-3166-1 2-character code aka domain name.
+   //!
+   //! @note
+   //!    May be zero in some obscure cases where the
+   //!    ISO-3166-1 grouping differs from the FIPS-10
+   //!    grouping.
 
-   string fips10; // iso-2-character-code aka domain name
+   string|zero fips10;
    //!    FIPS 10-character code;
-   //!    "Federal Information Processing Standards 10-3" etc,
-   //!    used by some goverments in the US.
+   //!    "Federal Information Processing Standards 10-4" etc,
+   //!    previously used by some goverments in the US.
+   //!
+   //! @note
+   //!    This character code is slightly different from @[iso2],
+   //!    and should only be used for compatibility with old code.
+   //!
+   //! @deprecated iso2
+   //!    FIPS 10-4 was withdrawn by NIST 2008-09-02.
 
    string name;
    array(string) aka=({});
-   //!    Country name and as-known-as, if any
+   //!    Country name and also-known-as, if any
 
    int former=0;
    //!    Flag that is set if this country doesn't exist anymore.
@@ -431,7 +443,7 @@ class Country
       return _continent;
    }
 
-   protected void create(string _iso2,string _name,string _fips10,
+   protected void create(string|zero _iso2,string _name,string|zero _fips10,
 			 mapping|void opts)
    {
       iso2=_iso2;
