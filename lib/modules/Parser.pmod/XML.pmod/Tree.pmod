@@ -922,7 +922,7 @@ protected class VirtualNode {
   protected mapping(string:string) mAttributes;		// Resolved attributes
   protected mapping(string:string)	mShortAttributes;	// Shortened attributes
   protected array(Node) mAttrNodes;   //  created on demand
-  protected string         mText;
+  protected string|zero    mText;
   protected int            mDocOrder;
 
   // Functions implemented via multiple inheritance.
@@ -977,11 +977,11 @@ protected class VirtualNode {
   int get_node_type()        { return (mNodeType); }
 
   //! Returns text content in node.
-  string get_text()          { return (mText); }
+  string|zero get_text()          { return (mText); }
 
   //! Change the text content destructively.
   string set_text(string txt) {
-    if( mNodeType & XML_TEXT )
+    if( mNodeType & (XML_TEXT|XML_ATTR) )
       mText = txt;
   }
 
@@ -1030,7 +1030,8 @@ protected class VirtualNode {
   }
 
   //!
-  protected void create(int type, string name, mapping|zero attr, string text)
+  protected void create(int type, string name, mapping|zero attr,
+			string|zero text)
   {
     if (name) {
       if (has_value(name, ":") && sscanf (name, "%*[^/:]%*c") == 2) {
@@ -1045,7 +1046,19 @@ protected class VirtualNode {
     }
     mNodeType = type;
     mAttributes = attr;
-    mText = text;
+    if( mNodeType & (XML_TEXT|XML_ATTR) ) {
+      if (!text) {
+	error("Text missing for node of type %s.\n",
+	      get_type_name(mNodeType));
+      }
+      mText = text;
+    } else {
+      if (text && (text != "")) {
+	error("Nodes of type %s do not support text.\n",
+	      get_type_name(mNodeType));
+      }
+      mText = UNDEFINED;
+    }
     mAttrNodes = 0;
   }
 
