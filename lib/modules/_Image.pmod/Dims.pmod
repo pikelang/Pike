@@ -29,12 +29,12 @@
 #define M_COM   0xFE		/* COMment */
 #define M_APP1  0xE1
 
-protected int(0..255) read_1_byte(Stdio.File f)
+protected int(0..255) read_1_byte(Stdio.Stream f)
 {
   return f->read(1)[0];
 }
 
-protected int(0..65535) read_2_bytes(Stdio.File f)
+protected int(0..65535) read_2_bytes(Stdio.Stream f)
 {
   int c;
   sscanf( f->read(2), "%2c", c );
@@ -50,7 +50,7 @@ protected int(0..65535) read_2_bytes(Stdio.File f)
  * file and then return a misleading error message...
  */
 
-protected int first_marker(Stdio.File f)
+protected int first_marker(Stdio.Stream f)
 {
   int c1, c2;
 
@@ -69,7 +69,7 @@ protected int first_marker(Stdio.File f)
  * not deal correctly with FF/00 sequences in the compressed image data...
  */
 
-protected int next_marker(Stdio.File f)
+protected int next_marker(Stdio.Stream f)
 {
   // Find 0xFF byte; count and skip any non-FFs.
   int c = read_1_byte(f);
@@ -85,7 +85,7 @@ protected int next_marker(Stdio.File f)
 }
 
 /* Skip over an unknown or uninteresting variable-length marker */
-protected int skip_variable(Stdio.File f)
+protected int skip_variable(Stdio.Stream f)
 {
   int length = read_2_bytes(f);
   if (length < 2) return 0;  // Length includes itself, so must be at least 2.
@@ -95,7 +95,7 @@ protected int skip_variable(Stdio.File f)
 }
 
 /* Get the width, height and orientation from a JPEG file */
-protected mapping get_JPEG_internal(Stdio.File f)
+protected mapping get_JPEG_internal(Stdio.BlockFile f)
 {
   if (!first_marker(f))
     return 0;
@@ -150,7 +150,7 @@ protected mapping get_JPEG_internal(Stdio.File f)
 
 //! Reads the dimensions from a JPEG file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_JPEG(Stdio.File f)
+array(int) get_JPEG(Stdio.BlockFile f)
 {
   mapping result = get_JPEG_internal(f);
   return result && ({ result->width, result->height });
@@ -175,7 +175,7 @@ protected array(int) exif_flip(array(int) dims, mapping exif)
 
 //! Like @[get_JPEG()], but returns the dimensions flipped if
 //! @[Image.JPEG.exif_decode()] would flip them
-array(int) exif_get_JPEG(Stdio.File f)
+array(int) exif_get_JPEG(Stdio.BlockFile f)
 {
   mapping result = get_JPEG_internal(f);
   return result && exif_flip(({ result->width, result->height }), result->exif);
@@ -197,7 +197,7 @@ array(int) exif_get_JPEG(Stdio.File f)
 
 //! Reads the dimensions from a GIF file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_GIF(Stdio.File f)
+array(int) get_GIF(Stdio.BlockFile f)
 {
   if(f->read(3)!="GIF") return 0;
   f->seek(3, Stdio.SEEK_CUR);
@@ -206,7 +206,7 @@ array(int) get_GIF(Stdio.File f)
 
 //! Reads the dimensions from a PNG file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_PNG(Stdio.File f)
+array(int) get_PNG(Stdio.BlockFile f)
 {
   int offs=f->tell();
   if(f->read(6)!="\211PNG\r\n") return 0;
@@ -217,7 +217,7 @@ array(int) get_PNG(Stdio.File f)
 
 //! Reads the dimensions from a TIFF file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_TIFF(Stdio.File f)
+array(int) get_TIFF(Stdio.BlockFile f)
 {
  int|string buf;
  int entries;
@@ -321,7 +321,7 @@ array(int) get_TIFF(Stdio.File f)
 
 //! Reads the dimensions from a PSD file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_PSD(Stdio.File f)
+array(int) get_PSD(Stdio.BlockFile f)
 {
   //  4 bytes signature + 2 bytes version
   if (f->read(6) != "8BPS\0\1") return 0;
@@ -336,7 +336,7 @@ array(int) get_PSD(Stdio.File f)
 
 //! Reads the dimensions from a WebP file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_WebP(Stdio.File f)
+array(int) get_WebP(Stdio.BlockFile f)
 {
   if (f->read(4) != "RIFF") return 0;
   f->read(4);
@@ -390,7 +390,7 @@ array(int) get_WebP(Stdio.File f)
 //!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@},
 //!       @expr{"jpeg"@}, @expr{"webp"@} and @expr{"psd"@}.
 //!   @endarray
-array(int|string) get(string|Stdio.File file, int(0..1)|void exif) {
+array(int|string) get(string|Stdio.BlockFile file, int(0..1)|void exif) {
 
   if(stringp(file))
     file = Stdio.FakeFile(file);
@@ -450,6 +450,6 @@ array(int|string) get(string|Stdio.File file, int(0..1)|void exif) {
 
 //! Like @[get()], but returns the dimensions flipped if
 //! @[Image.JPEG.exif_decode()] would flip them
-array(int) exif_get(string|Stdio.File file) {
+array(int) exif_get(string|Stdio.BlockFile file) {
   return get(file, 1);
 }
