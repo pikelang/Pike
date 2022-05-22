@@ -120,7 +120,7 @@ int netmask_to_cidr( string mask )
 //!             The bitmask.
 //!     @endarray
 //!     Returns 0 if the string could not be parsed.
-array(int) cidr_to_netmask(string cidr)
+array(int) cidr_to_netmask(string|zero cidr)
 {
     string ips;
     int bits;
@@ -1070,7 +1070,7 @@ array(NetworkType) connectable_network_types()
 
 // Used for seltests.
 array(string) _sort_addresses(array(string) addresses,
-                              array(NetworkType) exclude_types,
+                              array(NetworkType)|zero exclude_types,
                               bool separate_v6,
                               array(NetworkType) connectable_types )
 {
