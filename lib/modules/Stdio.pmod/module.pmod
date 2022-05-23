@@ -47,18 +47,18 @@ final constant DATA_CHUNK_SIZE = 64 * 1024;
 class Stream
 {
   //!
-  string read(int nbytes);
+  string read(int(0..) nbytes);
 
   //!
-  int write(string data);
+  int(-1..) write(string data);
 
   //!
-  void close();
+  int close();
 
   //!
-  optional string read_oob(int nbytes);
-  optional int write_oob(string data);
-  optional mapping(string:int) tcgetattr();
+  optional string read_oob(int(0..) nbytes);
+  optional int(-1..) write_oob(string data);
+  optional mapping(string:int)|zero tcgetattr();
   optional int tcsetattr(mapping(string:int) attr, string|void when);
 }
 
@@ -95,18 +95,18 @@ class NonblockingStream
   //! @decl @Pike.Annotations.Implements(Stream)
   @__builtin.Implements(Stream);
 
-  //!11
-  NonblockingStream set_read_callback( function|zero f, mixed ... rest );
-  NonblockingStream set_write_callback( function|zero f, mixed ... rest );
-  NonblockingStream set_close_callback( function|zero f, mixed ... rest );
-  NonblockingStream set_fs_event_callback( function|zero f, int event_mask, mixed ... rest );
+  //!
+  void set_read_callback( function|zero f );
+  void set_write_callback( function|zero f );
+  void set_close_callback( function|zero f );
+  optional void set_fs_event_callback( function|zero f, int event_mask, mixed ... rest );
 
   //!
-  optional NonblockingStream set_read_oob_callback(function|zero f, mixed ... rest)
+  optional void set_read_oob_callback(function|zero f)
   {
     error("OOB not implemented for this stream type\n");
   }
-  optional NonblockingStream set_write_oob_callback(function|zero f, mixed ... rest)
+  optional void set_write_oob_callback(function|zero f)
   {
     error("OOB not implemented for this stream type\n");
   }

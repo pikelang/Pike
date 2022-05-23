@@ -3,6 +3,8 @@
 //! A string wrapper that pretends to be a @[Stdio.File] object
 //! in addition to some features of a @[Stdio.FILE] object.
 
+@Pike.Annotations.Implements(Stdio.BlockFile);
+@Pike.Annotations.Implements(Stdio.NonblockingStream);
 
 //! This constant can be used to distinguish a FakeFile object
 //! from a real @[Stdio.File] object.
@@ -400,7 +402,8 @@ protected int(0..) _sizeof() {
 
 //! @ignore
 
-#define NOPE(X) mixed X (mixed ... args) { error("This is a FakeFile. %s is not available.\n", #X); }
+#define LOW_NOPE(X) error("This is a FakeFile. %s is not available.\n", #X)
+#define NOPE(X) mixed X (mixed ... args) { LOW_NOPE(X); }
 NOPE(assign);
 NOPE(async_connect);
 NOPE(connect);
@@ -408,18 +411,18 @@ NOPE(connect_unix);
 NOPE(open);
 NOPE(open_socket);
 NOPE(pipe);
-NOPE(tcgetattr);
-NOPE(tcsetattr);
+mapping(string:int) tcgetattr() { LOW_NOPE(tcgetattr); }
+int tcsetattr(mapping(string:int) attr, string|void when) { LOW_NOPE(tcsetattr); }
 
 // Stdio.Fd
 NOPE(dup2);
 NOPE(lock); // We could implement this
 NOPE(proxy); // We could implement this
 NOPE(query_fd);
-NOPE(read_oob);
+string read_oob(int(0..) nbytes) { LOW_NOPE(read_oob); }
 NOPE(set_close_on_exec);
 NOPE(set_keepalive);
 NOPE(trylock); // We could implement this
-NOPE(write_oob);
+int(-1..) write_oob(string data) { LOW_NOPE(write_oob); }
 
 //! @endignore
