@@ -981,7 +981,7 @@ protected class VirtualNode {
 
   //! Change the text content destructively.
   string set_text(string txt) {
-    if( mNodeType & (XML_TEXT|XML_ATTR) )
+    if( mNodeType & (XML_TEXT|XML_ATTR|XML_PI|XML_COMMENT|DTD_ENTITY) )
       mText = txt;
   }
 
@@ -1046,7 +1046,7 @@ protected class VirtualNode {
     }
     mNodeType = type;
     mAttributes = attr;
-    if( mNodeType & (XML_TEXT|XML_ATTR) ) {
+    if( mNodeType & (XML_TEXT|XML_ATTR|XML_PI|XML_COMMENT|DTD_ENTITY) ) {
       if (!text) {
 	error("Text missing for node of type %s.\n",
 	      get_type_name(mNodeType));
