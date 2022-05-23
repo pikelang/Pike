@@ -5901,14 +5901,20 @@ void init_operators(void)
 				   tAddInt(tVar(2), tVar(3))),
 			     tOr(tFunc(tFloat tOr(tFloat, tInt), tFloat),
 				 tFunc(tOr(tFloat, tInt) tFloat, tFloat)),
-			     tOr3(tFunc(tSetvar(2, tStr) tSetvar(3, tStr),
-					tOr(tVar(2), tVar(3))),
-				  tFunc(tSetvar(2, tStr) tOr(tInt, tFloat),
-					tOr(tVar(2), tStr7)),
-				  tFunc(tOr(tInt, tFloat) tSetvar(3, tStr),
-					tOr(tStr7, tVar(3)))),
-			     tFunc(tArr(tSetvar(0,tMix)) tArr(tSetvar(1,tMix)),
-				   tArr(tOr(tVar(0), tVar(1)))),
+			     tOr3(tFunc(tLStr(tSetvar(2, tIntPos), tSetvar(0, tInt))
+					tLStr(tSetvar(3, tIntPos), tSetvar(1, tInt)),
+					tLStr(tAddInt(tVar(2), tVar(3)),
+					      tOr(tVar(0), tVar(1)))),
+				  tFunc(tNStr(tSetvar(2, tInt))
+					tOr(tInt, tFloat),
+					tNStr(tOr(tVar(2), tInt7bit))),
+				  tFunc(tOr(tInt, tFloat)
+					tNStr(tSetvar(3, tInt)),
+					tNStr(tOr(tInt7bit, tVar(3))))),
+			     tFunc(tLArr(tSetvar(2, tIntPos), tSetvar(0,tMix))
+				   tLArr(tSetvar(3, tIntPos), tSetvar(1,tMix)),
+				   tLArr(tAddInt(tVar(2), tVar(3)),
+					 tOr(tVar(0), tVar(1)))),
 			     tFunc(tSetvar(0, tMapping) tSetvar(1, tMapping),
 				   tOr(tVar(0), tVar(1))),
 			     tFunc(tSetvar(0, tMultiset) tSetvar(1, tMultiset),
