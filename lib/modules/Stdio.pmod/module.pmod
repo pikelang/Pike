@@ -615,7 +615,7 @@ class File
   }
 #endif
 
-  private function(int, mixed ...:void) _async_cb;
+  private function(int, __unknown__ ...:void) _async_cb;
   private array(mixed) _async_args;
   private void _async_check_cb(mixed|void ignored)
   {
@@ -730,7 +730,7 @@ class File
   //! @seealso
   //!   @[connect()], @[open_socket()], @[set_nonblocking()]
   int async_connect(string host, int|string port,
-		    function(int, mixed ...:void) callback,
+		    function(int, __unknown__ ...:void) callback,
 		    mixed ... args)
   {
     if (!is_open() ||
@@ -3517,7 +3517,7 @@ protected class nb_sendfile
 			object(File)|zero f, int off, int l,
 			array(string)|zero tr,
 			File t,
-			function(int, mixed ...:void)|void cb,
+			function(int, __unknown__ ...:void)|void cb,
 			mixed ... a)
   {
     backend = (t->query_backend && t->query_backend()) ||
@@ -3556,7 +3556,7 @@ protected class nb_sendfile
       trailers = ({});
 
     to = t;
-    callback = cb;
+    callback = [function(int, mixed...:void)]cb;
     args = a;
 
     blocking_to = to->is_file ||
@@ -3664,7 +3664,7 @@ object sendfile(array(string)|zero headers,
 		File|zero from, int offset, int len,
 		array(string)|zero trailers,
 		File to,
-		function(int, mixed ...:void)|void cb,
+		function(int, __unknown__ ...:void)|void cb,
 		mixed ... args)
 {
 #if !defined(DISABLE_FILES_SENDFILE) && constant(_Stdio.sendfile)
@@ -3706,7 +3706,7 @@ class UDP
   //! @returns
   //! The called object.
   //!
-  this_program set_nonblocking(void|function(mapping,mixed...:void) f,
+  this_program set_nonblocking(void|function(mapping,__unknown__...:void) f,
 			       mixed ... stuff)
   {
     if(f)
@@ -3735,7 +3735,7 @@ class UDP
   //! @seealso
   //! @[read()]
   //!
-  this_program set_read_callback(function(mapping,mixed ...:void)|zero f,
+  this_program set_read_callback(function(mapping,__unknown__ ...:void)|zero f,
 				 mixed ...ext)
   {
     extra=ext;
