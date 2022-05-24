@@ -197,8 +197,13 @@ class Base
   {
     mapping j = Standards.JSON.decode(jwt);
 
-    if (!token_endpoint)
+    if (!token_endpoint) {
       token_endpoint = j->token_uri;
+
+      if (!token_endpoint) {
+	error("Token endpoint not specified.\n");
+      }
+    }
 
     mapping claims = ([
       "iss"   : j->client_email,
@@ -357,8 +362,11 @@ class Base
   //!  The URI to the remote authorization page
   //! @param args
   //!  Additional argument.
-  string get_auth_uri(string auth_uri, void|mapping args)
+  string get_auth_uri(string|zero auth_uri, void|mapping args)
   {
+    if (!auth_uri) {
+      error("Authorization URI not specified.\n");
+    }
     Web.Auth.Params p;
     p = Web.Auth.Params(Web.Auth.Param("client_id",     _client_id),
                         Web.Auth.Param("response_type", _response_type));
