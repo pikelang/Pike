@@ -49,23 +49,28 @@ void set_max_request_size(int size)
   max_request_size = size;
 }
 
+// Internal prototype for Protocols.Server.Port.
 protected class Port {
-  Stdio.Port port;
-  int portno;
-  string|int(0..0) interface;
-  function(.Request:void) callback;
+  optional Stdio.Port port;
+  optional int portno;
+  optional string|int(0..0) interface;
+  optional function(.Request:void) callback;
+
+  // NB: The only field we're actually using is request_program.
+  //
+  // Note also that the testsuite has a Port class with only this field.
   program request_program=.Request;
-  void create(function(.Request:void) _callback,
-	      void|int _portno,
-	      void|string _interface);
-  void close();
-  protected void _destruct();
+
+  optional void create(function(.Request:void) _callback,
+		       void|int _portno,
+		       void|string _interface);
+  optional void close();
 }
 
 //! The socket that this request came in on.
 Stdio.NonblockingStream my_fd;
 
-Port server_port;
+object(Port)|zero server_port;
 .HeaderParser headerparser;
 
 protected Stdio.Buffer content_buffer = Stdio.Buffer();
@@ -141,7 +146,7 @@ function(this_program,array:void) error_callback;
 
 System.Timer startt = System.Timer();
 
-void attach_fd(Stdio.NonblockingStream _fd, Port server,
+void attach_fd(Stdio.NonblockingStream _fd, object(Port)|zero server,
 	       function(this_program:void) _request_callback,
 	       void|string already_data,
 	       void|function(this_program,array:void) _error_callback)
@@ -900,7 +905,8 @@ void finish(int clean)
      if (clean && keep_alive) {
        // create new request
 
-       this_program r=server_port->request_program();
+       this_program r =
+	 server_port ? server_port->request_program() : this_program();
        r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
      } else
        my_fd->set_blocking();  // Setup for close, disable callbacks

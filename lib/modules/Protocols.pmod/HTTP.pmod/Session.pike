@@ -507,7 +507,7 @@ void set_http_cookie(string cookie,Standards.URI at)
 //!	The cookie will be checked against current security levels et al,
 //!	using the parameter @[who].
 //!	If @[who] is zero, no security checks will be performed.
-void set_cookie(Cookie cookie,Standards.URI who)
+void set_cookie(Cookie cookie, Standards.URI|zero who)
 {
 // fixme: insert security checks here
 

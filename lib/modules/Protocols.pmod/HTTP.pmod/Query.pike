@@ -722,8 +722,8 @@ array(string) dns_lookup(string hostname)
 //! @returns
 //!	Returns the called object
 
-this_program set_callbacks(function(object,mixed...:mixed)|zero _ok,
-			   function(object,mixed...:mixed)|zero _fail,
+this_program set_callbacks(function(object,__unknown__...:mixed)|zero _ok,
+			   function(object,__unknown__...:mixed)|zero _fail,
 			   mixed ...extra)
 {
    extra_args=extra;
