@@ -5355,11 +5355,11 @@ static void html_quote_stapling(INT32 args)
 /****** module init *********************************/
 
 #define tCbret tOr4(tZero,tInt1,tStr,tArr(tMixed))
-#define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFunc(tObjImpl_PARSER_HTML X,tCbret))
+#define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFuncV(tObjImpl_PARSER_HTML X,tUnknown,tCbret))
 #define tTodo(X) tOr4(tZero,tStr,tCbfunc(X),tArray)
 #define tTagargs tMap(tStr,tStr)
 
-#define t_Todo tOr3(tStr,tArr(tMixed),tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret))
+#define t_Todo tOr3(tStr,tArr(tMixed),tFuncV(tObjImpl_PARSER_HTML tStr,tUnknown,tCbret))
 
 void init_parser_html(void)
 {
