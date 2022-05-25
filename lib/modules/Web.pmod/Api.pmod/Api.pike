@@ -451,11 +451,11 @@ protected mixed handle_response(Protocols.HTTP.Query req)
     TRACE("Data: [%s]\n\n", req->data()||"(empty)");
 #endif
 
-  if (req->status != 200) {
+  if (req->status >= 300) {
     string d = req->data();
 
     TRACE("Bad resp[%d]: %s\n\n%O\n",
-          req->status, req->data(), req->headers);
+          req->status, d, req->headers);
 
     if (has_value(d, "error")) {
       mapping e;
