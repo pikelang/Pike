@@ -528,7 +528,7 @@ protected mixed handle_response(Protocols.HTTP.Query|Protocols.HTTP.Promise.Resu
     d = req->data();
   }
 
-  if (req->status != 200) {
+  if (req->status >= 300) {
     TRACE("Bad resp[%d]: %s\n\n%O\n",
           req->status, d, req->headers);
 
