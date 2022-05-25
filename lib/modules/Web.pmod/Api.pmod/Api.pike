@@ -15,13 +15,24 @@
 # define TRACE(X...) 0
 #endif
 
-//! The URI to the remote API
+//! The default URI to the remote API
 constant API_URI = 0;
 
 //! In some API's (LinkedIn f ex) this is named something else so it needs
 //! to be overridden i cases where it has a different name than the
-//! standard one
+//! standard one.
+//!
+//! @note
+//!   Obsolete.
+//!
+//!   This is only used if @[AUTHORIZATION_METHOD] has been set to @expr{""@}.
 protected constant ACCESS_TOKEN_PARAM_NAME = "access_token";
+
+//! Authorization header prefix.
+//!
+//! This is typically @expr{"Bearer"@} as per @rfc{6750@}, but
+//! some apis use the older @expr{"token"@}.
+protected constant AUTHORIZATION_METHOD = "Bearer";
 
 //! If @expr{1@} @[Standards.JSON.decode_utf8()] will be used when JSON data
 //! is decoded.
@@ -243,13 +254,29 @@ mixed call(string api_method, void|ParamsArg params,
 
   if (params) p += params;
 
-  if (_auth && !_auth->is_expired()) {
-    if (string a = _auth->access_token) {
-      p += Web.Auth.Param(ACCESS_TOKEN_PARAM_NAME, a);
+  mapping request_headers = copy_value(default_headers);
+
+  switch(lower_case(AUTHORIZATION_METHOD)) {
+  case "":
+    // Ancient.
+    if (_auth && !_auth->is_expired()) {
+      if (string a = _auth->access_token) {
+	p += Web.Auth.Param(ACCESS_TOKEN_PARAM_NAME, a);
+      }
     }
+    break;
+  case "basic":
+    request_headers->Authorization =
+      sprintf("%s %s", AUTHORIZATION_METHOD,
+	      MIME.encode_base64(_auth->get_client_id() + ":" +
+				 _auth->get_client_secret()));
+    break;
+  default:
+    request_headers->Authorization =
+      sprintf("%s %s", AUTHORIZATION_METHOD, _auth->access_token);
+    break;
   }
 
-  mapping request_headers = copy_value(default_headers);
   params = (mapping) p;
 
   if ((< "POST" >)[http_method]) {
