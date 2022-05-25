@@ -442,10 +442,14 @@ class Base
   //!
   //!  Depending on the authorization service it might also contain more
   //!  members.
-  string request_access_token(string oauth_token_uri, string code,
+  string request_access_token(string|zero oauth_token_uri, string code,
                               void|function(bool,string:void) async_cb)
   {
     TRACE("request_access_token: %O, %O\n", oauth_token_uri, code);
+
+    if (!oauth_token_uri) {
+      error("Token URI not specified.\n");
+    }
 
     Web.Auth.Params p = get_default_params();
     p += Web.Auth.Param("code", code);
@@ -474,10 +478,14 @@ class Base
   //!  argument will be a string. If the request failed it will be an
   //!  error message. If it succeeded it will be the result as a
   //!  string encoded with @[predef::encode_value()].
-  string refresh_access_token(string oauth_token_uri,
+  string refresh_access_token(string|zero oauth_token_uri,
                               void|function(bool,string:void) async_cb)
   {
-    TRACE("Refresh: %s @ %s\n", gettable->refresh_token, oauth_token_uri);
+    TRACE("Refresh: %O @ %s\n", gettable->refresh_token, oauth_token_uri);
+
+    if (!oauth_token_uri) {
+      error("Token URI not specified.\n");
+    }
 
     if (!gettable->refresh_token)
       error("No refresh_token in object! ");
@@ -509,9 +517,13 @@ class Base
   //!  argument will be a string. If the request failed it will be an
   //!  error message. If it succeeded it will be the result as a
   //!  string encoded with @[predef::encode_value()].
-  protected string do_query(string oauth_token_uri, Web.Auth.Params p,
+  protected string do_query(string|zero oauth_token_uri, Web.Auth.Params p,
                             void|function(bool,string:void) async_cb)
   {
+    if (!oauth_token_uri) {
+      error("Token URI not specified.\n");
+    }
+
     int qpos = 0;
 
     if ((qpos = search(oauth_token_uri, "?")) > -1) {
