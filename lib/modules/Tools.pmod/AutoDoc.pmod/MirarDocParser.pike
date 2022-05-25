@@ -465,10 +465,10 @@ constant self_terminating = (< "br", "hr", "wbr" >);
 
 ADT.Stack nesting;
 
-array(string) pop_to_tag(string tag)
+array(string) pop_to_tag(string|zero tag)
 {
   array(string) res = ({});
-  string top;
+  string|zero top;
   while ((top = nesting->top()) && (top != tag)) {
     res += ({ "</" + top + ">" });
     nesting->pop();

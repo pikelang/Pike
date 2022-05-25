@@ -327,7 +327,7 @@ private class Extractor {
   // at the beginning of the file, and then the return value is that
   // Documentation for the file.
   Documentation parseClassBody(AutoDoc root, Class|Module c,
-                               array(string) defModifiers,
+                               array(string)|zero defModifiers,
                                void|string filename,
 			       void|string inAt)
   {
