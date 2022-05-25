@@ -27,6 +27,8 @@ class Github
   //! The base uri to the Github API
   constant API_URI = "https://api.github.com";
 
+  protected constant AUTHORIZATION_METHOD = "token";
+
   //! Getter for the @[Any] object which is a generic object for making request
   //! to the Github API
   //!
