@@ -1030,7 +1030,7 @@ protected class VirtualNode {
   }
 
   //!
-  protected void create(int type, string name, mapping|zero attr,
+  protected void create(int type, string|zero name, mapping|zero attr,
 			string|zero text)
   {
     if (name) {
