@@ -1389,8 +1389,8 @@ void async_fetch(function callback,mixed ... extra)
 //!
 //! @seealso
 //!   @[async_fetch()], @[async_request()], @[set_callbacks()]
-void timed_async_fetch(function(object, mixed ...:void) ok_callback,
-		       function(object, mixed ...:void) fail_callback,
+void timed_async_fetch(function(object, __unknown__ ...:void) ok_callback,
+		       function(object, __unknown__ ...:void) fail_callback,
 		       mixed ... extra) {
   if (body_is_fetched()) {
     call_out(ok_callback, 0, this, @extra);
