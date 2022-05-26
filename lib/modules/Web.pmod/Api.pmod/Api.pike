@@ -18,7 +18,7 @@
 #endif
 
 //! The default URI to the remote API
-constant API_URI = 0;
+constant API_URI = "";
 
 //! In some API's (LinkedIn f ex) this is named something else so it needs
 //! to be overridden i cases where it has a different name than the
