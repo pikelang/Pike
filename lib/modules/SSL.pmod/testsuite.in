@@ -682,7 +682,7 @@ test_do([[
 test_do([[
   import SSL.Constants;
   string f(SSL.Context server_ctx, SSL.Context client_ctx,
-           string exp_data, int exp_suite, int exp_version,
+           string|zero exp_data, int exp_suite, int exp_version,
 	   SSL.Session|void session)
   {
     Stdio.File client_con = Stdio.File();
@@ -821,7 +821,7 @@ test_do([[
 test_do([[
   import SSL.Constants;
   int f(int client_min, int client_max, int server_min, int server_max,
-        string exp_data, object server_ctx, array(int) suites,
+        string|zero exp_data, object server_ctx, array(int) suites,
         array(CertificatePair)|void client_certs,
         array(int)|void ffdhe_groups)
   {
@@ -957,7 +957,8 @@ test_do([[
 test_do([[
   import SSL.Constants;
   array(string) f(SSL.Context server_ctx, SSL.Context client_ctx,
-		  string exp_data, int exp_suite, ProtocolVersion exp_version)
+		  string|zero exp_data, int exp_suite,
+		  ProtocolVersion exp_version)
   {
 #if constant(thread_create)
     Stdio.File client_con = Stdio.File();
@@ -1074,7 +1075,7 @@ test_do([[
 test_do([[
   import SSL.Constants;
   int f(int client_min, int client_max, int server_min, int server_max,
-        string exp_data, object server_ctx, array(int) suites,
+        string|zero exp_data, object server_ctx, array(int) suites,
         array(CertificatePair)|void client_certs,
 	array(int)|void ffdhe_groups)
   {
