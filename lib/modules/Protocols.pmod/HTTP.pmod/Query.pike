@@ -722,8 +722,8 @@ array(string) dns_lookup(string hostname)
 //! @returns
 //!	Returns the called object
 
-this_program set_callbacks(function(object,__unknown__...:mixed)|zero _ok,
-			   function(object,__unknown__...:mixed)|zero _fail,
+this_program set_callbacks(function(this_program,__unknown__...:mixed)|zero _ok,
+			   function(this_program,__unknown__...:mixed)|zero _fail,
 			   mixed ...extra)
 {
    extra_args=extra;
@@ -1389,8 +1389,8 @@ void async_fetch(function callback,mixed ... extra)
 //!
 //! @seealso
 //!   @[async_fetch()], @[async_request()], @[set_callbacks()]
-void timed_async_fetch(function(object, __unknown__ ...:void) ok_callback,
-		       function(object, __unknown__ ...:void) fail_callback,
+void timed_async_fetch(function(this_program, __unknown__ ...:void) ok_callback,
+		       function(this_program, __unknown__ ...:void) fail_callback,
 		       mixed ... extra) {
   if (body_is_fetched()) {
     call_out(ok_callback, 0, this, @extra);
