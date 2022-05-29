@@ -140,10 +140,11 @@ class V1
   //! @param params
   //!
   //! @param data
+  //!  Ignored.
   //!
   //! @param cb
   //!  Callback for async requests
-  mapping post(string path, void|ParamsArg params, string data,
+  mapping post(string path, void|ParamsArg params, string|zero data,
                void|Callback cb)
   {
     return `any()->post(path, params, 0, cb);
@@ -185,7 +186,7 @@ class V1
     }
 
     //! Internal convenience method
-    protected mixed _post(string s, void|ParamsArg p, string data,
+    protected mixed _post(string s, void|ParamsArg p, string|zero data,
                           void|Callback cb)
     {
       return parent::post(get_uri(METHOD_PATH + s), p, data, cb);
@@ -819,7 +820,7 @@ class V1
     //!
     //! @param cb
     //!  Async callback
-    mixed post(string s, void|ParamsArg p, string data, void|Callback cb)
+    mixed post(string s, void|ParamsArg p, string|zero data, void|Callback cb)
     {
       return _post(s, p, data, cb);
     }
