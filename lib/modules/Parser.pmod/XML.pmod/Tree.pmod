@@ -947,7 +947,7 @@ protected class VirtualNode {
   //!
   //! @seealso
   //!   @[replace_attributes()]
-  mapping(string:string) get_attributes()   { return (mAttributes); }
+  mapping(string:string) get_attributes()   { return mAttributes||([]); }
 
   //! Replace the entire set of attributes.
   //!
