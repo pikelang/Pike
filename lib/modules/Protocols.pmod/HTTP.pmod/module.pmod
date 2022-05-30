@@ -162,7 +162,7 @@ constant response_codes =
                          string method,
                          string|Standards.URI url,
                          void|mapping(string:int|string|array(string)) query_variables,
-                         void|mapping(string:string|array(string)) request_headers,
+                         void|mapping(string:string|array(string)|int) request_headers,
                          void|Protocols.HTTP.Query con, void|string data)
 {
   if (!proxy || (proxy == "")) {
@@ -257,7 +257,7 @@ constant response_codes =
 .Query do_method(string method,
 		 string|Standards.URI url,
 		 void|mapping(string:int|string|array(string)) query_variables,
-		 void|mapping(string:string|array(string)) request_headers,
+		 void|mapping(string:string|array(string)|int) request_headers,
 		 void|Protocols.HTTP.Query con, void|string data)
 {
   if(stringp(url))
@@ -322,7 +322,7 @@ constant response_codes =
 
 protected .Query do_udp_method(string method, Standards.URI url,
 			    void|mapping(string:int|string|array(string)) query_variables,
-			    void|mapping(string:string|array(string))
+			    void|mapping(string:string|array(string)|int)
 			    request_headers, void|Protocols.HTTP.Query con,
 			    void|string data)
 {
@@ -391,7 +391,7 @@ protected .Query do_udp_method(string method, Standards.URI url,
 void do_async_method(string method,
 		     string|Standards.URI url,
 		     void|mapping(string:int|string|array(string)) query_variables,
-		     void|mapping(string:string|array(string)) request_headers,
+		     void|mapping(string:string|array(string)|int) request_headers,
 		     Protocols.HTTP.Query con, void|string data)
 {
   if(stringp(url))
@@ -526,7 +526,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 			     string method,
 			     string|Standards.URI url,
 			     void|mapping(string:int|string|array(string)) query_variables,
-			     void|mapping(string:string|array(string)) request_headers,
+			     void|mapping(string:string|array(string)|int) request_headers,
 			     Protocols.HTTP.Query con, void|string data)
 {
   if (!proxy || (proxy == "")) {
@@ -616,7 +616,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 //!
 .Query get_url(string|Standards.URI url,
 	       void|mapping(string:int|string|array(string)) query_variables,
-	       void|mapping(string:string|array(string)) request_headers,
+	       void|mapping(string:string|array(string)|int) request_headers,
 	       void|Protocols.HTTP.Query con)
 {
   return do_method("GET", url, query_variables, request_headers, con);
@@ -632,7 +632,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 .Query put_url(string|Standards.URI url,
 	       void|string file,
 	       void|mapping(string:int|string|array(string)) query_variables,
-	       void|mapping(string:string|array(string)) request_headers,
+	       void|mapping(string:string|array(string)|int) request_headers,
 	       void|Protocols.HTTP.Query con)
 {
   return do_method("PUT", url, query_variables, request_headers, con, file);
@@ -647,7 +647,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 //!
 .Query delete_url(string|Standards.URI url,
 		  void|mapping(string:int|string|array(string)) query_variables,
-		  void|mapping(string:string|array(string)) request_headers,
+		  void|mapping(string:string|array(string)|int) request_headers,
 		  void|Protocols.HTTP.Query con)
 {
   return do_method("DELETE", url, query_variables, request_headers, con);
@@ -659,7 +659,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 //!
 array(string) get_url_nice(string|Standards.URI url,
 			   void|mapping(string:int|string|array(string)) query_variables,
-			   void|mapping(string:string|array(string)) request_headers,
+			   void|mapping(string:string|array(string)|int) request_headers,
 			   void|Protocols.HTTP.Query con)
 {
   .Query c;
@@ -682,7 +682,7 @@ array(string) get_url_nice(string|Standards.URI url,
 //!
 string get_url_data(string|Standards.URI url,
 		    void|mapping(string:int|string|array(string)) query_variables,
-		    void|mapping(string:string|array(string)) request_headers,
+		    void|mapping(string:string|array(string)|int) request_headers,
 		    void|Protocols.HTTP.Query con)
 {
   array(string) z = get_url_nice(url, query_variables, request_headers, con);
@@ -696,7 +696,7 @@ string get_url_data(string|Standards.URI url,
 //! manually, in this case.
 .Query post_url(string|Standards.URI url,
 	mapping(string:int|string|array(string))|string query_variables,
-		void|mapping(string:string|array(string)) request_headers,
+		void|mapping(string:string|array(string)|int) request_headers,
 		void|Protocols.HTTP.Query con)
 {
   return do_method("POST", url, 0, stringp(query_variables) ? request_headers
@@ -712,7 +712,7 @@ string get_url_data(string|Standards.URI url,
 //! a POST request instead of a GET request.
 array(string) post_url_nice(string|Standards.URI url,
 			    mapping(string:int|string|array(string))|string query_variables,
-			    void|mapping(string:string|array(string)) request_headers,
+			    void|mapping(string:string|array(string)|int) request_headers,
 			    void|Protocols.HTTP.Query con)
 {
   .Query c = post_url(url, query_variables, request_headers, con);
@@ -723,7 +723,7 @@ array(string) post_url_nice(string|Standards.URI url,
 //! a POST request instead of a GET request.
 string post_url_data(string|Standards.URI url,
 		     mapping(string:int|string|array(string))|string query_variables,
-		     void|mapping(string:string|array(string)) request_headers,
+		     void|mapping(string:string|array(string)|int) request_headers,
 		     void|Protocols.HTTP.Query con)
 {
   .Query z = post_url(url, query_variables, request_headers, con);

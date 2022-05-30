@@ -590,7 +590,7 @@ void async_fetch_close()
 }
 
 /****** utilities **************************************************/
-string headers_encode(mapping(string:array(string)|string) h)
+string headers_encode(mapping(string:array(string)|string|int) h)
 {
     constant rfc_headers = ({ "accept-charset", "accept-encoding", "accept-language",
                               "accept-ranges", "cache-control", "content-length",
@@ -602,7 +602,7 @@ string headers_encode(mapping(string:array(string)|string) h)
 
    if (!h || !sizeof(h)) return "";
    String.Buffer buf = String.Buffer();
-   foreach(h; string name; array(string)|string value)
+   foreach(h; string name; array(string)|string|int value)
    {
      if( replace_headers[name] )
        name = replace_headers[name];
