@@ -3795,6 +3795,9 @@ void fix_type_field(node *n)
       }
 #endif /* 0 */
       n->type = and_pike_types(CDR(n)->type, CAR(n)->type);
+      if (!n->type) {
+	copy_pike_type(n->type, CDR(n)->type);
+      }
     }
     break;
 
