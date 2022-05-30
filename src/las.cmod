@@ -3902,7 +3902,8 @@ void fix_type_field(node *n)
 	/* Check that the returned type is compatible with the
 	 * variable type.
 	 */
-	if (!pike_types_le(f, CAR(n)->type, PT_FLAG_CMP_VOID_IS_ZERO, 0)) {
+	if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
+	    !pike_types_le(f, CAR(n)->type, PT_FLAG_CMP_VOID_IS_ZERO, 0)) {
 	  /* a["b"]+=c and a->b+=c can be valid when a is an array.
 	   *
 	   * FIXME: Exactly what case is the problem?
