@@ -231,7 +231,7 @@ class Future
   //!
   //! @seealso
   //!   @[on_failure()], @[query_success_callbacks()]
-  this_program on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
+  this_program on_success(function(mixed, __unknown__ ... : void) cb, mixed ... extra)
   {
     Thread.MutexKey key = mux->lock();
     switch (state) {
@@ -275,7 +275,7 @@ class Future
   //!
   //! @seealso
   //!   @[on_success()], @[query_failure_callbacks()]
-  this_program on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
+  this_program on_failure(function(mixed, __unknown__ ... : void) cb, mixed ... extra)
   {
     Thread.MutexKey key = mux->lock();
     switch (state) {
@@ -1002,7 +1002,7 @@ class AggregatedPromise
   protected int(1bit) started;
   protected int(0..) min_failure_threshold;
   protected int(-1..) max_failure_threshold;
-  protected function(mixed, mixed, mixed ... : mixed) fold_fun;
+  protected function(mixed, mixed, __unknown__ ... : mixed) fold_fun;
   protected array(mixed) extra_fold_args;
 
   //! Callback used to aggregate the results from dependencies.
@@ -1235,7 +1235,7 @@ class AggregatedPromise
   //! @seealso
   //!   @[depend()], @[Concurrent.fold()]
   this_program fold(mixed initial,
-	            function(mixed, mixed, mixed ... : mixed) fun,
+	            function(mixed, mixed, __unknown__ ... : mixed) fun,
 	            mixed ... extra)
   {
     if (started) {
@@ -1262,7 +1262,7 @@ class AggregatedPromise
       error("Sequencing error. Not possible to switch to first completed.\n");
     }
     extra_fold_args = ({});
-    fold_fun = lambda(mixed a, mixed b) { return b; };
+    fold_fun = lambda(mixed a, mixed b, mixed ...) { return b; };
     num_dependencies = 1;
     start();
 
