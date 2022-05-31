@@ -10273,11 +10273,10 @@ void init_builtin_efuns(void)
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tIntPos),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN2("indices",f_indices,
-	    tOr4(tFunc(tArray,tArr(tIntPos)),
-		 tFunc(tOr3(tMap(tSetvar(1,tMix),tMix),
-			    tSet(tSetvar(1,tMix)),
-			    tNStr(tSetvar(1,tInt))),
-		       tArr(tVar(1))),
+	    tOr6(tFunc(tLArr(tSetvar(1, tIntPos), tMix),tArr(tVar(1))),
+		 tFunc(tMap(tSetvar(1, tMix), tMix), tArr(tVar(1))),
+		 tFunc(tSet(tSetvar(1, tMix)), tArr(tVar(1))),
+		 tFunc(tLStr(tSetvar(1, tIntPos), tInt), tArr(tVar(1))),
 		 tFunc(tPrg(tObj), tArr(tStr)),
 		 tFuncArg(tSetvar(2, tObj),
 			  tOr(tFindLFun(tVar(2), "_indices"),
@@ -10438,11 +10437,16 @@ void init_builtin_efuns(void)
 
   /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN2("values",f_values,
-	   tOr(tFunc(tOr(tStr,tMultiset),tArr(tInt)),
-	       tFunc(tOr4(tArr(tSetvar(0,tMix)),
-			  tMap(tMix,tSetvar(0,tMix)),
-			  tObj,tPrg(tObj)),
-		     tArr(tVar(0)))),0,fix_values_type,0);
+	   tOr6(tFunc(tMultiset, tArr(tInt01)),
+	        tFunc(tNStr(tSetvar(0, tInt)), tArr(tVar(0))),
+	        tFunc(tSetvar(1, tArray), tVar(1)),
+	        tFunc(tMap(tMix, tSetvar(0, tMix)), tArr(tVar(0))),
+	        tFunc(tPrg(tObj), tArr(tStr)),
+	        tFuncArg(tSetvar(2, tObj),
+			 tOr(tFindLFun(tVar(2), "_values"),
+			     tIfnot(tFindLFun(tVar(2), "_values"),
+				    tFunc(tNone, tArr(tMix)))))),
+	    0, fix_values_type, 0);
 
   /* function(string|multiset(array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN2("types", f_types,
