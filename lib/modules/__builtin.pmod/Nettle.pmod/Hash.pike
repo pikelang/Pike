@@ -1295,7 +1295,7 @@ class SCRAM
     string(7bit) punypass = "";
     string(7bit)|zero validated_r;
     string(7bit)|zero response;
-    if (!catch([string(8bit) r, string(8bit) salt, int iters] =
+    if (!catch([string(8bit)|zero r, string(8bit) salt, int iters] =
 	       [array(string(8bit)|int)]array_sscanf(line, format))
 	&& iters > 0
 	&& (validated_r = validate_nonce(r))
@@ -1311,9 +1311,9 @@ class SCRAM
       string(8bit) key = sprintf("%s,%s,%d", punypass, salt, iters);
       if (!(r = SCRAM_get_salted_password(key))) {
 	r = pbkdf2(punypass, salt, iters, digest_size());
-	SCRAM_set_salted_password(r, key);
+	SCRAM_set_salted_password([string]r, key);
       }
-      response = sprintf("%s,p=%s", newline, clientproof(r));
+      response = sprintf("%s,p=%s", newline, clientproof([string]r));
       first = 0;                         // Free memory
     } else
       response = 0;
