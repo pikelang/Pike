@@ -1254,6 +1254,12 @@ new_arg_name: full_type optional_dot_dot_dot optional_identifier
     int i;
     if(Pike_compiler->varargs) yyerror("Can't define more arguments after ...");
 
+    if (TEST_COMPAT(8, 0) &&
+	!pike_types_le(zero_type_string, peek_type_stack(), 0, 0)) {
+      push_type(PIKE_T_ZERO);
+      push_type(T_OR);
+    }
+
     if($2)
     {
       push_unlimited_array_type(T_ARRAY);
@@ -1781,9 +1787,7 @@ opt_function_type: '('
    push_type(T_VOID);
    push_type(T_OR);
 
-   push_type(T_ZERO);
-   push_type(T_VOID);
-   push_type(T_OR);
+   push_type(PIKE_T_UNKNOWN);
 
    push_type(T_MANY);
 
@@ -1800,8 +1804,6 @@ opt_function_type: '('
      push_type(PIKE_T_UNKNOWN);
 
      push_type(T_MIXED);
-     push_type(T_VOID);
-     push_type(T_OR);
 
      push_type(T_MANY);
 
