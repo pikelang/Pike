@@ -227,7 +227,7 @@ class LocaleObject
   }
 }
 
-object get_object(string project, string lang) {
+object|zero get_object(string project, string lang) {
 
   // Is there such a project?
   int guess_project;
@@ -319,7 +319,7 @@ object get_object(string project, string lang) {
     data = line+data;
 
   string|int id;
-  string str_tag(Parser.HTML parser, mapping m, string c) {
+  string|zero str_tag(Parser.HTML parser, mapping m, string c) {
     id = 0;
     if(m->id && m->id!="" && c!="") {
       if((int)m->id) m->id = (int)m->id;
@@ -328,7 +328,7 @@ object get_object(string project, string lang) {
     }
     return 0;
   };
-  string t_tag(Parser.HTML parser, mapping m, string c) {
+  string|zero t_tag(Parser.HTML parser, mapping m, string c) {
     if(!id) {
       if(!m->id)
 	return 0;
@@ -347,7 +347,7 @@ object get_object(string project, string lang) {
     bindings[id]=c;
     return 0;
   };
-  string pike_tag(Parser.HTML parser, mapping m, string c) {
+  string|zero pike_tag(Parser.HTML parser, mapping m, string c) {
     // Replace encoded entities
     c = replace(c, ({"&lt;","&gt;","&amp;"}),
 		({ "<",   ">",    "&"  }));
@@ -387,7 +387,7 @@ object get_object(string project, string lang) {
   return locale_object;
 }
 
-mapping(string:object) get_objects(string lang)
+mapping(string:object)|zero get_objects(string lang)
   //! Reads in and returns a mapping with all the registred projects'
   //! LocaleObjects in the language 'lang'
 {
@@ -418,7 +418,7 @@ string translate(string project, string lang, string|int id, string fallback)
   return fallback;
 }
 
-function call(string project, string lang, string name,
+function|zero call(string project, string lang, string name,
 	   void|function|string fb)
   //! Returns a localized function
   //! If function not found, tries fallback function fb,

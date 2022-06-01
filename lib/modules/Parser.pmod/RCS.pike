@@ -574,8 +574,8 @@ this_program parse(array raw, void|function(string:void) progress_callback,
 //! cut down memory use at the expense of slow access to older revisions.
 //! @seealso
 //!   @[expand_keywords_for_revision()]
-string get_contents_for_revision( string|Revision rev,
-				  void|int(0..1) dont_cache_data)
+string|zero get_contents_for_revision( string|Revision rev,
+                                       void|int(0..1) dont_cache_data)
 {
   if( stringp( rev ) ) rev = revisions[rev];
   if( !rev ) return 0;
@@ -714,8 +714,9 @@ protected string kwchars = Array.uniq(sort("Author" "Date" "Header" "Id" "Name"
 //!
 //! @seealso
 //!   @[get_contents_for_revision]
-string expand_keywords_for_revision( string|Revision rev, string|void text,
-				     int|void expansion_mode )
+string|zero
+  expand_keywords_for_revision( string|Revision rev, string|void text,
+                                int|void expansion_mode )
 {
   if( stringp( rev ) ) rev = revisions[rev];
   if( !rev ) return 0;

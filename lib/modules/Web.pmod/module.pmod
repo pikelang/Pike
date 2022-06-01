@@ -59,9 +59,9 @@ string(7bit) encode_jws(Crypto.Sign.State|Crypto.MAC.State sign,
 //! @seealso
 //!   @[encode_jws()], @[decode_jwt()], @[Crypto.Sign.State()->jose_decode()],
 //!   @rfc{7515@}
-array decode_jws(array(Crypto.Sign.State|Crypto.MAC.State)|
-		 Crypto.Sign.State|Crypto.MAC.State sign,
-		 string(7bit) jws)
+array|zero decode_jws(array(Crypto.Sign.State|Crypto.MAC.State)|
+                      Crypto.Sign.State|Crypto.MAC.State sign,
+                      string(7bit) jws)
 {
   if (!arrayp(sign)) sign = ({ sign });
   array(mapping(string(7bit):string(7bit)|int)|string(8bit)) decoded_jws;
@@ -129,7 +129,7 @@ string(7bit) encode_jwt(Crypto.Sign.State|Crypto.MAC.State sign,
 //!
 //! @seealso
 //!   @[encode_jwt()], @[decode_jws()], @rfc{7519:4@}
-mapping(string:string|int) decode_jwt(array(Crypto.Sign.State|Crypto.MAC.State)|
+mapping(string:string|int)|zero decode_jwt(array(Crypto.Sign.State|Crypto.MAC.State)|
 				      Crypto.Sign.State|Crypto.MAC.State sign,
 				      string(7bit) jwt)
 {

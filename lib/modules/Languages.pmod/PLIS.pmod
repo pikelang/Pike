@@ -56,7 +56,7 @@ class Cons
       car = a; cdr = d;
     }
 
-  object mapcar(string|function fun, mixed ...extra)
+  object|zero mapcar(string|function fun, mixed ...extra)
     {
       object new_car = stringp(fun)? car[fun](@extra) : fun(car, @extra);
       if (!new_car)
@@ -76,7 +76,7 @@ class Cons
       }
     }
 
-  object map(string|function fun, mixed ...extra)
+  object|zero map(string|function fun, mixed ...extra)
     {
       /* Do this as a special case to allow tail recursion */
       if (!cdr || (cdr == Lempty))
@@ -114,7 +114,7 @@ class Cons
       return s;
     }
 
-  object eval(Environment env, Environment globals)
+  object|zero eval(Environment env, Environment globals)
     {
       WERROR(sprintf("eval list: %s\n", print(1)));
       //if (car->name == "read-line")
@@ -149,7 +149,7 @@ class Symbol
 
   string name;
 
-  object eval(Environment env, Environment globals)
+  object|zero eval(Environment env, Environment globals)
     {
       WERROR(sprintf("eval symbol '%s'\n", name));
 #if 0
@@ -325,7 +325,7 @@ class Lambda (object formals, // May be a dotted list
 
   object new_env(Environment env, object arglist);
 
-  object apply(object arglist, Environment env, Environment globals)
+  object|zero apply(object arglist, Environment env, Environment globals)
     {
       if (globals->limit_apply && (globals->limit_apply()))
 	return 0;
@@ -488,7 +488,7 @@ class Parser (string buffer)
       }
     }
 
-  object read()
+  object|zero read()
     {
       mixed res = _read();
       if (intp(res))
@@ -498,7 +498,7 @@ class Parser (string buffer)
       return res;
     }
 
-  object read_list()
+  object|zero read_list()
     {
       mixed item = _read();
       if (!item)
@@ -532,7 +532,7 @@ object s_quote(object arglist, Environment env, Environment globals)
   return arglist->car;
 }
 
-object s_setq(object arglist, Environment env, Environment globals)
+object|zero s_setq(object arglist, Environment env, Environment globals)
 {
 //  werror(sprintf("set!, arglist: %s\n", arglist->print(1) + "\n"));
   object value = arglist->cdr->car->eval(env, globals);
@@ -547,7 +547,7 @@ object s_setq(object arglist, Environment env, Environment globals)
     return 0;
 }
 
-object s_define(object arglist, Environment env, Environment globals)
+object|zero s_define(object arglist, Environment env, Environment globals)
 {
   object symbol, value;
   if (arglist->car->car)
@@ -565,7 +565,7 @@ object s_define(object arglist, Environment env, Environment globals)
   return symbol;
 }
 
-object s_defmacro(object arglist, Environment env, Environment globals)
+object|zero s_defmacro(object arglist, Environment env, Environment globals)
 {
   // werror(sprintf("defmacro '%s'\n", arglist->car->car->print(0)));
   object symbol = arglist->car->car;
@@ -673,21 +673,21 @@ object f_list(object arglist, Environment env, Environment globals)
   return arglist;
 }
 
-object f_setcar(object arglist, Environment env, Environment globals)
+object|zero f_setcar(object arglist, Environment env, Environment globals)
 {
   if (arglist->car->is_mutable_cons)
     return arglist->car->car = arglist->cdr->car;
   return 0;
 }
 
-object f_setcdr(object arglist, Environment env, Environment globals)
+object|zero f_setcdr(object arglist, Environment env, Environment globals)
 {
   if (arglist->car->is_mutable_cons)
     return arglist->car->cdr = arglist->cdr->car;
   return 0;
 }
 
-object f_eval(object arglist, Environment env, Environment globals)
+object|zero f_eval(object arglist, Environment env, Environment globals)
 {
   if (arglist->cdr != Lempty)
   {
@@ -706,7 +706,7 @@ object f_apply(object arglist, Environment env, Environment globals)
   return arglist->car->apply(arglist->cdr->car, env, globals);
 }
 
-object f_add(object arglist, Environment env, Environment globals)
+object|zero f_add(object arglist, Environment env, Environment globals)
 {
   int sum = 0;
 
@@ -720,7 +720,7 @@ object f_add(object arglist, Environment env, Environment globals)
   return Number(sum);
 }
 
-object f_mult(object arglist, Environment env, Environment globals)
+object|zero f_mult(object arglist, Environment env, Environment globals)
 {
   int product = 1;
 
@@ -734,7 +734,7 @@ object f_mult(object arglist, Environment env, Environment globals)
   return Number(product);
 }
 
-object f_subtract(object arglist, Environment env, Environment globals)
+object|zero f_subtract(object arglist, Environment env, Environment globals)
 {
   if (arglist == Lempty)
     return Number( 0 );
@@ -776,7 +776,7 @@ object f_gt(object arglist, Environment env, Environment globals)
     ? Ltrue : Lfalse;
 }
 
-object f_concat(object arglist, Environment env, Environment globals)
+object|zero f_concat(object arglist, Environment env, Environment globals)
 {
   string res="";
   do {
@@ -793,7 +793,7 @@ object f_read_string(object arglist, Environment env, Environment globals)
     return Parser(arglist->car->to_string())->read();
 }
 
-object f_readline(object arglist, Environment env, Environment globals)
+object|zero f_readline(object arglist, Environment env, Environment globals)
 {
   if (!arglist->car->is_string)
     return 0;

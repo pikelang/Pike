@@ -126,7 +126,7 @@ void async_new_text_old()
 
 class MiscInfo
 {
-  protected string _sprintf(int t)
+  protected string|zero _sprintf(int t)
   {
     if(t!='O') return 0;
     array(string) to = ({});
@@ -481,7 +481,7 @@ class AuxItemInput
 //!   Undocumented
 class AuxItems
 {
-  protected string _sprintf(int t)
+  protected string|zero _sprintf(int t)
   {
     if(t!='O') return 0;
     array desc = ({});

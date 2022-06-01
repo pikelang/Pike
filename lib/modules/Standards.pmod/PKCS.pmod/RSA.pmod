@@ -122,7 +122,7 @@ Sequence build_private_key(Crypto.RSA rsa)
 //! Returns the PKCS-1 algorithm identifier for RSA and the provided
 //! hash algorithm. One of @[MD2], @[MD5], @[SHA1], @[SHA256],
 //! @[SHA384] or @[SHA512].
-Sequence signature_algorithm_id(Crypto.Hash hash)
+object(Sequence)|zero signature_algorithm_id(Crypto.Hash hash)
 {
   switch(hash->name())
   {

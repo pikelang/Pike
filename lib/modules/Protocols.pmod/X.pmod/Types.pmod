@@ -781,7 +781,7 @@ class Window
   }
 
   //!
-  array ListProperties()
+  array|zero ListProperties()
   {
     object req = ListProperties_req();
     array a = display->blocking_request(req);
@@ -834,7 +834,7 @@ class Window
   }
 
   //!
-  mapping GetProperty(object property, object|void type)
+  mapping|zero GetProperty(object property, object|void type)
   {
     object req = GetProperty_req(property, type);
     array a = display->blocking_request(req);

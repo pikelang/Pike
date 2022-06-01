@@ -1432,7 +1432,7 @@ class cYear
 	 n=0;
    }
 
-   TimeRange place(TimeRange what,void|int force)
+   object(TimeRange)|zero place(TimeRange what,void|int force)
    {
       if (what->is_day)
       {
@@ -1759,7 +1759,7 @@ class cMonth
 	 ->autopromote();
    }
 
-   TimeRange place_day(int day,int day_n,void|int force)
+   object(TimeRange)|zero place_day(int day,int day_n,void|int force)
    {
       if (day>number_of_days()) return 0; // doesn't exist
       return Day("ymd_jd",rules,jd+day-1,day_n)->autopromote();
@@ -2095,7 +2095,7 @@ class cWeek
       error("add: Incompatible type %O\n",step);
    }
 
-   TimeRange place_day(int day,int day_n,int force)
+   object(TimeRange)|zero place_day(int day,int day_n,int force)
    {
       if (day>number_of_days())
 	 if (!force)
@@ -2802,7 +2802,8 @@ class cSuperTimeRange
 
 // dwim time of day; needed to correct timezones
 // this API may change without further notice
-protected TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
+protected object(TimeRange)|zero dwim_tod(TimeRange origin,
+                                          string whut,int h,int m,int s)
 {
    TimeRange tr;
    if (catch {
@@ -2840,8 +2841,8 @@ protected mapping abbr2zones;
 
 // dwim timezone and call dwim time of day above
 // this API may change without further notice
-protected TimeRange dwim_zone(TimeRange origin,string zonename,
-			   string whut,int ...args)
+protected object(TimeRange)|zero dwim_zone(TimeRange origin,string zonename,
+                                           string whut,int ...args)
 {
    if (zonename=="") return 0;
 
@@ -2892,7 +2893,7 @@ protected mapping(string:array) parse_format_cache=([]);
 protected mapping dwim_year=([ "past_lower":70, "past_upper":100,
                             "current_century":2000, "past_century":1900 ]);
 
-TimeRange parse(string fmt,string arg,void|TimeRange context)
+object(TimeRange)|zero parse(string fmt,string arg,void|TimeRange context)
 {
    [string nfmt,array q]=(parse_format_cache[fmt]||({0,0}));
 
@@ -3319,7 +3320,7 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 }
 
 // Parses time according to HTTP 1.1 (RFC 2616) HTTP-date token.
-TimeofDay http_time(string what, void|TimeRange cx)
+object(TimeofDay)|zero http_time(string what, void|TimeRange cx)
 {
   TimeofDay t;
 

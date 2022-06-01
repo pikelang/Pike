@@ -421,9 +421,9 @@ class NSNode {
   }
 }
 
-protected NSNode|int(0..0) parse_xml_callback(string type, string name,
-					   mapping attr, string|array contents,
-					   mixed location, mixed ...extra)
+protected NSNode|zero parse_xml_callback(string type, string name,
+                                         mapping attr, string|array contents,
+                                         mixed location, mixed ...extra)
 {
   NSNode parent = sizeof(extra[0]) && extra[0]->top();
 

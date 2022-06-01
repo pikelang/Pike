@@ -444,7 +444,7 @@ class GetProperty
 			 delete);
   }
 
-  mapping handle_reply(mapping reply)
+  mapping|zero handle_reply(mapping reply)
   {
     mapping m = ([ "format" : reply->data1 ]);
     int length;

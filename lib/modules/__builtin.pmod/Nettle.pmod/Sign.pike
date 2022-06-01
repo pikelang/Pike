@@ -71,7 +71,7 @@ Sequence pkcs_public_key();
 //!
 //! @seealso
 //!   @[Web.encode_jwk()], @[Web.decode_jwk()], @rfc{7517:4@}
-mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+mapping(string(7bit):string(7bit))|zero jwk(int(0..1)|void private_key)
 {
   return 0;
 }
@@ -91,7 +91,7 @@ mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
 //!
 //! @seealso
 //!   @[jwk()], @rfc{7638@}
-string(8bit) jwk_thumbprint(.Hash h)
+string(8bit)|zero jwk_thumbprint(.Hash h)
 {
   mapping(string(7bit):string(7bit)) public_jwk = jwk();
   if (!public_jwk) return 0;
@@ -127,9 +127,10 @@ string(8bit) jwk_thumbprint(.Hash h)
 //!
 //! @seealso
 //!   @[jose_decode()], @[pkcs_sign()], @rfc{7515@}
-string(7bit) jose_sign(string(8bit) message,
-		       mapping(string(7bit):string(7bit)|int)|void headers,
-		       .Hash|void h)
+string(7bit)|zero
+  jose_sign(string(8bit) message,
+            mapping(string(7bit):string(7bit)|int)|void headers,
+            .Hash|void h)
 {
   return 0;
 }
@@ -155,8 +156,8 @@ string(7bit) jose_sign(string(8bit) message,
 //!
 //! @seealso
 //!   @[jose_sign()], @[pkcs_verify()], @rfc{7515@}
-array(mapping(string(7bit):string(7bit)|int)|
-      string(8bit)) jose_decode(string(7bit) jws)
+array(mapping(string(7bit):string(7bit)|int)|string(8bit))|zero
+  jose_decode(string(7bit) jws)
 {
   return 0;
 }

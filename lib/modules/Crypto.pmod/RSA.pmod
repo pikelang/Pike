@@ -335,7 +335,7 @@ protected class LowState {
   //!
   //! @seealso
   //!   @[create()], @[Web.encode_jwk()], @rfc{7517:4@}, @rfc{7518:6.3@}
-  mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+  mapping(string(7bit):string(7bit))|zero jwk(int(0..1)|void private_key)
   {
     if (!n) return 0;	// Not initialized.
     mapping(string(7bit):string(7bit)) jwk = ([
@@ -487,7 +487,7 @@ class PSSState {
     //!
     //! @seealso
     //!   @rfc{7518:3.1@}
-    string(7bit) jwa(.Hash hash)
+    string(7bit)|zero jwa(.Hash hash)
     {
       switch(hash->name()) {
       case "sha256":
@@ -679,9 +679,10 @@ class PSSState {
     //!
     //! @seealso
     //!   @[pkcs_sign()], @[salt_size()], @rfc{7515:3.5@}
-    string(7bit) jose_sign(string(8bit) message,
-			   mapping(string(7bit):string(7bit)|int)|void headers,
-			   .Hash|void h)
+    string(7bit)|zero
+      jose_sign(string(8bit) message,
+                mapping(string(7bit):string(7bit)|int)|void headers,
+                .Hash|void h)
     {
       // FIXME: Consider selecting depending on key size.
       //        https://www.keylength.com/en/4/ says the
@@ -722,8 +723,8 @@ class PSSState {
     //!
     //! @seealso
     //!   @[pkcs_verify()], @rfc{7515:3.5@}
-    array(mapping(string(7bit):
-		  string(7bit)|int)|string(8bit)) jose_decode(string(7bit) jws)
+    array(mapping(string(7bit):string(7bit)|int)|string(8bit))|zero
+      jose_decode(string(7bit) jws)
     {
       array(string(7bit)) segments = [array(string(7bit))](jws/".");
       if (sizeof(segments) != 3) return 0;
@@ -798,7 +799,7 @@ class PKCS1_5State
   //!
   //! @seealso
   //!   @rfc{7518:3.1@}
-  string(7bit) jwa(.Hash hash)
+  string(7bit)|zero jwa(.Hash hash)
   {
     switch(hash->name()) {
     case "sha256":
@@ -852,9 +853,10 @@ class PKCS1_5State
   //!
   //! @seealso
   //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
-  string(7bit) jose_sign(string(8bit) message,
-			 mapping(string(7bit):string(7bit)|int)|void headers,
-			 .Hash|void h)
+  string(7bit)|zero
+    jose_sign(string(8bit) message,
+              mapping(string(7bit):string(7bit)|int)|void headers,
+              .Hash|void h)
   {
     // NB: Identical to the code in PSSState, but duplication
     //     is necessary to bind to the correct variants of
@@ -899,8 +901,8 @@ class PKCS1_5State
   //!
   //! @seealso
   //!   @[pkcs_verify()], @rfc{7515:3.5@}
-  array(mapping(string(7bit):
-		string(7bit)|int)|string(8bit)) jose_decode(string(7bit) jws)
+  array(mapping(string(7bit):string(7bit)|int)|string(8bit))|zero
+    jose_decode(string(7bit) jws)
   {
     // NB: Not quite identical to the code in PSSState, but almost
     //     as it is necessary to bind to the correct variant of
@@ -1024,7 +1026,7 @@ class PKCS1_5State
   }
 
   //! Reverse the effect of @[rsa_pad].
-  string(8bit) rsa_unpad(Gmp.mpz block, int type)
+  string(8bit)|zero rsa_unpad(Gmp.mpz block, int type)
   {
     string(8bit) s = block->digits(256);
 

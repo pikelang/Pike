@@ -918,7 +918,7 @@ class _Class_or_Module {
 
   //! @returns
   //!   Returns the first child with the name @[name] if any.
-  PikeObject findChild(string name) {
+  object(PikeObject)|zero findChild(string name) {
     int a = Array.search_array(children,
                                lambda(PikeObject o, string n) {
                                  return o->name == n;
@@ -930,7 +930,7 @@ class _Class_or_Module {
   //! @returns
   //!   Returns the first @[DocGroup] that documents an entity
   //!   with the name @[name] if any.
-  DocGroup findObject(string name) {
+  object(DocGroup)|zero findObject(string name) {
     int a = Array.search_array(docGroups,
                                lambda(DocGroup d, string n) {
                                  return (search(d->objects->name, n) >= 0);

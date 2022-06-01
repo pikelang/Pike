@@ -191,9 +191,9 @@ protected void transform_point(array(float) out, array(float)m,
 //! gluProject transforms the specified object coordinates into window
 //! coordinates using @[model], @[proj], and @[viewport]. The result is
 //! returned in a three valued array.
-array(float) gluProject(float objx, float objy,
-			float objz, array(float) model,
-			array(float) proj, array(int) viewport)
+array(float)|zero gluProject(float objx, float objy,
+                             float objz, array(float) model,
+                             array(float) proj, array(int) viewport)
 
 {
   array(float) in=allocate(4),out=allocate(4);

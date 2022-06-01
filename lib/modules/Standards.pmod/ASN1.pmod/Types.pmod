@@ -523,7 +523,7 @@ class BitString
     return this;
   }
 
-  this_program decode_primitive(string(0..255) contents,
+  this_program|zero decode_primitive(string(0..255) contents,
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
@@ -756,7 +756,7 @@ class UTF8String
     return string_to_utf8(value);
   }
 
-  this_program decode_primitive(string(0..255) contents,
+  this_program|zero decode_primitive(string(0..255) contents,
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,

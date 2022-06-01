@@ -552,7 +552,7 @@ class PikeType
       }
     }
 
-  protected array(PikeType) strip_zero_alt()
+  protected array(PikeType)|zero strip_zero_alt()
   /* Assumes this is an '|' node. Returns args without any 'zero'
    * alternatives. */
   {

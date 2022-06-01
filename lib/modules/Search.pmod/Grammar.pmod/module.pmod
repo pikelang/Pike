@@ -122,7 +122,7 @@ private array(TextNode) mergeTextNodes(array(TextNode) a, string op) {
 }
 
 //!
-ParseNode optimize(ParseNode node, string|void parentOp) {
+object(ParseNode)|zero optimize(ParseNode node, string|void parentOp) {
   if (!node)
     return 0;
   node->children = map(node->children, optimize, node->op) - ({0});
@@ -234,7 +234,7 @@ private void _validate(ParseNode node, ParseNode parent) {
 }
 
 // Returns 0 if OK, a string with error message if error
-string validate(ParseNode node) {
+string|zero validate(ParseNode node) {
   if (!node)  // A null query is also valid.
     return 0;
   mixed err = catch (_validate(node, 0));

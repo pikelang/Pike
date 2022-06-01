@@ -282,7 +282,7 @@ protected Packet finished_packet(string(8bit) sender)
   return handshake_packet(HANDSHAKE_finished, client_verify_data);
 }
 
-protected Packet client_key_exchange_packet()
+protected object(Packet)|zero client_key_exchange_packet()
 {
   Stdio.Buffer packet_data = Stdio.Buffer();
   if (!ke) {

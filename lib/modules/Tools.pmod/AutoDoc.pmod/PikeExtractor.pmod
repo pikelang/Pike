@@ -326,10 +326,11 @@ private class Extractor {
   // If 'filename' is supplied, it will look for standalone doc comments
   // at the beginning of the file, and then the return value is that
   // Documentation for the file.
-  Documentation parseClassBody(AutoDoc root, Class|Module c,
-                               array(string)|zero defModifiers,
-                               void|string filename,
-			       void|string inAt)
+  object(Documentation)|zero
+    parseClassBody(AutoDoc root, Class|Module c,
+                   array(string)|zero defModifiers,
+                   void|string filename,
+                   void|string inAt)
   {
     Documentation filedoc = 0;
   mainloop:

@@ -164,7 +164,7 @@ protected int(0..1) `==(mixed i) {
 //  3	[..(..]..)
 //  4	[..]..(..)
 
-protected this_program `&(this_program i) {
+protected this_program|zero `&(this_program i) {
     Boundary l, r;
 
     l = max(a, i->a);
@@ -212,7 +212,7 @@ protected this_program `+(this_program i) {
     return this | i;
 }
 
-protected this_program `-(this_program interval) {
+protected this_program|zero `-(this_program interval) {
     this_program i = interval & this;
     if (i) {
 	if (i == this) return 0;

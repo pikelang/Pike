@@ -144,7 +144,7 @@ class simple
   //! @seealso
   //!   @[handle_command()], @[line_separator]
   //!
-  protected string read_line()
+  protected string|zero read_line()
   {
     // FIXME: Should probably keep track of where the search ended last time.
     int i = search(read_buffer, line_separator);

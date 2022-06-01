@@ -830,7 +830,7 @@ string encode_headerfield_params(array(mapping|ADT.OrderedMapping) params)
 //!     @expr{"mixed"@}
 //! @endstring
 //!
-string guess_subtype( string type )
+string|zero guess_subtype( string type )
 {
   switch (type) {
   case "text":
@@ -1091,7 +1091,7 @@ class Message {
   //! @seealso
   //! @[MIME.reconstruct_partial()]
   //!
-  array(string|int) is_partial( )
+  array(string|int)|zero is_partial( )
   {
     return (type == "message" && subtype == "partial") &&
       ({ params["id"], (int)params["number"], (int)(params["total"]||"0") });

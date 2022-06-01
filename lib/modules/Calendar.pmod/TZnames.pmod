@@ -38,7 +38,7 @@ string _zone_tab()
 }
 
 protected array(array(string)) parsed_zone_tab=0;
-array(array(string)) zone_tab()
+array(array(string))|zero zone_tab()
 {
    return parsed_zone_tab ||
       (parsed_zone_tab=

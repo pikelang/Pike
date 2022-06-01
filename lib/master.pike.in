@@ -811,7 +811,7 @@ protected class CompilerEnvironment
   }
 
   //!
-  string format_exception(mixed err)
+  string|zero format_exception(mixed err)
   {
     return 0;
   }
@@ -988,7 +988,7 @@ protected class CompilerEnvironment
     }
 
     //!
-    string format_exception(mixed err)
+    string|zero format_exception(mixed err)
     {
       string ret = apply_handler(__func__, err);
       if (ret) return ret;
@@ -1207,7 +1207,7 @@ program compile_string(string source, void|string filename,
 //! @seealso
 //!   @[add_filesystem_handler()], @[find_handler_for_path()],
 //!   @[master_get_dir()], @[master_file_stat()]
-string master_read_file(string file)
+string|zero master_read_file(string file)
 {
   string x = find_handler_for_path(file);
   if(x)
@@ -1275,7 +1275,7 @@ array(string) master_get_dir(string|void x)
   else return predef::get_dir(x);
 }
 
-Stat master_file_stat(string x)
+object(Stat)|zero master_file_stat(string x)
 {
   object y = find_handler_for_path(file);
 
@@ -1378,7 +1378,7 @@ mixed add_filesystem_handler(string mountpoint, object /*Filesystem.Base*/ files
 //!
 //! @seealso
 //!   @[add_filesystem_handler()]
-string find_handler_for_path(string file)
+string|zero find_handler_for_path(string file)
 {
 // TODO: maybe some caching would be worthwhile here. maybe.
 
@@ -1751,7 +1751,7 @@ protected void call_compile_warning (object handler, string file,
 #define FIX_CASE(X)	(X)
 #endif /* __NT__ */
 
-protected string base_from_filename(string fname)
+protected string|zero base_from_filename(string fname)
 {
   string low_name = FIX_CASE(fname);
   if (has_prefix(low_name, ".#")) return 0;
@@ -1904,10 +1904,10 @@ protected string call_describe_error(mixed /* object|array */ err)
   return (all_constants()["describe_error"]||describe_error)(err);
 }
 
-protected program low_findprog(string pname,
-			       string ext,
-			       object|void handler,
-			       void|int mkobj)
+protected program|zero low_findprog(string pname,
+                                    string ext,
+                                    object|void handler,
+                                    void|int mkobj)
 {
   program ret;
   Stat s;
@@ -2160,10 +2160,10 @@ protected program findprog(string pname,
   }
 }
 
-program low_cast_to_program(string pname,
-			    string|zero current_file,
-			    object|void handler,
-			    void|int mkobj)
+program|zero low_cast_to_program(string pname,
+                                 string|zero current_file,
+                                 object|void handler,
+                                 void|int mkobj)
 {
   string ext;
   string nname;
@@ -2528,8 +2528,8 @@ program handle_inherit(string pname, string current_file, object|void handler)
   return ret;
 }
 
-object low_cast_to_object(string oname, string|zero current_file,
-			  object|void current_handler)
+object|zero low_cast_to_object(string oname, string|zero current_file,
+                               object|void current_handler)
 {
   program p;
   object o;
@@ -2604,7 +2604,7 @@ class dirnode (string dirname, object|void compilation_handler,
 #define FIX_CASE(X)	(X)
 #endif /* __NT__ */
 
-  protected string base_from_filename(string fname)
+  protected string|zero base_from_filename(string fname)
   {
     string low_name = FIX_CASE(fname);
     catch {
@@ -3033,7 +3033,7 @@ class joinnode (array(object|mapping) joined_modules,
   mapping(string:mixed) cache=([]);
   mapping(string:int(0..1)) deprecated_cache=([]);
 
-  protected string _sprintf(int as)
+  protected string|zero _sprintf(int as)
   {
     if (as != 'O') return 0;
     if (name) {
@@ -3853,9 +3853,9 @@ class CompatResolver
   //!
   //! @seealso
   //!   @[read_include()]
-  string handle_include(string f,
-			string current_file,
-			int local_include)
+  string|zero handle_include(string f,
+                             string current_file,
+                             int local_include)
   {
     if(local_include)
     {
@@ -5174,7 +5174,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 
 //! Function called by @expr{sprintf("%O")@} for objects that don't
 //! have an @[lfun::_sprintf()], or have one that returns @expr{UNDEFINED@}.
-string describe_object(object o)
+string|zero describe_object(object o)
 {
   string s;
   if(undefinedp (o)) return 0;	// Destructed.
@@ -5217,7 +5217,7 @@ string describe_object(object o)
 }
 
 //! Function called by @expr{sprintf("%O")@} for programs.
-string describe_program(program|function p)
+string|zero describe_program(program|function p)
 {
   string s;
   if(!p) return 0;
@@ -5245,7 +5245,7 @@ string describe_program(program|function p)
 
 //! Function called by @[describe_backtrace()] to describe
 //! functions in the backtrace.
-string describe_function (function f)
+string|zero describe_function (function f)
 {
   if (!f) return 0;
 
@@ -5745,9 +5745,9 @@ class Encoder
     return id;
   }
 
-  protected string|array compare_resolved (string name, mixed what,
-					   mixed resolved,
-					   array(object) module_object)
+  protected string|array|zero compare_resolved (string name, mixed what,
+                                                mixed resolved,
+                                                array(object) module_object)
   {
     array append;
 
@@ -6271,7 +6271,7 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
   //!
   //! @seealso
   //!   @[Encoder()->encode_object()]
-  array(mixed) decode_object(object o, mixed data)
+  array(mixed)|zero decode_object(object o, mixed data)
   {
     DEC_MSG ("decode_object (object(%O), %O)\n", object_program (o), data);
     if(!o->_decode) {
@@ -6380,7 +6380,7 @@ mapping(Version:CompatResolver) compat_handler_cache = ([
   currentversion:this_object(),
 ]);
 
-CompatResolver get_compilation_handler(int major, int minor)
+object(CompatResolver)|zero get_compilation_handler(int major, int minor)
 {
   Version v=Version(major,minor);
 

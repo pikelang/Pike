@@ -149,7 +149,7 @@ class Request
 //!	0 upon failure, this object upon success
 //! @seealso
 //!     @[prepare_method], @[do_async], @[do_thread]
-   Request do_sync(array(string|int|mapping) args)
+   object(Request)|zero do_sync(array(string|int|mapping) args)
    {
       for (;;)
       {
@@ -203,7 +203,7 @@ class Request
 //!	0 upon failure, or the called object upon success.
 //! @seealso
 //!     @[do_thread]
-   Request wait()
+   object(Request)|zero wait()
    {
       if (con->`()())
       {

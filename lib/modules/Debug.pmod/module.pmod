@@ -1152,7 +1152,7 @@ int describe_encoded_value(string data)
   return state->decode();
 }
 
-string get_perf_map(program p, mapping|void m) {
+string|zero get_perf_map(program p, mapping|void m) {
     string perf_quote(string s) {
         return sprintf("%O", s)[1..<1];
     };

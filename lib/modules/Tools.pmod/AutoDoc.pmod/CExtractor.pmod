@@ -68,7 +68,7 @@ protected private class Extractor {
   // or ({"docgroup", DocGroup })
   // or ({"namespace", NameSpace })
   // or 0 if no objects to parse.
-  protected array(string|Class|Module|NameSpace|DocGroup)
+  protected array(string|Class|Module|NameSpace|DocGroup)|zero
     parseObject(Class|Module|NameSpace|AutoDoc parent, AutoDoc root)
   {
     Parse token = tokens[0];

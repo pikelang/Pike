@@ -129,7 +129,7 @@ private string has_relexpires = "unknown";
 //! Should you need to report a bug to the author, please submit along with
 //! the report the driver version number, as returned by this call.
 
-private protected string glob_to_regexp (string glob) {
+private protected string|zero glob_to_regexp (string glob) {
 	if (!glob||!sizeof(glob))
 		return 0;
 	return "^"+replace(glob,({"*","?","'","\\"}),({".*",".","\\'","\\\\"}))+"$";

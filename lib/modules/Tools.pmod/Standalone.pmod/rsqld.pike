@@ -212,7 +212,7 @@ class Connection
     return sprintf("%4c%4c", qbase, qid++);
   }
 
-  protected string cmd_bigquery(string|array(string) q)
+  protected string|zero cmd_bigquery(string|array(string) q)
   {
     object res;
     if (arrayp(q)) {

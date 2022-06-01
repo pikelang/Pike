@@ -79,7 +79,7 @@ protected typedef mapping(string:R|mapping(string:R)) RuleMap;
 
 protected object noop = class {
   string source;
-  array split2() { return 0; }
+  array|zero split2() { return 0; }
   protected string _sprintf(int t) { return "noop()"; }
 }();
 
@@ -196,7 +196,7 @@ protected class R
 
   string `source() { return src; }
 
-  array(string) split_string(string subject)
+  array(string)|zero split_string(string subject)
   {
     array(array(int)) offsets = ({});
 

@@ -373,8 +373,8 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
   }
 }
 
-string extract(string filename, string imgdest,
-	       string builddir, array(string) root)
+string|zero extract(string filename, string imgdest,
+                    string builddir, array(string) root)
 {
   if (verbosity > 1)
     werror("Extracting file %O...\n", filename);

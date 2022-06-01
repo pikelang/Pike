@@ -269,7 +269,7 @@ class Node
     }
   }
 
-  array(string) my_parse_docgroup(Parser.HTML p, mapping m, string c)
+  array(string)|zero my_parse_docgroup(Parser.HTML p, mapping m, string c)
   {
     foreach(({"homogen-name", "belongs"}), string attr) {
       if (m[attr]) m[attr] = Parser.parse_html_entities(m[attr]);

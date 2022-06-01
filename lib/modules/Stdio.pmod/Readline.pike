@@ -656,7 +656,7 @@ class InputController
   }
 
   //!
-  function getbindingstr(string str)
+  function|zero getbindingstr(string str)
   {
     switch (sizeof(str||""))
     {
@@ -1631,7 +1631,8 @@ void set_blocking()
 
 //! @fixme
 //!   Document this function
-string edit(string data, string|void local_prompt, array(string)|void attrs)
+string|zero edit(string data, string|void local_prompt,
+                 array(string)|void attrs)
 {
   if(data && sizeof(data) && input_controller->dumb)
   {

@@ -93,7 +93,7 @@ protected string _sprintf(int t)
   return t=='O' && sprintf("%O(/* root=%O, wd=%O */)", this_program, root, wd);
 }
 
-Filesystem.Base cd(string directory)
+object(Filesystem.Base)|zero cd(string directory)
 {
   Filesystem.Stat st = stat(directory);
 #ifdef __NT__
@@ -116,7 +116,7 @@ string cwd()
   return wd;
 }
 
-Filesystem.Base chroot(void|string directory)
+object(Filesystem.Base)|zero chroot(void|string directory)
 {
   if(directory)
   {
@@ -127,7 +127,7 @@ Filesystem.Base chroot(void|string directory)
   return this_program("", combine_path("/",root,wd), 1, parent);
 }
 
-Filesystem.Stat stat(string file, int|void lstat)
+object(Filesystem.Stat)|zero stat(string file, int|void lstat)
 {
    Stdio.Stat a;
 #ifdef __NT__
@@ -181,8 +181,8 @@ array(string) get_dir(void|string directory, void|string|array(string) globs)
   }
 }
 
-array(Filesystem.Stat) get_stats(void|string directory,
-				 void|string|array(string) globs)
+array(Filesystem.Stat)|zero get_stats(void|string directory,
+                                      void|string|array(string) globs)
 {
   Filesystem.Base z = this;
 #ifdef __NT__
@@ -241,7 +241,7 @@ void chmod(string filename, int|string mode)
   if(stringp(mode))
   {
     Filesystem.Stat st = stat(filename); // call to self
-    if(!st) return 0;
+    if(!st) return;
     mode = Filesystem.parse_mode(st->mode, mode);
   }
   predef::chmod(combine_path("/",root,filename), mode);

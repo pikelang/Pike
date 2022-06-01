@@ -1190,7 +1190,7 @@ class PieceDownload
       destruct(this);
    }
 
-   protected string _sprintf(int t)
+   protected string|zero _sprintf(int t)
    {
       if (t=='O')
 	 return sprintf(

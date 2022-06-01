@@ -31,9 +31,9 @@
 //!
 //! where line is numeral, first 'line'==0
 
-protected array sedreplace(string s,object re,string with,
-			array whatin,int first,int lastmod,
-			multiset flags)
+protected array|zero sedreplace(string s,object re,string with,
+                                array whatin,int first,int lastmod,
+                                multiset flags)
 {
    array a;
    string w=0;

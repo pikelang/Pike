@@ -93,7 +93,7 @@ class ScriptTestsuite(string file_name)
   }
 }
 
-Testsuite read_tests( string fn ) {
+object(Testsuite)|zero read_tests( string fn ) {
   string tests = Stdio.read_file( fn );
   if(!tests) {
     log_msg("Failed to read test file %O, errno=%d.\n",

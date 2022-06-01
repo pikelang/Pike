@@ -34,7 +34,7 @@ class Curve {
 
   //! Returns the PKCS-1 elliptic curve identifier for the curve.
   //! cf @rfc{5480:2.1.1@}.
-  Identifier pkcs_named_curve_id()
+  object(Identifier)|zero pkcs_named_curve_id()
   {
     switch(name()) {
     case "SECP_192R1":
@@ -208,7 +208,7 @@ class Curve {
     //!
     //! @seealso
     //!   @rfc{7518:3.1@}
-    string(7bit) jwa(.Hash hash)
+    string(7bit)|zero jwa(.Hash hash)
     {
       switch(Curve::name() + ":" + hash->name()) {
       case "SECP_256R1:sha256":
@@ -268,7 +268,7 @@ class Curve {
     //!
     //! @seealso
     //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
-    string(7bit) jose_sign(string(8bit) message, .Hash|void h,
+    string(7bit)|zero jose_sign(string(8bit) message, .Hash|void h,
 			   mapping(string(7bit):string(7bit)|int)|void headers)
     {
       if (!h) {
@@ -320,8 +320,8 @@ class Curve {
     //!
     //! @seealso
     //!   @[pkcs_verify()], @rfc{7515:3.5@}
-    array(mapping(string(7bit):
-		  string(7bit)|int)|string(8bit)) jose_decode(string(7bit) jws)
+    array(mapping(string(7bit):string(7bit)|int)|string(8bit))|zero
+      jose_decode(string(7bit) jws)
     {
       array(string(7bit)) segments = [array(string(7bit))](jws/".");
       if (sizeof(segments) != 3) return 0;
@@ -362,7 +362,7 @@ class Curve {
     //! Returns the PKCS-1 algorithm identifier for ECDSA and the provided
     //! hash algorithm. Only SHA-1 and SHA-2 based hashes are supported
     //! currently.
-    Sequence pkcs_signature_algorithm_id(.Hash hash)
+    object(Sequence)|zero pkcs_signature_algorithm_id(.Hash hash)
     {
       switch(hash->name())
       {
@@ -413,7 +413,7 @@ class Curve {
     //!
     //! @seealso
     //!   @[create()], @[Web.encode_jwk()], @rfc{7517:4@}, @rfc{7518:6.2@}
-    mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+    mapping(string(7bit):string(7bit))|zero jwk(int(0..1)|void private_key)
     {
       if (!jose_name()) return 0;	// Not supported for this curve.
       mapping(string(7bit):string(7bit)) jwk = ([
@@ -682,8 +682,9 @@ class _Curve25519 {
     //!
     //! @seealso
     //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
-    string(7bit) jose_sign(string(8bit) message, .Hash|void h,
-			   mapping(string(7bit):string(7bit)|int)|void headers)
+    string(7bit)|zero
+      jose_sign(string(8bit) message, .Hash|void h,
+                mapping(string(7bit):string(7bit)|int)|void headers)
     {
       string(7bit) alg = jwa(h);
       if (!alg) return 0;
@@ -713,8 +714,8 @@ class _Curve25519 {
     //!
     //! @seealso
     //!   @[pkcs_verify()], @rfc{7515:3.5@}
-    array(mapping(string(7bit):
-		  string(7bit)|int)|string(8bit)) jose_decode(string(7bit) jws)
+    array(mapping(string(7bit):string(7bit)|int)|string(8bit))|zero
+      jose_decode(string(7bit) jws)
     {
       array(string(7bit)) segments = [array(string(7bit))](jws/".");
       if (sizeof(segments) != 3) return 0;
@@ -782,7 +783,7 @@ class _Curve25519 {
     //!
     //! @seealso
     //!   @[create()], @[Web.encode_jwk()], @rfc{8037@}
-    mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+    mapping(string(7bit):string(7bit))|zero jwk(int(0..1)|void private_key)
     {
       if (!jose_name()) return 0;	// Not supported for this curve.
       mapping(string(7bit):string(7bit)) jwk = ([

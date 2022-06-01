@@ -429,7 +429,7 @@ Enter \"help me more\" for further Hilfe help.
 
 protected class CommandDot {
   inherit Command;
-  string help(string what) { return 0; }
+  string|zero help(string what) { return 0; }
 
   local protected constant usr_vector_a = ({
     89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97,
@@ -572,7 +572,7 @@ class CommandDump {
 
 protected class CommandHej {
   inherit Command;
-  string help(string what) { return 0; }
+  string|zero help(string what) { return 0; }
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) {
     if(line[0]=='.') e->safe_write( (string)({ 84,106,97,98,97,33,10 }) );
@@ -941,7 +941,7 @@ class Expression {
   }
 
   //! Returns a token or a token range without whitespaces.
-  protected string `[](int f, void|int t) {
+  protected string|zero `[](int f, void|int t) {
     if(f>sizeof(positions) || -f>sizeof(positions))
       return 0;
     if(!t)
@@ -973,7 +973,7 @@ class Expression {
   //! @returns
   //!   Returns an error message as a string if the expression
   //!   contains a forbidden modifier, otherwise @expr{0@}.
-  string check_modifiers() {
+  string|zero check_modifiers() {
     foreach(sort(values(positions)), int pos)
       if(modifier[tokens[pos]])
 	return "Hilfe Error: Modifier \"" + tokens[pos] +
@@ -1259,7 +1259,7 @@ protected class ParserState(Evaluator evaluator) {
   //! Sends the input @[line] to @[Parser.Pike] for tokenization,
   //! but keeps a state between each call to handle multiline
   //! /**/ comments and multiline #"" strings.
-  array(string) push_string(string line) {
+  array(string)|zero push_string(string line) {
     array(string) tokens;
     array err;
     if(sizeof(line) && line[0]=='#') {
@@ -1942,7 +1942,7 @@ class Evaluator {
 
   //! Parses a Pike expression. Returns 0 if everything went well,
   //! or a string with an error message otherwise.
-  string parse_expression(Expression expr)
+  string|zero parse_expression(Expression expr)
   {
     // Check for modifiers
     expr->check_modifiers();
@@ -2188,7 +2188,7 @@ class Evaluator {
   //! If a new variable is compiled to be tested, its name
   //! should be given in @[new_var] so that magically defined
   //! entities can be undefined and a warning printed.
-  object hilfe_compile(string f, void|string new_var)
+  object|zero hilfe_compile(string f, void|string new_var)
   {
     if(new_var && commands[new_var])
       safe_write("Hilfe Warning: Command %O no longer reachable. "

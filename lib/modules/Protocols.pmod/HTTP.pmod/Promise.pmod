@@ -312,7 +312,7 @@ class Result
 
   //! Returns the charset of the requested document, if given by the
   //! response headers.
-  public string `charset() {
+  public string|zero `charset() {
     string ce = headers["content-type"];
     if (ce && sscanf (ce, "%*s;%*scharset=%*1['\"]%[^'\"]%*1['\"]", ce) == 5)
       return ce;

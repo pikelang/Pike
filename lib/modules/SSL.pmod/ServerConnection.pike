@@ -142,7 +142,7 @@ protected Packet server_hello_packet()
 //! Initialize the KeyExchange @[ke], and generate a
 //! @[HANDSHAKE_server_key_exchange] packet if the
 //! key exchange needs one.
-protected Packet server_key_exchange_packet()
+protected object(Packet)|zero server_key_exchange_packet()
 {
   if (ke) error("KE!\n");
   ke = session->cipher_spec->ke_factory(context, session, this, client_version);

@@ -492,7 +492,7 @@ class TermcapDB {
     return cap/"|";
   }
 
-  protected private string read()
+  protected private string|zero read()
   {
     int i, st;
     string res="";
@@ -611,7 +611,7 @@ class TermcapDB {
                                         Termcap, this)));
   }
 
-  protected private string read_next(string find) // quick search
+  protected private string|zero read_next(string find) // quick search
   {
     for (;;)
     {
@@ -753,7 +753,7 @@ class TerminfoDB {
                        });
   }
 
-  protected Terminfo load(string term)
+  protected object(Terminfo)|zero load(string term)
   {
     Terminfo ti;
 
@@ -829,7 +829,7 @@ class MetaTerminfoDB {
     }
   }
 
-  protected Terminfo `[](string name)
+  protected object(Terminfo)|zero `[](string name)
   {
     foreach(dbs, TerminfoDB db) {
       Terminfo ti = db[name];

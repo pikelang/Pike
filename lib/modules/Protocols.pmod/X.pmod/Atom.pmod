@@ -110,7 +110,7 @@ class atom_manager
 
     //! Looks up the atom in local cache. If it is not present,
     //! issue an asyncronous InternAtom request, and return 0
-  object InternAtom(string name, function|void callback)
+  object|zero InternAtom(string name, function|void callback)
   {
     if (atom_table[name])
       return atom_table[name];
@@ -142,7 +142,7 @@ class atom_manager
     return req;
   }
 
-  object lookup_atom(int id, function|void callback)
+  object|zero lookup_atom(int id, function|void callback)
   {
     if (atoms[id])
       return atoms[id];

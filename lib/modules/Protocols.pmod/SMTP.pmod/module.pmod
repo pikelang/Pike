@@ -1208,7 +1208,7 @@ class Connection {
      return message;
    }
 
-   protected MIME.Message low_message(string content)
+   protected object(MIME.Message)|zero low_message(string content)
    {
      datamode = 0;
      MIME.Message message;

@@ -430,7 +430,7 @@ private class HZ_dec
 
 //! All character set names are normalized through this function
 //! before compared.
-string normalize(string in) {
+string|zero normalize(string|zero in) {
   if(!in) return 0;
   string out = replace(lower_case(in),
 		      ({ "_",".",":","-","(",")" }),
@@ -488,9 +488,9 @@ void set_decoder(string name, program(Decoder) decoder)
 //!   various encodings as described by @rfc{1345@}.
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
-Decoder decoder(string name)
+Decoder decoder(string|zero name)
 {
-  string orig_name = name;
+  string|zero orig_name = name;
 
   name = normalize(name);
 
@@ -880,10 +880,10 @@ void set_encoder(string name, program(Encoder) encoder)
 //!
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
-Encoder encoder(string name, string|void replacement,
+Encoder encoder(string|zero name, string|void replacement,
 		function(string:string)|void repcb)
 {
-  string orig_name = name;
+  string|zero orig_name = name;
 
   name = normalize(name);
 

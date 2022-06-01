@@ -200,7 +200,7 @@ protected int isKeywordChar(int char) {
   return char >= 'a' && char <= 'z';
 }
 
-protected array(string) extractKeyword(string line) {
+protected array(string)|zero extractKeyword(string line) {
   line += "\0";
   int i = 0;
   while (i < sizeof(line) && isSpaceChar(line[i]))
@@ -1150,7 +1150,7 @@ class Parse {
   //!
   //! @note
   //!   @[metadata()] must be called before this function.
-  string doc(string context) {
+  string|zero doc(string context) {
     if (state == 1) {
       ++state;
       mContext == context;

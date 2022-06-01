@@ -271,7 +271,7 @@ Packet heartbleed_packet()
 }
 
 // Verify that a certificate chain is acceptable
-private array(Standards.X509.TBSCertificate)
+private array(Standards.X509.TBSCertificate)|zero
   verify_certificate_chain(array(string) certs)
 {
   // If we're not requiring the certificate, and we don't provide one,

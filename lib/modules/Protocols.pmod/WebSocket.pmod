@@ -341,7 +341,7 @@ class Frame {
 
     //! @decl string close_reason
 
-    string `close_reason() {
+    string|zero `close_reason() {
         if (opcode != FRAME_CLOSE)
             error("This is not a close frame.\n");
         if (sizeof(data) <= 2) return 0;
@@ -1102,7 +1102,7 @@ class defragment {
 
     private Frame fragment;
 
-    Frame receive(Frame frame, Connection con) {
+    object(Frame)|zero receive(Frame frame, Connection con) {
         int opcode = frame->opcode;
         int(0..1) fin = frame->fin;
 
@@ -1221,7 +1221,7 @@ class _permessagedeflate {
         return frame;
     }
 
-    Frame receive(Frame frame, Connection con) {
+    object(Frame)|zero receive(Frame frame, Connection con) {
         frame = ::receive(frame, con);
 
         if (!frame) return 0;
@@ -1283,7 +1283,7 @@ object permessagedeflate(void|mapping default_options) {
 #if constant(Gz.deflate)
   default_options = deflate_default_options + (default_options||([]));
 
-  object factory(int(0..1) client_mode, mapping ext, mapping rext) {
+  object|zero factory(int(0..1) client_mode, mapping ext, mapping rext) {
 
     if (client_mode && !ext) {
         /* this is the first step, we just offer the extension without any
@@ -1351,7 +1351,7 @@ object permessagedeflate(void|mapping default_options) {
 class conformance_check {
     inherit Extension;
 
-    Frame receive(Frame frame, Connection con) {
+    object(Frame)|zero receive(Frame frame, Connection con) {
         int opcode = frame->opcode;
 
         if (opcode == FRAME_TEXT && catch(frame->text)) {

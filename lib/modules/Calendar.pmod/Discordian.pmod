@@ -145,7 +145,7 @@ class cYear
       return 5*n;
    }
 
-   TimeRange place(TimeRange what)
+   object(TimeRange)|zero place(TimeRange what)
    {
       if (what->is_day)
       {
@@ -203,7 +203,7 @@ class cMonth
 
    }
 
-   TimeRange place(TimeRange what,int|void force)
+   object(TimeRange)|zero place(TimeRange what,int|void force)
    {
       if (what->is_day)
       {

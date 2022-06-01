@@ -44,13 +44,14 @@ string filename_to_type(string filename)
 }
 
 //!
-Search.Filter.Output filter_and_index(Search.Database.Base db,
-				      string|Standards.URI uri,
-				      void|string language,
-				      string|Stdio.File data,
-				      string content_type,
-				      void|mapping headers,
-				      void|string default_charset )
+object(Search.Filter.Output)|zero
+  filter_and_index(Search.Database.Base db,
+                   string|Standards.URI uri,
+                   void|string language,
+                   string|Stdio.File data,
+                   string content_type,
+                   void|mapping headers,
+                   void|string default_charset )
 {
   Search.Filter.Base filter=Search.get_filter(content_type);
   if(!filter)

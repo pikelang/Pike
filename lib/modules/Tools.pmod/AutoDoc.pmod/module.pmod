@@ -129,7 +129,7 @@ class SourcePosition {
     return SourcePosition(filename, firstline, lastline);
   }
 
-  protected string _sprintf(int t) {
+  protected string|zero _sprintf(int t) {
     if(t!='O') return 0;
     string res = "SourcePosition(File: " + (filename ? filename : "?");
     if (firstline)

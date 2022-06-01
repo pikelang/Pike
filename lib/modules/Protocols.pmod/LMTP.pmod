@@ -26,7 +26,7 @@ class Connection {
     if(sizeof(content) > cfg->maxsize)
     {
       outcode(552);
-      return 0;
+      return;
     }
     // LMTP as well as SMTP encode '.' by another '.' when it is the first
     // character of a line so we have to decode it

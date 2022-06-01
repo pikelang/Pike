@@ -115,7 +115,7 @@ string git(string git_dir, string command, string ... args)
 //!
 //! @seealso
 //!   @[git()], @[low_git()]
-string try_git(string git_dir, string command, string ... args)
+string|zero try_git(string git_dir, string command, string ... args)
 {
   mixed err = catch {
       return git(git_dir, command, @args);

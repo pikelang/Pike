@@ -40,7 +40,7 @@ protected class _ymd_base
    protected mapping(int:string) week_day_n2ss;
    protected mapping(string:int) week_day_s2n;
 
-   string name()
+   string|zero name()
    {
      //  Perform the inverse operation to the `[] method below. We don't
      //  care about normalizing the name among several aliases.

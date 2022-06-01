@@ -67,7 +67,7 @@ string get_atom(int|void with_options)
   return sizeof(atom) && atom;
 }
 
-string|object get_string()
+string|object|zero get_string()
 {
   werror("get_string: buffer = '%s'\n", buffer);
 
@@ -114,7 +114,7 @@ string|object get_string()
   }
 }
 
-string|object get_astring()
+string|object|zero get_astring()
 {
   werror("get_astring: buffer = '%s'\n", buffer);
 
@@ -132,7 +132,7 @@ string|object get_astring()
 }
 
 //! Returns a set object.
-object get_set()
+object|zero get_set()
 {
   string atom = get_atom();
   if (!atom)
@@ -183,7 +183,7 @@ mapping get_token(int eol, int accept_options)
 }
 
 //! Reads a <start.size> suffix
-mapping get_range(mapping atom)
+mapping|zero get_range(mapping atom)
 {
   if (!sizeof(buffer) || (buffer[0] != '<'))
     return atom;
@@ -209,7 +209,7 @@ mapping get_range(mapping atom)
 
 //! Get a list of atoms.
 //! Primarily intended for use by STORE for the flags argument.
-array(string) get_flag_list()
+array(string)|zero get_flag_list()
 {
   skip_whitespace();
 
@@ -251,7 +251,7 @@ array(string) get_flag_list()
 //! FIXME: This function is used to read fetch commands. This breaks
 //! rfc-2060 compliance, as the names of headers can be represented
 //! as string literals.
-mapping get_simple_list(int max_depth)
+mapping|zero get_simple_list(int max_depth)
 {
   skip_whitespace();
   if (!sizeof(buffer))
@@ -272,7 +272,7 @@ mapping get_simple_list(int max_depth)
   // return get_atom_options(max_depth-1);
 }
 
-array do_parse_simple_list(int max_depth, int terminator)
+array|zero do_parse_simple_list(int max_depth, int terminator)
 {
   array a = ({ });
 
@@ -318,7 +318,7 @@ array do_parse_simple_list(int max_depth, int terminator)
 //!    raw : name[options]
 //!    options : parsed options,
 //!    range : ({ start, size })
-mapping get_atom_options(int max_depth)
+mapping|zero get_atom_options(int max_depth)
 {
   string atom = get_atom(1);
   if (!atom)

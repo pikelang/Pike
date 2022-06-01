@@ -113,8 +113,9 @@ import Standards.ASN1.Types;
   }
 
 //! @ignore
-protected function(string:string) get_attr_decoder (string attr,
-						 DO_IF_DEBUG (void|int nowarn))
+protected function(string:string)|zero
+  get_attr_decoder (string attr,
+                    DO_IF_DEBUG (void|int nowarn))
 {
   if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
     if (function(string:string) decoder =
@@ -135,7 +136,7 @@ protected function(string:string) get_attr_decoder (string attr,
 }
 //! @endignore
 
-protected function(string:string) get_attr_encoder (string attr)
+protected function(string:string)|zero get_attr_encoder (string attr)
 {
   if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
     if (function(string:string) encoder =
@@ -491,7 +492,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! @seealso
     //!   @[fetch_all]
-    ResultEntry fetch(int|void idx)
+    object(ResultEntry)|zero fetch(int|void idx)
     {
       if (!undefinedp (idx)) actnum = idx;
       if (actnum >= num_entries() || actnum < 0) return 0;
@@ -1120,9 +1121,10 @@ void reset_options()
 
   } // add
 
-protected mapping(string:array(string)) simple_read (string object_name,
-						  object filter,
-						  array attrs)
+protected mapping(string:array(string))|zero
+  simple_read (string object_name,
+               object filter,
+               array attrs)
 // Makes a base object search for object_name. The result is returned
 // as a mapping where the attribute types have been lowercased and the
 // string values are unprocessed.
@@ -1564,7 +1566,7 @@ object|zero get_default_filter()
 
   } // search
 
-mapping(string:string|array(string)) read (
+mapping(string:string|array(string))|zero read (
   string object_name,
   void|string filter,
   void|array(string) attrs,
@@ -1651,10 +1653,11 @@ mapping(string:string|array(string)) read (
   return last_rv->fetch();
 }
 
-string|array(string) read_attr (string object_name,
-				string attr,
-				void|string filter,
-				void|mapping(string:array(int|string)) controls)
+string|array(string)|zero
+  read_attr (string object_name,
+             string attr,
+             void|string filter,
+             void|mapping(string:array(int|string)) controls)
 //! Reads a specified attribute of a specified object in the LDAP
 //! server. @[object_name] is the distinguished name of the object and
 //! @[attr] is the attribute. The rest of the arguments are the same
@@ -2009,8 +2012,9 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
 
 // Schema handling.
 
-protected mapping(string:array(string)) query_subschema (string dn,
-							 array(string) attrs)
+protected mapping(string:array(string))|zero
+  query_subschema (string dn,
+                   array(string) attrs)
 // Queries the server for the specified attributes in the subschema
 // applicable for the specified object. The return value is on the
 // same form as from simple_read (specifically there's no UTF-8
@@ -2311,7 +2315,8 @@ protected constant attr_type_term_syntax = ([
 
 protected mapping(string:mapping(string:mixed)) attr_type_descrs;
 
-mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
+mapping(string:mixed)|zero
+  get_attr_type_descr (string attr, void|int standard_attrs)
 //! Returns the attribute type description for the given attribute,
 //! which includes the name, object identifier, syntax, etc (see
 //! @rfc{2252:4.2@} for details).

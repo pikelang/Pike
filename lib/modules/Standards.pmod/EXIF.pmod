@@ -1219,8 +1219,9 @@ protected int parse_ifd(TIFF tiff, mapping tags, mapping exif_info,
   return 1;
 }
 
-protected mapping low_get_properties(Stdio.BlockFile file, mapping exif_info,
-                                     int discard_unknown)
+protected mapping|zero low_get_properties(Stdio.BlockFile file,
+                                          mapping exif_info,
+                                          int discard_unknown)
 {
   TIFF tiff = TIFF(file);
   if(!tiff->is_valid()) return 0;

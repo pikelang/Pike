@@ -30,7 +30,7 @@ Image.Image decode( string data )
 
 //! Attempts to decode @[data] as image data. The heuristics
 //! has some limited ability to decode macbinary files as well.
-mapping _decode( string data, int(0..1)|void exif )
+mapping|zero _decode( string data, int(0..1)|void exif )
 {
   Image.Image i, a;
   mapping e;
@@ -187,7 +187,7 @@ mapping exif_decode( string data )
 //! Attempts to decode @[data] as image layer data. Additional
 //! arguments to the various formats decode_layers method can
 //! be passed through @[opt].
-array(Image.Layer) decode_layers( string data, mapping|void opt )
+array(Image.Layer)|zero decode_layers( string data, mapping|void opt )
 {
   array i;
   function f;

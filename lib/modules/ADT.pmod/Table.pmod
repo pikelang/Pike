@@ -444,7 +444,7 @@ object Separated = class {
 //! @ignore
 object ASCII = class {
 //! @endignore
-  object decode(string s, void|mapping options)
+  object|zero decode(string s, void|mapping options)
   {
     // Yet to be done.
     return 0;
@@ -498,7 +498,7 @@ object ASCII = class {
 
 // Experimental
 object SQL = class {
-  object decode(array t, void|mapping options)
+  object|zero decode(array t, void|mapping options)
   {
     // Yet to be done
     return 0;

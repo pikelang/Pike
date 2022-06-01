@@ -555,7 +555,7 @@ function log_cb;
 //! Return the IP address that originated the request, or 0 if
 //! the IP address could not be determined. In the event of an
 //! error, @[my_fd]@tt{->errno()@} will be set.
-string get_ip()
+string|zero get_ip()
 {
    if (!my_fd) return 0;
    string addr = my_fd->query_address();

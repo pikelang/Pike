@@ -733,7 +733,8 @@ protected void reportError(string filename, mixed ... args) {
 // HANDLING @appears directives
 //========================================================================
 
-protected SimpleNode findNode(SimpleNode root, array(string) ref) {
+protected object(SimpleNode)|zero findNode(SimpleNode root,
+                                           array(string) ref) {
   SimpleNode n = root;
   // top:: is an anchor to the root of the current namespace.
   if (sizeof(ref) && ref[0] == "top::")
@@ -1277,7 +1278,7 @@ void oldResolveRefs(SimpleNode tree) {
 
 protected class DummyNScope(string name)
 {
-  string lookup(array(string) ref)
+  string|zero lookup(array(string) ref)
   {
     return 0;
   }
@@ -1468,7 +1469,7 @@ class NScope
 		   type, name, sizeof(symbols), sizeof(inherits||([])));
   }
 
-  string lookup(array(string) path, int(0..1)|void no_imports )
+  string|zero lookup(array(string) path, int(0..1)|void no_imports )
   {
     if( !sizeof(path) )
         return 0;
@@ -1605,7 +1606,7 @@ class NScopeStack
     }
   }
 
-  NScope|int(1..1) lookup(string ref)
+  NScope|int(0..1) lookup(string ref)
   {
     array(string) path = splitRef(ref);
     int(1..1)|NScope val = scopes;
@@ -1619,7 +1620,7 @@ class NScopeStack
     return val;
   }
 
-  string resolve(array(string) ref)
+  string|zero resolve(array(string) ref)
   {
     if (!sizeof(ref)) {
       return top->name;

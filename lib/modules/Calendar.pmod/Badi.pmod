@@ -363,7 +363,7 @@ class cMonth
 
 
    // identical to gregorian
-   TimeRange place(TimeRange what,int|void force)
+   object(TimeRange)|zero place(TimeRange what,int|void force)
    {
       if (what->is_day)
       {
@@ -431,7 +431,7 @@ class cYear
    }
 
    // identical to gregorian
-   TimeRange place(TimeRange what,void|int force)
+   object(TimeRange)|zero place(TimeRange what,void|int force)
    {
       if (what->is_day)
       {

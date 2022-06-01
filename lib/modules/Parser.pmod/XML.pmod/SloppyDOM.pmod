@@ -268,14 +268,14 @@ protected class NodeWithChildren
 {
   inherit Node;
 
-  Node get_first_child()
+  object(Node)|zero get_first_child()
   {
     CHECK_CONTENT;
     if (content && sizeof (content)) return NODE_AT (0);
     return 0;
   }
 
-  Node get_last_child()
+  object(Node)|zero get_last_child()
   {
     CHECK_CONTENT;
     if (content && sizeof (content)) return NODE_AT (-1);
@@ -290,7 +290,7 @@ protected class NodeWithChildren
 
   /*protected*/ string|array(string|Node) content;
 
-  /*protected*/ Node _get_child_by_pos (int pos)
+  /*protected*/ object(Node)|zero _get_child_by_pos (int pos)
   {
     if (pos < 0) return 0;
     CHECK_CONTENT;

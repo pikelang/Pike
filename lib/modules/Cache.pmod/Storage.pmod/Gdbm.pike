@@ -98,7 +98,7 @@ void set(string key, mixed value,
   //should I refuse storing objects too?
   if (programp(value)||functionp(value)) {
     werror("can't store value\n"); //TODO: use crumbs
-    return 0;
+    return;
   }
   string tmp;
   int tm=time(1);

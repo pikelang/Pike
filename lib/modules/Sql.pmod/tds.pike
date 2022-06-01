@@ -464,7 +464,7 @@ protected {
     //! @returns
     //!   If @[last] is true an @[InPacket] with the result
     //!   will be returned.
-    InPacket send_packet(Packet p, int flag, int|void last)
+    object(InPacket)|zero send_packet(Packet p, int flag, int|void last)
     {
       if (busy) {
 	tds_error("Sending packet on busy connection!\n");
@@ -883,7 +883,8 @@ protected {
       return res;
     }
 
-    protected array(mapping(string:mixed)) tds7_process_result(InPacket inp)
+    protected array(mapping(string:mixed))|zero
+      tds7_process_result(InPacket inp)
     {
       int num_cols = inp->get_smallint();
       if (num_cols == 0xffff) {
@@ -1278,8 +1279,9 @@ protected {
       }
     }
 
-    protected array(string|int) process_row(InPacket inp,
-					 array(mapping(string:mixed)) col_info)
+    protected array(string|int)|zero
+      process_row(InPacket inp,
+                  array(mapping(string:mixed)) col_info)
     {
       if (!col_info) return 0;
       array(string|int) res = allocate(sizeof(col_info));
@@ -1289,9 +1291,10 @@ protected {
       return res;
     }
 
-    array(string|int) process_row_tokens(InPacket inp,
-					 array(mapping(string:mixed)) col_info,
-					 int|void leave_end_token)
+    array(string|int)|zero
+      process_row_tokens(InPacket inp,
+                         array(mapping(string:mixed)) col_info,
+                         int|void leave_end_token)
     {
       //if (!busy) return 0;	// No more rows.
       while (1) {

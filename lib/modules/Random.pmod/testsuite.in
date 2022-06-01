@@ -137,7 +137,7 @@ test_do( add_constant("RND") )
 test_eval_error([[
   class R {
     inherit Random.Interface;
-    string random_string(int len) { return 0; }
+    string|zero random_string(int len) { return 0; }
   }()->random(10);
 ]])
 test_eval_error([[
@@ -149,7 +149,7 @@ test_eval_error([[
 dnl test_do([[
 dnl   class R {
 dnl     inherit Random.Interface;
-dnl     string random_string(int len) { return 0; }
+dnl     string|zero random_string(int len) { return 0; }
 dnl     variant int random(int limit) { return ::random(limit); }
 dnl   }()->random( ({1,2,3}) );
 dnl ]])

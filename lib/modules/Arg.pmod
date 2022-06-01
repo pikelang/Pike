@@ -551,7 +551,7 @@ class LowOptions
 
   }
 
-  protected string index(string i)
+  protected string|zero index(string i)
   {
     string s = ::`[](i, this, 1);
     if( !s ) return 0;

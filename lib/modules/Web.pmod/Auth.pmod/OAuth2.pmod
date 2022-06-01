@@ -191,9 +191,9 @@ class Base
   //!
   //! @seealso
   //!  @[Web.encode_jwt()]
-  string get_token_from_jwt(string jwt, void|string token_endpoint,
-                            string|void sub,
-                            void|function(bool,string:void) async_cb)
+  string|zero get_token_from_jwt(string jwt, void|string token_endpoint,
+                                 string|void sub,
+                                 void|function(bool,string:void) async_cb)
   {
     mapping j = Standards.JSON.decode(jwt);
 
@@ -442,8 +442,8 @@ class Base
   //!
   //!  Depending on the authorization service it might also contain more
   //!  members.
-  string request_access_token(string|zero oauth_token_uri, string code,
-                              void|function(bool,string:void) async_cb)
+  string|zero request_access_token(string|zero oauth_token_uri, string code,
+                                   void|function(bool,string:void) async_cb)
   {
     TRACE("request_access_token: %O, %O\n", oauth_token_uri, code);
 
@@ -478,8 +478,8 @@ class Base
   //!  argument will be a string. If the request failed it will be an
   //!  error message. If it succeeded it will be the result as a
   //!  string encoded with @[predef::encode_value()].
-  string refresh_access_token(string|zero oauth_token_uri,
-                              void|function(bool,string:void) async_cb)
+  string|zero refresh_access_token(string|zero oauth_token_uri,
+                                   void|function(bool,string:void) async_cb)
   {
     TRACE("Refresh: %O @ %s\n", gettable->refresh_token, oauth_token_uri);
 
@@ -517,8 +517,9 @@ class Base
   //!  argument will be a string. If the request failed it will be an
   //!  error message. If it succeeded it will be the result as a
   //!  string encoded with @[predef::encode_value()].
-  protected string do_query(string|zero oauth_token_uri, Web.Auth.Params p,
-                            void|function(bool,string:void) async_cb)
+  protected string|zero do_query(string|zero oauth_token_uri,
+                                 Web.Auth.Params p,
+                                 void|function(bool,string:void) async_cb)
   {
     if (!oauth_token_uri) {
       error("Token URI not specified.\n");

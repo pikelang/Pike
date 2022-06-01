@@ -95,7 +95,7 @@ protected int skip_variable(Stdio.Stream f)
 }
 
 /* Get the width, height and orientation from a JPEG file */
-protected mapping get_JPEG_internal(Stdio.BlockFile f)
+protected mapping|zero get_JPEG_internal(Stdio.BlockFile f)
 {
   if (!first_marker(f))
     return 0;
@@ -197,7 +197,7 @@ array(int) exif_get_JPEG(Stdio.BlockFile f)
 
 //! Reads the dimensions from a GIF file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_GIF(Stdio.BlockFile f)
+array(int)|zero get_GIF(Stdio.BlockFile f)
 {
   if(f->read(3)!="GIF") return 0;
   f->seek(3, Stdio.SEEK_CUR);
@@ -206,7 +206,7 @@ array(int) get_GIF(Stdio.BlockFile f)
 
 //! Reads the dimensions from a PNG file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_PNG(Stdio.BlockFile f)
+array(int)|zero get_PNG(Stdio.BlockFile f)
 {
   int offs=f->tell();
   if(f->read(6)!="\211PNG\r\n") return 0;
@@ -217,7 +217,7 @@ array(int) get_PNG(Stdio.BlockFile f)
 
 //! Reads the dimensions from a TIFF file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_TIFF(Stdio.BlockFile f)
+array(int)|zero get_TIFF(Stdio.BlockFile f)
 {
  int|string buf;
  int entries;
@@ -321,7 +321,7 @@ array(int) get_TIFF(Stdio.BlockFile f)
 
 //! Reads the dimensions from a PSD file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_PSD(Stdio.BlockFile f)
+array(int)|zero get_PSD(Stdio.BlockFile f)
 {
   //  4 bytes signature + 2 bytes version
   if (f->read(6) != "8BPS\0\1") return 0;
@@ -336,7 +336,7 @@ array(int) get_PSD(Stdio.BlockFile f)
 
 //! Reads the dimensions from a WebP file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_WebP(Stdio.BlockFile f)
+array(int)|zero get_WebP(Stdio.BlockFile f)
 {
   if (f->read(4) != "RIFF") return 0;
   f->read(4);
@@ -390,7 +390,7 @@ array(int) get_WebP(Stdio.BlockFile f)
 //!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@},
 //!       @expr{"jpeg"@}, @expr{"webp"@} and @expr{"psd"@}.
 //!   @endarray
-array(int|string) get(string|Stdio.BlockFile file, int(0..1)|void exif) {
+array(int|string)|zero get(string|Stdio.BlockFile file, int(0..1)|void exif) {
 
   if(stringp(file))
     file = Stdio.FakeFile(file);

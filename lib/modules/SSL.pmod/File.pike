@@ -418,7 +418,8 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //!
 //! @seealso
 //!   @[accept()]
-SSL.Session connect(string|void dest_addr, SSL.Session|void session)
+object(SSL.Session)|zero connect(string|void dest_addr,
+                                 SSL.Session|void session)
 {
   if (conn) error("A connection is already configured!\n");
 

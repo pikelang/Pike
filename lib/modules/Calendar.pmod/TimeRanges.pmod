@@ -944,7 +944,7 @@ class TimeRange
    }
 
 
-   protected string _sprintf(int t)
+   protected string|zero _sprintf(int t)
    {
       switch (t)
       {

@@ -1030,7 +1030,7 @@ string host_info()
 //!
 //! @seealso
 //!   @[list_dbs()]
-protected array(string) low_list_dbs()
+protected array(string)|zero low_list_dbs()
 {
   catch {
     array(mapping) res = query("SHOW DATABASES");
@@ -1077,7 +1077,7 @@ array(string) list_dbs(string|void wild)
 //!
 //! @seealso
 //!   @[list_tables()]
-protected array(string) low_list_tables()
+protected array(string)|zero low_list_tables()
 {
   array(string)|array(mapping(string:mixed))|object res;
 
@@ -1145,7 +1145,7 @@ array(string) list_tables(string|void wild)
 //!
 //! @seealso
 //!   @[list_fields()]
-protected array(mapping(string:mixed)) low_list_fields(string table)
+protected array(mapping(string:mixed))|zero low_list_fields(string table)
 {
 
   catch {

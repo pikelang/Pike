@@ -119,7 +119,7 @@ string identify_peer(string peerid)
    return "unknown";
 }
 
-protected string azureus_style(string peerid)
+protected string|zero azureus_style(string peerid)
 {
   if( peerid[0]!='-' || peerid[7]!='-' ) return 0;
   string id = peerid[1..2];
@@ -198,7 +198,7 @@ protected string azureus_style(string peerid)
   return id + " " + ver;
 }
 
-protected string shadow_style(string peerid)
+protected string|zero shadow_style(string peerid)
 {
   if( peerid[4..6]!="---" ) return 0;
   string id = ([
@@ -225,7 +225,7 @@ protected int shadow_int(int c)
   return -1;
 }
 
-protected string bram_style(string peerid)
+protected string|zero bram_style(string peerid)
 {
   int a,b,c;
   if( sscanf(peerid, "%*1s%d-%d-%d-", a,b,c)!=4 ) return 0;

@@ -471,7 +471,7 @@ int skipemptylines()
 //!
 //! @seealso
 //!  @[compile()], @[create()], @[setformat()], @[skipemptylines()]
-mapping fetch(void|array|mapping format)
+mapping|zero fetch(void|array|mapping format)
 {
   mapping ret=([]);
   int skipempty=0;

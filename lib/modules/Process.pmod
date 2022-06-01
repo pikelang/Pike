@@ -417,7 +417,7 @@ class Process
 }
 
 // FIXME: Should probably be located elsewhere.
-string locate_binary(array(string) path, string name)
+string|zero locate_binary(array(string) path, string name)
 {
 #ifdef __NT__
   if( !has_suffix(lower_case(name), ".exe") )
@@ -1216,7 +1216,7 @@ void daemon(int nochdir, int noclose,
 //!   Process.daemon(1, 0, ([ "stdout": "access.log", "stderr": "error.log" ]) );
 {
     array(Stdio.File) opened = ({});
-    Stdio.File getfd(string|object f)
+    object(Stdio.File)|zero getfd(string|object f)
     {
         if (stringp(f))
         {
@@ -1229,6 +1229,10 @@ void daemon(int nochdir, int noclose,
 	else
 	  return 0;
     };
+    void dup2(string index, Stdio.File f) {
+      Stdio.File fd = getfd(modifiers[index]);
+      if( fd ) fd->dup2(f);
+    }
 
     if (low_daemon(nochdir, noclose) == -1)
       error("Failed to daemonize: %s.\n", strerror(errno()));
@@ -1239,13 +1243,13 @@ void daemon(int nochdir, int noclose,
         cd(modifiers["cwd"]);
 
     if (modifiers["stdin"])
-        getfd(modifiers["stdin"])->dup2(Stdio.stdin);
+        dup2("stdin", Stdio.stdin);
 
     if (modifiers["stdout"])
-        getfd(modifiers["stdout"])->dup2(Stdio.stdout);
+        dup2("stdout", Stdio.stdout);
 
     if (modifiers["stderr"])
-        getfd(modifiers["stderr"])->dup2(Stdio.stderr);
+        dup2("stderr", Stdio.stderr);
 
     opened->close();
 }

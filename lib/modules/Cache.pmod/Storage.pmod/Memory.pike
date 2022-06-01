@@ -127,5 +127,5 @@ void delete(string key, void|int(0..1) hard) {
       delete(dep,hard);
     }
   }
-  return 0;
+  return;
 }

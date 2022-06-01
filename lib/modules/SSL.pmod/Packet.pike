@@ -44,7 +44,7 @@ protected variant void create(ProtocolVersion version,
   this::fragment = fragment;
 }
 
-protected object check_size(string data, int extra)
+protected object|zero check_size(string data, int extra)
 {
   if (sizeof(data) > (PACKET_MAX_SIZE + extra))
     return Alert(ALERT_fatal, ALERT_record_overflow, version);

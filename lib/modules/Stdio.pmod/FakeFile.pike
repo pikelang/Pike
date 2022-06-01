@@ -130,11 +130,11 @@ int(-1..1) peek(int|float|void timeout) {
 //! Always returns 0.
 //! @seealso
 //!   @[Stdio.File()->query_address()]
-string query_address(void|int(0..1) is_local) { return 0; }
+string|zero query_address(void|int(0..1) is_local) { return 0; }
 
 //! @seealso
 //!   @[Stdio.File()->read()]
-string read(void|int(0..) len, void|int(0..1) not_all) {
+string|zero read(void|int(0..) len, void|int(0..1) not_all) {
   if(!r) return 0;
   if (len < 0) error("Cannot read negative number of characters.\n");
   int start=ptr;
@@ -148,7 +148,7 @@ string read(void|int(0..) len, void|int(0..1) not_all) {
 
 //! @seealso
 //!   @[Stdio.FILE()->gets()]
-string gets() {
+string|zero gets() {
   if(!r) return 0;
   string ret;
   sscanf(data,"%*"+(string)ptr+"s%[^\n]",ret);

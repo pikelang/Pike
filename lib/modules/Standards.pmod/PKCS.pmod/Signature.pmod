@@ -149,7 +149,7 @@ Signed sign(Sequence tbs, Crypto.Sign sign, Crypto.Hash hash)
   return res->sign(sign, hash);
 }
 
-Signed decode_signed(string(8bit)|Sequence signed,
+object(Signed)|zero decode_signed(string(8bit)|Sequence signed,
 		     mapping(int:program(Object))|void asn1_types)
 {
   if (stringp(signed))

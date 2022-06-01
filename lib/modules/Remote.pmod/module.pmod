@@ -207,7 +207,7 @@ class Connection {
     return 0;
   }
 
-  string error_message()
+  string|zero error_message()
   //! Returns an error message for the last error, in case @[connect]
   //! returns zero. Returns zero if the last @[connect] call was
   //! successful.
@@ -750,7 +750,7 @@ class Context {
   }
 
   //!
-  object object_for(string id)
+  object|zero object_for(string id)
   {
     object o = id2val[id];
     int destructed = zero_type (id2val[id]) != 1;

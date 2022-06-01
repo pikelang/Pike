@@ -28,7 +28,7 @@ private multiset(program) object_programs()
     return x;
 }
 
-private string remove_cwd(string from)
+private string|zero remove_cwd(string from)
 {
     if( !from ) return 0;
 

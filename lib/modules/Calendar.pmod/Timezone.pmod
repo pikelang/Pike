@@ -175,7 +175,7 @@ protected function(:Calendar.Rule.Timezone) _locale()
    return expert(localtime());
 };
 
-Calendar.Rule.Timezone tz_from_tzfile(string tzfile)
+object(Calendar.Rule.Timezone)|zero tz_from_tzfile(string tzfile)
 {
   /* TZfile format (network byte-order):
    *
@@ -573,7 +573,7 @@ class Runtime_timezone_compiler
       complain("failed to parse offset %O\n",t);
    }
 
-   array parse_tod(string t)
+   array|zero parse_tod(string t)
    {
       int h,m,s;
       string res;
@@ -731,7 +731,7 @@ class Runtime_timezone_compiler
    //        return d1==d2;
       }
 
-      Shift try_promote(Shift t,int y0,int y1)
+      object(Shift)|zero try_promote(Shift t,int y0,int y1)
       {
    // this is year y0
    // t is year y1

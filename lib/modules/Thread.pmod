@@ -1076,7 +1076,7 @@ class Mutex
   protected int locks = 0;
   protected void dec_locks() {locks--;}
 
-  MutexKey lock (int|void type)
+  object(MutexKey)|zero lock (int|void type)
   {
     switch (type) {
       default:
@@ -1097,7 +1097,7 @@ class Mutex
     return MutexKey (dec_locks);
   }
 
-  MutexKey trylock (int|void type)
+  object(MutexKey)|zero trylock (int|void type)
   {
     switch (type) {
       default:

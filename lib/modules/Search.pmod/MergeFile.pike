@@ -35,7 +35,7 @@ void write_blobs(_WhiteFish.Blobs blobs)
     fd->write(buf->get());
 }
 
-array get_next_word_blob()
+array|zero get_next_word_blob()
 {
   int length;
   if(!sscanf(fd->read(4), "%4c", length))

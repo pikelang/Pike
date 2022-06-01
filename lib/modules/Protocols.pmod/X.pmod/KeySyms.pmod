@@ -1354,7 +1354,7 @@
   {
     switch(sym)
     {
-     case XK_Scroll_Lock: return 0; break;
+     case XK_Scroll_Lock: return; break;
      case XK_Mode_switch:  alt_gr = 0; return;
      case XK_Num_Lock:    num_lock = 0; return;
      case XK_Shift_L:
@@ -1371,7 +1371,7 @@
   }
 
 //!
-  string _LookupKeysym( int keysym )
+  string|zero _LookupKeysym( int keysym )
   {
     switch(keysym)
     {
@@ -1515,7 +1515,7 @@
   }
 
 //!
-  string LookupKeysym( int keysym, object display )
+  string|zero LookupKeysym( int keysym, object display )
   {
     if(!compose_patterns) compose_patterns =  display->compose_patterns;
     switch(keysym)

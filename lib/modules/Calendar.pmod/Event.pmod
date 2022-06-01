@@ -115,14 +115,16 @@ class NullEvent
       name=s;
    }
 
-   Calendar.TimeRanges.TimeRange next(void|Calendar.TimeRanges.TimeRange from,
-				      void|int(0..1) including)
+    object(Calendar.TimeRanges.TimeRange)|zero
+      next(void|Calendar.TimeRanges.TimeRange from,
+           void|int(0..1) including)
    {
       return 0;
    }
 
-   Calendar.TimeRanges.TimeRange previous(void|Calendar.TimeRanges.TimeRange from,
-					  void|int(0..1) including)
+   object(Calendar.TimeRanges.TimeRange)|zero
+     previous(void|Calendar.TimeRanges.TimeRange from,
+              void|int(0..1) including)
    {
       return 0;
    }
@@ -180,8 +182,9 @@ class Day_Event
   //! Uses the virtual method @[scan_jd].
   //! @seealso
   //!   @[Event.previous]
-   Calendar.TimeRanges.TimeRange previous(void|Calendar.TimeRanges.TimeRange from,
-					  void|int(0..1) including)
+  object(Calendar.TimeRanges.TimeRange)|zero
+    previous(void|Calendar.TimeRanges.TimeRange from,
+             void|int(0..1) including)
    {
       if (!from) from=std_day();
       int jd;
@@ -1535,7 +1538,7 @@ class TZShift_Event
    }
 
   //!
-   protected Calendar.TimeRanges.TimeRange
+   protected object(Calendar.TimeRanges.TimeRange)|zero
      scan_rule(Calendar.Rule.Timezone tz,
 	       Calendar.TimeRanges.TimeRange from,
 	       int direction,int including)

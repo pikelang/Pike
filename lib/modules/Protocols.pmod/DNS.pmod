@@ -1029,8 +1029,8 @@ class server_base
   //!     @member int "ad"
   //!       Set to 1 to include the Authenticated Data bit in the response
   //!   @endmapping
-  protected mapping reply_query(mapping query, mapping udp_data,
-				 function(mapping:void) cb)
+  protected mapping|zero reply_query(mapping query, mapping udp_data,
+                                     function(mapping:void) cb)
   {
     // Override this function.
     //
@@ -1664,7 +1664,7 @@ class client
   //!     object d=Protocols.DNS.client();
   //!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
   //!   @endcode
-  mapping do_sync_query(string s)
+  mapping|zero do_sync_query(string s)
   {
     int i;
     object udp = Stdio.UDP();
@@ -1919,7 +1919,7 @@ class client
   //! @returns
   //!   Returns the hostname of the primary mail exchanger.
   //!
-  string get_primary_mx(string host)
+  string|zero get_primary_mx(string host)
   {
     mapping m;
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -1951,7 +1951,7 @@ class client
   }
 
   //!
-  array(string) get_mx(string host)
+  array(string)|zero get_mx(string host)
   {
     mapping m;
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -2609,7 +2609,7 @@ class tcp_client
   //!     object d=Protocols.DNS.tcp_client();
   //!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
   //!   @endcode
-  mapping do_sync_query(string s)
+  mapping|zero do_sync_query(string s)
   {
     for (int i=0; i < RETRIES; i++) {
       object tcp = Stdio.File();

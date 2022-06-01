@@ -177,7 +177,7 @@ class imap_set
       return ({ start, end });
     }
 
-  this_program init(string s)
+  this_program|zero init(string s)
     {
       items = s/",";
 

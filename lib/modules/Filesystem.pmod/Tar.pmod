@@ -703,7 +703,7 @@ class _TarFS
     return Array.uniq(f - ({ "" }));
   }
 
-  Filesystem.Base cd(string directory)
+  object(Filesystem.Base)|zero cd(string directory)
   {
     Filesystem.Stat st = stat(directory);
     if(!st) return 0;

@@ -226,7 +226,7 @@ class Params
   //!
   //! @param key
   //! The name of a @[Param]erter to find.
-  protected Param `[](string key)
+  protected object(Param)|zero `[](string key)
   {
     foreach (params, Param p)
       if (p->get_name() == key)

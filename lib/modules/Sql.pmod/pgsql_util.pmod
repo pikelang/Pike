@@ -512,7 +512,8 @@ class conxion {
      portal._portalname, ++queueoutidx, synctransact, sizeof(this));
   }
 
-  final bufcon|conxsess start(void|int|array(Thread.MutexKey) waitforreal) {
+  final bufcon|conxsess|zero start(void|int|array(Thread.MutexKey) waitforreal)
+  {
     Thread.MutexKey lock;
 #ifdef PG_DEBUGRACE
     if (nostash->current_locking_thread())
@@ -1815,7 +1816,7 @@ class Result {
   //!
   //! @seealso
   //!  @[eof()], @[send_row()]
-  /*semi*/final array(mixed) fetch_row() {
+  /*semi*/final array(mixed)|zero fetch_row() {
     int|array datarow;
     if (!this)			// If object already destructed, return fast
       return 0;
@@ -1848,7 +1849,7 @@ class Result {
   //!
   //! @seealso
   //!  @[eof()], @[fetch_row()]
-  /*semi*/final array(array(mixed)) fetch_row_array() {
+  /*semi*/final array(array(mixed))|zero fetch_row_array() {
     if (eoffound)
       return 0;
     replenishrows();
@@ -1902,7 +1903,7 @@ class Result {
       array cid = setuptimeout();
       PT(datarow = datarows->read());
       if (!this)		// If object already destructed, return fast
-        return 0;
+        return;
       scuttletimeout(cid);
       if (!arrayp(datarow))
         break;
@@ -1933,7 +1934,7 @@ class Result {
       array cid = setuptimeout();
       PT(datarow = datarows->read_array());
       if (!this)		// If object already destructed, return fast
-        return 0;
+        return;
       scuttletimeout(cid);
       if (!datarow || !arrayp(datarow[-1]))
         break;

@@ -450,7 +450,7 @@ class DigestClient {
     return has_value(value, ' ') || has_value(value, ',');
   }
 
-  string(7bit) auth(string method, string path, string|void cnonce) {
+  string(7bit)|zero auth(string method, string path, string|void cnonce) {
 
     if( !method || !path )
       return 0;

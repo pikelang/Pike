@@ -305,7 +305,7 @@ Resource reify_low(Resource subj, Resource pred, Resource obj) {
 
 //! Returns a resource that is the subject of the reified statement
 //! {subj, pred, obj}, if such a resource exists in the RDF domain.
-Resource get_reify(Resource subj, Resource pred, Resource obj) {
+object(Resource)|zero get_reify(Resource subj, Resource pred, Resource obj) {
   array rs = find_statements(0, rdf_predicate, pred)[*][0] &
     find_statements(0, rdf_subject, subj)[*][0] &
     find_statements(0, rdf_object, obj)[*][0];

@@ -293,7 +293,7 @@ class State {
 
   //! Returns the PKCS-1 algorithm identifier for DSA and the provided
   //! hash algorithm. Only @[SHA1] supported.
-  Sequence pkcs_signature_algorithm_id(.Hash hash)
+  object(Sequence)|zero pkcs_signature_algorithm_id(.Hash hash)
   {
     switch(hash->name())
     {

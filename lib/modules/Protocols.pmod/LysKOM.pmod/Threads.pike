@@ -19,7 +19,7 @@ class Thread
 
     array(Node) children = ({ });
 
-    string get_aux_item_author(object text)
+    string|zero get_aux_item_author(object text)
     {
       string name, email;
       if(sizeof(text->aux_items["mx-author"]))
@@ -54,7 +54,7 @@ class Thread
     }
 
 
-    Node possible_parent(int follow)
+    object(Node)|zero possible_parent(int follow)
     {
       foreach(text->misc->comm_to, Session.Text _parent)
       {

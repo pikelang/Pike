@@ -74,7 +74,7 @@ string decrypt_body(string dek_info, string(8bit) body, string(8bit) password)
 //!
 //! @returns
 //!   Returns the decrypted body text.
-string decrypt_fragment(Message m, string(8bit) pwd)
+string|zero decrypt_fragment(Message m, string(8bit) pwd)
 {
   // FIXME: Check proc-type = "4,ENCRYPTED"?
   string|zero dek = m->headers["dek-info"];

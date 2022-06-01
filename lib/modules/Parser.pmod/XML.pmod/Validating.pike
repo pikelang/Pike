@@ -208,9 +208,9 @@ protected private string __root_element_name;
 //!
 //! @seealso
 //!   @[parse()], @[parse_dtd()]
-string get_external_entity(string sysid, string|void pubid,
-			   mapping|void info,
-			   mixed ... extra)
+string|zero get_external_entity(string sysid, string|void pubid,
+                                mapping|void info,
+                                mixed ... extra)
 {
   // Override this function
   return 0;

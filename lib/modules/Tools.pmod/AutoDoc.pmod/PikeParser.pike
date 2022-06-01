@@ -581,7 +581,7 @@ AttributeType parseDeprecated()
   return t;
 }
 
-Type parseType() {
+object(Type)|zero parseType() {
   string s = peekToken();
   switch(s) {
     case "float":
@@ -686,7 +686,7 @@ array parseArgList(int|void allowLiterals) {
 }
 
 //! Parse a single annotation from the token stream.
-Annotation parseAnnotation()
+object(Annotation)|zero parseAnnotation()
 {
   if (peekToken() != "@") return 0;
   eat("@");
@@ -739,7 +739,7 @@ array(string) parseModifiers() {
 }
 
 //! Parse the next literal constant (if any) from the token stream.
-void|string parseLiteral() {
+string|zero parseLiteral() {
   string sign = peekToken() == "-" ? readToken() : "";
   string s = peekToken();
   if (s && s != "" &&
@@ -751,7 +751,7 @@ void|string parseLiteral() {
   return 0;
 }
 
-Type literalType (string literal)
+object(Type)|zero literalType (string literal)
 //! Returns the type of a literal. Currently only recognizes the top
 //! level type. Currently does not thoroughly check that the literal
 //! is syntactically valid.

@@ -1209,7 +1209,7 @@ Session decode_ticket(string(8bit) ticket)
 //!
 //! @seealso
 //!   @[decode_ticket()], @[record_session()], @rfc{4507:3.3@}
-array(string(8bit)|int) encode_ticket(Session session)
+array(string(8bit)|int)|zero encode_ticket(Session session)
 {
   if (!use_cache) return 0;
   string(8bit) ticket = [string(8bit)] session->ticket;

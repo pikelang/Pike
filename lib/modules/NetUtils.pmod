@@ -23,7 +23,7 @@ final constant DOMAIN_LABEL_MAX_LENGTH = 63;
 //! @returns
 //!     The string representation of the address, or 0 if the IP
 //!     was invalid.
-string ip_to_string( int ip, bool|void v6_only )
+string|zero ip_to_string( int ip, bool|void v6_only )
 {
     if( ip < 0 )
         return 0;
@@ -120,7 +120,7 @@ int netmask_to_cidr( string mask )
 //!             The bitmask.
 //!     @endarray
 //!     Returns 0 if the string could not be parsed.
-array(int) cidr_to_netmask(string|zero cidr)
+array(int)|zero cidr_to_netmask(string|zero cidr)
 {
     string ips;
     int bits;
@@ -526,8 +526,8 @@ string port_of( RemoteAddressObject|string|int(0..0) inc,
 //!
 //! This function can return 0 if @[inc] is a @[RemoteAddressObject]
 //! and query_address throws an error or does not return a string.
-array(string) ip_and_port_of( RemoteAddressObject|string|int(0..0) inc,
-                              bool|void local_address)
+array(string)|zero ip_and_port_of( RemoteAddressObject|string|int(0..0) inc,
+                                   bool|void local_address)
 {
     if( objectp(inc) && (catch(inc = inc->query_address(local_address)) || !inc) )
         return 0;
@@ -725,7 +725,7 @@ IpRangeLookup local_networks()
 //! on a computer that does not actually have any ipv6 addresses (and
 //! thus no support for ipv6), at least on linux, causes the bind call
 //! to fail entirely.
-string `ANY()
+string|zero `ANY()
 {
     if( has_ipv6() )
         return "::";
@@ -909,7 +909,7 @@ bool ip_less_global( int|string which, int|string towhat, bool|void prefer_v4 )
 //! addresses.
 //!
 //! Will return 0 if @[a] is not a valid address.
-string normalize_address( string a )
+string|zero normalize_address( string a )
 {
     if( !a ) return 0;
 

@@ -344,7 +344,7 @@ class File
     debug_bits = b;
   }
 
-  protected string _sprintf( int type, mapping flags )
+  protected string|zero _sprintf( int type, mapping flags )
   {
     if(type!='O') return 0;
     return sprintf("%O(%O, %O, %o /* fd=%d */)",
@@ -578,7 +578,7 @@ class File
   {
     return connect(host,port,0,0,data);
   }
-  variant string connect(string host, int(0..)|string port,
+  variant string|zero connect(string host, int(0..)|string port,
                          int(0..0)|string client, int(0..)|string client_port,
                          string data)
   {
@@ -654,7 +654,7 @@ class File
   //!
   //! @seealso
   //!   @[read_function()], @[write()], @[Fd::read()]
-  string(8bit) read(int|void nbytes, int(0..1)|void not_all)
+  string(8bit)|zero read(int|void nbytes, int(0..1)|void not_all)
   {
     if (inbuffer) {
       if (!nbytes) return "";
@@ -853,7 +853,7 @@ class File
   //!   @[PROP_SHUTDOWN], @[PROP_BUFFERED], @[PROP_REVERSE],
   //!   @[PROP_BIDIRECTIONAL], @[PROP_TTY]
   //!
-  File pipe(void|int required_properties)
+  object(File)|zero pipe(void|int required_properties)
   {
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
@@ -882,7 +882,7 @@ class File
   //!
   //! @seealso
   //!   @[File.statat()], @[File.unlinkat()]
-  File openat(string filename, string|void mode, int|void mask)
+  object(File)|zero openat(string filename, string|void mode, int|void mask)
   {
     if(Fd fd = ::openat(filename, mode, mask))
     {
@@ -1938,7 +1938,7 @@ class Port
   //! @seealso
   //!   @[Stdio.File], @[fd_factory()]
   //!
-  File accept()
+  object(File)|zero accept()
   {
     if(object(Fd) x=::accept())
     {
@@ -2114,7 +2114,7 @@ class FILE
   //! @seealso
   //!   @[ngets()], @[read()], @[line_iterator()], @[set_charset()]
   //!
-  string gets(int(0..1)|void not_all)
+  string|zero gets(int(0..1)|void not_all)
   {
     string r;
     if( (sizeof(cached_lines) <= lp+1) &&
@@ -2183,7 +2183,7 @@ class FILE
   //! @param not_all
   //!   Set this parameter to ignore partial lines at EOF. This
   //!   is useful for eg monitoring a growing logfile.
-  array(string) ngets(void|int(1..) n, int(0..1)|void not_all)
+  array(string)|zero ngets(void|int(1..) n, int(0..1)|void not_all)
   {
     array(string) res;
     if (!n)
@@ -2244,7 +2244,7 @@ class FILE
   //!
   //! @seealso
   //!   @[Stdio.File()->openat()]
-  FILE openat(string filename, string|void mode, int|void mask)
+  object(FILE)|zero openat(string filename, string|void mode, int|void mask)
   {
     if(Fd fd=[object(Fd)]_fd->openat(filename, mode, mask))
     {
@@ -2521,7 +2521,7 @@ protected void register_close_file (int id)
   }
 }
 
-array(string) file_open_places (string file)
+array(string)|zero file_open_places (string file)
 {
   file = combine_path (getcwd(), file);
   if (array(int) ids = open_files[file])
@@ -2567,7 +2567,7 @@ void report_file_open_places (string file)
 //! @seealso
 //! @[read_bytes()], @[write_file()]
 //!
-string(0..255) read_file(string filename,void|int start,void|int len)
+string(0..255)|zero read_file(string filename,void|int start,void|int len)
 {
   FILE f;
   string ret;
@@ -2655,7 +2655,7 @@ string(0..255) read_file(string filename,void|int start,void|int len)
 //! @seealso
 //! @[read_file], @[write_file()], @[append_file()]
 //!
-string(0..255) read_bytes(string filename, void|int start,void|int len)
+string(0..255)|zero read_bytes(string filename, void|int start,void|int len)
 {
   string ret;
   File f = File();

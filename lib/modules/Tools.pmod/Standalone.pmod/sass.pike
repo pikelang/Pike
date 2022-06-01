@@ -28,7 +28,7 @@ int want_args = 0;
 int(0..) verbosity = 0;
 string genmap = 0;
 
-string process(string input, string ... args) {
+string|zero process(string input, string ... args) {
   Web.Sass.Api sc = Web.Sass.Api();
   sc->output_style = Web.Sass.STYLE_COMPRESSED;
   sc->sass_syntax = false;

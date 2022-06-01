@@ -243,7 +243,7 @@ int get_document_id(string uri, void|string language, void|int do_not_create)
   return db->insert_id();
 }
 
-mapping get_uri_and_language(int|array(int) doc_id)
+mapping|zero get_uri_and_language(int|array(int) doc_id)
 {
   Sql.Sql db = get_db();
   if(arrayp(doc_id))
@@ -554,8 +554,8 @@ int get_padded_blob_length(int used_len)
 
 protected int blobs_per_select = 40;
 
-string get_blob(string word, int num,
-		void|mapping(string:mapping(int:string)) blobcache)
+string|zero get_blob(string word, int num,
+                     void|mapping(string:mapping(int:string)) blobcache)
 {
   word = string_to_utf8( word );
   if(blobcache[word] && blobcache[word][num])
@@ -702,7 +702,7 @@ void set_metadata(Standards.URI|string uri, void|string language,
   }
 
   if(!sizeof(md))
-    return 0;
+    return;
 
   foreach(indices(md), string ind)
     if(ind!="body")

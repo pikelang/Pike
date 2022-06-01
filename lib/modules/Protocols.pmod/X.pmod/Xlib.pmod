@@ -57,7 +57,7 @@ class rec_buffer
     buffer += data;
   }
 
-  string get_msg()
+  string|zero get_msg()
   {
     if (sizeof(buffer) < (expected + pad))
       return 0;
@@ -322,7 +322,7 @@ class Display
 
   void get_keyboard_mapping();
 
-  array process()
+  array|zero process()
   {
     string msg;
     while (msg = received->get_msg())

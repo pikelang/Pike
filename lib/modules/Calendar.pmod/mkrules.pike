@@ -66,7 +66,7 @@ int parse_offset(string t)
    complain("failed to parse offset %O\n",t);
 }
 
-array parse_tod(string t)
+array|zero parse_tod(string t)
 {
    int h,m,s;
    string res;
@@ -222,7 +222,7 @@ class Shift
       return d1==d2;
    }
 
-   Shift try_promote(Shift t,int y0,int y1)
+   object(Shift)|zero try_promote(Shift t,int y0,int y1)
    {
 // this is year y0
 // t is year y1
@@ -524,7 +524,7 @@ class Zone (string id)
 	    -(roff+a[0]),a[2]);
    }
 
-   string rule_shift(array a)
+   string|zero rule_shift(array a)
    {
       if (a[3]=="" || a[3][0]=='#') return "forever";
 

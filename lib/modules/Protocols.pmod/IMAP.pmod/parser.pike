@@ -232,7 +232,7 @@ class handle_options
     }
 }
 
-mapping get_any(int max_depth, int eol, int accept_options, function c)
+mapping|zero get_any(int max_depth, int eol, int accept_options, function c)
 {
   if (!line)
     return ([ "action" : "expect_line",

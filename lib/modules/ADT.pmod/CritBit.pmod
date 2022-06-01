@@ -255,7 +255,7 @@ class RangeSet {
 	return new;
     }
 
-    protected string _sprintf(int type) {
+    protected string|zero _sprintf(int type) {
 	if (type == 'O') {
 	    array a = indices(this);
 	    return sprintf("{%s}", map(a, Function.curry(sprintf)("%O"))*", ");

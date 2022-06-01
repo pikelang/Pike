@@ -294,7 +294,7 @@ string get_pike_version()
       (int)__REAL_MINOR__, (int)__REAL_BUILD__);
 }
 
-mapping get_module_info(string name)
+mapping|zero get_module_info(string name)
 {
   int module_id;
   mixed err;
@@ -354,7 +354,7 @@ mapping get_module_version_info(int|string module, string version)
 }
 
 //
-mapping get_module_action_data(string name, string|void version)
+mapping|zero get_module_action_data(string name, string|void version)
 {
   string dv;
   mixed err;
@@ -410,7 +410,8 @@ mapping get_module_action_data(string name, string|void version)
   return vi + info;
 }
 
-string get_file(mapping version_info, string|void path, int|void from_source)
+string|zero get_file(mapping version_info, string|void path,
+                     int|void from_source)
 {
   array rq;
   int have_path;

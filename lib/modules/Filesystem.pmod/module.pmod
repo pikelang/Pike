@@ -105,7 +105,7 @@ class Stat
   //! Change to the stated directory.
   //! @returns
   //! the directory if the stated object was a directory, 0 otherwise.
-  object /* Filesystem.Base */ cd()
+  object|zero /* Filesystem.Base */ cd()
   {
     if(isdir)
       return filesystem->cd(fullpath);
@@ -323,7 +323,7 @@ class Traversion {
   }
 
   //! Returns the stat for the current index-value-pair.
-  Stdio.Stat stat() {
+  object(Stdio.Stat)|zero stat() {
     if(!current) return 0;
     if(current->is_traversion)
       return current->stat();

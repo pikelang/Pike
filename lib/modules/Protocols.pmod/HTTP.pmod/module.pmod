@@ -254,11 +254,12 @@ constant response_codes =
 //!
 //! @seealso
 //!   @[do_sync_method()]
-.Query do_method(string method,
-		 string|Standards.URI url,
-		 void|mapping(string:int|string|array(string)) query_variables,
-		 void|mapping(string:string|array(string)|int) request_headers,
-		 void|Protocols.HTTP.Query con, void|string data)
+object(.Query)|zero
+  do_method(string method,
+            string|Standards.URI url,
+            void|mapping(string:int|string|array(string)) query_variables,
+            void|mapping(string:string|array(string)|int) request_headers,
+            void|Protocols.HTTP.Query con, void|string data)
 {
   if(stringp(url))
     url=Standards.URI(url);
@@ -657,10 +658,11 @@ void do_async_proxied_method(string|Standards.URI proxy,
 //! the requested server for the information. @expr{0@} is returned
 //! upon failure. Redirects (HTTP 302) are automatically followed.
 //!
-array(string) get_url_nice(string|Standards.URI url,
-			   void|mapping(string:int|string|array(string)) query_variables,
-			   void|mapping(string:string|array(string)|int) request_headers,
-			   void|Protocols.HTTP.Query con)
+array(string)|zero
+  get_url_nice(string|Standards.URI url,
+               void|mapping(string:int|string|array(string)) query_variables,
+               void|mapping(string:string|array(string)|int) request_headers,
+               void|Protocols.HTTP.Query con)
 {
   .Query c;
   multiset seen = (<>);

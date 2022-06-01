@@ -184,7 +184,7 @@ class Request
   }
 
   //! Get param with name @[name].
-  Param get_param(string name)
+  object(Param)|zero get_param(string name)
   {
     foreach (values(params), Param p)
       if (p[name])
@@ -386,7 +386,7 @@ class Param
   }
 
   //! Index lookup.
-  protected object `[](string key)
+  protected object|zero `[](string key)
   {
     if (key == name)
       return this;

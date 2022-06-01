@@ -403,8 +403,8 @@ class KeyExchange(object context, object session, object connection,
   //!
   //! @returns
   //!   Returns the signed payload for a @[HANDSHAKE_server_key_exchange].
-  string(8bit) server_key_exchange_packet(string client_random,
-                                          string server_random)
+  string(8bit)|zero server_key_exchange_packet(string client_random,
+                                               string server_random)
   {
     Stdio.Buffer struct = server_key_params();
     if (!struct) return 0;
@@ -545,8 +545,8 @@ class KeyExchangePSK
     return ret;
   }
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+  string(8bit)|zero client_key_exchange_packet(Stdio.Buffer packet_data,
+                                               ProtocolVersion version)
   {
     anonymous = 1;
 
@@ -609,7 +609,7 @@ class KeyExchangeRSA
     return 1;
   }
 
-  Stdio.Buffer server_key_params()
+  object(Stdio.Buffer)|zero server_key_params()
   {
     SSL3_DEBUG_MSG("KE_RSA\n");
     return 0;
@@ -759,8 +759,8 @@ class KeyExchangeRSAPSK
 {
   inherit KeyExchangePSK;
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+  string(8bit)|zero client_key_exchange_packet(Stdio.Buffer packet_data,
+                                               ProtocolVersion version)
   {
     string id = context->get_psk_id(hint);
     if( !id ) return 0;
@@ -910,8 +910,8 @@ class KeyExchangeDHE
     return output;
   }
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+  string(8bit)|zero client_key_exchange_packet(Stdio.Buffer packet_data,
+                                               ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
 		   packet_data, version>>8, version & 0xff);
@@ -971,7 +971,7 @@ class KeyExchangeDHE
     return premaster_secret;
   }
 
-  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
+  object(Stdio.Buffer)|zero parse_server_key_exchange(Stdio.Buffer input)
   {
     SSL3_DEBUG_MSG("KE_DHE\n");
     string p = input->read_hstring(2);
@@ -1023,8 +1023,8 @@ class KeyExchangeDHEPSK
     return psk->add(dhe);
   }
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+  string(8bit)|zero client_key_exchange_packet(Stdio.Buffer packet_data,
+                                               ProtocolVersion version)
   {
     string(8bit) id = context->get_psk_id(hint);
     if( !id ) return 0;
@@ -1092,7 +1092,7 @@ class KeyExchangeDH
     return ::init_client();
   }
 
-  Stdio.Buffer server_key_params()
+  object(Stdio.Buffer)|zero server_key_params()
   {
     SSL3_DEBUG_MSG("KE_DH\n");
     // RFC 4346 7.4.3:
@@ -1297,7 +1297,7 @@ class KeyExchangeECDHE
     return premaster_secret;
   }
 
-  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
+  object(Stdio.Buffer)|zero parse_server_key_exchange(Stdio.Buffer input)
   {
     SSL3_DEBUG_MSG("KE_ECDHE\n");
 
@@ -1375,8 +1375,8 @@ class KeyExchangeECDHEPSK
     return psk->add(ecdhe);
   }
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+  string(8bit)|zero client_key_exchange_packet(Stdio.Buffer packet_data,
+                                               ProtocolVersion version)
   {
     string(8bit) id = context->get_psk_id(hint);
     if( !id ) return 0;
@@ -1439,7 +1439,7 @@ class KeyExchangeECDH
     return ::init_client();
   }
 
-  Stdio.Buffer server_key_params()
+  object(Stdio.Buffer)|zero server_key_params()
   {
     SSL3_DEBUG_MSG("KE_ECDH\n");
     // RFC 4492 2.1:
@@ -1479,7 +1479,7 @@ class KeyShareECDHE
     offer->add_hstring(p->encode(), 2);
   }
 
-  string(8bit) receive_key_share_offer(string(8bit) offer)
+  string(8bit)|zero receive_key_share_offer(string(8bit) offer)
   {
     catch {
       point = curve->Point(Stdio.Buffer(offer));
@@ -1522,7 +1522,7 @@ class KeyExchangeKRB
 
   GSSAPI.Context gss_context;
 
-  Stdio.Buffer server_key_params()
+  object(Stdio.Buffer)|zero server_key_params()
   {
     SSL3_DEBUG_MSG("KE_KRB\n");
 
@@ -1957,9 +1957,9 @@ class RC2
 //! @returns
 //!   Returns @expr{0@} (zero) for unsupported combinations, otherwise
 //!   returns an initialized @[CipherSpec] for the @[suite].
-CipherSpec lookup(int suite, ProtocolVersion|int version,
-                  array(int)|zero signature_algorithms,
-                  int max_hash_size)
+object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
+                               array(int)|zero signature_algorithms,
+                               int max_hash_size)
 {
   CipherSpec res = CipherSpec();
 

@@ -241,7 +241,7 @@ protected class _HMAC
     //!
     //! @seealso
     //!   @[create()], @[Web.encode_jwk()], @rfc{7517:4@}, @rfc{7518:6.4@}
-    mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+    mapping(string(7bit):string(7bit))|zero jwk(int(0..1)|void private_key)
     {
       if (!jwa()) return 0;	// Not supported for this hash.
       mapping(string(7bit):string(7bit)) jwk = ([
@@ -777,12 +777,12 @@ string(8bit) mgf1(string(8bit) seed, int(0..) bytes)
 //!
 //! @seealso
 //!   @[eme_oaep_decode()]
-string(8bit) eme_oaep_encode(string(8bit) message,
-			     int(1..) bytes,
-			     string(8bit) seed,
-			     string(8bit)|void label,
-			     function(string(8bit), int(0..):
-				      string(8bit))|void mgf)
+string(8bit)|zero eme_oaep_encode(string(8bit) message,
+                                  int(1..) bytes,
+                                  string(8bit) seed,
+                                  string(8bit)|void label,
+                                  function(string(8bit), int(0..):
+                                           string(8bit))|void mgf)
 {
   int(0..) hlen = digest_size();
 
@@ -854,10 +854,10 @@ string(8bit) eme_oaep_encode(string(8bit) message,
 //!
 //! @seealso
 //!   @[eme_oaep_encode()], @rfc{3447:7.1.2@}
-string(8bit) eme_oaep_decode(string(8bit) message,
-			     string(8bit)|void label,
-			     function(string(8bit), int(0..):
-				      string(8bit))|void mgf)
+string(8bit)|zero eme_oaep_decode(string(8bit) message,
+                                  string(8bit)|void label,
+                                  function(string(8bit), int(0..):
+                                           string(8bit))|void mgf)
 {
   int(0..) hlen = digest_size();
 
@@ -944,10 +944,10 @@ string(8bit) eme_oaep_decode(string(8bit) message,
 //!
 //! @seealso
 //!   @[emsa_pss_verify()], @[mgf1()].
-string(8bit) emsa_pss_encode(string(8bit) message, int(1..) bits,
-			     string(8bit)|void salt,
-			     function(string(8bit), int(0..):
-				      string(8bit))|void mgf)
+string(8bit)|zero emsa_pss_encode(string(8bit) message, int(1..) bits,
+                                  string(8bit)|void salt,
+                                  function(string(8bit), int(0..):
+                                           string(8bit))|void mgf)
 {
   if (!mgf) mgf = mgf1;
   if (!salt) salt = "";
@@ -1188,7 +1188,7 @@ class SCRAM
     return encode64(random_string(18));
   }
 
-  private string(7bit) validate_nonce(string r) {
+  private string(7bit)|zero validate_nonce(string r) {
     [int min, int max] = String.range(r);
     if (min < 32 || max > 126 || search(r, ",") >= 0)
       /* Invalid nonce */

@@ -1496,7 +1496,7 @@ TBSCertificate|zero decode_certificate(string|.PKCS.Signature.Signed cert)
 //! @note
 //!   This function allows self-signed certificates, and it doesn't
 //!   check that names or extensions make sense.
-TBSCertificate verify_certificate(string s,
+object(TBSCertificate)|zero verify_certificate(string s,
 				  mapping(string:Verifier|array(Verifier)) authorities,
 				  mapping(Standards.ASN1.Types.Identifier:Crypto.Hash)|void options)
 {
@@ -1530,7 +1530,7 @@ TBSCertificate verify_certificate(string s,
 
 //! Verifies that all extensions mandated for certificate signing
 //! certificates are present and valid.
-TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
+object(TBSCertificate)|zero verify_ca_certificate(string|TBSCertificate tbs)
 {
   if(stringp(tbs)) tbs = decode_certificate(tbs);
   if(!tbs) return 0;

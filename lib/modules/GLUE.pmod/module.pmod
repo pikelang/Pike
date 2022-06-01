@@ -1138,7 +1138,7 @@ class BaseTexture {
   }
 #endif
 
-  protected string _sprintf( int f ) {
+  protected string|zero _sprintf( int f ) {
     if(f!='O') return 0;
 
     string ms;

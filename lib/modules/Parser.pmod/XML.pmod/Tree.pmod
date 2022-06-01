@@ -347,7 +347,7 @@ class AbstractSimpleNode {
   //! @note
   //!   The [] operator will select a node from all the nodes children,
   //!   not just its element children.
-  protected AbstractSimpleNode `[](int pos)
+  protected object(AbstractSimpleNode)|zero `[](int pos)
   {
     //  Treat pos as index into array
     if ((pos < 0) || (pos > sizeof(mChildren) - 1))
@@ -431,8 +431,9 @@ class AbstractSimpleNode {
   //! @returns
   //!   Returns the current node on success, and @expr{0@} (zero)
   //!   if the node @[old] wasn't found.
-  AbstractSimpleNode replace_child(AbstractSimpleNode old,
-                                   AbstractSimpleNode|array(AbstractSimpleNode) new)
+  object(AbstractSimpleNode)|zero
+    replace_child(AbstractSimpleNode old,
+                  AbstractSimpleNode|array(AbstractSimpleNode) new)
   {
     int index = search(mChildren, old);
     if (index < 0)
@@ -781,8 +782,9 @@ class AbstractNode {
   //!   The returned value is NOT the current node.
   //! @returns
   //!   Returns the new child node.
-  AbstractNode replace_child(AbstractNode old,
-                             AbstractNode|array(AbstractNode) new)
+  object(AbstractNode)|zero
+    replace_child(AbstractNode old,
+                  AbstractNode|array(AbstractNode) new)
   {
     if (!::replace_child(old, new)) return 0;
     new->mParent = this;
@@ -1095,7 +1097,9 @@ protected class VirtualNode {
   //!
   //! @returns
   //!   Returns the first matching node, and 0 if no such node was found.
-  AbstractNode get_first_element(string|void name, int(0..1)|void full) {
+  object(AbstractNode)|zero
+    get_first_element(string|void name, int(0..1)|void full)
+  {
     if (!name) {
       foreach(get_children(), AbstractNode c)
 	if(c->get_node_type()==XML_ELEMENT)
@@ -1802,7 +1806,7 @@ class XMLParser
     return node_factory(type, name, attr, text);
   }
 
-  protected AbstractSimpleNode|int(0..0)
+  protected AbstractSimpleNode|zero
     parse_xml_callback(string type, string name,
                        mapping attr, string|array contents,
                        mixed location, mixed ...extra)

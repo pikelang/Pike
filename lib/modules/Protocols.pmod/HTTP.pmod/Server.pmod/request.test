@@ -32,7 +32,7 @@ class Request
 class FDWrapper
 {
   string response = "";
-  array get_response()
+  array|zero get_response()
   {
     array ret = _Roxen.HeaderParser()->feed(response);
     if( !ret ) return 0;

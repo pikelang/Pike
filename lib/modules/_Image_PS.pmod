@@ -291,7 +291,7 @@ function _encode = encode;
 //!     Color space of image. "GRAYSCALE", "LAB", RGB", "CMYK" or "UNKNOWN"
 //!  @endmapping
 //!
-public mapping decode_header(string data) {
+public mapping|zero decode_header(string data) {
   if(has_prefix(data, "\xc5\xd0\xd3\xc6")) {
     // DOS EPS Binary Header.
     int ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len, sum;

@@ -195,7 +195,7 @@ protected ParseNode parseExpr2() {
   return parseExpr3();
 }
 
-protected ParseNode parseExpr3() {
+protected object(ParseNode)|zero parseExpr3() {
   //  TRACE;
   if (lookingAtFieldStart() || lookingAtDateStart())
     return 0;
@@ -236,7 +236,7 @@ protected ParseNode parseExpr4() {
   return and;
 }
 
-protected ParseNode parseExpr5() {
+protected object(ParseNode)|zero parseExpr5() {
   //  TRACE;
   ParseNode text = TextNode();
   ParseNode res;

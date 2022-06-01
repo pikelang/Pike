@@ -382,7 +382,7 @@ array(object) decode_background( mapping data )
 }
 
 //! Convert a photoshop mode name to pike @[Image.lay] mode names
-string translate_mode( string mode )
+string|zero translate_mode( string mode )
 {
   switch( mode )
   {

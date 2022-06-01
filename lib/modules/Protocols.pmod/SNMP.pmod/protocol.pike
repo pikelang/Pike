@@ -113,7 +113,7 @@ protected void create(int|void rem_port, string|void rem_addr,
 
 
 //! return the whole SNMP message in raw format
-mapping readmsg(int|float|void timeout) {
+mapping|zero readmsg(int|float|void timeout) {
   mapping rv;
 
   if(timeout && !wait(timeout))

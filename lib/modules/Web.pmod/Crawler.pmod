@@ -174,7 +174,7 @@ class Queue
 
   void done(Standards.URI uri, int|void callback_called);
 
-  string normalize_query( string query )
+  string|zero normalize_query( string query )
   {
     array q = query / "&";
 

@@ -1867,7 +1867,7 @@ string get_node_id() { return my_node_id; };
 //
 //! Start up the DHT instance.
 void start(int port, void|string bind_address) {
-  if (is_running) return 0;
+  if (is_running) return;
   is_running = 1;
   this_program::port = Stdio.UDP();
   this_program::port->bind(port, bind_address, 1);

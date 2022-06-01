@@ -187,7 +187,7 @@ this_program make_symmetric()
 //!
 //! The argument @[avoiding] is either 0 (or omitted), or a multiset of
 //! nodes that must not be part of the path.
-array find_shortest_path(mixed from, mixed to, void|multiset avoiding)
+array|zero find_shortest_path(mixed from, mixed to, void|multiset avoiding)
 {
   if (from == to)
      return ({ from });

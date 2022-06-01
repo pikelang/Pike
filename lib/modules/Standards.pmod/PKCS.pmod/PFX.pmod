@@ -79,7 +79,7 @@ class ContentInfo_meta
 	}
 
 #if 0
-      object decode_constructed(array contents, string raw)
+      object|zero decode_constructed(array contents, string raw)
 	{
 	  Sequence::decode_constructed(contents, raw);
 	  if (!sizeof(elements)

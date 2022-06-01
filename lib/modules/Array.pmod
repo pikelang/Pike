@@ -837,7 +837,7 @@ array pop(array list) {
 //!   > ({ "a", ({ "b", "c", "d" }) })
 //! @seealso
 //!   @[ADT.Stack]
-array shift(array list) {
+array|zero shift(array list) {
   if (sizeof(list))
     return ({ list[0], list[1..] });
   else

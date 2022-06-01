@@ -104,7 +104,7 @@ void set(string key, mixed value,
   //developers take care of this themselves.
    if (programp(value)||functionp(value)||objectp(value)) {
      werror("can't store value\n"); //TODO: use crumbs
-     return 0;
+     return;
    }
    int tm=time(1);
    mapping meta;

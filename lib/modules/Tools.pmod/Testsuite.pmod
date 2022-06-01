@@ -914,7 +914,7 @@ test_equal(max($2,$1,$3), $3)
   {
     int pos;
 
-    array(string) parse_args()
+    array(string)|zero parse_args()
     {
       array args = ({});
       if( data[pos] == '(' )
