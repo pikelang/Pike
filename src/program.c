@@ -221,89 +221,90 @@ static struct mapping *lfun_ids;
 static struct mapping *lfun_types;
 
 static const char *const raw_lfun_types[] = {
-  tFuncV(tNone,tVoid,tVoid),	/* "__INIT", */
-  tFuncV(tNone,tUnknown,tVoid),	/* "create", */
-  tFuncV(tOr(tVoid,tInt),tVoid,tInt01), /* "_destruct", */
-  tFuncV(tOr(tVoid,tInt7bit) tOr(tMap(tStr,tInt),tVoid),tVoid,tStr),	/* "_sprintf", */
+  tFunc(tNone, tVoid),				/* "__INIT", */
+  tFuncV(tNone, tUnknown, tVoid),		/* "create", */
+  tFunc(tInt03, tInt01),			/* "_destruct", */
+  tFunc(tInt7bit tMap(tStr, tInt), tStr),	/* "_sprintf", */
   0,
 
-  tFuncV(tUnknown,tVoid,tMix),	/* "`+", */
-  tOr(tFunc(tNone,tMix),tFunc(tUnknown,tMix)),	/* "`-", */
-  tFuncV(tNone,tUnknown,tMix),	/* "`*", */
-  tFuncV(tNone,tUnknown,tMix),	/* "`/", */
-  tFuncV(tNone,tUnknown,tMix),	/* "`%", */
-  tFuncV(tNone,tUnknown,tMix),	/* "`&", */
-  tFuncV(tNone,tUnknown,tMix),	/* "`|", */
-  tFuncV(tNone,tUnknown,tMix),	/* "`^", */
-  tFuncV(tUnknown,tVoid,tMix),	/* "`<<", */
-  tFuncV(tUnknown,tVoid,tMix),	/* "`>>", */
-  tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "pow", */
+  tFunc(tUnknown, tMix),			/* "`+", */
+  tFunc(tUnknown, tMix),			/* "`-", */
+  tFuncV(tNone, tUnknown, tMix),		/* "`*", */
+  tFuncV(tNone, tUnknown, tMix),		/* "`/", */
+  tFuncV(tNone, tUnknown, tMix),		/* "`%", */
+  tFuncV(tNone, tUnknown, tMix),		/* "`&", */
+  tFuncV(tNone, tUnknown, tMix),		/* "`|", */
+  tFuncV(tNone, tUnknown, tMix),		/* "`^", */
+  tFunc(tUnknown, tMix),			/* "`<<", */
+  tFunc(tUnknown, tMix),			/* "`>>", */
+  tFunc(tOr3(tInt, tFloat, tObj),
+	tOr3(tInt, tFloat, tObj)),		/* "pow", */
   0,
 
-  tFuncV(tUnknown,tVoid,tMix),	/* "``+", */
-  tFuncV(tUnknown,tVoid,tMix),	/* "``-", */
-  tFuncV(tNone,tUnknown,tMix),	/* "``*", */
-  tFuncV(tNone,tUnknown,tMix),	/* "``/", */
-  tFuncV(tNone,tUnknown,tMix),	/* "``%", */
-  tFuncV(tNone,tUnknown,tMix),	/* "``&", */
-  tFuncV(tNone,tUnknown,tMix),	/* "``|", */
-  tFuncV(tNone,tUnknown,tMix),	/* "``^", */
-  tFuncV(tUnknown,tVoid,tMix),	/* "``<<", */
-  tFuncV(tUnknown,tVoid,tMix),	/* "``>>", */
-  tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "rpow", */
+  tFunc(tUnknown, tMix),			/* "``+", */
+  tFunc(tUnknown, tMix),			/* "``-", */
+  tFuncV(tNone, tUnknown, tMix),		/* "``*", */
+  tFuncV(tNone, tUnknown, tMix),		/* "``/", */
+  tFuncV(tNone, tUnknown, tMix),		/* "``%", */
+  tFuncV(tNone, tUnknown, tMix),		/* "``&", */
+  tFuncV(tNone, tUnknown, tMix),		/* "``|", */
+  tFuncV(tNone, tUnknown, tMix),		/* "``^", */
+  tFunc(tUnknown, tMix),			/* "``<<", */
+  tFunc(tUnknown, tMix),			/* "``>>", */
+  tFunc(tOr3(tInt, tFloat, tObj),
+	tOr3(tInt, tFloat, tObj)),		/* "rpow", */
   0,
 
-  tFuncV(tNone,tVoid,tMix),	/* "`~", */
-  tFuncV(tNone,tVoid,tInt),	/* "`!", */
-  tFuncV(tNone,tUnknown,tMix),	/* "`()", */
-  tFuncV(tString,tVoid,tMix),	/* "cast", */
-  tFuncV(tNone,tVoid,tInt),	/* "__hash", */
-  tFunc(tVoid,tMix),            /* "_sqrt", */
-  tFuncV(tFunction tFunction, tVoid, tMix),	/* "_random", */
-  tFuncV(tNone, tUnknown, tVoid),	/* "_reverse", */
+  tFunc(tNone, tMix),				/* "`~", */
+  tFunc(tNone, tInt),				/* "`!", */
+  tFuncV(tNone, tUnknown, tOr(tMix, tVoid)),	/* "`()", */
+  tFunc(tString, tMix),				/* "cast", */
+  tFunc(tNone, tInt),				/* "__hash", */
+  tFunc(tVoid, tMix),				/* "_sqrt", */
+  tFunc(tFunction tFunction, tMix),		/* "_random", */
+  tFuncV(tNone, tUnknown, tVoid),		/* "_reverse", */
   0,
 
-  tFuncV(tMix,tVoid,tInt),	/* "`==", */
-  tFuncV(tMix,tVoid,tInt),	/* "`<", */
-  tFuncV(tMix,tVoid,tInt),	/* "`>", */
-  tFuncV(tMix,tVoid,tInt),	/* "_equal", */
-  tFuncV(tStr,tVoid,tInt),	/* "_is_type", */
+  tFunc(tMix, tInt),				/* "`==", */
+  tFunc(tMix, tInt),				/* "`<", */
+  tFunc(tMix, tInt),				/* "`>", */
+  tFunc(tMix, tInt),				/* "_equal", */
+  tFunc(tStr, tInt),				/* "_is_type", */
   0,
 
-  tFuncV(tUnknown,tVoid,tMix),	/* "`[]", */
-  tFuncV(tStr tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tMix),	/* "`->", */
-  tFuncV(tUnknown tRangeBound tUnknown tRangeBound, tVoid, tMix), /* "`[..]" */
-  tFuncV(tUnknown, tUnknown, tMix), /* "_search", */
-  tFuncV(tNone, tVoid, tInt),	/* "_size_object", */
+  tFunc(tUnknown, tMix),			/* "`[]", */
+  tFunc(tStr tObj tInt, tMix),			/* "`->", */
+  tFunc(tUnknown tRangeBound tUnknown tRangeBound, tMix), /* "`[..]" */
+  tFuncV(tUnknown, tUnknown, tMix),		/* "_search", */
+  tFunc(tNone, tInt),				/* "_size_object", */
   0,
 
-  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tInt),	/* "_sizeof", */
-  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tArray),	/* "_indices", */
-  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,tArray),	/* "_values", */
-  tFuncV(tNone,tVoid,tArray),	/* "_types", */
-  tFuncV(tOr(tVoid,tObj) tOr(tVoid,tInt)
-	 tOr(tInt01,tVoid),tVoid,tArray),   /* "_annotations", */
-  tFuncV(tNone,tVoid,tObj),	/* "_get_iterator", */
+  tFunc(tObj tInt, tInt),			/* "_sizeof", */
+  tFunc(tObj tInt, tArray),			/* "_indices", */
+  tFunc(tObj tInt, tArray),			/* "_values", */
+  tFunc(tNone, tArray),				/* "_types", */
+  tFunc(tObj tInt tInt01, tArray),		/* "_annotations", */
+  tFunc(tNone, tObj),				/* "_get_iterator", */
   0,
 
-  tFuncV(tUnknown,tVoid,tMix),	/* "`+=", */
-  tFuncV(tUnknown tSetvar(0,tMix) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,
-	 tOr(tVar(0),tVoid)),	/* "`[]=", */
-  tFuncV(tLStr(tUnknown, tUnknown) tSetvar(0,tMix) tOr(tVoid,tObj) tOr(tVoid,tInt),tVoid,
-	 tOr(tVar(0),tVoid)),	/* "`->=", */
-  tFuncV(tUnknown,tVoid,tMix),	/* "_m_delete", */
-  tFuncV(tNone, tVoid, tVoid),	/* "_m_clear", */
-  tFuncV(tUnknown, tVoid, tVoid),	/* "_m_add", */
-  tFuncV(tUnknown tUnknown, tVoid, tMix),	/* "_atomic_get_set", */
+  tFunc(tUnknown, tMix),			/* "`+=", */
+  tFunc(tUnknown tSetvar(0, tMix) tObj tInt,
+	tOr(tVar(0), tVoid)),			/* "`[]=", */
+  tFunc(tLStr(tUnknown, tUnknown) tSetvar(0, tMix) tObj tInt,
+	tOr(tVar(0), tVoid)),			/* "`->=", */
+  tFunc(tUnknown, tMix),			/* "_m_delete", */
+  tFunc(tNone, tVoid),				/* "_m_clear", */
+  tFunc(tUnknown, tVoid),			/* "_m_add", */
+  tFunc(tUnknown tUnknown, tMix),		/* "_atomic_get_set", */
   0,
 
-  tFuncV(tObj tUnknown, tVoid, tVoid),	/* "_serialize", */
-  tFuncV(tObj tUnknown, tVoid, tVoid),	/* "_deserialize", */
+  tFunc(tObj tUnknown, tVoid),			/* "_serialize", */
+  tFunc(tObj tUnknown, tVoid),			/* "_deserialize", */
   0,
 
-  tFuncV(tNone, tUnknown, tMix),	/* "_iterator_next", */
-  tFuncV(tNone, tUnknown, tMix),	/* "_iterator_index", */
-  tFuncV(tNone, tUnknown, tMix),	/* "_iterator_value", */
+  tFuncV(tNone, tUnknown, tMix),		/* "_iterator_next", */
+  tFuncV(tNone, tUnknown, tMix),		/* "_iterator_index", */
+  tFuncV(tNone, tUnknown, tMix),		/* "_iterator_value", */
   0,
   0,		/* End marker. */
 };
