@@ -229,8 +229,8 @@ mapping(int:program(.Types.Object)) universal_types =
 .Types.Object simple_der_decode(string(0..255) data,
 				mapping(int:program(.Types.Object))|void types)
 {
-  types = types ? universal_types+types : universal_types;
-  return der_decode(Stdio.Buffer(data)->set_error_mode(1), types);
+  types = types ? universal_types+[mapping]types : universal_types;
+  return der_decode(Stdio.Buffer(data)->set_error_mode(1), [mapping]types);
 }
 
 //! Works just like @[simple_der_decode], except it will return
@@ -241,9 +241,9 @@ mapping(int:program(.Types.Object)) universal_types =
 .Types.Object secure_der_decode(string(0..255) data,
 				mapping(int:program(.Types.Object))|void types)
 {
-  types = types ? universal_types+types : universal_types;
+  types = types ? universal_types+[mapping]types : universal_types;
   Stdio.Buffer buf = Stdio.Buffer(data)->set_error_mode(1);
-  .Types.Object ret = der_decode(buf, types);
+  .Types.Object ret = der_decode(buf, [mapping]types);
   if( sizeof(buf) ) return 0;
   return ret;
 }

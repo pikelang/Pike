@@ -73,7 +73,7 @@ class Object
   //!
   //! @returns
   //!   the combined tag header
-  int(1..) get_combined_tag() {
+  int(0..) get_combined_tag() {
     return make_combined_tag(get_cls(), get_tag());
   }
 
