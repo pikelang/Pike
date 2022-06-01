@@ -116,7 +116,16 @@ class NonblockingStream
                         function|void d, function|void e);
 
   //!
+  void set_nonblocking_keep_callbacks();
+
+  //!
   void set_blocking();
+
+  //!
+  void set_blocking_keep_callbacks();
+
+  //!
+  int(0..1) set_nodelay(int(0..1)|void state);
 }
 
 //! The Stdio.BlockFile API.

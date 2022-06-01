@@ -335,6 +335,9 @@ void set_nonblocking(function rcb, function wcb, function ccb,
 //!   @[Stdio.File()->set_blocking_keep_callbacks]
 void set_nonblocking_keep_callbacks() { }
 
+//! @seealso
+//!   @[Stdio.File()->set_nodelay]
+int(0..1) set_nodelay(int(0..1)|void state) { }
 
 //! @seealso
 //!   @[Stdio.File()->set_close_callback]
