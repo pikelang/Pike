@@ -726,7 +726,7 @@ variant .Result big_query(object|string q,
 //!
 //! @seealso
 //!   @[typed_query], @[big_query], @[streaming_query]
-array(mapping(string:string)) query(object|string q,
+array(mapping(string:string|zero)) query(object|string q,
 				    mixed ... extraargs)
 {
   return res_obj_to_array(big_query(q, @extraargs));  

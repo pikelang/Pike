@@ -157,13 +157,13 @@ PIKEFUN void init(int flags) {
   }
 }
 
-/*! @decl string get_error()
+/*! @decl string|zero get_error()
  *!
  *! Get the last internal SDL error.
  *! @returns
  *!   The error string, or zero if there was no error.
  */
-PIKEFUN string get_error() {
+PIKEFUN string|zero get_error() {
   const char *err = SDL_GetError();
   pop_n_elems(args);
   if(err != NULL) {

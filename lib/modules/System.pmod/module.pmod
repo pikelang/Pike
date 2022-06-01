@@ -20,7 +20,7 @@ constant TM    = __builtin.TM;
 //!  On NT systems, this returns the user the current thread is running as,
 //!  while on Unix-like systems this function returns the user that started
 //!  the process (rather than the effective user)..
-string get_user()
+string|zero get_user()
 {
 #if constant(_system.GetUserName)
   return GetUserName();
@@ -40,7 +40,7 @@ string get_user()
 //! @note
 //! This method uses the standard environment variables for
 //! various systems to determine the home directory.
-string get_home()
+string|zero get_home()
 {
   string home = [string]getenv("HOME");
   if(home) return home;

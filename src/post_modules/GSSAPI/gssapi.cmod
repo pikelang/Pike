@@ -876,13 +876,13 @@ PIKEFUN array(string) minor_status_messages()
     f_minor_status_messages (1);
 }
 
-/*! @decl string minor_status_mech()
+/*! @decl string|zero minor_status_mech()
  *!
  *! Returns the OID for the mechanism that is used to interpret the
  *! minor status, or zero if no mechanism has been set. It is returned
  *! on dotted-decimal form.
  */
-PIKEFUN string minor_status_mech()
+PIKEFUN string|zero minor_status_mech()
 {
   if (!THIS->mech.elements)
     push_int (0);

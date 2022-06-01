@@ -734,7 +734,7 @@ static void f_sid_account(INT32 args)
 
 }
 
-/*! @decl object LogonUser(string username, string|int(0..0) domain, @
+/*! @decl object LogonUser(string username, string|zero domain, @
  *!                        string password, int|void logon_type, @
  *!                        int|void logon_provider)
  *!
@@ -781,7 +781,7 @@ void f_LogonUser(INT32 args)
   BOOL ret;
 
   check_all_args(NULL, args,
-		 BIT_STRING, BIT_INT | BIT_STRING, BIT_STRING,
+                 BIT_STRING, BIT_ZERO | BIT_STRING, BIT_STRING,
 		 BIT_INT | BIT_VOID, BIT_INT | BIT_VOID,0);
 
   username=(LPTSTR)sp[-args].u.string->str;

@@ -334,7 +334,7 @@ class AbstractSimpleNode {
   }
 
   //! Returns the last child node or zero.
-  AbstractSimpleNode get_last_child()
+  object(AbstractSimpleNode)|zero get_last_child()
   {
     if (!sizeof(mChildren))
       return 0;

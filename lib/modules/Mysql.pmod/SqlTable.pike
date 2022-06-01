@@ -633,7 +633,7 @@ array select1 (string|array select_expr, string|array where,
 		       rest, select_flags);
 }
 
-mapping(string:mixed) get (mixed id, void|array(string) fields)
+mapping(string:mixed)|zero get (mixed id, void|array(string) fields)
 //! Returns the record matched by a primary key value, or zero if
 //! there is no such record.
 //!
@@ -1566,7 +1566,7 @@ protected string make_insert_clause (array(mapping(string:mixed)) records)
   return buf->get();
 }
 
-protected string make_pk_where (mapping(string:mixed) rec)
+protected string|zero make_pk_where (mapping(string:mixed) rec)
 // Returns a WHERE expression like "a=1 AND b=2" for matching the
 // primary key, or zero if the record doesn't have values for all pk
 // columns. The pk fields are also removed from the rec mapping.

@@ -537,7 +537,7 @@ void set_alert_callback(function(object,int|object,string:void) callback)
 
 //! Low-level receive handler. Returns a packet, an alert, or zero if
 //! more data is needed to get a complete packet.
-protected Packet recv_packet()
+protected object(Packet)|zero recv_packet()
 {
   if (!packet)
     packet = Packet(version, 2048);

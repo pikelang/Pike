@@ -141,7 +141,7 @@ class URIResource {
   }
 
   //! Returns the qualifying name, or zero.
-  string get_qname(void|string ns) {
+  string|zero get_qname(void|string ns) {
     fix_namespaces();
     if(!ns) ns=common_ns;
     string nns,obj;
@@ -383,7 +383,7 @@ mapping(Resource:mapping(Resource:array(Resource))) get_subject_map() {
 
 //! Returns an RDF resource with the given URI as identifier,
 //! or zero.
-URIResource get_resource(string uri) {
+object(URIResource)|zero get_resource(string uri) {
   if(uris[uri]) return uris[uri];
   return 0;
 }

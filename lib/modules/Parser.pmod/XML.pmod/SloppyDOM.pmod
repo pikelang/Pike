@@ -94,7 +94,7 @@ class Node
     return res->get();
   }
 
-  mapping(string:string)|Node|array(mapping(string:string)|Node)|string
+  mapping(string:string)|Node|array(mapping(string:string)|Node)|string|zero
     simple_path (string path, void|int xml_format);
   //! Access a node or a set of nodes through an expression that is a
   //! subset of an XPath RelativeLocationPath in abbreviated form.

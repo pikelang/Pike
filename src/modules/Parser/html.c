@@ -4199,7 +4199,7 @@ static void html_current(INT32 args)
       push_int(0);
 }
 
-/*! @decl string tag_name()
+/*! @decl string|zero tag_name()
  *!
  *! Gives the name of the current tag, or zero. If used from an entity
  *! callback, it gives the string inside the entity.
@@ -5425,7 +5425,7 @@ void init_parser_html(void)
    ADD_FUNCTION("at_char",html_at_char,tFunc(tNone,tInt),0);
    ADD_FUNCTION("at_column",html_at_column,tFunc(tNone,tInt),0);
 
-   ADD_FUNCTION("tag_name",html_tag_name,tFunc(tNone,tStr),0);
+   ADD_FUNCTION("tag_name",html_tag_name,tFunc(tNone,tOr(tStr,tZero)),0);
    ADD_FUNCTION("tag_args",html_tag_args,
 		tFunc(tOr(tVoid,tSetvar(1,tMixed)),
 		      tMap(tStr,tOr(tStr,tVar(1)))),0);

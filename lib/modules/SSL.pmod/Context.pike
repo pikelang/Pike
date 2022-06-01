@@ -1158,7 +1158,7 @@ void forget_old_sessions()
 //! Lookup a session identifier in the cache. Returns the
 //! corresponding session, or zero if it is not found or caching is
 //! disabled.
-Session lookup_session(string id)
+object(Session)|zero lookup_session(string id)
 {
   if (use_cache)
     return session_cache[id];

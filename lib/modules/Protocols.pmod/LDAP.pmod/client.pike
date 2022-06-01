@@ -423,7 +423,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! @seealso
     //!  @[error_string], @[error_number]
-    string server_error_string() {return resultstring;}
+    string|zero server_error_string() {return resultstring;}
 
     //!
     //! Returns the number of entries.
@@ -1288,7 +1288,7 @@ object get_cached_filter (string filter)
   return Protocols.LDAP.get_cached_filter (filter, ldap_version);
 }
 
-object get_default_filter()
+object|zero get_default_filter()
 //! Returns the ASN1 object parsed from the filter specified in the
 //! LDAP URL, or zero if the URL doesn't specify any filter.
 //!
@@ -1719,7 +1719,7 @@ string get_bound_dn() {return bound_dn;}
 //! or zero if the connection isn't bound. If no password was given to
 //! @[bind] then an empty string was sent as password, and the MD5
 //! hash of that is therefore returned.
-string get_bind_password_hash() {return md5_password;}
+string|zero get_bind_password_hash() {return md5_password;}
 
   //!
   //! Sets value of scope for search operation.
