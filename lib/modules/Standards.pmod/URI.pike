@@ -222,7 +222,7 @@ void reparse_uri(this_program|string|void base_uri)
   if(stringp(base_uri))
   {
     DEBUG("cloning base URI %O", base_uri);
-    this::base_uri = this_program(base_uri); // create a new URI object
+    this::base_uri = this_program([string]base_uri); // create a new URI object
   }
   else
     this::base_uri = [object(this_program)]base_uri;
@@ -514,7 +514,7 @@ protected mapping(string:string)|zero variables;
 
 //! Returns the query variables as a @expr{mapping(string:string)@}.
 mapping(string:string) get_query_variables() {
-  if( variables ) return variables;
+  if( variables ) return [mapping]variables;
   if(!query) return ([]);
 
   variables = ([]);
@@ -526,7 +526,7 @@ mapping(string:string) get_query_variables() {
       variables[pair] = 0;
   }
 
-  return variables;
+  return [mapping]variables;
 }
 
 //! Sets the query variables from the provided mapping.
@@ -609,7 +609,7 @@ string http_encode(string in)
 }
 
 //! Return the query part, coded according to @rfc{1738@}, or zero.
-string get_http_query() {
+string|zero get_http_query() {
   return query;
 }
 
