@@ -5672,7 +5672,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  if (tmp) {
 	    /* No or not full overlap. */
 
-	    if ((ai->car == void_type_string) && (tmp != bi->car) &&
+	    if ((ai->car == void_type_string) &&
 		(aflags & PT_FLAG_CMP_IGNORE_EXTRA_ARGS)) {
 	      /* End of argument list for a, and it is valid to end the
 	       * argument list here (void matched), and a implicitly
@@ -5685,8 +5685,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 		/* Common case, no overlap. */
 		pop_stack_mark();
 		free_type(tmp);
-		add_ref(ai);
-		return ai;
+
+		return remap_markers(ai, remap, remap_flags);
 	      }
 	      free_type(tmp);
 
@@ -5703,11 +5703,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 		 */
 		pop_stack_mark();
 		free_type(tmp);
-		add_ref(ai);
-		return ai;
+
+		return remap_markers(ai, remap, remap_flags);
 	      }
 
-	      push_finished_type(ai->cdr);
+	      push_remap_markers(ai->cdr, remap, remap_flags);
 	      push_finished_type(tmp);
 	      push_type(ai->type);
 	      free_type(tmp);
