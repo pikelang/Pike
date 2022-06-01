@@ -7177,6 +7177,7 @@ INT32 define_function(struct pike_string *name,
     if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
       struct svalue *lfun_id = low_mapping_string_lookup(lfun_ids, name);
       enum pt_cmp_flags aflags = 0;
+      struct pike_type *tmp_type = NULL;
       if (lfun_id && (TYPEOF(*lfun_id) == PIKE_T_INT)) {
 	if (lfun_compat_strings[lfun_id->u.integer] == name) {
 	  /* Compat lfun.
@@ -7219,13 +7220,23 @@ INT32 define_function(struct pike_string *name,
       }
       /* Inhibit deprecation warnings during the comparison. */
       c->lex.pragmas |= ID_NO_DEPRECATION_WARNINGS;
-      if (!pike_types_le(type, lfun_type->u.type, aflags, 0)) {
+
+      tmp_type = type_binop(PT_BINOP_MINUS, type, lfun_type->u.type,
+			    aflags, 0, 0);
+      if (tmp_type) {
 	int level = REPORT_NOTICE;
-	if (!match_types(type, lfun_type->u.type)) {
+
+	free_type(tmp_type);
+	tmp_type = type_binop(PT_BINOP_AND, type, lfun_type->u.type,
+			      aflags, 0, 0);
+	if (!tmp_type) {
 	  level = REPORT_ERROR;
 	} else if (c->lex.pragmas & ID_STRICT_TYPES) {
 	  level = REPORT_WARNING;
 	}
+
+	free_type(tmp_type);
+
 	if (level != REPORT_NOTICE) {
 	  yytype_report(level,
 			NULL, 0, lfun_type->u.type,
