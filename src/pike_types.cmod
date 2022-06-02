@@ -6341,14 +6341,17 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     if (!tmp && (op == PT_BINOP_AND) && a->car && b->car) return NULL;
     if ((a->type == T_STRING) || (op == PT_BINOP_AND)) {
       tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
-			    0, 0, remap_flags);
+			    PT_FLAG_CMP_VOID_IS_ZERO,
+			    PT_FLAG_CMP_VOID_IS_ZERO,
+			    remap_flags);
     } else {
       /* Mappings may always result in UNDEFINED on indexing.
        * Arrays are typically initialized to all zeroes.
+       * Any void values have been up-converted to zeroes.
        */
       tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
-			    PT_FLAG_CMP_NULLABLE,
-			    PT_FLAG_CMP_NULLABLE,
+			    PT_FLAG_CMP_NULLABLE|PT_FLAG_CMP_VOID_IS_ZERO,
+			    PT_FLAG_CMP_NULLABLE|PT_FLAG_CMP_VOID_IS_ZERO,
 			    remap_flags);
     }
     if (!tmp2 && (op == PT_BINOP_MINUS || (a->cdr && b->cdr))) {
