@@ -494,7 +494,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
   case "2x":	// Blowfish (weak)
   case "2y":	// Blowfish (stronger)
   {
-    string(8bit) salt;
+    string(8bit) salt = "";
     int exp2 = -1;
     if (rounds) {
       int(0..) exp2;

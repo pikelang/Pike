@@ -93,11 +93,11 @@ mapping(string(7bit):string(7bit))|zero jwk(int(0..1)|void private_key)
 //!   @[jwk()], @rfc{7638@}
 string(8bit)|zero jwk_thumbprint(.Hash h)
 {
-  mapping(string(7bit):string(7bit)) public_jwk = jwk();
+  mapping(string(7bit):string(7bit))|zero public_jwk = jwk();
   if (!public_jwk) return 0;
   // NB: For the fields used in JWK, the Standards.JSON.PIKE_CANONICAL
   //     behavior is the same as the one specified in RFC 7638 3.3.
-  return h->hash([string(7bit)]Standards.JSON.encode(public_jwk,
+  return h->hash([string(7bit)]Standards.JSON.encode([mapping]public_jwk,
 						     Standards.JSON.PIKE_CANONICAL));
 }
 

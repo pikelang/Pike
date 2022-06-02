@@ -34,14 +34,14 @@ protected class LowState {
 
   protected function(int(0..):string(8bit)) random = random_string;
 
-  Gmp.mpz get_n() { return n; } //! Returns the RSA modulo (n).
-  Gmp.mpz get_e() { return e; } //! Returns the RSA public exponent (e).
+  Gmp.mpz|zero get_n() { return n; } //! Returns the RSA modulo (n).
+  Gmp.mpz|zero get_e() { return e; } //! Returns the RSA public exponent (e).
 
   //! Returns the RSA private exponent (d), if known.
-  Gmp.mpz get_d() { return d; }
+  Gmp.mpz|zero get_d() { return d; }
 
-  Gmp.mpz get_p() { return p; } //! Returns the first RSA prime (p), if known.
-  Gmp.mpz get_q() { return q; } //! Returns the second RSA prime (q), if known.
+  Gmp.mpz|zero get_p() { return p; } //! Returns the first RSA prime (p), if known.
+  Gmp.mpz|zero get_q() { return q; } //! Returns the second RSA prime (q), if known.
 
   //! Sets the random function, used to generate keys and parameters, to
   //! the function @[r]. Default is @[random_string].
@@ -694,7 +694,7 @@ class PSSState {
       //      >>2030	7680 bits	384 bits
       //     >>>2030	15360 bits	512 bits
       if (!h) h = .SHA256;
-      string(7bit) alg = jwa(h);
+      string(7bit) alg = jwa([object(.Hash)]h);
       if (!alg) return 0;
       headers = headers || ([]);
       headers += ([ "alg": alg ]);
@@ -702,7 +702,7 @@ class PSSState {
 	sprintf("%s.%s",
 		MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
 		MIME.encode_base64url(message));
-      string(8bit) raw = pkcs_sign(tbs, h, h->digest_size());
+      string(8bit) raw = pkcs_sign(tbs, [object(.Hash)]h, h->digest_size());
       if (!raw) return 0;
       return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
     }
@@ -871,7 +871,7 @@ class PKCS1_5State
     //	      >>2030	7680 bits	384 bits
     //	     >>>2030	15360 bits	512 bits
     h = h || .SHA256;
-    string(7bit) alg = jwa(h);
+    string(7bit) alg = jwa([object(.Hash)]h);
     if (!alg) return 0;
     headers = headers || ([]);
     headers += ([ "alg": alg ]);
@@ -879,7 +879,7 @@ class PKCS1_5State
       sprintf("%s.%s",
 	      MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
 	      MIME.encode_base64url(message));
-    string(8bit) raw = pkcs_sign(tbs, h);
+    string(8bit) raw = pkcs_sign(tbs, [object(.Hash)]h);
     if (!raw) return 0;
     return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
   }
@@ -1011,7 +1011,7 @@ class PKCS1_5State
     switch(type)
     {
     case 1:
-      padding = sprintf("%@c", allocate(len, 0xff));
+      padding = sprintf("%@c", allocate([int(8..)]len, 0xff));
       break;
     case 2:
       if( !random ) random = this::random;
