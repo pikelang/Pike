@@ -5539,7 +5539,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  fprintf(stderr, " (%d))\n\n", bvoidable);
 #endif
 
-	  /* FIXME: Use implicit nullable only for legacy types. */
+	  /* FIXME: Use implicit nullable for legacy types? */
 	  /* NOTE: Intentional use of PT_BINOP_OR below!
 	   *       Note that for function types a larger type for
 	   *       the arguments implies that the function type
@@ -5552,9 +5552,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	   *       than function(zero:mixed).
 	   */
 	  tmp = low_type_binop(PT_BINOP_OR, ai->car, bi->car, remap,
-			       avoidable | PT_FLAG_CMP_NULLABLE,
-			       bvoidable | PT_FLAG_CMP_NULLABLE,
-			       remap_flags);
+			       avoidable, bvoidable, remap_flags);
 
 	  /* Advance to the next argument. */
 	  if (ai->type == T_FUNCTION) {
@@ -5616,6 +5614,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	    while (nargs--) {
 	      push_reverse_type(T_FUNCTION);
 	    }
+
 	    return pop_unfinished_type();
 	  }
 	}
@@ -5662,12 +5661,12 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  /* Common case */
 	  tmp = NULL;
 	} else {
-	  /* FIXME: Use implicit nullable only for legacy types.
+	  /* FIXME: Use implicit nullable for legacy types?
 	   * FIXME: What about PT_FLAG_CMP_VOID_IS_NULL?
 	   */
 	  tmp = low_type_binop(PT_BINOP_MINUS, bi->car, ai->car, remap,
-			       bvoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
-			       avoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
+			       bvoidable | PT_FLAG_CMP_INSEPARABLE,
+			       avoidable | PT_FLAG_CMP_INSEPARABLE,
 			       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	  if (tmp) {
 	    /* No or not full overlap. */
@@ -5691,8 +5690,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	      free_type(tmp);
 
 	      tmp = low_type_binop(PT_BINOP_MINUS, ai->car, bi->car, remap,
-				   avoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
-				   bvoidable | PT_FLAG_CMP_NULLABLE | PT_FLAG_CMP_INSEPARABLE,
+				   avoidable | PT_FLAG_CMP_INSEPARABLE,
+				   bvoidable | PT_FLAG_CMP_INSEPARABLE,
 				   remap_flags);
 
 	      if (tmp == ai->car) {
@@ -5747,7 +5746,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	    if (tmp) {
 	      /* Not full overlap for the return value. */
 	      push_finished_type(tmp);
-	      push_finished_type(a->car);
+	      push_remap_markers(ai->car, remap, remap_flags);
 	      push_type(T_MANY);
 	      free_type(tmp);
 	    } else {
@@ -5763,7 +5762,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
 	  if (tmp) {
 	    push_finished_type(tmp);
-	    push_finished_type(a->car);
+	    push_remap_markers(a->car, remap, remap_flags);
 	    push_type(PIKE_T_FUNCTION);
 	    free_type(tmp);
 	  } else {
@@ -5774,6 +5773,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	while (peek_stack_mark() > 1) {
 	  push_type(T_OR);
 	}
+
 	return pop_unfinished_type();
 
       default:
