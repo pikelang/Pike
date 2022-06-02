@@ -439,11 +439,11 @@ class InputController
 {
   private object infd, term;
   private int enabled = -1;
-  private function(:int) close_callback = 0;
+  private function(:int)|zero close_callback = 0;
   private string prefix="";
   private mapping(int:function|mapping(string:function)) bindings=([]);
-  private function grab_binding = 0;
-  private mapping oldattrs = 0;
+  private function|zero grab_binding = 0;
+  private mapping|zero oldattrs = 0;
 
   int dumb=0;
 
@@ -1254,12 +1254,12 @@ class History
 private OutputController output_controller;
 private InputController input_controller;
 private string prompt="";
-private array(string) prompt_attrs=0;
+private array(string)|zero prompt_attrs=0;
 private string text="", readtext;
 private function(string|zero:void) newline_func;
 private int cursorpos = 0;
 private int mark = 0;
-/* private */ History historyobj = 0;
+/* private */ object(History)|zero historyobj = 0;
 private int hide = 0;
 
 private array(string) kill_ring=({});

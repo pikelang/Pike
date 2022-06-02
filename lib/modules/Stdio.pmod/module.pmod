@@ -629,7 +629,7 @@ class File
   private void _async_check_cb(mixed|void ignored)
   {
     // Copy the args to avoid races.
-    function(int, mixed ...:void) cb = _async_cb;
+    function(int, __unknown__ ...:void) cb = _async_cb;
     array args = _async_args;
     _async_cb = 0;
     _async_args = 0;
@@ -3402,13 +3402,13 @@ protected class nb_sendfile
     }
 
     // Make sure we get rid of any references...
-    to_write = 0;
+    to_write = ({});
     trailers = 0;
     from = 0;
     to = 0;
     backend = 0;
     array(mixed) a = args;
-    function(int, mixed ...:void) cb = callback;
+    function(int, __unknown__ ...:void) cb = callback;
     args = 0;
     callback = 0;
     if (cb) {
@@ -3700,7 +3700,7 @@ class UDP
   inherit _Stdio.UDP;
 
   private array extra=0;
-  private function(mapping,mixed...:void) callback=0;
+  private function(mapping, __unknown__ ...:void) callback=0;
 
   //! @decl UDP set_nonblocking()
   //! @decl UDP set_nonblocking(void|function(mapping(string:int|string), @
