@@ -3346,10 +3346,10 @@ joinnode handle_import(string path, string|void current_file,
   return node;
 }
 
-program|object findmodule(string fullname, object|void handler,
-			  void|string name)
+program|object|zero findmodule(string fullname, object|void handler,
+			       void|string name)
 {
-  program|object o;
+  program|object|zero o;
 
   resolv_debug ("findmodule(%O)\n", fullname);
   if(!undefinedp(o=fc[fullname]) && o != no_value)
@@ -4030,7 +4030,7 @@ void _main(array(string(0..255)) orig_argv)
   array(string) argv=copy_value(orig_argv);
   int debug,trace,run_tool;
   object tmp;
-  string postparseaction=0;
+  string|zero postparseaction = 0;
 
   predefines = initial_predefines =
     Builtin._take_over_initial_predefines();
@@ -4793,7 +4793,7 @@ class Describer
       // NB: The code further below requires maxlen <= sizeof(m).
       //     We adjust maxlen so that this holds. Cf [PIKE-224].
       maxlen = sizeof(m) - (sizeof(t) - maxlen);
-      t = 0;
+      t = "";
     }
     clipped++;
     if(maxlen>10) {
