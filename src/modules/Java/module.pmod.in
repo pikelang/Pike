@@ -414,7 +414,7 @@ protected class jconstructor {
   protected object cls, con;
   protected mapping(string:mixed) info;
 
-  protected object `()(mixed ... args)
+  protected object|zero `()(mixed ... args)
   {
     object o = cls->_alloc();
     if(!o)
@@ -515,7 +515,7 @@ protected class jclass {
     return rows(this, _indices());
   }
 
-  protected object method(string n, string sig)
+  protected object|zero method(string n, string sig)
   {
     object m = static_methods[n];
     if(m) {
@@ -526,7 +526,7 @@ protected class jclass {
     return 0;
   }
 
-  protected object make_constructor(string sig)
+  protected object|zero make_constructor(string sig)
   {
     if(sizeof(sig) && sig[-1]!='V')
       sig += "V";
@@ -566,7 +566,7 @@ protected class jclass {
 	return `[](n);
   }
 
-  protected object `()(mixed ... args)
+  protected object|zero `()(mixed ... args)
   {
     object o = obj->alloc();
     if(!o)

@@ -53,14 +53,14 @@ class oracle
     function(int:void) seek;
 
     // Convert to the standard result coding.
-    protected string|int(0..0) compat_convert(mixed x)
+    protected string|zero compat_convert(mixed x)
     {
       if(!x && !intp(x)) return 0;
       if(multisetp(x)) return ((array(string))x)*",";
       return (string)x;
     }
 
-    int(0..0)|array(string|int(0..0)) fetch_row()
+    array(string|zero)|zero fetch_row()
     {
       array(mixed) res = answer->fetch_row();
 

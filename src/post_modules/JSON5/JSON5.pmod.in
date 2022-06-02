@@ -138,7 +138,7 @@ class Validator
     //!   The JSON5 object to validate.
     //! @returns
     //!   0, if the json5 object is valid, and an error-message if it is not valid.
-    string validate(mixed json5)
+    string|zero validate(mixed json5)
     {
 	if (undefinedp(json5) || zero_type(json5))
 	    return sprintf("JSON5 invalid: Expected a json5 object got %O\n", json5);
@@ -357,7 +357,7 @@ class Validator
     //!   If @tt{schema@} has the property @tt{"multipleOf"@}, then the
     //!   @tt{value@} must be an integer multiple of the specified multpleOf.
     //! @enddl
-    private string validate_number(string key, mixed value, mapping(string:mixed) schema)
+    private string|zero validate_number(string key, mixed value, mapping(string:mixed) schema)
     {
 	if (!intp(value) && !floatp(value))
 	    return sprintf("JSON5 invalid: Value for %O is expected to be a number, got %O\n",
@@ -448,7 +448,7 @@ class Validator
     //!   If @tt{schema@} has the property @tt{"multipleOf"@}, then the
     //!   @tt{value@} must be an integer multiple of the specified multpleOf.
     //! @enddl
-    private string validate_integer(string key, mixed value, mapping(string:mixed) schema)
+    private string|zero validate_integer(string key, mixed value, mapping(string:mixed) schema)
     {
 	if (!intp(value))
 	    return sprintf("JSON5 invalid: Value for %O is expected to be an integer, got %O\n",
@@ -473,7 +473,7 @@ class Validator
     //! @note
     //!   TODO: We use @[Regexp.SimpleRegexp] to handle @tt{schema->pattern@},
     //!   but that covers only some part of the possible regular expressions.
-    private string validate_string(string key, mixed value, mapping(string:mixed) schema)
+    private string|zero validate_string(string key, mixed value, mapping(string:mixed) schema)
     {
 	if (!stringp(value))
 	    return sprintf("JSON5 invalid: Value for %O is expected to be a string, got %O\n",
@@ -526,7 +526,8 @@ class Validator
     //!   "null",
     //! @endul
     //! or an array of these.
-    private string validate_item_type(string key, mixed value, mapping schema)
+    private string|zero validate_item_type(string key, mixed value,
+                                           mapping schema)
     {
 	array(string) expected_types = Array.arrayify(schema->type);
 	if (sizeof(expected_types) == 0)
@@ -621,7 +622,8 @@ class Validator
     //! @note
     //!   If the @tt{schema@} is empty (i.e., it has none of the above specified
     //!   properties, then the @tt{value@} is valid).
-    private string validate_properties(string key, mixed value, mapping schema)
+    private string|zero validate_properties(string key, mixed value,
+                                            mapping schema)
     {
 	array(string) errors = ({
 	    validate_item_type(key, value, schema)
@@ -684,7 +686,8 @@ class Validator
     //!   schema objects, then each element in the value array must be valid
     //!   according the corresponding schema in the @tt{"items"@} array.
     //! @enddl
-    private string validate_array(string key, mixed value, mapping(string:mixed) schema)
+    private string|zero validate_array(string key, mixed value,
+                                       mapping(string:mixed) schema)
     {
 	if (!arrayp(value))
 	    return sprintf("JSON5 invalid: Value for %O is expected to be an array, got %O\n",
@@ -812,7 +815,7 @@ class Validator
     //!  TODO: We use @[Regexp.SimpleRegexp] to handle
     //!  @tt{schema->patternProperties@}, but that covers only some part of the
     //!  possible regular expressions.
-    private string validate_object(string key, mixed value, mapping(string:mixed) schema)
+    private string|zero validate_object(string key, mixed value, mapping(string:mixed) schema)
     {
 	if (!mappingp(value))
 	    return sprintf("JSON5 invalid: Value for %O is expected to be a mapping, got %O\n",

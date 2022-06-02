@@ -165,7 +165,7 @@ private mapping(int:mapping(string:mixed)) tiff_tags = ([
 ]);
 
 
-private Type get_type(array(Type)|Type types, int type) {
+private object(Type)|zero get_type(array(Type)|Type types, int type) {
   if (!arrayp(types)) {
     if (types->type == type) {
       return types;
@@ -259,7 +259,7 @@ private mapping extract_IFD(Stdio.File f, int(0..1) little_endian, mapping tags)
 //!   @member string "XMP"
 //! @endmapping
 //!
-public mapping decode_header(string data) {
+public mapping|zero decode_header(string data) {
   Stdio.FakeFile f = Stdio.FakeFile(data);
   string byte_order;
   int(0..1) little_endian;

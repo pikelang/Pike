@@ -160,7 +160,7 @@ class GtkFunction(Class parent,
     return fmt=='O' && sprintf("GtkFunction( %O, %O )",name, return_type );
   }
 
-  string pike_type( )
+  string|zero pike_type( )
   {
     if(!return_type)
       return 0;
@@ -1034,7 +1034,7 @@ class Type
     if( !c_inited )c_init();
     return consumed;
   }
-  string c_declare( int a, int|void is_const )
+  string|zero c_declare( int a, int|void is_const )
   {
     if( !c_inited )c_init();
     c_declared = 1;
@@ -1127,7 +1127,7 @@ class Class( string name, string file, int line )
 
   void create_default_sprintf( )
   {
-    if( name == "_global" || mixin_for ) return 0;
+    if( name == "_global" || mixin_for ) return;
     add_function( GtkFunction(this,
                            "_sprintf",
                            Type("string"), ({
@@ -1470,7 +1470,7 @@ Class get_class_define( string name, string file, int line )
 }
 
 mapping(string:Type) types = ([]);
-Type parse_type( mixed t )
+object(Type)|zero parse_type( mixed t )
 {
   string tt;
   if(!sizeof(t))

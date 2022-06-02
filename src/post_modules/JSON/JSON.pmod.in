@@ -138,7 +138,7 @@ class Validator
     //!   The JSON object to validate.
     //! @returns
     //!   0, if the json object is valid, and an error-message if it is not valid.
-    string validate(mixed json)
+    string|zero validate(mixed json)
     {
 	if (undefinedp(json) || zero_type(json))
 	    return sprintf("JSON invalid: Expected a json object got %O\n", json);
@@ -357,7 +357,8 @@ class Validator
     //!   If @tt{schema@} has the property @tt{"multipleOf"@}, then the
     //!   @tt{value@} must be an integer multiple of the specified multpleOf.
     //! @enddl
-    private string validate_number(string key, mixed value, mapping(string:mixed) schema)
+    private string|zero validate_number(string key, mixed value,
+                                        mapping(string:mixed) schema)
     {
 	if (!intp(value) && !floatp(value))
 	    return sprintf("JSON invalid: Value for %O is expected to be a number, got %O\n",
@@ -448,7 +449,7 @@ class Validator
     //!   If @tt{schema@} has the property @tt{"multipleOf"@}, then the
     //!   @tt{value@} must be an integer multiple of the specified multpleOf.
     //! @enddl
-    private string validate_integer(string key, mixed value, mapping(string:mixed) schema)
+    private string|zero validate_integer(string key, mixed value, mapping(string:mixed) schema)
     {
 	if (!intp(value))
 	    return sprintf("JSON invalid: Value for %O is expected to be an integer, got %O\n",
@@ -473,7 +474,7 @@ class Validator
     //! @note
     //!   TODO: We use @[Regexp.SimpleRegexp] to handle @tt{schema->pattern@},
     //!   but that covers only some part of the possible regular expressions.
-    private string validate_string(string key, mixed value, mapping(string:mixed) schema)
+    private string|zero validate_string(string key, mixed value, mapping(string:mixed) schema)
     {
 	if (!stringp(value))
 	    return sprintf("JSON invalid: Value for %O is expected to be a string, got %O\n",
@@ -526,7 +527,8 @@ class Validator
     //!   "null",
     //! @endul
     //! or an array of these.
-    private string validate_item_type(string key, mixed value, mapping schema)
+    private string|zero validate_item_type(string key, mixed value,
+                                           mapping schema)
     {
 	array(string) expected_types = Array.arrayify(schema->type);
 	if (sizeof(expected_types) == 0)
@@ -589,26 +591,28 @@ class Validator
 			   key, value, expected_types * ",");
     }
 
-    //! Verify that the specified value matches the specified @tt{schema@}. The
-    //! following properties of @tt{schema@} are verified:
+    //! Verify that the specified value matches the specified
+    //! @tt{schema@}. The following properties of @tt{schema@} are
+    //! verified:
     //! @dl
     //! @item type
     //!   If the @tt{schema@} has a property @tt{"type"@}, then the @tt{value@}
     //!   must match the specified type (see @[validate_item_type()]).
     //! @item allOf
-    //!   If the @tt{schema@} has a property @tt{"allOf"@}, which is an array of
-    //!   schema objects, then the @tt{value@} must match each schema specified
-    //!   in that array (via another call to @[validate_properties()]).
+    //!   If the @tt{schema@} has a property @tt{"allOf"@}, which is
+    //!   an array of schema objects, then the @tt{value@} must match
+    //!   each schema specified in that array (via another call to
+    //!   @[validate_properties()]).
     //! @item anyOf
-    //!   If the @tt{schema@} has a property @tt{"anyOf"@}, which is an array of
-    //!   schema objects, then the @tt{value@} must match at least one schema
-    //!   specified in that array (via another call to
-    //!   @[validate_properties()]).
+    //!   If the @tt{schema@} has a property @tt{"anyOf"@}, which is
+    //!   an array of schema objects, then the @tt{value@} must match
+    //!   at least one schema specified in that array (via another
+    //!   call to @[validate_properties()]).
     //! @item oneOf
-    //!   If the @tt{schema@} has a property @tt{"oneOf"@}, which is an array of
-    //!   schema objects, then the @tt{value@} must match exactly one schema
-    //!   specified in that array (via another call to
-    //!   @[validate_properties()]).
+    //!   If the @tt{schema@} has a property @tt{"oneOf"@}, which is
+    //!   an array of schema objects, then the @tt{value@} must match
+    //!   exactly one schema specified in that array (via another call
+    //!   to @[validate_properties()]).
     //! @item not
     //!   If the @tt{schema@} has a property @tt{"not"@}, then the @tt{value@}
     //!   must not match the schema specified by that property (via another
@@ -619,9 +623,10 @@ class Validator
     //! @enddl
     //!
     //! @note
-    //!   If the @tt{schema@} is empty (i.e., it has none of the above specified
-    //!   properties, then the @tt{value@} is valid).
-    private string validate_properties(string key, mixed value, mapping schema)
+    //!   If the @tt{schema@} is empty (i.e., it has none of the above
+    //!   specified properties, then the @tt{value@} is valid).
+    private string|zero validate_properties(string key, mixed value,
+                                            mapping schema)
     {
 	array(string) errors = ({
 	    validate_item_type(key, value, schema)
@@ -684,7 +689,7 @@ class Validator
     //!   schema objects, then each element in the value array must be valid
     //!   according the corresponding schema in the @tt{"items"@} array.
     //! @enddl
-    private string validate_array(string key, mixed value, mapping(string:mixed) schema)
+    private string|zero validate_array(string key, mixed value, mapping(string:mixed) schema)
     {
 	if (!arrayp(value))
 	    return sprintf("JSON invalid: Value for %O is expected to be an array, got %O\n",
@@ -812,7 +817,7 @@ class Validator
     //!  TODO: We use @[Regexp.SimpleRegexp] to handle
     //!  @tt{schema->patternProperties@}, but that covers only some part of the
     //!  possible regular expressions.
-    private string validate_object(string key, mixed value, mapping(string:mixed) schema)
+    private string|zero validate_object(string key, mixed value, mapping(string:mixed) schema)
     {
 	if (!mappingp(value))
 	    return sprintf("JSON invalid: Value for %O is expected to be a mapping, got %O\n",
