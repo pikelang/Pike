@@ -233,7 +233,7 @@ class Future
   //!   @[on_failure()], @[query_success_callbacks()]
   this_program on_success(function(mixed, __unknown__ ... : void) cb, mixed ... extra)
   {
-    Thread.MutexKey key = mux->lock();
+    object(Thread.MutexKey)|zero key = mux->lock();
     switch (state) {
       case STATE_FULFILLED:
 	key = 0;
@@ -275,9 +275,10 @@ class Future
   //!
   //! @seealso
   //!   @[on_success()], @[query_failure_callbacks()]
-  this_program on_failure(function(mixed, __unknown__ ... : void) cb, mixed ... extra)
+  this_program on_failure(function(mixed, __unknown__ ... : void) cb,
+			  mixed ... extra)
   {
-    Thread.MutexKey key = mux->lock();
+    object(Thread.MutexKey)|zero key = mux->lock();
     switch (state) {
       case STATE_REJECTED:
 	state = STATE_REJECTION_REPORTED;
@@ -833,7 +834,7 @@ class Promise
 
   protected this_program finalise(State newstate, mixed value, int try)
   {
-    Thread.MutexKey key = mux->lock();
+    object(Thread.MutexKey)|zero key = mux->lock();
     if (state <= STATE_PENDING)
     {
       state = newstate;
@@ -855,7 +856,7 @@ class Promise
 	  state = STATE_REJECTION_REPORTED;
 	}
       }
-      failure_cbs = success_cbs = 0;		// Free memory and references
+      failure_cbs = success_cbs = ({});		// Free memory and references
     }
     else
     {
