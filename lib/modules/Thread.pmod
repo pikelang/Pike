@@ -91,7 +91,7 @@ class Fifo {
   //!
   mixed read()
   {
-    object key=lock::lock();
+    object|zero key = lock::lock();
     while(!num) r_cond::wait(key);
     mixed res = read_unlocked();
     key = 0;
@@ -109,7 +109,7 @@ class Fifo {
   mixed try_read()
   {
     if (!num) return UNDEFINED;
-    object key=lock::lock();
+    object|zero key = lock::lock();
     if (!num) return UNDEFINED;
     mixed res = read_unlocked();
     key = 0;
@@ -158,7 +158,7 @@ class Fifo {
   //!
   array read_array()
   {
-    object key=lock::lock();
+    object|zero key = lock::lock();
     while(!num) r_cond::wait(key);
     array ret = read_all_unlocked();
     key = 0;
@@ -175,7 +175,7 @@ class Fifo {
   array try_read_array()
   {
     if (!num) return ({});
-    object key=lock::lock();
+    object|zero key = lock::lock();
     array ret = read_all_unlocked();
     key = 0;
     return ret;
@@ -204,7 +204,7 @@ class Fifo {
   //!
   int write(mixed value)
   {
-    object key=lock::lock();
+    object|zero key = lock::lock();
     while(num == sizeof(buffer)) w_cond::wait(key);
     write_unlocked (value);
     int items = num;
@@ -222,7 +222,7 @@ class Fifo {
   int try_write(mixed value)
   {
     if (num == sizeof (buffer)) return 0;
-    object key=lock::lock();
+    object|zero key = lock::lock();
     if (num == sizeof (buffer)) return 0;
     write_unlocked (value);
     int items = num;
@@ -287,7 +287,7 @@ class Queue {
   mixed read()
   {
     mixed tmp;
-    object key=lock::lock();
+    object|zero key = lock::lock();
     while(w_ptr == r_ptr) r_cond::wait(key);
     tmp=buffer[r_ptr];
     buffer[r_ptr++] = 0;	// Throw away any references.
@@ -306,7 +306,7 @@ class Queue {
   mixed try_read()
   {
     if (w_ptr == r_ptr) return UNDEFINED;
-    object key=lock::lock();
+    object|zero key = lock::lock();
     if (w_ptr == r_ptr) return UNDEFINED;
     mixed tmp=buffer[r_ptr];
     buffer[r_ptr++] = 0;	// Throw away any references.
@@ -348,7 +348,7 @@ class Queue {
   //!
   array read_array()
   {
-    object key=lock::lock();
+    object|zero key = lock::lock();
     while (w_ptr == r_ptr) r_cond::wait(key);
     array ret = read_all_unlocked();
     key = 0;
@@ -365,7 +365,7 @@ class Queue {
   array try_read_array()
   {
     if (w_ptr == r_ptr) return ({});
-    object key=lock::lock();
+    object|zero key = lock::lock();
     array ret = read_all_unlocked();
     key = 0;
     return ret;
@@ -378,7 +378,7 @@ class Queue {
   array peek_array()
   {
     if (w_ptr == r_ptr) return ({});
-    MutexKey key = lock::lock();
+    object(MutexKey)|zero key = lock::lock();
     array ret = buffer[r_ptr..w_ptr - 1];
     key = 0;
     return ret;
@@ -393,7 +393,7 @@ class Queue {
   //!
   int write(mixed value)
   {
-    object key=lock::lock();
+    object|zero key = lock::lock();
     if(w_ptr >= sizeof(buffer))
     {
       buffer=buffer[r_ptr..];
@@ -468,7 +468,7 @@ class Farm
     //! Wait for completion.
     protected mixed `()()
     {
-      object key = mutex->lock();
+      object|zero key = mutex->lock();
       while(!ready)     ft_cond->wait(key);
       key = 0;
       if( ready < 0 )   throw( value );
@@ -599,7 +599,7 @@ class Farm
     Mutex job_mutex = Mutex();
     Condition cond = Condition();
     array(object|array(function|array)) job;
-    object thread;
+    object|zero thread;
 
     float total_time;
     int handled, max_time;
@@ -619,7 +619,7 @@ class Farm
     void handler()
     {
       array(object|array(function|array)) q;
-      object key = job_mutex->lock();
+      object|zero key = job_mutex->lock();
       ready = 1;
       while( 1 )
       {
@@ -638,7 +638,7 @@ class Farm
             else
               ([object]q[0])->provide( res );
           }
-          object lock = mutex->lock();
+          object|zero lock = mutex->lock();
           free_threads += ({ this });
           lock = 0;
           st = gethrtime()-st;
@@ -650,7 +650,7 @@ class Farm
             max_time = st;
           ft_cond->broadcast();
         } else {
-          object lock = mutex->lock();
+          object|zero lock = mutex->lock();
           threads -= ({ this });
           free_threads -= ({ this });
           lock = 0;
@@ -664,7 +664,7 @@ class Farm
     void run( array(function|array) what, object|void resobj )
     {
       while(!ready) sleep(0.1);
-      object key = job_mutex->lock();
+      object|zero key = job_mutex->lock();
       job = ({ resobj, what });
       cond->signal();
       key = 0;
@@ -715,7 +715,7 @@ class Farm
 
   protected Handler aquire_thread()
   {
-    object lock = mutex->lock();
+    object|zero lock = mutex->lock();
     while( !sizeof(free_threads) )
     {
       if( sizeof(threads) < max_num_threads )
@@ -734,7 +734,7 @@ class Farm
 
   protected void dispatcher()
   {
-    while( array q = [array]job_queue->read() ) {
+    while( array|zero q = [array]job_queue->read() ) {
       aquire_thread()->run( q[1], q[0] );
       q = 0;
     }
@@ -885,7 +885,7 @@ class Farm
     max_num_threads = to;
     while( sizeof( threads ) > max_num_threads )
     {
-      object key = mutex->lock();
+      object|zero key = mutex->lock();
       while( sizeof( free_threads ) )
         free_threads[0]->cond->signal();
       if( sizeof( threads ) > max_num_threads)
@@ -1019,7 +1019,7 @@ class ResourceCount {
 
   protected string _sprintf(int type)
   {
-    string res = UNDEFINED;
+    string|zero res = UNDEFINED;
     if (!this)				// Only if not destructed
       return "(destructed)";
     switch(type) {
