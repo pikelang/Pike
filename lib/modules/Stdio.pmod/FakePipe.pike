@@ -10,9 +10,9 @@
 #endif
 
 //! Class that implements one end of an emulated  bi-directional pipe/socket.
-protected class InternalSocket( protected this_program _other,
-				Stdio.Buffer _read_buffer,
-				Stdio.Buffer _write_buffer,
+protected class InternalSocket( protected object(this_program)|zero _other,
+				object(Stdio.Buffer)|zero _read_buffer,
+				object(Stdio.Buffer)|zero _write_buffer,
                                 protected Thread.Mutex mux,
                                 protected Thread.Condition cond)
 
@@ -77,9 +77,9 @@ protected class InternalSocket( protected this_program _other,
     return schedule_poll();
   }
 
-  protected function __read_cb;
-  protected function __write_cb;
-  protected function __close_cb;
+  protected function|zero __read_cb;
+  protected function|zero __write_cb;
+  protected function|zero __close_cb;
   protected mixed __id;
 
   void _run_close_cb() {
@@ -363,7 +363,7 @@ inherit InternalSocket;
 //!
 protected void create(void|string direction)
 {
-  Stdio.Buffer abuf, bbuf;
+  object(Stdio.Buffer)|zero abuf, bbuf;
   Thread.Mutex mux = Thread.Mutex();
   Thread.Condition cond = Thread.Condition();
 
