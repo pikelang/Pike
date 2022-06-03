@@ -1528,6 +1528,10 @@ AC_DEFUN(PIKE_CHECK_FILE_ABI,
       #   Mach-O object ppc
       $1=32
       ;;
+    *"POSIX shell script"*)
+      # Shell scripts do not have an ABI
+      $1=noarch
+      ;;
     *)
       # Unknown. Probably cross-compiling.
       PIKE_MSG_WARN([Unrecognized object file format: $PIKE_filetype:$PIKE_filetype_L])
