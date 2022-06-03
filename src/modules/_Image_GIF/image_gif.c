@@ -1037,7 +1037,8 @@ void _image_gif_encode(INT32 args,int fs)
 	 if (args!=4)
 	 {
 	    n=sp[1-args].u.integer;
-	    if (n>256) n=256; if (n<2) n=2;
+	    if (n>256) n=256;
+	    if (n<2) n=2;
 
 	    ref_push_object(imgobj);
 	    push_int(n);
