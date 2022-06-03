@@ -558,11 +558,11 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
     throw( ({ "Can not redirect stdout or stderr in Process.run, "
               "please use Process.Process instead.", backtrace() }) );
 
-  Stdio.File mystdout = Stdio.File();
-  Stdio.File mystderr = Stdio.File();
-  Stdio.File mystdin;
+  object(Stdio.File)|zero mystdout = Stdio.File();
+  object(Stdio.File)|zero mystderr = Stdio.File();
+  object(Stdio.File)|zero mystdin;
 
-  object p;
+  object|zero p;
   if(stringp(modifiers->stdin))
   {
     mystdin = Stdio.File();
