@@ -188,7 +188,7 @@ Connection Sql(string|zero host,
 {
   // Note: No need to censor host here, since it is rewritten below if
   //       it contains an SQL-URL.
-  string password = _password;
+  string|zero password = _password;
   _password = "CENSORED";
 
   Connection con;

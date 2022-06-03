@@ -249,7 +249,7 @@ void create(string|object|zero host, void|string|mapping(string:int|string) db,
 {
   // Note: No need to censor host here, since it is rewritten below if
   //       it contains an SQL-URL.
-  string password = _password;
+  string|zero password = _password;
   _password = "CENSORED";
 
   if (objectp(host)) {
