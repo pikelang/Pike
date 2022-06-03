@@ -1250,7 +1250,7 @@ class KeyExchangeECDHE
     // field; leading zeros found in this octet string MUST NOT be
     // truncated.
     string premaster_secret = (point*secret)->get_x_str();
-    secret = 0;
+    secret = "";
 
     packet_data->add_hstring(p->encode(), 1);
     return premaster_secret;
