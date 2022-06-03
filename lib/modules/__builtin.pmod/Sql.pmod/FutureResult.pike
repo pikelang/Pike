@@ -24,7 +24,7 @@
 //!
 //! @seealso
 //!   @[Sql.Connection->big_typed_query()]
-final array(mixed) data;
+final array(mixed)|zero data;
 
 //! @returns
 //! The returned labeled records, all typed data.
@@ -40,10 +40,10 @@ final array(mapping(string:mixed)) get() {
 }
 
 //! The SQL query.
-final string query;
+final string|zero query;
 
 //! The parameter bindings belonging to the query.
-final mapping(string:mixed) bindings;
+final mapping(string:mixed)|zero bindings;
 
 //! The status of the completed command.
 //! If the command is still in progress, the value is @expr{null@}.
@@ -54,9 +54,9 @@ final string|mixed status_command_complete;
 final int affected_rows;
 
 //! The description of the fields in a record.
-final array(mapping(string:mixed)) fields;
+final array(mapping(string:mixed))|zero fields;
 
-final .Connection _dblink;
+final object(.Connection)|zero _dblink;
 
 protected string _sprintf(int type) {
   string res;

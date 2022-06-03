@@ -166,7 +166,7 @@ array(array(mixed)) fetch_row_array() {
 //! @seealso
 //!  @[fetch_row()], @[set_result_array_callback()]
 void set_result_callback(
- function(this_program, array(mixed), mixed ... :void) callback,
+ function(this_program, array(mixed), __unknown__ ... :void) callback,
  mixed ... args) {
   if (callback) {
     array row;
@@ -184,7 +184,7 @@ void set_result_callback(
 //! @seealso
 //!  @[fetch_row_array()], @[set_result_callback()]
 void set_result_array_callback(
- function(this_program, array(array(mixed)), mixed ... :void) callback,
+ function(this_program, array(array(mixed)), __unknown__ ... :void) callback,
  mixed ... args) {
   if (callback) {
     array rows;
