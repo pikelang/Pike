@@ -445,6 +445,7 @@ void ins_f_byte(unsigned int b)
   {
    case F_MARK2 - F_OFFSET:
      ppc32_mark();
+     /* FALLTHRU */
    case F_MARK - F_OFFSET:
      ppc32_mark();
      return;
@@ -474,6 +475,7 @@ void ins_f_byte(unsigned int b)
 
   case F_EXIT_CATCH - F_OFFSET:
     ppc32_push_int(0, 1);
+    /* FALLTHRU */
   case F_ESCAPE_CATCH - F_OFFSET:
     ppc32_escape_catch();
     return;
@@ -564,6 +566,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   {
    case F_MARK_AND_LOCAL:
      ppc32_mark();
+     /* FALLTHRU */
 
    case F_LOCAL:
      ppc32_push_local(b);
@@ -575,6 +578,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
    case F_MARK_AND_GLOBAL:
      ppc32_mark();
+     /* FALLTHRU */
 
    case F_GLOBAL:
      ppc32_push_global(b);
@@ -582,6 +586,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
    case F_MARK_AND_STRING:
      ppc32_mark();
+     /* FALLTHRU */
 
    case F_STRING:
      ppc32_push_string(b, 0);
