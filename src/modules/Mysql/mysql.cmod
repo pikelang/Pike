@@ -1898,7 +1898,7 @@ PIKEFUN string(8bit) client_info()
   push_static_text("MariaDB/");
   {
     char *vers = NULL;
-    if (mariadb_get_info(NULL, MARIADB_CLIENT_VERSION, &vers) < 0) {
+    if (mariadb_get_info(NULL, MARIADB_CLIENT_VERSION, &vers)) {
       vers = "unknown";
     }
     push_text(vers);
