@@ -623,7 +623,7 @@ class AbstractSimpleNode {
 class AbstractNode {
   inherit AbstractSimpleNode;
   //  Private member variables
-  /* protected */ AbstractNode           mParent = 0;
+  /* protected */ object(AbstractNode)|zero           mParent = 0;
 
   @Pike.Annotations.Implements(AbstractSimpleNode);
 
@@ -1812,7 +1812,7 @@ class XMLParser
                        mixed location, mixed ...extra)
   {
     AbstractSimpleNode node;
-    mapping short_attr = attr;
+    mapping|zero short_attr = attr;
 
     switch (type) {
     case "":
@@ -1864,7 +1864,7 @@ class XMLParser
 	}
       }
       node = node_factory_dispatch(XML_ELEMENT, name, attr, "");
-      if (node && short_attr) node->set_short_attributes(short_attr);
+      if (node && short_attr) node->set_short_attributes([mapping]short_attr);
       return node;
 
     case ">":
@@ -1899,7 +1899,7 @@ class XMLParser
 	Node text_node;
 	int(0..1) modified;
 
-	if (short_attr) node->set_short_attributes(short_attr);
+	if (short_attr) node->set_short_attributes([mapping]short_attr);
 
 	foreach(contents; int i; Node child) {
 	  if (child->get_node_type() == XML_TEXT) {
