@@ -1353,7 +1353,7 @@ class ResourceCount {
 
   protected string _sprintf(int type)
   {
-    string res = UNDEFINED;
+    string|zero res = UNDEFINED;
     if (!this)				// Only if not destructed
       return "(destructed)";
     switch(type) {
