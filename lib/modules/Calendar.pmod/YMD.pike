@@ -3054,7 +3054,7 @@ object(TimeRange)|zero parse(string fmt,string arg,void|TimeRange context)
 
       int h=0,mi=0,s=0;
       float sub_second;
-      string g=0;
+      string|zero g=0;
 
       if (m->t)
       {
