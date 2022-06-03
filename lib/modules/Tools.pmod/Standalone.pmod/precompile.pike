@@ -1321,9 +1321,9 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
   switch((string)complex_type->t) {
   case "|":
     {
-      array(int) res = UNDEFINED;
+      array(int)|zero res = UNDEFINED;
       foreach(complex_type->args, PikeType arg) {
-	array(int) sub_res = clamp_int_range(arg, ranged_type);
+	array(int)|zero sub_res = clamp_int_range(arg, ranged_type);
 	if (!sub_res) continue;
 	if (!res) {
 	  res = sub_res;
@@ -1338,7 +1338,7 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
     {
       array(int) res = ({ -0x80000000, 0x7fffffff });
       foreach(complex_type->args, PikeType arg) {
-	array(int) sub_res = clamp_int_range(arg, ranged_type);
+	array(int)|zero sub_res = clamp_int_range(arg, ranged_type);
 	if (!sub_res) return UNDEFINED;
 	if (res[0] < sub_res[0]) res[0] = sub_res[0];
 	if (res[1] > sub_res[1]) res[1] = sub_res[1];
