@@ -5574,8 +5574,7 @@ static int call_handle_import(void)
 /* Set compiler_frame->current_type from the type stack. */
 static void update_current_type(void)
 {
-  if (TEST_COMPAT(8,0) ||
-      !(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
+  if (TEST_COMPAT(8,0)) {
     struct pike_type *t = peek_type_stack();
     if (!t || (t->type != PIKE_T_AUTO)) {
       /* Implicit zero */
