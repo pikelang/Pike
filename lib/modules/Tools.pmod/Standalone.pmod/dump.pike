@@ -23,7 +23,7 @@ string fakeroot(string s)
 #define fakeroot(X) X
 #endif
 
-object progress_bar;
+object|zero progress_bar;
 
 array(int) debug_level = ({});
 
@@ -58,10 +58,10 @@ class GTKProgress {
 #endif
 }
 
-Stdio.File logfile = Stdio.stderr;
+object(Stdio.File)|zero logfile = Stdio.stderr;
 
 int padline = 0;
-string next_file = 0;
+string|zero next_file = 0;
 
 void logstart (int one_line)
 {
