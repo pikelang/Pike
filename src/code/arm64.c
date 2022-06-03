@@ -669,7 +669,7 @@ OPCODE_FUN gen_logic_reg_imm(enum logic_instr op, enum arm64_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_bitfield_reg_imm(enum logic_instr op, enum arm64_register dst,
+OPCODE_FUN gen_bitfield_reg_imm(enum bitfield_instr op, enum arm64_register dst,
 				enum arm64_register reg, unsigned char immr, unsigned char imms, int sf) {
     unsigned INT32 instr = set_bitfield_src_imm(op, sf, immr, imms);
 
@@ -1370,7 +1370,7 @@ static void arm64_load_fp_reg(void) {
     }
 }
 
-static void arm64_invalidate_fp_reg(void) {
+MACRO void arm64_invalidate_fp_reg(void) {
     compiler_state.flags &= ~FLAG_FP_LOADED;
 }
 

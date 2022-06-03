@@ -933,7 +933,7 @@ static void arm32_load_fp_reg(void) {
     }
 }
 
-static void arm32_invalidate_fp_reg(void) {
+MACRO void arm32_invalidate_fp_reg(void) {
     compiler_state.flags &= ~FLAG_FP_LOADED;
 }
 
