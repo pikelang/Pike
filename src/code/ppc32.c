@@ -1018,7 +1018,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 	if((imm & 0x8000) && opcd != 10 && (opcd < 24 || opcd > 29))
 	  imm -= 0x10000;
 	if(imm<0)
-	  sprintf(immtext, "-0x%x", -imm);
+	  sprintf(immtext, "-0x%x", (unsigned INT16)-imm);
 	else
 	  sprintf(immtext, "0x%x", imm);
 	if(opcd == 3)
