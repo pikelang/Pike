@@ -98,7 +98,7 @@ PIKECLASS PIKE_NAME
 	  ((struct Nettle_Hash_struct *)
 	   parent_storage(2, Nettle_Hash_program))->meta;
         NO_WIDE_STRING(passwd);
-	if (b && b->u.integer && (b->u.integer != meta->block_size)) {
+	if (b && b->u.integer && (b->u.integer != (INT_TYPE)meta->block_size)) {
 	  Pike_error("Block sizes other than %d are not supported.\n",
 		     meta->block_size);
 	}
