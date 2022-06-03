@@ -1590,7 +1590,7 @@ class Message {
 
 	// Skip past the separator and any white space after it.
 	found += sizeof(separator);
-	string terminator = data[found..found+1];
+	string|zero terminator = data[found..found+1];
 	if (terminator == "--") {
 	  found += 2;
 	} else {
