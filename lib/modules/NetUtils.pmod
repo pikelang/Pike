@@ -541,12 +541,12 @@ array(string)|zero ip_and_port_of( RemoteAddressObject|string|int(0..0) inc,
     return ip_and_port;
 }
 
-private multiset(string) __lips;
-private multiset(int)    __lipi;
-private mapping(string:array(string)) __interfaces;
-private IpRangeLookup _local_networks;
-private mapping _broadcast_addresses;
-private array(NetworkType) __c_n_t;
+private multiset(string)|zero __lips;
+private multiset(int)|zero    __lipi;
+private mapping(string:array(string))|zero __interfaces;
+private object(IpRangeLookup)|zero _local_networks;
+private mapping|zero _broadcast_addresses;
+private array(NetworkType)|zero __c_n_t;
 
 
 
@@ -843,7 +843,7 @@ string local_host()
     return "127.0.0.1";
 }
 
-private IpRangeLookup _special_networks;
+private object(IpRangeLookup)|zero _special_networks;
 
 // NOTE: If you add a network type here you also need to fix
 // connectable_network_types below.
