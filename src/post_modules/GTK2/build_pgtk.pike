@@ -145,15 +145,15 @@ string unsillycaps(string what)
 }
 
 class GtkFunction(Class parent,
-               string name,
-               Type return_type,
-               array(Type) arg_types,
-               array(string) arg_names,
-               mixed body,
-               array require,
-               string doc,
-               string file,
-               int line)
+		  string name,
+		  object(Type)|zero return_type,
+		  array(Type) arg_types,
+		  array(string) arg_names,
+		  mixed body,
+		  array require,
+		  string doc,
+		  string file,
+		  int line)
 {
   protected string _sprintf(int fmt)
   {
@@ -1075,7 +1075,7 @@ class Type
 
 int last_class_id = 2000;
 
-class Class( string name, string file, int line )
+class Class( string name, string|zero file, int line )
 {
   array(Class) inherits = ({});
   mapping(string:GtkFunction) functions = ([]);
