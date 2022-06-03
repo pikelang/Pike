@@ -1010,19 +1010,19 @@ test_equal(max($2,$1,$3), $3)
         args = parse_args();
         if(sizeof(args)!=2)
           error("Need two arguments for DOTEST. %O\n", sizeof(args));
-        string cond = macros->CONDITION;
+        string|zero cond = macros->CONDITION;
         if(cond)
         {
-          cond = dequote(cond);
-          if( !sscanf(cond, "COND %s", cond) )
+          cond = dequote([string]cond);
+          if( !sscanf([string]cond, "COND %s", cond) )
             cond = "";
-          cond = String.trim(cond);
+          cond = String.trim([string]cond);
           if( cond=="" )
             cond = 0;
         }
         tests += ({ Test(file_name, 0/*FIXME*/, sizeof(tests)+1,
                          dequote(parse(args[0])), dequote(parse(args[1])),
-                         cond && ({ cond })) });
+                         cond && ({ [string]cond })) });
         break;
 
       default:

@@ -70,7 +70,7 @@ array(string) find_testsuites(string dir)
   return ret;
 }
 
-class ScriptTestsuite(string file_name)
+class ScriptTestsuite(string|zero file_name)
 {
   inherit Testsuite;
   protected int(1..1) _sizeof() { return 1; }
