@@ -817,7 +817,7 @@ class TBSCertificate
   protected array fmt_asn1(object asn)
   {
     array i = ({});
-    mapping m = ([]);
+    mapping|zero m = ([]);
 
     foreach(asn->elements;; object o)
     {

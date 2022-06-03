@@ -25,13 +25,14 @@ protected void create()
 //!
 //! @returns
 //!   Returns @[UNDEFINED] if the curve is unsupported.
-Crypto.ECC.Curve parse_ec_parameters(string ec_parameters)
+object(Crypto.ECC.Curve)|zero parse_ec_parameters(string ec_parameters)
 {
   return curve_lookup[ec_parameters];
 }
 
 //!
-variant Crypto.ECC.Curve parse_ec_parameters(Standards.ASN1.Types.Identifier|void named_curve)
+variant object(Crypto.ECC.Curve)|zero
+  parse_ec_parameters(Standards.ASN1.Types.Identifier|void named_curve)
 {
   if (!named_curve) return UNDEFINED;
   return parse_ec_parameters(named_curve->get_der());
@@ -65,8 +66,8 @@ string(8bit) private_key(Crypto.ECC.SECP_521R1.ECDSA ecdsa)
 //! an ASN.1 ec private key sequence.
 //!
 //! As specified in @rfc{5915:3@}.
-Crypto.ECC.SECP_521R1.ECDSA parse_private_key(Sequence a,
-					      Crypto.ECC.Curve|void c)
+object(Crypto.ECC.SECP_521R1.ECDSA)|zero
+  parse_private_key(Sequence a, Crypto.ECC.Curve|void c)
 {
   if ((sizeof(a->elements) < 2) ||
       (a->elements[0]->type_name != "INTEGER") ||
@@ -95,8 +96,8 @@ Crypto.ECC.SECP_521R1.ECDSA parse_private_key(Sequence a,
 //! an ASN.1 DER encoded ec private key.
 //!
 //! As specified in @rfc{5915:3@}.
-variant Crypto.ECC.SECP_521R1.ECDSA parse_private_key(string(8bit) ec_private_key,
-						      Crypto.ECC.Curve|void c)
+variant object(Crypto.ECC.SECP_521R1.ECDSA)|zero
+  parse_private_key(string(8bit) ec_private_key, Crypto.ECC.Curve|void c)
 {
   Object o =
     Standards.ASN1.Decode.simple_der_decode(ec_private_key);

@@ -257,7 +257,7 @@ class Messages
   }
 
   //! Returns the first key, decoded by the @[pwd] password.
-  string get_encrypted_private_key(string(8bit) pwd)
+  string|zero get_encrypted_private_key(string(8bit) pwd)
   {
     Message m = low_get_private_keys()[?0];
     if(!m) return 0;
@@ -273,7 +273,7 @@ class Messages
 //! Convenience function that decodes a PEM message containing only
 //! one part, and returns it as a string. Returns @expr{0@} for indata
 //! containing no or multiple parts.
-string simple_decode(string pem)
+string|zero simple_decode(string pem)
 {
   Messages m = Messages(pem);
   return sizeof(m->parts)==1 &&
@@ -318,7 +318,7 @@ string build(string tag, string data,
     out->add("\n", line);
 
   if( checksum )
-    out->add("\n=", MIME.encode_base64(checksum, 1));
+    out->add("\n=", MIME.encode_base64([string]checksum, 1));
   out->add("\n-----END ", tag, "-----\n");
   return (string)out;
 }

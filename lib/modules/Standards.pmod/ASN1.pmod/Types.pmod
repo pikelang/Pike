@@ -264,7 +264,7 @@ class Boolean
 {
   inherit Object;
 
-  int(1..) tag = 1;
+  int(0..) tag = 1;
   constant type_name = "BOOLEAN";
 
   //! value of object
@@ -306,7 +306,7 @@ class Integer
 {
   inherit Object;
 
-  int(1..) tag = 2;
+  int(0..) tag = 2;
   constant type_name = "INTEGER";
 
   //! value of object
@@ -366,7 +366,7 @@ class Integer
 class Enumerated
 {
   inherit Integer;
-  int(1..) tag = 10;
+  int(0..) tag = 10;
   constant type_name = "ENUMERATED";
 }
 
@@ -374,7 +374,7 @@ class Real
 {
   inherit Object;
 
-  int(1..) tag = 9;
+  int(0..) tag = 9;
   constant type_name = "REAL";
 
   float value = 0.0;
@@ -478,7 +478,7 @@ class Real
 class BitString
 {
   inherit Object;
-  int(1..) tag = 3;
+  int(0..) tag = 3;
   constant type_name = "BIT STRING";
 
   //! value of object
@@ -591,7 +591,7 @@ class BitString
 class OctetString
 {
   inherit String;
-  int(1..) tag = 4;
+  int(0..) tag = 4;
   constant type_name = "OCTET STRING";
 }
 
@@ -599,7 +599,7 @@ class OctetString
 class Null
 {
   inherit Object;
-  int(1..) tag = 5;
+  int(0..) tag = 5;
   constant type_name = "NULL";
 
   this_program decode_primitive(string(0..255) contents,
@@ -626,7 +626,7 @@ class Null
 class Identifier
 {
   inherit Object;
-  int(1..) tag = 6;
+  int(0..) tag = 6;
   constant type_name = "OBJECT IDENTIFIER";
 
   //! value of object
@@ -748,7 +748,7 @@ int(1..1) asn1_utf8_valid (string s)
 class UTF8String
 {
   inherit String;
-  int(1..) tag = 12;
+  int(0..) tag = 12;
   constant type_name = "UTF8String";
 
   string(0..255) get_der_content()
@@ -775,7 +775,7 @@ class UTF8String
 class Sequence
 {
   inherit Compound;
-  int(1..) tag = 16;
+  int(0..) tag = 16;
   constant type_name = "SEQUENCE";
 
   string(0..255) get_der_content()
