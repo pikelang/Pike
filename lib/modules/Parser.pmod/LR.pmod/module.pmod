@@ -533,7 +533,7 @@ class Parser
     }
 
     //! Return the next state from the queue.
-    Kernel next()
+    object(Kernel)|zero next()
     {
       if (head == tail) {
 	return 0;
