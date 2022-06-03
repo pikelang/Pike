@@ -2600,7 +2600,7 @@ void simple_describe_type(struct pike_type *s)
 	    break;
 	  default:
 	    if (s->cdr) {
-	      fprintf(stderr, ",0x%08lx)", CDR_TO_INT(s));
+	      fprintf(stderr, ",0x%08"PRINTPTRDIFFT"x)", CDR_TO_INT(s));
 	    } else {
 	      fprintf(stderr, ")");
 	    }
