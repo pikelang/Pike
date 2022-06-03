@@ -420,7 +420,7 @@ class OAEPState {
 			 string(8bit)|void label)
     {
       if (!r) r = random;
-      string(8bit) em =
+      string(8bit)|zero em =
 	hash_alg->eme_oaep_encode(s, n->size(256),
 				  r(hash_alg->digest_size()),
 				  label);
@@ -438,14 +438,14 @@ class OAEPState {
       if (c >= n) {
 	error("Decryption error.\n");
       }
-      string(8bit) m =
+      string(8bit)|zero m =
 	hash_alg->eme_oaep_decode([string(8bit)]
 				  sprintf("%*c", n->size(256), c->powm(d, n)),
 				  label);
       if (!m) {
 	error("Decryption error.\n");
       }
-      return m;
+      return [string]m;
     }
   }
 }
@@ -694,7 +694,7 @@ class PSSState {
       //      >>2030	7680 bits	384 bits
       //     >>>2030	15360 bits	512 bits
       if (!h) h = .SHA256;
-      string(7bit) alg = jwa([object(.Hash)]h);
+      string(7bit)|zero alg = jwa([object(.Hash)]h);
       if (!alg) return 0;
       headers = headers || ([]);
       headers += ([ "alg": alg ]);
@@ -871,7 +871,7 @@ class PKCS1_5State
     //	      >>2030	7680 bits	384 bits
     //	     >>>2030	15360 bits	512 bits
     h = h || .SHA256;
-    string(7bit) alg = jwa([object(.Hash)]h);
+    string(7bit)|zero alg = jwa([object(.Hash)]h);
     if (!alg) return 0;
     headers = headers || ([]);
     headers += ([ "alg": alg ]);
@@ -954,7 +954,7 @@ class PKCS1_5State
   }
 
   //! Decrypt a message encrypted with @[encrypt].
-  string(8bit) decrypt(string(8bit) s)
+  string(8bit)|zero decrypt(string(8bit) s)
   {
     return rsa_unpad(Gmp.smpz(s, 256)->powm(d, n), 2);
   }
