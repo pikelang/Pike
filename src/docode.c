@@ -594,13 +594,20 @@ static int do_lfun_call(int id, node *args)
  * FIXME: this can be optimized, but is not really used
  * enough to be worth it yet.
  */
-static void emit_apply_builtin(char *func)
+static void low_emit_apply_builtin(char *func, char *fallback)
 {
   INT32 tmp1;
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *n1=make_shared_string(func);
   node *n=find_module_identifier(n1,0);
   free_string(n1);
+
+  if (!n && fallback) {
+    func = fallback;
+    n1 = make_shared_string(func);
+    n = find_module_identifier(n1, 0);
+    free_string(n1);
+  }
 
   switch(n?n->token:0)
   {
@@ -621,13 +628,22 @@ static void emit_apply_builtin(char *func)
   free_node(n);
 }
 
-static void emit_automap_marker(void)
+static void emit_apply_builtin(char *func)
 {
-  if (master_object) {
-    emit_apply_builtin("__builtin.automap_marker");
-  } else {
-    emit_apply_builtin("_static_modules.Builtin.automap_marker");
-  }
+  low_emit_apply_builtin(func, NULL);
+}
+
+static void emit_automap_marker(int depth)
+{
+  struct compilation *c = THIS_COMPILATION;
+  emit1(F_NUMBER, depth);
+
+  /* NB: __builtin is not available without a full master.
+   *     In particular it is not available when compiling
+   *     the main master.
+   */
+  low_emit_apply_builtin("__builtin.automap_marker",
+			 "_static_modules.Builtin.automap_marker");
 }
 
 static int do_encode_automap_arg_list(node *n,
@@ -662,8 +678,7 @@ static int do_encode_automap_arg_list(node *n,
       emit0(F_MARK);
       PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       code_expression(n, 0, "[*]");
-      emit1(F_NUMBER, depth);
-      emit_automap_marker();
+      emit_automap_marker(depth);
       POP_AND_DONT_CLEANUP;
       return 1;
     }
@@ -1641,8 +1656,7 @@ static int do_docode2(node *n, int flags)
       PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
       emit0(F_LTOSVAL);
-      emit1(F_NUMBER, depth);
-      emit_automap_marker();
+      emit_automap_marker(depth);
       POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`+");
       emit2(F_REARRANGE,1,1);
@@ -1707,8 +1721,7 @@ static int do_docode2(node *n, int flags)
       PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
       emit0(F_LTOSVAL);
-      emit1(F_NUMBER, depth);
-      emit_automap_marker();
+      emit_automap_marker(depth);
       POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`-");
       emit2(F_REARRANGE,1,1);
