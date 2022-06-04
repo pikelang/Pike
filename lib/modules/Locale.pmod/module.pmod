@@ -275,7 +275,7 @@ object|zero get_object(string project, string lang) {
   // Check encoding
   sscanf(line, "%*sencoding=\"%s\"", string encoding);
   if(encoding && encoding!="") {
-    function(string:string) decode = 0;
+    function(string:string)|zero decode = 0;
     switch(lower_case(encoding))
       {
       case "iso-8859-1":
@@ -366,7 +366,7 @@ object|zero get_object(string project, string lang) {
     return 0;
   };
 
-  Parser.HTML xml_parser = Parser.HTML();
+  object(Parser.HTML)|void xml_parser = Parser.HTML();
   xml_parser->case_insensitive_tag(1);
   xml_parser->
     add_containers( ([ "str"       : str_tag,
