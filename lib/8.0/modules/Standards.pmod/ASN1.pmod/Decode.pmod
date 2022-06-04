@@ -25,8 +25,8 @@ class constructed
     return _sprintf('O');
   }
 
-  protected void create(int tag_n_cls, string(8bit) raw,
-                        array(.Types.Object) elements)
+  protected void create(int tag_n_cls, string(8bit)|zero raw,
+                        array(.Types.Object)|zero elements)
   {
     ::create(tag_n_cls >> 6, tag_n_cls & 0x1f, raw, elements);
   }
@@ -47,7 +47,7 @@ class primitive
     return sprintf("primitive(%d)", get_combined_tag());
   }
 
-  protected void create(int tag_n_cls, string(8bit) raw)
+  protected void create(int tag_n_cls, string(8bit)|zero raw)
   {
     ::create(tag_n_cls >> 6, tag_n_cls & 0x1f, raw);
   }
