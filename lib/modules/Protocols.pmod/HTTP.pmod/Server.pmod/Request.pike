@@ -187,7 +187,7 @@ constant singular_use_headers = ({
 
 private int sent;
 private OutputBuffer send_buf = OutputBuffer(BLOCKSIZE);
-private Stdio.File send_fd=0;
+private object(Stdio.File)|zero send_fd = 0;
 private int send_stop;
 private int keep_alive=0;
 

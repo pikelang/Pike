@@ -764,7 +764,7 @@ this_program thread_request(string server, int port, string query,
    if (!ips || !sizeof(ips)) ips = ({server}); // cheaty, if host doesn't exist
 
    con = 0;
-   Stdio.File new_con = Stdio.File();
+   object(Stdio.File)|zero new_con = Stdio.File();
    if (!new_con->open_socket(-1, 0, ips[0])) {
      int errno = con->errno();
      new_con = 0;
@@ -837,7 +837,7 @@ this_program sync_request(string server, int port, string query,
     if(!ips || !sizeof(ips)) ips = ({server}); // cheaty, if host doesn't exist
 
     con = 0;
-    Stdio.File new_con = Stdio.File();
+    object(Stdio.File)|zero new_con = Stdio.File();
     if(!new_con->open_socket(-1, 0, ips[0])) {
       int errno = con->errno();
       new_con = 0;
