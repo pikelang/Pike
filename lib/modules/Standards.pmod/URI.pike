@@ -616,7 +616,7 @@ string|zero get_http_query() {
 //! Return the path and query part of the URI, coded according to
 //! @rfc{1738@}.
 string get_http_path_query() {
-  string q = get_http_query();
+  string|zero q = get_http_query();
   return http_encode(((path||"")/"/")[*])*"/" + (q?"?"+q:"");
 }
 
