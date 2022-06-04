@@ -56,7 +56,7 @@ class Request
 //!	additions. If a cookie is encountered, this
 //!	function is called. Default is to call
 //!	@[set_http_cookie] in the @[Session] object.
-   function(string,Standards.URI:mixed) cookie_encountered=set_http_cookie;
+   function(string,Standards.URI:mixed|void) cookie_encountered=set_http_cookie;
 
 // ----------------
 
