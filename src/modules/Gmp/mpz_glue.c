@@ -2443,7 +2443,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt tMapping,tStr),  \
                ID_PROTECTED);                                           \
   ADD_FUNCTION("_size_object",mpzmod__size_object, tFunc(tVoid,tInt),0);\
-  ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tIntPos), 0);	\
+  ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt1Plus), 0);\
 									\
   ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,		\
                tFunc(tOr(tVoid,tIntPos),tInt01),0);                     \
