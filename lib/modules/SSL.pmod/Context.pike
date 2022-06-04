@@ -343,10 +343,10 @@ array(int) get_signature_algorithms(array(int)|void signature_algorithms)
   constant(Crypto.SHA384) && constant(Crypto.SHA224) && \
   constant(Crypto.ECC.Curve25519) && \
   constant(Crypto.ECC.Curve448)
-  return signature_algorithms;
+  return [array(int)]signature_algorithms;
 #else
   return [array(int)]
-    filter(signature_algorithms,
+    filter([array(int)]signature_algorithms,
 		lambda(SignatureScheme scheme) {
 #if !constant(Crypto.ECC.Curve)
 		  if ((scheme & SIGNATURE_MASK) == SIGNATURE_ecdsa) return 0;

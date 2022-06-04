@@ -569,9 +569,12 @@ class PSSState {
       if (intp(salt)) {
 	salt = random([int(0..)]salt);
       }
-      string(8bit) em =
+      string(8bit)|zero em_maybe =
 	h->emsa_pss_encode(message, [int(1..)](n->size()-1),
-			   [string(8bit)]salt);
+                           [string(8bit)]salt);
+      if( !em_maybe )
+        error("Encoding error");
+      string(8bit) em = [string(8bit)]em_maybe;
 
       // RSA signature:
       //   a. Convert the encoded message EM to an integer message
