@@ -754,7 +754,7 @@ protected class Monitor(string path,
   int(0..1) check(MonitorFlags|void flags)
   {
     MON_WERR("Checking monitor %O...\n", this);
-    Stdio.Stat st = file_stat(path, 1);
+    void|Stdio.Stat st = file_stat(path, 1);
     Stdio.Stat old_st = this::st;
     int orig_flags = this::flags;
     this::flags |= MF_INITED;
