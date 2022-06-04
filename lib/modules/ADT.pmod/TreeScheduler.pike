@@ -30,7 +30,7 @@ class Consumer
   inherit ::this_program;
 
   //! @[Consumer] that we depend on.
-  Consumer parent;
+  object(Consumer)|zero parent;
 
   //! @[Consumer]s that depend on us.
   array(Consumer) children = ({});
@@ -296,7 +296,7 @@ variant Consumer add(int|float weight, mixed val, Consumer parent)
 //!   Note that the root is never active (ie added to the Scheduler).
 //!
 //! @[Customer]s that don't have an explicit dependency depend on @[root].
-Consumer root = Consumer(1.0, "root");
+object(Consumer)|zero root = Consumer(1.0, "root");
 
 protected string _sprintf(int c)
 {

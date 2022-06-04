@@ -204,7 +204,7 @@ array|zero find_shortest_path(mixed from, mixed to, void|multiset avoiding)
   // But those algorithms typically have worse space complexity, so
   // this will do for now.
 
-  array subpath, found = 0;
+  array|zero subpath, found = 0;
   avoiding = avoiding ? avoiding + (< from >) : (< from >);
   foreach(indices(val[from]), mixed right)
     if (!avoiding[right])
