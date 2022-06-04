@@ -191,7 +191,7 @@ class Chunk {
   /* Point in file from which new chunks can be allocated. */
   private int eof = 0;
 
-  private mapping frees = ([]), keys = ([]);
+  private mapping|void frees = ([]), keys = ([]);
 
   /* Escape special characters used for synchronizing
    * the contents of Yabu files.
