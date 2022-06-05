@@ -44,19 +44,19 @@ constant BUCKET_SIZE = 8;
 constant MAX_BUCKETS = 160;
 
 //! Our global ID for this DHT router, expressed as a 20 byte hash.
-protected string my_node_id = UNDEFINED;
+protected string|zero my_node_id = UNDEFINED;
 
 //! Indicates if the DHT instance is up and running or not.
 int is_running = 0;
 
 //! The UDP port on which we listen for messages.
-Stdio.UDP port;
+object(Stdio.UDP)|zero port;
 
 // Some statistics that we collect. This is not a stable API at the
 // moment.
 mapping stats = ([]);
 
-Routingtable rt;
+object(Routingtable)|zero rt;
 
 // Callbacks called when a nodes has been added or removed from a
 // bucket, added as a candidate, promoted from candidate to peer or
@@ -67,11 +67,11 @@ function(DHTNode, object /* Bucket */:void) node_added_cb, node_removed_cb,
 //! Abstraction for the routing table.
 class Routingtable {
   //! Node ID that this routing table belongs to
-  protected string my_node_id;
+  protected string|zero my_node_id;
 
   //! Lookup table for nodess so we can quickly find out if any given
   //! hash is already in our table somewhere.
-  mapping(string:DHTNode) nodes_by_hash = set_weak_flag(([]), Pike.WEAK);
+  mapping(string:DHTNode) nodes_by_hash = ([]);//set_weak_flag(([]), Pike.WEAK);
   mapping(string:DHTNode) nodes_by_endpoint = set_weak_flag(([]), Pike.WEAK);
 
   //! Buckets in our routing table
@@ -80,7 +80,7 @@ class Routingtable {
 
 
   protected class Bucket {
-    string uuid;
+    string|zero uuid;
 
     // Live nodes in the bucket.
     array(object) nodes = ({});
@@ -746,7 +746,8 @@ class DHTNode {
 
 //! Base class for operations that need to iterate over the DHT in
 //! some way like get_peers and find_node.
-class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args) {
+class DHTOperation(string target_hash, function|zero done_cb,
+		   mixed ... done_cb_args) {
 
   //
   // Variables controling behaviour of this op
@@ -1334,7 +1335,7 @@ string send_ping(string ip, int port, function(mapping, string, int:void) cb) {
 //! cannot rely on the send_dht_query() callback to propagate this.
 protected void read_timeout(string txid) {
   m_delete(request_timeouts, txid);
-  [function cb, array args] = m_delete(callbacks_by_txid, txid);
+  [function cb, array args] = m_delete(callbacks_by_txid, txid) || ({ 0, 0 });
   functionp(cb) && cb(([
 			"t" : txid,
 			"r" : "e",

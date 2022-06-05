@@ -4,7 +4,7 @@
 
 constant dont_dump_program = 1;
 
-Stdio.File fd=Stdio.File();
+object(Stdio.File)|zero fd = Stdio.File();
 
 .Torrent parent;
 
