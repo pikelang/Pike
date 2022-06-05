@@ -80,7 +80,7 @@ constant msg_to_string=([
    MSG_CANCEL:"cancel",
 ]);
 
-function(string,mixed...:void|mixed) warning=werror;
+function(string, __unknown__ ...:void|mixed) warning = werror;
 int cancelled=0;
 
 int bandwidth_out=0; // bytes/s

@@ -715,7 +715,7 @@ void contact_peers(void|int n)
    v->connect();
 }
 
-string _file_got_bitfield=0;
+string|zero _file_got_bitfield=0;
 
 // usually called from peers
 //! Returns the file got field as a string bitfield (cached).
