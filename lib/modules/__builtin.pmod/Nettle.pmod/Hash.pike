@@ -1340,7 +1340,7 @@ class SCRAM
     if (!catch([string(8bit) r, string(8bit) p] =
 	       [array(string(8bit))]array_sscanf(line, format))
 	&& r == nonce) {
-      first += sprintf("c=biws,r=%s", r);
+      first += [string(8bit)]sprintf("c=biws,r=%s", r);
       ret = p == clientproof(salted_password) && sprintf("v=%s", server_signature);
     }
     return ret;

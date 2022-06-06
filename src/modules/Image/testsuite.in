@@ -354,22 +354,22 @@ test_do( add_constant("img") )
 test_define(test_polygone,[[
 test_any_equal([[
  object img=Image.Image(100,100,0,0,0);
- float x=0,y=0.2;
+ float y=0.2;
  img->setcolor(255,254,253);
- img->polygone(({10+x,15+y,15+x,10+y,15+x,15+y}),
-		 ({20+x,15+y,25+x,15+y,20+x,10+y}),
-		 ({10+x,20+y,15+x,20+y,15+x,25+y}),
-		 ({20+x,25+y,25+x,20+y,20+x,20+y}),
+ img->polygone(({10,15+y,15,10+y,15,15+y}),
+		 ({20,15+y,25,15+y,20,10+y}),
+		 ({10,20+y,15,20+y,15,25+y}),
+		 ({20,25+y,25,20+y,20,20+y}),
 
-		 ({30+2*10+x,15+y,30+2*15+x,10+y,30+2*15+x,15+y}),
-		 ({30+2*20+x,15+y,30+2*25+x,15+y,30+2*20+x,10+y}),
-		 ({30+2*10+x,20+y,30+2*15+x,20+y,30+2*15+x,25+y}),
-		 ({30+2*20+x,25+y,30+2*25+x,20+y,30+2*20+x,20+y}),
+		 ({30+2*10,15+y,30+2*15,10+y,30+2*15,15+y}),
+		 ({30+2*20,15+y,30+2*25,15+y,30+2*20,10+y}),
+		 ({30+2*10,20+y,30+2*15,20+y,30+2*15,25+y}),
+		 ({30+2*20,25+y,30+2*25,20+y,30+2*20,20+y}),
 
-		 ({10+x,30+2*15+y,15+x,30+2*10+y,15+x,30+2*15+y}),
-		 ({20+x,30+2*15+y,25+x,30+2*15+y,20+x,30+2*10+y}),
-		 ({10+x,30+2*20+y,15+x,30+2*20+y,15+x,30+2*25+y}),
-		 ({20+x,30+2*25+y,25+x,30+2*20+y,20+x,30+2*20+y}));
+		 ({10,30+2*15+y,15,30+2*10+y,15,30+2*15+y}),
+		 ({20,30+2*15+y,25,30+2*15+y,20,30+2*10+y}),
+		 ({10,30+2*20+y,15,30+2*20+y,15,30+2*25+y}),
+		 ({20,30+2*25+y,25,30+2*20+y,20,30+2*20+y}));
    object img1=Image.GIF.decode(MIME.decode_base64(
       "R0lGODlhZABkAMQAAAAAAAICAgUFBQoKChYWFigoKC0tLTAwMDIyMjMyMj8/P1lYWFFRUHJycXp5eYyLi6OioaWlpK2srLW0s8vLyszLytbV1Ojn5vTz8vn49/z7+v/+/QAAAAAAAAAAAAAAACwAAAAAZABkAAQF/yAAiONYmiaapivLuu8byzJd1zeO6/ve+z5gMDgkEo3HY1KpZDabTyhUOp1WrVZsNrvlcr3fb1gsJpfLZzRafWSw3Osd4bF7EOLtDCsDx6fmGBs7Gxh2fjgMGYIpG3yHAIAbG4s1k4SGjyaJkyyTjnGRlpQyopd3j5ucjJ59X6Glg6WmhwYICLYst7cGaAW6uro7wMAIBZmZx8jIysvLzc7O0GUOFBTVLNbWDmgKE9nZ1jvg4BMKhwISlp2TEgJrAw0XsrGiFw0DmeiqJuzuePDy1OGod8+Zvk7tMgHcR2qDPXzRAKBjkXAZwB0PI6bwZ4KjM4g1QGrUOJIkSZMnT+6mVKmSZcuWL2HClDlzZk2bNnHmzLmTJ0+fP38GFSqUaNGiR5EiVbp0aVOnTqFGjTqV6hdjKbBadRaBRdetywpoYKFBK9hDEUYB2PD1rB+xajeUdesnbVy2dOPAvTs3bxm7d/H6vapBIL9JfQdbARxYsOIpBxIkkMxi8uQDjx9n1qyZc+fOn0GDFj169CMI4LBlg2D6yAJR6yYtaE0kgAXDIyxZCECbyGuGa2X3rn377u7hvoELRx7EdtzjzIO87jQ7enMLLKBb91HdRPftO3inEA8efHnz5tGnT7+ePXv379/Hly+ffv369/HjPxQCADs="));
   return $1;
@@ -382,22 +382,22 @@ test_polygone(img->max(), ({255,254,253}) )
 define(test_polyfill,[[
 test_any_equal([[
   object img=Image.Image(100,100,0,0,0);
-  float x=0,y=0.2;
+  float y=0.2;
   img->setcolor(255,254,253);
-  img->polygone(({10+x,15+y,15+x,10+y,15+x,15+y}),
-		 ({20+x,15+y,25+x,15+y,20+x,10+y}),
-		 ({10+x,20+y,15+x,20+y,15+x,25+y}),
-		 ({20+x,25+y,25+x,20+y,20+x,20+y}),
+  img->polygone(({10,15+y,15,10+y,15,15+y}),
+		 ({20,15+y,25,15+y,20,10+y}),
+		 ({10,20+y,15,20+y,15,25+y}),
+		 ({20,25+y,25,20+y,20,20+y}),
 
-		 ({30+2*10+x,15+y,30+2*15+x,10+y,30+2*15+x,15+y}),
-		 ({30+2*20+x,15+y,30+2*25+x,15+y,30+2*20+x,10+y}),
-		 ({30+2*10+x,20+y,30+2*15+x,20+y,30+2*15+x,25+y}),
-		 ({30+2*20+x,25+y,30+2*25+x,20+y,30+2*20+x,20+y}),
+		 ({30+2*10,15+y,30+2*15,10+y,30+2*15,15+y}),
+		 ({30+2*20,15+y,30+2*25,15+y,30+2*20,10+y}),
+		 ({30+2*10,20+y,30+2*15,20+y,30+2*15,25+y}),
+		 ({30+2*20,25+y,30+2*25,20+y,30+2*20,20+y}),
 
-		 ({10+x,30+2*15+y,15+x,30+2*10+y,15+x,30+2*15+y}),
-		 ({20+x,30+2*15+y,25+x,30+2*15+y,20+x,30+2*10+y}),
-		 ({10+x,30+2*20+y,15+x,30+2*20+y,15+x,30+2*25+y}),
-		 ({20+x,30+2*25+y,25+x,30+2*20+y,20+x,30+2*20+y}));
+		 ({10,30+2*15+y,15,30+2*10+y,15,30+2*15+y}),
+		 ({20,30+2*15+y,25,30+2*15+y,20,30+2*10+y}),
+		 ({10,30+2*20+y,15,30+2*20+y,15,30+2*25+y}),
+		 ({20,30+2*25+y,25,30+2*20+y,20,30+2*20+y}));
 
   object img1=Image.GIF.decode(MIME.decode_base64(
     "R0lGODlhZABkAMQAAAAAAAICAgUFBQoKChYWFigoKC0tLTAwMDIyMjMyMj8/P1lYWFFRUHJycXp5eYyLi6OioaWlpK2srLW0s8vLyszLytbV1Ojn5vTz8vn49/z7+v/+/QAAAAAAAAAAAAAAACwAAAAAZABkAAQF/yAAiONYmiaapivLuu8byzJd1zeO6/ve+z5gMDgkEo3HY1KpZDabTyhUOp1WrVZsNrvlcr3fb1gsJpfLZzRafWSw3Osd4bF7EOLtDCsDx6fmGBs7Gxh2fjgMGYIpG3yHAIAbG4s1k4SGjyaJkyyTjnGRlpQyopd3j5ucjJ59X6Glg6WmhwYICLYst7cGaAW6uro7wMAIBZmZx8jIysvLzc7O0GUOFBTVLNbWDmgKE9nZ1jvg4BMKhwISlp2TEgJrAw0XsrGiFw0DmeiqJuzuePDy1OGod8+Zvk7tMgHcR2qDPXzRAKBjkXAZwB0PI6bwZ4KjM4g1QGrUOJIkSZMnT+6mVKmSZcuWL2HClDlzZk2bNnHmzLmTJ0+fP38GFSqUaNGiR5EiVbp0aVOnTqFGjTqV6hdjKbBadRaBRdetywpoYKFBK9hDEUYB2PD1rB+xajeUdesnbVy2dOPAvTs3bxm7d/H6vapBIL9JfQdbARxYsOIpBxIkkMxi8uQDjx9n1qyZc+fOn0GDFj169CMI4LBlg2D6yAJR6yYtaE0kgAXDIyxZCECbyGuGa2X3rn377u7hvoELRx7EdtzjzIO87jQ7enMLLKBb91HdRPftO3inEA8efHnz5tGnT7+ePXv379/Hly+ffv369/HjPxQCADs="));

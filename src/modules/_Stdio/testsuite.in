@@ -141,11 +141,11 @@ test_any([[
 cond_end // Stdio.File()->proxy
 
 
-test_any([[object o,o2=Stdio.File(); o=o2->pipe(); destruct(o2); return o->read()]],"")
-test_any([[object o,o2=Stdio.File(); o=o2->pipe(); o2=0; return o->read()]],"")
+test_any([[object|zero o,o2=Stdio.File(); o=o2->pipe(); destruct(o2); return o->read()]],"")
+test_any([[object|zero o,o2=Stdio.File(); o=o2->pipe(); o2=0; return o->read()]],"")
 
 test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); destruct(o); return o2->read() || ("error:"+o2->errno())]],"")
-test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); o=0; return o2->read() || ("error:"+o2->errno())]],"")
+test_any([[object|zero o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); o=0; return o2->read() || ("error:"+o2->errno())]],"")
 
 
 dnl - file->seek

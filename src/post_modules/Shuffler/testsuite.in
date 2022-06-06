@@ -94,7 +94,7 @@ cond([[master()->resolv("Pike.PollBackend")]], [[
   test_any([[
     Pike.PollBackend pb = Pike.PollBackend();
     Stdio.File f = Stdio.File(), f2 = f->pipe();
-    Shuffler.Shuffler sfr = Shuffler.Shuffler();
+    object(Shuffler.Shuffler)|zero sfr = Shuffler.Shuffler();
     sfr->set_backend (pb);
     Shuffler.Shuffle sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);

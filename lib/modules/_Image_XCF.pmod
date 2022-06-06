@@ -698,8 +698,9 @@ mapping(string:string|Image.Image) _decode( string|mapping|GimpImage what, mappi
   what = "";
 
   int shrink = (opts->shrink_fact||1);
-  Image.Layer res = Image.lay(decode_layers( data, opts, 1 ),
-                              0,0,data->width/shrink,data->height/shrink );
+  object(Image.Layer)|zero res;
+  res = Image.lay(decode_layers( data, opts, 1 ),
+                  0,0,data->width/shrink,data->height/shrink );
   Image.Image img = res->image();
   Image.Image alpha = res->alpha();
   res = 0;
