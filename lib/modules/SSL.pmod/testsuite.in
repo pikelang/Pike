@@ -1247,7 +1247,7 @@ array(int) a() {
 
   __signal_watchdog();
 
-  string exp_res = client_msg;
+  string|zero exp_res = client_msg;
   if ((client_max < server_min) || (server_max < client_min)) {
     exp_res = UNDEFINED;
   }
@@ -1582,7 +1582,7 @@ test_tests([[
       log_status("Client certificates: NONE, %s",
 		 fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
 
-      string exp = client_msg;
+      string|zero exp = client_msg;
       if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
       int count = test_ssl_connection(PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
 				      PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
@@ -1599,7 +1599,7 @@ test_tests([[
       log_status("Client certificates: INVALID, %s",
 		 fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
 
-      string exp = client_msg;
+      string|zero exp = client_msg;
       if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
       int count = test_ssl_connection(PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
 				      PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
@@ -1619,7 +1619,7 @@ test_tests([[
 		   cp->key->key_size(),
 		   fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
 
-	string exp = client_msg;
+	string|zero exp = client_msg;
 	if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
 	for (int ver = PROTOCOL_TLS_1_2; ver <= PROTOCOL_TLS_MAX; ver++) {
 	  int count = test_ssl_connection(PROTOCOL_SSL_3_0, ver,
