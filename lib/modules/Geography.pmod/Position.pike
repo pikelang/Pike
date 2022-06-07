@@ -69,7 +69,7 @@ protected variant void create(int|float lat, int|float long,
 private float dwim(string what,string direction)
 {
    float d,m,s;
-   string dir=0;
+   string|zero dir = 0;
    int neg=0;
 #define DIV "%*[ \t\r\n'`\260\":.]"
 
