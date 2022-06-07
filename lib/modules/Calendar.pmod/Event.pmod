@@ -1291,7 +1291,7 @@ class SuperEvent
    mapping(Event:multiset(string)) flags=([]);
 
    array(Event) events=({});
-   mapping(string:Event) id2event=UNDEFINED;
+   mapping(string:Event)|zero id2event = UNDEFINED;
 
    array(Event) day_events=({});
    array(Namedays) namedays=({});
@@ -1366,10 +1366,10 @@ class SuperEvent
       return indices(scan_events(in));
    }
 
-   Calendar.TimeRanges.TimeRange next(Calendar.TimeRanges.TimeRange from,
-				      void|int(0..1) including)
+   object(Calendar.TimeRanges.TimeRange)|zero
+      next(Calendar.TimeRanges.TimeRange from, void|int(0..1) including)
    {
-      Calendar.TimeRanges.TimeRange best=0;
+      object(Calendar.TimeRanges.TimeRange)|zero best = 0;
       foreach (events,Event e)
       {
 	 Calendar.TimeRanges.TimeRange y=e->next(from,including);
@@ -1379,10 +1379,10 @@ class SuperEvent
       return best;
    }
 
-   Calendar.TimeRanges.TimeRange previous(Calendar.TimeRanges.TimeRange from,
-					  void|int(0..1) including)
+   object(Calendar.TimeRanges.TimeRange)|zero
+      previous(Calendar.TimeRanges.TimeRange from, void|int(0..1) including)
    {
-      Calendar.TimeRanges.TimeRange best=0;
+      object(Calendar.TimeRanges.TimeRange)|zero best = 0;
       foreach (events,Event e)
       {
 	 Calendar.TimeRanges.TimeRange y=e->previous(from,including);
@@ -1511,7 +1511,7 @@ class TZShift_Event
 	 foreach (reverse(tz->shifts),int z)
 	    if (z<=ux) { nextshift=z; break; }
 
-      Calendar.TimeRanges.TimeRange btr=0;
+      object(Calendar.TimeRanges.TimeRange)|zero btr = 0;
       if (nextshift!=-1)
 	 btr=from->calendar()->Second("unix_r",nextshift,from->ruleset());
 
