@@ -32,7 +32,7 @@ cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
     fp->set_backend(pb);
     fp->other->set_backend(pb);
     f2->set_backend(pb);
-    Shuffler.Shuffle sf = sfr->shuffle(f);
+    object(Shuffler.Shuffle)|zero sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 1);
     sf->add_source(Stdio.Buffer("xyz\n" * 1000));
     sf->add_source(fp);
@@ -74,7 +74,7 @@ cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
     Stdio.File f = Stdio.File(), f2 = f->pipe();
     Shuffler.Shuffler sfr = Shuffler.Shuffler();
     sfr->set_backend (pb);
-    Shuffler.Shuffle sf = sfr->shuffle(f);
+    object(Shuffler.Shuffle)|zero sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
     sf->set_done_callback( lambda(mixed ...) { sf->stop(); f->close(); });
     sf->start();
@@ -96,7 +96,7 @@ cond([[master()->resolv("Pike.PollBackend")]], [[
     Stdio.File f = Stdio.File(), f2 = f->pipe();
     object(Shuffler.Shuffler)|zero sfr = Shuffler.Shuffler();
     sfr->set_backend (pb);
-    Shuffler.Shuffle sf = sfr->shuffle(f);
+    object(Shuffler.Shuffle)|zero sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
     sf->set_done_callback( lambda(mixed ...) { sf->stop(); f->close(); });
     sf->start();
