@@ -296,7 +296,7 @@ class Consumer
 }
 
 //! Token class.
-class Token (string key, string secret)
+class Token (string|zero key, string|zero secret)
 {
   //! Only supports casting to string wich will return a query string
   //! of the object.
