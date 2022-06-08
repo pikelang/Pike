@@ -174,7 +174,7 @@ private class Extractor {
   protected void parseEnumBody(Enum parent) {
     for (;;) {
       parser->skipNewlines();
-      Documentation doc = 0;
+      object(Documentation)|zero doc = 0;
       array(EnumConstant) consts = ({});
       int got_nl;
       if (isIdent(parser->peekToken())) {
@@ -332,10 +332,10 @@ private class Extractor {
                    void|string filename,
                    void|string inAt)
   {
-    Documentation filedoc = 0;
+    object(Documentation)|zero filedoc = 0;
   mainloop:
     for (;;) {
-      Documentation doc = 0;
+      object(Documentation)|zero doc = 0;
       array(PikeObject) decls = ({ });
       int(0..1) got_nl;
 
@@ -394,9 +394,9 @@ private class Extractor {
       }
 
 
-      object(.DocParser.Parse) parse = 0;
-      string appears = 0;
-      string belongs = 0;
+      object(.DocParser.Parse)|zero parse = 0;
+      string|zero appears = 0;
+      string|zero belongs = 0;
       if (doc) {
         parse = .DocParser.Parse(doc->text, doc->position, flags);
         MetaData meta = parse->metadata();

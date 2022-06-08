@@ -205,7 +205,7 @@ class Node
     array names = children->name;
     foreach(Array.uniq(names), string n)
       if(sizeof(filter(names, lambda(string in) { return in==n; }))!=1) {
-        string d="";
+        string|zero d="";
         Parser.HTML parser = Parser.HTML();
         parser->case_insensitive_tag(1);
         parser->xml_tag_syntax(3);

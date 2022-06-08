@@ -226,10 +226,10 @@ protected int allSpaces(string s) {
 
 protected private class Token (
   int type,
-  string keyword,
-  string arg,   // the rest of the line, after the keyword
-  string text,
-  SourcePosition position,
+  string|zero keyword,
+  string|zero arg,   // the rest of the line, after the keyword
+  string|zero text,
+  object(SourcePosition)|zero position,
 ) {
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d, %O, %O, %O, %O)", this_program, type,
@@ -252,7 +252,7 @@ protected array(Token) split(string s, SourcePosition pos) {
   array(Token) res = ({ });
 
   string filename = pos->filename;
-  string text = 0;
+  string|zero text = 0;
   int textFirstLine;
   int textLastLine;
 
@@ -384,7 +384,7 @@ protected class DocParserClass {
       parser->eat("...");
     }
     string s = parser->parseLiteral() || parser->parseIdents();
-    string s2 = 0;
+    string|zero s2 = 0;
     int dots = 0;
     if (parser->peekToken() == "..") {
       dots = 1;
@@ -464,7 +464,7 @@ protected class DocParserClass {
     .PikeParser parser = .PikeParser(arg, currentPosition);
     //  werror("&&& %O\n", arg);
     string s = parser->parseLiteral() || parser->parseIdents();
-    string s2 = 0;
+    string|zero s2 = 0;
     int dots = 0;
     if (parser->peekToken() == "..") {
       dots = 1;
@@ -771,7 +771,7 @@ protected class DocParserClass {
       if (! (<SINGLEKEYWORD, DELIMITERKEYWORD>) [token->type] )
         return res;
 
-      string single = 0;
+      string|zero single = 0;
       array(string) keywords = ({});
       res += opentag("group");
     group:
@@ -866,12 +866,12 @@ protected class DocParserClass {
   //!   Returns the @[MetaData] for the documentation string.
   MetaData getMetaData() {
     MetaData meta = MetaData();
-    string scopeModule = 0;
+    string|zero scopeModule = 0;
     while(peekToken()->type == METAKEYWORD) {
       Token token = readToken();
       string keyword = token->keyword;
       string arg = token->arg;
-      string endkeyword = 0;
+      string|zero endkeyword = 0;
       switch (keyword) {
       case "namespace":
       case "enum":

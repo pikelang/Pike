@@ -658,7 +658,7 @@ class Annotation
 //!   @[Modifier], @[Method], @[Constant], @[Typedef], @[EnumConstant],
 //!   @[Enum], @[Variable]
 class PikeObject {
-  array(Annotation) annotations = UNDEFINED;
+  array(Annotation)|zero annotations = UNDEFINED;
 
   //! The set of modifiers affecting this entity.
   array(string) modifiers = ({ });
@@ -1234,11 +1234,11 @@ class Enum {
             && group->get_any_name() == "group")
         {
           int constants = 0;
-          string homogenName = 0;
+          string|zero homogenName = 0;
           SimpleNode docGroupNode =
 	    SimpleNode(XML_ELEMENT, "docgroup",
 		       ([ "homogen-type" : "constant" ]), 0);
-          SimpleNode text = 0;
+          object(SimpleNode)|zero text = 0;
           foreach (group->get_children(), SimpleNode child)
             if (child->get_node_type() == XML_ELEMENT)
               if (child->get_any_name() == "constant") {

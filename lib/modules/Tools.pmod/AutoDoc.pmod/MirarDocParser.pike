@@ -648,7 +648,8 @@ string doctype(string type,void|string indent)
    if (type[..2]=="...")
       return nindent+"<varargs>"+doctype(type[3..])+"</varargs>";
 
-   string a=type,b=0,c,o=0;
+   string a=type;
+   string|zero b=0,c,o=0;
    sscanf(type,"%s(%s",a,b);
    if (b) [b,c]=endparan(b);
 
@@ -738,7 +739,7 @@ constant convname=
 
 array(string) parse_decl(string raw_decl)
 {
-   string rv,name,params=0;
+   string|zero rv,name,params=0;
    array tokens =
       Parser.Pike.split(replace(raw_decl, ({ "&lt;", "&gt;" }), ({ "<", ">"})));
    tokens = Parser.Pike.tokenize(tokens);
@@ -769,7 +770,7 @@ void docdecl(string enttype,
 	     array(string) decl,
 	     object f)
 {
-   string rv,name,params=0;
+   string|zero rv,name,params=0;
    rv = decl[0];
    name = decl[1];
    if (sizeof(decl) == 3) params = decl[2][1..];

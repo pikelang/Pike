@@ -296,7 +296,7 @@ string moveImages(string docXMLFile,
             if (attr["homogen-name"])
               parents += ({ attr["homogen-name"] });
             else {
-              string name = 0;
+              string|zero name = 0;
               foreach (n->get_children(), SimpleNode c) {
                 if (c->get_node_type() == XML_ELEMENT)
                   if (name = c->get_attributes()["name"])
@@ -328,7 +328,7 @@ string moveImages(string docXMLFile,
             break;
 
           case "image":
-            string imageFilename;
+            string|zero imageFilename;
             array(SimpleNode) children = n->get_children();
             if (sizeof(children || ({})) != 1
                 || children[0]->get_node_type() != XML_TEXT) {
@@ -355,7 +355,7 @@ string moveImages(string docXMLFile,
 		werror("(Could not read %s)\n", imageFilename);
 	    }
 	    else {
-	      Image.Image o = Image.load(imageFilename);
+	      object(Image.Image)|zero o = Image.load(imageFilename);
 	      if(o && o->xsize() && o->ysize()) {
 		args->width = (string)o->xsize();
 		args->height = (string)o->ysize();
@@ -743,11 +743,11 @@ protected object(SimpleNode)|zero findNode(SimpleNode root,
     return root;
   while (sizeof(ref)) {
     array(SimpleNode) children = n->get_children();
-    SimpleNode found = 0;
+    object(SimpleNode)|zero found = 0;
     foreach (children, SimpleNode child) {
       string tag = child->get_any_name();
       if (tag == "namespace" || tag == "module" || tag == "class") {
-        string name = child->get_attributes()["name"];
+        string|zero name = child->get_attributes()["name"];
         if (name && name == ref[0]) {
           found = child;
           break;
@@ -1101,7 +1101,7 @@ protected class ScopeStack {
 	    matches += ({ res + ref });
 	  }
       }
-      string ns = namespace;
+      string|zero ns = namespace;
       for (multiset(string) extends = namespace_extends[ns];
 	   (ns && extends); extends = namespace_extends[ns]) {
 	ns = 0;
@@ -1211,7 +1211,7 @@ protected void resolveFun(ScopeStack scopes, SimpleNode node) {
 		  }
 	      }
 	    }
-            SimpleNode doc = 0;
+            object(SimpleNode)|zero doc = 0;
 	    foreach(child->get_children(), SimpleNode n) {
 	      if (n->get_any_name() == "doc") {
 		doc = n;

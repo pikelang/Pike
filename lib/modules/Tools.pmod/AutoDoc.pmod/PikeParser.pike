@@ -652,8 +652,8 @@ array parseArgList(int|void allowLiterals) {
     Type typ = parseOrType();
     if (typ && typ->name == "void" && peekToken() == ")")
       return ({ argnames, argtypes });
-    string literal = 0;
-    string identifier = 0;
+    string|zero literal = 0;
+    string|zero identifier = 0;
     if (!typ)
       literal = parseLiteral();
     else {
@@ -797,7 +797,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
   peekToken();
   SourcePosition position = currentPosition;
   Annotation a = parseAnnotation();
-  array(Annotation) annotations = UNDEFINED;
+  array(Annotation)|zero annotations = UNDEFINED;
   if (a) {
     switch(peekToken()) {
     case ";":
