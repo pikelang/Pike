@@ -85,7 +85,7 @@ mixed decode_answer(string s)
       if (!p)
       {
 	 p=compile_string(source,"NoReply."+cmd);
-	 source=0;
+         source="";
       }
       return p(@args);
    }
