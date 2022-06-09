@@ -242,9 +242,9 @@ class Frame {
     int rsv;
 
     //! Generic options for this frame.
-    mapping(string:mixed) options;
+    mapping(string:mixed)|zero options;
 
-    string mask;
+    string|zero mask;
 
     //! Data part of the frame. Valid for frames of type @[FRAME_BINARY],
     //! @[FRAME_PING] and @[FRAME_PONG].

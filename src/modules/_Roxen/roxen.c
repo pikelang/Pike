@@ -749,7 +749,8 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("html_encode_string", f_html_encode_string,
 	       tFunc(tMix,tStr), 0 );
 
-  ADD_FUNCTION("websocket_mask", f_websocket_mask, tFunc(tStr0 tStr0, tStr0), 0);
+  ADD_FUNCTION("websocket_mask", f_websocket_mask,
+	       tFunc(tStr8 tStr8, tStr8), 0);
 
   start_new_program();
   ADD_STORAGE( struct header_buf  );

@@ -161,7 +161,7 @@ void got_client_fail()
   cond->broadcast();
 }
 
-void got_client_ok()
+void got_client_ok(mixed ... ignored)
 {
   object key = mux->lock();
   done |= 2;
@@ -176,7 +176,8 @@ void got_server_http(Protocols.WebSocket.Request req)
   got_server_fail();
 }
 
-void got_client_close(Protocols.WebSocket.CLOSE_STATUS cause)
+void got_client_close(Protocols.WebSocket.CLOSE_STATUS cause,
+		      mixed ... ignored)
 {
   Tools.Testsuite.log_status("Got close: %d\n", cause);
   if (cause != Protocols.WebSocket.CLOSE_NORMAL) got_client_fail();
