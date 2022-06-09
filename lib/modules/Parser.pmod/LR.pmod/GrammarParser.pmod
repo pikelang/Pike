@@ -221,7 +221,8 @@ protected private string symbol_to_string(int|string symbol)
     return "\""+symbol+"\"";
 }
 
-protected private void add_rule(int nt, string colon, array(mixed) symbols, string action)
+protected private void add_rule(int nt, string colon, array(mixed) symbols,
+				string|zero action)
 {
   if (action == ";") {
     action = 0;
@@ -307,7 +308,7 @@ protected void create()
 //! return_value->lr_error.
 Parser make_parser(string str, object|void m)
 {
-  Parser res = 0;
+  object(Parser)|zero res = 0;
 
   master = m;
   lr_error = 0;	/* No errors yet */
