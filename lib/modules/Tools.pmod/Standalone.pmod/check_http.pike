@@ -179,7 +179,7 @@ int main(int argc, array(string) argv)
   Standards.URI url = Standards.URI("http://localhost/");
   string method = "GET";
   int timeout = 10;
-  string post_data = UNDEFINED;
+  string|zero post_data = UNDEFINED;
 
   foreach(Getopt.find_all_options(argv, options, 1), array(string) opt) {
     switch(opt[0]) {
