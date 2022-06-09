@@ -307,6 +307,10 @@ class Parser
 
     protected string _sprintf(int t)
     {
+      if (t == 's') {
+	if (!r) return "Item()";
+	return "Item(" + symbol_to_string(r->nonterminal) + ")";
+      }
       if( t!='O' ) return UNDEFINED;
       array(string) res = ({ symbol_to_string(r->nonterminal), ":\t" });
 
@@ -502,6 +506,9 @@ class Parser
 
     protected string _sprintf(int t)
     {
+      if (t == 's') {
+	return sprintf("Kernel(%d items)", sizeof(items));
+      }
       return t=='O' && sprintf("%{%s\n%}", items);
     }
   }
