@@ -10636,21 +10636,18 @@ void init_builtin_efuns(void)
    * 3: Mapping index type when looping over mapping.
    * 4: Callback function continuation type for optional arguments and result.
    */
-#define tMapStuffLow(IN,SUB,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
-  tOr5( tFuncV(IN tSet(tMix),tMix,OUTSET), \
+#define tMapStuffLow(IN,SUB,OUTSET,OUTPROG,OUTARR,OUTMAP) \
+  tOr3( tFuncV(IN tSet(tMix),tMix,OUTSET), \
 	tFuncV(IN tMap(tMix, tSetvar(2,tMix)), tMix, OUTMAP), \
-        tFuncV(IN tArray, tMix, OUTARR), \
-	tIfnot(tFuncV(IN, tNot(tMix), tMix), \
-	       tFuncV(IN, tMix, OUTMIX)), \
-	tFuncV(IN, tVoid, OUTMIX) )
+        tFuncV(IN tArray, tMix, OUTARR) )
 
-#define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
+#define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTARR,OUTMAP) \
   tOr( tFuncV(IN tFuncV(SUB, tSetvar(0, tAny), tSetvar(2,tAny)),     \
 	      tVar(0), OUTFUN),					     \
-       tMapStuffLow(IN,SUB,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP))
+       tMapStuffLow(IN,SUB,OUTSET,OUTPROG,OUTARR,OUTMAP))
 
   ADD_EFUN2("map", f_map,
-	    tOr8(tFuncArg(tArr(tSetvar(1,tMix)),
+	    tOr9(tFuncArg(tArr(tSetvar(1,tMix)),
 			  tFuncArg(tFuncArg(tVar(1),
 					    tSetvar(4,
 						    tFuncV(tNone, tUnknown, tMix))),
@@ -10658,7 +10655,6 @@ void init_builtin_efuns(void)
 		 tMapStuffLow(tArr(tSetvar(1,tMix)),tVar(1),
 			      tArr(tInt01),
 			      tArr(tObj),
-			      tArr(tMix),
 			      tArr(tArr(tMix)),
 			      tArr(tOr(tInt0,tVar(2)))),
 
@@ -10666,7 +10662,6 @@ void init_builtin_efuns(void)
 			   tMap(tVar(3),tVar(2)),
 			   tMap(tVar(3),tInt01),
 			   tMap(tVar(3),tObj),
-			   tMap(tVar(3),tMix),
 			   tMap(tVar(3),tArr(tMix)),
 			   tMap(tVar(3),tOr(tInt0,tVar(2)))),
 
@@ -10674,7 +10669,6 @@ void init_builtin_efuns(void)
 			   tSet(tVar(2)),
 			   tSet(tInt01),
 			   tSet(tObj),
-			   tSet(tMix),
 			   tSet(tArr(tMix)),
 			   tSet(tOr(tInt0,tVar(2)))),
 
@@ -10682,7 +10676,6 @@ void init_builtin_efuns(void)
 			   tMap(tStr,tVar(2)),
 			   tMap(tStr,tInt01),
 			   tMap(tStr,tObj),
-			   tMap(tStr,tMix),
 			   tMap(tStr,tArr(tMix)),
 			   tMap(tStr,tOr(tInt0,tVar(2)))),
 
@@ -10696,6 +10689,10 @@ void init_builtin_efuns(void)
 			      tMap(tVar(3),tMix)),
 		       tFuncV(tSet(tStringIndicable) tString,tMix,tSet(tMix)),
 		       tFuncV(tOr(tPrg(tObj),tFunction) tString,tMix,tMapping)),
+
+		 tFunc(tSetvar(0, tOr4(tArray, tString,
+				       tMap(tMix, tMix), tSet(tMix))),
+		       tVar(0)),
 
 		 tFuncV(tObj,tMix,tMix) ),
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
