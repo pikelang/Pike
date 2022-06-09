@@ -12141,10 +12141,17 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
       free_type(tmp);
       return NULL;
     }
-    res = and_pike_types(tmp, tmp2);
+    if (tmp == tmp2) {
+      free_type(tmp2);
+      return tmp;
+    }
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(tmp2);
+    push_type(T_AND);
     free_type(tmp);
     free_type(tmp2);
-    return res;
+    return pop_unfinished_type();
 
   case T_VOID:
     if ((flags & (CALL_WEAK_VOID|CALL_STRICT)) == CALL_STRICT) {
