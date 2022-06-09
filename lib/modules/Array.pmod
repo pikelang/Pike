@@ -178,7 +178,7 @@ array sum_arrays(function(int(0..0) ...:mixed) sum, array ... args)
 //! @[map()], @[sort()], @[`>()], @[dwim_sort_func], @[lyskom_sort_func],
 //! @[oid_sort_func]
 //!
-array sort_array(array arr, function(int(0..0),int(0..0),mixed ...:int)|void cmp,
+array sort_array(array arr, function(__unknown__, __unknown__, __unknown__ ...:int)|void cmp,
                  mixed ... args)
 {
   // FIXME: The two int(0..0) in the function prototype above are
@@ -761,13 +761,13 @@ int(0..1) all( array a, function(int(0..0), mixed ...:mixed) predicate,
 //!   Array.any( ({ 2, 4, 6, 8 }), `>, 5 )
 //! @seealso
 //!   @[all], @[has_value]
-int(0..1) any( array a, function(int(0..0), mixed ...:mixed) predicate,
+int(0..1) any( array a, function(__unknown__, __unknown__ ...:mixed) predicate,
 	       mixed ... extra_args )
 {
   // FIXME: int(0..0) in the function prototype above is a kludge.
   // See the FIXME in sort_array.
   foreach( a, mixed elem )
-    if( predicate( [int(0..0)] elem, @extra_args ) )
+    if( ([function(mixed...:mixed)]predicate)( elem, @extra_args ) )
       return 1;
   return 0;
 }
