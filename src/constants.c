@@ -115,8 +115,10 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 #ifdef PIKE_DEBUG
   {
     struct pike_type *z = NULL;
+    struct call_state cs;
     add_ref(type);
-    type = check_splice_call(name, type, 1, mixed_type_string, NULL,
+    LOW_INIT_CALL_STATE(cs, 1);
+    type = check_splice_call(name, type, &cs, mixed_type_string, NULL,
 			     CALL_INHIBIT_WARNINGS);
     if (type) {
       z = new_get_return_type(type, CALL_INHIBIT_WARNINGS);
@@ -125,6 +127,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
     f->may_return_void = pike_types_le(z, void_type_string, 0, 0);
     if(!z) Pike_fatal("Function has no valid return type.\n");
     free_type(z);
+    FREE_CALL_STATE(cs);
   }
   f->runs=0;
 #endif

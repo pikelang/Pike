@@ -3820,7 +3820,9 @@ void fix_type_field(node *n)
       node *efun_node = NULL;
       struct pike_type *f;
       enum Pike_opcodes opcode = n->token;
-      INT32 args = 0;
+      struct call_state cs;
+
+      INIT_CALL_STATE(cs);
 
       switch(opcode) {
       case F_AND_EQ:
@@ -3893,13 +3895,15 @@ void fix_type_field(node *n)
        *       for new_check_call(),
        */
       n->token = F_ARG_LIST;
-      f = debug_malloc_pass(new_check_call(efun_string, f, n, &args, 0));
+      f = debug_malloc_pass(new_check_call(efun_string, f, n, &cs, 0));
       n->token = opcode;
       if (f) {
 	struct pike_type *ret = new_get_return_type(f, 0);
 	free_type(f);
 	f = ret;
       }
+
+      FREE_CALL_STATE(cs);
 
       if (f && CAR(n)) {
 	/* Check that the returned type is compatible with the
@@ -4100,7 +4104,7 @@ void fix_type_field(node *n)
       struct pike_type *f;	/* Expected type. */
       struct pike_type *s;	/* Actual type */
       struct pike_string *name = NULL;
-      INT32 args;
+      struct call_state cs;
 #ifdef PIKE_DEBUG
       int save_l_flag = l_flag;
 
@@ -4109,7 +4113,7 @@ void fix_type_field(node *n)
       }
 #endif
 
-      args = 0;
+      INIT_CALL_STATE(cs);
       name = get_name_of_function(CAR(n));
 
 #ifdef PIKE_DEBUG
@@ -4120,7 +4124,7 @@ void fix_type_field(node *n)
 
       /* NOTE: new_check_call() steals a reference from f! */
       copy_pike_type(f, CAR(n)->type);
-      f = debug_malloc_pass(new_check_call(name, f, CDR(n), &args, 0));
+      f = debug_malloc_pass(new_check_call(name, f, CDR(n), &cs, 0));
 
       if (!f) {
 	/* Errors have been generated. */
@@ -4128,6 +4132,8 @@ void fix_type_field(node *n)
 	l_flag = save_l_flag;
 #endif
 	copy_pike_type(n->type, mixed_type_string);
+
+	FREE_CALL_STATE(cs);
 	break;
       }
 
@@ -4151,6 +4157,8 @@ void fix_type_field(node *n)
 #ifdef PIKE_DEBUG
 	l_flag = save_l_flag;
 #endif
+
+	FREE_CALL_STATE(cs);
 	break;
       }
 
@@ -4162,7 +4170,7 @@ void fix_type_field(node *n)
 	yytype_report(REPORT_ERROR, NULL, 0, s,
 		      NULL, 0, NULL,
 		      0, "Too few arguments to %S (got %d).",
-		      name, args);
+		      name, cs.argno);
 	free_type(s);
 	yytype_report(REPORT_ERROR, NULL, 0, NULL,
 		      NULL, 0, CAR(n)->type,
@@ -4177,6 +4185,8 @@ void fix_type_field(node *n)
 #ifdef PIKE_DEBUG
       l_flag = save_l_flag;
 #endif
+
+      FREE_CALL_STATE(cs);
       break;
     }
     copy_pike_type(n->type, mixed_type_string);
@@ -4403,13 +4413,14 @@ void fix_type_field(node *n)
       struct pike_string *sscanf_name;
       struct pike_type *sscanf_type;
       node *args;
-      INT32 argno = 0;
+      struct call_state cs;
       MAKE_CONST_STRING(sscanf_name, "sscanf");
       add_ref(sscanf_type = sscanf_type_string);
       args = mknode(F_ARG_LIST, CAR(n), CDR(n));
       add_ref(CAR(n));
       if (CDR(n)) add_ref(CDR(n));
-      sscanf_type = new_check_call(sscanf_name, sscanf_type, args, &argno, 0);
+      INIT_CALL_STATE(cs);
+      sscanf_type = new_check_call(sscanf_name, sscanf_type, args, &cs, 0);
       free_node(args);
       if (sscanf_type) {
 	if (!(n->type = new_get_return_type(sscanf_type, 0))) {
@@ -4419,7 +4430,7 @@ void fix_type_field(node *n)
 			  NULL, 0, expected,
 			  NULL, 0, NULL,
 			  0, "Too few arguments to sscanf (got %d).",
-			  argno);
+			  cs.argno);
 	    free_type(expected);
 	  } else {
 	    /* Most likely not reached. */
@@ -4431,6 +4442,7 @@ void fix_type_field(node *n)
 	}
 	free_type(sscanf_type);
       }
+      FREE_CALL_STATE(cs);
       if (!n->type) {
 	MAKE_CONSTANT_TYPE(n->type, tIntPos);
       }

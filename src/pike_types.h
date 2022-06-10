@@ -190,6 +190,19 @@ enum pt_cmp_flags
 #define CALL_INHIBIT_WARNINGS	0x0020	/* Inhibit warnings. */
 #define CALL_INVERTED_TYPES	0x0040	/* The fun and arg are inverted. */
 
+struct call_state
+{
+  INT32 argno;
+};
+
+#define LOW_INIT_CALL_STATE(CS, ARGNO)	do {		\
+    (CS).argno = (ARGNO);				\
+  } while (0)
+
+#define INIT_CALL_STATE(CS)	LOW_INIT_CALL_STATE(CS, 0)
+
+#define FREE_CALL_STATE(CS)
+
 /*
  * soft_cast() flags
  */
@@ -408,6 +421,7 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
 struct pike_type *low_new_check_call(struct pike_type *fun_type,
 				     struct pike_type *arg_type,
 				     INT32 flags,
+				     struct call_state *cs,
 				     struct svalue *sval);
 struct pike_type *new_get_return_type(struct pike_type *fun_type,
 				      INT32 flags);
@@ -415,13 +429,14 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 				     INT32 flags);
 struct pike_type *check_splice_call(struct pike_string *fun_name,
 				    struct pike_type *fun_type,
-				    INT32 argno,
+				    struct call_state *cs,
 				    struct pike_type *arg_type,
 				    struct svalue *sval,
 				    INT32 flags);
 struct pike_type *new_check_call(struct pike_string *fun_name,
 				 struct pike_type *fun_type,
-				 node *args, INT32 *argno, INT32 flags);
+				 node *args, struct call_state *cs,
+				 INT32 flags);
 struct pike_type *zzap_function_return(struct pike_type *t,
 				       struct pike_type *fun_ret);
 struct pike_type *get_lax_type_of_svalue( const struct svalue *s );

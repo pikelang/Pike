@@ -3067,6 +3067,7 @@ static void f___low_check_call(INT32 args)
 {
   struct pike_type *res;
   INT32 flags = CALL_NOT_LAST_ARG;
+  struct call_state cs;
   struct svalue *sval = NULL;
   if (args < 2) Pike_error("Bad number of arguments to __low_check_call().\n");
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_TYPE) {
@@ -3082,14 +3083,17 @@ static void f___low_check_call(INT32 args)
     flags = Pike_sp[2-args].u.integer ^ CALL_NOT_LAST_ARG;
   }
   if (args > 3) sval = Pike_sp + 3 - args;
+  LOW_INIT_CALL_STATE(cs, 1);
   if (!(res = low_new_check_call(Pike_sp[-args].u.type,
-				 Pike_sp[1-args].u.type, flags, sval))) {
+				 Pike_sp[1-args].u.type,
+				 flags, &cs, sval))) {
     pop_n_elems(args);
     push_undefined();
   } else {
     pop_n_elems(args);
     push_type_value(res);
   }
+  FREE_CALL_STATE(cs);
 }
 
 /*! @decl type|zero get_return_type(type fun_type)

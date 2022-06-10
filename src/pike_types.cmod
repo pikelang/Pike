@@ -4408,6 +4408,8 @@ static void push_expand_transitive_remap(struct pike_type *cont,
       push_remap_markers(cont, remap, flags);
 
       if (!BEGIN_CYCLIC(cont, trans)) {
+	struct call_state cs;
+
 	SET_CYCLIC_RET(1);
 
 	/* Check many arg. */
@@ -4423,7 +4425,9 @@ static void push_expand_transitive_remap(struct pike_type *cont,
 	}
 
 	push_remap_markers(cont->cdr, remap, flags);
-	tmp = low_new_check_call(trans, peek_type_stack(), 0, NULL);
+	INIT_CALL_STATE(cs);
+	tmp = low_new_check_call(trans, peek_type_stack(), 0, &cs, NULL);
+	FREE_CALL_STATE(cs);
 	compiler_discard_top_type();
 
 	if (tmp) {
@@ -8105,6 +8109,8 @@ static void push_expand_transitive_type(struct pike_type *cont,
       push_finished_type_with_markers(cont, markers, 0);
 
       if (!BEGIN_CYCLIC(cont, trans)) {
+	struct call_state cs;
+
 	SET_CYCLIC_RET(1);
 
 	/* Check many arg. */
@@ -8120,7 +8126,9 @@ static void push_expand_transitive_type(struct pike_type *cont,
 	}
 
 	push_finished_type_with_markers(cont->cdr, markers, 0);
-	tmp = low_new_check_call(trans, peek_type_stack(), 0, NULL);
+	INIT_CALL_STATE(cs);
+	tmp = low_new_check_call(trans, peek_type_stack(), 0, &cs, NULL);
+	FREE_CALL_STATE(cs);
 	compiler_discard_top_type();
 
 	if (tmp) {
@@ -9826,6 +9834,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 {
   struct compilation *c = THIS_COMPILATION;
   struct pike_type *t;
+  struct call_state cs;
   int tmp;
 
   CHECK_COMPILER();
@@ -9961,6 +9970,8 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 
   push_type(PIKE_T_UNKNOWN);
 
+  INIT_CALL_STATE(cs);
+
   do {
     struct pike_type *cont;
 
@@ -9986,7 +9997,8 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
     }
 #endif
 
-    cont = low_new_check_call(a, b->car, 0, NULL);
+    cont = low_new_check_call(a, b->car, 0, &cs, NULL);
+
     free_type(a);
     a = cont;
 
@@ -9995,12 +10007,18 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
     if (b->type == T_FUNCTION) b = b->cdr;
   } while(1);
 
-  if (a) {
-    free_type(a);
+  FREE_CALL_STATE(cs);
 
-    if (peek_type_stack()) {
-      return 1;
-    }
+#if 0
+  fprintf(stderr, "==> ");
+  simple_describe_type(peek_type_stack());
+  fprintf(stderr, "\n\n");
+#endif
+
+  free_type(a);
+
+  if (peek_type_stack()) {
+    return 1;
   }
 
   compiler_discard_top_type();
@@ -10221,10 +10239,12 @@ static struct pike_type *low_index_type(struct pike_type *t,
       {
 	if((i=FIND_LFUN(p,LFUN_ARROW))!=-1)
 	{
-	  INT32 args = 0;
+	  struct call_state cs;
+	  INIT_CALL_STATE(cs);
 	  add_ref(tmp = ID_FROM_INT(p, i)->type);
-	  if ((tmp = new_check_call(lfun_strings[LFUN_ARROW], tmp, CDR(n),
-				    &args, 0))) {
+	  tmp = new_check_call(lfun_strings[LFUN_ARROW], tmp, CDR(n), &cs, 0);
+	  FREE_CALL_STATE(cs);
+	  if (tmp) {
 	    struct pike_type *ret = new_get_return_type(tmp, 0);
 	    free_type(tmp);
 	    if (ret) return ret;
@@ -10237,10 +10257,12 @@ static struct pike_type *low_index_type(struct pike_type *t,
       }else{
 	if((i=FIND_LFUN(p,LFUN_INDEX)) != -1)
 	{
-	  INT32 args = 0;
+	  struct call_state cs;
+	  INIT_CALL_STATE(cs);
 	  add_ref(tmp = ID_FROM_INT(p, i)->type);
-	  if ((tmp = new_check_call(lfun_strings[LFUN_INDEX], tmp, CDR(n),
-				    &args, 0))) {
+	  tmp = new_check_call(lfun_strings[LFUN_INDEX], tmp, CDR(n), &cs, 0);
+	  FREE_CALL_STATE(cs);
+	  if (tmp) {
 	    struct pike_type *ret = new_get_return_type(tmp, 0);
 	    free_type(tmp);
 	    if (ret) return ret;
@@ -10846,8 +10868,12 @@ static int low_check_indexing(struct pike_type *type,
 	  (i = FIND_LFUN(p,LFUN_ASSIGN_INDEX));
       }
       if (i != -1) {
-	if ((type = low_new_check_call(ID_FROM_INT(p, i)->type, index_type,
-				       CALL_NOT_LAST_ARG, NULL))) {
+	struct call_state cs;
+	INIT_CALL_STATE(cs);
+	type = low_new_check_call(ID_FROM_INT(p, i)->type, index_type,
+				  CALL_NOT_LAST_ARG, &cs, NULL);
+	FREE_CALL_STATE(cs);
+	if (type) {
 	  free_type(type);
 	  return 1;
 	}
@@ -11601,6 +11627,7 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
 static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 					      struct pike_type *arg_type,
 					      INT32 flags,
+					      struct call_state *cs,
 					      struct svalue *sval
 #ifdef PIKE_TYPE_DEBUG
 					      , INT32 indent
@@ -11622,7 +11649,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     simple_describe_type(fun_type);
     fprintf(stderr, ", ");
     simple_describe_type(arg_type);
-    fprintf(stderr, ", 0x%04x, %p)...\n", flags, sval);
+    fprintf(stderr, ", 0x%04x, %p(argno:%d), %p)...\n",
+	    flags, cs, cs?cs->argno:-1, sval);
   }
 #endif /* PIKE_DEBUG */
 
@@ -11642,7 +11670,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     goto loop;
 
   case PIKE_T_ATTRIBUTE:
-    res = lower_new_check_call(fun_type->cdr, arg_type, flags, sval CHECK_CALL_ARGS);
+    res = lower_new_check_call(fun_type->cdr, arg_type, flags,
+			       cs, sval CHECK_CALL_ARGS);
     if (!res) return NULL;
     if (c) {
       ref_push_string((struct pike_string *)fun_type->car);
@@ -11667,12 +11696,15 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     break;
 
   case T_OR:
-    res = lower_new_check_call(fun_type->car, arg_type, flags, sval CHECK_CALL_ARGS);
+    res = lower_new_check_call(fun_type->car, arg_type, flags,
+			       cs, sval CHECK_CALL_ARGS);
     if (!res) {
-      res = lower_new_check_call(fun_type->cdr, arg_type, flags, sval CHECK_CALL_ARGS);
+      res = lower_new_check_call(fun_type->cdr, arg_type, flags,
+				 cs, sval CHECK_CALL_ARGS);
       break;
     }
-    tmp = lower_new_check_call(fun_type->cdr, arg_type, flags, sval CHECK_CALL_ARGS);
+    tmp = lower_new_check_call(fun_type->cdr, arg_type, flags,
+			       cs, sval CHECK_CALL_ARGS);
     if (!tmp) break;
     res = or_pike_types(tmp2 = res, tmp, 1);
     free_type(tmp);
@@ -11680,9 +11712,11 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     break;
 
   case T_AND:
-    res = lower_new_check_call(fun_type->car, arg_type, flags, sval CHECK_CALL_ARGS);
+    res = lower_new_check_call(fun_type->car, arg_type, flags,
+			       cs, sval CHECK_CALL_ARGS);
     if (!res) break;
-    tmp = lower_new_check_call(fun_type->cdr, arg_type, flags, sval CHECK_CALL_ARGS);
+    tmp = lower_new_check_call(fun_type->cdr, arg_type, flags,
+			       cs, sval CHECK_CALL_ARGS);
     if (!tmp) {
       free_type(res);
       res = NULL;
@@ -11715,7 +11749,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     } else {
       res = lower_new_check_call(fun_type->car, arg_type,
 				 flags ^ CALL_INVERTED_TYPES,
-				 sval CHECK_CALL_ARGS);
+				 cs, sval CHECK_CALL_ARGS);
       if (res) {
 	/* The argument matched the function type. */
 	/* Move the inversion back to the function type. */
@@ -11765,7 +11799,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     } else {
       fun_type = zzap_function_return(tmp, fun_type->car);
     }
-    res = lower_new_check_call(fun_type, arg_type, flags, sval CHECK_CALL_ARGS);
+    res = lower_new_check_call(fun_type, arg_type, flags,
+			       cs, sval CHECK_CALL_ARGS);
     free_type(fun_type);
     break;
 
@@ -11789,7 +11824,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     if (!tmp) {
       return NULL;
     }
-    res = lower_new_check_call(tmp, arg_type, flags, sval CHECK_CALL_ARGS);
+    res = lower_new_check_call(tmp, arg_type, flags,
+			       cs, sval CHECK_CALL_ARGS);
     free_type(tmp);
     break;
 
@@ -11799,7 +11835,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
      *     but this leads to a combinatorial explosion.
      */
     tmp = expand_transitive(fun_type, a_markers, 0);
-    res = lower_new_check_call(tmp, arg_type, flags, sval CHECK_CALL_ARGS);
+    res = lower_new_check_call(tmp, arg_type, flags,
+			       cs, sval CHECK_CALL_ARGS);
     free_type(tmp);
 #else
     /* There are two cases here; arg_type can belong to either
@@ -11812,24 +11849,24 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       tmp = new_get_return_type(fun_type->cdr, 0);
     }
     if (tmp) {
-      tmp2 = low_new_check_call(fun_type->cdr, tmp, 0, NULL);
+      tmp2 = low_new_check_call(fun_type->cdr, tmp, 0, cs, NULL);
       free_type(tmp);
       tmp = NULL;
       if (tmp2) {
 	/* tmp is a valid argument to fun_type->cdr,
 	 * so check if arg_type is also valid. */
 	tmp = lower_new_check_call(tmp2, arg_type, flags,
-				   sval CHECK_CALL_ARGS);
+				   cs, sval CHECK_CALL_ARGS);
 	free_type(tmp2);
       }
     }
 
     if (fun_type->car) {
-      tmp2 = lower_new_check_call(fun_type->car, arg_type,
-				  flags, sval CHECK_CALL_ARGS);
+      tmp2 = lower_new_check_call(fun_type->car, arg_type, flags,
+				  cs, sval CHECK_CALL_ARGS);
     } else {
-      tmp2 = lower_new_check_call(fun_type->cdr, arg_type,
-				  flags, sval CHECK_CALL_ARGS);
+      tmp2 = lower_new_check_call(fun_type->cdr, arg_type, flags,
+				  cs, sval CHECK_CALL_ARGS);
     }
     if (tmp2) {
       if (!tmp) {
@@ -12059,6 +12096,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 struct pike_type *low_new_check_call(struct pike_type *fun_type,
 				     struct pike_type *arg_type,
 				     INT32 flags,
+				     struct call_state *cs,
 				     struct svalue *sval)
 {
   struct pike_type *tmp;
@@ -12111,7 +12149,7 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
       goto loop;
     }
     if (!(tmp = low_new_check_call(fun_type, arg_type->car,
-				   flags | CALL_WEAK_VOID, sval))) {
+				   flags | CALL_WEAK_VOID, cs, sval))) {
       if (flags & CALL_STRICT) {
 	return NULL;
       }
@@ -12119,7 +12157,7 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
       goto loop;
     }
     if (!(tmp2 = low_new_check_call(fun_type, arg_type->cdr,
-				    flags | CALL_WEAK_VOID, sval))) {
+				    flags | CALL_WEAK_VOID, cs, sval))) {
       if (flags & CALL_STRICT) {
 	free_type(tmp);
 	return NULL;
@@ -12133,11 +12171,11 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
 
   case T_AND:
     if (!(tmp = low_new_check_call(fun_type, arg_type->car,
-				   flags & ~CALL_WEAK_VOID, sval))) {
+				   flags & ~CALL_WEAK_VOID, cs, sval))) {
       return NULL;
     }
     if (!(tmp2 = low_new_check_call(fun_type, arg_type->cdr,
-				    flags & ~CALL_WEAK_VOID, sval))) {
+				    flags & ~CALL_WEAK_VOID, cs, sval))) {
       free_type(tmp);
       return NULL;
     }
@@ -12163,7 +12201,7 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
   }
 
   if (!(tmp = lower_new_check_call(fun_type, arg_type,
-				   flags & ~CALL_WEAK_VOID, sval
+				   flags & ~CALL_WEAK_VOID, cs, sval
 #ifdef PIKE_TYPE_DEBUG
 				   , 0
 #endif
@@ -12185,7 +12223,7 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
     push_int_type(CAR_TO_INT(arg_type), -1);
     tmp2 = pop_unfinished_type();
     if (!(tmp = lower_new_check_call(fun_type, tmp2,
-				     flags & ~CALL_WEAK_VOID, sval
+				     flags & ~CALL_WEAK_VOID, cs, sval
 #ifdef PIKE_TYPE_DEBUG
 				     , 0
 #endif
@@ -12204,7 +12242,7 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
     push_int_type(1, CDR_TO_INT(arg_type));
     tmp2 = pop_unfinished_type();
     if (!(tmp = lower_new_check_call(fun_type, tmp2,
-				     flags & ~CALL_WEAK_VOID, sval
+				     flags & ~CALL_WEAK_VOID, cs, sval
 #ifdef PIKE_TYPE_DEBUG
 				     , 0
 #endif
@@ -12792,7 +12830,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 /* NOTE: fun_type loses a reference. */
 struct pike_type *check_splice_call(struct pike_string *fun_name,
 				    struct pike_type *fun_type,
-				    INT32 argno,
+				    struct call_state *cs,
 				    struct pike_type *args_type,
 				    struct svalue *sval,
 				    INT32 flags)
@@ -12824,7 +12862,7 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
   if (l_flag>4) {
     fprintf(stderr, "check_splice_call(\"%s\", ", fun_name->str);
     simple_describe_type(fun_type);
-    fprintf(stderr, ",\n    %d, ", argno);
+    fprintf(stderr, ",\n    %d, ", cs->argno);
     simple_describe_type(args_type);
     fprintf(stderr, ",\n    %p, 0x%04x)", sval, flags);
     fprintf(stderr, "\n    range: [%d..%d] ", min_cnt, max_cnt);
@@ -12856,7 +12894,7 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
     if (cnt >= max_cnt) break;
 
     fun_type = low_new_check_call(prev = fun_type, arg_type,
-				  flags | CALL_NOT_LAST_ARG, sval);
+				  flags | CALL_NOT_LAST_ARG, cs, sval);
     free_type(prev);
 
 #ifdef PIKE_DEBUG
@@ -12879,10 +12917,10 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
     /* The splice values are invalid for later arguments. */
     if (!cnt && max_cnt) {
       yywarning("In argument %d to %S: The @-operator argument must be an empty array.",
-		argno, fun_name);
+		cs->argno, fun_name);
     } else if (c->lex.pragmas & ID_STRICT_TYPES) {
       yywarning("In argument %d to %S: The @-operator argument has a max length of %d.",
-		argno, fun_name, cnt);
+		cs->argno, fun_name, cnt);
     }
   }
 
@@ -12903,7 +12941,7 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
 /* NOTE: fun_type loses a reference. */
 static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
 					    struct pike_type *fun_type,
-					    node *args, INT32 *argno,
+					    node *args, struct call_state *cs,
 					    INT32 flags)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -12920,7 +12958,7 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
     return fun_type;
   }
 
-  (*argno)++;
+  cs->argno++;
 
   if (args->token == F_CONSTANT) {
     sval = &args->u.sval;
@@ -12928,7 +12966,7 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
 
 #ifdef PIKE_DEBUG
   if (l_flag>2) {
-    fprintf(stderr, "  Checking argument #%d... ", *argno);
+    fprintf(stderr, "  Checking argument #%d... ", cs->argno);
     simple_describe_type(args->type);
     if (sval) {
       fprintf(stderr, "\n  Constant of type %s",
@@ -12946,8 +12984,7 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
     }
 #endif /* PIKE_DEBUG */
 
-    res = check_splice_call(fun_name, fun_type, *argno,
-			    args->type, sval, flags);
+    res = check_splice_call(fun_name, fun_type, cs, args->type, sval, flags);
 
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
@@ -12962,7 +12999,7 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
 #ifdef PIKE_DEBUG
     if (l_flag>2) fputc ('\n', stderr);
 #endif
-    if ((res = low_new_check_call(fun_type, args->type, flags, sval))) {
+    if ((res = low_new_check_call(fun_type, args->type, flags, cs, sval))) {
       /* OK. */
 #ifdef PIKE_DEBUG
       if (l_flag>2) {
@@ -12973,12 +13010,12 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
 	  /* FIXME: Strict types not supported for lvalues yet. */
 	  !(flags & CALL_ARG_LVALUE)){
 	if (!(tmp = low_new_check_call(fun_type, args->type,
-				       flags|CALL_STRICT, sval))) {
+				       flags|CALL_STRICT, cs, sval))) {
 	  tmp = get_first_arg_type(fun_type, flags);
 	  yytype_report(REPORT_WARNING, NULL, 0, tmp,
 			NULL, 0, args->type,
 			0, "Type mismatch in argument %d to %S.",
-			*argno, fun_name);
+			cs->argno, fun_name);
 	  if (tmp) free_type(tmp);
 	} else {
 	  free_type(tmp);
@@ -12998,12 +13035,12 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
     }
 #endif /* PIKE_DEBUG */
     yytype_report(REPORT_ERROR, NULL, 0, tmp, NULL, 0, args->type,
-		  0, "Bad argument %d to %S.", *argno, fun_name);
+		  0, "Bad argument %d to %S.", cs->argno, fun_name);
 
     /* Try advancing with the suggested type, so that we can check
      * the rest of the arguments.
      */
-    if ((tmp2 = low_new_check_call(fun_type, tmp, flags, NULL))) {
+    if ((tmp2 = low_new_check_call(fun_type, tmp, flags, cs, NULL))) {
       /* Succeeded. */
       free_type(fun_type);
       free_type(tmp);
@@ -13031,7 +13068,7 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
     yytype_report(REPORT_ERROR, NULL, 0, NULL,
 		  NULL, 0, args->type,
 		  0, "Too many arguments to %S (expected %d arguments).",
-		  fun_name, *argno - 1);
+		  fun_name, cs->argno - 1);
   }
   free_type(fun_type);
   return NULL;
@@ -13040,7 +13077,8 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
 /* NOTE: fun_type loses a reference. */
 struct pike_type *new_check_call(struct pike_string *fun_name,
 				 struct pike_type *fun_type,
-				 node *args, INT32 *argno, INT32 flags)
+				 node *args, struct call_state *cs,
+				 INT32 flags)
 {
   node *orig_arg_parent = NULL;
   INT32 orig_flags = flags;
@@ -13081,7 +13119,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	continue;
       }
     } else {
-      fun_type = new_check_call_arg(fun_name, fun_type, args, argno, flags);
+      fun_type = new_check_call_arg(fun_name, fun_type, args, cs, flags);
       debug_malloc_touch(fun_type);
 
       if (!fun_type) return NULL;
@@ -13114,7 +13152,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	 * This should be a quite rare case, and the tree is
 	 * most likely very shallow, so this should be safe.
 	 */
-	fun_type = new_check_call(fun_name, fun_type, prev, argno, flags);
+	fun_type = new_check_call(fun_name, fun_type, prev, cs, flags);
 	debug_malloc_touch(fun_type);
 
 	if (!fun_type) return NULL;
