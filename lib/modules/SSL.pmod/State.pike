@@ -28,7 +28,7 @@ Cipher.MACAlgorithm mac;
 //! Encryption or decryption object.
 Cipher.CipherAlgorithm crypt;
 
-function(string(8bit),int(1bit)|void:string(8bit)) compress;
+function(string(8bit):string(8bit)) compress;
 
 //! 64-bit sequence number.
 int next_seq_num = 0;    /* Bignum, values 0, .. 2^64-1 are valid */
