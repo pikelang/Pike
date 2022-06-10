@@ -390,7 +390,7 @@ int(0..1) handle_certificates(Buffer packet)
   }
 
   // This array is in the reverse order of the certs array.
-  array(Standards.X509.TBSCertificate) decoded =
+  array(Standards.X509.TBSCertificate)|zero decoded =
     verify_certificate_chain(certs);
   if( !decoded )
   {

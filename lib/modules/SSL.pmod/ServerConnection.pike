@@ -129,7 +129,7 @@ protected Packet server_hello_packet()
     return Buffer()->add_string_array(({application_protocol}), 1, 2);
   };
 
-  if (fail) return fail;
+  if (fail) return [object]fail;
 
   // NB: Assume that the client understands extensions
   //     if it has sent extensions...
@@ -208,7 +208,7 @@ protected int(-1..0) reply_new_session(array(int) cipher_suites,
     }
   }
 
-  Packet key_exchange = server_key_exchange_packet();
+  object(Packet)|zero key_exchange = server_key_exchange_packet();
 
   if (key_exchange) {
     SSL3_DEBUG_MSG("Sending ServerKeyExchange.\n");
@@ -765,7 +765,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                      fmt_cipher_suites((array(int))cipher_suites));
 
       if (sizeof(cipher_suites)) {
-        array(CertificatePair) certs =
+        array(CertificatePair)|zero certs =
           context->find_cert_domain(session->server_name);
 
         ProtocolVersion orig_version = version;
@@ -941,7 +941,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       {
 	if (version < PROTOCOL_TLS_1_3) {
 	  if (tickets_enabled) {
-	    array(string(8bit)|int) ticket_info =
+	    array(string(8bit)|int)|zero ticket_info =
 	      context->encode_ticket(session);
 	    if (ticket_info) {
 	      SSL3_DEBUG_MSG("SSL.ServerConnection: Sending ticket %O.\n",

@@ -187,7 +187,7 @@ protected Packet client_hello(string(8bit)|void server_name,
   {
     Buffer hostname = Buffer();
     hostname->add_int(0, 1); // name_time host_name(0)
-    hostname->add_hstring(server_name, 2); // hostname
+    hostname->add_hstring([string]server_name, 2); // hostname
 
     return Buffer()->add_hstring(hostname, 2);
   };
@@ -228,9 +228,9 @@ protected Packet client_hello(string(8bit)|void server_name,
     return Buffer()->add("\0"*padding);
   };
 
-  ext(EXTENSION_early_data, early_data && sizeof(early_data)) {
+  ext(EXTENSION_early_data, early_data && sizeof([array]early_data)) {
     SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d packets of early data.\n",
-		   sizeof(early_data));
+		   sizeof([array]early_data));
     Buffer buf = Buffer();
     foreach([array] early_data, Packet p) {
       p->send(buf);
@@ -417,7 +417,7 @@ protected int send_certs()
   COND_FATAL(!session->has_required_certificates(),
              ALERT_unexpected_message, "Certificate message missing.\n");
 
-  Packet key_exchange = client_key_exchange_packet();
+  object(Packet)|zero key_exchange = client_key_exchange_packet();
 
   if (key_exchange) {
     send_packet(key_exchange);

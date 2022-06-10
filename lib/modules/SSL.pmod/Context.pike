@@ -561,7 +561,7 @@ array(int) get_suites(int(-1..)|void min_keylength,
 #endif
 
   if (blacklisted_kes) {
-    kes -= blacklisted_kes;
+    kes -= [multiset]blacklisted_kes;
   }
 
   // Filter unsupported key exchange methods.
@@ -592,7 +592,7 @@ array(int) get_suites(int(-1..)|void min_keylength,
     blacklisted_ciphers |= (< CIPHER_rc4, CIPHER_des, CIPHER_rc4_40,
 			      CIPHER_rc2_40, CIPHER_des40 >);
   }
-  if( sizeof(blacklisted_ciphers) )
+  if( sizeof([multiset]blacklisted_ciphers) )
       res = filter(res,
                    lambda(int suite, multiset(int) blacklisted_hashes) {
                      return !blacklisted_hashes[CIPHER_SUITES[suite][1]];
@@ -936,7 +936,7 @@ protected mapping(string(8bit):array(CertificatePair)) cert_chains_domain = ([])
 //! Look up a suitable set of certificates for the specified issuer.
 //! @[UNDEFIEND] if no certificate was found. Called only by the
 //! ClientConnection as a response to a certificate request.
-array(CertificatePair) find_cert_issuer(array(string) ders)
+array(CertificatePair)|zero find_cert_issuer(array(string) ders)
 {
   // Return the first matching issuer. FIXME: Should we merge if
   // several matching issuers are found?
@@ -952,7 +952,7 @@ array(CertificatePair) find_cert_issuer(array(string) ders)
 //! Look up a suitable set of certificates for the specified domain.
 //! @[UNDEFINED] if no certificate was found. Called only by the
 //! Server.
-array(CertificatePair) find_cert_domain(string(8bit) domain)
+array(CertificatePair)|zero find_cert_domain(string(8bit) domain)
 {
   if( domain )
   {
@@ -1177,7 +1177,7 @@ object(Session)|zero lookup_session(string id)
 //!
 //! @seealso
 //!   @[encode_ticket()], @[lookup_session()]
-Session decode_ticket(string(8bit) ticket)
+object(Session)|zero decode_ticket(string(8bit) ticket)
 {
   return lookup_session(ticket);
 }
