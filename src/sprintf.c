@@ -2530,7 +2530,8 @@ static node *optimize_sprintf(node *n)
 }
 
 /*! @decl type(mixed) __handle_sprintf_format(string attr, string fmt, @
- *!                                           type arg_type, type cont_type)
+ *!                                           type arg_type, type cont_type, @
+ *!                                           mapping state)
  *!
  *!   Type attribute handler for @expr{"sprintf_format"@}.
  *!
@@ -2549,6 +2550,9 @@ static node *optimize_sprintf(node *n)
  *!   scanned for the type attribute @expr{"sprintf_args"@} to
  *!   determine where the remaining arguments to @[sprintf()] will
  *!   come from.
+ *!
+ *! @param state
+ *!   State mapping.
  *!
  *! This function is typically called from
  *! @[PikeCompiler()->apply_attribute_constant()] and is used to perform
@@ -2586,39 +2590,41 @@ void f___handle_sprintf_format(INT32 args)
   int str_marker = 0;
   int marker_mask;
 
-  if (args != 4)
-    SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sprintf_format", 4);
-  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING)
+  if (args != 5)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sprintf_format", 5);
+  if (TYPEOF(Pike_sp[-5]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 1, "string");
-  if (TYPEOF(Pike_sp[-3]) != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 2, "string");
-  if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
+  if (TYPEOF(Pike_sp[-3]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 3, "type");
-  if (TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE)
+  if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 4, "type");
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 5, "mapping");
 
-  tmp = Pike_sp[-1].u.type;
+  tmp = Pike_sp[-2].u.type;
   if ((tmp->type != PIKE_T_FUNCTION) && (tmp->type != T_MANY)) {
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 4, "type(function)");
   }
 
 #if 0
   fprintf(stderr, "__handle_sprintf_format(\"%s\", \"%s\", ...)\n",
-	  Pike_sp[-4].u.string->str, Pike_sp[-3].u.string->str);
+	  Pike_sp[-5].u.string->str, Pike_sp[-4].u.string->str);
 #endif /* 0 */
 
   MAKE_CONST_STRING(attr, "sprintf_format");
-  if (Pike_sp[-4].u.string == attr) {
+  if (Pike_sp[-5].u.string == attr) {
     /* Don't complain so loud about syntax errors in
      * relaxed mode.
      */
     severity = REPORT_NOTICE;
   } else {
     MAKE_CONST_STRING(attr, "strict_sprintf_format");
-    if (Pike_sp[-4].u.string != attr) {
+    if (Pike_sp[-5].u.string != attr) {
       Pike_error("Bad argument 1 to __handle_sprintf_format(), expected "
 		 "\"sprintf_format\" or \"strict_sprintf_format\", "
-		 "got \"%S\".\n", Pike_sp[-4].u.string);
+		 "got \"%S\".\n", Pike_sp[-5].u.string);
     }
   }
 
@@ -2640,7 +2646,7 @@ void f___handle_sprintf_format(INT32 args)
     if (str_marker > '9') str_marker = 0;
   }
 
-  fmt = Pike_sp[-3].u.string;
+  fmt = Pike_sp[-4].u.string;
   MAKE_CONST_STRING(attr, "sprintf_args");
 
   type_stack_mark();
@@ -2751,7 +2757,7 @@ void f___handle_sprintf_format(INT32 args)
 	  if (severity < REPORT_ERROR) {
 	    /* Add the type where the fmt isn't sent to sprintf(). */
 	    type_stack_mark();
-	    for (arg = Pike_sp[-1].u.type; arg != tmp; arg = arg->cdr) {
+	    for (arg = Pike_sp[-2].u.type; arg != tmp; arg = arg->cdr) {
 	      push_finished_type(arg->car);
 	    }
 	    push_type(T_VOID);			/* No more args */
@@ -2870,7 +2876,7 @@ void f___handle_sprintf_format(INT32 args)
   } else {
     /* No marker found. */
 #if 0
-    simple_describe_type(Pike_sp[-1].u.type);
+    simple_describe_type(Pike_sp[-2].u.type);
     fprintf(stderr, " ==> No marker found.\n");
 #endif /* 0 */
     pop_stack_mark();

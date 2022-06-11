@@ -2047,18 +2047,20 @@ void f___handle_sscanf_format(INT32 args)
 #if 0
   fprintf(stderr, "__handle_sscanf_format()\n");
 #endif /* 0 */
-  if (args != 4)
-    SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sscanf_format", 4);
-  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING)
+  if (args != 5)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sscanf_format", 5);
+  if (TYPEOF(Pike_sp[-5]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 1, "string");
-  if (TYPEOF(Pike_sp[-3]) != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 2, "string");
-  if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
+  if (TYPEOF(Pike_sp[-3]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 3, "type");
-  if (TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE)
+  if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 4, "type");
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 5, "mapping");
 
-  tmp = Pike_sp[-1].u.type;
+  tmp = Pike_sp[-2].u.type;
   if ((tmp->type != PIKE_T_FUNCTION) && (tmp->type != T_MANY)) {
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 4, "type(function)");
   }
@@ -2066,20 +2068,20 @@ void f___handle_sscanf_format(INT32 args)
   MAKE_CONST_STRING(sscanf_format_string, "sscanf_format");
   MAKE_CONST_STRING(sscanf_76_format_string, "sscanf_76_format");
 
-  if (Pike_sp[-4].u.string != sscanf_format_string) {
-    if (Pike_sp[-4].u.string != sscanf_76_format_string) {
+  if (Pike_sp[-5].u.string != sscanf_format_string) {
+    if (Pike_sp[-5].u.string != sscanf_76_format_string) {
       pop_n_elems(args);
       push_undefined();
       return;
     }
   }
 
-  fmt = Pike_sp[-3].u.string;
+  fmt = Pike_sp[-4].u.string;
   MAKE_CONST_STRING(attr, "sscanf_args");
 
 #if 0
   fprintf(stderr, "Checking sscanf format: \"%s\": ", fmt->str);
-  simple_describe_type(Pike_sp[-1].u.type);
+  simple_describe_type(Pike_sp[-2].u.type);
   fprintf(stderr, "\n");
 #endif /* 0 */
 

@@ -11674,10 +11674,14 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 			       cs, sval CHECK_CALL_ARGS);
     if (!res) return NULL;
     if (c) {
+      if (!cs->m) {
+	cs->m = allocate_mapping(0);
+      }
       ref_push_string((struct pike_string *)fun_type->car);
       ref_push_type_value(fun_type->cdr);
       ref_push_type_value(arg_type);
-      safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 3,
+      ref_push_mapping(cs->m);
+      safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 4,
 			  "apply_type_attribute");
       if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
 	  (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
@@ -12023,11 +12027,15 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	struct compilation *c = MAYBE_THIS_COMPILATION;
 	if (c) {
 	  /* Perform extra argument checking based on the attribute. */
+	  if (!cs->m) {
+	    cs->m = allocate_mapping(0);
+	  }
 	  ref_push_string((struct pike_string *)tmp2->car);
 	  push_svalue(sval);
 	  ref_push_type_value(tmp2->cdr);
 	  ref_push_type_value(res);
-	  safe_apply_current(PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM, 4);
+	  ref_push_mapping(cs->m);
+	  safe_apply_current(PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM, 5);
 	  if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
 	    type_stack_mark();
 	    push_finished_type(Pike_sp[-1].u.type);

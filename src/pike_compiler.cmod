@@ -2275,7 +2275,9 @@ static void f_compilation_push_type_attribute(INT32 args)
 }
 
 /*! @decl int(0..1) apply_type_attribute(string attribute, @
- *!                                      type a, type|void b)
+ *!                                      type a, type|zero b, @
+ *!                                      mapping|void state)
+ *! @decl int(0..1) apply_type_attribute(string attribute, type a)
  *!
  *!   Type attribute handler.
  *!
@@ -2297,6 +2299,10 @@ static void f_compilation_push_type_attribute(INT32 args)
  *!   The default implementation implements the "deprecated"
  *!   attribute.
  *!
+ *! @param state
+ *!   Mapping intended to hold state during checking of multiple
+ *!   arguments.
+ *!
  *! @returns
  *!   Returns @expr{1@} if the type check should be allowed
  *!   (ie @expr{__attribute__(attribute, a)(b)@}) is valid,
@@ -2311,8 +2317,9 @@ static void f_compilation_apply_type_attribute(INT32 args)
   struct svalue *a, *b = NULL;
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
+  struct mapping *state = NULL;
 
-  get_all_args(NULL, args, "%W%*.%*", &attr, &a, &b);
+  get_all_args(NULL, args, "%W%*.%*%m", &attr, &a, &b, &state);
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
@@ -2334,7 +2341,8 @@ static void f_compilation_apply_type_attribute(INT32 args)
 /*! @decl type(mixed) apply_attribute_constant(string attr, @
  *!                                            mixed value, @
  *!                                            type arg_type, @
- *!                                            void cont_type)
+ *!                                            void cont_type, @
+ *!                                            mapping state)
  *!
  *!   Handle constant arguments to attributed function argument types.
  *!
@@ -2361,6 +2369,10 @@ static void f_compilation_apply_type_attribute(INT32 args)
  *!
  *!   The default implementation implements the @expr{"sprintf_format"@},
  *!   @expr{"sscanf_format"@} and @expr{"sscanf_76_format"@} attributes.
+ *!
+ *! @param state
+ *!   Mapping intended to hold state during checking of multiple
+ *!   arguments.
  *!
  *! @returns
  *!   Returns a continuation type if it succeeded in strengthening the type.
@@ -2959,11 +2971,12 @@ static void compile_compiler(void)
 	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
 
   ADD_FUNCTION("apply_type_attribute", f_compilation_apply_type_attribute,
-	       tFunc(tStr tType(tMix) tOr(tType(tMix), tVoid), tInt01), 0);
+	       tFunc(tStr tType(tMix) tOr(tType(tMix), tZero) tMapping,
+		     tInt01), 0);
 
   ADD_FUNCTION("apply_attribute_constant",
 	       f_compilation_apply_attribute_constant,
-	       tFunc(tStr tMix tType(tMix) tType(tFunction),
+	       tFunc(tStr tMix tType(tMix) tType(tFunction) tMapping,
 		     tType(tFunction)), 0);
 
   ADD_FUNCTION("_sprintf", f_compilation__sprintf,
