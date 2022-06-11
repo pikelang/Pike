@@ -3083,7 +3083,7 @@ static void f___low_check_call(INT32 args)
     flags = Pike_sp[2-args].u.integer ^ CALL_NOT_LAST_ARG;
   }
   if (args > 3) sval = Pike_sp + 3 - args;
-  LOW_INIT_CALL_STATE(cs, 1);
+  LOW_INIT_CALL_STATE(cs, 1, NULL);
   if (!(res = low_new_check_call(Pike_sp[-args].u.type,
 				 Pike_sp[1-args].u.type,
 				 flags, &cs, sval))) {

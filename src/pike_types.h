@@ -10,6 +10,7 @@
 #include "svalue.h"
 #include "stralloc.h"
 #include "string_builder.h"
+#include "mapping.h"
 
 #define PIKE_TYPE_STACK_SIZE 100000
 
@@ -192,16 +193,29 @@ enum pt_cmp_flags
 
 struct call_state
 {
+  struct mapping *m;
   INT32 argno;
 };
 
-#define LOW_INIT_CALL_STATE(CS, ARGNO)	do {		\
+#define LOW_INIT_CALL_STATE(CS, ARGNO, MAP)	do {	\
+    if (((CS).m = (MAP))) {				\
+      add_ref((CS).m);					\
+    }							\
     (CS).argno = (ARGNO);				\
   } while (0)
 
-#define INIT_CALL_STATE(CS)	LOW_INIT_CALL_STATE(CS, 0)
+#define INIT_CALL_STATE(CS)	LOW_INIT_CALL_STATE(CS, 0, NULL)
 
-#define FREE_CALL_STATE(CS)
+#define FREE_CALL_STATE(CS) free_call_state(&(CS))
+
+static inline void free_call_state(struct call_state *cs)
+{
+  if (cs->m) {
+    free_mapping(cs->m);
+    cs->m = NULL;
+  }
+  cs->argno = 0;
+}
 
 /*
  * soft_cast() flags
