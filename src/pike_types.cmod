@@ -12679,29 +12679,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
     break;
 
   case PIKE_T_TRANSITIVE:
-    if (!fun_type->car) {
-      fun_type = fun_type->cdr;
-      goto loop;
-    }
-
-    tmp = new_get_return_type(fun_type->car, 0);
-
-    if (!tmp) {
-      fun_type = fun_type->car;
-      goto loop;
-    }
-
-    tmp2 = low_new_check_call(fun_type->cdr, tmp, 0, NULL);
-    free_type(tmp);
-    tmp = NULL;
-
-    if (!tmp2) {
-      fun_type = fun_type->car;
-      goto loop;
-    }
-
-    tmp = or_pike_types(fun_type->car, tmp2, 1);
-    free_type(tmp2);
+    tmp = expand_transitive(fun_type, a_markers, 0);
     res = get_first_arg_type(tmp, flags);
     free_type(tmp);
     return res;
