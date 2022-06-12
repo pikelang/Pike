@@ -758,8 +758,9 @@ F_ARG_LIST(0 = F_COMMA_EXPR(*, F_BREAK), +[!($$->tree_info & OPT_CASE)]):
 F_LVALUE_LIST(-, 0):
   $0;
 
-F_LVALUE_LIST(0, -):
-  $0;
+// Breaks sscanf lvalue detection.
+// F_LVALUE_LIST(0, -):
+//  $0;
 
 // Dead-code elimination.
 // FIXME: Should it be a warning here?
