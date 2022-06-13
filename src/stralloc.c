@@ -2539,8 +2539,6 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 	INC_PCHARP(str,1);
 	c = EXTRACT_PCHARP(str);
       }
-    } else {
-      neg = 0;
     }
   }
 
@@ -2574,7 +2572,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   }
   str_start=str;
 
-  if (neg) {
+  if (neg > 0) {
     mul_limit = (unsigned INT_TYPE) MIN_INT_TYPE / base;
     add_limit = (int) ((unsigned INT_TYPE) MIN_INT_TYPE % base);
   }
@@ -2609,13 +2607,13 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
      */
     push_int(base);
     convert_stack_top_with_base_to_bignum();
-    if(neg) o_negate();
+    if(neg > 0) o_negate();
 
     *r = *--Pike_sp;
     dmalloc_touch_svalue (r);
   }
   else {
-    if (neg)
+    if (neg > 0)
       r->u.integer = val > (unsigned INT_TYPE) MAX_INT_TYPE ?
 	-(INT_TYPE) (val - (unsigned INT_TYPE) MAX_INT_TYPE) - MAX_INT_TYPE :
 	-(INT_TYPE) val;
