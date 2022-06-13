@@ -1091,6 +1091,7 @@ INPUT_IS_WIDE(								 \
         case 'b':							 \
         case 'o':							 \
         case 'd':							 \
+        case 'u':							 \
         case 'x':							 \
         case 'D':							 \
         case 'i':							 \
@@ -1106,10 +1107,11 @@ INPUT_IS_WIDE(								 \
 									 \
 	  switch(match[cnt])						 \
 	  {								 \
-	  case 'b': base =  2; break;					 \
-	  case 'o': base =  8; break;					 \
+	  case 'b': base = -2; break;					 \
+	  case 'o': base = -8; break;					 \
 	  case 'd': base = 10; break;					 \
-	  case 'x': base = 16; break;					 \
+	  case 'u': base =-10; break;					 \
+	  case 'x': base =-16; break;					 \
 	  }								 \
 									 \
 	  wide_string_to_svalue_inumber(&sval, input+eye, &t,		 \
@@ -1253,6 +1255,11 @@ INPUT_IS_WIDE(								 \
 		  set.c['-']=0;						 \
 		  goto match_set;					 \
 									 \
+		case 'u':						 \
+		  memset(set.c, 1, sizeof(set.c));			 \
+		  for(e='0';e<='9';e++) set.c[e]=0;			 \
+		  goto match_set;					 \
+									 \
 		case 'o':						 \
 		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='7';e++) set.c[e]=0;			 \
@@ -1265,6 +1272,7 @@ INPUT_IS_WIDE(								 \
 		  goto match_set;					 \
 									 \
 		case 'D':						 \
+		case 'i':						 \
 		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['-']=0;						 \
@@ -1932,11 +1940,20 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	case 'n':	/* FIXME: tIntPos? */
         case 'b':
         case 'o':
-        case 'd':
+        case 'u':
         case 'x':
+	  /* Unsigned integers. */
+	  if (!no_assign)
+	    push_int_type(0, 0x7fffffff);
+	  break;
+
+	case 'c':
+	  /* FIXME: Use the width of the input string and format_len. */
+	  /* FALLTHRU */
+        case 'd':
         case 'D':
         case 'i':
-	case 'c':	/* FIXME: Use the width of the input string. */
+	  /* Signed integers. */
 	  if (!no_assign)
 	    push_finished_type(int_type_string);
 	  break;
