@@ -2512,6 +2512,12 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   if(ptr != 0)
     *ptr = str;
 
+  if (base < 0) {
+    /* Unsigned indicator. */
+    neg = -1;
+    base = -base;
+  }
+
   if(base < 0 || MBASE < base)
     return 0;
 
@@ -2523,14 +2529,18 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
       c = EXTRACT_PCHARP(str);
     }
 
-    switch (c)
-    {
-    case '-':
-      neg++;
-      /* Fall-through. */
-    case '+':
-      INC_PCHARP(str,1);
-      c = EXTRACT_PCHARP(str);
+    if (!neg) {
+      switch (c)
+      {
+      case '-':
+	neg++;
+	/* Fall-through. */
+      case '+':
+	INC_PCHARP(str,1);
+	c = EXTRACT_PCHARP(str);
+      }
+    } else {
+      neg = 0;
     }
   }
 
