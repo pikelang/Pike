@@ -2390,6 +2390,12 @@ static void f_compilation_apply_attribute_constant(INT32 args)
   struct svalue *sval;
   get_all_args(NULL, args, "%S%*", &attribute, &sval);
 
+  MAKE_CONST_STRING(test, "sscanf_input");
+  if (attribute == test) {
+    f___handle_sscanf_format(args);
+    return;
+  }
+
   if ((TYPEOF(*sval) == T_INT) && !sval->u.integer) {
     pop_n_elems(args);
     push_undefined();
@@ -2546,6 +2552,8 @@ PMOD_EXPORT void exit_compiler(void)
  *       execute outside of the compilation context, eg by
  *       __handle_sprintf_format(), which can be called directly
  *       by Pike-code, in which case it is a NO-OP.
+ *
+ * On return the pike stack arguments have been popped.
  */
 PMOD_EXPORT void va_yyreport(int severity_level,
 			     struct pike_string *file, INT_TYPE line,

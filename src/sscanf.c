@@ -1861,7 +1861,7 @@ PMOD_EXPORT void f_sscanf(INT32 args)
 }
 
 static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
-				       int cnt)
+				       int cnt, struct mapping *state)
 {
   for(; cnt < format_len; cnt++)
   {
@@ -1920,7 +1920,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  }
 	  if (!no_assign) {
 	    type_stack_mark();
-	    push_sscanf_argument_types(format, e, cnt+1);
+	    push_sscanf_argument_types(format, e, cnt+1, state);
 	    if (!(depth = pop_stack_mark())) {
 	      push_type(PIKE_T_ZERO);
 	    } else {
@@ -2020,8 +2020,14 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
       case 's':
       case 'H':
 	if (!no_assign) {
-	  /* FIXME: Use the type of the input string. */
-	  push_finished_type(string_type_string);
+	  struct svalue *s =
+	    simple_mapping_string_lookup(state, "sscanf_input");
+	  if (s && (TYPEOF(*s) == PIKE_T_TYPE)) {
+	    /* Use the type of the input string. */
+	    push_finished_type(s->u.type);
+	  } else {
+	    push_finished_type(string_type_string);
+	  }
 	}
 	break;
 
@@ -2056,8 +2062,10 @@ void f___handle_sscanf_format(INT32 args)
   struct pike_type *tmp;
   struct pike_string *attr;
   struct pike_string *fmt;
+  struct pike_string *sscanf_input_string;
   struct pike_string *sscanf_format_string;
   struct pike_string *sscanf_76_format_string;
+  struct mapping *state;
   int found = 0;
   int fmt_count;
 
@@ -2068,8 +2076,6 @@ void f___handle_sscanf_format(INT32 args)
     SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sscanf_format", 5);
   if (TYPEOF(Pike_sp[-5]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 1, "string");
-  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING)
-    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 2, "string");
   if (TYPEOF(Pike_sp[-3]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 3, "type");
   if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
@@ -2080,6 +2086,26 @@ void f___handle_sscanf_format(INT32 args)
   tmp = Pike_sp[-2].u.type;
   if ((tmp->type != PIKE_T_FUNCTION) && (tmp->type != T_MANY)) {
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 4, "type(function)");
+  }
+
+  state = Pike_sp[-1].u.mapping;
+
+  MAKE_CONST_STRING(sscanf_input_string, "sscanf_input");
+
+  if (Pike_sp[-5].u.string == sscanf_input_string) {
+    mapping_string_insert(state, sscanf_input_string, Pike_sp-3);
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
+
+  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-4]) == PIKE_T_INT) {
+      pop_n_elems(args);
+      push_undefined();
+      return;
+    }
+    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 2, "string");
   }
 
   MAKE_CONST_STRING(sscanf_format_string, "sscanf_format");
@@ -2129,7 +2155,7 @@ void f___handle_sscanf_format(INT32 args)
     if (arg) {
       type_stack_mark();
       push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-				 fmt->len, 0);
+				 fmt->len, 0, state);
       if (!array_cnt) {
 	pop_stack_mark();
 	push_type(T_VOID);	/* No more args */
@@ -2222,7 +2248,7 @@ void f___handle_sscanf_format(INT32 args)
     if (arg) {
       type_stack_mark();
       push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-				 fmt->len, 0);
+				 fmt->len, 0, state);
       /* Join the argument types. */
       if (!(fmt_count = pop_stack_mark())) {
 	push_type(PIKE_T_ZERO);
