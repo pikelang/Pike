@@ -12716,10 +12716,14 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
     free_type(tmp2);
     break;
   case T_AND:
-    if (!(res = get_first_arg_type(fun_type->car, flags))) {
+    if (!(res = get_first_arg_type(fun_type->car, flags)) &&
+	!(flags & CALL_ARG_LVALUE)) {
       break;
     }
     if (!(tmp = get_first_arg_type(fun_type->cdr, flags))) {
+      if (flags & CALL_ARG_LVALUE) {
+	break;
+      }
       free_type(res);
       res = NULL;
       break;
@@ -12737,8 +12741,9 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
      *     ==>
      *   attribute(sprintf_args, mixed) & object|string
      */
-    if (!(flags & CALL_NOT_LAST_ARG) ||
-	((fun_type->car->type == T_NOT) == (fun_type->cdr->type == T_NOT))) {
+    if (!(flags & CALL_ARG_LVALUE) &&
+	(!(flags & CALL_NOT_LAST_ARG) ||
+	 ((fun_type->car->type == T_NOT) == (fun_type->cdr->type == T_NOT)))) {
       res = and_pike_types(tmp2 = res, tmp);
     } else {
       res = or_pike_types(tmp2 = res, tmp, 1);
