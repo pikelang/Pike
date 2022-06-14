@@ -1979,7 +1979,7 @@ class client
 
   //!
   class Request(string domain, string req,
-		function(string,mapping|zero,mixed...:void)|zero callback,
+		function(string,mapping|zero,__unknown__...:void)|zero callback,
 		array(mixed) args)
   {
     int retries;
@@ -2052,7 +2052,7 @@ class async_client
   //! @note
   //!   Pike versions prior to 8.0 did not return the @[Request] object.
   Request do_query(string domain, int cl, int type,
-		   function(string,mapping,mixed...:void) callback,
+		   function(string,mapping,__unknown__...:void) callback,
 		   mixed ... args)
   {
     if (!callback) return UNDEFINED;
@@ -2114,7 +2114,7 @@ class async_client
   }
 
   private void collect_return(string domain, mapping res,
-                              function(array|zero, mixed ...:void)|zero callback,
+                              function(array|zero, __unknown__ ...:void)|zero callback,
                               mixed ... restargs) {
     array an = res->an;
     switch (res->rcode) {
@@ -2139,7 +2139,7 @@ class async_client
   }
 
   private array prepslots(int numslots,
-      function(array(string)|zero, mixed ...:void) callback,
+      function(array(string)|zero, __unknown__ ...:void) callback,
       mixed ... restargs) {
     array slots = allocate(numslots + 1);
     slots[0] = numslots;
@@ -2149,7 +2149,7 @@ class async_client
    // FIXME This actually is a hand-rolled Promise/Future construction.
   //        Would it be more elegant (but more overhead) to use a real Promise?
   private void collectslots(array|zero results, int slot, array slots,
-      function(array(string)|zero, mixed ...:void) callback,
+      function(array(string)|zero, __unknown__ ...:void) callback,
       mixed ... restargs) {
     // All queries are racing; collect all results in order
     slots[slot] = results;
@@ -2171,7 +2171,7 @@ class async_client
 
   private void multicallback(array|zero results,
       string type, string domain, array(string) multiq,
-      function(array(string)|zero, mixed ...:void) callback,
+      function(array(string)|zero, __unknown__ ...:void) callback,
       mixed ... restargs) {
     // If we have results, return early
     if (results && sizeof(results)) {
@@ -2190,7 +2190,7 @@ class async_client
   }
 
   private void mxfallback(array|zero results, string domain,
-      function(array(string)|zero, mixed ...:void) callback,
+      function(array(string)|zero, __unknown__ ...:void) callback,
       mixed ... restargs) {
     // We just want the names, not the IP addresses
     if (results && sizeof(results))
@@ -2200,7 +2200,7 @@ class async_client
   }
 
   private void collectmx(array|zero results, string domain,
-      function(array(string)|zero, mixed ...:void) callback,
+      function(array(string)|zero, __unknown__ ...:void) callback,
       mixed ... restargs) {
     if (results && sizeof(results)) {
       if (callback)			// Callback might have vanished
@@ -2211,7 +2211,7 @@ class async_client
   }
 
   private void collectmxip(array|zero results, string domain,
-      function(array(string)|zero, mixed ...:void) callback,
+      function(array(string)|zero, __unknown__ ...:void) callback,
       mixed ... restargs) {
     if (results && sizeof(results)) {
       restargs = prepslots(sizeof(results), callback, @restargs);
@@ -2235,7 +2235,7 @@ class async_client
   //!   @endint
   //!
   private void low_generic_query(int restrictsearch, string type,
-       string domain, function(array(string)|zero, mixed ...:void) callback,
+       string domain, function(array(string)|zero, __unknown__ ...:void) callback,
        mixed ... restargs) {
     int itype = dnstypetonum[type];
     if (!itype) {
@@ -2348,13 +2348,13 @@ class async_client
   //! @note
   //!   All queries sort automatically by preference (lowest numbers first).
   void generic_query(string type, string domain,
-       function(array(string)|zero, mixed ...:void) callback,
+       function(array(string)|zero, __unknown__ ...:void) callback,
        mixed ... restargs) {
     low_generic_query(0, upper_case(type), domain, callback, @restargs);
   }
 
   private void single_result(array|zero results,
-      string domain, function(string, string, mixed ...:void) callback,
+      string domain, function(string, string, __unknown__ ...:void) callback,
       mixed ... restargs) {
     if (callback)
       callback(domain, results && sizeof(results) ? results[0] : "",
@@ -2362,7 +2362,7 @@ class async_client
   }
 
   private void multiple_results(array|zero results,
-      string domain, function(string, array, mixed ...:void) callback,
+      string domain, function(string, array, __unknown__ ...:void) callback,
       mixed ... restargs) {
     if (callback)
       callback(domain, results, @restargs);
@@ -2417,7 +2417,7 @@ class async_client
   //!
   //! @seealso
   //!   @[host_to_ips]
-  Request host_to_ip(string host, function(string,string,mixed...:void) callback, mixed ... args)
+  Request host_to_ip(string host, function(string,string,__unknown__...:void) callback, mixed ... args)
   {
     generic_query("A", host, single_result, host, callback, @args);
   }
@@ -2447,7 +2447,7 @@ class async_client
   //!   from the retries variable and the request can be cancelled
   //!   using the @[cancel] method.
   Request host_to_ips(string host,
-		      function(string, array, mixed...:void) callback,
+		      function(string, array, __unknown__...:void) callback,
 		      mixed ... args)
   {
     generic_query("AAAA", host, multiple_results, host, callback, @args);
@@ -2469,7 +2469,7 @@ class async_client
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
   //!   using the @[cancel] method.
-  Request ip_to_host(string ip, function(string,string,mixed...:void) callback, mixed ... args)
+  Request ip_to_host(string ip, function(string,string,__unknown__...:void) callback, mixed ... args)
   {
     generic_query("PTR", ip, single_result, ip, callback, @args);
   }
@@ -2493,7 +2493,7 @@ class async_client
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
   //!   using the @[cancel] method.
-  Request get_mx_all(string host, function(string,array(mapping(string:string|int)),mixed...:void) callback, mixed ... args)
+  Request get_mx_all(string host, function(string,array(mapping(string:string|int)),__unknown__...:void) callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
       return do_query(host, C_IN, T_MX,
@@ -2524,7 +2524,7 @@ class async_client
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
   //!   using the @[cancel] method.
-  Request get_mx(string host, function(array(string),mixed...:void) callback, mixed ... args)
+  Request get_mx(string host, function(array(string),__unknown__...:void) callback, mixed ... args)
   {
     return get_mx_all(host,
 		      lambda(string domain, array(mapping) mx,
@@ -2640,7 +2640,7 @@ class async_tcp_client
     protected string writebuf="",readbuf="";
 
     protected void create(string domain, string req,
-			  function(string,mapping,mixed...:void) callback,
+			  function(string,mapping,__unknown__...:void) callback,
 			  array(mixed) args)
     {
       ::create(domain, req, callback, args);
@@ -2693,7 +2693,7 @@ class async_tcp_client
 
   //!
   Request do_query(string domain, int cl, int type,
-		   function(string,mapping,mixed...:void) callback,
+		   function(string,mapping,__unknown__...:void) callback,
 		   mixed ... args)
   {
     string req=low_mkquery(random(65536),domain,cl,type);
@@ -2725,7 +2725,7 @@ class async_dual_client
   inherit async_tcp_client : TCP;
 
   void check_truncation(string domain, mapping result, int cl, int type,
-			function(string,mapping,mixed...:void) callback,
+			function(string,mapping,__unknown__...:void) callback,
 			mixed ... args)
   {
     if (!result || !result->tc) callback(domain,result,@args);
@@ -2734,7 +2734,7 @@ class async_dual_client
 
   //!
   Request do_query(string domain, int cl, int type,
-		   function(string,mapping,mixed...:void) callback,
+		   function(string,mapping,__unknown__...:void) callback,
 		   mixed ... args)
   {
     return UDP::do_query(domain,cl,type,check_truncation,
