@@ -62,7 +62,7 @@ final void use_backend(int enable)
 }
 
 private mixed
- callnow(function(mixed ...:void) f, int|float delay, mixed ... args)
+ callnow(function(__unknown__ ...:void) f, int|float delay, mixed ... args)
 {
   mixed err = catch (f(@args));
   if (err)
@@ -75,7 +75,7 @@ private void auto_use_backend()
   callout = call_out;
 }
 
-protected function(function(mixed ...:void), int|float, mixed ...:mixed)
+protected function(function(__unknown__ ...:void), int|float, mixed ...:mixed)
   callout = ((callout = callnow), call_out(auto_use_backend, 0), callout);
 
 //! Value that will be provided asynchronously sometime in the
@@ -89,9 +89,9 @@ class Future
   mixed result;
   State state;
 
-  protected array(array(function(mixed, mixed ...: void)|mixed))
+  protected array(array(function(mixed, __unknown__ ...: void)|mixed))
     success_cbs = ({});
-  protected array(array(function(mixed, mixed ...: void)|mixed))
+  protected array(array(function(mixed, __unknown__ ...: void)|mixed))
     failure_cbs = ({});
 
   protected Pike.Backend backend;
@@ -231,7 +231,8 @@ class Future
   //!
   //! @seealso
   //!   @[on_failure()], @[query_success_callbacks()]
-  this_program on_success(function(mixed, __unknown__ ... : void) cb, mixed ... extra)
+  this_program on_success(function(mixed, __unknown__ ... : void) cb,
+			  mixed ... extra)
   {
     object(Thread.MutexKey)|zero key = mux->lock();
     switch (state) {
@@ -311,7 +312,7 @@ class Future
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
   //! and update @[p] with the result.
   protected void apply(mixed val, Promise p,
-		       function(mixed, mixed ... : mixed) fun,
+		       function(mixed, __unknown__ ... : mixed) fun,
 		       array(mixed) ctx)
   {
     mixed f;
@@ -324,7 +325,7 @@ class Future
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
   //! and update @[p] with the eventual result.
   protected void apply_flat(mixed val, Promise p,
-			    function(mixed, mixed ... : Future) fun,
+			    function(mixed, __unknown__ ... : Future) fun,
 			    array(mixed) ctx)
   {
     Future f;
@@ -342,7 +343,7 @@ class Future
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
   //! and update @[p] with the eventual result.
   protected void apply_smart(mixed val, Promise p,
-			    function(mixed, mixed ... : mixed|Future) fun,
+			    function(mixed, __unknown__ ... : mixed|Future) fun,
 			    array(mixed) ctx)
   {
     mixed|Future f;
@@ -363,7 +364,7 @@ class Future
   //! and update @[p] with @[val] if @[fun] didn't return false.
   //! If @[fun] returned false, fail @[p] with @expr{0@} as result.
   protected void apply_filter(mixed val, Promise p,
-			      function(mixed, mixed ... : int(0..1)) fun,
+			      function(mixed, __unknown__ ... : int(0..1)) fun,
 			      array(mixed) ctx)
   {
     int bool;
@@ -396,7 +397,8 @@ class Future
   //!
   //! @seealso
   //!  @[map_with()], @[transform()], @[recover()]
-  this_program map(function(mixed, mixed ... : mixed) fun, mixed ... extra)
+  this_program map(function(mixed, __unknown__ ... : mixed) fun,
+		   mixed ... extra)
   {
     Promise p = promise_factory();
     on_failure(p->failure);
@@ -426,7 +428,7 @@ class Future
   //!
   //! @seealso
   //!  @[map()], @[transform_with()], @[recover_with()], @[flat_map]
-  this_program map_with(function(mixed, mixed ... : this_program) fun,
+  this_program map_with(function(mixed, __unknown__ ... : this_program) fun,
 			mixed ... extra)
   {
     Promise p = promise_factory();
@@ -439,7 +441,7 @@ class Future
   //!
   //! @seealso
   //!   @[map_with()]
-  inline this_program flat_map(function(mixed, mixed ... : this_program) fun,
+  inline this_program flat_map(function(mixed, __unknown__ ... : this_program) fun,
 			       mixed ... extra)
   {
     return map_with(fun, @extra);
@@ -467,7 +469,7 @@ class Future
   //!
   //! @seealso
   //!   @[recover_with()], @[map()], @[transform()]
-  this_program recover(function(mixed, mixed ... : mixed) fun,
+  this_program recover(function(mixed, __unknown__ ... : mixed) fun,
 		       mixed ... extra)
   {
     Promise p = promise_factory();
@@ -498,7 +500,7 @@ class Future
   //!
   //! @seealso
   //!   @[recover()], @[map_with()], @[transform_with()]
-  this_program recover_with(function(mixed, mixed ... : this_program) fun,
+  this_program recover_with(function(mixed, __unknown__ ... : this_program) fun,
 			    mixed ... extra)
   {
     Promise p = promise_factory();
@@ -528,7 +530,7 @@ class Future
   //!
   //! @seealso
   //!   @[transform()]
-  this_program filter(function(mixed, mixed ... : int(0..1)) fun,
+  this_program filter(function(mixed, __unknown__ ... : int(0..1)) fun,
 		      mixed ... extra)
   {
     Promise p = promise_factory();
@@ -565,8 +567,8 @@ class Future
   //!
   //! @seealso
   //!   @[transform_with()], @[map()], @[recover()]
-  this_program transform(function(mixed, mixed ... : mixed) success,
-			 function(mixed, mixed ... : mixed)|void failure,
+  this_program transform(function(mixed, __unknown__ ... : mixed) success,
+			 function(mixed, __unknown__ ... : mixed)|void failure,
 			 mixed ... extra)
   {
     Promise p = promise_factory();
@@ -604,8 +606,8 @@ class Future
   //!
   //! @seealso
   //!   @[transform()], @[map_with()], @[recover_with]
-  this_program transform_with(function(mixed, mixed ... : this_program) success,
-		         function(mixed, mixed ... : this_program)|void failure,
+  this_program transform_with(function(mixed, __unknown__ ... : this_program) success,
+		         function(mixed, __unknown__ ... : this_program)|void failure,
 			      mixed ... extra)
   {
     Promise p = promise_factory();
@@ -663,9 +665,9 @@ class Future
   //!   @[on_success()], @[Promise.success()],
   //!   @[on_failure()], @[Promise.failure()],
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
-  this_program then(void|function(mixed, mixed ... : mixed) onfulfilled,
-   void|function(mixed, mixed ... : mixed) onrejected,
-   mixed ... extra) {
+  this_program then(void|function(mixed, __unknown__ ... : mixed) onfulfilled,
+		    void|function(mixed, __unknown__ ... : mixed) onrejected,
+		    mixed ... extra) {
     Promise p = promise_factory();
     if (onfulfilled)
       on_success(apply_smart, p, onfulfilled, extra);
@@ -699,8 +701,8 @@ class Future
   //!   @[recover()], @[recover_with()], @[then()], @[on_failure()],
   //!   @[Promise.failure()],
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
-  inline this_program thencatch(function(mixed, mixed ... : mixed) onrejected,
-   mixed ... extra) {
+  inline this_program thencatch(function(mixed, __unknown__ ... : mixed) onrejected,
+				mixed ... extra) {
     return then(0, onrejected, @extra);
   }
 
@@ -790,8 +792,10 @@ class Promise
   //! @seealso
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
   protected void create(void|
-   function(function(mixed:void),
-            function(mixed:void), mixed ...:void) executor, mixed ... extra)
+			function(function(mixed:void),
+				 function(mixed:void),
+				 __unknown__ ...:void) executor,
+			mixed ... extra)
   {
     state = STATE_NO_FUTURE;
 
@@ -839,7 +843,7 @@ class Promise
     {
       state = newstate;
       result = value;
-      array(array(function(mixed, mixed ...: void)|array(mixed))) cbs;
+      array(array(function(mixed, __unknown__ ...: void)|array(mixed))) cbs;
       if (state == STATE_FULFILLED) {
 	cbs = success_cbs;
       } else {
@@ -1138,13 +1142,13 @@ class AggregatedPromise
     }
   }
 
-  Future on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
+  Future on_success(function(mixed, __unknown__ ... : void) cb, mixed ... extra)
   {
     start();
     return ::on_success(cb, @extra);
   }
 
-  Future on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
+  Future on_failure(function(mixed, __unknown__ ... : void) cb, mixed ... extra)
   {
     start();
     return ::on_failure(cb, @extra);
@@ -1444,7 +1448,7 @@ Future resolve(mixed value)
 //!   The returned @[Future] does NOT have any state (eg backend)
 //!   propagated from the @[futures]. This must be done by hand.
 Future traverse(array(Future) futures,
-		function(mixed, mixed ... : mixed) fun,
+		function(mixed, __unknown__ ... : mixed) fun,
 		mixed ... extra)
 {
   return results(futures->map(fun, @extra));
@@ -1475,7 +1479,7 @@ Future traverse(array(Future) futures,
 //!   propagated from the @[futures]. This must be done by hand.
 Future fold(array(Future) futures,
 	    mixed initial,
-	    function(mixed, mixed, mixed ... : mixed) fun,
+	    function(mixed, mixed, __unknown__ ... : mixed) fun,
 	    mixed ... extra)
 {
   return AggregatedPromise()->depend(futures)->fold(initial, fun, extra)->future();
