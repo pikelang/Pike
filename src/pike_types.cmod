@@ -14448,6 +14448,9 @@ void init_types(void)
   sscanf_type_string = CONSTTYPE(tFuncV(tAttr("sscanf_input", tStr)
 					tAttr("sscanf_format", tStr),
 					tAttr("sscanf_args", tUnknown), tIntPos));
+  sscanf_80_type_string = CONSTTYPE(tFuncV(tAttr("sscanf_input", tStr)
+					   tAttr("sscanf_80_format", tStr),
+					   tAttr("sscanf_args", tUnknown), tIntPos));
   utf8_type_string = CONSTTYPE(tUtf8Str);
 
   /* add_ref(weak_type_string);	*//* LEAK */
@@ -14542,6 +14545,8 @@ void cleanup_pike_types(void)
   weak_type_string = NULL;
   free_type(sscanf_type_string);
   sscanf_type_string = NULL;
+  free_type(sscanf_80_type_string);
+  sscanf_80_type_string = NULL;
   free_type(utf8_type_string);
   utf8_type_string = NULL;
 
