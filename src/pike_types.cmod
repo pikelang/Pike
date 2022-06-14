@@ -67,6 +67,7 @@ PMOD_EXPORT struct pike_type *enumerable_type_string;
 PMOD_EXPORT struct pike_type *any_type_string;
 PMOD_EXPORT struct pike_type *weak_type_string;	/* array|mapping|multiset|function */
 struct pike_type *sscanf_type_string;
+struct pike_type *sscanf_80_type_string;
 PMOD_EXPORT struct pike_type *utf8_type_string;
 
 PMOD_EXPORT struct pike_string *literal_string_string;
