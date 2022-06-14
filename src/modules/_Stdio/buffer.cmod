@@ -2229,7 +2229,7 @@ PIKECLASS Buffer
     i = low_sscanf_pcharp(
       MKPCHARP(io_read_pointer(THIS), 0), io_len(THIS),
       MKPCHARP(format->str,format->size_shift), format->len,
-      &num_used);
+      &num_used, 0);
 
     if( !num_used )
     {
@@ -2350,7 +2350,7 @@ PIKECLASS Buffer
     i = low_sscanf_pcharp(
       MKPCHARP(io_read_pointer(THIS), 0), io_len(THIS),
       MKPCHARP(format->str,format->size_shift), format->len,
-      &num_used);
+      &num_used, 0);
 
     if( !num_used )
     {

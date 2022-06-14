@@ -2209,6 +2209,8 @@ OPCODE1(F_SIZEOF_LOCAL_STRING, "sizeof local string", I_UPDATE_SP, {
 
 OPCODE1_ALIAS(F_SSCANF, "sscanf", I_UPDATE_SP, o_sscanf);
 
+OPCODE1_ALIAS(F_SSCANF_80, "sscanf_80", I_UPDATE_SP, o_sscanf_80);
+
 #define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)                       \
 PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_,OPCODE),NAME,I_UPDATE_ALL,         \
 {                                                                       \

@@ -119,6 +119,7 @@ protected Mapping.ShadowedMapping compat_all_constants =
                             "syslog" : System.syslog,
                             "closelog" : System.closelog,
 #endif
+			    "array_sscanf": array_sscanf_80,
 			    "werror" : werror,
 			    "exit" : exit,
 			  ]), 1);

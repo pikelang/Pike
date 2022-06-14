@@ -10476,6 +10476,11 @@ void init_builtin_efuns(void)
 		 tAttr("sscanf_format", tStr),
 		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
 
+  ADD_EFUN("array_sscanf_80", f_sscanf_80,
+	   tFunc(tAttr("sscanf_input", tSetvar(0, tStr))
+		 tAttr("sscanf_80_format", tStr),
+		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
+
   ADD_EFUN("__handle_sscanf_format", f___handle_sscanf_format,
 	   tFunc(tStr tOr(tStr, tZero) tType(tMix) tType(tMix), tType(tMix)),
 	   0);

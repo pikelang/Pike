@@ -1020,6 +1020,7 @@ node *debug_mknode(int token, node *a, node *b)
     break;
 
   case F_SSCANF:
+  case F_SSCANF_80:
     if(!b || count_args(b) == 0) break;
     res->node_info |= OPT_ASSIGNMENT;
     break;
@@ -3011,6 +3012,7 @@ static void find_written_vars(node *n,
       break;
 
   case F_SSCANF:
+  case F_SSCANF_80:
     find_written_vars(CAR(n), p, 0);
     /* FIXME: Marks arg 2 as written for now.
      */
@@ -4405,6 +4407,7 @@ void fix_type_field(node *n)
     break;
 
   case F_SSCANF:
+  case F_SSCANF_80:
     if (!CAR(n) || (CAR(n)->token != F_ARG_LIST) || !CAAR(n))
     {
       yyerror("Too few arguments to sscanf().");
@@ -4415,7 +4418,11 @@ void fix_type_field(node *n)
       node *args;
       struct call_state cs;
       MAKE_CONST_STRING(sscanf_name, "sscanf");
-      add_ref(sscanf_type = sscanf_type_string);
+      if (n->token == F_SSCANF_80) {
+	add_ref(sscanf_type = sscanf_80_type_string);
+      } else {
+	add_ref(sscanf_type = sscanf_type_string);
+      }
       args = mknode(F_ARG_LIST, CAR(n), CDR(n));
       add_ref(CAR(n));
       if (CDR(n)) add_ref(CDR(n));
