@@ -231,7 +231,7 @@ int verify(string(8bit) password, string(7bit) hash)
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
     case "5":	// SHA-256
       if (salt && has_prefix(salt, "rounds=")) {
-	sscanf(salt, "rounds=%d", rounds);
+	sscanf(salt, "rounds=%u", rounds);
 	sscanf(hash, "%s$%s", salt, hash);
       }
       return Crypto.SHA256.crypt_hash(passwd, salt, rounds) == hash;
@@ -239,7 +239,7 @@ int verify(string(8bit) password, string(7bit) hash)
 #if constant(Crypto.SHA512)
     case "6":	// SHA-512
       if (salt && has_prefix(salt, "rounds=")) {
-	sscanf(salt, "rounds=%d", rounds);
+	sscanf(salt, "rounds=%u", rounds);
 	sscanf(hash, "%s$%s", salt, hash);
       }
       return Crypto.SHA512.crypt_hash(passwd, salt, rounds) == hash;
@@ -501,9 +501,9 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
       for (exp2 = 0; 1 << exp2 < rounds && ++exp2 < 31; );
       rounds = exp2;
     }
-    if (sizeof(scheme) < 1 + 2 + 1 + 2 + 1 + 22)
+    if (sizeof([string]scheme) < 1 + 2 + 1 + 2 + 1 + 22)
       salt = random_string(16);
-    return Nettle.bcrypt_hash(password, scheme, salt, rounds);
+    return Nettle.bcrypt_hash(password, [string]scheme, salt, rounds);
   }
 #endif
   case "1":
