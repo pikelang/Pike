@@ -272,6 +272,7 @@ PMOD_EXPORT extern struct pike_type *enumerable_type_string;
 PMOD_EXPORT extern struct pike_type *any_type_string;
 PMOD_EXPORT extern struct pike_type *weak_type_string;
 extern struct pike_type *sscanf_type_string;
+extern struct pike_type *sscanf_80_type_string;
 PMOD_EXPORT extern struct pike_type *utf8_type_string;
 
 PMOD_EXPORT extern struct pike_string *literal_string_string;
