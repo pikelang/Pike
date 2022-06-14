@@ -10477,7 +10477,7 @@ void init_builtin_efuns(void)
 		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__handle_sscanf_format", f___handle_sscanf_format,
-	   tFunc(tStr tStr tType(tMix) tType(tMix), tType(tMix)),
+	   tFunc(tStr tOr(tStr, tZero) tType(tMix) tType(tMix), tType(tMix)),
 	   0);
 
   /* Some Wide-string stuff */

@@ -2529,8 +2529,10 @@ static node *optimize_sprintf(node *n)
   return ret;
 }
 
-/*! @decl type(mixed) __handle_sprintf_format(string attr, string fmt, @
- *!                                           type arg_type, type cont_type, @
+/*! @decl type(mixed) __handle_sprintf_format(string attr, @
+ *!                                           string|zero fmt, @
+ *!                                           type arg_type, @
+ *!                                           type cont_type, @
  *!                                           mapping state)
  *!
  *!   Type attribute handler for @expr{"sprintf_format"@}.
@@ -2594,8 +2596,14 @@ void f___handle_sprintf_format(INT32 args)
     SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sprintf_format", 5);
   if (TYPEOF(Pike_sp[-5]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 1, "string");
-  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING)
-    SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 2, "string");
+  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING) {
+    if ((TYPEOF(Pike_sp[-4]) != PIKE_T_INT) || Pike_sp[-4].u.integer) {
+      SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 2, "string");
+    }
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
   if (TYPEOF(Pike_sp[-3]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 3, "type");
   if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
@@ -2952,7 +2960,7 @@ void init_sprintf(void)
   struct svalue s;
 
   ADD_EFUN("__handle_sprintf_format", f___handle_sprintf_format,
-	   tFunc(tStr tStr tType(tMix) tType(tMix), tType(tMix)),
+	   tFunc(tStr tOr(tStr, tZero) tType(tMix) tType(tMix), tType(tMix)),
 	   0);
 
   MAKE_CONST_STRING(attr, "sprintf_format");
