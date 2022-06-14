@@ -14444,7 +14444,8 @@ void init_types(void)
   any_type_string = CONSTTYPE(tOr(tVoid,tMix));
   weak_type_string = CONSTTYPE(tOr4(tArray,tMultiset,tMapping,
 				    tFuncV(tNone,tZero,tOr(tMix,tVoid))));
-  sscanf_type_string = CONSTTYPE(tFuncV(tStr tAttr("sscanf_format", tStr),
+  sscanf_type_string = CONSTTYPE(tFuncV(tAttr("sscanf_input", tStr)
+					tAttr("sscanf_format", tStr),
 					tAttr("sscanf_args", tUnknown), tIntPos));
   utf8_type_string = CONSTTYPE(tUtf8Str);
 

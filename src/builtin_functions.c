@@ -10472,7 +10472,8 @@ void init_builtin_efuns(void)
 
   /* function(string,string:array) */
   ADD_EFUN("array_sscanf", f_sscanf,
-	   tFunc(tStr tAttr("sscanf_format", tStr),
+	   tFunc(tAttr("sscanf_input", tSetvar(0, tStr))
+		 tAttr("sscanf_format", tStr),
 		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__handle_sscanf_format", f___handle_sscanf_format,
