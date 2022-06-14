@@ -654,6 +654,10 @@ class PikeType
       case "zero":
 	return ret;
 
+      case "unknown":
+      case "__unknown__":
+	return "__unknown__";
+
       case "utf8_string":
       case "sprintf_format":
 	return "string";
@@ -740,6 +744,10 @@ class PikeType
       case "zero":
 	return ({ ret });
 
+      case "unknown":
+      case "__unknown__":
+	return ({ "__unknown__" });
+
       case "utf8_string":
       case "sprintf_format":
 	return ({ "string" });
@@ -795,6 +803,7 @@ class PikeType
       string btype = realtype();
       switch (btype)
       {
+        case "unknown": case "__unknown__":
 	case "void": return "void";
 	case "zero":
 	  return may_be_void()?"struct svalue *":"INT_TYPE";
@@ -939,6 +948,8 @@ class PikeType
         case "sprintf_args": return "tAttr(\"sprintf_args\", tMix)";
 	case "program": return "tPrg(tObj)";
 	case "any":     return "tAny";
+	case "unknown": return "tUnknown";
+	case "__unknown__": return "tUnknown";
 	case "mixed":   return "tMix";
 	case "int":
 	  // Clamp the integer range to 32 bit signed.
@@ -1122,6 +1133,7 @@ class PikeType
 	  tok=convert_comments(PC.tokenize(split(tok),"piketype"));
 	  tok=PC.group(PC.hide_whitespaces(tok));
 
+	  // FALLTHRU
 	case "array":
 	  /* strip parenthesis */
 	  while(sizeof(tok) == 1 && arrayp(tok[0]))
@@ -1182,7 +1194,7 @@ class PikeType
 		break;
 
 	      case "function":
-		args=({ PikeType("mixed"), PikeType("any") });
+		args=({ PikeType("unknown"), PikeType("any") });
 		break;
 
 	      case "type":
@@ -1242,7 +1254,7 @@ class PikeType
 		  args=map(argstmp[..end]-({({})}),PikeType)+
 		    ({repeater, PikeType(rettmp) });
 		}else{
-		  args=({PikeType("mixed"),PikeType("any")});
+		  args=({PikeType("unknown"),PikeType("any")});
 		}
 		return;
 
