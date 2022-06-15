@@ -2691,9 +2691,10 @@ static int do_docode2(node *n, int flags)
   }
 
   case F_SSCANF:
+  case F_SSCANF_80:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
     tmp2=do_docode(CDR(n),DO_NOT_COPY | DO_LVALUE);
-    emit1(F_SSCANF, (INT32)(tmp1+tmp2));
+    emit1(n->token, (INT32)(tmp1+tmp2));
     return 1;
 
   case F_CATCH: {

@@ -202,6 +202,33 @@ F_SSCANF(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
 		  mkintnode(1));
 }
 ;
+F_SSCANF_80(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
+						    string_type_string, 0, 0)],
+			       ':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
+									 int_type_string, 0, 0)], -),
+				   F_RANGE_OPEN)),
+		       2 = +), 3):
+{
+  struct pike_string *percent_star_string;
+  struct pike_string *s_string;
+  MAKE_CONST_STRING(percent_star_string, "%*!");
+  MAKE_CONST_STRING(s_string, "s");
+  $$ = mkopernode("`-",
+		  mknode(F_LOR,
+			 mknode(F_SSCANF_80,
+				mknode(F_ARG_LIST, $0,
+				       mkopernode("`+",
+						  mknode(F_ARG_LIST,
+							 mkstrnode(percent_star_string),
+							 $1),
+						  mknode(F_ARG_LIST,
+							 mkstrnode(s_string),
+							 $2))),
+				$3),
+			 mkintnode(1)),
+		  mkintnode(1));
+}
+;
 
 
 // FIXME: Similar rule for sizeof(A+B) => sizeof(A)+sizeof(B)
