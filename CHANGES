@@ -157,6 +157,9 @@ o Use updated FFI API in Java module, to better support recent libffi.
 o Fix testsuite generation for BSD m4 users; POSIX systems must continue
   to use GNU m4 (gm4).
 
+o Adopted Gz configure checks to work with/accept zlib 1.2.12 changed
+  behaviour.
+
 Changes since Pike 8.0.702 (release 13)
 ----------------------------------------------------------------------
 

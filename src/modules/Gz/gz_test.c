@@ -321,11 +321,39 @@ void test_sync(compr, comprLen, uncompr, uncomprLen)
     CHECK_ERR(err, "inflateSync");
 
     err = inflate(&d_stream, Z_FINISH);
+/* Beginning of version based check selection / Pike modified code.
+ *
+ * According to the zlib copyright notice, we must clearly mark "altered
+ * source versions". The upstream example.c checks for Z_DATA_ERROR before
+ * 1.2.12 (or zlib commit 0d36ec47f310478549c0864f215ab5c0114c49ba),
+ * Z_STREAM_END after. We check for either of these based on the zlib version
+ * (as announced by zlib.h).
+ */
+#ifdef PIKE_CONFTEST_Z_NO_EXPECT_DATA_ERROR
+# error PIKE_CONFTEST_Z_NO_EXPECT_DATA_ERROR defined before check.
+#endif
+#if defined(ZLIB_VER_MAJOR) && defined(ZLIB_VER_MINOR) \
+    && defined(ZLIB_VER_REVISION)
+# if ZLIB_VER_MAJOR > 1 \
+    || (ZLIB_VER_MAJOR == 1 \
+        && ZLIB_VER_MINOR > 2 \
+        || (ZLIB_VER_MINOR == 2 \
+            && ZLIB_VER_REVISION >= 12))
+#  define PIKE_CONFTEST_Z_NO_EXPECT_DATA_ERROR
+# endif
+#endif
+#ifdef PIKE_CONFTEST_Z_NO_EXPECT_DATA_ERROR
+    if (err != Z_STREAM_END) {
+        fprintf(stderr, "inflate should report STREAM_END\n");
+    }
+#else
     if (err != Z_DATA_ERROR) {
         fprintf(stderr, "inflate should report DATA_ERROR\n");
         /* Because of incorrect adler32 */
 	exit(1);
     }
+#endif
+/* End of version based check selection / Pike modified code. */
     err = inflateEnd(&d_stream);
     CHECK_ERR(err, "inflateEnd");
 
