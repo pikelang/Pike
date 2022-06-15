@@ -5492,16 +5492,21 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       enum pt_cmp_flags avoidable = 0;
       enum pt_cmp_flags bvoidable = 0;
 
-      /* FIXME: What about function(__unknown__...:mixed|void)? */
-      if ((b->type == T_MANY) && !b->car && (b->cdr == mixed_type_string)) {
-	/* Common case. function(__unknown__...:mixed) */
+      if ((b->type == T_MANY) && !b->car &&
+	  ((b->cdr == mixed_type_string) || (b->cdr == any_type_string))) {
+	/* Common case.
+	 * function(__unknown__...:mixed) or function(__unknown__...:mixed|void)
+	 */
 	if (op == PT_BINOP_AND) {
 	  return remap_markers(a, remap, remap_flags);
 	}
 	return NULL;
       }
-      if ((a->type == T_MANY) && !a->car && (a->cdr == mixed_type_string)) {
-	/* Common case. function(__unknown__...:mixed) */
+      if ((a->type == T_MANY) && !a->car &&
+	  ((a->cdr == mixed_type_string) || (a->cdr == any_type_string))) {
+	/* Common case.
+	 * function(__unknown__...:mixed) or function(__unknown__...:mixed|void)
+	 */
 	if (op == PT_BINOP_AND) {
 	  return remap_markers(b, remap,
 			       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
