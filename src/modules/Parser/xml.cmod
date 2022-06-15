@@ -697,13 +697,13 @@ PIKECLASS Simple
    *   mixed ... xtra
    */
 #define CALLBACKTYPE							\
-  tFuncV(tStr tStr tMapping tOr(tArray,tStr) tMap(tStr,tMix), tMix,	\
+  tFuncV(tStr tStr tMapping tOr(tArray,tStr) tMap(tStr,tMix), tUnknown,	\
 	 tSetvar(0, tMix))
   /*"function(string,string,mapping,array|string,mapping(string:mixed),mixed...:0=mixed)"*/
 
 #define PARSETYPE							\
-  tOr(tFuncV(tStr tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0))),	\
-      tFuncV(tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0))))
+  tOr(tFuncV(tStr tStr tOr(CALLBACKTYPE, tVoid), tUnknown, tArr(tVar(0))),	\
+      tFuncV(tStr tOr(CALLBACKTYPE, tVoid), tUnknown, tArr(tVar(0))))
   /* "function(string," CALLBACKTYPE ",mixed...:array(0))" */
 
   /*! @decl array parse(string xml, string context, @
