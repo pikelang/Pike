@@ -5,7 +5,7 @@ Changes since Pike 7.8.700 (fourth 7.8 release):
 o Core: 
 
     - Improve robustness against outputting wide strings.
-    
+
         master()->handle_error() now survives if, for example, an object has
         an _sprintf() that returns a wide string.
     
@@ -71,6 +71,9 @@ o Build:
 
     - Disable machine code when compiling using GCC 4.6.0 and above, to avoid
         a broken machine code generator.
+
+    - Adopted Gz configure checks to work with/accept zlib 1.2.12 changed
+        behaviour.
 
 o Threads: 
 
