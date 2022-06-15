@@ -4129,13 +4129,10 @@ optional_block: /* EMPTY */ { $$=0; }
       push_type(T_MIXED);
     }
 
-    if (args_used) {
-      /* __ARGS__ is used. */
-      push_type(T_MIXED);
-    } else {
-      push_type(T_VOID);
-    }
-
+    /* Any extra args are available in __ARGS__, but allow
+     * the user to ignore them implicitly if not used.
+     */
+    push_type(T_MIXED);
     push_type(T_MANY);
 
     type=compiler_pop_type();
