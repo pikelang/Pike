@@ -99,7 +99,7 @@ protected class Element {
   }
 
   void check_attributes(mapping(string:string) c_attrs,
-			function(string|zero, string, mixed ...:mixed) xmlerror)
+			function(string|zero, string, __unknown__ ...:mixed) xmlerror)
   {
     foreach(indices(c_attrs), string name) {
       array spec = attributes[name];
@@ -283,11 +283,11 @@ protected private mixed validate(string kind, string name, mapping attributes,
 				 mapping(string:mixed) info,
 				 function(string,string|zero,mapping|zero,array|string,
 					  mapping(string:mixed),
-					  mixed ...:mixed) callback,
+					  __unknown__ ...:mixed) callback,
 				 array(mixed) extra)
 {
   // Helper...
-  function(string|zero, string, mixed ...:mixed) xmlerror =
+  function(string|zero, string, __unknown__ ...:mixed) xmlerror =
     lambda(string|zero tag, string msg, mixed ... args) {
       return callback("error", tag, 0, sprintf(msg, @args), info, @extra);
     };
@@ -472,7 +472,7 @@ protected private mixed validate(string kind, string name, mapping attributes,
 protected private mixed cleanup_parse(function(string,string|zero,mapping|zero
 					    ,array|string,
 					    mapping(string:mixed),
-					    mixed ...:mixed) callback,
+					    __unknown__ ...:mixed) callback,
 				   array(mixed) extra)
 {
   if(sizeof(__idrefs_used - __ids_used)>0)
@@ -494,7 +494,7 @@ protected private mixed cleanup_parse(function(string,string|zero,mapping|zero
 //!   Document this function
 array parse(string data,
 	    string|function(string, string, mapping, array|string,
-			    mapping(string:mixed), mixed ...:mixed) callback,
+			    mapping(string:mixed), __unknown__ ...:mixed) callback,
 	    mixed ... extra)
 {
   // Note: No need for advanced argument checks here;
@@ -515,7 +515,7 @@ array parse(string data,
 //!   Document this function
 array parse_dtd(string data,
 		string|function(string,string,mapping,array|string,
-				mapping(string:mixed),mixed ...:mixed) callback,
+				mapping(string:mixed), __unknown__ ...:mixed) callback,
 		mixed ... extra)
 {
   // Note: No need for advanced argument checks here;
