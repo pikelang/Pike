@@ -6,6 +6,10 @@
 
 #pragma strict_types
 
+#if !constant(zero)
+typedef int(0..0) zero;
+#endif
+
 /*
  * Input format:
  *
@@ -254,7 +258,7 @@ void fail(string msg, mixed ... args)
   exit(7); /* distinctive error... */
 }
 
-string fname;
+string|zero fname;
 string data = "";
 string tpos = "";
 int pos;
@@ -297,6 +301,7 @@ string read_id()
 
   while ((pos < sizeof(data)) && (((c = data[pos]) == '_') ||
 				  (('A' <= c) && (c <= 'Z')) ||
+				  (('0' <= c) && (c <= '9')) ||
 				  (c == '*') || (c == '+'))) {
     pos++;
   }
@@ -849,7 +854,7 @@ void parse_data()
     }
   }
   data = a*"";
-  a = 0;
+  a = ({});
 
   eat_whitespace();
   while (pos < sizeof(data)) {
@@ -1347,7 +1352,7 @@ string generate_code()
   return res;
 }
 
-void generate_parent(object(node) n, object(node) parent, string tpos)
+void generate_parent(object(node) n, object(node)|zero parent, string tpos)
 {
   n->tpos = tpos;
   n->parent = parent;
