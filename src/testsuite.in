@@ -1106,7 +1106,7 @@ test_any_equal([[
 ]], typeof(indices((mixed)0)))
 
 // Check that complex function types survive soft casting to function.
-ignore_warning("Soft cast of scope(0,function(*)) to function is a noop.", [[
+ignore_warning("Soft cast of scope(0,*) to function* is a noop.", [[
   test_eq(typeof([function]`+), typeof(`+))
 ]])
 
