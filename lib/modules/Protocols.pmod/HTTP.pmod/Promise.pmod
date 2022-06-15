@@ -385,7 +385,7 @@ protected class Session
         extra_callback_arguments = 0; // to allow garb
     }
 
-    protected void async_data() {
+    protected void async_data(object q) {
       string|zero s = con->data();
 
       if (!s)		// data incomplete, try again later
