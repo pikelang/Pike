@@ -146,12 +146,12 @@ class WarningFlag {
 //
 
 #ifndef WATCHDOG_TIMEOUT
-// 40 minutes should be enough...
+// 10 minutes should be enough...
 #if !constant(_reset_dmalloc)
-#define WATCHDOG_TIMEOUT 60*40
+#define WATCHDOG_TIMEOUT 60*10
 #else
 // ... unless we're running dmalloc
-#define WATCHDOG_TIMEOUT 60*160
+#define WATCHDOG_TIMEOUT 60*40
 #endif
 #endif
 
