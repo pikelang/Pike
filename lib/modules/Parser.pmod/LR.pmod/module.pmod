@@ -517,10 +517,10 @@ class Parser
   protected class StateQueue {
 
     //! Index of the head of the queue.
-    int head;
+    int(0..) head;
 
     //! Index of the tail of the queue.
-    int tail;
+    int(0..) tail;
 
     //! The queue itself.
     array(Kernel) arr = allocate(64);
@@ -899,7 +899,7 @@ class Parser
     if (i->number == depth) {
       int cyclic = 0;
       int empty_cycle = 1;
-      Item i2;
+      object(Item)|zero i2;
 
       while ((i2 = [object(Item)]item_stack->pop()) != i) {
 
@@ -1304,8 +1304,8 @@ class Parser
   {
     int lr_error = 0;	/* No error yet */
     int state_no = 0;	/* DEBUG INFO */
-    Kernel state;
-    multiset(int|string) symbols, conflicts;
+    object(Kernel)|zero state;
+    multiset(int|string)|zero symbols, conflicts;
 
     s_q = StateQueue();
     s_q->push(first_state());
@@ -1585,7 +1585,7 @@ class Parser
     ADT.Stack state_stack = ADT.Stack(4096);
     Kernel state = [object]start_state;
 
-    string input;
+    string input = "";
     mixed value;
 
     lr_error = 0;	/* No parse error yet */
