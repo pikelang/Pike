@@ -9,7 +9,7 @@
 
 //! @decl inherit 8.0::
 
-array|mapping|multiset|string map(array|mapping|multiset|string|object|program stuff, function(mixed,mixed...:mixed) f, mixed ... args)
+array|mapping|multiset|string map(array|mapping|multiset|string|object|program stuff, function(__unknown__, __unknown__...:mixed) f, mixed ... args)
 {
   if(objectp(stuff))
   {
