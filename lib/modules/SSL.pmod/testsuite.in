@@ -576,7 +576,7 @@ test_do([[
     void server_got_close() {
       trigged = 2;
     };
-    void server_alert() {
+    void server_alert(mixed ... ignored) {
       trigged = 0;
       // server->close();
     };
@@ -616,7 +616,7 @@ test_do([[
       if (state == 2) state = 3;
       client->close();
     };
-    void client_alert() {
+    void client_alert(mixed ... ignored) {
       trigged = 0;
     };
     void client_check_suite() {
@@ -728,7 +728,7 @@ test_do([[
     void server_got_close() {
       trigged = 2;
     };
-    void server_alert() {
+    void server_alert(mixed ... ignored) {
       trigged = 0;
       // server->close();
     };
@@ -757,7 +757,7 @@ test_do([[
       if (state == 2) state = 3;
       client->close();
     };
-    void client_alert() {
+    void client_alert(mixed ... ignored) {
       trigged = 0;
       // client->close();
     };
