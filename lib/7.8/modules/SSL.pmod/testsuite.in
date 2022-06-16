@@ -123,7 +123,7 @@ define(test_ssl, [[
     {
       trigged = 2;
     };
-    void server_alert()
+    void server_alert(mixed ... ignored)
     {
       trigged = 0;
       // server->close();
@@ -152,7 +152,7 @@ define(test_ssl, [[
       if (state == 2) state = 3;
       client->close();
     };
-    void client_alert()
+    void client_alert(mixed ... ignored)
     {
       trigged = 0;
       // client->close();
