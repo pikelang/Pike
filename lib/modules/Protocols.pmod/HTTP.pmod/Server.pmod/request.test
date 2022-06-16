@@ -119,7 +119,7 @@ void do_tests()
 
   void Test(function test)
   {
-    next = next->then(lambda()
+    next = next->then(lambda(mixed ...)
       {
         return test();
       },
