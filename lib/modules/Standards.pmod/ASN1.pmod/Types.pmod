@@ -805,7 +805,7 @@ class Sequence
 class Set
 {
   inherit Compound;
-  int(1..) tag = 17;
+  int(0..) tag = 17;
   constant type_name = "SET";
 
   int(-1..1) compare_octet_strings(string r, string s)
@@ -846,7 +846,7 @@ int(0..1) asn1_printable_valid (string s) {
 class PrintableString
 {
   inherit String;
-  int(1..) tag = 19;
+  int(0..) tag = 19;
   constant type_name = "PrintableString";
 }
 
@@ -883,14 +883,14 @@ int(0..1) asn1_IA5_valid (string s)
 class IA5String
 {
   inherit String;
-  int(1..) tag = 22;
+  int(0..) tag = 22;
   constant type_name = "IA5STRING";
 }
 
 //!
 class VisibleString {
   inherit String;
-  int(1..) tag = 26;
+  int(0..) tag = 26;
   constant type_name = "VisibleString";
 }
 
@@ -900,7 +900,7 @@ class VisibleString {
 class UTC
 {
   inherit String;
-  int(1..) tag = 23;
+  int(0..) tag = 23;
   constant type_name = "UTCTime";
 
   this_program init(int|string|Calendar.ISO_UTC.Second t)
@@ -961,7 +961,7 @@ class UTC
 class GeneralizedTime
 {
   inherit UTC;
-  int(1..) tag = 24;
+  int(0..) tag = 24;
   constant type_name = "GeneralizedTime";
 
   // We are currently not doing any management of fractions. X690
@@ -1012,7 +1012,7 @@ int(0..0) asn1_universal_valid (string s)
 class UniversalString
 {
   inherit OctetString;
-  int(1..) tag = 28;
+  int(0..) tag = 28;
   constant type_name = "UniversalString";
 
   string get_der_content() {
@@ -1043,7 +1043,7 @@ int(0..1) asn1_bmp_valid (string s)
 class BMPString
 {
   inherit OctetString;
-  int(1..) tag = 30;
+  int(0..) tag = 30;
   constant type_name = "BMPString";
 
   string get_der_content() {
