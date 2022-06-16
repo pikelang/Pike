@@ -161,7 +161,7 @@ protected class DefaultMonitor
   //! @param symlink
   //!   Symbolic link that must have been followed for the
   //!   callback to be called.
-  void low_call_callback(function(string, mixed ...:void) cb,
+  void low_call_callback(function(string, __unknown__ ...:void) cb,
 			 mapping(string:int) state,
 			 mapping(string:string) symlink_targets,
 			 string path, Stdio.Stat|void st,
@@ -195,14 +195,14 @@ protected class DefaultMonitor
   //!
   //! @param extras
   //!   Extra arguments after the @[path] argument to @[cb].
-  protected void call_callback(function(string, mixed ...:void) cb,
+  protected void call_callback(function(string, __unknown__ ...:void) cb,
 			       string path, Stdio.Stat|void st)
   {
     if (!cb) return;
     low_call_callback(cb, ([]), global::symlink_targets, path, st);
   }
 
-  protected void notify_symlink(function(string, mixed ...:void) cb,
+  protected void notify_symlink(function(string, __unknown__ ...:void) cb,
 				string sym)
   {
     int sym_id = global::symlink_ids[sym];
