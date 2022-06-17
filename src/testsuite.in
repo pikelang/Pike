@@ -1789,7 +1789,7 @@ test_do([[
 	if (count != c)
 	  error ("Destruct out of sequence, "
 		 "%d destructed when %d should be.\n", c, count);
-	object x = foo && Foo(0);
+	object|zero x = foo && Foo(0);
 	x = 0;
 	// Cause call to destruct_objects_to_destruct.
 	for (int j = 0; j < 10; j++) write ("");
