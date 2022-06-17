@@ -5975,25 +5975,22 @@ multiset & mapping -> mapping
 
 
   ADD_EFUN2("`&",f_and,
-	    tOr4(
-	       tFunc(tSetvar(0,tMix),tVar(0)),
-
-	       tOr(tFuncV(tMix tObj,tMix,tMix),
-		   tFuncV(tObj tMix,tMix,tMix)),
-
-	       tOr6( F_AND_TYPE(tInt),
-		     F_AND_TYPE(tArray),
-		     F_AND_TYPE(tMapping),
-		     F_AND_TYPE(tMultiset),
-		     F_AND_TYPE(tString),
-		     F_AND_TYPE(tOr(tType(tMix),tPrg(tObj))) ),
-
-	       tIfnot(tFuncV(tNone, tNot(tMapping), tMix),
-		      tFuncV(tNone,
-			     tOr3(tArray,tMultiset,tSetvar(4,tMapping)),
-			     tVar(4)) )
-	       ),
-
+	    tTransitive(tFunc(tSetvar(0,tMix),tVar(0)),
+			tOr9(tFunc(tSetvar(0, tInt) tSetvar(1, tInt),
+				   tAndInt(tVar(0), tVar(1))),
+			     F_AND_TYPE(tArray),
+			     F_AND_TYPE(tMapping),
+			     F_AND_TYPE(tMultiset),
+			     F_AND_TYPE(tString),
+			     F_AND_TYPE(tOr(tType(tMix),tPrg(tObj))),
+			     tFunc(tSetvar(4, tMapping)
+				   tOr(tArray,tMultiset),
+				   tVar(4)),
+			     tFunc(tOr(tArray,tMultiset)
+				   tSetvar(4, tMapping),
+				   tVar(4)),
+			     tOr(tFunc(tMix tObj, tMix),
+				 tFunc(tObj tMix, tMix)))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
 #define LOG_TYPE								\
