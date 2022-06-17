@@ -3172,6 +3172,7 @@ static void low_or_pike_types(struct pike_type *t1,
  * zero_implied: One of:
  *          0 the zero type (if any) must be explicit in the result.
  *          1 the zero type is implicit.
+ *          2 zero is explicit and integers are regarded as masks (cf enums).
  *          3 zero is implicit and integers are regarded as masks (cf enums).
  */
 static int lower_or_pike_types(struct pike_type *t1,
@@ -3197,9 +3198,9 @@ static int lower_or_pike_types(struct pike_type *t1,
   } else if (!t2) {
     t = t1;
     ret = -1;
-  } else if (zero_implied && (t1->type == T_ZERO)) {
+  } else if ((zero_implied & 1) && (t1->type == T_ZERO)) {
     t = t2;
-  } else if (zero_implied && (t2->type == T_ZERO)) {
+  } else if ((zero_implied & 1) && (t2->type == T_ZERO)) {
     t = t1;
   } else if ((t1->type == T_NOT) && pike_types_le(t1->car, t2, 0, 0)) {
     t = mixed_type_string;
@@ -3381,11 +3382,11 @@ static int lower_or_pike_types(struct pike_type *t1,
   } else if (!t) {
     /* No need to do anything. */
   } else if ((top = peek_type_stack())->type != t->type) {
-    if (zero_implied && (top->type == T_ZERO)) {
+    if ((zero_implied & 1) && (top->type == T_ZERO)) {
       Pike_compiler->type_stackp--;
       free_type(top);
       push_finished_type(t);
-    } else if (zero_implied && (t->type == T_ZERO)) {
+    } else if ((zero_implied & 1) && (t->type == T_ZERO)) {
       /* The zero is implied. */
     } else {
       push_finished_type(t);
@@ -3407,32 +3408,32 @@ static int lower_or_pike_types(struct pike_type *t1,
 	INT32 min2 = CAR_TO_INT(top);
 	INT32 max2 = CDR_TO_INT(top);
 
-	if (zero_implied) {
+	if (zero_implied & 1) {
 	  if (min1 == 1) min1 = 0;
 	  if (min2 == 1) min2 = 0;
 	  if (max1 == -1) max1 = 0;
 	  if (max2 == -1) max2 = 0;
+	}
 
-	  if (zero_implied == 3) {
-	    /* Or between integer masks.
-	     * This is a bit more lenient than the default further below,
-	     * and is used for generating the type for enums.
-	     */
+	if (zero_implied & 2) {
+	  /* Or between integer masks.
+	   * This is a bit more lenient than the default further below,
+	   * and is used for generating the type for enums.
+	   */
 
-	    /* Ensure that zero is always in the range.
-	     * This also ensures that there'll be an overlap.
-	     */
-	    if (max1 < 0) max1 = 0;
-	    if (max2 < 0) max2 = 0;
-	    if (min1 > 0) min1 = 0;
-	    if (min2 > 0) min2 = 0;
+	  /* Ensure that zero is always in the range.
+	   * This also ensures that there'll be an overlap.
+	   */
+	  if (max1 < 0) max1 = 0;
+	  if (max2 < 0) max2 = 0;
+	  if (min1 > 0) min1 = 0;
+	  if (min2 > 0) min2 = 0;
 
-	    /* Both max values are now >= 0, so this or is safe. */
-	    max1 |= max2;
+	  /* Both max values are now >= 0, so this or is safe. */
+	  max1 |= max2;
 
-	    if ((min1 < 0) && (min2 < 0)) {
-	      min1 &= min2;
-	    }
+	  if ((min1 < 0) && (min2 < 0)) {
+	    min1 &= min2;
 	  }
 	}
 
@@ -3534,11 +3535,11 @@ static void low_or_pike_types(struct pike_type *t1,
   }
   else if((!t2) ||
 	  ((t2->type == T_ZERO) &&
-	   (zero_implied || (t1->flags & PT_FLAG_NULLABLE)))) {
+	   ((zero_implied & 1) || (t1->flags & PT_FLAG_NULLABLE)))) {
     push_finished_type(t1);
   }
   else if ((t1->type == T_ZERO) &&
-	   (zero_implied || (t2->flags & PT_FLAG_NULLABLE))) {
+	   ((zero_implied & 1) || (t2->flags & PT_FLAG_NULLABLE))) {
     push_finished_type(t2);
   }
   else if (t1 == t2) {
@@ -3631,7 +3632,7 @@ struct pike_type *or_pike_types(struct pike_type *a,
 {
   struct pike_type *res;
   type_stack_mark();
-  low_or_pike_types(a,b,1|zero_implied);
+  low_or_pike_types(a, b, zero_implied);
   res = pop_unfinished_type();
 #if 0
   fprintf(stderr, "  ==> ");

@@ -3570,7 +3570,7 @@ enum_def: /* EMPTY */
       {
 	struct pike_type *current = pop_unfinished_type();
 	struct pike_type *new = get_type_of_svalue(Pike_sp-1);
-	struct pike_type *res = or_pike_types(new, current, 3);
+	struct pike_type *res = or_pike_types(new, current, 2);
 	free_type(current);
 	free_type(new);
 	type_stack_mark();
